@@ -1203,6 +1203,19 @@ paths:
       responses:
         "200":
           description: Respuesta exitosa o manejada por el handler real.
+  "/api/empresa/impresoras/agente":
+    get:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/impresoras/agente
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/impresoras/agente
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
   "/api/empresa/impresoras/resolver":
     get:
       tags: [empresa]

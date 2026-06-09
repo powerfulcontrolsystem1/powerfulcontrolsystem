@@ -9,13 +9,10 @@
   <script src="/js/ai_button_icons.js?v=20260607"></script>
   <style>
     .fin-center{display:grid;grid-template-rows:auto minmax(0,1fr);gap:12px;height:100%;min-height:0}
-    .fin-center-overview{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(280px,.85fr);gap:12px;padding:12px 14px;border-bottom:1px solid var(--border);background:var(--surface)}
+    .fin-center-overview{display:grid;grid-template-columns:1fr;gap:10px;padding:14px;border-bottom:1px solid var(--border);background:var(--surface)}
     .fin-center-title{display:grid;gap:4px}
     .fin-center-title h1{margin:0;color:var(--text);font-size:1.15rem;line-height:1.15}
     .fin-center-title p{margin:0;color:var(--muted);font-size:.88rem;line-height:1.35}
-    .fin-center-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center;justify-content:flex-end}
-    .fin-center-chip{border:1px solid var(--border);background:var(--surface-soft);color:var(--text);border-radius:8px;padding:8px 10px;font-weight:800;cursor:pointer}
-    .fin-center-chip.is-active{background:var(--accent);border-color:var(--accent);color:var(--accent-contrast)}
     .fin-center-health{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;padding:0 14px 12px;background:var(--surface)}
     .fin-center-metric{border:1px solid var(--border);border-radius:8px;background:var(--surface-soft);padding:10px}
     .fin-center-metric span{display:block;color:var(--muted);font-size:.72rem;font-weight:850;text-transform:uppercase}
@@ -23,8 +20,8 @@
     .fin-center-frame-wrap{position:relative;min-height:0}
     .fin-center-loading{position:absolute;right:18px;top:12px;z-index:2;display:none;padding:7px 10px;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--muted);box-shadow:0 10px 22px rgba(15,23,42,.12)}
     .fin-center-loading.is-visible{display:block}
-    @media(max-width:920px){.fin-center-overview{grid-template-columns:1fr}.fin-center-actions{justify-content:flex-start}.fin-center-health{grid-template-columns:repeat(2,minmax(0,1fr))}}
-    @media(max-width:620px){.fin-center-health{grid-template-columns:1fr}.fin-center-chip{flex:1 1 130px}}
+    @media(max-width:920px){.fin-center-overview{grid-template-columns:1fr}.fin-center-health{grid-template-columns:repeat(2,minmax(0,1fr))}}
+    @media(max-width:620px){.fin-center-health{grid-template-columns:1fr}}
   </style>
 </head>
 <body class="admin-empresa-shell">
@@ -55,7 +52,6 @@
         <li><a id="linkPortalContadorMenu" href="/administrar_empresa/portal_contador.html" target="finanzasContentFrame"><img class="icon" src="/img/report.svg" alt="">Portal contador</a></li>
         <li><a id="linkPortalTercerosCertificadosMenu" href="/administrar_empresa/portal_terceros_certificados.html" target="finanzasContentFrame"><img class="icon" src="/img/report.svg" alt="">Certificados tributarios</a></li>
         <li><a id="linkNominaMenu" href="/administrar_empresa/nomina_sueldos.html" target="finanzasContentFrame"><img class="icon" src="/img/analytics-color.svg" alt="">Nomina de sueldos</a></li>
-        <li><a id="linkERPExtendidoMenu" href="/administrar_empresa/modulos_erp_extendido.html" target="finanzasContentFrame"><img class="icon" src="/img/network-color.svg" alt="">ERP extendido</a></li>
         <li class="admin-menu-visibility-item">
           <button type="button" class="admin-menu-visibility-toggle" aria-controls="finanzasSidebarNav" aria-expanded="true" data-show-label="Mostrar menu" data-hide-label="Ocultar menu">
             <span class="admin-menu-visibility-icon" aria-hidden="true">&#9776;</span>
@@ -73,21 +69,7 @@
               <h1>Centro financiero y contable</h1>
               <p id="finCenterSubtitle">Operación financiera, contabilidad legal, impuestos, cartera, tesorería y cierres por empresa.</p>
             </div>
-            <div class="fin-center-actions" aria-label="Accesos financieros principales">
-              <button class="fin-center-chip is-active" type="button" data-frame="/administrar_empresa/finanzas.html" data-permission-link="linkFinanzasMain">Operación</button>
-              <button class="fin-center-chip" type="button" data-frame="/administrar_empresa/renta_ia.html" data-permission-link="linkRentaIA" hidden>Renta IA</button>
-              <button class="fin-center-chip" type="button" data-frame="/administrar_empresa/centro_ia_empresarial.html" data-permission-link="linkCentroIAEmpresarial" hidden>IA empresarial</button>
-              <button class="fin-center-chip" type="button" data-frame="/administrar_empresa/suite_contador.html" data-permission-link="linkSuiteContador">Contador 360</button>
-              <button class="fin-center-chip" type="button" data-frame="/administrar_empresa/niif.html" data-permission-link="linkNIIF">NIIF</button>
-              <button class="fin-center-chip" type="button" data-frame="/administrar_empresa/contabilidad_colombia.html" data-permission-link="linkContabilidadColombia">Contabilidad</button>
-              <button class="fin-center-chip" type="button" data-frame="/administrar_empresa/declaraciones_tributarias.html" data-permission-link="linkDeclaracionesTributarias">Tributario</button>
-              <button class="fin-center-chip" type="button" data-frame="/administrar_empresa/impuestos.html" data-permission-link="linkImpuestos">Impuestos</button>
-              <button class="fin-center-chip" type="button" data-frame="/administrar_empresa/creditos_menu.html" data-permission-link="linkCreditosMenu">Creditos</button>
-              <button class="fin-center-chip" type="button" data-frame="/administrar_empresa/cobranza.html" data-permission-link="linkCobranzaMenu">Cobranza</button>
-              <button class="fin-center-chip" type="button" data-frame="/administrar_empresa/tesoreria_presupuesto.html" data-permission-link="linkTesoreriaPresupuesto">Tesorería</button>
-              <button class="fin-center-chip" type="button" data-frame="/administrar_empresa/portal_contador.html" data-permission-link="linkPortalContadorMenu">Contador</button>
-            </div>
-          </div>
+</div>
           <div class="fin-center-health" aria-label="Estado del centro financiero">
             <div class="fin-center-metric"><span>Base</span><strong>Multiempresa</strong></div>
             <div class="fin-center-metric"><span>Control</span><strong>Permisos por rol</strong></div>
@@ -108,71 +90,7 @@
     (function(){
       var frame=document.getElementById("finanzasContentFrame");
       var loading=document.getElementById("finCenterLoading");
-      var subtitle=document.getElementById("finCenterSubtitle");
-      var copy={
-        "/administrar_empresa/finanzas.html":"Operación financiera, ingresos, egresos, caja y reportes base.",
-        "/administrar_empresa/renta_ia.html":"Estimacion de renta empresarial con calculo real e interpretacion IA.",
-        "/administrar_empresa/centro_ia_empresarial.html":"Diagnostico IA, borradores operativos, cobranza, inventario, conciliacion y cumplimiento con datos reales de la empresa.",
-        "/administrar_empresa/contabilidad_colombia.html":"PUC, terceros, impuestos, comprobantes, auditoría y cierres.",
-        "/administrar_empresa/declaraciones_tributarias.html":"Declaraciones tributarias y control de cumplimiento.",
-        "/administrar_empresa/impuestos.html":"Configuracion tributaria, impuestos por ventas y resumen fiscal por codigo.",
-        "/administrar_empresa/creditos_menu.html":"Creditos, cuotas, saldos, abonos y cartera por cliente.",
-        "/administrar_empresa/cobranza.html":"Seguimiento de cobranza, vencimientos y gestion de recaudo.",
-        "/administrar_empresa/suite_contador.html":"Centro de trabajo para contadores: clientes, PUC/NIIF, DIAN, impuestos, cierres, certificados, reportes y Renta IA.",
-        "/administrar_empresa/tesoreria_presupuesto.html":"Tesorería, presupuesto y seguimiento de caja proyectada.",
-        "/administrar_empresa/portal_contador.html":"Portal de contador con revisión documental y soporte contable."
-      };
-      function withEmpresa(url){
-        try{
-          var id=(parent&&parent.__resolveEmpresaIdContext&&parent.__resolveEmpresaIdContext())||new URLSearchParams(location.search).get("empresa_id")||"";
-          if(!id)return url;
-          return url+(url.indexOf("?")>=0?"&":"?")+"empresa_id="+encodeURIComponent(id);
-        }catch(e){return url;}
-      }
-      function resolveEmpresaId(){
-        try{
-          return (parent&&parent.__resolveEmpresaIdContext&&parent.__resolveEmpresaIdContext())||new URLSearchParams(location.search).get("empresa_id")||"";
-        }catch(e){
-          return new URLSearchParams(location.search).get("empresa_id")||"";
-        }
-      }
-      function applyChipPermissions(){
-        var id=resolveEmpresaId();
-        if(!id)return;
-        fetch("/api/empresa/permisos_contexto?empresa_id="+encodeURIComponent(id),{credentials:"same-origin"})
-          .then(function(resp){return resp.ok?resp.json():null;})
-          .then(function(data){
-            var pages=data&&data.paginas&&typeof data.paginas==="object"?data.paginas:null;
-            if(!pages)return;
-            var firstVisible=null;
-            document.querySelectorAll(".fin-center-chip[data-permission-link]").forEach(function(btn){
-              var key=btn.getAttribute("data-permission-link")||"";
-              var visible=!Object.prototype.hasOwnProperty.call(pages,key)||!!pages[key];
-              if((key==="linkRentaIA"||key==="linkCentroIAEmpresarial")&&!pages[key]){
-                visible=false;
-              }
-              btn.hidden=!visible;
-              if(visible&&!firstVisible)firstVisible=btn;
-            });
-            var active=document.querySelector(".fin-center-chip.is-active");
-            if(active&&active.hidden&&firstVisible){
-              firstVisible.click();
-            }
-          })
-          .catch(function(){});
-      }
-      document.querySelectorAll(".fin-center-chip").forEach(function(btn){
-        btn.addEventListener("click",function(){
-          if(btn.hidden)return;
-          document.querySelectorAll(".fin-center-chip").forEach(function(x){x.classList.toggle("is-active",x===btn);});
-          var target=btn.getAttribute("data-frame");
-          subtitle.textContent=copy[target]||"Centro financiero y contable por empresa.";
-          loading.classList.add("is-visible");
-          frame.src=withEmpresa(target);
-        });
-      });
       frame.addEventListener("load",function(){loading.classList.remove("is-visible");});
-      applyChipPermissions();
     })();
   </script>
 </body>

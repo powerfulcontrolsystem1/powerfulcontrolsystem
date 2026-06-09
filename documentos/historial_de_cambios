@@ -1,3 +1,37 @@
+2026-06-09: Impresoras por empresa con cola para agente local.
+- Modulos afectados: Configuracion de impresoras, ventas/caja.
+- Backend: `empresa_impresoras.go` agrega `empresa_impresoras_cola` para trabajos pendientes/tomados/impresos/error, reclamados por `agente_id` y `estacion_id`, con `empresa_id` obligatorio en consultas, updates y listados.
+- API: `/api/empresa/impresoras` conserva administracion por seguridad y agrega prueba/reintento de cola; `/api/empresa/impresoras/agente` queda limitado a tomar trabajos y actualizar estado bajo permisos de ventas, sin editar impresoras ni reglas.
+- Frontend: `configuracion_impresora.html` permite crear prueba de impresion, tomar pendientes desde un agente local/caja y ver cola reciente junto a las reglas por funcionalidad/producto/categoria.
+- Seguridad: no se agregan dependencias ni motores distintos a PostgreSQL; no se imprimen secretos; los trabajos guardan contenido operativo de impresion y metadata limitada.
+
+2026-06-09: ERP extendido retirado de la navegacion vigente.
+- Modulos afectados: Administrar empresa, Configuracion, permisos empresariales.
+- Frontend: se elimina el concepto visible `ERP extendido` de la navegacion empresarial, se retiran `modulos_erp_extendido.html`, `modulos_erp_dominio.html` y `web/js/modulos_erp_extendido.js`, y se renombra el acceso real de integraciones a `linkConfiguracionIntegraciones`, conservando la pagina `configuracion_integraciones.html`.
+- Backend: el catalogo de permisos empresariales deja de exponer `linkERPExtendido` y `linkERPExtendidoMenu`; agrega `linkConfiguracionIntegraciones` como permiso de seguridad/configuracion.
+- Alcance: no se eliminan tablas ni endpoints operativos de CRM, produccion, logistica, documentos o integraciones; se retira el hub ERP extendido y sus archivos frontend para evitar duplicidad.
+
+2026-06-09: Limpieza visual de facturacion electronica y finanzas.
+- Modulos afectados: Facturacion electronica, Finanzas y cumplimiento.
+- Frontend: `facturacion_electronica.html` agrega separacion consistente entre tarjetas y titulo/descripcion a `Selector fiscal` y `Configuracion de facturacion por pais`, evitando tarjetas pegadas o bloques sin contexto.
+- Frontend: `finanzas_menu.html` retira `ERP extendido` del menu financiero y elimina los chips superiores que repetian accesos ya presentes en la barra lateral.
+
+2026-06-09: Facturacion electronica sin opcion duplicada y obligatorios visibles.
+- Modulo afectado: Facturacion electronica Colombia / configuracion por pais.
+- Frontend: `facturacion_electronica.html` oculta la opcion duplicada de envio automatico de factura electronica al correo del cliente en configuracion avanzada y deja como fuente visible unica la seccion principal de facturacion electronica.
+- UX: la pagina agrega avisos de campos obligatorios, marca los labels con asterisco y resalta campos faltantes de configuracion DIAN y facturacion por pais en tiempo real, sin cambiar endpoints ni reglas fiscales.
+
+2026-06-09: Eventos RADIAN visibles como operativos.
+- Modulo afectado: Facturacion electronica Colombia.
+- Backend: `backend/db/facturacion_electronica.go` marca `eventos_radian_recepcion` como `operativo`, manteniendo `EsEvento=true`, `RequiereFirma=true` y alcance de habilitacion mientras la empresa no active produccion.
+- Frontend: `facturacion_electronica.html` reconoce estados `base_operativa`, `operativo` e `implementado` como cobertura operativa y agrega panel de acceso directo al Centro de habilitacion DIAN para RADIAN, aclarando que no cambia la empresa a produccion.
+- QA: se refuerza `TestCatalogoDianColombiaIncluyeDocumentosYObligacionesContables` para verificar que RADIAN exista como evento firmado operativo en el catalogo DIAN Colombia.
+
+2026-06-09: Facturacion electronica sin encabezado redundante.
+- Modulo afectado: Facturacion electronica Colombia / configuracion por pais.
+- Frontend: `web/administrar_empresa/facturacion_electronica.html` retira el encabezado visible `Facturacion electronica por pais - {empresa}` y el texto introductorio de la tarjeta de pais para que la pagina inicie directamente en el selector y la configuracion DIAN.
+- Alcance: no cambia endpoints, tablas, permisos, credenciales, transporte DIAN ni logica de paises; elimina una consulta frontend que solo actualizaba ese titulo.
+
 2026-06-09: Impresion DIAN con QR obligatorio y bascula electronica en carrito.
 - Modulos afectados: Facturacion electronica Colombia, Facturas electronicas, Carrito y venta directa.
 - Frontend: `facturas_electronicas.html` genera QR local en la impresion POS/carta de factura, nota credito y nota debito electronica Colombia cuando existe CUFE/CUDE o URL DIAN; si falta la validacion, imprime advertencia `QR DIAN pendiente` sin inventar codigos.

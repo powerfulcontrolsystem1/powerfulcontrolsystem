@@ -22,6 +22,11 @@
     .fe-config-missing strong{color:var(--text)}
     .fe-config-missing ul{margin:8px 0 0 18px;padding:0}
     .fe-config-missing li{margin:3px 0}
+    .fe-required-note{display:flex;align-items:flex-start;gap:8px;margin:10px 0 12px;padding:10px 12px;border:1px solid color-mix(in srgb,#38bdf8 38%,var(--border));border-radius:8px;background:color-mix(in srgb,#38bdf8 8%,var(--surface));color:var(--muted);font-size:.86rem;line-height:1.42}
+    .fe-required-note strong{color:var(--text)}
+    .fe-required-mark{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;flex:0 0 22px;border-radius:999px;background:color-mix(in srgb,#38bdf8 18%,var(--surface));border:1px solid color-mix(in srgb,#38bdf8 42%,var(--border));color:var(--text);font-weight:950}
+    .form-label.is-required::after{content:" *";color:#ef5350;font-weight:950}
+    .form-input.is-required-missing,.form-textarea.is-required-missing{border-color:#ef5350 !important;box-shadow:0 0 0 1px color-mix(in srgb,#ef5350 35%,transparent)}
     .dian-readable-result{margin-top:10px;border:1px solid var(--border);border-radius:8px;background:var(--surface-soft);padding:10px;color:var(--text);white-space:normal}
     .dian-readable-result.is-empty{display:none}
     .dian-readable-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:8px}
@@ -55,6 +60,10 @@
     .dian-essential-card span.ok{border-color:color-mix(in srgb,var(--success) 42%,var(--border));color:var(--success);background:color-mix(in srgb,var(--success) 10%,var(--surface))}
     .dian-essential-card span.warn{border-color:color-mix(in srgb,#f59e0b 48%,var(--border));color:#b45309;background:color-mix(in srgb,#f59e0b 10%,var(--surface))}
     .dian-essential-card p{margin:7px 0 0;color:var(--muted);font-size:.78rem;line-height:1.35}
+    .fe-radian-panel{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:10px 0 14px;padding:12px;border:1px solid color-mix(in srgb,var(--success) 34%,var(--border));border-radius:8px;background:color-mix(in srgb,var(--success) 7%,var(--surface))}
+    .fe-radian-panel strong{display:block;color:var(--text);font-size:.95rem}
+    .fe-radian-panel p{margin:4px 0 0;color:var(--muted);font-size:.82rem;line-height:1.35}
+    .fe-radian-panel a{white-space:nowrap}
     .fe-country-card{border:1px solid var(--border);border-radius:8px;background:var(--surface);padding:14px}
     .fe-country-card h2{margin:0 0 6px;color:var(--text);font-size:1.08rem;letter-spacing:0}
     .fe-country-grid{display:grid;grid-template-columns:minmax(220px,360px) minmax(220px,1fr) auto;gap:12px;align-items:end}
@@ -71,22 +80,19 @@
     #feDianDocumentosCard{order:4}
     #feForm{order:5}
     #advancedConfigCard{order:6}
-    .fe-page-stack{display:flex;flex-direction:column}
+    .fe-page-stack{display:flex;flex-direction:column;gap:14px;padding-bottom:18px}
+    .fe-page-stack > .card,.fe-page-stack > form.card{margin:0}
     @media (max-width:1100px){.dian-capture-guide{grid-template-columns:repeat(2,minmax(0,1fr))}.dian-capture-fields{grid-template-columns:repeat(2,minmax(0,1fr))}.dian-essential-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
     @media (max-width:900px){.fe-config-progress-steps{grid-template-columns:repeat(2,minmax(0,1fr))}}
     @media (max-width:900px){.fe-country-grid{grid-template-columns:1fr}}
-    @media (max-width:560px){.fe-config-progress-steps,.dian-readable-grid,.dian-capture-guide,.dian-capture-fields,.dian-essential-grid{grid-template-columns:1fr}.fe-config-progress-percent{font-size:1.45rem}}
+    @media (max-width:560px){.fe-config-progress-steps,.dian-readable-grid,.dian-capture-guide,.dian-capture-fields,.dian-essential-grid{grid-template-columns:1fr}.fe-config-progress-percent{font-size:1.45rem}.fe-radian-panel{align-items:flex-start;flex-direction:column}.fe-radian-panel a{width:100%;text-align:center}}
   </style>
 </head>
 <body class="super-page form-bg-dark">
   <div class="container fe-page-stack">
-    <div class="page-header">
-      <h1 id="pageTitle">Facturación electrónica por país</h1>
-    </div>
-
     <div id="feCountrySelectorCard" class="card fe-country-card">
-      <h2>País de facturación electrónica</h2>
-      <p class="form-help">El sistema detecta el país de la empresa. Si lo cambias, carga la configuración y la página fiscal correspondiente sin mezclarla con Colombia.</p>
+      <h2>Selector fiscal</h2>
+      <p class="form-help">Elige el pais de facturacion de la empresa. Colombia mantiene la configuracion DIAN principal; otros paises cargan su perfil separado.</p>
       <div class="fe-country-grid">
         <div>
           <label class="form-label" for="pais_codigo">País detectado / seleccionado</label>
@@ -262,6 +268,7 @@
       <h2>Documentos electronicos DIAN Colombia</h2>
       <p class="form-help">Activa los documentos del Sistema de Facturacion Electronica que la empresa usara. Las obligaciones de contador se separan para no mezclarlas con documentos UBL de venta.</p>
       <div id="feDianEssentialDocs" class="dian-essential-grid"></div>
+      <div id="feRadianStatus" class="fe-radian-panel is-hidden"></div>
       <div class="form-row">
         <div class="form-col">
           <h3>Documentos y eventos del SFE</h3>
@@ -302,7 +309,7 @@
 
     <div id="feEstructuradoPA" class="card is-hidden fe-estructurado fe-estructurado-pa">
       <h3>Campos estructurados — Panamá (DGI)</h3>
-      <p class="form-help">Se fusionan con <code>campos_pais_json</code> (claves: <code>ruc</code>, <code>dv</code>. Independiente de Colombia y de la DIAN.</p>
+      <p class="form-help">Se fusionan con <code>campos_pais_json</code> (claves: <code>ruc</code>, <code>dv</code>). Es independiente de Colombia y de la DIAN.</p>
       <div class="form-row">
         <div class="form-col"><label class="form-label" for="fe_pa_ruc">RUC</label><input id="fe_pa_ruc" class="form-input" autocomplete="off"></div>
         <div class="form-col"><label class="form-label" for="fe_pa_dv">Dígito verificador (DV)</label><input id="fe_pa_dv" class="form-input" autocomplete="off"></div>
@@ -352,7 +359,9 @@
       </div>
     </div>
 
-    <form id="feForm" class="form">
+    <form id="feForm" class="form card">
+      <h2>Configuracion de facturacion por pais</h2>
+      <p class="form-help">Define el proveedor, ambiente, moneda, datos fiscales generales y preferencias de envio para el pais seleccionado.</p>
       <input type="hidden" id="empresa_id">
       <div class="form-row">
         <div class="form-col">
@@ -471,13 +480,14 @@
 
       <form id="advancedConfigForm" class="form">
         <input type="hidden" id="adv_empresa_id">
+        <input id="adv_enviar_factura_electronica_venta" type="checkbox" hidden aria-hidden="true">
 
         <h3>Automatización de ventas y facturación</h3>
         <div class="form-row">
           <div class="form-col">
             <div class="form-help"><label><input id="adv_facturacion_electronica_activa" type="checkbox"> Activar facturación electrónica automática al cerrar venta</label></div>
             <div class="form-help"><label><input id="adv_enviar_email_venta" type="checkbox"> Enviar correo de la venta (comprobante)</label></div>
-            <div class="form-help"><label><input id="adv_enviar_factura_electronica_venta" type="checkbox"> Enviar factura electrónica automáticamente al correo del cliente al cerrar venta</label></div>
+            <p id="advFacturaEmailAutoHint" class="form-help">El envío automático de factura electrónica al correo del cliente se configura una sola vez en la sección principal de facturación electrónica.</p>
           </div>
         </div>
 
@@ -991,7 +1001,7 @@
         empresa_id: Number(state.empresaID),
         facturacion_electronica_activa: !!document.getElementById("adv_facturacion_electronica_activa").checked,
         enviar_email_venta: !!document.getElementById("adv_enviar_email_venta").checked,
-        enviar_factura_electronica_venta: !!document.getElementById("adv_enviar_factura_electronica_venta").checked,
+        enviar_factura_electronica_venta: getEnviarFacturaEmailClienteAutoValue(),
         tipo_documento_emisor: txt(document.getElementById("adv_tipo_documento_emisor").value) || "NIT",
         nit: txt(document.getElementById("adv_nit").value),
         digito_verificacion: txt(document.getElementById("adv_digito_verificacion").value),
@@ -1284,6 +1294,7 @@
 
       if (!missing.length) {
         missingEl.innerHTML = "<strong>Sin campos pendientes.</strong> Ya puedes guardar, validar credenciales y continuar con el test DIAN.";
+        updateRequiredFieldHighlights();
         return;
       }
       var html = "<strong>Campos pendientes:</strong><ul>";
@@ -1292,6 +1303,102 @@
       });
       html += "</ul>";
       missingEl.innerHTML = html;
+      updateRequiredFieldHighlights();
+    }
+
+    function addRequiredNote(container, text) {
+      if (!container || container.querySelector(".fe-required-note")) return;
+      var note = document.createElement("div");
+      note.className = "fe-required-note";
+      note.innerHTML = '<span class="fe-required-mark">*</span><div><strong>Campos obligatorios:</strong> ' + escapeHTML(text) + '</div>';
+      container.insertBefore(note, container.firstElementChild || null);
+    }
+
+    function markFieldRequired(id) {
+      var input = document.getElementById(id);
+      if (!input) return;
+      var col = input.closest ? input.closest(".form-col") : null;
+      var label = col ? col.querySelector(".form-label") : null;
+      if (label) label.classList.add("is-required");
+    }
+
+    function setFieldMissing(id, missing) {
+      var input = document.getElementById(id);
+      if (!input) return;
+      input.classList.toggle("is-required-missing", !!missing);
+    }
+
+    function updateRequiredFieldHighlights() {
+      var ambiente = dianFieldValue("dian_tipo_ambiente").toLowerCase();
+      var softwareCompartido = !!(document.getElementById("dian_usar_software_compartido") && document.getElementById("dian_usar_software_compartido").checked);
+      var rangoDesde = dianNumberValue("dian_rango_desde");
+      var rangoHasta = dianNumberValue("dian_rango_hasta");
+      var consecutivo = dianNumberValue("dian_consecutivo_actual");
+      var dianRequired = {
+        dian_nit: !dianFieldValue("dian_nit"),
+        dian_dv: !dianFieldValue("dian_dv"),
+        dian_razon_social: !dianFieldValue("dian_razon_social"),
+        dian_tipo_ambiente: !dianFieldValue("dian_tipo_ambiente"),
+        dian_url: !dianFieldValue("dian_url"),
+        dian_test_set_id: ambiente !== "produccion" && !dianFieldValue("dian_test_set_id"),
+        dian_software_id: !dianFieldValue("dian_software_id"),
+        dian_software_pin: !softwareCompartido && !dianFieldValue("dian_software_pin"),
+        dian_prefijo: !dianFieldValue("dian_prefijo"),
+        dian_resolucion_numero: !dianFieldValue("dian_resolucion_numero"),
+        dian_consecutivo_actual: !(consecutivo > 0 && (!rangoDesde || consecutivo >= rangoDesde) && (!rangoHasta || consecutivo <= rangoHasta)),
+        dian_resolucion_fecha_desde: !dianFieldValue("dian_resolucion_fecha_desde"),
+        dian_resolucion_fecha_hasta: !dianFieldValue("dian_resolucion_fecha_hasta"),
+        dian_rango_desde: !(rangoDesde > 0 && rangoHasta > 0 && rangoHasta >= rangoDesde),
+        dian_rango_hasta: !(rangoDesde > 0 && rangoHasta > 0 && rangoHasta >= rangoDesde),
+        dian_llave_tecnica: !dianFieldValue("dian_llave_tecnica"),
+        dian_certificado_url: !dianFieldValue("dian_certificado_url"),
+        dian_certificado_clave_ref: !dianFieldValue("dian_certificado_clave_ref")
+      };
+      Object.keys(dianRequired).forEach(function(id) {
+        markFieldRequired(id);
+        setFieldMissing(id, dianRequired[id]);
+      });
+
+      var countryRequiredIDs = ["proveedor", "ambiente", "moneda_codigo", "tipo_documento_emisor", "identificador_fiscal", "razon_social", "email_facturacion", "direccion_fiscal"];
+      countryRequiredIDs.forEach(function(id) {
+        markFieldRequired(id);
+        var el = document.getElementById(id);
+        setFieldMissing(id, el && !txt(el.value));
+      });
+    }
+
+    function installRequiredFieldGuides() {
+      addRequiredNote(document.getElementById("feDianConfigForm"), "completa los campos marcados con asterisco. La barra de avance muestra que falta para guardar, validar credenciales y continuar en habilitacion DIAN.");
+      addRequiredNote(document.getElementById("feForm"), "para facturacion electronica completa los campos marcados con asterisco. En Colombia, los datos legales finales se validan en la tarjeta DIAN.");
+      updateRequiredFieldHighlights();
+    }
+
+    function hideDuplicatedElectronicInvoiceEmailOption() {
+      var input = document.getElementById("adv_enviar_factura_electronica_venta");
+      if (!input) return;
+      var wrapper = input.closest ? input.closest(".form-help") : null;
+      if (wrapper) wrapper.style.display = "none";
+      var emailSale = document.getElementById("adv_enviar_email_venta");
+      var col = emailSale && emailSale.closest ? emailSale.closest(".form-col") : null;
+      if (col && !document.getElementById("advFacturaEmailAutoHint")) {
+        var hint = document.createElement("p");
+        hint.id = "advFacturaEmailAutoHint";
+        hint.className = "form-help";
+        hint.textContent = "El envio automatico de factura electronica al correo del cliente se configura una sola vez en la seccion principal de facturacion electronica.";
+        col.appendChild(hint);
+      }
+    }
+
+    function getEnviarFacturaEmailClienteAutoValue() {
+      var principal = document.getElementById("enviar_factura_email_cliente_auto");
+      if (principal) return !!principal.checked;
+      var avanzado = document.getElementById("adv_enviar_factura_electronica_venta");
+      return !!(avanzado && avanzado.checked);
+    }
+
+    function syncAdvancedInvoiceEmailAutoFromMain() {
+      var avanzado = document.getElementById("adv_enviar_factura_electronica_venta");
+      if (avanzado) avanzado.checked = getEnviarFacturaEmailClienteAutoValue();
     }
 
     function bindDianSetupProgressInputs() {
@@ -1310,6 +1417,17 @@
         el.addEventListener("change", renderDianSetupProgress);
       });
       renderDianSetupProgress();
+    }
+
+    function bindCountryRequiredInputs() {
+      ["proveedor", "ambiente", "moneda_codigo", "tipo_documento_emisor", "identificador_fiscal", "razon_social", "email_facturacion", "direccion_fiscal"].forEach(function(id) {
+        var el = document.getElementById(id);
+        if (!el) return;
+        el.addEventListener("input", updateRequiredFieldHighlights);
+        el.addEventListener("change", updateRequiredFieldHighlights);
+      });
+      var emailAuto = document.getElementById("enviar_factura_email_cliente_auto");
+      if (emailAuto) emailAuto.addEventListener("change", syncAdvancedInvoiceEmailAutoFromMain);
     }
 
     function renderFirmaExpiry(info) {
@@ -1481,14 +1599,14 @@
       essentials.forEach(function(item) {
         var found = item.codes.map(function(code) { return catalog[code]; }).filter(Boolean);
         var allFound = found.length === item.codes.length;
-        var allBase = allFound && found.every(function(doc) { return doc.estado_implementacion === "base_operativa"; });
-        var status = allBase ? "Implementado" : (allFound ? "Catalogado" : "Pendiente");
+        var allOperational = allFound && found.every(isDianEssentialOperational);
+        var status = allOperational ? "Operativo" : (allFound ? "Catalogado" : "Pendiente");
         var card = document.createElement("div");
         card.className = "dian-essential-card";
         var title = document.createElement("strong");
         title.textContent = item.title;
         var badge = document.createElement("span");
-        badge.className = allBase ? "ok" : (allFound ? "warn" : "");
+        badge.className = allOperational ? "ok" : (allFound ? "warn" : "");
         badge.textContent = status;
         var note = document.createElement("p");
         note.textContent = item.note;
@@ -1497,6 +1615,39 @@
         card.appendChild(note);
         box.appendChild(card);
       });
+      renderRadianStatus(catalog.eventos_radian_recepcion);
+    }
+
+    function isDianEssentialOperational(doc) {
+      var estado = txt(doc && doc.estado_implementacion).toLowerCase();
+      return estado === "base_operativa" || estado === "operativo" || estado === "implementado";
+    }
+
+    function renderRadianStatus(item) {
+      var panel = document.getElementById("feRadianStatus");
+      if (!panel) return;
+      panel.innerHTML = "";
+      if (!item) {
+        panel.classList.add("is-hidden");
+        return;
+      }
+      panel.classList.remove("is-hidden");
+
+      var text = document.createElement("div");
+      var title = document.createElement("strong");
+      title.textContent = "Eventos RADIAN operativos en habilitacion";
+      var note = document.createElement("p");
+      note.textContent = item.observacion || "Registra acuse, recibo, aceptacion o reclamo sobre facturas electronicas existentes en ambiente de pruebas.";
+      text.appendChild(title);
+      text.appendChild(note);
+
+      var link = document.createElement("a");
+      link.className = "btn secondary";
+      link.href = "facturacion_electronica_pruebas_dian.html?empresa_id=" + encodeURIComponent(state.empresaID || "") + "&tipo_documento=eventos_radian_recepcion";
+      link.textContent = "Abrir centro DIAN";
+
+      panel.appendChild(text);
+      panel.appendChild(link);
     }
 
     async function loadDianCatalog() {
@@ -2122,6 +2273,7 @@
       document.getElementById("razon_social").value = txt(cfg.razon_social);
       document.getElementById("email_facturacion").value = txt(cfg.email_facturacion);
       document.getElementById("enviar_factura_email_cliente_auto").checked = cfg.enviar_factura_email_cliente_auto === true;
+      syncAdvancedInvoiceEmailAutoFromMain();
       document.getElementById("telefono_facturacion").value = txt(cfg.telefono_facturacion);
       document.getElementById("direccion_fiscal").value = txt(cfg.direccion_fiscal);
       document.getElementById("prefijo_factura").value = txt(cfg.prefijo_factura);
@@ -2135,6 +2287,7 @@
       if (txt(document.getElementById("pais_codigo").value).toUpperCase() === "CO") {
         loadDianCatalog();
       }
+      updateRequiredFieldHighlights();
     }
 
     async function loadCountryConfig(countryCode) {
@@ -2422,7 +2575,10 @@
     removeFacturacionIntroCards();
     reorderDianCards();
     installFacturacionFieldHelp();
+    installRequiredFieldGuides();
+    hideDuplicatedElectronicInvoiceEmailOption();
     bindDianSetupProgressInputs();
+    bindCountryRequiredInputs();
 
     (async function init() {
       const empresaID = Number(q("empresa_id") || 0);
@@ -2442,18 +2598,6 @@
       }
       try {
         localStorage.setItem("active_empresa_id", String(empresaID));
-      } catch (_) {}
-
-      try {
-        const empRes = await fetch("/api/empresa/configuracion_guiada?empresa_id=" + encodeURIComponent(empresaID), { credentials: "same-origin" });
-        if (empRes.ok) {
-          const data = await empRes.json();
-          const estado = data && data.estado && typeof data.estado === "object" ? data.estado : data;
-          const nombre = estado && (estado.empresa_nombre || estado.nombre);
-          if (nombre) {
-            document.getElementById("pageTitle").textContent = "Facturación electrónica por país - " + nombre;
-          }
-        }
       } catch (_) {}
 
       try {

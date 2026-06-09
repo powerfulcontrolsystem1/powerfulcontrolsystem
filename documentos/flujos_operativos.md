@@ -4,6 +4,26 @@ Guia corta de los procesos que mas se prueban y modifican. Cada flujo debe
 mantener aislamiento por `empresa_id`, permisos por rol y trazabilidad cuando
 afecte dinero, documentos, licencias o seguridad.
 
+## Impresoras por empresa y agente local
+
+1. Abrir `Administrar empresa > Configuracion > Configuracion de impresora`.
+2. Registrar impresoras activas por empresa con codigo, nombre, tipo de conexion,
+   direccion o cola, area operativa, formato POS/carta y predeterminada.
+3. Asignar impresora por funcionalidad (`ticket_cobro`, `factura_caja`,
+   `orden_servicio`, `cocina`, `barra`, `reporte_caja`) o por producto/categoria.
+4. Cuando una venta, factura, comanda o cierre necesite imprimir, el backend puede
+   resolver la impresora por `/api/empresa/impresoras/resolver` o encolar un
+   trabajo en `/api/empresa/impresoras?action=cola_trabajo`.
+5. El agente local de cada caja consulta
+   `/api/empresa/impresoras/agente?action=tomar` con `empresa_id`, `agente_id` y
+   `estacion_id`; solo recibe trabajos pendientes de su empresa, agente o estacion.
+6. Tras imprimir en la impresora fisica del equipo, el agente marca el trabajo
+   como `impreso` o `error` en `/api/empresa/impresoras/agente?action=estado`.
+7. El administrador puede ver la cola reciente y reintentar trabajos fallidos
+   desde la pagina de configuracion.
+8. La ruta de agente usa permisos de ventas y no permite editar impresoras,
+   reglas ni predeterminadas; esas acciones siguen bajo permisos de seguridad.
+
 ## Modulo NIIF
 
 1. Abrir `Administrar empresa > Finanzas y cumplimiento > NIIF` o el acceso

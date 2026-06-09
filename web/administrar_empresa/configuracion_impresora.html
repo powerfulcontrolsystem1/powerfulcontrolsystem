@@ -821,6 +821,74 @@
         </div>
       </div>
 
+      <div class="empresa-config-grid">
+        <div class="form">
+          <h3 style="margin:0 0 10px 0;font-size:0.95rem;">Agente local y cola de impresion</h3>
+          <p class="form-help">Cada computador de caja puede tomar trabajos pendientes y enviarlos a su impresora fisica configurada.</p>
+          <div class="form-row">
+            <div class="form-col">
+              <label class="form-label" for="printerAgentId">Agente local</label>
+              <input id="printerAgentId" class="form-input" maxlength="120" placeholder="CAJA-1">
+            </div>
+            <div class="form-col">
+              <label class="form-label" for="printerAgentEstacion">Estacion o caja</label>
+              <input id="printerAgentEstacion" class="form-input" type="number" min="0" step="1" value="0">
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-col">
+              <label class="form-label" for="printerTrabajoFuncionalidad">Tipo de trabajo</label>
+              <select id="printerTrabajoFuncionalidad" class="form-input">
+                <option value="ticket_cobro">Recibo de venta / ticket</option>
+                <option value="factura_caja">Factura</option>
+                <option value="orden_servicio">Pedido / orden de servicio</option>
+                <option value="cocina">Comanda cocina</option>
+                <option value="barra">Comanda barra</option>
+                <option value="reporte_caja">Reporte o cierre de caja</option>
+              </select>
+            </div>
+            <div class="form-col">
+              <label class="form-label" for="printerTrabajoImpresora">Impresora directa</label>
+              <select id="printerTrabajoImpresora" class="form-input"></select>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-col">
+              <label class="form-label" for="printerTrabajoTitulo">Titulo</label>
+              <input id="printerTrabajoTitulo" class="form-input" maxlength="180" value="Prueba de impresion PCS">
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-col">
+              <label class="form-label" for="printerTrabajoContenido">Contenido</label>
+              <textarea id="printerTrabajoContenido" class="form-textarea">Prueba de impresion desde PCS.</textarea>
+            </div>
+          </div>
+          <div class="form-actions">
+            <button id="btnCrearTrabajoImpresion" type="button" class="btn secondary">Enviar prueba a cola</button>
+            <button id="btnTomarTrabajosImpresion" type="button" class="btn secondary">Tomar pendientes</button>
+          </div>
+        </div>
+
+        <div class="form">
+          <h3 style="margin:0 0 10px 0;font-size:0.95rem;">Cola reciente</h3>
+          <div class="table-wrap">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Estado</th>
+                  <th>Impresora</th>
+                  <th>Documento</th>
+                  <th>Accion</th>
+                </tr>
+              </thead>
+              <tbody id="tablaImpresorasColaBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
       <div id="impresorasMsg" class="form-help"></div>
     </section>
 
@@ -995,6 +1063,7 @@
       funcionalidades: [],
       productos: [],
       productoReglas: [],
+      cola: [],
       catalogoProductos: [],
       catalogoCategorias: [],
       editingId: 0
@@ -1901,6 +1970,22 @@
       }
     }
 
+    function renderPrinterSelectOptional(selectID, selectedID) {
+      const select = document.getElementById(selectID);
+      if (!select) return;
+      const active = getActivePrinters();
+      const selected = Number(selectedID || 0);
+      const options = ['<option value="0">Resolver por regla o predeterminada</option>'].concat(active.map(function(item) {
+        return '<option value="' + Number(item.id || 0) + '">' +
+          escapeConfigHtml(String(item.nombre || 'Impresora')) +
+          ' [' + escapeConfigHtml(String(item.codigo || 'SIN_CODIGO')) + ']' +
+          (item.es_predeterminada === true ? ' (predeterminada)' : '') +
+          '</option>';
+      }));
+      select.innerHTML = options.join('');
+      select.value = String(selected > 0 && getPrinterByID(selected) ? selected : 0);
+    }
+
     function renderProductoSelect(selectedID) {
       const select = document.getElementById('printerProducto');
       if (!select) return;
@@ -2015,17 +2100,35 @@
           eliminarAsignacionProductoRegla(alcance, categoriaID);
         });
       });
+
+      document.querySelectorAll('.printer-job-done').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+          const id = Number(btn.getAttribute('data-id') || 0);
+          if (!id) return;
+          actualizarTrabajoImpresion(id, 'impreso');
+        });
+      });
+
+      document.querySelectorAll('.printer-job-retry').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+          const id = Number(btn.getAttribute('data-id') || 0);
+          if (!id) return;
+          reintentarTrabajoImpresion(id);
+        });
+      });
     }
 
     function renderImpresorasTables() {
       const printersBody = document.getElementById('tablaImpresorasBody');
       const funcionesBody = document.getElementById('tablaImpresorasFuncionalidadesBody');
       const productosBody = document.getElementById('tablaImpresorasProductosBody');
+      const colaBody = document.getElementById('tablaImpresorasColaBody');
 
       const printers = Array.isArray(impresorasState.impresoras) ? impresorasState.impresoras : [];
       const funcs = Array.isArray(impresorasState.funcionalidades) ? impresorasState.funcionalidades : [];
       const products = Array.isArray(impresorasState.productos) ? impresorasState.productos : [];
       const productRules = Array.isArray(impresorasState.productoReglas) ? impresorasState.productoReglas : [];
+      const cola = Array.isArray(impresorasState.cola) ? impresorasState.cola : [];
 
       if (!printers.length) {
         printersBody.innerHTML = '<tr><td colspan="5">Sin impresoras registradas.</td></tr>';
@@ -2088,11 +2191,37 @@
         productosBody.innerHTML = ruleRows.concat(productRows).join('');
       }
 
+      if (colaBody) {
+        if (!cola.length) {
+          colaBody.innerHTML = '<tr><td colspan="5">Sin trabajos recientes en cola.</td></tr>';
+        } else {
+          colaBody.innerHTML = cola.map(function(item) {
+            const id = Number(item.id || 0);
+            const estado = String(item.estado || 'pendiente').toLowerCase();
+            const printer = String(item.impresora_nombre || item.impresora_codigo || (item.impresora_id ? ('#' + Number(item.impresora_id || 0)) : 'Por regla'));
+            const doc = String(item.titulo || item.tipo_documento || item.funcionalidad || 'Trabajo de impresion');
+            const actions = estado === 'impreso'
+              ? '<span class="muted">Cerrado</span>'
+              : '<button type="button" class="btn secondary printer-job-done" data-id="' + id + '">Marcar impreso</button> ' +
+                '<button type="button" class="btn secondary printer-job-retry" data-id="' + id + '">Reintentar</button>';
+            return '<tr>' +
+              '<td>' + id + '</td>' +
+              '<td>' + escapeConfigHtml(estado) + '</td>' +
+              '<td>' + escapeConfigHtml(printer) + '</td>' +
+              '<td>' + escapeConfigHtml(doc) + '</td>' +
+              '<td>' + actions + '</td>' +
+            '</tr>';
+          }).join('');
+        }
+      }
+
       const selectedFuncPrinter = Number(document.getElementById('printerFuncionalidadImpresora').value || 0);
       const selectedProdPrinter = Number(document.getElementById('printerProductoImpresora').value || 0);
+      const selectedTrabajoPrinter = Number(document.getElementById('printerTrabajoImpresora').value || 0);
       const selectedProducto = Number(document.getElementById('printerProducto').value || 0);
       renderPrinterSelect('printerFuncionalidadImpresora', selectedFuncPrinter);
       renderPrinterSelect('printerProductoImpresora', selectedProdPrinter);
+      renderPrinterSelectOptional('printerTrabajoImpresora', selectedTrabajoPrinter);
       renderProductoSelect(selectedProducto);
       renderCategoriaSelect(Number(document.getElementById('printerCategoria').value || 0));
       syncPrinterProductoScopeUI();
@@ -2137,6 +2266,7 @@
         impresorasState.funcionalidades = Array.isArray(resumen.funcionalidades) ? resumen.funcionalidades : [];
         impresorasState.productos = Array.isArray(resumen.productos) ? resumen.productos : [];
         impresorasState.productoReglas = Array.isArray(resumen.producto_reglas) ? resumen.producto_reglas : [];
+        impresorasState.cola = Array.isArray(resumen.cola) ? resumen.cola : [];
         impresorasState.catalogoProductos = Array.isArray(catalogo.productos) ? catalogo.productos : [];
         impresorasState.catalogoCategorias = Array.isArray(catalogoCategorias.categorias) ? catalogoCategorias.categorias : [];
         renderImpresorasTables();
@@ -2338,6 +2468,119 @@
         setImpresorasMessage('Regla de impresora eliminada.', 'success');
       } catch (err) {
         setImpresorasMessage('No se pudo eliminar la regla de impresora: ' + (err && err.message ? err.message : err), 'error');
+      }
+    }
+
+    function getPrinterAgentID() {
+      const input = document.getElementById('printerAgentId');
+      const raw = String(input && input.value ? input.value : '').trim();
+      if (raw) return raw.slice(0, 120);
+      const fallback = 'CAJA-' + String(empresaId || 'LOCAL');
+      if (input) input.value = fallback;
+      return fallback;
+    }
+
+    async function crearTrabajoImpresionPrueba() {
+      if (!empresaId) {
+        setImpresorasMessage('No se puede encolar sin empresa seleccionada.', 'error');
+        return;
+      }
+      const contenido = String(document.getElementById('printerTrabajoContenido').value || '').trim();
+      if (!contenido) {
+        setImpresorasMessage('Escribe el contenido de prueba antes de encolar.', 'error');
+        return;
+      }
+      const agenteID = getPrinterAgentID();
+      const payload = {
+        empresa_id: Number(empresaId),
+        estacion_id: Number(document.getElementById('printerAgentEstacion').value || 0),
+        agente_id: agenteID,
+        impresora_id: Number(document.getElementById('printerTrabajoImpresora').value || 0),
+        funcionalidad: normalizePrinterFunctionValue(document.getElementById('printerTrabajoFuncionalidad').value),
+        tipo_documento: 'prueba_impresion',
+        titulo: String(document.getElementById('printerTrabajoTitulo').value || 'Prueba de impresion PCS').trim(),
+        formato_impresion: 'pos',
+        contenido_tipo: 'text/plain',
+        contenido: contenido,
+        copias: 1,
+        prioridad: 10,
+        max_intentos: 3,
+        metadata_json: JSON.stringify({ origen: 'configuracion_impresora', agente_id: agenteID })
+      };
+      try {
+        const res = await fetch('/api/empresa/impresoras?empresa_id=' + encodeURIComponent(empresaId) + '&action=cola_trabajo', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'same-origin',
+          body: JSON.stringify(payload)
+        });
+        if (!res.ok) throw new Error(await res.text());
+        await loadImpresorasConfig(false);
+        setImpresorasMessage('Trabajo de prueba enviado a la cola.', 'success');
+      } catch (err) {
+        setImpresorasMessage('No se pudo encolar la prueba: ' + (err && err.message ? err.message : err), 'error');
+      }
+    }
+
+    async function tomarTrabajosImpresion() {
+      if (!empresaId) {
+        setImpresorasMessage('No se pueden tomar trabajos sin empresa seleccionada.', 'error');
+        return;
+      }
+      const agenteID = getPrinterAgentID();
+      try {
+        const res = await fetch('/api/empresa/impresoras/agente?empresa_id=' + encodeURIComponent(empresaId) + '&action=tomar', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'same-origin',
+          body: JSON.stringify({
+            agente_id: agenteID,
+            estacion_id: Number(document.getElementById('printerAgentEstacion').value || 0),
+            limit: 5
+          })
+        });
+        if (!res.ok) throw new Error(await res.text());
+        const out = await res.json();
+        const trabajos = out && Array.isArray(out.trabajos) ? out.trabajos : [];
+        await loadImpresorasConfig(false);
+        setImpresorasMessage(trabajos.length ? ('Agente tomo ' + trabajos.length + ' trabajo(s).') : 'No hay trabajos pendientes para este agente.', trabajos.length ? 'success' : '');
+      } catch (err) {
+        setImpresorasMessage('No se pudieron tomar trabajos: ' + (err && err.message ? err.message : err), 'error');
+      }
+    }
+
+    async function actualizarTrabajoImpresion(trabajoID, estado) {
+      const agenteID = getPrinterAgentID();
+      try {
+        const res = await fetch('/api/empresa/impresoras/agente?empresa_id=' + encodeURIComponent(empresaId) + '&action=estado', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'same-origin',
+          body: JSON.stringify({
+            trabajo_id: Number(trabajoID || 0),
+            estado: estado,
+            agente_id: agenteID
+          })
+        });
+        if (!res.ok) throw new Error(await res.text());
+        await loadImpresorasConfig(false);
+        setImpresorasMessage('Trabajo de impresion actualizado.', 'success');
+      } catch (err) {
+        setImpresorasMessage('No se pudo actualizar el trabajo: ' + (err && err.message ? err.message : err), 'error');
+      }
+    }
+
+    async function reintentarTrabajoImpresion(trabajoID) {
+      try {
+        const res = await fetch('/api/empresa/impresoras?empresa_id=' + encodeURIComponent(empresaId) + '&action=cola_reintentar&trabajo_id=' + encodeURIComponent(Number(trabajoID || 0)), {
+          method: 'PUT',
+          credentials: 'same-origin'
+        });
+        if (!res.ok) throw new Error(await res.text());
+        await loadImpresorasConfig(false);
+        setImpresorasMessage('Trabajo devuelto a pendiente.', 'success');
+      } catch (err) {
+        setImpresorasMessage('No se pudo reintentar el trabajo: ' + (err && err.message ? err.message : err), 'error');
       }
     }
 
@@ -2813,6 +3056,8 @@
       document.getElementById('btnGuardarImpresoraFuncionalidad').addEventListener('click', guardarImpresoraFuncionalidad);
       document.getElementById('printerProductoAlcance').addEventListener('change', syncPrinterProductoScopeUI);
       document.getElementById('btnGuardarImpresoraProducto').addEventListener('click', guardarImpresoraProducto);
+      document.getElementById('btnCrearTrabajoImpresion').addEventListener('click', crearTrabajoImpresionPrueba);
+      document.getElementById('btnTomarTrabajosImpresion').addEventListener('click', tomarTrabajosImpresion);
       document.getElementById('btnDescargarBackup').addEventListener('click', descargarBackup);
       document.getElementById('btnRestaurarBackup').addEventListener('click', restaurarBackup);
       document.getElementById('btnGuardarPasarelasPago').addEventListener('click', savePasarelasConfig);

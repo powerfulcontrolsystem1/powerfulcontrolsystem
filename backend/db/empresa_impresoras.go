@@ -109,6 +109,40 @@ type EmpresaImpresoraResolucion struct {
 	Impresora     EmpresaImpresora `json:"impresora"`
 }
 
+// EmpresaImpresoraTrabajo representa un documento en cola para el agente local
+// de impresion instalado en una caja o computador de la empresa.
+type EmpresaImpresoraTrabajo struct {
+	ID                 int64  `json:"id"`
+	EmpresaID          int64  `json:"empresa_id"`
+	EstacionID         int64  `json:"estacion_id,omitempty"`
+	AgenteID           string `json:"agente_id,omitempty"`
+	ImpresoraID        int64  `json:"impresora_id,omitempty"`
+	ImpresoraNombre    string `json:"impresora_nombre,omitempty"`
+	ImpresoraCodigo    string `json:"impresora_codigo,omitempty"`
+	Funcionalidad      string `json:"funcionalidad,omitempty"`
+	TipoDocumento      string `json:"tipo_documento,omitempty"`
+	ReferenciaTipo     string `json:"referencia_tipo,omitempty"`
+	ReferenciaID       int64  `json:"referencia_id,omitempty"`
+	TipoItem           string `json:"tipo_item,omitempty"`
+	Titulo             string `json:"titulo,omitempty"`
+	FormatoImpresion   string `json:"formato_impresion,omitempty"`
+	ContenidoTipo      string `json:"contenido_tipo,omitempty"`
+	Contenido          string `json:"contenido,omitempty"`
+	Copias             int64  `json:"copias,omitempty"`
+	Prioridad          int64  `json:"prioridad,omitempty"`
+	Estado             string `json:"estado,omitempty"`
+	Intentos           int64  `json:"intentos,omitempty"`
+	MaxIntentos        int64  `json:"max_intentos,omitempty"`
+	TomadoPor          string `json:"tomado_por,omitempty"`
+	TomadoEn           string `json:"tomado_en,omitempty"`
+	ImpresoEn          string `json:"impreso_en,omitempty"`
+	UltimoError        string `json:"ultimo_error,omitempty"`
+	MetadataJSON       string `json:"metadata_json,omitempty"`
+	FechaCreacion      string `json:"fecha_creacion,omitempty"`
+	FechaActualizacion string `json:"fecha_actualizacion,omitempty"`
+	UsuarioCreador     string `json:"usuario_creador,omitempty"`
+}
+
 // EnsureEmpresaImpresorasSchema crea/migra tablas del módulo de impresoras por empresa.
 func EnsureEmpresaImpresorasSchema(dbConn *sql.DB) error {
 	stmts := []string{
@@ -185,6 +219,38 @@ func EnsureEmpresaImpresorasSchema(dbConn *sql.DB) error {
 		);`,
 		`CREATE UNIQUE INDEX IF NOT EXISTS ux_empresa_impresoras_receta ON empresa_impresoras_recetas(empresa_id, receta_id);`,
 		`CREATE INDEX IF NOT EXISTS ix_empresa_impresoras_recetas_printer ON empresa_impresoras_recetas(empresa_id, impresora_id);`,
+		`CREATE TABLE IF NOT EXISTS empresa_impresoras_cola (
+			id BIGSERIAL PRIMARY KEY,
+			empresa_id INTEGER NOT NULL,
+			estacion_id INTEGER DEFAULT 0,
+			agente_id TEXT,
+			impresora_id INTEGER,
+			funcionalidad TEXT,
+			tipo_documento TEXT,
+			referencia_tipo TEXT,
+			referencia_id INTEGER DEFAULT 0,
+			tipo_item TEXT,
+			titulo TEXT,
+			formato_impresion TEXT DEFAULT 'pos',
+			contenido_tipo TEXT DEFAULT 'text/plain',
+			contenido TEXT NOT NULL,
+			copias INTEGER DEFAULT 1,
+			prioridad INTEGER DEFAULT 100,
+			estado TEXT DEFAULT 'pendiente',
+			intentos INTEGER DEFAULT 0,
+			max_intentos INTEGER DEFAULT 3,
+			tomado_por TEXT,
+			tomado_en TEXT,
+			impreso_en TEXT,
+			ultimo_error TEXT,
+			metadata_json TEXT,
+			fecha_creacion TEXT DEFAULT (CURRENT_TIMESTAMP),
+			fecha_actualizacion TEXT DEFAULT (CURRENT_TIMESTAMP),
+			usuario_creador TEXT
+		);`,
+		`CREATE INDEX IF NOT EXISTS ix_empresa_impresoras_cola_estado ON empresa_impresoras_cola(empresa_id, estado, prioridad, id);`,
+		`CREATE INDEX IF NOT EXISTS ix_empresa_impresoras_cola_impresora ON empresa_impresoras_cola(empresa_id, impresora_id);`,
+		`CREATE INDEX IF NOT EXISTS ix_empresa_impresoras_cola_agente ON empresa_impresoras_cola(empresa_id, agente_id, estacion_id);`,
 	}
 
 	for _, stmt := range stmts {
@@ -344,6 +410,86 @@ func EnsureEmpresaImpresorasSchema(dbConn *sql.DB) error {
 		return err
 	}
 
+	// Cola para agente local de impresion.
+	if err := ensureColumnIfMissing(dbConn, "empresa_impresoras_cola", "empresa_id", "INTEGER NOT NULL"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_impresoras_cola", "estacion_id", "INTEGER DEFAULT 0"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_impresoras_cola", "agente_id", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_impresoras_cola", "impresora_id", "INTEGER"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_impresoras_cola", "funcionalidad", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_impresoras_cola", "tipo_documento", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_impresoras_cola", "referencia_tipo", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_impresoras_cola", "referencia_id", "INTEGER DEFAULT 0"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_impresoras_cola", "tipo_item", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_impresoras_cola", "titulo", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_impresoras_cola", "formato_impresion", "TEXT DEFAULT 'pos'"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_impresoras_cola", "contenido_tipo", "TEXT DEFAULT 'text/plain'"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_impresoras_cola", "contenido", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_impresoras_cola", "copias", "INTEGER DEFAULT 1"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_impresoras_cola", "prioridad", "INTEGER DEFAULT 100"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_impresoras_cola", "estado", "TEXT DEFAULT 'pendiente'"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_impresoras_cola", "intentos", "INTEGER DEFAULT 0"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_impresoras_cola", "max_intentos", "INTEGER DEFAULT 3"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_impresoras_cola", "tomado_por", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_impresoras_cola", "tomado_en", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_impresoras_cola", "impreso_en", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_impresoras_cola", "ultimo_error", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_impresoras_cola", "metadata_json", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_impresoras_cola", "fecha_creacion", "TEXT DEFAULT (CURRENT_TIMESTAMP)"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_impresoras_cola", "fecha_actualizacion", "TEXT DEFAULT (CURRENT_TIMESTAMP)"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_impresoras_cola", "usuario_creador", "TEXT"); err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -391,12 +537,71 @@ func scanEmpresaImpresora(row empresaImpresoraScanner) (*EmpresaImpresora, error
 	return &item, nil
 }
 
+func scanEmpresaImpresoraTrabajo(row empresaImpresoraScanner) (*EmpresaImpresoraTrabajo, error) {
+	item := EmpresaImpresoraTrabajo{}
+	if err := row.Scan(
+		&item.ID,
+		&item.EmpresaID,
+		&item.EstacionID,
+		&item.AgenteID,
+		&item.ImpresoraID,
+		&item.ImpresoraNombre,
+		&item.ImpresoraCodigo,
+		&item.Funcionalidad,
+		&item.TipoDocumento,
+		&item.ReferenciaTipo,
+		&item.ReferenciaID,
+		&item.TipoItem,
+		&item.Titulo,
+		&item.FormatoImpresion,
+		&item.ContenidoTipo,
+		&item.Contenido,
+		&item.Copias,
+		&item.Prioridad,
+		&item.Estado,
+		&item.Intentos,
+		&item.MaxIntentos,
+		&item.TomadoPor,
+		&item.TomadoEn,
+		&item.ImpresoEn,
+		&item.UltimoError,
+		&item.MetadataJSON,
+		&item.FechaCreacion,
+		&item.FechaActualizacion,
+		&item.UsuarioCreador,
+	); err != nil {
+		return nil, err
+	}
+	item.Funcionalidad = normalizeEmpresaImpresoraFuncionalidad(item.Funcionalidad)
+	item.TipoItem = normalizeEmpresaImpresoraTipoItem(item.TipoItem)
+	item.FormatoImpresion = normalizeEmpresaImpresoraFormato(item.FormatoImpresion)
+	item.ContenidoTipo = normalizeEmpresaImpresoraContenidoTipo(item.ContenidoTipo)
+	item.Estado = normalizeEmpresaImpresoraTrabajoEstado(item.Estado)
+	return &item, nil
+}
+
 func normalizeEmpresaImpresoraEstado(raw string) string {
 	value := strings.ToLower(strings.TrimSpace(raw))
 	if value == "inactivo" || value == "desactivado" || value == "off" {
 		return "inactivo"
 	}
 	return "activo"
+}
+
+func normalizeEmpresaImpresoraTrabajoEstado(raw string) string {
+	value := strings.ToLower(strings.TrimSpace(raw))
+	switch value {
+	case "tomado", "en_proceso", "procesando":
+		return "tomado"
+	case "impreso", "completado", "ok":
+		return "impreso"
+	case "error", "fallido":
+		return "error"
+	case "cancelado", "anulado":
+		return "cancelado"
+	default:
+		return "pendiente"
+	}
 }
 
 func normalizeEmpresaImpresoraFormato(raw string) string {
@@ -407,6 +612,16 @@ func normalizeEmpresaImpresoraFormato(raw string) string {
 	return defaultEmpresaImpresoraFormato
 }
 
+func normalizeEmpresaImpresoraContenidoTipo(raw string) string {
+	value := strings.ToLower(strings.TrimSpace(raw))
+	switch value {
+	case "text/html", "application/pdf", "application/json", "application/vnd.pcs.escpos-base64":
+		return value
+	default:
+		return "text/plain"
+	}
+}
+
 func normalizeEmpresaImpresoraTipoConexion(raw string) string {
 	value := strings.ToLower(strings.TrimSpace(raw))
 	switch value {
@@ -414,6 +629,16 @@ func normalizeEmpresaImpresoraTipoConexion(raw string) string {
 		return value
 	default:
 		return defaultEmpresaImpresoraTipoConexion
+	}
+}
+
+func normalizeEmpresaImpresoraTipoItem(raw string) string {
+	value := strings.ToLower(strings.TrimSpace(raw))
+	switch value {
+	case "producto", "receta":
+		return value
+	default:
+		return ""
 	}
 }
 
@@ -489,6 +714,34 @@ func normalizeEmpresaImpresoraPrioridad(raw int64) int64 {
 		return 99999
 	}
 	return raw
+}
+
+func normalizeEmpresaImpresoraTrabajoCopias(raw int64) int64 {
+	if raw <= 0 {
+		return 1
+	}
+	if raw > 10 {
+		return 10
+	}
+	return raw
+}
+
+func normalizeEmpresaImpresoraTrabajoMaxIntentos(raw int64) int64 {
+	if raw <= 0 {
+		return 3
+	}
+	if raw > 10 {
+		return 10
+	}
+	return raw
+}
+
+func trimEmpresaImpresoraText(raw string, max int) string {
+	value := strings.TrimSpace(raw)
+	if max > 0 && len(value) > max {
+		return value[:max]
+	}
+	return value
 }
 
 // EnsureEmpresaPOS80Defaults deja la empresa preparada para imprimir reportes y
@@ -672,6 +925,307 @@ func GetEmpresaImpresoraByID(dbConn *sql.DB, empresaID, impresoraID int64) (*Emp
 	WHERE empresa_id = ? AND id = ?
 	LIMIT 1`, empresaID, impresoraID)
 	return scanEmpresaImpresora(row)
+}
+
+func empresaImpresoraTrabajoSelectSQL() string {
+	return `SELECT
+		c.id,
+		c.empresa_id,
+		COALESCE(c.estacion_id, 0),
+		COALESCE(c.agente_id, ''),
+		COALESCE(c.impresora_id, 0),
+		COALESCE(i.nombre, ''),
+		COALESCE(i.codigo, ''),
+		COALESCE(c.funcionalidad, ''),
+		COALESCE(c.tipo_documento, ''),
+		COALESCE(c.referencia_tipo, ''),
+		COALESCE(c.referencia_id, 0),
+		COALESCE(c.tipo_item, ''),
+		COALESCE(c.titulo, ''),
+		COALESCE(c.formato_impresion, 'pos'),
+		COALESCE(c.contenido_tipo, 'text/plain'),
+		COALESCE(c.contenido, ''),
+		COALESCE(c.copias, 1),
+		COALESCE(c.prioridad, 100),
+		COALESCE(c.estado, 'pendiente'),
+		COALESCE(c.intentos, 0),
+		COALESCE(c.max_intentos, 3),
+		COALESCE(c.tomado_por, ''),
+		COALESCE(c.tomado_en, ''),
+		COALESCE(c.impreso_en, ''),
+		COALESCE(c.ultimo_error, ''),
+		COALESCE(c.metadata_json, ''),
+		COALESCE(c.fecha_creacion, ''),
+		COALESCE(c.fecha_actualizacion, ''),
+		COALESCE(c.usuario_creador, '')
+	FROM empresa_impresoras_cola c
+	LEFT JOIN empresa_impresoras i ON i.id = c.impresora_id AND i.empresa_id = c.empresa_id`
+}
+
+// GetEmpresaImpresoraTrabajoByID obtiene un trabajo de cola por empresa e id.
+func GetEmpresaImpresoraTrabajoByID(dbConn *sql.DB, empresaID, trabajoID int64) (*EmpresaImpresoraTrabajo, error) {
+	row := queryRowSQLCompat(dbConn, empresaImpresoraTrabajoSelectSQL()+`
+	WHERE c.empresa_id = ? AND c.id = ?
+	LIMIT 1`, empresaID, trabajoID)
+	return scanEmpresaImpresoraTrabajo(row)
+}
+
+// ListEmpresaImpresoraCola lista trabajos de impresion por empresa y estado.
+func ListEmpresaImpresoraCola(dbConn *sql.DB, empresaID int64, estado string, limit int64) ([]EmpresaImpresoraTrabajo, error) {
+	if empresaID <= 0 {
+		return nil, fmt.Errorf("empresa_id requerido")
+	}
+	if limit <= 0 {
+		limit = 50
+	}
+	if limit > 200 {
+		limit = 200
+	}
+	query := empresaImpresoraTrabajoSelectSQL() + `
+	WHERE c.empresa_id = ?`
+	args := []interface{}{empresaID}
+	estado = strings.ToLower(strings.TrimSpace(estado))
+	if estado != "" && estado != "todos" {
+		query += ` AND COALESCE(c.estado, 'pendiente') = ?`
+		args = append(args, normalizeEmpresaImpresoraTrabajoEstado(estado))
+	}
+	query += ` ORDER BY c.id DESC LIMIT ?`
+	args = append(args, limit)
+	rows, err := querySQLCompat(dbConn, query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	out := make([]EmpresaImpresoraTrabajo, 0)
+	for rows.Next() {
+		item, errScan := scanEmpresaImpresoraTrabajo(rows)
+		if errScan != nil {
+			return nil, errScan
+		}
+		out = append(out, *item)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// CrearEmpresaImpresoraTrabajo encola un documento para que lo procese el agente local.
+func CrearEmpresaImpresoraTrabajo(dbConn *sql.DB, payload EmpresaImpresoraTrabajo) (int64, error) {
+	if payload.EmpresaID <= 0 {
+		return 0, fmt.Errorf("empresa_id requerido")
+	}
+	payload.Funcionalidad = normalizeEmpresaImpresoraFuncionalidad(payload.Funcionalidad)
+	payload.TipoItem = normalizeEmpresaImpresoraTipoItem(payload.TipoItem)
+	payload.FormatoImpresion = normalizeEmpresaImpresoraFormato(payload.FormatoImpresion)
+	payload.ContenidoTipo = normalizeEmpresaImpresoraContenidoTipo(payload.ContenidoTipo)
+	payload.Copias = normalizeEmpresaImpresoraTrabajoCopias(payload.Copias)
+	payload.Prioridad = normalizeEmpresaImpresoraPrioridad(payload.Prioridad)
+	payload.MaxIntentos = normalizeEmpresaImpresoraTrabajoMaxIntentos(payload.MaxIntentos)
+	payload.Estado = "pendiente"
+	payload.AgenteID = trimEmpresaImpresoraText(payload.AgenteID, 120)
+	payload.TipoDocumento = trimEmpresaImpresoraText(payload.TipoDocumento, 80)
+	payload.ReferenciaTipo = trimEmpresaImpresoraText(payload.ReferenciaTipo, 80)
+	payload.Titulo = trimEmpresaImpresoraText(payload.Titulo, 180)
+	payload.UsuarioCreador = trimEmpresaImpresoraText(payload.UsuarioCreador, 180)
+	payload.MetadataJSON = trimEmpresaImpresoraText(payload.MetadataJSON, 20000)
+	payload.Contenido = trimEmpresaImpresoraText(payload.Contenido, 200000)
+	if payload.UsuarioCreador == "" {
+		payload.UsuarioCreador = "sistema"
+	}
+	if payload.Contenido == "" {
+		return 0, fmt.Errorf("contenido de impresion requerido")
+	}
+	if payload.ImpresoraID > 0 {
+		if err := ensureEmpresaImpresoraExistsAndActive(dbConn, payload.EmpresaID, payload.ImpresoraID); err != nil {
+			return 0, err
+		}
+	} else {
+		resolved, err := ResolveEmpresaImpresoraOperacion(dbConn, payload.EmpresaID, payload.Funcionalidad, payload.TipoItem, payload.ReferenciaID)
+		if err != nil {
+			return 0, err
+		}
+		if resolved != nil {
+			payload.ImpresoraID = resolved.Impresora.ID
+			payload.FormatoImpresion = normalizeEmpresaImpresoraFormato(resolved.Impresora.FormatoImpresion)
+		}
+	}
+
+	return insertSQLCompat(dbConn, `INSERT INTO empresa_impresoras_cola (
+		empresa_id,
+		estacion_id,
+		agente_id,
+		impresora_id,
+		funcionalidad,
+		tipo_documento,
+		referencia_tipo,
+		referencia_id,
+		tipo_item,
+		titulo,
+		formato_impresion,
+		contenido_tipo,
+		contenido,
+		copias,
+		prioridad,
+		estado,
+		intentos,
+		max_intentos,
+		metadata_json,
+		fecha_creacion,
+		fecha_actualizacion,
+		usuario_creador
+	) VALUES (
+		?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pendiente', 0, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, ?
+	)`,
+		payload.EmpresaID,
+		payload.EstacionID,
+		payload.AgenteID,
+		payload.ImpresoraID,
+		payload.Funcionalidad,
+		payload.TipoDocumento,
+		payload.ReferenciaTipo,
+		payload.ReferenciaID,
+		payload.TipoItem,
+		payload.Titulo,
+		payload.FormatoImpresion,
+		payload.ContenidoTipo,
+		payload.Contenido,
+		payload.Copias,
+		payload.Prioridad,
+		payload.MaxIntentos,
+		payload.MetadataJSON,
+		payload.UsuarioCreador,
+	)
+}
+
+// TomarEmpresaImpresoraTrabajos reclama trabajos pendientes para un agente local.
+func TomarEmpresaImpresoraTrabajos(dbConn *sql.DB, empresaID int64, agenteID string, estacionID int64, limit int64) ([]EmpresaImpresoraTrabajo, error) {
+	if empresaID <= 0 {
+		return nil, fmt.Errorf("empresa_id requerido")
+	}
+	agenteID = trimEmpresaImpresoraText(agenteID, 120)
+	if agenteID == "" {
+		return nil, fmt.Errorf("agente_id requerido")
+	}
+	if limit <= 0 {
+		limit = 5
+	}
+	if limit > 25 {
+		limit = 25
+	}
+	rows, err := querySQLCompat(dbConn, `SELECT c.id
+	FROM empresa_impresoras_cola c
+	WHERE c.empresa_id = ?
+		AND COALESCE(c.estado, 'pendiente') = 'pendiente'
+		AND COALESCE(c.intentos, 0) < COALESCE(c.max_intentos, 3)
+		AND (COALESCE(c.agente_id, '') = '' OR COALESCE(c.agente_id, '') = ?)
+		AND (COALESCE(c.estacion_id, 0) = 0 OR COALESCE(c.estacion_id, 0) = ?)
+	ORDER BY COALESCE(c.prioridad, 100) ASC, c.id ASC
+	LIMIT ?`, empresaID, agenteID, estacionID, limit)
+	if err != nil {
+		return nil, err
+	}
+	ids := make([]int64, 0)
+	for rows.Next() {
+		var id int64
+		if err := rows.Scan(&id); err != nil {
+			rows.Close()
+			return nil, err
+		}
+		ids = append(ids, id)
+	}
+	if err := rows.Err(); err != nil {
+		rows.Close()
+		return nil, err
+	}
+	rows.Close()
+
+	out := make([]EmpresaImpresoraTrabajo, 0, len(ids))
+	for _, id := range ids {
+		res, err := execSQLCompat(dbConn, `UPDATE empresa_impresoras_cola
+			SET estado = 'tomado',
+				tomado_por = ?,
+				tomado_en = CURRENT_TIMESTAMP,
+				intentos = COALESCE(intentos, 0) + 1,
+				fecha_actualizacion = CURRENT_TIMESTAMP
+			WHERE empresa_id = ? AND id = ? AND COALESCE(estado, 'pendiente') = 'pendiente'`, agenteID, empresaID, id)
+		if err != nil {
+			return nil, err
+		}
+		affected, _ := res.RowsAffected()
+		if affected != 1 {
+			continue
+		}
+		item, err := GetEmpresaImpresoraTrabajoByID(dbConn, empresaID, id)
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, *item)
+	}
+	return out, nil
+}
+
+// ActualizarEmpresaImpresoraTrabajoEstado cierra o marca error en un trabajo tomado.
+func ActualizarEmpresaImpresoraTrabajoEstado(dbConn *sql.DB, empresaID, trabajoID int64, estado, agenteID, ultimoError string) error {
+	if empresaID <= 0 || trabajoID <= 0 {
+		return fmt.Errorf("empresa_id y trabajo_id requeridos")
+	}
+	estado = normalizeEmpresaImpresoraTrabajoEstado(estado)
+	agenteID = trimEmpresaImpresoraText(agenteID, 120)
+	ultimoError = trimEmpresaImpresoraText(ultimoError, 2000)
+	if estado != "impreso" && estado != "error" && estado != "cancelado" {
+		return fmt.Errorf("estado de cola no permitido")
+	}
+	var res sql.Result
+	var err error
+	if estado == "impreso" {
+		res, err = execSQLCompat(dbConn, `UPDATE empresa_impresoras_cola
+			SET estado = 'impreso',
+				impreso_en = CURRENT_TIMESTAMP,
+				tomado_por = CASE WHEN TRIM(COALESCE(?, '')) <> '' THEN ? ELSE tomado_por END,
+				ultimo_error = '',
+				fecha_actualizacion = CURRENT_TIMESTAMP
+			WHERE empresa_id = ? AND id = ?`, agenteID, agenteID, empresaID, trabajoID)
+	} else {
+		res, err = execSQLCompat(dbConn, `UPDATE empresa_impresoras_cola
+			SET estado = ?,
+				tomado_por = CASE WHEN TRIM(COALESCE(?, '')) <> '' THEN ? ELSE tomado_por END,
+				ultimo_error = ?,
+				fecha_actualizacion = CURRENT_TIMESTAMP
+			WHERE empresa_id = ? AND id = ?`, estado, agenteID, agenteID, ultimoError, empresaID, trabajoID)
+	}
+	if err != nil {
+		return err
+	}
+	if affected, _ := res.RowsAffected(); affected == 0 {
+		return fmt.Errorf("trabajo de impresion no encontrado")
+	}
+	return nil
+}
+
+// ReintentarEmpresaImpresoraTrabajo devuelve a pendiente un trabajo fallido o tomado.
+func ReintentarEmpresaImpresoraTrabajo(dbConn *sql.DB, empresaID, trabajoID int64, usuario string) error {
+	if empresaID <= 0 || trabajoID <= 0 {
+		return fmt.Errorf("empresa_id y trabajo_id requeridos")
+	}
+	usuario = trimEmpresaImpresoraText(usuario, 180)
+	res, err := execSQLCompat(dbConn, `UPDATE empresa_impresoras_cola
+		SET estado = 'pendiente',
+			tomado_por = '',
+			tomado_en = '',
+			impreso_en = '',
+			ultimo_error = '',
+			fecha_actualizacion = CURRENT_TIMESTAMP,
+			usuario_creador = CASE WHEN TRIM(COALESCE(?, '')) <> '' THEN ? ELSE usuario_creador END
+		WHERE empresa_id = ? AND id = ? AND COALESCE(estado, 'pendiente') IN ('tomado', 'error', 'cancelado')`, usuario, usuario, empresaID, trabajoID)
+	if err != nil {
+		return err
+	}
+	if affected, _ := res.RowsAffected(); affected == 0 {
+		return fmt.Errorf("trabajo de impresion no encontrado o no reintentable")
+	}
+	return nil
 }
 
 func ensureEmpresaImpresoraDefaultConsistency(dbConn *sql.DB, empresaID int64) error {

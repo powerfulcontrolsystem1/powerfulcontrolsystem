@@ -1197,6 +1197,13 @@ Actualizacion 2026-04-29 (auditoria como fuente de contexto IA)
   - empresa_id, alcance (`todos`/`categoria`), categoria_id, impresora_id
   - estado, usuario_creador, observaciones
   - indice unico: `(empresa_id, alcance, categoria_id)`
+- empresa_impresoras_cola:
+  - empresa_id, estacion_id, agente_id, impresora_id
+  - funcionalidad, tipo_documento, referencia_tipo, referencia_id, tipo_item, titulo
+  - formato_impresion, contenido_tipo, contenido, copias, prioridad
+  - estado (`pendiente`/`tomado`/`impreso`/`error`/`cancelado`), intentos, max_intentos
+  - tomado_por, tomado_en, impreso_en, ultimo_error, metadata_json
+  - indices: `(empresa_id, estado, prioridad, id)`, `(empresa_id, impresora_id)`, `(empresa_id, agente_id, estacion_id)`
 - Regla de resolucion operativa:
   - prioridad de asignacion: `receta` -> `producto` -> `categoria de producto` -> `todos los productos` -> `funcionalidad` -> `predeterminada`.
 

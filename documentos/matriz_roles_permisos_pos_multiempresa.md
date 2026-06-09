@@ -179,7 +179,7 @@
 
 2026-05-25: Nota de navegacion financiera y paginas huerfanas
 - `linkCreditos` y `linkCobranza` se conservan como paginas protegidas y accesos internos del Centro financiero; ya no se duplican como botones directos del grupo principal `Finanzas y cumplimiento`.
-- `linkChatIA`, `linkConfiguracionGuiada` y `linkERPExtendido` se conectan desde menus visibles para paginas empresariales ya existentes. No se crean wrappers nuevos ni se relaja el aislamiento por `empresa_id`.
+- `linkChatIA`, `linkConfiguracionGuiada` y `linkConfiguracionIntegraciones` se conectan desde menus visibles para paginas empresariales ya existentes. No se crean wrappers nuevos ni se relaja el aislamiento por `empresa_id`.
 - Las paginas legacy o generadas por accion, como `frecuencia_fp.html` y `soporte_remoto_view.html`, no se promocionan a menu principal porque son alias/visores de flujo, no modulos de entrada operativa.
 
 2026-05-20: Nota de nombres configurables de estaciones

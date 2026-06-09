@@ -1,3 +1,32 @@
+2026-06-09: Impresoras por empresa con cola para agente local
+- Modulo afectado: `configuracion_impresora`.
+- Backend: `empresa_impresoras.go` agrega `empresa_impresoras_cola` y operaciones para crear trabajos, listarlos, tomarlos por `agente_id`/`estacion_id`, marcarlos impresos/error y reintentarlos, siempre por `empresa_id`.
+- API: `/api/empresa/impresoras` administra configuracion y prueba de cola; `/api/empresa/impresoras/agente` queda limitado al contrato operativo del agente local con permisos de ventas.
+- Frontend: `configuracion_impresora.html` muestra agente local, estacion/caja, prueba de impresion y cola reciente, conservando impresoras por funcionalidad, producto, categoria y predeterminada.
+- Seguridad: no se agregan dependencias ni motores distintos a PostgreSQL; el agente no edita impresoras ni reglas.
+
+2026-06-09: ERP extendido retirado de navegacion
+- Modulos afectados: `administrar_empresa`, `configuracion_menu`, permisos empresariales.
+- Frontend: el acceso real `Integraciones` usa `linkConfiguracionIntegraciones`; los IDs `linkERPExtendido` y `linkERPExtendidoMenu` dejan de usarse en menus vigentes y se retiran los archivos del hub ERP extendido.
+- Backend: `empresa_permisos.go` publica `linkConfiguracionIntegraciones` y deja de publicar los permisos de pagina ERP extendido.
+- Alcance: no se borran datos ni endpoints especializados; se retira el hub duplicado para que cada dominio se opere desde su modulo propio.
+
+2026-06-09: Limpieza UX de facturacion electronica y finanzas
+- Modulos afectados: `facturacion_electronica` y `finanzas_menu`.
+- Facturacion electronica: se separan visualmente las tarjetas y se agregan encabezados descriptivos al selector fiscal y a la configuracion por pais.
+- Finanzas: se retira `ERP extendido` del menu financiero y se eliminan accesos superiores duplicados para que la navegacion quede concentrada en la barra lateral.
+
+2026-06-09: Obligatorios visibles en facturacion electronica
+- Modulo afectado: `facturacion_electronica`.
+- Frontend: la pagina muestra avisos de campos obligatorios en configuracion DIAN y configuracion por pais, marca labels con asterisco y resalta campos faltantes en tiempo real.
+- UX: la opcion de envio automatico de factura electronica al correo del cliente queda visible solo en la seccion principal; configuracion avanzada conserva el valor oculto para compatibilidad de payload.
+
+2026-06-09: Eventos RADIAN operativos en facturacion electronica
+- Modulo afectado: `facturacion_electronica`.
+- Backend: el catalogo DIAN Colombia marca `eventos_radian_recepcion` como `operativo`, con firma requerida, bandera de evento y alcance de habilitacion mientras la empresa no active produccion.
+- Frontend: el resumen de cobertura esencial muestra RADIAN como operativo en habilitacion y enlaza al Centro de habilitacion DIAN para registrar el evento documental.
+- Alcance: RADIAN sigue separado de factura, nota, documento soporte y nomina; opera sobre facturas electronicas existentes y no crea una venta nueva.
+
 2026-06-08: OCR documental sin IA
 - Modulo afectado: `ocr`.
 - Objetivo: permitir que una empresa cargue imagenes o PDFs para extraer texto con OCR libre y obtener campos sugeridos para configurar DIAN, inventario, usuarios, clientes u otros procesos, sin usar inteligencia artificial.
@@ -2224,7 +2253,7 @@
 2026-05-05: Organizacion profesional de modulos y rol contralor super
 - Modulos afectados: `administrar_empresa`, `finanzas`, `contabilidad_colombia`, `contabilidad_colombia_avanzada`, `ayuda`, `super_administrador`, `roles`.
 - Cambio funcional: el menu principal fusiona las entradas repetidas de finanzas/contabilidad bajo `Centro financiero y contable`; las rutas internas se conservan para compatibilidad, permisos, favoritos y enlaces existentes.
-- Navegacion: `web/administrar_empresa/finanzas_menu.html` concentra Finanzas operativas, Contabilidad Colombia, Suite contable Colombia, corte de caja, creditos/cartera, nomina y ERP extendido.
+- Navegacion: `web/administrar_empresa/finanzas_menu.html` concentra Finanzas operativas, Contabilidad Colombia, Suite contable Colombia, corte de caja, creditos/cartera y nomina; el antiguo hub ERP extendido queda retirado del centro financiero para evitar duplicidad transversal.
 - Seguridad: `web/ayuda/ayuda.html` deja de ser ayuda publica y queda protegida para el rol `super_administrador`; las ayudas publicas especificas, como login, se mantienen disponibles.
 - Nuevo rol administrativo: `control_super_administrador` permite supervision limitada del panel super sobre administradores, seguridad, errores, metricas y reportes globales sin abrir configuracion de pagos/licencias ni parametros sensibles.
 - Salvaguarda: el rol contralor no puede eliminar ni desactivar el super administrador principal ni administrar otros contralores super.

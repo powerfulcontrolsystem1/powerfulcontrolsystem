@@ -94,6 +94,26 @@ func EmpresaImpresorasHandler(dbEmp *sql.DB) http.HandlerFunc {
 				writeJSON(w, http.StatusOK, rows)
 				return
 
+			case "cola":
+				limit, err := parseIntQueryOptional(r, "limit")
+				if err != nil {
+					http.Error(w, "limit invalido", http.StatusBadRequest)
+					return
+				}
+				estado := strings.TrimSpace(r.URL.Query().Get("estado"))
+				rows, err := dbpkg.ListEmpresaImpresoraCola(dbEmp, empresaID, estado, int64(limit))
+				if err != nil {
+					log.Printf("[empresa_impresoras] list cola empresa_id=%d estado=%q error: %v", empresaID, estado, err)
+					http.Error(w, "No se pudo cargar la cola de impresion", http.StatusInternalServerError)
+					return
+				}
+				writeJSON(w, http.StatusOK, map[string]interface{}{
+					"ok":         true,
+					"empresa_id": empresaID,
+					"trabajos":   rows,
+				})
+				return
+
 			case "catalogo_productos":
 				limit, err := parseIntQueryOptional(r, "limit")
 				if err != nil {
@@ -269,12 +289,19 @@ func EmpresaImpresorasHandler(dbEmp *sql.DB) http.HandlerFunc {
 					recetas = []dbpkg.EmpresaImpresoraReceta{}
 					warnings = append(warnings, "No se pudieron cargar asignaciones por receta")
 				}
+				cola, err := dbpkg.ListEmpresaImpresoraCola(dbEmp, empresaID, "", 50)
+				if err != nil {
+					log.Printf("[empresa_impresoras] resumen cola empresa_id=%d error: %v", empresaID, err)
+					cola = []dbpkg.EmpresaImpresoraTrabajo{}
+					warnings = append(warnings, "No se pudo cargar la cola de impresion")
+				}
 				writeJSON(w, http.StatusOK, map[string]interface{}{
 					"impresoras":      impresoras,
 					"funcionalidades": funcionalidades,
 					"productos":       productos,
 					"producto_reglas": productoReglas,
 					"recetas":         recetas,
+					"cola":            cola,
 					"warnings":        warnings,
 				})
 				return
@@ -416,6 +443,111 @@ func EmpresaImpresorasHandler(dbEmp *sql.DB) http.HandlerFunc {
 					return
 				}
 				writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "id": id})
+				return
+
+			case "cola_trabajo", "crear_trabajo", "trabajo":
+				var payload dbpkg.EmpresaImpresoraTrabajo
+				if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+					http.Error(w, "JSON invalido", http.StatusBadRequest)
+					return
+				}
+				payload.EmpresaID = empresaID
+				payload.UsuarioCreador = strings.TrimSpace(adminEmailFromRequest(r))
+				id, err := dbpkg.CrearEmpresaImpresoraTrabajo(dbEmp, payload)
+				if err != nil {
+					log.Printf("[empresa_impresoras] crear trabajo empresa_id=%d error: %v", empresaID, err)
+					http.Error(w, err.Error(), http.StatusBadRequest)
+					return
+				}
+				item, err := dbpkg.GetEmpresaImpresoraTrabajoByID(dbEmp, empresaID, id)
+				if err != nil {
+					writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "id": id})
+					return
+				}
+				writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "id": id, "trabajo": item})
+				return
+
+			case "agente_tomar", "tomar_trabajos":
+				var payload struct {
+					AgenteID   string `json:"agente_id"`
+					EstacionID int64  `json:"estacion_id"`
+					Limit      int64  `json:"limit"`
+				}
+				_ = json.NewDecoder(r.Body).Decode(&payload)
+				if strings.TrimSpace(payload.AgenteID) == "" {
+					payload.AgenteID = strings.TrimSpace(r.URL.Query().Get("agente_id"))
+				}
+				if payload.EstacionID <= 0 {
+					if id, parseErr := parseInt64QueryOptional(r, "estacion_id"); parseErr == nil {
+						payload.EstacionID = id
+					}
+				}
+				if payload.Limit <= 0 {
+					if limit, parseErr := parseIntQueryOptional(r, "limit"); parseErr == nil {
+						payload.Limit = int64(limit)
+					}
+				}
+				trabajos, err := dbpkg.TomarEmpresaImpresoraTrabajos(dbEmp, empresaID, payload.AgenteID, payload.EstacionID, payload.Limit)
+				if err != nil {
+					log.Printf("[empresa_impresoras] tomar trabajos empresa_id=%d agente=%q error: %v", empresaID, payload.AgenteID, err)
+					http.Error(w, err.Error(), http.StatusBadRequest)
+					return
+				}
+				writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "empresa_id": empresaID, "trabajos": trabajos})
+				return
+
+			case "cola_estado", "trabajo_estado":
+				var payload struct {
+					ID          int64  `json:"id"`
+					TrabajoID   int64  `json:"trabajo_id"`
+					Estado      string `json:"estado"`
+					AgenteID    string `json:"agente_id"`
+					UltimoError string `json:"ultimo_error"`
+					Error       string `json:"error"`
+				}
+				if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+					http.Error(w, "JSON invalido", http.StatusBadRequest)
+					return
+				}
+				if payload.TrabajoID <= 0 {
+					payload.TrabajoID = payload.ID
+				}
+				if strings.TrimSpace(payload.UltimoError) == "" {
+					payload.UltimoError = payload.Error
+				}
+				if err := dbpkg.ActualizarEmpresaImpresoraTrabajoEstado(dbEmp, empresaID, payload.TrabajoID, payload.Estado, payload.AgenteID, payload.UltimoError); err != nil {
+					log.Printf("[empresa_impresoras] actualizar trabajo empresa_id=%d trabajo_id=%d estado=%q error: %v", empresaID, payload.TrabajoID, payload.Estado, err)
+					http.Error(w, err.Error(), http.StatusBadRequest)
+					return
+				}
+				item, _ := dbpkg.GetEmpresaImpresoraTrabajoByID(dbEmp, empresaID, payload.TrabajoID)
+				writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "trabajo": item})
+				return
+
+			case "cola_reintentar", "trabajo_reintentar":
+				trabajoID, err := parseInt64QueryOptional(r, "trabajo_id")
+				if err != nil {
+					http.Error(w, "trabajo_id invalido", http.StatusBadRequest)
+					return
+				}
+				if trabajoID <= 0 {
+					var payload struct {
+						ID        int64 `json:"id"`
+						TrabajoID int64 `json:"trabajo_id"`
+					}
+					_ = json.NewDecoder(r.Body).Decode(&payload)
+					trabajoID = payload.TrabajoID
+					if trabajoID <= 0 {
+						trabajoID = payload.ID
+					}
+				}
+				if err := dbpkg.ReintentarEmpresaImpresoraTrabajo(dbEmp, empresaID, trabajoID, strings.TrimSpace(adminEmailFromRequest(r))); err != nil {
+					log.Printf("[empresa_impresoras] reintentar trabajo empresa_id=%d trabajo_id=%d error: %v", empresaID, trabajoID, err)
+					http.Error(w, err.Error(), http.StatusBadRequest)
+					return
+				}
+				item, _ := dbpkg.GetEmpresaImpresoraTrabajoByID(dbEmp, empresaID, trabajoID)
+				writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "trabajo": item})
 				return
 
 			default:
@@ -569,5 +701,96 @@ func EmpresaImpresorasResolverHandler(dbEmp *sql.DB) http.HandlerFunc {
 			"impresora":  resolved.Impresora,
 			"fuente":     resolved.Fuente,
 		})
+	}
+}
+
+// EmpresaImpresorasAgenteHandler expone solo el contrato operativo del agente
+// local de impresion. No permite crear ni editar impresoras.
+func EmpresaImpresorasAgenteHandler(dbEmp *sql.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost && r.Method != http.MethodPut {
+			http.Error(w, "Metodo no permitido", http.StatusMethodNotAllowed)
+			return
+		}
+		if err := dbpkg.EnsureEmpresaImpresorasSchema(dbEmp); err != nil {
+			log.Printf("[empresa_impresoras_agente] ensure schema error: %v", err)
+			http.Error(w, "No se pudo preparar cola de impresion", http.StatusInternalServerError)
+			return
+		}
+		empresaID, err := parseEmpresaIDQuery(r)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		action := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("action")))
+		switch action {
+		case "", "tomar", "agente_tomar":
+			var payload struct {
+				AgenteID   string `json:"agente_id"`
+				EstacionID int64  `json:"estacion_id"`
+				Limit      int64  `json:"limit"`
+			}
+			_ = json.NewDecoder(r.Body).Decode(&payload)
+			if strings.TrimSpace(payload.AgenteID) == "" {
+				payload.AgenteID = strings.TrimSpace(r.URL.Query().Get("agente_id"))
+			}
+			if strings.TrimSpace(payload.AgenteID) == "" {
+				http.Error(w, "agente_id requerido", http.StatusBadRequest)
+				return
+			}
+			if payload.EstacionID <= 0 {
+				if id, parseErr := parseInt64QueryOptional(r, "estacion_id"); parseErr == nil {
+					payload.EstacionID = id
+				}
+			}
+			if payload.Limit <= 0 {
+				if limit, parseErr := parseIntQueryOptional(r, "limit"); parseErr == nil {
+					payload.Limit = int64(limit)
+				}
+			}
+			trabajos, err := dbpkg.TomarEmpresaImpresoraTrabajos(dbEmp, empresaID, payload.AgenteID, payload.EstacionID, payload.Limit)
+			if err != nil {
+				log.Printf("[empresa_impresoras_agente] tomar empresa_id=%d agente=%q error: %v", empresaID, payload.AgenteID, err)
+				http.Error(w, err.Error(), http.StatusBadRequest)
+				return
+			}
+			writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "empresa_id": empresaID, "trabajos": trabajos})
+			return
+
+		case "estado", "cola_estado":
+			var payload struct {
+				ID          int64  `json:"id"`
+				TrabajoID   int64  `json:"trabajo_id"`
+				Estado      string `json:"estado"`
+				AgenteID    string `json:"agente_id"`
+				UltimoError string `json:"ultimo_error"`
+				Error       string `json:"error"`
+			}
+			if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+				http.Error(w, "JSON invalido", http.StatusBadRequest)
+				return
+			}
+			if strings.TrimSpace(payload.AgenteID) == "" {
+				http.Error(w, "agente_id requerido", http.StatusBadRequest)
+				return
+			}
+			if payload.TrabajoID <= 0 {
+				payload.TrabajoID = payload.ID
+			}
+			if strings.TrimSpace(payload.UltimoError) == "" {
+				payload.UltimoError = payload.Error
+			}
+			if err := dbpkg.ActualizarEmpresaImpresoraTrabajoEstado(dbEmp, empresaID, payload.TrabajoID, payload.Estado, payload.AgenteID, payload.UltimoError); err != nil {
+				log.Printf("[empresa_impresoras_agente] estado empresa_id=%d trabajo_id=%d error: %v", empresaID, payload.TrabajoID, err)
+				http.Error(w, err.Error(), http.StatusBadRequest)
+				return
+			}
+			writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "trabajo_id": payload.TrabajoID})
+			return
+
+		default:
+			http.Error(w, "action no soportada", http.StatusBadRequest)
+			return
+		}
 	}
 }

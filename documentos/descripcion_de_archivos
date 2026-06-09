@@ -1,3 +1,10 @@
+2026-06-09 - Impresoras por empresa con cola de agente local
+- `backend/db/empresa_impresoras.go`: agrega la tabla `empresa_impresoras_cola`, normalizacion de trabajos, creacion de cola, toma por agente local, cierre de estado y reintento por `empresa_id`.
+- `backend/handlers/empresa_impresoras.go`: expone acciones de cola en `/api/empresa/impresoras` y handler limitado `EmpresaImpresorasAgenteHandler` para agentes de caja.
+- `backend/main.go`: registra `/api/empresa/impresoras/agente` con permisos de ventas.
+- `web/administrar_empresa/configuracion_impresora.html`: agrega panel de agente local, prueba de impresion, toma de pendientes y tabla de cola reciente.
+- `backend/db/empresa_impresoras_cola_test.go` y `backend/handlers/empresa_impresoras_agente_test.go`: validan contrato PostgreSQL, aislamiento por empresa y limite funcional del agente.
+
 2026-06-09 - Perfil tributario Colombia
 - `web/administrar_empresa/configuracion/perfil_tributario_colombia.html`: subpagina del menu de configuracion empresarial que abre la seccion de perfil tributario Colombia.
 - `web/administrar_empresa/configuracion.html`: agrega la seccion `Perfil tributario Colombia` para persona natural/juridica, subcategoria, regimen, IVA, consumo, responsabilidades RUT y obligaciones sugeridas por empresa.
@@ -4922,8 +4929,8 @@ Actualizacion 2026-04-09: Onboarding profesional DIAN por empresa (modelo SaaS m
 - `backend/handlers/modulos_faltantes_test.go`:
 	- agrega cobertura para onboarding/validacion de credenciales y upload de firma por empresa.
 
-- `web/ayuda/ayuda.html` y `web/js/modulos_erp_extendido.js`:
-	- amplian guia y acciones rapidas DIAN para operacion profesional multiempresa.
+- `web/ayuda/ayuda.html`:
+	- amplia guia y acciones rapidas DIAN para operacion profesional multiempresa. El antiguo script `web/js/modulos_erp_extendido.js` fue retirado del frontend vigente el 2026-06-09.
 
 Actualizacion 2026-04-09: DIAN multiempresa SaaS con software compartido y credenciales por empresa
 
@@ -5070,7 +5077,7 @@ Actualizacion 2026-04-11: MenÃƒÆ’Ã‚Âºs FacturaciÃƒÆ’Ã‚Â³n y 
 	- Shell de menÃƒÆ’Ã‚Âº para FacturaciÃƒÆ’Ã‚Â³n electrÃƒÆ’Ã‚Â³nica con menÃƒÆ’Ã‚Âº izquierdo y `iframe` derecho que carga por defecto `facturacion_electronica.html`. Incluye enlace a `facturas_electronicas.html`.
 
 - `web/administrar_empresa/finanzas_menu.html` (nuevo):
-	- Shell de menÃƒÆ’Ã‚Âº para Finanzas con menÃƒÆ’Ã‚Âº izquierdo y `iframe` derecho que carga por defecto `finanzas.html`. Incluye accesos a `creditos.html`, `nomina_sueldos.html` y `modulos_erp_extendido.html`.
+	- Shell de menÃƒÆ’Ã‚Âº para Finanzas con menÃƒÆ’Ã‚Âº izquierdo y `iframe` derecho que carga por defecto `finanzas.html`. Incluye accesos a `creditos.html` y `nomina_sueldos.html`; el antiguo hub `modulos_erp_extendido.html` fue retirado del frontend vigente el 2026-06-09.
 
 
 - `documentos/estructura_bd.md` y `estructura_bd.md`:
@@ -5493,7 +5500,7 @@ Actualizacion 2026-04-18: retiro de calculadora del panel empresa
 	- elimina el acceso rapido `Calculadora` del menu flotante y la propagacion de `empresa_id` hacia esa ruta.
 
 - `web/ayuda/ayuda.html`:
-	- retira referencias a la pagina `calculadora.html` y deja la ayuda operativa centrada en ERP extendido.
+	- retira referencias a la pagina `calculadora.html` y deja la ayuda operativa centrada en modulos empresariales vigentes.
 
 - `web/administrar_empresa/calculadora.html`:
 	- archivo eliminado para retirar del repositorio la pagina de calculadora del panel empresa.
@@ -10986,3 +10993,7 @@ backend/handlers/user_config.go - Controlador que expone /api/user/configuracion
   camaras, tecnologia de origen, visor web, estacion asociada y vista previa.
 - `web/js/camaras.js`: logica frontend del modulo Camaras y DVR: carga,
   guardado, edicion, desactivacion, KPIs, catalogo y render de visor.
+2026-06-09: Retiro de ERP extendido como hub frontend
+- Se eliminan `web/administrar_empresa/modulos_erp_extendido.html`, `web/administrar_empresa/modulos_erp_dominio.html` y `web/js/modulos_erp_extendido.js`.
+- El acceso vigente a integraciones queda en `web/administrar_empresa/configuracion_integraciones.html` mediante `linkConfiguracionIntegraciones`.
+- No se eliminan endpoints ni tablas de CRM, produccion, logistica, documentos o integraciones.

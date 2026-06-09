@@ -130,6 +130,20 @@ func TestCatalogoDianColombiaIncluyeDocumentosYObligacionesContables(t *testing.
 	if got := ListFacturacionDianFuentesNormativas(); len(got) < 3 {
 		t.Fatalf("expected official DIAN sources, got %#v", got)
 	}
+
+	foundRadian := false
+	for _, item := range ListFacturacionDianDocumentosElectronicos() {
+		if item.Codigo != "eventos_radian_recepcion" {
+			continue
+		}
+		foundRadian = true
+		if item.EstadoImplementacion != "operativo" || !item.EsEvento || !item.RequiereFirma {
+			t.Fatalf("expected operational signed RADIAN event, got %#v", item)
+		}
+	}
+	if !foundRadian {
+		t.Fatalf("missing RADIAN events in DIAN catalog")
+	}
 }
 
 func TestBuildFacturacionPanamaChecklistIndependiente(t *testing.T) {

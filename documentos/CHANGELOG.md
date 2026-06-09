@@ -1,3 +1,32 @@
+## [2026-06-09] Impresoras por empresa con cola para agente local
+- [Backend] `empresa_impresoras` incorpora `empresa_impresoras_cola` para encolar trabajos por `empresa_id`, impresora, funcionalidad, estacion/caja y agente local.
+- [API] `/api/empresa/impresoras` permite administrar impresoras y crear/reintentar trabajos; `/api/empresa/impresoras/agente` queda limitado a tomar pendientes y cerrar estados con permisos de ventas.
+- [Frontend] `configuracion_impresora.html` agrega panel de agente local, prueba de impresion y cola reciente sin cambiar la configuracion existente de impresoras por producto/categoria.
+- [Tests] Se valida que la cola use PostgreSQL, conserve aislamiento por `empresa_id` y que el handler del agente no pueda editar configuracion.
+
+## [2026-06-09] ERP extendido retirado de navegacion
+- [Frontend] Se retira el concepto visible `ERP extendido` de los menus vigentes y se eliminan sus paginas frontend antiguas; `Integraciones` queda como configuracion propia bajo `linkConfiguracionIntegraciones`.
+- [Backend] El catalogo de permisos deja de publicar `linkERPExtendido` y `linkERPExtendidoMenu`, y conserva `Integraciones` como permiso de configuracion.
+- [Alcance] No se eliminan datos ni endpoints especializados; se elimina la duplicidad del hub ERP extendido.
+
+## [2026-06-09] Limpieza UX en facturacion electronica y finanzas
+- [UX] `facturacion_electronica.html` agrega espacio consistente entre tarjetas y titulo/descripcion a bloques que no tenian encabezado propio.
+- [UX] `finanzas_menu.html` retira `ERP extendido` del menu financiero y deja una sola navegacion visible para evitar accesos repetidos.
+
+## [2026-06-09] Obligatorios visibles en facturacion electronica
+- [UX] `facturacion_electronica.html` deja una sola opcion visible para enviar automaticamente la factura electronica al correo del cliente.
+- [UX] La configuracion DIAN y la configuracion por pais muestran aviso de campos obligatorios, asterisco en labels y resaltado de campos faltantes en vivo.
+
+## [2026-06-09] Eventos RADIAN operativos en facturacion electronica
+- [Backend] `eventos_radian_recepcion` queda marcado como `operativo` en el catalogo DIAN Colombia, conservando que es evento firmado, no venta nueva y no activa produccion.
+- [Frontend] El resumen esencial de documentos DIAN ahora muestra RADIAN como operativo en habilitacion y agrega acceso directo al Centro de habilitacion DIAN.
+- [Tests] Se valida que el catalogo DIAN exponga RADIAN como evento firmado operativo.
+
+## [2026-06-09] Facturacion electronica sin titulo superior
+- [UX] `facturacion_electronica.html` elimina el encabezado visible `Facturacion electronica por pais - empresa` y el texto introductorio de `Pais de facturacion electronica`.
+- [Operacion] La pagina queda mas compacta y empieza directamente en el selector de pais y la configuracion DIAN.
+- [Alcance] No cambia endpoints, tablas, permisos, credenciales ni envios DIAN.
+
 ## [2026-06-09] QR DIAN obligatorio y bascula electronica en venta
 - [Facturacion] `facturas_electronicas.html` genera QR local en impresion POS/carta de documentos electronicos Colombia cuando hay CUFE/CUDE o URL DIAN; si falta la validacion imprime advertencia sin simular el QR.
 - [Carrito] `carrito_de_compras.html` fuerza el bloque QR DIAN para facturas/notas electronicas Colombia aunque el check operativo de recibos este apagado.
