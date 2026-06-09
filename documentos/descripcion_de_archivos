@@ -1,3 +1,9 @@
+2026-06-09 - Perfil tributario Colombia
+- `web/administrar_empresa/configuracion/perfil_tributario_colombia.html`: subpagina del menu de configuracion empresarial que abre la seccion de perfil tributario Colombia.
+- `web/administrar_empresa/configuracion.html`: agrega la seccion `Perfil tributario Colombia` para persona natural/juridica, subcategoria, regimen, IVA, consumo, responsabilidades RUT y obligaciones sugeridas por empresa.
+- `web/administrar_empresa/configuracion_menu.html`: agrega el acceso de submenu a `Perfil tributario Colombia`.
+- `backend/db/empresa_configuracion_avanzada.go`: amplia `empresa_configuracion_avanzada` con campos estructurados de perfil fiscal Colombia, normalizacion de valores permitidos y persistencia por `empresa_id`.
+
 2026-06-08 - OCR documental sin IA
 - `backend/db/ocr.go`: esquema y consultas de `empresa_ocr_documentos`, aisladas por `empresa_id`.
 - `backend/handlers/ocr.go`: handler empresarial `/api/empresa/ocr`, configuracion super `/super/api/config/ocr`, ejecucion Tesseract CLI, conversion PDF con `pdftoppm` y parser deterministico de sugerencias.

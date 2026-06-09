@@ -150,13 +150,61 @@
           </div>
           <div class="form-col maxw-180">
             <label class="form-label" for="scannerCantidad">Cantidad</label>
-            <input id="scannerCantidad" type="number" min="1" step="1" inputmode="numeric" pattern="[0-9]*" class="form-input" value="1">
+            <input id="scannerCantidad" type="number" min="0.001" step="0.001" inputmode="decimal" class="form-input" value="1">
           </div>
           <div class="form-col maxw-180 flex-end">
             <button type="button" id="scannerAgregarBtn" class="btn secondary w-full">Agregar</button>
           </div>
           <div class="form-col maxw-220 flex-end">
             <button type="button" id="carritoBtnBuscarBotones" class="btn secondary w-full">Buscar Productos</button>
+          </div>
+        </div>
+        <div id="scalePanel" class="form mt-10" style="border:1px solid var(--border);border-radius:8px;padding:10px;background:var(--surface-soft);">
+          <div class="form-row" style="align-items:end;">
+            <div class="form-col maxw-180">
+              <label class="form-label" for="scaleBaudRate">Bascula electronica</label>
+              <select id="scaleBaudRate" class="form-input">
+                <option value="9600">9600 baudios</option>
+                <option value="4800">4800 baudios</option>
+                <option value="19200">19200 baudios</option>
+                <option value="2400">2400 baudios</option>
+              </select>
+            </div>
+            <div class="form-col maxw-160">
+              <label class="form-label" for="scaleDefaultUnit">Unidad leida</label>
+              <select id="scaleDefaultUnit" class="form-input">
+                <option value="kg">kg</option>
+                <option value="g">g</option>
+                <option value="lb">lb</option>
+              </select>
+            </div>
+            <div class="form-col maxw-160">
+              <label class="form-label" for="scaleApplyWeight">Uso</label>
+              <label class="empresa-config-check inline-check" for="scaleApplyWeight">
+                <input id="scaleApplyWeight" type="checkbox" checked>
+                aplicar peso
+              </label>
+            </div>
+            <div class="form-col maxw-180">
+              <button type="button" id="scaleConnectBtn" class="btn secondary w-full">Conectar bascula</button>
+            </div>
+            <div class="form-col maxw-180">
+              <button type="button" id="scaleDisconnectBtn" class="btn secondary w-full" disabled>Desconectar</button>
+            </div>
+            <div class="form-col maxw-160">
+              <button type="button" id="scaleTareBtn" class="btn secondary w-full" disabled>Tara local</button>
+            </div>
+          </div>
+          <div class="form-row" style="align-items:center;">
+            <div class="form-col maxw-220">
+              <div class="kpi-box" style="margin:0;">
+                <span class="kpi-label">Peso estable</span>
+                <strong id="scaleWeightDisplay">0.000 kg</strong>
+              </div>
+            </div>
+            <div class="form-col">
+              <div id="scaleStatus" class="form-help">Conecta una bascula serial/USB compatible. El navegador pedira permiso para acceder al puerto.</div>
+            </div>
           </div>
         </div>
         <div id="scannerMsg" class="form-help"></div>
@@ -636,7 +684,7 @@
         <div class="form-row">
           <div class="form-col">
             <label class="form-label">Cantidad</label>
-            <input id="itemCantidad" type="number" min="1" step="1" inputmode="numeric" pattern="[0-9]*" class="form-input" value="1" required>
+            <input id="itemCantidad" type="number" min="0.001" step="0.001" inputmode="decimal" class="form-input" value="1" required>
           </div>
           <div class="form-col">
             <label class="form-label">Precio unitario</label>
@@ -803,6 +851,20 @@
         lastOnline: typeof navigator === 'undefined' ? true : navigator.onLine !== false,
         syncing: false,
         noticeTimer: null
+      },
+      scale: {
+        supported: typeof navigator !== 'undefined' && !!navigator.serial,
+        connected: false,
+        connecting: false,
+        port: null,
+        reader: null,
+        keepReading: false,
+        buffer: '',
+        weightKg: 0,
+        displayUnit: 'kg',
+        tareKg: 0,
+        lastRaw: '',
+        lastStableAt: 0
       }
     };
 
@@ -862,10 +924,60 @@
       return qty >= 1 ? qty : fallback;
     }
 
+    function isWeightUnit(unidad) {
+      const v = normalize(unidad).toLowerCase().replace(/[.\s]/g, '');
+      return ['kg','kilo','kilos','kilogramo','kilogramos','g','gr','gramo','gramos','lb','lbs','libra','libras','oz','onza','onzas'].indexOf(v) !== -1;
+    }
+
+    function parseQuantityValue(val, unidad, fallback) {
+      const raw = normalize(val).replace(',', '.');
+      const n = Number(raw);
+      if (!Number.isFinite(n)) return fallback;
+      if (isWeightUnit(unidad)) {
+        const rounded = Math.round(Math.max(0, n) * 1000) / 1000;
+        return rounded > 0 ? rounded : fallback;
+      }
+      return toNaturalQuantity(n, fallback);
+    }
+
+    function isValidQuantityForUnit(val, unidad) {
+      const n = Number(normalize(val).replace(',', '.'));
+      if (!Number.isFinite(n) || n <= 0) return false;
+      if (isWeightUnit(unidad)) return n >= 0.001;
+      return Number.isInteger(n) && n >= 1;
+    }
+
+    function formatQuantityForInput(value, unidad) {
+      const n = Number(value || 0);
+      if (!Number.isFinite(n) || n <= 0) return isWeightUnit(unidad) ? '0.000' : '1';
+      if (isWeightUnit(unidad)) return String(Math.round(n * 1000) / 1000);
+      return String(Math.max(1, Math.trunc(n)));
+    }
+
     function enforceNaturalQuantityInput(input) {
       if (!input || input.value === '') return;
       const qty = toNaturalQuantity(input.value, 1);
       input.value = String(qty);
+    }
+
+    function quantityUnitForInput(input) {
+      if (!input) return 'unidad';
+      if (input.id === 'itemCantidad') {
+        return normalize(document.getElementById('itemUnidad') && document.getElementById('itemUnidad').value) || 'unidad';
+      }
+      if (input.id === 'scannerCantidad') {
+        const useScale = document.getElementById('scaleApplyWeight');
+        if (useScale && useScale.checked) {
+          return normalize(document.getElementById('scaleDefaultUnit') && document.getElementById('scaleDefaultUnit').value) || 'kg';
+        }
+      }
+      return 'unidad';
+    }
+
+    function normalizeQuantityInputForUnit(input) {
+      if (!input || input.value === '') return;
+      const unit = quantityUnitForInput(input);
+      input.value = formatQuantityForInput(parseQuantityValue(input.value, unit, isWeightUnit(unit) ? 0.001 : 1), unit);
     }
 
     function normalize(v) {
@@ -2539,6 +2651,168 @@
       setMessage('scannerMsg', text, isError);
     }
 
+    function setScaleStatus(text, isError) {
+      const el = document.getElementById('scaleStatus');
+      if (!el) return;
+      el.textContent = text || '';
+      el.classList.toggle('value-negative', !!isError);
+      el.classList.toggle('value-positive', !isError && !!text && state.scale.connected);
+    }
+
+    function scaleUnitToKg(value, unit) {
+      const n = Number(value || 0);
+      const u = normalize(unit || 'kg').toLowerCase();
+      if (!Number.isFinite(n)) return 0;
+      if (u === 'g' || u === 'gr' || u === 'gramo' || u === 'gramos') return n / 1000;
+      if (u === 'lb' || u === 'lbs' || u === 'libra' || u === 'libras') return n * 0.45359237;
+      if (u === 'oz' || u === 'onza' || u === 'onzas') return n * 0.0283495231;
+      return n;
+    }
+
+    function scaleKgToUnit(kg, unit) {
+      const n = Number(kg || 0);
+      const u = normalize(unit || 'kg').toLowerCase();
+      if (!Number.isFinite(n)) return 0;
+      if (u === 'g' || u === 'gr' || u === 'gramo' || u === 'gramos') return n * 1000;
+      if (u === 'lb' || u === 'lbs' || u === 'libra' || u === 'libras') return n / 0.45359237;
+      if (u === 'oz' || u === 'onza' || u === 'onzas') return n / 0.0283495231;
+      return n;
+    }
+
+    function parseScaleLine(rawLine) {
+      const raw = normalize(rawLine);
+      if (!raw) return null;
+      const cleaned = raw.replace(',', '.');
+      const unitMatch = cleaned.match(/\b(kg|g|gr|lb|lbs|oz)\b/i);
+      const matches = cleaned.match(/[-+]?\d+(?:\.\d+)?/g);
+      if (!matches || !matches.length) return null;
+      const value = Number(matches[matches.length - 1]);
+      if (!Number.isFinite(value)) return null;
+      const unit = unitMatch ? unitMatch[1].toLowerCase() : (normalize(document.getElementById('scaleDefaultUnit') && document.getElementById('scaleDefaultUnit').value) || 'kg');
+      return { raw: raw, unit: unit, value: value, kg: Math.max(0, scaleUnitToKg(value, unit)) };
+    }
+
+    function currentScaleNetKg() {
+      return Math.max(0, Number(state.scale.weightKg || 0) - Number(state.scale.tareKg || 0));
+    }
+
+    function updateScaleUI() {
+      const display = document.getElementById('scaleWeightDisplay');
+      const connect = document.getElementById('scaleConnectBtn');
+      const disconnect = document.getElementById('scaleDisconnectBtn');
+      const tare = document.getElementById('scaleTareBtn');
+      const unit = normalize(document.getElementById('scaleDefaultUnit') && document.getElementById('scaleDefaultUnit').value) || state.scale.displayUnit || 'kg';
+      state.scale.displayUnit = unit;
+      const value = scaleKgToUnit(currentScaleNetKg(), unit);
+      if (display) display.textContent = (Math.round(value * 1000) / 1000).toFixed(unit === 'g' ? 0 : 3) + ' ' + unit;
+      if (connect) connect.disabled = !state.scale.supported || state.scale.connected || state.scale.connecting;
+      if (disconnect) disconnect.disabled = !state.scale.connected;
+      if (tare) tare.disabled = !state.scale.connected;
+      if (!state.scale.supported) {
+        setScaleStatus('Este navegador no permite Web Serial. Usa Chrome o Edge en HTTPS/local para conectar la bascula.', true);
+      }
+    }
+
+    function applyScaleWeightToQuantity(force) {
+      const enabled = document.getElementById('scaleApplyWeight');
+      if (enabled && !enabled.checked) return false;
+      const input = document.getElementById('scannerCantidad');
+      const unit = normalize(document.getElementById('scaleDefaultUnit') && document.getElementById('scaleDefaultUnit').value) || 'kg';
+      const value = scaleKgToUnit(currentScaleNetKg(), unit);
+      if (!input || value <= 0) return false;
+      input.step = '0.001';
+      input.min = '0.001';
+      input.removeAttribute('pattern');
+      input.inputMode = 'decimal';
+      input.value = formatQuantityForInput(value, unit);
+      return true;
+    }
+
+    function handleScaleDataChunk(text) {
+      state.scale.buffer += String(text || '');
+      const parts = state.scale.buffer.split(/\r?\n/);
+      state.scale.buffer = parts.pop() || '';
+      parts.forEach(function(line) {
+        const parsed = parseScaleLine(line);
+        if (!parsed) return;
+        state.scale.weightKg = parsed.kg;
+        state.scale.lastRaw = parsed.raw;
+        state.scale.lastStableAt = Date.now();
+        updateScaleUI();
+        applyScaleWeightToQuantity(false);
+        setScaleStatus('Bascula conectada. Ultima lectura: ' + parsed.raw, false);
+      });
+    }
+
+    async function startScaleReadLoop() {
+      if (!state.scale.port || !state.scale.port.readable) return;
+      const decoder = new TextDecoder();
+      state.scale.keepReading = true;
+      while (state.scale.keepReading && state.scale.port && state.scale.port.readable) {
+        state.scale.reader = state.scale.port.readable.getReader();
+        try {
+          while (state.scale.keepReading) {
+            const result = await state.scale.reader.read();
+            if (result.done) break;
+            handleScaleDataChunk(decoder.decode(result.value, { stream: true }));
+          }
+        } finally {
+          try { state.scale.reader.releaseLock(); } catch (_) {}
+          state.scale.reader = null;
+        }
+      }
+    }
+
+    async function connectScale() {
+      if (!state.scale.supported) {
+        setScaleStatus('Web Serial no esta disponible en este navegador.', true);
+        return;
+      }
+      if (state.scale.connected || state.scale.connecting) return;
+      state.scale.connecting = true;
+      updateScaleUI();
+      try {
+        const baudRate = Number(document.getElementById('scaleBaudRate').value || 9600);
+        const port = await navigator.serial.requestPort();
+        await port.open({ baudRate: baudRate || 9600, dataBits: 8, stopBits: 1, parity: 'none', flowControl: 'none' });
+        state.scale.port = port;
+        state.scale.connected = true;
+        state.scale.buffer = '';
+        setScaleStatus('Bascula conectada. Coloca el producto y espera lectura estable.', false);
+        updateScaleUI();
+        startScaleReadLoop().catch(function(err) {
+          setScaleStatus((err && err.message) || 'Se perdio la lectura de la bascula.', true);
+        });
+      } catch (err) {
+        setScaleStatus((err && err.message) || 'No se pudo conectar la bascula.', true);
+      } finally {
+        state.scale.connecting = false;
+        updateScaleUI();
+      }
+    }
+
+    async function disconnectScale() {
+      state.scale.keepReading = false;
+      try {
+        if (state.scale.reader) await state.scale.reader.cancel();
+      } catch (_) {}
+      try {
+        if (state.scale.port) await state.scale.port.close();
+      } catch (_) {}
+      state.scale.port = null;
+      state.scale.reader = null;
+      state.scale.connected = false;
+      setScaleStatus('Bascula desconectada.', false);
+      updateScaleUI();
+    }
+
+    function tareScaleLocal() {
+      state.scale.tareKg = Number(state.scale.weightKg || 0);
+      updateScaleUI();
+      applyScaleWeightToQuantity(true);
+      setScaleStatus('Tara local aplicada. El sistema descuenta el peso actual sin enviar comandos a la bascula.', false);
+    }
+
     function normalizeScanCode(value) {
       return normalize(value).replace(/\s+/g, '').toUpperCase();
     }
@@ -3689,14 +3963,15 @@
         return;
       }
 
-      if (typeof QRCode === 'undefined' || !QRCode || typeof QRCode.toCanvas !== 'function') {
+      const qrGenerator = getQRCodeGenerator();
+      if (!qrGenerator || typeof qrGenerator.toCanvas !== 'function') {
         clearPaymentQrCanvas();
         setPaymentQrStatus('No se encontró el generador QR local. Revisa /vendor/qrcode.min.js.', true);
         return;
       }
       const canvas = document.getElementById('paymentQrCanvas');
       if (!canvas) return;
-      QRCode.toCanvas(canvas, qr.payload, { width: 220, margin: 1, errorCorrectionLevel: 'M' }, function(err) {
+      qrGenerator.toCanvas(canvas, qr.payload, { width: 220, margin: 1, errorCorrectionLevel: 'M' }, function(err) {
         if (err) {
           clearPaymentQrCanvas();
           setPaymentQrStatus('No se pudo generar el QR: ' + (err.message || err), true);
@@ -4103,7 +4378,16 @@
       return true;
     }
 
-    function shouldPrintElectronicInvoiceQR() {
+    function isColombiaElectronicFiscalDocument(doc) {
+      const source = doc && typeof doc === 'object' ? doc : {};
+      const type = normalize(source.tipo_documento || source.modo).toLowerCase();
+      const country = normalizeCountryCodeForInvoiceQR(source);
+      const isElectronicType = type === 'factura_electronica' || type === 'nota_credito' || type === 'nota_debito';
+      return isElectronicType && (!country || country === 'co');
+    }
+
+    function shouldPrintElectronicInvoiceQR(doc) {
+      if (isColombiaElectronicFiscalDocument(doc)) return true;
       const ui = getCurrentStationCartUIConfig();
       return Boolean(ui && ui.mostrar_qr_factura_electronica);
     }
@@ -4145,16 +4429,24 @@
       return base + encodeURIComponent(key);
     }
 
+    function getQRCodeGenerator() {
+      if (typeof window !== 'undefined' && window.QRCode) return window.QRCode;
+      if (typeof globalThis !== 'undefined' && globalThis.QRCode) return globalThis.QRCode;
+      if (typeof QRCode !== 'undefined') return QRCode;
+      return null;
+    }
+
     function generateQRDataURL(payload, size) {
       return new Promise(function(resolve) {
         const value = normalize(payload);
-        if (!value || typeof QRCode === 'undefined' || !QRCode || typeof QRCode.toCanvas !== 'function') {
+        const qrGenerator = getQRCodeGenerator();
+        if (!value || !qrGenerator || typeof qrGenerator.toCanvas !== 'function') {
           resolve('');
           return;
         }
         try {
           const canvas = document.createElement('canvas');
-          QRCode.toCanvas(canvas, value, { width: Number(size || 140), margin: 1, errorCorrectionLevel: 'M' }, function(err) {
+          qrGenerator.toCanvas(canvas, value, { width: Number(size || 140), margin: 1, errorCorrectionLevel: 'M' }, function(err) {
             if (err) {
               console.warn(err);
               resolve('');
@@ -4175,11 +4467,19 @@
     }
 
     async function buildElectronicInvoiceQRForPrint(documentoVenta, printFormat) {
-      if (!shouldPrintElectronicInvoiceQR()) return null;
       const doc = documentoVenta && typeof documentoVenta === 'object' ? documentoVenta : {};
+      const requiredByDIAN = isColombiaElectronicFiscalDocument(doc);
+      if (!requiredByDIAN && !shouldPrintElectronicInvoiceQR(doc)) return null;
       const url = electronicInvoiceDianURL(doc);
       const key = electronicInvoiceValidationKey(doc);
-      if (!url || !key) return null;
+      if (!url || !key) {
+        if (!requiredByDIAN) return null;
+        return {
+          label: 'QR DIAN pendiente',
+          value: 'Falta CUFE/CUDE o codigo de validacion para construir el QR DIAN.',
+          caption: 'No entregue esta representacion grafica como factura electronica valida hasta tener validacion DIAN.'
+        };
+      }
       const size = normalize(printFormat).toLowerCase() === 'pos' ? 140 : 180;
       const image = await generateQRDataURL(url, size);
       return {
@@ -6123,13 +6423,8 @@
       const codeRaw = document.getElementById('scannerCodigo').value;
       const scanCode = normalizeScanCode(codeRaw);
       const qtyRaw = document.getElementById('scannerCantidad').value;
-      const qty = toNaturalQuantity(qtyRaw, 0);
       if (!scanCode) {
         setScannerMessage('Escanea o digita un código de barras o SKU válido.', true);
-        return;
-      }
-      if (!isNaturalQuantityValue(qtyRaw)) {
-        setScannerMessage('La cantidad debe ser un número natural positivo: 1, 2, 3...', true);
         return;
       }
 
@@ -6137,6 +6432,20 @@
       try {
         setScannerMessage('Buscando producto en catálogo...', false);
         const producto = await resolveProductoFromScanCode(scanCode);
+        const productoUnidad = normalize(producto.unidad_medida) || 'unidad';
+        const useScaleWeight = Boolean(document.getElementById('scaleApplyWeight') && document.getElementById('scaleApplyWeight').checked && currentScaleNetKg() > 0);
+        let qty = parseQuantityValue(qtyRaw, productoUnidad, 0);
+        if (useScaleWeight) {
+          if (!isWeightUnit(productoUnidad)) {
+            throw new Error('La bascula tiene peso activo, pero el producto "' + (normalize(producto.nombre) || 'seleccionado') + '" no esta configurado con unidad de peso. Usa unidad kg, g, lb u oz en Productos.');
+          }
+          const scaleUnit = normalize(document.getElementById('scaleDefaultUnit') && document.getElementById('scaleDefaultUnit').value) || 'kg';
+          qty = parseQuantityValue(scaleKgToUnit(currentScaleNetKg(), productoUnidad || scaleUnit), productoUnidad, 0);
+        }
+        if (!isValidQuantityForUnit(qty, productoUnidad)) {
+          setScannerMessage(isWeightUnit(productoUnidad) ? 'La cantidad por peso debe ser mayor a 0.001.' : 'La cantidad debe ser un número natural positivo: 1, 2, 3...', true);
+          return;
+        }
         const existing = findExistingScannedItem(Number(producto.id || 0), scanCode);
 
         const payload = {
@@ -6147,7 +6456,7 @@
           referencia_id: Number(producto.id || 0),
           codigo_item: normalize(producto.codigo_barras) || normalize(producto.sku),
           descripcion: normalize(producto.nombre) || 'Producto',
-          unidad_medida: normalize(producto.unidad_medida) || 'unidad',
+          unidad_medida: productoUnidad,
           cantidad: qty,
           precio_unitario: Number(producto.precio || 0),
           descuento_porcentaje: 0,
@@ -6158,7 +6467,9 @@
 
         const shouldAccumulate = caps.accumulate && !!existing;
         if (shouldAccumulate) {
-          payload.cantidad = toNaturalQuantity(existing.cantidad || 0, 0) + qty;
+          payload.cantidad = isWeightUnit(productoUnidad)
+            ? Math.round((Number(existing.cantidad || 0) + qty) * 1000) / 1000
+            : toNaturalQuantity(existing.cantidad || 0, 0) + qty;
           payload.precio_unitario = Number(existing.precio_unitario || payload.precio_unitario);
           payload.descuento_porcentaje = Number(existing.descuento_porcentaje || 0);
           payload.impuesto_porcentaje = Number(existing.impuesto_porcentaje || payload.impuesto_porcentaje);
@@ -8251,7 +8562,7 @@
           document.getElementById('itemCodigo').value = normalize(item.codigo_item);
           document.getElementById('itemDescripcion').value = normalize(item.descripcion);
           document.getElementById('itemUnidad').value = normalize(item.unidad_medida) || 'unidad';
-          document.getElementById('itemCantidad').value = String(toNaturalQuantity(item.cantidad || 1, 1));
+          document.getElementById('itemCantidad').value = formatQuantityForInput(item.cantidad || 1, item.unidad_medida || 'unidad');
           document.getElementById('itemPrecio').value = Number(item.precio_unitario || 0);
           document.getElementById('itemDescuentoPct').value = Number(item.descuento_porcentaje || 0);
           document.getElementById('itemImpuestoPct').value = Number(item.impuesto_porcentaje || 0);
@@ -8756,8 +9067,9 @@
       }
 
       const cantidadRaw = document.getElementById('itemCantidad').value;
-      if (!isNaturalQuantityValue(cantidadRaw)) {
-        setMessage('itemMsg', 'La cantidad debe ser un número natural positivo: 1, 2, 3...', true);
+      const unidadMedida = normalize(document.getElementById('itemUnidad').value) || 'unidad';
+      if (!isValidQuantityForUnit(cantidadRaw, unidadMedida)) {
+        setMessage('itemMsg', isWeightUnit(unidadMedida) ? 'La cantidad por peso debe ser mayor o igual a 0.001.' : 'La cantidad debe ser un número natural positivo: 1, 2, 3...', true);
         return;
       }
 
@@ -8770,8 +9082,8 @@
         referencia_id: toNumber(document.getElementById('itemReferenciaID').value || 0, 0),
         codigo_item: normalize(document.getElementById('itemCodigo').value),
         descripcion: normalize(document.getElementById('itemDescripcion').value),
-        unidad_medida: normalize(document.getElementById('itemUnidad').value) || 'unidad',
-        cantidad: toNaturalQuantity(cantidadRaw, 1),
+        unidad_medida: unidadMedida,
+        cantidad: parseQuantityValue(cantidadRaw, unidadMedida, 1),
         precio_unitario: normalizeMoneyValue(toNumber(document.getElementById('itemPrecio').value, 0), (getSelectedCarrito() && getSelectedCarrito().moneda) || 'COP'),
         descuento_porcentaje: toNumber(document.getElementById('itemDescuentoPct').value, 0),
         impuesto_porcentaje: toNumber(document.getElementById('itemImpuestoPct').value, 0),
@@ -9135,16 +9447,38 @@
       processScannerInput();
     });
 
+    const scaleConnectBtn = document.getElementById('scaleConnectBtn');
+    if (scaleConnectBtn) scaleConnectBtn.addEventListener('click', connectScale);
+    const scaleDisconnectBtn = document.getElementById('scaleDisconnectBtn');
+    if (scaleDisconnectBtn) scaleDisconnectBtn.addEventListener('click', disconnectScale);
+    const scaleTareBtn = document.getElementById('scaleTareBtn');
+    if (scaleTareBtn) scaleTareBtn.addEventListener('click', tareScaleLocal);
+    const scaleDefaultUnit = document.getElementById('scaleDefaultUnit');
+    if (scaleDefaultUnit) {
+      scaleDefaultUnit.addEventListener('change', function() {
+        updateScaleUI();
+        applyScaleWeightToQuantity(true);
+      });
+    }
+    const scaleApplyWeight = document.getElementById('scaleApplyWeight');
+    if (scaleApplyWeight) {
+      scaleApplyWeight.addEventListener('change', function() {
+        applyScaleWeightToQuantity(true);
+      });
+    }
+    const itemUnidadInput = document.getElementById('itemUnidad');
+    if (itemUnidadInput) {
+      itemUnidadInput.addEventListener('blur', function() {
+        normalizeQuantityInputForUnit(document.getElementById('itemCantidad'));
+      });
+    }
+    updateScaleUI();
+
     ['scannerCantidad', 'itemCantidad'].forEach(function(id) {
       const el = document.getElementById(id);
       if (!el) return;
-      el.addEventListener('input', function() {
-        enforceNaturalQuantityInput(el);
-      });
       el.addEventListener('blur', function() {
-        if (!isNaturalQuantityValue(el.value)) {
-          el.value = '1';
-        }
+        normalizeQuantityInputForUnit(el);
       });
     });
 

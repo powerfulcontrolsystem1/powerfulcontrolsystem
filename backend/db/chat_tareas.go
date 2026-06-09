@@ -364,7 +364,7 @@ func EnsureEmpresaChatTareasSchema(dbConn *sql.DB) error {
 	if err := ensureColumnIfMissing(dbConn, "chat_tareas_mensajes", "tipo_mensaje", "TEXT DEFAULT 'texto'"); err != nil {
 		return err
 	}
-	if err := ensureColumnIfMissing(dbConn, "chat_tareas_mensajes", "fecha_envio", "TEXT DEFAULT (datetime('now','localtime'))"); err != nil {
+	if err := ensureColumnIfMissing(dbConn, "chat_tareas_mensajes", "fecha_envio", "TEXT DEFAULT (CURRENT_TIMESTAMP)"); err != nil {
 		return err
 	}
 	if err := ensureColumnIfMissing(dbConn, "chat_tareas_mensajes", "fecha_actualizacion", "TEXT"); err != nil {
@@ -726,7 +726,7 @@ func CreateChatConversacion(dbConn *sql.DB, payload ChatConversacion) (int64, er
 		observaciones,
 		fecha_creacion,
 		fecha_actualizacion
-	) VALUES (?, ?, ?, ?, ?, '', ?, ?, ?, datetime('now','localtime'), datetime('now','localtime'))`,
+	) VALUES (?, ?, ?, ?, ?, '', ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
 		payload.EmpresaID,
 		strings.TrimSpace(payload.Titulo),
 		strings.TrimSpace(payload.Descripcion),
@@ -987,7 +987,7 @@ func UpdateChatConversacion(dbConn *sql.DB, payload ChatConversacion) error {
 		prioridad = ?,
 		estado_conversacion = ?,
 		observaciones = ?,
-		fecha_actualizacion = datetime('now','localtime')
+		fecha_actualizacion = CURRENT_TIMESTAMP
 	WHERE id = ? AND empresa_id = ?`,
 		strings.TrimSpace(payload.Titulo),
 		strings.TrimSpace(payload.Descripcion),
@@ -1004,7 +1004,7 @@ func UpdateChatConversacion(dbConn *sql.DB, payload ChatConversacion) error {
 func SetChatConversacionEstado(dbConn *sql.DB, empresaID, id int64, estado string) error {
 	_, err := execSQLCompat(dbConn, `UPDATE chat_tareas_conversaciones
 	SET estado = ?,
-		fecha_actualizacion = datetime('now','localtime')
+		fecha_actualizacion = CURRENT_TIMESTAMP
 	WHERE empresa_id = ? AND id = ?`, normalizeChatEstado(estado), empresaID, id)
 	return err
 }
@@ -1013,7 +1013,7 @@ func SetChatConversacionEstado(dbConn *sql.DB, empresaID, id int64, estado strin
 func SetChatConversacionOperacionEstado(dbConn *sql.DB, empresaID, id int64, estadoConversacion string) error {
 	_, err := execSQLCompat(dbConn, `UPDATE chat_tareas_conversaciones
 	SET estado_conversacion = ?,
-		fecha_actualizacion = datetime('now','localtime')
+		fecha_actualizacion = CURRENT_TIMESTAMP
 	WHERE empresa_id = ? AND id = ?`, normalizeConversacionEstado(estadoConversacion), empresaID, id)
 	return err
 }
@@ -1027,7 +1027,7 @@ func DeleteChatConversacion(dbConn *sql.DB, empresaID, id int64) error {
 	defer tx.Rollback()
 
 	// Marca adjuntos/mensajes/participantes/tareas/citas como eliminados (con timestamp).
-	now := "datetime('now','localtime')"
+	now := "CURRENT_TIMESTAMP"
 	if shouldUsePostgresCompat(dbConn) {
 		now = "CURRENT_TIMESTAMP"
 	}
@@ -1087,7 +1087,7 @@ func CreateChatParticipante(dbConn *sql.DB, payload ChatParticipante) (int64, er
 		observaciones,
 		fecha_creacion,
 		fecha_actualizacion
-	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now','localtime'), datetime('now','localtime'))
+	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
 	ON CONFLICT (empresa_id, conversacion_id, participante_tipo, participante_ref_id, email) DO NOTHING`,
 		payload.EmpresaID,
 		payload.ConversacionID,
@@ -1120,7 +1120,7 @@ func CreateChatParticipante(dbConn *sql.DB, payload ChatParticipante) (int64, er
 	SET nombre = ?,
 		estado = 'activo',
 		activo_chat = 1,
-		fecha_actualizacion = datetime('now','localtime')
+		fecha_actualizacion = CURRENT_TIMESTAMP
 	WHERE id = ? AND empresa_id = ? AND conversacion_id = ?`,
 		strings.TrimSpace(payload.Nombre), existingID, payload.EmpresaID, payload.ConversacionID)
 
@@ -1191,7 +1191,7 @@ func UpdateChatParticipante(dbConn *sql.DB, payload ChatParticipante) error {
 		email = ?,
 		activo_chat = ?,
 		observaciones = ?,
-		fecha_actualizacion = datetime('now','localtime')
+		fecha_actualizacion = CURRENT_TIMESTAMP
 	WHERE id = ? AND empresa_id = ? AND conversacion_id = ?`,
 		normalizeParticipanteTipo(payload.ParticipanteTipo),
 		nullableInt64(payload.ParticipanteRefID),
@@ -1215,14 +1215,14 @@ func SetChatParticipanteEstado(dbConn *sql.DB, empresaID, conversacionID, id int
 	_, err := execSQLCompat(dbConn, `UPDATE chat_tareas_participantes
 	SET estado = ?,
 		activo_chat = ?,
-		fecha_actualizacion = datetime('now','localtime')
+		fecha_actualizacion = CURRENT_TIMESTAMP
 	WHERE empresa_id = ? AND conversacion_id = ? AND id = ?`, normalizeChatEstado(estado), activoChat, empresaID, conversacionID, id)
 	return err
 }
 
 // DeleteChatParticipante mueve a papelera (soft-delete) un participante.
 func DeleteChatParticipante(dbConn *sql.DB, empresaID, conversacionID, id int64) error {
-	now := "datetime('now','localtime')"
+	now := "CURRENT_TIMESTAMP"
 	if shouldUsePostgresCompat(dbConn) {
 		now = "CURRENT_TIMESTAMP"
 	}
@@ -1251,7 +1251,7 @@ func CreateChatMensaje(dbConn *sql.DB, payload ChatMensaje) (int64, error) {
 		observaciones,
 		fecha_creacion,
 		fecha_actualizacion
-	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, datetime('now','localtime'), ?, ?, ?, datetime('now','localtime'), datetime('now','localtime'))`,
+	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
 		payload.EmpresaID,
 		payload.ConversacionID,
 		normalizeAutorTipo(payload.AutorTipo),
@@ -1283,7 +1283,7 @@ func refreshConversacionUltimoMensaje(dbConn *sql.DB, empresaID, conversacionID 
 			AND conversacion_id = ?
 			AND COALESCE(estado, 'activo') = 'activo'
 	),
-	fecha_actualizacion = datetime('now','localtime')
+	fecha_actualizacion = CURRENT_TIMESTAMP
 	WHERE empresa_id = ? AND id = ?`, empresaID, conversacionID, empresaID, conversacionID)
 	return err
 }
@@ -1446,7 +1446,7 @@ func UpdateChatMensaje(dbConn *sql.DB, payload ChatMensaje) error {
 	SET contenido = ?,
 		tipo_mensaje = ?,
 		observaciones = ?,
-		fecha_actualizacion = datetime('now','localtime')
+		fecha_actualizacion = CURRENT_TIMESTAMP
 	WHERE id = ?
 		AND empresa_id = ?
 		AND conversacion_id = ?`,
@@ -1464,7 +1464,7 @@ func UpdateChatMensaje(dbConn *sql.DB, payload ChatMensaje) error {
 func SetChatMensajeEstado(dbConn *sql.DB, empresaID, conversacionID, id int64, estado string) error {
 	if _, err := execSQLCompat(dbConn, `UPDATE chat_tareas_mensajes
 	SET estado = ?,
-		fecha_actualizacion = datetime('now','localtime')
+		fecha_actualizacion = CURRENT_TIMESTAMP
 	WHERE empresa_id = ? AND conversacion_id = ? AND id = ?`, normalizeChatEstado(estado), empresaID, conversacionID, id); err != nil {
 		return err
 	}
@@ -1479,7 +1479,7 @@ func DeleteChatMensaje(dbConn *sql.DB, empresaID, conversacionID, id int64) erro
 	}
 	defer tx.Rollback()
 
-	now := "datetime('now','localtime')"
+	now := "CURRENT_TIMESTAMP"
 	if shouldUsePostgresCompat(dbConn) {
 		now = "CURRENT_TIMESTAMP"
 	}
@@ -1519,7 +1519,7 @@ func CreateChatAdjunto(dbConn *sql.DB, payload ChatAdjunto) (int64, error) {
 		observaciones,
 		fecha_creacion,
 		fecha_actualizacion
-	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now','localtime'), datetime('now','localtime'))`,
+	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
 		payload.EmpresaID,
 		payload.MensajeID,
 		normalizeTipoAdjunto(payload.TipoArchivo),
@@ -1624,7 +1624,7 @@ func CreateChatTarea(dbConn *sql.DB, payload ChatTarea) (int64, error) {
 		observaciones,
 		fecha_creacion,
 		fecha_actualizacion
-	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CASE WHEN ? = 'completada' THEN datetime('now','localtime') ELSE NULL END, ?, ?, ?, ?, ?, ?, ?, datetime('now','localtime'), datetime('now','localtime'))`,
+	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CASE WHEN ? = 'completada' THEN CURRENT_TIMESTAMP ELSE NULL END, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
 		payload.EmpresaID,
 		nullableInt64(payload.ConversacionID),
 		strings.TrimSpace(payload.Titulo),
@@ -1787,7 +1787,7 @@ func UpdateChatTarea(dbConn *sql.DB, payload ChatTarea) error {
 		estado_tarea = ?,
 		porcentaje_avance = ?,
 		completada_en = CASE
-			WHEN ? = 'completada' THEN COALESCE(completada_en, datetime('now','localtime'))
+			WHEN ? = 'completada' THEN COALESCE(completada_en, CURRENT_TIMESTAMP)
 			ELSE NULL
 		END,
 		nota_voz_url = ?,
@@ -1795,7 +1795,7 @@ func UpdateChatTarea(dbConn *sql.DB, payload ChatTarea) error {
 		nota_voz_tamano_bytes = ?,
 		nota_voz_duracion_segundos = ?,
 		observaciones = ?,
-		fecha_actualizacion = datetime('now','localtime')
+		fecha_actualizacion = CURRENT_TIMESTAMP
 	WHERE id = ? AND empresa_id = ?`,
 		nullableInt64(payload.ConversacionID),
 		strings.TrimSpace(payload.Titulo),
@@ -1827,7 +1827,7 @@ func SetChatTareaNotaVoz(dbConn *sql.DB, empresaID, id int64, fileURL, mimeType 
 		nota_voz_mime_type = ?,
 		nota_voz_tamano_bytes = ?,
 		nota_voz_duracion_segundos = ?,
-		fecha_actualizacion = datetime('now','localtime')
+		fecha_actualizacion = CURRENT_TIMESTAMP
 	WHERE empresa_id = ? AND id = ?`,
 		strings.TrimSpace(fileURL),
 		strings.TrimSpace(mimeType),
@@ -1843,7 +1843,7 @@ func SetChatTareaNotaVoz(dbConn *sql.DB, empresaID, id int64, fileURL, mimeType 
 func SetChatTareaEstado(dbConn *sql.DB, empresaID, id int64, estado string) error {
 	_, err := execSQLCompat(dbConn, `UPDATE chat_tareas
 	SET estado = ?,
-		fecha_actualizacion = datetime('now','localtime')
+		fecha_actualizacion = CURRENT_TIMESTAMP
 	WHERE empresa_id = ? AND id = ?`, normalizeChatEstado(estado), empresaID, id)
 	return err
 }
@@ -1858,15 +1858,15 @@ func SetChatTareaWorkflowEstado(dbConn *sql.DB, empresaID, id int64, estadoTarea
 	_, err := execSQLCompat(dbConn, `UPDATE chat_tareas
 	SET estado_tarea = ?,
 		porcentaje_avance = ?,
-		completada_en = CASE WHEN ? = 'completada' THEN datetime('now','localtime') ELSE NULL END,
-		fecha_actualizacion = datetime('now','localtime')
+		completada_en = CASE WHEN ? = 'completada' THEN CURRENT_TIMESTAMP ELSE NULL END,
+		fecha_actualizacion = CURRENT_TIMESTAMP
 	WHERE empresa_id = ? AND id = ?`, est, pct, est, empresaID, id)
 	return err
 }
 
 // DeleteChatTarea mueve a papelera (soft-delete) una tarea.
 func DeleteChatTarea(dbConn *sql.DB, empresaID, id int64) error {
-	now := "datetime('now','localtime')"
+	now := "CURRENT_TIMESTAMP"
 	if shouldUsePostgresCompat(dbConn) {
 		now = "CURRENT_TIMESTAMP"
 	}
@@ -1918,7 +1918,7 @@ func CreateChatCita(dbConn *sql.DB, payload ChatCita) (int64, error) {
 		observaciones,
 		fecha_creacion,
 		fecha_actualizacion
-	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CASE WHEN ? = 1 THEN datetime('now','localtime') ELSE NULL END, ?, ?, ?, ?, datetime('now','localtime'), datetime('now','localtime'))`,
+	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CASE WHEN ? = 1 THEN CURRENT_TIMESTAMP ELSE NULL END, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
 			payload.EmpresaID,
 			nullableInt64(payload.ConversacionID),
 			strings.TrimSpace(payload.Titulo),
@@ -2099,10 +2099,10 @@ func UpdateChatCita(dbConn *sql.DB, payload ChatCita) error {
 		notificar_minutos_antes = ?,
 		estado_cita = ?,
 		recordatorio_enviado = ?,
-		recordatorio_enviado_en = CASE WHEN ? = 1 THEN COALESCE(recordatorio_enviado_en, datetime('now','localtime')) ELSE NULL END,
+		recordatorio_enviado_en = CASE WHEN ? = 1 THEN COALESCE(recordatorio_enviado_en, CURRENT_TIMESTAMP) ELSE NULL END,
 		visibilidad = ?,
 		observaciones = ?,
-		fecha_actualizacion = datetime('now','localtime')
+		fecha_actualizacion = CURRENT_TIMESTAMP
 	WHERE id = ? AND empresa_id = ?`,
 		nullableInt64(payload.ConversacionID),
 		strings.TrimSpace(payload.Titulo),
@@ -2137,7 +2137,7 @@ func UpdateChatCita(dbConn *sql.DB, payload ChatCita) error {
 func SetChatCitaEstado(dbConn *sql.DB, empresaID, id int64, estado string) error {
 	_, err := execSQLCompat(dbConn, `UPDATE chat_tareas_citas
 	SET estado = ?,
-		fecha_actualizacion = datetime('now','localtime')
+		fecha_actualizacion = CURRENT_TIMESTAMP
 	WHERE empresa_id = ? AND id = ?`, normalizeChatEstado(estado), empresaID, id)
 	return err
 }
@@ -2149,7 +2149,7 @@ func SetChatCitaWorkflowEstado(dbConn *sql.DB, empresaID, id int64, estadoCita s
 	SET estado_cita = ?,
 		recordatorio_enviado = CASE WHEN ? = 'programada' THEN 0 ELSE recordatorio_enviado END,
 		recordatorio_enviado_en = CASE WHEN ? = 'programada' THEN NULL ELSE recordatorio_enviado_en END,
-		fecha_actualizacion = datetime('now','localtime')
+		fecha_actualizacion = CURRENT_TIMESTAMP
 	WHERE empresa_id = ? AND id = ?`, estado, estado, estado, empresaID, id)
 	return err
 }
@@ -2162,15 +2162,15 @@ func SetChatCitaReminderSent(dbConn *sql.DB, empresaID, id int64, sent bool) err
 	}
 	_, err := execSQLCompat(dbConn, `UPDATE chat_tareas_citas
 	SET recordatorio_enviado = ?,
-		recordatorio_enviado_en = CASE WHEN ? = 1 THEN datetime('now','localtime') ELSE NULL END,
-		fecha_actualizacion = datetime('now','localtime')
+		recordatorio_enviado_en = CASE WHEN ? = 1 THEN CURRENT_TIMESTAMP ELSE NULL END,
+		fecha_actualizacion = CURRENT_TIMESTAMP
 	WHERE empresa_id = ? AND id = ?`, recordatorio, recordatorio, empresaID, id)
 	return err
 }
 
 // DeleteChatCita mueve a papelera (soft-delete) una cita.
 func DeleteChatCita(dbConn *sql.DB, empresaID, id int64) error {
-	now := "datetime('now','localtime')"
+	now := "CURRENT_TIMESTAMP"
 	if shouldUsePostgresCompat(dbConn) {
 		now = "CURRENT_TIMESTAMP"
 	}
@@ -2189,7 +2189,7 @@ func RestoreChatEntity(dbConn *sql.DB, empresaID int64, tipo string, id int64) e
 	if dbConn == nil || empresaID <= 0 || id <= 0 {
 		return fmt.Errorf("parametros invalidos")
 	}
-	now := "datetime('now','localtime')"
+	now := "CURRENT_TIMESTAMP"
 	if shouldUsePostgresCompat(dbConn) {
 		now = "CURRENT_TIMESTAMP"
 	}

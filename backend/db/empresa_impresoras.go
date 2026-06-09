@@ -113,7 +113,7 @@ type EmpresaImpresoraResolucion struct {
 func EnsureEmpresaImpresorasSchema(dbConn *sql.DB) error {
 	stmts := []string{
 		`CREATE TABLE IF NOT EXISTS empresa_impresoras (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL,
 			codigo TEXT NOT NULL,
 			nombre TEXT NOT NULL,
@@ -122,8 +122,8 @@ func EnsureEmpresaImpresorasSchema(dbConn *sql.DB) error {
 			area_operativa TEXT,
 			formato_impresion TEXT DEFAULT 'pos',
 			es_predeterminada INTEGER DEFAULT 0,
-			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
-			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+			fecha_creacion TEXT DEFAULT (CURRENT_TIMESTAMP),
+			fecha_actualizacion TEXT DEFAULT (CURRENT_TIMESTAMP),
 			usuario_creador TEXT,
 			estado TEXT DEFAULT 'activo',
 			observaciones TEXT
@@ -132,13 +132,13 @@ func EnsureEmpresaImpresorasSchema(dbConn *sql.DB) error {
 		`CREATE INDEX IF NOT EXISTS ix_empresa_impresoras_empresa_estado ON empresa_impresoras(empresa_id, estado);`,
 		`CREATE INDEX IF NOT EXISTS ix_empresa_impresoras_empresa_default ON empresa_impresoras(empresa_id, es_predeterminada);`,
 		`CREATE TABLE IF NOT EXISTS empresa_impresoras_funcionalidades (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL,
 			funcionalidad TEXT NOT NULL,
 			impresora_id INTEGER NOT NULL,
 			prioridad INTEGER DEFAULT 100,
-			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
-			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+			fecha_creacion TEXT DEFAULT (CURRENT_TIMESTAMP),
+			fecha_actualizacion TEXT DEFAULT (CURRENT_TIMESTAMP),
 			usuario_creador TEXT,
 			estado TEXT DEFAULT 'activo',
 			observaciones TEXT
@@ -146,12 +146,12 @@ func EnsureEmpresaImpresorasSchema(dbConn *sql.DB) error {
 		`CREATE UNIQUE INDEX IF NOT EXISTS ux_empresa_impresoras_funcionalidad ON empresa_impresoras_funcionalidades(empresa_id, funcionalidad);`,
 		`CREATE INDEX IF NOT EXISTS ix_empresa_impresoras_funcionalidades_printer ON empresa_impresoras_funcionalidades(empresa_id, impresora_id);`,
 		`CREATE TABLE IF NOT EXISTS empresa_impresoras_productos (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL,
 			producto_id INTEGER NOT NULL,
 			impresora_id INTEGER NOT NULL,
-			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
-			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+			fecha_creacion TEXT DEFAULT (CURRENT_TIMESTAMP),
+			fecha_actualizacion TEXT DEFAULT (CURRENT_TIMESTAMP),
 			usuario_creador TEXT,
 			estado TEXT DEFAULT 'activo',
 			observaciones TEXT
@@ -159,13 +159,13 @@ func EnsureEmpresaImpresorasSchema(dbConn *sql.DB) error {
 		`CREATE UNIQUE INDEX IF NOT EXISTS ux_empresa_impresoras_producto ON empresa_impresoras_productos(empresa_id, producto_id);`,
 		`CREATE INDEX IF NOT EXISTS ix_empresa_impresoras_productos_printer ON empresa_impresoras_productos(empresa_id, impresora_id);`,
 		`CREATE TABLE IF NOT EXISTS empresa_impresoras_productos_reglas (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL,
 			alcance TEXT NOT NULL DEFAULT 'todos',
 			categoria_id INTEGER NOT NULL DEFAULT 0,
 			impresora_id INTEGER NOT NULL,
-			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
-			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+			fecha_creacion TEXT DEFAULT (CURRENT_TIMESTAMP),
+			fecha_actualizacion TEXT DEFAULT (CURRENT_TIMESTAMP),
 			usuario_creador TEXT,
 			estado TEXT DEFAULT 'activo',
 			observaciones TEXT
@@ -173,12 +173,12 @@ func EnsureEmpresaImpresorasSchema(dbConn *sql.DB) error {
 		`CREATE UNIQUE INDEX IF NOT EXISTS ux_empresa_impresoras_productos_regla ON empresa_impresoras_productos_reglas(empresa_id, alcance, categoria_id);`,
 		`CREATE INDEX IF NOT EXISTS ix_empresa_impresoras_productos_reglas_printer ON empresa_impresoras_productos_reglas(empresa_id, impresora_id);`,
 		`CREATE TABLE IF NOT EXISTS empresa_impresoras_recetas (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL,
 			receta_id INTEGER NOT NULL,
 			impresora_id INTEGER NOT NULL,
-			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
-			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+			fecha_creacion TEXT DEFAULT (CURRENT_TIMESTAMP),
+			fecha_actualizacion TEXT DEFAULT (CURRENT_TIMESTAMP),
 			usuario_creador TEXT,
 			estado TEXT DEFAULT 'activo',
 			observaciones TEXT
@@ -218,10 +218,10 @@ func EnsureEmpresaImpresorasSchema(dbConn *sql.DB) error {
 	if err := ensureColumnIfMissing(dbConn, "empresa_impresoras", "es_predeterminada", "INTEGER DEFAULT 0"); err != nil {
 		return err
 	}
-	if err := ensureColumnIfMissing(dbConn, "empresa_impresoras", "fecha_creacion", "TEXT DEFAULT (datetime('now','localtime'))"); err != nil {
+	if err := ensureColumnIfMissing(dbConn, "empresa_impresoras", "fecha_creacion", "TEXT DEFAULT (CURRENT_TIMESTAMP)"); err != nil {
 		return err
 	}
-	if err := ensureColumnIfMissing(dbConn, "empresa_impresoras", "fecha_actualizacion", "TEXT DEFAULT (datetime('now','localtime'))"); err != nil {
+	if err := ensureColumnIfMissing(dbConn, "empresa_impresoras", "fecha_actualizacion", "TEXT DEFAULT (CURRENT_TIMESTAMP)"); err != nil {
 		return err
 	}
 	if err := ensureColumnIfMissing(dbConn, "empresa_impresoras", "usuario_creador", "TEXT"); err != nil {
@@ -247,10 +247,10 @@ func EnsureEmpresaImpresorasSchema(dbConn *sql.DB) error {
 	if err := ensureColumnIfMissing(dbConn, "empresa_impresoras_funcionalidades", "prioridad", "INTEGER DEFAULT 100"); err != nil {
 		return err
 	}
-	if err := ensureColumnIfMissing(dbConn, "empresa_impresoras_funcionalidades", "fecha_creacion", "TEXT DEFAULT (datetime('now','localtime'))"); err != nil {
+	if err := ensureColumnIfMissing(dbConn, "empresa_impresoras_funcionalidades", "fecha_creacion", "TEXT DEFAULT (CURRENT_TIMESTAMP)"); err != nil {
 		return err
 	}
-	if err := ensureColumnIfMissing(dbConn, "empresa_impresoras_funcionalidades", "fecha_actualizacion", "TEXT DEFAULT (datetime('now','localtime'))"); err != nil {
+	if err := ensureColumnIfMissing(dbConn, "empresa_impresoras_funcionalidades", "fecha_actualizacion", "TEXT DEFAULT (CURRENT_TIMESTAMP)"); err != nil {
 		return err
 	}
 	if err := ensureColumnIfMissing(dbConn, "empresa_impresoras_funcionalidades", "usuario_creador", "TEXT"); err != nil {
@@ -273,10 +273,10 @@ func EnsureEmpresaImpresorasSchema(dbConn *sql.DB) error {
 	if err := ensureColumnIfMissing(dbConn, "empresa_impresoras_productos", "impresora_id", "INTEGER NOT NULL"); err != nil {
 		return err
 	}
-	if err := ensureColumnIfMissing(dbConn, "empresa_impresoras_productos", "fecha_creacion", "TEXT DEFAULT (datetime('now','localtime'))"); err != nil {
+	if err := ensureColumnIfMissing(dbConn, "empresa_impresoras_productos", "fecha_creacion", "TEXT DEFAULT (CURRENT_TIMESTAMP)"); err != nil {
 		return err
 	}
-	if err := ensureColumnIfMissing(dbConn, "empresa_impresoras_productos", "fecha_actualizacion", "TEXT DEFAULT (datetime('now','localtime'))"); err != nil {
+	if err := ensureColumnIfMissing(dbConn, "empresa_impresoras_productos", "fecha_actualizacion", "TEXT DEFAULT (CURRENT_TIMESTAMP)"); err != nil {
 		return err
 	}
 	if err := ensureColumnIfMissing(dbConn, "empresa_impresoras_productos", "usuario_creador", "TEXT"); err != nil {
@@ -302,10 +302,10 @@ func EnsureEmpresaImpresorasSchema(dbConn *sql.DB) error {
 	if err := ensureColumnIfMissing(dbConn, "empresa_impresoras_productos_reglas", "impresora_id", "INTEGER NOT NULL"); err != nil {
 		return err
 	}
-	if err := ensureColumnIfMissing(dbConn, "empresa_impresoras_productos_reglas", "fecha_creacion", "TEXT DEFAULT (datetime('now','localtime'))"); err != nil {
+	if err := ensureColumnIfMissing(dbConn, "empresa_impresoras_productos_reglas", "fecha_creacion", "TEXT DEFAULT (CURRENT_TIMESTAMP)"); err != nil {
 		return err
 	}
-	if err := ensureColumnIfMissing(dbConn, "empresa_impresoras_productos_reglas", "fecha_actualizacion", "TEXT DEFAULT (datetime('now','localtime'))"); err != nil {
+	if err := ensureColumnIfMissing(dbConn, "empresa_impresoras_productos_reglas", "fecha_actualizacion", "TEXT DEFAULT (CURRENT_TIMESTAMP)"); err != nil {
 		return err
 	}
 	if err := ensureColumnIfMissing(dbConn, "empresa_impresoras_productos_reglas", "usuario_creador", "TEXT"); err != nil {
@@ -328,10 +328,10 @@ func EnsureEmpresaImpresorasSchema(dbConn *sql.DB) error {
 	if err := ensureColumnIfMissing(dbConn, "empresa_impresoras_recetas", "impresora_id", "INTEGER NOT NULL"); err != nil {
 		return err
 	}
-	if err := ensureColumnIfMissing(dbConn, "empresa_impresoras_recetas", "fecha_creacion", "TEXT DEFAULT (datetime('now','localtime'))"); err != nil {
+	if err := ensureColumnIfMissing(dbConn, "empresa_impresoras_recetas", "fecha_creacion", "TEXT DEFAULT (CURRENT_TIMESTAMP)"); err != nil {
 		return err
 	}
-	if err := ensureColumnIfMissing(dbConn, "empresa_impresoras_recetas", "fecha_actualizacion", "TEXT DEFAULT (datetime('now','localtime'))"); err != nil {
+	if err := ensureColumnIfMissing(dbConn, "empresa_impresoras_recetas", "fecha_actualizacion", "TEXT DEFAULT (CURRENT_TIMESTAMP)"); err != nil {
 		return err
 	}
 	if err := ensureColumnIfMissing(dbConn, "empresa_impresoras_recetas", "usuario_creador", "TEXT"); err != nil {
@@ -517,7 +517,7 @@ func EnsureEmpresaPOS80Defaults(dbConn *sql.DB, empresaID int64, usuario string)
 	)
 	ON CONFLICT(empresa_id) DO UPDATE SET
 		formato_impresion = 'pos',
-		fecha_actualizacion = datetime('now','localtime'),
+		fecha_actualizacion = CURRENT_TIMESTAMP,
 		usuario_creador = excluded.usuario_creador,
 		estado = 'activo',
 		observaciones = excluded.observaciones`, empresaID, usuario); err != nil {
@@ -685,7 +685,7 @@ func ensureEmpresaImpresoraDefaultConsistency(dbConn *sql.DB, empresaID int64) e
 		if err := queryRowSQLCompat(dbConn, `SELECT id FROM empresa_impresoras WHERE empresa_id = ? AND COALESCE(NULLIF(TRIM(estado), ''), 'activo') = 'activo' AND `+empresaImpresoraDefaultWhereExpr("")+` ORDER BY id ASC LIMIT 1`, empresaID).Scan(&keepID); err != nil {
 			return err
 		}
-		if _, err := execSQLCompat(dbConn, `UPDATE empresa_impresoras SET es_predeterminada = CASE WHEN id = ? THEN 1 ELSE 0 END, fecha_actualizacion = datetime('now','localtime') WHERE empresa_id = ? AND COALESCE(NULLIF(TRIM(estado), ''), 'activo') = 'activo'`, keepID, empresaID); err != nil {
+		if _, err := execSQLCompat(dbConn, `UPDATE empresa_impresoras SET es_predeterminada = CASE WHEN id = ? THEN 1 ELSE 0 END, fecha_actualizacion = CURRENT_TIMESTAMP WHERE empresa_id = ? AND COALESCE(NULLIF(TRIM(estado), ''), 'activo') = 'activo'`, keepID, empresaID); err != nil {
 			return err
 		}
 		return nil
@@ -700,7 +700,7 @@ func ensureEmpresaImpresoraDefaultConsistency(dbConn *sql.DB, empresaID int64) e
 			}
 			return err
 		}
-		if _, err := execSQLCompat(dbConn, `UPDATE empresa_impresoras SET es_predeterminada = CASE WHEN id = ? THEN 1 ELSE 0 END, fecha_actualizacion = datetime('now','localtime') WHERE empresa_id = ?`, firstActiveID, empresaID); err != nil {
+		if _, err := execSQLCompat(dbConn, `UPDATE empresa_impresoras SET es_predeterminada = CASE WHEN id = ? THEN 1 ELSE 0 END, fecha_actualizacion = CURRENT_TIMESTAMP WHERE empresa_id = ?`, firstActiveID, empresaID); err != nil {
 			return err
 		}
 	}
@@ -743,7 +743,7 @@ func UpsertEmpresaImpresora(dbConn *sql.DB, payload EmpresaImpresora) (int64, er
 			area_operativa = ?,
 			formato_impresion = ?,
 			es_predeterminada = ?,
-			fecha_actualizacion = datetime('now','localtime'),
+			fecha_actualizacion = CURRENT_TIMESTAMP,
 			usuario_creador = ?,
 			estado = ?,
 			observaciones = ?
@@ -787,7 +787,7 @@ func UpsertEmpresaImpresora(dbConn *sql.DB, payload EmpresaImpresora) (int64, er
 			usuario_creador,
 			estado,
 			observaciones
-		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, datetime('now','localtime'), datetime('now','localtime'), ?, ?, ?)`,
+		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, ?, ?, ?)`,
 			payload.EmpresaID,
 			payload.Codigo,
 			payload.Nombre,
@@ -807,7 +807,7 @@ func UpsertEmpresaImpresora(dbConn *sql.DB, payload EmpresaImpresora) (int64, er
 	}
 
 	if payload.EsPredeterminada {
-		if _, err := execSQLCompat(dbConn, `UPDATE empresa_impresoras SET es_predeterminada = CASE WHEN id = ? THEN 1 ELSE 0 END, fecha_actualizacion = datetime('now','localtime') WHERE empresa_id = ?`, payload.ID, payload.EmpresaID); err != nil {
+		if _, err := execSQLCompat(dbConn, `UPDATE empresa_impresoras SET es_predeterminada = CASE WHEN id = ? THEN 1 ELSE 0 END, fecha_actualizacion = CURRENT_TIMESTAMP WHERE empresa_id = ?`, payload.ID, payload.EmpresaID); err != nil {
 			return 0, err
 		}
 	}
@@ -835,7 +835,7 @@ func SetEmpresaImpresoraPredeterminada(dbConn *sql.DB, empresaID, impresoraID in
 	if strings.TrimSpace(usuario) == "" {
 		usuario = "sistema"
 	}
-	if _, err := execSQLCompat(dbConn, `UPDATE empresa_impresoras SET es_predeterminada = CASE WHEN id = ? THEN 1 ELSE 0 END, fecha_actualizacion = datetime('now','localtime'), usuario_creador = ? WHERE empresa_id = ?`, impresoraID, strings.TrimSpace(usuario), empresaID); err != nil {
+	if _, err := execSQLCompat(dbConn, `UPDATE empresa_impresoras SET es_predeterminada = CASE WHEN id = ? THEN 1 ELSE 0 END, fecha_actualizacion = CURRENT_TIMESTAMP, usuario_creador = ? WHERE empresa_id = ?`, impresoraID, strings.TrimSpace(usuario), empresaID); err != nil {
 		return err
 	}
 	return ensureEmpresaImpresoraDefaultConsistency(dbConn, empresaID)
@@ -854,7 +854,7 @@ func SetEmpresaImpresoraEstado(dbConn *sql.DB, empresaID, impresoraID int64, est
 	if normEstado != "activo" {
 		esPredeterminada = 0
 	}
-	if _, err := execSQLCompat(dbConn, `UPDATE empresa_impresoras SET estado = ?, es_predeterminada = CASE WHEN ? = 1 THEN es_predeterminada ELSE 0 END, fecha_actualizacion = datetime('now','localtime'), usuario_creador = ? WHERE empresa_id = ? AND id = ?`, normEstado, esPredeterminada, strings.TrimSpace(usuario), empresaID, impresoraID); err != nil {
+	if _, err := execSQLCompat(dbConn, `UPDATE empresa_impresoras SET estado = ?, es_predeterminada = CASE WHEN ? = 1 THEN es_predeterminada ELSE 0 END, fecha_actualizacion = CURRENT_TIMESTAMP, usuario_creador = ? WHERE empresa_id = ? AND id = ?`, normEstado, esPredeterminada, strings.TrimSpace(usuario), empresaID, impresoraID); err != nil {
 		return err
 	}
 	return ensureEmpresaImpresoraDefaultConsistency(dbConn, empresaID)
@@ -959,11 +959,11 @@ func UpsertEmpresaImpresoraFuncionalidad(dbConn *sql.DB, payload EmpresaImpresor
 		usuario_creador,
 		estado,
 		observaciones
-	) VALUES (?, ?, ?, ?, datetime('now','localtime'), datetime('now','localtime'), ?, ?, ?)
+	) VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, ?, ?, ?)
 	ON CONFLICT(empresa_id, funcionalidad) DO UPDATE SET
 		impresora_id = excluded.impresora_id,
 		prioridad = excluded.prioridad,
-		fecha_actualizacion = datetime('now','localtime'),
+		fecha_actualizacion = CURRENT_TIMESTAMP,
 		usuario_creador = excluded.usuario_creador,
 		estado = excluded.estado,
 		observaciones = excluded.observaciones`,
@@ -1093,10 +1093,10 @@ func UpsertEmpresaImpresoraProducto(dbConn *sql.DB, payload EmpresaImpresoraProd
 		usuario_creador,
 		estado,
 		observaciones
-	) VALUES (?, ?, ?, datetime('now','localtime'), datetime('now','localtime'), ?, ?, ?)
+	) VALUES (?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, ?, ?, ?)
 	ON CONFLICT(empresa_id, producto_id) DO UPDATE SET
 		impresora_id = excluded.impresora_id,
-		fecha_actualizacion = datetime('now','localtime'),
+		fecha_actualizacion = CURRENT_TIMESTAMP,
 		usuario_creador = excluded.usuario_creador,
 		estado = excluded.estado,
 		observaciones = excluded.observaciones`,
@@ -1246,10 +1246,10 @@ func UpsertEmpresaImpresoraProductoRegla(dbConn *sql.DB, payload EmpresaImpresor
 		usuario_creador,
 		estado,
 		observaciones
-	) VALUES (?, ?, ?, ?, datetime('now','localtime'), datetime('now','localtime'), ?, ?, ?)
+	) VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, ?, ?, ?)
 	ON CONFLICT(empresa_id, alcance, categoria_id) DO UPDATE SET
 		impresora_id = excluded.impresora_id,
-		fecha_actualizacion = datetime('now','localtime'),
+		fecha_actualizacion = CURRENT_TIMESTAMP,
 		usuario_creador = excluded.usuario_creador,
 		estado = excluded.estado,
 		observaciones = excluded.observaciones`,
@@ -1384,10 +1384,10 @@ func UpsertEmpresaImpresoraReceta(dbConn *sql.DB, payload EmpresaImpresoraReceta
 		usuario_creador,
 		estado,
 		observaciones
-	) VALUES (?, ?, ?, datetime('now','localtime'), datetime('now','localtime'), ?, ?, ?)
+	) VALUES (?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, ?, ?, ?)
 	ON CONFLICT(empresa_id, receta_id) DO UPDATE SET
 		impresora_id = excluded.impresora_id,
-		fecha_actualizacion = datetime('now','localtime'),
+		fecha_actualizacion = CURRENT_TIMESTAMP,
 		usuario_creador = excluded.usuario_creador,
 		estado = excluded.estado,
 		observaciones = excluded.observaciones`,

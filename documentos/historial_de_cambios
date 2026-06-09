@@ -1,3 +1,39 @@
+2026-06-09: Impresion DIAN con QR obligatorio y bascula electronica en carrito.
+- Modulos afectados: Facturacion electronica Colombia, Facturas electronicas, Carrito y venta directa.
+- Frontend: `facturas_electronicas.html` genera QR local en la impresion POS/carta de factura, nota credito y nota debito electronica Colombia cuando existe CUFE/CUDE o URL DIAN; si falta la validacion, imprime advertencia `QR DIAN pendiente` sin inventar codigos.
+- Frontend: `carrito_de_compras.html` mantiene el QR DIAN al final del recibo/factura electronica Colombia aunque el check operativo este apagado, porque para documentos fiscales electronicos el QR es un requisito de representacion grafica.
+- Frontend: `carrito_de_compras.html` agrega panel de bascula electronica real por Web Serial para supermercados: conexion USB/serial, baudios, unidad leida, tara local, lectura estable y aplicacion al escaneo de productos vendidos por peso.
+- Backend: `carrito_compra_items.cantidad` conserva decimales solo cuando `unidad_medida` es de peso (`kg`, `g`, `lb`, `oz` y alias); para unidades normales sigue exigiendo cantidad natural positiva.
+- Seguridad/alcance: no se agregan dependencias ni tablas, no se toca `go.mod`, no hay simulacion de bascula, no se envian documentos DIAN desde esta mejora y todo sigue filtrado por `empresa_id` en los endpoints existentes.
+- QA: sintaxis JS de `carrito_de_compras.html` y `facturas_electronicas.html` validada con Node empaquetado; `go test ./db -run "CarritoCompraItemCantidad|CarritosCompra" -count=1` ejecutado; revision visual local confirma render de paginas sin errores de consola, con API no disponible en servidor estatico.
+
+2026-06-09: Perfil tributario Colombia por empresa.
+- Modulo afectado: Configuracion empresarial y obligaciones fiscales Colombia.
+- Backend: `empresa_configuracion_avanzada` agrega campos estructurados para `tipo_persona_fiscal`, `naturaleza_juridica`, `regimen_tributario_colombia`, `iva_responsabilidad`, `inc_responsabilidad`, `responsabilidades_rut_json` y `obligaciones_fiscales_json`, manteniendo compatibilidad con `regimen_fiscal` y `responsabilidad_tributaria`.
+- Frontend: `Configuracion > Perfil tributario Colombia` permite elegir persona natural/juridica, subcategoria, regimen ordinario/SIMPLE/especial/ingresos y patrimonio/no declarante PN, IVA, consumo y responsabilidades RUT adicionales; muestra responsabilidades y obligaciones sugeridas antes de guardar.
+- Fuentes: se modela como perfil de RUT y responsabilidades DIAN, no como un unico regimen antiguo, para diferenciar renta/RST, IVA, consumo, retenciones y facturacion electronica.
+- Seguridad/alcance: usa `/api/empresa/configuracion_avanzada` existente, conserva aislamiento por `empresa_id`, no guarda secretos, no toca `go.mod` ni agrega dependencias.
+
+2026-06-09: Reparacion de iniciar_servidor para PostgreSQL local y tunel VPS.
+- Modulo afectado: operacion local y scripts de arranque.
+- `scripts/iniciar_servidor.ps1` conserva PostgreSQL como unica base de datos, deriva DSN locales desde `deploy/.env.platform` cuando faltan variables explicitas y valida que el endpoint PostgreSQL realmente este escuchando antes de levantar el backend.
+- Se agrega la opcion explicita `-UseVpsTunnel` para pruebas locales contra PostgreSQL del VPS por tunel SSH, cargando host, usuario, puerto y host key desde `scripts/pcs_deployment.local.ps1` sin imprimir valores sensibles.
+- Cuando el tunel esta activo y no hay DSN explicitos, el script intenta leer por SSH el `deploy/.env.platform` remoto para usar las credenciales PostgreSQL reales del VPS solo en memoria del proceso.
+- El tunel VPS resuelve automaticamente el contenedor Docker `pcs-postgres` como destino remoto cuando no se define `DB_VPS_REMOTE_HOST`, evitando apuntar al PostgreSQL del host por error.
+- Backend: se corrige la actualizacion de licencia interna Powerful Control System para no mezclar texto y timestamp en `fecha_inicio` sobre PostgreSQL real.
+- Backend/operacion local: `PCS_SKIP_CORPORATE_EMAIL_STARTUP_SYNC=1` permite omitir la sincronizacion masiva inicial de emails corporativos; `iniciar_servidor.ps1` la activa por defecto para pruebas locales para que el HTTP no quede bloqueado por tareas accesorias.
+- Seguridad/alcance: el script no reintroduce SQLite, no cambia `go.mod`, no persiste secretos nuevos y mantiene el flujo local separado; para pruebas destructivas se recomienda una base staging/clonada en PostgreSQL.
+- Validacion pendiente: ejecutar el arranque real con tunel o con PostgreSQL local disponible.
+
+2026-06-09: Limpieza PostgreSQL-only sin SQLite activo
+- Modulos afectados: backend DB, runtime PostgreSQL, portabilidad Docker y documentacion operativa.
+- Backend: se retiran los ultimos DDL/SQL activos con `AUTOINCREMENT`, `datetime(...)` y `julianday(...)`; el runtime usa `BIGSERIAL`, `CURRENT_TIMESTAMP` y helpers internos `pcs_ts`, `pcs_date` y `pcs_julian_day` sobre PostgreSQL.
+- Backend: `EnsurePostgresRuntimeCompat` deja de crear funciones con nombres de otros motores y conserva solo helpers internos PCS; el rewriter del driver ya no transforma autoincrementos legacy.
+- Operacion local: se eliminaron perfiles temporales de navegador dentro del workspace que contenian archivos `.db`; no eran datos PCS ni informacion productiva.
+- Portabilidad: `.dockerignore` deja de listar extensiones `.sqlite/.sqlite3`; sigue excluyendo `.db` genericos para evitar datos runtime en paquetes.
+- Alcance: no se agregan dependencias, no se toca `go.mod`, no se cambian permisos ni aislamiento por `empresa_id`; las menciones restantes a SQLite son reglas de gobernanza o historial cerrado para impedir regresiones.
+- Validacion: barrido con `rg` confirma ausencia de archivos `.db/.sqlite/.sqlite3` fuera de `.git/node_modules/vendor/tmp` y ausencia de imports/drivers SQLite en backend; queda pendiente `go test` tras revisar compilacion completa.
+
 2026-06-08: Modulo OCR documental sin IA.
 - Modulos afectados: OCR empresarial, configuracion super administrador, permisos/licencias y despliegue Docker VPS.
 - Backend: `backend/db/ocr.go` crea `empresa_ocr_documentos` por `empresa_id`; `backend/handlers/ocr.go` expone `/api/empresa/ocr` para subir imagenes/PDF, ejecutar Tesseract CLI real, convertir PDF con `pdftoppm`, guardar historial y devolver texto/campos sugeridos sin usar IA.
@@ -1832,7 +1868,7 @@
 2026-05-18: Fix guardado formato monetario y numerico
 - Modulos afectados: `configuracion_empresa`, `facturacion_configuracion`, `configuracion_operativa`, `permisos`.
 - Backend: `backend/db/empresa_configuracion_avanzada.go` agrega normalizacion de columnas booleanas legacy a enteros `0/1` para `empresa_configuracion_avanzada` antes de leer/guardar configuracion.
-- Backend: `UpsertEmpresaConfiguracionAvanzada` usa `sqlNowExpr()` para `fecha_creacion` y `fecha_actualizacion`, evitando SQL runtime con `datetime('now','localtime')` en PostgreSQL.
+- Backend: `UpsertEmpresaConfiguracionAvanzada` usa `sqlNowExpr()` para `fecha_creacion` y `fecha_actualizacion`, evitando SQL runtime con `CURRENT_TIMESTAMP` en PostgreSQL.
 - Backend: `backend/db/configuracion_operativa.go` deja de usar `LastInsertId()` al guardar configuracion operativa, reglas por rol, politicas e historial; ahora cada escritura usa `RETURNING id` con `QueryRowCompat`.
 - QA: `backend/db/empresa_configuracion_avanzada_postgres_test.go` cubre la regresion del SQL runtime y la migracion ligera de flags legacy.
 - QA: `backend/db/configuracion_operativa_postgres_test.go` cubre la regresion del historial/rollback operativo en PostgreSQL.
@@ -2046,7 +2082,7 @@
 
 2026-05-15: Asistencia de empleados reparada y profesionalizada
 - Modulos afectados: `asistencia_empleados`, `personas_activos`, `nomina`.
-- Causa tecnica: el runtime de asistencia aun usaba `dbConn.QueryRow/Query/Exec` con placeholders `?` y `datetime('now','localtime')`, lo que puede fallar en PostgreSQL al guardar configuracion, crear asistencia, marcar entrada/salida, activar/desactivar o eliminar.
+- Causa tecnica: el runtime de asistencia aun usaba `dbConn.QueryRow/Query/Exec` con placeholders `?` y `CURRENT_TIMESTAMP`, lo que puede fallar en PostgreSQL al guardar configuracion, crear asistencia, marcar entrada/salida, activar/desactivar o eliminar.
 - Backend: `backend/db/asistencia_empleados.go` migra las operaciones runtime a `queryRowSQLCompat`, `querySQLCompat`, `execSQLCompat`, `insertSQLCompat` y `sqlNowExpr()`. Tambien corrige `marcar_entrada` para clasificar automaticamente como `presente` o `tarde` cuando no llega estado explicito.
 - Frontend: `web/administrar_empresa/asistencia_empleados.html` hace que `Agregar registro` y `Editar` cambien a la seccion `Registro`; reemplaza prompts nativos por botones `Entrada ahora` y `Salida ahora`; compacta la celda de acciones para que los botones se vean completos.
 - Resguardo: `backend/db/asistencia_empleados_postgres_test.go` protege el runtime de asistencia contra regresiones SQLite en PostgreSQL.
@@ -2070,7 +2106,7 @@
 
 2026-05-15: Nuevo credito compatible con PostgreSQL
 - Modulos afectados: `creditos`, `cartera`, `finanzas`.
-- Causa tecnica: el alta de credito usaba SQL transaccional con `tx.Exec` directo, placeholders `?` y `datetime('now','localtime')`; en PostgreSQL esto podia fallar con 500 al presionar `Nuevo credito`, especialmente al generar cuotas.
+- Causa tecnica: el alta de credito usaba SQL transaccional con `tx.Exec` directo, placeholders `?` y `CURRENT_TIMESTAMP`; en PostgreSQL esto podia fallar con 500 al presionar `Nuevo credito`, especialmente al generar cuotas.
 - Backend: `backend/db/creditos.go` cambia el insert de `empresa_creditos`, la actualizacion de codigo automatico y el insert de `empresa_creditos_cuotas` para usar `insertTxSQLCompat`/`execTxSQLCompat` y `sqlNowExpr()`.
 - Resguardo: `backend/db/creditos_postgres_test.go` protege el flujo de creacion y generacion de cuotas contra regresiones SQLite en runtime PostgreSQL.
 - Validacion: `go test ./db -run "TestCreateEmpresaCreditoUsesPostgresCompatibleWrites|TestCreditoGenerateCuotasTxUsesPostgresCompatibleWrites|TestCreateBodegaUsaTimestampPostgres|TestShouldRefreshEmpresaCarritosSchemaForMissingObjects" -count=1`, `go test ./db ./handlers -count=1` y `git diff --check`.

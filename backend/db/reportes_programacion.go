@@ -15,7 +15,7 @@ func EnsureEmpresaReportesProgramacionSchema(dbConn *sql.DB) error {
 	isPostgres := isPostgresDialect()
 
 	createProgramaciones := `CREATE TABLE IF NOT EXISTS empresa_reportes_programaciones (
-		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		id BIGSERIAL PRIMARY KEY,
 		empresa_id INTEGER NOT NULL,
 		nombre TEXT NOT NULL,
 		dataset_key TEXT NOT NULL,
@@ -33,8 +33,8 @@ func EnsureEmpresaReportesProgramacionSchema(dbConn *sql.DB) error {
 		activa INTEGER DEFAULT 1,
 		validacion_consistencia INTEGER DEFAULT 1,
 		hash_ultima_ejecucion TEXT,
-		fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
-		fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+		fecha_creacion TEXT DEFAULT (CURRENT_TIMESTAMP),
+		fecha_actualizacion TEXT DEFAULT (CURRENT_TIMESTAMP),
 		usuario_creador TEXT,
 		estado TEXT DEFAULT 'activo',
 		observaciones TEXT
@@ -71,7 +71,7 @@ func EnsureEmpresaReportesProgramacionSchema(dbConn *sql.DB) error {
 	}
 
 	createPlantillas := `CREATE TABLE IF NOT EXISTS empresa_reportes_plantillas (
-		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		id BIGSERIAL PRIMARY KEY,
 		empresa_id INTEGER NOT NULL,
 		codigo TEXT NOT NULL,
 		nombre TEXT NOT NULL,
@@ -82,8 +82,8 @@ func EnsureEmpresaReportesProgramacionSchema(dbConn *sql.DB) error {
 		config_json TEXT DEFAULT '{}',
 		vigente INTEGER DEFAULT 1,
 		hash_contenido TEXT,
-		fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
-		fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+		fecha_creacion TEXT DEFAULT (CURRENT_TIMESTAMP),
+		fecha_actualizacion TEXT DEFAULT (CURRENT_TIMESTAMP),
 		usuario_creador TEXT,
 		estado TEXT DEFAULT 'activo',
 		observaciones TEXT
@@ -113,7 +113,7 @@ func EnsureEmpresaReportesProgramacionSchema(dbConn *sql.DB) error {
 	}
 
 	createEjecuciones := `CREATE TABLE IF NOT EXISTS empresa_reportes_ejecuciones (
-		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		id BIGSERIAL PRIMARY KEY,
 		empresa_id INTEGER NOT NULL,
 		programacion_id INTEGER,
 		dataset_key TEXT NOT NULL,
@@ -121,13 +121,13 @@ func EnsureEmpresaReportesProgramacionSchema(dbConn *sql.DB) error {
 		formato_principal TEXT DEFAULT 'json',
 		formatos_json TEXT DEFAULT '["json"]',
 		estado_ejecucion TEXT DEFAULT 'completado',
-		ejecutado_en TEXT DEFAULT (datetime('now','localtime')),
+		ejecutado_en TEXT DEFAULT (CURRENT_TIMESTAMP),
 		consistencia_estado TEXT DEFAULT 'pendiente',
 		consistencia_detalle_json TEXT,
 		salida_resumen_json TEXT,
 		error_detalle TEXT,
-		fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
-		fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+		fecha_creacion TEXT DEFAULT (CURRENT_TIMESTAMP),
+		fecha_actualizacion TEXT DEFAULT (CURRENT_TIMESTAMP),
 		usuario_creador TEXT,
 		estado TEXT DEFAULT 'activo',
 		observaciones TEXT
@@ -200,7 +200,7 @@ func EnsureEmpresaReportesProgramacionSchema(dbConn *sql.DB) error {
 	if err := ensureColumnIfMissing(dbConn, "empresa_reportes_programaciones", "hash_ultima_ejecucion", "TEXT"); err != nil {
 		return fmt.Errorf("ensure empresa_reportes_programaciones.hash_ultima_ejecucion: %w", err)
 	}
-	if err := ensureColumnIfMissing(dbConn, "empresa_reportes_programaciones", "fecha_actualizacion", "TEXT DEFAULT (datetime('now','localtime'))"); err != nil {
+	if err := ensureColumnIfMissing(dbConn, "empresa_reportes_programaciones", "fecha_actualizacion", "TEXT DEFAULT (CURRENT_TIMESTAMP)"); err != nil {
 		return fmt.Errorf("ensure empresa_reportes_programaciones.fecha_actualizacion: %w", err)
 	}
 	if err := ensureColumnIfMissing(dbConn, "empresa_reportes_programaciones", "usuario_creador", "TEXT"); err != nil {
@@ -240,7 +240,7 @@ func EnsureEmpresaReportesProgramacionSchema(dbConn *sql.DB) error {
 	if err := ensureColumnIfMissing(dbConn, "empresa_reportes_plantillas", "hash_contenido", "TEXT"); err != nil {
 		return fmt.Errorf("ensure empresa_reportes_plantillas.hash_contenido: %w", err)
 	}
-	if err := ensureColumnIfMissing(dbConn, "empresa_reportes_plantillas", "fecha_actualizacion", "TEXT DEFAULT (datetime('now','localtime'))"); err != nil {
+	if err := ensureColumnIfMissing(dbConn, "empresa_reportes_plantillas", "fecha_actualizacion", "TEXT DEFAULT (CURRENT_TIMESTAMP)"); err != nil {
 		return fmt.Errorf("ensure empresa_reportes_plantillas.fecha_actualizacion: %w", err)
 	}
 	if err := ensureColumnIfMissing(dbConn, "empresa_reportes_plantillas", "usuario_creador", "TEXT"); err != nil {
@@ -274,7 +274,7 @@ func EnsureEmpresaReportesProgramacionSchema(dbConn *sql.DB) error {
 	if err := ensureColumnIfMissing(dbConn, "empresa_reportes_ejecuciones", "estado_ejecucion", "TEXT DEFAULT 'completado'"); err != nil {
 		return fmt.Errorf("ensure empresa_reportes_ejecuciones.estado_ejecucion: %w", err)
 	}
-	if err := ensureColumnIfMissing(dbConn, "empresa_reportes_ejecuciones", "ejecutado_en", "TEXT DEFAULT (datetime('now','localtime'))"); err != nil {
+	if err := ensureColumnIfMissing(dbConn, "empresa_reportes_ejecuciones", "ejecutado_en", "TEXT DEFAULT (CURRENT_TIMESTAMP)"); err != nil {
 		return fmt.Errorf("ensure empresa_reportes_ejecuciones.ejecutado_en: %w", err)
 	}
 	if err := ensureColumnIfMissing(dbConn, "empresa_reportes_ejecuciones", "consistencia_estado", "TEXT DEFAULT 'pendiente'"); err != nil {
@@ -289,7 +289,7 @@ func EnsureEmpresaReportesProgramacionSchema(dbConn *sql.DB) error {
 	if err := ensureColumnIfMissing(dbConn, "empresa_reportes_ejecuciones", "error_detalle", "TEXT"); err != nil {
 		return fmt.Errorf("ensure empresa_reportes_ejecuciones.error_detalle: %w", err)
 	}
-	if err := ensureColumnIfMissing(dbConn, "empresa_reportes_ejecuciones", "fecha_actualizacion", "TEXT DEFAULT (datetime('now','localtime'))"); err != nil {
+	if err := ensureColumnIfMissing(dbConn, "empresa_reportes_ejecuciones", "fecha_actualizacion", "TEXT DEFAULT (CURRENT_TIMESTAMP)"); err != nil {
 		return fmt.Errorf("ensure empresa_reportes_ejecuciones.fecha_actualizacion: %w", err)
 	}
 	if err := ensureColumnIfMissing(dbConn, "empresa_reportes_ejecuciones", "usuario_creador", "TEXT"); err != nil {

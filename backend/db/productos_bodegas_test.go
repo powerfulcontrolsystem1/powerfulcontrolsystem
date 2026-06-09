@@ -21,8 +21,8 @@ func TestCreateBodegaUsaTimestampPostgres(t *testing.T) {
 		t.Fatal("no se encontro limite de CreateBodega")
 	}
 	body := src[start : start+end]
-	if strings.Contains(body, "datetime(") {
-		t.Fatalf("CreateBodega no debe usar datetime() en runtime PostgreSQL: %s", body)
+	if strings.Contains(body, "pcs_ts(") {
+		t.Fatalf("CreateBodega no debe usar pcs_ts() en runtime PostgreSQL: %s", body)
 	}
 	if !strings.Contains(body, "sqlNowExpr()") {
 		t.Fatalf("CreateBodega debe usar sqlNowExpr() para fecha_creacion/fecha_actualizacion: %s", body)

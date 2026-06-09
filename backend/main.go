@@ -793,7 +793,9 @@ func main() {
 			log.Printf("warning: no se pudo registrar configuracion Mailu desde entorno: %v", err)
 		}
 		startupTrace("after_empresa_email_corporativo_env")
-		if created, err := handlers.EnsureCorporateEmailRowsForExistingCompanies(dbSuper, dbEmpresas, "sistema.arranque"); err != nil {
+		if strings.TrimSpace(os.Getenv("PCS_SKIP_CORPORATE_EMAIL_STARTUP_SYNC")) == "1" {
+			log.Printf("INFO: sincronizacion inicial de emails corporativos omitida por PCS_SKIP_CORPORATE_EMAIL_STARTUP_SYNC=1")
+		} else if created, err := handlers.EnsureCorporateEmailRowsForExistingCompanies(dbSuper, dbEmpresas, "sistema.arranque"); err != nil {
 			log.Printf("warning: no se pudieron generar emails corporativos para empresas existentes: %v", err)
 		} else if created > 0 {
 			log.Printf("INFO: emails corporativos generados para empresas existentes: %d", created)

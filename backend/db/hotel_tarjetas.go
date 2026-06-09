@@ -57,7 +57,7 @@ type HotelTarjetaValidacion struct {
 func EnsureHotelTarjetasAccesoSchema(dbConn *sql.DB) error {
 	stmts := []string{
 		`CREATE TABLE IF NOT EXISTS hotel_tarjetas_acceso (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL,
 			estacion_id INTEGER NOT NULL,
 			estacion_codigo TEXT,
@@ -72,7 +72,7 @@ func EnsureHotelTarjetasAccesoSchema(dbConn *sql.DB) error {
 			max_usos INTEGER DEFAULT 0,
 			usos_realizados INTEGER DEFAULT 0,
 			ultimo_uso_en TEXT,
-			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
+			fecha_creacion TEXT DEFAULT (CURRENT_TIMESTAMP),
 			fecha_actualizacion TEXT,
 			usuario_creador TEXT,
 			estado TEXT DEFAULT 'activo',
@@ -82,14 +82,14 @@ func EnsureHotelTarjetasAccesoSchema(dbConn *sql.DB) error {
 		`CREATE INDEX IF NOT EXISTS ix_hotel_tarjetas_lookup ON hotel_tarjetas_acceso(empresa_id, estacion_id, estado);`,
 		`CREATE INDEX IF NOT EXISTS ix_hotel_tarjetas_reserva ON hotel_tarjetas_acceso(empresa_id, reserva_id);`,
 		`CREATE TABLE IF NOT EXISTS hotel_tarjetas_acceso_eventos (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL,
 			tarjeta_id INTEGER,
 			estacion_id INTEGER,
 			device_id TEXT,
 			resultado TEXT NOT NULL,
 			motivo TEXT,
-			fecha_evento TEXT DEFAULT (datetime('now','localtime')),
+			fecha_evento TEXT DEFAULT (CURRENT_TIMESTAMP),
 			metadata_json TEXT
 		);`,
 		`CREATE INDEX IF NOT EXISTS ix_hotel_tarjetas_eventos_empresa ON hotel_tarjetas_acceso_eventos(empresa_id, fecha_evento);`,
@@ -220,7 +220,7 @@ func CreateHotelTarjetaAcceso(dbConn *sql.DB, payload HotelTarjetaAcceso) (int64
 		card_uid_hash, access_code_hash, huesped_nombre, reserva_id, vigente_desde,
 		vigente_hasta, max_usos, usos_realizados, usuario_creador, estado, observaciones,
 		fecha_creacion, fecha_actualizacion
-	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, NULLIF(?,0), ?, ?, ?, 0, ?, ?, ?, datetime('now','localtime'), datetime('now','localtime'))`,
+	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, NULLIF(?,0), ?, ?, ?, 0, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
 		payload.EmpresaID, payload.EstacionID, payload.EstacionCodigo, payload.EstacionNombre, payload.CodigoTarjeta,
 		hashHotelTarjetaSecret(payload.CardUID), hashHotelTarjetaSecret(accessCode), payload.HuespedNombre, payload.ReservaID,
 		payload.VigenteDesde, payload.VigenteHasta, payload.MaxUsos, payload.UsuarioCreador, payload.Estado, payload.Observaciones,
@@ -241,7 +241,7 @@ func UpdateHotelTarjetaAcceso(dbConn *sql.DB, payload HotelTarjetaAcceso) error 
 		estacion_id = ?, estacion_codigo = ?, estacion_nombre = ?, codigo_tarjeta = ?,
 		huesped_nombre = ?, reserva_id = NULLIF(?,0), vigente_desde = ?, vigente_hasta = ?,
 		max_usos = ?, usuario_creador = ?, estado = ?, observaciones = ?,
-		fecha_actualizacion = datetime('now','localtime')`
+		fecha_actualizacion = CURRENT_TIMESTAMP`
 	args := []interface{}{payload.EstacionID, payload.EstacionCodigo, payload.EstacionNombre, payload.CodigoTarjeta, payload.HuespedNombre, payload.ReservaID, payload.VigenteDesde, payload.VigenteHasta, payload.MaxUsos, payload.UsuarioCreador, payload.Estado, payload.Observaciones}
 	if cardHash != "" {
 		query += `, card_uid_hash = ?`
@@ -326,7 +326,7 @@ func GetHotelTarjetaAccesoByID(dbConn *sql.DB, empresaID, id int64) (*HotelTarje
 }
 
 func SetHotelTarjetaAccesoEstado(dbConn *sql.DB, empresaID, id int64, estado string) error {
-	res, err := dbConn.Exec(`UPDATE hotel_tarjetas_acceso SET estado = ?, fecha_actualizacion = datetime('now','localtime') WHERE empresa_id = ? AND id = ?`, normalizeHotelTarjetaEstado(estado), empresaID, id)
+	res, err := dbConn.Exec(`UPDATE hotel_tarjetas_acceso SET estado = ?, fecha_actualizacion = CURRENT_TIMESTAMP WHERE empresa_id = ? AND id = ?`, normalizeHotelTarjetaEstado(estado), empresaID, id)
 	if err != nil {
 		return err
 	}
@@ -387,7 +387,7 @@ func ValidateHotelTarjetaAcceso(dbConn *sql.DB, empresaID, estacionID int64, car
 	if !permitido {
 		resultado = "denegado"
 	} else {
-		_, _ = dbConn.Exec(`UPDATE hotel_tarjetas_acceso SET usos_realizados = COALESCE(usos_realizados,0) + 1, ultimo_uso_en = datetime('now','localtime'), fecha_actualizacion = datetime('now','localtime') WHERE empresa_id = ? AND id = ?`, empresaID, item.ID)
+		_, _ = dbConn.Exec(`UPDATE hotel_tarjetas_acceso SET usos_realizados = COALESCE(usos_realizados,0) + 1, ultimo_uso_en = CURRENT_TIMESTAMP, fecha_actualizacion = CURRENT_TIMESTAMP WHERE empresa_id = ? AND id = ?`, empresaID, item.ID)
 		item.UsosRealizados++
 	}
 	eventID, _ := insertHotelTarjetaEvento(dbConn, empresaID, item.ID, item.EstacionID, deviceID, resultado, motivo)
@@ -399,5 +399,5 @@ func ValidateHotelTarjetaAcceso(dbConn *sql.DB, empresaID, estacionID int64, car
 }
 
 func insertHotelTarjetaEvento(dbConn *sql.DB, empresaID, tarjetaID, estacionID int64, deviceID, resultado, motivo string) (int64, error) {
-	return insertSQLCompat(dbConn, `INSERT INTO hotel_tarjetas_acceso_eventos (empresa_id, tarjeta_id, estacion_id, device_id, resultado, motivo, metadata_json, fecha_evento) VALUES (?, NULLIF(?,0), NULLIF(?,0), ?, ?, ?, '{}', datetime('now','localtime'))`, empresaID, tarjetaID, estacionID, strings.TrimSpace(deviceID), resultado, motivo)
+	return insertSQLCompat(dbConn, `INSERT INTO hotel_tarjetas_acceso_eventos (empresa_id, tarjeta_id, estacion_id, device_id, resultado, motivo, metadata_json, fecha_evento) VALUES (?, NULLIF(?,0), NULLIF(?,0), ?, ?, ?, '{}', CURRENT_TIMESTAMP)`, empresaID, tarjetaID, estacionID, strings.TrimSpace(deviceID), resultado, motivo)
 }

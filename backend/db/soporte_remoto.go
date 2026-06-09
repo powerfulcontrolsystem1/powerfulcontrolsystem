@@ -1,4 +1,4 @@
-﻿package db
+package db
 
 import (
 	"crypto/rand"
@@ -49,27 +49,27 @@ type EmpresaSoporteRemotoConfig struct {
 
 // EmpresaSoporteRemotoDispositivo representa un equipo remoto registrado por empresa.
 type EmpresaSoporteRemotoDispositivo struct {
-	ID                 int64  `json:"id"`
-	EmpresaID          int64  `json:"empresa_id"`
-	CodigoDispositivo  string `json:"codigo_dispositivo"`
-	NombreEquipo       string `json:"nombre_equipo"`
-	AliasOperativo     string `json:"alias_operativo,omitempty"`
-	Ubicacion          string `json:"ubicacion,omitempty"`
-	SistemaOperativo   string `json:"sistema_operativo,omitempty"`
-	AgenteVersion      string `json:"agente_version,omitempty"`
-	StreamURL          string `json:"stream_url"`
-	RustDeskDeviceID   string `json:"rustdesk_device_id,omitempty"`
-	CarpetaTransferencia string `json:"carpeta_transferencia,omitempty"`
-	AccesoPublicoHabilitado bool `json:"acceso_publico_habilitado"`
-	EstadoConexion     string `json:"estado_conexion"`
-	UltimoHeartbeat    string `json:"ultimo_heartbeat,omitempty"`
-	AccesoPINHash      string `json:"-"`
-	RustDeskPasswordEnc string `json:"-"`
-	FechaCreacion      string `json:"fecha_creacion,omitempty"`
-	FechaActualizacion string `json:"fecha_actualizacion,omitempty"`
-	UsuarioCreador     string `json:"usuario_creador,omitempty"`
-	Estado             string `json:"estado,omitempty"`
-	Observaciones      string `json:"observaciones,omitempty"`
+	ID                      int64  `json:"id"`
+	EmpresaID               int64  `json:"empresa_id"`
+	CodigoDispositivo       string `json:"codigo_dispositivo"`
+	NombreEquipo            string `json:"nombre_equipo"`
+	AliasOperativo          string `json:"alias_operativo,omitempty"`
+	Ubicacion               string `json:"ubicacion,omitempty"`
+	SistemaOperativo        string `json:"sistema_operativo,omitempty"`
+	AgenteVersion           string `json:"agente_version,omitempty"`
+	StreamURL               string `json:"stream_url"`
+	RustDeskDeviceID        string `json:"rustdesk_device_id,omitempty"`
+	CarpetaTransferencia    string `json:"carpeta_transferencia,omitempty"`
+	AccesoPublicoHabilitado bool   `json:"acceso_publico_habilitado"`
+	EstadoConexion          string `json:"estado_conexion"`
+	UltimoHeartbeat         string `json:"ultimo_heartbeat,omitempty"`
+	AccesoPINHash           string `json:"-"`
+	RustDeskPasswordEnc     string `json:"-"`
+	FechaCreacion           string `json:"fecha_creacion,omitempty"`
+	FechaActualizacion      string `json:"fecha_actualizacion,omitempty"`
+	UsuarioCreador          string `json:"usuario_creador,omitempty"`
+	Estado                  string `json:"estado,omitempty"`
+	Observaciones           string `json:"observaciones,omitempty"`
 }
 
 // EmpresaSoporteRemotoSession representa una sesion de visualizacion remota por empresa.
@@ -120,23 +120,23 @@ type EmpresaSoporteRemotoSessionFilter struct {
 }
 
 type EmpresaSoporteRemotoUso struct {
-	EmpresaID             int64  `json:"empresa_id"`
-	MesReferencia         string `json:"mes_referencia"`
-	DiaReferencia         string `json:"dia_referencia"`
-	DispositivosActivos   int64  `json:"dispositivos_activos"`
-	DispositivosOnline    int64  `json:"dispositivos_online"`
-	SesionesMes           int64  `json:"sesiones_mes"`
-	IntentosBloqueadosMes int64  `json:"intentos_bloqueados_mes"`
-	MinutosConsumidosMes  int64  `json:"minutos_consumidos_mes"`
-	MinutosConsumidosDiaRustDesk int64 `json:"minutos_consumidos_dia_rustdesk"`
-	MaxConexionesMes      int64  `json:"max_conexiones_mes"`
-	MaxMinutosMes         int64  `json:"max_minutos_mes"`
-	MaxMinutosDiaRustDesk int64  `json:"max_minutos_dia_rustdesk"`
-	MinutosDisponiblesDiaRustDesk int64 `json:"minutos_disponibles_dia_rustdesk"`
-	MaxDispositivos       int64  `json:"max_dispositivos"`
-	PuedeCrearDispositivo bool   `json:"puede_crear_dispositivo"`
-	PuedeCrearSesion      bool   `json:"puede_crear_sesion"`
-	BloqueoMotivo         string `json:"bloqueo_motivo,omitempty"`
+	EmpresaID                     int64  `json:"empresa_id"`
+	MesReferencia                 string `json:"mes_referencia"`
+	DiaReferencia                 string `json:"dia_referencia"`
+	DispositivosActivos           int64  `json:"dispositivos_activos"`
+	DispositivosOnline            int64  `json:"dispositivos_online"`
+	SesionesMes                   int64  `json:"sesiones_mes"`
+	IntentosBloqueadosMes         int64  `json:"intentos_bloqueados_mes"`
+	MinutosConsumidosMes          int64  `json:"minutos_consumidos_mes"`
+	MinutosConsumidosDiaRustDesk  int64  `json:"minutos_consumidos_dia_rustdesk"`
+	MaxConexionesMes              int64  `json:"max_conexiones_mes"`
+	MaxMinutosMes                 int64  `json:"max_minutos_mes"`
+	MaxMinutosDiaRustDesk         int64  `json:"max_minutos_dia_rustdesk"`
+	MinutosDisponiblesDiaRustDesk int64  `json:"minutos_disponibles_dia_rustdesk"`
+	MaxDispositivos               int64  `json:"max_dispositivos"`
+	PuedeCrearDispositivo         bool   `json:"puede_crear_dispositivo"`
+	PuedeCrearSesion              bool   `json:"puede_crear_sesion"`
+	BloqueoMotivo                 string `json:"bloqueo_motivo,omitempty"`
 }
 
 func soporteRemotoNormalizeEstado(raw string) string {
@@ -391,7 +391,7 @@ func EnsureEmpresaSoporteRemotoSchema(dbConn *sql.DB) error {
 
 	stmts := []string{
 		`CREATE TABLE IF NOT EXISTS empresa_soporte_remoto_configuracion (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL UNIQUE,
 			habilitado INTEGER DEFAULT 1,
 			proveedor_preferido TEXT DEFAULT 'novnc',
@@ -413,8 +413,8 @@ func EnsureEmpresaSoporteRemotoSchema(dbConn *sql.DB) error {
 			servidor_mac_url TEXT,
 			carpeta_transferencia TEXT,
 			instrucciones_publicas TEXT,
-			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
-			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+			fecha_creacion TEXT DEFAULT (CURRENT_TIMESTAMP),
+			fecha_actualizacion TEXT DEFAULT (CURRENT_TIMESTAMP),
 			usuario_creador TEXT,
 			estado TEXT DEFAULT 'activo',
 			observaciones TEXT
@@ -422,7 +422,7 @@ func EnsureEmpresaSoporteRemotoSchema(dbConn *sql.DB) error {
 		`CREATE INDEX IF NOT EXISTS ix_empresa_soporte_remoto_configuracion_estado
 		ON empresa_soporte_remoto_configuracion(empresa_id, estado);`,
 		`CREATE TABLE IF NOT EXISTS empresa_soporte_remoto_dispositivos (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL,
 			codigo_dispositivo TEXT NOT NULL,
 			nombre_equipo TEXT NOT NULL,
@@ -438,8 +438,8 @@ func EnsureEmpresaSoporteRemotoSchema(dbConn *sql.DB) error {
 			estado_conexion TEXT DEFAULT 'offline',
 			ultimo_heartbeat TEXT,
 			acceso_pin_hash TEXT,
-			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
-			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+			fecha_creacion TEXT DEFAULT (CURRENT_TIMESTAMP),
+			fecha_actualizacion TEXT DEFAULT (CURRENT_TIMESTAMP),
 			usuario_creador TEXT,
 			estado TEXT DEFAULT 'activo',
 			observaciones TEXT
@@ -449,7 +449,7 @@ func EnsureEmpresaSoporteRemotoSchema(dbConn *sql.DB) error {
 		`CREATE INDEX IF NOT EXISTS ix_empresa_soporte_remoto_dispositivos_lookup
 		ON empresa_soporte_remoto_dispositivos(empresa_id, estado, estado_conexion, id DESC);`,
 		`CREATE TABLE IF NOT EXISTS empresa_soporte_remoto_sesiones (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL,
 			dispositivo_id INTEGER NOT NULL,
 			codigo_sesion TEXT NOT NULL,
@@ -466,8 +466,8 @@ func EnsureEmpresaSoporteRemotoSchema(dbConn *sql.DB) error {
 			iniciada_en TEXT,
 			expira_en TEXT,
 			finalizada_en TEXT,
-			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
-			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+			fecha_creacion TEXT DEFAULT (CURRENT_TIMESTAMP),
+			fecha_actualizacion TEXT DEFAULT (CURRENT_TIMESTAMP),
 			usuario_creador TEXT,
 			estado TEXT DEFAULT 'activo',
 			observaciones TEXT
@@ -747,7 +747,7 @@ func UpsertEmpresaSoporteRemotoConfig(dbConn *sql.DB, cfg EmpresaSoporteRemotoCo
 				usuario_creador = ?,
 				estado = ?,
 				observaciones = ?,
-				fecha_actualizacion = datetime('now','localtime')
+				fecha_actualizacion = CURRENT_TIMESTAMP
 			WHERE id = ?`,
 			soporteRemotoBoolToInt(cfg.Habilitado),
 			cfg.ProveedorPreferido,
@@ -805,7 +805,7 @@ func UpsertEmpresaSoporteRemotoConfig(dbConn *sql.DB, cfg EmpresaSoporteRemotoCo
 		usuario_creador,
 		estado,
 		observaciones
-	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)` ,
+	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 		cfg.EmpresaID,
 		soporteRemotoBoolToInt(cfg.Habilitado),
 		cfg.ProveedorPreferido,
@@ -911,7 +911,7 @@ func CreateEmpresaSoporteRemotoDispositivo(dbConn *sql.DB, item EmpresaSoporteRe
 		usuario_creador,
 		estado,
 		observaciones
-	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)` ,
+	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 		item.EmpresaID,
 		item.CodigoDispositivo,
 		item.NombreEquipo,
@@ -963,13 +963,13 @@ func GetEmpresaSoporteRemotoUso(dbConn *sql.DB, empresaID int64) (EmpresaSoporte
 	}
 
 	uso := EmpresaSoporteRemotoUso{
-		EmpresaID:        empresaID,
-		MesReferencia:    time.Now().In(time.Local).Format("2006-01"),
-		DiaReferencia:    time.Now().In(time.Local).Format("2006-01-02"),
-		MaxConexionesMes: int64(cfg.MaxConexionesMes),
-		MaxMinutosMes:    int64(cfg.MaxMinutosMes),
+		EmpresaID:             empresaID,
+		MesReferencia:         time.Now().In(time.Local).Format("2006-01"),
+		DiaReferencia:         time.Now().In(time.Local).Format("2006-01-02"),
+		MaxConexionesMes:      int64(cfg.MaxConexionesMes),
+		MaxMinutosMes:         int64(cfg.MaxMinutosMes),
 		MaxMinutosDiaRustDesk: int64(cfg.MaxMinutosDiaRustDesk),
-		MaxDispositivos:  int64(cfg.MaxDispositivos),
+		MaxDispositivos:       int64(cfg.MaxDispositivos),
 	}
 
 	err = dbConn.QueryRow(`SELECT
@@ -1122,7 +1122,7 @@ func createEmpresaSoporteRemotoBlockedAttempt(dbConn *sql.DB, empresaID, disposi
 		usuario_creador,
 		estado,
 		observaciones
-	) VALUES (?, ?, ?, ?, ?, ?, ?, 'rechazada', ?, 0, 1, datetime('now','localtime'), ?, 'activo', ?)`,
+	) VALUES (?, ?, ?, ?, ?, ?, ?, 'rechazada', ?, 0, 1, CURRENT_TIMESTAMP, ?, 'activo', ?)`,
 		empresaID,
 		dispositivoID,
 		soporteRemotoGenerateSessionCode(),
@@ -1195,7 +1195,7 @@ func UpdateEmpresaSoporteRemotoDispositivo(dbConn *sql.DB, item EmpresaSoporteRe
 			usuario_creador = ?,
 			estado = ?,
 			observaciones = ?,
-			fecha_actualizacion = datetime('now','localtime')
+			fecha_actualizacion = CURRENT_TIMESTAMP
 		WHERE id = ? AND empresa_id = ?`,
 		item.CodigoDispositivo,
 		item.NombreEquipo,
@@ -1240,7 +1240,7 @@ func SetEmpresaSoporteRemotoDispositivoEstadoByID(dbConn *sql.DB, empresaID, dev
 		return errors.New("empresa_id/id invalidos")
 	}
 	res, err := dbConn.Exec(`UPDATE empresa_soporte_remoto_dispositivos
-		SET estado = ?, fecha_actualizacion = datetime('now','localtime')
+		SET estado = ?, fecha_actualizacion = CURRENT_TIMESTAMP
 		WHERE id = ? AND empresa_id = ?`, soporteRemotoNormalizeEstado(estado), deviceID, empresaID)
 	if err != nil {
 		return err
@@ -1428,8 +1428,8 @@ func RegisterEmpresaSoporteRemotoDispositivoHeartbeat(dbConn *sql.DB, empresaID 
 			sistema_operativo = CASE WHEN ? = '' THEN sistema_operativo ELSE ? END,
 			agente_version = CASE WHEN ? = '' THEN agente_version ELSE ? END,
 			estado_conexion = 'online',
-			ultimo_heartbeat = datetime('now','localtime'),
-			fecha_actualizacion = datetime('now','localtime')
+			ultimo_heartbeat = CURRENT_TIMESTAMP,
+			fecha_actualizacion = CURRENT_TIMESTAMP
 		WHERE id = ? AND empresa_id = ?`,
 		stream,
 		strings.TrimSpace(sistemaOperativo), strings.TrimSpace(sistemaOperativo),
@@ -1612,7 +1612,7 @@ func CreateEmpresaSoporteRemotoSession(dbConn *sql.DB, empresaID, dispositivoID 
 		usuario_creador,
 		estado,
 		observaciones
-	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 0, ?, ?, ?, ?, ?, 'activo', ?)` ,
+	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 0, ?, ?, ?, ?, ?, 'activo', ?)`,
 		empresaID,
 		dispositivoID,
 		codigoSesion,
@@ -1812,7 +1812,7 @@ func SetEmpresaSoporteRemotoSessionEstadoByCodigo(dbConn *sql.DB, empresaID int6
 			finalizada_en = CASE WHEN ? = '' THEN finalizada_en ELSE ? END,
 			duracion_minutos_consumida = CASE WHEN ? <= 0 THEN duracion_minutos_consumida ELSE ? END,
 			observaciones = CASE WHEN ? = '' THEN observaciones ELSE ? END,
-			fecha_actualizacion = datetime('now','localtime')
+			fecha_actualizacion = CURRENT_TIMESTAMP
 		WHERE empresa_id = ? AND trim(codigo_sesion) = trim(?)`,
 		estado,
 		iniciadaEn, iniciadaEn,

@@ -103,7 +103,7 @@ func EnsureEmpresaCorteCajaConfiguracionSchema(dbConn *sql.DB) error {
 	}
 	stmts := []string{
 		`CREATE TABLE IF NOT EXISTS empresa_corte_caja_configuracion (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL UNIQUE,
 			mostrar_encabezado INTEGER DEFAULT 1,
 			mostrar_empresa_datos INTEGER DEFAULT 1,
@@ -141,8 +141,8 @@ func EnsureEmpresaCorteCajaConfiguracionSchema(dbConn *sql.DB) error {
 			mostrar_sensores_puertas INTEGER DEFAULT 1,
 			mostrar_auditoria INTEGER DEFAULT 1,
 			formato_impresion TEXT DEFAULT 'pos',
-			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
-			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+			fecha_creacion TEXT DEFAULT (CURRENT_TIMESTAMP),
+			fecha_actualizacion TEXT DEFAULT (CURRENT_TIMESTAMP),
 			usuario_creador TEXT,
 			estado TEXT DEFAULT 'activo',
 			observaciones TEXT
@@ -194,7 +194,7 @@ func EnsureEmpresaCorteCajaConfiguracionSchema(dbConn *sql.DB) error {
 		{"mostrar_sensores_puertas", "INTEGER DEFAULT 1"},
 		{"mostrar_auditoria", "INTEGER DEFAULT 1"},
 		{"formato_impresion", "TEXT DEFAULT 'pos'"},
-		{"fecha_actualizacion", "TEXT DEFAULT (datetime('now','localtime'))"},
+		{"fecha_actualizacion", "TEXT DEFAULT (CURRENT_TIMESTAMP)"},
 		{"usuario_creador", "TEXT"},
 		{"estado", "TEXT DEFAULT 'activo'"},
 		{"observaciones", "TEXT"},
@@ -402,7 +402,7 @@ func UpsertEmpresaCorteCajaConfiguracion(dbConn *sql.DB, cfg EmpresaCorteCajaCon
 		) VALUES (
 			?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
 			?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
-			datetime('now','localtime'), datetime('now','localtime'), ?, ?, ?
+			CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, ?, ?, ?
 		)`, args...)
 	}
 
@@ -444,7 +444,7 @@ func UpsertEmpresaCorteCajaConfiguracion(dbConn *sql.DB, cfg EmpresaCorteCajaCon
 		mostrar_sensores_puertas = ?,
 		mostrar_auditoria = ?,
 		formato_impresion = ?,
-		fecha_actualizacion = datetime('now','localtime'),
+		fecha_actualizacion = CURRENT_TIMESTAMP,
 		usuario_creador = ?,
 		estado = ?,
 		observaciones = ?

@@ -163,7 +163,7 @@ func EnsureAdminEmpresaCompartidaSchema(dbConn *sql.DB) error {
 
 	statements := []string{
 		`CREATE TABLE IF NOT EXISTS admin_empresa_compartida (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL,
 			admin_email TEXT NOT NULL,
 			compartido_por_email TEXT,
@@ -181,7 +181,7 @@ func EnsureAdminEmpresaCompartidaSchema(dbConn *sql.DB) error {
 		`CREATE INDEX IF NOT EXISTS ix_admin_empresa_compartida_empresa_admin ON admin_empresa_compartida (empresa_id, admin_email)`,
 		`CREATE INDEX IF NOT EXISTS ix_admin_empresa_compartida_admin_estado ON admin_empresa_compartida (admin_email, estado)`,
 		`CREATE TABLE IF NOT EXISTS admin_empresa_compartida_invitaciones (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL,
 			admin_email TEXT NOT NULL,
 			invitado_por_email TEXT,

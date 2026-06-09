@@ -72,8 +72,8 @@ func EnsureEmpresaEstacionAseoSchema(dbConn *sql.DB) error {
 			origen TEXT,
 			estado TEXT DEFAULT 'pendiente',
 			observaciones TEXT,
-			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
-			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime'))
+			fecha_creacion TEXT DEFAULT (CURRENT_TIMESTAMP),
+			fecha_actualizacion TEXT DEFAULT (CURRENT_TIMESTAMP)
 		);`,
 		`CREATE INDEX IF NOT EXISTS ix_empresa_estacion_aseo_empresa_estacion_estado ON empresa_estacion_aseo_eventos(empresa_id, estacion_id, estado);`,
 		`CREATE INDEX IF NOT EXISTS ix_empresa_estacion_aseo_empresa_fin ON empresa_estacion_aseo_eventos(empresa_id, aseo_fin);`,
@@ -99,8 +99,8 @@ func EnsureEmpresaEstacionAseoSchema(dbConn *sql.DB) error {
 		{"origen", "TEXT"},
 		{"estado", "TEXT DEFAULT 'pendiente'"},
 		{"observaciones", "TEXT"},
-		{"fecha_creacion", "TEXT DEFAULT (datetime('now','localtime'))"},
-		{"fecha_actualizacion", "TEXT DEFAULT (datetime('now','localtime'))"},
+		{"fecha_creacion", "TEXT DEFAULT (CURRENT_TIMESTAMP)"},
+		{"fecha_actualizacion", "TEXT DEFAULT (CURRENT_TIMESTAMP)"},
 	}
 	for _, column := range columns {
 		if err := ensureColumnIfMissing(dbConn, "empresa_estacion_aseo_eventos", column.name, column.def); err != nil {
@@ -163,7 +163,7 @@ func StartEmpresaEstacionAseoEvento(dbConn *sql.DB, empresaID, estacionID int64,
 			SET estacion_nombre = COALESCE(NULLIF(?, ''), estacion_nombre),
 				sucia_desde = ?,
 				origen = COALESCE(NULLIF(?, ''), origen),
-				fecha_actualizacion = datetime('now','localtime')
+				fecha_actualizacion = CURRENT_TIMESTAMP
 			WHERE id = ? AND empresa_id = ?`,
 			estacionNombre,
 			startedAt,
@@ -175,7 +175,7 @@ func StartEmpresaEstacionAseoEvento(dbConn *sql.DB, empresaID, estacionID int64,
 	}
 	return insertSQLCompat(dbConn, `INSERT INTO empresa_estacion_aseo_eventos (
 		empresa_id, estacion_id, estacion_nombre, sucia_desde, origen, estado, fecha_creacion, fecha_actualizacion
-	) VALUES (?, ?, ?, ?, ?, 'pendiente', datetime('now','localtime'), datetime('now','localtime'))`,
+	) VALUES (?, ?, ?, ?, ?, 'pendiente', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
 		empresaID,
 		estacionID,
 		estacionNombre,
@@ -249,7 +249,7 @@ func FinalizarEmpresaEstacionAseo(dbConn *sql.DB, input EmpresaEstacionAseoFinal
 			origen = ?,
 			estado = 'finalizado',
 			observaciones = ?,
-			fecha_actualizacion = datetime('now','localtime')
+			fecha_actualizacion = CURRENT_TIMESTAMP
 		WHERE id = ? AND empresa_id = ?`,
 		strings.TrimSpace(input.EstacionNombre),
 		finStr,

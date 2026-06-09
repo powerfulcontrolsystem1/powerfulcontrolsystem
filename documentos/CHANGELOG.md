@@ -1,3 +1,10 @@
+## [2026-06-09] QR DIAN obligatorio y bascula electronica en venta
+- [Facturacion] `facturas_electronicas.html` genera QR local en impresion POS/carta de documentos electronicos Colombia cuando hay CUFE/CUDE o URL DIAN; si falta la validacion imprime advertencia sin simular el QR.
+- [Carrito] `carrito_de_compras.html` fuerza el bloque QR DIAN para facturas/notas electronicas Colombia aunque el check operativo de recibos este apagado.
+- [Supermercado] El carrito agrega conexion Web Serial para bascula USB/serial real, lectura de peso, unidad, tara local y aplicacion al escaneo de productos vendidos por peso.
+- [Backend] Los items de carrito aceptan decimales solo para unidades de peso (`kg`, `g`, `lb`, `oz` y alias); las unidades normales siguen protegidas con cantidad natural positiva.
+- [Seguridad] Sin dependencias nuevas, sin tablas nuevas, sin simulacion de bascula y sin cambios a `go.mod`.
+
 ## [2026-06-08] DIAN firma XMLDSig/XAdES con C14N de contexto
 - [Firma] `dianBuildXAdESBaseSignature` ya calcula `DigestValue` y `SignatureValue` con canonicalizacion inclusiva usando el contexto completo de namespaces UBL del documento, como hacen los ejemplos oficiales DIAN para `SignedInfo`, `KeyInfo` y `SignedProperties`.
 - [Politica] Para factura/nota FEV se usa la URL de politica presente en los ejemplos principales DIAN: `politicadefirma/v1/politicadefirmav2.pdf`.

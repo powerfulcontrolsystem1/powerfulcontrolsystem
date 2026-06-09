@@ -398,7 +398,7 @@ func superDockerPortableShouldExclude(rel string, isDir bool) bool {
 	if isDir {
 		return false
 	}
-	if strings.HasSuffix(base, ".log") || strings.HasSuffix(base, ".tmp") || strings.HasSuffix(base, ".bak") || strings.HasSuffix(base, ".sqlite") || strings.HasSuffix(base, ".sqlite3") || strings.HasSuffix(base, ".db") || strings.HasSuffix(base, ".exe") {
+	if strings.HasSuffix(base, ".log") || strings.HasSuffix(base, ".tmp") || strings.HasSuffix(base, ".bak") || strings.HasSuffix(base, ".db") || strings.HasSuffix(base, ".exe") {
 		return true
 	}
 	return false

@@ -58,8 +58,8 @@ func EnsureSuperCorreosMasivosSchema(dbConn *sql.DB) error {
 		return fmt.Errorf("db connection is required")
 	}
 
-	campaignID := "INTEGER PRIMARY KEY AUTOINCREMENT"
-	recipientID := "INTEGER PRIMARY KEY AUTOINCREMENT"
+	campaignID := "BIGSERIAL PRIMARY KEY"
+	recipientID := "BIGSERIAL PRIMARY KEY"
 	fkID := "INTEGER"
 	if isPostgresDialect() {
 		campaignID = "BIGSERIAL PRIMARY KEY"
@@ -84,8 +84,8 @@ func EnsureSuperCorreosMasivosSchema(dbConn *sql.DB) error {
 			modo_prueba INTEGER DEFAULT 0,
 			metadata_json TEXT,
 			fecha_envio TEXT,
-			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
-			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+			fecha_creacion TEXT DEFAULT (CURRENT_TIMESTAMP),
+			fecha_actualizacion TEXT DEFAULT (CURRENT_TIMESTAMP),
 			usuario_creador TEXT,
 			estado TEXT DEFAULT 'activo',
 			observaciones TEXT
@@ -102,8 +102,8 @@ func EnsureSuperCorreosMasivosSchema(dbConn *sql.DB) error {
 			resultado TEXT DEFAULT 'pendiente',
 			error_detalle TEXT,
 			fecha_envio TEXT,
-			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
-			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+			fecha_creacion TEXT DEFAULT (CURRENT_TIMESTAMP),
+			fecha_actualizacion TEXT DEFAULT (CURRENT_TIMESTAMP),
 			usuario_creador TEXT,
 			estado TEXT DEFAULT 'activo',
 			observaciones TEXT
@@ -137,8 +137,8 @@ func EnsureSuperCorreosMasivosSchema(dbConn *sql.DB) error {
 		{"modo_prueba", "INTEGER DEFAULT 0"},
 		{"metadata_json", "TEXT"},
 		{"fecha_envio", "TEXT"},
-		{"fecha_creacion", "TEXT DEFAULT (datetime('now','localtime'))"},
-		{"fecha_actualizacion", "TEXT DEFAULT (datetime('now','localtime'))"},
+		{"fecha_creacion", "TEXT DEFAULT (CURRENT_TIMESTAMP)"},
+		{"fecha_actualizacion", "TEXT DEFAULT (CURRENT_TIMESTAMP)"},
 		{"usuario_creador", "TEXT"},
 		{"estado", "TEXT DEFAULT 'activo'"},
 		{"observaciones", "TEXT"},
@@ -163,8 +163,8 @@ func EnsureSuperCorreosMasivosSchema(dbConn *sql.DB) error {
 		{"resultado", "TEXT DEFAULT 'pendiente'"},
 		{"error_detalle", "TEXT"},
 		{"fecha_envio", "TEXT"},
-		{"fecha_creacion", "TEXT DEFAULT (datetime('now','localtime'))"},
-		{"fecha_actualizacion", "TEXT DEFAULT (datetime('now','localtime'))"},
+		{"fecha_creacion", "TEXT DEFAULT (CURRENT_TIMESTAMP)"},
+		{"fecha_actualizacion", "TEXT DEFAULT (CURRENT_TIMESTAMP)"},
 		{"usuario_creador", "TEXT"},
 		{"estado", "TEXT DEFAULT 'activo'"},
 		{"observaciones", "TEXT"},
@@ -208,7 +208,7 @@ func CreateSuperCorreoMasivo(dbConn *sql.DB, item SuperCorreoMasivo) (int64, err
 		total_destinatarios, enviados, fallidos, omitidos, estado_envio, modo_prueba,
 		metadata_json, fecha_envio, usuario_creador, estado, observaciones,
 		fecha_creacion, fecha_actualizacion
-	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now','localtime'), datetime('now','localtime'))`,
+	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
 		item.Codigo,
 		item.Categoria,
 		item.Alcance,
@@ -254,7 +254,7 @@ func CreateSuperCorreoMasivoDestinatario(dbConn *sql.DB, item SuperCorreoMasivoD
 		correo_masivo_id, email, nombre, tipo_destinatario, empresa_id, empresa_nombre,
 		rol, resultado, error_detalle, fecha_envio, usuario_creador, estado, observaciones,
 		fecha_creacion, fecha_actualizacion
-	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now','localtime'), datetime('now','localtime'))`,
+	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
 		item.CorreoMasivoID,
 		item.Email,
 		item.Nombre,
@@ -281,7 +281,7 @@ func UpdateSuperCorreoMasivoResultado(dbConn *sql.DB, id int64, enviados, fallid
 	}
 	_, err := execSQLCompat(dbConn, `UPDATE super_correos_masivos
 		SET enviados = ?, fallidos = ?, omitidos = ?, estado_envio = ?, observaciones = ?,
-			fecha_envio = datetime('now','localtime'), fecha_actualizacion = datetime('now','localtime')
+			fecha_envio = CURRENT_TIMESTAMP, fecha_actualizacion = CURRENT_TIMESTAMP
 		WHERE id = ?`,
 		enviados, fallidos, omitidos, estadoEnvio, strings.TrimSpace(observaciones), id,
 	)

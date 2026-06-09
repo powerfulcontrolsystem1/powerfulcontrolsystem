@@ -92,7 +92,7 @@ type EmpresaImportacionesCosteoDashboard struct {
 func EnsureEmpresaImportacionesCosteoSchema(dbConn *sql.DB) error {
 	stmts := []string{
 		`CREATE TABLE IF NOT EXISTS empresa_importaciones_costeo (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL,
 			codigo TEXT NOT NULL,
 			proveedor TEXT DEFAULT '',
@@ -115,7 +115,7 @@ func EnsureEmpresaImportacionesCosteoSchema(dbConn *sql.DB) error {
 		)`,
 		`CREATE INDEX IF NOT EXISTS ix_importaciones_costeo_empresa_estado ON empresa_importaciones_costeo(empresa_id, estado)`,
 		`CREATE TABLE IF NOT EXISTS empresa_importaciones_costeo_items (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL,
 			importacion_id INTEGER NOT NULL,
 			producto_id INTEGER DEFAULT 0,
@@ -134,7 +134,7 @@ func EnsureEmpresaImportacionesCosteoSchema(dbConn *sql.DB) error {
 		)`,
 		`CREATE INDEX IF NOT EXISTS ix_importaciones_items_importacion ON empresa_importaciones_costeo_items(empresa_id, importacion_id)`,
 		`CREATE TABLE IF NOT EXISTS empresa_importaciones_costeo_costos (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL,
 			importacion_id INTEGER NOT NULL,
 			tipo TEXT DEFAULT 'nacionalizacion',

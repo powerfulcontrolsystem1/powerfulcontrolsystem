@@ -27,13 +27,13 @@ func EnsureEmpresaPermisosFinosSchema(dbConn *sql.DB) error {
 	}
 	statements := []string{
 		`CREATE TABLE IF NOT EXISTS empresa_permisos_modulos (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL,
 			modulo TEXT NOT NULL,
 			accion TEXT NOT NULL,
 			permitido INTEGER NOT NULL DEFAULT 1,
-			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
-			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+			fecha_creacion TEXT DEFAULT (CURRENT_TIMESTAMP),
+			fecha_actualizacion TEXT DEFAULT (CURRENT_TIMESTAMP),
 			usuario_creador TEXT,
 			estado TEXT DEFAULT 'activo',
 			observaciones TEXT
@@ -43,12 +43,12 @@ func EnsureEmpresaPermisosFinosSchema(dbConn *sql.DB) error {
 		`CREATE INDEX IF NOT EXISTS idx_empresa_permisos_modulos_lookup
 		ON empresa_permisos_modulos(empresa_id, estado);`,
 		`CREATE TABLE IF NOT EXISTS empresa_permisos_paginas (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL,
 			pagina_clave TEXT NOT NULL,
 			permitido INTEGER NOT NULL DEFAULT 1,
-			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
-			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+			fecha_creacion TEXT DEFAULT (CURRENT_TIMESTAMP),
+			fecha_actualizacion TEXT DEFAULT (CURRENT_TIMESTAMP),
 			usuario_creador TEXT,
 			estado TEXT DEFAULT 'activo',
 			observaciones TEXT
@@ -169,7 +169,7 @@ func ReplaceEmpresaPermisosFinos(dbConn *sql.DB, empresaID int64, permisosModulo
 		}
 		if _, err = tx.Exec(`INSERT INTO empresa_permisos_modulos (
 			empresa_id, modulo, accion, permitido, usuario_creador, estado, fecha_creacion, fecha_actualizacion
-		) VALUES (?, ?, ?, ?, ?, 'activo', datetime('now','localtime'), datetime('now','localtime'))`,
+		) VALUES (?, ?, ?, ?, ?, 'activo', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
 			item.EmpresaID, item.Modulo, item.Accion, permitido, usuarioCreador); err != nil {
 			return err
 		}
@@ -183,7 +183,7 @@ func ReplaceEmpresaPermisosFinos(dbConn *sql.DB, empresaID int64, permisosModulo
 		}
 		if _, err = tx.Exec(`INSERT INTO empresa_permisos_paginas (
 			empresa_id, pagina_clave, permitido, usuario_creador, estado, fecha_creacion, fecha_actualizacion
-		) VALUES (?, ?, ?, ?, 'activo', datetime('now','localtime'), datetime('now','localtime'))`,
+		) VALUES (?, ?, ?, ?, 'activo', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
 			item.EmpresaID, item.PaginaClave, permitido, usuarioCreador); err != nil {
 			return err
 		}

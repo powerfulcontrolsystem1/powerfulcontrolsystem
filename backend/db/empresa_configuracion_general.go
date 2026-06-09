@@ -54,9 +54,9 @@ func EnsureEmpresaConfiguracionGeneralSchema(dbConn *sql.DB) error {
 		return errors.New("db connection is nil")
 	}
 
-	idDefinition := "INTEGER PRIMARY KEY AUTOINCREMENT"
-	createdDefault := "datetime('now','localtime')"
-	updatedDefault := "datetime('now','localtime')"
+	idDefinition := "BIGSERIAL PRIMARY KEY"
+	createdDefault := "CURRENT_TIMESTAMP"
+	updatedDefault := "CURRENT_TIMESTAMP"
 	if isPostgresDialect() {
 		idDefinition = "BIGSERIAL PRIMARY KEY"
 		createdDefault = "CAST(CURRENT_TIMESTAMP AS TEXT)"

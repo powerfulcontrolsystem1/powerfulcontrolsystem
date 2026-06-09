@@ -62,7 +62,7 @@ type SuperAuditoriaEventoFilter struct {
 func EnsureSuperAuditoriaSchema(dbConn *sql.DB) error {
 	stmts := []string{
 		`CREATE TABLE IF NOT EXISTS super_auditoria_eventos (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER DEFAULT 0,
 			principal_email TEXT,
 			modulo TEXT NOT NULL,
@@ -78,10 +78,10 @@ func EnsureSuperAuditoriaSchema(dbConn *sql.DB) error {
 			user_agent TEXT,
 			metadata_json TEXT,
 			retencion_dias INTEGER DEFAULT 365,
-			fecha_evento TEXT DEFAULT (datetime('now','localtime')),
+			fecha_evento TEXT DEFAULT (CURRENT_TIMESTAMP),
 			fecha_expiracion TEXT,
-			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
-			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+			fecha_creacion TEXT DEFAULT (CURRENT_TIMESTAMP),
+			fecha_actualizacion TEXT DEFAULT (CURRENT_TIMESTAMP),
 			usuario_creador TEXT,
 			estado TEXT DEFAULT 'activo',
 			observaciones TEXT
@@ -118,9 +118,9 @@ func EnsureSuperAuditoriaSchema(dbConn *sql.DB) error {
 		{"user_agent", "TEXT"},
 		{"metadata_json", "TEXT"},
 		{"retencion_dias", "INTEGER DEFAULT 365"},
-		{"fecha_evento", "TEXT DEFAULT (datetime('now','localtime'))"},
+		{"fecha_evento", "TEXT DEFAULT (CURRENT_TIMESTAMP)"},
 		{"fecha_expiracion", "TEXT"},
-		{"fecha_actualizacion", "TEXT DEFAULT (datetime('now','localtime'))"},
+		{"fecha_actualizacion", "TEXT DEFAULT (CURRENT_TIMESTAMP)"},
 		{"usuario_creador", "TEXT"},
 		{"estado", "TEXT DEFAULT 'activo'"},
 		{"observaciones", "TEXT"},
@@ -188,9 +188,9 @@ func CreateSuperAuditoriaEvento(dbConn *sql.DB, in SuperAuditoriaEvento) (int64,
 		fecha_creacion, fecha_actualizacion, usuario_creador, estado, observaciones
 	) VALUES (
 		?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
-		COALESCE(NULLIF(?, ''), datetime('now','localtime')),
-		datetime(COALESCE(NULLIF(?, ''), datetime('now','localtime')), ?),
-		datetime('now','localtime'), datetime('now','localtime'), ?, ?, ?
+		COALESCE(NULLIF(?, ''), CURRENT_TIMESTAMP),
+		pcs_ts(COALESCE(NULLIF(?, ''), 'now'), ?),
+		CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, ?, ?, ?
 	)`,
 		in.EmpresaID, in.PrincipalEmail, in.Modulo, in.Accion, in.Recurso, in.RecursoID,
 		in.MetodoHTTP, in.Endpoint, in.Resultado, in.CodigoHTTP, in.RequestID, in.IPOrigen,
@@ -312,11 +312,11 @@ func buildSuperAuditoriaWhereClause(f SuperAuditoriaEventoFilter) (string, []int
 		args = append(args, reqID)
 	}
 	if desde := strings.TrimSpace(f.Desde); desde != "" {
-		where += ` AND datetime(COALESCE(fecha_evento, fecha_creacion, '')) >= datetime(?)`
+		where += ` AND pcs_ts(COALESCE(fecha_evento, fecha_creacion, '')) >= pcs_ts(?)`
 		args = append(args, desde)
 	}
 	if hasta := strings.TrimSpace(f.Hasta); hasta != "" {
-		where += ` AND datetime(COALESCE(fecha_evento, fecha_creacion, '')) <= datetime(?)`
+		where += ` AND pcs_ts(COALESCE(fecha_evento, fecha_creacion, '')) <= pcs_ts(?)`
 		args = append(args, hasta)
 	}
 	if searchLike := normalizeAuditoriaContains(f.Search, 180); searchLike != "" {

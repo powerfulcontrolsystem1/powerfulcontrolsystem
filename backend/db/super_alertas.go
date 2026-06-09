@@ -148,14 +148,14 @@ func EnsureSuperAlertasSchema(dbConn *sql.DB) error {
 			admin_register_enabled INTEGER DEFAULT 1,
 			empresa_nueva_enabled INTEGER DEFAULT 1,
 			cooldown_minutes INTEGER DEFAULT 60,
-			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
-			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+			fecha_creacion TEXT DEFAULT (CURRENT_TIMESTAMP),
+			fecha_actualizacion TEXT DEFAULT (CURRENT_TIMESTAMP),
 			usuario_creador TEXT,
 			estado TEXT DEFAULT 'activo',
 			observaciones TEXT
 		);`
 		eventosCreate = `CREATE TABLE IF NOT EXISTS super_alertas_eventos (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			tipo TEXT NOT NULL,
 			severidad TEXT DEFAULT 'warning',
 			titulo TEXT,
@@ -169,9 +169,9 @@ func EnsureSuperAlertasSchema(dbConn *sql.DB) error {
 			correo_enviado INTEGER DEFAULT 0,
 			correo_error TEXT,
 			metadata_json TEXT,
-			fecha_evento TEXT DEFAULT (datetime('now','localtime')),
-			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
-			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+			fecha_evento TEXT DEFAULT (CURRENT_TIMESTAMP),
+			fecha_creacion TEXT DEFAULT (CURRENT_TIMESTAMP),
+			fecha_actualizacion TEXT DEFAULT (CURRENT_TIMESTAMP),
 			usuario_creador TEXT,
 			estado TEXT DEFAULT 'activo',
 			observaciones TEXT

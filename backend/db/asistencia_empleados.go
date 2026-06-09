@@ -76,7 +76,7 @@ var (
 func EnsureEmpresaAsistenciaSchema(dbConn *sql.DB) error {
 	stmts := []string{
 		`CREATE TABLE IF NOT EXISTS empresa_asistencia_empleados (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL,
 			empleado_id INTEGER DEFAULT 0,
 			empleado_codigo TEXT,
@@ -84,15 +84,15 @@ func EnsureEmpresaAsistenciaSchema(dbConn *sql.DB) error {
 			empleado_documento TEXT,
 			cargo TEXT,
 			turno TEXT,
-			fecha_asistencia TEXT DEFAULT (date('now','localtime')),
+			fecha_asistencia TEXT DEFAULT (CURRENT_DATE),
 			hora_entrada TEXT,
 			hora_salida TEXT,
 			minutos_tarde INTEGER DEFAULT 0,
 			horas_trabajadas REAL DEFAULT 0,
 			estado_asistencia TEXT DEFAULT 'pendiente',
 			novedad TEXT,
-			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
-			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+			fecha_creacion TEXT DEFAULT (CURRENT_TIMESTAMP),
+			fecha_actualizacion TEXT DEFAULT (CURRENT_TIMESTAMP),
 			usuario_creador TEXT,
 			estado TEXT DEFAULT 'activo',
 			observaciones TEXT
@@ -101,7 +101,7 @@ func EnsureEmpresaAsistenciaSchema(dbConn *sql.DB) error {
 		`CREATE INDEX IF NOT EXISTS ix_empresa_asistencia_empleados_empresa_empleado ON empresa_asistencia_empleados(empresa_id, empleado_documento, empleado_nombre);`,
 		`CREATE INDEX IF NOT EXISTS ix_empresa_asistencia_empleados_empresa_estado ON empresa_asistencia_empleados(empresa_id, estado, estado_asistencia);`,
 		`CREATE TABLE IF NOT EXISTS empresa_asistencia_configuracion (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL UNIQUE,
 			tolerancia_entrada_minutos INTEGER DEFAULT 10,
 			tolerancia_salida_minutos INTEGER DEFAULT 0,
@@ -110,23 +110,23 @@ func EnsureEmpresaAsistenciaSchema(dbConn *sql.DB) error {
 			hora_inicio_turno_noche TEXT DEFAULT '22:00:00',
 			permitir_turno_nocturno INTEGER DEFAULT 1,
 			permitir_turno_cruzado INTEGER DEFAULT 1,
-			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
-			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+			fecha_creacion TEXT DEFAULT (CURRENT_TIMESTAMP),
+			fecha_actualizacion TEXT DEFAULT (CURRENT_TIMESTAMP),
 			usuario_creador TEXT,
 			estado TEXT DEFAULT 'activo',
 			observaciones TEXT
 		);`,
 		`CREATE UNIQUE INDEX IF NOT EXISTS ux_empresa_asistencia_configuracion_empresa ON empresa_asistencia_configuracion(empresa_id);`,
 		`CREATE TABLE IF NOT EXISTS empresa_asistencia_periodos_cerrados (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL,
 			periodo_desde TEXT NOT NULL,
 			periodo_hasta TEXT NOT NULL,
-			fecha_cierre TEXT DEFAULT (datetime('now','localtime')),
+			fecha_cierre TEXT DEFAULT (CURRENT_TIMESTAMP),
 			cerrado_por TEXT,
 			motivo TEXT,
-			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
-			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+			fecha_creacion TEXT DEFAULT (CURRENT_TIMESTAMP),
+			fecha_actualizacion TEXT DEFAULT (CURRENT_TIMESTAMP),
 			usuario_creador TEXT,
 			estado TEXT DEFAULT 'activo',
 			observaciones TEXT,
@@ -158,7 +158,7 @@ func EnsureEmpresaAsistenciaSchema(dbConn *sql.DB) error {
 	if err := ensureColumnIfMissing(dbConn, "empresa_asistencia_empleados", "turno", "TEXT"); err != nil {
 		return err
 	}
-	if err := ensureColumnIfMissing(dbConn, "empresa_asistencia_empleados", "fecha_asistencia", "TEXT DEFAULT (date('now','localtime'))"); err != nil {
+	if err := ensureColumnIfMissing(dbConn, "empresa_asistencia_empleados", "fecha_asistencia", "TEXT DEFAULT (CURRENT_DATE)"); err != nil {
 		return err
 	}
 	if err := ensureColumnIfMissing(dbConn, "empresa_asistencia_empleados", "hora_entrada", "TEXT"); err != nil {
@@ -226,7 +226,7 @@ func EnsureEmpresaAsistenciaSchema(dbConn *sql.DB) error {
 		return err
 	}
 
-	if err := ensureColumnIfMissing(dbConn, "empresa_asistencia_periodos_cerrados", "fecha_cierre", "TEXT DEFAULT (datetime('now','localtime'))"); err != nil {
+	if err := ensureColumnIfMissing(dbConn, "empresa_asistencia_periodos_cerrados", "fecha_cierre", "TEXT DEFAULT (CURRENT_TIMESTAMP)"); err != nil {
 		return err
 	}
 	if err := ensureColumnIfMissing(dbConn, "empresa_asistencia_periodos_cerrados", "cerrado_por", "TEXT"); err != nil {

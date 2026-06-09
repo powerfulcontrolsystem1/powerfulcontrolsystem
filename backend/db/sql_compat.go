@@ -25,16 +25,17 @@ func PostgresCompatDriverName() string {
 	return pgxCompatDriverName
 }
 
-// EnsurePostgresRuntimeCompat crea funciones auxiliares SQL en PostgreSQL para
-// mantener compatibilidad con expresiones legacy usadas por modulos antiguos.
+// EnsurePostgresRuntimeCompat crea funciones auxiliares internas PCS en
+// PostgreSQL para normalizar fechas antiguas sin depender de funciones de otros
+// motores.
 func EnsurePostgresRuntimeCompat(dbConn *sql.DB) error {
 	if dbConn == nil || !isPostgresDialect() {
 		return nil
 	}
 
 	stmts := []string{
-		`CREATE OR REPLACE FUNCTION datetime(base_value text DEFAULT 'now', VARIADIC modifiers text[] DEFAULT ARRAY[]::text[])
-RETURNS text
+		`CREATE OR REPLACE FUNCTION pcs_ts(base_value text DEFAULT 'now', VARIADIC modifiers text[] DEFAULT ARRAY[]::text[])
+RETURNS timestamp
 LANGUAGE plpgsql
 STABLE
 AS $fn$
@@ -68,59 +69,38 @@ BEGIN
 		END LOOP;
 	END IF;
 
-	RETURN to_char(ts, 'YYYY-MM-DD HH24:MI:SS');
+	RETURN ts;
 END;
 $fn$;`,
-		`CREATE OR REPLACE FUNCTION datetime(base_value timestamp, VARIADIC modifiers text[] DEFAULT ARRAY[]::text[])
-RETURNS text
+		`CREATE OR REPLACE FUNCTION pcs_ts(base_value timestamp, VARIADIC modifiers text[] DEFAULT ARRAY[]::text[])
+RETURNS timestamp
 LANGUAGE sql
 STABLE
 AS $$
-SELECT datetime(to_char(base_value, 'YYYY-MM-DD HH24:MI:SS'), VARIADIC modifiers);
+SELECT pcs_ts(to_char(base_value, 'YYYY-MM-DD HH24:MI:SS'), VARIADIC modifiers);
 $$;`,
-		`CREATE OR REPLACE FUNCTION datetime(base_value timestamptz, VARIADIC modifiers text[] DEFAULT ARRAY[]::text[])
-RETURNS text
+		`CREATE OR REPLACE FUNCTION pcs_ts(base_value timestamptz, VARIADIC modifiers text[] DEFAULT ARRAY[]::text[])
+RETURNS timestamp
 LANGUAGE sql
 STABLE
 AS $$
-SELECT datetime(to_char(base_value AT TIME ZONE current_setting('TIMEZONE'), 'YYYY-MM-DD HH24:MI:SS'), VARIADIC modifiers);
+SELECT pcs_ts(to_char(base_value AT TIME ZONE current_setting('TIMEZONE'), 'YYYY-MM-DD HH24:MI:SS'), VARIADIC modifiers);
 $$;`,
-		`CREATE OR REPLACE FUNCTION date(base_value text, modifier text)
-RETURNS text
+		`CREATE OR REPLACE FUNCTION pcs_date(base_value text)
+RETURNS date
 LANGUAGE sql
 STABLE
 AS $$
-SELECT split_part(datetime(base_value, modifier), ' ', 1);
+SELECT pcs_ts(base_value)::date;
 $$;`,
-		`CREATE OR REPLACE FUNCTION date(base_value text, modifier1 text, modifier2 text)
-RETURNS text
+		`CREATE OR REPLACE FUNCTION pcs_date(base_value timestamp)
+RETURNS date
 LANGUAGE sql
 STABLE
 AS $$
-SELECT split_part(datetime(base_value, modifier1, modifier2), ' ', 1);
+SELECT base_value::date;
 $$;`,
-		`CREATE OR REPLACE FUNCTION "time"(base_value text, modifier text)
-RETURNS text
-LANGUAGE sql
-STABLE
-AS $$
-SELECT split_part(datetime(base_value, modifier), ' ', 2);
-$$;`,
-		`CREATE OR REPLACE FUNCTION "time"(base_value text, modifier1 text, modifier2 text)
-RETURNS text
-LANGUAGE sql
-STABLE
-AS $$
-SELECT split_part(datetime(base_value, modifier1, modifier2), ' ', 2);
-$$;`,
-		`CREATE OR REPLACE FUNCTION printf(format_text text, value anyelement)
-RETURNS text
-LANGUAGE sql
-IMMUTABLE
-AS $$
-SELECT replace(COALESCE(format_text, ''), '%d', COALESCE(value::text, ''));
-$$;`,
-		`CREATE OR REPLACE FUNCTION julianday(base_value text)
+		`CREATE OR REPLACE FUNCTION pcs_julian_day(base_value text)
 RETURNS double precision
 LANGUAGE plpgsql
 STABLE
@@ -145,21 +125,21 @@ BEGIN
 	RETURN EXTRACT(EPOCH FROM ts) / 86400.0;
 END;
 $fn$;`,
-		`CREATE OR REPLACE FUNCTION julianday(base_value timestamp)
+		`CREATE OR REPLACE FUNCTION pcs_julian_day(base_value timestamp)
 RETURNS double precision
 LANGUAGE sql
 STABLE
 AS $$
 SELECT EXTRACT(EPOCH FROM base_value) / 86400.0;
 $$;`,
-		`CREATE OR REPLACE FUNCTION julianday(base_value date)
+		`CREATE OR REPLACE FUNCTION pcs_julian_day(base_value date)
 RETURNS double precision
 LANGUAGE sql
 STABLE
 AS $$
 SELECT EXTRACT(EPOCH FROM (base_value::timestamp)) / 86400.0;
 $$;`,
-		`CREATE OR REPLACE FUNCTION julianday(base_value timestamptz)
+		`CREATE OR REPLACE FUNCTION pcs_julian_day(base_value timestamptz)
 RETURNS double precision
 LANGUAGE sql
 STABLE
@@ -346,7 +326,6 @@ func (c *pgxCompatConn) IsValid() bool {
 func rewritePostgresCompatQuery(query string) string {
 	q := rebindQuestionPlaceholders(query)
 	q = rewriteInsertOrIgnoreQuery(q)
-	q = rewriteAutoIncrementForPostgres(q)
 	return q
 }
 
@@ -373,12 +352,6 @@ func rewriteInsertOrIgnoreQuery(query string) string {
 	}
 
 	return rewritten + " ON CONFLICT DO NOTHING"
-}
-
-func rewriteAutoIncrementForPostgres(query string) string {
-	q := replaceInsensitiveAll(query, "integer primary key autoincrement", "BIGSERIAL PRIMARY KEY")
-	q = replaceInsensitiveAll(q, "int primary key autoincrement", "BIGSERIAL PRIMARY KEY")
-	return q
 }
 
 func replaceInsensitiveFirst(value, target, replacement string) string {
@@ -526,10 +499,10 @@ func normalizeColumnDefForDialect(columnDef string) string {
 		old string
 		new string
 	}{
-		{"TEXT DEFAULT (datetime('now','localtime'))", "TEXT DEFAULT (CAST(CURRENT_TIMESTAMP AS TEXT))"},
-		{"TEXT DEFAULT (datetime('now'))", "TEXT DEFAULT (CAST(CURRENT_TIMESTAMP AS TEXT))"},
-		{"datetime('now','localtime')", "CURRENT_TIMESTAMP"},
-		{"datetime('now')", "CURRENT_TIMESTAMP"},
+		{"TEXT DEFAULT (CURRENT_TIMESTAMP)", "TEXT DEFAULT (CAST(CURRENT_TIMESTAMP AS TEXT))"},
+		{"TEXT DEFAULT (CURRENT_TIMESTAMP)", "TEXT DEFAULT (CAST(CURRENT_TIMESTAMP AS TEXT))"},
+		{"CURRENT_TIMESTAMP", "CURRENT_TIMESTAMP"},
+		{"CURRENT_TIMESTAMP", "CURRENT_TIMESTAMP"},
 	}
 	for _, item := range replacements {
 		def = strings.ReplaceAll(def, item.old, item.new)

@@ -26,6 +26,13 @@ type EmpresaConfiguracionAvanzada struct {
 	NombreComercial                       string `json:"nombre_comercial,omitempty"`
 	RegimenFiscal                         string `json:"regimen_fiscal,omitempty"`
 	ResponsabilidadTributaria             string `json:"responsabilidad_tributaria,omitempty"`
+	TipoPersonaFiscal                     string `json:"tipo_persona_fiscal,omitempty"`
+	NaturalezaJuridica                    string `json:"naturaleza_juridica,omitempty"`
+	RegimenTributarioColombia             string `json:"regimen_tributario_colombia,omitempty"`
+	IVAResponsabilidad                    string `json:"iva_responsabilidad,omitempty"`
+	INCResponsabilidad                    string `json:"inc_responsabilidad,omitempty"`
+	ResponsabilidadesRUTJSON              string `json:"responsabilidades_rut_json,omitempty"`
+	ObligacionesFiscalesJSON              string `json:"obligaciones_fiscales_json,omitempty"`
 	EmailFacturacion                      string `json:"email_facturacion,omitempty"`
 	TelefonoFacturacion                   string `json:"telefono_facturacion,omitempty"`
 	DireccionFiscal                       string `json:"direccion_fiscal,omitempty"`
@@ -93,7 +100,7 @@ const (
 func EnsureEmpresaConfiguracionAvanzadaSchema(dbConn *sql.DB) error {
 	stmts := []string{
 		`CREATE TABLE IF NOT EXISTS empresa_configuracion_avanzada (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL UNIQUE,
 			modo_documento_venta TEXT DEFAULT 'comprobante_pago',
 			enviar_email_venta INTEGER DEFAULT 0,
@@ -108,6 +115,13 @@ func EnsureEmpresaConfiguracionAvanzadaSchema(dbConn *sql.DB) error {
 			nombre_comercial TEXT,
 			regimen_fiscal TEXT,
 			responsabilidad_tributaria TEXT,
+			tipo_persona_fiscal TEXT,
+			naturaleza_juridica TEXT,
+			regimen_tributario_colombia TEXT,
+			iva_responsabilidad TEXT,
+			inc_responsabilidad TEXT,
+			responsabilidades_rut_json TEXT,
+			obligaciones_fiscales_json TEXT,
 			email_facturacion TEXT,
 			telefono_facturacion TEXT,
 			direccion_fiscal TEXT,
@@ -147,8 +161,8 @@ func EnsureEmpresaConfiguracionAvanzadaSchema(dbConn *sql.DB) error {
 			sistema_numerico TEXT DEFAULT 'latino',
 			usar_decimales INTEGER DEFAULT 1,
 			cantidad_decimales INTEGER DEFAULT 2,
-			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
-			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+			fecha_creacion TEXT DEFAULT (CURRENT_TIMESTAMP),
+			fecha_actualizacion TEXT DEFAULT (CURRENT_TIMESTAMP),
 			usuario_creador TEXT,
 			estado TEXT DEFAULT 'activo',
 			observaciones TEXT
@@ -199,6 +213,27 @@ func EnsureEmpresaConfiguracionAvanzadaSchema(dbConn *sql.DB) error {
 		return err
 	}
 	if err := ensureColumnIfMissing(dbConn, "empresa_configuracion_avanzada", "responsabilidad_tributaria", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_configuracion_avanzada", "tipo_persona_fiscal", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_configuracion_avanzada", "naturaleza_juridica", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_configuracion_avanzada", "regimen_tributario_colombia", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_configuracion_avanzada", "iva_responsabilidad", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_configuracion_avanzada", "inc_responsabilidad", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_configuracion_avanzada", "responsabilidades_rut_json", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_configuracion_avanzada", "obligaciones_fiscales_json", "TEXT"); err != nil {
 		return err
 	}
 	if err := ensureColumnIfMissing(dbConn, "empresa_configuracion_avanzada", "email_facturacion", "TEXT"); err != nil {
@@ -318,7 +353,7 @@ func EnsureEmpresaConfiguracionAvanzadaSchema(dbConn *sql.DB) error {
 	if err := ensureColumnIfMissing(dbConn, "empresa_configuracion_avanzada", "cantidad_decimales", "INTEGER DEFAULT 2"); err != nil {
 		return err
 	}
-	if err := ensureColumnIfMissing(dbConn, "empresa_configuracion_avanzada", "fecha_creacion", "TEXT DEFAULT (datetime('now','localtime'))"); err != nil {
+	if err := ensureColumnIfMissing(dbConn, "empresa_configuracion_avanzada", "fecha_creacion", "TEXT DEFAULT (CURRENT_TIMESTAMP)"); err != nil {
 		return err
 	}
 	if err := ensureColumnIfMissing(dbConn, "empresa_configuracion_avanzada", "fecha_actualizacion", "TEXT"); err != nil {
@@ -583,6 +618,84 @@ func normalizePrintItemsJSON(raw string) string {
 	return string(out)
 }
 
+func normalizeFiscalToken(v string, allowed map[string]bool) string {
+	v = strings.TrimSpace(strings.ToLower(v))
+	if allowed[v] {
+		return v
+	}
+	return ""
+}
+
+func normalizeResponsabilidadesRUTJSON(raw string) string {
+	raw = strings.TrimSpace(raw)
+	if raw == "" || len(raw) > 4000 {
+		return ""
+	}
+	var incoming []string
+	if err := json.Unmarshal([]byte(raw), &incoming); err != nil {
+		return ""
+	}
+	allowed := map[string]bool{
+		"04": true, "05": true, "06": true, "07": true, "09": true, "13": true, "14": true, "15": true,
+		"16": true, "19": true, "20": true, "22": true, "23": true, "24": true, "26": true, "33": true,
+		"42": true, "46": true, "47": true, "48": true, "49": true, "50": true, "52": true, "53": true, "55": true,
+		"59": true, "60": true,
+	}
+	seen := map[string]bool{}
+	clean := make([]string, 0, len(incoming))
+	for _, item := range incoming {
+		code := strings.TrimSpace(item)
+		if len(code) == 1 {
+			code = "0" + code
+		}
+		if !allowed[code] || seen[code] {
+			continue
+		}
+		seen[code] = true
+		clean = append(clean, code)
+	}
+	if len(clean) == 0 {
+		return ""
+	}
+	out, err := json.Marshal(clean)
+	if err != nil {
+		return ""
+	}
+	return string(out)
+}
+
+func normalizeObligacionesFiscalesJSON(raw string) string {
+	raw = strings.TrimSpace(raw)
+	if raw == "" || len(raw) > 4000 {
+		return ""
+	}
+	var incoming map[string]bool
+	if err := json.Unmarshal([]byte(raw), &incoming); err != nil {
+		return ""
+	}
+	allowed := map[string]bool{
+		"renta": true, "rst_declaracion_anual": true, "rst_anticipos_bimestrales": true,
+		"iva": true, "inc": true, "retencion_fuente": true, "reteiva": true,
+		"facturacion_electronica": true, "informacion_exogena": true,
+		"beneficiarios_finales": true, "ica": true,
+	}
+	clean := make(map[string]bool)
+	for key, value := range incoming {
+		key = strings.TrimSpace(strings.ToLower(key))
+		if allowed[key] {
+			clean[key] = value
+		}
+	}
+	if len(clean) == 0 {
+		return ""
+	}
+	out, err := json.Marshal(clean)
+	if err != nil {
+		return ""
+	}
+	return string(out)
+}
+
 func GetEmpresaConfiguracionAvanzada(dbConn *sql.DB, empresaID int64) (*EmpresaConfiguracionAvanzada, error) {
 	if err := EnsureEmpresaConfiguracionAvanzadaSchema(dbConn); err != nil {
 		return nil, err
@@ -604,6 +717,13 @@ func GetEmpresaConfiguracionAvanzada(dbConn *sql.DB, empresaID int64) (*EmpresaC
 		COALESCE(nombre_comercial, ''),
 		COALESCE(regimen_fiscal, ''),
 		COALESCE(responsabilidad_tributaria, ''),
+		COALESCE(tipo_persona_fiscal, ''),
+		COALESCE(naturaleza_juridica, ''),
+		COALESCE(regimen_tributario_colombia, ''),
+		COALESCE(iva_responsabilidad, ''),
+		COALESCE(inc_responsabilidad, ''),
+		COALESCE(responsabilidades_rut_json, ''),
+		COALESCE(obligaciones_fiscales_json, ''),
 		COALESCE(email_facturacion, ''),
 		COALESCE(telefono_facturacion, ''),
 		COALESCE(direccion_fiscal, ''),
@@ -680,6 +800,13 @@ func GetEmpresaConfiguracionAvanzada(dbConn *sql.DB, empresaID int64) (*EmpresaC
 		&cfg.NombreComercial,
 		&cfg.RegimenFiscal,
 		&cfg.ResponsabilidadTributaria,
+		&cfg.TipoPersonaFiscal,
+		&cfg.NaturalezaJuridica,
+		&cfg.RegimenTributarioColombia,
+		&cfg.IVAResponsabilidad,
+		&cfg.INCResponsabilidad,
+		&cfg.ResponsabilidadesRUTJSON,
+		&cfg.ObligacionesFiscalesJSON,
 		&cfg.EmailFacturacion,
 		&cfg.TelefonoFacturacion,
 		&cfg.DireccionFiscal,
@@ -799,6 +926,50 @@ func UpsertEmpresaConfiguracionAvanzada(dbConn *sql.DB, payload EmpresaConfigura
 	payload.CantidadDecimales = normalizeCantidadDecimales(payload.CantidadDecimales)
 	payload.FacturacionFrecuenciaCadaNNo = normalizeFrecuenciaCadaNNo(payload.FacturacionFrecuenciaCadaNNo)
 	payload.FacturacionFrecuenciaContador = normalizeFrecuenciaContador(payload.FacturacionFrecuenciaContador, payload.FacturacionFrecuenciaCadaNNo)
+	payload.TipoPersonaFiscal = normalizeFiscalToken(payload.TipoPersonaFiscal, map[string]bool{
+		"persona_natural":  true,
+		"persona_juridica": true,
+	})
+	payload.NaturalezaJuridica = normalizeFiscalToken(payload.NaturalezaJuridica, map[string]bool{
+		"natural_asalariado":    true,
+		"natural_independiente": true,
+		"natural_comerciante":   true,
+		"natural_profesional":   true,
+		"sas":                   true,
+		"ltda":                  true,
+		"sa":                    true,
+		"esal":                  true,
+		"entidad_publica":       true,
+		"sucursal_extranjera":   true,
+		"otra_juridica":         true,
+	})
+	payload.RegimenTributarioColombia = normalizeFiscalToken(payload.RegimenTributarioColombia, map[string]bool{
+		"ordinario":           true,
+		"simple":              true,
+		"especial":            true,
+		"ingresos_patrimonio": true,
+		"no_declarante_pn":    true,
+	})
+	payload.IVAResponsabilidad = normalizeFiscalToken(payload.IVAResponsabilidad, map[string]bool{
+		"responsable_iva":              true,
+		"no_responsable_iva":           true,
+		"pj_no_responsable_iva_simple": true,
+		"bienes_exentos":               true,
+		"servicios_exterior":           true,
+	})
+	payload.INCResponsabilidad = normalizeFiscalToken(payload.INCResponsabilidad, map[string]bool{
+		"no_aplica":                             true,
+		"responsable_inc":                       true,
+		"no_responsable_inc_restaurantes_bares": true,
+	})
+	payload.ResponsabilidadesRUTJSON = normalizeResponsabilidadesRUTJSON(payload.ResponsabilidadesRUTJSON)
+	payload.ObligacionesFiscalesJSON = normalizeObligacionesFiscalesJSON(payload.ObligacionesFiscalesJSON)
+	if strings.TrimSpace(payload.RegimenFiscal) == "" && payload.RegimenTributarioColombia != "" {
+		payload.RegimenFiscal = payload.RegimenTributarioColombia
+	}
+	if strings.TrimSpace(payload.ResponsabilidadTributaria) == "" && payload.IVAResponsabilidad != "" {
+		payload.ResponsabilidadTributaria = payload.IVAResponsabilidad
+	}
 	if payload.UsarDecimales {
 		if payload.CantidadDecimales <= 0 {
 			payload.CantidadDecimales = defaultCantidadDecimales
@@ -1047,6 +1218,13 @@ func UpsertEmpresaConfiguracionAvanzada(dbConn *sql.DB, payload EmpresaConfigura
 			mostrar_deducido_impuesto_factura = ?,
 			impresion_recibo_items_json = ?,
 			impresion_corte_items_json = ?,
+			tipo_persona_fiscal = ?,
+			naturaleza_juridica = ?,
+			regimen_tributario_colombia = ?,
+			iva_responsabilidad = ?,
+			inc_responsabilidad = ?,
+			responsabilidades_rut_json = ?,
+			obligaciones_fiscales_json = ?,
 			fecha_actualizacion = `+nowExpr+`
 		WHERE empresa_id = ?`,
 		mostrarLogoEmpresaInt,
@@ -1055,6 +1233,13 @@ func UpsertEmpresaConfiguracionAvanzada(dbConn *sql.DB, payload EmpresaConfigura
 		mostrarDeducidoImpuestoFacturaInt,
 		payload.ImpresionReciboItemsJSON,
 		payload.ImpresionCorteItemsJSON,
+		payload.TipoPersonaFiscal,
+		payload.NaturalezaJuridica,
+		payload.RegimenTributarioColombia,
+		payload.IVAResponsabilidad,
+		payload.INCResponsabilidad,
+		payload.ResponsabilidadesRUTJSON,
+		payload.ObligacionesFiscalesJSON,
 		payload.EmpresaID,
 	); err != nil {
 		return 0, err

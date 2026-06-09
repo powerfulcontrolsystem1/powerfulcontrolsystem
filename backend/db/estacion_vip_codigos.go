@@ -11,7 +11,7 @@ import (
 )
 
 type EstacionVIPCodigo struct {
-	ID            int64  `json:"id"`
+	ID             int64  `json:"id"`
 	EmpresaID      int64  `json:"empresa_id"`
 	EstacionID     int64  `json:"estacion_id"`
 	CarritoID      int64  `json:"carrito_id"`
@@ -29,14 +29,14 @@ func EnsureEstacionVIPCodigosSchema(dbConn *sql.DB) error {
 	}
 	stmts := []string{
 		`CREATE TABLE IF NOT EXISTS estacion_vip_codigos (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL,
 			estacion_id INTEGER NOT NULL,
 			carrito_id INTEGER NOT NULL,
 			codigo TEXT NOT NULL,
 			expira_en TEXT,
 			estado TEXT DEFAULT 'activo',
-			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
+			fecha_creacion TEXT DEFAULT (CURRENT_TIMESTAMP),
 			usuario_creador TEXT,
 			observaciones TEXT
 		);`,
@@ -162,4 +162,3 @@ func InvalidateVIPCodesForCarrito(dbConn *sql.DB, empresaID, carritoID int64, mo
 		WHERE empresa_id = ? AND carrito_id = ? AND LOWER(COALESCE(NULLIF(TRIM(estado),''),'activo')) = 'activo'`, obs, obs, empresaID, carritoID)
 	return err
 }
-

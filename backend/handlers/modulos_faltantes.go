@@ -923,7 +923,7 @@ func handleRRHHVacacionesSaldoAction(dbEmp *sql.DB, w http.ResponseWriter, r *ht
 
 	fechaCorte := time.Now().In(time.Local)
 	if raw := strings.TrimSpace(r.URL.Query().Get("fecha_corte")); raw != "" {
-		parsed, ok := ventasParseDateTime(raw)
+		parsed, ok := ventasParsepcs_ts(raw)
 		if !ok {
 			http.Error(w, "fecha_corte invalida (use YYYY-MM-DD)", http.StatusBadRequest)
 			return
@@ -1129,7 +1129,7 @@ func handleRRHHVacacionesAprobacionAction(dbEmp *sql.DB, action string, w http.R
 			}
 
 			fechaCorte := now
-			if parsed, ok := ventasParseDateTime(finanzasFirstNonBlank(genericStringValue(item["fecha_fin"]), genericStringValue(item["fecha_inicio"]))); ok {
+			if parsed, ok := ventasParsepcs_ts(finanzasFirstNonBlank(genericStringValue(item["fecha_fin"]), genericStringValue(item["fecha_inicio"]))); ok {
 				fechaCorte = parsed.In(time.Local)
 			}
 
@@ -1457,7 +1457,7 @@ func buildRRHHVacacionesSaldoByFilter(dbEmp *sql.DB, empresaID int64, filter rrh
 		return nil, fmt.Errorf("empleado sin fecha_ingreso en nomina")
 	}
 
-	fechaIngreso, ok := ventasParseDateTime(fechaIngresoRaw)
+	fechaIngreso, ok := ventasParsepcs_ts(fechaIngresoRaw)
 	if !ok {
 		return nil, fmt.Errorf("fecha_ingreso invalida")
 	}
@@ -1665,8 +1665,8 @@ func rrhhComputeDiasSolicitud(item map[string]interface{}) float64 {
 		return 0
 	}
 
-	fechaInicio, okInicio := ventasParseDateTime(fechaInicioRaw)
-	fechaFin, okFin := ventasParseDateTime(fechaFinRaw)
+	fechaInicio, okInicio := ventasParsepcs_ts(fechaInicioRaw)
+	fechaFin, okFin := ventasParsepcs_ts(fechaFinRaw)
 	if !okInicio || !okFin {
 		return 0
 	}
@@ -1688,7 +1688,7 @@ func rrhhNormalizeDateOnly(raw string) string {
 	if raw == "" {
 		return ""
 	}
-	if parsed, ok := ventasParseDateTime(raw); ok {
+	if parsed, ok := ventasParsepcs_ts(raw); ok {
 		return parsed.In(time.Local).Format("2006-01-02")
 	}
 	if len(raw) >= 10 {
@@ -1966,7 +1966,7 @@ func handleInventarioLotesSeriesOperacionAction(dbEmp *sql.DB, defaultAction str
 		ultima_operacion_ref = ?,
 		ultima_operacion_en = ?,
 		observaciones = ?,
-		fecha_actualizacion = datetime('now','localtime')
+		fecha_actualizacion = CURRENT_TIMESTAMP
 	WHERE empresa_id = ? AND id = ?`,
 		disponibleDespues,
 		reservadoDespues,
@@ -2103,7 +2103,7 @@ func handleInventarioLotesSeriesTrazabilidadAction(dbEmp *sql.DB, w http.Respons
 		query += ` AND LOWER(COALESCE(estado, 'activo')) = 'activo'`
 	}
 
-	query += ` ORDER BY datetime(COALESCE(NULLIF(fecha_operacion, ''), fecha_creacion)) DESC, id DESC LIMIT ?`
+	query += ` ORDER BY pcs_ts(COALESCE(NULLIF(fecha_operacion, ''), fecha_creacion)) DESC, id DESC LIMIT ?`
 	args = append(args, limit)
 
 	rows, err := dbEmp.Query(query, args...)
@@ -2546,7 +2546,7 @@ func loteSerieEstaVencido(fechaVencimiento string, now time.Time) bool {
 	if fechaVencimiento == "" {
 		return false
 	}
-	parsed, ok := ventasParseDateTime(fechaVencimiento)
+	parsed, ok := ventasParsepcs_ts(fechaVencimiento)
 	if !ok {
 		return false
 	}
@@ -3284,7 +3284,7 @@ func loadPagosCarteraRelacionados(dbEmp *sql.DB, empresaID int64, tipoMovimiento
 		args = append(args, terceroNombre, pattern)
 	}
 
-	query += ` ORDER BY datetime(COALESCE(NULLIF(fecha_movimiento, ''), fecha_creacion)) DESC, id DESC LIMIT 500`
+	query += ` ORDER BY pcs_ts(COALESCE(NULLIF(fecha_movimiento, ''), fecha_creacion)) DESC, id DESC LIMIT 500`
 
 	rows, err := dbEmp.Query(query, args...)
 	if err != nil {
@@ -3329,7 +3329,7 @@ func loadPagosCarteraRelacionados(dbEmp *sql.DB, empresaID int64, tipoMovimiento
 		total += monto
 		out = append(out, item)
 
-		if parsed, ok := ventasParseDateTime(item.FechaMovimiento); ok {
+		if parsed, ok := ventasParsepcs_ts(item.FechaMovimiento); ok {
 			if ultimoPago == "" || parsed.After(ultimoPagoAt) {
 				ultimoPagoAt = parsed
 				ultimoPago = parsed.Format("2006-01-02 15:04:05")
@@ -3373,7 +3373,7 @@ func normalizePeriodoContableInput(v string) string {
 			return candidate
 		}
 	}
-	if parsed, ok := ventasParseDateTime(v); ok {
+	if parsed, ok := ventasParsepcs_ts(v); ok {
 		return parsed.Format("2006-01")
 	}
 	return ""
@@ -3402,7 +3402,7 @@ func finanzasCarteraDiasMora(fechaVencimiento string, saldo float64) int64 {
 	if dueDate == "" {
 		return 0
 	}
-	parsedDue, ok := ventasParseDateTime(dueDate)
+	parsedDue, ok := ventasParsepcs_ts(dueDate)
 	if !ok {
 		return 0
 	}
@@ -4176,8 +4176,8 @@ func handleProduccionOrdenesPlanCapacidadAction(dbEmp *sql.DB, w http.ResponseWr
 	desde := rrhhNormalizeDateOnly(strings.TrimSpace(r.URL.Query().Get("desde")))
 	hasta := rrhhNormalizeDateOnly(strings.TrimSpace(r.URL.Query().Get("hasta")))
 	if desde != "" && hasta != "" {
-		if d, okD := ventasParseDateTime(desde); okD {
-			if h, okH := ventasParseDateTime(hasta); okH && d.After(h) {
+		if d, okD := ventasParsepcs_ts(desde); okD {
+			if h, okH := ventasParsepcs_ts(hasta); okH && d.After(h) {
 				desde, hasta = hasta, desde
 			}
 		}
@@ -4299,7 +4299,7 @@ func handleProduccionOrdenesPlanCapacidadAction(dbEmp *sql.DB, w http.ResponseWr
 
 		atrasada := false
 		if fechaBase != "" && !isFinalizada {
-			if parsedFecha, ok := ventasParseDateTime(fechaBase); ok {
+			if parsedFecha, ok := ventasParsepcs_ts(fechaBase); ok {
 				baseDate, _ := time.Parse("2006-01-02", parsedFecha.Format("2006-01-02"))
 				if baseDate.Before(nowDate) {
 					atrasada = true
@@ -4471,8 +4471,8 @@ func handleLogisticaEnviosSeguimientoHitosAction(dbEmp *sql.DB, w http.ResponseW
 	desde := rrhhNormalizeDateOnly(strings.TrimSpace(r.URL.Query().Get("desde")))
 	hasta := rrhhNormalizeDateOnly(strings.TrimSpace(r.URL.Query().Get("hasta")))
 	if desde != "" && hasta != "" {
-		if d, okD := ventasParseDateTime(desde); okD {
-			if h, okH := ventasParseDateTime(hasta); okH && d.After(h) {
+		if d, okD := ventasParsepcs_ts(desde); okD {
+			if h, okH := ventasParsepcs_ts(hasta); okH && d.After(h) {
 				desde, hasta = hasta, desde
 			}
 		}
@@ -4559,9 +4559,9 @@ func handleLogisticaEnviosSeguimientoHitosAction(dbEmp *sql.DB, w http.ResponseW
 
 		totalEnvios++
 
-		programadaAt, hasProgramada := ventasParseDateTime(fechaProgramada)
-		salidaAt, hasSalida := ventasParseDateTime(fechaSalida)
-		entregaAt, hasEntrega := ventasParseDateTime(fechaEntrega)
+		programadaAt, hasProgramada := ventasParsepcs_ts(fechaProgramada)
+		salidaAt, hasSalida := ventasParsepcs_ts(fechaSalida)
+		entregaAt, hasEntrega := ventasParsepcs_ts(fechaEntrega)
 
 		if hasSalida {
 			conHitoSalida++
@@ -4694,8 +4694,8 @@ func produccionEstadoEsFinal(estado string) bool {
 
 func produccionDiasPlanificacion(desde, hasta string, diasConDatos int64) int64 {
 	if desde != "" && hasta != "" {
-		if parsedDesde, okDesde := ventasParseDateTime(desde); okDesde {
-			if parsedHasta, okHasta := ventasParseDateTime(hasta); okHasta {
+		if parsedDesde, okDesde := ventasParsepcs_ts(desde); okDesde {
+			if parsedHasta, okHasta := ventasParsepcs_ts(hasta); okHasta {
 				dInicio, _ := time.Parse("2006-01-02", parsedDesde.Format("2006-01-02"))
 				dFin, _ := time.Parse("2006-01-02", parsedHasta.Format("2006-01-02"))
 				if dFin.Before(dInicio) {
@@ -5600,7 +5600,7 @@ func ventasAnyToFloat64(v interface{}) float64 {
 	}
 }
 
-func ventasParseDateTime(raw string) (time.Time, bool) {
+func ventasParsepcs_ts(raw string) (time.Time, bool) {
 	raw = strings.TrimSpace(raw)
 	if raw == "" {
 		return time.Time{}, false
@@ -5622,7 +5622,7 @@ func ventasParseDateTime(raw string) (time.Time, bool) {
 }
 
 func ventasElapsedHoursSince(raw string, now time.Time) int64 {
-	parsed, ok := ventasParseDateTime(raw)
+	parsed, ok := ventasParsepcs_ts(raw)
 	if !ok {
 		return 0
 	}
@@ -5634,7 +5634,7 @@ func ventasElapsedHoursSince(raw string, now time.Time) int64 {
 }
 
 func ventasIsPastDueDate(raw string, now time.Time) bool {
-	parsed, ok := ventasParseDateTime(raw)
+	parsed, ok := ventasParsepcs_ts(raw)
 	if !ok {
 		return false
 	}
@@ -6519,7 +6519,7 @@ func handleIntegracionesMonitoreoAction(dbEmp *sql.DB, cfg empresaModuloGenericC
 
 		horasDesdeSync := -1.0
 		if ultimaSync != "" {
-			if parsed, ok := ventasParseDateTime(ultimaSync); ok {
+			if parsed, ok := ventasParsepcs_ts(ultimaSync); ok {
 				horasDesdeSync = reportesRound(executedAt.Sub(parsed).Hours())
 			}
 		}
@@ -8216,7 +8216,7 @@ func dianFormatQuantity(raw string, fallback float64) string {
 	return fmt.Sprintf("%.6f", value)
 }
 
-func dianIssueDateTime(raw string) (string, string) {
+func dianIssuepcs_ts(raw string) (string, string) {
 	raw = strings.TrimSpace(raw)
 	if raw == "" {
 		now := time.Now()
@@ -8878,7 +8878,7 @@ func generateDIANUBLBase(cfg map[string]interface{}, empresaID int64, payload ma
 		profileExecutionID = "1"
 	}
 
-	issueDateOnly, issueTime := dianIssueDateTime(issueDateTime)
+	issueDateOnly, issueTime := dianIssuepcs_ts(issueDateTime)
 	rootName, lineName, customizationID, uuidSchemeName, typeCode, monetaryTotalTag, quantityTag, correctionCode := dianDocumentKind(documentoTipo)
 	totalFloat := ventasAnyToFloat64(total)
 	taxFloat := ventasAnyToFloat64(impuestoTotal)

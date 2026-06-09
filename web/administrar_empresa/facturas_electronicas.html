@@ -6,6 +6,7 @@
   <title>Facturas electrónicas y comprobantes</title>
   <link rel="stylesheet" href="/estilos.css">
   <script src="/js/empresa_submenu_context.js"></script>
+  <script src="/vendor/qrcode.min.js"></script>
   <script src="/js/print_documents.js"></script>
 </head>
 <body class="empresa-subpage">
@@ -282,6 +283,132 @@
         return "";
       }
 
+      function safeQRImageUrl(raw) {
+        var v = normalize(raw);
+        if (!v) return "";
+        var lower = v.toLowerCase();
+        if (lower.indexOf("data:image/") === 0) return v;
+        return safeUrl(v);
+      }
+
+      function normalizeCountryCodeForInvoiceQR(item) {
+        var raw = normalize(item && (item.pais_codigo || item.pais || item.country)).toLowerCase();
+        if (!raw) return "";
+        if (raw === "co" || raw === "col" || raw === "colombia") return "co";
+        return raw;
+      }
+
+      function isColombiaElectronicFiscalDocument(item) {
+        var tipo = normalize(item && item.tipo_documento).toLowerCase();
+        var country = normalizeCountryCodeForInvoiceQR(item);
+        return (tipo === "factura_electronica" || tipo === "nota_credito" || tipo === "nota_debito") && (!country || country === "co");
+      }
+
+      function electronicInvoiceValidationKey(item) {
+        return normalize(
+          item && (
+            item.cufe ||
+            item.cude ||
+            item.codigo_validacion ||
+            item.uuid ||
+            item.document_key ||
+            item.documentkey ||
+            item.xml_document_key ||
+            item.clave_acceso
+          )
+        );
+      }
+
+      function electronicInvoiceDianURL(item) {
+        var explicitURL = normalize(item && (item.qr_url || item.url_qr || item.url_consulta_dian || item.dian_qr_url || item.consulta_url));
+        if (/^https?:\/\//i.test(explicitURL)) return explicitURL;
+        var country = normalizeCountryCodeForInvoiceQR(item);
+        if (country && country !== "co") return "";
+        var key = electronicInvoiceValidationKey(item);
+        if (!key) return "";
+        var ambiente = normalize(item && (item.ambiente_fe || item.ambiente || item.environment)).toLowerCase();
+        var base = ambiente.indexOf("hab") >= 0 || ambiente.indexOf("test") >= 0 || ambiente.indexOf("prueba") >= 0
+          ? "https://catalogo-vpfe-hab.dian.gov.co/document/searchqr?documentkey="
+          : "https://catalogo-vpfe.dian.gov.co/document/searchqr?documentkey=";
+        return base + encodeURIComponent(key);
+      }
+
+      function getQRCodeGenerator() {
+        if (typeof window !== "undefined" && window.QRCode) return window.QRCode;
+        if (typeof globalThis !== "undefined" && globalThis.QRCode) return globalThis.QRCode;
+        if (typeof QRCode !== "undefined") return QRCode;
+        return null;
+      }
+
+      function generateQRDataURL(payload, size) {
+        return new Promise(function(resolve) {
+          var value = normalize(payload);
+          var generator = getQRCodeGenerator();
+          if (!value || !generator || typeof generator.toCanvas !== "function") {
+            resolve("");
+            return;
+          }
+          try {
+            var canvas = document.createElement("canvas");
+            generator.toCanvas(canvas, value, { width: Number(size || 180), margin: 1, errorCorrectionLevel: "M" }, function(err) {
+              if (err) {
+                resolve("");
+                return;
+              }
+              try {
+                resolve(canvas.toDataURL("image/png"));
+              } catch (_) {
+                resolve("");
+              }
+            });
+          } catch (_) {
+            resolve("");
+          }
+        });
+      }
+
+      function getPrintableDocumentQR(item) {
+        return item && item.__pcs_print_qr ? item.__pcs_print_qr : null;
+      }
+
+      async function preparePrintableDocumentQR(item, format) {
+        if (!isColombiaElectronicFiscalDocument(item)) return null;
+        var key = electronicInvoiceValidationKey(item);
+        var url = electronicInvoiceDianURL(item);
+        if (!key || !url) {
+          return {
+            label: "QR DIAN pendiente",
+            value: "Falta CUFE/CUDE o codigo de validacion para construir el QR DIAN.",
+            caption: "No entregue esta representacion grafica como factura electronica valida hasta tener validacion DIAN."
+          };
+        }
+        var image = await generateQRDataURL(url, format === "pos" ? 140 : 190);
+        return {
+          src: image,
+          label: "Consultar factura electronica DIAN",
+          value: "CUFE/CUDE: " + key,
+          url: url,
+          caption: "Escanee para verificar el documento electronico en DIAN."
+        };
+      }
+
+      function printableQRHTML(qr) {
+        if (!qr || typeof qr !== "object") return "";
+        var src = safeQRImageUrl(qr.src || qr.image || qr.imageUrl || qr.dataURL || "");
+        var label = normalize(qr.label) || "Consultar documento electronico";
+        var value = normalize(qr.value || qr.code);
+        var url = normalize(qr.url || qr.href);
+        var caption = normalize(qr.caption);
+        if (!src && !value && !url) return "";
+        return '<section class="factura-print-qr">' +
+          (src ? '<img src="' + escapeHtml(src) + '" alt="' + escapeHtml(label) + '">' : '') +
+          '<strong>' + escapeHtml(label) + '</strong>' +
+          (value ? '<span>' + escapeHtml(value) + '</span>' : '') +
+          (url ? '<span>' + escapeHtml(url) + '</span>' : '') +
+          (caption ? '<span>' + escapeHtml(caption) + '</span>' : '') +
+          '</section>';
+      }
+
       function companyLegalLines(cfg) {
         cfg = cfg && typeof cfg === "object" ? cfg : {};
         var lines = [];
@@ -435,6 +562,7 @@
           : (logoUrl ? ('<img src="' + escapeHtml(logoUrl) + '" alt="Logo empresa">') : '');
         var legalBlock = buildLegalBlock(cfg);
         var observaciones = normalize(item && item.observaciones) || "Sin observaciones registradas.";
+        var qrBlock = printableQRHTML(getPrintableDocumentQR(item));
 
         return '' +
           '<article class="factura-print-sheet ' + escapeHtml(meta.accentClass) + (viewMode === "compacta" ? " factura-print-compacta" : "") + '">' +
@@ -489,6 +617,7 @@
               '<strong>Observaciones</strong>' +
               '<p>' + escapeHtml(observaciones) + '</p>' +
             '</section>' +
+            qrBlock +
             (legalBlock ? ('<section class="factura-print-legal">' + escapeHtml(legalBlock) + '</section>') : '') +
           '</article>';
       }
@@ -503,6 +632,7 @@
           var notas = normalize(cfg.notas_legales);
           var pie = normalize(cfg.pie_factura);
           var numeroLegal = normalize(item && item.numero_legal) || normalize(item && item.documento_codigo) || "Pendiente";
+          var qrBlock = printableQRHTML(getPrintableDocumentQR(item));
           if (window.PCSPrint) {
             return window.PCSPrint.buildDocument({
               title: getPrintableDocumentMeta(item).title,
@@ -523,6 +653,7 @@
               totalLabel: "Total documento",
               totalValue: formatMoney(item && item.monto_total, (item && item.moneda) || "COP"),
               note: [notas, pie, normalize(item && item.codigo_validacion) ? ("Validacion: " + normalize(item && item.codigo_validacion)) : ""].filter(Boolean).join("\n"),
+              qr: getPrintableDocumentQR(item),
               signatures: false,
               closeAfterPrint: false
             });
@@ -530,7 +661,7 @@
           return '<!doctype html><html lang="es"><head><meta charset="utf-8">' +
             '<meta name="viewport" content="width=device-width,initial-scale=1">' +
             '<title>' + escapeHtml((item && item.documento_codigo) || "Recibo") + '</title>' +
-            '<style>body{font-family:monospace;padding:12px;color:#111}h1{font-size:18px;margin:0 0 8px}hr{border:0;border-top:1px dashed #999;margin:10px 0}small{color:#666}img{max-width:220px;max-height:64px;object-fit:contain;display:block;margin:0 auto 8px}</style>' +
+            '<style>body{font-family:monospace;padding:12px;color:#111}h1{font-size:18px;margin:0 0 8px}hr{border:0;border-top:1px dashed #999;margin:10px 0}small{color:#666}img{max-width:220px;max-height:64px;object-fit:contain;display:block;margin:0 auto 8px}.factura-print-qr{text-align:center;border-top:1px dashed #999;margin-top:10px;padding-top:8px}.factura-print-qr img{width:92px;height:92px;display:block;margin:0 auto 5px;image-rendering:pixelated}.factura-print-qr strong,.factura-print-qr span{display:block;font-size:9px;overflow-wrap:anywhere}</style>' +
             '</head><body>' +
             (logoUrl ? ('<img src="' + escapeHtml(logoUrl) + '" alt="Logo">') : '') +
             '<h1>' + escapeHtml(getPrintableDocumentMeta(item).title) + '</h1>' +
@@ -541,6 +672,7 @@
             '<p><strong>Total:</strong> ' + escapeHtml(formatMoney(item.monto_total, item.moneda || "COP")) + '</p>' +
             (notas ? ('<hr><small>' + escapeHtml(notas) + '</small>') : '') +
             (pie ? ('<p><small>' + escapeHtml(pie) + '</small></p>') : '') +
+            qrBlock +
             '<script>setTimeout(function(){try{window.print()}catch(e){}},250)<\/script>' +
             '</body></html>';
         }
@@ -554,6 +686,7 @@
             '.factura-print-shell{max-width:' + (formato === "compacta" ? "780" : "1120") + 'px;margin:0 auto;padding:28px 18px 42px;background:#fff;}' +
             '.factura-print-toolbar{display:flex;justify-content:flex-end;gap:12px;flex-wrap:wrap;margin-bottom:18px;}' +
             '.factura-print-compacta{padding:18px}.factura-print-compacta .factura-print-strip{grid-template-columns:repeat(2,minmax(0,1fr))}' +
+            '.factura-print-qr{text-align:center;border-top:1px dashed #9ca3af;margin-top:16px;padding-top:14px;color:#111827}.factura-print-qr img{width:132px;height:132px;object-fit:contain;display:block;margin:0 auto 7px;image-rendering:pixelated}.factura-print-qr strong,.factura-print-qr span{display:block;font-family:Arial,Helvetica,sans-serif;font-size:11px;line-height:1.35;overflow-wrap:anywhere}' +
             '@media print{.factura-print-toolbar{display:none}body{background:#fff;color:#111827}.factura-print-shell{padding:0}}' +
           '</style></head><body>' +
           '<div class="factura-print-shell">' +
@@ -703,7 +836,9 @@
         }
       }
 
-      function printInvoice(item) {
+      async function printInvoice(item) {
+        if (!item) return;
+        item.__pcs_print_qr = await preparePrintableDocumentQR(item, currentViewMode());
         var html = buildPrintableDocumentPage(item);
         if (window.Blob && window.URL && typeof window.URL.createObjectURL === "function") {
           var blobUrl = "";
@@ -853,7 +988,9 @@
         state.autoPrintDone = true;
         state.selectedKey = makeKey(found);
         renderDetalle(found);
-        try { printInvoice(found); } catch (e) {}
+        printInvoice(found).catch(function(err) {
+          showMessage((err && err.message) || "No se pudo preparar la visualizacion de la factura.", "error");
+        });
       }
 
       function loadEmpresa() {
@@ -908,7 +1045,9 @@
           return;
         }
         if (action === "imprimir") {
-          printInvoice(item);
+          printInvoice(item).catch(function(err) {
+            showMessage((err && err.message) || "No se pudo preparar la visualizacion de la factura.", "error");
+          });
         }
       });
 
@@ -921,7 +1060,9 @@
             item = state.index[state.selectedKey];
           }
           if (!item) return;
-          printInvoice(item);
+          printInvoice(item).catch(function(err) {
+            showMessage((err && err.message) || "No se pudo preparar la visualizacion de la factura.", "error");
+          });
         });
       }
 

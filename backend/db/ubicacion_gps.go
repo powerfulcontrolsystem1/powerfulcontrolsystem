@@ -65,7 +65,7 @@ type EmpresaGPSRecorrido struct {
 func EnsureEmpresaUbicacionGPSSchema(dbConn *sql.DB) error {
 	stmts := []string{
 		`CREATE TABLE IF NOT EXISTS empresa_gps_dispositivos (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL,
 			codigo TEXT NOT NULL,
 			nombre TEXT NOT NULL,
@@ -87,15 +87,15 @@ func EnsureEmpresaUbicacionGPSSchema(dbConn *sql.DB) error {
 			ultima_precision_metros REAL DEFAULT 0,
 			ultima_velocidad_kmh REAL DEFAULT 0,
 			ultimo_reporte_en TEXT,
-			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
-			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+			fecha_creacion TEXT DEFAULT (CURRENT_TIMESTAMP),
+			fecha_actualizacion TEXT DEFAULT (CURRENT_TIMESTAMP),
 			usuario_creador TEXT,
 			estado TEXT DEFAULT 'activo',
 			observaciones TEXT,
 			UNIQUE(empresa_id, codigo)
 		);`,
 		`CREATE TABLE IF NOT EXISTS empresa_gps_recorridos (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL,
 			dispositivo_id INTEGER NOT NULL,
 			latitud REAL NOT NULL,
@@ -108,9 +108,9 @@ func EnsureEmpresaUbicacionGPSSchema(dbConn *sql.DB) error {
 			senal_porcentaje REAL DEFAULT 0,
 			evento TEXT DEFAULT 'posicion',
 			fuente TEXT DEFAULT 'manual',
-			capturado_en TEXT DEFAULT (datetime('now','localtime')),
-			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
-			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+			capturado_en TEXT DEFAULT (CURRENT_TIMESTAMP),
+			fecha_creacion TEXT DEFAULT (CURRENT_TIMESTAMP),
+			fecha_actualizacion TEXT DEFAULT (CURRENT_TIMESTAMP),
 			usuario_creador TEXT,
 			estado TEXT DEFAULT 'activo',
 			observaciones TEXT
@@ -223,7 +223,7 @@ func EnsureEmpresaUbicacionGPSSchema(dbConn *sql.DB) error {
 	if err := ensureColumnIfMissing(dbConn, "empresa_gps_recorridos", "fuente", "TEXT DEFAULT 'manual'"); err != nil {
 		return err
 	}
-	if err := ensureColumnIfMissing(dbConn, "empresa_gps_recorridos", "capturado_en", "TEXT DEFAULT (datetime('now','localtime'))"); err != nil {
+	if err := ensureColumnIfMissing(dbConn, "empresa_gps_recorridos", "capturado_en", "TEXT DEFAULT (CURRENT_TIMESTAMP)"); err != nil {
 		return err
 	}
 	if err := ensureColumnIfMissing(dbConn, "empresa_gps_recorridos", "fecha_actualizacion", "TEXT"); err != nil {
@@ -265,7 +265,7 @@ func CreateEmpresaGPSDispositivo(dbConn *sql.DB, d EmpresaGPSDispositivo) (int64
 		telefono_sim, placa_activo, activo_referencia, intervalo_reporte_segundos, protocolo,
 		usuario_creador, estado, observaciones,
 		fecha_creacion, fecha_actualizacion
-	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, COALESCE(NULLIF(?, ''), 'activo'), ?, datetime('now','localtime'), datetime('now','localtime'))`,
+	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, COALESCE(NULLIF(?, ''), 'activo'), ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
 		d.EmpresaID,
 		codigo,
 		d.Nombre,
@@ -402,7 +402,7 @@ func UpdateEmpresaGPSDispositivo(dbConn *sql.DB, d EmpresaGPSDispositivo) error 
 		intervalo_reporte_segundos = ?,
 		protocolo = ?,
 		observaciones = ?,
-		fecha_actualizacion = datetime('now','localtime')
+		fecha_actualizacion = CURRENT_TIMESTAMP
 	WHERE empresa_id = ? AND id = ?`,
 		codigo,
 		d.Nombre,
@@ -438,7 +438,7 @@ func SetEmpresaGPSDispositivoEstado(dbConn *sql.DB, empresaID, id int64, estado 
 		estado = "activo"
 	}
 	res, err := dbConn.Exec(`UPDATE empresa_gps_dispositivos
-	SET estado = ?, fecha_actualizacion = datetime('now','localtime')
+	SET estado = ?, fecha_actualizacion = CURRENT_TIMESTAMP
 	WHERE empresa_id = ? AND id = ?`, estado, empresaID, id)
 	if err != nil {
 		return err
@@ -499,7 +499,7 @@ func CreateEmpresaGPSRecorrido(dbConn *sql.DB, p EmpresaGPSRecorrido) (int64, er
 		bateria_porcentaje, senal_porcentaje, evento,
 		fuente, capturado_en, usuario_creador, estado, observaciones,
 		fecha_creacion, fecha_actualizacion
-	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, COALESCE(NULLIF(?, ''), 'activo'), ?, datetime('now','localtime'), datetime('now','localtime'))`,
+	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, COALESCE(NULLIF(?, ''), 'activo'), ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
 		p.EmpresaID,
 		p.DispositivoID,
 		p.Latitud,
@@ -536,7 +536,7 @@ func CreateEmpresaGPSRecorrido(dbConn *sql.DB, p EmpresaGPSRecorrido) (int64, er
 		ultima_bateria_porcentaje = ?,
 		ultima_senal_porcentaje = ?,
 		ultimo_reporte_en = ?,
-		fecha_actualizacion = datetime('now','localtime')
+		fecha_actualizacion = CURRENT_TIMESTAMP
 	WHERE empresa_id = ? AND id = ?`,
 		p.Latitud,
 		p.Longitud,
@@ -590,10 +590,10 @@ func ListEmpresaGPSRecorridos(dbConn *sql.DB, empresaID, dispositivoID int64, in
 		query += ` AND estado = 'activo'`
 	}
 	if desdeMinutos > 0 {
-		query += ` AND datetime(capturado_en) >= datetime('now','localtime', ?)`
+		query += ` AND pcs_ts(capturado_en) >= pcs_ts('now','localtime', ?)`
 		args = append(args, fmt.Sprintf("-%d minutes", desdeMinutos))
 	}
-	query += ` ORDER BY datetime(capturado_en) ASC, id ASC LIMIT ?`
+	query += ` ORDER BY pcs_ts(capturado_en) ASC, id ASC LIMIT ?`
 	args = append(args, limit)
 
 	rows, err := dbConn.Query(query, args...)
@@ -665,7 +665,7 @@ func UpdateEmpresaGPSRecorrido(dbConn *sql.DB, p EmpresaGPSRecorrido) error {
 		fuente = ?,
 		capturado_en = ?,
 		observaciones = ?,
-		fecha_actualizacion = datetime('now','localtime')
+		fecha_actualizacion = CURRENT_TIMESTAMP
 	WHERE empresa_id = ? AND id = ?`,
 		p.DispositivoID,
 		p.Latitud,
@@ -702,7 +702,7 @@ func UpdateEmpresaGPSRecorrido(dbConn *sql.DB, p EmpresaGPSRecorrido) error {
 		ultima_bateria_porcentaje = ?,
 		ultima_senal_porcentaje = ?,
 		ultimo_reporte_en = ?,
-		fecha_actualizacion = datetime('now','localtime')
+		fecha_actualizacion = CURRENT_TIMESTAMP
 	WHERE empresa_id = ? AND id = ?`,
 		p.Latitud,
 		p.Longitud,
@@ -728,7 +728,7 @@ func SetEmpresaGPSRecorridoEstado(dbConn *sql.DB, empresaID, id int64, estado st
 		estado = "activo"
 	}
 	res, err := dbConn.Exec(`UPDATE empresa_gps_recorridos
-	SET estado = ?, fecha_actualizacion = datetime('now','localtime')
+	SET estado = ?, fecha_actualizacion = CURRENT_TIMESTAMP
 	WHERE empresa_id = ? AND id = ?`, estado, empresaID, id)
 	if err != nil {
 		return err

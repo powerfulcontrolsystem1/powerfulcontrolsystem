@@ -14,8 +14,8 @@ func TestEmpresaConfiguracionAvanzadaUpsertUsesPostgresRuntimeSQL(t *testing.T) 
 	src := string(raw)
 	body := extractEmpresaConfigAvanzadaFunctionForTest(t, src, "func UpsertEmpresaConfiguracionAvanzada(", "")
 
-	if strings.Contains(body, "datetime(") {
-		t.Fatalf("UpsertEmpresaConfiguracionAvanzada no debe usar datetime() en runtime PostgreSQL: %s", body)
+	if strings.Contains(body, "pcs_ts(") {
+		t.Fatalf("UpsertEmpresaConfiguracionAvanzada no debe usar pcs_ts() en runtime PostgreSQL: %s", body)
 	}
 	if !strings.Contains(body, "ExecCompat") {
 		t.Fatalf("UpsertEmpresaConfiguracionAvanzada debe usar ExecCompat para rebind PostgreSQL: %s", body)

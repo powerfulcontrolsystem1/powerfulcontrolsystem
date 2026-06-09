@@ -48,6 +48,21 @@ func TestBuildCarritosCompraByEmpresaQueryWithoutItemCountsDoesNotReferenceAlias
 	}
 }
 
+func TestValidateCarritoCompraItemCantidadAllowsWeightDecimalsOnlyForWeightUnits(t *testing.T) {
+	if err := validateCarritoCompraItemCantidad(0.375, "kg"); err != nil {
+		t.Fatalf("kg decimal must be valid: %v", err)
+	}
+	if err := validateCarritoCompraItemCantidad(250, "g"); err != nil {
+		t.Fatalf("gram quantity must be valid: %v", err)
+	}
+	if err := validateCarritoCompraItemCantidad(1.5, "unidad"); err == nil {
+		t.Fatalf("unit decimal must be rejected")
+	}
+	if err := validateCarritoCompraItemCantidad(2, "unidad"); err != nil {
+		t.Fatalf("integer unit quantity must be valid: %v", err)
+	}
+}
+
 func containsSQLToken(query, token string) bool {
 	return strings.Contains(strings.ToLower(query), strings.ToLower(token))
 }

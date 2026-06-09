@@ -92,7 +92,7 @@ type EmpresaDocumentoFacturacionListFilter struct {
 func EnsureEmpresaDocumentosTransaccionalesSchema(dbConn *sql.DB) error {
 	stmts := []string{
 		`CREATE TABLE IF NOT EXISTS empresa_facturacion_documentos (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL,
 			tipo_documento TEXT NOT NULL,
 			documento_codigo TEXT NOT NULL,
@@ -108,15 +108,15 @@ func EnsureEmpresaDocumentosTransaccionalesSchema(dbConn *sql.DB) error {
 			ambiente_fe TEXT,
 			fecha_documento TEXT,
 			entidad_relacionada_id INTEGER,
-			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
-			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+			fecha_creacion TEXT DEFAULT (CURRENT_TIMESTAMP),
+			fecha_actualizacion TEXT DEFAULT (CURRENT_TIMESTAMP),
 			usuario_creador TEXT,
 			estado TEXT DEFAULT 'activo',
 			observaciones TEXT,
 			UNIQUE(empresa_id, tipo_documento, documento_codigo)
 		);`,
 		`CREATE TABLE IF NOT EXISTS empresa_compras_documentos (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL,
 			proveedor_id INTEGER,
 			tipo_documento TEXT NOT NULL,
@@ -141,8 +141,8 @@ func EnsureEmpresaDocumentosTransaccionalesSchema(dbConn *sql.DB) error {
 			entrada_documento_ref TEXT,
 			comprobante_url TEXT,
 			comprobante_nombre_archivo TEXT,
-			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
-			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+			fecha_creacion TEXT DEFAULT (CURRENT_TIMESTAMP),
+			fecha_actualizacion TEXT DEFAULT (CURRENT_TIMESTAMP),
 			usuario_creador TEXT,
 			estado TEXT DEFAULT 'activo',
 			observaciones TEXT,
@@ -501,7 +501,7 @@ func UpsertEmpresaDocumentoFacturacion(dbConn *sql.DB, payload EmpresaDocumentoF
 		usuario_creador,
 		estado,
 		observaciones
-	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now','localtime'), datetime('now','localtime'), ?, ?, ?)
+	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, ?, ?, ?)
 	ON CONFLICT(empresa_id, tipo_documento, documento_codigo) DO UPDATE SET
 		estado_documento = excluded.estado_documento,
 		estado_anterior = excluded.estado_anterior,
@@ -515,7 +515,7 @@ func UpsertEmpresaDocumentoFacturacion(dbConn *sql.DB, payload EmpresaDocumentoF
 		ambiente_fe = CASE WHEN excluded.ambiente_fe <> '' THEN excluded.ambiente_fe ELSE empresa_facturacion_documentos.ambiente_fe END,
 		fecha_documento = CASE WHEN excluded.fecha_documento <> '' THEN excluded.fecha_documento ELSE empresa_facturacion_documentos.fecha_documento END,
 		entidad_relacionada_id = CASE WHEN excluded.entidad_relacionada_id > 0 THEN excluded.entidad_relacionada_id ELSE empresa_facturacion_documentos.entidad_relacionada_id END,
-		fecha_actualizacion = datetime('now','localtime'),
+		fecha_actualizacion = CURRENT_TIMESTAMP,
 		usuario_creador = CASE WHEN excluded.usuario_creador <> '' THEN excluded.usuario_creador ELSE empresa_facturacion_documentos.usuario_creador END,
 		estado = excluded.estado,
 		observaciones = CASE WHEN excluded.observaciones <> '' THEN excluded.observaciones ELSE empresa_facturacion_documentos.observaciones END`,
@@ -566,8 +566,8 @@ func ListEmpresaDocumentosFacturacionByEmpresa(dbConn *sql.DB, filter EmpresaDoc
 	fechaHasta := strings.TrimSpace(filter.FechaHasta)
 	busqueda := strings.TrimSpace(filter.Query)
 	fechaDocumentoExpr := `COALESCE(
-		NULLIF(CASE WHEN COALESCE(d.fecha_documento, '') LIKE 'date(%' OR COALESCE(d.fecha_documento, '') LIKE 'datetime(%' THEN '' ELSE COALESCE(d.fecha_documento, '') END, ''),
-		NULLIF(CASE WHEN COALESCE(d.fecha_creacion, '') LIKE 'date(%' OR COALESCE(d.fecha_creacion, '') LIKE 'datetime(%' THEN '' ELSE COALESCE(d.fecha_creacion, '') END, ''),
+		NULLIF(CASE WHEN COALESCE(d.fecha_documento, '') LIKE 'date(%' OR COALESCE(d.fecha_documento, '') LIKE 'pcs_ts(%' THEN '' ELSE COALESCE(d.fecha_documento, '') END, ''),
+		NULLIF(CASE WHEN COALESCE(d.fecha_creacion, '') LIKE 'date(%' OR COALESCE(d.fecha_creacion, '') LIKE 'pcs_ts(%' THEN '' ELSE COALESCE(d.fecha_creacion, '') END, ''),
 		''
 	)`
 	fechaDocumentoDiaExpr := `substr(` + fechaDocumentoExpr + `, 1, 10)`
@@ -863,7 +863,7 @@ func UpsertEmpresaDocumentoCompra(dbConn *sql.DB, payload EmpresaDocumentoCompra
 		usuario_creador,
 		estado,
 		observaciones
-	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now','localtime'), datetime('now','localtime'), ?, ?, ?)
+	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, ?, ?, ?)
 	ON CONFLICT(empresa_id, tipo_documento, documento_codigo) DO UPDATE SET
 		proveedor_id = CASE WHEN excluded.proveedor_id > 0 THEN excluded.proveedor_id ELSE empresa_compras_documentos.proveedor_id END,
 		estado_documento = excluded.estado_documento,
@@ -895,7 +895,7 @@ func UpsertEmpresaDocumentoCompra(dbConn *sql.DB, payload EmpresaDocumentoCompra
 		entrada_documento_ref = CASE WHEN excluded.entrada_documento_ref <> '' THEN excluded.entrada_documento_ref ELSE empresa_compras_documentos.entrada_documento_ref END,
 		comprobante_url = CASE WHEN excluded.comprobante_url <> '' THEN excluded.comprobante_url ELSE empresa_compras_documentos.comprobante_url END,
 		comprobante_nombre_archivo = CASE WHEN excluded.comprobante_nombre_archivo <> '' THEN excluded.comprobante_nombre_archivo ELSE empresa_compras_documentos.comprobante_nombre_archivo END,
-		fecha_actualizacion = datetime('now','localtime'),
+		fecha_actualizacion = CURRENT_TIMESTAMP,
 		usuario_creador = CASE WHEN excluded.usuario_creador <> '' THEN excluded.usuario_creador ELSE empresa_compras_documentos.usuario_creador END,
 		estado = excluded.estado,
 		observaciones = CASE WHEN excluded.observaciones <> '' THEN excluded.observaciones ELSE empresa_compras_documentos.observaciones END`,
@@ -1008,7 +1008,7 @@ func ListEmpresaDocumentosCompraByEmpresa(dbConn *sql.DB, empresaID int64, tipoD
 	}
 
 	query += `
-	ORDER BY datetime(COALESCE(NULLIF(fecha_actualizacion, ''), fecha_creacion)) DESC, id DESC
+	ORDER BY pcs_ts(COALESCE(NULLIF(fecha_actualizacion, ''), fecha_creacion)) DESC, id DESC
 	LIMIT ? OFFSET ?`
 	args = append(args, limit, offset)
 
@@ -1084,7 +1084,7 @@ func SetEmpresaDocumentoCompraEstadoByCodigo(dbConn *sql.DB, empresaID int64, ti
 	}
 
 	res, err := dbConn.Exec(`UPDATE empresa_compras_documentos
-		SET estado = ?, fecha_actualizacion = datetime('now','localtime')
+		SET estado = ?, fecha_actualizacion = CURRENT_TIMESTAMP
 		WHERE empresa_id = ? AND tipo_documento = ? AND documento_codigo = ?`, estadoNorm, empresaID, tipo, codigo)
 	if err != nil {
 		return err
@@ -1118,7 +1118,7 @@ func UpdateEmpresaDocumentoCompraComprobante(dbConn *sql.DB, empresaID int64, ti
 	res, err := dbConn.Exec(`UPDATE empresa_compras_documentos
 		SET comprobante_url = ?,
 			comprobante_nombre_archivo = ?,
-			fecha_actualizacion = datetime('now','localtime')
+			fecha_actualizacion = CURRENT_TIMESTAMP
 		WHERE empresa_id = ? AND tipo_documento = ? AND documento_codigo = ?`,
 		comprobanteURL,
 		comprobanteNombre,

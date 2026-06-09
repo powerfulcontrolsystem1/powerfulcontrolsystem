@@ -264,7 +264,7 @@ func refreshCarritoTotalConTarifaPorDiaTx(tx *sql.Tx, empresaID, carritoID int64
 	if _, err := tx.Exec(`UPDATE carritos_compras SET
 		subtotal = ?,
 		total = ?,
-		fecha_actualizacion = datetime('now','localtime')
+		fecha_actualizacion = CURRENT_TIMESTAMP
 	WHERE empresa_id = ? AND id = ?`, calc.SubtotalFinal, calc.TotalFinal, empresaID, carritoID); err != nil {
 		return nil, err
 	}

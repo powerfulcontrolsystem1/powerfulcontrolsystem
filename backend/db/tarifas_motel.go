@@ -87,7 +87,7 @@ func EnsureEmpresaTarifasMotelSchema(dbConn *sql.DB) error {
 
 	stmts := []string{
 		`CREATE TABLE IF NOT EXISTS empresa_tarifas_motel (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL,
 			estacion_id INTEGER NOT NULL,
 			estacion_codigo TEXT,
@@ -108,8 +108,8 @@ func EnsureEmpresaTarifasMotelSchema(dbConn *sql.DB) error {
 			moneda TEXT DEFAULT 'COP',
 			prioridad INTEGER DEFAULT 1,
 			aplicar_automaticamente INTEGER NOT NULL DEFAULT 1,
-			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
-			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+			fecha_creacion TEXT DEFAULT (CURRENT_TIMESTAMP),
+			fecha_actualizacion TEXT DEFAULT (CURRENT_TIMESTAMP),
 			usuario_creador TEXT,
 			estado TEXT DEFAULT 'activo',
 			observaciones TEXT
@@ -245,7 +245,7 @@ func CreateEmpresaTarifaMotel(dbConn *sql.DB, payload EmpresaTarifaMotel) (int64
 		minutos_incluidos, valor_base, minutos_extra, valor_extra, cobrar_por_fraccion,
 		tolerancia_minutos, moneda, prioridad, aplicar_automaticamente, usuario_creador,
 		estado, observaciones, fecha_creacion, fecha_actualizacion
-	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now','localtime'), datetime('now','localtime'))`,
+	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
 		payload.EmpresaID, payload.EstacionID, payload.EstacionCodigo, payload.EstacionNombre,
 		payload.NombrePlan, payload.TipoPlan, payload.CategoriaHabitacion, payload.DiaSemanaDesde,
 		payload.DiaSemanaHasta, payload.HoraInicio, payload.HoraFin, payload.MinutosIncluidos,
@@ -268,7 +268,7 @@ func UpdateEmpresaTarifaMotel(dbConn *sql.DB, payload EmpresaTarifaMotel) error 
 		categoria_habitacion = ?, dia_semana_desde = ?, dia_semana_hasta = ?, hora_inicio = ?, hora_fin = ?,
 		minutos_incluidos = ?, valor_base = ?, minutos_extra = ?, valor_extra = ?, cobrar_por_fraccion = ?,
 		tolerancia_minutos = ?, moneda = ?, prioridad = ?, aplicar_automaticamente = ?, usuario_creador = ?,
-		estado = ?, observaciones = ?, fecha_actualizacion = datetime('now','localtime')
+		estado = ?, observaciones = ?, fecha_actualizacion = CURRENT_TIMESTAMP
 	WHERE empresa_id = ? AND id = ?`,
 		payload.EstacionID, payload.EstacionCodigo, payload.EstacionNombre, payload.NombrePlan, payload.TipoPlan,
 		payload.CategoriaHabitacion, payload.DiaSemanaDesde, payload.DiaSemanaHasta, payload.HoraInicio, payload.HoraFin,
@@ -308,7 +308,7 @@ func SetEmpresaTarifaMotelEstado(dbConn *sql.DB, empresaID, id int64, estado str
 		return fmt.Errorf("empresa_id e id son obligatorios")
 	}
 	estado = normalizeTarifaPorDiaEstado(estado)
-	res, err := dbConn.Exec(`UPDATE empresa_tarifas_motel SET estado = ?, fecha_actualizacion = datetime('now','localtime') WHERE empresa_id = ? AND id = ?`, estado, empresaID, id)
+	res, err := dbConn.Exec(`UPDATE empresa_tarifas_motel SET estado = ?, fecha_actualizacion = CURRENT_TIMESTAMP WHERE empresa_id = ? AND id = ?`, estado, empresaID, id)
 	if err != nil {
 		return err
 	}

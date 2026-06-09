@@ -284,7 +284,7 @@ func EnsureEmpresaGimnasioSchema(dbConn *sql.DB) error {
 
 	stmts := []string{
 		`CREATE TABLE IF NOT EXISTS empresa_gimnasio_planes (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL,
 			servicio_id INTEGER,
 			nombre TEXT NOT NULL,
@@ -295,13 +295,13 @@ func EnsureEmpresaGimnasioSchema(dbConn *sql.DB) error {
 			acceso_ilimitado INTEGER DEFAULT 0,
 			sesiones_personalizadas INTEGER DEFAULT 0,
 			estado TEXT DEFAULT 'activo',
-			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
-			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+			fecha_creacion TEXT DEFAULT (CURRENT_TIMESTAMP),
+			fecha_actualizacion TEXT DEFAULT (CURRENT_TIMESTAMP),
 			usuario_creador TEXT
 		);`,
 		`CREATE INDEX IF NOT EXISTS ix_empresa_gimnasio_planes_empresa ON empresa_gimnasio_planes(empresa_id, estado, id DESC);`,
 		`CREATE TABLE IF NOT EXISTS empresa_gimnasio_socios (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL,
 			cliente_id INTEGER,
 			codigo TEXT,
@@ -320,14 +320,14 @@ func EnsureEmpresaGimnasioSchema(dbConn *sql.DB) error {
 			contacto_emergencia_nombre TEXT,
 			contacto_emergencia_telefono TEXT,
 			observaciones TEXT,
-			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
-			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+			fecha_creacion TEXT DEFAULT (CURRENT_TIMESTAMP),
+			fecha_actualizacion TEXT DEFAULT (CURRENT_TIMESTAMP),
 			usuario_creador TEXT
 		);`,
 		`CREATE INDEX IF NOT EXISTS ix_empresa_gimnasio_socios_empresa ON empresa_gimnasio_socios(empresa_id, estado, id DESC);`,
 		`CREATE INDEX IF NOT EXISTS ix_empresa_gimnasio_socios_plan ON empresa_gimnasio_socios(empresa_id, plan_id);`,
 		`CREATE TABLE IF NOT EXISTS empresa_gimnasio_entrenadores (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL,
 			nombre_completo TEXT NOT NULL,
 			especialidad TEXT,
@@ -337,13 +337,13 @@ func EnsureEmpresaGimnasioSchema(dbConn *sql.DB) error {
 			estado TEXT DEFAULT 'activo',
 			disponibilidad TEXT,
 			observaciones TEXT,
-			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
-			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+			fecha_creacion TEXT DEFAULT (CURRENT_TIMESTAMP),
+			fecha_actualizacion TEXT DEFAULT (CURRENT_TIMESTAMP),
 			usuario_creador TEXT
 		);`,
 		`CREATE INDEX IF NOT EXISTS ix_empresa_gimnasio_entrenadores_empresa ON empresa_gimnasio_entrenadores(empresa_id, estado, id DESC);`,
 		`CREATE TABLE IF NOT EXISTS empresa_gimnasio_clases (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL,
 			nombre TEXT NOT NULL,
 			categoria TEXT,
@@ -356,40 +356,40 @@ func EnsureEmpresaGimnasioSchema(dbConn *sql.DB) error {
 			estado TEXT DEFAULT 'programada',
 			precio REAL DEFAULT 0,
 			descripcion TEXT,
-			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
-			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+			fecha_creacion TEXT DEFAULT (CURRENT_TIMESTAMP),
+			fecha_actualizacion TEXT DEFAULT (CURRENT_TIMESTAMP),
 			usuario_creador TEXT
 		);`,
 		`CREATE INDEX IF NOT EXISTS ix_empresa_gimnasio_clases_empresa_fecha ON empresa_gimnasio_clases(empresa_id, fecha_programada DESC, id DESC);`,
 		`CREATE TABLE IF NOT EXISTS empresa_gimnasio_inscripciones (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL,
 			socio_id INTEGER NOT NULL,
 			clase_id INTEGER NOT NULL,
 			estado TEXT DEFAULT 'activa',
-			fecha_inscripcion TEXT DEFAULT (datetime('now','localtime')),
+			fecha_inscripcion TEXT DEFAULT (CURRENT_TIMESTAMP),
 			asistencia_marcada INTEGER DEFAULT 0,
 			observaciones TEXT,
-			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
+			fecha_creacion TEXT DEFAULT (CURRENT_TIMESTAMP),
 			usuario_creador TEXT
 		);`,
 		`CREATE INDEX IF NOT EXISTS ix_empresa_gimnasio_inscripciones_empresa ON empresa_gimnasio_inscripciones(empresa_id, estado, clase_id, socio_id);`,
 		`CREATE TABLE IF NOT EXISTS empresa_gimnasio_asistencias (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL,
 			socio_id INTEGER NOT NULL,
 			clase_id INTEGER,
-			fecha_hora TEXT DEFAULT (datetime('now','localtime')),
+			fecha_hora TEXT DEFAULT (CURRENT_TIMESTAMP),
 			tipo_acceso TEXT DEFAULT 'checkin',
 			canal TEXT,
 			sede TEXT,
 			observaciones TEXT,
-			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
+			fecha_creacion TEXT DEFAULT (CURRENT_TIMESTAMP),
 			usuario_creador TEXT
 		);`,
 		`CREATE INDEX IF NOT EXISTS ix_empresa_gimnasio_asistencias_empresa_fecha ON empresa_gimnasio_asistencias(empresa_id, fecha_hora DESC, id DESC);`,
 		`CREATE TABLE IF NOT EXISTS empresa_gimnasio_pagos (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL,
 			socio_id INTEGER NOT NULL,
 			cliente_id INTEGER,
@@ -405,14 +405,14 @@ func EnsureEmpresaGimnasioSchema(dbConn *sql.DB) error {
 			sede TEXT,
 			estado TEXT DEFAULT 'pagado',
 			referencia TEXT,
-			fecha_pago TEXT DEFAULT (datetime('now','localtime')),
+			fecha_pago TEXT DEFAULT (CURRENT_TIMESTAMP),
 			observaciones TEXT,
-			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
+			fecha_creacion TEXT DEFAULT (CURRENT_TIMESTAMP),
 			usuario_creador TEXT
 		);`,
 		`CREATE INDEX IF NOT EXISTS ix_empresa_gimnasio_pagos_empresa_fecha ON empresa_gimnasio_pagos(empresa_id, fecha_pago DESC, id DESC);`,
 		`CREATE TABLE IF NOT EXISTS empresa_gimnasio_acceso_config (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL UNIQUE,
 			modo_validacion_principal TEXT DEFAULT 'rfid',
 			permitir_rfid INTEGER DEFAULT 1,
@@ -424,11 +424,11 @@ func EnsureEmpresaGimnasioSchema(dbConn *sql.DB) error {
 			anti_passback_minutos INTEGER DEFAULT 10,
 			minutos_tolerancia_mora INTEGER DEFAULT 0,
 			estado TEXT DEFAULT 'activo',
-			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+			fecha_actualizacion TEXT DEFAULT (CURRENT_TIMESTAMP),
 			usuario_creador TEXT
 		);`,
 		`CREATE TABLE IF NOT EXISTS empresa_gimnasio_credenciales (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL,
 			socio_id INTEGER NOT NULL,
 			tipo_credencial TEXT NOT NULL,
@@ -437,14 +437,14 @@ func EnsureEmpresaGimnasioSchema(dbConn *sql.DB) error {
 			estado TEXT DEFAULT 'activa',
 			fecha_expiracion TEXT,
 			ultimo_uso TEXT,
-			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
-			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+			fecha_creacion TEXT DEFAULT (CURRENT_TIMESTAMP),
+			fecha_actualizacion TEXT DEFAULT (CURRENT_TIMESTAMP),
 			usuario_creador TEXT
 		);`,
 		`CREATE INDEX IF NOT EXISTS ix_empresa_gimnasio_credenciales_empresa ON empresa_gimnasio_credenciales(empresa_id, socio_id, estado, id DESC);`,
 		`CREATE UNIQUE INDEX IF NOT EXISTS ux_empresa_gimnasio_credenciales_codigo ON empresa_gimnasio_credenciales(empresa_id, codigo_credencial);`,
 		`CREATE TABLE IF NOT EXISTS empresa_gimnasio_dispositivos_acceso (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL,
 			nombre TEXT NOT NULL,
 			tipo_dispositivo TEXT NOT NULL,
@@ -454,13 +454,13 @@ func EnsureEmpresaGimnasioSchema(dbConn *sql.DB) error {
 			estado TEXT DEFAULT 'activo',
 			identificador TEXT,
 			observaciones TEXT,
-			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
-			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+			fecha_creacion TEXT DEFAULT (CURRENT_TIMESTAMP),
+			fecha_actualizacion TEXT DEFAULT (CURRENT_TIMESTAMP),
 			usuario_creador TEXT
 		);`,
 		`CREATE INDEX IF NOT EXISTS ix_empresa_gimnasio_dispositivos_empresa ON empresa_gimnasio_dispositivos_acceso(empresa_id, estado, id DESC);`,
 		`CREATE TABLE IF NOT EXISTS empresa_gimnasio_eventos_acceso (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL,
 			socio_id INTEGER,
 			credencial_id INTEGER,
@@ -469,7 +469,7 @@ func EnsureEmpresaGimnasioSchema(dbConn *sql.DB) error {
 			metodo_acceso TEXT,
 			resultado TEXT DEFAULT 'aprobado',
 			motivo TEXT,
-			fecha_evento TEXT DEFAULT (datetime('now','localtime')),
+			fecha_evento TEXT DEFAULT (CURRENT_TIMESTAMP),
 			canal TEXT,
 			sede TEXT,
 			observaciones TEXT,
@@ -505,8 +505,8 @@ func EnsureEmpresaGimnasioSchema(dbConn *sql.DB) error {
 				{"acceso_ilimitado", "INTEGER DEFAULT 0"},
 				{"sesiones_personalizadas", "INTEGER DEFAULT 0"},
 				{"estado", "TEXT DEFAULT 'activo'"},
-				{"fecha_creacion", "TEXT DEFAULT (datetime('now','localtime'))"},
-				{"fecha_actualizacion", "TEXT DEFAULT (datetime('now','localtime'))"},
+				{"fecha_creacion", "TEXT DEFAULT (CURRENT_TIMESTAMP)"},
+				{"fecha_actualizacion", "TEXT DEFAULT (CURRENT_TIMESTAMP)"},
 				{"usuario_creador", "TEXT"},
 			},
 		},
@@ -534,8 +534,8 @@ func EnsureEmpresaGimnasioSchema(dbConn *sql.DB) error {
 				{"contacto_emergencia_nombre", "TEXT"},
 				{"contacto_emergencia_telefono", "TEXT"},
 				{"observaciones", "TEXT"},
-				{"fecha_creacion", "TEXT DEFAULT (datetime('now','localtime'))"},
-				{"fecha_actualizacion", "TEXT DEFAULT (datetime('now','localtime'))"},
+				{"fecha_creacion", "TEXT DEFAULT (CURRENT_TIMESTAMP)"},
+				{"fecha_actualizacion", "TEXT DEFAULT (CURRENT_TIMESTAMP)"},
 				{"usuario_creador", "TEXT"},
 			},
 		},
@@ -554,8 +554,8 @@ func EnsureEmpresaGimnasioSchema(dbConn *sql.DB) error {
 				{"estado", "TEXT DEFAULT 'activo'"},
 				{"disponibilidad", "TEXT"},
 				{"observaciones", "TEXT"},
-				{"fecha_creacion", "TEXT DEFAULT (datetime('now','localtime'))"},
-				{"fecha_actualizacion", "TEXT DEFAULT (datetime('now','localtime'))"},
+				{"fecha_creacion", "TEXT DEFAULT (CURRENT_TIMESTAMP)"},
+				{"fecha_actualizacion", "TEXT DEFAULT (CURRENT_TIMESTAMP)"},
 				{"usuario_creador", "TEXT"},
 			},
 		},
@@ -577,8 +577,8 @@ func EnsureEmpresaGimnasioSchema(dbConn *sql.DB) error {
 				{"estado", "TEXT DEFAULT 'programada'"},
 				{"precio", "REAL DEFAULT 0"},
 				{"descripcion", "TEXT"},
-				{"fecha_creacion", "TEXT DEFAULT (datetime('now','localtime'))"},
-				{"fecha_actualizacion", "TEXT DEFAULT (datetime('now','localtime'))"},
+				{"fecha_creacion", "TEXT DEFAULT (CURRENT_TIMESTAMP)"},
+				{"fecha_actualizacion", "TEXT DEFAULT (CURRENT_TIMESTAMP)"},
 				{"usuario_creador", "TEXT"},
 			},
 		},
@@ -592,10 +592,10 @@ func EnsureEmpresaGimnasioSchema(dbConn *sql.DB) error {
 				{"socio_id", "INTEGER NOT NULL"},
 				{"clase_id", "INTEGER NOT NULL"},
 				{"estado", "TEXT DEFAULT 'activa'"},
-				{"fecha_inscripcion", "TEXT DEFAULT (datetime('now','localtime'))"},
+				{"fecha_inscripcion", "TEXT DEFAULT (CURRENT_TIMESTAMP)"},
 				{"asistencia_marcada", "INTEGER DEFAULT 0"},
 				{"observaciones", "TEXT"},
-				{"fecha_creacion", "TEXT DEFAULT (datetime('now','localtime'))"},
+				{"fecha_creacion", "TEXT DEFAULT (CURRENT_TIMESTAMP)"},
 				{"usuario_creador", "TEXT"},
 			},
 		},
@@ -608,12 +608,12 @@ func EnsureEmpresaGimnasioSchema(dbConn *sql.DB) error {
 				{"empresa_id", "INTEGER NOT NULL"},
 				{"socio_id", "INTEGER NOT NULL"},
 				{"clase_id", "INTEGER"},
-				{"fecha_hora", "TEXT DEFAULT (datetime('now','localtime'))"},
+				{"fecha_hora", "TEXT DEFAULT (CURRENT_TIMESTAMP)"},
 				{"tipo_acceso", "TEXT DEFAULT 'checkin'"},
 				{"canal", "TEXT"},
 				{"sede", "TEXT"},
 				{"observaciones", "TEXT"},
-				{"fecha_creacion", "TEXT DEFAULT (datetime('now','localtime'))"},
+				{"fecha_creacion", "TEXT DEFAULT (CURRENT_TIMESTAMP)"},
 				{"usuario_creador", "TEXT"},
 			},
 		},
@@ -638,9 +638,9 @@ func EnsureEmpresaGimnasioSchema(dbConn *sql.DB) error {
 				{"sede", "TEXT"},
 				{"estado", "TEXT DEFAULT 'pagado'"},
 				{"referencia", "TEXT"},
-				{"fecha_pago", "TEXT DEFAULT (datetime('now','localtime'))"},
+				{"fecha_pago", "TEXT DEFAULT (CURRENT_TIMESTAMP)"},
 				{"observaciones", "TEXT"},
-				{"fecha_creacion", "TEXT DEFAULT (datetime('now','localtime'))"},
+				{"fecha_creacion", "TEXT DEFAULT (CURRENT_TIMESTAMP)"},
 				{"usuario_creador", "TEXT"},
 			},
 		},
@@ -661,7 +661,7 @@ func EnsureEmpresaGimnasioSchema(dbConn *sql.DB) error {
 				{"anti_passback_minutos", "INTEGER DEFAULT 10"},
 				{"minutos_tolerancia_mora", "INTEGER DEFAULT 0"},
 				{"estado", "TEXT DEFAULT 'activo'"},
-				{"fecha_actualizacion", "TEXT DEFAULT (datetime('now','localtime'))"},
+				{"fecha_actualizacion", "TEXT DEFAULT (CURRENT_TIMESTAMP)"},
 				{"usuario_creador", "TEXT"},
 			},
 		},
@@ -679,8 +679,8 @@ func EnsureEmpresaGimnasioSchema(dbConn *sql.DB) error {
 				{"estado", "TEXT DEFAULT 'activa'"},
 				{"fecha_expiracion", "TEXT"},
 				{"ultimo_uso", "TEXT"},
-				{"fecha_creacion", "TEXT DEFAULT (datetime('now','localtime'))"},
-				{"fecha_actualizacion", "TEXT DEFAULT (datetime('now','localtime'))"},
+				{"fecha_creacion", "TEXT DEFAULT (CURRENT_TIMESTAMP)"},
+				{"fecha_actualizacion", "TEXT DEFAULT (CURRENT_TIMESTAMP)"},
 				{"usuario_creador", "TEXT"},
 			},
 		},
@@ -699,8 +699,8 @@ func EnsureEmpresaGimnasioSchema(dbConn *sql.DB) error {
 				{"estado", "TEXT DEFAULT 'activo'"},
 				{"identificador", "TEXT"},
 				{"observaciones", "TEXT"},
-				{"fecha_creacion", "TEXT DEFAULT (datetime('now','localtime'))"},
-				{"fecha_actualizacion", "TEXT DEFAULT (datetime('now','localtime'))"},
+				{"fecha_creacion", "TEXT DEFAULT (CURRENT_TIMESTAMP)"},
+				{"fecha_actualizacion", "TEXT DEFAULT (CURRENT_TIMESTAMP)"},
 				{"usuario_creador", "TEXT"},
 			},
 		},
@@ -718,7 +718,7 @@ func EnsureEmpresaGimnasioSchema(dbConn *sql.DB) error {
 				{"metodo_acceso", "TEXT"},
 				{"resultado", "TEXT DEFAULT 'aprobado'"},
 				{"motivo", "TEXT"},
-				{"fecha_evento", "TEXT DEFAULT (datetime('now','localtime'))"},
+				{"fecha_evento", "TEXT DEFAULT (CURRENT_TIMESTAMP)"},
 				{"canal", "TEXT"},
 				{"sede", "TEXT"},
 				{"observaciones", "TEXT"},
@@ -1061,7 +1061,7 @@ func syncEmpresaGimnasioSocioCliente(dbConn *sql.DB, socio EmpresaGimnasioSocio)
 	if err != nil || clienteID <= 0 || socio.ID <= 0 {
 		return clienteID, err
 	}
-	_, err = dbConn.Exec(`UPDATE empresa_gimnasio_socios SET cliente_id=?, fecha_actualizacion=datetime('now','localtime') WHERE empresa_id=? AND id=?`, clienteID, socio.EmpresaID, socio.ID)
+	_, err = dbConn.Exec(`UPDATE empresa_gimnasio_socios SET cliente_id=?, fecha_actualizacion=CURRENT_TIMESTAMP WHERE empresa_id=? AND id=?`, clienteID, socio.EmpresaID, socio.ID)
 	return clienteID, err
 }
 
@@ -1085,7 +1085,7 @@ func syncEmpresaGimnasioPlanServicio(dbConn *sql.DB, plan EmpresaGimnasioPlan) (
 		return 0, err
 	}
 	if plan.ID > 0 {
-		_, err = dbConn.Exec(`UPDATE empresa_gimnasio_planes SET servicio_id=?, fecha_actualizacion=datetime('now','localtime') WHERE empresa_id=? AND id=?`, servicioID, plan.EmpresaID, plan.ID)
+		_, err = dbConn.Exec(`UPDATE empresa_gimnasio_planes SET servicio_id=?, fecha_actualizacion=CURRENT_TIMESTAMP WHERE empresa_id=? AND id=?`, servicioID, plan.EmpresaID, plan.ID)
 	}
 	return servicioID, err
 }
@@ -1323,7 +1323,7 @@ func CreateEmpresaGimnasioSocio(dbConn *sql.DB, payload EmpresaGimnasioSocio) (i
 		empresa_id, cliente_id, codigo, nombre_completo, documento, telefono, email, fecha_nacimiento, genero, objetivo, estado,
 		plan_id, fecha_inicio_plan, fecha_fin_plan, saldo, contacto_emergencia_nombre, contacto_emergencia_telefono,
 		observaciones, usuario_creador, fecha_actualizacion
-	) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,datetime('now','localtime'))`,
+	) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,CURRENT_TIMESTAMP)`,
 		item.EmpresaID, nullableInt64(item.ClienteID), item.Codigo, item.NombreCompleto, item.Documento, item.Telefono, item.Email, item.FechaNacimiento, item.Genero, item.Objetivo, item.Estado,
 		item.PlanID, item.FechaInicioPlan, item.FechaFinPlan, item.Saldo, item.ContactoEmergenciaNombre, item.ContactoEmergenciaTelefono,
 		item.Observaciones, item.UsuarioCreador,
@@ -1349,7 +1349,7 @@ func UpdateEmpresaGimnasioSocio(dbConn *sql.DB, payload EmpresaGimnasioSocio) er
 	res, err := dbConn.Exec(`UPDATE empresa_gimnasio_socios SET
 		cliente_id=?, codigo=?, nombre_completo=?, documento=?, telefono=?, email=?, fecha_nacimiento=?, genero=?, objetivo=?, estado=?,
 		plan_id=?, fecha_inicio_plan=?, fecha_fin_plan=?, saldo=?, contacto_emergencia_nombre=?, contacto_emergencia_telefono=?,
-		observaciones=?, fecha_actualizacion=datetime('now','localtime')
+		observaciones=?, fecha_actualizacion=CURRENT_TIMESTAMP
 	WHERE id=? AND empresa_id=?`,
 		nullableInt64(item.ClienteID), item.Codigo, item.NombreCompleto, item.Documento, item.Telefono, item.Email, item.FechaNacimiento, item.Genero, item.Objetivo, item.Estado,
 		item.PlanID, item.FechaInicioPlan, item.FechaFinPlan, item.Saldo, item.ContactoEmergenciaNombre, item.ContactoEmergenciaTelefono,
@@ -1413,7 +1413,7 @@ func CreateEmpresaGimnasioPlan(dbConn *sql.DB, payload EmpresaGimnasioPlan) (int
 	id, err := insertSQLCompat(dbConn, `INSERT INTO empresa_gimnasio_planes (
 		empresa_id, nombre, descripcion, precio, duracion_dias, clases_incluidas, acceso_ilimitado, sesiones_personalizadas,
 		estado, usuario_creador, fecha_actualizacion
-	) VALUES (?,?,?,?,?,?,?,?,?,?,datetime('now','localtime'))`,
+	) VALUES (?,?,?,?,?,?,?,?,?,?,CURRENT_TIMESTAMP)`,
 		item.EmpresaID, item.Nombre, item.Descripcion, item.Precio, item.DuracionDias, item.ClasesIncluidas, accesoIlimitado, item.SesionesPersonalizadas,
 		item.Estado, item.UsuarioCreador,
 	)
@@ -1451,7 +1451,7 @@ func UpdateEmpresaGimnasioPlan(dbConn *sql.DB, payload EmpresaGimnasioPlan) erro
 	item.ServicioID = servicioID
 	res, err := dbConn.Exec(`UPDATE empresa_gimnasio_planes SET
 		servicio_id=?, nombre=?, descripcion=?, precio=?, duracion_dias=?, clases_incluidas=?, acceso_ilimitado=?, sesiones_personalizadas=?, estado=?,
-		fecha_actualizacion=datetime('now','localtime')
+		fecha_actualizacion=CURRENT_TIMESTAMP
 	WHERE id=? AND empresa_id=?`,
 		nullableInt64(item.ServicioID), item.Nombre, item.Descripcion, item.Precio, item.DuracionDias, item.ClasesIncluidas, accesoIlimitado, item.SesionesPersonalizadas, item.Estado,
 		item.ID, item.EmpresaID,
@@ -1508,7 +1508,7 @@ func CreateEmpresaGimnasioEntrenador(dbConn *sql.DB, payload EmpresaGimnasioEntr
 	return insertSQLCompat(dbConn, `INSERT INTO empresa_gimnasio_entrenadores (
 		empresa_id, nombre_completo, especialidad, telefono, email, certificaciones, estado, disponibilidad, observaciones,
 		usuario_creador, fecha_actualizacion
-	) VALUES (?,?,?,?,?,?,?,?,?,?,datetime('now','localtime'))`,
+	) VALUES (?,?,?,?,?,?,?,?,?,?,CURRENT_TIMESTAMP)`,
 		item.EmpresaID, item.NombreCompleto, item.Especialidad, item.Telefono, item.Email, item.Certificaciones, item.Estado, item.Disponibilidad, item.Observaciones,
 		item.UsuarioCreador,
 	)
@@ -1527,7 +1527,7 @@ func UpdateEmpresaGimnasioEntrenador(dbConn *sql.DB, payload EmpresaGimnasioEntr
 	}
 	res, err := dbConn.Exec(`UPDATE empresa_gimnasio_entrenadores SET
 		nombre_completo=?, especialidad=?, telefono=?, email=?, certificaciones=?, estado=?, disponibilidad=?, observaciones=?,
-		fecha_actualizacion=datetime('now','localtime')
+		fecha_actualizacion=CURRENT_TIMESTAMP
 	WHERE id=? AND empresa_id=?`,
 		item.NombreCompleto, item.Especialidad, item.Telefono, item.Email, item.Certificaciones, item.Estado, item.Disponibilidad, item.Observaciones,
 		item.ID, item.EmpresaID,
@@ -1587,7 +1587,7 @@ func CreateEmpresaGimnasioClase(dbConn *sql.DB, payload EmpresaGimnasioClase) (i
 	return insertSQLCompat(dbConn, `INSERT INTO empresa_gimnasio_clases (
 		empresa_id, nombre, categoria, entrenador_id, sede, canal, cupos, duracion_minutos, fecha_programada, estado, precio, descripcion,
 		usuario_creador, fecha_actualizacion
-	) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,datetime('now','localtime'))`,
+	) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,CURRENT_TIMESTAMP)`,
 		item.EmpresaID, item.Nombre, item.Categoria, item.EntrenadorID, item.Sede, item.Canal, item.Cupos, item.DuracionMinutos, item.FechaProgramada, item.Estado, item.Precio, item.Descripcion,
 		item.UsuarioCreador,
 	)
@@ -1606,7 +1606,7 @@ func UpdateEmpresaGimnasioClase(dbConn *sql.DB, payload EmpresaGimnasioClase) er
 	}
 	res, err := dbConn.Exec(`UPDATE empresa_gimnasio_clases SET
 		nombre=?, categoria=?, entrenador_id=?, sede=?, canal=?, cupos=?, duracion_minutos=?, fecha_programada=?, estado=?, precio=?, descripcion=?,
-		fecha_actualizacion=datetime('now','localtime')
+		fecha_actualizacion=CURRENT_TIMESTAMP
 	WHERE id=? AND empresa_id=?`,
 		item.Nombre, item.Categoria, item.EntrenadorID, item.Sede, item.Canal, item.Cupos, item.DuracionMinutos, item.FechaProgramada, item.Estado, item.Precio, item.Descripcion,
 		item.ID, item.EmpresaID,
@@ -1808,7 +1808,7 @@ func CreateEmpresaGimnasioPago(dbConn *sql.DB, payload EmpresaGimnasioPago) (int
 	if err != nil {
 		return 0, err
 	}
-	_, _ = dbConn.Exec(`UPDATE empresa_gimnasio_socios SET saldo=COALESCE(saldo,0)-?, fecha_actualizacion=datetime('now','localtime') WHERE empresa_id=? AND id=?`, item.Monto, item.EmpresaID, item.SocioID)
+	_, _ = dbConn.Exec(`UPDATE empresa_gimnasio_socios SET saldo=COALESCE(saldo,0)-?, fecha_actualizacion=CURRENT_TIMESTAMP WHERE empresa_id=? AND id=?`, item.Monto, item.EmpresaID, item.SocioID)
 	return id, nil
 }
 

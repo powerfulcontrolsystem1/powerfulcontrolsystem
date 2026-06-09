@@ -112,7 +112,7 @@ func ListEmpresaLicenciasAdicionales(dbConn *sql.DB, empresaID int64, includeIna
 		if isPostgresDialect() {
 			query += ` AND COALESCE(a.activo,1) = 1 AND ` + postgresLicenciaDatePredicate("a.fecha_fin", ">=")
 		} else {
-			query += ` AND COALESCE(a.activo,1) = 1 AND (COALESCE(a.fecha_fin,'') = '' OR datetime(a.fecha_fin) >= datetime('now','localtime'))`
+			query += ` AND COALESCE(a.activo,1) = 1 AND (COALESCE(a.fecha_fin,'') = '' OR pcs_ts(a.fecha_fin) >= CURRENT_TIMESTAMP)`
 		}
 	}
 	query += ` ORDER BY COALESCE(a.activo,1) DESC, COALESCE(a.fecha_fin,'') DESC, a.id DESC`

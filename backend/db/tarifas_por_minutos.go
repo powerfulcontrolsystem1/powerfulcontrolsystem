@@ -108,7 +108,7 @@ type empresaTarifaPorMinutosEstacionRef struct {
 func EnsureEmpresaTarifasPorMinutosSchema(dbConn *sql.DB) error {
 	stmts := []string{
 		`CREATE TABLE IF NOT EXISTS empresa_tarifas_por_minutos (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL,
 			estacion_id INTEGER NOT NULL,
 			estacion_codigo TEXT,
@@ -122,8 +122,8 @@ func EnsureEmpresaTarifasPorMinutosSchema(dbConn *sql.DB) error {
 			cobrar_por_fraccion INTEGER NOT NULL DEFAULT 0,
 			moneda TEXT DEFAULT 'COP',
 			prioridad INTEGER DEFAULT 1,
-			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
-			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+			fecha_creacion TEXT DEFAULT (CURRENT_TIMESTAMP),
+			fecha_actualizacion TEXT DEFAULT (CURRENT_TIMESTAMP),
 			usuario_creador TEXT,
 			estado TEXT DEFAULT 'activo',
 			observaciones TEXT
@@ -194,7 +194,7 @@ func EnsureEmpresaTarifasPorMinutosSchema(dbConn *sql.DB) error {
 func EnsureEmpresaTarifasPorMinutosConfiguracionSchema(dbConn *sql.DB) error {
 	stmts := []string{
 		`CREATE TABLE IF NOT EXISTS empresa_tarifas_por_minutos_configuracion (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL,
 			redondeo_modo TEXT NOT NULL DEFAULT 'ninguno',
 			redondeo_unidad REAL NOT NULL DEFAULT 100,
@@ -204,8 +204,8 @@ func EnsureEmpresaTarifasPorMinutosConfiguracionSchema(dbConn *sql.DB) error {
 			sensor_auto_activar_estacion INTEGER NOT NULL DEFAULT 0,
 			margen_desactivacion_habilitado INTEGER NOT NULL DEFAULT 0,
 			margen_desactivacion_minutos INTEGER NOT NULL DEFAULT 0,
-			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
-			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+			fecha_creacion TEXT DEFAULT (CURRENT_TIMESTAMP),
+			fecha_actualizacion TEXT DEFAULT (CURRENT_TIMESTAMP),
 			usuario_creador TEXT,
 			estado TEXT DEFAULT 'activo',
 			observaciones TEXT,
@@ -502,7 +502,7 @@ func CreateEmpresaTarifaPorMinutos(dbConn *sql.DB, payload EmpresaTarifaPorMinut
 		observaciones,
 		fecha_creacion,
 		fecha_actualizacion
-	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now','localtime'), datetime('now','localtime'))`,
+	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
 		payload.EmpresaID,
 		payload.EstacionID,
 		payload.EstacionCodigo,
@@ -548,7 +548,7 @@ func UpdateEmpresaTarifaPorMinutos(dbConn *sql.DB, payload EmpresaTarifaPorMinut
 		usuario_creador = ?,
 		estado = ?,
 		observaciones = ?,
-		fecha_actualizacion = datetime('now','localtime')
+		fecha_actualizacion = CURRENT_TIMESTAMP
 	WHERE empresa_id = ? AND id = ?`,
 		payload.EstacionID,
 		payload.EstacionCodigo,
@@ -585,7 +585,7 @@ func SetEmpresaTarifaPorMinutosEstado(dbConn *sql.DB, empresaID, id int64, estad
 	}
 	nextEstado := normalizeTarifaEstado(estado)
 	res, err := dbConn.Exec(`UPDATE empresa_tarifas_por_minutos
-	SET estado = ?, fecha_actualizacion = datetime('now','localtime')
+	SET estado = ?, fecha_actualizacion = CURRENT_TIMESTAMP
 	WHERE empresa_id = ? AND id = ?`, nextEstado, empresaID, id)
 	if err != nil {
 		return err
@@ -926,7 +926,7 @@ func UpsertEmpresaTarifaPorMinutosConfiguracion(dbConn *sql.DB, payload EmpresaT
 		observaciones,
 		fecha_creacion,
 		fecha_actualizacion
-	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now','localtime'), datetime('now','localtime'))
+	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
 	ON CONFLICT(empresa_id) DO UPDATE SET
 		redondeo_modo = excluded.redondeo_modo,
 		redondeo_unidad = excluded.redondeo_unidad,
@@ -939,7 +939,7 @@ func UpsertEmpresaTarifaPorMinutosConfiguracion(dbConn *sql.DB, payload EmpresaT
 		usuario_creador = excluded.usuario_creador,
 		estado = excluded.estado,
 		observaciones = excluded.observaciones,
-		fecha_actualizacion = datetime('now','localtime')`,
+		fecha_actualizacion = CURRENT_TIMESTAMP`,
 		payload.EmpresaID,
 		payload.RedondeoModo,
 		payload.RedondeoUnidad,
@@ -1407,12 +1407,12 @@ func RegisterTarifaPorMinutosCalculoContable(
 	if _, err := dbConn.Exec(`UPDATE empresa_eventos_contables
 	SET
 		procesado = 1,
-		fecha_procesado = datetime('now','localtime'),
-		fecha_ultimo_intento = datetime('now','localtime'),
+		fecha_procesado = CURRENT_TIMESTAMP,
+		fecha_ultimo_intento = CURRENT_TIMESTAMP,
 		intentos_procesamiento = CASE WHEN COALESCE(intentos_procesamiento, 0) <= 0 THEN 1 ELSE intentos_procesamiento END,
 		error_procesamiento = '',
 		asiento_contable_id = COALESCE(asiento_contable_id, 0),
-		fecha_actualizacion = datetime('now','localtime')
+		fecha_actualizacion = CURRENT_TIMESTAMP
 	WHERE id = ?`, eventoID); err != nil {
 		return 0, "", "", err
 	}

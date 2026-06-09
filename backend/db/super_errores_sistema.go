@@ -155,7 +155,7 @@ func EnsureSuperErroresSistemaSchema(dbConn *sql.DB) error {
 		}
 	} else {
 		if _, err := execSQLCompat(dbConn, `CREATE TABLE IF NOT EXISTS super_errores_sistema (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			nivel TEXT NOT NULL,
 			tipo_error TEXT,
 			mensaje TEXT NOT NULL,
@@ -173,9 +173,9 @@ func EnsureSuperErroresSistemaSchema(dbConn *sql.DB) error {
 			ip TEXT,
 			user_agent TEXT,
 			metadata_json TEXT,
-			fecha_error TEXT DEFAULT (datetime('now','localtime')),
-			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
-			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+			fecha_error TEXT DEFAULT (CURRENT_TIMESTAMP),
+			fecha_creacion TEXT DEFAULT (CURRENT_TIMESTAMP),
+			fecha_actualizacion TEXT DEFAULT (CURRENT_TIMESTAMP),
 			usuario_creador TEXT,
 			estado TEXT DEFAULT 'activo',
 			observaciones TEXT
@@ -205,9 +205,9 @@ func EnsureSuperErroresSistemaSchema(dbConn *sql.DB) error {
 		{"ip", "TEXT"},
 		{"user_agent", "TEXT"},
 		{"metadata_json", "TEXT"},
-		{"fecha_error", "TEXT DEFAULT (datetime('now','localtime'))"},
-		{"fecha_creacion", "TEXT DEFAULT (datetime('now','localtime'))"},
-		{"fecha_actualizacion", "TEXT DEFAULT (datetime('now','localtime'))"},
+		{"fecha_error", "TEXT DEFAULT (CURRENT_TIMESTAMP)"},
+		{"fecha_creacion", "TEXT DEFAULT (CURRENT_TIMESTAMP)"},
+		{"fecha_actualizacion", "TEXT DEFAULT (CURRENT_TIMESTAMP)"},
 		{"usuario_creador", "TEXT"},
 		{"estado", "TEXT DEFAULT 'activo'"},
 		{"observaciones", "TEXT"},

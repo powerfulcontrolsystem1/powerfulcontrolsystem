@@ -315,7 +315,7 @@ func upsertEmpresaFinanzasMovimientoBancario(dbConn *sql.DB, item EmpresaFinanza
 		observaciones,
 		fecha_creacion,
 		fecha_actualizacion
-	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now','localtime'), datetime('now','localtime'))
+	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
 	ON CONFLICT(empresa_id, hash_movimiento) DO UPDATE SET
 		periodo_contable = excluded.periodo_contable,
 		fecha_movimiento = excluded.fecha_movimiento,
@@ -349,7 +349,7 @@ func upsertEmpresaFinanzasMovimientoBancario(dbConn *sql.DB, item EmpresaFinanza
 		usuario_creador = excluded.usuario_creador,
 		estado = excluded.estado,
 		observaciones = excluded.observaciones,
-		fecha_actualizacion = datetime('now','localtime')`,
+		fecha_actualizacion = CURRENT_TIMESTAMP`,
 		item.EmpresaID,
 		item.PeriodoContable,
 		item.FechaMovimiento,
@@ -480,7 +480,7 @@ func ListEmpresaFinanzasMovimientosBancarios(dbConn *sql.DB, empresaID int64, f 
 		args = append(args, estadoConciliacion)
 	}
 
-	query += ` ORDER BY datetime(fecha_movimiento) DESC, id DESC`
+	query += ` ORDER BY pcs_ts(fecha_movimiento) DESC, id DESC`
 	limit := normalizeConciliacionBancariaLimit(f.Limit)
 	query += ` LIMIT ?`
 	args = append(args, limit)
@@ -557,7 +557,7 @@ func findEmpresaMovimientoFinanzasBancarioMatch(dbConn *sql.DB, empresaID int64,
 		AND b.id IS NULL
 		AND ABS(COALESCE(NULLIF(m.total_neto, 0), NULLIF(m.total, 0), m.monto, 0) - ?) <= ?`
 	args := []interface{}{empresaID, item.TipoMovimiento, montoObjetivo, cfg.ToleranciaMonto}
-	fechaDistExpr := `ABS(julianday(date(COALESCE(m.fecha_movimiento, ''))) - julianday(date(?)))`
+	fechaDistExpr := `ABS(pcs_julian_day(pcs_date(COALESCE(m.fecha_movimiento, ''))) - pcs_julian_day(pcs_date(?)))`
 	if isPostgresDialect() {
 		fechaDistExpr = `ABS((COALESCE(NULLIF(m.fecha_movimiento, ''), CURRENT_DATE::text)::date) - (?::date))`
 	}
@@ -598,9 +598,9 @@ func setEmpresaMovimientoBancarioConciliado(dbConn *sql.DB, itemID, movimientoID
 	_, err := dbConn.Exec(`UPDATE empresa_finanzas_bancos_movimientos
 	SET movimiento_finanzas_id = ?,
 		estado_conciliacion = 'conciliado',
-		conciliado_en = datetime('now','localtime'),
+		conciliado_en = CURRENT_TIMESTAMP,
 		conciliado_por = ?,
-		fecha_actualizacion = datetime('now','localtime')
+		fecha_actualizacion = CURRENT_TIMESTAMP
 	WHERE id = ?`, movimientoID, usuario, itemID)
 	return err
 }
@@ -611,7 +611,7 @@ func setEmpresaMovimientoBancarioConDesviacion(dbConn *sql.DB, itemID int64) err
 		estado_conciliacion = 'con_desviacion',
 		conciliado_en = '',
 		conciliado_por = '',
-		fecha_actualizacion = datetime('now','localtime')
+		fecha_actualizacion = CURRENT_TIMESTAMP
 	WHERE id = ?`, itemID)
 	return err
 }
@@ -681,7 +681,7 @@ func ConciliarEmpresaMovimientosBancariosAutomatico(dbConn *sql.DB, empresaID in
 		args = append(args, cfg.PeriodoContable)
 	}
 
-	query += ` ORDER BY datetime(fecha_movimiento) ASC, id ASC LIMIT ?`
+	query += ` ORDER BY pcs_ts(fecha_movimiento) ASC, id ASC LIMIT ?`
 	args = append(args, cfg.Limit)
 
 	rows, err := dbConn.Query(query, args...)

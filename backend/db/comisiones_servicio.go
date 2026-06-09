@@ -188,34 +188,34 @@ type comisionServicioItemSnapshot struct {
 func EnsureEmpresaComisionesServicioSchema(dbConn *sql.DB) error {
 	bootstrapStmts := []string{
 		`CREATE TABLE IF NOT EXISTS empresa_comisiones_servicio_configuracion (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL UNIQUE,
 			habilitar_comisiones INTEGER DEFAULT 0,
 			porcentaje_comision REAL DEFAULT 10,
 			filtro_servicio TEXT DEFAULT 'lavado',
 			aplicar_automaticamente INTEGER DEFAULT 1,
-			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
-			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+			fecha_creacion TEXT DEFAULT (CURRENT_TIMESTAMP),
+			fecha_actualizacion TEXT DEFAULT (CURRENT_TIMESTAMP),
 			usuario_creador TEXT,
 			estado TEXT DEFAULT 'activo',
 			observaciones TEXT
 		);`,
 		`CREATE TABLE IF NOT EXISTS empresa_comisiones_servicio_escalas (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL,
 			rol_operacion TEXT,
 			servicio_filtro TEXT,
 			porcentaje_comision REAL DEFAULT 0,
 			tope_comision REAL DEFAULT 0,
 			prioridad INTEGER DEFAULT 100,
-			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
-			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+			fecha_creacion TEXT DEFAULT (CURRENT_TIMESTAMP),
+			fecha_actualizacion TEXT DEFAULT (CURRENT_TIMESTAMP),
 			usuario_creador TEXT,
 			estado TEXT DEFAULT 'activo',
 			observaciones TEXT
 		);`,
 		`CREATE TABLE IF NOT EXISTS empresa_comisiones_servicio_movimientos (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL,
 			carrito_id INTEGER DEFAULT 0,
 			carrito_item_id INTEGER DEFAULT 0,
@@ -247,9 +247,9 @@ func EnsureEmpresaComisionesServicioSchema(dbConn *sql.DB) error {
 			periodo_liquidacion_hasta TEXT,
 			liquidado_en TEXT,
 			liquidado_por TEXT,
-			fecha_movimiento TEXT DEFAULT (datetime('now','localtime')),
-			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
-			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+			fecha_movimiento TEXT DEFAULT (CURRENT_TIMESTAMP),
+			fecha_creacion TEXT DEFAULT (CURRENT_TIMESTAMP),
+			fecha_actualizacion TEXT DEFAULT (CURRENT_TIMESTAMP),
 			usuario_creador TEXT,
 			estado TEXT DEFAULT 'activo',
 			observaciones TEXT
@@ -407,7 +407,7 @@ func EnsureEmpresaComisionesServicioSchema(dbConn *sql.DB) error {
 	if err := ensureColumnIfMissing(dbConn, "empresa_comisiones_servicio_movimientos", "liquidado_por", "TEXT"); err != nil {
 		return err
 	}
-	if err := ensureColumnIfMissing(dbConn, "empresa_comisiones_servicio_movimientos", "fecha_movimiento", "TEXT DEFAULT (datetime('now','localtime'))"); err != nil {
+	if err := ensureColumnIfMissing(dbConn, "empresa_comisiones_servicio_movimientos", "fecha_movimiento", "TEXT DEFAULT (CURRENT_TIMESTAMP)"); err != nil {
 		return err
 	}
 	if err := ensureColumnIfMissing(dbConn, "empresa_comisiones_servicio_movimientos", "fecha_actualizacion", "TEXT"); err != nil {
@@ -737,7 +737,7 @@ func CreateEmpresaComisionServicioEscala(dbConn *sql.DB, payload EmpresaComision
 		observaciones,
 		fecha_creacion,
 		fecha_actualizacion
-	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now','localtime'), datetime('now','localtime'))`,
+	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
 		payload.EmpresaID,
 		payload.RolOperacion,
 		payload.ServicioFiltro,
@@ -782,7 +782,7 @@ func UpdateEmpresaComisionServicioEscala(dbConn *sql.DB, payload EmpresaComision
 		usuario_creador = ?,
 		estado = ?,
 		observaciones = ?,
-		fecha_actualizacion = datetime('now','localtime')
+		fecha_actualizacion = CURRENT_TIMESTAMP
 	WHERE empresa_id = ? AND id = ?`,
 		payload.RolOperacion,
 		payload.ServicioFiltro,
@@ -819,7 +819,7 @@ func SetEmpresaComisionServicioEscalaEstado(dbConn *sql.DB, empresaID, escalaID 
 		estado = ?,
 		usuario_creador = ?,
 		observaciones = ?,
-		fecha_actualizacion = datetime('now','localtime')
+		fecha_actualizacion = CURRENT_TIMESTAMP
 	WHERE empresa_id = ? AND id = ?`,
 		estado,
 		strings.TrimSpace(usuario),
@@ -918,7 +918,7 @@ func UpsertEmpresaComisionesServicioConfiguracion(dbConn *sql.DB, payload Empres
 			usuario_creador = ?,
 			estado = ?,
 			observaciones = ?,
-			fecha_actualizacion = datetime('now','localtime')
+			fecha_actualizacion = CURRENT_TIMESTAMP
 		WHERE empresa_id = ?`,
 			boolToInt(payload.HabilitarComisiones),
 			payload.PorcentajeComision,
@@ -946,7 +946,7 @@ func UpsertEmpresaComisionesServicioConfiguracion(dbConn *sql.DB, payload Empres
 		observaciones,
 		fecha_creacion,
 		fecha_actualizacion
-	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, datetime('now','localtime'), datetime('now','localtime'))`,
+	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
 		payload.EmpresaID,
 		boolToInt(payload.HabilitarComisiones),
 		payload.PorcentajeComision,
@@ -1109,7 +1109,7 @@ func CreateEmpresaComisionServicioMovimiento(dbConn *sql.DB, payload EmpresaComi
 		observaciones,
 		fecha_creacion,
 		fecha_actualizacion
-	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, COALESCE(NULLIF(?, ''), datetime('now','localtime')), ?, ?, ?, datetime('now','localtime'), datetime('now','localtime'))`,
+	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, COALESCE(NULLIF(?, ''), CURRENT_TIMESTAMP), ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
 		payload.EmpresaID,
 		payload.CarritoID,
 		payload.CarritoItemID,
@@ -1203,10 +1203,10 @@ func ResolverEmpresaComisionServicioAjusteManual(dbConn *sql.DB, empresaID, movi
 	SET
 		ajuste_estado = ?,
 		aprobado_por = ?,
-		aprobado_en = datetime('now','localtime'),
+		aprobado_en = CURRENT_TIMESTAMP,
 		estado = ?,
 		observaciones = ?,
-		fecha_actualizacion = datetime('now','localtime')
+		fecha_actualizacion = CURRENT_TIMESTAMP
 	WHERE empresa_id = ? AND id = ?`,
 		nuevoAjusteEstado,
 		usuario,
@@ -1343,7 +1343,7 @@ func ListEmpresaComisionServicioMovimientos(dbConn *sql.DB, empresaID int64, fil
 		COALESCE(observaciones, '')
 	FROM empresa_comisiones_servicio_movimientos
 	WHERE %s
-	ORDER BY datetime(COALESCE(fecha_movimiento, fecha_creacion)) DESC, id DESC
+	ORDER BY pcs_ts(COALESCE(fecha_movimiento, fecha_creacion)) DESC, id DESC
 	LIMIT %d`, whereSQL, limit)
 
 	rows, err := dbConn.Query(query, args...)
@@ -1938,9 +1938,9 @@ func VincularEmpresaComisionesServicioALiquidacion(dbConn *sql.DB, empresaID, li
 		liquidacion_nomina_id = ?,
 		periodo_liquidacion_desde = ?,
 		periodo_liquidacion_hasta = ?,
-		liquidado_en = datetime('now','localtime'),
+		liquidado_en = CURRENT_TIMESTAMP,
 		liquidado_por = ?,
-		fecha_actualizacion = datetime('now','localtime')
+		fecha_actualizacion = CURRENT_TIMESTAMP
 	WHERE empresa_id = ?
 		AND id IN (` + ph + `)`
 
@@ -1960,7 +1960,7 @@ func LimpiarVinculoEmpresaComisionesServicioLiquidacion(dbConn *sql.DB, empresaI
 		periodo_liquidacion_hasta = '',
 		liquidado_en = '',
 		liquidado_por = '',
-		fecha_actualizacion = datetime('now','localtime')
+		fecha_actualizacion = CURRENT_TIMESTAMP
 	WHERE empresa_id = ? AND liquidacion_nomina_id = ?`, empresaID, liquidacionNominaID)
 	return err
 }

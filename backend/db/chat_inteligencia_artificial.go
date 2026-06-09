@@ -231,7 +231,7 @@ type SuperAIModeloPreferido struct {
 func EnsureEmpresaAIChatSchema(dbConn *sql.DB) error {
 	stmts := []string{
 		`CREATE TABLE IF NOT EXISTS empresa_ai_consultas (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL,
 			provider TEXT NOT NULL,
 			model_id TEXT NOT NULL,
@@ -240,16 +240,16 @@ func EnsureEmpresaAIChatSchema(dbConn *sql.DB) error {
 			prompt_tokens INTEGER DEFAULT 0,
 			completion_tokens INTEGER DEFAULT 0,
 			total_tokens INTEGER DEFAULT 0,
-			fecha_consulta TEXT DEFAULT (datetime('now','localtime')),
+			fecha_consulta TEXT DEFAULT (CURRENT_TIMESTAMP),
 			plan_actual TEXT DEFAULT 'free',
-			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
-			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+			fecha_creacion TEXT DEFAULT (CURRENT_TIMESTAMP),
+			fecha_actualizacion TEXT DEFAULT (CURRENT_TIMESTAMP),
 			usuario_creador TEXT,
 			estado TEXT DEFAULT 'activo',
 			observaciones TEXT
 		);`,
 		`CREATE TABLE IF NOT EXISTS empresa_ai_uso_diario (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL,
 			provider TEXT NOT NULL,
 			model_id TEXT NOT NULL,
@@ -257,21 +257,21 @@ func EnsureEmpresaAIChatSchema(dbConn *sql.DB) error {
 			consultas_total INTEGER DEFAULT 0,
 			tokens_total INTEGER DEFAULT 0,
 			plan_actual TEXT DEFAULT 'free',
-			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
-			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+			fecha_creacion TEXT DEFAULT (CURRENT_TIMESTAMP),
+			fecha_actualizacion TEXT DEFAULT (CURRENT_TIMESTAMP),
 			usuario_creador TEXT,
 			estado TEXT DEFAULT 'activo',
 			observaciones TEXT,
 			UNIQUE(empresa_id, provider, model_id, fecha_uso)
 		);`,
 		`CREATE TABLE IF NOT EXISTS empresa_ai_modelo_preferido (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL,
 			admin_email TEXT NOT NULL,
 			provider TEXT,
 			model_id TEXT NOT NULL,
-			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
-			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+			fecha_creacion TEXT DEFAULT (CURRENT_TIMESTAMP),
+			fecha_actualizacion TEXT DEFAULT (CURRENT_TIMESTAMP),
 			usuario_creador TEXT,
 			estado TEXT DEFAULT 'activo',
 			observaciones TEXT,
@@ -297,13 +297,13 @@ func EnsureEmpresaAIChatSchema(dbConn *sql.DB) error {
 	if err := ensureColumnIfMissing(dbConn, "empresa_ai_consultas", "total_tokens", "INTEGER DEFAULT 0"); err != nil {
 		return err
 	}
-	if err := ensureColumnIfMissing(dbConn, "empresa_ai_consultas", "fecha_consulta", "TEXT DEFAULT (datetime('now','localtime'))"); err != nil {
+	if err := ensureColumnIfMissing(dbConn, "empresa_ai_consultas", "fecha_consulta", "TEXT DEFAULT (CURRENT_TIMESTAMP)"); err != nil {
 		return err
 	}
 	if err := ensureColumnIfMissing(dbConn, "empresa_ai_consultas", "plan_actual", "TEXT DEFAULT 'free'"); err != nil {
 		return err
 	}
-	if err := ensureColumnIfMissing(dbConn, "empresa_ai_consultas", "fecha_actualizacion", "TEXT DEFAULT (datetime('now','localtime'))"); err != nil {
+	if err := ensureColumnIfMissing(dbConn, "empresa_ai_consultas", "fecha_actualizacion", "TEXT DEFAULT (CURRENT_TIMESTAMP)"); err != nil {
 		return err
 	}
 	if err := ensureColumnIfMissing(dbConn, "empresa_ai_consultas", "usuario_creador", "TEXT"); err != nil {
@@ -324,7 +324,7 @@ func EnsureEmpresaAIChatSchema(dbConn *sql.DB) error {
 	if err := ensureColumnIfMissing(dbConn, "empresa_ai_uso_diario", "plan_actual", "TEXT DEFAULT 'free'"); err != nil {
 		return err
 	}
-	if err := ensureColumnIfMissing(dbConn, "empresa_ai_uso_diario", "fecha_actualizacion", "TEXT DEFAULT (datetime('now','localtime'))"); err != nil {
+	if err := ensureColumnIfMissing(dbConn, "empresa_ai_uso_diario", "fecha_actualizacion", "TEXT DEFAULT (CURRENT_TIMESTAMP)"); err != nil {
 		return err
 	}
 	if err := ensureColumnIfMissing(dbConn, "empresa_ai_uso_diario", "usuario_creador", "TEXT"); err != nil {
@@ -342,7 +342,7 @@ func EnsureEmpresaAIChatSchema(dbConn *sql.DB) error {
 	if err := ensureColumnIfMissing(dbConn, "empresa_ai_modelo_preferido", "model_id", "TEXT"); err != nil {
 		return err
 	}
-	if err := ensureColumnIfMissing(dbConn, "empresa_ai_modelo_preferido", "fecha_actualizacion", "TEXT DEFAULT (datetime('now','localtime'))"); err != nil {
+	if err := ensureColumnIfMissing(dbConn, "empresa_ai_modelo_preferido", "fecha_actualizacion", "TEXT DEFAULT (CURRENT_TIMESTAMP)"); err != nil {
 		return err
 	}
 	if err := ensureColumnIfMissing(dbConn, "empresa_ai_modelo_preferido", "usuario_creador", "TEXT"); err != nil {
@@ -362,7 +362,7 @@ func EnsureEmpresaAIChatSchema(dbConn *sql.DB) error {
 func EnsureSuperAIChatSchema(dbConn *sql.DB) error {
 	stmts := []string{
 		`CREATE TABLE IF NOT EXISTS super_ai_consultas (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			admin_email TEXT NOT NULL,
 			provider TEXT NOT NULL,
 			model_id TEXT NOT NULL,
@@ -371,16 +371,16 @@ func EnsureSuperAIChatSchema(dbConn *sql.DB) error {
 			prompt_tokens INTEGER DEFAULT 0,
 			completion_tokens INTEGER DEFAULT 0,
 			total_tokens INTEGER DEFAULT 0,
-			fecha_consulta TEXT DEFAULT (datetime('now','localtime')),
+			fecha_consulta TEXT DEFAULT (CURRENT_TIMESTAMP),
 			plan_actual TEXT DEFAULT 'free',
-			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
-			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+			fecha_creacion TEXT DEFAULT (CURRENT_TIMESTAMP),
+			fecha_actualizacion TEXT DEFAULT (CURRENT_TIMESTAMP),
 			usuario_creador TEXT,
 			estado TEXT DEFAULT 'activo',
 			observaciones TEXT
 		);`,
 		`CREATE TABLE IF NOT EXISTS super_ai_uso_diario (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			admin_email TEXT NOT NULL,
 			provider TEXT NOT NULL,
 			model_id TEXT NOT NULL,
@@ -388,20 +388,20 @@ func EnsureSuperAIChatSchema(dbConn *sql.DB) error {
 			consultas_total INTEGER DEFAULT 0,
 			tokens_total INTEGER DEFAULT 0,
 			plan_actual TEXT DEFAULT 'free',
-			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
-			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+			fecha_creacion TEXT DEFAULT (CURRENT_TIMESTAMP),
+			fecha_actualizacion TEXT DEFAULT (CURRENT_TIMESTAMP),
 			usuario_creador TEXT,
 			estado TEXT DEFAULT 'activo',
 			observaciones TEXT,
 			UNIQUE(admin_email, provider, model_id, fecha_uso)
 		);`,
 		`CREATE TABLE IF NOT EXISTS super_ai_modelo_preferido (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			admin_email TEXT NOT NULL,
 			provider TEXT,
 			model_id TEXT NOT NULL,
-			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
-			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+			fecha_creacion TEXT DEFAULT (CURRENT_TIMESTAMP),
+			fecha_actualizacion TEXT DEFAULT (CURRENT_TIMESTAMP),
 			usuario_creador TEXT,
 			estado TEXT DEFAULT 'activo',
 			observaciones TEXT,
@@ -427,13 +427,13 @@ func EnsureSuperAIChatSchema(dbConn *sql.DB) error {
 	if err := ensureColumnIfMissing(dbConn, "super_ai_consultas", "total_tokens", "INTEGER DEFAULT 0"); err != nil {
 		return err
 	}
-	if err := ensureColumnIfMissing(dbConn, "super_ai_consultas", "fecha_consulta", "TEXT DEFAULT (datetime('now','localtime'))"); err != nil {
+	if err := ensureColumnIfMissing(dbConn, "super_ai_consultas", "fecha_consulta", "TEXT DEFAULT (CURRENT_TIMESTAMP)"); err != nil {
 		return err
 	}
 	if err := ensureColumnIfMissing(dbConn, "super_ai_consultas", "plan_actual", "TEXT DEFAULT 'free'"); err != nil {
 		return err
 	}
-	if err := ensureColumnIfMissing(dbConn, "super_ai_consultas", "fecha_actualizacion", "TEXT DEFAULT (datetime('now','localtime'))"); err != nil {
+	if err := ensureColumnIfMissing(dbConn, "super_ai_consultas", "fecha_actualizacion", "TEXT DEFAULT (CURRENT_TIMESTAMP)"); err != nil {
 		return err
 	}
 	if err := ensureColumnIfMissing(dbConn, "super_ai_consultas", "usuario_creador", "TEXT"); err != nil {
@@ -454,7 +454,7 @@ func EnsureSuperAIChatSchema(dbConn *sql.DB) error {
 	if err := ensureColumnIfMissing(dbConn, "super_ai_uso_diario", "plan_actual", "TEXT DEFAULT 'free'"); err != nil {
 		return err
 	}
-	if err := ensureColumnIfMissing(dbConn, "super_ai_uso_diario", "fecha_actualizacion", "TEXT DEFAULT (datetime('now','localtime'))"); err != nil {
+	if err := ensureColumnIfMissing(dbConn, "super_ai_uso_diario", "fecha_actualizacion", "TEXT DEFAULT (CURRENT_TIMESTAMP)"); err != nil {
 		return err
 	}
 	if err := ensureColumnIfMissing(dbConn, "super_ai_uso_diario", "usuario_creador", "TEXT"); err != nil {
@@ -472,7 +472,7 @@ func EnsureSuperAIChatSchema(dbConn *sql.DB) error {
 	if err := ensureColumnIfMissing(dbConn, "super_ai_modelo_preferido", "model_id", "TEXT"); err != nil {
 		return err
 	}
-	if err := ensureColumnIfMissing(dbConn, "super_ai_modelo_preferido", "fecha_actualizacion", "TEXT DEFAULT (datetime('now','localtime'))"); err != nil {
+	if err := ensureColumnIfMissing(dbConn, "super_ai_modelo_preferido", "fecha_actualizacion", "TEXT DEFAULT (CURRENT_TIMESTAMP)"); err != nil {
 		return err
 	}
 	if err := ensureColumnIfMissing(dbConn, "super_ai_modelo_preferido", "usuario_creador", "TEXT"); err != nil {
@@ -1240,7 +1240,7 @@ func ListEmpresaAIConsultasRecientes(dbConn *sql.DB, empresaID int64, limit int)
 		COALESCE(observaciones, '')
 	FROM empresa_ai_consultas
 	WHERE empresa_id = ?
-	ORDER BY datetime(fecha_consulta) DESC, id DESC
+	ORDER BY pcs_ts(fecha_consulta) DESC, id DESC
 	LIMIT ?`, empresaID, limit)
 		if err != nil {
 			return nil, err
@@ -2728,10 +2728,10 @@ func empresaAISafeUpdateProductoPrecio(dbConn *sql.DB, empresaID int64, pregunta
 			observaciones
 		) VALUES (
 			?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
-			datetime('now','localtime'),
-			datetime(datetime('now','localtime'), '+3650 days'),
-			datetime('now','localtime'),
-			datetime('now','localtime'),
+			CURRENT_TIMESTAMP,
+			pcs_ts(CURRENT_TIMESTAMP, '+3650 days'),
+			CURRENT_TIMESTAMP,
+			CURRENT_TIMESTAMP,
 			?, ?, ?
 		)`,
 			empresaID,

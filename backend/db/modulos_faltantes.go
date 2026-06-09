@@ -55,12 +55,12 @@ func EnsureEmpresaModulosFaltantesSchema(dbConn *sql.DB) error {
 
 	stmts := []string{
 		`CREATE TABLE IF NOT EXISTS empresa_cotizaciones_venta (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL,
 			codigo TEXT NOT NULL,
 			cliente_id INTEGER DEFAULT 0,
 			cliente_nombre TEXT,
-			fecha_documento TEXT DEFAULT (date('now','localtime')),
+			fecha_documento TEXT DEFAULT (CURRENT_DATE),
 			vigencia_hasta TEXT,
 			estado_documento TEXT DEFAULT 'borrador',
 			subtotal REAL DEFAULT 0,
@@ -71,8 +71,8 @@ func EnsureEmpresaModulosFaltantesSchema(dbConn *sql.DB) error {
 			notas TEXT,
 			origen TEXT,
 			convertido_pedido_id INTEGER DEFAULT 0,
-			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
-			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+			fecha_creacion TEXT DEFAULT (CURRENT_TIMESTAMP),
+			fecha_actualizacion TEXT DEFAULT (CURRENT_TIMESTAMP),
 			usuario_creador TEXT,
 			estado TEXT DEFAULT 'activo',
 			observaciones TEXT,
@@ -81,13 +81,13 @@ func EnsureEmpresaModulosFaltantesSchema(dbConn *sql.DB) error {
 		`CREATE INDEX IF NOT EXISTS ix_cotizaciones_empresa_estado ON empresa_cotizaciones_venta(empresa_id, estado_documento, fecha_documento DESC);`,
 
 		`CREATE TABLE IF NOT EXISTS empresa_pedidos_venta (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL,
 			codigo TEXT NOT NULL,
 			cliente_id INTEGER DEFAULT 0,
 			cliente_nombre TEXT,
 			cotizacion_id INTEGER DEFAULT 0,
-			fecha_pedido TEXT DEFAULT (date('now','localtime')),
+			fecha_pedido TEXT DEFAULT (CURRENT_DATE),
 			fecha_entrega_estimada TEXT,
 			estado_pedido TEXT DEFAULT 'borrador',
 			subtotal REAL DEFAULT 0,
@@ -96,8 +96,8 @@ func EnsureEmpresaModulosFaltantesSchema(dbConn *sql.DB) error {
 			total REAL DEFAULT 0,
 			moneda TEXT DEFAULT 'COP',
 			notas TEXT,
-			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
-			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+			fecha_creacion TEXT DEFAULT (CURRENT_TIMESTAMP),
+			fecha_actualizacion TEXT DEFAULT (CURRENT_TIMESTAMP),
 			usuario_creador TEXT,
 			estado TEXT DEFAULT 'activo',
 			observaciones TEXT,
@@ -106,20 +106,20 @@ func EnsureEmpresaModulosFaltantesSchema(dbConn *sql.DB) error {
 		`CREATE INDEX IF NOT EXISTS ix_pedidos_empresa_estado ON empresa_pedidos_venta(empresa_id, estado_pedido, fecha_pedido DESC);`,
 
 		`CREATE TABLE IF NOT EXISTS empresa_devoluciones_venta (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL,
 			codigo TEXT NOT NULL,
 			carrito_id INTEGER DEFAULT 0,
 			documento_referencia TEXT,
 			motivo TEXT,
-			fecha_devolucion TEXT DEFAULT (date('now','localtime')),
+			fecha_devolucion TEXT DEFAULT (CURRENT_DATE),
 			estado_devolucion TEXT DEFAULT 'borrador',
 			subtotal REAL DEFAULT 0,
 			impuesto_total REAL DEFAULT 0,
 			total REAL DEFAULT 0,
 			moneda TEXT DEFAULT 'COP',
-			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
-			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+			fecha_creacion TEXT DEFAULT (CURRENT_TIMESTAMP),
+			fecha_actualizacion TEXT DEFAULT (CURRENT_TIMESTAMP),
 			usuario_creador TEXT,
 			estado TEXT DEFAULT 'activo',
 			observaciones TEXT,
@@ -128,7 +128,7 @@ func EnsureEmpresaModulosFaltantesSchema(dbConn *sql.DB) error {
 		`CREATE INDEX IF NOT EXISTS ix_devoluciones_venta_empresa_fecha ON empresa_devoluciones_venta(empresa_id, fecha_devolucion DESC);`,
 
 		`CREATE TABLE IF NOT EXISTS empresa_plan_cuentas (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL,
 			codigo TEXT NOT NULL,
 			nombre TEXT NOT NULL,
@@ -144,8 +144,8 @@ func EnsureEmpresaModulosFaltantesSchema(dbConn *sql.DB) error {
 			cuenta_clave TEXT,
 			requerida INTEGER DEFAULT 0,
 			orden_plantilla INTEGER DEFAULT 0,
-			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
-			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+			fecha_creacion TEXT DEFAULT (CURRENT_TIMESTAMP),
+			fecha_actualizacion TEXT DEFAULT (CURRENT_TIMESTAMP),
 			usuario_creador TEXT,
 			estado TEXT DEFAULT 'activo',
 			observaciones TEXT,
@@ -154,7 +154,7 @@ func EnsureEmpresaModulosFaltantesSchema(dbConn *sql.DB) error {
 		`CREATE INDEX IF NOT EXISTS ix_plan_cuentas_empresa_tipo ON empresa_plan_cuentas(empresa_id, tipo_cuenta, codigo);`,
 
 		`CREATE TABLE IF NOT EXISTS empresa_cuentas_por_cobrar (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL,
 			codigo TEXT NOT NULL,
 			cliente_id INTEGER DEFAULT 0,
@@ -174,8 +174,8 @@ func EnsureEmpresaModulosFaltantesSchema(dbConn *sql.DB) error {
 			fecha_ultimo_pago TEXT,
 			conciliado_en TEXT,
 			conciliado_por TEXT,
-			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
-			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+			fecha_creacion TEXT DEFAULT (CURRENT_TIMESTAMP),
+			fecha_actualizacion TEXT DEFAULT (CURRENT_TIMESTAMP),
 			usuario_creador TEXT,
 			estado TEXT DEFAULT 'activo',
 			observaciones TEXT,
@@ -184,7 +184,7 @@ func EnsureEmpresaModulosFaltantesSchema(dbConn *sql.DB) error {
 		`CREATE INDEX IF NOT EXISTS ix_cxc_empresa_estado ON empresa_cuentas_por_cobrar(empresa_id, estado_cartera, fecha_vencimiento);`,
 
 		`CREATE TABLE IF NOT EXISTS empresa_cuentas_por_pagar (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL,
 			codigo TEXT NOT NULL,
 			proveedor_id INTEGER DEFAULT 0,
@@ -204,8 +204,8 @@ func EnsureEmpresaModulosFaltantesSchema(dbConn *sql.DB) error {
 			fecha_ultimo_pago TEXT,
 			conciliado_en TEXT,
 			conciliado_por TEXT,
-			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
-			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+			fecha_creacion TEXT DEFAULT (CURRENT_TIMESTAMP),
+			fecha_actualizacion TEXT DEFAULT (CURRENT_TIMESTAMP),
 			usuario_creador TEXT,
 			estado TEXT DEFAULT 'activo',
 			observaciones TEXT,
@@ -214,7 +214,7 @@ func EnsureEmpresaModulosFaltantesSchema(dbConn *sql.DB) error {
 		`CREATE INDEX IF NOT EXISTS ix_cxp_empresa_estado ON empresa_cuentas_por_pagar(empresa_id, estado_cartera, fecha_vencimiento);`,
 
 		`CREATE TABLE IF NOT EXISTS inventario_lotes_series (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL,
 			producto_id INTEGER NOT NULL,
 			bodega_id INTEGER DEFAULT 0,
@@ -233,8 +233,8 @@ func EnsureEmpresaModulosFaltantesSchema(dbConn *sql.DB) error {
 			ultima_operacion_tipo TEXT,
 			ultima_operacion_ref TEXT,
 			ultima_operacion_en TEXT,
-			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
-			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+			fecha_creacion TEXT DEFAULT (CURRENT_TIMESTAMP),
+			fecha_actualizacion TEXT DEFAULT (CURRENT_TIMESTAMP),
 			usuario_creador TEXT,
 			estado TEXT DEFAULT 'activo',
 			observaciones TEXT,
@@ -243,7 +243,7 @@ func EnsureEmpresaModulosFaltantesSchema(dbConn *sql.DB) error {
 		`CREATE INDEX IF NOT EXISTS ix_lotes_empresa_vencimiento ON inventario_lotes_series(empresa_id, fecha_vencimiento, producto_id);`,
 
 		`CREATE TABLE IF NOT EXISTS inventario_lotes_series_movimientos (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL,
 			lote_serie_id INTEGER NOT NULL,
 			producto_id INTEGER NOT NULL,
@@ -257,9 +257,9 @@ func EnsureEmpresaModulosFaltantesSchema(dbConn *sql.DB) error {
 			cliente_id INTEGER DEFAULT 0,
 			cliente_nombre TEXT,
 			detalle_json TEXT,
-			fecha_operacion TEXT DEFAULT (datetime('now','localtime')),
-			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
-			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+			fecha_operacion TEXT DEFAULT (CURRENT_TIMESTAMP),
+			fecha_creacion TEXT DEFAULT (CURRENT_TIMESTAMP),
+			fecha_actualizacion TEXT DEFAULT (CURRENT_TIMESTAMP),
 			usuario_creador TEXT,
 			estado TEXT DEFAULT 'activo',
 			observaciones TEXT
@@ -268,13 +268,13 @@ func EnsureEmpresaModulosFaltantesSchema(dbConn *sql.DB) error {
 		`CREATE INDEX IF NOT EXISTS ix_lotes_mov_empresa_referencia ON inventario_lotes_series_movimientos(empresa_id, referencia_tipo, referencia_codigo);`,
 
 		`CREATE TABLE IF NOT EXISTS empresa_devoluciones_proveedor (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL,
 			codigo TEXT NOT NULL,
 			proveedor_id INTEGER DEFAULT 0,
 			proveedor_nombre TEXT,
 			documento_compra_codigo TEXT,
-			fecha_devolucion TEXT DEFAULT (date('now','localtime')),
+			fecha_devolucion TEXT DEFAULT (CURRENT_DATE),
 			motivo TEXT,
 			estado_devolucion TEXT DEFAULT 'borrador',
 			subtotal REAL DEFAULT 0,
@@ -287,8 +287,8 @@ func EnsureEmpresaModulosFaltantesSchema(dbConn *sql.DB) error {
 			fecha_contabilizacion TEXT,
 			contabilizado_por TEXT,
 			total_reintegrado REAL DEFAULT 0,
-			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
-			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+			fecha_creacion TEXT DEFAULT (CURRENT_TIMESTAMP),
+			fecha_actualizacion TEXT DEFAULT (CURRENT_TIMESTAMP),
 			usuario_creador TEXT,
 			estado TEXT DEFAULT 'activo',
 			observaciones TEXT,
@@ -297,7 +297,7 @@ func EnsureEmpresaModulosFaltantesSchema(dbConn *sql.DB) error {
 		`CREATE INDEX IF NOT EXISTS ix_dev_prov_empresa_fecha ON empresa_devoluciones_proveedor(empresa_id, fecha_devolucion DESC);`,
 
 		`CREATE TABLE IF NOT EXISTS empresa_rrhh_vacaciones_licencias (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL,
 			codigo TEXT NOT NULL,
 			empleado_id INTEGER DEFAULT 0,
@@ -326,8 +326,8 @@ func EnsureEmpresaModulosFaltantesSchema(dbConn *sql.DB) error {
 			nomina_periodo_hasta TEXT,
 			nomina_vinculada_en TEXT,
 			nomina_vinculada_por TEXT,
-			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
-			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+			fecha_creacion TEXT DEFAULT (CURRENT_TIMESTAMP),
+			fecha_actualizacion TEXT DEFAULT (CURRENT_TIMESTAMP),
 			usuario_creador TEXT,
 			estado TEXT DEFAULT 'activo',
 			observaciones TEXT,
@@ -336,7 +336,7 @@ func EnsureEmpresaModulosFaltantesSchema(dbConn *sql.DB) error {
 		`CREATE INDEX IF NOT EXISTS ix_rrhh_vac_lic_empresa_fechas ON empresa_rrhh_vacaciones_licencias(empresa_id, fecha_inicio, fecha_fin);`,
 
 		`CREATE TABLE IF NOT EXISTS crm_leads (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL,
 			codigo TEXT NOT NULL,
 			nombre TEXT,
@@ -350,8 +350,8 @@ func EnsureEmpresaModulosFaltantesSchema(dbConn *sql.DB) error {
 			propietario TEXT,
 			proximo_contacto TEXT,
 			notas TEXT,
-			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
-			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+			fecha_creacion TEXT DEFAULT (CURRENT_TIMESTAMP),
+			fecha_actualizacion TEXT DEFAULT (CURRENT_TIMESTAMP),
 			usuario_creador TEXT,
 			estado TEXT DEFAULT 'activo',
 			observaciones TEXT,
@@ -360,20 +360,20 @@ func EnsureEmpresaModulosFaltantesSchema(dbConn *sql.DB) error {
 		`CREATE INDEX IF NOT EXISTS ix_crm_leads_empresa_estado ON crm_leads(empresa_id, estado_lead, proximo_contacto);`,
 
 		`CREATE TABLE IF NOT EXISTS crm_interacciones (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL,
 			codigo TEXT NOT NULL,
 			lead_id INTEGER DEFAULT 0,
 			cliente_id INTEGER DEFAULT 0,
 			tipo_interaccion TEXT DEFAULT 'llamada',
-			fecha_interaccion TEXT DEFAULT (datetime('now','localtime')),
+			fecha_interaccion TEXT DEFAULT (CURRENT_TIMESTAMP),
 			resumen TEXT,
 			resultado TEXT,
 			usuario_responsable TEXT,
 			proxima_accion TEXT,
 			estado_interaccion TEXT DEFAULT 'abierta',
-			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
-			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+			fecha_creacion TEXT DEFAULT (CURRENT_TIMESTAMP),
+			fecha_actualizacion TEXT DEFAULT (CURRENT_TIMESTAMP),
 			usuario_creador TEXT,
 			estado TEXT DEFAULT 'activo',
 			observaciones TEXT,
@@ -382,7 +382,7 @@ func EnsureEmpresaModulosFaltantesSchema(dbConn *sql.DB) error {
 		`CREATE INDEX IF NOT EXISTS ix_crm_interacciones_empresa_fecha ON crm_interacciones(empresa_id, fecha_interaccion DESC);`,
 
 		`CREATE TABLE IF NOT EXISTS crm_campanas (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL,
 			codigo TEXT NOT NULL,
 			nombre TEXT,
@@ -395,8 +395,8 @@ func EnsureEmpresaModulosFaltantesSchema(dbConn *sql.DB) error {
 			audiencia TEXT,
 			kpi_objetivo TEXT,
 			resultado_json TEXT,
-			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
-			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+			fecha_creacion TEXT DEFAULT (CURRENT_TIMESTAMP),
+			fecha_actualizacion TEXT DEFAULT (CURRENT_TIMESTAMP),
 			usuario_creador TEXT,
 			estado TEXT DEFAULT 'activo',
 			observaciones TEXT,
@@ -405,7 +405,7 @@ func EnsureEmpresaModulosFaltantesSchema(dbConn *sql.DB) error {
 		`CREATE INDEX IF NOT EXISTS ix_crm_campanas_empresa_estado ON crm_campanas(empresa_id, estado_campana, fecha_inicio);`,
 
 		`CREATE TABLE IF NOT EXISTS produccion_bom (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL,
 			codigo TEXT NOT NULL,
 			producto_id INTEGER DEFAULT 0,
@@ -415,8 +415,8 @@ func EnsureEmpresaModulosFaltantesSchema(dbConn *sql.DB) error {
 			unidad_medida TEXT,
 			costo_estimado_total REAL DEFAULT 0,
 			estado_bom TEXT DEFAULT 'activo',
-			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
-			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+			fecha_creacion TEXT DEFAULT (CURRENT_TIMESTAMP),
+			fecha_actualizacion TEXT DEFAULT (CURRENT_TIMESTAMP),
 			usuario_creador TEXT,
 			estado TEXT DEFAULT 'activo',
 			observaciones TEXT,
@@ -425,7 +425,7 @@ func EnsureEmpresaModulosFaltantesSchema(dbConn *sql.DB) error {
 		`CREATE INDEX IF NOT EXISTS ix_bom_empresa_producto ON produccion_bom(empresa_id, producto_id, version);`,
 
 		`CREATE TABLE IF NOT EXISTS produccion_bom_detalle (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL,
 			bom_id INTEGER NOT NULL,
 			insumo_producto_id INTEGER DEFAULT 0,
@@ -435,8 +435,8 @@ func EnsureEmpresaModulosFaltantesSchema(dbConn *sql.DB) error {
 			costo_unitario REAL DEFAULT 0,
 			costo_total REAL DEFAULT 0,
 			merma_porcentaje REAL DEFAULT 0,
-			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
-			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+			fecha_creacion TEXT DEFAULT (CURRENT_TIMESTAMP),
+			fecha_actualizacion TEXT DEFAULT (CURRENT_TIMESTAMP),
 			usuario_creador TEXT,
 			estado TEXT DEFAULT 'activo',
 			observaciones TEXT
@@ -444,7 +444,7 @@ func EnsureEmpresaModulosFaltantesSchema(dbConn *sql.DB) error {
 		`CREATE INDEX IF NOT EXISTS ix_bom_detalle_empresa_bom ON produccion_bom_detalle(empresa_id, bom_id);`,
 
 		`CREATE TABLE IF NOT EXISTS produccion_ordenes (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL,
 			codigo TEXT NOT NULL,
 			bom_id INTEGER DEFAULT 0,
@@ -460,8 +460,8 @@ func EnsureEmpresaModulosFaltantesSchema(dbConn *sql.DB) error {
 			costo_real REAL DEFAULT 0,
 			responsable TEXT,
 			notas TEXT,
-			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
-			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+			fecha_creacion TEXT DEFAULT (CURRENT_TIMESTAMP),
+			fecha_actualizacion TEXT DEFAULT (CURRENT_TIMESTAMP),
 			usuario_creador TEXT,
 			estado TEXT DEFAULT 'activo',
 			observaciones TEXT,
@@ -470,7 +470,7 @@ func EnsureEmpresaModulosFaltantesSchema(dbConn *sql.DB) error {
 		`CREATE INDEX IF NOT EXISTS ix_produccion_ordenes_empresa_estado ON produccion_ordenes(empresa_id, estado_orden, fecha_programada);`,
 
 		`CREATE TABLE IF NOT EXISTS logistica_transportistas (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL,
 			codigo TEXT NOT NULL,
 			nombre TEXT,
@@ -481,8 +481,8 @@ func EnsureEmpresaModulosFaltantesSchema(dbConn *sql.DB) error {
 			vehiculo_tipo TEXT,
 			capacidad_carga REAL DEFAULT 0,
 			estado_transportista TEXT DEFAULT 'activo',
-			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
-			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+			fecha_creacion TEXT DEFAULT (CURRENT_TIMESTAMP),
+			fecha_actualizacion TEXT DEFAULT (CURRENT_TIMESTAMP),
 			usuario_creador TEXT,
 			estado TEXT DEFAULT 'activo',
 			observaciones TEXT,
@@ -491,7 +491,7 @@ func EnsureEmpresaModulosFaltantesSchema(dbConn *sql.DB) error {
 		`CREATE INDEX IF NOT EXISTS ix_log_transportistas_empresa_nombre ON logistica_transportistas(empresa_id, nombre);`,
 
 		`CREATE TABLE IF NOT EXISTS logistica_rutas (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL,
 			codigo TEXT NOT NULL,
 			nombre TEXT,
@@ -500,8 +500,8 @@ func EnsureEmpresaModulosFaltantesSchema(dbConn *sql.DB) error {
 			distancia_km REAL DEFAULT 0,
 			tiempo_estimado_min REAL DEFAULT 0,
 			estado_ruta TEXT DEFAULT 'activa',
-			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
-			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+			fecha_creacion TEXT DEFAULT (CURRENT_TIMESTAMP),
+			fecha_actualizacion TEXT DEFAULT (CURRENT_TIMESTAMP),
 			usuario_creador TEXT,
 			estado TEXT DEFAULT 'activo',
 			observaciones TEXT,
@@ -510,7 +510,7 @@ func EnsureEmpresaModulosFaltantesSchema(dbConn *sql.DB) error {
 		`CREATE INDEX IF NOT EXISTS ix_log_rutas_empresa_origen_destino ON logistica_rutas(empresa_id, origen, destino);`,
 
 		`CREATE TABLE IF NOT EXISTS logistica_envios (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL,
 			codigo TEXT NOT NULL,
 			cliente_id INTEGER DEFAULT 0,
@@ -527,8 +527,8 @@ func EnsureEmpresaModulosFaltantesSchema(dbConn *sql.DB) error {
 			latitud REAL DEFAULT 0,
 			longitud REAL DEFAULT 0,
 			observaciones_seguimiento TEXT,
-			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
-			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+			fecha_creacion TEXT DEFAULT (CURRENT_TIMESTAMP),
+			fecha_actualizacion TEXT DEFAULT (CURRENT_TIMESTAMP),
 			usuario_creador TEXT,
 			estado TEXT DEFAULT 'activo',
 			observaciones TEXT,
@@ -537,7 +537,7 @@ func EnsureEmpresaModulosFaltantesSchema(dbConn *sql.DB) error {
 		`CREATE INDEX IF NOT EXISTS ix_log_envios_empresa_estado ON logistica_envios(empresa_id, estado_envio, fecha_programada);`,
 
 		`CREATE TABLE IF NOT EXISTS empresa_documentos_gestion (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL,
 			codigo TEXT NOT NULL,
 			modulo TEXT,
@@ -552,8 +552,8 @@ func EnsureEmpresaModulosFaltantesSchema(dbConn *sql.DB) error {
 			tamano_bytes INTEGER DEFAULT 0,
 			version TEXT DEFAULT '1',
 			estado_documento TEXT DEFAULT 'vigente',
-			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
-			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+			fecha_creacion TEXT DEFAULT (CURRENT_TIMESTAMP),
+			fecha_actualizacion TEXT DEFAULT (CURRENT_TIMESTAMP),
 			usuario_creador TEXT,
 			estado TEXT DEFAULT 'activo',
 			observaciones TEXT,
@@ -562,7 +562,7 @@ func EnsureEmpresaModulosFaltantesSchema(dbConn *sql.DB) error {
 		`CREATE INDEX IF NOT EXISTS ix_doc_gestion_empresa_modulo ON empresa_documentos_gestion(empresa_id, modulo, entidad_id);`,
 
 		`CREATE TABLE IF NOT EXISTS empresa_documentos_firmas (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL,
 			codigo TEXT NOT NULL,
 			documento_gestion_id INTEGER DEFAULT 0,
@@ -576,8 +576,8 @@ func EnsureEmpresaModulosFaltantesSchema(dbConn *sql.DB) error {
 			fecha_firma TEXT,
 			validez_hasta TEXT,
 			estado_firma TEXT DEFAULT 'pendiente',
-			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
-			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+			fecha_creacion TEXT DEFAULT (CURRENT_TIMESTAMP),
+			fecha_actualizacion TEXT DEFAULT (CURRENT_TIMESTAMP),
 			usuario_creador TEXT,
 			estado TEXT DEFAULT 'activo',
 			observaciones TEXT,
@@ -586,7 +586,7 @@ func EnsureEmpresaModulosFaltantesSchema(dbConn *sql.DB) error {
 		`CREATE INDEX IF NOT EXISTS ix_doc_firmas_empresa_doc ON empresa_documentos_firmas(empresa_id, documento_gestion_id, fecha_firma);`,
 
 		`CREATE TABLE IF NOT EXISTS empresa_integraciones_apis (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL,
 			codigo TEXT NOT NULL,
 			nombre_integracion TEXT,
@@ -597,8 +597,8 @@ func EnsureEmpresaModulosFaltantesSchema(dbConn *sql.DB) error {
 			estado_integracion TEXT DEFAULT 'inactiva',
 			ultima_sincronizacion TEXT,
 			respuesta_ultimo_sync TEXT,
-			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
-			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+			fecha_creacion TEXT DEFAULT (CURRENT_TIMESTAMP),
+			fecha_actualizacion TEXT DEFAULT (CURRENT_TIMESTAMP),
 			usuario_creador TEXT,
 			estado TEXT DEFAULT 'activo',
 			observaciones TEXT,
@@ -607,7 +607,7 @@ func EnsureEmpresaModulosFaltantesSchema(dbConn *sql.DB) error {
 		`CREATE INDEX IF NOT EXISTS ix_integraciones_api_empresa_estado ON empresa_integraciones_apis(empresa_id, estado_integracion);`,
 
 		`CREATE TABLE IF NOT EXISTS empresa_integraciones_bancos (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL,
 			codigo TEXT NOT NULL,
 			banco_nombre TEXT,
@@ -619,8 +619,8 @@ func EnsureEmpresaModulosFaltantesSchema(dbConn *sql.DB) error {
 			credencial_ref TEXT,
 			estado_integracion TEXT DEFAULT 'inactiva',
 			ultima_conciliacion TEXT,
-			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
-			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+			fecha_creacion TEXT DEFAULT (CURRENT_TIMESTAMP),
+			fecha_actualizacion TEXT DEFAULT (CURRENT_TIMESTAMP),
 			usuario_creador TEXT,
 			estado TEXT DEFAULT 'activo',
 			observaciones TEXT,
@@ -629,7 +629,7 @@ func EnsureEmpresaModulosFaltantesSchema(dbConn *sql.DB) error {
 		`CREATE INDEX IF NOT EXISTS ix_integraciones_bancos_empresa_estado ON empresa_integraciones_bancos(empresa_id, estado_integracion);`,
 
 		`CREATE TABLE IF NOT EXISTS empresa_dian_configuracion (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL,
 			codigo TEXT NOT NULL,
 			nit TEXT,
@@ -679,8 +679,8 @@ func EnsureEmpresaModulosFaltantesSchema(dbConn *sql.DB) error {
 			token_emisor_ref TEXT,
 			ultimo_envio TEXT,
 			estado_dian TEXT DEFAULT 'pendiente',
-			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
-			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+			fecha_creacion TEXT DEFAULT (CURRENT_TIMESTAMP),
+			fecha_actualizacion TEXT DEFAULT (CURRENT_TIMESTAMP),
 			usuario_creador TEXT,
 			estado TEXT DEFAULT 'activo',
 			observaciones TEXT,
@@ -689,7 +689,7 @@ func EnsureEmpresaModulosFaltantesSchema(dbConn *sql.DB) error {
 		);`,
 		`CREATE INDEX IF NOT EXISTS ix_dian_empresa_ambiente ON empresa_dian_configuracion(empresa_id, tipo_ambiente, estado_dian);`,
 		`CREATE TABLE IF NOT EXISTS empresa_dian_track_historial (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL,
 			documento_codigo TEXT,
 			tipo_documento TEXT,
@@ -713,8 +713,8 @@ func EnsureEmpresaModulosFaltantesSchema(dbConn *sql.DB) error {
 			respuesta_acuse_json TEXT,
 			fecha_envio TEXT,
 			fecha_ultimo_acuse TEXT,
-			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
-			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+			fecha_creacion TEXT DEFAULT (CURRENT_TIMESTAMP),
+			fecha_actualizacion TEXT DEFAULT (CURRENT_TIMESTAMP),
 			usuario_creador TEXT,
 			estado TEXT DEFAULT 'activo',
 			observaciones TEXT,
@@ -1441,7 +1441,7 @@ func UpdateEmpresaGenericRow(dbConn *sql.DB, table string, empresaID, id int64, 
 		return errors.New("no hay campos para actualizar")
 	}
 
-	setParts = append(setParts, "fecha_actualizacion = datetime('now','localtime')")
+	setParts = append(setParts, "fecha_actualizacion = CURRENT_TIMESTAMP")
 	query := "UPDATE " + table + " SET " + strings.Join(setParts, ", ") + " WHERE empresa_id = ? AND id = ?"
 	args = append(args, empresaID, id)
 
@@ -1475,7 +1475,7 @@ func SetEmpresaGenericRowEstado(dbConn *sql.DB, table string, empresaID, id int6
 		estado = "activo"
 	}
 
-	_, err := dbConn.Exec("UPDATE "+table+" SET estado = ?, fecha_actualizacion = datetime('now','localtime') WHERE empresa_id = ? AND id = ?", estado, empresaID, id)
+	_, err := dbConn.Exec("UPDATE "+table+" SET estado = ?, fecha_actualizacion = CURRENT_TIMESTAMP WHERE empresa_id = ? AND id = ?", estado, empresaID, id)
 	return err
 }
 

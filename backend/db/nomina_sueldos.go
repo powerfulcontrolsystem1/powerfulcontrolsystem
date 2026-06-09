@@ -385,7 +385,7 @@ type nominaHorasMinutos struct {
 func EnsureEmpresaNominaSchema(dbConn *sql.DB) error {
 	stmts := []string{
 		`CREATE TABLE IF NOT EXISTS empresa_nomina_configuracion (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL UNIQUE,
 			pais_codigo TEXT DEFAULT 'CO',
 			moneda TEXT DEFAULT 'COP',
@@ -417,15 +417,15 @@ func EnsureEmpresaNominaSchema(dbConn *sql.DB) error {
 			provision_intereses_cesantias_porcentaje REAL DEFAULT 1,
 			provision_prima_porcentaje REAL DEFAULT 8.33,
 			provision_vacaciones_porcentaje REAL DEFAULT 4.17,
-			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
-			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+			fecha_creacion TEXT DEFAULT (CURRENT_TIMESTAMP),
+			fecha_actualizacion TEXT DEFAULT (CURRENT_TIMESTAMP),
 			usuario_creador TEXT,
 			estado TEXT DEFAULT 'activo',
 			observaciones TEXT
 		);`,
 		`CREATE UNIQUE INDEX IF NOT EXISTS ux_empresa_nomina_configuracion_empresa ON empresa_nomina_configuracion(empresa_id);`,
 		`CREATE TABLE IF NOT EXISTS empresa_nomina_empleados (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL,
 			empleado_id INTEGER DEFAULT 0,
 			empleado_codigo TEXT,
@@ -443,8 +443,8 @@ func EnsureEmpresaNominaSchema(dbConn *sql.DB) error {
 			deduccion_fija_mensual REAL DEFAULT 0,
 			jornada_horas_dia REAL DEFAULT 8,
 			incluir_auxilio_transporte INTEGER DEFAULT 1,
-			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
-			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+			fecha_creacion TEXT DEFAULT (CURRENT_TIMESTAMP),
+			fecha_actualizacion TEXT DEFAULT (CURRENT_TIMESTAMP),
 			usuario_creador TEXT,
 			estado TEXT DEFAULT 'activo',
 			observaciones TEXT
@@ -452,12 +452,12 @@ func EnsureEmpresaNominaSchema(dbConn *sql.DB) error {
 		`CREATE INDEX IF NOT EXISTS ix_empresa_nomina_empleados_empresa_estado ON empresa_nomina_empleados(empresa_id, estado, empleado_nombre);`,
 		`CREATE INDEX IF NOT EXISTS ix_empresa_nomina_empleados_empresa_documento ON empresa_nomina_empleados(empresa_id, empleado_documento);`,
 		`CREATE TABLE IF NOT EXISTS empresa_nomina_festivos (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL,
 			fecha_festivo TEXT NOT NULL,
 			descripcion TEXT,
-			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
-			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+			fecha_creacion TEXT DEFAULT (CURRENT_TIMESTAMP),
+			fecha_actualizacion TEXT DEFAULT (CURRENT_TIMESTAMP),
 			usuario_creador TEXT,
 			estado TEXT DEFAULT 'activo',
 			observaciones TEXT,
@@ -465,7 +465,7 @@ func EnsureEmpresaNominaSchema(dbConn *sql.DB) error {
 		);`,
 		`CREATE INDEX IF NOT EXISTS ix_empresa_nomina_festivos_empresa_fecha ON empresa_nomina_festivos(empresa_id, fecha_festivo DESC);`,
 		`CREATE TABLE IF NOT EXISTS empresa_nomina_liquidaciones (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL,
 			empleado_nomina_id INTEGER NOT NULL,
 			empleado_id INTEGER DEFAULT 0,
@@ -515,9 +515,9 @@ func EnsureEmpresaNominaSchema(dbConn *sql.DB) error {
 			neto_pagar REAL DEFAULT 0,
 			origen_calculo TEXT DEFAULT 'asistencia',
 			resumen_json TEXT,
-			fecha_generacion TEXT DEFAULT (datetime('now','localtime')),
-			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
-			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+			fecha_generacion TEXT DEFAULT (CURRENT_TIMESTAMP),
+			fecha_creacion TEXT DEFAULT (CURRENT_TIMESTAMP),
+			fecha_actualizacion TEXT DEFAULT (CURRENT_TIMESTAMP),
 			usuario_creador TEXT,
 			estado TEXT DEFAULT 'activo',
 			observaciones TEXT,
@@ -526,7 +526,7 @@ func EnsureEmpresaNominaSchema(dbConn *sql.DB) error {
 		`CREATE INDEX IF NOT EXISTS ix_empresa_nomina_liquidaciones_empresa_periodo ON empresa_nomina_liquidaciones(empresa_id, periodo_desde DESC, periodo_hasta DESC, id DESC);`,
 		`CREATE INDEX IF NOT EXISTS ix_empresa_nomina_liquidaciones_empresa_empleado ON empresa_nomina_liquidaciones(empresa_id, empleado_nomina_id, empleado_documento);`,
 		`CREATE TABLE IF NOT EXISTS empresa_nomina_pagos (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL,
 			liquidacion_id INTEGER NOT NULL,
 			empleado_nomina_id INTEGER NOT NULL,
@@ -534,7 +534,7 @@ func EnsureEmpresaNominaSchema(dbConn *sql.DB) error {
 			empleado_documento TEXT,
 			periodo_desde TEXT NOT NULL,
 			periodo_hasta TEXT NOT NULL,
-			fecha_pago TEXT DEFAULT (datetime('now','localtime')),
+			fecha_pago TEXT DEFAULT (CURRENT_TIMESTAMP),
 			metodo_pago TEXT DEFAULT 'transferencia_bancaria',
 			cuenta_bancaria TEXT,
 			referencia_pago TEXT,
@@ -542,8 +542,8 @@ func EnsureEmpresaNominaSchema(dbConn *sql.DB) error {
 			deduccion_total REAL DEFAULT 0,
 			neto_pagado REAL DEFAULT 0,
 			estado_pago TEXT DEFAULT 'pagado',
-			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
-			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+			fecha_creacion TEXT DEFAULT (CURRENT_TIMESTAMP),
+			fecha_actualizacion TEXT DEFAULT (CURRENT_TIMESTAMP),
 			usuario_creador TEXT,
 			estado TEXT DEFAULT 'activo',
 			observaciones TEXT,
@@ -954,7 +954,7 @@ func UpsertEmpresaNominaConfiguracion(dbConn *sql.DB, payload EmpresaNominaConfi
 			usuario_creador = ?,
 			estado = ?,
 			observaciones = ?,
-			fecha_actualizacion = datetime('now','localtime')
+			fecha_actualizacion = CURRENT_TIMESTAMP
 		WHERE empresa_id = ?`,
 			cfg.PaisCodigo,
 			cfg.Moneda,
@@ -1034,7 +1034,7 @@ func UpsertEmpresaNominaConfiguracion(dbConn *sql.DB, payload EmpresaNominaConfi
 		observaciones,
 		fecha_creacion,
 		fecha_actualizacion
-	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now','localtime'), datetime('now','localtime'))`,
+	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
 		cfg.EmpresaID,
 		cfg.PaisCodigo,
 		cfg.Moneda,
@@ -1131,7 +1131,7 @@ func CreateEmpresaNominaEmpleado(dbConn *sql.DB, payload EmpresaNominaEmpleado) 
 		observaciones,
 		fecha_creacion,
 		fecha_actualizacion
-	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now','localtime'), datetime('now','localtime'))`,
+	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
 		payload.EmpresaID,
 		payload.EmpleadoID,
 		strings.TrimSpace(payload.EmpleadoCodigo),
@@ -1209,7 +1209,7 @@ func UpdateEmpresaNominaEmpleado(dbConn *sql.DB, payload EmpresaNominaEmpleado) 
 		jornada_horas_dia = ?,
 		incluir_auxilio_transporte = ?,
 		observaciones = ?,
-		fecha_actualizacion = datetime('now','localtime')
+		fecha_actualizacion = CURRENT_TIMESTAMP
 	WHERE empresa_id = ? AND id = ?`,
 		payload.EmpleadoID,
 		strings.TrimSpace(payload.EmpleadoCodigo),
@@ -1245,7 +1245,7 @@ func UpdateEmpresaNominaEmpleado(dbConn *sql.DB, payload EmpresaNominaEmpleado) 
 func SetEmpresaNominaEmpleadoEstado(dbConn *sql.DB, empresaID, id int64, estado string) error {
 	next := normalizeNominaEstado(estado)
 	res, err := dbConn.Exec(`UPDATE empresa_nomina_empleados
-	SET estado = ?, fecha_actualizacion = datetime('now','localtime')
+	SET estado = ?, fecha_actualizacion = CURRENT_TIMESTAMP
 	WHERE empresa_id = ? AND id = ?`, next, empresaID, id)
 	if err != nil {
 		return err
@@ -1413,7 +1413,7 @@ func CreateEmpresaNominaFestivo(dbConn *sql.DB, payload EmpresaNominaFestivo) (i
 		observaciones,
 		fecha_creacion,
 		fecha_actualizacion
-	) VALUES (?, ?, ?, ?, ?, ?, datetime('now','localtime'), datetime('now','localtime'))`,
+	) VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
 		payload.EmpresaID,
 		payload.FechaFestivo,
 		strings.TrimSpace(payload.Descripcion),
@@ -2009,11 +2009,11 @@ func upsertEmpresaNominaLiquidacion(dbConn *sql.DB, payload EmpresaNominaLiquida
 			neto_pagar = ?,
 			origen_calculo = ?,
 			resumen_json = ?,
-			fecha_generacion = datetime('now','localtime'),
+			fecha_generacion = CURRENT_TIMESTAMP,
 			usuario_creador = ?,
 			estado = ?,
 			observaciones = ?,
-			fecha_actualizacion = datetime('now','localtime')
+			fecha_actualizacion = CURRENT_TIMESTAMP
 		WHERE id = ? AND empresa_id = ?`,
 			payload.EmpleadoID,
 			strings.TrimSpace(payload.EmpleadoCodigo),
@@ -2373,7 +2373,7 @@ func CreateEmpresaNominaPago(dbConn *sql.DB, payload EmpresaNominaPago) (int64, 
 		periodo_desde, periodo_hasta, fecha_pago, metodo_pago, cuenta_bancaria, referencia_pago,
 		devengado_total, deduccion_total, neto_pagado, estado_pago,
 		usuario_creador, estado, observaciones, fecha_creacion, fecha_actualizacion
-	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now','localtime'), datetime('now','localtime'))`,
+	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
 		payload.EmpresaID,
 		payload.LiquidacionID,
 		payload.EmpleadoNominaID,

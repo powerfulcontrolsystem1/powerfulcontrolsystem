@@ -122,7 +122,7 @@ type EmpresaComprasAvanzadasDashboard struct {
 func EnsureEmpresaComprasAvanzadasSchema(dbConn *sql.DB) error {
 	stmts := []string{
 		`CREATE TABLE IF NOT EXISTS empresa_compras_requisiciones (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL,
 			codigo TEXT NOT NULL,
 			solicitante TEXT DEFAULT '',
@@ -141,7 +141,7 @@ func EnsureEmpresaComprasAvanzadasSchema(dbConn *sql.DB) error {
 		)`,
 		`CREATE INDEX IF NOT EXISTS ix_compras_req_empresa_estado ON empresa_compras_requisiciones(empresa_id, estado_flujo)`,
 		`CREATE TABLE IF NOT EXISTS empresa_compras_requisicion_items (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL,
 			requisicion_id INTEGER NOT NULL,
 			producto_id INTEGER DEFAULT 0,
@@ -156,7 +156,7 @@ func EnsureEmpresaComprasAvanzadasSchema(dbConn *sql.DB) error {
 		)`,
 		`CREATE INDEX IF NOT EXISTS ix_compras_req_items_req ON empresa_compras_requisicion_items(empresa_id, requisicion_id)`,
 		`CREATE TABLE IF NOT EXISTS empresa_compras_cotizaciones (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL,
 			requisicion_id INTEGER NOT NULL,
 			proveedor_id INTEGER DEFAULT 0,
@@ -177,7 +177,7 @@ func EnsureEmpresaComprasAvanzadasSchema(dbConn *sql.DB) error {
 		)`,
 		`CREATE INDEX IF NOT EXISTS ix_compras_cot_req ON empresa_compras_cotizaciones(empresa_id, requisicion_id)`,
 		`CREATE TABLE IF NOT EXISTS empresa_compras_aprobaciones (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL,
 			requisicion_id INTEGER NOT NULL,
 			cotizacion_id INTEGER DEFAULT 0,
@@ -190,7 +190,7 @@ func EnsureEmpresaComprasAvanzadasSchema(dbConn *sql.DB) error {
 		)`,
 		`CREATE INDEX IF NOT EXISTS ix_compras_aprob_req ON empresa_compras_aprobaciones(empresa_id, requisicion_id)`,
 		`CREATE TABLE IF NOT EXISTS empresa_compras_recepciones_avanzadas (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL,
 			requisicion_id INTEGER NOT NULL,
 			cotizacion_id INTEGER DEFAULT 0,
@@ -206,7 +206,7 @@ func EnsureEmpresaComprasAvanzadasSchema(dbConn *sql.DB) error {
 		)`,
 		`CREATE INDEX IF NOT EXISTS ix_compras_recep_req ON empresa_compras_recepciones_avanzadas(empresa_id, requisicion_id)`,
 		`CREATE TABLE IF NOT EXISTS empresa_compras_recepcion_items_avanzadas (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL,
 			recepcion_id INTEGER NOT NULL,
 			requisicion_item_id INTEGER DEFAULT 0,

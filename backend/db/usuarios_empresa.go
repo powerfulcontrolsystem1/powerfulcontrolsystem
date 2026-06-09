@@ -117,7 +117,7 @@ func EnsureEmpresaUsuariosAuthSchema(dbConn *sql.DB) error {
 		}
 	} else {
 		if _, err := execSQLCompat(dbConn, `CREATE TABLE IF NOT EXISTS users (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			email TEXT UNIQUE,
 			name TEXT,
 			role TEXT DEFAULT 'administrador',
@@ -143,8 +143,8 @@ func EnsureEmpresaUsuariosAuthSchema(dbConn *sql.DB) error {
 			acepta_contrato INTEGER DEFAULT 0,
 			contrato_version_aceptada INTEGER DEFAULT 0,
 			fecha_acepta_contrato TEXT,
-			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
-			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+			fecha_creacion TEXT DEFAULT (CURRENT_TIMESTAMP),
+			fecha_actualizacion TEXT DEFAULT (CURRENT_TIMESTAMP),
 			usuario_creador TEXT,
 			estado TEXT DEFAULT 'activo',
 			observaciones TEXT
@@ -184,8 +184,8 @@ func EnsureEmpresaUsuariosAuthSchema(dbConn *sql.DB) error {
 		{name: "acepta_contrato", def: "INTEGER DEFAULT 0"},
 		{name: "contrato_version_aceptada", def: "INTEGER DEFAULT 0"},
 		{name: "fecha_acepta_contrato", def: "TEXT"},
-		{name: "fecha_creacion", def: "TEXT DEFAULT (datetime('now','localtime'))"},
-		{name: "fecha_actualizacion", def: "TEXT DEFAULT (datetime('now','localtime'))"},
+		{name: "fecha_creacion", def: "TEXT DEFAULT (CURRENT_TIMESTAMP)"},
+		{name: "fecha_actualizacion", def: "TEXT DEFAULT (CURRENT_TIMESTAMP)"},
 		{name: "usuario_creador", def: "TEXT"},
 		{name: "estado", def: "TEXT DEFAULT 'activo'"},
 		{name: "observaciones", def: "TEXT"},
@@ -304,7 +304,7 @@ func CreateEmpresaUsuario(
 		observaciones,
 		fecha_creacion,
 		fecha_actualizacion
-	) VALUES (?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?, 'inactivo', ?, datetime('now','localtime'), datetime('now','localtime'))`,
+	) VALUES (?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?, 'inactivo', ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
 		email,
 		nombre,
 		rolNombre,
@@ -842,14 +842,14 @@ func SetEmpresaUsuarioPassword(dbConn *sql.DB, empresaID, id int64, passwordHash
 		SET password_hash = ?,
 			password_salt = ?,
 			password_set = 1,
-			password_actualizada_en = datetime('now','localtime'),
+			password_actualizada_en = CURRENT_TIMESTAMP,
 			password_reset_token = '',
 			password_reset_expira = '',
 			password_reset_requested_en = '',
 			login_failed_attempts = 0,
 			login_failed_last_at = '',
 			login_locked_until = '',
-			fecha_actualizacion = datetime('now','localtime')
+			fecha_actualizacion = CURRENT_TIMESTAMP
 		WHERE id = ? AND empresa_id = ?`, passwordHash, passwordSalt, id, empresaID)
 	return err
 }
@@ -863,9 +863,9 @@ func CompleteEmpresaUsuarioInvitationPassword(dbConn *sql.DB, empresaID, id int6
 		SET password_hash = ?,
 			password_salt = ?,
 			password_set = 1,
-			password_actualizada_en = datetime('now','localtime'),
+			password_actualizada_en = CURRENT_TIMESTAMP,
 			email_confirmado = 1,
-			email_confirmado_en = CASE WHEN COALESCE(email_confirmado_en, '') = '' THEN datetime('now','localtime') ELSE email_confirmado_en END,
+			email_confirmado_en = CASE WHEN COALESCE(email_confirmado_en, '') = '' THEN CURRENT_TIMESTAMP ELSE email_confirmado_en END,
 			email_confirm_token = '',
 			email_confirm_expira = '',
 			password_reset_token = '',
@@ -875,7 +875,7 @@ func CompleteEmpresaUsuarioInvitationPassword(dbConn *sql.DB, empresaID, id int6
 			login_failed_last_at = '',
 			login_locked_until = '',
 			estado = 'activo',
-			fecha_actualizacion = datetime('now','localtime')
+			fecha_actualizacion = CURRENT_TIMESTAMP
 		WHERE id = ? AND empresa_id = ?`, passwordHash, passwordSalt, id, empresaID)
 	return err
 }
@@ -888,7 +888,7 @@ func CompleteEmpresaUsuarioInvitationGoogle(dbConn *sql.DB, empresaID, id int64)
 	}
 	_, err := dbConn.Exec(`UPDATE users
 		SET email_confirmado = 1,
-			email_confirmado_en = CASE WHEN COALESCE(email_confirmado_en, '') = '' THEN datetime('now','localtime') ELSE email_confirmado_en END,
+			email_confirmado_en = CASE WHEN COALESCE(email_confirmado_en, '') = '' THEN CURRENT_TIMESTAMP ELSE email_confirmado_en END,
 			email_confirm_token = '',
 			email_confirm_expira = '',
 			password_reset_token = '',
@@ -898,7 +898,7 @@ func CompleteEmpresaUsuarioInvitationGoogle(dbConn *sql.DB, empresaID, id int64)
 			login_failed_last_at = '',
 			login_locked_until = '',
 			estado = 'activo',
-			fecha_actualizacion = datetime('now','localtime')
+			fecha_actualizacion = CURRENT_TIMESTAMP
 		WHERE id = ? AND empresa_id = ?`, id, empresaID)
 	return err
 }
@@ -911,8 +911,8 @@ func SetEmpresaUsuarioPasswordResetToken(dbConn *sql.DB, empresaID, id int64, to
 	_, err := dbConn.Exec(`UPDATE users
 		SET password_reset_token = ?,
 			password_reset_expira = ?,
-			password_reset_requested_en = datetime('now','localtime'),
-			fecha_actualizacion = datetime('now','localtime')
+			password_reset_requested_en = CURRENT_TIMESTAMP,
+			fecha_actualizacion = CURRENT_TIMESTAMP
 		WHERE id = ? AND empresa_id = ?`, token, expira, id, empresaID)
 	return err
 }
@@ -926,7 +926,7 @@ func ClearEmpresaUsuarioPasswordResetToken(dbConn *sql.DB, empresaID, id int64) 
 		SET password_reset_token = '',
 			password_reset_expira = '',
 			password_reset_requested_en = '',
-			fecha_actualizacion = datetime('now','localtime')
+			fecha_actualizacion = CURRENT_TIMESTAMP
 		WHERE id = ? AND empresa_id = ?`, id, empresaID)
 	return err
 }
@@ -982,7 +982,7 @@ func RegisterEmpresaUsuarioLoginFailure(dbConn *sql.DB, empresaID, id int64, max
 		SET login_failed_attempts = ?,
 			login_failed_last_at = ?,
 			login_locked_until = ?,
-			fecha_actualizacion = datetime('now','localtime')
+			fecha_actualizacion = CURRENT_TIMESTAMP
 		WHERE id = ? AND empresa_id = ?`,
 		attempts,
 		now.Format("2006-01-02 15:04:05"),
@@ -1006,7 +1006,7 @@ func ClearEmpresaUsuarioLoginFailures(dbConn *sql.DB, empresaID, id int64) error
 		SET login_failed_attempts = 0,
 			login_failed_last_at = '',
 			login_locked_until = '',
-			fecha_actualizacion = datetime('now','localtime')
+			fecha_actualizacion = CURRENT_TIMESTAMP
 		WHERE id = ? AND empresa_id = ?`, id, empresaID)
 	return err
 }
@@ -1075,7 +1075,7 @@ func UpdateEmpresaUsuario(
 				estado = 'inactivo',
 				email_confirm_token = ?,
 				email_confirm_expira = ?,
-				fecha_actualizacion = datetime('now','localtime')
+				fecha_actualizacion = CURRENT_TIMESTAMP
 			WHERE id = ? AND empresa_id = ?`,
 			email,
 			nombre,
@@ -1100,7 +1100,7 @@ func UpdateEmpresaUsuario(
 			control_aseo_estaciones = ?,
 			role = ?,
 			observaciones = ?,
-			fecha_actualizacion = datetime('now','localtime')
+			fecha_actualizacion = CURRENT_TIMESTAMP
 		WHERE id = ? AND empresa_id = ?`,
 		email,
 		nombre,
@@ -1122,7 +1122,7 @@ func UpdateEmpresaUsuarioFoto(dbConn *sql.DB, empresaID, id int64, fotoURL strin
 	}
 	res, err := dbConn.Exec(`UPDATE users
 		SET foto_url = ?,
-			fecha_actualizacion = datetime('now','localtime')
+			fecha_actualizacion = CURRENT_TIMESTAMP
 		WHERE id = ? AND empresa_id = ?`,
 		strings.TrimSpace(fotoURL),
 		id,
@@ -1174,7 +1174,7 @@ func SetEmpresaUsuarioEstado(dbConn *sql.DB, empresaID, id int64, estado string)
 	if err := EnsureEmpresaUsuariosAuthSchema(dbConn); err != nil {
 		return err
 	}
-	_, err := dbConn.Exec(`UPDATE users SET estado = ?, fecha_actualizacion = datetime('now','localtime') WHERE id = ? AND empresa_id = ?`, estado, id, empresaID)
+	_, err := dbConn.Exec(`UPDATE users SET estado = ?, fecha_actualizacion = CURRENT_TIMESTAMP WHERE id = ? AND empresa_id = ?`, estado, id, empresaID)
 	return err
 }
 
@@ -1186,7 +1186,7 @@ func SetEmpresaUsuarioConfirmToken(dbConn *sql.DB, empresaID, id int64, confirmT
 	_, err := dbConn.Exec(`UPDATE users
 		SET email_confirm_token = ?,
 			email_confirm_expira = ?,
-			fecha_actualizacion = datetime('now','localtime')
+			fecha_actualizacion = CURRENT_TIMESTAMP
 		WHERE id = ? AND empresa_id = ?`, confirmToken, confirmExpira, id, empresaID)
 	return err
 }
@@ -1213,11 +1213,11 @@ func ConfirmEmpresaUsuarioByToken(dbConn *sql.DB, token string) (int64, error) {
 
 	_, err := dbConn.Exec(`UPDATE users
 		SET email_confirmado = 1,
-			email_confirmado_en = datetime('now','localtime'),
+			email_confirmado_en = CURRENT_TIMESTAMP,
 			estado = 'activo',
 			email_confirm_token = '',
 			email_confirm_expira = '',
-			fecha_actualizacion = datetime('now','localtime')
+			fecha_actualizacion = CURRENT_TIMESTAMP
 		WHERE id = ?`, id)
 	if err != nil {
 		return 0, err
@@ -1232,8 +1232,8 @@ func SetEmpresaUsuarioContratoAceptado(dbConn *sql.DB, empresaID, id int64, vers
 	_, err := dbConn.Exec(`UPDATE users
 		SET acepta_contrato = 1,
 			contrato_version_aceptada = ?,
-			fecha_acepta_contrato = datetime('now','localtime'),
-			fecha_actualizacion = datetime('now','localtime')
+			fecha_acepta_contrato = CURRENT_TIMESTAMP,
+			fecha_actualizacion = CURRENT_TIMESTAMP
 		WHERE id = ? AND empresa_id = ?`, version, id, empresaID)
 	return err
 }

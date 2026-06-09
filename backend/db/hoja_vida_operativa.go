@@ -90,7 +90,7 @@ type EmpresaHojaVidaReporte struct {
 func EnsureEmpresaHojaVidaOperativaSchema(dbConn *sql.DB) error {
 	stmts := []string{
 		`CREATE TABLE IF NOT EXISTS empresa_hoja_vida_entidades (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL,
 			tipo_entidad TEXT DEFAULT 'activo',
 			codigo TEXT,
@@ -108,8 +108,8 @@ func EnsureEmpresaHojaVidaOperativaSchema(dbConn *sql.DB) error {
 			ultimo_evento_fecha TEXT,
 			proximo_evento_fecha TEXT,
 			metadata_json TEXT,
-			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
-			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+			fecha_creacion TEXT DEFAULT (CURRENT_TIMESTAMP),
+			fecha_actualizacion TEXT DEFAULT (CURRENT_TIMESTAMP),
 			usuario_creador TEXT,
 			estado TEXT DEFAULT 'activo',
 			observaciones TEXT
@@ -117,13 +117,13 @@ func EnsureEmpresaHojaVidaOperativaSchema(dbConn *sql.DB) error {
 		`CREATE INDEX IF NOT EXISTS ix_empresa_hoja_vida_entidades_empresa ON empresa_hoja_vida_entidades(empresa_id, estado, tipo_entidad);`,
 		`CREATE INDEX IF NOT EXISTS ix_empresa_hoja_vida_entidades_codigo ON empresa_hoja_vida_entidades(empresa_id, codigo);`,
 		`CREATE TABLE IF NOT EXISTS empresa_hoja_vida_eventos (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL,
 			entidad_id INTEGER NOT NULL,
 			tipo_evento TEXT DEFAULT 'evento',
 			titulo TEXT NOT NULL,
 			descripcion TEXT,
-			fecha_evento TEXT DEFAULT (datetime('now','localtime')),
+			fecha_evento TEXT DEFAULT (CURRENT_TIMESTAMP),
 			fecha_proxima TEXT,
 			costo REAL DEFAULT 0,
 			responsable TEXT,
@@ -131,15 +131,15 @@ func EnsureEmpresaHojaVidaOperativaSchema(dbConn *sql.DB) error {
 			adjunto_url TEXT,
 			recurrente INTEGER DEFAULT 0,
 			recurrencia_dias INTEGER DEFAULT 0,
-			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
-			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+			fecha_creacion TEXT DEFAULT (CURRENT_TIMESTAMP),
+			fecha_actualizacion TEXT DEFAULT (CURRENT_TIMESTAMP),
 			usuario_creador TEXT,
 			estado TEXT DEFAULT 'activo',
 			observaciones TEXT
 		);`,
 		`CREATE INDEX IF NOT EXISTS ix_empresa_hoja_vida_eventos_entidad ON empresa_hoja_vida_eventos(empresa_id, entidad_id, fecha_evento DESC);`,
 		`CREATE TABLE IF NOT EXISTS empresa_hoja_vida_alertas (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL,
 			entidad_id INTEGER NOT NULL,
 			titulo TEXT NOT NULL,
@@ -149,8 +149,8 @@ func EnsureEmpresaHojaVidaOperativaSchema(dbConn *sql.DB) error {
 			estado_alerta TEXT DEFAULT 'pendiente',
 			fecha_completada TEXT,
 			responsable TEXT,
-			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
-			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+			fecha_creacion TEXT DEFAULT (CURRENT_TIMESTAMP),
+			fecha_actualizacion TEXT DEFAULT (CURRENT_TIMESTAMP),
 			usuario_creador TEXT,
 			estado TEXT DEFAULT 'activo',
 			observaciones TEXT
@@ -219,7 +219,7 @@ func UpdateEmpresaHojaVidaEntidad(dbConn *sql.DB, item EmpresaHojaVidaEntidad) e
 	res, err := dbConn.Exec(`UPDATE empresa_hoja_vida_entidades SET
 		tipo_entidad = ?, codigo = ?, nombre = ?, cliente_id = NULLIF(?,0), cliente_nombre = ?,
 		identificacion = ?, marca = ?, modelo = ?, serie = ?, color = ?, fecha_nacimiento = ?,
-		fecha_ingreso = ?, estado_operativo = ?, metadata_json = ?, fecha_actualizacion = datetime('now','localtime'),
+		fecha_ingreso = ?, estado_operativo = ?, metadata_json = ?, fecha_actualizacion = CURRENT_TIMESTAMP,
 		observaciones = ?
 		WHERE empresa_id = ? AND id = ? AND estado = 'activo'`,
 		item.TipoEntidad, strings.TrimSpace(item.Codigo), strings.TrimSpace(item.Nombre), item.ClienteID,
@@ -239,7 +239,7 @@ func UpdateEmpresaHojaVidaEntidad(dbConn *sql.DB, item EmpresaHojaVidaEntidad) e
 
 // DeleteEmpresaHojaVidaEntidad inactiva una hoja de vida.
 func DeleteEmpresaHojaVidaEntidad(dbConn *sql.DB, empresaID, id int64) error {
-	res, err := dbConn.Exec(`UPDATE empresa_hoja_vida_entidades SET estado = 'inactivo', fecha_actualizacion = datetime('now','localtime') WHERE empresa_id = ? AND id = ?`, empresaID, id)
+	res, err := dbConn.Exec(`UPDATE empresa_hoja_vida_entidades SET estado = 'inactivo', fecha_actualizacion = CURRENT_TIMESTAMP WHERE empresa_id = ? AND id = ?`, empresaID, id)
 	if err != nil {
 		return err
 	}
@@ -305,7 +305,7 @@ func CreateEmpresaHojaVidaEvento(dbConn *sql.DB, item EmpresaHojaVidaEvento) (in
 		empresa_id, entidad_id, tipo_evento, titulo, descripcion, fecha_evento, fecha_proxima,
 		costo, responsable, documento_referencia, adjunto_url, recurrente, recurrencia_dias,
 		usuario_creador, estado, observaciones
-	) VALUES (?, ?, ?, ?, ?, COALESCE(NULLIF(?,''), datetime('now','localtime')), ?, ?, ?, ?, ?, ?, ?, ?, 'activo', ?)`,
+	) VALUES (?, ?, ?, ?, ?, COALESCE(NULLIF(?,''), CURRENT_TIMESTAMP), ?, ?, ?, ?, ?, ?, ?, ?, 'activo', ?)`,
 		item.EmpresaID, item.EntidadID, strings.TrimSpace(item.TipoEvento), strings.TrimSpace(item.Titulo),
 		strings.TrimSpace(item.Descripcion), strings.TrimSpace(item.FechaEvento), strings.TrimSpace(item.FechaProxima),
 		item.Costo, strings.TrimSpace(item.Responsable), strings.TrimSpace(item.DocumentoReferencia),
@@ -345,7 +345,7 @@ func ListEmpresaHojaVidaEventos(dbConn *sql.DB, empresaID, entidadID int64, limi
 func DeleteEmpresaHojaVidaEvento(dbConn *sql.DB, empresaID, id int64) error {
 	var entidadID int64
 	_ = dbConn.QueryRow(`SELECT entidad_id FROM empresa_hoja_vida_eventos WHERE empresa_id = ? AND id = ?`, empresaID, id).Scan(&entidadID)
-	res, err := dbConn.Exec(`UPDATE empresa_hoja_vida_eventos SET estado = 'inactivo', fecha_actualizacion = datetime('now','localtime') WHERE empresa_id = ? AND id = ?`, empresaID, id)
+	res, err := dbConn.Exec(`UPDATE empresa_hoja_vida_eventos SET estado = 'inactivo', fecha_actualizacion = CURRENT_TIMESTAMP WHERE empresa_id = ? AND id = ?`, empresaID, id)
 	if err != nil {
 		return err
 	}
@@ -420,9 +420,9 @@ func SetEmpresaHojaVidaAlertaEstado(dbConn *sql.DB, empresaID, id int64, estadoA
 	}
 	fechaCompletadaExpr := "NULL"
 	if estadoAlerta == "completada" {
-		fechaCompletadaExpr = "datetime('now','localtime')"
+		fechaCompletadaExpr = "CURRENT_TIMESTAMP"
 	}
-	res, err := dbConn.Exec(`UPDATE empresa_hoja_vida_alertas SET estado_alerta = ?, fecha_completada = `+fechaCompletadaExpr+`, fecha_actualizacion = datetime('now','localtime') WHERE empresa_id = ? AND id = ? AND estado = 'activo'`, estadoAlerta, empresaID, id)
+	res, err := dbConn.Exec(`UPDATE empresa_hoja_vida_alertas SET estado_alerta = ?, fecha_completada = `+fechaCompletadaExpr+`, fecha_actualizacion = CURRENT_TIMESTAMP WHERE empresa_id = ? AND id = ? AND estado = 'activo'`, estadoAlerta, empresaID, id)
 	if err != nil {
 		return err
 	}
@@ -435,7 +435,7 @@ func SetEmpresaHojaVidaAlertaEstado(dbConn *sql.DB, empresaID, id int64, estadoA
 
 // DeleteEmpresaHojaVidaAlerta inactiva una alerta.
 func DeleteEmpresaHojaVidaAlerta(dbConn *sql.DB, empresaID, id int64) error {
-	res, err := dbConn.Exec(`UPDATE empresa_hoja_vida_alertas SET estado = 'inactivo', fecha_actualizacion = datetime('now','localtime') WHERE empresa_id = ? AND id = ?`, empresaID, id)
+	res, err := dbConn.Exec(`UPDATE empresa_hoja_vida_alertas SET estado = 'inactivo', fecha_actualizacion = CURRENT_TIMESTAMP WHERE empresa_id = ? AND id = ?`, empresaID, id)
 	if err != nil {
 		return err
 	}
@@ -453,7 +453,7 @@ func GetEmpresaHojaVidaReporte(dbConn *sql.DB, empresaID int64) (EmpresaHojaVida
 		(SELECT COUNT(1) FROM empresa_hoja_vida_entidades WHERE empresa_id = ? AND estado = 'activo'),
 		(SELECT COUNT(1) FROM empresa_hoja_vida_eventos WHERE empresa_id = ? AND estado = 'activo'),
 		(SELECT COUNT(1) FROM empresa_hoja_vida_alertas WHERE empresa_id = ? AND estado = 'activo' AND estado_alerta = 'pendiente'),
-		(SELECT COUNT(1) FROM empresa_hoja_vida_alertas WHERE empresa_id = ? AND estado = 'activo' AND estado_alerta = 'pendiente' AND fecha_programada IS NOT NULL AND fecha_programada < datetime('now','localtime')),
+		(SELECT COUNT(1) FROM empresa_hoja_vida_alertas WHERE empresa_id = ? AND estado = 'activo' AND estado_alerta = 'pendiente' AND fecha_programada IS NOT NULL AND fecha_programada < CURRENT_TIMESTAMP),
 		(SELECT COUNT(1) FROM empresa_hoja_vida_eventos WHERE empresa_id = ? AND estado = 'activo' AND recurrente = 1)`,
 		empresaID, empresaID, empresaID, empresaID, empresaID,
 	).Scan(&out.EntidadesActivas, &out.EventosActivos, &out.AlertasPendientes, &out.AlertasVencidas, &out.ServiciosRecurrentes)
@@ -464,7 +464,7 @@ func refreshEmpresaHojaVidaEntidadDates(dbConn *sql.DB, empresaID, entidadID int
 	_, err := dbConn.Exec(`UPDATE empresa_hoja_vida_entidades SET
 		ultimo_evento_fecha = (SELECT MAX(fecha_evento) FROM empresa_hoja_vida_eventos WHERE empresa_id = ? AND entidad_id = ? AND estado = 'activo'),
 		proximo_evento_fecha = (SELECT MIN(fecha_proxima) FROM empresa_hoja_vida_eventos WHERE empresa_id = ? AND entidad_id = ? AND estado = 'activo' AND fecha_proxima IS NOT NULL AND fecha_proxima <> ''),
-		fecha_actualizacion = datetime('now','localtime')
+		fecha_actualizacion = CURRENT_TIMESTAMP
 		WHERE empresa_id = ? AND id = ?`, empresaID, entidadID, empresaID, entidadID, empresaID, entidadID)
 	return err
 }

@@ -16,7 +16,7 @@ type RustDeskDevice struct {
 
 func EnsureRustDeskSchema(dbEmp *sql.DB) error {
 	query := `CREATE TABLE IF NOT EXISTS empresa_rustdesk_devices (
-		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		id BIGSERIAL PRIMARY KEY,
 		empresa_id INTEGER NOT NULL,
 		rustdesk_id TEXT NOT NULL,
 		password TEXT,
@@ -52,4 +52,3 @@ func RegisterRustDeskDevice(dbEmp *sql.DB, d RustDeskDevice) error {
 		d.EmpresaID, d.RustDeskID, d.Password, d.Nombre, d.Rol, d.Estado)
 	return err
 }
-

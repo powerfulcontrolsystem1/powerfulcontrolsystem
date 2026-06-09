@@ -97,7 +97,7 @@ var codigoDescuentoCharset = []rune("ABCDEFGHJKLMNPQRSTUVWXYZ23456789")
 func EnsureEmpresaCodigosDescuentoSchema(dbConn *sql.DB) error {
 	stmts := []string{
 		`CREATE TABLE IF NOT EXISTS codigos_de_descuento (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL,
 			codigo TEXT NOT NULL,
 			tipo_descuento TEXT DEFAULT 'valor_fijo',
@@ -114,14 +114,14 @@ func EnsureEmpresaCodigosDescuentoSchema(dbConn *sql.DB) error {
 			fecha_vencimiento TEXT,
 			usos_maximos INTEGER DEFAULT 1,
 			usos_actuales INTEGER DEFAULT 0,
-			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
-			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+			fecha_creacion TEXT DEFAULT (CURRENT_TIMESTAMP),
+			fecha_actualizacion TEXT DEFAULT (CURRENT_TIMESTAMP),
 			usuario_creador TEXT,
 			estado TEXT DEFAULT 'activo',
 			observaciones TEXT
 		);`,
 		`CREATE TABLE IF NOT EXISTS codigos_descuento_redenciones (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL,
 			codigo_descuento_id INTEGER NOT NULL,
 			carrito_id INTEGER,
@@ -134,9 +134,9 @@ func EnsureEmpresaCodigosDescuentoSchema(dbConn *sql.DB) error {
 			estado_redencion TEXT DEFAULT 'aplicada',
 			motivo TEXT,
 			referencia_operacion TEXT,
-			fecha_redencion TEXT DEFAULT (datetime('now','localtime')),
-			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
-			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+			fecha_redencion TEXT DEFAULT (CURRENT_TIMESTAMP),
+			fecha_creacion TEXT DEFAULT (CURRENT_TIMESTAMP),
+			fecha_actualizacion TEXT DEFAULT (CURRENT_TIMESTAMP),
 			usuario_creador TEXT,
 			estado TEXT DEFAULT 'activo',
 			observaciones TEXT
@@ -644,7 +644,7 @@ func CreateCodigoDescuento(dbConn *sql.DB, payload CodigoDescuento) (int64, erro
 			usuario_creador,
 			estado,
 			observaciones
-		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, NULLIF(?, ''), NULLIF(?, ''), NULLIF(?, ''), ?, ?, NULLIF(?, ''), ?, ?, datetime('now','localtime'), datetime('now','localtime'), ?, ?, ?)`,
+		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, NULLIF(?, ''), NULLIF(?, ''), NULLIF(?, ''), ?, ?, NULLIF(?, ''), ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, ?, ?, ?)`,
 			candidate.EmpresaID,
 			candidate.Codigo,
 			candidate.TipoDescuento,
@@ -919,7 +919,7 @@ func UpdateCodigoDescuento(dbConn *sql.DB, payload CodigoDescuento) error {
 		usos_actuales = ?,
 		estado = ?,
 		observaciones = ?,
-		fecha_actualizacion = datetime('now','localtime')
+		fecha_actualizacion = CURRENT_TIMESTAMP
 	WHERE id = ? AND empresa_id = ?`,
 		payload.Codigo,
 		payload.TipoDescuento,
@@ -968,7 +968,7 @@ func DeleteCodigoDescuento(dbConn *sql.DB, empresaID, codigoID int64) error {
 func SetCodigoDescuentoEstado(dbConn *sql.DB, empresaID, codigoID int64, estado string) error {
 	nuevoEstado := normalizeCodigoDescuentoEstado(estado)
 	res, err := dbConn.Exec(`UPDATE codigos_de_descuento
-	SET estado = ?, fecha_actualizacion = datetime('now','localtime')
+	SET estado = ?, fecha_actualizacion = CURRENT_TIMESTAMP
 	WHERE empresa_id = ? AND id = ?`, nuevoEstado, empresaID, codigoID)
 	if err != nil {
 		return err

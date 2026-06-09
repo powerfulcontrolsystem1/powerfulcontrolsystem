@@ -642,8 +642,8 @@ func GetLicenciasFiltered(dbConn *sql.DB, soloActivas bool, usuarioCreador strin
 			where = append(where, postgresLicenciaDatePredicate("l.fecha_inicio", "<="))
 			where = append(where, postgresLicenciaDatePredicate("l.fecha_fin", ">="))
 		} else {
-			where = append(where, "(COALESCE(l.fecha_inicio, '') = '' OR datetime(l.fecha_inicio) <= datetime('now','localtime'))")
-			where = append(where, "(COALESCE(l.fecha_fin, '') = '' OR datetime(l.fecha_fin) >= datetime('now','localtime'))")
+			where = append(where, "(COALESCE(l.fecha_inicio, '') = '' OR pcs_ts(l.fecha_inicio) <= CURRENT_TIMESTAMP)")
+			where = append(where, "(COALESCE(l.fecha_fin, '') = '' OR pcs_ts(l.fecha_fin) >= CURRENT_TIMESTAMP)")
 		}
 	}
 	if conEmpresa {
@@ -785,11 +785,11 @@ func GetActiveLicenciaByEmpresa(dbConn *sql.DB, empresaID int64) (*Licencia, err
 	FROM licencias
 	WHERE empresa_id = ?
 		AND COALESCE(activo, 1) = 1
-		AND (COALESCE(fecha_inicio, '') = '' OR datetime(fecha_inicio) <= datetime('now','localtime'))
-		AND (COALESCE(fecha_fin, '') = '' OR datetime(fecha_fin) >= datetime('now','localtime'))
+		AND (COALESCE(fecha_inicio, '') = '' OR pcs_ts(fecha_inicio) <= CURRENT_TIMESTAMP)
+		AND (COALESCE(fecha_fin, '') = '' OR pcs_ts(fecha_fin) >= CURRENT_TIMESTAMP)
 	ORDER BY
 		CASE WHEN COALESCE(fecha_fin, '') = '' THEN 1 ELSE 0 END DESC,
-		datetime(COALESCE(fecha_fin, '9999-12-31 23:59:59')) DESC,
+		pcs_ts(COALESCE(fecha_fin, '9999-12-31 23:59:59')) DESC,
 		id DESC
 	LIMIT 1`
 	if isPostgresDialect() {
@@ -962,11 +962,11 @@ func GetLicenciaPermisoPolicyByEmpresa(dbConn *sql.DB, empresaID int64) (*Licenc
 	FROM licencias
 	WHERE empresa_id = ?
 		AND COALESCE(activo, 1) = 1
-		AND (COALESCE(fecha_inicio, '') = '' OR datetime(fecha_inicio) <= datetime('now','localtime'))
-		AND (COALESCE(fecha_fin, '') = '' OR datetime(fecha_fin) >= datetime('now','localtime'))
+		AND (COALESCE(fecha_inicio, '') = '' OR pcs_ts(fecha_inicio) <= CURRENT_TIMESTAMP)
+		AND (COALESCE(fecha_fin, '') = '' OR pcs_ts(fecha_fin) >= CURRENT_TIMESTAMP)
 	ORDER BY
 		CASE WHEN COALESCE(fecha_fin, '') = '' THEN 1 ELSE 0 END DESC,
-		datetime(COALESCE(fecha_fin, '9999-12-31 23:59:59')) DESC,
+		pcs_ts(COALESCE(fecha_fin, '9999-12-31 23:59:59')) DESC,
 		id DESC
 	LIMIT 1`
 	if isPostgresDialect() {
@@ -2017,8 +2017,8 @@ func InitMetricsTable(dbConn *sql.DB) error {
 	}
 
 	create := `CREATE TABLE IF NOT EXISTS metrics (
-		id INTEGER PRIMARY KEY AUTOINCREMENT,
-		timestamp TEXT DEFAULT (datetime('now','localtime')),
+		id BIGSERIAL PRIMARY KEY,
+		timestamp TEXT DEFAULT (CURRENT_TIMESTAMP),
 		cpu_percent REAL,
 		mem_total INTEGER,
 		mem_used INTEGER,
@@ -2028,7 +2028,7 @@ func InitMetricsTable(dbConn *sql.DB) error {
 		disk_percent REAL DEFAULT 0,
 		net_recv INTEGER,
 		net_sent INTEGER,
-		fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
+		fecha_creacion TEXT DEFAULT (CURRENT_TIMESTAMP),
 		fecha_actualizacion TEXT,
 		usuario_creador TEXT,
 		estado TEXT DEFAULT 'activo',

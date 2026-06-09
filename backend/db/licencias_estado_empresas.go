@@ -23,7 +23,7 @@ func licenciaActivePredicate(alias string) string {
 	if isPostgresDialect() {
 		return "COALESCE(" + prefix + "activo, 1) = 1 AND " + postgresLicenciaDatePredicate(prefix+"fecha_inicio", "<=") + " AND " + postgresLicenciaDatePredicate(prefix+"fecha_fin", ">=")
 	}
-	return "COALESCE(" + prefix + "activo, 1) = 1 AND (COALESCE(" + prefix + "fecha_inicio, '') = '' OR datetime(" + prefix + "fecha_inicio) <= datetime('now','localtime')) AND (COALESCE(" + prefix + "fecha_fin, '') = '' OR datetime(" + prefix + "fecha_fin) >= datetime('now','localtime'))"
+	return "COALESCE(" + prefix + "activo, 1) = 1 AND (COALESCE(" + prefix + "fecha_inicio, '') = '' OR pcs_ts(" + prefix + "fecha_inicio) <= CURRENT_TIMESTAMP) AND (COALESCE(" + prefix + "fecha_fin, '') = '' OR pcs_ts(" + prefix + "fecha_fin) >= CURRENT_TIMESTAMP)"
 }
 
 func licenciaExpiredPredicate(alias string) string {
@@ -34,7 +34,7 @@ func licenciaExpiredPredicate(alias string) string {
 	if isPostgresDialect() {
 		return postgresLicenciaHasExpiredPredicate(prefix + "fecha_fin")
 	}
-	return "COALESCE(" + prefix + "fecha_fin, '') <> '' AND datetime(" + prefix + "fecha_fin) < datetime('now','localtime')"
+	return "COALESCE(" + prefix + "fecha_fin, '') <> '' AND pcs_ts(" + prefix + "fecha_fin) < CURRENT_TIMESTAMP"
 }
 
 func queryLicenciaEmpresaIDSet(dbConn *sql.DB, query string, args ...interface{}) (map[int64]struct{}, error) {

@@ -100,7 +100,7 @@ func EnsureEmpresaSoportesComprasIASchema(dbConn *sql.DB) error {
 	}
 	stmts := []string{
 		`CREATE TABLE IF NOT EXISTS empresa_soportes_compras_ia (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL,
 			codigo TEXT NOT NULL,
 			tipo_soporte TEXT DEFAULT 'gasto',
@@ -137,8 +137,8 @@ func EnsureEmpresaSoportesComprasIASchema(dbConn *sql.DB) error {
 			fecha_aprobacion TEXT,
 			convertido_tipo TEXT,
 			convertido_id INTEGER DEFAULT 0,
-			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
-			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+			fecha_creacion TEXT DEFAULT (CURRENT_TIMESTAMP),
+			fecha_actualizacion TEXT DEFAULT (CURRENT_TIMESTAMP),
 			usuario_creador TEXT,
 			estado TEXT DEFAULT 'activo',
 			observaciones TEXT,
@@ -147,14 +147,14 @@ func EnsureEmpresaSoportesComprasIASchema(dbConn *sql.DB) error {
 		`CREATE INDEX IF NOT EXISTS ix_soportes_compras_ia_empresa_estado ON empresa_soportes_compras_ia(empresa_id, estado_soporte, fecha_creacion DESC);`,
 		`CREATE INDEX IF NOT EXISTS ix_soportes_compras_ia_hash ON empresa_soportes_compras_ia(empresa_id, archivo_hash);`,
 		`CREATE TABLE IF NOT EXISTS empresa_soportes_compras_ia_eventos (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL,
 			soporte_id INTEGER NOT NULL,
 			evento TEXT NOT NULL,
 			estado_anterior TEXT,
 			estado_nuevo TEXT,
 			detalle_json TEXT,
-			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
+			fecha_creacion TEXT DEFAULT (CURRENT_TIMESTAMP),
 			usuario_creador TEXT
 		);`,
 		`CREATE INDEX IF NOT EXISTS ix_soportes_compras_ia_eventos_soporte ON empresa_soportes_compras_ia_eventos(empresa_id, soporte_id, fecha_creacion DESC);`,
@@ -334,7 +334,7 @@ func UpdateEmpresaSoporteComprasIAExtraccion(dbConn *sql.DB, empresaID, soporteI
 		tipo_soporte=?,estado_soporte=?,proveedor_id=?,proveedor_nombre=?,proveedor_nit=?,documento_tipo=?,documento_numero=?,
 		fecha_documento=?,fecha_vencimiento=?,subtotal=?,impuesto_iva=?,retencion_fuente=?,retencion_ica=?,retencion_iva=?,
 		total=?,moneda=?,categoria_contable=?,centro_costo=?,impacta_inventario=?,confianza_ia=?,modelo_ia=?,extraccion_json=?,
-		respuesta_ia=?,duplicado_soporte_id=?,requiere_revision_humana=?,fecha_actualizacion=datetime('now','localtime'),
+		respuesta_ia=?,duplicado_soporte_id=?,requiere_revision_humana=?,fecha_actualizacion=CURRENT_TIMESTAMP,
 		usuario_creador=?,observaciones=? WHERE empresa_id=? AND id=?`,
 		extracted.TipoSoporte, extracted.EstadoSoporte, extracted.ProveedorID, extracted.ProveedorNombre, extracted.ProveedorNIT, extracted.DocumentoTipo, extracted.DocumentoNumero,
 		extracted.FechaDocumento, extracted.FechaVencimiento, extracted.Subtotal, extracted.ImpuestoIVA, extracted.RetencionFuente, extracted.RetencionICA, extracted.RetencionIVA,
@@ -362,7 +362,7 @@ func UpdateEmpresaSoporteComprasIAEstado(dbConn *sql.DB, empresaID, soporteID in
 		aprobadoPor = strings.TrimSpace(usuario)
 		fechaAprobacion = time.Now().Format("2006-01-02 15:04:05")
 	}
-	_, err = ExecCompat(dbConn, `UPDATE empresa_soportes_compras_ia SET estado_soporte=?, aprobado_por=?, fecha_aprobacion=?, requiere_revision_humana=?, fecha_actualizacion=datetime('now','localtime'), usuario_creador=?, observaciones=? WHERE empresa_id=? AND id=?`,
+	_, err = ExecCompat(dbConn, `UPDATE empresa_soportes_compras_ia SET estado_soporte=?, aprobado_por=?, fecha_aprobacion=?, requiere_revision_humana=?, fecha_actualizacion=CURRENT_TIMESTAMP, usuario_creador=?, observaciones=? WHERE empresa_id=? AND id=?`,
 		next, aprobadoPor, fechaAprobacion, boolToIntSoporteIA(next != "aprobado"), usuario, observaciones, empresaID, soporteID)
 	if err != nil {
 		return EmpresaSoporteComprasIA{}, err
@@ -391,7 +391,7 @@ func ContabilizarEmpresaSoporteComprasIA(dbConn *sql.DB, empresaID, soporteID in
 	if err != nil {
 		return EmpresaSoporteComprasIA{}, err
 	}
-	_, err = ExecCompat(dbConn, `UPDATE empresa_soportes_compras_ia SET estado_soporte='contabilizado', convertido_tipo='cuenta_por_pagar', convertido_id=?, requiere_revision_humana=0, fecha_actualizacion=datetime('now','localtime'), usuario_creador=? WHERE empresa_id=? AND id=?`, cxpID, usuario, empresaID, soporteID)
+	_, err = ExecCompat(dbConn, `UPDATE empresa_soportes_compras_ia SET estado_soporte='contabilizado', convertido_tipo='cuenta_por_pagar', convertido_id=?, requiere_revision_humana=0, fecha_actualizacion=CURRENT_TIMESTAMP, usuario_creador=? WHERE empresa_id=? AND id=?`, cxpID, usuario, empresaID, soporteID)
 	if err != nil {
 		return EmpresaSoporteComprasIA{}, err
 	}

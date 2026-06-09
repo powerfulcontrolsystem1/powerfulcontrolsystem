@@ -28,7 +28,7 @@ type PublicacionRedSocial struct {
 func EnsureEmpresaPublicacionesRedSocialSchema(db *sql.DB) error {
 	query := `
 	CREATE TABLE IF NOT EXISTS empresa_publicaciones_red_social (
-		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		id BIGSERIAL PRIMARY KEY,
 		empresa_id INTEGER NOT NULL,
 		nombre TEXT NOT NULL,
 		descripcion TEXT NOT NULL,
@@ -86,7 +86,7 @@ func EnsureEmpresaRedSocialInteraccionesSchema(db *sql.DB) error {
 
 	comments := `
 	CREATE TABLE IF NOT EXISTS empresa_publicaciones_red_social_comentarios (
-		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		id BIGSERIAL PRIMARY KEY,
 		publicacion_id INTEGER NOT NULL,
 		empresa_id INTEGER NOT NULL,
 		actor_key TEXT,
@@ -97,7 +97,7 @@ func EnsureEmpresaRedSocialInteraccionesSchema(db *sql.DB) error {
 	);`
 	reactions := `
 	CREATE TABLE IF NOT EXISTS empresa_publicaciones_red_social_reacciones (
-		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		id BIGSERIAL PRIMARY KEY,
 		publicacion_id INTEGER NOT NULL,
 		empresa_id INTEGER NOT NULL,
 		actor_key TEXT NOT NULL,

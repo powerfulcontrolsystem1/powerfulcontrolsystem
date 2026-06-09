@@ -319,7 +319,7 @@ func paisFacturacionByCodigo(codigo string) PaisFacturacion {
 func EnsureEmpresaFacturacionElectronicaSchema(dbConn *sql.DB) error {
 	stmts := []string{
 		`CREATE TABLE IF NOT EXISTS facturacion_electronica_pais (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL,
 			pais_codigo TEXT NOT NULL,
 			pais_nombre TEXT NOT NULL,
@@ -337,8 +337,8 @@ func EnsureEmpresaFacturacionElectronicaSchema(dbConn *sql.DB) error {
 			resolucion_numero TEXT,
 			api_base_url TEXT,
 			campos_pais_json TEXT DEFAULT '{}',
-			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
-			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+			fecha_creacion TEXT DEFAULT (CURRENT_TIMESTAMP),
+			fecha_actualizacion TEXT DEFAULT (CURRENT_TIMESTAMP),
 			usuario_creador TEXT,
 			estado TEXT DEFAULT 'activo',
 			observaciones TEXT,
@@ -347,7 +347,7 @@ func EnsureEmpresaFacturacionElectronicaSchema(dbConn *sql.DB) error {
 		`CREATE INDEX IF NOT EXISTS ix_fe_pais_empresa ON facturacion_electronica_pais(empresa_id, pais_codigo);`,
 		`CREATE INDEX IF NOT EXISTS ix_fe_pais_estado ON facturacion_electronica_pais(empresa_id, estado);`,
 		`CREATE TABLE IF NOT EXISTS facturacion_electronica_reintentos (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL,
 			tipo_documento TEXT NOT NULL,
 			documento_codigo TEXT NOT NULL,
@@ -367,8 +367,8 @@ func EnsureEmpresaFacturacionElectronicaSchema(dbConn *sql.DB) error {
 			numero_legal TEXT,
 			codigo_validacion TEXT,
 			fecha_emision_legal TEXT,
-			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
-			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+			fecha_creacion TEXT DEFAULT (CURRENT_TIMESTAMP),
+			fecha_actualizacion TEXT DEFAULT (CURRENT_TIMESTAMP),
 			usuario_creador TEXT,
 			estado TEXT DEFAULT 'activo',
 			observaciones TEXT,
@@ -888,7 +888,7 @@ func UpsertFacturacionElectronicaPaisConfig(dbConn *sql.DB, payload FacturacionE
 		usuario_creador,
 		estado,
 		observaciones
-	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now','localtime'), datetime('now','localtime'), ?, ?, ?)
+	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, ?, ?, ?)
 	ON CONFLICT(empresa_id, pais_codigo) DO UPDATE SET
 		pais_nombre = excluded.pais_nombre,
 		moneda_codigo = excluded.moneda_codigo,
@@ -905,7 +905,7 @@ func UpsertFacturacionElectronicaPaisConfig(dbConn *sql.DB, payload FacturacionE
 		resolucion_numero = excluded.resolucion_numero,
 		api_base_url = excluded.api_base_url,
 		campos_pais_json = excluded.campos_pais_json,
-		fecha_actualizacion = datetime('now','localtime'),
+		fecha_actualizacion = CURRENT_TIMESTAMP,
 		usuario_creador = excluded.usuario_creador,
 		estado = excluded.estado,
 		observaciones = excluded.observaciones`
@@ -1405,7 +1405,7 @@ func PrepareFacturacionDocumentoLegal(dbConn *sql.DB, empresaID int64, paisCodig
 
 	if _, err := tx.Exec(`UPDATE empresa_configuracion_avanzada
 		SET proximo_consecutivo = ?,
-			fecha_actualizacion = datetime('now','localtime')
+			fecha_actualizacion = CURRENT_TIMESTAMP
 		WHERE empresa_id = ?`, proximoConsecutivo+1, empresaID); err != nil {
 		return nil, err
 	}
@@ -1640,7 +1640,7 @@ func UpsertFacturacionElectronicaRetry(dbConn *sql.DB, payload FacturacionElectr
 		usuario_creador,
 		estado,
 		observaciones
-	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now','localtime'), datetime('now','localtime'), ?, ?, ?)
+	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, ?, ?, ?)
 	ON CONFLICT(empresa_id, tipo_documento, documento_codigo) DO UPDATE SET
 		pais_codigo = excluded.pais_codigo,
 		proveedor = excluded.proveedor,
@@ -1658,7 +1658,7 @@ func UpsertFacturacionElectronicaRetry(dbConn *sql.DB, payload FacturacionElectr
 		numero_legal = CASE WHEN excluded.numero_legal <> '' THEN excluded.numero_legal ELSE facturacion_electronica_reintentos.numero_legal END,
 		codigo_validacion = CASE WHEN excluded.codigo_validacion <> '' THEN excluded.codigo_validacion ELSE facturacion_electronica_reintentos.codigo_validacion END,
 		fecha_emision_legal = CASE WHEN excluded.fecha_emision_legal <> '' THEN excluded.fecha_emision_legal ELSE facturacion_electronica_reintentos.fecha_emision_legal END,
-		fecha_actualizacion = datetime('now','localtime'),
+		fecha_actualizacion = CURRENT_TIMESTAMP,
 		usuario_creador = CASE WHEN excluded.usuario_creador <> '' THEN excluded.usuario_creador ELSE facturacion_electronica_reintentos.usuario_creador END,
 		estado = excluded.estado,
 		observaciones = excluded.observaciones`
@@ -1760,7 +1760,7 @@ func ListFacturacionElectronicaRetriesByEmpresa(dbConn *sql.DB, empresaID int64,
 	}
 
 	if filter.SoloVencidos {
-		query += " AND estado_envio IN ('pendiente','fallido','contingencia') AND (COALESCE(proximo_intento, '') = '' OR proximo_intento <= datetime('now','localtime'))"
+		query += " AND estado_envio IN ('pendiente','fallido','contingencia') AND (COALESCE(proximo_intento, '') = '' OR proximo_intento <= CURRENT_TIMESTAMP)"
 	}
 
 	if !filter.IncludeInactive {

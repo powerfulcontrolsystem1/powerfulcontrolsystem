@@ -207,7 +207,7 @@ func EnsureEmpresaControlElectricoSchema(dbConn *sql.DB) error {
 
 	stmts := []string{
 		`CREATE TABLE IF NOT EXISTS empresa_control_electrico_config (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL,
 			habilitado INTEGER DEFAULT 0,
 			raspberry_ip TEXT,
@@ -217,15 +217,15 @@ func EnsureEmpresaControlElectricoSchema(dbConn *sql.DB) error {
 			timeout_ms INTEGER DEFAULT 2500,
 			auto_sync_estaciones INTEGER DEFAULT 1,
 			fail_safe_on_error INTEGER DEFAULT 0,
-			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
-			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+			fecha_creacion TEXT DEFAULT (CURRENT_TIMESTAMP),
+			fecha_actualizacion TEXT DEFAULT (CURRENT_TIMESTAMP),
 			usuario_creador TEXT,
 			estado TEXT DEFAULT 'activo',
 			observaciones TEXT
 		);`,
 		`CREATE UNIQUE INDEX IF NOT EXISTS ux_empresa_control_electrico_config_empresa ON empresa_control_electrico_config(empresa_id);`,
 		`CREATE TABLE IF NOT EXISTS empresa_control_electrico_raspberry_pis (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL,
 			codigo TEXT,
 			nombre TEXT,
@@ -237,8 +237,8 @@ func EnsureEmpresaControlElectricoSchema(dbConn *sql.DB) error {
 			api_path TEXT DEFAULT '/api/gpio/relay',
 			api_token TEXT,
 			timeout_ms INTEGER DEFAULT 2500,
-			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
-			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+			fecha_creacion TEXT DEFAULT (CURRENT_TIMESTAMP),
+			fecha_actualizacion TEXT DEFAULT (CURRENT_TIMESTAMP),
 			usuario_creador TEXT,
 			estado TEXT DEFAULT 'activo',
 			observaciones TEXT
@@ -246,7 +246,7 @@ func EnsureEmpresaControlElectricoSchema(dbConn *sql.DB) error {
 		`CREATE UNIQUE INDEX IF NOT EXISTS ux_empresa_control_electrico_raspberry_codigo ON empresa_control_electrico_raspberry_pis(empresa_id, codigo);`,
 		`CREATE INDEX IF NOT EXISTS ix_empresa_control_electrico_raspberry_estado ON empresa_control_electrico_raspberry_pis(empresa_id, estado);`,
 		`CREATE TABLE IF NOT EXISTS empresa_control_electrico_reles (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL,
 			raspberry_id INTEGER,
 			estacion_id INTEGER NOT NULL,
@@ -286,8 +286,8 @@ func EnsureEmpresaControlElectricoSchema(dbConn *sql.DB) error {
 			ultimo_comando TEXT,
 			ultimo_error TEXT,
 			ultima_sincronizacion TEXT,
-			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
-			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+			fecha_creacion TEXT DEFAULT (CURRENT_TIMESTAMP),
+			fecha_actualizacion TEXT DEFAULT (CURRENT_TIMESTAMP),
 			usuario_creador TEXT,
 			estado TEXT DEFAULT 'activo',
 			observaciones TEXT
@@ -296,7 +296,7 @@ func EnsureEmpresaControlElectricoSchema(dbConn *sql.DB) error {
 		`CREATE INDEX IF NOT EXISTS ix_empresa_control_electrico_reles_empresa_estado ON empresa_control_electrico_reles(empresa_id, estado);`,
 		`CREATE INDEX IF NOT EXISTS ix_empresa_control_electrico_reles_gpio ON empresa_control_electrico_reles(empresa_id, gpio_pin);`,
 		`CREATE TABLE IF NOT EXISTS empresa_control_electrico_eventos (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL,
 			estacion_id INTEGER,
 			rele_id INTEGER,
@@ -309,7 +309,7 @@ func EnsureEmpresaControlElectricoSchema(dbConn *sql.DB) error {
 			raspberry_ip TEXT,
 			response_body TEXT,
 			error TEXT,
-			fecha_evento TEXT DEFAULT (datetime('now','localtime')),
+			fecha_evento TEXT DEFAULT (CURRENT_TIMESTAMP),
 			actor TEXT,
 			origen TEXT,
 			metadata_json TEXT
@@ -317,7 +317,7 @@ func EnsureEmpresaControlElectricoSchema(dbConn *sql.DB) error {
 		`CREATE INDEX IF NOT EXISTS ix_empresa_control_electrico_eventos_empresa_fecha ON empresa_control_electrico_eventos(empresa_id, fecha_evento);`,
 		`CREATE INDEX IF NOT EXISTS ix_empresa_control_electrico_eventos_estacion ON empresa_control_electrico_eventos(empresa_id, estacion_id);`,
 		`CREATE TABLE IF NOT EXISTS empresa_control_electrico_lecturas (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL,
 			estacion_id INTEGER,
 			rele_id INTEGER,
@@ -327,13 +327,13 @@ func EnsureEmpresaControlElectricoSchema(dbConn *sql.DB) error {
 			consumo_kwh REAL DEFAULT 0,
 			voltaje_v REAL DEFAULT 0,
 			corriente_a REAL DEFAULT 0,
-			fecha_lectura TEXT DEFAULT (datetime('now','localtime')),
+			fecha_lectura TEXT DEFAULT (CURRENT_TIMESTAMP),
 			metadata_json TEXT
 		);`,
 		`CREATE INDEX IF NOT EXISTS ix_empresa_control_electrico_lecturas_empresa_fecha ON empresa_control_electrico_lecturas(empresa_id, fecha_lectura);`,
 		`CREATE INDEX IF NOT EXISTS ix_empresa_control_electrico_lecturas_rele_fecha ON empresa_control_electrico_lecturas(empresa_id, rele_id, fecha_lectura);`,
 		`CREATE TABLE IF NOT EXISTS empresa_control_electrico_reglas (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL,
 			nombre TEXT,
 			sensor_codigo TEXT,
@@ -346,8 +346,8 @@ func EnsureEmpresaControlElectricoSchema(dbConn *sql.DB) error {
 			alarma_habilitada INTEGER DEFAULT 1,
 			severidad TEXT DEFAULT 'advertencia',
 			mensaje TEXT,
-			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
-			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+			fecha_creacion TEXT DEFAULT (CURRENT_TIMESTAMP),
+			fecha_actualizacion TEXT DEFAULT (CURRENT_TIMESTAMP),
 			usuario_creador TEXT,
 			estado TEXT DEFAULT 'activo'
 		);`,
@@ -364,7 +364,7 @@ func EnsureEmpresaControlElectricoSchema(dbConn *sql.DB) error {
 		"empresa_id": "INTEGER NOT NULL", "habilitado": "INTEGER DEFAULT 0", "raspberry_ip": "TEXT",
 		"raspberry_port": "INTEGER DEFAULT 8081", "api_path": "TEXT DEFAULT '/api/gpio/relay'", "api_token": "TEXT",
 		"timeout_ms": "INTEGER DEFAULT 2500", "auto_sync_estaciones": "INTEGER DEFAULT 1", "fail_safe_on_error": "INTEGER DEFAULT 0",
-		"fecha_creacion": "TEXT DEFAULT (datetime('now','localtime'))", "fecha_actualizacion": "TEXT DEFAULT (datetime('now','localtime'))",
+		"fecha_creacion": "TEXT DEFAULT (CURRENT_TIMESTAMP)", "fecha_actualizacion": "TEXT DEFAULT (CURRENT_TIMESTAMP)",
 		"usuario_creador": "TEXT", "estado": "TEXT DEFAULT 'activo'", "observaciones": "TEXT",
 	}
 	for col, def := range configCols {
@@ -377,8 +377,8 @@ func EnsureEmpresaControlElectricoSchema(dbConn *sql.DB) error {
 		"empresa_id": "INTEGER NOT NULL", "codigo": "TEXT", "nombre": "TEXT", "raspberry_ip": "TEXT",
 		"tipo_controlador": "TEXT DEFAULT 'raspberry_gpio'", "proveedor": "TEXT", "base_url": "TEXT",
 		"raspberry_port": "INTEGER DEFAULT 8081", "api_path": "TEXT DEFAULT '/api/gpio/relay'", "api_token": "TEXT",
-		"timeout_ms": "INTEGER DEFAULT 2500", "fecha_creacion": "TEXT DEFAULT (datetime('now','localtime'))",
-		"fecha_actualizacion": "TEXT DEFAULT (datetime('now','localtime'))", "usuario_creador": "TEXT",
+		"timeout_ms": "INTEGER DEFAULT 2500", "fecha_creacion": "TEXT DEFAULT (CURRENT_TIMESTAMP)",
+		"fecha_actualizacion": "TEXT DEFAULT (CURRENT_TIMESTAMP)", "usuario_creador": "TEXT",
 		"estado": "TEXT DEFAULT 'activo'", "observaciones": "TEXT",
 	}
 	for col, def := range raspberryCols {
@@ -401,7 +401,7 @@ func EnsureEmpresaControlElectricoSchema(dbConn *sql.DB) error {
 		"programacion_timezone": "TEXT DEFAULT 'America/Bogota'", "ultima_programacion_on": "TEXT", "ultima_programacion_off": "TEXT",
 		"imagen_url": "TEXT", "ultimo_estado": "TEXT DEFAULT 'desconocido'",
 		"ultimo_comando": "TEXT", "ultimo_error": "TEXT", "ultima_sincronizacion": "TEXT",
-		"fecha_creacion": "TEXT DEFAULT (datetime('now','localtime'))", "fecha_actualizacion": "TEXT DEFAULT (datetime('now','localtime'))",
+		"fecha_creacion": "TEXT DEFAULT (CURRENT_TIMESTAMP)", "fecha_actualizacion": "TEXT DEFAULT (CURRENT_TIMESTAMP)",
 		"usuario_creador": "TEXT", "estado": "TEXT DEFAULT 'activo'", "observaciones": "TEXT",
 	}
 	for col, def := range releCols {
@@ -422,7 +422,7 @@ func EnsureEmpresaControlElectricoSchema(dbConn *sql.DB) error {
 	eventCols := map[string]string{
 		"empresa_id": "INTEGER NOT NULL", "estacion_id": "INTEGER", "rele_id": "INTEGER", "raspberry_id": "INTEGER", "gpio_pin": "INTEGER",
 		"comando": "TEXT", "estado_objetivo": "TEXT", "resultado": "TEXT", "http_status": "INTEGER DEFAULT 0",
-		"raspberry_ip": "TEXT", "response_body": "TEXT", "error": "TEXT", "fecha_evento": "TEXT DEFAULT (datetime('now','localtime'))",
+		"raspberry_ip": "TEXT", "response_body": "TEXT", "error": "TEXT", "fecha_evento": "TEXT DEFAULT (CURRENT_TIMESTAMP)",
 		"actor": "TEXT", "origen": "TEXT", "metadata_json": "TEXT",
 	}
 	for col, def := range eventCols {
@@ -433,7 +433,7 @@ func EnsureEmpresaControlElectricoSchema(dbConn *sql.DB) error {
 	lecturaCols := map[string]string{
 		"empresa_id": "INTEGER NOT NULL", "estacion_id": "INTEGER", "rele_id": "INTEGER", "origen": "TEXT", "estado": "TEXT",
 		"consumo_w": "REAL DEFAULT 0", "consumo_kwh": "REAL DEFAULT 0", "voltaje_v": "REAL DEFAULT 0", "corriente_a": "REAL DEFAULT 0",
-		"fecha_lectura": "TEXT DEFAULT (datetime('now','localtime'))", "metadata_json": "TEXT",
+		"fecha_lectura": "TEXT DEFAULT (CURRENT_TIMESTAMP)", "metadata_json": "TEXT",
 	}
 	for col, def := range lecturaCols {
 		if err := ensureColumnIfMissing(dbConn, "empresa_control_electrico_lecturas", col, def); err != nil {
@@ -444,7 +444,7 @@ func EnsureEmpresaControlElectricoSchema(dbConn *sql.DB) error {
 		"empresa_id": "INTEGER NOT NULL", "nombre": "TEXT", "sensor_codigo": "TEXT", "sensor_tipo": "TEXT", "condicion": "TEXT DEFAULT 'igual'",
 		"valor": "TEXT", "accion": "TEXT DEFAULT 'alarma'", "estacion_id": "INTEGER", "rele_id": "INTEGER",
 		"alarma_habilitada": "INTEGER DEFAULT 1", "severidad": "TEXT DEFAULT 'advertencia'", "mensaje": "TEXT",
-		"fecha_creacion": "TEXT DEFAULT (datetime('now','localtime'))", "fecha_actualizacion": "TEXT DEFAULT (datetime('now','localtime'))",
+		"fecha_creacion": "TEXT DEFAULT (CURRENT_TIMESTAMP)", "fecha_actualizacion": "TEXT DEFAULT (CURRENT_TIMESTAMP)",
 		"usuario_creador": "TEXT", "estado": "TEXT DEFAULT 'activo'",
 	}
 	for col, def := range reglaCols {
@@ -589,11 +589,11 @@ func UpsertEmpresaControlElectricoRaspberry(dbConn *sql.DB, item *EmpresaControl
 		token = strings.TrimSpace(item.APIToken)
 	}
 	if existingID > 0 {
-		_, err := execSQLCompat(dbConn, `UPDATE empresa_control_electrico_raspberry_pis SET codigo=?, nombre=?, tipo_controlador=?, proveedor=?, base_url=?, raspberry_ip=?, raspberry_port=?, api_path=?, api_token=?, timeout_ms=?, fecha_actualizacion=datetime('now','localtime'), usuario_creador=?, estado=?, observaciones=? WHERE empresa_id=? AND id=?`,
+		_, err := execSQLCompat(dbConn, `UPDATE empresa_control_electrico_raspberry_pis SET codigo=?, nombre=?, tipo_controlador=?, proveedor=?, base_url=?, raspberry_ip=?, raspberry_port=?, api_path=?, api_token=?, timeout_ms=?, fecha_actualizacion=CURRENT_TIMESTAMP, usuario_creador=?, estado=?, observaciones=? WHERE empresa_id=? AND id=?`,
 			item.Codigo, item.Nombre, item.TipoControlador, item.Proveedor, item.BaseURL, item.RaspberryIP, item.RaspberryPort, item.APIPath, token, item.TimeoutMS, strings.TrimSpace(item.UsuarioCreador), item.Estado, strings.TrimSpace(item.Observaciones), item.EmpresaID, existingID)
 		return existingID, err
 	}
-	return insertSQLCompat(dbConn, `INSERT INTO empresa_control_electrico_raspberry_pis (empresa_id, codigo, nombre, tipo_controlador, proveedor, base_url, raspberry_ip, raspberry_port, api_path, api_token, timeout_ms, fecha_creacion, fecha_actualizacion, usuario_creador, estado, observaciones) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now','localtime'), datetime('now','localtime'), ?, ?, ?)`,
+	return insertSQLCompat(dbConn, `INSERT INTO empresa_control_electrico_raspberry_pis (empresa_id, codigo, nombre, tipo_controlador, proveedor, base_url, raspberry_ip, raspberry_port, api_path, api_token, timeout_ms, fecha_creacion, fecha_actualizacion, usuario_creador, estado, observaciones) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, ?, ?, ?)`,
 		item.EmpresaID, item.Codigo, item.Nombre, item.TipoControlador, item.Proveedor, item.BaseURL, item.RaspberryIP, item.RaspberryPort, item.APIPath, token, item.TimeoutMS, strings.TrimSpace(item.UsuarioCreador), item.Estado, strings.TrimSpace(item.Observaciones))
 }
 
@@ -602,7 +602,7 @@ func SetEmpresaControlElectricoRaspberryEstado(dbConn *sql.DB, empresaID, raspbe
 	if empresaID <= 0 || raspberryID <= 0 {
 		return errors.New("empresa_id y raspberry_id son obligatorios")
 	}
-	_, err := execSQLCompat(dbConn, `UPDATE empresa_control_electrico_raspberry_pis SET estado=?, fecha_actualizacion=datetime('now','localtime') WHERE empresa_id=? AND id=?`, normalizeControlElectricoEstado(estado), empresaID, raspberryID)
+	_, err := execSQLCompat(dbConn, `UPDATE empresa_control_electrico_raspberry_pis SET estado=?, fecha_actualizacion=CURRENT_TIMESTAMP WHERE empresa_id=? AND id=?`, normalizeControlElectricoEstado(estado), empresaID, raspberryID)
 	return err
 }
 
@@ -623,11 +623,11 @@ func UpsertEmpresaControlElectricoConfig(dbConn *sql.DB, cfg *EmpresaControlElec
 		token = strings.TrimSpace(cfg.APIToken)
 	}
 	if existingID > 0 {
-		_, err := execSQLCompat(dbConn, `UPDATE empresa_control_electrico_config SET habilitado=?, raspberry_ip=?, raspberry_port=?, api_path=?, api_token=?, timeout_ms=?, auto_sync_estaciones=?, fail_safe_on_error=?, fecha_actualizacion=datetime('now','localtime'), usuario_creador=?, estado=?, observaciones=? WHERE id=?`,
+		_, err := execSQLCompat(dbConn, `UPDATE empresa_control_electrico_config SET habilitado=?, raspberry_ip=?, raspberry_port=?, api_path=?, api_token=?, timeout_ms=?, auto_sync_estaciones=?, fail_safe_on_error=?, fecha_actualizacion=CURRENT_TIMESTAMP, usuario_creador=?, estado=?, observaciones=? WHERE id=?`,
 			boolInt(cfg.Habilitado), cfg.RaspberryIP, cfg.RaspberryPort, cfg.APIPath, token, cfg.TimeoutMS, boolInt(cfg.AutoSyncEstaciones), boolInt(cfg.FailSafeOnError), strings.TrimSpace(cfg.UsuarioCreador), cfg.Estado, strings.TrimSpace(cfg.Observaciones), existingID)
 		return existingID, err
 	}
-	return insertSQLCompat(dbConn, `INSERT INTO empresa_control_electrico_config (empresa_id, habilitado, raspberry_ip, raspberry_port, api_path, api_token, timeout_ms, auto_sync_estaciones, fail_safe_on_error, fecha_creacion, fecha_actualizacion, usuario_creador, estado, observaciones) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now','localtime'), datetime('now','localtime'), ?, ?, ?)`,
+	return insertSQLCompat(dbConn, `INSERT INTO empresa_control_electrico_config (empresa_id, habilitado, raspberry_ip, raspberry_port, api_path, api_token, timeout_ms, auto_sync_estaciones, fail_safe_on_error, fecha_creacion, fecha_actualizacion, usuario_creador, estado, observaciones) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, ?, ?, ?)`,
 		cfg.EmpresaID, boolInt(cfg.Habilitado), cfg.RaspberryIP, cfg.RaspberryPort, cfg.APIPath, token, cfg.TimeoutMS, boolInt(cfg.AutoSyncEstaciones), boolInt(cfg.FailSafeOnError), strings.TrimSpace(cfg.UsuarioCreador), cfg.Estado, strings.TrimSpace(cfg.Observaciones))
 }
 
@@ -781,11 +781,11 @@ func UpsertEmpresaControlElectricoRele(dbConn *sql.DB, item *EmpresaControlElect
 		return 0, err
 	}
 	if existingID > 0 {
-		_, err := execSQLCompat(dbConn, `UPDATE empresa_control_electrico_reles SET raspberry_id=NULLIF(?,0), estacion_codigo=?, estacion_nombre=?, salida_codigo=?, tipo_carga=?, integracion_tipo=?, fabricante=?, modelo=?, entity_id=?, device_id=?, capability=?, comando_on=?, comando_off=?, monitoreo_habilitado=?, potencia_w=?, sensor_consumo_entity_id=?, gpio_pin=?, relay_name=?, active_high=?, pulso_ms=?, modo=?, programacion_habilitada=?, hora_encendido=?, hora_apagado=?, programacion_dias=?, programacion_timezone=?, imagen_url=?, fecha_actualizacion=datetime('now','localtime'), usuario_creador=?, estado=?, observaciones=? WHERE id=?`,
+		_, err := execSQLCompat(dbConn, `UPDATE empresa_control_electrico_reles SET raspberry_id=NULLIF(?,0), estacion_codigo=?, estacion_nombre=?, salida_codigo=?, tipo_carga=?, integracion_tipo=?, fabricante=?, modelo=?, entity_id=?, device_id=?, capability=?, comando_on=?, comando_off=?, monitoreo_habilitado=?, potencia_w=?, sensor_consumo_entity_id=?, gpio_pin=?, relay_name=?, active_high=?, pulso_ms=?, modo=?, programacion_habilitada=?, hora_encendido=?, hora_apagado=?, programacion_dias=?, programacion_timezone=?, imagen_url=?, fecha_actualizacion=CURRENT_TIMESTAMP, usuario_creador=?, estado=?, observaciones=? WHERE id=?`,
 			item.RaspberryID, item.EstacionCodigo, item.EstacionNombre, item.SalidaCodigo, item.TipoCarga, item.IntegracionTipo, item.Fabricante, item.Modelo, item.EntityID, item.DeviceID, item.Capability, item.ComandoOn, item.ComandoOff, boolInt(item.MonitoreoHabilitado), item.PotenciaW, item.SensorConsumoEntityID, item.GPIOPin, item.RelayName, boolInt(item.ActiveHigh), item.PulsoMS, item.Modo, boolInt(item.ProgramacionHabilitada), item.HoraEncendido, item.HoraApagado, item.ProgramacionDias, item.ProgramacionTimezone, item.ImagenURL, strings.TrimSpace(item.UsuarioCreador), item.Estado, strings.TrimSpace(item.Observaciones), existingID)
 		return existingID, err
 	}
-	return insertSQLCompat(dbConn, `INSERT INTO empresa_control_electrico_reles (empresa_id, raspberry_id, estacion_id, estacion_codigo, estacion_nombre, salida_codigo, tipo_carga, integracion_tipo, fabricante, modelo, entity_id, device_id, capability, comando_on, comando_off, monitoreo_habilitado, potencia_w, sensor_consumo_entity_id, gpio_pin, relay_name, active_high, pulso_ms, modo, programacion_habilitada, hora_encendido, hora_apagado, programacion_dias, programacion_timezone, imagen_url, ultimo_estado, fecha_creacion, fecha_actualizacion, usuario_creador, estado, observaciones) VALUES (?, NULLIF(?,0), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'desconocido', datetime('now','localtime'), datetime('now','localtime'), ?, ?, ?)`,
+	return insertSQLCompat(dbConn, `INSERT INTO empresa_control_electrico_reles (empresa_id, raspberry_id, estacion_id, estacion_codigo, estacion_nombre, salida_codigo, tipo_carga, integracion_tipo, fabricante, modelo, entity_id, device_id, capability, comando_on, comando_off, monitoreo_habilitado, potencia_w, sensor_consumo_entity_id, gpio_pin, relay_name, active_high, pulso_ms, modo, programacion_habilitada, hora_encendido, hora_apagado, programacion_dias, programacion_timezone, imagen_url, ultimo_estado, fecha_creacion, fecha_actualizacion, usuario_creador, estado, observaciones) VALUES (?, NULLIF(?,0), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'desconocido', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, ?, ?, ?)`,
 		item.EmpresaID, item.RaspberryID, item.EstacionID, item.EstacionCodigo, item.EstacionNombre, item.SalidaCodigo, item.TipoCarga, item.IntegracionTipo, item.Fabricante, item.Modelo, item.EntityID, item.DeviceID, item.Capability, item.ComandoOn, item.ComandoOff, boolInt(item.MonitoreoHabilitado), item.PotenciaW, item.SensorConsumoEntityID, item.GPIOPin, item.RelayName, boolInt(item.ActiveHigh), item.PulsoMS, item.Modo, boolInt(item.ProgramacionHabilitada), item.HoraEncendido, item.HoraApagado, item.ProgramacionDias, item.ProgramacionTimezone, item.ImagenURL, strings.TrimSpace(item.UsuarioCreador), item.Estado, strings.TrimSpace(item.Observaciones))
 }
 
@@ -794,7 +794,7 @@ func SetEmpresaControlElectricoReleEstado(dbConn *sql.DB, empresaID, releID int6
 	if empresaID <= 0 || releID <= 0 {
 		return errors.New("empresa_id y rele_id son obligatorios")
 	}
-	_, err := execSQLCompat(dbConn, `UPDATE empresa_control_electrico_reles SET estado=?, fecha_actualizacion=datetime('now','localtime') WHERE empresa_id=? AND id=?`, normalizeControlElectricoEstado(estado), empresaID, releID)
+	_, err := execSQLCompat(dbConn, `UPDATE empresa_control_electrico_reles SET estado=?, fecha_actualizacion=CURRENT_TIMESTAMP WHERE empresa_id=? AND id=?`, normalizeControlElectricoEstado(estado), empresaID, releID)
 	return err
 }
 
@@ -837,7 +837,7 @@ func MarkEmpresaControlElectricoReleProgramacion(dbConn *sql.DB, empresaID, rele
 	if ejecutadoEn == "" {
 		ejecutadoEn = time.Now().Format("2006-01-02 15:04:05")
 	}
-	_, err := execSQLCompat(dbConn, `UPDATE empresa_control_electrico_reles SET `+column+`=?, fecha_actualizacion=datetime('now','localtime') WHERE empresa_id=? AND id=?`, ejecutadoEn, empresaID, releID)
+	_, err := execSQLCompat(dbConn, `UPDATE empresa_control_electrico_reles SET `+column+`=?, fecha_actualizacion=CURRENT_TIMESTAMP WHERE empresa_id=? AND id=?`, ejecutadoEn, empresaID, releID)
 	return err
 }
 
@@ -846,7 +846,7 @@ func UpdateEmpresaControlElectricoReleImagen(dbConn *sql.DB, empresaID, releID i
 	if empresaID <= 0 || releID <= 0 {
 		return errors.New("empresa_id y rele_id son obligatorios")
 	}
-	_, err := execSQLCompat(dbConn, `UPDATE empresa_control_electrico_reles SET imagen_url=?, fecha_actualizacion=datetime('now','localtime') WHERE empresa_id=? AND id=?`, truncateControlElectricoText(imagenURL, 2000), empresaID, releID)
+	_, err := execSQLCompat(dbConn, `UPDATE empresa_control_electrico_reles SET imagen_url=?, fecha_actualizacion=CURRENT_TIMESTAMP WHERE empresa_id=? AND id=?`, truncateControlElectricoText(imagenURL, 2000), empresaID, releID)
 	return err
 }
 
@@ -855,7 +855,7 @@ func UpdateEmpresaControlElectricoReleRuntime(dbConn *sql.DB, empresaID, releID 
 	if empresaID <= 0 || releID <= 0 {
 		return nil
 	}
-	_, err := execSQLCompat(dbConn, `UPDATE empresa_control_electrico_reles SET ultimo_estado=?, ultimo_comando=?, ultimo_error=?, ultima_sincronizacion=datetime('now','localtime'), fecha_actualizacion=datetime('now','localtime') WHERE empresa_id=? AND id=?`, strings.TrimSpace(ultimoEstado), strings.TrimSpace(ultimoComando), strings.TrimSpace(ultimoError), empresaID, releID)
+	_, err := execSQLCompat(dbConn, `UPDATE empresa_control_electrico_reles SET ultimo_estado=?, ultimo_comando=?, ultimo_error=?, ultima_sincronizacion=CURRENT_TIMESTAMP, fecha_actualizacion=CURRENT_TIMESTAMP WHERE empresa_id=? AND id=?`, strings.TrimSpace(ultimoEstado), strings.TrimSpace(ultimoComando), strings.TrimSpace(ultimoError), empresaID, releID)
 	return err
 }
 
@@ -871,12 +871,12 @@ func InsertEmpresaControlElectricoLectura(dbConn *sql.DB, lectura EmpresaControl
 		lectura.ConsumoKWh = 0
 	}
 	if lectura.ReleID > 0 {
-		if _, err := execSQLCompat(dbConn, `UPDATE empresa_control_electrico_reles SET ultimo_estado=COALESCE(NULLIF(?,''), ultimo_estado), ultimo_consumo_w=?, ultimo_consumo_kwh=?, ultimo_voltaje_v=?, ultimo_corriente_a=?, ultima_sincronizacion=datetime('now','localtime'), fecha_actualizacion=datetime('now','localtime') WHERE empresa_id=? AND id=?`,
+		if _, err := execSQLCompat(dbConn, `UPDATE empresa_control_electrico_reles SET ultimo_estado=COALESCE(NULLIF(?,''), ultimo_estado), ultimo_consumo_w=?, ultimo_consumo_kwh=?, ultimo_voltaje_v=?, ultimo_corriente_a=?, ultima_sincronizacion=CURRENT_TIMESTAMP, fecha_actualizacion=CURRENT_TIMESTAMP WHERE empresa_id=? AND id=?`,
 			strings.TrimSpace(lectura.Estado), lectura.ConsumoW, lectura.ConsumoKWh, lectura.VoltajeV, lectura.CorrienteA, lectura.EmpresaID, lectura.ReleID); err != nil {
 			return 0, err
 		}
 	}
-	return insertSQLCompat(dbConn, `INSERT INTO empresa_control_electrico_lecturas (empresa_id, estacion_id, rele_id, origen, estado, consumo_w, consumo_kwh, voltaje_v, corriente_a, fecha_lectura, metadata_json) VALUES (?, NULLIF(?,0), NULLIF(?,0), ?, ?, ?, ?, ?, ?, datetime('now','localtime'), ?)`,
+	return insertSQLCompat(dbConn, `INSERT INTO empresa_control_electrico_lecturas (empresa_id, estacion_id, rele_id, origen, estado, consumo_w, consumo_kwh, voltaje_v, corriente_a, fecha_lectura, metadata_json) VALUES (?, NULLIF(?,0), NULLIF(?,0), ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, ?)`,
 		lectura.EmpresaID, lectura.EstacionID, lectura.ReleID, truncateControlElectricoText(lectura.Origen, 80), truncateControlElectricoText(lectura.Estado, 40), lectura.ConsumoW, lectura.ConsumoKWh, lectura.VoltajeV, lectura.CorrienteA, truncateControlElectricoText(lectura.MetadataJSON, 2000))
 }
 
@@ -964,11 +964,11 @@ func UpsertEmpresaControlElectricoRegla(dbConn *sql.DB, item *EmpresaControlElec
 		if err != nil {
 			return 0, err
 		}
-		_, err = execSQLCompat(dbConn, `UPDATE empresa_control_electrico_reglas SET nombre=?, sensor_codigo=?, sensor_tipo=?, condicion=?, valor=?, accion=?, estacion_id=NULLIF(?,0), rele_id=NULLIF(?,0), alarma_habilitada=?, severidad=?, mensaje=?, fecha_actualizacion=datetime('now','localtime'), usuario_creador=?, estado=? WHERE empresa_id=? AND id=?`,
+		_, err = execSQLCompat(dbConn, `UPDATE empresa_control_electrico_reglas SET nombre=?, sensor_codigo=?, sensor_tipo=?, condicion=?, valor=?, accion=?, estacion_id=NULLIF(?,0), rele_id=NULLIF(?,0), alarma_habilitada=?, severidad=?, mensaje=?, fecha_actualizacion=CURRENT_TIMESTAMP, usuario_creador=?, estado=? WHERE empresa_id=? AND id=?`,
 			item.Nombre, item.SensorCodigo, item.SensorTipo, item.Condicion, item.Valor, item.Accion, item.EstacionID, item.ReleID, boolInt(item.AlarmaHabilitada), item.Severidad, item.Mensaje, strings.TrimSpace(item.UsuarioCreador), item.Estado, item.EmpresaID, existingID)
 		return existingID, err
 	}
-	return insertSQLCompat(dbConn, `INSERT INTO empresa_control_electrico_reglas (empresa_id, nombre, sensor_codigo, sensor_tipo, condicion, valor, accion, estacion_id, rele_id, alarma_habilitada, severidad, mensaje, fecha_creacion, fecha_actualizacion, usuario_creador, estado) VALUES (?, ?, ?, ?, ?, ?, ?, NULLIF(?,0), NULLIF(?,0), ?, ?, ?, datetime('now','localtime'), datetime('now','localtime'), ?, ?)`,
+	return insertSQLCompat(dbConn, `INSERT INTO empresa_control_electrico_reglas (empresa_id, nombre, sensor_codigo, sensor_tipo, condicion, valor, accion, estacion_id, rele_id, alarma_habilitada, severidad, mensaje, fecha_creacion, fecha_actualizacion, usuario_creador, estado) VALUES (?, ?, ?, ?, ?, ?, ?, NULLIF(?,0), NULLIF(?,0), ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, ?, ?)`,
 		item.EmpresaID, item.Nombre, item.SensorCodigo, item.SensorTipo, item.Condicion, item.Valor, item.Accion, item.EstacionID, item.ReleID, boolInt(item.AlarmaHabilitada), item.Severidad, item.Mensaje, strings.TrimSpace(item.UsuarioCreador), item.Estado)
 }
 
@@ -976,7 +976,7 @@ func SetEmpresaControlElectricoReglaEstado(dbConn *sql.DB, empresaID, reglaID in
 	if empresaID <= 0 || reglaID <= 0 {
 		return errors.New("empresa_id y regla_id son obligatorios")
 	}
-	_, err := execSQLCompat(dbConn, `UPDATE empresa_control_electrico_reglas SET estado=?, fecha_actualizacion=datetime('now','localtime') WHERE empresa_id=? AND id=?`, normalizeControlElectricoEstado(estado), empresaID, reglaID)
+	_, err := execSQLCompat(dbConn, `UPDATE empresa_control_electrico_reglas SET estado=?, fecha_actualizacion=CURRENT_TIMESTAMP WHERE empresa_id=? AND id=?`, normalizeControlElectricoEstado(estado), empresaID, reglaID)
 	return err
 }
 
@@ -985,7 +985,7 @@ func InsertEmpresaControlElectricoEvento(dbConn *sql.DB, ev EmpresaControlElectr
 	if ev.EmpresaID <= 0 {
 		return 0, errors.New("empresa_id invalido")
 	}
-	return insertSQLCompat(dbConn, `INSERT INTO empresa_control_electrico_eventos (empresa_id, estacion_id, rele_id, raspberry_id, gpio_pin, comando, estado_objetivo, resultado, http_status, raspberry_ip, response_body, error, fecha_evento, actor, origen, metadata_json) VALUES (?, NULLIF(?,0), NULLIF(?,0), NULLIF(?,0), ?, ?, ?, ?, ?, ?, ?, ?, datetime('now','localtime'), ?, ?, ?)`,
+	return insertSQLCompat(dbConn, `INSERT INTO empresa_control_electrico_eventos (empresa_id, estacion_id, rele_id, raspberry_id, gpio_pin, comando, estado_objetivo, resultado, http_status, raspberry_ip, response_body, error, fecha_evento, actor, origen, metadata_json) VALUES (?, NULLIF(?,0), NULLIF(?,0), NULLIF(?,0), ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, ?, ?, ?)`,
 		ev.EmpresaID, ev.EstacionID, ev.ReleID, ev.RaspberryID, ev.GPIOPin, strings.TrimSpace(ev.Comando), strings.TrimSpace(ev.EstadoObjetivo), strings.TrimSpace(ev.Resultado), ev.HTTPStatus, strings.TrimSpace(ev.RaspberryIP), truncateControlElectricoText(ev.ResponseBody, 1200), truncateControlElectricoText(ev.Error, 800), strings.TrimSpace(ev.Actor), strings.TrimSpace(ev.Origen), strings.TrimSpace(ev.MetadataJSON))
 }
 

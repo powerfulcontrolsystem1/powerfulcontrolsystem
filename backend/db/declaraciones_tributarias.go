@@ -107,7 +107,7 @@ func EnsureEmpresaDeclaracionesTributariasSchema(dbConn *sql.DB) error {
 	}
 	stmts := []string{
 		`CREATE TABLE IF NOT EXISTS empresa_declaraciones_tributarias (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL,
 			tipo_declaracion TEXT NOT NULL,
 			periodo TEXT NOT NULL,
@@ -149,7 +149,7 @@ func EnsureEmpresaDeclaracionesTributariasSchema(dbConn *sql.DB) error {
 		)`,
 		`CREATE INDEX IF NOT EXISTS ix_declaraciones_tributarias_empresa ON empresa_declaraciones_tributarias(empresa_id,tipo_declaracion,estado,fecha_vencimiento)`,
 		`CREATE TABLE IF NOT EXISTS empresa_declaraciones_tributarias_movimientos (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL,
 			declaracion_id INTEGER DEFAULT 0,
 			tipo_declaracion TEXT NOT NULL,
@@ -168,7 +168,7 @@ func EnsureEmpresaDeclaracionesTributariasSchema(dbConn *sql.DB) error {
 		)`,
 		`CREATE INDEX IF NOT EXISTS ix_declaraciones_movimientos_empresa ON empresa_declaraciones_tributarias_movimientos(empresa_id,tipo_declaracion,periodo,declaracion_id)`,
 		`CREATE TABLE IF NOT EXISTS empresa_calendario_tributario (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL,
 			tipo_declaracion TEXT NOT NULL,
 			anio INTEGER NOT NULL,

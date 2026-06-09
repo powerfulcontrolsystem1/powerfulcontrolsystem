@@ -251,7 +251,7 @@ func isClientesUniqueConstraintErr(err error) bool {
 func EnsureEmpresaClientesSchema(dbConn *sql.DB) error {
 	stmts := []string{
 		`CREATE TABLE IF NOT EXISTS clientes (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL,
 			tipo_documento TEXT NOT NULL DEFAULT 'NIT',
 			numero_documento TEXT NOT NULL,
@@ -268,8 +268,8 @@ func EnsureEmpresaClientesSchema(dbConn *sql.DB) error {
 			departamento TEXT,
 			municipio TEXT,
 			codigo_postal TEXT,
-			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
-			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+			fecha_creacion TEXT DEFAULT (CURRENT_TIMESTAMP),
+			fecha_actualizacion TEXT DEFAULT (CURRENT_TIMESTAMP),
 			usuario_creador TEXT,
 			estado TEXT DEFAULT 'activo',
 			observaciones TEXT,
@@ -384,7 +384,7 @@ func CreateCliente(dbConn *sql.DB, payload Cliente) (int64, error) {
 		observaciones,
 		fecha_creacion,
 		fecha_actualizacion
-	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'activo', ?, datetime('now','localtime'), datetime('now','localtime'))`,
+	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'activo', ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
 		payload.EmpresaID,
 		strings.TrimSpace(payload.TipoDocumento),
 		strings.TrimSpace(payload.NumeroDocumento),
@@ -595,7 +595,7 @@ func UpdateCliente(dbConn *sql.DB, payload Cliente) error {
 		municipio = ?,
 		codigo_postal = ?,
 		observaciones = ?,
-		fecha_actualizacion = datetime('now','localtime')
+		fecha_actualizacion = CURRENT_TIMESTAMP
 	WHERE id = ? AND empresa_id = ?`,
 		strings.TrimSpace(payload.TipoDocumento),
 		strings.TrimSpace(payload.NumeroDocumento),
@@ -633,7 +633,7 @@ func DeleteCliente(dbConn *sql.DB, empresaID, id int64) error {
 
 // SetClienteEstado activa o desactiva un cliente por empresa.
 func SetClienteEstado(dbConn *sql.DB, empresaID, id int64, estado string) error {
-	_, err := dbConn.Exec(`UPDATE clientes SET estado = ?, fecha_actualizacion = datetime('now','localtime') WHERE empresa_id = ? AND id = ?`, estado, empresaID, id)
+	_, err := dbConn.Exec(`UPDATE clientes SET estado = ?, fecha_actualizacion = CURRENT_TIMESTAMP WHERE empresa_id = ? AND id = ?`, estado, empresaID, id)
 	return err
 }
 
@@ -753,7 +753,7 @@ func GetClienteHistorialComprasByEmpresa(dbConn *sql.DB, empresaID, clienteID in
 	WHERE c.empresa_id = ?
 		AND COALESCE(c.estado, 'activo') = 'activo'
 		AND COALESCE(c.cliente_id, 0) = ?
-	ORDER BY datetime(COALESCE(NULLIF(c.pagado_en, ''), NULLIF(c.fecha_actualizacion, ''), COALESCE(c.fecha_creacion, ''))) DESC, c.id DESC
+	ORDER BY pcs_ts(COALESCE(NULLIF(c.pagado_en, ''), NULLIF(c.fecha_actualizacion, ''), COALESCE(c.fecha_creacion, ''))) DESC, c.id DESC
 	LIMIT ?`, empresaID, clienteID, limit)
 	if err != nil {
 		if strings.Contains(strings.ToLower(err.Error()), "no such table") {
@@ -889,7 +889,7 @@ func getClienteComprasMetricas(dbConn *sql.DB, empresaID, clienteID int64) (clie
 	if m.NumeroCompras > 0 {
 		m.TicketPromedio = m.MontoCompras / float64(m.NumeroCompras)
 	}
-	if last, ok := parseLegacyDateTime(m.UltimaCompra); ok {
+	if last, ok := parseLegacypcs_ts(m.UltimaCompra); ok {
 		delta := int(time.Since(last).Hours() / 24)
 		if delta < 0 {
 			delta = 0
@@ -915,7 +915,7 @@ func resolveClienteSegmento(numeroCompras int64, montoCompras float64, diasSinCo
 	}
 }
 
-func parseLegacyDateTime(raw string) (time.Time, bool) {
+func parseLegacypcs_ts(raw string) (time.Time, bool) {
 	value := strings.TrimSpace(raw)
 	if value == "" {
 		return time.Time{}, false

@@ -69,7 +69,7 @@ type EmpresaAuditoriaEventoFilter struct {
 func EnsureEmpresaAuditoriaSchema(dbConn *sql.DB) error {
 	stmts := []string{
 		`CREATE TABLE IF NOT EXISTS empresa_auditoria_eventos (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL,
 			modulo TEXT NOT NULL,
 			accion TEXT NOT NULL,
@@ -84,10 +84,10 @@ func EnsureEmpresaAuditoriaSchema(dbConn *sql.DB) error {
 			user_agent TEXT,
 			metadata_json TEXT,
 			retencion_dias INTEGER DEFAULT 180,
-			fecha_evento TEXT DEFAULT (datetime('now','localtime')),
+			fecha_evento TEXT DEFAULT (CURRENT_TIMESTAMP),
 			fecha_expiracion TEXT,
-			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
-			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+			fecha_creacion TEXT DEFAULT (CURRENT_TIMESTAMP),
+			fecha_actualizacion TEXT DEFAULT (CURRENT_TIMESTAMP),
 			usuario_creador TEXT,
 			estado TEXT DEFAULT 'activo',
 			observaciones TEXT
@@ -145,13 +145,13 @@ func EnsureEmpresaAuditoriaSchema(dbConn *sql.DB) error {
 	if err := ensureColumnIfMissing(dbConn, "empresa_auditoria_eventos", "retencion_dias", "INTEGER DEFAULT 180"); err != nil {
 		return err
 	}
-	if err := ensureColumnIfMissing(dbConn, "empresa_auditoria_eventos", "fecha_evento", "TEXT DEFAULT (datetime('now','localtime'))"); err != nil {
+	if err := ensureColumnIfMissing(dbConn, "empresa_auditoria_eventos", "fecha_evento", "TEXT DEFAULT (CURRENT_TIMESTAMP)"); err != nil {
 		return err
 	}
 	if err := ensureColumnIfMissing(dbConn, "empresa_auditoria_eventos", "fecha_expiracion", "TEXT"); err != nil {
 		return err
 	}
-	if err := ensureColumnIfMissing(dbConn, "empresa_auditoria_eventos", "fecha_actualizacion", "TEXT DEFAULT (datetime('now','localtime'))"); err != nil {
+	if err := ensureColumnIfMissing(dbConn, "empresa_auditoria_eventos", "fecha_actualizacion", "TEXT DEFAULT (CURRENT_TIMESTAMP)"); err != nil {
 		return err
 	}
 	if err := ensureColumnIfMissing(dbConn, "empresa_auditoria_eventos", "usuario_creador", "TEXT"); err != nil {
@@ -176,7 +176,7 @@ func EnsureEmpresaAuditoriaSchema(dbConn *sql.DB) error {
 func ensureEmpresaAuditoriaIAConsultaSchema(dbConn *sql.DB) error {
 	stmts := []string{
 		`CREATE TABLE IF NOT EXISTS empresa_auditoria_ia_consultas (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL,
 			alcance TEXT NOT NULL,
 			modelo TEXT,
@@ -188,9 +188,9 @@ func ensureEmpresaAuditoriaIAConsultaSchema(dbConn *sql.DB) error {
 			eventos_consultados INTEGER DEFAULT 0,
 			contexto_caracteres INTEGER DEFAULT 0,
 			resultado TEXT DEFAULT 'ok',
-			fecha_consulta TEXT DEFAULT (datetime('now','localtime')),
-			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
-			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+			fecha_consulta TEXT DEFAULT (CURRENT_TIMESTAMP),
+			fecha_creacion TEXT DEFAULT (CURRENT_TIMESTAMP),
+			fecha_actualizacion TEXT DEFAULT (CURRENT_TIMESTAMP),
 			usuario_creador TEXT,
 			estado TEXT DEFAULT 'activo',
 			observaciones TEXT
@@ -218,8 +218,8 @@ func ensureEmpresaAuditoriaIAConsultaSchema(dbConn *sql.DB) error {
 		{"eventos_consultados", "INTEGER DEFAULT 0"},
 		{"contexto_caracteres", "INTEGER DEFAULT 0"},
 		{"resultado", "TEXT DEFAULT 'ok'"},
-		{"fecha_consulta", "TEXT DEFAULT (datetime('now','localtime'))"},
-		{"fecha_actualizacion", "TEXT DEFAULT (datetime('now','localtime'))"},
+		{"fecha_consulta", "TEXT DEFAULT (CURRENT_TIMESTAMP)"},
+		{"fecha_actualizacion", "TEXT DEFAULT (CURRENT_TIMESTAMP)"},
 		{"usuario_creador", "TEXT"},
 		{"estado", "TEXT DEFAULT 'activo'"},
 		{"observaciones", "TEXT"},
@@ -309,10 +309,10 @@ func CreateEmpresaAuditoriaEvento(dbConn *sql.DB, in EmpresaAuditoriaEvento) (in
 		observaciones
 	) VALUES (
 		?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
-		COALESCE(NULLIF(?, ''), datetime('now','localtime')),
-		datetime(COALESCE(NULLIF(?, ''), datetime('now','localtime')), ?),
-		datetime('now','localtime'),
-		datetime('now','localtime'),
+		COALESCE(NULLIF(?, ''), CURRENT_TIMESTAMP),
+		pcs_ts(COALESCE(NULLIF(?, ''), 'now'), ?),
+		CURRENT_TIMESTAMP,
+		CURRENT_TIMESTAMP,
 		?, ?, ?
 	)`,
 		in.EmpresaID,
@@ -488,11 +488,11 @@ func buildEmpresaAuditoriaWhereClause(dbConn *sql.DB, empresaID int64, f Empresa
 		args = append(args, reqID)
 	}
 	if desde := strings.TrimSpace(f.Desde); desde != "" {
-		where += ` AND datetime(COALESCE(fecha_evento, fecha_creacion, '')) >= datetime(?)`
+		where += ` AND pcs_ts(COALESCE(fecha_evento, fecha_creacion, '')) >= pcs_ts(?)`
 		args = append(args, desde)
 	}
 	if hasta := strings.TrimSpace(f.Hasta); hasta != "" {
-		where += ` AND datetime(COALESCE(fecha_evento, fecha_creacion, '')) <= datetime(?)`
+		where += ` AND pcs_ts(COALESCE(fecha_evento, fecha_creacion, '')) <= pcs_ts(?)`
 		args = append(args, hasta)
 	}
 	if searchClause, searchArgs := buildAuditoriaSearchClause(dbConn, empresaID, f.Search); searchClause != "" {
@@ -551,7 +551,7 @@ func PurgeEmpresaAuditoriaEventos(dbConn *sql.DB, empresaID int64, retencionDias
 
 	res, err := dbConn.Exec(`DELETE FROM empresa_auditoria_eventos
 	WHERE empresa_id = ?
-		AND datetime(COALESCE(fecha_evento, fecha_creacion, '')) < datetime('now','localtime', ?)`,
+		AND pcs_ts(COALESCE(fecha_evento, fecha_creacion, '')) < pcs_ts('now','localtime', ?)`,
 		empresaID,
 		expr,
 	)
@@ -568,14 +568,12 @@ func PurgeExpiredEmpresaAuditoriaEventos(dbConn *sql.DB) (int64, error) {
 	}
 
 	res, err := dbConn.Exec(`DELETE FROM empresa_auditoria_eventos
-	WHERE datetime(
-		CASE
-			WHEN COALESCE(fecha_expiracion, '') <> '' THEN fecha_expiracion
-			WHEN COALESCE(fecha_evento, '') <> '' THEN datetime(fecha_evento, printf('+%d days', COALESCE(retencion_dias, 180)))
-			WHEN COALESCE(fecha_creacion, '') <> '' THEN datetime(fecha_creacion, printf('+%d days', COALESCE(retencion_dias, 180)))
-			ELSE datetime('now','localtime','+36500 days')
-		END
-	) <= datetime('now','localtime')`)
+	WHERE CASE
+		WHEN COALESCE(fecha_expiracion, '') <> '' THEN pcs_ts(fecha_expiracion)
+		WHEN COALESCE(fecha_evento, '') <> '' THEN pcs_ts(fecha_evento, '+' || COALESCE(retencion_dias, 180)::text || ' days')
+		WHEN COALESCE(fecha_creacion, '') <> '' THEN pcs_ts(fecha_creacion, '+' || COALESCE(retencion_dias, 180)::text || ' days')
+		ELSE pcs_ts('now','localtime','+36500 days')
+	END <= CURRENT_TIMESTAMP`)
 	if err != nil {
 		return 0, err
 	}

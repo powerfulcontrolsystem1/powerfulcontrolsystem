@@ -175,7 +175,7 @@ func EnsureEmpresaContabilidadColombiaSchema(dbConn *sql.DB) error {
 			usuario_creador TEXT
 		)`,
 		`CREATE TABLE IF NOT EXISTS empresa_contabilidad_colombia_cuentas (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL,
 			codigo TEXT NOT NULL,
 			nombre TEXT NOT NULL,
@@ -192,7 +192,7 @@ func EnsureEmpresaContabilidadColombiaSchema(dbConn *sql.DB) error {
 			UNIQUE(empresa_id,codigo)
 		)`,
 		`CREATE TABLE IF NOT EXISTS empresa_contabilidad_colombia_terceros (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL,
 			tipo_documento TEXT DEFAULT 'NIT',
 			documento TEXT NOT NULL,
@@ -212,7 +212,7 @@ func EnsureEmpresaContabilidadColombiaSchema(dbConn *sql.DB) error {
 			UNIQUE(empresa_id,documento)
 		)`,
 		`CREATE TABLE IF NOT EXISTS empresa_contabilidad_colombia_impuestos (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL,
 			codigo TEXT NOT NULL,
 			nombre TEXT NOT NULL,
@@ -227,7 +227,7 @@ func EnsureEmpresaContabilidadColombiaSchema(dbConn *sql.DB) error {
 			UNIQUE(empresa_id,codigo)
 		)`,
 		`CREATE TABLE IF NOT EXISTS empresa_contabilidad_colombia_comprobantes (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL,
 			codigo TEXT NOT NULL,
 			tipo_comprobante TEXT DEFAULT 'nota_contable',
@@ -248,7 +248,7 @@ func EnsureEmpresaContabilidadColombiaSchema(dbConn *sql.DB) error {
 			UNIQUE(empresa_id,codigo)
 		)`,
 		`CREATE TABLE IF NOT EXISTS empresa_contabilidad_colombia_lineas (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL,
 			comprobante_id INTEGER NOT NULL,
 			cuenta_codigo TEXT NOT NULL,
@@ -261,7 +261,7 @@ func EnsureEmpresaContabilidadColombiaSchema(dbConn *sql.DB) error {
 			centro_costo TEXT
 		)`,
 		`CREATE TABLE IF NOT EXISTS empresa_contabilidad_colombia_periodos (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL,
 			periodo TEXT NOT NULL,
 			estado TEXT DEFAULT 'abierto',
@@ -277,7 +277,7 @@ func EnsureEmpresaContabilidadColombiaSchema(dbConn *sql.DB) error {
 			UNIQUE(empresa_id,periodo)
 		)`,
 		`CREATE TABLE IF NOT EXISTS empresa_contabilidad_colombia_eventos (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL,
 			comprobante_id INTEGER DEFAULT 0,
 			tipo TEXT NOT NULL,

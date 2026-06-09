@@ -2,6 +2,7 @@ param(
     [switch]$Background,
     [int]$Port = 8080,
     [switch]$NoKillLocalPort,
+    [switch]$UseVpsTunnel,
     [switch]$NoVpsTunnel
 )
 
@@ -34,6 +35,10 @@ if ($Port -lt 1 -or $Port -gt 65535) {
     Write-ErrMsg "Puerto invalido: $Port. Usa un valor entre 1 y 65535."
     exit 1
 }
+if ($UseVpsTunnel -and $NoVpsTunnel) {
+    Write-ErrMsg "UseVpsTunnel y NoVpsTunnel son opciones opuestas. Usa solo una."
+    exit 1
+}
 $localServerPort = $Port
 
 Write-Step "1/8 Preparando entorno"
@@ -56,14 +61,23 @@ if ($NoKillLocalPort) {
 if ($NoVpsTunnel) {
     Write-Info "NoVpsTunnel activo: no se abrira tunel SSH hacia la VPS."
 }
+if ($UseVpsTunnel) {
+    Write-Info "UseVpsTunnel activo: se intentara abrir tunel SSH local hacia PostgreSQL del VPS."
+}
 Push-Location $backend
 
 function Import-DotEnvValues {
     param([string]$Path)
-    $map = @{}
-    if (-not (Test-Path $Path)) { return $map }
+    if (-not (Test-Path $Path)) { return @{} }
 
-    $lines = Get-Content -Path $Path -ErrorAction SilentlyContinue
+    $lines = @(Get-Content -Path $Path -ErrorAction SilentlyContinue)
+    return Import-DotEnvLines -Lines $lines
+}
+
+function Import-DotEnvLines {
+    param([string[]]$Lines)
+    $map = @{}
+
     foreach ($line in $lines) {
         $raw = [string]$line
         if ([string]::IsNullOrWhiteSpace($raw)) { continue }
@@ -291,7 +305,11 @@ function Load-PostgresEnvFromFiles {
             'DB_VPS_TUNNEL_ENABLED',
             'DB_VPS_SSH_HOST',
             'DB_VPS_SSH_USER',
+            'DB_VPS_SSH_PORT',
             'DB_VPS_SSH_KEY_PATH',
+            'DB_VPS_SSH_HOSTKEY',
+            'DB_VPS_REMOTE_APP_PATH',
+            'DB_VPS_POSTGRES_CONTAINER',
             'DB_VPS_LOCAL_PORT',
             'DB_VPS_REMOTE_HOST',
             'DB_VPS_REMOTE_PORT',
@@ -307,6 +325,383 @@ function Load-PostgresEnvFromFiles {
                 Set-Item -Path ("Env:" + $key) -Value $candidate
             }
         }
+    }
+}
+
+function Get-ProjectRootFromBackend {
+    param([string]$BackendDir)
+
+    $backendFull = [System.IO.Path]::GetFullPath($BackendDir)
+    $root = Split-Path -Parent $backendFull
+    return $root
+}
+
+function Set-ProcessEnvIfEmpty {
+    param(
+        [string]$Key,
+        [string]$Value
+    )
+
+    if ([string]::IsNullOrWhiteSpace($Key) -or [string]::IsNullOrWhiteSpace($Value)) {
+        return
+    }
+
+    $current = [Environment]::GetEnvironmentVariable($Key, 'Process')
+    if ([string]::IsNullOrWhiteSpace($current)) {
+        [Environment]::SetEnvironmentVariable($Key, $Value, 'Process')
+        Set-Item -Path ("Env:" + $Key) -Value $Value
+    }
+}
+
+function ConvertTo-PostgresDsnComponent {
+    param([string]$Value)
+
+    if ($null -eq $Value) {
+        return ''
+    }
+    return [System.Uri]::EscapeDataString([string]$Value)
+}
+
+function New-LocalPostgresDSN {
+    param(
+        [string]$User,
+        [string]$Password,
+        [string]$Database,
+        [string]$HostName = '127.0.0.1',
+        [int]$Port = 5432
+    )
+
+    $safeUser = ConvertTo-PostgresDsnComponent -Value $User
+    $safePassword = ConvertTo-PostgresDsnComponent -Value $Password
+    $safeDatabase = ConvertTo-PostgresDsnComponent -Value $Database
+    return "postgres://${safeUser}:${safePassword}@${HostName}:${Port}/${safeDatabase}?sslmode=disable"
+}
+
+function Load-PostgresEnvFromPlatformFallback {
+    param([string]$BackendDir)
+
+    if (-not ([string]::IsNullOrWhiteSpace($env:DB_EMPRESAS_DSN)) -and -not ([string]::IsNullOrWhiteSpace($env:DB_SUPERADMIN_DSN))) {
+        return
+    }
+
+    $root = Get-ProjectRootFromBackend -BackendDir $BackendDir
+    $platformEnvPath = Join-Path $root 'deploy\.env.platform'
+    if (-not (Test-Path $platformEnvPath)) {
+        return
+    }
+
+    $vals = Import-DotEnvValues -Path $platformEnvPath
+    if (-not $vals.ContainsKey('POSTGRES_PASSWORD') -or [string]::IsNullOrWhiteSpace([string]$vals['POSTGRES_PASSWORD'])) {
+        return
+    }
+
+    $user = 'pcs'
+    if ($vals.ContainsKey('POSTGRES_USER') -and -not [string]::IsNullOrWhiteSpace([string]$vals['POSTGRES_USER'])) {
+        $user = [string]$vals['POSTGRES_USER']
+    }
+
+    Set-ProcessEnvIfEmpty -Key 'DB_EMPRESAS_DSN' -Value (New-LocalPostgresDSN -User $user -Password ([string]$vals['POSTGRES_PASSWORD']) -Database 'pcs_empresas')
+    Set-ProcessEnvIfEmpty -Key 'DB_SUPERADMIN_DSN' -Value (New-LocalPostgresDSN -User $user -Password ([string]$vals['POSTGRES_PASSWORD']) -Database 'pcs_superadministrador')
+    Write-Info "DSN PostgreSQL local derivados desde deploy/.env.platform (valores sensibles no se imprimen)."
+}
+
+function Get-DeploymentScriptStringValue {
+    param(
+        [string[]]$Lines,
+        [string]$VariableName
+    )
+
+    $pattern = '^\s*\$script:' + [regex]::Escape($VariableName) + '\s*=\s*[''"]([^''"]+)[''"]'
+    foreach ($line in $Lines) {
+        $match = [regex]::Match([string]$line, $pattern)
+        if ($match.Success) {
+            return $match.Groups[1].Value
+        }
+    }
+    return ''
+}
+
+function Get-DeploymentScriptIntValue {
+    param(
+        [string[]]$Lines,
+        [string]$VariableName
+    )
+
+    $pattern = '^\s*\$script:' + [regex]::Escape($VariableName) + '\s*=\s*(\d+)'
+    foreach ($line in $Lines) {
+        $match = [regex]::Match([string]$line, $pattern)
+        if ($match.Success) {
+            return $match.Groups[1].Value
+        }
+    }
+    return ''
+}
+
+function Load-VpsTunnelEnvFromDeploymentConfig {
+    param([string]$BackendDir)
+
+    $root = Get-ProjectRootFromBackend -BackendDir $BackendDir
+    $deploymentConfig = Join-Path $root 'scripts\pcs_deployment.local.ps1'
+    if (-not (Test-Path $deploymentConfig)) {
+        return
+    }
+
+    $lines = @(Get-Content -Path $deploymentConfig -ErrorAction SilentlyContinue)
+    if ($lines.Count -eq 0) {
+        return
+    }
+
+    $loaded = 0
+    $sshHost = Get-DeploymentScriptStringValue -Lines $lines -VariableName 'PcsVpsHost'
+    $sshUser = Get-DeploymentScriptStringValue -Lines $lines -VariableName 'PcsVpsUser'
+    $sshPort = Get-DeploymentScriptIntValue -Lines $lines -VariableName 'PcsVpsPort'
+    $sshKey = Get-DeploymentScriptStringValue -Lines $lines -VariableName 'PcsVpsIdentityFile'
+    $sshHostKey = Get-DeploymentScriptStringValue -Lines $lines -VariableName 'PcsVpsHostKey'
+    $remotePath = Get-DeploymentScriptStringValue -Lines $lines -VariableName 'PcsVpsRemotePath'
+
+    if (-not [string]::IsNullOrWhiteSpace($sshHost)) {
+        Set-ProcessEnvIfEmpty -Key 'DB_VPS_SSH_HOST' -Value $sshHost
+        $loaded++
+    }
+    if (-not [string]::IsNullOrWhiteSpace($sshUser)) {
+        Set-ProcessEnvIfEmpty -Key 'DB_VPS_SSH_USER' -Value $sshUser
+        $loaded++
+    }
+    if (-not [string]::IsNullOrWhiteSpace($sshPort)) {
+        Set-ProcessEnvIfEmpty -Key 'DB_VPS_SSH_PORT' -Value $sshPort
+        $loaded++
+    }
+    if (-not [string]::IsNullOrWhiteSpace($sshKey)) {
+        Set-ProcessEnvIfEmpty -Key 'DB_VPS_SSH_KEY_PATH' -Value $sshKey
+        $loaded++
+    }
+    if (-not [string]::IsNullOrWhiteSpace($sshHostKey)) {
+        Set-ProcessEnvIfEmpty -Key 'DB_VPS_SSH_HOSTKEY' -Value $sshHostKey
+        $loaded++
+    }
+    if (-not [string]::IsNullOrWhiteSpace($remotePath)) {
+        Set-ProcessEnvIfEmpty -Key 'DB_VPS_REMOTE_APP_PATH' -Value $remotePath
+        $loaded++
+    }
+
+    if ($loaded -gt 0) {
+        Write-Info "Configuracion SSH VPS cargada desde scripts/pcs_deployment.local.ps1 (valores no se imprimen)."
+    }
+}
+
+function Resolve-VpsSshKeyPath {
+    param(
+        [string]$BackendDir,
+        [string]$SshKeyPath
+    )
+
+    if ([string]::IsNullOrWhiteSpace($SshKeyPath)) {
+        $SshKeyPath = '..\clave privada ssh.ppk'
+    }
+
+    if ([System.IO.Path]::IsPathRooted($SshKeyPath)) {
+        return [System.IO.Path]::GetFullPath($SshKeyPath)
+    }
+
+    return [System.IO.Path]::GetFullPath((Join-Path $BackendDir $SshKeyPath))
+}
+
+function Invoke-VpsSshText {
+    param(
+        [string]$BackendDir,
+        [string]$SshHost,
+        [string]$SshUser,
+        [string]$SshKeyPath,
+        [string]$SshHostKey,
+        [int]$SshPort,
+        [string]$Command
+    )
+
+    if ([string]::IsNullOrWhiteSpace($SshHost) -or [string]::IsNullOrWhiteSpace($SshUser)) {
+        return @()
+    }
+
+    $resolvedKeyPath = Resolve-VpsSshKeyPath -BackendDir $BackendDir -SshKeyPath $SshKeyPath
+    if (-not (Test-Path $resolvedKeyPath)) {
+        Write-WarnMsg "No se encontro la llave SSH local para leer configuracion remota del VPS."
+        return @()
+    }
+
+    $plink = Get-Command plink.exe -ErrorAction SilentlyContinue
+    if ($null -eq $plink) {
+        Write-WarnMsg "No se encontro plink.exe; no se puede leer configuracion remota del VPS."
+        return @()
+    }
+
+    $hostKeyArgs = @()
+    if (-not [string]::IsNullOrWhiteSpace($SshHostKey)) {
+        $hostKeyArgs = @('-hostkey', $SshHostKey.Trim())
+    }
+
+    $target = "{0}@{1}" -f $SshUser, $SshHost
+    $plinkArgs = @('-batch') + $hostKeyArgs + @('-P', "$SshPort", '-i', $resolvedKeyPath, $target, $Command)
+    $output = @(& $plink.Source @plinkArgs 2>&1)
+    if ($LASTEXITCODE -ne 0) {
+        Write-WarnMsg "No se pudo leer la configuracion remota de PostgreSQL por SSH; se usara la configuracion local si existe."
+        return @()
+    }
+
+    return $output
+}
+
+function Load-PostgresEnvFromVpsPlatformFallback {
+    param([string]$BackendDir)
+
+    if (-not ([string]::IsNullOrWhiteSpace($env:DB_EMPRESAS_DSN)) -and -not ([string]::IsNullOrWhiteSpace($env:DB_SUPERADMIN_DSN))) {
+        return
+    }
+
+    $sshHost = [Environment]::GetEnvironmentVariable('DB_VPS_SSH_HOST', 'Process')
+    $sshUser = [Environment]::GetEnvironmentVariable('DB_VPS_SSH_USER', 'Process')
+    $sshKeyPath = [Environment]::GetEnvironmentVariable('DB_VPS_SSH_KEY_PATH', 'Process')
+    $sshHostKey = [Environment]::GetEnvironmentVariable('DB_VPS_SSH_HOSTKEY', 'Process')
+    $remotePath = [Environment]::GetEnvironmentVariable('DB_VPS_REMOTE_APP_PATH', 'Process')
+    if ([string]::IsNullOrWhiteSpace($remotePath)) {
+        $remotePath = '/root/powerfulcontrolsystem'
+    }
+    if ($remotePath -notmatch '^[a-zA-Z0-9_./-]+$') {
+        Write-WarnMsg "Ruta remota VPS no tiene formato seguro para lectura automatica; configura DSN localmente."
+        return
+    }
+
+    $sshPort = 49222
+    $rawSshPort = [Environment]::GetEnvironmentVariable('DB_VPS_SSH_PORT', 'Process')
+    if (-not [string]::IsNullOrWhiteSpace($rawSshPort)) {
+        $parsedSshPort = 0
+        if ([int]::TryParse($rawSshPort, [ref]$parsedSshPort) -and $parsedSshPort -gt 0) {
+            $sshPort = $parsedSshPort
+        }
+    }
+
+    $command = "cd $remotePath && if [ -f deploy/.env.platform ]; then cat deploy/.env.platform; fi"
+    $remoteEnvLines = @(Invoke-VpsSshText -BackendDir $BackendDir -SshHost $sshHost -SshUser $sshUser -SshKeyPath $sshKeyPath -SshHostKey $sshHostKey -SshPort $sshPort -Command $command)
+    if ($remoteEnvLines.Count -eq 0) {
+        return
+    }
+
+    $vals = Import-DotEnvLines -Lines $remoteEnvLines
+    if (-not $vals.ContainsKey('POSTGRES_PASSWORD') -or [string]::IsNullOrWhiteSpace([string]$vals['POSTGRES_PASSWORD'])) {
+        Write-WarnMsg "La configuracion remota no contiene POSTGRES_PASSWORD usable."
+        return
+    }
+
+    $user = 'pcs'
+    if ($vals.ContainsKey('POSTGRES_USER') -and -not [string]::IsNullOrWhiteSpace([string]$vals['POSTGRES_USER'])) {
+        $user = [string]$vals['POSTGRES_USER']
+    }
+
+    Set-ProcessEnvIfEmpty -Key 'DB_EMPRESAS_DSN' -Value (New-LocalPostgresDSN -User $user -Password ([string]$vals['POSTGRES_PASSWORD']) -Database 'pcs_empresas')
+    Set-ProcessEnvIfEmpty -Key 'DB_SUPERADMIN_DSN' -Value (New-LocalPostgresDSN -User $user -Password ([string]$vals['POSTGRES_PASSWORD']) -Database 'pcs_superadministrador')
+    Write-Info "DSN PostgreSQL derivados desde configuracion remota del VPS por SSH (valores sensibles no se imprimen)."
+}
+
+function Resolve-VpsPostgresContainerHost {
+    param(
+        [string]$BackendDir,
+        [string]$SshHost,
+        [string]$SshUser,
+        [string]$SshKeyPath,
+        [string]$SshHostKey,
+        [int]$SshPort
+    )
+
+    $containerName = [Environment]::GetEnvironmentVariable('DB_VPS_POSTGRES_CONTAINER', 'Process')
+    if ([string]::IsNullOrWhiteSpace($containerName)) {
+        $containerName = 'pcs-postgres'
+    }
+    if ($containerName -notmatch '^[a-zA-Z0-9_.-]+$') {
+        Write-WarnMsg "Nombre de contenedor PostgreSQL VPS no tiene formato seguro; se usara 127.0.0.1."
+        return ''
+    }
+
+    $command = "docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' $containerName 2>/dev/null"
+    $lines = @(Invoke-VpsSshText -BackendDir $BackendDir -SshHost $SshHost -SshUser $SshUser -SshKeyPath $SshKeyPath -SshHostKey $SshHostKey -SshPort $SshPort -Command $command)
+    foreach ($line in $lines) {
+        $candidate = ([string]$line).Trim()
+        if ($candidate -match '^\d{1,3}(\.\d{1,3}){3}$') {
+            Write-Info "PostgreSQL VPS resuelto desde contenedor Docker configurado (direccion no se imprime)."
+            return $candidate
+        }
+    }
+
+    Write-WarnMsg "No se pudo resolver IP del contenedor PostgreSQL VPS; se usara 127.0.0.1."
+    return ''
+}
+
+function Get-PostgresDSNEndpoint {
+    param([string]$Dsn)
+
+    if ([string]::IsNullOrWhiteSpace($Dsn)) {
+        return $null
+    }
+
+    try {
+        $uri = [System.Uri]$Dsn
+        if ([string]::IsNullOrWhiteSpace($uri.Host)) {
+            return $null
+        }
+        $port = $uri.Port
+        if ($port -le 0) {
+            $port = 5432
+        }
+        return @{
+            Host = $uri.Host
+            Port = [int]$port
+        }
+    } catch {
+        return $null
+    }
+}
+
+function Test-TcpListener {
+    param(
+        [string]$HostName,
+        [int]$Port,
+        [int]$TimeoutMs = 1500
+    )
+
+    if ([string]::IsNullOrWhiteSpace($HostName) -or $Port -le 0) {
+        return $false
+    }
+
+    $client = New-Object System.Net.Sockets.TcpClient
+    try {
+        $iar = $client.BeginConnect($HostName, $Port, $null, $null)
+        if (-not $iar.AsyncWaitHandle.WaitOne($TimeoutMs, $false)) {
+            return $false
+        }
+        $client.EndConnect($iar)
+        return $true
+    } catch {
+        return $false
+    } finally {
+        $client.Close()
+    }
+}
+
+function Assert-PostgresEndpointReachable {
+    param([string]$Dsn)
+
+    $endpoint = Get-PostgresDSNEndpoint -Dsn $Dsn
+    if ($null -eq $endpoint) {
+        Write-WarnMsg "No se pudo interpretar el endpoint del DSN PostgreSQL; se continuara hasta la validacion del backend."
+        return
+    }
+
+    $hostName = [string]$endpoint.Host
+    $port = [int]$endpoint.Port
+    if (-not (Test-TcpListener -HostName $hostName -Port $port)) {
+        Write-ErrMsg ("No hay PostgreSQL escuchando en {0}:{1}." -f $hostName, $port)
+        Write-Host "Para pruebas locales tienes tres opciones:" -ForegroundColor Yellow
+        Write-Host "  1. Levantar PostgreSQL local con las bases pcs_empresas y pcs_superadministrador." -ForegroundColor Yellow
+        Write-Host "  2. Activar tunel VPS con DB_VPS_TUNNEL_ENABLED=1 y DSN apuntando a localhost." -ForegroundColor Yellow
+        Write-Host "  3. Definir DB_EMPRESAS_DSN y DB_SUPERADMIN_DSN hacia una instancia PostgreSQL accesible." -ForegroundColor Yellow
+        exit 1
     }
 }
 
@@ -342,6 +737,7 @@ function Ensure-VpsSshTunnel {
         [string]$SshHost,
         [string]$SshUser,
         [string]$SshKeyPath,
+        [string]$SshHostKey,
         [int]$SshPort = 49222,
         [int]$LocalPort,
         [string]$RemoteHost,
@@ -381,20 +777,58 @@ function Ensure-VpsSshTunnel {
         throw ("{0}: no se encontro plink.exe. Instala PuTTY para habilitar el tunel." -f $TunnelLabel)
     }
 
+    $forwardSpec = "{0}:{1}:{2}" -f $LocalPort, $RemoteHost, $RemotePort
     $listening = Get-NetTCPConnection -LocalPort $LocalPort -State Listen -ErrorAction SilentlyContinue
     if ($listening) {
-        Write-Info ("Tunel {0} detectado en localhost:{1}. Se reutiliza." -f $TunnelLabel, $LocalPort)
-        return
+        $pids = @($listening | Select-Object -ExpandProperty OwningProcess -Unique)
+        $matchingTunnel = $false
+        $stoppedStaleTunnel = $false
+
+        foreach ($pidNum in $pids) {
+            $procInfo = Get-CimInstance Win32_Process -Filter ("ProcessId={0}" -f [int]$pidNum) -ErrorAction SilentlyContinue
+            $cmdLine = ''
+            $procName = ''
+            if ($procInfo) {
+                $cmdLine = [string]$procInfo.CommandLine
+                $procName = [string]$procInfo.Name
+            }
+
+            if ($cmdLine.Contains($forwardSpec)) {
+                $matchingTunnel = $true
+                break
+            }
+
+            if ($procName -ieq 'plink.exe' -and $cmdLine.Contains('-L') -and $cmdLine.Contains(("{0}:" -f $LocalPort))) {
+                Stop-Process -Id ([int]$pidNum) -Force -ErrorAction SilentlyContinue
+                $stoppedStaleTunnel = $true
+            }
+        }
+
+        if ($matchingTunnel) {
+            Write-Info ("Tunel {0} detectado en localhost:{1}. Se reutiliza." -f $TunnelLabel, $LocalPort)
+            return
+        }
+
+        if ($stoppedStaleTunnel) {
+            Write-Info ("Tunel {0} previo en localhost:{1} apuntaba a otro destino; se recreara." -f $TunnelLabel, $LocalPort)
+            Start-Sleep -Milliseconds 800
+        } else {
+            throw ("{0}: localhost:{1} esta ocupado por otro proceso y no se puede abrir el tunel." -f $TunnelLabel, $LocalPort)
+        }
     }
 
-    $forwardSpec = "{0}:{1}:{2}" -f $LocalPort, $RemoteHost, $RemotePort
     $target = "{0}@{1}" -f $SshUser, $SshHost
+    $displayTarget = 'servidor VPS configurado'
 
     $keyArg = $resolvedKeyPath
     if ($keyArg -match '\s') {
         $keyArg = '"' + ($keyArg -replace '"', '\"') + '"'
     }
-    $plinkArgs = @('-batch', '-N', '-P', "$SshPort", '-i', $keyArg, '-L', $forwardSpec, $target)
+    $hostKeyArgs = @()
+    if (-not [string]::IsNullOrWhiteSpace($SshHostKey)) {
+        $hostKeyArgs = @('-hostkey', $SshHostKey.Trim())
+    }
+    $plinkArgs = @('-batch') + $hostKeyArgs + @('-N', '-P', "$SshPort", '-i', $keyArg, '-L', $forwardSpec, $target)
 
     $tmpDir = Join-Path $BackendDir 'tmp'
     if (-not (Test-Path $tmpDir)) {
@@ -409,7 +843,7 @@ function Ensure-VpsSshTunnel {
 
     $proc = Start-Process -FilePath $plink.Source -ArgumentList $plinkArgs -WindowStyle Hidden -RedirectStandardOutput $plinkStdOut -RedirectStandardError $plinkStdErr -PassThru
     if ($null -eq $proc -or $proc.HasExited) {
-        throw ("{0}: no se pudo iniciar tunel SSH a {1}:{2} ({3})." -f $TunnelLabel, $target, $SshPort, $forwardSpec)
+        throw ("{0}: no se pudo iniciar tunel SSH al {1}:{2} ({3})." -f $TunnelLabel, $displayTarget, $SshPort, $forwardSpec)
     }
 
     $listenerReady = $false
@@ -447,9 +881,9 @@ function Ensure-VpsSshTunnel {
 
     if (-not $listenerReady) {
         if ($proc.HasExited) {
-            throw ("{0}: el tunel SSH se cerro al iniciar (PID={1}, ExitCode={2}) para {3}:{4} ({5}).{6}" -f $TunnelLabel, $proc.Id, $proc.ExitCode, $target, $SshPort, $forwardSpec, $diagnosticDetail)
+            throw ("{0}: el tunel SSH se cerro al iniciar (PID={1}, ExitCode={2}) para el {3}:{4} ({5}).{6}" -f $TunnelLabel, $proc.Id, $proc.ExitCode, $displayTarget, $SshPort, $forwardSpec, $diagnosticDetail)
         }
-        throw ("{0}: no se detecto listener en localhost:{1} tras iniciar tunel SSH (PID={2}) hacia {3}:{4} ({5}).{6}" -f $TunnelLabel, $LocalPort, $proc.Id, $target, $SshPort, $forwardSpec, $diagnosticDetail)
+        throw ("{0}: no se detecto listener en localhost:{1} tras iniciar tunel SSH (PID={2}) hacia el {3}:{4} ({5}).{6}" -f $TunnelLabel, $LocalPort, $proc.Id, $displayTarget, $SshPort, $forwardSpec, $diagnosticDetail)
     }
 
     Write-Info ("Tunel {0} iniciado: localhost:{1} -> {2}:{3} (PID={4})" -f $TunnelLabel, $LocalPort, $RemoteHost, $RemotePort, $proc.Id)
@@ -461,16 +895,27 @@ function Ensure-VpsPostgresTunnel {
         [string]$SshHost,
         [string]$SshUser,
         [string]$SshKeyPath,
+        [string]$SshHostKey,
         [int]$SshPort = 49222,
         [int]$LocalPort,
         [string]$RemoteHost,
         [int]$RemotePort
     )
 
-    Ensure-VpsSshTunnel -BackendDir $BackendDir -SshHost $SshHost -SshUser $SshUser -SshKeyPath $SshKeyPath -SshPort $SshPort -LocalPort $LocalPort -RemoteHost $RemoteHost -RemotePort $RemotePort -TunnelLabel 'DB'
+    Ensure-VpsSshTunnel -BackendDir $BackendDir -SshHost $SshHost -SshUser $SshUser -SshKeyPath $SshKeyPath -SshHostKey $SshHostKey -SshPort $SshPort -LocalPort $LocalPort -RemoteHost $RemoteHost -RemotePort $RemotePort -TunnelLabel 'DB'
 }
 
 Load-PostgresEnvFromFiles -BackendDir $backend
+Load-VpsTunnelEnvFromDeploymentConfig -BackendDir $backend
+if ($UseVpsTunnel) {
+    [Environment]::SetEnvironmentVariable('DB_VPS_TUNNEL_ENABLED', '1', 'Process')
+    Set-Item -Path 'Env:DB_VPS_TUNNEL_ENABLED' -Value '1'
+}
+$initialTunnelEnabled = Test-TruthyValue -Value ([Environment]::GetEnvironmentVariable('DB_VPS_TUNNEL_ENABLED', 'Process'))
+if ($initialTunnelEnabled -and -not $NoVpsTunnel) {
+    Load-PostgresEnvFromVpsPlatformFallback -BackendDir $backend
+}
+Load-PostgresEnvFromPlatformFallback -BackendDir $backend
 
 # Validar modo de base de datos PostgreSQL-only
 Write-Step "2/8 Validando configuracion de base de datos (PostgreSQL)"
@@ -489,6 +934,10 @@ if ($tunnelEnabled) {
     $sshHost = [Environment]::GetEnvironmentVariable('DB_VPS_SSH_HOST', 'Process')
     $sshUser = [Environment]::GetEnvironmentVariable('DB_VPS_SSH_USER', 'Process')
     $sshKeyPath = [Environment]::GetEnvironmentVariable('DB_VPS_SSH_KEY_PATH', 'Process')
+    $sshHostKey = [Environment]::GetEnvironmentVariable('DB_VPS_SSH_HOSTKEY', 'Process')
+    if ([string]::IsNullOrWhiteSpace($sshHostKey)) {
+        $sshHostKey = [Environment]::GetEnvironmentVariable('PCS_VPS_SSH_HOSTKEY', 'Process')
+    }
     $sshPort = 49222
     $rawSshPort = [Environment]::GetEnvironmentVariable('DB_VPS_SSH_PORT', 'Process')
     if (-not [string]::IsNullOrWhiteSpace($rawSshPort)) {
@@ -498,6 +947,17 @@ if ($tunnelEnabled) {
         }
     }
     $remoteHost = [Environment]::GetEnvironmentVariable('DB_VPS_REMOTE_HOST', 'Process')
+    $remotePort = 5432
+    $rawRemotePort = [Environment]::GetEnvironmentVariable('DB_VPS_REMOTE_PORT', 'Process')
+    if (-not [string]::IsNullOrWhiteSpace($rawRemotePort)) {
+        $parsedRemote = 0
+        if ([int]::TryParse($rawRemotePort, [ref]$parsedRemote) -and $parsedRemote -gt 0) {
+            $remotePort = $parsedRemote
+        }
+    }
+    if ([string]::IsNullOrWhiteSpace($remoteHost)) {
+        $remoteHost = Resolve-VpsPostgresContainerHost -BackendDir $backend -SshHost $sshHost -SshUser $sshUser -SshKeyPath $sshKeyPath -SshHostKey $sshHostKey -SshPort $sshPort
+    }
     if ([string]::IsNullOrWhiteSpace($remoteHost)) {
         $remoteHost = '127.0.0.1'
     }
@@ -511,16 +971,7 @@ if ($tunnelEnabled) {
         }
     }
 
-    $remotePort = 5432
-    $rawRemotePort = [Environment]::GetEnvironmentVariable('DB_VPS_REMOTE_PORT', 'Process')
-    if (-not [string]::IsNullOrWhiteSpace($rawRemotePort)) {
-        $parsedRemote = 0
-        if ([int]::TryParse($rawRemotePort, [ref]$parsedRemote) -and $parsedRemote -gt 0) {
-            $remotePort = $parsedRemote
-        }
-    }
-
-    Ensure-VpsPostgresTunnel -BackendDir $backend -SshHost $sshHost -SshUser $sshUser -SshKeyPath $sshKeyPath -SshPort $sshPort -LocalPort $localPort -RemoteHost $remoteHost -RemotePort $remotePort
+    Ensure-VpsPostgresTunnel -BackendDir $backend -SshHost $sshHost -SshUser $sshUser -SshKeyPath $sshKeyPath -SshHostKey $sshHostKey -SshPort $sshPort -LocalPort $localPort -RemoteHost $remoteHost -RemotePort $remotePort
 
     $env:DB_EMPRESAS_DSN = Rewrite-PostgresDSNForTunnel -Dsn $env:DB_EMPRESAS_DSN -LocalPort $localPort
     $env:DB_SUPERADMIN_DSN = Rewrite-PostgresDSNForTunnel -Dsn $env:DB_SUPERADMIN_DSN -LocalPort $localPort
@@ -535,8 +986,12 @@ if ($env:DB_DIALECT -ne 'postgres') {
 
 if (-not $env:DB_EMPRESAS_DSN -or -not $env:DB_SUPERADMIN_DSN) {
     Write-Host "Faltan DSN de PostgreSQL. Define DB_EMPRESAS_DSN y DB_SUPERADMIN_DSN en backend/.env.local o en el entorno." -ForegroundColor Red
+    Write-Host "Para pruebas locales, configura DB_VPS_TUNNEL_ENABLED=1 si vas a usar PostgreSQL del VPS por tunel SSH." -ForegroundColor Yellow
     exit 1
 }
+
+Assert-PostgresEndpointReachable -Dsn $env:DB_EMPRESAS_DSN
+Assert-PostgresEndpointReachable -Dsn $env:DB_SUPERADMIN_DSN
 
 Write-Ok "Configuracion PostgreSQL validada."
 Write-Info "DB_DIALECT=$env:DB_DIALECT"
@@ -857,6 +1312,9 @@ if ($clientSecret) { $env:GOOGLE_CLIENT_SECRET = $clientSecret }
 if ($env:GOOGLE_REDIRECT_URL) { $env:GOOGLE_REDIRECT_URL = $env:GOOGLE_REDIRECT_URL }
 if ($env:CONFIG_ENC_KEY) { $env:CONFIG_ENC_KEY = $env:CONFIG_ENC_KEY }
 $env:PCS_SERVER_START_REASON = "inicio_script_iniciar_servidor"
+if ([string]::IsNullOrWhiteSpace($env:PCS_SKIP_CORPORATE_EMAIL_STARTUP_SYNC)) {
+    $env:PCS_SKIP_CORPORATE_EMAIL_STARTUP_SYNC = "1"
+}
 Write-Info "Motivo de arranque enviado al backend: $env:PCS_SERVER_START_REASON"
 
 # Iniciar sin -Environment para compatibilidad con Windows PowerShell 5.1

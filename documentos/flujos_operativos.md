@@ -385,6 +385,28 @@ afecte dinero, documentos, licencias o seguridad.
 7. Pruebas: guardar seccion, recargar pagina, validar que otra seccion no cambio
    e imprimir una venta con impuesto para confirmar el bloque.
 
+## Venta por peso con bascula
+
+1. Abrir `Administrar empresa > Ventas > Carrito y venta directa` con
+   `empresa_id`.
+2. El navegador debe ser Chrome o Edge en HTTPS/local y la bascula debe exponer
+   un puerto serial/USB compatible con Web Serial.
+3. En el panel del lector, seleccionar baudios y unidad leida (`kg`, `g` o
+   `lb`), presionar `Conectar bascula` y aceptar el permiso del navegador.
+4. Si el plato o recipiente ya esta sobre la bascula, usar `Tara local`; PCS
+   descuenta ese peso en pantalla sin enviar comandos al equipo.
+5. El producto debe estar configurado con unidad de peso (`kg`, `g`, `lb`, `oz`
+   o alias). Si esta en `unidad`, el sistema bloquea aplicar peso para evitar
+   ventas decimales incorrectas.
+6. Escanear o digitar el SKU/codigo de barras. Si `aplicar peso` esta activo y
+   hay lectura mayor a cero, PCS manda la cantidad real al item del carrito.
+7. El backend acepta cantidades decimales solo para unidades de peso; en
+   unidades normales sigue exigiendo cantidades naturales positivas.
+8. Pruebas: producto `kg` con lectura real, producto `unidad` con lectura activa
+   debe bloquearse, desconectar/reconectar la bascula, validar que otro
+   `empresa_id` no accede al carrito ni a items ajenos mediante los endpoints
+   existentes.
+
 ## Firma electronica DIAN
 
 1. La empresa configura primero los datos base de facturacion electronica

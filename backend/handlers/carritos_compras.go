@@ -131,7 +131,7 @@ func EmpresaCarritosCompraHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 					WHERE empresa_id = ?
 						AND COALESCE(estado,'activo') = 'activo'
 						AND evento_operacion = 'venta_pagada'
-						AND datetime(COALESCE(fecha_evento, fecha_creacion, datetime('now','localtime'))) >= datetime('now','localtime', ?)`
+						AND pcs_ts(COALESCE(fecha_evento, fecha_creacion, CURRENT_TIMESTAMP)) >= pcs_ts('now','localtime', ?)`
 				args := []interface{}{empresaID, fmt.Sprintf("-%d day", days)}
 				if usuarioActual != "" {
 					query += " AND LOWER(COALESCE(usuario_creador,'')) = LOWER(?)"
@@ -2011,7 +2011,7 @@ func EmpresaCarritoItemsHandler(dbEmp *sql.DB) http.HandlerFunc {
 Pasos sugeridos:
 1) Cree al menos una bodega para la empresa (tabla 'bodegas').
 2) Asigne existencia para el producto en la bodega (tabla 'inventario_existencias'), por ejemplo:
-   INSERT INTO inventario_existencias (empresa_id, producto_id, bodega_id, cantidad, estado, fecha_creacion, fecha_actualizacion, usuario_creador) VALUES (<EMPRESA_ID>, <PRODUCTO_ID>, <BODEGA_ID>, 10, 'activo', datetime('now','localtime'), datetime('now','localtime'), '<USUARIO>');
+   INSERT INTO inventario_existencias (empresa_id, producto_id, bodega_id, cantidad, estado, fecha_creacion, fecha_actualizacion, usuario_creador) VALUES (<EMPRESA_ID>, <PRODUCTO_ID>, <BODEGA_ID>, 10, 'activo', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, '<USUARIO>');
 3) Alternativamente, establezca 'bodega_principal_id' en la tabla 'productos':
    UPDATE productos SET bodega_principal_id = <BODEGA_ID> WHERE empresa_id = <EMPRESA_ID> AND id = <PRODUCTO_ID>;
 4) Reintente agregar el producto al carrito.

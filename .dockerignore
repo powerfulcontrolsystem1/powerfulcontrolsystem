@@ -28,8 +28,6 @@ backend/tmp_tools/
 backend/tmp/
 backend/logs/
 backend/*.db
-backend/*.sqlite
-backend/*.sqlite3
 backend/backend
 backend/handlers/vendedor_config_handlers.go
 backend/handlers/vendedores_handlers.go

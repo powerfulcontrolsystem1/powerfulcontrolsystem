@@ -106,7 +106,7 @@ func EnsureCatalogoLegalPaisSchema(dbConn *sql.DB) error {
 	}
 	stmts := []string{
 		`CREATE TABLE IF NOT EXISTS catalogo_legal_pais_versiones (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			pais_codigo TEXT NOT NULL,
 			version TEXT NOT NULL,
 			nombre TEXT NOT NULL,
@@ -115,13 +115,13 @@ func EnsureCatalogoLegalPaisSchema(dbConn *sql.DB) error {
 			estado TEXT DEFAULT 'vigente',
 			fuente TEXT,
 			descripcion TEXT,
-			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
-			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+			fecha_creacion TEXT DEFAULT (CURRENT_TIMESTAMP),
+			fecha_actualizacion TEXT DEFAULT (CURRENT_TIMESTAMP),
 			actualizado_por TEXT,
 			UNIQUE(pais_codigo, version)
 		);`,
 		`CREATE TABLE IF NOT EXISTS catalogo_legal_pais_parametros (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			version_id INTEGER NOT NULL,
 			codigo TEXT NOT NULL,
 			grupo TEXT NOT NULL,
@@ -132,26 +132,26 @@ func EnsureCatalogoLegalPaisSchema(dbConn *sql.DB) error {
 			habilitado INTEGER DEFAULT 1,
 			orden INTEGER DEFAULT 0,
 			observaciones TEXT,
-			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
-			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+			fecha_creacion TEXT DEFAULT (CURRENT_TIMESTAMP),
+			fecha_actualizacion TEXT DEFAULT (CURRENT_TIMESTAMP),
 			actualizado_por TEXT,
 			UNIQUE(version_id, codigo)
 		);`,
 		`CREATE TABLE IF NOT EXISTS empresa_parametros_legales_aplicados (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL,
 			pais_codigo TEXT NOT NULL DEFAULT 'CO',
 			version TEXT NOT NULL,
 			auto_actualizar INTEGER DEFAULT 0,
 			fecha_ultima_revision TEXT,
-			fecha_aplicacion TEXT DEFAULT (datetime('now','localtime')),
+			fecha_aplicacion TEXT DEFAULT (CURRENT_TIMESTAMP),
 			usuario_creador TEXT,
 			modo_aplicacion TEXT DEFAULT 'manual',
 			estado TEXT DEFAULT 'activo',
 			resumen_json TEXT,
 			observaciones TEXT,
-			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
-			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+			fecha_creacion TEXT DEFAULT (CURRENT_TIMESTAMP),
+			fecha_actualizacion TEXT DEFAULT (CURRENT_TIMESTAMP),
 			UNIQUE(empresa_id, pais_codigo)
 		);`,
 		`CREATE INDEX IF NOT EXISTS ix_catalogo_legal_versiones_pais_estado ON catalogo_legal_pais_versiones(pais_codigo, estado, vigencia_desde);`,
@@ -199,7 +199,7 @@ func SeedCatalogoLegalColombiaBase(dbConn *sql.DB, usuario string) error {
 	versionID, err := insertSQLCompat(dbConn, `INSERT INTO catalogo_legal_pais_versiones (
 		pais_codigo, version, nombre, vigencia_desde, vigencia_hasta, estado, fuente, descripcion,
 		fecha_creacion, fecha_actualizacion, actualizado_por
-	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, datetime('now','localtime'), datetime('now','localtime'), ?)
+	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, ?)
 	ON CONFLICT(pais_codigo, version) DO UPDATE SET
 		nombre = excluded.nombre,
 		vigencia_desde = excluded.vigencia_desde,
@@ -207,7 +207,7 @@ func SeedCatalogoLegalColombiaBase(dbConn *sql.DB, usuario string) error {
 		estado = excluded.estado,
 		fuente = excluded.fuente,
 		descripcion = excluded.descripcion,
-		fecha_actualizacion = datetime('now','localtime'),
+		fecha_actualizacion = CURRENT_TIMESTAMP,
 		actualizado_por = excluded.actualizado_por
 	RETURNING id`,
 		"CO",
@@ -239,7 +239,7 @@ func SeedCatalogoLegalColombiaBase(dbConn *sql.DB, usuario string) error {
 		if _, err := insertSQLCompat(dbConn, `INSERT INTO catalogo_legal_pais_parametros (
 			version_id, codigo, grupo, nombre, tipo_valor, valor_numero, valor_texto, habilitado, orden,
 			observaciones, fecha_creacion, fecha_actualizacion, actualizado_por
-		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now','localtime'), datetime('now','localtime'), ?)
+		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, ?)
 		ON CONFLICT(version_id, codigo) DO UPDATE SET
 			grupo = excluded.grupo,
 			nombre = excluded.nombre,
@@ -249,7 +249,7 @@ func SeedCatalogoLegalColombiaBase(dbConn *sql.DB, usuario string) error {
 			habilitado = excluded.habilitado,
 			orden = excluded.orden,
 			observaciones = excluded.observaciones,
-			fecha_actualizacion = datetime('now','localtime'),
+			fecha_actualizacion = CURRENT_TIMESTAMP,
 			actualizado_por = excluded.actualizado_por
 		RETURNING id`,
 			versionID,
@@ -348,7 +348,7 @@ func GetEmpresaParametrosLegalesEstado(dbConn *sql.DB, empresaID int64, paisCodi
 	} else {
 		out.Mensaje = "Parametros legales al dia."
 	}
-	_, _ = execSQLCompat(dbConn, `UPDATE empresa_parametros_legales_aplicados SET fecha_ultima_revision = datetime('now','localtime'), fecha_actualizacion = datetime('now','localtime') WHERE empresa_id = ? AND pais_codigo = ?`, empresaID, latest.PaisCodigo)
+	_, _ = execSQLCompat(dbConn, `UPDATE empresa_parametros_legales_aplicados SET fecha_ultima_revision = CURRENT_TIMESTAMP, fecha_actualizacion = CURRENT_TIMESTAMP WHERE empresa_id = ? AND pais_codigo = ?`, empresaID, latest.PaisCodigo)
 	return out, nil
 }
 
@@ -376,11 +376,11 @@ func SetEmpresaParametrosLegalesAutoActualizar(dbConn *sql.DB, empresaID int64, 
 	_, err = insertSQLCompat(dbConn, `INSERT INTO empresa_parametros_legales_aplicados (
 		empresa_id, pais_codigo, version, auto_actualizar, fecha_ultima_revision, fecha_aplicacion,
 		usuario_creador, modo_aplicacion, estado, resumen_json, observaciones, fecha_creacion, fecha_actualizacion
-	) VALUES (?, ?, ?, ?, datetime('now','localtime'), datetime('now','localtime'), ?, 'preferencia', 'activo', '{}', ?, datetime('now','localtime'), datetime('now','localtime'))
+	) VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, ?, 'preferencia', 'activo', '{}', ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
 	ON CONFLICT(empresa_id, pais_codigo) DO UPDATE SET
 		auto_actualizar = excluded.auto_actualizar,
-		fecha_ultima_revision = datetime('now','localtime'),
-		fecha_actualizacion = datetime('now','localtime'),
+		fecha_ultima_revision = CURRENT_TIMESTAMP,
+		fecha_actualizacion = CURRENT_TIMESTAMP,
 		usuario_creador = excluded.usuario_creador,
 		observaciones = excluded.observaciones
 	RETURNING id`,
@@ -441,18 +441,18 @@ func ApplyEmpresaParametrosLegalesLatest(dbConn *sql.DB, empresaID int64, paisCo
 	id, err := insertSQLCompat(dbConn, `INSERT INTO empresa_parametros_legales_aplicados (
 		empresa_id, pais_codigo, version, auto_actualizar, fecha_ultima_revision, fecha_aplicacion,
 		usuario_creador, modo_aplicacion, estado, resumen_json, observaciones, fecha_creacion, fecha_actualizacion
-	) VALUES (?, ?, ?, ?, datetime('now','localtime'), datetime('now','localtime'), ?, ?, 'activo', ?, ?, datetime('now','localtime'), datetime('now','localtime'))
+	) VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, ?, ?, 'activo', ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
 	ON CONFLICT(empresa_id, pais_codigo) DO UPDATE SET
 		version = excluded.version,
 		auto_actualizar = excluded.auto_actualizar,
-		fecha_ultima_revision = datetime('now','localtime'),
-		fecha_aplicacion = datetime('now','localtime'),
+		fecha_ultima_revision = CURRENT_TIMESTAMP,
+		fecha_aplicacion = CURRENT_TIMESTAMP,
 		usuario_creador = excluded.usuario_creador,
 		modo_aplicacion = excluded.modo_aplicacion,
 		estado = 'activo',
 		resumen_json = excluded.resumen_json,
 		observaciones = excluded.observaciones,
-		fecha_actualizacion = datetime('now','localtime')
+		fecha_actualizacion = CURRENT_TIMESTAMP
 	RETURNING id`,
 		empresaID,
 		latest.PaisCodigo,

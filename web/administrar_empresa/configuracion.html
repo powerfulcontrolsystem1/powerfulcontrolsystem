@@ -363,6 +363,10 @@
           <span class="empresa-config-map-title">Formato monetario</span>
           <span>Moneda operativa, sistema num?rico y precisi?n decimal.</span>
         </a>
+        <a href="#configuracionPerfilTributarioColombia" class="empresa-config-map-item">
+          <span class="empresa-config-map-title">Perfil tributario Colombia</span>
+          <span>Persona, regimen, IVA, consumo y responsabilidades RUT.</span>
+        </a>
         <a href="/administrar_empresa/configuracion_impresora.html" class="empresa-config-map-item">
           <span class="empresa-config-map-title">Impresora</span>
           <span>Caj?n monedero, documentos de venta e impresoras del sistema.</span>
@@ -1089,6 +1093,91 @@
       </div>
 
       <div id="formatoNumericoMsg" class="form-help"></div>
+    </section>
+
+    <section id="configuracionPerfilTributarioColombia" class="card empresa-section">
+      <div class="empresa-section-header">
+        <h2>Perfil tributario Colombia</h2>
+        <button id="btnGuardarPerfilTributarioCO" type="button" class="btn">Guardar perfil</button>
+      </div>
+      <p class="form-help">Configura la clasificacion fiscal de la empresa segun el RUT. Esta seleccion orienta impuestos, facturacion electronica, retenciones y recordatorios de cumplimiento; no reemplaza la revision del contador.</p>
+
+      <div class="empresa-config-grid">
+        <div class="form">
+          <div class="form-row">
+            <div class="form-col">
+              <label class="form-label" for="tributarioTipoPersonaCO">Tipo de persona</label>
+              <select id="tributarioTipoPersonaCO" class="form-input">
+                <option value="">Seleccionar</option>
+                <option value="persona_natural">Persona natural</option>
+                <option value="persona_juridica">Persona juridica</option>
+              </select>
+            </div>
+            <div class="form-col">
+              <label class="form-label" for="tributarioNaturalezaCO">Subcategoria</label>
+              <select id="tributarioNaturalezaCO" class="form-input"></select>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-col">
+              <label class="form-label" for="tributarioRegimenCO">Regimen de renta</label>
+              <select id="tributarioRegimenCO" class="form-input">
+                <option value="">Seleccionar</option>
+                <option value="ordinario">Renta regimen ordinario</option>
+                <option value="simple">Regimen Simple de Tributacion - SIMPLE</option>
+                <option value="especial">Regimen Tributario Especial</option>
+                <option value="ingresos_patrimonio">Ingresos y patrimonio</option>
+                <option value="no_declarante_pn">Persona natural no obligada a declarar renta</option>
+              </select>
+            </div>
+            <div class="form-col">
+              <label class="form-label" for="tributarioIVAResponsabilidadCO">IVA</label>
+              <select id="tributarioIVAResponsabilidadCO" class="form-input">
+                <option value="">Seleccionar</option>
+                <option value="responsable_iva">Responsable de IVA</option>
+                <option value="no_responsable_iva">No responsable de IVA</option>
+                <option value="pj_no_responsable_iva_simple">Persona juridica no responsable de IVA por SIMPLE</option>
+                <option value="bienes_exentos">Productor/exportador de bienes exentos</option>
+                <option value="servicios_exterior">Prestador de servicios desde el exterior</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-col">
+              <label class="form-label" for="tributarioINCResponsabilidadCO">Impuesto nacional al consumo</label>
+              <select id="tributarioINCResponsabilidadCO" class="form-input">
+                <option value="no_aplica">No aplica</option>
+                <option value="responsable_inc">Responsable de INC</option>
+                <option value="no_responsable_inc_restaurantes_bares">No responsable de consumo restaurantes y bares</option>
+              </select>
+            </div>
+            <div class="form-col">
+              <label class="form-label" for="tributarioRutExtraCO">Responsabilidades RUT adicionales</label>
+              <select id="tributarioRutExtraCO" class="form-input" multiple size="6">
+                <option value="07">07 Retencion en la fuente a titulo de renta</option>
+                <option value="09">09 Retencion en la fuente en IVA</option>
+                <option value="13">13 Gran contribuyente</option>
+                <option value="14">14 Informante de exogena</option>
+                <option value="15">15 Autorretenedor</option>
+                <option value="16">16 Obligado a facturar por bienes excluidos/no gravados</option>
+                <option value="52">52 Facturador electronico</option>
+                <option value="55">55 Informante de beneficiarios finales</option>
+                <option value="59">59 Autorretencion especial renta</option>
+              </select>
+              <p class="form-help">Usa Ctrl o Shift para seleccionar varias. El sistema agregara automaticamente las responsabilidades base segun persona, regimen e IVA.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="form">
+          <h3 style="margin:0 0 8px 0;font-size:1rem;">Responsabilidades y obligaciones sugeridas</h3>
+          <div id="tributarioRutResumenCO" class="form-help" style="display:grid;gap:8px;margin-bottom:10px;"></div>
+          <div id="tributarioObligacionesResumenCO" class="form-help" style="display:grid;gap:8px;"></div>
+          <p class="form-help">Fuente de referencia: responsabilidades RUT DIAN y micrositio DIAN del Regimen Simple. Verifica contra el RUT real antes de declarar o emitir documentos.</p>
+        </div>
+      </div>
+
+      <div id="perfilTributarioCOMsg" class="form-help"></div>
     </section>
 
     <section id="configuracionImpresorasSistema" class="card empresa-section">
@@ -1832,6 +1921,13 @@
 
     function setFormatoNumericoMessage(text, type) {
       const box = document.getElementById('formatoNumericoMsg');
+      box.textContent = text || '';
+      box.className = type === 'error' ? 'error' : (type === 'success' ? 'success' : 'form-help');
+    }
+
+    function setPerfilTributarioCOMessage(text, type) {
+      const box = document.getElementById('perfilTributarioCOMsg');
+      if (!box) return;
       box.textContent = text || '';
       box.className = type === 'error' ? 'error' : (type === 'success' ? 'success' : 'form-help');
     }
@@ -3250,6 +3346,157 @@
       };
     }
 
+    const tributarioNaturalezasCO = {
+      persona_natural: [
+        ['natural_asalariado', 'Asalariado'],
+        ['natural_independiente', 'Independiente / cuenta propia'],
+        ['natural_comerciante', 'Comerciante'],
+        ['natural_profesional', 'Profesional independiente']
+      ],
+      persona_juridica: [
+        ['sas', 'Sociedad por Acciones Simplificada - SAS'],
+        ['ltda', 'Sociedad Limitada - LTDA'],
+        ['sa', 'Sociedad Anonima - S.A.'],
+        ['esal', 'Entidad sin animo de lucro - ESAL'],
+        ['entidad_publica', 'Entidad publica'],
+        ['sucursal_extranjera', 'Sucursal de sociedad extranjera'],
+        ['otra_juridica', 'Otra persona juridica']
+      ]
+    };
+
+    const tributarioResponsabilidadesCO = {
+      '04': 'Impuesto sobre la renta y complementarios - Regimen Tributario Especial',
+      '05': 'Impuesto sobre la renta y complementarios - Regimen Ordinario',
+      '06': 'Ingresos y patrimonio',
+      '07': 'Retencion en la fuente a titulo de renta',
+      '09': 'Retencion en la fuente en IVA',
+      '13': 'Gran contribuyente',
+      '14': 'Informante de exogena',
+      '15': 'Autorretenedor',
+      '16': 'Obligado a facturar por bienes excluidos/no gravados',
+      '19': 'Productor/exportador de bienes exentos',
+      '46': 'IVA prestadores de servicios desde el exterior',
+      '47': 'Regimen Simple de Tributacion - SIMPLE',
+      '48': 'Responsable de IVA',
+      '49': 'No responsable de IVA',
+      '50': 'No responsable de consumo restaurantes y bares',
+      '52': 'Facturador electronico',
+      '53': 'Persona juridica no responsable de IVA',
+      '55': 'Informante de beneficiarios finales',
+      '59': 'Autorretencion especial renta'
+    };
+
+    const tributarioObligacionesCO = {
+      renta: 'Declaracion de renta o cumplimiento equivalente segun RUT',
+      rst_declaracion_anual: 'Declaracion anual consolidada SIMPLE',
+      rst_anticipos_bimestrales: 'Anticipos bimestrales SIMPLE cuando aplique',
+      iva: 'Declaracion/recaudo de IVA cuando sea responsable',
+      inc: 'Impuesto nacional al consumo cuando aplique',
+      retencion_fuente: 'Retenciones en la fuente practicadas',
+      reteiva: 'Retencion de IVA cuando corresponda',
+      facturacion_electronica: 'Factura electronica, notas y documentos derivados',
+      informacion_exogena: 'Informacion exogena DIAN si esta obligado',
+      beneficiarios_finales: 'Reporte de beneficiarios finales cuando aplique',
+      ica: 'ICA/avisos/tableros municipal o integrado en SIMPLE segun municipio'
+    };
+
+    function parseJSONSafe(raw, fallback) {
+      if (typeof raw !== 'string' || !raw.trim()) return fallback;
+      try { return JSON.parse(raw); } catch (e) { return fallback; }
+    }
+
+    function syncTributarioNaturalezaOptions(selected) {
+      const tipo = String(document.getElementById('tributarioTipoPersonaCO').value || '').trim();
+      const select = document.getElementById('tributarioNaturalezaCO');
+      const options = tributarioNaturalezasCO[tipo] || [];
+      select.innerHTML = '<option value="">Seleccionar</option>' + options.map(function(item) {
+        return '<option value="' + item[0] + '">' + item[1] + '</option>';
+      }).join('');
+      select.value = options.some(function(item) { return item[0] === selected; }) ? selected : '';
+    }
+
+    function selectedTributarioExtraRUT() {
+      return Array.prototype.slice.call(document.getElementById('tributarioRutExtraCO').selectedOptions || []).map(function(opt) {
+        return String(opt.value || '').trim();
+      }).filter(Boolean);
+    }
+
+    function calculateTributarioCO() {
+      const tipo = String(document.getElementById('tributarioTipoPersonaCO').value || '').trim();
+      const regimen = String(document.getElementById('tributarioRegimenCO').value || '').trim();
+      const iva = String(document.getElementById('tributarioIVAResponsabilidadCO').value || '').trim();
+      const inc = String(document.getElementById('tributarioINCResponsabilidadCO').value || 'no_aplica').trim();
+      const codes = [];
+      const obligations = {};
+      function add(code) { if (code && codes.indexOf(code) === -1) codes.push(code); }
+      function enable(key) { obligations[key] = true; }
+
+      if (regimen === 'ordinario') { add('05'); enable('renta'); }
+      if (regimen === 'simple') { add('47'); enable('rst_declaracion_anual'); enable('ica'); if (tipo === 'persona_juridica') enable('rst_anticipos_bimestrales'); }
+      if (regimen === 'especial') { add('04'); enable('renta'); }
+      if (regimen === 'ingresos_patrimonio') { add('06'); }
+      if (iva === 'responsable_iva') { add('48'); enable('iva'); }
+      if (iva === 'no_responsable_iva') { add('49'); }
+      if (iva === 'pj_no_responsable_iva_simple') { add('53'); }
+      if (iva === 'bienes_exentos') { add('19'); add('48'); enable('iva'); }
+      if (iva === 'servicios_exterior') { add('46'); enable('iva'); }
+      if (inc === 'responsable_inc') { enable('inc'); }
+      if (inc === 'no_responsable_inc_restaurantes_bares') { add('50'); }
+      selectedTributarioExtraRUT().forEach(function(code) {
+        add(code);
+        if (code === '07') enable('retencion_fuente');
+        if (code === '09') enable('reteiva');
+        if (code === '14') enable('informacion_exogena');
+        if (code === '52') enable('facturacion_electronica');
+        if (code === '55') enable('beneficiarios_finales');
+      });
+      return { codes: codes.sort(), obligations: obligations };
+    }
+
+    function renderTributarioResumenCO() {
+      const calc = calculateTributarioCO();
+      const rutBox = document.getElementById('tributarioRutResumenCO');
+      const oblBox = document.getElementById('tributarioObligacionesResumenCO');
+      rutBox.innerHTML = calc.codes.length ? calc.codes.map(function(code) {
+        return '<span><strong>' + code + '</strong> ' + (tributarioResponsabilidadesCO[code] || 'Responsabilidad RUT') + '</span>';
+      }).join('') : '<span>Selecciona tipo de persona, regimen e IVA para ver responsabilidades sugeridas.</span>';
+      const activeObligations = Object.keys(calc.obligations).filter(function(key) { return calc.obligations[key]; });
+      oblBox.innerHTML = activeObligations.length ? activeObligations.map(function(key) {
+        return '<span>' + (tributarioObligacionesCO[key] || key) + '</span>';
+      }).join('') : '<span>Sin obligaciones sugeridas todavia.</span>';
+    }
+
+    function setPerfilTributarioCOFormData(cfg) {
+      const src = cfg && typeof cfg === 'object' ? cfg : {};
+      const tipo = String(src.tipo_persona_fiscal || '').trim();
+      document.getElementById('tributarioTipoPersonaCO').value = tipo;
+      syncTributarioNaturalezaOptions(String(src.naturaleza_juridica || '').trim());
+      document.getElementById('tributarioRegimenCO').value = String(src.regimen_tributario_colombia || src.regimen_fiscal || '').trim();
+      document.getElementById('tributarioIVAResponsabilidadCO').value = String(src.iva_responsabilidad || src.responsabilidad_tributaria || '').trim();
+      document.getElementById('tributarioINCResponsabilidadCO').value = String(src.inc_responsabilidad || 'no_aplica').trim() || 'no_aplica';
+      const savedCodes = parseJSONSafe(src.responsabilidades_rut_json, []);
+      Array.prototype.slice.call(document.getElementById('tributarioRutExtraCO').options || []).forEach(function(opt) {
+        opt.selected = savedCodes.indexOf(String(opt.value || '').trim()) !== -1;
+      });
+      renderTributarioResumenCO();
+    }
+
+    function getPerfilTributarioCOFormData() {
+      const calc = calculateTributarioCO();
+      return {
+        empresa_id: Number(empresaId),
+        tipo_persona_fiscal: String(document.getElementById('tributarioTipoPersonaCO').value || '').trim(),
+        naturaleza_juridica: String(document.getElementById('tributarioNaturalezaCO').value || '').trim(),
+        regimen_tributario_colombia: String(document.getElementById('tributarioRegimenCO').value || '').trim(),
+        iva_responsabilidad: String(document.getElementById('tributarioIVAResponsabilidadCO').value || '').trim(),
+        inc_responsabilidad: String(document.getElementById('tributarioINCResponsabilidadCO').value || 'no_aplica').trim(),
+        regimen_fiscal: String(document.getElementById('tributarioRegimenCO').value || '').trim(),
+        responsabilidad_tributaria: String(document.getElementById('tributarioIVAResponsabilidadCO').value || '').trim(),
+        responsabilidades_rut_json: JSON.stringify(calc.codes),
+        obligaciones_fiscales_json: JSON.stringify(calc.obligations)
+      };
+    }
+
     function setFormatoNumericoFormData(cfg) {
       const src = cfg && typeof cfg === 'object' ? cfg : {};
       const usarDecimales = src.usar_decimales !== false;
@@ -3316,6 +3563,7 @@
         setFacturaFormData(cfg || {});
         setIdentidadVisualFormData(cfg || {});
         setFormatoNumericoFormData(cfg || {});
+        setPerfilTributarioCOFormData(cfg || {});
       } catch (err) {
         setFacturaMessage('No se pudo cargar configuración de facturas: ' + (err && err.message ? err.message : err), 'error');
         setFormatoNumericoMessage('No se pudo cargar configuración monetaria: ' + (err && err.message ? err.message : err), 'error');
@@ -3409,6 +3657,21 @@
         setFormatoNumericoMessage('Formato monetario y numerico guardado correctamente.', 'success');
       } catch (err) {
         setFormatoNumericoMessage('No se pudo guardar formato monetario y numerico: ' + (err && err.message ? err.message : err), 'error');
+      }
+    }
+
+    async function guardarPerfilTributarioCOConfig() {
+      if (!empresaId) {
+        setPerfilTributarioCOMessage('No se puede guardar sin empresa seleccionada.', 'error');
+        return;
+      }
+      try {
+        const payload = getPerfilTributarioCOFormData();
+        const cfg = await upsertEmpresaConfigAvanzada(payload);
+        setPerfilTributarioCOFormData(cfg || payload);
+        setPerfilTributarioCOMessage('Perfil tributario Colombia guardado correctamente.', 'success');
+      } catch (err) {
+        setPerfilTributarioCOMessage('No se pudo guardar el perfil tributario: ' + (err && err.message ? err.message : err), 'error');
       }
     }
 
@@ -3605,6 +3868,7 @@
         setImpresorasMessage('No se detectó empresa_id para cargar impresoras.', 'error');
         setFacturaMessage('No se detectó empresa_id para cargar facturación.', 'error');
         setFormatoNumericoMessage('No se detectó empresa_id para cargar formato numérico.', 'error');
+        setPerfilTributarioCOMessage('No se detectó empresa_id para cargar perfil tributario.', 'error');
         setCorteReporteMessage('No se detecto empresa_id para cargar el reporte de corte.', 'error');
         setProductoCamposObligatoriosConfigMessage('No se detecto empresa_id para cargar campos obligatorios de productos.', 'error');
         return;
@@ -3670,6 +3934,15 @@
       document.getElementById('btnGuardarFormatoNumerico').addEventListener('click', guardarFormatoNumericoConfig);
       document.getElementById('formatoUsarDecimales').addEventListener('change', syncFormatoDecimalesUI);
       document.getElementById('formatoCantidadDecimales').addEventListener('blur', syncFormatoDecimalesUI);
+      document.getElementById('btnGuardarPerfilTributarioCO').addEventListener('click', guardarPerfilTributarioCOConfig);
+      document.getElementById('tributarioTipoPersonaCO').addEventListener('change', function() {
+        syncTributarioNaturalezaOptions('');
+        renderTributarioResumenCO();
+      });
+      ['tributarioNaturalezaCO','tributarioRegimenCO','tributarioIVAResponsabilidadCO','tributarioINCResponsabilidadCO','tributarioRutExtraCO'].forEach(function(id) {
+        var el = document.getElementById(id);
+        if (el) el.addEventListener('change', renderTributarioResumenCO);
+      });
       document.getElementById('btnRefrescarImpresoras').addEventListener('click', function() { loadImpresorasConfig(true); });
       document.getElementById('btnGuardarImpresora').addEventListener('click', guardarImpresora);
       document.getElementById('btnLimpiarImpresora').addEventListener('click', function() {

@@ -73,7 +73,7 @@ var ErrEmpresaVehiculoDuplicadoActivo = errors.New("ya existe un vehiculo activo
 func EnsureEmpresaVehiculosRegistroSchema(dbConn *sql.DB) error {
 	stmts := []string{
 		`CREATE TABLE IF NOT EXISTS empresa_vehiculos_registro (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL,
 			patente TEXT NOT NULL,
 			tipo_vehiculo TEXT DEFAULT 'automovil',
@@ -86,12 +86,12 @@ func EnsureEmpresaVehiculosRegistroSchema(dbConn *sql.DB) error {
 			conductor_documento TEXT,
 			motivo_ingreso TEXT,
 			referencia_externa TEXT,
-			fecha_ingreso TEXT DEFAULT (datetime('now','localtime')),
+			fecha_ingreso TEXT DEFAULT (CURRENT_TIMESTAMP),
 			fecha_salida TEXT,
 			estado_registro TEXT DEFAULT 'en_empresa',
 			usuario_salida TEXT,
-			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
-			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+			fecha_creacion TEXT DEFAULT (CURRENT_TIMESTAMP),
+			fecha_actualizacion TEXT DEFAULT (CURRENT_TIMESTAMP),
 			usuario_creador TEXT,
 			estado TEXT DEFAULT 'activo',
 			observaciones TEXT
@@ -100,14 +100,14 @@ func EnsureEmpresaVehiculosRegistroSchema(dbConn *sql.DB) error {
 		`CREATE INDEX IF NOT EXISTS ix_empresa_vehiculos_registro_empresa_patente ON empresa_vehiculos_registro(empresa_id, patente);`,
 		`CREATE INDEX IF NOT EXISTS ix_empresa_vehiculos_registro_empresa_estado ON empresa_vehiculos_registro(empresa_id, estado, estado_registro);`,
 		`CREATE TABLE IF NOT EXISTS empresa_vehiculos_configuracion (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL UNIQUE,
 			pais_codigo TEXT DEFAULT 'CO',
 			patente_regex TEXT,
 			patente_descripcion TEXT,
 			evitar_duplicado_activo INTEGER DEFAULT 1,
-			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
-			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+			fecha_creacion TEXT DEFAULT (CURRENT_TIMESTAMP),
+			fecha_actualizacion TEXT DEFAULT (CURRENT_TIMESTAMP),
 			usuario_creador TEXT,
 			estado TEXT DEFAULT 'activo',
 			observaciones TEXT
@@ -150,7 +150,7 @@ func EnsureEmpresaVehiculosRegistroSchema(dbConn *sql.DB) error {
 	if err := ensureColumnIfMissing(dbConn, "empresa_vehiculos_registro", "referencia_externa", "TEXT"); err != nil {
 		return err
 	}
-	if err := ensureColumnIfMissing(dbConn, "empresa_vehiculos_registro", "fecha_ingreso", "TEXT DEFAULT (datetime('now','localtime'))"); err != nil {
+	if err := ensureColumnIfMissing(dbConn, "empresa_vehiculos_registro", "fecha_ingreso", "TEXT DEFAULT (CURRENT_TIMESTAMP)"); err != nil {
 		return err
 	}
 	if err := ensureColumnIfMissing(dbConn, "empresa_vehiculos_registro", "fecha_salida", "TEXT"); err != nil {
@@ -357,7 +357,7 @@ func UpsertEmpresaVehiculosRegistroConfiguracion(dbConn *sql.DB, payload Empresa
 			usuario_creador = ?,
 			estado = ?,
 			observaciones = ?,
-			fecha_actualizacion = datetime('now','localtime')
+			fecha_actualizacion = CURRENT_TIMESTAMP
 		WHERE empresa_id = ?`,
 			cfg.PaisCodigo,
 			cfg.PatenteRegex,
@@ -385,7 +385,7 @@ func UpsertEmpresaVehiculosRegistroConfiguracion(dbConn *sql.DB, payload Empresa
 		observaciones,
 		fecha_creacion,
 		fecha_actualizacion
-	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, datetime('now','localtime'), datetime('now','localtime'))`,
+	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
 		cfg.EmpresaID,
 		cfg.PaisCodigo,
 		cfg.PatenteRegex,
@@ -419,11 +419,11 @@ func CreateEmpresaVehiculoRegistro(dbConn *sql.DB, item EmpresaVehiculoRegistro)
 		return 0, err
 	}
 
-	fechaIngreso, err := normalizeVehiculoDateTime(item.FechaIngreso, true)
+	fechaIngreso, err := normalizeVehiculopcs_ts(item.FechaIngreso, true)
 	if err != nil {
 		return 0, err
 	}
-	fechaSalida, err := normalizeVehiculoDateTime(item.FechaSalida, false)
+	fechaSalida, err := normalizeVehiculopcs_ts(item.FechaSalida, false)
 	if err != nil {
 		return 0, err
 	}
@@ -458,7 +458,7 @@ func CreateEmpresaVehiculoRegistro(dbConn *sql.DB, item EmpresaVehiculoRegistro)
 		?, ?,
 		?, ?, ?, ?,
 		?, COALESCE(NULLIF(?, ''), 'activo'), ?,
-		datetime('now','localtime'), datetime('now','localtime')
+		CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
 	)`,
 		item.EmpresaID,
 		item.Patente,
@@ -605,7 +605,7 @@ func ListEmpresaVehiculosPermanenciaReporte(dbConn *sql.DB, empresaID int64, inc
 		COALESCE(fecha_salida, ''),
 		COALESCE(estado_registro, 'en_empresa'),
 		COALESCE(estado, 'activo'),
-		CAST(ROUND((julianday(COALESCE(NULLIF(fecha_salida, ''), datetime('now','localtime'))) - julianday(COALESCE(NULLIF(fecha_ingreso, ''), datetime('now','localtime')))) * 24.0 * 60.0, 0) AS INTEGER) AS minutos_estadia
+		CAST(ROUND((pcs_julian_day(COALESCE(NULLIF(fecha_salida, ''), CURRENT_TIMESTAMP)) - pcs_julian_day(COALESCE(NULLIF(fecha_ingreso, ''), CURRENT_TIMESTAMP))) * 24.0 * 60.0, 0) AS INTEGER) AS minutos_estadia
 	FROM empresa_vehiculos_registro
 	WHERE empresa_id = ?`
 	args := []interface{}{empresaID}
@@ -707,11 +707,11 @@ func UpdateEmpresaVehiculoRegistro(dbConn *sql.DB, item EmpresaVehiculoRegistro)
 		return err
 	}
 
-	fechaIngreso, err := normalizeVehiculoDateTime(item.FechaIngreso, true)
+	fechaIngreso, err := normalizeVehiculopcs_ts(item.FechaIngreso, true)
 	if err != nil {
 		return err
 	}
-	fechaSalida, err := normalizeVehiculoDateTime(item.FechaSalida, false)
+	fechaSalida, err := normalizeVehiculopcs_ts(item.FechaSalida, false)
 	if err != nil {
 		return err
 	}
@@ -749,7 +749,7 @@ func UpdateEmpresaVehiculoRegistro(dbConn *sql.DB, item EmpresaVehiculoRegistro)
 		estado_registro = ?,
 		usuario_salida = ?,
 		observaciones = ?,
-		fecha_actualizacion = datetime('now','localtime')
+		fecha_actualizacion = CURRENT_TIMESTAMP
 	WHERE empresa_id = ? AND id = ?`,
 		item.Patente,
 		normalizeTipoVehiculo(item.TipoVehiculo),
@@ -812,7 +812,7 @@ func SetEmpresaVehiculoRegistroEstado(dbConn *sql.DB, empresaID, id int64, estad
 	}
 
 	res, err := dbConn.Exec(`UPDATE empresa_vehiculos_registro
-	SET estado = ?, fecha_actualizacion = datetime('now','localtime')
+	SET estado = ?, fecha_actualizacion = CURRENT_TIMESTAMP
 	WHERE empresa_id = ? AND id = ?`, estado, empresaID, id)
 	if err != nil {
 		return err
@@ -826,7 +826,7 @@ func SetEmpresaVehiculoRegistroEstado(dbConn *sql.DB, empresaID, id int64, estad
 
 // MarkEmpresaVehiculoSalida marca la salida de un vehiculo.
 func MarkEmpresaVehiculoSalida(dbConn *sql.DB, empresaID, id int64, fechaSalida, usuarioSalida, observaciones string) error {
-	fechaSalidaNorm, err := normalizeVehiculoDateTime(fechaSalida, false)
+	fechaSalidaNorm, err := normalizeVehiculopcs_ts(fechaSalida, false)
 	if err != nil {
 		return err
 	}
@@ -840,7 +840,7 @@ func MarkEmpresaVehiculoSalida(dbConn *sql.DB, empresaID, id int64, fechaSalida,
 		estado_registro = 'retirado',
 		usuario_salida = CASE WHEN ? <> '' THEN ? ELSE usuario_salida END,
 		observaciones = CASE WHEN ? <> '' THEN ? ELSE observaciones END,
-		fecha_actualizacion = datetime('now','localtime')
+		fecha_actualizacion = CURRENT_TIMESTAMP
 	WHERE empresa_id = ? AND id = ?`,
 		fechaSalidaNorm,
 		strings.TrimSpace(usuarioSalida), strings.TrimSpace(usuarioSalida),
@@ -991,7 +991,7 @@ func normalizeEstadoRegistroVehiculo(raw string) string {
 	}
 }
 
-func normalizeVehiculoDateTime(raw string, allowNow bool) (string, error) {
+func normalizeVehiculopcs_ts(raw string, allowNow bool) (string, error) {
 	value := strings.TrimSpace(raw)
 	if value == "" {
 		if allowNow {

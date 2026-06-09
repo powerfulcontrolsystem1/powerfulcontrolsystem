@@ -585,7 +585,7 @@ func EnsureEmpresaBackupsSchema(dbConn *sql.DB) error {
 
 	stmts := []string{
 		`CREATE TABLE IF NOT EXISTS empresa_backups (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL,
 			codigo TEXT NOT NULL,
 			nombre TEXT NOT NULL,
@@ -603,8 +603,8 @@ func EnsureEmpresaBackupsSchema(dbConn *sql.DB) error {
 			metadata_json TEXT DEFAULT '{}',
 			restaurado_en TEXT,
 			restaurado_por TEXT,
-			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
-			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+			fecha_creacion TEXT DEFAULT (CURRENT_TIMESTAMP),
+			fecha_actualizacion TEXT DEFAULT (CURRENT_TIMESTAMP),
 			usuario_creador TEXT,
 			estado TEXT DEFAULT 'activo',
 			observaciones TEXT,
@@ -613,7 +613,7 @@ func EnsureEmpresaBackupsSchema(dbConn *sql.DB) error {
 		`CREATE INDEX IF NOT EXISTS ix_empresa_backups_empresa_fecha ON empresa_backups(empresa_id, fecha_creacion DESC, id DESC);`,
 		`CREATE INDEX IF NOT EXISTS ix_empresa_backups_empresa_estado ON empresa_backups(empresa_id, estado, id DESC);`,
 		`CREATE TABLE IF NOT EXISTS empresa_backups_restauraciones (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL,
 			backup_id INTEGER NOT NULL,
 			codigo_backup TEXT,
@@ -622,8 +622,8 @@ func EnsureEmpresaBackupsSchema(dbConn *sql.DB) error {
 			tablas_omitidas_json TEXT DEFAULT '[]',
 			resultado TEXT DEFAULT 'ok',
 			detalle_json TEXT DEFAULT '{}',
-			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
-			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+			fecha_creacion TEXT DEFAULT (CURRENT_TIMESTAMP),
+			fecha_actualizacion TEXT DEFAULT (CURRENT_TIMESTAMP),
 			usuario_creador TEXT,
 			estado TEXT DEFAULT 'activo',
 			observaciones TEXT
@@ -1320,7 +1320,7 @@ func RestoreEmpresaBackupByID(dbConn *sql.DB, empresaID, backupID int64, usuario
 		UPDATE empresa_backups
 		SET restaurado_en = ?,
 			restaurado_por = ?,
-			fecha_actualizacion = datetime('now','localtime')
+			fecha_actualizacion = CURRENT_TIMESTAMP
 		WHERE empresa_id = ? AND id = ?
 	`, now, executor, empresaID, backupID)
 	if err != nil {
@@ -1402,7 +1402,7 @@ func PurgeEmpresaDataByDateCorte(dbConn *sql.DB, empresaID int64, fechaCorte str
 			continue
 		}
 
-		query := "DELETE FROM " + table + " WHERE empresa_id = ? AND COALESCE(" + dateColumn + ", '') <> '' AND datetime(" + dateColumn + ") <= datetime(?)"
+		query := "DELETE FROM " + table + " WHERE empresa_id = ? AND COALESCE(" + dateColumn + ", '') <> '' AND pcs_ts(" + dateColumn + ") <= pcs_ts(?)"
 		execResult, execErr := tx.Exec(query, empresaID, fechaCorte)
 		if execErr != nil {
 			return nil, execErr
@@ -1489,7 +1489,7 @@ func ResetEmpresaOperationalData(dbConn *sql.DB, empresaID int64, options Empres
 				result.TablasSinFecha = append(result.TablasSinFecha, table)
 				continue
 			}
-			whereSQL += " AND COALESCE(" + dateColumn + ", '') <> '' AND datetime(" + dateColumn + ") <= datetime(?)"
+			whereSQL += " AND COALESCE(" + dateColumn + ", '') <> '' AND pcs_ts(" + dateColumn + ") <= pcs_ts(?)"
 			args = append(args, fechaCorte)
 		}
 
@@ -1540,7 +1540,7 @@ func SetEmpresaBackupEstadoByID(dbConn *sql.DB, empresaID, backupID int64, estad
 	}
 	_, err := dbConn.Exec(`
 		UPDATE empresa_backups
-		SET estado = ?, fecha_actualizacion = datetime('now','localtime')
+		SET estado = ?, fecha_actualizacion = CURRENT_TIMESTAMP
 		WHERE empresa_id = ? AND id = ?
 	`, normalizeEmpresaBackupEstado(estado), empresaID, backupID)
 	return err

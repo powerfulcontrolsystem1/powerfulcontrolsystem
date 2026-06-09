@@ -192,11 +192,11 @@ func EnsureEmpresaFinanzasSchema(dbConn *sql.DB) error {
 
 	stmts := []string{
 		`CREATE TABLE IF NOT EXISTS empresa_finanzas_movimientos (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL,
 			tipo_movimiento TEXT NOT NULL,
 			codigo TEXT NOT NULL,
-			fecha_movimiento TEXT DEFAULT (datetime('now','localtime')),
+			fecha_movimiento TEXT DEFAULT (CURRENT_TIMESTAMP),
 			periodo_contable TEXT,
 			categoria TEXT,
 			subcategoria TEXT,
@@ -223,15 +223,15 @@ func EnsureEmpresaFinanzasSchema(dbConn *sql.DB) error {
 			caja_turno TEXT,
 			caja_sucursal_id INTEGER DEFAULT 0,
 			aprobado_por TEXT,
-			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
-			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+			fecha_creacion TEXT DEFAULT (CURRENT_TIMESTAMP),
+			fecha_actualizacion TEXT DEFAULT (CURRENT_TIMESTAMP),
 			usuario_creador TEXT,
 			estado TEXT DEFAULT 'activo',
 			observaciones TEXT,
 			UNIQUE(empresa_id, codigo)
 		);`,
 		`CREATE TABLE IF NOT EXISTS empresa_finanzas_configuracion (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL UNIQUE,
 			habilitar_ingresos INTEGER DEFAULT 1,
 			habilitar_egresos INTEGER DEFAULT 1,
@@ -252,14 +252,14 @@ func EnsureEmpresaFinanzasSchema(dbConn *sql.DB) error {
 			cuenta_retenciones_pagar TEXT DEFAULT '236595',
 			cuentas_ingreso_categoria TEXT,
 			cuentas_egreso_categoria TEXT,
-			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
-			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+			fecha_creacion TEXT DEFAULT (CURRENT_TIMESTAMP),
+			fecha_actualizacion TEXT DEFAULT (CURRENT_TIMESTAMP),
 			usuario_creador TEXT,
 			estado TEXT DEFAULT 'activo',
 			observaciones TEXT
 		);`,
 		`CREATE TABLE IF NOT EXISTS empresa_finanzas_periodos (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL,
 			periodo TEXT NOT NULL,
 			fecha_inicio TEXT,
@@ -267,20 +267,20 @@ func EnsureEmpresaFinanzasSchema(dbConn *sql.DB) error {
 			estado TEXT DEFAULT 'abierto',
 			fecha_cierre TEXT,
 			cerrado_por TEXT,
-			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
-			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+			fecha_creacion TEXT DEFAULT (CURRENT_TIMESTAMP),
+			fecha_actualizacion TEXT DEFAULT (CURRENT_TIMESTAMP),
 			usuario_creador TEXT,
 			observaciones TEXT,
 			UNIQUE(empresa_id, periodo)
 		);`,
 		`CREATE TABLE IF NOT EXISTS empresa_cierres_caja (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL,
 			sucursal_id INTEGER DEFAULT 0,
 			caja_codigo TEXT NOT NULL,
 			turno TEXT DEFAULT 'general',
-			fecha_operacion TEXT DEFAULT (date('now','localtime')),
-			fecha_apertura TEXT DEFAULT (datetime('now','localtime')),
+			fecha_operacion TEXT DEFAULT (CURRENT_DATE),
+			fecha_apertura TEXT DEFAULT (CURRENT_TIMESTAMP),
 			fecha_cierre TEXT,
 			estado_cierre TEXT DEFAULT 'abierto',
 			apertura_monto REAL DEFAULT 0,
@@ -303,18 +303,18 @@ func EnsureEmpresaFinanzasSchema(dbConn *sql.DB) error {
 			propinas_neto REAL DEFAULT 0,
 			propinas_conciliado_en TEXT,
 			propinas_conciliado_por TEXT,
-			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
-			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+			fecha_creacion TEXT DEFAULT (CURRENT_TIMESTAMP),
+			fecha_actualizacion TEXT DEFAULT (CURRENT_TIMESTAMP),
 			usuario_creador TEXT,
 			estado TEXT DEFAULT 'activo',
 			observaciones TEXT,
 			UNIQUE(empresa_id, sucursal_id, caja_codigo, fecha_operacion, turno, usuario_creador)
 		);`,
 		`CREATE TABLE IF NOT EXISTS empresa_finanzas_bancos_movimientos (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL,
 			periodo_contable TEXT,
-			fecha_movimiento TEXT DEFAULT (datetime('now','localtime')),
+			fecha_movimiento TEXT DEFAULT (CURRENT_TIMESTAMP),
 			fecha_valor TEXT,
 			cuenta_bancaria TEXT,
 			banco_nombre TEXT,
@@ -331,8 +331,8 @@ func EnsureEmpresaFinanzasSchema(dbConn *sql.DB) error {
 			conciliado_por TEXT,
 			origen TEXT DEFAULT 'manual',
 			hash_movimiento TEXT NOT NULL,
-			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
-			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+			fecha_creacion TEXT DEFAULT (CURRENT_TIMESTAMP),
+			fecha_actualizacion TEXT DEFAULT (CURRENT_TIMESTAMP),
 			usuario_creador TEXT,
 			estado TEXT DEFAULT 'activo',
 			observaciones TEXT,
@@ -353,7 +353,7 @@ func EnsureEmpresaFinanzasSchema(dbConn *sql.DB) error {
 		}
 	}
 
-	if err := ensureColumnIfMissing(dbConn, "empresa_finanzas_movimientos", "fecha_movimiento", "TEXT DEFAULT (datetime('now','localtime'))"); err != nil {
+	if err := ensureColumnIfMissing(dbConn, "empresa_finanzas_movimientos", "fecha_movimiento", "TEXT DEFAULT (CURRENT_TIMESTAMP)"); err != nil {
 		return err
 	}
 	if err := ensureColumnIfMissing(dbConn, "empresa_finanzas_movimientos", "periodo_contable", "TEXT"); err != nil {
@@ -498,10 +498,10 @@ func EnsureEmpresaFinanzasSchema(dbConn *sql.DB) error {
 	if err := ensureColumnIfMissing(dbConn, "empresa_cierres_caja", "turno", "TEXT DEFAULT 'general'"); err != nil {
 		return err
 	}
-	if err := ensureColumnIfMissing(dbConn, "empresa_cierres_caja", "fecha_operacion", "TEXT DEFAULT (date('now','localtime'))"); err != nil {
+	if err := ensureColumnIfMissing(dbConn, "empresa_cierres_caja", "fecha_operacion", "TEXT DEFAULT (CURRENT_DATE)"); err != nil {
 		return err
 	}
-	if err := ensureColumnIfMissing(dbConn, "empresa_cierres_caja", "fecha_apertura", "TEXT DEFAULT (datetime('now','localtime'))"); err != nil {
+	if err := ensureColumnIfMissing(dbConn, "empresa_cierres_caja", "fecha_apertura", "TEXT DEFAULT (CURRENT_TIMESTAMP)"); err != nil {
 		return err
 	}
 	if err := ensureColumnIfMissing(dbConn, "empresa_cierres_caja", "fecha_cierre", "TEXT"); err != nil {
@@ -588,7 +588,7 @@ func EnsureEmpresaFinanzasSchema(dbConn *sql.DB) error {
 	if err := ensureColumnIfMissing(dbConn, "empresa_finanzas_bancos_movimientos", "periodo_contable", "TEXT"); err != nil {
 		return err
 	}
-	if err := ensureColumnIfMissing(dbConn, "empresa_finanzas_bancos_movimientos", "fecha_movimiento", "TEXT DEFAULT (datetime('now','localtime'))"); err != nil {
+	if err := ensureColumnIfMissing(dbConn, "empresa_finanzas_bancos_movimientos", "fecha_movimiento", "TEXT DEFAULT (CURRENT_TIMESTAMP)"); err != nil {
 		return err
 	}
 	if err := ensureColumnIfMissing(dbConn, "empresa_finanzas_bancos_movimientos", "fecha_valor", "TEXT"); err != nil {
@@ -975,7 +975,7 @@ func UpsertEmpresaFinanzasConfiguracion(dbConn *sql.DB, cfg EmpresaFinanzasConfi
 		cuentas_ingreso_categoria, cuentas_egreso_categoria,
 		usuario_creador, estado, observaciones,
 		fecha_creacion, fecha_actualizacion
-	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now','localtime'), datetime('now','localtime'))
+	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
 	ON CONFLICT(empresa_id) DO UPDATE SET
 		habilitar_ingresos = excluded.habilitar_ingresos,
 		habilitar_egresos = excluded.habilitar_egresos,
@@ -999,7 +999,7 @@ func UpsertEmpresaFinanzasConfiguracion(dbConn *sql.DB, cfg EmpresaFinanzasConfi
 		usuario_creador = excluded.usuario_creador,
 		estado = excluded.estado,
 		observaciones = excluded.observaciones,
-		fecha_actualizacion = datetime('now','localtime')`,
+		fecha_actualizacion = CURRENT_TIMESTAMP`,
 		cfg.EmpresaID,
 		boolToInt(cfg.HabilitarIngresos),
 		boolToInt(cfg.HabilitarEgresos),
@@ -1074,7 +1074,7 @@ func CreateEmpresaFinanzasMovimiento(dbConn *sql.DB, m EmpresaFinanzasMovimiento
 		?, ?, ?,
 		?, ?, ?, ?, ?, ?,
 		?, ?, ?,
-		datetime('now','localtime'), datetime('now','localtime')
+		CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
 	)`,
 		m.EmpresaID, m.TipoMovimiento, m.Codigo, m.FechaMovimiento,
 		m.PeriodoContable,
@@ -1152,7 +1152,7 @@ func ListEmpresaFinanzasMovimientos(dbConn *sql.DB, empresaID int64, f EmpresaFi
 		args = append(args, like, like, like, like, like)
 	}
 
-	query += ` ORDER BY datetime(fecha_movimiento) DESC, id DESC`
+	query += ` ORDER BY pcs_ts(fecha_movimiento) DESC, id DESC`
 	limit := f.Limit
 	if limit <= 0 {
 		limit = 200
@@ -1255,7 +1255,7 @@ func UpdateEmpresaFinanzasMovimiento(dbConn *sql.DB, m EmpresaFinanzasMovimiento
 		aprobado_por = ?,
 		observaciones = ?,
 		estado = ?,
-		fecha_actualizacion = datetime('now','localtime')
+		fecha_actualizacion = CURRENT_TIMESTAMP
 	WHERE empresa_id = ? AND id = ?`,
 		m.TipoMovimiento,
 		m.Codigo,
@@ -1319,7 +1319,7 @@ func UpdateEmpresaFinanzasMovimientoComprobante(dbConn *sql.DB, empresaID, id in
 
 	res, err := dbConn.Exec(`UPDATE empresa_finanzas_movimientos
 		SET comprobante_url = ?,
-			fecha_actualizacion = datetime('now','localtime')
+			fecha_actualizacion = CURRENT_TIMESTAMP
 		WHERE empresa_id = ? AND id = ?`, comprobanteURL, empresaID, id)
 	if err != nil {
 		return err
@@ -1346,7 +1346,7 @@ func SetEmpresaFinanzasMovimientoEstado(dbConn *sql.DB, empresaID, id int64, est
 		return ErrPeriodoFinancieroCerrado
 	}
 	res, err := dbConn.Exec(`UPDATE empresa_finanzas_movimientos
-	SET estado = ?, fecha_actualizacion = datetime('now','localtime')
+	SET estado = ?, fecha_actualizacion = CURRENT_TIMESTAMP
 	WHERE empresa_id = ? AND id = ?`, estado, empresaID, id)
 	if err != nil {
 		return err
@@ -1479,7 +1479,7 @@ func UpsertEmpresaFinanzasPeriodo(dbConn *sql.DB, p EmpresaFinanzasPeriodo) (int
 		observaciones,
 		fecha_creacion,
 		fecha_actualizacion
-	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now','localtime'), datetime('now','localtime'))
+	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
 	ON CONFLICT(empresa_id, periodo) DO UPDATE SET
 		fecha_inicio = excluded.fecha_inicio,
 		fecha_fin = excluded.fecha_fin,
@@ -1488,7 +1488,7 @@ func UpsertEmpresaFinanzasPeriodo(dbConn *sql.DB, p EmpresaFinanzasPeriodo) (int
 		cerrado_por = excluded.cerrado_por,
 		usuario_creador = excluded.usuario_creador,
 		observaciones = excluded.observaciones,
-		fecha_actualizacion = datetime('now','localtime')`,
+		fecha_actualizacion = CURRENT_TIMESTAMP`,
 		p.EmpresaID,
 		p.Periodo,
 		p.FechaInicio,
@@ -1596,7 +1596,7 @@ func CreateEmpresaCierreCaja(dbConn *sql.DB, cierre EmpresaCierreCaja) (int64, e
 		?, ?, ?, ?, ?,
 		?, ?,
 		?, ?, ?,
-		datetime('now','localtime'), datetime('now','localtime')
+		CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
 	)`,
 		cierre.EmpresaID, cierre.SucursalID, cierre.CajaCodigo, cierre.Turno,
 		cierre.FechaOperacion, cierre.FechaApertura, cierre.FechaCierre, cierre.EstadoCierre,
@@ -1847,7 +1847,7 @@ func GetEmpresaCierreCajaAbiertaUsuario(dbConn *sql.DB, empresaID, cierreCajaID 
 		query += ` AND UPPER(COALESCE(caja_codigo, '')) = ? AND LOWER(COALESCE(turno, 'general')) = ? AND COALESCE(sucursal_id, 0) = ?`
 		args = append(args, cajaCodigo, turno, sucursalID)
 	}
-	query += ` ORDER BY datetime(fecha_apertura) DESC, id DESC LIMIT 1`
+	query += ` ORDER BY pcs_ts(fecha_apertura) DESC, id DESC LIMIT 1`
 
 	var item EmpresaCierreCaja
 	var incidencia int
@@ -1903,7 +1903,7 @@ func RegistrarIngresoEfectivoCierreCaja(dbConn *sql.DB, empresaID, cierreCajaID 
 	SET ingresos_efectivo = COALESCE(ingresos_efectivo, 0) + ?,
 		caja_teorica = COALESCE(apertura_monto, 0) + COALESCE(ingresos_efectivo, 0) + ? - COALESCE(egresos_efectivo, 0) - COALESCE(retiros_efectivo, 0),
 		diferencia_caja = (COALESCE(apertura_monto, 0) + COALESCE(ingresos_efectivo, 0) + ? - COALESCE(egresos_efectivo, 0) - COALESCE(retiros_efectivo, 0)) - COALESCE(caja_fisica, 0),
-		fecha_actualizacion = datetime('now','localtime')
+		fecha_actualizacion = CURRENT_TIMESTAMP
 	WHERE empresa_id = ?
 	  AND id = ?
 	  AND LOWER(COALESCE(estado_cierre, 'abierto')) = 'abierto'
@@ -1941,7 +1941,7 @@ func RegistrarMovimientoEfectivoCierreCaja(dbConn *sql.DB, empresaID, cierreCaja
 	SET egresos_efectivo = COALESCE(egresos_efectivo, 0) + ?,
 		caja_teorica = COALESCE(apertura_monto, 0) + COALESCE(ingresos_efectivo, 0) - (COALESCE(egresos_efectivo, 0) + ?) - COALESCE(retiros_efectivo, 0),
 		diferencia_caja = (COALESCE(apertura_monto, 0) + COALESCE(ingresos_efectivo, 0) - (COALESCE(egresos_efectivo, 0) + ?) - COALESCE(retiros_efectivo, 0)) - COALESCE(caja_fisica, 0),
-		fecha_actualizacion = datetime('now','localtime')
+		fecha_actualizacion = CURRENT_TIMESTAMP
 	WHERE empresa_id = ?
 	  AND id = ?
 	  AND LOWER(COALESCE(estado_cierre, 'abierto')) = 'abierto'
@@ -2030,7 +2030,7 @@ func UpdateEmpresaCierreCaja(dbConn *sql.DB, cierre EmpresaCierreCaja) error {
 		propinas_conciliado_por = ?,
 		estado = ?,
 		observaciones = ?,
-		fecha_actualizacion = datetime('now','localtime')
+		fecha_actualizacion = CURRENT_TIMESTAMP
 	WHERE empresa_id = ? AND id = ?`,
 		cierre.SucursalID,
 		cierre.CajaCodigo,
@@ -2197,7 +2197,7 @@ func SetEmpresaCierreCajaEstado(dbConn *sql.DB, empresaID, id int64, estado stri
 		diferencia_caja = ?,
 		tiene_incidencia = ?,
 		observaciones = ?,
-		fecha_actualizacion = datetime('now','localtime')
+		fecha_actualizacion = CURRENT_TIMESTAMP
 	WHERE empresa_id = ? AND id = ?`,
 		estado,
 		fechaCierre,
@@ -2225,7 +2225,7 @@ func SetEmpresaCierreCajaEstado(dbConn *sql.DB, empresaID, id int64, estado stri
 func SetEmpresaCierreCajaRegistroEstado(dbConn *sql.DB, empresaID, id int64, estado string) error {
 	estado = normalizeEstadoMovimiento(estado)
 	res, err := dbConn.Exec(`UPDATE empresa_cierres_caja
-	SET estado = ?, fecha_actualizacion = datetime('now','localtime')
+	SET estado = ?, fecha_actualizacion = CURRENT_TIMESTAMP
 	WHERE empresa_id = ? AND id = ?`, estado, empresaID, id)
 	if err != nil {
 		return err

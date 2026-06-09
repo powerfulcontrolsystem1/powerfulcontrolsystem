@@ -480,7 +480,7 @@ func EnsureEmpresaModulosColombiaSchema(dbConn *sql.DB) error {
 	}
 	stmts := []string{
 		`CREATE TABLE IF NOT EXISTS empresa_modulos_colombia_registros (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL,
 			modulo TEXT NOT NULL,
 			tipo TEXT DEFAULT 'general',
@@ -503,7 +503,7 @@ func EnsureEmpresaModulosColombiaSchema(dbConn *sql.DB) error {
 		)`,
 		`CREATE INDEX IF NOT EXISTS ix_modulos_colombia_registros_empresa ON empresa_modulos_colombia_registros(empresa_id,modulo,estado,fecha_vencimiento)`,
 		`CREATE TABLE IF NOT EXISTS empresa_modulos_colombia_eventos (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL,
 			modulo TEXT NOT NULL,
 			registro_id INTEGER DEFAULT 0,
@@ -516,7 +516,7 @@ func EnsureEmpresaModulosColombiaSchema(dbConn *sql.DB) error {
 		)`,
 		`CREATE INDEX IF NOT EXISTS ix_modulos_colombia_eventos_empresa ON empresa_modulos_colombia_eventos(empresa_id,modulo,registro_id)`,
 		`CREATE TABLE IF NOT EXISTS empresa_modulos_colombia_evidencias (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL,
 			modulo TEXT NOT NULL,
 			registro_id INTEGER NOT NULL,
@@ -529,7 +529,7 @@ func EnsureEmpresaModulosColombiaSchema(dbConn *sql.DB) error {
 		)`,
 		`CREATE INDEX IF NOT EXISTS ix_modulos_colombia_evidencias_empresa ON empresa_modulos_colombia_evidencias(empresa_id,modulo,registro_id)`,
 		`CREATE TABLE IF NOT EXISTS empresa_modulos_colombia_aprobaciones (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL,
 			modulo TEXT NOT NULL,
 			registro_id INTEGER NOT NULL,
@@ -545,7 +545,7 @@ func EnsureEmpresaModulosColombiaSchema(dbConn *sql.DB) error {
 		)`,
 		`CREATE INDEX IF NOT EXISTS ix_modulos_colombia_aprobaciones_empresa ON empresa_modulos_colombia_aprobaciones(empresa_id,modulo,registro_id,estado)`,
 		`CREATE TABLE IF NOT EXISTS empresa_modulos_colombia_tareas (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL,
 			modulo TEXT NOT NULL,
 			registro_id INTEGER NOT NULL,

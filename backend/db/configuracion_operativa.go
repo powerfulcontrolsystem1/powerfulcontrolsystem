@@ -228,7 +228,7 @@ func normalizeConfiguracionOperativaEvento(raw string) string {
 func EnsureEmpresaConfiguracionOperativaSchema(dbConn *sql.DB) error {
 	stmts := []string{
 		`CREATE TABLE IF NOT EXISTS empresa_configuracion_operativa (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL UNIQUE,
 			metodo_pago_efectivo INTEGER DEFAULT 1,
 			metodo_pago_tarjeta_credito INTEGER DEFAULT 1,
@@ -238,8 +238,8 @@ func EnsureEmpresaConfiguracionOperativaSchema(dbConn *sql.DB) error {
 			metodo_pago_codigo_descuento INTEGER DEFAULT 1,
 			habilitar_propinas INTEGER DEFAULT 1,
 			habilitar_comisiones INTEGER DEFAULT 1,
-			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
-			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+			fecha_creacion TEXT DEFAULT (CURRENT_TIMESTAMP),
+			fecha_actualizacion TEXT DEFAULT (CURRENT_TIMESTAMP),
 			usuario_creador TEXT,
 			estado TEXT DEFAULT 'activo',
 			observaciones TEXT
@@ -247,7 +247,7 @@ func EnsureEmpresaConfiguracionOperativaSchema(dbConn *sql.DB) error {
 		`CREATE UNIQUE INDEX IF NOT EXISTS ux_empresa_configuracion_operativa_empresa ON empresa_configuracion_operativa(empresa_id);`,
 		`CREATE INDEX IF NOT EXISTS ix_empresa_configuracion_operativa_estado ON empresa_configuracion_operativa(empresa_id, estado);`,
 		`CREATE TABLE IF NOT EXISTS empresa_configuracion_operativa_roles (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL,
 			rol TEXT NOT NULL,
 			metodo_pago_efectivo INTEGER DEFAULT 1,
@@ -258,8 +258,8 @@ func EnsureEmpresaConfiguracionOperativaSchema(dbConn *sql.DB) error {
 			metodo_pago_codigo_descuento INTEGER DEFAULT 1,
 			habilitar_propinas INTEGER DEFAULT 1,
 			habilitar_comisiones INTEGER DEFAULT 1,
-			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
-			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+			fecha_creacion TEXT DEFAULT (CURRENT_TIMESTAMP),
+			fecha_actualizacion TEXT DEFAULT (CURRENT_TIMESTAMP),
 			usuario_creador TEXT,
 			estado TEXT DEFAULT 'activo',
 			observaciones TEXT
@@ -267,7 +267,7 @@ func EnsureEmpresaConfiguracionOperativaSchema(dbConn *sql.DB) error {
 		`CREATE UNIQUE INDEX IF NOT EXISTS ux_empresa_configuracion_operativa_roles_empresa_rol ON empresa_configuracion_operativa_roles(empresa_id, rol);`,
 		`CREATE INDEX IF NOT EXISTS ix_empresa_configuracion_operativa_roles_estado ON empresa_configuracion_operativa_roles(empresa_id, estado, rol);`,
 		`CREATE TABLE IF NOT EXISTS empresa_configuracion_operativa_politicas (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL,
 			canal_venta TEXT DEFAULT '',
 			sucursal_id INTEGER DEFAULT 0,
@@ -281,8 +281,8 @@ func EnsureEmpresaConfiguracionOperativaSchema(dbConn *sql.DB) error {
 			metodo_pago_codigo_descuento INTEGER DEFAULT 1,
 			habilitar_propinas INTEGER DEFAULT 1,
 			habilitar_comisiones INTEGER DEFAULT 1,
-			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
-			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+			fecha_creacion TEXT DEFAULT (CURRENT_TIMESTAMP),
+			fecha_actualizacion TEXT DEFAULT (CURRENT_TIMESTAMP),
 			usuario_creador TEXT,
 			estado TEXT DEFAULT 'activo',
 			observaciones TEXT
@@ -290,14 +290,14 @@ func EnsureEmpresaConfiguracionOperativaSchema(dbConn *sql.DB) error {
 		`CREATE UNIQUE INDEX IF NOT EXISTS ux_empresa_configuracion_operativa_politicas_ctx ON empresa_configuracion_operativa_politicas(empresa_id, canal_venta, sucursal_id, turno);`,
 		`CREATE INDEX IF NOT EXISTS ix_empresa_configuracion_operativa_politicas_estado ON empresa_configuracion_operativa_politicas(empresa_id, estado, prioridad, id DESC);`,
 		`CREATE TABLE IF NOT EXISTS empresa_configuracion_operativa_historial (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL,
 			evento TEXT DEFAULT 'publicar',
 			rollback_de_historial_id INTEGER DEFAULT 0,
 			snapshot_json TEXT NOT NULL,
 			simulacion_json TEXT,
-			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
-			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+			fecha_creacion TEXT DEFAULT (CURRENT_TIMESTAMP),
+			fecha_actualizacion TEXT DEFAULT (CURRENT_TIMESTAMP),
 			usuario_creador TEXT,
 			estado TEXT DEFAULT 'activo',
 			observaciones TEXT
@@ -1298,7 +1298,7 @@ func ApplyEmpresaConfiguracionOperativaRollback(dbConn *sql.DB, empresaID, histo
 	}
 
 	if _, err := dbConn.Exec(`UPDATE empresa_configuracion_operativa_roles
-		SET estado = 'inactivo', fecha_actualizacion = datetime('now','localtime')
+		SET estado = 'inactivo', fecha_actualizacion = CURRENT_TIMESTAMP
 		WHERE empresa_id = ?`, empresaID); err != nil {
 		return 0, err
 	}
@@ -1316,7 +1316,7 @@ func ApplyEmpresaConfiguracionOperativaRollback(dbConn *sql.DB, empresaID, histo
 	}
 
 	if _, err := dbConn.Exec(`UPDATE empresa_configuracion_operativa_politicas
-		SET estado = 'inactivo', fecha_actualizacion = datetime('now','localtime')
+		SET estado = 'inactivo', fecha_actualizacion = CURRENT_TIMESTAMP
 		WHERE empresa_id = ?`, empresaID); err != nil {
 		return 0, err
 	}

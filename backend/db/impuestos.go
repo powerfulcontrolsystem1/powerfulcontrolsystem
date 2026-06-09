@@ -106,7 +106,7 @@ func EnsureEmpresaImpuestosSchema(dbConn *sql.DB) error {
 	}
 	query := `
 	CREATE TABLE IF NOT EXISTS empresa_impuestos_config (
-		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		id BIGSERIAL PRIMARY KEY,
 		empresa_id INTEGER NOT NULL,
 		pais_codigo TEXT DEFAULT 'CO',
 		codigo TEXT NOT NULL,
@@ -115,8 +115,8 @@ func EnsureEmpresaImpuestosSchema(dbConn *sql.DB) error {
 		tasa_porcentaje REAL DEFAULT 0,
 		habilitado INTEGER DEFAULT 1,
 		aplica_en TEXT DEFAULT 'ventas',
-		fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
-		fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+		fecha_creacion TEXT DEFAULT (CURRENT_TIMESTAMP),
+		fecha_actualizacion TEXT DEFAULT (CURRENT_TIMESTAMP),
 		usuario_creador TEXT,
 		estado TEXT DEFAULT 'activo',
 		observaciones TEXT,
@@ -212,7 +212,7 @@ func UpsertEmpresaImpuesto(dbConn *sql.DB, payload EmpresaImpuestoConfig) (int64
 	id, err := insertSQLCompat(dbConn, `INSERT INTO empresa_impuestos_config (
 		empresa_id, pais_codigo, codigo, nombre, tipo, tasa_porcentaje, habilitado, aplica_en,
 		usuario_creador, estado, observaciones, fecha_creacion, fecha_actualizacion
-	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now','localtime'), datetime('now','localtime'))
+	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
 	ON CONFLICT (empresa_id, codigo) DO UPDATE SET
 		pais_codigo = excluded.pais_codigo,
 		nombre = excluded.nombre,
@@ -221,7 +221,7 @@ func UpsertEmpresaImpuesto(dbConn *sql.DB, payload EmpresaImpuestoConfig) (int64
 		habilitado = excluded.habilitado,
 		aplica_en = excluded.aplica_en,
 		observaciones = excluded.observaciones,
-		fecha_actualizacion = datetime('now','localtime')
+		fecha_actualizacion = CURRENT_TIMESTAMP
 	RETURNING id`,
 		payload.EmpresaID, payload.PaisCodigo, payload.Codigo, payload.Nombre, payload.Tipo, payload.TasaPorcentaje, payload.Habilitado, payload.AplicaEn,
 		strings.TrimSpace(payload.UsuarioCreador), normalizeChatEstado(payload.Estado), strings.TrimSpace(payload.Observaciones),

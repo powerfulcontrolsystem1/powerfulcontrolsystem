@@ -144,7 +144,7 @@ func EnsureEmpresaCobranzaSchema(dbConn *sql.DB) error {
 
 	stmts := []string{
 		`CREATE TABLE IF NOT EXISTS empresa_cobranza_plantillas (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL,
 			codigo TEXT NOT NULL,
 			nombre TEXT NOT NULL,
@@ -155,8 +155,8 @@ func EnsureEmpresaCobranzaSchema(dbConn *sql.DB) error {
 			dias_mora_hasta INTEGER DEFAULT 9999,
 			prioridad INTEGER DEFAULT 1,
 			activa INTEGER DEFAULT 1,
-			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
-			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+			fecha_creacion TEXT DEFAULT (CURRENT_TIMESTAMP),
+			fecha_actualizacion TEXT DEFAULT (CURRENT_TIMESTAMP),
 			usuario_creador TEXT,
 			estado TEXT DEFAULT 'activo',
 			observaciones TEXT,
@@ -164,7 +164,7 @@ func EnsureEmpresaCobranzaSchema(dbConn *sql.DB) error {
 		);`,
 		`CREATE INDEX IF NOT EXISTS ix_cobranza_plantillas_empresa ON empresa_cobranza_plantillas(empresa_id, canal, activa);`,
 		`CREATE TABLE IF NOT EXISTS empresa_cobranza_campanas (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL,
 			codigo TEXT NOT NULL,
 			nombre TEXT NOT NULL,
@@ -179,8 +179,8 @@ func EnsureEmpresaCobranzaSchema(dbConn *sql.DB) error {
 			valor_recuperado REAL DEFAULT 0,
 			contactos_programados INTEGER DEFAULT 0,
 			contactos_realizados INTEGER DEFAULT 0,
-			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
-			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+			fecha_creacion TEXT DEFAULT (CURRENT_TIMESTAMP),
+			fecha_actualizacion TEXT DEFAULT (CURRENT_TIMESTAMP),
 			usuario_creador TEXT,
 			estado TEXT DEFAULT 'activo',
 			observaciones TEXT,
@@ -188,7 +188,7 @@ func EnsureEmpresaCobranzaSchema(dbConn *sql.DB) error {
 		);`,
 		`CREATE INDEX IF NOT EXISTS ix_cobranza_campanas_empresa ON empresa_cobranza_campanas(empresa_id, estado_campana, fecha_inicio);`,
 		`CREATE TABLE IF NOT EXISTS empresa_cobranza_gestiones (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL,
 			cuenta_id INTEGER DEFAULT 0,
 			campana_id INTEGER DEFAULT 0,
@@ -198,22 +198,22 @@ func EnsureEmpresaCobranzaSchema(dbConn *sql.DB) error {
 			documento_codigo TEXT,
 			canal TEXT DEFAULT 'llamada',
 			resultado TEXT DEFAULT 'registrada',
-			fecha_gestion TEXT DEFAULT (datetime('now','localtime')),
+			fecha_gestion TEXT DEFAULT (CURRENT_TIMESTAMP),
 			fecha_proximo_contacto TEXT,
 			valor_compromiso REAL DEFAULT 0,
 			promesa_fecha TEXT,
 			promesa_estado TEXT DEFAULT 'sin_promesa',
 			mensaje TEXT,
 			contacto TEXT,
-			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
-			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+			fecha_creacion TEXT DEFAULT (CURRENT_TIMESTAMP),
+			fecha_actualizacion TEXT DEFAULT (CURRENT_TIMESTAMP),
 			usuario_creador TEXT,
 			estado TEXT DEFAULT 'activo',
 			observaciones TEXT
 		);`,
 		`CREATE INDEX IF NOT EXISTS ix_cobranza_gestiones_empresa ON empresa_cobranza_gestiones(empresa_id, fecha_gestion DESC, resultado);`,
 		`CREATE TABLE IF NOT EXISTS empresa_cobranza_promesas (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL,
 			cuenta_id INTEGER DEFAULT 0,
 			gestion_id INTEGER DEFAULT 0,
@@ -223,8 +223,8 @@ func EnsureEmpresaCobranzaSchema(dbConn *sql.DB) error {
 			fecha_promesa TEXT,
 			estado_promesa TEXT DEFAULT 'pendiente',
 			fecha_cumplimiento TEXT,
-			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
-			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+			fecha_creacion TEXT DEFAULT (CURRENT_TIMESTAMP),
+			fecha_actualizacion TEXT DEFAULT (CURRENT_TIMESTAMP),
 			usuario_creador TEXT,
 			observaciones TEXT
 		);`,
@@ -348,7 +348,7 @@ func UpsertEmpresaCobranzaPlantilla(dbConn *sql.DB, row EmpresaCobranzaPlantilla
 		activa = 1
 	}
 	if row.ID > 0 {
-		_, err := ExecCompat(dbConn, `UPDATE empresa_cobranza_plantillas SET nombre=?,canal=?,asunto=?,cuerpo=?,dias_mora_desde=?,dias_mora_hasta=?,prioridad=?,activa=?,fecha_actualizacion=datetime('now','localtime'),usuario_creador=?,estado=?,observaciones=? WHERE id=? AND empresa_id=?`, row.Nombre, row.Canal, row.Asunto, row.Cuerpo, row.DiasMoraDesde, row.DiasMoraHasta, row.Prioridad, activa, row.Usuario, row.Estado, row.Observaciones, row.ID, row.EmpresaID)
+		_, err := ExecCompat(dbConn, `UPDATE empresa_cobranza_plantillas SET nombre=?,canal=?,asunto=?,cuerpo=?,dias_mora_desde=?,dias_mora_hasta=?,prioridad=?,activa=?,fecha_actualizacion=CURRENT_TIMESTAMP,usuario_creador=?,estado=?,observaciones=? WHERE id=? AND empresa_id=?`, row.Nombre, row.Canal, row.Asunto, row.Cuerpo, row.DiasMoraDesde, row.DiasMoraHasta, row.Prioridad, activa, row.Usuario, row.Estado, row.Observaciones, row.ID, row.EmpresaID)
 		return row.ID, err
 	}
 	return insertSQLCompat(dbConn, `INSERT INTO empresa_cobranza_plantillas (empresa_id,codigo,nombre,canal,asunto,cuerpo,dias_mora_desde,dias_mora_hasta,prioridad,activa,usuario_creador,estado,observaciones) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`, row.EmpresaID, row.Codigo, row.Nombre, row.Canal, row.Asunto, row.Cuerpo, row.DiasMoraDesde, row.DiasMoraHasta, row.Prioridad, activa, row.Usuario, row.Estado, row.Observaciones)
@@ -370,7 +370,7 @@ func UpsertEmpresaCobranzaCampana(dbConn *sql.DB, row EmpresaCobranzaCampana) (i
 		row.Codigo = nextEmpresaCobranzaCode(dbConn, row.EmpresaID, "empresa_cobranza_campanas", "COB-CA")
 	}
 	if row.ID > 0 {
-		_, err := ExecCompat(dbConn, `UPDATE empresa_cobranza_campanas SET nombre=?,tipo=?,canal_principal=?,segmento=?,fecha_inicio=?,fecha_fin=?,estado_campana=?,meta_recaudo=?,valor_asignado=?,valor_recuperado=?,contactos_programados=?,contactos_realizados=?,fecha_actualizacion=datetime('now','localtime'),usuario_creador=?,estado=?,observaciones=? WHERE id=? AND empresa_id=?`, row.Nombre, row.Tipo, row.CanalPrincipal, row.Segmento, row.FechaInicio, row.FechaFin, row.EstadoCampana, row.MetaRecaudo, row.ValorAsignado, row.ValorRecuperado, row.ContactosProgramados, row.ContactosRealizados, row.Usuario, row.Estado, row.Observaciones, row.ID, row.EmpresaID)
+		_, err := ExecCompat(dbConn, `UPDATE empresa_cobranza_campanas SET nombre=?,tipo=?,canal_principal=?,segmento=?,fecha_inicio=?,fecha_fin=?,estado_campana=?,meta_recaudo=?,valor_asignado=?,valor_recuperado=?,contactos_programados=?,contactos_realizados=?,fecha_actualizacion=CURRENT_TIMESTAMP,usuario_creador=?,estado=?,observaciones=? WHERE id=? AND empresa_id=?`, row.Nombre, row.Tipo, row.CanalPrincipal, row.Segmento, row.FechaInicio, row.FechaFin, row.EstadoCampana, row.MetaRecaudo, row.ValorAsignado, row.ValorRecuperado, row.ContactosProgramados, row.ContactosRealizados, row.Usuario, row.Estado, row.Observaciones, row.ID, row.EmpresaID)
 		return row.ID, err
 	}
 	return insertSQLCompat(dbConn, `INSERT INTO empresa_cobranza_campanas (empresa_id,codigo,nombre,tipo,canal_principal,segmento,fecha_inicio,fecha_fin,estado_campana,meta_recaudo,valor_asignado,valor_recuperado,contactos_programados,contactos_realizados,usuario_creador,estado,observaciones) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`, row.EmpresaID, row.Codigo, row.Nombre, row.Tipo, row.CanalPrincipal, row.Segmento, row.FechaInicio, row.FechaFin, row.EstadoCampana, row.MetaRecaudo, row.ValorAsignado, row.ValorRecuperado, row.ContactosProgramados, row.ContactosRealizados, row.Usuario, row.Estado, row.Observaciones)
@@ -428,7 +428,7 @@ func UpsertEmpresaCobranzaPromesa(dbConn *sql.DB, row EmpresaCobranzaPromesa) (i
 	}
 	row.EstadoPromesa = normalizeCobranzaEstadoPromesa(row.EstadoPromesa)
 	if row.ID > 0 {
-		_, err := ExecCompat(dbConn, `UPDATE empresa_cobranza_promesas SET cuenta_id=?,gestion_id=?,cliente_nombre=?,documento_codigo=?,valor_prometido=?,fecha_promesa=?,estado_promesa=?,fecha_cumplimiento=?,fecha_actualizacion=datetime('now','localtime'),usuario_creador=?,observaciones=? WHERE id=? AND empresa_id=?`, row.CuentaID, row.GestionID, row.ClienteNombre, row.DocumentoCodigo, row.ValorPrometido, row.FechaPromesa, row.EstadoPromesa, row.FechaCumplimiento, row.Usuario, row.Observaciones, row.ID, row.EmpresaID)
+		_, err := ExecCompat(dbConn, `UPDATE empresa_cobranza_promesas SET cuenta_id=?,gestion_id=?,cliente_nombre=?,documento_codigo=?,valor_prometido=?,fecha_promesa=?,estado_promesa=?,fecha_cumplimiento=?,fecha_actualizacion=CURRENT_TIMESTAMP,usuario_creador=?,observaciones=? WHERE id=? AND empresa_id=?`, row.CuentaID, row.GestionID, row.ClienteNombre, row.DocumentoCodigo, row.ValorPrometido, row.FechaPromesa, row.EstadoPromesa, row.FechaCumplimiento, row.Usuario, row.Observaciones, row.ID, row.EmpresaID)
 		return row.ID, err
 	}
 	return insertSQLCompat(dbConn, `INSERT INTO empresa_cobranza_promesas (empresa_id,cuenta_id,gestion_id,cliente_nombre,documento_codigo,valor_prometido,fecha_promesa,estado_promesa,fecha_cumplimiento,usuario_creador,observaciones) VALUES (?,?,?,?,?,?,?,?,?,?,?)`, row.EmpresaID, row.CuentaID, row.GestionID, row.ClienteNombre, row.DocumentoCodigo, row.ValorPrometido, row.FechaPromesa, row.EstadoPromesa, row.FechaCumplimiento, row.Usuario, row.Observaciones)
@@ -443,7 +443,7 @@ func UpdateEmpresaCobranzaPromesaEstado(dbConn *sql.DB, empresaID, promesaID int
 	if estado == "cumplida" {
 		fechaCumplimiento = time.Now().Format("2006-01-02")
 	}
-	_, err := ExecCompat(dbConn, `UPDATE empresa_cobranza_promesas SET estado_promesa=?,fecha_cumplimiento=?,fecha_actualizacion=datetime('now','localtime'),usuario_creador=?,observaciones=? WHERE empresa_id=? AND id=?`, estado, fechaCumplimiento, usuario, observaciones, empresaID, promesaID)
+	_, err := ExecCompat(dbConn, `UPDATE empresa_cobranza_promesas SET estado_promesa=?,fecha_cumplimiento=?,fecha_actualizacion=CURRENT_TIMESTAMP,usuario_creador=?,observaciones=? WHERE empresa_id=? AND id=?`, estado, fechaCumplimiento, usuario, observaciones, empresaID, promesaID)
 	if err != nil {
 		return EmpresaCobranzaPromesa{}, err
 	}

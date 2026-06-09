@@ -153,15 +153,15 @@ func EnsureSuperContractSchema(dbConn *sql.DB) error {
 		}
 	} else {
 		if _, err := execSQLCompat(dbConn, `CREATE TABLE IF NOT EXISTS super_contrato_versiones (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			version INTEGER NOT NULL UNIQUE,
 			titulo TEXT NOT NULL,
 			resumen TEXT,
 			contenido TEXT NOT NULL,
 			nota_aceptacion TEXT,
 			resumen_cambio TEXT,
-			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
-			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+			fecha_creacion TEXT DEFAULT (CURRENT_TIMESTAMP),
+			fecha_actualizacion TEXT DEFAULT (CURRENT_TIMESTAMP),
 			usuario_creador TEXT,
 			estado TEXT DEFAULT 'activo',
 			observaciones TEXT
@@ -197,10 +197,10 @@ func EnsureSuperContractSchema(dbConn *sql.DB) error {
 	if err := ensureColumnIfMissing(dbConn, "super_contrato_versiones", "observaciones", "TEXT"); err != nil {
 		return err
 	}
-	if err := ensureColumnIfMissing(dbConn, "super_contrato_versiones", "fecha_creacion", "TEXT DEFAULT (datetime('now','localtime'))"); err != nil {
+	if err := ensureColumnIfMissing(dbConn, "super_contrato_versiones", "fecha_creacion", "TEXT DEFAULT (CURRENT_TIMESTAMP)"); err != nil {
 		return err
 	}
-	if err := ensureColumnIfMissing(dbConn, "super_contrato_versiones", "fecha_actualizacion", "TEXT DEFAULT (datetime('now','localtime'))"); err != nil {
+	if err := ensureColumnIfMissing(dbConn, "super_contrato_versiones", "fecha_actualizacion", "TEXT DEFAULT (CURRENT_TIMESTAMP)"); err != nil {
 		return err
 	}
 

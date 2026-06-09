@@ -201,7 +201,7 @@ func EnsureSuperVentaDigitalSchema(dbConn *sql.DB) error {
 
 	stmts := []string{
 		`CREATE TABLE IF NOT EXISTS super_venta_digital_configuracion (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			scope_key TEXT NOT NULL UNIQUE DEFAULT 'global',
 			nombre_tienda TEXT,
 			descripcion_tienda TEXT,
@@ -210,14 +210,14 @@ func EnsureSuperVentaDigitalSchema(dbConn *sql.DB) error {
 			color_primario TEXT DEFAULT '#0f4c81',
 			moneda TEXT DEFAULT 'COP',
 			wompi_activo INTEGER DEFAULT 1,
-			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
-			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+			fecha_creacion TEXT DEFAULT (CURRENT_TIMESTAMP),
+			fecha_actualizacion TEXT DEFAULT (CURRENT_TIMESTAMP),
 			usuario_creador TEXT,
 			estado TEXT DEFAULT 'activo',
 			observaciones TEXT
 		);`,
 		`CREATE TABLE IF NOT EXISTS super_venta_digital_items (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			codigo_publico TEXT NOT NULL UNIQUE,
 			nombre TEXT NOT NULL,
 			descripcion TEXT,
@@ -228,15 +228,15 @@ func EnsureSuperVentaDigitalSchema(dbConn *sql.DB) error {
 			instrucciones_archivo_url TEXT NOT NULL,
 			orden_visual INTEGER DEFAULT 0,
 			destacado INTEGER DEFAULT 0,
-			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
-			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+			fecha_creacion TEXT DEFAULT (CURRENT_TIMESTAMP),
+			fecha_actualizacion TEXT DEFAULT (CURRENT_TIMESTAMP),
 			usuario_creador TEXT,
 			estado TEXT DEFAULT 'activo',
 			observaciones TEXT
 		);`,
 		`CREATE INDEX IF NOT EXISTS ix_super_venta_digital_items_estado_orden ON super_venta_digital_items(estado, orden_visual, id DESC);`,
 		`CREATE TABLE IF NOT EXISTS super_venta_digital_ordenes (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			codigo_orden TEXT NOT NULL UNIQUE,
 			item_id INTEGER NOT NULL,
 			item_nombre TEXT,
@@ -256,8 +256,8 @@ func EnsureSuperVentaDigitalSchema(dbConn *sql.DB) error {
 			correo_entrega_error TEXT,
 			licencia_codigo_enviado TEXT,
 			instrucciones_archivo_url TEXT,
-			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
-			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+			fecha_creacion TEXT DEFAULT (CURRENT_TIMESTAMP),
+			fecha_actualizacion TEXT DEFAULT (CURRENT_TIMESTAMP),
 			usuario_creador TEXT,
 			estado TEXT DEFAULT 'activo',
 			observaciones TEXT
@@ -421,7 +421,7 @@ func UpsertSuperVentaDigitalConfig(dbConn *sql.DB, cfg SuperVentaDigitalConfig) 
 				usuario_creador = ?,
 				estado = ?,
 				observaciones = ?,
-				fecha_actualizacion = datetime('now','localtime')
+				fecha_actualizacion = CURRENT_TIMESTAMP
 			WHERE id = ?`,
 			cfg.NombreTienda,
 			cfg.DescripcionTienda,
@@ -585,7 +585,7 @@ func UpdateSuperVentaDigitalItem(dbConn *sql.DB, item SuperVentaDigitalItem) err
 			usuario_creador = ?,
 			estado = ?,
 			observaciones = ?,
-			fecha_actualizacion = datetime('now','localtime')
+			fecha_actualizacion = CURRENT_TIMESTAMP
 		WHERE id = ?`,
 		item.CodigoPublico,
 		item.Nombre,
@@ -624,7 +624,7 @@ func SetSuperVentaDigitalItemEstadoByID(dbConn *sql.DB, itemID int64, estado str
 		return fmt.Errorf("id invalido")
 	}
 	res, err := dbConn.Exec(`UPDATE super_venta_digital_items
-		SET estado = ?, fecha_actualizacion = datetime('now','localtime')
+		SET estado = ?, fecha_actualizacion = CURRENT_TIMESTAMP
 		WHERE id = ?`, ventaDigitalNormalizeEstado(estado), itemID)
 	if err != nil {
 		return err
@@ -901,7 +901,7 @@ func UpdateSuperVentaDigitalOrderPayment(dbConn *sql.DB, codigoOrden, estadoPago
 			pasarela_payload_json = CASE WHEN ? = '' THEN pasarela_payload_json ELSE ? END,
 			pagado_en = CASE WHEN ? = '' THEN pagado_en ELSE ? END,
 			observaciones = CASE WHEN ? = '' THEN observaciones ELSE ? END,
-			fecha_actualizacion = datetime('now','localtime')
+			fecha_actualizacion = CURRENT_TIMESTAMP
 		WHERE codigo_orden = ?`,
 		estado,
 		strings.TrimSpace(transactionID), strings.TrimSpace(transactionID),
@@ -940,7 +940,7 @@ func SetSuperVentaDigitalOrderDelivery(dbConn *sql.DB, codigoOrden string, deliv
 			correo_entrega_error = CASE WHEN ? = '' THEN correo_entrega_error ELSE ? END,
 			licencia_codigo_enviado = CASE WHEN ? = '' THEN licencia_codigo_enviado ELSE ? END,
 			instrucciones_archivo_url = CASE WHEN ? = '' THEN instrucciones_archivo_url ELSE ? END,
-			fecha_actualizacion = datetime('now','localtime')
+			fecha_actualizacion = CURRENT_TIMESTAMP
 		WHERE codigo_orden = ?`,
 		ventaDigitalBoolToInt(delivered),
 		strings.TrimSpace(deliveredAt), strings.TrimSpace(deliveredAt),

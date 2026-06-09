@@ -101,7 +101,7 @@ func EnsureEmpresaPortalTercerosCertificadosSchema(dbConn *sql.DB) error {
 	}
 	stmts := []string{
 		`CREATE TABLE IF NOT EXISTS empresa_portal_terceros (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL,
 			tipo_tercero TEXT DEFAULT 'proveedor',
 			tipo_documento TEXT DEFAULT 'NIT',
@@ -124,7 +124,7 @@ func EnsureEmpresaPortalTercerosCertificadosSchema(dbConn *sql.DB) error {
 		`CREATE UNIQUE INDEX IF NOT EXISTS ux_portal_terceros_token ON empresa_portal_terceros(acceso_token)`,
 		`CREATE INDEX IF NOT EXISTS ix_portal_terceros_empresa ON empresa_portal_terceros(empresa_id, tipo_tercero, estado)`,
 		`CREATE TABLE IF NOT EXISTS empresa_certificados_tributarios (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL,
 			tercero_id INTEGER NOT NULL,
 			tipo_certificado TEXT DEFAULT 'retencion_fuente',
@@ -158,7 +158,7 @@ func EnsureEmpresaPortalTercerosCertificadosSchema(dbConn *sql.DB) error {
 		`CREATE UNIQUE INDEX IF NOT EXISTS ux_certificados_tributarios_token ON empresa_certificados_tributarios(public_token)`,
 		`CREATE INDEX IF NOT EXISTS ix_certificados_tributarios_empresa ON empresa_certificados_tributarios(empresa_id, tercero_id, anio, estado)`,
 		`CREATE TABLE IF NOT EXISTS empresa_certificados_tributarios_descargas (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL,
 			certificado_id INTEGER NOT NULL,
 			tercero_id INTEGER NOT NULL,

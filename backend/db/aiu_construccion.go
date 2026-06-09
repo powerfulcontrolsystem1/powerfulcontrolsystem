@@ -137,7 +137,7 @@ type EmpresaAIUDashboard struct {
 func EnsureEmpresaAIUConstruccionSchema(dbConn *sql.DB) error {
 	stmts := []string{
 		`CREATE TABLE IF NOT EXISTS empresa_aiu_contratos (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL,
 			codigo TEXT NOT NULL,
 			nombre TEXT NOT NULL,
@@ -189,7 +189,7 @@ func EnsureEmpresaAIUConstruccionSchema(dbConn *sql.DB) error {
 		)`,
 		`CREATE INDEX IF NOT EXISTS ix_aiu_contratos_empresa_estado ON empresa_aiu_contratos(empresa_id, estado)`,
 		`CREATE TABLE IF NOT EXISTS empresa_aiu_items (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL,
 			contrato_id INTEGER NOT NULL,
 			servicio_id INTEGER DEFAULT 0,
@@ -204,7 +204,7 @@ func EnsureEmpresaAIUConstruccionSchema(dbConn *sql.DB) error {
 		)`,
 		`CREATE INDEX IF NOT EXISTS ix_aiu_items_contrato ON empresa_aiu_items(empresa_id, contrato_id)`,
 		`CREATE TABLE IF NOT EXISTS empresa_aiu_facturas (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL,
 			contrato_id INTEGER NOT NULL,
 			carrito_id INTEGER DEFAULT 0,
@@ -230,7 +230,7 @@ func EnsureEmpresaAIUConstruccionSchema(dbConn *sql.DB) error {
 		)`,
 		`CREATE INDEX IF NOT EXISTS ix_aiu_facturas_contrato ON empresa_aiu_facturas(empresa_id, contrato_id)`,
 		`CREATE TABLE IF NOT EXISTS empresa_aiu_eventos (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL,
 			contrato_id INTEGER NOT NULL,
 			tipo TEXT NOT NULL,

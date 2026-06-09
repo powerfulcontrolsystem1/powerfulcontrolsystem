@@ -32,8 +32,8 @@ func EnsureRolesDeUsuarioSchema(dbConn *sql.DB) error {
 			tipo_empresa_id BIGINT NOT NULL,
 			nombre TEXT NOT NULL,
 			descripcion TEXT,
-			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
-			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+			fecha_creacion TEXT DEFAULT (CURRENT_TIMESTAMP),
+			fecha_actualizacion TEXT DEFAULT (CURRENT_TIMESTAMP),
 			usuario_creador TEXT,
 			estado TEXT DEFAULT 'activo',
 			observaciones TEXT
@@ -53,8 +53,8 @@ func EnsureRolesDeUsuarioSchema(dbConn *sql.DB) error {
 		{"tipo_empresa_id", "BIGINT DEFAULT 0"},
 		{"nombre", "TEXT"},
 		{"descripcion", "TEXT"},
-		{"fecha_creacion", "TEXT DEFAULT (datetime('now','localtime'))"},
-		{"fecha_actualizacion", "TEXT DEFAULT (datetime('now','localtime'))"},
+		{"fecha_creacion", "TEXT DEFAULT (CURRENT_TIMESTAMP)"},
+		{"fecha_actualizacion", "TEXT DEFAULT (CURRENT_TIMESTAMP)"},
 		{"usuario_creador", "TEXT"},
 		{"estado", "TEXT DEFAULT 'activo'"},
 		{"observaciones", "TEXT"},
@@ -84,7 +84,7 @@ func CreateRolDeUsuario(dbConn *sql.DB, tipoEmpresaID int64, nombre, descripcion
 	}
 	id, err := insertSQLCompat(dbConn, `INSERT INTO roles_de_usuario (
 		tipo_empresa_id, nombre, descripcion, usuario_creador, estado, fecha_creacion, fecha_actualizacion
-	) VALUES (?, ?, ?, ?, 'activo', datetime('now','localtime'), datetime('now','localtime'))`, tipoEmpresaID, nombre, descripcion, usuarioCreador)
+	) VALUES (?, ?, ?, ?, 'activo', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`, tipoEmpresaID, nombre, descripcion, usuarioCreador)
 	if err != nil {
 		return 0, err
 	}
@@ -116,7 +116,7 @@ func UpsertRolDeUsuarioByTipoNombre(dbConn *sql.DB, tipoEmpresaID int64, nombre,
 			SET descripcion = COALESCE(NULLIF(?, ''), descripcion),
 				estado = 'activo',
 				usuario_creador = COALESCE(NULLIF(?, ''), usuario_creador),
-				fecha_actualizacion = datetime('now','localtime')
+				fecha_actualizacion = CURRENT_TIMESTAMP
 			WHERE id = ?`, descripcion, usuarioCreador, id)
 		return id, false, err
 	}
@@ -293,7 +293,7 @@ func UpdateRolDeUsuario(dbConn *sql.DB, id, tipoEmpresaID int64, nombre, descrip
 		return errors.New("ya existe un rol con ese nombre para el tipo de empresa")
 	}
 	_, err := execSQLCompat(dbConn, `UPDATE roles_de_usuario
-		SET tipo_empresa_id = ?, nombre = ?, descripcion = ?, fecha_actualizacion = datetime('now','localtime')
+		SET tipo_empresa_id = ?, nombre = ?, descripcion = ?, fecha_actualizacion = CURRENT_TIMESTAMP
 		WHERE id = ?`, tipoEmpresaID, nombre, descripcion, id)
 	return err
 }
@@ -330,7 +330,7 @@ func SetRolDeUsuarioEstado(dbConn *sql.DB, id int64, estado string) error {
 	if err := EnsureRolesDeUsuarioSchema(dbConn); err != nil {
 		return err
 	}
-	_, err := execSQLCompat(dbConn, `UPDATE roles_de_usuario SET estado = ?, fecha_actualizacion = datetime('now','localtime') WHERE id = ?`, estado, id)
+	_, err := execSQLCompat(dbConn, `UPDATE roles_de_usuario SET estado = ?, fecha_actualizacion = CURRENT_TIMESTAMP WHERE id = ?`, estado, id)
 	return err
 }
 

@@ -102,7 +102,7 @@ func EnsureEmpresaReservasHotelSchema(dbConn *sql.DB) error {
 
 	stmts := []string{
 		`CREATE TABLE IF NOT EXISTS reservas_hotel (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL,
 			carrito_id INTEGER NOT NULL,
 			estacion_id INTEGER NOT NULL,
@@ -124,8 +124,8 @@ func EnsureEmpresaReservasHotelSchema(dbConn *sql.DB) error {
 			confirmado_por TEXT,
 			canal_origen TEXT DEFAULT 'web_reservas',
 			request_id TEXT,
-			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
-			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+			fecha_creacion TEXT DEFAULT (CURRENT_TIMESTAMP),
+			fecha_actualizacion TEXT DEFAULT (CURRENT_TIMESTAMP),
 			usuario_creador TEXT,
 			estado TEXT DEFAULT 'activo',
 			observaciones TEXT
@@ -307,7 +307,7 @@ func normalizeReservaHotelEstadoPago(v string) string {
 	}
 }
 
-func parseReservaHotelDateTime(raw string) (time.Time, error) {
+func parseReservaHotelpcs_ts(raw string) (time.Time, error) {
 	value := strings.TrimSpace(raw)
 	if value == "" {
 		return time.Time{}, fmt.Errorf("fecha vacia")
@@ -329,11 +329,11 @@ func parseReservaHotelDateTime(raw string) (time.Time, error) {
 }
 
 func normalizeReservaHotelDateRange(fechaEntrada, fechaSalida string) (string, string, error) {
-	entrada, err := parseReservaHotelDateTime(fechaEntrada)
+	entrada, err := parseReservaHotelpcs_ts(fechaEntrada)
 	if err != nil {
 		return "", "", fmt.Errorf("fecha_entrada invalida")
 	}
-	salida, err := parseReservaHotelDateTime(fechaSalida)
+	salida, err := parseReservaHotelpcs_ts(fechaSalida)
 	if err != nil {
 		return "", "", fmt.Errorf("fecha_salida invalida")
 	}
@@ -405,10 +405,10 @@ func hasReservaHotelConflict(dbConn *sql.DB, empresaID, estacionID, carritoID in
 		AND (
 			estado_reserva <> 'pendiente_pago'
 			OR COALESCE(fecha_expiracion, '') = ''
-			OR datetime(fecha_expiracion) > datetime('now','localtime')
+			OR pcs_ts(fecha_expiracion) > CURRENT_TIMESTAMP
 		)
-		AND datetime(fecha_entrada) < datetime(?)
-		AND datetime(fecha_salida) > datetime(?)`
+		AND pcs_ts(fecha_entrada) < pcs_ts(?)
+		AND pcs_ts(fecha_salida) > pcs_ts(?)`
 	args := []interface{}{empresaID, estacionID, carritoID, fechaSalida, fechaEntrada}
 	if ignoreID > 0 {
 		query += ` AND id <> ?`
@@ -432,18 +432,18 @@ func expirePendientesReservasHotelAvanzado(dbConn *sql.DB, empresaID int64) (int
 	SET
 		estado_reserva = 'expirada',
 		estado_pago = 'expirado',
-		fecha_actualizacion = datetime('now','localtime')
+		fecha_actualizacion = CURRENT_TIMESTAMP
 	WHERE COALESCE(estado, 'activo') = 'activo'
 		AND estado_reserva = 'pendiente_pago'
 		AND estado_pago = 'pendiente'
 		AND (
 			(
 				COALESCE(fecha_expiracion, '') <> ''
-				AND datetime(fecha_expiracion) <= datetime('now','localtime')
+				AND pcs_ts(fecha_expiracion) <= CURRENT_TIMESTAMP
 			)
 			OR (
 				COALESCE(fecha_expiracion, '') = ''
-				AND datetime(fecha_creacion, '+' || ? || ' minutes') <= datetime('now','localtime')
+				AND pcs_ts(fecha_creacion, '+' || ? || ' minutes') <= CURRENT_TIMESTAMP
 			)
 		)`
 	args := []interface{}{strconv.Itoa(reservaHotelExpiracionDefaultMin)}
@@ -470,11 +470,11 @@ func markReservasHotelNoShow(dbConn *sql.DB, empresaID int64, toleranciaMin int)
 			WHEN trim(COALESCE(observaciones, '')) = '' THEN 'no_show automatico por inasistencia'
 			ELSE trim(observaciones) || ' | no_show automatico por inasistencia'
 		END,
-		fecha_actualizacion = datetime('now','localtime')
+		fecha_actualizacion = CURRENT_TIMESTAMP
 	WHERE COALESCE(estado, 'activo') = 'activo'
 		AND estado_reserva = 'confirmada'
 		AND estado_pago = 'confirmado'
-		AND datetime(fecha_entrada, '+' || ? || ' minutes') <= datetime('now','localtime')`
+		AND pcs_ts(fecha_entrada, '+' || ? || ' minutes') <= CURRENT_TIMESTAMP`
 	args := []interface{}{strconv.Itoa(toleranciaMin)}
 	if empresaID > 0 {
 		query += ` AND empresa_id = ?`
@@ -586,7 +586,7 @@ func CreateReservaHotel(dbConn *sql.DB, payload ReservaHotel) (int64, error) {
 
 	fechaExpiracion := strings.TrimSpace(payload.FechaExpiracion)
 	if fechaExpiracion != "" {
-		parsedExp, err := parseReservaHotelDateTime(fechaExpiracion)
+		parsedExp, err := parseReservaHotelpcs_ts(fechaExpiracion)
 		if err != nil {
 			return 0, fmt.Errorf("fecha_expiracion invalida")
 		}
@@ -630,7 +630,7 @@ func CreateReservaHotel(dbConn *sql.DB, payload ReservaHotel) (int64, error) {
 		observaciones,
 		fecha_creacion,
 		fecha_actualizacion
-	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, '', NULL, COALESCE(NULLIF(?, ''), datetime('now','localtime', '+30 minutes')), '', ?, ?, ?, 'activo', ?, datetime('now','localtime'), datetime('now','localtime'))`,
+	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, '', NULL, COALESCE(NULLIF(?, ''), pcs_ts('now','localtime', '+30 minutes')), '', ?, ?, ?, 'activo', ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
 		payload.EmpresaID,
 		carritoID,
 		payload.EstacionID,
@@ -745,7 +745,7 @@ func UpdateReservaHotel(dbConn *sql.DB, payload ReservaHotel) error {
 	fechaExpiracion := strings.TrimSpace(firstNonEmpty(payload.FechaExpiracion, current.FechaExpiracion))
 	if fechaExpiracion == "" {
 		fechaExpiracion = ""
-	} else if parsedExp, err := parseReservaHotelDateTime(fechaExpiracion); err == nil {
+	} else if parsedExp, err := parseReservaHotelpcs_ts(fechaExpiracion); err == nil {
 		fechaExpiracion = parsedExp.Format("2006-01-02 15:04:05")
 	} else {
 		return fmt.Errorf("fecha_expiracion invalida")
@@ -765,11 +765,11 @@ func UpdateReservaHotel(dbConn *sql.DB, payload ReservaHotel) error {
 		fecha_salida = ?,
 		monto_total = ?,
 		moneda = ?,
-		fecha_expiracion = COALESCE(NULLIF(?, ''), datetime('now','localtime', '+30 minutes')),
+		fecha_expiracion = COALESCE(NULLIF(?, ''), pcs_ts('now','localtime', '+30 minutes')),
 		canal_origen = ?,
 		request_id = ?,
 		observaciones = ?,
-		fecha_actualizacion = datetime('now','localtime')
+		fecha_actualizacion = CURRENT_TIMESTAMP
 	WHERE empresa_id = ?
 		AND id = ?
 		AND COALESCE(estado, 'activo') = 'activo'`,
@@ -818,7 +818,7 @@ func SetReservaHotelEstado(dbConn *sql.DB, empresaID, reservaID int64, estado st
 	res, err := dbConn.Exec(`UPDATE reservas_hotel
 	SET
 		estado = ?,
-		fecha_actualizacion = datetime('now','localtime')
+		fecha_actualizacion = CURRENT_TIMESTAMP
 	WHERE empresa_id = ?
 		AND id = ?`, nextEstado, empresaID, reservaID)
 	if err != nil {
@@ -1017,13 +1017,13 @@ func buildReservaHotelFilterClause(empresaID int64, filter ReservaHotelFilter) (
 		args = append(args, estadoPago)
 	}
 	if strings.TrimSpace(filter.FechaDesde) != "" {
-		if parsed, err := parseReservaHotelDateTime(filter.FechaDesde); err == nil {
+		if parsed, err := parseReservaHotelpcs_ts(filter.FechaDesde); err == nil {
 			where = append(where, buildReservaHotelDateGTEClause("r.fecha_entrada"))
 			args = append(args, parsed.Format("2006-01-02 15:04:05"))
 		}
 	}
 	if strings.TrimSpace(filter.FechaHasta) != "" {
-		if parsed, err := parseReservaHotelDateTime(filter.FechaHasta); err == nil {
+		if parsed, err := parseReservaHotelpcs_ts(filter.FechaHasta); err == nil {
 			where = append(where, buildReservaHotelDateLTEClause("r.fecha_salida"))
 			args = append(args, parsed.Format("2006-01-02 15:04:05"))
 		}
@@ -1067,7 +1067,7 @@ func buildReservaHotelDateGTEClause(column string) string {
 	if isPostgresDialect() {
 		return column + " >= ?"
 	}
-	return "datetime(" + column + ") >= datetime(?)"
+	return "pcs_ts(" + column + ") >= pcs_ts(?)"
 }
 
 func buildReservaHotelDateLTEClause(column string) string {
@@ -1078,7 +1078,7 @@ func buildReservaHotelDateLTEClause(column string) string {
 	if isPostgresDialect() {
 		return column + " <= ?"
 	}
-	return "datetime(" + column + ") <= datetime(?)"
+	return "pcs_ts(" + column + ") <= pcs_ts(?)"
 }
 
 // GetReservaHotelByID obtiene una reserva puntual por empresa.
@@ -1196,7 +1196,7 @@ func ConfirmReservaHotelPago(dbConn *sql.DB, empresaID, reservaID int64, referen
 		return fmt.Errorf("la reserva no esta pendiente de pago")
 	}
 	if strings.TrimSpace(current.FechaExpiracion) != "" {
-		expiresAt, err := parseReservaHotelDateTime(current.FechaExpiracion)
+		expiresAt, err := parseReservaHotelpcs_ts(current.FechaExpiracion)
 		if err == nil && !expiresAt.After(time.Now()) {
 			if _, expireErr := ExpirePendientesReservasHotel(dbConn, empresaID); expireErr != nil {
 				return expireErr
@@ -1227,10 +1227,10 @@ func ConfirmReservaHotelPago(dbConn *sql.DB, empresaID, reservaID int64, referen
 		estado_reserva = 'confirmada',
 		estado_pago = 'confirmado',
 		referencia_pago = ?,
-		pago_confirmado_en = datetime('now','localtime'),
+		pago_confirmado_en = CURRENT_TIMESTAMP,
 		confirmado_por = ?,
 		observaciones = ?,
-		fecha_actualizacion = datetime('now','localtime')
+		fecha_actualizacion = CURRENT_TIMESTAMP
 	WHERE empresa_id = ? AND id = ? AND COALESCE(estado, 'activo') = 'activo'`,
 		ref,
 		by,
@@ -1295,10 +1295,10 @@ func ConvertReservaHotelToCarrito(dbConn *sql.DB, empresaID, reservaID int64, us
 		estado = 'activo',
 		estado_carrito = 'abierto',
 		activado_en = CASE
-			WHEN trim(COALESCE(activado_en, '')) = '' THEN datetime('now','localtime')
+			WHEN trim(COALESCE(activado_en, '')) = '' THEN CURRENT_TIMESTAMP
 			ELSE activado_en
 		END,
-		fecha_actualizacion = datetime('now','localtime')
+		fecha_actualizacion = CURRENT_TIMESTAMP
 	WHERE empresa_id = ? AND id = ?`, empresaID, current.CarritoID)
 	if err != nil {
 		tx.Rollback()
@@ -1315,7 +1315,7 @@ func ConvertReservaHotelToCarrito(dbConn *sql.DB, empresaID, reservaID int64, us
 		estado_reserva = 'en_curso',
 		confirmado_por = ?,
 		observaciones = ?,
-		fecha_actualizacion = datetime('now','localtime')
+		fecha_actualizacion = CURRENT_TIMESTAMP
 	WHERE empresa_id = ?
 		AND id = ?
 		AND COALESCE(estado, 'activo') = 'activo'`, by, obs, empresaID, reservaID)
@@ -1354,7 +1354,7 @@ func CancelReservaHotel(dbConn *sql.DB, empresaID, reservaID int64, motivo, usua
 		estado_pago = CASE WHEN estado_pago = 'confirmado' THEN 'confirmado' ELSE 'cancelado' END,
 		confirmado_por = ?,
 		observaciones = ?,
-		fecha_actualizacion = datetime('now','localtime')
+		fecha_actualizacion = CURRENT_TIMESTAMP
 	WHERE empresa_id = ? AND id = ? AND COALESCE(estado, 'activo') = 'activo'`,
 		by,
 		obs,
@@ -1403,10 +1403,10 @@ func ListReservasHotelEstacionesDisponibles(dbConn *sql.DB, empresaID int64, fec
 		AND (
 			r.estado_reserva <> 'pendiente_pago'
 			OR COALESCE(r.fecha_expiracion, '') = ''
-			OR datetime(r.fecha_expiracion) > datetime('now','localtime')
+			OR pcs_ts(r.fecha_expiracion) > CURRENT_TIMESTAMP
 		)
-		AND datetime(r.fecha_entrada) < datetime(?)
-		AND datetime(r.fecha_salida) > datetime(?)
+		AND pcs_ts(r.fecha_entrada) < pcs_ts(?)
+		AND pcs_ts(r.fecha_salida) > pcs_ts(?)
 	WHERE c.empresa_id = ?
 		AND (
 			upper(COALESCE(c.referencia_externa, '')) LIKE 'ESTACION_%'

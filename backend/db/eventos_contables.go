@@ -214,7 +214,7 @@ var empresaEventoContableContrato = map[string]map[string]struct{}{
 func EnsureEmpresaEventosContablesSchema(dbConn *sql.DB) error {
 	stmts := []string{
 		`CREATE TABLE IF NOT EXISTS empresa_eventos_contables (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL,
 			modulo TEXT NOT NULL,
 			evento TEXT NOT NULL,
@@ -227,26 +227,26 @@ func EnsureEmpresaEventosContablesSchema(dbConn *sql.DB) error {
 			moneda TEXT DEFAULT 'COP',
 			payload_json TEXT,
 			origen TEXT DEFAULT 'backend',
-			fecha_evento TEXT DEFAULT (datetime('now','localtime')),
+			fecha_evento TEXT DEFAULT (CURRENT_TIMESTAMP),
 			procesado INTEGER DEFAULT 0,
 			fecha_procesado TEXT,
 			intentos_procesamiento INTEGER DEFAULT 0,
 			fecha_ultimo_intento TEXT,
 			error_procesamiento TEXT,
 			asiento_contable_id INTEGER,
-			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
-			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+			fecha_creacion TEXT DEFAULT (CURRENT_TIMESTAMP),
+			fecha_actualizacion TEXT DEFAULT (CURRENT_TIMESTAMP),
 			usuario_creador TEXT,
 			estado TEXT DEFAULT 'activo',
 			observaciones TEXT
 		);`,
 		`CREATE TABLE IF NOT EXISTS empresa_asientos_contables (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL,
 			evento_contable_id INTEGER NOT NULL,
 			modulo TEXT NOT NULL,
 			evento TEXT NOT NULL,
-			fecha_asiento TEXT DEFAULT (datetime('now','localtime')),
+			fecha_asiento TEXT DEFAULT (CURRENT_TIMESTAMP),
 			periodo_contable TEXT,
 			documento_tipo TEXT,
 			documento_codigo TEXT,
@@ -259,8 +259,8 @@ func EnsureEmpresaEventosContablesSchema(dbConn *sql.DB) error {
 			payload_origen_json TEXT,
 			fecha_procesado TEXT,
 			procesado_por TEXT,
-			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
-			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+			fecha_creacion TEXT DEFAULT (CURRENT_TIMESTAMP),
+			fecha_actualizacion TEXT DEFAULT (CURRENT_TIMESTAMP),
 			usuario_creador TEXT,
 			estado TEXT DEFAULT 'activo',
 			observaciones TEXT,
@@ -304,7 +304,7 @@ func EnsureEmpresaEventosContablesSchema(dbConn *sql.DB) error {
 	if err := ensureColumnIfMissing(dbConn, "empresa_eventos_contables", "origen", "TEXT DEFAULT 'backend'"); err != nil {
 		return err
 	}
-	if err := ensureColumnIfMissing(dbConn, "empresa_eventos_contables", "fecha_evento", "TEXT DEFAULT (datetime('now','localtime'))"); err != nil {
+	if err := ensureColumnIfMissing(dbConn, "empresa_eventos_contables", "fecha_evento", "TEXT DEFAULT (CURRENT_TIMESTAMP)"); err != nil {
 		return err
 	}
 	if err := ensureColumnIfMissing(dbConn, "empresa_eventos_contables", "procesado", "INTEGER DEFAULT 0"); err != nil {
@@ -350,7 +350,7 @@ func EnsureEmpresaEventosContablesSchema(dbConn *sql.DB) error {
 	if err := ensureColumnIfMissing(dbConn, "empresa_asientos_contables", "evento", "TEXT"); err != nil {
 		return err
 	}
-	if err := ensureColumnIfMissing(dbConn, "empresa_asientos_contables", "fecha_asiento", "TEXT DEFAULT (datetime('now','localtime'))"); err != nil {
+	if err := ensureColumnIfMissing(dbConn, "empresa_asientos_contables", "fecha_asiento", "TEXT DEFAULT (CURRENT_TIMESTAMP)"); err != nil {
 		return err
 	}
 	if err := ensureColumnIfMissing(dbConn, "empresa_asientos_contables", "periodo_contable", "TEXT"); err != nil {
@@ -477,7 +477,7 @@ func CreateEmpresaEventoContable(dbConn *sql.DB, e EmpresaEventoContable) (int64
 		usuario_creador,
 		estado,
 		observaciones
-	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, NULL, datetime('now','localtime'), datetime('now','localtime'), ?, ?, ?)`
+	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, NULL, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, ?, ?, ?)`
 
 	id, err := insertSQLCompat(dbConn, query,
 		e.EmpresaID,

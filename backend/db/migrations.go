@@ -8,11 +8,11 @@ import (
 // EnsureSchemaMigrationsTable crea la tabla de control de migraciones versionadas.
 func EnsureSchemaMigrationsTable(dbConn *sql.DB) error {
 	createStmt := `CREATE TABLE IF NOT EXISTS schema_migrations (
-		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		id BIGSERIAL PRIMARY KEY,
 		scope TEXT NOT NULL,
 		version TEXT NOT NULL,
 		description TEXT,
-		applied_at TEXT DEFAULT (datetime('now','localtime')),
+		applied_at TEXT DEFAULT (CURRENT_TIMESTAMP),
 		UNIQUE(scope, version)
 	);`
 	if isPostgresDialect() {

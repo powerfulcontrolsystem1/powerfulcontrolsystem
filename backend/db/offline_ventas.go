@@ -38,7 +38,7 @@ func EnsureEmpresaVentasOfflineSchema(dbConn *sql.DB) error {
 	}
 	stmts := []string{
 		`CREATE TABLE IF NOT EXISTS empresa_ventas_offline_sync (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL,
 			sync_key TEXT NOT NULL,
 			carrito_id INTEGER DEFAULT 0,
@@ -52,8 +52,8 @@ func EnsureEmpresaVentasOfflineSchema(dbConn *sql.DB) error {
 			usuario_creador TEXT,
 			estado TEXT DEFAULT 'activo',
 			observaciones TEXT,
-			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
-			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime'))
+			fecha_creacion TEXT DEFAULT (CURRENT_TIMESTAMP),
+			fecha_actualizacion TEXT DEFAULT (CURRENT_TIMESTAMP)
 		);`,
 		`CREATE UNIQUE INDEX IF NOT EXISTS ux_empresa_ventas_offline_sync_key ON empresa_ventas_offline_sync(empresa_id, sync_key);`,
 		`CREATE INDEX IF NOT EXISTS ix_empresa_ventas_offline_estado ON empresa_ventas_offline_sync(empresa_id, estado_sync, fecha_creacion DESC);`,

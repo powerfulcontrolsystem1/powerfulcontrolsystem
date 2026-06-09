@@ -222,7 +222,7 @@ func EnsureEmpresaOdontologiaSchema(dbConn *sql.DB) error {
 
 	stmts := []string{
 		`CREATE TABLE IF NOT EXISTS empresa_odontologia_pacientes (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL,
 			cliente_id INTEGER,
 			codigo TEXT,
@@ -239,13 +239,13 @@ func EnsureEmpresaOdontologiaSchema(dbConn *sql.DB) error {
 			saldo REAL DEFAULT 0,
 			estado TEXT DEFAULT 'activo',
 			observaciones TEXT,
-			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
-			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+			fecha_creacion TEXT DEFAULT (CURRENT_TIMESTAMP),
+			fecha_actualizacion TEXT DEFAULT (CURRENT_TIMESTAMP),
 			usuario_creador TEXT
 		);`,
 		`CREATE INDEX IF NOT EXISTS ix_empresa_odontologia_pacientes_empresa ON empresa_odontologia_pacientes(empresa_id, estado, id DESC);`,
 		`CREATE TABLE IF NOT EXISTS empresa_odontologia_profesionales (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL,
 			nombre_completo TEXT NOT NULL,
 			especialidad TEXT,
@@ -255,26 +255,26 @@ func EnsureEmpresaOdontologiaSchema(dbConn *sql.DB) error {
 			color_agenda TEXT,
 			estado TEXT DEFAULT 'activo',
 			observaciones TEXT,
-			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
-			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+			fecha_creacion TEXT DEFAULT (CURRENT_TIMESTAMP),
+			fecha_actualizacion TEXT DEFAULT (CURRENT_TIMESTAMP),
 			usuario_creador TEXT
 		);`,
 		`CREATE INDEX IF NOT EXISTS ix_empresa_odontologia_profesionales_empresa ON empresa_odontologia_profesionales(empresa_id, estado, id DESC);`,
 		`CREATE TABLE IF NOT EXISTS empresa_odontologia_consultorios (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL,
 			nombre TEXT NOT NULL,
 			sede TEXT,
 			sillon TEXT,
 			estado TEXT DEFAULT 'activo',
 			observaciones TEXT,
-			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
-			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+			fecha_creacion TEXT DEFAULT (CURRENT_TIMESTAMP),
+			fecha_actualizacion TEXT DEFAULT (CURRENT_TIMESTAMP),
 			usuario_creador TEXT
 		);`,
 		`CREATE INDEX IF NOT EXISTS ix_empresa_odontologia_consultorios_empresa ON empresa_odontologia_consultorios(empresa_id, estado, id DESC);`,
 		`CREATE TABLE IF NOT EXISTS empresa_odontologia_citas (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL,
 			paciente_id INTEGER NOT NULL,
 			profesional_id INTEGER NOT NULL,
@@ -287,13 +287,13 @@ func EnsureEmpresaOdontologiaSchema(dbConn *sql.DB) error {
 			prioridad TEXT,
 			aseguradora TEXT,
 			observaciones TEXT,
-			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
-			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+			fecha_creacion TEXT DEFAULT (CURRENT_TIMESTAMP),
+			fecha_actualizacion TEXT DEFAULT (CURRENT_TIMESTAMP),
 			usuario_creador TEXT
 		);`,
 		`CREATE INDEX IF NOT EXISTS ix_empresa_odontologia_citas_empresa ON empresa_odontologia_citas(empresa_id, estado, fecha_hora);`,
 		`CREATE TABLE IF NOT EXISTS empresa_odontologia_historias (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL,
 			paciente_id INTEGER NOT NULL,
 			profesional_id INTEGER DEFAULT 0,
@@ -307,13 +307,13 @@ func EnsureEmpresaOdontologiaSchema(dbConn *sql.DB) error {
 			recomendaciones TEXT,
 			proxima_cita TEXT,
 			estado TEXT DEFAULT 'cerrada',
-			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
-			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+			fecha_creacion TEXT DEFAULT (CURRENT_TIMESTAMP),
+			fecha_actualizacion TEXT DEFAULT (CURRENT_TIMESTAMP),
 			usuario_creador TEXT
 		);`,
 		`CREATE INDEX IF NOT EXISTS ix_empresa_odontologia_historias_empresa ON empresa_odontologia_historias(empresa_id, paciente_id, fecha_atencion DESC);`,
 		`CREATE TABLE IF NOT EXISTS empresa_odontologia_odontogramas (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL,
 			paciente_id INTEGER NOT NULL,
 			profesional_id INTEGER DEFAULT 0,
@@ -321,13 +321,13 @@ func EnsureEmpresaOdontologiaSchema(dbConn *sql.DB) error {
 			piezas_json TEXT,
 			observaciones TEXT,
 			estado TEXT DEFAULT 'activo',
-			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
-			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+			fecha_creacion TEXT DEFAULT (CURRENT_TIMESTAMP),
+			fecha_actualizacion TEXT DEFAULT (CURRENT_TIMESTAMP),
 			usuario_creador TEXT
 		);`,
 		`CREATE INDEX IF NOT EXISTS ix_empresa_odontologia_odontogramas_empresa ON empresa_odontologia_odontogramas(empresa_id, paciente_id, fecha_registro DESC);`,
 		`CREATE TABLE IF NOT EXISTS empresa_odontologia_tratamientos (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL,
 			servicio_id INTEGER,
 			paciente_id INTEGER NOT NULL,
@@ -343,13 +343,13 @@ func EnsureEmpresaOdontologiaSchema(dbConn *sql.DB) error {
 			fecha_fin TEXT,
 			estado TEXT DEFAULT 'planificado',
 			observaciones TEXT,
-			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
-			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+			fecha_creacion TEXT DEFAULT (CURRENT_TIMESTAMP),
+			fecha_actualizacion TEXT DEFAULT (CURRENT_TIMESTAMP),
 			usuario_creador TEXT
 		);`,
 		`CREATE INDEX IF NOT EXISTS ix_empresa_odontologia_tratamientos_empresa ON empresa_odontologia_tratamientos(empresa_id, estado, id DESC);`,
 		`CREATE TABLE IF NOT EXISTS empresa_odontologia_presupuestos (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL,
 			paciente_id INTEGER NOT NULL,
 			tratamiento_id INTEGER DEFAULT 0,
@@ -360,13 +360,13 @@ func EnsureEmpresaOdontologiaSchema(dbConn *sql.DB) error {
 			estado TEXT DEFAULT 'vigente',
 			vigencia_hasta TEXT,
 			observaciones TEXT,
-			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
-			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+			fecha_creacion TEXT DEFAULT (CURRENT_TIMESTAMP),
+			fecha_actualizacion TEXT DEFAULT (CURRENT_TIMESTAMP),
 			usuario_creador TEXT
 		);`,
 		`CREATE INDEX IF NOT EXISTS ix_empresa_odontologia_presupuestos_empresa ON empresa_odontologia_presupuestos(empresa_id, estado, id DESC);`,
 		`CREATE TABLE IF NOT EXISTS empresa_odontologia_pagos (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL,
 			paciente_id INTEGER DEFAULT 0,
 			cliente_id INTEGER,
@@ -381,8 +381,8 @@ func EnsureEmpresaOdontologiaSchema(dbConn *sql.DB) error {
 			fecha_pago TEXT,
 			estado TEXT DEFAULT 'aplicado',
 			observaciones TEXT,
-			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
-			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+			fecha_creacion TEXT DEFAULT (CURRENT_TIMESTAMP),
+			fecha_actualizacion TEXT DEFAULT (CURRENT_TIMESTAMP),
 			usuario_creador TEXT
 		);`,
 		`CREATE INDEX IF NOT EXISTS ix_empresa_odontologia_pagos_empresa ON empresa_odontologia_pagos(empresa_id, fecha_pago DESC, id DESC);`,
@@ -559,7 +559,7 @@ func syncEmpresaOdontologiaPacienteCliente(dbConn *sql.DB, paciente EmpresaOdont
 	if err != nil || clienteID <= 0 || paciente.ID <= 0 {
 		return clienteID, err
 	}
-	_, err = execSQLCompat(dbConn, `UPDATE empresa_odontologia_pacientes SET cliente_id=?, fecha_actualizacion=datetime('now','localtime') WHERE empresa_id=? AND id=?`, clienteID, paciente.EmpresaID, paciente.ID)
+	_, err = execSQLCompat(dbConn, `UPDATE empresa_odontologia_pacientes SET cliente_id=?, fecha_actualizacion=CURRENT_TIMESTAMP WHERE empresa_id=? AND id=?`, clienteID, paciente.EmpresaID, paciente.ID)
 	return clienteID, err
 }
 
@@ -587,7 +587,7 @@ func syncEmpresaOdontologiaTratamientoServicio(dbConn *sql.DB, tratamiento Empre
 		return 0, err
 	}
 	if tratamiento.ID > 0 {
-		_, err = execSQLCompat(dbConn, `UPDATE empresa_odontologia_tratamientos SET servicio_id=?, fecha_actualizacion=datetime('now','localtime') WHERE empresa_id=? AND id=?`, servicioID, tratamiento.EmpresaID, tratamiento.ID)
+		_, err = execSQLCompat(dbConn, `UPDATE empresa_odontologia_tratamientos SET servicio_id=?, fecha_actualizacion=CURRENT_TIMESTAMP WHERE empresa_id=? AND id=?`, servicioID, tratamiento.EmpresaID, tratamiento.ID)
 	}
 	return servicioID, err
 }
@@ -730,11 +730,11 @@ func BuildEmpresaOdontologiaDashboard(dbConn *sql.DB, empresaID int64) (*Empresa
 	row := &EmpresaOdontologiaDashboard{EmpresaID: empresaID}
 	_ = queryRowSQLCompat(dbConn, `SELECT COUNT(1) FROM empresa_odontologia_pacientes WHERE empresa_id = ? AND COALESCE(estado,'activo') = 'activo'`, empresaID).Scan(&row.PacientesActivos)
 	_ = queryRowSQLCompat(dbConn, `SELECT COUNT(1) FROM empresa_odontologia_profesionales WHERE empresa_id = ? AND COALESCE(estado,'activo') = 'activo'`, empresaID).Scan(&row.ProfesionalesActivos)
-	_ = queryRowSQLCompat(dbConn, `SELECT COUNT(1) FROM empresa_odontologia_citas WHERE empresa_id = ? AND substr(COALESCE(fecha_hora,''),1,10) = substr(datetime('now','localtime'),1,10)`, empresaID).Scan(&row.CitasHoy)
+	_ = queryRowSQLCompat(dbConn, `SELECT COUNT(1) FROM empresa_odontologia_citas WHERE empresa_id = ? AND substr(COALESCE(fecha_hora,''),1,10) = substr(CURRENT_TIMESTAMP,1,10)`, empresaID).Scan(&row.CitasHoy)
 	_ = queryRowSQLCompat(dbConn, `SELECT COUNT(1) FROM empresa_odontologia_citas WHERE empresa_id = ? AND COALESCE(estado,'programada') IN ('programada','confirmada','en_sala')`, empresaID).Scan(&row.CitasPendientes)
 	_ = queryRowSQLCompat(dbConn, `SELECT COUNT(1) FROM empresa_odontologia_tratamientos WHERE empresa_id = ? AND COALESCE(estado,'planificado') IN ('planificado','en_proceso')`, empresaID).Scan(&row.TratamientosActivos)
 	_ = queryRowSQLCompat(dbConn, `SELECT COUNT(1) FROM empresa_odontologia_presupuestos WHERE empresa_id = ? AND COALESCE(estado,'vigente') IN ('vigente','parcial')`, empresaID).Scan(&row.PresupuestosVigentes)
-	_ = queryRowSQLCompat(dbConn, `SELECT COALESCE(SUM(monto),0) FROM empresa_odontologia_pagos WHERE empresa_id = ? AND substr(COALESCE(fecha_pago,''),1,7) = substr(datetime('now','localtime'),1,7) AND COALESCE(estado,'aplicado') <> 'anulado'`, empresaID).Scan(&row.RecaudoMes)
+	_ = queryRowSQLCompat(dbConn, `SELECT COALESCE(SUM(monto),0) FROM empresa_odontologia_pagos WHERE empresa_id = ? AND substr(COALESCE(fecha_pago,''),1,7) = substr(CURRENT_TIMESTAMP,1,7) AND COALESCE(estado,'aplicado') <> 'anulado'`, empresaID).Scan(&row.RecaudoMes)
 	_ = queryRowSQLCompat(dbConn, `SELECT COALESCE(SUM(saldo),0) FROM empresa_odontologia_presupuestos WHERE empresa_id = ? AND COALESCE(estado,'vigente') IN ('vigente','parcial')`, empresaID).Scan(&row.SaldoPendiente)
 	agenda, err := ListEmpresaOdontologiaCitasByFecha(dbConn, empresaID, time.Now().Format("2006-01-02"))
 	if err != nil {
@@ -788,11 +788,11 @@ func CreateEmpresaOdontologiaPaciente(dbConn *sql.DB, payload EmpresaOdontologia
 		return 0, err
 	}
 	payload.ClienteID = clienteID
-	return insertSQLCompat(dbConn, `INSERT INTO empresa_odontologia_pacientes (empresa_id,cliente_id,codigo,nombre_completo,documento,telefono,email,fecha_nacimiento,genero,aseguradora,alergias,riesgo_medico,ultima_visita,saldo,estado,observaciones,fecha_creacion,fecha_actualizacion,usuario_creador) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,datetime('now','localtime'),datetime('now','localtime'),?)`, payload.EmpresaID, nullableInt64(payload.ClienteID), strings.TrimSpace(payload.Codigo), strings.TrimSpace(payload.NombreCompleto), strings.TrimSpace(payload.Documento), strings.TrimSpace(payload.Telefono), strings.TrimSpace(payload.Email), strings.TrimSpace(payload.FechaNacimiento), strings.TrimSpace(payload.Genero), strings.TrimSpace(payload.Aseguradora), strings.TrimSpace(payload.Alergias), strings.TrimSpace(payload.RiesgoMedico), strings.TrimSpace(payload.UltimaVisita), payload.Saldo, payload.Estado, strings.TrimSpace(payload.Observaciones), strings.TrimSpace(payload.UsuarioCreador))
+	return insertSQLCompat(dbConn, `INSERT INTO empresa_odontologia_pacientes (empresa_id,cliente_id,codigo,nombre_completo,documento,telefono,email,fecha_nacimiento,genero,aseguradora,alergias,riesgo_medico,ultima_visita,saldo,estado,observaciones,fecha_creacion,fecha_actualizacion,usuario_creador) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,?)`, payload.EmpresaID, nullableInt64(payload.ClienteID), strings.TrimSpace(payload.Codigo), strings.TrimSpace(payload.NombreCompleto), strings.TrimSpace(payload.Documento), strings.TrimSpace(payload.Telefono), strings.TrimSpace(payload.Email), strings.TrimSpace(payload.FechaNacimiento), strings.TrimSpace(payload.Genero), strings.TrimSpace(payload.Aseguradora), strings.TrimSpace(payload.Alergias), strings.TrimSpace(payload.RiesgoMedico), strings.TrimSpace(payload.UltimaVisita), payload.Saldo, payload.Estado, strings.TrimSpace(payload.Observaciones), strings.TrimSpace(payload.UsuarioCreador))
 }
 
 func SetEmpresaOdontologiaPacienteEstado(dbConn *sql.DB, empresaID, id int64, estado string) error {
-	_, err := execSQLCompat(dbConn, `UPDATE empresa_odontologia_pacientes SET estado = ?, fecha_actualizacion = datetime('now','localtime') WHERE empresa_id = ? AND id = ?`, normalizeOdontoEstado(estado, "activo"), empresaID, id)
+	_, err := execSQLCompat(dbConn, `UPDATE empresa_odontologia_pacientes SET estado = ?, fecha_actualizacion = CURRENT_TIMESTAMP WHERE empresa_id = ? AND id = ?`, normalizeOdontoEstado(estado, "activo"), empresaID, id)
 	return err
 }
 
@@ -827,11 +827,11 @@ func CreateEmpresaOdontologiaProfesional(dbConn *sql.DB, payload EmpresaOdontolo
 	if strings.TrimSpace(payload.ColorAgenda) == "" {
 		payload.ColorAgenda = "#0ea5e9"
 	}
-	return insertSQLCompat(dbConn, `INSERT INTO empresa_odontologia_profesionales (empresa_id,nombre_completo,especialidad,registro_profesional,telefono,email,color_agenda,estado,observaciones,fecha_creacion,fecha_actualizacion,usuario_creador) VALUES (?,?,?,?,?,?,?,?,?,datetime('now','localtime'),datetime('now','localtime'),?)`, payload.EmpresaID, strings.TrimSpace(payload.NombreCompleto), strings.TrimSpace(payload.Especialidad), strings.TrimSpace(payload.RegistroProfesional), strings.TrimSpace(payload.Telefono), strings.TrimSpace(payload.Email), strings.TrimSpace(payload.ColorAgenda), payload.Estado, strings.TrimSpace(payload.Observaciones), strings.TrimSpace(payload.UsuarioCreador))
+	return insertSQLCompat(dbConn, `INSERT INTO empresa_odontologia_profesionales (empresa_id,nombre_completo,especialidad,registro_profesional,telefono,email,color_agenda,estado,observaciones,fecha_creacion,fecha_actualizacion,usuario_creador) VALUES (?,?,?,?,?,?,?,?,?,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,?)`, payload.EmpresaID, strings.TrimSpace(payload.NombreCompleto), strings.TrimSpace(payload.Especialidad), strings.TrimSpace(payload.RegistroProfesional), strings.TrimSpace(payload.Telefono), strings.TrimSpace(payload.Email), strings.TrimSpace(payload.ColorAgenda), payload.Estado, strings.TrimSpace(payload.Observaciones), strings.TrimSpace(payload.UsuarioCreador))
 }
 
 func SetEmpresaOdontologiaProfesionalEstado(dbConn *sql.DB, empresaID, id int64, estado string) error {
-	_, err := execSQLCompat(dbConn, `UPDATE empresa_odontologia_profesionales SET estado = ?, fecha_actualizacion = datetime('now','localtime') WHERE empresa_id = ? AND id = ?`, normalizeOdontoEstado(estado, "activo"), empresaID, id)
+	_, err := execSQLCompat(dbConn, `UPDATE empresa_odontologia_profesionales SET estado = ?, fecha_actualizacion = CURRENT_TIMESTAMP WHERE empresa_id = ? AND id = ?`, normalizeOdontoEstado(estado, "activo"), empresaID, id)
 	return err
 }
 
@@ -863,11 +863,11 @@ func CreateEmpresaOdontologiaConsultorio(dbConn *sql.DB, payload EmpresaOdontolo
 		return 0, fmt.Errorf("empresa_id y nombre son obligatorios")
 	}
 	payload.Estado = normalizeOdontoEstado(payload.Estado, "activo")
-	return insertSQLCompat(dbConn, `INSERT INTO empresa_odontologia_consultorios (empresa_id,nombre,sede,sillon,estado,observaciones,fecha_creacion,fecha_actualizacion,usuario_creador) VALUES (?,?,?,?,?,?,datetime('now','localtime'),datetime('now','localtime'),?)`, payload.EmpresaID, strings.TrimSpace(payload.Nombre), strings.TrimSpace(payload.Sede), strings.TrimSpace(payload.Sillon), payload.Estado, strings.TrimSpace(payload.Observaciones), strings.TrimSpace(payload.UsuarioCreador))
+	return insertSQLCompat(dbConn, `INSERT INTO empresa_odontologia_consultorios (empresa_id,nombre,sede,sillon,estado,observaciones,fecha_creacion,fecha_actualizacion,usuario_creador) VALUES (?,?,?,?,?,?,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,?)`, payload.EmpresaID, strings.TrimSpace(payload.Nombre), strings.TrimSpace(payload.Sede), strings.TrimSpace(payload.Sillon), payload.Estado, strings.TrimSpace(payload.Observaciones), strings.TrimSpace(payload.UsuarioCreador))
 }
 
 func SetEmpresaOdontologiaConsultorioEstado(dbConn *sql.DB, empresaID, id int64, estado string) error {
-	_, err := execSQLCompat(dbConn, `UPDATE empresa_odontologia_consultorios SET estado = ?, fecha_actualizacion = datetime('now','localtime') WHERE empresa_id = ? AND id = ?`, normalizeOdontoEstado(estado, "activo"), empresaID, id)
+	_, err := execSQLCompat(dbConn, `UPDATE empresa_odontologia_consultorios SET estado = ?, fecha_actualizacion = CURRENT_TIMESTAMP WHERE empresa_id = ? AND id = ?`, normalizeOdontoEstado(estado, "activo"), empresaID, id)
 	return err
 }
 
@@ -909,11 +909,11 @@ func CreateEmpresaOdontologiaCita(dbConn *sql.DB, payload EmpresaOdontologiaCita
 		payload.DuracionMinutos = 45
 	}
 	payload.Estado = normalizeOdontoEstado(payload.Estado, "programada")
-	return insertSQLCompat(dbConn, `INSERT INTO empresa_odontologia_citas (empresa_id,paciente_id,profesional_id,consultorio_id,fecha_hora,duracion_minutos,motivo,estado,canal,prioridad,aseguradora,observaciones,fecha_creacion,fecha_actualizacion,usuario_creador) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,datetime('now','localtime'),datetime('now','localtime'),?)`, payload.EmpresaID, payload.PacienteID, payload.ProfesionalID, payload.ConsultorioID, strings.TrimSpace(payload.FechaHora), payload.DuracionMinutos, strings.TrimSpace(payload.Motivo), payload.Estado, strings.TrimSpace(payload.Canal), strings.TrimSpace(payload.Prioridad), strings.TrimSpace(payload.Aseguradora), strings.TrimSpace(payload.Observaciones), strings.TrimSpace(payload.UsuarioCreador))
+	return insertSQLCompat(dbConn, `INSERT INTO empresa_odontologia_citas (empresa_id,paciente_id,profesional_id,consultorio_id,fecha_hora,duracion_minutos,motivo,estado,canal,prioridad,aseguradora,observaciones,fecha_creacion,fecha_actualizacion,usuario_creador) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,?)`, payload.EmpresaID, payload.PacienteID, payload.ProfesionalID, payload.ConsultorioID, strings.TrimSpace(payload.FechaHora), payload.DuracionMinutos, strings.TrimSpace(payload.Motivo), payload.Estado, strings.TrimSpace(payload.Canal), strings.TrimSpace(payload.Prioridad), strings.TrimSpace(payload.Aseguradora), strings.TrimSpace(payload.Observaciones), strings.TrimSpace(payload.UsuarioCreador))
 }
 
 func SetEmpresaOdontologiaCitaEstado(dbConn *sql.DB, empresaID, id int64, estado string) error {
-	_, err := execSQLCompat(dbConn, `UPDATE empresa_odontologia_citas SET estado = ?, fecha_actualizacion = datetime('now','localtime') WHERE empresa_id = ? AND id = ?`, normalizeOdontoEstado(estado, "programada"), empresaID, id)
+	_, err := execSQLCompat(dbConn, `UPDATE empresa_odontologia_citas SET estado = ?, fecha_actualizacion = CURRENT_TIMESTAMP WHERE empresa_id = ? AND id = ?`, normalizeOdontoEstado(estado, "programada"), empresaID, id)
 	return err
 }
 
@@ -945,9 +945,9 @@ func CreateEmpresaOdontologiaHistoria(dbConn *sql.DB, payload EmpresaOdontologia
 		return 0, fmt.Errorf("empresa_id y paciente_id son obligatorios")
 	}
 	payload.Estado = normalizeOdontoEstado(payload.Estado, "cerrada")
-	id, err := insertSQLCompat(dbConn, `INSERT INTO empresa_odontologia_historias (empresa_id,paciente_id,profesional_id,cita_id,fecha_atencion,motivo_consulta,diagnostico,plan_tratamiento,evolucion,formula,recomendaciones,proxima_cita,estado,fecha_creacion,fecha_actualizacion,usuario_creador) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,datetime('now','localtime'),datetime('now','localtime'),?)`, payload.EmpresaID, payload.PacienteID, payload.ProfesionalID, payload.CitaID, strings.TrimSpace(payload.FechaAtencion), strings.TrimSpace(payload.MotivoConsulta), strings.TrimSpace(payload.Diagnostico), strings.TrimSpace(payload.PlanTratamiento), strings.TrimSpace(payload.Evolucion), strings.TrimSpace(payload.Formula), strings.TrimSpace(payload.Recomendaciones), strings.TrimSpace(payload.ProximaCita), payload.Estado, strings.TrimSpace(payload.UsuarioCreador))
+	id, err := insertSQLCompat(dbConn, `INSERT INTO empresa_odontologia_historias (empresa_id,paciente_id,profesional_id,cita_id,fecha_atencion,motivo_consulta,diagnostico,plan_tratamiento,evolucion,formula,recomendaciones,proxima_cita,estado,fecha_creacion,fecha_actualizacion,usuario_creador) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,?)`, payload.EmpresaID, payload.PacienteID, payload.ProfesionalID, payload.CitaID, strings.TrimSpace(payload.FechaAtencion), strings.TrimSpace(payload.MotivoConsulta), strings.TrimSpace(payload.Diagnostico), strings.TrimSpace(payload.PlanTratamiento), strings.TrimSpace(payload.Evolucion), strings.TrimSpace(payload.Formula), strings.TrimSpace(payload.Recomendaciones), strings.TrimSpace(payload.ProximaCita), payload.Estado, strings.TrimSpace(payload.UsuarioCreador))
 	if err == nil {
-		_, _ = execSQLCompat(dbConn, `UPDATE empresa_odontologia_pacientes SET ultima_visita = ?, fecha_actualizacion = datetime('now','localtime') WHERE empresa_id = ? AND id = ?`, strings.TrimSpace(payload.FechaAtencion), payload.EmpresaID, payload.PacienteID)
+		_, _ = execSQLCompat(dbConn, `UPDATE empresa_odontologia_pacientes SET ultima_visita = ?, fecha_actualizacion = CURRENT_TIMESTAMP WHERE empresa_id = ? AND id = ?`, strings.TrimSpace(payload.FechaAtencion), payload.EmpresaID, payload.PacienteID)
 	}
 	return id, err
 }
@@ -980,7 +980,7 @@ func CreateEmpresaOdontologiaOdontograma(dbConn *sql.DB, payload EmpresaOdontolo
 		return 0, fmt.Errorf("empresa_id y paciente_id son obligatorios")
 	}
 	payload.Estado = normalizeOdontoEstado(payload.Estado, "activo")
-	return insertSQLCompat(dbConn, `INSERT INTO empresa_odontologia_odontogramas (empresa_id,paciente_id,profesional_id,fecha_registro,piezas_json,observaciones,estado,fecha_creacion,fecha_actualizacion,usuario_creador) VALUES (?,?,?,?,?,?,?,?,datetime('now','localtime'),?)`, payload.EmpresaID, payload.PacienteID, payload.ProfesionalID, strings.TrimSpace(payload.FechaRegistro), strings.TrimSpace(payload.PiezasJSON), strings.TrimSpace(payload.Observaciones), payload.Estado, strings.TrimSpace(payload.UsuarioCreador))
+	return insertSQLCompat(dbConn, `INSERT INTO empresa_odontologia_odontogramas (empresa_id,paciente_id,profesional_id,fecha_registro,piezas_json,observaciones,estado,fecha_creacion,fecha_actualizacion,usuario_creador) VALUES (?,?,?,?,?,?,?,?,CURRENT_TIMESTAMP,?)`, payload.EmpresaID, payload.PacienteID, payload.ProfesionalID, strings.TrimSpace(payload.FechaRegistro), strings.TrimSpace(payload.PiezasJSON), strings.TrimSpace(payload.Observaciones), payload.Estado, strings.TrimSpace(payload.UsuarioCreador))
 }
 
 func ListEmpresaOdontologiaTratamientos(dbConn *sql.DB, empresaID int64) ([]EmpresaOdontologiaTratamiento, error) {
@@ -1014,7 +1014,7 @@ func CreateEmpresaOdontologiaTratamiento(dbConn *sql.DB, payload EmpresaOdontolo
 		payload.SesionesTotal = 1
 	}
 	payload.Estado = normalizeOdontoEstado(payload.Estado, "planificado")
-	id, err := insertSQLCompat(dbConn, `INSERT INTO empresa_odontologia_tratamientos (empresa_id,paciente_id,profesional_id,nombre,categoria,piezas,sesiones_total,sesiones_realizadas,costo_estimado,costo_real,fecha_inicio,fecha_fin,estado,observaciones,fecha_creacion,fecha_actualizacion,usuario_creador) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,datetime('now','localtime'),datetime('now','localtime'),?)`, payload.EmpresaID, payload.PacienteID, payload.ProfesionalID, strings.TrimSpace(payload.Nombre), strings.TrimSpace(payload.Categoria), strings.TrimSpace(payload.Piezas), payload.SesionesTotal, payload.SesionesRealizadas, payload.CostoEstimado, payload.CostoReal, strings.TrimSpace(payload.FechaInicio), strings.TrimSpace(payload.FechaFin), payload.Estado, strings.TrimSpace(payload.Observaciones), strings.TrimSpace(payload.UsuarioCreador))
+	id, err := insertSQLCompat(dbConn, `INSERT INTO empresa_odontologia_tratamientos (empresa_id,paciente_id,profesional_id,nombre,categoria,piezas,sesiones_total,sesiones_realizadas,costo_estimado,costo_real,fecha_inicio,fecha_fin,estado,observaciones,fecha_creacion,fecha_actualizacion,usuario_creador) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,?)`, payload.EmpresaID, payload.PacienteID, payload.ProfesionalID, strings.TrimSpace(payload.Nombre), strings.TrimSpace(payload.Categoria), strings.TrimSpace(payload.Piezas), payload.SesionesTotal, payload.SesionesRealizadas, payload.CostoEstimado, payload.CostoReal, strings.TrimSpace(payload.FechaInicio), strings.TrimSpace(payload.FechaFin), payload.Estado, strings.TrimSpace(payload.Observaciones), strings.TrimSpace(payload.UsuarioCreador))
 	if err != nil {
 		return 0, err
 	}
@@ -1026,7 +1026,7 @@ func CreateEmpresaOdontologiaTratamiento(dbConn *sql.DB, payload EmpresaOdontolo
 }
 
 func SetEmpresaOdontologiaTratamientoEstado(dbConn *sql.DB, empresaID, id int64, estado string) error {
-	_, err := execSQLCompat(dbConn, `UPDATE empresa_odontologia_tratamientos SET estado = ?, fecha_actualizacion = datetime('now','localtime') WHERE empresa_id = ? AND id = ?`, normalizeOdontoEstado(estado, "planificado"), empresaID, id)
+	_, err := execSQLCompat(dbConn, `UPDATE empresa_odontologia_tratamientos SET estado = ?, fecha_actualizacion = CURRENT_TIMESTAMP WHERE empresa_id = ? AND id = ?`, normalizeOdontoEstado(estado, "planificado"), empresaID, id)
 	return err
 }
 
@@ -1062,11 +1062,11 @@ func CreateEmpresaOdontologiaPresupuesto(dbConn *sql.DB, payload EmpresaOdontolo
 	if saldo < 0 {
 		saldo = 0
 	}
-	return insertSQLCompat(dbConn, `INSERT INTO empresa_odontologia_presupuestos (empresa_id,paciente_id,tratamiento_id,nombre,valor_total,cuota_inicial,saldo,estado,vigencia_hasta,observaciones,fecha_creacion,fecha_actualizacion,usuario_creador) VALUES (?,?,?,?,?,?,?,?,?,?,datetime('now','localtime'),datetime('now','localtime'),?)`, payload.EmpresaID, payload.PacienteID, payload.TratamientoID, strings.TrimSpace(payload.Nombre), payload.ValorTotal, payload.CuotaInicial, saldo, payload.Estado, strings.TrimSpace(payload.VigenciaHasta), strings.TrimSpace(payload.Observaciones), strings.TrimSpace(payload.UsuarioCreador))
+	return insertSQLCompat(dbConn, `INSERT INTO empresa_odontologia_presupuestos (empresa_id,paciente_id,tratamiento_id,nombre,valor_total,cuota_inicial,saldo,estado,vigencia_hasta,observaciones,fecha_creacion,fecha_actualizacion,usuario_creador) VALUES (?,?,?,?,?,?,?,?,?,?,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,?)`, payload.EmpresaID, payload.PacienteID, payload.TratamientoID, strings.TrimSpace(payload.Nombre), payload.ValorTotal, payload.CuotaInicial, saldo, payload.Estado, strings.TrimSpace(payload.VigenciaHasta), strings.TrimSpace(payload.Observaciones), strings.TrimSpace(payload.UsuarioCreador))
 }
 
 func SetEmpresaOdontologiaPresupuestoEstado(dbConn *sql.DB, empresaID, id int64, estado string) error {
-	_, err := execSQLCompat(dbConn, `UPDATE empresa_odontologia_presupuestos SET estado = ?, fecha_actualizacion = datetime('now','localtime') WHERE empresa_id = ? AND id = ?`, normalizeOdontoEstado(estado, "vigente"), empresaID, id)
+	_, err := execSQLCompat(dbConn, `UPDATE empresa_odontologia_presupuestos SET estado = ?, fecha_actualizacion = CURRENT_TIMESTAMP WHERE empresa_id = ? AND id = ?`, normalizeOdontoEstado(estado, "vigente"), empresaID, id)
 	return err
 }
 
@@ -1136,15 +1136,15 @@ func CreateEmpresaOdontologiaPago(dbConn *sql.DB, payload EmpresaOdontologiaPago
 		payload.CarritoID = carritoID
 		payload.CarritoItemID = itemID
 	}
-	id, err := insertSQLCompat(dbConn, `INSERT INTO empresa_odontologia_pagos (empresa_id,paciente_id,cliente_id,presupuesto_id,servicio_id,carrito_id,carrito_item_id,concepto,monto,metodo_pago,referencia,fecha_pago,estado,observaciones,fecha_creacion,fecha_actualizacion,usuario_creador) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,datetime('now','localtime'),datetime('now','localtime'),?)`, payload.EmpresaID, nullableInt64(payload.PacienteID), nullableInt64(payload.ClienteID), nullableInt64(payload.PresupuestoID), nullableInt64(payload.ServicioID), nullableInt64(payload.CarritoID), nullableInt64(payload.CarritoItemID), strings.TrimSpace(payload.Concepto), payload.Monto, strings.TrimSpace(payload.MetodoPago), strings.TrimSpace(payload.Referencia), strings.TrimSpace(payload.FechaPago), payload.Estado, strings.TrimSpace(payload.Observaciones), strings.TrimSpace(payload.UsuarioCreador))
+	id, err := insertSQLCompat(dbConn, `INSERT INTO empresa_odontologia_pagos (empresa_id,paciente_id,cliente_id,presupuesto_id,servicio_id,carrito_id,carrito_item_id,concepto,monto,metodo_pago,referencia,fecha_pago,estado,observaciones,fecha_creacion,fecha_actualizacion,usuario_creador) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,?)`, payload.EmpresaID, nullableInt64(payload.PacienteID), nullableInt64(payload.ClienteID), nullableInt64(payload.PresupuestoID), nullableInt64(payload.ServicioID), nullableInt64(payload.CarritoID), nullableInt64(payload.CarritoItemID), strings.TrimSpace(payload.Concepto), payload.Monto, strings.TrimSpace(payload.MetodoPago), strings.TrimSpace(payload.Referencia), strings.TrimSpace(payload.FechaPago), payload.Estado, strings.TrimSpace(payload.Observaciones), strings.TrimSpace(payload.UsuarioCreador))
 	if err != nil {
 		return 0, err
 	}
 	if payload.PresupuestoID > 0 {
-		_, _ = execSQLCompat(dbConn, `UPDATE empresa_odontologia_presupuestos SET saldo = CASE WHEN saldo - ? < 0 THEN 0 ELSE saldo - ? END, estado = CASE WHEN saldo - ? <= 0 THEN 'pagado' ELSE estado END, fecha_actualizacion = datetime('now','localtime') WHERE empresa_id = ? AND id = ?`, payload.Monto, payload.Monto, payload.Monto, payload.EmpresaID, payload.PresupuestoID)
+		_, _ = execSQLCompat(dbConn, `UPDATE empresa_odontologia_presupuestos SET saldo = CASE WHEN saldo - ? < 0 THEN 0 ELSE saldo - ? END, estado = CASE WHEN saldo - ? <= 0 THEN 'pagado' ELSE estado END, fecha_actualizacion = CURRENT_TIMESTAMP WHERE empresa_id = ? AND id = ?`, payload.Monto, payload.Monto, payload.Monto, payload.EmpresaID, payload.PresupuestoID)
 	}
 	if payload.PacienteID > 0 {
-		_, _ = execSQLCompat(dbConn, `UPDATE empresa_odontologia_pacientes SET saldo = CASE WHEN saldo - ? < 0 THEN 0 ELSE saldo - ? END, fecha_actualizacion = datetime('now','localtime') WHERE empresa_id = ? AND id = ?`, payload.Monto, payload.Monto, payload.EmpresaID, payload.PacienteID)
+		_, _ = execSQLCompat(dbConn, `UPDATE empresa_odontologia_pacientes SET saldo = CASE WHEN saldo - ? < 0 THEN 0 ELSE saldo - ? END, fecha_actualizacion = CURRENT_TIMESTAMP WHERE empresa_id = ? AND id = ?`, payload.Monto, payload.Monto, payload.EmpresaID, payload.PacienteID)
 	}
 	return id, nil
 }

@@ -106,7 +106,7 @@ type EmpresaInventarioAvanzadoDashboard struct {
 func EnsureEmpresaInventarioAvanzadoSchema(dbConn *sql.DB) error {
 	stmts := []string{
 		`CREATE TABLE IF NOT EXISTS empresa_inventario_lotes_avanzados (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL,
 			producto_id INTEGER NOT NULL,
 			bodega_id INTEGER NOT NULL,
@@ -128,7 +128,7 @@ func EnsureEmpresaInventarioAvanzadoSchema(dbConn *sql.DB) error {
 		)`,
 		`CREATE INDEX IF NOT EXISTS ix_inv_lotes_av_empresa_venc ON empresa_inventario_lotes_avanzados(empresa_id, fecha_vencimiento, estado)`,
 		`CREATE TABLE IF NOT EXISTS empresa_inventario_seriales_avanzados (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL,
 			lote_id INTEGER DEFAULT 0,
 			producto_id INTEGER NOT NULL,
@@ -147,7 +147,7 @@ func EnsureEmpresaInventarioAvanzadoSchema(dbConn *sql.DB) error {
 		)`,
 		`CREATE INDEX IF NOT EXISTS ix_inv_seriales_av_producto ON empresa_inventario_seriales_avanzados(empresa_id, producto_id, bodega_id)`,
 		`CREATE TABLE IF NOT EXISTS empresa_inventario_reservas_avanzadas (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL,
 			producto_id INTEGER NOT NULL,
 			bodega_id INTEGER NOT NULL,

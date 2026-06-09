@@ -142,19 +142,19 @@ func EnsureEmpresaCalculadoraSchema(dbConn *sql.DB) error {
 
 	stmts := []string{
 		`CREATE TABLE IF NOT EXISTS empresa_calculadora_configuracion (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL UNIQUE,
 			integrar_carritos INTEGER DEFAULT 1,
 			integrar_cotizaciones INTEGER DEFAULT 1,
-			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
-			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+			fecha_creacion TEXT DEFAULT (CURRENT_TIMESTAMP),
+			fecha_actualizacion TEXT DEFAULT (CURRENT_TIMESTAMP),
 			usuario_creador TEXT,
 			estado TEXT DEFAULT 'activo',
 			observaciones TEXT
 		);`,
 		`CREATE UNIQUE INDEX IF NOT EXISTS ux_empresa_calculadora_configuracion_empresa ON empresa_calculadora_configuracion(empresa_id);`,
 		`CREATE TABLE IF NOT EXISTS empresa_calculadora_operaciones (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL,
 			expresion TEXT NOT NULL,
 			resultado TEXT NOT NULL,
@@ -165,10 +165,10 @@ func EnsureEmpresaCalculadoraSchema(dbConn *sql.DB) error {
 			documento_codigo TEXT,
 			carrito_id INTEGER DEFAULT 0,
 			cotizacion_id INTEGER DEFAULT 0,
-			fecha_operacion TEXT DEFAULT (datetime('now','localtime')),
+			fecha_operacion TEXT DEFAULT (CURRENT_TIMESTAMP),
 			metadata_json TEXT DEFAULT '{}',
-			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
-			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+			fecha_creacion TEXT DEFAULT (CURRENT_TIMESTAMP),
+			fecha_actualizacion TEXT DEFAULT (CURRENT_TIMESTAMP),
 			usuario_creador TEXT,
 			estado TEXT DEFAULT 'activo',
 			observaciones TEXT
@@ -224,7 +224,7 @@ func EnsureEmpresaCalculadoraSchema(dbConn *sql.DB) error {
 	if err := ensureColumnIfMissing(dbConn, "empresa_calculadora_operaciones", "cotizacion_id", "INTEGER DEFAULT 0"); err != nil {
 		return err
 	}
-	if err := ensureColumnIfMissing(dbConn, "empresa_calculadora_operaciones", "fecha_operacion", "TEXT DEFAULT (datetime('now','localtime'))"); err != nil {
+	if err := ensureColumnIfMissing(dbConn, "empresa_calculadora_operaciones", "fecha_operacion", "TEXT DEFAULT (CURRENT_TIMESTAMP)"); err != nil {
 		return err
 	}
 	if err := ensureColumnIfMissing(dbConn, "empresa_calculadora_operaciones", "metadata_json", "TEXT DEFAULT '{}'"); err != nil {
@@ -331,8 +331,8 @@ func UpsertEmpresaCalculadoraConfiguracion(dbConn *sql.DB, cfg EmpresaCalculador
 			observaciones
 		) VALUES (
 			?, ?, ?,
-			datetime('now','localtime'),
-			datetime('now','localtime'),
+			CURRENT_TIMESTAMP,
+			CURRENT_TIMESTAMP,
 			?, ?, ?
 		)`,
 			cfg.EmpresaID,
@@ -351,7 +351,7 @@ func UpsertEmpresaCalculadoraConfiguracion(dbConn *sql.DB, cfg EmpresaCalculador
 	_, updateErr := dbConn.Exec(`UPDATE empresa_calculadora_configuracion SET
 		integrar_carritos = ?,
 		integrar_cotizaciones = ?,
-		fecha_actualizacion = datetime('now','localtime'),
+		fecha_actualizacion = CURRENT_TIMESTAMP,
 		usuario_creador = ?,
 		estado = ?,
 		observaciones = ?
@@ -432,10 +432,10 @@ func CreateEmpresaCalculadoraOperacion(dbConn *sql.DB, op EmpresaCalculadoraOper
 		?, ?, ?, ?,
 		?, ?, ?, ?,
 		?, ?,
-		COALESCE(NULLIF(?, ''), datetime('now','localtime')),
+		COALESCE(NULLIF(?, ''), CURRENT_TIMESTAMP),
 		?,
-		datetime('now','localtime'),
-		datetime('now','localtime'),
+		CURRENT_TIMESTAMP,
+		CURRENT_TIMESTAMP,
 		?, ?, ?
 	)`,
 		op.EmpresaID,
@@ -539,7 +539,7 @@ func ListEmpresaCalculadoraOperaciones(dbConn *sql.DB, empresaID int64, filter E
 		COALESCE(observaciones, '')
 	FROM empresa_calculadora_operaciones
 	WHERE empresa_id = ?` + whereSQL + `
-	ORDER BY datetime(COALESCE(fecha_operacion, fecha_creacion)) DESC, id DESC
+	ORDER BY pcs_ts(COALESCE(fecha_operacion, fecha_creacion)) DESC, id DESC
 	LIMIT ? OFFSET ?`
 
 	args := make([]interface{}, 0, 3+len(whereArgs))
@@ -660,7 +660,7 @@ func SetEmpresaCalculadoraOperacionEstadoByID(dbConn *sql.DB, empresaID, operaci
 
 	_, err := dbConn.Exec(`UPDATE empresa_calculadora_operaciones SET
 		estado = ?,
-		fecha_actualizacion = datetime('now','localtime')
+		fecha_actualizacion = CURRENT_TIMESTAMP
 	WHERE empresa_id = ? AND id = ?`, normalizeEmpresaCalculadoraEstado(estado), empresaID, operacionID)
 	return err
 }
@@ -675,7 +675,7 @@ func SetEmpresaCalculadoraOperacionesEstado(dbConn *sql.DB, empresaID int64, fil
 	}
 
 	whereSQL, whereArgs := calcBuildOperacionesFilterClause(filter, false)
-	query := "UPDATE empresa_calculadora_operaciones SET estado = ?, fecha_actualizacion = datetime('now','localtime') WHERE empresa_id = ?" + whereSQL
+	query := "UPDATE empresa_calculadora_operaciones SET estado = ?, fecha_actualizacion = CURRENT_TIMESTAMP WHERE empresa_id = ?" + whereSQL
 	args := make([]interface{}, 0, 2+len(whereArgs))
 	args = append(args, normalizeEmpresaCalculadoraEstado(estado), empresaID)
 	args = append(args, whereArgs...)

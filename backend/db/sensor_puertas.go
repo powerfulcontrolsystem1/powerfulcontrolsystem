@@ -85,7 +85,7 @@ func EnsureEmpresaSensorPuertasSchema(dbConn *sql.DB) error {
 
 	stmts := []string{
 		`CREATE TABLE IF NOT EXISTS empresa_sensor_puertas_devices (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL,
 			device_id TEXT NOT NULL,
 			device_token_hash TEXT,
@@ -93,7 +93,7 @@ func EnsureEmpresaSensorPuertasSchema(dbConn *sql.DB) error {
 			estacion_id INTEGER,
 			last_state TEXT,
 			last_seen TEXT,
-			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
+			fecha_creacion TEXT DEFAULT (CURRENT_TIMESTAMP),
 			fecha_actualizacion TEXT,
 			usuario_creador TEXT,
 			estado TEXT DEFAULT 'activo',
@@ -103,13 +103,13 @@ func EnsureEmpresaSensorPuertasSchema(dbConn *sql.DB) error {
 		`CREATE INDEX IF NOT EXISTS ix_empresa_sensor_device_empresa ON empresa_sensor_puertas_devices(empresa_id);`,
 		`CREATE INDEX IF NOT EXISTS ix_empresa_sensor_device_lookup ON empresa_sensor_puertas_devices(empresa_id, estado, estacion_id, last_state);`,
 		`CREATE TABLE IF NOT EXISTS empresa_sensor_puertas_messages (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER,
 			device_id TEXT,
 			estacion_id INTEGER,
 			message_text TEXT,
 			raw_text TEXT,
-			received_at TEXT DEFAULT (datetime('now','localtime')),
+			received_at TEXT DEFAULT (CURRENT_TIMESTAMP),
 			procesado INTEGER DEFAULT 0
 		);`,
 		`CREATE INDEX IF NOT EXISTS ix_empresa_sensor_messages_empresa ON empresa_sensor_puertas_messages(empresa_id);`,
@@ -251,13 +251,13 @@ func UpsertEmpresaSensorDevice(dbConn *sql.DB, p *EmpresaSensorDevice) (int64, e
 
 	if existingID > 0 {
 		if tokenHash.Valid {
-			_, err := dbConn.Exec(`UPDATE empresa_sensor_puertas_devices SET estacion_id = NULLIF(?,0), fecha_actualizacion = datetime('now','localtime'), usuario_creador = ?, estado = COALESCE(NULLIF(?, ''), 'activo'), observaciones = COALESCE(NULLIF(?, ''), observaciones), device_token_hash = ?, device_token_enc = ? WHERE id = ?`, p.EstacionID, p.UsuarioCreador, p.Estado, strings.TrimSpace(p.Observaciones), tokenHash.String, tokenEnc.String, existingID)
+			_, err := dbConn.Exec(`UPDATE empresa_sensor_puertas_devices SET estacion_id = NULLIF(?,0), fecha_actualizacion = CURRENT_TIMESTAMP, usuario_creador = ?, estado = COALESCE(NULLIF(?, ''), 'activo'), observaciones = COALESCE(NULLIF(?, ''), observaciones), device_token_hash = ?, device_token_enc = ? WHERE id = ?`, p.EstacionID, p.UsuarioCreador, p.Estado, strings.TrimSpace(p.Observaciones), tokenHash.String, tokenEnc.String, existingID)
 			if err != nil {
 				return 0, err
 			}
 			return existingID, nil
 		}
-		_, err := dbConn.Exec(`UPDATE empresa_sensor_puertas_devices SET estacion_id = NULLIF(?,0), fecha_actualizacion = datetime('now','localtime'), usuario_creador = ?, estado = COALESCE(NULLIF(?, ''), 'activo'), observaciones = COALESCE(NULLIF(?, ''), observaciones) WHERE id = ?`, p.EstacionID, p.UsuarioCreador, p.Estado, strings.TrimSpace(p.Observaciones), existingID)
+		_, err := dbConn.Exec(`UPDATE empresa_sensor_puertas_devices SET estacion_id = NULLIF(?,0), fecha_actualizacion = CURRENT_TIMESTAMP, usuario_creador = ?, estado = COALESCE(NULLIF(?, ''), 'activo'), observaciones = COALESCE(NULLIF(?, ''), observaciones) WHERE id = ?`, p.EstacionID, p.UsuarioCreador, p.Estado, strings.TrimSpace(p.Observaciones), existingID)
 		if err != nil {
 			return 0, err
 		}
@@ -265,14 +265,14 @@ func UpsertEmpresaSensorDevice(dbConn *sql.DB, p *EmpresaSensorDevice) (int64, e
 	}
 
 	if tokenHash.Valid {
-		res, err := dbConn.Exec(`INSERT INTO empresa_sensor_puertas_devices (empresa_id, device_id, estacion_id, last_state, last_seen, device_token_hash, device_token_enc, fecha_creacion, fecha_actualizacion, usuario_creador, estado, observaciones) VALUES (?, ?, NULLIF(?,0), ?, ?, ?, ?, datetime('now','localtime'), datetime('now','localtime'), ?, COALESCE(NULLIF(?, ''), 'activo'), ?)`, p.EmpresaID, device, p.EstacionID, p.LastState, p.LastSeen, tokenHash.String, tokenEnc.String, p.UsuarioCreador, p.Estado, strings.TrimSpace(p.Observaciones))
+		res, err := dbConn.Exec(`INSERT INTO empresa_sensor_puertas_devices (empresa_id, device_id, estacion_id, last_state, last_seen, device_token_hash, device_token_enc, fecha_creacion, fecha_actualizacion, usuario_creador, estado, observaciones) VALUES (?, ?, NULLIF(?,0), ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, ?, COALESCE(NULLIF(?, ''), 'activo'), ?)`, p.EmpresaID, device, p.EstacionID, p.LastState, p.LastSeen, tokenHash.String, tokenEnc.String, p.UsuarioCreador, p.Estado, strings.TrimSpace(p.Observaciones))
 		if err != nil {
 			return 0, err
 		}
 		return res.LastInsertId()
 	}
 
-	res, err := dbConn.Exec(`INSERT INTO empresa_sensor_puertas_devices (empresa_id, device_id, estacion_id, last_state, last_seen, fecha_creacion, fecha_actualizacion, usuario_creador, estado, observaciones) VALUES (?, ?, NULLIF(?,0), ?, ?, datetime('now','localtime'), datetime('now','localtime'), ?, COALESCE(NULLIF(?, ''), 'activo'), ?)`, p.EmpresaID, device, p.EstacionID, p.LastState, p.LastSeen, p.UsuarioCreador, p.Estado, strings.TrimSpace(p.Observaciones))
+	res, err := dbConn.Exec(`INSERT INTO empresa_sensor_puertas_devices (empresa_id, device_id, estacion_id, last_state, last_seen, fecha_creacion, fecha_actualizacion, usuario_creador, estado, observaciones) VALUES (?, ?, NULLIF(?,0), ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, ?, COALESCE(NULLIF(?, ''), 'activo'), ?)`, p.EmpresaID, device, p.EstacionID, p.LastState, p.LastSeen, p.UsuarioCreador, p.Estado, strings.TrimSpace(p.Observaciones))
 	if err != nil {
 		return 0, err
 	}
@@ -291,7 +291,7 @@ func UpdateDeviceHeartbeat(dbConn *sql.DB, deviceID, state string) (int64, int64
 	}
 
 	nowState := strings.TrimSpace(state)
-	if _, err := dbConn.Exec(`UPDATE empresa_sensor_puertas_devices SET last_state = ?, last_seen = datetime('now','localtime'), fecha_actualizacion = datetime('now','localtime') WHERE id = ?`, nowState, id); err != nil {
+	if _, err := dbConn.Exec(`UPDATE empresa_sensor_puertas_devices SET last_state = ?, last_seen = CURRENT_TIMESTAMP, fecha_actualizacion = CURRENT_TIMESTAMP WHERE id = ?`, nowState, id); err != nil {
 		return 0, 0, err
 	}
 
@@ -321,7 +321,7 @@ func InsertEmpresaSensorMessage(dbConn *sql.DB, deviceID, messageText string) (i
 		return 0, 0, 0, err
 	}
 
-	res, err := dbConn.Exec(`INSERT INTO empresa_sensor_puertas_messages (empresa_id, device_id, estacion_id, message_text, raw_text, received_at) VALUES (?, ?, NULLIF(?,0), ?, ?, datetime('now','localtime'))`, dev.EmpresaID, dev.DeviceID, dev.EstacionID, messageText, messageText)
+	res, err := dbConn.Exec(`INSERT INTO empresa_sensor_puertas_messages (empresa_id, device_id, estacion_id, message_text, raw_text, received_at) VALUES (?, ?, NULLIF(?,0), ?, ?, CURRENT_TIMESTAMP)`, dev.EmpresaID, dev.DeviceID, dev.EstacionID, messageText, messageText)
 	if err != nil {
 		return 0, 0, 0, err
 	}

@@ -167,7 +167,7 @@ func EnsureEmpresaPropinasSchema(dbConn *sql.DB) error {
 
 	bootstrapStmts := []string{
 		`CREATE TABLE IF NOT EXISTS empresa_propinas_configuracion (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL UNIQUE,
 			habilitar_propina INTEGER DEFAULT 0,
 			porcentaje_propina REAL DEFAULT 10,
@@ -177,14 +177,14 @@ func EnsureEmpresaPropinasSchema(dbConn *sql.DB) error {
 			regimen_fiscal TEXT DEFAULT 'general',
 			tratamiento_fiscal TEXT DEFAULT 'no_gravada',
 			porcentaje_impuesto_propina REAL DEFAULT 0,
-			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
-			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+			fecha_creacion TEXT DEFAULT (CURRENT_TIMESTAMP),
+			fecha_actualizacion TEXT DEFAULT (CURRENT_TIMESTAMP),
 			usuario_creador TEXT,
 			estado TEXT DEFAULT 'activo',
 			observaciones TEXT
 		);`,
 		`CREATE TABLE IF NOT EXISTS empresa_propinas_movimientos (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL,
 			carrito_id INTEGER DEFAULT 0,
 			cierre_caja_id INTEGER DEFAULT 0,
@@ -208,9 +208,9 @@ func EnsureEmpresaPropinasSchema(dbConn *sql.DB) error {
 			fiscal_impuesto_monto REAL DEFAULT 0,
 			fiscal_total REAL DEFAULT 0,
 			conciliado_en TEXT,
-			fecha_movimiento TEXT DEFAULT (datetime('now','localtime')),
-			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
-			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+			fecha_movimiento TEXT DEFAULT (CURRENT_TIMESTAMP),
+			fecha_creacion TEXT DEFAULT (CURRENT_TIMESTAMP),
+			fecha_actualizacion TEXT DEFAULT (CURRENT_TIMESTAMP),
 			usuario_creador TEXT,
 			estado TEXT DEFAULT 'activo',
 			observaciones TEXT
@@ -325,7 +325,7 @@ func EnsureEmpresaPropinasSchema(dbConn *sql.DB) error {
 	if err := ensureColumnIfMissing(dbConn, "empresa_propinas_movimientos", "conciliado_en", "TEXT"); err != nil {
 		return err
 	}
-	if err := ensureColumnIfMissing(dbConn, "empresa_propinas_movimientos", "fecha_movimiento", "TEXT DEFAULT (datetime('now','localtime'))"); err != nil {
+	if err := ensureColumnIfMissing(dbConn, "empresa_propinas_movimientos", "fecha_movimiento", "TEXT DEFAULT (CURRENT_TIMESTAMP)"); err != nil {
 		return err
 	}
 	if err := ensureColumnIfMissing(dbConn, "empresa_propinas_movimientos", "fecha_actualizacion", "TEXT"); err != nil {
@@ -595,7 +595,7 @@ func UpsertEmpresaPropinasConfiguracion(dbConn *sql.DB, payload EmpresaPropinasC
 			usuario_creador = ?,
 			estado = ?,
 			observaciones = ?,
-			fecha_actualizacion = datetime('now','localtime')
+			fecha_actualizacion = CURRENT_TIMESTAMP
 		WHERE empresa_id = ?`,
 			boolToInt(payload.HabilitarPropina),
 			payload.PorcentajePropina,
@@ -631,7 +631,7 @@ func UpsertEmpresaPropinasConfiguracion(dbConn *sql.DB, payload EmpresaPropinasC
 		observaciones,
 		fecha_creacion,
 		fecha_actualizacion
-	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now','localtime'), datetime('now','localtime'))`,
+	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
 		payload.EmpresaID,
 		boolToInt(payload.HabilitarPropina),
 		payload.PorcentajePropina,
@@ -768,7 +768,7 @@ func CreateEmpresaPropinaMovimiento(dbConn *sql.DB, payload EmpresaPropinaMovimi
 		observaciones,
 		fecha_creacion,
 		fecha_actualizacion
-	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, COALESCE(NULLIF(?, ''), datetime('now','localtime')), ?, ?, ?, datetime('now','localtime'), datetime('now','localtime'))`,
+	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, COALESCE(NULLIF(?, ''), CURRENT_TIMESTAMP), ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
 		payload.EmpresaID,
 		payload.CarritoID,
 		payload.CierreCajaID,
@@ -1176,8 +1176,8 @@ func ConciliarEmpresaPropinasConCierreCaja(dbConn *sql.DB, empresaID, cierreCaja
 	if _, err := dbConn.Exec(`UPDATE empresa_propinas_movimientos
 	SET
 		cierre_caja_id = ?,
-		conciliado_en = datetime('now','localtime'),
-		fecha_actualizacion = datetime('now','localtime')
+		conciliado_en = CURRENT_TIMESTAMP,
+		fecha_actualizacion = CURRENT_TIMESTAMP
 	WHERE empresa_id = ?
 		AND LOWER(COALESCE(estado, 'activo')) = 'activo'
 		AND COALESCE(cierre_caja_id, 0) IN (0, ?)
@@ -1197,9 +1197,9 @@ func ConciliarEmpresaPropinasConCierreCaja(dbConn *sql.DB, empresaID, cierreCaja
 		propinas_ajustes = ?,
 		propinas_impuesto = ?,
 		propinas_neto = ?,
-		propinas_conciliado_en = datetime('now','localtime'),
+		propinas_conciliado_en = CURRENT_TIMESTAMP,
 		propinas_conciliado_por = ?,
-		fecha_actualizacion = datetime('now','localtime')
+		fecha_actualizacion = CURRENT_TIMESTAMP
 	WHERE empresa_id = ? AND id = ?`,
 		result.CantidadMovimientos,
 		result.TotalPropinas,

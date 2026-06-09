@@ -21,21 +21,21 @@ var (
 func EnsureVentaPublicaSchema(db *sql.DB) error {
 	stmts := []string{
 		`CREATE TABLE IF NOT EXISTS paginas_publicas (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL,
 			slug TEXT NOT NULL,
 			titulo TEXT NOT NULL,
 			descripcion TEXT,
 			video_url TEXT,
 			activo INTEGER NOT NULL DEFAULT 1,
-			creado_en DATETIME DEFAULT (datetime('now')),
-			actualizado_en DATETIME DEFAULT (datetime('now'))
+			creado_en DATETIME DEFAULT (CURRENT_TIMESTAMP),
+			actualizado_en DATETIME DEFAULT (CURRENT_TIMESTAMP)
 		);`,
 
 		`CREATE UNIQUE INDEX IF NOT EXISTS idx_paginas_publicas_empresa_slug ON paginas_publicas(empresa_id, slug);`,
 
 		`CREATE TABLE IF NOT EXISTS productos_publicos (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			pagina_id INTEGER NOT NULL,
 			nombre TEXT NOT NULL,
 			descripcion TEXT,
@@ -45,15 +45,15 @@ func EnsureVentaPublicaSchema(db *sql.DB) error {
 			sku TEXT,
 			youtube_url TEXT,
 			activo INTEGER NOT NULL DEFAULT 1,
-			creado_en DATETIME DEFAULT (datetime('now')),
-			actualizado_en DATETIME DEFAULT (datetime('now')),
+			creado_en DATETIME DEFAULT (CURRENT_TIMESTAMP),
+			actualizado_en DATETIME DEFAULT (CURRENT_TIMESTAMP),
 			FOREIGN KEY(pagina_id) REFERENCES paginas_publicas(id) ON DELETE CASCADE
 		);`,
 
 		`CREATE INDEX IF NOT EXISTS idx_productos_publicos_pagina_id ON productos_publicos(pagina_id);`,
 
 		`CREATE TABLE IF NOT EXISTS imagenes_productos_publicos (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			producto_id INTEGER NOT NULL,
 			url TEXT NOT NULL,
 			orden INTEGER NOT NULL DEFAULT 0,
@@ -63,13 +63,13 @@ func EnsureVentaPublicaSchema(db *sql.DB) error {
 		`CREATE INDEX IF NOT EXISTS idx_imagenes_producto_id ON imagenes_productos_publicos(producto_id);`,
 
 		`CREATE TABLE IF NOT EXISTS empresa_payment_settings (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL,
 			provider TEXT NOT NULL,
 			config TEXT,
 			activo INTEGER NOT NULL DEFAULT 1,
-			creado_en DATETIME DEFAULT (datetime('now')),
-			actualizado_en DATETIME DEFAULT (datetime('now'))
+			creado_en DATETIME DEFAULT (CURRENT_TIMESTAMP),
+			actualizado_en DATETIME DEFAULT (CURRENT_TIMESTAMP)
 		);`,
 
 		`CREATE UNIQUE INDEX IF NOT EXISTS idx_empresa_payment_provider ON empresa_payment_settings(empresa_id, provider);`,

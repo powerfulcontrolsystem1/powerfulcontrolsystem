@@ -99,7 +99,7 @@ type EmpresaCarnetsDashboard struct {
 func EnsureEmpresaCarnetsSchema(dbConn *sql.DB) error {
 	stmts := []string{
 		`CREATE TABLE IF NOT EXISTS empresa_carnets_plantillas (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL,
 			nombre TEXT NOT NULL,
 			tipo TEXT DEFAULT 'empleado',
@@ -116,15 +116,15 @@ func EnsureEmpresaCarnetsSchema(dbConn *sql.DB) error {
 			campos_visibles TEXT DEFAULT 'documento,cargo,area,email,nivel_acceso,vencimiento',
 			diseno_json TEXT,
 			es_predeterminada INTEGER DEFAULT 0,
-			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
-			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+			fecha_creacion TEXT DEFAULT (CURRENT_TIMESTAMP),
+			fecha_actualizacion TEXT DEFAULT (CURRENT_TIMESTAMP),
 			usuario_creador TEXT,
 			estado TEXT DEFAULT 'activo',
 			observaciones TEXT
 		);`,
 		`CREATE INDEX IF NOT EXISTS ix_empresa_carnets_plantillas_empresa ON empresa_carnets_plantillas(empresa_id, estado, tipo);`,
 		`CREATE TABLE IF NOT EXISTS empresa_carnets (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL,
 			plantilla_id INTEGER,
 			usuario_id INTEGER,
@@ -146,8 +146,8 @@ func EnsureEmpresaCarnetsSchema(dbConn *sql.DB) error {
 			qr_payload TEXT,
 			estado_carnet TEXT DEFAULT 'vigente',
 			ultima_impresion TEXT,
-			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
-			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+			fecha_creacion TEXT DEFAULT (CURRENT_TIMESTAMP),
+			fecha_actualizacion TEXT DEFAULT (CURRENT_TIMESTAMP),
 			usuario_creador TEXT,
 			estado TEXT DEFAULT 'activo',
 			observaciones TEXT
@@ -156,12 +156,12 @@ func EnsureEmpresaCarnetsSchema(dbConn *sql.DB) error {
 		`CREATE INDEX IF NOT EXISTS ix_empresa_carnets_empresa_estado ON empresa_carnets(empresa_id, estado, estado_carnet);`,
 		`CREATE INDEX IF NOT EXISTS ix_empresa_carnets_usuario ON empresa_carnets(empresa_id, usuario_id);`,
 		`CREATE TABLE IF NOT EXISTS empresa_carnets_eventos (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL,
 			carnet_id INTEGER NOT NULL,
 			evento TEXT NOT NULL,
 			detalle TEXT,
-			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
+			fecha_creacion TEXT DEFAULT (CURRENT_TIMESTAMP),
 			usuario_creador TEXT,
 			estado TEXT DEFAULT 'activo'
 		);`,

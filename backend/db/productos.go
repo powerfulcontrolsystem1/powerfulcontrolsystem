@@ -502,34 +502,34 @@ type InventarioMovimiento struct {
 func EnsureEmpresaProductosSchema(dbConn *sql.DB) error {
 	stmts := []string{
 		`CREATE TABLE IF NOT EXISTS bodegas (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL,
 			codigo TEXT,
 			nombre TEXT NOT NULL,
 			ubicacion TEXT,
 			responsable TEXT,
-			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
-			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+			fecha_creacion TEXT DEFAULT (CURRENT_TIMESTAMP),
+			fecha_actualizacion TEXT DEFAULT (CURRENT_TIMESTAMP),
 			usuario_creador TEXT,
 			estado TEXT DEFAULT 'activo',
 			observaciones TEXT
 		);`,
 		`CREATE TABLE IF NOT EXISTS categorias_productos (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL,
 			codigo TEXT,
 			nombre TEXT NOT NULL,
 			descripcion TEXT,
 			color_hex TEXT,
 			orden INTEGER DEFAULT 0,
-			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
-			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+			fecha_creacion TEXT DEFAULT (CURRENT_TIMESTAMP),
+			fecha_actualizacion TEXT DEFAULT (CURRENT_TIMESTAMP),
 			usuario_creador TEXT,
 			estado TEXT DEFAULT 'activo',
 			observaciones TEXT
 		);`,
 		`CREATE TABLE IF NOT EXISTS productos (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL,
 			bodega_principal_id INTEGER,
 			proveedor_principal_id INTEGER,
@@ -551,14 +551,14 @@ func EnsureEmpresaProductosSchema(dbConn *sql.DB) error {
 			fecha_vencimiento TEXT,
 			dias_alerta_vencimiento INTEGER DEFAULT 30,
 			lote_codigo TEXT,
-			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
-			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+			fecha_creacion TEXT DEFAULT (CURRENT_TIMESTAMP),
+			fecha_actualizacion TEXT DEFAULT (CURRENT_TIMESTAMP),
 			usuario_creador TEXT,
 			estado TEXT DEFAULT 'activo',
 			observaciones TEXT
 		);`,
 		`CREATE TABLE IF NOT EXISTS proveedores (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL,
 			codigo TEXT,
 			nombre TEXT NOT NULL,
@@ -572,14 +572,14 @@ func EnsureEmpresaProductosSchema(dbConn *sql.DB) error {
 			descuento_porcentaje REAL DEFAULT 0,
 			plazo_pago_dias INTEGER DEFAULT 0,
 			condicion_entrega TEXT,
-			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
-			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+			fecha_creacion TEXT DEFAULT (CURRENT_TIMESTAMP),
+			fecha_actualizacion TEXT DEFAULT (CURRENT_TIMESTAMP),
 			usuario_creador TEXT,
 			estado TEXT DEFAULT 'activo',
 			observaciones TEXT
 		);`,
 		`CREATE TABLE IF NOT EXISTS servicios (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL,
 			codigo TEXT,
 			nombre TEXT NOT NULL,
@@ -590,16 +590,16 @@ func EnsureEmpresaProductosSchema(dbConn *sql.DB) error {
 			precio REAL DEFAULT 0,
 			impuesto_porcentaje REAL DEFAULT 0,
 			imagen_url TEXT,
-			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
-			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+			fecha_creacion TEXT DEFAULT (CURRENT_TIMESTAMP),
+			fecha_actualizacion TEXT DEFAULT (CURRENT_TIMESTAMP),
 			usuario_creador TEXT,
 			estado TEXT DEFAULT 'activo',
 			observaciones TEXT
 		);`,
 		`CREATE TABLE IF NOT EXISTS recetas_productos (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
-			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
-			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+			id BIGSERIAL PRIMARY KEY,
+			fecha_creacion TEXT DEFAULT (CURRENT_TIMESTAMP),
+			fecha_actualizacion TEXT DEFAULT (CURRENT_TIMESTAMP),
 			usuario_creador TEXT,
 			estado TEXT DEFAULT 'activo',
 			observaciones TEXT,
@@ -617,9 +617,9 @@ func EnsureEmpresaProductosSchema(dbConn *sql.DB) error {
 			variacion_costo_porcentaje REAL DEFAULT 0
 		);`,
 		`CREATE TABLE IF NOT EXISTS recetas_productos_detalle (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
-			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
-			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+			id BIGSERIAL PRIMARY KEY,
+			fecha_creacion TEXT DEFAULT (CURRENT_TIMESTAMP),
+			fecha_actualizacion TEXT DEFAULT (CURRENT_TIMESTAMP),
 			usuario_creador TEXT,
 			estado TEXT DEFAULT 'activo',
 			observaciones TEXT,
@@ -630,9 +630,9 @@ func EnsureEmpresaProductosSchema(dbConn *sql.DB) error {
 			unidad_medida TEXT DEFAULT 'unidad'
 		);`,
 		`CREATE TABLE IF NOT EXISTS recetas_productos_versiones (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
-			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
-			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+			id BIGSERIAL PRIMARY KEY,
+			fecha_creacion TEXT DEFAULT (CURRENT_TIMESTAMP),
+			fecha_actualizacion TEXT DEFAULT (CURRENT_TIMESTAMP),
 			usuario_creador TEXT,
 			estado TEXT DEFAULT 'activo',
 			observaciones TEXT,
@@ -647,7 +647,7 @@ func EnsureEmpresaProductosSchema(dbConn *sql.DB) error {
 			motivo TEXT
 		);`,
 		`CREATE TABLE IF NOT EXISTS producto_precios_historial (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL,
 			producto_id INTEGER NOT NULL,
 			costo_anterior REAL DEFAULT 0,
@@ -658,27 +658,27 @@ func EnsureEmpresaProductosSchema(dbConn *sql.DB) error {
 			impuesto_nuevo REAL DEFAULT 0,
 			motivo TEXT,
 			referencia TEXT,
-			fecha_cambio TEXT DEFAULT (datetime('now','localtime')),
-			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
-			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+			fecha_cambio TEXT DEFAULT (CURRENT_TIMESTAMP),
+			fecha_creacion TEXT DEFAULT (CURRENT_TIMESTAMP),
+			fecha_actualizacion TEXT DEFAULT (CURRENT_TIMESTAMP),
 			usuario_creador TEXT,
 			estado TEXT DEFAULT 'activo',
 			observaciones TEXT
 		);`,
 		`CREATE TABLE IF NOT EXISTS inventario_existencias (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL,
 			producto_id INTEGER NOT NULL,
 			bodega_id INTEGER NOT NULL,
 			cantidad REAL NOT NULL DEFAULT 0,
-			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
-			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+			fecha_creacion TEXT DEFAULT (CURRENT_TIMESTAMP),
+			fecha_actualizacion TEXT DEFAULT (CURRENT_TIMESTAMP),
 			usuario_creador TEXT,
 			estado TEXT DEFAULT 'activo',
 			observaciones TEXT
 		);`,
 		`CREATE TABLE IF NOT EXISTS inventario_movimientos (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL,
 			producto_id INTEGER NOT NULL,
 			bodega_origen_id INTEGER,
@@ -687,41 +687,41 @@ func EnsureEmpresaProductosSchema(dbConn *sql.DB) error {
 			cantidad REAL NOT NULL,
 			costo_unitario REAL DEFAULT 0,
 			referencia TEXT,
-			fecha_movimiento TEXT DEFAULT (datetime('now','localtime')),
-			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
-			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+			fecha_movimiento TEXT DEFAULT (CURRENT_TIMESTAMP),
+			fecha_creacion TEXT DEFAULT (CURRENT_TIMESTAMP),
+			fecha_actualizacion TEXT DEFAULT (CURRENT_TIMESTAMP),
 			usuario_creador TEXT,
 			estado TEXT DEFAULT 'activo',
 			observaciones TEXT
 		);`,
 		`CREATE TABLE IF NOT EXISTS empresa_inventario_configuracion (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL UNIQUE,
 			politica_costo TEXT NOT NULL DEFAULT 'promedio',
 			producto_campos_obligatorios_json TEXT DEFAULT '{}',
-			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
-			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+			fecha_creacion TEXT DEFAULT (CURRENT_TIMESTAMP),
+			fecha_actualizacion TEXT DEFAULT (CURRENT_TIMESTAMP),
 			usuario_creador TEXT,
 			estado TEXT DEFAULT 'activo',
 			observaciones TEXT
 		);`,
 		`CREATE TABLE IF NOT EXISTS inventario_costos_lotes (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL,
 			producto_id INTEGER NOT NULL,
 			bodega_id INTEGER NOT NULL,
 			cantidad_disponible REAL NOT NULL DEFAULT 0,
 			costo_unitario REAL NOT NULL DEFAULT 0,
 			referencia TEXT,
-			fecha_lote TEXT DEFAULT (datetime('now','localtime')),
-			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
-			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+			fecha_lote TEXT DEFAULT (CURRENT_TIMESTAMP),
+			fecha_creacion TEXT DEFAULT (CURRENT_TIMESTAMP),
+			fecha_actualizacion TEXT DEFAULT (CURRENT_TIMESTAMP),
 			usuario_creador TEXT,
 			estado TEXT DEFAULT 'activo',
 			observaciones TEXT
 		);`,
 		`CREATE TABLE IF NOT EXISTS inventario_conteos_ciclicos (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL,
 			producto_id INTEGER NOT NULL,
 			bodega_id INTEGER NOT NULL,
@@ -731,11 +731,11 @@ func EnsureEmpresaProductosSchema(dbConn *sql.DB) error {
 			tipo_ajuste TEXT NOT NULL DEFAULT 'sin_ajuste',
 			movimiento_id INTEGER,
 			referencia TEXT,
-			fecha_conteo TEXT DEFAULT (datetime('now','localtime')),
+			fecha_conteo TEXT DEFAULT (CURRENT_TIMESTAMP),
 			usuario_revisor TEXT,
 			estado_conteo TEXT DEFAULT 'sin_diferencia',
-			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
-			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+			fecha_creacion TEXT DEFAULT (CURRENT_TIMESTAMP),
+			fecha_actualizacion TEXT DEFAULT (CURRENT_TIMESTAMP),
 			usuario_creador TEXT,
 			estado TEXT DEFAULT 'activo',
 			observaciones TEXT
@@ -974,10 +974,10 @@ func EnsureEmpresaProductosSchema(dbConn *sql.DB) error {
 		return err
 	}
 
-	if err := ensureColumnIfMissing(dbConn, "recetas_productos", "fecha_creacion", "TEXT DEFAULT (datetime('now','localtime'))"); err != nil {
+	if err := ensureColumnIfMissing(dbConn, "recetas_productos", "fecha_creacion", "TEXT DEFAULT (CURRENT_TIMESTAMP)"); err != nil {
 		return err
 	}
-	if err := ensureColumnIfMissing(dbConn, "recetas_productos", "fecha_actualizacion", "TEXT DEFAULT (datetime('now','localtime'))"); err != nil {
+	if err := ensureColumnIfMissing(dbConn, "recetas_productos", "fecha_actualizacion", "TEXT DEFAULT (CURRENT_TIMESTAMP)"); err != nil {
 		return err
 	}
 	if err := ensureColumnIfMissing(dbConn, "recetas_productos", "usuario_creador", "TEXT"); err != nil {
@@ -1026,10 +1026,10 @@ func EnsureEmpresaProductosSchema(dbConn *sql.DB) error {
 		return err
 	}
 
-	if err := ensureColumnIfMissing(dbConn, "recetas_productos_detalle", "fecha_creacion", "TEXT DEFAULT (datetime('now','localtime'))"); err != nil {
+	if err := ensureColumnIfMissing(dbConn, "recetas_productos_detalle", "fecha_creacion", "TEXT DEFAULT (CURRENT_TIMESTAMP)"); err != nil {
 		return err
 	}
-	if err := ensureColumnIfMissing(dbConn, "recetas_productos_detalle", "fecha_actualizacion", "TEXT DEFAULT (datetime('now','localtime'))"); err != nil {
+	if err := ensureColumnIfMissing(dbConn, "recetas_productos_detalle", "fecha_actualizacion", "TEXT DEFAULT (CURRENT_TIMESTAMP)"); err != nil {
 		return err
 	}
 	if err := ensureColumnIfMissing(dbConn, "recetas_productos_detalle", "usuario_creador", "TEXT"); err != nil {
@@ -1057,10 +1057,10 @@ func EnsureEmpresaProductosSchema(dbConn *sql.DB) error {
 		return err
 	}
 
-	if err := ensureColumnIfMissing(dbConn, "recetas_productos_versiones", "fecha_creacion", "TEXT DEFAULT (datetime('now','localtime'))"); err != nil {
+	if err := ensureColumnIfMissing(dbConn, "recetas_productos_versiones", "fecha_creacion", "TEXT DEFAULT (CURRENT_TIMESTAMP)"); err != nil {
 		return err
 	}
-	if err := ensureColumnIfMissing(dbConn, "recetas_productos_versiones", "fecha_actualizacion", "TEXT DEFAULT (datetime('now','localtime'))"); err != nil {
+	if err := ensureColumnIfMissing(dbConn, "recetas_productos_versiones", "fecha_actualizacion", "TEXT DEFAULT (CURRENT_TIMESTAMP)"); err != nil {
 		return err
 	}
 	if err := ensureColumnIfMissing(dbConn, "recetas_productos_versiones", "usuario_creador", "TEXT"); err != nil {
@@ -1130,7 +1130,7 @@ func EnsureEmpresaProductosSchema(dbConn *sql.DB) error {
 	if err := ensureColumnIfMissing(dbConn, "producto_precios_historial", "referencia", "TEXT"); err != nil {
 		return err
 	}
-	if err := ensureColumnIfMissing(dbConn, "producto_precios_historial", "fecha_cambio", "TEXT DEFAULT (datetime('now','localtime'))"); err != nil {
+	if err := ensureColumnIfMissing(dbConn, "producto_precios_historial", "fecha_cambio", "TEXT DEFAULT (CURRENT_TIMESTAMP)"); err != nil {
 		return err
 	}
 	if err := ensureColumnIfMissing(dbConn, "producto_precios_historial", "fecha_actualizacion", "TEXT"); err != nil {
@@ -1163,7 +1163,7 @@ func EnsureEmpresaProductosSchema(dbConn *sql.DB) error {
 		return err
 	}
 
-	if err := ensureColumnIfMissing(dbConn, "inventario_movimientos", "fecha_movimiento", "TEXT DEFAULT (datetime('now','localtime'))"); err != nil {
+	if err := ensureColumnIfMissing(dbConn, "inventario_movimientos", "fecha_movimiento", "TEXT DEFAULT (CURRENT_TIMESTAMP)"); err != nil {
 		return err
 	}
 	if err := ensureColumnIfMissing(dbConn, "inventario_movimientos", "fecha_actualizacion", "TEXT"); err != nil {
@@ -1425,7 +1425,7 @@ func CreateCategoriaProducto(dbConn *sql.DB, c CategoriaProducto) (int64, error)
 	id, err := insertSQLCompat(dbConn, `INSERT INTO categorias_productos (
 		empresa_id, codigo, nombre, descripcion, color_hex, orden,
 		usuario_creador, estado, observaciones, fecha_creacion, fecha_actualizacion
-	) VALUES (?, NULLIF(?, ''), ?, ?, ?, ?, ?, COALESCE(NULLIF(?, ''), 'activo'), ?, datetime('now','localtime'), datetime('now','localtime'))`,
+	) VALUES (?, NULLIF(?, ''), ?, ?, ?, ?, ?, COALESCE(NULLIF(?, ''), 'activo'), ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
 		c.EmpresaID, strings.TrimSpace(c.Codigo), strings.TrimSpace(c.Nombre), strings.TrimSpace(c.Descripcion), strings.TrimSpace(c.ColorHex), c.Orden,
 		strings.TrimSpace(c.UsuarioCreador), strings.TrimSpace(c.Estado), strings.TrimSpace(c.Observaciones))
 	if err != nil {
@@ -1697,7 +1697,7 @@ func CreateProducto(dbConn *sql.DB, p Producto, stockInicial float64, referencia
 		empresa_id, bodega_principal_id, proveedor_principal_id, categoria_id, sku, codigo_barras, nombre, descripcion, categoria, marca, unidad_medida,
 		costo, precio, impuesto_porcentaje, stock_minimo, stock_maximo, imagen_url, maneja_vencimiento, fecha_vencimiento, dias_alerta_vencimiento, lote_codigo,
 		usuario_creador, estado, observaciones, fecha_creacion, fecha_actualizacion
-	) VALUES (?, ?, ?, ?, NULLIF(?, ''), NULLIF(?, ''), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULLIF(?, ''), ?, NULLIF(?, ''), ?, COALESCE(NULLIF(?, ''), 'activo'), ?, datetime('now','localtime'), datetime('now','localtime'))`,
+	) VALUES (?, ?, ?, ?, NULLIF(?, ''), NULLIF(?, ''), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULLIF(?, ''), ?, NULLIF(?, ''), ?, COALESCE(NULLIF(?, ''), 'activo'), ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
 		p.EmpresaID, nullableInt64(p.BodegaPrincipalID), nullableInt64(p.ProveedorPrincipalID), nullableInt64(p.CategoriaID), strings.TrimSpace(p.SKU), strings.TrimSpace(p.CodigoBarras), strings.TrimSpace(p.Nombre), strings.TrimSpace(p.Descripcion), strings.TrimSpace(p.Categoria), strings.TrimSpace(p.Marca), defaultUnidad(p.UnidadMedida),
 		p.Costo, p.Precio, p.ImpuestoPorcentaje, p.StockMinimo, p.StockMaximo, strings.TrimSpace(p.ImagenURL), productoBoolToInt(p.ManejaVencimiento), strings.TrimSpace(p.FechaVencimiento), p.DiasAlertaVencimiento, strings.TrimSpace(p.LoteCodigo),
 		strings.TrimSpace(p.UsuarioCreador), strings.TrimSpace(p.Estado), strings.TrimSpace(p.Observaciones))
@@ -2357,11 +2357,11 @@ func UpsertEmpresaInventarioConfiguracion(dbConn *sql.DB, conf EmpresaInventario
 		usuario_creador,
 		estado,
 		observaciones
-	) VALUES (?, ?, ?, datetime('now','localtime'), datetime('now','localtime'), ?, COALESCE(NULLIF(?, ''), 'activo'), ?)
+	) VALUES (?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, ?, COALESCE(NULLIF(?, ''), 'activo'), ?)
 	ON CONFLICT(empresa_id) DO UPDATE SET
 		politica_costo = excluded.politica_costo,
 		producto_campos_obligatorios_json = excluded.producto_campos_obligatorios_json,
-		fecha_actualizacion = datetime('now','localtime'),
+		fecha_actualizacion = CURRENT_TIMESTAMP,
 		usuario_creador = CASE
 			WHEN TRIM(COALESCE(excluded.usuario_creador, '')) <> '' THEN excluded.usuario_creador
 			ELSE empresa_inventario_configuracion.usuario_creador
@@ -3717,7 +3717,7 @@ func TransferirProductoEntreBodegas(dbConn *sql.DB, empresaID, productoID, bodeg
 	}
 
 	if _, err := execTxSQLCompat(tx, `UPDATE inventario_existencias
-		SET cantidad = cantidad - ?, fecha_actualizacion = datetime('now','localtime')
+		SET cantidad = cantidad - ?, fecha_actualizacion = CURRENT_TIMESTAMP
 		WHERE empresa_id = ? AND producto_id = ? AND bodega_id = ?`, cantidad, empresaID, productoID, bodegaOrigenID); err != nil {
 		return err
 	}
@@ -3791,7 +3791,7 @@ func GetMovimientosByEmpresa(dbConn *sql.DB, empresaID, productoID, bodegaID int
 		args = append(args, strings.TrimSpace(hasta))
 	}
 
-	query += " ORDER BY datetime(COALESCE(m.fecha_movimiento, m.fecha_creacion)) DESC, m.id DESC LIMIT ? OFFSET ?"
+	query += " ORDER BY pcs_ts(COALESCE(m.fecha_movimiento, m.fecha_creacion)) DESC, m.id DESC LIMIT ? OFFSET ?"
 	args = append(args, limit, offset)
 
 	rows, err := dbConn.Query(query, args...)
@@ -3864,7 +3864,7 @@ func CreateProveedor(dbConn *sql.DB, p Proveedor) (int64, error) {
 		empresa_id, codigo, nombre, documento, contacto, telefono, email, direccion, catalogo_referencia,
 		precio_base_referencial, descuento_porcentaje, plazo_pago_dias, condicion_entrega,
 		usuario_creador, estado, observaciones, fecha_creacion, fecha_actualizacion
-	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, COALESCE(NULLIF(?, ''), 'activo'), ?, datetime('now','localtime'), datetime('now','localtime'))`,
+	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, COALESCE(NULLIF(?, ''), 'activo'), ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
 		p.EmpresaID,
 		strings.TrimSpace(p.Codigo),
 		strings.TrimSpace(p.Nombre),
@@ -5209,7 +5209,7 @@ func RegistrarMovimientoInventario(dbConn *sql.DB, empresaID, productoID, bodega
 		}
 	}
 
-	if _, err := execTxSQLCompat(tx, `UPDATE inventario_existencias SET cantidad = cantidad - ?, fecha_actualizacion = datetime('now','localtime') WHERE empresa_id = ? AND producto_id = ? AND bodega_id = ?`, cantidad, empresaID, productoID, bodegaID); err != nil {
+	if _, err := execTxSQLCompat(tx, `UPDATE inventario_existencias SET cantidad = cantidad - ?, fecha_actualizacion = CURRENT_TIMESTAMP WHERE empresa_id = ? AND producto_id = ? AND bodega_id = ?`, cantidad, empresaID, productoID, bodegaID); err != nil {
 		return err
 	}
 	if err := insertMovimientoTx(tx, InventarioMovimiento{
@@ -5340,7 +5340,7 @@ func RegistrarConteoCiclicoInventario(dbConn *sql.DB, conteo InventarioConteoCic
 		usuario_creador,
 		estado,
 		observaciones
-	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now','localtime'), ?, ?, datetime('now','localtime'), datetime('now','localtime'), ?, COALESCE(NULLIF(?, ''), 'activo'), ?)`,
+	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, ?, COALESCE(NULLIF(?, ''), 'activo'), ?)`,
 		conteo.EmpresaID,
 		conteo.ProductoID,
 		conteo.BodegaID,
@@ -5482,7 +5482,7 @@ func GetInventarioConteosCiclicosByEmpresa(dbConn *sql.DB, empresaID, productoID
 		args = append(args, strings.TrimSpace(hasta))
 	}
 
-	query += ` ORDER BY datetime(COALESCE(c.fecha_conteo, c.fecha_creacion)) DESC, c.id DESC LIMIT ? OFFSET ?`
+	query += ` ORDER BY pcs_ts(COALESCE(c.fecha_conteo, c.fecha_creacion)) DESC, c.id DESC LIMIT ? OFFSET ?`
 	args = append(args, limit, offset)
 
 	rows, err := dbConn.Query(query, args...)
@@ -5595,7 +5595,7 @@ func RegistrarCambioProducto(dbConn *sql.DB, empresaID, productoOrigenID, produc
 		costoOrigen = costoConsumoOrigen
 	}
 
-	if _, err := tx.Exec(`UPDATE inventario_existencias SET cantidad = cantidad - ?, fecha_actualizacion = datetime('now','localtime') WHERE empresa_id = ? AND producto_id = ? AND bodega_id = ?`, cantidad, empresaID, productoOrigenID, bodegaID); err != nil {
+	if _, err := tx.Exec(`UPDATE inventario_existencias SET cantidad = cantidad - ?, fecha_actualizacion = CURRENT_TIMESTAMP WHERE empresa_id = ? AND producto_id = ? AND bodega_id = ?`, cantidad, empresaID, productoOrigenID, bodegaID); err != nil {
 		return err
 	}
 	if err := upsertExistenciaTx(tx, empresaID, productoDestinoID, bodegaID, cantidad, usuario, "cambio de producto"); err != nil {
@@ -5682,7 +5682,7 @@ func seedCategoriasProductosFromLegacy(dbConn *sql.DB) error {
 	for _, seed := range seeds {
 		if _, err := dbConn.Exec(`INSERT OR IGNORE INTO categorias_productos (
 			empresa_id, nombre, descripcion, usuario_creador, estado, observaciones, fecha_creacion, fecha_actualizacion
-		) VALUES (?, ?, ?, 'migracion', 'activo', ?, datetime('now','localtime'), datetime('now','localtime'))`,
+		) VALUES (?, ?, ?, 'migracion', 'activo', ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
 			seed.empresaID, seed.nombre, "categoria migrada desde productos.categoria", "registro automático por migración"); err != nil {
 			return err
 		}
@@ -5737,7 +5737,7 @@ func insertProductoPrecioHistorialTx(tx *sql.Tx, h ProductoPrecioHistorial) erro
 	_, err := tx.Exec(`INSERT INTO producto_precios_historial (
 		empresa_id, producto_id, costo_anterior, costo_nuevo, precio_anterior, precio_nuevo, impuesto_anterior, impuesto_nuevo,
 		motivo, referencia, fecha_cambio, fecha_creacion, fecha_actualizacion, usuario_creador, estado, observaciones
-	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now','localtime'), datetime('now','localtime'), datetime('now','localtime'), ?, COALESCE(NULLIF(?, ''), 'activo'), ?)`,
+	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, ?, COALESCE(NULLIF(?, ''), 'activo'), ?)`,
 		h.EmpresaID, h.ProductoID, h.CostoAnterior, h.CostoNuevo, h.PrecioAnterior, h.PrecioNuevo, h.ImpuestoAnterior, h.ImpuestoNuevo,
 		strings.TrimSpace(h.Motivo), strings.TrimSpace(h.Referencia), strings.TrimSpace(h.UsuarioCreador), strings.TrimSpace(h.Estado), strings.TrimSpace(h.Observaciones))
 	return err
@@ -5788,7 +5788,7 @@ func recalcularCostoPromedioProductoTx(tx *sql.Tx, empresaID, productoID int64) 
 		return nil
 	}
 	_, err = execTxSQLCompat(tx, `UPDATE productos
-		SET costo = ?, fecha_actualizacion = datetime('now','localtime')
+		SET costo = ?, fecha_actualizacion = CURRENT_TIMESTAMP
 		WHERE empresa_id = ? AND id = ?`, promedio, empresaID, productoID)
 	return err
 }
@@ -5855,7 +5855,7 @@ func registerCostoLoteTx(tx *sql.Tx, empresaID, productoID, bodegaID int64, cant
 		usuario_creador,
 		estado,
 		observaciones
-	) VALUES (?, ?, ?, ?, ?, ?, datetime('now','localtime'), datetime('now','localtime'), datetime('now','localtime'), ?, 'activo', ?)`,
+	) VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, ?, 'activo', ?)`,
 		empresaID,
 		productoID,
 		bodegaID,
@@ -5937,14 +5937,14 @@ func consumirCostoLotesPEPSTx(tx *sql.Tx, empresaID, productoID, bodegaID int64,
 			if _, err := execTxSQLCompat(tx, `UPDATE inventario_costos_lotes
 				SET cantidad_disponible = 0,
 					estado = 'consumido',
-					fecha_actualizacion = datetime('now','localtime')
+					fecha_actualizacion = CURRENT_TIMESTAMP
 				WHERE id = ?`, lote.id); err != nil {
 				return 0, err
 			}
 			continue
 		}
 		if _, err := execTxSQLCompat(tx, `UPDATE inventario_costos_lotes
-			SET cantidad_disponible = ?, fecha_actualizacion = datetime('now','localtime')
+			SET cantidad_disponible = ?, fecha_actualizacion = CURRENT_TIMESTAMP
 			WHERE id = ?`, lote.saldoFinal, lote.id); err != nil {
 			return 0, err
 		}
@@ -6008,7 +6008,7 @@ func validateProveedorEmpresaTx(tx *sql.Tx, empresaID, proveedorID int64) error 
 
 func upsertExistenciaTx(tx *sql.Tx, empresaID, productoID, bodegaID int64, delta float64, usuario, observaciones string) error {
 	res, err := execTxSQLCompat(tx, `UPDATE inventario_existencias
-		SET cantidad = cantidad + ?, fecha_actualizacion = datetime('now','localtime')
+		SET cantidad = cantidad + ?, fecha_actualizacion = CURRENT_TIMESTAMP
 		WHERE empresa_id = ? AND producto_id = ? AND bodega_id = ?`,
 		delta, empresaID, productoID, bodegaID)
 	if err != nil {
@@ -6023,7 +6023,7 @@ func upsertExistenciaTx(tx *sql.Tx, empresaID, productoID, bodegaID int64, delta
 	}
 	_, err = execTxSQLCompat(tx, `INSERT INTO inventario_existencias (
 		empresa_id, producto_id, bodega_id, cantidad, usuario_creador, estado, observaciones, fecha_creacion, fecha_actualizacion
-	) VALUES (?, ?, ?, ?, ?, 'activo', ?, datetime('now','localtime'), datetime('now','localtime'))`,
+	) VALUES (?, ?, ?, ?, ?, 'activo', ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
 		empresaID, productoID, bodegaID, delta, strings.TrimSpace(usuario), strings.TrimSpace(observaciones))
 	return err
 }
@@ -6032,7 +6032,7 @@ func insertMovimientoTx(tx *sql.Tx, m InventarioMovimiento) error {
 	_, err := execTxSQLCompat(tx, `INSERT INTO inventario_movimientos (
 		empresa_id, producto_id, bodega_origen_id, bodega_destino_id, tipo, cantidad, costo_unitario, referencia, fecha_movimiento,
 		usuario_creador, estado, observaciones, fecha_creacion, fecha_actualizacion
-	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, datetime('now','localtime'), ?, COALESCE(NULLIF(?, ''), 'activo'), ?, datetime('now','localtime'), datetime('now','localtime'))`,
+	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, ?, COALESCE(NULLIF(?, ''), 'activo'), ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
 		m.EmpresaID, m.ProductoID, nullableInt64(m.BodegaOrigenID), nullableInt64(m.BodegaDestinoID), strings.TrimSpace(m.Tipo), m.Cantidad, m.CostoUnitario, strings.TrimSpace(m.Referencia), strings.TrimSpace(m.UsuarioCreador), strings.TrimSpace(m.Estado), strings.TrimSpace(m.Observaciones))
 	return err
 }

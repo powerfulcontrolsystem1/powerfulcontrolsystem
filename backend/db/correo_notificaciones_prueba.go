@@ -48,7 +48,7 @@ func EnsureSuperCorreoNotificacionesPruebaSchema(dbConn *sql.DB) error {
 
 	stmts := []string{
 		`CREATE TABLE IF NOT EXISTS super_correo_notificaciones_prueba (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			tipo TEXT NOT NULL,
 			empresa_id INTEGER,
 			destinatario TEXT NOT NULL,
@@ -56,9 +56,9 @@ func EnsureSuperCorreoNotificacionesPruebaSchema(dbConn *sql.DB) error {
 			cuerpo TEXT,
 			token_ref TEXT,
 			metadata_json TEXT,
-			fecha_evento TEXT DEFAULT (datetime('now','localtime')),
-			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
-			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+			fecha_evento TEXT DEFAULT (CURRENT_TIMESTAMP),
+			fecha_creacion TEXT DEFAULT (CURRENT_TIMESTAMP),
+			fecha_actualizacion TEXT DEFAULT (CURRENT_TIMESTAMP),
 			usuario_creador TEXT,
 			estado TEXT DEFAULT 'capturado',
 			observaciones TEXT
@@ -160,7 +160,7 @@ func CreateSuperCorreoNotificacionPrueba(dbConn *sql.DB, payload SuperCorreoNoti
 		observaciones,
 		fecha_creacion,
 		fecha_actualizacion
-	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now','localtime'), datetime('now','localtime'))`,
+	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
 		payload.Tipo,
 		payload.EmpresaID,
 		payload.Destinatario,

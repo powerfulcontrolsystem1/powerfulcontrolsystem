@@ -201,7 +201,7 @@ func EnsurePowerfulSystemEmpresaPerpetualLicense(dbSuper *sql.DB, empresaID int6
 				modulos_habilitados = ?,
 				es_adicional = 0,
 				super_rol_habilitado = 0,
-				fecha_inicio = CASE WHEN COALESCE(fecha_inicio, '') = '' THEN `+nowExpr+` ELSE fecha_inicio END,
+				fecha_inicio = CASE WHEN fecha_inicio IS NULL THEN `+nowExpr+` ELSE fecha_inicio END,
 				fecha_fin = ?,
 				activo = 1,
 				fecha_actualizacion = `+nowExpr+`,

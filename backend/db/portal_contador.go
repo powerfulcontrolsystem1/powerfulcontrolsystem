@@ -112,7 +112,7 @@ func EnsureEmpresaPortalContadorSchema(dbConn *sql.DB) error {
 	}
 	stmts := []string{
 		`CREATE TABLE IF NOT EXISTS empresa_portal_contador_clientes (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL,
 			cliente_empresa_id INTEGER DEFAULT 0,
 			codigo TEXT NOT NULL,
@@ -128,8 +128,8 @@ func EnsureEmpresaPortalContadorSchema(dbConn *sql.DB) error {
 			cierre_mensual_dia INTEGER DEFAULT 10,
 			estado_cliente TEXT DEFAULT 'activo',
 			riesgo_nivel TEXT DEFAULT 'medio',
-			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
-			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+			fecha_creacion TEXT DEFAULT (CURRENT_TIMESTAMP),
+			fecha_actualizacion TEXT DEFAULT (CURRENT_TIMESTAMP),
 			usuario_creador TEXT,
 			estado TEXT DEFAULT 'activo',
 			observaciones TEXT,
@@ -137,7 +137,7 @@ func EnsureEmpresaPortalContadorSchema(dbConn *sql.DB) error {
 		);`,
 		`CREATE INDEX IF NOT EXISTS ix_portal_contador_clientes_empresa ON empresa_portal_contador_clientes(empresa_id, estado_cliente, riesgo_nivel);`,
 		`CREATE TABLE IF NOT EXISTS empresa_portal_contador_obligaciones (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL,
 			cliente_id INTEGER NOT NULL,
 			codigo TEXT NOT NULL,
@@ -150,45 +150,45 @@ func EnsureEmpresaPortalContadorSchema(dbConn *sql.DB) error {
 			responsable TEXT,
 			fecha_presentacion TEXT,
 			soporte_url TEXT,
-			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
-			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+			fecha_creacion TEXT DEFAULT (CURRENT_TIMESTAMP),
+			fecha_actualizacion TEXT DEFAULT (CURRENT_TIMESTAMP),
 			usuario_creador TEXT,
 			observaciones TEXT,
 			UNIQUE(empresa_id, codigo)
 		);`,
 		`CREATE INDEX IF NOT EXISTS ix_portal_contador_obligaciones_empresa ON empresa_portal_contador_obligaciones(empresa_id, estado_obligacion, fecha_vencimiento);`,
 		`CREATE TABLE IF NOT EXISTS empresa_portal_contador_solicitudes (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL,
 			cliente_id INTEGER NOT NULL,
 			codigo TEXT NOT NULL,
 			titulo TEXT NOT NULL,
 			categoria TEXT DEFAULT 'soportes',
-			fecha_solicitud TEXT DEFAULT (date('now','localtime')),
+			fecha_solicitud TEXT DEFAULT (CURRENT_DATE),
 			fecha_limite TEXT,
 			estado_solicitud TEXT DEFAULT 'abierta',
 			prioridad TEXT DEFAULT 'media',
 			responsable TEXT,
 			respuesta TEXT,
 			soporte_url TEXT,
-			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
-			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+			fecha_creacion TEXT DEFAULT (CURRENT_TIMESTAMP),
+			fecha_actualizacion TEXT DEFAULT (CURRENT_TIMESTAMP),
 			usuario_creador TEXT,
 			observaciones TEXT,
 			UNIQUE(empresa_id, codigo)
 		);`,
 		`CREATE INDEX IF NOT EXISTS ix_portal_contador_solicitudes_empresa ON empresa_portal_contador_solicitudes(empresa_id, estado_solicitud, fecha_limite);`,
 		`CREATE TABLE IF NOT EXISTS empresa_portal_contador_comunicaciones (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL,
 			cliente_id INTEGER NOT NULL,
 			canal TEXT DEFAULT 'interno',
 			asunto TEXT,
 			mensaje TEXT,
-			fecha_mensaje TEXT DEFAULT (datetime('now','localtime')),
+			fecha_mensaje TEXT DEFAULT (CURRENT_TIMESTAMP),
 			leido_cliente INTEGER DEFAULT 0,
-			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
-			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+			fecha_creacion TEXT DEFAULT (CURRENT_TIMESTAMP),
+			fecha_actualizacion TEXT DEFAULT (CURRENT_TIMESTAMP),
 			usuario_creador TEXT,
 			observaciones TEXT
 		);`,
@@ -281,7 +281,7 @@ func UpsertEmpresaPortalContadorCliente(dbConn *sql.DB, row EmpresaPortalContado
 		row.CierreMensualDia = 10
 	}
 	if row.ID > 0 {
-		_, err := ExecCompat(dbConn, `UPDATE empresa_portal_contador_clientes SET cliente_empresa_id=?,razon_social=?,nit=?,regimen=?,responsable=?,contacto_nombre=?,contacto_email=?,contacto_telefono=?,periodicidad=?,fecha_inicio=?,cierre_mensual_dia=?,estado_cliente=?,riesgo_nivel=?,fecha_actualizacion=datetime('now','localtime'),usuario_creador=?,estado=?,observaciones=? WHERE id=? AND empresa_id=?`, row.ClienteEmpresaID, row.RazonSocial, row.NIT, row.Regimen, row.Responsable, row.ContactoNombre, row.ContactoEmail, row.ContactoTelefono, row.Periodicidad, row.FechaInicio, row.CierreMensualDia, row.EstadoCliente, row.RiesgoNivel, row.Usuario, row.Estado, row.Observaciones, row.ID, row.EmpresaID)
+		_, err := ExecCompat(dbConn, `UPDATE empresa_portal_contador_clientes SET cliente_empresa_id=?,razon_social=?,nit=?,regimen=?,responsable=?,contacto_nombre=?,contacto_email=?,contacto_telefono=?,periodicidad=?,fecha_inicio=?,cierre_mensual_dia=?,estado_cliente=?,riesgo_nivel=?,fecha_actualizacion=CURRENT_TIMESTAMP,usuario_creador=?,estado=?,observaciones=? WHERE id=? AND empresa_id=?`, row.ClienteEmpresaID, row.RazonSocial, row.NIT, row.Regimen, row.Responsable, row.ContactoNombre, row.ContactoEmail, row.ContactoTelefono, row.Periodicidad, row.FechaInicio, row.CierreMensualDia, row.EstadoCliente, row.RiesgoNivel, row.Usuario, row.Estado, row.Observaciones, row.ID, row.EmpresaID)
 		return row.ID, err
 	}
 	return insertSQLCompat(dbConn, `INSERT INTO empresa_portal_contador_clientes (empresa_id,cliente_empresa_id,codigo,razon_social,nit,regimen,responsable,contacto_nombre,contacto_email,contacto_telefono,periodicidad,fecha_inicio,cierre_mensual_dia,estado_cliente,riesgo_nivel,usuario_creador,estado,observaciones) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`, row.EmpresaID, row.ClienteEmpresaID, row.Codigo, row.RazonSocial, row.NIT, row.Regimen, row.Responsable, row.ContactoNombre, row.ContactoEmail, row.ContactoTelefono, row.Periodicidad, row.FechaInicio, row.CierreMensualDia, row.EstadoCliente, row.RiesgoNivel, row.Usuario, row.Estado, row.Observaciones)
@@ -301,7 +301,7 @@ func UpsertEmpresaPortalContadorObligacion(dbConn *sql.DB, row EmpresaPortalCont
 	row.EstadoObligacion = normalizePortalContadorEstadoObligacion(row.EstadoObligacion)
 	row.Prioridad = normalizePortalContadorPrioridad(row.Prioridad)
 	if row.ID > 0 {
-		_, err := ExecCompat(dbConn, `UPDATE empresa_portal_contador_obligaciones SET cliente_id=?,tipo=?,periodo=?,fecha_vencimiento=?,estado_obligacion=?,prioridad=?,valor_estimado=?,responsable=?,fecha_presentacion=?,soporte_url=?,fecha_actualizacion=datetime('now','localtime'),usuario_creador=?,observaciones=? WHERE id=? AND empresa_id=?`, row.ClienteID, row.Tipo, row.Periodo, row.FechaVencimiento, row.EstadoObligacion, row.Prioridad, row.ValorEstimado, row.Responsable, row.FechaPresentacion, row.SoporteURL, row.Usuario, row.Observaciones, row.ID, row.EmpresaID)
+		_, err := ExecCompat(dbConn, `UPDATE empresa_portal_contador_obligaciones SET cliente_id=?,tipo=?,periodo=?,fecha_vencimiento=?,estado_obligacion=?,prioridad=?,valor_estimado=?,responsable=?,fecha_presentacion=?,soporte_url=?,fecha_actualizacion=CURRENT_TIMESTAMP,usuario_creador=?,observaciones=? WHERE id=? AND empresa_id=?`, row.ClienteID, row.Tipo, row.Periodo, row.FechaVencimiento, row.EstadoObligacion, row.Prioridad, row.ValorEstimado, row.Responsable, row.FechaPresentacion, row.SoporteURL, row.Usuario, row.Observaciones, row.ID, row.EmpresaID)
 		return row.ID, err
 	}
 	return insertSQLCompat(dbConn, `INSERT INTO empresa_portal_contador_obligaciones (empresa_id,cliente_id,codigo,tipo,periodo,fecha_vencimiento,estado_obligacion,prioridad,valor_estimado,responsable,fecha_presentacion,soporte_url,usuario_creador,observaciones) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)`, row.EmpresaID, row.ClienteID, row.Codigo, row.Tipo, row.Periodo, row.FechaVencimiento, row.EstadoObligacion, row.Prioridad, row.ValorEstimado, row.Responsable, row.FechaPresentacion, row.SoporteURL, row.Usuario, row.Observaciones)
@@ -325,7 +325,7 @@ func UpsertEmpresaPortalContadorSolicitud(dbConn *sql.DB, row EmpresaPortalConta
 	row.EstadoSolicitud = normalizePortalContadorEstadoSolicitud(row.EstadoSolicitud)
 	row.Prioridad = normalizePortalContadorPrioridad(row.Prioridad)
 	if row.ID > 0 {
-		_, err := ExecCompat(dbConn, `UPDATE empresa_portal_contador_solicitudes SET cliente_id=?,titulo=?,categoria=?,fecha_solicitud=?,fecha_limite=?,estado_solicitud=?,prioridad=?,responsable=?,respuesta=?,soporte_url=?,fecha_actualizacion=datetime('now','localtime'),usuario_creador=?,observaciones=? WHERE id=? AND empresa_id=?`, row.ClienteID, row.Titulo, row.Categoria, row.FechaSolicitud, row.FechaLimite, row.EstadoSolicitud, row.Prioridad, row.Responsable, row.Respuesta, row.SoporteURL, row.Usuario, row.Observaciones, row.ID, row.EmpresaID)
+		_, err := ExecCompat(dbConn, `UPDATE empresa_portal_contador_solicitudes SET cliente_id=?,titulo=?,categoria=?,fecha_solicitud=?,fecha_limite=?,estado_solicitud=?,prioridad=?,responsable=?,respuesta=?,soporte_url=?,fecha_actualizacion=CURRENT_TIMESTAMP,usuario_creador=?,observaciones=? WHERE id=? AND empresa_id=?`, row.ClienteID, row.Titulo, row.Categoria, row.FechaSolicitud, row.FechaLimite, row.EstadoSolicitud, row.Prioridad, row.Responsable, row.Respuesta, row.SoporteURL, row.Usuario, row.Observaciones, row.ID, row.EmpresaID)
 		return row.ID, err
 	}
 	return insertSQLCompat(dbConn, `INSERT INTO empresa_portal_contador_solicitudes (empresa_id,cliente_id,codigo,titulo,categoria,fecha_solicitud,fecha_limite,estado_solicitud,prioridad,responsable,respuesta,soporte_url,usuario_creador,observaciones) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)`, row.EmpresaID, row.ClienteID, row.Codigo, row.Titulo, row.Categoria, row.FechaSolicitud, row.FechaLimite, row.EstadoSolicitud, row.Prioridad, row.Responsable, row.Respuesta, row.SoporteURL, row.Usuario, row.Observaciones)

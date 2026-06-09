@@ -131,7 +131,7 @@ func EnsureEmpresaWMSSchema(dbConn *sql.DB) error {
 	}
 	stmts := []string{
 		`CREATE TABLE IF NOT EXISTS empresa_wms_ubicaciones (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL,
 			codigo TEXT NOT NULL,
 			bodega TEXT DEFAULT 'Principal',
@@ -151,7 +151,7 @@ func EnsureEmpresaWMSSchema(dbConn *sql.DB) error {
 		)`,
 		`CREATE INDEX IF NOT EXISTS ix_wms_ubicaciones_empresa ON empresa_wms_ubicaciones(empresa_id,bodega,estado)`,
 		`CREATE TABLE IF NOT EXISTS empresa_wms_ordenes (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL,
 			codigo TEXT NOT NULL,
 			tipo TEXT DEFAULT 'picking',
@@ -170,7 +170,7 @@ func EnsureEmpresaWMSSchema(dbConn *sql.DB) error {
 		)`,
 		`CREATE INDEX IF NOT EXISTS ix_wms_ordenes_empresa ON empresa_wms_ordenes(empresa_id,tipo,estado,fecha_compromiso)`,
 		`CREATE TABLE IF NOT EXISTS empresa_wms_items (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL,
 			orden_id INTEGER NOT NULL,
 			producto_id INTEGER DEFAULT 0,
@@ -189,7 +189,7 @@ func EnsureEmpresaWMSSchema(dbConn *sql.DB) error {
 		)`,
 		`CREATE INDEX IF NOT EXISTS ix_wms_items_orden ON empresa_wms_items(empresa_id,orden_id,estado)`,
 		`CREATE TABLE IF NOT EXISTS empresa_wms_despachos (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL,
 			orden_id INTEGER NOT NULL,
 			codigo TEXT NOT NULL,
@@ -209,7 +209,7 @@ func EnsureEmpresaWMSSchema(dbConn *sql.DB) error {
 		)`,
 		`CREATE INDEX IF NOT EXISTS ix_wms_despachos_empresa ON empresa_wms_despachos(empresa_id,orden_id,estado)`,
 		`CREATE TABLE IF NOT EXISTS empresa_wms_eventos (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL,
 			referencia_tipo TEXT NOT NULL,
 			referencia_id INTEGER DEFAULT 0,

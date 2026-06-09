@@ -18,8 +18,8 @@ func TestCreateEmpresaCreditoUsesPostgresCompatibleWrites(t *testing.T) {
 	if strings.Contains(body, "tx.Exec(") {
 		t.Fatalf("CreateEmpresaCredito debe usar helpers SQL compatibles con PostgreSQL, no tx.Exec directo: %s", body)
 	}
-	if strings.Contains(body, "datetime(") {
-		t.Fatalf("CreateEmpresaCredito no debe usar datetime() en runtime PostgreSQL: %s", body)
+	if strings.Contains(body, "pcs_ts(") {
+		t.Fatalf("CreateEmpresaCredito no debe usar pcs_ts() en runtime PostgreSQL: %s", body)
 	}
 	if !strings.Contains(body, "insertTxSQLCompat") || !strings.Contains(body, "execTxSQLCompat") {
 		t.Fatalf("CreateEmpresaCredito debe rebindear INSERT/UPDATE transaccionales con helpers SQL compat: %s", body)
@@ -40,8 +40,8 @@ func TestCreditoGenerateCuotasTxUsesPostgresCompatibleWrites(t *testing.T) {
 	if strings.Contains(body, "tx.Exec(") {
 		t.Fatalf("creditoGenerateCuotasTxWithStart debe usar helpers SQL compatibles con PostgreSQL, no tx.Exec directo: %s", body)
 	}
-	if strings.Contains(body, "datetime(") {
-		t.Fatalf("creditoGenerateCuotasTxWithStart no debe usar datetime() en runtime PostgreSQL: %s", body)
+	if strings.Contains(body, "pcs_ts(") {
+		t.Fatalf("creditoGenerateCuotasTxWithStart no debe usar pcs_ts() en runtime PostgreSQL: %s", body)
 	}
 	if !strings.Contains(body, "execTxSQLCompat") {
 		t.Fatalf("creditoGenerateCuotasTxWithStart debe rebindear INSERT transaccional con execTxSQLCompat: %s", body)
@@ -69,7 +69,7 @@ func TestCreditoDashboardsUsePostgresSafeDateComparisons(t *testing.T) {
 	}
 	for _, tc := range cases {
 		body := extractCreditoFunctionForTest(t, src, tc.start, tc.end)
-		for _, forbidden := range []string{"datetime(", "date('now'", `date("now"`, "julianday("} {
+		for _, forbidden := range []string{"pcs_ts(", "date('now'", `date("now"`, "pcs_julian_day("} {
 			if strings.Contains(body, forbidden) {
 				t.Fatalf("%s no debe usar %s en consultas runtime PostgreSQL: %s", tc.name, forbidden, body)
 			}

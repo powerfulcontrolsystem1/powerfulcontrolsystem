@@ -654,7 +654,7 @@ func EnsureEmpresaCreditosSchema(dbConn *sql.DB) error {
 
 	stmts := []string{
 		`CREATE TABLE IF NOT EXISTS empresa_creditos (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL,
 			codigo TEXT,
 			cliente_id INTEGER DEFAULT 0,
@@ -671,7 +671,7 @@ func EnsureEmpresaCreditosSchema(dbConn *sql.DB) error {
 			omitir_domingos INTEGER DEFAULT 0,
 			plazo_dias INTEGER DEFAULT 0,
 			plazo_cuotas INTEGER DEFAULT 0,
-			fecha_inicio TEXT DEFAULT (datetime('now','localtime')),
+			fecha_inicio TEXT DEFAULT (CURRENT_TIMESTAMP),
 			fecha_vencimiento TEXT,
 			fecha_ultimo_pago TEXT,
 			dias_mora INTEGER DEFAULT 0,
@@ -680,8 +680,8 @@ func EnsureEmpresaCreditosSchema(dbConn *sql.DB) error {
 			venta_origen_id INTEGER DEFAULT 0,
 			documento_origen TEXT,
 			estado_credito TEXT DEFAULT 'activo',
-			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
-			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+			fecha_creacion TEXT DEFAULT (CURRENT_TIMESTAMP),
+			fecha_actualizacion TEXT DEFAULT (CURRENT_TIMESTAMP),
 			usuario_creador TEXT,
 			estado TEXT DEFAULT 'activo',
 			observaciones TEXT
@@ -690,14 +690,14 @@ func EnsureEmpresaCreditosSchema(dbConn *sql.DB) error {
 		`CREATE UNIQUE INDEX IF NOT EXISTS ux_empresa_creditos_empresa_codigo ON empresa_creditos(empresa_id, codigo);`,
 		`CREATE INDEX IF NOT EXISTS ix_empresa_creditos_cliente ON empresa_creditos(empresa_id, cliente_id, id DESC);`,
 		`CREATE TABLE IF NOT EXISTS empresa_creditos_clientes_limites (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL,
 			cliente_id INTEGER NOT NULL,
 			limite_saldo_total REAL DEFAULT 0,
 			max_creditos_activos INTEGER DEFAULT 0,
 			requiere_aprobacion_exceso INTEGER DEFAULT 0,
-			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
-			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+			fecha_creacion TEXT DEFAULT (CURRENT_TIMESTAMP),
+			fecha_actualizacion TEXT DEFAULT (CURRENT_TIMESTAMP),
 			usuario_creador TEXT,
 			estado TEXT DEFAULT 'activo',
 			observaciones TEXT
@@ -705,7 +705,7 @@ func EnsureEmpresaCreditosSchema(dbConn *sql.DB) error {
 		`CREATE UNIQUE INDEX IF NOT EXISTS ux_empresa_creditos_clientes_limites_empresa_cliente ON empresa_creditos_clientes_limites(empresa_id, cliente_id);`,
 		`CREATE INDEX IF NOT EXISTS ix_empresa_creditos_clientes_limites_estado ON empresa_creditos_clientes_limites(empresa_id, estado, id DESC);`,
 		`CREATE TABLE IF NOT EXISTS empresa_creditos_cuotas (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL,
 			credito_id INTEGER NOT NULL,
 			numero_cuota INTEGER DEFAULT 1,
@@ -718,8 +718,8 @@ func EnsureEmpresaCreditosSchema(dbConn *sql.DB) error {
 			saldo_cuota REAL DEFAULT 0,
 			estado_cuota TEXT DEFAULT 'pendiente',
 			fecha_ultimo_pago TEXT,
-			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
-			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+			fecha_creacion TEXT DEFAULT (CURRENT_TIMESTAMP),
+			fecha_actualizacion TEXT DEFAULT (CURRENT_TIMESTAMP),
 			usuario_creador TEXT,
 			estado TEXT DEFAULT 'activo',
 			observaciones TEXT
@@ -727,7 +727,7 @@ func EnsureEmpresaCreditosSchema(dbConn *sql.DB) error {
 		`CREATE UNIQUE INDEX IF NOT EXISTS ux_empresa_creditos_cuotas_credito_numero ON empresa_creditos_cuotas(empresa_id, credito_id, numero_cuota);`,
 		`CREATE INDEX IF NOT EXISTS ix_empresa_creditos_cuotas_estado ON empresa_creditos_cuotas(empresa_id, credito_id, estado_cuota, fecha_vencimiento);`,
 		`CREATE TABLE IF NOT EXISTS empresa_creditos_movimientos (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL,
 			credito_id INTEGER NOT NULL,
 			cuota_id INTEGER DEFAULT 0,
@@ -740,16 +740,16 @@ func EnsureEmpresaCreditosSchema(dbConn *sql.DB) error {
 			referencia_pago TEXT,
 			comprobante TEXT,
 			aplicado_automatico INTEGER DEFAULT 0,
-			fecha_movimiento TEXT DEFAULT (datetime('now','localtime')),
-			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
-			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+			fecha_movimiento TEXT DEFAULT (CURRENT_TIMESTAMP),
+			fecha_creacion TEXT DEFAULT (CURRENT_TIMESTAMP),
+			fecha_actualizacion TEXT DEFAULT (CURRENT_TIMESTAMP),
 			usuario_creador TEXT,
 			estado TEXT DEFAULT 'activo',
 			observaciones TEXT
 		);`,
 		`CREATE INDEX IF NOT EXISTS ix_empresa_creditos_movimientos_credito ON empresa_creditos_movimientos(empresa_id, credito_id, fecha_movimiento DESC, id DESC);`,
 		`CREATE TABLE IF NOT EXISTS empresa_creditos_workflow (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL,
 			credito_id INTEGER NOT NULL,
 			workflow_codigo TEXT,
@@ -769,8 +769,8 @@ func EnsureEmpresaCreditosSchema(dbConn *sql.DB) error {
 			payload_json TEXT DEFAULT '{}',
 			resultado_json TEXT DEFAULT '{}',
 			historial_aprobaciones_json TEXT DEFAULT '[]',
-			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
-			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+			fecha_creacion TEXT DEFAULT (CURRENT_TIMESTAMP),
+			fecha_actualizacion TEXT DEFAULT (CURRENT_TIMESTAMP),
 			usuario_creador TEXT,
 			estado TEXT DEFAULT 'activo',
 			observaciones TEXT
@@ -844,7 +844,7 @@ func EnsureEmpresaCreditosSchema(dbConn *sql.DB) error {
 	if err := ensureColumnIfMissing(dbConn, "empresa_creditos_movimientos", "aplicado_automatico", "INTEGER DEFAULT 0"); err != nil {
 		return err
 	}
-	if err := ensureColumnIfMissing(dbConn, "empresa_creditos_movimientos", "fecha_movimiento", "TEXT DEFAULT (datetime('now','localtime'))"); err != nil {
+	if err := ensureColumnIfMissing(dbConn, "empresa_creditos_movimientos", "fecha_movimiento", "TEXT DEFAULT (CURRENT_TIMESTAMP)"); err != nil {
 		return err
 	}
 
@@ -1708,7 +1708,7 @@ func ListEmpresaCreditoMovimientos(dbConn *sql.DB, empresaID, creditoID int64, i
 	if !includeInactive {
 		query += ` AND LOWER(COALESCE(estado, 'activo')) = 'activo'`
 	}
-	query += ` ORDER BY datetime(COALESCE(fecha_movimiento, fecha_creacion)) DESC, id DESC LIMIT ?`
+	query += ` ORDER BY pcs_ts(COALESCE(fecha_movimiento, fecha_creacion)) DESC, id DESC LIMIT ?`
 	args = append(args, limit)
 
 	rows, err := dbConn.Query(query, args...)
@@ -1933,7 +1933,7 @@ func RegisterEmpresaCreditoAbono(dbConn *sql.DB, input EmpresaCreditoAbonoInput)
 			saldo_cuota = ?,
 			estado_cuota = ?,
 			fecha_ultimo_pago = ?,
-			fecha_actualizacion = datetime('now','localtime')
+			fecha_actualizacion = CURRENT_TIMESTAMP
 		WHERE empresa_id = ?
 		  AND credito_id = ?
 		  AND id = ?`,
@@ -1976,7 +1976,7 @@ func RegisterEmpresaCreditoAbono(dbConn *sql.DB, input EmpresaCreditoAbonoInput)
 		clasificacion_cartera = ?,
 		dias_mora = ?,
 		fecha_ultimo_pago = ?,
-		fecha_actualizacion = datetime('now','localtime')
+		fecha_actualizacion = CURRENT_TIMESTAMP
 	WHERE empresa_id = ?
 	  AND id = ?`,
 		saldoNuevo,
@@ -2010,7 +2010,7 @@ func RegisterEmpresaCreditoAbono(dbConn *sql.DB, input EmpresaCreditoAbonoInput)
 		usuario_creador,
 		estado,
 		observaciones
-	) VALUES (?, ?, 0, 'abono', ?, ?, ?, ?, ?, ?, ?, 0, ?, datetime('now','localtime'), datetime('now','localtime'), ?, 'activo', ?)`,
+	) VALUES (?, ?, 0, 'abono', ?, ?, ?, ?, ?, ?, ?, 0, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, ?, 'activo', ?)`,
 		input.EmpresaID,
 		input.CreditoID,
 		montoAplicado,
@@ -2048,7 +2048,7 @@ func SetEmpresaCreditoEstado(dbConn *sql.DB, empresaID, creditoID int64, estadoC
 		return errors.New("empresa_id o credito_id invalido")
 	}
 	estado := creditoNormalizeEstado(estadoCredito)
-	_, err := dbConn.Exec(`UPDATE empresa_creditos SET estado_credito = ?, fecha_actualizacion = datetime('now','localtime') WHERE empresa_id = ? AND id = ?`, estado, empresaID, creditoID)
+	_, err := dbConn.Exec(`UPDATE empresa_creditos SET estado_credito = ?, fecha_actualizacion = CURRENT_TIMESTAMP WHERE empresa_id = ? AND id = ?`, estado, empresaID, creditoID)
 	return err
 }
 
@@ -2060,7 +2060,7 @@ func SetEmpresaCreditoRowEstado(dbConn *sql.DB, empresaID, creditoID int64, esta
 	if empresaID <= 0 || creditoID <= 0 {
 		return errors.New("empresa_id o credito_id invalido")
 	}
-	_, err := dbConn.Exec(`UPDATE empresa_creditos SET estado = ?, fecha_actualizacion = datetime('now','localtime') WHERE empresa_id = ? AND id = ?`, creditoNormalizeRowEstado(estado), empresaID, creditoID)
+	_, err := dbConn.Exec(`UPDATE empresa_creditos SET estado = ?, fecha_actualizacion = CURRENT_TIMESTAMP WHERE empresa_id = ? AND id = ?`, creditoNormalizeRowEstado(estado), empresaID, creditoID)
 	return err
 }
 
@@ -2127,7 +2127,7 @@ func UpdateEmpresaCredito(dbConn *sql.DB, payload EmpresaCredito) error {
 		usuario_creador = ?,
 		estado = ?,
 		observaciones = ?,
-		fecha_actualizacion = datetime('now','localtime')
+		fecha_actualizacion = CURRENT_TIMESTAMP
 	WHERE empresa_id = ?
 	  AND id = ?`,
 		strings.TrimSpace(payload.Codigo),
@@ -2295,7 +2295,7 @@ func UpsertEmpresaCreditoClienteLimite(dbConn *sql.DB, payload EmpresaCreditoCli
 			usuario_creador,
 			estado,
 			observaciones
-		) VALUES (?, ?, ?, ?, ?, datetime('now','localtime'), datetime('now','localtime'), ?, ?, ?)`,
+		) VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, ?, ?, ?)`,
 			payload.EmpresaID,
 			payload.ClienteID,
 			payload.LimiteSaldoTotal,
@@ -2318,7 +2318,7 @@ func UpsertEmpresaCreditoClienteLimite(dbConn *sql.DB, payload EmpresaCreditoCli
 		usuario_creador = ?,
 		estado = ?,
 		observaciones = ?,
-		fecha_actualizacion = datetime('now','localtime')
+		fecha_actualizacion = CURRENT_TIMESTAMP
 	WHERE empresa_id = ? AND cliente_id = ?`,
 		payload.LimiteSaldoTotal,
 		payload.MaxCreditosActivos,
@@ -2344,7 +2344,7 @@ func SetEmpresaCreditoClienteLimiteRowEstado(dbConn *sql.DB, empresaID, clienteI
 	if empresaID <= 0 || clienteID <= 0 {
 		return errors.New("empresa_id o cliente_id invalido")
 	}
-	_, err := dbConn.Exec(`UPDATE empresa_creditos_clientes_limites SET estado = ?, fecha_actualizacion = datetime('now','localtime') WHERE empresa_id = ? AND cliente_id = ?`, creditoNormalizeRowEstado(estado), empresaID, clienteID)
+	_, err := dbConn.Exec(`UPDATE empresa_creditos_clientes_limites SET estado = ?, fecha_actualizacion = CURRENT_TIMESTAMP WHERE empresa_id = ? AND cliente_id = ?`, creditoNormalizeRowEstado(estado), empresaID, clienteID)
 	return err
 }
 
@@ -2894,7 +2894,7 @@ func CreateEmpresaCreditoWorkflowSolicitud(dbConn *sql.DB, input EmpresaCreditoW
 		estado,
 		observaciones
 	) VALUES (
-		?, ?, '', ?, 'pendiente_aprobacion', ?, 0, ?, ?, ?, '{}', '[]', datetime('now','localtime'), datetime('now','localtime'), ?, 'activo', ?
+		?, ?, '', ?, 'pendiente_aprobacion', ?, 0, ?, ?, ?, '{}', '[]', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, ?, 'activo', ?
 	)`,
 		input.EmpresaID,
 		input.CreditoID,
@@ -2910,7 +2910,7 @@ func CreateEmpresaCreditoWorkflowSolicitud(dbConn *sql.DB, input EmpresaCreditoW
 		return 0, err
 	}
 	codigo := creditoWorkflowDefaultCodigo(input.EmpresaID, id, input.TipoSolicitud)
-	if _, err = tx.Exec(`UPDATE empresa_creditos_workflow SET workflow_codigo = ?, fecha_actualizacion = datetime('now','localtime') WHERE empresa_id = ? AND id = ?`, codigo, input.EmpresaID, id); err != nil {
+	if _, err = tx.Exec(`UPDATE empresa_creditos_workflow SET workflow_codigo = ?, fecha_actualizacion = CURRENT_TIMESTAMP WHERE empresa_id = ? AND id = ?`, codigo, input.EmpresaID, id); err != nil {
 		return 0, err
 	}
 
@@ -3155,7 +3155,7 @@ func executeEmpresaCreditoReversoWorkflowTx(tx *sql.Tx, workflow *EmpresaCredito
 			valor_pagado = ?,
 			saldo_cuota = ?,
 			estado_cuota = ?,
-			fecha_actualizacion = datetime('now','localtime')
+			fecha_actualizacion = CURRENT_TIMESTAMP
 		WHERE empresa_id = ? AND credito_id = ? AND id = ?`, nuevoPagado, nuevoSaldo, nuevoEstado, workflow.EmpresaID, workflow.CreditoID, cuotaID); err != nil {
 			return 0, nil, err
 		}
@@ -3181,7 +3181,7 @@ func executeEmpresaCreditoReversoWorkflowTx(tx *sql.Tx, workflow *EmpresaCredito
 		estado_credito = ?,
 		clasificacion_cartera = ?,
 		dias_mora = ?,
-		fecha_actualizacion = datetime('now','localtime')
+		fecha_actualizacion = CURRENT_TIMESTAMP
 	WHERE empresa_id = ? AND id = ?`, saldoNuevo, creditoRound(creditoMax(credito.CupoCredito-saldoNuevo, 0)), estadoNuevo, clasificacion, diasMora, workflow.EmpresaID, workflow.CreditoID); err != nil {
 		return 0, nil, err
 	}
@@ -3214,7 +3214,7 @@ func executeEmpresaCreditoReversoWorkflowTx(tx *sql.Tx, workflow *EmpresaCredito
 		estado,
 		observaciones
 	) VALUES (
-		?, ?, 0, 'reverso', ?, ?, ?, ?, ?, ?, ?, 0, datetime('now','localtime'), datetime('now','localtime'), datetime('now','localtime'), ?, 'activo', ?
+		?, ?, 0, 'reverso', ?, ?, ?, ?, ?, ?, ?, 0, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, ?, 'activo', ?
 	)`,
 		workflow.EmpresaID,
 		workflow.CreditoID,
@@ -3294,7 +3294,7 @@ func executeEmpresaCreditoRefinanciacionWorkflowTx(tx *sql.Tx, workflow *Empresa
 	resInactivar, err := tx.Exec(`UPDATE empresa_creditos_cuotas SET
 		estado = 'inactivo',
 		estado_cuota = 'anulada',
-		fecha_actualizacion = datetime('now','localtime'),
+		fecha_actualizacion = CURRENT_TIMESTAMP,
 		observaciones = CASE
 			WHEN TRIM(COALESCE(observaciones,'')) = '' THEN ?
 			ELSE observaciones || ' | ' || ?
@@ -3351,7 +3351,7 @@ func executeEmpresaCreditoRefinanciacionWorkflowTx(tx *sql.Tx, workflow *Empresa
 		estado_credito = ?,
 		clasificacion_cartera = ?,
 		dias_mora = ?,
-		fecha_actualizacion = datetime('now','localtime')
+		fecha_actualizacion = CURRENT_TIMESTAMP
 	WHERE empresa_id = ? AND id = ?`,
 		nuevoTipoCredito,
 		nuevaTasaInteres,
@@ -3388,7 +3388,7 @@ func executeEmpresaCreditoRefinanciacionWorkflowTx(tx *sql.Tx, workflow *Empresa
 		estado,
 		observaciones
 	) VALUES (
-		?, ?, 0, 'refinanciacion', ?, 0, 0, 0, 'refinanciacion', ?, '', 1, datetime('now','localtime'), datetime('now','localtime'), datetime('now','localtime'), ?, 'activo', ?
+		?, ?, 0, 'refinanciacion', ?, 0, 0, 0, 'refinanciacion', ?, '', 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, ?, 'activo', ?
 	)`,
 		workflow.EmpresaID,
 		workflow.CreditoID,
@@ -3487,7 +3487,7 @@ func AprobarEmpresaCreditoWorkflow(dbConn *sql.DB, input EmpresaCreditoWorkflowA
 			aprobado_por = ?,
 			codigo_aprobacion = ?,
 			historial_aprobaciones_json = ?,
-			fecha_actualizacion = datetime('now','localtime')
+			fecha_actualizacion = CURRENT_TIMESTAMP
 		WHERE empresa_id = ? AND id = ?`, nivelNuevo, estadoSolicitud, input.AprobadoPor, input.CodigoAprobacion, historialNuevo, input.EmpresaID, input.WorkflowID); err != nil {
 			return nil, err
 		}
@@ -3513,7 +3513,7 @@ func AprobarEmpresaCreditoWorkflow(dbConn *sql.DB, input EmpresaCreditoWorkflowA
 			movimiento_resultado_id = ?,
 			resultado_json = ?,
 			historial_aprobaciones_json = ?,
-			fecha_actualizacion = datetime('now','localtime')
+			fecha_actualizacion = CURRENT_TIMESTAMP
 		WHERE empresa_id = ? AND id = ?`, nivelNuevo, estadoSolicitud, input.AprobadoPor, input.CodigoAprobacion, fechaAprobFinal, ejecutadoPor, fechaEjecucion, movimientoResultadoID, resultadoJSON, historialNuevo, input.EmpresaID, input.WorkflowID); err != nil {
 			return nil, err
 		}
@@ -3585,7 +3585,7 @@ func RechazarEmpresaCreditoWorkflow(dbConn *sql.DB, input EmpresaCreditoWorkflow
 		codigo_aprobacion = ?,
 		motivo_rechazo = ?,
 		historial_aprobaciones_json = ?,
-		fecha_actualizacion = datetime('now','localtime')
+		fecha_actualizacion = CURRENT_TIMESTAMP
 	WHERE empresa_id = ? AND id = ?`, input.AprobadoPor, input.CodigoAprobacion, strings.TrimSpace(input.MotivoRechazo), historialNuevo, input.EmpresaID, input.WorkflowID); err != nil {
 		return nil, err
 	}

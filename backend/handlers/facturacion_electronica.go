@@ -2295,7 +2295,7 @@ func listFacturacionDocumentosForReconciliacion(dbEmp *sql.DB, empresaID int64) 
 		COALESCE(observaciones, '')
 	FROM empresa_facturacion_documentos
 	WHERE empresa_id = ? AND COALESCE(estado, 'activo') = 'activo'
-	ORDER BY datetime(COALESCE(NULLIF(fecha_documento, ''), fecha_creacion)) DESC, id DESC
+	ORDER BY pcs_ts(COALESCE(NULLIF(fecha_documento, ''), fecha_creacion)) DESC, id DESC
 	LIMIT 1000`, empresaID)
 	if qErr != nil {
 		return nil, qErr

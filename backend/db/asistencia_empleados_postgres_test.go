@@ -14,7 +14,7 @@ func TestEmpresaAsistenciaRuntimeUsesPostgresCompatibleSQL(t *testing.T) {
 	src := string(raw)
 	body := extractAsistenciaRuntimeForTest(t, src)
 
-	for _, forbidden := range []string{"dbConn.Exec(", "dbConn.Query(", "dbConn.QueryRow(", "datetime('now'"} {
+	for _, forbidden := range []string{"dbConn.Exec(", "dbConn.Query(", "dbConn.QueryRow(", "pcs_ts('now'"} {
 		if strings.Contains(body, forbidden) {
 			t.Fatalf("asistencia runtime no debe usar %s en PostgreSQL: %s", forbidden, body)
 		}

@@ -125,7 +125,7 @@ func EnsureEmpresaCRMVentasAvanzadasSchema(dbConn *sql.DB) error {
 	}
 	stmts := []string{
 		`CREATE TABLE IF NOT EXISTS empresa_crm_metas_comerciales (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL,
 			periodo TEXT NOT NULL,
 			propietario TEXT DEFAULT '',
@@ -198,9 +198,9 @@ func BuildEmpresaCRMVentasAvanzadasDashboard(dbConn *sql.DB, empresaID int64, pe
 	_ = QueryRowCompat(dbConn, `SELECT COUNT(1) FROM crm_leads WHERE empresa_id=? AND estado='activo' AND estado_lead NOT IN ('ganado','perdido','descalificado','cerrado')`, empresaID).Scan(&d.LeadsActivos)
 	_ = QueryRowCompat(dbConn, `SELECT COUNT(1) FROM crm_leads WHERE empresa_id=? AND estado='activo' AND estado_lead='ganado'`, empresaID).Scan(&d.LeadsGanados)
 	_ = QueryRowCompat(dbConn, `SELECT COUNT(1) FROM crm_leads WHERE empresa_id=? AND estado='activo' AND estado_lead IN ('perdido','descalificado')`, empresaID).Scan(&d.LeadsPerdidos)
-	_ = QueryRowCompat(dbConn, `SELECT COUNT(1) FROM crm_leads WHERE empresa_id=? AND estado='activo' AND estado_lead NOT IN ('ganado','perdido','descalificado','cerrado') AND COALESCE(proximo_contacto,'')<>'' AND datetime(proximo_contacto) < datetime('now')`, empresaID).Scan(&d.LeadsVencidos)
+	_ = QueryRowCompat(dbConn, `SELECT COUNT(1) FROM crm_leads WHERE empresa_id=? AND estado='activo' AND estado_lead NOT IN ('ganado','perdido','descalificado','cerrado') AND COALESCE(proximo_contacto,'')<>'' AND pcs_ts(proximo_contacto) < CURRENT_TIMESTAMP`, empresaID).Scan(&d.LeadsVencidos)
 	_ = QueryRowCompat(dbConn, `SELECT COUNT(1) FROM crm_leads l LEFT JOIN (SELECT empresa_id, lead_id, COUNT(1) AS interacciones FROM crm_interacciones WHERE empresa_id=? AND estado='activo' GROUP BY empresa_id, lead_id) i ON i.empresa_id=l.empresa_id AND i.lead_id=l.id WHERE l.empresa_id=? AND l.estado='activo' AND l.estado_lead NOT IN ('ganado','perdido','descalificado','cerrado') AND COALESCE(i.interacciones,0)=0`, empresaID, empresaID).Scan(&d.LeadsSinContacto)
-	_ = QueryRowCompat(dbConn, `SELECT COUNT(1), COALESCE(SUM(valor_potencial),0) FROM crm_leads WHERE empresa_id=? AND estado='activo' AND estado_lead NOT IN ('ganado','perdido','descalificado','cerrado') AND COALESCE(fecha_actualizacion,fecha_creacion,'')<>'' AND datetime(COALESCE(fecha_actualizacion,fecha_creacion)) < datetime('now','-14 days')`, empresaID).Scan(&d.LeadsEstancados, &d.ValorRiesgo)
+	_ = QueryRowCompat(dbConn, `SELECT COUNT(1), COALESCE(SUM(valor_potencial),0) FROM crm_leads WHERE empresa_id=? AND estado='activo' AND estado_lead NOT IN ('ganado','perdido','descalificado','cerrado') AND COALESCE(fecha_actualizacion,fecha_creacion,'')<>'' AND pcs_ts(COALESCE(fecha_actualizacion,fecha_creacion)) < pcs_ts('now','-14 days')`, empresaID).Scan(&d.LeadsEstancados, &d.ValorRiesgo)
 	_ = QueryRowCompat(dbConn, `SELECT COUNT(1) FROM crm_campanas WHERE empresa_id=? AND estado='activo' AND estado_campana='activa'`, empresaID).Scan(&d.CampanasActivas)
 	_ = QueryRowCompat(dbConn, `SELECT COALESCE(SUM(valor_potencial),0), COALESCE(SUM(valor_potencial*(COALESCE(probabilidad,0)/100.0)),0) FROM crm_leads WHERE empresa_id=? AND estado='activo' AND estado_lead NOT IN ('perdido','descalificado','cerrado')`, empresaID).Scan(&d.ValorPipeline, &d.ForecastPonderado)
 	_ = QueryRowCompat(dbConn, `SELECT COUNT(1), COALESCE(SUM(total),0) FROM empresa_cotizaciones_venta WHERE empresa_id=? AND estado='activo' AND estado_documento IN ('borrador','emitida','aprobada')`, empresaID).Scan(&d.CotizacionesAbiertas, &d.CotizacionesValor)
@@ -209,7 +209,7 @@ func BuildEmpresaCRMVentasAvanzadasDashboard(dbConn *sql.DB, empresaID int64, pe
 		SELECT proximo_contacto AS fecha FROM crm_leads WHERE empresa_id=? AND estado='activo' AND COALESCE(proximo_contacto,'')<>''
 		UNION ALL
 		SELECT proxima_accion AS fecha FROM crm_interacciones WHERE empresa_id=? AND estado='activo' AND COALESCE(proxima_accion,'')<>''
-	) WHERE substr(fecha,1,10)=date('now')`, empresaID, empresaID).Scan(&d.AgendaHoy)
+	) WHERE substr(fecha,1,10)=CURRENT_DATE`, empresaID, empresaID).Scan(&d.AgendaHoy)
 	metas, err := ListEmpresaCRMMetasComerciales(dbConn, empresaID, periodo)
 	if err != nil {
 		return d, err
@@ -383,7 +383,7 @@ func buildEmpresaCRMAgenda(dbConn *sql.DB, empresaID int64) ([]EmpresaCRMAgendaI
 func buildEmpresaCRMResponsables(dbConn *sql.DB, empresaID int64) ([]EmpresaCRMResponsableRendimiento, error) {
 	rows, err := ExecQueryCompat(dbConn, `SELECT COALESCE(NULLIF(TRIM(propietario),''),'Sin asignar') AS responsable,
 		COUNT(1),
-		SUM(CASE WHEN COALESCE(proximo_contacto,'')<>'' AND datetime(proximo_contacto) < datetime('now') THEN 1 ELSE 0 END),
+		SUM(CASE WHEN COALESCE(proximo_contacto,'')<>'' AND pcs_ts(proximo_contacto) < CURRENT_TIMESTAMP THEN 1 ELSE 0 END),
 		COALESCE(SUM(valor_potencial),0),
 		COALESCE(SUM(valor_potencial*(COALESCE(probabilidad,0)/100.0)),0),
 		COALESCE(AVG(probabilidad),0)

@@ -24,12 +24,12 @@ type EstacionColumnPreferences struct {
 func EnsureEmpresaEstacionColumnPreferencesSchema(dbConn *sql.DB) error {
 	stmts := []string{
 		`CREATE TABLE IF NOT EXISTS estacion_column_preferences (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id BIGSERIAL PRIMARY KEY,
             empresa_id INTEGER NOT NULL,
             usuario_email TEXT,
             rol_id INTEGER,
             columnas TEXT NOT NULL,
-            fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
+            fecha_creacion TEXT DEFAULT (CURRENT_TIMESTAMP),
             fecha_actualizacion TEXT,
             usuario_creador TEXT,
             estado TEXT DEFAULT 'activo',
@@ -148,7 +148,7 @@ func UpsertEstacionColumnPreferences(dbConn *sql.DB, p *EstacionColumnPreference
 	}
 
 	if existingID > 0 {
-		_, err := dbConn.Exec(`UPDATE estacion_column_preferences SET columnas = ?, fecha_actualizacion = datetime('now','localtime'), usuario_creador = ?, estado = COALESCE(NULLIF(?, ''), 'activo') WHERE id = ?`, columnas, p.UsuarioCreador, p.Estado, existingID)
+		_, err := dbConn.Exec(`UPDATE estacion_column_preferences SET columnas = ?, fecha_actualizacion = CURRENT_TIMESTAMP, usuario_creador = ?, estado = COALESCE(NULLIF(?, ''), 'activo') WHERE id = ?`, columnas, p.UsuarioCreador, p.Estado, existingID)
 		if err != nil {
 			return 0, err
 		}
@@ -156,7 +156,7 @@ func UpsertEstacionColumnPreferences(dbConn *sql.DB, p *EstacionColumnPreference
 	}
 
 	// Insert
-	res, err := dbConn.Exec(`INSERT INTO estacion_column_preferences (empresa_id, usuario_email, rol_id, columnas, fecha_creacion, fecha_actualizacion, usuario_creador, estado) VALUES (?, NULLIF(?, ''), NULLIF(?, 0), ?, datetime('now','localtime'), datetime('now','localtime'), ?, COALESCE(NULLIF(?, ''), 'activo'))`, p.EmpresaID, usuario, p.RolID, columnas, p.UsuarioCreador, p.Estado)
+	res, err := dbConn.Exec(`INSERT INTO estacion_column_preferences (empresa_id, usuario_email, rol_id, columnas, fecha_creacion, fecha_actualizacion, usuario_creador, estado) VALUES (?, NULLIF(?, ''), NULLIF(?, 0), ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, ?, COALESCE(NULLIF(?, ''), 'activo'))`, p.EmpresaID, usuario, p.RolID, columnas, p.UsuarioCreador, p.Estado)
 	if err != nil {
 		return 0, err
 	}

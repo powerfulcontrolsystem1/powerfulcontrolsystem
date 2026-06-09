@@ -268,7 +268,7 @@ type EmpresaLibroOficialLinea struct {
 func EnsureEmpresaContabilidadColombiaAvanzadaSchema(dbConn *sql.DB) error {
 	stmts := []string{
 		`CREATE TABLE IF NOT EXISTS empresa_contabilidad_exogena_formatos (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL,
 			formato TEXT NOT NULL,
 			version TEXT DEFAULT 'configurable',
@@ -284,7 +284,7 @@ func EnsureEmpresaContabilidadColombiaAvanzadaSchema(dbConn *sql.DB) error {
 			UNIQUE(empresa_id, formato, anio_gravable, concepto)
 		)`,
 		`CREATE TABLE IF NOT EXISTS empresa_contabilidad_exogena_registros (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL,
 			formato_id INTEGER NOT NULL,
 			tercero_id INTEGER DEFAULT 0,
@@ -304,7 +304,7 @@ func EnsureEmpresaContabilidadColombiaAvanzadaSchema(dbConn *sql.DB) error {
 			usuario_creador TEXT
 		)`,
 		`CREATE TABLE IF NOT EXISTS empresa_contabilidad_nomina_electronica (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL,
 			empleado_id INTEGER DEFAULT 0,
 			tipo_documento TEXT DEFAULT 'CC',
@@ -326,7 +326,7 @@ func EnsureEmpresaContabilidadColombiaAvanzadaSchema(dbConn *sql.DB) error {
 			UNIQUE(empresa_id, documento, periodo)
 		)`,
 		`CREATE TABLE IF NOT EXISTS empresa_contabilidad_documentos_soporte (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL,
 			proveedor_id INTEGER DEFAULT 0,
 			tipo_documento TEXT DEFAULT 'NIT',
@@ -348,7 +348,7 @@ func EnsureEmpresaContabilidadColombiaAvanzadaSchema(dbConn *sql.DB) error {
 			usuario_creador TEXT
 		)`,
 		`CREATE TABLE IF NOT EXISTS empresa_contabilidad_activos_fijos (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL,
 			codigo TEXT NOT NULL,
 			nombre TEXT NOT NULL,
@@ -372,7 +372,7 @@ func EnsureEmpresaContabilidadColombiaAvanzadaSchema(dbConn *sql.DB) error {
 			UNIQUE(empresa_id, codigo)
 		)`,
 		`CREATE TABLE IF NOT EXISTS empresa_contabilidad_cartera_cxp (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL,
 			tipo TEXT NOT NULL,
 			tercero_id INTEGER DEFAULT 0,
@@ -440,7 +440,7 @@ func ensureEmpresaActivosFijosAvanzadoSchema(dbConn *sql.DB) error {
 	}
 	stmts := []string{
 		`CREATE TABLE IF NOT EXISTS empresa_contabilidad_activos_depreciacion (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL,
 			activo_id INTEGER NOT NULL,
 			periodo TEXT NOT NULL,
@@ -458,7 +458,7 @@ func ensureEmpresaActivosFijosAvanzadoSchema(dbConn *sql.DB) error {
 		)`,
 		`CREATE INDEX IF NOT EXISTS ix_activos_depreciacion_empresa_periodo ON empresa_contabilidad_activos_depreciacion(empresa_id, periodo)`,
 		`CREATE TABLE IF NOT EXISTS empresa_contabilidad_activos_eventos (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL,
 			activo_id INTEGER NOT NULL,
 			tipo TEXT NOT NULL,

@@ -20,7 +20,7 @@ type SuperJuegoRecord struct {
 func EnsureSuperJuegosSchema(db *sql.DB) error {
 	createTable := `
 	CREATE TABLE IF NOT EXISTS super_juegos_records (
-		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		id BIGSERIAL PRIMARY KEY,
 		juego TEXT NOT NULL,
 		nombre_jugador TEXT NOT NULL,
 		empresa_id TEXT DEFAULT 'Publico',
@@ -34,7 +34,7 @@ func EnsureSuperJuegosSchema(db *sql.DB) error {
 	);`
 
 	// En PostgreSQL CURRENT_TIMESTAMP es estándar.
-	// Haremos el switch genérico para la tabla y secuencias si PostgreSQL lo requiere (AUTOINCREMENT -> SERIAL)
+	// Haremos el switch generico para la tabla y secuencias si PostgreSQL lo requiere.
 	isPostgres := false
 	if err := db.QueryRow("SELECT 1 FROM pg_class LIMIT 1").Scan(new(int)); err == nil {
 		isPostgres = true

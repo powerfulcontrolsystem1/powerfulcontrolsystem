@@ -87,7 +87,7 @@ type RecepcionInventario struct {
 func EnsureEmpresasComprasSchema(dbConn *sql.DB) error {
 	stmts := []string{
 		`CREATE TABLE IF NOT EXISTS empresa_proveedores (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL,
 			nit TEXT,
 			nombre_comercial TEXT NOT NULL,
@@ -104,7 +104,7 @@ func EnsureEmpresasComprasSchema(dbConn *sql.DB) error {
 			observaciones TEXT
 		)`,
 		`CREATE TABLE IF NOT EXISTS empresa_ordenes_compra (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL,
 			proveedor_id INTEGER NOT NULL,
 			bodega_destino_id INTEGER DEFAULT 0,
@@ -124,7 +124,7 @@ func EnsureEmpresasComprasSchema(dbConn *sql.DB) error {
 			observaciones TEXT
 		)`,
 		`CREATE TABLE IF NOT EXISTS empresa_ordenes_compra_items (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL,
 			orden_compra_id INTEGER NOT NULL,
 			producto_id INTEGER NOT NULL,
@@ -142,7 +142,7 @@ func EnsureEmpresasComprasSchema(dbConn *sql.DB) error {
 			observaciones TEXT
 		)`,
 		`CREATE TABLE IF NOT EXISTS empresa_compras_recepciones (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL,
 			orden_compra_id INTEGER DEFAULT 0,
 			proveedor_id INTEGER DEFAULT 0,
@@ -193,13 +193,13 @@ func CreateEmpresaProveedor(dbConn *sql.DB, p EmpresaProveedor) (int64, error) {
 }
 
 func UpdateEmpresaProveedor(dbConn *sql.DB, p EmpresaProveedor) error {
-	stmt := `UPDATE empresa_proveedores SET nit=?, nombre_comercial=?, razon_social=?, direccion=?, telefono=?, email=?, cuenta_bancaria=?, plazo_dias_pago=?, fecha_actualizacion=datetime('now', 'localtime'), observaciones=? WHERE id=? AND empresa_id=?`
+	stmt := `UPDATE empresa_proveedores SET nit=?, nombre_comercial=?, razon_social=?, direccion=?, telefono=?, email=?, cuenta_bancaria=?, plazo_dias_pago=?, fecha_actualizacion=pcs_ts('now', 'localtime'), observaciones=? WHERE id=? AND empresa_id=?`
 	_, err := dbConn.Exec(stmt, p.NIT, p.NombreComercial, p.RazonSocial, p.Direccion, p.Telefono, p.Email, p.CuentaBancaria, p.PlazoDiasPago, p.Observaciones, p.ID, p.EmpresaID)
 	return err
 }
 
 func SetEstadoEmpresaProveedor(dbConn *sql.DB, id, empresaID int64, estado string) error {
-	stmt := `UPDATE empresa_proveedores SET estado=?, fecha_actualizacion=datetime('now', 'localtime') WHERE id=? AND empresa_id=?`
+	stmt := `UPDATE empresa_proveedores SET estado=?, fecha_actualizacion=pcs_ts('now', 'localtime') WHERE id=? AND empresa_id=?`
 	_, err := dbConn.Exec(stmt, estado, id, empresaID)
 	return err
 }
@@ -231,5 +231,3 @@ func GetEmpresaProveedores(dbConn *sql.DB, empresaID int64, paramEstado string) 
 	}
 	return lista, nil
 }
-
-

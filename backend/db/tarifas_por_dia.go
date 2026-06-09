@@ -110,7 +110,7 @@ type tarifaPorDiaCalculoInterno struct {
 func EnsureEmpresaTarifasPorDiaSchema(dbConn *sql.DB) error {
 	stmts := []string{
 		`CREATE TABLE IF NOT EXISTS empresa_tarifas_por_dia (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL,
 			nombre_tarifa TEXT,
 			estacion_id INTEGER NOT NULL,
@@ -125,8 +125,8 @@ func EnsureEmpresaTarifasPorDiaSchema(dbConn *sql.DB) error {
 			moneda TEXT DEFAULT 'COP',
 			prioridad INTEGER DEFAULT 1,
 			aplicar_automaticamente INTEGER NOT NULL DEFAULT 1,
-			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
-			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+			fecha_creacion TEXT DEFAULT (CURRENT_TIMESTAMP),
+			fecha_actualizacion TEXT DEFAULT (CURRENT_TIMESTAMP),
 			usuario_creador TEXT,
 			estado TEXT DEFAULT 'activo',
 			observaciones TEXT
@@ -450,7 +450,7 @@ func CreateEmpresaTarifaPorDia(dbConn *sql.DB, payload EmpresaTarifaPorDia) (int
 		observaciones,
 		fecha_creacion,
 		fecha_actualizacion
-	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now','localtime'), datetime('now','localtime'))`,
+	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
 		payload.EmpresaID,
 		payload.NombreTarifa,
 		payload.EstacionID,
@@ -506,7 +506,7 @@ func UpdateEmpresaTarifaPorDia(dbConn *sql.DB, payload EmpresaTarifaPorDia) erro
 		usuario_creador = ?,
 		estado = ?,
 		observaciones = ?,
-		fecha_actualizacion = datetime('now','localtime')
+		fecha_actualizacion = CURRENT_TIMESTAMP
 	WHERE empresa_id = ? AND id = ?`,
 		payload.EstacionID,
 		payload.NombreTarifa,
@@ -547,7 +547,7 @@ func SetEmpresaTarifaPorDiaEstado(dbConn *sql.DB, empresaID, id int64, estado st
 	}
 	nextEstado := normalizeTarifaPorDiaEstado(estado)
 	res, err := dbConn.Exec(`UPDATE empresa_tarifas_por_dia
-	SET estado = ?, fecha_actualizacion = datetime('now','localtime')
+	SET estado = ?, fecha_actualizacion = CURRENT_TIMESTAMP
 	WHERE empresa_id = ? AND id = ?`, nextEstado, empresaID, id)
 	if err != nil {
 		return err
