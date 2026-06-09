@@ -32940,3 +32940,37 @@ Archivos modificados:
 - web/administrar_empresa/configuracion/perfil_tributario_colombia.html
 - web/administrar_empresa/configuracion_menu.html
 - web/administrar_empresa/facturas_electronicas.html
+
+2026-06-09: rs: actualizar repositorio y sincronizar VPS
+PushStatus: OK
+Archivos modificados:
+- backend/db/empresa_impresoras.go
+- backend/db/empresa_impresoras_cola_test.go
+- backend/db/facturacion_electronica.go
+- backend/db/facturacion_electronica_paises_test.go
+- backend/handlers/empresa_impresoras.go
+- backend/handlers/empresa_impresoras_agente_test.go
+- backend/handlers/empresa_permisos.go
+- backend/main.go
+- backend/tmp/prueba_impresoras_pcs.png
+- backend/tmp_printer_server.pid
+- documentos/CHANGELOG.md
+- documentos/api/openapi.generated.yaml
+- documentos/descripcion_de_archivos
+- documentos/descripcion_de_modulos
+- documentos/descripcion_del_proyecto
+- documentos/estructura_bd.md
+- documentos/flujos_operativos.md
+- documentos/historial_de_cambios
+- documentos/mapa_modulos.md
+- documentos/matriz_roles_permisos_pos_multiempresa.md
+- web/administrar_empresa/configuracion_impresora.html
+- web/administrar_empresa/configuracion_menu.html
+- web/administrar_empresa/facturacion_electronica.html
+- web/administrar_empresa/finanzas_menu.html
+- web/administrar_empresa/modulos_erp_dominio.html
+- web/administrar_empresa/modulos_erp_extendido.html
+- web/ayuda/ayuda.html
+- web/estilos.css
+- web/js/administrar_empresa.js
+- web/js/modulos_erp_extendido.js
