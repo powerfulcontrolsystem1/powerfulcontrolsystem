@@ -5087,7 +5087,6 @@
       const cajeroNombre = receiptCashierName(pay);
       const customFieldMeta = receiptCustomFieldMeta(printItems);
       const customFieldHTML = receiptCustomFieldHTML(printItems);
-      const creditSaleInfo = buildCreditSalePrintInfo(pay, moneda);
       const subtitleParts = [];
       if (receiptItemEnabled(printItems, 'carrito')) subtitleParts.push('Carrito: ' + ((carrito && carrito.nombre) || ''));
       if (receiptItemEnabled(printItems, 'codigo')) subtitleParts.push('Codigo: ' + ((carrito && carrito.codigo) || ''));
