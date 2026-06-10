@@ -1,3 +1,21 @@
+## Actualizacion 2026-06-10 - Snapshot completo VPS
+
+- `backend/db/super_vps_snapshots.go`
+  - Define tabla `super_vps_snapshots` y consultas de historial para copias
+    completas de infraestructura.
+- `backend/handlers/super_vps_snapshots.go`
+  - Implementa `/super/api/vps_snapshots`, generacion tar.gz, manifiesto,
+    descarga segura, subida `rclone`, retencion y worker automatico.
+- `backend/main.go`
+  - Asegura esquema, registra endpoint super auditado y arranca
+    `super.vps_snapshot_worker`.
+- `web/super/docker_portabilidad.html`
+  - Integra la configuracion y operacion visual junto al paquete Docker
+    portable.
+- Flujo: Super administrador -> Docker VPS -> `/super/api/vps_snapshots` ->
+  `backup/vps_snapshots` + `super_vps_snapshots` -> descarga/restauracion o
+  nube `rclone`.
+
 ## Actualizacion 2026-06-08 - OCR documental sin IA
 
 - `backend/db/ocr.go`
@@ -73,9 +91,10 @@
 
 - `backend/db/licencias_empresa_sistema.go`: resuelve la empresa interna
   `Powerful Control System`/`Powerful Control Systen`, guarda su `empresa_id`
-  en configuracion global y asegura una licencia tecnica interna fechada a 100
-  anos, con limites altos y modulos completos para que opere como una empresa
-  normal del sistema.
+  en configuracion global y desactiva la licencia tecnica heredada
+  `PCS_SYSTEM_INTERNAL_PERPETUAL` si existe. La empresa emisora ya no tiene
+  acceso perpetuo: debe operar con licencia comercial vigente como cualquier
+  empresa.
 - `backend/handlers/payments_handlers.go`: al aprobar una licencia comercial en
   Epayco, Wompi o flujo manual, reutiliza la capa de facturacion electronica
   para crear `factura_electronica` desde la empresa interna, enviar correo al
@@ -873,6 +892,18 @@
 - `backend/db/drogueria_farmacia_bootstrap.go` conserva licencias con `inventario`, `compras`, `ventas`, `clientes` y `facturacion` centrales.
 - `web/administrar_empresa/drogueria_farmacia.html` declara que la gestion sanitaria opera sobre productos, inventario, ventas y facturacion centrales.
 - `web/js/plantillas_integracion_catalogo.js` marca `drogueria_farmacia` como plantilla visible integrada.
+
+## Actualizacion 2026-06-09 (IA empresarial sin avatar)
+
+- `web/js/ai_chat_drawer.js` conserva el drawer central del chat IA, pero la
+  personalidad visual se normaliza a `normal`; los flujos antiguos de robot se
+  redirigen al recuadro normal para no romper ayuda contextual.
+- `/api/chat_flotante/preferencias` persiste preferencias en
+  `empresa_estacion_prefs`, fuerza `robot_enabled=false` y mantiene la voz como
+  preferencia del asistente.
+- Las acciones IA confirmables quedan restringidas en frontend a endpoints
+  permitidos; el backend debe seguir siendo la fuente real de permisos,
+  `empresa_id`, auditoria y validacion de negocio.
 
 ## Actualizacion 2026-05-11 (AIU construccion al nucleo)
 

@@ -60,13 +60,17 @@
           </div>
         </div>
 
-        <div class="form-row">
-          <div class="form-col">
-            <label class="form-help" style="display:flex;align-items:center;gap:8px;">
-              <input id="carritoCfgModoTactil" type="checkbox">
-              Adaptar carrito y agregador de productos para pantallas tactiles
-            </label>
-            <div class="form-help">Aumenta botones, campos, tarjetas de cobro y catalogo por botones para operar con el dedo en tablet, monitor POS o pantalla tactil.</div>
+        <div class="empresa-section mt-12 pos-touch-config-card">
+          <div class="form-row">
+            <div class="form-col">
+              <label class="form-help" style="display:flex;align-items:flex-start;gap:10px;font-size:1.02rem;font-weight:800;color:#0f172a;">
+                <input id="carritoCfgModoTactil" type="checkbox" style="margin-top:2px;">
+                <span>
+                  Modo POS tactil para carrito, estaciones y corte de caja
+                  <small style="display:block;font-weight:500;color:#64748b;margin-top:4px;">Activa botones, campos y tarjetas mas grandes en las funciones operativas de venta. Se guarda por empresa y no cambia la configuracion de facturacion electronica.</small>
+                </span>
+              </label>
+            </div>
           </div>
         </div>
 
@@ -246,6 +250,15 @@
                 Visualizar boton Cambiar tarifa
               </label>
             </div>
+            <div class="form-col">
+              <label class="form-help" style="display:flex;align-items:center;gap:8px;">
+                <input id="carritoCfgBotonTransferirCuenta" type="checkbox">
+                Visualizar boton Transferir cuenta
+              </label>
+              <div class="form-help">Permite mover una cuenta abierta a otra mesa, habitacion o estacion disponible. En motel/hotel solo se permite si la tarifa destino es equivalente.</div>
+            </div>
+          </div>
+          <div class="form-row">
             <div class="form-col">
               <label class="form-help" style="display:flex;align-items:center;gap:8px;">
                 <input id="carritoCfgBotonControlElectrico" type="checkbox" checked>
@@ -552,6 +565,8 @@
         mostrar_tarjeta_vip_cliente: true,
         mostrar_boton_descuentos_carrito: true,
         mostrar_boton_cambiar_tarifa_carrito: true,
+        mostrar_boton_transferir_cuenta_carrito: false,
+        permitir_transferir_cuenta_carrito: false,
         mostrar_boton_control_electrico_carrito: true,
         mostrar_boton_cancelar_carrito: true,
         mostrar_boton_taxi_carrito: true,
@@ -581,8 +596,13 @@
     function normalizeUnifiedCartConfig(raw) {
       const base = defaultUnifiedCartConfig();
       const src = raw && typeof raw === 'object' ? raw : {};
-      return {
-        modo_pantalla_tactil: src.modo_pantalla_tactil === undefined ? base.modo_pantalla_tactil : !!src.modo_pantalla_tactil,
+      const touchAlias = src.pos_touch_ui && typeof src.pos_touch_ui === 'object'
+        ? src.pos_touch_ui.enabled
+        : src.pos_touch_enabled;
+      return Object.assign({}, src, {
+        modo_pantalla_tactil: src.modo_pantalla_tactil === undefined
+          ? (touchAlias === undefined ? base.modo_pantalla_tactil : !!touchAlias)
+          : !!src.modo_pantalla_tactil,
         mostrar_boton_buscar_productos: src.mostrar_boton_buscar_productos === undefined ? base.mostrar_boton_buscar_productos : !!src.mostrar_boton_buscar_productos,
         mostrar_busqueda_catalogo: src.mostrar_busqueda_catalogo === undefined ? base.mostrar_busqueda_catalogo : !!src.mostrar_busqueda_catalogo,
         mostrar_codigo_manual_item: src.mostrar_codigo_manual_item === undefined ? base.mostrar_codigo_manual_item : !!src.mostrar_codigo_manual_item,
@@ -615,6 +635,12 @@
         mostrar_tarjeta_vip_cliente: src.mostrar_tarjeta_vip_cliente === undefined ? base.mostrar_tarjeta_vip_cliente : !!src.mostrar_tarjeta_vip_cliente,
         mostrar_boton_descuentos_carrito: src.mostrar_boton_descuentos_carrito === undefined ? base.mostrar_boton_descuentos_carrito : !!src.mostrar_boton_descuentos_carrito,
         mostrar_boton_cambiar_tarifa_carrito: src.mostrar_boton_cambiar_tarifa_carrito === undefined ? base.mostrar_boton_cambiar_tarifa_carrito : !!src.mostrar_boton_cambiar_tarifa_carrito,
+        mostrar_boton_transferir_cuenta_carrito: src.mostrar_boton_transferir_cuenta_carrito === undefined
+          ? base.mostrar_boton_transferir_cuenta_carrito
+          : !!src.mostrar_boton_transferir_cuenta_carrito,
+        permitir_transferir_cuenta_carrito: src.permitir_transferir_cuenta_carrito === undefined
+          ? (src.transferencia_cuenta_habilitada === undefined ? base.permitir_transferir_cuenta_carrito : !!src.transferencia_cuenta_habilitada)
+          : !!src.permitir_transferir_cuenta_carrito,
         mostrar_boton_control_electrico_carrito: src.mostrar_boton_control_electrico_carrito === undefined
           ? (src.mostrar_control_electrico_carrito === undefined ? base.mostrar_boton_control_electrico_carrito : !!src.mostrar_control_electrico_carrito)
           : !!src.mostrar_boton_control_electrico_carrito,
@@ -647,7 +673,7 @@
         botones_pitido_movil: src.botones_pitido_movil === undefined ? base.botones_pitido_movil : !!src.botones_pitido_movil,
         botones_vibracion_pc: src.botones_vibracion_pc === undefined ? base.botones_vibracion_pc : !!src.botones_vibracion_pc,
         botones_vibracion_movil: src.botones_vibracion_movil === undefined ? base.botones_vibracion_movil : !!src.botones_vibracion_movil
-      };
+      });
     }
 
     function parseStationConfigValue(raw) {
@@ -680,7 +706,7 @@
         if (parsed > 1440) return 1440;
         return parsed;
       };
-      return {
+      return Object.assign({}, src, {
         cantidad: Math.max(1, Number(src.cantidad || estaciones.length || 1)),
         estaciones: estaciones,
         card_size: String(src.card_size || 'medium').trim().toLowerCase() || 'medium',
@@ -699,7 +725,7 @@
         ia_pedidos_enabled: !!(src.ia_pedidos_enabled || src.iaPedidosEnabled),
         ia_pedidos_placement: normalizePlacement(src.ia_pedidos_placement || src.iaPedidosPlacement),
         carrito_ui_global: normalizeUnifiedCartConfig(src.carrito_ui_global || src.carrito || src.carrito_configuracion_global)
-      };
+      });
     }
 
     async function loadConfig() {
@@ -869,6 +895,7 @@
       document.getElementById('carritoCfgTarjetaDomotica').checked = !!normalized.mostrar_tarjeta_domotica_carrito;
       document.getElementById('carritoCfgBotonDescuentos').checked = !!normalized.mostrar_boton_descuentos_carrito;
       document.getElementById('carritoCfgBotonCambiarTarifa').checked = !!normalized.mostrar_boton_cambiar_tarifa_carrito;
+      document.getElementById('carritoCfgBotonTransferirCuenta').checked = !!(normalized.mostrar_boton_transferir_cuenta_carrito && normalized.permitir_transferir_cuenta_carrito);
       document.getElementById('carritoCfgBotonControlElectrico').checked = !!normalized.mostrar_boton_control_electrico_carrito;
       document.getElementById('carritoCfgBotonCancelar').checked = !!normalized.mostrar_boton_cancelar_carrito;
       document.getElementById('carritoCfgBotonTaxi').checked = !!normalized.mostrar_boton_taxi_carrito;
@@ -927,6 +954,7 @@
           'carritoCfgTarjetaDomotica',
           'carritoCfgBotonDescuentos',
           'carritoCfgBotonCambiarTarifa',
+          'carritoCfgBotonTransferirCuenta',
           'carritoCfgBotonControlElectrico',
           'carritoCfgBotonCancelar',
           'carritoCfgBotonTaxi',
@@ -994,6 +1022,9 @@
           mostrar_tarjeta_domotica_carrito: document.getElementById('carritoCfgTarjetaDomotica').checked,
           mostrar_boton_descuentos_carrito: document.getElementById('carritoCfgBotonDescuentos').checked,
           mostrar_boton_cambiar_tarifa_carrito: document.getElementById('carritoCfgBotonCambiarTarifa').checked,
+          mostrar_boton_transferir_cuenta_carrito: document.getElementById('carritoCfgBotonTransferirCuenta').checked,
+          permitir_transferir_cuenta_carrito: document.getElementById('carritoCfgBotonTransferirCuenta').checked,
+          transferencia_cuenta_habilitada: document.getElementById('carritoCfgBotonTransferirCuenta').checked,
           mostrar_boton_control_electrico_carrito: document.getElementById('carritoCfgBotonControlElectrico').checked,
           mostrar_boton_cancelar_carrito: document.getElementById('carritoCfgBotonCancelar').checked,
           mostrar_boton_taxi_carrito: document.getElementById('carritoCfgBotonTaxi').checked,

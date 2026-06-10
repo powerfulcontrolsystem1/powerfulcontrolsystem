@@ -283,8 +283,13 @@
       function normalizeUnifiedCartConfig(raw) {
         const base = defaultUnifiedCartConfig();
         const src = raw && typeof raw === 'object' ? raw : {};
-        return {
-          modo_pantalla_tactil: src.modo_pantalla_tactil === undefined ? base.modo_pantalla_tactil : toBool(src.modo_pantalla_tactil),
+        const touchAlias = src.pos_touch_ui && typeof src.pos_touch_ui === 'object'
+          ? src.pos_touch_ui.enabled
+          : src.pos_touch_enabled;
+        return Object.assign({}, src, {
+          modo_pantalla_tactil: src.modo_pantalla_tactil === undefined
+            ? (touchAlias === undefined ? base.modo_pantalla_tactil : toBool(touchAlias))
+            : toBool(src.modo_pantalla_tactil),
           mostrar_boton_buscar_productos: src.mostrar_boton_buscar_productos === undefined ? base.mostrar_boton_buscar_productos : toBool(src.mostrar_boton_buscar_productos),
           mostrar_busqueda_catalogo: src.mostrar_busqueda_catalogo === undefined ? base.mostrar_busqueda_catalogo : toBool(src.mostrar_busqueda_catalogo),
           mostrar_codigo_manual_item: src.mostrar_codigo_manual_item === undefined ? base.mostrar_codigo_manual_item : toBool(src.mostrar_codigo_manual_item),
@@ -295,7 +300,7 @@
           mostrar_comision: src.mostrar_comision === undefined ? base.mostrar_comision : toBool(src.mostrar_comision),
           permitir_pago_mixto: src.permitir_pago_mixto === undefined ? base.permitir_pago_mixto : toBool(src.permitir_pago_mixto),
           mostrar_resumen_productos: src.mostrar_resumen_productos === undefined ? base.mostrar_resumen_productos : toBool(src.mostrar_resumen_productos)
-        };
+        });
       }
 
       function normalizeStationCarritoConfig(raw) {
@@ -346,7 +351,7 @@
       const camarasEnabledRaw = (cfg && (cfg.camaras_enabled !== undefined ? cfg.camaras_enabled : cfg.camarasEnabled)) || false;
       const camaras_enabled = toBool(camarasEnabledRaw);
       const camaras_placement = normalizeSpecialPlacement(cfg && (cfg.camaras_placement !== undefined ? cfg.camaras_placement : cfg.camarasPlacement));
-      return {
+      return Object.assign({}, cfg, {
         cantidad,
         estacion_nombre_singular: labels.singular,
         estacion_nombre_plural: labels.plural,
@@ -375,7 +380,21 @@
         carrito_ui_global: normalizeUnifiedCartConfig(cfg && (cfg.carrito_ui_global || cfg.carrito || cfg.carrito_configuracion_global)),
         station_card_ui: cfg && cfg.station_card_ui && typeof cfg.station_card_ui === 'object' ? cfg.station_card_ui : {},
         acceso_estaciones_cajeros: normalizeStationAccessConfig(cfg && (cfg.acceso_estaciones_cajeros || cfg.acceso_estaciones_por_cajero))
-      };
+      });
+    }
+
+    function isTouchPOSModeEnabled(cfg) {
+      const src = cfg && typeof cfg === 'object' ? cfg : {};
+      const ui = src.carrito_ui_global || src.carrito || src.carrito_configuracion_global || {};
+      if (!ui || typeof ui !== 'object') return false;
+      const alias = ui.pos_touch_ui && typeof ui.pos_touch_ui === 'object' ? ui.pos_touch_ui.enabled : ui.pos_touch_enabled;
+      return ui.modo_pantalla_tactil === undefined ? toBool(alias) : toBool(ui.modo_pantalla_tactil);
+    }
+
+    function applyTouchPOSMode(cfg) {
+      const enabled = isTouchPOSModeEnabled(cfg || stationConfig || {});
+      document.body.classList.toggle('pos-touch-mode', enabled);
+      document.body.classList.toggle('estaciones-touch-mode', enabled);
     }
 
     function normalizeSpecialPlacement(raw) {
@@ -2651,6 +2670,7 @@
           try { await saveConfigToServer(cfg); } catch (err) { console.warn('No se pudo guardar config por defecto', err); }
         }
         stationConfig = cfg;
+        applyTouchPOSMode(stationConfig);
         applyStationLabelsToDOM(stationConfig);
         applyCardSize(stationConfig);
         window.addEventListener('resize', function() {

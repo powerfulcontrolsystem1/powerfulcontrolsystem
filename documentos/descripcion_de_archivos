@@ -1,3 +1,61 @@
+2026-06-10 - Plantilla colegio fuera del index
+- `web/js/plantillas_nuevas_catalogo.js`: filtra `colegio_academia` del catalogo exportado al portal y reajusta el orden visible de plantillas publicas.
+- `web/index.html`: actualiza cache busting del catalogo y bloquea `colegio_academia` al pintar `Mas sistemas`, incluso si la API publica lo retorna.
+
+2026-06-10 - Snapshot completo VPS desde super administrador
+- `backend/db/super_vps_snapshots.go`: esquema PostgreSQL y consultas de historial `super_vps_snapshots` para registrar snapshots VPS, estado local/nube, hash, manifiesto, errores saneados y usuario creador.
+- `backend/handlers/super_vps_snapshots.go`: endpoint super `/super/api/vps_snapshots`, generador de `.tar.gz` restaurable, descarga segura, subida `rclone`, limpieza por retencion y worker automatico.
+- `backend/handlers/super_vps_snapshots_test.go`: valida saneamiento de rutas remotas y bloqueo de descargas fuera de `backup/vps_snapshots`.
+- `backend/main.go`: asegura el esquema, registra la ruta super auditada y arranca el worker horario de snapshots cuando la configuracion lo active.
+- `web/super/docker_portabilidad.html`: agrega tarjeta profesional para configurar, crear, descargar, subir a nube y revisar historial de snapshots completos de VPS.
+
+2026-06-10 - Retencion de empresas vencidas por licencia
+- `backend/db/licencias_retencion_empresas.go`: esquema y consultas de `licencia_empresa_retencion_log`, deteccion de empresas no operativas sin licencia base vigente, preaviso pendiente y eliminacion programada.
+- `backend/db/licencias_retencion_empresas_test.go`: valida que estados activos no entren al barrido y que estados inactivos/suspendidos/bloqueados/vencidos si sean candidatos.
+- `backend/handlers/licencias_vencimiento_alertas.go`: amplia `/super/api/licencias/vencimiento_alertas` con configuracion `retencion_empresas`, acciones `retencion_preview`/`retencion_run_now`, envio de preaviso y borrado con `DeleteEmpresaCascade`.
+- `backend/handlers/super_email_templates.go`: agrega plantilla `licencia_empresa_eliminacion_warning` para el preaviso de eliminacion por licencia vencida.
+- `web/super/configuracion_avanzada.html`: agrega controles visuales de retencion, vista previa y reporte reciente dentro de alertas de licencias.
+
+2026-06-09 - Modo POS tactil por empresa
+- `web/administrar_empresa/configuracion_carrito_de_compra_empresa.html`:
+	- convierte el check tactil en una opcion visible para carrito, estaciones y corte de caja.
+	- conserva campos desconocidos de `estaciones_config` y `carrito_ui_global` al normalizar/guardar.
+- `web/administrar_empresa/carrito_de_compras.html`:
+	- aplica `pos-touch-mode` junto a `cart-touch-mode` cuando `carrito_ui_global.modo_pantalla_tactil` esta activo.
+	- conserva alias antiguos `pos_touch_ui.enabled` y `pos_touch_enabled`.
+- `web/administrar_empresa/buscar_producto_botones.html`:
+	- activa `pos-touch-mode` cuando llega `touch=1` desde el carrito.
+- `web/administrar_empresa/estaciones.html`:
+	- lee la preferencia tactil global y aplica `estaciones-touch-mode` sin crear configuracion propia duplicada.
+	- preserva campos desconocidos al normalizar `estaciones_config`.
+- `web/administrar_empresa/corte_de_caja.html`:
+	- consulta `/api/empresa/estacion_prefs` para aplicar `corte-touch-mode` segun la misma preferencia por empresa.
+- `web/estilos.css`:
+	- agrega reglas compartidas para botones, inputs, acciones, tarjetas de estaciones y corte de caja en modo POS tactil.
+
+2026-06-09 - Imagenes del carrusel Mas sistemas del portal
+- `web/index.html`:
+	- actualiza las imagenes secundarias de las 26 tarjetas base del carrusel `Mas sistemas`.
+	- corrige el render del carrusel para usar `imagen_secundaria_url` por tarjeta en vez de repetir `/img/sistema punto de venta.png`.
+- `web/js/plantillas_nuevas_catalogo.js`:
+	- actualiza las 20 plantillas verticales publicas para que tambien usen imagen propia en `Mas sistemas`.
+- `web/img/portal-systems/*.svg`:
+	- agrega 46 ilustraciones profesionales especificas para las tarjetas base y plantillas verticales publicas del carrusel.
+
+2026-06-09 - Correo de bienvenida de licencias con factura electronica
+- `backend/handlers/payments_handlers.go`:
+	- agrega switches globales para correo de bienvenida, emision automatica de factura electronica y adjunto PDF de factura en compras de licencia.
+	- deja de adjuntar el PDF de licencia al correo; el mensaje incluye el enlace a Administrar empresa > Licencia del sistema.
+	- mantiene idempotencia en Epayco/Wompi y registra cuando el correo queda omitido por configuracion.
+- `backend/handlers/super_email_templates.go`:
+	- actualiza el template por defecto `licencia_activation_payment` como bienvenida a PCS y agrega `license_download_url`.
+- `backend/handlers/licencias_pdf_test.go`:
+	- cubre que el correo de bienvenida adjunte solo la factura electronica PDF y no `licencia.pdf`.
+- `web/super/licencias.html`:
+	- agrega controles de super administrador para las reglas de comunicacion de licencias.
+- `web/super/formato_para_emviar_email.html`:
+	- aclara que la licencia se descarga desde Administrar empresa y ya no viaja como adjunto.
+
 2026-06-09 - Impresoras por empresa con cola de agente local
 - `backend/db/empresa_impresoras.go`: agrega la tabla `empresa_impresoras_cola`, normalizacion de trabajos, creacion de cola, toma por agente local, cierre de estado y reintento por `empresa_id`.
 - `backend/handlers/empresa_impresoras.go`: expone acciones de cola en `/api/empresa/impresoras` y handler limitado `EmpresaImpresorasAgenteHandler` para agentes de caja.
@@ -108,6 +166,15 @@
 	- ejecuta el backfill de `Bodega 1` despues de asegurar el esquema de productos.
 - `backend/db/productos_bodegas_test.go`:
 	- valida que el default sea idempotente y no cree stock/productos demo.
+
+2026-06-09 - IA empresarial activa sin robot ni secretaria
+	- `web/js/ai_chat_drawer.js` : normaliza la experiencia al recuadro IA tradicional, conserva voz, redirige ayudas antiguas del robot al drawer normal y restringe acciones `PCS_ACTION` a endpoints permitidos.
+	- `web/administrar_empresa/configuracion_chat_flotante.html` : reemplaza la configuracion de robot/secretaria por una pagina sobria de IA empresarial, emisora opcional y voz del asistente por empresa.
+	- `web/estilos.css` : cambia el boton flotante del chat IA a un circulo compacto tipo asistente moderno, sin etiqueta rectangular visible.
+	- `backend/handlers/chat_flotante_config.go` : fuerza `robot_enabled=false` y `personality_mode=normal` aunque lleguen preferencias antiguas; conserva `chat_enabled`, emisora y voz.
+	- `backend/db/empresa_estacion_prefs.go` y `backend/db/tipo_empresa_preconfiguracion.go` : aplican defaults de preproduccion con chat IA activo, avatar retirado y emisora opt-in para empresas existentes y preconfiguraciones.
+	- `backend/handlers/chat_con_inteligencia_artificial_controller.go` : actualiza el prompt operativo para usar contexto de lectura preparado por backend y acciones confirmables sobre endpoints permitidos, sin SQL libre ni endpoints genericos de BD.
+	- `backend/handlers/empresa_permisos.go` : Chat IA y Centro IA empresarial dejan de estar en la lista de paginas IA ocultas por defecto; siguen sujetos a rol/licencia/wrapper.
 
 2026-06-07 - Ayuda integrada con robot/caja IA
 - `web/js/help_ai_bridge.js`:
@@ -481,7 +548,7 @@
 	- agrega `EmpresaLicenciaSistemaPDFHandler` para descargar la licencia activa de una empresa como PDF usando el formato editable `licencia_software_pdf`.
 	- centraliza `buildLicenciaSoftwarePDFForEmpresa` para reutilizar el mismo documento en correos y descarga manual.
 - `backend/handlers/payments_handlers.go`:
-	- reutiliza el generador central de PDF para adjuntar la licencia al correo de activacion.
+	- reutilizaba el generador central de PDF para correo y descarga; desde 2026-06-09 la licencia se descarga desde la empresa y no se adjunta al correo.
 - `backend/handlers/empresa_permisos.go`:
 	- asigna la descarga PDF a `linkLicenciaSistema` y mueve el permiso al grupo `Licencia`.
 - `backend/main.go`:
@@ -576,14 +643,17 @@
 
 2026-05-30 - Licencias globales compartidas
 - `backend/db/licencias_globales.go`:
-	- nuevo catalogo canonico de cuatro planes globales aplicables a todos los tipos de empresa y rutina idempotente para ocultar licencias base heredadas por tipo.
+	- catalogo canonico de siete planes globales aplicables a todos los tipos de empresa y rutina idempotente para ocultar licencias base heredadas por tipo.
 - `backend/db/licencias_globales_test.go`:
 	- prueba unitaria de cantidad, codigos, documentos, cajas y valor de los planes globales.
+- `backend/handlers/licencias_advance_limit_test.go`:
+	- prueba unitaria del limite de compras adelantadas de la misma licencia con ventanas comerciales de 365 dias.
 - `backend/db/db.go`:
-	- asegura el catalogo global durante la regularizacion de licencias e incluye `GLOBAL`/`*` al filtrar por pais.
+	- asegura el catalogo global durante la regularizacion de licencias, incluye `GLOBAL`/`*` al filtrar por pais y conserva `codigo_funcion` al copiar una licencia global a una empresa.
 - `backend/db/constructora_bootstrap.go`, `backend/db/alquileres_bootstrap.go`, `backend/db/drogueria_farmacia_bootstrap.go`, `backend/db/plantillas_nuevas_bootstrap.go`:
 	- dejan de crear licencias base repetidas por tipo y aseguran el catalogo global.
 - `backend/handlers/payments_handlers.go`:
+	- expone `/super/api/licencias/configuracion` y bloquea compras adelantadas de la misma licencia en resumen de checkout, Wompi, Epayco y activacion sin pago.
 	- el CRUD/listado super incluye planes globales `tipo_id=0` cuando se filtra por tipo de empresa.
 - `web/elegir_licencia.html`:
 	- muestra planes globales para cualquier tipo de empresa y mantiene el bloqueo de prueba gratis ya usada.
@@ -10997,3 +11067,15 @@ backend/handlers/user_config.go - Controlador que expone /api/user/configuracion
 - Se eliminan `web/administrar_empresa/modulos_erp_extendido.html`, `web/administrar_empresa/modulos_erp_dominio.html` y `web/js/modulos_erp_extendido.js`.
 - El acceso vigente a integraciones queda en `web/administrar_empresa/configuracion_integraciones.html` mediante `linkConfiguracionIntegraciones`.
 - No se eliminan endpoints ni tablas de CRM, produccion, logistica, documentos o integraciones.
+2026-06-09 - Gobierno IA super administrador profesional
+- `web/super/configuracion/ia_global.html`:
+	- Remodela la pagina directa de IA global como centro de gobierno super con tarjetas de seguridad, enlaces a limites/contexto/voz y frame del panel operativo real.
+- `web/super/configuracion_avanzada.html`:
+	- Remodela `aiConfigCard` para mostrar servicio global, proveedor OpenAI, credencial cifrada, modelos conectados, resumen operativo, prueba backend y politica de seguridad.
+- `web/super/contexto_ia_logica_negocio.html`:
+	- Actualiza el texto para hablar del recuadro flotante de IA, sin robot ni secretaria.
+- `documentos/contexto_codex.md`, `documentos/mapa_modulos.md`, `documentos/descripcion_de_modulos`, `documentos/CHANGELOG.md`, `documentos/historial_de_cambios`:
+	- Registran trazabilidad de la remodelacion y validaciones ejecutadas.
+2026-06-09 - Tutorial interno de nomina
+- `web/administrar_empresa/nomina_tutorial.html`: pagina empresarial nueva para explicar el flujo operativo de nomina: parametros legales, configuracion, empleados, novedades, liquidacion, pagos, PILA, preparacion de nomina electronica DIAN, checklist previo y fuentes oficiales.
+- `web/administrar_empresa/nomina_sueldos.html`: agrega boton `Tutorial` junto a `Ayuda` y conserva `empresa_id` en los enlaces del modulo.

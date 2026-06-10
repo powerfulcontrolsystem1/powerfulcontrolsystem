@@ -446,8 +446,6 @@ type permissionPageRule struct {
 }
 
 var defaultHiddenEnterpriseIAPages = map[string]bool{
-	"linkChatIA":                true,
-	"linkCentroIAEmpresarial":   true,
 	"linkRentaIA":               true,
 	"linkSoportesComprasIA":     true,
 	"linkSoportesComprasIAMenu": true,

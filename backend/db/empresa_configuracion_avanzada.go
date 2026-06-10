@@ -58,8 +58,10 @@ type EmpresaConfiguracionAvanzada struct {
 	ImpresionCorteItemsJSON               string `json:"impresion_corte_items_json,omitempty"`
 	MostrarLogo                           bool   `json:"mostrar_logo"`
 	MostrarLogoEmpresa                    bool   `json:"mostrar_logo_empresa"`
+	MostrarLogoFactura                    bool   `json:"mostrar_logo_factura"`
 	MostrarLogoSistema                    bool   `json:"mostrar_logo_sistema"`
 	LogoURL                               string `json:"logo_url,omitempty"`
+	LogoFacturaURL                        string `json:"logo_factura_url,omitempty"`
 	LogoSistemaURL                        string `json:"logo_sistema_url,omitempty"`
 	PieFactura                            string `json:"pie_factura,omitempty"`
 	NotasLegales                          string `json:"notas_legales,omitempty"`
@@ -147,8 +149,10 @@ func EnsureEmpresaConfiguracionAvanzadaSchema(dbConn *sql.DB) error {
 			impresion_corte_items_json TEXT,
 			mostrar_logo INTEGER DEFAULT 1,
 			mostrar_logo_empresa INTEGER DEFAULT 1,
+			mostrar_logo_factura INTEGER DEFAULT 1,
 			mostrar_logo_sistema INTEGER DEFAULT 0,
 			logo_url TEXT,
+			logo_factura_url TEXT,
 			pie_factura TEXT,
 			notas_legales TEXT,
 			color_carrito_activo TEXT DEFAULT '#d9fbe8',
@@ -311,10 +315,16 @@ func EnsureEmpresaConfiguracionAvanzadaSchema(dbConn *sql.DB) error {
 	if err := ensureColumnIfMissing(dbConn, "empresa_configuracion_avanzada", "mostrar_logo_empresa", "INTEGER"); err != nil {
 		return err
 	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_configuracion_avanzada", "mostrar_logo_factura", "INTEGER DEFAULT 1"); err != nil {
+		return err
+	}
 	if err := ensureColumnIfMissing(dbConn, "empresa_configuracion_avanzada", "mostrar_logo_sistema", "INTEGER DEFAULT 0"); err != nil {
 		return err
 	}
 	if err := ensureColumnIfMissing(dbConn, "empresa_configuracion_avanzada", "logo_url", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_configuracion_avanzada", "logo_factura_url", "TEXT"); err != nil {
 		return err
 	}
 	if err := ensureColumnIfMissing(dbConn, "empresa_configuracion_avanzada", "pie_factura", "TEXT"); err != nil {
@@ -389,6 +399,7 @@ func ensureEmpresaConfiguracionAvanzadaFlagColumns(dbConn *sql.DB) error {
 		"mostrar_deducido_impuesto_factura":        0,
 		"mostrar_logo":                             1,
 		"mostrar_logo_empresa":                     1,
+		"mostrar_logo_factura":                     1,
 		"mostrar_logo_sistema":                     0,
 		"usar_decimales":                           1,
 	}
@@ -455,6 +466,7 @@ func defaultConfigAvanzada(empresaID int64) EmpresaConfiguracionAvanzada {
 		ImprimirFacturaElectronica:            false,
 		MostrarLogo:                           true,
 		MostrarLogoEmpresa:                    true,
+		MostrarLogoFactura:                    true,
 		MostrarLogoSistema:                    false,
 		LogoSistemaURL:                        defaultLogoSistemaURL,
 		ColorCarritoActivo:                    defaultColorCarritoActivo,
@@ -749,8 +761,10 @@ func GetEmpresaConfiguracionAvanzada(dbConn *sql.DB, empresaID int64) (*EmpresaC
 		COALESCE(impresion_corte_items_json, ''),
 		COALESCE(mostrar_logo, 1),
 		COALESCE(mostrar_logo_empresa, mostrar_logo, 1),
+		COALESCE(mostrar_logo_factura, mostrar_logo, 1),
 		COALESCE(mostrar_logo_sistema, 0),
 		COALESCE(logo_url, ''),
+		COALESCE(logo_factura_url, logo_url, ''),
 		COALESCE(pie_factura, ''),
 		COALESCE(notas_legales, ''),
 		COALESCE(color_carrito_activo, '#d9fbe8'),
@@ -779,6 +793,7 @@ func GetEmpresaConfiguracionAvanzada(dbConn *sql.DB, empresaID int64) (*EmpresaC
 	var mostrarDeducidoImpuestoFacturaInt int
 	var mostrarLogoInt int
 	var mostrarLogoEmpresaInt int
+	var mostrarLogoFacturaInt int
 	var mostrarLogoSistemaInt int
 	var usarDecimalesInt int
 	var enviarEmailVentaInt int
@@ -832,8 +847,10 @@ func GetEmpresaConfiguracionAvanzada(dbConn *sql.DB, empresaID int64) (*EmpresaC
 		&cfg.ImpresionCorteItemsJSON,
 		&mostrarLogoInt,
 		&mostrarLogoEmpresaInt,
+		&mostrarLogoFacturaInt,
 		&mostrarLogoSistemaInt,
 		&cfg.LogoURL,
+		&cfg.LogoFacturaURL,
 		&cfg.PieFactura,
 		&cfg.NotasLegales,
 		&cfg.ColorCarritoActivo,
@@ -869,8 +886,9 @@ func GetEmpresaConfiguracionAvanzada(dbConn *sql.DB, empresaID int64) (*EmpresaC
 	cfg.ImprimirCopiaFactura = imprimirCopiaFacturaInt == 1
 	cfg.MostrarDeducidoImpuestoFactura = mostrarDeducidoImpuestoFacturaInt == 1
 	cfg.MostrarLogoEmpresa = mostrarLogoEmpresaInt == 1
+	cfg.MostrarLogoFactura = mostrarLogoFacturaInt == 1
 	cfg.MostrarLogoSistema = mostrarLogoSistemaInt == 1
-	cfg.MostrarLogo = mostrarLogoInt == 1 && (cfg.MostrarLogoEmpresa || cfg.MostrarLogoSistema)
+	cfg.MostrarLogo = mostrarLogoInt == 1 && (cfg.MostrarLogoEmpresa || cfg.MostrarLogoFactura || cfg.MostrarLogoSistema)
 	cfg.LogoSistemaURL = defaultLogoSistemaURL
 	cfg.ColorCarritoActivo = normalizeHexColor(cfg.ColorCarritoActivo, defaultColorCarritoActivo)
 	cfg.ColorCarritoInactivo = normalizeHexColor(cfg.ColorCarritoInactivo, defaultColorCarritoInactivo)
@@ -990,13 +1008,15 @@ func UpsertEmpresaConfiguracionAvanzada(dbConn *sql.DB, payload EmpresaConfigura
 		payload.Estado = "activo"
 	}
 	payload.LogoURL = strings.TrimSpace(payload.LogoURL)
+	payload.LogoFacturaURL = strings.TrimSpace(payload.LogoFacturaURL)
 	payload.LogoSistemaURL = defaultLogoSistemaURL
 	payload.ImpresionReciboItemsJSON = normalizePrintItemsJSON(payload.ImpresionReciboItemsJSON)
 	payload.ImpresionCorteItemsJSON = normalizePrintItemsJSON(payload.ImpresionCorteItemsJSON)
-	if payload.MostrarLogo && !payload.MostrarLogoEmpresa && !payload.MostrarLogoSistema {
+	if payload.MostrarLogo && !payload.MostrarLogoEmpresa && !payload.MostrarLogoFactura && !payload.MostrarLogoSistema {
 		payload.MostrarLogoEmpresa = true
+		payload.MostrarLogoFactura = true
 	}
-	payload.MostrarLogo = payload.MostrarLogoEmpresa || payload.MostrarLogoSistema
+	payload.MostrarLogo = payload.MostrarLogoEmpresa || payload.MostrarLogoFactura || payload.MostrarLogoSistema
 
 	mostrarLogoInt := 0
 	if payload.MostrarLogo {
@@ -1005,6 +1025,10 @@ func UpsertEmpresaConfiguracionAvanzada(dbConn *sql.DB, payload EmpresaConfigura
 	mostrarLogoEmpresaInt := 0
 	if payload.MostrarLogoEmpresa {
 		mostrarLogoEmpresaInt = 1
+	}
+	mostrarLogoFacturaInt := 0
+	if payload.MostrarLogoFactura {
+		mostrarLogoFacturaInt = 1
 	}
 	mostrarLogoSistemaInt := 0
 	if payload.MostrarLogoSistema {
@@ -1213,8 +1237,10 @@ func UpsertEmpresaConfiguracionAvanzada(dbConn *sql.DB, payload EmpresaConfigura
 	}
 	if _, err := ExecCompat(dbConn, `UPDATE empresa_configuracion_avanzada
 		SET mostrar_logo_empresa = ?,
+			mostrar_logo_factura = ?,
 			mostrar_logo_sistema = ?,
 			mostrar_logo = ?,
+			logo_factura_url = ?,
 			mostrar_deducido_impuesto_factura = ?,
 			impresion_recibo_items_json = ?,
 			impresion_corte_items_json = ?,
@@ -1228,8 +1254,10 @@ func UpsertEmpresaConfiguracionAvanzada(dbConn *sql.DB, payload EmpresaConfigura
 			fecha_actualizacion = `+nowExpr+`
 		WHERE empresa_id = ?`,
 		mostrarLogoEmpresaInt,
+		mostrarLogoFacturaInt,
 		mostrarLogoSistemaInt,
 		mostrarLogoInt,
+		strings.TrimSpace(payload.LogoFacturaURL),
 		mostrarDeducidoImpuestoFacturaInt,
 		payload.ImpresionReciboItemsJSON,
 		payload.ImpresionCorteItemsJSON,

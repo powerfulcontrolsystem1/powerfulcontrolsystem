@@ -3,32 +3,69 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>IA global - Configuracion super</title>
+  <title>Gobierno IA - Configuracion super</title>
   <link rel="stylesheet" href="/estilos.css">
   <style>
     html,body{height:100%}
     body{margin:0;background:var(--bg);color:var(--text)}
-    .super-config-section-page{height:100vh;display:grid;grid-template-rows:auto minmax(0,1fr)}
-    .super-config-section-header{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:14px 16px;border-bottom:1px solid var(--border);background:var(--surface)}
-    .super-config-section-header h1{margin:0;color:var(--text);font-size:1.35rem}
-    .super-config-section-header p{margin:3px 0 0;color:var(--muted);font-size:.82rem;line-height:1.35}
-    .super-config-section-frame{width:100%;height:100%;border:0;background:transparent}
-    .super-config-section-actions{display:flex;gap:8px;flex-wrap:wrap}
-    @media(max-width:760px){.super-config-section-actions .btn{flex:1 1 auto}.super-config-section-header{padding:12px}}
+    .ai-governance-page{min-height:100vh;display:grid;grid-template-rows:auto auto minmax(640px,1fr);gap:12px;padding:14px}
+    .ai-governance-header{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:16px;border:1px solid var(--border);border-radius:8px;background:var(--surface)}
+    .ai-governance-header h1{margin:0;color:var(--text);font-size:1.45rem}
+    .ai-governance-header p{margin:4px 0 0;color:var(--muted);font-size:.9rem;line-height:1.4;max-width:760px}
+    .ai-governance-actions{display:flex;gap:8px;flex-wrap:wrap}
+    .ai-governance-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+    .ai-governance-kpi{padding:12px;border:1px solid var(--border);border-radius:8px;background:var(--surface)}
+    .ai-governance-kpi strong{display:block;color:var(--text);font-size:.92rem;margin-bottom:5px}
+    .ai-governance-kpi span{display:block;color:var(--muted);font-size:.82rem;line-height:1.35}
+    .ai-governance-frame-card{border:1px solid var(--border);border-radius:8px;background:var(--surface);overflow:hidden;min-height:640px}
+    .ai-governance-frame-title{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;border-bottom:1px solid var(--border)}
+    .ai-governance-frame-title strong{font-size:.95rem;color:var(--text)}
+    .ai-governance-frame{width:100%;height:calc(100vh - 265px);min-height:590px;border:0;background:transparent}
+    @media(max-width:1000px){.ai-governance-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.ai-governance-frame{height:720px}}
+    @media(max-width:640px){.ai-governance-page{padding:10px}.ai-governance-grid{grid-template-columns:1fr}.ai-governance-actions .btn{flex:1 1 auto}.ai-governance-frame{height:760px}}
   </style>
 </head>
 <body class="super-page">
-  <main class="super-config-section-page">
-    <header class="super-config-section-header">
+  <main class="ai-governance-page">
+    <header class="ai-governance-header">
       <div>
-        <h1>IA global</h1>
-        <p>Modelos y credenciales</p>
+        <h1>Gobierno de inteligencia artificial</h1>
+        <p>Centro super administrador para habilitar IA, administrar la credencial OpenAI cifrada, probar conectividad real y entrar a limites, contexto de negocio y voz.</p>
       </div>
-      <div class="super-config-section-actions">
-        <a class="btn secondary" href="/super/configuracion_avanzada.html">Ver todas</a>
+      <div class="ai-governance-actions">
+        <a class="btn secondary" href="/super/configuracion_logica_del_chat_con_ia.html">Limites</a>
+        <a class="btn secondary" href="/super/contexto_ia_logica_negocio.html">Contexto</a>
+        <a class="btn secondary" href="/super/configuracion/voz_ia.html">Voz</a>
+        <a class="btn secondary" href="/super/configuracion_avanzada.html">Todas</a>
       </div>
     </header>
-    <iframe class="super-config-section-frame" src="/super/configuracion_avanzada.html?single=1&section=aiConfigCard" title="IA global"></iframe>
+
+    <section class="ai-governance-grid" aria-label="Politicas de IA">
+      <div class="ai-governance-kpi">
+        <strong>Credenciales seguras</strong>
+        <span>La API key se guarda cifrada en backend y no se revela en pantalla.</span>
+      </div>
+      <div class="ai-governance-kpi">
+        <strong>Sin avatar antiguo</strong>
+        <span>El asistente usa recuadro normal y boton flotante circular, sin robot ni secretaria.</span>
+      </div>
+      <div class="ai-governance-kpi">
+        <strong>Roles y empresas</strong>
+        <span>Las acciones se gobiernan por sesion, rol y aislamiento por empresa_id.</span>
+      </div>
+      <div class="ai-governance-kpi">
+        <strong>Acciones controladas</strong>
+        <span>La IA no ejecuta SQL libre; usa contexto preparado y endpoints autorizados.</span>
+      </div>
+    </section>
+
+    <section class="ai-governance-frame-card">
+      <div class="ai-governance-frame-title">
+        <strong>Proveedor, estado global y prueba OpenAI</strong>
+        <span class="form-help">Panel operativo real</span>
+      </div>
+      <iframe class="ai-governance-frame" src="/super/configuracion_avanzada.html?single=1&section=aiConfigCard" title="Gobierno IA"></iframe>
+    </section>
   </main>
 </body>
 </html>

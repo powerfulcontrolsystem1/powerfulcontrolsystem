@@ -191,7 +191,7 @@
       gap: 10px;
     }
 
-    input, select {
+    input, select, textarea {
       min-height: 42px;
       border: 1px solid var(--public-line);
       border-radius: 8px;
@@ -202,7 +202,13 @@
       letter-spacing: 0;
     }
 
-    input:focus, select:focus {
+    textarea {
+      resize: vertical;
+      min-height: 112px;
+      line-height: 1.45;
+    }
+
+    input:focus, select:focus, textarea:focus {
       outline: 3px solid color-mix(in srgb, var(--public-accent) 18%, transparent);
       border-color: var(--public-accent);
     }
@@ -334,6 +340,83 @@
       padding: 22px;
     }
 
+    .contact-section {
+      margin-top: 24px;
+      border-top: 1px solid var(--public-line);
+      padding-top: 20px;
+    }
+
+    .contact-card {
+      background: var(--public-panel);
+      border: 1px solid var(--public-line);
+      border-radius: 8px;
+      box-shadow: var(--public-shadow);
+      padding: 18px;
+      display: grid;
+      gap: 14px;
+    }
+
+    .contact-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 14px;
+      align-items: flex-start;
+    }
+
+    .contact-head h2 {
+      margin: 0;
+      font-size: 20px;
+      letter-spacing: 0;
+    }
+
+    .contact-head p {
+      margin: 6px 0 0;
+      color: var(--public-muted);
+      font-size: 14px;
+      line-height: 1.45;
+    }
+
+    .contact-form {
+      display: grid;
+      gap: 12px;
+    }
+
+    .contact-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .contact-form label {
+      display: grid;
+      gap: 6px;
+      color: var(--public-ink);
+      font-size: 12px;
+      font-weight: 900;
+    }
+
+    .contact-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+    }
+
+    .btn {
+      border: 1px solid var(--public-accent);
+      background: var(--public-accent);
+      color: var(--btn-primary-text, #fff);
+      min-height: 42px;
+      border-radius: 8px;
+      padding: 9px 14px;
+      font-weight: 900;
+      cursor: pointer;
+    }
+
+    .btn:disabled {
+      opacity: .65;
+      cursor: wait;
+    }
+
     .footer {
       color: var(--public-muted);
       font-size: 12px;
@@ -349,6 +432,10 @@
       .banner { min-height: 150px; }
       .hero-copy { padding: 14px; }
       .products { grid-template-columns: 1fr; }
+      .contact-head { flex-direction: column; }
+      .contact-grid { grid-template-columns: 1fr; }
+      .contact-actions { justify-content: stretch; }
+      .contact-actions .btn { width: 100%; }
     }
   </style>
 </head>
@@ -395,6 +482,36 @@
       <nav class="tabs" id="tabs" aria-label="Secciones de la carta"></nav>
       <div class="status" id="status">Cargando carta publica...</div>
       <section class="products" id="products" aria-live="polite"></section>
+      <section class="contact-section" id="contactSection" aria-label="Contacto con la empresa">
+        <div class="contact-card">
+          <div class="contact-head">
+            <div>
+              <h2>Escríbenos</h2>
+              <p>Envía una consulta a la empresa. El mensaje llega al correo corporativo configurado.</p>
+            </div>
+          </div>
+          <form class="contact-form" id="contactForm">
+            <div class="contact-grid">
+              <label>Nombre
+                <input id="contactName" maxlength="160" autocomplete="name" required>
+              </label>
+              <label>Correo
+                <input id="contactEmail" type="email" maxlength="180" autocomplete="email" required>
+              </label>
+            </div>
+            <label>Teléfono
+              <input id="contactPhone" maxlength="60" autocomplete="tel">
+            </label>
+            <label>Mensaje
+              <textarea id="contactMessage" maxlength="2200" required placeholder="Escribe tu consulta sobre productos, precios o disponibilidad."></textarea>
+            </label>
+            <div class="contact-actions">
+              <button class="btn" id="contactSubmit" type="submit">Enviar mensaje</button>
+            </div>
+            <div class="status" id="contactStatus" aria-live="polite"></div>
+          </form>
+        </div>
+      </section>
     </main>
 
     <footer class="footer">Pagina publica de solo lectura. Los precios publicados pueden cambiar sin previo aviso.</footer>
@@ -418,12 +535,20 @@
         banner: document.getElementById('banner'),
         pageTitle: document.getElementById('pageTitle'),
         pageDescription: document.getElementById('pageDescription'),
+        contactSection: document.getElementById('contactSection'),
         search: document.getElementById('search'),
         sort: document.getElementById('sort'),
         tabs: document.getElementById('tabs'),
         status: document.getElementById('status'),
         products: document.getElementById('products'),
-        counter: document.getElementById('counter')
+        counter: document.getElementById('counter'),
+        contactForm: document.getElementById('contactForm'),
+        contactName: document.getElementById('contactName'),
+        contactEmail: document.getElementById('contactEmail'),
+        contactPhone: document.getElementById('contactPhone'),
+        contactMessage: document.getElementById('contactMessage'),
+        contactSubmit: document.getElementById('contactSubmit'),
+        contactStatus: document.getElementById('contactStatus')
       };
 
       function escapeHtml(value) {
@@ -485,6 +610,11 @@
         els.status.className = 'status' + (error ? ' error' : '');
       }
 
+      function setContactStatus(message, error) {
+        els.contactStatus.textContent = message || '';
+        els.contactStatus.className = 'status' + (error ? ' error' : '');
+      }
+
       function applyProfile(data) {
         const tienda = data.tienda || {};
         const title = tienda.nombre_tienda || 'Carta de productos';
@@ -507,6 +637,9 @@
         if (bannerUrl) {
           els.banner.classList.add('has-image');
           els.banner.style.backgroundImage = 'linear-gradient(135deg, color-mix(in srgb, var(--public-panel) 88%, transparent), color-mix(in srgb, var(--public-panel) 58%, transparent)), url("' + bannerUrl.replace(/"/g, '%22') + '")';
+        }
+        if (els.contactSection) {
+          els.contactSection.hidden = tienda.contacto_formulario_activo === false;
         }
       }
 
@@ -581,6 +714,55 @@
         setStatus('Carta publica actualizada.', false);
       }
 
+      async function sendContactMessage(ev) {
+        ev.preventDefault();
+        const payload = {
+          empresa_id: state.empresaId ? Number(state.empresaId) : 0,
+          empresa_slug: state.slug || '',
+          pagina_slug: state.pageSlug || '',
+          nombre: els.contactName.value.trim(),
+          email: els.contactEmail.value.trim(),
+          telefono: els.contactPhone.value.trim(),
+          mensaje: els.contactMessage.value.trim(),
+          url: window.location.href
+        };
+        if (state.data && state.data.tienda && state.data.tienda.contacto_formulario_activo === false) {
+          setContactStatus('El formulario de contacto no esta activo en este momento.', true);
+          return;
+        }
+        if (!payload.nombre || payload.nombre.length < 2) {
+          setContactStatus('Escribe tu nombre para enviar el mensaje.', true);
+          return;
+        }
+        if (!payload.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(payload.email)) {
+          setContactStatus('Escribe un correo valido para que la empresa pueda responder.', true);
+          return;
+        }
+        if (!payload.mensaje || payload.mensaje.length < 10) {
+          setContactStatus('Escribe un mensaje un poco mas completo.', true);
+          return;
+        }
+        els.contactSubmit.disabled = true;
+        setContactStatus('Enviando mensaje...', false);
+        try {
+          const res = await fetch('/api/public/venta_publica?action=contacto', {
+            method: 'POST',
+            headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+          if (!res.ok) {
+            const text = await res.text().catch(() => '');
+            throw new Error(text || 'No se pudo enviar el mensaje.');
+          }
+          els.contactForm.reset();
+          setContactStatus('Mensaje enviado. La empresa recibio tu consulta en su correo corporativo.', false);
+        } catch (err) {
+          setContactStatus(err.message || 'No se pudo enviar el mensaje.', true);
+        } finally {
+          els.contactSubmit.disabled = false;
+        }
+      }
+
       let searchTimer = 0;
       els.search.addEventListener('input', function() {
         clearTimeout(searchTimer);
@@ -601,6 +783,7 @@
         state.pageSlug = normalizeSlug(btn.getAttribute('data-page') || '');
         loadCatalog().catch(err => setStatus(err.message, true));
       });
+      els.contactForm.addEventListener('submit', sendContactMessage);
 
       resolveContext();
       loadCatalog().catch(err => {

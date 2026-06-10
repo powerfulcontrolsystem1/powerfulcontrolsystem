@@ -220,17 +220,35 @@ func applyEmpresaTipoPreconfiguracion(dbEmp, dbSuper *sql.DB, empresaID, tipoEmp
 	_, _ = dbpkg.UpsertEmpresaEstacionPref(dbEmp, dbpkg.EmpresaEstacionPref{
 		EmpresaID:      empresaID,
 		EstacionID:     0,
-		Clave:          chatFlotanteRobotEnabledKey,
-		Valor:          chatFlotanteBoolValue(template.Asistente.RobotEnabled),
+		Clave:          chatFlotanteChatEnabledKey,
+		Valor:          chatFlotanteBoolValue(true),
 		UsuarioCreador: usuario,
 		Estado:         "activo",
-		Observaciones:  empresaPreconfigMarker + " robot IA apagado por defecto desde preconfiguracion",
+		Observaciones:  empresaPreconfigMarker + " chat IA activo por defecto desde preconfiguracion",
+	})
+	_, _ = dbpkg.UpsertEmpresaEstacionPref(dbEmp, dbpkg.EmpresaEstacionPref{
+		EmpresaID:      empresaID,
+		EstacionID:     0,
+		Clave:          chatFlotanteRobotEnabledKey,
+		Valor:          chatFlotanteBoolValue(false),
+		UsuarioCreador: usuario,
+		Estado:         "activo",
+		Observaciones:  empresaPreconfigMarker + " robot/secretaria retirados; chat normal por defecto",
+	})
+	_, _ = dbpkg.UpsertEmpresaEstacionPref(dbEmp, dbpkg.EmpresaEstacionPref{
+		EmpresaID:      empresaID,
+		EstacionID:     0,
+		Clave:          chatFlotantePersonalityModeKey,
+		Valor:          chatFlotantePersonalityNormal,
+		UsuarioCreador: usuario,
+		Estado:         "activo",
+		Observaciones:  empresaPreconfigMarker + " apariencia normal del chat IA desde preconfiguracion",
 	})
 	_, _ = dbpkg.UpsertEmpresaEstacionPref(dbEmp, dbpkg.EmpresaEstacionPref{
 		EmpresaID:      empresaID,
 		EstacionID:     0,
 		Clave:          chatFlotanteRadioOnlineEnabledKey,
-		Valor:          chatFlotanteBoolValue(template.Asistente.RadioOnlineEnabled),
+		Valor:          chatFlotanteBoolValue(false),
 		UsuarioCreador: usuario,
 		Estado:         "activo",
 		Observaciones:  empresaPreconfigMarker + " emisora online apagada por defecto desde preconfiguracion",

@@ -764,6 +764,43 @@
         </div>
       </div>
 
+      <div class="form-row" style="border-top:1px solid rgba(148,163,184,.35);margin-top:14px;padding-top:14px;">
+        <div class="form-col">
+          <label class="form-label">Retencion de empresas vencidas</label>
+          <label class="mode-switch-row" for="licenciaRetencionEnabled">
+            <span class="mode-label">Off</span>
+            <input id="licenciaRetencionEnabled" type="checkbox" role="switch" aria-label="Activar eliminacion programada de empresas con licencia vencida">
+            <span class="mode-label">On</span>
+          </label>
+          <div id="licenciaRetencionEnabledStatus" class="form-help">Cargando estado...</div>
+        </div>
+        <div class="form-col">
+          <label class="form-label" for="licenciaRetencionDiasEspera">Dias de espera despues del vencimiento</label>
+          <input id="licenciaRetencionDiasEspera" class="form-input" type="number" min="1" max="3650" step="1" placeholder="365">
+          <div class="form-help">Solo aplica a empresas sin operacion activa y sin licencia base vigente.</div>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-col">
+          <label class="form-label" for="licenciaRetencionDiasPreaviso">Dias de preaviso antes de eliminar</label>
+          <input id="licenciaRetencionDiasPreaviso" class="form-input" type="number" min="1" max="3650" step="1" placeholder="1">
+          <div class="form-help">Por defecto se avisa un dia antes. Si no hay correo valido, se registra error y no se elimina en silencio.</div>
+        </div>
+        <div class="form-col">
+          <label class="form-label" for="licenciaRetencionMax">Maximo por ejecucion</label>
+          <input id="licenciaRetencionMax" class="form-input" type="number" min="1" max="200" step="1" placeholder="25">
+          <div id="licenciaRetencionStatus" class="form-help">Cargando retencion...</div>
+        </div>
+      </div>
+
+      <div class="form-actions">
+        <button id="previewLicenciaRetencionBtn" class="btn secondary" type="button">Vista previa retencion</button>
+        <button id="runLicenciaRetencionBtn" class="btn secondary" type="button" style="margin-left:8px;">Procesar retencion</button>
+      </div>
+      <div id="licenciaRetencionPreview" class="form-help"></div>
+      <div id="licenciaRetencionLogs" class="form-help"></div>
+
       <div class="form-actions">
         <button id="saveLicenciaVencimientoBtn" class="btn" type="button">Guardar alertas</button>
         <button id="previewLicenciaVencimientoBtn" class="btn secondary" type="button" style="margin-left:8px;">Vista previa</button>
@@ -909,39 +946,49 @@
     <section class="card form advanced-card" data-brand="ai" id="aiConfigCard">
       <h2>
         <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"></path><path d="M12 8v8M8 12h8"></path></svg>
-        Inteligencia Artificial - OpenAI
+        Gobierno de inteligencia artificial
       </h2>
-      <p class="form-help" style="margin-bottom:8px">Conecta servicios de GenAI (100% integrados y unificados) para la asistente del portal corporativo y super-admin.</p>
+      <p class="form-help" style="margin-bottom:10px">Configura el servicio IA central de PCS, la credencial OpenAI cifrada, los modelos usados por empresas y super administrador, y los enlaces de control operativo.</p>
       <div id="aiLoggedAccount" class="form-help">Cuenta: Cargando...</div>
+      <div id="aiConfigSummary" class="form-help">Resumen: cargando...</div>
 
       <div class="form-row">
         <div class="form-col">
-          <label class="form-label">OpenAI (gpt-5.4-mini)</label>
+          <label class="form-label">Proveedor OpenAI</label>
           <label class="mode-switch-row" for="aiProviderOpenAIEnabled">
             <span class="mode-label">Disponible en chats</span>
             <input id="aiProviderOpenAIEnabled" type="checkbox" role="switch" aria-label="Activar OpenAI en los chats">
           </label>
-          <input id="aiKeyOpenAI" class="form-input" type="password" placeholder="API key para openai:gpt-5.4-mini">
+          <input id="aiKeyOpenAI" class="form-input" type="password" autocomplete="new-password" placeholder="Pegar nueva API key de OpenAI solo si se va a actualizar">
           <div id="aiStatusOpenAI" class="form-help">Cargando estado...</div>
           <div id="aiUsageOpenAI" class="form-help">Consumo del plan: --</div>
-          <div class="form-help">La API key se guarda cifrada obligatoriamente en backend y nunca se expone en pantalla.</div>
+          <div class="form-help">La credencial se guarda cifrada en backend. Nunca se muestra completa en pantalla ni se escribe en logs.</div>
+        </div>
+        <div class="form-col">
+          <div class="form-label">Modelos conectados</div>
+          <div class="form-help">Texto y tareas operativas: <strong>GPT-5.4 mini</strong>.</div>
+          <div class="form-help">Imagenes, adjuntos y analisis avanzado: <strong>GPT-5.5</strong> cuando el flujo lo requiera.</div>
+          <div class="form-help">Ambos usan la misma credencial OpenAI y respetan limites, roles y aislamiento por empresa.</div>
         </div>
       </div>
 
       <div class="form-row">
         <div class="form-col">
           <label class="form-label">Servicio global de IA</label>
-          <label class="switch" style="display:flex;align-items:center;gap:8px;">
+          <label class="mode-switch-row" for="aiEnabledToggle">
+            <span class="mode-label">Off</span>
             <input id="aiEnabledToggle" type="checkbox" role="switch" aria-label="Activar servicio global de IA">
             <span class="mode-label">On</span>
           </label>
           <div id="aiEnabledStatus" class="form-help">Cargando estado...</div>
-          <div id="aiEnabledHelp" class="form-help">Si está desactivado, el chat empresarial y el chat global super rechazarán nuevas consultas para liberar el servidor.</div>
+          <div class="form-help">La IA opera sin robot ni secretaria: se muestra como recuadro normal y boton flotante circular.</div>
+          <div class="form-help"><strong>Seguridad:</strong> sin SQL libre ni secretos para la IA; el servidor prepara contexto de lectura, aplica permisos y solo habilita acciones estructuradas autorizadas.</div>
+          <div id="aiEnabledHelp" class="form-help">Si esta desactivado, el chat empresarial y el chat global super rechazaran nuevas consultas para liberar el servidor.</div>
         </div>
       </div>
 
       <div class="form-actions">
-        <button id="saveAiConfigBtn" class="btn" style="display:none;">Guardar configuración IA</button>
+        <button id="saveAiConfigBtn" class="btn" style="display:none;">Guardar gobierno IA</button>
         <button id="editAiConfigBtn" type="button" class="btn secondary" style="display:none;margin-left:8px;">Editar</button>
         <button id="cancelAiConfigBtn" type="button" class="btn secondary" style="display:none;margin-left:8px;">Cancelar</button>
         <button id="testAiBtn" type="button" class="btn secondary" style="margin-left:8px;">Probar OpenAI</button>
@@ -949,6 +996,11 @@
       <div id="aiConfigMsg" class="form-help"></div>
       <div class="form-help">Usa la prueba para validar la API key de OpenAI desde el backend.</div>
       <div id="aiTestResult" class="form-help"></div>
+      <div class="form-actions" style="margin-top:10px">
+        <a class="btn secondary" href="/super/configuracion_logica_del_chat_con_ia.html">Limites y contexto</a>
+        <a class="btn secondary" href="/super/contexto_ia_logica_negocio.html" style="margin-left:8px;">Conocimiento IA</a>
+        <a class="btn secondary" href="/super/configuracion/voz_ia.html" style="margin-left:8px;">Voz IA</a>
+      </div>
     </section>
 
     <div class="advanced-category-heading">
@@ -2054,12 +2106,16 @@
         return provider + 'Country' + String(countryCode || '').toUpperCase();
       }
 
+      function defaultPaymentCountryEnabled(countryCode){
+        return String(countryCode || '').toUpperCase() === 'CO';
+      }
+
       function applyPaymentCountryOverrides(provider, overrides){
         const source = overrides && typeof overrides === 'object' ? overrides : {};
         paymentCountryCatalog.forEach(function(countryCode){
           const el = document.getElementById(paymentCountryToggleId(provider, countryCode));
           if (!el) return;
-          el.checked = Object.prototype.hasOwnProperty.call(source, countryCode) ? !!source[countryCode] : true;
+          el.checked = Object.prototype.hasOwnProperty.call(source, countryCode) ? !!source[countryCode] : defaultPaymentCountryEnabled(countryCode);
         });
       }
 
@@ -2107,6 +2163,44 @@
         box.innerHTML = '<ul style="margin:8px 0 0 18px;padding:0;">' + rows + '</ul>';
       }
 
+      function renderLicenciaRetencionPreview(items){
+        const box = document.getElementById('licenciaRetencionPreview');
+        if (!box) return;
+        const list = Array.isArray(items) ? items : [];
+        if (!list.length) {
+          box.innerHTML = 'No hay empresas candidatas para preaviso o eliminacion programada.';
+          return;
+        }
+        const rows = list.slice(0, 12).map(function(item){
+          const empresa = escapeHtml(item.empresa_nombre || ('Empresa ' + (item.empresa_id || '')));
+          const estado = escapeHtml(item.estado_empresa || '--');
+          const vence = escapeHtml(item.ultima_licencia_fin || '--');
+          const elimina = escapeHtml(item.fecha_programada_eliminacion || '--');
+          const accion = item.debe_eliminar ? 'lista para eliminacion' : (item.debe_preavisar ? 'preaviso pendiente' : escapeHtml(item.estado_reporte || 'en seguimiento'));
+          return '<li><strong>' + empresa + '</strong> - estado ' + estado + ', vencida desde ' + vence + ', eliminacion ' + elimina + ' (' + accion + ')</li>';
+        }).join('');
+        box.innerHTML = '<strong>Vista previa de retencion:</strong><ul style="margin:8px 0 0 18px;padding:0;">' + rows + '</ul>';
+      }
+
+      function renderLicenciaRetencionLogs(items){
+        const box = document.getElementById('licenciaRetencionLogs');
+        if (!box) return;
+        const list = Array.isArray(items) ? items : [];
+        if (!list.length) {
+          box.innerHTML = 'Sin reporte de empresas preavisadas o eliminadas.';
+          return;
+        }
+        const rows = list.slice(0, 10).map(function(item){
+          const empresa = escapeHtml(item.empresa_nombre || ('Empresa ' + (item.empresa_ref_id || '')));
+          const estado = escapeHtml(item.estado || '--');
+          const aviso = escapeHtml(item.preaviso_enviado_en || '--');
+          const eliminado = escapeHtml(item.eliminado_en || '--');
+          const error = item.error ? (' - ' + escapeHtml(item.error)) : '';
+          return '<li><strong>' + empresa + '</strong> - ' + estado + '. Preaviso: ' + aviso + '. Eliminada: ' + eliminado + error + '</li>';
+        }).join('');
+        box.innerHTML = '<strong>Reporte reciente:</strong><ul style="margin:8px 0 0 18px;padding:0;">' + rows + '</ul>';
+      }
+
       function refreshLicenciaVencimientoHint(){
         const enabled = document.getElementById('licenciaVencimientoEnabled');
         const status = document.getElementById('licenciaVencimientoEnabledStatus');
@@ -2116,9 +2210,19 @@
           : 'Alertas desactivadas: solo se puede consultar vista previa o ejecutar manualmente desde aqui.';
       }
 
+      function refreshLicenciaRetencionHint(){
+        const enabled = document.getElementById('licenciaRetencionEnabled');
+        const status = document.getElementById('licenciaRetencionEnabledStatus');
+        if (!enabled || !status) return;
+        status.innerText = enabled.checked
+          ? 'Retencion activa: el sistema preavisa y elimina solo empresas no operativas, sin licencia base vigente y con reporte trazable.'
+          : 'Retencion desactivada: puedes ver candidatos y reporte, pero no se preavisa ni elimina automaticamente.';
+      }
+
       async function loadLicenciaVencimientoAlertas(){
         const msg = document.getElementById('licenciaVencimientoMsg');
         const status = document.getElementById('licenciaVencimientoStatus');
+        const retencionStatus = document.getElementById('licenciaRetencionStatus');
         try {
           const res = await fetch('/super/api/licencias/vencimiento_alertas', { credentials: 'same-origin' });
           const body = await res.json();
@@ -2132,10 +2236,22 @@
           const lastResult = cfg.ultimo_resultado ? ('Resultado: ' + cfg.ultimo_resultado + '. ') : '';
           status.innerText = lastRun + lastResult + 'Pendientes visibles: ' + (Array.isArray(body.preview) ? body.preview.length : 0) + '.';
           renderLicenciaVencimientoPreview(body.preview || []);
+          const ret = cfg.retencion_empresas || {};
+          document.getElementById('licenciaRetencionEnabled').checked = typeof ret.enabled === 'boolean' ? ret.enabled : false;
+          document.getElementById('licenciaRetencionDiasEspera').value = ret.dias_espera || 365;
+          document.getElementById('licenciaRetencionDiasPreaviso').value = ret.dias_preaviso || 1;
+          document.getElementById('licenciaRetencionMax').value = ret.max_por_ejecucion || 25;
+          refreshLicenciaRetencionHint();
+          const retLastRun = ret.ultimo_run ? ('Ultima ejecucion: ' + ret.ultimo_run + '. ') : 'Sin ejecuciones de retencion registradas. ';
+          const retLastResult = ret.ultimo_resultado ? ('Resultado: ' + ret.ultimo_resultado + '. ') : '';
+          if (retencionStatus) retencionStatus.innerText = retLastRun + retLastResult + 'Candidatas visibles: ' + (Array.isArray(body.retencion_preview) ? body.retencion_preview.length : 0) + '.';
+          renderLicenciaRetencionPreview(body.retencion_preview || []);
+          renderLicenciaRetencionLogs(body.retencion_logs || []);
           if (msg) msg.innerText = '';
         } catch (err) {
           if (msg) msg.innerText = 'Error: ' + err.message;
           if (status) status.innerText = 'No se pudo cargar el estado.';
+          if (retencionStatus) retencionStatus.innerText = 'No se pudo cargar retencion.';
         }
       }
 
@@ -2144,7 +2260,13 @@
         const payload = {
           enabled: !!document.getElementById('licenciaVencimientoEnabled').checked,
           dias_aviso_raw: document.getElementById('licenciaVencimientoDias').value.trim(),
-          max_por_ejecucion: Number(document.getElementById('licenciaVencimientoMax').value || 100)
+          max_por_ejecucion: Number(document.getElementById('licenciaVencimientoMax').value || 100),
+          retencion_empresas: {
+            enabled: !!document.getElementById('licenciaRetencionEnabled').checked,
+            dias_espera: Number(document.getElementById('licenciaRetencionDiasEspera').value || 365),
+            dias_preaviso: Number(document.getElementById('licenciaRetencionDiasPreaviso').value || 1),
+            max_por_ejecucion: Number(document.getElementById('licenciaRetencionMax').value || 25)
+          }
         };
         if (msg) msg.innerText = 'Guardando alertas de vencimiento...';
         try {
@@ -2158,6 +2280,27 @@
           if (!res.ok || !body.ok) throw new Error((body && body.error) || 'No se pudo guardar');
           if (msg) msg.innerText = 'Configuracion guardada.';
           await loadLicenciaVencimientoAlertas();
+        } catch (err) {
+          if (msg) msg.innerText = 'Error: ' + err.message;
+        }
+      }
+
+      async function runLicenciaRetencionEmpresas(dryRun){
+        const msg = document.getElementById('licenciaVencimientoMsg');
+        if (msg) msg.innerText = dryRun ? 'Calculando retencion...' : 'Procesando retencion de empresas vencidas...';
+        try {
+          const action = dryRun ? 'retencion_preview' : 'retencion_run_now';
+          const res = await fetch('/super/api/licencias/vencimiento_alertas?action=' + action, { method: 'POST', credentials: 'same-origin' });
+          const body = await res.json();
+          if (!res.ok || body.ok === false) throw new Error((body && body.error) || 'No se pudo ejecutar retencion');
+          renderLicenciaRetencionPreview(body.candidatas || []);
+          renderLicenciaRetencionLogs(body.logs || []);
+          if (dryRun) {
+            if (msg) msg.innerText = 'Vista previa de retencion lista: ' + (body.evaluadas || 0) + ' empresas candidatas.';
+          } else {
+            if (msg) msg.innerText = 'Retencion finalizada: preavisadas=' + (body.preavisadas || 0) + ', capturadas=' + (body.capturadas || 0) + ', eliminadas=' + (body.eliminadas || 0) + ', errores=' + (body.errores || 0) + '.';
+            await loadLicenciaVencimientoAlertas();
+          }
         } catch (err) {
           if (msg) msg.innerText = 'Error: ' + err.message;
         }
@@ -2553,6 +2696,7 @@
         const enabledToggle = document.getElementById('aiEnabledToggle');
         const enabledStatusEl = document.getElementById('aiEnabledStatus');
         const openAIEnabledEl = document.getElementById('aiProviderOpenAIEnabled');
+        const summaryEl = document.getElementById('aiConfigSummary');
         try {
           const res = await fetch('/super/api/config/ai');
           if (!res.ok) {
@@ -2570,6 +2714,7 @@
           const serviceStatus = data.service_status || {};
           if (enabledToggle) enabledToggle.checked = !!serviceStatus.enabled;
           if (enabledStatusEl) enabledStatusEl.innerText = serviceStatus.enabled ? 'Servicio IA habilitado' : 'Servicio IA desactivado';
+          if (summaryEl) summaryEl.innerText = 'Resumen: OpenAI gobierna los chats empresariales, el chat global super, adjuntos y voz cuando cada modulo este habilitado.';
           refreshAIEnabledHint();
 
           if (typeof data.encryption_available !== 'undefined' && !data.encryption_available) {
@@ -2582,6 +2727,12 @@
 
           const openAIItem = byModel['openai:gpt-5.4-mini'] || null;
           if (openAIEnabledEl) openAIEnabledEl.checked = !openAIItem || !!openAIItem.enabled;
+          if (summaryEl) {
+            const proveedor = openAIItem && openAIItem.enabled === false ? 'OpenAI desactivado' : 'OpenAI disponible';
+            const credencial = openAIItem && openAIItem.configured ? 'credencial configurada' : 'sin credencial guardada';
+            const servicio = serviceStatus.enabled ? 'servicio global activo' : 'servicio global apagado';
+            summaryEl.innerText = 'Resumen: ' + servicio + ', ' + proveedor + ', ' + credencial + '.';
+          }
 
           let hasAIConfig = false;
           aiCredentialBindings.forEach(function(binding){
@@ -2683,7 +2834,7 @@
       msg.innerText = 'Error guardando credencial OpenAI: ' + (err.message || err);
         } finally {
 		  btn.disabled = false;
-      btn.innerText = 'Guardar configuración IA';
+      btn.innerText = 'Guardar gobierno IA';
         }
       }
 
@@ -2799,8 +2950,8 @@
 		const helpEl = document.getElementById('aiEnabledHelp');
 		if (!enabledEl || !helpEl) return;
 		helpEl.innerText = enabledEl.checked
-      ? 'IA habilitada: el chat empresarial y el chat global super podrán consultar OpenAI cuando el proveedor esté disponible.'
-    		  : 'IA desactivada: los chats empresariales y el chat global super quedarán bloqueados hasta volver a activarla, liberando carga del servidor.';
+      ? 'IA habilitada: el chat empresarial y el chat global super pueden consultar OpenAI cuando el proveedor este disponible.'
+      : 'IA desactivada: los chats empresariales y el chat global super quedan bloqueados hasta volver a activarla, liberando carga del servidor.';
       }
 
       async function saveGmail(e){
@@ -3312,6 +3463,7 @@
         document.getElementById('saveGmailBtn').disabled = false;
       });
       document.getElementById('licenciaVencimientoEnabled').addEventListener('change', refreshLicenciaVencimientoHint);
+      document.getElementById('licenciaRetencionEnabled').addEventListener('change', refreshLicenciaRetencionHint);
       document.getElementById('portalWhatsAppNumber').addEventListener('input', function(){
         refreshPortalWhatsAppPreview();
         document.getElementById('savePortalWhatsAppBtn').disabled = false;
@@ -3356,6 +3508,8 @@
       document.getElementById('saveLicenciaVencimientoBtn').addEventListener('click', saveLicenciaVencimientoAlertas);
       document.getElementById('previewLicenciaVencimientoBtn').addEventListener('click', function(){ runLicenciaVencimientoAlertas(true); });
       document.getElementById('runLicenciaVencimientoBtn').addEventListener('click', function(){ runLicenciaVencimientoAlertas(false); });
+      document.getElementById('previewLicenciaRetencionBtn').addEventListener('click', function(){ runLicenciaRetencionEmpresas(true); });
+      document.getElementById('runLicenciaRetencionBtn').addEventListener('click', function(){ runLicenciaRetencionEmpresas(false); });
       document.getElementById('savePortalWhatsAppBtn').addEventListener('click', savePortalWhatsApp);
       document.getElementById('editPortalWhatsAppBtn').addEventListener('click', enableEditPortalWhatsApp);
       document.getElementById('cancelPortalWhatsAppBtn').addEventListener('click', cancelEditPortalWhatsApp);

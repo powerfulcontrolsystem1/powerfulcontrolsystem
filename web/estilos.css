@@ -1922,15 +1922,16 @@ body.has-floating-menu.admin-empresa-shell .admin-frame-toolbar{top:calc(var(--f
 .admin-favorite-btn[aria-pressed="true"]{background:color-mix(in srgb,var(--accent-yellow,#facc15) 22%,var(--surface) 78%);border-color:var(--accent-yellow,#facc15);color:var(--accent-yellow,#facc15);box-shadow:0 16px 36px color-mix(in srgb,var(--accent-yellow,#facc15) 26%,transparent)}
 .ai-chat-backdrop{position:fixed;inset:0;z-index:1648;background:rgba(8,12,24,.42);opacity:0;pointer-events:none;transition:opacity .22s ease}
 .ai-chat-backdrop.is-visible{opacity:1;pointer-events:auto}
-.ai-chat-toggle-button{position:fixed;right:20px;bottom:20px;z-index:1660;display:inline-flex;align-items:center;gap:8px;padding:12px 16px;font-weight:800;border:none;border-radius:999px;background:var(--accent);color:var(--btn-primary-text);cursor:pointer;box-shadow:0 22px 50px rgba(0,0,0,.18);transition:transform .18s ease,box-shadow .18s ease,opacity .2s ease}
-.ai-chat-toggle-button:hover{transform:translateY(-1px);box-shadow:0 24px 58px rgba(0,0,0,.22)}
-.ai-chat-toggle-button img.icon{width:18px;height:18px;margin:0;filter:none}
+.ai-chat-toggle-button{position:fixed;right:20px;bottom:20px;z-index:1660;display:inline-flex;align-items:center;justify-content:center;width:58px;height:58px;min-width:58px;gap:0;padding:0;font-weight:800;border:1px solid color-mix(in srgb,#fff 28%,transparent);border-radius:999px;background:radial-gradient(circle at 30% 24%,#ffffff 0 10%,#99f6e4 11% 22%,#0f172a 23% 100%);color:#fff;cursor:pointer;box-shadow:0 22px 50px rgba(0,0,0,.24);transition:transform .18s ease,box-shadow .18s ease,opacity .2s ease}
+.ai-chat-toggle-button:hover{transform:translateY(-1px) scale(1.02);box-shadow:0 24px 58px rgba(0,0,0,.28)}
+.ai-chat-toggle-button img.icon{width:26px;height:26px;margin:0;filter:brightness(0) invert(1)}
+.ai-chat-toggle-button .ai-chat-toggle-label{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;border:0;clip:rect(0 0 0 0);white-space:nowrap}
 @media (max-width: 860px){
+  .ai-chat-toggle-button{right:14px;bottom:14px;width:54px;height:54px;min-width:54px}
   .ai-chat-toggle-button.is-drawer-open{min-width:0;width:48px;height:48px;padding:0;gap:0;border-radius:50%;justify-content:center;}
-  .ai-chat-toggle-button.is-drawer-open .ai-chat-toggle-label{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;border:0;clip:rect(0 0 0 0);white-space:nowrap;}
 }
 @media (min-width: 861px){
-  .ai-chat-toggle-button:not(.is-drawer-open){opacity:.38}
+  .ai-chat-toggle-button:not(.is-drawer-open){opacity:.96}
   .ai-chat-toggle-button:not(.is-drawer-open):hover,
   .ai-chat-toggle-button:not(.is-drawer-open):focus-visible{opacity:1}
 }
@@ -2564,6 +2565,26 @@ body.theme-dark .login-page{
 .password-visibility-toggle:hover,.password-visibility-toggle:focus-visible{background:color-mix(in srgb,var(--accent) 16%,var(--surface));border-color:color-mix(in srgb,var(--accent) 56%,var(--border));color:var(--text);outline:none;box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 20%,transparent)}
 .password-visibility-toggle.is-visible{color:var(--accent)}
 .password-visibility-toggle svg{width:18px;height:18px;display:block}
+html[data-theme^="dark"] .login-page .form-input,
+html.theme-dark .login-page .form-input,
+body.theme-dark .login-page .form-input{
+  background:color-mix(in srgb,var(--surface) 82%,#020617 18%);
+  color:var(--text);
+  border-color:color-mix(in srgb,var(--border) 72%,var(--accent) 28%);
+  box-shadow:inset 0 1px 0 color-mix(in srgb,#fff 6%,transparent),0 0 0 1px color-mix(in srgb,#020617 12%,transparent);
+}
+html[data-theme^="dark"] .login-page .form-input::placeholder,
+html.theme-dark .login-page .form-input::placeholder,
+body.theme-dark .login-page .form-input::placeholder{
+  color:color-mix(in srgb,var(--muted) 82%,#ffffff 18%);
+}
+html[data-theme^="dark"] .login-page .password-visibility-toggle,
+html.theme-dark .login-page .password-visibility-toggle,
+body.theme-dark .login-page .password-visibility-toggle{
+  background:color-mix(in srgb,var(--surface) 76%,#020617 24%);
+  color:var(--text);
+  border-color:color-mix(in srgb,var(--border) 70%,var(--accent) 30%);
+}
 
 /* Titulo profesional para el login de administradores */
 .login-page .login-header{width:100%;max-width:460px;margin:0 auto 12px auto;text-align:center}
@@ -20320,5 +20341,176 @@ body.carrito-flat-page #carritosList{
   .solar-system-row {
     align-items: stretch;
     flex-direction: column;
+  }
+}
+
+/* POS touch mode: enabled per company from estaciones_config.carrito_ui_global. */
+.pos-touch-config-card {
+  border: 1px solid var(--border-color, #d8e0ea);
+  border-radius: 8px;
+  background: var(--card-bg, #fff);
+  padding: 12px;
+}
+
+body.pos-touch-mode {
+  --pcs-touch-target: 56px;
+  --pcs-touch-gap: 10px;
+  touch-action: manipulation;
+}
+
+body.pos-touch-mode .btn,
+body.pos-touch-mode button,
+body.pos-touch-mode input,
+body.pos-touch-mode select,
+body.pos-touch-mode textarea {
+  font-size: 1rem;
+}
+
+body.pos-touch-mode .btn,
+body.pos-touch-mode button.btn,
+body.pos-touch-mode a.btn {
+  align-items: center;
+  display: inline-flex;
+  height: auto !important;
+  justify-content: center;
+  min-height: var(--pcs-touch-target) !important;
+  padding: 12px 16px !important;
+  touch-action: manipulation;
+}
+
+body.pos-touch-mode .form-input,
+body.pos-touch-mode input.form-input,
+body.pos-touch-mode select.form-input {
+  min-height: var(--pcs-touch-target);
+  padding: 12px 14px;
+}
+
+body.pos-touch-mode textarea.form-input,
+body.pos-touch-mode .form-textarea {
+  min-height: 88px;
+}
+
+body.pos-touch-mode input[type="checkbox"],
+body.pos-touch-mode input[type="radio"] {
+  min-height: 24px;
+  min-width: 24px;
+}
+
+body.pos-touch-mode .form-row,
+body.pos-touch-mode .form-actions,
+body.pos-touch-mode .cash-close-actions,
+body.pos-touch-mode .actions-wrap-gap-10 {
+  gap: var(--pcs-touch-gap) !important;
+}
+
+body.pos-touch-mode.carrito-flat-page .container {
+  padding: 8px !important;
+}
+
+body.pos-touch-mode.carrito-flat-page .container > *,
+body.pos-touch-mode.carrito-flat-page .empresa-section,
+body.pos-touch-mode.carrito-flat-page .empresa-card,
+body.pos-touch-mode.carrito-flat-page .carrito-productos-layout,
+body.pos-touch-mode.carrito-flat-page .carrito-main-grid {
+  gap: var(--pcs-touch-gap) !important;
+  row-gap: var(--pcs-touch-gap) !important;
+  column-gap: var(--pcs-touch-gap) !important;
+}
+
+body.pos-touch-mode .carrito-scanner-compact-grid,
+body.pos-touch-mode #stationDiscountSettings,
+body.pos-touch-mode #mixedPaymentBlock,
+body.pos-touch-mode #mixedPaymentBlock2,
+body.pos-touch-mode #mixedPaymentBlock3,
+body.pos-touch-mode #stationPaymentAmountsRow,
+body.pos-touch-mode .carrito-customer-search-grid,
+body.pos-touch-mode .carrito-customer-quick-grid {
+  align-items: stretch;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+}
+
+body.pos-touch-mode #carritoActionToolbar,
+body.pos-touch-mode .carrito-station-toolbar {
+  align-items: stretch;
+  display: grid !important;
+  grid-template-columns: repeat(auto-fit, minmax(152px, 1fr));
+}
+
+body.pos-touch-mode #carritoActionToolbar .btn,
+body.pos-touch-mode #carritoActionToolbar button,
+body.pos-touch-mode .carrito-station-toolbar .btn,
+body.pos-touch-mode .carrito-station-toolbar button {
+  justify-content: center;
+  min-height: var(--pcs-touch-target) !important;
+  width: 100%;
+}
+
+body.estaciones-touch-mode .container {
+  max-width: 1500px;
+}
+
+body.estaciones-touch-mode #estacionesGrid.portal-grid {
+  gap: 14px;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+}
+
+body.estaciones-touch-mode .station-launch-card,
+body.estaciones-touch-mode .youtube-station-card,
+body.estaciones-touch-mode .notas-station-card,
+body.estaciones-touch-mode .ia-pedidos-station-card,
+body.estaciones-touch-mode .camera-station-card,
+body.estaciones-touch-mode #cajaCard {
+  min-height: 182px;
+  padding: 18px;
+  touch-action: manipulation;
+}
+
+body.estaciones-touch-mode .station-launch-card h3,
+body.estaciones-touch-mode #cajaCard h3 {
+  font-size: 1.18rem;
+}
+
+body.estaciones-touch-mode .station-data {
+  gap: 7px;
+}
+
+body.corte-touch-mode .cash-close-hero {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+body.corte-touch-mode .cash-close-actions.is-compact {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+}
+
+body.corte-touch-mode .cash-close-actions.is-compact .btn {
+  min-height: 60px;
+  width: 100%;
+}
+
+@media (max-width: 760px) {
+  body.pos-touch-mode {
+    --pcs-touch-target: 58px;
+  }
+
+  body.pos-touch-mode #carritoActionToolbar,
+  body.pos-touch-mode .carrito-station-toolbar,
+  body.corte-touch-mode .cash-close-actions.is-compact {
+    grid-template-columns: 1fr;
+  }
+
+  body.estaciones-touch-mode #estacionesGrid.portal-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  body.estaciones-touch-mode .station-launch-card,
+  body.estaciones-touch-mode .youtube-station-card,
+  body.estaciones-touch-mode .notas-station-card,
+  body.estaciones-touch-mode .ia-pedidos-station-card,
+  body.estaciones-touch-mode .camera-station-card,
+  body.estaciones-touch-mode #cajaCard {
+    min-height: 168px;
+    padding: 14px;
   }
 }

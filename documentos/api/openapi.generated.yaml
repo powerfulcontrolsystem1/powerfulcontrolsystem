@@ -3426,6 +3426,19 @@ paths:
       responses:
         "200":
           description: Respuesta exitosa o manejada por el handler real.
+  "/super/api/licencias/configuracion":
+    get:
+      tags: [super-administrador]
+      summary: Ruta inventariada /super/api/licencias/configuracion
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [super-administrador]
+      summary: Ruta inventariada /super/api/licencias/configuracion
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
   "/super/api/licencias/vencimiento_alertas":
     get:
       tags: [super-administrador]
@@ -3774,6 +3787,19 @@ paths:
     post:
       tags: [super-administrador]
       summary: Ruta inventariada /super/api/venta_digital
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/super/api/vps_snapshots":
+    get:
+      tags: [super-administrador]
+      summary: Ruta inventariada /super/api/vps_snapshots
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [super-administrador]
+      summary: Ruta inventariada /super/api/vps_snapshots
       responses:
         "200":
           description: Respuesta exitosa o manejada por el handler real.

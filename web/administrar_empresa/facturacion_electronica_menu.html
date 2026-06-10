@@ -54,7 +54,8 @@
       var countryMenuState = {
         country: '',
         empresaId: 0,
-        permissions: null
+        permissions: null,
+        source: ''
       };
 
       function setCountryLinkVisible(link, visible) {
@@ -161,6 +162,17 @@
         return '/administrar_empresa/facturacion_electronica.html';
       }
 
+      function countrySourceLabel(raw) {
+        var value = String(raw || '').trim().toLowerCase();
+        if (value === 'configuracion_avanzada') return 'configuracion general de la empresa';
+        if (value === 'facturacion_electronica') return 'perfil fiscal guardado';
+        if (value === 'licencia_activa') return 'licencia activa';
+        if (value === 'seleccion_manual') return 'seleccion manual';
+        if (value === 'timezone') return 'zona horaria';
+        if (value === 'language') return 'idioma del navegador';
+        return 'deteccion automatica';
+      }
+
       function renderCountrySelector(items, selected) {
         if (!selector) return;
         var list = Array.isArray(items) && items.length ? items : [{ codigo: 'CO', nombre: 'Colombia', bandera: 'CO' }];
@@ -184,9 +196,13 @@
           setCountryLinkVisible(link, countryMatches(link, country) && linkAllowedByLicenseAndRole(permissions, link));
         });
         if (selector && selector.value !== country) selector.value = country;
-        if (source) source.textContent = country === 'CO'
-          ? 'Colombia usa la configuración DIAN actual.'
-          : 'El país seleccionado carga su página fiscal específica.';
+        if (source) {
+          var prefix = countryMenuState.source === 'seleccion_manual' ? 'Pais seleccionado' : 'Pais detectado';
+          source.textContent = prefix + ': ' + country + ' - ' + countrySourceLabel(countryMenuState.source) + '. '
+            + (country === 'CO'
+              ? 'Colombia usa la configuracion DIAN actual.'
+              : 'El pais seleccionado carga su pagina fiscal especifica.');
+        }
         if (navigate && frame) {
           var target = withEmpresaContext(countryPage(country), countryMenuState.empresaId, country);
           if ((frame.getAttribute('src') || '') !== target) frame.setAttribute('src', target);
@@ -212,12 +228,14 @@
           countryMenuState.country = country;
           countryMenuState.empresaId = empresaId;
           countryMenuState.permissions = permissions;
+          countryMenuState.source = String(detected.source || 'deteccion_automatica').trim();
           renderCountrySelector(catalog.items || [], country);
           applyCountryMenuState(true);
         }).catch(function() {
           countryMenuState.country = 'CO';
           countryMenuState.empresaId = empresaId;
           countryMenuState.permissions = {};
+          countryMenuState.source = 'default';
           renderCountrySelector([], 'CO');
           applyCountryMenuState(true);
         });
@@ -226,6 +244,7 @@
       if (selector) {
         selector.addEventListener('change', function() {
           countryMenuState.country = String(selector.value || 'CO').trim().toUpperCase();
+          countryMenuState.source = 'seleccion_manual';
           applyCountryMenuState(true);
         });
       }

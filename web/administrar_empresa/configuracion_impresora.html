@@ -31,6 +31,11 @@
       margin: 0 0 6px 0;
       font-size: 0.98rem;
     }
+    .receipt-custom-field-panel {
+      margin-top: 12px;
+      border-top: 1px solid var(--border);
+      padding-top: 12px;
+    }
   </style>
   <script src="/js/empresa_submenu_context.js"></script>
 </head>
@@ -551,12 +556,13 @@
         <div class="form">
           <div class="form-row">
             <div class="form-col">
-              <label class="form-label" for="facturaLogoURL">Logo de la empresa</label>
-              <input id="facturaLogoURL" class="form-input" placeholder="/img/logo_empresa.png o URL pública">
+              <label class="form-label" for="facturaLogoURL">Logo de factura</label>
+              <input id="facturaLogoURL" class="form-input" placeholder="/uploads/empresas/empresa_1_nombre/imagenes/logos/factura/logo.png o URL publica">
               <label class="empresa-config-check" for="facturaMostrarLogo" >
                 <input id="facturaMostrarLogo" type="checkbox">
                 <span>Mostrar logo en factura</span>
               </label>
+              <p class="form-help">Puede ser diferente al logo corporativo. Si no se define, la factura puede usar el logo general de la empresa como respaldo.</p>
             </div>
           </div>
         </div>
@@ -577,6 +583,29 @@
             <label class="empresa-config-check" for="reciboItemFormato"><input id="reciboItemFormato" type="checkbox" data-print-scope="recibo" data-print-key="formato"><span>Formato</span></label>
             <label class="empresa-config-check" for="reciboItemImpresora"><input id="reciboItemImpresora" type="checkbox" data-print-scope="recibo" data-print-key="impresora"><span>Impresora objetivo</span></label>
             <label class="empresa-config-check" for="reciboItemCopias"><input id="reciboItemCopias" type="checkbox" data-print-scope="recibo" data-print-key="copias"><span>Copias</span></label>
+          </div>
+          <div class="receipt-custom-field-panel">
+            <label class="empresa-config-check" for="reciboItemCampoPersonalizado">
+              <input id="reciboItemCampoPersonalizado" type="checkbox" data-print-scope="recibo" data-print-key="campo_personalizado">
+              <span>Mostrar campo adicional en el recibo</span>
+            </label>
+            <p class="form-help">Este dato se imprime como informacion operativa. No suma, resta ni modifica la venta, los pagos, la contabilidad ni la factura electronica.</p>
+            <div class="form-row">
+              <div class="form-col">
+                <label class="form-label" for="reciboCampoPersonalizadoEtiqueta">Nombre del campo</label>
+                <input id="reciboCampoPersonalizadoEtiqueta" class="form-input" maxlength="80" placeholder="Domicilio">
+              </div>
+              <div class="form-col">
+                <label class="form-label" for="reciboCampoPersonalizadoValor">Valor que se imprime</label>
+                <input id="reciboCampoPersonalizadoValor" class="form-input" maxlength="160" placeholder="Ej: Entrega a domicilio, Mesa 4, Piso 2">
+              </div>
+            </div>
+            <label class="empresa-config-check" for="reciboItemCampoPersonalizadoDescripcion">
+              <input id="reciboItemCampoPersonalizadoDescripcion" type="checkbox" data-print-scope="recibo" data-print-key="campo_personalizado_descripcion_visible">
+              <span>Mostrar descripcion del campo</span>
+            </label>
+            <label class="form-label" for="reciboCampoPersonalizadoDescripcion">Descripcion editable</label>
+            <textarea id="reciboCampoPersonalizadoDescripcion" class="form-input" rows="3" maxlength="240" placeholder="Ej: Informacion visible solo en el recibo para orientar la entrega o el proceso interno."></textarea>
           </div>
         </div>
 
@@ -2649,7 +2678,12 @@
       fecha: true,
       formato: true,
       impresora: true,
-      copias: true
+      copias: true,
+      campo_personalizado: false,
+      campo_personalizado_etiqueta: 'Domicilio',
+      campo_personalizado_valor: '',
+      campo_personalizado_descripcion_visible: true,
+      campo_personalizado_descripcion: ''
     };
 
     const DEFAULT_CORTE_PRINT_ITEMS = {
@@ -2676,7 +2710,14 @@
         const parsed = JSON.parse(text);
         if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return base;
         Object.keys(base).forEach(function(key) {
-          if (Object.prototype.hasOwnProperty.call(parsed, key)) base[key] = parsed[key] !== false;
+          if (!Object.prototype.hasOwnProperty.call(parsed, key)) return;
+          if (typeof base[key] === 'boolean') {
+            base[key] = parsed[key] !== false;
+          } else if (typeof base[key] === 'string') {
+            base[key] = String(parsed[key] == null ? '' : parsed[key]);
+          } else {
+            base[key] = parsed[key];
+          }
         });
       } catch (_) {}
       return base;
@@ -2699,6 +2740,41 @@
       return cfg;
     }
 
+    function sanitizeReceiptCustomText(value, fallback, max) {
+      const text = String(value == null ? '' : value).replace(/\s+/g, ' ').trim();
+      const out = text || String(fallback || '');
+      return out.slice(0, max || 160);
+    }
+
+    function syncReceiptCustomFieldUI() {
+      const enabled = document.getElementById('reciboItemCampoPersonalizado').checked;
+      const showDescription = document.getElementById('reciboItemCampoPersonalizadoDescripcion').checked;
+      ['reciboCampoPersonalizadoEtiqueta', 'reciboCampoPersonalizadoValor'].forEach(function(id) {
+        const el = document.getElementById(id);
+        if (el) el.disabled = !enabled;
+      });
+      const descriptionCheck = document.getElementById('reciboItemCampoPersonalizadoDescripcion');
+      const description = document.getElementById('reciboCampoPersonalizadoDescripcion');
+      if (descriptionCheck) descriptionCheck.disabled = !enabled;
+      if (description) description.disabled = !enabled || !showDescription;
+    }
+
+    function setReceiptCustomPrintFields(values) {
+      const cfg = Object.assign({}, DEFAULT_RECIBO_PRINT_ITEMS, values || {});
+      document.getElementById('reciboCampoPersonalizadoEtiqueta').value = sanitizeReceiptCustomText(cfg.campo_personalizado_etiqueta, 'Domicilio', 80);
+      document.getElementById('reciboCampoPersonalizadoValor').value = sanitizeReceiptCustomText(cfg.campo_personalizado_valor, '', 160);
+      document.getElementById('reciboCampoPersonalizadoDescripcion').value = sanitizeReceiptCustomText(cfg.campo_personalizado_descripcion, '', 240);
+      syncReceiptCustomFieldUI();
+    }
+
+    function collectReceiptPrintItems() {
+      const cfg = collectPrintItemChecks('recibo', DEFAULT_RECIBO_PRINT_ITEMS);
+      cfg.campo_personalizado_etiqueta = sanitizeReceiptCustomText(document.getElementById('reciboCampoPersonalizadoEtiqueta').value, 'Domicilio', 80);
+      cfg.campo_personalizado_valor = sanitizeReceiptCustomText(document.getElementById('reciboCampoPersonalizadoValor').value, '', 160);
+      cfg.campo_personalizado_descripcion = sanitizeReceiptCustomText(document.getElementById('reciboCampoPersonalizadoDescripcion').value, '', 240);
+      return cfg;
+    }
+
     function setFacturaFormData(cfg) {
       const src = cfg && typeof cfg === 'object' ? cfg : {};
       document.getElementById('facturaModoDocumentoVenta').value = String(src.modo_documento_venta || 'comprobante_pago').trim().toLowerCase() === 'factura_electronica' ? 'factura_electronica' : 'comprobante_pago';
@@ -2707,9 +2783,11 @@
       document.getElementById('facturaImprimirFacturaElectronica').checked = src.imprimir_factura_electronica === true;
       document.getElementById('facturaImprimirCopia').checked = src.imprimir_copia_factura === true;
       document.getElementById('facturaMostrarDeducidoImpuesto').checked = src.mostrar_deducido_impuesto_factura === true;
-      document.getElementById('facturaMostrarLogo').checked = src.mostrar_logo_empresa !== false && src.mostrar_logo !== false;
-      document.getElementById('facturaLogoURL').value = String(src.logo_url || '').trim();
-      setPrintItemChecks('recibo', parsePrintItemsJSON(src.impresion_recibo_items_json, DEFAULT_RECIBO_PRINT_ITEMS), DEFAULT_RECIBO_PRINT_ITEMS);
+      document.getElementById('facturaMostrarLogo').checked = src.mostrar_logo_factura !== false && src.mostrar_logo !== false;
+      document.getElementById('facturaLogoURL').value = String(src.logo_factura_url || src.logo_url || '').trim();
+      const reciboPrintItems = parsePrintItemsJSON(src.impresion_recibo_items_json, DEFAULT_RECIBO_PRINT_ITEMS);
+      setPrintItemChecks('recibo', reciboPrintItems, DEFAULT_RECIBO_PRINT_ITEMS);
+      setReceiptCustomPrintFields(reciboPrintItems);
       setPrintItemChecks('corte', parsePrintItemsJSON(src.impresion_corte_items_json, DEFAULT_CORTE_PRINT_ITEMS), DEFAULT_CORTE_PRINT_ITEMS);
     }
 
@@ -2732,10 +2810,9 @@
         imprimir_factura_electronica: document.getElementById('facturaImprimirFacturaElectronica').checked,
         imprimir_copia_factura: document.getElementById('facturaImprimirCopia').checked,
         mostrar_deducido_impuesto_factura: document.getElementById('facturaMostrarDeducidoImpuesto').checked,
-        mostrar_logo: document.getElementById('facturaMostrarLogo').checked,
-        mostrar_logo_empresa: document.getElementById('facturaMostrarLogo').checked,
-        logo_url: String(document.getElementById('facturaLogoURL').value || '').trim(),
-        impresion_recibo_items_json: JSON.stringify(collectPrintItemChecks('recibo', DEFAULT_RECIBO_PRINT_ITEMS)),
+        mostrar_logo_factura: document.getElementById('facturaMostrarLogo').checked,
+        logo_factura_url: String(document.getElementById('facturaLogoURL').value || '').trim(),
+        impresion_recibo_items_json: JSON.stringify(collectReceiptPrintItems()),
         impresion_corte_items_json: JSON.stringify(collectPrintItemChecks('corte', DEFAULT_CORTE_PRINT_ITEMS))
       };
     }
@@ -3045,6 +3122,8 @@
       document.getElementById('opPoliticaTurno').addEventListener('blur', syncOperativaPoliticaFormFromCache);
       document.getElementById('btnGuardarFacturaConfig').addEventListener('click', guardarFacturaConfig);
       document.getElementById('btnGuardarFormatoNumerico').addEventListener('click', guardarFormatoNumericoConfig);
+      document.getElementById('reciboItemCampoPersonalizado').addEventListener('change', syncReceiptCustomFieldUI);
+      document.getElementById('reciboItemCampoPersonalizadoDescripcion').addEventListener('change', syncReceiptCustomFieldUI);
       document.getElementById('formatoUsarDecimales').addEventListener('change', syncFormatoDecimalesUI);
       document.getElementById('formatoCantidadDecimales').addEventListener('blur', syncFormatoDecimalesUI);
       document.getElementById('btnRefrescarImpresoras').addEventListener('click', function() { loadImpresorasConfig(true); });

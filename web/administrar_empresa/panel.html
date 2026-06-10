@@ -1958,8 +1958,42 @@
         });
       }
 
-      function loadEmpresaEmail() {
+      function normalizeEmpresaEmailRole(value) {
+        return String(value || "")
+          .trim()
+          .toLowerCase()
+          .normalize("NFD")
+          .replace(/[\u0300-\u036f]/g, "")
+          .replace(/[\s-]+/g, "_");
+      }
+
+      function canSeeEmpresaEmailPanel(context) {
+        var permissionContext = context && context.permissionContext ? context.permissionContext : null;
+        var admin = context && context.admin ? context.admin : null;
+        var role = normalizeEmpresaEmailRole(permissionContext && (permissionContext.rol_efectivo || permissionContext.rolEfectivo || permissionContext.rol || permissionContext.role));
+        if (!role) {
+          role = normalizeEmpresaEmailRole(admin && (admin.role || admin.Role || admin.rol || admin.Rol));
+        }
+        if (!role) return false;
+        return [
+          "admin_empresa",
+          "administrador",
+          "administrador_empresa",
+          "super_administrador",
+          "superadmin",
+          "super_control",
+          "propietario",
+          "owner"
+        ].indexOf(role) >= 0;
+      }
+
+      function loadEmpresaEmail(context) {
         if (!empresaEmailPanelEl || !empresaId) return;
+        if (!canSeeEmpresaEmailPanel(context || {})) {
+          resetEmpresaEmailEmbed();
+          empresaEmailPanelEl.hidden = true;
+          return;
+        }
         applyEmpresaEmailTheme();
         fetchJSON("/api/empresa/email_corporativo?empresa_id=" + encodeURIComponent(empresaId) + "&check_webmail=1&theme=" + encodeURIComponent(currentEmailThemeMode()))
           .then(function (data) {
@@ -2692,7 +2726,6 @@
         setDateText();
         applyEmpresaLinks();
         renderFavorites();
-        loadEmpresaEmail();
         setupWeatherControls();
         loadMaintenanceNotice();
         var adminPromise = fetchJSON("/me").catch(function () { return {}; });
@@ -2709,11 +2742,16 @@
         var identidadPromise = empresaId
           ? fetchJSON("/api/empresa/configuracion_avanzada?empresa_id=" + encodeURIComponent(empresaId)).catch(function () { return {}; })
           : Promise.resolve({});
-        Promise.all([adminPromise, empresaPromise, weatherConfigPromise, identidadPromise]).then(function (values) {
+        var permisosPromise = empresaId
+          ? fetchJSON("/api/empresa/permisos_contexto?empresa_id=" + encodeURIComponent(empresaId)).catch(function () { return {}; })
+          : Promise.resolve({});
+        Promise.all([adminPromise, empresaPromise, weatherConfigPromise, identidadPromise, permisosPromise]).then(function (values) {
           var admin = values[0] || {};
           var empresa = values[1] || {};
           var savedLocation = values[2] || null;
           var identidad = values[3] || {};
+          var permissionContext = values[4] || {};
+          loadEmpresaEmail({ admin: admin, permissionContext: permissionContext });
           renderWelcome(admin, empresa);
           applyEmpresaLogo(identidad);
           return detectLocation(admin, empresa, savedLocation).then(function (location) {

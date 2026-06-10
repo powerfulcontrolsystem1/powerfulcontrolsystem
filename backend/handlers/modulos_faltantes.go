@@ -12621,6 +12621,8 @@ func uploadDIANCompanySignature(dbEmp, dbSuper *sql.DB, r *http.Request) (map[st
 		return nil, http.StatusInternalServerError, fmt.Errorf("no se pudo preparar directorio de firma")
 	}
 	_ = os.Chmod(dir, empresaFirmaElectronicaPrivateDirPerms)
+	oldKeyRef := strings.TrimSpace(genericStringValue(cfg["certificado_clave_ref"]))
+	oldCertRef := strings.TrimSpace(genericStringValue(cfg["certificado_url"]))
 
 	suffix := time.Now().UnixNano()
 	keyFileName := fmt.Sprintf("firma_privada_%d.pem", suffix)
@@ -12636,6 +12638,7 @@ func uploadDIANCompanySignature(dbEmp, dbSuper *sql.DB, r *http.Request) (map[st
 		certFileName = fmt.Sprintf("certificado_publico_%d.pem", suffix)
 		certAbsPath := filepath.Join(dir, certFileName)
 		if err := os.WriteFile(certAbsPath, []byte(strings.TrimSpace(material.CertificatePEM)+"\n"), 0o600); err != nil {
+			_ = os.Remove(keyAbsPath)
 			return nil, http.StatusInternalServerError, fmt.Errorf("no se pudo guardar certificado en servidor")
 		}
 		certRef = "file:" + certAbsPath
@@ -12675,7 +12678,17 @@ func uploadDIANCompanySignature(dbEmp, dbSuper *sql.DB, r *http.Request) (map[st
 		}
 	}
 	if err := updateDIANConfigFields(dbEmp, empresaID, cfg, updates); err != nil {
+		_ = os.Remove(keyAbsPath)
+		if strings.TrimSpace(certRef) != "" {
+			_ = deleteFileRefIfInsideDir(certRef, dir)
+		}
 		return nil, http.StatusInternalServerError, fmt.Errorf("no se pudo actualizar certificado_clave_ref")
+	}
+	if oldKeyRef != "" && oldKeyRef != keyRef {
+		_ = deleteFileRefIfInsideDir(oldKeyRef, dir)
+	}
+	if oldCertRef != "" && oldCertRef != certRef {
+		_ = deleteFileRefIfInsideDir(oldCertRef, dir)
 	}
 	vencimiento := checkDIANCertificateExpiry(dbEmp, dbSuper, empresaID, cfg, true)
 

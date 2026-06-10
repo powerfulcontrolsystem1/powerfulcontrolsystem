@@ -3,6 +3,49 @@
 Version: 2026-05-15.1.0
 Ultima actualizacion: 2026-05-15
 
+Actualizacion 2026-06-10 (retencion de empresas vencidas)
+- Nueva tabla `licencia_empresa_retencion_log` en `pcs_superadministrador`.
+- Registra `empresa_ref_id`, nombre, correo administrador, estado operativo,
+  ultima fecha de vencimiento de licencia base, dias de retencion, dias de
+  preaviso, fecha programada de eliminacion, envio de preaviso, eliminacion,
+  estado, error y resultado JSON saneado del borrado.
+- Usa `empresa_ref_id` deliberadamente en vez de `empresa_id` para que el reporte
+  no sea eliminado por `DeleteEmpresaCascade`, que limpia tablas operativas y
+  super con columna `empresa_id`.
+- Configuracion global en `configuraciones`:
+  `licencias.retencion_empresas_vencidas.enabled`,
+  `licencias.retencion_empresas_vencidas.dias_espera`,
+  `licencias.retencion_empresas_vencidas.dias_preaviso`,
+  `licencias.retencion_empresas_vencidas.max_por_ejecucion`,
+  `licencias.retencion_empresas_vencidas.ultimo_run` y
+  `licencias.retencion_empresas_vencidas.ultimo_resultado`.
+
+Actualizacion 2026-06-10 (snapshots completos VPS)
+- Nueva tabla `super_vps_snapshots` en `pcs_superadministrador`.
+- Registra `codigo`, `file_name`, `file_path`, `estado`, `tamano_bytes`,
+  `hash_sha256`, proveedor/destino/estado/mensaje de nube, banderas de
+  ejecucion automatica, secretos e imagenes Docker, `manifest_json`, error
+  saneado, usuario creador y fechas de inicio/fin/creacion/actualizacion.
+- La configuracion global vive en `configuraciones` con claves
+  `super.vps_snapshot.*`: activacion, ejecucion automatica, intervalo,
+  retencion, limpieza local/remota, proveedor, ruta `rclone`, inclusion de
+  proyecto/PostgreSQL/volumenes/imagenes y ultimo resultado.
+- No hay `empresa_id` porque es un respaldo de infraestructura completo,
+  exclusivo de super administrador; las copias fisicas quedan bajo
+  `backup/vps_snapshots` y la descarga valida que la ruta no salga de esa
+  carpeta.
+
+Actualizacion 2026-06-09 (logos corporativo y factura por empresa)
+- Tabla `empresa_configuracion_avanzada`: agrega
+  `mostrar_logo_factura INTEGER DEFAULT 1` y `logo_factura_url TEXT`.
+- `logo_url` queda como logo corporativo general de la empresa; el logo de
+  factura puede ser diferente y se usa en representacion/impresion de facturas.
+- Los archivos se guardan por empresa en
+  `web/uploads/empresas/empresa_{id}_{slug}/imagenes/logos/empresa/` y
+  `web/uploads/empresas/empresa_{id}_{slug}/imagenes/logos/factura/`.
+- No se crean datos operativos ni documentos electronicos; solo configuracion
+  visual aislada por `empresa_id`.
+
 Actualizacion 2026-06-08 (OCR documental sin IA)
 - Nueva tabla `empresa_ocr_documentos`: guarda por `empresa_id` cada documento
   procesado con OCR, tipo documental, titulo, archivo, MIME, motor, idioma,
@@ -195,12 +238,11 @@ Actualizacion 2026-06-04 (factura electronica automatica por compra de licencia)
   empresa interna emisora `Powerful Control System`. El resolver tambien acepta
   el nombre historico existente `Powerful Control Systen` para no duplicar
   empresas.
-- `pcs_superadministrador.licencias`: la empresa emisora interna conserva una
-  licencia tecnica `PCS_SYSTEM_INTERNAL_PERPETUAL`, activa, con `fecha_fin`
-  fechada a 100 anos, valor cero, limites altos y `modulos_habilitados`
-  completos. Esta licencia esta fuera del catalogo comercial y permite que la
-  empresa del sistema cargue carrito, correo corporativo, facturacion,
-  configuracion y reportes como cualquier empresa normal.
+- `pcs_superadministrador.licencias`: la licencia tecnica heredada
+  `PCS_SYSTEM_INTERNAL_PERPETUAL` se conserva solo como codigo historico para
+  desactivarla si existe. La empresa emisora interna debe tener una licencia
+  comercial vigente normal; si se vence o no existe, queda sujeta al mismo
+  bloqueo que cualquier otra empresa.
 - `pcs_superadministrador.pagos_epayco` y `pcs_superadministrador.pagos_wompi`:
   el JSON de `raw_payload` puede incluir
   `licencia_factura_electronica_emitida`,
@@ -263,10 +305,11 @@ Actualizacion 2026-06-01 (renovaciones anticipadas de licencias)
   la pasarela reenvia el webhook.
 
 Actualizacion 2026-05-31 (catalogo global de licencias)
-- `pcs_superadministrador.licencias`: el catalogo base comercial queda normalizado en cuatro planes globales con `tipo_id=0` y `pais_codigo='GLOBAL'`: prueba gratis 15 dias, COP 60000, COP 100000 y COP 150000.
+- `pcs_superadministrador.licencias`: el catalogo base comercial queda normalizado en siete planes globales con `tipo_id=0` y `pais_codigo='GLOBAL'`: prueba gratis 15 dias, COP 60000, COP 110000, COP 200000, COP 600000 anual, COP 1100000 anual y COP 2200000 anual.
 - Las licencias heredadas sin empresa asignada, incluidos addons de catalogo, que no correspondan a esos codigos globales se eliminan del catalogo para no exponer ni conservar planes duplicados por tipo de empresa.
 - Las licencias ya asignadas a empresas no se eliminan; el historial y las renovaciones siguen usando `empresa_id`.
 - `licencias_activaciones_gratis` mantiene la regla de una sola prueba/gratis activa por empresa mediante el indice unico parcial por `empresa_id`.
+- `configuraciones.licencias.max_compras_adelantadas_misma_licencia` guarda el maximo global de renovaciones adelantadas de la misma licencia; si no existe, el backend usa 2.
 
 Este documento consolida la estructura relacional activa del proyecto.
 Nota de gobernanza documental:
@@ -1418,7 +1461,7 @@ Actualizacion 2026-04-29 (auditoria como fuente de contexto IA)
   - ambiente_fe, tipo_operacion, prefijo_factura
   - resolucion_numero, resolucion_fecha_desde, resolucion_fecha_hasta
   - consecutivo_desde, consecutivo_hasta, proximo_consecutivo
-  - formato_impresion, imprimir_copia_factura, mostrar_deducido_impuesto_factura, impresion_recibo_items_json, impresion_corte_items_json, mostrar_logo, mostrar_logo_empresa, mostrar_logo_sistema, logo_url
+  - formato_impresion, imprimir_copia_factura, mostrar_deducido_impuesto_factura, impresion_recibo_items_json, impresion_corte_items_json, mostrar_logo, mostrar_logo_empresa, mostrar_logo_factura, mostrar_logo_sistema, logo_url, logo_factura_url
   - pie_factura, notas_legales
   - color_carrito_activo, color_carrito_inactivo
   - moneda_codigo, sistema_numerico, usar_decimales, cantidad_decimales
@@ -1941,10 +1984,10 @@ Actualizacion 2026-04-29 (auditoria como fuente de contexto IA)
 - empresa_documentos_gestion.id -> empresa_documentos_firmas.documento_gestion_id
 ## Actualizacion 2026-05-12 - Identidad visual empresarial
 
-- No se agregan tablas nuevas. La configuracion avanzada ahora usa `mostrar_logo_empresa` y `mostrar_logo_sistema` para separar la visibilidad del logo empresarial y del logo del sistema en documentos imprimibles; `mostrar_logo` queda como compatibilidad general.
-- Se reutiliza `empresa_configuracion_avanzada.logo_url` como URL canonica del logo empresarial.
-- Los archivos cargados por el endpoint empresarial se almacenan bajo `web/uploads/empresa_logos/empresa_<id>/` y se sirven como ruta publica `/uploads/empresa_logos/empresa_<id>/<archivo>`.
-- El dato queda aislado por `empresa_id` y es compartido por panel, factura, comprobantes y documentos empresariales que leen la configuracion avanzada.
+- No se agregan tablas nuevas. La configuracion avanzada usa `mostrar_logo_empresa`, `mostrar_logo_factura` y `mostrar_logo_sistema` para separar visibilidad del logo corporativo, logo de factura y logo del sistema; `mostrar_logo` queda como compatibilidad general.
+- `empresa_configuracion_avanzada.logo_url` es la URL canonica del logo corporativo y `logo_factura_url` es la URL canonica del logo usado en facturas.
+- Los archivos cargados por el endpoint empresarial se almacenan bajo `web/uploads/empresas/empresa_{id}_{slug}/imagenes/logos/empresa/` o `web/uploads/empresas/empresa_{id}_{slug}/imagenes/logos/factura/` y se sirven como rutas publicas `/uploads/empresas/...`.
+- El dato queda aislado por `empresa_id`; panel, reportes y documentos generales leen el logo corporativo, mientras las facturas usan el logo de factura con respaldo al corporativo.
 
 - carritos_compras.id -> carrito_compra_items.carrito_id
 - carritos_compras.id -> reservas_hotel.carrito_id
@@ -1988,7 +2031,7 @@ Actualizacion 2026-04-29 (auditoria como fuente de contexto IA)
 - 2026-05-29: `empresa_email_corporativo` soporta provision directa `mailu_direct`; el backend conserva en `configuraciones.email_corporativo.direct_provision_command` la ruta del script operativo y marca `estado_provision='provisionado'` solo despues de crear/validar el buzon real en Mailu.
 - 2026-05-28: se agrega `empresa_email_corporativo` en `pcs_superadministrador` para mapear cada empresa a un email corporativo unico bajo el dominio configurado. Guarda `empresa_id`, nombre, correo, dominio, webmail, estado de provision Mailu, intentos, ultimo error, clave inicial cifrada y trazabilidad. Tiene indices unicos activos por `empresa_id` y por `lower(email)` para evitar duplicados.
 - 2026-05-13: el aseguramiento ligero de `carritos_compras`, `carrito_compra_items` y `empresa_ventas_estacion_metricas` valida y completa ahora todas las columnas usadas por el listado operativo antes de marcar el esquema como listo, con cache por base/esquema PostgreSQL. Esto evita 500 en `/api/empresa/carritos_compra` cuando una empresa conserva migraciones rezagadas; no crea tablas nuevas ni cambia relaciones.
-- 2026-05-13: `licencias` incorpora `max_cajas_simultaneas` para limitar cajas abiertas simultaneas por empresa segun licencia activa. El valor por defecto es 2 cajas; el plan global COP 150000 queda en 4 cajas. `carritos_compras`, `empresa_ventas_estacion_metricas` y `empresa_finanzas_movimientos` enlazan operaciones con `cierre_caja_id`, `caja_codigo`, `caja_turno` y `caja_sucursal_id` para cierres separados por caja.
+- 2026-05-13: `licencias` incorpora `max_cajas_simultaneas` para limitar cajas abiertas simultaneas por empresa segun licencia activa. El valor por defecto es 2 cajas; los planes globales escalan cajas segun catalogo vigente, incluyendo COP 200000 con 4 cajas. `carritos_compras`, `empresa_ventas_estacion_metricas` y `empresa_finanzas_movimientos` enlazan operaciones con `cierre_caja_id`, `caja_codigo`, `caja_turno` y `caja_sucursal_id` para cierres separados por caja.
 - 2026-05-13: se agregan `super_correos_masivos` y `super_correos_masivos_destinatarios` en `pcs_superadministrador` para auditar comunicados globales enviados por super administrador. La campana registra codigo, categoria, alcance, asunto, totales, estado, modo prueba, usuario creador y fechas; cada destinatario guarda email, tipo (`administrador` o `usuario_empresa`), empresa asociada cuando aplique, rol, resultado y error resumido.
 - 2026-05-13: se agrega `licencia_vencimiento_notificaciones` en `pcs_superadministrador` para registrar avisos de vencimiento enviados/capturados por licencia base o adicional, empresa, correo administrador, fecha de vencimiento y umbral de dias. La configuracion global vive en `configuraciones` con claves `licencias.vencimiento_alertas.*`.
 - 2026-05-04: se agregan `empresa_control_electrico_config`, `empresa_control_electrico_reles` y `empresa_control_electrico_eventos` para controlar reles GPIO en Raspberry Pi por estacion. La configuracion guarda conexion HTTP por empresa; los reles asignan estacion + `salida_codigo` + `tipo_carga` a GPIO y estado runtime; los eventos auditan comandos `on/off`, respuesta de la Raspberry, actor y origen.

@@ -1259,7 +1259,8 @@
       inventarioPlanReposicionRows: [],
       planReposicionProveedorFiltro: 0,
       planReposicionBorrador: null,
-      ultimaOrdenReposicion: null
+      ultimaOrdenReposicion: null,
+      currentProductoImageURL: ''
     };
 
     const productoCampoObligatorioDefs = [
@@ -1321,6 +1322,21 @@
         .replace(/>/g, '&gt;')
         .replace(/"/g, '&quot;')
         .replace(/'/g, '&#39;');
+    }
+
+    function promptDownloadPreviousAsset(url, label) {
+      const clean = String(url || '').trim();
+      if (!clean) return;
+      const shouldDownload = confirm('Este registro ya tiene ' + (label || 'un archivo') + ' cargado. Al subir uno nuevo, el anterior se eliminara del sistema. Deseas descargar el archivo anterior antes de reemplazarlo?');
+      if (!shouldDownload) return;
+      const a = document.createElement('a');
+      a.href = clean;
+      a.download = '';
+      a.target = '_blank';
+      a.rel = 'noopener';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
     }
 
     function num(v) {
@@ -2397,6 +2413,7 @@
       const printerAssignment = p ? getProductoPrinterAssignment(Number(p.id || 0)) : null;
       refreshProductoPrinterSelector(printerAssignment ? Number(printerAssignment.impresora_id || 0) : 0);
       document.getElementById('productoImagenURL').value = p ? (p.imagen_url || '') : '';
+      state.currentProductoImageURL = p ? (p.imagen_url || '') : '';
       document.getElementById('productoDescripcion').value = p ? (p.descripcion || '') : '';
       document.getElementById('productoObservaciones').value = p ? (p.observaciones || '') : '';
       document.getElementById('productoMotivoPrecio').value = '';
@@ -2500,6 +2517,7 @@
 
       const fileInput = document.getElementById('productoImagen');
       if (productoID > 0 && fileInput.files && fileInput.files.length > 0) {
+        promptDownloadPreviousAsset(state.currentProductoImageURL || document.getElementById('productoImagenURL').value, 'imagen de producto');
         const fd = new FormData();
         fd.append('empresa_id', String(empresaId));
         fd.append('producto_id', String(productoID));

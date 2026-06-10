@@ -91,6 +91,9 @@
           <p id="empresaInfo" class="form-help">Empresa: cargando...</p>
         </div>
         <div class="form-actions">
+          <a id="nominaTutorialPage" class="btn nomina-help-action" href="/administrar_empresa/nomina_tutorial.html">
+            Tutorial
+          </a>
           <a id="nominaHelpTutorial" class="btn secondary nomina-help-action" href="/ayuda/tutorial_nomina.html" target="_blank" rel="noopener" data-pcs-help-ai="1" data-help-page="Nomina y costo empresa" data-help-section="Nomina de sueldos" data-help-type="tutorial" data-help-detail="Guia para configurar parametros legales, empleados, festivos, liquidaciones, provisiones, pagos y preparacion de nomina electronica.">
             <span class="nomina-help-action-icon" aria-hidden="true">?</span>
             Ayuda
@@ -811,10 +814,11 @@
 
       function syncTutorialHelpLink() {
         const link = document.getElementById('nominaHelpTutorial');
-        if (!link) return;
+        const tutorial = document.getElementById('nominaTutorialPage');
         const params = new URLSearchParams();
         if (state.empresaID > 0) params.set('empresa_id', String(state.empresaID));
-        link.href = '/ayuda/tutorial_nomina.html' + (params.toString() ? '?' + params.toString() : '');
+        if (link) link.href = '/ayuda/tutorial_nomina.html' + (params.toString() ? '?' + params.toString() : '');
+        if (tutorial) tutorial.href = '/administrar_empresa/nomina_tutorial.html' + (params.toString() ? '?' + params.toString() : '');
       }
 
       function normalize(v) {

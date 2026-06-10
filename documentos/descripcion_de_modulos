@@ -1,3 +1,82 @@
+2026-06-10: Snapshot completo de VPS
+- Modulo afectado: `Docker y VPS` dentro de super administrador.
+- Configuracion: `web/super/docker_portabilidad.html` permite activar snapshots, definir intervalo automatico, retencion local, subida a nube por `rclone`, proveedor visual y limpieza remota.
+- Backend: `/super/api/vps_snapshots` exige rol `super_administrador`, queda envuelto en auditoria super y no acepta `empresa_id` porque es operacion global de infraestructura.
+- Contenido: proyecto portable sin secretos, dump logico PostgreSQL si esta disponible, volumenes Docker PCS, manifiesto, guia de restauracion y opcion manual para incluir imagenes Docker.
+- Seguridad: `.env.platform`, certificados, claves y uploads privados del paquete portable se excluyen por defecto; la ruta de descarga se valida para que solo pueda servir archivos dentro de `backup/vps_snapshots`.
+- Nube: PCS no guarda tokens de Google/Mega/OneDrive/S3; la autenticacion vive en la configuracion externa de `rclone` en la VPS.
+
+2026-06-10: Retencion de empresas con licencia vencida
+- Modulo afectado: `licencias` y `super_administrador`.
+- Configuracion: en `web/super/configuracion_avanzada.html`, la tarjeta de alertas de vencimiento incluye `Retencion de empresas vencidas` con activacion global, dias de espera, dias de preaviso, limite por ejecucion, vista previa y procesamiento manual.
+- Backend: `/super/api/licencias/vencimiento_alertas` expone `retencion_empresas`, acciones `retencion_preview` y `retencion_run_now`, y reporte reciente de `licencia_empresa_retencion_log`.
+- Operacion: el worker de vencimientos evalua empresas no operativas sin licencia base vigente; si corresponde, envia preaviso al administrador y solo elimina en una ejecucion posterior si el plazo ya se cumplio y el preaviso quedo registrado.
+- Reporte: las empresas preavisadas, errores y eliminaciones quedan en `licencia_empresa_retencion_log` usando `empresa_ref_id`, no `empresa_id`, para que la evidencia sobreviva al borrado total de la empresa.
+- Seguridad: no aplica a empresas activas/operativas, no borra por falta de correo y conserva aislamiento multiempresa mediante `DeleteEmpresaCascade` y limpieza de carpetas empresariales.
+
+2026-06-09: Transferencia de cuenta entre estaciones
+- Modulos afectados: `carritos`, `estaciones` y `configuracion_carrito`.
+- Configuracion: desde `Configuracion carrito` se activa el check `Visualizar boton Transferir cuenta`, guardado por empresa en `estaciones_config.carrito_ui_global.mostrar_boton_transferir_cuenta_carrito`, `permitir_transferir_cuenta_carrito` y `transferencia_cuenta_habilitada`.
+- Operacion: en `carrito_de_compras.html`, la barra de acciones muestra `Transferir cuenta` solo cuando la empresa lo habilita; el usuario elige mesa, habitacion o estacion destino y registra un motivo operativo.
+- Backend: el traslado se ejecuta por `/api/empresa/carritos_compra?action=transferir_estacion` o `transferir_cuenta`, siempre filtrado por `empresa_id`, usuario y permisos de estacion.
+- Validaciones: origen abierto/no pagado, destino disponible, destino diferente, carritos asociados a estacion y tarifa equivalente para flujos de motel/hotel.
+- Alcance: mueve items, abonos, cliente, descuentos, caja y estado de sesion; no duplica inventario, no crea ventas nuevas y deja el origen cerrado/en cero.
+
+2026-06-09: Powerful Control System con licencia comercial normal
+- Modulo afectado: `licencias`.
+- Alcance: la empresa interna/emisora Powerful Control System se sigue usando para emitir documentos de compra de licencias, pero su acceso propio ya no se sostiene con una licencia tecnica perpetua.
+- Comportamiento: una licencia heredada `PCS_SYSTEM_INTERNAL_PERPETUAL` activa se retira automaticamente; la empresa debe tener una licencia comercial vigente o queda bloqueada igual que cualquier empresa.
+
+2026-06-09: Factura electronica manual desde ventas con cliente
+- Modulos afectados: `ventas`, `facturacion_electronica` y `clientes`.
+- Ventas: el boton `Hacer factura electronica` abre un modal para seleccionar un cliente existente o crear un cliente rapido antes de generar la factura electronica desde el comprobante.
+- Facturacion electronica: el backend valida el cliente por `empresa_id`, lo asocia al documento origen y genera la factura electronica con fecha/hora fiscal nueva segun la preparacion legal del documento.
+- Alcance: no modifica el valor de la venta, pagos, inventario ni total; solo crea/asocia el documento fiscal derivado y permite enviar correo al cliente.
+
+2026-06-09: Campo adicional configurable en recibo de venta
+- Modulos afectados: `configuracion_impresora`, `carritos` y `ventas`.
+- Configuracion: el panel `Documento de venta e impresion` permite activar un campo adicional para el recibo operativo, editar su etiqueta, valor y descripcion, y decidir con checks si se imprime el campo y si se imprime la descripcion.
+- Recibo: el carrito agrega ese dato al recibo impreso como informacion operativa no fiscal; no participa en total, pagos, impuestos, inventario, XML DIAN ni contabilidad.
+- Persistencia: se reutiliza `empresa_configuracion_avanzada.impresion_recibo_items_json` por `empresa_id`, sin tablas nuevas.
+
+2026-06-09: Produccion local DIAN con control unico
+- Modulo afectado: `facturacion_electronica`.
+- Frontend: en `facturacion_electronica_pruebas_dian.html` se elimina el boton repetido `Activar produccion local y emitir real`; la activacion se realiza desde el check explicativo `DIAN ya habilito esta empresa para produccion`.
+- UX: el check pide confirmacion antes de enviar la activacion y vuelve a desmarcarse si el usuario cancela o si el backend rechaza la solicitud.
+- Alcance: no cambia backend, endpoint, permisos, datos DIAN ni aislamiento por empresa.
+
+2026-06-09: Centro DIAN sin titulo superior visible
+- Modulo afectado: `facturacion_electronica`.
+- Frontend: el centro de habilitacion DIAN retira el H1 visible de pagina y ajusta el padding superior para que la tarjeta `Estado del centro DIAN` quede como primer elemento operativo.
+- Alcance: mejora de presentacion sin cambios de API, permisos, DIAN ni persistencia por empresa.
+
+2026-06-09: Estado DIAN compacto en centro de habilitacion
+- Modulo afectado: `facturacion_electronica`.
+- Frontend: los indicadores superiores de `facturacion_electronica_pruebas_dian.html` muestran Ambiente, Estado DIAN, TestSetId y Rango en cuadros mas compactos, con texto menor y lectura estable para identificadores largos.
+- Alcance: mejora visual sin cambios de API, almacenamiento, envio DIAN ni aislamiento por empresa.
+
+2026-06-09: Modo POS tactil por empresa.
+- Modulos afectados: `carritos`, `estaciones`, `corte_de_caja`, `configuracion_carrito` y `frontend_ux`.
+- Cambio funcional: la empresa puede activar un modo POS tactil unico desde `Configuracion carrito`; el valor se guarda en `estaciones_config.carrito_ui_global.modo_pantalla_tactil`.
+- Carrito y venta directa: al estar activo, botones, campos, descuentos, taxi, pagos mixtos, cliente, busqueda de productos y acciones principales reciben objetivos tactiles mas grandes sin cambiar pagos, stock ni facturacion.
+- Catalogo por botones: el carrito envia `touch=1` y la pagina de productos aplica la misma ergonomia para agregar items en tablet, monitor POS o pantalla tactil.
+- Estaciones: el tablero aplica tarjetas y especiales tactiles usando la misma preferencia global, manteniendo filtros por cajero, portero y servicio de limpieza.
+- Corte de caja: la pantalla lee la preferencia de la empresa y agranda generar corte, reporte mi turno, corte automatico, cerrar/imprimir e impresion seleccionada.
+- Arquitectura: no agrega endpoints, tablas, dependencias ni permisos; reutiliza `/api/empresa/estacion_prefs`, conserva `empresa_id` y preserva campos desconocidos del JSON para no romper configuraciones futuras.
+
+2026-06-09: Imagenes profesionales para Mas sistemas en index.
+- Modulo afectado: `Portal publico e index`.
+- Frontend: `web/index.html` enlaza una imagen secundaria unica para cada tarjeta base del carrusel `Mas sistemas`, `web/js/plantillas_nuevas_catalogo.js` hace lo mismo con las plantillas verticales publicas y el render deja de reutilizar la misma foto de punto de venta.
+- Assets: `web/img/portal-systems/` contiene 46 ilustraciones SVG nuevas, generadas por titulo y proposito operativo de cada tarjeta.
+- Alcance: no cambia APIs, permisos, base de datos ni contenido dinamico del super; el fallback estatico del portal queda mas coherente visualmente.
+
+2026-06-09: Correo de bienvenida de licencias con factura electronica y descarga separada.
+- Modulos afectados: `licencias`, `pagos`, `facturacion_electronica`, `super_administrador` y `mensajeria_super`.
+- Cambio funcional: al aprobarse una compra de licencia, PCS puede enviar un correo de bienvenida al cliente y adjuntar la factura electronica PDF emitida por la empresa interna Powerful Control System; la licencia del software ya no se adjunta por correo.
+- Descarga: la licencia queda disponible solo desde Administrar empresa > Licencia > Licencia del sistema, usando `/api/empresa/licencia_sistema/pdf` y la plantilla `licencia_software_pdf`.
+- Super administrador: `web/super/licencias.html` permite activar/desactivar correo de bienvenida, emision automatica de factura electronica y adjunto PDF de factura; `web/super/formato_para_emviar_email.html` expone el texto configurable del correo.
+- Seguridad: no se agregan dependencias, no se imprimen secretos, se conserva idempotencia de pagos y los documentos/facturas siguen aislados por `empresa_id`.
+
 2026-06-09: Impresoras por empresa con cola para agente local
 - Modulo afectado: `configuracion_impresora`.
 - Backend: `empresa_impresoras.go` agrega `empresa_impresoras_cola` y operaciones para crear trabajos, listarlos, tomarlos por `agente_id`/`estacion_id`, marcarlos impresos/error y reintentarlos, siempre por `empresa_id`.
@@ -130,6 +209,22 @@
 - Frontend: `web/administrar_empresa/suite_contador.html` usa variables de tema, tarjetas compactas, acciones con iconos textuales y estados visuales consistentes para modulos disponibles o bloqueados.
 - Responsive: escritorio/tablet sin scroll horizontal; en movil la grilla pasa a una columna y el boton de apertura ocupa el ancho disponible.
 - Seguridad/alcance: no cambia permisos, endpoints, datos ni rutas; cada enlace conserva `empresa_id` y cada destino mantiene su wrapper.
+
+2026-06-09: IA empresarial activa sin robot ni secretaria
+
+- Frontend: el asistente IA del panel empresarial usa solo el recuadro normal;
+  los accesos historicos de robot/secretaria se redirigen al drawer para no
+  romper ayuda contextual ni configuracion guiada.
+- Configuracion: `configuracion_chat_flotante.html` permite activar/desactivar
+  IA por empresa, emisora online y modo voz; ya no muestra tarjetas de avatar.
+- Backend: `/api/chat_flotante/preferencias` responde siempre
+  `robot_enabled=false` y `personality_mode=normal`, incluso ante caches viejas.
+- Preconfiguracion: empresas existentes y plantillas por tipo quedan con chat IA
+  activo por defecto en preproduccion y emisora apagada salvo preferencia.
+- Seguridad IA: las respuestas pueden proponer `PCS_ACTION` solo contra endpoints
+  permitidos y confirmables; no se habilita SQL libre ni mutaciones sin wrapper.
+- Permisos: `linkChatIA` y `linkCentroIAEmpresarial` dejan de estar ocultos por
+  default, pero siguen sujetos a rol, licencia y permisos efectivos.
 
 2026-06-07: Ayuda integrada con robot/caja IA
 - Modulos afectados: `ayuda`, `chat_flotante`, `robot_ia`, `nomina_sueldos` y paginas empresariales en iframe.
@@ -320,13 +415,13 @@
 2026-06-04: Licencias comerciales con factura electronica de Powerful Control System
 - Modulos afectados: `licencias`, `pagos`, `facturacion_electronica`, `mensajeria_super`.
 - Cambio funcional: cuando una licencia comercial queda pagada/aprobada con valor mayor que cero, el sistema emite automaticamente una factura electronica desde la empresa interna `Powerful Control System` y la envia al correo del cliente comprador.
-- Backend: `backend/db/licencias_empresa_sistema.go` resuelve la empresa interna existente, incluyendo la variante historica `Powerful Control Systen`, y asegura una licencia tecnica de 100 anos con fecha fin, limites altos y modulos completos. `backend/handlers/payments_handlers.go` conecta Epayco, Wompi y activacion manual con el flujo de facturacion electronica ya existente.
+- Backend: `backend/db/licencias_empresa_sistema.go` resuelve la empresa interna existente, incluyendo la variante historica `Powerful Control Systen`, y guarda su `empresa_id` como emisora. Desde 2026-06-09 ya no asegura licencia tecnica interna; si el codigo heredado existe activo, se retira. `backend/handlers/payments_handlers.go` conecta Epayco, Wompi y activacion manual con el flujo de facturacion electronica ya existente.
 - Persistencia: `configuraciones.licencias.facturacion_empresa_sistema_id` guarda la empresa emisora; `pagos_epayco` y `pagos_wompi` marcan `licencia_factura_electronica_emitida` en `raw_payload` para idempotencia; `empresa_facturacion_documentos` guarda la factura bajo el `empresa_id` de la emisora interna.
 - Seguridad: no se crean facturas para licencias de valor cero; los documentos usan la configuracion fiscal real de la empresa interna y no inventan credenciales DIAN. Si falta configuracion legal, el documento queda pendiente para reintento sin duplicar. La empresa interna debe cargar carrito, correo corporativo, configuracion y reportes como cualquier empresa.
 
-2026-06-05: Licencia interna normalizada para Powerful Control System
+2026-06-05: Licencia interna normalizada para Powerful Control System (reemplazada el 2026-06-09)
 - Modulos afectados: `licencias`, `carritos`, `email_corporativo`, `portal_publico`, `documentacion`.
-- Cambio funcional: `Powerful Control System` deja de depender de una licencia tecnica sin fecha de fin y queda con una licencia interna fechada a 100 anos, valor cero, limites altos y todos los modulos empresariales actuales.
+- Cambio funcional vigente: `Powerful Control System` deja de depender de una licencia tecnica sin fecha de fin y, desde 2026-06-09, tambien deja de usar la licencia interna fechada. Debe tener licencia comercial activa como cualquier empresa.
 - Portal publico: el respaldo editable de `Modulos y caracteristicas principales` agrega GRAFOLOGIX y Camaras/DVR, y completa esos modulos si existe una configuracion antigua en base.
 - Licencias: las consultas PostgreSQL de licencias vigentes/vencidas toleran fechas heredadas vacias o no fechables para evitar que registros antiguos bloqueen permisos empresariales, carrito, correo corporativo o reportes.
 - Permisos: el rol `super_administrador` validado en backend puede operar globalmente para soporte y gobierno del sistema, conservando aislamiento por `empresa_id` en handlers y SQL.
@@ -404,7 +499,7 @@
 - Modulos afectados: `licencias`, `administrar_empresa`, `permisos_empresa` y `mensajeria_super`.
 - Cambio funcional: Administrar empresa incorpora el grupo principal `Licencia` con la pagina `Licencia del sistema`.
 - Descarga: el boton `Descargar licencia PDF` usa `/api/empresa/licencia_sistema/pdf` y genera el documento con la licencia activa de esa empresa.
-- Configuracion: el contenido legal del PDF se edita desde Super administrador > Formatos de email, plantilla `licencia_software_pdf`, compartida con el PDF adjunto al correo de activacion.
+- Configuracion: el contenido legal del PDF se edita desde Super administrador > Formatos de email, plantilla `licencia_software_pdf`; el PDF se descarga desde la empresa y ya no se adjunta al correo de bienvenida.
 - Seguridad: el endpoint queda asociado a `linkLicenciaSistema` y al alcance efectivo de `empresa_id`.
 
 2026-05-31: Catalogo base de roles empresariales comunes
@@ -464,9 +559,9 @@
 
 2026-05-30: Licencias globales compartidas
 - Modulos afectados: `licencias`, `checkout_licencias`, `super_administrador`, `plantillas`.
-- Cambio funcional: el catalogo base queda reducido a cuatro planes globales para todos los tipos de empresa: prueba gratis 15 dias, 1000 documentos, 2000 documentos y 4000 documentos.
+- Cambio funcional: el catalogo base queda normalizado en siete planes globales para todos los tipos de empresa: prueba gratis 15 dias, mensuales de 1000, 2000 y 4000 documentos, y anuales de 12000, 24000 y 36000 documentos.
 - Backend: `EnsureLicenciasSchema` asegura esos planes con `tipo_id=0` y `pais_codigo=GLOBAL`; los bootstraps de nuevos tipos y plantillas dejan de crear planes repetidos por tipo y ocultan licencias base heredadas no asignadas.
-- UX: `web/super/licencias.html` agrega una tarjeta de reglas comerciales donde se deja visible que la prueba de 15 dias solo se aplica una vez por empresa, y `web/elegir_licencia.html` muestra los planes globales para cualquier tipo.
+- UX: `web/super/licencias.html` agrega una tarjeta de reglas comerciales donde se deja visible que la prueba de 15 dias solo se aplica una vez por empresa y permite configurar cuantas compras adelantadas de la misma licencia se permiten, por defecto 2.
 - Seguridad/datos: las licencias ya asignadas a empresas no se eliminan; solo se oculta el catalogo base legado. El bloqueo de prueba gratis por empresa sigue en `licencias_activaciones_gratis`.
 
 2026-05-30: Informacion de contacto corporativa
@@ -1030,7 +1125,7 @@
 - Modulos afectados: `facturacion`, `ventas`, `documentos`, `corte_de_caja`, `reportes`, `frontend_ux`.
 - Facturas, ventas, notas, documentos imprimibles y reportes de turno/corte quedan visualmente independientes del modo claro u oscuro del panel.
 - Las vistas previas y paginas de impresion usan papel blanco, texto negro/gris, bordes simples y sin sombras, para coincidir con lo que saldra en la hoja o ticket POS.
-- Se conserva la configuracion existente de logo empresarial y logo del sistema para facturas, recibos, reportes y documentos; ventas y facturas esperan la configuracion avanzada antes de pintar la primera vista previa, y los logos se muestran en escala de grises en documentos imprimibles.
+- Se conserva la configuracion existente de logo corporativo, logo de factura y logo del sistema; ventas y facturas esperan la configuracion avanzada antes de pintar la primera vista previa, y los logos se muestran en escala de grises en documentos imprimibles.
 - Sin cambios de backend, endpoints, permisos ni tablas.
 
 2026-05-19: Legibilidad POS reporte de turno.
@@ -1577,7 +1672,7 @@
 - Modulos afectados: `administrar_empresa`, `configuracion_empresa`, `carritos`, `facturacion`, `reportes`.
 - Cambio funcional: Motel Calipso (`empresa_id=7`) y Gimnasio el bollon (`empresa_id=32`) quedan con logos propios cargados y activados desde `empresa_configuracion_avanzada`.
 - Activos: los SVG viven en `web/uploads/empresa_logos/empresa_7/motel-calipso-logo.svg` y `web/uploads/empresa_logos/empresa_32/gimnasio-el-bollon-logo.svg`.
-- Alcance: no cambia backend, base de datos estructural, permisos ni dependencias; reutiliza `logo_url`, `mostrar_logo` y `mostrar_logo_empresa`.
+- Alcance: no cambia backend, base de datos estructural, permisos ni dependencias; esos activos quedan como historicos de logo corporativo. La configuracion vigente separa `logo_url` como logo corporativo y `logo_factura_url` como logo de factura.
 
 2026-05-13: Indicadores economicos moviles completos
 - Modulos afectados: `administrar_empresa`, `panel_empresarial`.
@@ -3701,7 +3796,7 @@ Criterio de esta guia:
 2026-05-12: Identidad visual empresarial
 - Modulos afectados: `administrar_empresa`, `configuracion`, `facturacion/documentos`, `seguridad y permisos`.
 - Cambio funcional: Configuracion empresarial expone una seccion visible para cargar o pegar el logo de la empresa; el panel principal lo muestra encima del titulo de empresa sin modificar la tarjeta de clima.
-- Fuente unica: el logo se guarda en `empresa_configuracion_avanzada.logo_url`; `mostrar_logo_empresa` y `mostrar_logo_sistema` controlan de forma separada si facturas, recibos, reportes y documentos imprimibles muestran el logo empresarial, el logo del sistema o ambos. `mostrar_logo` queda como compatibilidad de visibilidad general.
+- Configuracion vigente: `empresa_configuracion_avanzada.logo_url` guarda el logo corporativo; `logo_factura_url` guarda el logo especifico de factura. `mostrar_logo_empresa`, `mostrar_logo_factura` y `mostrar_logo_sistema` controlan cada visibilidad; `mostrar_logo` queda como compatibilidad de visibilidad general.
 - Seguridad: la carga usa `/api/empresa/configuracion_avanzada/logo` bajo `WithEmpresaSeguridadPermissions` y conserva aislamiento por `empresa_id`.
 
 27) Ventas simples por estacion
@@ -3960,3 +4055,29 @@ Captura inteligente de compras y gastos
   fallback a `control_electrico` o `seguridad` para compatibilidad.
 - Seguridad: URLs web bloquean esquemas `javascript:`/`data:` y el backend exige
   `empresa_id` en consulta, actualizacion y baja.
+2026-06-09: Gobierno IA super administrador profesional
+- Modulos afectados: Super administrador, IA global, configuracion avanzada.
+- Frontend: `web/super/configuracion/ia_global.html` deja de ser una pagina minima y queda como centro de gobierno con resumen de seguridad, enlaces a limites/contexto/voz y panel operativo real.
+- Frontend: `web/super/configuracion_avanzada.html` remodela `aiConfigCard` para mostrar servicio global, proveedor OpenAI, credencial cifrada, modelos conectados, consumo, prueba backend y politica de seguridad.
+- Seguridad: sin cambios de endpoints ni tablas; se conserva `/super/api/config/ai`, cifrado obligatorio de credenciales, auditoria UI y ausencia de SQL libre/secretos para la IA.
+- UX: se retiran textos de robot/secretaria de la configuracion de contexto y se mantiene el contrato de recuadro normal con boton flotante circular.
+2026-06-09 - Modulo Nomina: tutorial operativo
+- El modulo de nomina incorpora la pagina interna `web/administrar_empresa/nomina_tutorial.html` para que el administrador tenga una guia empresarial antes de liquidar y antes de preparar nomina electronica DIAN.
+- La guia cubre parametros legales, configuracion de nomina, empleados, novedades/asistencia, calculo del periodo, pagos, PILA, checklist DIAN, errores frecuentes y enlaces oficiales.
+- La pagina se abre desde el boton `Tutorial` de `web/administrar_empresa/nomina_sueldos.html`, mantiene `empresa_id` y no modifica endpoints ni datos.
+
+2026-06-09 - Licencias: pasarelas por pais de empresa
+- Modulos afectados: `licencias`, `pagos`, `super_administrador`, `configuracion_avanzada`.
+- Cambio funcional: el checkout publico de licencias resuelve el pais desde `empresa_configuracion_avanzada`, perfil de facturacion electronica o licencia activa antes de usar navegador/parametros.
+- Colombia queda con ePayco y Wompi como pasarelas disponibles por defecto cuando sus credenciales globales esten configuradas; otros paises no heredan esas pasarelas salvo habilitacion explicita en super administrador.
+- Seguridad: `/epayco/create_transaction` y `/wompi/create_checkout` validan nuevamente el pais por `empresa_id` antes de crear el cobro, evitando que un cliente fuerce una pasarela no permitida desde el frontend.
+
+2026-06-09 - Facturacion electronica: selector de pais solo en menu
+- Modulos afectados: `facturacion_electronica`, `facturacion_pais`.
+- Cambio funcional: se retira de la pagina principal la tarjeta visible `Selector fiscal`; el selector interno queda oculto solo para mantener estado y compatibilidad con la carga por pais.
+- UX: el menu lateral `facturacion_electronica_menu.html` conserva la deteccion automatica del pais de la empresa, muestra la fuente de deteccion y mantiene el selector para cambiar manualmente entre paises.
+
+2026-06-09 - Facturacion electronica: retirada de asistente DIAN con capturas
+- Modulos afectados: `facturacion_electronica`, `DIAN Colombia`.
+- Cambio funcional: se elimina de `web/administrar_empresa/facturacion_electronica.html` la tarjeta `Asistente DIAN con capturas`, incluyendo carga de imagen, analisis OCR/IA y aplicacion de campos detectados.
+- UX: la configuracion DIAN queda centrada en los formularios manuales, carga de firma, documentos electronicos, tutorial y centro de habilitacion DIAN.

@@ -2584,6 +2584,7 @@ func activateLicenciaForEmpresaTx(tx *sql.Tx, licenciaID, empresaID int64, fecha
 	var maxDocumentosMensuales sql.NullInt64
 	var maxCajasSimultaneas sql.NullInt64
 	var modulosHabilitados sql.NullString
+	var codigoFuncion sql.NullString
 	var superRol sql.NullInt64
 	var usuarioCreador sql.NullString
 	var observaciones sql.NullString
@@ -2600,6 +2601,7 @@ func activateLicenciaForEmpresaTx(tx *sql.Tx, licenciaID, empresaID int64, fecha
 		COALESCE(max_documentos_mensuales, 0),
 		COALESCE(max_cajas_simultaneas, 0),
 		COALESCE(modulos_habilitados, ''),
+		COALESCE(codigo_funcion, ''),
 		COALESCE(super_rol_habilitado, 0),
 		COALESCE(usuario_creador, ''),
 		COALESCE(observaciones, ''),
@@ -2618,6 +2620,7 @@ func activateLicenciaForEmpresaTx(tx *sql.Tx, licenciaID, empresaID int64, fecha
 		&maxDocumentosMensuales,
 		&maxCajasSimultaneas,
 		&modulosHabilitados,
+		&codigoFuncion,
 		&superRol,
 		&usuarioCreador,
 		&observaciones,
@@ -2669,6 +2672,7 @@ func activateLicenciaForEmpresaTx(tx *sql.Tx, licenciaID, empresaID int64, fecha
 		max_documentos_mensuales,
 		max_cajas_simultaneas,
 		modulos_habilitados,
+		codigo_funcion,
 		super_rol_habilitado,
 		fecha_inicio,
 		fecha_fin,
@@ -2678,7 +2682,7 @@ func activateLicenciaForEmpresaTx(tx *sql.Tx, licenciaID, empresaID int64, fecha
 		usuario_creador,
 		estado,
 		observaciones
-	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, `+nowExpr+`, `+nowExpr+`, ?, 'activo', ?)`,
+	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, `+nowExpr+`, `+nowExpr+`, ?, 'activo', ?)`,
 		empresaID,
 		tipoID.Int64,
 		strings.TrimSpace(paisCodigo.String),
@@ -2689,6 +2693,7 @@ func activateLicenciaForEmpresaTx(tx *sql.Tx, licenciaID, empresaID int64, fecha
 		int(maxDocumentosMensuales.Int64),
 		int(maxCajasSimultaneas.Int64),
 		modulosHabilitados.String,
+		strings.TrimSpace(codigoFuncion.String),
 		int(superRol.Int64),
 		stackedInicio,
 		stackedFin,

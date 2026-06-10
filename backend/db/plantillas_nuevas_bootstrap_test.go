@@ -20,8 +20,8 @@ func TestDefaultNuevoVerticalLicenciaPlans(t *testing.T) {
 				t.Fatalf("observaciones derivadas invalidas: %q", item.Observaciones)
 			}
 			plans := DefaultNuevoVerticalLicenciaPlans(item)
-			if len(plans) != 4 {
-				t.Fatalf("expected 4 plans, got %d", len(plans))
+			if len(plans) != 7 {
+				t.Fatalf("expected 7 plans, got %d", len(plans))
 			}
 			if plans[0].DuracionDias != 15 || plans[0].MaxDocumentosMensuales != 250 || plans[0].Valor != 0 {
 				t.Fatalf("trial plan mismatch: %+v", plans[0])
@@ -29,8 +29,11 @@ func TestDefaultNuevoVerticalLicenciaPlans(t *testing.T) {
 			if !strings.Contains(plans[0].ModulosHabilitados, item.Modulo) {
 				t.Fatalf("modules %q missing %s", plans[0].ModulosHabilitados, item.Modulo)
 			}
-			if plans[3].Nombre != "Plan mensual COP 150000" || plans[3].MaxDocumentosMensuales != 4000 || plans[3].Valor != 150000 {
-				t.Fatalf("plan COP 150000 mismatch: %+v", plans[3])
+			if plans[3].Nombre != "Plan mensual COP 200000" || plans[3].MaxDocumentosMensuales != 4000 || plans[3].Valor != 200000 {
+				t.Fatalf("plan COP 200000 mismatch: %+v", plans[3])
+			}
+			if plans[6].Nombre != "Plan anual COP 2200000" || plans[6].MaxDocumentosMensuales != 36000 || plans[6].DuracionDias != 365 {
+				t.Fatalf("plan anual COP 2200000 mismatch: %+v", plans[6])
 			}
 		})
 	}
@@ -48,8 +51,8 @@ func TestNuevasPlantillasProduccionMasivaLicenciasRecomendadas(t *testing.T) {
 				t.Fatalf("plantilla %s no existe en catalogo", modulo)
 			}
 			plans := DefaultNuevoVerticalLicenciaPlans(item)
-			if len(plans) != 4 {
-				t.Fatalf("planes %s len=%d want 4", modulo, len(plans))
+			if len(plans) != 7 {
+				t.Fatalf("planes %s len=%d want 7", modulo, len(plans))
 			}
 			for _, plan := range plans {
 				modules := strings.Split(plan.ModulosHabilitados, ",")

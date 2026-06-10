@@ -285,6 +285,89 @@
       color: var(--docker-text);
     }
 
+    .docker-form-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 12px;
+    }
+
+    .docker-field {
+      display: grid;
+      gap: 6px;
+    }
+
+    .docker-field label,
+    .docker-check {
+      color: var(--docker-muted);
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .docker-input,
+    .docker-select {
+      min-height: 38px;
+      border: 1px solid var(--docker-line);
+      border-radius: 8px;
+      background: var(--docker-soft);
+      color: var(--docker-text);
+      padding: 0 10px;
+      font: inherit;
+      font-size: 13px;
+      box-sizing: border-box;
+      width: 100%;
+    }
+
+    .docker-check {
+      min-height: 38px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      border: 1px solid var(--docker-line);
+      border-radius: 8px;
+      background: var(--docker-soft);
+      padding: 0 10px;
+      color: var(--docker-text);
+    }
+
+    .docker-table-wrap {
+      overflow: auto;
+      margin-top: 12px;
+      border: 1px solid var(--docker-line);
+      border-radius: 8px;
+    }
+
+    .docker-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+      color: var(--docker-text);
+      min-width: 760px;
+    }
+
+    .docker-table th,
+    .docker-table td {
+      padding: 9px 10px;
+      border-bottom: 1px solid var(--docker-line);
+      text-align: left;
+      vertical-align: top;
+    }
+
+    .docker-table th {
+      color: var(--docker-muted);
+      background: var(--docker-soft);
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+    }
+
+    .docker-msg {
+      margin-top: 10px;
+      color: var(--docker-muted);
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
     @media (max-width: 980px) {
       .docker-header {
         display: grid;
@@ -293,7 +376,8 @@
         justify-content: flex-start;
       }
       .docker-grid,
-      .docker-main-grid {
+      .docker-main-grid,
+      .docker-form-grid {
         grid-template-columns: 1fr;
       }
       .docker-row {
@@ -380,6 +464,97 @@
           <div class="docker-list" id="excludedPolicy"></div>
         </article>
       </section>
+
+      <section class="docker-card" id="vpsSnapshotCard">
+        <h2>Snapshot completo VPS</h2>
+        <p>Genera una copia operativa restaurable con proyecto portable, dump de PostgreSQL, volumenes Docker, manifiesto y, opcionalmente, imagenes de contenedores. La subida a Google Drive, Mega, OneDrive o S3 se realiza mediante un remoto de <span class="docker-code">rclone</span> configurado previamente en la VPS.</p>
+
+        <div class="docker-grid" aria-label="Estado snapshot VPS" style="margin-top:12px">
+          <article class="docker-card docker-kpi">
+            <span>Snapshot</span>
+            <strong id="snapshotEnabledLabel">Cargando...</strong>
+          </article>
+          <article class="docker-card docker-kpi">
+            <span>Automatico</span>
+            <strong id="snapshotAutoLabel">-</strong>
+          </article>
+          <article class="docker-card docker-kpi">
+            <span>Nube</span>
+            <strong id="snapshotCloudLabel">-</strong>
+          </article>
+          <article class="docker-card docker-kpi">
+            <span>Herramientas</span>
+            <strong id="snapshotToolsLabel">-</strong>
+          </article>
+        </div>
+
+        <div class="docker-form-grid">
+          <label class="docker-check"><input id="snapshotEnabled" type="checkbox"> Habilitar snapshots VPS</label>
+          <label class="docker-check"><input id="snapshotAutoEnabled" type="checkbox"> Ejecutar automatico</label>
+          <label class="docker-check"><input id="snapshotDeleteOldLocal" type="checkbox"> Eliminar copias locales antiguas</label>
+          <div class="docker-field">
+            <label for="snapshotIntervalHours">Cada cuantas horas</label>
+            <input id="snapshotIntervalHours" class="docker-input" type="number" min="1" max="720" step="1" placeholder="24">
+          </div>
+          <div class="docker-field">
+            <label for="snapshotRetentionDays">Retencion dias</label>
+            <input id="snapshotRetentionDays" class="docker-input" type="number" min="1" max="3650" step="1" placeholder="14">
+          </div>
+          <label class="docker-check"><input id="snapshotIncludeImages" type="checkbox"> Incluir imagenes Docker</label>
+        </div>
+
+        <div class="docker-form-grid">
+          <label class="docker-check"><input id="snapshotCloudEnabled" type="checkbox"> Subir automaticamente a nube</label>
+          <div class="docker-field">
+            <label for="snapshotCloudProvider">Destino</label>
+            <select id="snapshotCloudProvider" class="docker-select">
+              <option value="rclone">rclone generico</option>
+              <option value="google_drive">Google Drive</option>
+              <option value="mega">Mega</option>
+              <option value="onedrive">OneDrive</option>
+              <option value="s3">S3 compatible</option>
+            </select>
+          </div>
+          <div class="docker-field">
+            <label for="snapshotRcloneRemotePath">Ruta rclone</label>
+            <input id="snapshotRcloneRemotePath" class="docker-input" type="text" placeholder="gdrive:PCS/backups">
+          </div>
+          <label class="docker-check"><input id="snapshotDeleteOldCloud" type="checkbox"> Eliminar copias viejas en nube</label>
+          <label class="docker-check"><input id="snapshotIncludePostgres" type="checkbox"> Incluir PostgreSQL</label>
+          <label class="docker-check"><input id="snapshotIncludeVolumes" type="checkbox"> Incluir volumenes/archivos</label>
+        </div>
+
+        <div class="docker-actions" style="justify-content:flex-start;margin-top:12px">
+          <button id="saveSnapshotConfigBtn" class="docker-btn primary" type="button">Guardar configuracion snapshot</button>
+          <button id="createSnapshotBtn" class="docker-btn" type="button">Crear y descargar snapshot</button>
+          <button id="createUploadSnapshotBtn" class="docker-btn" type="button">Crear y subir a nube</button>
+          <button id="refreshSnapshotBtn" class="docker-btn" type="button">Refrescar historial</button>
+        </div>
+        <div id="snapshotMsg" class="docker-msg"></div>
+
+        <div class="docker-alert" style="margin-top:12px">
+          <strong>Nota de seguridad:</strong> por defecto no se incluye <span class="docker-code">deploy/.env.platform</span>. Si algun dia necesitas respaldar secretos, hazlo manualmente en un medio privado; no lo subas a nubes compartidas sin cifrado externo.
+        </div>
+
+        <div class="docker-table-wrap">
+          <table class="docker-table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Codigo</th>
+                <th>Estado</th>
+                <th>Tamano</th>
+                <th>Nube</th>
+                <th>Creacion</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="snapshotHistoryBody">
+              <tr><td colspan="7">Sin snapshots registrados.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
     </section>
   </main>
 
@@ -439,6 +614,143 @@
           });
         }).join(" | ");
       }
+      function formatSnapshotBytes(bytes) {
+        var n = Number(bytes || 0);
+        if (!isFinite(n) || n <= 0) return "0 B";
+        var units = ["B", "KB", "MB", "GB", "TB"];
+        var i = 0;
+        while (n >= 1024 && i < units.length - 1) {
+          n = n / 1024;
+          i += 1;
+        }
+        return n.toFixed(i === 0 ? 0 : 2) + " " + units[i];
+      }
+      function escapeHtml(value) {
+        return String(value == null ? "" : value).replace(/[<>&"']/g, function (ch) {
+          return ({ "<": "&lt;", ">": "&gt;", "&": "&amp;", "\"": "&quot;", "'": "&#39;" })[ch] || ch;
+        });
+      }
+      function setSnapshotMsg(textValue) {
+        var el = $("snapshotMsg");
+        if (el) el.textContent = textValue || "";
+      }
+      function snapshotPayloadFromForm() {
+        return {
+          enabled: !!($("snapshotEnabled") && $("snapshotEnabled").checked),
+          auto_enabled: !!($("snapshotAutoEnabled") && $("snapshotAutoEnabled").checked),
+          interval_hours: Number(($("snapshotIntervalHours") && $("snapshotIntervalHours").value) || 24),
+          retention_days: Number(($("snapshotRetentionDays") && $("snapshotRetentionDays").value) || 14),
+          delete_old_local: !!($("snapshotDeleteOldLocal") && $("snapshotDeleteOldLocal").checked),
+          cloud_enabled: !!($("snapshotCloudEnabled") && $("snapshotCloudEnabled").checked),
+          cloud_provider: ($("snapshotCloudProvider") && $("snapshotCloudProvider").value) || "rclone",
+          rclone_remote_path: (($("snapshotRcloneRemotePath") && $("snapshotRcloneRemotePath").value) || "").trim(),
+          delete_old_cloud: !!($("snapshotDeleteOldCloud") && $("snapshotDeleteOldCloud").checked),
+          include_project: true,
+          include_postgres: !!($("snapshotIncludePostgres") && $("snapshotIncludePostgres").checked),
+          include_volumes: !!($("snapshotIncludeVolumes") && $("snapshotIncludeVolumes").checked),
+          include_docker_images: !!($("snapshotIncludeImages") && $("snapshotIncludeImages").checked)
+        };
+      }
+      function renderSnapshotStatus(config) {
+        config = config || {};
+        text("snapshotEnabledLabel", config.enabled ? "Activo" : "Apagado");
+        text("snapshotAutoLabel", config.auto_enabled ? ("Cada " + (config.interval_hours || 24) + " h") : "Manual");
+        text("snapshotCloudLabel", config.cloud_enabled ? (config.cloud_provider + " / " + (config.rclone_remote_path || "sin ruta")) : "Sin nube");
+        text("snapshotToolsLabel", "Docker " + (config.docker_available ? "ok" : "no") + " / rclone " + (config.rclone_available ? "ok" : "no"));
+        if ($("snapshotEnabled")) $("snapshotEnabled").checked = !!config.enabled;
+        if ($("snapshotAutoEnabled")) $("snapshotAutoEnabled").checked = !!config.auto_enabled;
+        if ($("snapshotIntervalHours")) $("snapshotIntervalHours").value = config.interval_hours || 24;
+        if ($("snapshotRetentionDays")) $("snapshotRetentionDays").value = config.retention_days || 14;
+        if ($("snapshotDeleteOldLocal")) $("snapshotDeleteOldLocal").checked = !!config.delete_old_local;
+        if ($("snapshotCloudEnabled")) $("snapshotCloudEnabled").checked = !!config.cloud_enabled;
+        if ($("snapshotCloudProvider")) $("snapshotCloudProvider").value = config.cloud_provider || "rclone";
+        if ($("snapshotRcloneRemotePath")) $("snapshotRcloneRemotePath").value = config.rclone_remote_path || "";
+        if ($("snapshotDeleteOldCloud")) $("snapshotDeleteOldCloud").checked = !!config.delete_old_cloud;
+        if ($("snapshotIncludePostgres")) $("snapshotIncludePostgres").checked = config.include_postgres !== false;
+        if ($("snapshotIncludeVolumes")) $("snapshotIncludeVolumes").checked = config.include_volumes !== false;
+        if ($("snapshotIncludeImages")) $("snapshotIncludeImages").checked = !!config.include_docker_images;
+      }
+      function renderSnapshotHistory(items) {
+        var body = $("snapshotHistoryBody");
+        if (!body) return;
+        var list = Array.isArray(items) ? items : [];
+        if (!list.length) {
+          body.innerHTML = '<tr><td colspan="7">Sin snapshots registrados.</td></tr>';
+          return;
+        }
+        body.innerHTML = list.map(function (item) {
+          var cloud = item.cloud_estado ? (item.cloud_estado + (item.cloud_destino ? " / " + item.cloud_destino : "")) : "-";
+          var download = item.estado === "completado"
+            ? '<a class="docker-btn" href="/super/api/vps_snapshots?action=download&id=' + encodeURIComponent(item.id) + '">Descargar</a>'
+            : "-";
+          return '<tr>' +
+            '<td>' + escapeHtml(item.id) + '</td>' +
+            '<td><span class="docker-code">' + escapeHtml(item.codigo || item.file_name || "-") + '</span></td>' +
+            '<td>' + escapeHtml(item.estado || "-") + (item.error ? '<div class="docker-msg">' + escapeHtml(item.error) + '</div>' : '') + '</td>' +
+            '<td>' + formatSnapshotBytes(item.tamano_bytes) + '</td>' +
+            '<td>' + escapeHtml(cloud) + '</td>' +
+            '<td>' + escapeHtml(item.fecha_creacion || item.fecha_inicio || "-") + '</td>' +
+            '<td>' + download + '</td>' +
+          '</tr>';
+        }).join("");
+      }
+      async function loadSnapshotStatus() {
+        try {
+          var res = await fetch("/super/api/vps_snapshots?action=status", { credentials: "same-origin" });
+          var data = await res.json().catch(function () { return {}; });
+          if (!res.ok || !data.ok) throw new Error(data.error || "No se pudo consultar snapshots");
+          renderSnapshotStatus(data.config || {});
+          renderSnapshotHistory(data.items || []);
+        } catch (error) {
+          setSnapshotMsg("Error cargando snapshots: " + (error && error.message ? error.message : error));
+        }
+      }
+      async function saveSnapshotConfig() {
+        setSnapshotMsg("Guardando configuracion de snapshot...");
+        try {
+          var res = await fetch("/super/api/vps_snapshots", {
+            method: "PUT",
+            credentials: "same-origin",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(snapshotPayloadFromForm())
+          });
+          var data = await res.json().catch(function () { return {}; });
+          if (!res.ok || !data.ok) throw new Error(data.error || "No se pudo guardar");
+          renderSnapshotStatus(data.config || {});
+          setSnapshotMsg("Configuracion guardada.");
+          await loadSnapshotStatus();
+        } catch (error) {
+          setSnapshotMsg("Error: " + (error && error.message ? error.message : error));
+        }
+      }
+      async function createSnapshot(uploadCloud, downloadAfter) {
+        setSnapshotMsg(uploadCloud ? "Creando snapshot y subiendo a nube. Esto puede tardar varios minutos..." : "Creando snapshot VPS. Esto puede tardar varios minutos...");
+        try {
+          var cfg = snapshotPayloadFromForm();
+          var res = await fetch("/super/api/vps_snapshots?action=create", {
+            method: "POST",
+            credentials: "same-origin",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              upload_cloud: !!uploadCloud,
+              include_docker_images: !!cfg.include_docker_images,
+              delete_old_local: !!cfg.delete_old_local,
+              delete_old_cloud: !!cfg.delete_old_cloud,
+              retention_days: cfg.retention_days
+            })
+          });
+          var data = await res.json().catch(function () { return {}; });
+          if (!res.ok || !data.ok) throw new Error(data.error || "No se pudo crear snapshot");
+          var warn = Array.isArray(data.warnings) && data.warnings.length ? " Advertencias: " + data.warnings.join(" | ") : "";
+          setSnapshotMsg("Snapshot creado: " + ((data.item && data.item.codigo) || "ok") + "." + warn);
+          await loadSnapshotStatus();
+          if (downloadAfter && data.item && data.item.id) {
+            window.location.href = "/super/api/vps_snapshots?action=download&id=" + encodeURIComponent(data.item.id);
+          }
+        } catch (error) {
+          setSnapshotMsg("Error: " + (error && error.message ? error.message : error));
+        }
+      }
       async function loadStatus() {
         if (state.loading) return;
         state.loading = true;
@@ -474,7 +786,16 @@
 
       var refresh = $("refreshBtn");
       if (refresh) refresh.addEventListener("click", loadStatus);
+      var saveSnapshot = $("saveSnapshotConfigBtn");
+      if (saveSnapshot) saveSnapshot.addEventListener("click", saveSnapshotConfig);
+      var createSnapshotBtn = $("createSnapshotBtn");
+      if (createSnapshotBtn) createSnapshotBtn.addEventListener("click", function () { createSnapshot(false, true); });
+      var createUploadSnapshotBtn = $("createUploadSnapshotBtn");
+      if (createUploadSnapshotBtn) createUploadSnapshotBtn.addEventListener("click", function () { createSnapshot(true, false); });
+      var refreshSnapshot = $("refreshSnapshotBtn");
+      if (refreshSnapshot) refreshSnapshot.addEventListener("click", loadSnapshotStatus);
       loadStatus();
+      loadSnapshotStatus();
     })();
   </script>
 </body>

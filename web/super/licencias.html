@@ -29,6 +29,8 @@
     .lic-admin-rule-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:0;padding:0;list-style:none}
     .lic-admin-rule-list li{position:relative;padding:9px 10px 9px 28px;border:1px solid color-mix(in srgb,var(--border) 78%,#0f766e 22%);border-radius:12px;background:color-mix(in srgb,var(--surface-soft) 88%,#0f766e 12%);color:var(--text);font-size:.78rem;line-height:1.32}
     .lic-admin-rule-list li::before{content:"";position:absolute;left:11px;top:15px;width:8px;height:8px;border-radius:999px;background:#0f766e;box-shadow:0 0 0 3px rgba(15,118,110,.14)}
+    .lic-admin-rule-config{grid-column:1/-1;display:grid;grid-template-columns:minmax(190px,260px) minmax(0,1fr) auto;gap:8px;align-items:end;padding:10px;border:1px solid var(--border);border-radius:12px;background:var(--surface-soft)}
+    .lic-admin-rule-config .form-help{grid-column:1/-1;margin:0}
     .lic-admin-scroll-top{height:18px;margin:0 0 6px;overflow-x:auto;overflow-y:hidden;border:1px solid var(--border);border-radius:14px;background:var(--surface-soft)}
     .lic-admin-scroll-top-inner{height:1px}
     .lic-admin-table-wrap{overflow:auto;border:1px solid var(--border);border-radius:16px;background:var(--surface)}
@@ -93,7 +95,7 @@
     .lic-history-actions{gap:6px}
     .lic-history-actions .btn{min-height:30px;padding:5px 8px;font-size:.76rem}
     @media (max-width:1120px){.lic-admin-kpis{grid-template-columns:repeat(3,minmax(0,1fr))}.lic-admin-toolbar{grid-template-columns:repeat(2,minmax(0,1fr))}}
-    @media (max-width:780px){.lic-admin-hero{grid-template-columns:1fr}.lic-admin-kpis,.lic-admin-health{grid-template-columns:repeat(2,minmax(0,1fr))}.lic-admin-toolbar,.lic-admin-rules,.lic-admin-rule-list{grid-template-columns:1fr}.lic-history-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.lic-history-focus-grid{grid-template-columns:1fr}}
+    @media (max-width:780px){.lic-admin-hero{grid-template-columns:1fr}.lic-admin-kpis,.lic-admin-health{grid-template-columns:repeat(2,minmax(0,1fr))}.lic-admin-toolbar,.lic-admin-rules,.lic-admin-rule-list,.lic-admin-rule-config{grid-template-columns:1fr}.lic-history-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.lic-history-focus-grid{grid-template-columns:1fr}}
     @media (max-width:480px){.lic-admin-kpis,.lic-admin-health{grid-template-columns:1fr}}
   </style>
 </head>
@@ -120,8 +122,8 @@
       <div class="lic-admin-hero">
         <div>
           <p class="lic-admin-kicker">Gobierno comercial de licencias</p>
-          <h2>Cuatro licencias globales para todas las empresas</h2>
-          <p>El catálogo queda fijo con prueba gratis de 15 días y tres planes comerciales de COP 60000, COP 100000 y COP 150000. Estos planes aplican a cualquier tipo de empresa.</p>
+          <h2>Licencias globales para todas las empresas</h2>
+          <p>El catálogo queda fijo con prueba gratis de 15 días, planes mensuales de COP 60000, COP 110000 y COP 200000, y planes anuales de COP 600000, COP 1100000 y COP 2200000.</p>
           <div class="lic-admin-hero-actions" style="display:none">
             <button id="quickBaseBtn" class="btn secondary" type="button">Nuevo plan base</button>
             <button id="quickAddonBtn" class="btn secondary" type="button">Nuevo addon</button>
@@ -174,16 +176,31 @@
         <ul class="lic-admin-rule-list">
           <li>La licencia gratis de 15 dias solo se puede activar una vez por empresa.</li>
           <li>Los planes base son globales y aplican para todos los tipos de empresa.</li>
+          <li>Una empresa con licencia activa solo puede adelantar la misma licencia el número de veces configurado por super administrador.</li>
           <li>Las licencias vencidas se renuevan con planes comerciales, no con otra prueba gratis.</li>
           <li>El codigo de asesor de ventas queda registrado durante la activacion cuando aplique.</li>
+          <li>El correo de compra da la bienvenida a PCS y puede adjuntar la factura electronica en PDF; la licencia del software se descarga desde Administrar empresa.</li>
         </ul>
+        <div class="lic-admin-rule-config">
+          <label class="form-label" for="maxAdvanceSameLicense">Compras adelantadas de la misma licencia</label>
+          <input id="maxAdvanceSameLicense" class="form-input" type="number" min="0" max="24" step="1" value="2">
+          <p class="form-help">Valor por defecto: 2. Con licencia activa, el cliente puede comprar máximo dos renovaciones adicionales de ese mismo plan y volver a comprar cuando una se venza.</p>
+          <label class="lic-superrol-item"><input id="licenseWelcomeEmailEnabled" type="checkbox" checked> Enviar correo de bienvenida cuando se aprueba una compra de licencia.</label>
+          <label class="lic-superrol-item"><input id="licenseAutoInvoiceEnabled" type="checkbox" checked> Emitir automaticamente la factura electronica desde la empresa Powerful Control System.</label>
+          <label class="lic-superrol-item"><input id="licenseAttachInvoicePdfEnabled" type="checkbox" checked> Adjuntar la factura electronica en PDF en el correo de bienvenida.</label>
+          <p class="form-help">La licencia del software no se adjunta por correo. El cliente la descarga desde Administrar empresa > Licencia del sistema.</p>
+          <div class="form-actions">
+            <button id="saveLicenseConfigBtn" class="btn secondary" type="button">Guardar reglas</button>
+          </div>
+          <p id="licenseConfigMsg" class="form-help"></p>
+        </div>
       </section>
     </section>
     <form id="form" class="form lic-form-shell" style="display:none">
       <div class="lic-form-title">
         <div>
           <h2 id="formTitle">Nueva licencia</h2>
-          <p id="formSubtitle">El catálogo comercial es fijo: prueba gratis de 15 días y planes COP 60000, COP 100000 y COP 150000.</p>
+          <p id="formSubtitle">El catálogo comercial es fijo: prueba gratis de 15 días, tres planes mensuales y tres planes anuales.</p>
         </div>
         <span class="lic-badge" id="formModeBadge">Catálogo</span>
       </div>
@@ -363,6 +380,9 @@
       const licClassFilter = document.getElementById('licClassFilter');
       const licStatusFilter = document.getElementById('licStatusFilter');
       const clearFiltersBtn = document.getElementById('clearFiltersBtn');
+      const maxAdvanceSameLicense = document.getElementById('maxAdvanceSameLicense');
+      const saveLicenseConfigBtn = document.getElementById('saveLicenseConfigBtn');
+      const licenseConfigMsg = document.getElementById('licenseConfigMsg');
       const quickBaseBtn = document.getElementById('quickBaseBtn');
       const quickAddonBtn = document.getElementById('quickAddonBtn');
       const formTitle = document.getElementById('formTitle');
@@ -721,15 +741,15 @@
         const global = rows.filter(function(item){ return String(item.pais_codigo || '').toUpperCase() === 'GLOBAL' && Number(item.tipo_id || 0) === 0; }).length;
         const avg = averageValue(rows);
         licKpiGrid.innerHTML = [
-          '<div class="lic-admin-kpi"><span>Total catálogo</span><strong>' + total + '</strong><small>Solo 4 planes globales canónicos.</small></div>',
+          '<div class="lic-admin-kpi"><span>Total catálogo</span><strong>' + total + '</strong><small>7 planes globales canónicos.</small></div>',
           '<div class="lic-admin-kpi"><span>Visibles</span><strong>' + active + '</strong><small>' + (total ? Math.round(active * 100 / total) : 0) + '% disponible para clientes.</small></div>',
           '<div class="lic-admin-kpi"><span>Prueba gratis</span><strong>' + trial + '</strong><small>15 días, una vez por empresa.</small></div>',
-          '<div class="lic-admin-kpi"><span>Planes pagos</span><strong>' + paid + '</strong><small>COP 60000, COP 100000 y COP 150000.</small></div>',
+          '<div class="lic-admin-kpi"><span>Planes pagos</span><strong>' + paid + '</strong><small>Mensuales y anuales vigentes.</small></div>',
           '<div class="lic-admin-kpi"><span>Ticket promedio</span><strong>' + escapeHTML(renderMoney(avg)) + '</strong><small>Promedio del catálogo fijo.</small></div>'
         ].join('');
 
         const riskItems = [];
-        if (total !== 4) riskItems.push(['Catálogo incompleto', 'Deben existir exactamente 4 licencias globales.']);
+        if (total !== 7) riskItems.push(['Catálogo incompleto', 'Deben existir exactamente 7 licencias globales.']);
         if (global !== total) riskItems.push(['Alcance no global', 'Todos los planes deben aplicar a todos los tipos de empresa.']);
         if (rows.some(function(item){ return Number(item.valor || 0) <= 0 && Number(item.duracion_dias || 0) !== 15; })) riskItems.push(['Plan en cero', 'Solo la prueba gratis debe tener valor cero.']);
         if (rows.some(function(item){ return isActiveLic(item) && Number(item.duracion_dias || 0) <= 0; })) riskItems.push(['Duración pendiente', 'Hay licencias visibles sin duración comercial definida.']);
@@ -818,6 +838,53 @@
         const configured = Number(item && item.max_cajas_simultaneas || 0);
         const limit = configured > 0 ? configured : defaultCashRegisterLimit(item && item.max_documentos_mensuales);
         return new Intl.NumberFormat('es-CO', { maximumFractionDigits: 0 }).format(limit) + ' cajas simultáneas';
+      }
+
+      async function loadLicenseConfig(){
+        if (!maxAdvanceSameLicense) return;
+        try {
+          const cfg = await fetchJSONOrThrow('/super/api/licencias/configuracion');
+          const value = Number(cfg && cfg.max_compras_adelantadas_misma_licencia);
+          maxAdvanceSameLicense.value = Number.isFinite(value) && value >= 0 ? String(value) : '2';
+          const welcomeEl = document.getElementById('licenseWelcomeEmailEnabled');
+          const invoiceEl = document.getElementById('licenseAutoInvoiceEnabled');
+          const attachEl = document.getElementById('licenseAttachInvoicePdfEnabled');
+          if (welcomeEl) welcomeEl.checked = cfg.email_bienvenida_compra_enabled !== false;
+          if (invoiceEl) invoiceEl.checked = cfg.factura_electronica_automatica_enabled !== false;
+          if (attachEl) attachEl.checked = cfg.email_adjuntar_factura_pdf_enabled !== false;
+          if (licenseConfigMsg) licenseConfigMsg.textContent = 'Reglas vigentes cargadas.';
+        } catch (err) {
+          if (licenseConfigMsg) licenseConfigMsg.textContent = 'No se pudieron cargar las reglas. Se muestran valores por defecto.';
+          console.warn('No se pudo cargar configuracion de licencias:', err);
+        }
+      }
+
+      async function saveLicenseConfig(){
+        if (!maxAdvanceSameLicense) return;
+        const value = parseInt(maxAdvanceSameLicense.value || '2', 10);
+        if (!Number.isFinite(value) || value < 0 || value > 24) {
+          if (licenseConfigMsg) licenseConfigMsg.textContent = 'El valor debe estar entre 0 y 24.';
+          return;
+        }
+        const welcomeEl = document.getElementById('licenseWelcomeEmailEnabled');
+        const invoiceEl = document.getElementById('licenseAutoInvoiceEnabled');
+        const attachEl = document.getElementById('licenseAttachInvoicePdfEnabled');
+        if (licenseConfigMsg) licenseConfigMsg.textContent = 'Guardando reglas...';
+        try {
+          await fetchJSONOrThrow('/super/api/licencias/configuracion', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              max_compras_adelantadas_misma_licencia: value,
+              email_bienvenida_compra_enabled: welcomeEl ? !!welcomeEl.checked : true,
+              factura_electronica_automatica_enabled: invoiceEl ? !!invoiceEl.checked : true,
+              email_adjuntar_factura_pdf_enabled: attachEl ? !!attachEl.checked : true
+            })
+          });
+          if (licenseConfigMsg) licenseConfigMsg.textContent = 'Reglas guardadas correctamente.';
+        } catch (err) {
+          if (licenseConfigMsg) licenseConfigMsg.textContent = err.message || 'No se pudieron guardar las reglas.';
+        }
       }
 
       function cleanupTopTableScroll(){
@@ -1381,7 +1448,7 @@
 
       async function loadCrud(){
         pageTitle.textContent = 'Licencias';
-        pageLead.textContent = 'Catálogo fijo de 4 licencias globales para todos los tipos de empresa.';
+        pageLead.textContent = 'Catálogo fijo de 7 licencias globales para todos los tipos de empresa.';
         addBtn.style.display = 'none';
         if (historyPageBtn) historyPageBtn.style.display = 'none';
         form.style.display = 'none';
@@ -1400,6 +1467,7 @@
             tipoSelect.appendChild(opt);
           });
         }catch(e){ console.warn('No se pudieron cargar tipos:', e); }
+        await loadLicenseConfig();
 
         const data = await fetchJSONOrThrow(buildLicenciasApiURL());
         crudState.licencias = Array.isArray(data) ? data : [];
@@ -1423,6 +1491,11 @@
         licStatusFilter.value = '';
         renderCrudList();
       });
+      if (saveLicenseConfigBtn) {
+        saveLicenseConfigBtn.addEventListener('click', function(){
+          saveLicenseConfig();
+        });
+      }
 
       document.querySelectorAll('[data-module-preset]').forEach(function(btn){
         btn.addEventListener('click', function(){

@@ -496,18 +496,35 @@
             } catch (e) {}
             return normalizeCountryCode(resolveCountryFromBrowser()) || 'CO';
           }
+          function countrySourceLabel(source){
+            const value = String(source || '').trim().toLowerCase();
+            if (value === 'configuracion_avanzada') return 'configuración general de la empresa';
+            if (value === 'facturacion_electronica') return 'perfil fiscal de facturación electrónica';
+            if (value === 'licencia_activa') return 'licencia activa';
+            if (value === 'request') return 'selección manual';
+            if (value === 'timezone') return 'zona horaria';
+            if (value === 'language') return 'idioma del navegador';
+            return 'valor por defecto';
+          }
           const countryOptions = ['CO', 'EC', 'PA', 'MX', 'US', 'ES'];
-          const paisCodigo = resolveCountryForCheckout();
+          const requestedPaisCodigo = resolveCountryForCheckout();
+          const methodParams = new URLSearchParams();
+          if (empresaId) methodParams.set('empresa_id', String(empresaId));
+          methodParams.set('pais_codigo', requestedPaisCodigo);
+          methodParams.set('tz', Intl.DateTimeFormat().resolvedOptions().timeZone || '');
+          methodParams.set('lang', String((navigator.languages && navigator.languages[0]) || navigator.language || ''));
 
           const [summaryRes, methodsRes] = await Promise.all([
             fetch('/api/public/licencias/checkout_summary?' + summaryParams.toString(), { credentials: 'same-origin' }),
-            fetch('/api/public/licencias/payment_methods?pais_codigo=' + encodeURIComponent(paisCodigo), { credentials: 'same-origin' })
+            fetch('/api/public/licencias/payment_methods?' + methodParams.toString(), { credentials: 'same-origin' })
           ]);
           if (!summaryRes.ok) { container.innerText = 'Error al obtener el resumen público de la licencia'; return }
           if (!methodsRes.ok) { container.innerText = 'Error al obtener métodos de pago disponibles'; return }
 
           const summaryPayload = await summaryRes.json();
           const methodsPayload = await methodsRes.json();
+          const paisCodigo = normalizeCountryCode(methodsPayload && methodsPayload.pais_codigo) || requestedPaisCodigo;
+          const paisSource = String((methodsPayload && methodsPayload.pais_source) || '').trim();
           const lic = summaryPayload && summaryPayload.licencia ? summaryPayload.licencia : null;
           const selectedEmpresa = summaryPayload && summaryPayload.empresa ? summaryPayload.empresa : null;
           const paymentProviders = Array.isArray(methodsPayload.providers) ? methodsPayload.providers : [];
@@ -518,14 +535,18 @@
           if (wompiProvider && wompiProvider.available) availableMethods.push('wompi');
           const unavailableMessages = [];
           if (epaycoProvider && !epaycoProvider.available) {
-            unavailableMessages.push(epaycoProvider.enabled
-              ? 'Epayco está activado, pero requiere Public Key + Private Key para Smart Checkout o Public Key + Customer ID + P_KEY para checkout estándar.'
-              : 'Epayco está desactivado en configuración avanzada.');
+            unavailableMessages.push(epaycoProvider.country_enabled === false
+              ? 'Epayco no está habilitado para ' + countryName(paisCodigo) + ' en la configuración de pasarelas por país.'
+              : (epaycoProvider.enabled
+                ? 'Epayco está activado, pero requiere Public Key + Private Key para Smart Checkout o Public Key + Customer ID + P_KEY para checkout estándar.'
+                : 'Epayco está desactivado en configuración avanzada.'));
           }
           if (wompiProvider && !wompiProvider.available) {
-            unavailableMessages.push(wompiProvider.enabled
-              ? 'Wompi está activado, pero le faltan credenciales obligatorias para Web Checkout (Public Key e Integrity Key).'
-              : 'Wompi está desactivado en configuración avanzada.');
+            unavailableMessages.push(wompiProvider.country_enabled === false
+              ? 'Wompi no está habilitado para ' + countryName(paisCodigo) + ' en la configuración de pasarelas por país.'
+              : (wompiProvider.enabled
+                ? 'Wompi está activado, pero le faltan credenciales obligatorias para Web Checkout (Public Key e Integrity Key).'
+                : 'Wompi está desactivado en configuración avanzada.'));
           }
 
           const paymentCards = [];
@@ -592,6 +613,7 @@
                   '<p class="brand-subtitle checkout-brand-subtitle">' + escapeHtml(checkoutSubtitle) + '</p>'+
                   '<div class="checkout-mini-pills" style="margin-top:10px;">' +
                     '<span class="checkout-mini-pill">País de pago: ' + escapeHtml(countryName(paisCodigo)) + ' (' + escapeHtml(paisCodigo) + ')</span>' +
+                    '<span class="checkout-mini-pill">Origen: ' + escapeHtml(countrySourceLabel(paisSource)) + '</span>' +
                     (checkoutMode ? '<span class="checkout-mini-pill">Modo: ' + escapeHtml(checkoutMode) + '</span>' : '') +
                   '</div>' +
                 '</div>'+
@@ -636,7 +658,7 @@
                           return '<option value="' + escapeHtml(code) + '"' + (code === paisCodigo ? ' selected' : '') + '>' + escapeHtml(countryName(code)) + ' (' + escapeHtml(code) + ')</option>';
                         }).join('')+
                       '</select>'+
-                      '<div class="form-help">Cambia el país si el navegador o una VPN detecta una ubicación incorrecta.</div>'+
+                      '<div class="form-help">Si la empresa tiene país configurado, esa configuración tiene prioridad sobre navegador o selección manual.</div>'+
                     '</div>'+
                     '<div class="form-col">'+
                       '<label class="form-label" for="discountCode">Código de descuento</label>'+

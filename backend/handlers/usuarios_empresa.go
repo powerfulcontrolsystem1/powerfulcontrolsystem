@@ -1717,12 +1717,14 @@ func handleEmpresaUsuarioFotoUpload(r *http.Request, dbEmp, dbSuper *sql.DB, emp
 	if err != nil || userID <= 0 {
 		return 0, "", fmt.Errorf("usuario_id requerido")
 	}
-	if _, err := dbpkg.GetEmpresaUsuarioByID(dbEmp, empresaID, userID); err != nil {
+	user, err := dbpkg.GetEmpresaUsuarioByID(dbEmp, empresaID, userID)
+	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return 0, "", fmt.Errorf("usuario no encontrado")
 		}
 		return 0, "", err
 	}
+	oldPhotoURL := strings.TrimSpace(user.FotoURL)
 	file, header, err := r.FormFile("foto")
 	if err != nil {
 		return 0, "", fmt.Errorf("foto requerida")
@@ -1747,13 +1749,27 @@ func handleEmpresaUsuarioFotoUpload(r *http.Request, dbEmp, dbSuper *sql.DB, emp
 	if err != nil {
 		return 0, "", fmt.Errorf("no se pudo crear imagen")
 	}
-	defer out.Close()
-	if _, err := io.Copy(out, file); err != nil {
+	written, copyErr := io.Copy(out, io.LimitReader(file, maxBytes+1))
+	closeErr := out.Close()
+	if copyErr != nil {
+		_ = os.Remove(absPath)
 		return 0, "", fmt.Errorf("no se pudo guardar imagen")
+	}
+	if written > maxBytes {
+		_ = os.Remove(absPath)
+		return 0, "", fmt.Errorf("la imagen supera el tamano maximo permitido de %d KB", maxBytes/1024)
+	}
+	if closeErr != nil {
+		_ = os.Remove(absPath)
+		return 0, "", fmt.Errorf("no se pudo cerrar imagen")
 	}
 	photoURL := "/uploads/empresas/" + folder + "/imagenes/usuarios/" + fileName
 	if err := dbpkg.UpdateEmpresaUsuarioFoto(dbEmp, empresaID, userID, photoURL); err != nil {
+		_ = os.Remove(absPath)
 		return 0, "", err
+	}
+	if oldPhotoURL != "" && oldPhotoURL != photoURL {
+		_ = deleteEmpresaUploadedPublicURL(dbEmp, empresaID, oldPhotoURL)
 	}
 	return userID, photoURL, nil
 }

@@ -11,6 +11,7 @@ import (
 	"math"
 	"net"
 	"net/http"
+	"net/mail"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -203,6 +204,7 @@ type empresaVentaPublicaConfigPayload struct {
 	Moneda                          string `json:"moneda"`
 	DominioPublico                  string `json:"dominio_publico"`
 	MostrarStock                    *bool  `json:"mostrar_stock"`
+	ContactoFormularioActivo        *bool  `json:"contacto_formulario_activo"`
 	PedidosRestauranteActivo        *bool  `json:"pedidos_restaurante_activo"`
 	PedidosRegistroOpcionalCliente  *bool  `json:"pedidos_registro_opcional_cliente"`
 	PedidosPermitirRecogerEnTienda  *bool  `json:"pedidos_permitir_recoger_en_tienda"`
@@ -330,6 +332,8 @@ func ventaPublicaNormalizeAction(raw string) string {
 		return "crear_pedido"
 	case "estado_pedido", "order_status", "tracking":
 		return "estado_pedido"
+	case "contacto", "contact", "mensaje", "message":
+		return "contacto"
 	default:
 		return ""
 	}
@@ -606,6 +610,7 @@ func sanitizeVentaPublicaConfigForPublic(cfg dbpkg.EmpresaVentaPublicaConfig) ma
 		"moneda":                             cfg.Moneda,
 		"dominio_publico":                    cfg.DominioPublico,
 		"mostrar_stock":                      cfg.MostrarStock,
+		"contacto_formulario_activo":         cfg.ContactoFormularioActivo,
 		"pedidos_restaurante_activo":         cfg.PedidosRestauranteActivo,
 		"pedidos_registro_opcional_cliente":  cfg.PedidosRegistroOpcionalCliente,
 		"pedidos_permitir_recoger_en_tienda": cfg.PedidosPermitirRecogerEnTienda,
@@ -1058,6 +1063,10 @@ func handleEmpresaVentaPublicaConfigUpsert(w http.ResponseWriter, r *http.Reques
 	if payload.MostrarStock != nil {
 		mostrarStock = *payload.MostrarStock
 	}
+	contactoFormularioActivo := true
+	if payload.ContactoFormularioActivo != nil {
+		contactoFormularioActivo = *payload.ContactoFormularioActivo
+	}
 	pedidosRestauranteActivo := false
 	if payload.PedidosRestauranteActivo != nil {
 		pedidosRestauranteActivo = *payload.PedidosRestauranteActivo
@@ -1123,6 +1132,7 @@ func handleEmpresaVentaPublicaConfigUpsert(w http.ResponseWriter, r *http.Reques
 		Moneda:                          payload.Moneda,
 		DominioPublico:                  payload.DominioPublico,
 		MostrarStock:                    mostrarStock,
+		ContactoFormularioActivo:        contactoFormularioActivo,
 		PedidosRestauranteActivo:        pedidosRestauranteActivo,
 		PedidosRegistroOpcionalCliente:  pedidosRegistroOpcional,
 		PedidosPermitirRecogerEnTienda:  pedidosPermitirRecoger,
@@ -1280,6 +1290,12 @@ func handleEmpresaVentaPublicaUploadImage(w http.ResponseWriter, r *http.Request
 	w.Header().Set("X-Empresa-ID", strconv.FormatInt(empresaID, 10))
 
 	itemID, _ := parseInt64Form(r, "item_id")
+	pageID, _ := parseInt64Form(r, "pagina_id")
+	imageType := strings.ToLower(strings.TrimSpace(firstNonEmptyString(
+		r.FormValue("tipo_imagen"),
+		r.FormValue("image_type"),
+		r.FormValue("tipo"),
+	)))
 	file, header, err := r.FormFile("imagen")
 	if err != nil {
 		http.Error(w, "imagen required", http.StatusBadRequest)
@@ -1293,9 +1309,13 @@ func handleEmpresaVentaPublicaUploadImage(w http.ResponseWriter, r *http.Request
 		http.Error(w, "image extension not allowed", http.StatusBadRequest)
 		return
 	}
+	const maxImageBytes = 10 << 20
+	if header.Size > maxImageBytes {
+		http.Error(w, "la imagen supera 10 MB", http.StatusBadRequest)
+		return
+	}
 
-	webRoot := resolveWebRootDir()
-	dir := filepath.Join(webRoot, "uploads", "venta_publica", fmt.Sprintf("empresa_%d", empresaID))
+	dir, publicDir, _ := empresaUploadsSubdir(dbEmp, empresaID, "imagenes", "venta_publica")
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		http.Error(w, "failed to prepare upload directory", http.StatusInternalServerError)
 		return
@@ -1305,6 +1325,16 @@ func handleEmpresaVentaPublicaUploadImage(w http.ResponseWriter, r *http.Request
 	if itemID > 0 {
 		prefix = fmt.Sprintf("item_%d", itemID)
 	}
+	switch imageType {
+	case "perfil", "profile", "logo":
+		imageType = "perfil"
+		prefix = "perfil"
+	case "portada", "cover", "banner":
+		imageType = "portada"
+		prefix = "portada"
+	default:
+		imageType = "item"
+	}
 	fileName := fmt.Sprintf("%s_%d%s", prefix, time.Now().UnixNano(), ext)
 	absPath := filepath.Join(dir, fileName)
 	out, err := os.Create(absPath)
@@ -1312,32 +1342,100 @@ func handleEmpresaVentaPublicaUploadImage(w http.ResponseWriter, r *http.Request
 		http.Error(w, "failed to create image file", http.StatusInternalServerError)
 		return
 	}
-	defer out.Close()
-	if _, err := io.Copy(out, file); err != nil {
+	written, copyErr := io.Copy(out, io.LimitReader(file, maxImageBytes+1))
+	closeErr := out.Close()
+	if copyErr != nil {
+		_ = os.Remove(absPath)
 		http.Error(w, "failed to save image file", http.StatusInternalServerError)
 		return
 	}
-
-	imageURL := "/uploads/venta_publica/empresa_" + strconv.FormatInt(empresaID, 10) + "/" + fileName
-	if itemID > 0 {
-		item, err := dbpkg.GetEmpresaVentaPublicaItemByID(dbEmp, empresaID, itemID)
-		if err == nil {
-			item.ImagenURL = imageURL
-			item.UsuarioCreador = adminEmailFromRequest(r)
-			_ = dbpkg.UpdateEmpresaVentaPublicaItem(dbEmp, item)
-		}
+	if written > maxImageBytes {
+		_ = os.Remove(absPath)
+		http.Error(w, "la imagen supera 10 MB", http.StatusBadRequest)
+		return
+	}
+	if closeErr != nil {
+		_ = os.Remove(absPath)
+		http.Error(w, "failed to close image file", http.StatusInternalServerError)
+		return
 	}
 
-	writeJSON(w, http.StatusOK, map[string]interface{}{
-		"saved":      true,
-		"empresa_id": empresaID,
-		"item_id":    itemID,
-		"image_url":  imageURL,
-	})
+	imageURL := publicDir + "/" + fileName
+	deletedPrevious := false
+	response := map[string]interface{}{
+		"saved":        true,
+		"empresa_id":   empresaID,
+		"item_id":      itemID,
+		"pagina_id":    pageID,
+		"image_type":   imageType,
+		"image_url":    imageURL,
+		"replaced_old": false,
+	}
+
+	switch imageType {
+	case "perfil", "portada":
+		cfg, err := dbpkg.GetEmpresaVentaPublicaConfig(dbEmp, empresaID)
+		if err != nil {
+			_ = os.Remove(absPath)
+			http.Error(w, "No se pudo cargar configuracion publica", http.StatusInternalServerError)
+			return
+		}
+		oldURLs := make([]string, 0, 2)
+		if imageType == "perfil" {
+			oldURLs = append(oldURLs, strings.TrimSpace(cfg.LogoURL))
+			cfg.LogoURL = imageURL
+		} else {
+			oldURLs = append(oldURLs, strings.TrimSpace(cfg.BannerURL))
+			cfg.BannerURL = imageURL
+		}
+		cfg.UsuarioCreador = adminEmailFromRequest(r)
+		if _, err := dbpkg.UpsertEmpresaVentaPublicaConfig(dbEmp, cfg); err != nil {
+			_ = os.Remove(absPath)
+			http.Error(w, "No se pudo guardar la imagen en la configuracion publica", http.StatusInternalServerError)
+			return
+		}
+		if imageType == "portada" && pageID > 0 {
+			if page, err := dbpkg.GetEmpresaVentaPublicaPaginaByID(dbEmp, empresaID, pageID); err == nil {
+				oldURLs = append(oldURLs, strings.TrimSpace(page.BannerURL))
+				page.BannerURL = imageURL
+				page.UsuarioCreador = adminEmailFromRequest(r)
+				_, _ = dbpkg.UpsertEmpresaVentaPublicaPagina(dbEmp, page)
+			}
+		}
+		for _, oldURL := range oldURLs {
+			if oldURL != "" && oldURL != imageURL && deleteEmpresaUploadedPublicURL(dbEmp, empresaID, oldURL) {
+				deletedPrevious = true
+			}
+		}
+		response["config"] = cfg
+	case "item":
+		if itemID > 0 {
+			item, err := dbpkg.GetEmpresaVentaPublicaItemByID(dbEmp, empresaID, itemID)
+			if err != nil {
+				_ = os.Remove(absPath)
+				http.Error(w, "item_id no encontrado para la empresa", http.StatusNotFound)
+				return
+			}
+			oldURL := strings.TrimSpace(item.ImagenURL)
+			item.ImagenURL = imageURL
+			item.UsuarioCreador = adminEmailFromRequest(r)
+			if err := dbpkg.UpdateEmpresaVentaPublicaItem(dbEmp, item); err != nil {
+				_ = os.Remove(absPath)
+				http.Error(w, "No se pudo actualizar la imagen del producto publico", http.StatusInternalServerError)
+				return
+			}
+			if oldURL != "" && oldURL != imageURL && deleteEmpresaUploadedPublicURL(dbEmp, empresaID, oldURL) {
+				deletedPrevious = true
+			}
+			response["item"] = item
+		}
+	}
+	response["replaced_old"] = deletedPrevious
+	writeJSON(w, http.StatusOK, response)
 }
 
-// PublicVentaPublicaHandler expone catalogo y pagos para clientes finales.
-func PublicVentaPublicaHandler(dbEmp *sql.DB) http.HandlerFunc {
+// PublicVentaPublicaHandler expone catalogo, pagos y contacto para clientes finales.
+func PublicVentaPublicaHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		action := ventaPublicaNormalizeAction(r.URL.Query().Get("action"))
 		if action == "" {
@@ -1363,6 +1461,8 @@ func PublicVentaPublicaHandler(dbEmp *sql.DB) http.HandlerFunc {
 				handleVentaPublicaCrearPagoPublico(w, r, dbEmp)
 			case "crear_pedido":
 				handleVentaPublicaCrearPedidoPublico(w, r, dbEmp)
+			case "contacto":
+				handleVentaPublicaContactoPublico(w, r, dbEmp, dbSuper)
 			default:
 				http.Error(w, "action invalida", http.StatusBadRequest)
 			}
@@ -1370,6 +1470,119 @@ func PublicVentaPublicaHandler(dbEmp *sql.DB) http.HandlerFunc {
 			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 		}
 	}
+}
+
+func handleVentaPublicaContactoPublico(w http.ResponseWriter, r *http.Request, dbEmp, dbSuper *sql.DB) {
+	type contactoPayload struct {
+		EmpresaID   int64  `json:"empresa_id"`
+		EmpresaSlug string `json:"empresa_slug"`
+		PaginaSlug  string `json:"pagina_slug"`
+		Nombre      string `json:"nombre"`
+		Email       string `json:"email"`
+		Telefono    string `json:"telefono"`
+		Mensaje     string `json:"mensaje"`
+		URL         string `json:"url"`
+	}
+	var payload contactoPayload
+	if err := json.NewDecoder(io.LimitReader(r.Body, 18<<10)).Decode(&payload); err != nil {
+		http.Error(w, "payload invalido", http.StatusBadRequest)
+		return
+	}
+	payload.EmpresaSlug = firstNonEmptyString(payload.EmpresaSlug, r.URL.Query().Get("empresa_slug"), r.URL.Query().Get("slug"))
+	if payload.EmpresaID <= 0 {
+		payload.EmpresaID, _ = parseInt64QueryOptional(r, "empresa_id")
+	}
+	resolvedEmpresaID, err := dbpkg.ResolveVentaPublicaEmpresaIDFromAny(dbEmp, payload.EmpresaID, payload.EmpresaSlug)
+	if err != nil {
+		http.Error(w, "empresa no encontrada", http.StatusNotFound)
+		return
+	}
+	payload.Nombre = ventaPublicaContactClean(payload.Nombre, 160)
+	payload.Email = strings.TrimSpace(payload.Email)
+	payload.Telefono = ventaPublicaContactClean(payload.Telefono, 60)
+	payload.Mensaje = ventaPublicaContactClean(payload.Mensaje, 2200)
+	payload.PaginaSlug = ventaPublicaContactClean(payload.PaginaSlug, 120)
+	payload.URL = ventaPublicaContactClean(payload.URL, 260)
+	if len(payload.Nombre) < 2 {
+		http.Error(w, "nombre es obligatorio", http.StatusBadRequest)
+		return
+	}
+	if _, err := mail.ParseAddress(payload.Email); err != nil {
+		http.Error(w, "email invalido", http.StatusBadRequest)
+		return
+	}
+	if len(payload.Mensaje) < 10 {
+		http.Error(w, "mensaje es obligatorio", http.StatusBadRequest)
+		return
+	}
+	cfg, _ := dbpkg.GetEmpresaVentaPublicaConfig(dbEmp, resolvedEmpresaID)
+	if !cfg.ContactoFormularioActivo {
+		http.Error(w, "El formulario de contacto publico no esta activo para esta empresa.", http.StatusForbidden)
+		return
+	}
+	account, err := dbpkg.GetEmpresaEmailCorporativoByEmpresa(dbEmp, resolvedEmpresaID)
+	if err != nil || account == nil || strings.TrimSpace(account.Email) == "" || strings.EqualFold(strings.TrimSpace(account.Estado), "eliminado") {
+		http.Error(w, "La empresa aun no tiene correo corporativo activo para recibir mensajes.", http.StatusConflict)
+		return
+	}
+	recipient := strings.TrimSpace(account.Email)
+	if _, err := mail.ParseAddress(recipient); err != nil {
+		http.Error(w, "El correo corporativo configurado no es valido.", http.StatusConflict)
+		return
+	}
+	empresaNombre := strings.TrimSpace(account.EmpresaNombre)
+	if strings.TrimSpace(cfg.NombreTienda) != "" {
+		empresaNombre = strings.TrimSpace(cfg.NombreTienda)
+	}
+	if empresaNombre == "" {
+		empresaNombre = "Empresa"
+	}
+	subject := "Mensaje desde carta publica - " + empresaNombre
+	body := strings.Join([]string{
+		"Nuevo mensaje recibido desde la carta publica de productos.",
+		"",
+		"Empresa: " + empresaNombre,
+		"Empresa ID: " + strconv.FormatInt(resolvedEmpresaID, 10),
+		"Nombre: " + payload.Nombre,
+		"Email: " + payload.Email,
+		"Telefono: " + payload.Telefono,
+		"Pagina: " + payload.PaginaSlug,
+		"URL: " + payload.URL,
+		"",
+		"Mensaje:",
+		payload.Mensaje,
+	}, "\n")
+	sendErr := sendEmpresaUsuarioGmailPlain(dbSuper, recipient, subject, body)
+	if sendErr != nil {
+		sendErr = sendEmpresaUsuarioMailuPlain(dbSuper, recipient, subject, body)
+	}
+	if sendErr != nil {
+		http.Error(w, "No se pudo enviar el mensaje al correo corporativo.", http.StatusBadGateway)
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]interface{}{
+		"ok":         true,
+		"sent":       true,
+		"empresa_id": resolvedEmpresaID,
+	})
+}
+
+func ventaPublicaContactClean(value string, max int) string {
+	clean := strings.TrimSpace(value)
+	clean = strings.Map(func(r rune) rune {
+		if r == '\n' || r == '\r' || r == '\t' {
+			return r
+		}
+		if r < 32 || r == 127 {
+			return -1
+		}
+		return r
+	}, clean)
+	if max > 0 && len([]rune(clean)) > max {
+		rs := []rune(clean)
+		clean = string(rs[:max])
+	}
+	return clean
 }
 
 func ensureMotelCalipsoPublicShowcase(dbEmp *sql.DB, empresaID int64, cfg *dbpkg.EmpresaVentaPublicaConfig) {

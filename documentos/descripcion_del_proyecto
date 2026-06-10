@@ -1,3 +1,11 @@
+Revision snapshot completo VPS 2026-06-10: el modulo super `Docker VPS` permite
+crear una copia restaurable de la infraestructura en `backup/vps_snapshots`.
+Incluye proyecto portable sin secretos, dump PostgreSQL cuando esta disponible,
+volumenes Docker PCS, manifiesto, guia de restauracion y opcion manual para
+imagenes Docker. La nube usa `rclone` configurado en la VPS para Google Drive,
+Mega, OneDrive o S3; PCS no guarda tokens de nube y no incluye `.env.platform`
+por defecto.
+
 Revision IA default 2026-06-07: los accesos de inteligencia artificial empresarial quedan ocultos por defecto para todas las empresas. `linkChatIA`, `linkCentroIAEmpresarial`, `linkRentaIA`, `linkSoportesComprasIA` y `linkSoportesComprasIAMenu` solo se muestran si la empresa tiene una regla fina explicita de pagina permitida y el rol/licencia base tambien lo permite. Administrar empresa, Centro financiero, Suite contador y el chat flotante respetan ese contexto para no mostrar IA sin habilitacion empresarial.
 
 Revision Suite contador 2026-06-07: se agrega `web/administrar_empresa/suite_contador.html` como hub profesional para contadores por empresa, inspirado en funciones publicas de Siigo Contador pero implementado con modulos reales existentes: Portal contador, PUC/NIIF Colombia, contabilidad avanzada, impuestos, DIAN, declaraciones, certificados, cierres, activos, reportes, nomina, bancos, compras IA y Renta IA. No crea endpoints ni tablas; consulta `/api/empresa/permisos_contexto`, conserva `empresa_id` y marca modulos disponibles/bloqueados. `linkSuiteContador` queda bajo `finanzas:R` y el rol `contador` ve accesos contables clave sin recibir escritura ni aprobacion por este cambio. La portada publica actualiza Finanzas y cumplimiento con `Suite contador 360`.

@@ -9,10 +9,17 @@
   <style>
     html{min-height:100%;height:auto;overflow-y:auto}
     body.dian-test-page{min-height:100%;height:auto;overflow-y:auto;padding-bottom:18px}
+    body.dian-test-page .container{padding-top:0}
+    body.dian-test-page .container>.card:first-child{margin-top:0}
     .dian-status-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-top:12px}
     .dian-status-item{border:1px solid var(--border);border-radius:8px;background:var(--surface-soft);padding:10px;min-height:70px}
     .dian-status-label{display:block;color:var(--muted);font-size:.78rem;font-weight:800;text-transform:uppercase;letter-spacing:.04em}
     .dian-status-value{display:block;color:var(--text);font-size:1rem;font-weight:900;margin-top:6px;overflow-wrap:anywhere}
+    #feDianStatusGrid{gap:6px;margin-top:8px}
+    #feDianStatusGrid .dian-status-item{padding:6px 8px;min-height:44px;border-radius:7px}
+    #feDianStatusGrid .dian-status-label{font-size:.64rem;line-height:1;letter-spacing:.025em}
+    #feDianStatusGrid .dian-status-value{font-size:.78rem;font-weight:850;line-height:1.18;margin-top:3px}
+    #feDianStatusTestSet,#feDianStatusRango{font-family:ui-monospace,SFMono-Regular,Consolas,"Liberation Mono",monospace;font-size:.7rem;font-weight:800}
     .dian-test-actions{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-top:12px}
     .dian-test-actions .btn{min-height:42px}
     .dian-portal-summary{margin-top:14px;border:1px solid var(--border);border-radius:8px;background:var(--surface-soft);overflow:hidden}
@@ -112,10 +119,6 @@
 </head>
 <body class="super-page form-bg-dark dian-test-page">
   <div class="container">
-    <div class="page-header">
-      <h1>Centro de habilitación DIAN</h1>
-    </div>
-
     <div class="card">
       <h2>Estado del centro DIAN</h2>
       <p class="form-help">
@@ -258,7 +261,6 @@
         <button id="btnDianEnviarFactura" type="button" class="btn secondary">Enviar factura</button>
         <button id="btnDianEnviarND" type="button" class="btn secondary">Enviar nota debito</button>
         <button id="btnDianEnviarNC" type="button" class="btn secondary">Enviar nota credito</button>
-        <button id="btnDianActivarProduccion" type="button" class="btn secondary">Activar produccion local y emitir real</button>
       </div>
       <div id="feDianPruebasMsg" class="form-help"></div>
       <div id="feDianResumenResultado" class="dian-status-grid"></div>
@@ -918,8 +920,8 @@
         setValue("feDianSetAceptadasNC", Number(cfg.set_notas_credito_aceptadas_requeridas || 0));
       }
       const productionCheck = document.getElementById("feDianConfirmarHabilitado");
-      if (productionCheck && hasDianProduccionLocal(cfg)) {
-        productionCheck.checked = true;
+      if (productionCheck) {
+        productionCheck.checked = hasDianProduccionLocal(cfg);
       }
       updateDianProductionCheckHint();
       updateDianProgress();
@@ -1415,8 +1417,16 @@
     }
 
     async function activarProduccionDianLocal() {
-      const confirmado = !!document.getElementById("feDianConfirmarHabilitado").checked;
-      if (!confirmado && !window.confirm("Este paso solo cambia la configuracion local a produccion. Debes verificar antes que DIAN ya dejo la empresa habilitada. Continuar?")) {
+      const checkbox = document.getElementById("feDianConfirmarHabilitado");
+      const confirmado = !!(checkbox && checkbox.checked);
+      if (!confirmado) {
+        updateDianProductionCheckHint();
+        setText("feDianPruebasMsg", "Produccion local sin activar.", false);
+        return;
+      }
+      if (!window.confirm("Vas a activar la produccion local para emitir documentos reales. Confirma que DIAN ya habilito la empresa y que tienes resolucion, prefijo y rango reales de produccion. Continuar?")) {
+        if (checkbox) checkbox.checked = false;
+        updateDianProductionCheckHint();
         return;
       }
       const payload = {
@@ -1439,9 +1449,13 @@
         if (data && data.ok) {
           await loadDianConfigStatus().catch(function() {});
         } else {
+          if (checkbox) checkbox.checked = false;
+          updateDianProductionCheckHint();
           updateDianProgress();
         }
       } catch (err) {
+        if (checkbox) checkbox.checked = false;
+        updateDianProductionCheckHint();
         updateDianProgress();
         setJSON("feDianPruebasResultado", err && err.data ? err.data : null);
         setText("feDianPruebasMsg", err && err.message ? err.message : "No se pudo activar produccion local DIAN", true);
@@ -1526,8 +1540,12 @@
     document.addEventListener("keydown", function(event) {
       if (event.key === "Escape" && dianConfirmResolve) closeDianConfirm(false);
     });
-    document.getElementById("btnDianActivarProduccion").addEventListener("click", activarProduccionDianLocal);
-    document.getElementById("feDianConfirmarHabilitado").addEventListener("change", updateDianProductionCheckHint);
+    document.getElementById("feDianConfirmarHabilitado").addEventListener("change", function(event) {
+      updateDianProductionCheckHint();
+      if (event.target && event.target.checked) {
+        activarProduccionDianLocal();
+      }
+    });
     updateDianProductionCheckHint();
     document.getElementById("btnDianConsoleLimpiar").addEventListener("click", clearDianConsole);
     document.getElementById("btnDianConsoleCopiar").addEventListener("click", copyDianConsole);

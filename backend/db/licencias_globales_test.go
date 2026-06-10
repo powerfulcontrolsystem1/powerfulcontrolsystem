@@ -1,25 +1,25 @@
 package db
 
-import (
-	"strings"
-	"testing"
-)
+import "testing"
 
 func TestDefaultGlobalLicenciaPlans(t *testing.T) {
 	plans := DefaultGlobalLicenciaPlans()
-	if len(plans) != 4 {
-		t.Fatalf("planes globales = %d, want 4", len(plans))
+	if len(plans) != 7 {
+		t.Fatalf("planes globales = %d, want 7", len(plans))
 	}
 
 	seenCodes := map[string]bool{}
-	expectedDocs := []int{250, 1000, 2000, 4000}
-	expectedCajas := []int{2, 2, 3, 4}
-	expectedValues := []float64{0, 60000, 100000, 150000}
+	expectedDocs := []int{250, 1000, 2000, 4000, 12000, 24000, 36000}
+	expectedCajas := []int{2, 2, 3, 4, 4, 5, 6}
+	expectedValues := []float64{0, 60000, 110000, 200000, 600000, 1100000, 2200000}
 	expectedNames := []string{
 		"Prueba gratis 15 dias",
 		"Plan mensual COP 60000",
-		"Plan mensual COP 100000",
-		"Plan mensual COP 150000",
+		"Plan mensual COP 110000",
+		"Plan mensual COP 200000",
+		"Plan anual COP 600000",
+		"Plan anual COP 1100000",
+		"Plan anual COP 2200000",
 	}
 	for i, plan := range plans {
 		if plan.Codigo == "" {
@@ -47,6 +47,11 @@ func TestDefaultGlobalLicenciaPlans(t *testing.T) {
 	}
 	if plans[0].Valor != 0 {
 		t.Fatalf("valor prueba gratis = %.2f, want 0", plans[0].Valor)
+	}
+	for _, idx := range []int{4, 5, 6} {
+		if plans[idx].DuracionDias != 365 {
+			t.Fatalf("duracion plan anual %d = %d, want 365", idx, plans[idx].DuracionDias)
+		}
 	}
 }
 
@@ -93,14 +98,8 @@ func TestIsPowerfulSystemEmpresaNameRecognizesExistingCompanyAndLegacyTypo(t *te
 	}
 }
 
-func TestPowerfulSystemEmpresaLicenseIsLongAndOperational(t *testing.T) {
-	if PowerfulSystemEmpresaLicenseDays < 36500 {
-		t.Fatalf("licencia interna debe cubrir 100 anos, got %d dias", PowerfulSystemEmpresaLicenseDays)
-	}
-	modules := PowerfulSystemEmpresaLicenseModules()
-	for _, expected := range []string{"ventas", "seguridad", "facturacion", "finanzas", "grafologia", "camaras", "energia_solar"} {
-		if !strings.Contains(","+modules+",", ","+expected+",") {
-			t.Fatalf("licencia interna debe habilitar %q; modulos=%q", expected, modules)
-		}
+func TestPowerfulSystemEmpresaInternalLicenseIsNotCommercialPlan(t *testing.T) {
+	if IsGlobalLicenciaPlanCode(PowerfulSystemEmpresaLicenseCode) {
+		t.Fatal("la licencia interna retirada no debe ser parte del catalogo comercial global")
 	}
 }

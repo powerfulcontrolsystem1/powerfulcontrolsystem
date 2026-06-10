@@ -100,11 +100,15 @@ func EmpresaConfiguracionAvanzadaHandler(dbEmp *sql.DB) http.HandlerFunc {
 				if _, hasEmpresaLogo := raw["mostrar_logo_empresa"]; !hasEmpresaLogo {
 					existMap["mostrar_logo_empresa"] = v
 				}
+				if _, hasFacturaLogo := raw["mostrar_logo_factura"]; !hasFacturaLogo {
+					existMap["mostrar_logo_factura"] = v
+				}
 			}
 			_, hasLogoEmpresa := raw["mostrar_logo_empresa"]
+			_, hasLogoFactura := raw["mostrar_logo_factura"]
 			_, hasLogoSistema := raw["mostrar_logo_sistema"]
-			if hasLogoLegacy || hasLogoEmpresa || hasLogoSistema {
-				existMap["mostrar_logo"] = boolFromJSONLike(existMap["mostrar_logo_empresa"]) || boolFromJSONLike(existMap["mostrar_logo_sistema"])
+			if hasLogoLegacy || hasLogoEmpresa || hasLogoFactura || hasLogoSistema {
+				existMap["mostrar_logo"] = boolFromJSONLike(existMap["mostrar_logo_empresa"]) || boolFromJSONLike(existMap["mostrar_logo_factura"]) || boolFromJSONLike(existMap["mostrar_logo_sistema"])
 			}
 			mergedBytes, merr := json.Marshal(existMap)
 			if merr != nil {
@@ -183,8 +187,24 @@ func EmpresaConfiguracionAvanzadaLogoUploadHandler(dbEmp *sql.DB) http.HandlerFu
 			return
 		}
 
-		webRoot := resolveWebRootDir()
-		dir := filepath.Join(webRoot, "uploads", "empresa_logos", fmt.Sprintf("empresa_%d", empresaID))
+		tipoLogo := strings.ToLower(strings.TrimSpace(r.FormValue("tipo_logo")))
+		if tipoLogo == "" {
+			tipoLogo = strings.ToLower(strings.TrimSpace(r.FormValue("tipo")))
+		}
+		if tipoLogo != "factura" {
+			tipoLogo = "empresa"
+		}
+		cfg, err := dbpkg.GetEmpresaConfiguracionAvanzada(dbEmp, empresaID)
+		if err != nil {
+			log.Printf("[empresa_config_avanzada_logo] get empresa_id=%d error: %v", empresaID, err)
+			http.Error(w, "no se pudo cargar la configuracion", http.StatusInternalServerError)
+			return
+		}
+		oldLogoURL := strings.TrimSpace(cfg.LogoURL)
+		if tipoLogo == "factura" {
+			oldLogoURL = strings.TrimSpace(cfg.LogoFacturaURL)
+		}
+		dir, publicDir, _ := empresaUploadsSubdir(dbEmp, empresaID, "imagenes", "logos", tipoLogo)
 		if err := os.MkdirAll(dir, 0o755); err != nil {
 			http.Error(w, "no se pudo preparar el directorio de logos", http.StatusInternalServerError)
 			return
@@ -215,21 +235,24 @@ func EmpresaConfiguracionAvanzadaLogoUploadHandler(dbEmp *sql.DB) http.HandlerFu
 			return
 		}
 
-		logoURL := "/uploads/empresa_logos/empresa_" + strconv.FormatInt(empresaID, 10) + "/" + fileName
-		cfg, err := dbpkg.GetEmpresaConfiguracionAvanzada(dbEmp, empresaID)
-		if err != nil {
-			log.Printf("[empresa_config_avanzada_logo] get empresa_id=%d error: %v", empresaID, err)
-			http.Error(w, "no se pudo cargar la configuracion", http.StatusInternalServerError)
-			return
+		logoURL := publicDir + "/" + fileName
+		if tipoLogo == "factura" {
+			cfg.LogoFacturaURL = logoURL
+			cfg.MostrarLogoFactura = true
+		} else {
+			cfg.LogoURL = logoURL
+			cfg.MostrarLogoEmpresa = true
 		}
-		cfg.LogoURL = logoURL
 		cfg.MostrarLogo = true
-		cfg.MostrarLogoEmpresa = true
 		cfg.UsuarioCreador = strings.TrimSpace(adminEmailFromRequest(r))
 		if _, err := dbpkg.UpsertEmpresaConfiguracionAvanzada(dbEmp, *cfg); err != nil {
+			_ = os.Remove(absPath)
 			log.Printf("[empresa_config_avanzada_logo] upsert empresa_id=%d error: %v", empresaID, err)
 			http.Error(w, "no se pudo guardar el logo en la configuracion", http.StatusInternalServerError)
 			return
+		}
+		if oldLogoURL != "" && oldLogoURL != logoURL {
+			_ = deleteEmpresaUploadedPublicURL(dbEmp, empresaID, oldLogoURL)
 		}
 
 		stored, _ := dbpkg.GetEmpresaConfiguracionAvanzada(dbEmp, empresaID)
@@ -237,6 +260,7 @@ func EmpresaConfiguracionAvanzadaLogoUploadHandler(dbEmp *sql.DB) http.HandlerFu
 		writeJSON(w, http.StatusOK, map[string]interface{}{
 			"ok":            true,
 			"empresa_id":    empresaID,
+			"tipo_logo":     tipoLogo,
 			"logo_url":      logoURL,
 			"configuracion": stored,
 		})

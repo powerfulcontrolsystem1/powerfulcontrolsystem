@@ -4,6 +4,40 @@ Este archivo es la primera lectura operativa antes de tocar el proyecto. Resume
 lo que Codex debe tener en memoria para evitar redescubrir rutas, flujos y
 decisiones en cada tarea.
 
+## Actualizacion 2026-06-10 - Snapshot completo VPS
+
+- El super administrador tiene una funcion en `Docker VPS` para crear snapshots
+  restaurables en `backup/vps_snapshots` mediante `/super/api/vps_snapshots`.
+- El snapshot incluye proyecto portable, dump PostgreSQL si esta disponible,
+  volumenes Docker PCS, manifiesto y guia `RESTAURAR_VPS.md`; las imagenes
+  Docker son opcionales porque pueden pesar mucho.
+- La nube se maneja con `rclone` configurado fuera de PCS. El sistema solo guarda
+  proveedor y ruta remota (`gdrive:...`, `mega:...`, `onedrive:...`, `s3:...`),
+  no tokens OAuth ni claves.
+- `.env.platform`, certificados, llaves y secretos no se incluyen por defecto.
+  Cualquier restauracion real debe revisar el manifiesto y configurar secretos
+  manualmente en la VPS destino.
+
+## Actualizacion 2026-06-09 - IA empresarial sin robot ni secretaria
+
+- El asistente IA empresarial vuelve al recuadro normal: no debe mostrarse robot,
+  secretaria ni avatar 3D en nuevas pantallas, configuraciones o ayudas.
+- El icono flotante es un circulo compacto; la voz se conserva como opcion del
+  chat y se persiste en `chat_flotante.voice_enabled`/`robot_voice` por
+  compatibilidad historica del nombre de clave.
+- En preproduccion, las empresas existentes y las preconfiguraciones por tipo
+  quedan con `chat_flotante.chat_enabled=1`, `chat_flotante.robot_enabled=0` y
+  `chat_flotante.personality_mode=normal`; la emisora sigue siendo opt-in.
+- La IA no puede ejecutar SQL libre ni endpoints genericos de base de datos. El
+  patron profesional es contexto de lectura construido por backend con
+  `empresa_id`, tool/function calling con endpoints permitidos, confirmacion
+  humana y validacion real de rol/licencia en backend.
+- Segun documentacion oficial OpenAI 2026, la arquitectura recomendada para PCS
+  es Responses API/function calling para herramientas de negocio; GPT-5.5 para
+  razonamiento, vision y tareas complejas, y el modelo mini configurado para
+  consultas frecuentes. La voz debe ser una capa reutilizable del mismo agente,
+  con Realtime/WebRTC solo cuando se requiera baja latencia.
+
 ## Actualizacion 2026-06-08 - Herramientas locales Codex
 
 - Chrome esta instalado y la Codex Chrome Extension esta habilitada en el perfil
@@ -149,17 +183,16 @@ decisiones en cada tarea.
 - La tarjeta antigua `Perfil de facturacion` sigue fuera de la vista para no
   duplicar informacion.
 
-## Actualizacion 2026-06-07 - Ayuda integrada con robot/caja IA
+## Actualizacion 2026-06-07 - Ayuda integrada con caja IA
 
 - `web/js/help_ai_bridge.js` conecta enlaces de ayuda, tutoriales y botones con
-  `data-pcs-help-ai` al robot/caja IA del panel empresarial.
+  `data-pcs-help-ai` a la caja IA del panel empresarial.
 - `web/js/ai_chat_drawer.js` expone `PCSAIChatHelp` y acepta el mensaje
   `pcs-help-ai-open` para mostrar ayuda contextual estatica sin ejecutar
   acciones ni consumir IA automaticamente.
-- Si el robot 3D esta habilitado por empresa, la ayuda aparece en sus globos; si
-  solo esta habilitada la caja IA, se abre el drawer en modo `Ayudante por
-  pasos`; si la IA/chat estan apagados, se abre un panel de ayuda estatica sin
-  activar IA ni cambiar preferencias y con enlace a la guia HTML completa.
+- La ayuda se abre en el drawer normal en modo `Ayudante por pasos`; si la
+  IA/chat estan apagados, se abre un panel de ayuda estatica sin activar IA ni
+  cambiar preferencias y con enlace a la guia HTML completa.
 - `web/js/empresa_submenu_context.js` carga el puente de ayuda en subpaginas
   empresariales para que los iframes puedan pedir ayuda al panel padre sin
   romper `empresa_id`.
@@ -312,10 +345,12 @@ decisiones en cada tarea.
   deben enviar documentos reales al ambiente de habilitacion, recibir `ZipKey`
   cuando aplique y cerrar el acuse con `GetStatusZip`. Solo una ejecucion real
   con acuse aceptado de DIAN/proveedor puede permitir pasar a produccion local.
-- Compra de licencias: el correo unificado adjunta licencia y factura
-  electronica solo cuando el pago comercial aprobado es mayor que cero. Una
-  activacion valor cero o con descuento total activa la licencia, pero no emite
-  factura electronica.
+- Compra de licencias: el correo de bienvenida puede adjuntar la factura
+  electronica en PDF cuando el pago comercial aprobado es mayor que cero. La
+  licencia del software ya no se adjunta por correo; se descarga desde
+  Administrar empresa > Licencia > Licencia del sistema. Una activacion valor
+  cero o con descuento total activa la licencia, pero no emite factura
+  electronica.
 
 ## Actualizacion 2026-06-05 - Tutorial guiado de nomina
 
@@ -362,12 +397,12 @@ decisiones en cada tarea.
 - La empresa interna `Powerful Control System` opera como cualquier empresa del
   SaaS: panel, carrito, correo corporativo, facturacion, reportes y modulos
   empresariales pasan por los mismos endpoints y permisos multiempresa.
-- La unica diferencia es su licencia tecnica interna
-  `PCS_SYSTEM_INTERNAL_PERPETUAL`: vigencia fechada de 100 anos, valor cero,
-  limites altos y todos los modulos operativos habilitados.
+- La licencia tecnica interna `PCS_SYSTEM_INTERNAL_PERPETUAL` queda retirada:
+  no se debe crear, reactivar ni usar para otorgar acceso. Si existe en datos
+  heredados, el arranque la desactiva y la empresa debe comprar, renovar o
+  adquirir licencias comerciales como las demas empresas.
 - No usar excepciones sin fecha para esta empresa; las consultas de licencia
-  deben tolerar valores heredados vacios y resolver siempre una licencia vigente
-  normal.
+  deben resolver siempre una licencia comercial vigente normal.
 - El rol `super_administrador` validado en backend puede acceder globalmente a
   empresas para soporte, auditoria, comparticion y operacion interna, manteniendo
   filtros por `empresa_id` en las consultas.
@@ -507,29 +542,31 @@ botones, desde handlers estaticos del backend.
   `/super/api/licencias/codigos_descuento`, `/licencias/activar_sin_pago` y
   `/api/empresa/licencia_sistema/pdf`.
   El catalogo base vigente es global para todos
-  los tipos de empresa (`tipo_id=0`, `pais_codigo=GLOBAL`) con cuatro planes:
-  prueba gratis 15 dias, COP 60000, COP 100000 y COP 150000. La
+  los tipos de empresa (`tipo_id=0`, `pais_codigo=GLOBAL`) con siete planes:
+  prueba gratis 15 dias, mensuales COP 60000, COP 110000 y COP 200000, y
+  anuales COP 600000, COP 1100000 y COP 2200000. La
   prueba gratis solo se puede activar una vez por empresa, incluso cuando la
   prueba anterior ya vencio, quedo inactiva o viene de datos antiguos; las
   licencias base antiguas por tipo y addons de catalogo sin empresa asignada se
-  eliminan del catalogo comercial. Al activarse una licencia por pago o por
-  flujo de valor cero permitido, `backend/handlers/payments_handlers.go` envia
-  un solo correo al administrador de la empresa y adjunta un PDF de licencia de
-  software generado en Go puro. Ese mismo PDF se descarga desde Administrar
-  empresa > Licencia > Licencia del sistema y su texto se edita con la plantilla
-  `licencia_software_pdf` de Super administrador > Formatos de email.
+  eliminan del catalogo comercial. La renovacion adelantada de la misma licencia
+  se limita con `licencias.max_compras_adelantadas_misma_licencia`, por defecto
+  2 compras adicionales. Al activarse una licencia por pago o por flujo de valor
+  cero permitido, `backend/handlers/payments_handlers.go` puede enviar un correo
+  de bienvenida configurable desde Super administrador > Licencias y Formatos de
+  email. El PDF de licencia de software no se adjunta al correo; se descarga
+  desde Administrar empresa > Licencia > Licencia del sistema y su texto se
+  edita con la plantilla `licencia_software_pdf`.
   En compras comerciales con total pagado mayor que cero, el mismo flujo emite
   una factura electronica automatica desde la empresa interna `Powerful Control
-  System`/`Powerful Control Systen` ya existente y adjunta el PDF resumen de esa
-  factura al mismo correo de activacion de licencia. El documento se registra en
+  System`/`Powerful Control Systen` ya existente y, si el switch esta activo,
+  adjunta el PDF resumen de esa factura al correo de bienvenida. El documento se registra en
   `empresa_facturacion_documentos` de la empresa emisora y marca `pagos_epayco` o `pagos_wompi` con
   `licencia_factura_electronica_emitida` para no duplicar documentos por
   webhooks repetidos. La empresa emisora interna se guarda en
-  `configuraciones.licencias.facturacion_empresa_sistema_id` y recibe una
-  licencia tecnica interna `PCS_SYSTEM_INTERNAL_PERPETUAL` con vigencia fechada
-  de 100 anos, limites altos y modulos operativos completos. Esta licencia no se
-  ofrece en el catalogo comercial; solo evita tratar a la empresa interna como
-  una excepcion sin carrito, correo o permisos normales. Las activaciones con
+  `configuraciones.licencias.facturacion_empresa_sistema_id`. La licencia
+  tecnica interna heredada `PCS_SYSTEM_INTERNAL_PERPETUAL` se desactiva si
+  existe; la empresa emisora debe tener una licencia comercial vigente para
+  operar sus propios modulos. Las activaciones con
   total pagado cero por prueba o descuento total no emiten factura electronica
   en el flujo final.
   Si una empresa paga una licencia comercial antes de que venza la licencia
@@ -639,9 +676,9 @@ botones, desde handlers estaticos del backend.
   `web/super/mantenimiento_sistema.html`, `web/super/configuracion/gmail_smtp.html`
   y `web/super/email_corporativo.html`. Los mensajes de compra/pago de licencia
   se editan desde `Formatos de email`; en esa misma pagina tambien se configura
-  el texto del PDF `licencia_software_pdf` que se adjunta al correo de licencia
-  activada y que cada empresa puede descargar desde Administrar empresa >
-  Licencia > Licencia del sistema.
+  el texto del PDF `licencia_software_pdf`, que cada empresa descarga desde
+  Administrar empresa > Licencia > Licencia del sistema y ya no se adjunta al
+  correo de bienvenida.
 - Email corporativo Mailu: `web/super/email_corporativo.html`,
   `/super/api/email_corporativo`, `/api/empresa/email_corporativo`,
   `backend/handlers/email_corporativo_handlers.go`,
@@ -701,15 +738,13 @@ botones, desde handlers estaticos del backend.
   baterias y alertas; el rol `tecnico_solar` solo recibe lectura.
 - Analitica publica por pais: `/api/public/portal_visitas`,
   `web/js/portal_visits.js`.
-- Chat/robot/emisora flotante: `web/js/ai_chat_drawer.js`,
+- Chat IA/emisora flotante: `web/js/ai_chat_drawer.js`,
   `web/js/radio_player.js`, `web/js/radio_online.js`,
-  `/api/chat_flotante/preferencias`. En contexto empresarial, robot/secretaria
-  IA 3D y emisora online deben iniciar apagados salvo preferencia explicita por
-  `empresa_id`; no deben prenderse por configuracion global ni por
-  `localStorage` viejo. Mientras el proyecto siga en preproduccion, el arranque
-  puede limpiar preferencias antiguas encendidas para dejar el default en cero.
-  Las preconfiguraciones por tipo tambien deben guardar/aplicar
-  `asistente_ia.robot_enabled=false` y `asistente_ia.radio_online_enabled=false`.
+  `/api/chat_flotante/preferencias`. En contexto empresarial, el chat IA debe
+  iniciar activo por defecto en preproduccion, siempre en modo `normal`; robot y
+  secretaria no se muestran ni deben prenderse por configuracion global o
+  `localStorage` viejo. La emisora online sigue apagada salvo preferencia
+  explicita por `empresa_id`.
 
 ## Flujo de login
 
@@ -778,9 +813,10 @@ real vive en backend y en `CanAdminAccessEmpresaIA`.
 
 - Configuracion visual/operativa del carrito:
   `empresa_estacion_prefs.estaciones_config.carrito_ui_global`.
-- Configuracion chat flotante/robot/emisora:
+- Configuracion chat IA/emisora:
   claves `chat_flotante.*` en `empresa_estacion_prefs` con `estacion_id=0`.
-  Robot/secretaria y emisora son opt-in por empresa.
+  `chat_enabled` queda activo por defecto en preproduccion; `robot_enabled`
+  permanece en `0`, `personality_mode=normal` y la emisora es opt-in por empresa.
 - Overrides por estacion:
   `empresa_estacion_prefs.estaciones_config.estaciones[].carrito.configuracion`.
 - Configuracion de estaciones y nombres singular/plural:
@@ -834,3 +870,20 @@ Antes de ejecutar scripts operativos revisar `documentos/comandos_codex.md`.
   licencias, usuarios, backups, conectividad y cambios de configuracion.
 - En tareas de limpieza, backup o reinicio de datos, conservar configuracion,
   usuarios, permisos e integraciones salvo instruccion explicita.
+
+## IA super administrador 2026-06-09
+
+- La configuracion IA del super administrador queda remodelada como
+  `Gobierno de inteligencia artificial` en
+  `web/super/configuracion/ia_global.html` y en el card `aiConfigCard` de
+  `web/super/configuracion_avanzada.html`.
+- La pantalla concentra estado global, proveedor OpenAI, credencial cifrada,
+  consumo, prueba real y accesos a limites, contexto de negocio y voz.
+- La IA visible ya no usa robot ni secretaria: se presenta como recuadro normal
+  y boton flotante circular, conservando voz cuando este habilitada.
+- La credencial OpenAI se conserva en `pcs_superadministrador.configuraciones`
+  mediante `/super/api/config/ai`; no se imprime completa ni se duplica en
+  documentacion.
+- La politica operativa mantiene lectura preparada por servidor, roles,
+  aislamiento por `empresa_id` y acciones estructuradas solo contra endpoints
+  autorizados; no hay SQL libre ni secretos expuestos a la IA.

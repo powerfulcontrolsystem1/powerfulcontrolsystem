@@ -1891,7 +1891,7 @@ func DisableRobotRadioInTipoEmpresaPreconfiguraciones(dbConn *sql.DB) error {
 	if err := EnsureTipoEmpresaPreconfiguracionSchema(dbConn); err != nil {
 		return err
 	}
-	return ApplySchemaMigration(dbConn, "super", "20260528_preconfig_robot_radio_off_default", "Normaliza preconfiguraciones con robot y emisora apagados por defecto", func(tx *sql.DB) error {
+	return ApplySchemaMigration(dbConn, "super", "20260609_preconfig_chat_ia_activo_sin_avatar", "Normaliza preconfiguraciones con chat IA activo sin robot/secretaria", func(tx *sql.DB) error {
 		rows, err := querySQLCompat(tx, `SELECT id, COALESCE(config_json, '') FROM tipo_empresa_preconfiguraciones`)
 		if err != nil {
 			return err
@@ -1917,6 +1917,7 @@ func DisableRobotRadioInTipoEmpresaPreconfiguraciones(dbConn *sql.DB) error {
 			if err != nil {
 				continue
 			}
+			template.Asistente.Enabled = true
 			template.Asistente.RobotEnabled = false
 			template.Asistente.RadioOnlineEnabled = false
 			nextRaw, err := MarshalTipoEmpresaPreconfigTemplate(template)
@@ -2113,6 +2114,7 @@ func NormalizeTipoEmpresaPreconfigTemplate(template TipoEmpresaPreconfigTemplate
 		usuarios = append(usuarios, u)
 	}
 	template.Usuarios = usuarios
+	template.Asistente.Enabled = true
 	template.Asistente.Rol = strings.TrimSpace(template.Asistente.Rol)
 	template.Asistente.RobotEnabled = false
 	template.Asistente.RadioOnlineEnabled = false

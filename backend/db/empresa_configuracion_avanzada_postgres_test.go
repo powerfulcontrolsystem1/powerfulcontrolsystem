@@ -50,6 +50,7 @@ func TestEmpresaConfiguracionAvanzadaSchemaNormalizesLegacyBooleanFlags(t *testi
 		"ALTER COLUMN %s TYPE INTEGER USING CASE",
 		"enviar_email_venta",
 		"mostrar_logo_empresa",
+		"mostrar_logo_factura",
 		"usar_decimales",
 	} {
 		if !strings.Contains(normalizerBody, required) {

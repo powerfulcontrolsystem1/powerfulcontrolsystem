@@ -15,8 +15,9 @@ func TestDefaultContextoIALogicaNegocioIncluyePlantillas2026(t *testing.T) {
 		"cooperativa/fondo de empleados",
 		"empresa_modulos_colombia",
 		"/api/public/plantillas_nuevas/catalogo",
-		"cuatro licencias globales",
-		"plan COP 150000",
+		"siete licencias globales",
+		"COP 200000",
+		"dos compras adicionales",
 	}
 	for _, want := range required {
 		if !strings.Contains(ctx, want) {

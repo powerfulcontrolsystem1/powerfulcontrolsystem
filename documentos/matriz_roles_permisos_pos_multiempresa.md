@@ -1,3 +1,33 @@
+2026-06-10: Nota de snapshot completo VPS
+- `/super/api/vps_snapshots` es exclusivo de `super_administrador` y queda
+  envuelto en `WithSuperAuditoria` como `super_vps_snapshots`.
+- No recibe ni concede permisos por `empresa_id`: opera sobre infraestructura
+  global de la VPS y por eso no aparece en la matriz empresarial.
+- Las descargas solo sirven archivos dentro de `backup/vps_snapshots`; la ruta
+  fisica no se expone en la lista del frontend.
+- La configuracion de nube guarda ruta `rclone`, no credenciales OAuth, tokens,
+  certificados ni claves privadas.
+
+2026-06-10: Nota de retencion de empresas vencidas
+- `/super/api/licencias/vencimiento_alertas` mantiene acceso exclusivo de
+  `super_administrador` y ahora tambien administra `retencion_empresas`.
+- La accion manual `retencion_run_now` y el worker solo procesan empresas no
+  operativas, sin licencia base vigente y con preaviso registrado antes de
+  cualquier eliminacion.
+- El reporte de preavisos, errores y empresas eliminadas queda en
+  `licencia_empresa_retencion_log` con `empresa_ref_id`, sin conceder permisos
+  a administradores empresariales.
+
+2026-06-09: Nota de IA empresarial activa sin avatar
+- `linkChatIA` y `linkCentroIAEmpresarial` ya no se fuerzan ocultos por defecto;
+  se muestran cuando rol, licencia y wrapper efectivo lo permiten.
+- `linkRentaIA`, `linkSoportesComprasIA` y `linkSoportesComprasIAMenu` siguen
+  ocultos hasta regla fina explicita por su impacto tributario/contable.
+- El chat flotante queda activo por defecto en preproduccion, siempre como
+  recuadro normal. Robot y secretaria se retiran de la experiencia visual.
+- Las acciones propuestas por IA siguen requiriendo confirmacion y endpoints
+  permitidos; la IA no concede permisos ni ejecuta SQL libre.
+
 2026-06-08: Nota de OCR documental sin IA
 - Se agrega modulo `ocr`, pagina `linkOCR` y wrapper `WithEmpresaOCRPermissions`.
 - Matriz efectiva: lectura para roles con consulta general; procesar documentos requiere permiso de creacion/actualizacion segun la matriz empresarial y licencia activa.
@@ -15,15 +45,11 @@
 - `web/administrar_empresa/auditoria.html` solo amplia opciones visibles de filtro; consultar eventos sigue dependiendo del permiso/wrapper de auditoria existente.
 - Los hubs sin tabla propia se muestran como `sin_tabla`; esto documenta alcance operativo y no concede acceso a datos, mutaciones, emision DIAN, pagos, IA ni documentos.
 
-2026-06-07: Nota de IA oculta por defecto
-- Las paginas `linkChatIA`, `linkCentroIAEmpresarial`, `linkRentaIA`,
-  `linkSoportesComprasIA` y `linkSoportesComprasIAMenu` quedan ocultas por
-  defecto para todas las empresas.
-- El permiso base del rol/licencia sigue siendo necesario, pero no basta para
-  mostrar IA: la empresa debe tener una regla fina explicita de pagina
-  permitida.
-- El menu principal, el chat flotante, Centro financiero y Suite contador
-  consumen `/api/empresa/permisos_contexto` y no muestran IA sin esa regla.
+2026-06-07: Nota historica de IA oculta por defecto
+- Regla reemplazada el 2026-06-09 para `linkChatIA` y
+  `linkCentroIAEmpresarial`: ahora se muestran con permisos/licencia efectivos.
+- La restriccion fina sigue vigente para `linkRentaIA`,
+  `linkSoportesComprasIA` y `linkSoportesComprasIAMenu`.
 
 2026-06-07: Nota de Suite contador
 - Se agrega pagina `linkSuiteContador` bajo el modulo `finanzas` con accion de lectura (`R`).
@@ -685,7 +711,7 @@
 - La pagina publica `visualizar_productos_y_precios_publico.html` usa `/api/public/venta_publicaaction=catalogo` y solo expone catalogo de lectura: no crea pedidos, pagos ni carrito.
 
 2026-04-30: Nota operativa para `chat IA`, `documentos dinamicos`, `empresas compartidas` y `pagos`
-- La configuracion del chat flotante, robot, secretaria y emisora online queda en Administrar empresa > Configuracion > Configurar chat/robot; es una configuracion empresarial por `empresa_id` y no una concesion de permisos super.
+- La configuracion del chat IA flotante, voz y emisora online queda en Administrar empresa > Configuracion > Configurar chat IA; es una configuracion empresarial por `empresa_id` y no una concesion de permisos super.
 - `/generate` y `/download` para documentos dinamicos requieren sesion y deben asociarse al contexto empresarial cuando se usen desde empresa; no entregan credenciales ni SQL libre a la IA.
 - La consulta/revocacion de administradores compartidos se controla por pertenencia administrativa a la empresa compartida; quien compartio y quien recibio pueden retirar acceso, registrando actor y fecha.
 - El fallback clasico de Epayco no cambia permisos de checkout: solo modifica el transporte hacia la pasarela usando POST firmado cuando Smart Checkout no entrega token.

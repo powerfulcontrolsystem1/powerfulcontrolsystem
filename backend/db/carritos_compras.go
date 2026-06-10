@@ -225,6 +225,22 @@ type CarritoStationMetricSummary struct {
 	UltimaOperacion        string  `json:"ultima_operacion"`
 }
 
+// CarritoTransferResult resume el traslado operativo de una cuenta entre estaciones.
+type CarritoTransferResult struct {
+	EmpresaID             int64   `json:"empresa_id"`
+	OrigenCarritoID       int64   `json:"origen_carrito_id"`
+	DestinoCarritoID      int64   `json:"destino_carrito_id"`
+	OrigenEstacionID      int64   `json:"origen_estacion_id"`
+	DestinoEstacionID     int64   `json:"destino_estacion_id"`
+	OrigenEstacionNombre  string  `json:"origen_estacion_nombre"`
+	DestinoEstacionNombre string  `json:"destino_estacion_nombre"`
+	TarifaTiempoTipo      string  `json:"tarifa_tiempo_tipo"`
+	TarifaTiempoID        int64   `json:"tarifa_tiempo_id"`
+	ItemsTransferidos     int64   `json:"items_transferidos"`
+	AbonosTransferidos    int64   `json:"abonos_transferidos"`
+	Total                 float64 `json:"total"`
+}
+
 // EnsureEmpresaCarritosSchema crea y migra tablas de carritos de compra en PostgreSQL.
 func EnsureEmpresaCarritosSchema(dbConn *sql.DB) error {
 	startedAt := time.Now()
@@ -1915,6 +1931,561 @@ func ActivateCarritoStationSession(dbConn *sql.DB, empresaID, carritoID int64, r
 	}
 
 	return tx.Commit()
+}
+
+type carritoTransferSnapshot struct {
+	ID                int64
+	EmpresaID         int64
+	Codigo            string
+	Nombre            string
+	CanalVenta        string
+	ClienteID         int64
+	EstadoCarrito     string
+	Moneda            string
+	ReferenciaExterna string
+	Subtotal          float64
+	DescuentoTotal    float64
+	ImpuestoTotal     float64
+	Total             float64
+	ActivadoEn        string
+	PagadoEn          string
+	DescuentoTipo     string
+	DescuentoCodigo   string
+	DescuentoValor    float64
+	DevolucionTotal   float64
+	TotalPagado       float64
+	MetodoPago        string
+	ReferenciaPago    string
+	CierreCajaID      int64
+	CajaCodigo        string
+	CajaTurno         string
+	CajaSucursalID    int64
+	TarifaTiempoTipo  string
+	TarifaTiempoID    int64
+	UsuarioCreador    string
+	Estado            string
+	Observaciones     string
+	StationID         int64
+	StationCodigo     string
+	StationNombre     string
+}
+
+func getCarritoTransferSnapshotTx(tx *sql.Tx, empresaID, carritoID int64) (*carritoTransferSnapshot, error) {
+	row := tx.QueryRow(`SELECT
+		id,
+		empresa_id,
+		COALESCE(codigo, ''),
+		COALESCE(nombre, ''),
+		COALESCE(canal_venta, 'mostrador'),
+		COALESCE(cliente_id, 0),
+		COALESCE(estado_carrito, 'abierto'),
+		COALESCE(moneda, 'COP'),
+		COALESCE(referencia_externa, ''),
+		COALESCE(subtotal, 0),
+		COALESCE(descuento_total, 0),
+		COALESCE(impuesto_total, 0),
+		COALESCE(total, 0),
+		COALESCE(activado_en, ''),
+		COALESCE(pagado_en, ''),
+		COALESCE(descuento_tipo, ''),
+		COALESCE(descuento_codigo, ''),
+		COALESCE(descuento_valor, 0),
+		COALESCE(devolucion_total, 0),
+		COALESCE(total_pagado, 0),
+		COALESCE(metodo_pago, 'efectivo'),
+		COALESCE(referencia_pago, ''),
+		COALESCE(cierre_caja_id, 0),
+		COALESCE(caja_codigo, ''),
+		COALESCE(caja_turno, ''),
+		COALESCE(caja_sucursal_id, 0),
+		COALESCE(tarifa_tiempo_tipo, 'auto'),
+		COALESCE(tarifa_tiempo_id, 0),
+		COALESCE(usuario_creador, ''),
+		COALESCE(estado, 'activo'),
+		COALESCE(observaciones, '')
+	FROM carritos_compras
+	WHERE empresa_id = ? AND id = ?
+	FOR UPDATE`, empresaID, carritoID)
+
+	var item carritoTransferSnapshot
+	if err := row.Scan(
+		&item.ID,
+		&item.EmpresaID,
+		&item.Codigo,
+		&item.Nombre,
+		&item.CanalVenta,
+		&item.ClienteID,
+		&item.EstadoCarrito,
+		&item.Moneda,
+		&item.ReferenciaExterna,
+		&item.Subtotal,
+		&item.DescuentoTotal,
+		&item.ImpuestoTotal,
+		&item.Total,
+		&item.ActivadoEn,
+		&item.PagadoEn,
+		&item.DescuentoTipo,
+		&item.DescuentoCodigo,
+		&item.DescuentoValor,
+		&item.DevolucionTotal,
+		&item.TotalPagado,
+		&item.MetodoPago,
+		&item.ReferenciaPago,
+		&item.CierreCajaID,
+		&item.CajaCodigo,
+		&item.CajaTurno,
+		&item.CajaSucursalID,
+		&item.TarifaTiempoTipo,
+		&item.TarifaTiempoID,
+		&item.UsuarioCreador,
+		&item.Estado,
+		&item.Observaciones,
+	); err != nil {
+		return nil, err
+	}
+	item.StationID = parseCarritoStationID(item.ReferenciaExterna, item.Codigo, item.EmpresaID)
+	item.StationCodigo = strings.TrimSpace(item.Codigo)
+	item.StationNombre = sanitizeLegacyUserVisibleText(item.Nombre)
+	if item.StationNombre == "" && item.StationID > 0 {
+		item.StationNombre = fmt.Sprintf("Estacion %d", item.StationID)
+	}
+	return &item, nil
+}
+
+func countActiveCarritoRowsTx(tx *sql.Tx, tableName string, empresaID, carritoID int64) (int64, error) {
+	if tableName != "carrito_compra_items" && tableName != "carrito_compra_abonos" {
+		return 0, fmt.Errorf("tabla de carrito no permitida")
+	}
+	var count int64
+	query := fmt.Sprintf(`SELECT COUNT(1) FROM %s WHERE empresa_id = ? AND carrito_id = ? AND LOWER(COALESCE(estado, 'activo')) = 'activo'`, tableName)
+	if err := tx.QueryRow(query, empresaID, carritoID).Scan(&count); err != nil {
+		return 0, err
+	}
+	return count, nil
+}
+
+func carritoTransferSourceIsOpen(item *carritoTransferSnapshot) bool {
+	if item == nil {
+		return false
+	}
+	estado := strings.TrimSpace(strings.ToLower(item.Estado))
+	if estado == "" {
+		estado = "activo"
+	}
+	estadoCarrito := strings.TrimSpace(strings.ToLower(item.EstadoCarrito))
+	if estadoCarrito == "" {
+		estadoCarrito = "abierto"
+	}
+	return estado == "activo" && estadoCarrito == "abierto" && strings.TrimSpace(item.PagadoEn) == ""
+}
+
+func carritoTransferDestinoOcupado(item *carritoTransferSnapshot, activeItems, activeAbonos int64) bool {
+	if item == nil {
+		return true
+	}
+	if strings.TrimSpace(item.PagadoEn) != "" {
+		return false
+	}
+	estado := strings.TrimSpace(strings.ToLower(item.Estado))
+	if estado == "" {
+		estado = "activo"
+	}
+	estadoCarrito := strings.TrimSpace(strings.ToLower(item.EstadoCarrito))
+	if estadoCarrito == "" {
+		estadoCarrito = "abierto"
+	}
+	if estado == "activo" && estadoCarrito == "abierto" && strings.TrimSpace(item.ActivadoEn) != "" {
+		return true
+	}
+	return activeItems > 0 || activeAbonos > 0 || round2(item.Total) > 0 || round2(item.Subtotal) > 0
+}
+
+func transferTarifaPorMinutosCompatible(src, dst *EmpresaTarifaPorMinutos) bool {
+	if src == nil || dst == nil {
+		return src == nil && dst == nil
+	}
+	return src.DiaSemanaDesde == dst.DiaSemanaDesde &&
+		src.DiaSemanaHasta == dst.DiaSemanaHasta &&
+		src.MinutosBase == dst.MinutosBase &&
+		src.MinutosExtra == dst.MinutosExtra &&
+		math.Abs(round2(src.ValorBase)-round2(dst.ValorBase)) < 0.01 &&
+		math.Abs(round2(src.ValorExtra)-round2(dst.ValorExtra)) < 0.01 &&
+		src.CobrarPorFraccion == dst.CobrarPorFraccion &&
+		strings.EqualFold(strings.TrimSpace(src.Moneda), strings.TrimSpace(dst.Moneda))
+}
+
+func transferTarifaPorDiaCompatible(src, dst *EmpresaTarifaPorDia) bool {
+	if src == nil || dst == nil {
+		return src == nil && dst == nil
+	}
+	return strings.EqualFold(strings.TrimSpace(src.NombreTarifa), strings.TrimSpace(dst.NombreTarifa)) &&
+		strings.EqualFold(strings.TrimSpace(src.ServicioNombre), strings.TrimSpace(dst.ServicioNombre)) &&
+		math.Abs(round2(src.ValorDia)-round2(dst.ValorDia)) < 0.01 &&
+		src.PersonasDesde == dst.PersonasDesde &&
+		src.PersonasHasta == dst.PersonasHasta &&
+		strings.EqualFold(strings.TrimSpace(src.HoraCheckIn), strings.TrimSpace(dst.HoraCheckIn)) &&
+		strings.EqualFold(strings.TrimSpace(src.HoraCheckOut), strings.TrimSpace(dst.HoraCheckOut)) &&
+		strings.EqualFold(strings.TrimSpace(src.Moneda), strings.TrimSpace(dst.Moneda))
+}
+
+func resolveTransferTarifaDestinoTx(tx *sql.Tx, empresaID int64, source, target *carritoTransferSnapshot, fechaCorte time.Time) (string, int64, error) {
+	tipo := normalizeCarritoTarifaTiempoTipo(source.TarifaTiempoTipo)
+	if tipo == "minutos" && source.TarifaTiempoID > 0 {
+		srcTarifa, err := getEmpresaTarifaPorMinutosByIDTx(tx, empresaID, source.TarifaTiempoID)
+		if err != nil {
+			return "", 0, err
+		}
+		if srcTarifa == nil || srcTarifa.EstacionID != source.StationID || !strings.EqualFold(strings.TrimSpace(srcTarifa.Estado), "activo") {
+			return "", 0, fmt.Errorf("la tarifa de origen no esta activa o no pertenece a la estacion de origen")
+		}
+		destTarifas, err := listEmpresaTarifasPorMinutosTx(tx, empresaID, target.StationID)
+		if err != nil {
+			return "", 0, err
+		}
+		for i := range destTarifas {
+			if transferTarifaPorMinutosCompatible(srcTarifa, &destTarifas[i]) {
+				return "minutos", destTarifas[i].ID, nil
+			}
+		}
+		return "", 0, fmt.Errorf("la estacion destino no tiene una tarifa de motel equivalente")
+	}
+	if tipo == "dia" && source.TarifaTiempoID > 0 {
+		srcTarifa, err := getEmpresaTarifaPorDiaByIDTx(tx, empresaID, source.TarifaTiempoID)
+		if err != nil {
+			return "", 0, err
+		}
+		if srcTarifa == nil || srcTarifa.EstacionID != source.StationID || !strings.EqualFold(strings.TrimSpace(srcTarifa.Estado), "activo") {
+			return "", 0, fmt.Errorf("la tarifa diaria de origen no esta activa o no pertenece a la estacion de origen")
+		}
+		destTarifas, err := listEmpresaTarifasPorDiaTx(tx, empresaID, target.StationID)
+		if err != nil {
+			return "", 0, err
+		}
+		for i := range destTarifas {
+			if transferTarifaPorDiaCompatible(srcTarifa, &destTarifas[i]) {
+				return "dia", destTarifas[i].ID, nil
+			}
+		}
+		return "", 0, fmt.Errorf("la estacion destino no tiene una tarifa diaria equivalente")
+	}
+
+	diaSemana := DayOfWeekISO(fechaCorte)
+	srcMinutos, err := getEmpresaTarifaPorMinutosAplicableTx(tx, empresaID, source.StationID, diaSemana)
+	if err != nil {
+		return "", 0, err
+	}
+	if srcMinutos != nil {
+		dstMinutos, err := getEmpresaTarifaPorMinutosAplicableTx(tx, empresaID, target.StationID, diaSemana)
+		if err != nil {
+			return "", 0, err
+		}
+		if !transferTarifaPorMinutosCompatible(srcMinutos, dstMinutos) {
+			return "", 0, fmt.Errorf("la estacion destino no tiene una tarifa de motel equivalente")
+		}
+		return "auto", 0, nil
+	}
+	srcDia, err := getEmpresaTarifaPorDiaAplicableTx(tx, empresaID, source.StationID)
+	if err != nil {
+		return "", 0, err
+	}
+	if srcDia != nil {
+		dstDia, err := getEmpresaTarifaPorDiaAplicableTx(tx, empresaID, target.StationID)
+		if err != nil {
+			return "", 0, err
+		}
+		if !transferTarifaPorDiaCompatible(srcDia, dstDia) {
+			return "", 0, fmt.Errorf("la estacion destino no tiene una tarifa diaria equivalente")
+		}
+		return "auto", 0, nil
+	}
+	return "auto", 0, nil
+}
+
+func listEmpresaTarifasPorMinutosTx(tx *sql.Tx, empresaID, estacionID int64) ([]EmpresaTarifaPorMinutos, error) {
+	rows, err := tx.Query(`SELECT
+		id,
+		empresa_id,
+		estacion_id,
+		COALESCE(estacion_codigo, ''),
+		COALESCE(estacion_nombre, ''),
+		COALESCE(dia_semana_desde, 1),
+		COALESCE(dia_semana_hasta, 7),
+		COALESCE(minutos_base, 120),
+		COALESCE(valor_base, 0),
+		COALESCE(minutos_extra, 60),
+		COALESCE(valor_extra, 0),
+		COALESCE(cobrar_por_fraccion, 0),
+		COALESCE(moneda, 'COP'),
+		COALESCE(prioridad, 1),
+		COALESCE(fecha_creacion, ''),
+		COALESCE(fecha_actualizacion, ''),
+		COALESCE(usuario_creador, ''),
+		COALESCE(estado, 'activo'),
+		COALESCE(observaciones, '')
+	FROM empresa_tarifas_por_minutos
+	WHERE empresa_id = ? AND estacion_id = ? AND COALESCE(estado, 'activo') = 'activo'
+	ORDER BY prioridad ASC, id ASC`, empresaID, estacionID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := make([]EmpresaTarifaPorMinutos, 0)
+	for rows.Next() {
+		var item EmpresaTarifaPorMinutos
+		var cobrarPorFraccion int
+		if err := rows.Scan(&item.ID, &item.EmpresaID, &item.EstacionID, &item.EstacionCodigo, &item.EstacionNombre, &item.DiaSemanaDesde, &item.DiaSemanaHasta, &item.MinutosBase, &item.ValorBase, &item.MinutosExtra, &item.ValorExtra, &cobrarPorFraccion, &item.Moneda, &item.Prioridad, &item.FechaCreacion, &item.FechaActualizacion, &item.UsuarioCreador, &item.Estado, &item.Observaciones); err != nil {
+			return nil, err
+		}
+		item.CobrarPorFraccion = cobrarPorFraccion > 0
+		out = append(out, item)
+	}
+	return out, rows.Err()
+}
+
+func listEmpresaTarifasPorDiaTx(tx *sql.Tx, empresaID, estacionID int64) ([]EmpresaTarifaPorDia, error) {
+	rows, err := tx.Query(`SELECT
+		id,
+		empresa_id,
+		COALESCE(nombre_tarifa, ''),
+		estacion_id,
+		COALESCE(estacion_codigo, ''),
+		COALESCE(estacion_nombre, ''),
+		COALESCE(servicio_nombre, 'hospedaje'),
+		COALESCE(valor_dia, 0),
+		COALESCE(personas_desde, 1),
+		COALESCE(personas_hasta, 0),
+		COALESCE(hora_check_in, '15:00'),
+		COALESCE(hora_check_out, '12:00'),
+		COALESCE(moneda, 'COP'),
+		COALESCE(prioridad, 1),
+		COALESCE(aplicar_automaticamente, 1),
+		COALESCE(fecha_creacion, ''),
+		COALESCE(fecha_actualizacion, ''),
+		COALESCE(usuario_creador, ''),
+		COALESCE(estado, 'activo'),
+		COALESCE(observaciones, '')
+	FROM empresa_tarifas_por_dia
+	WHERE empresa_id = ? AND estacion_id = ? AND COALESCE(estado, 'activo') = 'activo'
+	ORDER BY prioridad ASC, COALESCE(personas_desde, 1) DESC, COALESCE(personas_hasta, 0) ASC, id ASC`, empresaID, estacionID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := make([]EmpresaTarifaPorDia, 0)
+	for rows.Next() {
+		item, err := scanEmpresaTarifaPorDia(rows)
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, *item)
+	}
+	return out, rows.Err()
+}
+
+func refreshCarritoTotalConTarifasTiempoTx(tx *sql.Tx, empresaID, carritoID int64, fechaCorte time.Time) error {
+	calc, err := refreshCarritoTotalConTarifaPorMinutosTx(tx, empresaID, carritoID, fechaCorte)
+	if err != nil {
+		return err
+	}
+	if calc != nil && calc.TarifaID > 0 && calc.Aplicada {
+		return nil
+	}
+	_, err = refreshCarritoTotalConTarifaPorDiaTx(tx, empresaID, carritoID, fechaCorte)
+	return err
+}
+
+// TransferCarritoStationCuenta mueve una cuenta abierta entre estaciones sin duplicar cobros ni inventario.
+func TransferCarritoStationCuenta(dbConn *sql.DB, empresaID, origenCarritoID, destinoCarritoID int64, usuario, motivo string) (*CarritoTransferResult, error) {
+	if dbConn == nil {
+		return nil, fmt.Errorf("db connection is nil")
+	}
+	if err := EnsureEmpresaCarritosSchema(dbConn); err != nil {
+		return nil, err
+	}
+	if empresaID <= 0 || origenCarritoID <= 0 || destinoCarritoID <= 0 {
+		return nil, fmt.Errorf("empresa_id, carrito origen y carrito destino son obligatorios")
+	}
+	if origenCarritoID == destinoCarritoID {
+		return nil, fmt.Errorf("el carrito destino debe ser diferente al origen")
+	}
+	usuario = strings.TrimSpace(usuario)
+	if usuario == "" {
+		usuario = "sistema"
+	}
+	motivo = strings.TrimSpace(motivo)
+	if motivo == "" {
+		motivo = "transferencia de cuenta entre estaciones"
+	}
+
+	var result *CarritoTransferResult
+	err := withCarritoTxRetry(dbConn, func(tx *sql.Tx) error {
+		fechaCorte := time.Now()
+		source, err := getCarritoTransferSnapshotTx(tx, empresaID, origenCarritoID)
+		if err != nil {
+			return err
+		}
+		target, err := getCarritoTransferSnapshotTx(tx, empresaID, destinoCarritoID)
+		if err != nil {
+			return err
+		}
+		if source.StationID <= 0 || target.StationID <= 0 {
+			return fmt.Errorf("la transferencia solo aplica entre carritos asociados a estaciones")
+		}
+		if source.StationID == target.StationID {
+			return fmt.Errorf("la estacion destino debe ser diferente a la estacion origen")
+		}
+		if !carritoTransferSourceIsOpen(source) {
+			return fmt.Errorf("solo se puede transferir una cuenta abierta y no pagada")
+		}
+		activeItemsTarget, err := countActiveCarritoRowsTx(tx, "carrito_compra_items", empresaID, destinoCarritoID)
+		if err != nil {
+			return err
+		}
+		activeAbonosTarget, err := countActiveCarritoRowsTx(tx, "carrito_compra_abonos", empresaID, destinoCarritoID)
+		if err != nil {
+			return err
+		}
+		if carritoTransferDestinoOcupado(target, activeItemsTarget, activeAbonosTarget) {
+			return fmt.Errorf("la estacion destino no esta disponible para recibir la cuenta")
+		}
+		tipoTarifaDestino, tarifaDestinoID, err := resolveTransferTarifaDestinoTx(tx, empresaID, source, target, fechaCorte)
+		if err != nil {
+			return err
+		}
+
+		if _, err := tx.Exec(`DELETE FROM carrito_compra_items WHERE empresa_id = ? AND carrito_id = ?`, empresaID, destinoCarritoID); err != nil {
+			return err
+		}
+		if _, err := tx.Exec(`DELETE FROM carrito_compra_abonos WHERE empresa_id = ? AND carrito_id = ?`, empresaID, destinoCarritoID); err != nil {
+			return err
+		}
+
+		itemsRes, err := tx.Exec(`UPDATE carrito_compra_items SET carrito_id = ?, fecha_actualizacion = CURRENT_TIMESTAMP WHERE empresa_id = ? AND carrito_id = ?`, destinoCarritoID, empresaID, origenCarritoID)
+		if err != nil {
+			return err
+		}
+		abonosRes, err := tx.Exec(`UPDATE carrito_compra_abonos SET carrito_id = ?, fecha_actualizacion = CURRENT_TIMESTAMP WHERE empresa_id = ? AND carrito_id = ?`, destinoCarritoID, empresaID, origenCarritoID)
+		if err != nil {
+			return err
+		}
+
+		metodoPago := NormalizeMetodoPagoCarrito(source.MetodoPago)
+		if metodoPago == "" {
+			metodoPago = "efectivo"
+		}
+		transferNote := fmt.Sprintf("Cuenta transferida desde %s (#%d) por %s. Motivo: %s", source.StationNombre, source.StationID, usuario, motivo)
+		_, err = tx.Exec(`UPDATE carritos_compras SET
+			cliente_id = NULLIF(?, 0),
+			estado = 'activo',
+			estado_carrito = 'abierto',
+			moneda = ?,
+			activado_en = NULLIF(?, ''),
+			pagado_en = NULL,
+			descuento_tipo = ?,
+			descuento_codigo = ?,
+			descuento_valor = ?,
+			devolucion_total = ?,
+			total_pagado = ?,
+			metodo_pago = ?,
+			referencia_pago = ?,
+			cierre_caja_id = ?,
+			caja_codigo = ?,
+			caja_turno = ?,
+			caja_sucursal_id = ?,
+			tarifa_tiempo_tipo = ?,
+			tarifa_tiempo_id = ?,
+			usuario_creador = ?,
+			observaciones = TRIM(COALESCE(observaciones, '') || CASE WHEN COALESCE(observaciones, '') = '' THEN '' ELSE ' | ' END || ?),
+			fecha_actualizacion = CURRENT_TIMESTAMP
+		WHERE empresa_id = ? AND id = ?`,
+			source.ClienteID,
+			defaultMoneda(source.Moneda),
+			source.ActivadoEn,
+			source.DescuentoTipo,
+			source.DescuentoCodigo,
+			source.DescuentoValor,
+			source.DevolucionTotal,
+			source.TotalPagado,
+			metodoPago,
+			source.ReferenciaPago,
+			source.CierreCajaID,
+			source.CajaCodigo,
+			source.CajaTurno,
+			source.CajaSucursalID,
+			tipoTarifaDestino,
+			tarifaDestinoID,
+			usuario,
+			transferNote,
+			empresaID,
+			destinoCarritoID,
+		)
+		if err != nil {
+			return err
+		}
+
+		sourceNote := fmt.Sprintf("Cuenta transferida hacia %s (#%d) por %s. Motivo: %s", target.StationNombre, target.StationID, usuario, motivo)
+		_, err = tx.Exec(`UPDATE carritos_compras SET
+			cliente_id = NULL,
+			estado = 'activo',
+			estado_carrito = 'cerrado',
+			subtotal = 0,
+			descuento_total = 0,
+			impuesto_total = 0,
+			total = 0,
+			activado_en = NULL,
+			pagado_en = NULL,
+			descuento_tipo = '',
+			descuento_codigo = '',
+			descuento_valor = 0,
+			devolucion_total = 0,
+			total_pagado = 0,
+			metodo_pago = 'efectivo',
+			referencia_pago = '',
+			cierre_caja_id = 0,
+			caja_codigo = '',
+			caja_turno = '',
+			caja_sucursal_id = 0,
+			tarifa_tiempo_tipo = 'auto',
+			tarifa_tiempo_id = 0,
+			observaciones = TRIM(COALESCE(observaciones, '') || CASE WHEN COALESCE(observaciones, '') = '' THEN '' ELSE ' | ' END || ?),
+			fecha_actualizacion = CURRENT_TIMESTAMP
+		WHERE empresa_id = ? AND id = ?`, sourceNote, empresaID, origenCarritoID)
+		if err != nil {
+			return err
+		}
+
+		if err := recalculateCarritoTotalsTx(tx, empresaID, origenCarritoID); err != nil {
+			return err
+		}
+		if err := refreshCarritoTotalConTarifasTiempoTx(tx, empresaID, destinoCarritoID, fechaCorte); err != nil {
+			return err
+		}
+		var totalDestino float64
+		if err := tx.QueryRow(`SELECT COALESCE(total, 0) FROM carritos_compras WHERE empresa_id = ? AND id = ?`, empresaID, destinoCarritoID).Scan(&totalDestino); err != nil {
+			return err
+		}
+		itemsMoved, _ := itemsRes.RowsAffected()
+		abonosMoved, _ := abonosRes.RowsAffected()
+		result = &CarritoTransferResult{
+			EmpresaID:             empresaID,
+			OrigenCarritoID:       origenCarritoID,
+			DestinoCarritoID:      destinoCarritoID,
+			OrigenEstacionID:      source.StationID,
+			DestinoEstacionID:     target.StationID,
+			OrigenEstacionNombre:  source.StationNombre,
+			DestinoEstacionNombre: target.StationNombre,
+			TarifaTiempoTipo:      tipoTarifaDestino,
+			TarifaTiempoID:        tarifaDestinoID,
+			ItemsTransferidos:     itemsMoved,
+			AbonosTransferidos:    abonosMoved,
+			Total:                 round2(totalDestino),
+		}
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	return result, nil
 }
 
 // RecoverInterruptedCarritoSession recupera una sesion interrumpida sin perder items reservados.

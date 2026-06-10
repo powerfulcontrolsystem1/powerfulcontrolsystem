@@ -139,8 +139,8 @@
 
     <section id="panel-licencias" class="email-template-panel" hidden>
       <article class="card form mp-card email-template-card" data-template-key="licencia_activation_payment">
-        <h2>Formato del correo cuando un cliente paga una licencia</h2>
-        <p class="form-help">Se envía cuando el pago queda aprobado y la licencia se activa. Esta era una de las plantillas clave que faltaba exponer en el panel.</p>
+        <h2>Correo de bienvenida cuando un cliente paga una licencia</h2>
+        <p class="form-help">Se envia cuando el pago queda aprobado y la licencia se activa. Funciona como bienvenida a PCS y puede adjuntar la factura electronica en PDF segun la configuracion de Licencias; la licencia del software se descarga desde Administrar empresa.</p>
         <div class="email-template-vars">
           <span>{{company_name}}</span>
           <span>{{license_name}}</span>
@@ -174,7 +174,7 @@
       </article>
       <article class="card form mp-card email-template-card" data-template-key="licencia_software_pdf">
         <h2>PDF de licencia del software</h2>
-        <p class="form-help">Este texto se convierte en el PDF adjunto que recibe el cliente cuando la licencia queda activa.</p>
+        <p class="form-help">Este texto se convierte en el PDF que el cliente descarga desde Administrar empresa > Licencia del sistema. Ya no se adjunta al correo de bienvenida.</p>
         <div class="email-template-vars">
           <span>{{company_name}}</span>
           <span>{{company_nit}}</span>
@@ -182,6 +182,7 @@
           <span>{{license_code}}</span>
           <span>{{provider}}</span>
           <span>{{reference}}</span>
+          <span>{{license_download_url}}</span>
           <span>{{issue_date}}</span>
           <span>{{start_date}}</span>
           <span>{{end_date}}</span>

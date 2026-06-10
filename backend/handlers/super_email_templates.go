@@ -13,18 +13,19 @@ import (
 )
 
 const (
-	superEmailTemplateKeyAdminConfirmation       = "admin_confirmation"
-	superEmailTemplateKeyAdminScopedInvitation   = "admin_scoped_invitation"
-	superEmailTemplateKeyAdminPortfolioDelegated = "admin_portfolio_delegated"
-	superEmailTemplateKeyEmpresaConfirmation     = "empresa_user_confirmation"
-	superEmailTemplateKeyEmpresaAdminShareInvite = "empresa_admin_share_invitation"
-	superEmailTemplateKeyLicenciaActivation      = "licencia_activation_payment"
-	superEmailTemplateKeyLicenciaSoftwarePDF     = "licencia_software_pdf"
-	superEmailTemplateKeyLicenciaPaymentRejected = "licencia_payment_rejected"
-	superEmailTemplateKeyLicenciaExpiryWarning   = "licencia_expiry_warning"
-	superEmailTemplateKeyAdminPasswordRecovery   = "admin_password_recovery"
-	superEmailTemplateKeyEmpresaPasswordRecovery = "empresa_user_password_recovery"
-	superEmailTemplateKeyServerRestartAlert      = "server_restart_alert"
+	superEmailTemplateKeyAdminConfirmation              = "admin_confirmation"
+	superEmailTemplateKeyAdminScopedInvitation          = "admin_scoped_invitation"
+	superEmailTemplateKeyAdminPortfolioDelegated        = "admin_portfolio_delegated"
+	superEmailTemplateKeyEmpresaConfirmation            = "empresa_user_confirmation"
+	superEmailTemplateKeyEmpresaAdminShareInvite        = "empresa_admin_share_invitation"
+	superEmailTemplateKeyLicenciaActivation             = "licencia_activation_payment"
+	superEmailTemplateKeyLicenciaSoftwarePDF            = "licencia_software_pdf"
+	superEmailTemplateKeyLicenciaPaymentRejected        = "licencia_payment_rejected"
+	superEmailTemplateKeyLicenciaExpiryWarning          = "licencia_expiry_warning"
+	superEmailTemplateKeyLicenciaEmpresaDeletionWarning = "licencia_empresa_eliminacion_warning"
+	superEmailTemplateKeyAdminPasswordRecovery          = "admin_password_recovery"
+	superEmailTemplateKeyEmpresaPasswordRecovery        = "empresa_user_password_recovery"
+	superEmailTemplateKeyServerRestartAlert             = "server_restart_alert"
 )
 
 type superEmailTemplateDefinition struct {
@@ -145,6 +146,17 @@ var superEmailTemplateDefinitions = []superEmailTemplateDefinition{
 		DefaultBodyHTML: "<html><body><p>Hola {{name}},</p><p>La licencia <strong>{{license_name}}</strong> de la empresa <strong>{{company_name}}</strong> esta proxima a vencer.</p><p><strong>Tipo:</strong> {{license_type}}<br/><strong>Fecha de vencimiento:</strong> {{end_date}}<br/><strong>Dias restantes:</strong> {{days_remaining}}</p><p><a href=\"{{renew_url}}\" style=\"display:inline-block;padding:12px 18px;background:#0f4c81;color:#ffffff;text-decoration:none;border-radius:10px;font-weight:700;\">Revisar licencia</a></p><p>Si el boton no abre correctamente, usa este enlace:</p><p><a href=\"{{renew_url}}\">{{renew_url}}</a></p><p>Si ya realizaste el pago, puedes ignorar este aviso.</p><p>Powerful Control System</p></body></html>",
 	},
 	{
+		Key:             superEmailTemplateKeyLicenciaEmpresaDeletionWarning,
+		Label:           "Preaviso de eliminacion por licencia vencida",
+		Category:        "licencias",
+		Description:     "Aviso al administrador antes de eliminar una empresa inactiva con licencia base vencida y periodo de retencion cumplido.",
+		Recommended:     true,
+		Variables:       []string{"name", "company_name", "last_license_end", "deletion_date", "retention_days", "notice_days", "renew_url", "support_url"},
+		DefaultSubject:  "Tu empresa sera eliminada si no renuevas la licencia",
+		DefaultBodyText: "Hola {{name}},\n\nLa empresa {{company_name}} tiene la licencia base vencida desde {{last_license_end}} y se encuentra sin operacion activa en Powerful Control System.\n\nSegun la politica de retencion configurada, el sistema espera {{retention_days}} dias y envia este preaviso {{notice_days}} dia(s) antes de la eliminacion programada.\n\nFecha programada de eliminacion: {{deletion_date}}\n\nPara conservar la empresa y sus datos, renueva o regulariza la licencia antes de esa fecha:\n{{renew_url}}\n\nAyuda y soporte:\n{{support_url}}\n\nSi ya renovaste la licencia o la empresa debe conservarse, responde este correo o contacta al soporte antes de la fecha indicada.\n\nPowerful Control System\n",
+		DefaultBodyHTML: "<html><body><p>Hola {{name}},</p><p>La empresa <strong>{{company_name}}</strong> tiene la licencia base vencida desde <strong>{{last_license_end}}</strong> y se encuentra sin operacion activa en Powerful Control System.</p><p>Segun la politica de retencion configurada, el sistema espera <strong>{{retention_days}} dias</strong> y envia este preaviso <strong>{{notice_days}} dia(s)</strong> antes de la eliminacion programada.</p><p><strong>Fecha programada de eliminacion:</strong> {{deletion_date}}</p><p><a href=\"{{renew_url}}\" style=\"display:inline-block;padding:12px 18px;background:#7f1d1d;color:#ffffff;text-decoration:none;border-radius:10px;font-weight:700;\">Renovar licencia y conservar empresa</a></p><p>Si el boton no abre correctamente, usa este enlace:</p><p><a href=\"{{renew_url}}\">{{renew_url}}</a></p><p>Ayuda y soporte: <a href=\"{{support_url}}\">{{support_url}}</a></p><p>Si ya renovaste la licencia o la empresa debe conservarse, responde este correo o contacta al soporte antes de la fecha indicada.</p><p>Powerful Control System</p></body></html>",
+	},
+	{
 		Key:             superEmailTemplateKeyAdminPasswordRecovery,
 		Label:           "Recuperación de contraseña administrativa",
 		Category:        "recomendadas",
@@ -176,6 +188,20 @@ var superEmailTemplateDefinitions = []superEmailTemplateDefinition{
 		DefaultSubject:  "[PCS] Inicio de servidor detectado ({{hostname}})",
 		DefaultBodyText: "Inicio de servidor detectado.\n\nFecha evento: {{event_date}}\nHost: {{hostname}}\n{{listen_addr_line}}Motivo: {{reason}}\nReinicio inesperado: {{unexpected_restart}}\n{{detail_line}}{{previous_status_block}}{{previous_start_block}}{{previous_stop_block}}{{previous_stop_reason_block}}\nMensaje generado automaticamente por el backend PCS.",
 	},
+}
+
+func init() {
+	for i := range superEmailTemplateDefinitions {
+		if superEmailTemplateDefinitions[i].Key != superEmailTemplateKeyLicenciaActivation {
+			continue
+		}
+		superEmailTemplateDefinitions[i].Description = "Correo de bienvenida enviado cuando una licencia queda activa tras un pago aprobado. La factura electronica puede adjuntarse en PDF; la licencia del software se descarga desde Administrar empresa."
+		superEmailTemplateDefinitions[i].Variables = []string{"company_name", "license_name", "provider", "reference", "license_download_url", "start_date_line", "end_date_line", "reference_line", "license_name_line", "amount_paid_line", "discount_code_line", "discount_value_line", "original_value_line", "asesor_id_line", "amount_paid_line_html", "discount_code_line_html", "discount_value_line_html", "original_value_line_html", "asesor_id_line_html"}
+		superEmailTemplateDefinitions[i].DefaultSubject = "Bienvenido a Powerful Control System"
+		superEmailTemplateDefinitions[i].DefaultBodyText = "Hola,\n\nBienvenido a Powerful Control System. Tu pago fue confirmado correctamente y tu licencia ya quedo activa.\n\nEmpresa: {{company_name}}\n{{license_name_line}}{{start_date_line}}{{end_date_line}}{{reference_line}}Pasarela: {{provider}}\n{{amount_paid_line}}{{discount_code_line}}{{discount_value_line}}{{original_value_line}}{{asesor_id_line}}\n\nAdjuntamos la factura electronica en PDF cuando la emision automatica esta habilitada. La licencia del software ya no se envia por correo; puedes descargarla desde Administrar empresa > Licencia del sistema:\n{{license_download_url}}\n\nYa puedes ingresar al sistema y continuar con la operacion normal de tu empresa.\n\nSi no reconoces este movimiento o necesitas ayuda, responde este correo.\n\nPowerful Control System\n"
+		superEmailTemplateDefinitions[i].DefaultBodyHTML = "<html><body><p>Hola,</p><p>Bienvenido a <strong>Powerful Control System</strong>. Tu pago fue confirmado correctamente y tu licencia ya quedo activa.</p><p><strong>Empresa:</strong> {{company_name}}<br/>{{license_name_line}}{{start_date_line}}{{end_date_line}}{{reference_line}}<strong>Pasarela:</strong> {{provider}}<br/>{{amount_paid_line_html}}{{discount_code_line_html}}{{discount_value_line_html}}{{original_value_line_html}}{{asesor_id_line_html}}</p><p>Adjuntamos la factura electronica en PDF cuando la emision automatica esta habilitada.</p><p>La licencia del software ya no se envia por correo; puedes descargarla desde <strong>Administrar empresa &gt; Licencia del sistema</strong>: <a href=\"{{license_download_url}}\">descargar licencia</a>.</p><p>Ya puedes ingresar al sistema y continuar con la operacion normal de tu empresa.</p><p>Si no reconoces este movimiento o necesitas ayuda, responde este correo.</p><p>Powerful Control System</p></body></html>"
+		break
+	}
 }
 
 func superEmailTemplateConfigKey(key, field string) string {

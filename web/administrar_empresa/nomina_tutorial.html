@@ -1,0 +1,460 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Tutorial de nomina</title>
+  <link rel="stylesheet" href="/estilos.css">
+  <script src="/js/empresa_submenu_context.js"></script>
+  <style>
+    html {
+      height: auto;
+      min-height: 100%;
+      overflow-y: auto;
+    }
+    body.nomina-tutorial-page {
+      height: auto;
+      min-height: 100%;
+      overflow-y: auto;
+      padding-bottom: 18px;
+    }
+    .nomina-tutorial-header {
+      align-items: flex-start;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px;
+      justify-content: space-between;
+    }
+    .nomina-tutorial-header h1 {
+      margin-bottom: 6px;
+    }
+    .nomina-tutorial-actions {
+      align-items: center;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    .nomina-tutorial-actions .btn {
+      align-items: center;
+      display: inline-flex;
+      gap: 8px;
+      min-height: 40px;
+    }
+    .nomina-tutorial-icon {
+      height: 18px;
+      object-fit: contain;
+      width: 18px;
+    }
+    .nomina-tutorial-alert {
+      background: var(--surface-soft);
+      border-left: 4px solid var(--accent);
+      border-radius: 8px;
+      color: var(--muted);
+      font-size: .93rem;
+      line-height: 1.5;
+      margin-top: 12px;
+      padding: 10px 12px;
+    }
+    .nomina-tutorial-grid {
+      display: grid;
+      gap: 12px;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      margin-top: 14px;
+    }
+    .nomina-tutorial-step,
+    .nomina-tutorial-resource,
+    .nomina-tutorial-flow-step {
+      background: var(--surface-soft);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+    }
+    .nomina-tutorial-step {
+      min-height: 210px;
+      padding: 14px;
+    }
+    .nomina-tutorial-step h2 {
+      align-items: center;
+      color: var(--text);
+      display: flex;
+      font-size: 1rem;
+      gap: 10px;
+      letter-spacing: 0;
+      margin: 0 0 8px;
+    }
+    .nomina-tutorial-number {
+      align-items: center;
+      background: var(--accent);
+      border-radius: 999px;
+      color: #fff;
+      display: inline-flex;
+      flex: 0 0 auto;
+      font-size: .88rem;
+      font-weight: 900;
+      height: 28px;
+      justify-content: center;
+      width: 28px;
+    }
+    .nomina-tutorial-step ul,
+    .nomina-tutorial-list {
+      color: var(--text);
+      margin: 8px 0 0;
+      padding-left: 20px;
+    }
+    .nomina-tutorial-step li,
+    .nomina-tutorial-list li {
+      line-height: 1.45;
+      margin: 6px 0;
+    }
+    .nomina-tutorial-checklist {
+      display: grid;
+      gap: 8px;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      margin-top: 12px;
+    }
+    .nomina-tutorial-check {
+      align-items: flex-start;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      display: flex;
+      font-size: .88rem;
+      gap: 8px;
+      min-height: 62px;
+      padding: 9px;
+    }
+    .nomina-tutorial-check span:first-child {
+      align-items: center;
+      background: color-mix(in srgb, var(--success) 22%, var(--surface));
+      border-radius: 999px;
+      color: var(--success);
+      display: inline-flex;
+      flex: 0 0 auto;
+      font-weight: 900;
+      height: 20px;
+      justify-content: center;
+      width: 20px;
+    }
+    .nomina-tutorial-flow {
+      display: grid;
+      gap: 8px;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      margin-top: 12px;
+    }
+    .nomina-tutorial-flow-step {
+      background: var(--surface);
+      min-height: 88px;
+      padding: 10px;
+    }
+    .nomina-tutorial-flow-step strong {
+      color: var(--text);
+      display: block;
+      font-size: .9rem;
+    }
+    .nomina-tutorial-flow-step span {
+      color: var(--muted);
+      display: block;
+      font-size: .82rem;
+      line-height: 1.35;
+      margin-top: 5px;
+    }
+    .nomina-tutorial-resources {
+      display: grid;
+      gap: 12px;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      margin-top: 12px;
+    }
+    .nomina-tutorial-resource {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      min-height: 150px;
+      padding: 12px;
+    }
+    .nomina-tutorial-resource h3 {
+      color: var(--text);
+      font-size: 1rem;
+      letter-spacing: 0;
+      margin: 0;
+    }
+    .nomina-tutorial-resource p {
+      color: var(--muted);
+      font-size: .9rem;
+      line-height: 1.45;
+      margin: 0;
+    }
+    .nomina-tutorial-resource-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: auto;
+    }
+    .nomina-tutorial-table {
+      border-collapse: collapse;
+      color: var(--text);
+      margin-top: 12px;
+      width: 100%;
+    }
+    .nomina-tutorial-table th,
+    .nomina-tutorial-table td {
+      border-bottom: 1px solid var(--border);
+      font-size: .9rem;
+      padding: 9px 7px;
+      text-align: left;
+      vertical-align: top;
+    }
+    .nomina-tutorial-table th {
+      color: var(--muted);
+      font-size: .76rem;
+      letter-spacing: .04em;
+      text-transform: uppercase;
+    }
+    .nomina-tutorial-note {
+      color: var(--muted);
+      font-size: .9rem;
+      line-height: 1.5;
+      margin-top: 12px;
+    }
+    @media (max-width: 900px) {
+      .nomina-tutorial-grid,
+      .nomina-tutorial-resources {
+        grid-template-columns: 1fr;
+      }
+      .nomina-tutorial-checklist,
+      .nomina-tutorial-flow {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+    @media (max-width: 560px) {
+      .nomina-tutorial-actions,
+      .nomina-tutorial-actions .btn {
+        justify-content: center;
+        width: 100%;
+      }
+      .nomina-tutorial-checklist,
+      .nomina-tutorial-flow {
+        grid-template-columns: 1fr;
+      }
+      .nomina-tutorial-table {
+        display: block;
+        overflow-x: auto;
+        white-space: nowrap;
+      }
+    }
+  </style>
+</head>
+<body class="super-page form-bg-dark nomina-tutorial-page">
+  <div class="container">
+    <div class="page-header nomina-tutorial-header">
+      <div>
+        <h1>Tutorial de nomina</h1>
+        <p class="form-help">Guia operativa para preparar empleados, liquidar nomina, revisar pagos y dejar listo el soporte de nomina electronica Colombia.</p>
+      </div>
+      <div class="nomina-tutorial-actions" aria-label="Accesos de nomina">
+        <a class="btn secondary" data-nomina-link href="/administrar_empresa/nomina_sueldos.html">
+          <img class="nomina-tutorial-icon" src="/img/company-briefcase-color.svg" alt="">
+          Volver a nomina
+        </a>
+        <a class="btn primary" data-nomina-link href="/ayuda/tutorial_nomina.html" target="_blank" rel="noopener">
+          <img class="nomina-tutorial-icon" src="/img/play.svg" alt="">
+          Ver guia guiada
+        </a>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Antes de liquidar</h2>
+      <p class="form-help">
+        La nomina debe prepararse por empresa y por periodo. Verifica primero los parametros legales, empleados, novedades, asistencia y datos fiscales antes de calcular o preparar documentos electronicos.
+      </p>
+      <div class="nomina-tutorial-alert">
+        La nomina electronica ante DIAN no reemplaza la revision laboral ni contable: es el documento soporte para validar costos, deducciones y pagos laborales. En produccion debe enviarse con datos reales, firma digital vigente y configuracion fiscal activa de la empresa.
+      </div>
+    </div>
+
+    <div class="nomina-tutorial-grid">
+      <section class="nomina-tutorial-step">
+        <h2><span class="nomina-tutorial-number">1</span>Configura parametros legales</h2>
+        <ul>
+          <li>Abre <strong>Parametros legales</strong> y revisa la version aplicada contra la version disponible.</li>
+          <li>Aplica la actualizacion legal cuando corresponda: salario minimo, auxilio legal, porcentajes, recargos y reglas base.</li>
+          <li>Activa autoactualizacion solo si el administrador quiere que la empresa reciba los parametros oficiales cargados por PCS.</li>
+        </ul>
+      </section>
+
+      <section class="nomina-tutorial-step">
+        <h2><span class="nomina-tutorial-number">2</span>Revisa la configuracion de nomina</h2>
+        <ul>
+          <li>Confirma pais, moneda, dias de nomina, horas ordinarias, recargos y divisor de hora.</li>
+          <li>Guarda la configuracion antes de crear liquidaciones del periodo.</li>
+          <li>Para Colombia, usa COP y valida que los valores legales correspondan al periodo que vas a liquidar.</li>
+        </ul>
+      </section>
+
+      <section class="nomina-tutorial-step">
+        <h2><span class="nomina-tutorial-number">3</span>Crea y depura empleados</h2>
+        <ul>
+          <li>Registra empleado, documento, cargo, salario, sede, tipo de contrato y datos de pago.</li>
+          <li>Completa correo, celular y datos basicos para desprendibles y trazabilidad.</li>
+          <li>Antes de calcular, revisa que no haya empleados duplicados, inactivos o con salario cero por error.</li>
+        </ul>
+      </section>
+
+      <section class="nomina-tutorial-step">
+        <h2><span class="nomina-tutorial-number">4</span>Registra novedades y asistencia</h2>
+        <ul>
+          <li>Carga festivos, ausencias, horas extra, recargos, bonificaciones, deducciones y ajustes del periodo.</li>
+          <li>Concila asistencia contra nomina para detectar diferencias antes del pago.</li>
+          <li>Aprueba las novedades Colombia antes de generar PILA o documentos electronicos.</li>
+        </ul>
+      </section>
+
+      <section class="nomina-tutorial-step">
+        <h2><span class="nomina-tutorial-number">5</span>Calcula y revisa la nomina</h2>
+        <ul>
+          <li>Selecciona periodo desde y hasta, empleado especifico o todos los empleados activos.</li>
+          <li>Ejecuta <strong>Calcular nomina</strong> y revisa devengados, deducciones, neto y costo empresa.</li>
+          <li>Genera desprendibles solo cuando la liquidacion este revisada y aprobada internamente.</li>
+        </ul>
+      </section>
+
+      <section class="nomina-tutorial-step">
+        <h2><span class="nomina-tutorial-number">6</span>Prepara pagos, PILA y contabilidad</h2>
+        <ul>
+          <li>Revisa provisiones, aportes patronales y control contable antes de generar pagos.</li>
+          <li>Genera PILA cuando las novedades y bases esten completas.</li>
+          <li>Usa referencias de pago claras para que tesoreria, contabilidad y auditoria puedan rastrear el periodo.</li>
+        </ul>
+      </section>
+    </div>
+
+    <div class="card">
+      <h2>Nomina electronica Colombia</h2>
+      <p class="form-help">
+        DIAN define el Documento Soporte de Pago de Nomina Electronica como un documento que se genera y transmite para validacion por cada beneficiario de pagos laborales. Esta compuesto por devengados, deducidos y el total resultante.
+      </p>
+      <div class="nomina-tutorial-flow">
+        <div class="nomina-tutorial-flow-step"><strong>1. Habilitacion</strong><span>La empresa debe estar registrada en RUT y tener modo de operacion para nomina electronica.</span></div>
+        <div class="nomina-tutorial-flow-step"><strong>2. Datos base</strong><span>Empleado, empleador, periodo, metodo de pago, contrato, devengados y deducciones completos.</span></div>
+        <div class="nomina-tutorial-flow-step"><strong>3. Validacion local</strong><span>Revisar que no falten liquidaciones, documentos, valores ni novedades aprobadas.</span></div>
+        <div class="nomina-tutorial-flow-step"><strong>4. Preparar lote</strong><span>Usar <strong>Preparar lote DIAN</strong> para construir el resumen por empleado y detectar pendientes.</span></div>
+        <div class="nomina-tutorial-flow-step"><strong>5. Firma y CUNE</strong><span>El documento final debe incluir CUNE, firma digital, software y estructura tecnica vigente.</span></div>
+        <div class="nomina-tutorial-flow-step"><strong>6. Envio</strong><span>Transmitir en el ambiente correcto, revisar acuse y conservar respuesta DIAN.</span></div>
+        <div class="nomina-tutorial-flow-step"><strong>7. Ajustes</strong><span>Si hay error, corregir la liquidacion o emitir nota de ajuste segun aplique.</span></div>
+        <div class="nomina-tutorial-flow-step"><strong>8. Archivo</strong><span>Guardar trazabilidad del periodo, acuses, desprendibles y soporte contable.</span></div>
+      </div>
+      <p class="nomina-tutorial-note">
+        En PCS el boton <strong>Ver estado DIAN</strong> consulta el resumen documental y <strong>Preparar lote DIAN</strong> prepara el lote para revision. El envio real debe ejecutarse solo cuando la empresa tenga configuracion fiscal, firma y modo de operacion listos.
+      </p>
+    </div>
+
+    <div class="card">
+      <h2>Checklist antes de preparar el lote DIAN</h2>
+      <div class="nomina-tutorial-checklist">
+        <div class="nomina-tutorial-check"><span>✓</span><span>Empresa, NIT, representante y datos fiscales revisados.</span></div>
+        <div class="nomina-tutorial-check"><span>✓</span><span>Firma digital vigente y modo de operacion habilitado.</span></div>
+        <div class="nomina-tutorial-check"><span>✓</span><span>Periodo cerrado sin novedades pendientes de aprobacion.</span></div>
+        <div class="nomina-tutorial-check"><span>✓</span><span>Todos los empleados tienen documento, nombres y datos de pago completos.</span></div>
+        <div class="nomina-tutorial-check"><span>✓</span><span>Devengados, deducciones, neto, PILA y provisiones revisados.</span></div>
+        <div class="nomina-tutorial-check"><span>✓</span><span>Ambiente correcto: habilitacion para pruebas o produccion para documentos fiscales reales.</span></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Errores frecuentes y que hacer</h2>
+      <table class="nomina-tutorial-table">
+        <thead>
+          <tr><th>Situacion</th><th>Que revisar</th><th>Accion recomendada</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Empleado no aparece en el lote</td>
+            <td>Estado del empleado, periodo de liquidacion, sede y liquidacion generada.</td>
+            <td>Recalcular el periodo o corregir la ficha antes de preparar de nuevo.</td>
+          </tr>
+          <tr>
+            <td>Valores de nomina inconsistentes</td>
+            <td>Asistencia, recargos, novedades, deducciones y salario base.</td>
+            <td>Conciliar asistencia contra nomina y aprobar novedades antes del cierre.</td>
+          </tr>
+          <tr>
+            <td>Pendientes DIAN en el panel</td>
+            <td>Datos fiscales, firma, CUNE, configuracion de software o documentos incompletos.</td>
+            <td>Completar los campos faltantes y preparar el lote otra vez sin reenviar a ciegas.</td>
+          </tr>
+          <tr>
+            <td>Acuse rechazado</td>
+            <td>Mensaje de validacion DIAN, XML, fechas, identificacion del empleado o totales.</td>
+            <td>Corregir la causa, generar ajuste si aplica y conservar la evidencia del rechazo.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="card">
+      <h2>Fuentes oficiales DIAN</h2>
+      <p class="form-help">
+        Usa estos enlaces para validar la regulacion vigente y los anexos tecnicos antes de activar envios reales.
+      </p>
+      <div class="nomina-tutorial-resources">
+        <article class="nomina-tutorial-resource">
+          <h3>Documento soporte de pago de nomina electronica</h3>
+          <p>Pagina oficial DIAN con definicion general, alcance y materiales de soporte.</p>
+          <div class="nomina-tutorial-resource-actions">
+            <a class="btn secondary" href="https://www.dian.gov.co/impuestos/Paginas/Sistema-de-Factura-Electronica/Documento-Soporte-de-Pago-de-Nomina-Electronica.aspx" target="_blank" rel="noopener">Abrir DIAN</a>
+          </div>
+        </article>
+        <article class="nomina-tutorial-resource">
+          <h3>Micrositio de nomina electronica</h3>
+          <p>Resumen oficial del sistema, componentes del documento y orientacion para contribuyentes.</p>
+          <div class="nomina-tutorial-resource-actions">
+            <a class="btn secondary" href="https://micrositios.dian.gov.co/sistema-de-facturacion-electronica/soporte-de-pago-de-nomina-electronica/" target="_blank" rel="noopener">Ver micrositio</a>
+          </div>
+        </article>
+        <article class="nomina-tutorial-resource">
+          <h3>Documentacion tecnica</h3>
+          <p>Resolucion, anexo tecnico y caja de herramientas para el documento soporte de nomina electronica.</p>
+          <div class="nomina-tutorial-resource-actions">
+            <a class="btn secondary" href="https://micrositios.dian.gov.co/sistema-de-facturacion-electronica/documentacion-tecnica-soporte-de-pago-nomina-electronica/" target="_blank" rel="noopener">Abrir tecnica</a>
+          </div>
+        </article>
+        <article class="nomina-tutorial-resource">
+          <h3>Registro y modo de operacion</h3>
+          <p>PDF DIAN sobre registro, habilitacion, modo de operacion y migracion a produccion para nomina electronica.</p>
+          <div class="nomina-tutorial-resource-actions">
+            <a class="btn secondary" href="https://www.dian.gov.co/impuestos/factura-electronica/Documents/Registro-y-Seleccion-del-Modo-de-Operacion-Nomina-Electronica.pdf" target="_blank" rel="noopener">Descargar PDF</a>
+          </div>
+        </article>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (function() {
+      'use strict';
+
+      function resolveEmpresaId() {
+        try {
+          var params = new URLSearchParams(window.location.search || '');
+          var own = Number(params.get('empresa_id') || params.get('id') || 0);
+          if (own > 0) return Math.trunc(own);
+        } catch (_) {}
+        try {
+          var stored = Number(sessionStorage.getItem('active_empresa_id') || sessionStorage.getItem('empresa_id') || localStorage.getItem('active_empresa_id') || localStorage.getItem('empresa_id') || 0);
+          if (stored > 0) return Math.trunc(stored);
+        } catch (_) {}
+        return 0;
+      }
+
+      var empresaId = resolveEmpresaId();
+      Array.prototype.slice.call(document.querySelectorAll('[data-nomina-link]')).forEach(function(link) {
+        try {
+          var url = new URL(link.getAttribute('href') || '', window.location.origin);
+          if (empresaId > 0 && url.origin === window.location.origin) url.searchParams.set('empresa_id', String(empresaId));
+          link.setAttribute('href', url.pathname + url.search + url.hash);
+        } catch (_) {}
+      });
+    })();
+  </script>
+</body>
+</html>

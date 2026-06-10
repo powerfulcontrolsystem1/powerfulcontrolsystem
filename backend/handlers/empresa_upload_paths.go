@@ -3,7 +3,9 @@ package handlers
 import (
 	"database/sql"
 	"fmt"
+	"net/url"
 	"os"
+	"path"
 	"path/filepath"
 	"strings"
 
@@ -84,4 +86,140 @@ func ensureEmpresaUploadFolders(dbEmp *sql.DB, empresaID int64) (string, error) 
 		_ = os.Chmod(item.path, item.perm)
 	}
 	return folder, nil
+}
+
+func empresaUploadedPublicURLAbsPath(dbEmp *sql.DB, empresaID int64, publicURL string) (string, bool) {
+	raw := strings.TrimSpace(publicURL)
+	if raw == "" || empresaID <= 0 {
+		return "", false
+	}
+	if strings.HasPrefix(strings.ToLower(raw), "http://") || strings.HasPrefix(strings.ToLower(raw), "https://") {
+		parsed, err := url.Parse(raw)
+		if err != nil {
+			return "", false
+		}
+		raw = parsed.Path
+	}
+	if !strings.HasPrefix(raw, "/") {
+		return "", false
+	}
+	baseDir, folder := empresaUploadsBaseDir(dbEmp, empresaID)
+	cleanURL := path.Clean("/" + strings.TrimLeft(raw, "/"))
+	prefix := "/uploads/" + empresaUploadsRootDirName + "/" + folder + "/"
+	if !strings.HasPrefix(cleanURL, prefix) {
+		return "", false
+	}
+	relURL := strings.TrimPrefix(cleanURL, prefix)
+	if relURL == "" || strings.HasPrefix(relURL, "../") || strings.Contains(relURL, "/../") {
+		return "", false
+	}
+	abs := filepath.Join(baseDir, filepath.FromSlash(relURL))
+	baseClean, err := filepath.Abs(filepath.Clean(baseDir))
+	if err != nil {
+		return "", false
+	}
+	absClean, err := filepath.Abs(filepath.Clean(abs))
+	if err != nil {
+		return "", false
+	}
+	rel, err := filepath.Rel(baseClean, absClean)
+	if err != nil || rel == "." || rel == ".." || strings.HasPrefix(rel, ".."+string(filepath.Separator)) || filepath.IsAbs(rel) {
+		return "", false
+	}
+	return absClean, true
+}
+
+func deleteEmpresaUploadedPublicURL(dbEmp *sql.DB, empresaID int64, publicURL string) bool {
+	abs, ok := empresaUploadedPublicURLAbsPath(dbEmp, empresaID, publicURL)
+	if !ok {
+		return false
+	}
+	info, err := os.Stat(abs)
+	if err != nil || info.IsDir() {
+		return false
+	}
+	return os.Remove(abs) == nil
+}
+
+func legacyEmpresaProductoUploadAbsPath(empresaID int64, publicURL string) (string, bool) {
+	raw := strings.TrimSpace(publicURL)
+	if raw == "" || empresaID <= 0 {
+		return "", false
+	}
+	if strings.HasPrefix(strings.ToLower(raw), "http://") || strings.HasPrefix(strings.ToLower(raw), "https://") {
+		parsed, err := url.Parse(raw)
+		if err != nil {
+			return "", false
+		}
+		raw = parsed.Path
+	}
+	cleanURL := path.Clean("/" + strings.TrimLeft(raw, "/"))
+	prefix := "/uploads/productos/empresa_" + fmt.Sprintf("%d", empresaID) + "/"
+	if !strings.HasPrefix(cleanURL, prefix) {
+		return "", false
+	}
+	relURL := strings.TrimPrefix(cleanURL, prefix)
+	if relURL == "" || strings.HasPrefix(relURL, "../") || strings.Contains(relURL, "/../") {
+		return "", false
+	}
+	baseDir := filepath.Join(resolveWebRootDir(), "uploads", "productos", fmt.Sprintf("empresa_%d", empresaID))
+	abs := filepath.Join(baseDir, filepath.FromSlash(relURL))
+	baseClean, err := filepath.Abs(filepath.Clean(baseDir))
+	if err != nil {
+		return "", false
+	}
+	absClean, err := filepath.Abs(filepath.Clean(abs))
+	if err != nil {
+		return "", false
+	}
+	rel, err := filepath.Rel(baseClean, absClean)
+	if err != nil || rel == "." || rel == ".." || strings.HasPrefix(rel, ".."+string(filepath.Separator)) || filepath.IsAbs(rel) {
+		return "", false
+	}
+	return absClean, true
+}
+
+func deleteEmpresaProductoUploadedPublicURL(dbEmp *sql.DB, empresaID int64, publicURL string) bool {
+	if deleteEmpresaUploadedPublicURL(dbEmp, empresaID, publicURL) {
+		return true
+	}
+	abs, ok := legacyEmpresaProductoUploadAbsPath(empresaID, publicURL)
+	if !ok {
+		return false
+	}
+	info, err := os.Stat(abs)
+	if err != nil || info.IsDir() {
+		return false
+	}
+	return os.Remove(abs) == nil
+}
+
+func deleteFileRefIfInsideDir(fileRef string, baseDir string) bool {
+	raw := strings.TrimSpace(fileRef)
+	if raw == "" || strings.TrimSpace(baseDir) == "" {
+		return false
+	}
+	if strings.HasPrefix(raw, "file:") {
+		raw = strings.TrimPrefix(raw, "file:")
+	}
+	if raw == "" {
+		return false
+	}
+	baseClean, err := filepath.Abs(filepath.Clean(baseDir))
+	if err != nil {
+		return false
+	}
+	absClean, err := filepath.Abs(filepath.Clean(raw))
+	if err != nil {
+		return false
+	}
+	rel, err := filepath.Rel(baseClean, absClean)
+	if err != nil || rel == "." || rel == ".." || strings.HasPrefix(rel, ".."+string(filepath.Separator)) || filepath.IsAbs(rel) {
+		return false
+	}
+	info, err := os.Stat(absClean)
+	if err != nil || info.IsDir() {
+		return false
+	}
+	return os.Remove(absClean) == nil
 }

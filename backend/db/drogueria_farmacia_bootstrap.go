@@ -43,40 +43,25 @@ func DefaultDrogueriaFarmaciaLicenciaModules() string {
 
 func DefaultDrogueriaFarmaciaLicenciaPlans() []DrogueriaFarmaciaLicenciaPlan {
 	modules := DefaultDrogueriaFarmaciaLicenciaModules()
-	return []DrogueriaFarmaciaLicenciaPlan{
-		{
-			Nombre:                 "Drogueria y farmacia prueba 15 dias",
-			Descripcion:            "Licencia de prueba para droguerias y farmacias: medicamentos, lotes, INVIMA, vencimientos, formulas, controlados y dispensacion.",
-			Valor:                  0,
-			DuracionDias:           15,
-			MaxDocumentosMensuales: 250,
+	plans := DefaultGlobalLicenciaPlans()
+	out := make([]DrogueriaFarmaciaLicenciaPlan, 0, len(plans))
+	for _, plan := range plans {
+		nombre := plan.Nombre
+		descripcion := plan.Descripcion
+		if plan.Valor == 0 && plan.DuracionDias == 15 {
+			nombre = "Drogueria y farmacia prueba 15 dias"
+			descripcion = "Licencia de prueba para droguerias y farmacias: medicamentos, lotes, INVIMA, vencimientos, formulas, controlados y dispensacion."
+		}
+		out = append(out, DrogueriaFarmaciaLicenciaPlan{
+			Nombre:                 nombre,
+			Descripcion:            descripcion,
+			Valor:                  plan.Valor,
+			DuracionDias:           plan.DuracionDias,
+			MaxDocumentosMensuales: plan.MaxDocumentosMensuales,
 			ModulosHabilitados:     modules,
-		},
-		{
-			Nombre:                 "Plan mensual COP 60000",
-			Descripcion:            "Plan mensual global para cualquier tipo de empresa por COP 60000.",
-			Valor:                  60000,
-			DuracionDias:           30,
-			MaxDocumentosMensuales: 1000,
-			ModulosHabilitados:     modules,
-		},
-		{
-			Nombre:                 "Plan mensual COP 100000",
-			Descripcion:            "Plan mensual global para cualquier tipo de empresa por COP 100000.",
-			Valor:                  100000,
-			DuracionDias:           30,
-			MaxDocumentosMensuales: 2000,
-			ModulosHabilitados:     modules,
-		},
-		{
-			Nombre:                 "Plan mensual COP 150000",
-			Descripcion:            "Plan mensual global para cualquier tipo de empresa por COP 150000.",
-			Valor:                  150000,
-			DuracionDias:           30,
-			MaxDocumentosMensuales: 4000,
-			ModulosHabilitados:     modules,
-		},
+		})
 	}
+	return out
 }
 
 func EnsureDrogueriaFarmaciaTipoEmpresaYLicencias(dbConn *sql.DB, usuario string) (tipoID int64, licenciasAseguradas int, err error) {

@@ -250,12 +250,23 @@ func DefaultNuevoVerticalLicenciaPlans(item NuevoVerticalTipoEmpresa) []NuevoVer
 	modules := DefaultNuevoVerticalLicenciaModules(item.Modulo)
 	nombre := strings.TrimSpace(item.Nombre)
 	descripcion := "Licencia para " + strings.ToLower(nombre) + ": " + strings.TrimSpace(item.Observaciones)
-	return []NuevoVerticalLicenciaPlan{
-		{Nombre: nombre + " prueba 15 dias", Descripcion: descripcion, Valor: 0, DuracionDias: 15, MaxDocumentosMensuales: 250, ModulosHabilitados: modules},
-		{Nombre: "Plan mensual COP 60000", Descripcion: descripcion, Valor: 60000, DuracionDias: 30, MaxDocumentosMensuales: 1000, ModulosHabilitados: modules},
-		{Nombre: "Plan mensual COP 100000", Descripcion: descripcion, Valor: 100000, DuracionDias: 30, MaxDocumentosMensuales: 2000, ModulosHabilitados: modules},
-		{Nombre: "Plan mensual COP 150000", Descripcion: descripcion, Valor: 150000, DuracionDias: 30, MaxDocumentosMensuales: 4000, ModulosHabilitados: modules},
+	globalPlans := DefaultGlobalLicenciaPlans()
+	out := make([]NuevoVerticalLicenciaPlan, 0, len(globalPlans))
+	for _, plan := range globalPlans {
+		planNombre := plan.Nombre
+		if plan.Valor == 0 && plan.DuracionDias == 15 {
+			planNombre = nombre + " prueba 15 dias"
+		}
+		out = append(out, NuevoVerticalLicenciaPlan{
+			Nombre:                 planNombre,
+			Descripcion:            descripcion,
+			Valor:                  plan.Valor,
+			DuracionDias:           plan.DuracionDias,
+			MaxDocumentosMensuales: plan.MaxDocumentosMensuales,
+			ModulosHabilitados:     modules,
+		})
 	}
+	return out
 }
 
 func EnsureNuevasPlantillasTipoEmpresaYLicencias(dbConn *sql.DB, usuario string) (tiposAsegurados, licenciasAseguradas int, err error) {

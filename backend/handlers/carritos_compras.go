@@ -831,6 +831,111 @@ func EmpresaCarritosCompraHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 				return
 			}
 
+			if action == "transferir_estacion" || action == "transferir_cuenta" {
+				empresaID, errEmp := parseEmpresaIDQuery(r)
+				if errEmp != nil {
+					http.Error(w, errEmp.Error(), http.StatusBadRequest)
+					return
+				}
+				origenID, errID := parseInt64Query(r, "id")
+				if errID != nil {
+					http.Error(w, errID.Error(), http.StatusBadRequest)
+					return
+				}
+				if !carritoTransferenciaEstacionHabilitada(dbEmp, empresaID) {
+					http.Error(w, "transferencia de cuenta desactivada para esta empresa", http.StatusForbidden)
+					return
+				}
+				var payload struct {
+					DestinoCarritoID  int64  `json:"destino_carrito_id"`
+					TargetCarritoID   int64  `json:"target_carrito_id"`
+					DestinoEstacionID int64  `json:"destino_estacion_id"`
+					TargetEstacionID  int64  `json:"target_estacion_id"`
+					Motivo            string `json:"motivo"`
+				}
+				if r.Body != nil {
+					_ = json.NewDecoder(io.LimitReader(r.Body, 1<<20)).Decode(&payload)
+				}
+				destinoCarritoID := payload.DestinoCarritoID
+				if destinoCarritoID <= 0 {
+					destinoCarritoID = payload.TargetCarritoID
+				}
+				destinoEstacionID := payload.DestinoEstacionID
+				if destinoEstacionID <= 0 {
+					destinoEstacionID = payload.TargetEstacionID
+				}
+				if destinoCarritoID <= 0 && destinoEstacionID > 0 {
+					destinoCarrito, err := dbpkg.GetCarritoCompraByStation(dbEmp, empresaID, destinoEstacionID)
+					if err != nil {
+						if errors.Is(err, sql.ErrNoRows) {
+							http.Error(w, "carrito destino no encontrado para la estacion", http.StatusNotFound)
+							return
+						}
+						log.Printf("[carritos] resolver destino transferencia empresa_id=%d estacion_id=%d error: %v", empresaID, destinoEstacionID, err)
+						http.Error(w, "No se pudo resolver el carrito destino", http.StatusInternalServerError)
+						return
+					}
+					destinoCarritoID = destinoCarrito.ID
+				}
+				if destinoCarritoID <= 0 {
+					http.Error(w, "destino_carrito_id o destino_estacion_id es obligatorio", http.StatusBadRequest)
+					return
+				}
+				origen, errOrigen := dbpkg.GetCarritoCompraByID(dbEmp, empresaID, origenID)
+				if errOrigen != nil {
+					if errors.Is(errOrigen, sql.ErrNoRows) {
+						http.Error(w, "carrito origen no encontrado", http.StatusNotFound)
+						return
+					}
+					http.Error(w, "No se pudo validar el carrito origen", http.StatusInternalServerError)
+					return
+				}
+				destino, errDestino := dbpkg.GetCarritoCompraByID(dbEmp, empresaID, destinoCarritoID)
+				if errDestino != nil {
+					if errors.Is(errDestino, sql.ErrNoRows) {
+						http.Error(w, "carrito destino no encontrado", http.StatusNotFound)
+						return
+					}
+					http.Error(w, "No se pudo validar el carrito destino", http.StatusInternalServerError)
+					return
+				}
+				usuarioActual := strings.TrimSpace(adminEmailFromRequest(r))
+				if err := ensureCarritoStationAccessForCarrito(dbEmp, empresaID, usuarioActual, origen); err != nil {
+					writeCarritoStationAccessError(w, err)
+					return
+				}
+				if err := ensureCarritoStationAccessForCarrito(dbEmp, empresaID, usuarioActual, destino); err != nil {
+					writeCarritoStationAccessError(w, err)
+					return
+				}
+				result, err := dbpkg.TransferCarritoStationCuenta(dbEmp, empresaID, origenID, destinoCarritoID, usuarioActual, payload.Motivo)
+				if err != nil {
+					lowerErr := strings.ToLower(err.Error())
+					status := http.StatusConflict
+					if strings.Contains(lowerErr, "obligatorio") || strings.Contains(lowerErr, "diferente") {
+						status = http.StatusBadRequest
+					}
+					http.Error(w, err.Error(), status)
+					return
+				}
+				registrarEventoContableVentaCarrito(dbEmp, r, origen, "cuenta_transferida", result.Total, map[string]interface{}{
+					"action":                   action,
+					"origen_carrito_id":        result.OrigenCarritoID,
+					"destino_carrito_id":       result.DestinoCarritoID,
+					"origen_estacion_id":       result.OrigenEstacionID,
+					"destino_estacion_id":      result.DestinoEstacionID,
+					"tarifa_tiempo_tipo":       result.TarifaTiempoTipo,
+					"tarifa_tiempo_id":         result.TarifaTiempoID,
+					"items_transferidos":       result.ItemsTransferidos,
+					"abonos_transferidos":      result.AbonosTransferidos,
+					"motivo":                   strings.TrimSpace(payload.Motivo),
+					"validacion_tarifa":        "equivalente_o_sin_tarifa_temporal",
+					"transferencia_habilitada": true,
+				}, "transferencia de cuenta entre estaciones")
+				writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "transferencia": result})
+				return
+			}
+
 			if action == "pagar_estacion" {
 				empresaID, errEmp := parseEmpresaIDQuery(r)
 				if errEmp != nil {
@@ -2353,6 +2458,37 @@ func ensureCarritoStationCajaAccess(dbEmp *sql.DB, empresaID int64, usuario stri
 		return nil
 	}
 	return errCarritoStationAccessDenied
+}
+
+func carritoTransferenciaEstacionHabilitada(dbEmp *sql.DB, empresaID int64) bool {
+	if dbEmp == nil || empresaID <= 0 {
+		return false
+	}
+	pref, err := dbpkg.GetEmpresaEstacionPref(dbEmp, empresaID, 0, "estaciones_config")
+	if err != nil || pref == nil || strings.TrimSpace(pref.Valor) == "" {
+		return false
+	}
+	root := carritoParseConfigJSON(pref.Valor)
+	if root == nil {
+		return false
+	}
+	for _, key := range []string{"carrito_ui_global", "carrito", "carrito_configuracion_global"} {
+		cfg := carritoMapFromConfig(root[key])
+		if cfg == nil {
+			continue
+		}
+		for _, flag := range []string{
+			"permitir_transferir_cuenta_carrito",
+			"permitir_transferencia_cuenta_carrito",
+			"transferencia_cuenta_habilitada",
+			"mostrar_boton_transferir_cuenta_carrito",
+		} {
+			if carritoBoolFromConfigValue(cfg[flag]) {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 func ensureCarritoStationAccessByID(dbEmp *sql.DB, empresaID, carritoID int64, usuario string) error {

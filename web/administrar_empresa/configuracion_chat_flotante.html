@@ -3,15 +3,9 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Configuración chat flotante</title>
+  <title>Configuracion chat IA</title>
   <link rel="stylesheet" href="/estilos.css">
   <style>
-    .chat-appearance-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-      gap: 14px;
-      margin-top: 14px;
-    }
     body.admin-empresa-config-page {
       margin: 0;
       min-height: 100vh;
@@ -25,143 +19,109 @@
       margin: 0;
       padding: 0;
     }
-    .chat-appearance-option {
+    .chat-ia-grid {
       display: grid;
-      grid-template-columns: auto 1fr;
+      gap: 14px;
+    }
+    .chat-ia-option {
+      display: flex;
       gap: 12px;
-      align-items: start;
-      padding: 16px;
+      align-items: flex-start;
+      padding: 14px 16px;
       border: 2px solid color-mix(in srgb, var(--border, #cbd5e1) 72%, transparent);
       border-radius: 8px;
       background: color-mix(in srgb, var(--surface, #fff) 94%, var(--accent, #0ea5e9) 6%);
-      cursor: pointer;
     }
-    .chat-appearance-option:has(input:checked) {
-      border-color: var(--accent, #0ea5e9);
-      box-shadow: 0 10px 24px rgba(14, 165, 233, 0.14);
+    .chat-ia-option input {
+      width: 20px;
+      height: 20px;
+      margin-top: 3px;
+      accent-color: var(--accent, #0ea5e9);
     }
-    .chat-appearance-option input {
-      margin-top: 4px;
-    }
-    .chat-appearance-title {
+    .chat-ia-title {
       display: block;
       font-weight: 800;
       color: var(--text, #162033);
     }
-    .chat-appearance-copy {
+    .chat-ia-copy {
       display: block;
       margin-top: 6px;
       color: var(--text-muted, #64748b);
       line-height: 1.45;
     }
-    .chat-voice-toggle {
-      display: flex;
-      gap: 12px;
-      align-items: flex-start;
-      margin-top: 18px;
+    .chat-ia-info {
+      padding: 14px 16px;
+      border: 1px solid var(--border, #cbd5e1);
+      border-radius: 8px;
+      background: var(--surface-soft, #f1f5f9);
+    }
+    .chat-ia-select-card {
+      display: grid;
+      gap: 8px;
       padding: 14px 16px;
       border: 2px solid color-mix(in srgb, var(--border, #cbd5e1) 72%, transparent);
       border-radius: 8px;
       background: color-mix(in srgb, var(--surface, #fff) 94%, var(--accent-2, #14b8a6) 6%);
-    }
-    .chat-voice-toggle input {
-      margin-top: 4px;
-    }
-    .chat-voice-select-card {
-      margin-top: 14px;
-      padding: 14px 16px;
-      border: 2px solid color-mix(in srgb, var(--border, #cbd5e1) 72%, transparent);
-      border-radius: 8px;
-      background: color-mix(in srgb, var(--surface, #fff) 94%, var(--accent, #0ea5e9) 6%);
-    }
-    .chat-voice-select-card .form-label {
-      margin-bottom: 8px;
     }
   </style>
 </head>
 <body class="admin-empresa-config-page form-bg-dark">
   <div class="container">
     <div class="page-header">
-      <h1>Configuración del chat flotante</h1>
-      <p class="form-help">Elige como se abre el asistente IA en Administrar Empresa: ventana cuadrada tradicional, robot 3D o secretaria 3D conversacional.</p>
+      <h1>Configuracion del asistente IA</h1>
+      <p class="form-help">Configura el asistente empresarial en recuadro normal. Los modos de robot y secretaria fueron retirados; la voz se conserva como opcion del chat.</p>
     </div>
 
     <section class="card form advanced-card">
-      <label class="chat-voice-toggle" for="chatEnabled">
-        <input id="chatEnabled" type="checkbox">
-        <span>
-          <span class="chat-appearance-title">Activar chat flotante con IA</span>
-          <span class="chat-appearance-copy">Control principal para mostrar u ocultar el asistente IA flotante en la empresa.</span>
-        </span>
-      </label>
-
-      <label class="chat-voice-toggle" for="robotEnabled">
-        <input id="robotEnabled" type="checkbox">
-        <span>
-          <span class="chat-appearance-title">Activar avatares IA 3D</span>
-          <span class="chat-appearance-copy">Permite usar el robot o la secretaria 3D, los globos conversacionales, la guía inicial y los avisos hablados de recordatorios.</span>
-        </span>
-      </label>
-
-      <label class="chat-voice-toggle" for="radioOnlineEnabled">
-        <input id="radioOnlineEnabled" type="checkbox">
-        <span>
-          <span class="chat-appearance-title">Activar emisora online</span>
-          <span class="chat-appearance-copy">Muestra el reproductor de musica latina flotante para esta empresa y permite apagarlo sin afectar a otras empresas.</span>
-        </span>
-      </label>
-
-      <label class="form-label">Apariencia del chat con IA</label>
-      <div class="chat-appearance-grid" role="radiogroup" aria-label="Apariencia del chat flotante">
-        <label class="chat-appearance-option" for="chatModeNormal">
-          <input id="chatModeNormal" type="radio" name="chatMode" value="normal">
+      <div class="chat-ia-grid">
+        <label class="chat-ia-option" for="chatEnabled">
+          <input id="chatEnabled" type="checkbox">
           <span>
-            <span class="chat-appearance-title">Chat cuadrado</span>
-            <span class="chat-appearance-copy">Usa la ventana lateral tradicional con historial, adjuntos, modos y controles completos.</span>
+            <span class="chat-ia-title">Activar IA empresarial flotante</span>
+            <span class="chat-ia-copy">Muestra el circulo flotante y permite abrir el recuadro normal del asistente en esta empresa.</span>
           </span>
         </label>
-        <label class="chat-appearance-option" for="chatModeRobot">
-          <input id="chatModeRobot" type="radio" name="chatMode" value="robot">
+
+        <label class="chat-ia-option" for="radioOnlineEnabled">
+          <input id="radioOnlineEnabled" type="checkbox">
           <span>
-            <span class="chat-appearance-title">Robot IA</span>
-            <span class="chat-appearance-copy">Usa el avatar 3D con globos de conversacion integrados en el mismo robot.</span>
+            <span class="chat-ia-title">Activar emisora online</span>
+            <span class="chat-ia-copy">Muestra el reproductor de musica configurado para esta empresa sin afectar a otras empresas.</span>
           </span>
         </label>
-        <label class="chat-appearance-option" for="chatModeSecretary">
-          <input id="chatModeSecretary" type="radio" name="chatMode" value="secretary">
+
+        <div class="chat-ia-info">
+          <span class="chat-ia-title">Apariencia del asistente</span>
+          <span class="chat-ia-copy">La IA se abre siempre como recuadro normal profesional con historial, adjuntos, modos y controles completos.</span>
+        </div>
+
+        <label class="chat-ia-option" for="chatVoiceEnabled">
+          <input id="chatVoiceEnabled" type="checkbox">
           <span>
-            <span class="chat-appearance-title">Secretaria IA 3D</span>
-            <span class="chat-appearance-copy">Usa una secretaria estilo caricatura, joven, con ropa ejecutiva, globos de conversacion y voz femenina.</span>
+            <span class="chat-ia-title">Activar modo voz del chat</span>
+            <span class="chat-ia-copy">Cuando esta activo, las respuestas del asistente se leen en voz alta usando el servicio de voz configurado o la voz del navegador.</span>
           </span>
         </label>
-      </div>
 
-      <label class="chat-voice-toggle" for="chatVoiceEnabled">
-        <input id="chatVoiceEnabled" type="checkbox">
-        <span>
-          <span class="chat-appearance-title">Activar modo voz del chat</span>
-          <span class="chat-appearance-copy">Cuando esta activo, las respuestas del asistente se leen en voz alta usando el servicio de voz configurado o la voz del navegador como respaldo.</span>
-        </span>
-      </label>
-
-      <div class="chat-voice-select-card">
-        <label class="form-label" for="chatRobotVoice">Voz del avatar</label>
-        <select id="chatRobotVoice" class="form-input">
-          <option value="es-CO">Colombiana natural (predeterminada)</option>
-          <option value="es-CO-female">Colombiana femenina</option>
-          <option value="es-CO-male">Colombiana masculina</option>
-          <option value="es-MX">Español latino</option>
-          <option value="es-ES">Español castellano</option>
-        </select>
-        <div class="form-help">Se usa para la voz del avatar IA. La secretaria usa voz femenina automaticamente. Si el servidor de voz no tiene ese modelo, el navegador usara la voz en español mas cercana.</div>
+        <div class="chat-ia-select-card">
+          <label class="form-label" for="chatRobotVoice">Voz del asistente</label>
+          <select id="chatRobotVoice" class="form-input">
+            <option value="es-CO">Colombiana natural (predeterminada)</option>
+            <option value="es-CO-female">Colombiana femenina</option>
+            <option value="es-CO-male">Colombiana masculina</option>
+            <option value="es-MX">Espanol latino</option>
+            <option value="es-ES">Espanol castellano</option>
+          </select>
+          <div class="form-help">Se usa cuando el modo voz esta activo. Si el servidor de voz no tiene ese modelo, el navegador usara la voz en espanol mas cercana.</div>
+        </div>
       </div>
 
       <div class="form-actions" style="margin-top:16px;">
-        <button id="saveChatModeBtn" class="btn" type="button">Guardar configuración</button>
-        <button id="resetChatModeBtn" class="btn secondary" type="button">Restablecer chat cuadrado</button>
+        <button id="saveChatModeBtn" class="btn" type="button">Guardar configuracion</button>
+        <button id="resetChatModeBtn" class="btn secondary" type="button">Restablecer IA activa</button>
         <a href="/administrar_empresa.html" class="btn secondary" style="text-decoration:none;">Volver al panel</a>
       </div>
-      <div id="chatModeStatus" class="form-help" style="margin-top:12px;">Cargando configuración...</div>
+      <div id="chatModeStatus" class="form-help" style="margin-top:12px;">Cargando configuracion...</div>
     </section>
   </div>
 
@@ -174,9 +134,7 @@
       var VOICE_STORAGE_KEY = 'pcs_ai_chat_voice_enabled';
       var ROBOT_VOICE_STORAGE_KEY = 'pcs_ai_chat_robot_voice';
       var PREFS_ENDPOINT = '/api/chat_flotante/preferencias';
-      var modeInputs = Array.prototype.slice.call(document.querySelectorAll('input[name="chatMode"]'));
       var chatEnabledCheckbox = document.getElementById('chatEnabled');
-      var robotEnabledCheckbox = document.getElementById('robotEnabled');
       var radioEnabledCheckbox = document.getElementById('radioOnlineEnabled');
       var voiceCheckbox = document.getElementById('chatVoiceEnabled');
       var robotVoiceSelect = document.getElementById('chatRobotVoice');
@@ -184,7 +142,6 @@
       var resetBtn = document.getElementById('resetChatModeBtn');
       var status = document.getElementById('chatModeStatus');
       var currentChatEnabled = true;
-      var currentRobotEnabled = false;
       var currentRadioEnabled = false;
 
       function parsePositiveInt(raw) {
@@ -221,27 +178,12 @@
         return PREFS_ENDPOINT + '?empresa_id=' + encodeURIComponent(String(empresaId));
       }
 
-      function normalize(value) {
-        var mode = String(value || '').trim().toLowerCase();
-        if ((mode === 'robot' || mode === 'secretary' || mode === 'secretaria') && currentRobotEnabled) {
-          return mode === 'secretaria' ? 'secretary' : mode;
-        }
-        return 'normal';
-      }
-
-      function labelFor(value) {
-        var mode = normalize(value);
-        if (mode === 'secretary') return 'Secretaria IA 3D';
-        return mode === 'robot' ? 'Robot IA' : 'Chat cuadrado';
-      }
-
       function normalizeRobotVoice(value) {
-        var raw = String(value || '').trim();
-        var lower = raw.toLowerCase();
+        var lower = String(value || '').trim().toLowerCase();
         if (lower === 'es-co-female' || lower === 'femenina' || lower === 'mujer') return 'es-CO-female';
         if (lower === 'es-co-male' || lower === 'masculina' || lower === 'hombre') return 'es-CO-male';
         if (lower === 'es-mx' || lower === 'mexico' || lower === 'mexicana') return 'es-MX';
-        if (lower === 'es-es' || lower === 'espana' || lower === 'españa' || lower === 'castellano') return 'es-ES';
+        if (lower === 'es-es' || lower === 'espana' || lower === 'castellano') return 'es-ES';
         return 'es-CO';
       }
 
@@ -249,54 +191,10 @@
         switch (normalizeRobotVoice(value)) {
           case 'es-CO-female': return 'Colombiana femenina';
           case 'es-CO-male': return 'Colombiana masculina';
-          case 'es-MX': return 'Español latino';
-          case 'es-ES': return 'Español castellano';
+          case 'es-MX': return 'Espanol latino';
+          case 'es-ES': return 'Espanol castellano';
           default: return 'Colombiana natural';
         }
-      }
-
-      function getSelectedMode() {
-        var checked = modeInputs.find(function (input) { return input && input.checked; });
-        return normalize(checked && checked.value);
-      }
-
-      function getSelectedRobotVoice() {
-        if (getSelectedMode() === 'secretary') return 'es-CO-female';
-        return normalizeRobotVoice(robotVoiceSelect && robotVoiceSelect.value);
-      }
-
-      function setSelectedMode(value) {
-        var mode = normalize(value);
-        modeInputs.forEach(function (input) {
-          input.checked = input.value === mode;
-        });
-        if (mode === 'secretary') {
-          setSelectedRobotVoice('es-CO-female');
-        }
-        return mode;
-      }
-
-      function updateControlAvailability() {
-        var chatOn = !!currentChatEnabled;
-        var robotOn = !!currentRobotEnabled;
-        modeInputs.forEach(function (input) {
-          input.disabled = !chatOn || ((input.value === 'robot' || input.value === 'secretary') && !robotOn);
-        });
-        if (!robotOn && (getSelectedMode() === 'robot' || getSelectedMode() === 'secretary')) {
-          setSelectedMode('normal');
-        }
-        if (voiceCheckbox) voiceCheckbox.disabled = !chatOn;
-        if (robotVoiceSelect) robotVoiceSelect.disabled = !chatOn || !robotOn;
-        if (robotEnabledCheckbox) robotEnabledCheckbox.disabled = !chatOn;
-      }
-
-      function setSelectedRobotVoice(value) {
-        var voice = normalizeRobotVoice(value);
-        if (robotVoiceSelect) {
-          robotVoiceSelect.value = voice;
-        }
-        storeLocalRobotVoice(voice);
-        return voice;
       }
 
       function updateStatus(message, isError) {
@@ -305,19 +203,9 @@
         status.style.color = isError ? '#b91c1c' : '';
       }
 
-      function storeLocalMode(value) {
-        var mode = normalize(value);
-        try {
-          window.localStorage.setItem(STORAGE_KEY, mode);
-        } catch (err) {}
-        return mode;
-      }
-
       function storeLocalEnabled(key, enabled) {
         var value = !!enabled;
-        try {
-          window.localStorage.setItem(key, value ? '1' : '0');
-        } catch (err) {}
+        try { window.localStorage.setItem(key, value ? '1' : '0'); } catch (err) {}
         return value;
       }
 
@@ -331,24 +219,20 @@
         }
       }
 
+      function storeNormalMode() {
+        try {
+          window.localStorage.setItem(STORAGE_KEY, 'normal');
+          window.localStorage.setItem(ROBOT_ENABLED_STORAGE_KEY, '0');
+        } catch (err) {}
+        return 'normal';
+      }
+
       function setChatEnabled(enabled) {
         currentChatEnabled = storeLocalEnabled(CHAT_ENABLED_STORAGE_KEY, enabled);
         if (chatEnabledCheckbox) chatEnabledCheckbox.checked = currentChatEnabled;
-        if (!currentChatEnabled) {
-          setSelectedMode('normal');
-        }
-        updateControlAvailability();
+        if (voiceCheckbox) voiceCheckbox.disabled = !currentChatEnabled;
+        if (robotVoiceSelect) robotVoiceSelect.disabled = !currentChatEnabled;
         return currentChatEnabled;
-      }
-
-      function setRobotEnabled(enabled) {
-        currentRobotEnabled = storeLocalEnabled(ROBOT_ENABLED_STORAGE_KEY, enabled);
-        if (robotEnabledCheckbox) robotEnabledCheckbox.checked = currentRobotEnabled;
-        if (!currentRobotEnabled) {
-          setSelectedMode('normal');
-        }
-        updateControlAvailability();
-        return currentRobotEnabled;
       }
 
       function setRadioEnabled(enabled) {
@@ -364,97 +248,50 @@
         return currentRadioEnabled;
       }
 
-      function storeLocalVoice(enabled) {
-        var value = !!enabled;
-        try {
-          window.localStorage.setItem(VOICE_STORAGE_KEY, value ? '1' : '0');
-        } catch (err) {}
+      function setVoiceEnabled(enabled) {
+        var value = storeLocalEnabled(VOICE_STORAGE_KEY, enabled);
+        if (voiceCheckbox) voiceCheckbox.checked = value;
         return value;
       }
 
-      function storeLocalRobotVoice(value) {
+      function setSelectedRobotVoice(value) {
         var voice = normalizeRobotVoice(value);
-        try {
-          window.localStorage.setItem(ROBOT_VOICE_STORAGE_KEY, voice);
-        } catch (err) {}
+        if (robotVoiceSelect) robotVoiceSelect.value = voice;
+        try { window.localStorage.setItem(ROBOT_VOICE_STORAGE_KEY, voice); } catch (err) {}
         return voice;
       }
 
-      function setVoiceEnabled(enabled) {
-        var value = storeLocalVoice(enabled);
-        if (voiceCheckbox) {
-          voiceCheckbox.checked = value;
-        }
-        return value;
-      }
-
-      function notifyChatMode(value) {
-        var mode = normalize(value);
-        var message = { type: 'pcs-ai-chat-personality-updated', mode: mode };
+      function postToShell(message) {
         try { window.parent.postMessage(message, '*'); } catch (err) {}
         try { window.top.postMessage(message, '*'); } catch (err) {}
       }
 
-      function notifyChatEnabled(enabled) {
-        var message = { type: 'pcs-ai-chat-enabled-updated', enabled: !!enabled };
-        try { window.parent.postMessage(message, '*'); } catch (err) {}
-        try { window.top.postMessage(message, '*'); } catch (err) {}
+      function notifyShell(chatOn, radioOn, voiceOn, robotVoice) {
+        postToShell({ type: 'pcs-ai-chat-enabled-updated', enabled: !!chatOn });
+        postToShell({ type: 'pcs-ai-robot-enabled-updated', enabled: false });
+        postToShell({ type: 'pcs-radio-online-enabled-updated', enabled: !!radioOn });
+        postToShell({ type: 'pcs-ai-chat-personality-updated', mode: 'normal' });
+        postToShell({ type: 'pcs-ai-chat-voice-updated', enabled: !!voiceOn });
+        postToShell({ type: 'pcs-ai-chat-robot-voice-updated', voice: robotVoice });
       }
 
-      function notifyRobotEnabled(enabled) {
-        var message = { type: 'pcs-ai-robot-enabled-updated', enabled: !!enabled };
-        try { window.parent.postMessage(message, '*'); } catch (err) {}
-        try { window.top.postMessage(message, '*'); } catch (err) {}
-      }
-
-      function notifyRadioEnabled(enabled) {
-        var message = { type: 'pcs-radio-online-enabled-updated', enabled: !!enabled };
-        try { window.parent.postMessage(message, '*'); } catch (err) {}
-        try { window.top.postMessage(message, '*'); } catch (err) {}
-      }
-
-      function notifyChatVoice(enabled) {
-        var message = { type: 'pcs-ai-chat-voice-updated', enabled: !!enabled };
-        try { window.parent.postMessage(message, '*'); } catch (err) {}
-        try { window.top.postMessage(message, '*'); } catch (err) {}
-      }
-
-      function notifyRobotVoice(value) {
-        var voice = normalizeRobotVoice(value);
-        var message = { type: 'pcs-ai-chat-robot-voice-updated', voice: voice };
-        try { window.parent.postMessage(message, '*'); } catch (err) {}
-        try { window.top.postMessage(message, '*'); } catch (err) {}
+      function renderStatus(prefix, chatOn, radioOn, voiceOn, robotVoice) {
+        updateStatus(prefix + ' IA: ' + (chatOn ? 'activa' : 'desactivada') + '. Emisora: ' + (radioOn ? 'activa' : 'desactivada') + '. Voz: ' + (voiceOn ? 'activa' : 'inactiva') + '. Voz seleccionada: ' + labelForRobotVoice(robotVoice) + '.');
       }
 
       function loadMode() {
-        var current = 'normal';
-        var currentChat = true;
-        var currentRobot = false;
-        var currentRadio = false;
-        var currentVoice = false;
-        var currentRobotVoice = 'es-CO';
-        try {
-          currentChat = readLocalEnabled(CHAT_ENABLED_STORAGE_KEY, true);
-          currentRobot = false;
-          currentRadio = false;
-          current = normalize(window.localStorage.getItem(STORAGE_KEY) || 'normal');
-          currentVoice = window.localStorage.getItem(VOICE_STORAGE_KEY) === '1';
-          currentRobotVoice = normalizeRobotVoice(window.localStorage.getItem(ROBOT_VOICE_STORAGE_KEY) || 'es-CO');
-        } catch (err) {
-          current = 'normal';
-          currentChat = true;
-          currentRobot = false;
-          currentRadio = false;
-          currentVoice = false;
-          currentRobotVoice = 'es-CO';
-        }
+        storeNormalMode();
+        var currentChat = readLocalEnabled(CHAT_ENABLED_STORAGE_KEY, true);
+        var currentRadio = readLocalEnabled(RADIO_ENABLED_STORAGE_KEY, false);
+        var currentVoice = readLocalEnabled(VOICE_STORAGE_KEY, false);
+        var currentRobotVoice = normalizeRobotVoice((function () {
+          try { return window.localStorage.getItem(ROBOT_VOICE_STORAGE_KEY) || 'es-CO'; } catch (err) { return 'es-CO'; }
+        })());
         setChatEnabled(currentChat);
-        setRobotEnabled(currentRobot);
         setRadioEnabled(currentRadio);
-        setSelectedMode(current);
         setVoiceEnabled(currentVoice);
         setSelectedRobotVoice(currentRobotVoice);
-        updateStatus('Chat: ' + (currentChat ? 'activo' : 'desactivado') + '. Robot: ' + (currentRobot ? 'activo' : 'desactivado') + '. Emisora: ' + (currentRadio ? 'activa' : 'desactivada') + '. Modo actual: ' + labelFor(current) + '. Voz: ' + (currentVoice ? 'activa' : 'inactiva') + '. Voz del avatar: ' + labelForRobotVoice(current === 'secretary' ? 'es-CO-female' : currentRobotVoice) + '.');
+        renderStatus('Configuracion local.', currentChat, currentRadio, currentVoice, currentRobotVoice);
 
         fetch(buildPrefsEndpoint(), { credentials: 'same-origin' })
           .then(function (res) {
@@ -464,62 +301,49 @@
           .then(function (data) {
             if (!data) return;
             var chatOn = typeof data.chat_enabled === 'boolean' ? setChatEnabled(data.chat_enabled) : currentChat;
-            var robotOn = typeof data.robot_enabled === 'boolean' ? setRobotEnabled(data.robot_enabled) : currentRobot;
             var radioOn = typeof data.radio_online_enabled === 'boolean' ? setRadioEnabled(data.radio_online_enabled) : currentRadio;
-            var mode = storeLocalMode(data.personality_mode || current);
-            var voice = typeof data.voice_enabled === 'boolean' ? setVoiceEnabled(data.voice_enabled) : currentVoice;
+            var voiceOn = typeof data.voice_enabled === 'boolean' ? setVoiceEnabled(data.voice_enabled) : currentVoice;
             var robotVoice = setSelectedRobotVoice(data.robot_voice || currentRobotVoice);
-            setSelectedMode(mode);
-            notifyChatEnabled(chatOn);
-            notifyRobotEnabled(robotOn);
-            notifyRadioEnabled(radioOn);
-            notifyChatMode(mode);
-            notifyChatVoice(voice);
-            notifyRobotVoice(robotVoice);
-            updateStatus('Chat: ' + (chatOn ? 'activo' : 'desactivado') + '. Robot: ' + (robotOn ? 'activo' : 'desactivado') + '. Emisora: ' + (radioOn ? 'activa' : 'desactivada') + '. Modo actual: ' + labelFor(mode) + '. Voz: ' + (voice ? 'activa' : 'inactiva') + '. Voz del avatar: ' + labelForRobotVoice(mode === 'secretary' ? 'es-CO-female' : robotVoice) + '.');
+            storeNormalMode();
+            notifyShell(chatOn, radioOn, voiceOn, robotVoice);
+            renderStatus('Configuracion cargada.', chatOn, radioOn, voiceOn, robotVoice);
           })
           .catch(function () {
-            updateStatus('Chat: ' + (currentChat ? 'activo' : 'desactivado') + '. Robot: ' + (currentRobot ? 'activo' : 'desactivado') + '. Emisora: ' + (currentRadio ? 'activa' : 'desactivada') + '. Modo actual: ' + labelFor(current) + '. Voz: ' + (currentVoice ? 'activa' : 'inactiva') + '. Voz del avatar: ' + labelForRobotVoice(current === 'secretary' ? 'es-CO-female' : currentRobotVoice) + '. Se usara la configuracion local si el servidor no responde.');
+            renderStatus('Servidor no disponible; queda aplicada localmente.', currentChat, currentRadio, currentVoice, currentRobotVoice);
           });
       }
 
       function saveMode() {
         var chatOn = setChatEnabled(chatEnabledCheckbox ? chatEnabledCheckbox.checked : true);
-        var robotOn = setRobotEnabled(robotEnabledCheckbox ? robotEnabledCheckbox.checked : false);
         var radioOn = setRadioEnabled(radioEnabledCheckbox ? radioEnabledCheckbox.checked : false);
-        var mode = storeLocalMode(getSelectedMode());
-        var voice = setVoiceEnabled(voiceCheckbox && voiceCheckbox.checked);
-        var robotVoice = setSelectedRobotVoice(getSelectedRobotVoice());
-        notifyChatEnabled(chatOn);
-        notifyRobotEnabled(robotOn);
-        notifyRadioEnabled(radioOn);
-        notifyChatMode(mode);
-        notifyChatVoice(voice);
-        notifyRobotVoice(robotVoice);
+        var voiceOn = setVoiceEnabled(voiceCheckbox && voiceCheckbox.checked);
+        var robotVoice = setSelectedRobotVoice(robotVoiceSelect && robotVoiceSelect.value);
+        storeNormalMode();
+        notifyShell(chatOn, radioOn, voiceOn, robotVoice);
         updateStatus('Guardando configuracion...');
         fetch(buildPrefsEndpoint(), {
           method: 'PUT',
           credentials: 'same-origin',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ chat_enabled: chatOn, robot_enabled: robotOn, radio_online_enabled: radioOn, personality_mode: mode, voice_enabled: voice, robot_voice: robotVoice })
+          body: JSON.stringify({
+            chat_enabled: chatOn,
+            robot_enabled: false,
+            radio_online_enabled: radioOn,
+            personality_mode: 'normal',
+            voice_enabled: voiceOn,
+            robot_voice: robotVoice
+          })
         }).then(function (res) {
           if (!res.ok) throw new Error('No se pudo guardar en servidor.');
           return res.json();
         }).then(function (data) {
           var savedChat = typeof (data && data.chat_enabled) === 'boolean' ? setChatEnabled(data.chat_enabled) : chatOn;
-          var savedRobot = typeof (data && data.robot_enabled) === 'boolean' ? setRobotEnabled(data.robot_enabled) : robotOn;
           var savedRadio = typeof (data && data.radio_online_enabled) === 'boolean' ? setRadioEnabled(data.radio_online_enabled) : radioOn;
-          var saved = storeLocalMode(data && data.personality_mode ? data.personality_mode : mode);
-          var savedVoice = typeof (data && data.voice_enabled) === 'boolean' ? setVoiceEnabled(data.voice_enabled) : voice;
+          var savedVoice = typeof (data && data.voice_enabled) === 'boolean' ? setVoiceEnabled(data.voice_enabled) : voiceOn;
           var savedRobotVoice = setSelectedRobotVoice(data && data.robot_voice ? data.robot_voice : robotVoice);
-          setSelectedMode(saved);
-          notifyChatEnabled(savedChat);
-          notifyRobotEnabled(savedRobot);
-          notifyRadioEnabled(savedRadio);
-          notifyChatMode(saved);
-          notifyChatVoice(savedVoice);
-          notifyRobotVoice(savedRobotVoice);
-          updateStatus('Configuracion guardada. Chat: ' + (savedChat ? 'activo' : 'desactivado') + '. Robot: ' + (savedRobot ? 'activo' : 'desactivado') + '. Emisora: ' + (savedRadio ? 'activa' : 'desactivada') + '. Modo: ' + labelFor(saved) + '. Voz: ' + (savedVoice ? 'activa' : 'inactiva') + '. Voz del avatar: ' + labelForRobotVoice(saved === 'secretary' ? 'es-CO-female' : savedRobotVoice) + '.');
+          storeNormalMode();
+          notifyShell(savedChat, savedRadio, savedVoice, savedRobotVoice);
+          renderStatus('Configuracion guardada.', savedChat, savedRadio, savedVoice, savedRobotVoice);
         }).catch(function (err) {
           updateStatus('Configuracion aplicada localmente, pero no se pudo guardar en servidor. ' + String(err && err.message ? err.message : ''), true);
         });
@@ -527,57 +351,40 @@
 
       function resetMode() {
         setChatEnabled(true);
-        setRobotEnabled(false);
         setRadioEnabled(false);
-        setSelectedMode('normal');
+        setVoiceEnabled(false);
+        setSelectedRobotVoice('es-CO');
         saveMode();
       }
 
       if (saveBtn) saveBtn.addEventListener('click', saveMode);
       if (resetBtn) resetBtn.addEventListener('click', resetMode);
-      modeInputs.forEach(function (input) {
-        input.addEventListener('change', function () {
-          var mode = storeLocalMode(getSelectedMode());
-          notifyChatMode(mode);
-          updateStatus('Vista previa aplicada: ' + labelFor(mode) + '. Presiona Guardar configuración para persistirla.');
-        });
+      if (chatEnabledCheckbox) chatEnabledCheckbox.addEventListener('change', function () {
+        var chatOn = setChatEnabled(chatEnabledCheckbox.checked);
+        var voiceOn = voiceCheckbox && voiceCheckbox.checked;
+        var robotVoice = setSelectedRobotVoice(robotVoiceSelect && robotVoiceSelect.value);
+        notifyShell(chatOn, currentRadioEnabled, voiceOn, robotVoice);
+        renderStatus('Vista previa.', chatOn, currentRadioEnabled, voiceOn, robotVoice);
       });
-      if (chatEnabledCheckbox) {
-        chatEnabledCheckbox.addEventListener('change', function () {
-          var enabled = setChatEnabled(chatEnabledCheckbox.checked);
-          notifyChatEnabled(enabled);
-          updateStatus('Vista previa aplicada: chat ' + (enabled ? 'activo' : 'desactivado') + '. Presiona Guardar configuración para persistirla.');
-        });
-      }
-      if (robotEnabledCheckbox) {
-        robotEnabledCheckbox.addEventListener('change', function () {
-          var enabled = setRobotEnabled(robotEnabledCheckbox.checked);
-          notifyRobotEnabled(enabled);
-          notifyChatMode(getSelectedMode());
-          updateStatus('Vista previa aplicada: robot ' + (enabled ? 'activo' : 'desactivado') + '. Presiona Guardar configuración para persistirla.');
-        });
-      }
-      if (radioEnabledCheckbox) {
-        radioEnabledCheckbox.addEventListener('change', function () {
-          var enabled = setRadioEnabled(radioEnabledCheckbox.checked);
-          notifyRadioEnabled(enabled);
-          updateStatus('Vista previa aplicada: emisora ' + (enabled ? 'activa' : 'desactivada') + '. Presiona Guardar configuracion para persistirla.');
-        });
-      }
-      if (voiceCheckbox) {
-        voiceCheckbox.addEventListener('change', function () {
-          var enabled = setVoiceEnabled(voiceCheckbox.checked);
-          notifyChatVoice(enabled);
-          updateStatus('Vista previa aplicada: voz ' + (enabled ? 'activa' : 'inactiva') + '. Presiona Guardar configuración para persistirla.');
-        });
-      }
-      if (robotVoiceSelect) {
-        robotVoiceSelect.addEventListener('change', function () {
-          var voice = setSelectedRobotVoice(robotVoiceSelect.value);
-          notifyRobotVoice(voice);
-          updateStatus('Vista previa aplicada: voz del avatar ' + labelForRobotVoice(getSelectedMode() === 'secretary' ? 'es-CO-female' : voice) + '. Presiona Guardar configuración para persistirla.');
-        });
-      }
+      if (radioEnabledCheckbox) radioEnabledCheckbox.addEventListener('change', function () {
+        var radioOn = setRadioEnabled(radioEnabledCheckbox.checked);
+        var voiceOn = voiceCheckbox && voiceCheckbox.checked;
+        var robotVoice = setSelectedRobotVoice(robotVoiceSelect && robotVoiceSelect.value);
+        notifyShell(currentChatEnabled, radioOn, voiceOn, robotVoice);
+        renderStatus('Vista previa.', currentChatEnabled, radioOn, voiceOn, robotVoice);
+      });
+      if (voiceCheckbox) voiceCheckbox.addEventListener('change', function () {
+        var voiceOn = setVoiceEnabled(voiceCheckbox.checked);
+        var robotVoice = setSelectedRobotVoice(robotVoiceSelect && robotVoiceSelect.value);
+        notifyShell(currentChatEnabled, currentRadioEnabled, voiceOn, robotVoice);
+        renderStatus('Vista previa.', currentChatEnabled, currentRadioEnabled, voiceOn, robotVoice);
+      });
+      if (robotVoiceSelect) robotVoiceSelect.addEventListener('change', function () {
+        var voiceOn = voiceCheckbox && voiceCheckbox.checked;
+        var robotVoice = setSelectedRobotVoice(robotVoiceSelect.value);
+        notifyShell(currentChatEnabled, currentRadioEnabled, voiceOn, robotVoice);
+        renderStatus('Vista previa.', currentChatEnabled, currentRadioEnabled, voiceOn, robotVoice);
+      });
       loadMode();
     })();
   </script>

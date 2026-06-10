@@ -773,10 +773,18 @@ func main() {
 			log.Fatalf("failed to ensure super auditoria schema in superadministrador db: %v", err)
 		}
 		startupTrace("after_ensure_super_auditoria_schema")
+		if err := dbpkg.EnsureSuperVPSSnapshotSchema(dbSuper); err != nil {
+			log.Fatalf("failed to ensure super vps snapshots schema in superadministrador db: %v", err)
+		}
+		startupTrace("after_ensure_super_vps_snapshots_schema")
 		if err := dbpkg.EnsureLicenciaVencimientoNotificacionesSchema(dbSuper); err != nil {
 			log.Fatalf("failed to ensure licencia vencimiento notificaciones schema in superadministrador db: %v", err)
 		}
 		startupTrace("after_ensure_licencia_vencimiento_notificaciones_schema")
+		if err := dbpkg.EnsureLicenciaEmpresaRetencionSchema(dbSuper); err != nil {
+			log.Fatalf("failed to ensure licencia empresa retencion schema in superadministrador db: %v", err)
+		}
+		startupTrace("after_ensure_licencia_empresa_retencion_schema")
 		if err := dbpkg.EnsureSuperJuegosSchema(dbSuper); err != nil {
 			log.Fatalf("failed to ensure super juegos schema in superadministrador db: %v", err)
 		}
@@ -1072,6 +1080,11 @@ func main() {
 		handlers.StartLicenciaVencimientoAlertasWorker(dbSuper, dbEmpresas, 12*time.Hour, stopLicenciasVencimiento)
 	})
 
+	stopVPSSnapshotWorker := make(chan struct{})
+	go utils.RunProtectedProcess("super.vps_snapshot_worker", map[string]interface{}{"interval_hours": 1}, func() {
+		handlers.StartSuperVPSSnapshotWorker(dbSuper, time.Hour, stopVPSSnapshotWorker)
+	})
+
 	stopParametrosLegales := make(chan struct{})
 	go utils.RunProtectedProcess("parametros_legales.worker", map[string]interface{}{"interval_hours": 24}, func() {
 		dbpkg.StartEmpresaParametrosLegalesWorker(dbEmpresas, 24*time.Hour, stopParametrosLegales)
@@ -1214,7 +1227,7 @@ func main() {
 	http.HandleFunc("/api/empresa/offline_ventas", handlers.WithEmpresaVentasPermissions(dbEmpresas, dbSuper, handlers.EmpresaOfflineVentasHandler(dbEmpresas, dbSuper)))
 	http.HandleFunc("/api/empresa/datafonos", handlers.WithEmpresaVentasPermissions(dbEmpresas, dbSuper, handlers.EmpresaDatafonosHandler(dbEmpresas, dbSuper)))
 	http.HandleFunc("/api/empresa/venta_publica", handlers.WithEmpresaVentaPublicaPermissions(dbEmpresas, dbSuper, handlers.EmpresaVentaPublicaHandler(dbEmpresas)))
-	http.HandleFunc("/api/public/venta_publica", handlers.PublicVentaPublicaHandler(dbEmpresas))
+	http.HandleFunc("/api/public/venta_publica", handlers.PublicVentaPublicaHandler(dbEmpresas, dbSuper))
 	http.HandleFunc("/api/public/turnos_atencion", handlers.PublicTurnosAtencionHandler(dbEmpresas))
 	http.HandleFunc("/api/public/taxi_system", handlers.PublicTaxiSystemHandler(dbEmpresas))
 	http.HandleFunc("/api/public/domicilios", handlers.PublicDomiciliosHandler(dbEmpresas))
@@ -1355,13 +1368,14 @@ func main() {
 	http.HandleFunc("/super/api/administradores/restablecer_password", handlers.AdminResetPasswordHandler(dbSuper))
 	// Endpoint CRUD para licencias (nuevo)
 	http.HandleFunc("/super/api/licencias", handlers.WithSuperAuditoria(dbSuper, "licencias", handlers.LicenciasHandler(dbSuper)))
+	http.HandleFunc("/super/api/licencias/configuracion", handlers.WithSuperAuditoria(dbSuper, "super_config_licencias", handlers.SuperLicenciasConfiguracionHandler(dbSuper)))
 	http.HandleFunc("/super/api/licencias/codigos_descuento", handlers.WithSuperAuditoria(dbSuper, "licencias_codigos_descuento", handlers.SuperLicenciasCodigosDescuentoHandler(dbSuper)))
 	http.HandleFunc("/super/api/empresa_licencias_adicionales", handlers.EmpresaLicenciasAdicionalesHandler(dbSuper))
 	http.HandleFunc("/super/api/licencias/vencimiento_alertas", handlers.WithSuperAuditoria(dbSuper, "super_config_alertas_licencia", handlers.SuperLicenciaVencimientoAlertasHandler(dbSuper, dbEmpresas)))
 	// Endpoint super: lista de administradores autorizados (Frecuencia FE/FP)
 	http.HandleFunc("/super/api/administradores_frecuencia_fe", handlers.SuperAdministradoresFrecuenciaFEHandler(dbSuper))
 	// Endpoint publico para exponer metodos de pago activos del checkout de licencias
-	http.HandleFunc("/api/public/licencias/payment_methods", handlers.PublicLicenciasPaymentMethodsHandler(dbSuper))
+	http.HandleFunc("/api/public/licencias/payment_methods", handlers.PublicLicenciasPaymentMethodsHandler(dbSuper, dbEmpresas))
 	// Endpoint publico para calcular total, descuentos y activacion sin pago del checkout de licencias
 	http.HandleFunc("/api/public/licencias/checkout_summary", handlers.LicenciaCheckoutSummaryHandler(dbSuper))
 	// Endpoint para gestionar credenciales de Wompi (GET/PUT)
@@ -1441,6 +1455,7 @@ func main() {
 	http.HandleFunc("/super/api/postgres/performance", handlers.WithSuperAuditoria(dbSuper, "super_postgresql", handlers.PostgresPerformanceHandler(dbEmpresas, dbSuper)))
 	http.HandleFunc("/super/api/explorador_archivos", handlers.WithSuperAuditoria(dbSuper, "super_explorador_archivos", handlers.SuperFileExplorerHandler(dbSuper)))
 	http.HandleFunc("/super/api/docker_portabilidad", handlers.WithSuperAuditoria(dbSuper, "super_docker_portabilidad", handlers.SuperDockerPortabilidadHandler(dbSuper)))
+	http.HandleFunc("/super/api/vps_snapshots", handlers.WithSuperAuditoria(dbSuper, "super_vps_snapshots", handlers.SuperVPSSnapshotsHandler(dbSuper)))
 	http.HandleFunc("/super/api/domotica_storage", handlers.WithSuperAuditoria(dbSuper, "super_domotica_storage", handlers.SuperDomoticaStorageHandler(dbSuper, dbEmpresas)))
 	// Endpoint de seguridad: escaneo de puertos
 	http.HandleFunc("/super/api/security/ports", handlers.WithSuperAuditoria(dbSuper, "super_seguridad_vps", handlers.SecurityPortsHandler(dbSuper)))

@@ -396,6 +396,51 @@
       padding: 18px;
     }
 
+    .image-upload {
+      display: grid;
+      grid-template-columns: 96px minmax(0, 1fr);
+      gap: 12px;
+      align-items: center;
+      border: 1px solid var(--catalog-line);
+      border-radius: 8px;
+      background: color-mix(in srgb, var(--catalog-panel) 94%, var(--catalog-accent) 6%);
+      padding: 12px;
+    }
+
+    .image-preview {
+      width: 96px;
+      height: 72px;
+      border: 1px solid var(--catalog-line);
+      border-radius: 8px;
+      background: var(--surface-soft);
+      display: grid;
+      place-items: center;
+      overflow: hidden;
+      color: var(--catalog-muted);
+      font-weight: 900;
+      font-size: 12px;
+      text-transform: uppercase;
+    }
+
+    .image-preview.profile { height: 96px; }
+
+    .image-preview img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    .image-controls {
+      display: grid;
+      gap: 8px;
+      min-width: 0;
+    }
+
+    .image-controls input[type="file"] {
+      padding: 7px;
+    }
+
     @media (max-width: 980px) {
       .grid { grid-template-columns: 1fr; }
       .page-head { flex-direction: column; }
@@ -417,6 +462,7 @@
         justify-content: flex-start;
         min-width: 0;
       }
+      .image-upload { grid-template-columns: 1fr; }
       .url-line { flex-direction: column; align-items: stretch; }
       .qr-actions { grid-template-columns: 1fr; }
     }
@@ -501,13 +547,32 @@
               <textarea id="descripcionTienda" maxlength="600" placeholder="Texto corto que acompana la carta publica."></textarea>
             </label>
 
-            <div class="two-cols">
-              <label>Logo URL
-                <input id="logoUrl" placeholder="/img/logo.png">
-              </label>
-              <label>Banner URL
-                <input id="bannerUrl" placeholder="/img/banner.jpg">
-              </label>
+            <div class="image-upload">
+              <div class="image-preview profile" id="perfilPreview">Perfil</div>
+              <div class="image-controls">
+                <label>Foto de perfil de la carta
+                  <input id="perfilUpload" type="file" accept="image/png,image/jpeg,image/webp,image/gif">
+                </label>
+                <button class="btn small" type="button" id="btnUploadPerfil">Subir perfil</button>
+                <label>URL de perfil
+                  <input id="logoUrl" placeholder="/uploads/empresas/.../perfil.jpg">
+                </label>
+                <div class="status" id="perfilStatus"></div>
+              </div>
+            </div>
+
+            <div class="image-upload">
+              <div class="image-preview" id="portadaPreview">Portada</div>
+              <div class="image-controls">
+                <label>Foto de portada de la carta
+                  <input id="portadaUpload" type="file" accept="image/png,image/jpeg,image/webp,image/gif">
+                </label>
+                <button class="btn small" type="button" id="btnUploadPortada">Subir portada</button>
+                <label>URL de portada
+                  <input id="bannerUrl" placeholder="/uploads/empresas/.../portada.jpg">
+                </label>
+                <div class="status" id="portadaStatus"></div>
+              </div>
             </div>
 
             <div class="two-cols">
@@ -522,6 +587,11 @@
             <label class="switch-row">
               <span>Mostrar existencias publicadas</span>
               <input id="mostrarStock" type="checkbox" checked>
+            </label>
+
+            <label class="switch-row">
+              <span>Mostrar formulario de contacto en la carta publica</span>
+              <input id="contactoFormularioActivo" type="checkbox" checked>
             </label>
 
             <hr>
@@ -589,9 +659,18 @@
         descripcionTienda: document.getElementById('descripcionTienda'),
         logoUrl: document.getElementById('logoUrl'),
         bannerUrl: document.getElementById('bannerUrl'),
+        perfilUpload: document.getElementById('perfilUpload'),
+        portadaUpload: document.getElementById('portadaUpload'),
+        btnUploadPerfil: document.getElementById('btnUploadPerfil'),
+        btnUploadPortada: document.getElementById('btnUploadPortada'),
+        perfilPreview: document.getElementById('perfilPreview'),
+        portadaPreview: document.getElementById('portadaPreview'),
+        perfilStatus: document.getElementById('perfilStatus'),
+        portadaStatus: document.getElementById('portadaStatus'),
         colorPrimario: document.getElementById('colorPrimario'),
         dominioPublico: document.getElementById('dominioPublico'),
         mostrarStock: document.getElementById('mostrarStock'),
+        contactoFormularioActivo: document.getElementById('contactoFormularioActivo'),
         paginaSlug: document.getElementById('paginaSlug'),
         paginaNombre: document.getElementById('paginaNombre'),
         paginaDescripcion: document.getElementById('paginaDescripcion'),
@@ -663,6 +742,31 @@
       function setStatus(el, message, type) {
         el.textContent = message || '';
         el.className = 'status' + (type ? ' ' + type : '');
+      }
+
+      function setImagePreview(el, url, label) {
+        if (!el) return;
+        const clean = String(url || '').trim();
+        if (clean) {
+          el.innerHTML = '<img src="' + escapeHtml(clean) + '" alt="">';
+        } else {
+          el.textContent = label || 'Imagen';
+        }
+      }
+
+      function promptDownloadPreviousAsset(url, label) {
+        const clean = String(url || '').trim();
+        if (!clean) return;
+        const shouldDownload = confirm('Este registro ya tiene ' + (label || 'un archivo') + ' cargado. Al subir uno nuevo, el anterior se eliminara del sistema. Deseas descargar el archivo anterior antes de reemplazarlo?');
+        if (!shouldDownload) return;
+        const a = document.createElement('a');
+        a.href = clean;
+        a.download = '';
+        a.target = '_blank';
+        a.rel = 'noopener';
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
       }
 
       function downloadBlob(blob, filename) {
@@ -1153,9 +1257,12 @@
         els.descripcionTienda.value = cfg.descripcion_tienda || '';
         els.logoUrl.value = cfg.logo_url || '';
         els.bannerUrl.value = cfg.banner_url || '';
+        setImagePreview(els.perfilPreview, els.logoUrl.value, 'Perfil');
+        setImagePreview(els.portadaPreview, els.bannerUrl.value, 'Portada');
         els.colorPrimario.value = /^#[0-9a-f]{6}$/i.test(cfg.color_primario || '') ? cfg.color_primario : '#0f766e';
         els.dominioPublico.value = cfg.dominio_publico || '';
         els.mostrarStock.checked = cfg.mostrar_stock !== false;
+        els.contactoFormularioActivo.checked = cfg.contacto_formulario_activo !== false;
         if (!els.paginaSlug.value) els.paginaSlug.value = 'productos';
         if (!els.paginaNombre.value) els.paginaNombre.value = 'Productos';
         buildPublicUrl();
@@ -1176,6 +1283,7 @@
           moneda: (els.moneda.value.trim() || 'COP').toUpperCase(),
           dominio_publico: els.dominioPublico.value.trim(),
           mostrar_stock: !!els.mostrarStock.checked,
+          contacto_formulario_activo: !!els.contactoFormularioActivo.checked,
           pedidos_restaurante_activo: !!current.pedidos_restaurante_activo,
           pedidos_registro_opcional_cliente: current.pedidos_registro_opcional_cliente !== false,
           pedidos_permitir_recoger_en_tienda: current.pedidos_permitir_recoger_en_tienda !== false,
@@ -1234,6 +1342,56 @@
         await saveConfig();
         if (!state.activePage || !state.activePage.id) throw new Error('No se pudo crear la seccion publica');
         return state.activePage;
+      }
+
+      async function uploadCartaImage(tipo) {
+        const isPortada = tipo === 'portada';
+        const input = isPortada ? els.portadaUpload : els.perfilUpload;
+        const statusEl = isPortada ? els.portadaStatus : els.perfilStatus;
+        const targetInput = isPortada ? els.bannerUrl : els.logoUrl;
+        const preview = isPortada ? els.portadaPreview : els.perfilPreview;
+        const btn = isPortada ? els.btnUploadPortada : els.btnUploadPerfil;
+        const file = input && input.files ? input.files[0] : null;
+        if (!file) {
+          setStatus(statusEl, 'Selecciona una imagen antes de subir.', 'error');
+          return;
+        }
+        if (file.size > 10 * 1024 * 1024) {
+          setStatus(statusEl, 'La imagen supera 10 MB.', 'error');
+          return;
+        }
+        if (isPortada) {
+          await ensurePage();
+        }
+        promptDownloadPreviousAsset(targetInput.value, isPortada ? 'foto de portada' : 'foto de perfil');
+        const form = new FormData();
+        form.append('empresa_id', String(state.empresaId));
+        form.append('tipo_imagen', tipo);
+        if (isPortada && state.activePage && state.activePage.id) {
+          form.append('pagina_id', String(state.activePage.id));
+        }
+        form.append('imagen', file);
+        btn.disabled = true;
+        setStatus(statusEl, 'Subiendo imagen...', '');
+        try {
+          const data = await api('/api/empresa/venta_publica?action=subir_imagen&' + empresaQS(), {
+            method: 'POST',
+            body: form
+          });
+          const imageUrl = data && data.image_url ? data.image_url : '';
+          if (!imageUrl) throw new Error('El servidor no devolvio la URL de la imagen.');
+          targetInput.value = imageUrl;
+          setImagePreview(preview, imageUrl, isPortada ? 'Portada' : 'Perfil');
+          if (data.config) state.config = data.config;
+          if (isPortada && state.activePage) state.activePage.banner_url = imageUrl;
+          input.value = '';
+          buildPublicUrl();
+          setStatus(statusEl, 'Imagen subida. La imagen anterior de esta empresa fue reemplazada si correspondia.', 'ok');
+        } catch (err) {
+          setStatus(statusEl, err.message || 'No se pudo subir la imagen.', 'error');
+        } finally {
+          btn.disabled = false;
+        }
       }
 
       function itemForProduct(product) {
@@ -1406,6 +1564,22 @@
         } catch (_) {
           setStatus(els.configStatus, 'No se pudo copiar automaticamente. El enlace esta visible arriba.', 'error');
         }
+      });
+
+      els.btnUploadPerfil.addEventListener('click', function() {
+        uploadCartaImage('perfil').catch(err => setStatus(els.perfilStatus, err.message || 'No se pudo subir perfil.', 'error'));
+      });
+
+      els.btnUploadPortada.addEventListener('click', function() {
+        uploadCartaImage('portada').catch(err => setStatus(els.portadaStatus, err.message || 'No se pudo subir portada.', 'error'));
+      });
+
+      els.logoUrl.addEventListener('input', function() {
+        setImagePreview(els.perfilPreview, els.logoUrl.value, 'Perfil');
+      });
+
+      els.bannerUrl.addEventListener('input', function() {
+        setImagePreview(els.portadaPreview, els.bannerUrl.value, 'Portada');
       });
 
       document.getElementById('btnDownloadQrPng').addEventListener('click', function() {

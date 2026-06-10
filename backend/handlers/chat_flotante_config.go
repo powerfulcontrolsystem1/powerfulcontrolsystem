@@ -60,7 +60,7 @@ func getChatFlotanteChatEnabled(dbSuper *sql.DB) bool {
 }
 
 func getChatFlotanteRobotEnabled(dbSuper *sql.DB) bool {
-	return getChatFlotanteEnabledDefaultTrue(dbSuper, chatFlotanteRobotEnabledKey)
+	return false
 }
 
 func getChatFlotanteRadioOnlineEnabled(dbSuper *sql.DB) bool {
@@ -107,14 +107,7 @@ func getChatFlotanteRobotVoice(dbSuper *sql.DB) string {
 }
 
 func normalizeChatFlotantePersonalityMode(raw string) string {
-	switch strings.ToLower(strings.TrimSpace(raw)) {
-	case chatFlotantePersonalityRobot, "ejecutivo", "avatar", "3d":
-		return chatFlotantePersonalityRobot
-	case chatFlotantePersonalitySecretary, "secretaria", "asistente-secretaria", "recepcionista":
-		return chatFlotantePersonalitySecretary
-	default:
-		return chatFlotantePersonalityNormal
-	}
+	return chatFlotantePersonalityNormal
 }
 
 func normalizeChatFlotanteRadioCountry(raw string) string {
@@ -317,7 +310,7 @@ func getChatFlotanteStringForEmpresa(dbSuper, dbEmp *sql.DB, empresaID int64, ke
 
 func chatFlotantePrefsResponse(dbSuper, dbEmp *sql.DB, empresaID int64) map[string]any {
 	robotVoice := normalizeChatFlotanteRobotVoice(getChatFlotanteStringForEmpresa(dbSuper, dbEmp, empresaID, chatFlotanteRobotVoiceKey, "es-CO"))
-	personalityMode := normalizeChatFlotantePersonalityMode(getChatFlotanteStringForEmpresa(dbSuper, dbEmp, empresaID, chatFlotantePersonalityModeKey, chatFlotantePersonalityNormal))
+	personalityMode := chatFlotantePersonalityNormal
 	radioCountry := normalizeChatFlotanteRadioCountry(getChatFlotanteStringForEmpresa(dbSuper, dbEmp, empresaID, chatFlotanteRadioCountryKey, ""))
 	return map[string]any{
 		"ok":         true,
@@ -329,7 +322,7 @@ func chatFlotantePrefsResponse(dbSuper, dbEmp *sql.DB, empresaID int64) map[stri
 			return "global"
 		}(),
 		"chat_enabled":          getChatFlotanteBoolForEmpresa(dbSuper, dbEmp, empresaID, chatFlotanteChatEnabledKey, true),
-		"robot_enabled":         getChatFlotanteBoolExplicitForEmpresa(dbSuper, dbEmp, empresaID, chatFlotanteRobotEnabledKey, false),
+		"robot_enabled":         false,
 		"radio_online_enabled":  getChatFlotanteBoolExplicitForEmpresa(dbSuper, dbEmp, empresaID, chatFlotanteRadioOnlineEnabledKey, false),
 		"radio_country":         radioCountry,
 		"radio_custom_stations": getChatFlotanteRadioCustomStations(dbSuper, dbEmp, empresaID),
@@ -392,7 +385,7 @@ func ChatFlotantePreferenciasHandler(dbSuper, dbEmp *sql.DB) http.HandlerFunc {
 				}
 			}
 			if payload.RobotEnabled != nil {
-				value := chatFlotanteBoolValue(*payload.RobotEnabled)
+				value := chatFlotanteBoolValue(false)
 				if empresaID > 0 {
 					if err := setChatFlotanteEmpresaPref(dbEmp, empresaID, chatFlotanteRobotEnabledKey, value, usuario); err != nil {
 						http.Error(w, "No se pudo guardar chat_flotante.robot_enabled por empresa: "+err.Error(), http.StatusInternalServerError)
@@ -456,7 +449,7 @@ func ChatFlotantePreferenciasHandler(dbSuper, dbEmp *sql.DB) http.HandlerFunc {
 				}
 			}
 			if strings.TrimSpace(payload.PersonalityMode) != "" {
-				value := normalizeChatFlotantePersonalityMode(payload.PersonalityMode)
+				value := chatFlotantePersonalityNormal
 				if empresaID > 0 {
 					if err := setChatFlotanteEmpresaPref(dbEmp, empresaID, chatFlotantePersonalityModeKey, value, usuario); err != nil {
 						http.Error(w, "No se pudo guardar chat_flotante.personality_mode por empresa: "+err.Error(), http.StatusInternalServerError)

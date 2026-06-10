@@ -559,6 +559,44 @@
     return data;
   }
 
+  function parseStationPrefsValue(raw) {
+    var current = raw;
+    for (var i = 0; i < 5; i += 1) {
+      if (typeof current !== 'string') break;
+      var trimmed = current.trim();
+      if (!trimmed) return null;
+      try { current = JSON.parse(trimmed); } catch (_) { return null; }
+    }
+    return current && typeof current === 'object' ? current : null;
+  }
+
+  function readTouchModeFromStationConfig(cfg) {
+    var src = cfg && typeof cfg === 'object' ? cfg : {};
+    var ui = src.carrito_ui_global || src.carrito || src.carrito_configuracion_global || {};
+    if (!ui || typeof ui !== 'object') return false;
+    var alias = ui.pos_touch_ui && typeof ui.pos_touch_ui === 'object' ? ui.pos_touch_ui.enabled : ui.pos_touch_enabled;
+    return ui.modo_pantalla_tactil === undefined ? !!alias : !!ui.modo_pantalla_tactil;
+  }
+
+  function applyTouchPOSMode(enabled) {
+    document.body.classList.toggle('pos-touch-mode', !!enabled);
+    document.body.classList.toggle('corte-touch-mode', !!enabled);
+  }
+
+  async function cargarModoTactilPOS() {
+    if (!empresaId) return;
+    try {
+      var data = await requestJSON('/api/empresa/estacion_prefs?empresa_id=' + encodeURIComponent(empresaId));
+      var prefs = data && Array.isArray(data.prefs) ? data.prefs : [];
+      var pref = prefs.find(function(item) {
+        return item && String(item.clave) === 'estaciones_config' && Number(item.estacion_id) === 0;
+      });
+      applyTouchPOSMode(readTouchModeFromStationConfig(parseStationPrefsValue(pref && pref.valor)));
+    } catch (_) {
+      applyTouchPOSMode(false);
+    }
+  }
+
   var DEFAULT_CORTE_PRINT_ITEMS = {
     empresa: true,
     fecha_hora: true,
@@ -1197,6 +1235,7 @@
     setDefaultDates();
     applyPageContext();
     applyPrintFormat(document.getElementById('modoVista').value);
+    cargarModoTactilPOS();
     cargarConfigReporte();
     Promise.allSettled([preloadAccount(), preloadCajaDefaults()]).then(function() {
       if (pageContext.autoGenerar) {

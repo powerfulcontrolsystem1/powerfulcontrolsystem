@@ -37,6 +37,151 @@ func TiposLicenciasHandler(dbSuper *sql.DB) http.HandlerFunc {
 	}
 }
 
+const (
+	licenciaMaxAdvanceSamePlanConfigKey     = "licencias.max_compras_adelantadas_misma_licencia"
+	licenciaWelcomeEmailEnabledConfigKey    = "licencias.email_bienvenida_compra.enabled"
+	licenciaAutoInvoiceEnabledConfigKey     = "licencias.factura_electronica_automatica.enabled"
+	licenciaAttachInvoicePDFConfigKey       = "licencias.email_adjuntar_factura_pdf.enabled"
+	defaultLicenciaMaxAdvanceSamePlanBuys   = 2
+	maxLicenciaMaxAdvanceSamePlanBuysConfig = 24
+)
+
+type licenciaComunicacionConfig struct {
+	WelcomeEmailEnabled bool
+	AutoInvoiceEnabled  bool
+	AttachInvoicePDF    bool
+}
+
+func readLicenciaMaxAdvanceSamePlanBuys(dbSuper *sql.DB) (int, error) {
+	raw, _, err := dbpkg.GetConfigValue(dbSuper, licenciaMaxAdvanceSamePlanConfigKey)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return defaultLicenciaMaxAdvanceSamePlanBuys, nil
+		}
+		return defaultLicenciaMaxAdvanceSamePlanBuys, err
+	}
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		return defaultLicenciaMaxAdvanceSamePlanBuys, nil
+	}
+	value, err := strconv.Atoi(raw)
+	if err != nil {
+		return defaultLicenciaMaxAdvanceSamePlanBuys, nil
+	}
+	if value < 0 {
+		return 0, nil
+	}
+	if value > maxLicenciaMaxAdvanceSamePlanBuysConfig {
+		return maxLicenciaMaxAdvanceSamePlanBuysConfig, nil
+	}
+	return value, nil
+}
+
+func readBoolConfigWithDefault(dbSuper *sql.DB, key string, fallback bool) bool {
+	if dbSuper == nil || strings.TrimSpace(key) == "" {
+		return fallback
+	}
+	raw, _, err := dbpkg.GetConfigValue(dbSuper, key)
+	if err != nil {
+		return fallback
+	}
+	switch strings.ToLower(strings.TrimSpace(raw)) {
+	case "1", "true", "si", "yes", "on", "activo", "enabled":
+		return true
+	case "0", "false", "no", "off", "inactivo", "disabled":
+		return false
+	default:
+		return fallback
+	}
+}
+
+func readLicenciaComunicacionConfig(dbSuper *sql.DB) licenciaComunicacionConfig {
+	return licenciaComunicacionConfig{
+		WelcomeEmailEnabled: readBoolConfigWithDefault(dbSuper, licenciaWelcomeEmailEnabledConfigKey, true),
+		AutoInvoiceEnabled:  readBoolConfigWithDefault(dbSuper, licenciaAutoInvoiceEnabledConfigKey, true),
+		AttachInvoicePDF:    readBoolConfigWithDefault(dbSuper, licenciaAttachInvoicePDFConfigKey, true),
+	}
+}
+
+// SuperLicenciasConfiguracionHandler administra reglas comerciales globales de licencias.
+func SuperLicenciasConfiguracionHandler(dbSuper *sql.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodGet:
+			maxAdvance, err := readLicenciaMaxAdvanceSamePlanBuys(dbSuper)
+			if err != nil {
+				http.Error(w, "No se pudo consultar configuracion de licencias: "+err.Error(), http.StatusInternalServerError)
+				return
+			}
+			comms := readLicenciaComunicacionConfig(dbSuper)
+			writeJSON(w, http.StatusOK, map[string]interface{}{
+				"ok":                                      true,
+				"max_compras_adelantadas_misma_licencia":  maxAdvance,
+				"default_max_compras_adelantadas":         defaultLicenciaMaxAdvanceSamePlanBuys,
+				"email_bienvenida_compra_enabled":         comms.WelcomeEmailEnabled,
+				"factura_electronica_automatica_enabled":  comms.AutoInvoiceEnabled,
+				"email_adjuntar_factura_pdf_enabled":      comms.AttachInvoicePDF,
+				"email_adjuntar_licencia_pdf_enabled":     false,
+				"email_adjuntar_licencia_pdf_forzado_off": true,
+				"config_key":                              licenciaMaxAdvanceSamePlanConfigKey,
+			})
+		case http.MethodPut, http.MethodPost:
+			var payload struct {
+				MaxComprasAdelantadasMismaLicencia int   `json:"max_compras_adelantadas_misma_licencia"`
+				EmailBienvenidaCompraEnabled       *bool `json:"email_bienvenida_compra_enabled"`
+				FacturaElectronicaAutomatica       *bool `json:"factura_electronica_automatica_enabled"`
+				EmailAdjuntarFacturaPDF            *bool `json:"email_adjuntar_factura_pdf_enabled"`
+			}
+			if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+				http.Error(w, "payload invalido", http.StatusBadRequest)
+				return
+			}
+			value := payload.MaxComprasAdelantadasMismaLicencia
+			if value < 0 || value > maxLicenciaMaxAdvanceSamePlanBuysConfig {
+				http.Error(w, fmt.Sprintf("El maximo debe estar entre 0 y %d", maxLicenciaMaxAdvanceSamePlanBuysConfig), http.StatusBadRequest)
+				return
+			}
+			if err := dbpkg.SetConfigValue(dbSuper, licenciaMaxAdvanceSamePlanConfigKey, strconv.Itoa(value), false); err != nil {
+				http.Error(w, "No se pudo guardar configuracion de licencias: "+err.Error(), http.StatusInternalServerError)
+				return
+			}
+			boolUpdates := []struct {
+				key   string
+				value *bool
+			}{
+				{licenciaWelcomeEmailEnabledConfigKey, payload.EmailBienvenidaCompraEnabled},
+				{licenciaAutoInvoiceEnabledConfigKey, payload.FacturaElectronicaAutomatica},
+				{licenciaAttachInvoicePDFConfigKey, payload.EmailAdjuntarFacturaPDF},
+			}
+			for _, item := range boolUpdates {
+				if item.value == nil {
+					continue
+				}
+				raw := "0"
+				if *item.value {
+					raw = "1"
+				}
+				if err := dbpkg.SetConfigValue(dbSuper, item.key, raw, false); err != nil {
+					http.Error(w, "No se pudo guardar configuracion de licencias: "+err.Error(), http.StatusInternalServerError)
+					return
+				}
+			}
+			comms := readLicenciaComunicacionConfig(dbSuper)
+			writeJSON(w, http.StatusOK, map[string]interface{}{
+				"ok":                                      true,
+				"max_compras_adelantadas_misma_licencia":  value,
+				"email_bienvenida_compra_enabled":         comms.WelcomeEmailEnabled,
+				"factura_electronica_automatica_enabled":  comms.AutoInvoiceEnabled,
+				"email_adjuntar_factura_pdf_enabled":      comms.AttachInvoicePDF,
+				"email_adjuntar_licencia_pdf_enabled":     false,
+				"email_adjuntar_licencia_pdf_forzado_off": true,
+			})
+		default:
+			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		}
+	}
+}
+
 // LicenciasHandler maneja CRUD de licencias
 func LicenciasHandler(dbSuper *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -306,7 +451,7 @@ func LicenciasHandler(dbSuper *sql.DB) http.HandlerFunc {
 				http.Error(w, "invalid payload", http.StatusBadRequest)
 				return
 			}
-			http.Error(w, "catalogo fijo: solo existen 4 licencias globales para todas las empresas", http.StatusConflict)
+			http.Error(w, "catalogo fijo: solo se administran las licencias globales canonicas para todas las empresas", http.StatusConflict)
 			return
 
 			log.Printf("POST /super/api/licencias payload: TipoID=%d Nombre=%q", payload.TipoID, payload.Nombre)
@@ -373,7 +518,7 @@ func LicenciasHandler(dbSuper *sql.DB) http.HandlerFunc {
 					return
 				}
 				if dbpkg.IsGlobalLicenciaCatalogItem(*existing) && act == 0 {
-					http.Error(w, "las 4 licencias globales no se pueden ocultar desde la API", http.StatusConflict)
+					http.Error(w, "las licencias globales canonicas no se pueden ocultar desde la API", http.StatusConflict)
 					return
 				}
 				if err := dbpkg.SetLicenciaActivo(dbSuper, id, act); err != nil {
@@ -446,7 +591,7 @@ func LicenciasHandler(dbSuper *sql.DB) http.HandlerFunc {
 				return
 			}
 			if dbpkg.IsGlobalLicenciaCatalogItem(*existing) {
-				http.Error(w, "las 4 licencias globales no se pueden eliminar", http.StatusConflict)
+				http.Error(w, "las licencias globales canonicas no se pueden eliminar", http.StatusConflict)
 				return
 			}
 			if err := dbpkg.DeleteLicencia(dbSuper, id); err != nil {
@@ -783,6 +928,28 @@ func buildLicenciaRetryURL(r *http.Request, dbSuper *sql.DB, licenciaID, empresa
 	return target
 }
 
+func buildLicenciaSistemaDownloadPageURL(r *http.Request, dbSuper *sql.DB, empresaID int64) string {
+	baseURL, err := resolvePaymentBaseURL(r, dbSuper)
+	if err != nil || strings.TrimSpace(baseURL) == "" {
+		scheme := "https"
+		host := ""
+		if r != nil {
+			scheme = resolveRequestScheme(r)
+			host = resolveRequestHost(r)
+		}
+		if strings.TrimSpace(host) == "" {
+			baseURL = canonicalPaymentPublicBaseURL
+		} else {
+			baseURL = scheme + "://" + host
+		}
+	}
+	target := strings.TrimRight(strings.TrimSpace(baseURL), "/") + "/administrar_empresa/licencia_sistema.html"
+	if empresaID > 0 {
+		target += "?empresa_id=" + strconv.FormatInt(empresaID, 10)
+	}
+	return target
+}
+
 func resolveLicenciaActivationRecipient(dbSuper *sql.DB, empresaID int64, payRec *dbpkg.EpaycoPaymentRecord) (string, error) {
 	if payRec == nil || !payRec.RawPayload.Valid {
 		return "", fmt.Errorf("payload del pago no disponible para notificar activacion de licencia")
@@ -794,7 +961,8 @@ func epaycoActivationEmailAlreadySent(payRec *dbpkg.EpaycoPaymentRecord) bool {
 	if payRec == nil || !payRec.RawPayload.Valid {
 		return false
 	}
-	return paymentPayloadFlagIsTrue(payRec.RawPayload.String, "licencia_activation_email_sent")
+	return paymentPayloadFlagIsTrue(payRec.RawPayload.String, "licencia_activation_email_sent") ||
+		paymentPayloadFlagIsTrue(payRec.RawPayload.String, "licencia_activation_email_skipped")
 }
 
 func markEpaycoActivationEmailSent(dbSuper *sql.DB, payRec *dbpkg.EpaycoPaymentRecord, recipient, reference string) error {
@@ -828,11 +996,43 @@ func markEpaycoActivationEmailSent(dbSuper *sql.DB, payRec *dbpkg.EpaycoPaymentR
 	return nil
 }
 
+func markEpaycoActivationEmailSkipped(dbSuper *sql.DB, payRec *dbpkg.EpaycoPaymentRecord, reference, reason string) error {
+	if dbSuper == nil || payRec == nil {
+		return nil
+	}
+	status := strings.TrimSpace(payRec.Status.String)
+	if status == "" {
+		status = "APPROVED"
+	}
+	patchBytes, _ := json.Marshal(map[string]interface{}{
+		"licencia_activation_email_skipped":    true,
+		"licencia_activation_email_skipped_at": time.Now().Format(time.RFC3339),
+		"licencia_activation_email_ref":        strings.TrimSpace(reference),
+		"licencia_activation_email_reason":     strings.TrimSpace(reason),
+	})
+	mergedPayload := mergePaymentPayloadJSON(payRec.RawPayload.String, string(patchBytes))
+	transactionID := strings.TrimSpace(payRec.TransactionID.String)
+	recordReference := strings.TrimSpace(payRec.Reference.String)
+	if transactionID != "" {
+		if err := dbpkg.UpdateEpaycoPaymentRecordByTransaction(dbSuper, transactionID, status, mergedPayload); err != nil {
+			return err
+		}
+	}
+	if recordReference != "" {
+		if err := dbpkg.UpdateEpaycoPaymentRecordByReference(dbSuper, recordReference, status, mergedPayload); err != nil {
+			return err
+		}
+	}
+	payRec.RawPayload = sql.NullString{String: mergedPayload, Valid: strings.TrimSpace(mergedPayload) != ""}
+	return nil
+}
+
 func wompiActivationEmailAlreadySent(payRec *dbpkg.WompiPaymentRecord) bool {
 	if payRec == nil || !payRec.RawPayload.Valid {
 		return false
 	}
-	return paymentPayloadFlagIsTrue(payRec.RawPayload.String, "licencia_activation_email_sent")
+	return paymentPayloadFlagIsTrue(payRec.RawPayload.String, "licencia_activation_email_sent") ||
+		paymentPayloadFlagIsTrue(payRec.RawPayload.String, "licencia_activation_email_skipped")
 }
 
 func markWompiActivationEmailSent(dbSuper *sql.DB, payRec *dbpkg.WompiPaymentRecord, recipient, reference string) error {
@@ -850,6 +1050,37 @@ func markWompiActivationEmailSent(dbSuper *sql.DB, payRec *dbpkg.WompiPaymentRec
 		recipient,
 		reference,
 	))
+	transactionID := strings.TrimSpace(payRec.TransactionID.String)
+	recordReference := strings.TrimSpace(payRec.Reference.String)
+	if transactionID != "" {
+		if err := dbpkg.UpdateWompiPaymentRecordByTransaction(dbSuper, transactionID, status, mergedPayload); err != nil {
+			return err
+		}
+	}
+	if recordReference != "" {
+		if err := dbpkg.UpdateWompiPaymentRecordByReference(dbSuper, recordReference, status, mergedPayload); err != nil {
+			return err
+		}
+	}
+	payRec.RawPayload = sql.NullString{String: mergedPayload, Valid: strings.TrimSpace(mergedPayload) != ""}
+	return nil
+}
+
+func markWompiActivationEmailSkipped(dbSuper *sql.DB, payRec *dbpkg.WompiPaymentRecord, reference, reason string) error {
+	if dbSuper == nil || payRec == nil {
+		return nil
+	}
+	status := strings.TrimSpace(payRec.Status.String)
+	if status == "" {
+		status = "APPROVED"
+	}
+	patchBytes, _ := json.Marshal(map[string]interface{}{
+		"licencia_activation_email_skipped":    true,
+		"licencia_activation_email_skipped_at": time.Now().Format(time.RFC3339),
+		"licencia_activation_email_ref":        strings.TrimSpace(reference),
+		"licencia_activation_email_reason":     strings.TrimSpace(reason),
+	})
+	mergedPayload := mergePaymentPayloadJSON(payRec.RawPayload.String, string(patchBytes))
 	transactionID := strings.TrimSpace(payRec.TransactionID.String)
 	recordReference := strings.TrimSpace(payRec.Reference.String)
 	if transactionID != "" {
@@ -973,6 +1204,9 @@ func tryIssueLicenciaFacturaElectronicaForEpayco(r *http.Request, dbEmp, dbSuper
 	if payRec == nil || lic == nil {
 		return nil
 	}
+	if !readLicenciaComunicacionConfig(dbSuper).AutoInvoiceEnabled {
+		return nil
+	}
 	if epaycoLicenciaFacturaAlreadyIssued(payRec) {
 		return nil
 	}
@@ -985,6 +1219,9 @@ func tryIssueLicenciaFacturaElectronicaForEpayco(r *http.Request, dbEmp, dbSuper
 
 func tryIssueLicenciaFacturaElectronicaForWompi(r *http.Request, dbEmp, dbSuper *sql.DB, empresaID int64, lic *dbpkg.Licencia, payRec *dbpkg.WompiPaymentRecord, provider, reference string) error {
 	if payRec == nil || lic == nil {
+		return nil
+	}
+	if !readLicenciaComunicacionConfig(dbSuper).AutoInvoiceEnabled {
 		return nil
 	}
 	if wompiLicenciaFacturaAlreadyIssued(payRec) {
@@ -1004,13 +1241,22 @@ func trySendLicenciaActivationEmail(r *http.Request, dbSuper *sql.DB, empresaID 
 	if epaycoActivationEmailAlreadySent(payRec) {
 		return nil
 	}
+	comms := readLicenciaComunicacionConfig(dbSuper)
+	if !comms.WelcomeEmailEnabled {
+		return markEpaycoActivationEmailSkipped(dbSuper, payRec, reference, "correo de bienvenida desactivado en super administrador")
+	}
 	recipient, err := resolveLicenciaActivationRecipient(dbSuper, empresaID, payRec)
 	if err != nil {
 		return err
 	}
-	invoiceOutcome, invoiceAttachments, invoiceErr := prepareLicenciaFacturaElectronicaAttachments(r, dbpkg.GetDB(), dbSuper, empresaID, lic, payRec.RawPayload.String, provider, reference)
-	if invoiceErr != nil {
-		log.Println("warning: licencia factura electronica no se adjunta al correo unificado:", invoiceErr)
+	var invoiceOutcome licenciaFacturaElectronicaOutcome
+	var invoiceAttachments []licenciaEmailAttachment
+	if comms.AutoInvoiceEnabled && comms.AttachInvoicePDF {
+		var invoiceErr error
+		invoiceOutcome, invoiceAttachments, invoiceErr = prepareLicenciaFacturaElectronicaAttachments(r, dbpkg.GetDB(), dbSuper, empresaID, lic, payRec.RawPayload.String, provider, reference)
+		if invoiceErr != nil {
+			log.Println("warning: licencia factura electronica no se adjunta al correo unificado:", invoiceErr)
+		}
 	}
 	if err := sendLicenciaActivationEmailWithAttachments(r, dbSuper, empresaID, lic, payRec, provider, reference, invoiceAttachments); err != nil {
 		return err
@@ -1033,6 +1279,10 @@ func trySendLicenciaActivationEmailForWompi(r *http.Request, dbSuper *sql.DB, em
 	if wompiActivationEmailAlreadySent(payRec) {
 		return nil
 	}
+	comms := readLicenciaComunicacionConfig(dbSuper)
+	if !comms.WelcomeEmailEnabled {
+		return markWompiActivationEmailSkipped(dbSuper, payRec, reference, "correo de bienvenida desactivado en super administrador")
+	}
 	recipient, err := resolveLicenciaPaymentRecipient(dbSuper, empresaID, payRec.RawPayload.String)
 	if err != nil {
 		return err
@@ -1040,9 +1290,14 @@ func trySendLicenciaActivationEmailForWompi(r *http.Request, dbSuper *sql.DB, em
 	epaycoLike := &dbpkg.EpaycoPaymentRecord{
 		RawPayload: payRec.RawPayload,
 	}
-	invoiceOutcome, invoiceAttachments, invoiceErr := prepareLicenciaFacturaElectronicaAttachments(r, dbpkg.GetDB(), dbSuper, empresaID, lic, payRec.RawPayload.String, provider, reference)
-	if invoiceErr != nil {
-		log.Println("warning: licencia factura electronica no se adjunta al correo unificado:", invoiceErr)
+	var invoiceOutcome licenciaFacturaElectronicaOutcome
+	var invoiceAttachments []licenciaEmailAttachment
+	if comms.AutoInvoiceEnabled && comms.AttachInvoicePDF {
+		var invoiceErr error
+		invoiceOutcome, invoiceAttachments, invoiceErr = prepareLicenciaFacturaElectronicaAttachments(r, dbpkg.GetDB(), dbSuper, empresaID, lic, payRec.RawPayload.String, provider, reference)
+		if invoiceErr != nil {
+			log.Println("warning: licencia factura electronica no se adjunta al correo unificado:", invoiceErr)
+		}
 	}
 	if err := sendLicenciaActivationEmailWithAttachments(r, dbSuper, empresaID, lic, epaycoLike, provider, reference, invoiceAttachments); err != nil {
 		return err
@@ -1617,7 +1872,6 @@ func sendLicenciaActivationEmailWithAttachments(r *http.Request, dbSuper *sql.DB
 	}
 
 	empresaNombre := ""
-	empresaNit := ""
 	if empresaID > 0 {
 		var empresa *dbpkg.Empresa
 		var err error
@@ -1629,7 +1883,6 @@ func sendLicenciaActivationEmailWithAttachments(r *http.Request, dbSuper *sql.DB
 		}
 		if err == nil && empresa != nil {
 			empresaNombre = strings.TrimSpace(empresa.Nombre)
-			empresaNit = strings.TrimSpace(empresa.Nit)
 		}
 	}
 	safeEmpresa := strings.TrimSpace(empresaNombre)
@@ -1676,11 +1929,13 @@ func sendLicenciaActivationEmailWithAttachments(r *http.Request, dbSuper *sql.DB
 	discountValueLineHTML := templateLineHTML("Descuento aplicado: ", discountValue)
 	originalValueLineHTML := templateLineHTML("Valor original: ", originalValue)
 	asesorIDLineHTML := templateLineHTML("Codigo asesor comercial: ", asesorID)
+	licenseDownloadURL := buildLicenciaSistemaDownloadPageURL(r, dbSuper, empresaID)
 	asunto, cuerpo, _, err := applySuperEmailTemplate(dbSuper, superEmailTemplateKeyLicenciaActivation, map[string]string{
 		"company_name":             safeEmpresa,
 		"license_name":             strings.TrimSpace(lic.Nombre),
 		"provider":                 safeProvider,
 		"reference":                strings.TrimSpace(reference),
+		"license_download_url":     licenseDownloadURL,
 		"license_name_line":        templateLine("Licencia: ", strings.TrimSpace(lic.Nombre)),
 		"start_date_line":          templateLine("Fecha de inicio: ", strings.TrimSpace(lic.FechaInicio)),
 		"end_date_line":            templateLine("Fecha de vencimiento: ", strings.TrimSpace(lic.FechaFin)),
@@ -1700,26 +1955,9 @@ func sendLicenciaActivationEmailWithAttachments(r *http.Request, dbSuper *sql.DB
 		return err
 	}
 	if len(extraAttachments) > 0 {
-		cuerpo = strings.TrimSpace(cuerpo) + "\n\nAdjunto tambien encontraras la factura electronica emitida por la compra de esta licencia."
+		cuerpo = strings.TrimSpace(cuerpo) + "\n\nAdjunto encontraras la factura electronica en PDF emitida por Powerful Control System."
 	}
-	issueDate := time.Now()
-	empresaPDF := &dbpkg.Empresa{ID: empresaID, EmpresaID: empresaID, Nombre: safeEmpresa, Nit: empresaNit}
-	if empresaID > 0 {
-		if dbEmp := dbpkg.GetDB(); dbEmp != nil {
-			if empresa, empresaErr := dbpkg.GetEmpresaByScopeID(dbEmp, empresaID); empresaErr == nil && empresa != nil {
-				empresaPDF = empresa
-			}
-		}
-	}
-	pdfBytes, pdfName, err := buildLicenciaSoftwarePDFForEmpresa(dbSuper, empresaPDF, lic, safeProvider, strings.TrimSpace(reference), totalValue, issueDate)
-	if err != nil {
-		return err
-	}
-	attachments := []licenciaEmailAttachment{{
-		Filename:    pdfName,
-		ContentType: "application/pdf",
-		Data:        pdfBytes,
-	}}
+	attachments := make([]licenciaEmailAttachment, 0, len(extraAttachments))
 	for _, attachment := range extraAttachments {
 		if len(attachment.Data) == 0 {
 			continue
@@ -1732,7 +1970,7 @@ func sendLicenciaActivationEmailWithAttachments(r *http.Request, dbSuper *sql.DB
 		}
 		attachments = append(attachments, attachment)
 	}
-	metadataJSON := fmt.Sprintf(`{"provider":%q,"licencia_id":%d,"empresa_id":%d,"reference":%q,"discount_code":%q,"asesor_id":%q,"total_value":%q,"license_pdf_filename":%q,"license_pdf_bytes":%d}`, provider, lic.ID, empresaID, reference, discountCode, asesorID, totalValue, pdfName, len(pdfBytes))
+	metadataJSON := fmt.Sprintf(`{"provider":%q,"licencia_id":%d,"empresa_id":%d,"reference":%q,"discount_code":%q,"asesor_id":%q,"total_value":%q,"invoice_pdf_attachments":%d,"license_download_url":%q}`, provider, lic.ID, empresaID, reference, discountCode, asesorID, totalValue, len(attachments), licenseDownloadURL)
 
 	if isEmpresaUsuarioMailTestMode(dbSuper) {
 		return captureEmpresaUsuarioMailNotification(dbSuper, "licencia_activada_pago", empresaID, toEmail, asunto, cuerpo, reference, metadataJSON, adminEmailFromRequest(r))
@@ -1871,6 +2109,11 @@ func activateLicenciaByIDs(dbSuper *sql.DB, licenciaID, empresaID int64) (bool, 
 	if lic == nil {
 		return false, 0, nil
 	}
+	if blocked, reason, err := validateLicenciaAdvancePurchaseLimit(dbSuper, lic, empresaID); err != nil {
+		return false, 0, err
+	} else if blocked {
+		return false, 0, errors.New(reason)
+	}
 	now := time.Now()
 	if lic.DuracionDias <= 0 {
 		lic.DuracionDias = 30
@@ -1989,6 +2232,13 @@ func activateLicenciaCheckoutContext(dbSuper, dbEmp *sql.DB, licenciaID, empresa
 		return false, 0, err
 	}
 	mode := normalizeLicenciaCheckoutMode(checkoutMode)
+	if mode != "empresa_addons" {
+		if blocked, reason, err := validateLicenciaAdvancePurchaseLimit(dbSuper, lic, empresaID); err != nil {
+			return false, 0, err
+		} else if blocked {
+			return false, 0, errors.New(reason)
+		}
+	}
 	if mode == "" {
 		activated, assignedID, err := activateLicenciaByIDs(dbSuper, licenciaID, empresaID)
 		if err != nil || !activated {
@@ -2140,6 +2390,8 @@ type licenciaCheckoutSummary struct {
 	AdvisorDiscountLabel      string  `json:"advisor_discount_label,omitempty"`
 	IsZeroTotal               bool    `json:"is_zero_total"`
 	ZeroTotalBlocked          bool    `json:"zero_total_blocked"`
+	PurchaseBlocked           bool    `json:"purchase_blocked,omitempty"`
+	PurchaseBlockedReason     string  `json:"purchase_blocked_reason,omitempty"`
 	CanActivateWithoutPayment bool    `json:"can_activate_without_payment"`
 	Message                   string  `json:"message,omitempty"`
 }
@@ -2154,6 +2406,91 @@ func roundLicenciaCheckoutAmount(value float64) float64 {
 		value = 0
 	}
 	return math.Round(value*100) / 100
+}
+
+func licenciaAdvancePurchaseBlocked(now time.Time, fechaFin string, durationDays, maxAdvanceBuys int) (bool, int) {
+	if durationDays <= 0 {
+		durationDays = 30
+	}
+	if maxAdvanceBuys < 0 {
+		maxAdvanceBuys = defaultLicenciaMaxAdvanceSamePlanBuys
+	}
+	end, ok := parsePaymentTime(fechaFin)
+	if !ok || !end.After(now) {
+		return false, 0
+	}
+	periodHours := float64(durationDays * 24)
+	if periodHours <= 0 {
+		periodHours = 30 * 24
+	}
+	remainingWindows := int(math.Ceil(end.Sub(now).Hours() / periodHours))
+	if remainingWindows < 1 {
+		remainingWindows = 1
+	}
+	return remainingWindows >= 1+maxAdvanceBuys, remainingWindows
+}
+
+func licenciasRepresentSameCommercialPlan(active, requested *dbpkg.Licencia) bool {
+	if active == nil || requested == nil {
+		return false
+	}
+	activeCode := strings.ToUpper(strings.TrimSpace(active.CodigoFuncion))
+	requestedCode := strings.ToUpper(strings.TrimSpace(requested.CodigoFuncion))
+	if activeCode != "" && requestedCode != "" {
+		return activeCode == requestedCode
+	}
+	activeName := strings.ToLower(strings.TrimSpace(active.Nombre + " " + active.Descripcion))
+	requestedName := strings.ToLower(strings.TrimSpace(requested.Nombre + " " + requested.Descripcion))
+	if activeName != "" && requestedName != "" && activeName == requestedName {
+		return true
+	}
+	if requestedCode == dbpkg.LicenciaCodigoProfesionalGlobal {
+		return active.DuracionDias == 30 && active.MaxDocumentosMensuales == 2000 &&
+			(strings.Contains(activeName, "100000") || strings.Contains(activeName, "110000") || strings.Contains(activeName, "profesional"))
+	}
+	if requestedCode == dbpkg.LicenciaCodigoEmpresarialGlobal {
+		return active.DuracionDias == 30 && active.MaxDocumentosMensuales == 4000 &&
+			(strings.Contains(activeName, "150000") || strings.Contains(activeName, "200000") || strings.Contains(activeName, "empresarial"))
+	}
+	return active.DuracionDias == requested.DuracionDias &&
+		active.MaxDocumentosMensuales == requested.MaxDocumentosMensuales &&
+		roundLicenciaCheckoutAmount(active.Valor) == roundLicenciaCheckoutAmount(requested.Valor)
+}
+
+func licenciaAdvanceLimitMessage(maxAdvanceBuys int) string {
+	if maxAdvanceBuys == 1 {
+		return "De manera adelantada solo se permite comprar una vez mas la misma licencia. Puedes volver a comprar cuando una de esas licencias se venza."
+	}
+	return fmt.Sprintf("De manera adelantada solo se permite comprar %d veces mas la misma licencia. Puedes volver a comprar cuando una de esas licencias se venza.", maxAdvanceBuys)
+}
+
+func validateLicenciaAdvancePurchaseLimit(dbSuper *sql.DB, lic *dbpkg.Licencia, empresaID int64) (bool, string, error) {
+	if dbSuper == nil || lic == nil || empresaID <= 0 || lic.EsAdicional == 1 || roundLicenciaCheckoutAmount(lic.Valor) <= 0 {
+		return false, "", nil
+	}
+	active, err := dbpkg.GetActiveLicenciaByEmpresa(dbSuper, empresaID)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return false, "", nil
+		}
+		return false, "", err
+	}
+	if active == nil || !licenciasRepresentSameCommercialPlan(active, lic) {
+		return false, "", nil
+	}
+	maxAdvance, err := readLicenciaMaxAdvanceSamePlanBuys(dbSuper)
+	if err != nil {
+		return false, "", err
+	}
+	duration := lic.DuracionDias
+	if duration <= 0 {
+		duration = active.DuracionDias
+	}
+	blocked, _ := licenciaAdvancePurchaseBlocked(time.Now(), active.FechaFin, duration, maxAdvance)
+	if !blocked {
+		return false, "", nil
+	}
+	return true, licenciaAdvanceLimitMessage(maxAdvance), nil
 }
 
 func normalizeLicenciaDiscountCode(code string) string {
@@ -2323,6 +2660,22 @@ func resolveLicenciaCheckoutSummary(dbSuper *sql.DB, lic *dbpkg.Licencia, empres
 		return summary, err
 	}
 	originalValue := roundLicenciaCheckoutAmount(lic.Valor)
+	if blocked, reason, err := validateLicenciaAdvancePurchaseLimit(dbSuper, lic, empresaID); err != nil {
+		return summary, err
+	} else if blocked {
+		return licenciaCheckoutSummary{
+			OriginalValue:             originalValue,
+			TotalValue:                originalValue,
+			DiscountCode:              strings.TrimSpace(discountCode),
+			AsesorID:                  strings.ToUpper(strings.TrimSpace(asesorID)),
+			IsZeroTotal:               false,
+			ZeroTotalBlocked:          false,
+			PurchaseBlocked:           true,
+			PurchaseBlockedReason:     reason,
+			CanActivateWithoutPayment: false,
+			Message:                   reason,
+		}, nil
+	}
 	discountValue, discountLabel, discountApplied, err := resolveLicenciaDiscountAmount(dbSuper, discountCode, originalValue)
 	if err != nil {
 		return summary, err
@@ -2470,6 +2823,24 @@ func resolveLicenciaCheckoutSummaryWithMode(dbSuper *sql.DB, lic *dbpkg.Licencia
 	}
 	if err := validateLicenciaEmpresaTipoCompat(dbSuper, nil, lic, empresaID); err != nil {
 		return licenciaCheckoutSummary{}, nil, err
+	}
+	if mode != "empresa_addons" {
+		if blocked, reason, err := validateLicenciaAdvancePurchaseLimit(dbSuper, lic, empresaID); err != nil {
+			return licenciaCheckoutSummary{}, nil, err
+		} else if blocked {
+			return licenciaCheckoutSummary{
+				OriginalValue:             roundLicenciaCheckoutAmount(lic.Valor),
+				TotalValue:                roundLicenciaCheckoutAmount(lic.Valor),
+				DiscountCode:              strings.TrimSpace(discountCode),
+				AsesorID:                  strings.ToUpper(strings.TrimSpace(asesorID)),
+				IsZeroTotal:               false,
+				ZeroTotalBlocked:          false,
+				PurchaseBlocked:           true,
+				PurchaseBlockedReason:     reason,
+				CanActivateWithoutPayment: false,
+				Message:                   reason,
+			}, nil, nil
+		}
 	}
 	bundle, err := dbpkg.BuildEmpresaLicenciaBundleSummary(dbSuper, empresaID, mode, addonLicenciaIDs)
 	if err != nil {
@@ -3083,13 +3454,14 @@ func defaultLicenciaPaymentProviderEnabled(configured bool) bool {
 }
 
 type licenciaPaymentMethodStatus struct {
-	ID          string `json:"id"`
-	Nombre      string `json:"nombre"`
-	Descripcion string `json:"descripcion"`
-	Enabled     bool   `json:"enabled"`
-	Configured  bool   `json:"configured"`
-	Available   bool   `json:"available"`
-	SortOrder   int    `json:"sort_order"`
+	ID             string `json:"id"`
+	Nombre         string `json:"nombre"`
+	Descripcion    string `json:"descripcion"`
+	Enabled        bool   `json:"enabled"`
+	Configured     bool   `json:"configured"`
+	Available      bool   `json:"available"`
+	CountryEnabled bool   `json:"country_enabled"`
+	SortOrder      int    `json:"sort_order"`
 }
 
 var paymentCountryConfigCatalog = []string{"CO", "EC", "PA", "MX", "US", "ES"}
@@ -3134,6 +3506,17 @@ func resolveCountryProviderEnabled(dbSuper *sql.DB, paisCodigo, providerID strin
 	return parseBoolConfigValue(val)
 }
 
+func defaultCountryPaymentProviderEnabled(paisCodigo, providerID string) bool {
+	switch normalizePaisCodigo(paisCodigo) {
+	case "", "CO":
+		switch strings.ToLower(strings.TrimSpace(providerID)) {
+		case "epayco", "wompi":
+			return true
+		}
+	}
+	return false
+}
+
 func wompiWebCheckoutReady(publicKey, integrityKey string) bool {
 	return looksLikeWompiPublicKey(publicKey) && strings.TrimSpace(integrityKey) != ""
 }
@@ -3170,29 +3553,35 @@ func loadLicenciaPaymentMethodStatuses(dbSuper *sql.DB, paisCodigo string) ([]li
 	}
 
 	paisCodigo = normalizePaisCodigo(paisCodigo)
+	epaycoCountryEnabled := true
+	wompiCountryEnabled := true
 	if paisCodigo != "" {
-		epaycoEnabled = epaycoEnabled && resolveCountryProviderEnabled(dbSuper, paisCodigo, "epayco", true)
-		wompiEnabled = wompiEnabled && resolveCountryProviderEnabled(dbSuper, paisCodigo, "wompi", true)
+		epaycoCountryEnabled = resolveCountryProviderEnabled(dbSuper, paisCodigo, "epayco", defaultCountryPaymentProviderEnabled(paisCodigo, "epayco"))
+		wompiCountryEnabled = resolveCountryProviderEnabled(dbSuper, paisCodigo, "wompi", defaultCountryPaymentProviderEnabled(paisCodigo, "wompi"))
+		epaycoEnabled = epaycoEnabled && epaycoCountryEnabled
+		wompiEnabled = wompiEnabled && wompiCountryEnabled
 	}
 
 	return []licenciaPaymentMethodStatus{
 		{
-			ID:          "epayco",
-			Nombre:      "Epayco",
-			Descripcion: "Tarjeta, PSE y otros",
-			Enabled:     epaycoEnabled,
-			Configured:  epaycoConfigured,
-			Available:   epaycoEnabled && epaycoConfigured,
-			SortOrder:   1,
+			ID:             "epayco",
+			Nombre:         "Epayco",
+			Descripcion:    "Tarjeta, PSE y otros",
+			Enabled:        epaycoEnabled,
+			Configured:     epaycoConfigured,
+			Available:      epaycoEnabled && epaycoConfigured,
+			CountryEnabled: epaycoCountryEnabled,
+			SortOrder:      1,
 		},
 		{
-			ID:          "wompi",
-			Nombre:      "Wompi",
-			Descripcion: "Web Checkout: Nequi, PSE y tarjetas",
-			Enabled:     wompiEnabled,
-			Configured:  wompiConfigured,
-			Available:   wompiEnabled && wompiConfigured,
-			SortOrder:   2,
+			ID:             "wompi",
+			Nombre:         "Wompi",
+			Descripcion:    "Web Checkout: Nequi, PSE y tarjetas",
+			Enabled:        wompiEnabled,
+			Configured:     wompiConfigured,
+			Available:      wompiEnabled && wompiConfigured,
+			CountryEnabled: wompiCountryEnabled,
+			SortOrder:      2,
 		},
 	}, nil
 }
@@ -3200,7 +3589,7 @@ func loadLicenciaPaymentMethodStatuses(dbSuper *sql.DB, paisCodigo string) ([]li
 func loadCountryProviderOverrides(dbSuper *sql.DB, providerID string) map[string]bool {
 	result := make(map[string]bool, len(paymentCountryConfigCatalog))
 	for _, countryCode := range paymentCountryConfigCatalog {
-		result[countryCode] = resolveCountryProviderEnabled(dbSuper, countryCode, providerID, true)
+		result[countryCode] = resolveCountryProviderEnabled(dbSuper, countryCode, providerID, defaultCountryPaymentProviderEnabled(countryCode, providerID))
 	}
 	return result
 }
@@ -3226,8 +3615,8 @@ func saveCountryProviderOverrides(dbSuper *sql.DB, providerID string, overrides 
 	return nil
 }
 
-func getLicenciaPaymentMethodStatus(dbSuper *sql.DB, methodID string) (licenciaPaymentMethodStatus, error) {
-	statuses, err := loadLicenciaPaymentMethodStatuses(dbSuper, "")
+func getLicenciaPaymentMethodStatusByCountry(dbSuper *sql.DB, methodID, paisCodigo string) (licenciaPaymentMethodStatus, error) {
+	statuses, err := loadLicenciaPaymentMethodStatuses(dbSuper, paisCodigo)
 	if err != nil {
 		return licenciaPaymentMethodStatus{}, err
 	}
@@ -3239,14 +3628,59 @@ func getLicenciaPaymentMethodStatus(dbSuper *sql.DB, methodID string) (licenciaP
 	return licenciaPaymentMethodStatus{}, fmt.Errorf("payment method not found: %s", methodID)
 }
 
-func PublicLicenciasPaymentMethodsHandler(dbSuper *sql.DB) http.HandlerFunc {
+func getLicenciaPaymentMethodStatus(dbSuper *sql.DB, methodID string) (licenciaPaymentMethodStatus, error) {
+	return getLicenciaPaymentMethodStatusByCountry(dbSuper, methodID, "")
+}
+
+func resolveLicenciaPaymentPaisCodigo(dbSuper, dbEmp *sql.DB, empresaID int64, requestedPais, timezone, language string) (string, string, error) {
+	requested := normalizePaisCodigo(requestedPais)
+	if empresaID > 0 && dbEmp != nil {
+		pais, source, err := dbpkg.DetectFacturacionPais(dbEmp, empresaID, timezone, language)
+		if err != nil {
+			return "", "", err
+		}
+		detected := normalizePaisCodigo(pais.Codigo)
+		switch source {
+		case "configuracion_avanzada", "facturacion_electronica", "licencia_activa":
+			if detected != "" {
+				return detected, source, nil
+			}
+		}
+		if requested != "" {
+			return requested, "request", nil
+		}
+		if detected != "" {
+			return detected, source, nil
+		}
+	}
+	if requested != "" {
+		return requested, "request", nil
+	}
+	return "CO", "default", nil
+}
+
+func getLicenciaPaymentMethodStatusForEmpresa(dbSuper, dbEmp *sql.DB, methodID string, empresaID int64) (licenciaPaymentMethodStatus, string, string, error) {
+	paisCodigo, source, err := resolveLicenciaPaymentPaisCodigo(dbSuper, dbEmp, empresaID, "", "", "")
+	if err != nil {
+		return licenciaPaymentMethodStatus{}, "", "", err
+	}
+	status, err := getLicenciaPaymentMethodStatusByCountry(dbSuper, methodID, paisCodigo)
+	return status, paisCodigo, source, err
+}
+
+func PublicLicenciasPaymentMethodsHandler(dbSuper, dbEmp *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 			return
 		}
 
-		paisCodigo := normalizePaisCodigo(r.URL.Query().Get("pais_codigo"))
+		empresaID, _ := strconv.ParseInt(strings.TrimSpace(firstNonEmptyString(r.URL.Query().Get("empresa_id"), r.URL.Query().Get("id"))), 10, 64)
+		paisCodigo, source, err := resolveLicenciaPaymentPaisCodigo(dbSuper, dbEmp, empresaID, r.URL.Query().Get("pais_codigo"), r.URL.Query().Get("tz"), r.URL.Query().Get("lang"))
+		if err != nil {
+			http.Error(w, "failed to detect payment country: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
 		statuses, err := loadLicenciaPaymentMethodStatuses(dbSuper, paisCodigo)
 		if err != nil {
 			http.Error(w, "failed to load payment methods: "+err.Error(), http.StatusInternalServerError)
@@ -3263,9 +3697,12 @@ func PublicLicenciasPaymentMethodsHandler(dbSuper *sql.DB) http.HandlerFunc {
 
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(map[string]interface{}{
-			"pais_codigo":    paisCodigo,
-			"providers":      statuses,
-			"default_method": defaultMethod,
+			"empresa_id":        empresaID,
+			"pais_codigo":       paisCodigo,
+			"pais_source":       source,
+			"providers":         statuses,
+			"default_method":    defaultMethod,
+			"country_supported": paisCodigo == "CO" || defaultMethod != "",
 		})
 	}
 }
@@ -4541,40 +4978,7 @@ func WompiCreateCheckoutHandler(dbSuper *sql.DB) http.HandlerFunc {
 			return
 		}
 
-		status, err := getLicenciaPaymentMethodStatus(dbSuper, "wompi")
-		if err != nil {
-			http.Error(w, "failed to read wompi availability: "+err.Error(), http.StatusInternalServerError)
-			return
-		}
-		if !status.Enabled {
-			w.Header().Set("Content-Type", "application/json")
-			w.WriteHeader(http.StatusPreconditionFailed)
-			json.NewEncoder(w).Encode(map[string]interface{}{"error": "Wompi no esta activo en configuracion avanzada", "provider": "wompi"})
-			return
-		}
-		if !status.Configured {
-			w.Header().Set("Content-Type", "application/json")
-			w.WriteHeader(http.StatusPreconditionFailed)
-			json.NewEncoder(w).Encode(map[string]interface{}{"error": "Wompi requiere Public Key e Integrity Key para Web Checkout", "provider": "wompi"})
-			return
-		}
-
-		publicKey, err := getDecryptedConfigValue(dbSuper, "wompi.public_key")
-		if err != nil {
-			http.Error(w, "failed to read wompi.public_key: "+err.Error(), http.StatusInternalServerError)
-			return
-		}
-		privateKey, _ := getDecryptedConfigValue(dbSuper, "wompi.private_key")
-		integrityKey, err := getDecryptedConfigValue(dbSuper, "wompi.integrity_key")
-		if err != nil {
-			http.Error(w, "failed to read wompi.integrity_key: "+err.Error(), http.StatusInternalServerError)
-			return
-		}
-		if strings.TrimSpace(publicKey) == "" || strings.TrimSpace(integrityKey) == "" {
-			http.Error(w, "Wompi no configurado: faltan wompi.public_key o wompi.integrity_key", http.StatusInternalServerError)
-			return
-		}
-
+		var err error
 		payload.AsesorID, err = validateLicenciaAsesorCode(dbSuper, payload.AsesorID)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
@@ -4596,10 +5000,55 @@ func WompiCreateCheckoutHandler(dbSuper *sql.DB) http.HandlerFunc {
 		if rejectLicenciaNoDisponibleParaCheckout(w, lic, payload.EmpresaID) {
 			return
 		}
+		status, paisCodigo, paisSource, err := getLicenciaPaymentMethodStatusForEmpresa(dbSuper, dbpkg.GetDB(), "wompi", payload.EmpresaID)
+		if err != nil {
+			http.Error(w, "failed to read wompi availability: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+		if !status.Enabled {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusPreconditionFailed)
+			json.NewEncoder(w).Encode(map[string]interface{}{
+				"error":           "Wompi no esta habilitado para el pais configurado de esta empresa",
+				"provider":        "wompi",
+				"pais_codigo":     paisCodigo,
+				"pais_source":     paisSource,
+				"country_enabled": status.CountryEnabled,
+			})
+			return
+		}
+		if !status.Configured {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusPreconditionFailed)
+			json.NewEncoder(w).Encode(map[string]interface{}{"error": "Wompi requiere Public Key e Integrity Key para Web Checkout", "provider": "wompi", "pais_codigo": paisCodigo})
+			return
+		}
+
+		publicKey, err := getDecryptedConfigValue(dbSuper, "wompi.public_key")
+		if err != nil {
+			http.Error(w, "failed to read wompi.public_key: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+		privateKey, _ := getDecryptedConfigValue(dbSuper, "wompi.private_key")
+		integrityKey, err := getDecryptedConfigValue(dbSuper, "wompi.integrity_key")
+		if err != nil {
+			http.Error(w, "failed to read wompi.integrity_key: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+		if strings.TrimSpace(publicKey) == "" || strings.TrimSpace(integrityKey) == "" {
+			http.Error(w, "Wompi no configurado: faltan wompi.public_key o wompi.integrity_key", http.StatusInternalServerError)
+			return
+		}
 
 		summary, bundle, err := resolveLicenciaCheckoutSummaryWithMode(dbSuper, lic, payload.EmpresaID, payload.DiscountCode, payload.AsesorID, payload.CheckoutMode, payload.AddonLicenciaIDs)
 		if err != nil {
 			http.Error(w, "failed to resolve licencia summary: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+		if summary.PurchaseBlocked {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusConflict)
+			json.NewEncoder(w).Encode(map[string]interface{}{"error": summary.Message, "provider": "wompi", "summary": summary})
 			return
 		}
 		if summary.IsZeroTotal {
@@ -4648,6 +5097,8 @@ func WompiCreateCheckoutHandler(dbSuper *sql.DB) http.HandlerFunc {
 			"asesor_id":            payload.AsesorID,
 			"licencia_id":          payload.LicenciaID,
 			"empresa_id":           payload.EmpresaID,
+			"pais_codigo":          paisCodigo,
+			"pais_source":          paisSource,
 			"checkout_mode":        normalizeLicenciaCheckoutMode(payload.CheckoutMode),
 			"addon_licencia_ids":   payload.AddonLicenciaIDs,
 			"bundle":               bundle,
@@ -4674,6 +5125,8 @@ func WompiCreateCheckoutHandler(dbSuper *sql.DB) http.HandlerFunc {
 			"reference":           reference,
 			"status":              "PENDING",
 			"asesor_id":           payload.AsesorID,
+			"pais_codigo":         paisCodigo,
+			"pais_source":         paisSource,
 			"amount_in_cents":     amountInCents,
 			"currency":            "COP",
 			"checkout_type":       "web_checkout",
@@ -4809,6 +5262,12 @@ func WompiCreateNequiTransactionHandler(dbSuper *sql.DB) http.HandlerFunc {
 		summary, bundle, err := resolveLicenciaCheckoutSummaryWithMode(dbSuper, lic, payload.EmpresaID, payload.DiscountCode, payload.AsesorID, payload.CheckoutMode, payload.AddonLicenciaIDs)
 		if err != nil {
 			http.Error(w, "failed to resolve licencia summary: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+		if summary.PurchaseBlocked {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusConflict)
+			json.NewEncoder(w).Encode(map[string]interface{}{"error": summary.Message, "provider": "wompi", "summary": summary})
 			return
 		}
 		if summary.IsZeroTotal {
@@ -5724,6 +6183,28 @@ func EpaycoCreateTransactionHandler(dbSuper *sql.DB) http.HandlerFunc {
 		if rejectLicenciaNoDisponibleParaCheckout(w, lic, payload.EmpresaID) {
 			return
 		}
+		status, paisCodigo, paisSource, statusErr := getLicenciaPaymentMethodStatusForEmpresa(dbSuper, dbpkg.GetDB(), "epayco", payload.EmpresaID)
+		if statusErr != nil {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusConflict)
+			json.NewEncoder(w).Encode(map[string]interface{}{
+				"error":    "failed to read Epayco availability: " + statusErr.Error(),
+				"provider": "epayco",
+			})
+			return
+		}
+		if !status.Enabled {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusPreconditionFailed)
+			json.NewEncoder(w).Encode(map[string]interface{}{
+				"error":           "Epayco no esta habilitado para el pais configurado de esta empresa",
+				"provider":        "epayco",
+				"pais_codigo":     paisCodigo,
+				"pais_source":     paisSource,
+				"country_enabled": status.CountryEnabled,
+			})
+			return
+		}
 		if payload.AsesorID != "" {
 			advisor, aerr := dbpkg.GetAsesorComercialByCode(dbSuper, payload.AsesorID)
 			if aerr != nil {
@@ -5744,6 +6225,12 @@ func EpaycoCreateTransactionHandler(dbSuper *sql.DB) http.HandlerFunc {
 				"error":    "failed to resolve licencia summary: " + err.Error(),
 				"provider": "epayco",
 			})
+			return
+		}
+		if summary.PurchaseBlocked {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusConflict)
+			json.NewEncoder(w).Encode(map[string]interface{}{"error": summary.Message, "provider": "epayco", "summary": summary})
 			return
 		}
 		if summary.IsZeroTotal {
@@ -5826,6 +6313,8 @@ func EpaycoCreateTransactionHandler(dbSuper *sql.DB) http.HandlerFunc {
 				"confirmation":         confirmationURL,
 				"license_id":           payload.LicenciaID,
 				"empresa_id":           payload.EmpresaID,
+				"pais_codigo":          paisCodigo,
+				"pais_source":          paisSource,
 				"customer_email":       email,
 				"discount_code":        payload.DiscountCode,
 				"valor_pagado":         summary.TotalValue,
@@ -5857,6 +6346,8 @@ func EpaycoCreateTransactionHandler(dbSuper *sql.DB) http.HandlerFunc {
 				"reference":               reference,
 				"status":                  "PENDING",
 				"asesor_id":               payload.AsesorID,
+				"pais_codigo":             paisCodigo,
+				"pais_source":             paisSource,
 				"checkout_type":           "classic_js",
 				"checkout_script_url":     classicCheckoutPayload.ScriptURL,
 				"checkout_config":         classicCheckoutPayload.Config,
@@ -5902,6 +6393,8 @@ func EpaycoCreateTransactionHandler(dbSuper *sql.DB) http.HandlerFunc {
 			"confirmation":       confirmationURL,
 			"license_id":         payload.LicenciaID,
 			"empresa_id":         payload.EmpresaID,
+			"pais_codigo":        paisCodigo,
+			"pais_source":        paisSource,
 			"customer_email":     email,
 			"discount_code":      payload.DiscountCode,
 			"valor_pagado":       summary.TotalValue,
@@ -5929,6 +6422,8 @@ func EpaycoCreateTransactionHandler(dbSuper *sql.DB) http.HandlerFunc {
 			"reference":           reference,
 			"status":              "PENDING",
 			"asesor_id":           payload.AsesorID,
+			"pais_codigo":         paisCodigo,
+			"pais_source":         paisSource,
 			"session_id":          sessionID,
 			"checkout_session_id": sessionID,
 			"checkout_type":       "standard",
@@ -6609,6 +7104,10 @@ func ActivateLicenciaSinPagoHandler(dbSuper *sql.DB, dbEmpresas *sql.DB) http.Ha
 		summary, bundle, err := resolveLicenciaCheckoutSummaryWithMode(dbSuper, lic, payload.EmpresaID, payload.DiscountCode, payload.AsesorID, payload.CheckoutMode, payload.AddonLicenciaIDs)
 		if err != nil {
 			http.Error(w, "failed to resolve licencia summary: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+		if summary.PurchaseBlocked {
+			http.Error(w, summary.Message, http.StatusConflict)
 			return
 		}
 		if !summary.IsZeroTotal {

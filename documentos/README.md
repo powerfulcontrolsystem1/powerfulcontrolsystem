@@ -18,12 +18,15 @@ Este archivo organiza la lectura tecnica y funcional del repositorio para desarr
 9. `CHANGELOG.md`
 
 ## Estado documental reciente
+- 2026-06-10: Docker/VPS incorpora snapshot completo desde super administrador,
+  con descarga restaurable, historial, retencion y subida opcional por `rclone`
+  sin guardar secretos de nube ni incluir `.env.platform` por defecto.
 - 2026-05-30: la pagina publica `Informacion_de_contacto.html` queda redisenada sin logo en el hero y con vision corporativa orientada a pequenas empresas.
 - 2026-05-30: Domotica queda organizada por vistas separadas del submenu empresarial (`pagina=resumen`, `conexion`, `raspberry`, `reles`, `automatizaciones`, `reportes`, `bitacora`) y el resumen operativo deja de duplicar enlaces internos.
 - 2026-05-30: carrito y venta directa documentados como UI unificada plana: `carrito-flat-page` conserva tarjetas sin sombra ni efecto 3D, usa fondo estructural mas oscuro que las tarjetas en todas las apariencias y permite abrir/salir de pantalla completa desde venta directa.
 - 2026-05-13: se agrega `documentos/estado_documentacion_2026-05-13.md` como mapa rapido del estado vigente: reglas de producto, autenticacion, licencias/cajas, operacion conectada, soporte, comunicaciones, portal publico, VPS y validacion recomendada.
 - 2026-05-13: la ayuda principal `web/ayuda/ayuda.html` se actualiza con operacion conectada, cajas simultaneas, login por invitacion, soporte por tickets, documentos locales, backups, mantenimiento, correos globales y criterios de validacion.
-- 2026-05-13: licencias incorporan `max_cajas_simultaneas`; el default operativo es 2 cajas por empresa y el plan global COP 150000 permite 4 cajas.
+- 2026-05-13: licencias incorporan `max_cajas_simultaneas`; el default operativo es 2 cajas por empresa y el plan global COP 200000 permite 4 cajas.
 - 2026-05-13: se retira la operacion/facturacion offline para clientes; ventas, cobros, documentos y facturacion requieren servidor activo.
 - 2026-05-13: `login_usuario.html` queda como acceso global de usuarios operativos y `login.html` mantiene acceso administrativo con presentacion visual profesional.
 - 2026-05-10: implementados y documentados los 20 plantillas empresariales 2026 sobre el motor comun `empresa_modulos_colombia_*`, con catalogo backend/frontend, licencias por tipo, preconfiguracion, selector de empresas, portada publica, checkout, permisos, ayuda administrativa e IA. Ver `documentos/plan_20_modulos_plantillas_2026-05-10.md` y `documentos/arquitectura_modulos_universales.md`.

@@ -443,6 +443,36 @@ func GetEmpresaDocumentoFacturacionByCodigo(dbConn *sql.DB, empresaID int64, tip
 	return &item, nil
 }
 
+// UpdateEmpresaDocumentoFacturacionCliente asocia un documento de facturacion a un cliente de la misma empresa.
+func UpdateEmpresaDocumentoFacturacionCliente(dbConn *sql.DB, empresaID int64, tipoDocumento, documentoCodigo string, clienteID int64) (*EmpresaDocumentoFacturacion, error) {
+	if empresaID <= 0 {
+		return nil, fmt.Errorf("empresa_id es obligatorio")
+	}
+	if clienteID <= 0 {
+		return nil, fmt.Errorf("cliente_id es obligatorio")
+	}
+	tipoDocumento = normalizeDocumentoTransaccionalTipo(tipoDocumento, "comprobante_pago")
+	documentoCodigo = normalizeDocumentoTransaccionalCodigo(documentoCodigo)
+	if documentoCodigo == "" {
+		return nil, fmt.Errorf("documento_codigo es obligatorio")
+	}
+	res, err := dbConn.Exec(`UPDATE empresa_facturacion_documentos
+		SET entidad_relacionada_id = ?, fecha_actualizacion = CURRENT_TIMESTAMP
+		WHERE empresa_id = ? AND tipo_documento = ? AND documento_codigo = ?`,
+		clienteID,
+		empresaID,
+		tipoDocumento,
+		documentoCodigo,
+	)
+	if err != nil {
+		return nil, err
+	}
+	if affected, affErr := res.RowsAffected(); affErr == nil && affected == 0 {
+		return nil, sql.ErrNoRows
+	}
+	return GetEmpresaDocumentoFacturacionByCodigo(dbConn, empresaID, tipoDocumento, documentoCodigo)
+}
+
 // UpsertEmpresaDocumentoFacturacion registra o actualiza estado transaccional de facturacion.
 func UpsertEmpresaDocumentoFacturacion(dbConn *sql.DB, payload EmpresaDocumentoFacturacion) (*EmpresaDocumentoFacturacion, error) {
 	if err := EnsureEmpresaDocumentosTransaccionalesSchema(dbConn); err != nil {

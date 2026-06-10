@@ -791,6 +791,7 @@
       state.returnURL = returnURL || buildDefaultReturnURL();
       state.touchMode = getQueryParam('touch') === '1' || String(getQueryParam('touch') || '').toLowerCase() === 'true';
       document.body.classList.toggle('product-touch-mode', state.touchMode);
+      document.body.classList.toggle('pos-touch-mode', state.touchMode);
 
       try {
         await resolveCarrito();

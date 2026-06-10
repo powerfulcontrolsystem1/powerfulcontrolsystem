@@ -10,7 +10,11 @@ const (
 	LicenciaCodigoTrial15Global     = "PLAN_GLOBAL_TRIAL_15"
 	LicenciaCodigoBasicoGlobal      = "PLAN_GLOBAL_BASICO_1000"
 	LicenciaCodigoProfesionalGlobal = "PLAN_GLOBAL_PROFESIONAL_2000"
+	// Codigo historico conservado para no romper renovaciones de clientes existentes.
 	LicenciaCodigoEmpresarialGlobal = "PLAN_GLOBAL_EMPRESARIAL_4000"
+	LicenciaCodigoAnual12000Global  = "PLAN_GLOBAL_ANUAL_12000"
+	LicenciaCodigoAnual24000Global  = "PLAN_GLOBAL_ANUAL_24000"
+	LicenciaCodigoAnual36000Global  = "PLAN_GLOBAL_ANUAL_36000"
 )
 
 type GlobalLicenciaPlan struct {
@@ -45,21 +49,48 @@ func DefaultGlobalLicenciaPlans() []GlobalLicenciaPlan {
 		},
 		{
 			Codigo:                 LicenciaCodigoProfesionalGlobal,
-			Nombre:                 "Plan mensual COP 100000",
-			Descripcion:            "Plan mensual global para cualquier tipo de empresa por COP 100000.",
-			Valor:                  100000,
+			Nombre:                 "Plan mensual COP 110000",
+			Descripcion:            "Plan mensual global para cualquier tipo de empresa por COP 110000.",
+			Valor:                  110000,
 			DuracionDias:           30,
 			MaxDocumentosMensuales: 2000,
 			MaxCajasSimultaneas:    3,
 		},
 		{
 			Codigo:                 LicenciaCodigoEmpresarialGlobal,
-			Nombre:                 "Plan mensual COP 150000",
-			Descripcion:            "Plan mensual global para cualquier tipo de empresa por COP 150000.",
-			Valor:                  150000,
+			Nombre:                 "Plan mensual COP 200000",
+			Descripcion:            "Plan mensual global para cualquier tipo de empresa por COP 200000.",
+			Valor:                  200000,
 			DuracionDias:           30,
 			MaxDocumentosMensuales: 4000,
 			MaxCajasSimultaneas:    4,
+		},
+		{
+			Codigo:                 LicenciaCodigoAnual12000Global,
+			Nombre:                 "Plan anual COP 600000",
+			Descripcion:            "Plan anual global para cualquier tipo de empresa por COP 600000 con cupo de 12000 documentos electronicos.",
+			Valor:                  600000,
+			DuracionDias:           365,
+			MaxDocumentosMensuales: 12000,
+			MaxCajasSimultaneas:    4,
+		},
+		{
+			Codigo:                 LicenciaCodigoAnual24000Global,
+			Nombre:                 "Plan anual COP 1100000",
+			Descripcion:            "Plan anual global para cualquier tipo de empresa por COP 1100000 con cupo de 24000 documentos electronicos.",
+			Valor:                  1100000,
+			DuracionDias:           365,
+			MaxDocumentosMensuales: 24000,
+			MaxCajasSimultaneas:    5,
+		},
+		{
+			Codigo:                 LicenciaCodigoAnual36000Global,
+			Nombre:                 "Plan anual COP 2200000",
+			Descripcion:            "Plan anual global para cualquier tipo de empresa por COP 2200000 con cupo de 36000 documentos electronicos.",
+			Valor:                  2200000,
+			DuracionDias:           365,
+			MaxDocumentosMensuales: 36000,
+			MaxCajasSimultaneas:    6,
 		},
 	}
 }

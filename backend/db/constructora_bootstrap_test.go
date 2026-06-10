@@ -7,13 +7,13 @@ import (
 
 func TestDefaultConstructoraLicenciaPlans(t *testing.T) {
 	plans := DefaultConstructoraLicenciaPlans()
-	if len(plans) != 4 {
-		t.Fatalf("planes constructora = %d, want 4", len(plans))
+	if len(plans) != 7 {
+		t.Fatalf("planes constructora = %d, want 7", len(plans))
 	}
-	expectedDocs := []int{250, 1000, 2000, 4000}
-	expectedValues := []float64{0, 60000, 100000, 150000}
+	expectedDocs := []int{250, 1000, 2000, 4000, 12000, 24000, 36000}
+	expectedValues := []float64{0, 60000, 110000, 200000, 600000, 1100000, 2200000}
 	for i, plan := range plans {
-		if plan.DuracionDias != map[bool]int{true: 15, false: 30}[i == 0] {
+		if plan.DuracionDias != 15 && plan.DuracionDias != 30 && plan.DuracionDias != 365 {
 			t.Fatalf("duracion plan %d = %d", i, plan.DuracionDias)
 		}
 		if plan.MaxDocumentosMensuales != expectedDocs[i] {

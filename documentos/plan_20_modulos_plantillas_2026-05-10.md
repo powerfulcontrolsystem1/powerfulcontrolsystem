@@ -104,12 +104,15 @@ Si una licencia tiene `modulos_habilitados` vacio, no restringe modulos. Si una 
 
 ## Tipos de empresa y licencias
 
-El arranque del backend ejecuta `EnsureNuevasPlantillasTipoEmpresaYLicencias`, que verifica los 20 tipos de empresa en `tipos_de_empresas`, crea/actualiza sus preconfiguraciones iniciales y asegura 4 licencias base por tipo:
+El arranque del backend ejecuta `EnsureNuevasPlantillasTipoEmpresaYLicencias`, que verifica los 20 tipos de empresa en `tipos_de_empresas`, crea/actualiza sus preconfiguraciones iniciales y asegura las 7 licencias globales base:
 
 - prueba 15 dias: 250 documentos;
 - 30 dias: 1000 documentos;
 - 30 dias: 2000 documentos;
 - 30 dias: 4000 documentos.
+- 365 dias: 12000 documentos;
+- 365 dias: 24000 documentos;
+- 365 dias: 36000 documentos.
 
 Cada licencia incluye el modulo vertical correspondiente y los modulos base de ventas, inventario, compras, clientes/CRM, finanzas, bancos, tesoreria, cobranza, gestion documental, contratos, calidad, facturacion y seguridad. Los tickets de ayuda se gestionan aparte en el sistema propio centralizado.
 

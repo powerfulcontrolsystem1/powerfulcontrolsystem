@@ -34,6 +34,10 @@ type facturacionOperacionPayload struct {
 	TipoDocumento           string  `json:"tipo_documento"`
 	ClienteEmail            string  `json:"cliente_email"`
 	ClienteNombre           string  `json:"cliente_nombre"`
+	ClienteTipoDocumento    string  `json:"cliente_tipo_documento"`
+	ClienteNumeroDocumento  string  `json:"cliente_numero_documento"`
+	ClienteTelefono         string  `json:"cliente_telefono"`
+	ClienteDireccion        string  `json:"cliente_direccion"`
 	PaisCodigo              string  `json:"pais_codigo"`
 	DocumentoCodigo         string  `json:"documento_codigo"`
 	EstadoActual            string  `json:"estado_actual"`
@@ -398,6 +402,56 @@ func EmpresaFacturacionElectronicaHandler(dbEmp, dbSuper *sql.DB) http.HandlerFu
 				if strings.TrimSpace(strings.ToLower(ventaDoc.EstadoDocumento)) != "emitida" {
 					http.Error(w, "la venta debe estar emitida para generar la factura electronica", http.StatusConflict)
 					return
+				}
+				clienteID := payload.ClienteID
+				if clienteID <= 0 && payload.EntidadID > 0 {
+					clienteID = payload.EntidadID
+				}
+				if clienteID <= 0 && strings.TrimSpace(payload.ClienteNombre) != "" && strings.TrimSpace(payload.ClienteNumeroDocumento) != "" {
+					if email := strings.TrimSpace(payload.ClienteEmail); email != "" {
+						if _, err := mail.ParseAddress(email); err != nil {
+							http.Error(w, "cliente_email invalido", http.StatusBadRequest)
+							return
+						}
+					}
+					tipoDocCliente := strings.ToUpper(strings.TrimSpace(payload.ClienteTipoDocumento))
+					if tipoDocCliente == "" {
+						tipoDocCliente = "CC"
+					}
+					newClienteID, err := dbpkg.CreateCliente(dbEmp, dbpkg.Cliente{
+						EmpresaID:         payload.EmpresaID,
+						TipoDocumento:     tipoDocCliente,
+						NumeroDocumento:   strings.TrimSpace(payload.ClienteNumeroDocumento),
+						TipoPersona:       "natural",
+						NombreRazonSocial: strings.TrimSpace(payload.ClienteNombre),
+						Email:             strings.TrimSpace(payload.ClienteEmail),
+						Telefono:          strings.TrimSpace(payload.ClienteTelefono),
+						Direccion:         strings.TrimSpace(payload.ClienteDireccion),
+						Pais:              "CO",
+						UsuarioCreador:    strings.TrimSpace(adminEmailFromRequest(r)),
+						Observaciones:     "creado desde facturacion electronica de venta",
+					})
+					if err != nil {
+						http.Error(w, "No se pudo crear el cliente para facturar la venta: "+err.Error(), http.StatusBadRequest)
+						return
+					}
+					clienteID = newClienteID
+				}
+				if clienteID > 0 {
+					if _, err := dbpkg.GetClienteByID(dbEmp, payload.EmpresaID, clienteID); err != nil {
+						if errors.Is(err, sql.ErrNoRows) {
+							http.Error(w, "cliente_id no pertenece a esta empresa", http.StatusNotFound)
+							return
+						}
+						http.Error(w, "No se pudo validar el cliente", http.StatusInternalServerError)
+						return
+					}
+					updatedVentaDoc, err := dbpkg.UpdateEmpresaDocumentoFacturacionCliente(dbEmp, payload.EmpresaID, ventaDoc.TipoDocumento, ventaDoc.DocumentoCodigo, clienteID)
+					if err != nil {
+						http.Error(w, "No se pudo asociar el cliente a la venta", http.StatusInternalServerError)
+						return
+					}
+					ventaDoc = updatedVentaDoc
 				}
 
 				resultado, err := registrarFacturaElectronicaDesdeDocumentoVenta(

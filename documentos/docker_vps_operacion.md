@@ -21,6 +21,48 @@ El endpoint exige rol `super_administrador`. El paquete incluye codigo, `deploy/
 
 Para una migracion real se debe descargar este paquete y combinarlo con el snapshot operativo de PostgreSQL/volumenes generado por `scripts/vps_backup_operacion.ps1`.
 
+## Snapshot completo desde Super Administrador
+
+El panel `Super Administrador > Plataforma > Docker VPS` tambien incluye
+`Snapshot completo VPS`, pensado para crear una copia restaurable con un clic.
+
+Rutas:
+
+```text
+GET /super/api/vps_snapshots?action=status
+PUT /super/api/vps_snapshots
+POST /super/api/vps_snapshots?action=create
+GET /super/api/vps_snapshots?action=download&id={id}
+```
+
+El snapshot se genera en:
+
+```text
+backup/vps_snapshots/pcs-vps-snapshot-YYYYMMDD-HHMMSS.tar.gz
+```
+
+Contenido esperado:
+
+- `project/`: proyecto portable usando las mismas exclusiones de Docker
+  portabilidad.
+- `postgres/pg_dumpall.sql`: dump logico cuando `pcs-postgres` o `pg_dumpall`
+  estan disponibles.
+- `docker-volumes/`: volumenes persistentes PCS cuando Docker esta disponible.
+- `docker-images/`: solo si el super administrador activa manualmente
+  `Incluir imagenes Docker`.
+- `MANIFEST.json` y `RESTAURAR_VPS.md`: manifiesto y guia corta de
+  restauracion.
+
+Seguridad:
+
+- No incluye `deploy/.env.platform`, certificados, llaves ni secretos por
+  defecto.
+- La descarga valida que el archivo exista dentro de `backup/vps_snapshots`.
+- La nube se integra con `rclone`; PCS solo guarda proveedor/ruta remota como
+  `gdrive:PCS/backups` o `mega:PCS/backups`, no tokens ni claves.
+- La retencion local/remota elimina solo archivos `pcs-vps-snapshot-*.tar.gz`
+  mayores a los dias configurados.
+
 ## Estado actual
 
 La VPS actual (`2.24.197.58`) ya tiene Docker Engine y Docker Compose v2. El nucleo de la plataforma quedo ejecutandose en Docker y publicado por Nginx del host:

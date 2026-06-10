@@ -2191,6 +2191,16 @@ func EmpresaProductoImagenUploadHandler(dbEmp *sql.DB) http.HandlerFunc {
 			http.Error(w, "producto_id required", http.StatusBadRequest)
 			return
 		}
+		existing, err := dbpkg.GetProductoByID(dbEmp, empresaID, productoID)
+		if err != nil {
+			if errors.Is(err, sql.ErrNoRows) {
+				http.Error(w, "producto no encontrado", http.StatusNotFound)
+				return
+			}
+			http.Error(w, "failed to query producto: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+		oldImageURL := strings.TrimSpace(existing.ImagenURL)
 
 		file, header, err := r.FormFile("imagen")
 		if err != nil {
@@ -2205,9 +2215,13 @@ func EmpresaProductoImagenUploadHandler(dbEmp *sql.DB) http.HandlerFunc {
 			http.Error(w, "image extension not allowed", http.StatusBadRequest)
 			return
 		}
+		const maxProductImageBytes = 10 << 20
+		if header.Size > maxProductImageBytes {
+			http.Error(w, "la imagen supera 10 MB", http.StatusBadRequest)
+			return
+		}
 
-		webRoot := resolveWebRootDir()
-		dir := filepath.Join(webRoot, "uploads", "productos", fmt.Sprintf("empresa_%d", empresaID))
+		dir, publicDir, _ := empresaUploadsSubdir(dbEmp, empresaID, "imagenes", "productos")
 		if err := os.MkdirAll(dir, 0o755); err != nil {
 			http.Error(w, "failed to prepare upload directory", http.StatusInternalServerError)
 			return
@@ -2220,15 +2234,28 @@ func EmpresaProductoImagenUploadHandler(dbEmp *sql.DB) http.HandlerFunc {
 			http.Error(w, "failed to create image file", http.StatusInternalServerError)
 			return
 		}
-		defer out.Close()
 
-		if _, err := io.Copy(out, file); err != nil {
+		written, copyErr := io.Copy(out, io.LimitReader(file, maxProductImageBytes+1))
+		closeErr := out.Close()
+		if copyErr != nil {
+			_ = os.Remove(absPath)
 			http.Error(w, "failed to save image file", http.StatusInternalServerError)
 			return
 		}
+		if written > maxProductImageBytes {
+			_ = os.Remove(absPath)
+			http.Error(w, "la imagen supera 10 MB", http.StatusBadRequest)
+			return
+		}
+		if closeErr != nil {
+			_ = os.Remove(absPath)
+			http.Error(w, "failed to close image file", http.StatusInternalServerError)
+			return
+		}
 
-		imageURL := "/uploads/productos/empresa_" + strconv.FormatInt(empresaID, 10) + "/" + fileName
+		imageURL := publicDir + "/" + fileName
 		if err := dbpkg.UpdateProductoImagen(dbEmp, empresaID, productoID, imageURL); err != nil {
+			_ = os.Remove(absPath)
 			if errors.Is(err, sql.ErrNoRows) {
 				http.Error(w, "producto no encontrado", http.StatusNotFound)
 				return
@@ -2236,13 +2263,18 @@ func EmpresaProductoImagenUploadHandler(dbEmp *sql.DB) http.HandlerFunc {
 			http.Error(w, "failed to update image url in producto: "+err.Error(), http.StatusInternalServerError)
 			return
 		}
+		deletedPrevious := false
+		if oldImageURL != "" && oldImageURL != imageURL {
+			deletedPrevious = deleteEmpresaProductoUploadedPublicURL(dbEmp, empresaID, oldImageURL)
+		}
 
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(map[string]interface{}{
-			"saved":       true,
-			"empresa_id":  empresaID,
-			"producto_id": productoID,
-			"image_url":   imageURL,
+			"saved":        true,
+			"empresa_id":   empresaID,
+			"producto_id":  productoID,
+			"image_url":    imageURL,
+			"replaced_old": deletedPrevious,
 		})
 	}
 }

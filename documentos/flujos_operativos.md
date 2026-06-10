@@ -4,6 +4,66 @@ Guia corta de los procesos que mas se prueban y modifican. Cada flujo debe
 mantener aislamiento por `empresa_id`, permisos por rol y trazabilidad cuando
 afecte dinero, documentos, licencias o seguridad.
 
+## Modo POS tactil por empresa
+
+1. Abrir `Administrar empresa > Configuracion > Configuracion carrito`.
+2. Activar `Modo POS tactil para carrito, estaciones y corte de caja`.
+3. El valor se guarda por empresa en
+   `empresa_estacion_prefs.estaciones_config.carrito_ui_global.modo_pantalla_tactil`
+   usando `/api/empresa/estacion_prefs`.
+4. Al abrir `Venta directa` o un carrito por estacion, el carrito aplica
+   `pos-touch-mode`/`cart-touch-mode`: botones, campos, descuentos, taxi,
+   pagos mixtos, cliente y acciones quedan con objetivos tactiles grandes.
+5. El catalogo por botones recibe `touch=1` desde el carrito y aplica la misma
+   ergonomia para agregar productos con el dedo.
+6. `Estaciones` lee la misma configuracion global y agranda tarjetas, especiales
+   como Caja/Notas/YouTube y acciones operativas sin cambiar el flujo normal.
+7. `Corte de caja` lee la preferencia al cargar y agranda los botones de
+   generar, reporte, cierre e impresion; si la preferencia no carga, queda en
+   modo normal.
+8. La opcion no crea tablas nuevas, no cambia permisos ni mezcla empresas; cada
+   pantalla sigue filtrando por su `empresa_id` y sus endpoints existentes.
+
+## Snapshot completo VPS desde super administrador
+
+1. Abrir `Super Administrador > Plataforma > Docker VPS`.
+2. En `Snapshot completo VPS`, activar snapshots y definir retencion local,
+   intervalo automatico y si se incluyen imagenes Docker.
+3. Para nube, configurar previamente `rclone` en la VPS y guardar solo la ruta
+   remota en PCS, por ejemplo `gdrive:PCS/backups` o `mega:PCS/backups`.
+4. Usar `Crear y descargar snapshot` para generar un `.tar.gz` restaurable en
+   `backup/vps_snapshots` y descargarlo desde el historial.
+5. Usar `Crear y subir a nube` cuando el remoto `rclone` ya este probado; PCS no
+   guarda tokens OAuth ni claves de Google Drive, Mega, OneDrive o S3.
+6. Si `Ejecutar automatico` queda activo, el worker horario verifica el ultimo
+   respaldo y crea uno nuevo cuando se cumpla el intervalo configurado.
+7. La limpieza local/remota solo elimina archivos con patron
+   `pcs-vps-snapshot-*.tar.gz` mayores a los dias de retencion configurados.
+8. El paquete incluye proyecto portable, `pg_dumpall` cuando este disponible,
+   volumenes Docker PCS, `MANIFEST.json` y `RESTAURAR_VPS.md`; no incluye
+   `.env.platform` ni secretos por defecto.
+
+## Transferir cuenta entre mesas, habitaciones o estaciones
+
+1. Abrir `Administrar empresa > Configuracion > Configuracion carrito`.
+2. Activar `Visualizar boton Transferir cuenta`; por defecto queda apagado para
+   no exponer el flujo a empresas que no lo usan.
+3. Abrir una cuenta activa desde `Estaciones`, agregar productos/servicios,
+   abonos o tarifa segun aplique.
+4. En el carrito, usar `Transferir cuenta`, elegir el destino y registrar un
+   motivo operativo.
+5. PCS valida en backend que el origen este abierto/no pagado, que el destino
+   sea diferente y este disponible, y que ambos pertenezcan al mismo
+   `empresa_id`.
+6. En motel/hotel, si el origen tiene tarifa por minutos o diaria, el destino
+   debe tener una tarifa activa equivalente; si no la tiene, la transferencia se
+   rechaza para evitar cobros incompatibles.
+7. Al aprobarse, se mueven items, abonos, cliente, descuentos, caja y estado de
+   sesion al destino; el origen queda cerrado/en cero y el usuario es llevado al
+   carrito destino.
+8. No se duplica inventario, no se crea una venta nueva y los roles restringidos
+   de tablero de estaciones siguen sin poder ejecutar la transferencia.
+
 ## Impresoras por empresa y agente local
 
 1. Abrir `Administrar empresa > Configuracion > Configuracion de impresora`.
@@ -23,6 +83,21 @@ afecte dinero, documentos, licencias o seguridad.
    desde la pagina de configuracion.
 8. La ruta de agente usa permisos de ventas y no permite editar impresoras,
    reglas ni predeterminadas; esas acciones siguen bajo permisos de seguridad.
+
+## Factura electronica desde una venta existente
+
+1. Abrir `Administrar empresa > Ventas` y ubicar un comprobante de pago emitido.
+2. Usar `Hacer factura electronica`.
+3. Seleccionar un cliente existente de la empresa o crear cliente rapido con
+   tipo/documento, nombre y correo si no existe.
+4. PCS asocia el cliente al comprobante origen por `empresa_id` antes de generar
+   la factura electronica.
+5. La venta origen conserva valor, pagos, inventario y total; solo se crea el
+   documento fiscal derivado.
+6. La fecha y hora fiscal de la factura electronica se generan al preparar el
+   documento legal, por lo que pueden diferir de la fecha/hora de la venta.
+7. Si se activa el check de correo, la factura se envia al correo del cliente
+   cuando no haya sido enviada ya por la configuracion automatica.
 
 ## Modulo NIIF
 
@@ -99,8 +174,8 @@ afecte dinero, documentos, licencias o seguridad.
 
 ## Centro IA empresarial
 
-1. Habilitar primero la pagina `linkCentroIAEmpresarial` en permisos finos de
-   la empresa; por defecto no se muestra en ninguna empresa.
+1. Confirmar que el rol/licencia tenga permiso `reportes:R`; el Centro IA ya no
+   se oculta por defecto, pero no concede permisos de escritura ni aprobacion.
 2. Abrir `Administrar empresa > Canales digitales y colaboracion > Centro IA
    empresarial` o el acceso rapido `IA empresarial` del Centro financiero.
 3. La pagina conserva `empresa_id`, periodo desde/hasta y consulta
@@ -117,7 +192,7 @@ afecte dinero, documentos, licencias o seguridad.
 7. La IA no emite documentos, no registra pagos, no crea clientes, no cambia
    inventario y no activa DIAN; devuelve borradores revisables, riesgos, datos
    faltantes y siguiente accion sugerida.
-8. Cada ejecucion IA usa GPT-5.4 mini, registra consumo diario por empresa y
+8. Cada ejecucion IA usa el modelo mini configurado, registra consumo diario por empresa y
    muestra error saneado si la IA global, la IA empresarial o la credencial del
    proveedor no estan disponibles.
 9. Los botones que ejecutan funciones IA deben mostrar el icono GPT y badge
@@ -232,6 +307,21 @@ afecte dinero, documentos, licencias o seguridad.
 5. La ayuda es frontend, no sustituye validaciones backend ni permisos por
    `empresa_id`.
 
+## Logos de empresa y factura
+
+1. El logo corporativo se configura en `Configuracion > Identidad visual` y se
+   usa en panel, reportes y documentos generales.
+2. El logo de factura se configura en la seccion de documento de venta o en
+   facturacion electronica y puede ser diferente al corporativo.
+3. Los uploads usan `/api/empresa/configuracion_avanzada/logo` con
+   `tipo_logo=empresa` o `tipo_logo=factura`.
+4. Los archivos quedan dentro de la carpeta de la empresa:
+   `web/uploads/empresas/empresa_{id}_{slug}/imagenes/logos/empresa/` o
+   `web/uploads/empresas/empresa_{id}_{slug}/imagenes/logos/factura/`.
+5. Si no hay logo de factura dedicado, la impresion de factura puede usar el
+   logo corporativo como respaldo. Esta configuracion no cambia XML DIAN,
+   numeracion, CUFE/CUDE ni reglas fiscales.
+
 ## Ordenar empresas en el selector
 
 1. Administrador entra a `web/seleccionar_empresa.html`.
@@ -316,9 +406,12 @@ afecte dinero, documentos, licencias o seguridad.
 ## Licencia gratis 15 dias
 
 1. El catalogo base de licencias es global para todos los tipos de empresa:
-   prueba gratis 15 dias, plan COP 60000, plan COP 100000 y plan COP 150000.
+   prueba gratis 15 dias, planes mensuales COP 60000, COP 110000 y COP 200000,
+   y planes anuales COP 600000, COP 1100000 y COP 2200000.
    Las licencias base antiguas por tipo y addons de catalogo se eliminan del
    catalogo sin empresa asignada.
+   El super administrador configura cuantas compras adelantadas de la misma
+   licencia se permiten; el valor por defecto es 2.
 2. Desde el checkout de licencia se obtiene resumen publico.
 3. Si el total es cero o prueba permitida, `POST /licencias/activar_sin_pago`
    activa la licencia.
@@ -327,27 +420,27 @@ afecte dinero, documentos, licencias o seguridad.
    aunque la licencia anterior ya este vencida o inactiva.
 5. La activacion debe ser idempotente si el primer intento ya dejo la licencia
    vigente.
-6. Al quedar activa, el sistema envia un solo correo al administrador de la
-   empresa con el mensaje `licencia_activation_payment` y adjunta un PDF de
-   licencia de software generado desde la plantilla `licencia_software_pdf`,
-   ambas configurables en `web/super/formato_para_emviar_email.html`.
-   Si el pago comercial queda aprobado con valor mayor a cero, ademas se emite
-   automaticamente una factura electronica desde la empresa interna `Powerful
-   Control System` (tambien reconoce el nombre existente `Powerful Control
-   Systen`) y el PDF resumen de esa factura se adjunta al mismo correo de
-   activacion. El documento se guarda en `empresa_facturacion_documentos` de la
+6. Al quedar activa, el sistema puede enviar un correo de bienvenida al
+   administrador/cliente comprador con el mensaje `licencia_activation_payment`,
+   configurable en `web/super/formato_para_emviar_email.html`.
+   La licencia de software ya no se adjunta por correo; solo se descarga desde
+   Administrar empresa > Licencia > Licencia del sistema usando la plantilla
+   `licencia_software_pdf`.
+   Si el pago comercial queda aprobado con valor mayor a cero, y la regla esta
+   activa en Super administrador > Licencias, ademas se emite automaticamente una
+   factura electronica desde la empresa interna `Powerful Control System`
+   (tambien reconoce el nombre existente `Powerful Control Systen`) y el PDF
+   resumen de esa factura se adjunta al mismo correo de bienvenida. El documento se guarda en `empresa_facturacion_documentos` de la
    empresa emisora y el pago queda marcado con
    `licencia_factura_electronica_emitida` en `pagos_epayco` o `pagos_wompi`
    para idempotencia.
    La empresa emisora interna se resuelve por
-   `configuraciones.licencias.facturacion_empresa_sistema_id` y mantiene una
-   licencia tecnica interna `PCS_SYSTEM_INTERNAL_PERPETUAL` con fecha fin a 100
-   anos, limites altos y modulos completos. La empresa interna debe cargar
-   carrito, correo corporativo, facturacion y configuracion como cualquier otra
-   empresa; la unica diferencia es que esa licencia no pertenece al catalogo
-   comercial. Las activaciones con total pagado cero por prueba o descuento
-   total solo envian la licencia; no emiten factura electronica en el flujo
-   final.
+   `configuraciones.licencias.facturacion_empresa_sistema_id`. La licencia
+   tecnica heredada `PCS_SYSTEM_INTERNAL_PERPETUAL` se desactiva si existe, de
+   modo que la empresa interna debe comprar, renovar o adquirir una licencia
+   comercial vigente como cualquier otra empresa. Las activaciones con total
+   pagado cero por prueba o descuento total pueden enviar bienvenida si esta
+   activa, pero no emiten factura electronica en el flujo final.
 7. La empresa puede descargar el mismo documento desde Administrar empresa >
    Licencia > Licencia del sistema; el endpoint
    `/api/empresa/licencia_sistema/pdf` debe quedar protegido por permisos de
@@ -374,9 +467,9 @@ afecte dinero, documentos, licencias o seguridad.
 11. Pruebas: activar una vez, reintentar sin duplicar mientras sigue vigente,
    bloquear segundo uso real despues del vencimiento y comprobar que el
    historial muestra otras licencias cuando la prueba no es renovable, ademas
-   de validar que el correo capturado o enviado incluya el PDF de licencia y,
-   cuando el pago sea mayor a cero, el PDF de factura electronica en el mismo
-   mensaje; confirmar tambien que descuento total o valor cero no genera factura
+   de validar que el correo capturado o enviado no incluya PDF de licencia y,
+   cuando el pago sea mayor a cero y la configuracion lo permita, incluya el PDF
+   de factura electronica en el mismo mensaje; confirmar tambien que descuento total o valor cero no genera factura
    electronica. La descarga empresarial debe devolver `application/pdf`; para
    pago, seleccionar Epayco y Wompi, aceptar terminos y comprobar que cada
    proveedor pasa a verificacion con referencia propia. Para renovaciones comerciales, simular
@@ -856,6 +949,10 @@ afecte dinero, documentos, licencias o seguridad.
    El envio real a DIAN sigue dependiendo de firma, CUNE, numeracion,
    credenciales y transporte documental configurados por empresa en facturacion
    electronica.
-10. Pruebas: usar `Crear nomina demo Motel Calipso`, verificar empleados en varias
+10. La pagina `web/administrar_empresa/nomina_tutorial.html` debe abrirse desde
+   el boton `Tutorial` de nomina y conservar `empresa_id`; explica el orden
+   recomendado: parametros legales, configuracion, empleados, novedades,
+   liquidacion, pagos/PILA, preparacion del lote DIAN y revision de acuses.
+11. Pruebas: usar `Crear nomina demo Motel Calipso`, verificar empleados en varias
    sedes, liquidaciones por sede, PILA, pagos, desprendible y botones `Ver estado
-   DIAN` / `Preparar lote DIAN`.
+   DIAN` / `Preparar lote DIAN`; abrir `Tutorial` y `Ayuda` desde nomina.

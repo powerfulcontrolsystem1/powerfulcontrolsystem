@@ -217,6 +217,7 @@ type EmpresaVentaPublicaConfig struct {
 	Moneda                          string `json:"moneda"`
 	DominioPublico                  string `json:"dominio_publico,omitempty"`
 	MostrarStock                    bool   `json:"mostrar_stock"`
+	ContactoFormularioActivo        bool   `json:"contacto_formulario_activo"`
 	PedidosRestauranteActivo        bool   `json:"pedidos_restaurante_activo"`
 	PedidosRegistroOpcionalCliente  bool   `json:"pedidos_registro_opcional_cliente"`
 	PedidosPermitirRecogerEnTienda  bool   `json:"pedidos_permitir_recoger_en_tienda"`
@@ -611,6 +612,7 @@ func EnsureEmpresaVentaPublicaSchema(dbConn *sql.DB) error {
 			moneda TEXT DEFAULT 'COP',
 			dominio_publico TEXT,
 			mostrar_stock INTEGER DEFAULT 1,
+			contacto_formulario_activo INTEGER DEFAULT 1,
 			pedidos_restaurante_activo INTEGER DEFAULT 0,
 			pedidos_registro_opcional_cliente INTEGER DEFAULT 1,
 			pedidos_permitir_recoger_en_tienda INTEGER DEFAULT 1,
@@ -765,6 +767,9 @@ func EnsureEmpresaVentaPublicaSchema(dbConn *sql.DB) error {
 		return err
 	}
 	if err := ensureColumnIfMissing(dbConn, "empresa_venta_publica_configuracion", "pedidos_restaurante_activo", "INTEGER DEFAULT 0"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_venta_publica_configuracion", "contacto_formulario_activo", "INTEGER DEFAULT 1"); err != nil {
 		return err
 	}
 	if err := ensureColumnIfMissing(dbConn, "empresa_venta_publica_configuracion", "pedidos_registro_opcional_cliente", "INTEGER DEFAULT 1"); err != nil {
@@ -1138,6 +1143,7 @@ func GetEmpresaVentaPublicaConfig(dbConn *sql.DB, empresaID int64) (EmpresaVenta
 
 	var out EmpresaVentaPublicaConfig
 	var mostrarStock sql.NullInt64
+	var contactoFormularioActivo sql.NullInt64
 	var pedidosRestauranteActivo sql.NullInt64
 	var pedidosRegistroOpcional sql.NullInt64
 	var pedidosPermitirRecoger sql.NullInt64
@@ -1159,6 +1165,7 @@ func GetEmpresaVentaPublicaConfig(dbConn *sql.DB, empresaID int64) (EmpresaVenta
 		COALESCE(moneda, 'COP'),
 		COALESCE(dominio_publico, ''),
 		COALESCE(mostrar_stock, 1),
+		COALESCE(contacto_formulario_activo, 1),
 		COALESCE(pedidos_restaurante_activo, 0),
 		COALESCE(pedidos_registro_opcional_cliente, 1),
 		COALESCE(pedidos_permitir_recoger_en_tienda, 1),
@@ -1198,6 +1205,7 @@ func GetEmpresaVentaPublicaConfig(dbConn *sql.DB, empresaID int64) (EmpresaVenta
 		&out.Moneda,
 		&out.DominioPublico,
 		&mostrarStock,
+		&contactoFormularioActivo,
 		&pedidosRestauranteActivo,
 		&pedidosRegistroOpcional,
 		&pedidosPermitirRecoger,
@@ -1239,6 +1247,7 @@ func GetEmpresaVentaPublicaConfig(dbConn *sql.DB, empresaID int64) (EmpresaVenta
 			TemaVisual:                      "default",
 			Moneda:                          "COP",
 			MostrarStock:                    true,
+			ContactoFormularioActivo:        true,
 			PedidosRegistroOpcionalCliente:  true,
 			PedidosPermitirRecogerEnTienda:  true,
 			PedidosPermitirDomicilio:        true,
@@ -1280,6 +1289,7 @@ func GetEmpresaVentaPublicaConfig(dbConn *sql.DB, empresaID int64) (EmpresaVenta
 	if !mostrarStock.Valid {
 		out.MostrarStock = true
 	}
+	out.ContactoFormularioActivo = !contactoFormularioActivo.Valid || contactoFormularioActivo.Int64 > 0
 	out.PedidosRestauranteActivo = pedidosRestauranteActivo.Valid && pedidosRestauranteActivo.Int64 > 0
 	out.PedidosRegistroOpcionalCliente = !pedidosRegistroOpcional.Valid || pedidosRegistroOpcional.Int64 > 0
 	out.PedidosPermitirRecogerEnTienda = !pedidosPermitirRecoger.Valid || pedidosPermitirRecoger.Int64 > 0
@@ -1359,6 +1369,7 @@ func UpsertEmpresaVentaPublicaConfig(dbConn *sql.DB, cfg EmpresaVentaPublicaConf
 				moneda = ?,
 				dominio_publico = ?,
 				mostrar_stock = ?,
+				contacto_formulario_activo = ?,
 				pedidos_restaurante_activo = ?,
 				pedidos_registro_opcional_cliente = ?,
 				pedidos_permitir_recoger_en_tienda = ?,
@@ -1393,6 +1404,7 @@ func UpsertEmpresaVentaPublicaConfig(dbConn *sql.DB, cfg EmpresaVentaPublicaConf
 			cfg.Moneda,
 			strings.TrimSpace(cfg.DominioPublico),
 			ventaPublicaBoolToInt(cfg.MostrarStock),
+			ventaPublicaBoolToInt(cfg.ContactoFormularioActivo),
 			ventaPublicaBoolToInt(cfg.PedidosRestauranteActivo),
 			ventaPublicaBoolToInt(cfg.PedidosRegistroOpcionalCliente),
 			ventaPublicaBoolToInt(cfg.PedidosPermitirRecogerEnTienda),
@@ -1435,6 +1447,7 @@ func UpsertEmpresaVentaPublicaConfig(dbConn *sql.DB, cfg EmpresaVentaPublicaConf
 		moneda,
 		dominio_publico,
 		mostrar_stock,
+		contacto_formulario_activo,
 		pedidos_restaurante_activo,
 		pedidos_registro_opcional_cliente,
 		pedidos_permitir_recoger_en_tienda,
@@ -1457,7 +1470,7 @@ func UpsertEmpresaVentaPublicaConfig(dbConn *sql.DB, cfg EmpresaVentaPublicaConf
 		usuario_creador,
 		estado,
 		observaciones
-	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 		cfg.EmpresaID,
 		cfg.EmpresaSlug,
 		cfg.NombreTienda,
@@ -1469,6 +1482,7 @@ func UpsertEmpresaVentaPublicaConfig(dbConn *sql.DB, cfg EmpresaVentaPublicaConf
 		cfg.Moneda,
 		strings.TrimSpace(cfg.DominioPublico),
 		ventaPublicaBoolToInt(cfg.MostrarStock),
+		ventaPublicaBoolToInt(cfg.ContactoFormularioActivo),
 		ventaPublicaBoolToInt(cfg.PedidosRestauranteActivo),
 		ventaPublicaBoolToInt(cfg.PedidosRegistroOpcionalCliente),
 		ventaPublicaBoolToInt(cfg.PedidosPermitirRecogerEnTienda),

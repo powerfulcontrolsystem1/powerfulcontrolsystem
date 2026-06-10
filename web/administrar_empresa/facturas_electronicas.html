@@ -555,10 +555,10 @@
         var numeroLegal = normalize(item && item.numero_legal) || normalize(item && item.documento_codigo) || "Pendiente";
         var cfg = state.cfg || {};
         var empresaLabel = normalize(state.empresaNombre) || normalize(cfg.razon_social) || normalize(cfg.nombre_comercial) || ("Empresa #" + String(empresaID || ""));
-        var showLogo = cfg.mostrar_logo_empresa !== false && cfg.mostrar_logo !== false;
-        var logoUrl = showLogo ? safeUrl(cfg.logo_url) : "";
+        var showLogo = cfg.mostrar_logo_factura !== false && cfg.mostrar_logo !== false;
+        var logoUrl = showLogo ? safeUrl(cfg.logo_factura_url || cfg.logo_url) : "";
         var logoHtml = window.PCSPrint && window.PCSPrint.resolveDocumentLogos && window.PCSPrint.logosHTML
-          ? window.PCSPrint.logosHTML(window.PCSPrint.resolveDocumentLogos(cfg))
+          ? window.PCSPrint.logosHTML(window.PCSPrint.resolveDocumentLogos(cfg, "factura"))
           : (logoUrl ? ('<img src="' + escapeHtml(logoUrl) + '" alt="Logo empresa">') : '');
         var legalBlock = buildLegalBlock(cfg);
         var observaciones = normalize(item && item.observaciones) || "Sin observaciones registradas.";
@@ -627,8 +627,8 @@
         var formato = currentViewMode();
         if (formato === "pos") {
           var lines = companyLegalLines(cfg);
-          var showLogo = cfg.mostrar_logo_empresa !== false && cfg.mostrar_logo !== false;
-          var logoUrl = showLogo ? safeUrl(cfg.logo_url) : "";
+          var showLogo = cfg.mostrar_logo_factura !== false && cfg.mostrar_logo !== false;
+          var logoUrl = showLogo ? safeUrl(cfg.logo_factura_url || cfg.logo_url) : "";
           var notas = normalize(cfg.notas_legales);
           var pie = normalize(cfg.pie_factura);
           var numeroLegal = normalize(item && item.numero_legal) || normalize(item && item.documento_codigo) || "Pendiente";
@@ -638,7 +638,7 @@
               title: getPrintableDocumentMeta(item).title,
               kind: normalize(item && item.tipo_documento).indexOf("factura") >= 0 ? "factura" : "comprobante",
               format: "pos",
-              logos: window.PCSPrint.resolveDocumentLogos(cfg),
+              logos: window.PCSPrint.resolveDocumentLogos(cfg, "factura"),
               company: lines[0] || "Empresa",
               subtitle: lines.slice(1).join(" | "),
               badge: "POS",

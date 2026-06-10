@@ -236,7 +236,8 @@
       stationConfig: null,
       stationAccess: { habilitado: false, caja_por_cajero: true, usuarios: {} },
       highlightUserID: 0,
-      highlightUserEmail: ''
+      highlightUserEmail: '',
+      currentUserPhotoURL: ''
     };
 
     function getQueryParam(name) {
@@ -458,6 +459,21 @@
       return String(value || '').replace(/[&<>"']/g, function(ch) {
         return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[ch];
       });
+    }
+
+    function promptDownloadPreviousAsset(url, label) {
+      const clean = String(url || '').trim();
+      if (!clean) return;
+      const shouldDownload = confirm('Este registro ya tiene ' + (label || 'un archivo') + ' cargado. Al subir uno nuevo, el anterior se eliminara del sistema. Deseas descargar el archivo anterior antes de reemplazarlo?');
+      if (!shouldDownload) return;
+      const a = document.createElement('a');
+      a.href = clean;
+      a.download = '';
+      a.target = '_blank';
+      a.rel = 'noopener';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
     }
 
     function userInitials(item) {
@@ -682,6 +698,7 @@
       document.getElementById('documento_identidad').value = '';
       document.getElementById('observaciones').value = '';
       document.getElementById('foto_usuario').value = '';
+      state.currentUserPhotoURL = '';
       setPhotoPreview('', null);
       document.getElementById('control_aseo_estaciones').checked = false;
         document.getElementById('mensaje_invitacion').value = '';
@@ -766,6 +783,7 @@
           document.getElementById('documento_identidad').value = item.documento_identidad || '';
           document.getElementById('observaciones').value = item.observaciones || '';
           document.getElementById('foto_usuario').value = '';
+          state.currentUserPhotoURL = item.foto_url || '';
           setPhotoPreview(item.foto_url || '', item);
           document.getElementById('control_aseo_estaciones').checked = Number(item.control_aseo_estaciones || 0) === 1;
           fillRolesSelect(item.rol_usuario_id);
@@ -871,6 +889,7 @@
     async function uploadUserPhoto(userId) {
       const input = document.getElementById('foto_usuario');
       if (!input.files || !input.files[0]) return null;
+      promptDownloadPreviousAsset(state.currentUserPhotoURL, 'foto del usuario');
       const form = new FormData();
       form.append('usuario_id', String(userId));
       form.append('foto', input.files[0]);

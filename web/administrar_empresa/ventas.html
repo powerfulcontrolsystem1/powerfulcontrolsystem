@@ -7,6 +7,15 @@
   <link rel="stylesheet" href="/estilos.css">
   <script src="/js/empresa_submenu_context.js"></script>
   <script src="/js/print_documents.js"></script>
+  <style>
+    .ventas-fe-modal-backdrop{position:fixed;inset:0;z-index:9999;display:none;align-items:center;justify-content:center;background:rgba(15,23,42,.62);padding:18px}
+    .ventas-fe-modal-backdrop.is-visible{display:flex}
+    .ventas-fe-modal{width:min(720px,100%);max-height:92vh;overflow:auto;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--text);box-shadow:0 18px 70px rgba(0,0,0,.28);padding:16px}
+    .ventas-fe-modal h3{margin:0;color:var(--text);font-size:1.05rem}
+    .ventas-fe-modal p{margin:6px 0 0;color:var(--muted);font-size:.9rem;line-height:1.45}
+    .ventas-fe-modal-actions{display:flex;justify-content:flex-end;gap:10px;flex-wrap:wrap;margin-top:14px}
+    .ventas-fe-hidden{display:none!important}
+  </style>
 </head>
 <body class="empresa-subpage">
   <div class="container empresa-module">
@@ -60,6 +69,68 @@
     </section>
 
     <div id="messageBox" class="form-help"></div>
+
+    <div id="facturarVentaModal" class="ventas-fe-modal-backdrop" aria-hidden="true">
+      <div class="ventas-fe-modal" role="dialog" aria-modal="true" aria-labelledby="facturarVentaTitle">
+        <h3 id="facturarVentaTitle">Generar factura electronica desde venta</h3>
+        <p id="facturarVentaSummary">Selecciona una venta para facturar.</p>
+        <div class="form mt-12">
+          <label class="form-label" for="facturarClienteSelect">Cliente para la factura</label>
+          <select id="facturarClienteSelect" class="form-input">
+            <option value="">Cargando clientes...</option>
+          </select>
+          <p class="form-help">La factura electronica se emite con fecha y hora legal nuevas. La venta origen no cambia de valor ni de forma de pago.</p>
+
+          <div id="facturarClienteNuevo" class="ventas-fe-hidden">
+            <div class="form-row">
+              <div class="form-col">
+                <label class="form-label" for="facturarClienteTipoDocumento">Tipo documento</label>
+                <select id="facturarClienteTipoDocumento" class="form-input">
+                  <option value="CC">CC</option>
+                  <option value="NIT">NIT</option>
+                  <option value="CE">CE</option>
+                  <option value="PAS">PAS</option>
+                </select>
+              </div>
+              <div class="form-col">
+                <label class="form-label" for="facturarClienteNumeroDocumento">Numero documento</label>
+                <input id="facturarClienteNumeroDocumento" class="form-input" maxlength="40">
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-col">
+                <label class="form-label" for="facturarClienteNombre">Nombre o razon social</label>
+                <input id="facturarClienteNombre" class="form-input" maxlength="180">
+              </div>
+              <div class="form-col">
+                <label class="form-label" for="facturarClienteEmail">Correo</label>
+                <input id="facturarClienteEmail" class="form-input" type="email" maxlength="180">
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-col">
+                <label class="form-label" for="facturarClienteTelefono">Telefono</label>
+                <input id="facturarClienteTelefono" class="form-input" maxlength="60">
+              </div>
+              <div class="form-col">
+                <label class="form-label" for="facturarClienteDireccion">Direccion</label>
+                <input id="facturarClienteDireccion" class="form-input" maxlength="220">
+              </div>
+            </div>
+          </div>
+
+          <label class="empresa-config-check" for="facturarEnviarCorreo">
+            <input id="facturarEnviarCorreo" type="checkbox" checked>
+            <span>Enviar factura electronica al correo del cliente al terminar</span>
+          </label>
+          <div id="facturarVentaMsg" class="form-help"></div>
+        </div>
+        <div class="ventas-fe-modal-actions">
+          <button id="btnFacturarVentaCancelar" type="button" class="btn secondary">Cancelar</button>
+          <button id="btnFacturarVentaConfirmar" type="button" class="btn">Generar y enviar</button>
+        </div>
+      </div>
+    </div>
 
     <section class="card empresa-section">
       <div class="empresa-section-header">
@@ -195,7 +266,7 @@
       var tbody = document.querySelector("#ventasTable tbody");
       var detalle = document.getElementById("detalle");
       var preview = document.getElementById("preview");
-      var state = { items: [], index: Object.create(null), selectedKey: "", empresaNombre: "", cfg: null, viewMode: "carta" };
+      var state = { items: [], index: Object.create(null), selectedKey: "", empresaNombre: "", cfg: null, viewMode: "carta", clientes: [], facturarItem: null };
 
       function safeUrl(raw){
         var v = norm(raw);
@@ -244,6 +315,114 @@
         return base ? ("FV-" + base) : "";
       }
 
+      function clienteDisplay(c){
+        if(!c) return "";
+        var nombre = norm(c.nombre_razon_social) || norm(c.nombre_comercial) || ("Cliente #" + String(c.id || ""));
+        var doc = [norm(c.tipo_documento), norm(c.numero_documento)].filter(Boolean).join(" ");
+        var mail = norm(c.email);
+        return nombre + (doc ? (" - " + doc) : "") + (mail ? (" - " + mail) : "");
+      }
+
+      function clienteByID(id){
+        id = Number(id || 0);
+        return state.clientes.find(function(c){ return Number(c.id || 0) === id; }) || null;
+      }
+
+      function loadClientes(){
+        if(!empresaID) return Promise.resolve([]);
+        return api("/api/empresa/clientes?empresa_id=" + encodeURIComponent(String(empresaID)) + "&include_inactive=1", { method:"GET" })
+          .then(function(rows){
+            state.clientes = Array.isArray(rows) ? rows : [];
+            return state.clientes;
+          })
+          .catch(function(){
+            state.clientes = [];
+            return [];
+          });
+      }
+
+      function renderFacturarClienteSelect(selectedID){
+        var select = document.getElementById("facturarClienteSelect");
+        var options = ['<option value="">Selecciona un cliente existente</option>'];
+        state.clientes.forEach(function(c){
+          var id = Number(c.id || 0);
+          options.push('<option value="' + esc(String(id)) + '"' + (Number(selectedID || 0) === id ? " selected" : "") + '>' + esc(clienteDisplay(c)) + '</option>');
+        });
+        options.push('<option value="__nuevo">Crear cliente rapido...</option>');
+        select.innerHTML = options.join("");
+      }
+
+      function syncFacturarClienteNuevo(){
+        var nuevo = document.getElementById("facturarClienteSelect").value === "__nuevo";
+        document.getElementById("facturarClienteNuevo").className = nuevo ? "" : "ventas-fe-hidden";
+      }
+
+      function setFacturarMsg(text, error){
+        var box = document.getElementById("facturarVentaMsg");
+        box.textContent = text || "";
+        box.className = error ? "error" : "form-help";
+      }
+
+      function openFacturarModal(item){
+        state.facturarItem = item || null;
+        var modal = document.getElementById("facturarVentaModal");
+        document.getElementById("facturarVentaSummary").textContent = item
+          ? ("Venta " + norm(item.documento_codigo) + " por " + formatMoney(item.monto_total, item.moneda || "COP") + ".")
+          : "Selecciona una venta para facturar.";
+        document.getElementById("facturarEnviarCorreo").checked = true;
+        document.getElementById("facturarClienteTipoDocumento").value = "CC";
+        document.getElementById("facturarClienteNumeroDocumento").value = "";
+        document.getElementById("facturarClienteNombre").value = norm(item && item.cliente_nombre);
+        document.getElementById("facturarClienteEmail").value = norm(item && item.cliente_email);
+        document.getElementById("facturarClienteTelefono").value = "";
+        document.getElementById("facturarClienteDireccion").value = "";
+        setFacturarMsg("", false);
+        renderFacturarClienteSelect(Number(item && item.entidad_relacionada_id || 0));
+        syncFacturarClienteNuevo();
+        modal.className = "ventas-fe-modal-backdrop is-visible";
+        modal.setAttribute("aria-hidden", "false");
+      }
+
+      function closeFacturarModal(){
+        var modal = document.getElementById("facturarVentaModal");
+        modal.className = "ventas-fe-modal-backdrop";
+        modal.setAttribute("aria-hidden", "true");
+        state.facturarItem = null;
+      }
+
+      function collectFacturarPayload(item){
+        var selected = norm(document.getElementById("facturarClienteSelect").value);
+        var payload = {
+          empresa_id: empresaID,
+          tipo_documento: item.tipo_documento,
+          documento_codigo: item.documento_codigo
+        };
+        if(!selected){
+          throw new Error("Selecciona un cliente existente o crea uno rapido para emitir la factura electronica.");
+        }
+        if(selected && selected !== "__nuevo"){
+          payload.cliente_id = Number(selected);
+          var c = clienteByID(payload.cliente_id);
+          if(c){
+            payload.cliente_nombre = norm(c.nombre_razon_social) || norm(c.nombre_comercial);
+            payload.cliente_email = norm(c.email);
+          }
+          return payload;
+        }
+        if(selected === "__nuevo"){
+          payload.cliente_tipo_documento = norm(document.getElementById("facturarClienteTipoDocumento").value) || "CC";
+          payload.cliente_numero_documento = norm(document.getElementById("facturarClienteNumeroDocumento").value);
+          payload.cliente_nombre = norm(document.getElementById("facturarClienteNombre").value);
+          payload.cliente_email = norm(document.getElementById("facturarClienteEmail").value);
+          payload.cliente_telefono = norm(document.getElementById("facturarClienteTelefono").value);
+          payload.cliente_direccion = norm(document.getElementById("facturarClienteDireccion").value);
+          if(!payload.cliente_numero_documento || !payload.cliente_nombre){
+            throw new Error("Para crear cliente rapido debes indicar documento y nombre.");
+          }
+        }
+        return payload;
+      }
+
       function setDefaultDates(){
         var now=new Date(); var y=now.getFullYear(); var m=String(now.getMonth()+1).padStart(2,"0"); var d=String(now.getDate()).padStart(2,"0");
         document.getElementById("fechaDesde").value = y+"-"+m+"-01";
@@ -290,10 +469,10 @@
         var numeroLegal = norm(item && item.numero_legal) || norm(item && item.documento_codigo) || "Pendiente";
         var cfg = state.cfg || {};
         var empresaLabel = norm(state.empresaNombre) || norm(cfg.razon_social) || norm(cfg.nombre_comercial) || ("Empresa #"+String(empresaID||""));
-        var showLogo = cfg.mostrar_logo_empresa !== false && cfg.mostrar_logo !== false;
-        var logoUrl = showLogo ? safeUrl(cfg.logo_url) : "";
+        var showLogo = cfg.mostrar_logo_factura !== false && cfg.mostrar_logo !== false;
+        var logoUrl = showLogo ? safeUrl(cfg.logo_factura_url || cfg.logo_url) : "";
         var logoHtml = window.PCSPrint && window.PCSPrint.resolveDocumentLogos && window.PCSPrint.logosHTML
-          ? window.PCSPrint.logosHTML(window.PCSPrint.resolveDocumentLogos(cfg))
+          ? window.PCSPrint.logosHTML(window.PCSPrint.resolveDocumentLogos(cfg, "factura"))
           : (logoUrl ? ('<img src="'+esc(logoUrl)+'" alt="Logo empresa">') : '');
         var legalBlock = buildLegalBlock(cfg);
         if(viewMode === "pos"){
@@ -442,8 +621,8 @@
         var formato = currentViewMode();
         if(formato === "pos"){
           var lines = companyLegalLines(cfg);
-          var showLogo = cfg.mostrar_logo_empresa !== false && cfg.mostrar_logo !== false;
-          var logoUrl = showLogo ? safeUrl(cfg.logo_url) : "";
+          var showLogo = cfg.mostrar_logo_factura !== false && cfg.mostrar_logo !== false;
+          var logoUrl = showLogo ? safeUrl(cfg.logo_factura_url || cfg.logo_url) : "";
           var notas = norm(cfg.notas_legales);
           var pie = norm(cfg.pie_factura);
           var numeroLegal = norm(item && item.numero_legal) || norm(item && item.documento_codigo) || "Pendiente";
@@ -452,7 +631,7 @@
               title: "Recibo de venta",
               kind: norm(item && item.tipo_documento).indexOf("factura") >= 0 ? "factura" : "recibo",
               format: "pos",
-              logos: window.PCSPrint.resolveDocumentLogos(cfg),
+              logos: window.PCSPrint.resolveDocumentLogos(cfg, "factura"),
               company: lines[0] || "Empresa",
               subtitle: lines.slice(1).join(" | "),
               badge: "POS",
@@ -568,15 +747,38 @@
         window.open(href, "_blank", "noopener,noreferrer");
       }
 
-      function facturarDesdeVenta(item){
-        return api("/api/empresa/facturacion_electronica?action=facturar_desde_venta&empresa_id=" + encodeURIComponent(String(empresaID)), {
+      function facturaEmailAlreadySent(factura){
+        var envio = factura && factura.envio_correo_factura_fe;
+        return !!(envio && typeof envio === "object" && envio.enviado);
+      }
+
+      function enviarCorreoFacturaGenerada(factura, payload){
+        if(!factura || !norm(factura.documento_codigo)) return Promise.resolve(null);
+        payload = payload || {};
+        return api("/api/empresa/facturacion_electronica?action=reenviar_correo&empresa_id=" + encodeURIComponent(String(empresaID)), {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             empresa_id: empresaID,
+            tipo_documento: "factura_electronica",
+            documento_codigo: factura.documento_codigo,
+            cliente_id: Number(payload.cliente_id || 0),
+            cliente_email: norm(payload.cliente_email),
+            cliente_nombre: norm(payload.cliente_nombre)
+          })
+        });
+      }
+
+      function facturarDesdeVenta(item, extraPayload){
+        extraPayload = extraPayload || {};
+        return api("/api/empresa/facturacion_electronica?action=facturar_desde_venta&empresa_id=" + encodeURIComponent(String(empresaID)), {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(Object.assign({
+            empresa_id: empresaID,
             tipo_documento: item.tipo_documento,
             documento_codigo: item.documento_codigo
-          })
+          }, extraPayload))
         }).then(function(out){
           var factura = out && out.factura_generada ? out.factura_generada : null;
           if (factura && norm(factura.documento_codigo)) {
@@ -588,6 +790,18 @@
             msg("Factura electrónica generada: " + norm(factura.documento_codigo), "ok");
           } else {
             msg("La factura electrónica quedó generada desde la venta.", "ok");
+          }
+          var enviar = document.getElementById("facturarEnviarCorreo") && document.getElementById("facturarEnviarCorreo").checked;
+          if(enviar && factura && !facturaEmailAlreadySent(factura)){
+            return enviarCorreoFacturaGenerada(factura, extraPayload).then(function(mailOut){
+              var envio = mailOut && mailOut.factura_email;
+              if(envio && envio.enviado){
+                msg("Factura electronica generada y enviada a " + (envio.destinatario || "cliente") + ".", "ok");
+              } else if(envio && envio.error){
+                msg("Factura generada, pero el correo no se pudo enviar: " + envio.error, "error");
+              }
+              return run();
+            });
           }
           return run();
         });
@@ -713,6 +927,8 @@
         if(action==="ver"){ renderDetail(item); return; }
         if(action==="visualizar"){ visualizar(item); return; }
         if(action==="facturar"){
+          openFacturarModal(item);
+          return;
           facturarDesdeVenta(item).catch(function(err){
             msg(err.message || "No se pudo generar la factura electrónica desde la venta.", "error");
           });
@@ -738,6 +954,29 @@
         if(action==="compartir_whatsapp"){ compartirVenta(item, "whatsapp"); return; }
         if(action==="compartir_correo"){ compartirVenta(item, "email"); return; }
       });
+      document.getElementById("facturarClienteSelect").addEventListener("change", syncFacturarClienteNuevo);
+      document.getElementById("btnFacturarVentaCancelar").addEventListener("click", closeFacturarModal);
+      document.getElementById("facturarVentaModal").addEventListener("click", function(ev){
+        if(ev.target && ev.target.id === "facturarVentaModal") closeFacturarModal();
+      });
+      document.getElementById("btnFacturarVentaConfirmar").addEventListener("click", function(){
+        var item = state.facturarItem;
+        if(!item){ setFacturarMsg("No hay venta seleccionada.", true); return; }
+        var payload;
+        try {
+          payload = collectFacturarPayload(item);
+        } catch(err) {
+          setFacturarMsg(err && err.message ? err.message : "Datos de cliente invalidos.", true);
+          return;
+        }
+        setFacturarMsg("Generando factura electronica...", false);
+        facturarDesdeVenta(item, payload).then(function(){
+          closeFacturarModal();
+        }).catch(function(err){
+          setFacturarMsg(err.message || "No se pudo generar la factura electronica desde la venta.", true);
+          msg(err.message || "No se pudo generar la factura electronica desde la venta.", "error");
+        });
+      });
 
       (function init(){
         if(!empresaID){ msg("empresa_id es obligatorio en la URL", "error"); return; }
@@ -746,7 +985,7 @@
           state.viewMode = currentViewMode();
           if(state.selectedKey && state.index[state.selectedKey]) renderDetail(state.index[state.selectedKey]);
         });
-        Promise.all([loadEmpresa(), loadEmpresaConfigAvanzada()]).finally(run);
+        Promise.all([loadEmpresa(), loadEmpresaConfigAvanzada(), loadClientes()]).finally(run);
       })();
     })();
   </script>

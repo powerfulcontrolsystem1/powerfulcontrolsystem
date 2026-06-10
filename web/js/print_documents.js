@@ -46,12 +46,17 @@
     return '';
   }
 
-  function resolveDocumentLogos(config) {
+  function resolveDocumentLogos(config, kind) {
     var cfg = config || {};
+    var documentKind = normalizeKind(kind);
     var logos = [];
-    var companyLogo = safeLogoURL(cfg.logo_url);
+    var companyLogo = documentKind === 'factura'
+      ? safeLogoURL(cfg.logo_factura_url || cfg.logo_url)
+      : safeLogoURL(cfg.logo_url);
     var systemLogo = safeLogoURL(cfg.logo_sistema_url || '/img/logo.png');
-    var showCompany = cfg.mostrar_logo_empresa !== false && cfg.mostrar_logo !== false;
+    var showCompany = documentKind === 'factura'
+      ? cfg.mostrar_logo_factura !== false && cfg.mostrar_logo !== false
+      : cfg.mostrar_logo_empresa !== false && cfg.mostrar_logo !== false;
     var showSystem = cfg.mostrar_logo_sistema === true;
     if (showCompany && companyLogo) {
       logos.push({ src: companyLogo, alt: 'Logo empresa' });

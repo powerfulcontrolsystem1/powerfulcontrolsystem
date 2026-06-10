@@ -1,3 +1,67 @@
+## [2026-06-10] Plantilla de colegio retirada del index
+- [Portal] `Mas sistemas` deja de mostrar `Colegio o academia`.
+- [Frontend] El catalogo local y el render del index filtran `colegio_academia` para que no reaparezca desde el fallback o desde la API publica.
+- [Alcance] No se borran datos ni endpoints historicos; solo se oculta la tarjeta publica por decision de producto.
+
+## [2026-06-10] Snapshot completo VPS desde super administrador
+- [Super] `web/super/docker_portabilidad.html` agrega una tarjeta para configurar, crear, descargar, subir a nube y revisar historial de snapshots completos.
+- [Backend] Nuevo `/super/api/vps_snapshots` con historial `super_vps_snapshots`, descarga segura, worker automatico y subida opcional por `rclone`.
+- [Operacion] El `.tar.gz` incluye proyecto portable, PostgreSQL si esta disponible, volumenes Docker PCS, manifiesto y guia de restauracion; imagenes Docker son opcionales.
+- [Seguridad] No incluye `.env.platform` por defecto, no guarda tokens de nube y limita descargas a `backup/vps_snapshots`.
+- [QA] `go test ./handlers -run "SuperVPS|DockerPortabilidad|Snapshot" -count=1`; `go test ./db -run "SuperVPS|Snapshot" -count=1`; `go test . -run "^$" -count=1`; validacion Node de scripts embebidos.
+
+## [2026-06-10] Retencion configurable de empresas vencidas
+- [Super] `web/super/configuracion_avanzada.html` agrega controles para activar la retencion de empresas con licencia base vencida, configurar dias de espera/preaviso, ver candidatos y consultar reporte.
+- [Backend] `/super/api/licencias/vencimiento_alertas` suma `retencion_empresas`, `retencion_preview` y `retencion_run_now`; el worker periodico reutiliza el mismo proceso.
+- [BD] Nueva tabla `licencia_empresa_retencion_log` con `empresa_ref_id` para conservar el reporte aunque la empresa sea eliminada con `DeleteEmpresaCascade`.
+- [Seguridad] Solo procesa empresas no operativas, sin licencia base vigente y con preaviso previo; empresas activas no son candidatas.
+- [QA] `go test ./db -run "Retencion|LicenciaEmpresaRetencion" -count=1`; `go test ./handlers -run "Licencia|Vencimiento|EmailTemplate" -count=1`.
+
+## [2026-06-09] Powerful Control System con licencia normal
+- [Licencias] La empresa Powerful Control System deja de recibir o renovar la licencia tecnica `PCS_SYSTEM_INTERNAL_PERPETUAL`; si existe activa, el arranque la marca como retirada.
+- [Backend] `EnsurePowerfulSystemEmpresa` sigue resolviendo la empresa emisora para facturar compras de licencia, pero ya no le otorga acceso perpetuo ni modulos ilimitados.
+- [Seguridad] PCS queda sujeta al mismo ciclo de compra, vigencia, vencimiento y bloqueo que cualquier empresa multiempresa.
+- [QA] Pruebas Go enfocadas en licencias y validacion de diffs sin espacios invalidos.
+
+## [2026-06-09] Modo POS tactil por empresa
+- [Configuracion] `Configuracion carrito` convierte el check tactil en una opcion operativa clara para carrito, estaciones, catalogo por botones y corte de caja, guardada en `estaciones_config.carrito_ui_global.modo_pantalla_tactil`.
+- [Frontend] `carrito_de_compras.html`, `buscar_producto_botones.html`, `estaciones.html` y `corte_de_caja.html` aplican clases tactiles compartidas solo cuando la empresa lo activa.
+- [Seguridad] No cambia backend, tablas ni permisos; reutiliza `/api/empresa/estacion_prefs` con `empresa_id` y conserva campos desconocidos del JSON para evitar pisar otras configuraciones.
+- [QA] Se valida sintaxis de scripts embebidos, `git diff --check` y revision visual local de configuracion, carrito, catalogo, estaciones y corte.
+
+## [2026-06-09] Tutorial operativo de nomina y nomina electronica
+- [Nomina] Se agrega `web/administrar_empresa/nomina_tutorial.html` como pagina interna del modulo para guiar parametros legales, configuracion, empleados, novedades, liquidacion, pagos, PILA y preparacion de nomina electronica DIAN.
+- [UX] `web/administrar_empresa/nomina_sueldos.html` agrega el boton `Tutorial` junto a `Ayuda`, conservando `empresa_id` en los enlaces.
+- [Documentacion] Se actualizan mapa de modulos, flujos operativos, descripcion de archivos/modulos e historial de cambios.
+- [Alcance] No cambia backend, base de datos, endpoints ni envio real DIAN.
+
+## [2026-06-09] Imagenes nuevas para Mas sistemas del index
+- [Portal] `web/index.html` asigna una imagen propia a cada tarjeta base del carrusel `Mas sistemas`, `web/js/plantillas_nuevas_catalogo.js` actualiza las plantillas verticales publicas y se corrige el render para no repetir la misma foto de punto de venta.
+- [Assets] Se agregan 46 ilustraciones en `web/img/portal-systems/`, una por cada sistema visible del carrusel estatico.
+- [Alcance] No cambia backend, base de datos, permisos ni APIs publicas.
+
+## [2026-06-09] Correo de bienvenida de licencia con factura electronica
+- [Pagos] Las compras aprobadas de licencia pueden enviar un correo de bienvenida a PCS y adjuntar la factura electronica PDF emitida por la empresa interna Powerful Control System.
+- [Licencias] El PDF de licencia del software ya no se adjunta por correo; queda disponible solo desde Administrar empresa > Licencia > Licencia del sistema.
+- [Super] `web/super/licencias.html` agrega switches para correo de bienvenida, factura electronica automatica y adjunto PDF de factura; `Formatos de email` actualiza la plantilla configurable.
+- [Seguridad] Se mantiene idempotencia de Epayco/Wompi, aislamiento por `empresa_id` y no se agregan dependencias externas.
+
+## [2026-06-09] Login oscuro corrige campo de contraseña
+- [UX] `web/estilos.css` fuerza fondo, borde, placeholder y boton de visibilidad coherentes con temas oscuros para los campos `.form-input` del login de administradores.
+- [Alcance] No cambia autenticacion, endpoints, sesiones ni manejo de credenciales.
+
+## [2026-06-09] Licencias globales actualizadas y limite de renovacion adelantada
+- [Backend] El catalogo canonico queda en 7 planes globales: prueba gratis, tres mensuales y tres anuales; COP 110000 conserva 2000 documentos, COP 200000 conserva 4000 documentos y los anuales cubren 12000, 24000 y 36000 documentos.
+- [Pagos] Checkout, Wompi, Epayco y activacion sin pago bloquean compras adelantadas de la misma licencia cuando la empresa ya acumulo la licencia activa mas el maximo configurado.
+- [Super] `web/super/licencias.html` agrega configuracion global de compras adelantadas de la misma licencia, por defecto 2, usando `/super/api/licencias/configuracion`.
+- [Tests] Se actualizan pruebas del catalogo y se agrega cobertura del calculo de ventanas adelantadas.
+
+## [2026-06-09] Logos separados por empresa y por factura
+- [Backend] `empresa_configuracion_avanzada` agrega `mostrar_logo_factura` y `logo_factura_url`, conservando `logo_url` como logo corporativo de la empresa.
+- [Uploads] `/api/empresa/configuracion_avanzada/logo` guarda archivos por empresa en `/uploads/empresas/empresa_{id}_{slug}/imagenes/logos/empresa/` o `/imagenes/logos/factura/` segun `tipo_logo`.
+- [Frontend] Configuracion, configuracion de impresora y facturacion electronica separan logo corporativo y logo de factura; la impresion de factura usa `logo_factura_url` con respaldo a `logo_url`.
+- [Tests] Se valida esquema/handlers Go y sintaxis de scripts de las pantallas tocadas.
+
 ## [2026-06-09] Impresoras por empresa con cola para agente local
 - [Backend] `empresa_impresoras` incorpora `empresa_impresoras_cola` para encolar trabajos por `empresa_id`, impresora, funcionalidad, estacion/caja y agente local.
 - [API] `/api/empresa/impresoras` permite administrar impresoras y crear/reintentar trabajos; `/api/empresa/impresoras/agente` queda limitado a tomar pendientes y cerrar estados con permisos de ventas.
@@ -344,7 +408,7 @@
 - [QA] Pruebas Go enfocadas para decodificacion DIAN y convencion de ruta de firma electronica.
 
 ## [2026-06-05] Empresa interna Powerful Control System operativa
-- [Licencias] La empresa interna del SaaS conserva el codigo tecnico `PCS_SYSTEM_INTERNAL_PERPETUAL`, pero ahora se asegura como licencia fechada a 100 anos, con valor cero, limites altos y modulos completos.
+- [Licencias] La empresa interna del SaaS operaba con el codigo tecnico `PCS_SYSTEM_INTERNAL_PERPETUAL`; desde 2026-06-09 esa licencia queda retirada y no debe otorgar acceso.
 - [Licencias] Las consultas PostgreSQL de licencias vigentes/vencidas toleran fechas heredadas vacias o no fechables para que una licencia antigua no bloquee permisos, carrito, correo ni reportes.
 - [Permisos] El rol `super_administrador` validado en backend puede acceder globalmente a empresas para soporte y operacion interna, sin quitar los filtros por `empresa_id` de cada endpoint.
 - [Operacion] `Powerful Control System` debe cargar carrito, correo corporativo, facturacion, configuracion y reportes como cualquier empresa; la unica diferencia es que la licencia no pertenece al catalogo comercial.
@@ -388,7 +452,7 @@
 
 ## [2026-06-04] Factura electronica automatica por compra de licencia
 - [Licencias] Las compras comerciales aprobadas generan factura electronica desde la empresa interna `Powerful Control System` y envian el documento al correo del cliente.
-- [Backend] Se agrega `backend/db/licencias_empresa_sistema.go` para resolver la empresa existente, incluyendo `Powerful Control Systen`, y asegurar licencia tecnica interna. Desde 2026-06-05 esa licencia se normaliza con vigencia fechada de 100 anos y modulos completos.
+- [Backend] Se agrega `backend/db/licencias_empresa_sistema.go` para resolver la empresa existente, incluyendo `Powerful Control Systen`; desde 2026-06-09 la licencia tecnica interna heredada se desactiva si existe.
 - [Pagos] Epayco/Wompi marcan `licencia_factura_electronica_emitida` en el payload del pago para evitar facturas duplicadas por reintentos o webhooks repetidos.
 - [QA] `go test -p 1 ./db ./handlers -run "Powerful|Licencia|Facturacion" -count=1`.
 
@@ -528,7 +592,7 @@
 - [Alcance] `Reportes globales` se conserva para abrirse desde `seleccionar_empresa.html`, con el mismo alcance de empresas visibles.
 
 ## [2026-05-31] Licencias fijas globales
-- [Backend] `backend/db/licencias_globales.go` asegura solo cuatro planes globales: prueba gratis 15 dias, COP 60000, COP 100000 y COP 150000.
+- [Backend] `backend/db/licencias_globales.go` asegura el catalogo global compartido; desde 2026-06-09 son siete planes canonicos con prueba, mensuales y anuales.
 - [Datos] La limpieza de catalogo elimina licencias sobrantes sin empresa asignada, incluidos addons antiguos y duplicados de catalogo; las licencias asignadas a empresas se conservan para historial y pagos.
 - [Super] `web/super/licencias.html` muestra el catalogo como fijo y retira acciones de agregar, eliminar u ocultar licencias.
 - [QA] `go test ./db -run "GlobalLicencia|LicenciaCatalog" -count=1` y `go test ./handlers -run TestLicencia -count=1`.
@@ -1995,7 +2059,7 @@
 
 ## [2026-05-11] Aseguramiento comercial de plantillas
 - [Backend] `POST /super/api/plantillas_nuevas/catalogoaction=asegurar_20_licencias` llama `EnsureNuevasPlantillasProduccionMasivaLicencias`; `asegurar_v1_licencias` queda como alias compatible.
-- [Producto] La accion asegura tipos de empresa, preconfiguraciones y cuatro planes recomendados para los 20 plantillas.
+- [Producto] La accion asegura tipos de empresa, preconfiguraciones y planes recomendados para los 20 plantillas; desde 2026-06-09 usa el catalogo global de siete planes.
 - [Frontend] `web/super/plantillas_produccion_masiva.html` agrega `Asegurar 20` y refresca el semaforo despues de ejecutar.
 - [Alcance] No hay tablas, rutas nuevas, permisos nuevos ni dependencias.
 
@@ -2555,7 +2619,7 @@
 - [Super administrador] `Asesores de ventas` pasa a ser el primer boton del grupo `Comercial y licencias`.
 - [Navegacion] Se enlazan las paginas super que no tenian boton directo: reportes globales, auditoria global, metricas de trafico, preconfiguracion, contrato, administradores Frecuencia FE, chat IA global, voz IA, servidores, soporte remoto y configuracion avanzada.
 - [QA] Validado cruce menu/paginas: 52 paginas HTML en `web/super`, 52 enlaces super en el menu y ningun enlace fuera de paginas permitidas.
-- 2026-05-30: `Licencias globales compartidas` reduce el catalogo base a cuatro planes globales para todos los tipos de empresa; desde 2026-05-31 elimina planes heredados repetidos sin empresa asignada, mantiene la prueba gratis de 15 dias una sola vez por empresa y agrega una tarjeta visible de reglas en Super administrador > Licencias.
+- 2026-05-30: `Licencias globales compartidas` reduce el catalogo base a planes globales para todos los tipos de empresa; desde 2026-06-09 el catalogo canonico vigente tiene siete planes, elimina planes heredados repetidos sin empresa asignada, mantiene la prueba gratis de 15 dias una sola vez por empresa y agrega una tarjeta visible de reglas en Super administrador > Licencias.
 - 2026-05-30: `Configuracion general PostgreSQL` corrige el esquema y consultas de `empresa_configuracion_general` para usar `BIGSERIAL`, fecha compatible y placeholders traducidos, evitando 500 al entrar al panel de empresas nuevas.
 - 2026-05-30: `Checkout Wompi de licencias` ajusta la consulta publica de terminos del comercio para no enviar cabecera `Authorization` al endpoint merchants de Wompi y desbloquear la prueba visual de planes comerciales.
 ## [2026-05-31] Encabezado visual compacto en logins
@@ -2616,3 +2680,30 @@
 - [Creditos] El resumen de cartera, filtros de vencidos y dashboard de mora dejan de usar funciones SQLite en consultas runtime y comparan fechas normalizadas con parametros calculados desde Go.
 - [QA] Se agrega prueba estatica para bloquear `datetime()`, `date('now')` y `julianday()` en las rutas que alimentan el panel de creditos.
 - [E2E] Auditoria visual con Powerful Control System creo cliente, producto, usuario, empleado de nomina, liquidacion, credito, abono, carrito e item QA; el cierre/pago del carrito se omitio para evitar disparar facturacion electronica o caja real.
+## [2026-06-09] IA empresarial activa sin robot ni secretaria
+- [Frontend] El chat flotante vuelve al recuadro normal y el boton queda como circulo compacto; se retiran opciones visibles de robot/secretaria y se conserva modo voz.
+- [Backend] Las preferencias del chat fuerzan `robot_enabled=false` y `personality_mode=normal`; empresas existentes y preconfiguraciones quedan con `chat_enabled=1` en preproduccion.
+- [Seguridad IA] `PCS_ACTION` queda limitado a endpoints permitidos y confirmables; el prompt deja de orientar a SQL libre o administracion generica de BD.
+- [Permisos] Chat IA y Centro IA empresarial dejan de estar ocultos por defecto, pero siguen sujetos a rol, licencia y wrappers.
+## [2026-06-09] Gobierno IA super administrador profesional
+- [Super] `web/super/configuracion/ia_global.html` deja de ser una envoltura minima y queda como centro de gobierno con politica de seguridad, accesos a limites/contexto/voz y panel operativo real.
+- [UX] `web/super/configuracion_avanzada.html` remodela la tarjeta IA con estado global, proveedor OpenAI, credencial cifrada, modelos conectados, consumo, prueba real y resumen operativo.
+- [Seguridad] No cambia endpoints, tablas ni credenciales; conserva cifrado obligatorio, auditoria super y la regla de no exponer secretos ni SQL libre a la IA.
+- [Tests] Se validan scripts inline de las pantallas IA y handlers Go de configuracion/chat IA.
+
+## [2026-06-09] Carta publica: contacto e imagenes por empresa
+- [Venta publica] La carta publica puede mostrar un formulario de contacto configurable por empresa; el backend rechaza mensajes si el check esta desactivado.
+- [Archivos] Portada, perfil de carta, logo de empresa y logo de factura se guardan en `/uploads/empresas/{empresa}/...` y eliminan la imagen anterior cuando pertenece a la misma carpeta empresarial.
+- [Seguridad] El correo corporativo del panel se carga solo para roles administrativos efectivos; la API publica de contacto no expone la direccion de destino.
+- [QA] Se validan sintaxis JS, compilacion Go enfocada y verificacion visual local de controles de imagen, check de contacto y formulario publico.
+
+## [2026-06-09] Reemplazo seguro de fotos y archivos activos
+- [Archivos por empresa] Al reemplazar foto de producto, foto de usuario, logo corporativo, logo de factura, perfil/portada de carta publica o firma DIAN, PCS elimina el archivo anterior solo si pertenece a la carpeta segura de la misma empresa.
+- [UX] Productos, usuarios, configuracion y carta publica preguntan si se desea descargar la imagen anterior antes de reemplazarla; firma DIAN exige confirmacion especial y no descarga llaves privadas por seguridad.
+- [Alcance] Cargas historicas como comprobantes, chat, OCR, grafologia, capturas DIAN, red social y documentos Office se conservan como anexos/evidencia; no se tratan como reemplazo unico.
+- [QA] Sintaxis JS validada en las pantallas tocadas, compilacion Go enfocada y verificacion visual local sin desbordamientos.
+
+## [2026-06-09] Licencias - pasarelas por pais de empresa
+- [Checkout] La pantalla de pago de licencias carga metodos de pago usando el pais configurado de la empresa; Colombia muestra ePayco y Wompi cuando esten configuradas.
+- [Backend] La disponibilidad de `/api/public/licencias/payment_methods` y la creacion de cobros en ePayco/Wompi aplican la misma regla por `empresa_id`.
+- [Seguridad] Otros paises no heredan pasarelas colombianas salvo activacion explicita en super administrador.

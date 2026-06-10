@@ -58,33 +58,33 @@ func TestBuildLicenciaActivationEmailMessageAdjuntaPDF(t *testing.T) {
 	}
 }
 
-func TestBuildLicenciaActivationEmailMessageAdjuntaLicenciaYFactura(t *testing.T) {
-	licenciaPDF := buildLicenciaSoftwarePDF(licenciaSoftwarePDFInput{CompanyName: "Motel Calipso"})
+func TestBuildLicenciaActivationEmailMessageAdjuntaSoloFacturaElectronica(t *testing.T) {
 	facturaPDF := []byte("%PDF-1.4\nfactura electronica\n%%EOF")
 	msg := buildLicenciaActivationEmailMessageWithAttachments(
 		"Powerful Control System",
 		"no-reply@example.com",
 		"cliente@example.com",
-		"Tu licencia ya quedo activa",
-		"Adjunto encontraras la licencia y la factura electronica.",
+		"Bienvenido a Powerful Control System",
+		"Adjunto encontraras la factura electronica. La licencia se descarga desde Administrar empresa.",
 		[]licenciaEmailAttachment{
-			{Filename: "licencia.pdf", ContentType: "application/pdf", Data: licenciaPDF},
 			{Filename: "factura-electronica.pdf", ContentType: "application/pdf", Data: facturaPDF},
 		},
 	)
 	text := string(msg)
 	for _, want := range []string{
 		"Content-Type: multipart/mixed",
-		"Content-Disposition: attachment; filename=\"licencia.pdf\"",
 		"Content-Disposition: attachment; filename=\"factura-electronica.pdf\"",
-		"Adjunto encontraras la licencia y la factura electronica.",
+		"La licencia se descarga desde Administrar empresa.",
 	} {
 		if !strings.Contains(text, want) {
 			t.Fatalf("mensaje no contiene %q", want)
 		}
 	}
-	if got := strings.Count(text, "Content-Type: application/pdf"); got != 2 {
-		t.Fatalf("adjuntos PDF = %d, want 2", got)
+	if strings.Contains(text, "filename=\"licencia.pdf\"") {
+		t.Fatalf("el correo de bienvenida no debe adjuntar la licencia del software")
+	}
+	if got := strings.Count(text, "Content-Type: application/pdf"); got != 1 {
+		t.Fatalf("adjuntos PDF = %d, want 1", got)
 	}
 }
 

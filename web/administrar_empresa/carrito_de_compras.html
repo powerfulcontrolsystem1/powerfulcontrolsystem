@@ -296,6 +296,7 @@
         <div id="carritoActionToolbar" class="carrito-station-toolbar form-actions action-toolbar actions-wrap-gap-10">
           <button type="button" id="carritoBtnDescuentos" class="btn secondary">Descuentos</button>
           <button type="button" id="carritoBtnCambiarTarifa" class="btn secondary">Cambiar tarifa</button>
+          <button type="button" id="carritoBtnTransferirCuenta" class="btn secondary">Transferir cuenta</button>
           <button type="button" id="carritoBtnControlElectrico" class="btn secondary">Domotica</button>
           <button type="button" id="carritoBtnCancelarCarrito" class="btn secondary">Cancelar carrito</button>
           <label id="carritoAlertaTiempoControl" class="form-help inline-check carrito-alert10-check" hidden>
@@ -329,6 +330,33 @@
             </div>
           </div>
           <div id="carritoTarifaMsg" class="form-help mt-6"></div>
+        </div>
+        <div id="carritoTransferPanel" class="empresa-section mt-10 is-hidden" hidden>
+          <div class="empresa-section-header compact">
+            <div>
+              <h3 class="section-heading">Transferir cuenta</h3>
+              <p class="form-help mt-0">Mueve la cuenta abierta a otra mesa, habitacion o estacion disponible. Si hay tarifas de motel u hotel, el destino debe tener una tarifa equivalente.</p>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-col">
+              <label class="form-label" for="carritoTransferDestinoSelect">Destino</label>
+              <select id="carritoTransferDestinoSelect" class="form-input">
+                <option value="">Selecciona destino</option>
+              </select>
+            </div>
+            <div class="form-col">
+              <label class="form-label" for="carritoTransferMotivo">Motivo operativo</label>
+              <input id="carritoTransferMotivo" class="form-input" maxlength="180" placeholder="Ej: cambio de habitacion, mesa o estacion">
+            </div>
+            <div class="form-col maxw-220 flex-col-end">
+              <button type="button" id="carritoTransferAplicarBtn" class="btn primary">Transferir</button>
+            </div>
+            <div class="form-col maxw-160 flex-col-end">
+              <button type="button" id="carritoTransferCerrarBtn" class="btn secondary">Cerrar</button>
+            </div>
+          </div>
+          <div id="carritoTransferMsg" class="form-help mt-6"></div>
         </div>
         <div id="carritoAbonosPanel" class="empresa-section mt-10 is-hidden" hidden>
           <div class="empresa-section-header compact">
@@ -1599,6 +1627,8 @@
         mostrar_tarjeta_vip_cliente: true,
         mostrar_boton_descuentos_carrito: true,
         mostrar_boton_cambiar_tarifa_carrito: true,
+        mostrar_boton_transferir_cuenta_carrito: false,
+        permitir_transferir_cuenta_carrito: false,
         mostrar_boton_control_electrico_carrito: true,
         mostrar_boton_cancelar_carrito: true,
         mostrar_boton_taxi_carrito: true,
@@ -1677,8 +1707,13 @@
     function normalizeUnifiedCartUIConfig(raw) {
       const base = defaultUnifiedCartUIConfig();
       const src = raw && typeof raw === 'object' ? raw : {};
-      return {
-        modo_pantalla_tactil: src.modo_pantalla_tactil === undefined ? base.modo_pantalla_tactil : Boolean(src.modo_pantalla_tactil),
+      const touchAlias = src.pos_touch_ui && typeof src.pos_touch_ui === 'object'
+        ? src.pos_touch_ui.enabled
+        : src.pos_touch_enabled;
+      return Object.assign({}, src, {
+        modo_pantalla_tactil: src.modo_pantalla_tactil === undefined
+          ? (touchAlias === undefined ? base.modo_pantalla_tactil : Boolean(touchAlias))
+          : Boolean(src.modo_pantalla_tactil),
         mostrar_boton_buscar_productos: src.mostrar_boton_buscar_productos === undefined ? base.mostrar_boton_buscar_productos : Boolean(src.mostrar_boton_buscar_productos),
         mostrar_busqueda_catalogo: src.mostrar_busqueda_catalogo === undefined ? base.mostrar_busqueda_catalogo : Boolean(src.mostrar_busqueda_catalogo),
         mostrar_codigo_manual_item: src.mostrar_codigo_manual_item === undefined ? base.mostrar_codigo_manual_item : Boolean(src.mostrar_codigo_manual_item),
@@ -1711,6 +1746,12 @@
         mostrar_tarjeta_vip_cliente: src.mostrar_tarjeta_vip_cliente === undefined ? base.mostrar_tarjeta_vip_cliente : Boolean(src.mostrar_tarjeta_vip_cliente),
         mostrar_boton_descuentos_carrito: src.mostrar_boton_descuentos_carrito === undefined ? base.mostrar_boton_descuentos_carrito : Boolean(src.mostrar_boton_descuentos_carrito),
         mostrar_boton_cambiar_tarifa_carrito: src.mostrar_boton_cambiar_tarifa_carrito === undefined ? base.mostrar_boton_cambiar_tarifa_carrito : Boolean(src.mostrar_boton_cambiar_tarifa_carrito),
+        mostrar_boton_transferir_cuenta_carrito: src.mostrar_boton_transferir_cuenta_carrito === undefined
+          ? base.mostrar_boton_transferir_cuenta_carrito
+          : Boolean(src.mostrar_boton_transferir_cuenta_carrito),
+        permitir_transferir_cuenta_carrito: src.permitir_transferir_cuenta_carrito === undefined
+          ? (src.transferencia_cuenta_habilitada === undefined ? base.permitir_transferir_cuenta_carrito : Boolean(src.transferencia_cuenta_habilitada))
+          : Boolean(src.permitir_transferir_cuenta_carrito),
         mostrar_boton_control_electrico_carrito: src.mostrar_boton_control_electrico_carrito === undefined
           ? (src.mostrar_control_electrico_carrito === undefined ? base.mostrar_boton_control_electrico_carrito : Boolean(src.mostrar_control_electrico_carrito))
           : Boolean(src.mostrar_boton_control_electrico_carrito),
@@ -1743,7 +1784,7 @@
         botones_pitido_movil: src.botones_pitido_movil === undefined ? base.botones_pitido_movil : Boolean(src.botones_pitido_movil),
         botones_vibracion_pc: src.botones_vibracion_pc === undefined ? base.botones_vibracion_pc : Boolean(src.botones_vibracion_pc),
         botones_vibracion_movil: src.botones_vibracion_movil === undefined ? base.botones_vibracion_movil : Boolean(src.botones_vibracion_movil)
-      };
+      });
     }
 
     function normalizeStationCarritoConfig(raw) {
@@ -2259,12 +2300,16 @@
       const actionsVisible = focusedSaleMode && Boolean(ui && ui.mostrar_tarjeta_acciones_carrito);
       setCarritoActionControlVisible('carritoBtnDescuentos', actionsVisible && Boolean(ui.mostrar_boton_descuentos_carrito));
       setCarritoActionControlVisible('carritoBtnCambiarTarifa', actionsVisible && Boolean(ui.mostrar_boton_cambiar_tarifa_carrito));
+      setCarritoActionControlVisible('carritoBtnTransferirCuenta', actionsVisible && Boolean(ui.mostrar_boton_transferir_cuenta_carrito && ui.permitir_transferir_cuenta_carrito));
       setCarritoActionControlVisible('carritoBtnControlElectrico', actionsVisible && Boolean(ui.mostrar_control_electrico_carrito && ui.mostrar_boton_control_electrico_carrito));
       setCarritoActionControlVisible('carritoBtnCancelarCarrito', actionsVisible && Boolean(ui.mostrar_boton_cancelar_carrito));
       setCarritoActionControlVisible('carritoBtnTaxi', actionsVisible && Boolean(ui.mostrar_boton_taxi_carrito));
       setCarritoActionControlVisible('carritoBtnClientes', actionsVisible && Boolean(ui.mostrar_boton_clientes_carrito));
       setCarritoActionControlVisible('carritoBtnAbonos', actionsVisible && Boolean(ui.mostrar_boton_abonos_carrito));
       setCarritoActionControlVisible('carritoBtnVehiculo', actionsVisible && Boolean(ui.mostrar_boton_vehiculo_carrito));
+      if (!actionsVisible || !ui.mostrar_boton_transferir_cuenta_carrito || !ui.permitir_transferir_cuenta_carrito) {
+        hideCarritoTransferPanel();
+      }
     }
 
     function hasVisibleCarritoActionControl(ui) {
@@ -2272,6 +2317,7 @@
       return Boolean(
         cfg.mostrar_boton_descuentos_carrito ||
         cfg.mostrar_boton_cambiar_tarifa_carrito ||
+        (cfg.mostrar_boton_transferir_cuenta_carrito && cfg.permitir_transferir_cuenta_carrito) ||
         (cfg.mostrar_control_electrico_carrito && cfg.mostrar_boton_control_electrico_carrito) ||
         cfg.mostrar_boton_cancelar_carrito ||
         cfg.mostrar_boton_taxi_carrito ||
@@ -2288,6 +2334,7 @@
       state.stationCartUI = ui;
       publishConnectivityContext();
       document.body.classList.toggle('cart-touch-mode', Boolean(ui.modo_pantalla_tactil));
+      document.body.classList.toggle('pos-touch-mode', Boolean(ui.modo_pantalla_tactil));
       placeVipCardBelowTotals();
       syncCarritoActionButtons(ui);
 
@@ -4600,7 +4647,12 @@
       fecha: true,
       formato: true,
       impresora: true,
-      copias: true
+      copias: true,
+      campo_personalizado: false,
+      campo_personalizado_etiqueta: 'Domicilio',
+      campo_personalizado_valor: '',
+      campo_personalizado_descripcion_visible: true,
+      campo_personalizado_descripcion: ''
     };
 
     function parsePrintItemsJSON(raw, defaults) {
@@ -4612,7 +4664,14 @@
         const parsed = JSON.parse(text);
         if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return base;
         Object.keys(base).forEach(function(key) {
-          if (Object.prototype.hasOwnProperty.call(parsed, key)) base[key] = parsed[key] !== false;
+          if (!Object.prototype.hasOwnProperty.call(parsed, key)) return;
+          if (typeof base[key] === 'boolean') {
+            base[key] = parsed[key] !== false;
+          } else if (typeof base[key] === 'string') {
+            base[key] = normalize(parsed[key]);
+          } else {
+            base[key] = parsed[key];
+          }
         });
       } catch (_) {}
       return base;
@@ -4628,6 +4687,34 @@
 
     function receiptCashierName(pay) {
       return normalize(pay && (pay.cajero || pay.cajero_nombre || pay.usuario || pay.usuario_email || pay.usuario_creador)) || normalize(currentOfflineOperatorEmail && currentOfflineOperatorEmail());
+    }
+
+    function receiptCustomField(printItems) {
+      const cfg = printItems && typeof printItems === 'object' ? printItems : {};
+      if (cfg.campo_personalizado !== true) return null;
+      const label = normalize(cfg.campo_personalizado_etiqueta) || 'Domicilio';
+      const value = normalize(cfg.campo_personalizado_valor);
+      const description = cfg.campo_personalizado_descripcion_visible !== false ? normalize(cfg.campo_personalizado_descripcion) : '';
+      if (!value && !description) return null;
+      return { label: label, value: value, description: description };
+    }
+
+    function receiptCustomFieldMeta(printItems) {
+      const field = receiptCustomField(printItems);
+      if (!field) return [];
+      const rows = [];
+      if (field.value) rows.push({ label: field.label, value: field.value });
+      if (field.description) rows.push({ label: field.label + ' - descripcion', value: field.description });
+      return rows;
+    }
+
+    function receiptCustomFieldHTML(printItems) {
+      const field = receiptCustomField(printItems);
+      if (!field) return '';
+      return '<section class="receipt-extra-field">' +
+        (field.value ? '<p><strong>' + escapeHtml(field.label) + ':</strong> ' + escapeHtml(field.value) + '</p>' : '') +
+        (field.description ? '<p class="muted"><strong>Descripcion:</strong> ' + escapeHtml(field.description) + '</p>' : '') +
+        '</section>';
     }
 
     async function printSaleReceiptIfEnabled(carrito, pay, items, printTarget, documentoVenta) {
@@ -4648,6 +4735,8 @@
       const taxDeduction = shouldShowTaxDeductionOnInvoice(cfg) ? buildTaxDeductionSummary(items) : null;
       const taxSummaryRows = taxDeductionSummaryRows(taxDeduction, moneda);
       const cajeroNombre = receiptCashierName(pay);
+      const customFieldMeta = receiptCustomFieldMeta(printItems);
+      const customFieldHTML = receiptCustomFieldHTML(printItems);
       const subtitleParts = [];
       if (receiptItemEnabled(printItems, 'carrito')) subtitleParts.push('Carrito: ' + ((carrito && carrito.nombre) || ''));
       if (receiptItemEnabled(printItems, 'codigo')) subtitleParts.push('Codigo: ' + ((carrito && carrito.codigo) || ''));
@@ -4693,7 +4782,7 @@
             receiptItemEnabled(printItems, 'fecha') ? { label: 'Fecha', value: now.toLocaleString() } : null,
             receiptItemEnabled(printItems, 'copias') ? { label: 'Copias', value: String(copias) } : null,
             receiptItemEnabled(printItems, 'formato') ? { label: 'Formato', value: printFormat.toUpperCase() } : null
-          ],
+          ].concat(customFieldMeta),
           tableHeaders: ['Descripcion', 'Cant.', 'P.U.', 'Total'],
           rows: printRows,
           totalLabel: 'Total a pagar',
@@ -4711,8 +4800,8 @@
         ? '@media print{@page{size:80mm auto;margin:3mm}body{width:74mm;margin:0}}'
         : '@media print{@page{size:letter;margin:14mm}body{margin:0}}';
       const baseStyle = printFormat === 'pos'
-        ? 'body{font-family:monospace;padding:6px;color:#111;font-size:11px;line-height:1.25}h1{font-size:14px;text-align:center;margin:0 0 6px}table{width:100%;border-collapse:collapse;font-size:10.5px}td,th{border-bottom:1px dashed #999;padding:4px 2px;vertical-align:top}th{text-align:left}.tot{font-weight:bold;font-size:13px;text-align:right}.muted{color:#555;font-size:10px}hr{border:0;border-top:1px dashed #999;margin:7px 0}.invoice-tax-deduction{border-top:1px dashed #999;border-bottom:1px dashed #999;margin:7px 0;padding:5px 0}.invoice-tax-deduction h2{font-size:11px;margin:0 0 3px;text-align:center}.invoice-tax-deduction p{display:flex;justify-content:space-between;gap:5px;margin:2px 0;font-size:10px}.invoice-tax-deduction strong{text-align:right;white-space:nowrap}.invoice-access-qr{text-align:center;border-top:1px dashed #999;margin-top:8px;padding-top:7px}.invoice-access-qr img{width:92px;height:92px;display:block;margin:0 auto 4px}.invoice-access-qr strong,.invoice-access-qr span{display:block;font-size:9px;overflow-wrap:anywhere}'
-        : 'body{font-family:Arial,sans-serif;padding:14px;color:#111}h1{font-size:18px;margin:0 0 8px}table{width:100%;border-collapse:collapse;font-size:13px}td,th{border-bottom:1px solid #ddd;padding:6px 4px}th{text-align:left}.tot{font-weight:bold}.muted{color:#666;font-size:12px}.invoice-tax-deduction{border-top:1px solid #ddd;border-bottom:1px solid #ddd;margin:10px 0;padding:6px 0}.invoice-tax-deduction h2{font-size:13px;margin:0 0 5px}.invoice-tax-deduction p{display:flex;justify-content:space-between;gap:10px;margin:3px 0;font-size:12px}.invoice-tax-deduction strong{text-align:right;white-space:nowrap}.invoice-access-qr{text-align:center;border-top:1px dashed #aaa;margin-top:14px;padding-top:12px}.invoice-access-qr img{width:126px;height:126px;display:block;margin:0 auto 6px}.invoice-access-qr strong,.invoice-access-qr span{display:block;font-size:11px;overflow-wrap:anywhere}';
+        ? 'body{font-family:monospace;padding:6px;color:#111;font-size:11px;line-height:1.25}h1{font-size:14px;text-align:center;margin:0 0 6px}table{width:100%;border-collapse:collapse;font-size:10.5px}td,th{border-bottom:1px dashed #999;padding:4px 2px;vertical-align:top}th{text-align:left}.tot{font-weight:bold;font-size:13px;text-align:right}.muted{color:#555;font-size:10px}hr{border:0;border-top:1px dashed #999;margin:7px 0}.receipt-extra-field{border-top:1px dashed #999;border-bottom:1px dashed #999;margin:7px 0;padding:5px 0}.receipt-extra-field p{margin:2px 0;font-size:10px}.invoice-tax-deduction{border-top:1px dashed #999;border-bottom:1px dashed #999;margin:7px 0;padding:5px 0}.invoice-tax-deduction h2{font-size:11px;margin:0 0 3px;text-align:center}.invoice-tax-deduction p{display:flex;justify-content:space-between;gap:5px;margin:2px 0;font-size:10px}.invoice-tax-deduction strong{text-align:right;white-space:nowrap}.invoice-access-qr{text-align:center;border-top:1px dashed #999;margin-top:8px;padding-top:7px}.invoice-access-qr img{width:92px;height:92px;display:block;margin:0 auto 4px}.invoice-access-qr strong,.invoice-access-qr span{display:block;font-size:9px;overflow-wrap:anywhere}'
+        : 'body{font-family:Arial,sans-serif;padding:14px;color:#111}h1{font-size:18px;margin:0 0 8px}table{width:100%;border-collapse:collapse;font-size:13px}td,th{border-bottom:1px solid #ddd;padding:6px 4px}th{text-align:left}.tot{font-weight:bold}.muted{color:#666;font-size:12px}.receipt-extra-field{border:1px solid #ddd;margin:10px 0;padding:8px}.receipt-extra-field p{margin:3px 0}.invoice-tax-deduction{border-top:1px solid #ddd;border-bottom:1px solid #ddd;margin:10px 0;padding:6px 0}.invoice-tax-deduction h2{font-size:13px;margin:0 0 5px}.invoice-tax-deduction p{display:flex;justify-content:space-between;gap:10px;margin:3px 0;font-size:12px}.invoice-tax-deduction strong{text-align:right;white-space:nowrap}.invoice-access-qr{text-align:center;border-top:1px dashed #aaa;margin-top:14px;padding-top:12px}.invoice-access-qr img{width:126px;height:126px;display:block;margin:0 auto 6px}.invoice-access-qr strong,.invoice-access-qr span{display:block;font-size:11px;overflow-wrap:anywhere}';
       const html = '<!doctype html><html><head><meta charset="utf-8"><title>Recibo de cobro</title>' +
         '<style>' + pageStyle + baseStyle + '</style>' +
         '</head><body>' +
@@ -4725,6 +4814,7 @@
         (receiptItemEnabled(printItems, 'formato') ? '<p><strong>Formato:</strong> ' + escapeHtml(printFormat.toUpperCase()) + '</p>' : '') +
         (receiptItemEnabled(printItems, 'codigo') ? '<p><strong>Código:</strong> ' + escapeHtml((carrito && carrito.codigo) || '') + '</p>' : '') +
         (receiptItemEnabled(printItems, 'impresora') ? '<p><strong>Impresora objetivo:</strong> ' + escapeHtml(printerName) + (printerSource ? (' <span class="muted">(' + escapeHtml(printerSource) + ')</span>') : '') + '</p>' : '') +
+        customFieldHTML +
         '<hr>' +
         '<table><thead><tr><th>Descripción</th><th style="text-align:right">Cant.</th><th style="text-align:right">P.U.</th><th style="text-align:right">Total</th></tr></thead><tbody>' + rowsHtml + '</tbody></table>' +
         '<p class="tot">Total a pagar: ' + escapeHtml(formatAmount(pay.totalPagarFinal, moneda)) + '</p>' +
@@ -8180,6 +8270,140 @@
       }
     }
 
+    function setCarritoTransferMessage(message, isError) {
+      const box = document.getElementById('carritoTransferMsg');
+      if (!box) return;
+      box.textContent = message || '';
+      box.className = 'form-help mt-6' + (isError ? ' error' : '');
+    }
+
+    function hideCarritoTransferPanel() {
+      const panel = document.getElementById('carritoTransferPanel');
+      if (!panel) return;
+      panel.hidden = true;
+      panel.classList.add('is-hidden');
+      panel.style.display = 'none';
+      setCarritoTransferMessage('', false);
+    }
+
+    function carritoTransferDestinoLabel(station) {
+      if (!station) return '';
+      const id = Number(station.id || 0);
+      const label = normalize(station.nombre) || stationDefaultName(id);
+      return label + (id > 0 ? ' (#' + String(id) + ')' : '');
+    }
+
+    function populateCarritoTransferDestinos() {
+      const select = document.getElementById('carritoTransferDestinoSelect');
+      const selected = getSelectedCarrito();
+      if (!select) return 0;
+      select.innerHTML = '';
+      select.appendChild(new Option('Selecciona destino', ''));
+      const currentStationID = resolveCarritoEstacionID(selected);
+      const stations = state.stationConfig && Array.isArray(state.stationConfig.estaciones)
+        ? state.stationConfig.estaciones
+        : [];
+      let count = 0;
+      stations.forEach(function(station) {
+        const id = Number(station && station.id || 0);
+        if (!id || id === Number(currentStationID || 0)) return;
+        const option = new Option(carritoTransferDestinoLabel(station), String(id));
+        select.appendChild(option);
+        count += 1;
+      });
+      return count;
+    }
+
+    function openCarritoTransferPanel() {
+      const ui = normalizeUnifiedCartUIConfig(state.stationCartUI || getCurrentStationCartUIConfig());
+      if (!ui.mostrar_boton_transferir_cuenta_carrito || !ui.permitir_transferir_cuenta_carrito) {
+        setMessage('itemMsg', 'La transferencia de cuenta esta desactivada en la configuracion del carrito.', true);
+        return;
+      }
+      const selected = getSelectedCarrito();
+      if (!state.stationMode || state.directSaleMode || !selected || !resolveCarritoEstacionID(selected)) {
+        setMessage('itemMsg', 'Selecciona una cuenta abierta de estacion, mesa o habitacion para transferir.', true);
+        return;
+      }
+      if (!isCarritoOperativoActivo(selected)) {
+        setMessage('itemMsg', 'Solo se puede transferir una cuenta abierta y activa.', true);
+        return;
+      }
+      const panel = document.getElementById('carritoTransferPanel');
+      if (!panel) return;
+      const count = populateCarritoTransferDestinos();
+      panel.hidden = false;
+      panel.classList.remove('is-hidden');
+      panel.style.display = '';
+      if (!count) {
+        setCarritoTransferMessage('No hay otros destinos configurados para esta empresa.', true);
+      } else {
+        setCarritoTransferMessage('El destino debe estar disponible. Para motel/hotel, PCS validara que la tarifa sea equivalente antes de mover la cuenta.', false);
+      }
+    }
+
+    async function applyCarritoTransferCuenta() {
+      const selected = getSelectedCarrito();
+      const select = document.getElementById('carritoTransferDestinoSelect');
+      const motivoEl = document.getElementById('carritoTransferMotivo');
+      const btn = document.getElementById('carritoTransferAplicarBtn');
+      if (!selected || !select) {
+        setCarritoTransferMessage('Selecciona una cuenta activa para transferir.', true);
+        return;
+      }
+      const destinoEstacionID = Number(select.value || 0);
+      if (!destinoEstacionID) {
+        setCarritoTransferMessage('Selecciona la mesa, habitacion o estacion destino.', true);
+        return;
+      }
+      if (destinoEstacionID === Number(resolveCarritoEstacionID(selected) || 0)) {
+        setCarritoTransferMessage('El destino debe ser diferente al origen.', true);
+        return;
+      }
+      const motivo = normalize(motivoEl && motivoEl.value) || 'Transferencia operativa de cuenta';
+      const prevText = btn ? btn.textContent : '';
+      try {
+        if (btn) {
+          btn.disabled = true;
+          btn.textContent = 'Transfiriendo...';
+        }
+        setCarritoTransferMessage('Validando disponibilidad y tarifa del destino...', false);
+        const url = '/api/empresa/carritos_compra?empresa_id=' + encodeURIComponent(state.empresaID) +
+          '&id=' + encodeURIComponent(selected.id) + '&action=transferir_estacion';
+        const res = await fetchWithTimeout(url, {
+          method: 'PUT',
+          credentials: 'same-origin',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ destino_estacion_id: destinoEstacionID, motivo: motivo })
+        });
+        await ensureOk(res);
+        const payload = await res.json();
+        const transferencia = payload && payload.transferencia ? payload.transferencia : {};
+        setCarritoTransferMessage('Cuenta transferida correctamente. Abriendo destino...', false);
+        setStationPaymentMessage('Cuenta transferida a ' + (transferencia.destino_estacion_nombre || ('destino #' + destinoEstacionID)) + '.', false);
+        await Promise.all([loadCarritos(), loadItems()]);
+        const params = new URLSearchParams(window.location.search);
+        params.set('empresa_id', String(state.empresaID));
+        params.set('estacion_id', String(transferencia.destino_estacion_id || destinoEstacionID));
+        params.delete('carrito_codigo');
+        if (transferencia.destino_carrito_id) {
+          params.set('carrito_id', String(transferencia.destino_carrito_id));
+        }
+        if (transferencia.destino_estacion_nombre) {
+          params.set('estacion_nombre', transferencia.destino_estacion_nombre);
+        }
+        window.location.href = window.location.pathname + '?' + params.toString();
+      } catch (err) {
+        setCarritoTransferMessage(err.message || 'No se pudo transferir la cuenta.', true);
+        setStationPaymentMessage(err.message || 'No se pudo transferir la cuenta.', true);
+      } finally {
+        if (btn) {
+          btn.disabled = false;
+          btn.textContent = prevText || 'Transferir';
+        }
+      }
+    }
+
     function showCarritoAlert(message) {
       const banner = document.getElementById('carritoAlertBanner');
       if (!banner) return;
@@ -9237,6 +9461,10 @@
     document.getElementById('carritoBtnCambiarTarifa').addEventListener('click', function() {
       openCarritoTarifaPanel();
     });
+    const carritoBtnTransferirCuenta = document.getElementById('carritoBtnTransferirCuenta');
+    if (carritoBtnTransferirCuenta) {
+      carritoBtnTransferirCuenta.addEventListener('click', openCarritoTransferPanel);
+    }
     const carritoBtnControlElectrico = document.getElementById('carritoBtnControlElectrico');
     if (carritoBtnControlElectrico) {
       carritoBtnControlElectrico.addEventListener('click', openCarritoControlElectricoPanel);
@@ -9293,6 +9521,14 @@
     const carritoTarifaAplicarBtn = document.getElementById('carritoTarifaAplicarBtn');
     if (carritoTarifaAplicarBtn) {
       carritoTarifaAplicarBtn.addEventListener('click', applyCarritoTarifaTiempo);
+    }
+    const carritoTransferAplicarBtn = document.getElementById('carritoTransferAplicarBtn');
+    if (carritoTransferAplicarBtn) {
+      carritoTransferAplicarBtn.addEventListener('click', applyCarritoTransferCuenta);
+    }
+    const carritoTransferCerrarBtn = document.getElementById('carritoTransferCerrarBtn');
+    if (carritoTransferCerrarBtn) {
+      carritoTransferCerrarBtn.addEventListener('click', hideCarritoTransferPanel);
     }
     document.getElementById('carritoBtnCancelarCarrito').addEventListener('click', async function() {
       const selected = getSelectedCarrito();
