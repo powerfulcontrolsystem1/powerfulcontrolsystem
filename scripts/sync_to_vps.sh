@@ -29,6 +29,7 @@ BOOTSTRAP_SERVER="${BOOTSTRAP_SERVER:-1}"
 GOOGLE_CLIENT_ID="${GOOGLE_CLIENT_ID:-}"
 GOOGLE_CLIENT_SECRET="${GOOGLE_CLIENT_SECRET:-}"
 GOOGLE_REDIRECT_URL="${GOOGLE_REDIRECT_URL:-}"
+OPENAI_API_KEY="${OPENAI_API_KEY:-}"
 DB_DIALECT="${DB_DIALECT:-}"
 DB_EMPRESAS_DSN="${DB_EMPRESAS_DSN:-}"
 DB_SUPERADMIN_DSN="${DB_SUPERADMIN_DSN:-}"
@@ -456,6 +457,7 @@ if [[ "$BOOTSTRAP_SERVER" == "1" ]]; then
   SAFE_GOOGLE_CLIENT_ID="$(escape_sq "$GOOGLE_CLIENT_ID")"
   SAFE_GOOGLE_CLIENT_SECRET="$(escape_sq "$GOOGLE_CLIENT_SECRET")"
   SAFE_GOOGLE_REDIRECT_URL="$(escape_sq "$GOOGLE_REDIRECT_URL")"
+  SAFE_OPENAI_API_KEY="$(escape_sq "$OPENAI_API_KEY")"
 
   BOOTSTRAP_CMD="$(cat <<EOF_REMOTE_BOOTSTRAP
 set -e;
@@ -579,6 +581,7 @@ db_superadmin_dsn='$SAFE_DB_SUPERADMIN_DSN';
 google_client_id='$SAFE_GOOGLE_CLIENT_ID';
 google_client_secret='$SAFE_GOOGLE_CLIENT_SECRET';
 google_redirect_url='$SAFE_GOOGLE_REDIRECT_URL';
+openai_api_key='$SAFE_OPENAI_API_KEY';
 get_env_value(){ grep -E \"^\$1=\" \"\$env_file\" | tail -n1 | cut -d= -f2- || true; };
 upsert_env(){
   key=\"\$1\";
@@ -593,18 +596,21 @@ current_dbsuper=\"\$(get_env_value DB_SUPERADMIN_DSN)\";
 current_gid=\"\$(get_env_value GOOGLE_CLIENT_ID)\";
 current_gsec=\"\$(get_env_value GOOGLE_CLIENT_SECRET)\";
 current_grurl=\"\$(get_env_value GOOGLE_REDIRECT_URL)\";
+current_openai=\"\$(get_env_value OPENAI_API_KEY)\";
 effective_dbdialect=\"\$db_dialect\";
 effective_dbemp=\"\$db_empresas_dsn\";
 effective_dbsuper=\"\$db_superadmin_dsn\";
 effective_gid=\"\$google_client_id\";
 effective_gsec=\"\$google_client_secret\";
 effective_grurl=\"\$google_redirect_url\";
+effective_openai=\"\$openai_api_key\";
 if [ -z \"\$effective_dbdialect\" ]; then effective_dbdialect=\"\$current_dbdialect\"; fi;
 if [ -z \"\$effective_dbemp\" ]; then effective_dbemp=\"\$current_dbemp\"; fi;
 if [ -z \"\$effective_dbsuper\" ]; then effective_dbsuper=\"\$current_dbsuper\"; fi;
 if [ -z \"\$effective_gid\" ]; then effective_gid=\"\$current_gid\"; fi;
 if [ -z \"\$effective_gsec\" ]; then effective_gsec=\"\$current_gsec\"; fi;
 if [ -z \"\$effective_grurl\" ]; then effective_grurl=\"\$current_grurl\"; fi;
+if [ -z \"\$effective_openai\" ]; then effective_openai=\"\$current_openai\"; fi;
 if [ -z \"\$effective_dbdialect\" ] && { [ -n \"\$effective_dbemp\" ] || [ -n \"\$effective_dbsuper\" ]; }; then
   effective_dbdialect=postgres;
 fi;
@@ -622,12 +628,16 @@ if [ -n \"\$effective_dbsuper\" ]; then upsert_env DB_SUPERADMIN_DSN \"\$effecti
 if [ -n \"\$effective_gid\" ]; then upsert_env GOOGLE_CLIENT_ID \"\$effective_gid\"; fi;
 if [ -n \"\$effective_gsec\" ]; then upsert_env GOOGLE_CLIENT_SECRET \"\$effective_gsec\"; fi;
 if [ -n \"\$effective_grurl\" ]; then upsert_env GOOGLE_REDIRECT_URL \"\$effective_grurl\"; fi;
-for k in DB_DIALECT DB_SUPERADMIN_DSN DB_EMPRESAS_DSN GOOGLE_CLIENT_ID GOOGLE_CLIENT_SECRET GOOGLE_REDIRECT_URL SERVER_PORT CONFIG_ENC_KEY; do
+if [ -n \"\$effective_openai\" ]; then upsert_env OPENAI_API_KEY \"\$effective_openai\"; fi;
+for k in DB_DIALECT DB_SUPERADMIN_DSN DB_EMPRESAS_DSN GOOGLE_CLIENT_ID GOOGLE_CLIENT_SECRET GOOGLE_REDIRECT_URL OPENAI_API_KEY SERVER_PORT CONFIG_ENC_KEY; do
   line=\"\$(grep -E \"^\$k=\" \"\$env_file\" | tail -n1 || true)\";
   if [ -z \"\$line\" ]; then
     case \"\$k\" in
       GOOGLE_CLIENT_ID|GOOGLE_CLIENT_SECRET|GOOGLE_REDIRECT_URL)
         echo \"BOOTSTRAP_WARN:\$k ausente (solo requerido para login Google)\";
+        ;;
+      OPENAI_API_KEY)
+        echo \"BOOTSTRAP_WARN:OPENAI_API_KEY ausente (requerida para IA si la credencial cifrada no se puede leer)\";
         ;;
       CONFIG_ENC_KEY)
         echo \"BOOTSTRAP_WARN:CONFIG_ENC_KEY ausente (requerida para cifrado de secretos)\";
@@ -643,6 +653,9 @@ for k in DB_DIALECT DB_SUPERADMIN_DSN DB_EMPRESAS_DSN GOOGLE_CLIENT_ID GOOGLE_CL
       case \"\$k\" in
         GOOGLE_CLIENT_ID|GOOGLE_CLIENT_SECRET|GOOGLE_REDIRECT_URL)
           echo \"BOOTSTRAP_WARN:\$k vacio (solo requerido para login Google)\";
+          ;;
+        OPENAI_API_KEY)
+          echo \"BOOTSTRAP_WARN:OPENAI_API_KEY vacia (requerida para IA si la credencial cifrada no se puede leer)\";
           ;;
         CONFIG_ENC_KEY)
           echo \"BOOTSTRAP_WARN:CONFIG_ENC_KEY vacia (requerida para cifrado de secretos)\";

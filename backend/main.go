@@ -144,11 +144,23 @@ func loadRuntimeEnvDefaults(backendDir string) {
 		}
 	}
 
-	platformEnv := filepath.Join(filepath.Dir(backendDir), "deploy", ".env.platform")
-	if added, err := loadSelectedEnvDefaultsFromFile(platformEnv, []string{"OPENAI_API_KEY"}); err == nil && added > 0 {
-		log.Printf("INFO: fallback IA cargado desde deploy/.env.platform (%d variable sensible, valor oculto)", added)
-	} else if err != nil {
-		log.Printf("warning: no se pudo cargar fallback IA desde %s: %v", platformEnv, err)
+	platformEnvCandidates := []string{
+		filepath.Join(filepath.Dir(backendDir), "deploy", ".env.platform"),
+	}
+	if exportRoot := strings.TrimSpace(os.Getenv("PCS_PROJECT_EXPORT_ROOT")); exportRoot != "" {
+		platformEnvCandidates = append(platformEnvCandidates, filepath.Join(exportRoot, "deploy", ".env.platform"))
+	}
+	loadedPlatformEnv := map[string]bool{}
+	for _, platformEnv := range platformEnvCandidates {
+		if strings.TrimSpace(platformEnv) == "" || loadedPlatformEnv[platformEnv] {
+			continue
+		}
+		loadedPlatformEnv[platformEnv] = true
+		if added, err := loadSelectedEnvDefaultsFromFile(platformEnv, []string{"OPENAI_API_KEY"}); err == nil && added > 0 {
+			log.Printf("INFO: fallback IA cargado desde %s (%d variable sensible, valor oculto)", platformEnv, added)
+		} else if err != nil {
+			log.Printf("warning: no se pudo cargar fallback IA desde %s: %v", platformEnv, err)
+		}
 	}
 }
 

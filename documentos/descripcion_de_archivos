@@ -1,3 +1,9 @@
+2026-06-10 - Carrito estable y fallback IA en despliegue
+- `web/administrar_empresa/carrito_de_compras.html`: mantiene visibles y ordenadas las tarjetas base de venta directa/estaciones aunque una preferencia antigua intente ocultarlas; si la carga secundaria falla despues de seleccionar carrito, conserva la pantalla y muestra advertencia.
+- `scripts/sync_to_vps.ps1`: agrega parametro `OpenAIApiKey`, carga fallback desde `.env.local`, `deploy/.env.platform` o entorno, lo propaga al bootstrap remoto y redacta secretos en logs de preview/ejecucion.
+- `scripts/sync_to_vps.sh`: acepta `OPENAI_API_KEY` desde entorno y la sincroniza con `backend/.env.local` remoto sin imprimir el valor.
+- `backend/main.go`: suma `PCS_PROJECT_EXPORT_ROOT/deploy/.env.platform` como candidato para cargar exclusivamente `OPENAI_API_KEY` cuando no exista en el entorno.
+
 2026-06-10 - Carrito con tarjetas base visibles
 - `web/administrar_empresa/carrito_de_compras.html`: mantiene visibles en venta directa y estaciones las tarjetas de cliente, detalle del pago, productos agregados y acciones; agrega encabezados claros para detalle de pago y productos.
 - `web/estilos.css`: define el orden visual estable de las tarjetas base del carrito y evita que el layout flex las reordene al refrescar datos.

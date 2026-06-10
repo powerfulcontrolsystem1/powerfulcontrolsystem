@@ -735,7 +735,10 @@ afecte dinero, documentos, licencias o seguridad.
 6. La vista enfocada del carrito debe mantener visibles, en este orden, las
    tarjetas base: cliente, detalle del pago, productos agregados y acciones del
    carrito. Las preferencias antiguas no deben ocultar esa estructura minima.
-7. Pruebas: entrar con rol `cajero` por `login_usuario`, agregar item, buscar
+7. Si el carrito ya fue seleccionado y una sincronizacion secundaria falla, la
+   pantalla no debe desmontarse; debe conservar la venta visible y mostrar una
+   advertencia operativa.
+8. Pruebas: entrar con rol `cajero` por `login_usuario`, agregar item, buscar
    producto, pagar, imprimir, validar inventario y caja, abrir/salir de pantalla
    completa y revisar contraste fondo/tarjetas.
 

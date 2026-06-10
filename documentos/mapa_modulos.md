@@ -29,9 +29,14 @@ electronica DIAN y tutorial. Las subpaginas reutilizan
 
 Actualizacion 2026-06-10: `Carrito y venta directa` conserva como estructura
 base las tarjetas de cliente, detalle del pago, productos agregados y acciones.
-Las preferencias antiguas de `carrito_ui_global` ya no pueden dejar oculta esa
-estructura minima en venta directa o estaciones; solo gobiernan funciones
-internas permitidas.
+Las preferencias antiguas de `carrito_ui_global` ya no pueden dejar oculta ni
+reordenada esa estructura minima en venta directa o estaciones; si ya existe
+carrito seleccionado y falla una sincronizacion secundaria, la pantalla se
+conserva y muestra advertencia en lugar de desmontar la venta.
+
+Actualizacion 2026-06-10: `Chat IA` puede usar `OPENAI_API_KEY` de entorno como
+respaldo operativo cuando una credencial cifrada antigua no descifra con la llave
+actual. `rs`/`sync_to_vps` propagan ese fallback al VPS sin imprimir secretos.
 
 Actualizacion 2026-06-09: la configuracion visual separa `logo_url` como logo
 corporativo general y `logo_factura_url` como logo de factura. El endpoint

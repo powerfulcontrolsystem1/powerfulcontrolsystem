@@ -40,6 +40,7 @@ param(
   [string]$GoogleClientId = "",
   [string]$GoogleClientSecret = "",
   [string]$GoogleRedirectUrl = "https://powerfulcontrolsystem.com/auth/google/callback",
+  [string]$OpenAIApiKey = "",
   [string]$PublicBaseUrl = "https://powerfulcontrolsystem.com/",
   [string]$DbDialect = "postgres",
   [string]$DbEmpresasDsn = "",
@@ -122,6 +123,26 @@ function Convert-ToBashLiteral {
   }
   $escaped = $Value.Replace("'", "'\''")
   return "'" + $escaped + "'"
+}
+
+function Redact-SyncCommandForLog {
+  param([AllowNull()][AllowEmptyString()][string]$Command = "")
+  if ($null -eq $Command) {
+    return ""
+  }
+  $sensitiveNames = @(
+    "GOOGLE_CLIENT_SECRET",
+    "OPENAI_API_KEY",
+    "DB_EMPRESAS_DSN",
+    "DB_SUPERADMIN_DSN",
+    "PLINK_KEY_WIN"
+  )
+  $redacted = $Command
+  foreach ($name in $sensitiveNames) {
+    $redacted = [regex]::Replace($redacted, "($name=)'[^']*(?:'\\''[^']*)*'", "`$1'<oculto>'")
+    $redacted = [regex]::Replace($redacted, "($name=)\S+", "`$1<oculto>")
+  }
+  return $redacted
 }
 
 function Assert-WslReady {
@@ -470,6 +491,7 @@ function Get-RemoteBootstrapCommand {
     [AllowEmptyString()][string]$GoogleClientId,
     [AllowEmptyString()][string]$GoogleClientSecret,
     [AllowEmptyString()][string]$GoogleRedirectUrl,
+    [AllowEmptyString()][string]$OpenAIApiKey = "",
     [AllowEmptyString()][string]$DbDialect = "postgres",
     [AllowEmptyString()][string]$DbEmpresasDsn = "",
     [AllowEmptyString()][string]$DbSuperadminDsn = ""
@@ -479,6 +501,7 @@ function Get-RemoteBootstrapCommand {
   $googleIdLit = Convert-ToBashLiteral $GoogleClientId
   $googleSecretLit = Convert-ToBashLiteral $GoogleClientSecret
   $googleRedirectLit = Convert-ToBashLiteral $GoogleRedirectUrl
+  $openAIApiKeyLit = Convert-ToBashLiteral $OpenAIApiKey
   $dbDialectNormalized = if ([string]::IsNullOrWhiteSpace($DbDialect)) { "" } else { $DbDialect.Trim().ToLowerInvariant() }
   $dbDialectLit = Convert-ToBashLiteral $dbDialectNormalized
   $dbEmpresasDsnLit = Convert-ToBashLiteral $DbEmpresasDsn
@@ -605,6 +628,7 @@ fi;
 gid=__GOOGLE_ID__;
 gsec=__GOOGLE_SECRET__;
 grurl=__GOOGLE_REDIRECT_URL__;
+openai_api_key=__OPENAI_API_KEY__;
 dbdialect=__DB_DIALECT__;
 dbemp=__DB_EMPRESAS_DSN__;
 dbsuper=__DB_SUPERADMIN_DSN__;
@@ -622,18 +646,21 @@ current_dbsuper="$(get_env_value DB_SUPERADMIN_DSN)";
 current_gid="$(get_env_value GOOGLE_CLIENT_ID)";
 current_gsec="$(get_env_value GOOGLE_CLIENT_SECRET)";
 current_grurl="$(get_env_value GOOGLE_REDIRECT_URL)";
+current_openai="$(get_env_value OPENAI_API_KEY)";
 effective_dbdialect="$dbdialect";
 effective_dbemp="$dbemp";
 effective_dbsuper="$dbsuper";
 effective_gid="$gid";
 effective_gsec="$gsec";
 effective_grurl="$grurl";
+effective_openai="$openai_api_key";
 if [ -z "$effective_dbdialect" ]; then effective_dbdialect="$current_dbdialect"; fi;
 if [ -z "$effective_dbemp" ]; then effective_dbemp="$current_dbemp"; fi;
 if [ -z "$effective_dbsuper" ]; then effective_dbsuper="$current_dbsuper"; fi;
 if [ -z "$effective_gid" ]; then effective_gid="$current_gid"; fi;
 if [ -z "$effective_gsec" ]; then effective_gsec="$current_gsec"; fi;
 if [ -z "$effective_grurl" ]; then effective_grurl="$current_grurl"; fi;
+if [ -z "$effective_openai" ]; then effective_openai="$current_openai"; fi;
 if [ -z "$effective_dbdialect" ] && { [ -n "$effective_dbemp" ] || [ -n "$effective_dbsuper" ]; }; then
   effective_dbdialect=postgres;
 fi;
@@ -657,12 +684,16 @@ fi;
 if [ -n "$effective_gid" ]; then upsert_env GOOGLE_CLIENT_ID "$effective_gid"; fi;
 if [ -n "$effective_gsec" ]; then upsert_env GOOGLE_CLIENT_SECRET "$effective_gsec"; fi;
 if [ -n "$effective_grurl" ]; then upsert_env GOOGLE_REDIRECT_URL "$effective_grurl"; fi;
-for k in DB_DIALECT DB_SUPERADMIN_DSN DB_EMPRESAS_DSN GOOGLE_CLIENT_ID GOOGLE_CLIENT_SECRET GOOGLE_REDIRECT_URL SERVER_PORT CONFIG_ENC_KEY; do
+if [ -n "$effective_openai" ]; then upsert_env OPENAI_API_KEY "$effective_openai"; fi;
+for k in DB_DIALECT DB_SUPERADMIN_DSN DB_EMPRESAS_DSN GOOGLE_CLIENT_ID GOOGLE_CLIENT_SECRET GOOGLE_REDIRECT_URL OPENAI_API_KEY SERVER_PORT CONFIG_ENC_KEY; do
   line="$(grep -E "^$k=" "$env_file" | tail -n1 || true)";
   if [ -z "$line" ]; then
     case "$k" in
       GOOGLE_CLIENT_ID|GOOGLE_CLIENT_SECRET|GOOGLE_REDIRECT_URL)
         echo "BOOTSTRAP_WARN:$k ausente (solo requerido para login Google)";
+        ;;
+      OPENAI_API_KEY)
+        echo "BOOTSTRAP_WARN:OPENAI_API_KEY ausente (requerida para IA si la credencial cifrada no se puede leer)";
         ;;
       CONFIG_ENC_KEY)
         echo "BOOTSTRAP_WARN:CONFIG_ENC_KEY ausente (requerida para cifrado de secretos)";
@@ -678,6 +709,9 @@ for k in DB_DIALECT DB_SUPERADMIN_DSN DB_EMPRESAS_DSN GOOGLE_CLIENT_ID GOOGLE_CL
       case "$k" in
         GOOGLE_CLIENT_ID|GOOGLE_CLIENT_SECRET|GOOGLE_REDIRECT_URL)
           echo "BOOTSTRAP_WARN:$k vacio (solo requerido para login Google)";
+          ;;
+        OPENAI_API_KEY)
+          echo "BOOTSTRAP_WARN:OPENAI_API_KEY vacia (requerida para IA si la credencial cifrada no se puede leer)";
           ;;
         CONFIG_ENC_KEY)
           echo "BOOTSTRAP_WARN:CONFIG_ENC_KEY vacia (requerida para cifrado de secretos)";
@@ -695,7 +729,7 @@ done;
 ok "BOOTSTRAP_COMPLETE entorno remoto preparado para el redeploy"
 '@
 
-  $cmd = $template.Replace("__BACKEND_DIR__", $backendDirLit).Replace("__SERVER_PORT__", $serverPortLit).Replace("__GOOGLE_ID__", $googleIdLit).Replace("__GOOGLE_SECRET__", $googleSecretLit).Replace("__GOOGLE_REDIRECT_URL__", $googleRedirectLit).Replace("__DB_DIALECT__", $dbDialectLit).Replace("__DB_EMPRESAS_DSN__", $dbEmpresasDsnLit).Replace("__DB_SUPERADMIN_DSN__", $dbSuperadminDsnLit)
+  $cmd = $template.Replace("__BACKEND_DIR__", $backendDirLit).Replace("__SERVER_PORT__", $serverPortLit).Replace("__GOOGLE_ID__", $googleIdLit).Replace("__GOOGLE_SECRET__", $googleSecretLit).Replace("__GOOGLE_REDIRECT_URL__", $googleRedirectLit).Replace("__OPENAI_API_KEY__", $openAIApiKeyLit).Replace("__DB_DIALECT__", $dbDialectLit).Replace("__DB_EMPRESAS_DSN__", $dbEmpresasDsnLit).Replace("__DB_SUPERADMIN_DSN__", $dbSuperadminDsnLit)
   $cmd = $cmd -replace "`r", "" -replace "`n", " "
   return $cmd
 }
@@ -1416,6 +1450,7 @@ function Invoke-PuttySync {
     [AllowEmptyString()][string]$BootstrapGoogleClientId = "",
     [AllowEmptyString()][string]$BootstrapGoogleClientSecret = "",
     [AllowEmptyString()][string]$BootstrapGoogleRedirectUrl = "",
+    [AllowEmptyString()][string]$OpenAIApiKey = "",
     [AllowEmptyString()][string]$BootstrapDbDialect = "postgres",
     [AllowEmptyString()][string]$BootstrapDbEmpresasDsn = "",
     [AllowEmptyString()][string]$BootstrapDbSuperadminDsn = "",
@@ -1537,7 +1572,7 @@ function Invoke-PuttySync {
   }
 
   if ($RunBootstrap) {
-    $bootstrapCmd = Get-RemoteBootstrapCommand -RemotePath $RemotePath -ServerPort $BootstrapServerPort -GoogleClientId $BootstrapGoogleClientId -GoogleClientSecret $BootstrapGoogleClientSecret -GoogleRedirectUrl $BootstrapGoogleRedirectUrl -DbDialect $BootstrapDbDialect -DbEmpresasDsn $BootstrapDbEmpresasDsn -DbSuperadminDsn $BootstrapDbSuperadminDsn
+    $bootstrapCmd = Get-RemoteBootstrapCommand -RemotePath $RemotePath -ServerPort $BootstrapServerPort -GoogleClientId $BootstrapGoogleClientId -GoogleClientSecret $BootstrapGoogleClientSecret -GoogleRedirectUrl $BootstrapGoogleRedirectUrl -OpenAIApiKey $OpenAIApiKey -DbDialect $BootstrapDbDialect -DbEmpresasDsn $BootstrapDbEmpresasDsn -DbSuperadminDsn $BootstrapDbSuperadminDsn
     if ($isPpkIdentity) {
       $bootstrapScriptPath = New-TempRemoteCommandFile -Prefix "bootstrap_remote" -Content $bootstrapCmd
       $tempCommandFiles += $bootstrapScriptPath
@@ -1940,6 +1975,7 @@ try {
   }
 
   $localBackendEnvPath = Join-Path $LocalPath "backend\.env.local"
+  $localPlatformEnvPath = Join-Path $LocalPath "deploy\.env.platform"
 
   if ([string]::IsNullOrWhiteSpace($DbDialect)) {
     $DbDialect = Get-DotEnvValue -EnvFilePath $localBackendEnvPath -Key "DB_DIALECT"
@@ -2039,6 +2075,16 @@ try {
       Write-Host "[INFO] DeploymentMode=hybrid: se actualiza binario/systemd y tambien Docker Compose."
     }
   }
+
+  if ([string]::IsNullOrWhiteSpace($OpenAIApiKey)) {
+    $OpenAIApiKey = Get-DotEnvValue -EnvFilePath $localBackendEnvPath -Key "OPENAI_API_KEY"
+    if ([string]::IsNullOrWhiteSpace($OpenAIApiKey)) {
+      $OpenAIApiKey = Get-DotEnvValue -EnvFilePath $localPlatformEnvPath -Key "OPENAI_API_KEY"
+    }
+    if ([string]::IsNullOrWhiteSpace($OpenAIApiKey)) {
+      $OpenAIApiKey = [Environment]::GetEnvironmentVariable("OPENAI_API_KEY")
+    }
+  }
   if ($BuildOnly) {
     $effectiveSkipBuild = $false
   }
@@ -2079,7 +2125,7 @@ try {
   }
 
   if (-not (Test-WslReady)) {
-    Invoke-PuttySync -LocalResolvedPath $LocalPath -RemoteUser $RemoteUser -RemoteHost $RemoteHost -RemotePath $RemotePath -Port $Port -IdentityPath $IdentityFile -IsDryRun $DryRun.IsPresent -IsPreviewOnly $PreviewOnly.IsPresent -ExcludeFile $ExcludeFile -ExcludeEvidence $ExcludeEvidenceFromPackage -UseCompression $CompressPackage -LargeTransferWarningMB $LargeTransferWarningMB -ExecRelativePath $builtBinaryRel -Retries $RetryCount -AutoInstallDeps $AutoInstallDependencies -RunBootstrap $BootstrapServer -BootstrapServerPort $ServerPort -BootstrapGoogleClientId $GoogleClientId -BootstrapGoogleClientSecret $GoogleClientSecret -BootstrapGoogleRedirectUrl $GoogleRedirectUrl -BootstrapDbDialect $DbDialect -BootstrapDbEmpresasDsn $DbEmpresasDsn -BootstrapDbSuperadminDsn $DbSuperadminDsn -RestartServer $effectiveRestartRemoteServer -RestartBinaryRelativePath $restartBinaryRel -RestartStdoutLogRelativePath $RemoteStdoutLogPath -RestartStderrLogRelativePath $RemoteStderrLogPath -RestartHealthTimeout $RestartHealthTimeoutSeconds
+    Invoke-PuttySync -LocalResolvedPath $LocalPath -RemoteUser $RemoteUser -RemoteHost $RemoteHost -RemotePath $RemotePath -Port $Port -IdentityPath $IdentityFile -IsDryRun $DryRun.IsPresent -IsPreviewOnly $PreviewOnly.IsPresent -ExcludeFile $ExcludeFile -ExcludeEvidence $ExcludeEvidenceFromPackage -UseCompression $CompressPackage -LargeTransferWarningMB $LargeTransferWarningMB -ExecRelativePath $builtBinaryRel -Retries $RetryCount -AutoInstallDeps $AutoInstallDependencies -RunBootstrap $BootstrapServer -BootstrapServerPort $ServerPort -BootstrapGoogleClientId $GoogleClientId -BootstrapGoogleClientSecret $GoogleClientSecret -BootstrapGoogleRedirectUrl $GoogleRedirectUrl -OpenAIApiKey $OpenAIApiKey -BootstrapDbDialect $DbDialect -BootstrapDbEmpresasDsn $DbEmpresasDsn -BootstrapDbSuperadminDsn $DbSuperadminDsn -RestartServer $effectiveRestartRemoteServer -RestartBinaryRelativePath $restartBinaryRel -RestartStdoutLogRelativePath $RemoteStdoutLogPath -RestartStderrLogRelativePath $RemoteStderrLogPath -RestartHealthTimeout $RestartHealthTimeoutSeconds
 
     Invoke-RemoteDockerComposeRedeploy -RemoteUser $RemoteUser -RemoteHost $RemoteHost -Port $Port -IdentityPath $IdentityFile -RemotePath $RemotePath -Enabled $effectiveRedeployDockerStack -IsDryRun $DryRun.IsPresent -IsPreviewOnly $PreviewOnly.IsPresent -HealthTimeoutSeconds $DockerHealthTimeoutSeconds
 
@@ -2152,6 +2198,7 @@ try {
     "GOOGLE_CLIENT_ID=$(Convert-ToBashLiteral $GoogleClientId)",
     "GOOGLE_CLIENT_SECRET=$(Convert-ToBashLiteral $GoogleClientSecret)",
     "GOOGLE_REDIRECT_URL=$(Convert-ToBashLiteral $GoogleRedirectUrl)",
+    "OPENAI_API_KEY=$(Convert-ToBashLiteral $OpenAIApiKey)",
     "DB_DIALECT=$(Convert-ToBashLiteral $DbDialect)",
     "DB_EMPRESAS_DSN=$(Convert-ToBashLiteral $DbEmpresasDsn)",
     "DB_SUPERADMIN_DSN=$(Convert-ToBashLiteral $DbSuperadminDsn)"
@@ -2177,12 +2224,12 @@ try {
 
   if ($PreviewOnly) {
     Write-Host "[PREVIEW] Comando que se ejecutaría en WSL:"
-    Write-Host $bashCmd
+    Write-Host (Redact-SyncCommandForLog -Command $bashCmd)
     return
   }
 
   Write-Host "Ejecutando sincronización en WSL..."
-  Write-Host $bashCmd
+  Write-Host (Redact-SyncCommandForLog -Command $bashCmd)
   $wslOutput = & wsl bash -lc $bashCmd 2>&1
   if ($wslOutput) {
     $wslOutput | ForEach-Object { Write-TaggedExternalOutput -Line "$_" }

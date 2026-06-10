@@ -1,3 +1,9 @@
+## [2026-06-10] Carrito estable e IA con fallback de despliegue
+- [Carrito] Venta directa y estaciones conservan cliente, detalle del pago, productos y acciones aunque una preferencia antigua intente ocultar o reordenar tarjetas.
+- [Carrito] Si ya existe carrito seleccionado y falla una sincronizacion secundaria, la pantalla muestra advertencia pero no borra la vista operativa.
+- [IA] `rs`/`sync_to_vps` propagan `OPENAI_API_KEY` como fallback seguro para el chat IA cuando una credencial cifrada antigua no descifra con la llave actual.
+- [Seguridad] Los comandos de sincronizacion redactan secretos en logs y no imprimen API keys ni DSN.
+
 ## [2026-06-10] IA flotante activa para todas las empresas
 - [Empresa] El icono circular del asistente IA queda visible por defecto en contexto empresarial y no se oculta por preferencias viejas del navegador.
 - [Backend] `/api/chat_flotante/preferencias?empresa_id=...` responde `chat_enabled=true` y normaliza guardados apagados a activo.

@@ -2187,6 +2187,49 @@
       updateCarritoSideColumnVisibility();
     }
 
+    function showFocusedCartBaseCard(id, visible) {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.classList.toggle('is-hidden', !visible);
+      el.hidden = !visible;
+      el.style.display = visible ? '' : 'none';
+    }
+
+    function isFocusedCartShellReady(carrito) {
+      return Boolean((state.stationMode || state.directSaleMode) && carrito);
+    }
+
+    function ensureFocusedCartBaseOrder() {
+      const customer = document.getElementById('stationCustomerCard');
+      const payment = document.getElementById('stationPaymentAmountsCard');
+      const products = document.getElementById('stationCartSplitRow');
+      const actions = document.getElementById('stationCartActionsCard');
+      if (!customer || !payment || !products || !actions || !customer.parentNode) return;
+      const parent = customer.parentNode;
+      let anchor = customer;
+      [payment, products, actions].forEach(function(el) {
+        if (!el || el.parentNode !== parent) return;
+        if (anchor.nextSibling !== el) {
+          parent.insertBefore(el, anchor.nextSibling);
+        }
+        anchor = el;
+      });
+    }
+
+    function enforceFocusedCartBaseLayout(carrito) {
+      const visible = isFocusedCartShellReady(carrito);
+      ensureFocusedCartBaseOrder();
+      showFocusedCartBaseCard('stationCustomerCard', visible);
+      showFocusedCartBaseCard('stationPaymentAmountsCard', visible);
+      showFocusedCartBaseCard('stationCartSplitRow', visible);
+      showFocusedCartBaseCard('stationCartActionsCard', visible);
+      const amountsRow = document.getElementById('stationPaymentAmountsRow');
+      if (amountsRow) {
+        amountsRow.hidden = !visible;
+        amountsRow.style.display = visible ? '' : 'none';
+      }
+    }
+
     function placeVipCardBelowTotals() {
       const vipCard = document.getElementById('stationVipAccessCard');
       const totalsPanel = document.getElementById('carritoTotalsPanel');
@@ -2214,7 +2257,7 @@
       const showPayButton = Boolean(cfg.mostrar_boton_pagar);
       const showPaymentMeans = Boolean(cfg.mostrar_tarjetas_pago);
       const focusedSaleMode = state.stationMode || state.directSaleMode;
-      const showPaymentAmounts = showPaymentMeans && Boolean(cfg.mostrar_tarjeta_valores_pago) && focusedSaleMode && Boolean(getSelectedCarrito());
+      const showPaymentAmounts = focusedSaleMode && Boolean(getSelectedCarrito());
       const stationPayBtn = document.getElementById('btnPagarCarrito');
       const stationPaymentAmountsCard = document.getElementById('stationPaymentAmountsCard');
       const stationPaymentAmountsRow = document.getElementById('stationPaymentAmountsRow');
@@ -2468,15 +2511,16 @@
       setCardVisibility('scannerPanel', Boolean(ui.mostrar_tarjeta_lector_codigo) && Boolean(ui.mostrar_lector_codigo_barras));
       syncScalePanelVisibility(ui);
       const focusedSaleMode = state.stationMode || state.directSaleMode;
-      setCardVisibility('stationCartSplitRow', Boolean(ui.mostrar_tarjeta_items_carrito) && focusedSaleMode && Boolean(getSelectedCarrito()));
+      const selectedCarrito = getSelectedCarrito();
+      setCardVisibility('stationCartSplitRow', focusedSaleMode && Boolean(selectedCarrito));
       if (!focusedSaleMode) {
         setCardVisibility('carritoGrid', Boolean(ui.mostrar_tarjeta_items_carrito));
       } else {
         setCardVisibility('carritoGrid', false);
       }
       setCardVisibility('carritoTotalsPanel', Boolean(ui.mostrar_tarjeta_totales_detalles));
-      setOptionalSectionsControlsVisibility(ui, getSelectedCarrito());
-      setCardVisibility('stationCheckoutPanel', Boolean(ui.mostrar_tarjeta_cobro_estados) && Boolean(state.optionalSections.showCheckoutAdvanced) && focusedSaleMode && Boolean(getSelectedCarrito()));
+      setOptionalSectionsControlsVisibility(ui, selectedCarrito);
+      setCardVisibility('stationCheckoutPanel', Boolean(ui.mostrar_tarjeta_cobro_estados) && Boolean(state.optionalSections.showCheckoutAdvanced) && focusedSaleMode && Boolean(selectedCarrito));
 
       const productsSummaryCard = document.getElementById('productsSummaryCard');
       if (productsSummaryCard) {
@@ -2485,11 +2529,12 @@
 
       const actionsCard = document.getElementById('stationCartActionsCard');
       if (actionsCard) {
-        const showActionsCard = Boolean(ui.mostrar_tarjeta_acciones_carrito) && hasVisibleCarritoActionControl(ui) && focusedSaleMode && Boolean(getSelectedCarrito());
+        const showActionsCard = focusedSaleMode && Boolean(selectedCarrito) && hasVisibleCarritoActionControl(ui);
         actionsCard.classList.toggle('is-hidden', !showActionsCard);
         actionsCard.hidden = !showActionsCard;
         actionsCard.style.display = showActionsCard ? '' : 'none';
       }
+      enforceFocusedCartBaseLayout(selectedCarrito);
     }
 
     // Preferencias de estaciones (localStorage)
@@ -5626,7 +5671,7 @@
       panel.hidden = !showCheckoutPanel;
       panel.style.display = showCheckoutPanel ? '' : 'none';
       if (stationItemsPanel) {
-        const showItemsPanel = Boolean(stationUI.mostrar_tarjeta_items_carrito);
+        const showItemsPanel = isFocusedCartShellReady(carrito);
         stationItemsPanel.hidden = !showItemsPanel;
         stationItemsPanel.style.display = showItemsPanel ? '' : 'none';
       }
@@ -5635,11 +5680,12 @@
       const selectedActive = isCarritoOperativoActivo(carrito);
       setPaymentCheckoutVisibility(stationUI);
       if (actionsCard) {
-        const showActionsCard = focusedSaleMode && stationUI.mostrar_tarjeta_acciones_carrito;
+        const showActionsCard = focusedSaleMode && Boolean(carrito) && hasVisibleCarritoActionControl(stationUI);
         actionsCard.classList.toggle('is-hidden', !showActionsCard);
         actionsCard.hidden = !showActionsCard;
         actionsCard.style.display = showActionsCard ? '' : 'none';
       }
+      enforceFocusedCartBaseLayout(carrito);
       ensureCarritoDomoticaPanel();
       renderCarritoAbonosPanel();
       if (vipCard) {
@@ -10061,6 +10107,18 @@
           syncOfflineSalesQueue();
         }
       } catch (err) {
+        const selectedAfterPartialLoad = getSelectedCarrito();
+        if ((state.directSaleMode || state.stationMode) && selectedAfterPartialLoad) {
+          console.warn('Carga parcial del carrito; se conserva la pantalla operativa.', err);
+          setInitialLoadContentVisible(true);
+          renderCarritos();
+          renderResumen();
+          renderItems();
+          applyStationCartUIConfig();
+          renderStationPaymentPanel(selectedAfterPartialLoad);
+          setMessage('carritoMsg', 'El carrito cargó, pero una sincronización secundaria falló: ' + ((err && err.message) || 'revisa la conexión y reintenta.'), true);
+          return;
+        }
         renderInitialLoadError(err);
       }
     })();
