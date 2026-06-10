@@ -1,5 +1,9 @@
+## [2026-06-10] Carrito ordena productos antes de pago
+- [Carrito] En venta directa y estaciones se intercambian las tarjetas `Productos agregados al carrito` y `Detalle del pago`.
+- [UX] El flujo queda Cliente -> Productos -> Detalle del pago -> Acciones.
+
 ## [2026-06-10] Carrito estable e IA con fallback de despliegue
-- [Carrito] Venta directa y estaciones conservan cliente, detalle del pago, productos y acciones aunque una preferencia antigua intente ocultar o reordenar tarjetas.
+- [Carrito] Venta directa y estaciones conservan cliente, productos, detalle del pago y acciones aunque una preferencia antigua intente ocultar o reordenar tarjetas.
 - [Carrito] Si ya existe carrito seleccionado y falla una sincronizacion secundaria, la pantalla muestra advertencia pero no borra la vista operativa.
 - [IA] `rs`/`sync_to_vps` propagan `OPENAI_API_KEY` como fallback seguro para el chat IA cuando una credencial cifrada antigua no descifra con la llave actual.
 - [Seguridad] Los comandos de sincronizacion redactan secretos en logs y no imprimen API keys ni DSN.

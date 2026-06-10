@@ -1,17 +1,23 @@
+2026-06-10: Carrito intercambia productos y detalle de pago.
+- Modulos afectados: `carritos`, `venta_directa`, `estaciones`.
+- UX: la vista enfocada del carrito queda en orden cliente, productos agregados, detalle del pago y acciones, como flujo principal de venta.
+- Frontend: `ensureFocusedCartBaseOrder` reordena el DOM con productos antes del detalle de pago y `web/estilos.css` aplica el mismo orden visual por CSS.
+- Seguridad: sin cambios de endpoints, tablas, permisos ni datos multiempresa.
+
 2026-06-10: Carrito estable y fallback IA en despliegue.
 - Modulos afectados: `carritos`, `venta_directa`, `estaciones`, `chat IA`, `runtime VPS`.
 - Frontend: `web/administrar_empresa/carrito_de_compras.html` conserva la pantalla operativa cuando ya existe carrito seleccionado aunque falle una sincronizacion secundaria; ya no desmonta la vista despues de aparecer.
-- UX: la vista enfocada fuerza tambien el orden DOM de tarjetas base: cliente, detalle del pago, productos agregados y acciones del carrito.
+- UX: la vista enfocada fuerza tambien el orden DOM de tarjetas base: cliente, productos agregados, detalle del pago y acciones del carrito.
 - IA/runtime: `scripts/sync_to_vps.ps1` y `scripts/sync_to_vps.sh` propagan `OPENAI_API_KEY` al bootstrap remoto como fallback seguro; el log redacta secretos y solo informa si la variable esta configurada.
 - Backend: `backend/main.go` acepta `PCS_PROJECT_EXPORT_ROOT/deploy/.env.platform` como candidato adicional para cargar solo `OPENAI_API_KEY`.
 - Seguridad: no se agregan endpoints ni tablas; no se imprime ningun secreto, DSN ni API key en consola.
-- QA: PowerShell parser OK, `node --check` del script principal del carrito OK, `go test . -run TestLoadSelectedEnvDefaultsFromFile -count=1` OK, `git diff --check` OK y captura visual local confirma cliente -> detalle pago -> productos -> acciones.
+- QA: PowerShell parser OK, `node --check` del script principal del carrito OK, `go test . -run TestLoadSelectedEnvDefaultsFromFile -count=1` OK, `git diff --check` OK y captura visual local confirma estructura completa del carrito.
 
 2026-06-10: Estructura base visible del carrito.
 - Modulo afectado: `carritos`, `venta_directa`, `estaciones`.
-- Frontend: `web/administrar_empresa/carrito_de_compras.html` protege la vista enfocada para que siempre muestre las tarjetas base: cliente, detalle del pago, productos agregados y acciones del carrito.
+- Frontend: `web/administrar_empresa/carrito_de_compras.html` protege la vista enfocada para que siempre muestre las tarjetas base: cliente, productos agregados, detalle del pago y acciones del carrito.
 - UX: la tarjeta `Detalle del pago` ahora tiene titulo/descripción visibles y la zona de productos queda como tarjeta titulada `Productos agregados al carrito`.
-- Estilos: `web/estilos.css` fija el orden visual Cliente -> Detalle del pago -> Productos -> Acciones, evitando que preferencias antiguas oculten o reordenen el flujo operativo.
+- Estilos: `web/estilos.css` fija el orden visual Cliente -> Productos -> Detalle del pago -> Acciones, evitando que preferencias antiguas oculten o reordenen el flujo operativo.
 - Seguridad: no se agregan endpoints, tablas ni dependencias; el cambio conserva datos y permisos por `empresa_id`.
 - QA: validacion de sintaxis de scripts embebidos de `carrito_de_compras.html` con Node empaquetado y `git diff --check`.
 

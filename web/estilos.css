@@ -9612,8 +9612,8 @@ html[data-theme^="light"] .estaciones-page .empresa-section{
 .carrito-primary-layout{display:grid;grid-template-columns:minmax(0,1fr) minmax(238px,306px);gap:18px;align-items:start;width:100%;}
 .carrito-primary-main{min-width:0;width:100%;display:flex;flex-direction:column;}
 .carrito-primary-main #stationCustomerCard{order:10;}
-.carrito-primary-main #stationPaymentAmountsCard{order:20;}
-.carrito-primary-main #stationCartSplitRow{order:30;}
+.carrito-primary-main #stationCartSplitRow{order:20;}
+.carrito-primary-main #stationPaymentAmountsCard{order:30;}
 .carrito-primary-main #stationCartActionsCard{order:40;}
 .carrito-primary-main #stationCheckoutPanel{order:50;}
 .carrito-primary-main #stationPaymentQrCard{order:55;}

@@ -28,7 +28,7 @@ electronica DIAN y tutorial. Las subpaginas reutilizan
 `empresa_id`.
 
 Actualizacion 2026-06-10: `Carrito y venta directa` conserva como estructura
-base las tarjetas de cliente, detalle del pago, productos agregados y acciones.
+base las tarjetas de cliente, productos agregados, detalle del pago y acciones.
 Las preferencias antiguas de `carrito_ui_global` ya no pueden dejar oculta ni
 reordenada esa estructura minima en venta directa o estaciones; si ya existe
 carrito seleccionado y falla una sincronizacion secundaria, la pantalla se

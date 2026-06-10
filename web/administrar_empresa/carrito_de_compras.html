@@ -2207,7 +2207,7 @@
       if (!customer || !payment || !products || !actions || !customer.parentNode) return;
       const parent = customer.parentNode;
       let anchor = customer;
-      [payment, products, actions].forEach(function(el) {
+      [products, payment, actions].forEach(function(el) {
         if (!el || el.parentNode !== parent) return;
         if (anchor.nextSibling !== el) {
           parent.insertBefore(el, anchor.nextSibling);

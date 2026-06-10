@@ -733,7 +733,7 @@ afecte dinero, documentos, licencias o seguridad.
    apariencia 3D, pero con el fondo estructural mas oscuro que las tarjetas para
    diferenciar zonas en cualquier apariencia.
 6. La vista enfocada del carrito debe mantener visibles, en este orden, las
-   tarjetas base: cliente, detalle del pago, productos agregados y acciones del
+   tarjetas base: cliente, productos agregados, detalle del pago y acciones del
    carrito. Las preferencias antiguas no deben ocultar esa estructura minima.
 7. Si el carrito ya fue seleccionado y una sincronizacion secundaria falla, la
    pantalla no debe desmontarse; debe conservar la venta visible y mostrar una
