@@ -14297,3 +14297,22 @@ Archivos modificados:
 - documentos/descripcion_de_archivos
 - documentos/historial_de_cambios
 - web/administrar_empresa/administrar_productos_menu.html
+
+2026-06-10 17:57:04 - Mensaje: rs: actualizar repositorio y sincronizar VPS; Commit: 961caa07; PushStatus: OK
+Archivos modificados:
+- CHANGELOG.md
+- backend/db/apartamentos_turisticos_integracion_test.go
+- backend/db/carritos_compras.go
+- backend/db/configuracion_operativa.go
+- backend/handlers/carritos_compras.go
+- backend/handlers/empresa_preconfiguracion.go
+- backend/handlers/empresa_preconfiguracion_carrito_test.go
+- documentos/CHANGELOG.md
+- documentos/descripcion_de_archivos
+- documentos/descripcion_de_modulos
+- documentos/estructura_bd.md
+- documentos/flujos_operativos.md
+- documentos/historial_de_cambios
+- documentos/mapa_modulos.md
+- web/administrar_empresa/carrito_de_compras.html
+- web/administrar_empresa/configuracion_carrito_de_compra_empresa.html
