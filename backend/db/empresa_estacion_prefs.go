@@ -95,7 +95,7 @@ func DisableLegacyFloatingRobotAndRadioPrefs(dbConn *sql.DB) error {
 	if err := EnsureEmpresaEstacionPrefsSchema(dbConn); err != nil {
 		return err
 	}
-	return ApplySchemaMigration(dbConn, "empresas", "20260609_chat_ia_activo_sin_avatar_default", "Activa chat IA flotante y retira robot/secretaria en empresas existentes", func(tx *sql.DB) error {
+	return ApplySchemaMigration(dbConn, "empresas", "20260610_chat_ia_activo_empresas_reaplicar", "Reactiva chat IA flotante y retira robot/secretaria en empresas existentes", func(tx *sql.DB) error {
 		_, err := execSQLCompat(tx, `
 			INSERT INTO empresa_estacion_prefs (
 				empresa_id, estacion_id, clave, valor, fecha_creacion, fecha_actualizacion, usuario_creador, estado, observaciones
@@ -108,7 +108,7 @@ func DisableLegacyFloatingRobotAndRadioPrefs(dbConn *sql.DB) error {
 			       CURRENT_TIMESTAMP,
 			       'sistema.preproduccion',
 			       'activo',
-			       '[preproduccion_2026-06-09] chat IA activo por defecto; robot/secretaria retirados; emisora opt-in'
+			       '[preproduccion_2026-06-10] chat IA activo para todas las empresas; robot/secretaria retirados; emisora opt-in'
 			FROM empresas e
 			CROSS JOIN (
 				VALUES
@@ -124,7 +124,7 @@ func DisableLegacyFloatingRobotAndRadioPrefs(dbConn *sql.DB) error {
 				fecha_actualizacion = CURRENT_TIMESTAMP,
 				usuario_creador = 'sistema.preproduccion',
 				estado = 'activo',
-				observaciones = '[preproduccion_2026-06-09] chat IA activo por defecto; robot/secretaria retirados; emisora opt-in'
+				observaciones = '[preproduccion_2026-06-10] chat IA activo para todas las empresas; robot/secretaria retirados; emisora opt-in'
 		`)
 		return err
 	})

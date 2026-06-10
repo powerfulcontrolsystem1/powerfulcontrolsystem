@@ -29,7 +29,49 @@
       line-height: 1;
       width: 26px;
     }
+    .nomina-subnav-grid {
+      display: grid;
+      gap: 10px;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      margin-top: 14px;
+    }
+    .nomina-subnav-card {
+      align-items: flex-start;
+      background: var(--surface-soft);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      display: grid;
+      gap: 6px;
+      min-height: 112px;
+      padding: 12px;
+      text-decoration: none;
+    }
+    .nomina-subnav-card:hover {
+      border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
+      color: var(--text);
+    }
+    .nomina-subnav-card.is-active {
+      background: color-mix(in srgb, var(--accent) 10%, var(--surface));
+      border-color: color-mix(in srgb, var(--accent) 60%, var(--border));
+    }
+    .nomina-subnav-card strong {
+      color: var(--text);
+      font-size: .96rem;
+      line-height: 1.2;
+    }
+    .nomina-subnav-card span {
+      color: var(--muted);
+      font-size: .82rem;
+      line-height: 1.35;
+    }
+    .nomina-section-hidden {
+      display: none !important;
+    }
     @media (max-width: 640px) {
+      .nomina-subnav-grid {
+        grid-template-columns: 1fr;
+      }
       .nomina-help-action,
       .nomina-page .empresa-section-header .form-actions .btn {
         justify-content: center;
@@ -84,7 +126,7 @@
         </div>
       </div>
     </section>
-    <section class="card empresa-section">
+    <section class="card empresa-section" data-nomina-section="resumen">
       <div class="empresa-section-header">
         <div>
           <h1>Nómina de sueldos</h1>
@@ -133,9 +175,35 @@
         </div>
       </div>
       <div id="mainMsg" class="form-help"></div>
+      <div class="nomina-subnav-grid" aria-label="Subpaginas de nomina">
+        <a class="nomina-subnav-card" data-nomina-nav="empleados" href="/administrar_empresa/nomina_sueldos.html?seccion=empleados">
+          <strong>Empleados de nomina</strong>
+          <span>Crear y depurar empleados, documento, contrato, salario, sede y centro de costo.</span>
+        </a>
+        <a class="nomina-subnav-card" data-nomina-nav="configuracion" href="/administrar_empresa/nomina_sueldos.html?seccion=configuracion">
+          <strong>Configuracion legal</strong>
+          <span>Parametros legales, salario minimo, auxilio, recargos, provisiones y festivos.</span>
+        </a>
+        <a class="nomina-subnav-card" data-nomina-nav="liquidacion" href="/administrar_empresa/nomina_sueldos.html?seccion=liquidacion">
+          <strong>Liquidaciones</strong>
+          <span>Calcular nomina por periodo, conciliar asistencia, revisar desprendibles y exportar.</span>
+        </a>
+        <a class="nomina-subnav-card" data-nomina-nav="pagos" href="/administrar_empresa/nomina_sueldos.html?seccion=pagos">
+          <strong>Pagos y PILA</strong>
+          <span>Validar control contable, generar pagos, consultar provisiones y resumen PILA.</span>
+        </a>
+        <a class="nomina-subnav-card" data-nomina-nav="dian" href="/administrar_empresa/nomina_sueldos.html?seccion=dian">
+          <strong>Nomina electronica DIAN</strong>
+          <span>Preparar lote documental y enviar documento soporte de pago de nomina electronica.</span>
+        </a>
+        <a class="nomina-subnav-card" data-nomina-nav="tutorial" href="/administrar_empresa/nomina_tutorial.html">
+          <strong>Tutorial de nomina</strong>
+          <span>Guia paso a paso para preparar nomina y enviarla a DIAN con trazabilidad.</span>
+        </a>
+      </div>
     </section>
 
-    <section class="card empresa-section">
+    <section class="card empresa-section" data-nomina-section="configuracion">
       <div class="empresa-section-header">
         <div>
           <h2>Par&aacute;metros legales</h2>
@@ -169,7 +237,7 @@
       </div>
     </section>
 
-    <section class="card empresa-section">
+    <section class="card empresa-section" data-nomina-section="configuracion">
       <div class="empresa-section-header">
         <h2>Configuración legal de nómina</h2>
       </div>
@@ -323,7 +391,7 @@
       </form>
     </section>
 
-    <div class="empresa-grid-2 nomina-layout-grid">
+    <div class="empresa-grid-2 nomina-layout-grid" data-nomina-section="empleados configuracion">
       <section class="card empresa-section">
         <div class="empresa-section-header">
           <h2>Empleados para nomina</h2>
@@ -504,7 +572,7 @@
       </section>
     </div>
 
-    <section class="card empresa-section">
+    <section class="card empresa-section" data-nomina-section="liquidacion dian pagos">
       <div class="empresa-section-header">
         <h2>Calculo de nomina por asistencia</h2>
       </div>
@@ -583,7 +651,7 @@
       </div>
     </section>
 
-    <div class="empresa-grid-2 nomina-layout-grid">
+    <div class="empresa-grid-2 nomina-layout-grid" data-nomina-section="liquidacion pagos dian">
       <section class="card empresa-section">
         <div class="empresa-section-header">
           <h2>Provisiones y costo empresa</h2>
@@ -679,7 +747,7 @@
         </div>
       </section>
 
-      <section class="card empresa-section" id="nominaColombiaAvanzadaSection">
+      <section class="card empresa-section" id="nominaColombiaAvanzadaSection" data-nomina-section="dian pagos">
         <div class="empresa-section-header">
           <div>
             <h2>Nomina Colombia avanzada</h2>
@@ -733,6 +801,7 @@
           <div class="form-actions" style="margin:0;">
             <button id="nomCoDianVerBtn" type="button" class="btn secondary">Ver estado DIAN</button>
             <button id="nomCoDianPrepararBtn" type="button" class="btn">Preparar lote DIAN</button>
+            <button id="nomCoDianEnviarBtn" type="button" class="btn primary">Enviar nomina electronica a DIAN</button>
           </div>
         </div>
         <div id="nomCoDianPanel" class="nomina-result-summary">Sin lote DIAN consultado.</div>
@@ -819,6 +888,36 @@
         if (state.empresaID > 0) params.set('empresa_id', String(state.empresaID));
         if (link) link.href = '/ayuda/tutorial_nomina.html' + (params.toString() ? '?' + params.toString() : '');
         if (tutorial) tutorial.href = '/administrar_empresa/nomina_tutorial.html' + (params.toString() ? '?' + params.toString() : '');
+      }
+
+      function applyNominaSectionMode() {
+        const raw = normalize(getQueryParam('seccion')).toLowerCase();
+        const section = raw || 'todo';
+        const params = new URLSearchParams();
+        if (state.empresaID > 0) params.set('empresa_id', String(state.empresaID));
+        const sectionBlocks = Array.prototype.slice.call(document.querySelectorAll('[data-nomina-section]'));
+        sectionBlocks.forEach(function(block) {
+          const values = normalize(block.getAttribute('data-nomina-section')).toLowerCase().split(/\s+/).filter(Boolean);
+          const visible = section === 'todo' || values.indexOf('resumen') >= 0 || values.indexOf(section) >= 0;
+          block.classList.toggle('nomina-section-hidden', !visible);
+        });
+        Array.prototype.slice.call(document.querySelectorAll('[data-nomina-nav]')).forEach(function(link) {
+          const target = normalize(link.getAttribute('data-nomina-nav')).toLowerCase();
+          link.classList.toggle('is-active', target === section || (section === 'todo' && target === 'resumen'));
+          try {
+            const u = new URL(link.getAttribute('href'), window.location.origin);
+            if (state.empresaID > 0) u.searchParams.set('empresa_id', String(state.empresaID));
+            if (u.pathname.indexOf('nomina_tutorial.html') < 0) {
+              u.searchParams.set('seccion', target);
+            }
+            if (getQueryParam('submenu') === '1') u.searchParams.set('submenu', '1');
+            link.href = u.pathname + u.search;
+          } catch (_) {}
+        });
+        if (section !== 'todo') {
+          const active = document.querySelector('[data-nomina-nav="' + section + '"] strong');
+          if (active) document.title = active.textContent + ' - Nomina';
+        }
       }
 
       function normalize(v) {
@@ -2030,6 +2129,7 @@
         }
 
         syncTutorialHelpLink();
+        applyNominaSectionMode();
         setDefaultDates();
         bindEvents();
         setEmpresaInfo();
@@ -2238,11 +2338,58 @@
           });
           renderNominaDian(data);
           msg('Lote de nomina electronica preparado para revision documental.', 'success');
-          return;
+          return data;
         }
         const params = new URLSearchParams({ empresa_id: String(state.empresaID), action: 'documentos_electronicos_colombia', periodo_desde: desde, periodo_hasta: hasta });
         const data = await requestJSON('/api/empresa/nomina?' + params.toString());
         renderNominaDian(data);
+        return data;
+      }
+
+      function nominaDianDocumentoCodigo(desde, hasta) {
+        const base = (txt(desde) || txt(hasta) || new Date().toISOString().slice(0, 10)).slice(0, 7).replace(/[^0-9]/g, '');
+        return 'NE-' + (base || 'PERIODO') + '-' + String(state.empresaID || 0);
+      }
+
+      async function enviarNominaElectronicaDian() {
+        const desde = txt(document.getElementById('calcDesde').value);
+        const hasta = txt(document.getElementById('calcHasta').value);
+        if (!desde || !hasta) {
+          throw new Error('Debes indicar periodo desde y hasta antes de enviar nomina electronica.');
+        }
+        if (!window.confirm('Esto enviara la nomina electronica a la DIAN usando la configuracion fiscal de esta empresa. Verifica periodo, empleados, liquidaciones y firma digital. Continuar?')) {
+          return;
+        }
+        msg('Preparando lote antes del envio DIAN...', 'success');
+        const lote = await cargarNominaDian(true);
+        const pendientes = Array.isArray(lote && lote.requisitos_pendientes) ? lote.requisitos_pendientes : [];
+        if (pendientes.length) {
+          throw new Error('No se envia a DIAN porque hay requisitos pendientes: ' + pendientes.slice(0, 3).join(' | '));
+        }
+        const codigo = nominaDianDocumentoCodigo(desde, hasta);
+        const payload = {
+          empresa_id: state.empresaID,
+          tipo_documento: 'nomina_electronica',
+          documento_codigo: codigo,
+          pais_codigo: 'CO',
+          monto_total: Number(lote && lote.total_neto || 0),
+          moneda: 'COP',
+          periodo_contable: desde.slice(0, 7),
+          observaciones: 'Documento soporte de pago de nomina electronica periodo ' + desde + ' a ' + hasta,
+          mensaje_confirmacion_dian: 'Envio solicitado desde modulo de nomina'
+        };
+        msg('Enviando nomina electronica a DIAN...', 'success');
+        const data = await requestJSON('/api/empresa/facturacion_electronica?action=nomina_electronica&empresa_id=' + encodeURIComponent(String(state.empresaID)), {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const fiscal = data && data.integracion_fiscal ? data.integracion_fiscal : {};
+        renderNominaDian(Object.assign({}, lote || {}, {
+          estado: fiscal.estado_envio || data.estado_nuevo || 'enviado',
+          mensajes: ['Documento ' + codigo + ' enviado al flujo fiscal. Estado DIAN/proveedor: ' + (fiscal.estado_envio || 'registrado') + '.']
+        }));
+        msg('Nomina electronica enviada al flujo DIAN. Documento: ' + codigo + '.', fiscal.estado_envio === 'fallido' ? 'error' : 'success');
       }
 
       async function seedParametros() {
@@ -2303,12 +2450,14 @@
         const pila = document.getElementById('nomCoPilaBtn');
         const dianVer = document.getElementById('nomCoDianVerBtn');
         const dianPreparar = document.getElementById('nomCoDianPrepararBtn');
+        const dianEnviar = document.getElementById('nomCoDianEnviarBtn');
         if (refresh) refresh.addEventListener('click', function () { loadDashboard(false).catch(function (err) { msg(err.message, 'error'); }); });
         if (seed) seed.addEventListener('click', function () { seedParametros().catch(function (err) { msg(err.message, 'error'); }); });
         if (seedPro) seedPro.addEventListener('click', function () { seedNominaProfesional().catch(function (err) { msg(err.message, 'error'); }); });
         if (pila) pila.addEventListener('click', function () { generarPila().catch(function (err) { msg(err.message, 'error'); }); });
         if (dianVer) dianVer.addEventListener('click', function () { cargarNominaDian(false).catch(function (err) { msg(err.message, 'error'); }); });
         if (dianPreparar) dianPreparar.addEventListener('click', function () { cargarNominaDian(true).catch(function (err) { msg(err.message, 'error'); }); });
+        if (dianEnviar) dianEnviar.addEventListener('click', function () { enviarNominaElectronicaDian().catch(function (err) { msg(err.message, 'error'); }); });
         const novedadesBody = document.getElementById('nomCoNovedadesBody');
         if (novedadesBody) {
           novedadesBody.addEventListener('click', function (ev) {

@@ -24,6 +24,27 @@ afecte dinero, documentos, licencias o seguridad.
 8. La opcion no crea tablas nuevas, no cambia permisos ni mezcla empresas; cada
    pantalla sigue filtrando por su `empresa_id` y sus endpoints existentes.
 
+## Nomina y nomina electronica DIAN
+
+1. Abrir `Administrar empresa > Finanzas y cumplimiento > Nomina`.
+2. Usar el submenu interno para configurar parametros legales, crear empleados
+   de nomina, registrar festivos y revisar liquidaciones.
+3. En `Liquidaciones`, elegir periodo, calcular nomina y conciliar asistencia
+   antes de continuar.
+4. En `Pagos y PILA`, validar control contable, consultar provisiones, generar
+   pagos y generar PILA cuando aplique.
+5. En `Nomina electronica DIAN`, usar `Preparar lote DIAN`; PCS arma el resumen
+   por empleado y muestra requisitos pendientes.
+6. Si no hay pendientes, usar `Enviar nomina electronica a DIAN`; la pantalla
+   vuelve a preparar el lote y llama el flujo fiscal existente de facturacion
+   electronica con `tipo_documento=nomina_electronica`.
+7. El envio conserva `empresa_id`, permisos existentes y configuracion DIAN de
+   la empresa; si DIAN/proveedor rechaza o no hay conectividad, la respuesta se
+   muestra en el panel de nomina y queda disponible para reintentos del modulo
+   fiscal.
+8. El tutorial vive en el mismo submenu y explica preparacion, envio, acuse,
+   ajustes y archivo documental.
+
 ## Snapshot completo VPS desde super administrador
 
 1. Abrir `Super Administrador > Plataforma > Docker VPS`.
@@ -133,7 +154,9 @@ afecte dinero, documentos, licencias o seguridad.
 ## Suite contador
 
 1. Abrir `Administrar empresa > Finanzas y cumplimiento > Suite contador` o
-   `Centro financiero y contable > Contador 360`.
+   desde el Centro financiero y contable. En el Centro financiero, `Suite
+   contador` es la unica entrada contable tipo hub; Portal contador y la suite
+   contable Colombia se abren desde dentro de esta pagina para evitar duplicados.
 2. La pagina conserva `empresa_id` y consulta
    `/api/empresa/permisos_contexto?empresa_id={id}` para pintar cada modulo como
    disponible o bloqueado.
@@ -174,6 +197,9 @@ afecte dinero, documentos, licencias o seguridad.
 
 ## Centro IA empresarial
 
+0. En contexto empresarial, el icono circular flotante del asistente IA se
+   mantiene activo para todas las empresas; no depende de permisos del Centro IA
+   ni de `localStorage` antiguo. Robot/secretaria no se muestran.
 1. Confirmar que el rol/licencia tenga permiso `reportes:R`; el Centro IA ya no
    se oculta por defecto, pero no concede permisos de escritura ni aprobacion.
 2. Abrir `Administrar empresa > Canales digitales y colaboracion > Centro IA
@@ -197,6 +223,25 @@ afecte dinero, documentos, licencias o seguridad.
    proveedor no estan disponibles.
 9. Los botones que ejecutan funciones IA deben mostrar el icono GPT y badge
    `IA` mediante `web/js/ai_button_icons.js`.
+
+## Chat IA flotante operativo
+
+1. El icono circular flotante esta activo por empresa y abre el chat normal con
+   voz conservada; no usa robot ni secretaria.
+2. Toda accion operativa generada por IA debe salir como `PCS_ACTION`, mostrarse
+   al usuario y ejecutarse solo despues de confirmar.
+3. El frontend solo permite `OPEN`, `POST` y `PUT` sobre endpoints cerrados; no
+   permite `DELETE` ni rutas genericas.
+4. Para `cajero`, las acciones permitidas son pedir/agregar productos a una
+   estacion, mesa, habitacion o venta directa mediante
+   `/api/empresa/ia_pedidos_estacion/ejecutar`, y activar/desactivar la emisora
+   mediante `/api/empresa/ia_radio/activar`.
+5. Productos manuales usan `/api/empresa/productos` y dependen de permisos de
+   inventario; nomina usa `/api/empresa/nomina` y depende de permisos de nomina;
+   tarifas de motel/hotel/tiempo usan los endpoints de tarifas bajo permisos de
+   ventas.
+6. El backend vuelve a validar sesion, `empresa_id`, licencia, pagina y permisos
+   efectivos en cada ruta; la IA no concede permisos ni ejecuta SQL libre.
 
 ## Auditoria integral de modulos
 
@@ -464,7 +509,12 @@ afecte dinero, documentos, licencias o seguridad.
    `/api/public/licencias/checkout_summary` y los conserva al pagar por Epayco,
    Wompi o activacion sin pago. Cada codigo queda limitado a un uso por empresa
    mediante `pagos_epayco`, `pagos_wompi` y `licencias_activaciones_gratis`.
-11. Pruebas: activar una vez, reintentar sin duplicar mientras sigue vigente,
+12. Los asesores de venta se configuran desde Super administrador > Comercial y
+   licencias > Asesor en ventas. Cada asesor puede tener porcentaje del primer
+   ano, porcentaje anual desde el segundo ano y meses de renovacion propios; el
+   backend calcula si el pago corresponde a `primer_anio`, `renovacion_anual` o
+   queda fuera del plazo antes de registrar la comision.
+13. Pruebas: activar una vez, reintentar sin duplicar mientras sigue vigente,
    bloquear segundo uso real despues del vencimiento y comprobar que el
    historial muestra otras licencias cuando la prueba no es renovable, ademas
    de validar que el correo capturado o enviado no incluya PDF de licencia y,
@@ -504,18 +554,20 @@ afecte dinero, documentos, licencias o seguridad.
    `empresa_id`.
 2. El navegador debe ser Chrome o Edge en HTTPS/local y la bascula debe exponer
    un puerto serial/USB compatible con Web Serial.
-3. En el panel del lector, seleccionar baudios y unidad leida (`kg`, `g` o
-   `lb`), presionar `Conectar bascula` y aceptar el permiso del navegador.
-4. Si el plato o recipiente ya esta sobre la bascula, usar `Tara local`; PCS
+3. En Configuracion carrito, activar la tarjeta independiente `Bascula
+   electronica`. Por defecto esta apagada para todas las empresas.
+4. En el carrito, seleccionar baudios y unidad leida (`kg`, `g` o `lb`),
+   presionar `Conectar bascula` y aceptar el permiso del navegador.
+5. Si el plato o recipiente ya esta sobre la bascula, usar `Tara local`; PCS
    descuenta ese peso en pantalla sin enviar comandos al equipo.
-5. El producto debe estar configurado con unidad de peso (`kg`, `g`, `lb`, `oz`
+6. El producto debe estar configurado con unidad de peso (`kg`, `g`, `lb`, `oz`
    o alias). Si esta en `unidad`, el sistema bloquea aplicar peso para evitar
    ventas decimales incorrectas.
-6. Escanear o digitar el SKU/codigo de barras. Si `aplicar peso` esta activo y
+7. Escanear o digitar el SKU/codigo de barras. Si `aplicar peso` esta activo y
    hay lectura mayor a cero, PCS manda la cantidad real al item del carrito.
-7. El backend acepta cantidades decimales solo para unidades de peso; en
+8. El backend acepta cantidades decimales solo para unidades de peso; en
    unidades normales sigue exigiendo cantidades naturales positivas.
-8. Pruebas: producto `kg` con lectura real, producto `unidad` con lectura activa
+9. Pruebas: producto `kg` con lectura real, producto `unidad` con lectura activa
    debe bloquearse, desconectar/reconectar la bascula, validar que otro
    `empresa_id` no accede al carrito ni a items ajenos mediante los endpoints
    existentes.
@@ -680,7 +732,10 @@ afecte dinero, documentos, licencias o seguridad.
 5. Visualmente debe conservar el modo plano del carrito: tarjetas sin sombras ni
    apariencia 3D, pero con el fondo estructural mas oscuro que las tarjetas para
    diferenciar zonas en cualquier apariencia.
-6. Pruebas: entrar con rol `cajero` por `login_usuario`, agregar item, buscar
+6. La vista enfocada del carrito debe mantener visibles, en este orden, las
+   tarjetas base: cliente, detalle del pago, productos agregados y acciones del
+   carrito. Las preferencias antiguas no deben ocultar esa estructura minima.
+7. Pruebas: entrar con rol `cajero` por `login_usuario`, agregar item, buscar
    producto, pagar, imprimir, validar inventario y caja, abrir/salir de pantalla
    completa y revisar contraste fondo/tarjetas.
 

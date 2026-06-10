@@ -157,10 +157,20 @@
             <button type="button" id="carritoBtnBuscarBotones" class="btn secondary w-full">Buscar Productos</button>
           </div>
         </div>
-        <div id="scalePanel" class="form mt-10" style="border:1px solid var(--border);border-radius:8px;padding:10px;background:var(--surface-soft);">
+        <div id="scannerMsg" class="form-help"></div>
+      </div>
+
+      <div id="scalePanel" class="card empresa-section mt-12" hidden>
+        <div class="empresa-section-header compact">
+          <div>
+            <h3 class="section-heading">Báscula electrónica</h3>
+            <p class="form-help mt-0">Conecta una báscula serial/USB para ventas por peso. Esta tarjeta solo aparece cuando la empresa activa el check en Configuración carrito.</p>
+          </div>
+        </div>
+        <div class="form">
           <div class="form-row" style="align-items:end;">
             <div class="form-col maxw-180">
-              <label class="form-label" for="scaleBaudRate">Bascula electronica</label>
+              <label class="form-label" for="scaleBaudRate">Puerto de báscula</label>
               <select id="scaleBaudRate" class="form-input">
                 <option value="9600">9600 baudios</option>
                 <option value="4800">4800 baudios</option>
@@ -201,11 +211,10 @@
               </div>
             </div>
             <div class="form-col">
-              <div id="scaleStatus" class="form-help">Conecta una bascula serial/USB compatible. El navegador pedira permiso para acceder al puerto.</div>
+              <div id="scaleStatus" class="form-help">Conecta una báscula serial/USB compatible. El navegador pedirá permiso para acceder al puerto.</div>
             </div>
           </div>
         </div>
-        <div id="scannerMsg" class="form-help"></div>
       </div>
 
       <section id="stationCustomerCard" class="card empresa-section carrito-customer-card is-hidden mt-12" hidden>
@@ -282,7 +291,12 @@
         <div id="stationClienteMsg" class="form-help mt-6"></div>
       </section>
 
-      <div id="stationCartSplitRow" class="carrito-station-split mt-12" hidden>
+      <div id="stationCartSplitRow" class="card empresa-section carrito-station-split carrito-products-card mt-12" hidden>
+        <div class="empresa-section-header compact carrito-products-header">
+          <div>
+            <h3 class="section-heading">Productos agregados al carrito</h3>
+          </div>
+        </div>
         <div class="carrito-station-split-main">
           <p class="form-help mb-8 mt-0" hidden></p>
           <div id="itemsListStation" class="carrito-items-box carrito-items-box--station-fixed">Selecciona un carrito para gestionar sus ítems.</div>
@@ -569,8 +583,11 @@
       </div>
 
       <section id="stationPaymentAmountsCard" class="card empresa-section carrito-payment-amounts-card is-hidden mt-12" hidden>
-        <div class="empresa-section-header compact" hidden>
-          <h3 class="section-heading"></h3>
+        <div class="empresa-section-header compact carrito-payment-amounts-header">
+          <div>
+            <h3 class="section-heading">Detalle del pago</h3>
+            <p class="form-help mt-0">Valores recibidos por medio de pago antes de cerrar el carrito.</p>
+          </div>
         </div>
         <div id="stationPaymentAmountsRow" class="carrito-station-payment-inputs-row">
           <div class="form-col">
@@ -1617,6 +1634,7 @@
         cliente_general_nombre: 'Cliente General',
         mostrar_impuestos_item: true,
         mostrar_lector_codigo_barras: true,
+        habilitar_bascula_electronica: false,
         mostrar_descuentos: false,
         mostrar_propina: false,
         mostrar_comision: false,
@@ -1734,6 +1752,9 @@
         cliente_general_nombre: normalize(src.cliente_general_nombre || src.nombre_cliente_general || src.cliente_generico_nombre || base.cliente_general_nombre) || base.cliente_general_nombre,
         mostrar_impuestos_item: src.mostrar_impuestos_item === undefined ? base.mostrar_impuestos_item : Boolean(src.mostrar_impuestos_item),
         mostrar_lector_codigo_barras: src.mostrar_lector_codigo_barras === undefined ? base.mostrar_lector_codigo_barras : Boolean(src.mostrar_lector_codigo_barras),
+        habilitar_bascula_electronica: src.habilitar_bascula_electronica === undefined
+          ? (src.bascula_electronica_habilitada === undefined ? base.habilitar_bascula_electronica : Boolean(src.bascula_electronica_habilitada))
+          : Boolean(src.habilitar_bascula_electronica),
         mostrar_descuentos: src.mostrar_descuentos === undefined ? base.mostrar_descuentos : Boolean(src.mostrar_descuentos),
         mostrar_propina: src.mostrar_propina === undefined ? base.mostrar_propina : Boolean(src.mostrar_propina),
         mostrar_comision: src.mostrar_comision === undefined ? base.mostrar_comision : Boolean(src.mostrar_comision),
@@ -2047,6 +2068,13 @@
         cfg.mostrar_boton_pagar = true;
         cfg.mostrar_tarjetas_pago = true;
       }
+      cfg.mostrar_selector_cliente = true;
+      cfg.mostrar_tarjeta_items_carrito = true;
+      cfg.mostrar_tarjeta_acciones_carrito = true;
+      cfg.mostrar_tarjeta_totales_detalles = true;
+      cfg.mostrar_tarjeta_valores_pago = true;
+      cfg.mostrar_tarjetas_pago = true;
+      cfg.mostrar_boton_pagar = true;
       return cfg;
     }
 
@@ -2213,6 +2241,21 @@
 
       setFieldColumnVisibility('paymentMethod', showPaymentMeans);
       setFieldColumnVisibility('paymentReference', showPaymentMeans);
+    }
+
+    function isScaleEnabledForCurrentCart() {
+      const ui = normalizeUnifiedCartUIConfig(state.stationCartUI || getCurrentStationCartUIConfig());
+      return Boolean(ui.habilitar_bascula_electronica);
+    }
+
+    function syncScalePanelVisibility(ui) {
+      const cfg = normalizeUnifiedCartUIConfig(ui || state.stationCartUI || getCurrentStationCartUIConfig());
+      const focusedSaleMode = state.stationMode || state.directSaleMode;
+      const visible = focusedSaleMode && Boolean(cfg.habilitar_bascula_electronica);
+      setCardVisibility('scalePanel', visible);
+      if (!visible && state.scale && (state.scale.connected || state.scale.connecting)) {
+        disconnectScale().catch(function() {});
+      }
     }
 
     function resetHiddenCheckoutOptions() {
@@ -2423,6 +2466,7 @@
       setPaymentCheckoutVisibility(ui);
 
       setCardVisibility('scannerPanel', Boolean(ui.mostrar_tarjeta_lector_codigo) && Boolean(ui.mostrar_lector_codigo_barras));
+      syncScalePanelVisibility(ui);
       const focusedSaleMode = state.stationMode || state.directSaleMode;
       setCardVisibility('stationCartSplitRow', Boolean(ui.mostrar_tarjeta_items_carrito) && focusedSaleMode && Boolean(getSelectedCarrito()));
       if (!focusedSaleMode) {
@@ -2759,19 +2803,21 @@
       const connect = document.getElementById('scaleConnectBtn');
       const disconnect = document.getElementById('scaleDisconnectBtn');
       const tare = document.getElementById('scaleTareBtn');
+      const enabledForCompany = isScaleEnabledForCurrentCart();
       const unit = normalize(document.getElementById('scaleDefaultUnit') && document.getElementById('scaleDefaultUnit').value) || state.scale.displayUnit || 'kg';
       state.scale.displayUnit = unit;
       const value = scaleKgToUnit(currentScaleNetKg(), unit);
       if (display) display.textContent = (Math.round(value * 1000) / 1000).toFixed(unit === 'g' ? 0 : 3) + ' ' + unit;
-      if (connect) connect.disabled = !state.scale.supported || state.scale.connected || state.scale.connecting;
+      if (connect) connect.disabled = !enabledForCompany || !state.scale.supported || state.scale.connected || state.scale.connecting;
       if (disconnect) disconnect.disabled = !state.scale.connected;
       if (tare) tare.disabled = !state.scale.connected;
-      if (!state.scale.supported) {
-        setScaleStatus('Este navegador no permite Web Serial. Usa Chrome o Edge en HTTPS/local para conectar la bascula.', true);
+      if (enabledForCompany && !state.scale.supported) {
+        setScaleStatus('Este navegador no permite Web Serial. Usa Chrome o Edge en HTTPS/local para conectar la báscula.', true);
       }
     }
 
     function applyScaleWeightToQuantity(force) {
+      if (!isScaleEnabledForCurrentCart()) return false;
       const enabled = document.getElementById('scaleApplyWeight');
       if (enabled && !enabled.checked) return false;
       const input = document.getElementById('scannerCantidad');
@@ -2822,6 +2868,10 @@
     }
 
     async function connectScale() {
+      if (!isScaleEnabledForCurrentCart()) {
+        setScaleStatus('Activa la báscula electrónica en Configuración carrito antes de conectar el puerto.', true);
+        return;
+      }
       if (!state.scale.supported) {
         setScaleStatus('Web Serial no esta disponible en este navegador.', true);
         return;
@@ -6541,7 +6591,7 @@
         setScannerMessage('Buscando producto en catálogo...', false);
         const producto = await resolveProductoFromScanCode(scanCode);
         const productoUnidad = normalize(producto.unidad_medida) || 'unidad';
-        const useScaleWeight = Boolean(document.getElementById('scaleApplyWeight') && document.getElementById('scaleApplyWeight').checked && currentScaleNetKg() > 0);
+        const useScaleWeight = Boolean(isScaleEnabledForCurrentCart() && document.getElementById('scaleApplyWeight') && document.getElementById('scaleApplyWeight').checked && currentScaleNetKg() > 0);
         let qty = parseQuantityValue(qtyRaw, productoUnidad, 0);
         if (useScaleWeight) {
           if (!isWeightUnit(productoUnidad)) {
@@ -6756,9 +6806,8 @@
     function renderStationCustomerPanel(carrito) {
       const card = document.getElementById('stationCustomerCard');
       if (!card) return;
-      const ui = normalizeUnifiedCartUIConfig(getCurrentStationCartUIConfig());
       const focusedSaleMode = state.stationMode || state.directSaleMode;
-      const show = focusedSaleMode && Boolean(carrito) && (state.directSaleMode || ui.mostrar_selector_cliente || ui.cliente_obligatorio_pago || state.customerPanelOpen);
+      const show = focusedSaleMode && Boolean(carrito);
       card.hidden = !show;
       card.classList.toggle('is-hidden', !show);
       card.style.display = show ? '' : 'none';

@@ -1925,6 +1925,11 @@ body.has-floating-menu.admin-empresa-shell .admin-frame-toolbar{top:calc(var(--f
 .ai-chat-toggle-button{position:fixed;right:20px;bottom:20px;z-index:1660;display:inline-flex;align-items:center;justify-content:center;width:58px;height:58px;min-width:58px;gap:0;padding:0;font-weight:800;border:1px solid color-mix(in srgb,#fff 28%,transparent);border-radius:999px;background:radial-gradient(circle at 30% 24%,#ffffff 0 10%,#99f6e4 11% 22%,#0f172a 23% 100%);color:#fff;cursor:pointer;box-shadow:0 22px 50px rgba(0,0,0,.24);transition:transform .18s ease,box-shadow .18s ease,opacity .2s ease}
 .ai-chat-toggle-button:hover{transform:translateY(-1px) scale(1.02);box-shadow:0 24px 58px rgba(0,0,0,.28)}
 .ai-chat-toggle-button img.icon{width:26px;height:26px;margin:0;filter:brightness(0) invert(1)}
+.ai-openai-mark{position:relative;display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px;flex:0 0 36px;color:#fff}
+.ai-openai-knot{position:absolute;inset:1px;border-radius:50%;background:conic-gradient(from 18deg,#fff 0 9%,transparent 9% 14%,#fff 14% 25%,transparent 25% 31%,#fff 31% 42%,transparent 42% 48%,#fff 48% 59%,transparent 59% 65%,#fff 65% 76%,transparent 76% 82%,#fff 82% 93%,transparent 93% 100%);filter:drop-shadow(0 1px 4px rgba(15,23,42,.28))}
+.ai-openai-knot::before{content:"";position:absolute;inset:8px;border-radius:50%;background:radial-gradient(circle at 40% 34%,#22d3ee,#0f172a 72%)}
+.ai-openai-knot::after{content:"";position:absolute;inset:5px;border:2px solid rgba(255,255,255,.82);border-left-color:transparent;border-bottom-color:transparent;border-radius:42% 58% 48% 52%;transform:rotate(32deg)}
+.ai-openai-text{position:relative;z-index:1;display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;background:rgba(15,23,42,.74);box-shadow:0 0 0 1px rgba(255,255,255,.45);font-size:10px;font-weight:950;letter-spacing:.02em;line-height:1;color:#fff}
 .ai-chat-toggle-button .ai-chat-toggle-label{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;border:0;clip:rect(0 0 0 0);white-space:nowrap}
 @media (max-width: 860px){
   .ai-chat-toggle-button{right:14px;bottom:14px;width:54px;height:54px;min-width:54px}
@@ -9606,10 +9611,12 @@ html[data-theme^="light"] .estaciones-page .empresa-section{
 #carritoResumen:empty{display:none;}
 .carrito-primary-layout{display:grid;grid-template-columns:minmax(0,1fr) minmax(238px,306px);gap:18px;align-items:start;width:100%;}
 .carrito-primary-main{min-width:0;width:100%;display:flex;flex-direction:column;}
-.carrito-primary-main #stationPaymentAmountsCard{order:40;}
-.carrito-primary-main #stationPaymentQrCard{order:45;}
+.carrito-primary-main #stationCustomerCard{order:10;}
+.carrito-primary-main #stationPaymentAmountsCard{order:20;}
+.carrito-primary-main #stationCartSplitRow{order:30;}
+.carrito-primary-main #stationCartActionsCard{order:40;}
 .carrito-primary-main #stationCheckoutPanel{order:50;}
-.carrito-primary-main #stationCartActionsCard{order:60;}
+.carrito-primary-main #stationPaymentQrCard{order:55;}
 .carrito-primary-main #stationWorkerCommissionCard{order:70;}
 .carrito-side-column{min-width:238px;max-width:306px;width:100%;display:flex;flex-direction:column;gap:12px;align-self:start;}
 .carrito-side-column #stationVipAccessCard{width:fit-content;min-width:210px;max-width:100%;box-sizing:border-box;margin-top:0;align-self:flex-start;padding:9px 10px;}
@@ -9672,6 +9679,8 @@ html[data-theme^="light"] .estaciones-page .empresa-section{
   color:var(--text);
 }
 .carrito-station-split{display:flex;flex-wrap:wrap;gap:18px;align-items:stretch;}
+.carrito-station-split.carrito-products-card{display:flex;flex-direction:column;flex-wrap:nowrap;gap:10px;align-items:stretch;}
+.carrito-products-header{margin-bottom:0;}
 .carrito-station-split-main{flex:2;min-width:280px;}
 .carrito-station-totals-aside{display:none;}
 .carrito-items-box--station-fixed{min-height:220px;max-height:min(52vh,420px);}

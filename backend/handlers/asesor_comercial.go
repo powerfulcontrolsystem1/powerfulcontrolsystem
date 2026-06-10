@@ -100,7 +100,7 @@ func sendAsesorComercialInvitationEmail(r *http.Request, dbSuper *sql.DB, item d
 	if name == "" {
 		name = "administrador"
 	}
-	asunto, cuerpoPlano, cuerpoHTML := asesorComercialEmailContent(name, item.Codigo, item.PorcentajeComision, item.MesesAsociacion, acceptURL, loginURL)
+	asunto, cuerpoPlano, cuerpoHTML := asesorComercialEmailContent(name, item.Codigo, item.PorcentajePrimerAnio, item.PorcentajeRenovacionAnual, item.MesesRenovacion, acceptURL, loginURL)
 	if isEmpresaUsuarioMailTestMode(dbSuper) {
 		metadataJSON := fmt.Sprintf(`{"accept_url":%q,"login_url":%q,"codigo":%q,"mail_mode":"test"}`, acceptURL, loginURL, item.Codigo)
 		if err := captureEmpresaUsuarioMailNotification(dbSuper, asesorComercialMailNotificationType, 0, item.AdminEmail, asunto, cuerpoPlano, token, metadataJSON, adminEmailFromRequest(r)); err != nil {
@@ -164,13 +164,20 @@ func sendAsesorComercialInvitationEmail(r *http.Request, dbSuper *sql.DB, item d
 	return acceptURL, smtp.SendMail(addr, auth, smtpEmail, []string{item.AdminEmail}, []byte(msg))
 }
 
-func asesorComercialEmailContent(name, code string, pct float64, meses int, acceptURL, loginURL string) (string, string, string) {
-	if meses <= 0 {
-		meses = 6
+func asesorComercialEmailContent(name, code string, pctPrimerAnio float64, pctRenovacion float64, mesesRenovacion int, acceptURL, loginURL string) (string, string, string) {
+	if pctPrimerAnio <= 0 {
+		pctPrimerAnio = 40
 	}
-	subject := "Invitación para activar asesor comercial"
-	text := fmt.Sprintf("Hola %s,\n\nPowerful Control System te invitó a ser asesor comercial.\n\nTu código de asesor será: %s\nComisión configurada: %.2f%%\nTiempo de asociación por cliente: %d mes(es)\n\nPara aceptar la invitación, abre este enlace:\n%s\n\nDespués podrás iniciar sesión y ver Mis clientes desde Seleccionar empresa:\n%s\n\nSi no esperabas esta invitación, ignora este mensaje.\n", name, code, pct, meses, acceptURL, loginURL)
-	html := fmt.Sprintf("<html><body><p>Hola %s,</p><p>Powerful Control System te invitó a ser <strong>asesor comercial</strong>.</p><p><strong>Código de asesor:</strong> %s<br><strong>Comisión configurada:</strong> %.2f%%<br><strong>Tiempo de asociación por cliente:</strong> %d mes(es)</p><p><a href=\"%s\" style=\"display:inline-block;padding:12px 18px;background:#0f6fcb;color:#fff;text-decoration:none;border-radius:8px;font-weight:700;\">Aceptar invitación</a></p><p>Después podrás iniciar sesión y consultar <strong>Mis clientes</strong> desde Seleccionar empresa.</p><p>Acceso manual: <a href=\"%s\">%s</a></p><p>Si no esperabas esta invitación, ignora este mensaje.</p></body></html>", htmlEscape(name), htmlEscape(code), pct, meses, htmlEscape(acceptURL), htmlEscape(loginURL), htmlEscape(loginURL))
+	if pctRenovacion < 0 {
+		pctRenovacion = 0
+	}
+	if mesesRenovacion < 0 {
+		mesesRenovacion = 0
+	}
+	meses := 12 + mesesRenovacion
+	subject := "Invitacion para activar asesor comercial"
+	text := fmt.Sprintf("Hola %s,\n\nPowerful Control System te invito a ser asesor comercial.\n\nTu codigo de asesor sera: %s\nComision del primer ano: %.2f%%\nComision desde el segundo ano: %.2f%% anual durante %d mes(es)\nTiempo total de asociacion por cliente: %d mes(es)\n\nPara aceptar la invitacion, abre este enlace:\n%s\n\nDespues podras iniciar sesion y ver Mis clientes desde Seleccionar empresa:\n%s\n\nSi no esperabas esta invitacion, ignora este mensaje.\n", name, code, pctPrimerAnio, pctRenovacion, mesesRenovacion, meses, acceptURL, loginURL)
+	html := fmt.Sprintf("<html><body><p>Hola %s,</p><p>Powerful Control System te invito a ser <strong>asesor comercial</strong>.</p><p><strong>Codigo de asesor:</strong> %s<br><strong>Comision del primer ano:</strong> %.2f%%<br><strong>Comision desde el segundo ano:</strong> %.2f%% anual durante %d mes(es)<br><strong>Tiempo total de asociacion por cliente:</strong> %d mes(es)</p><p><a href=\"%s\" style=\"display:inline-block;padding:12px 18px;background:#0f6fcb;color:#fff;text-decoration:none;border-radius:8px;font-weight:700;\">Aceptar invitacion</a></p><p>Despues podras iniciar sesion y consultar <strong>Mis clientes</strong> desde Seleccionar empresa.</p><p>Acceso manual: <a href=\"%s\">%s</a></p><p>Si no esperabas esta invitacion, ignora este mensaje.</p></body></html>", htmlEscape(name), htmlEscape(code), pctPrimerAnio, pctRenovacion, mesesRenovacion, meses, htmlEscape(acceptURL), htmlEscape(loginURL), htmlEscape(loginURL))
 	return subject, text, html
 }
 
@@ -215,22 +222,25 @@ func AsesorComercialSuperHandler(dbSuper *sql.DB) http.HandlerFunc {
 			writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "items": items})
 		case http.MethodPost:
 			var payload struct {
-				Email               string  `json:"email"`
-				PorcentajeComision  float64 `json:"porcentaje_comision"`
-				MesesAsociacion     int     `json:"meses_asociacion"`
-				MetodoPagoComision  string  `json:"metodo_pago_comision"`
-				EntidadFinanciera   string  `json:"entidad_financiera"`
-				TipoCuenta          string  `json:"tipo_cuenta"`
-				NumeroCuenta        string  `json:"numero_cuenta"`
-				TitularCuenta       string  `json:"titular_cuenta"`
-				DocumentoTitular    string  `json:"documento_titular"`
-				EmailPagos          string  `json:"email_pagos"`
-				TelefonoPagos       string  `json:"telefono_pagos"`
-				PeriodicidadPago    string  `json:"periodicidad_pago"`
-				DiaPago             int     `json:"dia_pago"`
-				PagoMinimo          float64 `json:"pago_minimo"`
-				RequiereSoportePago bool    `json:"requiere_soporte_pago"`
-				Observaciones       string  `json:"observaciones"`
+				Email                     string  `json:"email"`
+				PorcentajeComision        float64 `json:"porcentaje_comision"`
+				PorcentajePrimerAnio      float64 `json:"porcentaje_primer_anio"`
+				PorcentajeRenovacionAnual float64 `json:"porcentaje_renovacion_anual"`
+				MesesRenovacion           int     `json:"meses_renovacion"`
+				MesesAsociacion           int     `json:"meses_asociacion"`
+				MetodoPagoComision        string  `json:"metodo_pago_comision"`
+				EntidadFinanciera         string  `json:"entidad_financiera"`
+				TipoCuenta                string  `json:"tipo_cuenta"`
+				NumeroCuenta              string  `json:"numero_cuenta"`
+				TitularCuenta             string  `json:"titular_cuenta"`
+				DocumentoTitular          string  `json:"documento_titular"`
+				EmailPagos                string  `json:"email_pagos"`
+				TelefonoPagos             string  `json:"telefono_pagos"`
+				PeriodicidadPago          string  `json:"periodicidad_pago"`
+				DiaPago                   int     `json:"dia_pago"`
+				PagoMinimo                float64 `json:"pago_minimo"`
+				RequiereSoportePago       bool    `json:"requiere_soporte_pago"`
+				Observaciones             string  `json:"observaciones"`
 			}
 			if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
 				http.Error(w, "payload invalido", http.StatusBadRequest)
@@ -254,8 +264,20 @@ func AsesorComercialSuperHandler(dbSuper *sql.DB) http.HandlerFunc {
 				http.Error(w, "porcentaje_comision debe estar entre 0 y 100", http.StatusBadRequest)
 				return
 			}
-			if payload.MesesAsociacion <= 0 {
-				payload.MesesAsociacion = 6
+			if payload.PorcentajePrimerAnio <= 0 {
+				payload.PorcentajePrimerAnio = payload.PorcentajeComision
+			}
+			if payload.PorcentajePrimerAnio < 0 || payload.PorcentajePrimerAnio > 100 || payload.PorcentajeRenovacionAnual < 0 || payload.PorcentajeRenovacionAnual > 100 {
+				http.Error(w, "los porcentajes de comision deben estar entre 0 y 100", http.StatusBadRequest)
+				return
+			}
+			if payload.MesesRenovacion < 0 || payload.MesesRenovacion > 120 {
+				http.Error(w, "meses_renovacion debe estar entre 0 y 120", http.StatusBadRequest)
+				return
+			}
+			minMesesAsociacion := 12 + payload.MesesRenovacion
+			if payload.MesesAsociacion < minMesesAsociacion {
+				payload.MesesAsociacion = minMesesAsociacion
 			}
 			code := ""
 			if existing, lookupErr := dbpkg.GetAsesorComercialByEmail(dbSuper, email); lookupErr == nil && existing != nil {
@@ -275,26 +297,29 @@ func AsesorComercialSuperHandler(dbSuper *sql.DB) http.HandlerFunc {
 				return
 			}
 			item := dbpkg.AsesorComercial{
-				AdminEmail:          email,
-				AdminNombre:         target.Name,
-				Codigo:              code,
-				PorcentajeComision:  roundMoney(payload.PorcentajeComision),
-				MesesAsociacion:     payload.MesesAsociacion,
-				MetodoPagoComision:  payload.MetodoPagoComision,
-				EntidadFinanciera:   payload.EntidadFinanciera,
-				TipoCuenta:          payload.TipoCuenta,
-				NumeroCuenta:        payload.NumeroCuenta,
-				TitularCuenta:       payload.TitularCuenta,
-				DocumentoTitular:    payload.DocumentoTitular,
-				EmailPagos:          payload.EmailPagos,
-				TelefonoPagos:       payload.TelefonoPagos,
-				PeriodicidadPago:    payload.PeriodicidadPago,
-				DiaPago:             payload.DiaPago,
-				PagoMinimo:          roundMoney(payload.PagoMinimo),
-				RequiereSoportePago: payload.RequiereSoportePago,
-				InvitacionExpiraEn:  expira,
-				InvitadoPorEmail:    admin.Email,
-				Observaciones:       payload.Observaciones,
+				AdminEmail:                email,
+				AdminNombre:               target.Name,
+				Codigo:                    code,
+				PorcentajeComision:        roundMoney(payload.PorcentajeComision),
+				PorcentajePrimerAnio:      roundMoney(payload.PorcentajePrimerAnio),
+				PorcentajeRenovacionAnual: roundMoney(payload.PorcentajeRenovacionAnual),
+				MesesRenovacion:           payload.MesesRenovacion,
+				MesesAsociacion:           payload.MesesAsociacion,
+				MetodoPagoComision:        payload.MetodoPagoComision,
+				EntidadFinanciera:         payload.EntidadFinanciera,
+				TipoCuenta:                payload.TipoCuenta,
+				NumeroCuenta:              payload.NumeroCuenta,
+				TitularCuenta:             payload.TitularCuenta,
+				DocumentoTitular:          payload.DocumentoTitular,
+				EmailPagos:                payload.EmailPagos,
+				TelefonoPagos:             payload.TelefonoPagos,
+				PeriodicidadPago:          payload.PeriodicidadPago,
+				DiaPago:                   payload.DiaPago,
+				PagoMinimo:                roundMoney(payload.PagoMinimo),
+				RequiereSoportePago:       payload.RequiereSoportePago,
+				InvitacionExpiraEn:        expira,
+				InvitadoPorEmail:          admin.Email,
+				Observaciones:             payload.Observaciones,
 			}
 			id, err := dbpkg.CreateAsesorComercial(dbSuper, item, tokenHash)
 			if err != nil {
@@ -373,21 +398,24 @@ func AsesorComercialSuperHandler(dbSuper *sql.DB) http.HandlerFunc {
 				return
 			}
 			var payload struct {
-				PorcentajeComision  float64 `json:"porcentaje_comision"`
-				MesesAsociacion     int     `json:"meses_asociacion"`
-				MetodoPagoComision  string  `json:"metodo_pago_comision"`
-				EntidadFinanciera   string  `json:"entidad_financiera"`
-				TipoCuenta          string  `json:"tipo_cuenta"`
-				NumeroCuenta        string  `json:"numero_cuenta"`
-				TitularCuenta       string  `json:"titular_cuenta"`
-				DocumentoTitular    string  `json:"documento_titular"`
-				EmailPagos          string  `json:"email_pagos"`
-				TelefonoPagos       string  `json:"telefono_pagos"`
-				PeriodicidadPago    string  `json:"periodicidad_pago"`
-				DiaPago             int     `json:"dia_pago"`
-				PagoMinimo          float64 `json:"pago_minimo"`
-				RequiereSoportePago bool    `json:"requiere_soporte_pago"`
-				Observaciones       string  `json:"observaciones"`
+				PorcentajeComision        float64 `json:"porcentaje_comision"`
+				PorcentajePrimerAnio      float64 `json:"porcentaje_primer_anio"`
+				PorcentajeRenovacionAnual float64 `json:"porcentaje_renovacion_anual"`
+				MesesRenovacion           int     `json:"meses_renovacion"`
+				MesesAsociacion           int     `json:"meses_asociacion"`
+				MetodoPagoComision        string  `json:"metodo_pago_comision"`
+				EntidadFinanciera         string  `json:"entidad_financiera"`
+				TipoCuenta                string  `json:"tipo_cuenta"`
+				NumeroCuenta              string  `json:"numero_cuenta"`
+				TitularCuenta             string  `json:"titular_cuenta"`
+				DocumentoTitular          string  `json:"documento_titular"`
+				EmailPagos                string  `json:"email_pagos"`
+				TelefonoPagos             string  `json:"telefono_pagos"`
+				PeriodicidadPago          string  `json:"periodicidad_pago"`
+				DiaPago                   int     `json:"dia_pago"`
+				PagoMinimo                float64 `json:"pago_minimo"`
+				RequiereSoportePago       bool    `json:"requiere_soporte_pago"`
+				Observaciones             string  `json:"observaciones"`
 			}
 			if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
 				http.Error(w, "payload invalido", http.StatusBadRequest)
@@ -397,26 +425,41 @@ func AsesorComercialSuperHandler(dbSuper *sql.DB) http.HandlerFunc {
 				http.Error(w, "porcentaje_comision debe estar entre 0 y 100", http.StatusBadRequest)
 				return
 			}
-			if payload.MesesAsociacion <= 0 {
-				payload.MesesAsociacion = 6
+			if payload.PorcentajePrimerAnio <= 0 {
+				payload.PorcentajePrimerAnio = payload.PorcentajeComision
+			}
+			if payload.PorcentajePrimerAnio < 0 || payload.PorcentajePrimerAnio > 100 || payload.PorcentajeRenovacionAnual < 0 || payload.PorcentajeRenovacionAnual > 100 {
+				http.Error(w, "los porcentajes de comision deben estar entre 0 y 100", http.StatusBadRequest)
+				return
+			}
+			if payload.MesesRenovacion < 0 || payload.MesesRenovacion > 120 {
+				http.Error(w, "meses_renovacion debe estar entre 0 y 120", http.StatusBadRequest)
+				return
+			}
+			minMesesAsociacion := 12 + payload.MesesRenovacion
+			if payload.MesesAsociacion < minMesesAsociacion {
+				payload.MesesAsociacion = minMesesAsociacion
 			}
 			if err := dbpkg.UpdateAsesorComercial(dbSuper, dbpkg.AsesorComercial{
-				ID:                  id,
-				PorcentajeComision:  roundMoney(payload.PorcentajeComision),
-				MesesAsociacion:     payload.MesesAsociacion,
-				MetodoPagoComision:  payload.MetodoPagoComision,
-				EntidadFinanciera:   payload.EntidadFinanciera,
-				TipoCuenta:          payload.TipoCuenta,
-				NumeroCuenta:        payload.NumeroCuenta,
-				TitularCuenta:       payload.TitularCuenta,
-				DocumentoTitular:    payload.DocumentoTitular,
-				EmailPagos:          payload.EmailPagos,
-				TelefonoPagos:       payload.TelefonoPagos,
-				PeriodicidadPago:    payload.PeriodicidadPago,
-				DiaPago:             payload.DiaPago,
-				PagoMinimo:          roundMoney(payload.PagoMinimo),
-				RequiereSoportePago: payload.RequiereSoportePago,
-				Observaciones:       payload.Observaciones,
+				ID:                        id,
+				PorcentajeComision:        roundMoney(payload.PorcentajeComision),
+				PorcentajePrimerAnio:      roundMoney(payload.PorcentajePrimerAnio),
+				PorcentajeRenovacionAnual: roundMoney(payload.PorcentajeRenovacionAnual),
+				MesesRenovacion:           payload.MesesRenovacion,
+				MesesAsociacion:           payload.MesesAsociacion,
+				MetodoPagoComision:        payload.MetodoPagoComision,
+				EntidadFinanciera:         payload.EntidadFinanciera,
+				TipoCuenta:                payload.TipoCuenta,
+				NumeroCuenta:              payload.NumeroCuenta,
+				TitularCuenta:             payload.TitularCuenta,
+				DocumentoTitular:          payload.DocumentoTitular,
+				EmailPagos:                payload.EmailPagos,
+				TelefonoPagos:             payload.TelefonoPagos,
+				PeriodicidadPago:          payload.PeriodicidadPago,
+				DiaPago:                   payload.DiaPago,
+				PagoMinimo:                roundMoney(payload.PagoMinimo),
+				RequiereSoportePago:       payload.RequiereSoportePago,
+				Observaciones:             payload.Observaciones,
 			}, admin.Email); err != nil {
 				http.Error(w, "no se pudo actualizar asesor: "+err.Error(), http.StatusInternalServerError)
 				return

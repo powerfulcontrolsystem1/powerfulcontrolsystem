@@ -1,3 +1,16 @@
+2026-06-10: Nota de IA operativa por rol
+- `linkChatIA` sigue bajo modulo `ventas` con accion de lectura (`R`), y las
+  consultas del chat empresarial pasan por wrappers de ventas para permitir uso
+  operativo sin abrir paginas administrativas.
+- `cajero` puede usar el chat IA como API auxiliar del carrito: consultar el
+  asistente, ejecutar `/api/empresa/ia_pedidos_estacion/ejecutar` para pedidos
+  de estacion/mesa/habitacion y `/api/empresa/ia_radio/activar` para la emisora.
+- `cajero` no recibe paginas de Productos, Nomina, Tarifas ni Seguridad por este
+  cambio. Si intenta crear productos, modificar nomina o configurar tarifas, los
+  wrappers de inventario, nomina o ventas y la matriz efectiva deciden el acceso.
+- La IA solo propone acciones confirmables y no puede ejecutar `DELETE`, SQL
+  libre ni endpoints fuera de la lista permitida del drawer.
+
 2026-06-10: Nota de E-mail Corporativo
 - Se agrega pagina `linkEmailCorporativo` bajo modulo `seguridad` con accion de lectura (`R`) para abrir el buzon corporativo por empresa.
 - La configuracion del buzon sigue usando `Configuracion > Email corporativo` y requiere permisos de seguridad segun wrapper existente.

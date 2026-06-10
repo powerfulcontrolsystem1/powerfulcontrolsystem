@@ -46,3 +46,12 @@ func TestNormalizeChatFlotanteRadioCountry(t *testing.T) {
 		}
 	}
 }
+
+func TestChatFlotanteChatEnabledAlwaysActiveForEmpresa(t *testing.T) {
+	if got := getChatFlotanteBoolForEmpresa(nil, nil, 12, chatFlotanteChatEnabledKey, false); !got {
+		t.Fatalf("chat flotante empresarial desactivado; want activo para empresas")
+	}
+	if got := chatFlotantePrefsResponse(nil, nil, 12)["chat_enabled"]; got != true {
+		t.Fatalf("chat_enabled=%v, want true para empresa", got)
+	}
+}

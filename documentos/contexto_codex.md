@@ -18,6 +18,37 @@ decisiones en cada tarea.
   Cualquier restauracion real debe revisar el manifiesto y configurar secretos
   manualmente en la VPS destino.
 
+## Actualizacion 2026-06-10 - Nomina en Finanzas y cumplimiento
+
+- `Nomina` queda como acceso directo del grupo principal `Finanzas y
+  cumplimiento` y como entrada prioritaria del centro financiero.
+- El nuevo hub `web/administrar_empresa/nomina_menu.html` contiene submenu
+  propio: centro, empleados, configuracion legal, liquidaciones, pagos/PILA,
+  nomina electronica DIAN y tutorial.
+- Las subpaginas reutilizan `nomina_sueldos.html?seccion=...` para no duplicar
+  reglas ni APIs; la vista antigua sin `seccion` conserva pantalla completa.
+- El boton `Enviar nomina electronica a DIAN` prepara el lote, bloquea requisitos
+  pendientes y llama el endpoint fiscal existente de facturacion electronica con
+  `tipo_documento=nomina_electronica` y `empresa_id`.
+
+## Actualizacion 2026-06-10 - IA flotante activa para todas las empresas
+
+- En contexto empresarial, `/api/chat_flotante/preferencias?empresa_id=...`
+  responde `chat_enabled=true` aunque existan preferencias antiguas apagadas.
+- El arranque reaplica `chat_flotante.chat_enabled=1` a empresas existentes con
+  la migracion `20260610_chat_ia_activo_empresas_reaplicar`.
+- `web/js/ai_chat_drawer.js` fuerza el icono circular flotante como visible en
+  empresas y no permite que `localStorage` viejo lo oculte; robot/secretaria
+  siguen retirados y la voz se conserva como opcion.
+- Si el backend local no tiene `OPENAI_API_KEY` en `backend/.env.local`, puede
+  cargarla como fallback desde `deploy/.env.platform` sin imprimir el secreto.
+  La credencial descifrable registrada en Super administrador sigue siendo la
+  principal; la variable de entorno valida actua como respaldo cuando existan
+  credenciales cifradas antiguas que no puedan leerse con la `CONFIG_ENC_KEY`
+  actual.
+- El icono flotante del chat usa un simbolo circular tipo OpenAI con las letras
+  `IA`; paginas viejas con `gpt.svg` se normalizan desde `ai_chat_drawer.js`.
+
 ## Actualizacion 2026-06-09 - IA empresarial sin robot ni secretaria
 
 - El asistente IA empresarial vuelve al recuadro normal: no debe mostrarse robot,

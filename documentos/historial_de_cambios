@@ -1,3 +1,66 @@
+2026-06-10: Estructura base visible del carrito.
+- Modulo afectado: `carritos`, `venta_directa`, `estaciones`.
+- Frontend: `web/administrar_empresa/carrito_de_compras.html` protege la vista enfocada para que siempre muestre las tarjetas base: cliente, detalle del pago, productos agregados y acciones del carrito.
+- UX: la tarjeta `Detalle del pago` ahora tiene titulo/descripción visibles y la zona de productos queda como tarjeta titulada `Productos agregados al carrito`.
+- Estilos: `web/estilos.css` fija el orden visual Cliente -> Detalle del pago -> Productos -> Acciones, evitando que preferencias antiguas oculten o reordenen el flujo operativo.
+- Seguridad: no se agregan endpoints, tablas ni dependencias; el cambio conserva datos y permisos por `empresa_id`.
+- QA: validacion de sintaxis de scripts embebidos de `carrito_de_compras.html` con Node empaquetado y `git diff --check`.
+
+2026-06-10: Nomina como modulo principal de Finanzas y cumplimiento.
+- Modulos afectados: `nomina`, `finanzas_menu`, `administrar_empresa`.
+- Navegacion: `Nomina` queda como acceso directo en el grupo principal `Finanzas y cumplimiento` y como entrada prioritaria dentro del `Centro financiero y contable`.
+- Frontend: se crea `web/administrar_empresa/nomina_menu.html` como hub con submenu propio para Centro, Empleados, Configuracion legal, Liquidaciones, Pagos y PILA, Nomina electronica DIAN y Tutorial.
+- Subpaginas: `nomina_sueldos.html` acepta `seccion=resumen|empleados|configuracion|liquidacion|pagos|dian` para mostrar tarjetas y bloques operativos sin duplicar la logica existente.
+- DIAN: el modulo agrega boton `Enviar nomina electronica a DIAN`; antes de enviar prepara el lote, bloquea si hay requisitos pendientes y luego llama el endpoint fiscal existente `/api/empresa/facturacion_electronica?action=nomina_electronica` con `empresa_id`.
+- Seguridad: no se crean endpoints ni tablas nuevas; el envio final conserva wrappers/permisos existentes de facturacion electronica y nomina, y todo se mantiene por `empresa_id`.
+
+2026-06-10: IA operativa confirmable por rol.
+- Modulos afectados: `chat IA empresarial`, `ventas/estaciones`, `inventario`, `nomina`, `tarifas`, `radio online`, `permisos`.
+- Cambio funcional: el chat empresarial pasa a permiso operativo de ventas para que roles como `cajero` puedan usarlo; el backend conserva validacion de empresa, licencia, pagina y rol antes de cualquier accion.
+- Se agrega `/api/empresa/ia_radio/activar`, protegido por `WithEmpresaVentasPermissions`, para que el cajero pueda activar/desactivar la emisora desde el chat sin modificar otras preferencias del asistente.
+- El drawer IA permite confirmar solo endpoints cerrados: importacion IA revisada, pedido por estacion/mesa/habitacion, radio, productos, nomina y tarifas existentes. `DELETE` sigue bloqueado desde el chat.
+- El prompt de IA diferencia rol cajero frente a roles administrativos: cajero puede pedir a estaciones/mesas/habitaciones y activar radio; productos, nomina y tarifas quedan sujetos a permisos de inventario, nomina o ventas respectivamente.
+- Seguridad multiempresa: no se agregan consultas SQL libres ni endpoints genericos; todas las mutaciones usan wrappers existentes por modulo y `empresa_id`.
+- Pruebas: `go test ./handlers -run "TestCajeroPuedeUsarAPIAuxiliaresDelCarritoSinPaginaDeMenu" -count=1`; `node --check web\js\ai_chat_drawer.js`.
+
+2026-06-10: Chat IA con fallback local de credencial OpenAI e icono IA.
+- Modulos afectados: `chat IA`, `super IA`, `runtime local`, `frontend global`.
+- Backend: `backend/main.go` carga `OPENAI_API_KEY` desde `deploy/.env.platform` como fallback sensible cuando no existe en el entorno local, sin imprimir su valor ni cargar otras claves del archivo.
+- Backend: `resolveModelAPIKey` mantiene como principal la credencial descifrable de `configuraciones` y usa la variable de entorno valida como respaldo cuando una fila antigua fue cifrada con otra `CONFIG_ENC_KEY`.
+- Frontend: el boton flotante del asistente cambia de `gpt.svg` a un simbolo circular tipo OpenAI con texto `IA` superpuesto; el JS normaliza botones antiguos al inicializar.
+- Seguridad: no se descifra ni se registra ninguna credencial en logs; las filas cifradas antiguas siguen sin recuperarse si no existe su llave original, pero ya no bloquean cuando hay `OPENAI_API_KEY` vigente.
+
+2026-06-10: Centro financiero sin tarjetas contables repetidas.
+- Modulo afectado: `finanzas_menu`.
+- Cambio funcional: en `web/administrar_empresa/finanzas_menu.html` se deja `Suite contador` como entrada unica para el hub contable y se retiran del menu lateral las entradas duplicadas `Suite contable Colombia` y `Portal contador`.
+- Compatibilidad: no se eliminan paginas, endpoints ni permisos; `contabilidad_colombia_avanzada.html` y `portal_contador.html` siguen disponibles desde `suite_contador.html` y rutas internas autorizadas.
+- Seguridad: sin cambios de backend, tablas, wrappers ni alcance por `empresa_id`.
+
+2026-06-10: Imagenes Mas sistemas sin panel superior.
+- Modulo afectado: `portal_publico`.
+- Assets: se regeneran las 51 imagenes JPG de `web/img/portal-systems/realistic/` retirando el panel superpuesto blanco/verde que aparecia en la parte superior derecha.
+- Herramienta: `scripts/generate_portal_realistic_images.ps1` deja de dibujar el mockup de pantalla y conserva el fondo realista, trabajador, titulo inferior y estilo general de cada tarjeta.
+- QA: se valida muestra visual de `punto-venta.jpg` y se comprueba que la zona del antiguo panel ya no contiene el bloque blanco/verde.
+
+2026-06-10: IA flotante activa para todas las empresas.
+- Modulos afectados: `chat_flotante`, `administrar_empresa`, `preconfiguracion`.
+- Backend: `/api/chat_flotante/preferencias` fuerza `chat_enabled=true` cuando hay `empresa_id`; si llega un guardado apagado desde empresa, persiste `1` para evitar que configuraciones viejas oculten el asistente.
+- Datos: `DisableLegacyFloatingRobotAndRadioPrefs` reaplica `chat_flotante.chat_enabled=1`, `robot_enabled=0`, `personality_mode=normal` y `radio_online_enabled=0` con la migracion `20260610_chat_ia_activo_empresas_reaplicar`.
+- Frontend: `web/js/ai_chat_drawer.js` ignora `localStorage` apagado en contexto empresarial y mantiene visible el icono circular flotante; `configuracion_chat_flotante.html` muestra la IA como activa para todas las empresas.
+- Seguridad: se conserva aislamiento por `empresa_id`; no se agregan endpoints, tablas ni dependencias. Robot/secretaria siguen retirados y las acciones IA mantienen confirmacion/whitelist existente.
+
+2026-06-10: Bascula electronica opcional en carrito.
+- Modulos afectados: `carritos`, `configuracion_carrito`, `estaciones`.
+- Frontend: la bascula sale del panel de lector y queda como tarjeta independiente en `carrito_de_compras.html`; solo aparece cuando `habilitar_bascula_electronica` esta activo.
+- Configuracion: `configuracion_carrito_de_compra_empresa.html` agrega check empresarial apagado por defecto; `configuracion_de_estaciones.html` preserva el valor al guardar estaciones.
+- Backend: la preconfiguracion base del carrito guarda `habilitar_bascula_electronica=false` y el test de preconfiguracion lo valida.
+
+2026-06-10: Asesor comercial por etapas.
+- Modulos afectados: `asesor_comercial`, `licencias`, `pagos`, `super_administrador`.
+- Backend: `asesores_comerciales` agrega `porcentaje_primer_anio`, `porcentaje_renovacion_anual` y `meses_renovacion`; el calculo de pagos de licencia registra comision de `primer_anio` o `renovacion_anual` y bloquea comisiones fuera del plazo.
+- Frontend: Super administrador permite configurar la regla por asesor y `Mis clientes` muestra los porcentajes vigentes.
+- QA: se agrega prueba automatica enfocada para la formula de primer ano, renovacion y vencimiento.
+
 2026-06-09: Venta directa con carrito 0 operativo.
 - Modulos afectados: `carritos`, `venta_directa`, `estaciones`.
 - Frontend: `web/administrar_empresa/carrito_de_compras.html` muestra la tarjeta de cliente cuando venta directa ya tiene carrito cargado, de modo que el carrito 0 abre con el mismo panel operativo esperado para estaciones.

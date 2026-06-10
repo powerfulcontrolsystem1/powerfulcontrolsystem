@@ -86,12 +86,22 @@
           <input id="email" class="form-input" type="email" required placeholder="administrador@empresa.com">
           <div class="ac-row">
             <div>
-              <label class="form-label" for="pct">Comisión (%)</label>
-              <input id="pct" class="form-input" type="number" min="0" max="100" step="0.01" value="10">
+              <label class="form-label" for="pctPrimerAnio">Primer pago / primer año (%)</label>
+              <input id="pctPrimerAnio" class="form-input" type="number" min="0" max="100" step="0.01" value="40">
             </div>
             <div>
-              <label class="form-label" for="meses">Meses asociados</label>
-              <input id="meses" class="form-input" type="number" min="1" step="1" value="6">
+              <label class="form-label" for="pctRenovacion">Desde segundo año (%)</label>
+              <input id="pctRenovacion" class="form-input" type="number" min="0" max="100" step="0.01" value="30">
+            </div>
+          </div>
+          <div class="ac-row">
+            <div>
+              <label class="form-label" for="mesesRenovacion">Meses con porcentaje del segundo año</label>
+              <input id="mesesRenovacion" class="form-input" type="number" min="0" max="120" step="1" value="24">
+            </div>
+            <div>
+              <label class="form-label" for="meses">Meses asociados totales</label>
+              <input id="meses" class="form-input" type="number" min="12" step="1" value="36" readonly>
             </div>
           </div>
           <h3 class="ac-section-title">Transferencias y pagos de comisiones</h3>
@@ -201,6 +211,10 @@
       function safe(v){return String(v == null ? "" : v).replace(/[&<>"']/g, s => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[s]));}
       function field(id){const el=document.getElementById(id); return el ? String(el.value || "").trim() : "";}
       function writeField(id, value){const el=document.getElementById(id); if (el) el.value = value == null ? "" : String(value);}
+      function updateAdvisorAssociationMonths(){
+        const renewal = Math.max(0, Math.min(120, Number(field("mesesRenovacion") || 0)));
+        writeField("meses", String(12 + renewal));
+      }
       function pageAlert(text){
         const el = document.getElementById("pageAlert");
         if (!el) return;
@@ -229,8 +243,11 @@
         const f = document.getElementById("advisorForm");
         if (f) f.reset();
         writeField("advisorId", "");
-        writeField("pct", "10");
-        writeField("meses", "6");
+        writeField("pctPrimerAnio", "40");
+        writeField("pctRenovacion", "30");
+        writeField("mesesRenovacion", "24");
+        writeField("meses", "36");
+        updateAdvisorAssociationMonths();
         writeField("metodoPago", "transferencia_bancaria");
         writeField("periodicidadPago", "mensual");
         writeField("diaPago", "30");
@@ -246,8 +263,11 @@
       function buildPayload(){
         return {
           email: field("email"),
-          porcentaje_comision: Number(field("pct") || 0),
-          meses_asociacion: Number(field("meses") || 6),
+          porcentaje_comision: Number(field("pctPrimerAnio") || 0),
+          porcentaje_primer_anio: Number(field("pctPrimerAnio") || 0),
+          porcentaje_renovacion_anual: Number(field("pctRenovacion") || 0),
+          meses_renovacion: Number(field("mesesRenovacion") || 0),
+          meses_asociacion: Number(field("meses") || (12 + Number(field("mesesRenovacion") || 0))),
           metodo_pago_comision: field("metodoPago"),
           entidad_financiera: field("entidadFinanciera"),
           tipo_cuenta: field("tipoCuenta"),
@@ -269,8 +289,11 @@
         writeField("advisorId", a.id);
         writeField("email", a.admin_email || "");
         document.getElementById("email").disabled = true;
-        writeField("pct", Number(a.porcentaje_comision || 0).toFixed(2));
-        writeField("meses", a.meses_asociacion || 6);
+        writeField("pctPrimerAnio", Number(a.porcentaje_primer_anio || a.porcentaje_comision || 0).toFixed(2));
+        writeField("pctRenovacion", Number(a.porcentaje_renovacion_anual || 0).toFixed(2));
+        writeField("mesesRenovacion", a.meses_renovacion || 0);
+        writeField("meses", a.meses_asociacion || (12 + Number(a.meses_renovacion || 0)));
+        updateAdvisorAssociationMonths();
         writeField("metodoPago", a.metodo_pago_comision || "transferencia_bancaria");
         writeField("entidadFinanciera", a.entidad_financiera || "");
         writeField("tipoCuenta", a.tipo_cuenta || "");
@@ -303,10 +326,10 @@
               <div class="ac-code">${safe(a.codigo)}</div>
             </div>
             <div class="ac-metrics">
-              <div class="ac-metric"><span>Comisión</span><strong>${Number(a.porcentaje_comision || 0).toFixed(2)}%</strong></div>
-              <div class="ac-metric"><span>Asociación</span><strong>${safe(a.meses_asociacion || 0)} meses</strong></div>
-              <div class="ac-metric"><span>Pago</span><strong>${safe(a.metodo_pago_comision || "-")}</strong></div>
-              <div class="ac-metric"><span>Minimo</span><strong>${money.format(Number(a.pago_minimo || 0))}</strong></div>
+              <div class="ac-metric"><span>Primer año</span><strong>${Number(a.porcentaje_primer_anio || a.porcentaje_comision || 0).toFixed(2)}%</strong></div>
+              <div class="ac-metric"><span>Desde segundo año</span><strong>${Number(a.porcentaje_renovacion_anual || 0).toFixed(2)}%</strong></div>
+              <div class="ac-metric"><span>Tiempo recurrente</span><strong>${safe(a.meses_renovacion || 0)} meses</strong></div>
+              <div class="ac-metric"><span>Vigencia total</span><strong>${safe(a.meses_asociacion || (12 + Number(a.meses_renovacion || 0)))} meses</strong></div>
             </div>
             <div>
               <span class="ac-chip">Entidad: ${safe(a.entidad_financiera || "-")}</span>
@@ -417,6 +440,7 @@
         }
       });
       document.getElementById("cancelEditBtn").addEventListener("click", resetAdvisorEditor);
+      document.getElementById("mesesRenovacion").addEventListener("input", updateAdvisorAssociationMonths);
       document.getElementById("advisorPromoForm").addEventListener("submit", async function(ev){
         ev.preventDefault();
         const msg = document.getElementById("advisorPromoMsg");

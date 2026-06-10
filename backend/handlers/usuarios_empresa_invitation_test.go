@@ -102,6 +102,11 @@ func TestCajeroPuedeUsarAPIAuxiliaresDelCarritoSinPaginaDeMenu(t *testing.T) {
 		"/api/empresa/codigos_de_descuento",
 		"/api/empresa/propinas",
 		"/api/empresa/comisiones",
+		"/api/empresa/chat_con_inteligencia_artificial/modelos",
+		"/api/empresa/chat_con_inteligencia_artificial/consultar",
+		"/api/empresa/chat_con_inteligencia_artificial/consultar_stream",
+		"/api/empresa/ia_pedidos_estacion/ejecutar",
+		"/api/empresa/ia_radio/activar",
 	}
 	for _, path := range allowed {
 		if !isCajeroCartAuxiliaryAPIRequest("cajero", path) {

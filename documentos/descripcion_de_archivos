@@ -1,3 +1,41 @@
+2026-06-10 - Carrito con tarjetas base visibles
+- `web/administrar_empresa/carrito_de_compras.html`: mantiene visibles en venta directa y estaciones las tarjetas de cliente, detalle del pago, productos agregados y acciones; agrega encabezados claros para detalle de pago y productos.
+- `web/estilos.css`: define el orden visual estable de las tarjetas base del carrito y evita que el layout flex las reordene al refrescar datos.
+
+2026-06-10 - Nomina como modulo principal de Finanzas
+- `web/administrar_empresa.html`: agrega `Nomina` como acceso directo dentro del grupo principal `Finanzas y cumplimiento`.
+- `web/administrar_empresa/finanzas_menu.html`: sube `Nomina` al inicio del centro financiero y la abre como modulo propio.
+- `web/administrar_empresa/nomina_menu.html`: nueva pagina hub con submenu interno para centro de nomina, empleados, configuracion legal, liquidaciones, pagos/PILA, nomina electronica DIAN y tutorial.
+- `web/administrar_empresa/nomina_sueldos.html`: agrega tarjetas internas, filtro `seccion=...` para subpaginas, boton `Enviar nomina electronica a DIAN` y flujo que prepara el lote antes de llamar el endpoint fiscal existente.
+
+2026-06-10 - IA operativa por rol desde chat
+- `backend/handlers/ia_radio.go`: nuevo endpoint empresarial seguro para que la IA active o desactive solo la emisora por empresa, sin exponer toda la configuracion del chat flotante.
+- `backend/handlers/chat_con_inteligencia_artificial_router.go`: mueve el chat empresarial a permisos de ventas para uso operativo y registra la accion IA de radio.
+- `backend/handlers/chat_con_inteligencia_artificial_controller.go`: actualiza el prompt de herramientas permitidas para pedidos por estacion/mesa, radio, productos, nomina y tarifas, siempre con confirmacion y permisos backend.
+- `backend/handlers/empresa_permisos.go`: permite al rol cajero usar chat IA y acciones operativas auxiliares sin mostrar paginas administrativas.
+- `web/js/ai_chat_drawer.js`: amplia la lista local de endpoints confirmables desde IA sin permitir `DELETE` ni endpoints genericos.
+- `backend/handlers/usuarios_empresa_invitation_test.go`: cubre que cajero pueda usar chat IA, pedido por estacion y radio, sin heredar paginas administrativas.
+
+2026-06-10 - Chat IA fallback OpenAI e icono IA
+- `backend/main.go`: carga solo `OPENAI_API_KEY` desde `deploy/.env.platform` como fallback local cuando el entorno/backend `.env.local` no la trae.
+- `backend/main_env_test.go`: valida que el fallback sensible solo cargue claves permitidas y no importe `CONFIG_ENC_KEY` ni otros secretos.
+- `backend/handlers/chat_con_inteligencia_artificial_controller.go`: conserva la credencial descifrable de Super administrador como principal y usa `OPENAI_API_KEY` de entorno como respaldo cuando existan filas cifradas antiguas ilegibles.
+- `web/js/ai_chat_drawer.js`, `web/administrar_empresa.html`, `web/venta_publica.html`, `web/super_administrador.html`, `web/seleccionar_empresa.html`, `web/estilos.css`: reemplazan el icono flotante por un simbolo tipo OpenAI con letras `IA`.
+
+2026-06-10 - Centro financiero sin duplicados contables
+- `web/administrar_empresa/finanzas_menu.html`: conserva `Suite contador` como hub principal y retira del menu lateral las entradas repetidas `Suite contable Colombia` y `Portal contador`.
+
+2026-06-10 - Imagenes Mas sistemas sin panel superior
+- `scripts/generate_portal_realistic_images.ps1`: retira el mockup blanco/verde de pantalla que se dibujaba sobre la parte superior derecha de cada foto del carrusel.
+- `web/img/portal-systems/realistic/*.jpg`: 51 imagenes regeneradas conservando trabajador, ambiente y rotulo inferior, sin el cuadro superpuesto superior.
+
+2026-06-10 - IA flotante activa para todas las empresas
+- `backend/handlers/chat_flotante_config.go`: en contexto empresarial fuerza `chat_enabled=true` y normaliza guardados apagados a `1`, manteniendo robot/secretaria retirados.
+- `backend/db/empresa_estacion_prefs.go`: reaplica preferencias de preproduccion con la migracion `20260610_chat_ia_activo_empresas_reaplicar`.
+- `backend/handlers/chat_flotante_config_test.go`: cubre que el chat flotante empresarial responda activo aunque el fallback global este apagado.
+- `web/js/ai_chat_drawer.js`: ignora `localStorage` apagado en empresas y mantiene visible el boton circular flotante del asistente IA.
+- `web/administrar_empresa/configuracion_chat_flotante.html`: muestra la IA flotante como activa por empresa y deshabilita el apagado en contexto empresarial.
+
 2026-06-10 - E-mail Corporativo como pagina independiente
 - `web/administrar_empresa/email_corporativo.html`: nueva pagina empresarial para abrir automaticamente el webmail corporativo, mostrar cuenta, estado, no leidos y acceso a configuracion por `empresa_id`.
 - `web/administrar_empresa/panel.html`: reemplaza el webmail embebido por una tarjeta compacta de notificaciones bajo Favoritos con enlace a `E-mail Corporativo`.
@@ -11106,3 +11144,16 @@ backend/handlers/user_config.go - Controlador que expone /api/user/configuracion
 2026-06-09 - Tutorial interno de nomina
 - `web/administrar_empresa/nomina_tutorial.html`: pagina empresarial nueva para explicar el flujo operativo de nomina: parametros legales, configuracion, empleados, novedades, liquidacion, pagos, PILA, preparacion de nomina electronica DIAN, checklist previo y fuentes oficiales.
 - `web/administrar_empresa/nomina_sueldos.html`: agrega boton `Tutorial` junto a `Ayuda` y conserva `empresa_id` en los enlaces del modulo.
+2026-06-10 - Asesor comercial: comisiones por etapas
+- `backend/db/asesor_comercial.go`: agrega columnas PostgreSQL `porcentaje_primer_anio`, `porcentaje_renovacion_anual` y `meses_renovacion`; normaliza porcentajes y deriva la vigencia minima como `12 + meses_renovacion`.
+- `backend/handlers/asesor_comercial.go`: acepta y valida los campos nuevos en alta/edicion de asesores y actualiza el correo de invitacion con la regla por etapas.
+- `backend/handlers/payments_handlers.go`: calcula la comision segun primer ano, renovacion anual o fuera de plazo antes de crear `asesor_comercial_comisiones`.
+- `backend/handlers/asesor_comercial_commission_test.go`: cubre la formula de 40% primer ano, 30% renovacion y bloqueo fuera de vigencia.
+- `web/super/asesor_comercial.html` y `web/mis_clientes.html`: muestran y envian la configuracion por etapas del asesor.
+
+2026-06-10 - Carrito: bascula electronica opcional
+- `backend/handlers/empresa_preconfiguracion.go`: agrega `habilitar_bascula_electronica=false` a la preconfiguracion base del carrito.
+- `backend/handlers/empresa_preconfiguracion_carrito_test.go`: valida que la bascula quede apagada por defecto.
+- `web/administrar_empresa/configuracion_carrito_de_compra_empresa.html`: agrega tarjeta independiente con check para mostrar la bascula electronica.
+- `web/administrar_empresa/carrito_de_compras.html`: separa la bascula en tarjeta propia, oculta por defecto y protegida por el flag empresarial.
+- `web/administrar_empresa/configuracion_de_estaciones.html` y `web/administrar_empresa/estaciones.html`: conservan/leen el flag en normalizadores de configuracion.

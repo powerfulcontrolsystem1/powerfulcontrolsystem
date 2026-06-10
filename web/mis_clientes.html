@@ -65,7 +65,7 @@
         return;
       }
       const asesor = data.asesor || {};
-      info.innerHTML = 'Código de asesor: <span class="mc-code">' + esc(asesor.codigo) + '</span> · Comisión: <strong>' + Number(asesor.porcentaje_comision || 0).toFixed(2) + '%</strong> · Plazo: <strong>' + esc(asesor.meses_asociacion || 0) + ' mes(es)</strong>';
+      info.innerHTML = 'Código de asesor: <span class="mc-code">' + esc(asesor.codigo) + '</span> - Primer año: <strong>' + Number(asesor.porcentaje_primer_anio || asesor.porcentaje_comision || 0).toFixed(2) + '%</strong> - Desde segundo año: <strong>' + Number(asesor.porcentaje_renovacion_anual || 0).toFixed(2) + '%</strong> por <strong>' + esc(asesor.meses_renovacion || 0) + ' mes(es)</strong>';
       const companies = new Set(items.map(x => String(x.empresa_id || ""))).size;
       const paidValue = items.reduce((s,x) => s + Number(x.valor_pagado || 0), 0);
       const commission = items.reduce((s,x) => s + Number(x.monto_comision || 0), 0);

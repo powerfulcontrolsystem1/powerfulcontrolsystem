@@ -143,6 +143,66 @@ func loadRuntimeEnvDefaults(backendDir string) {
 			log.Printf("INFO: variables de entorno cargadas desde %s (%d nuevas)", candidate, added)
 		}
 	}
+
+	platformEnv := filepath.Join(filepath.Dir(backendDir), "deploy", ".env.platform")
+	if added, err := loadSelectedEnvDefaultsFromFile(platformEnv, []string{"OPENAI_API_KEY"}); err == nil && added > 0 {
+		log.Printf("INFO: fallback IA cargado desde deploy/.env.platform (%d variable sensible, valor oculto)", added)
+	} else if err != nil {
+		log.Printf("warning: no se pudo cargar fallback IA desde %s: %v", platformEnv, err)
+	}
+}
+
+func loadSelectedEnvDefaultsFromFile(path string, allowedKeys []string) (int, error) {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			return 0, nil
+		}
+		return 0, err
+	}
+
+	allowed := make(map[string]bool, len(allowedKeys))
+	for _, key := range allowedKeys {
+		key = strings.TrimSpace(key)
+		if key != "" {
+			allowed[key] = true
+		}
+	}
+	if len(allowed) == 0 {
+		return 0, nil
+	}
+
+	added := 0
+	lines := strings.Split(strings.ReplaceAll(string(data), "\r\n", "\n"), "\n")
+	for _, line := range lines {
+		raw := strings.TrimSpace(line)
+		if raw == "" || strings.HasPrefix(raw, "#") {
+			continue
+		}
+		idx := strings.Index(raw, "=")
+		if idx <= 0 {
+			continue
+		}
+		key := strings.TrimSpace(raw[:idx])
+		if !allowed[key] || os.Getenv(key) != "" {
+			continue
+		}
+		value := strings.TrimSpace(raw[idx+1:])
+		if strings.HasPrefix(value, "\"") && strings.HasSuffix(value, "\"") && len(value) >= 2 {
+			value = value[1 : len(value)-1]
+		}
+		if strings.HasPrefix(value, "'") && strings.HasSuffix(value, "'") && len(value) >= 2 {
+			value = value[1 : len(value)-1]
+		}
+		if value == "" {
+			continue
+		}
+		if err := os.Setenv(key, value); err != nil {
+			return added, err
+		}
+		added++
+	}
+	return added, nil
 }
 
 func refreshRuntimeGlobalsFromEnv() {

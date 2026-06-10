@@ -1573,11 +1573,12 @@ func buildEmpresaAISystemPrompt(contexto string, modoAsistente string) string {
 		"Cuando el usuario pida generar, crear o exportar un Excel, XLSX, tabla, reporte o documento con datos ya disponibles en el contexto validado, NO entres en ciclo de preguntas: genera la tabla o documento directamente. Solo pregunta si falta un dato indispensable que no pueda inferirse del pedido. " +
 		"Para solicitudes como 'genera un excel con los productos, solo nombre y precio', responde con una tabla Markdown clara con esas columnas para que el sistema muestre los botones de exportacion. " +
 		"Regla de seguridad: puedes proponer acciones OPEN/POST/PUT sobre endpoints permitidos, pero TODA accion debe pedir confirmacion previa; nunca propongas DELETE desde el chat. " +
-		"Endpoints permitidos para PCS_ACTION en esta fase: /api/empresa/ia/importar_desde_foto para registrar productos/egresos extraidos y revisados, /api/empresa/ia_pedidos_estacion/ejecutar para pedidos de estacion/venta asistida, y rutas OPEN relativas dentro de /administrar_empresa/ para guiar al usuario. " +
-		"No propongas endpoints genericos de base de datos; si una accion todavia no tiene herramienta permitida, explica los pasos o abre la pagina correspondiente. " +
+		"Endpoints permitidos para PCS_ACTION: /api/empresa/ia/importar_desde_foto para registrar productos/egresos extraidos y revisados; /api/empresa/ia_pedidos_estacion/ejecutar para pedidos de estacion, mesa, habitacion o venta asistida; /api/empresa/ia_radio/activar para encender o apagar la emisora; /api/empresa/productos para crear o editar productos solo si el rol tiene inventario; /api/empresa/nomina con action=config, empleado, calcular, conciliar_asistencia o parametros_legales_aplicar solo si el rol tiene nomina; /api/empresa/tarifas_motel, /api/empresa/tarifas_por_dia y /api/empresa/tarifas_por_minutos para tarifas de motel/hotel/tiempo solo si el rol tiene ventas. Tambien puedes usar rutas OPEN relativas dentro de /administrar_empresa/ para guiar al usuario. " +
+		"Para un cajero, limita las acciones operativas a pedidos de estacion/mesa/habitacion y radio online; no propongas creacion de productos, nomina ni tarifas para un cajero. El backend volvera a validar empresa_id, licencia, pagina y permisos antes de ejecutar. " +
+		"No propongas endpoints genericos de base de datos; si una accion todavia no tiene herramienta permitida o no conoces el contrato exacto, explica los pasos o abre la pagina correspondiente. " +
 		"Importante (foto de carta/lista de precios y egresos): cuando el usuario adjunte una foto y pida registrar productos o egresos, primero extrae y presenta una lista estructurada para revision humana. " +
 		"Solo tras una confirmacion explicita del usuario (por ejemplo: 'si, confirma y guarda'), genera UNA sola accion PCS_ACTION que llame a POST /api/empresa/ia/importar_desde_foto con empresa_id y un arreglo de productos y/o egresos. " +
-		"Usa ese endpoint (no llames directamente /api/empresa/productos ni /api/empresa/finanzas/movimientos) para que el servidor aplique la importacion solo si el usuario es administrador. " +
+		"Usa ese endpoint para importaciones desde foto; no llames directamente /api/empresa/finanzas/movimientos. Para productos manuales sin foto puedes usar /api/empresa/productos solo cuando el usuario tenga permisos y haya dado todos los campos obligatorios. " +
 		"Solo cuando tengas TODOS los datos obligatorios, incluye al FINAL de tu respuesta un bloque literal con el prefijo EXACTO `PCS_ACTION` en una linea aparte, seguido por un JSON valido. " +
 		"Formato requerido:\n" +
 		"PCS_ACTION\n" +
@@ -1741,6 +1742,7 @@ func (c *EmpresaAIChatController) resolveModelAPIKey(model empresaAIModelDef) (s
 	if strings.TrimSpace(model.ApiKeyEnv) == "" {
 		return "", nil
 	}
+
 	credentialReadErrors := []string{}
 	if c.dbSuper != nil {
 		if def, ok := aiCredentialByModelID()[model.ID]; ok {
@@ -1766,7 +1768,6 @@ func (c *EmpresaAIChatController) resolveModelAPIKey(model empresaAIModelDef) (s
 			}
 		}
 	}
-
 	apiKey := strings.TrimSpace(os.Getenv(model.ApiKeyEnv))
 	if apiKey != "" {
 		return apiKey, nil

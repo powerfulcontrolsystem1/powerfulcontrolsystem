@@ -852,6 +852,7 @@
         cliente_general_nombre: 'Cliente General',
         mostrar_impuestos_item: true,
         mostrar_lector_codigo_barras: true,
+        habilitar_bascula_electronica: false,
         mostrar_descuentos: false,
         mostrar_propina: false,
         mostrar_comision: false,
@@ -949,6 +950,9 @@
         cliente_general_nombre: normalizeDisplayText(src.cliente_general_nombre || src.nombre_cliente_general || src.cliente_generico_nombre || base.cliente_general_nombre) || base.cliente_general_nombre,
         mostrar_impuestos_item: src.mostrar_impuestos_item === undefined ? base.mostrar_impuestos_item : toBool(src.mostrar_impuestos_item),
         mostrar_lector_codigo_barras: src.mostrar_lector_codigo_barras === undefined ? base.mostrar_lector_codigo_barras : toBool(src.mostrar_lector_codigo_barras),
+        habilitar_bascula_electronica: src.habilitar_bascula_electronica === undefined
+          ? (src.bascula_electronica_habilitada === undefined ? base.habilitar_bascula_electronica : toBool(src.bascula_electronica_habilitada))
+          : toBool(src.habilitar_bascula_electronica),
         mostrar_descuentos: src.mostrar_descuentos === undefined ? base.mostrar_descuentos : toBool(src.mostrar_descuentos),
         mostrar_propina: src.mostrar_propina === undefined ? base.mostrar_propina : toBool(src.mostrar_propina),
         mostrar_comision: src.mostrar_comision === undefined ? base.mostrar_comision : toBool(src.mostrar_comision),
@@ -1748,6 +1752,8 @@
       nextConfig.pago_qr_payload_oficial = prev.pago_qr_payload_oficial;
       nextConfig.pago_qr_instrucciones = prev.pago_qr_instrucciones;
       nextConfig.pago_qr_cuentas = prev.pago_qr_cuentas;
+      nextConfig.habilitar_bascula_electronica = prev.habilitar_bascula_electronica;
+      nextConfig.bascula_electronica_habilitada = prev.habilitar_bascula_electronica;
       return nextConfig;
     }
 

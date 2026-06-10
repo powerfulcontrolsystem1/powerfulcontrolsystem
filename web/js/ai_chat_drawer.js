@@ -74,6 +74,7 @@
   var ICON_SPK = '<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path fill="currentColor" d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>';
   var ICON_CONV = '<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path fill="currentColor" d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H6l-2 2V4h16v12z"/></svg>';
   var ICON_STOP = '<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="currentColor" d="M6 6h12v12H6z"/></svg>';
+  var AI_TOGGLE_ICON = '<span class="ai-openai-mark" aria-hidden="true"><span class="ai-openai-knot"></span><span class="ai-openai-text">IA</span></span>';
   var ROBOT_PANEL_ID = 'robotInlineChatPanel';
   var ROBOT_STATUS_ID = 'robotInlineStatus';
   var ROBOT_ASSISTANT_BUBBLE_ID = 'robotAssistantBubble';
@@ -231,6 +232,14 @@
     return path.indexOf('/seleccionar_empresa.html') >= 0 || path.indexOf('/super_administrador.html') >= 0 || path.indexOf('/super/') === 0;
   }
 
+  function normalizeAIToggleButtonIcon(toggleBtn) {
+    if (!toggleBtn || toggleBtn.classList.contains('is-robot-avatar')) return;
+    if (toggleBtn.querySelector('.ai-openai-mark')) return;
+    toggleBtn.innerHTML = AI_TOGGLE_ICON + '<span class="ai-chat-toggle-label">Asistente IA</span>';
+    toggleBtn.setAttribute('aria-label', 'Abrir asistente IA');
+    toggleBtn.title = 'Asistente IA';
+  }
+
   function getPublicPortalContextConfig() {
     if (window && window.__pcsPublicChatContext && typeof window.__pcsPublicChatContext === 'object') {
       return window.__pcsPublicChatContext;
@@ -275,6 +284,10 @@
 
   function isPublicStoreContext() {
     return isPublicPortalContext() && getPublicPortalScope() === 'venta_publica';
+  }
+
+  function isEnterpriseAIContext() {
+    return !isSuperContext() && !isPublicPortalContext() && parsePositiveInt(getCurrentEmpresaId()) > 0;
   }
 
   function shouldAutoInjectDrawerShell() {
@@ -329,7 +342,7 @@
     var hintsMarkup = buildPublicDrawerExamplesMarkup();
     document.body.insertAdjacentHTML('beforeend',
       '<button id="' + TOGGLE_ID + '" class="ai-chat-toggle-button" aria-haspopup="dialog" aria-expanded="false" type="button">' +
-        '<img class="icon" src="/img/gpt.svg" alt=""><span class="ai-chat-toggle-label">Asistente IA</span>' +
+        AI_TOGGLE_ICON + '<span class="ai-chat-toggle-label">Asistente IA</span>' +
       '</button>' +
       '<div id="' + BACKDROP_ID + '" class="ai-chat-backdrop" aria-hidden="true"></div>' +
       '<section id="' + DRAWER_ID + '" class="ai-chat-drawer" role="dialog" aria-modal="true" aria-labelledby="aiChatTitle">' +
@@ -504,7 +517,7 @@
   }
 
   function setChatEnabledPreference(enabled) {
-    var next = isPublicPortalContext() ? true : !!enabled;
+    var next = (isPublicPortalContext() || isEnterpriseAIContext()) ? true : !!enabled;
     state.chatEnabled = writeEnabledPreference(CHAT_ENABLED_STORAGE_KEY, next);
     if (!state.chatEnabled) {
       closeChatDrawerFully();
@@ -690,7 +703,7 @@
 
   function loadVoicePreference(micBtn, voiceBtn, convBtn) {
     try {
-      state.chatEnabled = isPublicPortalContext() ? true : readEnabledPreference(CHAT_ENABLED_STORAGE_KEY, true);
+      state.chatEnabled = (isPublicPortalContext() || isEnterpriseAIContext()) ? true : readEnabledPreference(CHAT_ENABLED_STORAGE_KEY, true);
       state.robotEnabled = false;
       state.radioEnabled = false;
       state.voiceEnabled = window.localStorage.getItem(VOICE_COMMAND_STORAGE_KEY) === '1';
@@ -1215,6 +1228,7 @@
       setRobotInlineVisible(false);
       if (toggleBtn) {
         toggleBtn.style.display = 'none';
+        toggleBtn.hidden = true;
         toggleBtn.setAttribute('aria-hidden', 'true');
       }
       var hiddenRobotBtn = document.getElementById(ROBOT_HIDE_ID);
@@ -1225,7 +1239,9 @@
     }
 
     if (toggleBtn) {
+      toggleBtn.hidden = false;
       toggleBtn.setAttribute('aria-hidden', 'false');
+      normalizeAIToggleButtonIcon(toggleBtn);
     }
 
     if (drawer) {
@@ -1334,6 +1350,7 @@
           if (typeof toggleBtn.dataset.originalHtml !== 'undefined') {
              toggleBtn.innerHTML = toggleBtn.dataset.originalHtml;
           }
+          normalizeAIToggleButtonIcon(toggleBtn);
           var hb = document.getElementById('robotHideBtn');
           if (hb) hb.style.display = 'none';
           var sb = document.getElementById('robotShowBtn');
@@ -1367,7 +1384,7 @@
 
   function setCompactConfigState(mode, voiceEnabled, robotVoice, chatEnabled, robotEnabled, radioEnabled) {
     if (typeof chatEnabled === 'boolean') {
-      state.chatEnabled = chatEnabled;
+      state.chatEnabled = isEnterpriseAIContext() ? true : chatEnabled;
     }
     state.robotEnabled = false;
     if (typeof radioEnabled === 'boolean') {
@@ -1383,6 +1400,7 @@
     var modeInputs = Array.prototype.slice.call(document.querySelectorAll('input[name="aiChatCompactMode"]'));
     if (chatInput) {
       chatInput.checked = !!state.chatEnabled;
+      chatInput.disabled = isEnterpriseAIContext();
     }
     if (robotInput) {
       robotInput.checked = false;
@@ -1426,7 +1444,7 @@
       '<button id="' + CONFIG_CLOSE_ID + '" type="button" class="ai-chat-header-icon-btn" aria-label="Cerrar configuración">×</button>' +
       '</div>' +
       '<div class="ai-chat-compact-config-body">' +
-      '<label class="ai-chat-compact-option"><input id="' + CONFIG_CHAT_ENABLED_ID + '" type="checkbox"><span><b>Activar IA empresarial</b><small>Muestra u oculta el asistente flotante para esta empresa.</small></span></label>' +
+      '<label class="ai-chat-compact-option"><input id="' + CONFIG_CHAT_ENABLED_ID + '" type="checkbox"><span><b>IA empresarial activa</b><small>Muestra el circulo flotante del asistente para esta empresa.</small></span></label>' +
       '<label class="ai-chat-compact-option" hidden><input id="' + CONFIG_ROBOT_ENABLED_ID + '" type="checkbox"><span><b>Avatares retirados</b><small>El asistente usa el recuadro normal.</small></span></label>' +
       '<label class="ai-chat-compact-option"><input id="' + CONFIG_RADIO_ENABLED_ID + '" type="checkbox"><span><b>Activar emisora</b><small>Muestra el reproductor de musica latina para esta empresa.</small></span></label>' +
       '<label class="ai-chat-compact-option"><input type="radio" name="aiChatCompactMode" value="normal" checked><span><b>Recuadro normal</b><small>Ventana lateral profesional con historial, adjuntos, modos y controles completos.</small></span></label>' +
@@ -1456,7 +1474,7 @@
       var chatInput = document.getElementById(CONFIG_CHAT_ENABLED_ID);
       var robotInput = document.getElementById(CONFIG_ROBOT_ENABLED_ID);
       var radioInput = document.getElementById(CONFIG_RADIO_ENABLED_ID);
-      var chatOn = setChatEnabledPreference(chatInput ? chatInput.checked : state.chatEnabled);
+      var chatOn = setChatEnabledPreference(isEnterpriseAIContext() ? true : (chatInput ? chatInput.checked : state.chatEnabled));
       var robotOn = setRobotEnabledPreference(false);
       var radioOn = setRadioEnabledPreference(radioInput ? radioInput.checked : state.radioEnabled);
       var mode = setChatPersonalityMode('normal');
@@ -1501,7 +1519,7 @@
     });
     if (saveBtn) {
       saveBtn.addEventListener('click', function () {
-        var chatOn = setChatEnabledPreference(!!document.getElementById(CONFIG_CHAT_ENABLED_ID).checked);
+        var chatOn = setChatEnabledPreference(isEnterpriseAIContext() ? true : !!document.getElementById(CONFIG_CHAT_ENABLED_ID).checked);
         var robotOn = setRobotEnabledPreference(false);
         var radioOn = setRadioEnabledPreference(!!document.getElementById(CONFIG_RADIO_ENABLED_ID).checked);
         var mode = setChatPersonalityMode('normal');
@@ -2996,7 +3014,13 @@
     }
     if (method !== 'POST' && method !== 'PUT') return false;
     return endpoint.indexOf('/api/empresa/ia/importar_desde_foto') === 0 ||
-      endpoint.indexOf('/api/empresa/ia_pedidos_estacion/ejecutar') === 0;
+      endpoint.indexOf('/api/empresa/ia_pedidos_estacion/ejecutar') === 0 ||
+      endpoint.indexOf('/api/empresa/ia_radio/activar') === 0 ||
+      endpoint.indexOf('/api/empresa/productos') === 0 ||
+      endpoint.indexOf('/api/empresa/nomina') === 0 ||
+      endpoint.indexOf('/api/empresa/tarifas_motel') === 0 ||
+      endpoint.indexOf('/api/empresa/tarifas_por_dia') === 0 ||
+      endpoint.indexOf('/api/empresa/tarifas_por_minutos') === 0;
   }
 
   function inferDocumentExportType(text) {

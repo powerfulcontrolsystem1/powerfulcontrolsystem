@@ -50,6 +50,7 @@ func TestDefaultEmpresaPreconfigCarritoUISimplificado(t *testing.T) {
 		"mostrar_propina",
 		"mostrar_comision",
 		"cliente_obligatorio_pago",
+		"habilitar_bascula_electronica",
 		"mostrar_desglose_cobro",
 		"mostrar_tarjeta_cobro_estados",
 		"mostrar_tarjeta_comision",

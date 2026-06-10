@@ -1903,16 +1903,18 @@ Actualizacion 2026-04-29 (auditoria como fuente de contexto IA)
 ### Tablas de asesor comercial (superadministrador)
 - asesores_comerciales:
   - id, admin_email, admin_nombre, codigo (UNIQUE)
-  - porcentaje_comision, meses_asociacion
+  - porcentaje_comision (compatibilidad), porcentaje_primer_anio, porcentaje_renovacion_anual, meses_renovacion, meses_asociacion
   - metodo_pago_comision, entidad_financiera, tipo_cuenta, numero_cuenta
   - titular_cuenta, documento_titular, email_pagos, telefono_pagos
   - periodicidad_pago, dia_pago, pago_minimo, requiere_soporte_pago
+  - regla de pago asesor: primer ano usa `porcentaje_primer_anio`; desde el segundo ano usa `porcentaje_renovacion_anual` durante `meses_renovacion`. `meses_asociacion` queda como total derivado minimo `12 + meses_renovacion`.
   - estado_invitacion (`pendiente`, `aceptada`, `expirada`), invitacion_token_hash, invitacion_expira_en, invitado_por_email, aceptado_en
   - fecha_creacion, fecha_actualizacion, usuario_creador, estado, observaciones
   - Descripción: administradores invitados por super para operar como asesores comerciales. Al aceptar la invitación reciben un codigo comercial que puede incluirse en el checkout publico de licencias.
 
 - asesor_comercial_comisiones:
   - regla comercial: la existencia de una asociacion de asesor para la empresa impide aplicar nuevamente el descuento promocional de asesor, aunque las comisiones puedan seguir vigentes segun `asociado_hasta`.
+  - regla de liquidacion: el pago dentro del primer ano queda marcado como `primer_anio`; los pagos posteriores dentro del plazo configurado quedan como `renovacion_anual`; fuera del plazo no se genera comision.
   - id, asesor_id, asesor_codigo, asesor_email
   - empresa_id, empresa_nombre, licencia_id
   - pago_provider, pago_id, transaction_id, referencia

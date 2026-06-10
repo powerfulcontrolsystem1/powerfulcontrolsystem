@@ -74,6 +74,24 @@
           </div>
         </div>
 
+        <div class="empresa-section mt-12">
+          <div class="empresa-section-header compact">
+            <div>
+              <h3 class="section-heading">Báscula electrónica</h3>
+              <p class="form-help mt-0">Activa esta opción solo si la empresa venderá productos por peso usando una báscula serial/USB compatible con Web Serial.</p>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-col">
+              <label class="form-help" style="display:flex;align-items:flex-start;gap:10px;font-size:1.02rem;font-weight:800;">
+                <input id="carritoCfgBasculaElectronica" type="checkbox" style="margin-top:2px;">
+                <span>Mostrar tarjeta de báscula electrónica en el carrito</span>
+              </label>
+              <div class="form-help">Por defecto queda apagada. Al activarla, el cajero podrá conectar el puerto local de la báscula y aplicar el peso a la cantidad del producto.</div>
+            </div>
+          </div>
+        </div>
+
         <div class="form-row">
           <div class="form-col">
             <label class="form-help" style="display:flex;align-items:center;gap:8px;">
@@ -544,6 +562,7 @@
         cliente_general_nombre: 'Cliente General',
         mostrar_impuestos_item: true,
         mostrar_lector_codigo_barras: true,
+        habilitar_bascula_electronica: false,
         mostrar_descuentos: false,
         mostrar_propina: false,
         mostrar_comision: false,
@@ -612,6 +631,9 @@
         cliente_general_nombre: normalizeText(src.cliente_general_nombre || src.nombre_cliente_general || src.cliente_generico_nombre || base.cliente_general_nombre) || base.cliente_general_nombre,
         mostrar_impuestos_item: src.mostrar_impuestos_item === undefined ? base.mostrar_impuestos_item : !!src.mostrar_impuestos_item,
         mostrar_lector_codigo_barras: src.mostrar_lector_codigo_barras === undefined ? base.mostrar_lector_codigo_barras : !!src.mostrar_lector_codigo_barras,
+        habilitar_bascula_electronica: src.habilitar_bascula_electronica === undefined
+          ? (src.bascula_electronica_habilitada === undefined ? base.habilitar_bascula_electronica : !!src.bascula_electronica_habilitada)
+          : !!src.habilitar_bascula_electronica,
         mostrar_descuentos: src.mostrar_descuentos === undefined ? base.mostrar_descuentos : !!src.mostrar_descuentos,
         mostrar_propina: src.mostrar_propina === undefined ? base.mostrar_propina : !!src.mostrar_propina,
         mostrar_comision: src.mostrar_comision === undefined ? base.mostrar_comision : !!src.mostrar_comision,
@@ -880,6 +902,7 @@
       document.getElementById('carritoCfgClienteGeneralNombre').value = normalized.cliente_general_nombre;
       document.getElementById('carritoCfgImpuestos').checked = !!normalized.mostrar_impuestos_item;
       document.getElementById('carritoCfgLector').checked = !!normalized.mostrar_lector_codigo_barras;
+      document.getElementById('carritoCfgBasculaElectronica').checked = !!normalized.habilitar_bascula_electronica;
       document.getElementById('carritoCfgResumenProductos').checked = !!normalized.mostrar_resumen_productos;
       document.getElementById('carritoCfgMostrarPagar').checked = !!normalized.mostrar_boton_pagar;
       document.getElementById('carritoCfgMostrarTarjetasPago').checked = !!normalized.mostrar_tarjetas_pago;
@@ -939,6 +962,7 @@
           'carritoCfgClienteGeneralNombre',
           'carritoCfgImpuestos',
           'carritoCfgLector',
+          'carritoCfgBasculaElectronica',
           'carritoCfgResumenProductos',
           'carritoCfgMostrarPagar',
           'carritoCfgMostrarTarjetasPago',
@@ -1007,6 +1031,7 @@
           cliente_general_nombre: document.getElementById('carritoCfgClienteGeneralNombre').value,
           mostrar_impuestos_item: document.getElementById('carritoCfgImpuestos').checked,
           mostrar_lector_codigo_barras: document.getElementById('carritoCfgLector').checked,
+          habilitar_bascula_electronica: document.getElementById('carritoCfgBasculaElectronica').checked,
           mostrar_resumen_productos: document.getElementById('carritoCfgResumenProductos').checked,
           mostrar_boton_pagar: document.getElementById('carritoCfgMostrarPagar').checked,
           mostrar_tarjetas_pago: document.getElementById('carritoCfgMostrarTarjetasPago').checked,

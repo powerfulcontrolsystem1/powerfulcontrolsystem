@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Nomina</title>
+  <link rel="stylesheet" href="/estilos.css">
+  <script src="/js/empresa_submenu_context.js"></script>
+  <script src="/js/ai_button_icons.js?v=20260607"></script>
+  <style>
+    .nomina-center{display:grid;grid-template-rows:auto minmax(0,1fr);gap:12px;height:100%;min-height:0}
+    .nomina-center-overview{display:grid;gap:8px;padding:14px;border-bottom:1px solid var(--border);background:var(--surface)}
+    .nomina-center-title h1{margin:0;color:var(--text);font-size:1.15rem;line-height:1.15}
+    .nomina-center-title p{margin:4px 0 0;color:var(--muted);font-size:.88rem;line-height:1.35}
+    .nomina-center-health{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+    .nomina-center-metric{border:1px solid var(--border);border-radius:8px;background:var(--surface-soft);padding:10px}
+    .nomina-center-metric span{display:block;color:var(--muted);font-size:.72rem;font-weight:850;text-transform:uppercase}
+    .nomina-center-metric strong{display:block;color:var(--text);font-size:1rem;margin-top:4px}
+    .nomina-center-frame-wrap{position:relative;min-height:0}
+    .nomina-center-loading{position:absolute;right:18px;top:12px;z-index:2;display:none;padding:7px 10px;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--muted);box-shadow:0 10px 22px rgba(15,23,42,.12)}
+    .nomina-center-loading.is-visible{display:block}
+    #nominaSidebarNav a.is-active{background:var(--accent-soft);color:var(--accent)}
+    @media(max-width:920px){.nomina-center-health{grid-template-columns:repeat(2,minmax(0,1fr))}}
+    @media(max-width:620px){.nomina-center-health{grid-template-columns:1fr}}
+  </style>
+</head>
+<body class="admin-empresa-shell">
+  <div class="admin-layout">
+    <aside class="admin-sidebar admin-sidebar-mobile-collapsible">
+      <h2>Nomina</h2>
+      <p class="admin-sidebar-kicker">Empleados, liquidacion y DIAN</p>
+      <ul class="nav" id="nominaSidebarNav">
+        <li><a id="nominaLinkResumen" data-nomina-page="resumen" href="/administrar_empresa/nomina_sueldos.html?seccion=resumen" target="nominaContentFrame"><img class="icon" src="/img/analytics-color.svg" alt="">Centro de nomina</a></li>
+        <li><a id="nominaLinkEmpleados" data-nomina-page="empleados" href="/administrar_empresa/nomina_sueldos.html?seccion=empleados" target="nominaContentFrame"><img class="icon" src="/img/user-avatar-color.svg" alt="">Empleados de nomina</a></li>
+        <li><a id="nominaLinkConfig" data-nomina-page="configuracion" href="/administrar_empresa/nomina_sueldos.html?seccion=configuracion" target="nominaContentFrame"><img class="icon" src="/img/settings-color.svg" alt="">Configuracion legal</a></li>
+        <li><a id="nominaLinkLiquidacion" data-nomina-page="liquidacion" href="/administrar_empresa/nomina_sueldos.html?seccion=liquidacion" target="nominaContentFrame"><img class="icon" src="/img/report.svg" alt="">Liquidaciones</a></li>
+        <li><a id="nominaLinkPagos" data-nomina-page="pagos" href="/administrar_empresa/nomina_sueldos.html?seccion=pagos" target="nominaContentFrame"><img class="icon" src="/img/money.svg" alt="">Pagos y PILA</a></li>
+        <li><a id="nominaLinkDian" data-nomina-page="dian" href="/administrar_empresa/nomina_sueldos.html?seccion=dian" target="nominaContentFrame"><img class="icon" src="/img/invoice.svg" alt="">Nomina electronica DIAN</a></li>
+        <li><a id="nominaLinkTutorial" data-nomina-page="tutorial" href="/administrar_empresa/nomina_tutorial.html" target="nominaContentFrame"><img class="icon" src="/img/play.svg" alt="">Tutorial de nomina</a></li>
+        <li class="admin-menu-visibility-item">
+          <button type="button" class="admin-menu-visibility-toggle" aria-controls="nominaSidebarNav" aria-expanded="true" data-show-label="Mostrar menu" data-hide-label="Ocultar menu">
+            <span class="admin-menu-visibility-icon" aria-hidden="true">&#9776;</span>
+            <span class="admin-menu-visibility-label">Ocultar menu</span>
+          </button>
+        </li>
+      </ul>
+    </aside>
+
+    <main class="admin-content">
+      <section class="nomina-center">
+        <div class="nomina-center-overview">
+          <div class="nomina-center-title">
+            <h1>Modulo de nomina</h1>
+            <p>Administra empleados, parametros legales, liquidaciones, pagos, PILA y documento soporte de nomina electronica por empresa.</p>
+          </div>
+          <div class="nomina-center-health" aria-label="Estado del modulo de nomina">
+            <div class="nomina-center-metric"><span>Base</span><strong>Empleados</strong></div>
+            <div class="nomina-center-metric"><span>Calculo</span><strong>Liquidacion</strong></div>
+            <div class="nomina-center-metric"><span>Pago</span><strong>PILA y neto</strong></div>
+            <div class="nomina-center-metric"><span>DIAN</span><strong>Nomina electronica</strong></div>
+          </div>
+        </div>
+        <div class="nomina-center-frame-wrap">
+          <div id="nominaCenterLoading" class="nomina-center-loading">Cargando nomina...</div>
+          <iframe name="nominaContentFrame" id="nominaContentFrame" src="/administrar_empresa/nomina_sueldos.html?seccion=resumen" title="Contenido de nomina" class="admin-empresa-frame"></iframe>
+        </div>
+      </section>
+    </main>
+  </div>
+  <script src="/js/administrar_empresa.js"></script>
+  <script src="/menu.js"></script>
+  <script>
+    (function(){
+      var frame = document.getElementById("nominaContentFrame");
+      var loading = document.getElementById("nominaCenterLoading");
+      var links = Array.prototype.slice.call(document.querySelectorAll("#nominaSidebarNav a[data-nomina-page]"));
+
+      function empresaId() {
+        if (typeof window.__resolveEmpresaIdContext === "function") return Number(window.__resolveEmpresaIdContext() || 0);
+        try {
+          var params = new URLSearchParams(window.location.search || "");
+          return Number(params.get("empresa_id") || params.get("id") || 0);
+        } catch (_) {
+          return 0;
+        }
+      }
+
+      function withEmpresa(url) {
+        try {
+          var id = empresaId();
+          var u = new URL(url, window.location.origin);
+          if (id > 0) u.searchParams.set("empresa_id", String(id));
+          u.searchParams.set("submenu", "1");
+          return u.pathname + u.search;
+        } catch (_) {
+          return url;
+        }
+      }
+
+      function markActive(link) {
+        links.forEach(function(item){ item.classList.toggle("is-active", item === link); });
+      }
+
+      links.forEach(function(link) {
+        link.href = withEmpresa(link.getAttribute("href"));
+        link.addEventListener("click", function() {
+          markActive(link);
+          if (loading) loading.classList.add("is-visible");
+        });
+      });
+      if (frame) {
+        frame.src = withEmpresa(frame.getAttribute("src"));
+        frame.addEventListener("load", function(){ if (loading) loading.classList.remove("is-visible"); });
+      }
+      markActive(document.getElementById("nominaLinkResumen"));
+    })();
+  </script>
+</body>
+</html>

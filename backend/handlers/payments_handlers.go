@@ -5569,20 +5569,19 @@ func createAsesorComercialComisionFromPayment(db *sql.DB, provider, asesorCode s
 	}
 	fechaPago := time.Now()
 	asociadoDesde := fechaPago
-	asociadoHasta := fechaPago.AddDate(0, advisor.MesesAsociacion, 0)
 	if previous != nil {
 		if desde, ok := parsePaymentTime(previous.AsociadoDesde); ok {
 			asociadoDesde = desde
 		}
-		if hasta, ok := parsePaymentTime(previous.AsociadoHasta); ok {
-			asociadoHasta = hasta
-		}
 	}
-	pct := advisor.PorcentajeComision
+	pct, asociadoHasta, etapaComision, ok := asesorComercialCommissionRateForPayment(advisor, asociadoDesde, fechaPago)
+	if !ok {
+		return nil
+	}
 	monto := roundLicenciaCheckoutAmount(valorPagado * pct / 100)
-	obs := "Comision de asesor comercial por pago de licencia"
+	obs := "Comision de asesor comercial por pago de licencia (" + etapaComision + ")"
 	if asesorCode == "" && previous != nil {
-		obs = "Comision de asesor comercial por renovacion dentro del plazo de asociacion"
+		obs = "Comision de asesor comercial por renovacion dentro del plazo de asociacion (" + etapaComision + ")"
 	}
 	_, err = dbpkg.CreateAsesorComercialComision(db, dbpkg.AsesorComercialComision{
 		AsesorID:           advisor.ID,
@@ -5605,6 +5604,51 @@ func createAsesorComercialComisionFromPayment(db *sql.DB, provider, asesorCode s
 		Observaciones:      obs,
 	})
 	return err
+}
+
+func asesorComercialCommissionRateForPayment(advisor *dbpkg.AsesorComercial, asociadoDesde time.Time, fechaPago time.Time) (float64, time.Time, string, bool) {
+	if advisor == nil {
+		return 0, time.Time{}, "", false
+	}
+	pctPrimerAnio := advisor.PorcentajePrimerAnio
+	if pctPrimerAnio <= 0 {
+		pctPrimerAnio = advisor.PorcentajeComision
+	}
+	if pctPrimerAnio < 0 {
+		pctPrimerAnio = 0
+	}
+	if pctPrimerAnio > 100 {
+		pctPrimerAnio = 100
+	}
+	pctRenovacion := advisor.PorcentajeRenovacionAnual
+	if pctRenovacion < 0 {
+		pctRenovacion = 0
+	}
+	if pctRenovacion > 100 {
+		pctRenovacion = 100
+	}
+	mesesRenovacion := advisor.MesesRenovacion
+	if mesesRenovacion < 0 {
+		mesesRenovacion = 0
+	}
+	if mesesRenovacion > 120 {
+		mesesRenovacion = 120
+	}
+	if asociadoDesde.IsZero() {
+		asociadoDesde = fechaPago
+	}
+	primerAnioHasta := asociadoDesde.AddDate(1, 0, 0)
+	asociadoHasta := primerAnioHasta.AddDate(0, mesesRenovacion, 0)
+	if fechaPago.Before(primerAnioHasta) || fechaPago.Equal(primerAnioHasta) {
+		if pctPrimerAnio <= 0 {
+			return 0, asociadoHasta, "primer_anio", false
+		}
+		return pctPrimerAnio, asociadoHasta, "primer_anio", true
+	}
+	if mesesRenovacion <= 0 || pctRenovacion <= 0 || fechaPago.After(asociadoHasta) {
+		return 0, asociadoHasta, "fuera_de_plazo", false
+	}
+	return pctRenovacion, asociadoHasta, "renovacion_anual", true
 }
 
 func paymentPayloadAmount(raw string) float64 {

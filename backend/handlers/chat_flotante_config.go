@@ -271,6 +271,9 @@ func setChatFlotanteEmpresaPref(dbEmp *sql.DB, empresaID int64, key, value, usua
 }
 
 func getChatFlotanteBoolForEmpresa(dbSuper, dbEmp *sql.DB, empresaID int64, key string, globalFallback bool) bool {
+	if empresaID > 0 && key == chatFlotanteChatEnabledKey {
+		return true
+	}
 	if raw, ok := getChatFlotanteEmpresaPref(dbEmp, empresaID, key); ok {
 		return parseChatFlotanteBool(raw)
 	}
@@ -374,6 +377,9 @@ func ChatFlotantePreferenciasHandler(dbSuper, dbEmp *sql.DB) http.HandlerFunc {
 			usuario := adminEmailFromRequest(r)
 			if payload.ChatEnabled != nil {
 				value := chatFlotanteBoolValue(*payload.ChatEnabled)
+				if empresaID > 0 {
+					value = chatFlotanteBoolValue(true)
+				}
 				if empresaID > 0 {
 					if err := setChatFlotanteEmpresaPref(dbEmp, empresaID, chatFlotanteChatEnabledKey, value, usuario); err != nil {
 						http.Error(w, "No se pudo guardar chat_flotante.chat_enabled por empresa: "+err.Error(), http.StatusInternalServerError)

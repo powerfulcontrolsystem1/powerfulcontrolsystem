@@ -13,32 +13,35 @@ var (
 
 // AsesorComercial representa al administrador aceptado para operar como asesor comercial.
 type AsesorComercial struct {
-	ID                  int64   `json:"id"`
-	AdminEmail          string  `json:"admin_email"`
-	AdminNombre         string  `json:"admin_nombre"`
-	Codigo              string  `json:"codigo"`
-	PorcentajeComision  float64 `json:"porcentaje_comision"`
-	MesesAsociacion     int     `json:"meses_asociacion"`
-	MetodoPagoComision  string  `json:"metodo_pago_comision"`
-	EntidadFinanciera   string  `json:"entidad_financiera"`
-	TipoCuenta          string  `json:"tipo_cuenta"`
-	NumeroCuenta        string  `json:"numero_cuenta"`
-	TitularCuenta       string  `json:"titular_cuenta"`
-	DocumentoTitular    string  `json:"documento_titular"`
-	EmailPagos          string  `json:"email_pagos"`
-	TelefonoPagos       string  `json:"telefono_pagos"`
-	PeriodicidadPago    string  `json:"periodicidad_pago"`
-	DiaPago             int     `json:"dia_pago"`
-	PagoMinimo          float64 `json:"pago_minimo"`
-	RequiereSoportePago bool    `json:"requiere_soporte_pago"`
-	EstadoInvitacion    string  `json:"estado_invitacion"`
-	InvitadoPorEmail    string  `json:"invitado_por_email"`
-	InvitacionExpiraEn  string  `json:"invitacion_expira_en"`
-	AceptadoEn          string  `json:"aceptado_en"`
-	FechaCreacion       string  `json:"fecha_creacion"`
-	FechaActualizacion  string  `json:"fecha_actualizacion"`
-	Estado              string  `json:"estado"`
-	Observaciones       string  `json:"observaciones"`
+	ID                        int64   `json:"id"`
+	AdminEmail                string  `json:"admin_email"`
+	AdminNombre               string  `json:"admin_nombre"`
+	Codigo                    string  `json:"codigo"`
+	PorcentajeComision        float64 `json:"porcentaje_comision"`
+	PorcentajePrimerAnio      float64 `json:"porcentaje_primer_anio"`
+	PorcentajeRenovacionAnual float64 `json:"porcentaje_renovacion_anual"`
+	MesesRenovacion           int     `json:"meses_renovacion"`
+	MesesAsociacion           int     `json:"meses_asociacion"`
+	MetodoPagoComision        string  `json:"metodo_pago_comision"`
+	EntidadFinanciera         string  `json:"entidad_financiera"`
+	TipoCuenta                string  `json:"tipo_cuenta"`
+	NumeroCuenta              string  `json:"numero_cuenta"`
+	TitularCuenta             string  `json:"titular_cuenta"`
+	DocumentoTitular          string  `json:"documento_titular"`
+	EmailPagos                string  `json:"email_pagos"`
+	TelefonoPagos             string  `json:"telefono_pagos"`
+	PeriodicidadPago          string  `json:"periodicidad_pago"`
+	DiaPago                   int     `json:"dia_pago"`
+	PagoMinimo                float64 `json:"pago_minimo"`
+	RequiereSoportePago       bool    `json:"requiere_soporte_pago"`
+	EstadoInvitacion          string  `json:"estado_invitacion"`
+	InvitadoPorEmail          string  `json:"invitado_por_email"`
+	InvitacionExpiraEn        string  `json:"invitacion_expira_en"`
+	AceptadoEn                string  `json:"aceptado_en"`
+	FechaCreacion             string  `json:"fecha_creacion"`
+	FechaActualizacion        string  `json:"fecha_actualizacion"`
+	Estado                    string  `json:"estado"`
+	Observaciones             string  `json:"observaciones"`
 }
 
 // AsesorComercialComision registra una venta/renovacion asociada a un asesor.
@@ -97,6 +100,9 @@ func EnsureAsesorComercialSchema(dbConn *sql.DB) error {
 			admin_nombre TEXT,
 			codigo TEXT NOT NULL UNIQUE,
 			porcentaje_comision NUMERIC(12,4) DEFAULT 0,
+			porcentaje_primer_anio NUMERIC(12,4) DEFAULT 0,
+			porcentaje_renovacion_anual NUMERIC(12,4) DEFAULT 0,
+			meses_renovacion INTEGER DEFAULT 0,
 			meses_asociacion INTEGER DEFAULT 6,
 			metodo_pago_comision TEXT DEFAULT 'transferencia_bancaria',
 			entidad_financiera TEXT,
@@ -123,6 +129,9 @@ func EnsureAsesorComercialSchema(dbConn *sql.DB) error {
 		)`,
 		`ALTER TABLE asesores_comerciales ADD COLUMN IF NOT EXISTS admin_nombre TEXT`,
 		`ALTER TABLE asesores_comerciales ADD COLUMN IF NOT EXISTS porcentaje_comision NUMERIC(12,4) DEFAULT 0`,
+		`ALTER TABLE asesores_comerciales ADD COLUMN IF NOT EXISTS porcentaje_primer_anio NUMERIC(12,4) DEFAULT 0`,
+		`ALTER TABLE asesores_comerciales ADD COLUMN IF NOT EXISTS porcentaje_renovacion_anual NUMERIC(12,4) DEFAULT 0`,
+		`ALTER TABLE asesores_comerciales ADD COLUMN IF NOT EXISTS meses_renovacion INTEGER DEFAULT 0`,
 		`ALTER TABLE asesores_comerciales ADD COLUMN IF NOT EXISTS meses_asociacion INTEGER DEFAULT 6`,
 		`ALTER TABLE asesores_comerciales ADD COLUMN IF NOT EXISTS metodo_pago_comision TEXT DEFAULT 'transferencia_bancaria'`,
 		`ALTER TABLE asesores_comerciales ADD COLUMN IF NOT EXISTS entidad_financiera TEXT`,
@@ -257,6 +266,9 @@ func asesorComercialSchemaLooksReady(dbConn *sql.DB) (bool, error) {
 			"documento_titular",
 			"email_pagos",
 			"telefono_pagos",
+			"porcentaje_primer_anio",
+			"porcentaje_renovacion_anual",
+			"meses_renovacion",
 			"periodicidad_pago",
 			"dia_pago",
 			"pago_minimo",
@@ -324,6 +336,25 @@ func normalizeAsesorComercialPayment(item AsesorComercial) AsesorComercial {
 	item.AdminEmail = strings.ToLower(strings.TrimSpace(item.AdminEmail))
 	item.AdminNombre = strings.TrimSpace(item.AdminNombre)
 	item.Codigo = strings.ToUpper(strings.TrimSpace(item.Codigo))
+	if item.PorcentajePrimerAnio <= 0 && item.PorcentajeComision > 0 {
+		item.PorcentajePrimerAnio = item.PorcentajeComision
+	}
+	if item.PorcentajeComision <= 0 && item.PorcentajePrimerAnio > 0 {
+		item.PorcentajeComision = item.PorcentajePrimerAnio
+	}
+	item.PorcentajeComision = normalizeAsesorPercent(item.PorcentajeComision)
+	item.PorcentajePrimerAnio = normalizeAsesorPercent(item.PorcentajePrimerAnio)
+	item.PorcentajeRenovacionAnual = normalizeAsesorPercent(item.PorcentajeRenovacionAnual)
+	if item.MesesRenovacion < 0 {
+		item.MesesRenovacion = 0
+	}
+	if item.MesesRenovacion > 120 {
+		item.MesesRenovacion = 120
+	}
+	minMesesAsociacion := 12 + item.MesesRenovacion
+	if item.MesesAsociacion < minMesesAsociacion {
+		item.MesesAsociacion = minMesesAsociacion
+	}
 	item.MetodoPagoComision = normalizeAsesorMetodoPago(item.MetodoPagoComision)
 	item.EntidadFinanciera = strings.TrimSpace(item.EntidadFinanciera)
 	item.TipoCuenta = normalizeAsesorTipoCuenta(item.TipoCuenta)
@@ -343,6 +374,16 @@ func normalizeAsesorComercialPayment(item AsesorComercial) AsesorComercial {
 		item.PagoMinimo = 0
 	}
 	return item
+}
+
+func normalizeAsesorPercent(value float64) float64 {
+	if value < 0 {
+		return 0
+	}
+	if value > 100 {
+		return 100
+	}
+	return value
 }
 
 func normalizeAsesorMetodoPago(value string) string {
@@ -405,12 +446,15 @@ func CreateAsesorComercial(dbConn *sql.DB, item AsesorComercial, tokenHash strin
 	item = normalizeAsesorComercialPayment(item)
 	nowExpr := sqlNowExpr()
 	query := `INSERT INTO asesores_comerciales
-		(admin_email, admin_nombre, codigo, porcentaje_comision, meses_asociacion, metodo_pago_comision, entidad_financiera, tipo_cuenta, numero_cuenta, titular_cuenta, documento_titular, email_pagos, telefono_pagos, periodicidad_pago, dia_pago, pago_minimo, requiere_soporte_pago, estado_invitacion, invitacion_token_hash, invitacion_expira_en, invitado_por_email, usuario_creador, estado, observaciones, fecha_creacion, fecha_actualizacion)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pendiente', ?, ?, ?, ?, 'activo', ?, ` + nowExpr + `, ` + nowExpr + `)
+		(admin_email, admin_nombre, codigo, porcentaje_comision, porcentaje_primer_anio, porcentaje_renovacion_anual, meses_renovacion, meses_asociacion, metodo_pago_comision, entidad_financiera, tipo_cuenta, numero_cuenta, titular_cuenta, documento_titular, email_pagos, telefono_pagos, periodicidad_pago, dia_pago, pago_minimo, requiere_soporte_pago, estado_invitacion, invitacion_token_hash, invitacion_expira_en, invitado_por_email, usuario_creador, estado, observaciones, fecha_creacion, fecha_actualizacion)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pendiente', ?, ?, ?, ?, 'activo', ?, ` + nowExpr + `, ` + nowExpr + `)
 		ON CONFLICT (codigo) DO UPDATE SET
 			admin_email = EXCLUDED.admin_email,
 			admin_nombre = EXCLUDED.admin_nombre,
 			porcentaje_comision = EXCLUDED.porcentaje_comision,
+			porcentaje_primer_anio = EXCLUDED.porcentaje_primer_anio,
+			porcentaje_renovacion_anual = EXCLUDED.porcentaje_renovacion_anual,
+			meses_renovacion = EXCLUDED.meses_renovacion,
 			meses_asociacion = EXCLUDED.meses_asociacion,
 			metodo_pago_comision = EXCLUDED.metodo_pago_comision,
 			entidad_financiera = EXCLUDED.entidad_financiera,
@@ -437,6 +481,9 @@ func CreateAsesorComercial(dbConn *sql.DB, item AsesorComercial, tokenHash strin
 		item.AdminNombre,
 		item.Codigo,
 		item.PorcentajeComision,
+		item.PorcentajePrimerAnio,
+		item.PorcentajeRenovacionAnual,
+		item.MesesRenovacion,
 		item.MesesAsociacion,
 		item.MetodoPagoComision,
 		item.EntidadFinanciera,
@@ -462,7 +509,7 @@ func ListAsesoresComerciales(dbConn *sql.DB) ([]AsesorComercial, error) {
 	if err := EnsureAsesorComercialSchema(dbConn); err != nil {
 		return nil, err
 	}
-	rows, err := querySQLCompat(dbConn, `SELECT id, admin_email, COALESCE(admin_nombre,''), codigo, COALESCE(porcentaje_comision,0), COALESCE(meses_asociacion,6), COALESCE(metodo_pago_comision,'transferencia_bancaria'), COALESCE(entidad_financiera,''), COALESCE(tipo_cuenta,''), COALESCE(numero_cuenta,''), COALESCE(titular_cuenta,''), COALESCE(documento_titular,''), COALESCE(email_pagos,''), COALESCE(telefono_pagos,''), COALESCE(periodicidad_pago,'mensual'), COALESCE(dia_pago,30), COALESCE(pago_minimo,0), COALESCE(requiere_soporte_pago,1), COALESCE(estado_invitacion,''), COALESCE(invitado_por_email,''), COALESCE(invitacion_expira_en,''), COALESCE(aceptado_en,''), COALESCE(fecha_creacion,''), COALESCE(fecha_actualizacion,''), COALESCE(estado,'activo'), COALESCE(observaciones,'') FROM asesores_comerciales WHERE COALESCE(estado,'activo') <> 'inactivo' ORDER BY id DESC`)
+	rows, err := querySQLCompat(dbConn, `SELECT id, admin_email, COALESCE(admin_nombre,''), codigo, COALESCE(porcentaje_comision,0), COALESCE(porcentaje_primer_anio, COALESCE(porcentaje_comision,0)), COALESCE(porcentaje_renovacion_anual,0), COALESCE(meses_renovacion,0), COALESCE(meses_asociacion,6), COALESCE(metodo_pago_comision,'transferencia_bancaria'), COALESCE(entidad_financiera,''), COALESCE(tipo_cuenta,''), COALESCE(numero_cuenta,''), COALESCE(titular_cuenta,''), COALESCE(documento_titular,''), COALESCE(email_pagos,''), COALESCE(telefono_pagos,''), COALESCE(periodicidad_pago,'mensual'), COALESCE(dia_pago,30), COALESCE(pago_minimo,0), COALESCE(requiere_soporte_pago,1), COALESCE(estado_invitacion,''), COALESCE(invitado_por_email,''), COALESCE(invitacion_expira_en,''), COALESCE(aceptado_en,''), COALESCE(fecha_creacion,''), COALESCE(fecha_actualizacion,''), COALESCE(estado,'activo'), COALESCE(observaciones,'') FROM asesores_comerciales WHERE COALESCE(estado,'activo') <> 'inactivo' ORDER BY id DESC`)
 	if err != nil {
 		return nil, err
 	}
@@ -471,7 +518,7 @@ func ListAsesoresComerciales(dbConn *sql.DB) ([]AsesorComercial, error) {
 	for rows.Next() {
 		var item AsesorComercial
 		var requiereSoporte int
-		if err := rows.Scan(&item.ID, &item.AdminEmail, &item.AdminNombre, &item.Codigo, &item.PorcentajeComision, &item.MesesAsociacion, &item.MetodoPagoComision, &item.EntidadFinanciera, &item.TipoCuenta, &item.NumeroCuenta, &item.TitularCuenta, &item.DocumentoTitular, &item.EmailPagos, &item.TelefonoPagos, &item.PeriodicidadPago, &item.DiaPago, &item.PagoMinimo, &requiereSoporte, &item.EstadoInvitacion, &item.InvitadoPorEmail, &item.InvitacionExpiraEn, &item.AceptadoEn, &item.FechaCreacion, &item.FechaActualizacion, &item.Estado, &item.Observaciones); err != nil {
+		if err := rows.Scan(&item.ID, &item.AdminEmail, &item.AdminNombre, &item.Codigo, &item.PorcentajeComision, &item.PorcentajePrimerAnio, &item.PorcentajeRenovacionAnual, &item.MesesRenovacion, &item.MesesAsociacion, &item.MetodoPagoComision, &item.EntidadFinanciera, &item.TipoCuenta, &item.NumeroCuenta, &item.TitularCuenta, &item.DocumentoTitular, &item.EmailPagos, &item.TelefonoPagos, &item.PeriodicidadPago, &item.DiaPago, &item.PagoMinimo, &requiereSoporte, &item.EstadoInvitacion, &item.InvitadoPorEmail, &item.InvitacionExpiraEn, &item.AceptadoEn, &item.FechaCreacion, &item.FechaActualizacion, &item.Estado, &item.Observaciones); err != nil {
 			return nil, err
 		}
 		item.RequiereSoportePago = requiereSoporte != 0
@@ -484,27 +531,27 @@ func GetAsesorComercialByCode(dbConn *sql.DB, code string) (*AsesorComercial, er
 	if err := EnsureAsesorComercialSchema(dbConn); err != nil {
 		return nil, err
 	}
-	return scanAsesorComercial(queryRowSQLCompat(dbConn, `SELECT id, admin_email, COALESCE(admin_nombre,''), codigo, COALESCE(porcentaje_comision,0), COALESCE(meses_asociacion,6), COALESCE(metodo_pago_comision,'transferencia_bancaria'), COALESCE(entidad_financiera,''), COALESCE(tipo_cuenta,''), COALESCE(numero_cuenta,''), COALESCE(titular_cuenta,''), COALESCE(documento_titular,''), COALESCE(email_pagos,''), COALESCE(telefono_pagos,''), COALESCE(periodicidad_pago,'mensual'), COALESCE(dia_pago,30), COALESCE(pago_minimo,0), COALESCE(requiere_soporte_pago,1), COALESCE(estado_invitacion,''), COALESCE(invitado_por_email,''), COALESCE(invitacion_expira_en,''), COALESCE(aceptado_en,''), COALESCE(fecha_creacion,''), COALESCE(fecha_actualizacion,''), COALESCE(estado,'activo'), COALESCE(observaciones,'') FROM asesores_comerciales WHERE UPPER(codigo) = UPPER(?) AND COALESCE(estado,'activo') <> 'inactivo' LIMIT 1`, strings.TrimSpace(code)))
+	return scanAsesorComercial(queryRowSQLCompat(dbConn, `SELECT id, admin_email, COALESCE(admin_nombre,''), codigo, COALESCE(porcentaje_comision,0), COALESCE(porcentaje_primer_anio, COALESCE(porcentaje_comision,0)), COALESCE(porcentaje_renovacion_anual,0), COALESCE(meses_renovacion,0), COALESCE(meses_asociacion,6), COALESCE(metodo_pago_comision,'transferencia_bancaria'), COALESCE(entidad_financiera,''), COALESCE(tipo_cuenta,''), COALESCE(numero_cuenta,''), COALESCE(titular_cuenta,''), COALESCE(documento_titular,''), COALESCE(email_pagos,''), COALESCE(telefono_pagos,''), COALESCE(periodicidad_pago,'mensual'), COALESCE(dia_pago,30), COALESCE(pago_minimo,0), COALESCE(requiere_soporte_pago,1), COALESCE(estado_invitacion,''), COALESCE(invitado_por_email,''), COALESCE(invitacion_expira_en,''), COALESCE(aceptado_en,''), COALESCE(fecha_creacion,''), COALESCE(fecha_actualizacion,''), COALESCE(estado,'activo'), COALESCE(observaciones,'') FROM asesores_comerciales WHERE UPPER(codigo) = UPPER(?) AND COALESCE(estado,'activo') <> 'inactivo' LIMIT 1`, strings.TrimSpace(code)))
 }
 
 func GetAsesorComercialByEmail(dbConn *sql.DB, email string) (*AsesorComercial, error) {
 	if err := EnsureAsesorComercialSchema(dbConn); err != nil {
 		return nil, err
 	}
-	return scanAsesorComercial(queryRowSQLCompat(dbConn, `SELECT id, admin_email, COALESCE(admin_nombre,''), codigo, COALESCE(porcentaje_comision,0), COALESCE(meses_asociacion,6), COALESCE(metodo_pago_comision,'transferencia_bancaria'), COALESCE(entidad_financiera,''), COALESCE(tipo_cuenta,''), COALESCE(numero_cuenta,''), COALESCE(titular_cuenta,''), COALESCE(documento_titular,''), COALESCE(email_pagos,''), COALESCE(telefono_pagos,''), COALESCE(periodicidad_pago,'mensual'), COALESCE(dia_pago,30), COALESCE(pago_minimo,0), COALESCE(requiere_soporte_pago,1), COALESCE(estado_invitacion,''), COALESCE(invitado_por_email,''), COALESCE(invitacion_expira_en,''), COALESCE(aceptado_en,''), COALESCE(fecha_creacion,''), COALESCE(fecha_actualizacion,''), COALESCE(estado,'activo'), COALESCE(observaciones,'') FROM asesores_comerciales WHERE LOWER(admin_email) = LOWER(?) AND COALESCE(estado,'activo') <> 'inactivo' LIMIT 1`, strings.TrimSpace(email)))
+	return scanAsesorComercial(queryRowSQLCompat(dbConn, `SELECT id, admin_email, COALESCE(admin_nombre,''), codigo, COALESCE(porcentaje_comision,0), COALESCE(porcentaje_primer_anio, COALESCE(porcentaje_comision,0)), COALESCE(porcentaje_renovacion_anual,0), COALESCE(meses_renovacion,0), COALESCE(meses_asociacion,6), COALESCE(metodo_pago_comision,'transferencia_bancaria'), COALESCE(entidad_financiera,''), COALESCE(tipo_cuenta,''), COALESCE(numero_cuenta,''), COALESCE(titular_cuenta,''), COALESCE(documento_titular,''), COALESCE(email_pagos,''), COALESCE(telefono_pagos,''), COALESCE(periodicidad_pago,'mensual'), COALESCE(dia_pago,30), COALESCE(pago_minimo,0), COALESCE(requiere_soporte_pago,1), COALESCE(estado_invitacion,''), COALESCE(invitado_por_email,''), COALESCE(invitacion_expira_en,''), COALESCE(aceptado_en,''), COALESCE(fecha_creacion,''), COALESCE(fecha_actualizacion,''), COALESCE(estado,'activo'), COALESCE(observaciones,'') FROM asesores_comerciales WHERE LOWER(admin_email) = LOWER(?) AND COALESCE(estado,'activo') <> 'inactivo' LIMIT 1`, strings.TrimSpace(email)))
 }
 
 func GetAsesorComercialByTokenHash(dbConn *sql.DB, tokenHash string) (*AsesorComercial, error) {
 	if err := EnsureAsesorComercialSchema(dbConn); err != nil {
 		return nil, err
 	}
-	return scanAsesorComercial(queryRowSQLCompat(dbConn, `SELECT id, admin_email, COALESCE(admin_nombre,''), codigo, COALESCE(porcentaje_comision,0), COALESCE(meses_asociacion,6), COALESCE(metodo_pago_comision,'transferencia_bancaria'), COALESCE(entidad_financiera,''), COALESCE(tipo_cuenta,''), COALESCE(numero_cuenta,''), COALESCE(titular_cuenta,''), COALESCE(documento_titular,''), COALESCE(email_pagos,''), COALESCE(telefono_pagos,''), COALESCE(periodicidad_pago,'mensual'), COALESCE(dia_pago,30), COALESCE(pago_minimo,0), COALESCE(requiere_soporte_pago,1), COALESCE(estado_invitacion,''), COALESCE(invitado_por_email,''), COALESCE(invitacion_expira_en,''), COALESCE(aceptado_en,''), COALESCE(fecha_creacion,''), COALESCE(fecha_actualizacion,''), COALESCE(estado,'activo'), COALESCE(observaciones,'') FROM asesores_comerciales WHERE invitacion_token_hash = ? AND COALESCE(estado,'activo') <> 'inactivo' LIMIT 1`, strings.TrimSpace(tokenHash)))
+	return scanAsesorComercial(queryRowSQLCompat(dbConn, `SELECT id, admin_email, COALESCE(admin_nombre,''), codigo, COALESCE(porcentaje_comision,0), COALESCE(porcentaje_primer_anio, COALESCE(porcentaje_comision,0)), COALESCE(porcentaje_renovacion_anual,0), COALESCE(meses_renovacion,0), COALESCE(meses_asociacion,6), COALESCE(metodo_pago_comision,'transferencia_bancaria'), COALESCE(entidad_financiera,''), COALESCE(tipo_cuenta,''), COALESCE(numero_cuenta,''), COALESCE(titular_cuenta,''), COALESCE(documento_titular,''), COALESCE(email_pagos,''), COALESCE(telefono_pagos,''), COALESCE(periodicidad_pago,'mensual'), COALESCE(dia_pago,30), COALESCE(pago_minimo,0), COALESCE(requiere_soporte_pago,1), COALESCE(estado_invitacion,''), COALESCE(invitado_por_email,''), COALESCE(invitacion_expira_en,''), COALESCE(aceptado_en,''), COALESCE(fecha_creacion,''), COALESCE(fecha_actualizacion,''), COALESCE(estado,'activo'), COALESCE(observaciones,'') FROM asesores_comerciales WHERE invitacion_token_hash = ? AND COALESCE(estado,'activo') <> 'inactivo' LIMIT 1`, strings.TrimSpace(tokenHash)))
 }
 
 func scanAsesorComercial(row *sql.Row) (*AsesorComercial, error) {
 	var item AsesorComercial
 	var requiereSoporte int
-	if err := row.Scan(&item.ID, &item.AdminEmail, &item.AdminNombre, &item.Codigo, &item.PorcentajeComision, &item.MesesAsociacion, &item.MetodoPagoComision, &item.EntidadFinanciera, &item.TipoCuenta, &item.NumeroCuenta, &item.TitularCuenta, &item.DocumentoTitular, &item.EmailPagos, &item.TelefonoPagos, &item.PeriodicidadPago, &item.DiaPago, &item.PagoMinimo, &requiereSoporte, &item.EstadoInvitacion, &item.InvitadoPorEmail, &item.InvitacionExpiraEn, &item.AceptadoEn, &item.FechaCreacion, &item.FechaActualizacion, &item.Estado, &item.Observaciones); err != nil {
+	if err := row.Scan(&item.ID, &item.AdminEmail, &item.AdminNombre, &item.Codigo, &item.PorcentajeComision, &item.PorcentajePrimerAnio, &item.PorcentajeRenovacionAnual, &item.MesesRenovacion, &item.MesesAsociacion, &item.MetodoPagoComision, &item.EntidadFinanciera, &item.TipoCuenta, &item.NumeroCuenta, &item.TitularCuenta, &item.DocumentoTitular, &item.EmailPagos, &item.TelefonoPagos, &item.PeriodicidadPago, &item.DiaPago, &item.PagoMinimo, &requiereSoporte, &item.EstadoInvitacion, &item.InvitadoPorEmail, &item.InvitacionExpiraEn, &item.AceptadoEn, &item.FechaCreacion, &item.FechaActualizacion, &item.Estado, &item.Observaciones); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil
 		}
@@ -531,6 +578,9 @@ func UpdateAsesorComercial(dbConn *sql.DB, item AsesorComercial, actor string) e
 	nowExpr := sqlNowExpr()
 	_, err := execSQLCompat(dbConn, `UPDATE asesores_comerciales SET
 		porcentaje_comision = ?,
+		porcentaje_primer_anio = ?,
+		porcentaje_renovacion_anual = ?,
+		meses_renovacion = ?,
 		meses_asociacion = ?,
 		metodo_pago_comision = ?,
 		entidad_financiera = ?,
@@ -549,6 +599,9 @@ func UpdateAsesorComercial(dbConn *sql.DB, item AsesorComercial, actor string) e
 		usuario_creador = ?
 	WHERE id = ?`,
 		item.PorcentajeComision,
+		item.PorcentajePrimerAnio,
+		item.PorcentajeRenovacionAnual,
+		item.MesesRenovacion,
 		item.MesesAsociacion,
 		item.MetodoPagoComision,
 		item.EntidadFinanciera,

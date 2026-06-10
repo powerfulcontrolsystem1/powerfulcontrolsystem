@@ -1,3 +1,10 @@
+2026-06-10: Nomina en Finanzas y cumplimiento
+- Modulo afectado: `nomina`.
+- Navegacion: `Administrar empresa > Finanzas y cumplimiento > Nomina` abre `web/administrar_empresa/nomina_menu.html`.
+- Submenu propio: Centro, Empleados de nomina, Configuracion legal, Liquidaciones, Pagos y PILA, Nomina electronica DIAN y Tutorial de nomina.
+- Operacion: las subpaginas reutilizan `nomina_sueldos.html?seccion=...` para no duplicar formularios ni reglas; el filtro visual solo cambia la superficie mostrada.
+- DIAN: el boton `Enviar nomina electronica a DIAN` prepara el lote, valida requisitos pendientes y usa el flujo fiscal existente de facturacion electronica por `empresa_id`.
+
 2026-06-10: E-mail Corporativo independiente
 - Modulo afectado: `Email corporativo Mailu`.
 - Navegacion: `Administrar empresa > Canales digitales y colaboracion > E-mail Corporativo` abre `web/administrar_empresa/email_corporativo.html`.
@@ -219,6 +226,11 @@
 
 2026-06-09: IA empresarial activa sin robot ni secretaria
 
+- Actualizacion 2026-06-10: en contexto empresarial la IA flotante queda activa
+  para todas las empresas. El backend ignora apagados heredados de
+  `chat_flotante.chat_enabled`, el arranque reaplica `chat_enabled=1` con la
+  migracion `20260610_chat_ia_activo_empresas_reaplicar` y el frontend evita que
+  `localStorage` viejo oculte el icono circular.
 - Frontend: el asistente IA del panel empresarial usa solo el recuadro normal;
   los accesos historicos de robot/secretaria se redirigen al drawer para no
   romper ayuda contextual ni configuracion guiada.
@@ -4094,3 +4106,21 @@ Captura inteligente de compras y gastos
 - Cambio funcional: `web/administrar_empresa/carrito_de_compras.html` fuerza la tarjeta de cliente en modo venta directa para que el carrito 0 abra con el mismo panel operativo que una estacion y conserve la seleccion del carrito existente.
 - UX: el boton de pantalla completa queda dentro de la tarjeta `Cliente del carrito`, como icono compacto, sin cambiar endpoints ni persistencia.
 - Seguridad: sin tablas nuevas ni permisos nuevos; se mantiene `empresa_id` y los endpoints existentes de carritos.
+
+2026-06-10 - Asesor comercial: comisiones por etapas anuales
+- Modulos afectados: `asesor_comercial`, `licencias`, `pagos`, `super_administrador`.
+- Cambio funcional: cada asesor puede tener porcentaje propio para el primer ano, porcentaje anual desde el segundo ano y meses de renovacion configurables. Las comisiones de pagos de licencia se calculan como `primer_anio`, `renovacion_anual` o fuera de plazo antes de registrarse.
+- Frontend: `web/super/asesor_comercial.html` reemplaza el campo unico de comision/plazo por campos de primer ano, segundo ano y meses recurrentes; `web/mis_clientes.html` muestra la regla vigente al asesor.
+- Persistencia: `asesores_comerciales` agrega `porcentaje_primer_anio`, `porcentaje_renovacion_anual` y `meses_renovacion`, conservando `porcentaje_comision` como compatibilidad.
+
+2026-06-10 - Carrito: bascula electronica opcional
+- Modulos afectados: `carritos`, `configuracion_carrito`, `estaciones`.
+- Cambio funcional: la bascula electronica queda apagada por defecto con el flag empresarial `habilitar_bascula_electronica` dentro de `estaciones_config.carrito_ui_global`.
+- Frontend: `web/administrar_empresa/configuracion_carrito_de_compra_empresa.html` agrega una tarjeta independiente con check; `web/administrar_empresa/carrito_de_compras.html` separa la bascula en una tarjeta propia y solo permite conectar/aplicar peso si el check esta activo.
+- Compatibilidad: `web/administrar_empresa/configuracion_de_estaciones.html` conserva el valor al guardar configuraciones por estacion para no borrar el check global.
+2026-06-10 - Chat IA operativo por rol
+- Modulos afectados: `chat_con_inteligencia_artificial`, `ventas`, `inventario`, `nomina_sueldos`, `tarifas_motel`, `tarifas_por_dia`, `tarifas_por_minutos`, `radio online`.
+- El chat empresarial queda usable por roles operativos bajo permisos de ventas, sin mostrar paginas administrativas adicionales.
+- La IA puede proponer acciones confirmables para pedidos por estacion/mesa/habitacion, radio online, productos, nomina y tarifas; cada endpoint conserva su wrapper y validacion de `empresa_id`.
+- Se agrega `/api/empresa/ia_radio/activar` para que cajero pueda encender/apagar la emisora sin tocar otras preferencias del chat flotante.
+- Seguridad: no se permite `DELETE`, SQL libre ni endpoints genericos desde el chat; si faltan datos o permisos, la IA debe pedir informacion o abrir la pagina correspondiente.

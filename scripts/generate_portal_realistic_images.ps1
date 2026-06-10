@@ -239,46 +239,9 @@ function New-PortalPhoto {
 
   Add-DomainScene $g $Item
 
-  $screenX = 720
-  $screenY = 120
-  $screenW = 405
-  $screenH = 300
-  if ($Item.base -in @("restaurant", "bar", "salon", "taller", "pos")) {
-    $screenX = 655
-    $screenY = 105
-  }
-
-  $shadow = New-Object System.Drawing.SolidBrush ([System.Drawing.Color]::FromArgb(85, 0, 0, 0))
-  Add-RoundedRectangle $g $shadow ($screenX + 10) ($screenY + 14) $screenW $screenH 22
-  $frame = New-Object System.Drawing.SolidBrush ([System.Drawing.Color]::FromArgb(235, 14, 25, 39))
-  Add-RoundedRectangle $g $frame $screenX $screenY $screenW $screenH 22
-  $screen = New-Object System.Drawing.SolidBrush ([System.Drawing.Color]::FromArgb(248, 248, 250, 252))
-  Add-RoundedRectangle $g $screen ($screenX + 18) ($screenY + 22) ($screenW - 36) ($screenH - 44) 13
-
   $green = New-Object System.Drawing.SolidBrush ([System.Drawing.Color]::FromArgb(255, 15, 118, 72))
   $white = New-Object System.Drawing.SolidBrush ([System.Drawing.Color]::White)
-  $dark = New-Object System.Drawing.SolidBrush ([System.Drawing.Color]::FromArgb(255, 15, 23, 42))
-  $muted = New-Object System.Drawing.SolidBrush ([System.Drawing.Color]::FromArgb(255, 71, 85, 105))
-  $fontSmallBold = New-Object System.Drawing.Font "Arial", 13, ([System.Drawing.FontStyle]::Bold)
   $fontTiny = New-Object System.Drawing.Font "Arial", 10, ([System.Drawing.FontStyle]::Regular)
-  $fontMed = New-Object System.Drawing.Font "Arial", 16, ([System.Drawing.FontStyle]::Bold)
-
-  Add-RoundedRectangle $g $green ($screenX + 34) ($screenY + 40) 145 34 8
-  $g.DrawString("PCS", $fontSmallBold, $white, $screenX + 48, $screenY + 47)
-  $g.DrawString($Item.title, $fontMed, $dark, $screenX + 38, $screenY + 92)
-  $y = $screenY + 138
-  foreach ($line in $Item.lines) {
-    $rowBrush = New-Object System.Drawing.SolidBrush ([System.Drawing.Color]::FromArgb(255, 229, 234, 242))
-    $g.FillRectangle($rowBrush, $screenX + 38, $y, 275, 24)
-    $rowBrush.Dispose()
-    $g.DrawString($line, $fontTiny, $muted, $screenX + 50, $y + 5)
-    $okBrush = New-Object System.Drawing.SolidBrush ([System.Drawing.Color]::FromArgb(255, 34, 197, 94))
-    $g.FillRectangle($okBrush, $screenX + 325, $y + 6, 26, 12)
-    $okBrush.Dispose()
-    $y += 39
-  }
-  Add-RoundedRectangle $g $green ($screenX + 38) ($screenY + $screenH - 68) 165 34 10
-  $g.DrawString("Abrir modulo", $fontTiny, $white, $screenX + 68, $screenY + $screenH - 58)
 
   $titlePanel = New-Object System.Drawing.SolidBrush ([System.Drawing.Color]::FromArgb(218, 7, 21, 37))
   Add-RoundedRectangle $g $titlePanel 46 560 520 130 22
@@ -290,10 +253,6 @@ function New-PortalPhoto {
   Add-RoundedRectangle $g $green 76 660 148 20 10
   $g.DrawString("Sistema en uso", (New-Object System.Drawing.Font "Arial", 9, ([System.Drawing.FontStyle]::Bold)), $white, 103, 663)
 
-  $logoBrush = New-Object System.Drawing.SolidBrush ([System.Drawing.Color]::FromArgb(230, 255, 255, 255))
-  Add-RoundedRectangle $g $logoBrush 998 30 150 42 18
-  $g.DrawString("PCS", (New-Object System.Drawing.Font "Arial", 18, ([System.Drawing.FontStyle]::Bold)), $green, 1037, 39)
-
   $out = Join-Path $outDir ($Item.slug + ".jpg")
   $codec = [System.Drawing.Imaging.ImageCodecInfo]::GetImageEncoders() | Where-Object { $_.MimeType -eq "image/jpeg" }
   $params = New-Object System.Drawing.Imaging.EncoderParameters 1
@@ -301,21 +260,13 @@ function New-PortalPhoto {
   $bmp.Save($out, $codec, $params)
 
   $params.Dispose()
-  $fontSmallBold.Dispose()
   $fontTiny.Dispose()
-  $fontMed.Dispose()
   $fontTitle.Dispose()
   $fontSub.Dispose()
   $softWhite.Dispose()
-  $logoBrush.Dispose()
   $titlePanel.Dispose()
   $green.Dispose()
   $white.Dispose()
-  $dark.Dispose()
-  $muted.Dispose()
-  $screen.Dispose()
-  $frame.Dispose()
-  $shadow.Dispose()
   $g.Dispose()
   $bmp.Dispose()
   $src.Dispose()

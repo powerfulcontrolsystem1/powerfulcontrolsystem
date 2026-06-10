@@ -77,8 +77,8 @@
         <label class="chat-ia-option" for="chatEnabled">
           <input id="chatEnabled" type="checkbox">
           <span>
-            <span class="chat-ia-title">Activar IA empresarial flotante</span>
-            <span class="chat-ia-copy">Muestra el circulo flotante y permite abrir el recuadro normal del asistente en esta empresa.</span>
+            <span class="chat-ia-title">IA empresarial flotante activa</span>
+            <span class="chat-ia-copy">Muestra el circulo flotante y permite abrir el recuadro normal del asistente en esta empresa. En preproduccion queda activa para todas las empresas.</span>
           </span>
         </label>
 
@@ -178,6 +178,10 @@
         return PREFS_ENDPOINT + '?empresa_id=' + encodeURIComponent(String(empresaId));
       }
 
+      function isEnterpriseContext() {
+        return getCurrentEmpresaId() > 0;
+      }
+
       function normalizeRobotVoice(value) {
         var lower = String(value || '').trim().toLowerCase();
         if (lower === 'es-co-female' || lower === 'femenina' || lower === 'mujer') return 'es-CO-female';
@@ -228,8 +232,9 @@
       }
 
       function setChatEnabled(enabled) {
-        currentChatEnabled = storeLocalEnabled(CHAT_ENABLED_STORAGE_KEY, enabled);
+        currentChatEnabled = storeLocalEnabled(CHAT_ENABLED_STORAGE_KEY, isEnterpriseContext() ? true : enabled);
         if (chatEnabledCheckbox) chatEnabledCheckbox.checked = currentChatEnabled;
+        if (chatEnabledCheckbox) chatEnabledCheckbox.disabled = isEnterpriseContext();
         if (voiceCheckbox) voiceCheckbox.disabled = !currentChatEnabled;
         if (robotVoiceSelect) robotVoiceSelect.disabled = !currentChatEnabled;
         return currentChatEnabled;
@@ -281,7 +286,7 @@
 
       function loadMode() {
         storeNormalMode();
-        var currentChat = readLocalEnabled(CHAT_ENABLED_STORAGE_KEY, true);
+        var currentChat = isEnterpriseContext() ? true : readLocalEnabled(CHAT_ENABLED_STORAGE_KEY, true);
         var currentRadio = readLocalEnabled(RADIO_ENABLED_STORAGE_KEY, false);
         var currentVoice = readLocalEnabled(VOICE_STORAGE_KEY, false);
         var currentRobotVoice = normalizeRobotVoice((function () {
@@ -314,7 +319,7 @@
       }
 
       function saveMode() {
-        var chatOn = setChatEnabled(chatEnabledCheckbox ? chatEnabledCheckbox.checked : true);
+        var chatOn = setChatEnabled(isEnterpriseContext() ? true : (chatEnabledCheckbox ? chatEnabledCheckbox.checked : true));
         var radioOn = setRadioEnabled(radioEnabledCheckbox ? radioEnabledCheckbox.checked : false);
         var voiceOn = setVoiceEnabled(voiceCheckbox && voiceCheckbox.checked);
         var robotVoice = setSelectedRobotVoice(robotVoiceSelect && robotVoiceSelect.value);

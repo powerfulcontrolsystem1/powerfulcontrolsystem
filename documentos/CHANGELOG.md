@@ -1,3 +1,9 @@
+## [2026-06-10] IA flotante activa para todas las empresas
+- [Empresa] El icono circular del asistente IA queda visible por defecto en contexto empresarial y no se oculta por preferencias viejas del navegador.
+- [Backend] `/api/chat_flotante/preferencias?empresa_id=...` responde `chat_enabled=true` y normaliza guardados apagados a activo.
+- [Datos] El arranque reaplica `chat_flotante.chat_enabled=1` con `20260610_chat_ia_activo_empresas_reaplicar`.
+- [Alcance] Robot/secretaria siguen retirados; emisora continua opt-in y las acciones IA mantienen permisos/confirmacion existentes.
+
 ## [2026-06-10] E-mail Corporativo independiente
 - [Empresa] El webmail corporativo pasa a `Administrar empresa > Canales digitales y colaboración > E-mail Corporativo`, donde se abre automáticamente como antes.
 - [Panel] Debajo de Favoritos se agrega una tarjeta de notificaciones con enlace al módulo y conteo real de no leídos cuando IMAP responde.
