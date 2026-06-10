@@ -792,9 +792,15 @@ afecte dinero, documentos, licencias o seguridad.
    por empresa de fecha, cajero, cliente, metodo, impresora, copias, carrito,
    codigo y empresa.
 8. Si hay QR DIAN activo y documento con CUFE/CUDE/codigo, se imprime al final.
-9. Pruebas: efectivo, debito, credito, otro, pago mixto, vuelto, abono,
-   descuento, dos cajeros simultaneos y doble solicitud de pago sobre el mismo
-   carrito.
+9. Venta a credito: si el medio es `credito_cliente` o un tramo mixto de
+   credito, el carrito exige cliente registrado con cupo activo; consulta
+   `empresa_creditos_clientes_limites`, valida disponible, cierra la venta y
+   crea `empresa_creditos` ligado a `carritos_compras.id` en `venta_origen_id`.
+   El valor a credito no incrementa efectivo de caja, pero queda visible en
+   recibo/factura y en cartera.
+10. Pruebas: efectivo, debito, credito, credito cliente, otro, pago mixto,
+   vuelto, abono, descuento, dos cajeros simultaneos y doble solicitud de pago
+   sobre el mismo carrito.
 
 ## Facturacion electronica
 

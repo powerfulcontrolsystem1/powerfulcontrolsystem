@@ -96,6 +96,9 @@ func EmpresaCreditosHandler(dbEmp *sql.DB) http.HandlerFunc {
 			case "limites_cliente", "limite_cliente":
 				handleEmpresaCreditosLimitesCliente(w, r, dbEmp)
 				return
+			case "disponibilidad_cliente", "cupo_cliente":
+				handleEmpresaCreditosDisponibilidadCliente(w, r, dbEmp)
+				return
 			case "workflows", "workflow":
 				handleEmpresaCreditosWorkflows(w, r, dbEmp)
 				return
@@ -323,6 +326,37 @@ func handleEmpresaCreditosLimitesCliente(w http.ResponseWriter, r *http.Request,
 		"empresa_id": empresaID,
 		"total":      total,
 		"rows":       rows,
+	})
+}
+
+func handleEmpresaCreditosDisponibilidadCliente(w http.ResponseWriter, r *http.Request, dbEmp *sql.DB) {
+	empresaID, err := parseEmpresaIDQuery(r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	clienteID, err := parseInt64QueryOptional(r, "cliente_id")
+	if err != nil || clienteID <= 0 {
+		http.Error(w, "cliente_id invalido", http.StatusBadRequest)
+		return
+	}
+	if _, err := dbpkg.GetClienteByID(dbEmp, empresaID, clienteID); err != nil {
+		if err == sql.ErrNoRows {
+			http.Error(w, "cliente no encontrado para esta empresa", http.StatusNotFound)
+			return
+		}
+		http.Error(w, "No se pudo validar cliente", http.StatusInternalServerError)
+		return
+	}
+	disponibilidad, err := dbpkg.GetEmpresaCreditoClienteDisponibilidad(dbEmp, empresaID, clienteID)
+	if err != nil {
+		http.Error(w, "No se pudo consultar cupo de credito del cliente", http.StatusInternalServerError)
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]interface{}{
+		"ok":             true,
+		"empresa_id":     empresaID,
+		"disponibilidad": disponibilidad,
 	})
 }
 

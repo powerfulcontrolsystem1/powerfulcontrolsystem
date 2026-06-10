@@ -552,6 +552,13 @@ Actualizacion 2026-05-19 (cliente obligatorio en carrito)
 - El JSON `estaciones_config.carrito_ui_global` puede incluir `cliente_obligatorio_pago`; cuando vale `true`, `pagar_estacion` exige que `carritos_compras.cliente_id` tenga un cliente registrado de la empresa antes de cerrar el pago.
 - El registro rapido desde carrito crea filas en la tabla existente `clientes` mediante `/api/empresa/clientes` y luego actualiza `carritos_compras.cliente_id`.
 
+Actualizacion 2026-06-10 (venta a credito desde carrito)
+- No se agregan tablas fisicas nuevas.
+- `estaciones_config.carrito_ui_global.metodo_pago_credito_cliente` habilita o deshabilita el medio `credito_cliente` por empresa.
+- `pagar_estacion` valida cupo con `empresa_creditos_clientes_limites` y saldo activo en `empresa_creditos`, siempre filtrado por `empresa_id` y `cliente_id`.
+- Cuando el pago total o mixto usa `credito_cliente`, se crea una fila en `empresa_creditos` con `venta_origen_id=carritos_compras.id`, `documento_origen` del documento/venta generado, plazo inicial de 30 dias y saldo por cobrar igual al valor a credito.
+- El valor a credito se registra como venta cerrada, pero no incrementa efectivo de `empresa_cierres_caja`; la caja solo suma tramos en efectivo.
+
 Actualizacion 2026-05-19 (facturacion electronica Panama)
 - No se agregan tablas ni columnas fisicas.
 - El perfil Panama usa la tabla existente `facturacion_electronica_pais` con `pais_codigo='PA'` y `UNIQUE(empresa_id, pais_codigo)`.
@@ -1662,6 +1669,7 @@ Actualizacion 2026-04-29 (auditoria como fuente de contexto IA)
   - fecha_inicio, fecha_vencimiento, fecha_ultimo_pago
   - dias_mora, clasificacion_cartera (`al_dia`/`vencido`/`castigado`)
   - bloqueo_automatico_mora, venta_origen_id, documento_origen, estado_credito
+  - `venta_origen_id` puede apuntar a `carritos_compras.id` cuando nace de una venta a credito desde carrito.
 - empresa_creditos_cuotas:
   - empresa_id, credito_id, numero_cuota
   - fecha_vencimiento

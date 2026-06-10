@@ -28,6 +28,21 @@ type carritoPagoMixtoNormalizado struct {
 	Referencia string
 }
 
+type carritoCreditoVentaResultado struct {
+	Aplica           bool    `json:"aplica"`
+	CreditoID        int64   `json:"credito_id,omitempty"`
+	Codigo           string  `json:"codigo,omitempty"`
+	ClienteID        int64   `json:"cliente_id,omitempty"`
+	ClienteNombre    string  `json:"cliente_nombre,omitempty"`
+	MontoCredito     float64 `json:"monto_credito,omitempty"`
+	CupoLimite       float64 `json:"cupo_limite,omitempty"`
+	SaldoPrevio      float64 `json:"saldo_previo,omitempty"`
+	SaldoDisponible  float64 `json:"saldo_disponible,omitempty"`
+	SaldoDespues     float64 `json:"saldo_despues,omitempty"`
+	FechaVencimiento string  `json:"fecha_vencimiento,omitempty"`
+	Warning          string  `json:"warning,omitempty"`
+}
+
 type carritoBusinessPrerequisite struct {
 	OK           bool                     `json:"ok"`
 	Code         string                   `json:"code"`
@@ -159,6 +174,7 @@ func EmpresaCarritosCompraHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 					"transferencia_bre_b":    0.0,
 					"transferencia_nequi":    0.0,
 					"transferencia_otro":     0.0,
+					"credito_cliente":        0.0,
 				}
 				for rows.Next() {
 					var metodo string
@@ -1028,7 +1044,7 @@ func EmpresaCarritosCompraHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 
 				metodoPago := dbpkg.NormalizeMetodoPagoCarrito(payload.MetodoPago)
 				if metodoPago == "" {
-					http.Error(w, "metodo_pago invalido. Use: efectivo, tarjeta_credito, tarjeta_debito, transferencia_bre_b, transferencia_nequi, transferencia_otro, codigo_descuento o mixto", http.StatusBadRequest)
+					http.Error(w, "metodo_pago invalido. Use: efectivo, tarjeta_credito, tarjeta_debito, transferencia_bre_b, transferencia_nequi, transferencia_otro, credito_cliente, codigo_descuento o mixto", http.StatusBadRequest)
 					return
 				}
 
@@ -1201,6 +1217,13 @@ func EmpresaCarritosCompraHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 				}
 				totalDocumentoConPropina := roundMoneyCarritoForMoneda(totalEsperado+montoPropina, carrito.Moneda)
 				totalEsperadoConPropina := roundMoneyCarritoForMoneda(saldoEsperado+montoPropina, carrito.Moneda)
+
+				montoCreditoVenta := carritoCreditoAmount(metodoPago, pagosMixtos, totalEsperadoConPropina, carrito.Moneda)
+				creditoPrevalidado, errCreditoPrevalidado := validarCupoCreditoClienteParaVenta(dbEmp, carrito, montoCreditoVenta)
+				if errCreditoPrevalidado != nil {
+					http.Error(w, errCreditoPrevalidado.Error(), http.StatusBadRequest)
+					return
+				}
 
 				totalPagado := payload.TotalPagado
 				if metodoPago == "mixto" {
@@ -1422,6 +1445,7 @@ func EmpresaCarritosCompraHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 					"comision_monto":        comisionResultado.MontoComision,
 					"comision_movimientos":  comisionResultado.MovimientosRegistrados,
 					"comision_warning":      comisionResultado.Warning,
+					"credito_cliente":       montoCreditoVenta,
 					"estado_venta_anterior": carrito.EstadoVenta,
 					"estado_venta_nuevo":    "venta_pagada",
 				}, "pago de venta en estacion")
@@ -1469,6 +1493,21 @@ func EmpresaCarritosCompraHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 				if errDocumentoVenta != nil {
 					log.Printf("[carritos] documento_venta empresa_id=%d carrito_id=%d error: %v", empresaID, id, errDocumentoVenta)
 				}
+				creditoVenta := &carritoCreditoVentaResultado{Aplica: false}
+				if montoCreditoVenta > 0 {
+					var errCreditoVenta error
+					creditoVenta, errCreditoVenta = registrarCreditoVentaDesdeCarrito(dbEmp, carritoPagado, montoCreditoVenta, usuarioOperacion, documentoVenta, creditoPrevalidado)
+					if errCreditoVenta != nil {
+						log.Printf("[carritos] registrar credito venta empresa_id=%d carrito_id=%d error: %v", empresaID, id, errCreditoVenta)
+						creditoVenta = &carritoCreditoVentaResultado{
+							Aplica:        true,
+							ClienteID:     carrito.ClienteID,
+							ClienteNombre: strings.TrimSpace(carrito.ClienteNombre),
+							MontoCredito:  montoCreditoVenta,
+							Warning:       "venta cerrada, pero no se pudo crear la cartera automaticamente; revisa Creditos",
+						}
+					}
+				}
 				dispatchControlElectricoEstacionAsync(dbEmp, carritoPagado, false, usuarioOperacion, "pagar_estacion")
 
 				writeJSON(w, http.StatusOK, map[string]interface{}{
@@ -1513,6 +1552,7 @@ func EmpresaCarritosCompraHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 						"metodo_pago_tarjeta_credito":        permisosOperativos.MetodoPagoTarjetaCredito,
 						"metodo_pago_tarjeta_debito":         permisosOperativos.MetodoPagoTarjetaDebito,
 						"metodo_pago_transferencia_bancaria": permisosOperativos.MetodoPagoTransferenciaBancaria,
+						"metodo_pago_credito_cliente":        true,
 						"metodo_pago_mixto":                  permisosOperativos.MetodoPagoMixto,
 						"metodo_pago_codigo_descuento":       permisosOperativos.MetodoPagoCodigoDescuento,
 						"habilitar_propinas":                 permisosOperativos.HabilitarPropinas,
@@ -1525,6 +1565,7 @@ func EmpresaCarritosCompraHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 						"caja_sucursal_id": cierreCaja.SucursalID,
 						"efectivo_sumado":  montoEfectivoCaja,
 					},
+					"credito_venta":   creditoVenta,
 					"documento_venta": documentoVenta,
 				})
 				return
@@ -2373,6 +2414,8 @@ func carritoMetodoPagoHabilitadoPorEmpresa(dbEmp *sql.DB, empresaID int64, metod
 		return carritoBoolFromConfigValueDefault(cfg, "metodo_pago_nequi", true), nil
 	case "transferencia_otro":
 		return carritoBoolFromConfigValueDefault(cfg, "metodo_pago_otras_transferencias", true), nil
+	case "credito_cliente":
+		return carritoBoolFromConfigValueDefault(cfg, "metodo_pago_credito_cliente", true), nil
 	case "mixto":
 		return carritoBoolFromConfigValueDefault(cfg, "permitir_pago_mixto", true), nil
 	case "codigo_descuento":
@@ -2380,6 +2423,146 @@ func carritoMetodoPagoHabilitadoPorEmpresa(dbEmp *sql.DB, empresaID int64, metod
 	default:
 		return false, nil
 	}
+}
+
+func carritoCreditoAmount(metodoPago string, pagosMixtos []carritoPagoMixtoNormalizado, total float64, moneda string) float64 {
+	metodo := dbpkg.NormalizeMetodoPagoCarrito(metodoPago)
+	if metodo == "credito_cliente" {
+		return roundMoneyCarritoForMoneda(total, moneda)
+	}
+	if metodo != "mixto" {
+		return 0
+	}
+	monto := 0.0
+	for _, tramo := range pagosMixtos {
+		if tramo.Metodo == "credito_cliente" {
+			monto = roundMoneyCarritoForMoneda(monto+tramo.Monto, moneda)
+		}
+	}
+	return monto
+}
+
+func validarCupoCreditoClienteParaVenta(dbEmp *sql.DB, carrito *dbpkg.CarritoCompra, montoCredito float64) (*carritoCreditoVentaResultado, error) {
+	if carrito == nil || montoCredito <= 0 {
+		return &carritoCreditoVentaResultado{Aplica: false}, nil
+	}
+	if carrito.ClienteID <= 0 {
+		return nil, fmt.Errorf("para vender a credito debes seleccionar un cliente registrado con cupo activo")
+	}
+	if _, err := dbpkg.GetClienteByID(dbEmp, carrito.EmpresaID, carrito.ClienteID); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, fmt.Errorf("cliente de credito no encontrado para esta empresa")
+		}
+		return nil, err
+	}
+	disponibilidad, err := dbpkg.GetEmpresaCreditoClienteDisponibilidad(dbEmp, carrito.EmpresaID, carrito.ClienteID)
+	if err != nil {
+		return nil, err
+	}
+	if disponibilidad == nil || disponibilidad.Limite == nil {
+		return nil, fmt.Errorf("el cliente no tiene cupo de credito activo")
+	}
+	if disponibilidad.SaldoDisponible+carritoMoneyTolerance(carrito.Moneda) < montoCredito {
+		return nil, fmt.Errorf("cupo de credito insuficiente: disponible %s, venta a credito %s", formatCarritoMoneyForReference(disponibilidad.SaldoDisponible, carrito.Moneda), formatCarritoMoneyForReference(montoCredito, carrito.Moneda))
+	}
+	if disponibilidad.Estado != "" && disponibilidad.Estado != "disponible" {
+		if disponibilidad.Mensaje != "" {
+			return nil, fmt.Errorf("cupo de credito no disponible: %s", disponibilidad.Mensaje)
+		}
+		return nil, fmt.Errorf("cupo de credito no disponible")
+	}
+	return &carritoCreditoVentaResultado{
+		Aplica:          true,
+		ClienteID:       carrito.ClienteID,
+		ClienteNombre:   strings.TrimSpace(carrito.ClienteNombre),
+		MontoCredito:    roundMoneyCarritoForMoneda(montoCredito, carrito.Moneda),
+		CupoLimite:      disponibilidad.Limite.LimiteSaldoTotal,
+		SaldoPrevio:     disponibilidad.SaldoActual,
+		SaldoDisponible: disponibilidad.SaldoDisponible,
+		SaldoDespues:    roundMoneyCarritoForMoneda(disponibilidad.SaldoActual+montoCredito, carrito.Moneda),
+	}, nil
+}
+
+func registrarCreditoVentaDesdeCarrito(dbEmp *sql.DB, carrito *dbpkg.CarritoCompra, montoCredito float64, usuario string, documentoVenta map[string]interface{}, prevalidado *carritoCreditoVentaResultado) (*carritoCreditoVentaResultado, error) {
+	if carrito == nil || montoCredito <= 0 {
+		return &carritoCreditoVentaResultado{Aplica: false}, nil
+	}
+	if existing, err := dbpkg.GetEmpresaCreditoByVentaOrigenID(dbEmp, carrito.EmpresaID, carrito.ID); err == nil && existing != nil {
+		return &carritoCreditoVentaResultado{
+			Aplica:           true,
+			CreditoID:        existing.ID,
+			Codigo:           existing.Codigo,
+			ClienteID:        existing.ClienteID,
+			ClienteNombre:    existing.ClienteNombre,
+			MontoCredito:     existing.MontoAprobado,
+			SaldoDespues:     existing.SaldoActual,
+			FechaVencimiento: existing.FechaVencimiento,
+			Warning:          "credito ya existia para esta venta",
+		}, nil
+	} else if err != nil && !errors.Is(err, sql.ErrNoRows) {
+		return nil, err
+	}
+	cliente, err := dbpkg.GetClienteByID(dbEmp, carrito.EmpresaID, carrito.ClienteID)
+	if err != nil {
+		return nil, err
+	}
+	fechaInicio := time.Now().In(time.Local)
+	documentoOrigen := strings.TrimSpace(carrito.Codigo)
+	if documentoVenta != nil {
+		if v, ok := documentoVenta["documento_codigo"].(string); ok && strings.TrimSpace(v) != "" {
+			documentoOrigen = strings.TrimSpace(v)
+		}
+	}
+	if documentoOrigen == "" {
+		documentoOrigen = fmt.Sprintf("CAR-%d", carrito.ID)
+	}
+	creditoID, err := dbpkg.CreateEmpresaCredito(dbEmp, dbpkg.EmpresaCredito{
+		EmpresaID:             carrito.EmpresaID,
+		ClienteID:             carrito.ClienteID,
+		ClienteNombre:         strings.TrimSpace(cliente.NombreRazonSocial),
+		TipoCredito:           "fijo",
+		MontoAprobado:         montoCredito,
+		CupoCredito:           montoCredito,
+		SaldoActual:           montoCredito,
+		TasaInteres:           0,
+		TasaMora:              0,
+		PeriodicidadCuota:     "mensual",
+		ValorCuotaPactada:     montoCredito,
+		PlazoDias:             30,
+		PlazoCuotas:           1,
+		FechaInicio:           fechaInicio.Format("2006-01-02"),
+		FechaVencimiento:      fechaInicio.AddDate(0, 0, 30).Format("2006-01-02"),
+		BloqueoAutomaticoMora: true,
+		VentaOrigenID:         carrito.ID,
+		DocumentoOrigen:       documentoOrigen,
+		EstadoCredito:         "activo",
+		UsuarioCreador:        strings.TrimSpace(usuario),
+		Estado:                "activo",
+		Observaciones:         "credito creado automaticamente desde venta del carrito",
+	})
+	if err != nil {
+		return nil, err
+	}
+	row, err := dbpkg.GetEmpresaCreditoByID(dbEmp, carrito.EmpresaID, creditoID)
+	if err != nil {
+		return nil, err
+	}
+	result := &carritoCreditoVentaResultado{
+		Aplica:           true,
+		CreditoID:        row.ID,
+		Codigo:           row.Codigo,
+		ClienteID:        row.ClienteID,
+		ClienteNombre:    row.ClienteNombre,
+		MontoCredito:     row.MontoAprobado,
+		SaldoDespues:     row.SaldoActual,
+		FechaVencimiento: row.FechaVencimiento,
+	}
+	if prevalidado != nil {
+		result.CupoLimite = prevalidado.CupoLimite
+		result.SaldoPrevio = prevalidado.SaldoPrevio
+		result.SaldoDisponible = prevalidado.SaldoDisponible
+	}
+	return result, nil
 }
 
 var errCarritoStationAccessDenied = errors.New("usuario sin acceso a esta estacion")
@@ -3004,7 +3187,7 @@ func normalizePagosMixtosCarrito(entries []carritoPagoMixtoEntrada, moneda strin
 	for _, item := range entries {
 		metodo := dbpkg.NormalizeMetodoPagoCarrito(item.Metodo)
 		if metodo == "" || metodo == "mixto" || metodo == "codigo_descuento" {
-			return nil, 0, fmt.Errorf("pago mixto solo permite efectivo, tarjeta_credito, tarjeta_debito, transferencia_bre_b, transferencia_nequi y transferencia_otro")
+			return nil, 0, fmt.Errorf("pago mixto solo permite efectivo, tarjeta_credito, tarjeta_debito, transferencia_bre_b, transferencia_nequi, transferencia_otro y credito_cliente")
 		}
 		monto := roundMoneyCarritoForMoneda(item.Monto, moneda)
 		if monto <= 0 {

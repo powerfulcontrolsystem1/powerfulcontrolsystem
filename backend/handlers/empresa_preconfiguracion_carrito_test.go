@@ -24,6 +24,7 @@ func TestDefaultEmpresaPreconfigCarritoUISimplificado(t *testing.T) {
 		"metodo_pago_transferencia_bre_b",
 		"metodo_pago_nequi",
 		"metodo_pago_otras_transferencias",
+		"metodo_pago_credito_cliente",
 		"mostrar_resumen_totales_carrito",
 		"mostrar_resumen_productos",
 		"mostrar_boton_pagar",

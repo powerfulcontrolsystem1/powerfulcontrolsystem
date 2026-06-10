@@ -1,3 +1,11 @@
+2026-06-10: Venta a credito desde carrito.
+- Modulos afectados: `carritos`, `venta_directa`, `estaciones`, `creditos`, `clientes`, `caja`.
+- Backend: `pagar_estacion` acepta `credito_cliente` como medio total o mixto, valida cliente y cupo activo con `empresa_creditos_clientes_limites`, crea `empresa_creditos` ligado a la venta y no suma el tramo de credito al efectivo de caja.
+- Frontend: el carrito muestra cupo usado/disponible del cliente, permite abrir cupo desde el formulario rapido, incluye `Credito cliente` en selector/pago mixto/detalle del pago y lo imprime en recibo/factura visual.
+- Configuracion: `Configuracion carrito` agrega check por empresa `Credito cliente / cupo cartera`; la preconfiguracion lo deja activo por defecto.
+- Seguridad: no se agregan tablas ni dependencias; todo conserva filtros por `empresa_id` y reutiliza endpoints/wrappers existentes de clientes, carritos y creditos.
+- QA: `go test ./db ./handlers -run "Credito|Carrito|MetodoPago|PreconfigCarrito" -count=1` OK desde `backend`; validacion Node de scripts embebidos OK.
+
 2026-06-10: Carrito con cliente fiscal completo, cantidad editable y devolucion real.
 - Modulos afectados: `carritos`, `venta_directa`, `estaciones`, `clientes`, `inventario`.
 - Frontend: `web/administrar_empresa/carrito_de_compras.html` amplia el formulario rapido de clientes con persona natural/juridica, NIT/DV, regimen IVA, responsabilidad tributaria, datos de contacto y direccion fiscal usados por facturacion electronica.

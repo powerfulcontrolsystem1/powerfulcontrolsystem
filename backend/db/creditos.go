@@ -237,6 +237,18 @@ type EmpresaCreditoClienteLimiteFilter struct {
 	Offset          int
 }
 
+// EmpresaCreditoClienteDisponibilidad resume el cupo disponible real de un cliente.
+type EmpresaCreditoClienteDisponibilidad struct {
+	ClienteID          int64                        `json:"cliente_id"`
+	Limite             *EmpresaCreditoClienteLimite `json:"limite,omitempty"`
+	SaldoActual        float64                      `json:"saldo_actual"`
+	CreditosActivos    int                          `json:"creditos_activos"`
+	SaldoDisponible    float64                      `json:"saldo_disponible"`
+	MaxCreditosActivos int                          `json:"max_creditos_activos"`
+	Estado             string                       `json:"estado"`
+	Mensaje            string                       `json:"mensaje,omitempty"`
+}
+
 func creditoNormalizeTipo(raw string) string {
 	v := strings.ToLower(strings.TrimSpace(raw))
 	switch v {
@@ -2192,6 +2204,126 @@ func GetEmpresaCreditoClienteLimite(dbConn *sql.DB, empresaID, clienteID int64, 
 	query += ` LIMIT 1`
 
 	return scanEmpresaCreditoClienteLimite(dbConn.QueryRow(query, args...))
+}
+
+// GetEmpresaCreditoClienteDisponibilidad calcula cupo disponible filtrado por empresa y cliente.
+func GetEmpresaCreditoClienteDisponibilidad(dbConn *sql.DB, empresaID, clienteID int64) (*EmpresaCreditoClienteDisponibilidad, error) {
+	if dbConn == nil {
+		return nil, errors.New("db connection is nil")
+	}
+	if empresaID <= 0 || clienteID <= 0 {
+		return nil, errors.New("empresa_id o cliente_id invalido")
+	}
+
+	limite, err := GetEmpresaCreditoClienteLimite(dbConn, empresaID, clienteID, false)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return &EmpresaCreditoClienteDisponibilidad{
+				ClienteID:       clienteID,
+				Estado:          "sin_cupo",
+				Mensaje:         "cliente sin cupo de credito activo",
+				SaldoDisponible: 0,
+			}, nil
+		}
+		return nil, err
+	}
+
+	var creditosActivos int
+	var saldoActual float64
+	err = dbConn.QueryRow(`SELECT
+		COUNT(1),
+		COALESCE(SUM(COALESCE(saldo_actual, 0)), 0)
+	FROM empresa_creditos
+	WHERE empresa_id = ?
+	  AND cliente_id = ?
+	  AND LOWER(COALESCE(estado, 'activo')) = 'activo'
+	  AND LOWER(COALESCE(estado_credito, 'activo')) IN ('activo', 'suspendido', 'castigado')
+	  AND COALESCE(saldo_actual, 0) > 0`, empresaID, clienteID).Scan(&creditosActivos, &saldoActual)
+	if err != nil {
+		return nil, err
+	}
+
+	limiteTotal := creditoRound(creditoMax(limite.LimiteSaldoTotal, 0))
+	disponible := creditoRound(creditoMax(limiteTotal-saldoActual, 0))
+	estado := "disponible"
+	mensaje := ""
+	if limiteTotal <= 0 {
+		estado = "sin_cupo"
+		mensaje = "el limite de saldo total debe ser mayor a cero"
+		disponible = 0
+	} else if limite.MaxCreditosActivos > 0 && creditosActivos >= limite.MaxCreditosActivos {
+		estado = "bloqueado"
+		mensaje = "maximo de creditos activos alcanzado"
+		disponible = 0
+	} else if disponible <= 0 {
+		estado = "sin_disponible"
+		mensaje = "cupo de credito agotado"
+	}
+
+	return &EmpresaCreditoClienteDisponibilidad{
+		ClienteID:          clienteID,
+		Limite:             limite,
+		SaldoActual:        creditoRound(saldoActual),
+		CreditosActivos:    creditosActivos,
+		SaldoDisponible:    disponible,
+		MaxCreditosActivos: limite.MaxCreditosActivos,
+		Estado:             estado,
+		Mensaje:            mensaje,
+	}, nil
+}
+
+// GetEmpresaCreditoByVentaOrigenID busca el credito originado por una venta.
+func GetEmpresaCreditoByVentaOrigenID(dbConn *sql.DB, empresaID, ventaOrigenID int64) (*EmpresaCredito, error) {
+	if dbConn == nil {
+		return nil, errors.New("db connection is nil")
+	}
+	if empresaID <= 0 || ventaOrigenID <= 0 {
+		return nil, errors.New("empresa_id o venta_origen_id invalido")
+	}
+	row := dbConn.QueryRow(`SELECT
+		id,
+		empresa_id,
+		COALESCE(codigo, ''),
+		COALESCE(cliente_id, 0),
+		COALESCE(cliente_nombre, ''),
+		COALESCE(tipo_credito, 'cuotas'),
+		COALESCE(monto_aprobado, 0),
+		COALESCE(cupo_credito, 0),
+		COALESCE(saldo_actual, 0),
+		COALESCE(saldo_disponible, 0),
+		COALESCE(tasa_interes, 0),
+		COALESCE(tasa_mora, 0),
+		COALESCE(periodicidad_cuota, 'mensual'),
+		COALESCE(valor_cuota_pactada, 0),
+		COALESCE(omitir_domingos, 0),
+		COALESCE(plazo_dias, 0),
+		COALESCE(plazo_cuotas, 0),
+		COALESCE(fecha_inicio, ''),
+		COALESCE(fecha_vencimiento, ''),
+		COALESCE(fecha_ultimo_pago, ''),
+		COALESCE(dias_mora, 0),
+		COALESCE(clasificacion_cartera, 'al_dia'),
+		COALESCE(bloqueo_automatico_mora, 1),
+		COALESCE(venta_origen_id, 0),
+		COALESCE(documento_origen, ''),
+		COALESCE(estado_credito, 'activo'),
+		COALESCE(fecha_creacion, ''),
+		COALESCE(fecha_actualizacion, ''),
+		COALESCE(usuario_creador, ''),
+		COALESCE(estado, 'activo'),
+		COALESCE(observaciones, '')
+	FROM empresa_creditos
+	WHERE empresa_id = ?
+	  AND venta_origen_id = ?
+	  AND LOWER(COALESCE(estado, 'activo')) = 'activo'
+	ORDER BY id DESC
+	LIMIT 1`, empresaID, ventaOrigenID)
+	credito, err := scanEmpresaCredito(row)
+	if err != nil {
+		return nil, err
+	}
+	creditoHydrateCuotaStatus(dbConn, empresaID, credito)
+	return credito, nil
 }
 
 // ListEmpresaCreditoClienteLimites lista limites por cliente con filtros.

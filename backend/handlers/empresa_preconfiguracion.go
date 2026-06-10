@@ -627,6 +627,7 @@ func defaultEmpresaPreconfigCarritoUI() map[string]any {
 		"metodo_pago_transferencia_bre_b":         true,
 		"metodo_pago_nequi":                       true,
 		"metodo_pago_otras_transferencias":        true,
+		"metodo_pago_credito_cliente":             true,
 		"mostrar_resumen_totales_carrito":         true,
 		"mostrar_desglose_cobro":                  false,
 		"mostrar_resumen_productos":               true,

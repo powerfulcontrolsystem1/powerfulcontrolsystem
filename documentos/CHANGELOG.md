@@ -1,3 +1,10 @@
+## [2026-06-10] Venta a credito desde carrito
+- [Carrito] Se agrega el medio `Credito cliente` en venta directa/estaciones, incluido pago mixto y detalle del pago.
+- [Creditos] El cierre valida cupo activo por cliente y empresa, y crea cartera real en `empresa_creditos` con `venta_origen_id`.
+- [Caja] El credito cierra la venta pero no incrementa efectivo; solo los tramos en efectivo suman al cierre.
+- [Impresion] Recibo/factura visual muestran monto, codigo y vencimiento del credito cuando aplica.
+- [QA] `go test ./db ./handlers -run "Credito|Carrito|MetodoPago|PreconfigCarrito" -count=1`; validacion Node de scripts embebidos OK.
+
 ## [2026-06-10] Carrito cliente fiscal y devolucion real
 - [Clientes] El panel rapido del carrito permite crear persona natural o empresa con NIT/DV, razon social, nombre comercial, regimen IVA, responsabilidad tributaria, correo, telefono y direccion fiscal completa para facturacion electronica.
 - [Carrito] La tabla de productos agregados permite cambiar cantidad en linea y llama `PUT /api/empresa/carritos_compra/items` para recalcular cuenta e inventario desde backend.

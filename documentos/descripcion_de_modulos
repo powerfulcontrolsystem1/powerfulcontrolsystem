@@ -4130,3 +4130,10 @@ Captura inteligente de compras y gastos
 - `backend/db/carritos_compras.go`: normaliza `transferencia_bre_b`, `transferencia_nequi` y `transferencia_otro`, conservando el alias legacy `otro -> transferencia_bancaria`.
 - `backend/handlers/carritos_compras.go`: exige referencia para tarjetas/transferencias, valida pagos mixtos con los nuevos metodos y bloquea en backend medios deshabilitados por empresa o rol.
 - Bre-B queda como medio separado y preparado para conciliacion automatica futura mediante webhook/API bancaria; sin esa integracion, el cajero registra la referencia confirmada.
+2026-06-10: Venta a credito desde carrito.
+- Modulos afectados: `carritos`, `venta_directa`, `estaciones`, `creditos`, `cartera`, `clientes`.
+- Cambio funcional: el carrito agrega el medio `Credito cliente`, habilitable por empresa desde Configuracion carrito, para vender contra cupo aprobado del cliente.
+- Backend: `pagar_estacion` valida cliente y cupo activo por `empresa_id`, permite credito total o mixto y crea `empresa_creditos` enlazado por `venta_origen_id`/`documento_origen` sin sumar efectivo a caja.
+- Frontend: el panel de cliente muestra cupo/usado/disponible, el formulario rapido puede abrir cupo inicial y la impresion del recibo/factura visual informa monto, codigo y vencimiento de la cartera.
+- Seguridad: no se crean tablas paralelas; se reutilizan `clientes`, `empresa_creditos` y `empresa_creditos_clientes_limites` con aislamiento por empresa.
+- QA: `go test ./db ./handlers -run "Credito|Carrito|MetodoPago|PreconfigCarrito" -count=1` OK desde `backend`; validacion Node de scripts embebidos OK.

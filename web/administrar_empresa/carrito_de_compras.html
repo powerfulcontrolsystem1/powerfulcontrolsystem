@@ -255,6 +255,7 @@
             <button type="button" id="stationNewClienteToggleBtn" class="btn secondary w-full">Nuevo cliente</button>
           </div>
         </div>
+        <div id="stationClienteCreditoBox" class="form-help mt-6">Selecciona un cliente para consultar su cupo de crédito.</div>
         <div id="stationClienteQuickForm" class="empresa-section mt-10 is-hidden" hidden>
           <p class="form-help mt-0">Registra los datos fiscales del cliente para recibos y facturacion electronica: persona natural o empresa, documento, regimen IVA, responsabilidad tributaria, direccion y correo.</p>
           <div class="form-row carrito-customer-quick-grid">
@@ -343,6 +344,20 @@
             <div class="form-col">
               <label class="form-label" for="quickClienteObservaciones">Observaciones</label>
               <input id="quickClienteObservaciones" class="form-input" autocomplete="off" placeholder="Notas internas del cliente">
+            </div>
+            <div class="form-col">
+              <label class="form-label" for="quickClienteAbrirCupoCredito">Cupo de crédito</label>
+              <label class="form-help inline-check">
+                <input id="quickClienteAbrirCupoCredito" type="checkbox"> Abrir cupo para vender a crédito
+              </label>
+            </div>
+            <div class="form-col maxw-180">
+              <label class="form-label" for="quickClienteCupoCredito">Valor del cupo</label>
+              <input id="quickClienteCupoCredito" type="number" min="0" step="1" class="form-input" value="0">
+            </div>
+            <div class="form-col maxw-180">
+              <label class="form-label" for="quickClienteMaxCreditosActivos">Créditos activos máx.</label>
+              <input id="quickClienteMaxCreditosActivos" type="number" min="1" step="1" class="form-input" value="3">
             </div>
             <div class="form-col maxw-220 flex-col-end">
               <button type="button" id="quickClienteGuardarBtn" class="btn primary w-full">Guardar cliente</button>
@@ -549,6 +564,7 @@
               <option value="transferencia_bre_b">Transferencia Bre-B</option>
               <option value="transferencia_nequi">Nequi</option>
               <option value="transferencia_otro">Otra transferencia</option>
+              <option value="credito_cliente">Crédito cliente</option>
               <option value="mixto">Pago mixto</option>
               <option value="codigo_descuento">Código de descuento</option>
             </select>
@@ -587,6 +603,7 @@
               <option value="transferencia_bre_b">Transferencia Bre-B</option>
               <option value="transferencia_nequi">Nequi</option>
               <option value="transferencia_otro">Otra transferencia</option>
+              <option value="credito_cliente">Crédito cliente</option>
             </select>
           </div>
           <div class="form-col">
@@ -609,6 +626,7 @@
               <option value="transferencia_nequi">Nequi</option>
               <option value="transferencia_otro">Otra transferencia</option>
               <option value="efectivo">Efectivo</option>
+              <option value="credito_cliente">Crédito cliente</option>
             </select>
           </div>
           <div class="form-col">
@@ -631,6 +649,7 @@
               <option value="transferencia_nequi">Nequi</option>
               <option value="transferencia_otro">Otra transferencia</option>
               <option value="efectivo">Efectivo</option>
+              <option value="credito_cliente">Crédito cliente</option>
             </select>
           </div>
           <div class="form-col">
@@ -684,6 +703,10 @@
           <div class="form-col">
             <label class="form-label" for="stationPayDisplayTransferenciaOtro">Otra transferencia</label>
             <input id="stationPayDisplayTransferenciaOtro" type="text" inputmode="decimal" class="form-input" value="" autocomplete="off" data-payment-amount-method="transferencia_otro">
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="stationPayDisplayCreditoCliente">Crédito cliente</label>
+            <input id="stationPayDisplayCreditoCliente" type="text" inputmode="decimal" class="form-input" value="" autocomplete="off" data-payment-amount-method="credito_cliente">
           </div>
           <div class="form-col">
             <label class="form-label" for="stationCashReceivedDisplay">Efectivo recibido</label>
@@ -907,6 +930,16 @@
       selectedCarritoID: 0,
       selectedCarritoCode: '',
       customerPanelOpen: false,
+      clienteCredito: {
+        clienteID: 0,
+        loading: false,
+        loaded: false,
+        limite: null,
+        saldoActual: 0,
+        saldoDisponible: 0,
+        estado: '',
+        mensaje: ''
+      },
       items: [],
       cartAbonos: [],
       cartAbonosLoading: false,
@@ -975,7 +1008,8 @@
         tarjeta_debito: 0,
         transferencia_bre_b: 0,
         transferencia_nequi: 0,
-        transferencia_otro: 0
+        transferencia_otro: 0,
+        credito_cliente: 0
       },
       offlineVentas: {
         lastOnline: typeof navigator === 'undefined' ? true : navigator.onLine !== false,
@@ -1727,6 +1761,7 @@
         metodo_pago_transferencia_bre_b: true,
         metodo_pago_nequi: true,
         metodo_pago_otras_transferencias: true,
+        metodo_pago_credito_cliente: true,
         mostrar_resumen_totales_carrito: true,
         mostrar_desglose_cobro: false,
         mostrar_resumen_productos: true,
@@ -1854,6 +1889,7 @@
         metodo_pago_transferencia_bre_b: src.metodo_pago_transferencia_bre_b === undefined ? (src.metodo_pago_bre_b === undefined ? base.metodo_pago_transferencia_bre_b : Boolean(src.metodo_pago_bre_b)) : Boolean(src.metodo_pago_transferencia_bre_b),
         metodo_pago_nequi: src.metodo_pago_nequi === undefined ? base.metodo_pago_nequi : Boolean(src.metodo_pago_nequi),
         metodo_pago_otras_transferencias: src.metodo_pago_otras_transferencias === undefined ? (src.metodo_pago_transferencia_otro === undefined ? base.metodo_pago_otras_transferencias : Boolean(src.metodo_pago_transferencia_otro)) : Boolean(src.metodo_pago_otras_transferencias),
+        metodo_pago_credito_cliente: src.metodo_pago_credito_cliente === undefined ? base.metodo_pago_credito_cliente : Boolean(src.metodo_pago_credito_cliente),
         mostrar_resumen_totales_carrito: src.mostrar_resumen_totales_carrito === undefined ? base.mostrar_resumen_totales_carrito : Boolean(src.mostrar_resumen_totales_carrito),
         mostrar_desglose_cobro: src.mostrar_desglose_cobro === undefined ? base.mostrar_desglose_cobro : Boolean(src.mostrar_desglose_cobro),
         mostrar_resumen_productos: src.mostrar_resumen_productos === undefined ? base.mostrar_resumen_productos : Boolean(src.mostrar_resumen_productos),
@@ -2708,6 +2744,7 @@
         metodo_pago_transferencia_bre_b: true,
         metodo_pago_nequi: true,
         metodo_pago_otras_transferencias: true,
+        metodo_pago_credito_cliente: true,
         metodo_pago_mixto: true,
         metodo_pago_codigo_descuento: true,
         habilitar_propinas: true,
@@ -2727,6 +2764,7 @@
         metodo_pago_transferencia_bre_b: src.metodo_pago_transferencia_bre_b === undefined ? (src.metodo_pago_bre_b === undefined ? base.metodo_pago_transferencia_bre_b : Boolean(src.metodo_pago_bre_b)) : Boolean(src.metodo_pago_transferencia_bre_b),
         metodo_pago_nequi: src.metodo_pago_nequi === undefined ? base.metodo_pago_nequi : Boolean(src.metodo_pago_nequi),
         metodo_pago_otras_transferencias: src.metodo_pago_otras_transferencias === undefined ? (src.metodo_pago_transferencia_otro === undefined ? base.metodo_pago_otras_transferencias : Boolean(src.metodo_pago_transferencia_otro)) : Boolean(src.metodo_pago_otras_transferencias),
+        metodo_pago_credito_cliente: src.metodo_pago_credito_cliente === undefined ? base.metodo_pago_credito_cliente : Boolean(src.metodo_pago_credito_cliente),
         metodo_pago_mixto: src.metodo_pago_mixto === undefined ? base.metodo_pago_mixto : Boolean(src.metodo_pago_mixto),
         metodo_pago_codigo_descuento: src.metodo_pago_codigo_descuento === undefined ? base.metodo_pago_codigo_descuento : Boolean(src.metodo_pago_codigo_descuento),
         habilitar_propinas: src.habilitar_propinas === undefined ? base.habilitar_propinas : Boolean(src.habilitar_propinas),
@@ -2752,6 +2790,7 @@
       if (m === 'transferencia_bre_b') return stationUI.metodo_pago_transferencia_bre_b && p.metodo_pago_transferencia_bancaria && p.metodo_pago_transferencia_bre_b;
       if (m === 'transferencia_nequi') return stationUI.metodo_pago_nequi && p.metodo_pago_transferencia_bancaria && p.metodo_pago_nequi;
       if (m === 'transferencia_otro') return stationUI.metodo_pago_otras_transferencias && p.metodo_pago_transferencia_bancaria && p.metodo_pago_otras_transferencias;
+      if (m === 'credito_cliente') return stationUI.metodo_pago_credito_cliente && p.metodo_pago_credito_cliente;
       if (m === 'mixto') return stationUI.permitir_pago_mixto && p.metodo_pago_mixto;
       if (m === 'codigo_descuento') return stationUI.mostrar_descuentos && p.metodo_pago_codigo_descuento;
       return false;
@@ -2759,14 +2798,14 @@
 
     function isMixedMethodAllowed(metodo) {
       const m = normalize(metodo).toLowerCase();
-      if (['efectivo', 'tarjeta_credito', 'tarjeta_debito', 'transferencia_bancaria', 'transferencia_bre_b', 'transferencia_nequi', 'transferencia_otro'].indexOf(m) === -1) {
+      if (['efectivo', 'tarjeta_credito', 'tarjeta_debito', 'transferencia_bancaria', 'transferencia_bre_b', 'transferencia_nequi', 'transferencia_otro', 'credito_cliente'].indexOf(m) === -1) {
         return false;
       }
       return isPaymentMethodAllowed(m);
     }
 
     function getAllowedPaymentMethods() {
-      const ordered = ['efectivo', 'tarjeta_credito', 'tarjeta_debito', 'transferencia_bre_b', 'transferencia_nequi', 'transferencia_otro', 'mixto', 'codigo_descuento'];
+      const ordered = ['efectivo', 'tarjeta_credito', 'tarjeta_debito', 'transferencia_bre_b', 'transferencia_nequi', 'transferencia_otro', 'credito_cliente', 'mixto', 'codigo_descuento'];
       return ordered.filter(function(method) {
         return isPaymentMethodAllowed(method);
       });
@@ -2781,10 +2820,30 @@
         transferencia_bre_b: 'Transferencia Bre-B',
         transferencia_nequi: 'Nequi',
         transferencia_otro: 'Otra transferencia',
+        credito_cliente: 'Crédito cliente',
         mixto: 'Pago mixto',
         codigo_descuento: 'Codigo descuento'
       };
       return labels[normalize(method).toLowerCase()] || normalize(method).replace(/_/g, ' ');
+    }
+
+    function paymentUsesClienteCredito(paymentMethod, mixedPayments) {
+      const method = normalize(paymentMethod).toLowerCase();
+      if (method === 'credito_cliente') return true;
+      if (method !== 'mixto') return false;
+      return (Array.isArray(mixedPayments) ? mixedPayments : []).some(function(item) {
+        return normalize(item && item.metodo).toLowerCase() === 'credito_cliente' && Number(item.monto || 0) > 0;
+      });
+    }
+
+    function paymentCreditoClienteAmount(paymentMethod, mixedPayments, total) {
+      const method = normalize(paymentMethod).toLowerCase();
+      if (method === 'credito_cliente') return Math.max(0, roundMoney(Number(total || 0)));
+      if (method !== 'mixto') return 0;
+      return (Array.isArray(mixedPayments) ? mixedPayments : []).reduce(function(acc, item) {
+        if (normalize(item && item.metodo).toLowerCase() !== 'credito_cliente') return acc;
+        return roundMoney(acc + Math.max(0, Number(item.monto || 0)));
+      }, 0);
     }
 
     function renderPaymentMethodsCards(carrito) {
@@ -2798,7 +2857,7 @@
     }
 
     function getAllowedMixedMethods() {
-      const ordered = ['efectivo', 'tarjeta_credito', 'tarjeta_debito', 'transferencia_bre_b', 'transferencia_nequi', 'transferencia_otro'];
+      const ordered = ['efectivo', 'tarjeta_credito', 'tarjeta_debito', 'transferencia_bre_b', 'transferencia_nequi', 'transferencia_otro', 'credito_cliente'];
       return ordered.filter(function(method) {
         return isMixedMethodAllowed(method);
       });
@@ -3753,6 +3812,26 @@
         operativaMessage = 'El metodo de pago ' + getPaymentMethodLabel(paymentMethod) + ' no esta habilitado para este rol.';
       }
 
+      const creditoClienteMonto = paymentCreditoClienteAmount(paymentMethod, mixedPayments, totalPagarFinal);
+      if (creditoClienteMonto > 0) {
+        const clienteID = Number(carrito && carrito.cliente_id || 0);
+        const credit = state.clienteCredito || {};
+        if (clienteID <= 0) {
+          operativaMessage = 'Para vender a crédito debes seleccionar un cliente registrado con cupo activo.';
+        } else if (Number(credit.clienteID || 0) !== clienteID || credit.loading || !credit.loaded) {
+          operativaMessage = 'Consulta el cupo de crédito del cliente antes de cerrar la venta.';
+          loadClienteCreditoDisponibilidad(clienteID, carrito).catch(function(err) {
+            console.warn(err);
+          });
+        } else if (!credit.limite || credit.estado === 'sin_cupo') {
+          operativaMessage = 'El cliente no tiene cupo de crédito activo.';
+        } else if (credit.estado && credit.estado !== 'disponible') {
+          operativaMessage = credit.mensaje || 'El cupo de crédito del cliente no está disponible.';
+        } else if (Number(credit.saldoDisponible || 0) + 0.01 < creditoClienteMonto) {
+          operativaMessage = 'Cupo de crédito insuficiente. Disponible: ' + formatAmount(Number(credit.saldoDisponible || 0), carrito.moneda) + '.';
+        }
+      }
+
       if (state.paymentAmountsManual) {
         const manualEntries = getStationPaymentAmountEntries();
         const manualTotal = manualEntries.reduce(function(acc, item) {
@@ -3790,6 +3869,7 @@
         mixedPayments: mixedPayments,
         mixedTotal: mixedTotal,
         mixedSummary: mixedSummary,
+        creditoClienteMonto: creditoClienteMonto,
         mixedMessage: mixedMessage,
         paymentAmountsMessage: paymentAmountsMessage,
         operativaMessage: operativaMessage
@@ -3803,7 +3883,8 @@
         { id: 'stationPayDisplayDebito', metodo: 'tarjeta_debito' },
         { id: 'stationPayDisplayBreb', metodo: 'transferencia_bre_b' },
         { id: 'stationPayDisplayNequi', metodo: 'transferencia_nequi' },
-        { id: 'stationPayDisplayTransferenciaOtro', metodo: 'transferencia_otro' }
+        { id: 'stationPayDisplayTransferenciaOtro', metodo: 'transferencia_otro' },
+        { id: 'stationPayDisplayCreditoCliente', metodo: 'credito_cliente' }
       ];
     }
 
@@ -3814,7 +3895,8 @@
         tarjeta_debito: 0,
         transferencia_bre_b: 0,
         transferencia_nequi: 0,
-        transferencia_otro: 0
+        transferencia_otro: 0,
+        credito_cliente: 0
       };
     }
 
@@ -3988,7 +4070,7 @@
         msg.textContent = 'Sumatoria correcta: ' + formatAmount(sum, moneda) + '. Pago listo para cerrar.';
         msg.classList.add('value-positive');
       } else {
-        msg.textContent = 'Haz clic en Efectivo, Crédito, Débito, Bre-B, Nequi u otra transferencia para cargar el total. Puedes editar los valores para pago combinado.';
+        msg.textContent = 'Haz clic en Efectivo, Crédito, Débito, Bre-B, Nequi, otra transferencia o Crédito cliente para cargar el total. Puedes editar los valores para pago combinado.';
       }
     }
 
@@ -4025,6 +4107,7 @@
       let breb = 0;
       let nequi = 0;
       let otra = 0;
+      let creditoCliente = 0;
       const moneda = carrito.moneda;
       if (pay.paymentMethod === 'mixto' && pay.mixedPayments && pay.mixedPayments.length) {
         pay.mixedPayments.forEach(function(item) {
@@ -4035,7 +4118,8 @@
           else if (metodo === 'tarjeta_debito') deb += monto;
           else if (metodo === 'transferencia_bre_b') breb += monto;
           else if (metodo === 'transferencia_nequi') nequi += monto;
-          else otra += monto;
+          else if (metodo === 'transferencia_otro') otra += monto;
+          else if (metodo === 'credito_cliente') creditoCliente += monto;
         });
       } else {
         const pm = normalize(pay.paymentMethod).toLowerCase();
@@ -4045,7 +4129,8 @@
         else if (pm === 'tarjeta_debito') deb = t;
         else if (pm === 'transferencia_bre_b') breb = t;
         else if (pm === 'transferencia_nequi') nequi = t;
-        else otra = t;
+        else if (pm === 'transferencia_otro') otra = t;
+        else if (pm === 'credito_cliente') creditoCliente = t;
       }
       setOne('stationPayDisplayEfectivo', formatAmount(ef, moneda));
       setOne('stationPayDisplayCredito', formatAmount(cred, moneda));
@@ -4053,13 +4138,15 @@
       setOne('stationPayDisplayBreb', formatAmount(breb, moneda));
       setOne('stationPayDisplayNequi', formatAmount(nequi, moneda));
       setOne('stationPayDisplayTransferenciaOtro', formatAmount(otra, moneda));
+      setOne('stationPayDisplayCreditoCliente', formatAmount(creditoCliente, moneda));
       state.paymentAmounts = {
         efectivo: roundMoney(ef),
         tarjeta_credito: roundMoney(cred),
         tarjeta_debito: roundMoney(deb),
         transferencia_bre_b: roundMoney(breb),
         transferencia_nequi: roundMoney(nequi),
-        transferencia_otro: roundMoney(otra)
+        transferencia_otro: roundMoney(otra),
+        credito_cliente: roundMoney(creditoCliente)
       };
       renderCashReceivedChange(carrito);
     }
@@ -4969,6 +5056,16 @@
         '</section>';
     }
 
+    function buildCreditSalePrintInfo(pay, moneda) {
+      const credito = pay && pay.creditoVenta && typeof pay.creditoVenta === 'object' ? pay.creditoVenta : null;
+      if (!credito || !credito.aplica) return null;
+      const parts = ['Venta a crédito del cliente'];
+      if (normalize(credito.codigo)) parts.push('Código ' + normalize(credito.codigo));
+      parts.push('Monto ' + formatAmount(Number(credito.monto_credito || pay.creditoClienteMonto || 0), moneda || 'COP'));
+      if (normalize(credito.fecha_vencimiento)) parts.push('Vence ' + normalize(credito.fecha_vencimiento));
+      return parts.join(' | ');
+    }
+
     async function printSaleReceiptIfEnabled(carrito, pay, items, printTarget, documentoVenta) {
       const cfg = state.empresaAvanzadaConfig && typeof state.empresaAvanzadaConfig === 'object' ? state.empresaAvanzadaConfig : {};
       if (!shouldPrintCartReceipt(cfg)) return false;
@@ -4986,9 +5083,11 @@
       const invoiceQR = await buildElectronicInvoiceQRForPrint(documentoVenta, printFormat);
       const taxDeduction = shouldShowTaxDeductionOnInvoice(cfg) ? buildTaxDeductionSummary(items) : null;
       const taxSummaryRows = taxDeductionSummaryRows(taxDeduction, moneda);
+      const creditSaleInfo = buildCreditSalePrintInfo(pay, moneda);
       const cajeroNombre = receiptCashierName(pay);
       const customFieldMeta = receiptCustomFieldMeta(printItems);
       const customFieldHTML = receiptCustomFieldHTML(printItems);
+      const creditSaleInfo = buildCreditSalePrintInfo(pay, moneda);
       const subtitleParts = [];
       if (receiptItemEnabled(printItems, 'carrito')) subtitleParts.push('Carrito: ' + ((carrito && carrito.nombre) || ''));
       if (receiptItemEnabled(printItems, 'codigo')) subtitleParts.push('Codigo: ' + ((carrito && carrito.codigo) || ''));
@@ -5030,6 +5129,7 @@
             receiptItemEnabled(printItems, 'cliente') ? { label: 'Cliente', value: clienteNombre } : null,
             receiptItemEnabled(printItems, 'cajero') ? { label: 'Cajero', value: cajeroNombre } : null,
             receiptItemEnabled(printItems, 'metodo_pago') ? { label: 'Metodo', value: normalize(pay.paymentLabel || pay.paymentMethod || '') } : null,
+            creditSaleInfo ? { label: 'Crédito cliente', value: creditSaleInfo } : null,
             receiptItemEnabled(printItems, 'impresora') ? { label: 'Impresora', value: printerName + (printerSource ? (' (' + printerSource + ')') : '') } : null,
             receiptItemEnabled(printItems, 'fecha') ? { label: 'Fecha', value: now.toLocaleString() } : null,
             receiptItemEnabled(printItems, 'copias') ? { label: 'Copias', value: String(copias) } : null,
@@ -5072,6 +5172,7 @@
         '<p class="tot">Total a pagar: ' + escapeHtml(formatAmount(pay.totalPagarFinal, moneda)) + '</p>' +
         taxDeductionFallbackHTML(taxDeduction, moneda) +
         (receiptItemEnabled(printItems, 'metodo_pago') ? '<p>Método: ' + escapeHtml(normalize(pay.paymentLabel || pay.paymentMethod || '')) + '</p>' : '') +
+        (creditSaleInfo ? '<p><strong>Crédito cliente:</strong> ' + escapeHtml(creditSaleInfo) + '</p>' : '') +
         ((receiptItemEnabled(printItems, 'fecha') || receiptItemEnabled(printItems, 'copias')) ? '<p class="muted">' + [
           receiptItemEnabled(printItems, 'fecha') ? ('Fecha: ' + escapeHtml(now.toLocaleString())) : '',
           receiptItemEnabled(printItems, 'copias') ? ('Copias: ' + escapeHtml(String(copias))) : ''
@@ -5140,7 +5241,8 @@
             { label: 'Codigo', value: normalize(doc.documento_codigo || '') },
             { label: 'Fecha', value: now.toLocaleString() },
             { label: 'Validacion', value: normalize(doc.codigo_validacion || '') },
-            { label: 'Moneda', value: moneda }
+            { label: 'Moneda', value: moneda },
+            creditSaleInfo ? { label: 'Crédito cliente', value: creditSaleInfo } : null
           ],
           tableHeaders: ['Descripcion', 'Cant.', 'P.U.', 'Total'],
           rows: printRows,
@@ -5173,6 +5275,7 @@
         '<p><strong>C?digo:</strong> ' + escapeHtml(normalize(doc.documento_codigo || '')) + '</p>' +
         '<p><strong>Ambiente:</strong> ' + escapeHtml(normalize(doc.ambiente_fe || '')) + '</p>' +
         '<p><strong>Fecha:</strong> ' + escapeHtml(now.toLocaleString()) + '</p>' +
+        (creditSaleInfo ? '<p><strong>Crédito cliente:</strong> ' + escapeHtml(creditSaleInfo) + '</p>' : '') +
         '<hr>' +
         '<table><thead><tr><th>Descripci?n</th><th style="text-align:right">Cant.</th><th style="text-align:right">P.U.</th><th style="text-align:right">Total</th></tr></thead><tbody>' + rowsHtml + '</tbody></table>' +
         '<p class="tot">Total documento: ' + escapeHtml(formatAmount(Number(doc.monto_total || pay.totalPagarFinal || 0), moneda)) + '</p>' +
@@ -6359,6 +6462,8 @@
         const payResp = await res.json().catch(function() { return null; });
         const documentoVenta = payResp && payResp.documento_venta && typeof payResp.documento_venta === 'object' ? payResp.documento_venta : null;
         const facturaElectronica = payResp && payResp.factura_electronica && typeof payResp.factura_electronica === 'object' ? payResp.factura_electronica : null;
+        const creditoVenta = payResp && payResp.credito_venta && typeof payResp.credito_venta === 'object' ? payResp.credito_venta : null;
+        pay.creditoVenta = creditoVenta;
         var successMsg = 'Pago registrado. El carrito quedó inactivo.';
         if (payResp && payResp.propina && Number(payResp.propina.monto || 0) > 0) {
           successMsg += ' Propina registrada: ' + formatAmount(payResp.propina.monto, selected.moneda) + '.';
@@ -6374,6 +6479,12 @@
         }
         if (documentoVenta && normalize(documentoVenta.documento_codigo)) {
           successMsg += ' Venta registrada: ' + normalize(documentoVenta.documento_codigo) + '.';
+        }
+        if (creditoVenta && creditoVenta.aplica) {
+          successMsg += ' Crédito cliente: ' + formatAmount(Number(creditoVenta.monto_credito || 0), selected.moneda) + (normalize(creditoVenta.codigo) ? (' (' + normalize(creditoVenta.codigo) + ')') : '') + '.';
+          if (normalize(creditoVenta.warning)) {
+            successMsg += ' Aviso crédito: ' + normalize(creditoVenta.warning) + '.';
+          }
         }
         if (payResp && payResp.caja && normalize(payResp.caja.caja_codigo)) {
           successMsg += ' Caja: ' + normalize(payResp.caja.caja_codigo) + '.';
@@ -6513,6 +6624,7 @@
         'stationPayDisplayBreb',
         'stationPayDisplayNequi',
         'stationPayDisplayTransferenciaOtro',
+        'stationPayDisplayCreditoCliente',
         'stationCashReceivedDisplay'
       ];
       const numberMoneyIds = [
@@ -7092,6 +7204,113 @@
       box.style.color = isError ? '#ef5350' : '';
     }
 
+    function resetClienteCreditoState(clienteID) {
+      state.clienteCredito = {
+        clienteID: Number(clienteID || 0),
+        loading: false,
+        loaded: false,
+        limite: null,
+        saldoActual: 0,
+        saldoDisponible: 0,
+        estado: '',
+        mensaje: ''
+      };
+    }
+
+    function renderStationClienteCreditoBox(carrito) {
+      const box = document.getElementById('stationClienteCreditoBox');
+      if (!box) return;
+      const clienteID = Number(carrito && carrito.cliente_id || 0);
+      box.classList.remove('value-negative', 'value-positive');
+      if (!clienteID) {
+        box.textContent = 'Selecciona un cliente para vender a crédito o consultar su cupo.';
+        return;
+      }
+      const credit = state.clienteCredito || {};
+      if (Number(credit.clienteID || 0) !== clienteID || credit.loading) {
+        box.textContent = 'Consultando cupo de crédito del cliente...';
+        return;
+      }
+      if (!credit.loaded) {
+        box.textContent = 'Cupo de crédito pendiente de consultar.';
+        return;
+      }
+      if (!credit.limite || credit.estado === 'sin_cupo') {
+        box.textContent = 'Cliente sin cupo de crédito activo. Puedes abrirlo desde Nuevo cliente o desde el módulo Créditos.';
+        box.classList.add('value-negative');
+        return;
+      }
+      const moneda = (carrito && carrito.moneda) || 'COP';
+      const parts = [
+        'Cupo crédito: ' + formatAmount(Number(credit.limite.limite_saldo_total || 0), moneda),
+        'Usado: ' + formatAmount(Number(credit.saldoActual || 0), moneda),
+        'Disponible: ' + formatAmount(Number(credit.saldoDisponible || 0), moneda)
+      ];
+      if (Number(credit.maxCreditosActivos || 0) > 0) {
+        parts.push('Máx. créditos activos: ' + String(credit.maxCreditosActivos));
+      }
+      if (credit.estado && credit.estado !== 'disponible') {
+        parts.push(credit.mensaje || 'Cupo no disponible');
+        box.classList.add('value-negative');
+      } else {
+        box.classList.add('value-positive');
+      }
+      box.textContent = parts.join(' | ');
+    }
+
+    async function loadClienteCreditoDisponibilidad(clienteID, carrito) {
+      clienteID = Number(clienteID || 0);
+      if (!clienteID) {
+        resetClienteCreditoState(0);
+        renderStationClienteCreditoBox(carrito);
+        return null;
+      }
+      if (state.clienteCredito && state.clienteCredito.loaded && Number(state.clienteCredito.clienteID || 0) === clienteID) {
+        renderStationClienteCreditoBox(carrito);
+        return state.clienteCredito;
+      }
+      resetClienteCreditoState(clienteID);
+      state.clienteCredito.loading = true;
+      renderStationClienteCreditoBox(carrito);
+      try {
+        const res = await fetchWithTimeout('/api/empresa/creditos?action=disponibilidad_cliente&empresa_id=' + encodeURIComponent(state.empresaID) + '&cliente_id=' + encodeURIComponent(clienteID), {
+          method: 'GET',
+          credentials: 'same-origin'
+        });
+        await ensureOk(res);
+        const body = await res.json().catch(function() { return {}; });
+        const disp = body && body.disponibilidad && typeof body.disponibilidad === 'object' ? body.disponibilidad : {};
+        state.clienteCredito = {
+          clienteID: clienteID,
+          loading: false,
+          loaded: true,
+          limite: disp.limite || null,
+          saldoActual: Number(disp.saldo_actual || 0),
+          saldoDisponible: Number(disp.saldo_disponible || 0),
+          maxCreditosActivos: Number(disp.max_creditos_activos || 0),
+          estado: normalize(disp.estado || ''),
+          mensaje: normalize(disp.mensaje || '')
+        };
+      } catch (err) {
+        state.clienteCredito = {
+          clienteID: clienteID,
+          loading: false,
+          loaded: true,
+          limite: null,
+          saldoActual: 0,
+          saldoDisponible: 0,
+          estado: 'error',
+          mensaje: err.message || 'No se pudo consultar cupo de crédito'
+        };
+      }
+      renderStationClienteCreditoBox(carrito);
+      const selected = getSelectedCarrito();
+      if (selected && Number(selected.cliente_id || 0) === clienteID && (state.stationMode || state.directSaleMode)) {
+        renderStationPaymentPanel(selected);
+      }
+      return state.clienteCredito;
+    }
+
     function toggleQuickClienteForm(show) {
       const form = document.getElementById('stationClienteQuickForm');
       if (!form) return;
@@ -7150,6 +7369,15 @@
       if (actual) {
         actual.textContent = 'Cliente actual: ' + carritoCustomerDisplayName(carrito) + '.';
       }
+      if (!state.clienteCredito || Number(state.clienteCredito.clienteID || 0) !== selectedID) {
+        resetClienteCreditoState(selectedID);
+        if (selectedID > 0) {
+          loadClienteCreditoDisponibilidad(selectedID, carrito).catch(function(err) {
+            console.warn(err);
+          });
+        }
+      }
+      renderStationClienteCreditoBox(carrito);
     }
 
     function updateSelectedCarritoClienteLocal(clienteID) {
@@ -7162,6 +7390,7 @@
         next.cliente_nombre = cliente ? (normalize(cliente.nombre_razon_social) || normalize(cliente.nombre_comercial)) : configuredGeneralCustomerName();
         return next;
       });
+      resetClienteCreditoState(id);
     }
 
     async function assignClienteToSelectedCarrito(clienteID) {
@@ -7193,6 +7422,11 @@
       updateSelectedCarritoClienteLocal(id);
       renderStationCustomerPanel(getSelectedCarrito());
       renderResumen();
+      if (id > 0) {
+        loadClienteCreditoDisponibilidad(id, getSelectedCarrito()).catch(function(err) {
+          console.warn(err);
+        });
+      }
       setStationClienteMessage(id > 0 ? 'Cliente asignado al carrito.' : 'El carrito quedo como ' + configuredGeneralCustomerName() + '.', false);
     }
 
@@ -7252,21 +7486,56 @@
         await ensureOk(res);
         const body = await res.json().catch(function() { return {}; });
         const newID = Number(body && body.id || 0);
+        const abrirCupo = Boolean(document.getElementById('quickClienteAbrirCupoCredito') && document.getElementById('quickClienteAbrirCupoCredito').checked);
+        let cupoWarning = '';
+        if (newID > 0 && abrirCupo) {
+          const cupo = Math.max(0, Number(document.getElementById('quickClienteCupoCredito') && document.getElementById('quickClienteCupoCredito').value || 0));
+          const maxActivos = Math.max(1, Math.floor(Number(document.getElementById('quickClienteMaxCreditosActivos') && document.getElementById('quickClienteMaxCreditosActivos').value || 3)));
+          if (cupo <= 0) {
+            throw new Error('Para abrir cupo de crédito registra un valor mayor a cero.');
+          }
+          try {
+            const cupoRes = await fetch('/api/empresa/creditos?action=limites_cliente&empresa_id=' + encodeURIComponent(state.empresaID), {
+              method: 'POST',
+              credentials: 'same-origin',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                empresa_id: Number(state.empresaID),
+                cliente_id: newID,
+                limite_saldo_total: cupo,
+                max_creditos_activos: maxActivos,
+                requiere_aprobacion_exceso: false,
+                estado: 'activo',
+                observaciones: 'Cupo creado desde el carrito'
+              })
+            });
+            await ensureOk(cupoRes);
+          } catch (cupoErr) {
+            cupoWarning = ' No se pudo abrir el cupo desde carrito: ' + (cupoErr.message || 'revisa permisos en Créditos') + '.';
+          }
+        }
         await loadClientes();
         if (newID > 0) {
           await assignClienteToSelectedCarrito(newID);
+          await loadClienteCreditoDisponibilidad(newID, getSelectedCarrito());
         }
         ['quickClienteDocumento', 'quickClienteDV', 'quickClienteNombreComercial', 'quickClienteTelefono', 'quickClienteEmail', 'quickClienteDireccion', 'quickClienteDepartamento', 'quickClienteMunicipio', 'quickClienteCodigoPostal', 'quickClienteObservaciones'].forEach(function(id) {
           const el = document.getElementById(id);
           if (el) el.value = '';
         });
+        const abrirCupoEl = document.getElementById('quickClienteAbrirCupoCredito');
+        if (abrirCupoEl) abrirCupoEl.checked = false;
+        const cupoEl = document.getElementById('quickClienteCupoCredito');
+        if (cupoEl) cupoEl.value = '0';
+        const maxCupoEl = document.getElementById('quickClienteMaxCreditosActivos');
+        if (maxCupoEl) maxCupoEl.value = '3';
         const nameEl = document.getElementById('quickClienteNombre');
         if (nameEl) nameEl.value = '';
         const paisEl = document.getElementById('quickClientePais');
         if (paisEl) paisEl.value = 'CO';
         toggleQuickClienteForm(false);
         syncStationClienteSearchInput(getSelectedCarrito());
-        setStationClienteMessage('Cliente creado y asignado al carrito.', false);
+        setStationClienteMessage('Cliente creado y asignado al carrito' + (abrirCupo && !cupoWarning ? ' con cupo de crédito activo.' : '.') + cupoWarning, Boolean(cupoWarning));
       } catch (err) {
         setStationClienteMessage(err.message || 'No se pudo crear el cliente desde el carrito.', true);
       }
@@ -10188,7 +10457,7 @@
         }
       });
     }
-    ['quickClienteTipoPersona', 'quickClienteTipoDoc', 'quickClienteDocumento', 'quickClienteDV', 'quickClienteNombre', 'quickClienteNombreComercial', 'quickClienteRegimenFiscal', 'quickClienteResponsabilidad', 'quickClienteTelefono', 'quickClienteEmail', 'quickClienteDireccion', 'quickClientePais', 'quickClienteDepartamento', 'quickClienteMunicipio', 'quickClienteCodigoPostal', 'quickClienteObservaciones'].forEach(function(id) {
+    ['quickClienteTipoPersona', 'quickClienteTipoDoc', 'quickClienteDocumento', 'quickClienteDV', 'quickClienteNombre', 'quickClienteNombreComercial', 'quickClienteRegimenFiscal', 'quickClienteResponsabilidad', 'quickClienteTelefono', 'quickClienteEmail', 'quickClienteDireccion', 'quickClientePais', 'quickClienteDepartamento', 'quickClienteMunicipio', 'quickClienteCodigoPostal', 'quickClienteObservaciones', 'quickClienteCupoCredito', 'quickClienteMaxCreditosActivos'].forEach(function(id) {
       const el = document.getElementById(id);
       if (!el) return;
       el.addEventListener('keydown', function(e) {

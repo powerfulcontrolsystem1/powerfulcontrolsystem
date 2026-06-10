@@ -430,6 +430,13 @@
                 Otra transferencia
               </label>
             </div>
+            <div class="form-col">
+              <label class="form-help" style="display:flex;align-items:center;gap:8px;">
+                <input id="carritoCfgMetodoPagoCreditoCliente" type="checkbox" checked>
+                Crédito cliente / cupo cartera
+              </label>
+              <div class="form-help">Permite cerrar ventas contra el cupo aprobado del cliente y crear cartera por cobrar.</div>
+            </div>
           </div>
         </div>
 
@@ -624,6 +631,7 @@
         metodo_pago_transferencia_bre_b: true,
         metodo_pago_nequi: true,
         metodo_pago_otras_transferencias: true,
+        metodo_pago_credito_cliente: true,
         mostrar_resumen_totales_carrito: true,
         mostrar_desglose_cobro: false,
         mostrar_resumen_productos: true,
@@ -702,6 +710,7 @@
         metodo_pago_transferencia_bre_b: src.metodo_pago_transferencia_bre_b === undefined ? (src.metodo_pago_bre_b === undefined ? base.metodo_pago_transferencia_bre_b : !!src.metodo_pago_bre_b) : !!src.metodo_pago_transferencia_bre_b,
         metodo_pago_nequi: src.metodo_pago_nequi === undefined ? base.metodo_pago_nequi : !!src.metodo_pago_nequi,
         metodo_pago_otras_transferencias: src.metodo_pago_otras_transferencias === undefined ? (src.metodo_pago_transferencia_otro === undefined ? base.metodo_pago_otras_transferencias : !!src.metodo_pago_transferencia_otro) : !!src.metodo_pago_otras_transferencias,
+        metodo_pago_credito_cliente: src.metodo_pago_credito_cliente === undefined ? base.metodo_pago_credito_cliente : !!src.metodo_pago_credito_cliente,
         mostrar_resumen_totales_carrito: src.mostrar_resumen_totales_carrito === undefined ? base.mostrar_resumen_totales_carrito : !!src.mostrar_resumen_totales_carrito,
         mostrar_desglose_cobro: src.mostrar_desglose_cobro === undefined ? base.mostrar_desglose_cobro : !!src.mostrar_desglose_cobro,
         mostrar_resumen_productos: src.mostrar_resumen_productos === undefined ? base.mostrar_resumen_productos : !!src.mostrar_resumen_productos,
@@ -1002,6 +1011,7 @@
       document.getElementById('carritoCfgMetodoPagoBreb').checked = !!normalized.metodo_pago_transferencia_bre_b;
       document.getElementById('carritoCfgMetodoPagoNequi').checked = !!normalized.metodo_pago_nequi;
       document.getElementById('carritoCfgMetodoPagoOtraTransferencia').checked = !!normalized.metodo_pago_otras_transferencias;
+      document.getElementById('carritoCfgMetodoPagoCreditoCliente').checked = !!normalized.metodo_pago_credito_cliente;
       document.getElementById('carritoCfgResumenTotales').checked = !!normalized.mostrar_resumen_totales_carrito;
       document.getElementById('carritoCfgDesgloseCobro').checked = !!normalized.mostrar_desglose_cobro;
       document.getElementById('carritoCfgFacturacionOffline').checked = !!normalized.facturacion_offline_habilitada;
@@ -1068,6 +1078,7 @@
           'carritoCfgMetodoPagoBreb',
           'carritoCfgMetodoPagoNequi',
           'carritoCfgMetodoPagoOtraTransferencia',
+          'carritoCfgMetodoPagoCreditoCliente',
           'carritoCfgResumenTotales',
           'carritoCfgDesgloseCobro',
           'carritoCfgFacturacionOffline',
@@ -1146,6 +1157,7 @@
           metodo_pago_transferencia_bre_b: document.getElementById('carritoCfgMetodoPagoBreb').checked,
           metodo_pago_nequi: document.getElementById('carritoCfgMetodoPagoNequi').checked,
           metodo_pago_otras_transferencias: document.getElementById('carritoCfgMetodoPagoOtraTransferencia').checked,
+          metodo_pago_credito_cliente: document.getElementById('carritoCfgMetodoPagoCreditoCliente').checked,
           mostrar_resumen_totales_carrito: document.getElementById('carritoCfgResumenTotales').checked,
           mostrar_desglose_cobro: document.getElementById('carritoCfgDesgloseCobro').checked,
           facturacion_offline_habilitada: document.getElementById('carritoCfgFacturacionOffline').checked,

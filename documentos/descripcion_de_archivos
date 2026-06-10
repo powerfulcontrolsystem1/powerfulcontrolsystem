@@ -11205,3 +11205,18 @@ backend/handlers/user_config.go - Controlador que expone /api/user/configuracion
 	- Muestra los nuevos medios en abonos, pago principal, pago mixto y `Detalle del pago`; permite pagos combinados con seis medios.
 - `backend/db/apartamentos_turisticos_integracion_test.go` y `backend/handlers/empresa_preconfiguracion_carrito_test.go`:
 	- Cubren normalizacion y defaults de los nuevos medios.
+2026-06-10 - Venta a credito desde carrito
+- `backend/db/carritos_compras.go`:
+	- normaliza el metodo `credito_cliente` y alias de venta a credito.
+- `backend/db/creditos.go`:
+	- agrega consulta de disponibilidad por cliente y busqueda de credito generado por `venta_origen_id`.
+- `backend/handlers/creditos.go`:
+	- expone `GET /api/empresa/creditos?action=disponibilidad_cliente` para consultar cupo disponible por empresa y cliente.
+- `backend/handlers/carritos_compras.go`:
+	- valida cupo antes de pagar, permite `credito_cliente` en pago total o mixto, crea cartera real despues del cierre y devuelve `credito_venta` para impresion.
+- `backend/handlers/empresa_preconfiguracion.go` y `backend/handlers/empresa_preconfiguracion_carrito_test.go`:
+	- habilitan `metodo_pago_credito_cliente` por defecto en la preconfiguracion del carrito.
+- `web/administrar_empresa/carrito_de_compras.html`:
+	- agrega seleccion de `Credito cliente`, consulta de cupo visible, creacion rapida de cupo y texto de credito en recibo/factura visual.
+- `web/administrar_empresa/configuracion_carrito_de_compra_empresa.html`:
+	- agrega check por empresa para activar o desactivar `Credito cliente / cupo cartera`.
