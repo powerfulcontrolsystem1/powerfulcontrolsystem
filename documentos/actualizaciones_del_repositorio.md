@@ -14223,3 +14223,16 @@ Archivos modificados:
 - web/super/asesor_comercial.html
 - web/super_administrador.html
 - web/venta_publica.html
+
+2026-06-10 02:54:33 - Mensaje: rs: actualizar repositorio y sincronizar VPS; Commit: 038e3f06; PushStatus: OK
+Archivos modificados:
+- CHANGELOG.md
+- backend/main.go
+- documentos/CHANGELOG.md
+- documentos/descripcion_de_archivos
+- documentos/flujos_operativos.md
+- documentos/historial_de_cambios
+- documentos/mapa_modulos.md
+- scripts/sync_to_vps.ps1
+- scripts/sync_to_vps.sh
+- web/administrar_empresa/carrito_de_compras.html
