@@ -33654,6 +33654,7 @@ Archivos modificados:
 2026-06-10: Pago de carrito en estaciones con handler delegado
 - `web/administrar_empresa/carrito_de_compras.html` refuerza `Pagar y cerrar carrito` con un manejador delegado estable para venta directa y estaciones.
 - La correccion evita que el boton quede visible y habilitado pero sin ejecutar el cobro cuando la vista de estacion fue re-renderizada o decorada.
+- El manejador limpia un bloqueo visual obsoleto de `paymentInProgress` antes de reintentar, sin duplicar cobros activos.
 
 2026-06-10: rs: actualizar repositorio y sincronizar VPS
 PushStatus: OK

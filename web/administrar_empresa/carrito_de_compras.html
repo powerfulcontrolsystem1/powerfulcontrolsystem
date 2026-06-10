@@ -10085,6 +10085,11 @@
       if (e && typeof e.preventDefault === 'function') e.preventDefault();
       const btn = document.getElementById('btnPagarCarrito');
       if (!btn || btn.disabled || btn.dataset.paymentClickLock === '1') return;
+      if (state.paymentInProgress) {
+        state.paymentInProgress = false;
+        setStationPayButtonState({ disabled: false });
+        setStationPaymentMessage('Se limpio un cobro anterior que quedo pendiente en pantalla. Reintentando pago...', false);
+      }
       btn.dataset.paymentClickLock = '1';
       try {
         await payStationSession();

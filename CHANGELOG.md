@@ -1,4 +1,5 @@
 - 2026-06-10: `Pago carrito en estaciones` refuerza `Pagar y cerrar carrito` con un manejador delegado para que el cobro funcione aunque la vista de estacion haya sido re-renderizada o decorada con iconos.
+- 2026-06-10: `Pago carrito bloqueo obsoleto` limpia el estado visual `paymentInProgress` cuando no hay clic de pago en curso, permitiendo reintentar el cobro desde estaciones sin recargar manualmente.
 - 2026-06-10: `Carrito imprime despues de cobrar` cambia `Pagar y cerrar carrito` para validar caja y registrar `pagar_estacion` antes de abrir ventanas de recibo/factura; asi los errores quedan visibles en la pagina y la impresion solo ocurre con pago exitoso.
 - 2026-06-10: `Carrito vacio despues de pagar` hace que `Pagar y cerrar carrito` registre el pago, reabra/refresque la cuenta enfocada y la deje sin items, abonos ni cliente para el siguiente cliente, sin recarga manual.
 - 2026-06-10: `IA OpenAI disponible en Docker` registra la clave OpenAI en archivos locales ignorados por Git y actualiza `sync_to_vps` para sincronizar `OPENAI_API_KEY` tambien en `deploy/.env.platform` remoto, de modo que Docker Compose la entregue al backend sin imprimir secretos.
