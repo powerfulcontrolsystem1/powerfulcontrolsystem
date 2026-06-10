@@ -2723,6 +2723,10 @@
 - [Creditos] El resumen de cartera, filtros de vencidos y dashboard de mora dejan de usar funciones SQLite en consultas runtime y comparan fechas normalizadas con parametros calculados desde Go.
 - [QA] Se agrega prueba estatica para bloquear `datetime()`, `date('now')` y `julianday()` en las rutas que alimentan el panel de creditos.
 - [E2E] Auditoria visual con Powerful Control System creo cliente, producto, usuario, empleado de nomina, liquidacion, credito, abono, carrito e item QA; el cierre/pago del carrito se omitio para evitar disparar facturacion electronica o caja real.
+## [2026-06-10] Carrito - pago en estaciones
+- [Estaciones] El boton `Pagar y cerrar carrito` usa un manejador delegado estable para ejecutar el cobro aunque el render de estacion actualice o decore el boton.
+- [QA] Se reproduce el bloqueo en `Punto de venta 2` y se valida la sintaxis JS junto a pruebas enfocadas de carrito.
+
 ## [2026-06-10] Carrito - impresion posterior al cobro
 - [Carrito] El flujo `Pagar y cerrar carrito` ya no abre ventanas de impresion antes de validar caja y registrar el pago real.
 - [Operacion] Si falla la caja o el cobro, el error queda visible en la pagina; si el pago entra, entonces se imprime y se prepara el carrito vacio.

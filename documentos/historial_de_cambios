@@ -33651,6 +33651,10 @@ Archivos modificados:
 - `web/administrar_empresa/carrito_de_compras.html` deja de abrir ventanas de impresion antes de validar caja y registrar `pagar_estacion`.
 - La impresion del recibo/factura se prepara solo despues de un pago exitoso, evitando que una ventana de impresion oculte errores y deje el carrito sin cerrar.
 
+2026-06-10: Pago de carrito en estaciones con handler delegado
+- `web/administrar_empresa/carrito_de_compras.html` refuerza `Pagar y cerrar carrito` con un manejador delegado estable para venta directa y estaciones.
+- La correccion evita que el boton quede visible y habilitado pero sin ejecutar el cobro cuando la vista de estacion fue re-renderizada o decorada.
+
 2026-06-10: rs: actualizar repositorio y sincronizar VPS
 PushStatus: OK
 Archivos modificados:

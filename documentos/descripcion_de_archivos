@@ -11179,3 +11179,6 @@ backend/handlers/user_config.go - Controlador que expone /api/user/configuracion
 
 2026-06-10 - Carrito: pago antes de impresion
 - `web/administrar_empresa/carrito_de_compras.html`: valida caja y registra el pago antes de preparar ventanas de impresion, para que el carrito pueda quedar vacio tras `Pagar y cerrar carrito` y los errores no queden ocultos por la impresion.
+
+2026-06-10 - Carrito: handler estable de pago en estaciones
+- `web/administrar_empresa/carrito_de_compras.html`: agrega manejador delegado para `btnPagarCarrito`, conservando el mismo `payStationSession` pero evitando que el boton pierda ejecucion por renders/decoracion en vistas de estacion.

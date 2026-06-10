@@ -10081,7 +10081,11 @@
       });
     }
 
-    document.getElementById('btnPagarCarrito').addEventListener('click', async function() {
+    async function handlePagarCarritoClick(e) {
+      if (e && typeof e.preventDefault === 'function') e.preventDefault();
+      const btn = document.getElementById('btnPagarCarrito');
+      if (!btn || btn.disabled || btn.dataset.paymentClickLock === '1') return;
+      btn.dataset.paymentClickLock = '1';
       try {
         await payStationSession();
       } catch (err) {
@@ -10089,7 +10093,17 @@
         setStationPayButtonState({ disabled: false });
         setStationPaymentMessage(err.message || 'No se pudo procesar el pago del carrito.', true);
         console.error(err);
+      } finally {
+        if (btn) delete btn.dataset.paymentClickLock;
       }
+    }
+
+    document.addEventListener('click', function(e) {
+      const target = e && e.target && typeof e.target.closest === 'function'
+        ? e.target.closest('#btnPagarCarrito')
+        : null;
+      if (!target) return;
+      handlePagarCarritoClick(e);
     });
 
     document.getElementById('btnActivarSesionCarrito').addEventListener('click', async function() {
