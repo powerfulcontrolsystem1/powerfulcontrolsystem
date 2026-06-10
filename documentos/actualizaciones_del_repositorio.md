@@ -14247,3 +14247,13 @@ Archivos modificados:
 - documentos/mapa_modulos.md
 - web/administrar_empresa/carrito_de_compras.html
 - web/estilos.css
+
+2026-06-10 09:44:09 - Mensaje: rs: actualizar repositorio y sincronizar VPS; Commit: 9e894902; PushStatus: OK
+Archivos modificados:
+- CHANGELOG.md
+- documentos/CHANGELOG.md
+- documentos/descripcion_de_archivos
+- documentos/flujos_operativos.md
+- documentos/historial_de_cambios
+- scripts/sync_to_vps.ps1
+- scripts/sync_to_vps.sh
