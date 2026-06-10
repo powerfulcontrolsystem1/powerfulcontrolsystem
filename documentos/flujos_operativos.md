@@ -228,19 +228,22 @@ afecte dinero, documentos, licencias o seguridad.
 
 1. El icono circular flotante esta activo por empresa y abre el chat normal con
    voz conservada; no usa robot ni secretaria.
-2. Toda accion operativa generada por IA debe salir como `PCS_ACTION`, mostrarse
+2. En VPS/Docker, `OPENAI_API_KEY` debe existir en `deploy/.env.platform` remoto
+   para que Compose la entregue al backend; `rs/sync_to_vps` la sincroniza sin
+   imprimir el secreto cuando existe en los archivos locales ignorados.
+3. Toda accion operativa generada por IA debe salir como `PCS_ACTION`, mostrarse
    al usuario y ejecutarse solo despues de confirmar.
-3. El frontend solo permite `OPEN`, `POST` y `PUT` sobre endpoints cerrados; no
+4. El frontend solo permite `OPEN`, `POST` y `PUT` sobre endpoints cerrados; no
    permite `DELETE` ni rutas genericas.
-4. Para `cajero`, las acciones permitidas son pedir/agregar productos a una
+5. Para `cajero`, las acciones permitidas son pedir/agregar productos a una
    estacion, mesa, habitacion o venta directa mediante
    `/api/empresa/ia_pedidos_estacion/ejecutar`, y activar/desactivar la emisora
    mediante `/api/empresa/ia_radio/activar`.
-5. Productos manuales usan `/api/empresa/productos` y dependen de permisos de
+6. Productos manuales usan `/api/empresa/productos` y dependen de permisos de
    inventario; nomina usa `/api/empresa/nomina` y depende de permisos de nomina;
    tarifas de motel/hotel/tiempo usan los endpoints de tarifas bajo permisos de
    ventas.
-6. El backend vuelve a validar sesion, `empresa_id`, licencia, pagina y permisos
+7. El backend vuelve a validar sesion, `empresa_id`, licencia, pagina y permisos
    efectivos en cada ruta; la IA no concede permisos ni ejecuta SQL libre.
 
 ## Auditoria integral de modulos

@@ -533,7 +533,9 @@ run_root(){
   sudo -n "$@";
 };
 backend_dir=__BACKEND_DIR__;
+repo_dir="$(dirname "$backend_dir")";
 env_file="$backend_dir/.env.local";
+compose_env_file="$repo_dir/deploy/.env.platform";
 server_port=__SERVER_PORT__;
 case "$server_port" in
   ''|*[!0-9]*) fail "INVALID_SERVER_PORT SERVER_PORT debe ser numerico. Valor recibido: $server_port" ;;
@@ -684,7 +686,18 @@ fi;
 if [ -n "$effective_gid" ]; then upsert_env GOOGLE_CLIENT_ID "$effective_gid"; fi;
 if [ -n "$effective_gsec" ]; then upsert_env GOOGLE_CLIENT_SECRET "$effective_gsec"; fi;
 if [ -n "$effective_grurl" ]; then upsert_env GOOGLE_REDIRECT_URL "$effective_grurl"; fi;
-if [ -n "$effective_openai" ]; then upsert_env OPENAI_API_KEY "$effective_openai"; fi;
+if [ -n "$effective_openai" ]; then
+  upsert_env OPENAI_API_KEY "$effective_openai";
+  if [ -f "$compose_env_file" ]; then
+    grep -v "^OPENAI_API_KEY=" "$compose_env_file" > "$compose_env_file.tmp" 2>/dev/null || true;
+    mv "$compose_env_file.tmp" "$compose_env_file" 2>/dev/null || true;
+    printf '%s=%s\n' OPENAI_API_KEY "$effective_openai" >> "$compose_env_file";
+    chmod 600 "$compose_env_file" || true;
+    ok "OPENAI_API_KEY sincronizada en deploy/.env.platform para Docker Compose";
+  else
+    warn "OPENAI_API_KEY no pudo sincronizarse en deploy/.env.platform porque el archivo remoto no existe";
+  fi;
+fi;
 for k in DB_DIALECT DB_SUPERADMIN_DSN DB_EMPRESAS_DSN GOOGLE_CLIENT_ID GOOGLE_CLIENT_SECRET GOOGLE_REDIRECT_URL OPENAI_API_KEY SERVER_PORT CONFIG_ENC_KEY; do
   line="$(grep -E "^$k=" "$env_file" | tail -n1 || true)";
   if [ -z "$line" ]; then

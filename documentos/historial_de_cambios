@@ -1,3 +1,9 @@
+2026-06-10: IA OpenAI registrada y disponible para Docker Compose.
+- Modulos afectados: `chat IA`, `runtime VPS`, `rs/sync_to_vps`.
+- Operacion: la credencial OpenAI queda registrada en archivos locales ignorados por Git (`backend/.env.local` y `deploy/.env.platform`) sin documentar ni imprimir el valor.
+- Despliegue: `scripts/sync_to_vps.ps1` y `scripts/sync_to_vps.sh` sincronizan `OPENAI_API_KEY` tanto a `backend/.env.local` remoto como a `deploy/.env.platform` remoto para que Docker Compose inyecte la variable al contenedor backend.
+- Seguridad: el log solo informa presencia/configuracion de la variable y mantiene redaccion de secretos.
+
 2026-06-10: Carrito intercambia productos y detalle de pago.
 - Modulos afectados: `carritos`, `venta_directa`, `estaciones`.
 - UX: la vista enfocada del carrito queda en orden cliente, productos agregados, detalle del pago y acciones, como flujo principal de venta.

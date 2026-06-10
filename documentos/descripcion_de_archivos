@@ -2,6 +2,11 @@
 - `web/administrar_empresa/carrito_de_compras.html`: en venta directa y estaciones reordena el DOM para mostrar `Productos agregados al carrito` antes de `Detalle del pago`.
 - `web/estilos.css`: ajusta el orden flex de la columna principal del carrito para mantener Cliente -> Productos -> Detalle del pago -> Acciones.
 
+2026-06-10 - IA OpenAI disponible en Docker
+- `scripts/sync_to_vps.ps1`: cuando recibe o detecta `OPENAI_API_KEY`, la sincroniza tambien en `deploy/.env.platform` remoto para que Docker Compose la inyecte al contenedor backend sin exponer el valor en logs.
+- `scripts/sync_to_vps.sh`: mantiene el mismo comportamiento para ejecuciones Linux/WSL, con escritura segura del fallback OpenAI en `backend/.env.local` y en el env file de Compose.
+- `backend/.env.local` y `deploy/.env.platform`: archivos locales ignorados por Git donde se registra la credencial operativa; nunca deben documentar ni versionar el secreto.
+
 2026-06-10 - Carrito estable y fallback IA en despliegue
 - `web/administrar_empresa/carrito_de_compras.html`: mantiene visibles y ordenadas las tarjetas base de venta directa/estaciones aunque una preferencia antigua intente ocultarlas; si la carga secundaria falla despues de seleccionar carrito, conserva la pantalla y muestra advertencia.
 - `scripts/sync_to_vps.ps1`: agrega parametro `OpenAIApiKey`, carga fallback desde `.env.local`, `deploy/.env.platform` o entorno, lo propaga al bootstrap remoto y redacta secretos en logs de preview/ejecucion.

@@ -1,3 +1,8 @@
+## [2026-06-10] IA OpenAI disponible en Docker
+- [IA] Se registra la credencial OpenAI en archivos locales ignorados por Git para que el chat empresarial use el fallback de entorno cuando una credencial cifrada antigua no descifre.
+- [Deploy] `sync_to_vps` sincroniza `OPENAI_API_KEY` en `backend/.env.local` y en `deploy/.env.platform` remoto, requerido por Docker Compose para inyectarla al contenedor backend.
+- [Seguridad] Los logs solo muestran si la variable esta configurada; no imprimen el valor.
+
 ## [2026-06-10] Carrito ordena productos antes de pago
 - [Carrito] En venta directa y estaciones se intercambian las tarjetas `Productos agregados al carrito` y `Detalle del pago`.
 - [UX] El flujo queda Cliente -> Productos -> Detalle del pago -> Acciones.
