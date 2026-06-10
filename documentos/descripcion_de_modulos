@@ -4124,3 +4124,9 @@ Captura inteligente de compras y gastos
 - La IA puede proponer acciones confirmables para pedidos por estacion/mesa/habitacion, radio online, productos, nomina y tarifas; cada endpoint conserva su wrapper y validacion de `empresa_id`.
 - Se agrega `/api/empresa/ia_radio/activar` para que cajero pueda encender/apagar la emisora sin tocar otras preferencias del chat flotante.
 - Seguridad: no se permite `DELETE`, SQL libre ni endpoints genericos desde el chat; si faltan datos o permisos, la IA debe pedir informacion o abrir la pagina correspondiente.
+2026-06-10 - Carrito: medios de pago Colombia y pagos combinados
+- `web/administrar_empresa/configuracion_carrito_de_compra_empresa.html`: agrega la seccion `Medios de pago habilitados` con checks por empresa para efectivo, tarjeta credito, tarjeta debito, transferencia Bre-B, Nequi y otra transferencia.
+- `web/administrar_empresa/carrito_de_compras.html`: actualiza abonos, selector de metodo, pago mixto y la tarjeta `Detalle del pago` para manejar los seis medios y combinarlos hasta igualar el total.
+- `backend/db/carritos_compras.go`: normaliza `transferencia_bre_b`, `transferencia_nequi` y `transferencia_otro`, conservando el alias legacy `otro -> transferencia_bancaria`.
+- `backend/handlers/carritos_compras.go`: exige referencia para tarjetas/transferencias, valida pagos mixtos con los nuevos metodos y bloquea en backend medios deshabilitados por empresa o rol.
+- Bre-B queda como medio separado y preparado para conciliacion automatica futura mediante webhook/API bancaria; sin esa integracion, el cajero registra la referencia confirmada.

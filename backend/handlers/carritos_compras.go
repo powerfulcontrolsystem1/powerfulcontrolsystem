@@ -156,6 +156,9 @@ func EmpresaCarritosCompraHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 					"tarjeta_debito":         0.0,
 					"tarjeta_credito":        0.0,
 					"transferencia_bancaria": 0.0,
+					"transferencia_bre_b":    0.0,
+					"transferencia_nequi":    0.0,
+					"transferencia_otro":     0.0,
 				}
 				for rows.Next() {
 					var metodo string
@@ -445,11 +448,11 @@ func EmpresaCarritosCompraHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 				}
 				metodoPago := dbpkg.NormalizeMetodoPagoCarrito(payload.MetodoPago)
 				if metodoPago == "" || metodoPago == "codigo_descuento" || metodoPago == "mixto" {
-					http.Error(w, "metodo_pago invalido para abono. Use efectivo, tarjeta debito, tarjeta credito o transferencia bancaria", http.StatusBadRequest)
+					http.Error(w, "metodo_pago invalido para abono. Use efectivo, tarjeta debito, tarjeta credito, transferencia Bre-B, Nequi u otra transferencia", http.StatusBadRequest)
 					return
 				}
-				if (metodoPago == "tarjeta_credito" || metodoPago == "tarjeta_debito" || metodoPago == "transferencia_bancaria") && len(strings.TrimSpace(payload.ReferenciaPago)) < 4 {
-					http.Error(w, "referencia_pago es obligatoria para abonos con tarjeta o transferencia bancaria (minimo 4 caracteres)", http.StatusBadRequest)
+				if carritoMetodoPagoRequiereReferencia(metodoPago) && len(strings.TrimSpace(payload.ReferenciaPago)) < 4 {
+					http.Error(w, "referencia_pago es obligatoria para abonos con tarjeta o transferencia (minimo 4 caracteres)", http.StatusBadRequest)
 					return
 				}
 				carrito, errCarrito := dbpkg.GetCarritoCompraByID(dbEmp, empresaID, carritoID)
@@ -484,6 +487,14 @@ func EmpresaCarritosCompraHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 				permisosOperativos := dbpkg.ResolveEmpresaConfiguracionOperativaParaRol(cfgOperativa, rolOperacion)
 				if !permisosOperativos.IsMetodoPagoHabilitado(metodoPago) {
 					http.Error(w, "metodo_pago no habilitado para la empresa/rol actual", http.StatusForbidden)
+					return
+				}
+				if ok, err := carritoMetodoPagoHabilitadoPorEmpresa(dbEmp, empresaID, metodoPago); err != nil {
+					log.Printf("[carritos] validar metodo pago empresa_id=%d error: %v", empresaID, err)
+					http.Error(w, "No se pudo validar la configuracion de medios de pago", http.StatusInternalServerError)
+					return
+				} else if !ok {
+					http.Error(w, "metodo_pago deshabilitado en la configuracion del carrito de esta empresa", http.StatusForbidden)
 					return
 				}
 				usuarioOperacion := strings.TrimSpace(adminEmailFromRequest(r))
@@ -1017,7 +1028,7 @@ func EmpresaCarritosCompraHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 
 				metodoPago := dbpkg.NormalizeMetodoPagoCarrito(payload.MetodoPago)
 				if metodoPago == "" {
-					http.Error(w, "metodo_pago invalido. Use: efectivo, tarjeta_credito, tarjeta_debito, transferencia_bancaria, codigo_descuento o mixto", http.StatusBadRequest)
+					http.Error(w, "metodo_pago invalido. Use: efectivo, tarjeta_credito, tarjeta_debito, transferencia_bre_b, transferencia_nequi, transferencia_otro, codigo_descuento o mixto", http.StatusBadRequest)
 					return
 				}
 
@@ -1030,6 +1041,14 @@ func EmpresaCarritosCompraHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 				permisosOperativos := dbpkg.ResolveEmpresaConfiguracionOperativaParaRol(cfgOperativa, rolOperacion)
 				if !permisosOperativos.IsMetodoPagoHabilitado(metodoPago) {
 					http.Error(w, "metodo_pago no habilitado para la empresa/rol actual", http.StatusForbidden)
+					return
+				}
+				if ok, err := carritoMetodoPagoHabilitadoPorEmpresa(dbEmp, empresaID, metodoPago); err != nil {
+					log.Printf("[carritos] validar metodo pago empresa_id=%d error: %v", empresaID, err)
+					http.Error(w, "No se pudo validar la configuracion de medios de pago", http.StatusInternalServerError)
+					return
+				} else if !ok {
+					http.Error(w, "metodo_pago deshabilitado en la configuracion del carrito de esta empresa", http.StatusForbidden)
 					return
 				}
 
@@ -1048,10 +1067,18 @@ func EmpresaCarritosCompraHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 							http.Error(w, "uno o mas metodos del pago mixto no estan habilitados para la empresa/rol actual", http.StatusForbidden)
 							return
 						}
+						if ok, err := carritoMetodoPagoHabilitadoPorEmpresa(dbEmp, empresaID, tramo.Metodo); err != nil {
+							log.Printf("[carritos] validar tramo pago mixto empresa_id=%d error: %v", empresaID, err)
+							http.Error(w, "No se pudo validar la configuracion de medios de pago", http.StatusInternalServerError)
+							return
+						} else if !ok {
+							http.Error(w, "uno o mas metodos del pago mixto estan deshabilitados en la configuracion del carrito de esta empresa", http.StatusForbidden)
+							return
+						}
 					}
 					referenciaPago = buildReferenciaPagoMixto(pagosMixtos, carrito.Moneda)
-				} else if (metodoPago == "tarjeta_credito" || metodoPago == "tarjeta_debito" || metodoPago == "transferencia_bancaria") && len(referenciaPago) < 4 {
-					http.Error(w, "referencia_pago es obligatoria para pagos con tarjeta o transferencia bancaria (minimo 4 caracteres)", http.StatusBadRequest)
+				} else if carritoMetodoPagoRequiereReferencia(metodoPago) && len(referenciaPago) < 4 {
+					http.Error(w, "referencia_pago es obligatoria para pagos con tarjeta o transferencia (minimo 4 caracteres)", http.StatusBadRequest)
 					return
 				}
 
@@ -2272,6 +2299,17 @@ func carritoBoolFromConfigValue(value interface{}) bool {
 	}
 }
 
+func carritoBoolFromConfigValueDefault(cfg map[string]interface{}, key string, fallback bool) bool {
+	if cfg == nil {
+		return fallback
+	}
+	value, ok := cfg[key]
+	if !ok {
+		return fallback
+	}
+	return carritoBoolFromConfigValue(value)
+}
+
 func carritoParseConfigJSON(raw string) map[string]interface{} {
 	var current interface{} = strings.TrimSpace(raw)
 	for i := 0; i < 3; i++ {
@@ -2293,6 +2331,55 @@ func carritoParseConfigJSON(raw string) map[string]interface{} {
 		return cfg
 	}
 	return nil
+}
+
+func carritoGlobalUIConfig(dbEmp *sql.DB, empresaID int64) (map[string]interface{}, error) {
+	if dbEmp == nil || empresaID <= 0 {
+		return nil, nil
+	}
+	pref, err := dbpkg.GetEmpresaEstacionPref(dbEmp, empresaID, 0, "estaciones_config")
+	if err != nil || pref == nil || strings.TrimSpace(pref.Valor) == "" {
+		return nil, err
+	}
+	root := carritoParseConfigJSON(pref.Valor)
+	if root == nil {
+		return nil, nil
+	}
+	for _, key := range []string{"carrito_ui_global", "carrito", "carrito_configuracion_global"} {
+		if cfg := carritoMapFromConfig(root[key]); cfg != nil {
+			return cfg, nil
+		}
+	}
+	return nil, nil
+}
+
+func carritoMetodoPagoHabilitadoPorEmpresa(dbEmp *sql.DB, empresaID int64, metodoPago string) (bool, error) {
+	cfg, err := carritoGlobalUIConfig(dbEmp, empresaID)
+	if err != nil || cfg == nil {
+		return err == nil, err
+	}
+	switch dbpkg.NormalizeMetodoPagoCarrito(metodoPago) {
+	case "efectivo":
+		return carritoBoolFromConfigValueDefault(cfg, "metodo_pago_efectivo", true), nil
+	case "tarjeta_credito":
+		return carritoBoolFromConfigValueDefault(cfg, "metodo_pago_tarjeta_credito", true), nil
+	case "tarjeta_debito":
+		return carritoBoolFromConfigValueDefault(cfg, "metodo_pago_tarjeta_debito", true), nil
+	case "transferencia_bancaria":
+		return carritoBoolFromConfigValueDefault(cfg, "metodo_pago_transferencia_bancaria", true), nil
+	case "transferencia_bre_b":
+		return carritoBoolFromConfigValueDefault(cfg, "metodo_pago_transferencia_bre_b", true), nil
+	case "transferencia_nequi":
+		return carritoBoolFromConfigValueDefault(cfg, "metodo_pago_nequi", true), nil
+	case "transferencia_otro":
+		return carritoBoolFromConfigValueDefault(cfg, "metodo_pago_otras_transferencias", true), nil
+	case "mixto":
+		return carritoBoolFromConfigValueDefault(cfg, "permitir_pago_mixto", true), nil
+	case "codigo_descuento":
+		return carritoBoolFromConfigValueDefault(cfg, "mostrar_descuentos", false), nil
+	default:
+		return false, nil
+	}
 }
 
 var errCarritoStationAccessDenied = errors.New("usuario sin acceso a esta estacion")
@@ -2884,6 +2971,15 @@ func roundMoneyCarritoForMoneda(v float64, moneda string) float64 {
 	return roundMoneyCarritoHandler(v)
 }
 
+func carritoMetodoPagoRequiereReferencia(metodoPago string) bool {
+	switch dbpkg.NormalizeMetodoPagoCarrito(metodoPago) {
+	case "tarjeta_credito", "tarjeta_debito", "transferencia_bancaria", "transferencia_bre_b", "transferencia_nequi", "transferencia_otro":
+		return true
+	default:
+		return false
+	}
+}
+
 func carritoMoneyTolerance(moneda string) float64 {
 	if carritoUsesWholeMoney(moneda) {
 		return 0.01
@@ -2908,15 +3004,15 @@ func normalizePagosMixtosCarrito(entries []carritoPagoMixtoEntrada, moneda strin
 	for _, item := range entries {
 		metodo := dbpkg.NormalizeMetodoPagoCarrito(item.Metodo)
 		if metodo == "" || metodo == "mixto" || metodo == "codigo_descuento" {
-			return nil, 0, fmt.Errorf("pago mixto solo permite efectivo, tarjeta_credito, tarjeta_debito y transferencia_bancaria")
+			return nil, 0, fmt.Errorf("pago mixto solo permite efectivo, tarjeta_credito, tarjeta_debito, transferencia_bre_b, transferencia_nequi y transferencia_otro")
 		}
 		monto := roundMoneyCarritoForMoneda(item.Monto, moneda)
 		if monto <= 0 {
 			continue
 		}
 		referencia := strings.TrimSpace(item.Referencia)
-		if (metodo == "tarjeta_credito" || metodo == "tarjeta_debito" || metodo == "transferencia_bancaria") && len(referencia) < 4 {
-			return nil, 0, fmt.Errorf("cada pago con tarjeta o transferencia bancaria en pago mixto requiere referencia minima de 4 caracteres")
+		if carritoMetodoPagoRequiereReferencia(metodo) && len(referencia) < 4 {
+			return nil, 0, fmt.Errorf("cada pago con tarjeta o transferencia en pago mixto requiere referencia minima de 4 caracteres")
 		}
 
 		normalized = append(normalized, carritoPagoMixtoNormalizado{

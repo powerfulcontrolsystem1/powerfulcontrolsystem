@@ -22,6 +22,12 @@ func TestApartTurMetodoPagoUsaCatalogoCarrito(t *testing.T) {
 	if got := NormalizeMetodoPagoCarrito("tarjeta debito"); got != "tarjeta_debito" {
 		t.Fatalf("metodo normalizado = %q", got)
 	}
+	if got := NormalizeMetodoPagoCarrito("Bre-B"); got != "transferencia_bre_b" {
+		t.Fatalf("metodo Bre-B normalizado = %q", got)
+	}
+	if got := NormalizeMetodoPagoCarrito("nequi"); got != "transferencia_nequi" {
+		t.Fatalf("metodo Nequi normalizado = %q", got)
+	}
 	if got := NormalizeMetodoPagoCarrito("airbnb"); got != "" {
 		t.Fatalf("metodo no soportado debe quedar vacio, got %q", got)
 	}

@@ -1,3 +1,12 @@
+2026-06-10: Carrito con cliente fiscal completo, cantidad editable y devolucion real.
+- Modulos afectados: `carritos`, `venta_directa`, `estaciones`, `clientes`, `inventario`.
+- Frontend: `web/administrar_empresa/carrito_de_compras.html` amplia el formulario rapido de clientes con persona natural/juridica, NIT/DV, regimen IVA, responsabilidad tributaria, datos de contacto y direccion fiscal usados por facturacion electronica.
+- Carrito: la tabla de productos agregados permite cambiar cantidad en linea; el frontend usa el `PUT` real de items para recalcular totales y reservas de inventario.
+- Inventario: `Devolver producto` ahora usa confirmacion integrada de dos pasos, elimina la linea del carrito con el `DELETE` real de items, libera stock reservado y actualiza la cuenta visible sin abrir `confirm()` nativo.
+- UX: el campo de cantidad selecciona su valor al enfocar o hacer clic para evitar concatenar digitos cuando el cajero reemplaza la cantidad.
+- Seguridad: no se crean endpoints ni tablas nuevas; se reutilizan `/api/empresa/clientes` y `/api/empresa/carritos_compra/items`, conservando permisos y aislamiento por `empresa_id`.
+- QA: validacion Node de scripts embebidos OK; `go test ./db ./handlers -run "Carrito|Cliente|Producto" -count=1` OK desde `backend`.
+
 2026-06-10: Carrito se limpia inmediatamente despues de pagar.
 - Modulos afectados: `carritos`, `venta_directa`, `estaciones`, `caja`.
 - Backend: al reactivar la sesion con `reset_items=1`, `ActivateCarritoStationSession` limpia items, abonos y cliente antes de dejar el carrito abierto para la siguiente cuenta.
@@ -33694,3 +33703,4 @@ Archivos modificados:
 - documentos/descripcion_de_archivos
 - documentos/historial_de_cambios
 - web/administrar_empresa/administrar_productos_menu.html
+2026-06-10: `Carrito medios de pago y Bre-B` separa efectivo, tarjeta credito, tarjeta debito, transferencia Bre-B, Nequi y otra transferencia como medios configurables por empresa desde Configuracion carrito. La tarjeta `Detalle del pago`, abonos, pago mixto y cierre de carrito aceptan pagos combinados con esos medios. Backend valida `empresa_id`, permisos operativos, flags empresariales, referencia obligatoria para tarjetas/transferencias y conserva compatibilidad de `transferencia_bancaria`. Bre-B queda preparado para conciliacion automatica futura por webhook/API bancaria; mientras no exista esa integracion se registra referencia confirmada manualmente.

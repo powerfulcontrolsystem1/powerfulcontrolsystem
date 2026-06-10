@@ -1369,7 +1369,7 @@ func (p EmpresaConfiguracionOperativaPermisos) IsMetodoPagoHabilitado(metodoPago
 		return p.MetodoPagoTarjetaCredito
 	case "tarjeta_debito":
 		return p.MetodoPagoTarjetaDebito
-	case "transferencia_bancaria":
+	case "transferencia_bancaria", "transferencia_bre_b", "transferencia_nequi", "transferencia_otro":
 		return p.MetodoPagoTransferenciaBancaria
 	case "mixto":
 		return p.MetodoPagoMixto

@@ -1,3 +1,8 @@
+2026-06-10 - Carrito cliente fiscal y devolucion real
+- `web/administrar_empresa/carrito_de_compras.html`: amplia el panel rapido de clientes con datos fiscales para facturacion electronica, permite editar cantidad en la tabla de productos agregados, selecciona el valor completo al enfocar cantidad y convierte `Devolver producto` en eliminacion real del item con confirmacion integrada y liberacion de inventario.
+- `documentos/mapa_modulos.md`: registra el alcance de carrito/venta directa para cliente fiscal, busqueda por codigo/nombre, cantidad editable y devolucion de inventario.
+- `documentos/flujos_operativos.md`: documenta el flujo de cajero para crear cliente natural/empresa, buscar productos, cambiar cantidad y devolver productos desde el carrito.
+
 2026-06-10 - Carrito intercambia productos y detalle de pago
 - `web/administrar_empresa/carrito_de_compras.html`: en venta directa y estaciones reordena el DOM para mostrar `Productos agregados al carrito` antes de `Detalle del pago`.
 - `web/estilos.css`: ajusta el orden flex de la columna principal del carrito para mantener Cliente -> Productos -> Detalle del pago -> Acciones.
@@ -11185,3 +11190,18 @@ backend/handlers/user_config.go - Controlador que expone /api/user/configuracion
 
 2026-06-10 - Productos: acceso a bodegas y traslados
 - `web/administrar_empresa/administrar_productos_menu.html`: enlaza `Bodegas y traslados` con `administrar_productos.html?view=bodegas` para mostrar el formulario `Traslado entre bodegas` desde el submenu de Productos.
+2026-06-10 - Carrito medios de pago y Bre-B
+- `backend/db/carritos_compras.go`:
+	- Agrega normalizacion para `transferencia_bre_b`, `transferencia_nequi` y `transferencia_otro` sin romper el alias legacy `otro`.
+- `backend/db/configuracion_operativa.go`:
+	- Permite que la familia de transferencias use el permiso operativo existente de transferencia bancaria.
+- `backend/handlers/carritos_compras.go`:
+	- Valida referencia para tarjetas/transferencias, acepta pagos mixtos con los nuevos metodos y consulta `estaciones_config.carrito_ui_global` para bloquear medios deshabilitados por empresa.
+- `backend/handlers/empresa_preconfiguracion.go`:
+	- Preconfigura los nuevos checks de medios de pago activos por defecto en empresas nuevas.
+- `web/administrar_empresa/configuracion_carrito_de_compra_empresa.html`:
+	- Agrega checks empresariales para efectivo, credito, debito, Bre-B, Nequi y otra transferencia.
+- `web/administrar_empresa/carrito_de_compras.html`:
+	- Muestra los nuevos medios en abonos, pago principal, pago mixto y `Detalle del pago`; permite pagos combinados con seis medios.
+- `backend/db/apartamentos_turisticos_integracion_test.go` y `backend/handlers/empresa_preconfiguracion_carrito_test.go`:
+	- Cubren normalizacion y defaults de los nuevos medios.

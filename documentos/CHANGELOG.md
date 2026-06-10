@@ -1,3 +1,11 @@
+## [2026-06-10] Carrito cliente fiscal y devolucion real
+- [Clientes] El panel rapido del carrito permite crear persona natural o empresa con NIT/DV, razon social, nombre comercial, regimen IVA, responsabilidad tributaria, correo, telefono y direccion fiscal completa para facturacion electronica.
+- [Carrito] La tabla de productos agregados permite cambiar cantidad en linea y llama `PUT /api/empresa/carritos_compra/items` para recalcular cuenta e inventario desde backend.
+- [Inventario] `Devolver producto` usa confirmacion integrada de dos pasos, elimina la linea con `DELETE /api/empresa/carritos_compra/items`, libera inventario reservado y deja la cuenta actualizada sin bloquear la pagina con `confirm()` nativo.
+- [UX] El campo de cantidad selecciona todo el valor al enfocarse para que escribir una nueva cantidad reemplace la anterior.
+- [Seguridad] No se agregan endpoints ni tablas; se reutilizan wrappers existentes por `empresa_id`.
+- [QA] JS embebido del carrito OK; `go test ./db ./handlers -run "Carrito|Cliente|Producto" -count=1` OK desde `backend`.
+
 ## [2026-06-10] Carrito vacio despues de pagar
 - [Carrito] `Pagar y cerrar carrito` ahora refresca la cuenta enfocada al terminar el pago y la deja sin productos, abonos ni cliente.
 - [Venta directa/estaciones] La pantalla queda lista para la siguiente cuenta sin depender de recarga manual ni de volver al listado de estaciones.
@@ -2762,3 +2770,8 @@
 - [Checkout] La pantalla de pago de licencias carga metodos de pago usando el pais configurado de la empresa; Colombia muestra ePayco y Wompi cuando esten configuradas.
 - [Backend] La disponibilidad de `/api/public/licencias/payment_methods` y la creacion de cobros en ePayco/Wompi aplican la misma regla por `empresa_id`.
 - [Seguridad] Otros paises no heredan pasarelas colombianas salvo activacion explicita en super administrador.
+2026-06-10 - Carrito: medios de pago configurables y pagos combinados
+- Agrega en Configuracion carrito checks por empresa para efectivo, tarjeta credito, tarjeta debito, transferencia Bre-B, Nequi y otra transferencia.
+- El carrito permite pagos combinados desde `Detalle del pago`, abonos y pago mixto usando esos medios.
+- Backend acepta los nuevos metodos, exige referencia en tarjetas/transferencias y bloquea medios deshabilitados por empresa o rol.
+- Bre-B queda preparado como medio separado para una conciliacion automatica futura mediante webhook/API bancaria.

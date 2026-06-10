@@ -383,6 +383,56 @@
           </div>
         </div>
 
+        <div class="empresa-section mt-12">
+          <div class="empresa-section-header compact">
+            <div>
+              <h3 class="section-heading">Medios de pago habilitados</h3>
+              <p class="form-help mt-0">Activa los medios que puede usar la empresa en el carrito. Bre-B queda listo para conciliacion automatica cuando se conecte el webhook o API bancaria.</p>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-col">
+              <label class="form-help" style="display:flex;align-items:center;gap:8px;">
+                <input id="carritoCfgMetodoPagoEfectivo" type="checkbox" checked>
+                Efectivo
+              </label>
+            </div>
+            <div class="form-col">
+              <label class="form-help" style="display:flex;align-items:center;gap:8px;">
+                <input id="carritoCfgMetodoPagoCredito" type="checkbox" checked>
+                Tarjeta credito
+              </label>
+            </div>
+            <div class="form-col">
+              <label class="form-help" style="display:flex;align-items:center;gap:8px;">
+                <input id="carritoCfgMetodoPagoDebito" type="checkbox" checked>
+                Tarjeta debito
+              </label>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-col">
+              <label class="form-help" style="display:flex;align-items:center;gap:8px;">
+                <input id="carritoCfgMetodoPagoBreb" type="checkbox" checked>
+                Transferencia Bre-B
+              </label>
+              <div class="form-help">Mientras no exista webhook bancario, el cajero debe registrar la referencia o llave confirmada.</div>
+            </div>
+            <div class="form-col">
+              <label class="form-help" style="display:flex;align-items:center;gap:8px;">
+                <input id="carritoCfgMetodoPagoNequi" type="checkbox" checked>
+                Nequi
+              </label>
+            </div>
+            <div class="form-col">
+              <label class="form-help" style="display:flex;align-items:center;gap:8px;">
+                <input id="carritoCfgMetodoPagoOtraTransferencia" type="checkbox" checked>
+                Otra transferencia
+              </label>
+            </div>
+          </div>
+        </div>
+
         <div class="form-row">
           <div class="form-col">
             <label class="form-help" style="display:flex;align-items:center;gap:8px;">
@@ -567,6 +617,13 @@
         mostrar_propina: false,
         mostrar_comision: false,
         permitir_pago_mixto: true,
+        metodo_pago_efectivo: true,
+        metodo_pago_tarjeta_credito: true,
+        metodo_pago_tarjeta_debito: true,
+        metodo_pago_transferencia_bancaria: true,
+        metodo_pago_transferencia_bre_b: true,
+        metodo_pago_nequi: true,
+        metodo_pago_otras_transferencias: true,
         mostrar_resumen_totales_carrito: true,
         mostrar_desglose_cobro: false,
         mostrar_resumen_productos: true,
@@ -638,6 +695,13 @@
         mostrar_propina: src.mostrar_propina === undefined ? base.mostrar_propina : !!src.mostrar_propina,
         mostrar_comision: src.mostrar_comision === undefined ? base.mostrar_comision : !!src.mostrar_comision,
         permitir_pago_mixto: src.permitir_pago_mixto === undefined ? base.permitir_pago_mixto : !!src.permitir_pago_mixto,
+        metodo_pago_efectivo: src.metodo_pago_efectivo === undefined ? base.metodo_pago_efectivo : !!src.metodo_pago_efectivo,
+        metodo_pago_tarjeta_credito: src.metodo_pago_tarjeta_credito === undefined ? base.metodo_pago_tarjeta_credito : !!src.metodo_pago_tarjeta_credito,
+        metodo_pago_tarjeta_debito: src.metodo_pago_tarjeta_debito === undefined ? base.metodo_pago_tarjeta_debito : !!src.metodo_pago_tarjeta_debito,
+        metodo_pago_transferencia_bancaria: src.metodo_pago_transferencia_bancaria === undefined ? base.metodo_pago_transferencia_bancaria : !!src.metodo_pago_transferencia_bancaria,
+        metodo_pago_transferencia_bre_b: src.metodo_pago_transferencia_bre_b === undefined ? (src.metodo_pago_bre_b === undefined ? base.metodo_pago_transferencia_bre_b : !!src.metodo_pago_bre_b) : !!src.metodo_pago_transferencia_bre_b,
+        metodo_pago_nequi: src.metodo_pago_nequi === undefined ? base.metodo_pago_nequi : !!src.metodo_pago_nequi,
+        metodo_pago_otras_transferencias: src.metodo_pago_otras_transferencias === undefined ? (src.metodo_pago_transferencia_otro === undefined ? base.metodo_pago_otras_transferencias : !!src.metodo_pago_transferencia_otro) : !!src.metodo_pago_otras_transferencias,
         mostrar_resumen_totales_carrito: src.mostrar_resumen_totales_carrito === undefined ? base.mostrar_resumen_totales_carrito : !!src.mostrar_resumen_totales_carrito,
         mostrar_desglose_cobro: src.mostrar_desglose_cobro === undefined ? base.mostrar_desglose_cobro : !!src.mostrar_desglose_cobro,
         mostrar_resumen_productos: src.mostrar_resumen_productos === undefined ? base.mostrar_resumen_productos : !!src.mostrar_resumen_productos,
@@ -932,6 +996,12 @@
       document.getElementById('carritoCfgPropina').checked = !!normalized.mostrar_propina;
       document.getElementById('carritoCfgComision').checked = !!normalized.mostrar_comision;
       document.getElementById('carritoCfgPagoMixto').checked = !!normalized.permitir_pago_mixto;
+      document.getElementById('carritoCfgMetodoPagoEfectivo').checked = !!normalized.metodo_pago_efectivo;
+      document.getElementById('carritoCfgMetodoPagoCredito').checked = !!normalized.metodo_pago_tarjeta_credito;
+      document.getElementById('carritoCfgMetodoPagoDebito').checked = !!normalized.metodo_pago_tarjeta_debito;
+      document.getElementById('carritoCfgMetodoPagoBreb').checked = !!normalized.metodo_pago_transferencia_bre_b;
+      document.getElementById('carritoCfgMetodoPagoNequi').checked = !!normalized.metodo_pago_nequi;
+      document.getElementById('carritoCfgMetodoPagoOtraTransferencia').checked = !!normalized.metodo_pago_otras_transferencias;
       document.getElementById('carritoCfgResumenTotales').checked = !!normalized.mostrar_resumen_totales_carrito;
       document.getElementById('carritoCfgDesgloseCobro').checked = !!normalized.mostrar_desglose_cobro;
       document.getElementById('carritoCfgFacturacionOffline').checked = !!normalized.facturacion_offline_habilitada;
@@ -992,6 +1062,12 @@
           'carritoCfgPropina',
           'carritoCfgComision',
           'carritoCfgPagoMixto',
+          'carritoCfgMetodoPagoEfectivo',
+          'carritoCfgMetodoPagoCredito',
+          'carritoCfgMetodoPagoDebito',
+          'carritoCfgMetodoPagoBreb',
+          'carritoCfgMetodoPagoNequi',
+          'carritoCfgMetodoPagoOtraTransferencia',
           'carritoCfgResumenTotales',
           'carritoCfgDesgloseCobro',
           'carritoCfgFacturacionOffline',
@@ -1063,6 +1139,13 @@
           mostrar_propina: document.getElementById('carritoCfgPropina').checked,
           mostrar_comision: document.getElementById('carritoCfgComision').checked,
           permitir_pago_mixto: document.getElementById('carritoCfgPagoMixto').checked,
+          metodo_pago_efectivo: document.getElementById('carritoCfgMetodoPagoEfectivo').checked,
+          metodo_pago_tarjeta_credito: document.getElementById('carritoCfgMetodoPagoCredito').checked,
+          metodo_pago_tarjeta_debito: document.getElementById('carritoCfgMetodoPagoDebito').checked,
+          metodo_pago_transferencia_bancaria: document.getElementById('carritoCfgMetodoPagoOtraTransferencia').checked,
+          metodo_pago_transferencia_bre_b: document.getElementById('carritoCfgMetodoPagoBreb').checked,
+          metodo_pago_nequi: document.getElementById('carritoCfgMetodoPagoNequi').checked,
+          metodo_pago_otras_transferencias: document.getElementById('carritoCfgMetodoPagoOtraTransferencia').checked,
           mostrar_resumen_totales_carrito: document.getElementById('carritoCfgResumenTotales').checked,
           mostrar_desglose_cobro: document.getElementById('carritoCfgDesgloseCobro').checked,
           facturacion_offline_habilitada: document.getElementById('carritoCfgFacturacionOffline').checked,

@@ -1218,6 +1218,19 @@ Actualizacion 2026-04-29 (auditoria como fuente de contexto IA)
   - simulacion_json (resultado contextual opcional)
   - usuario_creador
   - estado
+
+### Configuracion JSON de carrito por empresa
+- `empresa_estacion_prefs` con `estacion_id=0`, `clave='estaciones_config'`:
+  - `carrito_ui_global.metodo_pago_efectivo`
+  - `carrito_ui_global.metodo_pago_tarjeta_credito`
+  - `carrito_ui_global.metodo_pago_tarjeta_debito`
+  - `carrito_ui_global.metodo_pago_transferencia_bancaria` (compatibilidad legacy)
+  - `carrito_ui_global.metodo_pago_transferencia_bre_b`
+  - `carrito_ui_global.metodo_pago_nequi`
+  - `carrito_ui_global.metodo_pago_otras_transferencias`
+  - `carrito_ui_global.permitir_pago_mixto`
+- Estas claves no agregan columnas: son switches por empresa para habilitar u
+  ocultar medios en el carrito y bloquearlos en backend durante abonos/pagos.
   - observaciones
   - indice: (empresa_id, fecha_creacion DESC, id DESC)
 

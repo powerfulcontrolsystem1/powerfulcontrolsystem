@@ -256,7 +256,15 @@
           </div>
         </div>
         <div id="stationClienteQuickForm" class="empresa-section mt-10 is-hidden" hidden>
+          <p class="form-help mt-0">Registra los datos fiscales del cliente para recibos y facturacion electronica: persona natural o empresa, documento, regimen IVA, responsabilidad tributaria, direccion y correo.</p>
           <div class="form-row carrito-customer-quick-grid">
+            <div class="form-col maxw-180">
+              <label class="form-label" for="quickClienteTipoPersona">Tipo cliente</label>
+              <select id="quickClienteTipoPersona" class="form-input">
+                <option value="natural">Persona natural</option>
+                <option value="juridica">Empresa / persona juridica</option>
+              </select>
+            </div>
             <div class="form-col maxw-180">
               <label class="form-label" for="quickClienteTipoDoc">Tipo doc.</label>
               <select id="quickClienteTipoDoc" class="form-input">
@@ -271,9 +279,38 @@
               <label class="form-label" for="quickClienteDocumento">Documento</label>
               <input id="quickClienteDocumento" class="form-input" autocomplete="off" placeholder="Numero de documento">
             </div>
+            <div class="form-col maxw-140">
+              <label class="form-label" for="quickClienteDV">DV</label>
+              <input id="quickClienteDV" class="form-input" inputmode="numeric" maxlength="1" autocomplete="off" placeholder="0-9">
+            </div>
             <div class="form-col">
               <label class="form-label" for="quickClienteNombre">Nombre / razon social</label>
               <input id="quickClienteNombre" class="form-input" autocomplete="off" placeholder="Nombre del cliente">
+            </div>
+            <div class="form-col">
+              <label class="form-label" for="quickClienteNombreComercial">Nombre comercial</label>
+              <input id="quickClienteNombreComercial" class="form-input" autocomplete="off" placeholder="Opcional">
+            </div>
+            <div class="form-col">
+              <label class="form-label" for="quickClienteRegimenFiscal">Regimen IVA</label>
+              <select id="quickClienteRegimenFiscal" class="form-input">
+                <option value="No responsable de IVA">No responsable de IVA</option>
+                <option value="Responsable de IVA">Responsable de IVA</option>
+                <option value="Regimen SIMPLE">Regimen SIMPLE</option>
+                <option value="Regimen ordinario">Regimen ordinario</option>
+                <option value="Gran contribuyente">Gran contribuyente</option>
+                <option value="Autorretenedor">Autorretenedor</option>
+              </select>
+            </div>
+            <div class="form-col">
+              <label class="form-label" for="quickClienteResponsabilidad">Responsabilidad tributaria</label>
+              <select id="quickClienteResponsabilidad" class="form-input">
+                <option value="R-99-PN">R-99-PN - No aplica / persona natural</option>
+                <option value="O-13">O-13 - Gran contribuyente</option>
+                <option value="O-15">O-15 - Autorretenedor</option>
+                <option value="O-23">O-23 - Agente retencion IVA</option>
+                <option value="O-47">O-47 - Regimen SIMPLE</option>
+              </select>
             </div>
             <div class="form-col">
               <label class="form-label" for="quickClienteTelefono">Telefono</label>
@@ -282,6 +319,30 @@
             <div class="form-col">
               <label class="form-label" for="quickClienteEmail">Email</label>
               <input id="quickClienteEmail" type="email" class="form-input" autocomplete="off" placeholder="Opcional">
+            </div>
+            <div class="form-col">
+              <label class="form-label" for="quickClienteDireccion">Direccion fiscal</label>
+              <input id="quickClienteDireccion" class="form-input" autocomplete="off" placeholder="Direccion para factura electronica">
+            </div>
+            <div class="form-col maxw-140">
+              <label class="form-label" for="quickClientePais">Pais</label>
+              <input id="quickClientePais" class="form-input" autocomplete="off" value="CO" placeholder="CO">
+            </div>
+            <div class="form-col">
+              <label class="form-label" for="quickClienteDepartamento">Departamento</label>
+              <input id="quickClienteDepartamento" class="form-input" autocomplete="off" placeholder="Ej: Atlantico">
+            </div>
+            <div class="form-col">
+              <label class="form-label" for="quickClienteMunicipio">Municipio</label>
+              <input id="quickClienteMunicipio" class="form-input" autocomplete="off" placeholder="Ej: Barranquilla">
+            </div>
+            <div class="form-col maxw-180">
+              <label class="form-label" for="quickClienteCodigoPostal">Codigo postal</label>
+              <input id="quickClienteCodigoPostal" class="form-input" autocomplete="off" placeholder="Opcional">
+            </div>
+            <div class="form-col">
+              <label class="form-label" for="quickClienteObservaciones">Observaciones</label>
+              <input id="quickClienteObservaciones" class="form-input" autocomplete="off" placeholder="Notas internas del cliente">
             </div>
             <div class="form-col maxw-220 flex-col-end">
               <button type="button" id="quickClienteGuardarBtn" class="btn primary w-full">Guardar cliente</button>
@@ -392,9 +453,11 @@
               <label class="form-label" for="carritoAbonoMetodo">Medio de pago</label>
               <select id="carritoAbonoMetodo" class="form-input">
                 <option value="efectivo">Efectivo</option>
-                <option value="tarjeta_debito">Débito</option>
-                <option value="tarjeta_credito">Crédito</option>
-                <option value="transferencia_bancaria">Otro</option>
+                <option value="tarjeta_credito">Tarjeta crédito</option>
+                <option value="tarjeta_debito">Tarjeta débito</option>
+                <option value="transferencia_bre_b">Transferencia Bre-B</option>
+                <option value="transferencia_nequi">Nequi</option>
+                <option value="transferencia_otro">Otra transferencia</option>
               </select>
             </div>
             <div class="form-col">
@@ -483,7 +546,9 @@
               <option value="efectivo">Efectivo</option>
               <option value="tarjeta_credito">Tarjeta crédito</option>
               <option value="tarjeta_debito">Tarjeta débito</option>
-              <option value="transferencia_bancaria">Transferencia bancaria</option>
+              <option value="transferencia_bre_b">Transferencia Bre-B</option>
+              <option value="transferencia_nequi">Nequi</option>
+              <option value="transferencia_otro">Otra transferencia</option>
               <option value="mixto">Pago mixto</option>
               <option value="codigo_descuento">Código de descuento</option>
             </select>
@@ -497,7 +562,7 @@
           </div>
           <div class="form-col">
             <label class="form-label" for="paymentReference">Referencia de pago</label>
-            <input id="paymentReference" class="form-input" placeholder="Ej: AUT-9482 / últimos 4 dígitos">
+            <input id="paymentReference" class="form-input" placeholder="Ej: AUT-9482 / llave Bre-B / comprobante Nequi">
           </div>
           <div class="form-col">
             <label class="form-label" for="devolucionMonto">Devolución (valor)</label>
@@ -519,7 +584,9 @@
               <option value="efectivo">Efectivo</option>
               <option value="tarjeta_credito">Tarjeta crédito</option>
               <option value="tarjeta_debito">Tarjeta débito</option>
-              <option value="transferencia_bancaria">Transferencia bancaria</option>
+              <option value="transferencia_bre_b">Transferencia Bre-B</option>
+              <option value="transferencia_nequi">Nequi</option>
+              <option value="transferencia_otro">Otra transferencia</option>
             </select>
           </div>
           <div class="form-col">
@@ -538,7 +605,9 @@
             <select id="mixedMethod2" class="form-input">
               <option value="tarjeta_debito">Tarjeta débito</option>
               <option value="tarjeta_credito">Tarjeta crédito</option>
-              <option value="transferencia_bancaria">Transferencia bancaria</option>
+              <option value="transferencia_bre_b">Transferencia Bre-B</option>
+              <option value="transferencia_nequi">Nequi</option>
+              <option value="transferencia_otro">Otra transferencia</option>
               <option value="efectivo">Efectivo</option>
             </select>
           </div>
@@ -558,7 +627,9 @@
             <select id="mixedMethod3" class="form-input">
               <option value="tarjeta_credito">Tarjeta crédito</option>
               <option value="tarjeta_debito">Tarjeta débito</option>
-              <option value="transferencia_bancaria">Transferencia bancaria</option>
+              <option value="transferencia_bre_b">Transferencia Bre-B</option>
+              <option value="transferencia_nequi">Nequi</option>
+              <option value="transferencia_otro">Otra transferencia</option>
               <option value="efectivo">Efectivo</option>
             </select>
           </div>
@@ -595,16 +666,24 @@
             <input id="stationPayDisplayEfectivo" type="text" inputmode="decimal" class="form-input" value="" autocomplete="off" data-payment-amount-method="efectivo">
           </div>
           <div class="form-col">
-            <label class="form-label" for="stationPayDisplayDebito">Débito</label>
-            <input id="stationPayDisplayDebito" type="text" inputmode="decimal" class="form-input" value="" autocomplete="off" data-payment-amount-method="tarjeta_debito">
-          </div>
-          <div class="form-col">
             <label class="form-label" for="stationPayDisplayCredito">Crédito</label>
             <input id="stationPayDisplayCredito" type="text" inputmode="decimal" class="form-input" value="" autocomplete="off" data-payment-amount-method="tarjeta_credito">
           </div>
           <div class="form-col">
-            <label class="form-label" for="stationPayDisplayOtro">Otro</label>
-            <input id="stationPayDisplayOtro" type="text" inputmode="decimal" class="form-input" value="" autocomplete="off" data-payment-amount-method="transferencia_bancaria">
+            <label class="form-label" for="stationPayDisplayDebito">Débito</label>
+            <input id="stationPayDisplayDebito" type="text" inputmode="decimal" class="form-input" value="" autocomplete="off" data-payment-amount-method="tarjeta_debito">
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="stationPayDisplayBreb">Bre-B</label>
+            <input id="stationPayDisplayBreb" type="text" inputmode="decimal" class="form-input" value="" autocomplete="off" data-payment-amount-method="transferencia_bre_b">
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="stationPayDisplayNequi">Nequi</label>
+            <input id="stationPayDisplayNequi" type="text" inputmode="decimal" class="form-input" value="" autocomplete="off" data-payment-amount-method="transferencia_nequi">
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="stationPayDisplayTransferenciaOtro">Otra transferencia</label>
+            <input id="stationPayDisplayTransferenciaOtro" type="text" inputmode="decimal" class="form-input" value="" autocomplete="off" data-payment-amount-method="transferencia_otro">
           </div>
           <div class="form-col">
             <label class="form-label" for="stationCashReceivedDisplay">Efectivo recibido</label>
@@ -873,8 +952,8 @@
         paymentReference: '',
         mixedPayments: [
           { metodo: 'efectivo', monto: 0, referencia: '' },
-          { metodo: 'tarjeta_debito', monto: 0, referencia: '' },
-          { metodo: 'tarjeta_credito', monto: 0, referencia: '' }
+          { metodo: 'tarjeta_credito', monto: 0, referencia: '' },
+          { metodo: 'tarjeta_debito', monto: 0, referencia: '' }
         ]
       },
       paymentInProgress: false,
@@ -892,9 +971,11 @@
       cashReceivedAmount: 0,
       paymentAmounts: {
         efectivo: 0,
-        tarjeta_debito: 0,
         tarjeta_credito: 0,
-        transferencia_bancaria: 0
+        tarjeta_debito: 0,
+        transferencia_bre_b: 0,
+        transferencia_nequi: 0,
+        transferencia_otro: 0
       },
       offlineVentas: {
         lastOnline: typeof navigator === 'undefined' ? true : navigator.onLine !== false,
@@ -1639,6 +1720,13 @@
         mostrar_propina: false,
         mostrar_comision: false,
         permitir_pago_mixto: true,
+        metodo_pago_efectivo: true,
+        metodo_pago_tarjeta_credito: true,
+        metodo_pago_tarjeta_debito: true,
+        metodo_pago_transferencia_bancaria: true,
+        metodo_pago_transferencia_bre_b: true,
+        metodo_pago_nequi: true,
+        metodo_pago_otras_transferencias: true,
         mostrar_resumen_totales_carrito: true,
         mostrar_desglose_cobro: false,
         mostrar_resumen_productos: true,
@@ -1759,6 +1847,13 @@
         mostrar_propina: src.mostrar_propina === undefined ? base.mostrar_propina : Boolean(src.mostrar_propina),
         mostrar_comision: src.mostrar_comision === undefined ? base.mostrar_comision : Boolean(src.mostrar_comision),
         permitir_pago_mixto: src.permitir_pago_mixto === undefined ? base.permitir_pago_mixto : Boolean(src.permitir_pago_mixto),
+        metodo_pago_efectivo: src.metodo_pago_efectivo === undefined ? base.metodo_pago_efectivo : Boolean(src.metodo_pago_efectivo),
+        metodo_pago_tarjeta_credito: src.metodo_pago_tarjeta_credito === undefined ? base.metodo_pago_tarjeta_credito : Boolean(src.metodo_pago_tarjeta_credito),
+        metodo_pago_tarjeta_debito: src.metodo_pago_tarjeta_debito === undefined ? base.metodo_pago_tarjeta_debito : Boolean(src.metodo_pago_tarjeta_debito),
+        metodo_pago_transferencia_bancaria: src.metodo_pago_transferencia_bancaria === undefined ? base.metodo_pago_transferencia_bancaria : Boolean(src.metodo_pago_transferencia_bancaria),
+        metodo_pago_transferencia_bre_b: src.metodo_pago_transferencia_bre_b === undefined ? (src.metodo_pago_bre_b === undefined ? base.metodo_pago_transferencia_bre_b : Boolean(src.metodo_pago_bre_b)) : Boolean(src.metodo_pago_transferencia_bre_b),
+        metodo_pago_nequi: src.metodo_pago_nequi === undefined ? base.metodo_pago_nequi : Boolean(src.metodo_pago_nequi),
+        metodo_pago_otras_transferencias: src.metodo_pago_otras_transferencias === undefined ? (src.metodo_pago_transferencia_otro === undefined ? base.metodo_pago_otras_transferencias : Boolean(src.metodo_pago_transferencia_otro)) : Boolean(src.metodo_pago_otras_transferencias),
         mostrar_resumen_totales_carrito: src.mostrar_resumen_totales_carrito === undefined ? base.mostrar_resumen_totales_carrito : Boolean(src.mostrar_resumen_totales_carrito),
         mostrar_desglose_cobro: src.mostrar_desglose_cobro === undefined ? base.mostrar_desglose_cobro : Boolean(src.mostrar_desglose_cobro),
         mostrar_resumen_productos: src.mostrar_resumen_productos === undefined ? base.mostrar_resumen_productos : Boolean(src.mostrar_resumen_productos),
@@ -2610,6 +2705,9 @@
         metodo_pago_tarjeta_credito: true,
         metodo_pago_tarjeta_debito: true,
         metodo_pago_transferencia_bancaria: true,
+        metodo_pago_transferencia_bre_b: true,
+        metodo_pago_nequi: true,
+        metodo_pago_otras_transferencias: true,
         metodo_pago_mixto: true,
         metodo_pago_codigo_descuento: true,
         habilitar_propinas: true,
@@ -2626,6 +2724,9 @@
         metodo_pago_tarjeta_credito: src.metodo_pago_tarjeta_credito === undefined ? base.metodo_pago_tarjeta_credito : Boolean(src.metodo_pago_tarjeta_credito),
         metodo_pago_tarjeta_debito: src.metodo_pago_tarjeta_debito === undefined ? base.metodo_pago_tarjeta_debito : Boolean(src.metodo_pago_tarjeta_debito),
         metodo_pago_transferencia_bancaria: src.metodo_pago_transferencia_bancaria === undefined ? base.metodo_pago_transferencia_bancaria : Boolean(src.metodo_pago_transferencia_bancaria),
+        metodo_pago_transferencia_bre_b: src.metodo_pago_transferencia_bre_b === undefined ? (src.metodo_pago_bre_b === undefined ? base.metodo_pago_transferencia_bre_b : Boolean(src.metodo_pago_bre_b)) : Boolean(src.metodo_pago_transferencia_bre_b),
+        metodo_pago_nequi: src.metodo_pago_nequi === undefined ? base.metodo_pago_nequi : Boolean(src.metodo_pago_nequi),
+        metodo_pago_otras_transferencias: src.metodo_pago_otras_transferencias === undefined ? (src.metodo_pago_transferencia_otro === undefined ? base.metodo_pago_otras_transferencias : Boolean(src.metodo_pago_transferencia_otro)) : Boolean(src.metodo_pago_otras_transferencias),
         metodo_pago_mixto: src.metodo_pago_mixto === undefined ? base.metodo_pago_mixto : Boolean(src.metodo_pago_mixto),
         metodo_pago_codigo_descuento: src.metodo_pago_codigo_descuento === undefined ? base.metodo_pago_codigo_descuento : Boolean(src.metodo_pago_codigo_descuento),
         habilitar_propinas: src.habilitar_propinas === undefined ? base.habilitar_propinas : Boolean(src.habilitar_propinas),
@@ -2643,11 +2744,14 @@
     function isPaymentMethodAllowed(metodo) {
       const m = normalize(metodo).toLowerCase();
       const p = getOperativaPermisos();
-      const stationUI = state.stationMode ? getCurrentStationCartUIConfig() : defaultUnifiedCartUIConfig();
-      if (m === 'efectivo') return p.metodo_pago_efectivo;
-      if (m === 'tarjeta_credito') return p.metodo_pago_tarjeta_credito;
-      if (m === 'tarjeta_debito') return p.metodo_pago_tarjeta_debito;
-      if (m === 'transferencia_bancaria') return p.metodo_pago_transferencia_bancaria;
+      const stationUI = (state.stationMode || state.directSaleMode) ? getCurrentStationCartUIConfig() : defaultUnifiedCartUIConfig();
+      if (m === 'efectivo') return stationUI.metodo_pago_efectivo && p.metodo_pago_efectivo;
+      if (m === 'tarjeta_credito') return stationUI.metodo_pago_tarjeta_credito && p.metodo_pago_tarjeta_credito;
+      if (m === 'tarjeta_debito') return stationUI.metodo_pago_tarjeta_debito && p.metodo_pago_tarjeta_debito;
+      if (m === 'transferencia_bancaria') return stationUI.metodo_pago_transferencia_bancaria && p.metodo_pago_transferencia_bancaria;
+      if (m === 'transferencia_bre_b') return stationUI.metodo_pago_transferencia_bre_b && p.metodo_pago_transferencia_bancaria && p.metodo_pago_transferencia_bre_b;
+      if (m === 'transferencia_nequi') return stationUI.metodo_pago_nequi && p.metodo_pago_transferencia_bancaria && p.metodo_pago_nequi;
+      if (m === 'transferencia_otro') return stationUI.metodo_pago_otras_transferencias && p.metodo_pago_transferencia_bancaria && p.metodo_pago_otras_transferencias;
       if (m === 'mixto') return stationUI.permitir_pago_mixto && p.metodo_pago_mixto;
       if (m === 'codigo_descuento') return stationUI.mostrar_descuentos && p.metodo_pago_codigo_descuento;
       return false;
@@ -2655,14 +2759,14 @@
 
     function isMixedMethodAllowed(metodo) {
       const m = normalize(metodo).toLowerCase();
-      if (m !== 'efectivo' && m !== 'tarjeta_credito' && m !== 'tarjeta_debito' && m !== 'transferencia_bancaria') {
+      if (['efectivo', 'tarjeta_credito', 'tarjeta_debito', 'transferencia_bancaria', 'transferencia_bre_b', 'transferencia_nequi', 'transferencia_otro'].indexOf(m) === -1) {
         return false;
       }
       return isPaymentMethodAllowed(m);
     }
 
     function getAllowedPaymentMethods() {
-      const ordered = ['efectivo', 'tarjeta_credito', 'tarjeta_debito', 'transferencia_bancaria', 'mixto', 'codigo_descuento'];
+      const ordered = ['efectivo', 'tarjeta_credito', 'tarjeta_debito', 'transferencia_bre_b', 'transferencia_nequi', 'transferencia_otro', 'mixto', 'codigo_descuento'];
       return ordered.filter(function(method) {
         return isPaymentMethodAllowed(method);
       });
@@ -2674,6 +2778,9 @@
         tarjeta_credito: 'Tarjeta credito',
         tarjeta_debito: 'Tarjeta debito',
         transferencia_bancaria: 'Transferencia',
+        transferencia_bre_b: 'Transferencia Bre-B',
+        transferencia_nequi: 'Nequi',
+        transferencia_otro: 'Otra transferencia',
         mixto: 'Pago mixto',
         codigo_descuento: 'Codigo descuento'
       };
@@ -2691,7 +2798,7 @@
     }
 
     function getAllowedMixedMethods() {
-      const ordered = ['efectivo', 'tarjeta_credito', 'tarjeta_debito', 'transferencia_bancaria'];
+      const ordered = ['efectivo', 'tarjeta_credito', 'tarjeta_debito', 'transferencia_bre_b', 'transferencia_nequi', 'transferencia_otro'];
       return ordered.filter(function(method) {
         return isMixedMethodAllowed(method);
       });
@@ -2699,6 +2806,7 @@
 
     function ensurePaymentMethodInputsFromOperativa() {
       const paymentMethodEl = document.getElementById('paymentMethod');
+      const abonoMethodEl = document.getElementById('carritoAbonoMetodo');
       const mixedMethod1El = document.getElementById('mixedMethod1');
       const mixedMethod2El = document.getElementById('mixedMethod2');
       const allowed = getAllowedPaymentMethods();
@@ -2712,6 +2820,15 @@
           paymentMethodEl.disabled = true;
         } else if (!isPaymentMethodAllowed(paymentMethodEl.value)) {
           paymentMethodEl.value = allowed[0];
+        }
+      }
+
+      if (abonoMethodEl) {
+        Array.from(abonoMethodEl.options).forEach(function(opt) {
+          opt.disabled = !isMixedMethodAllowed(opt.value);
+        });
+        if (allowedMixed.length && !isMixedMethodAllowed(abonoMethodEl.value)) {
+          abonoMethodEl.value = allowedMixed[0];
         }
       }
 
@@ -3460,8 +3577,8 @@
         setCarritoAbonosMessage('Ingresa un valor de abono mayor a cero.', true);
         return;
       }
-      if ((metodo === 'tarjeta_credito' || metodo === 'tarjeta_debito' || metodo === 'transferencia_bancaria') && referencia.length < 4) {
-        setCarritoAbonosMessage('Los abonos con tarjeta o transferencia requieren una referencia mínima de 4 caracteres.', true);
+      if (isNonCashPaymentAmountMethod(metodo) && referencia.length < 4) {
+        setCarritoAbonosMessage('Los abonos con tarjeta o transferencia requieren una referencia minima de 4 caracteres.', true);
         return;
       }
       let cashForPayment = getSelectedCashRegister();
@@ -3594,7 +3711,7 @@
       let mixedSummary = '';
       let mixedMessage = '';
       let paymentAmountsMessage = '';
-      let paymentLabel = paymentMethod.replace(/_/g, ' ');
+      let paymentLabel = getPaymentMethodLabel(paymentMethod);
 
       if (paymentMethod === 'mixto') {
         if (!isPaymentMethodAllowed('mixto')) {
@@ -3606,11 +3723,11 @@
           const referencia = normalize(item && item.referencia);
           if (monto <= 0) return;
           if (!isMixedMethodAllowed(metodo)) {
-            mixedMessage = 'El tramo de pago mixto con método ' + metodo.replace(/_/g, ' ') + ' no está habilitado para este rol.';
+            mixedMessage = 'El tramo de pago mixto con metodo ' + getPaymentMethodLabel(metodo) + ' no esta habilitado para este rol.';
             return;
           }
-          if ((metodo === 'tarjeta_credito' || metodo === 'tarjeta_debito' || metodo === 'transferencia_bancaria') && referencia.length < 4) {
-            mixedMessage = 'Cada tramo con tarjeta o transferencia bancaria en pago mixto requiere referencia mínima de 4 caracteres.';
+          if (isNonCashPaymentAmountMethod(metodo) && referencia.length < 4) {
+            mixedMessage = 'Cada tramo con tarjeta o transferencia en pago mixto requiere referencia minima de 4 caracteres.';
             return;
           }
           mixedPayments.push({ metodo: metodo, monto: monto, referencia: referencia });
@@ -3626,14 +3743,14 @@
         if (mixedPayments.length) {
           mixedSummary = mixedPayments.map(function(item) {
             const refPart = item.referencia ? (' ref:' + item.referencia) : '';
-            return item.metodo.replace(/_/g, ' ') + ' ' + formatAmount(item.monto, carrito.moneda) + refPart;
+            return getPaymentMethodLabel(item.metodo) + ' ' + formatAmount(item.monto, carrito.moneda) + refPart;
           }).join(' + ');
-          paymentLabel = 'mixto';
+          paymentLabel = 'Pago mixto';
         }
       }
 
       if (!isPaymentMethodAllowed(paymentMethod)) {
-        operativaMessage = 'El método de pago ' + paymentMethod.replace(/_/g, ' ') + ' no está habilitado para este rol.';
+        operativaMessage = 'El metodo de pago ' + getPaymentMethodLabel(paymentMethod) + ' no esta habilitado para este rol.';
       }
 
       if (state.paymentAmountsManual) {
@@ -3682,15 +3799,28 @@
     function getStationPaymentAmountInputDefs() {
       return [
         { id: 'stationPayDisplayEfectivo', metodo: 'efectivo' },
-        { id: 'stationPayDisplayDebito', metodo: 'tarjeta_debito' },
         { id: 'stationPayDisplayCredito', metodo: 'tarjeta_credito' },
-        { id: 'stationPayDisplayOtro', metodo: 'transferencia_bancaria' }
+        { id: 'stationPayDisplayDebito', metodo: 'tarjeta_debito' },
+        { id: 'stationPayDisplayBreb', metodo: 'transferencia_bre_b' },
+        { id: 'stationPayDisplayNequi', metodo: 'transferencia_nequi' },
+        { id: 'stationPayDisplayTransferenciaOtro', metodo: 'transferencia_otro' }
       ];
+    }
+
+    function defaultPaymentAmountsState() {
+      return {
+        efectivo: 0,
+        tarjeta_credito: 0,
+        tarjeta_debito: 0,
+        transferencia_bre_b: 0,
+        transferencia_nequi: 0,
+        transferencia_otro: 0
+      };
     }
 
     function isNonCashPaymentAmountMethod(metodo) {
       metodo = normalize(metodo).toLowerCase();
-      return metodo === 'tarjeta_debito' || metodo === 'tarjeta_credito' || metodo === 'transferencia_bancaria';
+      return metodo === 'tarjeta_debito' || metodo === 'tarjeta_credito' || metodo === 'transferencia_bancaria' || metodo === 'transferencia_bre_b' || metodo === 'transferencia_nequi' || metodo === 'transferencia_otro';
     }
 
     function paymentAmountAutoReference(metodo) {
@@ -3712,6 +3842,7 @@
     function getStationPaymentAmountsTotal() {
       const amounts = state.paymentAmounts || {};
       return getStationPaymentAmountInputDefs().reduce(function(acc, def) {
+        if (!isMixedMethodAllowed(def.metodo)) return acc;
         return roundMoney(acc + Math.max(0, Number(amounts[def.metodo] || 0)));
       }, 0);
     }
@@ -3721,6 +3852,7 @@
       const amounts = state.paymentAmounts || {};
       return getStationPaymentAmountInputDefs().reduce(function(acc, def) {
         if (def.metodo === metodo) return acc;
+        if (!isMixedMethodAllowed(def.metodo)) return acc;
         return roundMoney(acc + Math.max(0, Number(amounts[def.metodo] || 0)));
       }, 0);
     }
@@ -3734,7 +3866,7 @@
           referencia: paymentAmountAutoReference(def.metodo)
         };
       }).filter(function(item) {
-        return item.monto > 0;
+        return item.monto > 0 && isMixedMethodAllowed(item.metodo);
       });
     }
 
@@ -3788,7 +3920,7 @@
       const total = getStationPaymentTotalForAmountAutofill(selected);
       if (total <= 0) return;
       if (!state.paymentAmountsManual) {
-        state.paymentAmounts = { efectivo: 0, tarjeta_debito: 0, tarjeta_credito: 0, transferencia_bancaria: 0 };
+        state.paymentAmounts = defaultPaymentAmountsState();
       }
       state.paymentAmountsManual = true;
       const otherTotal = getStationPaymentAmountsTotalExcluding(metodo);
@@ -3856,7 +3988,7 @@
         msg.textContent = 'Sumatoria correcta: ' + formatAmount(sum, moneda) + '. Pago listo para cerrar.';
         msg.classList.add('value-positive');
       } else {
-        msg.textContent = 'Haz clic en Efectivo, Débito, Crédito u Otro para cargar el total. Puedes editar los valores para pago combinado.';
+        msg.textContent = 'Haz clic en Efectivo, Crédito, Débito, Bre-B, Nequi u otra transferencia para cargar el total. Puedes editar los valores para pago combinado.';
       }
     }
 
@@ -3868,7 +4000,7 @@
     }
 
     function syncStationPaymentDisplayInputs(carrito) {
-      const ids = ['stationPayDisplayEfectivo', 'stationPayDisplayDebito', 'stationPayDisplayCredito', 'stationPayDisplayOtro'];
+      const ids = getStationPaymentAmountInputDefs().map(function(def) { return def.id; });
       const setOne = function(id, text) {
         const el = document.getElementById(id);
         if (el) el.value = text || '';
@@ -3876,7 +4008,7 @@
       if (!carrito) {
         state.paymentAmountsManual = false;
         state.cashReceivedAmount = 0;
-        state.paymentAmounts = { efectivo: 0, tarjeta_debito: 0, tarjeta_credito: 0, transferencia_bancaria: 0 };
+        state.paymentAmounts = defaultPaymentAmountsState();
         ids.forEach(function(id) { setOne(id, ''); });
         formatCashReceivedInput('COP');
         renderCashReceivedChange(null);
@@ -3888,36 +4020,46 @@
       }
       const pay = getStationPaymentBreakdown(carrito);
       let ef = 0;
-      let deb = 0;
       let cred = 0;
-      let otro = 0;
+      let deb = 0;
+      let breb = 0;
+      let nequi = 0;
+      let otra = 0;
       const moneda = carrito.moneda;
       if (pay.paymentMethod === 'mixto' && pay.mixedPayments && pay.mixedPayments.length) {
         pay.mixedPayments.forEach(function(item) {
           const metodo = normalize(item.metodo).toLowerCase();
           const monto = Number(item.monto || 0);
           if (metodo === 'efectivo') ef += monto;
-          else if (metodo === 'tarjeta_debito') deb += monto;
           else if (metodo === 'tarjeta_credito') cred += monto;
-          else otro += monto;
+          else if (metodo === 'tarjeta_debito') deb += monto;
+          else if (metodo === 'transferencia_bre_b') breb += monto;
+          else if (metodo === 'transferencia_nequi') nequi += monto;
+          else otra += monto;
         });
       } else {
         const pm = normalize(pay.paymentMethod).toLowerCase();
         const t = pay.totalPagarFinal;
         if (pm === 'efectivo') ef = t;
-        else if (pm === 'tarjeta_debito') deb = t;
         else if (pm === 'tarjeta_credito') cred = t;
-        else otro = t;
+        else if (pm === 'tarjeta_debito') deb = t;
+        else if (pm === 'transferencia_bre_b') breb = t;
+        else if (pm === 'transferencia_nequi') nequi = t;
+        else otra = t;
       }
       setOne('stationPayDisplayEfectivo', formatAmount(ef, moneda));
-      setOne('stationPayDisplayDebito', formatAmount(deb, moneda));
       setOne('stationPayDisplayCredito', formatAmount(cred, moneda));
-      setOne('stationPayDisplayOtro', formatAmount(otro, moneda));
+      setOne('stationPayDisplayDebito', formatAmount(deb, moneda));
+      setOne('stationPayDisplayBreb', formatAmount(breb, moneda));
+      setOne('stationPayDisplayNequi', formatAmount(nequi, moneda));
+      setOne('stationPayDisplayTransferenciaOtro', formatAmount(otra, moneda));
       state.paymentAmounts = {
         efectivo: roundMoney(ef),
-        tarjeta_debito: roundMoney(deb),
         tarjeta_credito: roundMoney(cred),
-        transferencia_bancaria: roundMoney(otro)
+        tarjeta_debito: roundMoney(deb),
+        transferencia_bre_b: roundMoney(breb),
+        transferencia_nequi: roundMoney(nequi),
+        transferencia_otro: roundMoney(otra)
       };
       renderCashReceivedChange(carrito);
     }
@@ -4152,16 +4294,20 @@
         return;
       }
       const qr = ensurePaymentQrData(selected, pay, cfg, account, false);
+      const provider = normalize(account && account.proveedor).toLowerCase();
+      const qrPaymentMethod = provider === 'nequi'
+        ? 'transferencia_nequi'
+        : (provider === 'otro' ? 'transferencia_otro' : 'transferencia_bre_b');
       state.paymentAmountsManual = false;
-      state.stationDiscount.paymentMethod = 'transferencia_bancaria';
+      state.stationDiscount.paymentMethod = qrPaymentMethod;
       state.stationDiscount.paymentReference = qr.reference;
       state.stationDiscount.mixedPayments = [];
       const methodEl = document.getElementById('paymentMethod');
       const refEl = document.getElementById('paymentReference');
-      if (methodEl) methodEl.value = 'transferencia_bancaria';
+      if (methodEl) methodEl.value = qrPaymentMethod;
       if (refEl) refEl.value = qr.reference;
       renderStationPaymentPanel(selected);
-      setStationPaymentMessage('QR aplicado como transferencia bancaria. Verifica el abono en ' + paymentQrProviderLabel(account.proveedor) + ' antes de presionar Pagar y cerrar carrito.', false);
+      setStationPaymentMessage('QR aplicado como ' + getPaymentMethodLabel(qrPaymentMethod) + '. Verifica el abono en ' + paymentQrProviderLabel(account.proveedor) + ' antes de presionar Pagar y cerrar carrito.', false);
     }
 
     function roundMoney(value) {
@@ -5484,12 +5630,7 @@
       state.cartAbonosLoading = false;
       state.paymentAmountsManual = false;
       state.cashReceivedAmount = 0;
-      state.paymentAmounts = {
-        efectivo: 0,
-        tarjeta_debito: 0,
-        tarjeta_credito: 0,
-        transferencia_bancaria: 0
-      };
+      state.paymentAmounts = defaultPaymentAmountsState();
       state.stationDiscount.type = 'none';
       state.stationDiscount.code = '';
       state.stationDiscount.value = 0;
@@ -5919,7 +6060,10 @@
       getStationPaymentAmountInputDefs().forEach(function(def) {
         const el = document.getElementById(def.id);
         if (!el) return;
-        el.disabled = !selectedActive || !stationUI.mostrar_tarjeta_valores_pago;
+        const allowedMethod = isMixedMethodAllowed(def.metodo);
+        el.disabled = !selectedActive || !stationUI.mostrar_tarjeta_valores_pago || !allowedMethod;
+        const col = el.closest('.form-col');
+        if (col) col.style.display = allowedMethod ? '' : 'none';
       });
       const cashReceivedEl = document.getElementById('stationCashReceivedDisplay');
       if (cashReceivedEl) {
@@ -5950,7 +6094,7 @@
         ' | Saldo sin propina: ' + formatAmount(pay.totalPagar, carrito.moneda) +
         ' | Propina (' + pay.tipPercent.toFixed(2) + '%): +' + formatAmount(pay.tipAmount, carrito.moneda) +
         ' | Total final a pagar: ' + formatAmount(pay.totalPagarFinal, carrito.moneda) +
-        ' | Método de pago: ' + pay.paymentMethod.replace(/_/g, ' ');
+        ' | Método de pago: ' + getPaymentMethodLabel(pay.paymentMethod);
       if (pay.commissionEstimate && pay.commissionEstimate.enabled) {
         breakdownEl.textContent +=
           ' | Comisión estimada (' + Number(pay.commissionEstimate.percentage || 0).toFixed(2) + '%): +' +
@@ -6130,8 +6274,8 @@
         setStationPaymentMessage('No puedes usar solo código de descuento cuando la propina está activa en este cobro.', true);
         return;
       }
-      if ((pay.paymentMethod === 'tarjeta_credito' || pay.paymentMethod === 'tarjeta_debito' || pay.paymentMethod === 'transferencia_bancaria') && normalize(pay.paymentReference).length < 4) {
-        setStationPaymentMessage('Para pagos con tarjeta o transferencia bancaria debes ingresar una referencia de pago (mínimo 4 caracteres).', true);
+      if (isNonCashPaymentAmountMethod(pay.paymentMethod) && normalize(pay.paymentReference).length < 4) {
+        setStationPaymentMessage('Para pagos con tarjeta o transferencia debes ingresar una referencia de pago (mínimo 4 caracteres).', true);
         return;
       }
       if (pay.paymentAmountsMessage) {
@@ -6364,9 +6508,11 @@
       const whole = shouldUseWholeMoney(m);
       const textMoneyIds = [
         'stationPayDisplayEfectivo',
-        'stationPayDisplayDebito',
         'stationPayDisplayCredito',
-        'stationPayDisplayOtro',
+        'stationPayDisplayDebito',
+        'stationPayDisplayBreb',
+        'stationPayDisplayNequi',
+        'stationPayDisplayTransferenciaOtro',
         'stationCashReceivedDisplay'
       ];
       const numberMoneyIds = [
@@ -6955,8 +7101,35 @@
       form.classList.toggle('is-hidden', !visible);
       form.style.display = visible ? '' : 'none';
       if (visible && wasHidden) {
+        syncQuickClienteFiscalDefaults('open');
         const name = document.getElementById('quickClienteNombre');
         if (name && typeof name.focus === 'function') name.focus();
+      }
+    }
+
+    function syncQuickClienteFiscalDefaults(source) {
+      const tipoDocEl = document.getElementById('quickClienteTipoDoc');
+      const tipoPersonaEl = document.getElementById('quickClienteTipoPersona');
+      const regimenEl = document.getElementById('quickClienteRegimenFiscal');
+      const responsabilidadEl = document.getElementById('quickClienteResponsabilidad');
+      const dvEl = document.getElementById('quickClienteDV');
+      if (!tipoDocEl || !tipoPersonaEl) return;
+      const tipoDoc = normalize(tipoDocEl.value).toUpperCase();
+      if (source === 'tipo_documento') {
+        if (tipoDoc === 'NIT') {
+          tipoPersonaEl.value = 'juridica';
+          if (regimenEl && normalize(regimenEl.value) === 'No responsable de IVA') regimenEl.value = 'Responsable de IVA';
+          if (responsabilidadEl && normalize(responsabilidadEl.value) === 'R-99-PN') responsabilidadEl.value = 'O-15';
+        } else {
+          tipoPersonaEl.value = 'natural';
+          if (regimenEl && normalize(regimenEl.value) === 'Responsable de IVA') regimenEl.value = 'No responsable de IVA';
+          if (responsabilidadEl) responsabilidadEl.value = 'R-99-PN';
+          if (dvEl) dvEl.value = '';
+        }
+      }
+      if (dvEl) {
+        dvEl.disabled = tipoDoc !== 'NIT';
+        dvEl.placeholder = tipoDoc === 'NIT' ? '0-9' : 'No aplica';
       }
     }
 
@@ -7041,21 +7214,33 @@
       const nombre = normalize(document.getElementById('quickClienteNombre').value);
       const documento = normalize(document.getElementById('quickClienteDocumento').value);
       const tipoDoc = normalize(document.getElementById('quickClienteTipoDoc').value) || 'CC';
+      const tipoPersona = normalize(document.getElementById('quickClienteTipoPersona').value) || (tipoDoc === 'NIT' ? 'juridica' : 'natural');
       if (!nombre || !documento) {
         setStationClienteMessage('Nombre y documento del cliente son obligatorios.', true);
+        return;
+      }
+      if (tipoDoc === 'NIT' && !normalize(document.getElementById('quickClienteDV').value)) {
+        setStationClienteMessage('Para empresas con NIT registra tambien el digito de verificacion.', true);
         return;
       }
       const payload = {
         empresa_id: Number(state.empresaID),
         tipo_documento: tipoDoc,
         numero_documento: documento,
-        tipo_persona: tipoDoc === 'NIT' ? 'juridica' : 'natural',
+        digito_verificacion: normalize(document.getElementById('quickClienteDV').value),
+        tipo_persona: tipoPersona,
         nombre_razon_social: nombre,
-        nombre_comercial: nombre,
+        nombre_comercial: normalize(document.getElementById('quickClienteNombreComercial').value) || nombre,
+        regimen_fiscal: normalize(document.getElementById('quickClienteRegimenFiscal').value),
+        responsabilidad_tributaria: normalize(document.getElementById('quickClienteResponsabilidad').value),
         email: normalize(document.getElementById('quickClienteEmail').value),
         telefono: normalize(document.getElementById('quickClienteTelefono').value),
-        pais: 'CO',
-        observaciones: 'Creado desde el boton Clientes del carrito'
+        direccion: normalize(document.getElementById('quickClienteDireccion').value),
+        pais: normalize(document.getElementById('quickClientePais').value) || 'CO',
+        departamento: normalize(document.getElementById('quickClienteDepartamento').value),
+        municipio: normalize(document.getElementById('quickClienteMunicipio').value),
+        codigo_postal: normalize(document.getElementById('quickClienteCodigoPostal').value),
+        observaciones: normalize(document.getElementById('quickClienteObservaciones').value) || 'Creado desde el boton Clientes del carrito'
       };
       try {
         const res = await fetch('/api/empresa/clientes', {
@@ -7071,12 +7256,14 @@
         if (newID > 0) {
           await assignClienteToSelectedCarrito(newID);
         }
-        ['quickClienteDocumento', 'quickClienteTelefono', 'quickClienteEmail'].forEach(function(id) {
+        ['quickClienteDocumento', 'quickClienteDV', 'quickClienteNombreComercial', 'quickClienteTelefono', 'quickClienteEmail', 'quickClienteDireccion', 'quickClienteDepartamento', 'quickClienteMunicipio', 'quickClienteCodigoPostal', 'quickClienteObservaciones'].forEach(function(id) {
           const el = document.getElementById(id);
           if (el) el.value = '';
         });
         const nameEl = document.getElementById('quickClienteNombre');
         if (nameEl) nameEl.value = '';
+        const paisEl = document.getElementById('quickClientePais');
+        if (paisEl) paisEl.value = 'CO';
         toggleQuickClienteForm(false);
         syncStationClienteSearchInput(getSelectedCarrito());
         setStationClienteMessage('Cliente creado y asignado al carrito.', false);
@@ -8917,9 +9104,11 @@
       state.items.forEach(function(item) {
         const tr = document.createElement('tr');
         const moneda = normalize(item.moneda || selected.moneda) || 'COP';
+        const unidad = normalize(item.unidad_medida) || 'unidad';
+        const qtyValue = escapeHtml(formatQuantityForInput(item.cantidad || 1, unidad));
         let row = '<td>' + item.id + '</td>' +
-          '<td>' + (normalize(item.descripcion) || '') + '</td>' +
-          '<td>' + String(Number(item.cantidad || 0)) + '</td>' +
+          '<td>' + escapeHtml(normalize(item.descripcion) || '') + '<div class="form-help">' + escapeHtml(normalize(item.codigo_item) || '-') + '</div></td>' +
+          '<td><input class="form-input cart-item-qty-input" type="number" min="' + (isWeightUnit(unidad) ? '0.001' : '1') + '" step="' + (isWeightUnit(unidad) ? '0.001' : '1') + '" inputmode="decimal" data-id="' + Number(item.id || 0) + '" data-original="' + qtyValue + '" value="' + qtyValue + '" title="Cambiar cantidad"></td>' +
           '<td>' + escapeHtml(formatAmount(item.precio_unitario || 0, moneda)) + '</td>' +
           '<td>' + Number(item.descuento_porcentaje || 0).toFixed(2) + '</td>' +
           '<td>' + Number(item.impuesto_porcentaje || 0).toFixed(2) + '</td>';
@@ -8927,7 +9116,7 @@
         row += '<td class="actions">' +
             (readOnlyMode
               ? '<span class="form-help">Solo lectura</span>'
-              : '<button data-id="' + item.id + '" class="returnItem btn secondary">Devolver</button>') +
+              : '<button data-id="' + item.id + '" class="returnItem btn secondary">Devolver producto</button>') +
           '</td>';
         tr.innerHTML = row;
         tbody.appendChild(tr);
@@ -8936,6 +9125,120 @@
 
       box.innerHTML = '';
       box.appendChild(table);
+    }
+
+    function buildCartItemPayloadForUpdate(item, cantidad) {
+      return {
+        id: Number(item.id || 0),
+        empresa_id: Number(state.empresaID),
+        carrito_id: Number(state.selectedCarritoID),
+        tipo_item: normalize(item.tipo_item) || 'producto',
+        referencia_id: toNumber(item.referencia_id || 0, 0),
+        codigo_item: normalize(item.codigo_item),
+        descripcion: normalize(item.descripcion),
+        unidad_medida: normalize(item.unidad_medida) || 'unidad',
+        cantidad: cantidad,
+        precio_unitario: Number(item.precio_unitario || 0),
+        descuento_porcentaje: Number(item.descuento_porcentaje || 0),
+        impuesto_porcentaje: Number(item.impuesto_porcentaje || 0),
+        impuesto_codigo: normalize(item.impuesto_codigo) || 'IVA',
+        observaciones: normalize(item.observaciones)
+      };
+    }
+
+    async function updateCartItemQuantity(itemID, rawValue, inputEl) {
+      const id = Number(itemID);
+      const item = state.items.find(function(x) { return Number(x.id) === id; });
+      const selected = getSelectedCarrito();
+      if (!item || !selected) {
+        setMessage('itemMsg', 'No fue posible actualizar la cantidad del producto.', true);
+        return;
+      }
+      if ((state.stationMode || state.directSaleMode) && !isCarritoOperativoActivo(selected)) {
+        setMessage('itemMsg', 'El carrito no esta activo para modificar cantidades.', true);
+        if (inputEl) inputEl.value = inputEl.getAttribute('data-original') || formatQuantityForInput(item.cantidad || 1, item.unidad_medida || 'unidad');
+        return;
+      }
+
+      const unidad = normalize(item.unidad_medida) || 'unidad';
+      if (!isValidQuantityForUnit(rawValue, unidad)) {
+        setMessage('itemMsg', isWeightUnit(unidad) ? 'La cantidad por peso debe ser mayor o igual a 0.001.' : 'La cantidad debe ser un numero natural positivo: 1, 2, 3...', true);
+        if (inputEl) inputEl.value = inputEl.getAttribute('data-original') || formatQuantityForInput(item.cantidad || 1, unidad);
+        return;
+      }
+
+      const cantidad = parseQuantityValue(rawValue, unidad, Number(item.cantidad || 1));
+      const actual = parseQuantityValue(item.cantidad || 1, unidad, 1);
+      if (Math.abs(cantidad - actual) < 0.0001) {
+        if (inputEl) inputEl.value = formatQuantityForInput(actual, unidad);
+        return;
+      }
+
+      const payload = buildCartItemPayloadForUpdate(item, cantidad);
+      try {
+        if (inputEl) inputEl.disabled = true;
+        const res = await fetch('/api/empresa/carritos_compra/items', {
+          method: 'PUT',
+          credentials: 'same-origin',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        await ensureOk(res);
+        await Promise.all([loadItems(), loadCarritos()]);
+        setMessage('itemMsg', 'Cantidad actualizada. Totales e inventario recalculados.', false);
+      } catch (err) {
+        if (inputEl) inputEl.value = inputEl.getAttribute('data-original') || formatQuantityForInput(item.cantidad || 1, unidad);
+        if (!handleBusinessPrerequisiteError(err, 'No se pudo actualizar la cantidad.', function(text, isError) {
+          setMessage('itemMsg', text, isError);
+        })) {
+          setMessage('itemMsg', err.message || 'No se pudo actualizar la cantidad.', true);
+        }
+      } finally {
+        if (inputEl) inputEl.disabled = false;
+      }
+    }
+
+    async function returnCartItem(itemID, triggerButton) {
+      const id = Number(itemID);
+      const item = state.items.find(function(x) { return Number(x.id) === id; });
+      const selected = getSelectedCarrito();
+      if (!item || !selected) {
+        setMessage('itemMsg', 'No fue posible devolver el producto seleccionado.', true);
+        return;
+      }
+      if ((state.stationMode || state.directSaleMode) && !isCarritoOperativoActivo(selected)) {
+        setMessage('itemMsg', 'El carrito no esta activo para devolver productos.', true);
+        return;
+      }
+      if (triggerButton && triggerButton.getAttribute('data-confirming') !== '1') {
+        triggerButton.setAttribute('data-confirming', '1');
+        triggerButton.textContent = 'Confirmar devolucion';
+        setMessage('itemMsg', 'Presiona de nuevo Confirmar devolucion para retirar el producto y liberar inventario.', false);
+        setTimeout(function() {
+          if (!triggerButton || triggerButton.getAttribute('data-confirming') !== '1') return;
+          triggerButton.removeAttribute('data-confirming');
+          triggerButton.textContent = 'Devolver producto';
+        }, 7000);
+        return;
+      }
+
+      try {
+        if (triggerButton) triggerButton.disabled = true;
+        const res = await fetch('/api/empresa/carritos_compra/items?empresa_id=' + encodeURIComponent(state.empresaID) + '&carrito_id=' + encodeURIComponent(state.selectedCarritoID) + '&id=' + encodeURIComponent(id), {
+          method: 'DELETE',
+          credentials: 'same-origin'
+        });
+        await ensureOk(res);
+        state.stationDiscount.devolucion = 0;
+        const devolucionEl = document.getElementById('devolucionMonto');
+        if (devolucionEl) devolucionEl.value = '';
+        await Promise.all([loadItems(), loadCarritos()]);
+        setMessage('itemMsg', 'Producto devuelto. Inventario y cuenta actualizados.', false);
+      } catch (err) {
+        setMessage('itemMsg', err.message || 'No se pudo devolver el producto.', true);
+      } finally {
+        if (triggerButton) triggerButton.disabled = false;
+      }
     }
 
     function prepareItemReturn(itemID) {
@@ -8994,8 +9297,26 @@
 
       root.querySelectorAll('.returnItem').forEach(function(btn) {
         btn.onclick = function() {
-          prepareItemReturn(btn.getAttribute('data-id'));
+          returnCartItem(btn.getAttribute('data-id'), btn);
         };
+      });
+
+      root.querySelectorAll('.cart-item-qty-input').forEach(function(input) {
+        input.addEventListener('focus', function() {
+          if (typeof input.select === 'function') input.select();
+        });
+        input.addEventListener('click', function() {
+          if (typeof input.select === 'function') input.select();
+        });
+        input.addEventListener('change', function() {
+          updateCartItemQuantity(input.getAttribute('data-id'), input.value, input);
+        });
+        input.addEventListener('keydown', function(e) {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            updateCartItemQuantity(input.getAttribute('data-id'), input.value, input);
+          }
+        });
       });
 
       root.querySelectorAll('.editItem').forEach(function(btn) {
@@ -9825,6 +10146,24 @@
         createClienteFromCartButton();
       });
     }
+    const quickClienteTipoDoc = document.getElementById('quickClienteTipoDoc');
+    if (quickClienteTipoDoc) {
+      quickClienteTipoDoc.addEventListener('change', function() {
+        syncQuickClienteFiscalDefaults('tipo_documento');
+      });
+      syncQuickClienteFiscalDefaults('tipo_documento');
+    }
+    const quickClienteTipoPersona = document.getElementById('quickClienteTipoPersona');
+    if (quickClienteTipoPersona) {
+      quickClienteTipoPersona.addEventListener('change', function() {
+        const tipoDocEl = document.getElementById('quickClienteTipoDoc');
+        if (!tipoDocEl) return;
+        if (quickClienteTipoPersona.value === 'juridica' && normalize(tipoDocEl.value) !== 'NIT') {
+          tipoDocEl.value = 'NIT';
+          syncQuickClienteFiscalDefaults('tipo_documento');
+        }
+      });
+    }
     const stationClienteSearchMode = document.getElementById('stationClienteSearchMode');
     if (stationClienteSearchMode) {
       stationClienteSearchMode.addEventListener('change', function() {
@@ -9849,7 +10188,7 @@
         }
       });
     }
-    ['quickClienteDocumento', 'quickClienteNombre', 'quickClienteTelefono', 'quickClienteEmail'].forEach(function(id) {
+    ['quickClienteTipoPersona', 'quickClienteTipoDoc', 'quickClienteDocumento', 'quickClienteDV', 'quickClienteNombre', 'quickClienteNombreComercial', 'quickClienteRegimenFiscal', 'quickClienteResponsabilidad', 'quickClienteTelefono', 'quickClienteEmail', 'quickClienteDireccion', 'quickClientePais', 'quickClienteDepartamento', 'quickClienteMunicipio', 'quickClienteCodigoPostal', 'quickClienteObservaciones'].forEach(function(id) {
       const el = document.getElementById(id);
       if (!el) return;
       el.addEventListener('keydown', function(e) {

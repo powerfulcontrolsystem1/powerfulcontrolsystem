@@ -947,6 +947,12 @@ func NormalizeMetodoPagoCarrito(v string) string {
 		return "tarjeta_debito"
 	case "transferencia", "transferencia_bancaria", "bank_transfer":
 		return "transferencia_bancaria"
+	case "transferencia_bre_b", "transferencia_breb", "bre_b", "breb", "breeb", "bre":
+		return "transferencia_bre_b"
+	case "transferencia_nequi", "nequi":
+		return "transferencia_nequi"
+	case "transferencia_otro", "transferencia_otra", "otras_transferencias", "otra_transferencia", "otro_transferencia":
+		return "transferencia_otro"
 	case "codigo_descuento", "descuento", "codigo":
 		return "codigo_descuento"
 	case "mixto", "mixed", "pago_mixto":

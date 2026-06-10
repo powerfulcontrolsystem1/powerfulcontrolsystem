@@ -723,9 +723,18 @@ afecte dinero, documentos, licencias o seguridad.
    del carrito.
 3. El cajero agrega productos/servicios/recetas, cliente opcional u obligatorio,
    abonos y pagos mixtos.
-   Las cantidades de items deben ser numeros naturales positivos (`1, 2, 3...`);
-   el backend rechaza decimales, cero y negativos aunque se manipule el
-   navegador o la API.
+   El buscador de catalogo acepta nombre, SKU, codigo de barras o codigo del
+   servicio. El formulario rapido de clientes permite registrar persona natural
+   o empresa con NIT/DV, regimen IVA, responsabilidad tributaria, correo,
+   telefono y direccion fiscal para facturacion electronica.
+   Las cantidades de items se pueden cambiar desde la tabla del carrito. Deben
+   ser numeros naturales positivos (`1, 2, 3...`) salvo unidades de peso
+   (`kg/g/lb/oz`), donde se permiten decimales positivos. El backend recalcula
+   totales y reservas de inventario en cada `PUT`.
+   `Devolver producto` pide confirmacion integrada de dos pasos, elimina la
+   linea del carrito con `DELETE`, libera el inventario reservado y recalcula la
+   cuenta; las notas credito o devoluciones fiscales deben manejarse por el
+   flujo documental correspondiente.
    Si la empresa detectada es Colombia o el carrito usa `COP`, precios y pagos
    del carrito se capturan, muestran y sincronizan como pesos enteros positivos,
    sin centavos ni sufijo `.00`.
@@ -741,9 +750,10 @@ afecte dinero, documentos, licencias o seguridad.
 7. Si el carrito ya fue seleccionado y una sincronizacion secundaria falla, la
    pantalla no debe desmontarse; debe conservar la venta visible y mostrar una
    advertencia operativa.
-8. Pruebas: entrar con rol `cajero` por `login_usuario`, agregar item, buscar
-   producto, pagar, imprimir, validar inventario y caja, abrir/salir de pantalla
-   completa y revisar contraste fondo/tarjetas.
+8. Pruebas: entrar con rol `cajero` por `login_usuario`, crear/asignar cliente
+   natural y empresa, agregar item por nombre y por codigo, cambiar cantidad,
+   devolver producto, pagar, imprimir, validar inventario y caja, abrir/salir
+   de pantalla completa y revisar contraste fondo/tarjetas.
 
 ## Estaciones y carrito
 
@@ -1020,3 +1030,22 @@ afecte dinero, documentos, licencias o seguridad.
 11. Pruebas: usar `Crear nomina demo Motel Calipso`, verificar empleados en varias
    sedes, liquidaciones por sede, PILA, pagos, desprendible y botones `Ver estado
    DIAN` / `Preparar lote DIAN`; abrir `Tutorial` y `Ayuda` desde nomina.
+
+## Carrito: medios de pago y pagos combinados
+
+1. La empresa habilita/deshabilita medios desde
+   `web/administrar_empresa/configuracion_carrito_de_compra_empresa.html`.
+2. Los flags se guardan en `estaciones_config.carrito_ui_global` para efectivo,
+   tarjeta credito, tarjeta debito, transferencia Bre-B, Nequi y otra
+   transferencia. `permitir_pago_mixto` gobierna el pago combinado.
+3. El carrito muestra los mismos medios en abonos, selector principal, pago
+   mixto y tarjeta `Detalle del pago`.
+4. Si el cajero escribe valores en mas de un medio, el frontend arma
+   `metodo_pago=mixto` y envia `pagos_mixtos` al endpoint de pago.
+5. Backend normaliza los metodos y exige referencia minima de 4 caracteres para
+   tarjetas y transferencias. Tambien valida que el metodo este habilitado por
+   configuracion empresarial y por rol operativo.
+6. Bre-B se registra como `transferencia_bre_b`. La confirmacion automatica real
+   requiere webhook/API bancaria o proveedor de conciliacion que notifique la
+   referencia recibida; mientras no exista esa integracion, el cajero debe
+   verificar y registrar la referencia manualmente.

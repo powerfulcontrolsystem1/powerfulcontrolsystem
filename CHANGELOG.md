@@ -1,3 +1,4 @@
+- 2026-06-10: `Carrito cliente fiscal y devolucion real` amplia el cliente rapido del carrito para personas y empresas con datos necesarios para facturacion electronica, permite buscar productos por nombre/codigo, editar cantidad en linea con recalculo real de totales/inventario y convierte `Devolver producto` en eliminacion real de la linea con liberacion de stock reservado.
 - 2026-06-10: `Pago carrito en estaciones` refuerza `Pagar y cerrar carrito` con un manejador delegado para que el cobro funcione aunque la vista de estacion haya sido re-renderizada o decorada con iconos.
 - 2026-06-10: `Pago carrito bloqueo obsoleto` limpia el estado visual `paymentInProgress` cuando no hay clic de pago en curso, permitiendo reintentar el cobro desde estaciones sin recargar manualmente.
 - 2026-06-10: `Carrito imprime despues de cobrar` cambia `Pagar y cerrar carrito` para validar caja y registrar `pagar_estacion` antes de abrir ventanas de recibo/factura; asi los errores quedan visibles en la pagina y la impresion solo ocurre con pago exitoso.
@@ -4694,3 +4695,8 @@
 - 2026-06-05: `Index Documentos electronicos DIAN Colombia` actualiza la tarjeta publica de modulos para listar documentos y eventos SFE: factura electronica, notas credito/debito, contingencia, documento soporte y nota de ajuste.
 - 2026-06-08: `DIAN sin preset reducido` retira del Centro de habilitacion DIAN el preset pequeno de software gratuito y deja solo el objetivo real del portal, el historico excepcional y el modo personalizado; si llega un valor viejo se normaliza a 30 facturas, 10 notas debito y 10 notas credito.
 - 2026-06-10: `Bodegas y traslados visibles` cambia el acceso de Productos para abrir `administrar_productos.html?view=bodegas`, donde estan el traslado entre bodegas, ajustes, movimientos y existencias.
+2026-06-10 - Carrito: medios de pago configurables y pagos combinados
+- Agrega en Configuracion carrito checks por empresa para efectivo, tarjeta credito, tarjeta debito, transferencia Bre-B, Nequi y otra transferencia.
+- El carrito permite pagos combinados desde `Detalle del pago`, abonos y pago mixto usando esos medios.
+- Backend acepta los nuevos metodos, exige referencia en tarjetas/transferencias y bloquea medios deshabilitados por empresa o rol.
+- Bre-B queda preparado como medio separado para una conciliacion automatica futura mediante webhook/API bancaria.
