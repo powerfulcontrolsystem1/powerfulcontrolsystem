@@ -11182,3 +11182,6 @@ backend/handlers/user_config.go - Controlador que expone /api/user/configuracion
 
 2026-06-10 - Carrito: handler estable de pago en estaciones
 - `web/administrar_empresa/carrito_de_compras.html`: agrega manejador delegado para `btnPagarCarrito`, conservando el mismo `payStationSession` pero evitando que el boton pierda ejecucion por renders/decoracion en vistas de estacion.
+
+2026-06-10 - Productos: acceso a bodegas y traslados
+- `web/administrar_empresa/administrar_productos_menu.html`: enlaza `Bodegas y traslados` con `administrar_productos.html?view=bodegas` para mostrar el formulario `Traslado entre bodegas` desde el submenu de Productos.

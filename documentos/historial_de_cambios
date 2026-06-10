@@ -33656,6 +33656,11 @@ Archivos modificados:
 - La correccion evita que el boton quede visible y habilitado pero sin ejecutar el cobro cuando la vista de estacion fue re-renderizada o decorada.
 - El manejador limpia un bloqueo visual obsoleto de `paymentInProgress` antes de reintentar, sin duplicar cobros activos.
 
+2026-06-10: Bodegas y traslados visibles desde Productos
+- `web/administrar_empresa/administrar_productos_menu.html` cambia el acceso de `Bodegas` para abrir la vista completa `administrar_productos.html?view=bodegas`.
+- El menu queda nombrado como `Bodegas y traslados` para que el usuario encuentre el formulario `Traslado entre bodegas`, movimientos, ajustes y existencias sin conocer la URL interna.
+- Se actualiza la version de cache del submenu de Productos para que la VPS entregue el enlace corregido.
+
 2026-06-10: rs: actualizar repositorio y sincronizar VPS
 PushStatus: OK
 Archivos modificados:

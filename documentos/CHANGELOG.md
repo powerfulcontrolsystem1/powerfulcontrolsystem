@@ -2731,6 +2731,10 @@
 - [Carrito] El flujo `Pagar y cerrar carrito` ya no abre ventanas de impresion antes de validar caja y registrar el pago real.
 - [Operacion] Si falla la caja o el cobro, el error queda visible en la pagina; si el pago entra, entonces se imprime y se prepara el carrito vacio.
 
+## [2026-06-10] Productos - bodegas y traslados visibles
+- [Inventario] El menu de Productos cambia el acceso `Bodegas` por `Bodegas y traslados`.
+- [UX] El enlace abre `administrar_productos.html?view=bodegas`, donde se encuentra el formulario real `Traslado entre bodegas` junto con ajustes, movimientos y existencias.
+
 ## [2026-06-09] IA empresarial activa sin robot ni secretaria
 - [Frontend] El chat flotante vuelve al recuadro normal y el boton queda como circulo compacto; se retiran opciones visibles de robot/secretaria y se conserva modo voz.
 - [Backend] Las preferencias del chat fuerzan `robot_enabled=false` y `personality_mode=normal`; empresas existentes y preconfiguraciones quedan con `chat_enabled=1` en preproduccion.
