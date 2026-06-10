@@ -1,3 +1,16 @@
+2026-06-10: Propuestas de logo PCS profesional.
+- Modulo afectado: identidad visual y assets de marca.
+- Assets: se agregan 4 isotipos PCS y 4 versiones con el nombre `Powerful Control System` en SVG editable y PNG exportado dentro de `web/img/brand/pcs-logo-concepts/`.
+- Herramienta: `scripts/generate_pcs_logo_concepts.mjs` permite regenerar las propuestas sin dependencias externas, manteniendo continuidad con azul tecnologico, rayo/energia y sistema POS.
+- Alcance: no se reemplaza aun el logo oficial del sistema; quedan como propuestas para seleccion/aprobacion.
+
+2026-06-10: Fotos realistas para tarjetas Mas sistemas.
+- Modulo afectado: `portal_publico` e index comercial.
+- Frontend: `web/index.html` y `web/js/plantillas_nuevas_catalogo.js` cambian la imagen secundaria de las tarjetas de `Mas sistemas` a JPG realistas con trabajador operando PCS segun el titulo de cada sistema.
+- Assets: `web/img/portal-systems/realistic/` contiene 51 imagenes raster locales para las tarjetas base y plantillas verticales visibles; `scripts/generate_portal_realistic_images.ps1` permite regenerarlas desde assets existentes del proyecto sin servicios externos ni nuevas dependencias.
+- UX: el generador agrega escenas especializadas para laboratorio clinico, clinica, odontologia, drogueria, taller mecanico, servicios tecnicos y lavanderia, evitando que estas tarjetas usen fondos genericos que no correspondan al oficio.
+- Alcance: no cambia backend, base de datos, endpoints, permisos ni configuracion por empresa.
+
 2026-06-10: Plantilla de colegio retirada del index.
 - Modulo afectado: `portal_publico` y catalogo visual de plantillas.
 - Frontend: `web/js/plantillas_nuevas_catalogo.js` filtra `colegio_academia` antes de exportar `PCS_NUEVAS_PLANTILLAS`; `web/index.html` tambien bloquea ese modulo al construir `Mas sistemas`, incluso si llega desde la API publica.
@@ -33284,3 +33297,8 @@ Archivos modificados:
 - web/super/formato_para_emviar_email.html
 - web/super/licencias.html
 - web/visualizar_productos_y_precios_publico.html
+2026-06-10 - Login oscuro refuerza campo de contrasena y cache PWA
+- `web/estilos.css`: agrega reglas especificas para `admin-login-body` que fuerzan fondo, texto, borde, caret y autocompletado `:-webkit-autofill` en modo oscuro para email y contrasena, preservando el espacio del boton de visibilidad.
+- `web/login.html`: versiona la carga de `estilos.css` para evitar que el navegador use una hoja de estilos antigua.
+- `web/sw.js`: incrementa la version de cache PWA para refrescar el shell del login.
+- Alcance: solo UX del login; no cambia autenticacion, sesiones, endpoints, credenciales ni base de datos.

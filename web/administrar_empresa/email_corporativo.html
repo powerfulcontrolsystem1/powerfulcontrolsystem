@@ -1,0 +1,449 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>E-mail Corporativo</title>
+  <link rel="stylesheet" href="/estilos.css">
+  <script>
+    (function(){
+      var allowed = {dark:true,"dark-violet":true,"dark-emerald":true,"dark-corporate":true,"dark-neon":true,"dark-absolute":true,"dark-obsidian":true,light:true,"light-rose":true,"light-gold":true,"light-wood":true};
+      function normalizeTheme(value){
+        var theme = String(value || "").trim().toLowerCase();
+        if (theme === "dark-protect") theme = "dark";
+        return allowed[theme] ? theme : "light";
+      }
+      function isLightTheme(theme){ return normalizeTheme(theme).indexOf("light") === 0; }
+      function readStoredTheme(){
+        try { return window.localStorage.getItem("theme") || ""; } catch (_) { return ""; }
+      }
+      var theme = "";
+      try {
+        if (window.parent && window.parent !== window && window.parent.document) {
+          theme = window.parent.document.documentElement.getAttribute("data-theme") || "";
+        }
+      } catch (_) {}
+      theme = normalizeTheme(theme || readStoredTheme());
+      document.documentElement.setAttribute("data-theme", theme);
+      document.documentElement.classList.toggle("theme-light", isLightTheme(theme));
+      document.documentElement.classList.toggle("theme-dark", !isLightTheme(theme));
+    })();
+  </script>
+  <style>
+    body.email-corporativo-page {
+      min-height: 100vh;
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+    }
+
+    .email-corporativo-shell {
+      width: min(1180px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 20px 0 28px;
+    }
+
+    .email-corporativo-header {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 14px;
+      align-items: end;
+      margin-bottom: 14px;
+      padding: 18px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--card);
+      box-shadow: var(--shadow-soft);
+    }
+
+    .email-corporativo-kicker {
+      margin: 0 0 5px;
+      color: var(--muted);
+      font-size: .74rem;
+      font-weight: 900;
+      text-transform: uppercase;
+    }
+
+    .email-corporativo-title {
+      margin: 0;
+      color: var(--text);
+      font-size: clamp(1.45rem, 3vw, 2.1rem);
+      line-height: 1.08;
+      letter-spacing: 0;
+    }
+
+    .email-corporativo-summary {
+      margin: 7px 0 0;
+      color: var(--muted);
+      font-size: .94rem;
+      line-height: 1.4;
+    }
+
+    .email-corporativo-actions {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      gap: 8px;
+    }
+
+    .email-corporativo-card {
+      display: grid;
+      gap: 12px;
+      padding: 16px 18px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--card);
+      box-shadow: var(--shadow-soft);
+    }
+
+    .email-corporativo-status {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .email-corporativo-stat {
+      min-width: 0;
+      padding: 12px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: color-mix(in srgb, var(--surface) 88%, var(--bg) 12%);
+    }
+
+    .email-corporativo-stat span {
+      display: block;
+      color: var(--muted);
+      font-size: .7rem;
+      font-weight: 900;
+      text-transform: uppercase;
+    }
+
+    .email-corporativo-stat strong {
+      display: block;
+      margin-top: 5px;
+      color: var(--text);
+      font-size: .96rem;
+      line-height: 1.25;
+      overflow-wrap: anywhere;
+    }
+
+    .email-corporativo-alert {
+      margin: 0;
+      padding: 11px 12px;
+      border: 1px solid color-mix(in srgb, var(--warning, #f59e0b) 46%, var(--border));
+      border-radius: 8px;
+      background: color-mix(in srgb, var(--warning, #f59e0b) 12%, var(--surface) 88%);
+      color: var(--text);
+      font-size: .88rem;
+      line-height: 1.4;
+    }
+
+    .email-corporativo-alert[hidden] {
+      display: none;
+    }
+
+    .email-corporativo-webmail {
+      position: relative;
+      overflow: hidden;
+      min-height: 620px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: color-mix(in srgb, var(--surface) 88%, var(--bg) 12%);
+    }
+
+    .email-corporativo-placeholder {
+      display: grid;
+      min-height: 260px;
+      place-items: center;
+      padding: 24px;
+      color: var(--muted);
+      text-align: center;
+      font-weight: 750;
+      line-height: 1.45;
+    }
+
+    .email-corporativo-placeholder[hidden],
+    .email-corporativo-frame[hidden] {
+      display: none !important;
+    }
+
+    .email-corporativo-frame {
+      display: block;
+      width: 100%;
+      height: 720px;
+      border: 0;
+      background: #f8fafc;
+    }
+
+    html.theme-dark .email-corporativo-frame,
+    html[data-theme^="dark"] .email-corporativo-frame {
+      background: #07111f;
+      color-scheme: dark;
+    }
+
+    .email-corporativo-note {
+      margin: 0;
+      color: var(--muted);
+      font-size: .8rem;
+      line-height: 1.35;
+    }
+
+    @media (max-width: 760px) {
+      .email-corporativo-header {
+        grid-template-columns: 1fr;
+      }
+
+      .email-corporativo-actions {
+        justify-content: stretch;
+      }
+
+      .email-corporativo-actions .btn {
+        width: 100%;
+      }
+
+      .email-corporativo-status {
+        grid-template-columns: 1fr;
+      }
+
+      .email-corporativo-frame {
+        height: 620px;
+      }
+    }
+  </style>
+</head>
+<body class="email-corporativo-page">
+  <main class="email-corporativo-shell">
+    <header class="email-corporativo-header">
+      <div>
+        <p class="email-corporativo-kicker">Canales digitales</p>
+        <h1 class="email-corporativo-title">E-mail Corporativo</h1>
+        <p id="emailCorporateSummary" class="email-corporativo-summary">Preparando el buz&oacute;n empresarial.</p>
+      </div>
+      <div class="email-corporativo-actions">
+        <button id="emailRefreshBtn" class="btn secondary" type="button">Actualizar</button>
+        <a id="emailConfigLink" class="btn" href="/administrar_empresa/configuracion/email_corporativo.html">Configuraci&oacute;n</a>
+      </div>
+    </header>
+
+    <section class="email-corporativo-card" aria-label="Buzon corporativo">
+      <div class="email-corporativo-status">
+        <div class="email-corporativo-stat">
+          <span>Cuenta</span>
+          <strong id="emailAccount">Sin cuenta</strong>
+        </div>
+        <div class="email-corporativo-stat">
+          <span>Estado</span>
+          <strong id="emailStatus">Consultando</strong>
+        </div>
+        <div class="email-corporativo-stat">
+          <span>No le&iacute;dos</span>
+          <strong id="emailUnread">--</strong>
+        </div>
+        <div class="email-corporativo-stat">
+          <span>Apertura</span>
+          <strong id="emailAutoOpen">Autom&aacute;tica</strong>
+        </div>
+      </div>
+      <p id="emailAlert" class="email-corporativo-alert" hidden></p>
+      <div class="email-corporativo-webmail">
+        <div id="emailPlaceholder" class="email-corporativo-placeholder">
+          La bandeja se abrir&aacute; autom&aacute;ticamente cuando el buz&oacute;n est&eacute; activo.
+        </div>
+        <iframe id="emailFrame" class="email-corporativo-frame" title="Buzon de correo corporativo" loading="eager" referrerpolicy="no-referrer" hidden></iframe>
+      </div>
+      <p id="emailNote" class="email-corporativo-note">PCS abre el webmail con acceso autom&aacute;tico cuando la empresa tiene buz&oacute;n provisionado.</p>
+    </section>
+  </main>
+
+  <script>
+    (function () {
+      var summaryEl = document.getElementById("emailCorporateSummary");
+      var accountEl = document.getElementById("emailAccount");
+      var statusEl = document.getElementById("emailStatus");
+      var unreadEl = document.getElementById("emailUnread");
+      var autoOpenEl = document.getElementById("emailAutoOpen");
+      var alertEl = document.getElementById("emailAlert");
+      var placeholderEl = document.getElementById("emailPlaceholder");
+      var frameEl = document.getElementById("emailFrame");
+      var noteEl = document.getElementById("emailNote");
+      var refreshBtn = document.getElementById("emailRefreshBtn");
+      var configLink = document.getElementById("emailConfigLink");
+      var empresaId = getQueryParam("empresa_id") || getQueryParam("id") || readEmpresaId();
+      var lastWebmailURL = "";
+
+      function getQueryParam(name) {
+        try { return new URLSearchParams(window.location.search || "").get(name) || ""; } catch (_) { return ""; }
+      }
+
+      function readEmpresaId() {
+        var stores = [];
+        try { stores.push(window.sessionStorage); } catch (_) {}
+        try { stores.push(window.localStorage); } catch (_) {}
+        var keys = ["active_empresa_id", "empresa_id", "admin_empresa_id"];
+        for (var s = 0; s < stores.length; s += 1) {
+          for (var k = 0; k < keys.length; k += 1) {
+            var value = "";
+            try { value = stores[s].getItem(keys[k]) || ""; } catch (_) {}
+            if (/^[1-9]\d*$/.test(value)) return value;
+          }
+        }
+        return "";
+      }
+
+      function text(value) {
+        return String(value == null ? "" : value).trim();
+      }
+
+      function fetchJSON(url) {
+        return fetch(url, { credentials: "same-origin" }).then(function (res) {
+          if (!res.ok) throw new Error("HTTP " + res.status);
+          return res.json();
+        });
+      }
+
+      function currentEmailThemeMode() {
+        var theme = "";
+        try { theme = document.documentElement.getAttribute("data-theme") || ""; } catch (_) {}
+        return text(theme).toLowerCase().indexOf("dark") === 0 ? "dark" : "light";
+      }
+
+      function currentEmailThemeName() {
+        return (currentEmailThemeMode() === "dark" ? "PCSDark" : "PCSLight") + "@custom";
+      }
+
+      function decorateWebmailURL(url) {
+        var raw = text(url);
+        if (!raw) return "";
+        try {
+          var parsed = new URL(raw, window.location.origin);
+          parsed.searchParams.set("theme", currentEmailThemeMode());
+          parsed.searchParams.set("mail_theme", currentEmailThemeName());
+          parsed.searchParams.set("pcs_theme", currentEmailThemeName());
+          return parsed.origin === window.location.origin ? parsed.pathname + parsed.search + parsed.hash : parsed.toString();
+        } catch (_) {
+          return raw;
+        }
+      }
+
+      function setAlert(message) {
+        var value = text(message);
+        if (!alertEl) return;
+        alertEl.textContent = value;
+        alertEl.hidden = !value;
+      }
+
+      function resetFrame(message) {
+        lastWebmailURL = "";
+        if (placeholderEl) {
+          placeholderEl.textContent = message || "La bandeja se abrira automaticamente cuando el buzon este activo.";
+          placeholderEl.hidden = false;
+        }
+        if (frameEl) {
+          frameEl.hidden = true;
+          frameEl.src = "about:blank";
+        }
+      }
+
+      function openFrame(url) {
+        var href = decorateWebmailURL(url);
+        if (!href || !frameEl) {
+          resetFrame("No hay URL de webmail disponible para abrir.");
+          return;
+        }
+        lastWebmailURL = url;
+        if (placeholderEl) placeholderEl.hidden = true;
+        frameEl.hidden = false;
+        frameEl.style.colorScheme = currentEmailThemeMode();
+        frameEl.src = href;
+        if (noteEl) noteEl.textContent = "Bandeja Mailu abierta automaticamente para la empresa.";
+      }
+
+      function emailProvisionAlert(account, enabled, webmailCheck) {
+        if (!enabled) return "El modulo global de email corporativo esta desactivado.";
+        if (!account || !account.email) return "Esta empresa todavia no tiene correo generado.";
+        var status = text(account.estado_provision).toLowerCase();
+        if (status === "provisionado") {
+          if (webmailCheck && webmailCheck.ok === false) return webmailCheck.message || "El webmail no esta disponible.";
+          return "";
+        }
+        if (status.indexOf("error") === 0) return "El correo esta asignado, pero requiere revisar la provision de Mailu.";
+        return "El correo esta generado y falta provisionar el buzon real en Mailu.";
+      }
+
+      function render(data) {
+        var account = data && data.account ? data.account : null;
+        var enabled = !!(data && data.enabled);
+        var preferences = data && data.preferences ? data.preferences : {};
+        var webmail = account && account.webmail_url ? account.webmail_url : (data && data.webmail ? data.webmail : "");
+        var webmailEntryURL = data && data.autologin_url ? data.autologin_url : webmail;
+        var webmailCheck = data && data.webmail_check ? data.webmail_check : null;
+        var unread = data && data.unread ? data.unread : null;
+        var autoOpen = preferences.auto_open !== false;
+
+        if (summaryEl) summaryEl.textContent = account && account.email ? "Buzon empresarial de " + account.email + "." : "Estado del correo corporativo de la empresa.";
+        if (accountEl) accountEl.textContent = account && account.email ? account.email : "Sin cuenta";
+        if (statusEl) statusEl.textContent = enabled ? text(account && account.estado_provision) || "Activo" : "Modulo desactivado";
+        if (autoOpenEl) autoOpenEl.textContent = autoOpen ? "Automatica" : "Desactivada";
+        if (unreadEl) {
+          unreadEl.textContent = unread && unread.ok ? String(Number(unread.unseen || 0)) : (unread && unread.checked ? "No disponible" : "--");
+        }
+        setAlert(emailProvisionAlert(account, enabled, webmailCheck) || (unread && unread.checked && !unread.ok ? unread.message : ""));
+
+        if (!enabled || !account || !account.email) {
+          resetFrame("Abre Configuracion para activar o generar el buzon corporativo.");
+          return;
+        }
+        if (enabled && autoOpen && (account.estado_provision === "provisionado" || text(data && data.autologin_url))) {
+          openFrame(webmailEntryURL);
+        } else if (!autoOpen) {
+          resetFrame("La apertura automatica esta desactivada desde Configuracion > Email corporativo.");
+        } else {
+          resetFrame("El buzon todavia no esta listo para abrir automaticamente.");
+        }
+      }
+
+      function loadEmail() {
+        if (!empresaId) {
+          setAlert("No se encontro empresa_id para cargar el correo corporativo.");
+          resetFrame("Vuelve al panel de empresa y abre E-mail Corporativo desde el menu.");
+          return;
+        }
+        if (configLink) {
+          configLink.href = "/administrar_empresa/configuracion/email_corporativo.html?empresa_id=" + encodeURIComponent(empresaId);
+        }
+        if (refreshBtn) {
+          refreshBtn.disabled = true;
+          refreshBtn.textContent = "Actualizando...";
+        }
+        fetchJSON("/api/empresa/email_corporativo?empresa_id=" + encodeURIComponent(empresaId) + "&check_webmail=1&check_unread=1&theme=" + encodeURIComponent(currentEmailThemeMode()))
+          .then(render)
+          .catch(function () {
+            setAlert("No se pudo cargar el correo corporativo.");
+            resetFrame("Revisa la conexion o los permisos de la empresa.");
+          })
+          .then(function () {
+            if (refreshBtn) {
+              refreshBtn.disabled = false;
+              refreshBtn.textContent = "Actualizar";
+            }
+          });
+      }
+
+      if (refreshBtn) {
+        refreshBtn.addEventListener("click", loadEmail);
+      }
+      try {
+        new MutationObserver(function (mutations) {
+          for (var i = 0; i < mutations.length; i += 1) {
+            if (mutations[i].attributeName === "data-theme" && frameEl && !frameEl.hidden && lastWebmailURL) {
+              openFrame(lastWebmailURL);
+              break;
+            }
+          }
+        }).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+      } catch (_) {}
+      loadEmail();
+    })();
+  </script>
+</body>
+</html>

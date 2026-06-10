@@ -1,3 +1,30 @@
+2026-06-10 - E-mail Corporativo como pagina independiente
+- `web/administrar_empresa/email_corporativo.html`: nueva pagina empresarial para abrir automaticamente el webmail corporativo, mostrar cuenta, estado, no leidos y acceso a configuracion por `empresa_id`.
+- `web/administrar_empresa/panel.html`: reemplaza el webmail embebido por una tarjeta compacta de notificaciones bajo Favoritos con enlace a `E-mail Corporativo`.
+- `web/administrar_empresa.html`: agrega el enlace `E-mail Corporativo` en el grupo `Canales digitales y colaboracion`.
+- `web/js/administrar_empresa.js`: registra `linkEmailCorporativo` en navegacion, favoritos y permisos frontend.
+- `backend/handlers/email_corporativo_handlers.go`: agrega consulta opcional `check_unread=1` para contar correos no leidos por IMAP sin exponer contrasenas.
+- `backend/handlers/email_corporativo_handlers_test.go`: valida el parser de estado IMAP `UNSEEN`.
+
+2026-06-10 - Login oscuro refuerza campo de contrasena
+- `web/estilos.css`: reglas de tema oscuro para inputs del login de administrador, incluyendo autocompletado de Chrome y padding correcto del campo con boton de visibilidad.
+- `web/login.html`: actualiza la referencia a la hoja de estilos con version para invalidar cache del navegador.
+- `web/sw.js`: sube la version del cache PWA para que el shell del login se renueve.
+
+2026-06-10 - Propuestas de logo PCS profesional
+- `scripts/generate_pcs_logo_concepts.mjs`: generador local de propuestas de marca PCS en SVG, con exportacion posterior a PNG mediante Chrome headless.
+- `web/img/brand/pcs-logo-concepts/pcs-icon-v*.svg`: cuatro propuestas de isotipo PCS, conservando azul tecnologico, rayo/energia y referencia a sistema/POS.
+- `web/img/brand/pcs-logo-concepts/pcs-wordmark-v*.svg`: cuatro versiones del logo acompanadas del nombre `Powerful Control System`.
+- `web/img/brand/pcs-logo-concepts/*.png`: exportaciones raster de las propuestas para vista rapida y uso temporal en presentaciones o pruebas visuales.
+- `web/img/brand/pcs-logo-concepts/pcs-logo-concepts-contact-sheet.png`: hoja comparativa con las 8 propuestas.
+- `web/img/brand/pcs-logo-concepts/preview.html`: vista local de revision de las propuestas SVG.
+
+2026-06-10 - Fotos realistas para Mas sistemas
+- `web/index.html`: cambia las fotos grandes del carrusel publico `Mas sistemas` para usar JPG realistas de trabajador usando PCS segun el titulo de la tarjeta; conserva los iconos pequenos como iconografia del modulo.
+- `web/js/plantillas_nuevas_catalogo.js`: actualiza `secondaryIcon` de las plantillas verticales publicas para apuntar a `web/img/portal-systems/realistic/*.jpg`.
+- `web/img/portal-systems/realistic/*.jpg`: contiene 51 imagenes raster locales generadas para tarjetas base y verticales visibles del portal.
+- `scripts/generate_portal_realistic_images.ps1`: generador local en PowerShell/System.Drawing para reconstruir las imagenes realistas desde assets existentes del proyecto, con escenas especializadas por oficio para laboratorio, clinica, odontologia, drogueria, taller, servicios tecnicos y lavanderia, sin dependencias externas.
+
 2026-06-10 - Plantilla colegio fuera del index
 - `web/js/plantillas_nuevas_catalogo.js`: filtra `colegio_academia` del catalogo exportado al portal y reajusta el orden visible de plantillas publicas.
 - `web/index.html`: actualiza cache busting del catalogo y bloquea `colegio_academia` al pintar `Mas sistemas`, incluso si la API publica lo retorna.

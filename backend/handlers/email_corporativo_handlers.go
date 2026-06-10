@@ -1,10 +1,12 @@
 package handlers
 
 import (
+	"bufio"
 	"context"
 	"crypto/hmac"
 	"crypto/rand"
 	"crypto/sha256"
+	"crypto/tls"
 	"database/sql"
 	"encoding/base64"
 	"encoding/json"
@@ -12,6 +14,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"net"
 	"net/http"
 	"net/url"
 	"os"
@@ -73,6 +76,15 @@ type corporateWebmailCheck struct {
 	OK      bool   `json:"ok"`
 	Status  int    `json:"status"`
 	Message string `json:"message"`
+}
+
+type corporateEmailUnreadStatus struct {
+	Checked  bool   `json:"checked"`
+	OK       bool   `json:"ok"`
+	Unseen   int    `json:"unseen"`
+	Messages int    `json:"messages"`
+	Recent   int    `json:"recent"`
+	Message  string `json:"message,omitempty"`
 }
 
 type corporateEmailDiagnostics struct {
@@ -816,7 +828,124 @@ func checkCorporateWebmail(rawURL string) corporateWebmailCheck {
 	}
 }
 
-func corporateEmailResponse(dbSuper *sql.DB, cfg CorporateEmailConfig, account *dbpkg.EmpresaEmailCorporativo, message string, checkWebmail bool, theme string, prefs corporateEmailEmpresaPrefs) map[string]interface{} {
+func corporateEmailIMAPAddress() string {
+	value := strings.TrimSpace(firstNonEmptyEnv("EMAIL_CORPORATIVO_IMAP_ADDR", "MAILU_IMAP_ADDR"))
+	if value == "" {
+		value = "mailu-imap:143"
+	}
+	if !strings.Contains(value, ":") {
+		value += ":143"
+	}
+	return value
+}
+
+func corporateEmailIMAPQuote(value string) string {
+	escaped := strings.ReplaceAll(value, `\`, `\\`)
+	escaped = strings.ReplaceAll(escaped, `"`, `\"`)
+	return `"` + escaped + `"`
+}
+
+func parseCorporateEmailStatusLine(line string) corporateEmailUnreadStatus {
+	status := corporateEmailUnreadStatus{Checked: true, OK: true}
+	upper := strings.ToUpper(line)
+	start := strings.Index(upper, "(")
+	end := strings.LastIndex(upper, ")")
+	if start < 0 || end <= start {
+		status.OK = false
+		status.Message = "Respuesta IMAP sin estado de INBOX"
+		return status
+	}
+	parts := strings.Fields(upper[start+1 : end])
+	for i := 0; i+1 < len(parts); i += 2 {
+		n, _ := strconv.Atoi(parts[i+1])
+		switch parts[i] {
+		case "MESSAGES":
+			status.Messages = n
+		case "UNSEEN":
+			status.Unseen = n
+		case "RECENT":
+			status.Recent = n
+		}
+	}
+	return status
+}
+
+func corporateEmailReadLine(reader *bufio.Reader) (string, error) {
+	line, err := reader.ReadString('\n')
+	if err != nil {
+		return "", err
+	}
+	return strings.TrimSpace(line), nil
+}
+
+func corporateEmailUnreadStatusFromIMAP(dbSuper *sql.DB, account *dbpkg.EmpresaEmailCorporativo) corporateEmailUnreadStatus {
+	if account == nil || strings.TrimSpace(account.Email) == "" {
+		return corporateEmailUnreadStatus{Checked: false, OK: false, Message: "Buzon corporativo no disponible"}
+	}
+	if !account.InitialPasswordSet {
+		return corporateEmailUnreadStatus{Checked: true, OK: false, Message: "El buzon no tiene clave interna disponible para consultar no leidos"}
+	}
+	password, err := corporateEmailInitialPasswordForProvision(dbSuper, *account)
+	if err != nil || strings.TrimSpace(password) == "" {
+		return corporateEmailUnreadStatus{Checked: true, OK: false, Message: "No se pudo recuperar la clave cifrada del buzon para consultar no leidos"}
+	}
+	addr := corporateEmailIMAPAddress()
+	dialer := &net.Dialer{Timeout: 3 * time.Second}
+	var conn net.Conn
+	if strings.HasSuffix(addr, ":993") {
+		host, _, _ := net.SplitHostPort(addr)
+		conn, err = tls.DialWithDialer(dialer, "tcp", addr, &tls.Config{ServerName: host, MinVersion: tls.VersionTLS12})
+	} else {
+		conn, err = dialer.Dial("tcp", addr)
+	}
+	if err != nil {
+		return corporateEmailUnreadStatus{Checked: true, OK: false, Message: "No se pudo conectar al IMAP del correo corporativo"}
+	}
+	defer conn.Close()
+	_ = conn.SetDeadline(time.Now().Add(5 * time.Second))
+	reader := bufio.NewReader(conn)
+	if _, err := corporateEmailReadLine(reader); err != nil {
+		return corporateEmailUnreadStatus{Checked: true, OK: false, Message: "IMAP no respondio saludo inicial"}
+	}
+	commands := []string{
+		"a001 LOGIN " + corporateEmailIMAPQuote(account.Email) + " " + corporateEmailIMAPQuote(password) + "\r\n",
+		"a002 STATUS INBOX (MESSAGES UNSEEN RECENT)\r\n",
+		"a003 LOGOUT\r\n",
+	}
+	var statusLine string
+	for _, command := range commands {
+		if _, err := io.WriteString(conn, command); err != nil {
+			return corporateEmailUnreadStatus{Checked: true, OK: false, Message: "No se pudo enviar comando IMAP"}
+		}
+		tag := strings.Fields(command)
+		expected := ""
+		if len(tag) > 0 {
+			expected = strings.ToUpper(tag[0])
+		}
+		for {
+			line, err := corporateEmailReadLine(reader)
+			if err != nil {
+				return corporateEmailUnreadStatus{Checked: true, OK: false, Message: "No se pudo leer respuesta IMAP"}
+			}
+			upper := strings.ToUpper(line)
+			if strings.HasPrefix(upper, "* STATUS ") {
+				statusLine = line
+			}
+			if expected != "" && strings.HasPrefix(upper, expected+" ") {
+				if strings.Contains(upper, " NO ") || strings.Contains(upper, " BAD ") {
+					return corporateEmailUnreadStatus{Checked: true, OK: false, Message: "IMAP rechazo la consulta del buzon"}
+				}
+				break
+			}
+		}
+	}
+	if strings.TrimSpace(statusLine) == "" {
+		return corporateEmailUnreadStatus{Checked: true, OK: false, Message: "IMAP no devolvio conteo de INBOX"}
+	}
+	return parseCorporateEmailStatusLine(statusLine)
+}
+
+func corporateEmailResponse(dbSuper *sql.DB, cfg CorporateEmailConfig, account *dbpkg.EmpresaEmailCorporativo, message string, checkWebmail bool, checkUnread bool, theme string, prefs corporateEmailEmpresaPrefs) map[string]interface{} {
 	webmailURL := cfg.WebmailURL
 	theme = normalizeCorporateEmailTheme(theme)
 	if account != nil {
@@ -841,6 +970,9 @@ func corporateEmailResponse(dbSuper *sql.DB, cfg CorporateEmailConfig, account *
 	}
 	if checkWebmail {
 		resp["webmail_check"] = checkCorporateWebmail(webmailURL)
+	}
+	if checkUnread {
+		resp["unread"] = corporateEmailUnreadStatusFromIMAP(dbSuper, account)
 	}
 	accountCanAttemptAutologin := account != nil && (strings.EqualFold(strings.TrimSpace(account.EstadoProvision), "provisionado") || (cfg.ProvisionMode == "mailu_direct" && account.InitialPasswordSet))
 	if cfg.Enabled && accountCanAttemptAutologin {
@@ -1080,6 +1212,7 @@ func EmpresaEmailCorporativoHandler(dbSuper, dbEmp *sql.DB) http.HandlerFunc {
 		}
 		cfg := getCorporateEmailConfig(dbSuper)
 		checkWebmail := parseConfigBool(r.URL.Query().Get("check_webmail"), false)
+		checkUnread := parseConfigBool(r.URL.Query().Get("check_unread"), false)
 		theme := normalizeCorporateEmailTheme(r.URL.Query().Get("theme"))
 		prefs := getCorporateEmailEmpresaPrefs(dbEmp, empresaID)
 		if r.Method == http.MethodPost || r.Method == http.MethodPut {
@@ -1190,7 +1323,7 @@ func EmpresaEmailCorporativoHandler(dbSuper, dbEmp *sql.DB) http.HandlerFunc {
 						if created, createErr := EnsureEmpresaCorporateEmailAfterCreate(dbSuper, empresa.EmpresaID, empresa.Nombre, adminEmailFromRequest(r)); createErr == nil {
 							account = created
 						} else {
-							writeJSON(w, http.StatusOK, corporateEmailResponse(dbSuper, cfg, nil, "No se pudo generar el email corporativo", checkWebmail, theme, prefs))
+							writeJSON(w, http.StatusOK, corporateEmailResponse(dbSuper, cfg, nil, "No se pudo generar el email corporativo", checkWebmail, checkUnread, theme, prefs))
 							return
 						}
 					}
@@ -1199,10 +1332,10 @@ func EmpresaEmailCorporativoHandler(dbSuper, dbEmp *sql.DB) http.HandlerFunc {
 					if account.WebmailURL == "" {
 						account.WebmailURL = cfg.WebmailURL
 					}
-					writeJSON(w, http.StatusOK, corporateEmailResponse(dbSuper, cfg, account, "Email corporativo generado", checkWebmail, theme, prefs))
+					writeJSON(w, http.StatusOK, corporateEmailResponse(dbSuper, cfg, account, "Email corporativo generado", checkWebmail, checkUnread, theme, prefs))
 					return
 				}
-				writeJSON(w, http.StatusOK, corporateEmailResponse(dbSuper, cfg, nil, "Sin email corporativo generado", checkWebmail, theme, prefs))
+				writeJSON(w, http.StatusOK, corporateEmailResponse(dbSuper, cfg, nil, "Sin email corporativo generado", checkWebmail, checkUnread, theme, prefs))
 				return
 			}
 			http.Error(w, "No se pudo consultar email corporativo: "+err.Error(), http.StatusInternalServerError)
@@ -1213,7 +1346,7 @@ func EmpresaEmailCorporativoHandler(dbSuper, dbEmp *sql.DB) http.HandlerFunc {
 		} else {
 			account.WebmailURL = corporateEmailAccountWebmailURL(account.WebmailURL, cfg.WebmailURL)
 		}
-		writeJSON(w, http.StatusOK, corporateEmailResponse(dbSuper, cfg, account, "", checkWebmail, theme, prefs))
+		writeJSON(w, http.StatusOK, corporateEmailResponse(dbSuper, cfg, account, "", checkWebmail, checkUnread, theme, prefs))
 	}
 }
 

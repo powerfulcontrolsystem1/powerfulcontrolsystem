@@ -1,4 +1,4 @@
-const PCS_CACHE = "pcs-shell-v4";
+const PCS_CACHE = "pcs-shell-v5";
 const PCS_SHELL = [
   "/login.html",
   "/img/logo.png",

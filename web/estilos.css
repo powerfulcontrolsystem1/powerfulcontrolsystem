@@ -2678,6 +2678,50 @@ body.theme-dark .login-page .password-visibility-toggle{
   }
 }
 
+body.admin-login-body .login-page .password-visibility-field .password-visibility-input {
+  padding-right: 52px;
+}
+
+html[data-theme^="dark"] body.admin-login-body .login-page,
+html.theme-dark body.admin-login-body .login-page,
+body.theme-dark.admin-login-body .login-page {
+  --login-dark-input-bg: color-mix(in srgb, var(--surface) 82%, #020617 18%);
+  color-scheme: dark;
+}
+
+html[data-theme^="dark"] body.admin-login-body .login-page input.form-input,
+html.theme-dark body.admin-login-body .login-page input.form-input,
+body.theme-dark.admin-login-body .login-page input.form-input {
+  appearance: none;
+  -webkit-appearance: none;
+  background: var(--login-dark-input-bg, #0b1626) !important;
+  color: var(--text) !important;
+  border-color: color-mix(in srgb, var(--border) 72%, var(--accent) 28%) !important;
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, #fff 6%, transparent),
+    0 0 0 1px color-mix(in srgb, #020617 12%, transparent) !important;
+  caret-color: var(--text);
+}
+
+html[data-theme^="dark"] body.admin-login-body .login-page input.form-input:-webkit-autofill,
+html[data-theme^="dark"] body.admin-login-body .login-page input.form-input:-webkit-autofill:hover,
+html[data-theme^="dark"] body.admin-login-body .login-page input.form-input:-webkit-autofill:focus,
+html[data-theme^="dark"] body.admin-login-body .login-page input.form-input:-webkit-autofill:active,
+html.theme-dark body.admin-login-body .login-page input.form-input:-webkit-autofill,
+html.theme-dark body.admin-login-body .login-page input.form-input:-webkit-autofill:hover,
+html.theme-dark body.admin-login-body .login-page input.form-input:-webkit-autofill:focus,
+html.theme-dark body.admin-login-body .login-page input.form-input:-webkit-autofill:active,
+body.theme-dark.admin-login-body .login-page input.form-input:-webkit-autofill,
+body.theme-dark.admin-login-body .login-page input.form-input:-webkit-autofill:hover,
+body.theme-dark.admin-login-body .login-page input.form-input:-webkit-autofill:focus,
+body.theme-dark.admin-login-body .login-page input.form-input:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0 1000px var(--login-dark-input-bg, #0b1626) inset !important;
+  -webkit-text-fill-color: var(--text) !important;
+  border-color: color-mix(in srgb, var(--border) 72%, var(--accent) 28%) !important;
+  caret-color: var(--text);
+  transition: background-color 9999s ease-out;
+}
+
 @media (min-width: 980px) {
   .login-page .login-header,
   .login-page .container {

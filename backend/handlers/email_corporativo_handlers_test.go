@@ -51,6 +51,16 @@ func TestCorporateEmailMaxAccountsDefaultAndBounds(t *testing.T) {
 	}
 }
 
+func TestCorporateEmailParseStatusLineUnread(t *testing.T) {
+	status := parseCorporateEmailStatusLine(`* STATUS INBOX (MESSAGES 14 RECENT 1 UNSEEN 3)`)
+	if !status.Checked || !status.OK {
+		t.Fatalf("expected checked OK status, got %+v", status)
+	}
+	if status.Messages != 14 || status.Recent != 1 || status.Unseen != 3 {
+		t.Fatalf("unexpected IMAP counters: %+v", status)
+	}
+}
+
 func TestCorporateEmailSuperPageIncludesMaxAccountsField(t *testing.T) {
 	raw, err := os.ReadFile(filepath.Join("..", "..", "web", "super", "email_corporativo.html"))
 	if err != nil {

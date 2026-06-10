@@ -1,3 +1,10 @@
+2026-06-10: E-mail Corporativo independiente
+- Modulo afectado: `Email corporativo Mailu`.
+- Navegacion: `Administrar empresa > Canales digitales y colaboracion > E-mail Corporativo` abre `web/administrar_empresa/email_corporativo.html`.
+- Panel: `web/administrar_empresa/panel.html` ya no incrusta el webmail; debajo de Favoritos muestra una tarjeta de notificaciones para administradores con enlace al modulo.
+- Backend: `/api/empresa/email_corporativo` acepta `check_unread=1` y consulta IMAP `STATUS INBOX (MESSAGES UNSEEN RECENT)` con la clave cifrada del buzon; si IMAP no responde, devuelve error operativo saneado sin bloquear la apertura del webmail.
+- Seguridad: conserva `WithEmpresaSeguridadPermissions`, `empresa_id`, autologin temporal y cifrado de clave; no imprime ni devuelve contrasenas, tokens ni secretos.
+
 2026-06-10: Snapshot completo de VPS
 - Modulo afectado: `Docker y VPS` dentro de super administrador.
 - Configuracion: `web/super/docker_portabilidad.html` permite activar snapshots, definir intervalo automatico, retencion local, subida a nube por `rclone`, proveedor visual y limpieza remota.

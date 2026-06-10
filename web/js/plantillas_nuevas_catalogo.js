@@ -13,7 +13,7 @@
       description: "Gestiona paquetes turísticos, cotizaciones, itinerarios, reservas, vouchers, pagos por cuotas, proveedores, comisiones y seguimiento comercial desde una sola operación. La agencia puede controlar clientes, fechas de viaje, saldos pendientes, confirmaciones y evidencias para vender planes completos con trazabilidad y mejor servicio.",
       summary: "Paquetes, reservas, itinerarios, vouchers y comisiones.",
       icon: "/img/hotel-logo.svg",
-      secondaryIcon: "/img/portal-systems/agencia-viajes.svg",
+      secondaryIcon: "/img/portal-systems/realistic/agencia-viajes.jpg",
       sections: ["Dashboard comercial", "Paquetes y cotizaciones", "Reservas y vouchers", "Pagos y comisiones", "Aprobaciones", "Evidencias"]
     },
     {
@@ -25,7 +25,7 @@
       description: "Organiza tours locales con rutas, guías, cupos, transporte, check-in, novedades y cierre operativo. El módulo ayuda a coordinar grupos, validar asistencia, registrar evidencias del recorrido, controlar disponibilidad por fecha y entregar reportes claros sobre ocupación, cumplimiento y rentabilidad de cada experiencia.",
       summary: "Tours locales, guías, cupos, check-in y rutas.",
       icon: "/img/gps.svg",
-      secondaryIcon: "/img/portal-systems/operador-turistico.svg",
+      secondaryIcon: "/img/portal-systems/realistic/operador-turistico.jpg",
       sections: ["Dashboard operativo", "Tours y rutas", "Guias y cupos", "Check-in", "Evidencias", "Cierre"]
     },
     {
@@ -37,7 +37,7 @@
       description: "Administra eventos, preventas, boletas QR, aforo, validación en puerta, patrocinadores y reportes de ingreso. La operación queda preparada para vender entradas, controlar accesos, monitorear ocupación, registrar cortes por jornada y mantener trazabilidad de asistentes, canales comerciales y autorizaciones.",
       summary: "Eventos, boletas QR, aforo, preventa y puerta.",
       icon: "/img/tags-color.svg",
-      secondaryIcon: "/img/portal-systems/eventos-boleteria.svg",
+      secondaryIcon: "/img/portal-systems/realistic/eventos-boleteria.jpg",
       sections: ["Dashboard", "Eventos", "Boletas QR", "Aforo", "Validación", "Reportes"]
     },
     {
@@ -49,7 +49,7 @@
       description: "Controla agenda por profesional, cabinas, servicios, paquetes, insumos, comisiones y cierre de caja para salón, barbería o spa. El negocio puede reservar citas, asignar recursos, medir productividad, descontar productos usados y dar seguimiento a clientes frecuentes con historial comercial y operativo.",
       summary: "Agenda por profesional, cabinas, paquetes e insumos.",
       icon: "/img/customer.svg",
-      secondaryIcon: "/img/portal-systems/salon-spa.svg",
+      secondaryIcon: "/img/portal-systems/realistic/salon-spa.jpg",
       sections: ["Agenda", "Servicios", "Profesionales", "Insumos", "Comisiones", "Cierre"]
     },
     {
@@ -61,7 +61,7 @@
       description: "Centraliza mascotas, propietarios, vacunas, historia veterinaria, peluquería, productos, hospitalización y recordatorios. La veterinaria puede atender consultas, registrar tratamientos, vender artículos de pet shop, programar seguimientos y conservar evidencia clínica y comercial de cada paciente con permisos por rol.",
       summary: "Mascotas, vacunas, historia, peluquería y productos.",
       icon: "/img/shield-license-color.svg",
-      secondaryIcon: "/img/portal-systems/veterinaria-petshop.svg",
+      secondaryIcon: "/img/portal-systems/realistic/veterinaria-petshop.jpg",
       sections: ["Pacientes", "Historia", "Vacunas", "Peluqueria", "Productos", "Seguimiento"]
     },
     {
@@ -73,7 +73,7 @@
       description: "Gestiona pacientes, citas, profesionales, órdenes, remisiones, historia clínica básica y seguimiento administrativo para clínicas o consultorios múltiples. El flujo permite coordinar recepción, atención, autorizaciones, resultados, pagos y reportes manteniendo separación de permisos y trazabilidad por sede o especialidad.",
       summary: "Pacientes, citas, órdenes e historia clínica básica.",
       icon: "/img/report.svg",
-      secondaryIcon: "/img/portal-systems/clinica-consultorios.svg",
+      secondaryIcon: "/img/portal-systems/realistic/clinica-consultorios.jpg",
       sections: ["Pacientes", "Citas", "Historia", "Órdenes", "Aprobaciones", "Reportes"]
     },
     {
@@ -85,7 +85,7 @@
       description: "Administra órdenes de examen, toma de muestras, trazabilidad, control de calidad, resultados, validación profesional y entrega digital. El laboratorio puede seguir cada muestra por estado, priorizar tiempos de respuesta, documentar incidencias y cerrar servicios con reportes para usuarios, convenios y auditoría.",
       summary: "Órdenes, muestras, resultados y entrega digital.",
       icon: "/img/analytics-color.svg",
-      secondaryIcon: "/img/portal-systems/laboratorio-clinico.svg",
+      secondaryIcon: "/img/portal-systems/realistic/laboratorio-clinico.jpg",
       sections: ["Órdenes", "Muestras", "Resultados", "Calidad", "Entrega", "SLA"]
     },
     {
@@ -97,7 +97,7 @@
       description: "Organiza estudiantes, acudientes, matrículas, cursos, mensualidades, asistencia, boletines, certificados y cartera educativa. La institución puede controlar grupos, pagos, novedades académicas, documentos emitidos y comunicación administrativa, conectando la operación diaria con reportes para dirección y control financiero.",
       summary: "Matrículas, cursos, asistencia, mensualidades y boletines.",
       icon: "/img/company-briefcase-color.svg",
-      secondaryIcon: "/img/portal-systems/colegio-academia.svg",
+      secondaryIcon: "/img/portal-systems/realistic/colegio-academia.jpg",
       sections: ["Matriculas", "Cursos", "Asistencia", "Mensualidades", "Boletines", "Certificados"]
     },
     {
@@ -109,7 +109,7 @@
       description: "Controla niños, acudientes, autorizaciones, alimentación, novedades, entregas, pagos y seguimiento diario para guarderías o jardines infantiles. El módulo ayuda a registrar entrada y salida, responsables autorizados, observaciones de cuidado, cobros recurrentes y reportes para una operación segura y ordenada.",
       summary: "Niños, acudientes, autorizaciones, novedades y pagos.",
       icon: "/img/user-avatar-color.svg",
-      secondaryIcon: "/img/portal-systems/guarderia-infantil.svg",
+      secondaryIcon: "/img/portal-systems/realistic/guarderia-infantil.jpg",
       sections: ["Jornada", "Ninos", "Acudientes", "Autorizaciones", "Novedades", "Pagos"]
     },
     {
@@ -121,7 +121,7 @@
       description: "Gestiona recepción de prendas, etiquetas, estados de lavado, planchado, control de calidad, entregas, pagos y reclamos. La lavandería puede saber dónde está cada orden, evitar pérdidas, documentar novedades, programar rutas o domicilios y cerrar servicios con evidencia para el cliente.",
       summary: "Órdenes por prenda, etiquetas, estados y entregas.",
       icon: "/img/report.svg",
-      secondaryIcon: "/img/portal-systems/lavanderia-tintoreria.svg",
+      secondaryIcon: "/img/portal-systems/realistic/lavanderia-tintoreria.jpg",
       sections: ["Recepcion", "Prendas", "Etiquetas", "Proceso", "Entrega", "Reclamos"]
     },
     {
@@ -133,7 +133,7 @@
       description: "Administra órdenes de trabajo, diagnósticos, repuestos, mano de obra, aprobaciones, garantías y entrega de vehículos. El taller puede registrar entrada, cotizar reparaciones, controlar inventario usado, tomar evidencias, informar avances al cliente y medir tiempos, costos y rentabilidad por servicio.",
       summary: "Órdenes, diagnóstico, repuestos, mano de obra y garantías.",
       icon: "/img/settings-color.svg",
-      secondaryIcon: "/img/portal-systems/taller-mecanico.svg",
+      secondaryIcon: "/img/portal-systems/realistic/taller-mecanico.jpg",
       sections: ["Órdenes", "Diagnóstico", "Repuestos", "Mano de obra", "Garantías", "Entrega"]
     },
     {
@@ -145,7 +145,7 @@
       description: "Controla fletes, manifiestos, conductores, vehículos, rutas, tracking, entregas, novedades y liquidación para transporte de carga. La empresa puede coordinar operaciones, registrar evidencia de entrega, monitorear cumplimiento, asignar costos y mantener trazabilidad documental desde la solicitud hasta el cierre.",
       summary: "Fletes, manifiestos, conductores, rutas y entregas.",
       icon: "/img/vehiculos-flotas-logo.svg",
-      secondaryIcon: "/img/portal-systems/transporte-carga-tms.svg",
+      secondaryIcon: "/img/portal-systems/realistic/transporte-carga-tms.jpg",
       sections: ["Fletes", "Manifiestos", "Conductores", "Tracking", "Entregas", "Liquidacion"]
     },
     {
@@ -157,7 +157,7 @@
       description: "Gestiona órdenes de servicio, agenda de técnicos, visitas a domicilio, repuestos, firmas, evidencias, garantías y seguimiento posventa. El módulo permite asignar responsables, controlar tiempos de atención, documentar trabajos realizados, cobrar servicios y mantener historial por cliente, equipo o ubicación.",
       summary: "Órdenes a domicilio, técnicos, repuestos, firmas y evidencias.",
       icon: "/img/network-color.svg",
-      secondaryIcon: "/img/portal-systems/servicios-tecnicos.svg",
+      secondaryIcon: "/img/portal-systems/realistic/servicios-tecnicos.jpg",
       sections: ["Órdenes", "Agenda", "Técnicos", "Repuestos", "Firmas", "Garantías"]
     },
     {
@@ -169,7 +169,7 @@
       description: "Administra propiedades, arriendos, ventas, visitas, leads, propietarios, contratos, comisiones y seguimiento comercial inmobiliario. La agencia puede publicar inventario, programar recorridos, registrar interesados, controlar documentación, medir conversiones y cerrar negocios con trazabilidad financiera y contractual.",
       summary: "Propiedades, visitas, leads, propietarios y comisiones.",
       icon: "/img/company-briefcase-color.svg",
-      secondaryIcon: "/img/portal-systems/inmobiliaria-comercial.svg",
+      secondaryIcon: "/img/portal-systems/realistic/inmobiliaria-comercial.jpg",
       sections: ["Propiedades", "Leads", "Visitas", "Contratos", "Comisiones", "Cierre"]
     },
     {
@@ -181,7 +181,7 @@
       description: "Controla guardas, puestos, turnos, rondas QR, novedades, incidentes, escalamiento y reportes para empresas de seguridad privada. La operación puede verificar presencia, documentar eventos, asignar supervisores, medir cumplimiento de rondas y conservar evidencia para clientes, auditoría y control interno.",
       summary: "Guardas, puestos, turnos, rondas QR e incidentes.",
       icon: "/img/shield-license-color.svg",
-      secondaryIcon: "/img/portal-systems/seguridad-privada.svg",
+      secondaryIcon: "/img/portal-systems/realistic/seguridad-privada.jpg",
       sections: ["Puestos", "Turnos", "Guardas", "Rondas QR", "Incidentes", "Reportes"]
     },
     {
@@ -193,7 +193,7 @@
       description: "Gestiona alumnos, entrenadores, disciplinas, clases, torneos, pagos, asistencia y comunicaciones para clubes o escuelas deportivas. El módulo ayuda a organizar grupos, programar entrenamientos, controlar mensualidades, registrar participación en eventos y medir avance operativo por disciplina o categoría.",
       summary: "Alumnos, entrenadores, disciplinas, torneos y asistencia.",
       icon: "/img/analytics-color.svg",
-      secondaryIcon: "/img/portal-systems/club-deportivo.svg",
+      secondaryIcon: "/img/portal-systems/realistic/club-deportivo.jpg",
       sections: ["Alumnos", "Disciplinas", "Clases", "Torneos", "Pagos", "Asistencia"]
     },
     {
@@ -205,7 +205,7 @@
       description: "Administra planes exequiales, afiliados, contratos, salas, servicios, traslados, documentación y cierre operativo para funerarias. La empresa puede coordinar atenciones sensibles, controlar obligaciones, registrar pagos, organizar recursos y mantener expedientes claros con permisos, evidencias y reportes.",
       summary: "Planes, afiliados, salas, servicios y documentos.",
       icon: "/img/report.svg",
-      secondaryIcon: "/img/portal-systems/funeraria-exequial.svg",
+      secondaryIcon: "/img/portal-systems/realistic/funeraria-exequial.jpg",
       sections: ["Planes", "Afiliados", "Servicios", "Salas", "Documentos", "Cierre"]
     },
     {
@@ -217,7 +217,7 @@
       description: "Controla entradas, manillas QR, aforo, atracciones, consumo interno, incidentes y cierre de jornada para parques recreativos. La operación puede vender accesos, validar ingreso, monitorear ocupación, registrar novedades, administrar puntos de consumo y evaluar ventas, seguridad y experiencia del visitante.",
       summary: "Entradas, manillas QR, aforo, atracciones y consumo.",
       icon: "/img/tags-color.svg",
-      secondaryIcon: "/img/portal-systems/parque-recreativo.svg",
+      secondaryIcon: "/img/portal-systems/realistic/parque-recreativo.jpg",
       sections: ["Entradas", "Manillas QR", "Aforo", "Atracciones", "Consumo", "Incidentes"]
     },
     {
@@ -229,7 +229,7 @@
       description: "Gestiona asociados, aportes, créditos internos, cartera, beneficios, convenios, asambleas y trazabilidad administrativa para cooperativas o fondos de empleados. El módulo permite controlar solicitudes, aprobaciones, obligaciones, recaudos y comunicaciones manteniendo gobierno interno, reportes y permisos por responsabilidad.",
       summary: "Asociados, aportes, créditos internos, cartera y beneficios.",
       icon: "/img/money.svg",
-      secondaryIcon: "/img/portal-systems/cooperativa-fondo.svg",
+      secondaryIcon: "/img/portal-systems/realistic/cooperativa-fondo.jpg",
       sections: ["Asociados", "Aportes", "Creditos", "Cartera", "Beneficios", "Asambleas"]
     },
     {
@@ -241,7 +241,7 @@
       description: "Administra cursos, instructores, cohortes, empresas cliente, asistencia, evaluaciones, certificados y seguimiento comercial para centros de capacitación. La operación puede vender programas, controlar grupos, medir cumplimiento académico, emitir constancias y conservar historial por participante, empresa y periodo.",
       summary: "Cursos, instructores, certificados, asistencia y empresas.",
       icon: "/img/excel.svg",
-      secondaryIcon: "/img/portal-systems/capacitacion-empresarial.svg",
+      secondaryIcon: "/img/portal-systems/realistic/capacitacion-empresarial.jpg",
       sections: ["Cursos", "Cohortes", "Instructores", "Asistencia", "Evaluaciones", "Certificados"]
     }
   ];

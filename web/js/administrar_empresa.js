@@ -221,6 +221,7 @@ try {
     document.getElementById("linkClientes"),
     document.getElementById("linkCRMComercial"),
     document.getElementById("linkVentaPublica"),
+    document.getElementById("linkEmailCorporativo"),
     document.getElementById("linkRedSocialComercial"),
     document.getElementById("linkDocumentosOnlyOffice"),
     document.getElementById("linkGestionDocumental"),
@@ -360,6 +361,7 @@ try {
     linkLogisticaWMS: { module: permModuleLogisticaWMS, action: permActionCreate },
     linkCartaProductosPublica: { module: permModuleVentaPublica, action: permActionCreate },
     linkVentaPublica: { module: permModuleVentaPublica, action: permActionCreate },
+    linkEmailCorporativo: { module: permModuleSeguridad, action: permActionRead },
     linkConfiguracionCarritoEmpresa: { module: permModuleVentaPublica, action: permActionApprove },
 
     linkGimnasio: { module: permModuleGimnasio, action: permActionCreate },

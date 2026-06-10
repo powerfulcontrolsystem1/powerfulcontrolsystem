@@ -1,3 +1,9 @@
+2026-06-10: Nota de E-mail Corporativo
+- Se agrega pagina `linkEmailCorporativo` bajo modulo `seguridad` con accion de lectura (`R`) para abrir el buzon corporativo por empresa.
+- La configuracion del buzon sigue usando `Configuracion > Email corporativo` y requiere permisos de seguridad segun wrapper existente.
+- El panel de empresa muestra notificaciones de email solo a roles administrativos/super administrativos detectados por contexto efectivo; usuarios operativos sin ese rol no ven el correo corporativo en el panel.
+- El conteo de no leidos se consulta con `check_unread=1` desde `/api/empresa/email_corporativo`, siempre con `empresa_id` validado por backend y sin devolver credenciales.
+
 2026-06-10: Nota de snapshot completo VPS
 - `/super/api/vps_snapshots` es exclusivo de `super_administrador` y queda
   envuelto en `WithSuperAuditoria` como `super_vps_snapshots`.

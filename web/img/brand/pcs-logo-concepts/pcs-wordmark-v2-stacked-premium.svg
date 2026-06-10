@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1800 720" role="img" aria-label="pcs-wordmark-v2-stacked-premium.svg">
+
+  <rect width="1800" height="720" rx="80" fill="#07111f"/>
+  <image href="pcs-icon-v2-nexus-shield.svg" x="676" y="56" width="448" height="448"/>
+  <text x="900" y="575" text-anchor="middle" font-family="Montserrat, Arial, sans-serif" font-size="92" font-weight="900" fill="#eef9ff">Powerful Control System</text>
+  <text x="900" y="638" text-anchor="middle" font-family="Montserrat, Arial, sans-serif" font-size="34" font-weight="700" fill="#ffb000" letter-spacing="6">SAAS POS MULTIEMPRESA</text>
+</svg>

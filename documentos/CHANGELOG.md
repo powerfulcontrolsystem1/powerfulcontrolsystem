@@ -1,3 +1,20 @@
+## [2026-06-10] E-mail Corporativo independiente
+- [Empresa] El webmail corporativo pasa a `Administrar empresa > Canales digitales y colaboración > E-mail Corporativo`, donde se abre automáticamente como antes.
+- [Panel] Debajo de Favoritos se agrega una tarjeta de notificaciones con enlace al módulo y conteo real de no leídos cuando IMAP responde.
+- [Backend] `/api/empresa/email_corporativo?check_unread=1` consulta `UNSEEN` por IMAP con clave cifrada y devuelve errores saneados.
+- [Seguridad] Mantiene permisos de seguridad por empresa, autologin temporal y no expone contraseñas ni tokens.
+
+## [2026-06-10] Login oscuro refuerza campo de contraseña
+- [UX] El campo de contraseña del login de administrador conserva fondo oscuro igual que el email, incluso cuando Chrome aplica autocompletado.
+- [PWA] `login.html` versiona `estilos.css` y `sw.js` sube el cache a `pcs-shell-v5` para evitar que el navegador use el shell anterior.
+- [Alcance] No cambia autenticación, sesiones, endpoints, permisos ni base de datos.
+
+## [2026-06-10] Fotos realistas para Mas sistemas
+- [Portal] `Mas sistemas` ahora usa fotos JPG realistas con un trabajador operando PCS en cada tarjeta, alineadas al titulo del sistema.
+- [Assets] Se agregan 51 imagenes locales en `web/img/portal-systems/realistic/` y un generador reproducible en `scripts/generate_portal_realistic_images.ps1`.
+- [UX] Laboratorio clinico, clinica, odontologia, drogueria, taller mecanico, servicios tecnicos y lavanderia reciben escenas de oficio para no verse como tarjetas genericas.
+- [Alcance] No cambia backend, base de datos, permisos ni APIs; solo se actualizan assets y referencias visuales del portal publico.
+
 ## [2026-06-10] Plantilla de colegio retirada del index
 - [Portal] `Mas sistemas` deja de mostrar `Colegio o academia`.
 - [Frontend] El catalogo local y el render del index filtran `colegio_academia` para que no reaparezca desde el fallback o desde la API publica.

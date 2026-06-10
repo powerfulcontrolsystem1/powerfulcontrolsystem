@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1800 520" role="img" aria-label="pcs-wordmark-v3-dark-enterprise.svg">
+
+  <rect width="1800" height="520" rx="58" fill="#050b14"/>
+  <image href="pcs-icon-v3-pulse-circuit.svg" x="96" y="72" width="376" height="376"/>
+  <text x="520" y="228" font-family="Montserrat, Arial, sans-serif" font-size="96" font-weight="900" fill="#f8fbff">Powerful Control System</text>
+  <rect x="522" y="270" width="710" height="8" rx="4" fill="#38d5ff"/>
+  <text x="520" y="350" font-family="Montserrat, Arial, sans-serif" font-size="42" font-weight="700" fill="#38d5ff" letter-spacing="3">Sistema empresarial POS multiempresa</text>
+  <text x="1458" y="344" font-family="Montserrat, Arial, sans-serif" font-size="118" font-weight="900" fill="#38d5ff" opacity=".18">PCS</text>
+</svg>

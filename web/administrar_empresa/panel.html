@@ -639,6 +639,96 @@
       line-height: 1.45;
     }
 
+    .empresa-mail-notification {
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr) auto;
+      gap: 12px;
+      align-items: center;
+      margin-top: 12px;
+      padding: 14px 16px;
+      border-radius: 8px;
+      border: 1px solid color-mix(in srgb, var(--accent) 28%, var(--border));
+      background: linear-gradient(135deg, color-mix(in srgb, var(--surface) 88%, var(--accent) 12%), var(--card));
+      color: var(--text);
+      box-shadow: 0 12px 28px var(--panel-card-shadow);
+    }
+
+    .empresa-mail-notification[hidden] {
+      display: none;
+    }
+
+    .empresa-mail-notification-icon {
+      display: grid;
+      place-items: center;
+      width: 42px;
+      height: 42px;
+      border-radius: 8px;
+      border: 1px solid color-mix(in srgb, var(--accent) 38%, var(--border));
+      background: color-mix(in srgb, var(--accent) 16%, var(--surface) 84%);
+      color: var(--text);
+      font-size: 1.2rem;
+      font-weight: 950;
+    }
+
+    .empresa-mail-notification-kicker {
+      margin: 0 0 3px;
+      color: var(--muted);
+      font-size: .72rem;
+      font-weight: 900;
+      text-transform: uppercase;
+    }
+
+    .empresa-mail-notification-title {
+      margin: 0;
+      color: var(--text);
+      font-size: 1rem;
+      line-height: 1.25;
+    }
+
+    .empresa-mail-notification-meta {
+      margin: 3px 0 0;
+      color: var(--muted);
+      font-size: .82rem;
+      line-height: 1.35;
+      overflow-wrap: anywhere;
+    }
+
+    .empresa-mail-notification-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 32px;
+      height: 28px;
+      padding: 0 9px;
+      border-radius: 999px;
+      background: color-mix(in srgb, #ef4444 22%, var(--surface) 78%);
+      color: var(--text);
+      font-size: .82rem;
+      font-weight: 950;
+    }
+
+    .empresa-mail-notification-action {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 36px;
+      padding: 8px 12px;
+      border-radius: 8px;
+      border: 1px solid color-mix(in srgb, var(--accent) 48%, var(--border));
+      background: color-mix(in srgb, var(--accent) 16%, var(--surface) 84%);
+      color: var(--text);
+      font-size: .84rem;
+      font-weight: 900;
+      text-decoration: none;
+      white-space: nowrap;
+    }
+
+    .empresa-mail-notification-action:hover,
+    .empresa-mail-notification-action:focus-visible {
+      outline: 2px solid color-mix(in srgb, var(--accent) 28%, transparent);
+      outline-offset: 2px;
+    }
+
     .empresa-email-panel {
       display: grid;
       grid-template-columns: minmax(0, 1fr);
@@ -1373,6 +1463,15 @@
         overflow: visible;
       }
 
+      .empresa-mail-notification {
+        grid-template-columns: auto minmax(0, 1fr);
+      }
+
+      .empresa-mail-notification-action {
+        grid-column: 1 / -1;
+        justify-self: stretch;
+      }
+
       .empresa-home-footer {
         flex-direction: column;
         align-items: flex-start;
@@ -1464,22 +1563,14 @@
       </div>
     </section>
 
-    <section id="empresaEmailPanel" class="empresa-email-panel" hidden aria-label="Bandeja de correo corporativo">
-      <div class="empresa-email-head">
-        <div class="empresa-email-identity">
-          <p class="empresa-email-kicker">Bandeja de correo corporativo</p>
-          <h2 id="empresaEmailAddress" class="empresa-email-title" hidden></h2>
-          <p id="empresaEmailMeta" class="empresa-email-meta" hidden></p>
-        </div>
+    <section id="empresaEmailNotifications" class="empresa-mail-notification" hidden aria-label="Notificaciones de email corporativo">
+      <span class="empresa-mail-notification-icon" aria-hidden="true">@</span>
+      <div>
+        <p class="empresa-mail-notification-kicker">Notificaciones</p>
+        <h2 id="empresaEmailNotificationTitle" class="empresa-mail-notification-title">Correo corporativo</h2>
+        <p id="empresaEmailNotificationMeta" class="empresa-mail-notification-meta">Consultando el buz&oacute;n de la empresa.</p>
       </div>
-      <p id="empresaEmailAlert" class="empresa-email-alert" hidden></p>
-      <div class="empresa-email-embed">
-        <div id="empresaEmailPlaceholder" class="empresa-email-placeholder">
-          La bandeja se abrira automaticamente cuando el buzon este activo.
-        </div>
-        <iframe id="empresaEmailFrame" class="empresa-email-frame" title="Buzon de correo corporativo" loading="lazy" referrerpolicy="no-referrer"></iframe>
-      </div>
-      <p id="empresaEmailFrameNote" class="empresa-email-frame-note">El webmail se abre integrado en el panel cuando el buzon esta provisionado.</p>
+      <a id="empresaEmailNotificationLink" class="empresa-mail-notification-action" href="/administrar_empresa/email_corporativo.html">Abrir E-mail Corporativo</a>
     </section>
 
     <div class="empresa-home-footer">
@@ -1505,6 +1596,10 @@
       var empresaEmailPlaceholderEl = document.getElementById("empresaEmailPlaceholder");
       var empresaEmailAlertEl = document.getElementById("empresaEmailAlert");
       var empresaEmailFrameNoteEl = document.getElementById("empresaEmailFrameNote");
+      var empresaEmailNotificationsEl = document.getElementById("empresaEmailNotifications");
+      var empresaEmailNotificationTitleEl = document.getElementById("empresaEmailNotificationTitle");
+      var empresaEmailNotificationMetaEl = document.getElementById("empresaEmailNotificationMeta");
+      var empresaEmailNotificationLinkEl = document.getElementById("empresaEmailNotificationLink");
       var weatherGpsBtn = document.getElementById("weatherGpsBtn");
       var weatherManualToggle = document.getElementById("weatherManualToggle");
       var weatherManualForm = document.getElementById("weatherManualForm");
@@ -2048,6 +2143,54 @@
             resetEmpresaEmailEmbed();
             empresaEmailPanelEl.hidden = false;
           });
+      }
+
+      function setEmpresaEmailNotification(title, meta, unseen) {
+        if (!empresaEmailNotificationsEl) return;
+        if (empresaEmailNotificationTitleEl) {
+          empresaEmailNotificationTitleEl.textContent = title || "Correo corporativo";
+        }
+        if (empresaEmailNotificationMetaEl) {
+          empresaEmailNotificationMetaEl.textContent = meta || "";
+        }
+        var icon = empresaEmailNotificationsEl.querySelector(".empresa-mail-notification-icon");
+        if (icon) {
+          icon.innerHTML = Number(unseen || 0) > 0
+            ? '<span class="empresa-mail-notification-badge">' + String(unseen) + '</span>'
+            : "@";
+        }
+        if (empresaEmailNotificationLinkEl && empresaId) {
+          empresaEmailNotificationLinkEl.href = "/administrar_empresa/email_corporativo.html?empresa_id=" + encodeURIComponent(empresaId);
+        }
+        empresaEmailNotificationsEl.hidden = false;
+      }
+
+      function loadEmpresaEmailNotifications(context) {
+        if (!empresaEmailNotificationsEl || !empresaId) return;
+        if (!canSeeEmpresaEmailPanel(context || {})) {
+          empresaEmailNotificationsEl.hidden = true;
+          return;
+        }
+        var url = "/api/empresa/email_corporativo?empresa_id=" + encodeURIComponent(empresaId) +
+          "&check_unread=1&theme=" + encodeURIComponent(currentEmailThemeMode());
+        fetchJSON(url).then(function (data) {
+          var account = data && data.account ? data.account : null;
+          if (!data || !data.ok || !data.enabled || !account || !account.email) {
+            setEmpresaEmailNotification("Correo corporativo", "Abre el modulo para revisar la configuracion del buzon empresarial.", 0);
+            return;
+          }
+          var unread = data.unread && data.unread.ok ? Number(data.unread.unseen || 0) : 0;
+          if (unread > 0) {
+            setEmpresaEmailNotification("Tienes " + unread + " email" + (unread === 1 ? "" : "s") + " sin leer", account.email, unread);
+            return;
+          }
+          var meta = data.unread && data.unread.checked && !data.unread.ok
+            ? (data.unread.message || "No se pudo consultar el conteo de no leidos.")
+            : "Sin correos pendientes de lectura en la ultima consulta.";
+          setEmpresaEmailNotification("Correo corporativo al dia", meta, 0);
+        }).catch(function () {
+          setEmpresaEmailNotification("Correo corporativo", "No se pudo consultar el estado del buzon. Abre el modulo para revisar.", 0);
+        });
       }
 
       function resolveWeatherLocation(admin) {
@@ -2751,7 +2894,7 @@
           var savedLocation = values[2] || null;
           var identidad = values[3] || {};
           var permissionContext = values[4] || {};
-          loadEmpresaEmail({ admin: admin, permissionContext: permissionContext });
+          loadEmpresaEmailNotifications({ admin: admin, permissionContext: permissionContext });
           renderWelcome(admin, empresa);
           applyEmpresaLogo(identidad);
           return detectLocation(admin, empresa, savedLocation).then(function (location) {
