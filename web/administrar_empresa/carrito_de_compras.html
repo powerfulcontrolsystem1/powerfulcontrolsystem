@@ -5478,6 +5478,108 @@
       btn.setAttribute('aria-busy', loading ? 'true' : 'false');
     }
 
+    function resetPaymentDraftStateForNextCart() {
+      state.items = [];
+      state.cartAbonos = [];
+      state.cartAbonosLoading = false;
+      state.paymentAmountsManual = false;
+      state.cashReceivedAmount = 0;
+      state.paymentAmounts = {
+        efectivo: 0,
+        tarjeta_debito: 0,
+        tarjeta_credito: 0,
+        transferencia_bancaria: 0
+      };
+      state.stationDiscount.type = 'none';
+      state.stationDiscount.code = '';
+      state.stationDiscount.value = 0;
+      state.stationDiscount.devolucion = 0;
+      state.stationDiscount.paymentMethod = 'efectivo';
+      state.stationDiscount.paymentReference = '';
+      state.stationDiscount.mixedPayments = [];
+      state.stationTip.aplicar = false;
+
+      ['discountValue', 'devolucionMonto', 'paymentReference', 'mixedAmount1', 'mixedAmount2', 'mixedAmount3', 'mixedReference1', 'mixedReference2', 'mixedReference3', 'stationCashReceivedDisplay'].forEach(function(id) {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.value = id.indexOf('Amount') >= 0 || id === 'discountValue' || id === 'devolucionMonto' || id === 'stationCashReceivedDisplay' ? '0' : '';
+      });
+      const discountTypeEl = document.getElementById('discountType');
+      if (discountTypeEl) discountTypeEl.value = 'none';
+      const discountCodeEl = document.getElementById('discountCode');
+      if (discountCodeEl) discountCodeEl.value = '';
+      const paymentMethodEl = document.getElementById('paymentMethod');
+      if (paymentMethodEl) paymentMethodEl.value = 'efectivo';
+      const applyTipEl = document.getElementById('applyTipCheckbox');
+      if (applyTipEl) applyTipEl.checked = false;
+    }
+
+    function markSelectedCarritoLocallyReadyForNextSale() {
+      const selectedID = Number(state.selectedCarritoID || 0);
+      if (!selectedID || !Array.isArray(state.carritos)) return;
+      state.carritos = state.carritos.map(function(item) {
+        if (Number(item && item.id || 0) !== selectedID) return item;
+        return Object.assign({}, item, {
+          estado: 'activo',
+          estado_carrito: 'abierto',
+          estado_venta: 'venta_abierta',
+          pagado_en: '',
+          cliente_id: 0,
+          cliente_nombre: '',
+          cliente_documento: '',
+          cliente_email: '',
+          subtotal: 0,
+          descuento_total: 0,
+          impuesto_total: 0,
+          total: 0,
+          total_pagado: 0,
+          item_count: 0,
+          metodo_pago: 'efectivo',
+          referencia_pago: ''
+        });
+      });
+    }
+
+    async function resetFocusedCartForNextSale(successMessage) {
+      const selectedID = Number(state.selectedCarritoID || 0);
+      if (!selectedID) return false;
+
+      resetPaymentDraftStateForNextCart();
+      markSelectedCarritoLocallyReadyForNextSale();
+      renderResumen();
+      renderItems();
+      renderStationPaymentPanel(getSelectedCarrito());
+
+      let endpoint = '/api/empresa/carritos_compra?empresa_id=' + encodeURIComponent(state.empresaID) +
+        '&id=' + encodeURIComponent(selectedID) +
+        '&action=activar_estacion&reset_items=1';
+      if (state.stationMode) {
+        endpoint += '&perm_page=linkEstaciones';
+        if (state.stationID > 0) {
+          endpoint += '&estacion_id=' + encodeURIComponent(state.stationID);
+        }
+      }
+      if (state.directSaleMode) {
+        endpoint += '&modo=venta_directa&perm_page=linkVentaDirecta&carrito_codigo=' + encodeURIComponent(getDefaultDirectSaleCarritoCode());
+      }
+
+      const res = await fetchWithTimeout(endpoint, {
+        method: 'PUT',
+        credentials: 'same-origin'
+      }, 30000);
+      await ensureOk(res);
+
+      resetPaymentDraftStateForNextCart();
+      await loadCarritos();
+      await loadItems();
+      setStationPaymentPersistentMessage(successMessage, false);
+      renderCarritos();
+      renderResumen();
+      renderItems();
+      renderStationPaymentPanel(getSelectedCarrito());
+      return true;
+    }
+
     function buildBusinessGuideText(payload, fallback) {
       if (!payload || typeof payload !== 'object') return normalize(fallback);
       const parts = [];
@@ -6165,13 +6267,20 @@
             });
           }
         } catch (_) {}
-        if (state.directSaleMode) {
-          await loadCarritos();
-          const paid = getSelectedCarrito();
-          if (paid) {
-            await activateStationSession(true, 'activar_estacion');
+        if (state.directSaleMode || state.stationMode) {
+          const readyMsg = successMsg + (state.directSaleMode
+            ? ' Venta directa lista para el siguiente cliente.'
+            : ' Carrito actualizado y listo para la siguiente cuenta.');
+          try {
+            await resetFocusedCartForNextSale(readyMsg);
+          } catch (resetErr) {
+            console.warn(resetErr);
+            setStationPaymentPersistentMessage(successMsg + ' El pago quedó registrado, pero no se pudo preparar automáticamente el carrito vacío. Recarga esta pantalla antes de iniciar la siguiente cuenta.', true);
+            try {
+              await loadCarritos();
+              await loadItems();
+            } catch (_) {}
           }
-          setStationPaymentPersistentMessage(successMsg + ' Venta directa lista para el siguiente cliente.', false);
           return;
         }
         window.location.assign(buildStationsURL());

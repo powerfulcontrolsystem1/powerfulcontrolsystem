@@ -1907,11 +1907,15 @@ func ActivateCarritoStationSession(dbConn *sql.DB, empresaID, carritoID int64, r
 		if _, err := tx.Exec(`DELETE FROM carrito_compra_items WHERE empresa_id = ? AND carrito_id = ?`, empresaID, carritoID); err != nil {
 			return err
 		}
+		if _, err := tx.Exec(`DELETE FROM carrito_compra_abonos WHERE empresa_id = ? AND carrito_id = ?`, empresaID, carritoID); err != nil {
+			return err
+		}
 	}
 
 	if _, err := tx.Exec(`UPDATE carritos_compras SET
 		estado = 'activo',
 		estado_carrito = 'abierto',
+		cliente_id = 0,
 		activado_en = CURRENT_TIMESTAMP,
 		pagado_en = NULL,
 		descuento_tipo = '',

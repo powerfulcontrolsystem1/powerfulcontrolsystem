@@ -774,12 +774,15 @@ afecte dinero, documentos, licencias o seguridad.
    reciben respuesta idempotente y no duplican caja, documento, metricas ni
    movimientos de inventario.
 5. Se registra venta/pago y se genera documento.
-6. La impresion debe salir en blanco y negro como papel real, POS 80mm por
+6. En venta directa o estaciones, despues del pago exitoso PCS reabre la cuenta
+   operativa con `reset_items=1` y la pantalla debe quedar sin items, abonos ni
+   cliente para el siguiente cliente, sin recarga manual.
+7. La impresion debe salir en blanco y negro como papel real, POS 80mm por
    defecto, sin tema claro/oscuro. El recibo operativo debe respetar los checks
    por empresa de fecha, cajero, cliente, metodo, impresora, copias, carrito,
    codigo y empresa.
-7. Si hay QR DIAN activo y documento con CUFE/CUDE/codigo, se imprime al final.
-8. Pruebas: efectivo, debito, credito, otro, pago mixto, vuelto, abono,
+8. Si hay QR DIAN activo y documento con CUFE/CUDE/codigo, se imprime al final.
+9. Pruebas: efectivo, debito, credito, otro, pago mixto, vuelto, abono,
    descuento, dos cajeros simultaneos y doble solicitud de pago sobre el mismo
    carrito.
 

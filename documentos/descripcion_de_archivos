@@ -2,6 +2,10 @@
 - `web/administrar_empresa/carrito_de_compras.html`: en venta directa y estaciones reordena el DOM para mostrar `Productos agregados al carrito` antes de `Detalle del pago`.
 - `web/estilos.css`: ajusta el orden flex de la columna principal del carrito para mantener Cliente -> Productos -> Detalle del pago -> Acciones.
 
+2026-06-10 - Carrito vacio despues de pagar
+- `web/administrar_empresa/carrito_de_compras.html`: agrega refresco pospago para venta directa/estaciones; al recibir pago exitoso limpia estado local, reabre el carrito con `reset_items=1`, recarga items/abonos y deja la cuenta vacia para el siguiente cliente.
+- `backend/db/carritos_compras.go`: `ActivateCarritoStationSession` con reset limpia tambien abonos y cliente del carrito reutilizable, ademas de items y totales recalculados.
+
 2026-06-10 - IA OpenAI disponible en Docker
 - `scripts/sync_to_vps.ps1`: cuando recibe o detecta `OPENAI_API_KEY`, la sincroniza tambien en `deploy/.env.platform` remoto para que Docker Compose la inyecte al contenedor backend sin exponer el valor en logs.
 - `scripts/sync_to_vps.sh`: mantiene el mismo comportamiento para ejecuciones Linux/WSL, con escritura segura del fallback OpenAI en `backend/.env.local` y en el env file de Compose.

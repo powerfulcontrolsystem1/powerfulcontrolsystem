@@ -1,3 +1,8 @@
+## [2026-06-10] Carrito vacio despues de pagar
+- [Carrito] `Pagar y cerrar carrito` ahora refresca la cuenta enfocada al terminar el pago y la deja sin productos, abonos ni cliente.
+- [Venta directa/estaciones] La pantalla queda lista para la siguiente cuenta sin depender de recarga manual ni de volver al listado de estaciones.
+- [Seguridad] El pago y documento se registran primero; el reset visual/operativo ocurre despues del acuse exitoso del backend y conserva `empresa_id`.
+
 ## [2026-06-10] IA OpenAI disponible en Docker
 - [IA] Se registra la credencial OpenAI en archivos locales ignorados por Git para que el chat empresarial use el fallback de entorno cuando una credencial cifrada antigua no descifre.
 - [Deploy] `sync_to_vps` sincroniza `OPENAI_API_KEY` en `backend/.env.local` y en `deploy/.env.platform` remoto, requerido por Docker Compose para inyectarla al contenedor backend.

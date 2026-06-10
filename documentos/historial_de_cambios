@@ -1,3 +1,9 @@
+2026-06-10: Carrito se limpia inmediatamente despues de pagar.
+- Modulos afectados: `carritos`, `venta_directa`, `estaciones`, `caja`.
+- Backend: al reactivar la sesion con `reset_items=1`, `ActivateCarritoStationSession` limpia items, abonos y cliente antes de dejar el carrito abierto para la siguiente cuenta.
+- Frontend: despues de `Pagar y cerrar carrito`, la pantalla fuerza estado local vacio, reabre/refresca el carrito enfocado y muestra la cuenta lista para el siguiente cliente sin depender de recarga manual.
+- Seguridad: no se cambia el pago atomico ni la generacion del documento; el reset ocurre despues del acuse exitoso del backend y conserva aislamiento por `empresa_id`.
+
 2026-06-10: IA OpenAI registrada y disponible para Docker Compose.
 - Modulos afectados: `chat IA`, `runtime VPS`, `rs/sync_to_vps`.
 - Operacion: la credencial OpenAI queda registrada en archivos locales ignorados por Git (`backend/.env.local` y `deploy/.env.platform`) sin documentar ni imprimir el valor.
