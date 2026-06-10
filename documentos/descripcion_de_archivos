@@ -11176,3 +11176,6 @@ backend/handlers/user_config.go - Controlador que expone /api/user/configuracion
 - `web/administrar_empresa/configuracion_carrito_de_compra_empresa.html`: agrega tarjeta independiente con check para mostrar la bascula electronica.
 - `web/administrar_empresa/carrito_de_compras.html`: separa la bascula en tarjeta propia, oculta por defecto y protegida por el flag empresarial.
 - `web/administrar_empresa/configuracion_de_estaciones.html` y `web/administrar_empresa/estaciones.html`: conservan/leen el flag en normalizadores de configuracion.
+
+2026-06-10 - Carrito: pago antes de impresion
+- `web/administrar_empresa/carrito_de_compras.html`: valida caja y registra el pago antes de preparar ventanas de impresion, para que el carrito pueda quedar vacio tras `Pagar y cerrar carrito` y los errores no queden ocultos por la impresion.

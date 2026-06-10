@@ -6142,12 +6142,13 @@
         setStationPaymentMessage(pay.mixedMessage, true);
         return;
       }
-      const printTargets = preparePaymentPrintTargets();
+      let printTargets = null;
       const selectedCash = getSelectedCashRegister();
       let cashForPayment = selectedCash;
       const itemsSnapshot = Array.isArray(state.items) ? state.items.slice() : [];
       if (isOfflineBillingEnabled() && typeof navigator !== 'undefined' && navigator.onLine === false) {
-        if (!validateOfflineCashRegisterForPayment(cashForPayment, printTargets)) return;
+        if (!validateOfflineCashRegisterForPayment(cashForPayment, null)) return;
+        printTargets = preparePaymentPrintTargets();
         await storeAndPrintOfflineSale(selected, pay, itemsSnapshot, printTargets, cashForPayment);
         return;
       }
@@ -6237,6 +6238,7 @@
           successMsg += ' Factura electrónica: ' + normalize(facturaElectronica.documento_codigo) + '.';
         }
         setStationPaymentPersistentMessage(successMsg, false);
+        printTargets = preparePaymentPrintTargets();
         try {
           await printSaleReceiptIfEnabled(selected, pay, itemsSnapshot, printTargets && printTargets.receipt, facturaElectronica || documentoVenta);
         } catch (printErr) {

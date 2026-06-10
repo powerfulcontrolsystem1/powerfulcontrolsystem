@@ -33646,3 +33646,7 @@ Archivos modificados:
 - documentos/flujos_operativos.md
 - documentos/historial_de_cambios
 - web/administrar_empresa/carrito_de_compras.html
+
+2026-06-10: Carrito cobra antes de preparar impresion
+- `web/administrar_empresa/carrito_de_compras.html` deja de abrir ventanas de impresion antes de validar caja y registrar `pagar_estacion`.
+- La impresion del recibo/factura se prepara solo despues de un pago exitoso, evitando que una ventana de impresion oculte errores y deje el carrito sin cerrar.
