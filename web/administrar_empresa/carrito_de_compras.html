@@ -6758,7 +6758,7 @@
       if (!card) return;
       const ui = normalizeUnifiedCartUIConfig(getCurrentStationCartUIConfig());
       const focusedSaleMode = state.stationMode || state.directSaleMode;
-      const show = focusedSaleMode && Boolean(carrito) && (ui.mostrar_selector_cliente || ui.cliente_obligatorio_pago || state.customerPanelOpen);
+      const show = focusedSaleMode && Boolean(carrito) && (state.directSaleMode || ui.mostrar_selector_cliente || ui.cliente_obligatorio_pago || state.customerPanelOpen);
       card.hidden = !show;
       card.classList.toggle('is-hidden', !show);
       card.style.display = show ? '' : 'none';

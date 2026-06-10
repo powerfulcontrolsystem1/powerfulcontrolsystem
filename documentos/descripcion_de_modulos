@@ -4088,3 +4088,9 @@ Captura inteligente de compras y gastos
 - Modulos afectados: `facturacion_electronica`, `DIAN Colombia`.
 - Cambio funcional: se elimina de `web/administrar_empresa/facturacion_electronica.html` la tarjeta `Asistente DIAN con capturas`, incluyendo carga de imagen, analisis OCR/IA y aplicacion de campos detectados.
 - UX: la configuracion DIAN queda centrada en los formularios manuales, carga de firma, documentos electronicos, tutorial y centro de habilitacion DIAN.
+
+2026-06-09 - Venta directa: carrito 0 y pantalla completa en cliente
+- Modulos afectados: `carritos`, `venta_directa`, `estaciones`.
+- Cambio funcional: `web/administrar_empresa/carrito_de_compras.html` fuerza la tarjeta de cliente en modo venta directa para que el carrito 0 abra con el mismo panel operativo que una estacion y conserve la seleccion del carrito existente.
+- UX: el boton de pantalla completa queda dentro de la tarjeta `Cliente del carrito`, como icono compacto, sin cambiar endpoints ni persistencia.
+- Seguridad: sin tablas nuevas ni permisos nuevos; se mantiene `empresa_id` y los endpoints existentes de carritos.

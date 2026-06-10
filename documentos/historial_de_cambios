@@ -1,3 +1,9 @@
+2026-06-09: Venta directa con carrito 0 operativo.
+- Modulos afectados: `carritos`, `venta_directa`, `estaciones`.
+- Frontend: `web/administrar_empresa/carrito_de_compras.html` muestra la tarjeta de cliente cuando venta directa ya tiene carrito cargado, de modo que el carrito 0 abre con el mismo panel operativo esperado para estaciones.
+- UX: el boton de pantalla completa queda dentro de la tarjeta `Cliente del carrito` como icono compacto.
+- Seguridad: no se agregan endpoints, tablas ni dependencias; el flujo conserva permisos existentes de venta directa y aislamiento por `empresa_id`.
+
 2026-06-10: Propuestas de logo PCS profesional.
 - Modulo afectado: identidad visual y assets de marca.
 - Assets: se agregan 4 isotipos PCS y 4 versiones con el nombre `Powerful Control System` en SVG editable y PNG exportado dentro de `web/img/brand/pcs-logo-concepts/`.
