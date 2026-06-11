@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Tutorial Produccion / MRP</title>
+  <link rel="stylesheet" href="/estilos.css">
+  <style>
+    :root{color-scheme:light dark}
+    body.mrp-help{margin:0;min-height:100vh;background:var(--bg,#f3f6fb);color:var(--text,#172033);font-family:Inter,system-ui,-apple-system,"Segoe UI",sans-serif}
+    .mrp-help-shell{max-width:1240px;margin:0 auto;padding:18px;display:grid;gap:14px}
+    .mrp-help-head,.mrp-help-card,.mrp-help-step{background:var(--surface,#fff);border:1px solid var(--border,rgba(15,35,64,.14));border-radius:8px;box-shadow:var(--shadow-sm,0 8px 22px rgba(15,23,42,.06))}
+    .mrp-help-head{padding:16px;display:flex;justify-content:space-between;gap:12px;align-items:flex-start;background:linear-gradient(135deg,color-mix(in srgb,var(--surface,#fff) 90%,var(--accent,#1769e0) 10%),var(--surface,#fff))}
+    .mrp-help-head h1{margin:0;font-size:24px;letter-spacing:0;line-height:1.18}.mrp-help-head p{margin:6px 0 0;color:var(--muted,#65758b);line-height:1.45;max-width:860px}
+    .mrp-help-actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}.mrp-help-btn{border:1px solid var(--border,rgba(15,35,64,.16));background:var(--surface,#fff);color:var(--text,#172033);border-radius:8px;padding:9px 12px;min-height:38px;font-weight:750;text-decoration:none;display:inline-flex;align-items:center;justify-content:center}.mrp-help-btn.primary{background:linear-gradient(135deg,var(--accent,#1769e0),var(--accent-2,#0ea5a4));color:var(--on-accent,#fff);border-color:transparent}
+    .mrp-help-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}.mrp-help-card{padding:13px}.mrp-help-card span{display:block;color:var(--muted,#65758b);font-size:12px;font-weight:800}.mrp-help-card strong{display:block;margin-top:5px;font-size:18px}.mrp-help-card p{margin:7px 0 0;color:var(--muted,#65758b);line-height:1.4;font-size:13px}
+    .mrp-help-flow{display:grid;gap:10px}.mrp-help-step{padding:14px;display:grid;grid-template-columns:46px minmax(0,1fr) auto;gap:12px;align-items:start}.mrp-help-num{width:38px;height:38px;border-radius:999px;background:color-mix(in srgb,var(--accent,#1769e0) 16%,var(--surface,#fff));color:var(--accent,#1769e0);display:grid;place-items:center;font-weight:900}.mrp-help-step h2{margin:0;font-size:16px}.mrp-help-step p{margin:5px 0 0;color:var(--muted,#65758b);line-height:1.45}.mrp-help-step ul{margin:8px 0 0;padding-left:18px;color:var(--muted,#65758b);line-height:1.45}
+    .mrp-help-code{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;background:var(--surface-soft,#f4f7fc);border:1px solid var(--border,rgba(15,35,64,.14));border-radius:8px;padding:10px;overflow:auto;color:var(--text,#172033);font-size:13px}
+    .mrp-help-note{border:1px solid color-mix(in srgb,var(--warning,#f59e0b) 42%,var(--border,transparent));background:color-mix(in srgb,var(--warning,#f59e0b) 10%,var(--surface,#fff));border-radius:8px;padding:12px;color:var(--text,#172033);line-height:1.45}
+    @media(max-width:900px){.mrp-help-head,.mrp-help-step{grid-template-columns:1fr;display:grid}.mrp-help-actions{justify-content:flex-start}.mrp-help-grid{grid-template-columns:1fr}.mrp-help-step{gap:8px}}
+  </style>
+  <script src="/js/empresa_submenu_context.js"></script>
+</head>
+<body class="mrp-help admin-subpage">
+  <main class="mrp-help-shell">
+    <header class="mrp-help-head">
+      <div>
+        <h1>Tutorial Produccion / MRP</h1>
+        <p>Guia operativa para registrar recetas BOM, abrir ordenes, controlar consumos, cerrar calidad y generar requerimientos de compra o produccion por empresa.</p>
+      </div>
+      <div class="mrp-help-actions">
+        <a class="mrp-help-btn" id="backModule" href="/administrar_empresa/produccion_mrp.html">Volver al modulo</a>
+        <a class="mrp-help-btn primary" id="startBOM" href="/administrar_empresa/produccion_mrp.html?tab=recetas">Crear receta</a>
+      </div>
+    </header>
+
+    <section class="mrp-help-grid" aria-label="Conceptos clave">
+      <article class="mrp-help-card"><span>BOM / receta</span><strong>Que se fabrica</strong><p>Define producto terminado, cantidad base, materiales, merma, costos y etapa de cada componente.</p></article>
+      <article class="mrp-help-card"><span>Orden de produccion</span><strong>Cuanto y cuando</strong><p>Programa cantidades, responsable, prioridad, estado y fecha de entrega para controlar el piso operativo.</p></article>
+      <article class="mrp-help-card"><span>MRP</span><strong>Que falta comprar</strong><p>Calcula demanda bruta, materiales requeridos, disponibilidad proyectada y sugerencias de compra o produccion.</p></article>
+    </section>
+
+    <section class="mrp-help-flow">
+      <article class="mrp-help-step">
+        <div class="mrp-help-num">1</div>
+        <div>
+          <h2>Configurar reglas del modulo</h2>
+          <p>En Configuracion define moneda, modo de costeo y si la empresa exige aprobacion, consumo de inventario al iniciar o cierre obligatorio por calidad.</p>
+          <ul>
+            <li>Usa costeo estandar para empezar con recetas controladas.</li>
+            <li>Activa calidad obligatoria si los productos deben revisarse antes de cerrar la orden.</li>
+          </ul>
+        </div>
+        <a class="mrp-help-btn" data-tab-link="config" href="#">Ir</a>
+      </article>
+
+      <article class="mrp-help-step">
+        <div class="mrp-help-num">2</div>
+        <div>
+          <h2>Registrar receta o BOM</h2>
+          <p>Crea una receta por cada producto terminado. Cada componente debe incluir nombre, cantidad, unidad, costo, merma y etapa.</p>
+          <div class="mrp-help-code">Menta producto base|1|und|100|0|alistamiento<br>Bolsa sellada|1|und|80|0|empaque<br>Etiqueta PCS|1|und|120|0|empaque</div>
+        </div>
+        <a class="mrp-help-btn" data-tab-link="recetas" href="#">Ir</a>
+      </article>
+
+      <article class="mrp-help-step">
+        <div class="mrp-help-num">3</div>
+        <div>
+          <h2>Crear orden de produccion</h2>
+          <p>Selecciona receta, cantidad, prioridad, fecha programada y responsable. PCS materializa los consumos planificados de acuerdo con la BOM.</p>
+          <ul>
+            <li>Usa prioridad urgente solo si afecta despacho, venta o disponibilidad.</li>
+            <li>Deja observaciones claras para compras, cocina, taller o bodega.</li>
+          </ul>
+        </div>
+        <a class="mrp-help-btn" data-tab-link="ordenes" href="#">Ir</a>
+      </article>
+
+      <article class="mrp-help-step">
+        <div class="mrp-help-num">4</div>
+        <div>
+          <h2>Registrar consumos reales</h2>
+          <p>Cuando la orden avance, registra materiales consumidos, lote y costo unitario. Esto actualiza costo real y permite comparar contra el estandar.</p>
+        </div>
+        <a class="mrp-help-btn" data-tab-link="consumos" href="#">Ir</a>
+      </article>
+
+      <article class="mrp-help-step">
+        <div class="mrp-help-num">5</div>
+        <div>
+          <h2>Controlar calidad y cierre</h2>
+          <p>Registra aprobados, rechazados o reproceso. Si calidad obligatoria esta activa, la orden solo se cierra desde la etapa de calidad.</p>
+        </div>
+        <a class="mrp-help-btn" data-tab-link="calidad" href="#">Ir</a>
+      </article>
+
+      <article class="mrp-help-step">
+        <div class="mrp-help-num">6</div>
+        <div>
+          <h2>Generar plan MRP</h2>
+          <p>Genera el periodo actual para revisar productos y materiales con compra o produccion sugerida. Valida las lineas en riesgo antes de aprobar compras.</p>
+        </div>
+        <a class="mrp-help-btn" data-tab-link="mrp" href="#">Ir</a>
+      </article>
+    </section>
+
+    <aside class="mrp-help-note">
+      Recomendacion operativa: primero prueba con una receta sencilla, una orden pequena y un consumo real. Cuando el flujo cierre bien, replica el modelo en recetas de restaurante, supermercado, taller o produccion ligera.
+    </aside>
+  </main>
+  <script>
+    (function(){
+      "use strict";
+      var empresaId = "";
+      try { empresaId = (window.__resolveEmpresaIdContext && window.__resolveEmpresaIdContext()) || ""; } catch (e) {}
+      if (!empresaId) empresaId = new URLSearchParams(location.search).get("empresa_id") || new URLSearchParams(location.search).get("id") || "";
+      function moduleUrl(tab){
+        var url = new URL("/administrar_empresa/produccion_mrp.html", location.origin);
+        if (empresaId) url.searchParams.set("empresa_id", empresaId);
+        if (tab) url.searchParams.set("tab", tab);
+        url.searchParams.set("v", "20260611-mrp-tutorial");
+        return url.pathname + url.search;
+      }
+      var back = document.getElementById("backModule");
+      var start = document.getElementById("startBOM");
+      if (back) back.href = moduleUrl("dashboard");
+      if (start) start.href = moduleUrl("recetas");
+      document.querySelectorAll("[data-tab-link]").forEach(function(link){
+        link.href = moduleUrl(link.dataset.tabLink || "dashboard");
+      });
+    })();
+  </script>
+</body>
+</html>

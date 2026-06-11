@@ -223,6 +223,17 @@ func (c *EmpresaAIChatController) contextoPreguntaOptions(modelID string) dbpkg.
 	}
 }
 
+func (c *EmpresaAIChatController) contextoPreguntaOptionsForAccount(empresaID int64, adminEmail string, modelID string) dbpkg.EmpresaAIContextoPreguntaOptions {
+	opts := c.contextoPreguntaOptions(modelID)
+	if opts.DBQueryEnabled {
+		allowed, _, err := empresaAIAdminRoleCanReadCompanyDB(c.dbEmp, c.dbSuper, empresaID, adminEmail)
+		if err != nil || !allowed {
+			opts.DBQueryEnabled = false
+		}
+	}
+	return opts
+}
+
 func empresaAIModelCatalog() []empresaAIModelDef {
 	return []empresaAIModelDef{
 		{
@@ -588,20 +599,26 @@ func (c *EmpresaAIChatController) ConsultarHandler(w http.ResponseWriter, r *htt
 		return
 	}
 
-	contexto, err := dbpkg.BuildEmpresaAIContextoForQuestionWithOptions(c.dbEmp, payload.EmpresaID, payload.Pregunta, googleAccount, payload.PaginaContexto, c.contextoPreguntaOptions(model.ID))
-	if err != nil {
-		http.Error(w, "No se pudo construir contexto de empresa", http.StatusBadRequest)
-		return
-	}
-	contexto = appendContextoIALogicaNegocio(contexto, c.dbSuper)
-
 	var respuesta string
 	var promptTokens int64
 	var completionTokens int64
-	if direct, handled := buildEmpresaAIDirectDocumentResponse(c.dbEmp, payload.EmpresaID, payload.Pregunta); handled {
+	if direct, handled, directErr := buildEmpresaAIAdminDBDirectResponse(c.dbEmp, c.dbSuper, payload.EmpresaID, googleAccount, payload.Pregunta); handled {
+		if directErr != nil {
+			http.Error(w, directErr.Error(), http.StatusInternalServerError)
+			return
+		}
+		respuesta = direct
+		completionTokens = int64(len([]rune(respuesta)) / 4)
+	} else if direct, handled := buildEmpresaAIDirectDocumentResponse(c.dbEmp, payload.EmpresaID, payload.Pregunta); handled {
 		respuesta = direct
 		completionTokens = int64(len([]rune(respuesta)) / 4)
 	} else {
+		contexto, err := dbpkg.BuildEmpresaAIContextoForQuestionWithOptions(c.dbEmp, payload.EmpresaID, payload.Pregunta, googleAccount, payload.PaginaContexto, c.contextoPreguntaOptionsForAccount(payload.EmpresaID, googleAccount, model.ID))
+		if err != nil {
+			http.Error(w, "No se pudo construir contexto de empresa", http.StatusBadRequest)
+			return
+		}
+		contexto = appendContextoIALogicaNegocio(contexto, c.dbSuper)
 		modoAsistente := normalizeAIAssistantMode(payload.ModoAsistente)
 		systemPrompt := buildEmpresaAISystemPrompt(contexto, modoAsistente)
 		respuesta, promptTokens, completionTokens, err = c.generateResponseWithSystemPrompt(model, payload.Pregunta, payload.Historial, systemPrompt)
@@ -829,7 +846,7 @@ func (c *EmpresaAIChatController) ConsultarConAdjuntoHandler(w http.ResponseWrit
 		return
 	}
 
-	contexto, err := dbpkg.BuildEmpresaAIContextoForQuestionWithOptions(c.dbEmp, empresaID, pregunta, googleAccount, paginaContexto, c.contextoPreguntaOptions(model.ID))
+	contexto, err := dbpkg.BuildEmpresaAIContextoForQuestionWithOptions(c.dbEmp, empresaID, pregunta, googleAccount, paginaContexto, c.contextoPreguntaOptionsForAccount(empresaID, googleAccount, model.ID))
 	if err != nil {
 		http.Error(w, "No se pudo construir contexto de empresa", http.StatusBadRequest)
 		return
@@ -994,7 +1011,43 @@ func (c *EmpresaAIChatController) ConsultarStreamHandler(w http.ResponseWriter, 
 		return
 	}
 
-	contexto, err := dbpkg.BuildEmpresaAIContextoForQuestionWithOptions(c.dbEmp, payload.EmpresaID, payload.Pregunta, googleAccount, payload.PaginaContexto, c.contextoPreguntaOptions(model.ID))
+	if direct, handled, directErr := buildEmpresaAIAdminDBDirectResponse(c.dbEmp, c.dbSuper, payload.EmpresaID, googleAccount, payload.Pregunta); handled {
+		w.Header().Set("Content-Type", "text/event-stream; charset=utf-8")
+		w.Header().Set("Cache-Control", "no-cache")
+		w.Header().Set("Connection", "keep-alive")
+		if directErr != nil {
+			_ = sseWriteJSON(w, openAIStreamEvent{Error: directErr.Error()})
+			_ = sseWriteJSON(w, openAIStreamEvent{Done: true})
+			return
+		}
+		_ = sseWriteJSON(w, openAIStreamEvent{
+			ModelID:       model.ID,
+			Provider:      model.Provider,
+			DisplayName:   model.DisplayName,
+			UpstreamModel: model.UpstreamModel,
+		})
+		_ = sseWriteJSON(w, openAIStreamEvent{Delta: direct})
+		planActual := strings.ToLower(strings.TrimSpace(usoActual.PlanActual))
+		if planActual == "" {
+			planActual = "free"
+		}
+		_, _ = dbpkg.RegisterEmpresaAIConsulta(c.dbEmp, dbpkg.EmpresaAIConsulta{
+			EmpresaID:      payload.EmpresaID,
+			Provider:       model.Provider,
+			ModelID:        model.ID,
+			Pregunta:       payload.Pregunta,
+			Respuesta:      direct,
+			FechaConsulta:  time.Now().Format("2006-01-02 15:04:05"),
+			PlanActual:     planActual,
+			UsuarioCreador: googleAccount,
+			Estado:         "activo",
+			Observaciones:  "consulta administrativa directa desde chat_con_inteligencia_artificial",
+		})
+		_ = sseWriteJSON(w, openAIStreamEvent{Done: true})
+		return
+	}
+
+	contexto, err := dbpkg.BuildEmpresaAIContextoForQuestionWithOptions(c.dbEmp, payload.EmpresaID, payload.Pregunta, googleAccount, payload.PaginaContexto, c.contextoPreguntaOptionsForAccount(payload.EmpresaID, googleAccount, model.ID))
 	if err != nil {
 		http.Error(w, "No se pudo construir contexto de empresa", http.StatusBadRequest)
 		return
@@ -1570,6 +1623,7 @@ func buildEmpresaAISystemPrompt(contexto string, modoAsistente string) string {
 		"No inventes consultas SQL ni afirmes acceso a otras empresas. " +
 		"Cuando el usuario pida ejecutar acciones operativas o de base de datos (consultar, crear, editar o eliminar), NO ejecutes SQL ni escribas tablas directamente. " +
 		"En su lugar, usa solo el contexto de lectura que ya preparo el servidor o propone una accion estructurada para que el usuario la confirme. " +
+		"Los administradores autorizados pueden recibir lectura real de la base de datos de su propia empresa cuando el servidor la incluya en contexto; cualquier creacion, edicion, eliminacion o movimiento debe hacerse exclusivamente por funciones/endpoints de PCS, con validacion de rol, empresa_id y confirmacion humana cuando aplique. " +
 		"Cuando el usuario pida generar, crear o exportar un Excel, XLSX, tabla, reporte o documento con datos ya disponibles en el contexto validado, NO entres en ciclo de preguntas: genera la tabla o documento directamente. Solo pregunta si falta un dato indispensable que no pueda inferirse del pedido. " +
 		"Para solicitudes como 'genera un excel con los productos, solo nombre y precio', responde con una tabla Markdown clara con esas columnas para que el sistema muestre los botones de exportacion. " +
 		"Regla de seguridad: puedes proponer acciones OPEN/POST/PUT sobre endpoints permitidos, pero TODA accion debe pedir confirmacion previa; nunca propongas DELETE desde el chat. " +

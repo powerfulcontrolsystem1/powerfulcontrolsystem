@@ -1,3 +1,31 @@
+## [2026-06-11] Chat IA lectura administrativa por empresa
+- [Backend] El chat empresarial agrega una respuesta directa y auditada para conteos reales de usuarios desde `users`, siempre con filtro `empresa_id`.
+- [Seguridad] La lectura amplia de base de datos en contexto IA queda limitada a `super_administrador`, `administrador_total` y `admin_empresa`; usuarios operativos no reciben contexto total de tablas.
+- [Operacion] La IA puede responder consultas reales de la empresa activa, pero toda modificacion debe ir por funciones/endpoints PCS con permisos, validacion multiempresa y confirmacion cuando aplique.
+
+## [2026-06-11] Total en letras y campos imprimibles por empresa
+- [Impresion] `web/js/print_documents.js` agrega `amountToWords`, parsing comun de campos imprimibles y proteccion de campos obligatorios para documentos electronicos.
+- [Configuracion] `configuracion_impresora.html` suma checks para total en letras, numero legal, cliente, control documental, QR DIAN, observaciones, notas legales y otros campos de la representacion impresa.
+- [Ventas/FE] `ventas.html`, `facturas_electronicas.html` y el carrito respetan los checks en comprobantes/ventas, pero fuerzan campos DIAN obligatorios cuando el documento es factura electronica, nota, soporte, nomina o equivalente electronico.
+- [Seguridad legal] Los checks solo modifican la representacion impresa; no cambian XML, CUFE/CUDE, envio DIAN, totales, contabilidad ni inventario.
+
+## [2026-06-11] Ventas y facturas en bandeja unificada
+- [Ventas] `ventas.html` lista ventas internas y facturas electronicas en la misma tabla con columna `Relacion FE`.
+- [Cajero] Una venta sin factura muestra `Solo venta` y permite `Hacer factura electronica`; una venta ya facturada muestra `Venta con factura electronica` y permite abrir la FE asociada.
+- [UX] Los botones duplicados `Ver` y `Visualizar` se reemplazan por `Ver / imprimir`; se retira el salto redundante a la pagina separada de facturas desde la fila.
+- [Documentacion] Se actualiza el flujo operativo venta -> factura electronica y el mapa de modulos.
+
+## [2026-06-11] Produccion/MRP profesional y unificado
+- [Backend] `seed_demo` crea varios ejemplos PCS y es idempotente por codigo/orden demo.
+- [Integracion] MRP lista recetas vendibles activas de Productos y las importa como BOM productiva `POS-*` sin duplicar digitacion.
+- [UX] La pagina principal agrega resumen MRP, siguiente accion recomendada, ayuda de formato BOM y acceso al tutorial.
+- [Documentacion] Se separa responsabilidad: Productos conserva catalogo/POS/inventario; Produccion/MRP conserva BOM productiva, ordenes, consumos, calidad y plan de materiales.
+
+## [2026-06-11] Carrito busqueda por nombre con teclado
+- [Carrito] El campo `Busqueda por nombre` muestra resultados navegables con flecha arriba/abajo y seleccion visible.
+- [Operacion] `Enter` agrega el producto seleccionado; cuando solo hay una coincidencia por nombre, toma ese primer resultado sin requerir clic.
+- [UX] El control de pantalla completa de venta directa queda solo con el icono visible, conservando `title` y `aria-label`.
+
 ## [2026-06-11] Busqueda por nombre separada en carrito
 - [Carrito] La fila del lector separa `Codigo de barras o SKU` y `Busqueda por nombre` para que el cajero busque productos por nombre en un campo dedicado a la derecha.
 - [Operacion] Ambos campos comparten resultados, Enter y boton `Agregar`; escribir en uno limpia el otro para evitar busquedas ambiguas.

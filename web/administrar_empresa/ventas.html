@@ -15,6 +15,11 @@
     .ventas-fe-modal p{margin:6px 0 0;color:var(--muted);font-size:.9rem;line-height:1.45}
     .ventas-fe-modal-actions{display:flex;justify-content:flex-end;gap:10px;flex-wrap:wrap;margin-top:14px}
     .ventas-fe-hidden{display:none!important}
+    .ventas-relation-badge{display:inline-flex;align-items:center;min-height:28px;padding:4px 9px;border-radius:999px;border:1px solid var(--border);font-size:.78rem;font-weight:700;line-height:1.15;white-space:normal}
+    .ventas-relation-badge.sale-only{background:rgba(245,158,11,.12);border-color:rgba(245,158,11,.45);color:#92400e}
+    .ventas-relation-badge.with-fe{background:rgba(16,185,129,.12);border-color:rgba(16,185,129,.42);color:#047857}
+    .ventas-relation-badge.fe-doc{background:rgba(59,130,246,.12);border-color:rgba(59,130,246,.42);color:#1d4ed8}
+    .ventas-relation-badge.neutral{background:var(--surface-muted);color:var(--muted)}
   </style>
 </head>
 <body class="empresa-subpage">
@@ -209,6 +214,7 @@
             <tr>
               <th>Fecha</th>
               <th>Tipo</th>
+              <th>Relacion FE</th>
               <th>Código</th>
               <th>Número legal</th>
               <th>Cliente</th>
@@ -266,7 +272,7 @@
       var tbody = document.querySelector("#ventasTable tbody");
       var detalle = document.getElementById("detalle");
       var preview = document.getElementById("preview");
-      var state = { items: [], index: Object.create(null), selectedKey: "", empresaNombre: "", cfg: null, viewMode: "carta", clientes: [], facturarItem: null };
+      var state = { items: [], index: Object.create(null), facturasPorBase: Object.create(null), selectedKey: "", empresaNombre: "", cfg: null, viewMode: "carta", clientes: [], facturarItem: null };
 
       function safeUrl(raw){
         var v = norm(raw);
@@ -304,11 +310,61 @@
         return out.join("\n\n");
       }
 
+      function printItemsConfig(cfg){
+        cfg = cfg && typeof cfg === "object" ? cfg : {};
+        if(window.PCSPrint && typeof window.PCSPrint.printItemsFromConfig === "function"){
+          return window.PCSPrint.printItemsFromConfig(cfg);
+        }
+        try { return JSON.parse(norm(cfg.impresion_recibo_items_json) || "{}"); } catch(e) { return {}; }
+      }
+
+      function printFieldEnabled(items, key, item){
+        if(window.PCSPrint && typeof window.PCSPrint.printItemEnabled === "function"){
+          return window.PCSPrint.printItemEnabled(items, key, item);
+        }
+        return !items || items[key] !== false;
+      }
+
+      function totalEnLetras(item){
+        if(window.PCSPrint && typeof window.PCSPrint.amountToWords === "function"){
+          return window.PCSPrint.amountToWords(Number(item && item.monto_total || 0), norm(item && item.moneda) || "COP");
+        }
+        return "";
+      }
+
       function makeKey(it){ return norm(it.tipo_documento).toLowerCase()+"::"+norm(it.documento_codigo).toUpperCase(); }
       function ventaBaseCode(code){
         var raw = norm(code).toUpperCase().replace(/\s+/g, "");
         if (raw.indexOf("CP-") === 0 || raw.indexOf("FV-") === 0) return raw.slice(3);
         return raw;
+      }
+      function relatedFacturaFor(item){
+        if(!item || norm(item.tipo_documento).toLowerCase() !== "comprobante_pago") return null;
+        return state.facturasPorBase[ventaBaseCode(item.documento_codigo)] || null;
+      }
+      function typeLabel(item){
+        var tipo = norm(item && item.tipo_documento).toLowerCase();
+        if(tipo === "comprobante_pago") return "Venta";
+        if(tipo === "factura_electronica") return "Factura electronica";
+        return norm(item && item.tipo_documento) || "Documento";
+      }
+      function relationInfo(item){
+        var tipo = norm(item && item.tipo_documento).toLowerCase();
+        if(tipo === "factura_electronica"){
+          return { label: "Factura electronica", cls: "fe-doc", title: "Documento fiscal generado desde una venta" };
+        }
+        if(tipo === "comprobante_pago"){
+          var factura = relatedFacturaFor(item);
+          if(factura){
+            return { label: "Venta con factura electronica", cls: "with-fe", title: "Factura asociada: " + norm(factura.documento_codigo) };
+          }
+          return { label: "Solo venta", cls: "sale-only", title: "Venta sin factura electronica asociada" };
+        }
+        return { label: "Documento", cls: "neutral", title: "" };
+      }
+      function relationBadge(item){
+        var info = relationInfo(item);
+        return '<span class="ventas-relation-badge '+esc(info.cls)+'" title="'+esc(info.title)+'">'+esc(info.label)+'</span>';
       }
       function facturaCodeFromVentaCode(code){
         var base = ventaBaseCode(code);
@@ -474,23 +530,39 @@
         var logoHtml = window.PCSPrint && window.PCSPrint.resolveDocumentLogos && window.PCSPrint.logosHTML
           ? window.PCSPrint.logosHTML(window.PCSPrint.resolveDocumentLogos(cfg, "factura"))
           : (logoUrl ? ('<img src="'+esc(logoUrl)+'" alt="Logo empresa">') : '');
-        var legalBlock = buildLegalBlock(cfg);
+        var printItems = printItemsConfig(cfg);
+        var showEmpresa = printFieldEnabled(printItems, "empresa", item);
+        var showLegal = printFieldEnabled(printItems, "notas_legales", item);
+        var totalWords = printFieldEnabled(printItems, "total_en_letras", item) ? totalEnLetras(item) : "";
+        var legalBlock = showLegal ? buildLegalBlock(cfg) : "";
+        var strip = [
+          printFieldEnabled(printItems, "codigo", item) ? '<div><span>Codigo</span><strong>'+esc(item.documento_codigo||"")+'</strong></div>' : '',
+          printFieldEnabled(printItems, "numero_legal", item) ? '<div><span>Numero legal</span><strong>'+esc(numeroLegal)+'</strong></div>' : '',
+          printFieldEnabled(printItems, "fecha", item) ? '<div><span>Fecha</span><strong>'+esc(formatDate(item.fecha_documento||item.fecha_creacion))+'</strong></div>' : '',
+          printFieldEnabled(printItems, "estado", item) ? '<div><span>Estado</span><strong>'+esc(item.estado_documento||"borrador")+'</strong></div>' : ''
+        ].filter(Boolean).join("");
+        var clienteRows = [
+          printFieldEnabled(printItems, "cliente", item) ? '<div><dt>Nombre</dt><dd>'+esc(cliente)+'</dd></div>' : '',
+          printFieldEnabled(printItems, "cliente_email", item) ? '<div><dt>Correo</dt><dd>'+esc(clienteEmail)+'</dd></div>' : ''
+        ].filter(Boolean).join("");
+        var resumenRows = [
+          printFieldEnabled(printItems, "total", item) ? '<div><dt>Total</dt><dd>'+esc(formatMoney(item.monto_total, item.moneda||"COP"))+'</dd></div>' : '',
+          totalWords ? '<div><dt>Total en letras</dt><dd>'+esc(totalWords)+'</dd></div>' : '',
+          printFieldEnabled(printItems, "moneda", item) ? '<div><dt>Moneda</dt><dd>'+esc(item.moneda||"COP")+'</dd></div>' : '',
+          printFieldEnabled(printItems, "periodo", item) ? '<div><dt>Periodo</dt><dd>'+esc(item.periodo_contable||"")+'</dd></div>' : ''
+        ].filter(Boolean).join("");
         if(viewMode === "pos"){
           return '' +
             '<article class="factura-print-sheet '+esc(meta.accent)+' factura-print-pos-preview">' +
               '<header class="factura-print-head">' +
                 '<div class="factura-print-logo">' +
-                  logoHtml +
-                  '<div><span class="factura-print-kicker">Ticket POS</span><h3>'+esc(meta.title)+'</h3><p>'+esc(empresaLabel)+'</p></div>' +
+                  (showEmpresa ? logoHtml : '') +
+                  '<div><span class="factura-print-kicker">Ticket POS</span><h3>'+esc(meta.title)+'</h3>'+(showEmpresa?'<p>'+esc(empresaLabel)+'</p>':'')+'</div>' +
                 '</div>' +
               '</header>' +
-              '<section class="factura-print-strip">' +
-                '<div><span>Codigo</span><strong>'+esc(item.documento_codigo||"")+'</strong></div>' +
-                '<div><span>Fecha</span><strong>'+esc(formatDate(item.fecha_documento||item.fecha_creacion))+'</strong></div>' +
-                '<div><span>Estado</span><strong>'+esc(item.estado_documento||"borrador")+'</strong></div>' +
-              '</section>' +
-              '<section class="factura-print-panel"><h4>Cliente</h4><p>'+esc(cliente)+'</p></section>' +
-              '<section class="factura-print-panel"><h4>Total</h4><strong>'+esc(formatMoney(item.monto_total, item.moneda||"COP"))+'</strong></section>' +
+              (strip ? '<section class="factura-print-strip">'+strip+'</section>' : '') +
+              (clienteRows ? '<section class="factura-print-panel"><h4>Cliente</h4><dl>'+clienteRows+'</dl></section>' : '') +
+              (resumenRows ? '<section class="factura-print-panel"><h4>Resumen</h4><dl>'+resumenRows+'</dl></section>' : '') +
               (legalBlock ? ('<section class="factura-print-legal">'+esc(legalBlock)+'</section>') : '') +
             '</article>';
         }
@@ -498,27 +570,15 @@
           '<article class="factura-print-sheet '+esc(meta.accent)+' '+(viewMode==="compacta" ? "factura-print-compacta" : "")+'">' +
             '<header class="factura-print-head">' +
               '<div class="factura-print-logo">' +
-                logoHtml +
+                (showEmpresa ? logoHtml : '') +
                 '<div><span class="factura-print-kicker">Venta</span><h3>'+esc(meta.title)+'</h3><p>'+esc(meta.subtitle)+'</p></div>' +
               '</div>' +
-              '<div class="factura-print-company"><strong>'+esc(empresaLabel)+'</strong><span>'+esc(companyLegalLines(cfg).join(" · ") || ("ID empresa "+String(empresaID||0)))+'</span></div>' +
+              (showEmpresa ? '<div class="factura-print-company"><strong>'+esc(empresaLabel)+'</strong><span>'+esc(companyLegalLines(cfg).join(" · ") || ("ID empresa "+String(empresaID||0)))+'</span></div>' : '') +
             '</header>' +
-            '<section class="factura-print-strip">' +
-              '<div><span>Código</span><strong>'+esc(item.documento_codigo||"")+'</strong></div>' +
-              '<div><span>Número legal</span><strong>'+esc(numeroLegal)+'</strong></div>' +
-              '<div><span>Fecha</span><strong>'+esc(formatDate(item.fecha_documento||item.fecha_creacion))+'</strong></div>' +
-              '<div><span>Estado</span><strong>'+esc(item.estado_documento||"borrador")+'</strong></div>' +
-            '</section>' +
+            (strip ? '<section class="factura-print-strip">'+strip+'</section>' : '') +
             (viewMode==="compacta" ? '' : '<div class="factura-print-grid">') +
-              '<section class="factura-print-panel"><h4>Cliente</h4><dl>' +
-                '<div><dt>Nombre</dt><dd>'+esc(cliente)+'</dd></div>' +
-                '<div><dt>Correo</dt><dd>'+esc(clienteEmail)+'</dd></div>' +
-              '</dl></section>' +
-              '<section class="factura-print-panel"><h4>Resumen</h4><dl>' +
-                '<div><dt>Total</dt><dd>'+esc(formatMoney(item.monto_total, item.moneda||"COP"))+'</dd></div>' +
-                '<div><dt>Moneda</dt><dd>'+esc(item.moneda||"COP")+'</dd></div>' +
-                '<div><dt>Periodo</dt><dd>'+esc(item.periodo_contable||"")+'</dd></div>' +
-              '</dl></section>' +
+              (clienteRows ? '<section class="factura-print-panel"><h4>Cliente</h4><dl>'+clienteRows+'</dl></section>' : '') +
+              (resumenRows ? '<section class="factura-print-panel"><h4>Resumen</h4><dl>'+resumenRows+'</dl></section>' : '') +
             (viewMode==="compacta" ? '' : '</div>') +
             (legalBlock ? ('<section class="factura-print-legal">'+esc(legalBlock)+'</section>') : '') +
           '</article>';
@@ -531,9 +591,11 @@
           preview.textContent="Selecciona una venta para ver la vista previa.";
           return;
         }
+        var relacion = relationInfo(item);
         detalle.innerHTML =
           '<div class="form-row">' +
-            '<div class="form-col"><strong>Tipo:</strong> '+esc(item.tipo_documento||"")+'</div>' +
+            '<div class="form-col"><strong>Tipo:</strong> '+esc(typeLabel(item))+'</div>' +
+            '<div class="form-col"><strong>Relacion FE:</strong> '+esc(relacion.label)+'</div>' +
             '<div class="form-col"><strong>Código:</strong> '+esc(item.documento_codigo||"")+'</div>' +
             '<div class="form-col"><strong>Número legal:</strong> '+esc(item.numero_legal||"")+'</div>' +
           '</div>' +
@@ -568,8 +630,9 @@
             facturasPorBase[ventaBaseCode(it.documento_codigo)] = it;
           }
         });
+        state.facturasPorBase = facturasPorBase;
         if(!state.items.length){
-          tbody.innerHTML='<tr><td colspan="8">No se encontraron ventas para los filtros seleccionados.</td></tr>';
+          tbody.innerHTML='<tr><td colspan="9">No se encontraron ventas para los filtros seleccionados.</td></tr>';
           renderDetail(null);
           updateKPIs();
           return;
@@ -578,32 +641,31 @@
           var key=makeKey(it); state.index[key]=it;
           var clienteLabel = norm(it.cliente_nombre) || norm(it.cliente_email) || "Sin cliente";
           var tipo = norm(it.tipo_documento).toLowerCase();
-          var facturaRelacionada = tipo === "comprobante_pago" ? facturasPorBase[ventaBaseCode(it.documento_codigo)] : null;
+          var facturaRelacionada = relatedFacturaFor(it);
           var accionesFactura = "";
           if (tipo === "comprobante_pago") {
             if (facturaRelacionada) {
-              accionesFactura = '<button type="button" class="btn secondary" data-action="ver_fe" data-target-key="'+esc(makeKey(facturaRelacionada))+'">Ver factura FE</button> ';
+              accionesFactura = '<button type="button" class="btn secondary" data-action="ver_fe" data-target-key="'+esc(makeKey(facturaRelacionada))+'">Abrir factura FE</button> ';
             } else {
               accionesFactura = '<button type="button" class="btn secondary" data-action="facturar" data-key="'+esc(key)+'">Hacer factura electrónica</button> ';
             }
           }
-          var accionesAnulacion = norm(it.estado_documento).toLowerCase() === "anulada"
+          var accionesAnulacion = tipo !== "comprobante_pago" || norm(it.estado_documento).toLowerCase() === "anulada"
             ? ''
             : '<button type="button" class="btn secondary" data-action="anular_venta" data-key="'+esc(key)+'">Anular venta</button> ';
           return '<tr data-key="'+esc(key)+'">' +
             '<td>'+esc(formatDate(it.fecha_documento||it.fecha_creacion))+'</td>' +
-            '<td>'+esc(it.tipo_documento||"")+'</td>' +
+            '<td>'+esc(typeLabel(it))+'</td>' +
+            '<td>'+relationBadge(it)+'</td>' +
             '<td>'+esc(it.documento_codigo||"")+'</td>' +
             '<td>'+esc(it.numero_legal||"")+'</td>' +
             '<td>'+esc(clienteLabel)+'</td>' +
             '<td>'+esc(formatMoney(it.monto_total, it.moneda||"COP"))+'</td>' +
             '<td>'+badge(it.estado_documento)+'</td>' +
             '<td>' +
-              '<button type="button" class="btn secondary" data-action="ver" data-key="'+esc(key)+'">Ver</button> ' +
-              '<button type="button" class="btn secondary" data-action="visualizar" data-key="'+esc(key)+'">Visualizar</button> ' +
+              '<button type="button" class="btn secondary" data-action="visualizar" data-key="'+esc(key)+'">Ver / imprimir</button> ' +
               accionesFactura +
               accionesAnulacion +
-              '<button type="button" class="btn secondary" data-action="ver_facturas" data-key="'+esc(key)+'">Ver en Facturas electrónicas</button> ' +
               '<button type="button" class="btn secondary" data-action="enviar" data-key="'+esc(key)+'">Enviar correo</button> ' +
               '<button type="button" class="btn secondary" data-action="compartir_whatsapp" data-key="'+esc(key)+'">WhatsApp</button> ' +
               '<button type="button" class="btn secondary" data-action="compartir_correo" data-key="'+esc(key)+'">Compartir correo</button>' +
@@ -618,32 +680,35 @@
 
       function buildPrintablePage(item){
         var cfg = state.cfg || {};
+        var printItems = printItemsConfig(cfg);
         var formato = currentViewMode();
         if(formato === "pos"){
           var lines = companyLegalLines(cfg);
+          var showEmpresa = printFieldEnabled(printItems, "empresa", item);
           var showLogo = cfg.mostrar_logo_factura !== false && cfg.mostrar_logo !== false;
           var logoUrl = showLogo ? safeUrl(cfg.logo_factura_url || cfg.logo_url) : "";
-          var notas = norm(cfg.notas_legales);
-          var pie = norm(cfg.pie_factura);
+          var notas = printFieldEnabled(printItems, "notas_legales", item) ? norm(cfg.notas_legales) : "";
+          var pie = printFieldEnabled(printItems, "notas_legales", item) ? norm(cfg.pie_factura) : "";
           var numeroLegal = norm(item && item.numero_legal) || norm(item && item.documento_codigo) || "Pendiente";
           if (window.PCSPrint) {
             return window.PCSPrint.buildDocument({
               title: "Recibo de venta",
               kind: norm(item && item.tipo_documento).indexOf("factura") >= 0 ? "factura" : "recibo",
               format: "pos",
-              logos: window.PCSPrint.resolveDocumentLogos(cfg, "factura"),
-              company: lines[0] || "Empresa",
-              subtitle: lines.slice(1).join(" | "),
+              logos: showEmpresa ? window.PCSPrint.resolveDocumentLogos(cfg, "factura") : [],
+              company: showEmpresa ? (lines[0] || "Empresa") : "",
+              subtitle: showEmpresa ? lines.slice(1).join(" | ") : "",
               badge: "POS",
               meta: [
-                { label: "Codigo", value: item && item.documento_codigo },
-                { label: "Numero legal", value: numeroLegal },
-                { label: "Fecha", value: formatDate(item && (item.fecha_documento || item.fecha_creacion)) },
-                { label: "Cliente", value: norm(item && item.cliente_nombre) || norm(item && item.cliente_email) },
-                { label: "Estado", value: item && item.estado_documento }
+                printFieldEnabled(printItems, "codigo", item) ? { label: "Codigo", value: item && item.documento_codigo } : null,
+                printFieldEnabled(printItems, "numero_legal", item) ? { label: "Numero legal", value: numeroLegal } : null,
+                printFieldEnabled(printItems, "fecha", item) ? { label: "Fecha", value: formatDate(item && (item.fecha_documento || item.fecha_creacion)) } : null,
+                printFieldEnabled(printItems, "cliente", item) ? { label: "Cliente", value: norm(item && item.cliente_nombre) || norm(item && item.cliente_email) } : null,
+                printFieldEnabled(printItems, "estado", item) ? { label: "Estado", value: item && item.estado_documento } : null
               ],
-              totalLabel: "Total",
-              totalValue: formatMoney(item && item.monto_total, (item && item.moneda) || "COP"),
+              totalLabel: printFieldEnabled(printItems, "total", item) ? "Total" : "",
+              totalValue: printFieldEnabled(printItems, "total", item) ? formatMoney(item && item.monto_total, (item && item.moneda) || "COP") : "",
+              totalWords: printFieldEnabled(printItems, "total_en_letras", item) ? totalEnLetras(item) : "",
               note: [notas, pie].filter(Boolean).join("\n"),
               signatures: false,
               closeAfterPrint: false
@@ -842,12 +907,13 @@
 
       function exportCSV(){
         if(!state.items.length){ msg("No hay ventas para exportar.", "error"); return; }
-        var headers = ["fecha","tipo_documento","documento_codigo","numero_legal","cliente","cliente_email","monto_total","moneda","estado_documento","pais_codigo","ambiente_fe"];
+        var headers = ["fecha","tipo_documento","relacion_fe","documento_codigo","numero_legal","cliente","cliente_email","monto_total","moneda","estado_documento","pais_codigo","ambiente_fe"];
         var lines = [headers.join(",")];
         state.items.forEach(function(it){
           var row = [
             norm(it.fecha_documento||it.fecha_creacion),
-            norm(it.tipo_documento),
+            typeLabel(it),
+            relationInfo(it).label,
             norm(it.documento_codigo),
             norm(it.numero_legal),
             norm(it.cliente_nombre),
@@ -924,30 +990,15 @@
         }
         if(!item) return;
         state.selectedKey = key;
-        if(action==="ver"){ renderDetail(item); return; }
-        if(action==="visualizar"){ visualizar(item); return; }
+        if(action==="visualizar"){ renderDetail(item); visualizar(item); return; }
         if(action==="facturar"){
           openFacturarModal(item);
-          return;
-          facturarDesdeVenta(item).catch(function(err){
-            msg(err.message || "No se pudo generar la factura electrónica desde la venta.", "error");
-          });
           return;
         }
         if(action==="anular_venta"){
           anularVentaDesdeDocumento(item).catch(function(err){
             msg(err.message || "No se pudo anular la venta.", "error");
           });
-          return;
-        }
-        if(action==="ver_facturas"){
-          try {
-            var u = new URL("/administrar_empresa/facturas_electronicas.html", window.location.origin);
-            u.searchParams.set("empresa_id", String(empresaID));
-            if (norm(item.tipo_documento)) u.searchParams.set("tipo_documento", norm(item.tipo_documento));
-            if (norm(item.documento_codigo)) u.searchParams.set("documento", norm(item.documento_codigo));
-            window.location.href = u.pathname + u.search;
-          } catch (e) {}
           return;
         }
         if(action==="enviar"){ reenviarCorreo(item); return; }

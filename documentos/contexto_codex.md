@@ -18,6 +18,37 @@ decisiones en cada tarea.
   Cualquier restauracion real debe revisar el manifiesto y configurar secretos
   manualmente en la VPS destino.
 
+## Actualizacion 2026-06-11 - Empresa de pruebas operativas
+
+- Las pruebas visuales y operativas solicitadas por el usuario deben realizarse
+  en la empresa propia `Powerful Control System` / `PCS` cuando el flujo requiera
+  una empresa real de trabajo.
+- No usar empresas de ejemplo como Alfaix salvo que el usuario lo pida
+  explicitamente o que el caso de prueba corresponda a datos ya cargados alli.
+
+## Actualizacion 2026-06-11 - Carrito busqueda por nombre con teclado
+
+- El carrito permite buscar productos por nombre en un campo separado del codigo
+  de barras/SKU.
+- La lista de coincidencias se puede navegar con flecha arriba/abajo; `Enter`
+  agrega el resultado seleccionado y, si solo existe una coincidencia, toma la
+  primera sin exigir clic.
+- El icono de pantalla completa de venta directa queda visualmente como solo
+  icono, con `title` y `aria-label` para accesibilidad.
+
+## Actualizacion 2026-06-11 - Produccion/MRP unificado con Productos
+
+- `Inventario y productos` conserva catalogo, inventario, servicios y recetas
+  vendibles del POS.
+- `Produccion / MRP` queda como modulo profesional para BOM productiva, ordenes,
+  consumos, calidad y plan de requerimientos de materiales.
+- Desde MRP se pueden listar recetas vendibles activas e importarlas como BOM
+  con codigo `POS-*`; si ya existen, se actualizan por codigo para evitar
+  duplicados.
+- Los endpoints genericos antiguos `/api/empresa/produccion/bom` se consideran
+  legado tecnico; no deben ser el flujo operativo principal cuando exista
+  `produccion_mrp`.
+
 ## Actualizacion 2026-06-10 - Nomina en Finanzas y cumplimiento
 
 - `Nomina` queda como acceso directo del grupo principal `Finanzas y

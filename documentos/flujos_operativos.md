@@ -146,17 +146,26 @@ afecte dinero, documentos, licencias o seguridad.
 ## Factura electronica desde una venta existente
 
 1. Abrir `Administrar empresa > Ventas` y ubicar un comprobante de pago emitido.
-2. Usar `Hacer factura electronica`.
-3. Seleccionar un cliente existente de la empresa o crear cliente rapido con
+2. La misma bandeja lista ventas internas y facturas electronicas, mostrando
+   `Solo venta`, `Venta con factura electronica` o `Factura electronica` para
+   evitar consultar paginas separadas.
+3. Usar `Hacer factura electronica` sobre una fila `Solo venta`.
+4. Seleccionar un cliente existente de la empresa o crear cliente rapido con
    tipo/documento, nombre y correo si no existe.
-4. PCS asocia el cliente al comprobante origen por `empresa_id` antes de generar
+5. PCS asocia el cliente al comprobante origen por `empresa_id` antes de generar
    la factura electronica.
-5. La venta origen conserva valor, pagos, inventario y total; solo se crea el
+6. La venta origen conserva valor, pagos, inventario y total; solo se crea el
    documento fiscal derivado.
-6. La fecha y hora fiscal de la factura electronica se generan al preparar el
+7. La fecha y hora fiscal de la factura electronica se generan al preparar el
    documento legal, por lo que pueden diferir de la fecha/hora de la venta.
-7. Si se activa el check de correo, la factura se envia al correo del cliente
+8. Si se activa el check de correo, la factura se envia al correo del cliente
    cuando no haya sido enviada ya por la configuracion automatica.
+9. Los campos de la representacion impresa se configuran por empresa en
+   `Configuracion > Impresoras y caja > Documento de venta e impresion`.
+   `Total en letras` es opcional. Si el documento es factura electronica, nota,
+   soporte, nomina o equivalente electronico, PCS conserva impresos los campos
+   legales obligatorios aunque el check este apagado; esos checks solo pueden
+   ocultar campos en ventas/comprobantes sin factura electronica.
 
 ## Modulo NIIF
 
@@ -286,6 +295,12 @@ afecte dinero, documentos, licencias o seguridad.
    ventas.
 8. El backend vuelve a validar sesion, `empresa_id`, licencia, pagina y permisos
    efectivos en cada ruta; la IA no concede permisos ni ejecuta SQL libre.
+9. Para `super_administrador`, `administrador_total` y `admin_empresa`, el backend
+   puede entregar contexto real de lectura de la base de datos de la empresa
+   activa y respuestas directas como conteo de usuarios. Esa lectura siempre usa
+   consultas controladas, omite secretos y filtra por `empresa_id`; cualquier
+   cambio de datos debe ejecutarse por una funcion PCS existente con permisos y
+   confirmacion, no por SQL libre del modelo.
 
 ## Auditoria integral de modulos
 

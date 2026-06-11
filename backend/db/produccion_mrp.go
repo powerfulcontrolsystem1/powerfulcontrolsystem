@@ -345,6 +345,15 @@ func UpsertEmpresaProduccionReceta(dbConn *sql.DB, item EmpresaProduccionReceta)
 	if item.Codigo == "" || item.Nombre == "" {
 		return 0, errors.New("codigo y nombre de receta son obligatorios")
 	}
+	if item.ID <= 0 {
+		existingID, err := getEmpresaProduccionRecetaIDByCodigo(dbConn, item.EmpresaID, item.Codigo)
+		if err != nil {
+			return 0, err
+		}
+		if existingID > 0 {
+			item.ID = existingID
+		}
+	}
 	if item.ID > 0 {
 		_, err := ExecCompat(dbConn, `UPDATE empresa_produccion_recetas SET codigo=?, nombre=?, producto_terminado_id=?, producto_terminado_nombre=?, version=?, unidad=?, cantidad_base=?, costo_estandar=?, merma_porcentaje=?, tiempo_estimado_min=?, estado=?, fecha_actualizacion=CURRENT_TIMESTAMP WHERE empresa_id=? AND id=?`,
 			item.Codigo, item.Nombre, item.ProductoTerminadoID, item.ProductoTerminadoNombre, item.Version, item.Unidad, item.CantidadBase, item.CostoEstandar, item.MermaPorcentaje, item.TiempoEstimadoMin, item.Estado, item.EmpresaID, item.ID)
@@ -369,6 +378,23 @@ func UpsertEmpresaProduccionReceta(dbConn *sql.DB, item EmpresaProduccionReceta)
 		}
 	}
 	return id, nil
+}
+
+func getEmpresaProduccionRecetaIDByCodigo(dbConn *sql.DB, empresaID int64, codigo string) (int64, error) {
+	codigo = strings.ToUpper(strings.TrimSpace(codigo))
+	if empresaID <= 0 || codigo == "" {
+		return 0, nil
+	}
+	var id int64
+	err := QueryRowCompat(dbConn, `
+SELECT id
+FROM empresa_produccion_recetas
+WHERE empresa_id=? AND codigo=?
+LIMIT 1`, empresaID, codigo).Scan(&id)
+	if errors.Is(err, sql.ErrNoRows) {
+		return 0, nil
+	}
+	return id, err
 }
 
 func ReplaceEmpresaProduccionComponentes(dbConn *sql.DB, empresaID, recetaID int64, rows []EmpresaProduccionComponente) error {
@@ -796,24 +822,211 @@ func SeedEmpresaProduccionMRPDemo(dbConn *sql.DB, empresaID int64, user string) 
 	if err := UpsertEmpresaProduccionMRPConfig(dbConn, EmpresaProduccionMRPConfig{EmpresaID: empresaID, NombreSistema: "Produccion / MRP", Moneda: "COP", CosteoModo: "estandar", AprobarOrdenes: true, CerrarConCalidad: true, UsuarioCreador: user}); err != nil {
 		return err
 	}
-	recID, err := UpsertEmpresaProduccionReceta(dbConn, EmpresaProduccionReceta{
-		EmpresaID: empresaID, Codigo: "BOM-KIT-ASEO", Nombre: "Kit de aseo hotelero", ProductoTerminadoNombre: "Kit de aseo estacion", Version: "1.0", Unidad: "kit", CantidadBase: 1, CostoEstandar: 4200, MermaPorcentaje: 2, TiempoEstimadoMin: 12, Estado: "activo", UsuarioCreador: user,
-		Componentes: []EmpresaProduccionComponente{
-			{ProductoNombre: "Shampoo sachet", Unidad: "und", Cantidad: 1, CostoUnitario: 900, Etapa: "alistamiento", Obligatoria: true},
-			{ProductoNombre: "Jabon hotelero", Unidad: "und", Cantidad: 1, CostoUnitario: 1100, Etapa: "alistamiento", Obligatoria: true},
-			{ProductoNombre: "Empaque sellado", Unidad: "und", Cantidad: 1, CostoUnitario: 450, Etapa: "empaque", Obligatoria: true},
-		},
-	})
-	if err != nil {
+	for _, demo := range produccionMRPDemoDefinitions(user) {
+		receta := demo.Receta
+		receta.EmpresaID = empresaID
+		recID, err := UpsertEmpresaProduccionReceta(dbConn, receta)
+		if err != nil {
+			return err
+		}
+		orden := demo.Orden
+		orden.EmpresaID = empresaID
+		orden.RecetaID = recID
+		orden.UsuarioCreador = user
+		if orden.Observaciones == "" {
+			orden.Observaciones = "PCS-DEMO-MRP"
+		} else if !strings.Contains(orden.Observaciones, "PCS-DEMO-MRP") {
+			orden.Observaciones += " | PCS-DEMO-MRP"
+		}
+		created, err := ensureEmpresaProduccionDemoOrden(dbConn, orden)
+		if err != nil {
+			return err
+		}
+		_ = ensureEmpresaProduccionDemoCalidad(dbConn, empresaID, created.ID, demo.CalidadChecklist)
+	}
+	periodo := time.Now().Format("2006-01")
+	if _, err := GenerarEmpresaProduccionMRPPlan(dbConn, empresaID, periodo, user); err != nil {
 		return err
 	}
-	orden, err := CreateEmpresaProduccionOrden(dbConn, EmpresaProduccionOrden{EmpresaID: empresaID, RecetaID: recID, ProductoTerminadoNombre: "Kit de aseo estacion", CantidadPlanificada: 50, Estado: "programada", Prioridad: "normal", Responsable: "Operaciones", Observaciones: "Demo inicial para produccion hotelera/motelera", UsuarioCreador: user})
-	if err != nil {
-		return err
-	}
-	_, _ = RegistrarEmpresaProduccionCalidad(dbConn, EmpresaProduccionCalidad{EmpresaID: empresaID, OrdenID: orden.ID, Resultado: "pendiente", Responsable: "Calidad", ChecklistJSON: `{"empaque":"pendiente","contenido":"pendiente"}`})
-	_, err = GenerarEmpresaProduccionMRPPlan(dbConn, empresaID, "demo", user)
+	_, err := GenerarEmpresaProduccionMRPPlan(dbConn, empresaID, "demo", user)
 	return err
+}
+
+type produccionMRPDemoDefinition struct {
+	Receta           EmpresaProduccionReceta
+	Orden            EmpresaProduccionOrden
+	CalidadChecklist string
+}
+
+func produccionMRPDemoDefinitions(user string) []produccionMRPDemoDefinition {
+	return []produccionMRPDemoDefinition{
+		{
+			Receta: EmpresaProduccionReceta{
+				Codigo: "BOM-KIT-ASEO", Nombre: "Kit de aseo hotelero", ProductoTerminadoNombre: "Kit de aseo estacion", Version: "1.1", Unidad: "kit", CantidadBase: 1, CostoEstandar: 4200, MermaPorcentaje: 2, TiempoEstimadoMin: 12, Estado: "activo", UsuarioCreador: user,
+				Componentes: []EmpresaProduccionComponente{
+					{ProductoNombre: "Shampoo sachet", Unidad: "und", Cantidad: 1, CostoUnitario: 900, Etapa: "alistamiento", Obligatoria: true},
+					{ProductoNombre: "Jabon hotelero", Unidad: "und", Cantidad: 1, CostoUnitario: 1100, Etapa: "alistamiento", Obligatoria: true},
+					{ProductoNombre: "Empaque sellado", Unidad: "und", Cantidad: 1, CostoUnitario: 450, Etapa: "empaque", Obligatoria: true},
+				},
+			},
+			Orden:            EmpresaProduccionOrden{ProductoTerminadoNombre: "Kit de aseo estacion", CantidadPlanificada: 50, Estado: "programada", Prioridad: "normal", Responsable: "Operaciones", Observaciones: "Demo inicial para produccion hotelera/motelera"},
+			CalidadChecklist: `{"empaque":"pendiente","contenido":"pendiente"}`,
+		},
+		{
+			Receta: EmpresaProduccionReceta{
+				Codigo: "BOM-PAQ-MENTA-PCS", Nombre: "Paquete promocional de menta", ProductoTerminadoNombre: "Paquete menta PCS", Version: "1.0", Unidad: "paq", CantidadBase: 1, CostoEstandar: 720, MermaPorcentaje: 1, TiempoEstimadoMin: 4, Estado: "activo", UsuarioCreador: user,
+				Componentes: []EmpresaProduccionComponente{
+					{ProductoNombre: "Menta producto base", Unidad: "und", Cantidad: 1, CostoUnitario: 100, Etapa: "alistamiento", Obligatoria: true},
+					{ProductoNombre: "Bolsa sellada", Unidad: "und", Cantidad: 1, CostoUnitario: 80, Etapa: "empaque", Obligatoria: true},
+					{ProductoNombre: "Etiqueta PCS", Unidad: "und", Cantidad: 1, CostoUnitario: 120, Etapa: "empaque", Obligatoria: true},
+				},
+			},
+			Orden:            EmpresaProduccionOrden{ProductoTerminadoNombre: "Paquete menta PCS", CantidadPlanificada: 200, Estado: "en_proceso", Prioridad: "alta", Responsable: "Bodega 1", Observaciones: "Demo de producto simple con empaque y etiqueta"},
+			CalidadChecklist: `{"conteo":"pendiente","rotulado":"pendiente"}`,
+		},
+		{
+			Receta: EmpresaProduccionReceta{
+				Codigo: "BOM-HAMB-CLASICA", Nombre: "Hamburguesa clasica restaurante", ProductoTerminadoNombre: "Hamburguesa clasica", Version: "1.0", Unidad: "und", CantidadBase: 1, CostoEstandar: 8600, MermaPorcentaje: 3, TiempoEstimadoMin: 8, Estado: "activo", UsuarioCreador: user,
+				Componentes: []EmpresaProduccionComponente{
+					{ProductoNombre: "Pan artesanal", Unidad: "und", Cantidad: 1, CostoUnitario: 1200, Etapa: "preparacion", Obligatoria: true},
+					{ProductoNombre: "Carne porcionada", Unidad: "und", Cantidad: 1, CostoUnitario: 4800, Etapa: "coccion", Obligatoria: true},
+					{ProductoNombre: "Queso tajado", Unidad: "und", Cantidad: 1, CostoUnitario: 900, Etapa: "ensamble", Obligatoria: true},
+					{ProductoNombre: "Caja para domicilio", Unidad: "und", Cantidad: 1, CostoUnitario: 650, Etapa: "empaque", Obligatoria: true},
+				},
+			},
+			Orden:            EmpresaProduccionOrden{ProductoTerminadoNombre: "Hamburguesa clasica", CantidadPlanificada: 30, Estado: "borrador", Prioridad: "urgente", Responsable: "Cocina", Observaciones: "Demo restaurante con etapas y merma controlada"},
+			CalidadChecklist: `{"temperatura":"pendiente","presentacion":"pendiente"}`,
+		},
+	}
+}
+
+func ensureEmpresaProduccionDemoOrden(dbConn *sql.DB, item EmpresaProduccionOrden) (EmpresaProduccionOrden, error) {
+	var id int64
+	err := QueryRowCompat(dbConn, `
+SELECT id
+FROM empresa_produccion_ordenes
+WHERE empresa_id=? AND receta_id=? AND COALESCE(observaciones,'') LIKE '%PCS-DEMO-MRP%' AND estado NOT IN ('cerrada','cancelada')
+ORDER BY id DESC
+	LIMIT 1`, item.EmpresaID, item.RecetaID).Scan(&id)
+	if err == nil {
+		return GetEmpresaProduccionOrdenByID(dbConn, item.EmpresaID, id)
+	}
+	if !errors.Is(err, sql.ErrNoRows) {
+		return EmpresaProduccionOrden{}, err
+	}
+	return CreateEmpresaProduccionOrden(dbConn, item)
+}
+
+func ensureEmpresaProduccionDemoCalidad(dbConn *sql.DB, empresaID, ordenID int64, checklist string) error {
+	if empresaID <= 0 || ordenID <= 0 {
+		return nil
+	}
+	var id int64
+	err := QueryRowCompat(dbConn, `
+SELECT id
+FROM empresa_produccion_calidad
+WHERE empresa_id=? AND orden_id=? AND resultado='pendiente'
+LIMIT 1`, empresaID, ordenID).Scan(&id)
+	if err == nil {
+		return nil
+	}
+	if !errors.Is(err, sql.ErrNoRows) {
+		return err
+	}
+	_, err = RegistrarEmpresaProduccionCalidad(dbConn, EmpresaProduccionCalidad{EmpresaID: empresaID, OrdenID: ordenID, Resultado: "pendiente", Responsable: "Calidad", ChecklistJSON: checklist})
+	return err
+}
+
+func ImportEmpresaProduccionRecetaFromRecetaProducto(dbConn *sql.DB, empresaID, recetaProductoID int64, user string) (EmpresaProduccionReceta, error) {
+	if empresaID <= 0 || recetaProductoID <= 0 {
+		return EmpresaProduccionReceta{}, errors.New("empresa_id y receta_producto_id son obligatorios")
+	}
+	recetaPOS, err := GetRecetaProductoByID(dbConn, empresaID, recetaProductoID)
+	if err != nil {
+		return EmpresaProduccionReceta{}, err
+	}
+	if recetaPOS == nil || len(recetaPOS.Ingredientes) == 0 {
+		return EmpresaProduccionReceta{}, errors.New("la receta vendible no tiene ingredientes para importar")
+	}
+	componentes := make([]EmpresaProduccionComponente, 0, len(recetaPOS.Ingredientes))
+	var costoEstandar float64
+	for i, ing := range recetaPOS.Ingredientes {
+		nombre := strings.TrimSpace(ing.ProductoNombre)
+		unidad := strings.TrimSpace(ing.UnidadMedida)
+		costoUnitario := 0.0
+		if ing.ProductoID > 0 {
+			if producto, err := GetProductoByID(dbConn, empresaID, ing.ProductoID); err == nil && producto != nil {
+				if nombre == "" {
+					nombre = producto.Nombre
+				}
+				if unidad == "" {
+					unidad = producto.UnidadMedida
+				}
+				costoUnitario = producto.Costo
+			}
+		}
+		if nombre == "" || ing.Cantidad <= 0 {
+			continue
+		}
+		if unidad == "" {
+			unidad = "und"
+		}
+		costoEstandar += ing.Cantidad * costoUnitario
+		componentes = append(componentes, EmpresaProduccionComponente{
+			EmpresaID:      empresaID,
+			ProductoID:     ing.ProductoID,
+			ProductoNombre: nombre,
+			Unidad:         unidad,
+			Cantidad:       ing.Cantidad,
+			CostoUnitario:  costoUnitario,
+			Obligatoria:    true,
+			Etapa:          "preparacion",
+			Orden:          i + 1,
+		})
+	}
+	if len(componentes) == 0 {
+		return EmpresaProduccionReceta{}, errors.New("la receta vendible no tiene ingredientes validos para BOM")
+	}
+	codigo := strings.ToUpper(strings.TrimSpace(recetaPOS.Codigo))
+	if codigo == "" {
+		codigo = fmt.Sprintf("RECETA-%d", recetaPOS.ID)
+	}
+	if !strings.HasPrefix(codigo, "POS-") {
+		codigo = "POS-" + codigo
+	}
+	costo := recetaPOS.CostoReal
+	if costo <= 0 {
+		costo = recetaPOS.CostoTeorico
+	}
+	if costo <= 0 {
+		costo = costoEstandar
+	}
+	version := "1.0"
+	if recetaPOS.RecetaVersion > 0 {
+		version = fmt.Sprintf("%d", recetaPOS.RecetaVersion)
+	}
+	receta := EmpresaProduccionReceta{
+		EmpresaID:               empresaID,
+		Codigo:                  codigo,
+		Nombre:                  "BOM " + strings.TrimSpace(recetaPOS.Nombre),
+		ProductoTerminadoNombre: strings.TrimSpace(recetaPOS.Nombre),
+		Version:                 version,
+		Unidad:                  recetaPOS.UnidadMedida,
+		CantidadBase:            1,
+		CostoEstandar:           roundMoneyProduccion(costo),
+		MermaPorcentaje:         0,
+		TiempoEstimadoMin:       0,
+		Estado:                  "activo",
+		UsuarioCreador:          user,
+		Componentes:             componentes,
+	}
+	id, err := UpsertEmpresaProduccionReceta(dbConn, receta)
+	if err != nil {
+		return EmpresaProduccionReceta{}, err
+	}
+	receta.ID = id
+	receta.Componentes, _ = ListEmpresaProduccionComponentes(dbConn, empresaID, id)
+	return receta, nil
 }
 
 func getEmpresaProduccionRecetaByID(dbConn *sql.DB, empresaID, id int64) (EmpresaProduccionReceta, error) {

@@ -30,6 +30,154 @@
     return 'recibo';
   }
 
+  var DEFAULT_PRINT_ITEMS = {
+    empresa: true,
+    carrito: true,
+    codigo: true,
+    numero_legal: true,
+    fecha: true,
+    estado: true,
+    cliente: true,
+    cliente_email: true,
+    cliente_documento: true,
+    cajero: true,
+    metodo_pago: true,
+    total: true,
+    moneda: true,
+    periodo: true,
+    control_documental: true,
+    tipo_documento: true,
+    codigo_validacion: true,
+    pais: true,
+    ambiente: true,
+    observaciones: true,
+    notas_legales: true,
+    qr_dian: true,
+    total_en_letras: false,
+    formato: true,
+    impresora: true,
+    copias: true,
+    campo_personalizado: false,
+    campo_personalizado_etiqueta: 'Domicilio',
+    campo_personalizado_valor: '',
+    campo_personalizado_descripcion_visible: true,
+    campo_personalizado_descripcion: ''
+  };
+
+  var ELECTRONIC_REQUIRED_PRINT_KEYS = {
+    empresa: true,
+    codigo: true,
+    numero_legal: true,
+    fecha: true,
+    estado: true,
+    cliente: true,
+    cliente_documento: true,
+    total: true,
+    moneda: true,
+    control_documental: true,
+    tipo_documento: true,
+    codigo_validacion: true,
+    pais: true,
+    ambiente: true,
+    qr_dian: true
+  };
+
+  function parsePrintItemsJSON(raw, defaults) {
+    var base = Object.assign({}, DEFAULT_PRINT_ITEMS, defaults || {});
+    if (raw && typeof raw === 'object' && !Array.isArray(raw)) {
+      raw = JSON.stringify(raw);
+    }
+    var body = text(raw).trim();
+    if (!body) return base;
+    try {
+      var parsed = JSON.parse(body);
+      if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return base;
+      Object.keys(parsed).forEach(function(key) {
+        if (!Object.prototype.hasOwnProperty.call(base, key)) return;
+        if (typeof base[key] === 'boolean') {
+          base[key] = parsed[key] !== false;
+        } else if (typeof base[key] === 'string') {
+          base[key] = text(parsed[key]).trim();
+        } else {
+          base[key] = parsed[key];
+        }
+      });
+    } catch (e) {}
+    return base;
+  }
+
+  function printItemsFromConfig(config, defaults) {
+    return parsePrintItemsJSON(config && config.impresion_recibo_items_json, defaults);
+  }
+
+  function isElectronicDocument(item) {
+    var tipo = text(item && item.tipo_documento).trim().toLowerCase();
+    return tipo === 'factura_electronica' ||
+      tipo === 'nota_credito' ||
+      tipo === 'nota_debito' ||
+      tipo === 'documento_soporte' ||
+      tipo === 'nomina_electronica' ||
+      tipo === 'documento_equivalente_pos';
+  }
+
+  function printItemEnabled(items, key, item) {
+    if (isElectronicDocument(item) && ELECTRONIC_REQUIRED_PRINT_KEYS[key]) return true;
+    if (!items || typeof items !== 'object') return true;
+    return items[key] !== false;
+  }
+
+  function numberToSpanishInteger(value) {
+    var n = Math.floor(Math.abs(Number(value) || 0));
+    var units = ['cero','uno','dos','tres','cuatro','cinco','seis','siete','ocho','nueve','diez','once','doce','trece','catorce','quince','dieciseis','diecisiete','dieciocho','diecinueve'];
+    var tens = ['', '', 'veinte', 'treinta', 'cuarenta', 'cincuenta', 'sesenta', 'setenta', 'ochenta', 'noventa'];
+    var hundreds = ['', 'ciento', 'doscientos', 'trescientos', 'cuatrocientos', 'quinientos', 'seiscientos', 'setecientos', 'ochocientos', 'novecientos'];
+    function belowHundred(x) {
+      if (x < 20) return units[x];
+      if (x === 20) return 'veinte';
+      if (x < 30) return 'veinti' + units[x - 20];
+      var t = Math.floor(x / 10);
+      var u = x % 10;
+      return tens[t] + (u ? ' y ' + units[u] : '');
+    }
+    function belowThousand(x) {
+      if (x < 100) return belowHundred(x);
+      if (x === 100) return 'cien';
+      var h = Math.floor(x / 100);
+      var r = x % 100;
+      return hundreds[h] + (r ? ' ' + belowHundred(r) : '');
+    }
+    function chunk(x) {
+      if (x < 1000) return belowThousand(x);
+      if (x < 1000000) {
+        var th = Math.floor(x / 1000);
+        var rem = x % 1000;
+        return (th === 1 ? 'mil' : belowThousand(th) + ' mil') + (rem ? ' ' + belowThousand(rem) : '');
+      }
+      if (x < 1000000000000) {
+        var mill = Math.floor(x / 1000000);
+        var rest = x % 1000000;
+        return (mill === 1 ? 'un millon' : chunk(mill) + ' millones') + (rest ? ' ' + chunk(rest) : '');
+      }
+      var bill = Math.floor(x / 1000000000000);
+      var tail = x % 1000000000000;
+      return (bill === 1 ? 'un billon' : chunk(bill) + ' billones') + (tail ? ' ' + chunk(tail) : '');
+    }
+    return n === 0 ? 'cero' : chunk(n).replace(/\buno mil\b/g, 'un mil');
+  }
+
+  function amountToWords(amount, currency) {
+    var value = Number(amount || 0);
+    var cur = text(currency || 'COP').trim().toUpperCase() || 'COP';
+    var sign = value < 0 ? 'menos ' : '';
+    var entero = Math.floor(Math.abs(value));
+    var cents = Math.round((Math.abs(value) - entero) * 100);
+    var currencyName = cur === 'COP' ? (entero === 1 ? 'peso colombiano' : 'pesos colombianos') : cur;
+    var out = sign + numberToSpanishInteger(entero) + ' ' + currencyName;
+    if (cents > 0) out += ' con ' + numberToSpanishInteger(cents) + ' centavos';
+    if (cur === 'COP' && cents === 0) out += ' m/cte';
+    return out.toUpperCase();
+  }
+
   function safeLogoURL(value) {
     var raw = text(value).trim();
     var lower = raw.toLowerCase();
@@ -220,6 +368,9 @@
       if (text(options.totalLabel || options.totalValue).trim()) {
         body += '<section class="pcs-print-total"><span>' + escapeHTML(options.totalLabel || 'Total') + '</span><span>' + escapeHTML(options.totalValue || '') + '</span></section>';
       }
+      if (text(options.totalWords).trim()) {
+        body += '<section class="pcs-print-note"><strong>Total en letras:</strong> ' + escapeHTML(options.totalWords) + '</section>';
+      }
       var summary = summaryRowsHTML(options.summaryRows);
       if (summary) body += '<section class="pcs-print-summary">' + summary + '</section>';
       if (text(options.note).trim()) body += '<section class="pcs-print-note">' + escapeHTML(options.note) + '</section>';
@@ -304,6 +455,12 @@
   global.PCSPrint = {
     escapeHTML: escapeHTML,
     normalizeFormat: normalizeFormat,
+    DEFAULT_PRINT_ITEMS: DEFAULT_PRINT_ITEMS,
+    parsePrintItemsJSON: parsePrintItemsJSON,
+    printItemsFromConfig: printItemsFromConfig,
+    printItemEnabled: printItemEnabled,
+    isElectronicDocument: isElectronicDocument,
+    amountToWords: amountToWords,
     resolveDocumentLogos: resolveDocumentLogos,
     logosHTML: logosHTML,
     qrHTML: qrHTML,

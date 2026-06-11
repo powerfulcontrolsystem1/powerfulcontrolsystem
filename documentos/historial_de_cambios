@@ -1,3 +1,33 @@
+2026-06-11: Chat IA con lectura administrativa real por empresa.
+- Modulos afectados: `chat_ia`, `usuarios_empresa`, `seguridad`, `multiempresa`.
+- Backend: `backend/handlers/chat_con_inteligencia_artificial_admin_queries.go` agrega respuesta directa para conteos reales de usuarios desde `users`, siempre filtrando por `empresa_id`.
+- Seguridad: la lectura amplia de base de datos del contexto IA queda limitada a `super_administrador`, `administrador_total` y `admin_empresa`; roles operativos no reciben lectura total de tablas.
+- Regla operativa: la IA puede leer datos reales ya consultados por el backend para la empresa activa, pero cualquier creacion, edicion, eliminacion o movimiento debe ejecutarse por funciones/endpoints PCS con permisos, validacion de `empresa_id` y confirmacion cuando aplique.
+- Pruebas: `go test ./handlers -run "TestEmpresaAI(WantsUserSummaryQuestion|AdministrativeDBReadRole)|TestFormatEmpresaAIUsuariosResumen" -count=1`.
+
+2026-06-11: Total en letras y campos imprimibles por empresa.
+- Modulos afectados: `impresion`, `ventas`, `facturacion_electronica`, `carritos`, `configuracion_impresora`.
+- Frontend comun: `web/js/print_documents.js` agrega conversion de monto a letras en espanol, parsing compartido de `impresion_recibo_items_json` y regla de campos obligatorios para documentos electronicos.
+- Configuracion: `web/administrar_empresa/configuracion_impresora.html` agrega checks de total en letras, numero legal, cliente/correo/documento, estado, moneda, periodo, control documental, codigo validacion, pais, ambiente, observaciones, notas legales y QR DIAN.
+- Operacion: `web/administrar_empresa/ventas.html`, `web/administrar_empresa/facturas_electronicas.html` y `web/administrar_empresa/carrito_de_compras.html` respetan los checks en ventas/comprobantes y muestran total en letras cuando esta activo.
+- Seguridad legal: en factura electronica y documentos electronicos relacionados, los campos legales obligatorios se imprimen aunque el check este apagado; el cambio no modifica XML, CUFE/CUDE, DIAN, pagos, inventario ni contabilidad.
+
+2026-06-11: Ventas y facturas en bandeja unificada.
+- Modulos afectados: `ventas`, `facturacion_electronica`, `cajero`.
+- Frontend: `web/administrar_empresa/ventas.html` agrega columna `Relacion FE` y badges para diferenciar `Solo venta`, `Venta con factura electronica` y `Factura electronica`.
+- UX: reemplaza los botones duplicados `Ver` y `Visualizar` por `Ver / imprimir`, retira el salto redundante a `facturas_electronicas.html` desde la fila y limita `Anular venta` a comprobantes de pago.
+- Operacion: el cajero conserva una sola bandeja para consultar ventas/facturas, reimprimir, reenviar y generar factura electronica desde una venta interna sin alterar valores, pagos ni inventario.
+- Seguridad: no se agregan endpoints ni permisos nuevos; el flujo sigue usando `/api/empresa/facturacion_electronica` con `empresa_id` obligatorio.
+
+2026-06-11: Produccion/MRP profesional unificado con Productos.
+- Modulos afectados: `produccion_mrp`, `inventario`, `recetas_productos`, `administrar_productos`.
+- Backend: `backend/db/produccion_mrp.go` hace idempotente `seed_demo`, agrega varios ejemplos PCS y permite importar recetas vendibles activas como BOM `POS-*`.
+- Backend: `backend/handlers/produccion_mrp.go` expone `catalogo_recetas_vendibles` e `import_receta_producto` bajo el wrapper empresarial de Produccion/MRP.
+- Frontend: `web/administrar_empresa/produccion_mrp.html` agrega puente de importacion, resumen MRP, siguiente accion recomendada y boton tutorial.
+- Frontend: `web/administrar_empresa/produccion_mrp_tutorial.html` documenta el flujo operativo de configuracion, BOM, orden, consumo, calidad y MRP.
+- Frontend: `web/administrar_empresa/administrar_productos.html` agrega una tarjeta que aclara la separacion: Productos conserva catalogo/POS/inventario; MRP conserva planeacion y ejecucion productiva.
+- Seguridad: las consultas e importaciones usan `empresa_id`; no se agregan dependencias ni se mezclan datos entre empresas.
+
 2026-06-11: Busqueda por nombre separada en carrito.
 - Modulos afectados: `carritos`, `venta_directa`, `estaciones`.
 - Frontend: `web/administrar_empresa/carrito_de_compras.html` agrega el campo `scannerNombre` a la derecha de `scannerCodigo`, mantiene resultados compartidos y permite Enter/boton Agregar desde cualquiera de los dos campos.
@@ -34072,3 +34102,14 @@ Archivos modificados:
 - web/js/login_usuario.js
 - web/login_usuario.html
 - web/menu.js
+
+2026-06-11 - Carrito: busqueda por nombre con teclado y fullscreen solo icono
+- `web/administrar_empresa/carrito_de_compras.html`:
+	- agrega estado de resultado activo para el buscador por nombre del carrito.
+	- permite navegar coincidencias con flecha arriba/abajo, marcar seleccion visible y agregar con Enter el producto seleccionado o el unico resultado disponible.
+	- agrega atributos `role`, `aria-expanded` y `aria-activedescendant` al combobox de busqueda por nombre.
+	- deja el control de pantalla completa de venta directa solo con icono visible, conservando `title` y `aria-label`.
+- `web/estilos.css`:
+	- alinea la fila de codigo/nombre/cantidad dejando los resultados como lista flotante y corrige el layout del resultado decorado con icono.
+- `documentos/contexto_codex.md`, `documentos/mapa_modulos.md`, `documentos/CHANGELOG.md`, `CHANGELOG.md` y `documentos/descripcion_de_archivos`:
+	- documentan el comportamiento de caja y que las pruebas operativas se hacen sobre PCS/Powerful Control System salvo instruccion contraria.

@@ -30,6 +30,8 @@
     .prod-field textarea{resize:vertical;min-height:72px}.prod-field input:focus,.prod-field select:focus,.prod-field textarea:focus{border-color:var(--accent,#1769e0);box-shadow:0 0 0 3px var(--focus,rgba(23,105,224,.18))}
     .prod-list,.prod-alerts,.prod-stage-grid,.prod-detail-list{display:grid;gap:8px}.prod-list{max-height:560px;overflow:auto;padding-right:2px}.prod-stage-grid{grid-template-columns:repeat(5,minmax(0,1fr))}
     .prod-command{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(320px,.95fr);gap:12px;align-items:stretch}.prod-command-main,.prod-command-side{border:1px solid var(--border,rgba(15,35,64,.14));border-radius:8px;background:linear-gradient(135deg,color-mix(in srgb,var(--surface,#fff) 90%,var(--accent,#1769e0) 10%),var(--surface,#fff));padding:14px}.prod-command-main h2,.prod-command-side h2{margin:0 0 6px;font-size:16px}.prod-command-main p,.prod-command-side p{margin:0;color:var(--muted,#65758b);line-height:1.45}.prod-quick-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:12px}.prod-check{display:grid;gap:8px;margin-top:12px}.prod-check span{display:flex;justify-content:space-between;gap:8px;border:1px solid var(--border,rgba(15,35,64,.14));border-radius:8px;background:color-mix(in srgb,var(--surface,#fff) 84%,var(--surface-soft,#f4f7fc) 16%);padding:8px 10px;color:var(--muted,#65758b);font-size:12px;font-weight:800}.prod-check strong{color:var(--text,#172033)}
+    .prod-next{margin-top:12px;border:1px solid color-mix(in srgb,var(--accent,#1769e0) 36%,var(--border,transparent));border-radius:8px;padding:11px;background:color-mix(in srgb,var(--accent,#1769e0) 9%,var(--surface,#fff))}.prod-next strong{display:block;font-size:13px}.prod-next span{display:block;margin-top:4px;color:var(--muted,#65758b);font-size:12px;line-height:1.4}.prod-mrp-summary{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin:0 0 10px}.prod-mrp-card{border:1px solid var(--border,rgba(15,35,64,.14));border-radius:8px;padding:10px;background:color-mix(in srgb,var(--surface,#fff) 88%,var(--surface-soft,#f4f7fc) 12%)}.prod-mrp-card span{display:block;color:var(--muted,#65758b);font-size:12px;font-weight:800}.prod-mrp-card strong{display:block;margin-top:5px;font-size:18px}.prod-hint{display:block;color:var(--muted,#65758b);font-size:12px;line-height:1.35;margin-top:2px}
+    .prod-bridge{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:end}.prod-bridge-copy h2{margin:0 0 4px}.prod-bridge-copy p{margin:0;color:var(--muted,#65758b);font-size:13px;line-height:1.4}.prod-bridge-controls{display:flex;gap:8px;align-items:end;flex-wrap:wrap}.prod-bridge-controls .prod-field{min-width:260px}
     .prod-item,.prod-stage,.prod-meta{border:1px solid var(--border,rgba(15,35,64,.14));border-radius:8px;background:color-mix(in srgb,var(--surface,#fff) 92%,var(--surface-soft,#f4f7fc) 8%)}.prod-item{padding:11px;display:grid;gap:7px}.prod-item-top{display:flex;justify-content:space-between;gap:8px;align-items:center;min-width:0}.prod-item strong{font-size:14px;line-height:1.25;min-width:0;overflow-wrap:anywhere}
     .prod-stage{padding:10px;min-height:76px}.prod-stage span,.prod-meta span{display:block;color:var(--muted,#65758b);font-size:12px;font-weight:800}.prod-stage strong{display:block;margin-top:6px;font-size:22px;line-height:1.05}.prod-stage small{display:block;margin-top:4px;color:var(--muted,#65758b)}
     .prod-meta-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}.prod-meta{padding:8px;background:var(--surface,#fff)}.prod-meta strong{display:block;margin-top:3px;overflow-wrap:anywhere}
@@ -41,8 +43,8 @@
     .prod-empty{border:1px dashed var(--border,rgba(15,35,64,.18));border-radius:8px;padding:14px;color:var(--muted,#65758b);background:color-mix(in srgb,var(--surface,#fff) 84%,var(--surface-soft,#f4f7fc) 16%)}.prod-msg{min-height:24px;color:var(--muted,#65758b);font-size:13px;line-height:1.35}.prod-msg.is-error{color:var(--danger,#c43737)}
     #tab-config .prod-form>label{display:flex;align-items:center;gap:8px;padding:9px 10px;border:1px solid var(--border,rgba(15,35,64,.14));border-radius:8px;background:color-mix(in srgb,var(--surface,#fff) 92%,var(--surface-soft,#f4f7fc) 8%);color:var(--text,#172033);font-weight:700}
     html[data-theme^="dark"] .prod-head,html[data-theme^="dark"] .prod-box,html[data-theme^="dark"] .prod-kpi,html[data-theme^="dark"] .prod-tabs,html[data-theme^="dark"] .prod-table-wrap{box-shadow:0 12px 28px rgba(0,0,0,.26)}
-    @media(max-width:1180px){.prod-grid{grid-template-columns:repeat(4,minmax(0,1fr))}.prod-two,.prod-overview,.prod-command{grid-template-columns:1fr}.prod-head{display:grid}.prod-actions{justify-content:flex-start}.prod-stage-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.prod-meta-grid{grid-template-columns:1fr}}
-    @media(max-width:720px){.prod-shell{padding:12px}.prod-grid,.prod-row,.prod-row.three,.prod-stage-grid,.prod-quick-grid{grid-template-columns:1fr}.prod-tab{flex:1 1 42%}.prod-toolbar,.prod-toolbar-actions{display:grid}.prod-actions{display:grid;justify-content:stretch}}
+    @media(max-width:1180px){.prod-grid{grid-template-columns:repeat(4,minmax(0,1fr))}.prod-two,.prod-overview,.prod-command,.prod-bridge{grid-template-columns:1fr}.prod-head{display:grid}.prod-actions{justify-content:flex-start}.prod-stage-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.prod-meta-grid{grid-template-columns:1fr}.prod-mrp-summary{grid-template-columns:repeat(2,minmax(0,1fr))}}
+    @media(max-width:720px){.prod-shell{padding:12px}.prod-grid,.prod-row,.prod-row.three,.prod-stage-grid,.prod-quick-grid,.prod-mrp-summary{grid-template-columns:1fr}.prod-tab{flex:1 1 42%}.prod-toolbar,.prod-toolbar-actions{display:grid}.prod-actions{display:grid;justify-content:stretch}}
   </style>
   <script src="/js/empresa_submenu_context.js"></script>
 </head>
@@ -57,6 +59,7 @@
         <button class="prod-btn" id="prodRefresh" type="button">Actualizar</button>
         <button class="prod-btn" id="prodSeed" type="button">Cargar demo</button>
         <button class="prod-btn" id="prodExport" type="button">Exportar CSV</button>
+        <button class="prod-btn" id="prodTutorial" type="button">Tutorial</button>
         <button class="prod-btn primary" id="prodGenerateMRP" type="button">Generar MRP</button>
       </div>
     </header>
@@ -102,6 +105,7 @@
             <span>Ordenes urgentes <strong id="checkUrgentes">0</strong></span>
             <span>Lineas MRP en riesgo <strong id="checkMRP">0</strong></span>
           </div>
+          <div id="prodNextAction" class="prod-next"></div>
         </aside>
       </div>
       <div class="prod-overview">
@@ -112,6 +116,16 @@
     </section>
 
     <section id="tab-recetas" class="prod-panel">
+      <div class="prod-box prod-bridge">
+        <div class="prod-bridge-copy">
+          <h2>Unificar con recetas vendibles de Productos</h2>
+          <p>Las recetas del POS siguen siendo productos vendibles. Si una receta tambien se fabrica o se planea por materiales, importala aqui como BOM de produccion sin volver a digitar ingredientes.</p>
+        </div>
+        <div class="prod-bridge-controls">
+          <div class="prod-field"><label>Receta vendible</label><select id="recetaProductoSelect"></select></div>
+          <button class="prod-btn primary" id="importRecetaProducto" type="button">Importar como BOM</button>
+        </div>
+      </div>
       <div class="prod-two">
         <form id="recetaForm" class="prod-box prod-form">
           <input id="recId" type="hidden">
@@ -122,7 +136,7 @@
           <div class="prod-row"><div class="prod-field"><label>Unidad</label><input id="recUnidad" value="und"></div><div class="prod-field"><label>Cantidad base</label><input id="recCantidad" type="number" step="0.0001" value="1"></div></div>
           <div class="prod-row"><div class="prod-field"><label>Costo estandar</label><input id="recCosto" type="number" step="0.01" value="0"></div><div class="prod-field"><label>Merma %</label><input id="recMerma" type="number" step="0.01" value="0"></div></div>
           <div class="prod-row"><div class="prod-field"><label>Tiempo min</label><input id="recTiempo" type="number" value="0"></div><div class="prod-field"><label>Estado</label><select id="recEstado"><option value="activo">Activo</option><option value="borrador">Borrador</option><option value="inactivo">Inactivo</option></select></div></div>
-          <div class="prod-field"><label>Componentes: producto|cantidad|unidad|costo|merma|etapa</label><textarea id="recComponentes">Materia prima principal|1|und|0|0|produccion</textarea></div>
+          <div class="prod-field"><label>Componentes: producto|cantidad|unidad|costo|merma|etapa</label><textarea id="recComponentes">Materia prima principal|1|und|0|0|produccion</textarea><small class="prod-hint">Un componente por linea. Ejemplo: Harina|2|kg|3500|1|mezcla.</small></div>
           <div class="prod-row-actions"><button class="prod-btn primary" id="recSubmit" type="submit">Guardar receta</button><button class="prod-btn" id="recCancel" type="button">Limpiar</button></div>
         </form>
         <div class="prod-box">
@@ -180,6 +194,7 @@
     <section id="tab-mrp" class="prod-panel">
       <div class="prod-box">
         <div class="prod-toolbar"><h2>Requerimientos de materiales</h2><div class="prod-toolbar-actions"><div class="prod-field"><label>Periodo</label><input id="mrpPeriodo" placeholder="2026-05"></div><button class="prod-btn primary" id="mrpGenerate" type="button">Generar periodo</button></div></div>
+        <div id="mrpSummary" class="prod-mrp-summary"></div>
         <div id="mrpTable" class="prod-table-wrap"></div>
       </div>
     </section>
@@ -196,6 +211,6 @@
       </form>
     </section>
   </main>
-  <script src="/js/produccion_mrp.js?v=20260509-produccion-pro"></script>
+  <script src="/js/produccion_mrp.js?v=20260611-mrp-pro"></script>
 </body>
 </html>

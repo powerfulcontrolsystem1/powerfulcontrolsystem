@@ -106,6 +106,14 @@ func EmpresaProduccionMRPHandler(dbEmp *sql.DB) http.HandlerFunc {
 				}
 				writeJSON(w, http.StatusOK, rows)
 				return
+			case "catalogo_recetas_vendibles":
+				rows, err := dbpkg.GetRecetasProductosByEmpresa(dbEmp, empresaID, strings.TrimSpace(r.URL.Query().Get("q")), "activo", false, 100, 0)
+				if err != nil {
+					http.Error(w, "No se pudieron listar recetas vendibles", http.StatusInternalServerError)
+					return
+				}
+				writeJSON(w, http.StatusOK, rows)
+				return
 			}
 
 		case http.MethodPost:
@@ -228,6 +236,21 @@ func EmpresaProduccionMRPHandler(dbEmp *sql.DB) http.HandlerFunc {
 					return
 				}
 				writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true})
+				return
+			case "import_receta_producto":
+				var payload struct {
+					RecetaProductoID int64 `json:"receta_producto_id"`
+				}
+				if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+					http.Error(w, "JSON invalido", http.StatusBadRequest)
+					return
+				}
+				row, err := dbpkg.ImportEmpresaProduccionRecetaFromRecetaProducto(dbEmp, empresaID, payload.RecetaProductoID, adminEmail)
+				if err != nil {
+					http.Error(w, err.Error(), http.StatusBadRequest)
+					return
+				}
+				writeJSON(w, http.StatusCreated, row)
 				return
 			}
 

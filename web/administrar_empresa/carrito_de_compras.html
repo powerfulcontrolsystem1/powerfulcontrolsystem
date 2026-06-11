@@ -27,20 +27,16 @@
     .carrito-direct-sale-tools{align-items:center;justify-content:flex-end;gap:8px}
     .carrito-direct-sale-tools button[hidden]{display:none!important}
     .carrito-customer-header-actions{display:flex;align-items:center;justify-content:flex-end;gap:8px;flex-wrap:wrap}
-    .carrito-fullscreen-card{display:flex;align-items:center;gap:8px;border:1px solid var(--border);border-radius:8px;background:var(--surface-soft,var(--surface));padding:6px 8px;color:var(--text);min-height:46px}
+    .carrito-fullscreen-card{display:flex;align-items:center;justify-content:center;border:1px solid var(--border);border-radius:8px;background:var(--surface-soft,var(--surface));padding:4px;color:var(--text);min-height:46px}
     .carrito-fullscreen-card[hidden]{display:none!important}
-    .carrito-fullscreen-card-label{display:flex;flex-direction:column;gap:1px;line-height:1.1}
-    .carrito-fullscreen-card-label strong{font-size:.78rem}
-    .carrito-fullscreen-card-label span{font-size:.7rem;color:var(--muted)}
     .carrito-fullscreen-btn{width:38px;height:38px;min-width:38px;padding:0;display:inline-flex;align-items:center;justify-content:center}
     .carrito-fullscreen-btn .cart-btn-icon{font-size:1rem}
-    .carrito-fullscreen-label{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
     .cart-button-feedback-vibrate{animation:cartButtonFeedbackVibrate 130ms linear 1}
     @keyframes cartButtonFeedbackVibrate{0%,100%{transform:translateX(0)}25%{transform:translateX(-1px)}50%{transform:translateX(1px)}75%{transform:translateX(-1px)}}
     body.carrito-direct-fullscreen{background:var(--carrito-page-bg,var(--bg))}
     body.carrito-direct-fullscreen .container{max-width:none;width:100%;min-height:100vh;padding:8px}
     body.carrito-direct-fullscreen .carrito-customer-header{position:sticky;top:0;z-index:120;background:var(--surface,var(--bg));padding:6px 0}
-    @media(max-width:760px){.carrito-direct-sale-tools{justify-content:flex-end}.carrito-customer-header-actions{width:100%;justify-content:space-between}.carrito-fullscreen-card{width:100%;justify-content:space-between}.carrito-fullscreen-btn{width:38px!important}}
+    @media(max-width:760px){.carrito-direct-sale-tools{justify-content:flex-end}.carrito-customer-header-actions{width:100%;justify-content:flex-end}.carrito-fullscreen-btn{width:38px!important}}
   </style>
 </head>
 <body class="super-page form-bg-dark carrito-flat-page" data-auto-estacion-labels="true">
@@ -153,7 +149,7 @@
           </div>
           <div class="form-col carrito-scanner-name-column">
             <label class="form-label" for="scannerNombre">Búsqueda por nombre</label>
-            <input id="scannerNombre" class="form-input" autocomplete="off" placeholder="Busca el producto por nombre">
+            <input id="scannerNombre" class="form-input" autocomplete="off" placeholder="Busca el producto por nombre" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="scannerResultados">
             <div id="scannerResultados" class="scanner-product-results" hidden></div>
           </div>
           <div class="form-col maxw-180">
@@ -235,13 +231,8 @@
           <div class="carrito-customer-header-actions">
             <div id="stationClienteActual" class="form-help carrito-customer-current">Cliente actual: Cliente General.</div>
             <div id="directSaleFullscreenCard" class="carrito-fullscreen-card" hidden>
-              <div class="carrito-fullscreen-card-label">
-                <strong>Pantalla completa</strong>
-                <span>Vista de caja</span>
-              </div>
               <button id="directSaleFullscreenBtn" class="btn secondary carrito-fullscreen-btn" type="button" hidden title="Pantalla completa" aria-label="Abrir venta directa en pantalla completa">
                 <span class="cart-btn-icon cart-btn-icon-info" aria-hidden="true">⛶</span>
-                <span id="directSaleFullscreenText" class="carrito-fullscreen-label">Pantalla completa</span>
               </button>
             </div>
           </div>
@@ -918,6 +909,7 @@
       directSaleMode: false,
       scannerProductResults: [],
       scannerSelectedProductID: 0,
+      scannerActiveResultIndex: -1,
       scannerSearchToken: 0,
       stationID: 0,
       stationName: '',
@@ -5068,7 +5060,8 @@
       campo_personalizado_etiqueta: 'Domicilio',
       campo_personalizado_valor: '',
       campo_personalizado_descripcion_visible: true,
-      campo_personalizado_descripcion: ''
+      campo_personalizado_descripcion: '',
+      total_en_letras: false
     };
 
     function parsePrintItemsJSON(raw, defaults) {
@@ -5215,6 +5208,7 @@
           rows: printRows,
           totalLabel: 'Total a pagar',
           totalValue: formatAmount(pay.totalPagarFinal, moneda),
+          totalWords: receiptItemEnabled(printItems, 'total_en_letras') && window.PCSPrint && typeof window.PCSPrint.amountToWords === 'function' ? window.PCSPrint.amountToWords(Number(pay.totalPagarFinal || 0), moneda) : '',
           summaryRows: taxSummaryRows,
           footer: markOfflinePending ? 'Documento provisional emitido sin internet. Se sincroniza y valida al recuperar conexion.' : 'Gracias por su compra.',
           qr: invoiceQR,
@@ -5246,6 +5240,7 @@
         '<hr>' +
         '<table><thead><tr><th>Descripción</th><th style="text-align:right">Cant.</th><th style="text-align:right">P.U.</th><th style="text-align:right">Total</th></tr></thead><tbody>' + rowsHtml + '</tbody></table>' +
         '<p class="tot">Total a pagar: ' + escapeHtml(formatAmount(pay.totalPagarFinal, moneda)) + '</p>' +
+        (receiptItemEnabled(printItems, 'total_en_letras') && window.PCSPrint && typeof window.PCSPrint.amountToWords === 'function' ? '<p><strong>Total en letras:</strong> ' + escapeHtml(window.PCSPrint.amountToWords(Number(pay.totalPagarFinal || 0), moneda)) + '</p>' : '') +
         taxDeductionFallbackHTML(taxDeduction, moneda) +
         (receiptItemEnabled(printItems, 'metodo_pago') ? '<p>Método: ' + escapeHtml(normalize(pay.paymentLabel || pay.paymentMethod || '')) + '</p>' : '') +
         (creditSaleInfo ? '<p><strong>Crédito cliente:</strong> ' + escapeHtml(creditSaleInfo) + '</p>' : '') +
@@ -5268,6 +5263,11 @@
     async function printFacturaElectronicaIfEnabled(documentoVenta, carrito, pay, items, printTarget) {
       const cfg = state.empresaAvanzadaConfig && typeof state.empresaAvanzadaConfig === 'object' ? state.empresaAvanzadaConfig : {};
       const doc = documentoVenta && typeof documentoVenta === 'object' ? documentoVenta : {};
+      const printItems = receiptPrintItems(cfg);
+      const fieldEnabled = function(key) {
+        if (window.PCSPrint && typeof window.PCSPrint.printItemEnabled === 'function') return window.PCSPrint.printItemEnabled(printItems, key, doc);
+        return receiptItemEnabled(printItems, key);
+      };
       const tipoDocumento = normalize(doc.tipo_documento || doc.modo).toLowerCase();
       if (tipoDocumento !== 'factura_electronica') return false;
       if (!Boolean(cfg.imprimir_factura_electronica)) return false;
@@ -5322,8 +5322,9 @@
           ],
           tableHeaders: ['Descripcion', 'Cant.', 'P.U.', 'Total'],
           rows: printRows,
-          totalLabel: 'Total documento',
-          totalValue: formatAmount(Number(doc.monto_total || pay.totalPagarFinal || 0), moneda),
+          totalLabel: fieldEnabled('total') ? 'Total documento' : '',
+          totalValue: fieldEnabled('total') ? formatAmount(Number(doc.monto_total || pay.totalPagarFinal || 0), moneda) : '',
+          totalWords: fieldEnabled('total_en_letras') && window.PCSPrint && typeof window.PCSPrint.amountToWords === 'function' ? window.PCSPrint.amountToWords(Number(doc.monto_total || pay.totalPagarFinal || 0), moneda) : '',
           summaryRows: taxSummaryRows,
           note: [notas, pie].filter(Boolean).join('\n'),
           footer: normalize(doc.codigo_validacion) ? ('Validacion: ' + normalize(doc.codigo_validacion)) : '',
@@ -5355,6 +5356,7 @@
         '<hr>' +
         '<table><thead><tr><th>Descripci?n</th><th style="text-align:right">Cant.</th><th style="text-align:right">P.U.</th><th style="text-align:right">Total</th></tr></thead><tbody>' + rowsHtml + '</tbody></table>' +
         '<p class="tot">Total documento: ' + escapeHtml(formatAmount(Number(doc.monto_total || pay.totalPagarFinal || 0), moneda)) + '</p>' +
+        (fieldEnabled('total_en_letras') && window.PCSPrint && typeof window.PCSPrint.amountToWords === 'function' ? '<p><strong>Total en letras:</strong> ' + escapeHtml(window.PCSPrint.amountToWords(Number(doc.monto_total || pay.totalPagarFinal || 0), moneda)) + '</p>' : '') +
         taxDeductionFallbackHTML(taxDeduction, moneda) +
         (notas ? ('<p><strong>Notas legales:</strong> ' + escapeHtml(notas) + '</p>') : '') +
         (pie ? ('<p class="muted">' + escapeHtml(pie) + '</p>') : '') +
@@ -7014,10 +7016,59 @@
     function clearScannerProductResults() {
       state.scannerProductResults = [];
       state.scannerSelectedProductID = 0;
+      state.scannerActiveResultIndex = -1;
       const box = document.getElementById('scannerResultados');
       if (!box) return;
       box.hidden = true;
       box.innerHTML = '';
+      const nameInput = document.getElementById('scannerNombre');
+      if (nameInput) {
+        nameInput.removeAttribute('aria-activedescendant');
+        nameInput.setAttribute('aria-expanded', 'false');
+      }
+    }
+
+    function setScannerResultSelection(index, options) {
+      const box = document.getElementById('scannerResultados');
+      if (!box || box.hidden) return false;
+      const buttons = Array.from(box.querySelectorAll('.scanner-product-result'));
+      if (!buttons.length) return false;
+      const total = buttons.length;
+      let nextIndex = Number(index);
+      if (!Number.isFinite(nextIndex)) nextIndex = 0;
+      if (nextIndex < 0) nextIndex = total - 1;
+      if (nextIndex >= total) nextIndex = 0;
+
+      const selectedButton = buttons[nextIndex];
+      const selectedID = Number(selectedButton && selectedButton.dataset.productoId || 0);
+      state.scannerActiveResultIndex = nextIndex;
+      state.scannerSelectedProductID = selectedID;
+
+      buttons.forEach(function(btn, idx) {
+        const selected = idx === nextIndex;
+        btn.classList.toggle('is-selected', selected);
+        btn.setAttribute('aria-selected', selected ? 'true' : 'false');
+        if (!btn.id) btn.id = 'scannerResultadoProducto' + idx;
+      });
+
+      const nameInput = document.getElementById('scannerNombre');
+      if (nameInput && selectedButton && selectedButton.id) {
+        nameInput.setAttribute('aria-activedescendant', selectedButton.id);
+      }
+      if (!options || options.scroll !== false) {
+        try { selectedButton.scrollIntoView({ block: 'nearest' }); } catch (_) {}
+      }
+      return true;
+    }
+
+    function moveScannerResultSelection(delta) {
+      const current = Number(state.scannerActiveResultIndex || -1);
+      return setScannerResultSelection(current + Number(delta || 0));
+    }
+
+    function ensureSingleScannerResultSelected() {
+      if (state.scannerProductResults.length !== 1) return false;
+      return setScannerResultSelection(0, { scroll: false });
     }
 
     function renderScannerProductResults(rows, query) {
@@ -7027,23 +7078,33 @@
         return Number(row && row.id || 0) > 0;
       }) : [];
       state.scannerSelectedProductID = 0;
+      state.scannerActiveResultIndex = -1;
       box.innerHTML = '';
 
       if (!state.scannerProductResults.length) {
         box.hidden = true;
+        const nameInput = document.getElementById('scannerNombre');
+        if (nameInput) nameInput.setAttribute('aria-expanded', 'false');
         return;
       }
+
+      box.setAttribute('role', 'listbox');
+      box.setAttribute('aria-label', 'Resultados de productos');
 
       const title = document.createElement('div');
       title.className = 'scanner-product-results-title';
       title.textContent = 'Coincidencias para "' + normalize(query) + '"';
       box.appendChild(title);
 
-      state.scannerProductResults.slice(0, 8).forEach(function(producto) {
+      state.scannerProductResults.slice(0, 8).forEach(function(producto, index) {
         const btn = document.createElement('button');
         btn.type = 'button';
         btn.className = 'scanner-product-result';
+        btn.id = 'scannerResultadoProducto' + index;
+        btn.setAttribute('role', 'option');
+        btn.setAttribute('aria-selected', 'false');
         btn.dataset.productoId = String(producto.id || '');
+        btn.dataset.resultIndex = String(index);
         const carrito = getSelectedCarrito();
         const moneda = (carrito && carrito.moneda) || producto.moneda || 'COP';
         const price = formatAmount(Number(producto.precio || 0), moneda);
@@ -7051,22 +7112,21 @@
         btn.querySelector('.scanner-product-result-name').textContent = normalize(producto.nombre) || 'Producto';
         btn.querySelector('.scanner-product-result-meta').textContent = scannerProductDisplayCode(producto) + ' · ' + price;
         btn.addEventListener('click', function() {
-          state.scannerSelectedProductID = Number(producto.id || 0);
-          document.querySelectorAll('.scanner-product-result').forEach(function(other) {
-            other.classList.toggle('is-selected', other === btn);
-          });
+          setScannerResultSelection(Number(btn.dataset.resultIndex || 0));
           setScannerMessage('Producto seleccionado. Presiona Agregar para llevarlo al carrito.', false);
           const qty = document.getElementById('scannerCantidad');
           if (qty && typeof qty.focus === 'function') qty.focus();
         });
         btn.addEventListener('dblclick', function() {
-          state.scannerSelectedProductID = Number(producto.id || 0);
+          setScannerResultSelection(Number(btn.dataset.resultIndex || 0));
           processScannerInput();
         });
         box.appendChild(btn);
       });
 
       box.hidden = false;
+      const nameInput = document.getElementById('scannerNombre');
+      if (nameInput) nameInput.setAttribute('aria-expanded', 'true');
     }
 
     function getSelectedScannerProduct() {
@@ -7078,6 +7138,29 @@
         if (selected) return selected;
       }
       return state.scannerProductResults.length === 1 ? state.scannerProductResults[0] : null;
+    }
+
+    function handleScannerResultKeydown(e) {
+      const key = e && e.key;
+      if (key === 'ArrowDown') {
+        e.preventDefault();
+        moveScannerResultSelection(1);
+        return true;
+      }
+      if (key === 'ArrowUp') {
+        e.preventDefault();
+        moveScannerResultSelection(-1);
+        return true;
+      }
+      if (key === 'Escape') {
+        clearScannerProductResults();
+        setScannerMessage('Búsqueda de producto cancelada.', false);
+        return true;
+      }
+      if (key === 'Enter' && state.scannerProductResults.length === 1 && !state.scannerSelectedProductID) {
+        ensureSingleScannerResultSelected();
+      }
+      return false;
     }
 
     function findExistingScannedItem(productoID, code) {
@@ -7307,9 +7390,7 @@
           return;
         }
         if (state.scannerProductResults.length === 1) {
-          state.scannerSelectedProductID = Number(state.scannerProductResults[0].id || 0);
-          const onlyBtn = document.querySelector('.scanner-product-result');
-          if (onlyBtn) onlyBtn.classList.add('is-selected');
+          setScannerResultSelection(0, { scroll: false });
           if (!processOptions.auto) {
             const msgAction = await addScannerProductToCart(state.scannerProductResults[0], 'agregado desde busqueda rapida del carrito', scanCode);
             setScannerMessage(msgAction, false);
@@ -10291,9 +10372,6 @@
     function updateDirectSaleFullscreenButton() {
       const btn = document.getElementById('directSaleFullscreenBtn');
       const card = document.getElementById('directSaleFullscreenCard');
-      const textEl = document.getElementById('directSaleFullscreenText');
-      const cardLabel = card ? card.querySelector('.carrito-fullscreen-card-label strong') : null;
-      const cardHint = card ? card.querySelector('.carrito-fullscreen-card-label span') : null;
       if (!btn) return;
 
       const supported = Boolean(document.documentElement.requestFullscreen || document.documentElement.webkitRequestFullscreen || document.documentElement.msRequestFullscreen);
@@ -10309,9 +10387,6 @@
       const active = isDirectSaleFullscreenActive();
       const icon = btn.querySelector('.cart-btn-icon');
       if (icon) icon.textContent = active ? '↙' : '⛶';
-      if (textEl) textEl.textContent = active ? 'Salir' : 'Pantalla completa';
-      if (cardLabel) cardLabel.textContent = active ? 'Salir de pantalla completa' : 'Pantalla completa';
-      if (cardHint) cardHint.textContent = active ? 'Volver a vista normal' : 'Vista de caja';
       btn.title = active ? 'Salir de pantalla completa' : 'Pantalla completa';
       btn.setAttribute('aria-label', active ? 'Salir de pantalla completa' : 'Abrir venta directa en pantalla completa');
       btn.setAttribute('aria-pressed', active ? 'true' : 'false');
@@ -11027,6 +11102,7 @@
     if (scannerCodigoInput) {
       scannerCodigoInput.addEventListener('input', function() {
         state.scannerSelectedProductID = 0;
+        state.scannerActiveResultIndex = -1;
         const nameInput = document.getElementById('scannerNombre');
         if (normalize(this.value) && nameInput) nameInput.value = '';
         scheduleScannerAutoProcess();
@@ -11042,11 +11118,13 @@
     if (scannerNombreInput) {
       scannerNombreInput.addEventListener('input', function() {
         state.scannerSelectedProductID = 0;
+        state.scannerActiveResultIndex = -1;
         const codeInput = document.getElementById('scannerCodigo');
         if (normalize(this.value) && codeInput) codeInput.value = '';
         scheduleScannerAutoProcess();
       });
       scannerNombreInput.addEventListener('keydown', function(e) {
+        if (handleScannerResultKeydown(e)) return;
         if (e.key !== 'Enter') return;
         e.preventDefault();
         processScannerInput();

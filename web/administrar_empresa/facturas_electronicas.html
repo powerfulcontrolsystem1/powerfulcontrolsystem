@@ -435,6 +435,28 @@
         return out.join("\n\n");
       }
 
+      function printItemsConfig(cfg) {
+        cfg = cfg && typeof cfg === "object" ? cfg : {};
+        if (window.PCSPrint && typeof window.PCSPrint.printItemsFromConfig === "function") {
+          return window.PCSPrint.printItemsFromConfig(cfg);
+        }
+        try { return JSON.parse(normalize(cfg.impresion_recibo_items_json) || "{}"); } catch (e) { return {}; }
+      }
+
+      function printFieldEnabled(items, key, item) {
+        if (window.PCSPrint && typeof window.PCSPrint.printItemEnabled === "function") {
+          return window.PCSPrint.printItemEnabled(items, key, item);
+        }
+        return !items || items[key] !== false;
+      }
+
+      function totalEnLetras(item) {
+        if (window.PCSPrint && typeof window.PCSPrint.amountToWords === "function") {
+          return window.PCSPrint.amountToWords(Number(item && item.monto_total || 0), normalize(item && item.moneda) || "COP");
+        }
+        return "";
+      }
+
       function showMessage(text, type) {
         messageBox.textContent = text || "";
         messageBox.classList.remove("value-negative", "value-positive");
@@ -554,69 +576,78 @@
         var clienteDocumento = normalize(item && item.cliente_documento) || "No registrado";
         var numeroLegal = normalize(item && item.numero_legal) || normalize(item && item.documento_codigo) || "Pendiente";
         var cfg = state.cfg || {};
+        var printItems = printItemsConfig(cfg);
+        var showEmpresa = printFieldEnabled(printItems, "empresa", item);
+        var showLegal = printFieldEnabled(printItems, "notas_legales", item);
+        var totalWords = printFieldEnabled(printItems, "total_en_letras", item) ? totalEnLetras(item) : "";
         var empresaLabel = normalize(state.empresaNombre) || normalize(cfg.razon_social) || normalize(cfg.nombre_comercial) || ("Empresa #" + String(empresaID || ""));
         var showLogo = cfg.mostrar_logo_factura !== false && cfg.mostrar_logo !== false;
         var logoUrl = showLogo ? safeUrl(cfg.logo_factura_url || cfg.logo_url) : "";
         var logoHtml = window.PCSPrint && window.PCSPrint.resolveDocumentLogos && window.PCSPrint.logosHTML
           ? window.PCSPrint.logosHTML(window.PCSPrint.resolveDocumentLogos(cfg, "factura"))
           : (logoUrl ? ('<img src="' + escapeHtml(logoUrl) + '" alt="Logo empresa">') : '');
-        var legalBlock = buildLegalBlock(cfg);
+        var legalBlock = showLegal ? buildLegalBlock(cfg) : "";
         var observaciones = normalize(item && item.observaciones) || "Sin observaciones registradas.";
-        var qrBlock = printableQRHTML(getPrintableDocumentQR(item));
+        var qrBlock = printFieldEnabled(printItems, "qr_dian", item) ? printableQRHTML(getPrintableDocumentQR(item)) : "";
+        var strip = [
+          printFieldEnabled(printItems, "codigo", item) ? '<div><span>Codigo</span><strong>' + escapeHtml(item.documento_codigo || "") + '</strong></div>' : '',
+          printFieldEnabled(printItems, "numero_legal", item) ? '<div><span>Numero legal</span><strong>' + escapeHtml(numeroLegal) + '</strong></div>' : '',
+          printFieldEnabled(printItems, "fecha", item) ? '<div><span>Fecha</span><strong>' + escapeHtml(formatDate(item.fecha_documento || item.fecha_creacion)) + '</strong></div>' : '',
+          printFieldEnabled(printItems, "estado", item) ? '<div><span>Estado</span><strong>' + escapeHtml(item.estado_documento || "borrador") + '</strong></div>' : ''
+        ].filter(Boolean).join("");
+        var clienteRows = [
+          printFieldEnabled(printItems, "cliente", item) ? '<div><dt>Nombre</dt><dd>' + escapeHtml(cliente) + '</dd></div>' : '',
+          printFieldEnabled(printItems, "cliente_email", item) ? '<div><dt>Correo</dt><dd>' + escapeHtml(clienteEmail) + '</dd></div>' : '',
+          printFieldEnabled(printItems, "cliente_documento", item) ? '<div><dt>Documento</dt><dd>' + escapeHtml(clienteDocumento) + '</dd></div>' : ''
+        ].filter(Boolean).join("");
+        var resumenRows = [
+          printFieldEnabled(printItems, "total", item) ? '<div><dt>Total</dt><dd>' + escapeHtml(formatMoney(item.monto_total, item.moneda || "COP")) + '</dd></div>' : '',
+          totalWords ? '<div><dt>Total en letras</dt><dd>' + escapeHtml(totalWords) + '</dd></div>' : '',
+          printFieldEnabled(printItems, "moneda", item) ? '<div><dt>Moneda</dt><dd>' + escapeHtml(item.moneda || "COP") + '</dd></div>' : '',
+          printFieldEnabled(printItems, "periodo", item) ? '<div><dt>Periodo</dt><dd>' + escapeHtml(item.periodo_contable || "No definido") + '</dd></div>' : ''
+        ].filter(Boolean).join("");
+        var controlRows = [
+          printFieldEnabled(printItems, "tipo_documento", item) ? '<div><dt>Tipo</dt><dd>' + escapeHtml(item.tipo_documento || "") + '</dd></div>' : '',
+          printFieldEnabled(printItems, "codigo_validacion", item) ? '<div><dt>Codigo validacion</dt><dd>' + escapeHtml(meta.validationText) + '</dd></div>' : '',
+          printFieldEnabled(printItems, "pais", item) ? '<div><dt>Pais</dt><dd>' + escapeHtml(item.pais_codigo || "No aplica") + '</dd></div>' : '',
+          printFieldEnabled(printItems, "ambiente", item) ? '<div><dt>Ambiente</dt><dd>' + escapeHtml(meta.ambienteText) + '</dd></div>' : ''
+        ].filter(Boolean).join("");
 
         return '' +
           '<article class="factura-print-sheet ' + escapeHtml(meta.accentClass) + (viewMode === "compacta" ? " factura-print-compacta" : "") + '">' +
             '<header class="factura-print-head">' +
               '<div class="factura-print-logo">' +
-                logoHtml +
+                (showEmpresa ? logoHtml : '') +
                 '<div>' +
                   '<span class="factura-print-kicker">Documento de venta</span>' +
                   '<h3>' + escapeHtml(meta.title) + '</h3>' +
                   '<p>' + escapeHtml(meta.subtitle) + '</p>' +
                 '</div>' +
               '</div>' +
-              '<div class="factura-print-company">' +
+              (showEmpresa ? '<div class="factura-print-company">' +
                 '<strong>' + escapeHtml(empresaLabel) + '</strong>' +
                 '<span>' + escapeHtml(companyLegalLines(cfg).join(" · ") || ("ID empresa " + String(empresaID || 0))) + '</span>' +
-              '</div>' +
+              '</div>' : '') +
             '</header>' +
-            '<section class="factura-print-strip">' +
-              '<div><span>Código</span><strong>' + escapeHtml(item.documento_codigo || "") + '</strong></div>' +
-              '<div><span>Número legal</span><strong>' + escapeHtml(numeroLegal) + '</strong></div>' +
-              '<div><span>Fecha</span><strong>' + escapeHtml(formatDate(item.fecha_documento || item.fecha_creacion)) + '</strong></div>' +
-              '<div><span>Estado</span><strong>' + escapeHtml(item.estado_documento || "borrador") + '</strong></div>' +
-            '</section>' +
+            (strip ? '<section class="factura-print-strip">' + strip + '</section>' : '') +
             '<div class="factura-print-grid">' +
-              '<section class="factura-print-panel">' +
+              (clienteRows ? '<section class="factura-print-panel">' +
                 '<h4>Cliente</h4>' +
-                '<dl>' +
-                  '<div><dt>Nombre</dt><dd>' + escapeHtml(cliente) + '</dd></div>' +
-                  '<div><dt>Correo</dt><dd>' + escapeHtml(clienteEmail) + '</dd></div>' +
-                  '<div><dt>Documento</dt><dd>' + escapeHtml(clienteDocumento) + '</dd></div>' +
-                '</dl>' +
-              '</section>' +
-              '<section class="factura-print-panel">' +
+                '<dl>' + clienteRows + '</dl>' +
+              '</section>' : '') +
+              (resumenRows ? '<section class="factura-print-panel">' +
                 '<h4>Resumen financiero</h4>' +
-                '<dl>' +
-                  '<div><dt>Total</dt><dd>' + escapeHtml(formatMoney(item.monto_total, item.moneda || "COP")) + '</dd></div>' +
-                  '<div><dt>Moneda</dt><dd>' + escapeHtml(item.moneda || "COP") + '</dd></div>' +
-                  '<div><dt>Periodo</dt><dd>' + escapeHtml(item.periodo_contable || "No definido") + '</dd></div>' +
-                '</dl>' +
-              '</section>' +
+                '<dl>' + resumenRows + '</dl>' +
+              '</section>' : '') +
             '</div>' +
-            '<section class="factura-print-panel factura-print-panel--full">' +
+            (controlRows ? '<section class="factura-print-panel factura-print-panel--full">' +
               '<h4>Control documental</h4>' +
-              '<dl class="factura-print-doc-meta">' +
-                '<div><dt>Tipo</dt><dd>' + escapeHtml(item.tipo_documento || "") + '</dd></div>' +
-                '<div><dt>Código validación</dt><dd>' + escapeHtml(meta.validationText) + '</dd></div>' +
-                '<div><dt>Pais</dt><dd>' + escapeHtml(item.pais_codigo || "No aplica") + '</dd></div>' +
-                '<div><dt>Ambiente</dt><dd>' + escapeHtml(meta.ambienteText) + '</dd></div>' +
-              '</dl>' +
-            '</section>' +
-            '<section class="factura-print-note">' +
+              '<dl class="factura-print-doc-meta">' + controlRows + '</dl>' +
+            '</section>' : '') +
+            (printFieldEnabled(printItems, "observaciones", item) ? '<section class="factura-print-note">' +
               '<strong>Observaciones</strong>' +
               '<p>' + escapeHtml(observaciones) + '</p>' +
-            '</section>' +
+            '</section>' : '') +
             qrBlock +
             (legalBlock ? ('<section class="factura-print-legal">' + escapeHtml(legalBlock) + '</section>') : '') +
           '</article>';
@@ -624,36 +655,39 @@
 
       function buildPrintableDocumentPage(item) {
         var cfg = state.cfg || {};
+        var printItems = printItemsConfig(cfg);
         var formato = currentViewMode();
         if (formato === "pos") {
           var lines = companyLegalLines(cfg);
+          var showEmpresa = printFieldEnabled(printItems, "empresa", item);
           var showLogo = cfg.mostrar_logo_factura !== false && cfg.mostrar_logo !== false;
           var logoUrl = showLogo ? safeUrl(cfg.logo_factura_url || cfg.logo_url) : "";
-          var notas = normalize(cfg.notas_legales);
-          var pie = normalize(cfg.pie_factura);
+          var notas = printFieldEnabled(printItems, "notas_legales", item) ? normalize(cfg.notas_legales) : "";
+          var pie = printFieldEnabled(printItems, "notas_legales", item) ? normalize(cfg.pie_factura) : "";
           var numeroLegal = normalize(item && item.numero_legal) || normalize(item && item.documento_codigo) || "Pendiente";
-          var qrBlock = printableQRHTML(getPrintableDocumentQR(item));
+          var qrBlock = printFieldEnabled(printItems, "qr_dian", item) ? printableQRHTML(getPrintableDocumentQR(item)) : "";
           if (window.PCSPrint) {
             return window.PCSPrint.buildDocument({
               title: getPrintableDocumentMeta(item).title,
               kind: normalize(item && item.tipo_documento).indexOf("factura") >= 0 ? "factura" : "comprobante",
               format: "pos",
-              logos: window.PCSPrint.resolveDocumentLogos(cfg, "factura"),
-              company: lines[0] || "Empresa",
-              subtitle: lines.slice(1).join(" | "),
+              logos: showEmpresa ? window.PCSPrint.resolveDocumentLogos(cfg, "factura") : [],
+              company: showEmpresa ? (lines[0] || "Empresa") : "",
+              subtitle: showEmpresa ? lines.slice(1).join(" | ") : "",
               badge: "POS",
               meta: [
-                { label: "Codigo", value: item && item.documento_codigo },
-                { label: "Numero legal", value: numeroLegal },
-                { label: "Fecha", value: formatDate(item && (item.fecha_documento || item.fecha_creacion)) },
-                { label: "Estado", value: item && item.estado_documento },
-                { label: "Cliente", value: normalize(item && item.cliente_nombre) || normalize(item && item.cliente_email) },
-                { label: "Ambiente", value: item && item.ambiente_fe }
+                printFieldEnabled(printItems, "codigo", item) ? { label: "Codigo", value: item && item.documento_codigo } : null,
+                printFieldEnabled(printItems, "numero_legal", item) ? { label: "Numero legal", value: numeroLegal } : null,
+                printFieldEnabled(printItems, "fecha", item) ? { label: "Fecha", value: formatDate(item && (item.fecha_documento || item.fecha_creacion)) } : null,
+                printFieldEnabled(printItems, "estado", item) ? { label: "Estado", value: item && item.estado_documento } : null,
+                printFieldEnabled(printItems, "cliente", item) ? { label: "Cliente", value: normalize(item && item.cliente_nombre) || normalize(item && item.cliente_email) } : null,
+                printFieldEnabled(printItems, "ambiente", item) ? { label: "Ambiente", value: item && item.ambiente_fe } : null
               ],
-              totalLabel: "Total documento",
-              totalValue: formatMoney(item && item.monto_total, (item && item.moneda) || "COP"),
+              totalLabel: printFieldEnabled(printItems, "total", item) ? "Total documento" : "",
+              totalValue: printFieldEnabled(printItems, "total", item) ? formatMoney(item && item.monto_total, (item && item.moneda) || "COP") : "",
+              totalWords: printFieldEnabled(printItems, "total_en_letras", item) ? totalEnLetras(item) : "",
               note: [notas, pie, normalize(item && item.codigo_validacion) ? ("Validacion: " + normalize(item && item.codigo_validacion)) : ""].filter(Boolean).join("\n"),
-              qr: getPrintableDocumentQR(item),
+              qr: printFieldEnabled(printItems, "qr_dian", item) ? getPrintableDocumentQR(item) : null,
               signatures: false,
               closeAfterPrint: false
             });

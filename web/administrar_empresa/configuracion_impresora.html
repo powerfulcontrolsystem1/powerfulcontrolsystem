@@ -595,15 +595,31 @@
       <div class="empresa-config-grid mt-12">
         <div class="print-items-panel">
           <h3>Campos del recibo de venta</h3>
-          <p class="form-help">Aplica solo al recibo operativo de venta. La factura electronica conserva los campos exigidos por la ley colombiana y la DIAN.</p>
+          <p class="form-help">Aplica al recibo operativo y a la representacion impresa. Advertencia: si la empresa usa factura electronica, los campos obligatorios de DIAN se imprimen aunque el check este apagado; solo pueden ocultarse en ventas/comprobantes sin factura electronica.</p>
           <div class="print-items-grid" id="reciboPrintItems">
             <label class="empresa-config-check" for="reciboItemEmpresa"><input id="reciboItemEmpresa" type="checkbox" data-print-scope="recibo" data-print-key="empresa"><span>Empresa</span></label>
             <label class="empresa-config-check" for="reciboItemCarrito"><input id="reciboItemCarrito" type="checkbox" data-print-scope="recibo" data-print-key="carrito"><span>Carrito</span></label>
             <label class="empresa-config-check" for="reciboItemCodigo"><input id="reciboItemCodigo" type="checkbox" data-print-scope="recibo" data-print-key="codigo"><span>Codigo</span></label>
+            <label class="empresa-config-check" for="reciboItemNumeroLegal"><input id="reciboItemNumeroLegal" type="checkbox" data-print-scope="recibo" data-print-key="numero_legal"><span>Numero legal</span></label>
             <label class="empresa-config-check" for="reciboItemCliente"><input id="reciboItemCliente" type="checkbox" data-print-scope="recibo" data-print-key="cliente"><span>Cliente</span></label>
+            <label class="empresa-config-check" for="reciboItemClienteEmail"><input id="reciboItemClienteEmail" type="checkbox" data-print-scope="recibo" data-print-key="cliente_email"><span>Correo cliente</span></label>
+            <label class="empresa-config-check" for="reciboItemClienteDocumento"><input id="reciboItemClienteDocumento" type="checkbox" data-print-scope="recibo" data-print-key="cliente_documento"><span>Documento cliente</span></label>
             <label class="empresa-config-check" for="reciboItemCajero"><input id="reciboItemCajero" type="checkbox" data-print-scope="recibo" data-print-key="cajero"><span>Cajero</span></label>
             <label class="empresa-config-check" for="reciboItemMetodo"><input id="reciboItemMetodo" type="checkbox" data-print-scope="recibo" data-print-key="metodo_pago"><span>Metodo de pago</span></label>
             <label class="empresa-config-check" for="reciboItemFecha"><input id="reciboItemFecha" type="checkbox" data-print-scope="recibo" data-print-key="fecha"><span>Fecha y hora</span></label>
+            <label class="empresa-config-check" for="reciboItemEstado"><input id="reciboItemEstado" type="checkbox" data-print-scope="recibo" data-print-key="estado"><span>Estado</span></label>
+            <label class="empresa-config-check" for="reciboItemTotal"><input id="reciboItemTotal" type="checkbox" data-print-scope="recibo" data-print-key="total"><span>Total</span></label>
+            <label class="empresa-config-check" for="reciboItemTotalLetras"><input id="reciboItemTotalLetras" type="checkbox" data-print-scope="recibo" data-print-key="total_en_letras"><span>Total en letras</span></label>
+            <label class="empresa-config-check" for="reciboItemMoneda"><input id="reciboItemMoneda" type="checkbox" data-print-scope="recibo" data-print-key="moneda"><span>Moneda</span></label>
+            <label class="empresa-config-check" for="reciboItemPeriodo"><input id="reciboItemPeriodo" type="checkbox" data-print-scope="recibo" data-print-key="periodo"><span>Periodo</span></label>
+            <label class="empresa-config-check" for="reciboItemControl"><input id="reciboItemControl" type="checkbox" data-print-scope="recibo" data-print-key="control_documental"><span>Control documental</span></label>
+            <label class="empresa-config-check" for="reciboItemTipoDocumento"><input id="reciboItemTipoDocumento" type="checkbox" data-print-scope="recibo" data-print-key="tipo_documento"><span>Tipo documento</span></label>
+            <label class="empresa-config-check" for="reciboItemValidacion"><input id="reciboItemValidacion" type="checkbox" data-print-scope="recibo" data-print-key="codigo_validacion"><span>Codigo validacion</span></label>
+            <label class="empresa-config-check" for="reciboItemPais"><input id="reciboItemPais" type="checkbox" data-print-scope="recibo" data-print-key="pais"><span>Pais</span></label>
+            <label class="empresa-config-check" for="reciboItemAmbiente"><input id="reciboItemAmbiente" type="checkbox" data-print-scope="recibo" data-print-key="ambiente"><span>Ambiente</span></label>
+            <label class="empresa-config-check" for="reciboItemObservaciones"><input id="reciboItemObservaciones" type="checkbox" data-print-scope="recibo" data-print-key="observaciones"><span>Observaciones</span></label>
+            <label class="empresa-config-check" for="reciboItemNotasLegales"><input id="reciboItemNotasLegales" type="checkbox" data-print-scope="recibo" data-print-key="notas_legales"><span>Notas legales / pie</span></label>
+            <label class="empresa-config-check" for="reciboItemQRDian"><input id="reciboItemQRDian" type="checkbox" data-print-scope="recibo" data-print-key="qr_dian"><span>QR DIAN</span></label>
             <label class="empresa-config-check" for="reciboItemFormato"><input id="reciboItemFormato" type="checkbox" data-print-scope="recibo" data-print-key="formato"><span>Formato</span></label>
             <label class="empresa-config-check" for="reciboItemImpresora"><input id="reciboItemImpresora" type="checkbox" data-print-scope="recibo" data-print-key="impresora"><span>Impresora objetivo</span></label>
             <label class="empresa-config-check" for="reciboItemCopias"><input id="reciboItemCopias" type="checkbox" data-print-scope="recibo" data-print-key="copias"><span>Copias</span></label>
@@ -2938,10 +2954,26 @@
       empresa: true,
       carrito: true,
       codigo: true,
+      numero_legal: true,
       cliente: true,
+      cliente_email: true,
+      cliente_documento: true,
       cajero: true,
       metodo_pago: true,
       fecha: true,
+      estado: true,
+      total: true,
+      moneda: true,
+      periodo: true,
+      control_documental: true,
+      tipo_documento: true,
+      codigo_validacion: true,
+      pais: true,
+      ambiente: true,
+      observaciones: true,
+      notas_legales: true,
+      qr_dian: true,
+      total_en_letras: false,
       formato: true,
       impresora: true,
       copias: true,

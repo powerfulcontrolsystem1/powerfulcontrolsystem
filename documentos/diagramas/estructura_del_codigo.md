@@ -1,3 +1,14 @@
+## Actualizacion 2026-06-11 - Chat IA con lectura administrativa por empresa
+
+- `backend/handlers/chat_con_inteligencia_artificial_admin_queries.go`
+  - Centraliza respuestas administrativas directas del chat IA, iniciando por
+    conteo/resumen de usuarios desde `users` con `empresa_id` obligatorio.
+- `backend/handlers/chat_con_inteligencia_artificial_controller.go`
+  - Usa contexto amplio de lectura DB solo para roles administrativos y mantiene
+    escrituras por endpoints PCS confirmables, sin SQL libre generado por IA.
+- `backend/handlers/chat_con_inteligencia_artificial_admin_queries_test.go`
+  - Cubre intencion de consulta, roles autorizados y formato del resumen.
+
 ## Actualizacion 2026-06-11 - Buzon, tareas y chat empresarial
 
 - `backend/db/empresa_buzon.go`

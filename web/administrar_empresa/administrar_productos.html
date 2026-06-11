@@ -116,6 +116,28 @@
       gap:8px;
       align-items:center;
     }
+    .producto-mrp-bridge{
+      display:grid;
+      grid-template-columns:minmax(0,1fr) auto;
+      gap:10px;
+      align-items:center;
+      padding:10px 12px;
+      border:1px solid var(--border);
+      border-radius:8px;
+      background:color-mix(in srgb,var(--surface-soft) 82%,var(--card));
+      margin:10px 0 14px;
+    }
+    .producto-mrp-bridge h3{
+      margin:0 0 3px;
+      font-size:.98rem;
+      color:var(--text);
+    }
+    .producto-mrp-bridge p{
+      margin:0;
+      color:var(--muted);
+      font-size:.84rem;
+      line-height:1.35;
+    }
     .producto-import-result{
       margin-top:8px;
       max-height:150px;
@@ -194,6 +216,9 @@
       .producto-transfer-panel{
         grid-template-columns:1fr;
       }
+      .producto-mrp-bridge{
+        grid-template-columns:1fr;
+      }
     }
   </style>
   <script src="/js/empresa_submenu_context.js"></script>
@@ -257,6 +282,14 @@
     </section>
 
     <div id="messageBox" class="form-help"></div>
+
+    <section class="producto-mrp-bridge" aria-label="Integracion con Produccion MRP">
+      <div>
+        <h3>Recetas vendibles y Produccion / MRP</h3>
+        <p>Productos conserva catalogo, precios, inventario y recetas para vender en POS. Si una receta necesita fabricacion, ordenes, calidad o planeacion de materiales, importala desde Produccion/MRP como BOM.</p>
+      </div>
+      <a class="btn secondary" id="productoLinkProduccionMRP" href="/administrar_empresa/modulo_menu.html?module=produccion_mrp">Abrir Produccion / MRP</a>
+    </section>
 
     <section class="card empresa-section" data-view-section="bodegas">
       <div class="empresa-section-header">
@@ -4208,8 +4241,19 @@
       });
     }
 
+    function setupProduccionMRPBridge() {
+      const link = document.getElementById('productoLinkProduccionMRP');
+      if (!link) return;
+      const url = new URL('/administrar_empresa/modulo_menu.html', window.location.origin);
+      url.searchParams.set('module', 'produccion_mrp');
+      if (empresaId) url.searchParams.set('empresa_id', empresaId);
+      url.searchParams.set('v', '20260611-mrp-unificado');
+      link.href = url.pathname + url.search;
+    }
+
     async function bootstrap() {
       installProductoFieldHelp();
+      setupProduccionMRPBridge();
       hideCRUDForms();
       wireEvents();
       applyViewMode();

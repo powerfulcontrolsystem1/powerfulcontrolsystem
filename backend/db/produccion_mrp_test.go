@@ -84,3 +84,24 @@ func TestProduccionDateKey(t *testing.T) {
 		t.Fatalf("empty date key = %q", got)
 	}
 }
+
+func TestProduccionMRPDemoDefinitionsSonProfesionales(t *testing.T) {
+	defs := produccionMRPDemoDefinitions("qa")
+	if len(defs) < 3 {
+		t.Fatalf("se esperaban varios ejemplos de produccion, got %d", len(defs))
+	}
+	seen := map[string]bool{}
+	for _, def := range defs {
+		code := normalizeProduccionReceta(def.Receta).Codigo
+		if code == "" || seen[code] {
+			t.Fatalf("codigo de receta demo invalido o repetido: %q", code)
+		}
+		seen[code] = true
+		if len(def.Receta.Componentes) < 3 {
+			t.Fatalf("la receta demo %s debe tener BOM completo", code)
+		}
+		if def.Orden.CantidadPlanificada <= 0 || def.Orden.ProductoTerminadoNombre == "" {
+			t.Fatalf("orden demo incompleta para %s: %#v", code, def.Orden)
+		}
+	}
+}

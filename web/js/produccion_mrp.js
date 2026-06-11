@@ -11,6 +11,7 @@
 
   var state = {
     recetas: [],
+    recetasVendibles: [],
     ordenes: [],
     consumos: [],
     calidad: [],
@@ -168,6 +169,7 @@
     $("prodAlerts").innerHTML = alerts.map(function (a) {
       return '<article class="prod-alert ' + a[0] + '"><strong>' + esc(a[1]) + '</strong><p>' + esc(a[2]) + '</p></article>';
     }).join("");
+    renderNextAction({ sinComponentes: sinComponentes, vencidas: vencidas, riesgoMRP: riesgoMRP });
 
     var recent = state.consumos.slice(0, 8).map(function (c) {
       return ["Consumo", c.producto_nombre, qty(c.cantidad_consumida), money(c.costo_total), c.fecha_consumo || ""];
@@ -177,6 +179,25 @@
     $("prodRecent").innerHTML = '<table class="prod-table"><thead><tr><th>Tipo</th><th>Detalle</th><th>Cantidad</th><th>Valor/Resultado</th><th>Fecha</th></tr></thead><tbody>' +
       (recent.map(function (r) { return '<tr><td>' + esc(r[0]) + '</td><td>' + esc(r[1]) + '</td><td class="num">' + esc(r[2]) + '</td><td class="num">' + esc(r[3]) + '</td><td>' + esc(r[4]) + '</td></tr>'; }).join("") || '<tr><td colspan="5">Sin actividad reciente.</td></tr>') +
       '</tbody></table>';
+  }
+
+  function renderNextAction(metrics) {
+    var box = $("prodNextAction");
+    if (!box) return;
+    metrics = metrics || {};
+    var action = { title: "Siguiente accion", text: "Carga una receta/BOM o una orden para que el tablero pueda calcular requerimientos." };
+    if (metrics.sinComponentes > 0) {
+      action = { title: "Completar BOM antes de producir", text: "Hay recetas activas sin componentes. Edita la receta y define materiales, unidades, costo y etapa." };
+    } else if ((state.dashboard || {}).ordenes_urgentes > 0) {
+      action = { title: "Atender ordenes urgentes", text: "Revisa prioridad, responsable y fecha programada antes de liberar nuevos consumos." };
+    } else if (metrics.vencidas > 0) {
+      action = { title: "Reprogramar ordenes vencidas", text: "Actualiza fechas o cierra ordenes que ya pasaron por calidad para limpiar el tablero." };
+    } else if (metrics.riesgoMRP > 0) {
+      action = { title: "Gestionar compras y produccion", text: "El MRP detecto materiales o productos con requerimientos. Genera el periodo y valida cantidades sugeridas." };
+    } else if (state.ordenes.length > 0) {
+      action = { title: "Operacion estable", text: "Sigue registrando consumos reales y control de calidad para cerrar costos confiables." };
+    }
+    box.innerHTML = '<strong>' + esc(action.title) + '</strong><span>' + esc(action.text) + '</span>';
   }
 
   function recetaToComponentLines(r) {
@@ -240,6 +261,17 @@
       return '<option value="' + r.id + '">' + esc(r.codigo) + " - " + esc(r.nombre) + '</option>';
     }).join("");
     $("ordReceta").innerHTML = opts || '<option value="">Sin recetas</option>';
+    renderRecetasVendibles();
+  }
+
+  function renderRecetasVendibles() {
+    var select = $("recetaProductoSelect");
+    if (!select) return;
+    var rows = state.recetasVendibles || [];
+    select.innerHTML = rows.length ? rows.map(function (r) {
+      var count = r.ingredientes_count || (r.ingredientes || []).length || 0;
+      return '<option value="' + esc(r.id) + '">' + esc((r.codigo ? r.codigo + " - " : "") + r.nombre) + " (" + count + " ing.)</option>";
+    }).join("") : '<option value="">No hay recetas vendibles activas</option>';
   }
 
   function clearOrdenForm() {
@@ -320,6 +352,7 @@
   }
 
   function renderMRP() {
+    renderMRPSummary();
     var rows = state.plan.map(function (p) {
       var risk = num(p.disponible_proyectado) < 0 || num(p.cantidad_sugerida_compra) > 0 || num(p.cantidad_sugerida_producir) > 0;
       return '<tr class="' + (risk ? "is-risk" : "") + '">' +
@@ -329,6 +362,28 @@
         '<td class="num">' + esc(qty(p.cantidad_sugerida_compra)) + '</td><td class="num">' + esc(qty(p.cantidad_sugerida_producir)) + '</td><td>' + chip(p.estado) + '</td></tr>';
     });
     $("mrpTable").innerHTML = '<table class="prod-table"><thead><tr><th>Periodo</th><th>Producto/Material</th><th>Origen</th><th>Demanda</th><th>Requerido</th><th>Stock seguridad</th><th>Disponible</th><th>Comprar</th><th>Producir</th><th>Estado</th></tr></thead><tbody>' + (rows.join("") || '<tr><td colspan="10">Sin plan MRP generado para ordenes abiertas.</td></tr>') + '</tbody></table>';
+  }
+
+  function renderMRPSummary() {
+    var el = $("mrpSummary");
+    if (!el) return;
+    var stats = state.plan.reduce(function (acc, p) {
+      acc.lineas += 1;
+      if (num(p.cantidad_sugerida_compra) > 0) acc.comprar += 1;
+      if (num(p.cantidad_sugerida_producir) > 0) acc.producir += 1;
+      if (num(p.disponible_proyectado) < 0) acc.riesgo += 1;
+      acc.unidadesCompra += num(p.cantidad_sugerida_compra);
+      acc.unidadesProducir += num(p.cantidad_sugerida_producir);
+      return acc;
+    }, { lineas: 0, comprar: 0, producir: 0, riesgo: 0, unidadesCompra: 0, unidadesProducir: 0 });
+    el.innerHTML = [
+      ["Lineas plan", stats.lineas],
+      ["Con compra sugerida", stats.comprar + " (" + qty(stats.unidadesCompra) + ")"],
+      ["Con produccion sugerida", stats.producir + " (" + qty(stats.unidadesProducir) + ")"],
+      ["Riesgo de disponibilidad", stats.riesgo]
+    ].map(function (card) {
+      return '<article class="prod-mrp-card"><span>' + esc(card[0]) + '</span><strong>' + esc(card[1]) + '</strong></article>';
+    }).join("");
   }
 
   function parseComponentes(raw) {
@@ -366,6 +421,11 @@
       state.plan = d.plan || [];
       state.consumos = d.consumos_recientes || [];
       state.calidad = d.revisiones_calidad || [];
+      try {
+        state.recetasVendibles = await api("catalogo_recetas_vendibles");
+      } catch (catalogErr) {
+        state.recetasVendibles = [];
+      }
       fillConfig(d.config || {});
       renderAll();
       msg("Produccion/MRP actualizado.");
@@ -462,6 +522,34 @@
   $("prodGenerateMRP").onclick = generateMRP;
   $("mrpGenerate").onclick = generateMRP;
   $("prodExport").onclick = exportCSV;
+  if ($("importRecetaProducto")) {
+    $("importRecetaProducto").onclick = async function () {
+      var recetaProductoID = Number(($("recetaProductoSelect") && $("recetaProductoSelect").value) || 0);
+      if (!recetaProductoID) {
+        msg("Selecciona una receta vendible activa para importarla como BOM.", true);
+        return;
+      }
+      try {
+        setBusy(true, "Importando receta vendible como BOM...");
+        await api("import_receta_producto", body({ receta_producto_id: recetaProductoID }));
+        await load();
+        msg("Receta vendible importada como BOM de Produccion/MRP.");
+        setTab("recetas");
+      } catch (e) {
+        msg(e.message, true);
+      } finally {
+        setBusy(false);
+      }
+    };
+  }
+  if ($("prodTutorial")) {
+    $("prodTutorial").onclick = function () {
+      var url = new URL("/administrar_empresa/produccion_mrp_tutorial.html", location.origin);
+      if (empresaId) url.searchParams.set("empresa_id", empresaId);
+      url.searchParams.set("v", "20260611-mrp-tutorial");
+      location.href = url.pathname + url.search;
+    };
+  }
   $("recCancel").onclick = clearRecetaForm;
   $("ordCancel").onclick = clearOrdenForm;
   $("recFilter").onchange = function () { state.filters.recetas = this.value; renderRecetas(); };
@@ -487,6 +575,7 @@
         estado: $("recEstado").value,
         componentes: parseComponentes($("recComponentes").value)
       };
+      if (!payload.componentes.length) throw new Error("La receta necesita al menos un componente valido en el formato producto|cantidad|unidad|costo|merma|etapa.");
       setBusy(true, payload.id ? "Actualizando receta..." : "Guardando receta...");
       await api("recetas", body(payload, payload.id ? "PUT" : "POST"));
       clearRecetaForm();

@@ -1,3 +1,17 @@
+2026-06-11 - Lectura administrativa IA por empresa
+- `backend/handlers/chat_con_inteligencia_artificial_admin_queries.go`: agrega consultas administrativas directas y seguras para el chat IA, iniciando por resumen real de usuarios desde `users` filtrado por `empresa_id`; no acepta SQL libre ni expone secretos.
+- `backend/handlers/chat_con_inteligencia_artificial_admin_queries_test.go`: cubre deteccion de preguntas de usuarios, roles autorizados y formato del resumen administrativo.
+- `backend/handlers/chat_con_inteligencia_artificial_controller.go`: restringe la lectura amplia de base de datos a super administrador, administrador total y administrador de empresa; las modificaciones siguen saliendo solo por endpoints PCS con permisos y confirmacion.
+
+2026-06-11 - Total en letras y campos imprimibles por empresa
+- `web/js/print_documents.js`: agrega utilidades compartidas para convertir montos a letras, leer campos imprimibles y forzar campos obligatorios en documentos electronicos.
+- `web/administrar_empresa/configuracion_impresora.html`: amplia los checks por empresa para recibos/representaciones impresas, incluido `Total en letras`, QR DIAN y control documental.
+- `web/administrar_empresa/ventas.html`, `web/administrar_empresa/facturas_electronicas.html` y `web/administrar_empresa/carrito_de_compras.html`: aplican la configuracion en preview e impresion sin alterar XML, DIAN, pagos ni contabilidad.
+
+2026-06-11 - Ventas y facturas en bandeja unificada
+- `web/administrar_empresa/ventas.html`: lista ventas y facturas electronicas en la misma tabla con columna `Relacion FE`, accion unica `Ver / imprimir` y generacion de FE desde ventas `Solo venta`.
+- `documentos/mapa_modulos.md`, `documentos/flujos_operativos.md`, `CHANGELOG.md`, `documentos/CHANGELOG.md` y `documentos/historial_de_cambios`: registran el flujo operativo y la trazabilidad del cambio.
+
 2026-06-11 - Busqueda de productos en carrito por codigo o nombre
 - `backend/db/productos.go`: prioriza coincidencias exactas de `codigo_barras` y `sku` cuando el carrito consulta `/api/empresa/productos?q=...`, manteniendo busqueda por nombre y filtros por empresa.
 - `web/administrar_empresa/carrito_de_compras.html`: actualiza el catalogo inteligente para buscar por codigo/SKU/codigo de barras o nombre, aceptar codigos cortos y mostrar ambos codigos en resultados.
@@ -11250,6 +11264,14 @@ backend/handlers/user_config.go - Controlador que expone /api/user/configuracion
 	- Muestra los nuevos medios en abonos, pago principal, pago mixto y `Detalle del pago`; permite pagos combinados con seis medios.
 - `backend/db/apartamentos_turisticos_integracion_test.go` y `backend/handlers/empresa_preconfiguracion_carrito_test.go`:
 	- Cubren normalizacion y defaults de los nuevos medios.
+2026-06-11 - Produccion/MRP profesional unificado con Productos
+- `web/administrar_empresa/produccion_mrp_tutorial.html`: nueva guia operativa del modulo Produccion/MRP con pasos para configurar, crear BOM, abrir ordenes, registrar consumos, calidad y generar MRP.
+- `web/administrar_empresa/produccion_mrp.html`: agrega puente para importar recetas vendibles de Productos como BOM productiva, resumen MRP, siguiente accion recomendada y boton Tutorial.
+- `web/js/produccion_mrp.js`: lista/importa recetas POS activas, valida componentes BOM, muestra resumen ejecutivo del plan y abre el tutorial conservando `empresa_id`.
+- `backend/db/produccion_mrp.go`: hace idempotente el demo, agrega varios ejemplos PCS y convierte recetas vendibles `recetas_productos` a BOM `empresa_produccion_recetas` por empresa.
+- `backend/handlers/produccion_mrp.go`: expone `catalogo_recetas_vendibles` e `import_receta_producto` bajo el wrapper de Produccion/MRP.
+- `web/administrar_empresa/administrar_productos.html`: agrega tarjeta informativa/enlace a Produccion/MRP para aclarar que Productos conserva catalogo/POS y MRP controla fabricacion.
+
 2026-06-10 - Venta a credito desde carrito
 - `backend/db/carritos_compras.go`:
 	- normaliza el metodo `credito_cliente` y alias de venta a credito.
@@ -11263,6 +11285,9 @@ backend/handlers/user_config.go - Controlador que expone /api/user/configuracion
 	- habilitan `metodo_pago_credito_cliente` por defecto en la preconfiguracion del carrito.
 - `web/administrar_empresa/carrito_de_compras.html`:
 	- agrega seleccion de `Credito cliente`, consulta de cupo visible, creacion rapida de cupo y texto de credito en recibo/factura visual.
+	- separa busqueda por nombre del campo de codigo/SKU, permite navegar resultados con flechas y agrega el producto seleccionado con Enter; el boton de pantalla completa de venta directa queda solo como icono visible.
+- `web/estilos.css`:
+	- define la lista flotante de resultados del buscador por nombre del carrito para no desalinear codigo, nombre, cantidad y botones.
 - `web/administrar_empresa/configuracion_carrito_de_compra_empresa.html`:
 	- agrega check por empresa para activar o desactivar `Credito cliente / cupo cartera`.
 

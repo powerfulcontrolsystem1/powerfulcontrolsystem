@@ -1,3 +1,15 @@
+2026-06-11: Nota de lectura administrativa IA por empresa
+- `linkChatIA` puede seguir disponible como ayuda operativa, pero la lectura
+  amplia de base de datos y las respuestas administrativas directas solo se
+  habilitan para `super_administrador`, `administrador_total` y `admin_empresa`.
+- Para esos roles, el backend entrega datos reales filtrados por `empresa_id`,
+  como conteos de `users`, sin exponer secretos ni permitir SQL libre del modelo.
+- Roles como `cajero`, `vendedor`, `contador`, `inventario` o
+  `responsable_bodega` conservan el chat operativo, pero no reciben contexto
+  total de tablas por IA.
+- Cualquier modificacion solicitada desde IA debe pasar por endpoints PCS,
+  wrappers de permisos, validacion multiempresa y confirmacion cuando aplique.
+
 2026-06-10: Nota de IA operativa por rol
 - `linkChatIA` sigue bajo modulo `ventas` con accion de lectura (`R`), y las
   consultas del chat empresarial pasan por wrappers de ventas para permitir uso
