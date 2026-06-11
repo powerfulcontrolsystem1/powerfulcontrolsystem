@@ -14507,3 +14507,33 @@ Archivos modificados:
 - web/js/login_usuario.js
 - web/login_usuario.html
 - web/menu.js
+
+2026-06-11 18:34:54 - Mensaje: rs: actualizar repositorio y sincronizar VPS; Commit: a9eda0b7; PushStatus: OK
+Archivos modificados:
+- CHANGELOG.md
+- backend/db/produccion_mrp.go
+- backend/db/produccion_mrp_test.go
+- backend/handlers/chat_con_inteligencia_artificial_admin_queries.go
+- backend/handlers/chat_con_inteligencia_artificial_admin_queries_test.go
+- backend/handlers/chat_con_inteligencia_artificial_controller.go
+- backend/handlers/produccion_mrp.go
+- documentos/CHANGELOG.md
+- documentos/contexto_codex.md
+- documentos/descripcion_de_archivos
+- documentos/diagramas/estructura_del_codigo.md
+- documentos/flujos_operativos.md
+- documentos/historial_de_cambios
+- documentos/mapa_modulos.md
+- documentos/matriz_roles_permisos_pos_multiempresa.md
+- documentos/produccion_mrp.md
+- web/administrar_empresa/administrar_productos.html
+- web/administrar_empresa/carrito_de_compras.html
+- web/administrar_empresa/configuracion_impresora.html
+- web/administrar_empresa/facturas_electronicas.html
+- web/administrar_empresa/modulo_menu.html
+- web/administrar_empresa/produccion_mrp.html
+- web/administrar_empresa/produccion_mrp_tutorial.html
+- web/administrar_empresa/ventas.html
+- web/estilos.css
+- web/js/print_documents.js
+- web/js/produccion_mrp.js
