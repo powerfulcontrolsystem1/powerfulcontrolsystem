@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Tutorial Bre-B QR</title>
+  <link rel="stylesheet" href="/estilos.css">
+  <script src="/js/empresa_submenu_context.js"></script>
+  <style>
+    .tutorial-page{max-width:1120px;margin:0 auto;padding:14px;display:grid;gap:14px}
+    .tutorial-head,.tutorial-section{border:1px solid var(--border);border-radius:8px;background:var(--surface);padding:14px}
+    .tutorial-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
+    .tutorial-head h1{margin:0;color:var(--text);font-size:1.25rem;line-height:1.2}
+    .tutorial-head p,.tutorial-section p,.tutorial-section li{color:var(--muted);font-size:.9rem;line-height:1.45}
+    .tutorial-section h2{margin:0 0 8px;color:var(--text);font-size:1.05rem}
+    .tutorial-steps{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+    .tutorial-step{border:1px solid var(--border);border-radius:8px;background:var(--surface-soft);padding:12px}
+    .tutorial-step strong{display:block;color:var(--text);font-size:.95rem;margin-bottom:4px}
+    .tutorial-table{width:100%;border-collapse:collapse}
+    .tutorial-table th,.tutorial-table td{border-bottom:1px solid var(--border);padding:9px;text-align:left;font-size:.86rem}
+    .tutorial-table th{color:var(--muted);text-transform:uppercase;font-size:.72rem;background:var(--surface-soft)}
+    @media(max-width:860px){.tutorial-head{display:grid}.tutorial-steps{grid-template-columns:1fr}}
+  </style>
+</head>
+<body class="admin-empresa-shell">
+  <main class="tutorial-page">
+    <section class="tutorial-head">
+      <div>
+        <h1>Tutorial de pagos Bre-B por QR</h1>
+        <p>Guia para configurar Bre-B en PCS sin mezclar pagos de diferentes cajas y sin cerrar ventas antes de verificar el abono real.</p>
+      </div>
+      <a id="backLink" class="btn secondary" href="/administrar_empresa/finanzas_breb_qr.html">Volver a Bre-B QR</a>
+    </section>
+
+    <section class="tutorial-section">
+      <h2>Como funciona Bre-B</h2>
+      <p>Bre-B es el sistema colombiano de pagos inmediatos interoperables. El cliente paga desde su banco o billetera usando una llave o un QR; PCS registra la referencia en el carrito, pero la confirmacion final viene del banco, billetera, API o webhook del proveedor.</p>
+      <div class="tutorial-steps">
+        <div class="tutorial-step"><strong>Llave</strong><p>Puede ser celular, documento, correo, codigo comercial u otra llave disponible en la entidad financiera.</p></div>
+        <div class="tutorial-step"><strong>QR estatico</strong><p>Sirve para una caja o comercio fijo. El cajero debe digitar o validar el valor y referencia recibida.</p></div>
+        <div class="tutorial-step"><strong>QR dinamico</strong><p>Se genera por venta con valor y referencia unica. Es la opcion recomendada para varias cajas simultaneas.</p></div>
+      </div>
+    </section>
+
+    <section class="tutorial-section">
+      <h2>Configuracion recomendada en PCS</h2>
+      <ol>
+        <li>Entrar a Finanzas y cumplimiento > Pagos Bre-B QR.</li>
+        <li>Activar <strong>Mostrar pago por QR en carrito</strong> y <strong>Habilitar medio Transferencia Bre-B</strong>.</li>
+        <li>Crear al menos una cuenta receptora con proveedor Bre-B, llave, comercio y caja asignada.</li>
+        <li>Si cada caja recibe en una llave diferente, llenar el campo <strong>Caja</strong> en cada cuenta y activar <strong>Preferir cuenta/referencia por caja</strong>.</li>
+        <li>Pegar el payload oficial o plantilla QR entregada por el banco/proveedor cuando exista. Sin ese payload, PCS genera un QR operativo interno con valor y referencia, pero no necesariamente bancario nativo.</li>
+        <li>Guardar configuracion y probar desde Venta directa o una estacion: generar QR, verificar abono en la app bancaria y luego pagar/cerrar carrito.</li>
+      </ol>
+    </section>
+
+    <section class="tutorial-section">
+      <h2>Varias cajas al mismo tiempo</h2>
+      <p>Para evitar cruces, cada cobro debe quedar con una referencia unica que incluya empresa, caja/estacion y carrito/venta. En PCS el carrito ya crea referencias separadas; si el banco permite QR dinamico, use esa referencia en el payload oficial.</p>
+      <table class="tutorial-table">
+        <thead><tr><th>Escenario</th><th>Recomendacion</th><th>Riesgo si no se hace</th></tr></thead>
+        <tbody>
+          <tr><td>Una caja</td><td>Una llave Bre-B y referencia por venta.</td><td>Riesgo bajo, conciliacion manual simple.</td></tr>
+          <tr><td>Varias cajas, misma cuenta</td><td>Referencia dinamica obligatoria por carrito.</td><td>Pagos mezclados si el cajero no valida referencia.</td></tr>
+          <tr><td>Varias cajas, cuentas distintas</td><td>Asignar cuenta/llave por caja en la tabla de cuentas.</td><td>Menor riesgo, mejor conciliacion por turno.</td></tr>
+          <tr><td>Conciliacion automatica</td><td>Conectar API/webhook del banco o proveedor y guardar referencia recibida.</td><td>Sin webhook, PCS no puede saber solo si el dinero llego.</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section class="tutorial-section">
+      <h2>Registro y conciliacion</h2>
+      <p>El registro muestra ventas pagadas con Bre-B, abonos hechos por Bre-B y pagos bancarios manuales. Cuando el banco entregue API o webhook, la conciliacion puede pasar de manual a automatica usando la referencia unica de cada venta.</p>
+      <ul>
+        <li><strong>Pendiente:</strong> el pago fue informado o registrado, pero no se ha conciliado con banco.</li>
+        <li><strong>Conciliado:</strong> el abono fue verificado en banco/proveedor y coincide con monto, fecha y referencia.</li>
+        <li><strong>Venta carrito:</strong> pago confirmado operativamente desde el carrito; aun puede necesitar conciliacion bancaria.</li>
+      </ul>
+    </section>
+  </main>
+  <script>
+    (function(){
+      const params = new URLSearchParams(location.search);
+      const empresaId = params.get('empresa_id') || params.get('id') || '';
+      const back = document.getElementById('backLink');
+      if (empresaId) back.href = '/administrar_empresa/finanzas_breb_qr.html?empresa_id=' + encodeURIComponent(empresaId);
+    })();
+  </script>
+</body>
+</html>

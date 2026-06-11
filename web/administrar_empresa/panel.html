@@ -729,6 +729,199 @@
       outline-offset: 2px;
     }
 
+    .empresa-buzon-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(320px, .82fr);
+      gap: 12px;
+      margin-top: 12px;
+    }
+
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    .empresa-buzon-card,
+    .empresa-chat-card {
+      min-width: 0;
+      padding: 16px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--card);
+      color: var(--text);
+      box-shadow: 0 14px 30px var(--panel-card-shadow);
+    }
+
+    .empresa-buzon-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+
+    .empresa-buzon-head h2 {
+      margin: 0;
+      font-size: 1rem;
+      line-height: 1.2;
+    }
+
+    .empresa-buzon-head p {
+      margin: 4px 0 0;
+      color: var(--muted);
+      font-size: .82rem;
+      line-height: 1.35;
+    }
+
+    .empresa-buzon-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 34px;
+      height: 28px;
+      padding: 0 9px;
+      border-radius: 999px;
+      background: color-mix(in srgb, #ef4444 22%, var(--surface) 78%);
+      color: var(--text);
+      font-size: .82rem;
+      font-weight: 950;
+    }
+
+    .empresa-buzon-list,
+    .empresa-chat-list {
+      display: grid;
+      gap: 8px;
+      max-height: 310px;
+      overflow: auto;
+      padding-right: 3px;
+    }
+
+    .empresa-buzon-item,
+    .empresa-chat-item {
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 11px;
+      background: var(--surface);
+    }
+
+    .empresa-buzon-item {
+      width: 100%;
+      text-align: left;
+      cursor: pointer;
+    }
+
+    .empresa-buzon-item.is-unread {
+      border-color: color-mix(in srgb, var(--accent) 50%, var(--border));
+      background: color-mix(in srgb, var(--accent) 9%, var(--surface) 91%);
+    }
+
+    .empresa-buzon-item.is-task {
+      border-left: 4px solid #2563eb;
+    }
+
+    .empresa-buzon-item strong,
+    .empresa-chat-item strong {
+      display: block;
+      color: var(--text);
+      font-size: .88rem;
+      line-height: 1.25;
+    }
+
+    .empresa-buzon-item p,
+    .empresa-chat-item p {
+      margin: 4px 0 0;
+      color: var(--muted);
+      font-size: .8rem;
+      line-height: 1.35;
+      overflow-wrap: anywhere;
+    }
+
+    .empresa-buzon-attachments {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      margin-top: 7px;
+    }
+
+    .empresa-buzon-attachments a {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 5px 8px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      color: var(--text);
+      background: var(--content-soft-bg);
+      font-size: .76rem;
+      text-decoration: none;
+    }
+
+    .empresa-task-panel {
+      display: none;
+      gap: 8px;
+      padding: 10px;
+      border-radius: 8px;
+      border: 1px solid color-mix(in srgb, #2563eb 35%, var(--border));
+      background: color-mix(in srgb, #2563eb 8%, var(--surface) 92%);
+    }
+
+    .empresa-task-panel.is-visible {
+      display: grid;
+    }
+
+    .empresa-task-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 8px;
+      justify-content: flex-end;
+    }
+
+    .empresa-buzon-form {
+      display: grid;
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    .empresa-buzon-form-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      gap: 8px;
+    }
+
+    .empresa-buzon-form textarea,
+    .empresa-chat-form textarea {
+      min-height: 74px;
+      resize: vertical;
+    }
+
+    .empresa-buzon-form-actions,
+    .empresa-chat-form-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+      justify-content: flex-end;
+    }
+
+    .empresa-storage-warning {
+      margin-top: 10px;
+      padding: 10px 12px;
+      border-radius: 8px;
+      border: 1px solid color-mix(in srgb, #f59e0b 38%, var(--border));
+      background: color-mix(in srgb, #f59e0b 12%, var(--surface) 88%);
+      color: var(--text);
+      font-size: .82rem;
+      line-height: 1.35;
+    }
+
     .empresa-email-panel {
       display: grid;
       grid-template-columns: minmax(0, 1fr);
@@ -1018,6 +1211,10 @@
 
       .empresa-email-diagnostics {
         grid-template-columns: 1fr;
+      }
+
+      .empresa-buzon-grid {
+        grid-template-columns: minmax(0, 1fr);
       }
 
       .empresa-email-embed,
@@ -1573,6 +1770,83 @@
       <a id="empresaEmailNotificationLink" class="empresa-mail-notification-action" href="/administrar_empresa/email_corporativo.html">Abrir E-mail Corporativo</a>
     </section>
 
+    <section class="empresa-buzon-grid" aria-label="Buzon y chat interno">
+      <article class="empresa-buzon-card" aria-labelledby="empresaBuzonTitle">
+        <div class="empresa-buzon-head">
+          <div>
+            <p class="empresa-favorites-kicker">Mensajes internos</p>
+            <h2 id="empresaBuzonTitle">Buzon de usuario</h2>
+            <p>Recibe avisos operativos, traslados de bodega y tareas asignadas.</p>
+          </div>
+          <span id="empresaBuzonUnreadBadge" class="empresa-buzon-badge">0</span>
+        </div>
+        <div id="empresaBuzonStorage" class="empresa-storage-warning" hidden></div>
+        <div id="empresaBuzonList" class="empresa-buzon-list" aria-live="polite">
+          <p class="empresa-favorites-empty">Cargando mensajes...</p>
+        </div>
+        <form id="empresaBuzonForm" class="empresa-buzon-form">
+          <div class="empresa-buzon-form-row">
+            <label class="sr-only" for="empresaBuzonMode">Tipo de envio</label>
+            <select id="empresaBuzonMode" class="form-input">
+              <option value="mensaje">Enviar mensaje</option>
+              <option value="tarea">Asignar tarea</option>
+            </select>
+            <label class="sr-only" for="empresaBuzonRecipient">Destinatario</label>
+            <select id="empresaBuzonRecipient" class="form-input" required>
+              <option value="">Seleccionar usuario</option>
+            </select>
+          </div>
+          <input id="empresaBuzonTitleInput" class="form-input" type="text" maxlength="180" placeholder="Titulo">
+          <textarea id="empresaBuzonMessageInput" class="form-input" maxlength="3000" placeholder="Mensaje"></textarea>
+          <div id="empresaTaskAssignPanel" class="empresa-task-panel" aria-label="Datos de la tarea">
+            <div class="empresa-buzon-form-row">
+              <select id="empresaTaskPriority" class="form-input">
+                <option value="normal">Prioridad normal</option>
+                <option value="alta">Prioridad alta</option>
+                <option value="baja">Prioridad baja</option>
+              </select>
+              <input id="empresaTaskDue" class="form-input" type="datetime-local" aria-label="Fecha limite de la tarea">
+            </div>
+            <p class="empresa-favorites-empty">La tarea quedara en el buzon del usuario asignado y podra cerrarse con descripcion y evidencias.</p>
+          </div>
+          <input id="empresaBuzonFileInput" class="form-input" type="file" accept="image/*,audio/*,.pdf,.txt,.csv,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.odt,.ods,.odp">
+          <div class="empresa-buzon-form-actions">
+            <span id="empresaBuzonAudioStatus" class="empresa-favorites-empty"></span>
+            <button id="empresaBuzonRecordBtn" class="btn secondary" type="button">Grabar audio</button>
+            <button id="empresaBuzonSendBtn" class="btn" type="submit">Enviar</button>
+          </div>
+        </form>
+        <div id="empresaTaskCompletePanel" class="empresa-task-panel" aria-label="Finalizar tarea">
+          <strong id="empresaTaskCompleteTitle">Finalizar tarea</strong>
+          <textarea id="empresaTaskCompleteDescription" class="form-input" maxlength="3000" placeholder="Describe que se hizo y el resultado"></textarea>
+          <input id="empresaTaskEvidenceInput" class="form-input" type="file" accept="image/*,audio/*,.pdf,.txt,.csv,.doc,.docx,.xls,.xlsx,.ppt,.pptx">
+          <div class="empresa-task-actions">
+            <button id="empresaTaskCompleteCancel" class="btn secondary" type="button">Cancelar</button>
+            <button id="empresaTaskCompleteSave" class="btn" type="button">Finalizar tarea</button>
+          </div>
+        </div>
+      </article>
+
+      <article class="empresa-chat-card" aria-labelledby="empresaChatTitle">
+        <div class="empresa-buzon-head">
+          <div>
+            <p class="empresa-favorites-kicker">Comunicacion interna</p>
+            <h2 id="empresaChatTitle">Chat de la empresa</h2>
+            <p>Conversacion rapida entre usuarios registrados de esta empresa.</p>
+          </div>
+        </div>
+        <div id="empresaChatList" class="empresa-chat-list" aria-live="polite">
+          <p class="empresa-favorites-empty">Cargando chat...</p>
+        </div>
+        <form id="empresaChatForm" class="empresa-chat-form empresa-buzon-form">
+          <textarea id="empresaChatMessageInput" class="form-input" maxlength="2000" placeholder="Escribe un mensaje para el equipo"></textarea>
+          <div class="empresa-chat-form-actions">
+            <button id="empresaChatSendBtn" class="btn" type="submit">Enviar al chat</button>
+          </div>
+        </form>
+      </article>
+    </section>
+
     <div class="empresa-home-footer">
       <span id="homeDate"></span>
       <span id="homeStatus" class="empresa-home-status">Clima por Open-Meteo.</span>
@@ -1600,6 +1874,29 @@
       var empresaEmailNotificationTitleEl = document.getElementById("empresaEmailNotificationTitle");
       var empresaEmailNotificationMetaEl = document.getElementById("empresaEmailNotificationMeta");
       var empresaEmailNotificationLinkEl = document.getElementById("empresaEmailNotificationLink");
+      var empresaBuzonListEl = document.getElementById("empresaBuzonList");
+      var empresaBuzonUnreadBadgeEl = document.getElementById("empresaBuzonUnreadBadge");
+      var empresaBuzonStorageEl = document.getElementById("empresaBuzonStorage");
+      var empresaBuzonFormEl = document.getElementById("empresaBuzonForm");
+      var empresaBuzonModeEl = document.getElementById("empresaBuzonMode");
+      var empresaBuzonRecipientEl = document.getElementById("empresaBuzonRecipient");
+      var empresaBuzonTitleInputEl = document.getElementById("empresaBuzonTitleInput");
+      var empresaBuzonMessageInputEl = document.getElementById("empresaBuzonMessageInput");
+      var empresaBuzonFileInputEl = document.getElementById("empresaBuzonFileInput");
+      var empresaBuzonRecordBtnEl = document.getElementById("empresaBuzonRecordBtn");
+      var empresaBuzonAudioStatusEl = document.getElementById("empresaBuzonAudioStatus");
+      var empresaTaskAssignPanelEl = document.getElementById("empresaTaskAssignPanel");
+      var empresaTaskPriorityEl = document.getElementById("empresaTaskPriority");
+      var empresaTaskDueEl = document.getElementById("empresaTaskDue");
+      var empresaTaskCompletePanelEl = document.getElementById("empresaTaskCompletePanel");
+      var empresaTaskCompleteTitleEl = document.getElementById("empresaTaskCompleteTitle");
+      var empresaTaskCompleteDescriptionEl = document.getElementById("empresaTaskCompleteDescription");
+      var empresaTaskEvidenceInputEl = document.getElementById("empresaTaskEvidenceInput");
+      var empresaTaskCompleteCancelEl = document.getElementById("empresaTaskCompleteCancel");
+      var empresaTaskCompleteSaveEl = document.getElementById("empresaTaskCompleteSave");
+      var empresaChatListEl = document.getElementById("empresaChatList");
+      var empresaChatFormEl = document.getElementById("empresaChatForm");
+      var empresaChatMessageInputEl = document.getElementById("empresaChatMessageInput");
       var weatherGpsBtn = document.getElementById("weatherGpsBtn");
       var weatherManualToggle = document.getElementById("weatherManualToggle");
       var weatherManualForm = document.getElementById("weatherManualForm");
@@ -1608,6 +1905,11 @@
       var empresaId = getQueryParam("empresa_id") || getQueryParam("id") || readEmpresaId();
       var detectedLocation = null;
       var lastEmpresaEmailURL = "";
+      var empresaBuzonAudioBlob = null;
+      var empresaBuzonAudioName = "";
+      var empresaBuzonRecorder = null;
+      var empresaBuzonRecordingChunks = [];
+      var empresaSelectedTask = null;
       var weatherCodeMap = {
         0: ["Soleado", "clear", "\u2600"],
         1: ["Mayormente despejado", "clear", "\u2600"],
@@ -1679,6 +1981,334 @@
             if (!res.ok) throw new Error("HTTP " + res.status);
             return res.json();
           });
+      }
+
+      function empresaBuzonURL(action) {
+        return "/api/empresa/buzon?empresa_id=" + encodeURIComponent(String(empresaId || "")) + "&action=" + encodeURIComponent(action || "resumen");
+      }
+
+      function renderEmpresaBuzonStorage(storage) {
+        if (!empresaBuzonStorageEl) return;
+        if (!storage || !storage.quota_enabled) {
+          empresaBuzonStorageEl.hidden = true;
+          return;
+        }
+        var pct = Number(storage.usage_percent || 0);
+        var msg = storage.message || "";
+        if (!msg && pct >= 70) msg = "Almacenamiento usado: " + pct.toFixed(1) + "% de " + (storage.limit_mb || 0) + " MB.";
+        empresaBuzonStorageEl.textContent = msg;
+        empresaBuzonStorageEl.hidden = !msg;
+      }
+
+      function formatEmpresaBuzonMeta(item) {
+        var parts = [];
+        if (item && item.tipo === "tarea") {
+          parts.push("Tarea " + (item.tarea_estado || "pendiente"));
+          if (item.tarea_vence_en) parts.push("vence: " + item.tarea_vence_en);
+        }
+        if (item && item.remitente_nombre) parts.push("de " + item.remitente_nombre);
+        if (item && item.fecha_creacion) parts.push(item.fecha_creacion);
+        return parts.join(" - ");
+      }
+
+      function renderEmpresaBuzonMessages(items, unread) {
+        if (empresaBuzonUnreadBadgeEl) empresaBuzonUnreadBadgeEl.textContent = String(unread || 0);
+        if (!empresaBuzonListEl) return;
+        empresaBuzonListEl.innerHTML = "";
+        items = Array.isArray(items) ? items : [];
+        if (!items.length) {
+          var empty = document.createElement("p");
+          empty.className = "empresa-favorites-empty";
+          empty.textContent = "No tienes mensajes pendientes.";
+          empresaBuzonListEl.appendChild(empty);
+          return;
+        }
+        items.forEach(function (item) {
+          var button = document.createElement("button");
+          button.type = "button";
+          button.className = "empresa-buzon-item" + (Number(item.leido || 0) ? "" : " is-unread") + (item.tipo === "tarea" ? " is-task" : "");
+          button.dataset.id = String(item.id || "");
+          var title = document.createElement("strong");
+          title.textContent = (item.tipo === "tarea" ? "[Tarea] " : "") + (item.titulo || "Mensaje");
+          var msg = document.createElement("p");
+          msg.textContent = item.mensaje || "";
+          var meta = document.createElement("p");
+          meta.textContent = formatEmpresaBuzonMeta(item);
+          button.appendChild(title);
+          button.appendChild(msg);
+          button.appendChild(meta);
+          if (Array.isArray(item.adjuntos) && item.adjuntos.length) {
+            var files = document.createElement("div");
+            files.className = "empresa-buzon-attachments";
+            item.adjuntos.forEach(function (file) {
+              var a = document.createElement("a");
+              a.href = file.file_url || "#";
+              a.target = "_blank";
+              a.rel = "noopener";
+              a.textContent = file.tipo_archivo === "audio" ? "Audio" : (file.nombre_archivo || "Adjunto");
+              files.appendChild(a);
+            });
+            button.appendChild(files);
+          }
+          if (item.tipo === "tarea" && item.tarea_estado !== "finalizada") {
+            var taskActions = document.createElement("div");
+            taskActions.className = "empresa-task-actions";
+            var finish = document.createElement("span");
+            finish.className = "btn secondary";
+            finish.textContent = "Finalizar tarea";
+            taskActions.appendChild(finish);
+            button.appendChild(taskActions);
+          }
+          button.addEventListener("click", function () {
+            openEmpresaBuzonMessage(item);
+          });
+          empresaBuzonListEl.appendChild(button);
+        });
+      }
+
+      function renderEmpresaChat(items) {
+        if (!empresaChatListEl) return;
+        empresaChatListEl.innerHTML = "";
+        items = Array.isArray(items) ? items : [];
+        if (!items.length) {
+          var empty = document.createElement("p");
+          empty.className = "empresa-favorites-empty";
+          empty.textContent = "Aun no hay mensajes en el chat de la empresa.";
+          empresaChatListEl.appendChild(empty);
+          return;
+        }
+        items.forEach(function (item) {
+          var row = document.createElement("div");
+          row.className = "empresa-chat-item";
+          var author = document.createElement("strong");
+          author.textContent = item.remitente_nombre || item.remitente_email || "Usuario";
+          var body = document.createElement("p");
+          body.textContent = item.mensaje || "";
+          var date = document.createElement("p");
+          date.textContent = item.fecha_creacion || "";
+          row.appendChild(author);
+          row.appendChild(body);
+          row.appendChild(date);
+          empresaChatListEl.appendChild(row);
+        });
+        empresaChatListEl.scrollTop = empresaChatListEl.scrollHeight;
+      }
+
+      function loadEmpresaBuzon() {
+        if (!empresaId || !empresaBuzonListEl) return Promise.resolve();
+        return fetchJSON(empresaBuzonURL("resumen"))
+          .then(function (data) {
+            renderEmpresaBuzonMessages(data.mensajes || [], data.unread || 0);
+            renderEmpresaChat(data.chat || []);
+            renderEmpresaBuzonStorage(data.storage || null);
+          })
+          .catch(function () {
+            if (empresaBuzonListEl) empresaBuzonListEl.innerHTML = '<p class="empresa-favorites-empty">No se pudo cargar el buzon.</p>';
+          });
+      }
+
+      function loadEmpresaBuzonUsuarios() {
+        if (!empresaId || !empresaBuzonRecipientEl) return Promise.resolve();
+        return fetchJSON(empresaBuzonURL("usuarios"))
+          .then(function (data) {
+            empresaBuzonRecipientEl.innerHTML = '<option value="">Seleccionar usuario</option>';
+            (data.usuarios || []).forEach(function (user) {
+              var opt = document.createElement("option");
+              opt.value = String(user.id || user.email || "");
+              opt.textContent = [user.nombre || user.email || ("Usuario " + user.id), user.rol || ""].filter(Boolean).join(" - ");
+              opt.dataset.email = user.email || "";
+              empresaBuzonRecipientEl.appendChild(opt);
+            });
+          })
+          .catch(function () {});
+      }
+
+      function syncEmpresaTaskMode() {
+        var isTask = empresaBuzonModeEl && empresaBuzonModeEl.value === "tarea";
+        if (empresaTaskAssignPanelEl) empresaTaskAssignPanelEl.classList.toggle("is-visible", !!isTask);
+        if (empresaBuzonTitleInputEl && !empresaBuzonTitleInputEl.value) {
+          empresaBuzonTitleInputEl.placeholder = isTask ? "Titulo de la tarea" : "Titulo";
+        }
+        if (empresaBuzonMessageInputEl) {
+          empresaBuzonMessageInputEl.placeholder = isTask ? "Describe la tarea que debe realizar el usuario" : "Mensaje";
+        }
+      }
+
+      function openEmpresaBuzonMessage(item) {
+        if (!item || !item.id) return;
+        fetch(empresaBuzonURL("leer"), {
+          method: "PUT",
+          credentials: "same-origin",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ id: item.id })
+        }).catch(function () {}).then(loadEmpresaBuzon);
+        if (item.tipo === "tarea" && item.tarea_estado !== "finalizada") {
+          empresaSelectedTask = item;
+          if (empresaTaskCompleteTitleEl) empresaTaskCompleteTitleEl.textContent = "Finalizar tarea: " + (item.titulo || item.id);
+          if (empresaTaskCompleteDescriptionEl) empresaTaskCompleteDescriptionEl.value = "";
+          if (empresaTaskEvidenceInputEl) empresaTaskEvidenceInputEl.value = "";
+          if (empresaTaskCompletePanelEl) empresaTaskCompletePanelEl.classList.add("is-visible");
+          return;
+        }
+        if (item.enlace_url) window.location.href = item.enlace_url;
+      }
+
+      function sendEmpresaBuzonPayload(event) {
+        if (event) event.preventDefault();
+        if (!empresaId || !empresaBuzonRecipientEl) return;
+        var mode = empresaBuzonModeEl && empresaBuzonModeEl.value === "tarea" ? "tarea" : "mensaje";
+        var recipient = empresaBuzonRecipientEl.value || "";
+        var title = text(empresaBuzonTitleInputEl && empresaBuzonTitleInputEl.value) || (mode === "tarea" ? "Nueva tarea asignada" : "Nuevo mensaje");
+        var message = text(empresaBuzonMessageInputEl && empresaBuzonMessageInputEl.value);
+        if (!recipient || !message) {
+          setStatus("Selecciona destinatario y escribe el mensaje.", true);
+          return;
+        }
+        var file = empresaBuzonFileInputEl && empresaBuzonFileInputEl.files && empresaBuzonFileInputEl.files[0] ? empresaBuzonFileInputEl.files[0] : null;
+        var audioFile = empresaBuzonAudioBlob ? new File([empresaBuzonAudioBlob], empresaBuzonAudioName || "nota_voz.webm", { type: empresaBuzonAudioBlob.type || "audio/webm" }) : null;
+        if (file || audioFile) {
+          var form = new FormData();
+          form.append("empresa_id", empresaId);
+          form.append("destinatario_ref", recipient);
+          form.append("titulo", title);
+          form.append("mensaje", message);
+          form.append("tipo", mode === "tarea" ? "tarea" : "interno");
+          form.append("prioridad", empresaTaskPriorityEl ? empresaTaskPriorityEl.value : "normal");
+          form.append("tarea_vence_en", empresaTaskDueEl ? empresaTaskDueEl.value : "");
+          form.append("archivo", file || audioFile, (file && file.name) || audioFile.name);
+          return fetch(empresaBuzonURL("adjunto"), { method: "POST", credentials: "same-origin", body: form })
+            .then(function (res) { if (!res.ok) throw new Error("No se pudo enviar el adjunto"); return res.json(); })
+            .then(afterEmpresaBuzonSent)
+            .catch(function (err) { setStatus(err.message || "No se pudo enviar el mensaje.", true); });
+        }
+        var payload = {
+          destinatario_ref: recipient,
+          titulo: title,
+          mensaje: message,
+          tipo: mode === "tarea" ? "tarea" : "interno",
+          prioridad: empresaTaskPriorityEl ? empresaTaskPriorityEl.value : "normal",
+          tarea_vence_en: empresaTaskDueEl ? empresaTaskDueEl.value : ""
+        };
+        return fetch(empresaBuzonURL("mensaje"), {
+          method: "POST",
+          credentials: "same-origin",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        }).then(function (res) { if (!res.ok) throw new Error("No se pudo enviar el mensaje"); return res.json(); })
+          .then(afterEmpresaBuzonSent)
+          .catch(function (err) { setStatus(err.message || "No se pudo enviar el mensaje.", true); });
+      }
+
+      function afterEmpresaBuzonSent() {
+        if (empresaBuzonTitleInputEl) empresaBuzonTitleInputEl.value = "";
+        if (empresaBuzonMessageInputEl) empresaBuzonMessageInputEl.value = "";
+        if (empresaBuzonFileInputEl) empresaBuzonFileInputEl.value = "";
+        empresaBuzonAudioBlob = null;
+        empresaBuzonAudioName = "";
+        if (empresaBuzonAudioStatusEl) empresaBuzonAudioStatusEl.textContent = "";
+        setStatus("Mensaje enviado.", false);
+        return loadEmpresaBuzon();
+      }
+
+      function toggleEmpresaBuzonRecording() {
+        if (empresaBuzonRecorder && empresaBuzonRecorder.state === "recording") {
+          empresaBuzonRecorder.stop();
+          return;
+        }
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia || typeof MediaRecorder === "undefined") {
+          setStatus("Este navegador no permite grabar audio desde el buzon.", true);
+          return;
+        }
+        navigator.mediaDevices.getUserMedia({ audio: true }).then(function (stream) {
+          empresaBuzonRecordingChunks = [];
+          empresaBuzonRecorder = new MediaRecorder(stream);
+          empresaBuzonRecorder.ondataavailable = function (event) {
+            if (event.data && event.data.size) empresaBuzonRecordingChunks.push(event.data);
+          };
+          empresaBuzonRecorder.onstop = function () {
+            stream.getTracks().forEach(function (track) { track.stop(); });
+            empresaBuzonAudioBlob = new Blob(empresaBuzonRecordingChunks, { type: "audio/webm" });
+            empresaBuzonAudioName = "nota_voz_" + Date.now() + ".webm";
+            if (empresaBuzonRecordBtnEl) empresaBuzonRecordBtnEl.textContent = "Grabar audio";
+            if (empresaBuzonAudioStatusEl) empresaBuzonAudioStatusEl.textContent = "Audio listo para enviar.";
+          };
+          empresaBuzonRecorder.start();
+          if (empresaBuzonRecordBtnEl) empresaBuzonRecordBtnEl.textContent = "Detener audio";
+          if (empresaBuzonAudioStatusEl) empresaBuzonAudioStatusEl.textContent = "Grabando...";
+        }).catch(function () {
+          setStatus("No se pudo abrir el microfono.", true);
+        });
+      }
+
+      function completeEmpresaSelectedTask() {
+        if (!empresaSelectedTask || !empresaSelectedTask.id) return;
+        var desc = text(empresaTaskCompleteDescriptionEl && empresaTaskCompleteDescriptionEl.value);
+        if (!desc) {
+          setStatus("Describe la evidencia o resultado antes de finalizar la tarea.", true);
+          return;
+        }
+        var evidence = empresaTaskEvidenceInputEl && empresaTaskEvidenceInputEl.files && empresaTaskEvidenceInputEl.files[0] ? empresaTaskEvidenceInputEl.files[0] : null;
+        var uploadEvidence = Promise.resolve();
+        if (evidence) {
+          var form = new FormData();
+          form.append("empresa_id", empresaId);
+          form.append("mensaje_id", empresaSelectedTask.id);
+          form.append("tipo_archivo", "archivo");
+          form.append("archivo", evidence, evidence.name);
+          uploadEvidence = fetch(empresaBuzonURL("adjunto"), { method: "POST", credentials: "same-origin", body: form })
+            .then(function (res) { if (!res.ok) throw new Error("No se pudo adjuntar la evidencia"); return res.json(); });
+        }
+        uploadEvidence.then(function () {
+          return fetch(empresaBuzonURL("finalizar_tarea"), {
+            method: "POST",
+            credentials: "same-origin",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ id: empresaSelectedTask.id, descripcion: desc })
+          });
+        }).then(function (res) {
+          if (!res.ok) throw new Error("No se pudo finalizar la tarea");
+          return res.json();
+        }).then(function () {
+          empresaSelectedTask = null;
+          if (empresaTaskCompletePanelEl) empresaTaskCompletePanelEl.classList.remove("is-visible");
+          setStatus("Tarea finalizada con evidencia.", false);
+          return loadEmpresaBuzon();
+        }).catch(function (err) {
+          setStatus(err.message || "No se pudo finalizar la tarea.", true);
+        });
+      }
+
+      function sendEmpresaChat(event) {
+        if (event) event.preventDefault();
+        var message = text(empresaChatMessageInputEl && empresaChatMessageInputEl.value);
+        if (!message) return;
+        fetch(empresaBuzonURL("chat"), {
+          method: "POST",
+          credentials: "same-origin",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ mensaje: message })
+        }).then(function (res) {
+          if (!res.ok) throw new Error("No se pudo enviar al chat");
+          return res.json();
+        }).then(function () {
+          if (empresaChatMessageInputEl) empresaChatMessageInputEl.value = "";
+          return loadEmpresaBuzon();
+        }).catch(function (err) {
+          setStatus(err.message || "No se pudo enviar al chat.", true);
+        });
+      }
+
+      function setupEmpresaBuzonControls() {
+        if (empresaBuzonModeEl) empresaBuzonModeEl.addEventListener("change", syncEmpresaTaskMode);
+        if (empresaBuzonFormEl) empresaBuzonFormEl.addEventListener("submit", sendEmpresaBuzonPayload);
+        if (empresaBuzonRecordBtnEl) empresaBuzonRecordBtnEl.addEventListener("click", toggleEmpresaBuzonRecording);
+        if (empresaChatFormEl) empresaChatFormEl.addEventListener("submit", sendEmpresaChat);
+        if (empresaTaskCompleteCancelEl) empresaTaskCompleteCancelEl.addEventListener("click", function () {
+          empresaSelectedTask = null;
+          if (empresaTaskCompletePanelEl) empresaTaskCompletePanelEl.classList.remove("is-visible");
+        });
+        if (empresaTaskCompleteSaveEl) empresaTaskCompleteSaveEl.addEventListener("click", completeEmpresaSelectedTask);
+        syncEmpresaTaskMode();
       }
 
       function currentEmailThemeMode() {
@@ -2870,6 +3500,10 @@
         applyEmpresaLinks();
         renderFavorites();
         setupWeatherControls();
+        setupEmpresaBuzonControls();
+        loadEmpresaBuzonUsuarios();
+        loadEmpresaBuzon();
+        window.setInterval(loadEmpresaBuzon, 60000);
         loadMaintenanceNotice();
         var adminPromise = fetchJSON("/me").catch(function () { return {}; });
         var empresaPromise = empresaId

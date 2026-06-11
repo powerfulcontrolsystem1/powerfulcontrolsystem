@@ -45,6 +45,8 @@ func TestDefaultEmpresaPreconfigCarritoUISimplificado(t *testing.T) {
 		"mostrar_boton_clientes_carrito",
 		"mostrar_boton_abonos_carrito",
 		"mostrar_boton_vehiculo_carrito",
+		"atajos_pos_habilitados",
+		"atajos_pos_mostrar_ayuda",
 	}
 	for _, key := range wantTrue {
 		if got, _ := cfg[key].(bool); !got {
@@ -76,6 +78,35 @@ func TestDefaultEmpresaPreconfigCarritoUISimplificado(t *testing.T) {
 	}
 	if got, _ := cfg["cliente_general_nombre"].(string); got != "Cliente General" {
 		t.Fatalf("cliente_general_nombre debe quedar en Cliente General por defecto, got=%v", cfg["cliente_general_nombre"])
+	}
+	atajos, ok := cfg["atajos_pos"].(map[string]any)
+	if !ok {
+		t.Fatalf("atajos_pos debe existir como mapa, got=%T", cfg["atajos_pos"])
+	}
+	wantAtajos := map[string]string{
+		"ayuda":                 "F1",
+		"buscar_producto":       "F2",
+		"buscar_cliente":        "F3",
+		"descuento":             "F4",
+		"cambiar_cantidad":      "F5",
+		"modificar_precio":      "F6",
+		"suspender_venta":       "F7",
+		"recuperar_venta":       "F8",
+		"verificar_inventario":  "F9",
+		"cobrar":                "F10",
+		"abrir_cajon":           "F11",
+		"imprimir":              "F12",
+		"cancelar_operacion":    "ESC",
+		"agregar_producto":      "ENTER",
+		"descuento_combo":       "CTRL+D",
+		"imprimir_combo":        "CTRL+P",
+		"buscar_producto_combo": "CTRL+B",
+		"salir_sistema":         "ALT+F4",
+	}
+	for key, want := range wantAtajos {
+		if got, _ := atajos[key].(string); got != want {
+			t.Fatalf("atajo %s debe quedar en %s por defecto, got=%v", key, want, atajos[key])
+		}
 	}
 }
 

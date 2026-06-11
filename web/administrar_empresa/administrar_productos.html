@@ -83,6 +83,46 @@
       color:var(--danger);
       font-weight:900;
     }
+    .producto-transfer-panel{
+      display:grid;
+      grid-template-columns:minmax(0,1.25fr) minmax(280px,.75fr);
+      gap:12px;
+      margin:10px 0 14px;
+      padding:12px;
+      border:1px solid var(--border);
+      border-radius:8px;
+      background:color-mix(in srgb,var(--surface-soft) 78%,var(--card));
+    }
+    .producto-transfer-panel h3{
+      margin:0 0 4px;
+      font-size:.98rem;
+      color:var(--text);
+    }
+    .producto-transfer-panel p{
+      margin:0 0 8px;
+      color:var(--muted);
+      font-size:.86rem;
+      line-height:1.35;
+    }
+    .producto-transfer-controls{
+      display:grid;
+      grid-template-columns:repeat(auto-fit,minmax(130px,1fr));
+      gap:8px;
+      align-items:end;
+    }
+    .producto-transfer-actions{
+      display:flex;
+      flex-wrap:wrap;
+      gap:8px;
+      align-items:center;
+    }
+    .producto-import-result{
+      margin-top:8px;
+      max-height:150px;
+      overflow:auto;
+      font-size:.82rem;
+      color:var(--muted);
+    }
     .producto-admin-summary{
       grid-template-columns:minmax(170px,.34fr) minmax(0,1fr);
       align-items:center;
@@ -150,6 +190,9 @@
       }
       .producto-admin-summary .empresa-module-kpis{
         grid-template-columns:repeat(3,minmax(0,1fr));
+      }
+      .producto-transfer-panel{
+        grid-template-columns:1fr;
       }
     }
   </style>
@@ -437,6 +480,43 @@
       <div id="productoBodegaRequiredNotice" class="form-help is-hidden">
         Para agregar productos primero debes crear una bodega activa. La bodega permite guardar el stock, movimientos e inventario del producto.
         <button id="btnCrearBodegaDesdeProductos" class="btn secondary" type="button">Crear bodega</button>
+      </div>
+
+      <div class="producto-transfer-panel" aria-label="Importar y exportar productos">
+        <div>
+          <h3>Exportar productos</h3>
+          <p>Descarga el listado actual en archivo de datos o en formato imprimible carta/POS.</p>
+          <div class="producto-transfer-controls">
+            <div>
+              <label class="form-label" for="productoExportFormato">Formato</label>
+              <select id="productoExportFormato" class="form-input">
+                <option value="csv">CSV / Excel</option>
+                <option value="json">JSON</option>
+                <option value="html">Imprimible HTML</option>
+              </select>
+            </div>
+            <div>
+              <label class="form-label" for="productoExportTamano">Tamaño</label>
+              <select id="productoExportTamano" class="form-input">
+                <option value="carta">Carta</option>
+                <option value="pos">POS 80 mm</option>
+              </select>
+            </div>
+            <div class="producto-transfer-actions">
+              <button id="btnExportarProductos" type="button" class="btn secondary">Exportar</button>
+              <button id="btnPlantillaProductos" type="button" class="btn secondary">Plantilla</button>
+            </div>
+          </div>
+        </div>
+        <div>
+          <h3>Importar lista</h3>
+          <p>Usa la plantilla CSV. El sistema omite duplicados por SKU, código de barras o nombre.</p>
+          <div class="producto-transfer-actions">
+            <input id="productoImportArchivo" class="form-input" type="file" accept=".csv,text/csv">
+            <button id="btnImportarProductos" type="button" class="btn">Importar productos</button>
+          </div>
+          <div id="productoImportResultado" class="producto-import-result" aria-live="polite"></div>
+        </div>
       </div>
 
       <form id="productoForm" class="form producto-inline-form is-hidden">
@@ -1313,6 +1393,112 @@
         throw new Error(msg || ('HTTP ' + resp.status));
       }
       return data;
+    }
+
+    function downloadBlob(blob, filename) {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename || 'descarga';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.setTimeout(function(){ URL.revokeObjectURL(url); }, 1000);
+    }
+
+    function filenameFromDisposition(disposition, fallback) {
+      const text = String(disposition || '');
+      const match = text.match(/filename\*?=(?:UTF-8''|")?([^";]+)/i);
+      if (!match) return fallback;
+      try {
+        return decodeURIComponent(match[1].replace(/"/g, '').trim()) || fallback;
+      } catch (_) {
+        return match[1].replace(/"/g, '').trim() || fallback;
+      }
+    }
+
+    function buildProductosExportURL(action) {
+      const params = new URLSearchParams();
+      params.set('empresa_id', String(empresaId || 0));
+      params.set('action', action || 'exportar');
+      const q = document.getElementById('filtroProductos')?.value.trim();
+      const categoriaID = Number(document.getElementById('filtroCategoriaProducto')?.value || 0);
+      if (q) params.set('q', q);
+      if (categoriaID > 0) params.set('categoria_id', String(categoriaID));
+      return '/api/empresa/productos?' + params.toString();
+    }
+
+    async function exportarProductos() {
+      if (!empresaId) {
+        showMessage('No se encontro empresa activa para exportar productos.', 'error');
+        return;
+      }
+      const formato = document.getElementById('productoExportFormato')?.value || 'csv';
+      const tamano = document.getElementById('productoExportTamano')?.value || 'carta';
+      const url = buildProductosExportURL('exportar') + '&formato=' + encodeURIComponent(formato) + '&tamano=' + encodeURIComponent(tamano);
+      const resp = await fetch(url, { credentials: 'same-origin' });
+      if (!resp.ok) {
+        throw new Error(await resp.text() || 'No se pudo exportar productos.');
+      }
+      const blob = await resp.blob();
+      const ext = formato === 'json' ? 'json' : (formato === 'html' ? 'html' : 'csv');
+      const filename = filenameFromDisposition(resp.headers.get('content-disposition'), 'productos_empresa_' + empresaId + '.' + ext);
+      downloadBlob(blob, filename);
+      showMessage('Exportacion de productos generada.', 'success');
+    }
+
+    async function descargarPlantillaProductos() {
+      if (!empresaId) {
+        showMessage('No se encontro empresa activa para descargar la plantilla.', 'error');
+        return;
+      }
+      const resp = await fetch(buildProductosExportURL('plantilla_importacion'), { credentials: 'same-origin' });
+      if (!resp.ok) {
+        throw new Error(await resp.text() || 'No se pudo descargar la plantilla.');
+      }
+      const blob = await resp.blob();
+      const filename = filenameFromDisposition(resp.headers.get('content-disposition'), 'plantilla_productos.csv');
+      downloadBlob(blob, filename);
+      showMessage('Plantilla de productos descargada.', 'success');
+    }
+
+    function renderProductoImportResultado(data) {
+      const box = document.getElementById('productoImportResultado');
+      if (!box) return;
+      const filas = Array.isArray(data && data.filas) ? data.filas : [];
+      const resumen = 'Creados: ' + Number(data && data.creados || 0) +
+        ' · Omitidos: ' + Number(data && data.omitidos || 0) +
+        ' · Errores: ' + Number(data && data.errores || 0);
+      const detalle = filas.slice(0, 80).map(function(row){
+        const estado = String(row.estado || '');
+        const nombre = row.nombre ? (' - ' + row.nombre) : '';
+        const msg = row.mensaje ? (': ' + row.mensaje) : '';
+        return '<div><strong>Fila ' + sanitize(row.fila || '-') + ' [' + sanitize(estado) + ']</strong>' + sanitize(nombre + msg) + '</div>';
+      }).join('');
+      box.innerHTML = '<div><strong>' + sanitize(resumen) + '</strong></div>' + detalle;
+    }
+
+    async function importarProductos() {
+      if (!empresaId) {
+        showMessage('No se encontro empresa activa para importar productos.', 'error');
+        return;
+      }
+      const input = document.getElementById('productoImportArchivo');
+      if (!input || !input.files || !input.files.length) {
+        showMessage('Selecciona un archivo CSV de productos para importar.', 'error');
+        return;
+      }
+      const fd = new FormData();
+      fd.append('archivo', input.files[0]);
+      const data = await requestJSON('/api/empresa/productos?empresa_id=' + encodeURIComponent(empresaId) + '&action=importar', {
+        method: 'POST',
+        body: fd
+      });
+      renderProductoImportResultado(data);
+      await loadCategoriasProductos();
+      await loadProductos();
+      await loadExistencias();
+      showMessage('Importacion procesada. Revisa el resumen de filas.', Number(data.errores || 0) > 0 ? 'error' : 'success');
     }
 
     function sanitize(v) {
@@ -3730,6 +3916,28 @@
           await loadProductos();
         } catch (e) {
           showMessage(e.message || 'No se pudieron filtrar productos por categoría.', 'error');
+        }
+      });
+
+      document.getElementById('btnExportarProductos').addEventListener('click', async () => {
+        try {
+          await exportarProductos();
+        } catch (e) {
+          showMessage(e.message || 'No se pudo exportar productos.', 'error');
+        }
+      });
+      document.getElementById('btnPlantillaProductos').addEventListener('click', async () => {
+        try {
+          await descargarPlantillaProductos();
+        } catch (e) {
+          showMessage(e.message || 'No se pudo descargar la plantilla de productos.', 'error');
+        }
+      });
+      document.getElementById('btnImportarProductos').addEventListener('click', async () => {
+        try {
+          await importarProductos();
+        } catch (e) {
+          showMessage(e.message || 'No se pudieron importar productos.', 'error');
         }
       });
 

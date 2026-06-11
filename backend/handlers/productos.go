@@ -1,10 +1,13 @@
 package handlers
 
 import (
+	"bytes"
 	"database/sql"
+	"encoding/csv"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"html"
 	"io"
 	"net/http"
 	"os"
@@ -15,6 +18,26 @@ import (
 
 	dbpkg "github.com/you/pos-backend/db"
 )
+
+const productosImportMaxBytes int64 = 5 << 20
+
+var productoCSVHeaders = []string{
+	"sku",
+	"codigo_barras",
+	"nombre",
+	"categoria",
+	"marca",
+	"unidad_medida",
+	"costo",
+	"precio",
+	"impuesto_porcentaje",
+	"stock_minimo",
+	"stock_maximo",
+	"bodega_principal_id",
+	"stock_inicial",
+	"descripcion",
+	"observaciones",
+}
 
 func jsonPayloadKeys(body []byte) map[string]bool {
 	keys := make(map[string]bool)
@@ -109,6 +132,435 @@ func validateProductoCamposObligatorios(dbEmp *sql.DB, p dbpkg.Producto, stockIn
 		return fmt.Errorf("campos obligatorios por configuracion de la empresa: %s", strings.Join(missing, ", "))
 	}
 	return nil
+}
+
+func writeProductosCSV(w io.Writer, rows []dbpkg.Producto) error {
+	cw := csv.NewWriter(w)
+	cw.UseCRLF = true
+	headers := append([]string{}, productoCSVHeaders...)
+	headers = append(headers, "id", "estado", "stock_total")
+	if err := cw.Write(headers); err != nil {
+		return err
+	}
+	for _, p := range rows {
+		if err := cw.Write([]string{
+			p.SKU,
+			p.CodigoBarras,
+			p.Nombre,
+			p.Categoria,
+			p.Marca,
+			p.UnidadMedida,
+			formatFloatForCSV(p.Costo),
+			formatFloatForCSV(p.Precio),
+			formatFloatForCSV(p.ImpuestoPorcentaje),
+			formatFloatForCSV(p.StockMinimo),
+			formatFloatForCSV(p.StockMaximo),
+			formatInt64ForCSV(p.BodegaPrincipalID),
+			"",
+			p.Descripcion,
+			p.Observaciones,
+			formatInt64ForCSV(p.ID),
+			p.Estado,
+			formatFloatForCSV(p.StockTotal),
+		}); err != nil {
+			return err
+		}
+	}
+	cw.Flush()
+	return cw.Error()
+}
+
+func formatFloatForCSV(v float64) string {
+	return strconv.FormatFloat(v, 'f', -1, 64)
+}
+
+func formatInt64ForCSV(v int64) string {
+	if v <= 0 {
+		return ""
+	}
+	return strconv.FormatInt(v, 10)
+}
+
+func writeProductosPrintHTML(w io.Writer, rows []dbpkg.Producto, pageSize string) error {
+	pos := strings.EqualFold(strings.TrimSpace(pageSize), "pos")
+	width := "216mm"
+	font := "12px"
+	padding := "12mm"
+	if pos {
+		width = "80mm"
+		font = "10px"
+		padding = "4mm"
+	}
+	var b strings.Builder
+	b.WriteString(`<!doctype html><html lang="es"><head><meta charset="utf-8"><title>Productos</title><style>`)
+	b.WriteString("body{font-family:Arial,sans-serif;margin:0;color:#111;background:#fff;font-size:")
+	b.WriteString(font)
+	b.WriteString("}.page{max-width:")
+	b.WriteString(width)
+	b.WriteString(";margin:0 auto;padding:")
+	b.WriteString(padding)
+	b.WriteString("}h1{font-size:1.35em;margin:0 0 4px}p{margin:0 0 10px;color:#444}table{width:100%;border-collapse:collapse}th,td{border-bottom:1px solid #ddd;padding:5px 4px;text-align:left;vertical-align:top}th{font-size:.86em;text-transform:uppercase}.num{text-align:right;white-space:nowrap}@media print{@page{size:")
+	if pos {
+		b.WriteString("80mm auto")
+	} else {
+		b.WriteString("letter")
+	}
+	b.WriteString(";margin:0}button{display:none}.page{padding:")
+	b.WriteString(padding)
+	b.WriteString("}}</style></head><body><main class=\"page\"><button onclick=\"window.print()\">Imprimir</button><h1>Listado de productos</h1><p>Exportacion generada desde PCS. Total: ")
+	b.WriteString(strconv.Itoa(len(rows)))
+	b.WriteString("</p><table><thead><tr><th>SKU</th><th>Nombre</th><th>Categoria</th><th class=\"num\">Precio</th><th class=\"num\">Stock</th></tr></thead><tbody>")
+	for _, p := range rows {
+		b.WriteString("<tr><td>")
+		b.WriteString(html.EscapeString(p.SKU))
+		b.WriteString("</td><td>")
+		b.WriteString(html.EscapeString(p.Nombre))
+		b.WriteString("</td><td>")
+		b.WriteString(html.EscapeString(p.Categoria))
+		b.WriteString("</td><td class=\"num\">")
+		b.WriteString(html.EscapeString(formatFloatForCSV(p.Precio)))
+		b.WriteString("</td><td class=\"num\">")
+		b.WriteString(html.EscapeString(formatFloatForCSV(p.StockTotal)))
+		b.WriteString("</td></tr>")
+	}
+	b.WriteString("</tbody></table></main></body></html>")
+	_, err := io.WriteString(w, b.String())
+	return err
+}
+
+func writeProductosExport(w http.ResponseWriter, r *http.Request, dbEmp *sql.DB, empresaID int64) {
+	q := r.URL.Query()
+	formato := strings.ToLower(strings.TrimSpace(q.Get("formato")))
+	if formato == "" {
+		formato = strings.ToLower(strings.TrimSpace(q.Get("format")))
+	}
+	if formato == "" {
+		formato = "csv"
+	}
+	pageSize := strings.ToLower(strings.TrimSpace(q.Get("tamano")))
+	if pageSize == "" {
+		pageSize = strings.ToLower(strings.TrimSpace(q.Get("size")))
+	}
+	filtro := q.Get("q")
+	estado := q.Get("estado")
+	bodegaID, _ := parseInt64QueryOptional(r, "bodega_id")
+	categoriaID, _ := parseInt64QueryOptional(r, "categoria_id")
+	rows, err := dbpkg.GetProductosByEmpresa(dbEmp, empresaID, filtro, estado, bodegaID, categoriaID, 500, 0)
+	if err != nil {
+		http.Error(w, "failed to export productos: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+	filename := "productos_empresa_" + strconv.FormatInt(empresaID, 10)
+	switch formato {
+	case "json":
+		w.Header().Set("Content-Type", "application/json; charset=utf-8")
+		w.Header().Set("Content-Disposition", `attachment; filename="`+filename+`.json"`)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{"empresa_id": empresaID, "total": len(rows), "productos": rows})
+	case "html", "carta", "pos", "imprimir":
+		if formato == "pos" {
+			pageSize = "pos"
+		}
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		w.Header().Set("Content-Disposition", `attachment; filename="`+filename+`_`+safeExportSizeSuffix(pageSize)+`.html"`)
+		if err := writeProductosPrintHTML(w, rows, pageSize); err != nil {
+			http.Error(w, "failed to build printable productos: "+err.Error(), http.StatusInternalServerError)
+		}
+	default:
+		w.Header().Set("Content-Type", "text/csv; charset=utf-8")
+		w.Header().Set("Content-Disposition", `attachment; filename="`+filename+`.csv"`)
+		_, _ = w.Write([]byte{0xEF, 0xBB, 0xBF})
+		if err := writeProductosCSV(w, rows); err != nil {
+			http.Error(w, "failed to build csv productos: "+err.Error(), http.StatusInternalServerError)
+		}
+	}
+}
+
+func safeExportSizeSuffix(v string) string {
+	if strings.EqualFold(strings.TrimSpace(v), "pos") {
+		return "pos"
+	}
+	return "carta"
+}
+
+func writeProductosImportTemplate(w http.ResponseWriter, empresaID int64) {
+	w.Header().Set("Content-Type", "text/csv; charset=utf-8")
+	w.Header().Set("Content-Disposition", `attachment; filename="plantilla_productos_empresa_`+strconv.FormatInt(empresaID, 10)+`.csv"`)
+	_, _ = w.Write([]byte{0xEF, 0xBB, 0xBF})
+	cw := csv.NewWriter(w)
+	cw.UseCRLF = true
+	_ = cw.Write(productoCSVHeaders)
+	_ = cw.Write([]string{"MENTA-001", "770000000001", "Menta", "Dulceria", "PCS", "unidad", "60", "100", "0", "1", "100", "", "0", "Producto de ejemplo", "Importar desde plantilla"})
+	cw.Flush()
+}
+
+type productoImportRowResult struct {
+	Fila    int    `json:"fila"`
+	Estado  string `json:"estado"`
+	Mensaje string `json:"mensaje"`
+	ID      int64  `json:"id,omitempty"`
+	Nombre  string `json:"nombre,omitempty"`
+	SKU     string `json:"sku,omitempty"`
+}
+
+func handleProductosImport(w http.ResponseWriter, r *http.Request, dbEmp *sql.DB, empresaID int64) {
+	r.Body = http.MaxBytesReader(w, r.Body, productosImportMaxBytes)
+	if err := r.ParseMultipartForm(productosImportMaxBytes); err != nil {
+		http.Error(w, "archivo CSV requerido; tamano maximo 5 MB", http.StatusBadRequest)
+		return
+	}
+	file, _, err := r.FormFile("archivo")
+	if err != nil {
+		file, _, err = r.FormFile("file")
+	}
+	if err != nil {
+		http.Error(w, "archivo CSV requerido", http.StatusBadRequest)
+		return
+	}
+	defer file.Close()
+	content, err := io.ReadAll(io.LimitReader(file, productosImportMaxBytes+1))
+	if err != nil || int64(len(content)) > productosImportMaxBytes {
+		http.Error(w, "no se pudo leer el archivo o excede 5 MB", http.StatusBadRequest)
+		return
+	}
+	resultados := importarProductosCSV(dbEmp, empresaID, adminEmailFromRequest(r), content)
+	creados := 0
+	omitidos := 0
+	errores := 0
+	for _, row := range resultados {
+		switch row.Estado {
+		case "creado":
+			creados++
+		case "omitido":
+			omitidos++
+		default:
+			errores++
+		}
+	}
+	w.Header().Set("Content-Type", "application/json")
+	_ = json.NewEncoder(w).Encode(map[string]interface{}{
+		"ok":         errores == 0,
+		"empresa_id": empresaID,
+		"creados":    creados,
+		"omitidos":   omitidos,
+		"errores":    errores,
+		"filas":      resultados,
+	})
+}
+
+func importarProductosCSV(dbEmp *sql.DB, empresaID int64, usuario string, content []byte) []productoImportRowResult {
+	content = bytes.TrimPrefix(content, []byte{0xEF, 0xBB, 0xBF})
+	reader := csv.NewReader(bytes.NewReader(content))
+	reader.FieldsPerRecord = -1
+	reader.TrimLeadingSpace = true
+	if bytes.Count(content, []byte(";")) > bytes.Count(content, []byte(",")) {
+		reader.Comma = ';'
+	}
+	records, err := reader.ReadAll()
+	if err != nil {
+		return []productoImportRowResult{{Fila: 0, Estado: "error", Mensaje: "CSV invalido: " + err.Error()}}
+	}
+	if len(records) <= 1 {
+		return []productoImportRowResult{{Fila: 0, Estado: "error", Mensaje: "El archivo no tiene productos para importar"}}
+	}
+	headers := normalizeProductoImportHeaders(records[0])
+	bodegas, _ := dbpkg.GetBodegasByEmpresa(dbEmp, empresaID, false)
+	defaultBodegaID := int64(0)
+	for _, b := range bodegas {
+		if strings.EqualFold(strings.TrimSpace(b.Estado), "activo") || strings.TrimSpace(b.Estado) == "" {
+			defaultBodegaID = b.ID
+			break
+		}
+	}
+	categorias, _ := dbpkg.GetCategoriasProductoByEmpresa(dbEmp, empresaID, false, "")
+	categoriaByName := make(map[string]dbpkg.CategoriaProducto)
+	for _, c := range categorias {
+		categoriaByName[normalizeImportKey(c.Nombre)] = c
+	}
+	out := make([]productoImportRowResult, 0, len(records)-1)
+	for idx, rec := range records[1:] {
+		fila := idx + 2
+		val := func(name string) string {
+			pos, ok := headers[name]
+			if !ok || pos < 0 || pos >= len(rec) {
+				return ""
+			}
+			return strings.TrimSpace(rec[pos])
+		}
+		nombre := val("nombre")
+		sku := val("sku")
+		codigoBarras := val("codigo_barras")
+		if nombre == "" && sku == "" && codigoBarras == "" {
+			continue
+		}
+		if nombre == "" {
+			out = append(out, productoImportRowResult{Fila: fila, Estado: "error", Mensaje: "nombre es obligatorio", SKU: sku})
+			continue
+		}
+		p := dbpkg.Producto{
+			EmpresaID:             empresaID,
+			SKU:                   sku,
+			CodigoBarras:          codigoBarras,
+			Nombre:                nombre,
+			Categoria:             val("categoria"),
+			Marca:                 val("marca"),
+			UnidadMedida:          val("unidad_medida"),
+			Costo:                 parseProductoImportFloat(val("costo")),
+			Precio:                parseProductoImportFloat(val("precio")),
+			ImpuestoPorcentaje:    parseProductoImportFloat(val("impuesto_porcentaje")),
+			StockMinimo:           parseProductoImportFloat(val("stock_minimo")),
+			StockMaximo:           parseProductoImportFloat(val("stock_maximo")),
+			BodegaPrincipalID:     parseProductoImportInt64(val("bodega_principal_id")),
+			Descripcion:           val("descripcion"),
+			Observaciones:         val("observaciones"),
+			UsuarioCreador:        usuario,
+			Estado:                "activo",
+			DiasAlertaVencimiento: 30,
+		}
+		if p.UnidadMedida == "" {
+			p.UnidadMedida = "unidad"
+		}
+		if p.Categoria != "" {
+			key := normalizeImportKey(p.Categoria)
+			if c, ok := categoriaByName[key]; ok {
+				p.CategoriaID = c.ID
+				p.Categoria = c.Nombre
+			} else {
+				id, err := dbpkg.CreateCategoriaProducto(dbEmp, dbpkg.CategoriaProducto{EmpresaID: empresaID, Nombre: p.Categoria, UsuarioCreador: usuario, Estado: "activo", Observaciones: "creada automaticamente por importacion de productos"})
+				if err == nil && id > 0 {
+					c := dbpkg.CategoriaProducto{ID: id, EmpresaID: empresaID, Nombre: p.Categoria, Estado: "activo"}
+					categoriaByName[key] = c
+					p.CategoriaID = id
+				}
+			}
+		}
+		stockInicial := parseProductoImportFloat(val("stock_inicial"))
+		if stockInicial > 0 && p.BodegaPrincipalID <= 0 {
+			p.BodegaPrincipalID = defaultBodegaID
+		}
+		if stockInicial > 0 && p.BodegaPrincipalID <= 0 {
+			out = append(out, productoImportRowResult{Fila: fila, Estado: "error", Mensaje: "stock inicial requiere bodega activa o bodega_principal_id", Nombre: nombre, SKU: sku})
+			continue
+		}
+		exists, err := productoImportExists(dbEmp, empresaID, p)
+		if err != nil {
+			out = append(out, productoImportRowResult{Fila: fila, Estado: "error", Mensaje: "no se pudo validar duplicado: " + err.Error(), Nombre: nombre, SKU: sku})
+			continue
+		}
+		if exists {
+			out = append(out, productoImportRowResult{Fila: fila, Estado: "omitido", Mensaje: "producto ya existe por SKU, codigo de barras o nombre", Nombre: nombre, SKU: sku})
+			continue
+		}
+		keys := map[string]bool{"nombre": true}
+		for name := range headers {
+			if val(name) != "" {
+				keys[name] = true
+			}
+		}
+		if err := validateProductoCamposObligatorios(dbEmp, p, stockInicial, true, keys); err != nil {
+			out = append(out, productoImportRowResult{Fila: fila, Estado: "error", Mensaje: err.Error(), Nombre: nombre, SKU: sku})
+			continue
+		}
+		id, err := dbpkg.CreateProducto(dbEmp, p, stockInicial, "IMPORTACION_PRODUCTOS")
+		if err != nil {
+			out = append(out, productoImportRowResult{Fila: fila, Estado: "error", Mensaje: err.Error(), Nombre: nombre, SKU: sku})
+			continue
+		}
+		out = append(out, productoImportRowResult{Fila: fila, Estado: "creado", Mensaje: "producto creado", ID: id, Nombre: nombre, SKU: sku})
+	}
+	if len(out) == 0 {
+		out = append(out, productoImportRowResult{Fila: 0, Estado: "error", Mensaje: "No se encontraron filas validas para procesar"})
+	}
+	return out
+}
+
+func normalizeProductoImportHeaders(row []string) map[string]int {
+	out := make(map[string]int)
+	for i, h := range row {
+		key := normalizeImportKey(h)
+		switch key {
+		case "codigo", "codigobarras", "codigodebarras", "barras":
+			key = "codigo_barras"
+		case "unidad", "unidadmedida", "unidaddemedida":
+			key = "unidad_medida"
+		case "iva", "impuesto", "porcentajeimpuesto", "impuestoporcentaje":
+			key = "impuesto_porcentaje"
+		case "stockminimo":
+			key = "stock_minimo"
+		case "stockmaximo":
+			key = "stock_maximo"
+		case "bodega", "bodegaprincipal", "bodegaprincipalid":
+			key = "bodega_principal_id"
+		case "stockinicial", "existenciainicial", "inventarioinicial":
+			key = "stock_inicial"
+		}
+		if key != "" {
+			out[key] = i
+		}
+	}
+	return out
+}
+
+func normalizeImportKey(v string) string {
+	replacer := strings.NewReplacer(
+		"á", "a", "é", "e", "í", "i", "ó", "o", "ú", "u", "ñ", "n",
+		"Á", "a", "É", "e", "Í", "i", "Ó", "o", "Ú", "u", "Ñ", "n",
+		"_", "", "-", "", " ", "", ".", "", "/", "", "%", "",
+	)
+	return strings.ToLower(replacer.Replace(strings.TrimSpace(v)))
+}
+
+func parseProductoImportFloat(v string) float64 {
+	clean := strings.TrimSpace(v)
+	if clean == "" {
+		return 0
+	}
+	clean = strings.ReplaceAll(clean, "$", "")
+	clean = strings.ReplaceAll(clean, " ", "")
+	lastComma := strings.LastIndex(clean, ",")
+	lastDot := strings.LastIndex(clean, ".")
+	if lastComma >= 0 && lastDot >= 0 {
+		if lastComma > lastDot {
+			clean = strings.ReplaceAll(clean, ".", "")
+			clean = strings.ReplaceAll(clean, ",", ".")
+		} else {
+			clean = strings.ReplaceAll(clean, ",", "")
+		}
+	} else if strings.Contains(clean, ",") {
+		clean = strings.ReplaceAll(clean, ",", ".")
+	}
+	n, _ := strconv.ParseFloat(clean, 64)
+	return n
+}
+
+func parseProductoImportInt64(v string) int64 {
+	n, _ := strconv.ParseInt(strings.TrimSpace(v), 10, 64)
+	return n
+}
+
+func productoImportExists(dbEmp *sql.DB, empresaID int64, p dbpkg.Producto) (bool, error) {
+	conditions := make([]string, 0, 3)
+	args := []interface{}{empresaID}
+	if strings.TrimSpace(p.SKU) != "" {
+		conditions = append(conditions, "UPPER(TRIM(COALESCE(sku,''))) = UPPER(TRIM(?))")
+		args = append(args, strings.TrimSpace(p.SKU))
+	}
+	if strings.TrimSpace(p.CodigoBarras) != "" {
+		conditions = append(conditions, "UPPER(TRIM(COALESCE(codigo_barras,''))) = UPPER(TRIM(?))")
+		args = append(args, strings.TrimSpace(p.CodigoBarras))
+	}
+	if strings.TrimSpace(p.Nombre) != "" {
+		conditions = append(conditions, "UPPER(TRIM(COALESCE(nombre,''))) = UPPER(TRIM(?))")
+		args = append(args, strings.TrimSpace(p.Nombre))
+	}
+	if len(conditions) == 0 {
+		return false, nil
+	}
+	var count int64
+	query := "SELECT COUNT(1) FROM productos WHERE empresa_id = ? AND (" + strings.Join(conditions, " OR ") + ")"
+	if err := dbpkg.QueryRowCompat(dbEmp, query, args...).Scan(&count); err != nil {
+		return false, err
+	}
+	return count > 0, nil
 }
 
 // EmpresaBodegasHandler maneja CRUD de bodegas por empresa.
@@ -360,6 +812,14 @@ func EmpresaProductosHandler(dbEmp *sql.DB) http.HandlerFunc {
 			}
 			qParams := r.URL.Query()
 			action := strings.ToLower(strings.TrimSpace(qParams.Get("action")))
+			if action == "exportar" || action == "export" {
+				writeProductosExport(w, r, dbEmp, empresaID)
+				return
+			}
+			if action == "plantilla_importacion" || action == "template_import" || action == "plantilla" {
+				writeProductosImportTemplate(w, empresaID)
+				return
+			}
 			if action == "vencimientos" || action == "alertas_vencimiento" || action == "por_vencer" {
 				diasVentana, _ := parseIntQueryOptional(r, "dias")
 				limit, _ := parseIntQueryOptional(r, "limit")
@@ -403,6 +863,16 @@ func EmpresaProductosHandler(dbEmp *sql.DB) http.HandlerFunc {
 			json.NewEncoder(w).Encode(rows)
 			return
 		case http.MethodPost:
+			q := r.URL.Query()
+			if strings.EqualFold(strings.TrimSpace(q.Get("action")), "importar") || strings.EqualFold(strings.TrimSpace(q.Get("action")), "import") {
+				empresaID, err := parseEmpresaIDQuery(r)
+				if err != nil {
+					http.Error(w, err.Error(), http.StatusBadRequest)
+					return
+				}
+				handleProductosImport(w, r, dbEmp, empresaID)
+				return
+			}
 			var payload struct {
 				dbpkg.Producto
 				StockInicial      float64 `json:"stock_inicial"`
@@ -1583,9 +2053,24 @@ func EmpresaInventarioTransferHandler(dbEmp *sql.DB) http.HandlerFunc {
 			http.Error(w, "failed to transfer stock: "+err.Error(), http.StatusInternalServerError)
 			return
 		}
+		notification, notifyErr := dbpkg.CreateEmpresaBodegaTransferNotification(
+			dbEmp,
+			payload.EmpresaID,
+			payload.ProductoID,
+			payload.BodegaOrigenID,
+			payload.BodegaDestinoID,
+			payload.Cantidad,
+			payload.Referencia,
+			adminEmailFromRequest(r),
+		)
+		if notifyErr != nil {
+			// El traslado ya fue confirmado; la notificacion no debe revertir inventario.
+			// Queda visible en logs para corregir destinatarios/responsables de bodega.
+			fmt.Printf("[empresa_buzon] no se pudo notificar traslado empresa_id=%d producto_id=%d: %v\n", payload.EmpresaID, payload.ProductoID, notifyErr)
+		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]interface{}{"moved": true})
+		json.NewEncoder(w).Encode(map[string]interface{}{"moved": true, "notification": notification})
 	}
 }
 

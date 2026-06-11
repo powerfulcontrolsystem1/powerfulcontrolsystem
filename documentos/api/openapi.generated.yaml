@@ -267,6 +267,19 @@ paths:
       responses:
         "200":
           description: Respuesta exitosa o manejada por el handler real.
+  "/api/empresa/buzon":
+    get:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/buzon
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/buzon
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
   "/api/empresa/calculadora":
     get:
       tags: [empresa]
@@ -992,6 +1005,19 @@ paths:
     post:
       tags: [empresa]
       summary: Ruta inventariada /api/empresa/finanzas/asientos_contables
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/api/empresa/finanzas/breb_qr":
+    get:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/finanzas/breb_qr
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/finanzas/breb_qr
       responses:
         "200":
           description: Respuesta exitosa o manejada por el handler real.
@@ -3085,6 +3111,19 @@ paths:
     post:
       tags: [super-administrador]
       summary: Ruta inventariada /super/api/config/email_templates
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/super/api/config/empresa_storage":
+    get:
+      tags: [super-administrador]
+      summary: Ruta inventariada /super/api/config/empresa_storage
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [super-administrador]
+      summary: Ruta inventariada /super/api/config/empresa_storage
       responses:
         "200":
           description: Respuesta exitosa o manejada por el handler real.

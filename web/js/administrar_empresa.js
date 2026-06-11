@@ -1,4 +1,4 @@
-Ôªøfunction getQueryParam(name) {
+function getQueryParam(name) {
   var params = new URLSearchParams(window.location.search);
   var value = params.get(name);
   if (value) {
@@ -99,6 +99,11 @@ try {
   var frame = document.getElementById("contentFrame") || document.querySelector("iframe.admin-empresa-frame");
   var frameResizeObserver = null;
   var favoriteBtn = document.getElementById("adminFavoriteBtn");
+  var notificationBell = document.getElementById("adminNotificationBell");
+  var notificationBadge = document.getElementById("adminNotificationBadge");
+  var notificationMenu = document.getElementById("adminNotificationMenu");
+  var notificationList = document.getElementById("adminNotificationList");
+  var notificationRefresh = document.getElementById("adminNotificationRefresh");
   var frameTargetName = frame ? String(frame.getAttribute("name") || frame.name || frame.id || "").trim() : "";
   var initialFrameSrc = frame ? normalizeHref(frame.getAttribute("src") || frame.src || "") : "";
   var portalUsuariosLink = document.getElementById("linkPortalUsuarios");
@@ -122,6 +127,15 @@ try {
     linkSoportesComprasIAMenu: true
   };
   var enterpriseAIVisibleLinks = {};
+  var enterpriseMenuVisualConfig = { hiddenLinks: {} };
+  var lastPermissionContext = null;
+  var lastPermissionRole = "";
+  var nonHideableMenuLinks = {
+    linkPanelEmpresa: true,
+    linkConfiguracion: true,
+    linkConfiguracionMenuVisual: true,
+    linkVolverEmpresas: true
+  };
   try {
     storage = window.sessionStorage;
   } catch (e) {
@@ -152,6 +166,7 @@ try {
     document.getElementById("linkLicenciaSistema"),
     document.getElementById("linkConfiguracionMain"),
     document.getElementById("linkConfiguracionIdentidadVisual"),
+    document.getElementById("linkConfiguracionMenuVisual"),
     document.getElementById("linkConfiguracionCobroOperativo"),
     document.getElementById("linkConfiguracionReporteCorte"),
     document.getElementById("linkConfiguracionBackupsPasarelas"),
@@ -182,6 +197,7 @@ try {
     document.getElementById("linkContabilidadColombiaAvanzada"),
     document.getElementById("linkCentrosCosto"),
     document.getElementById("linkBancosPagos"),
+    document.getElementById("linkBrebQR"),
     document.getElementById("linkCierreFiscal"),
     document.getElementById("linkActivosFijosNIIF"),
     document.getElementById("linkDeclaracionesTributarias"),
@@ -413,6 +429,7 @@ try {
     linkCentrosCosto: { module: permModuleCentrosCosto, action: permActionCreate },
     linkCentrosCostoMenu: { module: permModuleCentrosCosto, action: permActionCreate },
     linkBancosPagos: { module: permModuleBancosPagos, action: permActionCreate },
+    linkBrebQR: { module: permModuleFinanzas, action: permActionCreate },
     linkCierreFiscal: { module: permModuleCierreFiscal, action: permActionApprove },
     linkCierreFiscalMenu: { module: permModuleCierreFiscal, action: permActionApprove },
     linkActivosFijosNIIF: { module: permModuleActivosFijosNIIF, action: permActionCreate },
@@ -473,6 +490,7 @@ try {
     linkLicenciaSistema: { module: permModuleSeguridad, action: permActionRead },
     linkConfiguracionMain: { module: permModuleSeguridad, action: permActionUpdate },
     linkConfiguracionIdentidadVisual: { module: permModuleSeguridad, action: permActionUpdate },
+    linkConfiguracionMenuVisual: { module: permModuleSeguridad, action: permActionUpdate },
     linkConfiguracionCobroOperativo: { module: permModuleSeguridad, action: permActionUpdate },
     linkConfiguracionReporteCorte: { module: permModuleSeguridad, action: permActionUpdate },
     linkConfiguracionBackupsPasarelas: { module: permModuleSeguridad, action: permActionUpdate },
@@ -521,6 +539,41 @@ try {
     return String(value == null ? "" : value).replace(/[&<>"']/g, function (ch) {
       return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch];
     });
+  }
+
+  function parseJSONSafe(raw) {
+    try {
+      if (!raw) return null;
+      var parsed = JSON.parse(String(raw));
+      return parsed && typeof parsed === "object" ? parsed : null;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  function normalizeMenuVisualConfig(raw) {
+    var src = raw && typeof raw === "object" ? raw : {};
+    var hidden = {};
+    var rows = [];
+    if (Array.isArray(src.hidden_links)) rows = src.hidden_links;
+    else if (Array.isArray(src.hiddenLinks)) rows = src.hiddenLinks;
+    rows.forEach(function (value) {
+      var id = String(value || "").trim();
+      if (id && !nonHideableMenuLinks[id]) {
+        hidden[id] = true;
+      }
+    });
+    return {
+      enabled: src.enabled === undefined ? true : !!src.enabled,
+      hiddenLinks: hidden
+    };
+  }
+
+  function isEnterpriseMenuLinkHidden(link) {
+    if (!link || !enterpriseMenuVisualConfig || enterpriseMenuVisualConfig.enabled === false) return false;
+    var linkId = String(link.id || "").trim();
+    if (!linkId || nonHideableMenuLinks[linkId]) return false;
+    return !!(enterpriseMenuVisualConfig.hiddenLinks && enterpriseMenuVisualConfig.hiddenLinks[linkId]);
   }
 
   function renderNuevasPlantillasMenuLinks() {
@@ -1018,10 +1071,14 @@ try {
         return "inventario";
       case "jefe_bodega":
       case "jefe de bodega":
+        return "jefe_bodega";
+      case "responsable_bodega":
+      case "responsable de bodega":
+      case "responsable bodega":
       case "bodega":
       case "bodeguero":
       case "almacenista":
-        return "jefe_bodega";
+        return "responsable_bodega";
       case "compras":
         return "compras";
       case "recursos_humanos":
@@ -1031,7 +1088,7 @@ try {
         return "recursos_humanos";
       case "tecnico_solar":
       case "tecnico solar":
-      case "t√©cnico solar":
+      case "tÈcnico solar":
       case "solar":
         return "tecnico_solar";
       case "contabilidad":
@@ -1040,7 +1097,7 @@ try {
         return "contador";
       case "empresario":
       case "dueno":
-      case "due√±o":
+      case "dueÒo":
       case "propietario":
       case "gerente_propietario":
         return "empresario";
@@ -1100,9 +1157,9 @@ try {
         break;
 
       case permModuleInventario:
-        if (normalizedAction === permActionRead) return roleIn(normalizedRole, allReadRoles.concat(["vendedor", "recepcion", "jefe_bodega"]));
+        if (normalizedAction === permActionRead) return roleIn(normalizedRole, allReadRoles.concat(["vendedor", "recepcion", "jefe_bodega", "responsable_bodega"]));
         if (normalizedAction === permActionCreate || normalizedAction === permActionUpdate || normalizedAction === permActionApprove) {
-          return roleIn(normalizedRole, ["admin_empresa", "supervisor_sucursal", "inventario", "jefe_bodega"]);
+          return roleIn(normalizedRole, ["admin_empresa", "supervisor_sucursal", "inventario", "jefe_bodega", "responsable_bodega"]);
         }
         if (normalizedAction === "D") {
           return roleIn(normalizedRole, ["admin_empresa", "supervisor_sucursal", "inventario"]);
@@ -1110,7 +1167,7 @@ try {
         break;
 
       case permModuleCompras:
-        if (normalizedAction === permActionRead) return roleIn(normalizedRole, allReadRoles.concat(["jefe_bodega"]));
+        if (normalizedAction === permActionRead) return roleIn(normalizedRole, allReadRoles.concat(["jefe_bodega", "responsable_bodega"]));
         if (normalizedAction === permActionCreate || normalizedAction === permActionUpdate || normalizedAction === "D" || normalizedAction === permActionApprove) {
           return roleIn(normalizedRole, ["admin_empresa", "supervisor_sucursal", "compras"]);
         }
@@ -1416,6 +1473,7 @@ try {
   }
 
   function applyMenuPermissionsByContext(permissionContext) {
+    lastPermissionContext = permissionContext || null;
     applyEnterpriseAIVisibilityFromContext(permissionContext);
     links.forEach(function (link) {
       setMenuLinkVisible(link, true);
@@ -1452,7 +1510,7 @@ try {
     }
     if (normalizePermissionRole(permissionContext.rol || permissionContext.role || "") === "contador") {
       links.forEach(function (link) {
-        setMenuLinkVisible(link, !!link && ["linkFinanzas", "linkFinanzasMain", "linkSuiteContador", "linkNIIF", "linkRentaIA", "linkImpuestos", "linkCentroIAEmpresarial", "linkPortalContador", "linkPortalContadorMenu", "linkContabilidadColombia", "linkContabilidadColombiaAvanzada", "linkDeclaracionesTributarias", "linkDeclaracionesTributariasMenu", "linkPortalTercerosCertificados", "linkPortalTercerosCertificadosMenu", "linkFacturacionElectronica", "linkFacturacionMain", "linkFacturasElectronicas", "linkReportes", "linkReportesEjecutivos", "linkCierreFiscal", "linkCierreFiscalMenu", "linkActivosFijosNIIF", "linkActivosFijosNIIFMenu", "linkTesoreriaPresupuesto", "linkBancosPagos", "linkNominaMenu", "linkSoportesComprasIA", "linkSoportesComprasIAMenu"].indexOf(link.id) !== -1);
+        setMenuLinkVisible(link, !!link && ["linkFinanzas", "linkFinanzasMain", "linkSuiteContador", "linkNIIF", "linkRentaIA", "linkImpuestos", "linkCentroIAEmpresarial", "linkPortalContador", "linkPortalContadorMenu", "linkContabilidadColombia", "linkContabilidadColombiaAvanzada", "linkDeclaracionesTributarias", "linkDeclaracionesTributariasMenu", "linkPortalTercerosCertificados", "linkPortalTercerosCertificadosMenu", "linkFacturacionElectronica", "linkFacturacionMain", "linkFacturasElectronicas", "linkReportes", "linkReportesEjecutivos", "linkCierreFiscal", "linkCierreFiscalMenu", "linkActivosFijosNIIF", "linkActivosFijosNIIFMenu", "linkTesoreriaPresupuesto", "linkBancosPagos", "linkBrebQR", "linkNominaMenu", "linkSoportesComprasIA", "linkSoportesComprasIAMenu"].indexOf(link.id) !== -1);
       });
       setSecondaryMenuVisibility(false);
       refreshMenuGroups();
@@ -1474,7 +1532,7 @@ try {
       refreshMenuGroups();
       return;
     }
-    if (normalizePermissionRole(permissionContext.rol || permissionContext.role || "") === "jefe_bodega") {
+    if (normalizePermissionRole(permissionContext.rol || permissionContext.role || "") === "jefe_bodega" || normalizePermissionRole(permissionContext.rol || permissionContext.role || "") === "responsable_bodega") {
       var bodegaLinks = ["linkProductos", "linkProductosMain", "linkInventarioAvanzado", "linkRecetasProductos", "linkPreciosHistorial", "linkBodegas", "linkCategorias", "linkGeneradorCodigosBarras"];
       links.forEach(function (link) {
         setMenuLinkVisible(link, !!link && bodegaLinks.indexOf(link.id) !== -1);
@@ -1509,7 +1567,7 @@ try {
 
   function describePermissionContext(permissionContext) {
     if (!permissionContext || typeof permissionContext !== "object") {
-      return "Permisos de men√∫: sin contexto disponible.";
+      return "Permisos de men˙: sin contexto disponible.";
     }
     var role = normalizePermissionRole(permissionContext.rol || "sin_rol") || "sin_rol";
     var summary = permissionContext.resumen || {};
@@ -1517,9 +1575,9 @@ try {
     var modulesRead = Number(summary.modulos_lectura || 0);
     var modulesApprove = Number(summary.modulos_aprobacion || 0);
     var enabledActions = Number(summary.acciones_habilitadas || 0);
-    return "Permisos de men√∫: rol " + role +
+    return "Permisos de men˙: rol " + role +
       " | lectura " + modulesRead + "/" + modulesTotal +
-      " | aprobaci√≥n " + modulesApprove +
+      " | aprobaciÛn " + modulesApprove +
       " | acciones habilitadas " + enabledActions +
       " | fuente: /api/empresa/permisos_contexto";
   }
@@ -1541,6 +1599,32 @@ try {
       })
       .catch(function () {
         return null;
+      });
+  }
+
+  function fetchEmpresaMenuVisualConfig(empresaId) {
+    enterpriseMenuVisualConfig = normalizeMenuVisualConfig(null);
+    if (!empresaId) return Promise.resolve(enterpriseMenuVisualConfig);
+    return fetch("/api/empresa/estacion_prefs?empresa_id=" + encodeURIComponent(empresaId) + "&estacion_id=0", { credentials: "same-origin" })
+      .then(function (resp) {
+        if (!resp.ok) return null;
+        return resp.json();
+      })
+      .then(function (data) {
+        var prefs = data && Array.isArray(data.prefs) ? data.prefs : [];
+        var pref = null;
+        for (var i = 0; i < prefs.length; i += 1) {
+          if (String(prefs[i] && prefs[i].clave || "").trim() === "menu_visual_config") {
+            pref = prefs[i];
+            break;
+          }
+        }
+        enterpriseMenuVisualConfig = normalizeMenuVisualConfig(parseJSONSafe(pref && pref.valor));
+        return enterpriseMenuVisualConfig;
+      })
+      .catch(function () {
+        enterpriseMenuVisualConfig = normalizeMenuVisualConfig(null);
+        return enterpriseMenuVisualConfig;
       });
   }
 
@@ -1579,7 +1663,7 @@ try {
     var parts = ["Plantillas", String(s.visible) + "/" + String(s.total), source];
     if (s.hidden) parts.push(String(s.hidden) + " ocultos");
     if (s.pending) parts.push(String(s.pending) + " pendientes");
-    verticalIntegrationEvidence.textContent = parts.join(" ¬∑ ");
+    verticalIntegrationEvidence.textContent = parts.join(" ∑ ");
     verticalIntegrationEvidence.hidden = false;
     verticalIntegrationEvidence.setAttribute("data-source", source.toLowerCase());
   }
@@ -1587,6 +1671,9 @@ try {
   function setMenuLinkVisible(link, visible) {
     if (!link) return;
     visible = !!visible && menuLinkPassesVerticalIntegration(link);
+    if (visible && isEnterpriseMenuLinkHidden(link)) {
+      visible = false;
+    }
     if (visible && isDefaultHiddenEnterpriseAILinkId(link.id) && !enterpriseAIVisibleLinks[link.id]) {
       visible = false;
     }
@@ -1686,6 +1773,8 @@ try {
 
   function applyMenuPermissionsByRole(rawRole) {
     var normalizedRole = normalizePermissionRole(rawRole);
+    lastPermissionRole = normalizedRole;
+    lastPermissionContext = null;
     links.forEach(function (link) {
       setMenuLinkVisible(link, true);
     });
@@ -1721,7 +1810,7 @@ try {
     }
     if (normalizedRole === "contador") {
       links.forEach(function (link) {
-        setMenuLinkVisible(link, !!link && ["linkFinanzas", "linkFinanzasMain", "linkSuiteContador", "linkNIIF", "linkRentaIA", "linkImpuestos", "linkCentroIAEmpresarial", "linkPortalContador", "linkPortalContadorMenu", "linkContabilidadColombia", "linkContabilidadColombiaAvanzada", "linkDeclaracionesTributarias", "linkDeclaracionesTributariasMenu", "linkPortalTercerosCertificados", "linkPortalTercerosCertificadosMenu", "linkFacturacionElectronica", "linkFacturacionMain", "linkFacturasElectronicas", "linkReportes", "linkReportesEjecutivos", "linkCierreFiscal", "linkCierreFiscalMenu", "linkActivosFijosNIIF", "linkActivosFijosNIIFMenu", "linkTesoreriaPresupuesto", "linkBancosPagos", "linkNominaMenu", "linkSoportesComprasIA", "linkSoportesComprasIAMenu"].indexOf(link.id) !== -1);
+        setMenuLinkVisible(link, !!link && ["linkFinanzas", "linkFinanzasMain", "linkSuiteContador", "linkNIIF", "linkRentaIA", "linkImpuestos", "linkCentroIAEmpresarial", "linkPortalContador", "linkPortalContadorMenu", "linkContabilidadColombia", "linkContabilidadColombiaAvanzada", "linkDeclaracionesTributarias", "linkDeclaracionesTributariasMenu", "linkPortalTercerosCertificados", "linkPortalTercerosCertificadosMenu", "linkFacturacionElectronica", "linkFacturacionMain", "linkFacturasElectronicas", "linkReportes", "linkReportesEjecutivos", "linkCierreFiscal", "linkCierreFiscalMenu", "linkActivosFijosNIIF", "linkActivosFijosNIIFMenu", "linkTesoreriaPresupuesto", "linkBancosPagos", "linkBrebQR", "linkNominaMenu", "linkSoportesComprasIA", "linkSoportesComprasIAMenu"].indexOf(link.id) !== -1);
       });
       setSecondaryMenuVisibility(false);
       refreshMenuGroups();
@@ -1743,7 +1832,7 @@ try {
       refreshMenuGroups();
       return;
     }
-    if (normalizedRole === "jefe_bodega") {
+    if (normalizedRole === "jefe_bodega" || normalizedRole === "responsable_bodega") {
       var bodegaLinks = ["linkProductos", "linkProductosMain", "linkInventarioAvanzado", "linkRecetasProductos", "linkPreciosHistorial", "linkBodegas", "linkCategorias", "linkGeneradorCodigosBarras"];
       links.forEach(function (link) {
         setMenuLinkVisible(link, !!link && bodegaLinks.indexOf(link.id) !== -1);
@@ -1819,6 +1908,7 @@ try {
 
   function applyMenuPermissionsWithSource(empresaId, role) {
     var normalizedRole = normalizePermissionRole(role);
+    lastPermissionRole = normalizedRole;
     return fetchEmpresaPermisosContexto(empresaId)
       .then(function (permissionContext) {
         if (permissionContext) {
@@ -1828,9 +1918,9 @@ try {
         }
         applyMenuPermissionsByRole(normalizedRole);
         if (normalizedRole) {
-          setMenuPermissionsEvidence("Permisos de men√∫: rol " + normalizedRole + " | fuente local de respaldo.", true);
+          setMenuPermissionsEvidence("Permisos de men˙: rol " + normalizedRole + " | fuente local de respaldo.", true);
         } else {
-          setMenuPermissionsEvidence("Permisos de men√∫: sin rol detectado | fuente local de respaldo.", true);
+          setMenuPermissionsEvidence("Permisos de men˙: sin rol detectado | fuente local de respaldo.", true);
         }
       });
   }
@@ -1944,6 +2034,49 @@ try {
     setActiveByHref(initialSrc);
   }
 
+  function reapplyMenuVisualConfiguration(empresaId) {
+    if (lastPermissionContext) {
+      applyMenuPermissionsByContext(lastPermissionContext);
+    } else {
+      applyMenuPermissionsByRole(lastPermissionRole || "");
+    }
+    refreshMenuGroups();
+    if (!frame) return;
+    var current = "";
+    try {
+      current = frame.contentWindow.location.pathname + frame.contentWindow.location.search;
+    } catch (e) {
+      current = frame.getAttribute("src") || "";
+    }
+    if (current && !isVisibleMenuHref(current)) {
+      var next = firstVisibleFrameSrc(empresaId);
+      frame.setAttribute("src", next);
+      persistFrameSrc(next, empresaId);
+      setActiveByHref(next);
+      updateFavoriteButton(next);
+    }
+  }
+
+  try {
+    window.PCSAdminMenuVisual = {
+      reload: function () {
+        return fetchEmpresaMenuVisualConfig(id).then(function () {
+          reapplyMenuVisualConfiguration(id);
+        });
+      }
+    };
+  } catch (e) {}
+
+  window.addEventListener("message", function (event) {
+    if (event.origin !== window.location.origin) return;
+    var data = event.data || {};
+    if (!data || data.type !== "pcs-menu-visual-config-updated") return;
+    if (String(data.empresa_id || "") && String(data.empresa_id || "") !== String(id || "")) return;
+    fetchEmpresaMenuVisualConfig(id).then(function () {
+      reapplyMenuVisualConfiguration(id);
+    });
+  });
+
   function clearPendingConfigurationAssistant(empresaId) {
     if (!empresaId) return;
     var key = "pcs_config_assistant_pending_" + String(empresaId);
@@ -2027,6 +2160,99 @@ try {
     });
   }
 
+  function fetchEmpresaBuzonResumen() {
+    if (!id) return Promise.resolve(null);
+    return fetch("/api/empresa/buzon?empresa_id=" + encodeURIComponent(id) + "&action=resumen", { credentials: "same-origin" })
+      .then(function (res) {
+        if (!res.ok) throw new Error("HTTP " + res.status);
+        return res.json();
+      });
+  }
+
+  function renderNotificationBell(data) {
+    if (!notificationBell || !notificationBadge || !notificationList) return;
+    var unread = Number(data && data.unread || 0);
+    notificationBadge.textContent = unread > 99 ? "99+" : String(unread);
+    notificationBell.classList.toggle("has-unread", unread > 0);
+    var messages = Array.isArray(data && data.mensajes) ? data.mensajes.slice(0, 8) : [];
+    notificationList.innerHTML = "";
+    if (!messages.length) {
+      var empty = document.createElement("p");
+      empty.className = "admin-notification-empty";
+      empty.textContent = "Sin mensajes pendientes.";
+      notificationList.appendChild(empty);
+      return;
+    }
+    messages.forEach(function (msg) {
+      var btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "admin-notification-item";
+      btn.innerHTML = "<strong></strong><span></span>";
+      btn.querySelector("strong").textContent = String(msg.titulo || "Mensaje");
+      btn.querySelector("span").textContent = String(msg.mensaje || "").slice(0, 140);
+      btn.addEventListener("click", function () {
+        markNotificationReadAndOpen(msg);
+      });
+      notificationList.appendChild(btn);
+    });
+  }
+
+  function loadNotificationBell() {
+    if (!notificationBell || !id) return;
+    fetchEmpresaBuzonResumen()
+      .then(renderNotificationBell)
+      .catch(function () {
+        renderNotificationBell({ unread: 0, mensajes: [] });
+      });
+  }
+
+  function markNotificationReadAndOpen(msg) {
+    if (!msg || !msg.id || !id) return;
+    fetch("/api/empresa/buzon?empresa_id=" + encodeURIComponent(id) + "&action=leer", {
+      method: "PUT",
+      credentials: "same-origin",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: msg.id })
+    }).catch(function () {}).then(function () {
+      loadNotificationBell();
+      if (notificationMenu) notificationMenu.hidden = true;
+      if (notificationBell) notificationBell.setAttribute("aria-expanded", "false");
+      var href = String(msg.enlace_url || "").trim();
+      if (!href) {
+        href = "/administrar_empresa/panel.html";
+      }
+      if (href.indexOf("/administrar_empresa/") === 0) {
+        href = withEmpresaParam(href, id);
+        if (frame) {
+          frame.src = href;
+          setActiveByHref(href);
+          return;
+        }
+      }
+      window.location.href = href;
+    });
+  }
+
+  if (notificationBell && notificationMenu) {
+    notificationBell.addEventListener("click", function () {
+      var nextHidden = !notificationMenu.hidden ? true : false;
+      notificationMenu.hidden = nextHidden;
+      notificationBell.setAttribute("aria-expanded", nextHidden ? "false" : "true");
+      if (!nextHidden) loadNotificationBell();
+    });
+    document.addEventListener("click", function (ev) {
+      if (!notificationMenu || notificationMenu.hidden) return;
+      if (notificationBell.contains(ev.target) || notificationMenu.contains(ev.target)) return;
+      notificationMenu.hidden = true;
+      notificationBell.setAttribute("aria-expanded", "false");
+    });
+  }
+  if (notificationRefresh) {
+    notificationRefresh.addEventListener("click", function () {
+      loadNotificationBell();
+    });
+  }
+
   if (frame) {
     frame.addEventListener("load", function () {
       var currentHref = "";
@@ -2037,8 +2263,8 @@ try {
       }
       if (!currentHref) return;
 
-      // Si una navegaci√≥n interna del iframe pierde empresa_id,
-      // se corrige autom√°ticamente usando el contexto activo.
+      // Si una navegaciÛn interna del iframe pierde empresa_id,
+      // se corrige autom·ticamente usando el contexto activo.
       if (id) {
         try {
           var normalizedCurrent = normalizeHref(currentHref);
@@ -2061,8 +2287,8 @@ try {
       updateFavoriteButton(currentHref);
       scheduleMobileFrameResize();
     });
-    // Interceptar F5 / Ctrl+R para recargar solo el iframe y mantener la subp√°gina activa.
-    // Si el foco est√° en un campo editable (input/textarea/contentEditable) se respeta el comportamiento por defecto.
+    // Interceptar F5 / Ctrl+R para recargar solo el iframe y mantener la subp·gina activa.
+    // Si el foco est· en un campo editable (input/textarea/contentEditable) se respeta el comportamiento por defecto.
     document.addEventListener('keydown', function (ev) {
       try {
         var isF5 = ev.key === 'F5' || ev.keyCode === 116;
@@ -2073,7 +2299,7 @@ try {
         var tag = (active && active.tagName) ? active.tagName.toLowerCase() : '';
         var isEditable = tag === 'input' || tag === 'textarea' || (active && active.isContentEditable);
         if (isEditable && !active.readOnly) {
-          // permitir refresco normal cuando el usuario est√° editando
+          // permitir refresco normal cuando el usuario est· editando
           return;
         }
 
@@ -2083,7 +2309,7 @@ try {
             frame.contentWindow.location.reload();
             return;
           } catch (e) {
-            // si por alguna raz√≥n no es posible acceder al contentWindow, forzamos reload asignando src
+            // si por alguna razÛn no es posible acceder al contentWindow, forzamos reload asignando src
             try {
               var src = frame.getAttribute('src') || frame.src;
               frame.setAttribute('src', src);
@@ -2118,11 +2344,16 @@ try {
       }
       var role = session && session.role ? session.role : "";
       if (id) {
-        return applyMenuPermissionsWithSource(id, role)
+        return fetchEmpresaMenuVisualConfig(id)
+          .then(function () {
+            return applyMenuPermissionsWithSource(id, role);
+          })
           .then(function () {
             initializeMenuAndFrame(id);
             loadEmpresaTitle(id);
             clearPendingConfigurationAssistant(id);
+            loadNotificationBell();
+            window.setInterval(loadNotificationBell, 60000);
           });
       }
       applyMenuPermissionsByRole(role);
@@ -2135,11 +2366,14 @@ try {
     .catch(function () {
       setVerticalIntegrationEvidence(null);
       if (id) {
-        applyMenuPermissionsByRole("");
-        setMenuPermissionsEvidence("Permisos de men√∫: no se pudo resolver contexto, se mantiene visibilidad base.", true);
-        initializeMenuAndFrame(id);
-        loadEmpresaTitle(id);
-        clearPendingConfigurationAssistant(id);
+        fetchEmpresaMenuVisualConfig(id).then(function () {
+          applyMenuPermissionsByRole("");
+          setMenuPermissionsEvidence("Permisos de men˙: no se pudo resolver contexto, se mantiene visibilidad base.", true);
+          initializeMenuAndFrame(id);
+          loadEmpresaTitle(id);
+          clearPendingConfigurationAssistant(id);
+          loadNotificationBell();
+        });
         return;
       }
       applyMenuPermissionsByRole("");

@@ -123,9 +123,10 @@
   La autorizacion efectiva sigue dependiendo de `rol_nombre` normalizado, matriz
   de permisos, licencia y `empresa_id`; no se concede acceso por editar la URL.
   La UI muestra cada rol con descripcion y enlace `Saber mas` a la ayuda.
-- Las preconfiguraciones de tipos de empresa incluyen roles comunes para asignacion directa desde usuarios empresariales: `supervisor_sucursal`, `vendedor`, `recepcion`, `jefe_bodega`, `recursos_humanos` y `tecnico_solar`.
+- Las preconfiguraciones de tipos de empresa incluyen roles comunes para asignacion directa desde usuarios empresariales: `supervisor_sucursal`, `vendedor`, `recepcion`, `jefe_bodega`, `responsable_bodega`, `recursos_humanos` y `tecnico_solar`.
 - `tecnico_solar`: `energia_solar:R`, pagina `linkEnergiaSolar`, sin permisos de configuracion, domotica, inventario, ventas ni reportes.
 - `jefe_bodega`: `inventario:R/C/U/A` y `compras:R`; puede ver paginas de inventario, bodegas, categorias, recetas, historial y codigos de barras, pero no ventas, caja ni configuracion. No recibe `D` para eliminar inventario.
+- `responsable_bodega`: `inventario:R/C/U/A` y `compras:R`; pensado para el usuario responsable de una bodega especifica. Puede operar productos, existencias, traslados y bodegas sin ventas, caja, configuracion ni `inventario:D`.
 - `recursos_humanos`: `horarios_trabajadores:R/C/U`, `asistencia_empleados:R/C/U` y `nomina_sueldos:R/C/U`; sin ventas, caja ni permisos generales de seguridad.
 - `vendedor` y `recepcion`: orientados a ventas/clientes con consulta de inventario, sin administracion global.
 - Defensa backend: las restricciones de roles especializados se reaplican despues de licencia, vertical, empresa y acceso compartido.

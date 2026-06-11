@@ -24,6 +24,37 @@ afecte dinero, documentos, licencias o seguridad.
 8. La opcion no crea tablas nuevas, no cambia permisos ni mezcla empresas; cada
    pantalla sigue filtrando por su `empresa_id` y sus endpoints existentes.
 
+## Atajos POS por empresa
+
+1. Abrir `Administrar empresa > Configuracion > Configuracion carrito`.
+2. En `Atajos de teclado POS`, activar o desactivar la captura de teclado y
+   asignar cada accion a F1-F12, ESC, ENTER, CTRL+B, CTRL+D, CTRL+P o ALT+F4.
+3. PCS guarda el mapa en
+   `empresa_estacion_prefs.estaciones_config.carrito_ui_global.atajos_pos`
+   usando `/api/empresa/estacion_prefs`, siempre filtrado por `empresa_id`.
+4. En `Venta directa` o carritos por estacion, el listener del carrito ejecuta
+   acciones existentes: ayuda, buscar producto/cliente, descuento, cantidad,
+   precio, suspender/recuperar, inventario, cobrar, cajon, imprimir, cancelar,
+   agregar producto y salir.
+5. ENTER no interfiere con formularios generales; solo agrega producto cuando el
+   foco esta en el lector/cantidad del escaner o no se esta escribiendo en otro
+   campo. Las acciones finales siguen pasando por permisos y validaciones del
+   backend.
+
+## Menu visible por empresa
+
+1. Abrir `Administrar empresa > Configuracion > Menu visible`.
+2. Marcar los modulos que deben mostrarse y desmarcar los que se quieren ocultar
+   del menu para todos los usuarios de esa empresa.
+3. PCS guarda la preferencia en
+   `empresa_estacion_prefs.menu_visual_config` con `estacion_id=0` y lista
+   `hidden_links`, siempre por `empresa_id`.
+4. Al cargar `Administrar empresa`, primero se aplican permisos, licencia y rol;
+   luego se aplica este filtro visual. Por eso un modulo oculto no aparece en el
+   menu, pero sus endpoints siguen protegidos por backend.
+5. `Panel`, `Configuracion`, `Menu visible` y `Volver a empresas` no se pueden
+   ocultar para evitar que el administrador pierda la ruta de recuperacion.
+
 ## Nomina y nomina electronica DIAN
 
 1. Abrir `Administrar empresa > Finanzas y cumplimiento > Nomina`.
@@ -231,19 +262,22 @@ afecte dinero, documentos, licencias o seguridad.
 2. En VPS/Docker, `OPENAI_API_KEY` debe existir en `deploy/.env.platform` remoto
    para que Compose la entregue al backend; `rs/sync_to_vps` la sincroniza sin
    imprimir el secreto cuando existe en los archivos locales ignorados.
-3. Toda accion operativa generada por IA debe salir como `PCS_ACTION`, mostrarse
+3. El boton `Stop` del toolbar corta audio, aborta la respuesta activa cuando el
+   navegador soporta `AbortController` y evita que respuestas tardias se pinten
+   despues de cancelar.
+4. Toda accion operativa generada por IA debe salir como `PCS_ACTION`, mostrarse
    al usuario y ejecutarse solo despues de confirmar.
-4. El frontend solo permite `OPEN`, `POST` y `PUT` sobre endpoints cerrados; no
+5. El frontend solo permite `OPEN`, `POST` y `PUT` sobre endpoints cerrados; no
    permite `DELETE` ni rutas genericas.
-5. Para `cajero`, las acciones permitidas son pedir/agregar productos a una
+6. Para `cajero`, las acciones permitidas son pedir/agregar productos a una
    estacion, mesa, habitacion o venta directa mediante
    `/api/empresa/ia_pedidos_estacion/ejecutar`, y activar/desactivar la emisora
    mediante `/api/empresa/ia_radio/activar`.
-6. Productos manuales usan `/api/empresa/productos` y dependen de permisos de
+7. Productos manuales usan `/api/empresa/productos` y dependen de permisos de
    inventario; nomina usa `/api/empresa/nomina` y depende de permisos de nomina;
    tarifas de motel/hotel/tiempo usan los endpoints de tarifas bajo permisos de
    ventas.
-7. El backend vuelve a validar sesion, `empresa_id`, licencia, pagina y permisos
+8. El backend vuelve a validar sesion, `empresa_id`, licencia, pagina y permisos
    efectivos en cada ruta; la IA no concede permisos ni ejecuta SQL libre.
 
 ## Auditoria integral de modulos
@@ -263,7 +297,9 @@ afecte dinero, documentos, licencias o seguridad.
    ficticios.
 7. En `Administrar empresa > Auditoria`, el filtro `Modulo` incluye DIAN,
    Bolsa, Renta IA, Suite contador, Centro IA, compras IA, OnlyOffice,
-   contabilidad, nomina, verticales y analisis/control para revisar eventos
+   contabilidad, nomina, Bre-B QR, buzon, tareas, chat empresarial,
+   impresoras, menu visible, atajos POS, productos import/export,
+   bodegas/traslados, verticales y analisis/control para revisar eventos
    reales y exportar CSV/JSON.
 
 ## GRAFOLOGIX grafologia OCR
@@ -354,6 +390,25 @@ afecte dinero, documentos, licencias o seguridad.
    datos privados reales; solo explican el tipo de dato y el cuidado operativo.
 5. La ayuda es frontend, no sustituye validaciones backend ni permisos por
    `empresa_id`.
+
+## Importar y exportar productos
+
+1. En `Administrar empresa > Inventario (Productos) > Productos`, la parte alta
+   de la seccion muestra la tarjeta `Exportar productos` y `Importar lista`.
+2. La exportacion llama `GET /api/empresa/productos?action=exportar` con el
+   `empresa_id` validado y conserva filtros visibles por busqueda/categoria.
+3. Formatos soportados: CSV para Excel, JSON para integraciones y HTML
+   imprimible en tamano carta o POS 80 mm.
+4. La plantilla CSV se descarga desde
+   `GET /api/empresa/productos?action=plantilla_importacion`.
+5. La importacion sube un CSV multipart a
+   `POST /api/empresa/productos?action=importar`; el backend valida permisos,
+   campos obligatorios configurados, duplicados, categoria, bodega y stock
+   inicial por `empresa_id`.
+6. Si la fila trae stock inicial sin bodega, se usa la primera bodega activa de
+   la empresa; si no existe bodega activa, la fila queda rechazada.
+7. El resultado informa productos creados, omitidos y errores por fila para que
+   el administrador corrija la lista sin repetir datos ya existentes.
 
 ## Logos de empresa y factura
 
@@ -922,7 +977,7 @@ afecte dinero, documentos, licencias o seguridad.
 
 1. Las empresas cuentan con roles base para asignar usuarios sin crear permisos
    desde cero: `supervisor_sucursal`, `vendedor`, `recepcion`, `jefe_bodega`,
-   `recursos_humanos`, `tecnico_solar`, `cajero`, `portero`,
+   `responsable_bodega`, `recursos_humanos`, `tecnico_solar`, `cajero`, `portero`,
    `servicio_limpieza`, `contador`, `empresario`, `compras`, `inventario`,
    `contabilidad` y `auditor`.
 2. `tecnico_solar` solo consulta el estado de energia solar: dashboard,
@@ -930,9 +985,12 @@ afecte dinero, documentos, licencias o seguridad.
 3. `jefe_bodega` administra inventario y bodegas: existencias, traslados,
    categorias, recetas y codigos; no puede operar ventas, caja ni eliminar
    inventario.
-4. `recursos_humanos` gestiona horarios, asistencia y nomina operativa; no abre
+4. `responsable_bodega` administra la bodega asignada con inventario,
+   existencias y traslados; no opera ventas, caja, configuracion ni elimina
+   inventario.
+5. `recursos_humanos` gestiona horarios, asistencia y nomina operativa; no abre
    ventas, caja ni configuracion general.
-5. Pruebas: crear usuarios con esos roles, iniciar por `login_usuario`, validar
+6. Pruebas: crear usuarios con esos roles, iniciar por `login_usuario`, validar
    menu visible y probar llamadas directas a endpoints fuera del alcance con
    respuesta 403.
 
@@ -1055,3 +1113,34 @@ afecte dinero, documentos, licencias o seguridad.
    requiere webhook/API bancaria o proveedor de conciliacion que notifique la
    referencia recibida; mientras no exista esa integracion, el cajero debe
    verificar y registrar la referencia manualmente.
+
+## Pagos Bre-B QR en Finanzas
+
+1. Abrir `Administrar empresa > Finanzas y cumplimiento > Pagos Bre-B QR`.
+2. Activar `Mostrar pago por QR en carrito` y `Habilitar medio Transferencia
+   Bre-B`; ambos valores se guardan por `empresa_id` dentro de
+   `empresa_estacion_prefs.estaciones_config.carrito_ui_global`.
+3. Registrar una o varias cuentas receptoras con proveedor, tipo de llave,
+   llave/cuenta, caja asignada y, cuando el banco lo entregue, payload oficial o
+   plantilla QR con `{valor}`, `{referencia}`, `{empresa_id}`, `{carrito_id}` y
+   `{carrito_codigo}`.
+4. Para varias cajas simultaneas, usar una cuenta por caja o una referencia
+   dinamica unica por venta. El cajero debe validar que la referencia recibida en
+   el banco coincide con la referencia del carrito antes de cerrar la venta.
+5. La pantalla lista ventas cerradas con `transferencia_bre_b`, abonos Bre-B y
+   registros bancarios manuales de `empresa_finanzas_bancos_movimientos`.
+6. `Registrar pago recibido` crea un movimiento bancario de ingreso con origen
+   `breb_qr_manual`, hash idempotente y estado de conciliacion pendiente o
+   conciliado; no crea venta ni reemplaza el cierre del carrito.
+7. La conciliacion automatica solo debe activarse cuando exista webhook/API real
+   de banco o proveedor; hasta entonces PCS conserva trazabilidad y conciliacion
+   manual sin simular confirmaciones.
+
+## Buzon de usuario, tareas y almacenamiento empresarial
+
+1. El panel de `Administrar empresa` carga `/api/empresa/buzon?action=resumen` con el `empresa_id` activo y muestra campana, contador de no leidos, ultimos mensajes, chat y estado de almacenamiento.
+2. Un usuario puede enviar `Mensaje` o `Asignar tarea` a otro usuario registrado de la misma empresa. Las tareas quedan como mensajes tipo `tarea` con prioridad, fecha limite opcional y estado `pendiente`.
+3. Si el mensaje incluye foto, archivo o audio grabado desde microfono, el backend guarda el binario en la carpeta de la empresa y registra metadata en `empresa_buzon_adjuntos`.
+4. El destinatario finaliza una tarea desde su propio buzon; debe escribir descripcion de cierre y puede adjuntar evidencia. El backend valida que el mensaje pertenezca a su buzon antes de adjuntar o cerrar.
+5. En traslados de bodega, el endpoint de inventario crea una notificacion de buzon para el responsable de la bodega destino o usuarios de inventario/administracion.
+6. Super administrador controla la cuota global por empresa desde Configuracion avanzada > Almacenamiento: limite MB, porcentaje de alerta, maximo por archivo, bloqueo al superar cuota y limpieza de archivos antiguos del buzon.

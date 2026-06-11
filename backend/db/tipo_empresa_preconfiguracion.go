@@ -1625,6 +1625,7 @@ func rolesFromTipoEmpresaPreconfigTemplate(template TipoEmpresaPreconfigTemplate
 	add("empresario")
 	add("servicio_limpieza")
 	add("jefe_bodega")
+	add("responsable_bodega")
 	add("recursos_humanos")
 	add("tecnico_solar")
 	for _, usuario := range template.Usuarios {
@@ -1671,7 +1672,7 @@ func permisosModuloPreconfigRol(rolID int64, rolNombre string) []RolPermisoModul
 		add("reportes", readOnly)
 	case "servicio_limpieza", "servicio de limpieza", "limpieza", "aseadora", "aseo":
 		add("ventas", readOnly)
-	case "jefe_bodega", "jefe de bodega", "bodega", "bodeguero":
+	case "jefe_bodega", "jefe de bodega", "bodega", "bodeguero", "responsable_bodega", "responsable de bodega", "responsable bodega":
 		add("inventario", []string{"R", "C", "U", "A"})
 		add("compras", readOnly)
 	case "recursos_humanos", "rrhh", "talento_humano":
@@ -1781,6 +1782,8 @@ func descripcionRolPreconfig(rolNombre, tipoEmpresaNombre string) string {
 		return "Rol de Servicio de limpieza para ver estaciones y reportar estaciones sucias como limpias, sin abrir carrito, cobrar, activar estaciones ni cambiar configuracion."
 	case "jefe_bodega", "jefe de bodega", "bodega", "bodeguero":
 		return "Rol de jefe de bodega para administrar inventario, bodegas, existencias, traslados y control de stock sin operar caja ni ventas."
+	case "responsable_bodega", "responsable de bodega", "responsable bodega":
+		return "Rol de responsable de bodega para gestionar la bodega asignada, existencias, traslados y control de stock sin operar caja ni ventas."
 	case "recursos_humanos", "rrhh", "talento_humano":
 		return "Rol de recursos humanos para gestionar asistencia, horarios, novedades y nomina operativa del personal autorizado."
 	case "tecnico_solar", "tecnico solar", "solar":

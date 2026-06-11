@@ -2136,6 +2136,7 @@ body.has-floating-menu.admin-empresa-shell .admin-frame-toolbar{top:calc(var(--f
 .ai-chat-icon-btn{width:40px;height:40px;min-width:40px;border-radius:12px;border:1px solid var(--border);background:var(--surface-soft);color:var(--text);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;padding:0;transition:background .15s ease,box-shadow .15s ease}
 .ai-chat-icon-btn:hover{background:var(--focus)}
 .ai-chat-icon-btn[aria-pressed="true"]{box-shadow:0 0 0 2px rgba(96,165,250,.45);background:rgba(96,165,250,.12)}
+.ai-chat-stop-btn.is-active{border-color:rgba(220,38,38,.42);background:rgba(220,38,38,.12);color:#dc2626;box-shadow:0 0 0 2px rgba(220,38,38,.18)}
 .ai-chat-icon-btn:disabled{opacity:.45;cursor:not-allowed}
 .ai-chat-icon-btn svg{display:block}
 .ai-chat-controls{display:flex;align-items:center;gap:8px;min-width:0;flex:1 1 auto}
@@ -12487,6 +12488,29 @@ html.theme-light .task-item{
   font-size:.78rem;
   font-weight:800;
   color:#183247;
+}
+
+.empresas-grid .portal-card.empresa-card .empresa-card-share-option{
+  display:flex;
+  align-items:flex-start;
+  gap:8px;
+  margin:0;
+  color:#183247;
+  font-size:.82rem;
+  font-weight:800;
+  line-height:1.35;
+}
+
+.empresas-grid .portal-card.empresa-card .empresa-card-share-option input{
+  margin-top:2px;
+}
+
+.empresas-grid .portal-card.empresa-card .empresa-card-share-hint{
+  margin-top:-4px;
+  color:#5c6f81;
+  font-size:.76rem;
+  font-weight:700;
+  line-height:1.35;
 }
 
 .empresas-grid .portal-card.empresa-card .empresa-card-share-feedback{

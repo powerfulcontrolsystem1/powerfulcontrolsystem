@@ -1,3 +1,53 @@
+## [2026-06-11] Stop de audio y respuesta en chat IA
+- [Chat IA] El toolbar incorpora `Stop` para cortar audio y respuesta activa desde el recuadro normal.
+- [Cancelacion] Las consultas de texto, streaming, documentos, reportes y adjuntos reciben señal de aborto cuando el navegador lo soporta.
+- [UX] Si ya habia texto parcial, el mensaje queda marcado como detenido y una respuesta tardia no se vuelve a pintar.
+- [QA] `node --check web/js/ai_chat_drawer.js` OK.
+
+## [2026-06-11] Auditoria transversal de opciones nuevas
+- [Auditoria] Bre-B QR, buzon, tareas, chat empresarial, adjuntos, preferencias transversales e impresoras/cola generan eventos con modulo propio.
+- [Reportes] `operativo_modulos_resumen` incluye productos import/export, bodegas/traslados, Bre-B QR, buzon, tareas, chat, adjuntos, impresoras, menu visible y atajos POS.
+- [Seguridad] La metadata registra IDs, estados, tamanos y flags operativos, pero no contenido de mensajes, archivos, claves, QR payloads ni secretos.
+- [QA] Pruebas Go enfocadas y validacion sintactica de `auditoria.html` OK.
+
+## [2026-06-11] Compartir empresa con permiso de re-compartir
+- [Selector] La tarjeta de empresa permite marcar si el administrador invitado tambien puede compartir esa empresa.
+- [Invitaciones] Ya se puede invitar un correo no registrado: PCS crea una cuenta administrativa pendiente, envia enlace de registro y conserva la invitacion de empresa para aceptarla despues del login.
+- [Seguridad] El permiso `puede_compartir` se guarda en invitacion/acceso y solo habilita gestion de invitaciones para esa empresa; no cambia permisos globales ni roles.
+- [QA] Pruebas enfocadas de handlers/db y validacion sintactica del selector OK. La suite completa mantiene fallos previos no relacionados en wrappers OCR/Bolsa, CSS super email corporativo, permisos de creditos e IA.
+
+## [2026-06-11] Menu visible por empresa
+- [Configuracion] Se agrega `Menu visible`, una pagina para ocultar visualmente modulos del menu empresarial por empresa.
+- [Menu] `administrar_empresa.js` lee `menu_visual_config` desde `empresa_estacion_prefs` y aplica el filtro despues de permisos/licencias/roles.
+- [Seguridad] Es solo presentacion: no cambia permisos, endpoints ni autorizacion backend. `Panel`, `Configuracion` y la propia pagina de menu visible no se pueden ocultar.
+
+## [2026-06-11] Atajos POS configurables por empresa
+- [Configuracion carrito] Se agrega la tarjeta `Atajos de teclado POS` con switches para activar/desactivar los atajos y mostrar ayuda con F1.
+- [Carrito] F1-F12, ESC, ENTER, CTRL+B, CTRL+D, CTRL+P y ALT+F4 ejecutan acciones operativas del carrito segun el mapa guardado por empresa.
+- [Datos] La configuracion se guarda en `estaciones_config.carrito_ui_global` mediante `/api/empresa/estacion_prefs`; no agrega tablas ni dependencias.
+- [Seguridad] Se conserva `empresa_id`; los atajos solo disparan funciones ya protegidas por los permisos existentes del carrito.
+
+## [2026-06-11] Productos: importacion y exportacion
+- [Inventario] La seccion `Productos` de `administrar_productos.html` incorpora controles superiores para exportar el catalogo en CSV/Excel, JSON o HTML imprimible.
+- [Impresion] La exportacion HTML permite tamano carta o POS 80 mm para listados operativos.
+- [Importacion] Se agrega plantilla CSV e importacion real desde `/api/empresa/productos?action=importar`, con resumen de creados, omitidos y errores por fila.
+- [Seguridad] El flujo reutiliza el endpoint protegido por permisos de inventario, filtra por `empresa_id`, omite duplicados por SKU/codigo/nombre y valida bodega para stock inicial.
+- [QA] `go test ./db ./handlers -run "Productos|Inventario" -count=1`; chequeo sintactico del script embebido de `administrar_productos.html`.
+
+## [2026-06-11] Rol Responsable de bodega
+- [Roles] Se agrega `responsable_bodega` como rol base visible para todas las empresas.
+- [Permisos] El rol puede gestionar inventario, bodegas, existencias y traslados (`inventario:R/C/U/A`) y consultar compras (`compras:R`), sin ventas, caja, configuracion ni eliminacion de inventario.
+- [UX] El selector de usuarios y la ayuda reconocen el rol y sus alias operativos: Responsable de bodega, Bodeguero y Almacenista.
+- [Inventario] Las notificaciones por traslado de bodega tambien consideran usuarios con rol `responsable_bodega`.
+
+## [2026-06-11] Buzon, tareas y chat por empresa
+- [Empresa] El panel principal incluye buzon de usuario, chat interno y campana con contador de mensajes no leidos.
+- [Tareas] Desde el buzon se puede enviar mensaje o asignar tarea a un usuario de la empresa; el destinatario puede finalizarla con descripcion y evidencia.
+- [Inventario] Los traslados entre bodegas generan notificacion al responsable o usuarios de inventario/administracion.
+- [Archivos] Adjuntos, fotos y audios del buzon se guardan en la carpeta de cada empresa.
+- [Super] Configuracion avanzada agrega cuota de almacenamiento por empresa, alerta, maximo por archivo, bloqueo y limpieza de archivos antiguos.
+- [QA] `go test ./db ./handlers -run TestNoSuchTest -count=1`; chequeo sintactico de JS embebido OK.
+
 ## [2026-06-10] Venta a credito desde carrito
 - [Carrito] Se agrega el medio `Credito cliente` en venta directa/estaciones, incluido pago mixto y detalle del pago.
 - [Creditos] El cierre valida cupo activo por cliente y empresa, y crea cartera real en `empresa_creditos` con `venta_origen_id`.
@@ -2782,3 +2832,9 @@
 - El carrito permite pagos combinados desde `Detalle del pago`, abonos y pago mixto usando esos medios.
 - Backend acepta los nuevos metodos, exige referencia en tarjetas/transferencias y bloquea medios deshabilitados por empresa o rol.
 - Bre-B queda preparado como medio separado para una conciliacion automatica futura mediante webhook/API bancaria.
+
+## [2026-06-11] Finanzas - Pagos Bre-B QR
+- [Finanzas] Se agrega pagina `Pagos Bre-B QR` con configuracion, cuentas receptoras por caja, registro manual y tabla de pagos.
+- [Carrito] La configuracion usa `estaciones_config.carrito_ui_global`, la misma fuente de verdad de medios de pago y QR del carrito.
+- [Backend] `/api/empresa/finanzas/breb_qr` lista ventas/abonos Bre-B reales y registra pagos bancarios manuales en conciliacion, siempre filtrado por `empresa_id`.
+- [Operacion] La confirmacion automatica queda documentada como dependiente de webhook/API bancaria real.

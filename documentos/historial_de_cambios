@@ -1,3 +1,26 @@
+2026-06-11: Stop de audio y respuesta en chat IA.
+- Modulos afectados: `chat_ia_flotante`, `ayuda_ia`, `super_administrador`, `seleccionar_empresa`, `venta_publica`.
+- Frontend: se agrega el boton `Stop` al toolbar del chat IA para cortar el audio activo y abortar la respuesta en curso, incluyendo streaming, modo documentos, reportes, texto y adjuntos.
+- Operacion: el boton invalida respuestas antiguas con secuencia interna y `AbortController`, marca mensajes parciales como detenidos y evita que una respuesta tardia se pinte despues de cancelar.
+- Seguridad: no cambia endpoints, permisos, secretos, roles ni datos por empresa; solo cancela peticiones ya iniciadas desde la sesion actual.
+- QA: `node --check web/js/ai_chat_drawer.js` OK con Node embebido.
+
+2026-06-11: Auditoria transversal de opciones nuevas.
+- Modulos afectados: `auditoria`, `reportes`, `breb_qr`, `buzon`, `tareas_buzon`, `chat_empresarial`, `impresoras`, `menu_visible`, `atajos_pos`, `productos_import_export` y `bodegas_traslados`.
+- Backend: se agrega un helper comun de auditoria especifica por modulo y se instrumentan Bre-B QR, buzon/tareas/chat, adjuntos, lectura de mensajes, preferencias transversales e impresoras/cola.
+- Reportes: `operativo_modulos_resumen` ahora incluye las opciones nuevas con sus tablas reales o preferencias empresariales asociadas por `empresa_id`.
+- Frontend: `auditoria.html` permite filtrar directamente los modulos nuevos y exportar sus eventos.
+- Seguridad: la metadata evita guardar contenido de mensajes, archivos o secretos; solo registra tipo, IDs, estado y tamanos. No se agregan dependencias ni motores distintos de PostgreSQL.
+- QA: `go test ./db ./handlers -run "Auditoria|Reportes|Breb|Buzon|EstacionPrefs|Impresoras|Permisos" -count=1` OK; validacion sintactica de scripts embebidos de `auditoria.html` OK con Node embebido.
+
+2026-06-11: Compartir empresa con re-compartir opcional e invitacion a correos nuevos.
+- Modulos afectados: `seleccionar_empresa`, `empresas compartidas`, `administradores`, `correo`.
+- Backend: `admin_empresa_compartida` y `admin_empresa_compartida_invitaciones` agregan `puede_compartir`; el permiso se guarda en invitacion, se copia al acceso aceptado y se expone como `shared_puede_compartir`.
+- Invitaciones: si el correo no existe o aun no esta confirmado, PCS crea/actualiza una cuenta administrativa pendiente con token de registro y envia correo de invitacion para registrarse primero; la invitacion de empresa queda pendiente para aceptarse al iniciar sesion.
+- Seguridad: propietario, super administrador o administrador compartido con `puede_compartir=true` pueden invitar/reenviar/revocar; los demas accesos compartidos no encadenan empresas. No se imprime ningun token o secreto.
+- Frontend: la tarjeta de empresa agrega check `Permitir que este administrador tambien pueda compartir esta empresa` y habilita el icono solo cuando el backend devuelve el permiso.
+- QA: `go test ./handlers -run "AdminEmpresaCompartida|EmpresaCompartida" -count=1` OK; `go test ./db -run "AdminEmpresaCompartida|Empresa" -count=1` OK; `node --check web/js/seleccionar_empresa.js` OK. `go test ./...` falla por pruebas existentes no relacionadas en wrappers OCR/Bolsa, CSS `admin_theme.css`, permisos de creditos e IA.
+
 2026-06-10: Venta a credito desde carrito.
 - Modulos afectados: `carritos`, `venta_directa`, `estaciones`, `creditos`, `clientes`, `caja`.
 - Backend: `pagar_estacion` acepta `credito_cliente` como medio total o mixto, valida cliente y cupo activo con `empresa_creditos_clientes_limites`, crea `empresa_creditos` ligado a la venta y no suma el tramo de credito al efectivo de caja.
@@ -33758,3 +33781,43 @@ Archivos modificados:
 PushStatus: OK
 Archivos modificados:
 - web/administrar_empresa/carrito_de_compras.html
+
+2026-06-11: Buzon de usuario, tareas internas, chat empresarial y cuota de almacenamiento
+- Se agrega el nuevo contrato `empresa_buzon_mensajes`, `empresa_buzon_adjuntos` y `empresa_chat_mensajes` por `empresa_id` para reemplazar en el panel el acceso visible de Chat y tareas por una experiencia mas directa: buzon personal, campana de notificaciones, chat de empresa y tareas asignadas.
+- El buzon permite mensajes internos, adjuntos/fotos/audio guardados bajo la carpeta de cada empresa, asignacion de tareas a usuarios registrados, cierre de tareas con descripcion y evidencia, lectura/no lectura y enlaces a paginas relacionadas.
+- Los traslados de bodega notifican al responsable o usuarios de inventario/administracion mediante el buzon empresarial.
+- Super administrador incorpora `empresa_storage.*` para cuota global por empresa, porcentaje de alerta, maximo por archivo, bloqueo al superar limite y limpieza de adjuntos antiguos del buzon.
+- Archivos principales: `backend/db/empresa_buzon.go`, `backend/handlers/empresa_buzon.go`, `backend/handlers/productos.go`, `backend/main.go`, `web/administrar_empresa.html`, `web/js/administrar_empresa.js`, `web/administrar_empresa/panel.html`, `web/super/configuracion_avanzada.html`.
+- Validacion: `go test ./db ./handlers -run TestNoSuchTest -count=1` desde `backend`; chequeo sintactico de JS embebido en panel, super configuracion y shell de administrar empresa.
+
+2026-06-11: Rol universal Responsable de bodega
+- Se agrega `responsable_bodega` al catalogo base de roles por tipo de empresa para que aparezca disponible en todas las empresas desde el selector de usuarios.
+- Permisos: `inventario:R/C/U/A` y `compras:R`, sin `inventario:D`, ventas, caja ni configuracion.
+- Alias normalizados: `Responsable de bodega`, `Bodeguero`, `Almacenista` y `Bodega`.
+- Las notificaciones de traslado de bodega incluyen usuarios con rol `responsable_bodega`.
+- Archivos: `backend/db/tipo_empresa_preconfiguracion.go`, `backend/handlers/empresa_permisos.go`, `backend/db/empresa_buzon.go`, `web/js/administrar_empresa.js`, `web/administrar_empresa/administrar_usuarios.html`, `web/ayuda/ayuda.html`.
+
+2026-06-11: Productos con importacion y exportacion
+- Se agrega en la parte superior de la seccion `Productos` una tarjeta para exportar el catalogo filtrado a CSV/Excel, JSON o HTML imprimible en carta/POS.
+- Se agrega descarga de plantilla CSV e importacion de lista de productos desde el endpoint protegido `/api/empresa/productos?action=importar`.
+- La importacion valida `empresa_id`, usa permisos de inventario, omite duplicados por SKU/codigo de barras/nombre, crea categoria si falta, asigna primera bodega activa cuando hay stock inicial sin bodega y reporta errores por fila.
+- Archivos: `backend/handlers/productos.go`, `web/administrar_empresa/administrar_productos.html`.
+- Validacion: `go test ./db ./handlers -run "Productos|Inventario" -count=1`; chequeo sintactico de JS embebido en `administrar_productos.html`.
+
+2026-06-11: Atajos POS configurables por empresa
+- Se agrega configuracion empresarial de atajos POS en `Configuracion carrito`, guardada en `estaciones_config.carrito_ui_global.atajos_pos` mediante `/api/empresa/estacion_prefs`.
+- El carrito ejecuta F1-F12, ESC, ENTER, CTRL+B, CTRL+D, CTRL+P y ALT+F4 segun el mapa de la empresa para ayuda, busqueda, cliente, descuento, cantidad, precio, suspender/recuperar, inventario, cobro, cajon, impresion, cancelar, agregar y salir.
+- No se agregan endpoints, tablas ni dependencias; las acciones reutilizan controles y permisos existentes por `empresa_id`.
+- Archivos: `backend/handlers/empresa_preconfiguracion.go`, `backend/handlers/empresa_preconfiguracion_carrito_test.go`, `web/administrar_empresa/configuracion_carrito_de_compra_empresa.html`, `web/administrar_empresa/carrito_de_compras.html`.
+
+2026-06-11: Finanzas - Pagos Bre-B QR
+- Se crea `Pagos Bre-B QR` dentro de Finanzas y cumplimiento con configuracion empresarial, cuentas receptoras por caja, payload oficial/plantilla QR, tutorial, registro manual y tabla de pagos detectados.
+- El endpoint `/api/empresa/finanzas/breb_qr` queda protegido por permisos de finanzas, conserva aislamiento por `empresa_id`, lee ventas/abonos reales con `transferencia_bre_b` y registra pagos recibidos manuales en `empresa_finanzas_bancos_movimientos` para conciliacion.
+- La configuracion se guarda en `empresa_estacion_prefs.estaciones_config.carrito_ui_global` para que el carrito siga usando una sola fuente de verdad.
+- Se documenta que la confirmacion automatica real depende de webhook/API bancaria; PCS no simula abonos recibidos.
+
+2026-06-11: Menu visible por empresa
+- Se agrega `Administrar empresa > Configuracion > Menu visible` para que el administrador oculte modulos del menu con checks por empresa.
+- La preferencia se guarda en `empresa_estacion_prefs` clave `menu_visual_config`, `estacion_id=0`, como lista `hidden_links`; no se crean tablas ni endpoints nuevos.
+- `web/js/administrar_empresa.js` aplica primero permisos/licencias/roles y despues el filtro visual. `Panel`, `Configuracion`, `Menu visible` y `Volver a empresas` no se pueden ocultar para conservar recuperacion.
+- Archivos: `web/administrar_empresa/configuracion/menu_visual.html`, `web/administrar_empresa/configuracion_menu.html`, `web/js/administrar_empresa.js`.

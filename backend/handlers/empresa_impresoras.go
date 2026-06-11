@@ -338,6 +338,12 @@ func EmpresaImpresorasHandler(dbEmp *sql.DB) http.HandlerFunc {
 					writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "id": id})
 					return
 				}
+				registrarAuditoriaModuloEmpresaNoBloqueante(dbEmp, r, empresaID, "impresoras", "impresora_guardada", "empresa_impresoras", id, http.StatusOK, map[string]interface{}{
+					"codigo":            item.Codigo,
+					"nombre":            item.Nombre,
+					"tipo_conexion":     item.TipoConexion,
+					"es_predeterminada": item.EsPredeterminada,
+				}, "impresora empresarial creada o actualizada")
 				writeJSON(w, http.StatusOK, map[string]interface{}{
 					"ok":        true,
 					"id":        id,
@@ -360,6 +366,9 @@ func EmpresaImpresorasHandler(dbEmp *sql.DB) http.HandlerFunc {
 					http.Error(w, err.Error(), http.StatusBadRequest)
 					return
 				}
+				registrarAuditoriaModuloEmpresaNoBloqueante(dbEmp, r, empresaID, "impresoras", "estado_impresora_actualizado", "empresa_impresoras", impresoraID, http.StatusOK, map[string]interface{}{
+					"estado": estado,
+				}, "estado de impresora actualizado")
 				writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "impresora_id": impresoraID, "estado": estado})
 				return
 
@@ -374,6 +383,7 @@ func EmpresaImpresorasHandler(dbEmp *sql.DB) http.HandlerFunc {
 					http.Error(w, err.Error(), http.StatusBadRequest)
 					return
 				}
+				registrarAuditoriaModuloEmpresaNoBloqueante(dbEmp, r, empresaID, "impresoras", "predeterminada_actualizada", "empresa_impresoras", impresoraID, http.StatusOK, nil, "impresora predeterminada actualizada")
 				writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "impresora_id": impresoraID})
 				return
 
@@ -391,6 +401,10 @@ func EmpresaImpresorasHandler(dbEmp *sql.DB) http.HandlerFunc {
 					http.Error(w, err.Error(), http.StatusBadRequest)
 					return
 				}
+				registrarAuditoriaModuloEmpresaNoBloqueante(dbEmp, r, empresaID, "impresoras", "funcionalidad_asignada", "empresa_impresoras_funcionalidades", id, http.StatusOK, map[string]interface{}{
+					"funcionalidad": payload.Funcionalidad,
+					"impresora_id":  payload.ImpresoraID,
+				}, "regla de impresion por funcionalidad guardada")
 				writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "id": id})
 				return
 
@@ -408,6 +422,10 @@ func EmpresaImpresorasHandler(dbEmp *sql.DB) http.HandlerFunc {
 					http.Error(w, err.Error(), http.StatusBadRequest)
 					return
 				}
+				registrarAuditoriaModuloEmpresaNoBloqueante(dbEmp, r, empresaID, "impresoras", "producto_asignado", "empresa_impresoras_productos", id, http.StatusOK, map[string]interface{}{
+					"producto_id":  payload.ProductoID,
+					"impresora_id": payload.ImpresoraID,
+				}, "regla de impresion por producto guardada")
 				writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "id": id})
 				return
 
@@ -425,6 +443,11 @@ func EmpresaImpresorasHandler(dbEmp *sql.DB) http.HandlerFunc {
 					http.Error(w, err.Error(), http.StatusBadRequest)
 					return
 				}
+				registrarAuditoriaModuloEmpresaNoBloqueante(dbEmp, r, empresaID, "impresoras", "regla_producto_asignada", "empresa_impresoras_productos_reglas", id, http.StatusOK, map[string]interface{}{
+					"alcance":      payload.Alcance,
+					"categoria_id": payload.CategoriaID,
+					"impresora_id": payload.ImpresoraID,
+				}, "regla masiva de impresion por producto guardada")
 				writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "id": id})
 				return
 
@@ -442,6 +465,10 @@ func EmpresaImpresorasHandler(dbEmp *sql.DB) http.HandlerFunc {
 					http.Error(w, err.Error(), http.StatusBadRequest)
 					return
 				}
+				registrarAuditoriaModuloEmpresaNoBloqueante(dbEmp, r, empresaID, "impresoras", "receta_asignada", "empresa_impresoras_recetas", id, http.StatusOK, map[string]interface{}{
+					"receta_id":    payload.RecetaID,
+					"impresora_id": payload.ImpresoraID,
+				}, "regla de impresion por receta guardada")
 				writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "id": id})
 				return
 
@@ -464,6 +491,12 @@ func EmpresaImpresorasHandler(dbEmp *sql.DB) http.HandlerFunc {
 					writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "id": id})
 					return
 				}
+				registrarAuditoriaModuloEmpresaNoBloqueante(dbEmp, r, empresaID, "impresoras", "trabajo_cola_creado", "empresa_impresoras_cola", id, http.StatusOK, map[string]interface{}{
+					"funcionalidad":  item.Funcionalidad,
+					"tipo_documento": item.TipoDocumento,
+					"estacion_id":    item.EstacionID,
+					"impresora_id":   item.ImpresoraID,
+				}, "trabajo de impresion creado en cola")
 				writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "id": id, "trabajo": item})
 				return
 
@@ -521,6 +554,11 @@ func EmpresaImpresorasHandler(dbEmp *sql.DB) http.HandlerFunc {
 					return
 				}
 				item, _ := dbpkg.GetEmpresaImpresoraTrabajoByID(dbEmp, empresaID, payload.TrabajoID)
+				registrarAuditoriaModuloEmpresaNoBloqueante(dbEmp, r, empresaID, "impresoras", "trabajo_cola_estado", "empresa_impresoras_cola", payload.TrabajoID, http.StatusOK, map[string]interface{}{
+					"estado":    payload.Estado,
+					"agente_id": payload.AgenteID,
+					"con_error": strings.TrimSpace(payload.UltimoError) != "",
+				}, "estado de trabajo de impresion actualizado")
 				writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "trabajo": item})
 				return
 
@@ -547,6 +585,7 @@ func EmpresaImpresorasHandler(dbEmp *sql.DB) http.HandlerFunc {
 					return
 				}
 				item, _ := dbpkg.GetEmpresaImpresoraTrabajoByID(dbEmp, empresaID, trabajoID)
+				registrarAuditoriaModuloEmpresaNoBloqueante(dbEmp, r, empresaID, "impresoras", "trabajo_cola_reintentado", "empresa_impresoras_cola", trabajoID, http.StatusOK, nil, "trabajo de impresion marcado para reintento")
 				writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "trabajo": item})
 				return
 
@@ -574,6 +613,7 @@ func EmpresaImpresorasHandler(dbEmp *sql.DB) http.HandlerFunc {
 					http.Error(w, err.Error(), http.StatusBadRequest)
 					return
 				}
+				registrarAuditoriaModuloEmpresaNoBloqueante(dbEmp, r, empresaID, "impresoras", "impresora_desactivada", "empresa_impresoras", impresoraID, http.StatusOK, nil, "impresora desactivada")
 				writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "impresora_id": impresoraID})
 				return
 
@@ -588,6 +628,9 @@ func EmpresaImpresorasHandler(dbEmp *sql.DB) http.HandlerFunc {
 					http.Error(w, "No se pudo eliminar la asignación", http.StatusInternalServerError)
 					return
 				}
+				registrarAuditoriaModuloEmpresaNoBloqueante(dbEmp, r, empresaID, "impresoras", "funcionalidad_eliminada", "empresa_impresoras_funcionalidades", 0, http.StatusOK, map[string]interface{}{
+					"funcionalidad": funcionalidad,
+				}, "regla de impresion por funcionalidad eliminada")
 				writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "funcionalidad": funcionalidad})
 				return
 
@@ -602,6 +645,9 @@ func EmpresaImpresorasHandler(dbEmp *sql.DB) http.HandlerFunc {
 					http.Error(w, "No se pudo eliminar la asignación", http.StatusInternalServerError)
 					return
 				}
+				registrarAuditoriaModuloEmpresaNoBloqueante(dbEmp, r, empresaID, "impresoras", "producto_asignacion_eliminada", "empresa_impresoras_productos", productoID, http.StatusOK, map[string]interface{}{
+					"producto_id": productoID,
+				}, "regla de impresion por producto eliminada")
 				writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "producto_id": productoID})
 				return
 			case "producto_regla":
@@ -616,6 +662,10 @@ func EmpresaImpresorasHandler(dbEmp *sql.DB) http.HandlerFunc {
 					http.Error(w, "No se pudo eliminar la regla", http.StatusInternalServerError)
 					return
 				}
+				registrarAuditoriaModuloEmpresaNoBloqueante(dbEmp, r, empresaID, "impresoras", "regla_producto_eliminada", "empresa_impresoras_productos_reglas", categoriaID, http.StatusOK, map[string]interface{}{
+					"alcance":      alcance,
+					"categoria_id": categoriaID,
+				}, "regla masiva de impresion eliminada")
 				writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "alcance": alcance, "categoria_id": categoriaID})
 				return
 			case "receta":
@@ -629,6 +679,9 @@ func EmpresaImpresorasHandler(dbEmp *sql.DB) http.HandlerFunc {
 					http.Error(w, "No se pudo eliminar la asignación", http.StatusInternalServerError)
 					return
 				}
+				registrarAuditoriaModuloEmpresaNoBloqueante(dbEmp, r, empresaID, "impresoras", "receta_asignacion_eliminada", "empresa_impresoras_recetas", recetaID, http.StatusOK, map[string]interface{}{
+					"receta_id": recetaID,
+				}, "regla de impresion por receta eliminada")
 				writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "receta_id": recetaID})
 				return
 			default:

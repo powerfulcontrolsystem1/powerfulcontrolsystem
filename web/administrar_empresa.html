@@ -5,6 +5,22 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Administrar Empresa</title>
   <link rel="stylesheet" href="/estilos.css">
+  <style>
+    .admin-notification-wrap { position:relative; display:inline-flex; }
+    .admin-notification-btn { position:relative; display:inline-grid; place-items:center; width:38px; height:38px; border-radius:8px; border:1px solid var(--border); background:var(--surface); color:var(--text); cursor:pointer; font-size:1.12rem; }
+    .admin-notification-btn:hover, .admin-notification-btn:focus-visible { outline:2px solid color-mix(in srgb,var(--accent) 30%,transparent); outline-offset:2px; }
+    .admin-notification-badge { position:absolute; top:-7px; right:-7px; min-width:20px; height:20px; padding:0 5px; border-radius:999px; display:none; align-items:center; justify-content:center; background:#ef4444; color:#fff; font-size:.72rem; font-weight:900; line-height:20px; box-shadow:0 0 0 2px var(--bg); }
+    .admin-notification-btn.has-unread .admin-notification-badge { display:flex; }
+    .admin-notification-menu { position:absolute; right:0; top:calc(100% + 8px); z-index:20; width:min(360px, calc(100vw - 28px)); max-height:420px; overflow:auto; padding:10px; border-radius:8px; border:1px solid var(--border); background:var(--card); box-shadow:0 18px 46px rgba(15,23,42,.22); color:var(--text); }
+    .admin-notification-menu[hidden] { display:none; }
+    .admin-notification-head { display:flex; justify-content:space-between; gap:8px; align-items:center; margin:0 0 8px; }
+    .admin-notification-head strong { font-size:.92rem; }
+    .admin-notification-list { display:grid; gap:8px; }
+    .admin-notification-item { width:100%; border:1px solid var(--border); border-radius:8px; padding:9px 10px; background:var(--surface); color:var(--text); text-align:left; cursor:pointer; }
+    .admin-notification-item strong { display:block; font-size:.86rem; line-height:1.25; }
+    .admin-notification-item span { display:block; margin-top:3px; color:var(--muted); font-size:.76rem; line-height:1.25; }
+    .admin-notification-empty { margin:0; color:var(--muted); font-size:.84rem; }
+  </style>
   <script src="/js/service_worker_update.js?v=20260521-admin-mobile-cache-v4"></script>
   <script src="/menu.js"></script>
   <script src="/js/empresa_submenu_context.js?v=20260521-connectivity"></script>
@@ -67,7 +83,6 @@
             <li><a id="linkCodigosDescuento" href="/administrar_empresa/codigos_de_descuento.html" target="contentFrame"><img class="icon" src="/img/gift-card.svg" alt="">Códigos de descuento</a></li>
             <li hidden><a id="linkChatIA" href="/administrar_empresa/chat_con_inteligencia_artificial.html" target="contentFrame"><img class="icon" src="/img/gpt.svg" alt="">Asistente IA</a></li>
             <li hidden><a id="linkCentroIAEmpresarial" href="/administrar_empresa/centro_ia_empresarial.html" target="contentFrame"><img class="icon" src="/img/gpt.svg" alt="">Centro IA empresarial</a></li>
-            <li><a id="linkChatTareas" href="/administrar_empresa/modulo_menu.html?module=chat_tareas" target="contentFrame"><img class="icon" src="/img/network-color.svg" alt="">Chat y tareas</a></li>
           </ul>
         </li>
 
@@ -155,6 +170,21 @@
 
     <main class="admin-content">
       <div class="admin-frame-toolbar" aria-label="Acciones de página">
+        <div class="admin-notification-wrap">
+          <button id="adminNotificationBell" class="admin-notification-btn" type="button" aria-expanded="false" aria-controls="adminNotificationMenu" title="Notificaciones" aria-label="Notificaciones">
+            <span aria-hidden="true">&#128276;</span>
+            <span id="adminNotificationBadge" class="admin-notification-badge">0</span>
+          </button>
+          <div id="adminNotificationMenu" class="admin-notification-menu" hidden>
+            <div class="admin-notification-head">
+              <strong>Buz&oacute;n de usuario</strong>
+              <button id="adminNotificationRefresh" class="btn secondary small" type="button">Actualizar</button>
+            </div>
+            <div id="adminNotificationList" class="admin-notification-list">
+              <p class="admin-notification-empty">Sin mensajes pendientes.</p>
+            </div>
+          </div>
+        </div>
         <button id="adminFavoriteBtn" class="admin-favorite-btn" type="button" aria-pressed="false" title="Agregar a favoritos" aria-label="Agregar página a favoritos">&#9733;</button>
       </div>
       <iframe name="contentFrame" id="contentFrame" src="about:blank" title="Contenido de empresa" class="admin-empresa-frame" allow="geolocation; fullscreen" allowfullscreen></iframe>
@@ -288,6 +318,9 @@
             <button type="button" id="aiChatConvBtn" class="ai-chat-icon-btn" aria-pressed="false" aria-label="Modo conversación" title="Modo conversación"></button>
             <button type="button" id="aiChatMicBtn" class="ai-chat-icon-btn" aria-pressed="false" aria-label="Dictar mensaje" title="Dictar"></button>
             <button type="button" id="aiChatVoiceBtn" class="ai-chat-icon-btn" aria-pressed="false" aria-label="Voz del asistente" title="Leer respuestas"></button>
+            <button type="button" id="aiChatStopBtn" class="ai-chat-icon-btn ai-chat-stop-btn" aria-label="Detener audio y respuesta" title="Detener audio y respuesta">
+              <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="currentColor" d="M6 6h12v12H6z"/></svg>
+            </button>
           </div>
           <div class="ai-chat-controls">
             <label class="ai-chat-control-field" for="aiChatMode">

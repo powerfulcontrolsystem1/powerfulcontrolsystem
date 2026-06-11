@@ -938,6 +938,9 @@ func main() {
 	if err := dbpkg.EnsureEmpresaUsuariosAuthSchema(dbEmpresas); err != nil {
 		log.Fatalf("failed to ensure users auth schema in empresas db: %v", err)
 	}
+	if err := dbpkg.EnsureEmpresaBuzonSchema(dbEmpresas); err != nil {
+		log.Fatalf("failed to ensure empresa buzon schema in empresas db: %v", err)
+	}
 	startupTrace("after_empresa_usuarios_auth_schema")
 	if err := dbpkg.EnsureEmpresaCarritosSchema(dbEmpresas); err != nil {
 		log.Fatalf("failed to ensure carritos schema in empresas db: %v", err)
@@ -1258,6 +1261,7 @@ func main() {
 	http.HandleFunc("/api/empresa/gestion_documental", handlers.WithEmpresaGestionDocumentalPermissions(dbEmpresas, dbSuper, handlers.EmpresaModuloColombiaHandler(dbEmpresas, "gestion_documental")))
 	http.HandleFunc("/api/empresa/contratos_obligaciones", handlers.WithEmpresaContratosObligacionesPermissions(dbEmpresas, dbSuper, handlers.EmpresaModuloColombiaHandler(dbEmpresas, "contratos_obligaciones")))
 	http.HandleFunc("/api/empresa/tickets_ayuda", handlers.WithEmpresaSelfServicePermissions(dbEmpresas, dbSuper, handlers.EmpresaAyudaTicketsHandler(dbEmpresas, dbSuper)))
+	http.HandleFunc("/api/empresa/buzon", handlers.WithEmpresaSelfServicePermissions(dbEmpresas, dbSuper, handlers.EmpresaBuzonHandler(dbEmpresas, dbSuper)))
 	http.HandleFunc("/api/empresa/drogueria_farmacia", handlers.WithEmpresaDrogueriaFarmaciaPermissions(dbEmpresas, dbSuper, handlers.EmpresaModuloColombiaHandler(dbEmpresas, "drogueria_farmacia")))
 	http.HandleFunc("/api/empresa/proveedores", handlers.WithEmpresaComprasPermissions(dbEmpresas, dbSuper, handlers.EmpresaProveedoresHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/importaciones_costeo", handlers.WithEmpresaImportacionesCosteoPermissions(dbEmpresas, dbSuper, handlers.EmpresaImportacionesCosteoHandler(dbEmpresas)))
@@ -1370,6 +1374,7 @@ func main() {
 	http.HandleFunc("/api/empresa/corte_caja/configuracion", handlers.WithEmpresaFinanzasPermissions(dbEmpresas, dbSuper, handlers.EmpresaCorteCajaConfiguracionHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/finanzas/configuracion", handlers.WithEmpresaFinanzasPermissions(dbEmpresas, dbSuper, handlers.EmpresaFinanzasConfiguracionHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/finanzas/periodos", handlers.WithEmpresaFinanzasPermissions(dbEmpresas, dbSuper, handlers.EmpresaFinanzasPeriodosHandler(dbEmpresas)))
+	http.HandleFunc("/api/empresa/finanzas/breb_qr", handlers.WithEmpresaFinanzasPermissions(dbEmpresas, dbSuper, handlers.EmpresaFinanzasBrebQRHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/finanzas/renta_ia", handlers.WithEmpresaFinanzasPermissions(dbEmpresas, dbSuper, handlers.EmpresaFinanzasRentaIAHandler(dbEmpresas, dbSuper)))
 	http.HandleFunc("/api/empresa/finanzas/asientos_contables", handlers.WithEmpresaFinanzasPermissions(dbEmpresas, dbSuper, handlers.EmpresaFinanzasAsientosContablesHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/finanzas/cierres_caja", handlers.WithEmpresaFinanzasPermissions(dbEmpresas, dbSuper, handlers.EmpresaFinanzasCierresCajaHandler(dbEmpresas, dbSuper)))
@@ -1492,6 +1497,7 @@ func main() {
 	http.HandleFunc("/api/empresa/mantenimiento_programado", handlers.WithEmpresaSelfServicePermissions(dbEmpresas, dbSuper, handlers.EmpresaMantenimientoProgramadoHandler(dbSuper)))
 	http.HandleFunc("/super/api/config/onlyoffice", handlers.WithSuperAuditoria(dbSuper, "super_config_onlyoffice", handlers.OnlyOfficeConfigHandler(dbSuper)))
 	http.HandleFunc("/super/api/config/ocr", handlers.WithSuperAuditoria(dbSuper, "super_config_ocr", handlers.OCRConfigHandler(dbSuper)))
+	http.HandleFunc("/super/api/config/empresa_storage", handlers.WithSuperAuditoria(dbSuper, "super_config_empresa_storage", handlers.SuperEmpresaStorageConfigHandler(dbSuper, dbEmpresas)))
 	// Endpoint super para administrar contrato versionado y su historial
 	http.HandleFunc("/super/api/contrato", handlers.SuperContratoHandler(dbSuper))
 	// Endpoint super para monitoreo centralizado de errores del sistema

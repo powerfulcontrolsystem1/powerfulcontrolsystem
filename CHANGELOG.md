@@ -1,3 +1,8 @@
+- 2026-06-11: `Stop chat IA` agrega un boton Stop en el chat flotante para detener audio y abortar respuestas en curso con `AbortController`, evitando que respuestas tardias se muestren despues de cancelar.
+- 2026-06-11: `Auditoria transversal de opciones nuevas` agrega eventos especificos por modulo para Bre-B QR, buzon, tareas, chat empresarial, adjuntos, preferencias transversales e impresoras/cola; amplia filtros de `auditoria.html`, severidad/retencion y el dataset `operativo_modulos_resumen` sin guardar contenidos sensibles ni secretos.
+- 2026-06-11: `Compartir empresa con re-compartir opcional` agrega el check `Permitir que este administrador tambien pueda compartir esta empresa`, guarda `puede_compartir` en invitacion/acceso, habilita el icono solo para accesos autorizados y permite invitar correos no registrados creando una cuenta administrativa pendiente con enlace de registro.
+- 2026-06-11: `Menu visible por empresa` agrega Configuracion > Menu visible para ocultar visualmente modulos del menu empresarial mediante checks guardados en `empresa_estacion_prefs.menu_visual_config`; el filtro se aplica despues de permisos/licencias y no reemplaza seguridad backend.
+- 2026-06-11: `Atajos POS configurables por empresa` agrega mapa editable de F1-F12, ESC, ENTER, CTRL+B, CTRL+D, CTRL+P y ALT+F4 en Configuracion carrito; el carrito ejecuta busqueda de producto/cliente, descuento, cantidad, cobro, impresion, cajon, ayuda, inventario, recuperar/suspender y salida respetando la configuracion guardada por `empresa_id` en `estaciones_config.carrito_ui_global`.
 - 2026-06-10: `Venta a credito desde carrito` agrega el medio `Credito cliente` en venta directa/estaciones, valida cupo activo por empresa y cliente, crea cartera real en `empresa_creditos` con `venta_origen_id`, no suma efectivo a caja y muestra monto/codigo/vencimiento en recibo/factura visual.
 - 2026-06-10: `Carrito cliente fiscal y devolucion real` amplia el cliente rapido del carrito para personas y empresas con datos necesarios para facturacion electronica, permite buscar productos por nombre/codigo, editar cantidad en linea con recalculo real de totales/inventario y convierte `Devolver producto` en eliminacion real de la linea con liberacion de stock reservado.
 - 2026-06-10: `Pago carrito en estaciones` refuerza `Pagar y cerrar carrito` con un manejador delegado para que el cobro funcione aunque la vista de estacion haya sido re-renderizada o decorada con iconos.
@@ -4701,3 +4706,8 @@
 - El carrito permite pagos combinados desde `Detalle del pago`, abonos y pago mixto usando esos medios.
 - Backend acepta los nuevos metodos, exige referencia en tarjetas/transferencias y bloquea medios deshabilitados por empresa o rol.
 - Bre-B queda preparado como medio separado para una conciliacion automatica futura mediante webhook/API bancaria.
+
+2026-06-11 - Finanzas: Pagos Bre-B QR
+- Agrega en Finanzas y cumplimiento la pagina `Pagos Bre-B QR` y su tutorial.
+- Permite configurar QR/cuentas receptoras por empresa y caja, listar pagos Bre-B reales del carrito y registrar pagos bancarios manuales para conciliacion.
+- El endpoint `/api/empresa/finanzas/breb_qr` conserva aislamiento por `empresa_id` y no simula confirmacion bancaria sin webhook/API real.

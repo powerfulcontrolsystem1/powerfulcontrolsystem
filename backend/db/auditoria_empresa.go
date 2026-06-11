@@ -1227,7 +1227,10 @@ func auditAIQuestionFilter(pregunta string) EmpresaAuditoriaEventoFilter {
 		{"carritos", []string{"carritos", "carrito", "cierre de venta", "cerrar venta"}},
 		{"venta_publica", []string{"venta_publica", "venta publica", "ecommerce", "tienda publica"}},
 		{"inventario", []string{"inventario", "stock", "existencias"}},
+		{"productos_import_export", []string{"productos_import_export", "importar productos", "importacion productos", "exportar productos", "plantilla productos"}},
+		{"bodegas_traslados", []string{"bodegas", "bodega", "traslado", "trasladar producto", "transferir bodega"}},
 		{"finanzas", []string{"finanzas", "ingresos", "egresos", "caja", "corte de caja"}},
+		{"breb_qr", []string{"breb", "bre-b", "qr breb", "pago qr", "pagos qr", "transferencia bre"}},
 		{"contabilidad_colombia", []string{"contabilidad_colombia", "contabilidad colombia", "niif", "dian"}},
 		{"clientes", []string{"clientes", "cliente"}},
 		{"crm_unificado", []string{"crm_unificado", "crm", "leads", "seguimientos"}},
@@ -1238,6 +1241,12 @@ func auditAIQuestionFilter(pregunta string) EmpresaAuditoriaEventoFilter {
 		{"auditoria", []string{"auditoria", "auditar", "actividad"}},
 		{"backups", []string{"backups", "backup", "copia", "copias", "respaldo"}},
 		{"documentos_onlyoffice", []string{"documentos_onlyoffice", "onlyoffice", "documentos", "ofimatica"}},
+		{"buzon", []string{"buzon", "buzón", "mensaje interno", "mensajeria interna", "notificacion", "campana"}},
+		{"tareas_buzon", []string{"tareas_buzon", "tarea", "tareas internas", "asignar tarea", "finalizar tarea"}},
+		{"chat_empresarial", []string{"chat empresarial", "chat interno", "chat usuarios"}},
+		{"impresoras", []string{"impresoras", "impresora", "agente local", "cola impresion", "reglas de impresion"}},
+		{"menu_visible", []string{"menu visible", "ocultar modulos", "ocultar modulo", "visibilidad menu"}},
+		{"atajos_pos", []string{"atajos pos", "teclas funcion", "teclado pos", "f1", "f10", "f12"}},
 		{"tickets_ayuda", []string{"tickets_ayuda", "ticket ayuda", "tickets de ayuda", "soporte"}},
 		{"mantenimiento_programado", []string{"mantenimiento_programado", "mantenimiento programado"}},
 		{"licencias", []string{"licencias", "licencia"}},
@@ -1477,9 +1486,9 @@ func resolveAuditoriaSeveridad(modulo, accion, resultado string, codigoHTTP int6
 		return auditoriaSeveridadCritica
 	case resultado == "error" && codigoHTTP >= 400:
 		return auditoriaSeveridadAlta
-	case modulo == "seguridad" || modulo == "auditoria" || modulo == "backups" || modulo == "licencias":
+	case modulo == "seguridad" || modulo == "auditoria" || modulo == "backups" || modulo == "licencias" || modulo == "menu_visible":
 		return auditoriaSeveridadAlta
-	case modulo == "finanzas" || modulo == "facturacion" || modulo == "compras" || modulo == "nomina" || modulo == "documentos_onlyoffice":
+	case modulo == "finanzas" || modulo == "breb_qr" || modulo == "facturacion" || modulo == "compras" || modulo == "nomina" || modulo == "documentos_onlyoffice" || modulo == "buzon" || modulo == "tareas_buzon" || modulo == "chat_empresarial" || modulo == "impresoras" || modulo == "productos_import_export" || modulo == "bodegas_traslados" || modulo == "atajos_pos":
 		return auditoriaSeveridadMedia
 	default:
 		return auditoriaSeveridadBaja
@@ -1519,7 +1528,7 @@ func resolveAuditoriaPoliticaRetencionDias(modulo, severidad string) int64 {
 	}
 
 	switch modulo {
-	case "seguridad", "auditoria", "backups", "licencias":
+	case "seguridad", "auditoria", "backups", "licencias", "menu_visible":
 		switch severidad {
 		case auditoriaSeveridadCritica:
 			return 3650
@@ -1530,7 +1539,7 @@ func resolveAuditoriaPoliticaRetencionDias(modulo, severidad string) int64 {
 		default:
 			return 365
 		}
-	case "finanzas":
+	case "finanzas", "breb_qr":
 		switch severidad {
 		case auditoriaSeveridadCritica:
 			return 3650
@@ -1541,7 +1550,7 @@ func resolveAuditoriaPoliticaRetencionDias(modulo, severidad string) int64 {
 		default:
 			return 365
 		}
-	case "facturacion", "compras", "nomina", "documentos_onlyoffice":
+	case "facturacion", "compras", "nomina", "documentos_onlyoffice", "buzon", "tareas_buzon", "chat_empresarial", "impresoras", "productos_import_export", "bodegas_traslados", "atajos_pos":
 		switch severidad {
 		case auditoriaSeveridadCritica:
 			return 1825

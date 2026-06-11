@@ -425,6 +425,7 @@ var permissionRolesCatalogOrdered = []string{
 	"portero",
 	"servicio_limpieza",
 	"jefe_bodega",
+	"responsable_bodega",
 	"inventario",
 	"compras",
 	"recursos_humanos",
@@ -542,6 +543,7 @@ var permissionPagesCatalogOrdered = []permissionPageRule{
 	{PaginaClave: "linkDeclaracionesTributariasMenu", Modulo: permModuleDeclaracionesTrib, Accion: permActionCreate, Titulo: "Declaraciones tributarias Colombia", Grupo: "Centro financiero y contable"},
 	{PaginaClave: "linkTesoreriaPresupuesto", Modulo: permModuleTesoreria, Accion: permActionCreate, Titulo: "Tesoreria y presupuesto", Grupo: "Centro financiero y contable"},
 	{PaginaClave: "linkBancosPagos", Modulo: permModuleBancosPagos, Accion: permActionCreate, Titulo: "Bancos y pagos masivos", Grupo: "Centro financiero y contable"},
+	{PaginaClave: "linkBrebQR", Modulo: permModuleFinanzas, Accion: permActionCreate, Titulo: "Pagos Bre-B QR", Grupo: "Centro financiero y contable"},
 	{PaginaClave: "linkCobranza", Modulo: permModuleCobranza, Accion: permActionCreate, Titulo: "Gestion de cobranza", Grupo: "Centro financiero y contable"},
 	{PaginaClave: "linkCobranzaMenu", Modulo: permModuleCobranza, Accion: permActionCreate, Titulo: "Gestion de cobranza", Grupo: "Centro financiero y contable"},
 	{PaginaClave: "linkPortalContador", Modulo: permModulePortalContador, Accion: permActionCreate, Titulo: "Portal contador", Grupo: "Centro financiero y contable"},
@@ -2221,8 +2223,10 @@ func normalizePermissionRole(raw string) string {
 		return "servicio_limpieza"
 	case "inventario":
 		return "inventario"
-	case "jefe_bodega", "jefe de bodega", "bodega", "bodeguero", "almacenista":
+	case "jefe_bodega", "jefe de bodega":
 		return "jefe_bodega"
+	case "responsable_bodega", "responsable de bodega", "responsable bodega", "bodega", "bodeguero", "almacenista":
+		return "responsable_bodega"
 	case "compras":
 		return "compras"
 	case "recursos_humanos", "rrhh", "talento_humano", "talento humano":
@@ -2264,6 +2268,8 @@ func permissionRoleDescription(role string) string {
 		return "Ve estaciones y reporta estaciones sucias como limpias, registrando tiempo de aseo sin abrir carrito ni activar ventas."
 	case "jefe_bodega":
 		return "Administra bodegas, existencias, traslados, inventario y control de stock sin operar caja ni ventas."
+	case "responsable_bodega":
+		return "Gestiona la bodega asignada, existencias, traslados y control de stock sin operar caja ni ventas."
 	case "inventario":
 		return "Gestiona productos, servicios, bodegas, traslados, existencias y procesos de inventario autorizados."
 	case "compras":
@@ -2329,9 +2335,9 @@ func roleAllowsModuleAction(role, module, action string) bool {
 	case permModuleInventario:
 		switch action {
 		case permActionRead:
-			return roleIn(role, append(allReadRoles, "vendedor", "recepcion", "jefe_bodega")...)
+			return roleIn(role, append(allReadRoles, "vendedor", "recepcion", "jefe_bodega", "responsable_bodega")...)
 		case permActionCreate, permActionUpdate, permActionApprove:
-			return roleIn(role, "admin_empresa", "supervisor_sucursal", "inventario", "jefe_bodega")
+			return roleIn(role, "admin_empresa", "supervisor_sucursal", "inventario", "jefe_bodega", "responsable_bodega")
 		case permActionDelete:
 			return roleIn(role, "admin_empresa", "supervisor_sucursal", "inventario")
 		}
@@ -2392,7 +2398,7 @@ func roleAllowsModuleAction(role, module, action string) bool {
 	case permModuleCompras:
 		switch action {
 		case permActionRead:
-			return roleIn(role, append(allReadRoles, "jefe_bodega")...)
+			return roleIn(role, append(allReadRoles, "jefe_bodega", "responsable_bodega")...)
 		case permActionCreate, permActionUpdate, permActionApprove:
 			return roleIn(role, "admin_empresa", "supervisor_sucursal", "compras")
 		case permActionDelete:
@@ -2883,9 +2889,9 @@ func buildPermissionPagesCatalogForRoleDynamic(dbSuper *sql.DB, role string, mod
 			rows[idx].Permitido = isAllowedPageForOperationalRole("tecnico_solar", rows[idx].PaginaClave)
 		}
 	}
-	if normalizePermissionRole(role) == "jefe_bodega" {
+	if normalizePermissionRole(role) == "jefe_bodega" || normalizePermissionRole(role) == "responsable_bodega" {
 		for idx := range rows {
-			rows[idx].Permitido = isAllowedPageForOperationalRole("jefe_bodega", rows[idx].PaginaClave)
+			rows[idx].Permitido = isAllowedPageForOperationalRole(normalizePermissionRole(role), rows[idx].PaginaClave)
 		}
 	}
 	if normalizePermissionRole(role) == "recursos_humanos" {
@@ -2898,7 +2904,7 @@ func buildPermissionPagesCatalogForRoleDynamic(dbSuper *sql.DB, role string, mod
 
 func restrictPermissionModuleRowsForOperationalRole(role string, rows []permissionModuleMatrixRow) []permissionModuleMatrixRow {
 	normalizedRole := normalizePermissionRole(role)
-	if normalizedRole != "cajero" && normalizedRole != "portero" && normalizedRole != "contador" && normalizedRole != "empresario" && normalizedRole != "servicio_limpieza" && normalizedRole != "tecnico_solar" && normalizedRole != "jefe_bodega" && normalizedRole != "recursos_humanos" {
+	if normalizedRole != "cajero" && normalizedRole != "portero" && normalizedRole != "contador" && normalizedRole != "empresario" && normalizedRole != "servicio_limpieza" && normalizedRole != "tecnico_solar" && normalizedRole != "jefe_bodega" && normalizedRole != "responsable_bodega" && normalizedRole != "recursos_humanos" {
 		return rows
 	}
 	out := clonePermissionModuleRows(rows)
@@ -2932,7 +2938,7 @@ func restrictPermissionModuleRowsForOperationalRole(role string, rows []permissi
 			if normalizedRole == "tecnico_solar" && row.Modulo == permModuleEnergiaSolar {
 				allowed = action == permActionRead
 			}
-			if normalizedRole == "jefe_bodega" {
+			if normalizedRole == "jefe_bodega" || normalizedRole == "responsable_bodega" {
 				if row.Modulo == permModuleInventario {
 					allowed = action == permActionRead || action == permActionCreate || action == permActionUpdate || action == permActionApprove
 				}
@@ -2964,7 +2970,7 @@ func isAllowedPageForOperationalRole(role, pageKey string) bool {
 		return pageKey == "linkEstaciones"
 	case "tecnico_solar":
 		return pageKey == "linkEnergiaSolar"
-	case "jefe_bodega":
+	case "jefe_bodega", "responsable_bodega":
 		switch pageKey {
 		case "linkProductos", "linkProductosMain", "linkInventarioAvanzado", "linkRecetasProductos", "linkPreciosHistorial", "linkBodegas", "linkCategorias", "linkGeneradorCodigosBarras":
 			return true
@@ -3034,7 +3040,7 @@ func isCajeroCartAuxiliaryAPIRequest(role, requestPath string) bool {
 
 func restrictPermissionPagesForOperationalRole(role string, pages map[string]bool) map[string]bool {
 	normalizedRole := normalizePermissionRole(role)
-	if normalizedRole != "cajero" && normalizedRole != "portero" && normalizedRole != "contador" && normalizedRole != "empresario" && normalizedRole != "servicio_limpieza" && normalizedRole != "tecnico_solar" && normalizedRole != "jefe_bodega" && normalizedRole != "recursos_humanos" {
+	if normalizedRole != "cajero" && normalizedRole != "portero" && normalizedRole != "contador" && normalizedRole != "empresario" && normalizedRole != "servicio_limpieza" && normalizedRole != "tecnico_solar" && normalizedRole != "jefe_bodega" && normalizedRole != "responsable_bodega" && normalizedRole != "recursos_humanos" {
 		return pages
 	}
 	if pages == nil {
@@ -3052,7 +3058,7 @@ func restrictPermissionPagesForOperationalRole(role string, pages map[string]boo
 		pages["linkEstaciones"] = true
 	case "tecnico_solar":
 		pages["linkEnergiaSolar"] = true
-	case "jefe_bodega":
+	case "jefe_bodega", "responsable_bodega":
 		pages["linkProductos"] = true
 		pages["linkProductosMain"] = true
 		pages["linkInventarioAvanzado"] = true

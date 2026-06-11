@@ -76,6 +76,13 @@ func EmpresaEstacionPrefsHandler(dbEmp *sql.DB) http.HandlerFunc {
 				http.Error(w, "No se pudieron guardar preferencias", http.StatusInternalServerError)
 				return
 			}
+			if auditModulo, auditAccion := resolveEstacionPrefAuditModuleAction(p.Clave, p.Valor); auditModulo != "" {
+				registrarAuditoriaModuloEmpresaNoBloqueante(dbEmp, r, empresaID, auditModulo, auditAccion, "empresa_estacion_prefs", id, http.StatusOK, map[string]interface{}{
+					"clave":       p.Clave,
+					"estacion_id": p.EstacionID,
+					"valor_bytes": len([]byte(p.Valor)),
+				}, "preferencia empresarial actualizada")
+			}
 			response := map[string]interface{}{"ok": true, "id": id}
 			if p.EstacionID > 0 && p.Clave == "estacion_estado_sucia" && dbpkg.IsEmpresaEstacionDirtyValue(p.Valor) {
 				stationName := dbpkg.ResolveEmpresaEstacionNombre(dbEmp, empresaID, p.EstacionID)
@@ -104,4 +111,29 @@ func EmpresaEstacionPrefsHandler(dbEmp *sql.DB) http.HandlerFunc {
 		}
 		http.Error(w, "Metodo no permitido", http.StatusMethodNotAllowed)
 	}
+}
+
+func resolveEstacionPrefAuditModuleAction(clave, valor string) (string, string) {
+	key := strings.ToLower(strings.TrimSpace(clave))
+	value := strings.ToLower(strings.TrimSpace(valor))
+	switch key {
+	case "menu_visual_config":
+		return "menu_visible", "configuracion_guardada"
+	case "estaciones_config":
+		switch {
+		case strings.Contains(value, "atajos_pos"):
+			return "atajos_pos", "configuracion_guardada"
+		case strings.Contains(value, "pago_qr") || strings.Contains(value, "breb"):
+			return "breb_qr", "configuracion_guardada"
+		default:
+			return "estaciones", "configuracion_guardada"
+		}
+	case "email_corporativo_config":
+		return "email_corporativo", "configuracion_guardada"
+	default:
+		if strings.HasPrefix(key, "chat_flotante.") {
+			return "centro_ia_empresarial", "preferencia_guardada"
+		}
+	}
+	return "", ""
 }

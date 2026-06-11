@@ -60,6 +60,31 @@
           </div>
         </div>
 
+        <div class="empresa-section mt-12">
+          <div class="empresa-section-header compact">
+            <div>
+              <h3 class="section-heading">Atajos de teclado POS</h3>
+              <p class="form-help mt-0">Configura por empresa las teclas rapidas usadas por cajeros en supermercados, tiendas y puntos de venta.</p>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-col">
+              <label class="form-help" style="display:flex;align-items:center;gap:8px;">
+                <input id="carritoCfgAtajosPOSEnabled" type="checkbox" checked>
+                Activar atajos de teclado en el carrito
+              </label>
+            </div>
+            <div class="form-col">
+              <label class="form-help" style="display:flex;align-items:center;gap:8px;">
+                <input id="carritoCfgAtajosPOSAyuda" type="checkbox" checked>
+                Mostrar ayuda de atajos con F1
+              </label>
+            </div>
+          </div>
+          <div id="carritoCfgAtajosPOSGrid" class="form-row" style="align-items:stretch;"></div>
+          <p class="form-help mt-0">ENTER solo agrega producto cuando el foco esta en el lector/codigo o cuando no estas escribiendo en otro campo. ALT+F4 sale del carrito hacia el panel del sistema si el navegador permite capturar la tecla.</p>
+        </div>
+
         <div class="empresa-section mt-12 pos-touch-config-card">
           <div class="form-row">
             <div class="form-col">
@@ -607,6 +632,58 @@
       return parsed;
     }
 
+    const POS_SHORTCUT_KEY_OPTIONS = [
+      '', 'F1', 'F2', 'F3', 'F4', 'F5', 'F6', 'F7', 'F8', 'F9', 'F10', 'F11', 'F12',
+      'ESC', 'ENTER', 'CTRL+B', 'CTRL+D', 'CTRL+P', 'ALT+F4'
+    ];
+
+    const POS_SHORTCUT_DEFS = [
+      { key: 'ayuda', label: 'Ayuda del sistema', description: 'Abre una guia corta de atajos y acciones.', defaultKey: 'F1' },
+      { key: 'buscar_producto', label: 'Buscar producto', description: 'Abre el buscador o enfoca el lector de codigo.', defaultKey: 'F2' },
+      { key: 'buscar_cliente', label: 'Buscar cliente', description: 'Enfoca la busqueda del cliente del carrito.', defaultKey: 'F3' },
+      { key: 'descuento', label: 'Aplicar descuento', description: 'Abre la seccion de descuentos del cobro.', defaultKey: 'F4' },
+      { key: 'cambiar_cantidad', label: 'Cambiar cantidad', description: 'Enfoca cantidad del producto agregado o del lector.', defaultKey: 'F5' },
+      { key: 'modificar_precio', label: 'Modificar precio', description: 'Enfoca precio unitario del item segun permisos.', defaultKey: 'F6' },
+      { key: 'suspender_venta', label: 'Suspender venta', description: 'Deja la cuenta abierta para recuperarla despues.', defaultKey: 'F7' },
+      { key: 'recuperar_venta', label: 'Recuperar venta', description: 'Recarga la cuenta activa de la estacion o venta directa.', defaultKey: 'F8' },
+      { key: 'verificar_inventario', label: 'Verificar inventario', description: 'Consulta inventario desde codigo o buscador.', defaultKey: 'F9' },
+      { key: 'cobrar', label: 'Cobrar / finalizar', description: 'Ejecuta Pagar y cerrar carrito.', defaultKey: 'F10' },
+      { key: 'abrir_cajon', label: 'Abrir cajon de dinero', description: 'Solicita apertura manual si la caja lo permite.', defaultKey: 'F11' },
+      { key: 'imprimir', label: 'Imprimir factura o duplicado', description: 'Imprime el comprobante visible o duplicado disponible.', defaultKey: 'F12' },
+      { key: 'cancelar_operacion', label: 'Cancelar operacion', description: 'Limpia el foco actual o cancela la operacion visible.', defaultKey: 'ESC' },
+      { key: 'agregar_producto', label: 'Agregar producto', description: 'Agrega el codigo digitado en el lector.', defaultKey: 'ENTER' },
+      { key: 'descuento_combo', label: 'Descuento alterno', description: 'Atajo combinado para abrir descuentos.', defaultKey: 'CTRL+D' },
+      { key: 'imprimir_combo', label: 'Imprimir alterno', description: 'Atajo combinado para imprimir.', defaultKey: 'CTRL+P' },
+      { key: 'buscar_producto_combo', label: 'Buscar producto alterno', description: 'Atajo combinado para buscar producto.', defaultKey: 'CTRL+B' },
+      { key: 'salir_sistema', label: 'Salir del carrito', description: 'Regresa al panel operativo del sistema.', defaultKey: 'ALT+F4' }
+    ];
+
+    function defaultPosShortcuts() {
+      const out = {};
+      POS_SHORTCUT_DEFS.forEach(function(def) {
+        out[def.key] = def.defaultKey;
+      });
+      return out;
+    }
+
+    function normalizeShortcutKey(value, fallback) {
+      const raw = String(value == null ? '' : value).trim().toUpperCase().replace(/\s+/g, '');
+      if (!raw) return '';
+      const normalized = raw === 'ESCAPE' ? 'ESC' : raw;
+      if (POS_SHORTCUT_KEY_OPTIONS.indexOf(normalized) >= 0) return normalized;
+      return fallback || '';
+    }
+
+    function normalizePosShortcuts(raw) {
+      const src = raw && typeof raw === 'object' ? raw : {};
+      const defaults = defaultPosShortcuts();
+      const out = {};
+      POS_SHORTCUT_DEFS.forEach(function(def) {
+        out[def.key] = normalizeShortcutKey(src[def.key], defaults[def.key]);
+      });
+      return out;
+    }
+
     function defaultUnifiedCartConfig() {
       return {
         modo_pantalla_tactil: false,
@@ -670,6 +747,9 @@
         pago_qr_payload_oficial: '',
         pago_qr_instrucciones: '',
         pago_qr_cuentas: [],
+        atajos_pos_habilitados: true,
+        atajos_pos_mostrar_ayuda: true,
+        atajos_pos: defaultPosShortcuts(),
         botones_pitido_pc: false,
         botones_pitido_movil: false,
         botones_vibracion_pc: false,
@@ -764,6 +844,9 @@
         pago_qr_payload_oficial: normalizeText(src.pago_qr_payload_oficial || ''),
         pago_qr_instrucciones: normalizeText(src.pago_qr_instrucciones || ''),
         pago_qr_cuentas: normalizeQrAccounts(src.pago_qr_cuentas || src.cuentas_qr || src.qr_accounts, src),
+        atajos_pos_habilitados: src.atajos_pos_habilitados === undefined ? base.atajos_pos_habilitados : !!src.atajos_pos_habilitados,
+        atajos_pos_mostrar_ayuda: src.atajos_pos_mostrar_ayuda === undefined ? base.atajos_pos_mostrar_ayuda : !!src.atajos_pos_mostrar_ayuda,
+        atajos_pos: normalizePosShortcuts(src.atajos_pos || src.pos_shortcuts || src.atajos_teclado_pos),
         botones_pitido_pc: src.botones_pitido_pc === undefined ? base.botones_pitido_pc : !!src.botones_pitido_pc,
         botones_pitido_movil: src.botones_pitido_movil === undefined ? base.botones_pitido_movil : !!src.botones_pitido_movil,
         botones_vibracion_pc: src.botones_vibracion_pc === undefined ? base.botones_vibracion_pc : !!src.botones_vibracion_pc,
@@ -959,6 +1042,49 @@
       renderQrAccounts(current);
     }
 
+    function renderPosShortcutControls(cfg) {
+      const normalized = normalizeUnifiedCartConfig(cfg || {});
+      const box = document.getElementById('carritoCfgAtajosPOSGrid');
+      if (!box) return;
+      box.innerHTML = '';
+      POS_SHORTCUT_DEFS.forEach(function(def) {
+        const col = document.createElement('div');
+        col.className = 'form-col';
+        col.style.minWidth = '220px';
+        const label = document.createElement('label');
+        label.className = 'form-label';
+        label.setAttribute('for', 'carritoCfgAtajoPOS_' + def.key);
+        label.textContent = def.label;
+        const select = document.createElement('select');
+        select.id = 'carritoCfgAtajoPOS_' + def.key;
+        select.className = 'form-input';
+        select.setAttribute('data-pos-shortcut-key', def.key);
+        POS_SHORTCUT_KEY_OPTIONS.forEach(function(optionValue) {
+          const option = document.createElement('option');
+          option.value = optionValue;
+          option.textContent = optionValue || 'Sin atajo';
+          select.appendChild(option);
+        });
+        select.value = normalized.atajos_pos[def.key] || '';
+        const help = document.createElement('div');
+        help.className = 'form-help';
+        help.textContent = def.description;
+        col.appendChild(label);
+        col.appendChild(select);
+        col.appendChild(help);
+        box.appendChild(col);
+      });
+    }
+
+    function collectPosShortcutConfig() {
+      const out = {};
+      POS_SHORTCUT_DEFS.forEach(function(def) {
+        const el = document.getElementById('carritoCfgAtajoPOS_' + def.key);
+        out[def.key] = normalizeShortcutKey(el ? el.value : '', '');
+      });
+      return normalizePosShortcuts(out);
+    }
+
     function applyConfig(cfg) {
       const normalized = normalizeUnifiedCartConfig(cfg);
       document.getElementById('carritoCfgModoTactil').checked = !!normalized.modo_pantalla_tactil;
@@ -966,6 +1092,9 @@
       document.getElementById('carritoCfgPitidoMovil').checked = !!normalized.botones_pitido_movil;
       document.getElementById('carritoCfgVibracionPc').checked = !!normalized.botones_vibracion_pc;
       document.getElementById('carritoCfgVibracionMovil').checked = !!normalized.botones_vibracion_movil;
+      document.getElementById('carritoCfgAtajosPOSEnabled').checked = !!normalized.atajos_pos_habilitados;
+      document.getElementById('carritoCfgAtajosPOSAyuda').checked = !!normalized.atajos_pos_mostrar_ayuda;
+      renderPosShortcutControls(normalized);
       document.getElementById('carritoCfgBuscarProductos').checked = !!normalized.mostrar_boton_buscar_productos;
       document.getElementById('carritoCfgBusquedaCatalogo').checked = !!normalized.mostrar_busqueda_catalogo;
       document.getElementById('carritoCfgCodigoManual').checked = !!normalized.mostrar_codigo_manual_item;
@@ -1034,6 +1163,8 @@
           'carritoCfgPitidoMovil',
           'carritoCfgVibracionPc',
           'carritoCfgVibracionMovil',
+          'carritoCfgAtajosPOSEnabled',
+          'carritoCfgAtajosPOSAyuda',
           'carritoCfgBusquedaCatalogo',
           'carritoCfgCodigoManual',
           'carritoCfgObservaciones',
@@ -1109,6 +1240,9 @@
           botones_pitido_movil: document.getElementById('carritoCfgPitidoMovil').checked,
           botones_vibracion_pc: document.getElementById('carritoCfgVibracionPc').checked,
           botones_vibracion_movil: document.getElementById('carritoCfgVibracionMovil').checked,
+          atajos_pos_habilitados: document.getElementById('carritoCfgAtajosPOSEnabled').checked,
+          atajos_pos_mostrar_ayuda: document.getElementById('carritoCfgAtajosPOSAyuda').checked,
+          atajos_pos: collectPosShortcutConfig(),
           mostrar_boton_buscar_productos: document.getElementById('carritoCfgBuscarProductos').checked,
           mostrar_busqueda_catalogo: document.getElementById('carritoCfgBusquedaCatalogo').checked,
           mostrar_codigo_manual_item: document.getElementById('carritoCfgCodigoManual').checked,

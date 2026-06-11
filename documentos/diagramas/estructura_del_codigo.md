@@ -1,3 +1,24 @@
+## Actualizacion 2026-06-11 - Buzon, tareas y chat empresarial
+
+- `backend/db/empresa_buzon.go`
+  - Define tablas `empresa_buzon_mensajes`, `empresa_buzon_adjuntos` y
+    `empresa_chat_mensajes`, con aislamiento por `empresa_id`, lectura/no
+    lectura, tareas y adjuntos.
+- `backend/handlers/empresa_buzon.go`
+  - Expone `/api/empresa/buzon` para resumen, usuarios, mensajes, tareas,
+    adjuntos multipart, chat y storage; expone
+    `/super/api/config/empresa_storage` para cuota y limpieza.
+- `backend/handlers/productos.go`
+  - El traslado de bodegas llama al buzon para notificar al responsable de la
+    bodega destino o roles de inventario/administracion.
+- `web/administrar_empresa.html`, `web/js/administrar_empresa.js` y
+  `web/administrar_empresa/panel.html`
+  - Integran campana, buzon, tareas con evidencia, audio/fotos/adjuntos y chat
+    interno; el modulo viejo `Chat y tareas` deja de mostrarse en el menu.
+- `web/super/configuracion_avanzada.html`
+  - Agrega tarjeta `Almacenamiento por empresa` para limite, alerta, bloqueo y
+    limpieza.
+
 ## Actualizacion 2026-06-10 - Snapshot completo VPS
 
 - `backend/db/super_vps_snapshots.go`

@@ -1,3 +1,36 @@
+2026-06-11 - Stop de audio y respuesta en chat IA
+- `web/js/ai_chat_drawer.js`: agrega `aiChatStopBtn`, `AbortController`, secuencia de respuesta activa y manejo de cancelacion para detener voz, streaming y respuestas tardias del chat IA.
+- `web/administrar_empresa.html`, `web/super_administrador.html`, `web/seleccionar_empresa.html`, `web/venta_publica.html`: incorporan el boton Stop en la barra de voz/conversacion del chat.
+- `web/estilos.css`: agrega estado visual activo para el boton Stop durante una respuesta en curso.
+- `documentos/historial_de_cambios`, `CHANGELOG.md`, `documentos/CHANGELOG.md`, `documentos/mapa_modulos.md` y `documentos/flujos_operativos.md`: documentan el flujo de cancelacion del chat IA.
+
+2026-06-11 - Auditoria transversal de opciones nuevas
+- `backend/handlers/auditoria_modulos_especificos.go`: helper comun para registrar eventos de auditoria empresarial por modulo real sin duplicar metadata sensible.
+- `backend/handlers/finanzas_breb_qr.go`: registra auditoria especifica `breb_qr` al guardar configuracion y registrar pagos manuales.
+- `backend/handlers/empresa_buzon.go`: registra eventos de `buzon`, `tareas_buzon` y `chat_empresarial` para mensajes, tareas, adjuntos y lectura.
+- `backend/handlers/empresa_estacion_prefs.go`: clasifica auditoria de `menu_visible`, `atajos_pos`, `breb_qr`, `estaciones` y `email_corporativo` segun la clave guardada.
+- `backend/handlers/empresa_impresoras.go`: registra auditoria de impresoras, reglas, cola, reintentos y desactivaciones por empresa.
+- `backend/db/auditoria_empresa.go`, `backend/handlers/reportes.go` y `web/administrar_empresa/auditoria.html`: agregan filtros, severidad, retencion y resumen operativo para modulos nuevos.
+
+2026-06-11 - Compartir empresa con re-compartir opcional
+- `backend/db/empresa_admin_compartida.go`: agrega `puede_compartir` a invitaciones y accesos compartidos, con migracion ligera, scans, inserciones y actualizaciones.
+- `backend/db/db.go`: expone `shared_puede_compartir` en la respuesta de empresa para que el selector conozca el permiso efectivo.
+- `backend/handlers/empresa_compartida_handlers.go`: permite gestionar invitaciones a propietarios, super administradores y accesos compartidos autorizados; crea cuenta administrativa pendiente si el correo invitado no existe.
+- `backend/handlers/empresa_compartida_handlers_test.go`: actualiza cobertura del permiso para re-compartir.
+- `web/js/seleccionar_empresa.js`: agrega check de re-compartir en la tarjeta y envia `puede_compartir`.
+- `web/estilos.css`: estilos del nuevo check y texto de ayuda en el panel de compartir.
+
+2026-06-11 - Menu visible por empresa
+- `web/administrar_empresa/configuracion/menu_visual.html`: nueva pagina empresarial para elegir con checks que modulos aparecen en el menu; guarda `menu_visual_config`.
+- `web/administrar_empresa/configuracion_menu.html`: agrega acceso `Menu visible` y alias `open=menu_visible`.
+- `web/js/administrar_empresa.js`: carga `menu_visual_config`, aplica ocultamiento visual despues de permisos/roles y escucha actualizaciones desde el iframe de configuracion.
+
+2026-06-11 - Atajos POS configurables por empresa
+- `backend/handlers/empresa_preconfiguracion.go`: agrega defaults `atajos_pos_habilitados`, `atajos_pos_mostrar_ayuda` y mapa `atajos_pos` dentro de la preconfiguracion global del carrito.
+- `backend/handlers/empresa_preconfiguracion_carrito_test.go`: valida que el preset incluya F1-F12, ESC, ENTER, CTRL+B, CTRL+D, CTRL+P y ALT+F4.
+- `web/administrar_empresa/configuracion_carrito_de_compra_empresa.html`: agrega tarjeta de configuracion por empresa para activar y reasignar atajos POS.
+- `web/administrar_empresa/carrito_de_compras.html`: ejecuta acciones POS del carrito segun el mapa empresarial, sin agregar endpoints.
+
 2026-06-10 - Carrito cliente fiscal y devolucion real
 - `web/administrar_empresa/carrito_de_compras.html`: amplia el panel rapido de clientes con datos fiscales para facturacion electronica, permite editar cantidad en la tabla de productos agregados, selecciona el valor completo al enfocar cantidad y convierte `Devolver producto` en eliminacion real del item con confirmacion integrada y liberacion de inventario.
 - `documentos/mapa_modulos.md`: registra el alcance de carrito/venta directa para cliente fiscal, busqueda por codigo/nombre, cantidad editable y devolucion de inventario.
@@ -11220,3 +11253,48 @@ backend/handlers/user_config.go - Controlador que expone /api/user/configuracion
 	- agrega seleccion de `Credito cliente`, consulta de cupo visible, creacion rapida de cupo y texto de credito en recibo/factura visual.
 - `web/administrar_empresa/configuracion_carrito_de_compra_empresa.html`:
 	- agrega check por empresa para activar o desactivar `Credito cliente / cupo cartera`.
+
+2026-06-11 - Buzon, tareas, chat y almacenamiento empresarial
+- `backend/db/empresa_buzon.go`:
+	- nuevo esquema PostgreSQL para `empresa_buzon_mensajes`, `empresa_buzon_adjuntos` y `empresa_chat_mensajes`; CRUD de mensajes, no leidos, adjuntos, chat, cierre de tareas y notificacion por traslado de bodega.
+- `backend/handlers/empresa_buzon.go`:
+	- nuevo endpoint `/api/empresa/buzon` para resumen, mensajes, usuarios, chat, adjuntos multipart, tareas y storage; nuevo `/super/api/config/empresa_storage` para cuotas, uso y limpieza.
+- `backend/handlers/productos.go`:
+	- el traslado entre bodegas crea notificacion visible en el buzon del responsable o roles de inventario/administracion.
+- `backend/main.go`:
+	- registra el esquema y rutas de buzon/storage.
+- `web/administrar_empresa.html` y `web/js/administrar_empresa.js`:
+	- campana de notificaciones con contador, dropdown de mensajes y navegacion al recurso relacionado; se retira del menu visible el modulo antiguo `Chat y tareas`.
+- `web/administrar_empresa/panel.html`:
+	- tarjetas de buzon de usuario, asignacion/cierre de tareas con evidencia, adjuntos/fotos/audio y chat general de empresa.
+- `web/super/configuracion_avanzada.html`:
+	- tarjeta `Almacenamiento por empresa` para cuota, alerta, maximo por archivo, bloqueo y limpieza.
+
+2026-06-11 - Rol Responsable de bodega
+- `backend/db/tipo_empresa_preconfiguracion.go`:
+	- agrega `responsable_bodega` a roles base por tipo de empresa y define permisos iniciales de inventario/compras.
+- `backend/handlers/empresa_permisos.go`:
+	- normaliza alias del nuevo rol, publica descripcion y restringe matriz/paginas a inventario y bodegas.
+- `backend/db/empresa_buzon.go`:
+	- incluye `responsable_bodega` como destinatario operativo de notificaciones de traslado de bodega.
+- `web/js/administrar_empresa.js` y `web/administrar_empresa/administrar_usuarios.html`:
+	- reconocen el rol en el menu y en el selector/descripcion de usuarios.
+- `web/ayuda/ayuda.html`:
+	- agrega ayuda visible para `responsable_bodega`.
+
+2026-06-11 - Productos: importacion/exportacion
+- `backend/handlers/productos.go`:
+	- agrega exportacion de productos por empresa a CSV, JSON y HTML imprimible carta/POS desde `GET /api/empresa/productos?action=exportar`.
+	- agrega plantilla CSV desde `GET /api/empresa/productos?action=plantilla_importacion`.
+	- agrega importacion CSV multipart desde `POST /api/empresa/productos?action=importar`, con validacion de duplicados, categoria, bodega, campos obligatorios y resumen por fila.
+- `backend/handlers/productos_import_export_test.go`:
+	- cubre normalizacion de encabezados CSV, parseo numerico y generacion de CSV/HTML POS.
+- `web/administrar_empresa/administrar_productos.html`:
+	- agrega tarjeta superior en la seccion Productos para seleccionar formato/tamano, descargar plantilla, subir CSV y ver resultado de importacion.
+
+2026-06-11 - Finanzas: Pagos Bre-B QR
+- `backend/handlers/finanzas_breb_qr.go`: nuevo endpoint empresarial `/api/empresa/finanzas/breb_qr` para leer/guardar configuracion Bre-B QR por empresa, listar pagos reales de carritos/abonos y registrar pagos bancarios manuales en conciliacion.
+- `backend/main.go`: registra la ruta Bre-B QR bajo `WithEmpresaFinanzasPermissions`.
+- `web/administrar_empresa/finanzas_breb_qr.html`: nueva pagina financiera para configurar cuentas receptoras, payload QR, varias cajas, registro manual y consulta de pagos Bre-B.
+- `web/administrar_empresa/finanzas_breb_qr_tutorial.html`: guia operativa para llaves, QR estatico/dinamico, varias cajas y conciliacion.
+- `web/administrar_empresa/finanzas_menu.html` y `web/js/administrar_empresa.js`: agregan el enlace `Pagos Bre-B QR` al centro financiero y a la matriz visible de permisos.

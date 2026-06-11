@@ -908,8 +908,16 @@
     return getEmpresaAccessSource(empresa) === "owner";
   }
 
+  function selectorTruthy(value) {
+    return value === true || value === 1 || value === "1" || String(value || "").toLowerCase() === "true";
+  }
+
+  function canSharedEmpresaReshare(empresa) {
+    return isSharedEmpresa(empresa) && selectorTruthy(empresa && (empresa.shared_puede_compartir || empresa.puede_compartir));
+  }
+
   function canShareEmpresa(empresa) {
-    return isOwnerEmpresa(empresa) || isPrincipalSuperAccount(currentAccount);
+    return isOwnerEmpresa(empresa) || isPrincipalSuperAccount(currentAccount) || canSharedEmpresaReshare(empresa);
   }
 
   function navigateToEmpresa(empresa, hasLicense) {
@@ -1001,7 +1009,7 @@
   function buildEmpresaShareButton(empresa) {
     var disabled = !canShareEmpresa(empresa);
     var title = disabled
-      ? "Solo el administrador propietario o un super administrador puede compartir esta empresa"
+      ? "Solo el propietario, super administrador o administrador compartido autorizado puede compartir esta empresa"
       : "Compartir empresa con otro administrador (correo)";
     return '' +
       '<button type="button" class="empresa-card-icon-action empresa-share-toggle' + (disabled ? ' is-disabled' : '') + '" data-empresa-id="' + escapeHtml(String(empresa.id || '')) + '" data-share-disabled="' + (disabled ? '1' : '0') + '" aria-label="' + escapeHtml(title) + '" title="' + escapeHtml(title) + '">' +
@@ -1018,7 +1026,7 @@
     if (!canShareEmpresa(empresa)) {
       return '' +
         '<div class="empresa-card-share-panel" data-empresa-id="' + escapeHtml(String(empresa.id || '')) + '" hidden>' +
-        '<div class="empresa-card-share-feedback is-error">Solo el administrador propietario o un super administrador puede enviar nuevas invitaciones para esta empresa.</div>' +
+        '<div class="empresa-card-share-feedback is-error">Solo el propietario, super administrador o administrador compartido autorizado puede enviar nuevas invitaciones para esta empresa.</div>' +
         '</div>';
     }
     return '' +
@@ -1036,6 +1044,11 @@
       '<option value="modulos">Solo ciertos modulos</option>' +
       '</select>' +
       '<div class="empresa-card-share-modules" data-share-modules hidden>' + buildEmpresaCardShareModules() + '</div>' +
+      '<label class="empresa-card-share-option">' +
+      '<input type="checkbox" data-share-can-reshare>' +
+      '<span>Permitir que este administrador tambien pueda compartir esta empresa</span>' +
+      '</label>' +
+      '<div class="empresa-card-share-hint">Si lo activas, el nuevo administrador podra invitar a otros administradores a esta misma empresa. Si queda apagado, solo tendra el acceso asignado.</div>' +
       '<div class="empresa-card-share-feedback" data-share-feedback role="status"></div>' +
       '</form>' +
       '</div>';
@@ -1156,9 +1169,11 @@
     }
     var emailInput = form.querySelector('[data-share-email]');
     var levelInput = form.querySelector('[data-share-level]');
+    var reshareInput = form.querySelector('[data-share-can-reshare]');
     var email = String(emailInput && emailInput.value ? emailInput.value : '').trim();
     var nivelAcceso = normalizeEmpresaShareNivel(levelInput && levelInput.value);
     var modulosPermitidos = nivelAcceso === 'modulos' ? getEmpresaCardSelectedShareModules(form) : [];
+    var puedeCompartir = !!(reshareInput && reshareInput.checked);
     if (!email) {
       setEmpresaShareFeedback(empresaId, 'Debes escribir el correo del otro administrador.', true);
       return;
@@ -1177,7 +1192,8 @@
           email: email,
           mensaje: '',
           nivel_acceso: nivelAcceso,
-          modulos_permitidos: modulosPermitidos
+          modulos_permitidos: modulosPermitidos,
+          puede_compartir: puedeCompartir
         })
       });
       var message = data && data.message ? data.message : 'Invitación enviada correctamente.';
@@ -1190,6 +1206,7 @@
       Array.prototype.forEach.call(form.querySelectorAll('[data-share-module]'), function (input) {
         input.checked = false;
       });
+      if (reshareInput) reshareInput.checked = false;
       updateEmpresaCardShareScope(form.closest('.empresa-card-share-panel'));
     } catch (err) {
       var payload = err && err.payload ? err.payload : null;
@@ -2274,7 +2291,7 @@
       var disabled = shareBtn.getAttribute('data-share-disabled') === '1';
       var empresaIdShare = parseInt(shareBtn.getAttribute('data-empresa-id') || '0', 10);
       if (disabled) {
-        setShareNotice('Solo el administrador propietario puede enviar invitaciones para una empresa compartida.', true);
+        setShareNotice('Solo el propietario, super administrador o administrador compartido autorizado puede enviar invitaciones.', true);
         return;
       }
       if (empresaIdShare > 0) {

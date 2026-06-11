@@ -1,0 +1,317 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Pagos Bre-B QR</title>
+  <link rel="stylesheet" href="/estilos.css">
+  <script src="/js/empresa_submenu_context.js"></script>
+  <style>
+    .breb-page{display:grid;gap:14px;padding:14px;max-width:1280px;margin:0 auto}
+    .breb-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;border:1px solid var(--border);border-radius:8px;background:var(--surface);padding:14px}
+    .breb-head h1{margin:0;color:var(--text);font-size:1.25rem;line-height:1.2}
+    .breb-head p{margin:4px 0 0;color:var(--muted);font-size:.9rem;line-height:1.35}
+    .breb-actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+    .breb-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+    .breb-metric{border:1px solid var(--border);border-radius:8px;background:var(--surface-soft);padding:12px;min-height:82px}
+    .breb-metric span{display:block;color:var(--muted);font-size:.72rem;text-transform:uppercase;font-weight:850}
+    .breb-metric strong{display:block;margin-top:6px;color:var(--text);font-size:1.15rem}
+    .breb-section{border:1px solid var(--border);border-radius:8px;background:var(--surface);padding:14px;display:grid;gap:12px}
+    .breb-section-header{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
+    .breb-section h2{margin:0;color:var(--text);font-size:1.05rem}
+    .breb-section p{margin:3px 0 0;color:var(--muted);font-size:.86rem;line-height:1.35}
+    .breb-form-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+    .breb-account-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;align-items:end;border-top:1px solid var(--border);padding-top:10px}
+    .breb-account-row:first-child{border-top:0;padding-top:0}
+    .breb-status{padding:8px 10px;border-radius:8px;background:var(--surface-soft);border:1px solid var(--border);color:var(--muted);font-size:.86rem}
+    .breb-status.ok{border-color:#15803d;color:#166534;background:rgba(34,197,94,.12)}
+    .breb-status.err{border-color:#b91c1c;color:#991b1b;background:rgba(239,68,68,.12)}
+    .breb-table-wrap{overflow:auto;border:1px solid var(--border);border-radius:8px}
+    .breb-table{width:100%;border-collapse:collapse;background:var(--surface)}
+    .breb-table th,.breb-table td{padding:9px 10px;border-bottom:1px solid var(--border);text-align:left;font-size:.84rem;vertical-align:top}
+    .breb-table th{color:var(--muted);font-size:.72rem;text-transform:uppercase;white-space:nowrap;background:var(--surface-soft)}
+    .breb-table tr:last-child td{border-bottom:0}
+    .breb-pill{display:inline-flex;align-items:center;border:1px solid var(--border);border-radius:999px;padding:3px 8px;font-size:.72rem;color:var(--muted);background:var(--surface-soft);white-space:nowrap}
+    @media(max-width:1100px){.breb-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.breb-form-grid{grid-template-columns:1fr 1fr}.breb-account-row{grid-template-columns:1fr 1fr}}
+    @media(max-width:720px){.breb-page{padding:10px}.breb-head,.breb-section-header{display:grid}.breb-grid,.breb-form-grid{grid-template-columns:1fr}.breb-account-row{grid-template-columns:1fr}}
+  </style>
+</head>
+<body class="admin-empresa-shell">
+  <main class="breb-page">
+    <section class="breb-head">
+      <div>
+        <h1>Pagos Bre-B QR</h1>
+        <p>Configuracion empresarial, cuentas receptoras por caja y trazabilidad de pagos inmediatos recibidos por QR.</p>
+      </div>
+      <div class="breb-actions">
+        <a id="brebTutorialLink" class="btn secondary" href="/administrar_empresa/finanzas_breb_qr_tutorial.html">Tutorial</a>
+        <button id="brebReloadBtn" type="button" class="btn secondary">Actualizar</button>
+      </div>
+    </section>
+
+    <section class="breb-grid" aria-label="Resumen Bre-B">
+      <div class="breb-metric"><span>QR en carrito</span><strong id="metricEnabled">-</strong></div>
+      <div class="breb-metric"><span>Pagos detectados</span><strong id="metricCount">0</strong></div>
+      <div class="breb-metric"><span>Total registrado</span><strong id="metricTotal">$0</strong></div>
+      <div class="breb-metric"><span>Pendientes</span><strong id="metricPending">0</strong></div>
+    </section>
+
+    <section class="breb-section">
+      <div class="breb-section-header">
+        <div>
+          <h2>Configuracion Bre-B por empresa</h2>
+          <p>Activa Bre-B en el carrito, define si se permiten pagos combinados y registra las cuentas/llaves receptoras. Para varias cajas, usa una cuenta o referencia distinta por caja.</p>
+        </div>
+        <button id="brebSaveConfigBtn" type="button" class="btn primary">Guardar configuracion</button>
+      </div>
+      <div class="breb-form-grid">
+        <label class="form-help"><input id="cfgPagoQR" type="checkbox"> Mostrar pago por QR en carrito</label>
+        <label class="form-help"><input id="cfgBrebEnabled" type="checkbox"> Habilitar medio Transferencia Bre-B</label>
+        <label class="form-help"><input id="cfgMixed" type="checkbox"> Permitir pagos combinados</label>
+        <label class="form-help"><input id="cfgRequireProof" type="checkbox"> Pedir comprobante o referencia al cajero</label>
+        <label class="form-help"><input id="cfgAutoReconcile" type="checkbox"> Conciliacion automatica cuando exista webhook/API</label>
+        <label class="form-help"><input id="cfgCuentaCaja" type="checkbox"> Preferir cuenta/referencia por caja</label>
+      </div>
+      <div class="breb-form-grid">
+        <div class="form-col">
+          <label class="form-label" for="cfgPrefix">Prefijo de referencia</label>
+          <input id="cfgPrefix" class="form-input" maxlength="12" placeholder="BREB">
+        </div>
+        <div class="form-col">
+          <label class="form-label" for="cfgAlertMin">Alerta pendientes (minutos)</label>
+          <input id="cfgAlertMin" class="form-input" type="number" min="0" step="1">
+        </div>
+        <div class="form-col">
+          <label class="form-label" for="cfgWebhook">Webhook/API bancaria</label>
+          <input id="cfgWebhook" class="form-input" placeholder="https://...">
+        </div>
+      </div>
+      <div class="form-col">
+        <label class="form-label" for="cfgInstructions">Instrucciones para cajero</label>
+        <textarea id="cfgInstructions" class="form-input" rows="2" placeholder="Verificar abono antes de cerrar carrito."></textarea>
+      </div>
+      <div class="breb-section-header">
+        <div>
+          <h2>Cuentas receptoras y QR</h2>
+          <p>El payload oficial puede ser un QR estatico o una plantilla con {valor}, {referencia}, {llave}, {empresa_id}, {carrito_id} y {carrito_codigo}.</p>
+        </div>
+        <button id="brebAddAccountBtn" type="button" class="btn secondary">Agregar cuenta</button>
+      </div>
+      <div id="brebAccounts"></div>
+      <div id="brebConfigMsg" class="breb-status">Cargando configuracion...</div>
+    </section>
+
+    <section class="breb-section">
+      <div class="breb-section-header">
+        <div>
+          <h2>Registrar pago recibido</h2>
+          <p>Use este registro cuando el banco/proveedor confirme la transferencia fuera del carrito. Queda como movimiento bancario para conciliacion financiera.</p>
+        </div>
+        <button id="brebManualBtn" type="button" class="btn primary">Registrar pago</button>
+      </div>
+      <div class="breb-form-grid">
+        <div class="form-col"><label class="form-label" for="manualMonto">Monto</label><input id="manualMonto" class="form-input" type="number" min="0" step="0.01"></div>
+        <div class="form-col"><label class="form-label" for="manualRef">Referencia bancaria</label><input id="manualRef" class="form-input" maxlength="80"></div>
+        <div class="form-col"><label class="form-label" for="manualFecha">Fecha/hora</label><input id="manualFecha" class="form-input" type="datetime-local"></div>
+        <div class="form-col"><label class="form-label" for="manualCuenta">Cuenta / llave destino</label><input id="manualCuenta" class="form-input" maxlength="120"></div>
+        <div class="form-col"><label class="form-label" for="manualBanco">Banco o billetera</label><input id="manualBanco" class="form-input" maxlength="120" placeholder="Bre-B / banco"></div>
+        <div class="form-col"><label class="form-label" for="manualCaja">Caja</label><input id="manualCaja" class="form-input" maxlength="60" placeholder="Caja 1"></div>
+        <div class="form-col"><label class="form-label" for="manualCarrito">Carrito / venta</label><input id="manualCarrito" class="form-input" type="number" min="0" step="1"></div>
+        <div class="form-col"><label class="form-label" for="manualPagador">Pagador</label><input id="manualPagador" class="form-input" maxlength="160"></div>
+        <div class="form-col"><label class="form-label" for="manualEstado">Estado</label><select id="manualEstado" class="form-input"><option value="pendiente">Pendiente</option><option value="conciliado">Conciliado</option></select></div>
+      </div>
+      <div class="form-col">
+        <label class="form-label" for="manualObs">Observaciones</label>
+        <textarea id="manualObs" class="form-input" rows="2"></textarea>
+      </div>
+      <div id="brebManualMsg" class="breb-status">El registro manual no reemplaza la verificacion bancaria del cajero.</div>
+    </section>
+
+    <section class="breb-section">
+      <div class="breb-section-header">
+        <div>
+          <h2>Registro de pagos Bre-B</h2>
+          <p>Incluye ventas cerradas por Bre-B, abonos y movimientos bancarios manuales de esta empresa.</p>
+        </div>
+      </div>
+      <div class="breb-table-wrap">
+        <table class="breb-table">
+          <thead><tr><th>Fecha</th><th>Origen</th><th>Caja</th><th>Referencia</th><th>Monto</th><th>Estado</th><th>Usuario</th></tr></thead>
+          <tbody id="brebPaymentsBody"><tr><td colspan="7">Cargando...</td></tr></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+  <script>
+    (function(){
+      const params = new URLSearchParams(location.search);
+      const empresaId = Number(params.get('empresa_id') || params.get('id') || 0);
+      const api = '/api/empresa/finanzas/breb_qr?empresa_id=' + encodeURIComponent(empresaId);
+      const accountsBox = document.getElementById('brebAccounts');
+      const paymentsBody = document.getElementById('brebPaymentsBody');
+      const msg = document.getElementById('brebConfigMsg');
+      const manualMsg = document.getElementById('brebManualMsg');
+      document.getElementById('brebTutorialLink').href = '/administrar_empresa/finanzas_breb_qr_tutorial.html?empresa_id=' + encodeURIComponent(empresaId);
+
+      function text(v){ return String(v == null ? '' : v).trim(); }
+      function money(v){ return new Intl.NumberFormat('es-CO',{style:'currency',currency:'COP',maximumFractionDigits:0}).format(Number(v||0)); }
+      function esc(v){ return text(v).replace(/[&<>"']/g, s => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[s])); }
+      function setStatus(el, value, ok){
+        el.textContent = value;
+        el.classList.toggle('ok', ok === true);
+        el.classList.toggle('err', ok === false);
+      }
+      function providerLabel(v){ const p=text(v).toLowerCase(); return p==='nequi'?'Nequi':(p==='otro'?'Otro':'Bre-B'); }
+      function blankAccount(index){
+        return { id:'qr_account_'+index, activa:true, nombre:'Cuenta QR '+index, proveedor:'breb', tipo_llave:'', llave:'', comercio:'', caja_codigo:'', payload_oficial:'', instrucciones:'', cuenta_contable:'', banco_receptor:'', referencia_fija:'', qr_tipo:'dinamico' };
+      }
+      function renderAccounts(rows){
+        const list = Array.isArray(rows) && rows.length ? rows : [blankAccount(1)];
+        accountsBox.innerHTML = list.map((row, index) => `
+          <div class="breb-account-row" data-index="${index}">
+            <label class="form-help"><input data-field="activa" type="checkbox" ${row.activa !== false ? 'checked' : ''}> Activa</label>
+            <div class="form-col"><label class="form-label">Nombre</label><input data-field="nombre" class="form-input" value="${esc(row.nombre)}"></div>
+            <div class="form-col"><label class="form-label">Proveedor</label><select data-field="proveedor" class="form-input"><option value="breb">Bre-B</option><option value="nequi">Nequi</option><option value="otro">Otro</option></select></div>
+            <div class="form-col"><label class="form-label">Tipo llave</label><input data-field="tipo_llave" class="form-input" value="${esc(row.tipo_llave)}" placeholder="Celular, NIT, email"></div>
+            <div class="form-col"><label class="form-label">Llave / cuenta</label><input data-field="llave" class="form-input" value="${esc(row.llave)}"></div>
+            <div class="form-col"><label class="form-label">Caja</label><input data-field="caja_codigo" class="form-input" value="${esc(row.caja_codigo)}" placeholder="Caja 1"></div>
+            <div class="form-col"><label class="form-label">QR</label><select data-field="qr_tipo" class="form-input"><option value="dinamico">Dinamico</option><option value="estatico">Estatico</option></select></div>
+            <div class="form-col"><label class="form-label">Payload / instrucciones</label><input data-field="payload_oficial" class="form-input" value="${esc(row.payload_oficial)}" placeholder="Plantilla oficial"></div>
+            <button type="button" class="btn secondary breb-remove-account">Quitar</button>
+            <input data-field="comercio" type="hidden" value="${esc(row.comercio)}">
+            <input data-field="instrucciones" type="hidden" value="${esc(row.instrucciones)}">
+            <input data-field="cuenta_contable" type="hidden" value="${esc(row.cuenta_contable)}">
+            <input data-field="banco_receptor" type="hidden" value="${esc(row.banco_receptor)}">
+            <input data-field="referencia_fija" type="hidden" value="${esc(row.referencia_fija)}">
+          </div>`).join('');
+        list.forEach((row, index) => {
+          const line = accountsBox.querySelector('[data-index="'+index+'"]');
+          if (!line) return;
+          const provider = line.querySelector('[data-field="proveedor"]');
+          const qr = line.querySelector('[data-field="qr_tipo"]');
+          if (provider) provider.value = text(row.proveedor) || 'breb';
+          if (qr) qr.value = text(row.qr_tipo) || 'dinamico';
+        });
+      }
+      function readAccounts(){
+        return Array.from(accountsBox.querySelectorAll('.breb-account-row')).map((line, index) => {
+          const get = (field) => {
+            const el = line.querySelector('[data-field="'+field+'"]');
+            if (!el) return '';
+            return el.type === 'checkbox' ? el.checked : text(el.value);
+          };
+          return {
+            id:'qr_account_'+(index+1), activa:get('activa'), nombre:get('nombre'), proveedor:get('proveedor') || 'breb',
+            tipo_llave:get('tipo_llave'), llave:get('llave'), comercio:get('comercio'), caja_codigo:get('caja_codigo'),
+            qr_tipo:get('qr_tipo') || 'dinamico', payload_oficial:get('payload_oficial'), instrucciones:get('instrucciones'),
+            cuenta_contable:get('cuenta_contable'), banco_receptor:get('banco_receptor'), referencia_fija:get('referencia_fija')
+          };
+        }).filter(row => row.nombre || row.llave || row.payload_oficial || row.caja_codigo);
+      }
+      function applyConfig(cfg){
+        document.getElementById('cfgPagoQR').checked = !!cfg.pago_qr_habilitado;
+        document.getElementById('cfgBrebEnabled').checked = cfg.metodo_pago_transferencia_bre_b !== false;
+        document.getElementById('cfgMixed').checked = cfg.permitir_pago_mixto !== false;
+        document.getElementById('cfgRequireProof').checked = cfg.breb_requiere_comprobante !== false;
+        document.getElementById('cfgAutoReconcile').checked = !!cfg.breb_conciliacion_automatica;
+        document.getElementById('cfgCuentaCaja').checked = !!cfg.breb_cuenta_default_por_caja;
+        document.getElementById('cfgPrefix').value = text(cfg.breb_referencia_prefijo) || 'BREB';
+        document.getElementById('cfgAlertMin').value = Number(cfg.breb_alerta_pagos_pendientes_min || 10);
+        document.getElementById('cfgWebhook').value = text(cfg.breb_webhook_url);
+        document.getElementById('cfgInstructions').value = text(cfg.breb_instrucciones_operacion);
+        renderAccounts(cfg.pago_qr_cuentas || []);
+        document.getElementById('metricEnabled').textContent = cfg.pago_qr_habilitado ? 'Activo' : 'Inactivo';
+      }
+      function renderPayments(rows){
+        if (!rows || !rows.length) {
+          paymentsBody.innerHTML = '<tr><td colspan="7">No hay pagos Bre-B registrados todavia.</td></tr>';
+          return;
+        }
+        paymentsBody.innerHTML = rows.map(row => `
+          <tr>
+            <td>${esc(row.fecha)}</td>
+            <td><span class="breb-pill">${esc(row.origen)}</span></td>
+            <td>${esc(row.caja_codigo || row.referencia_caja || '-')}</td>
+            <td>${esc(row.referencia_pago || '-')}</td>
+            <td>${money(row.monto)}</td>
+            <td>${esc(row.estado_conciliacion || row.estado || '')}</td>
+            <td>${esc(row.usuario_creador || '')}</td>
+          </tr>`).join('');
+      }
+      async function load(){
+        if (!empresaId) {
+          setStatus(msg, 'No se detecto empresa_id en la URL.', false);
+          return;
+        }
+        setStatus(msg, 'Cargando Bre-B QR...', null);
+        const res = await fetch(api + '&limit=120', { credentials:'same-origin' });
+        if (!res.ok) throw new Error('No se pudo cargar Bre-B QR. Verifica sesion, permisos y servidor.');
+        const data = await res.json();
+        applyConfig(data.config || {});
+        renderPayments(data.pagos || []);
+        const resumen = data.resumen || {};
+        document.getElementById('metricCount').textContent = Number(resumen.total_registros || 0);
+        document.getElementById('metricTotal').textContent = money(resumen.total_monto || 0);
+        document.getElementById('metricPending').textContent = Number(resumen.pendientes_conciliar || 0);
+        setStatus(msg, 'Configuracion cargada. Bre-B requiere confirmacion bancaria real o webhook/API para conciliacion automatica.', true);
+      }
+      async function saveConfig(){
+        const payload = {
+          empresa_id: empresaId,
+          pago_qr_habilitado: document.getElementById('cfgPagoQR').checked,
+          metodo_pago_transferencia_bre_b: document.getElementById('cfgBrebEnabled').checked,
+          permitir_pago_mixto: document.getElementById('cfgMixed').checked,
+          breb_requiere_comprobante: document.getElementById('cfgRequireProof').checked,
+          breb_conciliacion_automatica: document.getElementById('cfgAutoReconcile').checked,
+          breb_cuenta_default_por_caja: document.getElementById('cfgCuentaCaja').checked,
+          breb_referencia_prefijo: document.getElementById('cfgPrefix').value,
+          breb_alerta_pagos_pendientes_min: Number(document.getElementById('cfgAlertMin').value || 0),
+          breb_webhook_url: document.getElementById('cfgWebhook').value,
+          breb_instrucciones_operacion: document.getElementById('cfgInstructions').value,
+          pago_qr_cuentas: readAccounts()
+        };
+        const res = await fetch(api, { method:'PUT', credentials:'same-origin', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload) });
+        if (!res.ok) throw new Error('No se pudo guardar configuracion Bre-B QR.');
+        setStatus(msg, 'Configuracion Bre-B QR guardada.', true);
+        await load();
+      }
+      async function registerManual(){
+        const payload = {
+          empresa_id: empresaId,
+          monto: Number(document.getElementById('manualMonto').value || 0),
+          referencia_bancaria: document.getElementById('manualRef').value,
+          fecha_movimiento: document.getElementById('manualFecha').value ? document.getElementById('manualFecha').value.replace('T',' ') : '',
+          cuenta_bancaria: document.getElementById('manualCuenta').value,
+          banco_nombre: document.getElementById('manualBanco').value,
+          caja_codigo: document.getElementById('manualCaja').value,
+          carrito_id: Number(document.getElementById('manualCarrito').value || 0),
+          pagador_nombre: document.getElementById('manualPagador').value,
+          estado_conciliacion: document.getElementById('manualEstado').value,
+          observaciones: document.getElementById('manualObs').value
+        };
+        const res = await fetch(api + '&action=registro_manual', { method:'POST', credentials:'same-origin', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload) });
+        if (!res.ok) throw new Error('No se pudo registrar el pago Bre-B. Revisa monto y referencia.');
+        setStatus(manualMsg, 'Pago Bre-B registrado para conciliacion.', true);
+        await load();
+      }
+      document.getElementById('brebReloadBtn').addEventListener('click', () => load().catch(err => setStatus(msg, err.message || 'Error al actualizar.', false)));
+      document.getElementById('brebSaveConfigBtn').addEventListener('click', () => saveConfig().catch(err => setStatus(msg, err.message || 'Error al guardar.', false)));
+      document.getElementById('brebManualBtn').addEventListener('click', () => registerManual().catch(err => setStatus(manualMsg, err.message || 'Error al registrar.', false)));
+      document.getElementById('brebAddAccountBtn').addEventListener('click', () => {
+        const rows = readAccounts();
+        rows.push(blankAccount(rows.length + 1));
+        renderAccounts(rows);
+      });
+      accountsBox.addEventListener('click', (ev) => {
+        const btn = ev.target.closest('.breb-remove-account');
+        if (!btn) return;
+        btn.closest('.breb-account-row').remove();
+        const rows = readAccounts();
+        renderAccounts(rows.length ? rows : [blankAccount(1)]);
+      });
+      renderAccounts([blankAccount(1)]);
+      load().catch(err => setStatus(msg, err.message || 'No se pudo cargar Bre-B QR.', false));
+    })();
+  </script>
+</body>
+</html>

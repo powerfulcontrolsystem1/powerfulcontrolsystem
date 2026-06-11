@@ -5,13 +5,16 @@ import "testing"
 func TestAdminEmpresaCompartidaCanManageShares(t *testing.T) {
 	t.Parallel()
 
-	if !adminEmpresaCompartidaCanManageShares(true, false) {
+	if !adminEmpresaCompartidaCanManageShares(true, false, false) {
 		t.Fatal("owner should manage shares")
 	}
-	if !adminEmpresaCompartidaCanManageShares(false, true) {
+	if !adminEmpresaCompartidaCanManageShares(false, true, false) {
 		t.Fatal("super administrator should manage shares even when not owner")
 	}
-	if adminEmpresaCompartidaCanManageShares(false, false) {
+	if !adminEmpresaCompartidaCanManageShares(false, false, true) {
+		t.Fatal("shared administrator with reshare permission should manage shares")
+	}
+	if adminEmpresaCompartidaCanManageShares(false, false, false) {
 		t.Fatal("non-owner non-super should not manage shares")
 	}
 }

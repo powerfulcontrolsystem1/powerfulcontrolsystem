@@ -251,6 +251,41 @@ func TestJefeBodegaRoleAllowsWarehouseInventory(t *testing.T) {
 	}
 }
 
+func TestResponsableBodegaRoleAllowsAssignedWarehouseInventory(t *testing.T) {
+	if got := normalizePermissionRole("Responsable de bodega"); got != "responsable_bodega" {
+		t.Fatalf("expected Responsable de bodega to normalize as responsable_bodega, got %q", got)
+	}
+	if got := normalizePermissionRole("Bodeguero"); got != "responsable_bodega" {
+		t.Fatalf("expected Bodeguero to normalize as responsable_bodega, got %q", got)
+	}
+
+	rows := buildPermissionModuleMatrixForRole("responsable_bodega")
+	inventario := findPermissionModuleRowForTest(t, rows, permModuleInventario)
+	if !inventario.Read || !inventario.Create || !inventario.Update || !inventario.Approve || inventario.Delete {
+		t.Fatalf("responsable_bodega debe administrar inventario sin eliminar: %+v", inventario)
+	}
+	compras := findPermissionModuleRowForTest(t, rows, permModuleCompras)
+	if !compras.Read || compras.Create || compras.Update || compras.Delete || compras.Approve {
+		t.Fatalf("responsable_bodega debe tener solo lectura de compras: %+v", compras)
+	}
+	ventas := findPermissionModuleRowForTest(t, rows, permModuleVentas)
+	if ventas.Read || ventas.Create || ventas.Update || ventas.Delete || ventas.Approve {
+		t.Fatalf("responsable_bodega no debe tener permisos de ventas: %+v", ventas)
+	}
+
+	pages := buildPermissionPagesMapForRoleDynamic(nil, "responsable_bodega", rows)
+	for _, page := range []string{"linkProductos", "linkInventarioAvanzado", "linkBodegas", "linkCategorias", "linkPreciosHistorial"} {
+		if !pages[page] {
+			t.Fatalf("responsable_bodega debe ver %s", page)
+		}
+	}
+	for _, page := range []string{"linkPanelEmpresa", "linkVentaDirecta", "linkEstaciones", "linkCorteCaja", "linkConfiguracion"} {
+		if pages[page] {
+			t.Fatalf("responsable_bodega no debe ver %s", page)
+		}
+	}
+}
+
 func TestRecursosHumanosRoleAllowsPeopleOperations(t *testing.T) {
 	rows := buildPermissionModuleMatrixForRole("recursos_humanos")
 	for _, modulo := range []string{permModuleHorariosTrab, permModuleAsistenciaEmpleados, permModuleNominaSueldos} {

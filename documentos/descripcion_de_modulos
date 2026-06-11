@@ -1,3 +1,23 @@
+2026-06-11: Auditoria transversal de opciones nuevas
+- Modulos afectados: `auditoria`, `reportes`, `breb_qr`, `buzon`, `tareas_buzon`, `chat_empresarial`, `impresoras`, `menu_visible`, `atajos_pos`, `productos_import_export` y `bodegas_traslados`.
+- Auditoria: las acciones de configuracion Bre-B, pagos manuales, mensajes, tareas, adjuntos, lectura, preferencias e impresoras quedan en `empresa_auditoria_eventos` con modulo propio y metadata saneada.
+- Reportes: el resumen operativo de modulos lista las tablas reales relacionadas para validar existencia, totales, activos y rango de fechas por `empresa_id`.
+- Frontend: `Administrar empresa > Auditoria` agrega filtros visibles para revisar y exportar actividad de estos modulos sin depender de busquedas manuales.
+- Seguridad: no se registra contenido de mensajes, archivos, claves, tokens ni payloads QR; se conservan solo IDs, estados, tamanos y banderas operativas.
+
+2026-06-11: Menu visible por empresa
+- Modulos afectados: `administrar_empresa`, `configuracion` y `frontend_ux`.
+- Navegacion: `Administrar empresa > Configuracion > Menu visible` abre `web/administrar_empresa/configuracion/menu_visual.html`.
+- Persistencia: usa `empresa_estacion_prefs` con clave `menu_visual_config`, `estacion_id=0` y lista `hidden_links`.
+- Comportamiento: el menu principal y submenus aplican permisos/licencia/rol y despues ocultan visualmente los links marcados por la empresa. `Panel`, `Configuracion`, `Menu visible` y `Volver a empresas` quedan protegidos contra ocultamiento para permitir recuperacion.
+- Seguridad: es una preferencia visual; no otorga ni revoca permisos ni reemplaza validaciones backend.
+
+2026-06-11: Atajos POS configurables por empresa
+- Modulos afectados: `carritos`, `configuracion_carrito`, `estaciones` y `venta_directa`.
+- Configuracion: `web/administrar_empresa/configuracion_carrito_de_compra_empresa.html` permite activar atajos POS y asignar tecla por accion dentro de `estaciones_config.carrito_ui_global.atajos_pos`.
+- Operacion: `web/administrar_empresa/carrito_de_compras.html` captura F1-F12 y combinaciones definidas para ayuda, busqueda, cliente, descuento, cantidad, precio, suspender/recuperar, inventario, cobro, cajon, impresion, cancelar, agregar y salir.
+- Seguridad: no hay endpoint nuevo; cada accion reutiliza controles y APIs existentes con permisos por rol y filtro `empresa_id`.
+
 2026-06-10: Nomina en Finanzas y cumplimiento
 - Modulo afectado: `nomina`.
 - Navegacion: `Administrar empresa > Finanzas y cumplimiento > Nomina` abre `web/administrar_empresa/nomina_menu.html`.
@@ -4137,3 +4157,31 @@ Captura inteligente de compras y gastos
 - Frontend: el panel de cliente muestra cupo/usado/disponible, el formulario rapido puede abrir cupo inicial y la impresion del recibo/factura visual informa monto, codigo y vencimiento de la cartera.
 - Seguridad: no se crean tablas paralelas; se reutilizan `clientes`, `empresa_creditos` y `empresa_creditos_clientes_limites` con aislamiento por empresa.
 - QA: `go test ./db ./handlers -run "Credito|Carrito|MetodoPago|PreconfigCarrito" -count=1` OK desde `backend`; validacion Node de scripts embebidos OK.
+
+2026-06-11 - Buzon, tareas y chat empresarial
+- Modulos afectados: `administrar_empresa`, `inventario/bodegas`, `super_configuracion`.
+- Cambio funcional: el panel de empresa incluye una tarjeta de buzon personal para mensajes, tareas y adjuntos; debajo se integra chat general de usuarios de la empresa. La campana del shell muestra no leidos y permite navegar al recurso relacionado.
+- Tareas: al enviar un mensaje se puede elegir `Asignar tarea`; el destinatario la ve en su buzon, la finaliza con descripcion y evidencia adjunta.
+- Inventario: los traslados de bodega notifican al responsable o a usuarios de inventario/administracion mediante el buzon.
+- Almacenamiento: super administrador configura cuota por empresa, alerta, bloqueo de cargas y limpieza de adjuntos antiguos. Los archivos se guardan en la carpeta empresarial.
+- Seguridad: endpoints con `WithEmpresaSelfServicePermissions`, filtro por `empresa_id`, destinatario real para adjuntos/cierre y rutas de archivo limitadas a `/uploads/empresas/`.
+
+2026-06-11 - Rol Responsable de bodega
+- Modulos afectados: `usuarios_empresa`, `inventario`, `bodegas`, `permisos_contexto`.
+- Cambio funcional: `responsable_bodega` queda como rol base universal para asignar usuarios responsables de una bodega concreta.
+- Alcance: `inventario:R/C/U/A` y `compras:R`, sin eliminacion de inventario, ventas, caja ni configuracion.
+- Integracion: el menu empresarial muestra solo paginas de inventario/bodega y las notificaciones de traslado de bodega incluyen este rol.
+
+2026-06-11 - Inventario: importacion/exportacion de productos
+- Modulos afectados: `inventario`, `productos`, `bodegas`, `categorias_productos`.
+- Cambio funcional: la seccion Productos incorpora una tarjeta superior para exportar el catalogo filtrado a CSV/Excel, JSON o HTML imprimible en carta/POS y para importar listas desde CSV.
+- Backend: `/api/empresa/productos` agrega acciones `exportar`, `plantilla_importacion` e `importar`, todas bajo el wrapper de permisos de inventario existente.
+- Importacion: valida nombre, campos obligatorios configurados, duplicados por SKU/codigo de barras/nombre, bodega para stock inicial y categorias por empresa.
+- Seguridad: no crea tablas nuevas, no usa SQLite, no introduce dependencias externas y conserva aislamiento por `empresa_id`.
+
+2026-06-11 - Finanzas: Pagos Bre-B QR
+- Modulos afectados: `finanzas`, `carritos`, `caja`, `bancos_pagos`.
+- Cambio funcional: el centro financiero incorpora una pagina profesional `Pagos Bre-B QR` con configuracion de QR por empresa, cuentas receptoras por caja, payload oficial/plantilla, alertas operativas, registro manual de pagos recibidos y tabla de ventas/abonos Bre-B.
+- Backend: `/api/empresa/finanzas/breb_qr` usa `WithEmpresaFinanzasPermissions`, filtra siempre por `empresa_id`, lee `carritos_compras` y `carrito_compra_abonos`, y registra pagos manuales como movimientos bancarios en `empresa_finanzas_bancos_movimientos`.
+- Operacion: Bre-B puede operar con QR estatico o dinamico; para varias cajas simultaneas PCS exige referencias distintas por caja/carrito y no marca confirmacion automatica sin webhook/API bancaria real.
+- Seguridad: no se guardan secretos bancarios, no se simula confirmacion, no se crean motores externos y la configuracion se mezcla con `estaciones_config.carrito_ui_global` para no duplicar la verdad del carrito.

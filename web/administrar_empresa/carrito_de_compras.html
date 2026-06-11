@@ -1737,6 +1737,58 @@
       }
     }
 
+    const POS_SHORTCUT_KEY_OPTIONS = [
+      '', 'F1', 'F2', 'F3', 'F4', 'F5', 'F6', 'F7', 'F8', 'F9', 'F10', 'F11', 'F12',
+      'ESC', 'ENTER', 'CTRL+B', 'CTRL+D', 'CTRL+P', 'ALT+F4'
+    ];
+
+    const POS_SHORTCUT_DEFS = [
+      { key: 'ayuda', label: 'Ayuda del sistema', defaultKey: 'F1' },
+      { key: 'buscar_producto', label: 'Buscar producto', defaultKey: 'F2' },
+      { key: 'buscar_cliente', label: 'Buscar cliente', defaultKey: 'F3' },
+      { key: 'descuento', label: 'Aplicar descuento', defaultKey: 'F4' },
+      { key: 'cambiar_cantidad', label: 'Cambiar cantidad', defaultKey: 'F5' },
+      { key: 'modificar_precio', label: 'Modificar precio', defaultKey: 'F6' },
+      { key: 'suspender_venta', label: 'Suspender venta', defaultKey: 'F7' },
+      { key: 'recuperar_venta', label: 'Recuperar venta', defaultKey: 'F8' },
+      { key: 'verificar_inventario', label: 'Verificar inventario', defaultKey: 'F9' },
+      { key: 'cobrar', label: 'Cobrar / finalizar venta', defaultKey: 'F10' },
+      { key: 'abrir_cajon', label: 'Abrir cajon de dinero', defaultKey: 'F11' },
+      { key: 'imprimir', label: 'Imprimir factura o duplicado', defaultKey: 'F12' },
+      { key: 'cancelar_operacion', label: 'Cancelar operacion', defaultKey: 'ESC' },
+      { key: 'agregar_producto', label: 'Agregar producto', defaultKey: 'ENTER' },
+      { key: 'descuento_combo', label: 'Descuento alterno', defaultKey: 'CTRL+D' },
+      { key: 'imprimir_combo', label: 'Imprimir alterno', defaultKey: 'CTRL+P' },
+      { key: 'buscar_producto_combo', label: 'Buscar producto alterno', defaultKey: 'CTRL+B' },
+      { key: 'salir_sistema', label: 'Salir del carrito', defaultKey: 'ALT+F4' }
+    ];
+
+    function defaultPosShortcuts() {
+      const out = {};
+      POS_SHORTCUT_DEFS.forEach(function(def) {
+        out[def.key] = def.defaultKey;
+      });
+      return out;
+    }
+
+    function normalizeShortcutKey(value, fallback) {
+      const raw = String(value == null ? '' : value).trim().toUpperCase().replace(/\s+/g, '');
+      if (!raw) return '';
+      const normalized = raw === 'ESCAPE' ? 'ESC' : raw;
+      if (POS_SHORTCUT_KEY_OPTIONS.indexOf(normalized) >= 0) return normalized;
+      return fallback || '';
+    }
+
+    function normalizePosShortcuts(raw) {
+      const src = raw && typeof raw === 'object' ? raw : {};
+      const defaults = defaultPosShortcuts();
+      const out = {};
+      POS_SHORTCUT_DEFS.forEach(function(def) {
+        out[def.key] = normalizeShortcutKey(src[def.key], defaults[def.key]);
+      });
+      return out;
+    }
+
     function defaultUnifiedCartUIConfig() {
       return {
         modo_pantalla_tactil: false,
@@ -1800,6 +1852,9 @@
         pago_qr_payload_oficial: '',
         pago_qr_instrucciones: '',
         pago_qr_cuentas: [],
+        atajos_pos_habilitados: true,
+        atajos_pos_mostrar_ayuda: true,
+        atajos_pos: defaultPosShortcuts(),
         botones_pitido_pc: false,
         botones_pitido_movil: false,
         botones_vibracion_pc: false,
@@ -1943,6 +1998,9 @@
         pago_qr_payload_oficial: normalize(src.pago_qr_payload_oficial || ''),
         pago_qr_instrucciones: normalize(src.pago_qr_instrucciones || ''),
         pago_qr_cuentas: normalizePaymentQrAccounts(src.pago_qr_cuentas || src.cuentas_qr || src.qr_accounts, src),
+        atajos_pos_habilitados: src.atajos_pos_habilitados === undefined ? base.atajos_pos_habilitados : Boolean(src.atajos_pos_habilitados),
+        atajos_pos_mostrar_ayuda: src.atajos_pos_mostrar_ayuda === undefined ? base.atajos_pos_mostrar_ayuda : Boolean(src.atajos_pos_mostrar_ayuda),
+        atajos_pos: normalizePosShortcuts(src.atajos_pos || src.pos_shortcuts || src.atajos_teclado_pos),
         botones_pitido_pc: src.botones_pitido_pc === undefined ? base.botones_pitido_pc : Boolean(src.botones_pitido_pc),
         botones_pitido_movil: src.botones_pitido_movil === undefined ? base.botones_pitido_movil : Boolean(src.botones_pitido_movil),
         botones_vibracion_pc: src.botones_vibracion_pc === undefined ? base.botones_vibracion_pc : Boolean(src.botones_vibracion_pc),
@@ -9684,6 +9742,235 @@
 
       renderScannerPanel();
     }
+
+    function getPOSShortcutConfig() {
+      return normalizeUnifiedCartUIConfig(state.stationCartUI || getCurrentStationCartUIConfig());
+    }
+
+    function getPOSShortcutEventSignature(ev) {
+      const key = String(ev.key || '').toUpperCase();
+      if (ev.altKey && key === 'F4') return 'ALT+F4';
+      if (ev.ctrlKey && !ev.altKey && !ev.shiftKey) {
+        if (key === 'B') return 'CTRL+B';
+        if (key === 'D') return 'CTRL+D';
+        if (key === 'P') return 'CTRL+P';
+      }
+      if (ev.ctrlKey || ev.altKey || ev.metaKey || ev.shiftKey) return '';
+      if (/^F([1-9]|1[0-2])$/.test(key)) return key;
+      if (key === 'ESCAPE' || key === 'ESC') return 'ESC';
+      if (key === 'ENTER') return 'ENTER';
+      return '';
+    }
+
+    function isTypingTargetForPOSShortcut(target) {
+      if (!target) return false;
+      if (target.isContentEditable) return true;
+      const tag = String(target.tagName || '').toLowerCase();
+      return tag === 'input' || tag === 'textarea' || tag === 'select';
+    }
+
+    function shouldHandlePOSShortcut(ev, actionKey, signature) {
+      if (!signature) return false;
+      if (/^F([1-9]|1[0-2])$/.test(signature)) return true;
+      if (signature === 'ESC' || signature.indexOf('CTRL+') === 0 || signature.indexOf('ALT+') === 0) return true;
+      if (signature === 'ENTER') {
+        const target = ev.target;
+        if (!isTypingTargetForPOSShortcut(target)) return true;
+        return target && (target.id === 'scannerCodigo' || target.id === 'scannerCantidad');
+      }
+      return !isTypingTargetForPOSShortcut(ev.target);
+    }
+
+    function showPOSShortcutHelp() {
+      const cfg = getPOSShortcutConfig();
+      if (!cfg.atajos_pos_mostrar_ayuda) {
+        setStationPaymentMessage('La ayuda de atajos esta desactivada para esta empresa.', false);
+        return;
+      }
+      const shortcuts = cfg.atajos_pos || {};
+      const lines = POS_SHORTCUT_DEFS
+        .filter(function(def) { return shortcuts[def.key]; })
+        .map(function(def) { return shortcuts[def.key] + ' ' + def.label; });
+      setStationPaymentMessage('Atajos POS: ' + lines.join(' | '), false);
+    }
+
+    async function printCurrentPOSCartShortcut() {
+      const selected = getSelectedCarrito();
+      if (!selected) {
+        setStationPaymentMessage('Selecciona o activa un carrito antes de imprimir.', true);
+        return;
+      }
+      let targets = null;
+      try {
+        const pay = getStationPaymentBreakdown(selected);
+        targets = preparePaymentPrintTargets();
+        await printSaleReceiptIfEnabled(selected, pay, state.items || [], targets && targets.receipt, null);
+        closeUnusedPaymentPrintTargets(targets);
+        setStationPaymentMessage('Comprobante enviado a impresion. Si la impresion automatica no esta activa, usa la ventana del navegador.', false);
+      } catch (err) {
+        closeUnusedPaymentPrintTargets(targets);
+        console.warn(err);
+        window.print();
+      }
+    }
+
+    async function verifyInventoryPOSShortcut() {
+      const input = document.getElementById('scannerCodigo');
+      const code = normalize(input && input.value);
+      if (!code) {
+        setStationPaymentMessage('Escanea o escribe un codigo para verificar inventario, o abre Buscar productos.', false);
+        const searchBtn = document.getElementById('carritoBtnBuscarBotones');
+        if (searchBtn) searchBtn.click();
+        return;
+      }
+      try {
+        const producto = await resolveProductoFromScanCode(code);
+        const stock = producto.stock_total ?? producto.stock_actual ?? producto.existencias ?? producto.existencia ?? producto.cantidad_disponible;
+        const stockText = stock === undefined || stock === null || stock === ''
+          ? 'inventario disponible no reportado en la busqueda'
+          : ('inventario disponible: ' + String(stock));
+        setStationPaymentMessage('Producto: ' + (normalize(producto.nombre) || code) + '. ' + stockText + '.', false);
+      } catch (err) {
+        setStationPaymentMessage(err.message || 'No se pudo verificar el inventario del producto.', true);
+      }
+    }
+
+    async function openCashDrawerPOSShortcut() {
+      const selected = getSelectedCarrito();
+      if (!selected) {
+        setStationPaymentMessage('Selecciona un carrito antes de abrir el cajon de dinero.', true);
+        return;
+      }
+      try {
+        await openCashDrawerIfEnabled('manual_shortcut', selected, getStationPaymentBreakdown(selected));
+        setStationPaymentMessage('Solicitud de apertura enviada al cajon de dinero configurado.', false);
+      } catch (err) {
+        setStationPaymentMessage(err.message || 'No se pudo abrir el cajon de dinero.', true);
+      }
+    }
+
+    async function executePOSShortcutAction(actionKey) {
+      if (actionKey === 'descuento_combo') actionKey = 'descuento';
+      if (actionKey === 'imprimir_combo') actionKey = 'imprimir';
+      if (actionKey === 'buscar_producto_combo') actionKey = 'buscar_producto';
+
+      if (actionKey === 'ayuda') {
+        showPOSShortcutHelp();
+        return;
+      }
+      if (actionKey === 'buscar_producto') {
+        const btn = document.getElementById('carritoBtnBuscarBotones');
+        if (btn && btn.offsetParent !== null) {
+          btn.click();
+        } else {
+          const scanner = document.getElementById('scannerCodigo');
+          if (scanner) scanner.focus();
+          setStationPaymentMessage('Escribe o escanea el codigo del producto.', false);
+        }
+        return;
+      }
+      if (actionKey === 'buscar_cliente') {
+        const customerInput = document.getElementById('stationClienteSearchInput');
+        if (customerInput) {
+          customerInput.focus();
+          setStationPaymentMessage('Busca el cliente por nombre, documento, correo o celular.', false);
+        } else {
+          const btn = document.getElementById('carritoBtnClientes');
+          if (btn) btn.click();
+        }
+        return;
+      }
+      if (actionKey === 'descuento') {
+        const btn = document.getElementById('carritoBtnDescuentos');
+        if (btn) btn.click();
+        return;
+      }
+      if (actionKey === 'cambiar_cantidad') {
+        const qty = document.querySelector('.cart-item-qty-input') || document.getElementById('scannerCantidad') || document.getElementById('itemCantidad');
+        if (qty) {
+          qty.focus();
+          if (typeof qty.select === 'function') qty.select();
+          setStationPaymentMessage('Edita la cantidad y confirma con ENTER o saliendo del campo.', false);
+        }
+        return;
+      }
+      if (actionKey === 'modificar_precio') {
+        const price = document.getElementById('itemPrecio');
+        if (price) {
+          price.focus();
+          if (typeof price.select === 'function') price.select();
+          setStationPaymentMessage('Modifica el precio solo si tu rol tiene permiso operativo para hacerlo.', false);
+        }
+        return;
+      }
+      if (actionKey === 'suspender_venta') {
+        setStationPaymentPersistentMessage('Venta suspendida: la cuenta queda abierta y podras recuperarla desde la estacion o carrito correspondiente.', false);
+        return;
+      }
+      if (actionKey === 'recuperar_venta') {
+        await Promise.all([loadCarritos(), loadItems()]);
+        setStationPaymentMessage('Venta recuperada y datos actualizados.', false);
+        return;
+      }
+      if (actionKey === 'verificar_inventario') {
+        await verifyInventoryPOSShortcut();
+        return;
+      }
+      if (actionKey === 'cobrar') {
+        const btn = document.getElementById('btnPagarCarrito');
+        if (btn && !btn.disabled) btn.click();
+        else setStationPaymentMessage('El boton de pago no esta disponible todavia. Revisa cliente, caja, productos o permisos.', true);
+        return;
+      }
+      if (actionKey === 'abrir_cajon') {
+        await openCashDrawerPOSShortcut();
+        return;
+      }
+      if (actionKey === 'imprimir') {
+        await printCurrentPOSCartShortcut();
+        return;
+      }
+      if (actionKey === 'cancelar_operacion') {
+        const active = document.activeElement;
+        if (active && isTypingTargetForPOSShortcut(active)) {
+          if (active.id === 'scannerCodigo') active.value = '';
+          active.blur();
+          setStationPaymentMessage('Operacion actual cancelada.', false);
+          return;
+        }
+        resetItemForm();
+        setStationPaymentMessage('Operacion actual cancelada.', false);
+        return;
+      }
+      if (actionKey === 'agregar_producto') {
+        await processScannerInput();
+        return;
+      }
+      if (actionKey === 'salir_sistema') {
+        window.location.href = state.stationMode && !state.directSaleMode ? buildStationsURL() : ('/administrar_empresa.html?empresa_id=' + encodeURIComponent(state.empresaID || 0));
+      }
+    }
+
+    function handlePOSShortcutKeydown(ev) {
+      if (ev.defaultPrevented || ev.repeat) return;
+      const cfg = getPOSShortcutConfig();
+      if (!cfg.atajos_pos_habilitados) return;
+      const signature = getPOSShortcutEventSignature(ev);
+      if (!signature) return;
+      const shortcuts = cfg.atajos_pos || {};
+      const actionKey = Object.keys(shortcuts).find(function(key) {
+        return shortcuts[key] === signature;
+      });
+      if (!actionKey || !shouldHandlePOSShortcut(ev, actionKey, signature)) return;
+      ev.preventDefault();
+      ev.stopPropagation();
+      Promise.resolve(executePOSShortcutAction(actionKey)).catch(function(err) {
+        console.warn(err);
+        setStationPaymentMessage(err.message || 'No se pudo ejecutar el atajo POS.', true);
+      });
+    }
+
+    document.addEventListener('keydown', handlePOSShortcutKeydown, true);
 
     async function loadEmpresaTitle() {
       try {

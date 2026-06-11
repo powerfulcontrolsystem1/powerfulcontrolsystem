@@ -1554,21 +1554,22 @@ func SetTipoEmpresaActivo(dbConn *sql.DB, id int64, estado string) error {
 
 // Empresa representa una empresa registrada en la base PostgreSQL operativa.
 type Empresa struct {
-	ID                 int64  `json:"id"`
-	EmpresaID          int64  `json:"empresa_id,omitempty"`
-	Nombre             string `json:"nombre"`
-	Nit                string `json:"nit,omitempty"`
-	TipoID             int64  `json:"tipo_id,omitempty"`
-	TipoNombre         string `json:"tipo_nombre,omitempty"`
-	FechaCreacion      string `json:"fecha_creacion,omitempty"`
-	FechaActualizacion string `json:"fecha_actualizacion,omitempty"`
-	UsuarioCreador     string `json:"usuario_creador,omitempty"`
-	Estado             string `json:"estado,omitempty"`
-	Observaciones      string `json:"observaciones,omitempty"`
-	AccessSource       string `json:"access_source,omitempty"`
-	CompartidaPor      string `json:"compartida_por,omitempty"`
-	SharedNivelAcceso  string `json:"shared_nivel_acceso,omitempty"`
-	SharedModulos      string `json:"shared_modulos_permitidos,omitempty"`
+	ID                   int64  `json:"id"`
+	EmpresaID            int64  `json:"empresa_id,omitempty"`
+	Nombre               string `json:"nombre"`
+	Nit                  string `json:"nit,omitempty"`
+	TipoID               int64  `json:"tipo_id,omitempty"`
+	TipoNombre           string `json:"tipo_nombre,omitempty"`
+	FechaCreacion        string `json:"fecha_creacion,omitempty"`
+	FechaActualizacion   string `json:"fecha_actualizacion,omitempty"`
+	UsuarioCreador       string `json:"usuario_creador,omitempty"`
+	Estado               string `json:"estado,omitempty"`
+	Observaciones        string `json:"observaciones,omitempty"`
+	AccessSource         string `json:"access_source,omitempty"`
+	CompartidaPor        string `json:"compartida_por,omitempty"`
+	SharedNivelAcceso    string `json:"shared_nivel_acceso,omitempty"`
+	SharedModulos        string `json:"shared_modulos_permitidos,omitempty"`
+	SharedPuedeCompartir bool   `json:"shared_puede_compartir,omitempty"`
 }
 
 // CreateEmpresa inserta una nueva empresa en la base PostgreSQL operativa.

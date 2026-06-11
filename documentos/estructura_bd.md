@@ -3,6 +3,20 @@
 Version: 2026-05-15.1.0
 Ultima actualizacion: 2026-05-15
 
+Actualizacion 2026-06-11 (empresas compartidas)
+- Tablas en `pcs_superadministrador`:
+  - `admin_empresa_compartida`: agrega `puede_compartir BOOLEAN DEFAULT FALSE` para indicar si el acceso compartido puede invitar a otros administradores a la misma empresa.
+  - `admin_empresa_compartida_invitaciones`: agrega `puede_compartir BOOLEAN DEFAULT FALSE` para conservar la decision desde la invitacion hasta la aceptacion.
+- El permiso no reemplaza roles ni autorizacion backend; solo habilita la gestion de invitaciones de esa empresa compartida cuando ya existe acceso activo y no revocado.
+
+Actualizacion 2026-06-11 (buzon, tareas, chat y almacenamiento por empresa)
+- Nuevas tablas en `pcs_empresas`:
+  - `empresa_buzon_mensajes`: mensajes privados por `empresa_id`, destinatario/remitente, titulo, mensaje, tipo (`interno`, `tarea`, `inventario_traslado`), prioridad, modulo, referencia, enlace, lectura y campos de tarea (`tarea_estado`, `tarea_vence_en`, `tarea_cerrada_en`, `tarea_cierre_descripcion`).
+  - `empresa_buzon_adjuntos`: adjuntos de mensaje con tipo de archivo, nombre original, MIME, URL publica, tamano, duracion para audio y observaciones. Los binarios se guardan dentro de la carpeta de cada empresa en `mensajeria/buzon/mensaje_{id}`.
+  - `empresa_chat_mensajes`: chat general de usuarios registrados de la empresa, siempre filtrado por `empresa_id`.
+- Nuevas claves en `pcs_superadministrador.configuraciones`: `empresa_storage.quota_enabled`, `empresa_storage.default_limit_mb`, `empresa_storage.warn_percent`, `empresa_storage.block_uploads_over_limit` y `empresa_storage.max_upload_mb`.
+- Indices principales: destinatario/no leido por empresa, referencia por modulo y adjuntos por mensaje.
+
 Actualizacion 2026-06-10 (retencion de empresas vencidas)
 - Nueva tabla `licencia_empresa_retencion_log` en `pcs_superadministrador`.
 - Registra `empresa_ref_id`, nombre, correo administrador, estado operativo,

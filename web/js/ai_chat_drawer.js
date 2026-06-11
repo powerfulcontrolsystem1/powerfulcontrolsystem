@@ -12,6 +12,7 @@
   var MIC_ID = 'aiChatMicBtn';
   var VOICE_ID = 'aiChatVoiceBtn';
   var CONV_ID = 'aiChatConvBtn';
+  var STOP_ID = 'aiChatStopBtn';
   var CLEAR_CHAT_ID = 'aiChatNewBtn';
   var BACKDROP_ID = 'aiChatBackdrop';
   var MINIMIZE_ID = 'aiChatMinimize';
@@ -60,6 +61,8 @@
     voiceQueuePromise: Promise.resolve(),
     voiceQueueVersion: 0,
     streamingSpeechBuffer: '',
+    activeAbortController: null,
+    activeRequestSeq: 0,
     robotVoice: 'es-CO',
     radioEnabled: false,
     robotAssistantVisible: false,
@@ -385,6 +388,7 @@
                 '<button type="button" id="' + CONV_ID + '" class="ai-chat-icon-btn" aria-pressed="false" aria-label="Modo conversación" title="Modo conversación"></button>' +
                 '<button type="button" id="' + MIC_ID + '" class="ai-chat-icon-btn" aria-pressed="false" aria-label="Dictar mensaje" title="Dictar"></button>' +
                 '<button type="button" id="' + VOICE_ID + '" class="ai-chat-icon-btn" aria-pressed="false" aria-label="Voz del asistente" title="Leer respuestas"></button>' +
+                '<button type="button" id="' + STOP_ID + '" class="ai-chat-icon-btn ai-chat-stop-btn" aria-label="Detener audio y respuesta" title="Detener audio y respuesta"></button>' +
               '</div>' +
               '<div class="ai-chat-controls">' +
                 '<label class="ai-chat-control-field" for="' + MODE_ID + '">' +
@@ -2017,6 +2021,77 @@
     setNotice('Voz detenida por ahora. La siguiente respuesta volvera a hablar si el modo voz sigue activo.');
   }
 
+  function isAbortError(err) {
+    return !!(err && (err.name === 'AbortError' || String(err.message || '').toLowerCase().indexOf('abort') !== -1));
+  }
+
+  function createAbortController() {
+    if (!window.AbortController) return null;
+    try {
+      return new AbortController();
+    } catch (err) {
+      return null;
+    }
+  }
+
+  function startAIRequestAbortController() {
+    if (state.activeAbortController && typeof state.activeAbortController.abort === 'function') {
+      try { state.activeAbortController.abort(); } catch (err) {}
+    }
+    state.activeRequestSeq += 1;
+    state.activeAbortController = createAbortController();
+    return {
+      seq: state.activeRequestSeq,
+      controller: state.activeAbortController,
+      signal: state.activeAbortController ? state.activeAbortController.signal : null
+    };
+  }
+
+  function stopAssistantResponseAndVoice() {
+    clearConversationResumeTimer();
+    resetQueuedAssistantSpeech();
+    state.voicePlaybackVersion += 1;
+    state.activeRequestSeq += 1;
+    if (state.activeAbortController && typeof state.activeAbortController.abort === 'function') {
+      try { state.activeAbortController.abort(); } catch (err) {}
+    }
+    state.activeAbortController = null;
+    try {
+      if (state.voiceServerAudio) {
+        state.voiceServerAudio.pause();
+        state.voiceServerAudio.currentTime = 0;
+        state.voiceServerAudio = null;
+      }
+    } catch (err) {}
+    try {
+      if (window.speechSynthesis && typeof window.speechSynthesis.cancel === 'function') {
+        window.speechSynthesis.cancel();
+      }
+    } catch (err) {}
+    if (state.listening) {
+      stopActiveSpeechRecognition(true);
+    }
+    state.loading = false;
+    setRobotLoading(false);
+    if (isAvatarPersonalityMode(getChatPersonalityMode())) {
+      setRobotMood('idle', 900);
+      setRobotAssistantText('Respuesta detenida.');
+    }
+    Array.prototype.slice.call(document.querySelectorAll('.ai-chat-message.assistant.is-streaming')).forEach(function (item) {
+      item.classList.remove('is-streaming');
+      var textNode = Array.prototype.slice.call(item.children || []).filter(function (child) {
+        return child && child.tagName === 'DIV' && !child.classList.contains('ai-chat-model-badge');
+      })[0];
+      if (!textNode) return;
+      var current = String(textNode.textContent || '').trim();
+      textNode.textContent = current && current !== 'Respondiendo en tiempo real...' && current !== 'Pensando...'
+        ? current + '\n\nRespuesta detenida por el usuario.'
+        : 'Respuesta detenida por el usuario.';
+    });
+    setNotice('Audio y respuesta de IA detenidos. Puedes enviar otra consulta.');
+    updateVoiceButtons(document.getElementById(MIC_ID), document.getElementById(VOICE_ID), document.getElementById(CONV_ID));
+  }
+
   function clearConversationResumeTimer() {
     if (state.conversationResumeTimer) {
       window.clearTimeout(state.conversationResumeTimer);
@@ -2101,6 +2176,14 @@
       if (!isVoiceOutputSupported()) {
         voiceBtn.title = 'Texto a voz no disponible';
       }
+    }
+    var stopBtn = document.getElementById(STOP_ID);
+    if (stopBtn) {
+      stopBtn.innerHTML = ICON_STOP;
+      stopBtn.title = state.loading ? 'Detener respuesta y audio' : 'Detener audio del asistente';
+      stopBtn.setAttribute('aria-label', state.loading ? 'Detener respuesta y audio' : 'Detener audio del asistente');
+      stopBtn.disabled = !state.loading && !isVoiceOutputSupported();
+      stopBtn.classList.toggle('is-active', state.loading);
     }
     if (convBtn) {
       convBtn.innerHTML = ICON_CONV;
@@ -2749,6 +2832,13 @@
   function setupSpeechControls(input, micBtn, voiceBtn, convBtn) {
     updateVoiceButtons(micBtn, voiceBtn, convBtn);
     loadVoicePreference(micBtn, voiceBtn, convBtn);
+    var stopBtn = document.getElementById(STOP_ID);
+    if (stopBtn && !stopBtn.dataset.stopHandlerBound) {
+      stopBtn.dataset.stopHandlerBound = '1';
+      stopBtn.addEventListener('click', function () {
+        stopAssistantResponseAndVoice();
+      });
+    }
     if (voiceBtn) {
       voiceBtn.addEventListener('click', function () {
         if (state.loading) return;
@@ -3400,6 +3490,7 @@
     var onStreamStart = callbacks && typeof callbacks.onStreamStart === 'function' ? callbacks.onStreamStart : null;
     var onStreamDelta = callbacks && typeof callbacks.onStreamDelta === 'function' ? callbacks.onStreamDelta : null;
     var onStreamMeta = callbacks && typeof callbacks.onStreamMeta === 'function' ? callbacks.onStreamMeta : null;
+    var signal = callbacks && callbacks.signal ? callbacks.signal : null;
     var speechPlaybackVersion = beginStreamingSpeechPlayback();
     return fetch(endpoint, {
       method: 'POST',
@@ -3408,6 +3499,7 @@
         'Content-Type': 'application/json',
         'X-PCS-Source': 'ai_drawer_stream'
       },
+      signal: signal || undefined,
       body: JSON.stringify(body)
     }).then(function (resp) {
       if (!resp.ok) {
@@ -3466,6 +3558,12 @@
 
       function pump() {
         return reader.read().then(function (result) {
+          if (signal && signal.aborted) {
+            try { reader.cancel(); } catch (err) {}
+            var abortErr = new Error('Respuesta detenida por el usuario.');
+            abortErr.name = 'AbortError';
+            throw abortErr;
+          }
           if (!result) {
             return;
           }
@@ -3504,7 +3602,7 @@
     });
   }
 
-  function generateDocumentFromPrompt(query) {
+  function generateDocumentFromPrompt(query, signal) {
     if (isSuperContext() || isPublicPortalContext()) {
       throw new Error('El modo Documentos IA requiere una empresa activa.');
     }
@@ -3520,6 +3618,7 @@
         'Content-Type': 'application/json',
         'X-PCS-Source': 'ai_drawer_document_mode'
       },
+      signal: signal || undefined,
       body: JSON.stringify({
         empresa_id: parsePositiveInt(empresaId),
         title: inferDocumentExportTitle(query),
@@ -3555,12 +3654,13 @@
   }
 
   function sendQuery(query, attachment, callbacks) {
+    var signal = callbacks && callbacks.signal ? callbacks.signal : null;
     var useDocumentMode = isDocumentMode() || (!attachment && shouldAutoUseDocumentMode(query));
     if (useDocumentMode) {
       if (attachment) {
         throw new Error('El modo Documentos IA no usa adjuntos. Para fotos cambia a modo operativo y adjunta la imagen.');
       }
-      return generateDocumentFromPrompt(query);
+      return generateDocumentFromPrompt(query, signal);
     }
     if (isReportMode()) {
       if (isPublicPortalContext()) {
@@ -3580,6 +3680,7 @@
           'Content-Type': 'application/json',
           'X-PCS-Source': 'ai_drawer'
         },
+        signal: signal || undefined,
         body: JSON.stringify({
           empresa_id: parsePositiveInt(empresaIdForReports),
           modo: 'reporte',
@@ -3655,6 +3756,9 @@
         'X-PCS-Source': 'ai_drawer'
       }
     };
+    if (signal) {
+      options.signal = signal;
+    }
 
     if (attachment) {
       if (!isImageFileForAI(attachment)) {
@@ -4278,13 +4382,18 @@
 
     var liveAssistantMessage = null;
     var liveAssistantMeta = null;
+    var requestAbort = startAIRequestAbortController();
+    var requestSeq = requestAbort.seq;
     sendQuery(query, attachment, {
+      signal: requestAbort.signal,
       onStreamStart: function () {
+        if (requestSeq !== state.activeRequestSeq) return;
         setLastResponseModelMeta(null);
         liveAssistantMessage = appendStreamingAssistantMessage('Respondiendo en tiempo real...', liveAssistantMeta);
         setNotice('Respondiendo en tiempo real...');
       },
       onStreamMeta: function (meta) {
+        if (requestSeq !== state.activeRequestSeq) return;
         liveAssistantMeta = meta;
         setLastResponseModelMeta(meta);
         if (!liveAssistantMessage) {
@@ -4294,12 +4403,14 @@
         }
       },
       onStreamDelta: function (text) {
+        if (requestSeq !== state.activeRequestSeq) return;
         if (!liveAssistantMessage) {
           liveAssistantMessage = appendStreamingAssistantMessage('Respondiendo en tiempo real...', liveAssistantMeta);
         }
         updateStreamingAssistantMessage(liveAssistantMessage, text);
       },
       onStreamFallback: function () {
+        if (requestSeq !== state.activeRequestSeq) return;
         if (liveAssistantMessage && liveAssistantMessage.item && liveAssistantMessage.item.parentNode) {
           liveAssistantMessage.item.parentNode.removeChild(liveAssistantMessage.item);
         }
@@ -4307,6 +4418,7 @@
         setNotice('El modo en tiempo real no estuvo disponible. Continuo con respuesta normal.');
       }
     }).then(function (result) {
+      if (requestSeq !== state.activeRequestSeq) return;
       setLastResponseModelMeta(result && result.meta ? result.meta : null);
       var hasActions = !!(result && result.proposal && Array.isArray(result.proposal.actions) && result.proposal.actions.length);
       if (liveAssistantMessage && result && result.streamed) {
@@ -4321,6 +4433,10 @@
       setNotice(result && result.document ? 'Documento listo. Elige formato y presiona Descargar.' : 'Respuesta lista. Puedes seguir escribiendo otra consulta.');
       clearAttachmentSelection();
     }).catch(function (err) {
+      if (requestSeq !== state.activeRequestSeq || isAbortError(err)) {
+        setNotice('Respuesta detenida. Puedes enviar otra consulta.');
+        return;
+      }
       if (isAvatarPersonalityMode(getChatPersonalityMode())) setRobotMood('error', 2600);
       if (liveAssistantMessage && liveAssistantMessage.item && liveAssistantMessage.item.parentNode) {
         liveAssistantMessage.item.parentNode.removeChild(liveAssistantMessage.item);
@@ -4328,8 +4444,11 @@
       appendMessage('assistant', err.message || 'Error al procesar la consulta.', 'error');
       setNotice('No se pudo completar la solicitud. ' + String(err.message || ''), true);
     }).finally(function () {
-      state.loading = false;
-      updateVoiceButtons(document.getElementById(MIC_ID), document.getElementById(VOICE_ID), document.getElementById(CONV_ID));
+      if (requestSeq === state.activeRequestSeq) {
+        state.loading = false;
+        state.activeAbortController = null;
+        updateVoiceButtons(document.getElementById(MIC_ID), document.getElementById(VOICE_ID), document.getElementById(CONV_ID));
+      }
     });
   }
 

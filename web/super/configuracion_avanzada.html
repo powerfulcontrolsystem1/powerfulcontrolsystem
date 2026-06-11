@@ -96,6 +96,7 @@
           <ul class="admin-nav-sublist">
             <li><button type="button" data-target="rustdeskVpsCard" data-search="infraestructura vps rustdesk soporte remoto hbbs hbbr" aria-label="RustDesk VPS Soporte remoto"><img class="icon" src="/img/network-color.svg" alt=""><strong>RustDesk VPS</strong><span>Soporte remoto</span></button></li>
             <li><button type="button" data-target="empresaLimitacionesCard" data-search="limitaciones empresa api db ia gps rustdesk cuotas base datos" aria-label="Limitaciones API, DB, cuotas"><img class="icon" src="/img/shield-license-color.svg" alt=""><strong>Limitaciones</strong><span>API, DB, cuotas</span></button></li>
+            <li><button type="button" data-target="empresaStorageCard" data-search="almacenamiento empresa archivos adjuntos buzon cuota limpieza" aria-label="Almacenamiento por empresa"><img class="icon" src="/img/report.svg" alt=""><strong>Almacenamiento</strong><span>Archivos por empresa</span></button></li>
             <li><button type="button" data-target="onlyofficeConfigCard" data-search="onlyoffice documentos colaborativos edicion oficina" aria-label="OnlyOffice Documentos"><img class="icon" src="/img/report.svg" alt=""><strong>OnlyOffice</strong><span>Documentos</span></button></li>
             <li><button type="button" data-target="voiceStreamConfigCard" data-search="voz ia streaming piper tts audio token" aria-label="Voz IA Streaming"><img class="icon" src="/img/gpt.svg" alt=""><strong>Voz IA</strong><span>Streaming</span></button></li>
           </ul>
@@ -414,6 +415,57 @@
         <button id="cancelEmpresaLimitacionesBtn" class="btn secondary" type="button" style="display:none;">Cancelar</button>
       </div>
       <div id="empresaLimitacionesMsg" class="form-help"></div>
+    </section>
+
+    <section class="card form advanced-card" data-brand="system" id="empresaStorageCard">
+      <h2>
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 7h16"></path><path d="M7 7V5h10v2"></path><path d="M6 7l1 13h10l1-13"></path></svg>
+        Almacenamiento por empresa
+      </h2>
+      <p class="form-help">Define la cuota de archivos por empresa para adjuntos, fotos, audios, logos y documentos guardados en su carpeta. Cuando una empresa se acerque al limite, el panel mostrara alerta; si lo supera, puedes bloquear nuevas cargas y limpiar archivos antiguos del buzon.</p>
+
+      <div class="form-row">
+        <div class="form-col">
+          <label class="form-label">Activar cuota de almacenamiento</label>
+          <label class="mode-switch-row" for="empresaStorageQuotaEnabled">
+            <span class="mode-label">Off</span>
+            <input id="empresaStorageQuotaEnabled" type="checkbox" role="switch" aria-label="Activar cuota de almacenamiento">
+            <span class="mode-label">On</span>
+          </label>
+          <div class="form-help">Si esta activo, cada carpeta de empresa se mide contra el limite global.</div>
+        </div>
+        <div class="form-col">
+          <label class="form-label" for="empresaStorageDefaultLimitMB">Limite por empresa (MB)</label>
+          <input id="empresaStorageDefaultLimitMB" class="form-input" type="number" min="1" step="1" placeholder="1024">
+          <div class="form-help">Valor inicial recomendado: 1024 MB por empresa.</div>
+        </div>
+        <div class="form-col">
+          <label class="form-label" for="empresaStorageWarnPercent">Alerta desde (%)</label>
+          <input id="empresaStorageWarnPercent" class="form-input" type="number" min="50" max="99" step="1" placeholder="80">
+          <div class="form-help">El panel de la empresa mostrara mensajes al alcanzar este porcentaje.</div>
+        </div>
+        <div class="form-col">
+          <label class="form-label" for="empresaStorageMaxUploadMB">Maximo por archivo (MB)</label>
+          <input id="empresaStorageMaxUploadMB" class="form-input" type="number" min="1" max="100" step="1" placeholder="10">
+          <div class="form-help">Aplica a adjuntos del buzon, fotos y evidencias manejadas por este modulo.</div>
+        </div>
+        <div class="form-col">
+          <label class="form-label">Bloquear cargas al superar limite</label>
+          <label class="mode-switch-row" for="empresaStorageBlockUploads">
+            <span class="mode-label">No</span>
+            <input id="empresaStorageBlockUploads" type="checkbox" role="switch" aria-label="Bloquear cargas al superar limite">
+            <span class="mode-label">Si</span>
+          </label>
+          <div class="form-help">Si esta apagado, solo se muestran alertas administrativas.</div>
+        </div>
+      </div>
+
+      <div class="form-actions">
+        <button id="empresaStorageSaveBtn" class="btn" type="button">Guardar almacenamiento</button>
+        <button id="empresaStorageReloadBtn" class="btn secondary" type="button">Actualizar uso</button>
+      </div>
+      <div id="empresaStorageMsg" class="form-help">Cargando configuracion...</div>
+      <div id="empresaStorageEmpresas" class="form-help" style="display:grid;gap:8px;margin-top:12px;"></div>
     </section>
 
     <section class="card form advanced-card" data-brand="system" id="onlyofficeConfigCard">
@@ -1159,6 +1211,8 @@
         rustdeskSaveSshBtn: ['guardar_configuracion', 'super_config_rustdesk'],
         onlyofficeEditBtn: ['habilitar_edicion_configuracion', 'super_config_onlyoffice'],
         onlyofficeSaveBtn: ['guardar_configuracion', 'super_config_onlyoffice'],
+        empresaStorageSaveBtn: ['guardar_configuracion', 'super_config_empresa_storage'],
+        empresaStorageReloadBtn: ['actualizar_uso_storage', 'super_config_empresa_storage'],
         editEpaycoBtn: ['habilitar_edicion_configuracion', 'super_config_epayco'],
         saveEpaycoBtn: ['guardar_configuracion', 'super_config_epayco'],
         editWompiBtn: ['habilitar_edicion_configuracion', 'super_config_wompi'],
@@ -1608,6 +1662,104 @@
         }
       }
 
+      function empresaStorageEl(id){ return document.getElementById(id); }
+
+      function renderEmpresaStorageRows(items){
+        const box = empresaStorageEl('empresaStorageEmpresas');
+        if (!box) return;
+        box.innerHTML = '';
+        items = Array.isArray(items) ? items : [];
+        if (!items.length) {
+          box.innerText = 'No hay empresas para medir todavia.';
+          return;
+        }
+        items.slice(0, 80).forEach(function(item){
+          const row = document.createElement('div');
+          row.style.cssText = 'display:flex;gap:10px;align-items:center;justify-content:space-between;border:1px solid var(--content-soft-border);border-radius:8px;padding:10px;background:var(--content-soft-bg);';
+          const info = document.createElement('span');
+          const pct = Number(item.usage_percent || 0);
+          info.textContent = 'Empresa #' + item.empresa_id + ': ' + Number(item.used_mb || 0).toFixed(2) + ' MB de ' + (item.limit_mb || 0) + ' MB (' + pct.toFixed(1) + '%)' + (item.warn ? ' - alerta' : '');
+          const btn = document.createElement('button');
+          btn.type = 'button';
+          btn.className = 'btn secondary';
+          btn.textContent = 'Limpiar antiguos';
+          btn.addEventListener('click', function(){ cleanupEmpresaStorage(item.empresa_id); });
+          row.appendChild(info);
+          row.appendChild(btn);
+          box.appendChild(row);
+        });
+      }
+
+      async function loadEmpresaStorageConfig(){
+        const msgEl = empresaStorageEl('empresaStorageMsg');
+        if (msgEl) msgEl.innerText = 'Cargando almacenamiento...';
+        try {
+          const res = await fetch('/super/api/config/empresa_storage?action=empresas', { method: 'GET', credentials: 'same-origin' });
+          const raw = await res.text();
+          if (!res.ok) throw new Error(raw || ('HTTP ' + res.status));
+          const data = raw ? JSON.parse(raw) : {};
+          const cfg = data.config || {};
+          if (empresaStorageEl('empresaStorageQuotaEnabled')) empresaStorageEl('empresaStorageQuotaEnabled').checked = !!cfg.quota_enabled;
+          if (empresaStorageEl('empresaStorageDefaultLimitMB')) empresaStorageEl('empresaStorageDefaultLimitMB').value = cfg.default_limit_mb || 1024;
+          if (empresaStorageEl('empresaStorageWarnPercent')) empresaStorageEl('empresaStorageWarnPercent').value = cfg.warn_percent || 80;
+          if (empresaStorageEl('empresaStorageMaxUploadMB')) empresaStorageEl('empresaStorageMaxUploadMB').value = cfg.max_upload_mb || 10;
+          if (empresaStorageEl('empresaStorageBlockUploads')) empresaStorageEl('empresaStorageBlockUploads').checked = cfg.block_uploads_over_limit !== false;
+          renderEmpresaStorageRows(data.empresas || []);
+          if (msgEl) msgEl.innerText = 'Configuracion de almacenamiento cargada.';
+        } catch (err) {
+          if (msgEl) msgEl.innerText = err.message || 'No se pudo cargar almacenamiento.';
+        }
+      }
+
+      async function saveEmpresaStorageConfig(){
+        const msgEl = empresaStorageEl('empresaStorageMsg');
+        const btn = empresaStorageEl('empresaStorageSaveBtn');
+        if (btn) btn.disabled = true;
+        if (msgEl) msgEl.innerText = 'Guardando almacenamiento...';
+        try {
+          const payload = {
+            quota_enabled: !!(empresaStorageEl('empresaStorageQuotaEnabled') && empresaStorageEl('empresaStorageQuotaEnabled').checked),
+            default_limit_mb: normalizeNonNegativeInt(empresaStorageEl('empresaStorageDefaultLimitMB') && empresaStorageEl('empresaStorageDefaultLimitMB').value, 1024),
+            warn_percent: normalizeNonNegativeInt(empresaStorageEl('empresaStorageWarnPercent') && empresaStorageEl('empresaStorageWarnPercent').value, 80),
+            max_upload_mb: normalizeNonNegativeInt(empresaStorageEl('empresaStorageMaxUploadMB') && empresaStorageEl('empresaStorageMaxUploadMB').value, 10),
+            block_uploads_over_limit: !!(empresaStorageEl('empresaStorageBlockUploads') && empresaStorageEl('empresaStorageBlockUploads').checked)
+          };
+          const res = await fetch('/super/api/config/empresa_storage', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'same-origin',
+            body: JSON.stringify(payload)
+          });
+          const raw = await res.text();
+          if (!res.ok) throw new Error(raw || ('HTTP ' + res.status));
+          if (msgEl) msgEl.innerText = 'Almacenamiento guardado correctamente.';
+          await loadEmpresaStorageConfig();
+        } catch (err) {
+          if (msgEl) msgEl.innerText = err.message || 'No se pudo guardar almacenamiento.';
+        } finally {
+          if (btn) btn.disabled = false;
+        }
+      }
+
+      async function cleanupEmpresaStorage(empresaID){
+        const msgEl = empresaStorageEl('empresaStorageMsg');
+        if (!empresaID) return;
+        if (!window.confirm('Eliminar archivos antiguos del buzon de la empresa #' + empresaID + '?')) return;
+        if (msgEl) msgEl.innerText = 'Limpiando archivos antiguos...';
+        try {
+          const res = await fetch('/super/api/config/empresa_storage?empresa_id=' + encodeURIComponent(empresaID) + '&days=180', {
+            method: 'DELETE',
+            credentials: 'same-origin'
+          });
+          const raw = await res.text();
+          if (!res.ok) throw new Error(raw || ('HTTP ' + res.status));
+          if (msgEl) msgEl.innerText = 'Limpieza ejecutada.';
+          await loadEmpresaStorageConfig();
+        } catch (err) {
+          if (msgEl) msgEl.innerText = err.message || 'No se pudo limpiar.';
+        }
+      }
+
       async function loadOnlyOfficeConfig(){
         const msgEl = document.getElementById('onlyofficeMsg');
         const toggleEl = document.getElementById('onlyofficeEnabledToggle');
@@ -1973,6 +2125,7 @@
         await loadRustDeskSshConfig();
         await loadRustDeskCard();
         await loadEmpresaLimitacionesConfig();
+        await loadEmpresaStorageConfig();
         await loadOnlyOfficeConfig();
         await loadVoiceStreamQuickStatus();
         // cargar estado Wompi
@@ -3434,6 +3587,8 @@
       document.getElementById('saveEmpresaLimitacionesBtn').addEventListener('click', saveEmpresaLimitacionesConfig);
       document.getElementById('editEmpresaLimitacionesBtn').addEventListener('click', enableEditEmpresaLimitacionesConfig);
       document.getElementById('cancelEmpresaLimitacionesBtn').addEventListener('click', cancelEditEmpresaLimitacionesConfig);
+      document.getElementById('empresaStorageSaveBtn').addEventListener('click', saveEmpresaStorageConfig);
+      document.getElementById('empresaStorageReloadBtn').addEventListener('click', loadEmpresaStorageConfig);
       document.getElementById('onlyofficeSaveBtn').addEventListener('click', saveOnlyOfficeConfig);
       document.getElementById('onlyofficeEditBtn').addEventListener('click', enableEditOnlyOfficeConfig);
       document.getElementById('onlyofficeCancelBtn').addEventListener('click', cancelEditOnlyOfficeConfig);

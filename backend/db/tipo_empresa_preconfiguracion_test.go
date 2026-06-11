@@ -17,7 +17,7 @@ func TestDefaultTipoEmpresaPreconfigIncludesPorteroRole(t *testing.T) {
 	if !stringSliceContainsForTest(roles, "servicio_limpieza") {
 		t.Fatalf("roles por defecto deben incluir servicio_limpieza, got %v", roles)
 	}
-	for _, expected := range []string{"supervisor_sucursal", "vendedor", "recepcion", "jefe_bodega", "recursos_humanos", "tecnico_solar"} {
+	for _, expected := range []string{"supervisor_sucursal", "vendedor", "recepcion", "jefe_bodega", "responsable_bodega", "recursos_humanos", "tecnico_solar"} {
 		if !stringSliceContainsForTest(roles, expected) {
 			t.Fatalf("roles por defecto deben incluir %s, got %v", expected, roles)
 		}
@@ -66,6 +66,16 @@ func TestDefaultTipoEmpresaPreconfigIncludesPorteroRole(t *testing.T) {
 	}
 	if rolPermisoModuloAllowedForTest(permisosBodega, "inventario", "D") {
 		t.Fatalf("jefe_bodega no debe tener inventario:D, got %+v", permisosBodega)
+	}
+
+	permisosResponsableBodega := permisosModuloPreconfigRol(103, "responsable_bodega")
+	for _, accion := range []string{"R", "C", "U", "A"} {
+		if !rolPermisoModuloAllowedForTest(permisosResponsableBodega, "inventario", accion) {
+			t.Fatalf("responsable_bodega debe tener inventario:%s, got %+v", accion, permisosResponsableBodega)
+		}
+	}
+	if rolPermisoModuloAllowedForTest(permisosResponsableBodega, "inventario", "D") || !rolPermisoModuloAllowedForTest(permisosResponsableBodega, "compras", "R") {
+		t.Fatalf("responsable_bodega debe administrar inventario sin eliminar y consultar compras, got %+v", permisosResponsableBodega)
 	}
 }
 
