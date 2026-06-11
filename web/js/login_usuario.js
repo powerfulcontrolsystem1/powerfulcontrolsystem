@@ -42,11 +42,6 @@
   var contractDialogContent = document.getElementById("contractDialogContent");
   var contractDialogClose = document.getElementById("contractDialogClose");
   var googleUsuarioBtn = document.getElementById("googleUsuarioBtn");
-  var cashRegisterLoginDialog = document.getElementById("cashRegisterLoginDialog");
-  var cashRegisterLoginSelect = document.getElementById("cashRegisterLoginSelect");
-  var cashRegisterLoginMsg = document.getElementById("cashRegisterLoginMsg");
-  var cashRegisterLoginContinue = document.getElementById("cashRegisterLoginContinue");
-  var pendingCashRegisterAuthPayload = null;
   var recaptchaManagers = {
     login: window.PCSRecaptcha ? window.PCSRecaptcha.createManager({ containerId: "empresaLoginRecaptcha", action: "empresa_login" }) : null,
     setup: window.PCSRecaptcha ? window.PCSRecaptcha.createManager({ containerId: "empresaSetupRecaptcha", action: "empresa_setup_password" }) : null,
@@ -519,6 +514,90 @@
     return "pcs_cajero_caja_login_" + String(empresaID || 0) + "_" + email.replace(/[^a-z0-9_.@-]/g, "_");
   }
 
+  function ensureLocalDeviceID() {
+    var key = "pcs_dispositivo_id";
+    try {
+      var existing = String(window.localStorage.getItem(key) || "").trim();
+      if (existing) return existing;
+      var random = "";
+      if (window.crypto && window.crypto.getRandomValues) {
+        var bytes = new Uint8Array(12);
+        window.crypto.getRandomValues(bytes);
+        random = Array.prototype.map.call(bytes, function (b) { return ("0" + b.toString(16)).slice(-2); }).join("");
+      } else {
+        random = String(Date.now()) + "_" + Math.random().toString(36).slice(2);
+      }
+      var id = "PCS-" + random.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 24);
+      window.localStorage.setItem(key, id);
+      return id;
+    } catch (error) {
+      return "PCS-SESION";
+    }
+  }
+
+  function localDeviceLabel() {
+    var ua = String(navigator.userAgent || "");
+    var os = /Windows/i.test(ua) ? "Windows" : (/Mac/i.test(ua) ? "Mac" : (/Android/i.test(ua) ? "Android" : (/Linux/i.test(ua) ? "Linux" : "Equipo")));
+    var browser = /Edg\//i.test(ua) ? "Edge" : (/Chrome\//i.test(ua) ? "Chrome" : (/Firefox\//i.test(ua) ? "Firefox" : (/Safari\//i.test(ua) ? "Safari" : "Navegador")));
+    return os + " / " + browser;
+  }
+
+  function cashRegisterDeviceStorageKey(payload) {
+    var empresaID = Number((payload && payload.empresa_id) || state.empresaID || 0);
+    return "pcs_cajero_caja_dispositivo_" + String(empresaID || 0);
+  }
+
+  function readDeviceCashRegisterAssignment(payload) {
+    try {
+      var raw = window.localStorage.getItem(cashRegisterDeviceStorageKey(payload));
+      if (!raw) return null;
+      var parsed = JSON.parse(raw);
+      var code = normalizeCashCode(parsed && parsed.codigo);
+      if (!code) return null;
+      return {
+        codigo: code,
+        dispositivo_id: String((parsed && parsed.dispositivo_id) || ""),
+        etiqueta: String((parsed && parsed.etiqueta) || ""),
+        asignado_en: String((parsed && parsed.asignado_en) || "")
+      };
+    } catch (error) {
+      return null;
+    }
+  }
+
+  function readPrinterDeviceCashRegisterCode() {
+    try {
+      return normalizeCashCode(window.localStorage.getItem("pcs_dispositivo_ultima_caja_codigo"));
+    } catch (error) {
+      return "";
+    }
+  }
+
+  function findCashRegisterByCode(rows, code) {
+    var normalized = normalizeCashCode(code);
+    if (!normalized) return null;
+    return (Array.isArray(rows) ? rows : []).find(function (item) {
+      return item && normalizeCashCode(item.codigo) === normalized;
+    }) || null;
+  }
+
+  function persistDeviceCashRegisterAssignment(payload, caja) {
+    if (!caja || !caja.codigo) return;
+    try {
+      var deviceID = ensureLocalDeviceID();
+      var assignment = {
+        codigo: normalizeCashCode(caja.codigo),
+        nombre: caja.nombre || "",
+        descripcion: caja.descripcion || "",
+        dispositivo_id: deviceID,
+        etiqueta: localDeviceLabel(),
+        asignado_en: new Date().toISOString()
+      };
+      window.localStorage.setItem(cashRegisterDeviceStorageKey(payload), JSON.stringify(assignment));
+      window.localStorage.setItem("pcs_dispositivo_ultima_caja_codigo", assignment.codigo);
+    } catch (error) {}
+  }
+
   function readLastCashRegisterCode(payload) {
     try {
       return normalizeCashCode(window.localStorage.getItem(cashRegisterLoginStorageKey(payload)));
@@ -527,19 +606,35 @@
     }
   }
 
-  function persistSelectedCashRegister(payload, caja) {
+  function persistSelectedCashRegister(payload, caja, options) {
     if (!caja || !caja.codigo) return;
+    options = options || {};
     try {
       window.localStorage.setItem(cashRegisterLoginStorageKey(payload), caja.codigo);
+      if (options.assignDevice) persistDeviceCashRegisterAssignment(payload, caja);
       window.sessionStorage.setItem("pcs_caja_trabajo_codigo", caja.codigo);
       window.sessionStorage.setItem("pcs_caja_trabajo_nombre", caja.nombre || "");
       window.sessionStorage.setItem("pcs_caja_trabajo_descripcion", caja.descripcion || "");
       window.sessionStorage.setItem("pcs_caja_trabajo_empresa_id", String((payload && payload.empresa_id) || state.empresaID || 0));
+      window.sessionStorage.setItem("pcs_dispositivo_id", ensureLocalDeviceID());
     } catch (error) {}
   }
 
-  function redirectWithCashRegister(payload, caja) {
-    persistSelectedCashRegister(payload, caja);
+  function markCashRegisterAssignmentPending(payload) {
+    try {
+      var empresaID = String((payload && payload.empresa_id) || state.empresaID || 0);
+      window.sessionStorage.setItem("pcs_dispositivo_id", ensureLocalDeviceID());
+      window.sessionStorage.setItem("pcs_caja_trabajo_empresa_id", empresaID);
+      window.sessionStorage.removeItem("pcs_caja_trabajo_codigo");
+      window.sessionStorage.removeItem("pcs_caja_trabajo_nombre");
+      window.sessionStorage.removeItem("pcs_caja_trabajo_descripcion");
+      window.sessionStorage.setItem("pcs_caja_trabajo_requiere_asignacion", "1");
+      window.sessionStorage.setItem("pcs_caja_trabajo_requiere_asignacion_mensaje", "Este computador aun no tiene una caja asignada. Un administrador debe asociarlo desde Configuracion > Impresoras y caja.");
+    } catch (error) {}
+  }
+
+  function redirectWithCashRegister(payload, caja, options) {
+    persistSelectedCashRegister(payload, caja, options);
     var next = Object.assign({}, payload || {});
     var redirectURL = String(next.redirect_url || "").trim() || "/administrar_empresa.html";
     try {
@@ -552,45 +647,9 @@
     redirectAfterAuth(next);
   }
 
-  function setCashRegisterLoginMessage(text, isError) {
-    if (!cashRegisterLoginMsg) return;
-    cashRegisterLoginMsg.textContent = text || "";
-    cashRegisterLoginMsg.classList.toggle("value-negative", !!isError);
-  }
-
-  function closeCashRegisterLoginDialog() {
-    if (!cashRegisterLoginDialog) return;
-    cashRegisterLoginDialog.hidden = true;
-    cashRegisterLoginDialog.setAttribute("aria-hidden", "true");
-  }
-
-  function openCashRegisterLoginDialog(payload, rows) {
-    if (!cashRegisterLoginDialog || !cashRegisterLoginSelect) {
-      redirectAfterAuth(payload);
-      return;
-    }
-    pendingCashRegisterAuthPayload = payload || null;
-    var lastCode = readLastCashRegisterCode(payload);
-    cashRegisterLoginSelect.innerHTML = "";
-    rows.forEach(function (caja) {
-      var label = caja.codigo + (caja.nombre ? (" - " + caja.nombre) : "");
-      if (caja.descripcion && label.toLowerCase().indexOf(caja.descripcion.toLowerCase()) === -1) {
-        label += " · " + caja.descripcion;
-      }
-      cashRegisterLoginSelect.appendChild(new Option(label, caja.codigo));
-    });
-    if (lastCode && rows.some(function (item) { return item.codigo === lastCode; })) {
-      cashRegisterLoginSelect.value = lastCode;
-    }
-    setCashRegisterLoginMessage(lastCode ? "Ultima caja usada preseleccionada." : "Elige la caja fisica que usaras en este turno.", false);
-    cashRegisterLoginDialog.hidden = false;
-    cashRegisterLoginDialog.setAttribute("aria-hidden", "false");
-    cashRegisterLoginSelect.focus();
-  }
-
   function loadCashRegisterLoginConfig(empresaID) {
     if (!empresaID) {
-      return Promise.resolve({ enabled: true, rows: normalizeCashRegisterRows([]) });
+      return Promise.resolve({ autoByDevice: true, rows: normalizeCashRegisterRows([]) });
     }
     return fetch("/api/empresa/estacion_prefs?empresa_id=" + encodeURIComponent(empresaID), { credentials: "same-origin" })
       .then(function (response) {
@@ -604,12 +663,12 @@
         });
         var cfg = parseStationConfigValue(pref && pref.valor) || {};
         return {
-          enabled: cfg.solicitar_caja_login_cajero === undefined ? true : !!cfg.solicitar_caja_login_cajero,
+          autoByDevice: true,
           rows: normalizeCashRegisterRows(cfg.cajas_config || cfg.cajas_fisicas || cfg.cajas || cfg.caja_catalogo)
         };
       })
       .catch(function () {
-        return { enabled: true, rows: normalizeCashRegisterRows([]) };
+        return { autoByDevice: true, rows: normalizeCashRegisterRows([]) };
       });
   }
 
@@ -619,16 +678,22 @@
       return;
     }
     loadCashRegisterLoginConfig(Number((payload && payload.empresa_id) || state.empresaID || 0)).then(function (config) {
-      if (!config || config.enabled === false) {
-        redirectAfterAuth(payload);
-        return;
-      }
+      ensureLocalDeviceID();
       var rows = normalizeCashRegisterRows(config.rows);
-      if (rows.length <= 1) {
-        redirectWithCashRegister(payload, rows[0]);
+      var assignment = readDeviceCashRegisterAssignment(payload);
+      var assignedCaja = assignment ? findCashRegisterByCode(rows, assignment.codigo) : null;
+      if (!assignedCaja) assignedCaja = findCashRegisterByCode(rows, readPrinterDeviceCashRegisterCode());
+      if (!assignedCaja) assignedCaja = findCashRegisterByCode(rows, readLastCashRegisterCode(payload));
+      if (assignedCaja && assignedCaja.activa !== false) {
+        redirectWithCashRegister(payload, assignedCaja, { assignDevice: true });
         return;
       }
-      openCashRegisterLoginDialog(payload, rows);
+      if (rows.length <= 1) {
+        redirectWithCashRegister(payload, rows[0], { assignDevice: true });
+        return;
+      }
+      markCashRegisterAssignmentPending(payload);
+      redirectAfterAuth(payload);
     });
   }
 
@@ -991,30 +1056,6 @@
       if (event.target && event.target.hasAttribute("data-close-contract")) {
         closeContractDialog();
       }
-    });
-  }
-
-  if (cashRegisterLoginContinue) {
-    cashRegisterLoginContinue.addEventListener("click", function (event) {
-      event.preventDefault();
-      var payload = pendingCashRegisterAuthPayload || {};
-      var code = normalizeCashCode(cashRegisterLoginSelect && cashRegisterLoginSelect.value);
-      var selected = null;
-      if (cashRegisterLoginSelect) {
-        selected = Array.prototype.slice.call(cashRegisterLoginSelect.options || []).map(function (option) {
-          return {
-            codigo: normalizeCashCode(option.value),
-            nombre: String(option.textContent || "").replace(normalizeCashCode(option.value), "").replace(/^[\s\-·]+/, "").split("·")[0].trim(),
-            descripcion: String(option.textContent || "").split("·").slice(1).join("·").trim()
-          };
-        }).find(function (item) { return item.codigo === code; });
-      }
-      if (!selected || !selected.codigo) {
-        setCashRegisterLoginMessage("Selecciona una caja para continuar.", true);
-        return;
-      }
-      closeCashRegisterLoginDialog();
-      redirectWithCashRegister(payload, selected);
     });
   }
 

@@ -4,6 +4,11 @@ backend/pos-backend.exe
 backend/*.log
 backend/*.err
 backend/logs/*.log
+backend/logs/
+backend/handlers/logs/
+backend/tmp/
+backend/tmp_*
+backend/tmp_printer_server.*
 backend/logs/vps_security/
 backend/*.exe~
 backend/bin/vps_security_scan_linux_amd64
@@ -17,12 +22,19 @@ documentos/referencias/dian/2026-06-08/
 # URL local del remoto para actualizar_repositorio.ps1 (no versionar)
 scripts/actualizar_repositorio.repo_url
 scripts/pcs_deployment.local.ps1
+tmp/
 tmp/*.txt
 tmp/*.js
 tmp/*-profile/
 tmp/playwright-*/
 tmp_*.png
 outputs/
+test_runs/
+.tmp-go-test/
+__pycache__/
+*.pyc
+.DS_Store
+Thumbs.db
 backend/.env.local
 .env.local
 deploy/.env.platform

@@ -132,12 +132,49 @@
 - Defensa backend: las restricciones de roles especializados se reaplican despues de licencia, vertical, empresa y acceso compartido.
 - `cajero`: las variantes historicas `Caja`, `Caja principal` y `Caja turno`
   se normalizan como `cajero`. En `login_usuario.html` el menu queda limitado a
-  `Venta directa`, `Estaciones` y `Corte de Caja`, aunque el rol conserve
-  permisos operativos internos para cobrar, facturar, cerrar turno, consultar
-  catalogo de inventario y crear/actualizar clientes desde el carrito. Las APIs
+  `Venta directa`, `Estaciones`, `Corte de Caja` y `Buscar ventas y facturas`,
+  aunque el rol conserve permisos operativos internos para cobrar, facturar,
+  cerrar turno, consultar catalogo de inventario, crear/actualizar clientes
+  desde el carrito y reimprimir o reenviar documentos ya generados. Las APIs
   auxiliares de carrito para productos, servicios, recetas, clientes, codigos de
   descuento, propinas y comisiones pueden ejecutarse sin mostrar las paginas
   administrativas de Productos o Clientes en el menu.
+
+2026-06-11: Nota de busqueda de ventas y facturas para cajero
+- `linkVentas` pasa a ser acceso operativo permitido para `cajero` con
+  `ventas:R`, usando `web/administrar_empresa/ventas.html`.
+- Alcance del cajero: consultar ventas/facturas, previsualizar, reimprimir,
+  abrir facturas electronicas relacionadas y reenviar correo al cliente cuando
+  el documento lo permita.
+- Para evitar 403 en la consulta documental, `linkFacturasElectronicas` y
+  `linkFacturacionElectronica` quedan permitidos como soporte interno del flujo,
+  pero el frontend de cajero no los expone como botones de menu.
+- No abre paginas administrativas de Productos, Clientes, Finanzas,
+  Configuracion ni Reportes; los endpoints mantienen aislamiento por
+  `empresa_id` y wrappers de ventas/facturacion.
+
+2026-06-11: Nota de caja detectada por computador
+- `web/login_usuario.html` identifica el computador con `localStorage.pcs_dispositivo_id`
+  y entra automaticamente con la caja asignada a ese navegador/equipo cuando
+  la asociacion existe para la empresa.
+- La asignacion no concede permisos: solo selecciona `caja_codigo`,
+  `caja_nombre` y `caja_descripcion` para el flujo de cajero ya autorizado.
+- Ya no existe seleccion manual de caja en el login del cajero. Si un equipo
+  necesita cambiar de caja, el administrador actualiza la asociacion desde
+  Configuracion > Impresoras y caja.
+
+2026-06-11: Nota de ingresos/egresos manuales para cajero
+- El rol `cajero` no recibe finanzas completas por defecto. Puede registrar
+  ingresos o egresos manuales solo si el administrador activa los checks por rol
+  `permitir_ingresos_manuales` y/o `permitir_egresos_manuales` en Configuracion
+  operativa de cobro.
+- La excepcion de permisos del middleware aplica solo a
+  `/api/empresa/finanzas/movimientos` con `POST` o `PUT` de movimientos
+  manuales. Importacion bancaria, Bre-B, conciliacion, configuracion financiera,
+  periodos y otros endpoints de finanzas siguen bloqueados por matriz/wrapper.
+- Cuando el check esta activo, el menu puede mostrar `Ingresos`, `Egresos` y el
+  acceso resumido de finanzas necesario para llegar a esas paginas, siempre con
+  `empresa_id` validado y sin conceder `DELETE` financiero general.
 
 2026-05-31: Nota de rol Servicio de limpieza para estaciones
 - Se agrega el rol `servicio_limpieza` al catalogo base de roles empresariales y a las preconfiguraciones de tipos de empresa.
@@ -342,8 +379,8 @@
 - No cambian claves de permisos, modulos, acciones ni rutas; solo el orden visual del submenu empresarial.
 
 2026-05-17: Nota de navegacion para Operacion y ventas
-- El grupo `Operacion y ventas` de `web/administrar_empresa.html` queda reservado a los accesos de operacion diaria directa: `linkVentaDirecta` y `linkEstaciones`.
-- `linkVentas` se conserva como permiso base del TPV bajo `Permisos base de ventas`, no como boton operativo principal.
+- El grupo `Operacion y ventas` de `web/administrar_empresa.html` queda reservado a los accesos de operacion diaria directa: `linkVentaDirecta` y `linkEstaciones`; desde 2026-06-11 tambien incluye `linkVentas` como consulta operativa de ventas/facturas para reimpresion y reenvio.
+- `linkVentas` se conserva en el catalogo bajo `Permisos base de ventas` y se muestra en el menu operativo cuando el rol tiene alcance de caja.
 - `linkVentaPublica`, `linkRedSocialComercial`, `linkCodigosDescuento` y `linkChatTareas` se agrupan administrativamente como `Canales digitales y colaboracion`.
 - `linkReservasHotel` se agrupa como `Plantillas de negocio` y se muestra en `Soluciones por negocio`.
 - Impacto de matriz: no cambian acciones, wrappers, rutas, endpoints ni permisos efectivos; solo cambia la ubicacion visual y el grupo de catalogo.

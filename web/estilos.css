@@ -4696,16 +4696,35 @@ body.super-page{
 
 /* Menú flotante (esquina superior derecha) */
 .floating-menu{position:fixed;top:max(var(--floating-menu-edge), env(safe-area-inset-top, 0px));right:max(var(--floating-menu-edge), env(safe-area-inset-right, 0px));z-index:9999;font-family:inherit}
-.floating-menu .fm-toggle{width:44px;height:44px;border-radius:999px;background:linear-gradient(180deg,var(--surface-soft),var(--surface));border:1px solid var(--border);display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 8px 18px rgba(4,11,21,0.56);font-weight:700;padding:0;overflow:hidden;touch-action:manipulation}
+.floating-menu .fm-toggle{width:44px;height:44px;border-radius:999px;background:linear-gradient(180deg,var(--surface-soft),var(--surface));border:1px solid var(--border);display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 8px 18px rgba(4,11,21,0.56);font-weight:700;padding:0;overflow:hidden;touch-action:manipulation;position:relative}
 .floating-menu .fm-toggle .fm-toggle-icon{font-size:18px;color:var(--text);display:inline-block}
 .floating-menu .fm-toggle .fm-avatar{width:100%;height:100%;display:block;object-fit:cover;border-radius:999px}
-.floating-menu .fm-panel{display:none;position:absolute;top:56px;right:0;background:linear-gradient(180deg,var(--surface-soft),var(--surface));border:1px solid var(--border);padding:8px;border-radius:10px;min-width:180px;box-shadow:0 14px 30px rgba(4,11,21,0.56)}
+.floating-menu .fm-toggle-badge{position:absolute;top:-4px;right:-4px;min-width:18px;height:18px;padding:0 5px;border-radius:999px;background:#ef4444;color:#fff;border:2px solid var(--surface);display:inline-flex;align-items:center;justify-content:center;font-size:0.68rem;font-weight:800;line-height:1;box-shadow:0 4px 10px rgba(4,11,21,0.32);z-index:2}
+.floating-menu .fm-toggle-badge[hidden]{display:none}
+.floating-menu .fm-panel{display:none;position:absolute;top:56px;right:0;background:linear-gradient(180deg,var(--surface-soft),var(--surface));border:1px solid var(--border);padding:8px;border-radius:10px;min-width:210px;box-shadow:0 14px 30px rgba(4,11,21,0.56)}
 .floating-menu .fm-panel.open{display:block}
 .floating-menu .fm-item{display:block;color:var(--text);text-decoration:none;padding:10px 12px;border-radius:8px;font-weight:600;word-break:break-word;touch-action:manipulation}
 .floating-menu button.fm-item{width:100%;border:0;background:transparent;text-align:left;font:inherit;cursor:pointer}
 .floating-menu .fm-item:hover{background:var(--focus)}
 .floating-menu .fm-icon-item{display:flex;align-items:center;gap:8px}
 .floating-menu .fm-item-icon{width:18px;height:18px;object-fit:contain;flex:0 0 auto}
+.floating-menu .fm-notification-item{position:relative}
+.floating-menu .fm-notification-icon{width:18px;display:inline-flex;align-items:center;justify-content:center;flex:0 0 18px}
+.floating-menu .fm-notification-label{white-space:nowrap}
+.floating-menu .fm-notification-count{margin-left:auto;min-width:20px;height:20px;padding:0 6px;border-radius:999px;background:#ef4444;color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:0.72rem;font-weight:800;line-height:1}
+.floating-menu .fm-notification-count[hidden]{display:none}
+.floating-menu .fm-notification-item.has-unread{background:color-mix(in srgb, var(--focus) 72%, transparent)}
+.floating-menu .fm-notification-panel{margin:4px 0 8px;padding:8px;border:1px solid var(--border);border-radius:8px;background:color-mix(in srgb,var(--surface) 88%,#000 12%)}
+.floating-menu .fm-notification-panel[hidden]{display:none}
+.floating-menu .fm-notification-panel-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px}
+.floating-menu .fm-notification-panel-head strong{font-size:.88rem}
+.floating-menu .fm-notification-panel-head button{border:1px solid var(--border);border-radius:7px;background:var(--surface-soft);color:var(--text);font:inherit;font-size:.75rem;font-weight:700;padding:5px 7px;cursor:pointer}
+.floating-menu .fm-notification-list{display:grid;gap:6px;max-height:260px;overflow:auto}
+.floating-menu .fm-notification-row{width:100%;border:1px solid var(--border);border-radius:8px;background:var(--surface-soft);color:var(--text);padding:8px;text-align:left;cursor:pointer}
+.floating-menu .fm-notification-row:hover{background:var(--focus)}
+.floating-menu .fm-notification-row strong{display:block;font-size:.82rem;line-height:1.25}
+.floating-menu .fm-notification-row span{display:block;margin-top:3px;color:var(--muted);font-size:.74rem;line-height:1.25}
+.floating-menu .fm-notification-empty{margin:0;color:var(--muted);font-size:.8rem;line-height:1.35}
 .floating-menu .fm-submenu{position:relative}
 .floating-menu .fm-submenu-toggle{width:100%;background:transparent;border:0;text-align:left;font-family:inherit;cursor:pointer}
 .floating-menu .fm-submenu-popup{display:none;position:absolute;top:0;right:calc(100% + 8px);min-width:170px;padding:6px;border:1px solid var(--border);border-radius:10px;background:linear-gradient(180deg,var(--surface-soft),var(--surface));box-shadow:0 14px 30px rgba(4,11,21,0.42);z-index:2}
@@ -9627,13 +9646,20 @@ html[data-theme^="light"] .estaciones-page .empresa-section{
 #carritoTotalsPanel{position:sticky;top:12px;align-self:start;}
 .carrito-items-box{min-height:260px;max-height:420px;overflow:auto;border:1px solid var(--border);border-radius:12px;padding:10px;background:var(--content-soft-bg);}
 .carrito-scanner-stack{display:grid;grid-template-columns:minmax(240px,1fr) minmax(110px,150px);gap:10px;align-items:start;width:100%;max-width:720px;}
-.carrito-scanner-compact-grid{grid-template-columns:minmax(260px,1fr) minmax(88px,110px) minmax(104px,124px) minmax(146px,174px);max-width:none;align-items:end;gap:8px;}
+.carrito-scanner-compact-grid{grid-template-columns:minmax(170px,0.9fr) minmax(220px,1.1fr) minmax(88px,110px) minmax(104px,124px) minmax(146px,174px);max-width:none;align-items:end;gap:8px;}
 .carrito-scanner-stack .form-col{max-width:none;width:100%;}
 .carrito-scanner-stack .form-label{margin-top:0;}
 .carrito-scanner-stack .btn{width:100%;}
 .carrito-scanner-compact-grid .form-col{width:auto;min-width:0;}
 .carrito-scanner-compact-grid .form-input,
 .carrito-scanner-compact-grid .btn{box-sizing:border-box;min-height:38px;padding-top:8px;padding-bottom:8px;}
+.scanner-product-results{margin-top:6px;border:1px solid var(--border);border-radius:8px;background:var(--surface-soft);padding:6px;max-height:230px;overflow:auto;}
+.scanner-product-results-title{font-size:0.78rem;font-weight:700;color:var(--muted);padding:2px 6px 6px;}
+.scanner-product-result{width:100%;border:0;background:transparent;color:var(--text);display:flex;align-items:center;justify-content:space-between;gap:10px;text-align:left;border-radius:7px;padding:8px 9px;cursor:pointer;font:inherit;}
+.scanner-product-result:hover,
+.scanner-product-result.is-selected{background:var(--focus);}
+.scanner-product-result-name{font-weight:700;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.scanner-product-result-meta{font-size:0.82rem;color:var(--muted);white-space:nowrap;flex:0 0 auto;}
 .carrito-customer-card{padding:10px 12px;}
 .carrito-customer-header{align-items:center;gap:10px;margin-bottom:8px;}
 .carrito-customer-current{margin:0;text-align:right;font-size:.78rem;line-height:1.2;}
@@ -9957,6 +9983,7 @@ body.cart-touch-mode #carritoBtnBuscarBotones{
     flex:initial;
   }
   .carrito-scanner-compact-grid .carrito-scanner-column,
+  .carrito-scanner-compact-grid .carrito-scanner-name-column,
   .carrito-scanner-compact-grid > .form-col:last-child{grid-column:1 / -1;}
   .carrito-customer-header{align-items:flex-start;}
   .carrito-customer-current{text-align:left;}
@@ -20132,6 +20159,7 @@ body.carrito-flat-page #carritosList{
   }
 
   body.carrito-flat-page .carrito-scanner-compact-grid .carrito-scanner-column,
+  body.carrito-flat-page .carrito-scanner-compact-grid .carrito-scanner-name-column,
   body.carrito-flat-page .carrito-scanner-compact-grid > .form-col:last-child{
     grid-column:1 / -1 !important;
   }

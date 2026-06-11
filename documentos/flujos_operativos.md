@@ -123,17 +123,24 @@ afecte dinero, documentos, licencias o seguridad.
    direccion o cola, area operativa, formato POS/carta y predeterminada.
 3. Asignar impresora por funcionalidad (`ticket_cobro`, `factura_caja`,
    `orden_servicio`, `cocina`, `barra`, `reporte_caja`) o por producto/categoria.
-4. Cuando una venta, factura, comanda o cierre necesite imprimir, el backend puede
-   resolver la impresora por `/api/empresa/impresoras/resolver` o encolar un
-   trabajo en `/api/empresa/impresoras?action=cola_trabajo`.
-5. El agente local de cada caja consulta
+4. En `Impresora por computador`, PCS detecta el equipo con
+   `localStorage.pcs_dispositivo_id` y permite asociar ese computador/caja a una
+   impresora por funcionalidad o como regla general del equipo.
+5. Cuando una venta, factura, comanda o cierre necesite imprimir, el backend
+   resuelve por producto/receta/categoria, luego por computador detectado,
+   luego por funcionalidad y finalmente por impresora predeterminada.
+6. `/api/empresa/impresoras/resolver` acepta `dispositivo_id` o `agente_id`;
+   al encolar trabajos, `cola_trabajo` usa el `agente_id` del computador para
+   apuntar automaticamente a la impresora asociada cuando no se envio una
+   impresora directa.
+7. El agente local de cada caja consulta
    `/api/empresa/impresoras/agente?action=tomar` con `empresa_id`, `agente_id` y
    `estacion_id`; solo recibe trabajos pendientes de su empresa, agente o estacion.
-6. Tras imprimir en la impresora fisica del equipo, el agente marca el trabajo
+8. Tras imprimir en la impresora fisica del equipo, el agente marca el trabajo
    como `impreso` o `error` en `/api/empresa/impresoras/agente?action=estado`.
-7. El administrador puede ver la cola reciente y reintentar trabajos fallidos
+9. El administrador puede ver la cola reciente y reintentar trabajos fallidos
    desde la pagina de configuracion.
-8. La ruta de agente usa permisos de ventas y no permite editar impresoras,
+10. La ruta de agente usa permisos de ventas y no permite editar impresoras,
    reglas ni predeterminadas; esas acciones siguen bajo permisos de seguridad.
 
 ## Factura electronica desde una venta existente
@@ -733,22 +740,29 @@ afecte dinero, documentos, licencias o seguridad.
    contrato vigente, vuelve al formulario para aceptarlo.
 5. La sesion redirige siempre a `administrar_empresa.html?id={empresa_id}`; el
    panel carga rol, permisos y estaciones asignadas de esa empresa.
-6. Para `cajero`, si la configuracion de estaciones tiene activo
-   `solicitar_caja_login_cajero` (activo por defecto), despues de validar
-   credenciales se muestra una ventana para elegir la caja fisica de trabajo
-   del dia. La lista sale de `estaciones_config.cajas_config`, recuerda la
-   ultima caja usada por usuario/empresa en el navegador y propaga
-   `caja_codigo`, `caja_nombre` y `caja_descripcion` a estaciones, carrito y
-   corte de caja.
-7. Para `cajero`, el menu queda limitado a `Venta directa`, `Estaciones` y
-   `Corte de Caja`, pero el carrito debe cargar completo: catalogo de productos,
-   servicios, recetas, clientes, descuentos, propinas/comisiones y valores por
-   medio de pago. Esas APIs auxiliares solo se permiten dentro del alcance del
-   carrito, sin mostrar paginas administrativas de Productos o Clientes.
+6. Para `cajero`, PCS ya no muestra seleccion manual de caja en el login.
+   El navegador crea un `pcs_dispositivo_id` local por computador y usa la caja
+   asociada a ese equipo en la empresa, por ejemplo `CAJA-1`. La asociacion se
+   registra desde Configuracion > Impresoras y caja > Impresora por computador
+   y se guarda por `empresa_id`/navegador. Si la caja sigue activa, PCS entra
+   automaticamente y propaga `caja_codigo`, `caja_nombre` y `caja_descripcion`
+   a estaciones, carrito y corte de caja. Si hay varias cajas y el computador
+   aun no esta asociado, el login no abre selector manual: deja marcada la
+   sesion como pendiente de asignacion para que un administrador configure ese
+   equipo.
+7. Para `cajero`, el menu queda limitado a `Venta directa`, `Estaciones`,
+   `Corte de Caja` y `Buscar ventas y facturas`. El carrito debe cargar
+   completo: catalogo de productos, servicios, recetas, clientes, descuentos,
+   propinas/comisiones y valores por medio de pago. La busqueda de ventas y
+   facturas permite reimprimir, consultar y reenviar documentos del POS sin
+   mostrar paginas administrativas de Productos o Clientes; internamente el
+   rol conserva acceso documental a facturas electronicas para que la consulta,
+   vista previa y reenvio no fallen por permisos.
 8. Pruebas: Google sin invitacion debe rechazar, Google con invitacion debe
    consumir token y entrar, correo ambiguo exige enlace de empresa, tema claro u
-   oscuro se conserva, el boton `Instalar app` permanece visible y el cajero ve
-   el selector de caja solo cuando el check de configuracion esta activo.
+   oscuro se conserva, el boton `Instalar app` permanece visible y el cajero
+   no ve selector manual de caja: debe entrar con caja detectada por computador
+   o quedar pendiente de asociacion si el equipo no esta registrado.
 
 ## Abrir, usar y cerrar caja
 
@@ -757,14 +771,18 @@ afecte dinero, documentos, licencias o seguridad.
    `estaciones_config.cajas_config`, cada una con codigo, nombre, descripcion y
    estado activo. La estacion Caja muestra esos nombres, por ejemplo
    `CAJA-1 - FRUTERA`.
-3. En la misma seccion de configuracion existe el check
-   `solicitar_caja_login_cajero`, activo por defecto, para exigir a los cajeros
-   elegir caja al iniciar sesion operativa.
+3. El login operativo de cajeros usa la caja asignada al computador; la
+   asignacion se administra desde Configuracion > Impresoras y caja, sin pedir
+   al cajero que elija caja al iniciar sesion.
 4. Al hacer clic en una caja configurada, `corte_de_caja.html` recibe
    `caja_codigo`, `caja_nombre` y descripcion para abrir el corte de esa caja.
 5. La caja puede abrirse manual o automaticamente segun flujo vigente.
 6. Cada usuario/caja mantiene turno, pagos, ingresos, egresos y reporte
    independiente.
+   Para el rol `cajero`, registrar ingresos o egresos manuales es opcional por
+   empresa y rol: el administrador debe activarlo en Configuracion de impresora
+   y caja > Configuracion operativa de cobro > Override por rol. El check no
+   modifica los cobros normales del carrito.
 7. `Corte automatico` calcula desde apertura hasta el momento actual sin pedir
    fechas.
 7. `Cerrar turno e imprimir reporte` imprime y luego cierra sesion.
@@ -778,8 +796,13 @@ afecte dinero, documentos, licencias o seguridad.
    del carrito.
 3. El cajero agrega productos/servicios/recetas, cliente opcional u obligatorio,
    abonos y pagos mixtos.
-   El buscador de catalogo acepta nombre, SKU, codigo de barras o codigo del
-   servicio. El formulario rapido de clientes permite registrar persona natural
+   La fila superior del lector separa `Codigo de barras o SKU` y `Busqueda por
+   nombre`: el cajero puede escanear/digitar codigo, o escribir el nombre del
+   producto en el campo de la derecha y agregarlo desde la misma seccion. El
+   buscador de catalogo avanzado conserva codigo, SKU, codigo de barras o
+   nombre del producto, y conserva codigo del servicio/receta. Las coincidencias
+   exactas por codigo/SKU deben aparecer primero. El formulario rapido de
+   clientes permite registrar persona natural
    o empresa con NIT/DV, regimen IVA, responsabilidad tributaria, correo,
    telefono y direccion fiscal para facturacion electronica.
    Las cantidades de items se pueden cambiar desde la tabla del carrito. Deben
@@ -794,8 +817,9 @@ afecte dinero, documentos, licencias o seguridad.
    del carrito se capturan, muestran y sincronizan como pesos enteros positivos,
    sin centavos ni sufijo `.00`.
 4. La venta directa usa el carrito canonico `VENTA-DIRECTA-{empresa_id}-0` y
-   puede abrirse en pantalla completa desde el boton de la parte superior; el
-   mismo boton cambia a `Salir` y vuelve a la vista normal.
+   puede abrirse en pantalla completa desde una tarjeta compacta en el encabezado
+   del cliente; el icono dentro de esa tarjeta cambia a `Salir` y vuelve a la
+   vista normal.
 5. Visualmente debe conservar el modo plano del carrito: tarjetas sin sombras ni
    apariencia 3D, pero con el fondo estructural mas oscuro que las tarjetas para
    diferenciar zonas en cualquier apariencia.
@@ -1139,8 +1163,9 @@ afecte dinero, documentos, licencias o seguridad.
 ## Buzon de usuario, tareas y almacenamiento empresarial
 
 1. El panel de `Administrar empresa` carga `/api/empresa/buzon?action=resumen` con el `empresa_id` activo y muestra campana, contador de no leidos, ultimos mensajes, chat y estado de almacenamiento.
-2. Un usuario puede enviar `Mensaje` o `Asignar tarea` a otro usuario registrado de la misma empresa. Las tareas quedan como mensajes tipo `tarea` con prioridad, fecha limite opcional y estado `pendiente`.
-3. Si el mensaje incluye foto, archivo o audio grabado desde microfono, el backend guarda el binario en la carpeta de la empresa y registra metadata en `empresa_buzon_adjuntos`.
-4. El destinatario finaliza una tarea desde su propio buzon; debe escribir descripcion de cierre y puede adjuntar evidencia. El backend valida que el mensaje pertenezca a su buzon antes de adjuntar o cerrar.
-5. En traslados de bodega, el endpoint de inventario crea una notificacion de buzon para el responsable de la bodega destino o usuarios de inventario/administracion.
-6. Super administrador controla la cuota global por empresa desde Configuracion avanzada > Almacenamiento: limite MB, porcentaje de alerta, maximo por archivo, bloqueo al superar cuota y limpieza de archivos antiguos del buzon.
+2. El menu flotante global replica el contador de no leidos en su boton principal. Al abrirlo, la campana `Notificaciones` aparece como primera accion y despliega dentro del mismo menu el resumen del buzon; al hacer clic en una notificacion la marca como leida y navega a la pagina relacionada.
+3. Un usuario puede enviar `Mensaje` o `Asignar tarea` a otro usuario registrado de la misma empresa. Las tareas quedan como mensajes tipo `tarea` con prioridad, fecha limite opcional y estado `pendiente`.
+4. Si el mensaje incluye foto, archivo o audio grabado desde microfono, el backend guarda el binario en la carpeta de la empresa y registra metadata en `empresa_buzon_adjuntos`.
+5. El destinatario finaliza una tarea desde su propio buzon; debe escribir descripcion de cierre y puede adjuntar evidencia. El backend valida que el mensaje pertenezca a su buzon antes de adjuntar o cerrar.
+6. En traslados de bodega, el endpoint de inventario crea una notificacion de buzon para el responsable de la bodega destino o usuarios de inventario/administracion.
+7. Super administrador controla la cuota global por empresa desde Configuracion avanzada > Almacenamiento: limite MB, porcentaje de alerta, maximo por archivo, bloqueo al superar cuota y limpieza de archivos antiguos del buzon.

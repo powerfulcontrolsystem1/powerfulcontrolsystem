@@ -27,6 +27,11 @@
     .carrito-direct-sale-tools{align-items:center;justify-content:flex-end;gap:8px}
     .carrito-direct-sale-tools button[hidden]{display:none!important}
     .carrito-customer-header-actions{display:flex;align-items:center;justify-content:flex-end;gap:8px;flex-wrap:wrap}
+    .carrito-fullscreen-card{display:flex;align-items:center;gap:8px;border:1px solid var(--border);border-radius:8px;background:var(--surface-soft,var(--surface));padding:6px 8px;color:var(--text);min-height:46px}
+    .carrito-fullscreen-card[hidden]{display:none!important}
+    .carrito-fullscreen-card-label{display:flex;flex-direction:column;gap:1px;line-height:1.1}
+    .carrito-fullscreen-card-label strong{font-size:.78rem}
+    .carrito-fullscreen-card-label span{font-size:.7rem;color:var(--muted)}
     .carrito-fullscreen-btn{width:38px;height:38px;min-width:38px;padding:0;display:inline-flex;align-items:center;justify-content:center}
     .carrito-fullscreen-btn .cart-btn-icon{font-size:1rem}
     .carrito-fullscreen-label{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
@@ -35,7 +40,7 @@
     body.carrito-direct-fullscreen{background:var(--carrito-page-bg,var(--bg))}
     body.carrito-direct-fullscreen .container{max-width:none;width:100%;min-height:100vh;padding:8px}
     body.carrito-direct-fullscreen .carrito-customer-header{position:sticky;top:0;z-index:120;background:var(--surface,var(--bg));padding:6px 0}
-    @media(max-width:760px){.carrito-direct-sale-tools{justify-content:flex-end}.carrito-customer-header-actions{width:100%;justify-content:space-between}.carrito-fullscreen-btn{width:38px!important}}
+    @media(max-width:760px){.carrito-direct-sale-tools{justify-content:flex-end}.carrito-customer-header-actions{width:100%;justify-content:space-between}.carrito-fullscreen-card{width:100%;justify-content:space-between}.carrito-fullscreen-btn{width:38px!important}}
   </style>
 </head>
 <body class="super-page form-bg-dark carrito-flat-page" data-auto-estacion-labels="true">
@@ -144,7 +149,12 @@
         <div id="carritoClienteRow" class="form-row carrito-scanner-stack carrito-scanner-compact-grid">
           <div class="form-col carrito-scanner-column">
             <label class="form-label" for="scannerCodigo">Código de barras o SKU</label>
-            <input id="scannerCodigo" class="form-input" autocomplete="off" placeholder="Escanea codigo">
+            <input id="scannerCodigo" class="form-input" autocomplete="off" placeholder="Escanea o digita código/SKU">
+          </div>
+          <div class="form-col carrito-scanner-name-column">
+            <label class="form-label" for="scannerNombre">Búsqueda por nombre</label>
+            <input id="scannerNombre" class="form-input" autocomplete="off" placeholder="Busca el producto por nombre">
+            <div id="scannerResultados" class="scanner-product-results" hidden></div>
           </div>
           <div class="form-col maxw-180">
             <label class="form-label" for="scannerCantidad">Cantidad</label>
@@ -224,10 +234,16 @@
           </div>
           <div class="carrito-customer-header-actions">
             <div id="stationClienteActual" class="form-help carrito-customer-current">Cliente actual: Cliente General.</div>
-            <button id="directSaleFullscreenBtn" class="btn secondary carrito-fullscreen-btn" type="button" hidden title="Pantalla completa" aria-label="Abrir venta directa en pantalla completa">
-              <span class="cart-btn-icon cart-btn-icon-info" aria-hidden="true">⛶</span>
-              <span id="directSaleFullscreenText" class="carrito-fullscreen-label">Pantalla completa</span>
-            </button>
+            <div id="directSaleFullscreenCard" class="carrito-fullscreen-card" hidden>
+              <div class="carrito-fullscreen-card-label">
+                <strong>Pantalla completa</strong>
+                <span>Vista de caja</span>
+              </div>
+              <button id="directSaleFullscreenBtn" class="btn secondary carrito-fullscreen-btn" type="button" hidden title="Pantalla completa" aria-label="Abrir venta directa en pantalla completa">
+                <span class="cart-btn-icon cart-btn-icon-info" aria-hidden="true">⛶</span>
+                <span id="directSaleFullscreenText" class="carrito-fullscreen-label">Pantalla completa</span>
+              </button>
+            </div>
           </div>
         </div>
         <div id="stationClienteSelectorRow" class="form-row" hidden>
@@ -779,9 +795,9 @@
           <h4 class="section-heading">Catálogo inteligente</h4>
         <div id="itemCatalogSearchRow" class="form-row">
           <div class="form-col">
-            <label class="form-label">Buscar en catálogo inteligente</label>
-            <input id="itemBuscarCatalogo" class="form-input" placeholder="Busca por nombre, SKU, código de barras o código del servicio">
-            <div id="itemBusquedaHint" class="form-help">Selecciona tipo de ítem (producto/servicio/receta) y escribe al menos 2 caracteres.</div>
+            <label class="form-label">Buscar producto por código o nombre</label>
+            <input id="itemBuscarCatalogo" class="form-input" placeholder="Código, SKU, código de barras o nombre del producto">
+            <div id="itemBusquedaHint" class="form-help">Selecciona tipo de ítem y busca por código, SKU, código de barras o nombre.</div>
           </div>
           <div class="form-col maxw-220 flex-end">
             <button id="buscarCatalogoBtn" type="button" class="btn secondary w-full">Buscar catálogo</button>
@@ -900,6 +916,9 @@
       empresaID: 0,
       stationMode: false,
       directSaleMode: false,
+      scannerProductResults: [],
+      scannerSelectedProductID: 0,
+      scannerSearchToken: 0,
       stationID: 0,
       stationName: '',
       empresaGeneralConfig: null,
@@ -6969,6 +6988,98 @@
       return producto;
     }
 
+    async function fetchScannerProductRows(query) {
+      const q = normalize(query);
+      if (!q) return [];
+      const url = new URL('/api/empresa/productos', window.location.origin);
+      url.searchParams.set('empresa_id', String(state.empresaID));
+      url.searchParams.set('estado', 'activo');
+      url.searchParams.set('q', q);
+      url.searchParams.set('limit', '25');
+      const res = await fetch(url.pathname + url.search);
+      await ensureOk(res);
+      const rows = await res.json();
+      return Array.isArray(rows) ? rows : [];
+    }
+
+    function scannerProductDisplayCode(producto) {
+      const parts = [];
+      const sku = normalize(producto && producto.sku);
+      const barras = normalize(producto && producto.codigo_barras);
+      if (sku) parts.push('SKU ' + sku);
+      if (barras && barras !== sku) parts.push('Barras ' + barras);
+      return parts.join(' / ') || 'Sin codigo';
+    }
+
+    function clearScannerProductResults() {
+      state.scannerProductResults = [];
+      state.scannerSelectedProductID = 0;
+      const box = document.getElementById('scannerResultados');
+      if (!box) return;
+      box.hidden = true;
+      box.innerHTML = '';
+    }
+
+    function renderScannerProductResults(rows, query) {
+      const box = document.getElementById('scannerResultados');
+      if (!box) return;
+      state.scannerProductResults = Array.isArray(rows) ? rows.filter(function(row) {
+        return Number(row && row.id || 0) > 0;
+      }) : [];
+      state.scannerSelectedProductID = 0;
+      box.innerHTML = '';
+
+      if (!state.scannerProductResults.length) {
+        box.hidden = true;
+        return;
+      }
+
+      const title = document.createElement('div');
+      title.className = 'scanner-product-results-title';
+      title.textContent = 'Coincidencias para "' + normalize(query) + '"';
+      box.appendChild(title);
+
+      state.scannerProductResults.slice(0, 8).forEach(function(producto) {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'scanner-product-result';
+        btn.dataset.productoId = String(producto.id || '');
+        const carrito = getSelectedCarrito();
+        const moneda = (carrito && carrito.moneda) || producto.moneda || 'COP';
+        const price = formatAmount(Number(producto.precio || 0), moneda);
+        btn.innerHTML = '<span class="scanner-product-result-name"></span><span class="scanner-product-result-meta"></span>';
+        btn.querySelector('.scanner-product-result-name').textContent = normalize(producto.nombre) || 'Producto';
+        btn.querySelector('.scanner-product-result-meta').textContent = scannerProductDisplayCode(producto) + ' · ' + price;
+        btn.addEventListener('click', function() {
+          state.scannerSelectedProductID = Number(producto.id || 0);
+          document.querySelectorAll('.scanner-product-result').forEach(function(other) {
+            other.classList.toggle('is-selected', other === btn);
+          });
+          setScannerMessage('Producto seleccionado. Presiona Agregar para llevarlo al carrito.', false);
+          const qty = document.getElementById('scannerCantidad');
+          if (qty && typeof qty.focus === 'function') qty.focus();
+        });
+        btn.addEventListener('dblclick', function() {
+          state.scannerSelectedProductID = Number(producto.id || 0);
+          processScannerInput();
+        });
+        box.appendChild(btn);
+      });
+
+      box.hidden = false;
+    }
+
+    function getSelectedScannerProduct() {
+      const selectedID = Number(state.scannerSelectedProductID || 0);
+      if (selectedID > 0) {
+        const selected = state.scannerProductResults.find(function(row) {
+          return Number(row && row.id || 0) === selectedID;
+        });
+        if (selected) return selected;
+      }
+      return state.scannerProductResults.length === 1 ? state.scannerProductResults[0] : null;
+    }
+
     function findExistingScannedItem(productoID, code) {
       const normalizedTarget = normalizeScanCode(code);
       return state.items.find(function(it) {
@@ -6992,6 +7103,7 @@
       const canUse = !!selected && canUseByFocusedSale;
 
       if (focusedSaleMode && (!stationUI.mostrar_tarjeta_lector_codigo || !stationUI.mostrar_lector_codigo_barras)) {
+        clearScannerProductResults();
         panel.style.display = 'none';
         panel.hidden = true;
         panel.classList.add('is-hidden');
@@ -7003,23 +7115,28 @@
       panel.classList.toggle('is-hidden', !caps.enabled);
 
       const inputCode = document.getElementById('scannerCodigo');
+      const inputName = document.getElementById('scannerNombre');
       const inputQty = document.getElementById('scannerCantidad');
       const btnAdd = document.getElementById('scannerAgregarBtn');
       const disabled = !caps.enabled || !canUse;
 
       inputCode.disabled = disabled;
+      if (inputName) inputName.disabled = disabled;
       inputQty.disabled = disabled;
       if (btnAdd) btnAdd.disabled = disabled;
 
       if (!caps.enabled) {
+        clearScannerProductResults();
         setScannerMessage('El lector de código de barras está deshabilitado en Configuración de empresa.', false);
         return;
       }
       if (!selected) {
+        clearScannerProductResults();
         setScannerMessage('Selecciona un carrito para usar el lector de código de barras.', false);
         return;
       }
       if (!canUseByFocusedSale) {
+        clearScannerProductResults();
         setScannerMessage('El carrito está inactivo. Actívalo para agregar productos por escaneo.', true);
         return;
       }
@@ -7028,7 +7145,98 @@
       focusScannerInput();
     }
 
-    async function processScannerInput() {
+    function getScannerQueryContext() {
+      const codeInput = document.getElementById('scannerCodigo');
+      const nameInput = document.getElementById('scannerNombre');
+      const codeRaw = codeInput ? codeInput.value : '';
+      const nameRaw = nameInput ? nameInput.value : '';
+      const code = normalize(codeRaw);
+      const name = normalize(nameRaw);
+      if (code) {
+        return { raw: codeRaw, query: code, scanCode: normalizeScanCode(codeRaw), source: 'codigo', input: codeInput };
+      }
+      if (name) {
+        return { raw: nameRaw, query: name, scanCode: '', source: 'nombre', input: nameInput };
+      }
+      return { raw: '', query: '', scanCode: '', source: '', input: codeInput || nameInput };
+    }
+
+    function clearScannerQueryInputs(source) {
+      const codeInput = document.getElementById('scannerCodigo');
+      const nameInput = document.getElementById('scannerNombre');
+      if (!source || source === 'codigo') {
+        if (codeInput) codeInput.value = '';
+      }
+      if (!source || source === 'nombre') {
+        if (nameInput) nameInput.value = '';
+      }
+    }
+
+    async function addScannerProductToCart(producto, sourceLabel, matchCode) {
+      const productoUnidad = normalize(producto.unidad_medida) || 'unidad';
+      const qtyRaw = document.getElementById('scannerCantidad').value;
+      const useScaleWeight = Boolean(isScaleEnabledForCurrentCart() && document.getElementById('scaleApplyWeight') && document.getElementById('scaleApplyWeight').checked && currentScaleNetKg() > 0);
+      let qty = parseQuantityValue(qtyRaw, productoUnidad, 0);
+      if (useScaleWeight) {
+        if (!isWeightUnit(productoUnidad)) {
+          throw new Error('La bascula tiene peso activo, pero el producto "' + (normalize(producto.nombre) || 'seleccionado') + '" no esta configurado con unidad de peso. Usa unidad kg, g, lb u oz en Productos.');
+        }
+        const scaleUnit = normalize(document.getElementById('scaleDefaultUnit') && document.getElementById('scaleDefaultUnit').value) || 'kg';
+        qty = parseQuantityValue(scaleKgToUnit(currentScaleNetKg(), productoUnidad || scaleUnit), productoUnidad, 0);
+      }
+      if (!isValidQuantityForUnit(qty, productoUnidad)) {
+        throw new Error(isWeightUnit(productoUnidad) ? 'La cantidad por peso debe ser mayor a 0.001.' : 'La cantidad debe ser un número natural positivo: 1, 2, 3...');
+      }
+
+      const productoCode = normalize(producto.codigo_barras) || normalize(producto.sku);
+      const existing = findExistingScannedItem(Number(producto.id || 0), matchCode || productoCode);
+      const payload = {
+        id: existing ? Number(existing.id || 0) : 0,
+        empresa_id: Number(state.empresaID),
+        carrito_id: Number(state.selectedCarritoID),
+        tipo_item: 'producto',
+        referencia_id: Number(producto.id || 0),
+        codigo_item: productoCode,
+        descripcion: normalize(producto.nombre) || 'Producto',
+        unidad_medida: productoUnidad,
+        cantidad: qty,
+        precio_unitario: Number(producto.precio || 0),
+        descuento_porcentaje: 0,
+        impuesto_porcentaje: Number(producto.impuesto_porcentaje || 0),
+        impuesto_codigo: 'IVA',
+        observaciones: sourceLabel || 'agregado desde busqueda del carrito'
+      };
+
+      const caps = getBarcodeCapabilities();
+      const shouldAccumulate = caps.accumulate && !!existing;
+      if (shouldAccumulate) {
+        payload.cantidad = isWeightUnit(productoUnidad)
+          ? Math.round((Number(existing.cantidad || 0) + qty) * 1000) / 1000
+          : toNaturalQuantity(existing.cantidad || 0, 0) + qty;
+        payload.precio_unitario = Number(existing.precio_unitario || payload.precio_unitario);
+        payload.descuento_porcentaje = Number(existing.descuento_porcentaje || 0);
+        payload.impuesto_porcentaje = Number(existing.impuesto_porcentaje || payload.impuesto_porcentaje);
+        payload.impuesto_codigo = normalize(existing.impuesto_codigo) || 'IVA';
+        payload.descripcion = normalize(existing.descripcion) || payload.descripcion;
+        payload.unidad_medida = normalize(existing.unidad_medida) || payload.unidad_medida;
+        payload.observaciones = normalize(existing.observaciones) || payload.observaciones;
+      }
+
+      const endpoint = '/api/empresa/carritos_compra/items';
+      const method = shouldAccumulate ? 'PUT' : 'POST';
+      const res = await fetch(endpoint, {
+        method: method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      await ensureOk(res);
+
+      await Promise.all([loadItems(), loadCarritos()]);
+      return shouldAccumulate ? 'Cantidad actualizada en el carrito.' : 'Producto agregado al carrito.';
+    }
+
+    async function processScannerInput(options) {
+      const processOptions = options || {};
       if (scannerAutoTimer) {
         clearTimeout(scannerAutoTimer);
         scannerAutoTimer = null;
@@ -7036,13 +7244,13 @@
       if (scannerProcessing) return;
       const caps = getBarcodeCapabilities();
       if (!caps.enabled) {
-        setScannerMessage('El lector de código de barras está deshabilitado para esta empresa.', true);
+        setScannerMessage('El lector y buscador rápido de productos está deshabilitado para esta empresa.', true);
         return;
       }
 
       const selected = getSelectedCarrito();
       if (!selected) {
-        setScannerMessage('Selecciona un carrito antes de escanear.', true);
+        setScannerMessage('Selecciona un carrito antes de agregar productos.', true);
         return;
       }
       if ((state.stationMode || state.directSaleMode) && !isCarritoOperativoActivo(selected)) {
@@ -7050,84 +7258,73 @@
         return;
       }
 
-      const codeRaw = document.getElementById('scannerCodigo').value;
-      const scanCode = normalizeScanCode(codeRaw);
-      const qtyRaw = document.getElementById('scannerCantidad').value;
-      if (!scanCode) {
-        setScannerMessage('Escanea o digita un código de barras o SKU válido.', true);
+      const queryContext = getScannerQueryContext();
+      const input = queryContext.input;
+      const query = queryContext.query;
+      const scanCode = queryContext.scanCode;
+      if (!query) {
+        setScannerMessage('Escanea, digita un código/SKU o busca el producto por nombre.', true);
+        return;
+      }
+
+      const selectedResult = getSelectedScannerProduct();
+      if (selectedResult && state.scannerSelectedProductID > 0) {
+        scannerProcessing = true;
+        try {
+          const msgAction = await addScannerProductToCart(selectedResult, 'agregado desde busqueda rapida del carrito', scanCode);
+          setScannerMessage(msgAction, false);
+          setMessage('itemMsg', msgAction, false);
+          clearScannerQueryInputs(queryContext.source);
+          clearScannerProductResults();
+          if (caps.autofocus) focusScannerInput();
+        } catch (err) {
+          const msg = err && err.message ? err.message : 'No se pudo agregar el producto seleccionado.';
+          if (!handleBusinessPrerequisiteError(err, msg, setScannerMessage)) setScannerMessage(msg, true);
+        } finally {
+          scannerProcessing = false;
+        }
         return;
       }
 
       scannerProcessing = true;
       try {
         setScannerMessage('Buscando producto en catálogo...', false);
-        const producto = await resolveProductoFromScanCode(scanCode);
-        const productoUnidad = normalize(producto.unidad_medida) || 'unidad';
-        const useScaleWeight = Boolean(isScaleEnabledForCurrentCart() && document.getElementById('scaleApplyWeight') && document.getElementById('scaleApplyWeight').checked && currentScaleNetKg() > 0);
-        let qty = parseQuantityValue(qtyRaw, productoUnidad, 0);
-        if (useScaleWeight) {
-          if (!isWeightUnit(productoUnidad)) {
-            throw new Error('La bascula tiene peso activo, pero el producto "' + (normalize(producto.nombre) || 'seleccionado') + '" no esta configurado con unidad de peso. Usa unidad kg, g, lb u oz en Productos.');
-          }
-          const scaleUnit = normalize(document.getElementById('scaleDefaultUnit') && document.getElementById('scaleDefaultUnit').value) || 'kg';
-          qty = parseQuantityValue(scaleKgToUnit(currentScaleNetKg(), productoUnidad || scaleUnit), productoUnidad, 0);
-        }
-        if (!isValidQuantityForUnit(qty, productoUnidad)) {
-          setScannerMessage(isWeightUnit(productoUnidad) ? 'La cantidad por peso debe ser mayor a 0.001.' : 'La cantidad debe ser un número natural positivo: 1, 2, 3...', true);
+        const rows = await fetchScannerProductRows(query);
+        const exact = scanCode ? findExactProductoByCode(rows, scanCode) : null;
+        if (exact && Number(exact.id || 0) > 0) {
+          const msgAction = await addScannerProductToCart(exact, 'agregado por lector de codigo de barras', scanCode);
+          setScannerMessage(msgAction, false);
+          setMessage('itemMsg', msgAction, false);
+          clearScannerQueryInputs(queryContext.source);
+          clearScannerProductResults();
+          if (caps.autofocus) focusScannerInput();
           return;
         }
-        const existing = findExistingScannedItem(Number(producto.id || 0), scanCode);
 
-        const payload = {
-          id: existing ? Number(existing.id || 0) : 0,
-          empresa_id: Number(state.empresaID),
-          carrito_id: Number(state.selectedCarritoID),
-          tipo_item: 'producto',
-          referencia_id: Number(producto.id || 0),
-          codigo_item: normalize(producto.codigo_barras) || normalize(producto.sku),
-          descripcion: normalize(producto.nombre) || 'Producto',
-          unidad_medida: productoUnidad,
-          cantidad: qty,
-          precio_unitario: Number(producto.precio || 0),
-          descuento_porcentaje: 0,
-          impuesto_porcentaje: Number(producto.impuesto_porcentaje || 0),
-          impuesto_codigo: 'IVA',
-          observaciones: 'agregado por lector de codigo de barras'
-        };
-
-        const shouldAccumulate = caps.accumulate && !!existing;
-        if (shouldAccumulate) {
-          payload.cantidad = isWeightUnit(productoUnidad)
-            ? Math.round((Number(existing.cantidad || 0) + qty) * 1000) / 1000
-            : toNaturalQuantity(existing.cantidad || 0, 0) + qty;
-          payload.precio_unitario = Number(existing.precio_unitario || payload.precio_unitario);
-          payload.descuento_porcentaje = Number(existing.descuento_porcentaje || 0);
-          payload.impuesto_porcentaje = Number(existing.impuesto_porcentaje || payload.impuesto_porcentaje);
-          payload.impuesto_codigo = normalize(existing.impuesto_codigo) || 'IVA';
-          payload.descripcion = normalize(existing.descripcion) || payload.descripcion;
-          payload.unidad_medida = normalize(existing.unidad_medida) || payload.unidad_medida;
-          payload.observaciones = normalize(existing.observaciones) || payload.observaciones;
+        renderScannerProductResults(rows, query);
+        if (!state.scannerProductResults.length) {
+          setScannerMessage('No se encontró un producto activo por código, SKU o nombre.', true);
+          return;
         }
-
-        const endpoint = '/api/empresa/carritos_compra/items';
-        const method = shouldAccumulate ? 'PUT' : 'POST';
-        const res = await fetch(endpoint, {
-          method: method,
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        });
-        await ensureOk(res);
-
-        await Promise.all([loadItems(), loadCarritos()]);
-        const msgAction = shouldAccumulate ? 'Cantidad actualizada por escaneo.' : 'Producto agregado por escaneo.';
-        setScannerMessage(msgAction, false);
-        setMessage('itemMsg', msgAction, false);
-        document.getElementById('scannerCodigo').value = '';
-        if (caps.autofocus) {
-          focusScannerInput();
+        if (state.scannerProductResults.length === 1) {
+          state.scannerSelectedProductID = Number(state.scannerProductResults[0].id || 0);
+          const onlyBtn = document.querySelector('.scanner-product-result');
+          if (onlyBtn) onlyBtn.classList.add('is-selected');
+          if (!processOptions.auto) {
+            const msgAction = await addScannerProductToCart(state.scannerProductResults[0], 'agregado desde busqueda rapida del carrito', scanCode);
+            setScannerMessage(msgAction, false);
+            setMessage('itemMsg', msgAction, false);
+            clearScannerQueryInputs(queryContext.source);
+            clearScannerProductResults();
+            if (caps.autofocus) focusScannerInput();
+            return;
+          }
+          setScannerMessage('Se encontró 1 producto. Presiona Agregar de nuevo para llevarlo al carrito.', false);
+          return;
         }
+        setScannerMessage('Selecciona un producto de la lista y presiona Agregar.', false);
       } catch (err) {
-        const msg = err && err.message ? err.message : 'No se pudo procesar el escaneo.';
+        const msg = err && err.message ? err.message : 'No se pudo procesar la búsqueda del producto.';
         if (!handleBusinessPrerequisiteError(err, msg, setScannerMessage)) {
           setScannerMessage(msg, true);
         }
@@ -7135,18 +7332,20 @@
         scannerProcessing = false;
       }
     }
-
     function scheduleScannerAutoProcess() {
-      const input = document.getElementById('scannerCodigo');
-      const scanCode = normalizeScanCode(input ? input.value : '');
+      const context = getScannerQueryContext();
+      const scanCode = context.scanCode;
       if (scannerAutoTimer) {
         clearTimeout(scannerAutoTimer);
         scannerAutoTimer = null;
       }
-      if (!scanCode || scanCode.length < 3 || scannerProcessing) return;
+      if (scannerProcessing) return;
+      if (context.source === 'codigo' && (!scanCode || scanCode.length < 3)) return;
+      if (context.source === 'nombre' && context.query.length < 2) return;
+      if (!context.source) return;
       scannerAutoTimer = setTimeout(function() {
-        processScannerInput();
-      }, 180);
+        processScannerInput({ auto: true });
+      }, context.source === 'nombre' ? 260 : 180);
     }
 
     function fillClientesSelect(selected) {
@@ -7634,7 +7833,7 @@
       document.getElementById('cancelItemBtn').style.display = 'none';
       setMessage('itemMsg', '', false);
       document.getElementById('itemBuscarCatalogo').value = '';
-      clearCatalogResults('Selecciona tipo de ítem (producto/servicio/receta) y escribe al menos 2 caracteres.');
+      clearCatalogResults('Selecciona tipo de ítem y busca por código, SKU, código de barras o nombre.');
     }
 
     function isCatalogSearchType(tipo) {
@@ -7664,7 +7863,7 @@
       state.itemCatalogResults.forEach(function(item, idx) {
         const opt = document.createElement('option');
         opt.value = String(idx);
-        const codigo = normalize(item.codigo) || 'sin-codigo';
+        const codigo = catalogDisplayCode(item);
         const carrito = getSelectedCarrito();
         const moneda = (carrito && carrito.moneda) || item.moneda || 'COP';
         const precio = formatAmount(Number(item.precio || 0), moneda);
@@ -7680,6 +7879,17 @@
       state.itemCatalogQueryToken = 0;
       renderCatalogResults();
       renderCatalogHint(hintText || '', false);
+    }
+
+    function catalogDisplayCode(item) {
+      const parts = [];
+      const sku = normalize(item && item.sku);
+      const barras = normalize(item && item.codigo_barras);
+      const codigo = normalize(item && item.codigo);
+      if (sku) parts.push('SKU ' + sku);
+      if (barras && barras !== sku) parts.push('Barras ' + barras);
+      if (!parts.length && codigo) parts.push(codigo);
+      return parts.join(' / ') || 'sin-codigo';
     }
 
     function mapCatalogRow(raw, tipo) {
@@ -7700,6 +7910,8 @@
         nombre: nombre,
         descripcion: descripcion,
         codigo: codigo,
+        sku: normalize(raw.sku),
+        codigo_barras: normalize(raw.codigo_barras),
         unidad: unidad,
         precio: toNumber(raw.precio, 0),
         impuesto: toNumber(raw.impuesto_porcentaje, 0)
@@ -7715,8 +7927,9 @@
         return;
       }
 
-      if (q.length < 2) {
-        clearCatalogResults('Escribe al menos 2 caracteres para buscar.');
+      const looksLikeProductCode = tipo === 'producto' && /^[A-Za-z0-9_-]+$/.test(q);
+      if (q.length < 2 && !looksLikeProductCode) {
+        clearCatalogResults('Escribe al menos 2 caracteres para buscar por nombre, o un código/SKU exacto.');
         return;
       }
 
@@ -9776,7 +9989,7 @@
       if (signature === 'ENTER') {
         const target = ev.target;
         if (!isTypingTargetForPOSShortcut(target)) return true;
-        return target && (target.id === 'scannerCodigo' || target.id === 'scannerCantidad');
+        return target && (target.id === 'scannerCodigo' || target.id === 'scannerNombre' || target.id === 'scannerCantidad');
       }
       return !isTypingTargetForPOSShortcut(ev.target);
     }
@@ -9933,7 +10146,7 @@
       if (actionKey === 'cancelar_operacion') {
         const active = document.activeElement;
         if (active && isTypingTargetForPOSShortcut(active)) {
-          if (active.id === 'scannerCodigo') active.value = '';
+          if (active.id === 'scannerCodigo' || active.id === 'scannerNombre') active.value = '';
           active.blur();
           setStationPaymentMessage('Operacion actual cancelada.', false);
           return;
@@ -10077,11 +10290,15 @@
 
     function updateDirectSaleFullscreenButton() {
       const btn = document.getElementById('directSaleFullscreenBtn');
+      const card = document.getElementById('directSaleFullscreenCard');
       const textEl = document.getElementById('directSaleFullscreenText');
+      const cardLabel = card ? card.querySelector('.carrito-fullscreen-card-label strong') : null;
+      const cardHint = card ? card.querySelector('.carrito-fullscreen-card-label span') : null;
       if (!btn) return;
 
       const supported = Boolean(document.documentElement.requestFullscreen || document.documentElement.webkitRequestFullscreen || document.documentElement.msRequestFullscreen);
       const visible = Boolean(state.directSaleMode && supported);
+      if (card) card.hidden = !visible;
       btn.hidden = !visible;
       btn.style.display = visible ? '' : 'none';
       if (!visible) {
@@ -10093,6 +10310,8 @@
       const icon = btn.querySelector('.cart-btn-icon');
       if (icon) icon.textContent = active ? '↙' : '⛶';
       if (textEl) textEl.textContent = active ? 'Salir' : 'Pantalla completa';
+      if (cardLabel) cardLabel.textContent = active ? 'Salir de pantalla completa' : 'Pantalla completa';
+      if (cardHint) cardHint.textContent = active ? 'Volver a vista normal' : 'Vista de caja';
       btn.title = active ? 'Salir de pantalla completa' : 'Pantalla completa';
       btn.setAttribute('aria-label', active ? 'Salir de pantalla completa' : 'Abrir venta directa en pantalla completa');
       btn.setAttribute('aria-pressed', active ? 'true' : 'false');
@@ -10503,10 +10722,11 @@
       }
 
       const q = normalize(document.getElementById('itemBuscarCatalogo').value);
-      if (q.length >= 2) {
+      const looksLikeProductCode = tipo === 'producto' && /^[A-Za-z0-9_-]+$/.test(q);
+      if (q.length >= 2 || looksLikeProductCode) {
         searchCatalogByInput();
       } else {
-        clearCatalogResults('Escribe al menos 2 caracteres para buscar.');
+        clearCatalogResults('Escribe al menos 2 caracteres para buscar por nombre, o un código/SKU exacto.');
       }
     });
 
@@ -10803,15 +11023,35 @@
       });
     }
 
-    document.getElementById('scannerCodigo').addEventListener('input', function() {
-      scheduleScannerAutoProcess();
-    });
+    const scannerCodigoInput = document.getElementById('scannerCodigo');
+    if (scannerCodigoInput) {
+      scannerCodigoInput.addEventListener('input', function() {
+        state.scannerSelectedProductID = 0;
+        const nameInput = document.getElementById('scannerNombre');
+        if (normalize(this.value) && nameInput) nameInput.value = '';
+        scheduleScannerAutoProcess();
+      });
+      scannerCodigoInput.addEventListener('keydown', function(e) {
+        if (e.key !== 'Enter') return;
+        e.preventDefault();
+        processScannerInput();
+      });
+    }
 
-    document.getElementById('scannerCodigo').addEventListener('keydown', function(e) {
-      if (e.key !== 'Enter') return;
-      e.preventDefault();
-      processScannerInput();
-    });
+    const scannerNombreInput = document.getElementById('scannerNombre');
+    if (scannerNombreInput) {
+      scannerNombreInput.addEventListener('input', function() {
+        state.scannerSelectedProductID = 0;
+        const codeInput = document.getElementById('scannerCodigo');
+        if (normalize(this.value) && codeInput) codeInput.value = '';
+        scheduleScannerAutoProcess();
+      });
+      scannerNombreInput.addEventListener('keydown', function(e) {
+        if (e.key !== 'Enter') return;
+        e.preventDefault();
+        processScannerInput();
+      });
+    }
 
     document.getElementById('scannerCantidad').addEventListener('keydown', function(e) {
       if (e.key !== 'Enter') return;

@@ -1358,6 +1358,26 @@ func SetEmpresaFinanzasMovimientoEstado(dbConn *sql.DB, empresaID, id int64, est
 	return nil
 }
 
+// GetEmpresaFinanzasMovimientoTipo obtiene el tipo normalizado de un movimiento por empresa.
+func GetEmpresaFinanzasMovimientoTipo(dbConn *sql.DB, empresaID, id int64) (string, error) {
+	if empresaID <= 0 {
+		return "", fmt.Errorf("empresa_id es obligatorio")
+	}
+	if id <= 0 {
+		return "", fmt.Errorf("id es obligatorio")
+	}
+	var tipo string
+	err := dbConn.QueryRow(`SELECT COALESCE(tipo_movimiento, '') FROM empresa_finanzas_movimientos WHERE empresa_id = ? AND id = ? LIMIT 1`, empresaID, id).Scan(&tipo)
+	if err != nil {
+		return "", err
+	}
+	tipo = normalizeTipoMovimiento(tipo)
+	if tipo == "" {
+		return "", fmt.Errorf("tipo_movimiento debe ser ingreso o egreso")
+	}
+	return tipo, nil
+}
+
 // DeleteEmpresaFinanzasMovimiento elimina un movimiento financiero por empresa.
 func DeleteEmpresaFinanzasMovimiento(dbConn *sql.DB, empresaID, id int64) error {
 	periodo, err := getPeriodoContableMovimiento(dbConn, empresaID, id)

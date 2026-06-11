@@ -349,6 +349,21 @@ func normalizarCajaMovimientoFinanzas(dbEmp *sql.DB, payload *dbpkg.EmpresaFinan
 	return nil
 }
 
+func validarPermisoRolMovimientoFinanzasManual(dbEmp *sql.DB, r *http.Request, empresaID int64, tipoMovimiento string) error {
+	role := normalizePermissionRole(fmt.Sprint(r.Context().Value("adminRoleEfectivo")))
+	if role != "cajero" {
+		return nil
+	}
+	permisos, err := dbpkg.GetEmpresaConfiguracionOperativaPermisos(dbEmp, empresaID, role)
+	if err != nil {
+		return fmt.Errorf("no se pudo validar la configuracion operativa del rol: %w", err)
+	}
+	if !permisos.PermiteMovimientoFinancieroManual(tipoMovimiento) {
+		return fmt.Errorf("el rol cajero no tiene habilitado registrar %s manuales; activalo en Configuracion > Impresoras y caja > Configuracion operativa de cobro > Override por rol", strings.ToLower(strings.TrimSpace(tipoMovimiento)))
+	}
+	return nil
+}
+
 func validarCupoCajasLicencia(dbEmp *sql.DB, dbSuper *sql.DB, empresaID int64, excludeCierreID int64) (int, int, error) {
 	if empresaID <= 0 {
 		return 0, 0, fmt.Errorf("empresa_id es obligatorio")
@@ -652,6 +667,10 @@ func EmpresaFinanzasMovimientosHandler(dbEmp *sql.DB) http.HandlerFunc {
 					payload.EmpresaID = empresaID
 				}
 			}
+			if err := validarPermisoRolMovimientoFinanzasManual(dbEmp, r, payload.EmpresaID, payload.TipoMovimiento); err != nil {
+				http.Error(w, err.Error(), http.StatusForbidden)
+				return
+			}
 			payload.UsuarioCreador = strings.TrimSpace(adminEmailFromRequest(r))
 			if err := normalizarCajaMovimientoFinanzas(dbEmp, &payload, payload.UsuarioCreador); err != nil {
 				http.Error(w, err.Error(), http.StatusBadRequest)
@@ -773,6 +792,19 @@ func EmpresaFinanzasMovimientosHandler(dbEmp *sql.DB) http.HandlerFunc {
 				if action == "anular" {
 					estado = "anulado"
 				}
+				tipoMovimiento, err := dbpkg.GetEmpresaFinanzasMovimientoTipo(dbEmp, empresaID, id)
+				if err != nil {
+					if errors.Is(err, sql.ErrNoRows) {
+						http.Error(w, "movimiento no encontrado", http.StatusNotFound)
+						return
+					}
+					http.Error(w, "No se pudo validar el tipo de movimiento", http.StatusInternalServerError)
+					return
+				}
+				if err := validarPermisoRolMovimientoFinanzasManual(dbEmp, r, empresaID, tipoMovimiento); err != nil {
+					http.Error(w, err.Error(), http.StatusForbidden)
+					return
+				}
 				if err := dbpkg.SetEmpresaFinanzasMovimientoEstado(dbEmp, empresaID, id, estado); err != nil {
 					if errors.Is(err, sql.ErrNoRows) {
 						http.Error(w, "movimiento no encontrado", http.StatusNotFound)
@@ -796,6 +828,10 @@ func EmpresaFinanzasMovimientosHandler(dbEmp *sql.DB) http.HandlerFunc {
 			}
 			if payload.EmpresaID <= 0 || payload.ID <= 0 {
 				http.Error(w, "id y empresa_id son obligatorios", http.StatusBadRequest)
+				return
+			}
+			if err := validarPermisoRolMovimientoFinanzasManual(dbEmp, r, payload.EmpresaID, payload.TipoMovimiento); err != nil {
+				http.Error(w, err.Error(), http.StatusForbidden)
 				return
 			}
 			if payload.UsuarioCreador == "" {

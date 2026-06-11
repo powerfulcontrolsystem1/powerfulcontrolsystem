@@ -1774,12 +1774,13 @@ func GetProductosByEmpresa(dbConn *sql.DB, empresaID int64, filtro, estado strin
 	WHERE p.empresa_id = ?`
 
 	args := []interface{}{empresaID}
+	filter := strings.TrimSpace(filtro)
 	if strings.TrimSpace(estado) != "" {
 		query += " AND p.estado = ?"
 		args = append(args, strings.TrimSpace(estado))
 	}
-	if strings.TrimSpace(filtro) != "" {
-		like := "%" + strings.TrimSpace(filtro) + "%"
+	if filter != "" {
+		like := "%" + filter + "%"
 		query += " AND (p.nombre LIKE ? OR p.sku LIKE ? OR p.codigo_barras LIKE ? OR p.marca LIKE ? OR p.categoria LIKE ? OR cp.nombre LIKE ?)"
 		args = append(args, like, like, like, like, like, like)
 	}
@@ -1795,7 +1796,22 @@ func GetProductosByEmpresa(dbConn *sql.DB, empresaID int64, filtro, estado strin
 		args = append(args, categoriaID)
 	}
 
-	query += ` ORDER BY p.id DESC LIMIT ? OFFSET ?`
+	if filter != "" {
+		like := "%" + filter + "%"
+		query += ` ORDER BY
+			CASE
+				WHEN UPPER(TRIM(COALESCE(p.codigo_barras, ''))) = UPPER(TRIM(?)) THEN 0
+				WHEN UPPER(TRIM(COALESCE(p.sku, ''))) = UPPER(TRIM(?)) THEN 0
+				WHEN UPPER(TRIM(COALESCE(p.nombre, ''))) = UPPER(TRIM(?)) THEN 1
+				WHEN p.nombre LIKE ? THEN 2
+				ELSE 3
+			END,
+			p.id DESC`
+		args = append(args, filter, filter, filter, like)
+	} else {
+		query += ` ORDER BY p.id DESC`
+	}
+	query += ` LIMIT ? OFFSET ?`
 	args = append(args, limit, offset)
 
 	rows, err := querySQLCompat(dbConn, query, args...)

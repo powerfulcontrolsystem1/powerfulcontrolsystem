@@ -1,9 +1,0 @@
-url=https://powerfulcontrolsystem.com/administrar_empresa/carrito_de_compras.html?empresa_id=44&estacion_id=15&estacion_nombre=Mesa%2015&carrito_codigo=EST-44-15&v=activo-cajero-20260602
-hasError=false
-hasItem=true
-hasTotal1500=true
-hasEfectivo=true
-hasDebito=true
-hasCredito=false
-hasPagar=true
-badResponses=403 https://powerfulcontrolsystem.com/api/empresa/carritos_compra?action=abonos&empresa_id=44&carrito_id=191 :: {"empresa_id":44,"error":"forbidden: rol sin acceso a la funcionalidad solicitada","error_id":7235,"method":"GET","ok":false,"path":"/api/em || 403 https://powerfulcontrolsystem.com/api/empresa/carritos_compra?action=abonos&empresa_id=44&carrito_id=191 :: {"empresa_id":44,"error":"forbidden: rol sin acceso a la funcionalidad solicitada","error_id":7236,"method":"GET","ok":false,"path":"/api/em

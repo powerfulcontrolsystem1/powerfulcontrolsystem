@@ -1,3 +1,8 @@
+2026-06-11 - Busqueda de productos en carrito por codigo o nombre
+- `backend/db/productos.go`: prioriza coincidencias exactas de `codigo_barras` y `sku` cuando el carrito consulta `/api/empresa/productos?q=...`, manteniendo busqueda por nombre y filtros por empresa.
+- `web/administrar_empresa/carrito_de_compras.html`: actualiza el catalogo inteligente para buscar por codigo/SKU/codigo de barras o nombre, aceptar codigos cortos y mostrar ambos codigos en resultados.
+- `documentos/historial_de_cambios`, `CHANGELOG.md`, `documentos/CHANGELOG.md`, `documentos/mapa_modulos.md` y `documentos/flujos_operativos.md`: documentan el ajuste operativo del buscador del carrito.
+
 2026-06-11 - Stop de audio y respuesta en chat IA
 - `web/js/ai_chat_drawer.js`: agrega `aiChatStopBtn`, `AbortController`, secuencia de respuesta activa y manejo de cancelacion para detener voz, streaming y respuestas tardias del chat IA.
 - `web/administrar_empresa.html`, `web/super_administrador.html`, `web/seleccionar_empresa.html`, `web/venta_publica.html`: incorporan el boton Stop en la barra de voz/conversacion del chat.
@@ -177,6 +182,13 @@
 	- agrega controles de super administrador para las reglas de comunicacion de licencias.
 - `web/super/formato_para_emviar_email.html`:
 	- aclara que la licencia se descarga desde Administrar empresa y ya no viaja como adjunto.
+
+2026-06-11 - Impresoras por computador detectado
+- `backend/db/empresa_impresoras.go`: agrega `EmpresaImpresoraDispositivo`, tabla `empresa_impresoras_dispositivos`, CRUD por empresa y resolucion de impresora con `dispositivo_id`/`agente_id`.
+- `backend/handlers/empresa_impresoras.go`: expone acciones para listar/guardar/eliminar asociaciones computador-impresora y pasa el identificador del computador al resolver.
+- `backend/db/empresa_impresoras_cola_test.go`: cubre por contrato que la asociacion de computador se mantenga en PostgreSQL, aislada por `empresa_id` y usada por la cola.
+- `backend/handlers/empresa_impresoras_agente_test.go`: cubre que el handler administrativo tenga soporte de dispositivos y que el agente local siga sin administrar configuracion.
+- `web/administrar_empresa/configuracion_impresora.html`: agrega tarjeta `Impresora por computador`, usa `pcs_dispositivo_id`, guarda asociaciones por funcionalidad y muestra/elimina computadores asociados.
 
 2026-06-09 - Impresoras por empresa con cola de agente local
 - `backend/db/empresa_impresoras.go`: agrega la tabla `empresa_impresoras_cola`, normalizacion de trabajos, creacion de cola, toma por agente local, cierre de estado y reintento por `empresa_id`.
@@ -11298,3 +11310,19 @@ backend/handlers/user_config.go - Controlador que expone /api/user/configuracion
 - `web/administrar_empresa/finanzas_breb_qr.html`: nueva pagina financiera para configurar cuentas receptoras, payload QR, varias cajas, registro manual y consulta de pagos Bre-B.
 - `web/administrar_empresa/finanzas_breb_qr_tutorial.html`: guia operativa para llaves, QR estatico/dinamico, varias cajas y conciliacion.
 - `web/administrar_empresa/finanzas_menu.html` y `web/js/administrar_empresa.js`: agregan el enlace `Pagos Bre-B QR` al centro financiero y a la matriz visible de permisos.
+2026-06-11 - Permisos operativos de ingresos/egresos por rol
+- `backend/db/configuracion_operativa.go`: agrega columnas y campos
+  `permitir_ingresos_manuales` y `permitir_egresos_manuales` en
+  `empresa_configuracion_operativa_roles`, resolucion efectiva por rol y helper
+  `PermiteMovimientoFinancieroManual`.
+- `backend/db/finanzas.go`: agrega `GetEmpresaFinanzasMovimientoTipo` para
+  validar cambios de estado/anulacion manteniendo filtro por `empresa_id`.
+- `backend/handlers/finanzas.go`: bloquea a `cajero` en movimientos manuales si
+  el rol no tiene el check correspondiente.
+- `backend/handlers/empresa_permisos.go`: permite llegar al handler solo para
+  `/api/empresa/finanzas/movimientos` en acciones manuales de cajero y muestra
+  enlaces de ingresos/egresos cuando la configuracion operativa lo habilita.
+- `backend/handlers/configuracion_operativa.go`: invalida cache de permisos al
+  guardar/rollback de configuracion operativa.
+- `web/administrar_empresa/configuracion_impresora.html`: agrega checks de
+  ingresos y egresos manuales dentro del override por rol.

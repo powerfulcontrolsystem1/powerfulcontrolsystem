@@ -38,3 +38,25 @@ func TestEmpresaImpresorasAgenteHandlerLimitado(t *testing.T) {
 		}
 	}
 }
+
+func TestEmpresaImpresorasHandlerAdministraDispositivos(t *testing.T) {
+	raw, err := os.ReadFile("empresa_impresoras.go")
+	if err != nil {
+		t.Fatalf("read handler: %v", err)
+	}
+	src := string(raw)
+	for _, required := range []string{
+		`case "dispositivos":`,
+		"ListEmpresaImpresoraDispositivosByEmpresa",
+		`case "dispositivo":`,
+		"UpsertEmpresaImpresoraDispositivo",
+		"DeleteEmpresaImpresoraDispositivo",
+		"ResolveEmpresaImpresoraOperacionConDispositivo",
+		`r.URL.Query().Get("dispositivo_id")`,
+		`r.URL.Query().Get("agente_id")`,
+	} {
+		if !strings.Contains(src, required) {
+			t.Fatalf("EmpresaImpresorasHandler debe conservar soporte computador-impresora: falta %s", required)
+		}
+	}
+}

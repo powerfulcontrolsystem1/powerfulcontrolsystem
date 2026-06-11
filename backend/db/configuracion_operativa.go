@@ -87,6 +87,8 @@ type EmpresaConfiguracionOperativaRol struct {
 	MetodoPagoCodigoDescuento       bool   `json:"metodo_pago_codigo_descuento"`
 	HabilitarPropinas               bool   `json:"habilitar_propinas"`
 	HabilitarComisiones             bool   `json:"habilitar_comisiones"`
+	PermitirIngresosManuales        bool   `json:"permitir_ingresos_manuales"`
+	PermitirEgresosManuales         bool   `json:"permitir_egresos_manuales"`
 	FechaCreacion                   string `json:"fecha_creacion,omitempty"`
 	FechaActualizacion              string `json:"fecha_actualizacion,omitempty"`
 	UsuarioCreador                  string `json:"usuario_creador,omitempty"`
@@ -111,6 +113,8 @@ type EmpresaConfiguracionOperativaPermisos struct {
 	MetodoPagoCodigoDescuento       bool   `json:"metodo_pago_codigo_descuento"`
 	HabilitarPropinas               bool   `json:"habilitar_propinas"`
 	HabilitarComisiones             bool   `json:"habilitar_comisiones"`
+	PermitirIngresosManuales        bool   `json:"permitir_ingresos_manuales"`
+	PermitirEgresosManuales         bool   `json:"permitir_egresos_manuales"`
 }
 
 func defaultEmpresaConfiguracionOperativa(empresaID int64) EmpresaConfiguracionOperativa {
@@ -238,6 +242,8 @@ func EnsureEmpresaConfiguracionOperativaSchema(dbConn *sql.DB) error {
 			metodo_pago_codigo_descuento INTEGER DEFAULT 1,
 			habilitar_propinas INTEGER DEFAULT 1,
 			habilitar_comisiones INTEGER DEFAULT 1,
+			permitir_ingresos_manuales INTEGER DEFAULT 0,
+			permitir_egresos_manuales INTEGER DEFAULT 0,
 			fecha_creacion TEXT DEFAULT (CURRENT_TIMESTAMP),
 			fecha_actualizacion TEXT DEFAULT (CURRENT_TIMESTAMP),
 			usuario_creador TEXT,
@@ -371,6 +377,12 @@ func EnsureEmpresaConfiguracionOperativaSchema(dbConn *sql.DB) error {
 	if err := ensureColumnIfMissing(dbConn, "empresa_configuracion_operativa_roles", "habilitar_comisiones", "INTEGER DEFAULT 1"); err != nil {
 		return err
 	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_configuracion_operativa_roles", "permitir_ingresos_manuales", "INTEGER DEFAULT 0"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_configuracion_operativa_roles", "permitir_egresos_manuales", "INTEGER DEFAULT 0"); err != nil {
+		return err
+	}
 	if err := ensureColumnIfMissing(dbConn, "empresa_configuracion_operativa_roles", "fecha_actualizacion", "TEXT"); err != nil {
 		return err
 	}
@@ -478,6 +490,8 @@ func GetEmpresaConfiguracionOperativa(dbConn *sql.DB, empresaID int64) (*Empresa
 		COALESCE(metodo_pago_codigo_descuento, 1),
 		COALESCE(habilitar_propinas, 1),
 		COALESCE(habilitar_comisiones, 1),
+		COALESCE(permitir_ingresos_manuales, 0),
+		COALESCE(permitir_egresos_manuales, 0),
 		COALESCE(fecha_creacion, ''),
 		COALESCE(fecha_actualizacion, ''),
 		COALESCE(usuario_creador, ''),
@@ -593,6 +607,8 @@ func ListEmpresaConfiguracionOperativaRoles(dbConn *sql.DB, empresaID int64, inc
 		var metodoCodigo int
 		var habilitarPropinas int
 		var habilitarComisiones int
+		var permitirIngresosManuales int
+		var permitirEgresosManuales int
 		if err := rows.Scan(
 			&row.ID,
 			&row.EmpresaID,
@@ -605,6 +621,8 @@ func ListEmpresaConfiguracionOperativaRoles(dbConn *sql.DB, empresaID int64, inc
 			&metodoCodigo,
 			&habilitarPropinas,
 			&habilitarComisiones,
+			&permitirIngresosManuales,
+			&permitirEgresosManuales,
 			&row.FechaCreacion,
 			&row.FechaActualizacion,
 			&row.UsuarioCreador,
@@ -622,6 +640,8 @@ func ListEmpresaConfiguracionOperativaRoles(dbConn *sql.DB, empresaID int64, inc
 		row.MetodoPagoCodigoDescuento = metodoCodigo == 1
 		row.HabilitarPropinas = habilitarPropinas == 1
 		row.HabilitarComisiones = habilitarComisiones == 1
+		row.PermitirIngresosManuales = permitirIngresosManuales == 1
+		row.PermitirEgresosManuales = permitirEgresosManuales == 1
 		row.Estado = normalizeConfiguracionOperativaEstado(row.Estado)
 		out = append(out, row)
 	}
@@ -715,12 +735,14 @@ func UpsertEmpresaConfiguracionOperativaRol(dbConn *sql.DB, payload EmpresaConfi
 		metodo_pago_codigo_descuento,
 		habilitar_propinas,
 		habilitar_comisiones,
+		permitir_ingresos_manuales,
+		permitir_egresos_manuales,
 		fecha_creacion,
 		fecha_actualizacion,
 		usuario_creador,
 		estado,
 		observaciones
-	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, `+nowExpr+`, `+nowExpr+`, ?, ?, ?)
+	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, `+nowExpr+`, `+nowExpr+`, ?, ?, ?)
 	ON CONFLICT(empresa_id, rol) DO UPDATE SET
 		metodo_pago_efectivo = excluded.metodo_pago_efectivo,
 		metodo_pago_tarjeta_credito = excluded.metodo_pago_tarjeta_credito,
@@ -730,6 +752,8 @@ func UpsertEmpresaConfiguracionOperativaRol(dbConn *sql.DB, payload EmpresaConfi
 		metodo_pago_codigo_descuento = excluded.metodo_pago_codigo_descuento,
 		habilitar_propinas = excluded.habilitar_propinas,
 		habilitar_comisiones = excluded.habilitar_comisiones,
+		permitir_ingresos_manuales = excluded.permitir_ingresos_manuales,
+		permitir_egresos_manuales = excluded.permitir_egresos_manuales,
 		fecha_actualizacion = `+nowExpr+`,
 		usuario_creador = CASE
 			WHEN trim(excluded.usuario_creador) <> '' THEN excluded.usuario_creador
@@ -748,6 +772,8 @@ func UpsertEmpresaConfiguracionOperativaRol(dbConn *sql.DB, payload EmpresaConfi
 		boolToInt(payload.MetodoPagoCodigoDescuento),
 		boolToInt(payload.HabilitarPropinas),
 		boolToInt(payload.HabilitarComisiones),
+		boolToInt(payload.PermitirIngresosManuales),
+		boolToInt(payload.PermitirEgresosManuales),
 		strings.TrimSpace(payload.UsuarioCreador),
 		payload.Estado,
 		strings.TrimSpace(payload.Observaciones),
@@ -992,6 +1018,8 @@ func ResolveEmpresaConfiguracionOperativaConContexto(cfg *EmpresaConfiguracionOp
 		resolved.MetodoPagoCodigoDescuento = row.MetodoPagoCodigoDescuento
 		resolved.HabilitarPropinas = row.HabilitarPropinas
 		resolved.HabilitarComisiones = row.HabilitarComisiones
+		resolved.PermitirIngresosManuales = row.PermitirIngresosManuales
+		resolved.PermitirEgresosManuales = row.PermitirEgresosManuales
 		resolved.Fuente = "rol"
 		break
 	}
@@ -1377,6 +1405,18 @@ func (p EmpresaConfiguracionOperativaPermisos) IsMetodoPagoHabilitado(metodoPago
 		return p.MetodoPagoMixto
 	case "codigo_descuento":
 		return p.MetodoPagoCodigoDescuento
+	default:
+		return false
+	}
+}
+
+// PermiteMovimientoFinancieroManual valida permisos operativos por rol para ingresos/egresos manuales.
+func (p EmpresaConfiguracionOperativaPermisos) PermiteMovimientoFinancieroManual(tipoMovimiento string) bool {
+	switch strings.ToLower(strings.TrimSpace(tipoMovimiento)) {
+	case "ingreso":
+		return p.PermitirIngresosManuales
+	case "egreso":
+		return p.PermitirEgresosManuales
 	default:
 		return false
 	}

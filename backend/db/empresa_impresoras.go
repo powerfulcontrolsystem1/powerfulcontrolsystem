@@ -97,6 +97,25 @@ type EmpresaImpresoraReceta struct {
 	Observaciones      string `json:"observaciones,omitempty"`
 }
 
+// EmpresaImpresoraDispositivo vincula una impresora a un computador/caja detectado por PCS.
+type EmpresaImpresoraDispositivo struct {
+	ID                 int64  `json:"id"`
+	EmpresaID          int64  `json:"empresa_id"`
+	DispositivoID      string `json:"dispositivo_id"`
+	Etiqueta           string `json:"etiqueta,omitempty"`
+	CajaCodigo         string `json:"caja_codigo,omitempty"`
+	EstacionID         int64  `json:"estacion_id,omitempty"`
+	Funcionalidad      string `json:"funcionalidad,omitempty"`
+	ImpresoraID        int64  `json:"impresora_id"`
+	ImpresoraNombre    string `json:"impresora_nombre,omitempty"`
+	ImpresoraCodigo    string `json:"impresora_codigo,omitempty"`
+	FechaCreacion      string `json:"fecha_creacion,omitempty"`
+	FechaActualizacion string `json:"fecha_actualizacion,omitempty"`
+	UsuarioCreador     string `json:"usuario_creador,omitempty"`
+	Estado             string `json:"estado,omitempty"`
+	Observaciones      string `json:"observaciones,omitempty"`
+}
+
 // EmpresaImpresoraResolucion representa la impresora seleccionada para una ejecución operativa.
 type EmpresaImpresoraResolucion struct {
 	EmpresaID     int64            `json:"empresa_id"`
@@ -105,6 +124,7 @@ type EmpresaImpresoraResolucion struct {
 	CategoriaID   int64            `json:"categoria_id,omitempty"`
 	RecetaID      int64            `json:"receta_id,omitempty"`
 	TipoItem      string           `json:"tipo_item,omitempty"`
+	DispositivoID string           `json:"dispositivo_id,omitempty"`
 	Fuente        string           `json:"fuente"`
 	Impresora     EmpresaImpresora `json:"impresora"`
 }
@@ -219,6 +239,24 @@ func EnsureEmpresaImpresorasSchema(dbConn *sql.DB) error {
 		);`,
 		`CREATE UNIQUE INDEX IF NOT EXISTS ux_empresa_impresoras_receta ON empresa_impresoras_recetas(empresa_id, receta_id);`,
 		`CREATE INDEX IF NOT EXISTS ix_empresa_impresoras_recetas_printer ON empresa_impresoras_recetas(empresa_id, impresora_id);`,
+		`CREATE TABLE IF NOT EXISTS empresa_impresoras_dispositivos (
+			id BIGSERIAL PRIMARY KEY,
+			empresa_id INTEGER NOT NULL,
+			dispositivo_id TEXT NOT NULL,
+			etiqueta TEXT,
+			caja_codigo TEXT,
+			estacion_id INTEGER DEFAULT 0,
+			funcionalidad TEXT DEFAULT 'general',
+			impresora_id INTEGER NOT NULL,
+			fecha_creacion TEXT DEFAULT (CURRENT_TIMESTAMP),
+			fecha_actualizacion TEXT DEFAULT (CURRENT_TIMESTAMP),
+			usuario_creador TEXT,
+			estado TEXT DEFAULT 'activo',
+			observaciones TEXT
+		);`,
+		`CREATE UNIQUE INDEX IF NOT EXISTS ux_empresa_impresoras_dispositivo_func ON empresa_impresoras_dispositivos(empresa_id, dispositivo_id, funcionalidad);`,
+		`CREATE INDEX IF NOT EXISTS ix_empresa_impresoras_dispositivo_printer ON empresa_impresoras_dispositivos(empresa_id, impresora_id);`,
+		`CREATE INDEX IF NOT EXISTS ix_empresa_impresoras_dispositivo_estado ON empresa_impresoras_dispositivos(empresa_id, estado);`,
 		`CREATE TABLE IF NOT EXISTS empresa_impresoras_cola (
 			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL,
@@ -410,6 +448,44 @@ func EnsureEmpresaImpresorasSchema(dbConn *sql.DB) error {
 		return err
 	}
 
+	// Asociacion por computador/caja detectado en el navegador o agente local.
+	if err := ensureColumnIfMissing(dbConn, "empresa_impresoras_dispositivos", "empresa_id", "INTEGER NOT NULL"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_impresoras_dispositivos", "dispositivo_id", "TEXT NOT NULL"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_impresoras_dispositivos", "etiqueta", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_impresoras_dispositivos", "caja_codigo", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_impresoras_dispositivos", "estacion_id", "INTEGER DEFAULT 0"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_impresoras_dispositivos", "funcionalidad", "TEXT DEFAULT 'general'"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_impresoras_dispositivos", "impresora_id", "INTEGER NOT NULL"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_impresoras_dispositivos", "fecha_creacion", "TEXT DEFAULT (CURRENT_TIMESTAMP)"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_impresoras_dispositivos", "fecha_actualizacion", "TEXT DEFAULT (CURRENT_TIMESTAMP)"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_impresoras_dispositivos", "usuario_creador", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_impresoras_dispositivos", "estado", "TEXT DEFAULT 'activo'"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_impresoras_dispositivos", "observaciones", "TEXT"); err != nil {
+		return err
+	}
+
 	// Cola para agente local de impresion.
 	if err := ensureColumnIfMissing(dbConn, "empresa_impresoras_cola", "empresa_id", "INTEGER NOT NULL"); err != nil {
 		return err
@@ -537,6 +613,33 @@ func scanEmpresaImpresora(row empresaImpresoraScanner) (*EmpresaImpresora, error
 	return &item, nil
 }
 
+func scanEmpresaImpresoraDispositivo(row empresaImpresoraScanner) (*EmpresaImpresoraDispositivo, error) {
+	item := EmpresaImpresoraDispositivo{}
+	if err := row.Scan(
+		&item.ID,
+		&item.EmpresaID,
+		&item.DispositivoID,
+		&item.Etiqueta,
+		&item.CajaCodigo,
+		&item.EstacionID,
+		&item.Funcionalidad,
+		&item.ImpresoraID,
+		&item.ImpresoraNombre,
+		&item.ImpresoraCodigo,
+		&item.FechaCreacion,
+		&item.FechaActualizacion,
+		&item.UsuarioCreador,
+		&item.Estado,
+		&item.Observaciones,
+	); err != nil {
+		return nil, err
+	}
+	item.DispositivoID = normalizeEmpresaImpresoraDispositivoID(item.DispositivoID)
+	item.Funcionalidad = normalizeEmpresaImpresoraFuncionalidad(item.Funcionalidad)
+	item.Estado = normalizeEmpresaImpresoraEstado(item.Estado)
+	return &item, nil
+}
+
 func scanEmpresaImpresoraTrabajo(row empresaImpresoraScanner) (*EmpresaImpresoraTrabajo, error) {
 	item := EmpresaImpresoraTrabajo{}
 	if err := row.Scan(
@@ -640,6 +743,28 @@ func normalizeEmpresaImpresoraTipoItem(raw string) string {
 	default:
 		return ""
 	}
+}
+
+func normalizeEmpresaImpresoraDispositivoID(raw string) string {
+	value := strings.ToLower(strings.TrimSpace(raw))
+	if value == "" {
+		return ""
+	}
+	var b strings.Builder
+	b.Grow(len(value))
+	for i := 0; i < len(value); i++ {
+		ch := value[i]
+		isLetter := ch >= 'a' && ch <= 'z'
+		isDigit := ch >= '0' && ch <= '9'
+		if isLetter || isDigit || ch == '_' || ch == '-' || ch == '.' || ch == ':' {
+			b.WriteByte(ch)
+		}
+	}
+	out := strings.Trim(b.String(), "_.:-")
+	if len(out) > 120 {
+		return out[:120]
+	}
+	return out
 }
 
 func normalizeEmpresaImpresoraFuncionalidad(raw string) string {
@@ -1042,7 +1167,7 @@ func CrearEmpresaImpresoraTrabajo(dbConn *sql.DB, payload EmpresaImpresoraTrabaj
 			return 0, err
 		}
 	} else {
-		resolved, err := ResolveEmpresaImpresoraOperacion(dbConn, payload.EmpresaID, payload.Funcionalidad, payload.TipoItem, payload.ReferenciaID)
+		resolved, err := ResolveEmpresaImpresoraOperacionConDispositivo(dbConn, payload.EmpresaID, payload.Funcionalidad, payload.TipoItem, payload.ReferenciaID, payload.AgenteID)
 		if err != nil {
 			return 0, err
 		}
@@ -1974,6 +2099,130 @@ func DeleteEmpresaImpresoraReceta(dbConn *sql.DB, empresaID, recetaID int64) err
 	return err
 }
 
+// ListEmpresaImpresoraDispositivosByEmpresa lista impresoras asociadas a computadores/cajas.
+func ListEmpresaImpresoraDispositivosByEmpresa(dbConn *sql.DB, empresaID int64) ([]EmpresaImpresoraDispositivo, error) {
+	rows, err := querySQLCompat(dbConn, `SELECT
+		d.id,
+		d.empresa_id,
+		COALESCE(d.dispositivo_id, ''),
+		COALESCE(d.etiqueta, ''),
+		COALESCE(d.caja_codigo, ''),
+		COALESCE(d.estacion_id, 0),
+		COALESCE(d.funcionalidad, 'general'),
+		d.impresora_id,
+		COALESCE(i.nombre, ''),
+		COALESCE(i.codigo, ''),
+		COALESCE(d.fecha_creacion, ''),
+		COALESCE(d.fecha_actualizacion, ''),
+		COALESCE(d.usuario_creador, ''),
+		COALESCE(d.estado, 'activo'),
+		COALESCE(d.observaciones, '')
+	FROM empresa_impresoras_dispositivos d
+	LEFT JOIN empresa_impresoras i ON i.id = d.impresora_id AND i.empresa_id = d.empresa_id
+	WHERE d.empresa_id = ?
+	ORDER BY d.etiqueta ASC, d.dispositivo_id ASC, d.funcionalidad ASC`, empresaID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	out := make([]EmpresaImpresoraDispositivo, 0)
+	for rows.Next() {
+		item, errScan := scanEmpresaImpresoraDispositivo(rows)
+		if errScan != nil {
+			return nil, errScan
+		}
+		out = append(out, *item)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// UpsertEmpresaImpresoraDispositivo asocia una impresora activa a un computador detectado.
+func UpsertEmpresaImpresoraDispositivo(dbConn *sql.DB, payload EmpresaImpresoraDispositivo) (int64, error) {
+	if payload.EmpresaID <= 0 {
+		return 0, fmt.Errorf("empresa_id requerido")
+	}
+	payload.DispositivoID = normalizeEmpresaImpresoraDispositivoID(payload.DispositivoID)
+	if payload.DispositivoID == "" {
+		return 0, fmt.Errorf("dispositivo_id requerido")
+	}
+	if payload.ImpresoraID <= 0 {
+		return 0, fmt.Errorf("impresora_id requerido")
+	}
+	if err := ensureEmpresaImpresoraExistsAndActive(dbConn, payload.EmpresaID, payload.ImpresoraID); err != nil {
+		return 0, err
+	}
+	payload.Funcionalidad = normalizeEmpresaImpresoraFuncionalidad(payload.Funcionalidad)
+	payload.Etiqueta = trimEmpresaImpresoraText(payload.Etiqueta, 120)
+	payload.CajaCodigo = trimEmpresaImpresoraText(payload.CajaCodigo, 80)
+	payload.UsuarioCreador = trimEmpresaImpresoraText(payload.UsuarioCreador, 180)
+	payload.Observaciones = trimEmpresaImpresoraText(payload.Observaciones, 255)
+	payload.Estado = normalizeEmpresaImpresoraEstado(payload.Estado)
+	if payload.UsuarioCreador == "" {
+		payload.UsuarioCreador = "sistema"
+	}
+
+	if _, err := execSQLCompat(dbConn, `INSERT INTO empresa_impresoras_dispositivos (
+		empresa_id,
+		dispositivo_id,
+		etiqueta,
+		caja_codigo,
+		estacion_id,
+		funcionalidad,
+		impresora_id,
+		fecha_creacion,
+		fecha_actualizacion,
+		usuario_creador,
+		estado,
+		observaciones
+	) VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, ?, ?, ?)
+	ON CONFLICT(empresa_id, dispositivo_id, funcionalidad) DO UPDATE SET
+		etiqueta = excluded.etiqueta,
+		caja_codigo = excluded.caja_codigo,
+		estacion_id = excluded.estacion_id,
+		impresora_id = excluded.impresora_id,
+		fecha_actualizacion = CURRENT_TIMESTAMP,
+		usuario_creador = excluded.usuario_creador,
+		estado = excluded.estado,
+		observaciones = excluded.observaciones`,
+		payload.EmpresaID,
+		payload.DispositivoID,
+		payload.Etiqueta,
+		payload.CajaCodigo,
+		payload.EstacionID,
+		payload.Funcionalidad,
+		payload.ImpresoraID,
+		payload.UsuarioCreador,
+		payload.Estado,
+		payload.Observaciones,
+	); err != nil {
+		return 0, err
+	}
+
+	var id int64
+	if err := queryRowSQLCompat(dbConn, `SELECT id FROM empresa_impresoras_dispositivos WHERE empresa_id = ? AND dispositivo_id = ? AND funcionalidad = ? LIMIT 1`, payload.EmpresaID, payload.DispositivoID, payload.Funcionalidad).Scan(&id); err != nil {
+		return 0, err
+	}
+	return id, nil
+}
+
+// DeleteEmpresaImpresoraDispositivo elimina la asociacion de una funcionalidad para un computador.
+func DeleteEmpresaImpresoraDispositivo(dbConn *sql.DB, empresaID int64, dispositivoID, funcionalidad string) error {
+	if empresaID <= 0 {
+		return fmt.Errorf("empresa_id requerido")
+	}
+	dispositivoID = normalizeEmpresaImpresoraDispositivoID(dispositivoID)
+	if dispositivoID == "" {
+		return fmt.Errorf("dispositivo_id requerido")
+	}
+	funcionalidad = normalizeEmpresaImpresoraFuncionalidad(funcionalidad)
+	_, err := execSQLCompat(dbConn, `DELETE FROM empresa_impresoras_dispositivos WHERE empresa_id = ? AND dispositivo_id = ? AND funcionalidad = ?`, empresaID, dispositivoID, funcionalidad)
+	return err
+}
+
 func resolveEmpresaImpresoraByProducto(dbConn *sql.DB, empresaID, productoID int64) (*EmpresaImpresora, error) {
 	row := queryRowSQLCompat(dbConn, `SELECT
 		i.id,
@@ -2114,6 +2363,66 @@ func resolveEmpresaImpresoraByFuncionalidad(dbConn *sql.DB, empresaID int64, fun
 	return item, nil
 }
 
+func resolveEmpresaImpresoraByDispositivo(dbConn *sql.DB, empresaID int64, dispositivoID, funcionalidad string) (*EmpresaImpresora, string, error) {
+	dispositivoID = normalizeEmpresaImpresoraDispositivoID(dispositivoID)
+	if dispositivoID == "" {
+		return nil, "", sql.ErrNoRows
+	}
+	funcionalidad = normalizeEmpresaImpresoraFuncionalidad(funcionalidad)
+	row := queryRowSQLCompat(dbConn, `SELECT
+		i.id,
+		i.empresa_id,
+		COALESCE(i.codigo, ''),
+		COALESCE(i.nombre, ''),
+		COALESCE(i.tipo_conexion, 'red'),
+		COALESCE(i.direccion, ''),
+		COALESCE(i.area_operativa, ''),
+		COALESCE(i.formato_impresion, 'pos'),
+		`+empresaImpresoraDefaultSelectExpr("i")+`,
+		COALESCE(i.fecha_creacion, ''),
+		COALESCE(i.fecha_actualizacion, ''),
+		COALESCE(i.usuario_creador, ''),
+		COALESCE(i.estado, 'activo'),
+		COALESCE(i.observaciones, ''),
+		COALESCE(d.funcionalidad, 'general')
+	FROM empresa_impresoras_dispositivos d
+	INNER JOIN empresa_impresoras i ON i.id = d.impresora_id AND i.empresa_id = d.empresa_id
+	WHERE d.empresa_id = ?
+		AND d.dispositivo_id = ?
+		AND d.funcionalidad IN (?, 'general')
+		AND COALESCE(NULLIF(TRIM(d.estado), ''), 'activo') = 'activo'
+		AND COALESCE(NULLIF(TRIM(i.estado), ''), 'activo') = 'activo'
+	ORDER BY CASE WHEN d.funcionalidad = ? THEN 0 ELSE 1 END, d.id ASC
+	LIMIT 1`, empresaID, dispositivoID, funcionalidad, funcionalidad)
+	item := EmpresaImpresora{}
+	var esPredeterminadaInt int
+	var resolvedFunc string
+	if err := row.Scan(
+		&item.ID,
+		&item.EmpresaID,
+		&item.Codigo,
+		&item.Nombre,
+		&item.TipoConexion,
+		&item.Direccion,
+		&item.AreaOperativa,
+		&item.FormatoImpresion,
+		&esPredeterminadaInt,
+		&item.FechaCreacion,
+		&item.FechaActualizacion,
+		&item.UsuarioCreador,
+		&item.Estado,
+		&item.Observaciones,
+		&resolvedFunc,
+	); err != nil {
+		return nil, "", err
+	}
+	item.EsPredeterminada = esPredeterminadaInt == 1
+	item.FormatoImpresion = normalizeEmpresaImpresoraFormato(item.FormatoImpresion)
+	item.TipoConexion = normalizeEmpresaImpresoraTipoConexion(item.TipoConexion)
+	item.Estado = normalizeEmpresaImpresoraEstado(item.Estado)
+	return &item, normalizeEmpresaImpresoraFuncionalidad(resolvedFunc), nil
+}
+
 func resolveEmpresaImpresoraPredeterminada(dbConn *sql.DB, empresaID int64) (*EmpresaImpresora, error) {
 	row := queryRowSQLCompat(dbConn, `SELECT
 		id,
@@ -2144,11 +2453,17 @@ func resolveEmpresaImpresoraPredeterminada(dbConn *sql.DB, empresaID int64) (*Em
 
 // ResolveEmpresaImpresoraOperacion selecciona impresora por item -> categoria/todos -> funcionalidad -> predeterminada.
 func ResolveEmpresaImpresoraOperacion(dbConn *sql.DB, empresaID int64, funcionalidad string, tipoItem string, referenciaID int64) (*EmpresaImpresoraResolucion, error) {
+	return ResolveEmpresaImpresoraOperacionConDispositivo(dbConn, empresaID, funcionalidad, tipoItem, referenciaID, "")
+}
+
+// ResolveEmpresaImpresoraOperacionConDispositivo selecciona impresora por item -> computador -> funcionalidad -> predeterminada.
+func ResolveEmpresaImpresoraOperacionConDispositivo(dbConn *sql.DB, empresaID int64, funcionalidad string, tipoItem string, referenciaID int64, dispositivoID string) (*EmpresaImpresoraResolucion, error) {
 	if empresaID <= 0 {
 		return nil, fmt.Errorf("empresa_id requerido")
 	}
 	funcionalidad = normalizeEmpresaImpresoraFuncionalidad(funcionalidad)
 	tipoItem = strings.ToLower(strings.TrimSpace(tipoItem))
+	dispositivoID = normalizeEmpresaImpresoraDispositivoID(dispositivoID)
 	if tipoItem == "" && referenciaID > 0 {
 		tipoItem = "producto"
 	}
@@ -2217,6 +2532,29 @@ func ResolveEmpresaImpresoraOperacion(dbConn *sql.DB, empresaID int64, funcional
 				CategoriaID:   categoriaID,
 				TipoItem:      "producto",
 				Fuente:        "todos_productos",
+				Impresora:     *impresora,
+			}, nil
+		}
+		if err != sql.ErrNoRows {
+			return nil, err
+		}
+	}
+
+	if dispositivoID != "" {
+		impresora, dispositivoFuncionalidad, err := resolveEmpresaImpresoraByDispositivo(dbConn, empresaID, dispositivoID, funcionalidad)
+		if err == nil {
+			fuente := "computador"
+			if dispositivoFuncionalidad == "general" && funcionalidad != "general" {
+				fuente = "computador_general"
+			}
+			return &EmpresaImpresoraResolucion{
+				EmpresaID:     empresaID,
+				Funcionalidad: funcionalidad,
+				ProductoID:    mapEmpresaImpresoraProductoID(tipoItem, referenciaID),
+				RecetaID:      mapEmpresaImpresoraRecetaID(tipoItem, referenciaID),
+				TipoItem:      tipoItem,
+				DispositivoID: dispositivoID,
+				Fuente:        fuente,
 				Impresora:     *impresora,
 			}, nil
 		}

@@ -341,6 +341,7 @@ try {
   var permModuleDocumentosOnlyOffice = "documentos_onlyoffice";
   var menuPermissionCatalog = {
     linkCarritoCompras: { module: permModuleVentas, action: permActionCreate },
+    linkVentas: { module: permModuleVentas, action: permActionRead },
     linkVentaDirecta: { module: permModuleVentas, action: permActionCreate },
     linkCodigosDescuento: { module: permModuleVentas, action: permActionCreate },
     linkRedSocialComercial: { module: permModuleVentas, action: permActionCreate },
@@ -1484,7 +1485,7 @@ try {
       return;
     }
     if (normalizePermissionRole(permissionContext.rol || permissionContext.role || "") === "cajero") {
-      var cajeroLinksContext = ["linkVentaDirecta", "linkEstaciones", "linkCorteCaja"];
+      var cajeroLinksContext = ["linkVentaDirecta", "linkEstaciones", "linkCorteCaja", "linkVentas"];
       links.forEach(function (link) {
         setMenuLinkVisible(link, !!link && cajeroLinksContext.indexOf(link.id) !== -1);
       });
@@ -1784,7 +1785,7 @@ try {
       return;
     }
     if (normalizedRole === "cajero") {
-      var cajeroLinks = ["linkVentaDirecta", "linkEstaciones", "linkCorteCaja"];
+      var cajeroLinks = ["linkVentaDirecta", "linkEstaciones", "linkCorteCaja", "linkVentas"];
       links.forEach(function (link) {
         setMenuLinkVisible(link, !!link && cajeroLinks.indexOf(link.id) !== -1);
       });
@@ -2174,6 +2175,10 @@ try {
     var unread = Number(data && data.unread || 0);
     notificationBadge.textContent = unread > 99 ? "99+" : String(unread);
     notificationBell.classList.toggle("has-unread", unread > 0);
+    notificationBell.dataset.unread = String(unread);
+    try {
+      window.dispatchEvent(new CustomEvent("pcs:notifications-updated", { detail: { unread: unread } }));
+    } catch (error) {}
     var messages = Array.isArray(data && data.mensajes) ? data.mensajes.slice(0, 8) : [];
     notificationList.innerHTML = "";
     if (!messages.length) {

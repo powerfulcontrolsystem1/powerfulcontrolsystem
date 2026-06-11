@@ -96,3 +96,21 @@ func TestDefaultHiddenEnterpriseIAPagesRequireExplicitCompanyEnable(t *testing.T
 		t.Fatal("linkCentroIAEmpresarial debe seguir oculto si no tiene habilitacion explicita")
 	}
 }
+
+func TestCajeroFinanzasManualAPIRequestSoloMovimientosPermitidos(t *testing.T) {
+	if !isCajeroFinanzasManualAPIRequest("cajero", "/api/empresa/finanzas/movimientos", http.MethodPost, "") {
+		t.Fatal("cajero debe poder llegar al handler de movimientos manuales para validar configuracion operativa")
+	}
+	if !isCajeroFinanzasManualAPIRequest("cajero", "/api/empresa/finanzas/movimientos", http.MethodPut, "anular") {
+		t.Fatal("cajero debe poder llegar al handler de anulacion manual para validar configuracion operativa")
+	}
+	if isCajeroFinanzasManualAPIRequest("cajero", "/api/empresa/finanzas/movimientos", http.MethodPost, "importar_bancario") {
+		t.Fatal("cajero no debe saltarse permisos para importar extractos bancarios")
+	}
+	if isCajeroFinanzasManualAPIRequest("cajero", "/api/empresa/finanzas/breb_qr", http.MethodPost, "") {
+		t.Fatal("cajero no debe saltarse permisos de otras rutas de finanzas")
+	}
+	if isCajeroFinanzasManualAPIRequest("contador", "/api/empresa/finanzas/movimientos", http.MethodPost, "") {
+		t.Fatal("la excepcion operativa aplica solo al rol cajero")
+	}
+}

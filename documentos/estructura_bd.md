@@ -9,6 +9,12 @@ Actualizacion 2026-06-11 (empresas compartidas)
   - `admin_empresa_compartida_invitaciones`: agrega `puede_compartir BOOLEAN DEFAULT FALSE` para conservar la decision desde la invitacion hasta la aceptacion.
 - El permiso no reemplaza roles ni autorizacion backend; solo habilita la gestion de invitaciones de esa empresa compartida cuando ya existe acceso activo y no revocado.
 
+Actualizacion 2026-06-11 (impresoras por computador)
+- Nueva tabla en `pcs_empresas`: `empresa_impresoras_dispositivos`.
+- Guarda por `empresa_id` el `dispositivo_id` detectado por navegador/agente, etiqueta visible, caja, estacion, funcionalidad e `impresora_id`.
+- Indice unico: `(empresa_id, dispositivo_id, funcionalidad)` para permitir una regla general y reglas especificas por computador sin mezclar empresas.
+- La resolucion de impresion queda: receta/producto/categoria/todos, computador detectado, funcionalidad y predeterminada.
+
 Actualizacion 2026-06-11 (buzon, tareas, chat y almacenamiento por empresa)
 - Nuevas tablas en `pcs_empresas`:
   - `empresa_buzon_mensajes`: mensajes privados por `empresa_id`, destinatario/remitente, titulo, mensaje, tipo (`interno`, `tarea`, `inventario_traslado`), prioridad, modulo, referencia, enlace, lectura y campos de tarea (`tarea_estado`, `tarea_vence_en`, `tarea_cerrada_en`, `tarea_cierre_descripcion`).
@@ -1215,6 +1221,8 @@ Actualizacion 2026-04-29 (auditoria como fuente de contexto IA)
   - metodo_pago_codigo_descuento
   - habilitar_propinas
   - habilitar_comisiones
+  - permitir_ingresos_manuales (default 0; habilita al rol para registrar ingresos manuales de caja/finanzas)
+  - permitir_egresos_manuales (default 0; habilita al rol para registrar egresos manuales de caja/finanzas)
   - indice unico: (empresa_id, rol)
 - empresa_configuracion_operativa_politicas:
   - empresa_id
@@ -1274,6 +1282,10 @@ Actualizacion 2026-04-29 (auditoria como fuente de contexto IA)
   - empresa_id, alcance (`todos`/`categoria`), categoria_id, impresora_id
   - estado, usuario_creador, observaciones
   - indice unico: `(empresa_id, alcance, categoria_id)`
+- empresa_impresoras_dispositivos:
+  - empresa_id, dispositivo_id, etiqueta, caja_codigo, estacion_id
+  - funcionalidad, impresora_id, estado, usuario_creador, observaciones
+  - indice unico: `(empresa_id, dispositivo_id, funcionalidad)`
 - empresa_impresoras_cola:
   - empresa_id, estacion_id, agente_id, impresora_id
   - funcionalidad, tipo_documento, referencia_tipo, referencia_id, tipo_item, titulo
@@ -1282,7 +1294,7 @@ Actualizacion 2026-04-29 (auditoria como fuente de contexto IA)
   - tomado_por, tomado_en, impreso_en, ultimo_error, metadata_json
   - indices: `(empresa_id, estado, prioridad, id)`, `(empresa_id, impresora_id)`, `(empresa_id, agente_id, estacion_id)`
 - Regla de resolucion operativa:
-  - prioridad de asignacion: `receta` -> `producto` -> `categoria de producto` -> `todos los productos` -> `funcionalidad` -> `predeterminada`.
+  - prioridad de asignacion: `receta` -> `producto` -> `categoria de producto` -> `todos los productos` -> `computador detectado` -> `funcionalidad` -> `predeterminada`.
 
 ### Tablas de calculadora operativa por empresa
 - empresa_calculadora_configuracion:

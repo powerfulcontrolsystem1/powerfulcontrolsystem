@@ -413,8 +413,13 @@
     var wrapper = document.createElement('div');
     wrapper.className = 'floating-menu';
     wrapper.setAttribute('aria-hidden','false');
-    wrapper.innerHTML = '<button class="fm-toggle" aria-label="Abrir menú"><span class="fm-toggle-icon">☰</span></button>' +
+    wrapper.innerHTML = '<button class="fm-toggle" aria-label="Abrir menú"><span class="fm-toggle-icon">☰</span><span id="floatingMenuNotificationBadge" class="fm-toggle-badge" hidden>0</span></button>' +
       '<div class="fm-panel" role="menu">' +
+        '<button id="floatingNotificationBell" class="fm-item fm-action-item fm-icon-item fm-notification-item" type="button" aria-expanded="false" aria-controls="floatingNotificationPanel" aria-label="Notificaciones"><span class="fm-notification-icon" aria-hidden="true">&#128276;</span><span class="fm-notification-label">Notificaciones</span><span id="floatingNotificationCount" class="fm-notification-count" hidden>0</span></button>' +
+        '<div id="floatingNotificationPanel" class="fm-notification-panel" hidden>' +
+          '<div class="fm-notification-panel-head"><strong>Buz&oacute;n de usuario</strong><button id="floatingNotificationRefresh" type="button">Actualizar</button></div>' +
+          '<div id="floatingNotificationList" class="fm-notification-list"><p class="fm-notification-empty">Sin mensajes pendientes.</p></div>' +
+        '</div>' +
         '<a class="fm-item" href="/index.html">Portal</a>' +
         '<a class="fm-item" href="/red_social_comercial.html" target="_blank" rel="noopener">Red social comercial</a>' +
         '<a class="fm-item fm-icon-item" href="/noticias.html"><img class="fm-item-icon" src="/img/report.svg" alt="">Noticias</a>' +
@@ -473,6 +478,180 @@
     var helpTicketLauncher = wrapper.querySelector('#createHelpTicketLink');
     var floatingAILauncher = wrapper.querySelector('#openFloatingAILink');
     var floatingRadioLauncher = wrapper.querySelector('#openFloatingRadioLink');
+    var floatingNotificationBell = wrapper.querySelector('#floatingNotificationBell');
+    var floatingNotificationCount = wrapper.querySelector('#floatingNotificationCount');
+    var floatingMenuNotificationBadge = wrapper.querySelector('#floatingMenuNotificationBadge');
+    var floatingNotificationPanel = wrapper.querySelector('#floatingNotificationPanel');
+    var floatingNotificationList = wrapper.querySelector('#floatingNotificationList');
+    var floatingNotificationRefresh = wrapper.querySelector('#floatingNotificationRefresh');
+
+    function normalizeNotificationCount(value){
+      if (typeof value === 'string' && value.indexOf('+') !== -1) return 100;
+      var count = Number(value || 0);
+      if (!Number.isFinite(count) || count < 0) return 0;
+      return Math.floor(count);
+    }
+
+    function ensureFloatingMenuBadge(){
+      if (!toggle) return null;
+      floatingMenuNotificationBadge = toggle.querySelector('#floatingMenuNotificationBadge');
+      if (!floatingMenuNotificationBadge) {
+        floatingMenuNotificationBadge = document.createElement('span');
+        floatingMenuNotificationBadge.id = 'floatingMenuNotificationBadge';
+        floatingMenuNotificationBadge.className = 'fm-toggle-badge';
+        floatingMenuNotificationBadge.hidden = true;
+        floatingMenuNotificationBadge.textContent = '0';
+        toggle.appendChild(floatingMenuNotificationBadge);
+      }
+      return floatingMenuNotificationBadge;
+    }
+
+    function setFloatingNotificationCount(value){
+      var unread = normalizeNotificationCount(value);
+      var label = unread > 99 ? '99+' : String(unread);
+      var hasUnread = unread > 0;
+      if (floatingNotificationCount) {
+        floatingNotificationCount.textContent = label;
+        floatingNotificationCount.hidden = !hasUnread;
+      }
+      var toggleBadge = ensureFloatingMenuBadge();
+      if (toggleBadge) {
+        toggleBadge.textContent = label;
+        toggleBadge.hidden = !hasUnread;
+      }
+      wrapper.classList.toggle('has-notifications', hasUnread);
+      if (toggle) {
+        toggle.setAttribute('aria-label', hasUnread ? ('Abrir menú, ' + label + ' notificaciones') : 'Abrir menú');
+      }
+      if (floatingNotificationBell) {
+        floatingNotificationBell.setAttribute('aria-label', hasUnread ? ('Notificaciones, ' + label + ' pendientes') : 'Notificaciones');
+        floatingNotificationBell.classList.toggle('has-unread', hasUnread);
+      }
+    }
+
+    function syncFloatingNotificationFromAdminBell(){
+      try {
+        var adminBadge = document.getElementById('adminNotificationBadge');
+        var adminBell = document.getElementById('adminNotificationBell');
+        if (!adminBadge && !adminBell) return;
+        var text = adminBadge ? String(adminBadge.textContent || '').trim() : '0';
+        var unread = normalizeNotificationCount(text);
+        if (adminBell && adminBell.classList.contains('has-unread') && unread <= 0) unread = 1;
+        setFloatingNotificationCount(unread);
+      } catch (error) {}
+    }
+
+    function renderFloatingNotifications(data){
+      if (!floatingNotificationList) return;
+      var unread = normalizeNotificationCount(data && data.unread);
+      setFloatingNotificationCount(unread);
+      var messages = Array.isArray(data && data.mensajes) ? data.mensajes.slice(0, 8) : [];
+      floatingNotificationList.innerHTML = '';
+      if (!messages.length) {
+        var empty = document.createElement('p');
+        empty.className = 'fm-notification-empty';
+        empty.textContent = 'Sin mensajes pendientes.';
+        floatingNotificationList.appendChild(empty);
+        return;
+      }
+      messages.forEach(function(msg){
+        var item = document.createElement('button');
+        item.type = 'button';
+        item.className = 'fm-notification-row';
+        var title = document.createElement('strong');
+        title.textContent = String((msg && msg.titulo) || 'Mensaje');
+        var body = document.createElement('span');
+        body.textContent = String((msg && msg.mensaje) || '').slice(0, 140);
+        item.appendChild(title);
+        item.appendChild(body);
+        item.addEventListener('click', function(event){
+          event.preventDefault();
+          event.stopPropagation();
+          markFloatingNotificationReadAndOpen(msg);
+        });
+        floatingNotificationList.appendChild(item);
+      });
+    }
+
+    function loadFloatingNotifications(){
+      var empresaID = getActiveEmpresaID();
+      if (!empresaID || !floatingNotificationList) {
+        renderFloatingNotifications({ unread: 0, mensajes: [] });
+        return Promise.resolve(null);
+      }
+      floatingNotificationList.innerHTML = '<p class="fm-notification-empty">Cargando notificaciones...</p>';
+      return fetch('/api/empresa/buzon?empresa_id=' + encodeURIComponent(empresaID) + '&action=resumen', { credentials: 'same-origin' })
+        .then(function(response){
+          if (!response.ok) throw new Error('HTTP ' + response.status);
+          return response.json();
+        })
+        .then(function(data){
+          renderFloatingNotifications(data || {});
+          return data;
+        })
+        .catch(function(){
+          floatingNotificationList.innerHTML = '<p class="fm-notification-empty">No se pudieron cargar las notificaciones.</p>';
+          syncFloatingNotificationFromAdminBell();
+          return null;
+        });
+    }
+
+    function markFloatingNotificationReadAndOpen(msg){
+      var empresaID = getActiveEmpresaID();
+      if (!msg || !msg.id || !empresaID) return;
+      fetch('/api/empresa/buzon?empresa_id=' + encodeURIComponent(empresaID) + '&action=leer', {
+        method: 'PUT',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: msg.id })
+      }).catch(function(){}).then(function(){
+        var href = String(msg.enlace_url || '').trim() || '/administrar_empresa/panel.html';
+        if (href.indexOf('/administrar_empresa/') === 0) {
+          try {
+            var target = new URL(href, window.location.origin);
+            target.searchParams.set('empresa_id', String(empresaID));
+            href = target.pathname + target.search + target.hash;
+          } catch (error) {
+            href += (href.indexOf('?') === -1 ? '?' : '&') + 'empresa_id=' + encodeURIComponent(empresaID);
+          }
+          openPathInContentFrame(href);
+        } else {
+          window.location.href = href;
+        }
+        if (floatingNotificationPanel) floatingNotificationPanel.hidden = true;
+        if (floatingNotificationBell) floatingNotificationBell.setAttribute('aria-expanded', 'false');
+        closePanel();
+        loadFloatingNotifications();
+      });
+    }
+
+    function openAdminNotificationsFromFloating(){
+      if (floatingNotificationPanel) {
+        var willOpen = floatingNotificationPanel.hidden;
+        floatingNotificationPanel.hidden = !willOpen;
+        if (floatingNotificationBell) {
+          floatingNotificationBell.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
+        }
+        if (willOpen) {
+          loadFloatingNotifications();
+        }
+        return;
+      }
+      try {
+        var adminBell = document.getElementById('adminNotificationBell');
+        if (adminBell && typeof adminBell.click === 'function') {
+          adminBell.click();
+          closePanel();
+          return;
+        }
+      } catch (error) {}
+      var empresaID = getActiveEmpresaID();
+      var fallback = '/administrar_empresa/panel.html' + (empresaID ? ('?empresa_id=' + encodeURIComponent(empresaID)) : '');
+      if (!openPathInContentFrame(fallback)) {
+        window.location.href = fallback;
+      }
+      closePanel();
+    }
 
     function setPanelOpen(isOpen){
       if (!panel || !toggle) return;
@@ -481,6 +660,8 @@
     }
 
     function closePanel(){
+      if (floatingNotificationPanel) floatingNotificationPanel.hidden = true;
+      if (floatingNotificationBell) floatingNotificationBell.setAttribute('aria-expanded', 'false');
       setPanelOpen(false);
     }
 
@@ -1055,6 +1236,46 @@
       });
     }
 
+    if (floatingNotificationBell) {
+      floatingNotificationBell.addEventListener('click', function(event){
+        event.preventDefault();
+        event.stopPropagation();
+        closeThemePopup();
+        closeUtilitiesPopup();
+        openAdminNotificationsFromFloating();
+      });
+    }
+
+    if (floatingNotificationRefresh) {
+      floatingNotificationRefresh.addEventListener('click', function(event){
+        event.preventDefault();
+        event.stopPropagation();
+        loadFloatingNotifications();
+      });
+    }
+
+    window.addEventListener('pcs:notifications-updated', function(event){
+      var detail = event && event.detail ? event.detail : {};
+      setFloatingNotificationCount(detail.unread);
+    });
+
+    try {
+      syncFloatingNotificationFromAdminBell();
+      var observedAdminBadge = document.getElementById('adminNotificationBadge');
+      var observedAdminBell = document.getElementById('adminNotificationBell');
+      if (window.MutationObserver && (observedAdminBadge || observedAdminBell)) {
+        var notificationObserver = new MutationObserver(function(){
+          syncFloatingNotificationFromAdminBell();
+        });
+        if (observedAdminBadge) {
+          notificationObserver.observe(observedAdminBadge, { childList: true, characterData: true, subtree: true });
+        }
+        if (observedAdminBell) {
+          notificationObserver.observe(observedAdminBell, { attributes: true, attributeFilter: ['class'] });
+        }
+      }
+    } catch (error) {}
+
     if (themeToggle && themeSelectorPopup) {
       themeToggle.addEventListener('click', function(event){
         event.stopPropagation();
@@ -1098,8 +1319,12 @@
           img.alt = name || 'Perfil';
           img.onerror = function(){
             toggle.innerHTML = '<span class="fm-toggle-icon">☰</span>';
+            ensureFloatingMenuBadge();
+            syncFloatingNotificationFromAdminBell();
           };
           toggle.appendChild(img);
+          ensureFloatingMenuBadge();
+          syncFloatingNotificationFromAdminBell();
           if (name) toggle.title = name;
         } catch (error) {}
       }
@@ -1108,6 +1333,8 @@
         try {
           if (!toggle) return;
           toggle.innerHTML = '<span class="fm-toggle-icon">☰</span>';
+          ensureFloatingMenuBadge();
+          syncFloatingNotificationFromAdminBell();
         } catch (error) {}
       }
 

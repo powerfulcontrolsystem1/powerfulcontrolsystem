@@ -36,6 +36,21 @@
       border-top: 1px solid var(--border);
       padding-top: 12px;
     }
+    .printer-device-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      width: fit-content;
+      max-width: 100%;
+      margin: 4px 0 10px;
+      padding: 7px 10px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: rgba(37, 99, 235, 0.08);
+      color: var(--text);
+      font-size: 0.92rem;
+      overflow-wrap: anywhere;
+    }
   </style>
   <script src="/js/empresa_submenu_context.js"></script>
 </head>
@@ -206,6 +221,7 @@
 
         <div class="form">
           <h3 style="margin:0 0 10px 0;font-size:0.95rem;">Override por rol</h3>
+          <p class="form-help">Los permisos de ingresos/egresos manuales aplican a caja y finanzas; no bloquean los cobros normales del carrito.</p>
           <div class="form-row">
             <div class="form-col">
               <label class="form-label" for="opRolSelect">Rol</label>
@@ -262,6 +278,14 @@
               <label class="empresa-config-check" for="opRolHabilitarComisiones" >
                 <input id="opRolHabilitarComisiones" type="checkbox">
                 <span>Permitir comisiones</span>
+              </label>
+              <label class="empresa-config-check" for="opRolPermitirIngresosManuales">
+                <input id="opRolPermitirIngresosManuales" type="checkbox">
+                <span>Permitir ingresos manuales</span>
+              </label>
+              <label class="empresa-config-check" for="opRolPermitirEgresosManuales">
+                <input id="opRolPermitirEgresosManuales" type="checkbox">
+                <span>Permitir egresos manuales</span>
               </label>
             </div>
           </div>
@@ -852,6 +876,70 @@
 
       <div class="empresa-config-grid">
         <div class="form">
+          <h3 style="margin:0 0 10px 0;font-size:0.95rem;">Impresora por computador</h3>
+          <p class="form-help">PCS detecta este navegador como un computador/caja y puede usar esa identidad para elegir automaticamente la impresora local de esa estacion.</p>
+          <div id="printerDeviceInfo" class="printer-device-pill">Computador detectado: cargando...</div>
+          <div class="form-row">
+            <div class="form-col">
+              <label class="form-label" for="printerDeviceLabel">Nombre visible del computador</label>
+              <input id="printerDeviceLabel" class="form-input" maxlength="120" placeholder="CAJA 1 - Principal">
+            </div>
+            <div class="form-col">
+              <label class="form-label" for="printerDeviceCashCode">Caja asociada</label>
+              <input id="printerDeviceCashCode" class="form-input" maxlength="80" placeholder="CAJA-1">
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-col">
+              <label class="form-label" for="printerDeviceFunction">Funcionalidad</label>
+              <select id="printerDeviceFunction" class="form-input">
+                <option value="general">General de este computador</option>
+                <option value="ticket_cobro">Recibo de venta / ticket</option>
+                <option value="factura_caja">Factura de caja</option>
+                <option value="cajon_monedero">Cajon monedero</option>
+                <option value="reporte_caja">Reporte de caja</option>
+              </select>
+            </div>
+            <div class="form-col">
+              <label class="form-label" for="printerDevicePrinter">Impresora</label>
+              <select id="printerDevicePrinter" class="form-input"></select>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-col">
+              <label class="form-label" for="printerDeviceStation">Estacion ID opcional</label>
+              <input id="printerDeviceStation" class="form-input" type="number" min="0" step="1" value="0">
+            </div>
+            <div class="form-col">
+              <label class="form-label" for="printerDeviceNotes">Observaciones</label>
+              <input id="printerDeviceNotes" class="form-input" maxlength="255" placeholder="Ej: impresora USB conectada a esta caja">
+            </div>
+          </div>
+          <div class="form-actions">
+            <button id="btnGuardarImpresoraDispositivo" type="button" class="btn secondary">Asociar a este computador</button>
+          </div>
+        </div>
+
+        <div class="form">
+          <h3 style="margin:0 0 10px 0;font-size:0.95rem;">Computadores con impresora</h3>
+          <div class="table-wrap">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Computador</th>
+                  <th>Funcionalidad</th>
+                  <th>Impresora</th>
+                  <th>Accion</th>
+                </tr>
+              </thead>
+              <tbody id="tablaImpresorasDispositivosBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="empresa-config-grid">
+        <div class="form">
           <h3 style="margin:0 0 10px 0;font-size:0.95rem;">Agente local y cola de impresion</h3>
           <p class="form-help">Cada computador de caja puede tomar trabajos pendientes y enviarlos a su impresora fisica configurada.</p>
           <div class="form-row">
@@ -1092,6 +1180,7 @@
       funcionalidades: [],
       productos: [],
       productoReglas: [],
+      dispositivos: [],
       cola: [],
       catalogoProductos: [],
       catalogoCategorias: [],
@@ -1356,6 +1445,8 @@
         metodo_pago_codigo_descuento: src.metodo_pago_codigo_descuento === undefined ? true : Boolean(src.metodo_pago_codigo_descuento),
         habilitar_propinas: src.habilitar_propinas === undefined ? true : Boolean(src.habilitar_propinas),
         habilitar_comisiones: src.habilitar_comisiones === undefined ? true : Boolean(src.habilitar_comisiones),
+        permitir_ingresos_manuales: Boolean(src.permitir_ingresos_manuales),
+        permitir_egresos_manuales: Boolean(src.permitir_egresos_manuales),
         estado: String(src.estado || 'activo').trim().toLowerCase() === 'inactivo' ? 'inactivo' : 'activo'
       };
     }
@@ -1473,6 +1564,8 @@
         metodo_pago_codigo_descuento: base.metodo_pago_codigo_descuento,
         habilitar_propinas: base.habilitar_propinas,
         habilitar_comisiones: base.habilitar_comisiones,
+        permitir_ingresos_manuales: false,
+        permitir_egresos_manuales: false,
         estado: 'activo'
       };
 
@@ -1485,6 +1578,8 @@
       document.getElementById('opRolMetodoCodigoDescuento').checked = src.metodo_pago_codigo_descuento;
       document.getElementById('opRolHabilitarPropinas').checked = src.habilitar_propinas;
       document.getElementById('opRolHabilitarComisiones').checked = src.habilitar_comisiones;
+      document.getElementById('opRolPermitirIngresosManuales').checked = src.permitir_ingresos_manuales;
+      document.getElementById('opRolPermitirEgresosManuales').checked = src.permitir_egresos_manuales;
     }
 
     function getOperativaRoleFormData() {
@@ -1500,6 +1595,8 @@
         metodo_pago_codigo_descuento: document.getElementById('opRolMetodoCodigoDescuento').checked,
         habilitar_propinas: document.getElementById('opRolHabilitarPropinas').checked,
         habilitar_comisiones: document.getElementById('opRolHabilitarComisiones').checked,
+        permitir_ingresos_manuales: document.getElementById('opRolPermitirIngresosManuales').checked,
+        permitir_egresos_manuales: document.getElementById('opRolPermitirEgresosManuales').checked,
         estado: document.getElementById('opRolActivo').checked ? 'activo' : 'inactivo'
       };
     }
@@ -1908,6 +2005,74 @@
         .slice(0, 60);
     }
 
+    function normalizePrinterCashCodeForLogin(raw) {
+      return String(raw || '')
+        .trim()
+        .toUpperCase()
+        .replace(/\s+/g, '_')
+        .replace(/[^A-Z0-9_-]/g, '_')
+        .replace(/_+/g, '_')
+        .replace(/^_+|_+$/g, '')
+        .slice(0, 80);
+    }
+
+    function normalizePrinterDeviceID(raw) {
+      return String(raw || '')
+        .trim()
+        .toLowerCase()
+        .replace(/[^a-z0-9_.:-]/g, '')
+        .slice(0, 120);
+    }
+
+    function ensurePrinterDeviceID() {
+      const key = 'pcs_dispositivo_id';
+      try {
+        const existing = normalizePrinterDeviceID(window.localStorage.getItem(key));
+        if (existing) return existing;
+        const generated = 'pcs-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 10);
+        window.localStorage.setItem(key, generated);
+        return generated;
+      } catch (_) {
+        return 'pcs-session-' + Date.now().toString(36);
+      }
+    }
+
+    function getPrinterDeviceLabel() {
+      const nav = window.navigator || {};
+      const platform = String(nav.platform || '').trim();
+      const language = String(nav.language || '').trim();
+      return ['Computador PCS', platform, language].filter(Boolean).join(' - ').slice(0, 120);
+    }
+
+    function getStoredPrinterCashCode() {
+      try {
+        return String(window.sessionStorage.getItem('pcs_caja_trabajo_codigo') || window.localStorage.getItem('pcs_dispositivo_ultima_caja_codigo') || '').trim().slice(0, 80);
+      } catch (_) {
+        return '';
+      }
+    }
+
+    function updatePrinterDeviceInfo() {
+      const deviceID = ensurePrinterDeviceID();
+      const info = document.getElementById('printerDeviceInfo');
+      const labelInput = document.getElementById('printerDeviceLabel');
+      const cashInput = document.getElementById('printerDeviceCashCode');
+      const agentInput = document.getElementById('printerAgentId');
+      if (labelInput && !String(labelInput.value || '').trim()) {
+        labelInput.value = getPrinterDeviceLabel();
+      }
+      if (cashInput && !String(cashInput.value || '').trim()) {
+        cashInput.value = getStoredPrinterCashCode();
+      }
+      if (agentInput && !String(agentInput.value || '').trim()) {
+        agentInput.value = deviceID;
+      }
+      if (info) {
+        const cash = cashInput && cashInput.value ? (' · caja ' + cashInput.value) : '';
+        info.textContent = 'Computador detectado: ' + String((labelInput && labelInput.value) || 'Computador PCS') + ' · ID ' + deviceID.slice(0, 12) + cash;
+      }
+    }
+
     function isPrinterActive(item) {
       return String((item && item.estado) || 'activo').trim().toLowerCase() !== 'inactivo';
     }
@@ -2130,6 +2295,15 @@
         });
       });
 
+      document.querySelectorAll('.printer-device-delete').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+          const dispositivoID = String(btn.getAttribute('data-dispositivo-id') || '').trim();
+          const funcionalidad = String(btn.getAttribute('data-funcionalidad') || 'general').trim();
+          if (!dispositivoID) return;
+          eliminarAsignacionDispositivo(dispositivoID, funcionalidad);
+        });
+      });
+
       document.querySelectorAll('.printer-job-done').forEach(function(btn) {
         btn.addEventListener('click', function() {
           const id = Number(btn.getAttribute('data-id') || 0);
@@ -2151,12 +2325,14 @@
       const printersBody = document.getElementById('tablaImpresorasBody');
       const funcionesBody = document.getElementById('tablaImpresorasFuncionalidadesBody');
       const productosBody = document.getElementById('tablaImpresorasProductosBody');
+      const dispositivosBody = document.getElementById('tablaImpresorasDispositivosBody');
       const colaBody = document.getElementById('tablaImpresorasColaBody');
 
       const printers = Array.isArray(impresorasState.impresoras) ? impresorasState.impresoras : [];
       const funcs = Array.isArray(impresorasState.funcionalidades) ? impresorasState.funcionalidades : [];
       const products = Array.isArray(impresorasState.productos) ? impresorasState.productos : [];
       const productRules = Array.isArray(impresorasState.productoReglas) ? impresorasState.productoReglas : [];
+      const dispositivos = Array.isArray(impresorasState.dispositivos) ? impresorasState.dispositivos : [];
       const cola = Array.isArray(impresorasState.cola) ? impresorasState.cola : [];
 
       if (!printers.length) {
@@ -2220,6 +2396,26 @@
         productosBody.innerHTML = ruleRows.concat(productRows).join('');
       }
 
+      if (dispositivosBody) {
+        if (!dispositivos.length) {
+          dispositivosBody.innerHTML = '<tr><td colspan="4">Sin computadores asociados a impresora.</td></tr>';
+        } else {
+          dispositivosBody.innerHTML = dispositivos.map(function(item) {
+            const deviceID = normalizePrinterDeviceID(item.dispositivo_id);
+            const funcionalidad = normalizePrinterFunctionValue(item.funcionalidad || 'general');
+            const label = String(item.etiqueta || item.caja_codigo || deviceID || 'Computador');
+            const printer = String(item.impresora_nombre || item.impresora_codigo || ('#' + Number(item.impresora_id || 0)));
+            const state = String(item.estado || 'activo').toLowerCase() === 'inactivo' ? ' · inactivo' : '';
+            return '<tr>' +
+              '<td>' + escapeConfigHtml(label) + '<br><span class="muted">' + escapeConfigHtml(deviceID.slice(0, 18)) + state + '</span></td>' +
+              '<td>' + escapeConfigHtml(funcionalidad) + '</td>' +
+              '<td>' + escapeConfigHtml(printer) + '</td>' +
+              '<td><button type="button" class="btn danger printer-device-delete" data-dispositivo-id="' + escapeConfigHtml(deviceID) + '" data-funcionalidad="' + escapeConfigHtml(funcionalidad) + '">Eliminar</button></td>' +
+            '</tr>';
+          }).join('');
+        }
+      }
+
       if (colaBody) {
         if (!cola.length) {
           colaBody.innerHTML = '<tr><td colspan="5">Sin trabajos recientes en cola.</td></tr>';
@@ -2247,13 +2443,16 @@
       const selectedFuncPrinter = Number(document.getElementById('printerFuncionalidadImpresora').value || 0);
       const selectedProdPrinter = Number(document.getElementById('printerProductoImpresora').value || 0);
       const selectedTrabajoPrinter = Number(document.getElementById('printerTrabajoImpresora').value || 0);
+      const selectedDevicePrinter = Number(document.getElementById('printerDevicePrinter').value || 0);
       const selectedProducto = Number(document.getElementById('printerProducto').value || 0);
       renderPrinterSelect('printerFuncionalidadImpresora', selectedFuncPrinter);
       renderPrinterSelect('printerProductoImpresora', selectedProdPrinter);
       renderPrinterSelectOptional('printerTrabajoImpresora', selectedTrabajoPrinter);
+      renderPrinterSelect('printerDevicePrinter', selectedDevicePrinter);
       renderProductoSelect(selectedProducto);
       renderCategoriaSelect(Number(document.getElementById('printerCategoria').value || 0));
       syncPrinterProductoScopeUI();
+      updatePrinterDeviceInfo();
       bindImpresorasTableActions();
     }
 
@@ -2295,6 +2494,7 @@
         impresorasState.funcionalidades = Array.isArray(resumen.funcionalidades) ? resumen.funcionalidades : [];
         impresorasState.productos = Array.isArray(resumen.productos) ? resumen.productos : [];
         impresorasState.productoReglas = Array.isArray(resumen.producto_reglas) ? resumen.producto_reglas : [];
+        impresorasState.dispositivos = Array.isArray(resumen.dispositivos) ? resumen.dispositivos : [];
         impresorasState.cola = Array.isArray(resumen.cola) ? resumen.cola : [];
         impresorasState.catalogoProductos = Array.isArray(catalogo.productos) ? catalogo.productos : [];
         impresorasState.catalogoCategorias = Array.isArray(catalogoCategorias.categorias) ? catalogoCategorias.categorias : [];
@@ -2428,6 +2628,58 @@
       }
     }
 
+    async function guardarImpresoraDispositivo() {
+      if (!empresaId) {
+        setImpresorasMessage('No se puede asociar computador sin empresa seleccionada.', 'error');
+        return;
+      }
+      const dispositivoID = ensurePrinterDeviceID();
+      const impresoraID = Number(document.getElementById('printerDevicePrinter').value || 0);
+      if (!impresoraID) {
+        setImpresorasMessage('Selecciona una impresora activa para este computador.', 'error');
+        return;
+      }
+      const payload = {
+        empresa_id: Number(empresaId),
+        dispositivo_id: dispositivoID,
+        etiqueta: String(document.getElementById('printerDeviceLabel').value || getPrinterDeviceLabel()).trim(),
+        caja_codigo: normalizePrinterCashCodeForLogin(document.getElementById('printerDeviceCashCode').value || ''),
+        estacion_id: Number(document.getElementById('printerDeviceStation').value || 0),
+        funcionalidad: normalizePrinterFunctionValue(document.getElementById('printerDeviceFunction').value || 'general'),
+        impresora_id: impresoraID,
+        estado: 'activo',
+        observaciones: String(document.getElementById('printerDeviceNotes').value || '').trim()
+      };
+      try {
+        const res = await fetch('/api/empresa/impresoras?empresa_id=' + encodeURIComponent(empresaId) + '&action=dispositivo', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'same-origin',
+          body: JSON.stringify(payload)
+        });
+        if (!res.ok) throw new Error(await res.text());
+        try {
+          const cajaCodigo = normalizePrinterCashCodeForLogin(payload.caja_codigo);
+          if (cajaCodigo) {
+            const assignment = {
+              codigo: cajaCodigo,
+              nombre: cajaCodigo,
+              descripcion: payload.observaciones || '',
+              dispositivo_id: dispositivoID,
+              etiqueta: payload.etiqueta || getPrinterDeviceLabel(),
+              asignado_en: new Date().toISOString()
+            };
+            window.localStorage.setItem('pcs_dispositivo_ultima_caja_codigo', cajaCodigo);
+            window.localStorage.setItem('pcs_cajero_caja_dispositivo_' + String(empresaId || 0), JSON.stringify(assignment));
+          }
+        } catch (_) {}
+        await loadImpresorasConfig(false);
+        setImpresorasMessage('Impresora asociada a este computador correctamente.', 'success');
+      } catch (err) {
+        setImpresorasMessage('No se pudo asociar impresora al computador: ' + (err && err.message ? err.message : err), 'error');
+      }
+    }
+
     async function cambiarEstadoImpresora(impresoraID, activar) {
       const action = activar ? 'activar' : 'inactivar';
       try {
@@ -2500,11 +2752,25 @@
       }
     }
 
+    async function eliminarAsignacionDispositivo(dispositivoID, funcionalidad) {
+      try {
+        const res = await fetch('/api/empresa/impresoras?empresa_id=' + encodeURIComponent(empresaId) + '&action=dispositivo&dispositivo_id=' + encodeURIComponent(dispositivoID) + '&funcionalidad=' + encodeURIComponent(funcionalidad || 'general'), {
+          method: 'DELETE',
+          credentials: 'same-origin'
+        });
+        if (!res.ok) throw new Error(await res.text());
+        await loadImpresorasConfig(false);
+        setImpresorasMessage('Asociacion de computador eliminada.', 'success');
+      } catch (err) {
+        setImpresorasMessage('No se pudo eliminar la asociacion del computador: ' + (err && err.message ? err.message : err), 'error');
+      }
+    }
+
     function getPrinterAgentID() {
       const input = document.getElementById('printerAgentId');
       const raw = String(input && input.value ? input.value : '').trim();
       if (raw) return raw.slice(0, 120);
-      const fallback = 'CAJA-' + String(empresaId || 'LOCAL');
+      const fallback = ensurePrinterDeviceID();
       if (input) input.value = fallback;
       return fallback;
     }
@@ -3104,6 +3370,7 @@
       loadFacturaConfig();
       loadOperativaConfig();
       loadPasarelasConfig();
+      updatePrinterDeviceInfo();
       loadImpresorasConfig(false);
       document.getElementById('btnGuardarConfig').addEventListener('click', guardarConfiguracion);
       document.getElementById('btnGuardarCajaConfig').addEventListener('click', guardarCajaConfig);
@@ -3135,6 +3402,9 @@
       document.getElementById('btnGuardarImpresoraFuncionalidad').addEventListener('click', guardarImpresoraFuncionalidad);
       document.getElementById('printerProductoAlcance').addEventListener('change', syncPrinterProductoScopeUI);
       document.getElementById('btnGuardarImpresoraProducto').addEventListener('click', guardarImpresoraProducto);
+      document.getElementById('btnGuardarImpresoraDispositivo').addEventListener('click', guardarImpresoraDispositivo);
+      document.getElementById('printerDeviceLabel').addEventListener('input', updatePrinterDeviceInfo);
+      document.getElementById('printerDeviceCashCode').addEventListener('input', updatePrinterDeviceInfo);
       document.getElementById('btnCrearTrabajoImpresion').addEventListener('click', crearTrabajoImpresionPrueba);
       document.getElementById('btnTomarTrabajosImpresion').addEventListener('click', tomarTrabajosImpresion);
       document.getElementById('btnDescargarBackup').addEventListener('click', descargarBackup);

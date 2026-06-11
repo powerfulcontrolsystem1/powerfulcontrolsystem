@@ -1458,10 +1458,14 @@ func withEmpresaRolePermissions(dbEmp, dbSuper *sql.DB, module string, resolveAc
 
 		requestPath := strings.TrimSpace(r.URL.Path)
 		effectiveRole := snapshot.EffectiveRole
+		isCajeroFinanzasManualRequest := isCajeroFinanzasManualAPIRequest(effectiveRole, requestPath, r.Method, r.URL.Query().Get("action"))
 		isReadOnlyStationPrefsRequest := module == permModuleSeguridad &&
 			strings.EqualFold(requestPath, "/api/empresa/estacion_prefs") &&
 			strings.EqualFold(strings.TrimSpace(r.Method), http.MethodGet)
 		skipRoleModuloCheck := (module == permModuleSeguridad && strings.HasPrefix(requestPath, "/api/empresa/permisos_contexto")) || isReadOnlyStationPrefsRequest || isFacturacionPaisDetectado
+		if module == permModuleFinanzas && isCajeroFinanzasManualRequest {
+			skipRoleModuloCheck = true
+		}
 		if !skipRoleModuloCheck && !snapshot.RoleModuleActions[permissionModuleActionKey(module, action)] {
 			http.Error(w, "forbidden: rol sin permiso para la accion solicitada", http.StatusForbidden)
 			registrarAuditoriaOperacionNoBloqueante(dbEmp, r, empresaID, module, action, http.StatusForbidden, 0)
@@ -1477,6 +1481,9 @@ func withEmpresaRolePermissions(dbEmp, dbSuper *sql.DB, module string, resolveAc
 			pageKey = ""
 		}
 		if pageKey != "" && isCajeroCartAuxiliaryAPIRequest(effectiveRole, requestPath) {
+			pageKey = ""
+		}
+		if pageKey != "" && module == permModuleFinanzas && isCajeroFinanzasManualRequest {
 			pageKey = ""
 		}
 		if pageKey != "" {
@@ -2959,7 +2966,7 @@ func isAllowedPageForOperationalRole(role, pageKey string) bool {
 	switch normalizePermissionRole(role) {
 	case "cajero":
 		switch pageKey {
-		case "linkVentaDirecta", "linkEstaciones", "linkCorteCaja":
+		case "linkVentaDirecta", "linkEstaciones", "linkCorteCaja", "linkVentas", "linkFacturasElectronicas", "linkFacturacionElectronica":
 			return true
 		default:
 			return false
@@ -3038,6 +3045,25 @@ func isCajeroCartAuxiliaryAPIRequest(role, requestPath string) bool {
 	}
 }
 
+func isCajeroFinanzasManualAPIRequest(role, requestPath, method, action string) bool {
+	if normalizePermissionRole(role) != "cajero" {
+		return false
+	}
+	if !strings.EqualFold(strings.TrimSpace(requestPath), "/api/empresa/finanzas/movimientos") {
+		return false
+	}
+	method = strings.ToUpper(strings.TrimSpace(method))
+	action = strings.ToLower(strings.TrimSpace(action))
+	switch method {
+	case http.MethodPost:
+		return action == ""
+	case http.MethodPut:
+		return action == "" || action == "activar" || action == "desactivar" || action == "anular"
+	default:
+		return false
+	}
+}
+
 func restrictPermissionPagesForOperationalRole(role string, pages map[string]bool) map[string]bool {
 	normalizedRole := normalizePermissionRole(role)
 	if normalizedRole != "cajero" && normalizedRole != "portero" && normalizedRole != "contador" && normalizedRole != "empresario" && normalizedRole != "servicio_limpieza" && normalizedRole != "tecnico_solar" && normalizedRole != "jefe_bodega" && normalizedRole != "responsable_bodega" && normalizedRole != "recursos_humanos" {
@@ -3054,6 +3080,9 @@ func restrictPermissionPagesForOperationalRole(role string, pages map[string]boo
 		pages["linkVentaDirecta"] = true
 		pages["linkEstaciones"] = true
 		pages["linkCorteCaja"] = true
+		pages["linkVentas"] = true
+		pages["linkFacturasElectronicas"] = true
+		pages["linkFacturacionElectronica"] = true
 	case "portero", "servicio_limpieza":
 		pages["linkEstaciones"] = true
 	case "tecnico_solar":
@@ -3108,6 +3137,32 @@ func restrictPermissionPagesForOperationalRole(role string, pages map[string]boo
 		pages["linkReportes"] = true
 		pages["linkReportesEjecutivos"] = true
 		pages["linkCentroIAEmpresarial"] = true
+	}
+	return pages
+}
+
+func applyEmpresaOperativaFinanzasManualPages(dbEmp *sql.DB, empresaID int64, role string, pages map[string]bool) map[string]bool {
+	if normalizePermissionRole(role) != "cajero" || dbEmp == nil || empresaID <= 0 {
+		return pages
+	}
+	if pages == nil {
+		pages = map[string]bool{}
+	}
+	permisos, err := dbpkg.GetEmpresaConfiguracionOperativaPermisos(dbEmp, empresaID, role)
+	if err != nil {
+		log.Printf("[authz] no se pudo cargar configuracion operativa para paginas de finanzas empresa_id=%d rol=%s: %v", empresaID, role, err)
+		return pages
+	}
+	if permisos.PermitirIngresosManuales || permisos.PermitirEgresosManuales {
+		pages["linkFinanzas"] = true
+		pages["linkFinanzasMain"] = true
+		pages["linkEgresosIngresos"] = true
+	}
+	if permisos.PermitirIngresosManuales {
+		pages["linkIngresos"] = true
+	}
+	if permisos.PermitirEgresosManuales {
+		pages["linkEgresos"] = true
 	}
 	return pages
 }
@@ -3933,6 +3988,7 @@ func getEmpresaPermissionSnapshot(dbEmp, dbSuper *sql.DB, adminEmail string, emp
 	dbpkg.PerfLogf("[perf][authz] snapshot empresa=%d email=%s step=allowed_pages dur=%s", empresaID, strings.ToLower(strings.TrimSpace(adminEmail)), time.Since(stepStarted))
 	allowedPages = applyEmpresaPageRestrictionsToMap(allowedPages, empresaPageOverrides)
 	allowedPages = restrictPermissionPagesForOperationalRole(effectiveRole, allowedPages)
+	allowedPages = applyEmpresaOperativaFinanzasManualPages(dbEmp, empresaID, effectiveRole, allowedPages)
 	allowedPages = applyDefaultHiddenEnterpriseIAPages(allowedPages, empresaPageOverrides)
 
 	roleModuleActions := map[string]bool{}

@@ -52,7 +52,7 @@ func TestNormalizePermissionRoleCajaEsCajero(t *testing.T) {
 }
 
 func TestCajeroSoloVePaginasOperativas(t *testing.T) {
-	allowed := []string{"linkVentaDirecta", "linkEstaciones", "linkCorteCaja"}
+	allowed := []string{"linkVentaDirecta", "linkEstaciones", "linkCorteCaja", "linkVentas", "linkFacturasElectronicas", "linkFacturacionElectronica"}
 	for _, page := range allowed {
 		if !isAllowedPageForOperationalRole("cajero", page) {
 			t.Fatalf("cajero debe poder ver %s", page)

@@ -332,7 +332,7 @@
 
 - Backend inventario: el modulo compuesto usa `RecetaProducto` y ruta protegida `/api/empresa/recetas_productos`; las tablas vigentes son `recetas_productos`, `recetas_productos_detalle` y `recetas_productos_versiones`.
 - Carritos: los items compuestos viajan como `tipo_item=receta` con `referencia_id` de la receta; el ajuste de stock descompone ingredientes en una transaccion por `empresa_id`.
-- Impresoras: las comandas por receta se resuelven con `empresa_impresoras_recetas` y `receta_id`; los productos pueden usar impresora especifica o reglas masivas en `empresa_impresoras_productos_reglas` por categoria/todos, manteniendo prioridad receta -> producto -> categoria -> todos -> funcionalidad -> predeterminada.
+- Impresoras: las comandas por receta se resuelven con `empresa_impresoras_recetas` y `receta_id`; los productos pueden usar impresora especifica o reglas masivas en `empresa_impresoras_productos_reglas` por categoria/todos; cada computador/caja puede asociarse en `empresa_impresoras_dispositivos`, manteniendo prioridad receta -> producto -> categoria -> todos -> computador -> funcionalidad -> predeterminada.
 - Conectividad frontend: `web/js/empresa_submenu_context.js` instala avisos globales `offline/online`; `web/administrar_empresa.html` lo carga en el shell principal y los modulos internos lo reutilizan para avisar perdida y regreso de internet. `web/administrar_empresa/carrito_de_compras.html` publica si caja/carrito puede seguir vendiendo offline para cambiar el mensaje del aviso. El mismo monitor envia eventos al endpoint de auditoria `POST /api/empresa/auditoria/eventos?action=conexion`, usando cola local si la red se cae.
 - Frontend: `web/administrar_empresa/recetas_productos.html` reemplaza la pagina anterior, el menu usa `linkRecetasProductos` y el carrito consume `/api/empresa/recetas_productos` desde busqueda inteligente.
 - Flujo de capas: Productos/ingredientes -> Receta vendible -> Carrito `tipo_item=receta` -> reserva/liberacion de inventario por ingredientes -> impresion/reportes por empresa.
@@ -2570,7 +2570,7 @@ Cada cambio estructural de rutas, modelos, autenticacion o base de datos debe re
 
 - Backend DB:
   - nuevo modulo `backend/db/empresa_impresoras.go` con esquema y operaciones de impresoras por empresa.
-  - tablas: `empresa_impresoras`, `empresa_impresoras_funcionalidades`, `empresa_impresoras_productos`, `empresa_impresoras_productos_reglas` y `empresa_impresoras_recetas`.
+  - tablas: `empresa_impresoras`, `empresa_impresoras_funcionalidades`, `empresa_impresoras_productos`, `empresa_impresoras_productos_reglas`, `empresa_impresoras_recetas`, `empresa_impresoras_dispositivos` y `empresa_impresoras_cola`.
   - logica de resolucion operativa por prioridad: `receta` -> `producto` -> `categoria de producto` -> `todos los productos` -> `funcionalidad` -> `predeterminada`.
 - Backend handlers:
   - nuevo archivo `backend/handlers/empresa_impresoras.go`.

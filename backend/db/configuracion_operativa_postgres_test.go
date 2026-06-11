@@ -35,6 +35,33 @@ func TestConfiguracionOperativaWritesUsePostgresReturningID(t *testing.T) {
 	}
 }
 
+func TestConfiguracionOperativaRolPermiteIngresosEgresosManuales(t *testing.T) {
+	cfg := defaultEmpresaConfiguracionOperativa(12)
+	cfg.Roles = []EmpresaConfiguracionOperativaRol{
+		{
+			EmpresaID:                12,
+			Rol:                      "cajero",
+			MetodoPagoEfectivo:       true,
+			HabilitarPropinas:        true,
+			HabilitarComisiones:      true,
+			PermitirIngresosManuales: true,
+			PermitirEgresosManuales:  false,
+			Estado:                   "activo",
+		},
+	}
+
+	permisos := ResolveEmpresaConfiguracionOperativaParaRol(&cfg, "cajero")
+	if !permisos.PermiteMovimientoFinancieroManual("ingreso") {
+		t.Fatal("cajero debe poder registrar ingresos manuales cuando el override del rol lo habilita")
+	}
+	if permisos.PermiteMovimientoFinancieroManual("egreso") {
+		t.Fatal("cajero no debe poder registrar egresos manuales si el override del rol no lo habilita")
+	}
+	if permisos.PermiteMovimientoFinancieroManual("transferencia") {
+		t.Fatal("tipo de movimiento desconocido no debe quedar habilitado")
+	}
+}
+
 func extractConfiguracionOperativaFunctionForTest(t *testing.T, src, startMarker string) string {
 	t.Helper()
 

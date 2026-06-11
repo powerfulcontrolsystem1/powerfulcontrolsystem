@@ -1,3 +1,61 @@
+## [2026-06-11] Busqueda por nombre separada en carrito
+- [Carrito] La fila del lector separa `Codigo de barras o SKU` y `Busqueda por nombre` para que el cajero busque productos por nombre en un campo dedicado a la derecha.
+- [Operacion] Ambos campos comparten resultados, Enter y boton `Agregar`; escribir en uno limpia el otro para evitar busquedas ambiguas.
+- [Responsive] La fila queda compacta en escritorio y se apila en pantallas pequenas.
+
+## [2026-06-11] Notificaciones dentro del menu flotante
+- [Menu flotante] La campana queda como primera opcion del panel desplegable y el boton principal muestra el badge con el numero de notificaciones pendientes.
+- [Buzon] Al hacer clic en la campana se abre el resumen del buzon dentro del mismo menu; cada notificacion puede marcarse como leida y navegar a su enlace relacionado.
+- [UX] La campana antigua del encabezado empresarial queda oculta visualmente para evitar duplicidad.
+
+## [2026-06-11] Impresoras por computador detectado
+- [Backend] `empresa_impresoras_dispositivos` guarda por `empresa_id` la impresora asociada a un computador/caja detectado y una funcionalidad (`general`, `ticket_cobro`, `factura_caja`, `reporte_caja`, etc.).
+- [Backend] `/api/empresa/impresoras/resolver` y la cola de impresion aceptan `dispositivo_id`/`agente_id`; si no hay impresora directa, PCS resuelve por producto/receta/categoria, computador, funcionalidad y predeterminada.
+- [Frontend] `configuracion_impresora.html` agrega la tarjeta `Impresora por computador`, muestra el equipo detectado con `pcs_dispositivo_id`, permite asociarlo a una impresora activa y lista/elimina asociaciones.
+- [Seguridad] las asociaciones, consultas y eliminaciones filtran siempre por `empresa_id`; el agente local conserva permisos de ventas y no administra configuracion.
+- [QA] `go test ./db ./handlers -run "EmpresaImpresoras" -count=1` OK; validacion sintactica del script embebido de configuracion de impresora OK.
+
+## [2026-06-11] Login de cajero sin selector manual de caja
+- [Login usuario] Se elimina el modal de seleccion manual de caja para cajeros; el login usa la caja asociada al computador mediante `pcs_dispositivo_id`.
+- [Configuracion] El check `Pedir al cajero que elija caja al iniciar sesion` desaparece de Estaciones; la deteccion por computador queda activa y se administra desde Impresoras y caja.
+- [Operacion] Si el computador ya tiene caja asociada, el cajero entra directo con `caja_codigo`; si hay varias cajas y no existe asociacion, la sesion queda pendiente de configuracion sin permitir eleccion manual en login.
+- [Compatibilidad] Al asociar impresora/caja a este computador se actualiza `pcs_dispositivo_ultima_caja_codigo` y la asignacion local usada por el login.
+
+## [2026-06-11] Carrito pantalla completa en tarjeta
+- [Carrito] El control de pantalla completa queda dentro de una tarjeta compacta en el encabezado del cliente.
+- [UX] La tarjeta muestra `Pantalla completa / Vista de caja` y cambia a salida cuando el modo fullscreen esta activo.
+- [Compatibilidad] Se oculta completa si el navegador no soporta fullscreen o si no aplica al modo actual.
+## [2026-06-11] Caja detectada por computador
+- [Login usuario] El navegador genera `pcs_dispositivo_id` y puede recordar la caja asignada a ese computador por empresa.
+- [Configuracion] Estaciones agrega el check `Detectar computador y usar la caja asignada automaticamente`, guardado en `estaciones_config.caja_login_auto_por_computador`.
+- [Operacion] Si la caja asignada sigue activa, el cajero entra directo con `caja_codigo`, `caja_nombre` y `caja_descripcion`.
+- [Seguridad] La identificacion es local del navegador y no concede permisos nuevos ni expone seriales fisicos del equipo.
+
+## [2026-06-11] Cajero busca ventas y facturas
+- [Permisos] `linkVentas` queda permitido para rol `cajero` como consulta operativa de ventas/facturas.
+- [Menu] Administrar empresa muestra `Buscar ventas y facturas` en Operacion y ventas para reimprimir, abrir factura relacionada y reenviar correo al cliente.
+- [Documentos] `linkFacturasElectronicas` y `linkFacturacionElectronica` quedan como soporte interno para que la consulta/reenvio no falle por 403, sin mostrarse como menu de cajero.
+- [Seguridad] No abre paginas administrativas de Productos, Clientes, Finanzas, Configuracion ni Reportes; los endpoints conservan wrappers y `empresa_id`.
+- [QA] Prueba Go enfocada de rol cajero y validacion sintactica JS ejecutadas.
+
+## [2026-06-11] Buscador rapido del carrito por nombre
+- [Carrito] El campo superior `Codigo de barras, SKU o nombre` permite escanear, digitar codigo/SKU o escribir nombre del producto.
+- [Resultados] Las coincidencias aparecen debajo del campo con nombre, SKU/codigo de barras y precio; al seleccionar una, `Agregar` la lleva al carrito.
+- [Operacion] Si hay coincidencia exacta por codigo/SKU se agrega como escaneo; si hay una sola coincidencia por nombre y el cajero presiona `Agregar`, se agrega directamente.
+- [QA] Validacion sintactica del script embebido de `carrito_de_compras.html` y `git diff --check` OK.
+
+## [2026-06-11] Campana de notificaciones en menu flotante
+- [Menu flotante] `Notificaciones` queda como primera accion del panel desplegable.
+- [Contador] El boton flotante principal replica el numero de mensajes no leidos del buzon empresarial y conserva el badge aunque el boton use avatar.
+- [Flujo] Al hacer clic en la campana del menu flotante se abre la campana real del panel de Administrar empresa; si no esta disponible, redirige al panel empresarial.
+- [QA] `node --check web/menu.js`, `node --check web/js/administrar_empresa.js`, `git diff --check` y verificacion visual con Chrome headless OK.
+
+## [2026-06-11] Busqueda de productos en carrito por codigo o nombre
+- [Carrito] El campo de catalogo inteligente queda orientado a codigo, SKU, codigo de barras o nombre del producto.
+- [Resultados] La lista muestra SKU y codigo de barras cuando existen para que el cajero elija sin ambiguedad.
+- [Backend] La consulta de productos prioriza coincidencias exactas por codigo/SKU antes de parciales por nombre.
+- [QA] Pruebas enfocadas de productos/carrito y validacion sintactica del carrito OK.
+
 ## [2026-06-11] Stop de audio y respuesta en chat IA
 - [Chat IA] El toolbar incorpora `Stop` para cortar audio y respuesta activa desde el recuadro normal.
 - [Cancelacion] Las consultas de texto, streaming, documentos, reportes y adjuntos reciben señal de aborto cuando el navegador lo soporta.
@@ -2838,3 +2896,4 @@
 - [Carrito] La configuracion usa `estaciones_config.carrito_ui_global`, la misma fuente de verdad de medios de pago y QR del carrito.
 - [Backend] `/api/empresa/finanzas/breb_qr` lista ventas/abonos Bre-B reales y registra pagos bancarios manuales en conciliacion, siempre filtrado por `empresa_id`.
 - [Operacion] La confirmacion automatica queda documentada como dependiente de webhook/API bancaria real.
+- 2026-06-11: `Ingresos/egresos manuales por rol` agrega checks en Configuracion operativa de cobro para habilitar al rol `cajero` a registrar ingresos y/o egresos manuales. La excepcion de permisos queda limitada a `/api/empresa/finanzas/movimientos` y el handler valida `empresa_id`, rol y configuracion operativa antes de mutar datos.

@@ -7,6 +7,7 @@
   <link rel="stylesheet" href="/estilos.css">
   <style>
     .admin-notification-wrap { position:relative; display:inline-flex; }
+    .admin-frame-toolbar .admin-notification-wrap { position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); clip-path:inset(50%); white-space:nowrap; }
     .admin-notification-btn { position:relative; display:inline-grid; place-items:center; width:38px; height:38px; border-radius:8px; border:1px solid var(--border); background:var(--surface); color:var(--text); cursor:pointer; font-size:1.12rem; }
     .admin-notification-btn:hover, .admin-notification-btn:focus-visible { outline:2px solid color-mix(in srgb,var(--accent) 30%,transparent); outline-offset:2px; }
     .admin-notification-badge { position:absolute; top:-7px; right:-7px; min-width:20px; height:20px; padding:0 5px; border-radius:999px; display:none; align-items:center; justify-content:center; background:#ef4444; color:#fff; font-size:.72rem; font-weight:900; line-height:20px; box-shadow:0 0 0 2px var(--bg); }
@@ -42,6 +43,7 @@
             <li><a id="linkVentaDirecta" href="/administrar_empresa/carrito_de_compras.html?modo=venta_directa&amp;perm_page=linkVentaDirecta" target="contentFrame"><span class="icon menu-symbol-icon" aria-hidden="true">$</span>Venta directa</a></li>
             <li><a id="linkEstaciones" href="/administrar_empresa/estaciones.html" target="contentFrame"><img class="icon" src="/img/door.svg" alt="">Estaciones</a></li>
             <li><a id="linkCorteCaja" href="/administrar_empresa/corte_de_caja.html?source=estaciones&amp;return_to=estaciones&amp;auto_generar=1&amp;caja_nombre=Caja" target="contentFrame"><img class="icon" src="/img/money.svg" alt="">Corte de Caja</a></li>
+            <li><a id="linkVentas" href="/administrar_empresa/ventas.html?perm_page=linkVentas" target="contentFrame"><img class="icon" src="/img/invoice.svg" alt="">Buscar ventas y facturas</a></li>
           </ul>
         </li>
 

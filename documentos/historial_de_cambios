@@ -1,3 +1,72 @@
+2026-06-11: Busqueda por nombre separada en carrito.
+- Modulos afectados: `carritos`, `venta_directa`, `estaciones`.
+- Frontend: `web/administrar_empresa/carrito_de_compras.html` agrega el campo `scannerNombre` a la derecha de `scannerCodigo`, mantiene resultados compartidos y permite Enter/boton Agregar desde cualquiera de los dos campos.
+- UX: `web/estilos.css` ajusta la grilla del lector a cinco columnas en escritorio y conserva apilado responsive en pantallas pequenas.
+- Operacion: escribir codigo/SKU limpia la busqueda por nombre y escribir nombre limpia el codigo/SKU para evitar agregar productos con una consulta ambigua.
+
+2026-06-11: Notificaciones dentro del menu flotante.
+- Modulos afectados: `menu_flotante`, `buzon`, `administrar_empresa`.
+- Frontend: `web/menu.js` mantiene la campana como primera opcion del menu flotante, muestra `floatingMenuNotificationBadge` en el boton principal y agrega un subpanel interno que consulta `/api/empresa/buzon?action=resumen`.
+- Frontend: `web/administrar_empresa.html` oculta visualmente la campana antigua del toolbar para evitar duplicidad; queda como soporte interno del contador existente.
+- UX: al hacer clic en una notificacion, PCS la marca como leida con `action=leer`, cierra el panel y navega al enlace relacionado dentro del iframe empresarial cuando aplica.
+- Seguridad: no se agregan endpoints; las llamadas existentes conservan `empresa_id` y sesion autenticada.
+
+2026-06-11: Login de cajero sin selector manual de caja.
+- Modulos afectados: `login_usuario`, `estaciones`, `impresoras`, `corte_caja`, `carritos`.
+- Frontend login: `web/js/login_usuario.js` elimina el modal de seleccion de caja para cajeros; resuelve la caja por `pcs_dispositivo_id`, asignacion local por empresa o ultima caja asociada desde Impresoras y caja.
+- Configuracion: `web/administrar_empresa/configuracion_de_estaciones.html` retira el check `Pedir al cajero que elija caja al iniciar sesion`; la deteccion por computador queda activa y la asociacion se administra desde `web/administrar_empresa/configuracion_impresora.html`.
+- Operacion: `web/administrar_empresa/configuracion_impresora.html` guarda `pcs_dispositivo_ultima_caja_codigo` y `pcs_cajero_caja_dispositivo_{empresa_id}` al asociar computador/impresora/caja, para que el siguiente login del cajero entre directo con `caja_codigo`.
+- Seguridad: no se leen seriales fisicos del PC ni se conceden permisos nuevos; solo se elimina la seleccion manual y se mantiene el aislamiento por empresa.
+
+2026-06-11: Impresoras por computador detectado.
+- Modulos afectados: `impresoras`, `carritos`, `ventas`, `estaciones`, `agente_local`.
+- Backend: `backend/db/empresa_impresoras.go` agrega `empresa_impresoras_dispositivos`, CRUD por `empresa_id` y resolucion con `ResolveEmpresaImpresoraOperacionConDispositivo`.
+- Backend: `backend/handlers/empresa_impresoras.go` expone acciones `dispositivos`/`dispositivo` y permite resolver con `dispositivo_id` o `agente_id`; la cola usa el agente del computador para seleccionar impresora si no se envio impresora directa.
+- Frontend: `web/administrar_empresa/configuracion_impresora.html` agrega la tarjeta `Impresora por computador`, reutiliza `pcs_dispositivo_id`, permite asociar/eliminar impresora por funcionalidad y usa el computador como agente local por defecto.
+- Seguridad: las asociaciones no leen seriales reales del equipo; el ID vive en el navegador/agente, todo filtra por `empresa_id` y el handler de agente no administra configuracion.
+- QA: `go test ./db ./handlers -run "EmpresaImpresoras" -count=1` OK; validacion sintactica del script embebido de `configuracion_impresora.html` OK.
+
+2026-06-11: Carrito pantalla completa en tarjeta.
+- Modulos afectados: `carritos`, `venta_directa`, `estaciones`.
+- Frontend: `web/administrar_empresa/carrito_de_compras.html` envuelve el boton `directSaleFullscreenBtn` en la tarjeta compacta `directSaleFullscreenCard` dentro del encabezado del cliente.
+- UX: el icono de pantalla completa queda dentro de tarjeta, cambia estado visual al entrar/salir y la tarjeta se oculta completa cuando fullscreen no aplica.
+- QA: validacion sintactica del script embebido del carrito y `git diff --check`.
+2026-06-11: Caja detectada por computador.
+- Modulos afectados: `login_usuario`, `estaciones`, `corte_caja`, `carritos`.
+- Frontend login: `web/js/login_usuario.js` crea `pcs_dispositivo_id`, guarda asignacion de caja por computador/empresa y autoentra si la caja sigue activa.
+- Configuracion: `web/administrar_empresa/configuracion_de_estaciones.html` agrega el check `Detectar computador y usar la caja asignada automaticamente` y guarda `caja_login_auto_por_computador` dentro de `estaciones_config`.
+- Operacion: la caja seleccionada se propaga por `sessionStorage` y URL como `caja_codigo`, `caja_nombre` y `caja_descripcion`; el identificador del computador queda local en el navegador, sin leer seriales fisicos ni conceder permisos adicionales.
+- QA: validacion sintactica de `login_usuario.js`, validacion del script embebido de configuracion y pruebas dirigidas de permisos/login.
+
+2026-06-11: Cajero busca ventas y facturas.
+- Modulos afectados: `administrar_empresa`, `ventas`, `facturacion`, `permisos`.
+- Backend: `backend/handlers/empresa_permisos.go` permite `linkVentas` al rol `cajero` dentro de la allowlist operativa y lo publica en `permisos_contexto`.
+- Frontend: `web/administrar_empresa.html` agrega `Buscar ventas y facturas` en `Operacion y ventas`; `web/js/administrar_empresa.js` lo incluye en el catalogo y filtros de cajero.
+- Documentos: `linkFacturasElectronicas` y `linkFacturacionElectronica` quedan como permisos internos del flujo para listar, abrir y reenviar facturas sin exponer esos accesos como menu de cajero.
+- Seguridad: el cajero conserva alcance operativo para consultar, reimprimir o reenviar documentos, sin abrir paginas administrativas de Productos, Clientes, Finanzas, Configuracion ni Reportes.
+- QA: prueba enfocada de permisos de cajero y validacion sintactica JS.
+
+2026-06-11: Buscador rapido del carrito por nombre.
+- Modulos afectados: `carritos`, `venta_directa`, `estaciones`, `productos`.
+- Frontend: `web/administrar_empresa/carrito_de_compras.html` cambia el campo superior a `Codigo de barras, SKU o nombre`, agrega resultados compactos bajo el campo y permite seleccionar/agregar productos desde esa misma seccion.
+- Operacion: mantiene agregado exacto por codigo/SKU para escaner, permite busqueda por nombre con lista de coincidencias y conserva acumulacion/cantidad/bascula/inventario mediante el endpoint real de items.
+- UX: `web/estilos.css` agrega estilos para resultados del buscador rapido sin crear una tarjeta nueva.
+- QA: validacion sintactica del script embebido de `carrito_de_compras.html` y `git diff --check` OK.
+
+2026-06-11: Campana de notificaciones en menu flotante.
+- Modulos afectados: `administrar_empresa`, `buzon`, `menu_flotante`.
+- Frontend: `web/menu.js` agrega Notificaciones como primera accion, replica el contador de no leidos en el boton flotante principal y conserva el badge cuando se renderiza avatar.
+- Integracion: `web/js/administrar_empresa.js` publica `pcs:notifications-updated` al actualizar el resumen de buzon para que el menu flotante refleje el mismo estado.
+- UX: `web/estilos.css` agrega badge, contador interno y ancho de panel para evitar que la campana se parta visualmente.
+- QA: `node --check web/menu.js`, `node --check web/js/administrar_empresa.js`, `git diff --check` y verificacion visual con Chrome headless OK.
+
+2026-06-11: Busqueda de productos en carrito por codigo o nombre.
+- Modulos afectados: `carritos`, `venta_directa`, `estaciones`, `productos`.
+- Backend: `GetProductosByEmpresa` conserva busqueda por nombre, SKU y codigo de barras, y ahora prioriza coincidencias exactas por codigo/SKU antes de coincidencias parciales.
+- Frontend: el catalogo inteligente del carrito muestra claramente busqueda por codigo/SKU/codigo de barras o nombre, permite codigos cortos y lista SKU/codigo de barras en los resultados.
+- Seguridad: no cambia endpoints ni permisos; `/api/empresa/productos` sigue filtrando por `empresa_id` mediante los wrappers existentes.
+- QA: `go test ./db ./handlers -run "Producto|Productos|Carrito" -count=1` OK; validacion sintactica del script embebido de `carrito_de_compras.html` OK.
+
 2026-06-11: Stop de audio y respuesta en chat IA.
 - Modulos afectados: `chat_ia_flotante`, `ayuda_ia`, `super_administrador`, `seleccionar_empresa`, `venta_publica`.
 - Frontend: se agrega el boton `Stop` al toolbar del chat IA para cortar el audio activo y abortar la respuesta en curso, incluyendo streaming, modo documentos, reportes, texto y adjuntos.
@@ -33878,3 +33947,16 @@ Archivos modificados:
 - web/super/configuracion_avanzada.html
 - web/super_administrador.html
 - web/venta_publica.html
+2026-06-11 - Configuracion operativa: ingresos/egresos manuales por rol
+- Se agregan checks por rol para permitir que `cajero` registre ingresos y/o
+  egresos manuales sin otorgarle acceso financiero completo.
+- `empresa_configuracion_operativa_roles` incorpora
+  `permitir_ingresos_manuales` y `permitir_egresos_manuales` con default 0 para
+  empresas existentes.
+- `/api/empresa/finanzas/movimientos` valida el permiso operativo antes de crear,
+  editar o anular movimientos manuales cuando el rol efectivo es `cajero`.
+- El contexto de permisos solo muestra `Ingresos`/`Egresos` al cajero cuando el
+  check correspondiente esta activo.
+- Pruebas: `go test ./db -run "ConfiguracionOperativa|Finanzas" -count=1`,
+  `go test ./handlers -run "TestCajeroFinanzasManualAPIRequestSoloMovimientosPermitidos|TestPermissionChangeRequiresApprovalForSecurityEndpoints" -count=1`,
+  parseo de scripts inline de `configuracion_impresora.html`.

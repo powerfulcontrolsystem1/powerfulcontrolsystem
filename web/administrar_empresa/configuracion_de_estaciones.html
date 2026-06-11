@@ -101,9 +101,10 @@
               </div>
             </div>
             <label class="form-help" style="display:flex;align-items:center;gap:8px;margin:0 0 10px;">
-              <input type="checkbox" id="solicitarCajaLoginCajeroToggle" checked>
-              Pedir al cajero que elija caja al iniciar sesion
+              <input type="checkbox" id="cajaLoginAutoComputadorToggle" checked disabled>
+              Detectar computador y usar la caja asignada automaticamente
             </label>
+            <p class="form-help">PCS identifica cada computador por un ID local del navegador. El cajero ya no elige caja al iniciar sesion: un administrador debe asociar este computador con su caja fisica desde Configuracion > Impresoras y caja.</p>
             <div class="table-wrap">
               <table class="table" id="cajasConfigTable">
                 <thead>
@@ -1346,7 +1347,8 @@
         card_size: cardSize,
         caja_enabled: caja_enabled,
         caja_placement: cajaPlacement,
-        solicitar_caja_login_cajero: cfg && cfg.solicitar_caja_login_cajero === undefined ? true : toBool(cfg && cfg.solicitar_caja_login_cajero),
+        solicitar_caja_login_cajero: false,
+        caja_login_auto_por_computador: cfg && cfg.caja_login_auto_por_computador === undefined ? true : toBool(cfg && cfg.caja_login_auto_por_computador),
         cajas_config: normalizeCajasConfig(cfg && (cfg.cajas_config || cfg.cajas_fisicas || cfg.cajas || cfg.caja_catalogo)),
         youtube_enabled: youtube_enabled,
         youtube_placement: youtubePlacement,
@@ -1430,7 +1432,6 @@
         'notasBeepToggle',
         'notasBlinkToggle',
         'saveNotasConfigBtn',
-        'solicitarCajaLoginCajeroToggle',
         'btnAgregarCajaConfig',
         'btnGuardarCajasConfig'
       ].forEach(function(id){
@@ -1537,12 +1538,16 @@
         var cfg = await getConfigFromServer();
         if (!cfg) cfg = normalizeConfig({ cantidad: 1, estaciones: [] });
         cfg.cajas_config = collectCajasConfigRows();
-        var solicitarCajaLogin = document.getElementById('solicitarCajaLoginCajeroToggle');
-        cfg.solicitar_caja_login_cajero = solicitarCajaLogin ? !!solicitarCajaLogin.checked : true;
+        var cajaLoginAutoComputador = document.getElementById('cajaLoginAutoComputadorToggle');
+        cfg.solicitar_caja_login_cajero = false;
+        cfg.caja_login_auto_por_computador = true;
         cfg = await saveConfigToServer(cfg);
         current = cfg;
         renderCajasConfig(cfg.cajas_config);
-        if (solicitarCajaLogin) solicitarCajaLogin.checked = cfg.solicitar_caja_login_cajero !== false;
+        if (cajaLoginAutoComputador) {
+          cajaLoginAutoComputador.checked = true;
+          cajaLoginAutoComputador.disabled = true;
+        }
         setCajasConfigMessage('Cajas guardadas correctamente.', 'success');
       } catch (err) {
         console.error('No se pudo guardar cajas fisicas', err);
@@ -2693,9 +2698,10 @@
       } catch (_) {}
       renderRows(cfg);
       renderCajasConfig(cfg.cajas_config);
-      var solicitarCajaLoginToggle = document.getElementById('solicitarCajaLoginCajeroToggle');
-      if (solicitarCajaLoginToggle) {
-        solicitarCajaLoginToggle.checked = cfg.solicitar_caja_login_cajero !== false;
+      var cajaLoginAutoComputadorToggle = document.getElementById('cajaLoginAutoComputadorToggle');
+      if (cajaLoginAutoComputadorToggle) {
+        cajaLoginAutoComputadorToggle.checked = true;
+        cajaLoginAutoComputadorToggle.disabled = true;
       }
       fillCarritoConfigTargetOptions(cfg);
       setCarritoConfigForm(cfg, 0);

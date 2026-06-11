@@ -1,3 +1,10 @@
+2026-06-11: Impresoras por computador detectado
+- Modulo: Configuracion de impresora / agente local.
+- Backend: `empresa_impresoras.go` agrega `empresa_impresoras_dispositivos` para vincular un `dispositivo_id` detectado por navegador/agente a una impresora activa por `empresa_id` y funcionalidad.
+- Resolucion: el backend mantiene prioridad por documento/producto/receta/categoria, luego computador detectado, luego funcionalidad y finalmente predeterminada.
+- Frontend: `configuracion_impresora.html` muestra el computador detectado, permite nombrarlo como caja, asociarle impresora y eliminar reglas desde una tabla.
+- Seguridad: no se leen seriales reales ni impresoras del sistema operativo desde el navegador; la seleccion fisica sigue dependiendo de la impresora registrada o agente local, siempre aislado por empresa.
+
 2026-06-11: Auditoria transversal de opciones nuevas
 - Modulos afectados: `auditoria`, `reportes`, `breb_qr`, `buzon`, `tareas_buzon`, `chat_empresarial`, `impresoras`, `menu_visible`, `atajos_pos`, `productos_import_export` y `bodegas_traslados`.
 - Auditoria: las acciones de configuracion Bre-B, pagos manuales, mensajes, tareas, adjuntos, lectura, preferencias e impresoras quedan en `empresa_auditoria_eventos` con modulo propio y metadata saneada.
@@ -4185,3 +4192,14 @@ Captura inteligente de compras y gastos
 - Backend: `/api/empresa/finanzas/breb_qr` usa `WithEmpresaFinanzasPermissions`, filtra siempre por `empresa_id`, lee `carritos_compras` y `carrito_compra_abonos`, y registra pagos manuales como movimientos bancarios en `empresa_finanzas_bancos_movimientos`.
 - Operacion: Bre-B puede operar con QR estatico o dinamico; para varias cajas simultaneas PCS exige referencias distintas por caja/carrito y no marca confirmacion automatica sin webhook/API bancaria real.
 - Seguridad: no se guardan secretos bancarios, no se simula confirmacion, no se crean motores externos y la configuracion se mezcla con `estaciones_config.carrito_ui_global` para no duplicar la verdad del carrito.
+2026-06-11 - Configuracion operativa de cobro: permisos de ingresos/egresos por rol
+- Modulo: Configuracion de impresora y caja / Finanzas operativas.
+- Alcance: el administrador puede activar por rol si un cajero registra ingresos
+  y/o egresos manuales. Los cobros normales del carrito no dependen de estos
+  checks.
+- Backend: `/api/empresa/finanzas/movimientos` valida el rol efectivo y consulta
+  `empresa_configuracion_operativa_roles` antes de crear, editar o anular un
+  movimiento manual de tipo `ingreso` o `egreso`.
+- Seguridad: la excepcion del middleware es estrecha para el rol `cajero` y el
+  endpoint exacto de movimientos; no abre importacion bancaria, conciliacion,
+  Bre-B, periodos ni configuracion financiera.

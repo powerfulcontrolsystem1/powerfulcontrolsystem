@@ -127,6 +127,7 @@ func EmpresaConfiguracionOperativaHandler(dbEmp *sql.DB) http.HandlerFunc {
 					http.Error(w, err.Error(), http.StatusBadRequest)
 					return
 				}
+				invalidateEmpresaPermissionCacheForEmpresa(payload.EmpresaID)
 
 				historialID := registrarSnapshotConfiguracionOperativa(
 					dbEmp,
@@ -174,6 +175,7 @@ func EmpresaConfiguracionOperativaHandler(dbEmp *sql.DB) http.HandlerFunc {
 					http.Error(w, err.Error(), http.StatusBadRequest)
 					return
 				}
+				invalidateEmpresaPermissionCacheForEmpresa(payload.EmpresaID)
 
 				historialID := registrarSnapshotConfiguracionOperativa(
 					dbEmp,
@@ -313,6 +315,7 @@ func EmpresaConfiguracionOperativaHandler(dbEmp *sql.DB) http.HandlerFunc {
 					http.Error(w, err.Error(), http.StatusBadRequest)
 					return
 				}
+				invalidateEmpresaPermissionCacheForEmpresa(payload.EmpresaID)
 
 				cfg, err := dbpkg.GetEmpresaConfiguracionOperativa(dbEmp, payload.EmpresaID)
 				if err != nil {
@@ -352,6 +355,7 @@ func EmpresaConfiguracionOperativaHandler(dbEmp *sql.DB) http.HandlerFunc {
 				http.Error(w, err.Error(), http.StatusBadRequest)
 				return
 			}
+			invalidateEmpresaPermissionCacheForEmpresa(payload.EmpresaID)
 
 			for _, roleCfg := range payload.Roles {
 				if strings.TrimSpace(roleCfg.Rol) == "" {

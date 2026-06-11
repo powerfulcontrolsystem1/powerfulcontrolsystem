@@ -94,6 +94,16 @@ func EmpresaImpresorasHandler(dbEmp *sql.DB) http.HandlerFunc {
 				writeJSON(w, http.StatusOK, rows)
 				return
 
+			case "dispositivos":
+				rows, err := dbpkg.ListEmpresaImpresoraDispositivosByEmpresa(dbEmp, empresaID)
+				if err != nil {
+					log.Printf("[empresa_impresoras] list dispositivos empresa_id=%d error: %v", empresaID, err)
+					http.Error(w, "No se pudieron cargar las impresoras por computador", http.StatusInternalServerError)
+					return
+				}
+				writeJSON(w, http.StatusOK, rows)
+				return
+
 			case "cola":
 				limit, err := parseIntQueryOptional(r, "limit")
 				if err != nil {
@@ -231,7 +241,11 @@ func EmpresaImpresorasHandler(dbEmp *sql.DB) http.HandlerFunc {
 				} else if productoID > 0 {
 					tipoItem = "producto"
 				}
-				resolved, err := dbpkg.ResolveEmpresaImpresoraOperacion(dbEmp, empresaID, funcionalidad, tipoItem, referenciaID)
+				dispositivoID := strings.TrimSpace(r.URL.Query().Get("dispositivo_id"))
+				if dispositivoID == "" {
+					dispositivoID = strings.TrimSpace(r.URL.Query().Get("agente_id"))
+				}
+				resolved, err := dbpkg.ResolveEmpresaImpresoraOperacionConDispositivo(dbEmp, empresaID, funcionalidad, tipoItem, referenciaID, dispositivoID)
 				if err != nil {
 					log.Printf("[empresa_impresoras] resolver empresa_id=%d funcionalidad=%q tipo_item=%q referencia_id=%d error: %v", empresaID, funcionalidad, tipoItem, referenciaID, err)
 					http.Error(w, "No se pudo resolver impresora", http.StatusInternalServerError)
@@ -289,6 +303,12 @@ func EmpresaImpresorasHandler(dbEmp *sql.DB) http.HandlerFunc {
 					recetas = []dbpkg.EmpresaImpresoraReceta{}
 					warnings = append(warnings, "No se pudieron cargar asignaciones por receta")
 				}
+				dispositivos, err := dbpkg.ListEmpresaImpresoraDispositivosByEmpresa(dbEmp, empresaID)
+				if err != nil {
+					log.Printf("[empresa_impresoras] resumen dispositivos empresa_id=%d error: %v", empresaID, err)
+					dispositivos = []dbpkg.EmpresaImpresoraDispositivo{}
+					warnings = append(warnings, "No se pudieron cargar impresoras por computador")
+				}
 				cola, err := dbpkg.ListEmpresaImpresoraCola(dbEmp, empresaID, "", 50)
 				if err != nil {
 					log.Printf("[empresa_impresoras] resumen cola empresa_id=%d error: %v", empresaID, err)
@@ -301,6 +321,7 @@ func EmpresaImpresorasHandler(dbEmp *sql.DB) http.HandlerFunc {
 					"productos":       productos,
 					"producto_reglas": productoReglas,
 					"recetas":         recetas,
+					"dispositivos":    dispositivos,
 					"cola":            cola,
 					"warnings":        warnings,
 				})
@@ -469,6 +490,28 @@ func EmpresaImpresorasHandler(dbEmp *sql.DB) http.HandlerFunc {
 					"receta_id":    payload.RecetaID,
 					"impresora_id": payload.ImpresoraID,
 				}, "regla de impresion por receta guardada")
+				writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "id": id})
+				return
+
+			case "dispositivo":
+				var payload dbpkg.EmpresaImpresoraDispositivo
+				if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+					http.Error(w, "JSON invalido", http.StatusBadRequest)
+					return
+				}
+				payload.EmpresaID = empresaID
+				payload.UsuarioCreador = strings.TrimSpace(adminEmailFromRequest(r))
+				id, err := dbpkg.UpsertEmpresaImpresoraDispositivo(dbEmp, payload)
+				if err != nil {
+					log.Printf("[empresa_impresoras] upsert dispositivo empresa_id=%d dispositivo=%q error: %v", empresaID, payload.DispositivoID, err)
+					http.Error(w, err.Error(), http.StatusBadRequest)
+					return
+				}
+				registrarAuditoriaModuloEmpresaNoBloqueante(dbEmp, r, empresaID, "impresoras", "computador_impresora_asignado", "empresa_impresoras_dispositivos", id, http.StatusOK, map[string]interface{}{
+					"dispositivo_id": payload.DispositivoID,
+					"funcionalidad":  payload.Funcionalidad,
+					"impresora_id":   payload.ImpresoraID,
+				}, "impresora asociada a computador")
 				writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "id": id})
 				return
 
@@ -684,6 +727,20 @@ func EmpresaImpresorasHandler(dbEmp *sql.DB) http.HandlerFunc {
 				}, "regla de impresion por receta eliminada")
 				writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "receta_id": recetaID})
 				return
+			case "dispositivo":
+				dispositivoID := strings.TrimSpace(r.URL.Query().Get("dispositivo_id"))
+				funcionalidad := strings.TrimSpace(r.URL.Query().Get("funcionalidad"))
+				if err := dbpkg.DeleteEmpresaImpresoraDispositivo(dbEmp, empresaID, dispositivoID, funcionalidad); err != nil {
+					log.Printf("[empresa_impresoras] delete dispositivo empresa_id=%d dispositivo=%q funcionalidad=%q error: %v", empresaID, dispositivoID, funcionalidad, err)
+					http.Error(w, err.Error(), http.StatusBadRequest)
+					return
+				}
+				registrarAuditoriaModuloEmpresaNoBloqueante(dbEmp, r, empresaID, "impresoras", "computador_impresora_eliminado", "empresa_impresoras_dispositivos", 0, http.StatusOK, map[string]interface{}{
+					"dispositivo_id": dispositivoID,
+					"funcionalidad":  funcionalidad,
+				}, "impresora desasociada de computador")
+				writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "dispositivo_id": dispositivoID, "funcionalidad": funcionalidad})
+				return
 			default:
 				http.Error(w, "action no soportada", http.StatusBadRequest)
 				return
@@ -730,7 +787,11 @@ func EmpresaImpresorasResolverHandler(dbEmp *sql.DB) http.HandlerFunc {
 		} else if productoID > 0 {
 			tipoItem = "producto"
 		}
-		resolved, err := dbpkg.ResolveEmpresaImpresoraOperacion(dbEmp, empresaID, funcionalidad, tipoItem, referenciaID)
+		dispositivoID := strings.TrimSpace(r.URL.Query().Get("dispositivo_id"))
+		if dispositivoID == "" {
+			dispositivoID = strings.TrimSpace(r.URL.Query().Get("agente_id"))
+		}
+		resolved, err := dbpkg.ResolveEmpresaImpresoraOperacionConDispositivo(dbEmp, empresaID, funcionalidad, tipoItem, referenciaID, dispositivoID)
 		if err != nil {
 			log.Printf("[empresa_impresoras] resolver publico empresa_id=%d funcionalidad=%q tipo_item=%q referencia_id=%d error: %v", empresaID, funcionalidad, tipoItem, referenciaID, err)
 			http.Error(w, "No se pudo resolver impresora", http.StatusInternalServerError)
