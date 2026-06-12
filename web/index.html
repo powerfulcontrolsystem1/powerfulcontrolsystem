@@ -1189,43 +1189,43 @@
           titulo: 'Punto de venta',
           descripcion: 'POS profesional para vender productos, servicios, recetas y tarifas con caja, factura electronica, pagos mixtos, descuentos, propinas y auditoria.',
           imagen_url: '/img/punto_venta.png',
-          imagen_secundaria_url: '/img/portal-systems/realistic/punto-venta.jpg',
+          imagen_secundaria_url: '/img/sistema punto de venta.png',
           enlace: '/administrar_empresa.html?module=punto_venta'
-        },
-        {
-          titulo: 'Clientes y CRM',
-          descripcion: 'Leads, clientes, historial comercial, pipeline, campanas, seguimientos, cotizaciones y conversion a ventas centrales por empresa.',
-          imagen_url: '/img/customer.svg',
-          imagen_secundaria_url: '/img/portal-systems/realistic/clientes-crm.jpg',
-          enlace: '/administrar_empresa.html?module=crm_unificado'
         },
         {
           titulo: 'Motel',
           descripcion: 'Operacion motelera con estaciones, tarifas por minutos, reservas, minibar, carta publica, domotica por estacion y facturacion tarifada.',
           imagen_url: '/img/motel.png',
-          imagen_secundaria_url: '/img/portal-systems/realistic/motel.jpg',
+          imagen_secundaria_url: '/img/sistema motel.png',
           enlace: '/administrar_empresa.html?module=motel'
         },
         {
           titulo: 'Restaurante',
           descripcion: 'Gestion de mesas, pedidos, productos, recetas, cocina, caja, domicilios, carta publica con QR y facturacion para restaurantes.',
           imagen_url: '/img/restaurante.png',
-          imagen_secundaria_url: '/img/portal-systems/realistic/restaurante.jpg',
+          imagen_secundaria_url: '/img/sistema restaurante.png',
           enlace: '/administrar_empresa.html?module=restaurante'
         },
         {
           titulo: 'Control por sensor',
           descripcion: 'Sensores y domotica para accesos, estaciones, lamparas, motobombas, jacuzzi, aire, puertas y automatizaciones por estacion.',
           imagen_url: '/img/sensor.png',
-          imagen_secundaria_url: '/img/portal-systems/realistic/control-sensor.jpg',
+          imagen_secundaria_url: '/img/sistema sensor.png',
           enlace: '/administrar_empresa.html?module=sensor'
         },
         {
           titulo: 'Hotel',
           descripcion: 'Administracion hotelera con reservas, ocupacion, tarifas por dia, check-in, productos, servicios, estaciones y reportes ejecutivos.',
           imagen_url: '/img/hotel-logo.svg',
-          imagen_secundaria_url: '/img/portal-systems/realistic/hotel.jpg',
+          imagen_secundaria_url: '/img/sistema motel.png',
           enlace: '/administrar_empresa.html?module=configuracion'
+        },
+        {
+          titulo: 'Clientes y CRM',
+          descripcion: 'Leads, clientes, historial comercial, pipeline, campanas, seguimientos, cotizaciones y conversion a ventas centrales por empresa.',
+          imagen_url: '/img/customer.svg',
+          imagen_secundaria_url: '/img/analytics-color.svg',
+          enlace: '/administrar_empresa.html?module=crm_unificado'
         },
         {
           titulo: 'Apartamentos turisticos',
@@ -1613,6 +1613,79 @@
         return 'info_foto';
       }
 
+      function normalizeCardLookupKey(value) {
+        var normalized = String(value || '').trim().toLowerCase();
+        if (normalized.normalize) {
+          normalized = normalized.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+        }
+        return normalized.replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '');
+      }
+
+      var preferredPortalPrimaryCards = {
+        punto_de_venta: { rank: 1, figure: '/img/sistema punto de venta.png' },
+        motel: { rank: 2, figure: '/img/sistema motel.png' },
+        restaurante: { rank: 3, figure: '/img/sistema restaurante.png' },
+        control_por_sensor: { rank: 4, figure: '/img/sistema sensor.png' },
+        sensor: { rank: 4, figure: '/img/sistema sensor.png' },
+        hotel: { rank: 5, figure: '/img/sistema motel.png' },
+        configuracion: { rank: 5, figure: '/img/sistema motel.png' },
+        clientes_y_crm: { rank: 6, figure: '/img/analytics-color.svg' },
+        crm_unificado: { rank: 6, figure: '/img/analytics-color.svg' }
+      };
+
+      function preferredPortalCardInfo(card) {
+        var keys = [
+          normalizeCardLookupKey(card && (card.module || card.__verticalModule || card.modulo)),
+          normalizeCardLookupKey(card && card.titulo)
+        ];
+        for (var i = 0; i < keys.length; i += 1) {
+          if (keys[i] && preferredPortalPrimaryCards[keys[i]]) {
+            return preferredPortalPrimaryCards[keys[i]];
+          }
+        }
+        return null;
+      }
+
+      function restorePreferredPortalCard(card) {
+        var info = preferredPortalCardInfo(card);
+        if (!info) return card;
+        var restored = Object.assign({}, card);
+        restored.__primaryPortalRank = info.rank;
+        restored.imagen_secundaria_url = info.figure;
+        return restored;
+      }
+
+      function orderPortalCards(cards) {
+        return (cards || []).map(function(card, idx) {
+          var restored = restorePreferredPortalCard(card);
+          restored.__originalPortalIndex = idx;
+          return restored;
+        }).sort(function(a, b) {
+          var ar = a && a.__primaryPortalRank ? a.__primaryPortalRank : 9999;
+          var br = b && b.__primaryPortalRank ? b.__primaryPortalRank : 9999;
+          if (ar !== br) return ar - br;
+          return (a.__originalPortalIndex || 0) - (b.__originalPortalIndex || 0);
+        }).map(function(card) {
+          delete card.__primaryPortalRank;
+          delete card.__originalPortalIndex;
+          return card;
+        });
+      }
+
+      function fallbackCardFor(card, idx) {
+        var module = normalizeCardLookupKey(card && (card.module || card.__verticalModule || card.modulo));
+        var title = normalizeCardLookupKey(card && card.titulo);
+        for (var i = 0; i < fallbackCards.length; i += 1) {
+          var item = fallbackCards[i];
+          if (!item) continue;
+          var itemModule = normalizeCardLookupKey(item.module || item.__verticalModule || item.modulo);
+          var itemTitle = normalizeCardLookupKey(item.titulo);
+          if (module && itemModule && module === itemModule) return item;
+          if (title && itemTitle && title === itemTitle) return item;
+        }
+        return fallbackCards[idx % fallbackCards.length];
+      }
+
       function applyVisualSettings(raw) {
         var settings = normalizeVisualSettings(raw);
         gridEl.setAttribute('data-card-size', settings.index_card_size);
@@ -1638,14 +1711,13 @@
       function normalizeCards(rawCards) {
         var source = Array.isArray(rawCards) && rawCards.length ? rawCards : fallbackCards;
         return source.map(function (card, idx) {
-          var fallback = fallbackCards[idx % fallbackCards.length];
+          var fallback = fallbackCardFor(card, idx);
           var titulo = String((card && card.titulo) || '').trim() || fallback.titulo;
           var descripcion = String((card && card.descripcion) || '').trim() || fallback.descripcion;
           var imagen = normalizeImage((card && card.imagen_url) || fallback.imagen_url);
-          var fallbackImagenSec = normalizeImage(fallback && fallback.imagen_secundaria_url);
-          var rawImagenSec = normalizeImage(card && card.imagen_secundaria_url);
-          var imagenSec = isRealisticPortalFigure(fallbackImagenSec) ? fallbackImagenSec : rawImagenSec;
-          if (!isRealisticPortalFigure(imagenSec) && !rawImagenSec) {
+          var rawImagenSecValue = String((card && card.imagen_secundaria_url) || '').trim();
+          var imagenSec = rawImagenSecValue ? normalizeImage(rawImagenSecValue) : normalizeImage(fallback && fallback.imagen_secundaria_url);
+          if (!imagenSec) {
             imagenSec = '/img/portal-systems/realistic/punto-venta.jpg';
           }
           var enlace = normalizeLink((card && card.enlace) || fallback.enlace);
@@ -1891,13 +1963,13 @@
 
           applyVisualSettings(payload && payload.estilos);
           applyWhatsAppContactNumber(payload && payload.whatsapp_contact_number);
-          var cards = normalizeCards(mergeCardsWithVerticals(payload && payload.tarjetas));
+          var cards = orderPortalCards(normalizeCards(mergeCardsWithVerticals(payload && payload.tarjetas)));
           renderCards(cards);
           statusEl.textContent = '';
         } catch (err) {
           applyVisualSettings(null);
           applyWhatsAppContactNumber('573043306506');
-          renderCards(normalizeCards(fallbackCards));
+          renderCards(orderPortalCards(normalizeCards(fallbackCards)));
           statusEl.textContent = 'Se mostraron ofertas predeterminadas por un problema temporal de conexion.';
         }
       }

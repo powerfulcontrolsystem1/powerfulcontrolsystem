@@ -40,6 +40,7 @@ type requestContextKey string
 const (
 	ctxKeyRequestID         requestContextKey = "request_id"
 	ctxKeyEmpresaID         requestContextKey = "empresa_id"
+	publicAPIErrorHeader                      = "X-PCS-Public-API-Error"
 	canonicalPublicApexHost                   = "powerfulcontrolsystem.com"
 	canonicalPublicWWWHost                    = "www.powerfulcontrolsystem.com"
 	reservedSuperAdminEmail                   = "powerfulcontrolsystem@gmail.com"
@@ -143,6 +144,15 @@ func requestIDFromContext(ctx context.Context) string {
 // RequestIDFromContext expone el request_id propagado por middleware para otros paquetes.
 func RequestIDFromContext(ctx context.Context) string {
 	return requestIDFromContext(ctx)
+}
+
+// MarkPublicAPIError permite que un handler marque un error JSON >=500 como
+// seguro para mostrar al usuario. Los errores no marcados siguen protegidos.
+func MarkPublicAPIError(w http.ResponseWriter) {
+	if w == nil {
+		return
+	}
+	w.Header().Set(publicAPIErrorHeader, "1")
 }
 
 func empresaIDFromContext(ctx context.Context) int64 {
@@ -445,7 +455,12 @@ func JSONErrorMiddleware(next http.Handler) http.Handler {
 			}
 			writeCompanyLogEntry(empresaID, level, fmt.Sprintf("req_id=%s event=api_error method=%s path=%s status=%d error=%q", reqID, r.Method, path, capture.status, truncateLogMessage(msg, 500)))
 
+			publicError := strings.TrimSpace(capture.Header().Get(publicAPIErrorHeader)) == "1"
 			if capture.status >= http.StatusInternalServerError {
+				if publicError {
+					writePublicAPIErrorResponse(w, capture.status, reqID, empresaID, errorID, path, r.Method, capture.body.Bytes())
+					return
+				}
 				writeFriendlyAPIErrorResponse(w, capture.status, reqID, empresaID, errorID)
 				return
 			}

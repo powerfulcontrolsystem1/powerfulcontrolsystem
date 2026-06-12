@@ -3,6 +3,13 @@
 Version: 2026-05-15.1.0
 Ultima actualizacion: 2026-05-15
 
+Actualizacion 2026-06-11 (roles personalizados por empresa)
+- Tabla `roles_de_usuario` en `pcs_superadministrador`: agrega `empresa_id BIGINT DEFAULT 0`, `origen TEXT DEFAULT 'global'` y `rol_base_id BIGINT DEFAULT 0`.
+- Convencion: `empresa_id=0` y `origen='global'` identifican roles base compartidos; `empresa_id>0` y `origen='empresa'` identifican roles personalizados de una sola empresa.
+- Indices agregados: `ix_roles_de_usuario_empresa`, `ix_roles_de_usuario_empresa_nombre` e `ix_roles_de_usuario_origen`.
+- `rol_base_id` debe apuntar a un rol global activo; la autorizacion efectiva de un usuario con rol personalizado se calcula con ese rol base y nunca con un rol de otra empresa.
+- La tabla `users` conserva `rol_usuario_id` y `role`; la asignacion valida alcance por `empresa_id` antes de guardar.
+
 Actualizacion 2026-06-11 (empresas compartidas)
 - Tablas en `pcs_superadministrador`:
   - `admin_empresa_compartida`: agrega `puede_compartir BOOLEAN DEFAULT FALSE` para indicar si el acceso compartido puede invitar a otros administradores a la misma empresa.

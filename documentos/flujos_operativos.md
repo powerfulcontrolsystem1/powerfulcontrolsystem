@@ -4,6 +4,47 @@ Guia corta de los procesos que mas se prueban y modifican. Cada flujo debe
 mantener aislamiento por `empresa_id`, permisos por rol y trazabilidad cuando
 afecte dinero, documentos, licencias o seguridad.
 
+## Roles personalizados por empresa
+
+1. Abrir `Administrar empresa > Administrar usuarios`.
+2. En `Roles personalizados de esta empresa`, escribir el nombre del rol,
+   descripcion y elegir un `Rol base` global.
+3. Guardar. PCS crea el rol en `roles_de_usuario` con `empresa_id` de la
+   empresa activa, `origen=empresa` y `rol_base_id` del rol global elegido.
+4. El rol aparece inmediatamente en el selector de usuarios con la etiqueta
+   `(personalizado)` y se puede asignar desde `Editar rol de usuario` o desde
+   el formulario de creacion/edicion.
+5. Para desactivar un rol propio, usar `Desactivar` en la misma tarjeta. El rol
+   no desaparece del historial, pero deja de estar disponible para nuevas
+   asignaciones activas.
+6. La autorizacion efectiva usa el rol base global. Esto evita que un nombre
+   libre sin matriz conocida abra permisos por accidente y mantiene el alcance
+   por `empresa_id`.
+7. Un rol personalizado de otra empresa no puede asignarse ni resolverse en la
+   empresa actual; el backend lo rechaza aunque se manipule la URL o el payload.
+
+## Configuracion dedicada del rol cajero
+
+1. Abrir `Administrar empresa > Configuracion > Ventas y cobro > Rol cajero`.
+2. Revisar el resumen: rol base, usuarios cajeros, pago mixto y control por
+   estaciones.
+3. En `Perfil del rol`, crear o actualizar el nombre/descripcion visible del
+   cajero. PCS conserva el rol global `cajero` y guarda un rol personalizado
+   de la empresa cuando se requiere modificar el perfil.
+4. En `Cobro y caja`, activar o desactivar medios de pago, propinas,
+   comisiones, ingresos manuales y egresos manuales. El backend guarda la regla
+   en `empresa_configuracion_operativa_roles` para `rol=cajero`.
+5. En `Carrito POS`, `Botones visibles` y `Medios de pago POS`, ajustar lo que
+   ve el cajero en venta directa y estaciones. La pagina reutiliza
+   `estaciones_config.carrito_ui_global`, por lo que no duplica la configuracion
+   completa del carrito.
+6. En `Estaciones y caja fisica`, activar el control por estaciones cuando cada
+   cajero debe operar solo estaciones asignadas. Las asignaciones finas por
+   usuario siguen en `Administrar usuarios`.
+7. Guardar por seccion o usar `Guardar configuracion del cajero` para guardar
+   operativa, carrito/estaciones y perfil. Todas las llamadas llevan
+   `empresa_id`; no se debe editar el rol global ni mezclar empresas.
+
 ## Modo POS tactil por empresa
 
 1. Abrir `Administrar empresa > Configuracion > Configuracion carrito`.
@@ -759,12 +800,19 @@ afecte dinero, documentos, licencias o seguridad.
    responde `409` con `usuario_existente` sin exponer tokens; la interfaz debe
    recargar con `include_inactive=1`, resaltar el usuario y dejar disponible
    `Reenviar confirmacion`.
+   El mismo correo puede existir como administrador del panel principal y como
+   usuario operativo, porque son credenciales y pantallas distintas; en `users`
+   la unicidad vigente es por `lower(email), empresa_id`.
 2. El usuario abre `login_usuario.html` desde la invitacion para completar
    registro o iniciar con Google. Sin invitacion o usuario empresarial confirmado
    no hay alta publica. En este primer ingreso, un usuario pendiente puede tener
    `estado=inactivo`; si el token es valido, el sistema permite crear la
    contrasena, confirma el correo y cambia el estado a `activo`. Un usuario ya
    confirmado e inactivo sigue bloqueado hasta que el administrador lo active.
+   Los errores del primer ingreso muestran mensaje especifico, detalle y
+   `request_id` cuando el backend los marca como publicos seguros; los errores
+   internos no marcados siguen protegidos para no exponer SQL, rutas, claves o
+   datos sensibles.
 3. `Iniciar sesion con Google` usa `/auth/google/usuario/login`, conserva
    `empresa_id` y token de invitacion en cookies tecnicas de corta vida y vuelve
    por `/auth/google/callback`.

@@ -25,6 +25,9 @@
     .role-editor-current{border:1px solid var(--border);border-radius:8px;background:var(--surface-soft);padding:10px;margin-top:10px;color:var(--text)}
     .role-editor-current strong{display:block}
     .role-editor-current small{display:block;color:var(--muted);line-height:1.4;margin-top:3px}
+    .custom-role-grid{display:grid;grid-template-columns:minmax(160px,1fr) minmax(180px,1fr) minmax(180px,1fr);gap:10px;align-items:end}
+    .custom-role-list{display:grid;gap:8px;margin-top:12px}
+    .custom-role-badge{display:inline-flex;align-items:center;border:1px solid var(--border);border-radius:999px;padding:2px 7px;margin-left:6px;font-size:.72rem;color:var(--muted);background:var(--surface-soft);font-weight:700}
     .usuarios-global-msg{display:none;margin:12px 0;padding:10px 12px;border:1px solid var(--border);border-radius:8px;background:var(--surface-soft);color:var(--text);font-weight:700}
     .usuarios-global-msg.is-visible{display:block}
     .usuarios-global-msg.value-negative{border-color:var(--danger,#ef4444);color:var(--danger,#ef4444)}
@@ -83,7 +86,7 @@
     html[data-theme^="light"] .usuarios-page #form::before{
       background:linear-gradient(90deg,var(--accent),var(--accent-2));
     }
-    @media(max-width:760px){.role-editor-grid{grid-template-columns:1fr}}
+    @media(max-width:760px){.role-editor-grid,.custom-role-grid{grid-template-columns:1fr}}
     @media(max-width:640px){.usuario-photo-field{grid-template-columns:1fr}.usuario-photo{width:100%;height:120px}.station-access-grid{grid-template-columns:1fr}.role-row{grid-template-columns:1fr}.role-actions{justify-content:flex-start}}
   </style>
 </head>
@@ -119,7 +122,7 @@
         <div class="form-col">
           <label class="form-label">Rol</label>
           <select id="rol_usuario_id" class="form-input" required></select>
-          <div class="form-help">El catalogo muestra roles globales, sin repetidos, disponibles para todos los tipos de empresa.</div>
+          <div class="form-help">Puedes usar roles globales o roles personalizados creados solo para esta empresa.</div>
         </div>
       </div>
 
@@ -186,6 +189,29 @@
       <div id="roleEditorMsg" class="form-help"></div>
     </section>
 
+    <section class="card empresa-section" id="customRolePanel" style="margin-top:16px;">
+      <h2>Roles personalizados de esta empresa</h2>
+      <p class="form-help">Crea roles propios para esta empresa tomando como base un rol operativo existente. El rol propio queda aislado por empresa y puede asignarse a los usuarios desde esta misma pantalla.</p>
+      <input type="hidden" id="customRoleId">
+      <div class="custom-role-grid">
+        <label class="form-label">Nombre del rol
+          <input id="customRoleName" class="form-input" placeholder="Ej: Cajero nocturno">
+        </label>
+        <label class="form-label">Rol base
+          <select id="customRoleBase" class="form-input"></select>
+        </label>
+        <div class="form-actions" style="margin:0;">
+          <button type="button" id="customRoleSave" class="btn">Guardar rol</button>
+          <button type="button" id="customRoleCancel" class="btn secondary">Cancelar</button>
+        </div>
+      </div>
+      <label class="form-label" style="display:block;margin-top:10px;">Descripcion
+        <textarea id="customRoleDescription" class="form-textarea" placeholder="Explica para que se usa este rol dentro de la empresa"></textarea>
+      </label>
+      <div id="customRoleMsg" class="form-help"></div>
+      <div id="customRolesList" class="custom-role-list"></div>
+    </section>
+
     <div id="globalMsg" class="usuarios-global-msg" role="status" aria-live="polite"></div>
     <div id="list">Cargando...</div>
 
@@ -237,7 +263,8 @@
       stationAccess: { habilitado: false, caja_por_cajero: true, usuarios: {} },
       highlightUserID: 0,
       highlightUserEmail: '',
-      currentUserPhotoURL: ''
+      currentUserPhotoURL: '',
+      customRoleEditingID: 0
     };
 
     function getQueryParam(name) {
@@ -323,11 +350,21 @@
         if (role.estado && role.estado !== 'activo') return;
         const opt = document.createElement('option');
         opt.value = role.id;
-        opt.textContent = role.nombre;
+        opt.textContent = roleLabel(role);
         select.appendChild(opt);
       });
       if (selected) select.value = String(selected);
       renderRolesCatalog();
+      renderCustomRolesPanel();
+    }
+
+    function isCustomRole(role) {
+      return Number(role && role.empresa_id || 0) > 0 || !!(role && role.personalizado) || String(role && role.origen || '').toLowerCase() === 'empresa';
+    }
+
+    function roleLabel(role) {
+      const name = String(role && role.nombre || 'Rol sin nombre').trim();
+      return isCustomRole(role) ? (name + ' (personalizado)') : name;
     }
 
     function normalizeRoleKey(value) {
@@ -431,6 +468,12 @@
             '<a class="btn secondary role-help" target="_blank" rel="noopener">Saber mas</a>' +
           '</div>';
         row.querySelector('strong').textContent = role.nombre || 'Rol sin nombre';
+        if (isCustomRole(role)) {
+          const badge = document.createElement('span');
+          badge.className = 'custom-role-badge';
+          badge.textContent = 'Empresa';
+          row.querySelector('strong').appendChild(badge);
+        }
         row.querySelector('small').textContent = roleDescription(role);
         row.querySelector('.role-help').href = roleHelpAnchor(role);
         row.querySelector('.role-select').onclick = function() {
@@ -451,12 +494,103 @@
       const seen = new Set();
       const out = [];
       (Array.isArray(roles) ? roles : []).forEach(function(role) {
-        const key = canonicalRoleKey(role && role.nombre);
+        const key = isCustomRole(role) ? ('empresa:' + String(role && role.id || role && role.nombre || '')) : ('global:' + canonicalRoleKey(role && role.nombre));
         if (!key || seen.has(key)) return;
         seen.add(key);
         out.push(role);
       });
       return out;
+    }
+
+    function baseRoles() {
+      return state.roles.filter(function(role) {
+        return !isCustomRole(role) && !(role.estado && role.estado !== 'activo');
+      });
+    }
+
+    function customRoles() {
+      return state.roles.filter(function(role) { return isCustomRole(role); });
+    }
+
+    function setCustomRoleMessage(text, isError) {
+      const el = document.getElementById('customRoleMsg');
+      if (!el) return;
+      el.textContent = text || '';
+      el.classList.remove('value-negative');
+      if (isError) el.classList.add('value-negative');
+    }
+
+    function resetCustomRoleForm() {
+      state.customRoleEditingID = 0;
+      document.getElementById('customRoleId').value = '';
+      document.getElementById('customRoleName').value = '';
+      document.getElementById('customRoleDescription').value = '';
+      document.getElementById('customRoleBase').value = '';
+      document.getElementById('customRoleSave').textContent = 'Guardar rol';
+      setCustomRoleMessage('', false);
+    }
+
+    function renderCustomRolesPanel() {
+      const baseSelect = document.getElementById('customRoleBase');
+      const list = document.getElementById('customRolesList');
+      if (!baseSelect || !list) return;
+      const selectedBase = baseSelect.value;
+      baseSelect.innerHTML = '<option value="">-- Seleccionar rol base --</option>';
+      baseRoles().forEach(function(role) {
+        const opt = document.createElement('option');
+        opt.value = String(role.id);
+        opt.textContent = role.nombre || ('Rol #' + role.id);
+        baseSelect.appendChild(opt);
+      });
+      if (selectedBase) baseSelect.value = selectedBase;
+
+      const items = customRoles();
+      if (!items.length) {
+        list.innerHTML = '<div class="form-help">Esta empresa todavia no tiene roles personalizados.</div>';
+        return;
+      }
+      list.innerHTML = '';
+      items.forEach(function(role) {
+        const base = state.roles.find(function(item) { return Number(item.id) === Number(role.rol_base_id || 0); });
+        const row = document.createElement('div');
+        row.className = 'role-row';
+        row.innerHTML =
+          '<div><strong></strong><small></small></div>' +
+          '<div class="role-actions">' +
+            '<button type="button" class="btn secondary custom-role-edit">Editar</button>' +
+            '<button type="button" class="btn custom-role-toggle"></button>' +
+          '</div>';
+        row.querySelector('strong').textContent = role.nombre || 'Rol personalizado';
+        row.querySelector('small').textContent = (role.descripcion || 'Sin descripcion') + ' Base: ' + ((base && base.nombre) || 'No definida') + '. Estado: ' + (role.estado || 'activo') + '.';
+        row.querySelector('.custom-role-edit').onclick = function() {
+          state.customRoleEditingID = Number(role.id || 0);
+          document.getElementById('customRoleId').value = String(role.id || '');
+          document.getElementById('customRoleName').value = role.nombre || '';
+          document.getElementById('customRoleDescription').value = role.descripcion || '';
+          document.getElementById('customRoleBase').value = String(role.rol_base_id || '');
+          document.getElementById('customRoleSave').textContent = 'Actualizar rol';
+          setCustomRoleMessage('', false);
+          document.getElementById('customRoleName').focus();
+        };
+        const isActive = !role.estado || role.estado === 'activo';
+        const toggle = row.querySelector('.custom-role-toggle');
+        toggle.textContent = isActive ? 'Desactivar' : 'Activar';
+        toggle.classList.toggle('secondary', !isActive);
+        toggle.onclick = async function() {
+          const action = isActive ? 'desactivar' : 'activar';
+          if (!confirm(action.charAt(0).toUpperCase() + action.slice(1) + ' este rol personalizado?')) return;
+          try {
+            const res = await fetch('/api/empresa/roles_de_usuario?empresa_id=' + encodeURIComponent(state.empresaID) + '&id=' + encodeURIComponent(role.id) + '&action=activar&activo=' + (isActive ? '0' : '1') + '&aprobado_por=administrador_empresa&codigo_aprobacion=roles_empresa&motivo_aprobacion=' + encodeURIComponent('Cambio de estado de rol personalizado'), { method: 'PUT' });
+            await ensureOk(res);
+            await loadRoles();
+            renderRoleEditor();
+            setCustomRoleMessage('Estado del rol actualizado', false);
+          } catch (err) {
+            setCustomRoleMessage(err.message || 'No se pudo cambiar el estado del rol', true);
+          }
+        };
+        list.appendChild(row);
+      });
     }
 
     function escapeHTML(value) {
@@ -639,7 +773,7 @@
         if (role.estado && role.estado !== 'activo') return;
         const opt = document.createElement('option');
         opt.value = String(role.id);
-        opt.textContent = role.nombre || ('Rol #' + role.id);
+        opt.textContent = roleLabel(role);
         roleSelect.appendChild(opt);
       });
       if (previousRole) roleSelect.value = previousRole;
@@ -855,10 +989,11 @@
     }
 
     async function loadRoles() {
-      const res = await fetch('/api/empresa/roles_de_usuario?empresa_id=' + encodeURIComponent(state.empresaID));
+      const res = await fetch('/api/empresa/roles_de_usuario?empresa_id=' + encodeURIComponent(state.empresaID) + '&include_inactive=1');
       await ensureOk(res);
       state.roles = dedupeRoles(await res.json());
       fillRolesSelect('');
+      renderCustomRolesPanel();
     }
 
     async function loadEmpresaTitle() {
@@ -1046,6 +1181,41 @@
       } catch (err) {
         setRoleEditorMessage(err.message || 'No se pudo actualizar el rol', true);
       }
+    });
+
+    document.getElementById('customRoleSave').addEventListener('click', async function() {
+      const id = Number(document.getElementById('customRoleId').value || state.customRoleEditingID || 0);
+      const payload = {
+        nombre: document.getElementById('customRoleName').value.trim(),
+        descripcion: document.getElementById('customRoleDescription').value.trim(),
+        rol_base_id: Number(document.getElementById('customRoleBase').value || 0),
+        aprobado_por: 'administrador_empresa',
+        codigo_aprobacion: 'roles_empresa',
+        motivo_aprobacion: id ? 'Actualizacion de rol personalizado de empresa' : 'Creacion de rol personalizado de empresa'
+      };
+      if (!payload.nombre || !payload.rol_base_id) {
+        setCustomRoleMessage('Nombre del rol y rol base son obligatorios', true);
+        return;
+      }
+      try {
+        const url = '/api/empresa/roles_de_usuario?empresa_id=' + encodeURIComponent(state.empresaID) + (id ? ('&id=' + encodeURIComponent(id)) : '');
+        const res = await fetch(url, {
+          method: id ? 'PUT' : 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        await ensureOk(res);
+        resetCustomRoleForm();
+        await loadRoles();
+        renderRoleEditor();
+        setCustomRoleMessage(id ? 'Rol personalizado actualizado' : 'Rol personalizado creado', false);
+      } catch (err) {
+        setCustomRoleMessage(err.message || 'No se pudo guardar el rol personalizado', true);
+      }
+    });
+
+    document.getElementById('customRoleCancel').addEventListener('click', function() {
+      resetCustomRoleForm();
     });
 
     document.getElementById('stationAccessAll').addEventListener('click', function() {

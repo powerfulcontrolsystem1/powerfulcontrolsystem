@@ -318,25 +318,25 @@ func (monitor *errorMonitor) report(payload SystemErrorRecord) int64 {
 	}
 
 	linePayload := map[string]interface{}{
-		"id":              storedID,
-		"timestamp":       record.FechaError,
-		"level":           record.Nivel,
-		"error_type":      record.TipoError,
-		"message":         record.Mensaje,
-		"public_message":  record.MensajePublico,
-		"detail":          record.Detalle,
-		"stack_trace":     record.StackTrace,
-		"empresa_id":      record.EmpresaID,
-		"user_email":      record.UsuarioEmail,
-		"endpoint":        record.Endpoint,
-		"module":          record.Modulo,
-		"method":          record.MetodoHTTP,
-		"http_status":     record.CodigoHTTP,
-		"request_id":      record.RequestID,
-		"source":          record.Origen,
-		"ip":              record.IP,
-		"user_agent":      record.UserAgent,
-		"metadata_json":   metadataJSON,
+		"id":             storedID,
+		"timestamp":      record.FechaError,
+		"level":          record.Nivel,
+		"error_type":     record.TipoError,
+		"message":        record.Mensaje,
+		"public_message": record.MensajePublico,
+		"detail":         record.Detalle,
+		"stack_trace":    record.StackTrace,
+		"empresa_id":     record.EmpresaID,
+		"user_email":     record.UsuarioEmail,
+		"endpoint":       record.Endpoint,
+		"module":         record.Modulo,
+		"method":         record.MetodoHTTP,
+		"http_status":    record.CodigoHTTP,
+		"request_id":     record.RequestID,
+		"source":         record.Origen,
+		"ip":             record.IP,
+		"user_agent":     record.UserAgent,
+		"metadata_json":  metadataJSON,
 	}
 	monitor.appendFileLog(backendDir, linePayload)
 	return storedID
@@ -493,13 +493,61 @@ func writeInternalErrorHeaders(h http.Header, requestID string, errorID int64) {
 
 func copyResponseHeaders(dst, src http.Header) {
 	for k, vals := range src {
-		if strings.EqualFold(k, internalErrorLoggedHeader) || strings.EqualFold(k, internalErrorIDHeader) {
+		if strings.EqualFold(k, internalErrorLoggedHeader) ||
+			strings.EqualFold(k, internalErrorIDHeader) ||
+			strings.EqualFold(k, publicAPIErrorHeader) {
 			continue
 		}
 		for _, v := range vals {
 			dst.Add(k, v)
 		}
 	}
+}
+
+func writePublicAPIErrorResponse(w http.ResponseWriter, status int, requestID string, empresaID int64, errorID int64, path string, method string, raw []byte) {
+	w.Header().Set("Content-Type", "application/json")
+	if requestID != "" {
+		w.Header().Set("X-Request-ID", requestID)
+	}
+	if empresaID > 0 {
+		w.Header().Set("X-Empresa-ID", strconv.FormatInt(empresaID, 10))
+	}
+	w.WriteHeader(status)
+
+	payload := map[string]interface{}{}
+	if err := json.Unmarshal(raw, &payload); err != nil || payload == nil {
+		message := strings.TrimSpace(string(raw))
+		if message == "" {
+			message = friendlyAPIErrorMessage(status)
+		}
+		payload = map[string]interface{}{
+			"error": message,
+		}
+	}
+	if _, ok := payload["ok"]; !ok {
+		payload["ok"] = false
+	}
+	payload["status"] = status
+	if _, ok := payload["request_id"]; !ok {
+		payload["request_id"] = requestID
+	}
+	if _, ok := payload["path"]; !ok && path != "" {
+		payload["path"] = path
+	}
+	if _, ok := payload["method"]; !ok && method != "" {
+		payload["method"] = method
+	}
+	if empresaID > 0 {
+		if _, ok := payload["empresa_id"]; !ok {
+			payload["empresa_id"] = empresaID
+		}
+	}
+	if errorID > 0 {
+		if _, ok := payload["error_id"]; !ok {
+			payload["error_id"] = errorID
+		}
+	}
+	_ = json.NewEncoder(w).Encode(payload)
 }
 
 func writeFriendlyAPIErrorResponse(w http.ResponseWriter, status int, requestID string, empresaID int64, errorID int64) {

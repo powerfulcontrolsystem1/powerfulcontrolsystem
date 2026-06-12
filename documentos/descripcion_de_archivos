@@ -1,3 +1,8 @@
+2026-06-11 - Configuracion del rol cajero
+- `web/administrar_empresa/configuracion_rol_cajero.html`: pagina empresarial dedicada al rol cajero; centraliza perfil personalizado por empresa, cobro/caja, carrito POS, botones visibles, medios de pago, estaciones/caja fisica y lista informativa de usuarios cajeros.
+- `web/administrar_empresa/configuracion_menu.html`: agrega el acceso `Rol cajero` dentro de Configuracion > Ventas y cobro y alias `open=cajero|rol_cajero|configuracion_rol_cajero`.
+- `web/js/administrar_empresa.js`: registra `linkConfiguracionRolCajero` en el catalogo visual y de permisos del menu empresarial bajo `seguridad:U`.
+
 2026-06-11 - Lectura administrativa IA por empresa
 - `backend/handlers/chat_con_inteligencia_artificial_admin_queries.go`: agrega consultas administrativas directas y seguras para el chat IA, iniciando por resumen real de usuarios desde `users` filtrado por `empresa_id`; no acepta SQL libre ni expone secretos.
 - `backend/handlers/chat_con_inteligencia_artificial_admin_queries_test.go`: cubre deteccion de preguntas de usuarios, roles autorizados y formato del resumen administrativo.

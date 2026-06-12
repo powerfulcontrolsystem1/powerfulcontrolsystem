@@ -66,12 +66,18 @@ func EnsureRolesPermisosSchema(dbConn *sql.DB) error {
 
 // GetRolDeUsuarioByID retorna un rol por id.
 func GetRolDeUsuarioByID(dbConn *sql.DB, id int64) (*RolDeUsuario, error) {
+	if err := EnsureRolesDeUsuarioSchema(dbConn); err != nil {
+		return nil, err
+	}
 	const q = `SELECT
 		r.id,
+		COALESCE(r.empresa_id, 0),
 		r.tipo_empresa_id,
 		COALESCE(t.nombre, ''),
 		COALESCE(r.nombre, ''),
 		COALESCE(r.descripcion, ''),
+		COALESCE(r.origen, 'global'),
+		COALESCE(r.rol_base_id, 0),
 		COALESCE(r.fecha_creacion, ''),
 		COALESCE(r.fecha_actualizacion, ''),
 		COALESCE(r.usuario_creador, ''),
@@ -83,12 +89,15 @@ func GetRolDeUsuarioByID(dbConn *sql.DB, id int64) (*RolDeUsuario, error) {
 	LIMIT 1`
 
 	item := &RolDeUsuario{}
-	err := dbConn.QueryRow(q, id).Scan(
+	err := queryRowSQLCompat(dbConn, q, id).Scan(
 		&item.ID,
+		&item.EmpresaID,
 		&item.TipoEmpresaID,
 		&item.TipoEmpresaNombre,
 		&item.Nombre,
 		&item.Descripcion,
+		&item.Origen,
+		&item.RolBaseID,
 		&item.FechaCreacion,
 		&item.FechaActualizacion,
 		&item.UsuarioCreador,
@@ -98,6 +107,7 @@ func GetRolDeUsuarioByID(dbConn *sql.DB, id int64) (*RolDeUsuario, error) {
 	if err != nil {
 		return nil, err
 	}
+	item.Personalizado = item.EmpresaID > 0 || strings.EqualFold(strings.TrimSpace(item.Origen), "empresa")
 	return item, nil
 }
 
@@ -106,12 +116,13 @@ func ResolveRolDeUsuarioIDByNombre(dbConn *sql.DB, nombreRol string) (int64, err
 	const q = `SELECT id
 	FROM roles_de_usuario
 	WHERE lower(trim(nombre)) = lower(trim(?))
+		AND COALESCE(empresa_id, 0) = 0
 		AND COALESCE(estado, 'activo') = 'activo'
 	ORDER BY id DESC
 	LIMIT 1`
 
 	var id int64
-	if err := dbConn.QueryRow(q, nombreRol).Scan(&id); err != nil {
+	if err := queryRowSQLCompat(dbConn, q, nombreRol).Scan(&id); err != nil {
 		return 0, err
 	}
 	return id, nil

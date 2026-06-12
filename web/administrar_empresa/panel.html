@@ -2109,18 +2109,34 @@
 
       function loadEmpresaBuzonUsuarios() {
         if (!empresaId || !empresaBuzonRecipientEl) return Promise.resolve();
+        empresaBuzonRecipientEl.innerHTML = '<option value="">Cargando usuarios...</option>';
         return fetchJSON(empresaBuzonURL("usuarios"))
           .then(function (data) {
             empresaBuzonRecipientEl.innerHTML = '<option value="">Seleccionar usuario</option>';
-            (data.usuarios || []).forEach(function (user) {
+            var users = Array.isArray(data.usuarios) ? data.usuarios : [];
+            if (!users.length) {
+              var emptyOpt = document.createElement("option");
+              emptyOpt.value = "";
+              emptyOpt.textContent = "No hay usuarios activos en esta empresa";
+              empresaBuzonRecipientEl.appendChild(emptyOpt);
+              return;
+            }
+            users.forEach(function (user) {
               var opt = document.createElement("option");
-              opt.value = String(user.id || user.email || "");
-              opt.textContent = [user.nombre || user.email || ("Usuario " + user.id), user.rol || ""].filter(Boolean).join(" - ");
+              var nombre = user.nombre || user.email || ("Usuario " + user.id);
+              var rol = user.rol || (user.tipo === "admin" ? "administrador" : "usuario");
+              var email = user.email || "";
+              opt.value = String(user.value || user.ref || user.id || user.email || "");
+              opt.textContent = [nombre, rol, email].filter(Boolean).join(" | ");
               opt.dataset.email = user.email || "";
+              opt.dataset.tipo = user.tipo || "";
+              opt.title = opt.textContent;
               empresaBuzonRecipientEl.appendChild(opt);
             });
           })
-          .catch(function () {});
+          .catch(function () {
+            empresaBuzonRecipientEl.innerHTML = '<option value="">No se pudieron cargar usuarios</option>';
+          });
       }
 
       function syncEmpresaTaskMode() {

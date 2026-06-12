@@ -102,14 +102,11 @@ func EmpresaBuzonHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 				}
 				writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "chat": chat})
 			case "usuarios":
-				users, err := dbpkg.GetEmpresaUsuarios(dbEmp, empresaID, false)
+				items, err := listEmpresaBuzonRecipients(dbEmp, dbSuper, empresaID, actor)
 				if err != nil {
+					log.Printf("[empresa_buzon] usuarios empresa_id=%d error: %v", empresaID, err)
 					writeJSON(w, http.StatusInternalServerError, map[string]interface{}{"ok": false, "error": "No se pudieron cargar usuarios"})
 					return
-				}
-				items := make([]map[string]interface{}, 0, len(users))
-				for _, user := range users {
-					items = append(items, map[string]interface{}{"id": user.ID, "email": user.Email, "nombre": user.Nombre, "rol": user.RolNombre})
 				}
 				writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "usuarios": items})
 			case "storage":
@@ -143,7 +140,7 @@ func EmpresaBuzonHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 				}, "mensaje creado en chat empresarial")
 				writeJSON(w, http.StatusCreated, map[string]interface{}{"ok": true, "mensaje": item})
 			case "mensaje":
-				msg, err := createEmpresaBuzonManualMessageFromJSON(r, dbEmp, empresaID, actor)
+				msg, err := createEmpresaBuzonManualMessageFromJSON(r, dbEmp, dbSuper, empresaID, actor)
 				if err != nil {
 					http.Error(w, err.Error(), http.StatusBadRequest)
 					return
@@ -290,7 +287,7 @@ func resolveEmpresaBuzonRequestActor(w http.ResponseWriter, r *http.Request, dbE
 	return actor, true
 }
 
-func createEmpresaBuzonManualMessageFromJSON(r *http.Request, dbEmp *sql.DB, empresaID int64, actor dbpkg.EmpresaBuzonActor) (dbpkg.EmpresaBuzonMensaje, error) {
+func createEmpresaBuzonManualMessageFromJSON(r *http.Request, dbEmp, dbSuper *sql.DB, empresaID int64, actor dbpkg.EmpresaBuzonActor) (dbpkg.EmpresaBuzonMensaje, error) {
 	var payload struct {
 		DestinatarioRef   string `json:"destinatario_ref"`
 		DestinatarioEmail string `json:"destinatario_email"`
@@ -304,7 +301,7 @@ func createEmpresaBuzonManualMessageFromJSON(r *http.Request, dbEmp *sql.DB, emp
 	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
 		return dbpkg.EmpresaBuzonMensaje{}, fmt.Errorf("payload invalido")
 	}
-	recipient, err := resolveEmpresaBuzonRecipient(dbEmp, empresaID, payload.DestinatarioRef, payload.DestinatarioEmail)
+	recipient, err := resolveEmpresaBuzonRecipient(dbEmp, dbSuper, empresaID, payload.DestinatarioRef, payload.DestinatarioEmail)
 	if err != nil {
 		return dbpkg.EmpresaBuzonMensaje{}, err
 	}
@@ -385,7 +382,7 @@ func handleEmpresaBuzonAttachmentUpload(w http.ResponseWriter, r *http.Request, 
 	}
 
 	mensajeID := parsePositiveInt64(strings.TrimSpace(r.FormValue("mensaje_id")))
-	recipient, err := resolveEmpresaBuzonRecipient(dbEmp, empresaID, r.FormValue("destinatario_ref"), r.FormValue("destinatario_email"))
+	recipient, err := resolveEmpresaBuzonRecipient(dbEmp, dbSuper, empresaID, r.FormValue("destinatario_ref"), r.FormValue("destinatario_email"))
 	if err != nil && mensajeID <= 0 {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -497,18 +494,153 @@ func empresaBuzonActorCanAttach(actor dbpkg.EmpresaBuzonActor, msg dbpkg.Empresa
 	return false
 }
 
-func resolveEmpresaBuzonRecipient(dbEmp *sql.DB, empresaID int64, ref, email string) (dbpkg.EmpresaBuzonActor, error) {
+func listEmpresaBuzonRecipients(dbEmp, dbSuper *sql.DB, empresaID int64, actor dbpkg.EmpresaBuzonActor) ([]map[string]interface{}, error) {
+	out := make([]map[string]interface{}, 0)
+	seen := map[string]bool{}
+	add := func(tipo, ref, nombre, rol, email string, id int64) {
+		tipo = strings.ToLower(strings.TrimSpace(tipo))
+		ref = strings.TrimSpace(ref)
+		email = strings.ToLower(strings.TrimSpace(email))
+		nombre = strings.TrimSpace(nombre)
+		rol = strings.TrimSpace(rol)
+		if tipo == "" || ref == "" {
+			return
+		}
+		key := tipo + ":" + strings.ToLower(ref)
+		if seen[key] {
+			return
+		}
+		seen[key] = true
+		value := tipo + ":" + ref
+		if tipo == "usuario" && id > 0 {
+			value = "usuario:" + strconv.FormatInt(id, 10)
+		}
+		if nombre == "" {
+			nombre = firstNonEmptyString(email, ref)
+		}
+		if rol == "" {
+			rol = "usuario"
+		}
+		out = append(out, map[string]interface{}{
+			"id":     id,
+			"tipo":   tipo,
+			"ref":    ref,
+			"value":  value,
+			"email":  email,
+			"nombre": nombre,
+			"rol":    rol,
+		})
+	}
+
+	users, err := dbpkg.GetEmpresaUsuarios(dbEmp, empresaID, false)
+	if err != nil {
+		return nil, err
+	}
+	for _, user := range users {
+		add("usuario", strconv.FormatInt(user.ID, 10), user.Nombre, user.RolNombre, user.Email, user.ID)
+	}
+
+	if dbEmp != nil {
+		var ownerEmail string
+		if err := dbEmp.QueryRow(`SELECT COALESCE(usuario_creador, '') FROM empresas WHERE id = ? LIMIT 1`, empresaID).Scan(&ownerEmail); err != nil && err != sql.ErrNoRows {
+			return nil, err
+		}
+		ownerEmail = strings.ToLower(strings.TrimSpace(ownerEmail))
+		if ownerEmail != "" {
+			name := ownerEmail
+			role := "administrador"
+			if dbSuper != nil {
+				if admin, err := dbpkg.GetAdminByEmailFull(dbSuper, ownerEmail); err == nil && admin != nil {
+					name = firstNonEmptyString(admin.Name, ownerEmail)
+					role = firstNonEmptyString(admin.Role, role)
+				}
+			}
+			add("admin", ownerEmail, name, role, ownerEmail, 0)
+		}
+	}
+
+	if dbSuper != nil {
+		accesos, err := dbpkg.ListAdminEmpresaCompartidaAccesosByEmpresa(dbSuper, empresaID)
+		if err != nil {
+			return nil, err
+		}
+		for _, acceso := range accesos {
+			if !strings.EqualFold(strings.TrimSpace(acceso.Estado), "activo") || strings.TrimSpace(acceso.FechaRevocada) != "" {
+				continue
+			}
+			email := strings.ToLower(strings.TrimSpace(acceso.AdminEmail))
+			role := firstNonEmptyString(acceso.NivelAcceso, "administrador compartido")
+			name := firstNonEmptyString(acceso.AdminName, email)
+			if admin, err := dbpkg.GetAdminByEmailFull(dbSuper, email); err == nil && admin != nil {
+				name = firstNonEmptyString(admin.Name, name)
+				role = firstNonEmptyString(admin.Role, role)
+			}
+			add("admin", email, name, role, email, 0)
+		}
+	}
+
+	if actor.Ref != "" {
+		add(actor.Tipo, actor.Ref, actor.Nombre, actor.Rol, actor.Email, actor.UsuarioID)
+	}
+	return out, nil
+}
+
+func resolveEmpresaBuzonRecipient(dbEmp, dbSuper *sql.DB, empresaID int64, ref, email string) (dbpkg.EmpresaBuzonActor, error) {
 	ref = strings.TrimSpace(ref)
 	email = strings.ToLower(strings.TrimSpace(email))
 	lookup := firstNonEmptyString(ref, email)
 	if lookup == "" {
 		return dbpkg.EmpresaBuzonActor{}, fmt.Errorf("destinatario es obligatorio")
 	}
+
+	tipoPrefix := ""
+	if parts := strings.SplitN(lookup, ":", 2); len(parts) == 2 {
+		tipoPrefix = strings.ToLower(strings.TrimSpace(parts[0]))
+		lookup = strings.TrimSpace(parts[1])
+	}
+	if tipoPrefix == "usuario" || tipoPrefix == "" {
+		if user, err := dbpkg.ResolveEmpresaUsuarioByReference(dbEmp, empresaID, lookup); err == nil && user != nil {
+			return dbpkg.EmpresaBuzonActor{Tipo: "usuario", Ref: strconv.FormatInt(user.ID, 10), Email: strings.ToLower(strings.TrimSpace(user.Email)), Nombre: user.Nombre, Rol: user.RolNombre, UsuarioID: user.ID}, nil
+		}
+	}
+	if tipoPrefix == "usuario" {
+		return dbpkg.EmpresaBuzonActor{}, fmt.Errorf("destinatario no encontrado en la empresa")
+	}
+	if tipoPrefix == "admin" || strings.Contains(lookup, "@") {
+		adminEmail := strings.ToLower(strings.TrimSpace(lookup))
+		if adminEmail == "" || !strings.Contains(adminEmail, "@") {
+			return dbpkg.EmpresaBuzonActor{}, fmt.Errorf("destinatario admin invalido")
+		}
+		allowed := false
+		if dbSuper != nil {
+			canAccess, err := dbpkg.CanAdminAccessEmpresaIA(dbEmp, dbSuper, adminEmail, empresaID)
+			if err != nil {
+				return dbpkg.EmpresaBuzonActor{}, err
+			}
+			allowed = canAccess
+		}
+		if !allowed && dbEmp != nil {
+			var ownerEmail string
+			if err := dbEmp.QueryRow(`SELECT COALESCE(usuario_creador, '') FROM empresas WHERE id = ? LIMIT 1`, empresaID).Scan(&ownerEmail); err != nil && err != sql.ErrNoRows {
+				return dbpkg.EmpresaBuzonActor{}, err
+			}
+			allowed = strings.EqualFold(strings.TrimSpace(ownerEmail), adminEmail)
+		}
+		if !allowed {
+			return dbpkg.EmpresaBuzonActor{}, fmt.Errorf("destinatario no pertenece al alcance de la empresa")
+		}
+		name := adminEmail
+		role := "administrador"
+		if dbSuper != nil {
+			if admin, err := dbpkg.GetAdminByEmailFull(dbSuper, adminEmail); err == nil && admin != nil {
+				name = firstNonEmptyString(admin.Name, adminEmail)
+				role = firstNonEmptyString(admin.Role, role)
+			}
+		}
+		return dbpkg.EmpresaBuzonActor{Tipo: "admin", Ref: adminEmail, Email: adminEmail, Nombre: name, Rol: role}, nil
+	}
 	if user, err := dbpkg.ResolveEmpresaUsuarioByReference(dbEmp, empresaID, lookup); err == nil && user != nil {
 		return dbpkg.EmpresaBuzonActor{Tipo: "usuario", Ref: strconv.FormatInt(user.ID, 10), Email: strings.ToLower(strings.TrimSpace(user.Email)), Nombre: user.Nombre, Rol: user.RolNombre, UsuarioID: user.ID}, nil
-	}
-	if strings.Contains(lookup, "@") {
-		return dbpkg.EmpresaBuzonActor{Tipo: "admin", Ref: strings.ToLower(lookup), Email: strings.ToLower(lookup), Nombre: lookup}, nil
 	}
 	return dbpkg.EmpresaBuzonActor{}, fmt.Errorf("destinatario no encontrado en la empresa")
 }

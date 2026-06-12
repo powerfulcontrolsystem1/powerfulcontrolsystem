@@ -1,3 +1,52 @@
+## [2026-06-11] Nomina sin encabezado interno repetido
+- [UX] `web/administrar_empresa/nomina_sueldos.html` elimina los bloques superiores `Gestion laboral / Nomina y costo empresa` y `Ciclo laboral`.
+- [Operacion] Las subpaginas internas de nomina ahora empiezan directamente en la tarjeta operativa correspondiente.
+- [Alcance] No cambia endpoints, permisos, empleados, calculos, pagos, PILA, DIAN ni persistencia por `empresa_id`.
+- [QA] Busqueda textual y validacion visual Playwright local confirman que el encabezado repetido ya no aparece en el contenedor ni en el iframe.
+
+## [2026-06-11] Nomina sin tarjeta superior repetida
+- [UX] `web/administrar_empresa/nomina_menu.html` elimina la tarjeta superior `Modulo de nomina` y sus metricas Base, Calculo, Pago y DIAN.
+- [Navegacion] El submenu lateral de nomina se conserva y el iframe de contenido inicia desde arriba del area principal.
+- [Alcance] No cambia endpoints, permisos, calculos, nomina electronica ni datos por `empresa_id`.
+- [QA] Validacion visual Playwright local confirma ausencia de la tarjeta y alineacion superior del iframe.
+
+## [2026-06-11] Configuracion del rol cajero
+- [Configuracion] Nueva pagina `web/administrar_empresa/configuracion_rol_cajero.html` en Configuracion > Ventas y cobro > Rol cajero.
+- [Operacion] Centraliza perfil personalizado del cajero, cobro/caja, carrito POS, botones visibles, medios de pago, estaciones/caja fisica y usuarios cajeros.
+- [Integracion] Reutiliza `/api/empresa/configuracion_operativa?action=rol`, `/api/empresa/estacion_prefs` y `/api/empresa/roles_de_usuario`; no agrega tablas ni endpoints.
+- [Seguridad] Todos los cambios se guardan por `empresa_id`; el rol global `cajero` no se modifica, solo se crea/actualiza un perfil personalizado de la empresa.
+- [QA] Sintaxis del script embebido validada con Node; validacion visual Playwright con empresa PCS mockeada comprobo carga y guardado contra las tres APIs.
+
+## [2026-06-11] Index tarjetas principales restauradas
+- [Portal] `web/index.html` vuelve a mostrar las tarjetas principales en el orden base: Punto de venta, Motel, Restaurante, Control por sensor, Hotel y Clientes/CRM.
+- [Imagenes] Las primeras tarjetas recuperan las imagenes anteriores del proyecto (`sistema punto de venta`, `sistema motel`, `sistema restaurante`, `sistema sensor`) para evitar cruces visuales como usar la foto de Motel en otra posicion incorrecta.
+- [Frontend] `normalizeCards` ya no fuerza imagen secundaria por indice cuando la tarjeta trae una imagen propia; busca fallback por modulo/titulo y solo usa fallback cuando falta dato.
+- [QA] Validacion visual Playwright local: primeras seis tarjetas con orden e imagen esperados, sin errores de pagina.
+
+## [2026-06-11] Login usuario con errores especificos seguros
+- [Backend] `JSONErrorMiddleware` permite que un endpoint marque errores 500 JSON como publicos y seguros; los errores internos no marcados siguen saliendo con mensaje protegido, `request_id` y `error_id`.
+- [Usuarios operativos] El primer ingreso por invitacion devuelve mensajes accionables para contrato, invitacion, actualizacion de contrasena y sesion, sin exponer SQL, DSN ni secretos.
+- [DB] `CreateEmpresaUsuario` reintenta la creacion tras reparar indices unicos heredados de `users.email`, manteniendo la unicidad efectiva por `lower(email), empresa_id`; el correo de administrador separado no bloquea el usuario operativo.
+- [Frontend] `login_usuario.js` muestra `detalle` y `request_id` cuando el backend los envia.
+- [QA] `go test ./utils -run JSONErrorMiddleware -count=1`; `go test ./db -run EmpresaUsuario -count=1`; `go test ./handlers -run EmpresaUsuario -count=1`; `node --check web/js/login_usuario.js`; validacion visual Playwright del mensaje especifico.
+
+## [2026-06-11] Registro usuario operativo sin version visible
+- [UX] `login_usuario.html` ya no muestra la etiqueta tecnica `Version` en la tarjeta de contrato durante el registro de usuarios operativos.
+- [Configuracion] El titulo y contenido del contrato siguen editables desde Super Administrador > Contrato; el numero de version queda reservado para historial interno y aceptacion backend.
+- [QA] `node --check web/js/login_usuario.js`.
+
+## [2026-06-11] Buzon usuarios visibles
+- [Backend] `/api/empresa/buzon?action=usuarios` devuelve un directorio deduplicado por empresa con usuarios activos, administrador propietario, administradores compartidos y actor actual.
+- [Seguridad] El envio a destinatarios admin valida alcance real sobre `empresa_id`; ya no basta con escribir un correo arbitrario.
+- [Frontend] `panel.html` muestra en el selector `Nombre | Rol | email` y comunica estados de carga o error.
+- [QA] `go test ./handlers -run EmpresaBuzon -count=1`; `go test ./db -run EmpresaBuzon -count=1`; `go test ./... -run "^$" -count=1`; `git diff --check`.
+
+## [2026-06-11] Roles personalizados por empresa
+- [Backend] `roles_de_usuario` agrega `empresa_id`, `origen` y `rol_base_id`; el catalogo empresarial combina roles globales con roles propios filtrados por empresa.
+- [Seguridad] La asignacion de usuarios valida que un rol personalizado pertenezca a la misma empresa; el snapshot de permisos usa el rol base global para autorizar modulos y paginas.
+- [Frontend] `administrar_usuarios.html` agrega una tarjeta para crear, editar y activar/desactivar roles personalizados y permite asignarlos inmediatamente a usuarios.
+- [QA] `go test ./db -run "Test.*Rol|Test.*Permiso" -count=1`; `go test ./handlers -run "RolesDeUsuario|EmpresaRoles|PermissionPagesCatalog|Permission" -count=1`; parse JS de la pagina y validacion visual Playwright con Chrome local.
+
 ## [2026-06-11] Tarjeta Creditos y cartera
 - [Finanzas] `finanzas_menu.html` agrega una tarjeta de acceso rapido que abre `creditos_menu.html` con el `empresa_id` activo.
 - [Permisos] `linkCreditosTarjeta` queda registrado en el catalogo frontend/backend bajo `finanzas:C`; las subpaginas de panel, nuevo credito, cartera, morosidad, limites, abonos, aprobaciones y estado de cuenta quedan agrupadas en el centro financiero universal.

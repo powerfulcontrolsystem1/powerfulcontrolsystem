@@ -3907,6 +3907,9 @@ func getEmpresaPermissionSnapshot(dbEmp, dbSuper *sql.DB, adminEmail string, emp
 	}
 	dbpkg.PerfLogf("[perf][authz] snapshot empresa=%d email=%s step=admin dur=%s", empresaID, strings.ToLower(strings.TrimSpace(adminEmail)), time.Since(stepStarted))
 	role := normalizePermissionRole(admin.Role)
+	if assignedRole, ok := resolveEmpresaAssignedPermissionRole(dbEmp, dbSuper, empresaID, adminEmail, role); ok {
+		role = assignedRole
+	}
 
 	var (
 		canAccess              bool
@@ -4020,6 +4023,36 @@ func getEmpresaPermissionSnapshot(dbEmp, dbSuper *sql.DB, adminEmail string, emp
 	empresaPermissionCacheMu.Unlock()
 	snapshotResult = snapshot
 	return snapshot, nil
+}
+
+func resolveEmpresaAssignedPermissionRole(dbEmp, dbSuper *sql.DB, empresaID int64, adminEmail, fallbackRole string) (string, bool) {
+	if dbEmp == nil || dbSuper == nil || empresaID <= 0 || strings.TrimSpace(adminEmail) == "" {
+		return "", false
+	}
+	usuario, err := dbpkg.GetEmpresaUsuarioByEmailScoped(dbEmp, adminEmail, empresaID)
+	if err != nil || usuario == nil || usuario.RolUsuarioID <= 0 {
+		return "", false
+	}
+	rol, err := dbpkg.GetRolDeUsuarioByIDEmpresaScope(dbSuper, empresaID, usuario.RolUsuarioID)
+	if err != nil || rol == nil {
+		return "", false
+	}
+	if strings.EqualFold(strings.TrimSpace(rol.Estado), "inactivo") {
+		return "", false
+	}
+	if rol.EmpresaID > 0 && rol.RolBaseID > 0 {
+		base, err := dbpkg.GetRolDeUsuarioByIDEmpresaScope(dbSuper, empresaID, rol.RolBaseID)
+		if err == nil && base != nil && strings.TrimSpace(base.Nombre) != "" && !strings.EqualFold(strings.TrimSpace(base.Estado), "inactivo") {
+			if normalized := normalizePermissionRole(base.Nombre); normalized != "" && normalized != "sin_rol" {
+				return normalized, true
+			}
+		}
+	}
+	if normalized := normalizePermissionRole(rol.Nombre); normalized != "" && normalized != "sin_rol" {
+		return normalized, true
+	}
+	fallback := normalizePermissionRole(fallbackRole)
+	return fallback, fallback != "" && fallback != "sin_rol"
 }
 
 func resolveEffectiveRoleByLicencia(role string, licenciaPolicy *dbpkg.LicenciaPermisoPolicy) string {

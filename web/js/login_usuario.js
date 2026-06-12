@@ -283,7 +283,7 @@
     state.contract = contract || null;
     if (!contract) {
       contractTitle.textContent = "Contrato no disponible";
-      contractVersion.textContent = "Versión --";
+      if (contractVersion) contractVersion.textContent = "";
       contractSummary.textContent = "No fue posible cargar el contrato vigente. Intenta recargar esta página.";
       contractNote.textContent = "";
       if (contractDialogTitle) contractDialogTitle.textContent = "Contrato no disponible";
@@ -294,7 +294,7 @@
     }
 
     contractTitle.textContent = contract.titulo || "Contrato vigente";
-    contractVersion.textContent = "Versión " + String(contract.version || "--");
+    if (contractVersion) contractVersion.textContent = "";
     contractSummary.textContent = contract.resumen || "Lee el contrato antes de continuar con el acceso.";
     contractNote.textContent = contract.nota_aceptacion || "";
     if (contractLink) {
@@ -400,9 +400,17 @@
   function normalizeErrorMessage(payload, fallback) {
     if (!payload) return fallback;
     if (typeof payload === "string") return payload;
-    if (payload.message) return String(payload.message);
-    if (payload.error) return String(payload.error);
-    return fallback;
+    var message = payload.message || payload.error || fallback;
+    var out = String(message || fallback || "").trim();
+    var detail = String(payload.detalle || payload.detail || "").trim();
+    if (detail && out.indexOf(detail) < 0) {
+      out += " " + detail;
+    }
+    var requestID = String(payload.request_id || payload.requestId || "").trim();
+    if (requestID) {
+      out += " Ref: " + requestID;
+    }
+    return out || fallback;
   }
 
   function persistThemePreference(theme) {

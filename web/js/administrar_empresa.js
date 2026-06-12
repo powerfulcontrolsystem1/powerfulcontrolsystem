@@ -168,6 +168,7 @@ try {
     document.getElementById("linkConfiguracionIdentidadVisual"),
     document.getElementById("linkConfiguracionMenuVisual"),
     document.getElementById("linkConfiguracionCobroOperativo"),
+    document.getElementById("linkConfiguracionRolCajero"),
     document.getElementById("linkConfiguracionReporteCorte"),
     document.getElementById("linkConfiguracionBackupsPasarelas"),
     document.getElementById("linkConfiguracionPasarelasPago"),
@@ -381,6 +382,7 @@ try {
     linkVentaPublica: { module: permModuleVentaPublica, action: permActionCreate },
     linkEmailCorporativo: { module: permModuleSeguridad, action: permActionRead },
     linkConfiguracionCarritoEmpresa: { module: permModuleVentaPublica, action: permActionApprove },
+    linkConfiguracionRolCajero: { module: permModuleSeguridad, action: permActionUpdate },
 
     linkGimnasio: { module: permModuleGimnasio, action: permActionCreate },
     linkGimnasioDashboard: { module: permModuleGimnasio, action: permActionRead },
@@ -495,6 +497,7 @@ try {
     linkConfiguracionIdentidadVisual: { module: permModuleSeguridad, action: permActionUpdate },
     linkConfiguracionMenuVisual: { module: permModuleSeguridad, action: permActionUpdate },
     linkConfiguracionCobroOperativo: { module: permModuleSeguridad, action: permActionUpdate },
+    linkConfiguracionRolCajero: { module: permModuleSeguridad, action: permActionUpdate },
     linkConfiguracionReporteCorte: { module: permModuleSeguridad, action: permActionUpdate },
     linkConfiguracionBackupsPasarelas: { module: permModuleSeguridad, action: permActionUpdate },
     linkConfiguracionPasarelasPago: { module: permModuleSeguridad, action: permActionUpdate },

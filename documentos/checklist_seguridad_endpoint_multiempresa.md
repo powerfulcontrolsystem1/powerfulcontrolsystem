@@ -86,6 +86,9 @@ usuario pueda enviar o alterar `empresa_id`.
   privadas ni datos de otra empresa.
 - [ ] Las respuestas incluyen estado claro para frontend sin filtrar informacion
   sensible.
+- [ ] Si un endpoint necesita mostrar un error 5xx especifico al usuario, debe
+  marcarlo explicitamente como publico seguro; los 5xx no marcados conservan el
+  mensaje generico con `request_id`/`error_id`.
 - [ ] Los fallos de proveedor externo no dejan transacciones parciales sin
   estado auditable.
 - [ ] Los endpoints idempotentes documentan su clave de idempotencia o criterio

@@ -277,6 +277,33 @@ func dropLegacyEmpresaUsuariosEmailUniqueIndexes(dbConn *sql.DB) error {
 }
 
 // CreateEmpresaUsuario crea un usuario de empresa en estado pendiente de confirmación de correo.
+func repairEmpresaUsuariosScopedEmailUniqueness(dbConn *sql.DB) error {
+	if dbConn == nil || !isPostgresDialect() {
+		return nil
+	}
+	if _, err := execSQLCompat(dbConn, `ALTER TABLE users DROP CONSTRAINT IF EXISTS users_email_key`); err != nil {
+		return err
+	}
+	if err := dropLegacyEmpresaUsuariosEmailUniqueConstraints(dbConn); err != nil {
+		return err
+	}
+	if err := dropLegacyEmpresaUsuariosEmailUniqueIndexes(dbConn); err != nil {
+		return err
+	}
+	_, err := execSQLCompat(dbConn, `CREATE UNIQUE INDEX IF NOT EXISTS ux_users_lower_email_empresa ON users ((lower(email)), empresa_id)`)
+	return err
+}
+
+func isEmpresaUsuarioUniqueError(err error) bool {
+	if err == nil {
+		return false
+	}
+	msg := strings.ToLower(err.Error())
+	return strings.Contains(msg, "unique") ||
+		strings.Contains(msg, "duplicate key") ||
+		strings.Contains(msg, "duplicado")
+}
+
 func CreateEmpresaUsuario(
 	dbConn *sql.DB,
 	empresaID int64,
@@ -288,35 +315,44 @@ func CreateEmpresaUsuario(
 	if err := EnsureEmpresaUsuariosAuthSchema(dbConn); err != nil {
 		return 0, err
 	}
-	id, err := insertSQLCompat(dbConn, `INSERT INTO users (
-		email,
-		name,
-		role,
-		empresa_id,
-		documento_identidad,
-		rol_usuario_id,
-		control_aseo_estaciones,
-		email_confirmado,
-		email_confirm_token,
-		email_confirm_expira,
-		usuario_creador,
-		estado,
-		observaciones,
-		fecha_creacion,
-		fecha_actualizacion
-	) VALUES (?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?, 'inactivo', ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
-		email,
-		nombre,
-		rolNombre,
-		empresaID,
-		documentoIdentidad,
-		rolUsuarioID,
-		normalizeEmpresaUsuarioBinaryFlag(controlAseoEstaciones),
-		confirmToken,
-		confirmExpira,
-		usuarioCreador,
-		observaciones,
-	)
+	insertUser := func() (int64, error) {
+		return insertSQLCompat(dbConn, `INSERT INTO users (
+			email,
+			name,
+			role,
+			empresa_id,
+			documento_identidad,
+			rol_usuario_id,
+			control_aseo_estaciones,
+			email_confirmado,
+			email_confirm_token,
+			email_confirm_expira,
+			usuario_creador,
+			estado,
+			observaciones,
+			fecha_creacion,
+			fecha_actualizacion
+		) VALUES (?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?, 'inactivo', ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
+			email,
+			nombre,
+			rolNombre,
+			empresaID,
+			documentoIdentidad,
+			rolUsuarioID,
+			normalizeEmpresaUsuarioBinaryFlag(controlAseoEstaciones),
+			confirmToken,
+			confirmExpira,
+			usuarioCreador,
+			observaciones,
+		)
+	}
+	id, err := insertUser()
+	if err != nil && isPostgresDialect() && isEmpresaUsuarioUniqueError(err) {
+		if repairErr := repairEmpresaUsuariosScopedEmailUniqueness(dbConn); repairErr != nil {
+			return 0, fmt.Errorf("create empresa usuario: %w; no se pudo reparar unicidad por empresa: %v", err, repairErr)
+		}
+		id, err = insertUser()
+	}
 	if err != nil {
 		return 0, err
 	}
@@ -859,7 +895,7 @@ func CompleteEmpresaUsuarioInvitationPassword(dbConn *sql.DB, empresaID, id int6
 	if err := EnsureEmpresaUsuariosAuthSchema(dbConn); err != nil {
 		return err
 	}
-	_, err := dbConn.Exec(`UPDATE users
+	res, err := dbConn.Exec(`UPDATE users
 		SET password_hash = ?,
 			password_salt = ?,
 			password_set = 1,
@@ -877,7 +913,13 @@ func CompleteEmpresaUsuarioInvitationPassword(dbConn *sql.DB, empresaID, id int6
 			estado = 'activo',
 			fecha_actualizacion = CURRENT_TIMESTAMP
 		WHERE id = ? AND empresa_id = ?`, passwordHash, passwordSalt, id, empresaID)
-	return err
+	if err != nil {
+		return err
+	}
+	if affected, err := res.RowsAffected(); err == nil && affected == 0 {
+		return sql.ErrNoRows
+	}
+	return nil
 }
 
 // CompleteEmpresaUsuarioInvitationGoogle consume la invitacion cuando el usuario

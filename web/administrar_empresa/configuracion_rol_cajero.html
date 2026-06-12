@@ -1,0 +1,631 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Configuracion del rol cajero</title>
+  <link rel="stylesheet" href="/estilos.css">
+  <script src="/js/empresa_submenu_context.js"></script>
+  <style>
+    .cashier-config-page .cashier-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px}
+    .cashier-config-page .cashier-card{border:1px solid var(--border);border-radius:8px;background:var(--card);padding:14px;color:var(--text)}
+    .cashier-config-page .cashier-card h2{margin:0 0 6px;font-size:1rem}
+    .cashier-config-page .cashier-check{display:flex;align-items:flex-start;gap:9px;margin:8px 0;color:var(--text);line-height:1.35}
+    .cashier-config-page .cashier-check input{margin-top:2px;min-width:18px;min-height:18px}
+    .cashier-config-page .cashier-summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin:12px 0}
+    .cashier-config-page .cashier-summary-item{border:1px solid var(--border);border-radius:8px;background:var(--surface-soft);padding:10px}
+    .cashier-config-page .cashier-summary-item span{display:block;color:var(--muted);font-size:.78rem;font-weight:700;text-transform:uppercase}
+    .cashier-config-page .cashier-summary-item strong{display:block;margin-top:4px;font-size:1rem;color:var(--text)}
+    .cashier-config-page .cashier-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+    .cashier-config-page .cashier-status{margin-top:10px;min-height:20px}
+    .cashier-config-page .cashier-status.is-error{color:var(--danger,#dc2626);font-weight:700}
+    .cashier-config-page .cashier-status.is-ok{color:var(--success,#15803d);font-weight:700}
+    .cashier-config-page .cashier-mini-list{display:grid;gap:8px;margin-top:8px}
+    .cashier-config-page .cashier-mini-row{border:1px solid var(--border);border-radius:8px;background:var(--surface-soft);padding:9px 10px}
+    .cashier-config-page .cashier-mini-row strong{display:block}
+    .cashier-config-page .cashier-mini-row span{display:block;color:var(--muted);font-size:.86rem;margin-top:2px}
+  </style>
+</head>
+<body class="empresa-subpage cashier-config-page">
+  <div class="container empresa-module">
+    <section class="card empresa-section">
+      <div class="empresa-section-header">
+        <div>
+          <h1 style="margin:0;">Rol cajero</h1>
+          <p id="empresaInfo" class="form-help" style="margin:6px 0 0;">Empresa: cargando...</p>
+        </div>
+        <button id="btnGuardarTodo" type="button" class="btn">Guardar configuracion del cajero</button>
+      </div>
+      <p class="form-help">Centraliza los permisos operativos y checks frecuentes del cajero. La configuracion se guarda por empresa y respeta la separacion de datos por empresa_id.</p>
+      <div class="cashier-summary" aria-label="Resumen del rol cajero">
+        <div class="cashier-summary-item"><span>Rol base</span><strong id="cashierBaseRoleLabel">Cajero</strong></div>
+        <div class="cashier-summary-item"><span>Usuarios cajeros</span><strong id="cashierUsersCount">0</strong></div>
+        <div class="cashier-summary-item"><span>Pago mixto</span><strong id="cashierMixedPaymentStatus">Cargando</strong></div>
+        <div class="cashier-summary-item"><span>Control por estaciones</span><strong id="cashierStationAccessStatus">Cargando</strong></div>
+      </div>
+      <div id="pageMsg" class="cashier-status" role="status" aria-live="polite"></div>
+    </section>
+
+    <div class="cashier-grid">
+      <section class="cashier-card" aria-labelledby="profileTitle">
+        <h2 id="profileTitle">Perfil del rol</h2>
+        <p class="form-help">El rol global cajero se conserva como base. Si necesitas modificar nombre o descripcion, PCS crea o actualiza un rol personalizado aislado para esta empresa.</p>
+        <input id="customRoleId" type="hidden">
+        <label class="form-label" for="customRoleName">Nombre visible del rol</label>
+        <input id="customRoleName" class="form-input" maxlength="90" placeholder="Cajero">
+        <label class="form-label" for="customRoleDescription" style="margin-top:8px;">Descripcion operativa</label>
+        <textarea id="customRoleDescription" class="form-textarea" rows="4" placeholder="Opera ventas, cobros, facturacion operativa, caja y cierre de turno."></textarea>
+        <label class="cashier-check" for="customRoleActive">
+          <input id="customRoleActive" type="checkbox" checked>
+          <span>Mantener activo el perfil personalizado del cajero</span>
+        </label>
+        <div class="cashier-actions">
+          <button id="btnGuardarPerfil" type="button" class="btn secondary">Guardar perfil</button>
+          <a id="linkUsuarios" class="btn secondary" href="/administrar_empresa/administrar_usuarios.html">Asignar usuarios</a>
+        </div>
+        <div id="profileMsg" class="cashier-status"></div>
+      </section>
+
+      <section class="cashier-card" aria-labelledby="operationTitle">
+        <h2 id="operationTitle">Cobro y caja</h2>
+        <p class="form-help">Estos checks modifican la regla operativa del rol cajero usada por carrito, caja y finanzas.</p>
+        <label class="cashier-check" for="opRolActivo"><input id="opRolActivo" type="checkbox" checked><span>Regla de cajero activa</span></label>
+        <label class="cashier-check" for="opRolMetodoEfectivo"><input id="opRolMetodoEfectivo" type="checkbox"><span>Puede cobrar en efectivo</span></label>
+        <label class="cashier-check" for="opRolMetodoTarjetaCredito"><input id="opRolMetodoTarjetaCredito" type="checkbox"><span>Puede cobrar con tarjeta credito</span></label>
+        <label class="cashier-check" for="opRolMetodoTarjetaDebito"><input id="opRolMetodoTarjetaDebito" type="checkbox"><span>Puede cobrar con tarjeta debito</span></label>
+        <label class="cashier-check" for="opRolMetodoTransferencia"><input id="opRolMetodoTransferencia" type="checkbox"><span>Puede cobrar por transferencia bancaria</span></label>
+        <label class="cashier-check" for="opRolMetodoMixto"><input id="opRolMetodoMixto" type="checkbox"><span>Puede registrar pagos combinados</span></label>
+        <label class="cashier-check" for="opRolMetodoCodigoDescuento"><input id="opRolMetodoCodigoDescuento" type="checkbox"><span>Puede usar codigos de descuento</span></label>
+        <label class="cashier-check" for="opRolHabilitarPropinas"><input id="opRolHabilitarPropinas" type="checkbox"><span>Puede registrar propinas</span></label>
+        <label class="cashier-check" for="opRolHabilitarComisiones"><input id="opRolHabilitarComisiones" type="checkbox"><span>Puede registrar comisiones operativas</span></label>
+        <label class="cashier-check" for="opRolPermitirIngresosManuales"><input id="opRolPermitirIngresosManuales" type="checkbox"><span>Puede hacer ingresos manuales de caja</span></label>
+        <label class="cashier-check" for="opRolPermitirEgresosManuales"><input id="opRolPermitirEgresosManuales" type="checkbox"><span>Puede hacer egresos manuales de caja</span></label>
+        <div class="cashier-actions">
+          <button id="btnGuardarOperativa" type="button" class="btn secondary">Guardar cobro y caja</button>
+        </div>
+        <div id="operationMsg" class="cashier-status"></div>
+      </section>
+
+      <section class="cashier-card" aria-labelledby="cartTitle">
+        <h2 id="cartTitle">Carrito POS</h2>
+        <p class="form-help">Controla lo que ve y usa el cajero en venta directa y estaciones.</p>
+        <label class="cashier-check" for="cartSearchProducts"><input id="cartSearchProducts" type="checkbox"><span>Buscar producto por codigo, SKU o nombre</span></label>
+        <label class="cashier-check" for="cartBarcode"><input id="cartBarcode" type="checkbox"><span>Mostrar lector de codigo de barras</span></label>
+        <label class="cashier-check" for="cartClientPanel"><input id="cartClientPanel" type="checkbox"><span>Mostrar tarjeta de cliente</span></label>
+        <label class="cashier-check" for="cartClientRequired"><input id="cartClientRequired" type="checkbox"><span>Exigir cliente registrado antes de pagar</span></label>
+        <label class="cashier-check" for="cartPayButton"><input id="cartPayButton" type="checkbox"><span>Mostrar boton Pagar y cerrar carrito</span></label>
+        <label class="cashier-check" for="cartPaymentCards"><input id="cartPaymentCards" type="checkbox"><span>Mostrar tarjetas de pago</span></label>
+        <label class="cashier-check" for="cartTouchMode"><input id="cartTouchMode" type="checkbox"><span>Activar modo tactil POS</span></label>
+        <label class="cashier-check" for="cartShortcuts"><input id="cartShortcuts" type="checkbox"><span>Activar atajos de teclado F1-F12</span></label>
+        <label class="cashier-check" for="cartScale"><input id="cartScale" type="checkbox"><span>Mostrar bascula electronica</span></label>
+        <label class="cashier-check" for="cartOffline"><input id="cartOffline" type="checkbox"><span>Permitir cierre offline controlado</span></label>
+        <div class="cashier-actions">
+          <button id="btnGuardarCarrito" type="button" class="btn secondary">Guardar carrito POS</button>
+          <a id="linkCarritoDetalle" class="btn secondary" href="/administrar_empresa/configuracion_carrito_de_compra_empresa.html">Abrir configuracion completa</a>
+        </div>
+        <div id="cartMsg" class="cashier-status"></div>
+      </section>
+
+      <section class="cashier-card" aria-labelledby="actionsTitle">
+        <h2 id="actionsTitle">Botones visibles del carrito</h2>
+        <p class="form-help">Activa solamente las acciones que debe tener el cajero durante la venta.</p>
+        <label class="cashier-check" for="cartBtnDiscounts"><input id="cartBtnDiscounts" type="checkbox"><span>Descuentos</span></label>
+        <label class="cashier-check" for="cartBtnRate"><input id="cartBtnRate" type="checkbox"><span>Cambiar tarifa</span></label>
+        <label class="cashier-check" for="cartBtnTransfer"><input id="cartBtnTransfer" type="checkbox"><span>Transferir cuenta</span></label>
+        <label class="cashier-check" for="cartBtnDomotics"><input id="cartBtnDomotics" type="checkbox"><span>Domotica</span></label>
+        <label class="cashier-check" for="cartBtnCancel"><input id="cartBtnCancel" type="checkbox"><span>Cancelar carrito</span></label>
+        <label class="cashier-check" for="cartBtnTaxi"><input id="cartBtnTaxi" type="checkbox"><span>Taxi</span></label>
+        <label class="cashier-check" for="cartBtnClients"><input id="cartBtnClients" type="checkbox"><span>Clientes</span></label>
+        <label class="cashier-check" for="cartBtnCredits"><input id="cartBtnCredits" type="checkbox"><span>Abonos y creditos</span></label>
+        <label class="cashier-check" for="cartBtnVehicle"><input id="cartBtnVehicle" type="checkbox"><span>Vehiculo</span></label>
+      </section>
+
+      <section class="cashier-card" aria-labelledby="paymentsTitle">
+        <h2 id="paymentsTitle">Medios de pago POS</h2>
+        <p class="form-help">Estos checks gobiernan la disponibilidad visual y operativa dentro del carrito.</p>
+        <label class="cashier-check" for="cartPayCash"><input id="cartPayCash" type="checkbox"><span>Efectivo</span></label>
+        <label class="cashier-check" for="cartPayCreditCard"><input id="cartPayCreditCard" type="checkbox"><span>Tarjeta credito</span></label>
+        <label class="cashier-check" for="cartPayDebitCard"><input id="cartPayDebitCard" type="checkbox"><span>Tarjeta debito</span></label>
+        <label class="cashier-check" for="cartPayBreb"><input id="cartPayBreb" type="checkbox"><span>Transferencia Bre-B</span></label>
+        <label class="cashier-check" for="cartPayNequi"><input id="cartPayNequi" type="checkbox"><span>Nequi</span></label>
+        <label class="cashier-check" for="cartPayOtherTransfer"><input id="cartPayOtherTransfer" type="checkbox"><span>Otra transferencia</span></label>
+        <label class="cashier-check" for="cartPayCustomerCredit"><input id="cartPayCustomerCredit" type="checkbox"><span>Credito cliente / cupo cartera</span></label>
+        <label class="cashier-check" for="cartPayQr"><input id="cartPayQr" type="checkbox"><span>Pago por QR</span></label>
+      </section>
+
+      <section class="cashier-card" aria-labelledby="stationsTitle">
+        <h2 id="stationsTitle">Estaciones y caja fisica</h2>
+        <p class="form-help">El cajero ya no elige caja al iniciar sesion. PCS usa el computador detectado y las reglas de estacion configuradas por empresa.</p>
+        <label class="cashier-check" for="stationAccessEnabled"><input id="stationAccessEnabled" type="checkbox"><span>Activar control de estaciones por cajero</span></label>
+        <label class="cashier-check" for="stationAccessCaja"><input id="stationAccessCaja" type="checkbox"><span>Permitir estacion Caja y corte de turno para cajeros asignados</span></label>
+        <div class="cashier-actions">
+          <button id="btnGuardarEstaciones" type="button" class="btn secondary">Guardar estaciones</button>
+          <a id="linkEstacionesConfig" class="btn secondary" href="/administrar_empresa/configuracion_de_estaciones.html">Configurar estaciones</a>
+          <a id="linkImpresorasConfig" class="btn secondary" href="/administrar_empresa/configuracion_impresora.html">Impresoras y caja</a>
+        </div>
+        <div id="stationMsg" class="cashier-status"></div>
+      </section>
+
+      <section class="cashier-card" aria-labelledby="usersTitle">
+        <h2 id="usersTitle">Usuarios con rol cajero</h2>
+        <p class="form-help">Lista informativa para revisar rapidamente quienes quedarian afectados por esta configuracion.</p>
+        <div id="cashierUsersList" class="cashier-mini-list"></div>
+      </section>
+    </div>
+  </div>
+
+  <script>
+    (function(){
+      var state = { empresaID: 0, roles: [], users: [], operativa: null, cart: null, station: null };
+      function byId(id){ return document.getElementById(id); }
+      function text(value){ return String(value == null ? '' : value).trim(); }
+      function bool(value, fallback){ return value === undefined ? !!fallback : !!value; }
+      function parsePositiveInt(value){ var n = Number(value || 0); return Number.isFinite(n) && n > 0 ? Math.trunc(n) : 0; }
+      function setStatus(id, message, type) {
+        var el = byId(id);
+        if (!el) return;
+        el.textContent = message || '';
+        el.classList.remove('is-error','is-ok');
+        if (type === 'error') el.classList.add('is-error');
+        if (type === 'ok') el.classList.add('is-ok');
+      }
+      function ensureOk(res) {
+        if (res.ok) return res;
+        return res.text().then(function(t) {
+          var message = t || ('HTTP ' + res.status);
+          try { var body = JSON.parse(t); message = body.error || body.message || message; } catch (_) {}
+          throw new Error(message);
+        });
+      }
+      function resolveEmpresaId() {
+        try {
+          var p = new URLSearchParams(window.location.search || '');
+          var direct = parsePositiveInt(p.get('empresa_id') || p.get('id'));
+          if (direct) return direct;
+        } catch (_) {}
+        var keys = ['active_empresa_id','empresa_id','admin_empresa_id'];
+        for (var i = 0; i < keys.length; i += 1) {
+          try {
+            var sessionVal = parsePositiveInt(sessionStorage.getItem(keys[i]));
+            if (sessionVal) return sessionVal;
+            var localVal = parsePositiveInt(localStorage.getItem(keys[i]));
+            if (localVal) return localVal;
+          } catch (_) {}
+        }
+        return 0;
+      }
+      function roleKey(value) {
+        var key = text(value).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,'_').replace(/^_+|_+$/g,'');
+        var aliases = { caja:'cajero', caja_turno:'cajero', caja_principal:'cajero', cashier:'cajero' };
+        return aliases[key] || key;
+      }
+      function isCustomRole(role) {
+        return Number(role && role.empresa_id || 0) > 0 || text(role && role.origen).toLowerCase() === 'empresa' || !!(role && role.personalizado);
+      }
+      function findBaseCashierRole() {
+        for (var i = 0; i < state.roles.length; i += 1) {
+          var role = state.roles[i];
+          if (!isCustomRole(role) && roleKey(role && role.nombre) === 'cajero') return role;
+        }
+        return null;
+      }
+      function findCustomCashierRole() {
+        var base = findBaseCashierRole();
+        var baseID = Number(base && base.id || 0);
+        for (var i = 0; i < state.roles.length; i += 1) {
+          var role = state.roles[i];
+          if (!isCustomRole(role)) continue;
+          if (baseID && Number(role.rol_base_id || 0) === baseID) return role;
+          if (roleKey(role && role.nombre) === 'cajero') return role;
+        }
+        return null;
+      }
+      function cashierUsers() {
+        return (Array.isArray(state.users) ? state.users : []).filter(function(user) {
+          var role = state.roles.find(function(item){ return Number(item.id || 0) === Number(user.rol_usuario_id || 0); });
+          if (role && roleKey(role.nombre) === 'cajero') return true;
+          if (role && isCustomRole(role)) {
+            var base = state.roles.find(function(item){ return Number(item.id || 0) === Number(role.rol_base_id || 0); });
+            if (base && roleKey(base.nombre) === 'cajero') return true;
+          }
+          return roleKey(user.rol_nombre || user.rol || '') === 'cajero';
+        });
+      }
+      function defaultOperativa() {
+        return {
+          empresa_id: state.empresaID,
+          metodo_pago_efectivo: true,
+          metodo_pago_tarjeta_credito: true,
+          metodo_pago_tarjeta_debito: true,
+          metodo_pago_transferencia_bancaria: true,
+          metodo_pago_mixto: true,
+          metodo_pago_codigo_descuento: true,
+          habilitar_propinas: true,
+          habilitar_comisiones: true,
+          roles: []
+        };
+      }
+      function normalizeOperativaRole(raw) {
+        var src = raw && typeof raw === 'object' ? raw : {};
+        return {
+          empresa_id: Number(src.empresa_id || state.empresaID || 0),
+          rol: roleKey(src.rol || 'cajero'),
+          metodo_pago_efectivo: bool(src.metodo_pago_efectivo, true),
+          metodo_pago_tarjeta_credito: bool(src.metodo_pago_tarjeta_credito, true),
+          metodo_pago_tarjeta_debito: bool(src.metodo_pago_tarjeta_debito, true),
+          metodo_pago_transferencia_bancaria: bool(src.metodo_pago_transferencia_bancaria, true),
+          metodo_pago_mixto: bool(src.metodo_pago_mixto, true),
+          metodo_pago_codigo_descuento: bool(src.metodo_pago_codigo_descuento, true),
+          habilitar_propinas: bool(src.habilitar_propinas, true),
+          habilitar_comisiones: bool(src.habilitar_comisiones, true),
+          permitir_ingresos_manuales: !!src.permitir_ingresos_manuales,
+          permitir_egresos_manuales: !!src.permitir_egresos_manuales,
+          estado: text(src.estado || 'activo').toLowerCase() === 'inactivo' ? 'inactivo' : 'activo'
+        };
+      }
+      function normalizeOperativa(raw) {
+        var src = Object.assign(defaultOperativa(), raw && typeof raw === 'object' ? raw : {});
+        src.roles = Array.isArray(src.roles) ? src.roles.map(normalizeOperativaRole) : [];
+        return src;
+      }
+      function findCashierOperativaRole() {
+        var cfg = normalizeOperativa(state.operativa || {});
+        for (var i = 0; i < cfg.roles.length; i += 1) {
+          if (roleKey(cfg.roles[i].rol) === 'cajero') return cfg.roles[i];
+        }
+        return normalizeOperativaRole(Object.assign({}, cfg, { rol: 'cajero' }));
+      }
+      function fillOperativa() {
+        var role = findCashierOperativaRole();
+        byId('opRolActivo').checked = role.estado !== 'inactivo';
+        byId('opRolMetodoEfectivo').checked = role.metodo_pago_efectivo;
+        byId('opRolMetodoTarjetaCredito').checked = role.metodo_pago_tarjeta_credito;
+        byId('opRolMetodoTarjetaDebito').checked = role.metodo_pago_tarjeta_debito;
+        byId('opRolMetodoTransferencia').checked = role.metodo_pago_transferencia_bancaria;
+        byId('opRolMetodoMixto').checked = role.metodo_pago_mixto;
+        byId('opRolMetodoCodigoDescuento').checked = role.metodo_pago_codigo_descuento;
+        byId('opRolHabilitarPropinas').checked = role.habilitar_propinas;
+        byId('opRolHabilitarComisiones').checked = role.habilitar_comisiones;
+        byId('opRolPermitirIngresosManuales').checked = role.permitir_ingresos_manuales;
+        byId('opRolPermitirEgresosManuales').checked = role.permitir_egresos_manuales;
+      }
+      function collectOperativaRole() {
+        return {
+          empresa_id: state.empresaID,
+          rol: 'cajero',
+          metodo_pago_efectivo: byId('opRolMetodoEfectivo').checked,
+          metodo_pago_tarjeta_credito: byId('opRolMetodoTarjetaCredito').checked,
+          metodo_pago_tarjeta_debito: byId('opRolMetodoTarjetaDebito').checked,
+          metodo_pago_transferencia_bancaria: byId('opRolMetodoTransferencia').checked,
+          metodo_pago_mixto: byId('opRolMetodoMixto').checked,
+          metodo_pago_codigo_descuento: byId('opRolMetodoCodigoDescuento').checked,
+          habilitar_propinas: byId('opRolHabilitarPropinas').checked,
+          habilitar_comisiones: byId('opRolHabilitarComisiones').checked,
+          permitir_ingresos_manuales: byId('opRolPermitirIngresosManuales').checked,
+          permitir_egresos_manuales: byId('opRolPermitirEgresosManuales').checked,
+          estado: byId('opRolActivo').checked ? 'activo' : 'inactivo'
+        };
+      }
+      function defaultCart() {
+        return {
+          mostrar_boton_buscar_productos: true,
+          mostrar_busqueda_catalogo: true,
+          mostrar_selector_cliente: true,
+          cliente_obligatorio_pago: false,
+          mostrar_lector_codigo_barras: true,
+          mostrar_boton_pagar: true,
+          mostrar_tarjetas_pago: true,
+          modo_pantalla_tactil: false,
+          atajos_pos_habilitados: true,
+          habilitar_bascula_electronica: false,
+          facturacion_offline_habilitada: false,
+          mostrar_boton_descuentos_carrito: true,
+          mostrar_boton_cambiar_tarifa_carrito: true,
+          mostrar_boton_transferir_cuenta_carrito: false,
+          permitir_transferir_cuenta_carrito: false,
+          mostrar_boton_control_electrico_carrito: true,
+          mostrar_control_electrico_carrito: true,
+          mostrar_boton_cancelar_carrito: true,
+          mostrar_boton_taxi_carrito: true,
+          mostrar_boton_clientes_carrito: true,
+          mostrar_boton_abonos_carrito: true,
+          mostrar_boton_vehiculo_carrito: true,
+          permitir_pago_mixto: true,
+          metodo_pago_efectivo: true,
+          metodo_pago_tarjeta_credito: true,
+          metodo_pago_tarjeta_debito: true,
+          metodo_pago_transferencia_bancaria: true,
+          metodo_pago_transferencia_bre_b: true,
+          metodo_pago_nequi: true,
+          metodo_pago_otras_transferencias: true,
+          metodo_pago_credito_cliente: true,
+          pago_qr_habilitado: false
+        };
+      }
+      function parseJSONLoop(raw) {
+        var current = raw;
+        for (var i = 0; i < 3; i += 1) {
+          if (typeof current !== 'string') break;
+          if (!current.trim()) return null;
+          try { current = JSON.parse(current); } catch (_) { return null; }
+        }
+        return current && typeof current === 'object' ? current : null;
+      }
+      function normalizeStation(raw) {
+        var src = raw && typeof raw === 'object' ? raw : {};
+        var access = src.acceso_estaciones_cajeros || src.acceso_estaciones_por_cajero || {};
+        return Object.assign({}, src, {
+          carrito_ui_global: Object.assign(defaultCart(), src.carrito_ui_global || src.carrito || src.carrito_configuracion_global || {}),
+          acceso_estaciones_cajeros: {
+            habilitado: !!access.habilitado,
+            caja_por_cajero: access.caja_por_cajero === undefined ? true : !!access.caja_por_cajero,
+            usuarios: access.usuarios && typeof access.usuarios === 'object' ? access.usuarios : {}
+          }
+        });
+      }
+      function fillCart() {
+        var cart = Object.assign(defaultCart(), state.cart || {});
+        byId('cartSearchProducts').checked = !!(cart.mostrar_boton_buscar_productos && cart.mostrar_busqueda_catalogo);
+        byId('cartBarcode').checked = !!cart.mostrar_lector_codigo_barras;
+        byId('cartClientPanel').checked = !!cart.mostrar_selector_cliente;
+        byId('cartClientRequired').checked = !!cart.cliente_obligatorio_pago;
+        byId('cartPayButton').checked = !!cart.mostrar_boton_pagar;
+        byId('cartPaymentCards').checked = !!cart.mostrar_tarjetas_pago;
+        byId('cartTouchMode').checked = !!cart.modo_pantalla_tactil;
+        byId('cartShortcuts').checked = !!cart.atajos_pos_habilitados;
+        byId('cartScale').checked = !!cart.habilitar_bascula_electronica;
+        byId('cartOffline').checked = !!cart.facturacion_offline_habilitada;
+        byId('cartBtnDiscounts').checked = !!cart.mostrar_boton_descuentos_carrito;
+        byId('cartBtnRate').checked = !!cart.mostrar_boton_cambiar_tarifa_carrito;
+        byId('cartBtnTransfer').checked = !!(cart.mostrar_boton_transferir_cuenta_carrito && cart.permitir_transferir_cuenta_carrito);
+        byId('cartBtnDomotics').checked = !!cart.mostrar_boton_control_electrico_carrito;
+        byId('cartBtnCancel').checked = !!cart.mostrar_boton_cancelar_carrito;
+        byId('cartBtnTaxi').checked = !!cart.mostrar_boton_taxi_carrito;
+        byId('cartBtnClients').checked = !!cart.mostrar_boton_clientes_carrito;
+        byId('cartBtnCredits').checked = !!cart.mostrar_boton_abonos_carrito;
+        byId('cartBtnVehicle').checked = !!cart.mostrar_boton_vehiculo_carrito;
+        byId('cartPayCash').checked = !!cart.metodo_pago_efectivo;
+        byId('cartPayCreditCard').checked = !!cart.metodo_pago_tarjeta_credito;
+        byId('cartPayDebitCard').checked = !!cart.metodo_pago_tarjeta_debito;
+        byId('cartPayBreb').checked = !!cart.metodo_pago_transferencia_bre_b;
+        byId('cartPayNequi').checked = !!cart.metodo_pago_nequi;
+        byId('cartPayOtherTransfer').checked = !!cart.metodo_pago_otras_transferencias;
+        byId('cartPayCustomerCredit').checked = !!cart.metodo_pago_credito_cliente;
+        byId('cartPayQr').checked = !!cart.pago_qr_habilitado;
+      }
+      function collectCart() {
+        var cart = Object.assign(defaultCart(), state.cart || {});
+        cart.mostrar_boton_buscar_productos = byId('cartSearchProducts').checked;
+        cart.mostrar_busqueda_catalogo = byId('cartSearchProducts').checked;
+        cart.mostrar_lector_codigo_barras = byId('cartBarcode').checked;
+        cart.mostrar_selector_cliente = byId('cartClientPanel').checked;
+        cart.cliente_obligatorio_pago = byId('cartClientRequired').checked;
+        cart.mostrar_boton_pagar = byId('cartPayButton').checked;
+        cart.mostrar_tarjetas_pago = byId('cartPaymentCards').checked;
+        cart.modo_pantalla_tactil = byId('cartTouchMode').checked;
+        cart.atajos_pos_habilitados = byId('cartShortcuts').checked;
+        cart.habilitar_bascula_electronica = byId('cartScale').checked;
+        cart.facturacion_offline_habilitada = byId('cartOffline').checked;
+        cart.mostrar_boton_descuentos_carrito = byId('cartBtnDiscounts').checked;
+        cart.mostrar_boton_cambiar_tarifa_carrito = byId('cartBtnRate').checked;
+        cart.mostrar_boton_transferir_cuenta_carrito = byId('cartBtnTransfer').checked;
+        cart.permitir_transferir_cuenta_carrito = byId('cartBtnTransfer').checked;
+        cart.mostrar_boton_control_electrico_carrito = byId('cartBtnDomotics').checked;
+        cart.mostrar_control_electrico_carrito = byId('cartBtnDomotics').checked;
+        cart.mostrar_boton_cancelar_carrito = byId('cartBtnCancel').checked;
+        cart.mostrar_boton_taxi_carrito = byId('cartBtnTaxi').checked;
+        cart.mostrar_boton_clientes_carrito = byId('cartBtnClients').checked;
+        cart.mostrar_boton_abonos_carrito = byId('cartBtnCredits').checked;
+        cart.mostrar_boton_vehiculo_carrito = byId('cartBtnVehicle').checked;
+        cart.permitir_pago_mixto = byId('opRolMetodoMixto').checked;
+        cart.metodo_pago_efectivo = byId('cartPayCash').checked;
+        cart.metodo_pago_tarjeta_credito = byId('cartPayCreditCard').checked;
+        cart.metodo_pago_tarjeta_debito = byId('cartPayDebitCard').checked;
+        cart.metodo_pago_transferencia_bancaria = byId('opRolMetodoTransferencia').checked;
+        cart.metodo_pago_transferencia_bre_b = byId('cartPayBreb').checked;
+        cart.metodo_pago_nequi = byId('cartPayNequi').checked;
+        cart.metodo_pago_otras_transferencias = byId('cartPayOtherTransfer').checked;
+        cart.metodo_pago_credito_cliente = byId('cartPayCustomerCredit').checked;
+        cart.pago_qr_habilitado = byId('cartPayQr').checked;
+        return cart;
+      }
+      async function loadRoles() {
+        var res = await fetch('/api/empresa/roles_de_usuario?empresa_id=' + encodeURIComponent(state.empresaID) + '&include_inactive=1', { credentials:'same-origin' });
+        await ensureOk(res);
+        state.roles = await res.json();
+      }
+      async function loadUsers() {
+        var res = await fetch('/api/empresa/usuarios?empresa_id=' + encodeURIComponent(state.empresaID) + '&include_inactive=1', { credentials:'same-origin' });
+        await ensureOk(res);
+        state.users = await res.json();
+      }
+      async function loadOperativa() {
+        var res = await fetch('/api/empresa/configuracion_operativa?empresa_id=' + encodeURIComponent(state.empresaID), { credentials:'same-origin' });
+        await ensureOk(res);
+        state.operativa = normalizeOperativa(await res.json());
+      }
+      async function loadStationAndCart() {
+        var res = await fetch('/api/empresa/estacion_prefs?empresa_id=' + encodeURIComponent(state.empresaID), { credentials:'same-origin' });
+        await ensureOk(res);
+        var data = await res.json();
+        var prefs = data && Array.isArray(data.prefs) ? data.prefs : [];
+        var pref = prefs.find(function(item){ return item && String(item.clave) === 'estaciones_config' && Number(item.estacion_id) === 0; });
+        state.station = normalizeStation(parseJSONLoop(pref && pref.valor));
+        state.cart = Object.assign(defaultCart(), state.station.carrito_ui_global || {});
+      }
+      async function saveOperativa() {
+        var payload = collectOperativaRole();
+        var res = await fetch('/api/empresa/configuracion_operativa?empresa_id=' + encodeURIComponent(state.empresaID) + '&action=rol', {
+          method:'PUT',
+          credentials:'same-origin',
+          headers:{'Content-Type':'application/json'},
+          body: JSON.stringify(payload)
+        });
+        await ensureOk(res);
+        var out = await res.json();
+        state.operativa = normalizeOperativa(out && out.configuracion ? out.configuracion : state.operativa);
+        fillOperativa();
+        setStatus('operationMsg','Cobro y caja del cajero guardados.','ok');
+      }
+      async function saveStationAndCart(saveStationOnly) {
+        state.station = normalizeStation(state.station || {});
+        if (!saveStationOnly) {
+          state.cart = collectCart();
+          state.station.carrito_ui_global = state.cart;
+        }
+        state.station.acceso_estaciones_cajeros = state.station.acceso_estaciones_cajeros || {};
+        state.station.acceso_estaciones_cajeros.habilitado = byId('stationAccessEnabled').checked;
+        state.station.acceso_estaciones_cajeros.caja_por_cajero = byId('stationAccessCaja').checked;
+        delete state.station.acceso_estaciones_por_cajero;
+        var res = await fetch('/api/empresa/estacion_prefs?empresa_id=' + encodeURIComponent(state.empresaID), {
+          method:'PUT',
+          credentials:'same-origin',
+          headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({ estacion_id:0, clave:'estaciones_config', valor: JSON.stringify(state.station) })
+        });
+        await ensureOk(res);
+        fillCart();
+        fillStationAccess();
+      }
+      async function saveProfile(forceCreate) {
+        var base = findBaseCashierRole();
+        if (!base || !base.id) throw new Error('No se encontro el rol base cajero en el catalogo.');
+        var custom = findCustomCashierRole();
+        var name = text(byId('customRoleName').value) || 'Cajero';
+        var desc = text(byId('customRoleDescription').value) || 'Opera ventas, cobros, facturacion operativa, caja y cierre de turno.';
+        var id = Number(byId('customRoleId').value || (custom && custom.id) || 0);
+        var defaultName = 'cajero';
+        var defaultDesc = 'opera ventas, cobros, facturacion operativa, caja y cierre de turno.';
+        var unchangedDefault = !id && roleKey(name) === defaultName && desc.toLowerCase() === defaultDesc;
+        if (!forceCreate && unchangedDefault && byId('customRoleActive').checked) {
+          setStatus('profileMsg','Perfil base del cajero conservado; no se creo rol personalizado innecesario.','ok');
+          return;
+        }
+        var res = await fetch('/api/empresa/roles_de_usuario?empresa_id=' + encodeURIComponent(state.empresaID) + (id ? ('&id=' + encodeURIComponent(id)) : ''), {
+          method: id ? 'PUT' : 'POST',
+          credentials:'same-origin',
+          headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({
+            nombre: name,
+            descripcion: desc,
+            rol_base_id: Number(base.id),
+            aprobado_por: 'administrador_empresa',
+            codigo_aprobacion: 'configuracion_rol_cajero',
+            motivo_aprobacion: id ? 'Actualizacion del perfil cajero desde Configuracion' : 'Creacion del perfil cajero por empresa'
+          })
+        });
+        await ensureOk(res);
+        await loadRoles();
+        custom = findCustomCashierRole();
+        if (custom && custom.id && ((byId('customRoleActive').checked && custom.estado === 'inactivo') || (!byId('customRoleActive').checked && custom.estado !== 'inactivo'))) {
+          var activar = byId('customRoleActive').checked ? '1' : '0';
+          var motivo = byId('customRoleActive').checked ? 'Activacion del perfil cajero desde Configuracion' : 'Desactivacion del perfil cajero desde Configuracion';
+          var toggle = await fetch('/api/empresa/roles_de_usuario?empresa_id=' + encodeURIComponent(state.empresaID) + '&id=' + encodeURIComponent(custom.id) + '&action=activar&activo=' + activar + '&aprobado_por=administrador_empresa&codigo_aprobacion=configuracion_rol_cajero&motivo_aprobacion=' + encodeURIComponent(motivo), { method:'PUT', credentials:'same-origin' });
+          await ensureOk(toggle);
+          await loadRoles();
+        }
+        fillProfile();
+        setStatus('profileMsg','Perfil del cajero guardado. Asigna este rol desde Administrar usuarios cuando aplique.','ok');
+      }
+      function fillProfile() {
+        var base = findBaseCashierRole();
+        var custom = findCustomCashierRole();
+        byId('cashierBaseRoleLabel').textContent = base && base.nombre ? base.nombre : 'Cajero';
+        byId('customRoleId').value = custom && custom.id ? String(custom.id) : '';
+        byId('customRoleName').value = custom && custom.nombre ? custom.nombre : 'Cajero';
+        byId('customRoleDescription').value = custom && custom.descripcion ? custom.descripcion : 'Opera ventas, cobros, facturacion operativa, caja y cierre de turno.';
+        byId('customRoleActive').checked = !custom || !custom.estado || custom.estado === 'activo';
+      }
+      function fillStationAccess() {
+        var access = normalizeStation(state.station || {}).acceso_estaciones_cajeros;
+        byId('stationAccessEnabled').checked = !!access.habilitado;
+        byId('stationAccessCaja').checked = access.caja_por_cajero !== false;
+      }
+      function renderUsers() {
+        var users = cashierUsers();
+        byId('cashierUsersCount').textContent = String(users.length);
+        var box = byId('cashierUsersList');
+        if (!users.length) {
+          box.innerHTML = '<div class="form-help">No hay usuarios con rol cajero en esta empresa.</div>';
+          return;
+        }
+        box.innerHTML = '';
+        users.forEach(function(user) {
+          var role = state.roles.find(function(item){ return Number(item.id || 0) === Number(user.rol_usuario_id || 0); });
+          var row = document.createElement('div');
+          row.className = 'cashier-mini-row';
+          row.innerHTML = '<strong></strong><span></span>';
+          row.querySelector('strong').textContent = text(user.nombre || user.email || 'Usuario cajero');
+          row.querySelector('span').textContent = 'Rol: ' + text(role && role.nombre || user.rol_nombre || 'cajero') + ' | Email: ' + text(user.email || 'sin email') + ' | Estado: ' + text(user.estado || 'activo');
+          box.appendChild(row);
+        });
+      }
+      function updateSummary() {
+        var role = findCashierOperativaRole();
+        var access = normalizeStation(state.station || {}).acceso_estaciones_cajeros;
+        byId('cashierMixedPaymentStatus').textContent = role.metodo_pago_mixto ? 'Activo' : 'Inactivo';
+        byId('cashierStationAccessStatus').textContent = access.habilitado ? 'Activo' : 'Inactivo';
+      }
+      function fillLinks() {
+        ['linkUsuarios','linkCarritoDetalle','linkEstacionesConfig','linkImpresorasConfig'].forEach(function(id) {
+          var a = byId(id);
+          if (!a) return;
+          try {
+            var url = new URL(a.getAttribute('href'), window.location.origin);
+            url.searchParams.set('empresa_id', String(state.empresaID));
+            a.href = url.pathname + url.search;
+          } catch (_) {}
+        });
+      }
+      async function bootstrap() {
+        state.empresaID = resolveEmpresaId();
+        byId('empresaInfo').textContent = state.empresaID ? ('Empresa #' + state.empresaID) : 'Empresa: no detectada';
+        if (!state.empresaID) {
+          setStatus('pageMsg','empresa_id es obligatorio para configurar el rol cajero.','error');
+          byId('btnGuardarTodo').disabled = true;
+          return;
+        }
+        fillLinks();
+        try {
+          await Promise.all([loadRoles(), loadUsers(), loadOperativa(), loadStationAndCart()]);
+          fillProfile();
+          fillOperativa();
+          fillCart();
+          fillStationAccess();
+          renderUsers();
+          updateSummary();
+          setStatus('pageMsg','Configuracion del cajero cargada.','ok');
+        } catch (err) {
+          setStatus('pageMsg','No se pudo cargar la configuracion del cajero: ' + (err && err.message ? err.message : err),'error');
+        }
+      }
+      byId('btnGuardarPerfil').addEventListener('click', function(){
+        saveProfile(true).then(updateSummary).catch(function(err){ setStatus('profileMsg', err.message || 'No se pudo guardar perfil','error'); });
+      });
+      byId('btnGuardarOperativa').addEventListener('click', function(){
+        saveOperativa().then(updateSummary).catch(function(err){ setStatus('operationMsg', err.message || 'No se pudo guardar cobro y caja','error'); });
+      });
+      byId('btnGuardarCarrito').addEventListener('click', function(){
+        saveStationAndCart(false).then(function(){ setStatus('cartMsg','Carrito POS del cajero guardado.','ok'); updateSummary(); }).catch(function(err){ setStatus('cartMsg', err.message || 'No se pudo guardar carrito','error'); });
+      });
+      byId('btnGuardarEstaciones').addEventListener('click', function(){
+        saveStationAndCart(true).then(function(){ setStatus('stationMsg','Control de estaciones guardado.','ok'); updateSummary(); }).catch(function(err){ setStatus('stationMsg', err.message || 'No se pudo guardar estaciones','error'); });
+      });
+      byId('btnGuardarTodo').addEventListener('click', async function(){
+        setStatus('pageMsg','Guardando configuracion integral del cajero...','');
+        try {
+          await saveOperativa();
+          await saveStationAndCart(false);
+          await saveProfile(false);
+          renderUsers();
+          updateSummary();
+          setStatus('pageMsg','Configuracion integral del cajero guardada correctamente.','ok');
+        } catch (err) {
+          setStatus('pageMsg','No se pudo guardar todo: ' + (err && err.message ? err.message : err),'error');
+        }
+      });
+      bootstrap();
+    })();
+  </script>
+</body>
+</html>

@@ -1,3 +1,17 @@
+2026-06-11: Configuracion del rol cajero
+- Modulo afectado: Configuracion empresarial / Seguridad / Carritos.
+- Navegacion: `Administrar empresa > Configuracion > Ventas y cobro > Rol cajero` abre `web/administrar_empresa/configuracion_rol_cajero.html`.
+- Alcance: permite al administrador revisar y guardar desde una sola pantalla la regla operativa `cajero` de cobro/caja, los checks principales de carrito POS, medios de pago, botones visibles, control de estaciones por cajero y un perfil personalizado de rol basado en el rol global `cajero`.
+- Persistencia: reutiliza `/api/empresa/configuracion_operativa?action=rol`, `/api/empresa/estacion_prefs` con `estaciones_config.carrito_ui_global` y `/api/empresa/roles_de_usuario`; no crea tablas ni endpoints nuevos.
+- Seguridad: todos los datos se consultan y guardan con `empresa_id`; modificar el perfil visible crea/actualiza un rol personalizado de la misma empresa, sin alterar el rol global ni mezclar permisos entre empresas.
+
+2026-06-11: Roles personalizados por empresa
+- Modulo afectado: Administrar usuarios / Seguridad empresarial.
+- Navegacion: `Administrar empresa > Administrar usuarios` muestra la tarjeta `Roles personalizados de esta empresa`.
+- Backend: `/api/empresa/roles_de_usuario` lista roles globales y roles propios, y permite crear/editar/desactivar roles personalizados con `empresa_id`, `origen=empresa` y `rol_base_id`.
+- Operacion: el administrador define nombre, descripcion y rol base; el rol queda disponible de inmediato para asignarlo a usuarios de la misma empresa.
+- Seguridad: el rol propio no se puede asignar a otra empresa; permisos efectivos heredan el rol base global para evitar permisos accidentales por nombre libre.
+
 2026-06-11: Impresoras por computador detectado
 - Modulo: Configuracion de impresora / agente local.
 - Backend: `empresa_impresoras.go` agrega `empresa_impresoras_dispositivos` para vincular un `dispositivo_id` detectado por navegador/agente a una impresora activa por `empresa_id` y funcionalidad.
@@ -4122,6 +4136,12 @@ Captura inteligente de compras y gastos
 - Modulos afectados: `facturacion_electronica`, `facturacion_pais`.
 - Cambio funcional: se retira de la pagina principal la tarjeta visible `Selector fiscal`; el selector interno queda oculto solo para mantener estado y compatibilidad con la carga por pais.
 - UX: el menu lateral `facturacion_electronica_menu.html` conserva la deteccion automatica del pais de la empresa, muestra la fuente de deteccion y mantiene el selector para cambiar manualmente entre paises.
+
+2026-06-11 - Buzon: selector de usuarios visible y seguro
+- Modulos afectados: `administrar_empresa`, `buzon`, `tareas_buzon`, `chat_empresarial`.
+- Cambio funcional: el panel carga destinatarios con formato `Nombre | Rol | email`, incluyendo usuarios activos, administrador propietario, administradores compartidos y usuario actual.
+- Backend: `/api/empresa/buzon?action=usuarios` devuelve un directorio deduplicado por `empresa_id`; el envio de mensajes o adjuntos a administradores valida alcance real antes de crear el mensaje.
+- Seguridad: no se exponen secretos ni contrasenas; el endpoint conserva `WithEmpresaSelfServicePermissions` y no permite correos admin arbitrarios fuera de la empresa.
 
 2026-06-09 - Facturacion electronica: retirada de asistente DIAN con capturas
 - Modulos afectados: `facturacion_electronica`, `DIAN Colombia`.

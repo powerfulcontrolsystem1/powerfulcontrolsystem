@@ -1,3 +1,22 @@
+2026-06-11: Nota de configuracion dedicada del rol cajero
+- `linkConfiguracionRolCajero` queda en el menu de Configuracion bajo modulo
+  `seguridad` y accion `U`; solo roles con administracion de configuracion
+  empresarial deben verlo.
+- La pagina no concede permisos nuevos al cajero. Es una consola para que el
+  administrador edite, por `empresa_id`, la regla operativa del rol `cajero`,
+  checks del carrito POS, control de estaciones y un perfil personalizado
+  basado en el rol global.
+- El rol global `cajero` no se modifica. Si se cambia nombre/descripcion, PCS
+  crea o actualiza un rol personalizado de la empresa con `rol_base_id=cajero`.
+- Los permisos efectivos del cajero siguen saliendo de la matriz existente,
+  wrappers backend, licencia, estacion asignada y configuracion operativa.
+
+2026-06-11: Nota de roles personalizados por empresa
+- `/api/empresa/roles_de_usuario` mantiene `WithEmpresaSeguridadPermissions`, pero ahora `GET` lista roles globales y roles propios de la empresa, y `POST/PUT/DELETE` administra solo roles con `empresa_id` igual a la empresa activa.
+- `admin_empresa` puede crear roles personalizados desde Administrar usuarios siempre que tenga permiso de seguridad efectivo; el cambio pasa por la evidencia trazable ya exigida para cambios de roles.
+- Un rol personalizado no concede permisos nuevos por nombre libre: hereda el rol base global guardado en `rol_base_id` y el snapshot de permisos resuelve ese rol base para autorizar modulos/paginas.
+- Impacto de matriz: no se agregan roles base globales nuevos; se agrega capacidad empresarial de crear alias/roles propios aislados por `empresa_id` bajo el modulo `seguridad`.
+
 2026-06-11: Nota de lectura administrativa IA por empresa
 - `linkChatIA` puede seguir disponible como ayuda operativa, pero la lectura
   amplia de base de datos y las respuestas administrativas directas solo se
@@ -1936,7 +1955,7 @@ Regla de lectura comun (R):
 | `/api/empresa/impresoras/resolver` | `WithEmpresaVentasPermissions` | - | - | endpoint operativo de solo lectura para resolver impresora objetivo por `funcionalidad`, `producto_id` o `receta_id`, aplicando prioridad producto/categoria/todos |
 | `/api/empresa/control_electrico` | `WithEmpresaControlElectricoPermissions` | SA, AE, SS | SA, AE | configuracion Domotica por empresa: controladores, aparatos, fotos, lecturas, reglas de sensores, alarmas, reportes y sincronizacion; cambios y comandos requieren `A` |
 | `/super/api/domotica_storage` | `WithSuperAuditoria` + sesion super | SA | SA | limites de imagenes y revision de carpetas empresariales de Domotica; no expone secretos |
-| `/api/empresa/roles_de_usuario` | `WithEmpresaSeguridadPermissions` | SA, AE | SA, AE | consulta catalogo de roles con control de alcance |
+| `/api/empresa/roles_de_usuario` | `WithEmpresaSeguridadPermissions` | SA, AE | SA, AE | consulta roles globales + roles propios por `empresa_id`; crea/edita/desactiva solo roles personalizados de la empresa con evidencia trazable |
 | `/api/empresa/permisos_contexto` | `WithEmpresaSeguridadPermissions` | - | - | endpoint `GET` para visualizar permisos efectivos por modulo/accion; `include_matrix=1` retorna matriz comparativa por rol |
 | `/api/empresa/auditoria/eventos` | `WithEmpresaAuditoriaPermissions` | SA, AE | SA, AE | consulta y retencion (`action=retener|purgar`); `action=conexion` registra perdida/restauracion de internet como accion de lectura operativa para usuarios con acceso a la empresa |
 | `/api/empresa/backups` | `WithEmpresaSeguridadPermissions` | SA, AE | SA, AE | snapshots/restauracion y depuracion por fecha (`action=restaurar|depurar_fecha` requiere `A`) |
