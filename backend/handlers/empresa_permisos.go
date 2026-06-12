@@ -214,6 +214,7 @@ var permissionUniversalGroupLabels = map[string]string{
 	"Inventario y catalogo":                         "Inventario y compras universales",
 	"Compras":                                       "Inventario y compras universales",
 	"Centro financiero y contable":                  "Centro financiero universal y contable",
+	"Creditos y cartera":                            "Centro financiero universal y contable",
 	"Finanzas y reportes":                           "Centro financiero universal y contable",
 	"Finanzas y n\u00f3mina":                        "Centro financiero universal y contable",
 	"Administraci\u00f3n y configuraci\u00f3n":      "Administraci\u00f3n universal y configuraci\u00f3n",
@@ -234,6 +235,8 @@ var permissionUniversalGroupLabels = map[string]string{
 	"An\u00e1lisis y control":    "An\u00e1lisis universal y control",
 	"Analisis y control":         "An\u00e1lisis universal y control",
 	"Documentos, nube y soporte": "Documentos universales, nube y soporte",
+	"Domotica":                   "Administraci\u00f3n universal y configuraci\u00f3n",
+	"Licencia":                   "Administraci\u00f3n universal y configuraci\u00f3n",
 }
 
 var permissionUniversalModuleLabels = map[string]string{
@@ -447,6 +450,7 @@ type permissionPageRule struct {
 }
 
 var defaultHiddenEnterpriseIAPages = map[string]bool{
+	"linkCentroIAEmpresarial":   true,
 	"linkRentaIA":               true,
 	"linkSoportesComprasIA":     true,
 	"linkSoportesComprasIAMenu": true,
@@ -521,14 +525,15 @@ var permissionPagesCatalogOrdered = []permissionPageRule{
 	{PaginaClave: "linkCorteCaja", Modulo: permModuleFinanzas, Accion: permActionCreate, Titulo: "Corte de Caja", Grupo: "Operacion y ventas"},
 	{PaginaClave: "linkCreditos", Modulo: permModuleFinanzas, Accion: permActionCreate, Titulo: "Creditos y cartera", Grupo: "Centro financiero y contable"},
 	{PaginaClave: "linkCreditosMenu", Modulo: permModuleFinanzas, Accion: permActionCreate, Titulo: "Creditos y cartera", Grupo: "Centro financiero y contable"},
-	{PaginaClave: "linkCreditosPanelMenu", Modulo: permModuleFinanzas, Accion: permActionCreate, Titulo: "Creditos - panel", Grupo: "Creditos y cartera"},
-	{PaginaClave: "linkCreditosCrearMenu", Modulo: permModuleFinanzas, Accion: permActionCreate, Titulo: "Creditos - nuevo credito", Grupo: "Creditos y cartera"},
-	{PaginaClave: "linkCreditosCarteraMenu", Modulo: permModuleFinanzas, Accion: permActionCreate, Titulo: "Creditos - cartera", Grupo: "Creditos y cartera"},
-	{PaginaClave: "linkCreditosMorosidadMenu", Modulo: permModuleFinanzas, Accion: permActionCreate, Titulo: "Creditos - morosidad", Grupo: "Creditos y cartera"},
-	{PaginaClave: "linkCreditosLimitesMenu", Modulo: permModuleFinanzas, Accion: permActionCreate, Titulo: "Creditos - riesgo y limites", Grupo: "Creditos y cartera"},
-	{PaginaClave: "linkCreditosOperacionesMenu", Modulo: permModuleFinanzas, Accion: permActionCreate, Titulo: "Creditos - abonos y operaciones", Grupo: "Creditos y cartera"},
-	{PaginaClave: "linkCreditosAprobacionesMenu", Modulo: permModuleFinanzas, Accion: permActionCreate, Titulo: "Creditos - aprobaciones", Grupo: "Creditos y cartera"},
-	{PaginaClave: "linkCreditosEstadoMenu", Modulo: permModuleFinanzas, Accion: permActionCreate, Titulo: "Creditos - estado de cuenta", Grupo: "Creditos y cartera"},
+	{PaginaClave: "linkCreditosTarjeta", Modulo: permModuleFinanzas, Accion: permActionCreate, Titulo: "Creditos y cartera - acceso rapido", Grupo: "Centro financiero y contable"},
+	{PaginaClave: "linkCreditosPanelMenu", Modulo: permModuleFinanzas, Accion: permActionCreate, Titulo: "Creditos - panel", Grupo: "Centro financiero y contable"},
+	{PaginaClave: "linkCreditosCrearMenu", Modulo: permModuleFinanzas, Accion: permActionCreate, Titulo: "Creditos - nuevo credito", Grupo: "Centro financiero y contable"},
+	{PaginaClave: "linkCreditosCarteraMenu", Modulo: permModuleFinanzas, Accion: permActionCreate, Titulo: "Creditos - cartera", Grupo: "Centro financiero y contable"},
+	{PaginaClave: "linkCreditosMorosidadMenu", Modulo: permModuleFinanzas, Accion: permActionCreate, Titulo: "Creditos - morosidad", Grupo: "Centro financiero y contable"},
+	{PaginaClave: "linkCreditosLimitesMenu", Modulo: permModuleFinanzas, Accion: permActionCreate, Titulo: "Creditos - riesgo y limites", Grupo: "Centro financiero y contable"},
+	{PaginaClave: "linkCreditosOperacionesMenu", Modulo: permModuleFinanzas, Accion: permActionCreate, Titulo: "Creditos - abonos y operaciones", Grupo: "Centro financiero y contable"},
+	{PaginaClave: "linkCreditosAprobacionesMenu", Modulo: permModuleFinanzas, Accion: permActionCreate, Titulo: "Creditos - aprobaciones", Grupo: "Centro financiero y contable"},
+	{PaginaClave: "linkCreditosEstadoMenu", Modulo: permModuleFinanzas, Accion: permActionCreate, Titulo: "Creditos - estado de cuenta", Grupo: "Centro financiero y contable"},
 	{PaginaClave: "linkPropinas", Modulo: permModuleFinanzas, Accion: permActionCreate, Titulo: "Propinas", Grupo: "Centro financiero y contable"},
 	{PaginaClave: "linkComisiones", Modulo: permModuleFinanzas, Accion: permActionCreate, Titulo: "Comisiones de personal", Grupo: "Centro financiero y contable"},
 	{PaginaClave: "linkContabilidadColombia", Modulo: permModuleContabilidadCO, Accion: permActionCreate, Titulo: "Contabilidad Colombia NIIF/DIAN", Grupo: "Centro financiero y contable"},

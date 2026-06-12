@@ -41,6 +41,24 @@ afecte dinero, documentos, licencias o seguridad.
    campo. Las acciones finales siguen pasando por permisos y validaciones del
    backend.
 
+## Creditos y cartera por empresa
+
+1. Abrir `Administrar empresa > Finanzas y cumplimiento > Centro financiero y
+   contable`.
+2. Usar la tarjeta `Creditos y cartera` o el enlace lateral del centro
+   financiero.
+3. En `Riesgo y limites`, abrir o ajustar el cupo del cliente; el limite queda
+   por `empresa_id` y cliente.
+4. En `Nuevo credito`, crear el credito con cliente, monto, plazo y condiciones
+   aprobadas.
+5. En `Abonos y operaciones`, registrar abonos, reversos o refinanciaciones
+   permitidas.
+6. En `Cartera`, `Morosidad` y `Estado de cuenta`, consultar saldos, cuotas,
+   vencimientos y movimientos.
+7. El carrito usa el mismo modulo cuando el medio de pago es `Credito cliente`:
+   valida que el cliente tenga cupo activo y crea la cartera ligada a la venta,
+   sin sumar ese valor como efectivo de caja.
+
 ## Menu visible por empresa
 
 1. Abrir `Administrar empresa > Configuracion > Menu visible`.

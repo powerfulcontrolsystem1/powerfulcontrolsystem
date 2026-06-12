@@ -1,3 +1,9 @@
+## [2026-06-11] Tarjeta Creditos y cartera
+- [Finanzas] `finanzas_menu.html` agrega una tarjeta de acceso rapido que abre `creditos_menu.html` con el `empresa_id` activo.
+- [Permisos] `linkCreditosTarjeta` queda registrado en el catalogo frontend/backend bajo `finanzas:C`; las subpaginas de panel, nuevo credito, cartera, morosidad, limites, abonos, aprobaciones y estado de cuenta quedan agrupadas en el centro financiero universal.
+- [Operacion] Desde ese modulo se puede abrir cupo a clientes, crear creditos, hacer abonos, consultar cartera y revisar estados de cuenta sin duplicar el acceso en el menu principal.
+- [QA] `node --check web/js/administrar_empresa.js`; `go test ./handlers -run "Creditos|Credito|PermissionPagesCatalog" -count=1`.
+
 ## [2026-06-11] Chat IA lectura administrativa por empresa
 - [Backend] El chat empresarial agrega una respuesta directa y auditada para conteos reales de usuarios desde `users`, siempre con filtro `empresa_id`.
 - [Seguridad] La lectura amplia de base de datos en contexto IA queda limitada a `super_administrador`, `administrador_total` y `admin_empresa`; usuarios operativos no reciben contexto total de tablas.

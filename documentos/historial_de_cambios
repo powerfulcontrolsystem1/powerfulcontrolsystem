@@ -1,3 +1,11 @@
+2026-06-11: Tarjeta de Creditos y cartera en Centro financiero.
+- Modulos afectados: `finanzas`, `creditos`, `permisos`, `cartera`.
+- Frontend: `web/administrar_empresa/finanzas_menu.html` agrega tarjeta de acceso rapido a `creditos_menu.html` y conserva `empresa_id` al cargar el iframe.
+- Frontend permisos: `web/js/administrar_empresa.js` registra `linkCreditosTarjeta` y permite los enlaces de creditos al rol contador dentro del centro financiero.
+- Backend permisos: `backend/handlers/empresa_permisos.go` publica `linkCreditosTarjeta` y agrupa las subpaginas de creditos bajo `Centro financiero universal y contable`.
+- Seguridad: no se crean endpoints ni tablas; el modulo existente `/api/empresa/creditos` mantiene validacion por `empresa_id`, rol/licencia y filtros multiempresa.
+- Pruebas: `node --check web/js/administrar_empresa.js`; `go test ./handlers -run "TestPermissionPagesCatalogExposesOnlyUniversalBusinessGroups|TestDefaultHiddenEnterpriseIAPagesRequireExplicitCompanyEnable" -count=1`; `go test ./handlers -run "Creditos|Credito|PermissionPagesCatalog" -count=1`.
+
 2026-06-11: Chat IA con lectura administrativa real por empresa.
 - Modulos afectados: `chat_ia`, `usuarios_empresa`, `seguridad`, `multiempresa`.
 - Backend: `backend/handlers/chat_con_inteligencia_artificial_admin_queries.go` agrega respuesta directa para conteos reales de usuarios desde `users`, siempre filtrando por `empresa_id`.

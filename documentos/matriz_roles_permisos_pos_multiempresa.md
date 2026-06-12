@@ -69,6 +69,7 @@
 - El grupo `Finanzas y cumplimiento` del menu principal queda como entrada resumida: `Centro financiero y contable`, `Facturacion electronica` y `Reportes ejecutivos`.
 - `Suite contador`, `NIIF`, `Creditos y cartera`, `Gestion de cobranza` e `Impuestos` se mantienen dentro del Centro financiero para no duplicar funciones visibles.
 - No cambian permisos efectivos, wrappers ni paginas del catalogo; las rutas directas siguen protegidas para enlaces historicos y submenus internos.
+- Actualizacion 2026-06-11: `linkCreditosTarjeta` queda como tarjeta interna del Centro financiero y usa `finanzas:C`; las subpaginas de creditos se publican bajo el grupo financiero universal para mantener la matriz sin grupos heredados.
 
 2026-06-07: Nota de auditoria integral de modulos nuevos
 - No se agregan permisos, endpoints ni wrappers nuevos.

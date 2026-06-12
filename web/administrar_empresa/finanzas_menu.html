@@ -13,6 +13,13 @@
     .fin-center-title{display:grid;gap:4px}
     .fin-center-title h1{margin:0;color:var(--text);font-size:1.15rem;line-height:1.15}
     .fin-center-title p{margin:0;color:var(--muted);font-size:.88rem;line-height:1.35}
+    .fin-center-access-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+    .fin-center-access-card{display:grid;gap:7px;align-content:start;min-height:118px;padding:13px;border:1px solid var(--border);border-radius:8px;background:var(--surface-soft);color:var(--text);text-decoration:none;box-shadow:0 12px 24px rgba(15,23,42,.08)}
+    .fin-center-access-card:hover{border-color:var(--accent);box-shadow:0 16px 30px rgba(15,23,42,.13);transform:translateY(-1px)}
+    .fin-center-access-card span{color:var(--muted);font-size:.82rem;line-height:1.35}
+    .fin-center-access-card strong{display:flex;align-items:center;gap:8px;color:var(--text);font-size:.96rem;line-height:1.2}
+    .fin-center-access-card em{font-style:normal;color:var(--accent);font-size:.82rem;font-weight:850}
+    .fin-center-access-card .icon{width:21px;height:21px;flex:0 0 21px}
     .fin-center-health{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;padding:0 14px 12px;background:var(--surface)}
     .fin-center-metric{border:1px solid var(--border);border-radius:8px;background:var(--surface-soft);padding:10px}
     .fin-center-metric span{display:block;color:var(--muted);font-size:.72rem;font-weight:850;text-transform:uppercase}
@@ -20,7 +27,7 @@
     .fin-center-frame-wrap{position:relative;min-height:0}
     .fin-center-loading{position:absolute;right:18px;top:12px;z-index:2;display:none;padding:7px 10px;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--muted);box-shadow:0 10px 22px rgba(15,23,42,.12)}
     .fin-center-loading.is-visible{display:block}
-    @media(max-width:920px){.fin-center-overview{grid-template-columns:1fr}.fin-center-health{grid-template-columns:repeat(2,minmax(0,1fr))}}
+    @media(max-width:920px){.fin-center-overview{grid-template-columns:1fr}.fin-center-health{grid-template-columns:repeat(2,minmax(0,1fr))}.fin-center-access-grid{grid-template-columns:1fr}}
     @media(max-width:620px){.fin-center-health{grid-template-columns:1fr}}
   </style>
 </head>
@@ -68,7 +75,14 @@
               <h1>Centro financiero y contable</h1>
               <p id="finCenterSubtitle">Operación financiera, contabilidad legal, impuestos, cartera, tesorería y cierres por empresa.</p>
             </div>
-</div>
+            <div class="fin-center-access-grid" aria-label="Accesos financieros principales">
+              <a id="linkCreditosTarjeta" class="fin-center-access-card" href="/administrar_empresa/creditos_menu.html" target="finanzasContentFrame">
+                <strong><img class="icon" src="/img/analytics-color.svg" alt="">Creditos y cartera</strong>
+                <span>Abre cupos por cliente, crea creditos, consulta cartera, registra abonos, revisa morosidad y emite estados de cuenta.</span>
+                <em>Gestionar creditos</em>
+              </a>
+            </div>
+          </div>
           <div class="fin-center-health" aria-label="Estado del centro financiero">
             <div class="fin-center-metric"><span>Base</span><strong>Multiempresa</strong></div>
             <div class="fin-center-metric"><span>Control</span><strong>Permisos por rol</strong></div>
@@ -89,7 +103,32 @@
     (function(){
       var frame=document.getElementById("finanzasContentFrame");
       var loading=document.getElementById("finCenterLoading");
+      var creditos=document.getElementById("linkCreditosTarjeta");
+      function empresaId(){
+        try{
+          var parentID=parent&&parent.__resolveEmpresaIdContext&&parent.__resolveEmpresaIdContext();
+          if(parentID)return parentID;
+        }catch(_){}
+        try{
+          var fromUrl=new URLSearchParams(location.search).get("empresa_id");
+          if(fromUrl)return fromUrl;
+        }catch(_){}
+        try{return localStorage.getItem("active_empresa_id")||"";}catch(_){return "";}
+      }
+      function withEmpresa(href){
+        var id=empresaId();
+        var url=new URL(href,location.origin);
+        if(id)url.searchParams.set("empresa_id",id);
+        return url.pathname+url.search;
+      }
       frame.addEventListener("load",function(){loading.classList.remove("is-visible");});
+      if(creditos){
+        creditos.addEventListener("click",function(ev){
+          ev.preventDefault();
+          loading.classList.add("is-visible");
+          frame.src=withEmpresa(creditos.getAttribute("href"));
+        });
+      }
     })();
   </script>
 </body>

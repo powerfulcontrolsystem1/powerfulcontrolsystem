@@ -247,6 +247,7 @@ try {
     document.getElementById("linkEgresosIngresos"),
     document.getElementById("linkCreditos"),
     document.getElementById("linkCreditosMenu"),
+    document.getElementById("linkCreditosTarjeta"),
     document.getElementById("linkCreditosPanelMenu"),
     document.getElementById("linkCreditosCrearMenu"),
     document.getElementById("linkCreditosCarteraMenu"),
@@ -415,6 +416,7 @@ try {
     linkCorteCaja: { alwaysVisible: true },
     linkCreditos: { module: permModuleFinanzas, action: permActionCreate },
     linkCreditosMenu: { module: permModuleFinanzas, action: permActionCreate },
+    linkCreditosTarjeta: { module: permModuleFinanzas, action: permActionCreate },
     linkCreditosPanelMenu: { module: permModuleFinanzas, action: permActionCreate },
     linkCreditosCrearMenu: { module: permModuleFinanzas, action: permActionCreate },
     linkCreditosCarteraMenu: { module: permModuleFinanzas, action: permActionCreate },
@@ -1511,7 +1513,7 @@ try {
     }
     if (normalizePermissionRole(permissionContext.rol || permissionContext.role || "") === "contador") {
       links.forEach(function (link) {
-        setMenuLinkVisible(link, !!link && ["linkFinanzas", "linkFinanzasMain", "linkSuiteContador", "linkNIIF", "linkRentaIA", "linkImpuestos", "linkCentroIAEmpresarial", "linkPortalContador", "linkPortalContadorMenu", "linkContabilidadColombia", "linkContabilidadColombiaAvanzada", "linkDeclaracionesTributarias", "linkDeclaracionesTributariasMenu", "linkPortalTercerosCertificados", "linkPortalTercerosCertificadosMenu", "linkFacturacionElectronica", "linkFacturacionMain", "linkFacturasElectronicas", "linkReportes", "linkReportesEjecutivos", "linkCierreFiscal", "linkCierreFiscalMenu", "linkActivosFijosNIIF", "linkActivosFijosNIIFMenu", "linkTesoreriaPresupuesto", "linkBancosPagos", "linkBrebQR", "linkNominaMenu", "linkSoportesComprasIA", "linkSoportesComprasIAMenu"].indexOf(link.id) !== -1);
+        setMenuLinkVisible(link, !!link && ["linkFinanzas", "linkFinanzasMain", "linkSuiteContador", "linkNIIF", "linkRentaIA", "linkImpuestos", "linkCentroIAEmpresarial", "linkPortalContador", "linkPortalContadorMenu", "linkContabilidadColombia", "linkContabilidadColombiaAvanzada", "linkDeclaracionesTributarias", "linkDeclaracionesTributariasMenu", "linkPortalTercerosCertificados", "linkPortalTercerosCertificadosMenu", "linkFacturacionElectronica", "linkFacturacionMain", "linkFacturasElectronicas", "linkReportes", "linkReportesEjecutivos", "linkCierreFiscal", "linkCierreFiscalMenu", "linkActivosFijosNIIF", "linkActivosFijosNIIFMenu", "linkTesoreriaPresupuesto", "linkBancosPagos", "linkBrebQR", "linkCreditos", "linkCreditosMenu", "linkCreditosTarjeta", "linkCreditosPanelMenu", "linkCreditosCrearMenu", "linkCreditosCarteraMenu", "linkCreditosMorosidadMenu", "linkCreditosLimitesMenu", "linkCreditosOperacionesMenu", "linkCreditosAprobacionesMenu", "linkCreditosEstadoMenu", "linkNominaMenu", "linkSoportesComprasIA", "linkSoportesComprasIAMenu"].indexOf(link.id) !== -1);
       });
       setSecondaryMenuVisibility(false);
       refreshMenuGroups();
@@ -1811,7 +1813,7 @@ try {
     }
     if (normalizedRole === "contador") {
       links.forEach(function (link) {
-        setMenuLinkVisible(link, !!link && ["linkFinanzas", "linkFinanzasMain", "linkSuiteContador", "linkNIIF", "linkRentaIA", "linkImpuestos", "linkCentroIAEmpresarial", "linkPortalContador", "linkPortalContadorMenu", "linkContabilidadColombia", "linkContabilidadColombiaAvanzada", "linkDeclaracionesTributarias", "linkDeclaracionesTributariasMenu", "linkPortalTercerosCertificados", "linkPortalTercerosCertificadosMenu", "linkFacturacionElectronica", "linkFacturacionMain", "linkFacturasElectronicas", "linkReportes", "linkReportesEjecutivos", "linkCierreFiscal", "linkCierreFiscalMenu", "linkActivosFijosNIIF", "linkActivosFijosNIIFMenu", "linkTesoreriaPresupuesto", "linkBancosPagos", "linkBrebQR", "linkNominaMenu", "linkSoportesComprasIA", "linkSoportesComprasIAMenu"].indexOf(link.id) !== -1);
+        setMenuLinkVisible(link, !!link && ["linkFinanzas", "linkFinanzasMain", "linkSuiteContador", "linkNIIF", "linkRentaIA", "linkImpuestos", "linkCentroIAEmpresarial", "linkPortalContador", "linkPortalContadorMenu", "linkContabilidadColombia", "linkContabilidadColombiaAvanzada", "linkDeclaracionesTributarias", "linkDeclaracionesTributariasMenu", "linkPortalTercerosCertificados", "linkPortalTercerosCertificadosMenu", "linkFacturacionElectronica", "linkFacturacionMain", "linkFacturasElectronicas", "linkReportes", "linkReportesEjecutivos", "linkCierreFiscal", "linkCierreFiscalMenu", "linkActivosFijosNIIF", "linkActivosFijosNIIFMenu", "linkTesoreriaPresupuesto", "linkBancosPagos", "linkBrebQR", "linkCreditos", "linkCreditosMenu", "linkCreditosTarjeta", "linkCreditosPanelMenu", "linkCreditosCrearMenu", "linkCreditosCarteraMenu", "linkCreditosMorosidadMenu", "linkCreditosLimitesMenu", "linkCreditosOperacionesMenu", "linkCreditosAprobacionesMenu", "linkCreditosEstadoMenu", "linkNominaMenu", "linkSoportesComprasIA", "linkSoportesComprasIAMenu"].indexOf(link.id) !== -1);
       });
       setSecondaryMenuVisibility(false);
       refreshMenuGroups();
