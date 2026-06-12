@@ -34225,3 +34225,36 @@ Archivos modificados:
 - Configuracion: el titulo del contrato se mantiene configurable desde Super Administrador > Contrato; la version sigue en backend para aceptacion e historial.
 - Cache: se versiona `web/js/login_usuario.js` en la pagina para renovar el script en navegador.
 - QA: `node --check web/js/login_usuario.js`.
+
+2026-06-11: rs: actualizar repositorio y sincronizar VPS
+PushStatus: OK
+Archivos modificados:
+- CHANGELOG.md
+- backend/db/roles_permisos_usuario.go
+- backend/db/roles_tipos_usuario.go
+- backend/db/usuarios_empresa.go
+- backend/handlers/empresa_buzon.go
+- backend/handlers/empresa_permisos.go
+- backend/handlers/usuarios_empresa.go
+- backend/utils/json_error_middleware_test.go
+- backend/utils/system_errors.go
+- backend/utils/utils.go
+- documentos/CHANGELOG.md
+- documentos/checklist_seguridad_endpoint_multiempresa.md
+- documentos/descripcion_de_archivos
+- documentos/descripcion_de_modulos
+- documentos/estructura_bd.md
+- documentos/flujos_operativos.md
+- documentos/historial_de_cambios
+- documentos/mapa_modulos.md
+- documentos/matriz_roles_permisos_pos_multiempresa.md
+- web/administrar_empresa/administrar_usuarios.html
+- web/administrar_empresa/configuracion_menu.html
+- web/administrar_empresa/configuracion_rol_cajero.html
+- web/administrar_empresa/nomina_menu.html
+- web/administrar_empresa/nomina_sueldos.html
+- web/administrar_empresa/panel.html
+- web/index.html
+- web/js/administrar_empresa.js
+- web/js/login_usuario.js
+- web/login_usuario.html

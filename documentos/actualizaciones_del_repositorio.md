@@ -14549,3 +14549,35 @@ Archivos modificados:
 - documentos/matriz_roles_permisos_pos_multiempresa.md
 - web/administrar_empresa/finanzas_menu.html
 - web/js/administrar_empresa.js
+
+2026-06-11 21:29:13 - Mensaje: rs: actualizar repositorio y sincronizar VPS; Commit: 394e1fa3; PushStatus: OK
+Archivos modificados:
+- CHANGELOG.md
+- backend/db/roles_permisos_usuario.go
+- backend/db/roles_tipos_usuario.go
+- backend/db/usuarios_empresa.go
+- backend/handlers/empresa_buzon.go
+- backend/handlers/empresa_permisos.go
+- backend/handlers/usuarios_empresa.go
+- backend/utils/json_error_middleware_test.go
+- backend/utils/system_errors.go
+- backend/utils/utils.go
+- documentos/CHANGELOG.md
+- documentos/checklist_seguridad_endpoint_multiempresa.md
+- documentos/descripcion_de_archivos
+- documentos/descripcion_de_modulos
+- documentos/estructura_bd.md
+- documentos/flujos_operativos.md
+- documentos/historial_de_cambios
+- documentos/mapa_modulos.md
+- documentos/matriz_roles_permisos_pos_multiempresa.md
+- web/administrar_empresa/administrar_usuarios.html
+- web/administrar_empresa/configuracion_menu.html
+- web/administrar_empresa/configuracion_rol_cajero.html
+- web/administrar_empresa/nomina_menu.html
+- web/administrar_empresa/nomina_sueldos.html
+- web/administrar_empresa/panel.html
+- web/index.html
+- web/js/administrar_empresa.js
+- web/js/login_usuario.js
+- web/login_usuario.html
