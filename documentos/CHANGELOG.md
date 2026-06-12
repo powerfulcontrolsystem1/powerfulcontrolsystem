@@ -2980,3 +2980,7 @@
 - [Backend] `/api/empresa/finanzas/breb_qr` lista ventas/abonos Bre-B reales y registra pagos bancarios manuales en conciliacion, siempre filtrado por `empresa_id`.
 - [Operacion] La confirmacion automatica queda documentada como dependiente de webhook/API bancaria real.
 - 2026-06-11: `Ingresos/egresos manuales por rol` agrega checks en Configuracion operativa de cobro para habilitar al rol `cajero` a registrar ingresos y/o egresos manuales. La excepcion de permisos queda limitada a `/api/empresa/finanzas/movimientos` y el handler valida `empresa_id`, rol y configuracion operativa antes de mutar datos.
+
+## [2026-06-11] Carrito - Busqueda por nombre
+- [UX] El panel de coincidencias del buscador rapido por nombre se oculta al seleccionar un producto y mantiene la seleccion para agregarlo al carrito.
+- [QA] Validado con sintaxis JS embebida, prueba visual Playwright aislada y `git diff --check`.

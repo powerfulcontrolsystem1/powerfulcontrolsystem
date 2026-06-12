@@ -7017,6 +7017,10 @@
       state.scannerProductResults = [];
       state.scannerSelectedProductID = 0;
       state.scannerActiveResultIndex = -1;
+      hideScannerProductResults();
+    }
+
+    function hideScannerProductResults() {
       const box = document.getElementById('scannerResultados');
       if (!box) return;
       box.hidden = true;
@@ -7113,6 +7117,7 @@
         btn.querySelector('.scanner-product-result-meta').textContent = scannerProductDisplayCode(producto) + ' · ' + price;
         btn.addEventListener('click', function() {
           setScannerResultSelection(Number(btn.dataset.resultIndex || 0));
+          hideScannerProductResults();
           setScannerMessage('Producto seleccionado. Presiona Agregar para llevarlo al carrito.', false);
           const qty = document.getElementById('scannerCantidad');
           if (qty && typeof qty.focus === 'function') qty.focus();

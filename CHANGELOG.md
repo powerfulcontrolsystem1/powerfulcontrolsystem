@@ -4736,3 +4736,6 @@
 - Agrega en Finanzas y cumplimiento la pagina `Pagos Bre-B QR` y su tutorial.
 - Permite configurar QR/cuentas receptoras por empresa y caja, listar pagos Bre-B reales del carrito y registrar pagos bancarios manuales para conciliacion.
 - El endpoint `/api/empresa/finanzas/breb_qr` conserva aislamiento por `empresa_id` y no simula confirmacion bancaria sin webhook/API real.
+
+2026-06-11 - Carrito: busqueda por nombre
+- El panel de coincidencias del buscador rapido por nombre se oculta al seleccionar un producto, conservando la seleccion para agregarlo al carrito.
