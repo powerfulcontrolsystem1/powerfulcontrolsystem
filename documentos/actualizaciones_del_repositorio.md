@@ -14581,3 +14581,10 @@ Archivos modificados:
 - web/js/administrar_empresa.js
 - web/js/login_usuario.js
 - web/login_usuario.html
+
+2026-06-11 22:32:26 - Mensaje: rs: actualizar repositorio y sincronizar VPS; Commit: edcb09ee; PushStatus: OK
+Archivos modificados:
+- CHANGELOG.md
+- documentos/CHANGELOG.md
+- documentos/historial_de_cambios
+- web/administrar_empresa/carrito_de_compras.html

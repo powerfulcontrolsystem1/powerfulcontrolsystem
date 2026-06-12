@@ -34262,3 +34262,11 @@ Archivos modificados:
 2026-06-11: Carrito - cierre de resultados al seleccionar producto por nombre
 - Cambio: el buscador rapido por nombre en `web/administrar_empresa/carrito_de_compras.html` oculta el panel `scannerResultados` al seleccionar una coincidencia, conservando el producto seleccionado para el boton Agregar.
 - QA: validacion de scripts embebidos con Node, prueba visual aislada con Playwright y `git diff --check`.
+
+2026-06-11: rs: actualizar repositorio y sincronizar VPS
+PushStatus: OK
+Archivos modificados:
+- CHANGELOG.md
+- documentos/CHANGELOG.md
+- documentos/historial_de_cambios
+- web/administrar_empresa/carrito_de_compras.html
