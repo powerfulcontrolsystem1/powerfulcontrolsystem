@@ -14627,3 +14627,11 @@ Archivos modificados:
 2026-06-13 13:07:25 - Mensaje: rs: actualizar repositorio y sincronizar VPS; Commit: 5b647b6e; PushStatus: OK
 Archivos modificados:
 - web/administrar_empresa/carrito_de_compras.html
+
+2026-06-13 13:17:56 - Mensaje: rs: actualizar repositorio y sincronizar VPS; Commit: 8c4e76eb; PushStatus: OK
+Archivos modificados:
+- CHANGELOG.md
+- backend/db/usuarios_empresa.go
+- backend/handlers/empresa_permisos.go
+- backend/handlers/empresa_permisos_test.go
+- documentos/historial_de_cambios

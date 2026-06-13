@@ -34414,3 +34414,12 @@ Archivos modificados:
 PushStatus: OK
 Archivos modificados:
 - web/administrar_empresa/carrito_de_compras.html
+
+2026-06-13: rs: actualizar repositorio y sincronizar VPS
+PushStatus: OK
+Archivos modificados:
+- CHANGELOG.md
+- backend/db/usuarios_empresa.go
+- backend/handlers/empresa_permisos.go
+- backend/handlers/empresa_permisos_test.go
+- documentos/historial_de_cambios
