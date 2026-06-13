@@ -34461,3 +34461,8 @@ Archivos modificados:
 PushStatus: OK
 Archivos modificados:
 - web/js/empresa_submenu_context.js
+
+2026-06-13: rs: actualizar repositorio y sincronizar VPS
+PushStatus: OK
+Archivos modificados:
+- web/js/administrar_empresa.js
