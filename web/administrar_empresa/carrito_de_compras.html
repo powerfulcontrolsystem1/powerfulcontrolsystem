@@ -4171,6 +4171,9 @@
         return;
       }
       if (state.paymentAmountsManual) {
+        if (!document.activeElement || !document.activeElement.dataset || !document.activeElement.dataset.paymentAmountMethod) {
+          formatStationPaymentAmountInputs(carrito.moneda);
+        }
         renderCashReceivedChange(carrito);
         return;
       }
