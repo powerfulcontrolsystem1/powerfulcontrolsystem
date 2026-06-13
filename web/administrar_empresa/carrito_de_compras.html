@@ -11546,7 +11546,7 @@
         if (!button || button.nodeType !== 1) return false;
         if (button.querySelector('.cart-btn-icon')) return false;
         if (button.closest('[data-cart-icons="off"]')) return false;
-        if (button.matches('.cart-btn-icon, .ai-chat-icon-btn, .ai-chat-minibar-btn')) return false;
+        if (button.matches('.cart-btn-icon, .cart-item-qty-step, .ai-chat-icon-btn, .ai-chat-minibar-btn')) return false;
         const label = normalize(button.textContent || button.getAttribute('aria-label') || button.getAttribute('title'));
         if (!label || label === '×' || label === 'x') return false;
         return Boolean(button.closest('body.carrito-flat-page'));
