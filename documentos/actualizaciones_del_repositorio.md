@@ -14635,3 +14635,9 @@ Archivos modificados:
 - backend/handlers/empresa_permisos.go
 - backend/handlers/empresa_permisos_test.go
 - documentos/historial_de_cambios
+
+2026-06-13 13:29:48 - Mensaje: rs: actualizar repositorio y sincronizar VPS; Commit: c661f26a; PushStatus: OK
+Archivos modificados:
+- CHANGELOG.md
+- documentos/historial_de_cambios
+- web/js/administrar_empresa.js
