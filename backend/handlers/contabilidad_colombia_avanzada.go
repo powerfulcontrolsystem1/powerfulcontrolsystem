@@ -107,6 +107,14 @@ func EmpresaContabilidadColombiaAvanzadaHandler(dbEmp *sql.DB) http.HandlerFunc 
 				}
 				writeJSON(w, http.StatusOK, rows)
 				return
+			case "cartera_cxp_edades", "edades_cartera":
+				row, err := dbpkg.BuildEmpresaCarteraCXPEdades(dbEmp, empresaID, r.URL.Query().Get("tipo"), r.URL.Query().Get("fecha_corte"))
+				if err != nil {
+					http.Error(w, "No se pudo calcular edades de cartera", http.StatusInternalServerError)
+					return
+				}
+				writeJSON(w, http.StatusOK, row)
+				return
 			case "libros":
 				rows, err := dbpkg.ListEmpresaLibroOficial(dbEmp, empresaID, r.URL.Query().Get("tipo"), r.URL.Query().Get("periodo"))
 				if err != nil {
@@ -272,7 +280,100 @@ func EmpresaContabilidadColombiaAvanzadaHandler(dbEmp *sql.DB) http.HandlerFunc 
 					http.Error(w, err.Error(), http.StatusBadRequest)
 					return
 				}
+				evento := "cuenta_por_cobrar_generada"
+				if strings.EqualFold(payload.Tipo, "cxp") {
+					evento = "cuenta_por_pagar_generada"
+				}
+				registrarEventoContableNoBloqueante(dbEmp, r, "contabilidad_avanzada", dbpkg.EmpresaEventoContable{
+					EmpresaID:       empresaID,
+					Modulo:          "cartera",
+					Evento:          evento,
+					Entidad:         "empresa_contabilidad_cartera_cxp",
+					EntidadID:       id,
+					DocumentoTipo:   strings.ToLower(strings.TrimSpace(payload.Tipo)),
+					DocumentoCodigo: strings.TrimSpace(payload.Documento),
+					MontoTotal:      payload.Saldo,
+					Moneda:          "COP",
+					Origen:          "api_contabilidad_avanzada_cartera",
+					UsuarioCreador:  usuario,
+					Estado:          "activo",
+					Observaciones:   strings.TrimSpace(payload.Concepto),
+				}, map[string]interface{}{
+					"tipo":               strings.ToLower(strings.TrimSpace(payload.Tipo)),
+					"tercero_id":         payload.TerceroID,
+					"tercero_nombre":     strings.TrimSpace(payload.TerceroNombre),
+					"documento":          strings.TrimSpace(payload.Documento),
+					"fecha_emision":      strings.TrimSpace(payload.FechaEmision),
+					"fecha_vencimiento":  strings.TrimSpace(payload.FechaVencimiento),
+					"cuenta_cartera":     strings.TrimSpace(payload.CuentaCodigo),
+					"cuenta_cxp":         strings.TrimSpace(payload.CuentaCodigo),
+					"subtotal":           payload.ValorOriginal,
+					"base_gravable":      payload.ValorOriginal,
+					"total_neto":         payload.Saldo,
+					"saldo":              payload.Saldo,
+					"origen_modulo":      strings.TrimSpace(payload.OrigenModulo),
+					"referencia_externa": strings.TrimSpace(payload.ReferenciaExterna),
+				})
 				writeJSON(w, http.StatusCreated, map[string]interface{}{"ok": true, "id": id})
+				return
+			case "cartera_cxp_abono", "abono_cartera":
+				var payload struct {
+					ID              int64   `json:"id"`
+					Monto           float64 `json:"monto"`
+					FechaAplicacion string  `json:"fecha_aplicacion"`
+					ReferenciaPago  string  `json:"referencia_pago"`
+					MetodoPago      string  `json:"metodo_pago"`
+					Observaciones   string  `json:"observaciones"`
+				}
+				if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+					http.Error(w, "JSON invalido", http.StatusBadRequest)
+					return
+				}
+				if payload.ID <= 0 {
+					payload.ID = int64Query(r, "id")
+				}
+				if payload.Monto <= 0 {
+					payload.Monto = floatQuery(r, "monto")
+				}
+				result, err := dbpkg.AplicarEmpresaCarteraCXPAbono(dbEmp, empresaID, payload.ID, payload.Monto, payload.FechaAplicacion, payload.ReferenciaPago, usuario)
+				if err != nil {
+					http.Error(w, err.Error(), http.StatusBadRequest)
+					return
+				}
+				moduloEvento := "cartera"
+				documentoTipo := strings.ToLower(strings.TrimSpace(result.Cartera.Tipo))
+				registrarEventoContableNoBloqueante(dbEmp, r, "contabilidad_avanzada", dbpkg.EmpresaEventoContable{
+					EmpresaID:       empresaID,
+					Modulo:          moduloEvento,
+					Evento:          result.EventoContable,
+					Entidad:         "empresa_contabilidad_cartera_cxp",
+					EntidadID:       result.Cartera.ID,
+					DocumentoTipo:   documentoTipo,
+					DocumentoCodigo: result.DocumentoContable,
+					MontoTotal:      result.MontoAplicado,
+					Moneda:          "COP",
+					Origen:          "api_contabilidad_avanzada_cartera_abono",
+					UsuarioCreador:  usuario,
+					Estado:          "activo",
+					Observaciones:   strings.TrimSpace(payload.Observaciones),
+				}, map[string]interface{}{
+					"tipo":             documentoTipo,
+					"tercero_id":       result.Cartera.TerceroID,
+					"tercero_nombre":   result.Cartera.TerceroNombre,
+					"documento":        result.Cartera.Documento,
+					"metodo_pago":      strings.TrimSpace(payload.MetodoPago),
+					"referencia_pago":  strings.TrimSpace(payload.ReferenciaPago),
+					"monto":            result.MontoAplicado,
+					"total_neto":       result.MontoAplicado,
+					"saldo_anterior":   result.SaldoAnterior,
+					"saldo_nuevo":      result.SaldoNuevo,
+					"estado_anterior":  result.EstadoAnterior,
+					"estado_nuevo":     result.EstadoNuevo,
+					"cuenta_cartera":   result.Cartera.CuentaCodigo,
+					"cuenta_cxp":       result.Cartera.CuentaCodigo,
+					"fecha_aplicacion": result.FechaAplicacion,
+				})
+				writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "resultado": result})
 				return
 			}
 		}
@@ -287,5 +388,10 @@ func intQuery(r *http.Request, key string) int {
 
 func int64Query(r *http.Request, key string) int64 {
 	v, _ := strconv.ParseInt(strings.TrimSpace(r.URL.Query().Get(key)), 10, 64)
+	return v
+}
+
+func floatQuery(r *http.Request, key string) float64 {
+	v, _ := strconv.ParseFloat(strings.TrimSpace(r.URL.Query().Get(key)), 64)
 	return v
 }

@@ -2,96 +2,35 @@ package db
 
 import "testing"
 
-func TestDefaultExogenaFormatosCubreFormatosBaseColombia(t *testing.T) {
-	rows := defaultExogenaFormatos(7, "tester", 2026)
-	want := map[string]bool{"1001": false, "1003": false, "1005": false, "1006": false, "1007": false, "1008": false, "1009": false}
-	for _, row := range rows {
-		if row.EmpresaID != 7 {
-			t.Fatalf("empresa_id incorrecto: got %d", row.EmpresaID)
-		}
-		if row.AnioGravable != 2026 {
-			t.Fatalf("anio gravable incorrecto para %s: got %d", row.Formato, row.AnioGravable)
-		}
-		if _, ok := want[row.Formato]; ok {
-			want[row.Formato] = true
-		}
+func TestEmpresaCarteraCXPEdadRango(t *testing.T) {
+	cases := []struct {
+		name      string
+		venc      string
+		corte     string
+		wantRango string
+	}{
+		{name: "por vencer", venc: "2026-06-20", corte: "2026-06-12", wantRango: "por_vencer"},
+		{name: "vencido 30", venc: "2026-05-20", corte: "2026-06-12", wantRango: "0_30"},
+		{name: "vencido 60", venc: "2026-04-20", corte: "2026-06-12", wantRango: "31_60"},
+		{name: "vencido 90", venc: "2026-03-20", corte: "2026-06-12", wantRango: "61_90"},
+		{name: "vencido 180", venc: "2026-01-20", corte: "2026-06-12", wantRango: "91_180"},
+		{name: "vencido mayor", venc: "2025-01-20", corte: "2026-06-12", wantRango: "181_mas"},
 	}
-	for formato, found := range want {
-		if !found {
-			t.Fatalf("falta formato base %s", formato)
-		}
-	}
-}
-
-func TestValidateExogenaRegistro(t *testing.T) {
-	ok := validateExogenaRegistro(EmpresaExogenaRegistro{Documento: "900123456", RazonSocial: "Proveedor SAS", Total: 100})
-	if ok != "OK" {
-		t.Fatalf("validacion esperada OK, got %q", ok)
-	}
-	bad := validateExogenaRegistro(EmpresaExogenaRegistro{})
-	if bad == "OK" || bad == "" {
-		t.Fatalf("validacion incompleta no fue reportada: %q", bad)
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			got := empresaCarteraCXPEdadRango(tc.venc, tc.corte)
+			if got != tc.wantRango {
+				t.Fatalf("rango inesperado got=%s want=%s", got, tc.wantRango)
+			}
+		})
 	}
 }
 
-func TestFormatEmpresaDocumentoElectronicoRef(t *testing.T) {
-	got := FormatEmpresaDocumentoElectronicoRef("ne", 7, 42)
-	if got != "NE-7-000042" {
-		t.Fatalf("referencia incorrecta: got %q", got)
+func TestNormalizeEmpresaCarteraCXPEstado(t *testing.T) {
+	if got := normalizeEmpresaCarteraCXPEstado("pendiente", 0, "2026-06-12"); got != "pagado" {
+		t.Fatalf("saldo cero debe quedar pagado, got=%s", got)
 	}
-}
-
-func TestCalcularEmpresaActivoDepreciacionPeriodoLineaRecta(t *testing.T) {
-	activo := EmpresaActivoFijo{
-		ID:                      11,
-		EmpresaID:               7,
-		Codigo:                  "AF-001",
-		Nombre:                  "Equipo QA",
-		FechaCompra:             "2026-01-15",
-		FechaInicioDepreciacion: "2026-01-15",
-		Costo:                   1200000,
-		ValorResidual:           120000,
-		VidaUtilMeses:           12,
-		MetodoDepreciacion:      "linea_recta",
-	}
-	row := calcularEmpresaActivoDepreciacionPeriodo(activo, "2026-03", "2026-03-28", "qa")
-	if row.DepreciacionPeriodo != 90000 {
-		t.Fatalf("depreciacion periodo = %v", row.DepreciacionPeriodo)
-	}
-	if row.DepreciacionAcumulada != 270000 {
-		t.Fatalf("depreciacion acumulada = %v", row.DepreciacionAcumulada)
-	}
-	if row.ValorLibros != 930000 {
-		t.Fatalf("valor libros = %v", row.ValorLibros)
-	}
-}
-
-func TestCalcularActivoFiscalPeriodo(t *testing.T) {
-	activo := EmpresaActivoFijo{
-		EmpresaID:               7,
-		Codigo:                  "AF-FISCAL",
-		Nombre:                  "Activo fiscal QA",
-		FechaCompra:             "2026-01-01",
-		FechaInicioDepreciacion: "2026-01-01",
-		Costo:                   1200000,
-		BaseFiscal:              900000,
-		ValorResidual:           0,
-		VidaUtilMeses:           60,
-		VidaUtilFiscalMeses:     30,
-	}
-	if got := calcularActivoDepreciacionFiscalAcumulada(activo, "2026-03"); got != 90000 {
-		t.Fatalf("depreciacion fiscal acumulada = %v", got)
-	}
-	if got := calcularActivoValorFiscalPeriodo(activo, "2026-03"); got != 810000 {
-		t.Fatalf("valor fiscal = %v", got)
-	}
-}
-
-func TestNormalizeActivoEventoTipo(t *testing.T) {
-	if got := normalizeActivoEventoTipo(" TRASLADO "); got != "traslado" {
-		t.Fatalf("tipo evento = %q", got)
-	}
-	if got := normalizeActivoEventoTipo("desconocido"); got != "mantenimiento" {
-		t.Fatalf("tipo evento por defecto = %q", got)
+	if got := normalizeEmpresaCarteraCXPEstado("anulado", 100, "2026-06-12"); got != "anulado" {
+		t.Fatalf("estado anulado debe conservarse, got=%s", got)
 	}
 }

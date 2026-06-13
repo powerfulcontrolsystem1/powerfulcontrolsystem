@@ -505,6 +505,10 @@ func EmpresaUsuariosHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 				http.Error(w, err.Error(), http.StatusBadRequest)
 				return
 			}
+			if utils.AdminShouldUseSuperRole(payload.Email) {
+				http.Error(w, "este correo esta reservado para el super administrador y no puede crearse como usuario operativo", http.StatusConflict)
+				return
+			}
 
 			rolNombre, err := resolveRolNombreValidoParaEmpresa(dbEmp, dbSuper, payload.EmpresaID, payload.RolUsuarioID)
 			if err != nil {
@@ -687,6 +691,10 @@ func EmpresaUsuariosHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 			}
 			if err := validateEmpresaUsuarioPayload(payload.EmpresaID, payload.Email, payload.Nombre, payload.RolUsuarioID); err != nil {
 				http.Error(w, err.Error(), http.StatusBadRequest)
+				return
+			}
+			if utils.AdminShouldUseSuperRole(payload.Email) {
+				http.Error(w, "este correo esta reservado para el super administrador y no puede asignarse a un usuario operativo", http.StatusConflict)
 				return
 			}
 
@@ -2615,15 +2623,27 @@ type empresaUsuarioSessionResult struct {
 	Apariencia  string
 }
 
+func empresaUsuarioSessionRole(item *dbpkg.EmpresaUsuario) string {
+	if item == nil {
+		return "admin_empresa"
+	}
+	if utils.AdminShouldUseSuperRole(item.Email) {
+		return "super_administrador"
+	}
+
+	sessionRole := normalizePermissionRole(item.RolNombre)
+	if sessionRole == "" || sessionRole == "sin_rol" {
+		sessionRole = "admin_empresa"
+	}
+	return sessionRole
+}
+
 func createEmpresaUsuarioSession(w http.ResponseWriter, r *http.Request, dbSuper *sql.DB, item *dbpkg.EmpresaUsuario) (empresaUsuarioSessionResult, error) {
 	var result empresaUsuarioSessionResult
 	if item == nil {
 		return result, fmt.Errorf("usuario de empresa requerido")
 	}
-	sessionRole := normalizePermissionRole(item.RolNombre)
-	if sessionRole == "" || sessionRole == "sin_rol" {
-		sessionRole = "admin_empresa"
-	}
+	sessionRole := empresaUsuarioSessionRole(item)
 	if err := dbpkg.UpsertAdministrador(dbSuper, item.Email, item.Nombre, sessionRole, ""); err != nil {
 		return result, fmt.Errorf("failed to upsert admin: %w", err)
 	}

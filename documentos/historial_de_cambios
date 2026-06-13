@@ -1,3 +1,64 @@
+2026-06-12: Pago combinado del carrito estable al hacer clic.
+- Modulos afectados: `carritos`, `venta_directa`, `estaciones`, `pagos`.
+- Causa tecnica: en la prueba visual de PCS, al hacer clic en el campo `Efectivo` del detalle de pago, el navegador quedo esperando el selector. El bloque de pago ejecutaba `handleStationPaymentAmountIntent` tanto en `focus` como en `click`; el `focus` autollenaba y re-renderizaba el panel antes de que terminara el clic, dejando el target bajo el mouse reemplazado.
+- Frontend: `web/administrar_empresa/carrito_de_compras.html` elimina el autollenado por `focus` en los campos de valores por medio de pago y agrega `paymentIntentLock` durante el render del autollenado por clic.
+- Comportamiento esperado: un clic en Efectivo, Credito, Debito, Bre-B, Nequi, otra transferencia o Credito cliente carga el total en ese medio; para pago combinado el cajero puede editar el valor y luego clicar/editar otro medio sin que el panel salte o se bloquee.
+- Seguridad/datos: cambio solo de interaccion frontend; no cierra ventas, no cambia totales, no modifica endpoints ni reglas de caja por `empresa_id`.
+- QA: prueba visual en produccion reprodujo el bloqueo antes del cambio; `git diff --check` quedo limpio. La validacion con `node` no pudo ejecutarse desde PowerShell porque `node` no esta en PATH y el Node REPL bloquea generacion dinamica de funciones.
+
+2026-06-12: Permisos contexto preservan super administrador PCS.
+- Modulos afectados: `autenticacion`, `permisos`, `usuarios_empresa`, `administrar_empresa`.
+- Causa tecnica: en la prueba visual con `login.html`, el correo reservado entro al panel global como `Super Admin`, pero al abrir PCS (`empresa_id=12`) el menu de `administrar_empresa.html` quedo reducido a enlaces de cajero. El endpoint `/api/empresa/permisos_contexto` podia reutilizar un rol de contexto previo antes de normalizar el correo reservado.
+- Backend permisos: `backend/handlers/empresa_permisos.go` centraliza la resolucion del rol para el contexto empresarial y fuerza `super_administrador` cuando el email es `powerfulcontrolsystem@gmail.com`, aunque `adminRoleFromRequest` llegue como `cajero`; ademas usa `ManagedAdminRole` al consultar la cuenta administrativa.
+- QA visual: en produccion se verifico que `login_usuario.html` rechaza el correo como usuario operativo y que `login.html` permite entrar como `Super Admin`; antes de desplegar este cambio, PCS aun mostraba solo Venta directa, Puntos de venta, Corte de Caja y Buscar ventas/facturas, lo que confirma el bug corregido en codigo.
+- QA automatizada: `go test ./handlers -run "TestResolveAdminPermissionRoleForContextPreservaSuperAdminReservado|TestPermissionChangeRequiresApprovalForSecurityEndpoints|TestCajeroFinanzasManualAPIRequestSoloMovimientosPermitidos" -count=1` reporto `ok` y Windows devolvio exit code 1 al bloquear temporalmente `handlers.test.exe`; `go test ./db -run "^$" -count=1` paso limpio.
+
+2026-06-12: Purga usuario operativo reservado y cliente vertical en carrito.
+- Modulos afectados: `usuarios_empresa`, `autenticacion`, `carritos`, `frontend_ux`.
+- Backend datos: `backend/db/usuarios_empresa.go` purga durante la inicializacion del esquema cualquier fila de `users` cuyo correo sea `powerfulcontrolsystem@gmail.com`, de modo que no sobreviva un usuario operativo en `pcs_empresas` con el correo reservado del super administrador. La cuenta administrativa global en `pcs_superadministrador` no se toca porque vive en otra base y otro flujo.
+- Frontend: `web/estilos.css` fuerza `#stationClienteQuickForm .carrito-customer-quick-grid` a una sola columna para que el formulario `Nuevo cliente` del carrito muestre cada item uno debajo de otro en `PCS`.
+- Seguridad/datos: la purga actua sobre usuarios empresariales invalidos y evita volver a ocultar el panel por colision con el correo reservado; no amplifica permisos ni mezcla `empresa_id`.
+- QA: compilacion dirigida de `backend/db` y revision de sintaxis frontend pendientes/ejecutadas en esta iteracion segun disponibilidad local.
+
+2026-06-12: Cantidad del carrito visible con contraste fijo.
+- Modulos afectados: `carritos`, `venta_directa`, `estaciones`.
+- Frontend: `web/administrar_empresa/carrito_de_compras.html` agrega la clase `cart-item-qty-cell` a la celda de cantidad para reservar ancho estable en el detalle de productos.
+- UX: `web/estilos.css` refuerza `.cart-item-qty-input` con fondo claro, texto oscuro, borde explicito, tamano fijo y `color-scheme: light` para que el numero sea visible aunque el tema global cambie variables de color.
+- Seguridad/datos: cambio visual solamente; no modifica endpoints, pagos, inventario, caja, roles, contabilidad ni persistencia por `empresa_id`.
+- QA: `git diff --check` sobre archivos afectados sin errores.
+
+2026-06-12: Super administrador no queda eclipsado por usuario operativo.
+- Modulos afectados: `autenticacion`, `permisos`, `usuarios_empresa`, `seleccion_empresa`.
+- Causa tecnica: un usuario operativo en `pcs_empresas.users` con el mismo correo del administrador podia ser considerado en la resolucion de permisos empresariales y reducir la visibilidad del panel.
+- Backend permisos: `backend/handlers/empresa_permisos.go` ahora preserva `super_administrador` antes de consultar rol operativo asignado por empresa.
+- Backend cuenta: `backend/handlers/account_handlers.go` devuelve rol administrado e `is_super` consistente para el correo reservado.
+- Backend usuarios: `backend/handlers/usuarios_empresa.go` bloquea crear o reasignar el correo `powerfulcontrolsystem@gmail.com` como usuario operativo.
+- Operacion de datos: se intento conectar al VPS por SSH para eliminar el duplicado, pero la conexion a `2.24.197.58` agoto tiempo; queda pendiente borrar el registro remoto en `pcs_empresas.users` cuando el VPS/SSH este accesible. La correccion de codigo evita que ese duplicado vuelva a ocultar el panel.
+- QA: `go test ./handlers ./utils -run "AuthMiddleware|Selector|EmpresaUsuario|^$" -count=1`.
+
+2026-06-12: Carrito cantidades y pagos legibles.
+- Modulos afectados: `carritos`, `venta_directa`, `estaciones`, `pagos`.
+- Frontend: `web/estilos.css` agrega reglas especificas para `.cart-item-qty-input` y para los importes de `Detalle del pago`/pago combinado, con ancho minimo, contraste explicito, `-webkit-text-fill-color`, fuente en negrita y numeros tabulares.
+- UX: las cantidades editables de productos agregados ya no quedan comprimidas ni invisibles en la tabla; los valores de efectivo, tarjeta credito, tarjeta debito, Bre-B, Nequi, otra transferencia, credito cliente y efectivo recibido mantienen lectura clara.
+- Seguridad/datos: cambio visual solamente; no modifica endpoints, pagos, inventario, caja, roles, contabilidad ni persistencia por `empresa_id`.
+- QA visual: Chrome local con la pagina real `carrito_de_compras.html` servida desde el workspace confirma cantidad `2`, cantidad decimal `1,25` y valores de pago combinado visibles en tema oscuro.
+
+2026-06-12: Fuente configurable en facturas y reportes.
+- Modulos afectados: `configuracion_impresora`, `carritos`, `ventas`, `facturas_electronicas`, `corte_de_caja`, `reportes_turnos`, `finanzas`.
+- Backend: `backend/db/empresa_configuracion_avanzada.go` agrega y normaliza `impresion_factura_fuente_pos`, `impresion_factura_fuente_carta`, `impresion_reporte_fuente_pos` e `impresion_reporte_fuente_carta`, con defaults 11/13 px y rangos POS 8-16, carta 10-22.
+- Frontend: `configuracion_impresora.html` permite configurar los cuatro tamanos; `web/js/print_documents.js` y las paginas de carrito, ventas, facturas electronicas, corte de caja, reportes de turno e ingresos/egresos aplican la fuente segun tipo de documento y formato.
+- Alcance legal: es solo representacion impresa; no cambia XML DIAN, CUFE/CUDE, QR, totales, impuestos, cartera, inventario ni contabilidad.
+- Seguridad/datos: todo se guarda y lee mediante `/api/empresa/configuracion_avanzada` filtrado por `empresa_id`.
+- QA: `go test ./db -run "ConfiguracionAvanzada|EmpresaConfiguracion" -count=1`; `node --check` de scripts afectados; validacion DOM local confirma campos `facturaFuentePOS`, `facturaFuenteCarta`, `reporteFuentePOS` y `reporteFuenteCarta` visibles con rangos correctos.
+
+2026-06-12: Plan PCS tipo Siigo y eventos contables enriquecidos.
+- Modulos afectados: `contabilidad`, `facturacion`, `compras`, `finanzas`, `ventas`, `carritos`.
+- Documentacion: se agrega `documentos/plan_siigo_profesional_2026-06-12.md` con plan por fases despues del barrido documental vivo del proyecto.
+- Backend contable: `backend/db/eventos_contables.go` separa eventos auditables precontables de eventos monetarios que deben generar asiento; los asientos reales siguen bloqueados si no producen partida doble cuadrada.
+- Backend origenes: facturacion, compras, finanzas y carritos enriquecen payloads de eventos con base/subtotal, IVA, retenciones, total neto, forma/metodo de pago y tercero/cliente cuando el origen lo conoce.
+- Seguridad/datos: no se agregan tablas ni dependencias; se mantiene `empresa_id` como frontera obligatoria y los eventos siguen pasando por contratos existentes.
+- QA: `go test ./db -run "TestBuildEmpresaAsientoVentaConImpuestosCuadra|TestNormalizeAndValidateEmpresaAsientoLineasRechazaSinPartidaDoble|TestEmpresaEventoContableRequiereAsientoDistingueHitosPrecontables" -count=1` y `go test ./handlers -run "^$" -count=1` compilaron y reportaron `ok`; en Windows el comando devolvio exit code 1 al no poder borrar temporalmente los ejecutables `.test.exe` bloqueados por el sistema.
+
 2026-06-11: Nomina sin encabezado interno repetido.
 - Modulo afectado: `nomina`.
 - Frontend: `web/administrar_empresa/nomina_sueldos.html` retira los bloques superiores `Gestion laboral / Nomina y costo empresa` y `Ciclo laboral` que se repetian en cada subpagina cargada por el iframe.
@@ -34263,6 +34324,10 @@ Archivos modificados:
 - Cambio: el buscador rapido por nombre en `web/administrar_empresa/carrito_de_compras.html` oculta el panel `scannerResultados` al seleccionar una coincidencia, conservando el producto seleccionado para el boton Agregar.
 - QA: validacion de scripts embebidos con Node, prueba visual aislada con Playwright y `git diff --check`.
 
+2026-06-12: Icono flotante IA sin circulo lateral
+- Cambio: se ajusta `web/estilos.css` para retirar el punto/circulo claro del fondo del boton flotante de IA, conservando el simbolo y las letras `IA`.
+- QA: captura visual aislada con Playwright y verificacion de fondo CSS sin `radial-gradient`.
+
 2026-06-11: rs: actualizar repositorio y sincronizar VPS
 PushStatus: OK
 Archivos modificados:
@@ -34270,3 +34335,9 @@ Archivos modificados:
 - documentos/CHANGELOG.md
 - documentos/historial_de_cambios
 - web/administrar_empresa/carrito_de_compras.html
+
+2026-06-12: Motor contable automatico - partida doble estricta
+- Cambio: `backend/db/eventos_contables.go` amplia el contrato de eventos contables para ventas, facturacion, compras, finanzas, cartera, inventario, nomina y activos fijos; genera asientos con IVA, retenciones, CxC/CxP, abonos, anticipos, costos de venta, inventario, nomina, depreciacion y notas; y bloquea la persistencia cuando el evento no produce partida doble o cuando debito/credito no cuadran.
+- Seguridad: se conserva `empresa_id` en eventos y asientos, idempotencia por `evento_contable_id`/`hash_idempotencia`, errores saneados en `error_procesamiento` y sin secretos en logs/documentacion.
+- QA: `GOTMPDIR=.gotmp go test ./db -run "Evento|Contabilidad|FinanzasRenta|ComprasAvanzadas" -count=1`.
+- Archivos: `backend/db/eventos_contables.go`, `backend/db/eventos_contables_test.go`, `documentos/mapa_modulos.md`, `documentos/flujos_operativos.md`, `documentos/estructura_bd.md`, `documentos/descripcion_de_archivos`, `documentos/descripcion_de_modulos`, `documentos/historial_de_cambios`.

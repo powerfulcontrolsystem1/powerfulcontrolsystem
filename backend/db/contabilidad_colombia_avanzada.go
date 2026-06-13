@@ -240,6 +240,41 @@ type EmpresaCarteraCXP struct {
 	UsuarioCreador     string  `json:"usuario_creador,omitempty"`
 }
 
+type EmpresaCarteraCXPEdadFila struct {
+	Tipo       string  `json:"tipo"`
+	Rango      string  `json:"rango"`
+	Registros  int64   `json:"registros"`
+	Saldo      float64 `json:"saldo"`
+	Vencido    float64 `json:"vencido"`
+	PorVencer  float64 `json:"por_vencer"`
+	SaldoMayor float64 `json:"saldo_mayor"`
+}
+
+type EmpresaCarteraCXPEdadesResumen struct {
+	EmpresaID      int64                       `json:"empresa_id"`
+	Tipo           string                      `json:"tipo,omitempty"`
+	FechaCorte     string                      `json:"fecha_corte"`
+	TotalRegistros int64                       `json:"total_registros"`
+	SaldoTotal     float64                     `json:"saldo_total"`
+	VencidoTotal   float64                     `json:"vencido_total"`
+	PorVencerTotal float64                     `json:"por_vencer_total"`
+	Rangos         []EmpresaCarteraCXPEdadFila `json:"rangos"`
+}
+
+type EmpresaCarteraCXPAbonoResultado struct {
+	Cartera           EmpresaCarteraCXP `json:"cartera"`
+	MontoAplicado     float64           `json:"monto_aplicado"`
+	SaldoAnterior     float64           `json:"saldo_anterior"`
+	SaldoNuevo        float64           `json:"saldo_nuevo"`
+	ValorPagadoNuevo  float64           `json:"valor_pagado_nuevo"`
+	EstadoAnterior    string            `json:"estado_anterior"`
+	EstadoNuevo       string            `json:"estado_nuevo"`
+	FechaAplicacion   string            `json:"fecha_aplicacion"`
+	ReferenciaPago    string            `json:"referencia_pago,omitempty"`
+	EventoContable    string            `json:"evento_contable"`
+	DocumentoContable string            `json:"documento_contable"`
+}
+
 type EmpresaLibroOficialResumen struct {
 	Tipo         string  `json:"tipo"`
 	Periodo      string  `json:"periodo"`
@@ -1221,6 +1256,10 @@ func CreateEmpresaCarteraCXP(dbConn *sql.DB, x EmpresaCarteraCXP) (int64, error)
 	if x.Saldo == 0 {
 		x.Saldo = x.ValorOriginal - x.ValorPagado
 	}
+	x.Saldo = roundContabilidad(maxFloat64(x.Saldo, 0))
+	x.ValorOriginal = roundContabilidad(maxFloat64(x.ValorOriginal, 0))
+	x.ValorPagado = roundContabilidad(maxFloat64(x.ValorPagado, 0))
+	x.Estado = normalizeEmpresaCarteraCXPEstado(x.Estado, x.Saldo, x.FechaVencimiento)
 	return insertSQLCompat(dbConn, `INSERT INTO empresa_contabilidad_cartera_cxp
 		(empresa_id, tipo, tercero_id, tercero_nombre, documento, fecha_emision, fecha_vencimiento, cuenta_codigo, concepto, valor_original, valor_pagado, saldo, estado, origen_modulo, referencia_externa, usuario_creador)
 		VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
@@ -1255,6 +1294,207 @@ func ListEmpresaCarteraCXP(dbConn *sql.DB, empresaID int64, tipo, estado string)
 		out = append(out, x)
 	}
 	return out, rows.Err()
+}
+
+func GetEmpresaCarteraCXPByID(dbConn *sql.DB, empresaID, id int64) (EmpresaCarteraCXP, error) {
+	var x EmpresaCarteraCXP
+	if empresaID <= 0 || id <= 0 {
+		return x, errors.New("empresa_id e id son obligatorios")
+	}
+	err := dbConn.QueryRow(`SELECT id, empresa_id, tipo, tercero_id, tercero_nombre, documento, fecha_emision, fecha_vencimiento,
+		cuenta_codigo, concepto, valor_original, valor_pagado, saldo, estado, origen_modulo, COALESCE(referencia_externa,''),
+		COALESCE(fecha_creacion,''), COALESCE(fecha_actualizacion,''), COALESCE(usuario_creador,'')
+		FROM empresa_contabilidad_cartera_cxp WHERE empresa_id=? AND id=? LIMIT 1`, empresaID, id).
+		Scan(&x.ID, &x.EmpresaID, &x.Tipo, &x.TerceroID, &x.TerceroNombre, &x.Documento, &x.FechaEmision, &x.FechaVencimiento, &x.CuentaCodigo, &x.Concepto, &x.ValorOriginal, &x.ValorPagado, &x.Saldo, &x.Estado, &x.OrigenModulo, &x.ReferenciaExterna, &x.FechaCreacion, &x.FechaActualizacion, &x.UsuarioCreador)
+	return x, err
+}
+
+func AplicarEmpresaCarteraCXPAbono(dbConn *sql.DB, empresaID, id int64, monto float64, fechaAplicacion, referenciaPago, usuario string) (EmpresaCarteraCXPAbonoResultado, error) {
+	var result EmpresaCarteraCXPAbonoResultado
+	if empresaID <= 0 || id <= 0 {
+		return result, errors.New("empresa_id e id son obligatorios")
+	}
+	monto = roundContabilidad(monto)
+	if monto <= 0 {
+		return result, errors.New("monto del abono debe ser mayor que cero")
+	}
+	row, err := GetEmpresaCarteraCXPByID(dbConn, empresaID, id)
+	if err != nil {
+		return result, err
+	}
+	saldoAnterior := roundContabilidad(maxFloat64(row.Saldo, 0))
+	if saldoAnterior <= 0 {
+		return result, errors.New("la cartera seleccionada no tiene saldo pendiente")
+	}
+	if monto > saldoAnterior {
+		monto = saldoAnterior
+	}
+	fechaAplicacion = firstContabilidadValue(fechaAplicacion, time.Now().Format("2006-01-02"))
+	valorPagadoNuevo := roundContabilidad(maxFloat64(row.ValorPagado, 0) + monto)
+	saldoNuevo := roundContabilidad(maxFloat64(row.ValorOriginal, 0) - valorPagadoNuevo)
+	if saldoNuevo < 0 {
+		saldoNuevo = 0
+	}
+	estadoNuevo := normalizeEmpresaCarteraCXPEstado("", saldoNuevo, row.FechaVencimiento)
+	nowExpr := sqlNowExpr()
+	_, err = ExecCompat(dbConn, `UPDATE empresa_contabilidad_cartera_cxp
+		SET valor_pagado=?, saldo=?, estado=?, referencia_externa=?, fecha_actualizacion=`+nowExpr+`
+		WHERE empresa_id=? AND id=?`,
+		valorPagadoNuevo,
+		saldoNuevo,
+		estadoNuevo,
+		firstContabilidadValue(referenciaPago, row.ReferenciaExterna),
+		empresaID,
+		id,
+	)
+	if err != nil {
+		return result, err
+	}
+	updated, err := GetEmpresaCarteraCXPByID(dbConn, empresaID, id)
+	if err != nil {
+		return result, err
+	}
+	evento := "abono_cliente_registrado"
+	if strings.EqualFold(row.Tipo, "cxp") {
+		evento = "abono_proveedor_registrado"
+	}
+	result = EmpresaCarteraCXPAbonoResultado{
+		Cartera:           updated,
+		MontoAplicado:     monto,
+		SaldoAnterior:     saldoAnterior,
+		SaldoNuevo:        saldoNuevo,
+		ValorPagadoNuevo:  valorPagadoNuevo,
+		EstadoAnterior:    row.Estado,
+		EstadoNuevo:       estadoNuevo,
+		FechaAplicacion:   fechaAplicacion,
+		ReferenciaPago:    strings.TrimSpace(referenciaPago),
+		EventoContable:    evento,
+		DocumentoContable: strings.TrimSpace(row.Documento),
+	}
+	return result, nil
+}
+
+func BuildEmpresaCarteraCXPEdades(dbConn *sql.DB, empresaID int64, tipo, fechaCorte string) (EmpresaCarteraCXPEdadesResumen, error) {
+	resumen := EmpresaCarteraCXPEdadesResumen{
+		EmpresaID:  empresaID,
+		Tipo:       strings.ToLower(strings.TrimSpace(tipo)),
+		FechaCorte: firstContabilidadValue(fechaCorte, time.Now().Format("2006-01-02")),
+		Rangos:     make([]EmpresaCarteraCXPEdadFila, 0),
+	}
+	if empresaID <= 0 {
+		return resumen, errors.New("empresa_id es obligatorio")
+	}
+	rows, err := ListEmpresaCarteraCXP(dbConn, empresaID, resumen.Tipo, "")
+	if err != nil {
+		return resumen, err
+	}
+	byKey := make(map[string]*EmpresaCarteraCXPEdadFila)
+	order := []string{"por_vencer", "0_30", "31_60", "61_90", "91_180", "181_mas"}
+	for _, key := range order {
+		byKey[key] = &EmpresaCarteraCXPEdadFila{Tipo: resumen.Tipo, Rango: key}
+	}
+	for _, row := range rows {
+		if !empresaCarteraCXPAbierta(row.Estado, row.Saldo) {
+			continue
+		}
+		saldo := roundContabilidad(maxFloat64(row.Saldo, 0))
+		if saldo <= 0 {
+			continue
+		}
+		key := empresaCarteraCXPEdadRango(row.FechaVencimiento, resumen.FechaCorte)
+		fila := byKey[key]
+		if fila == nil {
+			fila = &EmpresaCarteraCXPEdadFila{Tipo: resumen.Tipo, Rango: key}
+			byKey[key] = fila
+			order = append(order, key)
+		}
+		if fila.Tipo == "" {
+			fila.Tipo = row.Tipo
+		}
+		fila.Registros++
+		fila.Saldo = roundContabilidad(fila.Saldo + saldo)
+		if key == "por_vencer" {
+			fila.PorVencer = roundContabilidad(fila.PorVencer + saldo)
+			resumen.PorVencerTotal = roundContabilidad(resumen.PorVencerTotal + saldo)
+		} else {
+			fila.Vencido = roundContabilidad(fila.Vencido + saldo)
+			resumen.VencidoTotal = roundContabilidad(resumen.VencidoTotal + saldo)
+		}
+		if saldo > fila.SaldoMayor {
+			fila.SaldoMayor = saldo
+		}
+		resumen.TotalRegistros++
+		resumen.SaldoTotal = roundContabilidad(resumen.SaldoTotal + saldo)
+	}
+	for _, key := range order {
+		if fila := byKey[key]; fila != nil && fila.Registros > 0 {
+			resumen.Rangos = append(resumen.Rangos, *fila)
+		}
+	}
+	return resumen, nil
+}
+
+func normalizeEmpresaCarteraCXPEstado(estado string, saldo float64, fechaVencimiento string) string {
+	estado = strings.ToLower(strings.TrimSpace(estado))
+	if saldo <= 0 {
+		return "pagado"
+	}
+	if estado == "anulado" || estado == "castigado" {
+		return estado
+	}
+	if estado == "parcial" || estado == "pendiente" || estado == "vencido" {
+		if empresaCarteraDiasVencido(fechaVencimiento, time.Now().Format("2006-01-02")) > 0 {
+			return "vencido"
+		}
+		return estado
+	}
+	return "pendiente"
+}
+
+func empresaCarteraCXPAbierta(estado string, saldo float64) bool {
+	if saldo <= 0 {
+		return false
+	}
+	switch strings.ToLower(strings.TrimSpace(estado)) {
+	case "pagado", "anulado", "castigado", "inactivo":
+		return false
+	default:
+		return true
+	}
+}
+
+func empresaCarteraCXPEdadRango(fechaVencimiento, fechaCorte string) string {
+	dias := empresaCarteraDiasVencido(fechaVencimiento, fechaCorte)
+	switch {
+	case dias <= 0:
+		return "por_vencer"
+	case dias <= 30:
+		return "0_30"
+	case dias <= 60:
+		return "31_60"
+	case dias <= 90:
+		return "61_90"
+	case dias <= 180:
+		return "91_180"
+	default:
+		return "181_mas"
+	}
+}
+
+func empresaCarteraDiasVencido(fechaVencimiento, fechaCorte string) int {
+	vencimiento, err := time.Parse("2006-01-02", strings.TrimSpace(fechaVencimiento))
+	if err != nil {
+		return 0
+	}
+	corte, err := time.Parse("2006-01-02", strings.TrimSpace(fechaCorte))
+	if err != nil {
+		corte = time.Now()
+	}
+	dias := int(corte.Sub(vencimiento).Hours() / 24)
+	if dias < 0 {
+		return 0
+	}
+	return dias
 }
 
 func ListEmpresaLibroOficial(dbConn *sql.DB, empresaID int64, tipo, periodo string) ([]EmpresaLibroOficialLinea, error) {

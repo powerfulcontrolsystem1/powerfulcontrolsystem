@@ -63,6 +63,17 @@ func EmpresaComprasDocumentosHandler(dbEmp *sql.DB) http.HandlerFunc {
 				EstadoActual         string  `json:"estado_actual"`
 				Accion               string  `json:"accion"`
 				PeriodoContable      string  `json:"periodo_contable"`
+				FormaPago            string  `json:"forma_pago"`
+				MetodoPago           string  `json:"metodo_pago"`
+				Subtotal             float64 `json:"subtotal"`
+				BaseGravable         float64 `json:"base_gravable"`
+				IVA                  float64 `json:"iva"`
+				Impuestos            float64 `json:"impuestos"`
+				RetencionFuente      float64 `json:"retencion_fuente"`
+				RetencionICA         float64 `json:"retencion_ica"`
+				RetencionIVA         float64 `json:"retencion_iva"`
+				TotalRetenciones     float64 `json:"total_retenciones"`
+				TotalNeto            float64 `json:"total_neto"`
 				MontoTotal           float64 `json:"monto_total"`
 				Moneda               string  `json:"moneda"`
 				FechaDocumento       string  `json:"fecha_documento"`
@@ -246,7 +257,21 @@ func EmpresaComprasDocumentosHandler(dbEmp *sql.DB) http.HandlerFunc {
 				"entidad_id":       docPersistido.ID,
 				"documento_codigo": docPersistido.DocumentoCodigo,
 				"proveedor_id":     docPersistido.ProveedorID,
-				"empresa_id":       docPersistido.EmpresaID,
+				"forma_pago":       comprasFirstNonBlank(payload.FormaPago, "credito"),
+				"metodo_pago":      strings.TrimSpace(payload.MetodoPago),
+				"subtotal":         comprasFirstPositive(payload.Subtotal, payload.BaseGravable, payload.MontoTotal),
+				"base_gravable":    comprasFirstPositive(payload.BaseGravable, payload.Subtotal, payload.MontoTotal),
+				"iva":              comprasFirstPositive(payload.IVA, payload.Impuestos),
+				"impuestos":        comprasFirstPositive(payload.Impuestos, payload.IVA),
+				"retencion_fuente": payload.RetencionFuente,
+				"retencion_ica":    payload.RetencionICA,
+				"retencion_iva":    payload.RetencionIVA,
+				"total_retenciones": comprasFirstPositive(
+					payload.TotalRetenciones,
+					payload.RetencionFuente+payload.RetencionICA+payload.RetencionIVA,
+				),
+				"total_neto": payload.TotalNeto,
+				"empresa_id": docPersistido.EmpresaID,
 			})
 
 			w.Header().Set("Content-Type", "application/json")
@@ -268,6 +293,17 @@ func EmpresaComprasDocumentosHandler(dbEmp *sql.DB) http.HandlerFunc {
 				EstadoDocumento    string                 `json:"estado_documento"`
 				Accion             string                 `json:"accion"`
 				PeriodoContable    string                 `json:"periodo_contable"`
+				FormaPago          string                 `json:"forma_pago"`
+				MetodoPago         string                 `json:"metodo_pago"`
+				Subtotal           float64                `json:"subtotal"`
+				BaseGravable       float64                `json:"base_gravable"`
+				IVA                float64                `json:"iva"`
+				Impuestos          float64                `json:"impuestos"`
+				RetencionFuente    float64                `json:"retencion_fuente"`
+				RetencionICA       float64                `json:"retencion_ica"`
+				RetencionIVA       float64                `json:"retencion_iva"`
+				TotalRetenciones   float64                `json:"total_retenciones"`
+				TotalNeto          float64                `json:"total_neto"`
 				MontoTotal         float64                `json:"monto_total"`
 				Moneda             string                 `json:"moneda"`
 				FechaDocumento     string                 `json:"fecha_documento"`
@@ -674,6 +710,20 @@ func EmpresaComprasDocumentosHandler(dbEmp *sql.DB) http.HandlerFunc {
 				"proveedor_id":     docPersistido.ProveedorID,
 				"empresa_id":       docPersistido.EmpresaID,
 				"nivel_aprobacion": docPersistido.NivelAprobacion,
+				"forma_pago":       comprasFirstNonBlank(payload.FormaPago, "credito"),
+				"metodo_pago":      strings.TrimSpace(payload.MetodoPago),
+				"subtotal":         comprasFirstPositive(payload.Subtotal, payload.BaseGravable, docPersistido.MontoTotal),
+				"base_gravable":    comprasFirstPositive(payload.BaseGravable, payload.Subtotal, docPersistido.MontoTotal),
+				"iva":              comprasFirstPositive(payload.IVA, payload.Impuestos),
+				"impuestos":        comprasFirstPositive(payload.Impuestos, payload.IVA),
+				"retencion_fuente": payload.RetencionFuente,
+				"retencion_ica":    payload.RetencionICA,
+				"retencion_iva":    payload.RetencionIVA,
+				"total_retenciones": comprasFirstPositive(
+					payload.TotalRetenciones,
+					payload.RetencionFuente+payload.RetencionICA+payload.RetencionIVA,
+				),
+				"total_neto": payload.TotalNeto,
 			})
 
 			if validationErr != nil {

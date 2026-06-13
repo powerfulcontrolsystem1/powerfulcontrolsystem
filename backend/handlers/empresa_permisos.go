@@ -16,6 +16,7 @@ import (
 	"time"
 
 	dbpkg "github.com/you/pos-backend/db"
+	"github.com/you/pos-backend/utils"
 )
 
 const (
@@ -740,15 +741,7 @@ func EmpresaPermisosContextoHandler(dbSuper *sql.DB) http.HandlerFunc {
 		}
 
 		adminEmail := strings.ToLower(strings.TrimSpace(adminEmailFromRequest(r)))
-		role := normalizePermissionRole(adminRoleFromRequest(r))
-		if role == "" && dbSuper != nil && adminEmail != "" && adminEmail != "sistema" {
-			admin, err := dbpkg.GetAdminByEmail(dbSuper, adminEmail)
-			if err == nil && admin != nil {
-				role = normalizePermissionRole(admin.Role)
-			} else if err != nil && !errors.Is(err, sql.ErrNoRows) {
-				log.Printf("[authz] permisos_contexto get admin email=%s error: %v", adminEmail, err)
-			}
-		}
+		role := resolveAdminPermissionRoleForContext(dbSuper, adminEmail, adminRoleFromRequest(r))
 		if role == "" {
 			role = "sin_rol"
 		}
@@ -831,6 +824,23 @@ func EmpresaPermisosContextoHandler(dbSuper *sql.DB) http.HandlerFunc {
 
 		writeJSON(w, http.StatusOK, resp)
 	}
+}
+
+func resolveAdminPermissionRoleForContext(dbSuper *sql.DB, adminEmail, rawRole string) string {
+	adminEmail = strings.ToLower(strings.TrimSpace(adminEmail))
+	if utils.AdminShouldUseSuperRole(adminEmail) {
+		return "super_administrador"
+	}
+	role := normalizePermissionRole(rawRole)
+	if role == "" && dbSuper != nil && adminEmail != "" && adminEmail != "sistema" {
+		admin, err := dbpkg.GetAdminByEmail(dbSuper, adminEmail)
+		if err == nil && admin != nil {
+			role = normalizePermissionRole(utils.ManagedAdminRole(admin.Email, admin.Role))
+		} else if err != nil && !errors.Is(err, sql.ErrNoRows) {
+			log.Printf("[authz] permisos_contexto get admin email=%s error: %v", adminEmail, err)
+		}
+	}
+	return role
 }
 
 // EmpresaPermisosFinosHandler administra el techo fino de modulos, acciones y paginas para una empresa.
@@ -3906,9 +3916,11 @@ func getEmpresaPermissionSnapshot(dbEmp, dbSuper *sql.DB, adminEmail string, emp
 		return empresaPermissionSnapshot{}, err
 	}
 	dbpkg.PerfLogf("[perf][authz] snapshot empresa=%d email=%s step=admin dur=%s", empresaID, strings.ToLower(strings.TrimSpace(adminEmail)), time.Since(stepStarted))
-	role := normalizePermissionRole(admin.Role)
-	if assignedRole, ok := resolveEmpresaAssignedPermissionRole(dbEmp, dbSuper, empresaID, adminEmail, role); ok {
-		role = assignedRole
+	role := normalizePermissionRole(utils.ManagedAdminRole(admin.Email, admin.Role))
+	if role != "super_administrador" {
+		if assignedRole, ok := resolveEmpresaAssignedPermissionRole(dbEmp, dbSuper, empresaID, adminEmail, role); ok {
+			role = assignedRole
+		}
 	}
 
 	var (
@@ -4027,6 +4039,9 @@ func getEmpresaPermissionSnapshot(dbEmp, dbSuper *sql.DB, adminEmail string, emp
 
 func resolveEmpresaAssignedPermissionRole(dbEmp, dbSuper *sql.DB, empresaID int64, adminEmail, fallbackRole string) (string, bool) {
 	if dbEmp == nil || dbSuper == nil || empresaID <= 0 || strings.TrimSpace(adminEmail) == "" {
+		return "", false
+	}
+	if normalizePermissionRole(fallbackRole) == "super_administrador" || utils.AdminShouldUseSuperRole(adminEmail) {
 		return "", false
 	}
 	usuario, err := dbpkg.GetEmpresaUsuarioByEmailScoped(dbEmp, adminEmail, empresaID)

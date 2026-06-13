@@ -3,6 +3,19 @@
 Version: 2026-05-15.1.0
 Ultima actualizacion: 2026-05-15
 
+Actualizacion 2026-06-12 (motor contable automatico)
+- No se agregan tablas nuevas. Se fortalece el contrato existente
+  `empresa_eventos_contables` -> `empresa_asientos_contables`.
+- `empresa_eventos_contables` acepta eventos contables para ventas,
+  facturacion, compras, finanzas, cartera, inventario, nomina y activos fijos.
+- `empresa_asientos_contables.lineas_json` solo se persiste cuando el evento
+  genera partida doble real: minimo dos lineas, cuentas no vacias, una sola
+  naturaleza por linea, y `total_debito == total_credito`.
+- Si el asiento no cuadra o no hay lineas reales, el evento permanece pendiente
+  con `error_procesamiento` saneado y no se crea asiento.
+- La idempotencia se conserva por `UNIQUE(empresa_id, evento_contable_id)` y
+  `UNIQUE(empresa_id, hash_idempotencia)`.
+
 Actualizacion 2026-06-11 (roles personalizados por empresa)
 - Tabla `roles_de_usuario` en `pcs_superadministrador`: agrega `empresa_id BIGINT DEFAULT 0`, `origen TEXT DEFAULT 'global'` y `rol_base_id BIGINT DEFAULT 0`.
 - Convencion: `empresa_id=0` y `origen='global'` identifican roles base compartidos; `empresa_id>0` y `origen='empresa'` identifican roles personalizados de una sola empresa.
@@ -1514,7 +1527,7 @@ Actualizacion 2026-04-29 (auditoria como fuente de contexto IA)
   - ambiente_fe, tipo_operacion, prefijo_factura
   - resolucion_numero, resolucion_fecha_desde, resolucion_fecha_hasta
   - consecutivo_desde, consecutivo_hasta, proximo_consecutivo
-  - formato_impresion, imprimir_copia_factura, mostrar_deducido_impuesto_factura, impresion_recibo_items_json, impresion_corte_items_json, mostrar_logo, mostrar_logo_empresa, mostrar_logo_factura, mostrar_logo_sistema, logo_url, logo_factura_url
+  - formato_impresion, imprimir_copia_factura, mostrar_deducido_impuesto_factura, impresion_recibo_items_json, impresion_corte_items_json, impresion_factura_fuente_pos, impresion_factura_fuente_carta, impresion_reporte_fuente_pos, impresion_reporte_fuente_carta, mostrar_logo, mostrar_logo_empresa, mostrar_logo_factura, mostrar_logo_sistema, logo_url, logo_factura_url
   - pie_factura, notas_legales
   - color_carrito_activo, color_carrito_inactivo
   - moneda_codigo, sistema_numerico, usar_decimales, cantidad_decimales
@@ -2077,6 +2090,7 @@ Actualizacion 2026-04-29 (auditoria como fuente de contexto IA)
 - super_venta_digital_items.id -> super_venta_digital_ordenes.item_id
 
 ## 4) Historial resumido
+- 2026-06-12: `empresa_configuracion_avanzada` agrega `impresion_factura_fuente_pos`, `impresion_factura_fuente_carta`, `impresion_reporte_fuente_pos` e `impresion_reporte_fuente_carta` para controlar tamano de fuente impresa por empresa. POS acepta 8-16 px y carta 10-22 px; no altera XML DIAN, totales, contabilidad ni documentos legales.
 - 2026-06-07: `empresa_configuracion_avanzada.impresion_recibo_items_json` e `impresion_corte_items_json` guardan mapas JSON de booleanos por `empresa_id` para decidir que campos aparecen impresos en recibos operativos y reportes de corte/cierre; no aplican a factura electronica DIAN ni modifican XML/CUFE/CUDE.
 - 2026-06-02: `empresa_configuracion_avanzada.mostrar_deducido_impuesto_factura` agrega el check empresarial para mostrar base gravable e impuesto deducido en la impresion de recibos/facturas, sin alterar documentos electronicos legales.
 - 2026-05-18: `empresa_corte_caja_configuracion` agrega banderas para que cada empresa active/desactive encabezado, datos de empresa, fecha/hora, usuario, consecutivo, cantidad de ventas, total de descuentos, columnas del detalle de ventas y metricas de productos/servicios en el reporte de turno/corte de caja.

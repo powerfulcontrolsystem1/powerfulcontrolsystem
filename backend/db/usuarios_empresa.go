@@ -14,6 +14,8 @@ var (
 	empresaUsuariosAuthSchemaReady bool
 )
 
+const reservedSuperAdminEmpresaUsuarioEmail = "powerfulcontrolsystem@gmail.com"
+
 // EmpresaUsuario representa un usuario gestionado dentro del contexto de una empresa.
 type EmpresaUsuario struct {
 	ID                       int64  `json:"id"`
@@ -197,8 +199,20 @@ func EnsureEmpresaUsuariosAuthSchema(dbConn *sql.DB) error {
 		}
 	}
 
+	if err := purgeReservedSuperAdminEmpresaUsuarios(dbConn); err != nil {
+		return err
+	}
+
 	empresaUsuariosAuthSchemaReady = true
 	return nil
+}
+
+func purgeReservedSuperAdminEmpresaUsuarios(dbConn *sql.DB) error {
+	if dbConn == nil {
+		return nil
+	}
+	_, err := execSQLCompat(dbConn, `DELETE FROM users WHERE lower(email) = lower(?)`, reservedSuperAdminEmpresaUsuarioEmail)
+	return err
 }
 
 func dropLegacyEmpresaUsuariosEmailUniqueConstraints(dbConn *sql.DB) error {

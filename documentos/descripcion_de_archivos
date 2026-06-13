@@ -1,3 +1,19 @@
+2026-06-12 - Cantidad del carrito visible con contraste fijo
+- `web/administrar_empresa/carrito_de_compras.html`: agrega `cart-item-qty-cell` a la celda del campo Cantidad en el detalle de productos para mantener ancho suficiente.
+- `web/estilos.css`: refuerza `.cart-item-qty-input` con contraste independiente del tema, fondo claro, texto oscuro y dimensiones estables para que el numero no quede invisible.
+
+2026-06-12 - Super administrador no queda eclipsado por usuario operativo
+- `backend/handlers/empresa_permisos.go`: la resolucion de permisos empresariales aplica primero el rol administrado del administrador y bloquea que un registro de `users` con el mismo correo reemplace a `super_administrador`.
+- `backend/handlers/account_handlers.go`: `/api/account` devuelve el rol administrado y `is_super` consistente para el correo reservado del super administrador, aunque exista un usuario operativo homonimo.
+- `backend/handlers/usuarios_empresa.go`: impide crear o reasignar usuarios operativos con el correo reservado `powerfulcontrolsystem@gmail.com`.
+
+2026-06-12 - Plan PCS tipo Siigo y motor contable reforzado
+- `documentos/plan_siigo_profesional_2026-06-12.md`: plan profesional por fases para cerrar PCS hacia flujos tipo Siigo, construido despues de revisar la documentacion viva del proyecto y enfocado en contabilidad automatica, ventas/facturacion/cartera, compras/CxP, bancos, reportes, migracion, API, documentos fiscales e IA operativa.
+- `backend/handlers/facturacion_electronica.go`: acepta y emite en eventos contables campos fiscales opcionales como forma/metodo de pago, subtotal/base, IVA, retenciones, total neto y cliente para que el motor cause facturas, notas y documentos electronicos con mejor contexto.
+- `backend/handlers/compras.go`: refuerza payloads contables de documentos de compra con base, IVA, retenciones, total neto y forma de pago por defecto a credito para contabilizacion y CxP.
+- `backend/handlers/finanzas.go`: traslada impuesto, retenciones, metodo de pago, tercero y referencia externa al evento contable de ingresos/egresos.
+- `backend/handlers/carritos_compras.go`: agrega base, total neto y forma de pago al evento de venta pagada desde carrito/estacion.
+
 2026-06-11 - Configuracion del rol cajero
 - `web/administrar_empresa/configuracion_rol_cajero.html`: pagina empresarial dedicada al rol cajero; centraliza perfil personalizado por empresa, cobro/caja, carrito POS, botones visibles, medios de pago, estaciones/caja fisica y lista informativa de usuarios cajeros.
 - `web/administrar_empresa/configuracion_menu.html`: agrega el acceso `Rol cajero` dentro de Configuracion > Ventas y cobro y alias `open=cajero|rol_cajero|configuracion_rol_cajero`.
@@ -11356,3 +11372,8 @@ backend/handlers/user_config.go - Controlador que expone /api/user/configuracion
   guardar/rollback de configuracion operativa.
 - `web/administrar_empresa/configuracion_impresora.html`: agrega checks de
   ingresos y egresos manuales dentro del override por rol.
+2026-06-12 - backend/db/eventos_contables.go
+- Motor de eventos y asientos contables canonicos por empresa. El contrato ahora cubre ventas, facturacion, compras, finanzas, cartera, inventario, nomina y activos fijos; normaliza lineas, calcula totales debito/credito y rechaza asientos vacios o descuadrados antes de persistir en `empresa_asientos_contables`.
+
+2026-06-12 - backend/db/eventos_contables_test.go
+- Pruebas unitarias del motor contable automatico: valida que una factura con IVA y retencion genere partida doble cuadrada, y que un evento sin lineas reales sea rechazado por no producir asiento contable.

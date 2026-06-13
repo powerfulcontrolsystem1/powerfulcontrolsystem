@@ -1,3 +1,34 @@
+## [2026-06-12] Cantidad del carrito visible con contraste fijo
+- [UX] `carrito_de_compras.html` agrega una celda dedicada para el campo Cantidad del detalle de productos.
+- [Frontend] `web/estilos.css` fija fondo claro, texto oscuro, borde y dimensiones del input de cantidad para que el numero sea visible aunque el tema global cambie colores.
+- [Alcance] No cambia endpoints, pagos, inventario, caja, permisos ni persistencia por `empresa_id`.
+- [QA] `git diff --check` sobre archivos afectados sin errores.
+
+## [2026-06-12] Carrito cantidades y pagos legibles
+- [UX] `web/estilos.css` fija ancho, contraste y peso visual para `.cart-item-qty-input` dentro del carrito, evitando que las cantidades queden comprimidas o invisibles.
+- [Pagos] Los importes de `Detalle del pago` y pago combinado mantienen color, fondo y numeros tabulares en temas oscuros/claros, incluso cuando el control queda deshabilitado.
+- [QA] Validacion visual local con Chrome/Playwright sobre `carrito_de_compras.html`: cantidades `2` y `1,25` visibles en productos agregados; Efectivo, Credito, Debito, Bre-B, Nequi y efectivo recibido visibles en el panel de pago.
+
+## [2026-06-12] Fuente configurable en facturas y reportes
+- [Configuracion] `configuracion_impresora.html` agrega tamano de fuente por empresa para facturas POS/carta y reportes POS/carta.
+- [Backend] `empresa_configuracion_avanzada` persiste `impresion_factura_fuente_pos`, `impresion_factura_fuente_carta`, `impresion_reporte_fuente_pos` e `impresion_reporte_fuente_carta` con rangos saneados.
+- [Impresion] `print_documents.js`, carrito, ventas, facturas electronicas, corte de caja, reportes de turnos e ingresos/egresos aplican esos valores solo a la representacion impresa.
+- [Alcance] No cambia XML DIAN, CUFE/CUDE, totales, inventario, contabilidad ni campos legales obligatorios.
+- [QA] `go test ./db -run "ConfiguracionAvanzada|EmpresaConfiguracion" -count=1`; `node --check` de scripts afectados; validacion DOM local confirma los cuatro campos visibles.
+
+## [2026-06-12] Super administrador no queda eclipsado por usuario operativo
+- [Permisos] `super_administrador` se preserva antes de aplicar roles operativos de `users`, evitando que un usuario homonimo oculte opciones del panel empresarial.
+- [Cuenta] `/api/account` devuelve rol administrado e `is_super` consistente para el correo reservado.
+- [Usuarios] Se bloquea crear o reasignar `powerfulcontrolsystem@gmail.com` como usuario operativo de empresa.
+- [Operacion] La eliminacion remota del duplicado queda pendiente porque SSH al VPS agoto tiempo; la correccion de codigo evita el impacto aunque el registro siga existiendo.
+- [QA] `go test ./handlers ./utils -run "AuthMiddleware|Selector|EmpresaUsuario|^$" -count=1`.
+
+## [2026-06-12] Plan PCS tipo Siigo y eventos contables enriquecidos
+- [Plan] Nuevo `documentos/plan_siigo_profesional_2026-06-12.md` con fases para contabilidad automatica, ventas/facturacion/cartera, compras/CxP, bancos, reportes, migracion, API, documentos fiscales e IA operativa.
+- [Contabilidad] Los hitos precontables quedan auditables sin asiento obligatorio; los eventos monetarios reales siguen bloqueados si no generan partida doble cuadrada.
+- [Integracion] Facturacion, compras, finanzas y carritos envian al evento contable base/subtotal, IVA, retenciones, total neto, forma/metodo de pago y tercero/cliente cuando aplica.
+- [QA] Pruebas enfocadas de `db` y compilacion de `handlers` reportaron `ok`; Windows bloqueo el borrado de `.test.exe` temporales y por eso Go devolvio exit code 1 al cierre.
+
 ## [2026-06-11] Nomina sin encabezado interno repetido
 - [UX] `web/administrar_empresa/nomina_sueldos.html` elimina los bloques superiores `Gestion laboral / Nomina y costo empresa` y `Ciclo laboral`.
 - [Operacion] Las subpaginas internas de nomina ahora empiezan directamente en la tarjeta operativa correspondiente.

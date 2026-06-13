@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	dbpkg "github.com/you/pos-backend/db"
+	"github.com/you/pos-backend/utils"
 )
 
 // AccountHandler devuelve el perfil compacto de la cuenta asociada a la cookie de sesión.
@@ -54,9 +55,10 @@ func AccountHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 			out.Email = adminFull.Email
 			out.Name = adminFull.Name
 			out.Photo = adminFull.Photo
-			out.Role = adminFull.Role
-			out.IsSuper = strings.Contains(strings.ToLower(adminFull.Role), "super")
+			out.Role = utils.ManagedAdminRole(adminFull.Email, adminFull.Role)
+			out.IsSuper = utils.IsSuperPanelRole(out.Role)
 			out.Admin = adminFull
+			out.Admin.Role = out.Role
 		} else {
 			out.Email = s.AdminEmail
 		}

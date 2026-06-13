@@ -169,17 +169,24 @@ type EmpresaConciliacionContableResumen struct {
 
 var empresaEventoContableContrato = map[string]map[string]struct{}{
 	"ventas": {
-		"venta_sesion_activada": {},
-		"venta_activada":        {},
-		"venta_suspendida":      {},
-		"venta_cerrada":         {},
-		"venta_reabierta":       {},
-		"venta_pagada":          {},
+		"venta_sesion_activada":  {},
+		"venta_activada":         {},
+		"venta_suspendida":       {},
+		"venta_cerrada":          {},
+		"venta_reabierta":        {},
+		"venta_pagada":           {},
+		"venta_credito_generada": {},
+		"venta_anulada":          {},
+		"devolucion_emitida":     {},
+		"recibo_caja_emitido":    {},
 	},
 	"facturacion": {
 		"factura_emitida":                       {},
 		"factura_anulada":                       {},
 		"nota_credito_emitida":                  {},
+		"nota_debito_emitida":                   {},
+		"documento_soporte_emitido":             {},
+		"nomina_electronica_emitida":            {},
 		"configuracion_facturacion_actualizada": {},
 		"factura_integracion_enviada":           {},
 		"factura_integracion_fallida":           {},
@@ -201,12 +208,42 @@ var empresaEventoContableContrato = map[string]map[string]struct{}{
 	"finanzas": {
 		"movimiento_ingreso_registrado": {},
 		"movimiento_egreso_registrado":  {},
+		"pago_recibido":                 {},
+		"pago_proveedor_registrado":     {},
+		"abono_cliente_registrado":      {},
+		"abono_proveedor_registrado":    {},
 		"periodo_contable_cerrado":      {},
 		"periodo_contable_reabierto":    {},
 		"tarifa_por_minutos_calculada":  {},
 	},
 	"creditos": {
 		"credito_abono_registrado": {},
+	},
+	"cartera": {
+		"cuenta_por_cobrar_generada": {},
+		"cuenta_por_pagar_generada":  {},
+		"abono_cliente_registrado":   {},
+		"abono_proveedor_registrado": {},
+		"anticipo_cliente_recibido":  {},
+		"anticipo_proveedor_pagado":  {},
+	},
+	"inventario": {
+		"entrada_inventario":     {},
+		"salida_inventario":      {},
+		"ajuste_inventario":      {},
+		"costo_venta_registrado": {},
+		"traslado_inventario":    {},
+		"devolucion_inventario":  {},
+	},
+	"nomina": {
+		"nomina_causada": {},
+		"nomina_pagada":  {},
+	},
+	"activos_fijos": {
+		"activo_adquirido":        {},
+		"depreciacion_registrada": {},
+		"deterioro_registrado":    {},
+		"activo_baja_registrada":  {},
 	},
 }
 
@@ -947,10 +984,12 @@ func ProcessEmpresaEventosContablesPendientesConPolitica(dbConn *sql.DB, empresa
 		}
 
 		result.EventosProcesados++
-		if creado {
-			result.AsientosCreados++
-		} else {
-			result.AsientosExistentes++
+		if asientoID > 0 {
+			if creado {
+				result.AsientosCreados++
+			} else {
+				result.AsientosExistentes++
+			}
 		}
 	}
 
@@ -1265,18 +1304,17 @@ func ensureEmpresaAsientoContableFromEvento(dbConn *sql.DB, evento EmpresaEvento
 	}
 
 	lineas := buildEmpresaAsientoContableLineas(evento, cfg)
+	if len(lineas) == 0 && !empresaEventoContableRequiereAsiento(evento) {
+		return 0, false, nil
+	}
+	lineas, totalDebito, totalCredito, diferencia, err := normalizeAndValidateEmpresaAsientoLineas(evento, lineas)
+	if err != nil {
+		return 0, false, err
+	}
 	lineasJSONBytes, err := json.Marshal(lineas)
 	if err != nil {
 		return 0, false, err
 	}
-
-	totalDebito := 0.0
-	totalCredito := 0.0
-	for _, ln := range lineas {
-		totalDebito += maxFloat64(ln.Debito, 0)
-		totalCredito += maxFloat64(ln.Credito, 0)
-	}
-	diferencia := totalDebito - totalCredito
 
 	fechaAsiento := strings.TrimSpace(evento.FechaEvento)
 	if fechaAsiento == "" {
@@ -1355,6 +1393,32 @@ func ensureEmpresaAsientoContableFromEvento(dbConn *sql.DB, evento EmpresaEvento
 		return 0, false, err
 	}
 	return id, true, nil
+}
+
+func empresaEventoContableRequiereAsiento(evento EmpresaEventoContable) bool {
+	modulo := normalizeEventoContableModulo(evento.Modulo)
+	nombre := normalizeEventoContableNombre(evento.Evento)
+	switch modulo {
+	case "compras":
+		switch nombre {
+		case "orden_compra_creada", "orden_compra_actualizada", "orden_compra_pendiente_aprobacion",
+			"orden_compra_aprobacion_parcial", "orden_compra_aprobada", "orden_compra_rechazada",
+			"orden_compra_activada", "orden_compra_desactivada", "orden_compra_eliminada",
+			"compra_recepcion_parcial", "compra_documentos_validados", "compra_documentos_inconsistentes":
+			return false
+		}
+	case "facturacion":
+		switch nombre {
+		case "configuracion_facturacion_actualizada", "factura_integracion_enviada", "factura_integracion_fallida", "factura_contingencia_activada":
+			return false
+		}
+	case "finanzas":
+		switch nombre {
+		case "periodo_contable_cerrado", "periodo_contable_reabierto":
+			return false
+		}
+	}
+	return true
 }
 
 func markEmpresaEventoContableProcessed(dbConn *sql.DB, eventoID, asientoID int64) error {
@@ -1436,27 +1500,46 @@ func buildEmpresaAsientoContableLineas(evento EmpresaEventoContable, cfg *Empres
 	}
 	cuentaIngresos := resolveEmpresaCuentaPorCategoria(cfg.CuentasIngresoCategoria, categoria, cfg.CuentaIngresos, "413595")
 	cuentaGastos := resolveEmpresaCuentaPorCategoria(cfg.CuentasEgresoCategoria, categoria, cfg.CuentaGastos, "519595")
+	cuentaIVAGenerado := firstContableAccount(cfg.CuentaIVAGenerado, "240805")
+	cuentaIVADescontable := firstContableAccount(cfg.CuentaIVADescontable, "240810")
+	cuentaRetencionesCobrar := firstContableAccount(cfg.CuentaRetencionesCobrar, "135515")
+	cuentaRetencionesPagar := firstContableAccount(cfg.CuentaRetencionesPagar, "236505")
+	cuentaCartera := firstContableAccount(payloadString(payload, "cuenta_cartera", "cuenta_cxc", "cuenta_por_cobrar"), "130505")
+	cuentaProveedores := firstContableAccount(payloadString(payload, "cuenta_proveedores", "cuenta_cxp", "cuenta_por_pagar"), "220505")
+	cuentaInventario := firstContableAccount(payloadString(payload, "cuenta_inventario"), "143505")
+	cuentaCostoVenta := firstContableAccount(payloadString(payload, "cuenta_costo_venta"), "613595")
+	cuentaSalarios := firstContableAccount(payloadString(payload, "cuenta_nomina_gasto", "cuenta_salarios"), "510506")
+	cuentaNominaPagar := firstContableAccount(payloadString(payload, "cuenta_nomina_pagar"), "250505")
+	cuentaActivo := firstContableAccount(payloadString(payload, "cuenta_activo"), "152405")
+	cuentaDepreciacion := firstContableAccount(payloadString(payload, "cuenta_depreciacion"), "159205")
+	cuentaDeterioro := firstContableAccount(payloadString(payload, "cuenta_deterioro"), "159995")
+	cuentaAnticiposCliente := firstContableAccount(payloadString(payload, "cuenta_anticipo_cliente"), "280505")
+	cuentaAnticiposProveedor := firstContableAccount(payloadString(payload, "cuenta_anticipo_proveedor"), "133005")
 
 	nuevoIngreso := func() []EmpresaAsientoContableLinea {
-		return []EmpresaAsientoContableLinea{
-			{Cuenta: cuentaCaja, Descripcion: "Caja y bancos", Debito: monto, Credito: 0},
-			{Cuenta: cuentaIngresos, Descripcion: "Ingresos operacionales", Debito: 0, Credito: monto},
-		}
+		return buildAsientoVentaIngreso(payload, monto, cuentaCaja, cuentaCartera, cuentaIngresos, cuentaIVAGenerado, cuentaRetencionesCobrar, false)
 	}
 	nuevoEgreso := func() []EmpresaAsientoContableLinea {
-		return []EmpresaAsientoContableLinea{
-			{Cuenta: cuentaGastos, Descripcion: "Gastos operacionales", Debito: monto, Credito: 0},
-			{Cuenta: cuentaCaja, Descripcion: "Caja y bancos", Debito: 0, Credito: monto},
-		}
+		return buildAsientoCompraEgreso(payload, monto, cuentaCaja, cuentaProveedores, cuentaGastos, cuentaIVADescontable, cuentaRetencionesPagar, false)
 	}
 
 	switch normalizeEventoContableModulo(evento.Modulo) {
 	case "finanzas":
 		switch normalizeEventoContableNombre(evento.Evento) {
-		case "movimiento_ingreso_registrado":
+		case "movimiento_ingreso_registrado", "pago_recibido":
 			return nuevoIngreso()
-		case "movimiento_egreso_registrado":
+		case "movimiento_egreso_registrado", "pago_proveedor_registrado":
 			return nuevoEgreso()
+		case "abono_cliente_registrado":
+			return []EmpresaAsientoContableLinea{
+				{Cuenta: cuentaCaja, Descripcion: "Caja y bancos", Debito: monto},
+				{Cuenta: cuentaCartera, Descripcion: "Abono a cuenta por cobrar", Credito: monto},
+			}
+		case "abono_proveedor_registrado":
+			return []EmpresaAsientoContableLinea{
+				{Cuenta: cuentaProveedores, Descripcion: "Abono a cuenta por pagar", Debito: monto},
+				{Cuenta: cuentaCaja, Descripcion: "Caja y bancos", Credito: monto},
+			}
 		}
 		if strings.EqualFold(tipoMovimiento, "ingreso") {
 			return nuevoIngreso()
@@ -1469,16 +1552,29 @@ func buildEmpresaAsientoContableLineas(evento EmpresaEventoContable, cfg *Empres
 		switch normalizeEventoContableNombre(evento.Evento) {
 		case "venta_pagada", "venta_cerrada":
 			return nuevoIngreso()
+		case "venta_credito_generada":
+			return buildAsientoVentaIngreso(payload, monto, cuentaCaja, cuentaCartera, cuentaIngresos, cuentaIVAGenerado, cuentaRetencionesCobrar, true)
+		case "venta_anulada", "devolucion_emitida":
+			return reverseAsientoLineas(buildAsientoVentaIngreso(payload, monto, cuentaCaja, cuentaCartera, cuentaIngresos, cuentaIVAGenerado, cuentaRetencionesCobrar, isCreditoPayload(payload)), "Reversion ")
+		case "recibo_caja_emitido":
+			return []EmpresaAsientoContableLinea{
+				{Cuenta: cuentaCaja, Descripcion: "Recibo de caja", Debito: monto},
+				{Cuenta: cuentaCartera, Descripcion: "Cartera clientes", Credito: monto},
+			}
 		}
 
 	case "facturacion":
 		switch normalizeEventoContableNombre(evento.Evento) {
-		case "factura_emitida":
-			return nuevoIngreso()
+		case "factura_emitida", "nota_debito_emitida":
+			return buildAsientoVentaIngreso(payload, monto, cuentaCaja, cuentaCartera, cuentaIngresos, cuentaIVAGenerado, cuentaRetencionesCobrar, isCreditoPayload(payload))
 		case "factura_anulada", "nota_credito_emitida":
+			return reverseAsientoLineas(buildAsientoVentaIngreso(payload, monto, cuentaCaja, cuentaCartera, cuentaIngresos, cuentaIVAGenerado, cuentaRetencionesCobrar, isCreditoPayload(payload)), "Reversion ")
+		case "documento_soporte_emitido":
+			return buildAsientoCompraEgreso(payload, monto, cuentaCaja, cuentaProveedores, cuentaGastos, cuentaIVADescontable, cuentaRetencionesPagar, true)
+		case "nomina_electronica_emitida":
 			return []EmpresaAsientoContableLinea{
-				{Cuenta: cuentaIngresos, Descripcion: "Reversion de ingresos", Debito: monto, Credito: 0},
-				{Cuenta: cuentaCaja, Descripcion: "Reversion caja y bancos", Debito: 0, Credito: monto},
+				{Cuenta: cuentaSalarios, Descripcion: "Nomina electronica causada", Debito: monto},
+				{Cuenta: cuentaNominaPagar, Descripcion: "Nomina por pagar", Credito: monto},
 			}
 		}
 
@@ -1488,7 +1584,7 @@ func buildEmpresaAsientoContableLineas(evento EmpresaEventoContable, cfg *Empres
 			// Se registran como hitos precontables para trazabilidad, sin asiento.
 			return []EmpresaAsientoContableLinea{}
 		case "devolucion_proveedor_contabilizada":
-			return nuevoIngreso()
+			return reverseAsientoLineas(buildAsientoCompraEgreso(payload, monto, cuentaCaja, cuentaProveedores, cuentaGastos, cuentaIVADescontable, cuentaRetencionesPagar, isCreditoPayload(payload)), "Reversion ")
 		case "orden_compra_emitida", "compra_recepcionada", "compra_contabilizada":
 			return nuevoEgreso()
 		}
@@ -1519,9 +1615,235 @@ func buildEmpresaAsientoContableLineas(evento EmpresaEventoContable, cfg *Empres
 
 			return lineas
 		}
+
+	case "cartera":
+		switch normalizeEventoContableNombre(evento.Evento) {
+		case "cuenta_por_cobrar_generada":
+			return buildAsientoVentaIngreso(payload, monto, cuentaCaja, cuentaCartera, cuentaIngresos, cuentaIVAGenerado, cuentaRetencionesCobrar, true)
+		case "cuenta_por_pagar_generada":
+			return buildAsientoCompraEgreso(payload, monto, cuentaCaja, cuentaProveedores, cuentaGastos, cuentaIVADescontable, cuentaRetencionesPagar, true)
+		case "abono_cliente_registrado":
+			return []EmpresaAsientoContableLinea{
+				{Cuenta: cuentaCaja, Descripcion: "Abono cliente", Debito: monto},
+				{Cuenta: cuentaCartera, Descripcion: "Cartera clientes", Credito: monto},
+			}
+		case "abono_proveedor_registrado":
+			return []EmpresaAsientoContableLinea{
+				{Cuenta: cuentaProveedores, Descripcion: "Cuentas por pagar", Debito: monto},
+				{Cuenta: cuentaCaja, Descripcion: "Abono proveedor", Credito: monto},
+			}
+		case "anticipo_cliente_recibido":
+			return []EmpresaAsientoContableLinea{
+				{Cuenta: cuentaCaja, Descripcion: "Anticipo recibido", Debito: monto},
+				{Cuenta: cuentaAnticiposCliente, Descripcion: "Anticipos de clientes", Credito: monto},
+			}
+		case "anticipo_proveedor_pagado":
+			return []EmpresaAsientoContableLinea{
+				{Cuenta: cuentaAnticiposProveedor, Descripcion: "Anticipos a proveedores", Debito: monto},
+				{Cuenta: cuentaCaja, Descripcion: "Caja y bancos", Credito: monto},
+			}
+		}
+
+	case "inventario":
+		switch normalizeEventoContableNombre(evento.Evento) {
+		case "entrada_inventario", "ajuste_inventario", "devolucion_inventario":
+			return []EmpresaAsientoContableLinea{
+				{Cuenta: cuentaInventario, Descripcion: "Inventario", Debito: monto},
+				{Cuenta: cuentaProveedores, Descripcion: "Contrapartida inventario", Credito: monto},
+			}
+		case "salida_inventario", "costo_venta_registrado":
+			return []EmpresaAsientoContableLinea{
+				{Cuenta: cuentaCostoVenta, Descripcion: "Costo de ventas", Debito: monto},
+				{Cuenta: cuentaInventario, Descripcion: "Inventario", Credito: monto},
+			}
+		case "traslado_inventario":
+			origen := firstContableAccount(payloadString(payload, "cuenta_origen"), cuentaInventario)
+			destino := firstContableAccount(payloadString(payload, "cuenta_destino"), cuentaInventario)
+			return []EmpresaAsientoContableLinea{
+				{Cuenta: destino, Descripcion: "Inventario destino", Debito: monto},
+				{Cuenta: origen, Descripcion: "Inventario origen", Credito: monto},
+			}
+		}
+
+	case "nomina":
+		switch normalizeEventoContableNombre(evento.Evento) {
+		case "nomina_causada":
+			return []EmpresaAsientoContableLinea{
+				{Cuenta: cuentaSalarios, Descripcion: "Nomina causada", Debito: monto},
+				{Cuenta: cuentaNominaPagar, Descripcion: "Nomina por pagar", Credito: monto},
+			}
+		case "nomina_pagada":
+			return []EmpresaAsientoContableLinea{
+				{Cuenta: cuentaNominaPagar, Descripcion: "Nomina por pagar", Debito: monto},
+				{Cuenta: cuentaCaja, Descripcion: "Caja y bancos", Credito: monto},
+			}
+		}
+
+	case "activos_fijos":
+		switch normalizeEventoContableNombre(evento.Evento) {
+		case "activo_adquirido":
+			return []EmpresaAsientoContableLinea{
+				{Cuenta: cuentaActivo, Descripcion: "Activo fijo", Debito: monto},
+				{Cuenta: cuentaProveedores, Descripcion: "Proveedor activo fijo", Credito: monto},
+			}
+		case "depreciacion_registrada":
+			return []EmpresaAsientoContableLinea{
+				{Cuenta: cuentaGastos, Descripcion: "Gasto depreciacion", Debito: monto},
+				{Cuenta: cuentaDepreciacion, Descripcion: "Depreciacion acumulada", Credito: monto},
+			}
+		case "deterioro_registrado":
+			return []EmpresaAsientoContableLinea{
+				{Cuenta: cuentaGastos, Descripcion: "Gasto deterioro", Debito: monto},
+				{Cuenta: cuentaDeterioro, Descripcion: "Deterioro acumulado", Credito: monto},
+			}
+		case "activo_baja_registrada":
+			depreciacion := payloadNumber(payload, "depreciacion_acumulada")
+			perdida := payloadNumber(payload, "perdida_baja", "gasto_baja")
+			if perdida <= 0 && depreciacion < monto {
+				perdida = roundReportesMoney(monto - depreciacion)
+			}
+			return []EmpresaAsientoContableLinea{
+				{Cuenta: cuentaDepreciacion, Descripcion: "Depreciacion acumulada", Debito: depreciacion},
+				{Cuenta: cuentaGastos, Descripcion: "Perdida o ajuste por baja", Debito: perdida},
+				{Cuenta: cuentaActivo, Descripcion: "Activo fijo dado de baja", Credito: monto},
+			}
+		}
 	}
 
 	return []EmpresaAsientoContableLinea{}
+}
+
+func buildAsientoVentaIngreso(payload map[string]interface{}, monto float64, cuentaCaja, cuentaCartera, cuentaIngresos, cuentaIVA, cuentaRetenciones string, credito bool) []EmpresaAsientoContableLinea {
+	base := payloadNumber(payload, "subtotal", "base_gravable", "base", "valor_base")
+	iva := payloadNumber(payload, "iva", "impuesto", "impuestos")
+	retenciones := payloadNumber(payload, "retenciones", "total_retenciones", "retencion_fuente", "retencion")
+	if base <= 0 {
+		base = roundReportesMoney(monto - iva + retenciones)
+	}
+	if base <= 0 {
+		base = monto
+	}
+	neto := roundReportesMoney(base + iva - retenciones)
+	if neto <= 0 {
+		neto = monto
+	}
+	if !credito && isCreditoPayload(payload) {
+		credito = true
+	}
+	contrapartida := cuentaCaja
+	descContrapartida := "Caja y bancos"
+	if credito {
+		contrapartida = cuentaCartera
+		descContrapartida = "Cuentas por cobrar"
+	}
+	lineas := []EmpresaAsientoContableLinea{
+		{Cuenta: contrapartida, Descripcion: descContrapartida, Debito: neto},
+		{Cuenta: cuentaIngresos, Descripcion: "Ingresos operacionales", Credito: base},
+	}
+	if iva > 0 {
+		lineas = append(lineas, EmpresaAsientoContableLinea{Cuenta: cuentaIVA, Descripcion: "IVA generado", Credito: iva})
+	}
+	if retenciones > 0 {
+		lineas = append(lineas, EmpresaAsientoContableLinea{Cuenta: cuentaRetenciones, Descripcion: "Retenciones por cobrar", Debito: retenciones})
+	}
+	return lineas
+}
+
+func buildAsientoCompraEgreso(payload map[string]interface{}, monto float64, cuentaCaja, cuentaProveedores, cuentaGastos, cuentaIVA, cuentaRetenciones string, credito bool) []EmpresaAsientoContableLinea {
+	base := payloadNumber(payload, "subtotal", "base_gravable", "base", "valor_base")
+	iva := payloadNumber(payload, "iva", "impuesto", "impuestos")
+	retenciones := payloadNumber(payload, "retenciones", "total_retenciones", "retencion_fuente", "retencion")
+	if base <= 0 {
+		base = roundReportesMoney(monto - iva + retenciones)
+	}
+	if base <= 0 {
+		base = monto
+	}
+	neto := roundReportesMoney(base + iva - retenciones)
+	if neto <= 0 {
+		neto = monto
+	}
+	if !credito && isCreditoPayload(payload) {
+		credito = true
+	}
+	contrapartida := cuentaCaja
+	descContrapartida := "Caja y bancos"
+	if credito {
+		contrapartida = cuentaProveedores
+		descContrapartida = "Cuentas por pagar"
+	}
+	lineas := []EmpresaAsientoContableLinea{
+		{Cuenta: cuentaGastos, Descripcion: "Costos y gastos", Debito: base},
+		{Cuenta: contrapartida, Descripcion: descContrapartida, Credito: neto},
+	}
+	if iva > 0 {
+		lineas = append(lineas, EmpresaAsientoContableLinea{Cuenta: cuentaIVA, Descripcion: "IVA descontable", Debito: iva})
+	}
+	if retenciones > 0 {
+		lineas = append(lineas, EmpresaAsientoContableLinea{Cuenta: cuentaRetenciones, Descripcion: "Retenciones por pagar", Credito: retenciones})
+	}
+	return lineas
+}
+
+func reverseAsientoLineas(lineas []EmpresaAsientoContableLinea, prefix string) []EmpresaAsientoContableLinea {
+	out := make([]EmpresaAsientoContableLinea, 0, len(lineas))
+	for _, ln := range lineas {
+		out = append(out, EmpresaAsientoContableLinea{
+			Cuenta:      ln.Cuenta,
+			Descripcion: strings.TrimSpace(prefix + ln.Descripcion),
+			Debito:      ln.Credito,
+			Credito:     ln.Debito,
+		})
+	}
+	return out
+}
+
+func normalizeAndValidateEmpresaAsientoLineas(evento EmpresaEventoContable, lineas []EmpresaAsientoContableLinea) ([]EmpresaAsientoContableLinea, float64, float64, float64, error) {
+	out := make([]EmpresaAsientoContableLinea, 0, len(lineas))
+	totalDebito := 0.0
+	totalCredito := 0.0
+	for _, ln := range lineas {
+		ln.Cuenta = sanitizeContableAccount(ln.Cuenta)
+		ln.Descripcion = strings.TrimSpace(ln.Descripcion)
+		ln.Debito = roundReportesMoney(maxFloat64(ln.Debito, 0))
+		ln.Credito = roundReportesMoney(maxFloat64(ln.Credito, 0))
+		if ln.Cuenta == "" || (ln.Debito <= 0 && ln.Credito <= 0) {
+			continue
+		}
+		if ln.Debito > 0 && ln.Credito > 0 {
+			return nil, 0, 0, 0, fmt.Errorf("asiento descuadrado: la cuenta %s tiene debito y credito simultaneos", ln.Cuenta)
+		}
+		out = append(out, ln)
+		totalDebito = roundReportesMoney(totalDebito + ln.Debito)
+		totalCredito = roundReportesMoney(totalCredito + ln.Credito)
+	}
+	if len(out) < 2 {
+		return nil, 0, 0, 0, fmt.Errorf("evento contable %s/%s no genero partida doble", evento.Modulo, evento.Evento)
+	}
+	diferencia := roundReportesMoney(totalDebito - totalCredito)
+	if conciliacionAbsFloat64(diferencia) > 0.009 {
+		return nil, 0, 0, 0, fmt.Errorf("asiento descuadrado para %s/%s: debito %.2f credito %.2f diferencia %.2f", evento.Modulo, evento.Evento, totalDebito, totalCredito, diferencia)
+	}
+	return out, totalDebito, totalCredito, diferencia, nil
+}
+
+func firstContableAccount(v, fallback string) string {
+	cuenta := sanitizeContableAccount(v)
+	if cuenta != "" {
+		return cuenta
+	}
+	return sanitizeContableAccount(fallback)
+}
+
+func isCreditoPayload(payload map[string]interface{}) bool {
+	text := strings.ToLower(strings.Join([]string{
+		payloadString(payload, "forma_pago"),
+		payloadString(payload, "metodo_pago"),
+		payloadString(payload, "condicion_pago"),
+		payloadString(payload, "tipo_pago"),
+		payloadString(payload, "estado_pago"),
+	}, " "))
+	return strings.Contains(text, "credito") || strings.Contains(text, "crédito") || strings.Contains(text, "cuenta_por_cobrar") || strings.Contains(text, "cuenta_por_pagar") || strings.Contains(text, "cxp") || strings.Contains(text, "cxc")
 }
 
 func resolveEmpresaCuentaPorCategoria(rawMap, categoria, fallback, fallbackDefault string) string {

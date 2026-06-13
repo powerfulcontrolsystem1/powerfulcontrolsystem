@@ -31,6 +31,15 @@
       margin: 0 0 6px 0;
       font-size: 0.98rem;
     }
+    .print-font-size-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+      gap: 10px 14px;
+      margin-top: 10px;
+    }
+    .print-font-size-grid .form-input {
+      max-width: 150px;
+    }
     .receipt-custom-field-panel {
       margin-top: 12px;
       border-top: 1px solid var(--border);
@@ -587,6 +596,42 @@
                 <span>Mostrar logo en factura</span>
               </label>
               <p class="form-help">Puede ser diferente al logo corporativo. Si no se define, la factura puede usar el logo general de la empresa como respaldo.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="empresa-config-grid mt-12">
+        <div class="print-items-panel">
+          <h3>Tamaño de fuente para facturas</h3>
+          <p class="form-help">Controla la letra de recibos, ventas y representaciones impresas de facturas. No modifica XML, CUFE/CUDE ni campos legales DIAN.</p>
+          <div class="print-font-size-grid">
+            <div>
+              <label class="form-label" for="facturaFuentePOS">POS 80mm</label>
+              <input id="facturaFuentePOS" class="form-input" type="number" min="8" max="16" step="1" value="11">
+              <p class="form-help">Rango recomendado: 8 a 16 px.</p>
+            </div>
+            <div>
+              <label class="form-label" for="facturaFuenteCarta">Carta</label>
+              <input id="facturaFuenteCarta" class="form-input" type="number" min="10" max="22" step="1" value="13">
+              <p class="form-help">Rango recomendado: 10 a 22 px.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="print-items-panel">
+          <h3>Tamaño de fuente para reportes</h3>
+          <p class="form-help">Aplica a reportes impresos como corte de caja, cierre de turno y reportes operativos en POS o carta.</p>
+          <div class="print-font-size-grid">
+            <div>
+              <label class="form-label" for="reporteFuentePOS">POS 80mm</label>
+              <input id="reporteFuentePOS" class="form-input" type="number" min="8" max="16" step="1" value="11">
+              <p class="form-help">Rango recomendado: 8 a 16 px.</p>
+            </div>
+            <div>
+              <label class="form-label" for="reporteFuenteCarta">Carta</label>
+              <input id="reporteFuenteCarta" class="form-input" type="number" min="10" max="22" step="1" value="13">
+              <p class="form-help">Rango recomendado: 10 a 22 px.</p>
             </div>
           </div>
         </div>
@@ -2918,6 +2963,16 @@
       return raw === 'pos' ? 'pos' : 'carta';
     }
 
+    function normalizePrintFontSize(value, fallback, min, max) {
+      const n = Number(value);
+      const base = Number.isFinite(Number(fallback)) ? Math.trunc(Number(fallback)) : min;
+      if (!Number.isFinite(n)) return Math.max(min, Math.min(max, base));
+      const intValue = Math.trunc(n);
+      if (intValue < min) return min;
+      if (intValue > max) return max;
+      return intValue;
+    }
+
     function normalizeMonedaCodigo(v) {
       const value = String(v || '').trim().toUpperCase();
       if (!value || value.length > 10) return 'COP';
@@ -3083,6 +3138,10 @@
       document.getElementById('facturaMostrarDeducidoImpuesto').checked = src.mostrar_deducido_impuesto_factura === true;
       document.getElementById('facturaMostrarLogo').checked = src.mostrar_logo_factura !== false && src.mostrar_logo !== false;
       document.getElementById('facturaLogoURL').value = String(src.logo_factura_url || src.logo_url || '').trim();
+      document.getElementById('facturaFuentePOS').value = String(normalizePrintFontSize(src.impresion_factura_fuente_pos, 11, 8, 16));
+      document.getElementById('facturaFuenteCarta').value = String(normalizePrintFontSize(src.impresion_factura_fuente_carta, 13, 10, 22));
+      document.getElementById('reporteFuentePOS').value = String(normalizePrintFontSize(src.impresion_reporte_fuente_pos, 11, 8, 16));
+      document.getElementById('reporteFuenteCarta').value = String(normalizePrintFontSize(src.impresion_reporte_fuente_carta, 13, 10, 22));
       const reciboPrintItems = parsePrintItemsJSON(src.impresion_recibo_items_json, DEFAULT_RECIBO_PRINT_ITEMS);
       setPrintItemChecks('recibo', reciboPrintItems, DEFAULT_RECIBO_PRINT_ITEMS);
       setReceiptCustomPrintFields(reciboPrintItems);
@@ -3110,6 +3169,10 @@
         mostrar_deducido_impuesto_factura: document.getElementById('facturaMostrarDeducidoImpuesto').checked,
         mostrar_logo_factura: document.getElementById('facturaMostrarLogo').checked,
         logo_factura_url: String(document.getElementById('facturaLogoURL').value || '').trim(),
+        impresion_factura_fuente_pos: normalizePrintFontSize(document.getElementById('facturaFuentePOS').value, 11, 8, 16),
+        impresion_factura_fuente_carta: normalizePrintFontSize(document.getElementById('facturaFuenteCarta').value, 13, 10, 22),
+        impresion_reporte_fuente_pos: normalizePrintFontSize(document.getElementById('reporteFuentePOS').value, 11, 8, 16),
+        impresion_reporte_fuente_carta: normalizePrintFontSize(document.getElementById('reporteFuenteCarta').value, 13, 10, 22),
         impresion_recibo_items_json: JSON.stringify(collectReceiptPrintItems()),
         impresion_corte_items_json: JSON.stringify(collectPrintItemChecks('corte', DEFAULT_CORTE_PRINT_ITEMS))
       };

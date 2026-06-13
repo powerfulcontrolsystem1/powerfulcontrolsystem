@@ -4064,6 +4064,7 @@
       if (!selected) return;
       const el = document.getElementById(def.id);
       if (!el || el.disabled) return;
+      if (el.dataset.paymentIntentLock === '1') return;
       const metodo = normalize(def.metodo).toLowerCase();
       const current = Math.max(0, roundMoney(Number((state.paymentAmounts || {})[metodo] || 0)));
       if (current > 0) return;
@@ -4078,11 +4079,15 @@
       const amount = otherTotal <= 0 ? total : Math.max(0, roundMoney(total - otherTotal));
       state.paymentAmounts[metodo] = amount;
       applyStationPaymentAmountsToDiscount();
+      el.dataset.paymentIntentLock = '1';
       formatStationPaymentAmountInputs(selected.moneda);
       renderStationPaymentPanel(selected);
       window.setTimeout(function() {
         const input = document.getElementById(def.id);
-        if (input) input.select();
+        if (input) {
+          delete input.dataset.paymentIntentLock;
+          input.select();
+        }
       }, 0);
     }
 
@@ -4719,6 +4724,9 @@
 
     function printPCSPrintDocument(options, target) {
       if (!window.PCSPrint || typeof window.PCSPrint.buildDocument !== 'function') return false;
+      if (options && !options.printConfig && !options.config && !options.companyConfig) {
+        options.printConfig = loadEmpresaGeneralConfig();
+      }
       const html = window.PCSPrint.buildDocument(options);
       return printHTMLDocument(html, options && options.features, target);
     }
@@ -9733,7 +9741,7 @@
         const qtyValue = escapeHtml(formatQuantityForInput(item.cantidad || 1, unidad));
         let row = '<td>' + item.id + '</td>' +
           '<td>' + escapeHtml(normalize(item.descripcion) || '') + '<div class="form-help">' + escapeHtml(normalize(item.codigo_item) || '-') + '</div></td>' +
-          '<td><input class="form-input cart-item-qty-input" type="number" min="' + (isWeightUnit(unidad) ? '0.001' : '1') + '" step="' + (isWeightUnit(unidad) ? '0.001' : '1') + '" inputmode="decimal" data-id="' + Number(item.id || 0) + '" data-original="' + qtyValue + '" value="' + qtyValue + '" title="Cambiar cantidad"></td>' +
+          '<td class="cart-item-qty-cell"><input class="form-input cart-item-qty-input" type="number" min="' + (isWeightUnit(unidad) ? '0.001' : '1') + '" step="' + (isWeightUnit(unidad) ? '0.001' : '1') + '" inputmode="decimal" data-id="' + Number(item.id || 0) + '" data-original="' + qtyValue + '" value="' + qtyValue + '" title="Cambiar cantidad"></td>' +
           '<td>' + escapeHtml(formatAmount(item.precio_unitario || 0, moneda)) + '</td>' +
           '<td>' + Number(item.descuento_porcentaje || 0).toFixed(2) + '</td>' +
           '<td>' + Number(item.impuesto_porcentaje || 0).toFixed(2) + '</td>';
@@ -11213,9 +11221,6 @@
     getStationPaymentAmountInputDefs().forEach(function(def) {
       const el = document.getElementById(def.id);
       if (!el) return;
-      el.addEventListener('focus', function() {
-        handleStationPaymentAmountIntent(def);
-      });
       el.addEventListener('click', function() {
         handleStationPaymentAmountIntent(def);
       });

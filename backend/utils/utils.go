@@ -91,13 +91,13 @@ func IsSuperPanelRole(role string) bool {
 
 func ManagedAdminRole(email, currentRole string) string {
 	normalizedCurrent := strings.ToLower(strings.TrimSpace(currentRole))
+	if AdminShouldUseSuperRole(email) {
+		return "super_administrador"
+	}
 	if normalizedCurrent != "" && normalizedCurrent != "administrador" && normalizedCurrent != "super_administrador" {
 		return strings.TrimSpace(currentRole)
 	}
 	if normalizedCurrent == "super_administrador" {
-		return "super_administrador"
-	}
-	if AdminShouldUseSuperRole(email) {
 		return "super_administrador"
 	}
 	return "administrador"

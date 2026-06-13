@@ -1,3 +1,17 @@
+2026-06-12: Carrito cantidades y pagos combinados legibles
+- Modulo afectado: Carrito / Venta directa / Estaciones.
+- Cambio UX: `web/estilos.css` fija ancho, contraste y numeracion tabular para las cantidades editables dentro de `Productos agregados al carrito`.
+- Cambio UX: los importes de `Detalle del pago` y pago combinado conservan color/fondo legible en temas oscuros y claros, incluyendo estados deshabilitados.
+- Alcance: cambio visual solamente; no modifica pagos, caja, inventario, endpoints, permisos ni persistencia por `empresa_id`.
+- QA: validacion visual local con Chrome sobre `carrito_de_compras.html` confirma cantidades `2` y `1,25` visibles y valores de pago Efectivo/Credito/Debito/Bre-B/Nequi legibles.
+
+2026-06-12: Configuracion de impresion con fuente por empresa
+- Modulo afectado: Configuracion de impresora / Impresion de facturas y reportes.
+- Cambio funcional: `configuracion_impresora.html` agrega tamano de fuente para facturas POS/carta y reportes POS/carta.
+- Backend: `empresa_configuracion_avanzada` persiste `impresion_factura_fuente_pos`, `impresion_factura_fuente_carta`, `impresion_reporte_fuente_pos` e `impresion_reporte_fuente_carta` con saneamiento de rangos.
+- Integracion: `print_documents.js`, carrito, ventas, facturas electronicas, corte de caja, reportes de turno e ingresos/egresos aplican la configuracion al imprimir.
+- Alcance legal: no cambia XML DIAN, QR, CUFE/CUDE, totales, impuestos, contabilidad ni obligatoriedad de campos legales.
+
 2026-06-11: Configuracion del rol cajero
 - Modulo afectado: Configuracion empresarial / Seguridad / Carritos.
 - Navegacion: `Administrar empresa > Configuracion > Ventas y cobro > Rol cajero` abre `web/administrar_empresa/configuracion_rol_cajero.html`.
@@ -4223,3 +4237,7 @@ Captura inteligente de compras y gastos
 - Seguridad: la excepcion del middleware es estrecha para el rol `cajero` y el
   endpoint exacto de movimientos; no abre importacion bancaria, conciliacion,
   Bre-B, periodos ni configuracion financiera.
+2026-06-12 - Motor contable automatico
+- El modulo contable automatico procesa `empresa_eventos_contables` por `empresa_id` y genera `empresa_asientos_contables` con partida doble, idempotencia y bloqueo por descuadre.
+- Cobertura de reglas: ventas/facturas/notas, pagos y abonos, compras/documento soporte, CxC/CxP, anticipos, inventario/costo de venta, nomina causada/pagada, nomina electronica y activos fijos/depreciacion/deterioro.
+- Los eventos precontables que no tengan base monetaria suficiente quedan fallidos con error saneado hasta que el modulo origen emita un evento contable real o complete el payload.

@@ -276,6 +276,29 @@ afecte dinero, documentos, licencias o seguridad.
    permisos de escritura, aprobacion, pagos, inventario ni emision DIAN por este
    cambio.
 
+## Motor contable automatico
+
+1. Los modulos operativos emiten eventos en `empresa_eventos_contables` con
+   `empresa_id`, modulo, evento, documento, periodo, monto y `payload_json`.
+2. El procesador de asientos toma pendientes por empresa desde
+   `/api/empresa/finanzas/asientos_contables?action=procesar_asientos` o desde
+   el worker automatico.
+3. Cada evento se transforma en `empresa_asientos_contables` con debitos y
+   creditos en `lineas_json`, totales y hash de idempotencia.
+4. Si el evento no genera minimo dos lineas reales, o si la diferencia
+   debito/credito no queda en cero, PCS no guarda el asiento y registra el error
+   saneado en el evento para revision contable.
+5. Cobertura actual del motor: ventas/facturas/notas, recibos de caja, compras,
+   documento soporte, pagos/egresos, abonos, CxC/CxP, anticipos, inventario,
+   costo de venta, nomina, nomina electronica, activos fijos, depreciacion y
+   deterioro.
+6. Las cuentas salen de la configuracion financiera de la empresa o de cuentas
+   PUC base de respaldo; el payload puede enviar cuentas especificas por modulo
+   cuando el origen tenga parametrizacion mas fina.
+7. Pruebas: procesar un evento de factura con IVA/retencion, confirmar que
+   debito y credito cuadran; procesar evento sin base contable y confirmar que
+   queda fallido sin asiento.
+
 ## Renta IA en finanzas
 
 1. Habilitar primero la pagina `linkRentaIA` en permisos finos de la empresa;

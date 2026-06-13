@@ -436,6 +436,7 @@
   var printFormat = 'pos';
   var logoutAfterPrintPending = false;
   var pageContext = resolvePageContext();
+  var advancedPrintConfig = {};
   var reporteConfig = {
     mostrar_encabezado: true,
     mostrar_empresa_datos: true,
@@ -627,6 +628,26 @@
     return base;
   }
 
+  function normalizePrintFontSize(value, fallback, min, max) {
+    var n = Number(value);
+    var base = Number(fallback);
+    if (!Number.isFinite(base)) base = min;
+    base = Math.max(min, Math.min(max, Math.trunc(base)));
+    if (!Number.isFinite(n)) return base;
+    n = Math.trunc(n);
+    if (n < min) return min;
+    if (n > max) return max;
+    return n;
+  }
+
+  function currentReportFontSize() {
+    var format = normalizePrintFormat(printFormat);
+    if (format === 'pos') {
+      return normalizePrintFontSize(advancedPrintConfig.impresion_reporte_fuente_pos, 11, 8, 16);
+    }
+    return normalizePrintFontSize(advancedPrintConfig.impresion_reporte_fuente_carta, 13, 10, 22);
+  }
+
   function applyAdvancedPrintItems(items) {
     var cfg = {
       mostrar_empresa_datos: items.empresa !== false,
@@ -657,6 +678,7 @@
     if (!empresaId) return;
     try {
       var cfg = await requestJSON('/api/empresa/configuracion_avanzada?empresa_id=' + encodeURIComponent(empresaId));
+      advancedPrintConfig = cfg && typeof cfg === 'object' ? cfg : {};
       var items = parsePrintItemsJSON(cfg && cfg.impresion_corte_items_json, DEFAULT_CORTE_PRINT_ITEMS);
       applyAdvancedPrintItems(items);
     } catch (_) {}
@@ -733,14 +755,16 @@
     document.body.classList.toggle('report-print-pos', printFormat === 'pos');
     document.body.classList.toggle('report-print-carta', printFormat !== 'pos');
     document.body.classList.toggle('report-print-ejecutivo', printFormat === 'ejecutivo');
+    var report = document.getElementById('report');
+    if (report) report.style.fontSize = currentReportFontSize() + 'px';
     var style = document.getElementById('dynamicPrintPageSize');
     if (!style) { style = document.createElement('style'); style.id = 'dynamicPrintPageSize'; document.head.appendChild(style); }
     if (printFormat === 'pos') {
-      style.textContent = '@media print{@page{size:80mm auto;margin:4mm}.corte-caja-page .corte-caja-report{width:72mm}.corte-caja-page .corte-summary-grid{grid-template-columns:1fr}.corte-caja-page .table{font-size:10px}.corte-caja-page .table th,.corte-caja-page .table td{padding:3px 2px}.corte-caja-page .corte-report-badge{display:none}.corte-caja-page .table thead{display:none}.corte-caja-page .table,.corte-caja-page .table tbody,.corte-caja-page .table tr,.corte-caja-page .table td{display:block;width:100%}.corte-caja-page .table tr{border:1px solid #cbd5e1;margin-bottom:6px;padding:4px;break-inside:avoid}.corte-caja-page .table td{border:0!important;padding:2px 0!important}.corte-caja-page .table td::before{content:attr(data-label) \": \";font-weight:800}}';
+      style.textContent = '@media print{@page{size:80mm auto;margin:4mm}.corte-caja-page .corte-caja-report{width:72mm;font-size:' + currentReportFontSize() + 'px}.corte-caja-page .corte-summary-grid{grid-template-columns:1fr}.corte-caja-page .table{font-size:' + Math.max(8, currentReportFontSize() - 1) + 'px}.corte-caja-page .table th,.corte-caja-page .table td{padding:3px 2px}.corte-caja-page .corte-report-badge{display:none}.corte-caja-page .table thead{display:none}.corte-caja-page .table,.corte-caja-page .table tbody,.corte-caja-page .table tr,.corte-caja-page .table td{display:block;width:100%}.corte-caja-page .table tr{border:1px solid #cbd5e1;margin-bottom:6px;padding:4px;break-inside:avoid}.corte-caja-page .table td{border:0!important;padding:2px 0!important}.corte-caja-page .table td::before{content:attr(data-label) \": \";font-weight:800}}';
     } else if (printFormat === 'ejecutivo') {
-      style.textContent = '@media print{@page{size:letter;margin:10mm}.corte-caja-page .corte-report-section[data-section="items"],.corte-caja-page .corte-report-section[data-section="sensores"]{display:none!important}}';
+      style.textContent = '@media print{@page{size:letter;margin:10mm}.corte-caja-page .corte-caja-report{font-size:' + currentReportFontSize() + 'px}.corte-caja-page .corte-report-section[data-section="items"],.corte-caja-page .corte-report-section[data-section="sensores"]{display:none!important}}';
     } else {
-      style.textContent = '@media print{@page{size:letter;margin:12mm}.corte-caja-page .corte-caja-report{width:auto}}';
+      style.textContent = '@media print{@page{size:letter;margin:12mm}.corte-caja-page .corte-caja-report{width:auto;font-size:' + currentReportFontSize() + 'px}}';
     }
   }
 

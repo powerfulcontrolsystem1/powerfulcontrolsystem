@@ -1922,7 +1922,7 @@ body.has-floating-menu.admin-empresa-shell .admin-frame-toolbar{top:calc(var(--f
 .admin-favorite-btn[aria-pressed="true"]{background:color-mix(in srgb,var(--accent-yellow,#facc15) 22%,var(--surface) 78%);border-color:var(--accent-yellow,#facc15);color:var(--accent-yellow,#facc15);box-shadow:0 16px 36px color-mix(in srgb,var(--accent-yellow,#facc15) 26%,transparent)}
 .ai-chat-backdrop{position:fixed;inset:0;z-index:1648;background:rgba(8,12,24,.42);opacity:0;pointer-events:none;transition:opacity .22s ease}
 .ai-chat-backdrop.is-visible{opacity:1;pointer-events:auto}
-.ai-chat-toggle-button{position:fixed;right:20px;bottom:20px;z-index:1660;display:inline-flex;align-items:center;justify-content:center;width:58px;height:58px;min-width:58px;gap:0;padding:0;font-weight:800;border:1px solid color-mix(in srgb,#fff 28%,transparent);border-radius:999px;background:radial-gradient(circle at 30% 24%,#ffffff 0 10%,#99f6e4 11% 22%,#0f172a 23% 100%);color:#fff;cursor:pointer;box-shadow:0 22px 50px rgba(0,0,0,.24);transition:transform .18s ease,box-shadow .18s ease,opacity .2s ease}
+.ai-chat-toggle-button{position:fixed;right:20px;bottom:20px;z-index:1660;display:inline-flex;align-items:center;justify-content:center;width:58px;height:58px;min-width:58px;gap:0;padding:0;font-weight:800;border:1px solid color-mix(in srgb,#fff 28%,transparent);border-radius:999px;background:linear-gradient(145deg,#0f172a,#172554);color:#fff;cursor:pointer;box-shadow:0 22px 50px rgba(0,0,0,.24);transition:transform .18s ease,box-shadow .18s ease,opacity .2s ease}
 .ai-chat-toggle-button:hover{transform:translateY(-1px) scale(1.02);box-shadow:0 24px 58px rgba(0,0,0,.28)}
 .ai-chat-toggle-button img.icon{width:26px;height:26px;margin:0;filter:brightness(0) invert(1)}
 .ai-openai-mark{position:relative;display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px;flex:0 0 36px;color:#fff}
@@ -9645,6 +9645,42 @@ html[data-theme^="light"] .estaciones-page .empresa-section{
 .carrito-summary-card{min-width:238px;max-width:306px;width:100%;padding:10px;}
 #carritoTotalsPanel{position:sticky;top:12px;align-self:start;}
 .carrito-items-box{min-height:260px;max-height:420px;overflow:auto;border:1px solid var(--border);border-radius:12px;padding:10px;background:var(--content-soft-bg);}
+.carrito-items-box .cart-item-qty-cell{
+  width:112px;
+  min-width:104px;
+}
+.carrito-items-box .cart-item-qty-input{
+  box-sizing:border-box;
+  width:100%;
+  min-width:92px;
+  max-width:112px;
+  min-height:38px;
+  padding:7px 8px;
+  text-align:center;
+  font-size:15px;
+  font-weight:900;
+  font-variant-numeric:tabular-nums;
+  line-height:1.15;
+  color:#0f172a !important;
+  -webkit-text-fill-color:#0f172a !important;
+  background:#fff !important;
+  border:1px solid #94a3b8 !important;
+  border-radius:8px;
+  opacity:1 !important;
+  text-shadow:none;
+  caret-color:#0f172a;
+  color-scheme:light;
+}
+.carrito-items-box .cart-item-qty-input:disabled{
+  color:#334155 !important;
+  -webkit-text-fill-color:#334155 !important;
+  background:#e2e8f0 !important;
+  opacity:1 !important;
+}
+.carrito-items-box .cart-item-qty-input::-webkit-inner-spin-button,
+.carrito-items-box .cart-item-qty-input::-webkit-outer-spin-button{
+  opacity:.65;
+}
 .carrito-scanner-stack{display:grid;grid-template-columns:minmax(240px,1fr) minmax(110px,150px);gap:10px;align-items:start;width:100%;max-width:720px;}
 .carrito-scanner-compact-grid{grid-template-columns:minmax(170px,0.9fr) minmax(220px,1.1fr) minmax(88px,110px) minmax(104px,124px) minmax(146px,174px);max-width:none;align-items:end;gap:8px;}
 .carrito-scanner-stack .form-col{max-width:none;width:100%;}
@@ -9676,6 +9712,8 @@ html[data-theme^="light"] .estaciones-page .empresa-section{
 .carrito-customer-search-grid .btn,
 .carrito-customer-quick-grid .form-input,
 .carrito-customer-quick-grid .btn{box-sizing:border-box;min-height:38px;padding-top:8px;padding-bottom:8px;}
+#stationClienteQuickForm .carrito-customer-quick-grid{grid-template-columns:1fr;gap:10px;}
+#stationClienteQuickForm .carrito-customer-quick-grid > .form-col{grid-column:1 / -1;max-width:none;width:100%;}
 .carrito-station-toolbar{
   display:grid;
   grid-template-columns:repeat(auto-fit,minmax(142px,1fr));
@@ -9716,6 +9754,27 @@ html[data-theme^="light"] .estaciones-page .empresa-section{
 .carrito-items-box--station-fixed{min-height:220px;max-height:min(52vh,420px);}
 .carrito-station-payment-inputs-row{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end;}
 .carrito-station-payment-inputs-row .form-col{flex:1;min-width:140px;}
+.carrito-station-payment-inputs-row .form-input,
+#mixedPaymentBlock .form-input,
+#mixedPaymentBlock2 .form-input,
+#mixedPaymentBlock3 .form-input{
+  min-width:0;
+  color:var(--text);
+  -webkit-text-fill-color:var(--text);
+  background:var(--form-input-bg);
+  border-color:var(--form-border);
+  opacity:1;
+  font-weight:800;
+  font-variant-numeric:tabular-nums;
+}
+.carrito-station-payment-inputs-row .form-input:disabled,
+#mixedPaymentBlock .form-input:disabled,
+#mixedPaymentBlock2 .form-input:disabled,
+#mixedPaymentBlock3 .form-input:disabled{
+  color:var(--muted);
+  -webkit-text-fill-color:var(--muted);
+  opacity:.86;
+}
 .cash-change-hint{
   display:inline-flex;
   align-items:center;

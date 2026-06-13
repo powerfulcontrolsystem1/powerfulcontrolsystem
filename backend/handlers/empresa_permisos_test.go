@@ -114,3 +114,10 @@ func TestCajeroFinanzasManualAPIRequestSoloMovimientosPermitidos(t *testing.T) {
 		t.Fatal("la excepcion operativa aplica solo al rol cajero")
 	}
 }
+
+func TestResolveAdminPermissionRoleForContextPreservaSuperAdminReservado(t *testing.T) {
+	got := resolveAdminPermissionRoleForContext(nil, "powerfulcontrolsystem@gmail.com", "cajero")
+	if got != "super_administrador" {
+		t.Fatalf("rol contexto correo reservado = %q, want super_administrador", got)
+	}
+}

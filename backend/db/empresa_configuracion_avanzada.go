@@ -56,6 +56,10 @@ type EmpresaConfiguracionAvanzada struct {
 	MostrarDeducidoImpuestoFactura        bool   `json:"mostrar_deducido_impuesto_factura"`
 	ImpresionReciboItemsJSON              string `json:"impresion_recibo_items_json,omitempty"`
 	ImpresionCorteItemsJSON               string `json:"impresion_corte_items_json,omitempty"`
+	ImpresionFacturaFuentePOS             int64  `json:"impresion_factura_fuente_pos,omitempty"`
+	ImpresionFacturaFuenteCarta           int64  `json:"impresion_factura_fuente_carta,omitempty"`
+	ImpresionReporteFuentePOS             int64  `json:"impresion_reporte_fuente_pos,omitempty"`
+	ImpresionReporteFuenteCarta           int64  `json:"impresion_reporte_fuente_carta,omitempty"`
 	MostrarLogo                           bool   `json:"mostrar_logo"`
 	MostrarLogoEmpresa                    bool   `json:"mostrar_logo_empresa"`
 	MostrarLogoFactura                    bool   `json:"mostrar_logo_factura"`
@@ -147,6 +151,10 @@ func EnsureEmpresaConfiguracionAvanzadaSchema(dbConn *sql.DB) error {
 			mostrar_deducido_impuesto_factura INTEGER DEFAULT 0,
 			impresion_recibo_items_json TEXT,
 			impresion_corte_items_json TEXT,
+			impresion_factura_fuente_pos INTEGER DEFAULT 11,
+			impresion_factura_fuente_carta INTEGER DEFAULT 13,
+			impresion_reporte_fuente_pos INTEGER DEFAULT 11,
+			impresion_reporte_fuente_carta INTEGER DEFAULT 13,
 			mostrar_logo INTEGER DEFAULT 1,
 			mostrar_logo_empresa INTEGER DEFAULT 1,
 			mostrar_logo_factura INTEGER DEFAULT 1,
@@ -309,6 +317,18 @@ func EnsureEmpresaConfiguracionAvanzadaSchema(dbConn *sql.DB) error {
 	if err := ensureColumnIfMissing(dbConn, "empresa_configuracion_avanzada", "impresion_corte_items_json", "TEXT"); err != nil {
 		return err
 	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_configuracion_avanzada", "impresion_factura_fuente_pos", "INTEGER DEFAULT 11"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_configuracion_avanzada", "impresion_factura_fuente_carta", "INTEGER DEFAULT 13"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_configuracion_avanzada", "impresion_reporte_fuente_pos", "INTEGER DEFAULT 11"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_configuracion_avanzada", "impresion_reporte_fuente_carta", "INTEGER DEFAULT 13"); err != nil {
+		return err
+	}
 	if err := ensureColumnIfMissing(dbConn, "empresa_configuracion_avanzada", "mostrar_logo", "INTEGER DEFAULT 1"); err != nil {
 		return err
 	}
@@ -464,6 +484,10 @@ func defaultConfigAvanzada(empresaID int64) EmpresaConfiguracionAvanzada {
 		FormatoImpresion:                      "carta",
 		ImprimirVenta:                         false,
 		ImprimirFacturaElectronica:            false,
+		ImpresionFacturaFuentePOS:             11,
+		ImpresionFacturaFuenteCarta:           13,
+		ImpresionReporteFuentePOS:             11,
+		ImpresionReporteFuenteCarta:           13,
 		MostrarLogo:                           true,
 		MostrarLogoEmpresa:                    true,
 		MostrarLogoFactura:                    true,
@@ -515,6 +539,19 @@ func defaultFormatoImpresion(v string) string {
 		return "pos"
 	}
 	return "carta"
+}
+
+func normalizePrintFontSize(v int64, fallback int64, min int64, max int64) int64 {
+	if fallback < min {
+		fallback = min
+	}
+	if fallback > max {
+		fallback = max
+	}
+	if v < min || v > max {
+		return fallback
+	}
+	return v
 }
 
 func defaultAmbienteFE(v string) string {
@@ -759,6 +796,10 @@ func GetEmpresaConfiguracionAvanzada(dbConn *sql.DB, empresaID int64) (*EmpresaC
 		COALESCE(mostrar_deducido_impuesto_factura, 0),
 		COALESCE(impresion_recibo_items_json, ''),
 		COALESCE(impresion_corte_items_json, ''),
+		COALESCE(impresion_factura_fuente_pos, 11),
+		COALESCE(impresion_factura_fuente_carta, 13),
+		COALESCE(impresion_reporte_fuente_pos, 11),
+		COALESCE(impresion_reporte_fuente_carta, 13),
 		COALESCE(mostrar_logo, 1),
 		COALESCE(mostrar_logo_empresa, mostrar_logo, 1),
 		COALESCE(mostrar_logo_factura, mostrar_logo, 1),
@@ -845,6 +886,10 @@ func GetEmpresaConfiguracionAvanzada(dbConn *sql.DB, empresaID int64) (*EmpresaC
 		&mostrarDeducidoImpuestoFacturaInt,
 		&cfg.ImpresionReciboItemsJSON,
 		&cfg.ImpresionCorteItemsJSON,
+		&cfg.ImpresionFacturaFuentePOS,
+		&cfg.ImpresionFacturaFuenteCarta,
+		&cfg.ImpresionReporteFuentePOS,
+		&cfg.ImpresionReporteFuenteCarta,
 		&mostrarLogoInt,
 		&mostrarLogoEmpresaInt,
 		&mostrarLogoFacturaInt,
@@ -885,6 +930,10 @@ func GetEmpresaConfiguracionAvanzada(dbConn *sql.DB, empresaID int64) (*EmpresaC
 	cfg.ImprimirFacturaElectronica = imprimirFacturaElectronicaInt == 1
 	cfg.ImprimirCopiaFactura = imprimirCopiaFacturaInt == 1
 	cfg.MostrarDeducidoImpuestoFactura = mostrarDeducidoImpuestoFacturaInt == 1
+	cfg.ImpresionFacturaFuentePOS = normalizePrintFontSize(cfg.ImpresionFacturaFuentePOS, 11, 8, 16)
+	cfg.ImpresionFacturaFuenteCarta = normalizePrintFontSize(cfg.ImpresionFacturaFuenteCarta, 13, 10, 22)
+	cfg.ImpresionReporteFuentePOS = normalizePrintFontSize(cfg.ImpresionReporteFuentePOS, 11, 8, 16)
+	cfg.ImpresionReporteFuenteCarta = normalizePrintFontSize(cfg.ImpresionReporteFuenteCarta, 13, 10, 22)
 	cfg.MostrarLogoEmpresa = mostrarLogoEmpresaInt == 1
 	cfg.MostrarLogoFactura = mostrarLogoFacturaInt == 1
 	cfg.MostrarLogoSistema = mostrarLogoSistemaInt == 1
@@ -933,6 +982,10 @@ func UpsertEmpresaConfiguracionAvanzada(dbConn *sql.DB, payload EmpresaConfigura
 	payload.AmbienteFE = defaultAmbienteFE(payload.AmbienteFE)
 	payload.TipoOperacion = defaultTipoOperacion(payload.TipoOperacion)
 	payload.FormatoImpresion = defaultFormatoImpresion(payload.FormatoImpresion)
+	payload.ImpresionFacturaFuentePOS = normalizePrintFontSize(payload.ImpresionFacturaFuentePOS, 11, 8, 16)
+	payload.ImpresionFacturaFuenteCarta = normalizePrintFontSize(payload.ImpresionFacturaFuenteCarta, 13, 10, 22)
+	payload.ImpresionReporteFuentePOS = normalizePrintFontSize(payload.ImpresionReporteFuentePOS, 11, 8, 16)
+	payload.ImpresionReporteFuenteCarta = normalizePrintFontSize(payload.ImpresionReporteFuenteCarta, 13, 10, 22)
 	payload.ColorCarritoActivo = normalizeHexColor(payload.ColorCarritoActivo, defaultColorCarritoActivo)
 	payload.ColorCarritoInactivo = normalizeHexColor(payload.ColorCarritoInactivo, defaultColorCarritoInactivo)
 	payload.ColorEstacionDisponible = normalizeHexColor(payload.ColorEstacionDisponible, defaultColorEstacionDisponible)
@@ -1244,6 +1297,10 @@ func UpsertEmpresaConfiguracionAvanzada(dbConn *sql.DB, payload EmpresaConfigura
 			mostrar_deducido_impuesto_factura = ?,
 			impresion_recibo_items_json = ?,
 			impresion_corte_items_json = ?,
+			impresion_factura_fuente_pos = ?,
+			impresion_factura_fuente_carta = ?,
+			impresion_reporte_fuente_pos = ?,
+			impresion_reporte_fuente_carta = ?,
 			tipo_persona_fiscal = ?,
 			naturaleza_juridica = ?,
 			regimen_tributario_colombia = ?,
@@ -1261,6 +1318,10 @@ func UpsertEmpresaConfiguracionAvanzada(dbConn *sql.DB, payload EmpresaConfigura
 		mostrarDeducidoImpuestoFacturaInt,
 		payload.ImpresionReciboItemsJSON,
 		payload.ImpresionCorteItemsJSON,
+		payload.ImpresionFacturaFuentePOS,
+		payload.ImpresionFacturaFuenteCarta,
+		payload.ImpresionReporteFuentePOS,
+		payload.ImpresionReporteFuenteCarta,
 		payload.TipoPersonaFiscal,
 		payload.NaturalezaJuridica,
 		payload.RegimenTributarioColombia,

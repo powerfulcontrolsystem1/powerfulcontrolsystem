@@ -6,6 +6,7 @@
   let movimientos = [];
   let empresaNombre = '';
   let finanzasConfig = { formato_impresion: 'carta' };
+  let advancedPrintConfig = {};
 
   function el(id) { return document.getElementById(id); }
 
@@ -150,6 +151,12 @@
     } catch (_) {
       finanzasConfig = { formato_impresion: 'carta' };
     }
+    try {
+      const cfg = await requestJSON('/api/empresa/configuracion_avanzada?empresa_id=' + encodeURIComponent(String(empresaId)));
+      advancedPrintConfig = cfg && typeof cfg === 'object' ? cfg : {};
+    } catch (_) {
+      advancedPrintConfig = {};
+    }
     updatePrintFormatInfo();
   }
 
@@ -157,7 +164,20 @@
     const info = el('printFormatInfo');
     if (!info) return;
     const format = normalizePrintFormat(finanzasConfig.formato_impresion);
-    info.textContent = 'Formato de impresion: ' + (format === 'pos' ? 'POS / ticket pequeno' : 'Carta') + '. Se toma de Finanzas empresariales.';
+    const font = format === 'pos'
+      ? normalizePrintFontSize(advancedPrintConfig.impresion_reporte_fuente_pos, 11, 8, 16)
+      : normalizePrintFontSize(advancedPrintConfig.impresion_reporte_fuente_carta, 13, 10, 22);
+    info.textContent = 'Formato de impresion: ' + (format === 'pos' ? 'POS / ticket pequeno' : 'Carta') + '. Fuente: ' + font + ' px. Se toma de la configuracion empresarial.';
+  }
+
+  function normalizePrintFontSize(value, fallback, min, max) {
+    const n = Number(value);
+    const base = Number.isFinite(Number(fallback)) ? Math.trunc(Number(fallback)) : min;
+    if (!Number.isFinite(n)) return Math.max(min, Math.min(max, base));
+    const intValue = Math.trunc(n);
+    if (intValue < min) return min;
+    if (intValue > max) return max;
+    return intValue;
   }
 
   function printStorageKey() {
@@ -471,8 +491,9 @@
       const totalValue = formatMoney(item.total_neto || item.total || item.monto, item.moneda);
       return window.PCSPrint.buildDocument({
         title,
-        kind: 'comprobante',
+        kind: 'reporte',
         format,
+        printConfig: advancedPrintConfig,
         company: empresaNombre || ('Empresa #' + empresaId),
         subtitle: 'Generado: ' + formatDateTime(new Date().toISOString()),
         badge,
@@ -498,8 +519,8 @@
       ? '@page{size:80mm auto;margin:4mm;} body{width:72mm;}'
       : '@page{size:letter;margin:12mm;} body{max-width:190mm;}';
     const compactCSS = format === 'pos'
-      ? 'body{font-size:11px}.receipt{border:0;padding:0}.brand h1{font-size:15px}.brand p,.meta{font-size:10px}.badge{display:none}th,td{padding:4px 0;border-bottom:1px dashed #999}.totals{font-size:13px}'
-      : 'body{font-size:13px}.receipt{border:1px solid #d7dde8;border-radius:10px;padding:18px}.brand h1{font-size:22px}.brand p,.meta{font-size:12px}th,td{padding:8px;border-bottom:1px solid #e5e7eb}.totals{font-size:18px}';
+      ? 'body{font-size:' + normalizePrintFontSize(advancedPrintConfig.impresion_reporte_fuente_pos, 11, 8, 16) + 'px}.receipt{border:0;padding:0}.brand h1{font-size:15px}.brand p,.meta{font-size:10px}.badge{display:none}th,td{padding:4px 0;border-bottom:1px dashed #999}.totals{font-size:13px}'
+      : 'body{font-size:' + normalizePrintFontSize(advancedPrintConfig.impresion_reporte_fuente_carta, 13, 10, 22) + 'px}.receipt{border:1px solid #d7dde8;border-radius:10px;padding:18px}.brand h1{font-size:22px}.brand p,.meta{font-size:12px}th,td{padding:8px;border-bottom:1px solid #e5e7eb}.totals{font-size:18px}';
     return '<!doctype html><html lang="es"><head><meta charset="utf-8"><title>' + escapeHTML(title) + '</title>' +
       '<style>' + pageCSS + 'html,body{background:#fff;color:#111;margin:0 auto;font-family:Arial,Helvetica,sans-serif}' +
       '.receipt{box-sizing:border-box}.brand{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;border-bottom:2px solid #111;padding-bottom:10px;margin-bottom:12px}' +

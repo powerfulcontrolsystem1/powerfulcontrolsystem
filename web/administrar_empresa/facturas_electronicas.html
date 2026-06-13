@@ -273,6 +273,25 @@
         return "carta";
       }
 
+      function normalizePrintFontSize(value, fallback, min, max) {
+        var n = Number(value);
+        var base = Number(fallback);
+        if (!Number.isFinite(base)) base = min;
+        base = Math.max(min, Math.min(max, Math.trunc(base)));
+        if (!Number.isFinite(n)) return base;
+        n = Math.trunc(n);
+        if (n < min) return min;
+        if (n > max) return max;
+        return n;
+      }
+
+      function facturaPrintFontSize(cfg, formato) {
+        cfg = cfg || {};
+        return formato === "pos"
+          ? normalizePrintFontSize(cfg.impresion_factura_fuente_pos, 11, 8, 16)
+          : normalizePrintFontSize(cfg.impresion_factura_fuente_carta, 13, 10, 22);
+      }
+
       function safeUrl(raw) {
         var v = normalize(raw);
         if (!v) return "";
@@ -671,6 +690,7 @@
               title: getPrintableDocumentMeta(item).title,
               kind: normalize(item && item.tipo_documento).indexOf("factura") >= 0 ? "factura" : "comprobante",
               format: "pos",
+              printConfig: cfg,
               logos: showEmpresa ? window.PCSPrint.resolveDocumentLogos(cfg, "factura") : [],
               company: showEmpresa ? (lines[0] || "Empresa") : "",
               subtitle: showEmpresa ? lines.slice(1).join(" | ") : "",
@@ -695,7 +715,7 @@
           return '<!doctype html><html lang="es"><head><meta charset="utf-8">' +
             '<meta name="viewport" content="width=device-width,initial-scale=1">' +
             '<title>' + escapeHtml((item && item.documento_codigo) || "Recibo") + '</title>' +
-            '<style>body{font-family:monospace;padding:12px;color:#111}h1{font-size:18px;margin:0 0 8px}hr{border:0;border-top:1px dashed #999;margin:10px 0}small{color:#666}img{max-width:220px;max-height:64px;object-fit:contain;display:block;margin:0 auto 8px}.factura-print-qr{text-align:center;border-top:1px dashed #999;margin-top:10px;padding-top:8px}.factura-print-qr img{width:92px;height:92px;display:block;margin:0 auto 5px;image-rendering:pixelated}.factura-print-qr strong,.factura-print-qr span{display:block;font-size:9px;overflow-wrap:anywhere}</style>' +
+            '<style>body{font-family:monospace;padding:12px;color:#111;font-size:' + facturaPrintFontSize(cfg, "pos") + 'px}h1{font-size:18px;margin:0 0 8px}hr{border:0;border-top:1px dashed #999;margin:10px 0}small{color:#666}img{max-width:220px;max-height:64px;object-fit:contain;display:block;margin:0 auto 8px}.factura-print-qr{text-align:center;border-top:1px dashed #999;margin-top:10px;padding-top:8px}.factura-print-qr img{width:92px;height:92px;display:block;margin:0 auto 5px;image-rendering:pixelated}.factura-print-qr strong,.factura-print-qr span{display:block;font-size:9px;overflow-wrap:anywhere}</style>' +
             '</head><body>' +
             (logoUrl ? ('<img src="' + escapeHtml(logoUrl) + '" alt="Logo">') : '') +
             '<h1>' + escapeHtml(getPrintableDocumentMeta(item).title) + '</h1>' +
@@ -716,7 +736,7 @@
           '<title>' + escapeHtml((item && item.documento_codigo) || "Documento") + '</title>' +
           '<link rel="stylesheet" href="/estilos.css">' +
           '<style>' +
-            'body{margin:0;background:#fff;color:#111827;font-family:Georgia,"Times New Roman",serif;color-scheme:light;}' +
+            'body{margin:0;background:#fff;color:#111827;font-family:Georgia,"Times New Roman",serif;color-scheme:light;font-size:' + facturaPrintFontSize(cfg, formato) + 'px;}' +
             '.factura-print-shell{max-width:' + (formato === "compacta" ? "780" : "1120") + 'px;margin:0 auto;padding:28px 18px 42px;background:#fff;}' +
             '.factura-print-toolbar{display:flex;justify-content:flex-end;gap:12px;flex-wrap:wrap;margin-bottom:18px;}' +
             '.factura-print-compacta{padding:18px}.factura-print-compacta .factura-print-strip{grid-template-columns:repeat(2,minmax(0,1fr))}' +

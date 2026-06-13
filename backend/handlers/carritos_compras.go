@@ -1402,8 +1402,12 @@ func EmpresaCarritosCompraHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 				registrarEventoContableVentaCarrito(dbEmp, r, carrito, "venta_pagada", montoEvento, map[string]interface{}{
 					"action":                "pagar_estacion",
 					"rol_operacion":         rolOperacion,
+					"forma_pago":            metodoPago,
 					"metodo_pago":           metodoPago,
 					"referencia_pago":       referenciaPago,
+					"subtotal":              montoEvento,
+					"base_gravable":         montoEvento,
+					"total_neto":            montoEvento,
 					"pagos_mixtos":          pagosMixtosToEventPayload(pagosMixtos),
 					"cfg_metodo_efectivo":   permisosOperativos.MetodoPagoEfectivo,
 					"cfg_metodo_tc":         permisosOperativos.MetodoPagoTarjetaCredito,
@@ -1446,6 +1450,7 @@ func EmpresaCarritosCompraHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 					"comision_movimientos":  comisionResultado.MovimientosRegistrados,
 					"comision_warning":      comisionResultado.Warning,
 					"credito_cliente":       montoCreditoVenta,
+					"cuenta_por_cobrar":     "",
 					"estado_venta_anterior": carrito.EstadoVenta,
 					"estado_venta_nuevo":    "venta_pagada",
 				}, "pago de venta en estacion")

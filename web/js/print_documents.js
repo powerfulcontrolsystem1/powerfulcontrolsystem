@@ -27,7 +27,38 @@
     if (v === 'factura' || v === 'invoice') return 'factura';
     if (v === 'comprobante' || v === 'voucher') return 'comprobante';
     if (v === 'orden' || v === 'orden_servicio') return 'orden';
+    if (v === 'reporte' || v === 'report') return 'reporte';
     return 'recibo';
+  }
+
+  function clampFontSize(value, fallback, min, max) {
+    var n = Number(value);
+    var base = Number(fallback);
+    if (!Number.isFinite(base)) base = min;
+    base = Math.max(min, Math.min(max, Math.trunc(base)));
+    if (!Number.isFinite(n)) return base;
+    n = Math.trunc(n);
+    if (n < min) return min;
+    if (n > max) return max;
+    return n;
+  }
+
+  function resolvePrintFontSize(format, kind, options) {
+    format = normalizeFormat(format);
+    kind = normalizeKind(kind);
+    options = options || {};
+    var cfg = options.printConfig || options.config || options.companyConfig || {};
+    if (Object.prototype.hasOwnProperty.call(options, 'printFontSize')) {
+      return clampFontSize(options.printFontSize, format === 'pos' ? 11 : 13, format === 'pos' ? 8 : 10, format === 'pos' ? 16 : 22);
+    }
+    if (kind === 'reporte') {
+      return format === 'pos'
+        ? clampFontSize(cfg.impresion_reporte_fuente_pos, 11, 8, 16)
+        : clampFontSize(cfg.impresion_reporte_fuente_carta, 13, 10, 22);
+    }
+    return format === 'pos'
+      ? clampFontSize(cfg.impresion_factura_fuente_pos, 11, 8, 16)
+      : clampFontSize(cfg.impresion_factura_fuente_carta, 13, 10, 22);
   }
 
   var DEFAULT_PRINT_ITEMS = {
@@ -225,10 +256,15 @@
     return html ? '<div class="pcs-print-logos">' + html + '</div>' : '';
   }
 
-  function documentCSS(format, kind) {
+  function documentCSS(format, kind, options) {
     format = normalizeFormat(format);
     kind = normalizeKind(kind);
     var accent = '#111827';
+    var fontSize = resolvePrintFontSize(format, kind, options || {});
+    var smallFont = Math.max(7, fontSize - 2);
+    var metaFont = Math.max(8, fontSize - 1);
+    var titleFont = format === 'pos' ? fontSize + 3 : fontSize + 9;
+    var totalFont = format === 'pos' ? fontSize + 2 : fontSize + 3;
     var page = format === 'pos'
       ? '@page{size:80mm auto;margin:3mm;}html,body{width:74mm;max-width:74mm;}'
       : '@page{size:letter;margin:12mm;}html,body{max-width:190mm;}';
@@ -298,6 +334,16 @@
     } else {
       base += 'body{padding:0;font-size:13px;}.pcs-print-doc{border:1px solid #111827;border-radius:0;padding:18px;box-shadow:none;}';
     }
+    base += [
+      'body{font-size:' + fontSize + 'px;}',
+      '.pcs-print-brand h1{font-size:' + titleFont + 'px;}',
+      '.pcs-print-brand p,.pcs-print-footer,.pcs-print-signatures div{font-size:' + metaFont + 'px;}',
+      '.pcs-print-badge,.pcs-print-table,.pcs-print-summary-row,.pcs-print-note,.pcs-print-qr strong{font-size:' + metaFont + 'px;}',
+      '.pcs-print-box span,.pcs-print-table th,.pcs-print-qr span{font-size:' + smallFont + 'px;}',
+      '.pcs-print-box strong{font-size:' + fontSize + 'px;}',
+      '.pcs-print-total{font-size:' + totalFont + 'px;}',
+      '.pcs-print-summary-row strong{font-size:' + metaFont + 'px;}'
+    ].join('');
     return base;
   }
 
@@ -380,7 +426,7 @@
       body += qrBlock;
     }
     var auto = options.autoPrint === false ? '' : '<script>window.addEventListener("load",function(){setTimeout(function(){try{window.focus();window.print();' + (options.closeAfterPrint === false ? '' : 'window.close();') + '}catch(e){}},180);});<\/script>';
-    return '<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>' + escapeHTML(title) + '</title><style>' + documentCSS(format, kind) + '</style></head><body><article class="pcs-print-doc pcs-print-' + escapeHTML(format) + ' pcs-print-' + escapeHTML(kind) + '"><header class="pcs-print-head">' + logosHTML(headerLogos) + '<div class="pcs-print-brand"><h1>' + escapeHTML(title) + '</h1>' + (company ? '<p><strong>' + escapeHTML(company) + '</strong></p>' : '') + (subtitle ? '<p>' + escapeHTML(subtitle) + '</p>' : '') + '</div><div class="pcs-print-badge">' + escapeHTML(badge) + '</div></header>' + body + (text(options.footer).trim() ? '<footer class="pcs-print-footer">' + escapeHTML(options.footer) + '</footer>' : '') + '</article>' + auto + '</body></html>';
+    return '<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>' + escapeHTML(title) + '</title><style>' + documentCSS(format, kind, options) + '</style></head><body><article class="pcs-print-doc pcs-print-' + escapeHTML(format) + ' pcs-print-' + escapeHTML(kind) + '"><header class="pcs-print-head">' + logosHTML(headerLogos) + '<div class="pcs-print-brand"><h1>' + escapeHTML(title) + '</h1>' + (company ? '<p><strong>' + escapeHTML(company) + '</strong></p>' : '') + (subtitle ? '<p>' + escapeHTML(subtitle) + '</p>' : '') + '</div><div class="pcs-print-badge">' + escapeHTML(badge) + '</div></header>' + body + (text(options.footer).trim() ? '<footer class="pcs-print-footer">' + escapeHTML(options.footer) + '</footer>' : '') + '</article>' + auto + '</body></html>';
   }
 
   function openDocument(options) {
@@ -458,6 +504,7 @@
     DEFAULT_PRINT_ITEMS: DEFAULT_PRINT_ITEMS,
     parsePrintItemsJSON: parsePrintItemsJSON,
     printItemsFromConfig: printItemsFromConfig,
+    resolvePrintFontSize: resolvePrintFontSize,
     printItemEnabled: printItemEnabled,
     isElectronicDocument: isElectronicDocument,
     amountToWords: amountToWords,

@@ -27,6 +27,15 @@ func parseTruthy(v string) bool {
 	}
 }
 
+func firstPositiveFloat64(values ...float64) float64 {
+	for _, value := range values {
+		if value > 0 {
+			return value
+		}
+	}
+	return 0
+}
+
 type facturacionOperacionPayload struct {
 	EmpresaID               int64   `json:"empresa_id"`
 	EntidadID               int64   `json:"entidad_id"`
@@ -41,6 +50,17 @@ type facturacionOperacionPayload struct {
 	PaisCodigo              string  `json:"pais_codigo"`
 	DocumentoCodigo         string  `json:"documento_codigo"`
 	EstadoActual            string  `json:"estado_actual"`
+	FormaPago               string  `json:"forma_pago"`
+	MetodoPago              string  `json:"metodo_pago"`
+	Subtotal                float64 `json:"subtotal"`
+	BaseGravable            float64 `json:"base_gravable"`
+	IVA                     float64 `json:"iva"`
+	Impuestos               float64 `json:"impuestos"`
+	RetencionFuente         float64 `json:"retencion_fuente"`
+	RetencionICA            float64 `json:"retencion_ica"`
+	RetencionIVA            float64 `json:"retencion_iva"`
+	TotalRetenciones        float64 `json:"total_retenciones"`
+	TotalNeto               float64 `json:"total_neto"`
 	MontoTotal              float64 `json:"monto_total"`
 	Moneda                  string  `json:"moneda"`
 	PeriodoContable         string  `json:"periodo_contable"`
@@ -676,6 +696,20 @@ func EmpresaFacturacionElectronicaHandler(dbEmp, dbSuper *sql.DB) http.HandlerFu
 					"pais_codigo":       docPersistido.PaisCodigo,
 					"ambiente_fe":       docPersistido.AmbienteFE,
 					"periodo_contable":  strings.TrimSpace(payload.PeriodoContable),
+					"forma_pago":        strings.TrimSpace(payload.FormaPago),
+					"metodo_pago":       strings.TrimSpace(payload.MetodoPago),
+					"subtotal":          payload.Subtotal,
+					"base_gravable":     payload.BaseGravable,
+					"iva":               firstPositiveFloat64(payload.IVA, payload.Impuestos),
+					"impuestos":         firstPositiveFloat64(payload.Impuestos, payload.IVA),
+					"retencion_fuente":  payload.RetencionFuente,
+					"retencion_ica":     payload.RetencionICA,
+					"retencion_iva":     payload.RetencionIVA,
+					"total_retenciones": firstPositiveFloat64(payload.TotalRetenciones, payload.RetencionFuente+payload.RetencionICA+payload.RetencionIVA),
+					"total_neto":        payload.TotalNeto,
+					"cliente_id":        payload.ClienteID,
+					"cliente_nombre":    strings.TrimSpace(payload.ClienteNombre),
+					"cliente_documento": strings.TrimSpace(payload.ClienteNumeroDocumento),
 					"empresa_id":        payload.EmpresaID,
 				})
 
