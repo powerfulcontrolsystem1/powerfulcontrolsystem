@@ -2720,7 +2720,7 @@
       }
       setCardVisibility('carritoTotalsPanel', Boolean(ui.mostrar_tarjeta_totales_detalles));
       setOptionalSectionsControlsVisibility(ui, selectedCarrito);
-      setCardVisibility('stationCheckoutPanel', Boolean(ui.mostrar_tarjeta_cobro_estados) && Boolean(state.optionalSections.showCheckoutAdvanced) && focusedSaleMode && Boolean(selectedCarrito));
+      setCardVisibility('stationCheckoutPanel', Boolean(state.optionalSections.showCheckoutAdvanced) && focusedSaleMode && Boolean(selectedCarrito));
 
       const productsSummaryCard = document.getElementById('productsSummaryCard');
       if (productsSummaryCard) {
