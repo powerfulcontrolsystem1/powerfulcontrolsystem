@@ -4747,3 +4747,4 @@
 
 2026-06-11 - Carrito: busqueda por nombre
 - El panel de coincidencias del buscador rapido por nombre se oculta al seleccionar un producto, conservando la seleccion para agregarlo al carrito.
+- 2026-06-13: `Carrito PCS con cantidad por mouse y pagos legibles` agrega botones `-`/`+` junto a cada cantidad del carrito y ensancha los campos del detalle de pago para que pagos combinados 25/25/50 se lean completos en venta directa.

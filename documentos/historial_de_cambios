@@ -34341,3 +34341,9 @@ Archivos modificados:
 - Seguridad: se conserva `empresa_id` en eventos y asientos, idempotencia por `evento_contable_id`/`hash_idempotencia`, errores saneados en `error_procesamiento` y sin secretos en logs/documentacion.
 - QA: `GOTMPDIR=.gotmp go test ./db -run "Evento|Contabilidad|FinanzasRenta|ComprasAvanzadas" -count=1`.
 - Archivos: `backend/db/eventos_contables.go`, `backend/db/eventos_contables_test.go`, `documentos/mapa_modulos.md`, `documentos/flujos_operativos.md`, `documentos/estructura_bd.md`, `documentos/descripcion_de_archivos`, `documentos/descripcion_de_modulos`, `documentos/historial_de_cambios`.
+2026-06-13: Carrito PCS con cantidad por mouse y pagos legibles.
+- Modulos afectados: `carritos`, `venta_directa`, `estaciones`, `pagos`.
+- Frontend: `web/administrar_empresa/carrito_de_compras.html` agrega controles `-` y `+` alrededor de cada input de cantidad y reutiliza `updateCartItemQuantity` para actualizar la linea con las mismas validaciones existentes.
+- UX: `web/estilos.css` aumenta el espacio de la celda de cantidad, fija un grid estable para los botones de cantidad y permite que los campos del detalle de pago envuelvan en columnas de 150 px para mostrar montos completos.
+- Seguridad/datos: no cambia contratos de API, totales ni reglas de inventario; los botones invocan la actualizacion existente por `empresa_id`.
+- QA prevista: validar en PCS que el numero de cantidad se vea, que el boton `+` incremente con mouse y que los valores de pago combinado Efectivo 25%, Tarjeta credito 25% y Tarjeta debito 50% sean visibles antes de cerrar.

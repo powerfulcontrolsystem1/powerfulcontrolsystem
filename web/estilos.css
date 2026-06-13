@@ -9646,14 +9646,41 @@ html[data-theme^="light"] .estaciones-page .empresa-section{
 #carritoTotalsPanel{position:sticky;top:12px;align-self:start;}
 .carrito-items-box{min-height:260px;max-height:420px;overflow:auto;border:1px solid var(--border);border-radius:12px;padding:10px;background:var(--content-soft-bg);}
 .carrito-items-box .cart-item-qty-cell{
-  width:112px;
-  min-width:104px;
+  width:158px;
+  min-width:148px;
+}
+.carrito-items-box .cart-item-qty-control{
+  display:grid;
+  grid-template-columns:34px minmax(72px,1fr) 34px;
+  align-items:center;
+  gap:6px;
+  min-width:146px;
+}
+.carrito-items-box .cart-item-qty-step{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  width:34px;
+  height:38px;
+  padding:0;
+  border:1px solid #94a3b8;
+  border-radius:8px;
+  background:#f8fafc;
+  color:#0f172a;
+  font-size:18px;
+  font-weight:900;
+  line-height:1;
+  cursor:pointer;
+}
+.carrito-items-box .cart-item-qty-step:hover{
+  background:#e2e8f0;
+  border-color:#64748b;
 }
 .carrito-items-box .cart-item-qty-input{
   box-sizing:border-box;
   width:100%;
-  min-width:92px;
-  max-width:112px;
+  min-width:72px;
+  max-width:none;
   min-height:38px;
   padding:7px 8px;
   text-align:center;
@@ -9753,12 +9780,13 @@ html[data-theme^="light"] .estaciones-page .empresa-section{
 .carrito-station-totals-aside{display:none;}
 .carrito-items-box--station-fixed{min-height:220px;max-height:min(52vh,420px);}
 .carrito-station-payment-inputs-row{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end;}
-.carrito-station-payment-inputs-row .form-col{flex:1;min-width:140px;}
+.carrito-station-payment-inputs-row .form-col{flex:1 1 150px;min-width:150px;}
 .carrito-station-payment-inputs-row .form-input,
 #mixedPaymentBlock .form-input,
 #mixedPaymentBlock2 .form-input,
 #mixedPaymentBlock3 .form-input{
   min-width:0;
+  width:100%;
   color:var(--text);
   -webkit-text-fill-color:var(--text);
   background:var(--form-input-bg);

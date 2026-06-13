@@ -9741,7 +9741,13 @@
         const qtyValue = escapeHtml(formatQuantityForInput(item.cantidad || 1, unidad));
         let row = '<td>' + item.id + '</td>' +
           '<td>' + escapeHtml(normalize(item.descripcion) || '') + '<div class="form-help">' + escapeHtml(normalize(item.codigo_item) || '-') + '</div></td>' +
-          '<td class="cart-item-qty-cell"><input class="form-input cart-item-qty-input" type="number" min="' + (isWeightUnit(unidad) ? '0.001' : '1') + '" step="' + (isWeightUnit(unidad) ? '0.001' : '1') + '" inputmode="decimal" data-id="' + Number(item.id || 0) + '" data-original="' + qtyValue + '" value="' + qtyValue + '" title="Cambiar cantidad"></td>' +
+          '<td class="cart-item-qty-cell">' +
+            '<div class="cart-item-qty-control" data-id="' + Number(item.id || 0) + '">' +
+              '<button type="button" class="cart-item-qty-step cart-item-qty-step--minus" data-id="' + Number(item.id || 0) + '" data-step="-1" title="Restar cantidad" aria-label="Restar cantidad">-</button>' +
+              '<input class="form-input cart-item-qty-input" type="number" min="' + (isWeightUnit(unidad) ? '0.001' : '1') + '" step="' + (isWeightUnit(unidad) ? '0.001' : '1') + '" inputmode="decimal" data-id="' + Number(item.id || 0) + '" data-original="' + qtyValue + '" data-unit="' + escapeHtml(unidad) + '" value="' + qtyValue + '" title="Cambiar cantidad">' +
+              '<button type="button" class="cart-item-qty-step cart-item-qty-step--plus" data-id="' + Number(item.id || 0) + '" data-step="1" title="Sumar cantidad" aria-label="Sumar cantidad">+</button>' +
+            '</div>' +
+          '</td>' +
           '<td>' + escapeHtml(formatAmount(item.precio_unitario || 0, moneda)) + '</td>' +
           '<td>' + Number(item.descuento_porcentaje || 0).toFixed(2) + '</td>' +
           '<td>' + Number(item.impuesto_porcentaje || 0).toFixed(2) + '</td>';
@@ -9932,6 +9938,23 @@
         btn.onclick = function() {
           returnCartItem(btn.getAttribute('data-id'), btn);
         };
+      });
+
+      root.querySelectorAll('.cart-item-qty-step').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+          const id = btn.getAttribute('data-id');
+          const control = btn.closest('.cart-item-qty-control');
+          const input = control ? control.querySelector('.cart-item-qty-input') : null;
+          if (!id || !input || input.disabled) return;
+          const unidad = normalize(input.getAttribute('data-unit')) || 'unidad';
+          const unit = isWeightUnit(unidad) ? Number(input.getAttribute('step') || 0.001) : 1;
+          const current = parseQuantityValue(input.value, unidad, Number(input.getAttribute('data-original') || 1));
+          const delta = Number(btn.getAttribute('data-step') || 0) * unit;
+          const min = isWeightUnit(unidad) ? 0.001 : 1;
+          const next = Math.max(min, roundMoney(current + delta));
+          input.value = formatQuantityForInput(next, unidad);
+          updateCartItemQuantity(id, input.value, input);
+        });
       });
 
       root.querySelectorAll('.cart-item-qty-input').forEach(function(input) {
