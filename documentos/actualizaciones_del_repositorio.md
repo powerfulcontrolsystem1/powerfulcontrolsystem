@@ -14641,3 +14641,16 @@ Archivos modificados:
 - CHANGELOG.md
 - documentos/historial_de_cambios
 - web/js/administrar_empresa.js
+
+2026-06-13 17:28:20 - Mensaje: rs: actualizar repositorio y sincronizar VPS; Commit: e6cc9f66; PushStatus: OK
+Archivos modificados:
+- CHANGELOG.md
+- backend/handlers/admin_page_urls_handlers.go
+- backend/main.go
+- documentos/api/openapi.generated.yaml
+- documentos/descripcion_de_archivos
+- documentos/historial_de_cambios
+- web/administrar_empresa/carrito_de_compras.html
+- web/js/administrar_empresa.js
+- web/js/empresa_submenu_context.js
+- web/super/configuracion_avanzada.html
