@@ -2,6 +2,11 @@
 
 ## 2026-04-18
 
+- Carritos y estaciones: mejora de la experiencia de usuario (UX) en el registro de clientes.
+	- Archivos modificados: `web/administrar_empresa/carrito_de_compras.html`, `documentos/diagramas/estructura_del_codigo.md`, `CHANGELOG.md`.
+	- Descripcion: se incorpora un icono de ayuda "?" en el formulario de nuevo cliente dentro del carrito, permitiendo acceso directo a la documentación de ayuda, manteniendo consistencia visual con el módulo de facturación electrónica.
+	- Verificacion: validación visual de la posición del icono y enlace al ancla correspondiente en el centro de ayuda.
+
 - Carritos y estaciones: se limpia el legado de `ventas_simple` y se amplían los checks del carrito unificado.
 	- Archivos modificados: `web/administrar_empresa/carrito_de_compras.html`, `web/administrar_empresa/configuracion_de_estaciones.html`, `web/administrar_empresa/configuracion_carrito_de_compra_empresa.html`, `backend/handlers/empresa_configuracion_general.go`, `backend/handlers/empresa_configuracion_general_test.go`, `backend/handlers/empresa_estacion_prefs_test.go`, `backend/db/empresa_configuracion_general.go`, `backend/db/empresa_estacion_prefs_test.go`, `documentos/descripcion_del_proyecto`, `documentos/diagramas/estructura_del_codigo.md`, `documentos/descripcion_de_modulos`, `documentos/matriz_roles_permisos_pos_multiempresa.md`, `documentos/descripcion_de_archivos`, `documentos/historial_de_cambios`, `CHANGELOG.md`.
 	- Archivos eliminados: `web/js/ventas_simple.js`.

@@ -23,18 +23,27 @@
 
       <div class="form-row">
         <div class="form-col">
-          <label class="form-label">Nombre del carrito</label>
+          <label class="form-label">
+            Nombre del carrito 
+            <a href="../ayuda/ayuda.html#carrito" class="btn-help-contextual" title="Identificador descriptivo para esta sesión o estación (ej: Mesa 5, Caja 1)." target="_blank">?</a>
+          </label>
           <input id="carritoNombre" class="form-input" required placeholder="Ej: Mostrador principal">
         </div>
         <div class="form-col">
-          <label class="form-label">Código interno</label>
+          <label class="form-label">
+            Código interno 
+            <a href="../ayuda/ayuda.html#carrito" class="btn-help-contextual" title="Referencia técnica única para el seguimiento en base de datos." target="_blank">?</a>
+          </label>
           <input id="carritoCodigo" class="form-input" placeholder="Opcional (si se deja vacío se genera)">
         </div>
       </div>
 
       <div class="form-row">
         <div class="form-col">
-          <label class="form-label">Canal de venta</label>
+          <label class="form-label">
+            Canal de venta 
+            <a href="../ayuda/ayuda.html#ventas" class="btn-help-contextual" title="Medio por el cual se origina la transacción." target="_blank">?</a>
+          </label>
           <select id="carritoCanal" class="form-input">
             <option value="mostrador">Mostrador</option>
             <option value="domicilio">Domicilio</option>
@@ -44,14 +53,20 @@
           </select>
         </div>
         <div class="form-col">
-          <label class="form-label">Cliente</label>
+          <label class="form-label">
+            Cliente 
+            <a href="../ayuda/ayuda.html#clientes" class="btn-help-contextual" title="¿Cómo gestionar clientes?" target="_blank">?</a>
+          </label>
           <select id="carritoClienteID" class="form-input"></select>
         </div>
       </div>
 
       <div class="form-row">
         <div class="form-col">
-          <label class="form-label">Moneda</label>
+          <label class="form-label">
+            Moneda 
+            <a href="../ayuda/ayuda.html#finanzas" class="btn-help-contextual" title="Divisa base para los cálculos de totales e impuestos." target="_blank">?</a>
+          </label>
           <select id="carritoMoneda" class="form-input">
             <option value="COP">COP</option>
             <option value="USD">USD</option>
@@ -59,7 +74,10 @@
           </select>
         </div>
         <div class="form-col">
-          <label class="form-label">Referencia externa (pre-factura)</label>
+          <label class="form-label">
+            Referencia externa 
+            <a href="../ayuda/ayuda.html#documentos" class="btn-help-contextual" title="Número de seguimiento externo o código de pre-factura asociado." target="_blank">?</a>
+          </label>
           <input id="carritoReferencia" class="form-input" placeholder="Ej: PRE-2026-0001">
         </div>
       </div>

@@ -27,15 +27,24 @@
       <input type="hidden" id="empresa_id">
       <div class="form-row">
         <div class="form-col">
-          <label class="form-label">País de facturación</label>
+          <label class="form-label">
+            País de facturación 
+            <a href="../ayuda/ayuda.html#paises" class="btn-help-contextual" title="Determina la normativa fiscal y el formato del documento legal." target="_blank">?</a>
+          </label>
           <select id="pais_codigo" class="form-input"></select>
         </div>
         <div class="form-col">
-          <label class="form-label">Proveedor FE</label>
+          <label class="form-label">
+            Proveedor FE 
+            <a href="../ayuda/ayuda.html#proveedores" class="btn-help-contextual" title="Entidad tecnológica encargada del despacho fiscal (ej: manual o API externa)." target="_blank">?</a>
+          </label>
           <input id="proveedor" class="form-input" placeholder="manual / proveedor externo">
         </div>
         <div class="form-col">
-          <label class="form-label">Ambiente</label>
+          <label class="form-label">
+            Ambiente 
+            <a href="../ayuda/ayuda.html#onboarding" class="btn-help-contextual" title="Sandbox para pruebas iniciales; Producción para emisión con validez legal." target="_blank">?</a>
+          </label>
           <select id="ambiente" class="form-input">
             <option value="sandbox">Sandbox / pruebas</option>
             <option value="produccion">Producción</option>
