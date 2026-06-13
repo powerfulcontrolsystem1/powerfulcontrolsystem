@@ -577,9 +577,19 @@ try {
 
   function isEnterpriseMenuLinkHidden(link) {
     if (!link || !enterpriseMenuVisualConfig || enterpriseMenuVisualConfig.enabled === false) return false;
+    if (isSuperAdminMenuContext()) return false;
     var linkId = String(link.id || "").trim();
     if (!linkId || nonHideableMenuLinks[linkId]) return false;
     return !!(enterpriseMenuVisualConfig.hiddenLinks && enterpriseMenuVisualConfig.hiddenLinks[linkId]);
+  }
+
+  function isSuperAdminMenuContext() {
+    var role = "";
+    if (lastPermissionContext && typeof lastPermissionContext === "object") {
+      role = lastPermissionContext.rol || lastPermissionContext.role || lastPermissionContext.rol_efectivo || "";
+    }
+    if (!role) role = lastPermissionRole || "";
+    return normalizePermissionRole(role) === "super_administrador";
   }
 
   function renderNuevasPlantillasMenuLinks() {

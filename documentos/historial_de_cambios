@@ -4,7 +4,8 @@
 - Backend permisos: `backend/handlers/empresa_permisos.go` usa un helper unico para que el snapshot trate `powerfulcontrolsystem@gmail.com` como `super_administrador` antes de cualquier rol asignado por empresa.
 - Backend datos: `backend/db/usuarios_empresa.go` expone la purga defensiva del usuario operativo reservado y `resolveEmpresaAssignedPermissionRole` la ejecuta antes de ignorar ese correo, eliminando el duplicado de `pcs_empresas.users` sin tocar el administrador global.
 - Seguridad/datos: el cambio solo protege un correo administrado reservado; no concede permisos a usuarios operativos, no mezcla empresas y conserva aislamiento por `empresa_id`.
-- QA: se agrega prueba unitaria para que el snapshot no vuelva a degradar el correo reservado a `cajero`.
+- Frontend menu: `web/js/administrar_empresa.js` omite `menu_visual_config` cuando el contexto efectivo es `super_administrador`, porque esa configuracion visual puede ocultar modulos operativos pero no debe recortar la consola del super administrador.
+- QA: se agrega prueba unitaria para que el snapshot no vuelva a degradar el correo reservado a `cajero`; en validacion visual se confirmo que el backend ya devuelve `rol=super_administrador` y se corrigio la capa visual restante.
 
 2026-06-12: Pago combinado del carrito estable al hacer clic.
 - Modulos afectados: `carritos`, `venta_directa`, `estaciones`, `pagos`.
