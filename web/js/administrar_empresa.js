@@ -2052,6 +2052,7 @@ try {
         persistFrameSrc(linkHref, empresaId);
         setActiveByHref(linkHref);
         updateFavoriteButton(linkHref);
+        syncBrowserURLWithFrame(linkHref, empresaId, false);
       });
     });
   }
