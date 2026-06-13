@@ -10902,7 +10902,19 @@
       if (toggle) toggle.checked = true;
       const selected = getSelectedCarrito();
       if (selected) renderStationPaymentPanel(selected);
+      const checkoutPanel = document.getElementById('stationCheckoutPanel');
+      if (checkoutPanel) {
+        checkoutPanel.hidden = false;
+        checkoutPanel.classList.remove('is-hidden');
+        checkoutPanel.style.display = '';
+      }
       window.setTimeout(function() {
+        const panel = document.getElementById('stationCheckoutPanel');
+        if (panel) {
+          panel.hidden = false;
+          panel.classList.remove('is-hidden');
+          panel.style.display = '';
+        }
         const discountTypeEl = document.getElementById('discountType');
         if (discountTypeEl) discountTypeEl.focus();
       }, 0);
