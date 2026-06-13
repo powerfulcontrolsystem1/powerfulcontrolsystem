@@ -7,6 +7,7 @@
   <link rel="stylesheet" href="/estilos.css">
   <script src="/vendor/qrcode.min.js"></script>
   <script src="/js/print_documents.js"></script>
+  <script src="/js/form_field_help.js?v=20260613-quick-client-help"></script>
   <style>
     .domotica-cart-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:8px}
     .domotica-device-button{display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;background:var(--surface-soft);color:var(--text);font:inherit;font-weight:800;text-align:left;cursor:pointer}
@@ -7707,6 +7708,31 @@
       }
     }
 
+    function installQuickClienteFieldHelp() {
+      if (!window.PCSFieldHelp || !window.PCSFieldHelp.install) return;
+      window.PCSFieldHelp.install({
+        quickClienteTipoPersona: 'Define si el cliente es persona natural o empresa. Si eliges juridica, el formulario prioriza NIT y datos fiscales empresariales.',
+        quickClienteTipoDoc: 'Selecciona el documento fiscal real del cliente. Para empresa en Colombia normalmente sera NIT; para persona natural, cedula u otro documento valido.',
+        quickClienteDocumento: 'Escribe el numero principal de identificacion sin adornos. Este dato se usa para buscar duplicados, vender y facturar.',
+        quickClienteDV: 'Digito de verificacion del NIT. Solo aplica cuando el tipo de documento es NIT.',
+        quickClienteNombre: 'Nombre completo de la persona o razon social de la empresa, tal como debe quedar en la venta y en la factura.',
+        quickClienteNombreComercial: 'Nombre comercial opcional si la empresa usa una marca distinta a la razon social.',
+        quickClienteRegimenFiscal: 'Indica si el cliente pertenece al regimen comun, simplificado u otro esquema IVA que aplique en su pais o configuracion fiscal.',
+        quickClienteResponsabilidad: 'Responsabilidad tributaria o clasificacion fiscal del cliente para facturacion electronica y reportes.',
+        quickClienteTelefono: 'Telefono de contacto del cliente. Es opcional, pero ayuda para soporte, domicilios o cobranza.',
+        quickClienteEmail: 'Correo del cliente para enviar factura, comprobantes o recordatorios. Si no lo tienes, puede quedar vacio.',
+        quickClienteDireccion: 'Direccion fiscal o comercial usada en factura electronica y datos de cliente.',
+        quickClientePais: 'Codigo o nombre corto del pais fiscal. Para Colombia normalmente usa CO.',
+        quickClienteDepartamento: 'Departamento, estado o provincia de la direccion fiscal del cliente.',
+        quickClienteMunicipio: 'Municipio o ciudad de la direccion fiscal del cliente.',
+        quickClienteCodigoPostal: 'Codigo postal si el cliente lo maneja. Puede quedar vacio si no aplica.',
+        quickClienteObservaciones: 'Notas internas del cliente para caja, ventas o facturacion. No reemplaza los datos fiscales.',
+        quickClienteAbrirCupoCredito: 'Activa esta opcion si quieres dejar al cliente con cupo disponible para ventas a credito desde el carrito.',
+        quickClienteCupoCredito: 'Valor maximo del cupo de credito inicial que quedara disponible para este cliente.',
+        quickClienteMaxCreditosActivos: 'Cantidad maxima de creditos abiertos simultaneos permitidos para este cliente.'
+      });
+    }
+
     function renderStationCustomerPanel(carrito) {
       const card = document.getElementById('stationCustomerCard');
       if (!card) return;
@@ -11050,6 +11076,7 @@
         createClienteFromCartButton();
       });
     }
+    installQuickClienteFieldHelp();
     const quickClienteTipoDoc = document.getElementById('quickClienteTipoDoc');
     if (quickClienteTipoDoc) {
       quickClienteTipoDoc.addEventListener('change', function() {

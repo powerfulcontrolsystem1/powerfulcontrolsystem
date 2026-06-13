@@ -98,6 +98,7 @@
             <li><button type="button" data-target="empresaLimitacionesCard" data-search="limitaciones empresa api db ia gps rustdesk cuotas base datos" aria-label="Limitaciones API, DB, cuotas"><img class="icon" src="/img/shield-license-color.svg" alt=""><strong>Limitaciones</strong><span>API, DB, cuotas</span></button></li>
             <li><button type="button" data-target="empresaStorageCard" data-search="almacenamiento empresa archivos adjuntos buzon cuota limpieza" aria-label="Almacenamiento por empresa"><img class="icon" src="/img/report.svg" alt=""><strong>Almacenamiento</strong><span>Archivos por empresa</span></button></li>
             <li><button type="button" data-target="onlyofficeConfigCard" data-search="onlyoffice documentos colaborativos edicion oficina" aria-label="OnlyOffice Documentos"><img class="icon" src="/img/report.svg" alt=""><strong>OnlyOffice</strong><span>Documentos</span></button></li>
+            <li><button type="button" data-target="adminPageURLsCard" data-search="urls barra direcciones administrar empresa iframe nomina rutas programacion" aria-label="URLs visibles en administrar empresa"><img class="icon" src="/img/network-color.svg" alt=""><strong>URLs visibles</strong><span>Barra del navegador</span></button></li>
             <li><button type="button" data-target="voiceStreamConfigCard" data-search="voz ia streaming piper tts audio token" aria-label="Voz IA Streaming"><img class="icon" src="/img/gpt.svg" alt=""><strong>Voz IA</strong><span>Streaming</span></button></li>
           </ul>
         </li>
@@ -507,6 +508,37 @@
         <button id="onlyofficeTestBtn" type="button" class="btn secondary" style="margin-left:8px;">Probar conexión</button>
       </div>
       <div id="onlyofficeMsg" class="form-help"></div>
+    </section>
+
+    <section class="card form advanced-card" data-brand="system" id="adminPageURLsCard">
+      <h2>
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 12h16"></path><path d="M12 4l8 8-8 8"></path></svg>
+        URLs visibles en Administrar empresa
+      </h2>
+      <p class="form-help">Cuando este check esta activo, la barra del navegador muestra la URL real de la subpagina abierta dentro de <strong>Administrar empresa</strong>, por ejemplo nomina o facturacion. El sistema conserva redireccion segura para que un refresh vuelva al shell empresarial y no rompa el menu.</p>
+
+      <div class="form-row">
+        <div class="form-col">
+          <label class="form-label">Mostrar URL real de subpaginas</label>
+          <label class="mode-switch-row" for="adminPageURLsEnabledToggle">
+            <span class="mode-label">Off</span>
+            <input id="adminPageURLsEnabledToggle" type="checkbox" role="switch" aria-label="Mostrar URL real de subpaginas empresariales">
+            <span class="mode-label">On</span>
+          </label>
+          <div id="adminPageURLsEnabledHelp" class="form-help">Apagado por defecto para conservar el comportamiento clasico del iframe.</div>
+        </div>
+        <div class="form-col">
+          <div id="adminPageURLsConfigStatus" class="form-help">Cargando estado de URLs visibles...</div>
+          <div id="adminPageURLsUpdatedStatus" class="form-help">Validando configuracion global...</div>
+        </div>
+      </div>
+
+      <div class="form-actions">
+        <button id="saveAdminPageURLsBtn" class="btn" type="button" style="display:none;">Guardar URLs visibles</button>
+        <button id="editAdminPageURLsBtn" class="btn secondary" type="button">Editar</button>
+        <button id="cancelAdminPageURLsBtn" class="btn secondary" type="button" style="display:none;">Cancelar</button>
+      </div>
+      <div id="adminPageURLsConfigMsg" class="form-help"></div>
     </section>
 
     <section class="card form advanced-card" data-brand="ai" id="voiceStreamConfigCard">
@@ -1223,6 +1255,8 @@
         saveRecaptchaBtn: ['guardar_configuracion', 'super_config_recaptcha'],
         editAdmin2FABtn: ['habilitar_edicion_configuracion', 'super_config_admin_2fa'],
         saveAdmin2FABtn: ['guardar_configuracion', 'super_config_admin_2fa'],
+        editAdminPageURLsBtn: ['habilitar_edicion_configuracion', 'super_config_admin_page_urls'],
+        saveAdminPageURLsBtn: ['guardar_configuracion', 'super_config_admin_page_urls'],
         editAiConfigBtn: ['habilitar_edicion_configuracion', 'super_config_ia_global'],
         saveAiConfigBtn: ['guardar_configuracion', 'super_config_ia_global'],
         voiceStreamQuickActivateTestBtn: ['activar_prueba_voz_ia', 'super_config_voz_ia'],
@@ -1298,6 +1332,11 @@
         setEditButtons('saveAdmin2FABtn', 'editAdmin2FABtn', 'cancelAdmin2FABtn', isEditing);
       }
 
+      function setAdminPageURLsEditMode(isEditing){
+        setDisabledByIds(['adminPageURLsEnabledToggle'], !isEditing);
+        setEditButtons('saveAdminPageURLsBtn', 'editAdminPageURLsBtn', 'cancelAdminPageURLsBtn', isEditing);
+      }
+
       function enableEditRustDeskSshConfig(){
         setRustDeskSshEditMode(true);
         const msgEl = document.getElementById('rustdeskSshMsg');
@@ -1346,6 +1385,16 @@
 
       function cancelEditAdmin2FAConfig(){
         loadAdmin2FAConfig();
+      }
+
+      function enableEditAdminPageURLsConfig(){
+        setAdminPageURLsEditMode(true);
+        const msgEl = document.getElementById('adminPageURLsConfigMsg');
+        if (msgEl) msgEl.innerText = 'Modo edicion activo para URLs visibles.';
+      }
+
+      function cancelEditAdminPageURLsConfig(){
+        loadAdminPageURLsConfig();
       }
 
       function normalizeRustDeskStatus(value){
@@ -2127,6 +2176,7 @@
         await loadEmpresaLimitacionesConfig();
         await loadEmpresaStorageConfig();
         await loadOnlyOfficeConfig();
+        await loadAdminPageURLsConfig();
         await loadVoiceStreamQuickStatus();
         // cargar estado Wompi
         try {
@@ -2840,6 +2890,66 @@
           if (msgEl) msgEl.innerText = err.message || 'No se pudo guardar 2FA login.';
         } finally {
           if (btn) { btn.disabled = false; btn.innerText = 'Guardar 2FA login'; }
+        }
+      }
+
+      function refreshAdminPageURLsEnabledHint(){
+        const enabledEl = document.getElementById('adminPageURLsEnabledToggle');
+        const helpEl = document.getElementById('adminPageURLsEnabledHelp');
+        if (!enabledEl || !helpEl) return;
+        helpEl.innerText = enabledEl.checked
+          ? 'Activo: Nomina, usuarios, facturacion y demas subpaginas empresariales muestran su URL real en la barra del navegador.'
+          : 'Apagado: se conserva la URL clasica del shell de administrar empresa.';
+      }
+
+      async function loadAdminPageURLsConfig(){
+        const statusEl = document.getElementById('adminPageURLsConfigStatus');
+        const updatedEl = document.getElementById('adminPageURLsUpdatedStatus');
+        const msgEl = document.getElementById('adminPageURLsConfigMsg');
+        const toggleEl = document.getElementById('adminPageURLsEnabledToggle');
+        try {
+          const res = await fetch('/super/api/config/admin_page_urls', { credentials: 'same-origin' });
+          const data = await res.json().catch(function(){ return null; });
+          if (!res.ok || !data || !data.ok) {
+            throw new Error((data && data.message) || ('HTTP ' + res.status));
+          }
+          toggleEl.checked = !!data.enabled;
+          refreshAdminPageURLsEnabledHint();
+          statusEl.innerText = data.enabled ? 'URLs visibles activadas para administrar empresa.' : 'URLs visibles desactivadas; se usa la ruta clasica del shell.';
+          updatedEl.innerText = data.updated_at
+            ? ('Ultima actualizacion: ' + data.updated_at + (data.updated_by ? ' por ' + data.updated_by : ''))
+            : 'Sin actualizacion manual registrada.';
+          msgEl.innerText = '';
+          setAdminPageURLsEditMode(false);
+        } catch (err) {
+          if (statusEl) statusEl.innerText = 'No se pudo cargar la configuracion de URLs visibles.';
+          if (updatedEl) updatedEl.innerText = err.message || 'Error al consultar configuracion.';
+          setAdminPageURLsEditMode(false);
+        }
+      }
+
+      async function saveAdminPageURLsConfig(){
+        const btn = document.getElementById('saveAdminPageURLsBtn');
+        const msgEl = document.getElementById('adminPageURLsConfigMsg');
+        const toggleEl = document.getElementById('adminPageURLsEnabledToggle');
+        if (btn) { btn.disabled = true; btn.innerText = 'Guardando...'; }
+        try {
+          const res = await fetch('/super/api/config/admin_page_urls', {
+            method: 'PUT',
+            credentials: 'same-origin',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ enabled: !!(toggleEl && toggleEl.checked) })
+          });
+          const data = await res.json().catch(function(){ return null; });
+          if (!res.ok || !data || !data.ok) {
+            throw new Error((data && data.message) || ('HTTP ' + res.status));
+          }
+          await loadAdminPageURLsConfig();
+          if (msgEl) msgEl.innerText = 'Configuracion de URLs visibles guardada correctamente.';
+        } catch (err) {
+          if (msgEl) msgEl.innerText = err.message || 'No se pudo guardar la configuracion de URLs visibles.';
+        } finally {
+          if (btn) { btn.disabled = false; btn.innerText = 'Guardar URLs visibles'; }
         }
       }
 
@@ -3593,6 +3703,9 @@
       document.getElementById('onlyofficeEditBtn').addEventListener('click', enableEditOnlyOfficeConfig);
       document.getElementById('onlyofficeCancelBtn').addEventListener('click', cancelEditOnlyOfficeConfig);
       document.getElementById('onlyofficeTestBtn').addEventListener('click', testOnlyOfficeConfig);
+      document.getElementById('saveAdminPageURLsBtn').addEventListener('click', saveAdminPageURLsConfig);
+      document.getElementById('editAdminPageURLsBtn').addEventListener('click', enableEditAdminPageURLsConfig);
+      document.getElementById('cancelAdminPageURLsBtn').addEventListener('click', cancelEditAdminPageURLsConfig);
       document.getElementById('voiceStreamQuickActivateTestBtn').addEventListener('click', activateAndTestVoiceStreamQuickConfig);
       document.getElementById('voiceStreamQuickTestBtn').addEventListener('click', testVoiceStreamQuickConfig);
       document.getElementById('rustdeskActiveToggle').addEventListener('change', function(){
@@ -3676,6 +3789,10 @@
       document.getElementById('editAdmin2FABtn').addEventListener('click', enableEditAdmin2FAConfig);
       document.getElementById('cancelAdmin2FABtn').addEventListener('click', cancelEditAdmin2FAConfig);
       document.getElementById('admin2FAEnabledToggle').addEventListener('change', refreshAdmin2FAEnabledHint);
+      document.getElementById('saveAdminPageURLsBtn').addEventListener('click', saveAdminPageURLsConfig);
+      document.getElementById('editAdminPageURLsBtn').addEventListener('click', enableEditAdminPageURLsConfig);
+      document.getElementById('cancelAdminPageURLsBtn').addEventListener('click', cancelEditAdminPageURLsConfig);
+      document.getElementById('adminPageURLsEnabledToggle').addEventListener('change', refreshAdminPageURLsEnabledHint);
       document.getElementById('saveAiConfigBtn').addEventListener('click', saveAIConfig);
       document.getElementById('editAiConfigBtn').addEventListener('click', enableEditAIConfig);
       document.getElementById('cancelAiConfigBtn').addEventListener('click', cancelEditAIConfig);

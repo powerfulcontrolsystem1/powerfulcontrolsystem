@@ -1,3 +1,14 @@
+2026-06-13: URLs visibles opcionales en Administrar empresa y ayudas en cliente rapido.
+- Modulos afectados: `administrar_empresa`, `super_administrador`, `carritos`, `frontend_ux`, `configuracion_global`.
+- Causa tecnica: el shell empresarial usa iframe y normalmente conserva la URL base `administrar_empresa.html`, lo que dificulta identificar subpaginas exactas al programar o reportar incidencias. Ademas el formulario rapido `Nuevo cliente` del carrito ya tenia muchos campos fiscales y faltaba ayuda contextual campo a campo.
+- Backend configuracion: `backend/handlers/admin_page_urls_handlers.go` agrega el endpoint super `/super/api/config/admin_page_urls` para leer/guardar el switch global `ui.admin_page_urls.enabled`; `backend/main.go` registra la ruta con auditoria `super_config_admin_page_urls`.
+- Frontend shell: `web/js/administrar_empresa.js` consulta la configuracion global y, si esta encendida, sincroniza `history.pushState/replaceState` con la subpagina abierta para mostrar arriba la URL real (por ejemplo Nomina) sin perder `empresa_id`; tambien repone la URL shell clasica cuando el switch esta apagado.
+- Frontend subpaginas: `web/js/empresa_submenu_context.js` detecta recargas directas con `shell_admin=1` y reentra al shell usando `page=...`, evitando romper el contenedor al actualizar o compartir la ruta interna.
+- Frontend super: `web/super/configuracion_avanzada.html` agrega la tarjeta `URLs visibles` con check para activar/desactivar el comportamiento desde Super administrador.
+- Frontend carrito: `web/administrar_empresa/carrito_de_compras.html` instala ayudas `?` para todos los campos del formulario rapido `Nuevo cliente`, incluyendo tipo de persona/documento, NIT-DV, regimen, responsabilidad, contacto, ubicacion y cupo de credito.
+- Seguridad/datos: el cambio de URL es visual y navegacional; no altera permisos efectivos, no reemplaza validaciones backend y mantiene el aislamiento por `empresa_id`. El switch queda centralizado en configuracion global super.
+- QA automatizada: `node --check web/js/administrar_empresa.js` y `go test ./handlers -run "AdminPageURLs|ResolveAdminPermissionRoleFor(Context|Snapshot)PreservaSuperAdminReservado" -count=1` reportaron `ok`.
+
 2026-06-13: Snapshot de permisos preserva super administrador PCS.
 - Modulos afectados: `autenticacion`, `permisos`, `usuarios_empresa`, `administrar_empresa`.
 - Causa tecnica: el contexto de permisos ya normalizaba el correo reservado como `super_administrador`, pero el snapshot cacheado usado por autorizacion y menu resolvia primero el rol administrativo y aun podia consultar una asignacion operativa empresarial vieja, dejando el panel con alcance de `cajero`.

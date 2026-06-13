@@ -128,6 +128,7 @@ try {
   };
   var enterpriseAIVisibleLinks = {};
   var enterpriseMenuVisualConfig = { hiddenLinks: {} };
+  var adminPageURLsConfig = { enabled: false };
   var lastPermissionContext = null;
   var lastPermissionRole = "";
   var nonHideableMenuLinks = {
@@ -1910,7 +1911,95 @@ try {
     return "";
   }
 
+  function requestedFrameSrcFromURL(empresaId) {
+    var raw = "";
+    try {
+      var params = new URLSearchParams(window.location.search || "");
+      raw = String(params.get("page") || "").trim();
+    } catch (e) {
+      raw = "";
+    }
+    if (!raw) return "";
+    var href = withEmpresaParam(raw, empresaId);
+    if (href && isAllowedFrameHref(href) && isVisibleMenuHref(href)) {
+      return href;
+    }
+    return "";
+  }
+
+  function adminShellBaseURL(empresaId, frameHref) {
+    var target = new URL('/administrar_empresa.html', window.location.origin);
+    if (empresaId) {
+      target.searchParams.set('empresa_id', empresaId);
+      target.searchParams.set('id', empresaId);
+    }
+    if (frameHref) {
+      target.searchParams.set('page', normalizeHref(frameHref));
+    }
+    return target.pathname + target.search;
+  }
+
+  function browserURLForFrame(empresaId, frameHref) {
+    var normalized = normalizeHref(frameHref);
+    if (!normalized) return adminShellBaseURL(empresaId, '');
+    try {
+      var target = new URL(normalized, window.location.origin);
+      if (empresaId && !parsePositiveInt(target.searchParams.get('empresa_id'))) {
+        target.searchParams.set('empresa_id', empresaId);
+      }
+      target.searchParams.set('shell_admin', '1');
+      return target.pathname + target.search + target.hash;
+    } catch (e) {
+      return adminShellBaseURL(empresaId, normalized);
+    }
+  }
+
+  function syncBrowserURLWithFrame(frameHref, empresaId, replaceOnly) {
+    if (!adminPageURLsConfig || !adminPageURLsConfig.enabled) {
+      restoreAdminShellBrowserURL(empresaId, frameHref, true);
+      return;
+    }
+    var next = browserURLForFrame(empresaId, frameHref);
+    if (!next) return;
+    var current = window.location.pathname + window.location.search + window.location.hash;
+    if (current === next) return;
+    var state = { pcsAdminShell: true, empresaId: empresaId || '', frameSrc: normalizeHref(frameHref) };
+    if (replaceOnly) window.history.replaceState(state, '', next);
+    else window.history.pushState(state, '', next);
+  }
+
+  function restoreAdminShellBrowserURL(empresaId, frameHref, replaceOnly) {
+    var next = adminShellBaseURL(empresaId, frameHref || '');
+    var current = window.location.pathname + window.location.search + window.location.hash;
+    if (current === next) return;
+    var state = { pcsAdminShell: true, empresaId: empresaId || '', frameSrc: normalizeHref(frameHref || '') };
+    if (replaceOnly) window.history.replaceState(state, '', next);
+    else window.history.pushState(state, '', next);
+  }
+
+  function fetchAdminPageURLsConfig() {
+    return fetch('/super/api/config/admin_page_urls', { credentials: 'same-origin' })
+      .then(function (resp) {
+        if (!resp.ok) return null;
+        return resp.json();
+      })
+      .then(function (data) {
+        adminPageURLsConfig = {
+          enabled: !!(data && data.ok && data.enabled)
+        };
+        return adminPageURLsConfig;
+      })
+      .catch(function () {
+        adminPageURLsConfig = { enabled: false };
+        return adminPageURLsConfig;
+      });
+  }
+
   function resolveInitialFrameSrc(empresaId) {
+    var requested = requestedFrameSrcFromURL(empresaId);
+    if (requested) {
+      return requested;
+    }
     var preferred = preferredStartupFrameSrc(empresaId);
     if (preferred) {
       return preferred;
@@ -2305,6 +2394,7 @@ try {
       persistFrameSrc(currentHref, id);
       setActiveByHref(currentHref);
       updateFavoriteButton(currentHref);
+      syncBrowserURLWithFrame(currentHref, id, true);
       scheduleMobileFrameResize();
     });
     // Interceptar F5 / Ctrl+R para recargar solo el iframe y mantener la subpágina activa.
@@ -2350,6 +2440,23 @@ try {
     scheduleMobileFrameResize();
   });
 
+  window.addEventListener('popstate', function (event) {
+    var state = event.state || {};
+    if (!frame) return;
+    if (state && state.pcsAdminShell && state.frameSrc) {
+      var nextHref = withEmpresaParam(state.frameSrc, id);
+      if (nextHref && normalizeHref(frame.getAttribute('src') || '') !== normalizeHref(nextHref)) {
+        frame.setAttribute('src', nextHref);
+      }
+      return;
+    }
+    if (!adminPageURLsConfig || !adminPageURLsConfig.enabled) return;
+    var fallback = requestedFrameSrcFromURL(id) || resolveInitialFrameSrc(id);
+    if (fallback && normalizeHref(frame.getAttribute('src') || '') !== normalizeHref(fallback)) {
+      frame.setAttribute('src', fallback);
+    }
+  });
+
   setupAdminNavGroups();
 
   fetchVerticalIntegrationCatalog(id)
@@ -2364,7 +2471,10 @@ try {
       }
       var role = session && session.role ? session.role : "";
       if (id) {
-        return fetchEmpresaMenuVisualConfig(id)
+        return fetchAdminPageURLsConfig()
+          .then(function () {
+            return fetchEmpresaMenuVisualConfig(id);
+          })
           .then(function () {
             return applyMenuPermissionsWithSource(id, role);
           })

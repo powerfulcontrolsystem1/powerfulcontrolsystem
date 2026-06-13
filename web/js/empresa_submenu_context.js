@@ -115,6 +115,29 @@
 
   window.__resolveEmpresaIdContext = window.__resolveEmpresaIdContext || resolveEmpresaId;
 
+  function redirectShellAdminTopLevelIfNeeded() {
+    if (!isEmpresaModulePage()) return;
+    let params = null;
+    try {
+      params = new URLSearchParams(window.location.search || '');
+    } catch (_) {
+      return;
+    }
+    if (params.get('shell_admin') !== '1') return;
+    if (!isTopLevelWindow()) return;
+    if (window.location.pathname === '/administrar_empresa.html') return;
+    const empresaId = resolveEmpresaId();
+    if (!(empresaId > 0)) return;
+    params.delete('shell_admin');
+    const innerSearch = params.toString();
+    const innerHref = window.location.pathname + (innerSearch ? ('?' + innerSearch) : '') + (window.location.hash || '');
+    const shellURL = new URL('/administrar_empresa.html', window.location.origin);
+    shellURL.searchParams.set('empresa_id', String(empresaId));
+    shellURL.searchParams.set('id', String(empresaId));
+    shellURL.searchParams.set('page', innerHref);
+    window.location.replace(shellURL.toString());
+  }
+
   function isEmpresaModulePage() {
     const body = document.body;
     if (!body) return false;
@@ -223,6 +246,8 @@
       return true;
     }
   }
+
+  redirectShellAdminTopLevelIfNeeded();
 
   function connectivityAuditQueueKey() {
     const empresaId = resolveEmpresaId();

@@ -1,3 +1,6 @@
+2026-06-13 - URLs visibles opcionales en shell empresarial
+- `backend/handlers/admin_page_urls_handlers.go`: handler super para leer y guardar la configuracion global `ui.admin_page_urls.enabled`; permite activar o desactivar que `Administrar empresa` muestre en la barra del navegador la URL real de la subpagina abierta.
+
 2026-06-12 - Cantidad del carrito visible con contraste fijo
 - `web/administrar_empresa/carrito_de_compras.html`: agrega `cart-item-qty-cell` a la celda del campo Cantidad en el detalle de productos para mantener ancho suficiente.
 - `web/estilos.css`: refuerza `.cart-item-qty-input` con contraste independiente del tema, fondo claro, texto oscuro y dimensiones estables para que el numero no quede invisible.
