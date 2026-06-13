@@ -138,6 +138,14 @@
     window.location.replace(shellURL.toString());
   }
 
+  function bootShellAdminRedirect() {
+    if (document.body) {
+      redirectShellAdminTopLevelIfNeeded();
+      return;
+    }
+    document.addEventListener('DOMContentLoaded', redirectShellAdminTopLevelIfNeeded, { once: true });
+  }
+
   function isEmpresaModulePage() {
     const body = document.body;
     if (!body) return false;
@@ -145,6 +153,8 @@
       || body.classList.contains('modulo-colombia-page')
       || body.classList.contains('admin-subpage');
   }
+
+  bootShellAdminRedirect();
 
   function safeMessage(raw) {
     const text = String(raw || '').replace(/\s+/g, ' ').trim();
