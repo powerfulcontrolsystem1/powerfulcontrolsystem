@@ -4749,3 +4749,4 @@
 - El panel de coincidencias del buscador rapido por nombre se oculta al seleccionar un producto, conservando la seleccion para agregarlo al carrito.
 - 2026-06-13: `Carrito PCS con cantidad por mouse y pagos legibles` agrega botones `-`/`+` junto a cada cantidad del carrito y ensancha los campos del detalle de pago para que pagos combinados 25/25/50 se lean completos en venta directa.
 - 2026-06-13: `Carrito PCS formato final de pago` formatea los pagos combinados al perder foco y evita mostrar un error interno cuando la venta directa ya quedó operativa tras una carga parcial.
+- 2026-06-13: `Carrito PCS botones de acciones` permite que Descuentos abra el panel de cobro desde venta directa y oculta Domotica cuando no hay estacion fisica asociada.

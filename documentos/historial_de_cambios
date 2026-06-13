@@ -34361,6 +34361,12 @@ PushStatus: OK
 Archivos modificados:
 - web/administrar_empresa/carrito_de_compras.html
 
+2026-06-13: Carrito PCS botones de acciones.
+- Modulos afectados: `carritos`, `venta_directa`, `pagos`, `estaciones`.
+- Frontend: `web/administrar_empresa/carrito_de_compras.html` hace que el boton Descuentos abra el panel de cobro avanzado aunque la tarjeta avanzada este apagada por defecto.
+- UX: el boton Domotica deja de mostrarse en venta directa sin estacion fisica, evitando un boton visible que no puede cargar reles.
+- QA visual: en PCS se probaron Descuentos, Cambiar tarifa, Cancelar carrito, Clientes, Abonos, Taxi y Vehiculo; Transferir cuenta y QR estaban ocultos por configuracion empresarial.
+
 2026-06-13: Carrito PCS formato final de pago y aviso parcial.
 - Modulos afectados: `carritos`, `venta_directa`, `pagos`.
 - Frontend: `web/administrar_empresa/carrito_de_compras.html` formatea los importes de pagos combinados al perder foco para conservar lectura `COP` en efectivo, credito y debito.

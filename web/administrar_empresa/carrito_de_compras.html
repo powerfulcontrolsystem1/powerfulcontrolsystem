@@ -2598,7 +2598,7 @@
       setCarritoActionControlVisible('carritoBtnDescuentos', actionsVisible && Boolean(ui.mostrar_boton_descuentos_carrito));
       setCarritoActionControlVisible('carritoBtnCambiarTarifa', actionsVisible && Boolean(ui.mostrar_boton_cambiar_tarifa_carrito));
       setCarritoActionControlVisible('carritoBtnTransferirCuenta', actionsVisible && Boolean(ui.mostrar_boton_transferir_cuenta_carrito && ui.permitir_transferir_cuenta_carrito));
-      setCarritoActionControlVisible('carritoBtnControlElectrico', actionsVisible && Boolean(ui.mostrar_control_electrico_carrito && ui.mostrar_boton_control_electrico_carrito));
+      setCarritoActionControlVisible('carritoBtnControlElectrico', actionsVisible && state.stationMode && !state.directSaleMode && Boolean(ui.mostrar_control_electrico_carrito && ui.mostrar_boton_control_electrico_carrito));
       setCarritoActionControlVisible('carritoBtnCancelarCarrito', actionsVisible && Boolean(ui.mostrar_boton_cancelar_carrito));
       setCarritoActionControlVisible('carritoBtnTaxi', actionsVisible && Boolean(ui.mostrar_boton_taxi_carrito));
       setCarritoActionControlVisible('carritoBtnClientes', actionsVisible && Boolean(ui.mostrar_boton_clientes_carrito));
@@ -6098,7 +6098,7 @@
 
       const stationUI = getCurrentStationCartUIConfig();
       setOptionalSectionsControlsVisibility(stationUI, carrito);
-      const showCheckoutPanel = Boolean(stationUI.mostrar_tarjeta_cobro_estados) && Boolean(state.optionalSections.showCheckoutAdvanced);
+      const showCheckoutPanel = Boolean(state.optionalSections.showCheckoutAdvanced);
       if (!showCheckoutPanel) {
         resetHiddenCheckoutOptions();
       }
