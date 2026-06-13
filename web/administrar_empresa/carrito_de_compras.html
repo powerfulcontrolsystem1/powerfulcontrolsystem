@@ -985,6 +985,7 @@
       },
       optionalSections: {
         showCheckoutAdvanced: false,
+        showDiscounts: false,
         showWorkerCommission: false
       },
       stationDiscount: {
@@ -6167,7 +6168,8 @@
       const commissionWorkerEl = document.getElementById('commissionWorker');
       const operativa = getOperativaPermisos();
 
-      if (!stationUI.mostrar_descuentos) {
+      const showDiscountControls = Boolean(stationUI.mostrar_descuentos || state.optionalSections.showDiscounts);
+      if (!showDiscountControls) {
         state.stationDiscount.type = 'none';
         state.stationDiscount.value = 0;
         state.stationDiscount.code = '';
@@ -6183,9 +6185,9 @@
         commissionWorkerEl.value = '';
       }
 
-      setFieldColumnVisibility('discountType', stationUI.mostrar_descuentos);
-      setFieldColumnVisibility('discountValue', stationUI.mostrar_descuentos);
-      setFieldColumnVisibility('discountCode', stationUI.mostrar_descuentos);
+      setFieldColumnVisibility('discountType', showDiscountControls);
+      setFieldColumnVisibility('discountValue', showDiscountControls);
+      setFieldColumnVisibility('discountCode', showDiscountControls);
       setFieldColumnVisibility('applyTipCheckbox', stationUI.mostrar_propina);
       setFieldColumnVisibility('commissionWorker', stationUI.mostrar_comision && state.optionalSections.showWorkerCommission);
       setFieldColumnVisibility('paymentMethod', stationUI.mostrar_tarjetas_pago);
@@ -6200,9 +6202,9 @@
       ensurePaymentMethodInputsFromOperativa();
       const hasAllowedPaymentMethods = getAllowedPaymentMethods().length > 0;
 
-      discountTypeEl.disabled = !selectedActive || !caps.enabled || !stationUI.mostrar_descuentos;
-      discountValueEl.disabled = !selectedActive || !caps.enabled || !stationUI.mostrar_descuentos;
-      discountCodeEl.disabled = !selectedActive || !caps.enabled || !stationUI.mostrar_descuentos;
+      discountTypeEl.disabled = !selectedActive || !caps.enabled || !showDiscountControls;
+      discountValueEl.disabled = !selectedActive || !caps.enabled || !showDiscountControls;
+      discountCodeEl.disabled = !selectedActive || !caps.enabled || !showDiscountControls;
       paymentMethodEl.disabled = !selectedActive || !hasAllowedPaymentMethods || !stationUI.mostrar_tarjetas_pago;
       if (activeCashRegisterEl) activeCashRegisterEl.disabled = !selectedActive || !(state.activeCashRegisters || []).length;
       paymentReferenceEl.disabled = !selectedActive || !stationUI.mostrar_tarjetas_pago;
@@ -10898,6 +10900,7 @@
 
     document.getElementById('carritoBtnDescuentos').addEventListener('click', function() {
       state.optionalSections.showCheckoutAdvanced = true;
+      state.optionalSections.showDiscounts = true;
       const toggle = document.getElementById('toggleStationCheckoutAdvanced');
       if (toggle) toggle.checked = true;
       const selected = getSelectedCarrito();
