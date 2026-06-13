@@ -14654,3 +14654,7 @@ Archivos modificados:
 - web/js/administrar_empresa.js
 - web/js/empresa_submenu_context.js
 - web/super/configuracion_avanzada.html
+
+2026-06-13 17:34:28 - Mensaje: rs: actualizar repositorio y sincronizar VPS; Commit: f33f5fb5; PushStatus: OK
+Archivos modificados:
+- web/js/empresa_submenu_context.js
