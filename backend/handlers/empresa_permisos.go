@@ -3916,7 +3916,12 @@ func getEmpresaPermissionSnapshot(dbEmp, dbSuper *sql.DB, adminEmail string, emp
 		return empresaPermissionSnapshot{}, err
 	}
 	dbpkg.PerfLogf("[perf][authz] snapshot empresa=%d email=%s step=admin dur=%s", empresaID, strings.ToLower(strings.TrimSpace(adminEmail)), time.Since(stepStarted))
-	role := normalizePermissionRole(utils.ManagedAdminRole(admin.Email, admin.Role))
+	if utils.AdminShouldUseSuperRole(adminEmail) {
+		if err := dbpkg.PurgeReservedSuperAdminEmpresaUsuarios(dbEmp); err != nil {
+			log.Printf("[authz] no se pudo purgar usuario operativo reservado: %v", err)
+		}
+	}
+	role := resolveAdminPermissionRoleForSnapshot(admin.Email, admin.Role)
 	if role != "super_administrador" {
 		if assignedRole, ok := resolveEmpresaAssignedPermissionRole(dbEmp, dbSuper, empresaID, adminEmail, role); ok {
 			role = assignedRole
@@ -4041,7 +4046,13 @@ func resolveEmpresaAssignedPermissionRole(dbEmp, dbSuper *sql.DB, empresaID int6
 	if dbEmp == nil || dbSuper == nil || empresaID <= 0 || strings.TrimSpace(adminEmail) == "" {
 		return "", false
 	}
-	if normalizePermissionRole(fallbackRole) == "super_administrador" || utils.AdminShouldUseSuperRole(adminEmail) {
+	if normalizePermissionRole(fallbackRole) == "super_administrador" {
+		return "", false
+	}
+	if utils.AdminShouldUseSuperRole(adminEmail) {
+		if err := dbpkg.PurgeReservedSuperAdminEmpresaUsuarios(dbEmp); err != nil {
+			log.Printf("[authz] no se pudo purgar usuario operativo reservado: %v", err)
+		}
 		return "", false
 	}
 	usuario, err := dbpkg.GetEmpresaUsuarioByEmailScoped(dbEmp, adminEmail, empresaID)
@@ -4068,6 +4079,13 @@ func resolveEmpresaAssignedPermissionRole(dbEmp, dbSuper *sql.DB, empresaID int6
 	}
 	fallback := normalizePermissionRole(fallbackRole)
 	return fallback, fallback != "" && fallback != "sin_rol"
+}
+
+func resolveAdminPermissionRoleForSnapshot(adminEmail, rawRole string) string {
+	if utils.AdminShouldUseSuperRole(adminEmail) {
+		return "super_administrador"
+	}
+	return normalizePermissionRole(utils.ManagedAdminRole(adminEmail, rawRole))
 }
 
 func resolveEffectiveRoleByLicencia(role string, licenciaPolicy *dbpkg.LicenciaPermisoPolicy) string {

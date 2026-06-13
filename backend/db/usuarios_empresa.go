@@ -215,6 +215,10 @@ func purgeReservedSuperAdminEmpresaUsuarios(dbConn *sql.DB) error {
 	return err
 }
 
+func PurgeReservedSuperAdminEmpresaUsuarios(dbConn *sql.DB) error {
+	return purgeReservedSuperAdminEmpresaUsuarios(dbConn)
+}
+
 func dropLegacyEmpresaUsuariosEmailUniqueConstraints(dbConn *sql.DB) error {
 	if !isPostgresDialect() {
 		return nil

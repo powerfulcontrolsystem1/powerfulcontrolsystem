@@ -121,3 +121,10 @@ func TestResolveAdminPermissionRoleForContextPreservaSuperAdminReservado(t *test
 		t.Fatalf("rol contexto correo reservado = %q, want super_administrador", got)
 	}
 }
+
+func TestResolveAdminPermissionRoleForSnapshotPreservaSuperAdminReservado(t *testing.T) {
+	got := resolveAdminPermissionRoleForSnapshot("powerfulcontrolsystem@gmail.com", "cajero")
+	if got != "super_administrador" {
+		t.Fatalf("rol snapshot correo reservado = %q, want super_administrador", got)
+	}
+}

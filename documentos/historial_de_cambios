@@ -1,3 +1,11 @@
+2026-06-13: Snapshot de permisos preserva super administrador PCS.
+- Modulos afectados: `autenticacion`, `permisos`, `usuarios_empresa`, `administrar_empresa`.
+- Causa tecnica: el contexto de permisos ya normalizaba el correo reservado como `super_administrador`, pero el snapshot cacheado usado por autorizacion y menu resolvia primero el rol administrativo y aun podia consultar una asignacion operativa empresarial vieja, dejando el panel con alcance de `cajero`.
+- Backend permisos: `backend/handlers/empresa_permisos.go` usa un helper unico para que el snapshot trate `powerfulcontrolsystem@gmail.com` como `super_administrador` antes de cualquier rol asignado por empresa.
+- Backend datos: `backend/db/usuarios_empresa.go` expone la purga defensiva del usuario operativo reservado y `resolveEmpresaAssignedPermissionRole` la ejecuta antes de ignorar ese correo, eliminando el duplicado de `pcs_empresas.users` sin tocar el administrador global.
+- Seguridad/datos: el cambio solo protege un correo administrado reservado; no concede permisos a usuarios operativos, no mezcla empresas y conserva aislamiento por `empresa_id`.
+- QA: se agrega prueba unitaria para que el snapshot no vuelva a degradar el correo reservado a `cajero`.
+
 2026-06-12: Pago combinado del carrito estable al hacer clic.
 - Modulos afectados: `carritos`, `venta_directa`, `estaciones`, `pagos`.
 - Causa tecnica: en la prueba visual de PCS, al hacer clic en el campo `Efectivo` del detalle de pago, el navegador quedo esperando el selector. El bloque de pago ejecutaba `handleStationPaymentAmountIntent` tanto en `focus` como en `click`; el `focus` autollenaba y re-renderizaba el panel antes de que terminara el clic, dejando el target bajo el mouse reemplazado.
