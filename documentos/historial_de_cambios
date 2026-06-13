@@ -34360,3 +34360,9 @@ Archivos modificados:
 PushStatus: OK
 Archivos modificados:
 - web/administrar_empresa/carrito_de_compras.html
+
+2026-06-13: Carrito PCS formato final de pago y aviso parcial.
+- Modulos afectados: `carritos`, `venta_directa`, `pagos`.
+- Frontend: `web/administrar_empresa/carrito_de_compras.html` formatea los importes de pagos combinados al perder foco para conservar lectura `COP` en efectivo, credito y debito.
+- UX: cuando la venta directa ya cargo carrito e items, una falla secundaria de carga no queda como error interno visible para el cajero; se muestra un aviso neutro de reintento automatico.
+- QA visual: en PCS (`empresa_id=12`) se valido cantidad con mouse, pagos 25/25/50 y creacion/asignacion de cliente empresa responsable de IVA sin cerrar una venta real.

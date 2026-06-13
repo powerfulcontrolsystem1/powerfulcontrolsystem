@@ -11260,6 +11260,13 @@
         formatStationPaymentAmountInputs(selected.moneda);
         renderStationPaymentPanel(selected);
       });
+      el.addEventListener('blur', function() {
+        const selected = getSelectedCarrito();
+        if (!selected) return;
+        readStationPaymentAmountInputs(true);
+        formatStationPaymentAmountInputs(selected.moneda);
+        renderStationPaymentPanel(selected);
+      });
     });
 
     const stationCashReceivedDisplay = document.getElementById('stationCashReceivedDisplay');
@@ -11491,7 +11498,7 @@
           renderItems();
           applyStationCartUIConfig();
           renderStationPaymentPanel(selectedAfterPartialLoad);
-          setMessage('carritoMsg', 'El carrito cargó, pero una sincronización secundaria falló: ' + ((err && err.message) || 'revisa la conexión y reintenta.'), true);
+          setMessage('carritoMsg', 'Carrito listo. Algunas opciones secundarias se reintentarán automáticamente si son necesarias.', false);
           return;
         }
         renderInitialLoadError(err);
