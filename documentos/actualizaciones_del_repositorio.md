@@ -270,3 +270,9 @@ Archivos modificados:
 - web/menu.js
 - web/super/chat_con_ia_global.html
 - web/super/configuracion_avanzada.html
+
+2026-06-13 15:43:54 - Mensaje: Actualizacion automatica desde script: anadir/actualizar archivos; Commit: 21cd359b; PushStatus: OK
+Archivos modificados:
+- CHANGELOG.md
+- web/administrar_empresa/carrito_de_compras.html
+- web/administrar_empresa/facturacion_electronica.html

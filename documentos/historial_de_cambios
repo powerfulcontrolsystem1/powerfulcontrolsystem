@@ -12719,3 +12719,10 @@ Archivos modificados:
 - web/menu.js
 - web/super/chat_con_ia_global.html
 - web/super/configuracion_avanzada.html
+
+2026-06-13: Actualizacion automatica desde script: anadir/actualizar archivos
+PushStatus: OK
+Archivos modificados:
+- CHANGELOG.md
+- web/administrar_empresa/carrito_de_compras.html
+- web/administrar_empresa/facturacion_electronica.html
