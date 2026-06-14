@@ -117,6 +117,24 @@
           </div>
         </div>
 
+        <div class="empresa-section mt-12">
+          <div class="empresa-section-header compact">
+            <div>
+              <h3 class="section-heading">Stock del carrito</h3>
+              <p class="form-help mt-0">Define si la empresa puede vender productos aunque el stock disponible llegue a cero o quede negativo.</p>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-col">
+              <label class="form-help" style="display:flex;align-items:center;gap:8px;">
+                <input id="carritoCfgPermitirVentaSinStock" type="checkbox">
+                Permitir vender aunque no haya stock
+              </label>
+              <div class="form-help">Si lo activas, el carrito permitirá agregar y cerrar ventas aun cuando el inventario no tenga existencia suficiente. El inventario podrá quedar negativo hasta que lo ajustes.</div>
+            </div>
+          </div>
+        </div>
+
         <div class="form-row">
           <div class="form-col">
             <label class="form-help" style="display:flex;align-items:center;gap:8px;">
@@ -760,6 +778,7 @@
         mostrar_boton_clientes_carrito: true,
         mostrar_boton_abonos_carrito: true,
         mostrar_boton_vehiculo_carrito: true,
+        permitir_venta_sin_stock_carrito: false,
         mostrar_alerta_tiempo_carrito: false,
         alerta_tiempo_minutos: 10,
         alerta_tiempo_activa_default: false,
@@ -853,6 +872,7 @@
         mostrar_boton_clientes_carrito: src.mostrar_boton_clientes_carrito === undefined ? base.mostrar_boton_clientes_carrito : !!src.mostrar_boton_clientes_carrito,
         mostrar_boton_abonos_carrito: src.mostrar_boton_abonos_carrito === undefined ? base.mostrar_boton_abonos_carrito : !!src.mostrar_boton_abonos_carrito,
         mostrar_boton_vehiculo_carrito: src.mostrar_boton_vehiculo_carrito === undefined ? base.mostrar_boton_vehiculo_carrito : !!src.mostrar_boton_vehiculo_carrito,
+        permitir_venta_sin_stock_carrito: src.permitir_venta_sin_stock_carrito === undefined ? base.permitir_venta_sin_stock_carrito : !!src.permitir_venta_sin_stock_carrito,
         mostrar_alerta_tiempo_carrito: src.mostrar_alerta_tiempo_carrito === undefined ? base.mostrar_alerta_tiempo_carrito : !!src.mostrar_alerta_tiempo_carrito,
         alerta_tiempo_minutos: clampCarritoAlertMinutes(src.alerta_tiempo_minutos === undefined ? base.alerta_tiempo_minutos : src.alerta_tiempo_minutos),
         alerta_tiempo_activa_default: src.alerta_tiempo_activa_default === undefined ? base.alerta_tiempo_activa_default : !!src.alerta_tiempo_activa_default,
@@ -1171,6 +1191,8 @@
       document.getElementById('carritoCfgBotonClientes').checked = !!normalized.mostrar_boton_clientes_carrito;
       document.getElementById('carritoCfgBotonAbonos').checked = !!normalized.mostrar_boton_abonos_carrito;
       document.getElementById('carritoCfgBotonVehiculo').checked = !!normalized.mostrar_boton_vehiculo_carrito;
+      const stocklessCfg = document.getElementById('carritoCfgPermitirVentaSinStock');
+      if (stocklessCfg) stocklessCfg.checked = !!normalized.permitir_venta_sin_stock_carrito;
       setButtonSelectorControlsEnabled();
       document.getElementById('carritoCfgMostrarAlertaTiempo').checked = !!normalized.mostrar_alerta_tiempo_carrito;
       document.getElementById('carritoCfgAlertaTiempoMinutos').value = String(normalized.alerta_tiempo_minutos || 10);
@@ -1240,6 +1262,7 @@
           'carritoCfgBotonClientes',
           'carritoCfgBotonAbonos',
           'carritoCfgBotonVehiculo',
+          'carritoCfgPermitirVentaSinStock',
           'carritoCfgBotonesSelectorEnabled',
           'carritoCfgBotonesSelector',
           'carritoCfgBotonesSelectorAction',
@@ -1325,6 +1348,7 @@
           mostrar_boton_clientes_carrito: document.getElementById('carritoCfgBotonClientes').checked,
           mostrar_boton_abonos_carrito: document.getElementById('carritoCfgBotonAbonos').checked,
           mostrar_boton_vehiculo_carrito: document.getElementById('carritoCfgBotonVehiculo').checked,
+          permitir_venta_sin_stock_carrito: document.getElementById('carritoCfgPermitirVentaSinStock').checked,
           mostrar_alerta_tiempo_carrito: document.getElementById('carritoCfgMostrarAlertaTiempo').checked,
           alerta_tiempo_minutos: document.getElementById('carritoCfgAlertaTiempoMinutos').value,
           alerta_tiempo_activa_default: document.getElementById('carritoCfgAlertaTiempoDefault').checked,

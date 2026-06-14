@@ -179,6 +179,7 @@ type CarritoCompraItem struct {
 	UsuarioCreador      string  `json:"usuario_creador,omitempty"`
 	Estado              string  `json:"estado,omitempty"`
 	Observaciones       string  `json:"observaciones,omitempty"`
+	PermitirSinStock    bool    `json:"permitir_sin_stock,omitempty"`
 }
 
 // CarritoStationMetricInput representa una medicion operativa por estacion.
@@ -3174,6 +3175,7 @@ func CreateCarritoCompraItem(dbConn *sql.DB, payload CarritoCompraItem) (int64, 
 				payload.ReferenciaID,
 				payload.Cantidad,
 				true,
+				payload.PermitirSinStock,
 				referencia,
 				payload.UsuarioCreador,
 				"reserva por adicion al carrito",
@@ -3295,6 +3297,7 @@ func UpdateCarritoCompraItem(dbConn *sql.DB, payload CarritoCompraItem) error {
 						payload.ReferenciaID,
 						delta,
 						true,
+						payload.PermitirSinStock,
 						referencia,
 						payload.UsuarioCreador,
 						"reserva adicional por actualizacion de item",
@@ -3311,6 +3314,7 @@ func UpdateCarritoCompraItem(dbConn *sql.DB, payload CarritoCompraItem) error {
 						payload.TipoItem,
 						payload.ReferenciaID,
 						-delta,
+						false,
 						false,
 						referencia,
 						payload.UsuarioCreador,
@@ -3330,6 +3334,7 @@ func UpdateCarritoCompraItem(dbConn *sql.DB, payload CarritoCompraItem) error {
 						prev.ReferenciaID,
 						prev.Cantidad,
 						false,
+						false,
 						referencia,
 						payload.UsuarioCreador,
 						"liberacion por cambio de referencia de item",
@@ -3347,6 +3352,7 @@ func UpdateCarritoCompraItem(dbConn *sql.DB, payload CarritoCompraItem) error {
 						payload.ReferenciaID,
 						payload.Cantidad,
 						true,
+						payload.PermitirSinStock,
 						referencia,
 						payload.UsuarioCreador,
 						"reserva por cambio de referencia de item",
@@ -3424,6 +3430,7 @@ func DeleteCarritoCompraItem(dbConn *sql.DB, empresaID, carritoID, itemID int64)
 				item.ReferenciaID,
 				item.Cantidad,
 				false,
+				false,
 				referencia,
 				item.UsuarioCreador,
 				"liberacion por eliminacion de item",
@@ -3473,6 +3480,7 @@ func SetCarritoCompraItemEstado(dbConn *sql.DB, empresaID, carritoID, itemID int
 					item.ReferenciaID,
 					item.Cantidad,
 					false,
+					false,
 					referencia,
 					item.UsuarioCreador,
 					"liberacion por desactivacion de item",
@@ -3490,6 +3498,7 @@ func SetCarritoCompraItemEstado(dbConn *sql.DB, empresaID, carritoID, itemID int
 					item.ReferenciaID,
 					item.Cantidad,
 					true,
+					false,
 					referencia,
 					item.UsuarioCreador,
 					"reserva por activacion de item",
@@ -3699,7 +3708,7 @@ func resolveProductoStockContextTx(tx *sql.Tx, empresaID, productoID int64) (int
 	return bodegaID, costo, nil
 }
 
-func adjustCarritoItemStockTx(tx *sql.Tx, empresaID, carritoID int64, tipoItem string, referenciaID int64, cantidad float64, reservar bool, referencia, usuario, observaciones string) error {
+func adjustCarritoItemStockTx(tx *sql.Tx, empresaID, carritoID int64, tipoItem string, referenciaID int64, cantidad float64, reservar bool, allowNegativeStock bool, referencia, usuario, observaciones string) error {
 	if cantidad <= 0 {
 		return nil
 	}
@@ -3755,18 +3764,23 @@ func adjustCarritoItemStockTx(tx *sql.Tx, empresaID, carritoID int64, tipoItem s
 		}
 
 		if reservar {
-			res, err := execTxSQLCompat(tx, `UPDATE inventario_existencias
+			query := `UPDATE inventario_existencias
 			SET cantidad = cantidad - ?,
 				fecha_actualizacion = `+sqlNowExpr()+`
 			WHERE empresa_id = ?
 				AND producto_id = ?
-				AND bodega_id = ?
-				AND cantidad >= ?`, ctx.Cantidad, empresaID, ctx.ProductoID, ctx.BodegaID, ctx.Cantidad)
+				AND bodega_id = ?`
+			args := []interface{}{ctx.Cantidad, empresaID, ctx.ProductoID, ctx.BodegaID}
+			if !allowNegativeStock {
+				query += ` AND cantidad >= ?`
+				args = append(args, ctx.Cantidad)
+			}
+			res, err := execTxSQLCompat(tx, query, args...)
 			if err != nil {
 				return err
 			}
 			affected, _ := res.RowsAffected()
-			if affected == 0 {
+			if affected == 0 && !allowNegativeStock {
 				return ErrStockInsuficiente
 			}
 			if err := insertMovimientoTx(tx, InventarioMovimiento{
@@ -3854,6 +3868,7 @@ func restoreCarritoItemsStockTx(tx *sql.Tx, empresaID, carritoID int64, motivo s
 			item.tipoItem,
 			item.referenciaID,
 			item.cantidad,
+			false,
 			false,
 			referencia,
 			item.usuario,

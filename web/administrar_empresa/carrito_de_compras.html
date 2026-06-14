@@ -1859,6 +1859,7 @@
         mostrar_boton_clientes_carrito: true,
         mostrar_boton_abonos_carrito: true,
         mostrar_boton_vehiculo_carrito: true,
+        permitir_venta_sin_stock_carrito: false,
         mostrar_alerta_tiempo_carrito: false,
         alerta_tiempo_minutos: 10,
         alerta_tiempo_activa_default: false,
@@ -2001,6 +2002,7 @@
         mostrar_boton_clientes_carrito: src.mostrar_boton_clientes_carrito === undefined ? base.mostrar_boton_clientes_carrito : Boolean(src.mostrar_boton_clientes_carrito),
         mostrar_boton_abonos_carrito: src.mostrar_boton_abonos_carrito === undefined ? base.mostrar_boton_abonos_carrito : Boolean(src.mostrar_boton_abonos_carrito),
         mostrar_boton_vehiculo_carrito: src.mostrar_boton_vehiculo_carrito === undefined ? base.mostrar_boton_vehiculo_carrito : Boolean(src.mostrar_boton_vehiculo_carrito),
+        permitir_venta_sin_stock_carrito: src.permitir_venta_sin_stock_carrito === undefined ? base.permitir_venta_sin_stock_carrito : Boolean(src.permitir_venta_sin_stock_carrito),
         mostrar_alerta_tiempo_carrito: src.mostrar_alerta_tiempo_carrito === undefined ? base.mostrar_alerta_tiempo_carrito : Boolean(src.mostrar_alerta_tiempo_carrito),
         alerta_tiempo_minutos: clampCarritoAlertMinutes(src.alerta_tiempo_minutos === undefined ? base.alerta_tiempo_minutos : src.alerta_tiempo_minutos),
         alerta_tiempo_activa_default: src.alerta_tiempo_activa_default === undefined ? base.alerta_tiempo_activa_default : Boolean(src.alerta_tiempo_activa_default),
@@ -2035,6 +2037,11 @@
         usar_configuracion_global: src.usar_configuracion_global === undefined ? true : Boolean(src.usar_configuracion_global),
         configuracion: normalizeUnifiedCartUIConfig(nested)
       };
+    }
+
+    function allowsStocklessCarritoSale() {
+      const cfg = state.stationConfig && state.stationConfig.carrito_ui_global ? state.stationConfig.carrito_ui_global : {};
+      return Boolean(cfg && cfg.permitir_venta_sin_stock_carrito);
     }
 
     function parseStationConfigValue(raw) {
@@ -7342,7 +7349,8 @@
         descuento_porcentaje: 0,
         impuesto_porcentaje: Number(producto.impuesto_porcentaje || 0),
         impuesto_codigo: 'IVA',
-        observaciones: sourceLabel || 'agregado desde busqueda del carrito'
+        observaciones: sourceLabel || 'agregado desde busqueda del carrito',
+        permitir_sin_stock: allowsStocklessCarritoSale()
       };
 
       const caps = getBarcodeCapabilities();
@@ -10891,7 +10899,8 @@
         descuento_porcentaje: toNumber(document.getElementById('itemDescuentoPct').value, 0),
         impuesto_porcentaje: toNumber(document.getElementById('itemImpuestoPct').value, 0),
         impuesto_codigo: normalize(document.getElementById('itemImpuestoCodigo').value) || 'IVA',
-        observaciones: normalize(document.getElementById('itemObservaciones').value)
+        observaciones: normalize(document.getElementById('itemObservaciones').value),
+        permitir_sin_stock: allowsStocklessCarritoSale()
       };
 
       if (!payload.descripcion || payload.precio_unitario < 0) {
