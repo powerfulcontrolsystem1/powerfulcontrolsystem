@@ -14687,3 +14687,11 @@ Archivos modificados:
 - documentos/historial_de_cambios
 - web/administrar_empresa/creditos_menu.html
 - web/administrar_empresa/finanzas_menu.html
+
+2026-06-13 20:18:01 - Mensaje: rs: actualizar repositorio y sincronizar VPS; Commit: c4c8d861; PushStatus: OK
+Archivos modificados:
+- CHANGELOG.md
+- backend/db/carritos_compras.go
+- documentos/historial_de_cambios
+- web/administrar_empresa/carrito_de_compras.html
+- web/administrar_empresa/configuracion_carrito_de_compra_empresa.html
