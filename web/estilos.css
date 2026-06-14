@@ -1930,6 +1930,7 @@ body.has-floating-menu.admin-empresa-shell .admin-frame-toolbar{top:calc(var(--f
 .ai-openai-knot::before{content:"";position:absolute;inset:8px;border-radius:50%;background:radial-gradient(circle at 40% 34%,#22d3ee,#0f172a 72%)}
 .ai-openai-knot::after{content:"";position:absolute;inset:5px;border:2px solid rgba(255,255,255,.82);border-left-color:transparent;border-bottom-color:transparent;border-radius:42% 58% 48% 52%;transform:rotate(32deg)}
 .ai-openai-text{position:relative;z-index:1;display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;background:rgba(15,23,42,.74);box-shadow:0 0 0 1px rgba(255,255,255,.45);font-size:10px;font-weight:950;letter-spacing:.02em;line-height:1;color:#fff}
+.ai-chat-toggle-button .ai-openai-mark{background:transparent!important;border:0!important;box-shadow:none!important}
 .ai-chat-toggle-button .ai-chat-toggle-label{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;border:0;clip:rect(0 0 0 0);white-space:nowrap}
 @media (max-width: 860px){
   .ai-chat-toggle-button{right:14px;bottom:14px;width:54px;height:54px;min-width:54px}
@@ -20087,13 +20088,19 @@ body.carrito-flat-page #carritoActionToolbar{
 }
 
 body.carrito-flat-page #carritoActionToolbar > .btn{
+  display:inline-flex !important;
+  align-items:center !important;
+  justify-content:flex-start !important;
+  flex:0 0 172px !important;
+  width:172px !important;
   border:1px solid var(--border) !important;
   border-radius:8px !important;
   background:linear-gradient(180deg, var(--surface-soft), var(--surface)) !important;
   box-shadow:0 7px 14px rgba(15,23,42,.18) !important;
   color:var(--text) !important;
-  min-height:38px !important;
+  min-height:44px !important;
   padding:8px 12px !important;
+  text-align:left !important;
 }
 
 body.carrito-flat-page #carritoActionToolbar > .btn:hover{
@@ -20104,9 +20111,10 @@ body.carrito-flat-page #carritoActionToolbar > .btn:hover{
 body.carrito-flat-page .cart-btn-with-icon{
   display:inline-flex !important;
   align-items:center !important;
-  justify-content:center !important;
+  justify-content:flex-start !important;
   gap:7px !important;
   line-height:1.1 !important;
+  width:100% !important;
 }
 
 body.carrito-flat-page .scanner-product-result.cart-btn-with-icon{
@@ -20637,6 +20645,62 @@ body.pos-touch-mode .carrito-customer-quick-grid {
   align-items: stretch;
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+}
+
+.carrito-payment-compact-table{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+  gap:0;
+  overflow:hidden;
+  border:1px solid var(--border,#d6dee8);
+  border-radius:12px;
+  background:var(--surface,#fff);
+}
+.carrito-payment-compact-row{
+  display:grid;
+  grid-template-columns:minmax(92px,.85fr) minmax(0,1fr);
+  align-items:center;
+  min-height:38px;
+  border-right:1px solid var(--border,#d6dee8);
+  border-bottom:1px solid var(--border,#d6dee8);
+}
+.carrito-payment-compact-label{
+  display:flex;
+  align-items:center;
+  min-height:100%;
+  padding:6px 8px;
+  font-size:.82rem;
+  font-weight:850;
+  color:var(--text,#1f2937);
+  background:color-mix(in srgb,var(--surface-soft,#f6f8fb) 84%,#fff 16%);
+}
+.carrito-payment-compact-input{
+  width:100%;
+  height:32px;
+  min-height:32px;
+  padding:4px 8px;
+  border:0;
+  border-left:1px solid var(--border,#d6dee8);
+  border-radius:0;
+  font-size:.88rem;
+  font-weight:850;
+  text-align:right;
+}
+.carrito-payment-compact-input:focus{
+  position:relative;
+  z-index:1;
+  outline:2px solid color-mix(in srgb,var(--primary,#2563eb) 58%,transparent);
+  outline-offset:-2px;
+}
+.carrito-payment-compact-summary{
+  grid-column:1/-1;
+  display:flex;
+  flex-wrap:wrap;
+  align-items:center;
+  gap:8px 14px;
+  padding:7px 10px;
+  border-top:1px solid var(--border,#d6dee8);
+  background:color-mix(in srgb,var(--surface-soft,#f6f8fb) 72%,#fff 28%);
 }
 
 body.pos-touch-mode #carritoActionToolbar,

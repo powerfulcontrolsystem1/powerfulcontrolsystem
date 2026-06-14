@@ -135,9 +135,11 @@
 
       <div class="carrito-primary-layout">
         <div class="carrito-primary-main">
-      <div id="buscarProductosActions" class="form-actions mt-10 carrito-direct-sale-tools">
-        <button id="backToStationsHeaderBtn" class="btn secondary" type="button" hidden>Regresar a estaciones</button>
-      </div>
+      <section id="buscarProductosActions" class="card empresa-section mt-10 carrito-direct-sale-tools" hidden>
+        <div class="form-actions">
+          <button id="backToStationsHeaderBtn" class="btn secondary" type="button" hidden>Regresar a estaciones</button>
+        </div>
+      </section>
 
       <div id="scannerPanel" class="card empresa-section mt-12">
         <div class="empresa-section-header" hidden>
@@ -266,6 +268,7 @@
         <div id="stationClienteCreditoBox" class="form-help mt-6">Selecciona un cliente para consultar su cupo de crédito.</div>
         <div id="stationClienteQuickForm" class="empresa-section mt-10 is-hidden" hidden>
           <p class="form-help mt-0">Registra los datos fiscales del cliente para recibos y facturacion electronica: persona natural o empresa, documento, regimen IVA, responsabilidad tributaria, direccion y correo.</p>
+          <input id="quickClienteEditID" type="hidden" value="">
           <div class="form-row carrito-customer-quick-grid">
             <div class="form-col maxw-180">
               <label class="form-label" for="quickClienteTipoPersona">Tipo cliente</label>
@@ -370,6 +373,9 @@
             <div class="form-col maxw-220 flex-col-end">
               <button type="button" id="quickClienteGuardarBtn" class="btn primary w-full">Guardar cliente</button>
             </div>
+            <div class="form-col maxw-220 flex-col-end">
+              <button type="button" id="quickClienteEditarExistenteBtn" class="btn secondary w-full">Editar cliente existente</button>
+            </div>
           </div>
         </div>
         <div id="stationClienteMsg" class="form-help mt-6"></div>
@@ -405,7 +411,6 @@
             <input type="checkbox" id="carritoAlerta10Enable">
             <span id="carritoAlertaTiempoLabel">Alerta visual</span>
           </label>
-          <button type="button" id="carritoBtnTaxi" class="btn secondary">Taxi</button>
           <button type="button" id="carritoBtnClientes" class="btn secondary">Clientes</button>
           <button type="button" id="carritoBtnAbonos" class="btn secondary">Abonos</button>
           <button type="button" id="carritoBtnPagoQR" class="btn secondary">QR de pago</button>
@@ -527,11 +532,11 @@
 
       <section id="stationOptionalSectionsControls" class="empresa-section carrito-optional-controls is-hidden mt-12" hidden>
         <div class="form-actions actions-wrap-gap-10">
-          <label class="form-help inline-check">
+          <label id="toggleStationCheckoutAdvancedWrap" class="form-help inline-check">
             <input type="checkbox" id="toggleStationCheckoutAdvanced">
             Mostrar opciones de cobro
           </label>
-          <label class="form-help inline-check">
+          <label id="toggleStationWorkerCommissionWrap" class="form-help inline-check">
             <input type="checkbox" id="toggleStationWorkerCommission">
             Mostrar lavador
           </label>
@@ -687,39 +692,41 @@
             <p class="form-help mt-0">Valores recibidos por medio de pago antes de cerrar el carrito.</p>
           </div>
         </div>
-        <div id="stationPaymentAmountsRow" class="carrito-station-payment-inputs-row">
-          <div class="form-col">
-            <label class="form-label" for="stationPayDisplayEfectivo">Efectivo</label>
-            <input id="stationPayDisplayEfectivo" type="text" inputmode="decimal" class="form-input" value="" autocomplete="off" data-payment-amount-method="efectivo">
+        <div id="stationPaymentAmountsRow" class="carrito-payment-compact-table" role="table" aria-label="Detalle del pago">
+          <div class="carrito-payment-compact-row" role="row">
+            <label class="carrito-payment-compact-label" for="stationPayDisplayEfectivo" role="rowheader">Efectivo</label>
+            <input id="stationPayDisplayEfectivo" type="text" inputmode="decimal" class="form-input carrito-payment-compact-input" value="" autocomplete="off" data-payment-amount-method="efectivo">
           </div>
-          <div class="form-col">
-            <label class="form-label" for="stationPayDisplayCredito">Crédito</label>
-            <input id="stationPayDisplayCredito" type="text" inputmode="decimal" class="form-input" value="" autocomplete="off" data-payment-amount-method="tarjeta_credito">
+          <div class="carrito-payment-compact-row" role="row">
+            <label class="carrito-payment-compact-label" for="stationPayDisplayCredito" role="rowheader">Crédito</label>
+            <input id="stationPayDisplayCredito" type="text" inputmode="decimal" class="form-input carrito-payment-compact-input" value="" autocomplete="off" data-payment-amount-method="tarjeta_credito">
           </div>
-          <div class="form-col">
-            <label class="form-label" for="stationPayDisplayDebito">Débito</label>
-            <input id="stationPayDisplayDebito" type="text" inputmode="decimal" class="form-input" value="" autocomplete="off" data-payment-amount-method="tarjeta_debito">
+          <div class="carrito-payment-compact-row" role="row">
+            <label class="carrito-payment-compact-label" for="stationPayDisplayDebito" role="rowheader">Débito</label>
+            <input id="stationPayDisplayDebito" type="text" inputmode="decimal" class="form-input carrito-payment-compact-input" value="" autocomplete="off" data-payment-amount-method="tarjeta_debito">
           </div>
-          <div class="form-col">
-            <label class="form-label" for="stationPayDisplayBreb">Bre-B</label>
-            <input id="stationPayDisplayBreb" type="text" inputmode="decimal" class="form-input" value="" autocomplete="off" data-payment-amount-method="transferencia_bre_b">
+          <div class="carrito-payment-compact-row" role="row">
+            <label class="carrito-payment-compact-label" for="stationPayDisplayBreb" role="rowheader">Bre-B</label>
+            <input id="stationPayDisplayBreb" type="text" inputmode="decimal" class="form-input carrito-payment-compact-input" value="" autocomplete="off" data-payment-amount-method="transferencia_bre_b">
           </div>
-          <div class="form-col">
-            <label class="form-label" for="stationPayDisplayNequi">Nequi</label>
-            <input id="stationPayDisplayNequi" type="text" inputmode="decimal" class="form-input" value="" autocomplete="off" data-payment-amount-method="transferencia_nequi">
+          <div class="carrito-payment-compact-row" role="row">
+            <label class="carrito-payment-compact-label" for="stationPayDisplayNequi" role="rowheader">Nequi</label>
+            <input id="stationPayDisplayNequi" type="text" inputmode="decimal" class="form-input carrito-payment-compact-input" value="" autocomplete="off" data-payment-amount-method="transferencia_nequi">
           </div>
-          <div class="form-col">
-            <label class="form-label" for="stationPayDisplayTransferenciaOtro">Otra transferencia</label>
-            <input id="stationPayDisplayTransferenciaOtro" type="text" inputmode="decimal" class="form-input" value="" autocomplete="off" data-payment-amount-method="transferencia_otro">
+          <div class="carrito-payment-compact-row" role="row">
+            <label class="carrito-payment-compact-label" for="stationPayDisplayTransferenciaOtro" role="rowheader">Otra transferencia</label>
+            <input id="stationPayDisplayTransferenciaOtro" type="text" inputmode="decimal" class="form-input carrito-payment-compact-input" value="" autocomplete="off" data-payment-amount-method="transferencia_otro">
           </div>
-          <div class="form-col">
-            <label class="form-label" for="stationPayDisplayCreditoCliente">Crédito cliente</label>
-            <input id="stationPayDisplayCreditoCliente" type="text" inputmode="decimal" class="form-input" value="" autocomplete="off" data-payment-amount-method="credito_cliente">
+          <div class="carrito-payment-compact-row" role="row">
+            <label class="carrito-payment-compact-label" for="stationPayDisplayCreditoCliente" role="rowheader">Crédito cliente</label>
+            <input id="stationPayDisplayCreditoCliente" type="text" inputmode="decimal" class="form-input carrito-payment-compact-input" value="" autocomplete="off" data-payment-amount-method="credito_cliente">
           </div>
-          <div class="form-col">
-            <label class="form-label" for="stationCashReceivedDisplay">Efectivo recibido</label>
-            <input id="stationCashReceivedDisplay" type="text" inputmode="decimal" class="form-input" value="" autocomplete="off" placeholder="COP 0">
-            <div id="stationCashChangeHint" class="cash-change-hint mt-6">Vuelto: COP 0</div>
+          <div class="carrito-payment-compact-row" role="row">
+            <label class="carrito-payment-compact-label" for="stationCashReceivedDisplay" role="rowheader">Efectivo recibido</label>
+            <input id="stationCashReceivedDisplay" type="text" inputmode="decimal" class="form-input carrito-payment-compact-input" value="" autocomplete="off" placeholder="COP 0">
+          </div>
+          <div class="carrito-payment-compact-summary" role="row">
+            <div id="stationCashChangeHint" class="cash-change-hint">Vuelto: COP 0</div>
           </div>
         </div>
         <div id="stationPaymentAmountsMsg" class="carrito-payment-amounts-msg form-help mt-8">Haz clic en un medio de pago para cargar el total. Puedes editar los valores para pago combinado.</div>
@@ -1848,7 +1855,7 @@
         permitir_transferir_cuenta_carrito: false,
         mostrar_boton_control_electrico_carrito: true,
         mostrar_boton_cancelar_carrito: true,
-        mostrar_boton_taxi_carrito: true,
+        mostrar_boton_taxi_carrito: false,
         mostrar_boton_clientes_carrito: true,
         mostrar_boton_abonos_carrito: true,
         mostrar_boton_vehiculo_carrito: true,
@@ -2535,21 +2542,31 @@
       const controls = document.getElementById('stationOptionalSectionsControls');
       const checkoutToggle = document.getElementById('toggleStationCheckoutAdvanced');
       const workerToggle = document.getElementById('toggleStationWorkerCommission');
+      const checkoutWrap = document.getElementById('toggleStationCheckoutAdvancedWrap');
+      const workerWrap = document.getElementById('toggleStationWorkerCommissionWrap');
       const focusedSaleMode = state.stationMode || state.directSaleMode;
-      const showControls = focusedSaleMode && Boolean(carrito);
+      const canShowCheckout = Boolean(ui && ui.mostrar_tarjeta_cobro_estados);
+      const canShowWorker = Boolean(ui && ui.mostrar_comision && ui.mostrar_tarjeta_comision);
+      const showControls = focusedSaleMode && Boolean(carrito) && (canShowCheckout || canShowWorker);
       if (controls) {
         controls.classList.toggle('is-hidden', !showControls);
         controls.hidden = !showControls;
         controls.style.display = showControls ? '' : 'none';
       }
+      if (checkoutWrap) {
+        checkoutWrap.hidden = !canShowCheckout;
+        checkoutWrap.style.display = canShowCheckout ? '' : 'none';
+      }
+      if (workerWrap) {
+        workerWrap.hidden = !canShowWorker;
+        workerWrap.style.display = canShowWorker ? '' : 'none';
+      }
       if (checkoutToggle) {
-        const canShowCheckout = Boolean(ui && ui.mostrar_tarjeta_cobro_estados);
         checkoutToggle.checked = canShowCheckout && Boolean(state.optionalSections.showCheckoutAdvanced);
         checkoutToggle.disabled = !canShowCheckout;
         if (!canShowCheckout) state.optionalSections.showCheckoutAdvanced = false;
       }
       if (workerToggle) {
-        const canShowWorker = Boolean(ui && ui.mostrar_comision && ui.mostrar_tarjeta_comision);
         workerToggle.checked = canShowWorker && Boolean(state.optionalSections.showWorkerCommission);
         workerToggle.disabled = !canShowWorker;
         if (!canShowWorker) state.optionalSections.showWorkerCommission = false;
@@ -2602,7 +2619,6 @@
       setCarritoActionControlVisible('carritoBtnTransferirCuenta', actionsVisible && Boolean(ui.mostrar_boton_transferir_cuenta_carrito && ui.permitir_transferir_cuenta_carrito));
       setCarritoActionControlVisible('carritoBtnControlElectrico', actionsVisible && state.stationMode && !state.directSaleMode && Boolean(ui.mostrar_control_electrico_carrito && ui.mostrar_boton_control_electrico_carrito));
       setCarritoActionControlVisible('carritoBtnCancelarCarrito', actionsVisible && Boolean(ui.mostrar_boton_cancelar_carrito));
-      setCarritoActionControlVisible('carritoBtnTaxi', actionsVisible && Boolean(ui.mostrar_boton_taxi_carrito));
       setCarritoActionControlVisible('carritoBtnClientes', actionsVisible && Boolean(ui.mostrar_boton_clientes_carrito));
       setCarritoActionControlVisible('carritoBtnAbonos', actionsVisible && Boolean(ui.mostrar_boton_abonos_carrito));
       setCarritoActionControlVisible('carritoBtnVehiculo', actionsVisible && Boolean(ui.mostrar_boton_vehiculo_carrito));
@@ -2619,7 +2635,6 @@
         (cfg.mostrar_boton_transferir_cuenta_carrito && cfg.permitir_transferir_cuenta_carrito) ||
         (cfg.mostrar_control_electrico_carrito && cfg.mostrar_boton_control_electrico_carrito) ||
         cfg.mostrar_boton_cancelar_carrito ||
-        cfg.mostrar_boton_taxi_carrito ||
         cfg.mostrar_boton_clientes_carrito ||
         cfg.mostrar_boton_abonos_carrito ||
         cfg.pago_qr_habilitado ||
@@ -2644,6 +2659,7 @@
         const showBackToStations = Boolean(backToStationsBtn && !backToStationsBtn.hidden && backToStationsBtn.style.display !== 'none');
         const showDirectSaleFullscreen = Boolean(directSaleFullscreenBtn && !directSaleFullscreenBtn.hidden && directSaleFullscreenBtn.style.display !== 'none');
         const showSearchActions = showBackToStations || showDirectSaleFullscreen;
+        searchActions.hidden = !showSearchActions;
         searchActions.style.display = showSearchActions ? '' : 'none';
       }
 
@@ -4082,12 +4098,12 @@
       state.paymentAmounts[metodo] = amount;
       applyStationPaymentAmountsToDiscount();
       el.dataset.paymentIntentLock = '1';
-      formatStationPaymentAmountInputs(selected.moneda);
-      renderStationPaymentPanel(selected);
+      refreshStationPaymentAmountUI(selected, { format: true });
       window.setTimeout(function() {
         const input = document.getElementById(def.id);
         if (input) {
           delete input.dataset.paymentIntentLock;
+          if (typeof input.focus === 'function') input.focus({ preventScroll: true });
           input.select();
         }
       }, 0);
@@ -4132,6 +4148,26 @@
       }
     }
 
+    function refreshStationPaymentAmountUI(carrito, options) {
+      if (!carrito) return;
+      const opts = options || {};
+      const moneda = carrito.moneda || 'COP';
+      if (opts.format !== false) {
+        const active = document.activeElement;
+        const activeMethod = active && active.dataset ? normalize(active.dataset.paymentAmountMethod).toLowerCase() : '';
+        getStationPaymentAmountInputDefs().forEach(function(def) {
+          if (def.metodo === activeMethod) return;
+          const el = document.getElementById(def.id);
+          if (!el) return;
+          const value = Number((state.paymentAmounts || {})[def.metodo] || 0);
+          el.value = formatAmount(value, moneda);
+        });
+      }
+      const pay = getStationPaymentBreakdown(carrito);
+      renderStationPaymentAmountsStatus(carrito, pay);
+      renderCashReceivedChange(carrito);
+    }
+
     function renderStationPaymentAmountsStatus(carrito, pay) {
       const msg = document.getElementById('stationPaymentAmountsMsg');
       if (!msg) return;
@@ -4146,7 +4182,7 @@
         msg.textContent = 'Sumatoria correcta: ' + formatAmount(sum, moneda) + '. Pago listo para cerrar.';
         msg.classList.add('value-positive');
       } else {
-        msg.textContent = 'Haz clic en Efectivo, Crédito, Débito, Bre-B, Nequi, otra transferencia o Crédito cliente para cargar el total. Puedes editar los valores para pago combinado.';
+        msg.textContent = 'Haz clic en un medio para cargar saldo o edita valores para pago combinado.';
       }
     }
 
@@ -7679,7 +7715,56 @@
         syncQuickClienteFiscalDefaults('open');
         const name = document.getElementById('quickClienteNombre');
         if (name && typeof name.focus === 'function') name.focus();
+      } else if (!visible) {
+        setQuickClienteEditMode(null);
       }
+    }
+
+    function setQuickClienteEditMode(cliente) {
+      const editIDEl = document.getElementById('quickClienteEditID');
+      const saveBtn = document.getElementById('quickClienteGuardarBtn');
+      const editBtn = document.getElementById('quickClienteEditarExistenteBtn');
+      if (editIDEl) editIDEl.value = cliente && Number(cliente.id || 0) > 0 ? String(Number(cliente.id || 0)) : '';
+      if (saveBtn) saveBtn.textContent = cliente ? 'Actualizar cliente' : 'Guardar cliente';
+      if (editBtn) editBtn.textContent = cliente ? 'Cargar otro cliente' : 'Editar cliente existente';
+    }
+
+    function fillQuickClienteFormFromCliente(cliente) {
+      if (!cliente || !Number(cliente.id || 0)) return false;
+      toggleQuickClienteForm(true);
+      setQuickClienteEditMode(cliente);
+      const setValue = function(id, value) {
+        const el = document.getElementById(id);
+        if (el) el.value = value == null ? '' : String(value);
+      };
+      setValue('quickClienteTipoPersona', normalize(cliente.tipo_persona) || (normalize(cliente.tipo_documento) === 'NIT' ? 'juridica' : 'natural'));
+      setValue('quickClienteTipoDoc', normalize(cliente.tipo_documento) || 'CC');
+      setValue('quickClienteDocumento', normalize(cliente.numero_documento));
+      setValue('quickClienteDV', normalize(cliente.digito_verificacion));
+      setValue('quickClienteNombre', normalize(cliente.nombre_razon_social));
+      setValue('quickClienteNombreComercial', normalize(cliente.nombre_comercial));
+      setValue('quickClienteRegimenFiscal', normalize(cliente.regimen_fiscal) || 'No responsable de IVA');
+      setValue('quickClienteResponsabilidad', normalize(cliente.responsabilidad_tributaria) || 'R-99-PN');
+      setValue('quickClienteTelefono', normalize(cliente.telefono));
+      setValue('quickClienteEmail', normalize(cliente.email));
+      setValue('quickClienteDireccion', normalize(cliente.direccion));
+      setValue('quickClientePais', normalize(cliente.pais) || 'CO');
+      setValue('quickClienteDepartamento', normalize(cliente.departamento));
+      setValue('quickClienteMunicipio', normalize(cliente.municipio));
+      setValue('quickClienteCodigoPostal', normalize(cliente.codigo_postal));
+      setValue('quickClienteObservaciones', normalize(cliente.observaciones));
+      syncQuickClienteFiscalDefaults('tipo_documento');
+      setStationClienteMessage('Cliente cargado para edicion.', false);
+      return true;
+    }
+
+    function resolveQuickClienteEditCandidate() {
+      const selected = getSelectedCarrito();
+      const assigned = getClienteByID(selected && selected.cliente_id || 0);
+      if (assigned && Number(assigned.id || 0) > 0) return assigned;
+      const input = document.getElementById('stationClienteSearchInput');
+      if (!input) return null;
+      return resolveClienteFromNameSearch(input.value);
     }
 
     function syncQuickClienteFiscalDefaults(source) {
@@ -7825,20 +7910,18 @@
       return true;
     }
 
-    async function createClienteFromCartButton() {
+    function buildQuickClientePayload() {
       const nombre = normalize(document.getElementById('quickClienteNombre').value);
       const documento = normalize(document.getElementById('quickClienteDocumento').value);
       const tipoDoc = normalize(document.getElementById('quickClienteTipoDoc').value) || 'CC';
       const tipoPersona = normalize(document.getElementById('quickClienteTipoPersona').value) || (tipoDoc === 'NIT' ? 'juridica' : 'natural');
       if (!nombre || !documento) {
-        setStationClienteMessage('Nombre y documento del cliente son obligatorios.', true);
-        return;
+        throw new Error('Nombre y documento del cliente son obligatorios.');
       }
       if (tipoDoc === 'NIT' && !normalize(document.getElementById('quickClienteDV').value)) {
-        setStationClienteMessage('Para empresas con NIT registra tambien el digito de verificacion.', true);
-        return;
+        throw new Error('Para empresas con NIT registra tambien el digito de verificacion.');
       }
-      const payload = {
+      return {
         empresa_id: Number(state.empresaID),
         tipo_documento: tipoDoc,
         numero_documento: documento,
@@ -7857,16 +7940,46 @@
         codigo_postal: normalize(document.getElementById('quickClienteCodigoPostal').value),
         observaciones: normalize(document.getElementById('quickClienteObservaciones').value) || 'Creado desde el boton Clientes del carrito'
       };
+    }
+
+    function resetQuickClienteFormAfterSave() {
+      ['quickClienteDocumento', 'quickClienteDV', 'quickClienteNombreComercial', 'quickClienteTelefono', 'quickClienteEmail', 'quickClienteDireccion', 'quickClienteDepartamento', 'quickClienteMunicipio', 'quickClienteCodigoPostal', 'quickClienteObservaciones'].forEach(function(id) {
+        const el = document.getElementById(id);
+        if (el) el.value = '';
+      });
+      const abrirCupoEl = document.getElementById('quickClienteAbrirCupoCredito');
+      if (abrirCupoEl) abrirCupoEl.checked = false;
+      const cupoEl = document.getElementById('quickClienteCupoCredito');
+      if (cupoEl) cupoEl.value = '0';
+      const maxCupoEl = document.getElementById('quickClienteMaxCreditosActivos');
+      if (maxCupoEl) maxCupoEl.value = '3';
+      const nameEl = document.getElementById('quickClienteNombre');
+      if (nameEl) nameEl.value = '';
+      const paisEl = document.getElementById('quickClientePais');
+      if (paisEl) paisEl.value = 'CO';
+      setQuickClienteEditMode(null);
+    }
+
+    async function createClienteFromCartButton() {
+      let payload;
       try {
+        payload = buildQuickClientePayload();
+      } catch (validationErr) {
+        setStationClienteMessage(validationErr.message || 'No se pudo validar el cliente.', true);
+        return;
+      }
+      const editID = Number(document.getElementById('quickClienteEditID') && document.getElementById('quickClienteEditID').value || 0);
+      try {
+        if (editID > 0) payload.id = editID;
         const res = await fetch('/api/empresa/clientes', {
-          method: 'POST',
+          method: editID > 0 ? 'PUT' : 'POST',
           credentials: 'same-origin',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
         });
         await ensureOk(res);
         const body = await res.json().catch(function() { return {}; });
-        const newID = Number(body && body.id || 0);
+        const newID = editID > 0 ? editID : Number(body && body.id || 0);
         const abrirCupo = Boolean(document.getElementById('quickClienteAbrirCupoCredito') && document.getElementById('quickClienteAbrirCupoCredito').checked);
         let cupoWarning = '';
         if (newID > 0 && abrirCupo) {
@@ -7900,25 +8013,12 @@
           await assignClienteToSelectedCarrito(newID);
           await loadClienteCreditoDisponibilidad(newID, getSelectedCarrito());
         }
-        ['quickClienteDocumento', 'quickClienteDV', 'quickClienteNombreComercial', 'quickClienteTelefono', 'quickClienteEmail', 'quickClienteDireccion', 'quickClienteDepartamento', 'quickClienteMunicipio', 'quickClienteCodigoPostal', 'quickClienteObservaciones'].forEach(function(id) {
-          const el = document.getElementById(id);
-          if (el) el.value = '';
-        });
-        const abrirCupoEl = document.getElementById('quickClienteAbrirCupoCredito');
-        if (abrirCupoEl) abrirCupoEl.checked = false;
-        const cupoEl = document.getElementById('quickClienteCupoCredito');
-        if (cupoEl) cupoEl.value = '0';
-        const maxCupoEl = document.getElementById('quickClienteMaxCreditosActivos');
-        if (maxCupoEl) maxCupoEl.value = '3';
-        const nameEl = document.getElementById('quickClienteNombre');
-        if (nameEl) nameEl.value = '';
-        const paisEl = document.getElementById('quickClientePais');
-        if (paisEl) paisEl.value = 'CO';
+        resetQuickClienteFormAfterSave();
         toggleQuickClienteForm(false);
         syncStationClienteSearchInput(getSelectedCarrito());
-        setStationClienteMessage('Cliente creado y asignado al carrito' + (abrirCupo && !cupoWarning ? ' con cupo de crédito activo.' : '.') + cupoWarning, Boolean(cupoWarning));
+        setStationClienteMessage((editID > 0 ? 'Cliente actualizado' : 'Cliente creado') + ' y asignado al carrito' + (abrirCupo && !cupoWarning ? ' con cupo de crédito activo.' : '.') + cupoWarning, Boolean(cupoWarning));
       } catch (err) {
-        setStationClienteMessage(err.message || 'No se pudo crear el cliente desde el carrito.', true);
+        setStationClienteMessage(err.message || 'No se pudo guardar el cliente desde el carrito.', true);
       }
     }
 
@@ -11043,9 +11143,12 @@
         ensureStationAlert10Timer();
       });
     }
-    document.getElementById('carritoBtnTaxi').addEventListener('click', function() {
-      window.location.href = '/administrar_empresa/vehiculos_registro.html';
-    });
+    const carritoBtnTaxi = document.getElementById('carritoBtnTaxi');
+    if (carritoBtnTaxi) {
+      carritoBtnTaxi.addEventListener('click', function() {
+        window.location.href = '/administrar_empresa/vehiculos_registro.html';
+      });
+    }
     document.getElementById('carritoBtnClientes').addEventListener('click', function() {
       state.customerPanelOpen = true;
       renderStationCustomerPanel(getSelectedCarrito());
@@ -11074,6 +11177,17 @@
     if (quickClienteGuardarBtn) {
       quickClienteGuardarBtn.addEventListener('click', function() {
         createClienteFromCartButton();
+      });
+    }
+    const quickClienteEditarExistenteBtn = document.getElementById('quickClienteEditarExistenteBtn');
+    if (quickClienteEditarExistenteBtn) {
+      quickClienteEditarExistenteBtn.addEventListener('click', function() {
+        const cliente = resolveQuickClienteEditCandidate();
+        if (!cliente) {
+          setStationClienteMessage('Selecciona o busca un cliente existente para editarlo.', true);
+          return;
+        }
+        fillQuickClienteFormFromCliente(cliente);
       });
     }
     installQuickClienteFieldHelp();
@@ -11296,21 +11410,19 @@
         const selected = getSelectedCarrito();
         if (!selected) return;
         readStationPaymentAmountInputs(true);
-        renderStationPaymentPanel(selected);
+        refreshStationPaymentAmountUI(selected, { format: false });
       });
       el.addEventListener('change', function() {
         const selected = getSelectedCarrito();
         if (!selected) return;
         readStationPaymentAmountInputs(true);
-        formatStationPaymentAmountInputs(selected.moneda);
-        renderStationPaymentPanel(selected);
+        refreshStationPaymentAmountUI(selected, { format: true });
       });
       el.addEventListener('blur', function() {
         const selected = getSelectedCarrito();
         if (!selected) return;
         readStationPaymentAmountInputs(true);
-        formatStationPaymentAmountInputs(selected.moneda);
-        renderStationPaymentPanel(selected);
+        refreshStationPaymentAmountUI(selected, { format: true });
       });
     });
 
