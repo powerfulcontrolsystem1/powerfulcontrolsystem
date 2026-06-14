@@ -4100,7 +4100,20 @@
       readStationPaymentAmountInputs(true);
       const selected = getSelectedCarrito();
       refreshStationPaymentAmountUI(selected, { format: true });
-      renderStationPaymentPanel(selected);
+      if (selected) {
+        const pay = getStationPaymentBreakdown(selected);
+        renderStationPaymentAmountsStatus(selected, pay);
+        renderCashReceivedChange(selected);
+        const breakdownEl = document.getElementById('stationPaymentBreakdown');
+        if (breakdownEl) {
+          breakdownEl.textContent =
+            'Subtotal carrito: ' + formatAmount(pay.totalBase, selected.moneda) +
+            ' | ' + pay.discountLabel + ': -' + formatAmount(pay.discountValue, selected.moneda) +
+            ' | Total final a pagar: ' + formatAmount(pay.totalPagarFinal, selected.moneda) +
+            ' | Metodo de pago: ' + getPaymentMethodLabel(pay.paymentMethod) +
+            (pay.mixedSummary ? (' | Detalle mixto: ' + pay.mixedSummary) : '');
+        }
+      }
     }
 
     function getStationPaymentTotalForAmountAutofill(carrito) {
