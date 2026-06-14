@@ -943,6 +943,8 @@ Antes de ejecutar scripts operativos revisar `documentos/comandos_codex.md`.
   consumo, prueba real y accesos a limites, contexto de negocio y voz.
 - La IA visible ya no usa robot ni secretaria: se presenta como recuadro normal
   y boton flotante circular, conservando voz cuando este habilitada.
+- El icono flotante de IA se unifico al mismo simbolo limpio usado en el resto
+  del proyecto, sin contenedor blanco ni variantes visuales por pagina.
 - La credencial OpenAI se conserva en `pcs_superadministrador.configuraciones`
   mediante `/super/api/config/ai`; no se imprime completa ni se duplica en
   documentacion.

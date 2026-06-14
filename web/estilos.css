@@ -1924,12 +1924,8 @@ body.has-floating-menu.admin-empresa-shell .admin-frame-toolbar{top:calc(var(--f
 .ai-chat-backdrop.is-visible{opacity:1;pointer-events:auto}
 .ai-chat-toggle-button{position:fixed;right:20px;bottom:20px;z-index:1660;display:inline-flex;align-items:center;justify-content:center;width:58px;height:58px;min-width:58px;gap:0;padding:0;font-weight:800;border:1px solid color-mix(in srgb,#fff 28%,transparent);border-radius:999px;background:linear-gradient(145deg,#0f172a,#172554);color:#fff;cursor:pointer;box-shadow:0 22px 50px rgba(0,0,0,.24);transition:transform .18s ease,box-shadow .18s ease,opacity .2s ease}
 .ai-chat-toggle-button:hover{transform:translateY(-1px) scale(1.02);box-shadow:0 24px 58px rgba(0,0,0,.28)}
-.ai-chat-toggle-button img.icon{width:26px;height:26px;margin:0;filter:brightness(0) invert(1)}
-.ai-openai-mark{position:relative;display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px;flex:0 0 36px;color:#fff}
-.ai-openai-knot{position:absolute;inset:1px;border-radius:50%;background:conic-gradient(from 18deg,#fff 0 9%,transparent 9% 14%,#fff 14% 25%,transparent 25% 31%,#fff 31% 42%,transparent 42% 48%,#fff 48% 59%,transparent 59% 65%,#fff 65% 76%,transparent 76% 82%,#fff 82% 93%,transparent 93% 100%);filter:drop-shadow(0 1px 4px rgba(15,23,42,.28))}
-.ai-openai-knot::before{content:"";position:absolute;inset:8px;border-radius:50%;background:radial-gradient(circle at 40% 34%,#22d3ee,#0f172a 72%)}
-.ai-openai-knot::after{content:"";position:absolute;inset:5px;border:2px solid rgba(255,255,255,.82);border-left-color:transparent;border-bottom-color:transparent;border-radius:42% 58% 48% 52%;transform:rotate(32deg)}
-.ai-openai-text{position:relative;z-index:1;display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;background:rgba(15,23,42,.74);box-shadow:0 0 0 1px rgba(255,255,255,.45);font-size:10px;font-weight:950;letter-spacing:.02em;line-height:1;color:#fff}
+.ai-chat-toggle-button img.icon{width:28px;height:28px;margin:0;filter:none;display:block}
+.ai-openai-mark{width:28px;height:28px;flex:0 0 28px;display:block}
 .ai-chat-toggle-button .ai-openai-mark{background:transparent!important;border:0!important;box-shadow:none!important}
 .ai-chat-toggle-button .ai-chat-toggle-label{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;border:0;clip:rect(0 0 0 0);white-space:nowrap}
 @media (max-width: 860px){
