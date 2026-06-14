@@ -287,6 +287,13 @@
       '.pcs-print-table th{color:#111827;text-align:left;font-size:11px;text-transform:uppercase;border-bottom:1px solid #111827;padding:6px 4px;}',
       '.pcs-print-table td{border-bottom:1px solid #d1d5db;padding:6px 4px;vertical-align:top;}',
       '.pcs-print-number{text-align:right;white-space:nowrap;}',
+      '.pcs-print-code{width:13%;white-space:nowrap;}',
+      '.pcs-print-desc{width:31%;}',
+      '.pcs-print-qty{width:8%;text-align:right;white-space:nowrap;}',
+      '.pcs-print-unit{width:7%;text-align:center;white-space:nowrap;}',
+      '.pcs-print-money{width:11%;text-align:right;white-space:nowrap;}',
+      '.pcs-print-tax{width:8%;text-align:right;white-space:nowrap;}',
+      '.pcs-print-discount{width:8%;text-align:right;white-space:nowrap;}',
       '.pcs-print-total{display:flex;justify-content:space-between;gap:12px;border:2px solid ' + accent + ';border-radius:8px;padding:10px 12px;margin-top:10px;font-size:16px;font-weight:900;}',
       '.pcs-print-summary{margin-top:8px;border-top:1px solid #d1d5db;border-bottom:1px solid #d1d5db;}',
       '.pcs-print-summary-row{display:flex;justify-content:space-between;gap:12px;padding:5px 0;border-bottom:1px dashed #d1d5db;font-size:12px;}',
@@ -319,6 +326,10 @@
         '.pcs-print-box strong{font-size:11px;}',
         '.pcs-print-table{font-size:10px;margin:7px 0;}',
         '.pcs-print-table th,.pcs-print-table td{border-bottom:1px dashed #9ca3af;padding:4px 2px;}',
+        '.pcs-print-code{width:14%;}',
+        '.pcs-print-desc{width:34%;}',
+        '.pcs-print-unit,.pcs-print-tax,.pcs-print-discount{display:none;}',
+        '.pcs-print-money{width:14%;}',
         '.pcs-print-total{border:1px dashed #111827;border-radius:0;padding:7px 0;font-size:13px;}',
         '.pcs-print-summary{margin-top:6px;border-top:1px dashed #9ca3af;border-bottom:1px dashed #9ca3af;}',
         '.pcs-print-summary-row{font-size:10px;padding:3px 0;border-bottom:1px dashed #d1d5db;}',
@@ -352,7 +363,10 @@
       return '<tr>' + row.map(function(cell, idx) {
         var value = typeof cell === 'object' && cell ? cell.value : cell;
         var hasNumberFlag = typeof cell === 'object' && cell && Object.prototype.hasOwnProperty.call(cell, 'number');
-        var cls = hasNumberFlag ? (cell.number ? ' class="pcs-print-number"' : '') : (idx > 0 ? ' class="pcs-print-number"' : '');
+        var extraClass = typeof cell === 'object' && cell && cell.className ? ' ' + text(cell.className).trim() : '';
+        var numberClass = hasNumberFlag ? (cell.number ? 'pcs-print-number' : '') : (idx > 0 ? 'pcs-print-number' : '');
+        var cls = (numberClass + extraClass).trim();
+        cls = cls ? ' class="' + escapeHTML(cls) + '"' : '';
         return '<td' + cls + '>' + escapeHTML(value) + '</td>';
       }).join('') + '</tr>';
     }).join('');
@@ -404,7 +418,12 @@
     var table = '';
     if (tableHeaders.length || (Array.isArray(options.rows) && options.rows.length)) {
       table = '<table class="pcs-print-table"><thead><tr>' + tableHeaders.map(function(h, idx) {
-        return '<th' + (idx > 0 ? ' class="pcs-print-number"' : '') + '>' + escapeHTML(h) + '</th>';
+        var value = typeof h === 'object' && h ? h.label || h.value || '' : h;
+        var hasNumberFlag = typeof h === 'object' && h && Object.prototype.hasOwnProperty.call(h, 'number');
+        var extraClass = typeof h === 'object' && h && h.className ? ' ' + text(h.className).trim() : '';
+        var numberClass = hasNumberFlag ? (h.number ? 'pcs-print-number' : '') : (idx > 0 ? 'pcs-print-number' : '');
+        var cls = (numberClass + extraClass).trim();
+        return '<th' + (cls ? ' class="' + escapeHTML(cls) + '"' : '') + '>' + escapeHTML(value) + '</th>';
       }).join('') + '</tr></thead><tbody>' + rowsHTML(options.rows) + '</tbody></table>';
     }
     var body = text(options.bodyHTML || '');

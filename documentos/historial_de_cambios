@@ -1,3 +1,11 @@
+2026-06-13: Carrito factura colombiana y pagos editables.
+- Modulos afectados: `carritos`, `facturacion`, `frontend_ux`.
+- Causa tecnica: la representacion impresa del carrito usaba una tabla generica de recibo y los campos compactos de pago podian conservar el prefijo `COP` durante edicion manual, provocando concatenaciones al borrar y reescribir.
+- Cambio frontend: `web/administrar_empresa/carrito_de_compras.html` genera filas fiscales con codigo, descripcion, cantidad, unidad de medida, valor unitario, IVA, descuento y total para recibo POS y factura carta; tambien limpia el valor al enfocar medios de pago y reformatea al salir.
+- Motor de impresion: `web/js/print_documents.js` acepta clases por columna/celda para alinear valores numericos y aplicar anchos compactos en POS.
+- Referencia normativa: se uso documentacion DIAN de factura electronica y documento equivalente electronico POS, que exige identificar bienes/servicios con cantidad, unidad, descripcion/codigos, valores, impuestos y datos del adquirente cuando aplica.
+- QA pendiente de cierre visual: probar en PCS pagos combinados 25/25/50, cantidad, busqueda por nombre y botones del carrito despues de publicar.
+
 2026-06-13: URLs visibles opcionales en Administrar empresa y ayudas en cliente rapido.
 - Modulos afectados: `administrar_empresa`, `super_administrador`, `carritos`, `frontend_ux`, `configuracion_global`.
 - Causa tecnica: el shell empresarial usa iframe y normalmente conserva la URL base `administrar_empresa.html`, lo que dificulta identificar subpaginas exactas al programar o reportar incidencias. Ademas el formulario rapido `Nuevo cliente` del carrito ya tenia muchos campos fiscales y faltaba ayuda contextual campo a campo.

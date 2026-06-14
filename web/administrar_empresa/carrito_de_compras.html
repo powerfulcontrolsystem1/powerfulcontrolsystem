@@ -4074,6 +4074,35 @@
       applyStationPaymentAmountsToDiscount();
     }
 
+    function formatMoneyForEditing(value, moneda) {
+      const m = normalize(moneda || 'COP') || 'COP';
+      const amount = Math.max(0, normalizeMoneyValue(value, m));
+      const precision = moneyPrecision(m);
+      if (precision <= 0) return String(Math.round(amount));
+      return amount.toFixed(precision).replace(/\.?0+$/, '');
+    }
+
+    function prepareStationPaymentInputForEdit(input, metodo) {
+      if (!input) return;
+      const selected = getSelectedCarrito();
+      const moneda = (selected && selected.moneda) || 'COP';
+      const stored = Number((state.paymentAmounts || {})[metodo] || 0);
+      const parsed = parseMoneyInputValue(input.value);
+      const value = stored > 0 ? stored : parsed;
+      input.value = value > 0 ? formatMoneyForEditing(value, moneda) : '';
+      window.setTimeout(function() {
+        try { input.select(); } catch (_) {}
+      }, 0);
+    }
+
+    function finishStationPaymentInputEdit(input) {
+      if (!input) return;
+      readStationPaymentAmountInputs(true);
+      const selected = getSelectedCarrito();
+      refreshStationPaymentAmountUI(selected, { format: true });
+      renderStationPaymentPanel(selected);
+    }
+
     function getStationPaymentTotalForAmountAutofill(carrito) {
       if (!carrito) return 0;
       const wasManual = state.paymentAmountsManual;
@@ -5192,6 +5221,97 @@
       return parts.join(' | ');
     }
 
+    function invoiceItemCodeForPrint(item) {
+      const source = item && typeof item === 'object' ? item : {};
+      return normalize(
+        source.codigo ||
+        source.sku ||
+        source.codigo_barras ||
+        source.referencia ||
+        source.producto_codigo ||
+        source.servicio_codigo ||
+        source.item_codigo ||
+        source.referencia_id ||
+        ''
+      );
+    }
+
+    function invoiceItemUnitForPrint(item) {
+      const unit = normalize(item && (item.unidad_medida || item.unidad || item.uom || item.medida));
+      return unit || 'UND';
+    }
+
+    function invoiceItemFinancials(item) {
+      const source = item && typeof item === 'object' ? item : {};
+      const qty = Number(source.cantidad || 0);
+      const unit = Number(source.precio_unitario || 0);
+      const pctDiscount = Number(source.descuento_porcentaje || source.descuento_pct || 0);
+      let discount = Number(source.valor_descuento || source.descuento_valor || 0);
+      let tax = Number(source.valor_impuesto || 0);
+      const taxPct = Number(source.impuesto_porcentaje || 0);
+      const gross = roundMoney(qty * unit);
+      if ((!Number.isFinite(discount) || discount <= 0) && pctDiscount > 0 && gross > 0) {
+        discount = roundMoney(gross * (pctDiscount / 100));
+      }
+      if (!Number.isFinite(discount) || discount < 0) discount = 0;
+      const taxableBase = Math.max(0, gross - discount);
+      if ((!Number.isFinite(tax) || tax <= 0) && taxPct > 0 && taxableBase > 0) {
+        tax = roundMoney(taxableBase * (taxPct / 100));
+      }
+      if (!Number.isFinite(tax) || tax < 0) tax = 0;
+      const explicitTotal = Number(source.total_linea || 0);
+      const total = explicitTotal > 0 ? roundMoney(explicitTotal) : roundMoney(taxableBase + tax);
+      return { qty: qty, unit: unit, discount: roundMoney(discount), tax: roundMoney(tax), total: total, taxPct: taxPct };
+    }
+
+    function fiscalInvoiceTableHeaders() {
+      return [
+        { label: 'Cod', className: 'pcs-print-code', number: false },
+        { label: 'Descripcion', className: 'pcs-print-desc', number: false },
+        { label: 'Cant', className: 'pcs-print-qty', number: true },
+        { label: 'UM', className: 'pcs-print-unit', number: false },
+        { label: 'Vr Unit', className: 'pcs-print-money', number: true },
+        { label: 'IVA', className: 'pcs-print-tax', number: true },
+        { label: 'Dto', className: 'pcs-print-discount', number: true },
+        { label: 'Total', className: 'pcs-print-money', number: true }
+      ];
+    }
+
+    function fiscalInvoicePrintRows(items, moneda) {
+      return (Array.isArray(items) ? items : []).filter(function(it) {
+        return normalize(it && (it.estado || 'activo')).toLowerCase() === 'activo';
+      }).map(function(it) {
+        const f = invoiceItemFinancials(it);
+        return [
+          { value: invoiceItemCodeForPrint(it) || '-', className: 'pcs-print-code', number: false },
+          { value: normalize(it.descripcion) || 'Item', className: 'pcs-print-desc', number: false },
+          { value: String(f.qty), className: 'pcs-print-qty', number: true },
+          { value: invoiceItemUnitForPrint(it), className: 'pcs-print-unit', number: false },
+          { value: formatAmount(f.unit, moneda), className: 'pcs-print-money', number: true },
+          { value: f.tax > 0 ? formatAmount(f.tax, moneda) : formatTaxPercent(f.taxPct), className: 'pcs-print-tax', number: true },
+          { value: formatAmount(f.discount, moneda), className: 'pcs-print-discount', number: true },
+          { value: formatAmount(f.total, moneda), className: 'pcs-print-money', number: true }
+        ];
+      });
+    }
+
+    function fiscalInvoiceFallbackRowsHTML(items, moneda) {
+      return fiscalInvoicePrintRows(items, moneda).map(function(row) {
+        return '<tr>' + row.map(function(cell) {
+          const cls = cell.className || '';
+          const align = cell.number ? ' style="text-align:right;white-space:nowrap"' : (cls.indexOf('pcs-print-unit') >= 0 ? ' style="text-align:center;white-space:nowrap"' : '');
+          return '<td class="' + escapeHtml(cls) + '"' + align + '>' + escapeHtml(cell.value) + '</td>';
+        }).join('') + '</tr>';
+      }).join('');
+    }
+
+    function fiscalInvoiceFallbackHeaderHTML() {
+      return '<tr>' + fiscalInvoiceTableHeaders().map(function(head) {
+        const align = head.number ? ' style="text-align:right;white-space:nowrap"' : (head.className === 'pcs-print-unit' ? ' style="text-align:center;white-space:nowrap"' : '');
+        return '<th class="' + escapeHtml(head.className || '') + '"' + align + '>' + escapeHtml(head.label) + '</th>';
+      }).join('') + '</tr>';
+    }
+
     async function printSaleReceiptIfEnabled(carrito, pay, items, printTarget, documentoVenta) {
       const cfg = state.empresaAvanzadaConfig && typeof state.empresaAvanzadaConfig === 'object' ? state.empresaAvanzadaConfig : {};
       if (!shouldPrintCartReceipt(cfg)) return false;
@@ -5217,29 +5337,10 @@
       if (receiptItemEnabled(printItems, 'carrito')) subtitleParts.push('Carrito: ' + ((carrito && carrito.nombre) || ''));
       if (receiptItemEnabled(printItems, 'codigo')) subtitleParts.push('Codigo: ' + ((carrito && carrito.codigo) || ''));
 
-      let rowsHtml = '';
-      (Array.isArray(items) ? items : []).forEach(function(it) {
-        if (normalize(it.estado || 'activo').toLowerCase() !== 'activo') return;
-        const desc = escapeHtml(normalize(it.descripcion) || 'Item');
-        const qty = Number(it.cantidad || 0);
-        const pu = Number(it.precio_unitario || 0);
-        const line = qty * pu;
-        rowsHtml += '<tr><td>' + desc + '</td><td style="text-align:right">' + escapeHtml(String(qty)) + '</td><td style="text-align:right">' + escapeHtml(formatAmount(pu, moneda)) + '</td><td style="text-align:right">' + escapeHtml(formatAmount(line, moneda)) + '</td></tr>';
-      });
+      const rowsHtml = fiscalInvoiceFallbackRowsHTML(items, moneda);
 
       if (window.PCSPrint) {
-        const printRows = (Array.isArray(items) ? items : []).filter(function(it) {
-          return normalize(it && (it.estado || 'activo')).toLowerCase() === 'activo';
-        }).map(function(it) {
-          const qty = Number(it.cantidad || 0);
-          const pu = Number(it.precio_unitario || 0);
-          return [
-            normalize(it.descripcion) || 'Item',
-            String(qty),
-            formatAmount(pu, moneda),
-            formatAmount(qty * pu, moneda)
-          ];
-        });
+        const printRows = fiscalInvoicePrintRows(items, moneda);
         const offlineProvisional = Boolean(pay && pay.offlineProvisional);
         const markOfflinePending = offlineProvisional && shouldMarkOfflineInvoicePending();
         const printed = printPCSPrintDocument({
@@ -5260,7 +5361,7 @@
             receiptItemEnabled(printItems, 'copias') ? { label: 'Copias', value: String(copias) } : null,
             receiptItemEnabled(printItems, 'formato') ? { label: 'Formato', value: printFormat.toUpperCase() } : null
           ].concat(customFieldMeta),
-          tableHeaders: ['Descripcion', 'Cant.', 'P.U.', 'Total'],
+          tableHeaders: fiscalInvoiceTableHeaders(),
           rows: printRows,
           totalLabel: 'Total a pagar',
           totalValue: formatAmount(pay.totalPagarFinal, moneda),
@@ -5294,7 +5395,7 @@
         (receiptItemEnabled(printItems, 'impresora') ? '<p><strong>Impresora objetivo:</strong> ' + escapeHtml(printerName) + (printerSource ? (' <span class="muted">(' + escapeHtml(printerSource) + ')</span>') : '') + '</p>' : '') +
         customFieldHTML +
         '<hr>' +
-        '<table><thead><tr><th>Descripción</th><th style="text-align:right">Cant.</th><th style="text-align:right">P.U.</th><th style="text-align:right">Total</th></tr></thead><tbody>' + rowsHtml + '</tbody></table>' +
+        '<table><thead>' + fiscalInvoiceFallbackHeaderHTML() + '</thead><tbody>' + rowsHtml + '</tbody></table>' +
         '<p class="tot">Total a pagar: ' + escapeHtml(formatAmount(pay.totalPagarFinal, moneda)) + '</p>' +
         (receiptItemEnabled(printItems, 'total_en_letras') && window.PCSPrint && typeof window.PCSPrint.amountToWords === 'function' ? '<p><strong>Total en letras:</strong> ' + escapeHtml(window.PCSPrint.amountToWords(Number(pay.totalPagarFinal || 0), moneda)) + '</p>' : '') +
         taxDeductionFallbackHTML(taxDeduction, moneda) +
@@ -5336,31 +5437,13 @@
       const notas = normalize(cfg.notas_legales);
       const taxDeduction = shouldShowTaxDeductionOnInvoice(cfg) ? buildTaxDeductionSummary(items) : null;
       const taxSummaryRows = taxDeductionSummaryRows(taxDeduction, moneda);
-      const rowsHtml = (Array.isArray(items) ? items : []).filter(function(it) {
-        return normalize(it && (it.estado || 'activo')).toLowerCase() === 'activo';
-      }).map(function(it) {
-        const desc = escapeHtml(normalize(it.descripcion) || 'Item');
-        const qty = Number(it.cantidad || 0);
-        const pu = Number(it.precio_unitario || 0);
-        const total = qty * pu;
-        return '<tr><td>' + desc + '</td><td style="text-align:right">' + escapeHtml(String(qty)) + '</td><td style="text-align:right">' + escapeHtml(formatAmount(pu, moneda)) + '</td><td style="text-align:right">' + escapeHtml(formatAmount(total, moneda)) + '</td></tr>';
-      }).join('');
+      const rowsHtml = fiscalInvoiceFallbackRowsHTML(items, moneda);
       const now = new Date();
       const invoiceQR = await buildElectronicInvoiceQRForPrint(doc, formato);
+      const creditSaleInfo = buildCreditSalePrintInfo(pay, moneda);
 
       if (window.PCSPrint) {
-        const printRows = (Array.isArray(items) ? items : []).filter(function(it) {
-          return normalize(it && (it.estado || 'activo')).toLowerCase() === 'activo';
-        }).map(function(it) {
-          const qty = Number(it.cantidad || 0);
-          const pu = Number(it.precio_unitario || 0);
-          return [
-            normalize(it.descripcion) || 'Item',
-            String(qty),
-            formatAmount(pu, moneda),
-            formatAmount(qty * pu, moneda)
-          ];
-        });
+        const printRows = fiscalInvoicePrintRows(items, moneda);
         const printed = printPCSPrintDocument({
           title: 'Factura electronica',
           kind: 'factura',
@@ -5376,7 +5459,7 @@
             { label: 'Moneda', value: moneda },
             creditSaleInfo ? { label: 'Crédito cliente', value: creditSaleInfo } : null
           ],
-          tableHeaders: ['Descripcion', 'Cant.', 'P.U.', 'Total'],
+          tableHeaders: fiscalInvoiceTableHeaders(),
           rows: printRows,
           totalLabel: fieldEnabled('total') ? 'Total documento' : '',
           totalValue: fieldEnabled('total') ? formatAmount(Number(doc.monto_total || pay.totalPagarFinal || 0), moneda) : '',
@@ -5410,7 +5493,7 @@
         '<p><strong>Fecha:</strong> ' + escapeHtml(now.toLocaleString()) + '</p>' +
         (creditSaleInfo ? '<p><strong>Crédito cliente:</strong> ' + escapeHtml(creditSaleInfo) + '</p>' : '') +
         '<hr>' +
-        '<table><thead><tr><th>Descripci?n</th><th style="text-align:right">Cant.</th><th style="text-align:right">P.U.</th><th style="text-align:right">Total</th></tr></thead><tbody>' + rowsHtml + '</tbody></table>' +
+        '<table><thead>' + fiscalInvoiceFallbackHeaderHTML() + '</thead><tbody>' + rowsHtml + '</tbody></table>' +
         '<p class="tot">Total documento: ' + escapeHtml(formatAmount(Number(doc.monto_total || pay.totalPagarFinal || 0), moneda)) + '</p>' +
         (fieldEnabled('total_en_letras') && window.PCSPrint && typeof window.PCSPrint.amountToWords === 'function' ? '<p><strong>Total en letras:</strong> ' + escapeHtml(window.PCSPrint.amountToWords(Number(doc.monto_total || pay.totalPagarFinal || 0), moneda)) + '</p>' : '') +
         taxDeductionFallbackHTML(taxDeduction, moneda) +
@@ -11412,6 +11495,9 @@
     getStationPaymentAmountInputDefs().forEach(function(def) {
       const el = document.getElementById(def.id);
       if (!el) return;
+      el.addEventListener('focus', function() {
+        prepareStationPaymentInputForEdit(el, def.metodo);
+      });
       el.addEventListener('click', function() {
         handleStationPaymentAmountIntent(def);
       });
@@ -11422,16 +11508,10 @@
         refreshStationPaymentAmountUI(selected, { format: false });
       });
       el.addEventListener('change', function() {
-        const selected = getSelectedCarrito();
-        if (!selected) return;
-        readStationPaymentAmountInputs(true);
-        refreshStationPaymentAmountUI(selected, { format: true });
+        finishStationPaymentInputEdit(el);
       });
       el.addEventListener('blur', function() {
-        const selected = getSelectedCarrito();
-        if (!selected) return;
-        readStationPaymentAmountInputs(true);
-        refreshStationPaymentAmountUI(selected, { format: true });
+        finishStationPaymentInputEdit(el);
       });
     });
 
