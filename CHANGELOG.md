@@ -1,3 +1,4 @@
+- 2026-06-13: `Carrito busca productos sin importar mayusculas` corrige el filtro `q` de `/api/empresa/productos` para que la busqueda por nombre en PCS encuentre productos como `Arroz` aunque el cajero escriba `arroz`.
 - 2026-06-13: `Carrito factura colombiana y pagos editables` alinea recibo POS/factura carta con columnas fiscales tipo Colombia (`Cod`, `Descripcion`, `Cant`, `UM`, `Vr Unit`, `IVA`, `Dto`, `Total`) y limpia los campos de pago al enfocar para evitar concatenar valores con `COP`.
 - 2026-06-13: `Icono flotante IA unificado` reemplaza la variante con contenedor blanco en Administrar empresa por el mismo icono limpio usado en seleccionar empresa y el resto del proyecto.
 - 2026-06-13: `Carrito puede vender sin stock por empresa` agrega un check de configuracion para permitir ventas aun sin existencia suficiente, propaga el flag al carrito y hace que la reserva de inventario permita saldo negativo solo cuando la empresa lo activa.

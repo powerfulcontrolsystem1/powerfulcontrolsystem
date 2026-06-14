@@ -1,3 +1,11 @@
+2026-06-13: Busqueda por nombre del carrito sin importar mayusculas.
+- Modulos afectados: `carritos`, `inventario_productos`, `backend_db`, `frontend_ux`.
+- Causa tecnica: `/api/empresa/productos?q=...` filtraba con `LIKE` sensible a mayusculas/minusculas; en PCS el cajero podia escribir `arroz` y no encontrar un producto guardado como `Arroz...`.
+- Backend: `backend/db/productos.go` cambia el filtro de catalogo a `LOWER(COALESCE(...)) LIKE LOWER(?)` para nombre, SKU, codigo de barras, marca y categoria, manteniendo el filtro `empresa_id` y `estado`.
+- Seguridad multiempresa: no se crea endpoint nuevo, no cambia permisos ni tablas; la consulta conserva `WHERE p.empresa_id = ?` y solo mejora la comparacion del parametro `q`.
+- QA automatizada: `go test ./db -run "^$" -count=1` reporto `ok`; `git diff --check` solo mostro advertencias CRLF esperadas de Windows.
+- QA visual pendiente despues de `rs`: repetir en PCS la busqueda por nombre con mouse desde el carrito y confirmar que agrega/incrementa producto.
+
 2026-06-13: Carrito factura colombiana y pagos editables.
 - Modulos afectados: `carritos`, `facturacion`, `frontend_ux`.
 - Causa tecnica: la representacion impresa del carrito usaba una tabla generica de recibo y los campos compactos de pago podian conservar el prefijo `COP` durante edicion manual, provocando concatenaciones al borrar y reescribir.

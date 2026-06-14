@@ -1781,7 +1781,14 @@ func GetProductosByEmpresa(dbConn *sql.DB, empresaID int64, filtro, estado strin
 	}
 	if filter != "" {
 		like := "%" + filter + "%"
-		query += " AND (p.nombre LIKE ? OR p.sku LIKE ? OR p.codigo_barras LIKE ? OR p.marca LIKE ? OR p.categoria LIKE ? OR cp.nombre LIKE ?)"
+		query += ` AND (
+			LOWER(COALESCE(p.nombre, '')) LIKE LOWER(?)
+			OR LOWER(COALESCE(p.sku, '')) LIKE LOWER(?)
+			OR LOWER(COALESCE(p.codigo_barras, '')) LIKE LOWER(?)
+			OR LOWER(COALESCE(p.marca, '')) LIKE LOWER(?)
+			OR LOWER(COALESCE(p.categoria, '')) LIKE LOWER(?)
+			OR LOWER(COALESCE(cp.nombre, '')) LIKE LOWER(?)
+		)`
 		args = append(args, like, like, like, like, like, like)
 	}
 	if bodegaID > 0 {
@@ -1803,7 +1810,7 @@ func GetProductosByEmpresa(dbConn *sql.DB, empresaID int64, filtro, estado strin
 				WHEN UPPER(TRIM(COALESCE(p.codigo_barras, ''))) = UPPER(TRIM(?)) THEN 0
 				WHEN UPPER(TRIM(COALESCE(p.sku, ''))) = UPPER(TRIM(?)) THEN 0
 				WHEN UPPER(TRIM(COALESCE(p.nombre, ''))) = UPPER(TRIM(?)) THEN 1
-				WHEN p.nombre LIKE ? THEN 2
+				WHEN LOWER(COALESCE(p.nombre, '')) LIKE LOWER(?) THEN 2
 				ELSE 3
 			END,
 			p.id DESC`
