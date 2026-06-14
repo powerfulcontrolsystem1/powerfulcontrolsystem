@@ -14748,3 +14748,19 @@ Archivos modificados:
 - documentos/historial_de_cambios
 - web/administrar_empresa.html
 - web/administrar_empresa/carrito_de_compras.html
+
+2026-06-14 10:57:36 - Mensaje: rs: actualizar repositorio y sincronizar VPS; Commit: f49fe1b6; PushStatus: OK
+Archivos modificados:
+- CHANGELOG.md
+- documentos/historial_de_cambios
+- web/administrar_empresa.html
+- web/administrar_empresa/carrito_de_compras.html
+- web/administrar_empresa/panel.html
+- web/estilos.css
+- web/img/gpt.svg
+- web/js/super_administrador.js
+- web/super/informacion_de_modulos.html
+- web/super/licencias_codigos_descuento.html
+- web/super/licencias_resumen.html
+- web/super/pagina_principal.html
+- web/super_administrador.html
