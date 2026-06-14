@@ -759,6 +759,21 @@
       box-shadow: 0 14px 30px var(--panel-card-shadow);
     }
 
+    .empresa-home-top-cards {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(260px, 360px);
+      gap: 12px;
+      align-items: stretch;
+      margin-top: 18px;
+    }
+
+    .empresa-home-top-cards .empresa-favorites-panel,
+    .empresa-home-top-cards .empresa-mail-notification {
+      margin-top: 0;
+      min-height: 100%;
+      box-sizing: border-box;
+    }
+
     .empresa-buzon-head {
       display: flex;
       align-items: flex-start;
@@ -1176,6 +1191,10 @@
       .empresa-home {
         width: min(100% - 20px, 720px);
         padding-top: 10px;
+      }
+
+      .empresa-home-top-cards {
+        grid-template-columns: 1fr;
       }
 
       .empresa-home-hero-inner {
@@ -1747,6 +1766,7 @@
         <p id="maintenanceNoticeMeta" class="empresa-maintenance-meta"></p>
       </div>
     </section>
+    <div class="empresa-home-top-cards">
     <section class="empresa-favorites-panel" aria-labelledby="empresaFavoritesTitle">
       <div class="empresa-favorites-head">
         <div class="empresa-favorites-heading">
@@ -1769,6 +1789,7 @@
       </div>
       <a id="empresaEmailNotificationLink" class="empresa-mail-notification-action" href="/administrar_empresa/email_corporativo.html">Abrir E-mail Corporativo</a>
     </section>
+    </div>
 
     <section class="empresa-buzon-grid" aria-label="Buzon y chat interno">
       <article class="empresa-buzon-card" aria-labelledby="empresaBuzonTitle">

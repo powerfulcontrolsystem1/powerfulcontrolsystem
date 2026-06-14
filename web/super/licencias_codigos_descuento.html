@@ -164,6 +164,7 @@
               '<td>Un uso por empresa en checkout de licencias.</td>' +
               '<td><div class="discount-actions">' +
                 '<button class="btn secondary small" type="button" data-action="edit" data-code="' + safe(item.codigo) + '">Editar</button>' +
+                '<button class="btn secondary small" type="button" data-action="email" data-code="' + safe(item.codigo) + '">Enviar correo</button>' +
                 '<button class="btn secondary small" type="button" data-action="toggle" data-code="' + safe(item.codigo) + '">' + (item.activo ? 'Desactivar' : 'Activar') + '</button>' +
                 '<button class="btn danger small" type="button" data-action="delete" data-code="' + safe(item.codigo) + '">Eliminar</button>' +
               '</div></td>' +
@@ -205,6 +206,26 @@
         await requestJSON("/super/api/licencias/codigos_descuento?codigo=" + encodeURIComponent(code), {method:"DELETE"});
         await load();
       }
+      function emailCode(code){
+        var item = state.items.find(function(x){return x.codigo === code;});
+        if (!item) return;
+        var email = window.prompt("Correo destino para enviar el codigo:", "");
+        if (email === null) return;
+        email = String(email || "").trim().toLowerCase();
+        if (!email) {
+          setMsg("El correo destino es obligatorio.", true);
+          return;
+        }
+        var subject = "Codigo de descuento " + item.codigo;
+        var body = [
+          "Codigo de descuento: " + item.codigo,
+          "Descuento: " + (item.descripcion || item.spec || ""),
+          "Estado: " + (item.activo ? "Activo" : "Inactivo"),
+          "Uso: checkout de licencias de Powerful Control System."
+        ].join("\n");
+        window.location.href = "mailto:" + encodeURIComponent(email) + "?subject=" + encodeURIComponent(subject) + "&body=" + encodeURIComponent(body);
+        setMsg("Se abrio el correo para enviar el codigo a " + email + ".", false);
+      }
       document.getElementById("type").addEventListener("change", toggleValueField);
       document.getElementById("reloadBtn").addEventListener("click", function(){load().catch(function(err){setMsg(err.message || String(err), true);});});
       document.getElementById("cancelBtn").addEventListener("click", resetForm);
@@ -215,6 +236,7 @@
         var code = btn.getAttribute("data-code");
         Promise.resolve().then(function(){
           if (action === "edit") return editCode(code);
+          if (action === "email") return emailCode(code);
           if (action === "toggle") return toggleCode(code);
           if (action === "delete") return deleteCode(code);
         }).catch(function(err){setMsg(err.message || String(err), true);});

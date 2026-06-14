@@ -1,3 +1,11 @@
+2026-06-14: Ajustes visuales super, empresa y carrito PCS.
+- Modulos afectados: `super_administrador`, `panel_empresa`, `carritos`, `codigos_descuento`, `frontend_ux`.
+- Frontend super: se retiran accesos `Ver index publico`, `Ver sistemas publico` y `Asesores de ventas` del menu; la analitica publica de visitas por pais queda dentro de `super/licencias_resumen.html`.
+- Frontend empresa: se agrega acceso `Noticias` al final del menu empresarial y el panel organiza `Favoritos` y notificaciones de email en columnas en PC.
+- Frontend carrito: se compacta el bloque cliente, se oculta `Cliente actual` y pantalla completa, se agranda el selector `Accion del carrito`, se igualan botones `Agregar` y `Buscar Productos`, se duplica `Total` arriba y abajo y se mejora responsive movil.
+- Codigos: los codigos globales de descuento de licencias suman opcion `Enviar correo` via cliente de correo local; los codigos empresariales ya contaban con opcion de correo.
+- Seguridad/datos: no se agregan endpoints ni tablas; los cambios son visuales o `mailto`, sin exponer credenciales.
+
 2026-06-14: Carrito y super panel compactos.
 - Modulos afectados: `carritos`, `super_administrador`, `menu_flotante`, `chat_ia`, `frontend_ux`.
 - Frontend IA: `/img/gpt.svg` vuelve a ser la unica imagen del icono flotante IA, con estilo tipo ChatGPT y letras IA; `super_administrador.html` usa esa misma imagen.

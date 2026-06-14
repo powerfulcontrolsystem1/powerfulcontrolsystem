@@ -1,3 +1,4 @@
+- 2026-06-14: `Ajustes visuales super empresa carrito` unifica el icono IA tipo tuerca sin circulo lateral, mueve analitica publica al panel de super, retira accesos publicos redundantes del super, agrega Noticias en Administrar empresa, suma envio por correo en codigos globales y mejora carrito escritorio/movil.
 - 2026-06-14: `Ajuste fino carrito e IA PCS` cambia la etiqueta visible de busqueda de cliente a `Cliente` y aplica `/img/gpt.svg` al boton flotante IA del shell `administrar_empresa.html`, manteniendo una sola imagen IA para el proyecto.
 - 2026-06-13: `Carrito abonos sin error secundario` evita que la carga de abonos falle por ordenamiento `pcs_ts` en PostgreSQL y muestre error interno despues de agregar productos.
 - 2026-06-13: `Carrito busca productos sin importar mayusculas` corrige el filtro `q` de `/api/empresa/productos` para que la busqueda por nombre en PCS encuentre productos como `Arroz` aunque el cajero escriba `arroz`.

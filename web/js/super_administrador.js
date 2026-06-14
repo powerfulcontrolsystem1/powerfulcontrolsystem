@@ -43,7 +43,6 @@
     "/super/plantillas_produccion_masiva.html": true,
     "/super/licencias.html": true,
     "/super/licencias_codigos_descuento.html": true,
-    "/super/asesor_comercial.html": true,
     "/super/administradores.html": true,
     "/super/administradores_frecuencia_fe.html": true,
     "/super/contrato.html": true,

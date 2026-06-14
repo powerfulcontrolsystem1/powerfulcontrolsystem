@@ -9129,11 +9129,16 @@
       const detailRows = compactRows.filter(function(row) {
         return !row.important;
       });
-      const orderedRows = totalRows.concat(detailRows);
+      const bottomTotalRows = totalRows.filter(function(row) {
+        return row.label === profile.totalLabel;
+      }).map(function(row) {
+        return Object.assign({}, row, { bottomTotal: true });
+      });
+      const orderedRows = totalRows.concat(detailRows).concat(bottomTotalRows);
 
       const contextHtml = '<div class="carrito-summary-profile"><span>' + escapeHtml(profile.badge) + '</span><strong>' + escapeHtml(getPrimaryCartBusinessLabel()) + '</strong></div>';
       return contextHtml + orderedRows.map(function(row) {
-        return '<div class="carrito-summary-row"><span>' + escapeHtml(row.label) + '</span><strong>' + escapeHtml(row.value) + '</strong></div>';
+        return '<div class="carrito-summary-row' + (row.bottomTotal ? ' carrito-summary-row-bottom-total' : '') + '"><span>' + escapeHtml(row.label) + '</span><strong>' + escapeHtml(row.value) + '</strong></div>';
       }).join('');
     }
 
