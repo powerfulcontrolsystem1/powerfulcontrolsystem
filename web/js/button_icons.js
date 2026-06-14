@@ -65,7 +65,7 @@
   }
 
   function isControlButton(button, label) {
-    if (button.matches(".calc-btn, .arcade-key, .game-btn, .mc-icon-btn, .ai-chat-icon-btn, .ai-chat-minibar-btn, .ai-chat-header-icon-btn, .ai-chat-close, .radio-mini-close")) {
+    if (button.matches(".calc-btn, .arcade-key, .game-btn, .mc-icon-btn, .ai-chat-icon-btn, .ai-chat-minibar-btn, .ai-chat-header-icon-btn, .ai-chat-close, .radio-mini-close, .pcs-field-help-button")) {
       return true;
     }
     if (/^[0-9.]$/.test(label)) return true;
