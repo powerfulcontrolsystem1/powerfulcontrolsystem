@@ -34467,3 +34467,12 @@ PushStatus: OK
 Archivos modificados:
 - web/js/administrar_empresa.js
 - 2026-06-13: `Carrito pagos compactos y foco estable` convierte el detalle de pagos combinados en una tabla compacta, mantiene el foco al borrar/escribir/cambiar entre medios, mueve Regresar a estaciones dentro de tarjeta, oculta opciones de cobro/lavador si no estan activadas, deja solo Vehiculo frente a Taxi y permite cargar/actualizar clientes existentes desde el formulario Nuevo cliente.
+
+2026-06-13: rs: actualizar repositorio y sincronizar VPS
+PushStatus: OK
+Archivos modificados:
+- CHANGELOG.md
+- documentos/historial_de_cambios
+- web/administrar_empresa/carrito_de_compras.html
+- web/administrar_empresa/configuracion_carrito_de_compra_empresa.html
+- web/estilos.css
