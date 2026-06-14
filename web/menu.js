@@ -420,19 +420,19 @@
           '<div class="fm-notification-panel-head"><strong>Buz&oacute;n de usuario</strong><button id="floatingNotificationRefresh" type="button">Actualizar</button></div>' +
           '<div id="floatingNotificationList" class="fm-notification-list"><p class="fm-notification-empty">Sin mensajes pendientes.</p></div>' +
         '</div>' +
-        '<a class="fm-item" href="/index.html">Portal</a>' +
-        '<a class="fm-item" href="/red_social_comercial.html" target="_blank" rel="noopener">Red social comercial</a>' +
+        '<a class="fm-item fm-icon-item" href="/index.html"><img class="fm-item-icon" src="/img/company-briefcase-color.svg" alt="">Portal</a>' +
+        '<a class="fm-item fm-icon-item" href="/red_social_comercial.html" target="_blank" rel="noopener"><img class="fm-item-icon" src="/img/social.svg" alt="">Red social comercial</a>' +
         '<a class="fm-item fm-icon-item" href="/noticias.html"><img class="fm-item-icon" src="/img/report.svg" alt="">Noticias</a>' +
-        '<button id="createHelpTicketLink" class="fm-item fm-action-item" type="button">Crear ticket de ayuda</button>' +
+        '<button id="createHelpTicketLink" class="fm-item fm-action-item fm-icon-item" type="button"><img class="fm-item-icon" src="/img/shield-security-color.svg" alt="">Crear ticket de ayuda</button>' +
         '<button id="openFloatingAILink" class="fm-item fm-action-item fm-icon-item" type="button"><img class="fm-item-icon" src="/img/gpt.svg" alt="">Robot / IA</button>' +
         '<button id="openFloatingRadioLink" class="fm-item fm-action-item fm-icon-item" type="button"><img class="fm-item-icon" src="/img/play.svg" alt="">Emisoras</button>' +
         '<div class="fm-submenu" id="utilitiesMenuWrapper">' +
-          '<button id="utilitiesMenuToggle" class="fm-item fm-submenu-toggle" type="button" aria-expanded="false" aria-haspopup="true">Utilidades \u25BC</button>' +
+          '<button id="utilitiesMenuToggle" class="fm-item fm-submenu-toggle fm-icon-item" type="button" aria-expanded="false" aria-haspopup="true"><img class="fm-item-icon" src="/img/settings-color.svg" alt="">Utilidades \u25BC</button>' +
           '<div id="utilitiesMenuPopup" class="fm-submenu-popup" aria-hidden="true" role="menu">' +
-            '<a class="fm-item fm-subitem" href="/calculadora.html?compact=1" data-open-calculator="1">Calculadora</a>' +
-            '<button class="fm-item fm-subitem fm-action-item" type="button" data-share-current="email">Compartir por correo</button>' +
-            '<a class="fm-item fm-subitem" href="/Juegos/menu_juegos.html" target="_blank" rel="noopener">Juegos</a>' +
-            '<a class="fm-item fm-subitem" href="/emulador/" target="_blank" rel="noopener">Emulador</a>' +
+            '<a class="fm-item fm-subitem fm-icon-item" href="/calculadora.html?compact=1" data-open-calculator="1"><img class="fm-item-icon" src="/img/analytics-color.svg" alt="">Calculadora</a>' +
+            '<button class="fm-item fm-subitem fm-action-item fm-icon-item" type="button" data-share-current="email"><img class="fm-item-icon" src="/img/network-color.svg" alt="">Compartir por correo</button>' +
+            '<a class="fm-item fm-subitem fm-icon-item" href="/Juegos/menu_juegos.html" target="_blank" rel="noopener"><img class="fm-item-icon" src="/img/play.svg" alt="">Juegos</a>' +
+            '<a class="fm-item fm-subitem fm-icon-item" href="/emulador/" target="_blank" rel="noopener"><img class="fm-item-icon" src="/img/settings-color.svg" alt="">Emulador</a>' +
           '</div>' +
         '</div>' +
         '<a class="fm-item" href="/configuracion_de_la_cuenta.html">Configuración de la cuenta</a>' +
@@ -484,6 +484,31 @@
     var floatingNotificationPanel = wrapper.querySelector('#floatingNotificationPanel');
     var floatingNotificationList = wrapper.querySelector('#floatingNotificationList');
     var floatingNotificationRefresh = wrapper.querySelector('#floatingNotificationRefresh');
+
+    function ensureFloatingMenuIcons(){
+      var fallback = {
+        sessionLink: '/img/shield-security-color.svg',
+        themeToggle: '/img/settings-color.svg',
+        utilitiesMenuToggle: '/img/settings-color.svg',
+        createHelpTicketLink: '/img/shield-security-color.svg'
+      };
+      wrapper.querySelectorAll('.fm-item').forEach(function(item){
+        if (item.querySelector('.fm-item-icon') || item.querySelector('.fm-notification-icon')) return;
+        var src = fallback[item.id] || '/img/report.svg';
+        if (item.matches('a[href*="configuracion"]')) src = '/img/settings-color.svg';
+        if (item.matches('a[href*="index"]')) src = '/img/company-briefcase-color.svg';
+        if (item.matches('a[href*="red_social"]')) src = '/img/social.svg';
+        if (item.matches('a[href*="calculadora"]')) src = '/img/analytics-color.svg';
+        if (item.matches('a[href*="Juegos"],a[href*="emulador"]')) src = '/img/play.svg';
+        var img = document.createElement('img');
+        img.className = 'fm-item-icon';
+        img.src = src;
+        img.alt = '';
+        item.classList.add('fm-icon-item');
+        item.insertBefore(img, item.firstChild);
+      });
+    }
+    ensureFloatingMenuIcons();
 
     function normalizeNotificationCount(value){
       if (typeof value === 'string' && value.indexOf('+') !== -1) return 100;

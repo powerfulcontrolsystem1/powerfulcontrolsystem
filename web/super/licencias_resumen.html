@@ -28,7 +28,8 @@
     .cmd-btn.primary{background:var(--cmd-blue);border-color:var(--cmd-blue);color:#fff}
     .cmd-btn.danger{background:var(--cmd-crit-bg);border-color:color-mix(in srgb,var(--cmd-red) 36%,var(--cmd-line));color:var(--cmd-red)}
     .cmd-btn:hover{filter:brightness(.98)}
-    .cmd-favorites-panel{margin-bottom:10px;padding:10px;border:1px solid var(--cmd-line);border-radius:8px;background:var(--cmd-panel)}
+    .cmd-top-row{display:grid;grid-template-columns:minmax(0,1fr) minmax(220px,300px);gap:10px;align-items:stretch;margin-bottom:10px}
+    .cmd-favorites-panel{margin:0;padding:10px;border:1px solid var(--cmd-line);border-radius:8px;background:var(--cmd-panel)}
     .cmd-favorites-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px}
     .cmd-favorites-heading{display:flex;align-items:baseline;gap:8px;min-width:0}
     .cmd-favorites-kicker{margin:0;color:var(--cmd-muted);font-size:.7rem;font-weight:900;letter-spacing:.07em;text-transform:uppercase;white-space:nowrap}
@@ -42,6 +43,14 @@
     .cmd-favorite-icon img{width:20px;height:20px;object-fit:contain}
     .cmd-favorite-text{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
     .cmd-favorites-empty{margin:0;padding:9px;border:1px dashed var(--cmd-line);border-radius:8px;color:var(--cmd-muted);font-size:.78rem}
+    .cmd-email-card{display:grid;align-content:space-between;gap:8px;padding:10px;border:1px solid var(--cmd-line);border-radius:8px;background:linear-gradient(135deg,var(--cmd-panel),var(--cmd-info-bg));color:var(--cmd-text);text-decoration:none;min-height:100%}
+    .cmd-email-card:hover{border-color:color-mix(in srgb,var(--cmd-blue) 42%,var(--cmd-line));background:var(--cmd-info-bg)}
+    .cmd-email-card-top{display:flex;align-items:center;gap:8px}
+    .cmd-email-icon{display:grid;place-items:center;width:34px;height:34px;border-radius:8px;border:1px solid var(--cmd-line);background:var(--cmd-panel)}
+    .cmd-email-icon img{width:20px;height:20px;object-fit:contain}
+    .cmd-email-card h2{margin:0;font-size:.92rem;line-height:1.1;color:var(--cmd-text)}
+    .cmd-email-card p{margin:3px 0 0;color:var(--cmd-muted);font-size:.72rem;line-height:1.25}
+    .cmd-email-status{display:inline-flex;align-items:center;justify-content:center;width:max-content;border-radius:999px;background:var(--cmd-ok-bg);color:var(--cmd-green);border:1px solid color-mix(in srgb,var(--cmd-green) 32%,var(--cmd-line));font-size:.68rem;font-weight:900;padding:4px 8px}
     .cmd-layout{display:grid;grid-template-columns:minmax(0,1fr);gap:10px;align-items:start}
     .cmd-panel{border:1px solid var(--cmd-line);border-radius:8px;background:var(--cmd-panel)}
     .cmd-panel+.cmd-panel{margin-top:12px}
@@ -82,23 +91,36 @@
     .cmd-toast.show{display:block}
     @media(max-width:1120px){.cmd-layout{grid-template-columns:1fr}}
     @media(max-width:860px){.cmd-summary{grid-template-columns:1fr}.cmd-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
+    @media(max-width:860px){.cmd-top-row{grid-template-columns:1fr}.cmd-email-card{min-height:auto}}
     @media(max-width:560px){.cmd-shell{width:min(100vw - 16px,1320px);padding-top:8px}.cmd-kpis,.cmd-favorites-grid{grid-template-columns:1fr}.cmd-panel-head{display:grid}.cmd-panel-actions{justify-content:flex-start}.cmd-favorites-heading{gap:5px}.cmd-favorites-title{font-size:.9rem}.cmd-favorites-kicker{font-size:.64rem}}
   </style>
 </head>
 <body class="super-page">
   <main class="cmd-shell">
-    <section class="cmd-favorites-panel" aria-labelledby="superFavoritesTitle">
-      <div class="cmd-favorites-head">
-        <div class="cmd-favorites-heading">
-          <p class="cmd-favorites-kicker">Accesos rapidos</p>
-          <h2 id="superFavoritesTitle" class="cmd-favorites-title">Favoritos</h2>
+    <div class="cmd-top-row">
+      <section class="cmd-favorites-panel" aria-labelledby="superFavoritesTitle">
+        <div class="cmd-favorites-head">
+          <div class="cmd-favorites-heading">
+            <p class="cmd-favorites-kicker">Accesos rapidos</p>
+            <h2 id="superFavoritesTitle" class="cmd-favorites-title">Favoritos</h2>
+          </div>
+          <span id="superFavoritesCount" class="cmd-favorites-count">0</span>
         </div>
-        <span id="superFavoritesCount" class="cmd-favorites-count">0</span>
-      </div>
-      <div id="superFavoritesList" class="cmd-favorites-grid" aria-live="polite">
-        <p class="cmd-favorites-empty">Marca cualquier pagina con la estrella para verla aqui.</p>
-      </div>
-    </section>
+        <div id="superFavoritesList" class="cmd-favorites-grid" aria-live="polite">
+          <p class="cmd-favorites-empty">Marca cualquier pagina con la estrella para verla aqui.</p>
+        </div>
+      </section>
+      <a class="cmd-email-card" href="/super/email_corporativo.html" aria-label="Abrir Email corporativo">
+        <div class="cmd-email-card-top">
+          <span class="cmd-email-icon"><img src="/img/network-color.svg" alt=""></span>
+          <div>
+            <h2>Email corporativo</h2>
+            <p>Mailu, cuentas y webmail</p>
+          </div>
+        </div>
+        <span class="cmd-email-status">Abrir</span>
+      </a>
+    </div>
 
     <section class="cmd-layout">
       <div>

@@ -1,3 +1,13 @@
+2026-06-14: Carrito y super panel compactos.
+- Modulos afectados: `carritos`, `super_administrador`, `menu_flotante`, `chat_ia`, `frontend_ux`.
+- Frontend IA: `/img/gpt.svg` vuelve a ser la unica imagen del icono flotante IA, con estilo tipo ChatGPT y letras IA; `super_administrador.html` usa esa misma imagen.
+- Frontend super: `web/super/licencias_resumen.html` coloca la tarjeta `Favoritos` y una tarjeta compacta `Email corporativo` en la misma fila para PC, conservando vista en una columna para pantallas pequenas.
+- Frontend menu: `web/menu.js` agrega iconos a las opciones del menu flotante y normaliza iconos faltantes en runtime.
+- Frontend carrito: `web/administrar_empresa/carrito_de_compras.html` reemplaza visualmente los botones de acciones por un select con checks por opcion, oculta los titulos `Cliente del carrito` y `Productos agregados al carrito`, elimina el texto descriptivo del detalle de pago y conserva los handlers internos existentes.
+- UX carrito: `web/estilos.css` reduce margenes exteriores, alinea buscador y totales arriba, compacta tarjeta cliente, acciones, detalle de pago y tabla de productos/cantidades.
+- Seguridad/datos: cambios visuales; no se modifican endpoints, pagos, permisos, stock, facturacion ni persistencia por `empresa_id`.
+- QA local: `node --check web/menu.js` paso; `git diff --check` solo mostro advertencias CRLF esperadas en Windows.
+
 2026-06-13: Carrito abonos sin error secundario en PostgreSQL.
 - Modulos afectados: `carritos`, `pagos`, `backend_db`.
 - Causa tecnica: la consulta de abonos del carrito ordenaba con `pcs_ts(...)`; en el runtime PostgreSQL real eso podia fallar y mostrar `Ocurrio un problema interno` despues de operaciones exitosas como agregar producto por nombre.

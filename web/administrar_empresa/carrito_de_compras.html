@@ -229,7 +229,7 @@
       <section id="stationCustomerCard" class="card empresa-section carrito-customer-card is-hidden mt-12" hidden>
         <div class="empresa-section-header compact carrito-customer-header">
           <div>
-            <h3 class="section-heading">Cliente del carrito</h3>
+            <h3 class="section-heading carrito-hidden-title">Cliente del carrito</h3>
           </div>
           <div class="carrito-customer-header-actions">
             <div id="stationClienteActual" class="form-help carrito-customer-current">Cliente actual: Cliente General.</div>
@@ -384,7 +384,7 @@
       <div id="stationCartSplitRow" class="card empresa-section carrito-station-split carrito-products-card mt-12" hidden>
         <div class="empresa-section-header compact carrito-products-header">
           <div>
-            <h3 class="section-heading">Productos agregados al carrito</h3>
+            <h3 class="section-heading carrito-hidden-title">Productos agregados al carrito</h3>
           </div>
         </div>
         <div class="carrito-station-split-main">
@@ -400,6 +400,21 @@
       <section id="stationCartActionsCard" class="card empresa-section carrito-actions-card is-hidden mt-12" hidden>
         <div class="empresa-section-header compact" hidden>
           <h3 class="section-heading"></h3>
+        </div>
+        <div class="carrito-action-select-wrap">
+          <label class="form-label" for="carritoActionSelect">Acción del carrito</label>
+          <select id="carritoActionSelect" class="form-input carrito-action-select" aria-label="Seleccionar acción del carrito">
+            <option value="">Selecciona una acción</option>
+            <option value="carritoBtnDescuentos">☑ Descuentos</option>
+            <option value="carritoBtnCambiarTarifa">☑ Cambiar tarifa</option>
+            <option value="carritoBtnTransferirCuenta">☐ Transferir cuenta</option>
+            <option value="carritoBtnControlElectrico">☐ Domótica</option>
+            <option value="carritoBtnCancelarCarrito">☑ Cancelar carrito</option>
+            <option value="carritoBtnClientes">☑ Clientes</option>
+            <option value="carritoBtnAbonos">☑ Abonos</option>
+            <option value="carritoBtnPagoQR">☐ QR de pago</option>
+            <option value="carritoBtnVehiculo">☑ Vehículo</option>
+          </select>
         </div>
         <div id="carritoActionToolbar" class="carrito-station-toolbar form-actions action-toolbar actions-wrap-gap-10">
           <button type="button" id="carritoBtnDescuentos" class="btn secondary">Descuentos</button>
@@ -689,7 +704,6 @@
         <div class="empresa-section-header compact carrito-payment-amounts-header">
           <div>
             <h3 class="section-heading">Detalle del pago</h3>
-            <p class="form-help mt-0">Valores recibidos por medio de pago antes de cerrar el carrito.</p>
           </div>
         </div>
         <div id="stationPaymentAmountsRow" class="carrito-payment-compact-table" role="table" aria-label="Detalle del pago">
@@ -2618,17 +2632,41 @@
       el.style.display = visible ? '' : 'none';
     }
 
+    function syncCarritoActionSelectOption(id, visible) {
+      const select = document.getElementById('carritoActionSelect');
+      if (!select) return;
+      const option = Array.from(select.options || []).find(function(opt) {
+        return opt.value === id;
+      });
+      if (!option) return;
+      const clean = String(option.textContent || '').replace(/^[☑☐]\s*/, '');
+      option.textContent = (visible ? '☑ ' : '☐ ') + clean;
+      option.disabled = !visible;
+    }
+
     function syncCarritoActionButtons(ui) {
       const focusedSaleMode = state.stationMode || state.directSaleMode;
       const actionsVisible = focusedSaleMode && Boolean(ui && ui.mostrar_tarjeta_acciones_carrito);
-      setCarritoActionControlVisible('carritoBtnDescuentos', actionsVisible && Boolean(ui.mostrar_boton_descuentos_carrito));
-      setCarritoActionControlVisible('carritoBtnCambiarTarifa', actionsVisible && Boolean(ui.mostrar_boton_cambiar_tarifa_carrito));
-      setCarritoActionControlVisible('carritoBtnTransferirCuenta', actionsVisible && Boolean(ui.mostrar_boton_transferir_cuenta_carrito && ui.permitir_transferir_cuenta_carrito));
-      setCarritoActionControlVisible('carritoBtnControlElectrico', actionsVisible && state.stationMode && !state.directSaleMode && Boolean(ui.mostrar_control_electrico_carrito && ui.mostrar_boton_control_electrico_carrito));
-      setCarritoActionControlVisible('carritoBtnCancelarCarrito', actionsVisible && Boolean(ui.mostrar_boton_cancelar_carrito));
-      setCarritoActionControlVisible('carritoBtnClientes', actionsVisible && Boolean(ui.mostrar_boton_clientes_carrito));
-      setCarritoActionControlVisible('carritoBtnAbonos', actionsVisible && Boolean(ui.mostrar_boton_abonos_carrito));
-      setCarritoActionControlVisible('carritoBtnVehiculo', actionsVisible && Boolean(ui.mostrar_boton_vehiculo_carrito));
+      const visibility = {
+        carritoBtnDescuentos: actionsVisible && Boolean(ui.mostrar_boton_descuentos_carrito),
+        carritoBtnCambiarTarifa: actionsVisible && Boolean(ui.mostrar_boton_cambiar_tarifa_carrito),
+        carritoBtnTransferirCuenta: actionsVisible && Boolean(ui.mostrar_boton_transferir_cuenta_carrito && ui.permitir_transferir_cuenta_carrito),
+        carritoBtnControlElectrico: actionsVisible && state.stationMode && !state.directSaleMode && Boolean(ui.mostrar_control_electrico_carrito && ui.mostrar_boton_control_electrico_carrito),
+        carritoBtnCancelarCarrito: actionsVisible && Boolean(ui.mostrar_boton_cancelar_carrito),
+        carritoBtnClientes: actionsVisible && Boolean(ui.mostrar_boton_clientes_carrito),
+        carritoBtnAbonos: actionsVisible && Boolean(ui.mostrar_boton_abonos_carrito),
+        carritoBtnPagoQR: actionsVisible && Boolean(ui.pago_qr_habilitado),
+        carritoBtnVehiculo: actionsVisible && Boolean(ui.mostrar_boton_vehiculo_carrito)
+      };
+      Object.keys(visibility).forEach(function(id) {
+        setCarritoActionControlVisible(id, visibility[id]);
+        syncCarritoActionSelectOption(id, visibility[id]);
+      });
+      const selectWrap = document.querySelector('.carrito-action-select-wrap');
+      if (selectWrap) {
+        selectWrap.hidden = !actionsVisible;
+        selectWrap.style.display = actionsVisible ? '' : 'none';
+      }
       if (!actionsVisible || !ui.mostrar_boton_transferir_cuenta_carrito || !ui.permitir_transferir_cuenta_carrito) {
         hideCarritoTransferPanel();
       }
@@ -11159,6 +11197,17 @@
     document.getElementById('carritoBtnCambiarTarifa').addEventListener('click', function() {
       openCarritoTarifaPanel();
     });
+    const carritoActionSelect = document.getElementById('carritoActionSelect');
+    if (carritoActionSelect) {
+      carritoActionSelect.addEventListener('change', function() {
+        const buttonID = normalize(carritoActionSelect.value);
+        carritoActionSelect.value = '';
+        if (!buttonID) return;
+        const btn = document.getElementById(buttonID);
+        if (!btn || btn.hidden || btn.disabled) return;
+        btn.click();
+      });
+    }
     const carritoBtnTransferirCuenta = document.getElementById('carritoBtnTransferirCuenta');
     if (carritoBtnTransferirCuenta) {
       carritoBtnTransferirCuenta.addEventListener('click', openCarritoTransferPanel);
