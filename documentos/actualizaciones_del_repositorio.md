@@ -14707,3 +14707,10 @@ Archivos modificados:
 Archivos modificados:
 - web/estilos.css
 - web/menu.js
+
+2026-06-13 22:26:45 - Mensaje: rs: actualizar repositorio y sincronizar VPS; Commit: 046590fc; PushStatus: OK
+Archivos modificados:
+- CHANGELOG.md
+- documentos/historial_de_cambios
+- web/administrar_empresa/carrito_de_compras.html
+- web/js/print_documents.js

@@ -34529,3 +34529,11 @@ PushStatus: OK
 Archivos modificados:
 - web/estilos.css
 - web/menu.js
+
+2026-06-13: rs: actualizar repositorio y sincronizar VPS
+PushStatus: OK
+Archivos modificados:
+- CHANGELOG.md
+- documentos/historial_de_cambios
+- web/administrar_empresa/carrito_de_compras.html
+- web/js/print_documents.js
