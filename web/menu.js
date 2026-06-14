@@ -670,6 +670,11 @@
       themeToggle.setAttribute('aria-expanded', 'false');
       themeSelectorPopup.setAttribute('aria-hidden', 'true');
       themeSelectorPopup.classList.remove('show');
+      themeSelectorPopup.style.maxHeight = '';
+      themeSelectorPopup.style.top = '';
+      themeSelectorPopup.style.bottom = '';
+      themeSelectorPopup.style.left = '';
+      themeSelectorPopup.style.right = '';
     }
 
     function closeUtilitiesPopup(){
@@ -677,6 +682,39 @@
       utilitiesToggle.setAttribute('aria-expanded', 'false');
       utilitiesPopup.setAttribute('aria-hidden', 'true');
       utilitiesPopup.classList.remove('show');
+      utilitiesPopup.style.maxHeight = '';
+      utilitiesPopup.style.top = '';
+      utilitiesPopup.style.bottom = '';
+      utilitiesPopup.style.left = '';
+      utilitiesPopup.style.right = '';
+    }
+
+    function fitPopupToViewport(popup, anchor){
+      if (!popup || !anchor) return;
+      var viewportH = window.innerHeight || document.documentElement.clientHeight || 0;
+      var viewportW = window.innerWidth || document.documentElement.clientWidth || 0;
+      var rect = popup.getBoundingClientRect();
+      var anchorRect = anchor.getBoundingClientRect();
+      var margin = 12;
+      popup.style.maxHeight = Math.max(160, viewportH - margin * 2) + 'px';
+      popup.style.overflowY = 'auto';
+      popup.style.overflowX = 'hidden';
+      if (rect.bottom > viewportH - margin || anchorRect.bottom + rect.height > viewportH) {
+        popup.style.top = 'auto';
+        popup.style.bottom = '0';
+      }
+      if (rect.top < margin) {
+        popup.style.top = '0';
+        popup.style.bottom = 'auto';
+      }
+      if (rect.right > viewportW - margin) {
+        popup.style.left = 'auto';
+        popup.style.right = '0';
+      }
+      if (rect.left < margin) {
+        popup.style.left = 'auto';
+        popup.style.right = 'calc(100% + 8px)';
+      }
     }
 
     function openCalculatorWindow(){
@@ -1285,6 +1323,7 @@
         themeSelectorPopup.classList.toggle('show', !isExpanded);
         if (!isExpanded) {
           closeUtilitiesPopup();
+          fitPopupToViewport(themeSelectorPopup, themeToggle);
         }
       });
 

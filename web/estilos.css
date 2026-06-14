@@ -4739,6 +4739,8 @@ body.super-page{
   padding:8px;
   border-radius:10px;
   min-width:180px;
+  max-height:calc(100vh - 24px);
+  overflow:auto;
   box-shadow:0 8px 24px rgba(4,11,21,0.56);
   z-index:9000;
 }
