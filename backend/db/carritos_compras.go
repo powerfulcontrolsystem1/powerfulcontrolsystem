@@ -2752,7 +2752,7 @@ func ListCarritoCompraAbonos(dbConn *sql.DB, empresaID, carritoID int64, include
 	if !includeInactive {
 		query += ` AND COALESCE(estado,'activo') = 'activo'`
 	}
-	query += ` ORDER BY pcs_ts(COALESCE(fecha_abono, fecha_creacion, CURRENT_TIMESTAMP)) DESC, id DESC`
+	query += ` ORDER BY COALESCE(fecha_abono, fecha_creacion, '') DESC, id DESC`
 	rows, err := querySQLCompat(dbConn, query, args...)
 	if err != nil {
 		return nil, err

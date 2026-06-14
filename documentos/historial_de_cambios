@@ -1,3 +1,10 @@
+2026-06-13: Carrito abonos sin error secundario en PostgreSQL.
+- Modulos afectados: `carritos`, `pagos`, `backend_db`.
+- Causa tecnica: la consulta de abonos del carrito ordenaba con `pcs_ts(...)`; en el runtime PostgreSQL real eso podia fallar y mostrar `Ocurrio un problema interno` despues de operaciones exitosas como agregar producto por nombre.
+- Backend: `backend/db/carritos_compras.go` ordena abonos por `COALESCE(fecha_abono, fecha_creacion, '') DESC, id DESC`, suficiente para fechas ISO y compatible con PostgreSQL sin funciones auxiliares.
+- Seguridad multiempresa: la consulta conserva `WHERE empresa_id = ? AND carrito_id = ?`; no cambia montos, pagos, permisos ni tablas.
+- QA pendiente despues de `rs`: repetir agregar por nombre en PCS y confirmar que no aparece el mensaje interno.
+
 2026-06-13: Busqueda por nombre del carrito sin importar mayusculas.
 - Modulos afectados: `carritos`, `inventario_productos`, `backend_db`, `frontend_ux`.
 - Causa tecnica: `/api/empresa/productos?q=...` filtraba con `LIKE` sensible a mayusculas/minusculas; en PCS el cajero podia escribir `arroz` y no encontrar un producto guardado como `Arroz...`.

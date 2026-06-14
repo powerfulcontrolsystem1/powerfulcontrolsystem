@@ -1,3 +1,4 @@
+- 2026-06-13: `Carrito abonos sin error secundario` evita que la carga de abonos falle por ordenamiento `pcs_ts` en PostgreSQL y muestre error interno despues de agregar productos.
 - 2026-06-13: `Carrito busca productos sin importar mayusculas` corrige el filtro `q` de `/api/empresa/productos` para que la busqueda por nombre en PCS encuentre productos como `Arroz` aunque el cajero escriba `arroz`.
 - 2026-06-13: `Carrito factura colombiana y pagos editables` alinea recibo POS/factura carta con columnas fiscales tipo Colombia (`Cod`, `Descripcion`, `Cant`, `UM`, `Vr Unit`, `IVA`, `Dto`, `Total`) y limpia los campos de pago al enfocar para evitar concatenar valores con `COP`.
 - 2026-06-13: `Icono flotante IA unificado` reemplaza la variante con contenedor blanco en Administrar empresa por el mismo icono limpio usado en seleccionar empresa y el resto del proyecto.
