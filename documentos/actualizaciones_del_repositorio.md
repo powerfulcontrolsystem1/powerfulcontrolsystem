@@ -14714,3 +14714,7 @@ Archivos modificados:
 - documentos/historial_de_cambios
 - web/administrar_empresa/carrito_de_compras.html
 - web/js/print_documents.js
+
+2026-06-13 22:31:27 - Mensaje: rs: actualizar repositorio y sincronizar VPS; Commit: ebdc2c61; PushStatus: OK
+Archivos modificados:
+- web/administrar_empresa/carrito_de_compras.html
