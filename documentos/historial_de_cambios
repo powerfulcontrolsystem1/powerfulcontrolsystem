@@ -34466,6 +34466,7 @@ Archivos modificados:
 PushStatus: OK
 Archivos modificados:
 - web/js/administrar_empresa.js
+- 2026-06-13: `Finanzas sin bloque introductorio largo` simplifica el hub financiero y la pestaña de creditos, quitando el bloque descriptivo repetido de Centro financiero y contable para dejar solo navegacion corta.
 - 2026-06-13: `Carrito pagos compactos y foco estable` convierte el detalle de pagos combinados en una tabla compacta, mantiene el foco al borrar/escribir/cambiar entre medios, mueve Regresar a estaciones dentro de tarjeta, oculta opciones de cobro/lavador si no estan activadas, deja solo Vehiculo frente a Taxi, permite cargar/actualizar clientes existentes desde Nuevo cliente y conserva limpios los iconos de ayuda `?`.
 
 2026-06-13: rs: actualizar repositorio y sincronizar VPS
