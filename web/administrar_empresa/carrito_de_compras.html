@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Carrito de compras</title>
   <link rel="stylesheet" href="/estilos.css">
+  <script src="/js/empresa_submenu_context.js"></script>
   <script src="/vendor/qrcode.min.js"></script>
   <script src="/js/print_documents.js"></script>
   <script src="/js/form_field_help.js?v=20260613-quick-client-help"></script>
@@ -40,7 +41,7 @@
     @media(max-width:760px){.carrito-direct-sale-tools{justify-content:flex-end}.carrito-customer-header-actions{width:100%;justify-content:flex-end}.carrito-fullscreen-btn{width:38px!important}}
   </style>
 </head>
-<body class="super-page form-bg-dark carrito-flat-page" data-auto-estacion-labels="true">
+<body class="super-page form-bg-dark carrito-flat-page admin-subpage" data-auto-estacion-labels="true">
   <div class="container">
 <div class="page-header">
       <div class="carrito-title-line">
@@ -165,7 +166,11 @@
           </div>
           <div class="form-col maxw-180">
             <label class="form-label" for="scannerCantidad">Cantidad</label>
-            <input id="scannerCantidad" type="number" min="1" step="1" inputmode="numeric" class="form-input" value="1">
+            <div class="cart-item-qty-control scanner-qty-control">
+              <button type="button" id="scannerCantidadMenos" class="cart-item-qty-step cart-item-qty-step--minus" title="Restar cantidad" aria-label="Restar cantidad">-</button>
+              <input id="scannerCantidad" type="number" min="1" step="1" inputmode="numeric" class="form-input cart-item-qty-input" value="1">
+              <button type="button" id="scannerCantidadMas" class="cart-item-qty-step cart-item-qty-step--plus" title="Sumar cantidad" aria-label="Sumar cantidad">+</button>
+            </div>
           </div>
           <div class="form-col maxw-180 flex-end">
             <button type="button" id="scannerAgregarBtn" class="btn secondary w-full">Agregar</button>
@@ -1160,6 +1165,24 @@
         input.inputMode = 'numeric';
         enforceNaturalQuantityInput(input);
       }
+    }
+
+    function stepScannerQuantity(delta) {
+      const input = document.getElementById('scannerCantidad');
+      if (!input || input.disabled) return;
+      const decimal = allowsDecimalScannerQuantity();
+      const step = decimal ? 0.001 : 1;
+      const current = Number(normalize(input.value).replace(',', '.'));
+      let next = (Number.isFinite(current) && current > 0 ? current : step) + (Number(delta || 0) * step);
+      if (decimal) {
+        next = Math.max(step, Math.round(next * 1000) / 1000);
+        input.value = String(next);
+      } else {
+        next = Math.max(1, Math.trunc(next));
+        input.value = String(next);
+      }
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+      try { input.focus({ preventScroll: true }); } catch (_) { input.focus(); }
     }
 
     function syncScannerSearchModeUI() {
@@ -11630,6 +11653,18 @@
     document.getElementById('scannerCantidad').addEventListener('input', function() {
       if (!allowsDecimalScannerQuantity()) enforceNaturalQuantityInput(this);
     });
+    const scannerCantidadMenos = document.getElementById('scannerCantidadMenos');
+    if (scannerCantidadMenos) {
+      scannerCantidadMenos.addEventListener('click', function() {
+        stepScannerQuantity(-1);
+      });
+    }
+    const scannerCantidadMas = document.getElementById('scannerCantidadMas');
+    if (scannerCantidadMas) {
+      scannerCantidadMas.addEventListener('click', function() {
+        stepScannerQuantity(1);
+      });
+    }
 
     const scaleConnectBtn = document.getElementById('scaleConnectBtn');
     if (scaleConnectBtn) scaleConnectBtn.addEventListener('click', connectScale);

@@ -34673,6 +34673,13 @@ Archivos modificados:
 - `web/img/ia_mark.svg`, `web/js/ai_chat_drawer.js`, `web/js/ai_button_icons.js`, `web/administrar_empresa.html` y `web/super_administrador.html` reemplazan el icono visual del asistente IA por una marca nueva con `IA`.
 - Riesgo controlado: no se cambian tablas ni endpoints nuevos; toda la configuracion sigue ligada al `empresa_id`.
 
+2026-06-15: Ajuste visual venta directa e icono IA definitivo.
+- `web/administrar_empresa/carrito_de_compras.html` marca el carrito como `admin-subpage` para que al recargar con `Ctrl+F5` y `shell_admin=1` vuelva al panel de administracion en vez de quedar como pantalla completa sin menu.
+- `web/administrar_empresa/carrito_de_compras.html` agrega botones `-` y `+` al campo `Cantidad` del agregador, usando la misma experiencia de la tabla de productos del carrito.
+- `web/estilos.css` adapta la tabla de detalles de productos al ancho completo de la tarjeta, elimina espacio muerto a la derecha y neutraliza el margen/fondo oscuro visible en venta directa.
+- `web/img/pcs_ia_logo_dark.svg` y `web/img/pcs_ia_logo_light.svg` reemplazan `web/img/ia_mark.svg`; el logo queda transparente y con variante por apariencia clara/oscura.
+- `web/js/ai_button_icons.js`, `web/js/ai_chat_drawer.js`, `web/administrar_empresa.html`, `web/super_administrador.html`, menus IA y portada actualizan referencias al nuevo logo.
+
 2026-06-15: rs: actualizar repositorio y sincronizar VPS
 PushStatus: OK
 Archivos modificados:

@@ -1,7 +1,8 @@
 (function () {
   "use strict";
 
-  var ICON_URL = "/img/ia_mark.svg";
+  var ICON_DARK_URL = "/img/pcs_ia_logo_dark.svg";
+  var ICON_LIGHT_URL = "/img/pcs_ia_logo_light.svg";
   var IA_TEXT = /\b(ia|i\.a\.|inteligencia artificial|gpt|chatgpt)\b/i;
   var IA_ACTIONS = /(analizar|generar|extraer|diagnosticar|consultar|preparar|borrador|asistente|centro).*(ia|gpt)|(ia|gpt).*(analizar|generar|extraer|diagnosticar|consultar|preparar|borrador|asistente|centro)/i;
 
@@ -9,16 +10,34 @@
     return String((el && (el.textContent || el.getAttribute("aria-label") || el.title)) || "").replace(/\s+/g, " ").trim();
   }
 
+  function isLightTheme(doc) {
+    var root = (doc || document).documentElement;
+    var theme = String((root && root.getAttribute("data-theme")) || "").toLowerCase();
+    return theme.indexOf("light") === 0;
+  }
+
+  function currentIconUrl(doc) {
+    return isLightTheme(doc) ? ICON_LIGHT_URL : ICON_DARK_URL;
+  }
+
+  function syncAILogos(root) {
+    var scope = root && root.querySelectorAll ? root : document;
+    var doc = scope.ownerDocument || document;
+    Array.prototype.slice.call(scope.querySelectorAll("img[data-ai-logo='true']")).forEach(function (img) {
+      img.src = currentIconUrl(doc);
+    });
+  }
+
   function isAIButton(el) {
     if (!el || el.nodeType !== 1) return false;
     if (el.getAttribute("data-ai-button") === "true" || el.getAttribute("data-ai-action") === "true") return true;
-    if (el.querySelector && (el.querySelector('img[src*="gpt.svg"]') || el.querySelector('img[src*="ia_mark.svg"]'))) return true;
+    if (el.querySelector && el.querySelector('img[src*="pcs_ia_logo_"]')) return true;
     var text = textOf(el);
     return IA_TEXT.test(text) && IA_ACTIONS.test(text);
   }
 
   function hasIcon(el) {
-    return !!(el && el.querySelector && el.querySelector(".ai-button-icon, img[src*='gpt.svg'], img[src*='ia_mark.svg']"));
+    return !!(el && el.querySelector && el.querySelector(".ai-button-icon, img[src*='pcs_ia_logo_']"));
   }
 
   function enhance(el) {
@@ -31,8 +50,9 @@
     if (!hasIcon(el)) {
       var img = (el.ownerDocument || document).createElement("img");
       img.className = "icon ai-button-icon";
-      img.src = ICON_URL;
+      img.src = currentIconUrl(el.ownerDocument || document);
       img.alt = "";
+      img.setAttribute("data-ai-logo", "true");
       img.setAttribute("aria-hidden", "true");
       el.insertBefore(img, el.firstChild);
     }
@@ -41,6 +61,7 @@
   function applyAIButtonIcons(root) {
     var scope = root && root.querySelectorAll ? root : document;
     Array.prototype.slice.call(scope.querySelectorAll("button, a.btn, .btn, .capture-btn, .fin-center-chip")).forEach(enhance);
+    syncAILogos(scope);
   }
 
   function enhanceFrame(frame) {
@@ -71,7 +92,7 @@
         applyAIButtonIcons(document);
         observeFrames();
       });
-      observer.observe(document.documentElement, { childList: true, subtree: true });
+      observer.observe(document.documentElement, { childList: true, subtree: true, attributes: true, attributeFilter: ["data-theme"] });
     }
   }
 
