@@ -4,6 +4,7 @@
 - UX carrito: `web/estilos.css` bloquea el scroll horizontal en la tabla de detalle de productos, compacta columnas/cantidad/devolucion y unifica el fondo de la tarjeta superior para retirar el hueco oscuro.
 - IA/index/cache: `web/index.html`, `web/administrar_empresa.html`, `web/super_administrador.html` y el carrito versionan CSS/scripts visuales para evitar cache viejo; el index carga el sincronizador de logos y sus botones de login/registro responden a tema claro/oscuro.
 - Seguridad/datos: cambios visuales y de interaccion; no se crean endpoints, tablas ni consultas multiempresa.
+- Ajuste posterior: `web/estilos.css` restaura la columna `Descripcion` como columna flexible principal del detalle de productos del carrito para que los nombres se lean en linea y no se partan en columnas estrechas.
 
 2026-06-14: Ajustes visuales super, empresa y carrito PCS.
 - Modulos afectados: `super_administrador`, `panel_empresa`, `carritos`, `codigos_descuento`, `frontend_ux`.

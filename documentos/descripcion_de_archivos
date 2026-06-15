@@ -1,6 +1,7 @@
 2026-06-15 - Correccion visual carrito e icono IA
 - `web/administrar_empresa/carrito_de_compras.html`: separa los campos rapidos de `Codigo de barras`, `Codigo SKU` y `Nombre` para que los tres esten disponibles al agregar productos.
 - `web/estilos.css`: elimina el scroll horizontal de la tabla de detalle del carrito, compacta columnas y retira el fondo/hueco oscuro del bloque superior.
+- `web/estilos.css`: corrige el ancho de `Descripcion` en el detalle de productos para que los nombres no se partan en columnas ilegibles.
 - `web/index.html`, `web/administrar_empresa.html`, `web/super_administrador.html`: actualizan cache de CSS/scripts IA; el index sincroniza el logo IA por tema y ajusta botones de acceso segun apariencia clara/oscura.
 
 2026-06-13 - URLs visibles opcionales en shell empresarial
