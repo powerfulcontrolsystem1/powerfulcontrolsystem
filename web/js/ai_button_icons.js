@@ -1,7 +1,7 @@
 (function () {
   "use strict";
 
-  var ICON_URL = "/img/gpt.svg";
+  var ICON_URL = "/img/ia_mark.svg";
   var IA_TEXT = /\b(ia|i\.a\.|inteligencia artificial|gpt|chatgpt)\b/i;
   var IA_ACTIONS = /(analizar|generar|extraer|diagnosticar|consultar|preparar|borrador|asistente|centro).*(ia|gpt)|(ia|gpt).*(analizar|generar|extraer|diagnosticar|consultar|preparar|borrador|asistente|centro)/i;
 
@@ -12,13 +12,13 @@
   function isAIButton(el) {
     if (!el || el.nodeType !== 1) return false;
     if (el.getAttribute("data-ai-button") === "true" || el.getAttribute("data-ai-action") === "true") return true;
-    if (el.querySelector && el.querySelector('img[src*="gpt.svg"]')) return true;
+    if (el.querySelector && (el.querySelector('img[src*="gpt.svg"]') || el.querySelector('img[src*="ia_mark.svg"]'))) return true;
     var text = textOf(el);
     return IA_TEXT.test(text) && IA_ACTIONS.test(text);
   }
 
   function hasIcon(el) {
-    return !!(el && el.querySelector && el.querySelector(".ai-button-icon, img[src*='gpt.svg']"));
+    return !!(el && el.querySelector && el.querySelector(".ai-button-icon, img[src*='gpt.svg'], img[src*='ia_mark.svg']"));
   }
 
   function enhance(el) {

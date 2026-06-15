@@ -197,6 +197,35 @@
             </label>
           </div>
           <div class="form-col">
+            <label class="form-label" for="carritoCfgBusquedaPredeterminada">Busqueda predeterminada al abrir venta</label>
+            <select id="carritoCfgBusquedaPredeterminada" class="form-input">
+              <option value="codigo_barras">Codigo de barras</option>
+              <option value="sku">Codigo SKU</option>
+              <option value="nombre">Nombre</option>
+            </select>
+          </div>
+          <div class="form-col">
+            <label class="form-help" style="display:flex;align-items:center;gap:8px;">
+              <input id="carritoCfgCantidadDecimal" type="checkbox">
+              Permitir cantidad decimal al buscar producto
+            </label>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-help" style="display:flex;align-items:center;gap:8px;">
+              <input id="carritoCfgAltoItemsContenido" type="checkbox" checked>
+              Ajustar alto de productos segun el contenido
+            </label>
+          </div>
+          <div class="form-col">
+            <label class="form-help" style="display:flex;align-items:center;gap:8px;">
+              <input id="carritoCfgMostrarTodosItems" type="checkbox">
+              Mantener siempre visible la lista completa
+            </label>
+          </div>
+          <div class="form-col">
             <label class="form-help" style="display:flex;align-items:center;gap:8px;">
               <input id="carritoCfgResumenProductos" type="checkbox" checked>
               Mostrar tabla resumen de productos y recetas
@@ -240,6 +269,29 @@
               <input id="carritoCfgTarjetaTotales" type="checkbox" checked>
               Activar tarjeta de totales y detalles
             </label>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-help" style="display:flex;align-items:center;gap:8px;"><input id="carritoCfgTotalEntrada" type="checkbox" checked> Mostrar entrada</label>
+            <label class="form-help" style="display:flex;align-items:center;gap:8px;"><input id="carritoCfgTotalSalida" type="checkbox" checked> Mostrar salida</label>
+            <label class="form-help" style="display:flex;align-items:center;gap:8px;"><input id="carritoCfgTotalItems" type="checkbox" checked> Mostrar items totales</label>
+            <label class="form-help" style="display:flex;align-items:center;gap:8px;"><input id="carritoCfgTotalProductos" type="checkbox" checked> Mostrar productos</label>
+            <label class="form-help" style="display:flex;align-items:center;gap:8px;"><input id="carritoCfgTotalServicios" type="checkbox" checked> Mostrar servicios</label>
+          </div>
+          <div class="form-col">
+            <label class="form-help" style="display:flex;align-items:center;gap:8px;"><input id="carritoCfgTotalFacturadoProductos" type="checkbox" checked> Mostrar productos facturados</label>
+            <label class="form-help" style="display:flex;align-items:center;gap:8px;"><input id="carritoCfgTotalFacturadoServicios" type="checkbox" checked> Mostrar servicios facturados</label>
+            <label class="form-help" style="display:flex;align-items:center;gap:8px;"><input id="carritoCfgTotalCliente" type="checkbox" checked> Mostrar cliente</label>
+            <label class="form-help" style="display:flex;align-items:center;gap:8px;"><input id="carritoCfgTotalSubtotal" type="checkbox" checked> Mostrar subtotal</label>
+            <label class="form-help" style="display:flex;align-items:center;gap:8px;"><input id="carritoCfgTotalDescuento" type="checkbox" checked> Mostrar descuento</label>
+          </div>
+          <div class="form-col">
+            <label class="form-help" style="display:flex;align-items:center;gap:8px;"><input id="carritoCfgTotalImpuesto" type="checkbox" checked> Mostrar impuesto</label>
+            <label class="form-help" style="display:flex;align-items:center;gap:8px;"><input id="carritoCfgTotalPagado" type="checkbox" checked> Mostrar pagado</label>
+            <label class="form-help" style="display:flex;align-items:center;gap:8px;"><input id="carritoCfgTotalGeneral" type="checkbox" checked> Mostrar total</label>
+            <label class="form-help" style="display:flex;align-items:center;gap:8px;"><input id="carritoCfgTotalSaldo" type="checkbox" checked> Mostrar saldo</label>
           </div>
         </div>
 
@@ -740,6 +792,10 @@
         cliente_general_nombre: 'Cliente General',
         mostrar_impuestos_item: true,
         mostrar_lector_codigo_barras: true,
+        modo_busqueda_producto_carrito: 'codigo_barras',
+        permitir_cantidad_decimal_carrito: false,
+        ajustar_alto_items_contenido_carrito: true,
+        mostrar_todos_items_carrito: false,
         habilitar_bascula_electronica: false,
         mostrar_descuentos: false,
         mostrar_propina: false,
@@ -761,6 +817,20 @@
         mostrar_tarjeta_lector_codigo: true,
         mostrar_tarjeta_items_carrito: true,
         mostrar_tarjeta_totales_detalles: true,
+        totales_detalles_mostrar_entrada: true,
+        totales_detalles_mostrar_salida: true,
+        totales_detalles_mostrar_items: true,
+        totales_detalles_mostrar_productos: true,
+        totales_detalles_mostrar_servicios: true,
+        totales_detalles_mostrar_total_productos: true,
+        totales_detalles_mostrar_total_servicios: true,
+        totales_detalles_mostrar_cliente: true,
+        totales_detalles_mostrar_subtotal: true,
+        totales_detalles_mostrar_descuento: true,
+        totales_detalles_mostrar_impuesto: true,
+        totales_detalles_mostrar_pagado: true,
+        totales_detalles_mostrar_total: true,
+        totales_detalles_mostrar_saldo: true,
         mostrar_tarjeta_cobro_estados: false,
         mostrar_tarjeta_acciones_carrito: true,
         mostrar_control_electrico_carrito: true,
@@ -821,6 +891,10 @@
         cliente_general_nombre: normalizeText(src.cliente_general_nombre || src.nombre_cliente_general || src.cliente_generico_nombre || base.cliente_general_nombre) || base.cliente_general_nombre,
         mostrar_impuestos_item: src.mostrar_impuestos_item === undefined ? base.mostrar_impuestos_item : !!src.mostrar_impuestos_item,
         mostrar_lector_codigo_barras: src.mostrar_lector_codigo_barras === undefined ? base.mostrar_lector_codigo_barras : !!src.mostrar_lector_codigo_barras,
+        modo_busqueda_producto_carrito: ['codigo_barras', 'sku', 'nombre'].indexOf(normalizeText(src.modo_busqueda_producto_carrito || src.busqueda_producto_modo_default).toLowerCase()) >= 0 ? normalizeText(src.modo_busqueda_producto_carrito || src.busqueda_producto_modo_default).toLowerCase() : base.modo_busqueda_producto_carrito,
+        permitir_cantidad_decimal_carrito: src.permitir_cantidad_decimal_carrito === undefined ? base.permitir_cantidad_decimal_carrito : !!src.permitir_cantidad_decimal_carrito,
+        ajustar_alto_items_contenido_carrito: src.ajustar_alto_items_contenido_carrito === undefined ? base.ajustar_alto_items_contenido_carrito : !!src.ajustar_alto_items_contenido_carrito,
+        mostrar_todos_items_carrito: src.mostrar_todos_items_carrito === undefined ? base.mostrar_todos_items_carrito : !!src.mostrar_todos_items_carrito,
         habilitar_bascula_electronica: src.habilitar_bascula_electronica === undefined
           ? (src.bascula_electronica_habilitada === undefined ? base.habilitar_bascula_electronica : !!src.bascula_electronica_habilitada)
           : !!src.habilitar_bascula_electronica,
@@ -844,6 +918,20 @@
         mostrar_tarjeta_lector_codigo: src.mostrar_tarjeta_lector_codigo === undefined ? base.mostrar_tarjeta_lector_codigo : !!src.mostrar_tarjeta_lector_codigo,
         mostrar_tarjeta_items_carrito: src.mostrar_tarjeta_items_carrito === undefined ? base.mostrar_tarjeta_items_carrito : !!src.mostrar_tarjeta_items_carrito,
         mostrar_tarjeta_totales_detalles: src.mostrar_tarjeta_totales_detalles === undefined ? base.mostrar_tarjeta_totales_detalles : !!src.mostrar_tarjeta_totales_detalles,
+        totales_detalles_mostrar_entrada: src.totales_detalles_mostrar_entrada === undefined ? base.totales_detalles_mostrar_entrada : !!src.totales_detalles_mostrar_entrada,
+        totales_detalles_mostrar_salida: src.totales_detalles_mostrar_salida === undefined ? base.totales_detalles_mostrar_salida : !!src.totales_detalles_mostrar_salida,
+        totales_detalles_mostrar_items: src.totales_detalles_mostrar_items === undefined ? base.totales_detalles_mostrar_items : !!src.totales_detalles_mostrar_items,
+        totales_detalles_mostrar_productos: src.totales_detalles_mostrar_productos === undefined ? base.totales_detalles_mostrar_productos : !!src.totales_detalles_mostrar_productos,
+        totales_detalles_mostrar_servicios: src.totales_detalles_mostrar_servicios === undefined ? base.totales_detalles_mostrar_servicios : !!src.totales_detalles_mostrar_servicios,
+        totales_detalles_mostrar_total_productos: src.totales_detalles_mostrar_total_productos === undefined ? base.totales_detalles_mostrar_total_productos : !!src.totales_detalles_mostrar_total_productos,
+        totales_detalles_mostrar_total_servicios: src.totales_detalles_mostrar_total_servicios === undefined ? base.totales_detalles_mostrar_total_servicios : !!src.totales_detalles_mostrar_total_servicios,
+        totales_detalles_mostrar_cliente: src.totales_detalles_mostrar_cliente === undefined ? base.totales_detalles_mostrar_cliente : !!src.totales_detalles_mostrar_cliente,
+        totales_detalles_mostrar_subtotal: src.totales_detalles_mostrar_subtotal === undefined ? base.totales_detalles_mostrar_subtotal : !!src.totales_detalles_mostrar_subtotal,
+        totales_detalles_mostrar_descuento: src.totales_detalles_mostrar_descuento === undefined ? base.totales_detalles_mostrar_descuento : !!src.totales_detalles_mostrar_descuento,
+        totales_detalles_mostrar_impuesto: src.totales_detalles_mostrar_impuesto === undefined ? base.totales_detalles_mostrar_impuesto : !!src.totales_detalles_mostrar_impuesto,
+        totales_detalles_mostrar_pagado: src.totales_detalles_mostrar_pagado === undefined ? base.totales_detalles_mostrar_pagado : !!src.totales_detalles_mostrar_pagado,
+        totales_detalles_mostrar_total: src.totales_detalles_mostrar_total === undefined ? base.totales_detalles_mostrar_total : !!src.totales_detalles_mostrar_total,
+        totales_detalles_mostrar_saldo: src.totales_detalles_mostrar_saldo === undefined ? base.totales_detalles_mostrar_saldo : !!src.totales_detalles_mostrar_saldo,
         mostrar_tarjeta_cobro_estados: src.mostrar_tarjeta_cobro_estados === undefined ? base.mostrar_tarjeta_cobro_estados : !!src.mostrar_tarjeta_cobro_estados,
         mostrar_tarjeta_acciones_carrito: src.mostrar_tarjeta_acciones_carrito === undefined ? base.mostrar_tarjeta_acciones_carrito : !!src.mostrar_tarjeta_acciones_carrito,
         mostrar_control_electrico_carrito: src.mostrar_control_electrico_carrito === undefined ? base.mostrar_control_electrico_carrito : !!src.mostrar_control_electrico_carrito,
@@ -1169,6 +1257,10 @@
       document.getElementById('carritoCfgClienteGeneralNombre').value = normalized.cliente_general_nombre;
       document.getElementById('carritoCfgImpuestos').checked = !!normalized.mostrar_impuestos_item;
       document.getElementById('carritoCfgLector').checked = !!normalized.mostrar_lector_codigo_barras;
+      document.getElementById('carritoCfgBusquedaPredeterminada').value = normalized.modo_busqueda_producto_carrito;
+      document.getElementById('carritoCfgCantidadDecimal').checked = !!normalized.permitir_cantidad_decimal_carrito;
+      document.getElementById('carritoCfgAltoItemsContenido').checked = !!normalized.ajustar_alto_items_contenido_carrito;
+      document.getElementById('carritoCfgMostrarTodosItems').checked = !!normalized.mostrar_todos_items_carrito;
       document.getElementById('carritoCfgBasculaElectronica').checked = !!normalized.habilitar_bascula_electronica;
       document.getElementById('carritoCfgResumenProductos').checked = !!normalized.mostrar_resumen_productos;
       document.getElementById('carritoCfgMostrarPagar').checked = !!normalized.mostrar_boton_pagar;
@@ -1176,6 +1268,20 @@
       document.getElementById('carritoCfgTarjetaLector').checked = !!normalized.mostrar_tarjeta_lector_codigo;
       document.getElementById('carritoCfgTarjetaItems').checked = !!normalized.mostrar_tarjeta_items_carrito;
       document.getElementById('carritoCfgTarjetaTotales').checked = !!normalized.mostrar_tarjeta_totales_detalles;
+      document.getElementById('carritoCfgTotalEntrada').checked = !!normalized.totales_detalles_mostrar_entrada;
+      document.getElementById('carritoCfgTotalSalida').checked = !!normalized.totales_detalles_mostrar_salida;
+      document.getElementById('carritoCfgTotalItems').checked = !!normalized.totales_detalles_mostrar_items;
+      document.getElementById('carritoCfgTotalProductos').checked = !!normalized.totales_detalles_mostrar_productos;
+      document.getElementById('carritoCfgTotalServicios').checked = !!normalized.totales_detalles_mostrar_servicios;
+      document.getElementById('carritoCfgTotalFacturadoProductos').checked = !!normalized.totales_detalles_mostrar_total_productos;
+      document.getElementById('carritoCfgTotalFacturadoServicios').checked = !!normalized.totales_detalles_mostrar_total_servicios;
+      document.getElementById('carritoCfgTotalCliente').checked = !!normalized.totales_detalles_mostrar_cliente;
+      document.getElementById('carritoCfgTotalSubtotal').checked = !!normalized.totales_detalles_mostrar_subtotal;
+      document.getElementById('carritoCfgTotalDescuento').checked = !!normalized.totales_detalles_mostrar_descuento;
+      document.getElementById('carritoCfgTotalImpuesto').checked = !!normalized.totales_detalles_mostrar_impuesto;
+      document.getElementById('carritoCfgTotalPagado').checked = !!normalized.totales_detalles_mostrar_pagado;
+      document.getElementById('carritoCfgTotalGeneral').checked = !!normalized.totales_detalles_mostrar_total;
+      document.getElementById('carritoCfgTotalSaldo').checked = !!normalized.totales_detalles_mostrar_saldo;
       document.getElementById('carritoCfgTarjetaCobro').checked = !!normalized.mostrar_tarjeta_cobro_estados;
       document.getElementById('carritoCfgTarjetaAcciones').checked = !!normalized.mostrar_tarjeta_acciones_carrito;
       document.getElementById('carritoCfgTarjetaValoresPago').checked = !!normalized.mostrar_tarjeta_valores_pago;
@@ -1240,6 +1346,10 @@
           'carritoCfgClienteGeneralNombre',
           'carritoCfgImpuestos',
           'carritoCfgLector',
+          'carritoCfgBusquedaPredeterminada',
+          'carritoCfgCantidadDecimal',
+          'carritoCfgAltoItemsContenido',
+          'carritoCfgMostrarTodosItems',
           'carritoCfgBasculaElectronica',
           'carritoCfgResumenProductos',
           'carritoCfgMostrarPagar',
@@ -1247,6 +1357,20 @@
           'carritoCfgTarjetaLector',
           'carritoCfgTarjetaItems',
           'carritoCfgTarjetaTotales',
+          'carritoCfgTotalEntrada',
+          'carritoCfgTotalSalida',
+          'carritoCfgTotalItems',
+          'carritoCfgTotalProductos',
+          'carritoCfgTotalServicios',
+          'carritoCfgTotalFacturadoProductos',
+          'carritoCfgTotalFacturadoServicios',
+          'carritoCfgTotalCliente',
+          'carritoCfgTotalSubtotal',
+          'carritoCfgTotalDescuento',
+          'carritoCfgTotalImpuesto',
+          'carritoCfgTotalPagado',
+          'carritoCfgTotalGeneral',
+          'carritoCfgTotalSaldo',
           'carritoCfgTarjetaCobro',
           'carritoCfgTarjetaAcciones',
           'carritoCfgTarjetaValoresPago',
@@ -1323,6 +1447,10 @@
           cliente_general_nombre: document.getElementById('carritoCfgClienteGeneralNombre').value,
           mostrar_impuestos_item: document.getElementById('carritoCfgImpuestos').checked,
           mostrar_lector_codigo_barras: document.getElementById('carritoCfgLector').checked,
+          modo_busqueda_producto_carrito: document.getElementById('carritoCfgBusquedaPredeterminada').value,
+          permitir_cantidad_decimal_carrito: document.getElementById('carritoCfgCantidadDecimal').checked,
+          ajustar_alto_items_contenido_carrito: document.getElementById('carritoCfgAltoItemsContenido').checked,
+          mostrar_todos_items_carrito: document.getElementById('carritoCfgMostrarTodosItems').checked,
           habilitar_bascula_electronica: document.getElementById('carritoCfgBasculaElectronica').checked,
           mostrar_resumen_productos: document.getElementById('carritoCfgResumenProductos').checked,
           mostrar_boton_pagar: document.getElementById('carritoCfgMostrarPagar').checked,
@@ -1330,6 +1458,20 @@
           mostrar_tarjeta_lector_codigo: document.getElementById('carritoCfgTarjetaLector').checked,
           mostrar_tarjeta_items_carrito: document.getElementById('carritoCfgTarjetaItems').checked,
           mostrar_tarjeta_totales_detalles: document.getElementById('carritoCfgTarjetaTotales').checked,
+          totales_detalles_mostrar_entrada: document.getElementById('carritoCfgTotalEntrada').checked,
+          totales_detalles_mostrar_salida: document.getElementById('carritoCfgTotalSalida').checked,
+          totales_detalles_mostrar_items: document.getElementById('carritoCfgTotalItems').checked,
+          totales_detalles_mostrar_productos: document.getElementById('carritoCfgTotalProductos').checked,
+          totales_detalles_mostrar_servicios: document.getElementById('carritoCfgTotalServicios').checked,
+          totales_detalles_mostrar_total_productos: document.getElementById('carritoCfgTotalFacturadoProductos').checked,
+          totales_detalles_mostrar_total_servicios: document.getElementById('carritoCfgTotalFacturadoServicios').checked,
+          totales_detalles_mostrar_cliente: document.getElementById('carritoCfgTotalCliente').checked,
+          totales_detalles_mostrar_subtotal: document.getElementById('carritoCfgTotalSubtotal').checked,
+          totales_detalles_mostrar_descuento: document.getElementById('carritoCfgTotalDescuento').checked,
+          totales_detalles_mostrar_impuesto: document.getElementById('carritoCfgTotalImpuesto').checked,
+          totales_detalles_mostrar_pagado: document.getElementById('carritoCfgTotalPagado').checked,
+          totales_detalles_mostrar_total: document.getElementById('carritoCfgTotalGeneral').checked,
+          totales_detalles_mostrar_saldo: document.getElementById('carritoCfgTotalSaldo').checked,
           mostrar_tarjeta_cobro_estados: document.getElementById('carritoCfgTarjetaCobro').checked,
           mostrar_tarjeta_acciones_carrito: document.getElementById('carritoCfgTarjetaAcciones').checked,
           mostrar_tarjeta_valores_pago: document.getElementById('carritoCfgTarjetaValoresPago').checked,

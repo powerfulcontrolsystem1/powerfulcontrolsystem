@@ -11384,3 +11384,7 @@ backend/handlers/user_config.go - Controlador que expone /api/user/configuracion
 
 2026-06-12 - backend/db/eventos_contables_test.go
 - Pruebas unitarias del motor contable automatico: valida que una factura con IVA y retencion genere partida doble cuadrada, y que un evento sin lineas reales sea rechazado por no producir asiento contable.
+
+2026-06-15 - Icono IA y ajustes avanzados de carrito
+- `web/img/ia_mark.svg`:
+	- nuevo icono de IA con estilo engrane/circular y texto `IA` para botones flotantes y acciones asistidas.

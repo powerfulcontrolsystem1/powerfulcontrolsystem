@@ -34663,3 +34663,12 @@ Archivos modificados:
 - web/seleccionar_empresa.html
 - web/super/auditoria_global.html
 - web/super/licencias_resumen.html
+
+2026-06-15: Venta directa por empresa, icono IA y tutorial DIAN.
+- `web/administrar_empresa/configuracion_carrito_de_compra_empresa.html` agrega checks por empresa para modo de busqueda predeterminado (`codigo de barras`, `SKU`, `nombre`), cantidad decimal en el buscador, alto automatico de la tabla de items, lista siempre expandida y visibilidad fina de cada fila de `Totales y detalles`.
+- `backend/handlers/empresa_preconfiguracion.go` incorpora esos nuevos defaults del carrito empresarial para empresas nuevas y para normalizacion de preferencias existentes.
+- `web/administrar_empresa/carrito_de_compras.html` aplica la configuracion por empresa: reinicia la venta directa conservando el modo elegido, cambia el buscador segun la opcion activa, permite o bloquea cantidad decimal en el campo del scanner, conserva el bloqueo de venta sin stock y adapta la altura de la tabla de productos al contenido cuando el check esta activo.
+- `web/estilos.css` compacta el layout principal de venta directa para eliminar el hueco oscuro lateral y agrega clases de alto automatico para el listado de productos.
+- `web/administrar_empresa/facturacion_electronica_tutorial_dian.html` agrega enlace oficial DIAN para nueva numeracion de facturacion y otro bloque oficial para el proceso de pruebas/habilitacion.
+- `web/img/ia_mark.svg`, `web/js/ai_chat_drawer.js`, `web/js/ai_button_icons.js`, `web/administrar_empresa.html` y `web/super_administrador.html` reemplazan el icono visual del asistente IA por una marca nueva con `IA`.
+- Riesgo controlado: no se cambian tablas ni endpoints nuevos; toda la configuracion sigue ligada al `empresa_id`.

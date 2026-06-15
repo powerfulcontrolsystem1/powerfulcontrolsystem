@@ -146,18 +146,26 @@
           <h3 class="section-heading"></h3>
         </div>
         <div id="carritoClienteRow" class="form-row carrito-scanner-stack carrito-scanner-compact-grid">
+          <div class="form-col maxw-180">
+            <label class="form-label" for="scannerSearchMode">Buscar por</label>
+            <select id="scannerSearchMode" class="form-input">
+              <option value="codigo_barras">Codigo de barras</option>
+              <option value="sku">Codigo SKU</option>
+              <option value="nombre">Nombre</option>
+            </select>
+          </div>
           <div class="form-col carrito-scanner-column">
-            <label class="form-label" for="scannerCodigo">Código de barras o SKU</label>
-            <input id="scannerCodigo" class="form-input" autocomplete="off" placeholder="Escanea o digita código/SKU">
+            <label class="form-label" for="scannerCodigo" id="scannerCodigoLabel">Codigo de barras</label>
+            <input id="scannerCodigo" class="form-input" autocomplete="off" placeholder="Escanea o digita codigo de barras">
           </div>
           <div class="form-col carrito-scanner-name-column">
-            <label class="form-label" for="scannerNombre">Búsqueda por nombre</label>
+            <label class="form-label" for="scannerNombre" id="scannerNombreLabel">Busqueda por nombre</label>
             <input id="scannerNombre" class="form-input" autocomplete="off" placeholder="Busca el producto por nombre" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="scannerResultados">
             <div id="scannerResultados" class="scanner-product-results" hidden></div>
           </div>
           <div class="form-col maxw-180">
             <label class="form-label" for="scannerCantidad">Cantidad</label>
-            <input id="scannerCantidad" type="number" min="0.001" step="0.001" inputmode="decimal" class="form-input" value="1">
+            <input id="scannerCantidad" type="number" min="1" step="1" inputmode="numeric" class="form-input" value="1">
           </div>
           <div class="form-col maxw-180 flex-end">
             <button type="button" id="scannerAgregarBtn" class="btn secondary w-full">Agregar</button>
@@ -1127,6 +1135,54 @@
       return ['kg','kilo','kilos','kilogramo','kilogramos','g','gr','gramo','gramos','lb','lbs','libra','libras','oz','onza','onzas'].indexOf(v) !== -1;
     }
 
+    function getScannerSearchMode() {
+      const ui = normalizeUnifiedCartUIConfig(state.stationCartUI || getCurrentStationCartUIConfig());
+      const select = document.getElementById('scannerSearchMode');
+      const preferred = normalize((select && select.value) || ui.modo_busqueda_producto_carrito).toLowerCase();
+      return ['codigo_barras', 'sku', 'nombre'].indexOf(preferred) >= 0 ? preferred : 'codigo_barras';
+    }
+
+    function allowsDecimalScannerQuantity() {
+      const ui = normalizeUnifiedCartUIConfig(state.stationCartUI || getCurrentStationCartUIConfig());
+      return Boolean(ui.permitir_cantidad_decimal_carrito);
+    }
+
+    function syncScannerQuantityInput() {
+      const input = document.getElementById('scannerCantidad');
+      if (!input) return;
+      if (allowsDecimalScannerQuantity()) {
+        input.min = '0.001';
+        input.step = '0.001';
+        input.inputMode = 'decimal';
+      } else {
+        input.min = '1';
+        input.step = '1';
+        input.inputMode = 'numeric';
+        enforceNaturalQuantityInput(input);
+      }
+    }
+
+    function syncScannerSearchModeUI() {
+      const mode = getScannerSearchMode();
+      const select = document.getElementById('scannerSearchMode');
+      const codeWrap = document.getElementById('scannerCodigo') && document.getElementById('scannerCodigo').closest('.form-col');
+      const nameWrap = document.getElementById('scannerNombre') && document.getElementById('scannerNombre').closest('.form-col');
+      const codeInput = document.getElementById('scannerCodigo');
+      const nameInput = document.getElementById('scannerNombre');
+      const codeLabel = document.getElementById('scannerCodigoLabel');
+      if (select) select.value = mode;
+      if (codeLabel) codeLabel.textContent = mode === 'sku' ? 'Codigo SKU' : 'Codigo de barras';
+      if (codeInput) codeInput.placeholder = mode === 'sku' ? 'Escanea o digita codigo SKU' : 'Escanea o digita codigo de barras';
+      if (codeWrap) codeWrap.style.display = mode === 'nombre' ? 'none' : '';
+      if (nameWrap) nameWrap.style.display = mode === 'nombre' ? '' : 'none';
+      clearScannerProductResults();
+      if (mode === 'nombre') {
+        if (codeInput) codeInput.value = '';
+      } else if (nameInput) {
+        nameInput.value = '';
+      }
+    }
+
     function parseQuantityValue(val, unidad, fallback) {
       const raw = normalize(val).replace(',', '.');
       const n = Number(raw);
@@ -1835,6 +1891,10 @@
         cliente_general_nombre: 'Cliente General',
         mostrar_impuestos_item: true,
         mostrar_lector_codigo_barras: true,
+        modo_busqueda_producto_carrito: 'codigo_barras',
+        permitir_cantidad_decimal_carrito: false,
+        ajustar_alto_items_contenido_carrito: true,
+        mostrar_todos_items_carrito: false,
         habilitar_bascula_electronica: false,
         mostrar_descuentos: false,
         mostrar_propina: false,
@@ -1856,6 +1916,20 @@
         mostrar_tarjeta_lector_codigo: true,
         mostrar_tarjeta_items_carrito: true,
         mostrar_tarjeta_totales_detalles: true,
+        totales_detalles_mostrar_entrada: true,
+        totales_detalles_mostrar_salida: true,
+        totales_detalles_mostrar_items: true,
+        totales_detalles_mostrar_productos: true,
+        totales_detalles_mostrar_servicios: true,
+        totales_detalles_mostrar_total_productos: true,
+        totales_detalles_mostrar_total_servicios: true,
+        totales_detalles_mostrar_cliente: true,
+        totales_detalles_mostrar_subtotal: true,
+        totales_detalles_mostrar_descuento: true,
+        totales_detalles_mostrar_impuesto: true,
+        totales_detalles_mostrar_pagado: true,
+        totales_detalles_mostrar_total: true,
+        totales_detalles_mostrar_saldo: true,
         mostrar_tarjeta_cobro_estados: false,
         mostrar_tarjeta_acciones_carrito: true,
         mostrar_control_electrico_carrito: true,
@@ -1965,6 +2039,10 @@
         cliente_general_nombre: normalize(src.cliente_general_nombre || src.nombre_cliente_general || src.cliente_generico_nombre || base.cliente_general_nombre) || base.cliente_general_nombre,
         mostrar_impuestos_item: src.mostrar_impuestos_item === undefined ? base.mostrar_impuestos_item : Boolean(src.mostrar_impuestos_item),
         mostrar_lector_codigo_barras: src.mostrar_lector_codigo_barras === undefined ? base.mostrar_lector_codigo_barras : Boolean(src.mostrar_lector_codigo_barras),
+        modo_busqueda_producto_carrito: ['codigo_barras', 'sku', 'nombre'].indexOf(normalize(src.modo_busqueda_producto_carrito || src.busqueda_producto_modo_default).toLowerCase()) >= 0 ? normalize(src.modo_busqueda_producto_carrito || src.busqueda_producto_modo_default).toLowerCase() : base.modo_busqueda_producto_carrito,
+        permitir_cantidad_decimal_carrito: src.permitir_cantidad_decimal_carrito === undefined ? base.permitir_cantidad_decimal_carrito : Boolean(src.permitir_cantidad_decimal_carrito),
+        ajustar_alto_items_contenido_carrito: src.ajustar_alto_items_contenido_carrito === undefined ? base.ajustar_alto_items_contenido_carrito : Boolean(src.ajustar_alto_items_contenido_carrito),
+        mostrar_todos_items_carrito: src.mostrar_todos_items_carrito === undefined ? base.mostrar_todos_items_carrito : Boolean(src.mostrar_todos_items_carrito),
         habilitar_bascula_electronica: src.habilitar_bascula_electronica === undefined
           ? (src.bascula_electronica_habilitada === undefined ? base.habilitar_bascula_electronica : Boolean(src.bascula_electronica_habilitada))
           : Boolean(src.habilitar_bascula_electronica),
@@ -1988,6 +2066,20 @@
         mostrar_tarjeta_lector_codigo: src.mostrar_tarjeta_lector_codigo === undefined ? base.mostrar_tarjeta_lector_codigo : Boolean(src.mostrar_tarjeta_lector_codigo),
         mostrar_tarjeta_items_carrito: src.mostrar_tarjeta_items_carrito === undefined ? base.mostrar_tarjeta_items_carrito : Boolean(src.mostrar_tarjeta_items_carrito),
         mostrar_tarjeta_totales_detalles: src.mostrar_tarjeta_totales_detalles === undefined ? base.mostrar_tarjeta_totales_detalles : Boolean(src.mostrar_tarjeta_totales_detalles),
+        totales_detalles_mostrar_entrada: src.totales_detalles_mostrar_entrada === undefined ? base.totales_detalles_mostrar_entrada : Boolean(src.totales_detalles_mostrar_entrada),
+        totales_detalles_mostrar_salida: src.totales_detalles_mostrar_salida === undefined ? base.totales_detalles_mostrar_salida : Boolean(src.totales_detalles_mostrar_salida),
+        totales_detalles_mostrar_items: src.totales_detalles_mostrar_items === undefined ? base.totales_detalles_mostrar_items : Boolean(src.totales_detalles_mostrar_items),
+        totales_detalles_mostrar_productos: src.totales_detalles_mostrar_productos === undefined ? base.totales_detalles_mostrar_productos : Boolean(src.totales_detalles_mostrar_productos),
+        totales_detalles_mostrar_servicios: src.totales_detalles_mostrar_servicios === undefined ? base.totales_detalles_mostrar_servicios : Boolean(src.totales_detalles_mostrar_servicios),
+        totales_detalles_mostrar_total_productos: src.totales_detalles_mostrar_total_productos === undefined ? base.totales_detalles_mostrar_total_productos : Boolean(src.totales_detalles_mostrar_total_productos),
+        totales_detalles_mostrar_total_servicios: src.totales_detalles_mostrar_total_servicios === undefined ? base.totales_detalles_mostrar_total_servicios : Boolean(src.totales_detalles_mostrar_total_servicios),
+        totales_detalles_mostrar_cliente: src.totales_detalles_mostrar_cliente === undefined ? base.totales_detalles_mostrar_cliente : Boolean(src.totales_detalles_mostrar_cliente),
+        totales_detalles_mostrar_subtotal: src.totales_detalles_mostrar_subtotal === undefined ? base.totales_detalles_mostrar_subtotal : Boolean(src.totales_detalles_mostrar_subtotal),
+        totales_detalles_mostrar_descuento: src.totales_detalles_mostrar_descuento === undefined ? base.totales_detalles_mostrar_descuento : Boolean(src.totales_detalles_mostrar_descuento),
+        totales_detalles_mostrar_impuesto: src.totales_detalles_mostrar_impuesto === undefined ? base.totales_detalles_mostrar_impuesto : Boolean(src.totales_detalles_mostrar_impuesto),
+        totales_detalles_mostrar_pagado: src.totales_detalles_mostrar_pagado === undefined ? base.totales_detalles_mostrar_pagado : Boolean(src.totales_detalles_mostrar_pagado),
+        totales_detalles_mostrar_total: src.totales_detalles_mostrar_total === undefined ? base.totales_detalles_mostrar_total : Boolean(src.totales_detalles_mostrar_total),
+        totales_detalles_mostrar_saldo: src.totales_detalles_mostrar_saldo === undefined ? base.totales_detalles_mostrar_saldo : Boolean(src.totales_detalles_mostrar_saldo),
         mostrar_tarjeta_cobro_estados: src.mostrar_tarjeta_cobro_estados === undefined ? base.mostrar_tarjeta_cobro_estados : Boolean(src.mostrar_tarjeta_cobro_estados),
         mostrar_tarjeta_acciones_carrito: src.mostrar_tarjeta_acciones_carrito === undefined ? base.mostrar_tarjeta_acciones_carrito : Boolean(src.mostrar_tarjeta_acciones_carrito),
         mostrar_control_electrico_carrito: src.mostrar_control_electrico_carrito === undefined ? base.mostrar_control_electrico_carrito : Boolean(src.mostrar_control_electrico_carrito),
@@ -2694,6 +2786,8 @@
       publishConnectivityContext();
       document.body.classList.toggle('cart-touch-mode', Boolean(ui.modo_pantalla_tactil));
       document.body.classList.toggle('pos-touch-mode', Boolean(ui.modo_pantalla_tactil));
+      syncScannerSearchModeUI();
+      syncScannerQuantityInput();
       placeVipCardBelowTotals();
       syncCarritoActionButtons(ui);
 
@@ -3282,7 +3376,9 @@
       const caps = getBarcodeCapabilities();
       if (!caps.enabled || !caps.autofocus) return;
       if (scannerAutofocusPaused) return;
-      const input = document.getElementById('scannerCodigo');
+      const input = getScannerSearchMode() === 'nombre'
+        ? document.getElementById('scannerNombre')
+        : document.getElementById('scannerCodigo');
       if (!input || input.disabled) return;
       setTimeout(function() {
         try {
@@ -7138,17 +7234,18 @@
       return null;
     }
 
-    function findExactProductoByCode(rows, code) {
+    function findExactProductoByCode(rows, code, mode) {
       const normalizedTarget = normalizeScanCode(code);
       if (!normalizedTarget) return null;
       if (!Array.isArray(rows) || !rows.length) return null;
+      const searchMode = normalize(mode).toLowerCase();
 
       let skuFallback = null;
       for (let i = 0; i < rows.length; i++) {
         const row = rows[i] || {};
         const barcode = normalizeScanCode(row.codigo_barras);
         const sku = normalizeScanCode(row.sku);
-        if (barcode && barcode === normalizedTarget) {
+        if (searchMode !== 'sku' && barcode && barcode === normalizedTarget) {
           return row;
         }
         if (!skuFallback && sku && sku === normalizedTarget) {
@@ -7156,6 +7253,7 @@
         }
       }
 
+      if (searchMode === 'sku') return skuFallback;
       if (skuFallback) return skuFallback;
       if (rows.length === 1) return rows[0];
       return null;
@@ -7373,6 +7471,8 @@
     function renderScannerPanel() {
       const panel = document.getElementById('scannerPanel');
       if (!panel) return;
+      syncScannerSearchModeUI();
+      syncScannerQuantityInput();
 
       const caps = getBarcodeCapabilities();
       const stationUI = getCurrentStationCartUIConfig();
@@ -7425,25 +7525,30 @@
     }
 
     function getScannerQueryContext() {
+      const mode = getScannerSearchMode();
       const codeInput = document.getElementById('scannerCodigo');
       const nameInput = document.getElementById('scannerNombre');
       const codeRaw = codeInput ? codeInput.value : '';
       const nameRaw = nameInput ? nameInput.value : '';
       const code = normalize(codeRaw);
       const name = normalize(nameRaw);
+      if (mode === 'nombre') {
+        if (name) return { raw: nameRaw, query: name, scanCode: '', source: 'nombre', input: nameInput, mode: mode };
+        return { raw: '', query: '', scanCode: '', source: '', input: nameInput || codeInput, mode: mode };
+      }
       if (code) {
-        return { raw: codeRaw, query: code, scanCode: normalizeScanCode(codeRaw), source: 'codigo', input: codeInput };
+        return { raw: codeRaw, query: code, scanCode: normalizeScanCode(codeRaw), source: mode, input: codeInput, mode: mode };
       }
       if (name) {
-        return { raw: nameRaw, query: name, scanCode: '', source: 'nombre', input: nameInput };
+        return { raw: nameRaw, query: name, scanCode: '', source: 'nombre', input: nameInput, mode: 'nombre' };
       }
-      return { raw: '', query: '', scanCode: '', source: '', input: codeInput || nameInput };
+      return { raw: '', query: '', scanCode: '', source: '', input: codeInput || nameInput, mode: mode };
     }
 
     function clearScannerQueryInputs(source) {
       const codeInput = document.getElementById('scannerCodigo');
       const nameInput = document.getElementById('scannerNombre');
-      if (!source || source === 'codigo') {
+      if (!source || source === 'codigo' || source === 'codigo_barras' || source === 'sku') {
         if (codeInput) codeInput.value = '';
       }
       if (!source || source === 'nombre') {
@@ -7454,8 +7559,12 @@
     async function addScannerProductToCart(producto, sourceLabel, matchCode) {
       const productoUnidad = normalize(producto.unidad_medida) || 'unidad';
       const qtyRaw = document.getElementById('scannerCantidad').value;
+      const decimalQtyAllowed = allowsDecimalScannerQuantity() && !isWeightUnit(productoUnidad);
       const useScaleWeight = Boolean(isScaleEnabledForCurrentCart() && document.getElementById('scaleApplyWeight') && document.getElementById('scaleApplyWeight').checked && currentScaleNetKg() > 0);
       let qty = parseQuantityValue(qtyRaw, productoUnidad, 0);
+      if (decimalQtyAllowed) {
+        qty = Math.round(Math.max(0, Number(normalize(qtyRaw).replace(',', '.')) || 0) * 1000) / 1000;
+      }
       if (useScaleWeight) {
         if (!isWeightUnit(productoUnidad)) {
           throw new Error('La bascula tiene peso activo, pero el producto "' + (normalize(producto.nombre) || 'seleccionado') + '" no esta configurado con unidad de peso. Usa unidad kg, g, lb u oz en Productos.');
@@ -7463,8 +7572,8 @@
         const scaleUnit = normalize(document.getElementById('scaleDefaultUnit') && document.getElementById('scaleDefaultUnit').value) || 'kg';
         qty = parseQuantityValue(scaleKgToUnit(currentScaleNetKg(), productoUnidad || scaleUnit), productoUnidad, 0);
       }
-      if (!isValidQuantityForUnit(qty, productoUnidad)) {
-        throw new Error(isWeightUnit(productoUnidad) ? 'La cantidad por peso debe ser mayor a 0.001.' : 'La cantidad debe ser un número natural positivo: 1, 2, 3...');
+      if ((!decimalQtyAllowed && !isValidQuantityForUnit(qty, productoUnidad)) || (decimalQtyAllowed && (!Number.isFinite(qty) || qty <= 0))) {
+        throw new Error(isWeightUnit(productoUnidad) || decimalQtyAllowed ? 'La cantidad debe ser mayor a 0.001.' : 'La cantidad debe ser un número natural positivo: 1, 2, 3...');
       }
 
       const productoCode = normalize(producto.codigo_barras) || normalize(producto.sku);
@@ -7543,7 +7652,7 @@
       const query = queryContext.query;
       const scanCode = queryContext.scanCode;
       if (!query) {
-        setScannerMessage('Escanea, digita un código/SKU o busca el producto por nombre.', true);
+        setScannerMessage('Escanea, digita o busca el producto segun la opcion seleccionada.', true);
         return;
       }
 
@@ -7570,7 +7679,7 @@
       try {
         setScannerMessage('Buscando producto en catálogo...', false);
         const rows = await fetchScannerProductRows(query);
-        const exact = scanCode ? findExactProductoByCode(rows, scanCode) : null;
+        const exact = scanCode ? findExactProductoByCode(rows, scanCode, queryContext.mode) : null;
         if (exact && Number(exact.id || 0) > 0) {
           const msgAction = await addScannerProductToCart(exact, 'agregado por lector de codigo de barras', scanCode);
           setScannerMessage(msgAction, false);
@@ -9117,10 +9226,27 @@
         { label: profile.paidLabel, value: formatAmount(paid, selected.moneda) },
         { label: profile.balanceLabel, value: formatAmount(balance, selected.moneda), important: true }
       ];
+      const ui = normalizeUnifiedCartUIConfig(state.stationCartUI || getCurrentStationCartUIConfig());
+      const rowVisibility = {};
+      rowVisibility[profile.entryLabel] = !!ui.totales_detalles_mostrar_entrada;
+      rowVisibility[profile.exitLabel] = !!ui.totales_detalles_mostrar_salida;
+      rowVisibility[profile.itemsLabel] = !!ui.totales_detalles_mostrar_items;
+      rowVisibility[profile.productItemsLabel] = !!ui.totales_detalles_mostrar_productos;
+      rowVisibility[profile.serviceItemsLabel] = !!ui.totales_detalles_mostrar_servicios;
+      rowVisibility[profile.productAmountLabel] = !!ui.totales_detalles_mostrar_total_productos;
+      rowVisibility[profile.serviceAmountLabel] = !!ui.totales_detalles_mostrar_total_servicios;
+      rowVisibility[profile.customerLabel] = !!ui.totales_detalles_mostrar_cliente;
+      rowVisibility[profile.subtotalLabel] = !!ui.totales_detalles_mostrar_subtotal;
+      rowVisibility[profile.discountLabel] = !!ui.totales_detalles_mostrar_descuento;
+      rowVisibility[profile.taxLabel] = !!ui.totales_detalles_mostrar_impuesto;
+      rowVisibility[profile.totalLabel] = !!ui.totales_detalles_mostrar_total;
+      rowVisibility[profile.paidLabel] = !!ui.totales_detalles_mostrar_pagado;
+      rowVisibility[profile.balanceLabel] = !!ui.totales_detalles_mostrar_saldo;
 
       const compactRows = rows.filter(function(row) {
         if (row.hidden) return false;
         if (row.optionalTime && !profile.showTimeRow && row.value === '-') return false;
+        if (Object.prototype.hasOwnProperty.call(rowVisibility, row.label) && !rowVisibility[row.label]) return false;
         return true;
       });
       const totalRows = compactRows.filter(function(row) {
@@ -9981,6 +10107,9 @@
 
     function renderItemsInto(box) {
       if (!box) return;
+      const ui = normalizeUnifiedCartUIConfig(state.stationCartUI || getCurrentStationCartUIConfig());
+      box.classList.toggle('carrito-items-box--auto-height', !!ui.ajustar_alto_items_contenido_carrito && !ui.mostrar_todos_items_carrito);
+      box.classList.toggle('carrito-items-box--always-expanded', !!ui.mostrar_todos_items_carrito);
       const selected = getSelectedCarrito();
       if (!selected) {
         box.textContent = state.directSaleMode
@@ -11485,10 +11614,21 @@
       });
     }
 
+    const scannerSearchMode = document.getElementById('scannerSearchMode');
+    if (scannerSearchMode) {
+      scannerSearchMode.addEventListener('change', function() {
+        syncScannerSearchModeUI();
+        focusScannerInput();
+      });
+    }
+
     document.getElementById('scannerCantidad').addEventListener('keydown', function(e) {
       if (e.key !== 'Enter') return;
       e.preventDefault();
       processScannerInput();
+    });
+    document.getElementById('scannerCantidad').addEventListener('input', function() {
+      if (!allowsDecimalScannerQuantity()) enforceNaturalQuantityInput(this);
     });
 
     const scaleConnectBtn = document.getElementById('scaleConnectBtn');
@@ -11522,6 +11662,7 @@
       const el = document.getElementById(id);
       if (!el) return;
       el.addEventListener('blur', function() {
+        if (id === 'scannerCantidad' && allowsDecimalScannerQuantity()) return;
         normalizeQuantityInputForUnit(el);
       });
     });

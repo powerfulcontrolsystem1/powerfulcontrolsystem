@@ -1926,6 +1926,7 @@ body.has-floating-menu.admin-empresa-shell .admin-frame-toolbar{top:calc(var(--f
 .ai-chat-toggle-button:hover{transform:translateY(-1px) scale(1.02);box-shadow:0 24px 58px rgba(0,0,0,.28)}
 .ai-chat-toggle-button img.icon{width:28px;height:28px;margin:0;filter:none;display:block}
 .ai-openai-mark{width:28px;height:28px;flex:0 0 28px;display:block}
+.ai-openai-mark.ai-mark-shell{display:inline-flex;align-items:center;justify-content:center}
 .ai-chat-toggle-button .ai-openai-mark{background:transparent!important;border:0!important;box-shadow:none!important}
 .ai-chat-toggle-button .ai-chat-toggle-label{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;border:0;clip:rect(0 0 0 0);white-space:nowrap}
 @media (max-width: 860px){
@@ -20224,6 +20225,11 @@ body.carrito-flat-page .carrito-primary-layout{
   gap:0 !important;
 }
 
+body.carrito-flat-page .carrito-primary-main{
+  margin-left:0 !important;
+  padding-left:0 !important;
+}
+
 body.carrito-flat-page #scannerPanel,
 body.carrito-flat-page #carritoTotalsPanel{
   align-self:start !important;
@@ -20263,6 +20269,16 @@ body.carrito-flat-page .carrito-items-box{
   max-height:360px !important;
   padding:4px !important;
   overflow:auto !important;
+}
+
+body.carrito-flat-page .carrito-items-box.carrito-items-box--auto-height{
+  min-height:auto !important;
+  max-height:none !important;
+}
+
+body.carrito-flat-page .carrito-items-box.carrito-items-box--always-expanded{
+  min-height:210px !important;
+  max-height:360px !important;
 }
 
 body.carrito-flat-page .carrito-items-box .table{
