@@ -14801,3 +14801,23 @@ Archivos modificados:
 - web/js/ai_button_icons.js
 - web/js/ai_chat_drawer.js
 - web/super_administrador.html
+
+2026-06-15 16:26:07 - Mensaje: rs: actualizar repositorio y sincronizar VPS; Commit: 74ddf63a; PushStatus: OK
+Archivos modificados:
+- documentos/descripcion_de_archivos
+- documentos/historial_de_cambios
+- web/administrar_empresa.html
+- web/administrar_empresa/carrito_de_compras.html
+- web/administrar_empresa/configuracion_menu.html
+- web/administrar_empresa/finanzas_menu.html
+- web/administrar_empresa/renta_ia.html
+- web/estilos.css
+- web/img/ia_mark.svg
+- web/img/pcs_ia_logo_dark.svg
+- web/img/pcs_ia_logo_light.svg
+- web/index.html
+- web/js/ai_button_icons.js
+- web/js/ai_chat_drawer.js
+- web/menu.js
+- web/super/configuracion_avanzada.html
+- web/super_administrador.html
