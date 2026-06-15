@@ -14831,3 +14831,12 @@ Archivos modificados:
 - web/estilos.css
 - web/index.html
 - web/super_administrador.html
+
+2026-06-15 16:57:51 - Mensaje: rs: actualizar repositorio y sincronizar VPS; Commit: de7ccc2a; PushStatus: OK
+Archivos modificados:
+- documentos/descripcion_de_archivos
+- documentos/historial_de_cambios
+- web/administrar_empresa.html
+- web/administrar_empresa/carrito_de_compras.html
+- web/index.html
+- web/super_administrador.html
