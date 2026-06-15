@@ -14764,3 +14764,25 @@ Archivos modificados:
 - web/super/licencias_resumen.html
 - web/super/pagina_principal.html
 - web/super_administrador.html
+
+2026-06-15 03:27:30 - Mensaje: rs: actualizar repositorio y sincronizar VPS; Commit: cefe0809; PushStatus: OK
+Archivos modificados:
+- documentos/descripcion_de_archivos
+- documentos/historial_de_cambios
+- web/administrar_empresa/administrar_productos.html
+- web/administrar_empresa/administrar_productos_menu.html
+- web/administrar_empresa/bodega.html
+- web/administrar_empresa/carrito_de_compras.html
+- web/administrar_empresa/compras.html
+- web/administrar_empresa/compras_avanzadas.html
+- web/administrar_empresa/compras_menu.html
+- web/administrar_empresa/compras_tutorial.html
+- web/administrar_empresa/corte_de_caja.html
+- web/administrar_empresa/historial_productos.html
+- web/administrar_empresa/panel.html
+- web/administrar_empresa/productos_tutorial.html
+- web/administrar_empresa/recetas_productos.html
+- web/administrar_empresa/ventas.html
+- web/seleccionar_empresa.html
+- web/super/auditoria_global.html
+- web/super/licencias_resumen.html

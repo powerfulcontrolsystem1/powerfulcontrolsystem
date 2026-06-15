@@ -34640,3 +34640,26 @@ Archivos modificados:
 - Seguridad/datos: no se crean endpoints ni tablas nuevas; se conserva el aislamiento por `empresa_id`.
 - QA local: `node --check web/js/seleccionar_empresa.js` paso y `git diff --check` no reporto errores de diff, solo advertencias CRLF esperadas en Windows.
 - QA pendiente: no se pudo ejecutar desde este hilo la prueba remota completa en `https://powerfulcontrolsystem.com` con la empresa `PCS` porque el control de Chrome con sesion existente no estuvo disponible; por eso quedan pendientes la venta directa real, la emision FE, la edicion de cliente, la asignacion de caja 2 y la validacion operativa de puntos de venta 1 y 2.
+
+2026-06-15: rs: actualizar repositorio y sincronizar VPS
+PushStatus: OK
+Archivos modificados:
+- documentos/descripcion_de_archivos
+- documentos/historial_de_cambios
+- web/administrar_empresa/administrar_productos.html
+- web/administrar_empresa/administrar_productos_menu.html
+- web/administrar_empresa/bodega.html
+- web/administrar_empresa/carrito_de_compras.html
+- web/administrar_empresa/compras.html
+- web/administrar_empresa/compras_avanzadas.html
+- web/administrar_empresa/compras_menu.html
+- web/administrar_empresa/compras_tutorial.html
+- web/administrar_empresa/corte_de_caja.html
+- web/administrar_empresa/historial_productos.html
+- web/administrar_empresa/panel.html
+- web/administrar_empresa/productos_tutorial.html
+- web/administrar_empresa/recetas_productos.html
+- web/administrar_empresa/ventas.html
+- web/seleccionar_empresa.html
+- web/super/auditoria_global.html
+- web/super/licencias_resumen.html
