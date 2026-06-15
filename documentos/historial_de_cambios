@@ -1,3 +1,10 @@
+2026-06-15: Correccion visual carrito PCS e icono IA.
+- Modulos afectados: `carritos`, `chat_ia`, `index_publico`, `frontend_ux`.
+- Frontend carrito: `web/administrar_empresa/carrito_de_compras.html` deja visibles los tres campos de agregacion rapida (`Codigo de barras`, `Codigo SKU` y `Nombre`) y conserva el modo predeterminado solo como foco/estado activo.
+- UX carrito: `web/estilos.css` bloquea el scroll horizontal en la tabla de detalle de productos, compacta columnas/cantidad/devolucion y unifica el fondo de la tarjeta superior para retirar el hueco oscuro.
+- IA/index: `web/index.html`, `web/administrar_empresa.html` y `web/super_administrador.html` versionan los scripts del logo IA; el index carga el sincronizador de logos y sus botones de login/registro responden a tema claro/oscuro.
+- Seguridad/datos: cambios visuales y de interaccion; no se crean endpoints, tablas ni consultas multiempresa.
+
 2026-06-14: Ajustes visuales super, empresa y carrito PCS.
 - Modulos afectados: `super_administrador`, `panel_empresa`, `carritos`, `codigos_descuento`, `frontend_ux`.
 - Frontend super: se retiran accesos `Ver index publico`, `Ver sistemas publico` y `Asesores de ventas` del menu; la analitica publica de visitas por pais queda dentro de `super/licencias_resumen.html`.

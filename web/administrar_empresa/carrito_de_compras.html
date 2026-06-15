@@ -159,6 +159,10 @@
             <label class="form-label" for="scannerCodigo" id="scannerCodigoLabel">Codigo de barras</label>
             <input id="scannerCodigo" class="form-input" autocomplete="off" placeholder="Escanea o digita codigo de barras">
           </div>
+          <div class="form-col carrito-scanner-sku-column">
+            <label class="form-label" for="scannerSku">Codigo SKU</label>
+            <input id="scannerSku" class="form-input" autocomplete="off" placeholder="Escanea o digita SKU">
+          </div>
           <div class="form-col carrito-scanner-name-column">
             <label class="form-label" for="scannerNombre" id="scannerNombreLabel">Busqueda por nombre</label>
             <input id="scannerNombre" class="form-input" autocomplete="off" placeholder="Busca el producto por nombre" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="scannerResultados">
@@ -1189,21 +1193,27 @@
       const mode = getScannerSearchMode();
       const select = document.getElementById('scannerSearchMode');
       const codeWrap = document.getElementById('scannerCodigo') && document.getElementById('scannerCodigo').closest('.form-col');
+      const skuWrap = document.getElementById('scannerSku') && document.getElementById('scannerSku').closest('.form-col');
       const nameWrap = document.getElementById('scannerNombre') && document.getElementById('scannerNombre').closest('.form-col');
       const codeInput = document.getElementById('scannerCodigo');
+      const skuInput = document.getElementById('scannerSku');
       const nameInput = document.getElementById('scannerNombre');
       const codeLabel = document.getElementById('scannerCodigoLabel');
       if (select) select.value = mode;
-      if (codeLabel) codeLabel.textContent = mode === 'sku' ? 'Codigo SKU' : 'Codigo de barras';
-      if (codeInput) codeInput.placeholder = mode === 'sku' ? 'Escanea o digita codigo SKU' : 'Escanea o digita codigo de barras';
-      if (codeWrap) codeWrap.style.display = mode === 'nombre' ? 'none' : '';
-      if (nameWrap) nameWrap.style.display = mode === 'nombre' ? '' : 'none';
+      if (codeLabel) codeLabel.textContent = 'Codigo de barras';
+      if (codeInput) codeInput.placeholder = 'Escanea o digita codigo de barras';
+      [
+        [codeWrap, 'codigo_barras'],
+        [skuWrap, 'sku'],
+        [nameWrap, 'nombre']
+      ].forEach(function(entry) {
+        if (!entry[0]) return;
+        entry[0].classList.toggle('scanner-field-active', mode === entry[1]);
+      });
       clearScannerProductResults();
-      if (mode === 'nombre') {
-        if (codeInput) codeInput.value = '';
-      } else if (nameInput) {
-        nameInput.value = '';
-      }
+      if (mode === 'codigo_barras' && codeInput) return;
+      if (mode === 'sku' && skuInput) return;
+      if (mode === 'nombre' && nameInput) return;
     }
 
     function parseQuantityValue(val, unidad, fallback) {
@@ -3401,7 +3411,9 @@
       if (scannerAutofocusPaused) return;
       const input = getScannerSearchMode() === 'nombre'
         ? document.getElementById('scannerNombre')
-        : document.getElementById('scannerCodigo');
+        : (getScannerSearchMode() === 'sku'
+          ? document.getElementById('scannerSku')
+          : document.getElementById('scannerCodigo'));
       if (!input || input.disabled) return;
       setTimeout(function() {
         try {
@@ -7517,12 +7529,14 @@
       panel.classList.toggle('is-hidden', !caps.enabled);
 
       const inputCode = document.getElementById('scannerCodigo');
+      const inputSku = document.getElementById('scannerSku');
       const inputName = document.getElementById('scannerNombre');
       const inputQty = document.getElementById('scannerCantidad');
       const btnAdd = document.getElementById('scannerAgregarBtn');
       const disabled = !caps.enabled || !canUse;
 
       inputCode.disabled = disabled;
+      if (inputSku) inputSku.disabled = disabled;
       if (inputName) inputName.disabled = disabled;
       inputQty.disabled = disabled;
       if (btnAdd) btnAdd.disabled = disabled;
@@ -7550,29 +7564,47 @@
     function getScannerQueryContext() {
       const mode = getScannerSearchMode();
       const codeInput = document.getElementById('scannerCodigo');
+      const skuInput = document.getElementById('scannerSku');
       const nameInput = document.getElementById('scannerNombre');
       const codeRaw = codeInput ? codeInput.value : '';
+      const skuRaw = skuInput ? skuInput.value : '';
       const nameRaw = nameInput ? nameInput.value : '';
       const code = normalize(codeRaw);
+      const sku = normalize(skuRaw);
       const name = normalize(nameRaw);
       if (mode === 'nombre') {
         if (name) return { raw: nameRaw, query: name, scanCode: '', source: 'nombre', input: nameInput, mode: mode };
-        return { raw: '', query: '', scanCode: '', source: '', input: nameInput || codeInput, mode: mode };
+        if (code) return { raw: codeRaw, query: code, scanCode: normalizeScanCode(codeRaw), source: 'codigo_barras', input: codeInput, mode: 'codigo_barras' };
+        if (sku) return { raw: skuRaw, query: sku, scanCode: normalizeScanCode(skuRaw), source: 'sku', input: skuInput, mode: 'sku' };
+        return { raw: '', query: '', scanCode: '', source: '', input: nameInput || codeInput || skuInput, mode: mode };
+      }
+      if (mode === 'sku') {
+        if (sku) return { raw: skuRaw, query: sku, scanCode: normalizeScanCode(skuRaw), source: 'sku', input: skuInput, mode: mode };
+        if (code) return { raw: codeRaw, query: code, scanCode: normalizeScanCode(codeRaw), source: 'codigo_barras', input: codeInput, mode: 'codigo_barras' };
+        if (name) return { raw: nameRaw, query: name, scanCode: '', source: 'nombre', input: nameInput, mode: 'nombre' };
+        return { raw: '', query: '', scanCode: '', source: '', input: skuInput || codeInput || nameInput, mode: mode };
       }
       if (code) {
         return { raw: codeRaw, query: code, scanCode: normalizeScanCode(codeRaw), source: mode, input: codeInput, mode: mode };
       }
+      if (sku) {
+        return { raw: skuRaw, query: sku, scanCode: normalizeScanCode(skuRaw), source: 'sku', input: skuInput, mode: 'sku' };
+      }
       if (name) {
         return { raw: nameRaw, query: name, scanCode: '', source: 'nombre', input: nameInput, mode: 'nombre' };
       }
-      return { raw: '', query: '', scanCode: '', source: '', input: codeInput || nameInput, mode: mode };
+      return { raw: '', query: '', scanCode: '', source: '', input: codeInput || skuInput || nameInput, mode: mode };
     }
 
     function clearScannerQueryInputs(source) {
       const codeInput = document.getElementById('scannerCodigo');
+      const skuInput = document.getElementById('scannerSku');
       const nameInput = document.getElementById('scannerNombre');
-      if (!source || source === 'codigo' || source === 'codigo_barras' || source === 'sku') {
+      if (!source || source === 'codigo' || source === 'codigo_barras') {
         if (codeInput) codeInput.value = '';
+      }
+      if (!source || source === 'sku') {
+        if (skuInput) skuInput.value = '';
       }
       if (!source || source === 'nombre') {
         if (nameInput) nameInput.value = '';
@@ -10536,7 +10568,7 @@
       if (signature === 'ENTER') {
         const target = ev.target;
         if (!isTypingTargetForPOSShortcut(target)) return true;
-        return target && (target.id === 'scannerCodigo' || target.id === 'scannerNombre' || target.id === 'scannerCantidad');
+        return target && (target.id === 'scannerCodigo' || target.id === 'scannerSku' || target.id === 'scannerNombre' || target.id === 'scannerCantidad');
       }
       return !isTypingTargetForPOSShortcut(ev.target);
     }
@@ -10575,7 +10607,9 @@
     }
 
     async function verifyInventoryPOSShortcut() {
-      const input = document.getElementById('scannerCodigo');
+      const input = getScannerSearchMode() === 'sku'
+        ? document.getElementById('scannerSku')
+        : document.getElementById('scannerCodigo');
       const code = normalize(input && input.value);
       if (!code) {
         setStationPaymentMessage('Escanea o escribe un codigo para verificar inventario, o abre Buscar productos.', false);
@@ -10623,7 +10657,9 @@
         if (btn && btn.offsetParent !== null) {
           btn.click();
         } else {
-          const scanner = document.getElementById('scannerCodigo');
+          const scanner = getScannerSearchMode() === 'sku'
+            ? document.getElementById('scannerSku')
+            : document.getElementById('scannerCodigo');
           if (scanner) scanner.focus();
           setStationPaymentMessage('Escribe o escanea el codigo del producto.', false);
         }
@@ -10693,7 +10729,7 @@
       if (actionKey === 'cancelar_operacion') {
         const active = document.activeElement;
         if (active && isTypingTargetForPOSShortcut(active)) {
-          if (active.id === 'scannerCodigo' || active.id === 'scannerNombre') active.value = '';
+          if (active.id === 'scannerCodigo' || active.id === 'scannerSku' || active.id === 'scannerNombre') active.value = '';
           active.blur();
           setStationPaymentMessage('Operacion actual cancelada.', false);
           return;
@@ -11609,11 +11645,31 @@
       scannerCodigoInput.addEventListener('input', function() {
         state.scannerSelectedProductID = 0;
         state.scannerActiveResultIndex = -1;
+        const skuInput = document.getElementById('scannerSku');
         const nameInput = document.getElementById('scannerNombre');
+        if (normalize(this.value) && skuInput) skuInput.value = '';
         if (normalize(this.value) && nameInput) nameInput.value = '';
         scheduleScannerAutoProcess();
       });
       scannerCodigoInput.addEventListener('keydown', function(e) {
+        if (e.key !== 'Enter') return;
+        e.preventDefault();
+        processScannerInput();
+      });
+    }
+
+    const scannerSkuInput = document.getElementById('scannerSku');
+    if (scannerSkuInput) {
+      scannerSkuInput.addEventListener('input', function() {
+        state.scannerSelectedProductID = 0;
+        state.scannerActiveResultIndex = -1;
+        const codeInput = document.getElementById('scannerCodigo');
+        const nameInput = document.getElementById('scannerNombre');
+        if (normalize(this.value) && codeInput) codeInput.value = '';
+        if (normalize(this.value) && nameInput) nameInput.value = '';
+        scheduleScannerAutoProcess();
+      });
+      scannerSkuInput.addEventListener('keydown', function(e) {
         if (e.key !== 'Enter') return;
         e.preventDefault();
         processScannerInput();
@@ -11626,7 +11682,9 @@
         state.scannerSelectedProductID = 0;
         state.scannerActiveResultIndex = -1;
         const codeInput = document.getElementById('scannerCodigo');
+        const skuInput = document.getElementById('scannerSku');
         if (normalize(this.value) && codeInput) codeInput.value = '';
+        if (normalize(this.value) && skuInput) skuInput.value = '';
         scheduleScannerAutoProcess();
       });
       scannerNombreInput.addEventListener('keydown', function(e) {

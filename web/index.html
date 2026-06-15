@@ -70,6 +70,20 @@
       opacity: 0.9;
     }
 
+    .portal .nav-actions > a.btn.dark {
+      background: linear-gradient(135deg, var(--btn-primary-bg, var(--accent)), color-mix(in srgb, var(--accent) 76%, var(--surface)));
+      color: var(--btn-primary-text, #fff);
+      border: 1px solid color-mix(in srgb, var(--accent) 52%, transparent);
+      box-shadow: 0 12px 28px color-mix(in srgb, var(--accent) 20%, transparent);
+    }
+
+    html[data-theme^="light"] .portal .nav-actions > a.btn.dark {
+      background: linear-gradient(135deg, #ffffff, color-mix(in srgb, var(--accent) 12%, #f8fafc));
+      color: var(--accent);
+      border-color: color-mix(in srgb, var(--accent) 34%, #dbeafe);
+      box-shadow: 0 10px 24px color-mix(in srgb, #0f172a 10%, transparent);
+    }
+
     .portal-intro {
       text-align: center;
       margin: 80px 20px;
@@ -2218,7 +2232,8 @@
       } catch (e) { }
     })();
   </script>
-  <script src="/js/ai_chat_drawer.js"></script>
+  <script src="/js/ai_button_icons.js?v=20260615-ia-logo-theme"></script>
+  <script src="/js/ai_chat_drawer.js?v=20260615-ia-logo-theme"></script>
 
 </body>
 
