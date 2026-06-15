@@ -34672,3 +34672,19 @@ Archivos modificados:
 - `web/administrar_empresa/facturacion_electronica_tutorial_dian.html` agrega enlace oficial DIAN para nueva numeracion de facturacion y otro bloque oficial para el proceso de pruebas/habilitacion.
 - `web/img/ia_mark.svg`, `web/js/ai_chat_drawer.js`, `web/js/ai_button_icons.js`, `web/administrar_empresa.html` y `web/super_administrador.html` reemplazan el icono visual del asistente IA por una marca nueva con `IA`.
 - Riesgo controlado: no se cambian tablas ni endpoints nuevos; toda la configuracion sigue ligada al `empresa_id`.
+
+2026-06-15: rs: actualizar repositorio y sincronizar VPS
+PushStatus: OK
+Archivos modificados:
+- backend/handlers/empresa_preconfiguracion.go
+- documentos/descripcion_de_archivos
+- documentos/historial_de_cambios
+- web/administrar_empresa.html
+- web/administrar_empresa/carrito_de_compras.html
+- web/administrar_empresa/configuracion_carrito_de_compra_empresa.html
+- web/administrar_empresa/facturacion_electronica_tutorial_dian.html
+- web/estilos.css
+- web/img/ia_mark.svg
+- web/js/ai_button_icons.js
+- web/js/ai_chat_drawer.js
+- web/super_administrador.html

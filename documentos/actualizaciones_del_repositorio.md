@@ -14786,3 +14786,18 @@ Archivos modificados:
 - web/seleccionar_empresa.html
 - web/super/auditoria_global.html
 - web/super/licencias_resumen.html
+
+2026-06-15 15:59:25 - Mensaje: rs: actualizar repositorio y sincronizar VPS; Commit: 2467f676; PushStatus: OK
+Archivos modificados:
+- backend/handlers/empresa_preconfiguracion.go
+- documentos/descripcion_de_archivos
+- documentos/historial_de_cambios
+- web/administrar_empresa.html
+- web/administrar_empresa/carrito_de_compras.html
+- web/administrar_empresa/configuracion_carrito_de_compra_empresa.html
+- web/administrar_empresa/facturacion_electronica_tutorial_dian.html
+- web/estilos.css
+- web/img/ia_mark.svg
+- web/js/ai_button_icons.js
+- web/js/ai_chat_drawer.js
+- web/super_administrador.html
