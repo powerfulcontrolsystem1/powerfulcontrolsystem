@@ -768,9 +768,25 @@
       }
 
       function visualizar(item){
-        var win = window.open("", "_blank", "noopener,noreferrer,width=980,height=760");
+        var printableHtml = buildPrintablePage(item);
+        var win = window.open("", "_blank", "width=980,height=760");
         if(!win){ msg("No se pudo abrir la ventana. Revisa el bloqueador de popups.", "error"); return; }
-        win.document.open(); win.document.write(buildPrintablePage(item)); win.document.close();
+        try {
+          win.document.open();
+          win.document.write(printableHtml);
+          win.document.close();
+          win.focus();
+        } catch(err) {
+          try {
+            var blob = new Blob([printableHtml], { type: "text/html;charset=utf-8" });
+            var blobUrl = URL.createObjectURL(blob);
+            win.location.replace(blobUrl);
+            window.setTimeout(function(){ URL.revokeObjectURL(blobUrl); }, 60000);
+            win.focus();
+          } catch(innerErr) {
+            msg("No se pudo abrir la vista para imprimir.", "error");
+          }
+        }
       }
 
       function reenviarCorreo(item){

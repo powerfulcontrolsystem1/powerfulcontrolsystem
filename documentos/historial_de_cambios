@@ -34628,3 +34628,15 @@ Archivos modificados:
 - web/super/licencias_resumen.html
 - web/super/pagina_principal.html
 - web/super_administrador.html
+2026-06-15: Compactado visual y tutoriales de productos/compras.
+- Modulos afectados: `super_administrador`, `selector_empresa`, `panel_empresa`, `carritos`, `ventas`, `corte_caja`, `inventario_productos`, `compras`.
+- Frontend super: `web/super/licencias_resumen.html` aumenta el tamano visible del KPI de infraestructura para resaltar procesador y RAM; `web/super/auditoria_global.html` compacta encabezado, KPIs y filtros para reducir altura.
+- Selector global: `web/seleccionar_empresa.html` retira el acceso lateral `Historial de licencias` porque esa vista ya reutiliza `Licencias` en modo historial y generaba duplicidad visual.
+- Panel empresa: `web/administrar_empresa/panel.html` compacta la tarjeta `Favoritos` y la tarjeta `Notificaciones`/`Correo corporativo al dia` sin cambiar endpoints ni permisos.
+- Carrito/POS: `web/administrar_empresa/carrito_de_compras.html` reduce el espacio superior del panel `Codigo de barras o SKU` para alinearlo mejor con totales/detalles; `web/administrar_empresa/corte_de_caja.html` compacta el formulario principal y la lectura rapida.
+- Ventas: `web/administrar_empresa/ventas.html` cambia la apertura de `Ver / imprimir` para evitar ventanas en blanco al escribir el HTML imprimible en una nueva pestaña.
+- Productos y compras: se agregan `web/administrar_empresa/productos_tutorial.html` y `web/administrar_empresa/compras_tutorial.html`; los submenus `administrar_productos_menu.html` y `compras_menu.html` enlazan esas ayudas.
+- Títulos compactos: `administrar_productos.html`, `historial_productos.html`, `bodega.html`, `recetas_productos.html`, `compras.html` y `compras_avanzadas.html` reducen encabezados repetidos o demasiado largos.
+- Seguridad/datos: no se crean endpoints ni tablas nuevas; se conserva el aislamiento por `empresa_id`.
+- QA local: `node --check web/js/seleccionar_empresa.js` paso y `git diff --check` no reporto errores de diff, solo advertencias CRLF esperadas en Windows.
+- QA pendiente: no se pudo ejecutar desde este hilo la prueba remota completa en `https://powerfulcontrolsystem.com` con la empresa `PCS` porque el control de Chrome con sesion existente no estuvo disponible; por eso quedan pendientes la venta directa real, la emision FE, la edicion de cliente, la asignacion de caja 2 y la validacion operativa de puntos de venta 1 y 2.

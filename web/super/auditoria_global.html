@@ -5,6 +5,27 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Auditoría global</title>
   <link rel="stylesheet" href="/estilos.css">
+  <style>
+    .auditoria-global-page .container{max-width:1180px}
+    .auditoria-global-header{align-items:flex-end;gap:12px}
+    .auditoria-global-header h1{margin-bottom:4px;font-size:1.45rem;line-height:1.05}
+    .auditoria-global-header .page-subtitle{max-width:840px;margin:0;font-size:.9rem;line-height:1.32}
+    .auditoria-global-actions{display:flex;gap:8px;flex-wrap:wrap}
+    .auditoria-global-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin:10px 0}
+    .auditoria-global-kpis article{padding:10px 12px;border:1px solid var(--border);border-radius:8px;background:var(--surface-soft)}
+    .auditoria-global-kpis span{display:block;font-size:.7rem;line-height:1.1}
+    .auditoria-global-kpis strong{display:block;margin-top:4px;font-size:1rem;line-height:1}
+    .auditoria-global-filtros{padding:12px 14px}
+    .auditoria-global-filtros .form-row{gap:10px;margin-bottom:8px}
+    .auditoria-global-filtros .form-label{margin-bottom:4px;font-size:.78rem}
+    .auditoria-global-filtros .form-input{min-height:38px;padding:8px 10px}
+    .auditoria-global-filtros .form-actions{margin-top:6px;gap:8px}
+    .auditoria-global-filtros #msg{margin-top:6px}
+    .auditoria-global-table-card{margin-top:10px}
+    .auditoria-global-table-head,.auditoria-global-pagination{padding:10px 12px}
+    @media(max-width:860px){.auditoria-global-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
+    @media(max-width:640px){.auditoria-global-kpis{grid-template-columns:1fr}.auditoria-global-header h1{font-size:1.2rem}.auditoria-global-header .page-subtitle{font-size:.84rem}}
+  </style>
 </head>
 <body class="super-page auditoria-global-page" data-audit-scope="principal" data-audit-download-prefix="auditoria_global">
   <div class="container">

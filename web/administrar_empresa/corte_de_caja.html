@@ -6,11 +6,11 @@
   <title>Corte de caja</title>
   <link rel="stylesheet" href="/estilos.css">
   <style>
-    .cash-close-hero { display:grid; grid-template-columns:minmax(0,1.35fr) minmax(280px,.65fr); gap:18px; align-items:stretch; }
-    .cash-close-panel { border:1px solid var(--border); border-radius:8px; padding:18px; background:linear-gradient(135deg,var(--card),color-mix(in srgb, var(--surface-soft) 88%, var(--card))); box-shadow:0 18px 50px color-mix(in srgb, #020617 14%, transparent); color:var(--text); }
+    .cash-close-hero { display:grid; grid-template-columns:minmax(0,1.35fr) minmax(260px,.65fr); gap:12px; align-items:stretch; }
+    .cash-close-panel { border:1px solid var(--border); border-radius:8px; padding:14px; background:linear-gradient(135deg,var(--card),color-mix(in srgb, var(--surface-soft) 88%, var(--card))); box-shadow:0 18px 50px color-mix(in srgb, #020617 14%, transparent); color:var(--text); }
     .cash-close-panel.dark { background:linear-gradient(135deg,color-mix(in srgb, var(--surface) 76%, #020617),var(--surface-soft)); color:var(--text); }
     .cash-close-actions { display:flex; flex-wrap:wrap; gap:10px; align-items:center; }
-    .cash-close-actions.is-compact { display:flex; flex-direction:column; align-items:stretch; gap:8px; margin:12px 0; }
+    .cash-close-actions.is-compact { display:flex; flex-direction:column; align-items:stretch; gap:6px; margin:10px 0; }
     .cash-close-actions.is-compact .btn { width:100%; justify-content:center; }
     .cash-close-panel.dark .cash-close-actions.is-compact .btn,
     .cash-close-panel.dark .cash-close-actions.is-compact .btn.secondary,
@@ -29,14 +29,18 @@
       opacity:.58;
       cursor:not-allowed;
     }
-    .cash-close-kpis { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; margin-top:12px; }
-    .cash-kpi { border-radius:8px; padding:13px; background:color-mix(in srgb, var(--accent) 28%, var(--surface)); color:var(--text); min-height:92px; border:1px solid color-mix(in srgb, var(--accent) 30%, var(--border)); }
+    .cash-close-kpis { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; margin-top:10px; }
+    .cash-kpi { border-radius:8px; padding:10px; background:color-mix(in srgb, var(--accent) 28%, var(--surface)); color:var(--text); min-height:74px; border:1px solid color-mix(in srgb, var(--accent) 30%, var(--border)); }
     .cash-kpi:nth-child(2) { background:color-mix(in srgb, var(--success) 26%, var(--surface)); border-color:color-mix(in srgb, var(--success) 30%, var(--border)); }
     .cash-kpi:nth-child(3) { background:color-mix(in srgb, var(--accent-yellow) 20%, var(--surface)); border-color:color-mix(in srgb, var(--accent-yellow) 28%, var(--border)); }
     .cash-kpi:nth-child(4) { background:color-mix(in srgb, var(--accent-2) 24%, var(--surface)); border-color:color-mix(in srgb, var(--accent-2) 30%, var(--border)); }
-    .cash-kpi span { display:block; font-size:.75rem; opacity:.8; }
-    .cash-kpi strong { display:block; font-size:1.2rem; margin-top:8px; }
-    .cash-kpi small { display:block; opacity:.75; margin-top:4px; }
+    .cash-kpi span { display:block; font-size:.68rem; opacity:.8; }
+    .cash-kpi strong { display:block; font-size:1rem; margin-top:6px; }
+    .cash-kpi small { display:block; opacity:.75; margin-top:3px; font-size:.72rem; }
+    .cash-close-panel .form-row{gap:10px;margin-bottom:8px}
+    .cash-close-panel .form-label{margin-bottom:4px;font-size:.78rem}
+    .cash-close-panel .form-input{min-height:38px;padding:8px 10px}
+    .cash-close-panel .form-help{font-size:.8rem;line-height:1.2}
     .corte-report-section[hidden], .corte-summary-grid[hidden] { display:none !important; }
     .corte-caja-report.turno-operativo-sheet { margin-top:18px; border:1px solid var(--border); border-radius:8px; background:var(--card); color:var(--text); box-shadow:none; overflow:hidden; }
     .corte-caja-report .corte-report-header { padding:16px 18px 12px; border-bottom:2px solid var(--border); margin-bottom:0; background:var(--surface-soft); }
@@ -249,8 +253,8 @@
     <section class="card empresa-section no-print">
       <div class="empresa-section-header">
         <div>
-          <h1 id="pageTitle" class="empresa-section-title">Corte de caja profesional</h1>
-          <p id="pageSubtitle" class="form-help">Cierra turno, concilia efectivo, revisa ventas/anulaciones y elige exactamente que reportes se imprimen.</p>
+          <h1 id="pageTitle" class="empresa-section-title">Corte de caja</h1>
+          <p id="pageSubtitle" class="form-help">Cierra turno, concilia efectivo y genera el reporte.</p>
         </div>
         <div class="cash-close-actions">
           <a id="btnVolverEstaciones" class="btn secondary" href="/administrar_empresa/estaciones.html" hidden>Regresar a estaciones</a>
