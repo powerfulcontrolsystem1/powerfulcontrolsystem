@@ -275,6 +275,193 @@ func writeProductosExport(w http.ResponseWriter, r *http.Request, dbEmp *sql.DB,
 	}
 }
 
+func productoPrecioHistorialFilename(empresaID int64) string {
+	return "historial_productos_empresa_" + strconv.FormatInt(empresaID, 10)
+}
+
+func writeProductoPrecioHistorialCSV(w io.Writer, rows []dbpkg.ProductoPrecioHistorial) error {
+	cw := csv.NewWriter(w)
+	cw.UseCRLF = true
+	if err := cw.Write([]string{
+		"id",
+		"producto_id",
+		"producto",
+		"fecha_cambio",
+		"costo_anterior",
+		"costo_nuevo",
+		"precio_anterior",
+		"precio_nuevo",
+		"impuesto_anterior",
+		"impuesto_nuevo",
+		"motivo",
+		"referencia",
+		"usuario",
+		"estado",
+		"observaciones",
+	}); err != nil {
+		return err
+	}
+	for _, h := range rows {
+		if err := cw.Write([]string{
+			strconv.FormatInt(h.ID, 10),
+			strconv.FormatInt(h.ProductoID, 10),
+			h.ProductoNombre,
+			h.FechaCambio,
+			formatFloatForCSV(h.CostoAnterior),
+			formatFloatForCSV(h.CostoNuevo),
+			formatFloatForCSV(h.PrecioAnterior),
+			formatFloatForCSV(h.PrecioNuevo),
+			formatFloatForCSV(h.ImpuestoAnterior),
+			formatFloatForCSV(h.ImpuestoNuevo),
+			h.Motivo,
+			h.Referencia,
+			h.UsuarioCreador,
+			h.Estado,
+			h.Observaciones,
+		}); err != nil {
+			return err
+		}
+	}
+	cw.Flush()
+	return cw.Error()
+}
+
+func productoPrecioHistorialPlainText(rows []dbpkg.ProductoPrecioHistorial) string {
+	var b strings.Builder
+	b.WriteString("Historial de productos\n")
+	b.WriteString("Total registros: ")
+	b.WriteString(strconv.Itoa(len(rows)))
+	b.WriteString("\n\n")
+	for _, h := range rows {
+		b.WriteString("ID ")
+		b.WriteString(strconv.FormatInt(h.ID, 10))
+		b.WriteString(" | Producto: ")
+		if strings.TrimSpace(h.ProductoNombre) != "" {
+			b.WriteString(h.ProductoNombre)
+		} else {
+			b.WriteString(strconv.FormatInt(h.ProductoID, 10))
+		}
+		b.WriteString(" | Fecha: ")
+		b.WriteString(h.FechaCambio)
+		b.WriteString(" | Precio: ")
+		b.WriteString(formatFloatForCSV(h.PrecioAnterior))
+		b.WriteString(" -> ")
+		b.WriteString(formatFloatForCSV(h.PrecioNuevo))
+		b.WriteString(" | Costo: ")
+		b.WriteString(formatFloatForCSV(h.CostoAnterior))
+		b.WriteString(" -> ")
+		b.WriteString(formatFloatForCSV(h.CostoNuevo))
+		b.WriteString(" | Impuesto: ")
+		b.WriteString(formatFloatForCSV(h.ImpuestoAnterior))
+		b.WriteString(" -> ")
+		b.WriteString(formatFloatForCSV(h.ImpuestoNuevo))
+		if strings.TrimSpace(h.Motivo) != "" {
+			b.WriteString(" | Motivo: ")
+			b.WriteString(h.Motivo)
+		}
+		if strings.TrimSpace(h.Referencia) != "" {
+			b.WriteString(" | Ref: ")
+			b.WriteString(h.Referencia)
+		}
+		if strings.TrimSpace(h.UsuarioCreador) != "" {
+			b.WriteString(" | Usuario: ")
+			b.WriteString(h.UsuarioCreador)
+		}
+		b.WriteString("\n")
+	}
+	return b.String()
+}
+
+func writeProductoPrecioHistorialHTML(w io.Writer, rows []dbpkg.ProductoPrecioHistorial) error {
+	var b strings.Builder
+	b.WriteString(`<!doctype html><html lang="es"><head><meta charset="utf-8"><title>Historial de productos</title><style>body{font-family:Arial,sans-serif;margin:24px;color:#111}h1{margin:0 0 6px}p{color:#444}table{width:100%;border-collapse:collapse;font-size:12px}th,td{border:1px solid #ddd;padding:6px 5px;text-align:left;vertical-align:top}th{background:#f3f4f6;text-transform:uppercase}.num{text-align:right;white-space:nowrap}@media print{button{display:none}@page{size:letter;margin:12mm}}</style></head><body><button onclick="window.print()">Imprimir</button><h1>Historial de productos</h1><p>Total registros: `)
+	b.WriteString(strconv.Itoa(len(rows)))
+	b.WriteString(`</p><table><thead><tr><th>ID</th><th>Fecha</th><th>Producto</th><th class="num">Costo ant.</th><th class="num">Costo nuevo</th><th class="num">Precio ant.</th><th class="num">Precio nuevo</th><th class="num">Imp. ant.</th><th class="num">Imp. nuevo</th><th>Motivo</th><th>Referencia</th><th>Usuario</th><th>Estado</th></tr></thead><tbody>`)
+	for _, h := range rows {
+		b.WriteString("<tr><td>")
+		b.WriteString(strconv.FormatInt(h.ID, 10))
+		b.WriteString("</td><td>")
+		b.WriteString(html.EscapeString(h.FechaCambio))
+		b.WriteString("</td><td>")
+		b.WriteString(html.EscapeString(h.ProductoNombre))
+		b.WriteString("</td><td class=\"num\">")
+		b.WriteString(html.EscapeString(formatFloatForCSV(h.CostoAnterior)))
+		b.WriteString("</td><td class=\"num\">")
+		b.WriteString(html.EscapeString(formatFloatForCSV(h.CostoNuevo)))
+		b.WriteString("</td><td class=\"num\">")
+		b.WriteString(html.EscapeString(formatFloatForCSV(h.PrecioAnterior)))
+		b.WriteString("</td><td class=\"num\">")
+		b.WriteString(html.EscapeString(formatFloatForCSV(h.PrecioNuevo)))
+		b.WriteString("</td><td class=\"num\">")
+		b.WriteString(html.EscapeString(formatFloatForCSV(h.ImpuestoAnterior)))
+		b.WriteString("</td><td class=\"num\">")
+		b.WriteString(html.EscapeString(formatFloatForCSV(h.ImpuestoNuevo)))
+		b.WriteString("</td><td>")
+		b.WriteString(html.EscapeString(h.Motivo))
+		b.WriteString("</td><td>")
+		b.WriteString(html.EscapeString(h.Referencia))
+		b.WriteString("</td><td>")
+		b.WriteString(html.EscapeString(h.UsuarioCreador))
+		b.WriteString("</td><td>")
+		b.WriteString(html.EscapeString(h.Estado))
+		b.WriteString("</td></tr>")
+	}
+	b.WriteString("</tbody></table></body></html>")
+	_, err := io.WriteString(w, b.String())
+	return err
+}
+
+func writeProductoPrecioHistorialExport(w http.ResponseWriter, r *http.Request, empresaID int64, rows []dbpkg.ProductoPrecioHistorial) {
+	formato := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("formato")))
+	if formato == "" {
+		formato = strings.ToLower(strings.TrimSpace(r.URL.Query().Get("format")))
+	}
+	if formato == "" {
+		formato = "json"
+	}
+	filename := productoPrecioHistorialFilename(empresaID)
+	switch formato {
+	case "csv", "excel", "xlsx":
+		w.Header().Set("Content-Type", "text/csv; charset=utf-8")
+		w.Header().Set("Content-Disposition", `attachment; filename="`+filename+`.csv"`)
+		_, _ = w.Write([]byte{0xEF, 0xBB, 0xBF})
+		if err := writeProductoPrecioHistorialCSV(w, rows); err != nil {
+			http.Error(w, "failed to build historial csv: "+err.Error(), http.StatusInternalServerError)
+		}
+	case "html", "carta", "imprimir":
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		w.Header().Set("Content-Disposition", `attachment; filename="`+filename+`.html"`)
+		if err := writeProductoPrecioHistorialHTML(w, rows); err != nil {
+			http.Error(w, "failed to build historial html: "+err.Error(), http.StatusInternalServerError)
+		}
+	case "pdf":
+		tmp, err := os.CreateTemp("", "pcs_historial_productos_*.pdf")
+		if err != nil {
+			http.Error(w, "failed to create historial pdf: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+		path := tmp.Name()
+		_ = tmp.Close()
+		defer os.Remove(path)
+		if err := writeBasicPDF("Historial de productos", productoPrecioHistorialPlainText(rows), path); err != nil {
+			http.Error(w, "failed to build historial pdf: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+		content, err := os.ReadFile(path)
+		if err != nil {
+			http.Error(w, "failed to read historial pdf: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+		w.Header().Set("Content-Type", "application/pdf")
+		w.Header().Set("Content-Disposition", `attachment; filename="`+filename+`.pdf"`)
+		_, _ = w.Write(content)
+	default:
+		w.Header().Set("Content-Type", "application/json; charset=utf-8")
+		w.Header().Set("Content-Disposition", `attachment; filename="`+filename+`.json"`)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{"empresa_id": empresaID, "total": len(rows), "historial": rows})
+	}
+}
+
 func safeExportSizeSuffix(v string) string {
 	if strings.EqualFold(strings.TrimSpace(v), "pos") {
 		return "pos"
@@ -2200,9 +2387,18 @@ func EmpresaProductoPrecioHistorialHandler(dbEmp *sql.DB) http.HandlerFunc {
 		productoID, _ := parseInt64QueryOptional(r, "producto_id")
 		limit, _ := parseIntQueryOptional(r, "limit")
 		offset, _ := parseIntQueryOptional(r, "offset")
+		if strings.TrimSpace(r.URL.Query().Get("formato")) != "" || strings.TrimSpace(r.URL.Query().Get("format")) != "" || strings.EqualFold(strings.TrimSpace(r.URL.Query().Get("export")), "1") {
+			if limit <= 0 || limit > 5000 {
+				limit = 5000
+			}
+		}
 		rows, err := dbpkg.GetProductoPrecioHistorialByEmpresa(dbEmp, empresaID, productoID, limit, offset)
 		if err != nil {
 			http.Error(w, "failed to list historial de precios: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+		if strings.TrimSpace(r.URL.Query().Get("formato")) != "" || strings.TrimSpace(r.URL.Query().Get("format")) != "" || strings.EqualFold(strings.TrimSpace(r.URL.Query().Get("export")), "1") {
+			writeProductoPrecioHistorialExport(w, r, empresaID, rows)
 			return
 		}
 		w.Header().Set("Content-Type", "application/json")

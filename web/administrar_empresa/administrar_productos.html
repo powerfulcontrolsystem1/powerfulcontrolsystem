@@ -1245,6 +1245,10 @@
         <div class="empresa-inline-actions">
           <select id="historialProducto" class="form-input"></select>
           <button id="btnCargarHistorialPrecios" class="btn secondary" type="button">Actualizar</button>
+          <button class="btn secondary" type="button" data-historial-export="csv">CSV</button>
+          <button class="btn secondary" type="button" data-historial-export="json">JSON</button>
+          <button class="btn secondary" type="button" data-historial-export="html">HTML</button>
+          <button class="btn secondary" type="button" data-historial-export="pdf">PDF</button>
         </div>
       </div>
       <div class="table-wrap">
@@ -3748,6 +3752,18 @@
       '</tr>').join('');
     }
 
+    function exportarPreciosHistorial(formato) {
+      const productoID = Number(document.getElementById('historialProducto').value || 0);
+      const params = new URLSearchParams();
+      params.set('empresa_id', empresaId);
+      params.set('limit', '5000');
+      params.set('offset', '0');
+      params.set('formato', formato || 'csv');
+      if (productoID > 0) params.set('producto_id', String(productoID));
+      window.open('/api/empresa/productos/precios_historial?' + params.toString(), '_blank', 'noopener');
+    }
+
+
     async function moverInventario(ev) {
       ev.preventDefault();
       const payload = {
@@ -4071,6 +4087,10 @@
         } catch (e) {
           showMessage(e.message || 'No se pudo cargar el historial de precios.', 'error');
         }
+      });
+
+      document.querySelectorAll('[data-historial-export]').forEach(btn => {
+        btn.addEventListener('click', () => exportarPreciosHistorial(btn.dataset.historialExport || 'csv'));
       });
 
       document.getElementById('btnAplicarAlertasFiltro').addEventListener('click', async () => {

@@ -34806,6 +34806,10 @@ Archivos modificados:
 - Se compacta el scanner de venta directa/estaciones para que se vean selector, codigo de barras, SKU, nombre, cantidad con `-`/`+`, agregar y catalogo.
 - El detalle de productos queda sin desplazamiento horizontal, con columnas fijas mas pequenas y nombres en una sola fila.
 
+2026-06-15: Historial de productos exportable
+- Se agrega exportacion CSV, JSON, HTML imprimible y PDF al historial de cambios de precio/costo/impuesto.
+- La pagina dedicada `historial_productos.html` y la vista interna de `administrar_productos.html` muestran botones de descarga por formato.
+
 2026-06-15: rs: actualizar repositorio y sincronizar VPS
 PushStatus: OK
 Archivos modificados:

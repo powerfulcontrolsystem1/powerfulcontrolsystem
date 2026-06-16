@@ -11407,3 +11407,9 @@ backend/handlers/user_config.go - Controlador que expone /api/user/configuracion
 	- asegura la migracion ligera del esquema antes del CRUD de items del carrito.
 - `web/estilos.css`:
 	- ajusta el scanner y la tabla de items para evitar barras horizontales y conservar botones visibles.
+
+2026-06-15 - Historial de productos exportable
+- `backend/handlers/productos.go`:
+	- permite descargar el historial de precios en CSV, JSON, HTML y PDF desde el endpoint existente.
+- `web/administrar_empresa/historial_productos.html` y `web/administrar_empresa/administrar_productos.html`:
+	- agregan botones de exportacion para el historial de productos.

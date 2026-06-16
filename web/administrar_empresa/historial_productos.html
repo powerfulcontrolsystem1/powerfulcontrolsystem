@@ -14,8 +14,12 @@
         <h1>Historial</h1>
         <p>Registro de cambios de precios, costos e impuestos.</p>
       </div>
-      <div>
+      <div class="empresa-inline-actions">
         <button type="button" class="btn" id="btnRefresh">Actualizar</button>
+        <button type="button" class="btn secondary" data-export-format="csv">CSV</button>
+        <button type="button" class="btn secondary" data-export-format="json">JSON</button>
+        <button type="button" class="btn secondary" data-export-format="html">HTML</button>
+        <button type="button" class="btn secondary" data-export-format="pdf">PDF</button>
       </div>
     </section>
 
@@ -74,6 +78,20 @@
       }
     }
 
+    function exportHistorial(formato) {
+      const url = buildEmpresaURL('/api/empresa/productos/precios_historial');
+      url.searchParams.set('limit', '5000');
+      url.searchParams.set('offset', '0');
+      url.searchParams.set('formato', formato);
+      const a = document.createElement('a');
+      a.href = url.pathname + url.search;
+      a.target = '_blank';
+      a.rel = 'noopener';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+    }
+
     function renderHistorial(items) {
       if (!items.length) {
         listContainer.innerHTML = '<p class="empty-state">No hay registros en el historial de precios.</p>';
@@ -121,6 +139,9 @@
     }
 
     document.getElementById('btnRefresh').addEventListener('click', loadHistorial);
+    document.querySelectorAll('[data-export-format]').forEach(btn => {
+      btn.addEventListener('click', () => exportHistorial(btn.dataset.exportFormat || 'csv'));
+    });
     document.addEventListener('DOMContentLoaded', loadHistorial);
   </script>
 </body>
