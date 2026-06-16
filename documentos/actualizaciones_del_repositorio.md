@@ -14918,3 +14918,7 @@ Archivos modificados:
 Archivos modificados:
 - backend/handlers/facturacion_documentos_electronicos_test.go
 - backend/handlers/facturacion_electronica.go
+
+2026-06-16 12:17:27 - Mensaje: rs: actualizar repositorio y sincronizar VPS; Commit: 252c9ab1; PushStatus: OK
+Archivos modificados:
+- backend/handlers/facturacion_electronica.go
