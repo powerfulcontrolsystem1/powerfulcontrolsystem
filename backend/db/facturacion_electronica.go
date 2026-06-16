@@ -1413,6 +1413,9 @@ func PrepareFacturacionDocumentoLegal(dbConn *sql.DB, empresaID int64, paisCodig
 	prefix := strings.ToUpper(strings.TrimSpace(cfg.PrefijoFactura))
 	prefix = strings.ReplaceAll(prefix, " ", "")
 	numeroLegal := fmt.Sprintf("%s-%d", prefix, proximoConsecutivo)
+	if strings.EqualFold(strings.TrimSpace(cfg.PaisCodigo), "CO") {
+		numeroLegal = fmt.Sprintf("%s%d", prefix, proximoConsecutivo)
+	}
 	fechaEmisionLegal := now.Format("2006-01-02 15:04:05")
 	if moneda == "" {
 		moneda = strings.ToUpper(strings.TrimSpace(cfg.MonedaCodigo))

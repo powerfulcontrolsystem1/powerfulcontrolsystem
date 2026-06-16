@@ -9209,7 +9209,11 @@ func generateDIANUBLBase(cfg map[string]interface{}, empresaID int64, payload ma
 		return nil, http.StatusBadRequest, fmt.Errorf("empresa_id es obligatorio")
 	}
 
-	documentoCodigo := dianFirstNonBlank(genericStringValue(payload["documento_codigo"]), "FV-"+time.Now().Format("20060102150405"))
+	documentoCodigo := dianFirstNonBlank(genericStringValue(payload["numero_legal"]), genericStringValue(payload["documento_codigo"]), "FV"+time.Now().Format("20060102150405"))
+	documentoCodigo = strings.ReplaceAll(strings.TrimSpace(documentoCodigo), " ", "")
+	if strings.EqualFold(dianFirstNonBlank(genericStringValue(cfg["pais_codigo"]), genericStringValue(payload["pais_codigo"])), "CO") {
+		documentoCodigo = strings.ReplaceAll(documentoCodigo, "-", "")
+	}
 	documentoTipo := strings.ToLower(dianFirstNonBlank(genericStringValue(payload["documento_tipo"]), "factura"))
 	issueDateTime := dianFirstNonBlank(genericStringValue(payload["fecha_emision"]), time.Now().Format(time.RFC3339))
 	total := dianFormatDecimal(genericStringValue(payload["total"]), 1190.00)
