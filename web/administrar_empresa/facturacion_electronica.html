@@ -193,6 +193,11 @@
           <div class="form-col"><label class="form-label">Rango autorizado</label><div style="display:flex; gap:8px;"><input id="dian_rango_desde" type="number" min="1" class="form-input" placeholder="Desde"><input id="dian_rango_hasta" type="number" min="1" class="form-input" placeholder="Hasta"></div></div>
         </div>
         <div class="form-row">
+          <div class="form-col"><label class="form-label">Avisar vencimiento resoluci&oacute;n (d&iacute;as)</label><input id="dian_resolucion_alerta_dias" type="number" min="1" max="365" class="form-input" value="30"></div>
+          <div class="form-col" style="display:flex; align-items:flex-end; gap:10px; flex-wrap:wrap;"><button id="btnDianResolucionVencimiento" type="button" class="btn secondary">Verificar vencimiento resoluci&oacute;n</button></div>
+          <div class="form-col"><div id="feDianResolutionExpiryText" class="form-help">Resoluci&oacute;n sin verificar.</div></div>
+        </div>
+        <div class="form-row">
           <div class="form-col"><label class="form-label">Llave tÃ©cnica DIAN</label><input id="dian_llave_tecnica" class="form-input" placeholder="Llave tÃ©cnica del rango de numeraciÃ³n"></div>
           <div class="form-col"><label class="form-label">Token proveedor/API (opcional en DIAN oficial)</label><input id="dian_token_emisor_ref" class="form-input" placeholder="Solo si usa proveedor/API bearer: env:DIAN_TOKEN_EMPRESA_1"></div>
           <div class="form-col"><label class="form-label">Certificado X.509</label><input id="dian_certificado_url" class="form-input" placeholder="Se completa al cargar P12/PFX o PEM con certificado"></div>
@@ -1670,6 +1675,7 @@
       set("dian_rango_desde", cfg.rango_desde || document.getElementById("adv_consecutivo_desde") && document.getElementById("adv_consecutivo_desde").value);
       set("dian_rango_hasta", cfg.rango_hasta || document.getElementById("adv_consecutivo_hasta") && document.getElementById("adv_consecutivo_hasta").value);
       set("dian_consecutivo_actual", cfg.consecutivo_actual || document.getElementById("adv_proximo_consecutivo") && document.getElementById("adv_proximo_consecutivo").value || 1);
+      set("dian_resolucion_alerta_dias", cfg.resolucion_alerta_dias || 30);
       set("dian_llave_tecnica", cfg.llave_tecnica);
       set("dian_token_emisor_ref", cfg.token_emisor_ref);
       set("dian_certificado_url", cfg.certificado_url);
@@ -1711,6 +1717,7 @@
         rango_desde: Number(document.getElementById("dian_rango_desde").value || 0),
         rango_hasta: Number(document.getElementById("dian_rango_hasta").value || 0),
         consecutivo_actual: Number(document.getElementById("dian_consecutivo_actual").value || 0),
+        resolucion_alerta_dias: Number(document.getElementById("dian_resolucion_alerta_dias").value || 30),
         set_documentos_requeridos: hiddenNumber("dian_set_documentos_requeridos"),
         set_facturas_requeridas: hiddenNumber("dian_set_facturas_requeridas"),
         set_notas_debito_requeridas: hiddenNumber("dian_set_notas_debito_requeridas"),
@@ -1739,6 +1746,7 @@
       var item = Array.isArray(data) && data.length ? data[0] : null;
       setDianConfigFormData(item || {});
       verificarDianFirmaVencimiento(true).catch(function() {});
+      verificarDianResolucionVencimiento(true).catch(function() {});
       return item;
     }
 
@@ -1759,7 +1767,38 @@
       var data = await readJSONResponse(res);
       if (!res.ok) throw new Error((data && (data.error || data.message)) || ("HTTP " + res.status));
       if (data && data.item) setDianConfigFormData(data.item);
+      if (data && data.vencimiento_resolucion) renderDianResolutionExpiry(data.vencimiento_resolucion);
       renderDianSetupProgress();
+      return data;
+    }
+
+    function renderDianResolutionExpiry(info) {
+      var el = document.getElementById("feDianResolutionExpiryText");
+      if (!el) return;
+      info = info || {};
+      var texto = info.mensaje || (info.fecha_vencimiento ? ("Resolucion vence el " + info.fecha_vencimiento) : "Resolucion sin fecha final registrada.");
+      if (info.dias_restantes !== undefined && info.dias_restantes !== null && !info.vencido) {
+        texto += " Dias restantes: " + info.dias_restantes + ".";
+      }
+      if (info.notificacion_enviada) {
+        texto += " Aviso enviado al buzon del panel.";
+      } else if (info.notificacion_omitida) {
+        texto += " Aviso ya enviado hoy.";
+      }
+      el.textContent = texto;
+      el.className = "form-help";
+      if (info.vencido) el.className = "form-help error";
+      else if (info.proximo_a_vencer || info.proximo_vencer) el.className = "form-help warning";
+    }
+
+    async function verificarDianResolucionVencimiento(silent) {
+      if (!state.empresaID) return null;
+      var url = "/api/empresa/facturacion_electronica/dian?action=vencimiento_resolucion&empresa_id=" + encodeURIComponent(state.empresaID);
+      if (silent) url += "&notificar=0";
+      var res = await fetch(url, { credentials: "same-origin" });
+      var data = await readJSONResponse(res);
+      if (!res.ok) throw new Error((data && (data.error || data.message)) || ("HTTP " + res.status));
+      renderDianResolutionExpiry(data);
       return data;
     }
 
@@ -2191,6 +2230,18 @@
           setDianConfigMessage("Configuración DIAN guardada. Ejecuta validar checklist para revisar faltantes.", false);
         }).catch(function(err) {
           setDianConfigMessage(err && err.message ? err.message : "No se pudo guardar DIAN Colombia", true);
+        });
+      });
+    }
+
+    var dianResolutionBtn = document.getElementById("btnDianResolucionVencimiento");
+    if (dianResolutionBtn) {
+      dianResolutionBtn.addEventListener("click", function() {
+        dianResolutionBtn.disabled = true;
+        verificarDianResolucionVencimiento(false).catch(function(err) {
+          setDianConfigMessage(err && err.message ? err.message : "No se pudo verificar vencimiento de resolucion.", true);
+        }).finally(function() {
+          dianResolutionBtn.disabled = false;
         });
       });
     }

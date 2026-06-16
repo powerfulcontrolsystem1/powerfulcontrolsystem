@@ -489,6 +489,7 @@ var (
 			"certificado_alerta_ultimo_envio", "certificado_alerta_email",
 			"certificado_ultima_carga_en", "certificado_archivo_original", "certificado_formato",
 			"certificado_subject", "certificado_issuer", "certificado_serial", "certificado_clave_estado",
+			"resolucion_alerta_dias", "resolucion_alerta_ultimo_envio",
 			"resolucion_fecha_desde", "resolucion_fecha_hasta", "rango_desde", "rango_hasta", "consecutivo_actual",
 			"llave_tecnica", "set_documentos_requeridos", "set_facturas_requeridas", "set_notas_debito_requeridas",
 			"set_notas_credito_requeridas", "set_documentos_aceptados_requeridos", "set_facturas_aceptadas_requeridas",
@@ -6927,6 +6928,10 @@ func EmpresaDIANColombiaHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 	base := empresaModuloGenericCRUDHandler(dbEmp, cfgDIAN)
 	return func(w http.ResponseWriter, r *http.Request) {
 		action := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("action")))
+		if action == "" && (r.Method == http.MethodPost || r.Method == http.MethodPut) {
+			handleDIANConfigSave(dbEmp, dbSuper, w, r)
+			return
+		}
 		switch action {
 		case "guia_onboarding", "ayuda_configuracion", "onboarding_empresa":
 			empresaID, _ := parseInt64QueryOptional(r, "empresa_id")
@@ -7002,6 +7007,25 @@ func EmpresaDIANColombiaHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 				notificar = parseTruthy(raw)
 			}
 			response := checkDIANCertificateExpiry(dbEmp, dbSuper, empresaID, cfg, notificar)
+			writeJSON(w, http.StatusOK, response)
+			return
+
+		case "vencimiento_resolucion", "verificar_vencimiento_resolucion", "alerta_resolucion":
+			empresaID, err := parseEmpresaIDQuery(r)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusBadRequest)
+				return
+			}
+			cfg, _ := getEmpresaDIANConfig(dbEmp, empresaID)
+			if len(cfg) == 0 {
+				http.Error(w, "configuracion DIAN no existe para la empresa; registre base DIAN primero", http.StatusBadRequest)
+				return
+			}
+			notificar := true
+			if raw := strings.TrimSpace(r.URL.Query().Get("notificar")); raw != "" {
+				notificar = parseTruthy(raw)
+			}
+			response := checkDIANResolutionExpiry(dbEmp, dbSuper, empresaID, cfg, strings.TrimSpace(adminEmailFromRequest(r)), notificar)
 			writeJSON(w, http.StatusOK, response)
 			return
 
@@ -7416,6 +7440,186 @@ func EmpresaDIANColombiaHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 	}
 }
 
+func handleDIANConfigSave(dbEmp, dbSuper *sql.DB, w http.ResponseWriter, r *http.Request) {
+	payload, err := decodeGenericBodyMap(r)
+	if err != nil {
+		http.Error(w, "JSON invalido", http.StatusBadRequest)
+		return
+	}
+	empresaID, err := resolveEmpresaIDFromPayloadOrRequest(r, payload)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	applyGenericDefaultValues(payload, cfgDIAN.DefaultValues)
+	ensureGenericCode(payload, cfgDIAN.CodeColumn, cfgDIAN.CodePrefix)
+	if hasAllowedColumn(cfgDIAN.AllowedColumns, "usuario_creador") && isEmptyGenericValue(payload["usuario_creador"]) {
+		payload["usuario_creador"] = adminEmailFromRequest(r)
+	}
+	if hasAllowedColumn(cfgDIAN.AllowedColumns, "estado") && isEmptyGenericValue(payload["estado"]) {
+		payload["estado"] = "activo"
+	}
+	if anyToInt64(payload["resolucion_alerta_dias"]) <= 0 {
+		payload["resolucion_alerta_dias"] = dianResolutionAlertDays
+	}
+	if err := validateGenericRequiredCreate(payload, cfgDIAN.RequiredOnCreate); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	id := resolveIDFromPayloadOrQuery(payload, r)
+	if id <= 0 {
+		if current, err := getEmpresaDIANConfig(dbEmp, empresaID); err == nil {
+			id = anyToInt64(current["id"])
+		}
+	}
+	status := http.StatusOK
+	if id <= 0 {
+		id, err = dbpkg.CreateEmpresaGenericRow(dbEmp, cfgDIAN.Table, empresaID, payload, cfgDIAN.AllowedColumns)
+		status = http.StatusCreated
+	} else {
+		err = dbpkg.UpdateEmpresaGenericRow(dbEmp, cfgDIAN.Table, empresaID, id, payload, cfgDIAN.AllowedColumns)
+	}
+	if err != nil {
+		if errors.Is(err, dbpkg.ErrPeriodoFinancieroCerrado) {
+			http.Error(w, "el periodo contable del registro esta cerrado", http.StatusConflict)
+			return
+		}
+		http.Error(w, "No se pudo guardar configuracion DIAN", http.StatusBadRequest)
+		return
+	}
+
+	item, _ := dbpkg.GetEmpresaGenericRowByID(dbEmp, cfgDIAN.Table, empresaID, id)
+	syncErr := syncDIANConfigToAdvanced(dbEmp, empresaID, item, strings.TrimSpace(adminEmailFromRequest(r)))
+	paisSyncErr := syncDIANConfigToFacturacionPais(dbEmp, empresaID, item, strings.TrimSpace(adminEmailFromRequest(r)))
+	resolutionStatus := checkDIANResolutionExpiry(dbEmp, dbSuper, empresaID, item, strings.TrimSpace(adminEmailFromRequest(r)), true)
+	if refreshed, err := dbpkg.GetEmpresaGenericRowByID(dbEmp, cfgDIAN.Table, empresaID, id); err == nil {
+		item = refreshed
+	}
+	resp := map[string]interface{}{
+		"ok":                     true,
+		"id":                     id,
+		"item":                   item,
+		"vencimiento_resolucion": resolutionStatus,
+	}
+	if syncErr != nil {
+		resp["configuracion_avanzada_warning"] = "La configuracion DIAN se guardo, pero no se pudo sincronizar la numeracion legal avanzada."
+	}
+	if paisSyncErr != nil {
+		resp["configuracion_pais_warning"] = "La configuracion DIAN se guardo, pero no se pudo sincronizar la configuracion fiscal por pais."
+	}
+	writeJSON(w, status, resp)
+}
+
+func syncDIANConfigToFacturacionPais(dbEmp *sql.DB, empresaID int64, cfg map[string]interface{}, actorEmail string) error {
+	if dbEmp == nil || empresaID <= 0 || len(cfg) == 0 {
+		return nil
+	}
+	if err := dbpkg.EnsureEmpresaFacturacionElectronicaSchema(dbEmp); err != nil {
+		return err
+	}
+	ambiente := "sandbox"
+	if chooseDIANAmbiente(cfg) == "produccion" {
+		ambiente = "produccion"
+	}
+	extra := map[string]interface{}{
+		"fuente":                   "dian_colombia",
+		"dian_configuracion_id":    anyToInt64(cfg["id"]),
+		"resolucion_fecha_desde":   strings.TrimSpace(genericStringValue(cfg["resolucion_fecha_desde"])),
+		"resolucion_fecha_hasta":   strings.TrimSpace(genericStringValue(cfg["resolucion_fecha_hasta"])),
+		"consecutivo_desde":        anyToInt64(cfg["rango_desde"]),
+		"consecutivo_hasta":        anyToInt64(cfg["rango_hasta"]),
+		"proximo_consecutivo":      anyToInt64(cfg["consecutivo_actual"]),
+		"resolucion_alerta_dias":   anyToInt64(cfg["resolucion_alerta_dias"]),
+		"usar_software_compartido": parseTruthy(genericStringValue(cfg["usar_software_compartido"])),
+	}
+	extraJSON, _ := json.Marshal(extra)
+	payload := dbpkg.FacturacionElectronicaPaisConfig{
+		EmpresaID:             empresaID,
+		PaisCodigo:            "CO",
+		PaisNombre:            "Colombia",
+		MonedaCodigo:          "COP",
+		Proveedor:             "dian",
+		Ambiente:              ambiente,
+		TipoDocumentoEmisor:   "NIT",
+		IdentificadorFiscal:   strings.TrimSpace(genericStringValue(cfg["nit"])),
+		RazonSocial:           strings.TrimSpace(genericStringValue(cfg["razon_social"])),
+		PrefijoFactura:        strings.ToUpper(strings.TrimSpace(genericStringValue(cfg["prefijo"]))),
+		ResolucionNumero:      strings.TrimSpace(genericStringValue(cfg["resolucion_numero"])),
+		APIBaseURL:            strings.TrimSpace(genericStringValue(cfg["url_dian"])),
+		CamposPaisJSON:        string(extraJSON),
+		UsuarioCreador:        strings.TrimSpace(actorEmail),
+		Estado:                "activo",
+		Observaciones:         "Sincronizado desde configuracion DIAN Colombia.",
+	}
+	_, err := dbpkg.UpsertFacturacionElectronicaPaisConfig(dbEmp, payload)
+	return err
+}
+
+func syncDIANConfigToAdvanced(dbEmp *sql.DB, empresaID int64, cfg map[string]interface{}, actorEmail string) error {
+	if dbEmp == nil || empresaID <= 0 || len(cfg) == 0 {
+		return nil
+	}
+	if err := dbpkg.EnsureEmpresaConfiguracionAvanzadaSchema(dbEmp); err != nil {
+		return err
+	}
+	prefijo := strings.ToUpper(strings.TrimSpace(genericStringValue(cfg["prefijo"])))
+	resolucion := strings.TrimSpace(genericStringValue(cfg["resolucion_numero"]))
+	fechaDesde := strings.TrimSpace(genericStringValue(cfg["resolucion_fecha_desde"]))
+	fechaHasta := strings.TrimSpace(genericStringValue(cfg["resolucion_fecha_hasta"]))
+	rangoDesde := anyToInt64(cfg["rango_desde"])
+	rangoHasta := anyToInt64(cfg["rango_hasta"])
+	consecutivo := anyToInt64(cfg["consecutivo_actual"])
+	if rangoDesde <= 0 {
+		rangoDesde = 1
+	}
+	if rangoHasta < rangoDesde {
+		rangoHasta = rangoDesde
+	}
+	if consecutivo < rangoDesde {
+		consecutivo = rangoDesde
+	}
+	if consecutivo > rangoHasta {
+		consecutivo = rangoHasta
+	}
+	ambiente := chooseDIANAmbiente(cfg)
+	nit := strings.TrimSpace(genericStringValue(cfg["nit"]))
+	dv := strings.TrimSpace(genericStringValue(cfg["digito_verificacion"]))
+	razon := strings.TrimSpace(genericStringValue(cfg["razon_social"]))
+	user := strings.TrimSpace(actorEmail)
+	if user == "" {
+		user = strings.TrimSpace(genericStringValue(cfg["usuario_creador"]))
+	}
+	_, err := dbpkg.ExecCompat(dbEmp, `INSERT INTO empresa_configuracion_avanzada (
+		empresa_id, tipo_documento_emisor, nit, digito_verificacion, razon_social,
+		pais_codigo, ambiente_fe, prefijo_factura, resolucion_numero,
+		resolucion_fecha_desde, resolucion_fecha_hasta, consecutivo_desde,
+		consecutivo_hasta, proximo_consecutivo, fecha_creacion, fecha_actualizacion,
+		usuario_creador, estado
+	) VALUES (?, 'NIT', ?, ?, ?, 'CO', ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, ?, 'activo')
+	ON CONFLICT(empresa_id) DO UPDATE SET
+		tipo_documento_emisor = 'NIT',
+		nit = CASE WHEN excluded.nit <> '' THEN excluded.nit ELSE empresa_configuracion_avanzada.nit END,
+		digito_verificacion = CASE WHEN excluded.digito_verificacion <> '' THEN excluded.digito_verificacion ELSE empresa_configuracion_avanzada.digito_verificacion END,
+		razon_social = CASE WHEN excluded.razon_social <> '' THEN excluded.razon_social ELSE empresa_configuracion_avanzada.razon_social END,
+		pais_codigo = 'CO',
+		ambiente_fe = excluded.ambiente_fe,
+		prefijo_factura = excluded.prefijo_factura,
+		resolucion_numero = excluded.resolucion_numero,
+		resolucion_fecha_desde = excluded.resolucion_fecha_desde,
+		resolucion_fecha_hasta = excluded.resolucion_fecha_hasta,
+		consecutivo_desde = excluded.consecutivo_desde,
+		consecutivo_hasta = excluded.consecutivo_hasta,
+		proximo_consecutivo = excluded.proximo_consecutivo,
+		fecha_actualizacion = CURRENT_TIMESTAMP,
+		usuario_creador = CASE WHEN excluded.usuario_creador <> '' THEN excluded.usuario_creador ELSE empresa_configuracion_avanzada.usuario_creador END,
+		estado = 'activo'`,
+		empresaID, nit, dv, razon, ambiente, prefijo, resolucion, fechaDesde, fechaHasta,
+		rangoDesde, rangoHasta, consecutivo, user,
+	)
+	return err
+}
+
 func dianNowLocal() string {
 	return time.Now().In(time.Local).Format("2006-01-02 15:04:05")
 }
@@ -7426,6 +7630,7 @@ const (
 	dianOfficialSetNotasCredito = 10
 	dianOfficialSetTotal        = dianOfficialSetFacturas + dianOfficialSetNotasDebito + dianOfficialSetNotasCredito
 	dianCertificateAlertDays    = 30
+	dianResolutionAlertDays     = 30
 )
 
 func parseDIANStoredTime(raw string) (time.Time, bool) {
@@ -7516,6 +7721,161 @@ func dianCertificateExpiryStatus(now, notBefore, notAfter time.Time, alertDays i
 		"validacion_x509":      true,
 		"zona_horaria_sistema": time.Local.String(),
 	}
+}
+
+func dianResolutionAlertThresholdDays(cfg map[string]interface{}) int {
+	days := int(anyToInt64(cfg["resolucion_alerta_dias"]))
+	if days <= 0 {
+		return dianResolutionAlertDays
+	}
+	if days > 365 {
+		return 365
+	}
+	return days
+}
+
+func dianDateDaysRemaining(now, target time.Time) int {
+	hours := target.Sub(now).Hours()
+	if hours >= 0 {
+		return int(math.Ceil(hours / 24))
+	}
+	return -int(math.Ceil(math.Abs(hours) / 24))
+}
+
+func dianResolutionExpiryStatus(now time.Time, cfg map[string]interface{}, alertDays int) map[string]interface{} {
+	if alertDays <= 0 {
+		alertDays = dianResolutionAlertDays
+	}
+	rawHasta := strings.TrimSpace(genericStringValue(cfg["resolucion_fecha_hasta"]))
+	prefijo := strings.TrimSpace(genericStringValue(cfg["prefijo"]))
+	resolucion := strings.TrimSpace(genericStringValue(cfg["resolucion_numero"]))
+	rangoDesde := anyToInt64(cfg["rango_desde"])
+	rangoHasta := anyToInt64(cfg["rango_hasta"])
+	consecutivo := anyToInt64(cfg["consecutivo_actual"])
+	if rawHasta == "" {
+		return map[string]interface{}{
+			"ok":              false,
+			"configurado":     false,
+			"mensaje":         "No hay fecha final de resolucion registrada para calcular vencimiento.",
+			"alerta_dias":     alertDays,
+			"dias_restantes":  nil,
+			"proximo_vencer":  false,
+			"vencido":         false,
+			"requiere_alerta": false,
+			"prefijo":         prefijo,
+			"resolucion":      resolucion,
+		}
+	}
+	fechaHasta, ok := parseDIANDate(rawHasta)
+	if !ok {
+		return map[string]interface{}{
+			"ok":              false,
+			"configurado":     true,
+			"mensaje":         "Fecha final de resolucion invalida.",
+			"alerta_dias":     alertDays,
+			"dias_restantes":  nil,
+			"proximo_vencer":  false,
+			"vencido":         false,
+			"requiere_alerta": true,
+			"prefijo":         prefijo,
+			"resolucion":      resolucion,
+		}
+	}
+	nowDate := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.Local)
+	expiryDate := time.Date(fechaHasta.Year(), fechaHasta.Month(), fechaHasta.Day(), 23, 59, 59, 0, time.Local)
+	days := dianDateDaysRemaining(nowDate, expiryDate)
+	expired := nowDate.After(expiryDate)
+	closeToExpiry := !expired && days <= alertDays
+	status := "vigente"
+	message := fmt.Sprintf("Resolucion DIAN vigente; vence el %s.", expiryDate.Format("2006-01-02"))
+	if expired {
+		status = "vencida"
+		message = fmt.Sprintf("Resolucion DIAN vencida el %s. No se debe emitir con este rango.", expiryDate.Format("2006-01-02"))
+	} else if closeToExpiry {
+		status = "proxima_a_vencer"
+		message = fmt.Sprintf("Resolucion DIAN proxima a vencer en %d dia(s).", days)
+	}
+	return map[string]interface{}{
+		"ok":                   !expired,
+		"configurado":          true,
+		"estado":               status,
+		"mensaje":              message,
+		"fecha_inicio":         genericStringValue(cfg["resolucion_fecha_desde"]),
+		"fecha_vencimiento":    expiryDate.Format("2006-01-02"),
+		"vence_en":             expiryDate.Format(time.RFC3339),
+		"alerta_dias":          alertDays,
+		"dias_restantes":       days,
+		"proximo_a_vencer":     closeToExpiry,
+		"proximo_vencer":       closeToExpiry,
+		"vencido":              expired,
+		"requiere_alerta":      expired || closeToExpiry,
+		"prefijo":              prefijo,
+		"resolucion":           resolucion,
+		"rango_desde":          rangoDesde,
+		"rango_hasta":          rangoHasta,
+		"consecutivo_actual":   consecutivo,
+		"zona_horaria_sistema": time.Local.String(),
+	}
+}
+
+func checkDIANResolutionExpiry(dbEmp, dbSuper *sql.DB, empresaID int64, cfg map[string]interface{}, actorEmail string, notify bool) map[string]interface{} {
+	status := dianResolutionExpiryStatus(time.Now(), cfg, dianResolutionAlertThresholdDays(cfg))
+	status["notificacion_enviada"] = false
+	if !notify || !parseTruthy(genericStringValue(status["requiere_alerta"])) || empresaID <= 0 || strings.TrimSpace(actorEmail) == "" {
+		return status
+	}
+	today := time.Now().Format("2006-01-02")
+	if strings.HasPrefix(strings.TrimSpace(genericStringValue(cfg["resolucion_alerta_ultimo_envio"])), today) {
+		status["notificacion_omitida"] = "ya_notificada_hoy"
+		return status
+	}
+	actor, err := dbpkg.ResolveEmpresaBuzonActor(dbEmp, dbSuper, empresaID, actorEmail)
+	if err != nil {
+		status["notificacion_error"] = "no se pudo resolver destinatario del buzon"
+		return status
+	}
+	title := "Resolucion DIAN proxima a vencer"
+	if parseTruthy(genericStringValue(status["vencido"])) {
+		title = "Resolucion DIAN vencida"
+	}
+	msg := fmt.Sprintf("%s Prefijo %s, resolucion %s, rango %d-%d, consecutivo actual %d.",
+		genericStringValue(status["mensaje"]),
+		genericStringValue(status["prefijo"]),
+		genericStringValue(status["resolucion"]),
+		anyToInt64(status["rango_desde"]),
+		anyToInt64(status["rango_hasta"]),
+		anyToInt64(status["consecutivo_actual"]),
+	)
+	created, err := dbpkg.CreateEmpresaBuzonMensaje(dbEmp, dbpkg.EmpresaBuzonMensaje{
+		EmpresaID:          empresaID,
+		DestinatarioTipo:   actor.Tipo,
+		DestinatarioRef:    actor.Ref,
+		DestinatarioEmail:  actor.Email,
+		DestinatarioNombre: actor.Nombre,
+		RemitenteTipo:      "sistema",
+		RemitenteRef:       "facturacion_dian",
+		RemitenteNombre:    "Facturacion DIAN PCS",
+		Titulo:             title,
+		Mensaje:            msg,
+		Tipo:               "interno",
+		Prioridad:          "alta",
+		Modulo:             "facturacion",
+		ReferenciaTipo:     "empresa_dian_configuracion",
+		ReferenciaID:       anyToInt64(cfg["id"]),
+		EnlaceURL:          fmt.Sprintf("/administrar_empresa/facturacion_electronica.html?empresa_id=%d", empresaID),
+		UsuarioCreador:     actorEmail,
+	})
+	if err != nil {
+		status["notificacion_error"] = "no se pudo crear mensaje en buzon"
+		return status
+	}
+	if created.ID > 0 {
+		status["notificacion_enviada"] = true
+		_ = updateDIANConfigFields(dbEmp, empresaID, cfg, map[string]interface{}{
+			"resolucion_alerta_ultimo_envio": time.Now().Format(time.RFC3339),
+		})
+	}
+	return status
 }
 
 func resolveDIANCertificateExpiryFromConfig(cfg map[string]interface{}) (time.Time, time.Time, string, error) {
