@@ -684,6 +684,14 @@ body.carrito-flat-page .advanced-card::before{
   content:none !important;
 }
 
+body.carrito-flat-page .carrito-workspace-card{
+  padding-top:0 !important;
+}
+
+body.carrito-flat-page #carritoResumen:empty{
+  display:none !important;
+}
+
 body.carrito-flat-page .container > *,
 body.carrito-flat-page .carrito-primary-layout,
 body.carrito-flat-page .carrito-primary-main,
