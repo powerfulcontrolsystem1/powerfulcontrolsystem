@@ -956,6 +956,7 @@
       empresaAvanzadaConfig: null,
       empresaPermissionsContext: null,
       stationConfig: null,
+      scannerSearchModeOverride: '',
       tarifaMinutosConfig: null,
       stationCartUI: null,
       buttonFeedbackAudioContext: null,
@@ -1147,8 +1148,56 @@
     function getScannerSearchMode() {
       const ui = normalizeUnifiedCartUIConfig(state.stationCartUI || getCurrentStationCartUIConfig());
       const select = document.getElementById('scannerSearchMode');
-      const preferred = normalize((select && select.value) || ui.modo_busqueda_producto_carrito).toLowerCase();
+      const preferred = normalize(state.scannerSearchModeOverride || (select && select.value) || ui.modo_busqueda_producto_carrito).toLowerCase();
       return ['codigo_barras', 'sku', 'nombre'].indexOf(preferred) >= 0 ? preferred : 'codigo_barras';
+    }
+
+    function getCartDeviceID() {
+      try {
+        let id = normalize(localStorage.getItem('pcs_dispositivo_id'));
+        if (!id) {
+          id = 'pcs-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 10);
+          localStorage.setItem('pcs_dispositivo_id', id);
+        }
+        return id.slice(0, 80);
+      } catch (_) {
+        return 'pcs-device';
+      }
+    }
+
+    function scannerSearchModePrefKey() {
+      const deviceID = getCartDeviceID().replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 80);
+      const cajaCode = normalizeCashCode(defaultPaymentCashRegisterCode() || 'CAJA-1').replace(/[^A-Z0-9_-]/g, '_').slice(0, 50) || 'CAJA-1';
+      return 'carrito_busqueda_producto_' + deviceID + '_' + cajaCode;
+    }
+
+    function loadScannerSearchModePref(prefs) {
+      try {
+        const key = scannerSearchModePrefKey();
+        const pref = Array.isArray(prefs) ? prefs.find(function(item) {
+          return item && String(item.clave) === key && Number(item.estacion_id) === 0;
+        }) : null;
+        const value = normalize(pref && pref.valor).toLowerCase();
+        state.scannerSearchModeOverride = ['codigo_barras', 'sku', 'nombre'].indexOf(value) >= 0 ? value : '';
+      } catch (_) {
+        state.scannerSearchModeOverride = '';
+      }
+    }
+
+    async function saveScannerSearchModePref(mode) {
+      const value = normalize(mode).toLowerCase();
+      if (!state.empresaID || ['codigo_barras', 'sku', 'nombre'].indexOf(value) < 0) return;
+      state.scannerSearchModeOverride = value;
+      try {
+        await fetch('/api/empresa/estacion_prefs?empresa_id=' + encodeURIComponent(state.empresaID), {
+          method: 'PUT',
+          credentials: 'same-origin',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ estacion_id: 0, clave: scannerSearchModePrefKey(), valor: value })
+        });
+      } catch (err) {
+        console.warn('No se pudo guardar el modo de busqueda del carrito para este computador/caja.', err);
+      }
     }
 
     function allowsDecimalScannerQuantity() {
@@ -2353,8 +2402,10 @@
           return item && String(item.clave) === 'estaciones_config' && Number(item.estacion_id) === 0;
         }) : null;
         state.stationConfig = normalizeStationConfig(parseStationConfigValue(pref && pref.valor));
+        loadScannerSearchModePref(prefs);
       } catch (_) {
         state.stationConfig = normalizeStationConfig({});
+        state.scannerSearchModeOverride = '';
       }
       if (window.PCSEstacionLabels && typeof window.PCSEstacionLabels.apply === 'function') {
         window.PCSEstacionLabels.apply(document.body, state.stationConfig);
@@ -7214,7 +7265,13 @@
       }
       if (state.directSaleMode) {
         params.set('modo', 'venta_directa');
+        params.set('perm_page', 'linkVentaDirecta');
       }
+      if (state.stationMode) {
+        params.set('perm_page', 'linkEstaciones');
+      }
+      const bodegaID = defaultPaymentCashRegisterBodegaID();
+      if (bodegaID > 0) params.set('bodega_id', String(bodegaID));
       if (state.stationCartUI && state.stationCartUI.modo_pantalla_tactil) {
         params.set('touch', '1');
       }
@@ -7225,7 +7282,13 @@
       if (code) returnParams.set('carrito_codigo', code);
       if (state.stationID > 0) returnParams.set('estacion_id', String(state.stationID));
       if (state.stationName) returnParams.set('estacion_nombre', state.stationName);
-      if (state.directSaleMode) returnParams.set('modo', 'venta_directa');
+      if (state.directSaleMode) {
+        returnParams.set('modo', 'venta_directa');
+        returnParams.set('perm_page', 'linkVentaDirecta');
+      }
+      if (state.stationMode) {
+        returnParams.set('perm_page', 'linkEstaciones');
+      }
       const returnRoute = '/administrar_empresa/carrito_de_compras.html?' + returnParams.toString();
       params.set('return_url', returnRoute);
       return '/administrar_empresa/buscar_producto_botones.html?' + params.toString();
@@ -11712,7 +11775,9 @@
     const scannerSearchMode = document.getElementById('scannerSearchMode');
     if (scannerSearchMode) {
       scannerSearchMode.addEventListener('change', function() {
+        state.scannerSearchModeOverride = normalize(this.value).toLowerCase();
         syncScannerSearchModeUI();
+        saveScannerSearchModePref(state.scannerSearchModeOverride);
         focusScannerInput();
       });
     }

@@ -300,7 +300,9 @@
       touchedItems: new Map(),
       touchSeq: 0,
       touchMode: false,
-      directSaleMode: false
+      directSaleMode: false,
+      permPage: '',
+      bodegaID: 0
     };
 
     function getQueryParam(name) {
@@ -369,6 +371,8 @@
       const estacionID = Number(getQueryParam('estacion_id') || 0);
       const estacionNombre = normalize(getQueryParam('estacion_nombre') || '');
       if (state.directSaleMode) params.set('modo', 'venta_directa');
+      if (state.directSaleMode) params.set('perm_page', 'linkVentaDirecta');
+      if (!state.directSaleMode && state.permPage) params.set('perm_page', state.permPage);
       if (estacionID > 0) params.set('estacion_id', String(estacionID));
       if (estacionNombre) params.set('estacion_nombre', estacionNombre);
 
@@ -381,6 +385,8 @@
       if (state.directSaleMode) {
         params.set('modo', 'venta_directa');
         params.set('perm_page', 'linkVentaDirecta');
+      } else if (state.permPage) {
+        params.set('perm_page', state.permPage);
       }
       if (state.carritoCodigo) {
         params.set('carrito_codigo', state.carritoCodigo);
@@ -579,7 +585,10 @@
     }
 
     async function loadProducts() {
-      const res = await fetch('/api/empresa/productos?empresa_id=' + encodeURIComponent(state.empresaID), { credentials: 'same-origin' });
+      const params = new URLSearchParams();
+      params.set('empresa_id', String(state.empresaID));
+      if (state.permPage) params.set('perm_page', state.permPage);
+      const res = await fetch('/api/empresa/productos?' + params.toString(), { credentials: 'same-origin' });
       await ensureOk(res);
       const rows = await res.json();
       state.productos = Array.isArray(rows) ? rows : [];
@@ -615,6 +624,7 @@
         tipo_item: 'producto',
         referencia_id: Number(producto.id || 0),
         codigo_item: normalize((currentItem && currentItem.codigo_item) || productCode),
+        bodega_id: Number((currentItem && currentItem.bodega_id) || state.bodegaID || 0),
         descripcion: normalize((currentItem && currentItem.descripcion) || producto.nombre || 'Producto'),
         unidad_medida: normalize((currentItem && currentItem.unidad_medida) || producto.unidad_medida || 'unidad'),
         cantidad: Number(existingQty + cantidad),
@@ -788,6 +798,8 @@
       state.carritoID = carritoID;
       state.carritoCodigo = carritoCode;
       state.directSaleMode = normalize(getQueryParam('modo') || '').toLowerCase() === 'venta_directa';
+      state.permPage = normalize(getQueryParam('perm_page') || (state.directSaleMode ? 'linkVentaDirecta' : 'linkEstaciones'));
+      state.bodegaID = Math.max(0, Math.trunc(Number(getQueryParam('bodega_id') || 0) || 0));
       state.returnURL = returnURL || buildDefaultReturnURL();
       state.touchMode = getQueryParam('touch') === '1' || String(getQueryParam('touch') || '').toLowerCase() === 'true';
       document.body.classList.toggle('product-touch-mode', state.touchMode);
