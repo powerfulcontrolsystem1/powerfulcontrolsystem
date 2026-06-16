@@ -14907,3 +14907,9 @@ Archivos modificados:
 - documentos/descripcion_de_archivos
 - documentos/historial_de_cambios
 - web/estilos.css
+
+2026-06-16 08:10:54 - Mensaje: rs: actualizar repositorio y sincronizar VPS; Commit: b2a2976d; PushStatus: OK
+Archivos modificados:
+- backend/db/modulos_faltantes.go
+- backend/handlers/modulos_faltantes.go
+- web/administrar_empresa/facturacion_electronica.html
