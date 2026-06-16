@@ -545,6 +545,83 @@ func EmpresaFacturacionElectronicaHandler(dbEmp, dbSuper *sql.DB) http.HandlerFu
 				})
 				return
 			}
+			if action == "reenviar_dian" || action == "reintentar_dian" || action == "enviar_dian" {
+				var payload facturacionOperacionPayload
+				if r.Body != nil {
+					_ = json.NewDecoder(r.Body).Decode(&payload)
+				}
+				if payload.EmpresaID <= 0 {
+					if empresaID, err := parseInt64QueryOptional(r, "empresa_id"); err == nil && empresaID > 0 {
+						payload.EmpresaID = empresaID
+					}
+				}
+				if payload.EmpresaID <= 0 {
+					http.Error(w, "empresa_id es obligatorio", http.StatusBadRequest)
+					return
+				}
+				if strings.TrimSpace(payload.DocumentoCodigo) == "" {
+					payload.DocumentoCodigo = strings.TrimSpace(r.URL.Query().Get("documento_codigo"))
+				}
+				if strings.TrimSpace(payload.DocumentoCodigo) == "" {
+					http.Error(w, "documento_codigo es obligatorio", http.StatusBadRequest)
+					return
+				}
+				if strings.TrimSpace(payload.TipoDocumento) == "" {
+					payload.TipoDocumento = strings.TrimSpace(r.URL.Query().Get("tipo_documento"))
+				}
+				documentoTipo := normalizeFacturacionDocumentoElectronicoTipo(payload.TipoDocumento)
+				if documentoTipo == "" {
+					documentoTipo = "factura_electronica"
+				}
+				doc, err := dbpkg.GetEmpresaDocumentoFacturacionByCodigo(dbEmp, payload.EmpresaID, documentoTipo, payload.DocumentoCodigo)
+				if err != nil {
+					if errors.Is(err, sql.ErrNoRows) {
+						http.Error(w, "documento no encontrado", http.StatusNotFound)
+						return
+					}
+					http.Error(w, "No se pudo consultar el documento", http.StatusInternalServerError)
+					return
+				}
+				merged := facturacionBuildOperacionPayloadFromDocumento(*doc)
+				if strings.TrimSpace(payload.ClienteNombre) != "" {
+					merged.ClienteNombre = payload.ClienteNombre
+				}
+				if strings.TrimSpace(payload.ClienteNumeroDocumento) != "" {
+					merged.ClienteNumeroDocumento = payload.ClienteNumeroDocumento
+				}
+				if strings.TrimSpace(payload.ClienteTipoDocumento) != "" {
+					merged.ClienteTipoDocumento = payload.ClienteTipoDocumento
+				}
+				if strings.TrimSpace(payload.ClienteEmail) != "" {
+					merged.ClienteEmail = payload.ClienteEmail
+				}
+				if strings.TrimSpace(payload.ClienteTelefono) != "" {
+					merged.ClienteTelefono = payload.ClienteTelefono
+				}
+				if strings.TrimSpace(payload.ClienteDireccion) != "" {
+					merged.ClienteDireccion = payload.ClienteDireccion
+				}
+				resultado, retryItem, err := processFacturacionIntegracionForDocumento(dbEmp, merged, *doc, "emitir", strings.TrimSpace(adminEmailFromRequest(r)))
+				if err != nil {
+					http.Error(w, "No se pudo reintentar envio DIAN", http.StatusInternalServerError)
+					return
+				}
+				resp := map[string]interface{}{
+					"ok":                 resultado.EstadoEnvio == "enviado" || strings.TrimSpace(resultado.ReferenciaExterna) != "",
+					"accion":             action,
+					"empresa_id":         payload.EmpresaID,
+					"tipo_documento":     doc.TipoDocumento,
+					"documento_codigo":   doc.DocumentoCodigo,
+					"numero_legal":       doc.NumeroLegal,
+					"codigo_validacion":  doc.CodigoValidacion,
+					"integracion_fiscal": resultado,
+				}
+				if retryItem != nil {
+					resp["cola_reintentos"] = retryItem
+				}
+				writeJSON(w, http.StatusOK, resp)
+				return
+			}
 			if !facturacionActionIsPaisConfig(action) && facturacionActionRequiresFiscalIntegration(action) {
 				var payload facturacionOperacionPayload
 				if r.Body != nil {
