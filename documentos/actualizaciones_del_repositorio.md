@@ -14892,3 +14892,11 @@ Archivos modificados:
 - documentos/historial_de_cambios
 - web/estilos.css
 - web/img/Logo con espacio.png
+
+2026-06-15 20:49:34 - Mensaje: rs: actualizar repositorio y sincronizar VPS; Commit: bb9cc2e3; PushStatus: OK
+Archivos modificados:
+- backend/handlers/productos.go
+- documentos/descripcion_de_archivos
+- documentos/historial_de_cambios
+- web/administrar_empresa/administrar_productos.html
+- web/administrar_empresa/historial_productos.html
