@@ -7535,22 +7535,22 @@ func syncDIANConfigToFacturacionPais(dbEmp *sql.DB, empresaID int64, cfg map[str
 	}
 	extraJSON, _ := json.Marshal(extra)
 	payload := dbpkg.FacturacionElectronicaPaisConfig{
-		EmpresaID:             empresaID,
-		PaisCodigo:            "CO",
-		PaisNombre:            "Colombia",
-		MonedaCodigo:          "COP",
-		Proveedor:             "dian",
-		Ambiente:              ambiente,
-		TipoDocumentoEmisor:   "NIT",
-		IdentificadorFiscal:   strings.TrimSpace(genericStringValue(cfg["nit"])),
-		RazonSocial:           strings.TrimSpace(genericStringValue(cfg["razon_social"])),
-		PrefijoFactura:        strings.ToUpper(strings.TrimSpace(genericStringValue(cfg["prefijo"]))),
-		ResolucionNumero:      strings.TrimSpace(genericStringValue(cfg["resolucion_numero"])),
-		APIBaseURL:            strings.TrimSpace(genericStringValue(cfg["url_dian"])),
-		CamposPaisJSON:        string(extraJSON),
-		UsuarioCreador:        strings.TrimSpace(actorEmail),
-		Estado:                "activo",
-		Observaciones:         "Sincronizado desde configuracion DIAN Colombia.",
+		EmpresaID:           empresaID,
+		PaisCodigo:          "CO",
+		PaisNombre:          "Colombia",
+		MonedaCodigo:        "COP",
+		Proveedor:           "dian",
+		Ambiente:            ambiente,
+		TipoDocumentoEmisor: "NIT",
+		IdentificadorFiscal: strings.TrimSpace(genericStringValue(cfg["nit"])),
+		RazonSocial:         strings.TrimSpace(genericStringValue(cfg["razon_social"])),
+		PrefijoFactura:      strings.ToUpper(strings.TrimSpace(genericStringValue(cfg["prefijo"]))),
+		ResolucionNumero:    strings.TrimSpace(genericStringValue(cfg["resolucion_numero"])),
+		APIBaseURL:          strings.TrimSpace(genericStringValue(cfg["url_dian"])),
+		CamposPaisJSON:      string(extraJSON),
+		UsuarioCreador:      strings.TrimSpace(actorEmail),
+		Estado:              "activo",
+		Observaciones:       "Sincronizado desde configuracion DIAN Colombia.",
 	}
 	_, err := dbpkg.UpsertFacturacionElectronicaPaisConfig(dbEmp, payload)
 	return err
