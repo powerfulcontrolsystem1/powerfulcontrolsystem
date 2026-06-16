@@ -112,6 +112,7 @@
                     <th>Activa</th>
                     <th>Codigo</th>
                     <th>Nombre</th>
+                    <th>Bodega de descuento</th>
                     <th>Descripcion</th>
                     <th>Acciones</th>
                   </tr>
@@ -742,6 +743,7 @@
     var messageBox = document.getElementById('messageBox');
     var current = null;
     var camarasCatalog = [];
+    var bodegasCatalog = [];
 
     function initTarifasPorMinutosFrame() {
       var frame = document.getElementById('tarifasPorMinutosFrame');
@@ -799,6 +801,7 @@
         codigo: 'CAJA-' + pos,
         nombre: pos === 1 ? 'Caja principal' : ('Caja ' + pos),
         descripcion: pos === 1 ? 'Caja principal' : '',
+        bodega_id: 0,
         activa: true
       };
     }
@@ -815,11 +818,13 @@
         seen[codigo] = true;
         var nombre = String(item.nombre || item.caja_nombre || item.name || fallback.nombre).trim();
         var descripcion = String(item.descripcion || item.caja_descripcion || item.description || '').trim();
+        var bodegaID = Math.max(0, Math.trunc(Number(item.bodega_id || item.bodegaID || item.bodega || fallback.bodega_id || 0) || 0));
         out.push({
           id: String(item.id || item.uid || codigo.toLowerCase().replace(/[^a-z0-9_-]/g, '_')).trim(),
           codigo: codigo,
           nombre: nombre || fallback.nombre,
           descripcion: descripcion,
+          bodega_id: bodegaID,
           activa: item.activa === undefined && item.active === undefined ? true : toBool(item.activa !== undefined ? item.activa : item.active)
         });
       });
@@ -1486,6 +1491,33 @@
       return camarasCatalog;
     }
 
+    async function loadBodegasCatalog() {
+      bodegasCatalog = [];
+      if (!empresaId) return bodegasCatalog;
+      try {
+        var data = await requestJSON('/api/empresa/bodegas?empresa_id=' + encodeURIComponent(empresaId) + '&include_inactive=1');
+        bodegasCatalog = Array.isArray(data) ? data : [];
+      } catch (err) {
+        console.warn('loadBodegasCatalog:', err);
+        bodegasCatalog = [];
+      }
+      return bodegasCatalog;
+    }
+
+    function renderBodegaOptions(selectedID) {
+      var selected = Math.max(0, Math.trunc(Number(selectedID || 0) || 0));
+      var options = ['<option value="">Automatica del producto</option>'];
+      (Array.isArray(bodegasCatalog) ? bodegasCatalog : []).forEach(function(bodega) {
+        var id = Math.max(0, Math.trunc(Number(bodega && bodega.id || 0) || 0));
+        if (!id) return;
+        var estado = String(bodega.estado || 'activo').trim().toLowerCase();
+        var label = String(bodega.nombre || bodega.codigo || ('Bodega ' + id)).trim();
+        if (estado && estado !== 'activo') label += ' (inactiva)';
+        options.push('<option value="' + id + '" ' + (id === selected ? 'selected' : '') + '>' + sanitize(label) + '</option>');
+      });
+      return options.join('');
+    }
+
     function setCajasConfigMessage(text, type) {
       var box = document.getElementById('cajasConfigMsg');
       if (!box) return;
@@ -1502,6 +1534,7 @@
           '<td><label><input type="checkbox" data-caja-activa ' + (caja.activa ? 'checked' : '') + '> Activa</label></td>' +
           '<td><input class="form-input" data-caja-codigo value="' + sanitize(caja.codigo) + '" placeholder="CAJA-' + (index + 1) + '"></td>' +
           '<td><input class="form-input" data-caja-nombre value="' + sanitize(caja.nombre) + '" placeholder="FRUTERA"></td>' +
+          '<td><select class="form-input" data-caja-bodega>' + renderBodegaOptions(caja.bodega_id) + '</select></td>' +
           '<td><input class="form-input" data-caja-descripcion value="' + sanitize(caja.descripcion) + '" placeholder="Ej: caja de frutera"></td>' +
           '<td><button type="button" class="btn secondary" data-caja-eliminar>Eliminar</button></td>' +
           '</tr>';
@@ -1520,12 +1553,14 @@
       var raw = rows.map(function(row, index) {
         var codigo = row.querySelector('[data-caja-codigo]');
         var nombre = row.querySelector('[data-caja-nombre]');
+        var bodega = row.querySelector('[data-caja-bodega]');
         var descripcion = row.querySelector('[data-caja-descripcion]');
         var activa = row.querySelector('[data-caja-activa]');
         return {
           id: 'caja_' + String(index + 1),
           codigo: codigo ? codigo.value : '',
           nombre: nombre ? nombre.value : '',
+          bodega_id: bodega ? Math.max(0, Math.trunc(Number(bodega.value || 0) || 0)) : 0,
           descripcion: descripcion ? descripcion.value : '',
           activa: activa ? !!activa.checked : true
         };
@@ -2668,7 +2703,7 @@
 
       wireEvents();
       initTarifasPorMinutosFrame();
-      await Promise.all([cargarEmpresa(), loadEstadoCarritoConfig(), loadCamarasCatalog()]);
+      await Promise.all([cargarEmpresa(), loadEstadoCarritoConfig(), loadCamarasCatalog(), loadBodegasCatalog()]);
 
       var cfg = await getConfigFromServer();
       if (!cfg) {

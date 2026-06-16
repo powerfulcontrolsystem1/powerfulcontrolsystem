@@ -1,9 +1,9 @@
-ï»¿<!doctype html>
+<!doctype html>
 <html lang="es">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Venta pÃºblica</title>
+  <title>Venta pública</title>
   <link rel="stylesheet" href="/estilos.css">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
   <script src="/menu.js"></script>
@@ -87,12 +87,12 @@
               <div id="avatar" class="avatar">E</div>
               <div class="headline">
                 <div id="handle" class="handle">@empresa</div>
-                <h1 id="title">Venta pÃºblica</h1>
-                <p id="desc">Cargando catÃ¡logo...</p>
+                <h1 id="title">Venta pública</h1>
+                <p id="desc">Cargando catálogo...</p>
               </div>
             </div>
             <div class="quick-metrics">
-              <div class="metric"><span>PÃ¡ginas</span><strong id="metricPages">0</strong></div>
+              <div class="metric"><span>Páginas</span><strong id="metricPages">0</strong></div>
               <div class="metric"><span>Productos</span><strong id="metricProducts">0</strong></div>
               <div class="metric"><span>Moneda</span><strong id="metricCurrency">COP</strong></div>
             </div>
@@ -104,7 +104,7 @@
       <div class="toolbar">
         <div class="tabs" id="tabs"></div>
         <div class="search">
-          <input id="q" placeholder="Buscar productos (nombre / cÃ³digo / SKU)" />
+          <input id="q" placeholder="Buscar productos (nombre / código / SKU)" />
           <select id="sort">
             <option value="relevancia">Relevancia</option>
             <option value="precio_asc">Precio: menor a mayor</option>
@@ -120,40 +120,40 @@
         <div class="panel">
           <div class="feed-head">
             <div>
-              <strong>CatÃ¡logo pÃºblico</strong>
+              <strong>Catálogo público</strong>
               <div class="form-help">Compra directa, promociones y vitrinas activas de esta empresa.</div>
             </div>
           </div>
           <section id="grid" class="grid"></section>
-          <div id="feedSentinel" class="load-more" hidden>Cargando mÃ¡s...</div>
+          <div id="feedSentinel" class="load-more" hidden>Cargando más...</div>
         </div>
 
         <aside class="panel side-card">
           <section class="profile-summary">
             <div class="summary-card">
               <h3>Perfil comercial</h3>
-              <div id="profileSummaryText" class="form-help">Cargando informaciÃ³n pÃºblica...</div>
+              <div id="profileSummaryText" class="form-help">Cargando información pública...</div>
             </div>
             <div class="summary-card">
-              <h3>PÃ¡ginas de esta empresa</h3>
+              <h3>Páginas de esta empresa</h3>
               <div id="pageList" class="page-list"></div>
             </div>
             <div id="restaurantOrderCard" class="summary-card" hidden>
               <h3>Pedidos para restaurante</h3>
-              <div id="restaurantOrderHint" class="form-help">Arma tu pedido y compÃ¡rtelo al restaurante desde esta misma pÃ¡gina.</div>
+              <div id="restaurantOrderHint" class="form-help">Arma tu pedido y compártelo al restaurante desde esta misma página.</div>
               <form id="restaurantOrderForm" class="order-form" style="margin-top:10px">
                 <input id="orderName" placeholder="Nombre de quien recibe">
-                <input id="orderPhone" placeholder="TelÃ©fono">
+                <input id="orderPhone" placeholder="Teléfono">
                 <input id="orderEmail" placeholder="Correo opcional">
                 <select id="orderChannel">
                   <option value="domicilio">Domicilio</option>
                   <option value="recoger">Recoger en tienda</option>
                 </select>
-                <input id="orderAddress" placeholder="DirecciÃ³n de entrega">
-                <textarea id="orderNotes" rows="3" placeholder="Notas del pedido. Ej: sin picante, porterÃ­a, apartamento"></textarea>
-                <label><input id="orderShareLocation" type="checkbox" checked> Compartir mi ubicaciÃ³n para ubicar el domicilio</label>
+                <input id="orderAddress" placeholder="Dirección de entrega">
+                <textarea id="orderNotes" rows="3" placeholder="Notas del pedido. Ej: sin picante, portería, apartamento"></textarea>
+                <label><input id="orderShareLocation" type="checkbox" checked> Compartir mi ubicación para ubicar el domicilio</label>
                 <div class="vp-actions">
-                  <button id="useCustomerLocationBtn" class="btn secondary" type="button">Usar mi ubicaciÃ³n</button>
+                  <button id="useCustomerLocationBtn" class="btn secondary" type="button">Usar mi ubicación</button>
                   <button class="btn" type="submit">Enviar pedido</button>
                 </div>
                 <div id="restaurantOrderMsg" class="form-help"></div>
@@ -161,7 +161,7 @@
             </div>
             <div id="trackingCard" class="summary-card" hidden>
               <h3>Seguimiento del pedido</h3>
-              <div id="trackingSummary" class="form-help">AÃºn no hay un pedido para seguir.</div>
+              <div id="trackingSummary" class="form-help">Aún no hay un pedido para seguir.</div>
               <div id="trackingMap" class="order-map"></div>
             </div>
           </section>
@@ -183,7 +183,7 @@
     </div>
   </aside>
   <button id="openAIDrawer" class="ai-chat-toggle-button" aria-haspopup="dialog" aria-expanded="false" type="button">
-    <span class="ai-openai-mark" aria-hidden="true"><span class="ai-openai-knot"></span><span class="ai-openai-text">IA</span></span><span class="ai-chat-toggle-label">Asistente IA</span>
+    <img class="icon ai-openai-mark ai-mark-shell" data-ai-logo="true" src="/img/pcs_ia_logo.svg" alt="" aria-hidden="true"><span class="ai-chat-toggle-label">Asistente IA</span>
   </button>
 
   <div id="aiChatBackdrop" class="ai-chat-backdrop" aria-hidden="true"></div>
@@ -202,18 +202,18 @@
             <svg viewBox="0 0 24 24" width="22" height="22"><path fill="currentColor" d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H6l-2 2V4h16v12z"/></svg>
           </span>
           <div>
-            <h2 id="aiChatTitle">Asistente pÃºblico de tienda</h2>
+            <h2 id="aiChatTitle">Asistente público de tienda</h2>
           </div>
         </div>
         <div class="ai-chat-header-actions">
           <button id="aiChatHintToggle" type="button" class="btn secondary small">Ver ejemplos</button>
-          <button id="aiChatConfigBtn" type="button" class="ai-chat-header-icon-btn" aria-label="Configurar chat flotante" title="ConfiguraciÃ³n chat flotante">
+          <button id="aiChatConfigBtn" type="button" class="ai-chat-header-icon-btn" aria-label="Configurar chat flotante" title="Configuración chat flotante">
             <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="currentColor" d="M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8zm7.4 4.5c.04-.3.06-.6.06-.9s-.02-.6-.06-.9l2-1.6a.5.5 0 0 0 .1-.6l-1.8-3.1a.5.5 0 0 0-.6-.2l-2.4 1a7 7 0 0 0-1.6-1l-.4-2.6A.5.5 0 0 0 13.5 2h-3a.5.5 0 0 0-.5.4l-.4 2.6a7 7 0 0 0-1.6 1l-2.4-1a.5.5 0 0 0-.6.2L4.5 7a.5.5 0 0 0 .1.6l2 1.6c-.1.3-.1.6-.1.9s.02.6.06.9l-2 1.6a.5.5 0 0 0-.1.6l1.8 3.1a.5.5 0 0 0 .6.2l2.4-1c.5.4 1.1.7 1.6 1l.4 2.6a.5.5 0 0 0 .5.4h3a.5.5 0 0 0 .5-.4l.4-2.6c.6-.2 1.1-.5 1.6-1l2.4 1a.5.5 0 0 0 .6-.2l1.8-3.1a.5.5 0 0 0-.1-.6l-2-1.6z"/></svg>
           </button>
           <button id="aiChatMinimize" type="button" class="ai-chat-header-icon-btn" aria-label="Minimizar chat" title="Minimizar">
             <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="currentColor" d="M5 12h14v2H5z"/></svg>
           </button>
-          <button id="closeAIDrawer" type="button" class="ai-chat-close" aria-label="Cerrar asistente IA">Ã—</button>
+          <button id="closeAIDrawer" type="button" class="ai-chat-close" aria-label="Cerrar asistente IA">×</button>
         </div>
       </div>
       <div id="aiChatNotice" class="ai-chat-notice"></div>
@@ -222,20 +222,20 @@
         <div id="aiChatHints" class="ai-chat-hints is-hidden">
           <p>Preguntas recomendadas:</p>
           <ul>
-            <li>Â¿QuÃ© productos o servicios tiene esta empresa?</li>
-            <li>Â¿QuÃ© promociones pÃºblicas estÃ¡n activas?</li>
-            <li>Â¿CuÃ¡les son los precios visibles hoy?</li>
-            <li>MuÃ©strame las pÃ¡ginas pÃºblicas disponibles.</li>
+            <li>¿Qué productos o servicios tiene esta empresa?</li>
+            <li>¿Qué promociones públicas están activas?</li>
+            <li>¿Cuáles son los precios visibles hoy?</li>
+            <li>Muéstrame las páginas públicas disponibles.</li>
           </ul>
         </div>
       </div>
       <form id="aiChatForm" class="ai-chat-form">
         <div class="ai-chat-toolbar-row">
-          <div class="ai-chat-voice-toolbar" role="toolbar" aria-label="Voz y conversaciÃ³n">
+          <div class="ai-chat-voice-toolbar" role="toolbar" aria-label="Voz y conversación">
             <button id="aiChatNewBtn" type="button" class="ai-chat-icon-btn" aria-label="Nuevo chat" title="Nuevo chat">
               <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="currentColor" d="M19 11h-6V5h-2v6H5v2h6v6h2v-6h6v-2z"/></svg>
             </button>
-            <button type="button" id="aiChatConvBtn" class="ai-chat-icon-btn" aria-pressed="false" aria-label="Modo conversaciÃ³n" title="Modo conversaciÃ³n"></button>
+            <button type="button" id="aiChatConvBtn" class="ai-chat-icon-btn" aria-pressed="false" aria-label="Modo conversación" title="Modo conversación"></button>
             <button type="button" id="aiChatMicBtn" class="ai-chat-icon-btn" aria-pressed="false" aria-label="Dictar mensaje" title="Dictar"></button>
             <button type="button" id="aiChatVoiceBtn" class="ai-chat-icon-btn" aria-pressed="false" aria-label="Voz del asistente" title="Leer respuestas"></button>
             <button type="button" id="aiChatStopBtn" class="ai-chat-icon-btn ai-chat-stop-btn" aria-label="Detener audio y respuesta" title="Detener audio y respuesta">
@@ -257,7 +257,7 @@
                 <button id="aiChatAttachBtn" type="button" class="ai-chat-icon-btn" aria-label="Adjuntar archivo" title="Adjuntar">
                   <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="currentColor" d="M16.5 6.5v9a4.5 4.5 0 0 1-9 0v-10a3 3 0 0 1 6 0v9a1.5 1.5 0 0 1-3 0v-8h2v8a.5.5 0 0 0 1 0v-9a2 2 0 1 0-4 0v10a2.5 2.5 0 0 0 5 0v-9h2z"/></svg>
                 </button>
-                <button id="aiChatClearAttachment" type="button" class="ai-chat-icon-btn is-hidden" aria-label="Quitar adjunto" title="Quitar adjunto">Ã—</button>
+                <button id="aiChatClearAttachment" type="button" class="ai-chat-icon-btn is-hidden" aria-label="Quitar adjunto" title="Quitar adjunto">×</button>
               </div>
               <div id="aiChatAttachmentName" class="ai-chat-attachment-name is-hidden"></div>
             </div>
@@ -307,7 +307,7 @@
       const cart=getCart();
       cartBody.innerHTML='';
       if(!cart.length){
-        cartBody.innerHTML='<div class="empty">Tu carrito estÃ¡ vacÃ­o.</div>';
+        cartBody.innerHTML='<div class="empty">Tu carrito está vacío.</div>';
       } else {
         cart.forEach(it=>{
           const div=document.createElement('div');
@@ -333,8 +333,8 @@
       const page=data.page||null;
       const pages=data.pages||[];
       const items=data.items||[];
-      const titleText=(page&&page.nombre)||tienda.nombre_tienda||'Venta pÃºblica';
-      const descText=(page&&page.descripcion)||tienda.descripcion_tienda||'Productos disponibles para pago en lÃ­nea.';
+      const titleText=(page&&page.nombre)||tienda.nombre_tienda||'Venta pública';
+      const descText=(page&&page.descripcion)||tienda.descripcion_tienda||'Productos disponibles para pago en línea.';
       const primary=String(tienda.color_primario||'#0f4c81').trim() || '#0f4c81';
       const banner=String((page&&page.banner_url) || tienda.banner_url || '').trim();
       const logo=String(tienda.logo_url||'').trim();
@@ -352,7 +352,7 @@
       profileSummaryText.textContent = descText;
       restaurantOrderCard.hidden = !tienda.pedidos_restaurante_activo;
       if(!restaurantOrderCard.hidden){
-        restaurantOrderHint.textContent=(tienda.pedidos_nombre_sistema||'Pedidos restaurante')+'. EnvÃ­a tu pedido, espera la preparaciÃ³n y sigue al domiciliario si la empresa tiene tracking activo.';
+        restaurantOrderHint.textContent=(tienda.pedidos_nombre_sistema||'Pedidos restaurante')+'. Envía tu pedido, espera la preparación y sigue al domiciliario si la empresa tiene tracking activo.';
         orderChannel.querySelector('option[value="recoger"]').hidden = tienda.pedidos_permitir_recoger_en_tienda === false;
         orderChannel.querySelector('option[value="domicilio"]').hidden = tienda.pedidos_permitir_domicilio === false;
         if (tienda.pedidos_permitir_domicilio === false) orderChannel.value='recoger';
@@ -373,12 +373,12 @@
       const tracking=data&&data.tracking?data.tracking:null;
       trackingCard.hidden=!order;
       if(!order){
-        trackingSummary.textContent='AÃºn no hay un pedido para seguir.';
+        trackingSummary.textContent='Aún no hay un pedido para seguir.';
         trackingMap.classList.remove('active');
         return;
       }
       const req=tracking&&tracking.request?tracking.request:null;
-      trackingSummary.textContent='Pedido '+(order.codigo_orden||'')+' Â· Estado: '+(order.estado_pedido||'recibido')+(req&&req.conductor_nombre?' Â· Mensajero: '+req.conductor_nombre:'');
+      trackingSummary.textContent='Pedido '+(order.codigo_orden||'')+' · Estado: '+(order.estado_pedido||'recibido')+(req&&req.conductor_nombre?' · Mensajero: '+req.conductor_nombre:'');
       if(req && tracking && Array.isArray(tracking.route) && tracking.route.length){
         ensureTrackingMap();
         trackingMap.classList.add('active');
@@ -408,10 +408,10 @@
     }
 
     async function sendCustomerLocation(){
-      if(!navigator.geolocation) throw new Error('Tu navegador no soporta ubicaciÃ³n');
+      if(!navigator.geolocation) throw new Error('Tu navegador no soporta ubicación');
       const pos=await new Promise((resolve,reject)=>navigator.geolocation.getCurrentPosition(resolve,e=>reject(new Error(e.message||'No se pudo obtener GPS')),{enableHighAccuracy:true,maximumAge:5000,timeout:12000}));
       state.customerLocation={lat:pos.coords.latitude,lng:pos.coords.longitude};
-      restaurantOrderMsg.textContent='UbicaciÃ³n capturada para el domicilio.';
+      restaurantOrderMsg.textContent='Ubicación capturada para el domicilio.';
     }
 
     async function createRestaurantOrder(ev){
@@ -449,7 +449,7 @@
     async function loadCatalog(reset){
       try{
         if(!state.slug && !state.data){
-          grid.innerHTML='<div class="empty">Selecciona una tienda pÃºblica vÃ¡lida para ver el catÃ¡logo.</div>';
+          grid.innerHTML='<div class="empty">Selecciona una tienda pública válida para ver el catálogo.</div>';
           feedSentinel.hidden=true;
           return;
         }
@@ -460,7 +460,7 @@
         }
         if(state.paging.done) return;
         state.paging.loading=true;
-        feedSentinel.hidden=false; feedSentinel.textContent='Cargando mÃ¡s...';
+        feedSentinel.hidden=false; feedSentinel.textContent='Cargando más...';
 
         let qs='action=catalogo';
         if(state.slug)qs+='&empresa_slug='+encodeURIComponent(state.slug);
@@ -481,9 +481,9 @@
         const tienda=data.tienda||{};
         const items=data.items||[];
         if(!items.length){
-          if(state.paging.offset===0) grid.innerHTML='<div class="empty">Esta pÃ¡gina aÃºn no tiene productos publicados.</div>';
+          if(state.paging.offset===0) grid.innerHTML='<div class="empty">Esta página aún no tiene productos publicados.</div>';
           state.paging.done=true;
-          feedSentinel.textContent='No hay mÃ¡s productos.';
+          feedSentinel.textContent='No hay más productos.';
           return;
         }
         items.forEach(it=>{
@@ -512,7 +512,7 @@
         });
       }catch(e){
         status.textContent=e.message||String(e);
-        if(!grid.children.length) grid.innerHTML='<div class="empty">No se pudo cargar esta pÃ¡gina pÃºblica.</div>';
+        if(!grid.children.length) grid.innerHTML='<div class="empty">No se pudo cargar esta página pública.</div>';
       }finally{
         state.paging.loading=false;
       }
@@ -562,7 +562,7 @@
       if (!a) return;
       ev.preventDefault();
       try {
-        if (!state.data) throw new Error('Cargando catÃ¡logo...');
+        if (!state.data) throw new Error('Cargando catálogo...');
         const empresaSlug = String(state.data.empresa_slug || state.slug || '').trim();
         if (!empresaSlug) throw new Error('Empresa no disponible.');
         const itemId = String(a.getAttribute('data-item') || '').trim();
@@ -586,7 +586,7 @@
         const text = await res.text();
         const data = text ? JSON.parse(text) : {};
         if (!res.ok) throw new Error(data.error || text || ('HTTP ' + res.status));
-        alert('Mensaje enviado. Si dejas tu contacto, la empresa podrÃ¡ responderte.');
+        alert('Mensaje enviado. Si dejas tu contacto, la empresa podrá responderte.');
       } catch (e) {
         alert(e.message || 'No se pudo enviar el mensaje.');
       } finally {
@@ -597,7 +597,7 @@
     cartBtn.onclick=openCart;
     closeCartBtn.onclick=closeCart;
     overlay.onclick=closeCart;
-    clearCartBtn.onclick=function(){ if(!confirm('Â¿Vaciar carrito?')) return; saveCart([]); updateCartBadge(); renderCart(); };
+    clearCartBtn.onclick=function(){ if(!confirm('¿Vaciar carrito?')) return; saveCart([]); updateCartBadge(); renderCart(); };
     checkoutBtn.onclick=function(){ location.href = checkoutCartUrl(); };
     searchBtn.onclick=applySearch;
     sort.onchange=applySearch;

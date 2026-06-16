@@ -1,3 +1,8 @@
+2026-06-15 - Caja-bodega e icono IA unico
+- `web/img/pcs_ia_logo.svg`: logo IA unico con fondo transparente y letras blancas para el boton de inteligencia artificial en todas las apariencias.
+- `backend/db/carritos_compras.go`: conserva `bodega_id` por item del carrito para que la caja detectada descuente de su bodega asignada.
+- `web/administrar_empresa/configuracion_de_estaciones.html`: agrega selector de bodega por caja fisica.
+
 2026-06-15 - Correccion visual carrito e icono IA
 - `web/administrar_empresa/carrito_de_compras.html`: separa los campos rapidos de `Codigo de barras`, `Codigo SKU` y `Nombre` para que los tres esten disponibles al agregar productos.
 - `web/estilos.css`: elimina el scroll horizontal de la tabla de detalle del carrito, compacta columnas y retira el fondo/hueco oscuro del bloque superior.

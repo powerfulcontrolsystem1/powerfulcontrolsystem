@@ -162,6 +162,7 @@ type CarritoCompraItem struct {
 	TipoItem            string  `json:"tipo_item,omitempty"`
 	ReferenciaID        int64   `json:"referencia_id,omitempty"`
 	CodigoItem          string  `json:"codigo_item,omitempty"`
+	BodegaID            int64   `json:"bodega_id,omitempty"`
 	Descripcion         string  `json:"descripcion"`
 	UnidadMedida        string  `json:"unidad_medida,omitempty"`
 	Cantidad            float64 `json:"cantidad"`
@@ -308,6 +309,7 @@ func EnsureEmpresaCarritosSchema(dbConn *sql.DB) error {
 			tipo_item TEXT DEFAULT 'producto',
 			referencia_id INTEGER,
 			codigo_item TEXT,
+			bodega_id INTEGER DEFAULT 0,
 			descripcion TEXT NOT NULL,
 			unidad_medida TEXT DEFAULT 'unidad',
 			cantidad REAL NOT NULL DEFAULT 1,
@@ -483,6 +485,9 @@ func EnsureEmpresaCarritosSchema(dbConn *sql.DB) error {
 		return err
 	}
 	if err := ensureColumnIfMissing(dbConn, "carrito_compra_items", "codigo_item", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "carrito_compra_items", "bodega_id", "INTEGER DEFAULT 0"); err != nil {
 		return err
 	}
 	if err := ensureColumnIfMissing(dbConn, "carrito_compra_items", "descripcion", "TEXT DEFAULT ''"); err != nil {
@@ -3122,6 +3127,7 @@ func CreateCarritoCompraItem(dbConn *sql.DB, payload CarritoCompraItem) (int64, 
 			tipo_item,
 			referencia_id,
 			codigo_item,
+			bodega_id,
 			descripcion,
 			unidad_medida,
 			cantidad,
@@ -3139,12 +3145,13 @@ func CreateCarritoCompraItem(dbConn *sql.DB, payload CarritoCompraItem) (int64, 
 			observaciones,
 			fecha_creacion,
 			fecha_actualizacion
-		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'activo', ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
+		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'activo', ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
 			payload.EmpresaID,
 			payload.CarritoID,
 			payload.TipoItem,
 			nullableInt64(payload.ReferenciaID),
 			strings.TrimSpace(payload.CodigoItem),
+			nullableInt64(payload.BodegaID),
 			strings.TrimSpace(payload.Descripcion),
 			payload.UnidadMedida,
 			payload.Cantidad,
@@ -3174,6 +3181,7 @@ func CreateCarritoCompraItem(dbConn *sql.DB, payload CarritoCompraItem) (int64, 
 				payload.TipoItem,
 				payload.ReferenciaID,
 				payload.Cantidad,
+				payload.BodegaID,
 				true,
 				payload.PermitirSinStock,
 				referencia,
@@ -3202,6 +3210,7 @@ func GetCarritoCompraItems(dbConn *sql.DB, empresaID, carritoID int64, includeIn
 		COALESCE(tipo_item, 'producto'),
 		COALESCE(referencia_id, 0),
 		COALESCE(codigo_item, ''),
+		COALESCE(bodega_id, 0),
 		COALESCE(descripcion, ''),
 		COALESCE(unidad_medida, 'unidad'),
 		COALESCE(cantidad, 0),
@@ -3243,6 +3252,7 @@ func GetCarritoCompraItems(dbConn *sql.DB, empresaID, carritoID int64, includeIn
 			&item.TipoItem,
 			&item.ReferenciaID,
 			&item.CodigoItem,
+			&item.BodegaID,
 			&item.Descripcion,
 			&item.UnidadMedida,
 			&item.Cantidad,
@@ -3296,6 +3306,7 @@ func UpdateCarritoCompraItem(dbConn *sql.DB, payload CarritoCompraItem) error {
 						payload.TipoItem,
 						payload.ReferenciaID,
 						delta,
+						prev.BodegaID,
 						true,
 						payload.PermitirSinStock,
 						referencia,
@@ -3314,6 +3325,7 @@ func UpdateCarritoCompraItem(dbConn *sql.DB, payload CarritoCompraItem) error {
 						payload.TipoItem,
 						payload.ReferenciaID,
 						-delta,
+						prev.BodegaID,
 						false,
 						false,
 						referencia,
@@ -3333,6 +3345,7 @@ func UpdateCarritoCompraItem(dbConn *sql.DB, payload CarritoCompraItem) error {
 						prev.TipoItem,
 						prev.ReferenciaID,
 						prev.Cantidad,
+						prev.BodegaID,
 						false,
 						false,
 						referencia,
@@ -3351,6 +3364,7 @@ func UpdateCarritoCompraItem(dbConn *sql.DB, payload CarritoCompraItem) error {
 						payload.TipoItem,
 						payload.ReferenciaID,
 						payload.Cantidad,
+						payload.BodegaID,
 						true,
 						payload.PermitirSinStock,
 						referencia,
@@ -3379,6 +3393,7 @@ func UpdateCarritoCompraItem(dbConn *sql.DB, payload CarritoCompraItem) error {
 			valor_impuesto = ?,
 			subtotal_linea = ?,
 			total_linea = ?,
+			bodega_id = ?,
 			observaciones = ?,
 			fecha_actualizacion = CURRENT_TIMESTAMP
 		WHERE id = ? AND empresa_id = ? AND carrito_id = ?`,
@@ -3397,6 +3412,7 @@ func UpdateCarritoCompraItem(dbConn *sql.DB, payload CarritoCompraItem) error {
 			payload.ValorImpuesto,
 			payload.SubtotalLinea,
 			payload.TotalLinea,
+			nullableInt64(payload.BodegaID),
 			strings.TrimSpace(payload.Observaciones),
 			payload.ID,
 			payload.EmpresaID,
@@ -3429,6 +3445,7 @@ func DeleteCarritoCompraItem(dbConn *sql.DB, empresaID, carritoID, itemID int64)
 				item.TipoItem,
 				item.ReferenciaID,
 				item.Cantidad,
+				item.BodegaID,
 				false,
 				false,
 				referencia,
@@ -3479,6 +3496,7 @@ func SetCarritoCompraItemEstado(dbConn *sql.DB, empresaID, carritoID, itemID int
 					item.TipoItem,
 					item.ReferenciaID,
 					item.Cantidad,
+					item.BodegaID,
 					false,
 					false,
 					referencia,
@@ -3497,6 +3515,7 @@ func SetCarritoCompraItemEstado(dbConn *sql.DB, empresaID, carritoID, itemID int
 					item.TipoItem,
 					item.ReferenciaID,
 					item.Cantidad,
+					item.BodegaID,
 					true,
 					false,
 					referencia,
@@ -3526,6 +3545,7 @@ type carritoItemSnapshot struct {
 	TipoItem       string
 	ReferenciaID   int64
 	Cantidad       float64
+	BodegaID       int64
 	Descripcion    string
 	UsuarioCreador string
 	Estado         string
@@ -3546,6 +3566,7 @@ func getCarritoItemSnapshotTx(tx *sql.Tx, empresaID, carritoID, itemID int64) (*
 		COALESCE(tipo_item, 'producto'),
 		COALESCE(referencia_id, 0),
 		COALESCE(cantidad, 0),
+		COALESCE(bodega_id, 0),
 		COALESCE(descripcion, ''),
 		COALESCE(usuario_creador, ''),
 		COALESCE(estado, 'activo')
@@ -3554,7 +3575,7 @@ func getCarritoItemSnapshotTx(tx *sql.Tx, empresaID, carritoID, itemID int64) (*
 	LIMIT 1`, empresaID, carritoID, itemID)
 
 	item := &carritoItemSnapshot{}
-	if err := row.Scan(&item.ID, &item.TipoItem, &item.ReferenciaID, &item.Cantidad, &item.Descripcion, &item.UsuarioCreador, &item.Estado); err != nil {
+	if err := row.Scan(&item.ID, &item.TipoItem, &item.ReferenciaID, &item.Cantidad, &item.BodegaID, &item.Descripcion, &item.UsuarioCreador, &item.Estado); err != nil {
 		return nil, err
 	}
 	item.TipoItem = defaultTipoItem(item.TipoItem)
@@ -3682,12 +3703,24 @@ func resolveCarritoStockComponentsTx(tx *sql.Tx, empresaID int64, tipoItem strin
 	return components, nil
 }
 
-func resolveProductoStockContextTx(tx *sql.Tx, empresaID, productoID int64) (int64, float64, error) {
+func resolveProductoStockContextTx(tx *sql.Tx, empresaID, productoID, preferredBodegaID int64) (int64, float64, error) {
 	var bodegaPrincipal sql.NullInt64
 	var costo float64
 	err := queryRowTxSQLCompat(tx, `SELECT bodega_principal_id, COALESCE(costo, 0) FROM productos WHERE empresa_id = ? AND id = ? LIMIT 1`, empresaID, productoID).Scan(&bodegaPrincipal, &costo)
 	if err != nil {
 		return 0, 0, err
+	}
+
+	if preferredBodegaID > 0 {
+		var exists int
+		err := queryRowTxSQLCompat(tx, `SELECT 1 FROM bodegas WHERE empresa_id = ? AND id = ? AND LOWER(COALESCE(estado, 'activo')) = 'activo' LIMIT 1`, empresaID, preferredBodegaID).Scan(&exists)
+		if err != nil {
+			if err == sql.ErrNoRows {
+				return 0, 0, fmt.Errorf("bodega %d no pertenece a la empresa %d o esta inactiva", preferredBodegaID, empresaID)
+			}
+			return 0, 0, err
+		}
+		return preferredBodegaID, costo, nil
 	}
 
 	bodegaID := int64(0)
@@ -3708,7 +3741,7 @@ func resolveProductoStockContextTx(tx *sql.Tx, empresaID, productoID int64) (int
 	return bodegaID, costo, nil
 }
 
-func adjustCarritoItemStockTx(tx *sql.Tx, empresaID, carritoID int64, tipoItem string, referenciaID int64, cantidad float64, reservar bool, allowNegativeStock bool, referencia, usuario, observaciones string) error {
+func adjustCarritoItemStockTx(tx *sql.Tx, empresaID, carritoID int64, tipoItem string, referenciaID int64, cantidad float64, preferredBodegaID int64, reservar bool, allowNegativeStock bool, referencia, usuario, observaciones string) error {
 	if cantidad <= 0 {
 		return nil
 	}
@@ -3730,7 +3763,7 @@ func adjustCarritoItemStockTx(tx *sql.Tx, empresaID, carritoID int64, tipoItem s
 
 	contexts := make([]carritoStockContext, 0, len(components))
 	for _, component := range components {
-		bodegaID, costoUnitario, err := resolveProductoStockContextTx(tx, empresaID, component.ProductoID)
+		bodegaID, costoUnitario, err := resolveProductoStockContextTx(tx, empresaID, component.ProductoID, preferredBodegaID)
 		if err != nil {
 			return err
 		}
@@ -3766,7 +3799,7 @@ func adjustCarritoItemStockTx(tx *sql.Tx, empresaID, carritoID int64, tipoItem s
 		if reservar {
 			query := `UPDATE inventario_existencias
 			SET cantidad = cantidad - ?,
-				fecha_actualizacion = `+sqlNowExpr()+`
+				fecha_actualizacion = ` + sqlNowExpr() + `
 			WHERE empresa_id = ?
 				AND producto_id = ?
 				AND bodega_id = ?`
@@ -3828,6 +3861,7 @@ func restoreCarritoItemsStockTx(tx *sql.Tx, empresaID, carritoID int64, motivo s
 		COALESCE(tipo_item, 'producto'),
 		COALESCE(referencia_id, 0),
 		COALESCE(cantidad, 0),
+		COALESCE(bodega_id, 0),
 		COALESCE(usuario_creador, '')
 	FROM carrito_compra_items
 	WHERE empresa_id = ? AND carrito_id = ? AND COALESCE(estado, 'activo') = 'activo'`, empresaID, carritoID)
@@ -3840,12 +3874,13 @@ func restoreCarritoItemsStockTx(tx *sql.Tx, empresaID, carritoID int64, motivo s
 		tipoItem     string
 		referenciaID int64
 		cantidad     float64
+		bodegaID     int64
 		usuario      string
 	}
 	items := make([]itemStockRestore, 0)
 	for rows.Next() {
 		var item itemStockRestore
-		if err := rows.Scan(&item.itemID, &item.tipoItem, &item.referenciaID, &item.cantidad, &item.usuario); err != nil {
+		if err := rows.Scan(&item.itemID, &item.tipoItem, &item.referenciaID, &item.cantidad, &item.bodegaID, &item.usuario); err != nil {
 			rows.Close()
 			return err
 		}
@@ -3868,6 +3903,7 @@ func restoreCarritoItemsStockTx(tx *sql.Tx, empresaID, carritoID int64, motivo s
 			item.tipoItem,
 			item.referenciaID,
 			item.cantidad,
+			item.bodegaID,
 			false,
 			false,
 			referencia,

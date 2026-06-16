@@ -1352,6 +1352,7 @@
         codigo: 'CAJA-' + pos,
         nombre: pos === 1 ? 'Caja principal' : ('Caja ' + pos),
         descripcion: pos === 1 ? 'Caja principal' : '',
+        bodega_id: 0,
         activa: true
       };
     }
@@ -1368,11 +1369,13 @@
         seen[codigo] = true;
         const nombre = normalize(item.nombre || item.caja_nombre || item.name || fallback.nombre);
         const descripcion = normalize(item.descripcion || item.caja_descripcion || item.description || '');
+        const bodegaID = Math.max(0, Math.trunc(Number(item.bodega_id || item.bodegaID || item.bodega || fallback.bodega_id || 0) || 0));
         out.push({
           id: normalize(item.id || item.uid || codigo.toLowerCase().replace(/[^a-z0-9_-]/g, '_')),
           codigo,
           nombre: nombre || fallback.nombre,
           descripcion,
+          bodega_id: bodegaID,
           activa: parseCajaBool(item.activa !== undefined ? item.activa : item.active, true)
         });
       });
@@ -1412,7 +1415,8 @@
         return {
           codigo,
           nombre: normalize(match.nombre || sessionStorage.getItem('pcs_caja_trabajo_nombre') || ''),
-          descripcion: normalize(match.descripcion || sessionStorage.getItem('pcs_caja_trabajo_descripcion') || '')
+          descripcion: normalize(match.descripcion || sessionStorage.getItem('pcs_caja_trabajo_descripcion') || ''),
+          bodega_id: Math.max(0, Math.trunc(Number(match.bodega_id || 0) || 0))
         };
       } catch (_) {
         return null;
@@ -1536,6 +1540,13 @@
       if (cajas.length && normalizeCashCode(cajas[0].codigo)) return normalizeCashCode(cajas[0].codigo);
       const drawer = getCashDrawerConfig();
       return normalizeCashCode((drawer && drawer.code) || 'CAJA-1') || 'CAJA-1';
+    }
+
+    function defaultPaymentCashRegisterBodegaID() {
+      const selectedLoginCaja = getSelectedLoginCaja();
+      if (selectedLoginCaja && Number(selectedLoginCaja.bodega_id || 0) > 0) return Number(selectedLoginCaja.bodega_id || 0);
+      const caja = findCajaCatalogEntry(defaultPaymentCashRegisterCode());
+      return Math.max(0, Math.trunc(Number(caja && caja.bodega_id || 0) || 0));
     }
 
     async function openCashRegisterForPayment(carrito) {
@@ -7640,6 +7651,7 @@
         tipo_item: 'producto',
         referencia_id: Number(producto.id || 0),
         codigo_item: productoCode,
+        bodega_id: defaultPaymentCashRegisterBodegaID(),
         descripcion: normalize(producto.nombre) || 'Producto',
         unidad_medida: productoUnidad,
         cantidad: qty,
@@ -7662,6 +7674,7 @@
         payload.impuesto_porcentaje = Number(existing.impuesto_porcentaje || payload.impuesto_porcentaje);
         payload.impuesto_codigo = normalize(existing.impuesto_codigo) || 'IVA';
         payload.descripcion = normalize(existing.descripcion) || payload.descripcion;
+        payload.bodega_id = Math.max(0, Math.trunc(Number(existing.bodega_id || payload.bodega_id || 0) || 0));
         payload.unidad_medida = normalize(existing.unidad_medida) || payload.unidad_medida;
         payload.observaciones = normalize(existing.observaciones) || payload.observaciones;
       }
@@ -10237,6 +10250,7 @@
         referencia_id: toNumber(item.referencia_id || 0, 0),
         codigo_item: normalize(item.codigo_item),
         descripcion: normalize(item.descripcion),
+        bodega_id: Math.max(0, Math.trunc(Number(item.bodega_id || 0) || 0)),
         unidad_medida: normalize(item.unidad_medida) || 'unidad',
         cantidad: cantidad,
         precio_unitario: Number(item.precio_unitario || 0),

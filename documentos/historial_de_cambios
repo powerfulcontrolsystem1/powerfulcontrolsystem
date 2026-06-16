@@ -1,3 +1,10 @@
+2026-06-15: Caja asociada a bodega e icono IA unico.
+- Modulos afectados: `carritos`, `estaciones`, `inventario`, `chat_ia`, `frontend_ux`.
+- Backend carrito: `backend/db/carritos_compras.go` agrega `bodega_id` a items del carrito y usa la bodega de la caja detectada para reservar/liberar stock, validando pertenencia a `empresa_id`.
+- Configuracion estaciones: `web/administrar_empresa/configuracion_de_estaciones.html` permite asignar una bodega de descuento a cada caja fisica guardada en `estaciones_config.cajas_config`.
+- Frontend carrito: `web/administrar_empresa/carrito_de_compras.html` toma la caja asociada al computador detectado y envia su `bodega_id` al agregar o actualizar productos.
+- IA visual: `web/img/pcs_ia_logo.svg`, `web/js/ai_button_icons.js`, `web/js/ai_chat_drawer.js` y estilos globales unifican el icono IA sin circulos adicionales en super administrador, selector y administrar empresa.
+
 2026-06-15: Correccion visual carrito PCS e icono IA.
 - Modulos afectados: `carritos`, `chat_ia`, `index_publico`, `frontend_ux`.
 - Frontend carrito: `web/administrar_empresa/carrito_de_compras.html` deja visibles los tres campos de agregacion rapida (`Codigo de barras`, `Codigo SKU` y `Nombre`) y conserva el modo predeterminado solo como foco/estado activo.

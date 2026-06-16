@@ -77,7 +77,7 @@
   var ICON_SPK = '<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path fill="currentColor" d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>';
   var ICON_CONV = '<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path fill="currentColor" d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H6l-2 2V4h16v12z"/></svg>';
   var ICON_STOP = '<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="currentColor" d="M6 6h12v12H6z"/></svg>';
-  var AI_TOGGLE_ICON = '<img class="icon ai-openai-mark ai-mark-shell" data-ai-logo="true" src="/img/pcs_ia_logo_dark.svg" alt="" aria-hidden="true">';
+  var AI_TOGGLE_ICON = '<img class="icon ai-openai-mark ai-mark-shell" data-ai-logo="true" src="/img/pcs_ia_logo.svg" alt="" aria-hidden="true">';
   var ROBOT_PANEL_ID = 'robotInlineChatPanel';
   var ROBOT_STATUS_ID = 'robotInlineStatus';
   var ROBOT_ASSISTANT_BUBBLE_ID = 'robotAssistantBubble';

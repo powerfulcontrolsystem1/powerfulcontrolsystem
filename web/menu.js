@@ -424,7 +424,7 @@
         '<a class="fm-item fm-icon-item" href="/red_social_comercial.html" target="_blank" rel="noopener"><img class="fm-item-icon" src="/img/social.svg" alt="">Red social comercial</a>' +
         '<a class="fm-item fm-icon-item" href="/noticias.html"><img class="fm-item-icon" src="/img/report.svg" alt="">Noticias</a>' +
         '<button id="createHelpTicketLink" class="fm-item fm-action-item fm-icon-item" type="button"><img class="fm-item-icon" src="/img/shield-security-color.svg" alt="">Crear ticket de ayuda</button>' +
-        '<button id="openFloatingAILink" class="fm-item fm-action-item fm-icon-item" type="button"><img class="fm-item-icon" data-ai-logo="true" src="/img/pcs_ia_logo_dark.svg" alt="">Robot / IA</button>' +
+        '<button id="openFloatingAILink" class="fm-item fm-action-item fm-icon-item" type="button"><img class="fm-item-icon" data-ai-logo="true" src="/img/pcs_ia_logo.svg" alt="">Robot / IA</button>' +
         '<button id="openFloatingRadioLink" class="fm-item fm-action-item fm-icon-item" type="button"><img class="fm-item-icon" src="/img/play.svg" alt="">Emisoras</button>' +
         '<div class="fm-submenu" id="utilitiesMenuWrapper">' +
           '<button id="utilitiesMenuToggle" class="fm-item fm-submenu-toggle fm-icon-item" type="button" aria-expanded="false" aria-haspopup="true"><img class="fm-item-icon" src="/img/settings-color.svg" alt="">Utilidades \u25BC</button>' +
