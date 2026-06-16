@@ -692,6 +692,15 @@ body.carrito-flat-page #carritoResumen:empty{
   display:none !important;
 }
 
+body.carrito-flat-page #buscarProductosActions{
+  display:none !important;
+  height:0 !important;
+  min-height:0 !important;
+  padding:0 !important;
+  border:0 !important;
+  overflow:hidden !important;
+}
+
 body.carrito-flat-page .container > *,
 body.carrito-flat-page .carrito-primary-layout,
 body.carrito-flat-page .carrito-primary-main,
