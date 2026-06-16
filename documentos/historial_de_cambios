@@ -34880,3 +34880,13 @@ Archivos modificados:
 PushStatus: OK
 Archivos modificados:
 - backend/handlers/modulos_faltantes.go
+
+2026-06-16: rs: actualizar repositorio y sincronizar VPS
+PushStatus: OK
+Archivos modificados:
+- backend/db/facturacion_electronica.go
+- backend/handlers/facturacion_electronica.go
+- backend/handlers/modulos_faltantes.go
+- documentos/comandos_codex.md
+- documentos/contexto_codex.md
+- documentos/flujos_operativos.md

@@ -14940,3 +14940,12 @@ Archivos modificados:
 2026-06-16 14:22:46 - Mensaje: rs: actualizar repositorio y sincronizar VPS; Commit: 3c92adcd; PushStatus: OK
 Archivos modificados:
 - backend/handlers/modulos_faltantes.go
+
+2026-06-16 14:46:13 - Mensaje: rs: actualizar repositorio y sincronizar VPS; Commit: 3de7098a; PushStatus: OK
+Archivos modificados:
+- backend/db/facturacion_electronica.go
+- backend/handlers/facturacion_electronica.go
+- backend/handlers/modulos_faltantes.go
+- documentos/comandos_codex.md
+- documentos/contexto_codex.md
+- documentos/flujos_operativos.md
