@@ -2127,6 +2127,11 @@ func EmpresaCarritoItemsHandler(dbEmp *sql.DB) http.HandlerFunc {
 			http.Error(w, "forbidden: este rol no puede consultar ni modificar items del carrito", http.StatusForbidden)
 			return
 		}
+		if err := dbpkg.EnsureEmpresaCarritosSchema(dbEmp); err != nil {
+			log.Printf("[carritos_items] ensure schema error: %v", err)
+			http.Error(w, "No se pudo preparar el modulo de carritos", http.StatusInternalServerError)
+			return
+		}
 		switch r.Method {
 		case http.MethodGet:
 			empresaID, err := parseEmpresaIDQuery(r)

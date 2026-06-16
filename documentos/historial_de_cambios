@@ -34800,3 +34800,8 @@ Archivos modificados:
 - web/administrar_empresa/carrito_de_compras.html
 - web/administrar_empresa/facturacion_electronica_tutorial_dian.html
 - web/estilos.css
+
+2026-06-15: Carrito PCS - catalogo por botones y detalle compacto
+- Se prepara el esquema de carritos antes de listar/modificar items para evitar error 500 al abrir `Buscar Productos`.
+- Se compacta el scanner de venta directa/estaciones para que se vean selector, codigo de barras, SKU, nombre, cantidad con `-`/`+`, agregar y catalogo.
+- El detalle de productos queda sin desplazamiento horizontal, con columnas fijas mas pequenas y nombres en una sola fila.

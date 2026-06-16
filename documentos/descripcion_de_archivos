@@ -11401,3 +11401,9 @@ backend/handlers/user_config.go - Controlador que expone /api/user/configuracion
 	- logo IA transparente para temas oscuros, inspirado en el simbolo entregado por el usuario.
 - `web/img/pcs_ia_logo_light.svg`:
 	- variante transparente para temas claros con letras `IA` de mayor contraste.
+
+2026-06-15 - Carrito PCS: catalogo y tabla de detalle
+- `backend/handlers/carritos_compras.go`:
+	- asegura la migracion ligera del esquema antes del CRUD de items del carrito.
+- `web/estilos.css`:
+	- ajusta el scanner y la tabla de items para evitar barras horizontales y conservar botones visibles.

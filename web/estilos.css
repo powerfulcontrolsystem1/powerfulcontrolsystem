@@ -703,9 +703,9 @@ body.carrito-flat-page #buscarProductosActions{
 
 body.carrito-flat-page .carrito-scanner-compact-grid{
   display:grid !important;
-  grid-template-columns:minmax(104px,.62fr) minmax(126px,.86fr) minmax(126px,.86fr) minmax(154px,1.1fr) 122px minmax(104px,118px) minmax(128px,148px) !important;
+  grid-template-columns:minmax(86px,.52fr) minmax(112px,.78fr) minmax(112px,.78fr) minmax(132px,1fr) 108px minmax(82px,96px) minmax(106px,118px) !important;
   align-items:end !important;
-  gap:6px !important;
+  gap:4px !important;
 }
 
 body.carrito-flat-page .carrito-scanner-compact-grid > .form-col{
@@ -20351,14 +20351,16 @@ body.carrito-flat-page .carrito-items-box .table td{
   line-height:1.12 !important;
   min-width:0 !important;
   max-width:100% !important;
-  white-space:normal !important;
-  overflow-wrap:anywhere !important;
+  white-space:nowrap !important;
+  overflow-wrap:normal !important;
   word-break:normal !important;
+  overflow:hidden !important;
+  text-overflow:ellipsis !important;
 }
 
 body.carrito-flat-page .carrito-items-box .table th:nth-child(1),
 body.carrito-flat-page .carrito-items-box .table td:nth-child(1){
-  width:54px !important;
+  width:44px !important;
   white-space:nowrap !important;
   overflow-wrap:normal !important;
   word-break:normal !important;
@@ -20369,34 +20371,37 @@ body.carrito-flat-page .carrito-items-box .table td:nth-child(1){
 body.carrito-flat-page .carrito-items-box .table th:nth-child(2),
 body.carrito-flat-page .carrito-items-box .table td:nth-child(2){
   width:auto !important;
-  min-width:260px !important;
+  min-width:0 !important;
+  white-space:nowrap !important;
+  overflow:hidden !important;
+  text-overflow:ellipsis !important;
 }
 
 body.carrito-flat-page .carrito-items-box .table th:nth-child(3),
 body.carrito-flat-page .carrito-items-box .table td:nth-child(3){
-  width:94px !important;
+  width:86px !important;
 }
 
 body.carrito-flat-page .carrito-items-box .table th:nth-child(4),
 body.carrito-flat-page .carrito-items-box .table td:nth-child(4){
-  width:86px !important;
+  width:74px !important;
 }
 
 body.carrito-flat-page .carrito-items-box .table th:nth-child(5),
 body.carrito-flat-page .carrito-items-box .table td:nth-child(5){
-  width:52px !important;
+  width:46px !important;
 }
 
 body.carrito-flat-page .carrito-items-box .table th:nth-child(6),
 body.carrito-flat-page .carrito-items-box .table td:nth-child(6),
 body.carrito-flat-page .carrito-items-box .table th:nth-child(7),
 body.carrito-flat-page .carrito-items-box .table td:nth-child(7){
-  width:78px !important;
+  width:66px !important;
 }
 
 body.carrito-flat-page .carrito-items-box .table th:nth-child(8),
 body.carrito-flat-page .carrito-items-box .table td:nth-child(8){
-  width:142px !important;
+  width:118px !important;
 }
 
 body.carrito-flat-page .carrito-items-box .table td.actions .btn,
@@ -20406,7 +20411,7 @@ body.carrito-flat-page .carrito-items-box .returnItem{
   padding:5px 6px !important;
   font-size:.72rem !important;
   line-height:1.05 !important;
-  white-space:normal !important;
+  white-space:nowrap !important;
 }
 
 body.carrito-flat-page .carrito-items-box .cart-item-qty-cell{
@@ -20415,8 +20420,8 @@ body.carrito-flat-page .carrito-items-box .cart-item-qty-cell{
 }
 
 body.carrito-flat-page .carrito-items-box .table td:nth-child(2){
-  white-space:normal !important;
-  overflow-wrap:break-word !important;
+  white-space:nowrap !important;
+  overflow-wrap:normal !important;
   word-break:normal !important;
 }
 
@@ -20507,14 +20512,18 @@ body.carrito-flat-page .carrito-items-box .returnItem{
 
 body.carrito-flat-page #scannerAgregarBtn,
 body.carrito-flat-page #carritoBtnBuscarBotones{
-  min-width:150px !important;
+  min-width:0 !important;
   width:100% !important;
-  min-height:40px !important;
-  height:40px !important;
+  min-height:38px !important;
+  height:38px !important;
+  padding:6px 5px !important;
   display:inline-flex !important;
   align-items:center !important;
   justify-content:center !important;
   text-align:center !important;
+  font-size:.78rem !important;
+  line-height:1.05 !important;
+  white-space:normal !important;
 }
 
 body.carrito-flat-page .carrito-summary-row-bottom-total{

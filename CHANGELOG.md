@@ -4762,3 +4762,4 @@
 - 2026-06-13: `Carrito PCS formato final de pago` formatea los pagos combinados al perder foco y evita mostrar un error interno cuando la venta directa ya quedó operativa tras una carga parcial.
 - 2026-06-13: `Carrito PCS botones de acciones` permite que Descuentos abra el panel de cobro desde venta directa y oculta Domotica cuando no hay estacion fisica asociada.
 - 2026-06-14: `Carrito y super panel compactos` unifica el icono flotante IA con `/img/gpt.svg`, coloca Favoritos y Email corporativo en la misma fila del panel super en PC, agrega iconos al menu flotante y compacta venta directa con selector de acciones, tarjetas alineadas y tabla de productos mas estrecha.
+- 2026-06-15: `Carrito PCS catalogo por botones` asegura el esquema antes de listar items, repara la carga del catalogo por botones y compacta scanner/tabla para mantener visibles `+`, agregar, catalogo y devolver producto sin barra horizontal.
