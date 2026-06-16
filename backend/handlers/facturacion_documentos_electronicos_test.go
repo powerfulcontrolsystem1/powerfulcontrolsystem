@@ -97,7 +97,7 @@ func TestFacturacionColombiaProduccionBloqueaProveedorManual(t *testing.T) {
 		t.Fatalf("unexpected connection state: %#v", status)
 	}
 
-	result := dispatchFacturacionProveedor(cfg, facturacionOperacionPayload{PaisCodigo: "CO"}, dbpkg.EmpresaDocumentoFacturacion{
+	result := dispatchFacturacionProveedor(nil, cfg, facturacionOperacionPayload{PaisCodigo: "CO"}, dbpkg.EmpresaDocumentoFacturacion{
 		EmpresaID:       1,
 		TipoDocumento:   "factura_electronica",
 		DocumentoCodigo: "FV-TEST",

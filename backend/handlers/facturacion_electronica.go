@@ -1665,7 +1665,99 @@ func dispatchFacturacionProveedorHTTP(url string, payload map[string]interface{}
 	}
 }
 
-func dispatchFacturacionProveedor(cfg *dbpkg.FacturacionElectronicaPaisConfig, payload facturacionOperacionPayload, doc dbpkg.EmpresaDocumentoFacturacion, accion string) facturacionProveedorDispatchResult {
+func dispatchFacturacionDIANOficial(dbEmp *sql.DB, payload facturacionOperacionPayload, doc dbpkg.EmpresaDocumentoFacturacion, accion, apiBaseURL string) facturacionProveedorDispatchResult {
+	if dbEmp == nil || doc.EmpresaID <= 0 {
+		return facturacionProveedorDispatchResult{Success: false, Error: "conexion o empresa invalida para DIAN oficial"}
+	}
+	dianCfg, err := getEmpresaDIANConfig(dbEmp, doc.EmpresaID)
+	if err != nil || len(dianCfg) == 0 {
+		return facturacionProveedorDispatchResult{Success: false, Error: "configuracion DIAN Colombia no disponible"}
+	}
+	documentoTipo := normalizeFacturacionDocumentoElectronicoTipo(facturacionFirstNonBlank(doc.TipoDocumento, payload.TipoDocumento))
+	if documentoTipo == "" {
+		documentoTipo = "factura_electronica"
+	}
+	total := firstPositiveFloat64(doc.MontoTotal, payload.MontoTotal, payload.TotalNeto)
+	impuesto := firstPositiveFloat64(payload.Impuestos, payload.IVA)
+	fechaEmision := strings.TrimSpace(doc.FechaDocumento)
+	if fechaEmision == "" {
+		fechaEmision = time.Now().Format("2006-01-02T15:04:05-07:00")
+	}
+	moneda := strings.ToUpper(strings.TrimSpace(facturacionFirstNonBlank(doc.Moneda, payload.Moneda, "COP")))
+	docPayload := map[string]interface{}{
+		"empresa_id":               doc.EmpresaID,
+		"documento_codigo":         strings.TrimSpace(doc.DocumentoCodigo),
+		"documento_tipo":           documentoTipo,
+		"fecha_emision":            fechaEmision,
+		"total":                    fmt.Sprintf("%.2f", total),
+		"impuesto_total":           fmt.Sprintf("%.2f", impuesto),
+		"moneda":                   moneda,
+		"cliente_nombre":           strings.TrimSpace(payload.ClienteNombre),
+		"cliente_nit":              strings.TrimSpace(payload.ClienteNumeroDocumento),
+		"cliente_tipo_documento":   strings.TrimSpace(payload.ClienteTipoDocumento),
+		"cliente_email":            strings.TrimSpace(payload.ClienteEmail),
+		"cliente_telefono":         strings.TrimSpace(payload.ClienteTelefono),
+		"cliente_direccion":        strings.TrimSpace(payload.ClienteDireccion),
+		"numero_legal":             strings.TrimSpace(doc.NumeroLegal),
+		"codigo_validacion":        strings.TrimSpace(doc.CodigoValidacion),
+		"resolucion_numero":        strings.TrimSpace(genericStringValue(dianCfg["resolucion_numero"])),
+		"prefijo":                  strings.TrimSpace(genericStringValue(dianCfg["prefijo"])),
+		"usar_soap_dian":           true,
+		"accion_facturacion":       strings.ToLower(strings.TrimSpace(accion)),
+	}
+	if endpoint := strings.TrimSpace(apiBaseURL); endpoint != "" {
+		docPayload["url_dian"] = endpoint
+	}
+	ublResp, _, err := generateDIANUBLBase(dianCfg, doc.EmpresaID, docPayload)
+	if err != nil {
+		return facturacionProveedorDispatchResult{Success: false, Error: "generar XML UBL DIAN: " + err.Error()}
+	}
+	docPayload["xml_ubl_base"] = genericStringValue(ublResp["xml_ubl_base"])
+	signResp, _, err := signDIANXMLXAdESBase(dianCfg, doc.EmpresaID, docPayload)
+	if err != nil {
+		return facturacionProveedorDispatchResult{Success: false, Error: "firmar XML DIAN: " + err.Error()}
+	}
+	xmlFirmado := genericStringValue(signResp["xml_firmado"])
+	preflight := validateDIANDocumentPreflight(dianCfg, doc.EmpresaID, docPayload, xmlFirmado, "emision_factura")
+	if parseTruthy(genericStringValue(preflight["bloqueado"])) {
+		raw, _ := json.Marshal(preflight)
+		return facturacionProveedorDispatchResult{Success: false, Error: "validacion preventiva DIAN no superada", RespuestaJSON: string(raw)}
+	}
+	envioPayload := map[string]interface{}{
+		"empresa_id":       doc.EmpresaID,
+		"documento_codigo": strings.TrimSpace(doc.DocumentoCodigo),
+		"documento_tipo":   documentoTipo,
+		"xml_firmado":      xmlFirmado,
+		"total":            fmt.Sprintf("%.2f", total),
+		"fecha_emision":    fechaEmision,
+		"usar_soap_dian":   true,
+	}
+	if endpoint := strings.TrimSpace(apiBaseURL); endpoint != "" {
+		envioPayload["url_dian"] = endpoint
+	}
+	envioResp, _, err := sendDIANDocumentoReal(dbEmp, dianCfg, doc.EmpresaID, envioPayload)
+	if err != nil {
+		return facturacionProveedorDispatchResult{Success: false, Error: err.Error()}
+	}
+	raw, _ := json.Marshal(envioResp)
+	estado := strings.ToLower(strings.TrimSpace(genericStringValue(envioResp["estado_dian"])))
+	trackID := strings.TrimSpace(genericStringValue(envioResp["track_id"]))
+	ok := parseTruthy(genericStringValue(envioResp["ok"])) || trackID != "" || estado == "enviado" || estado == "aceptado"
+	if !ok {
+		errMsg := dianFirstNonBlank(genericStringValue(envioResp["acuse_mensaje"]), genericStringValue(envioResp["error"]), genericStringValue(envioResp["mensaje_recepcion"]), "DIAN no acepto el documento")
+		return facturacionProveedorDispatchResult{Success: false, Error: errMsg, RespuestaJSON: string(raw), HTTPStatus: int(anyToInt64(envioResp["http_status"]))}
+	}
+	ref := trackID
+	if ref == "" {
+		ref = strings.TrimSpace(genericStringValue(envioResp["zip_key"]))
+	}
+	if ref == "" {
+		ref = strings.TrimSpace(genericStringValue(envioResp["referencia_externa"]))
+	}
+	return facturacionProveedorDispatchResult{Success: true, ReferenciaExterna: ref, RespuestaJSON: string(raw), HTTPStatus: int(anyToInt64(envioResp["http_status"]))}
+}
+
+func dispatchFacturacionProveedor(dbEmp *sql.DB, cfg *dbpkg.FacturacionElectronicaPaisConfig, payload facturacionOperacionPayload, doc dbpkg.EmpresaDocumentoFacturacion, accion string) facturacionProveedorDispatchResult {
 	proveedor := "manual"
 	ambiente := "sandbox"
 	apiBaseURL := ""
@@ -1691,6 +1783,10 @@ func dispatchFacturacionProveedor(cfg *dbpkg.FacturacionElectronicaPaisConfig, p
 	camposPais := facturacionTryParseJSONMap(camposPaisJSON)
 	if facturacionAnyToBool(camposPais["force_fail"]) || facturacionAnyToBool(camposPais["simular_error"]) {
 		return facturacionProveedorDispatchResult{Success: false, Error: "simulacion de fallo de proveedor fiscal"}
+	}
+
+	if paisCodigo == "CO" && (proveedor == "dian" || strings.Contains(strings.ToLower(apiBaseURL), "dian.gov.co")) {
+		return dispatchFacturacionDIANOficial(dbEmp, payload, doc, accion, apiBaseURL)
 	}
 
 	referenciaLocal := fmt.Sprintf("%s-%d-%s", strings.ToUpper(proveedor), doc.EmpresaID, strings.ToUpper(strings.TrimSpace(doc.DocumentoCodigo)))
@@ -2084,7 +2180,7 @@ func processFacturacionIntegracionForDocumento(dbEmp *sql.DB, payload facturacio
 	}
 
 	resultado.Aplica = true
-	dispatch := dispatchFacturacionProveedor(cfg, payload, doc, accion)
+	dispatch := dispatchFacturacionProveedor(dbEmp, cfg, payload, doc, accion)
 	now := facturacionNowLocal()
 	retryPayload.Intentos = retryPayload.Intentos + 1
 	retryPayload.FechaUltimoIntento = now
