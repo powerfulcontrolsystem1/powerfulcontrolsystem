@@ -14913,3 +14913,8 @@ Archivos modificados:
 - backend/db/modulos_faltantes.go
 - backend/handlers/modulos_faltantes.go
 - web/administrar_empresa/facturacion_electronica.html
+
+2026-06-16 12:07:03 - Mensaje: rs: actualizar repositorio y sincronizar VPS; Commit: eec25205; PushStatus: OK
+Archivos modificados:
+- backend/handlers/facturacion_documentos_electronicos_test.go
+- backend/handlers/facturacion_electronica.go
