@@ -128,6 +128,45 @@ Para frontend, hacer prueba visual cuando el cambio afecte pantallas, botones,
 formularios, impresion o responsive. En impresiones POS/carta, revisar captura o
 HTML imprimible en blanco y negro.
 
+## Pruebas reales en produccion PCS
+
+Cuando el usuario pida probar `powerfulcontrolsystem.com`, DIAN, carrito o una
+venta real de la empresa Powerful Control System, no iniciar probando en local
+salvo que la tarea diga explicitamente localhost. Usar:
+
+```text
+https://powerfulcontrolsystem.com
+empresa_id=12
+```
+
+Si el usuario entrego credenciales para esa prueba, autenticar por navegador real
+o por API con cookie temporal bajo `.gotmp`, sin imprimir la clave. Ejemplo de
+patron API:
+
+```powershell
+$base = "https://powerfulcontrolsystem.com"
+$cookie = "D:\powerfulcontrolsystem\.gotmp\pcs_cookie.txt"
+curl.exe --ssl-no-revoke -sS -c $cookie -H "Content-Type: application/json" -X POST "$base/super/api/administradores/login" --data-binary "@D:\powerfulcontrolsystem\.gotmp\login_payload.json"
+curl.exe --ssl-no-revoke -sS -b $cookie "$base/api/empresa/facturacion_electronica/dian?action=diagnostico_oficial&empresa_id=12"
+```
+
+Para facturacion electronica DIAN de PCS, el cierre minimo es:
+
+- Verificar diagnostico oficial y configuracion DIAN sin mostrar secretos.
+- Crear o reutilizar venta de producto `menta` y cliente natural/empresa segun
+  lo pedido.
+- Emitir con `/api/empresa/facturacion_electronica?action=emitir&empresa_id=12`
+  o reintentar con `action=reenviar_dian`.
+- Revisar `integracion_fiscal.estado_envio`, `numero_legal`, `cola_reintentos`
+  y reglas DIAN (`FAB05c`, `FAD06`, etc.).
+- Si DIAN responde HTTP 200 con `StatusCode=99`, la conexion funciono y el
+  rechazo es normativo/configuracion/XML, no caida de red.
+
+Usar navegador interno o Chrome solo para validar pantallas y flujo visible:
+login, seleccionar empresa, carrito, cliente, totales, factura/impresion. Para
+consultas de estado y reintentos DIAN preferir API autenticada porque conserva
+la evidencia exacta y reduce errores visuales.
+
 ## Validacion de diff
 
 ```powershell
@@ -144,4 +183,3 @@ El proyecto no usa Python como runtime. Para tareas del repositorio preferir Go,
 PowerShell o Node segun corresponda. Python solo seria una herramienta local
 temporal si no hay alternativa razonable y nunca debe introducirse como
 dependencia del proyecto.
-

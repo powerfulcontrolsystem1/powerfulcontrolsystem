@@ -141,6 +141,32 @@ decisiones en cada tarea.
   `StatusCode=99` con `ZE02`, pero el diagnostico corregido `SETP990000195`
   cerro la brecha de firma con aceptacion DIAN `00`.
 
+## Actualizacion 2026-06-16 - Pruebas reales DIAN produccion PCS
+
+- Para probar la facturacion electronica de Powerful Control System no iniciar
+  por localhost: usar `https://powerfulcontrolsystem.com` y la empresa PCS
+  (`empresa_id=12`) con sesion real o login API autorizado por el usuario.
+- El flujo rapido reproducible es: autenticar, verificar configuracion DIAN,
+  crear venta/factura de una `menta`, emitir o reenviar por
+  `/api/empresa/facturacion_electronica?action=emitir|reenviar_dian&empresa_id=12`
+  y revisar `integracion_fiscal`, `cola_reintentos` y acuse DIAN saneado.
+- No imprimir contrasenas, PIN, certificado, llave tecnica ni token. Se puede
+  mostrar numero legal, prefijo, resolucion, ambiente, codigo de regla DIAN y
+  estado `aceptado/rechazado/contingencia`.
+- La resolucion vigente de PCS registrada el 2026-06-16 usa prefijo `PCS`,
+  rango `1-1000000` y ambiente produccion. DIAN rechazo las pruebas `PCS1/PCS2`
+  despues de llegar a `SendBillSync` por `FAB05c` (Software ID no corresponde
+  al rango de numeracion) y `FAD06` (CUFE no calculado correctamente); ya no
+  hay rechazo por guion/rango tras normalizar el numero legal a `PCS1`, `PCS2`.
+- Si aparece `FAB05c`, revisar primero en el portal DIAN que la resolucion/rango
+  de numeracion este asociado al mismo Software ID configurado en PCS. No
+  sustituirlo por el TestSetId de habilitacion ni por valores copiados en
+  documentacion.
+- La aceptacion de habilitacion historica `SETP990000195` demuestra que el
+  transporte SOAP y la firma XAdES base pueden llegar a acuse `StatusCode=00`;
+  produccion exige ademas que el rango autorizado quede vinculado al software
+  correcto y que el CUFE use la hora Colombia `-05:00`.
+
 ## Actualizacion 2026-06-08 - UBL DIAN realista y errores completos
 
 - `generateDIANUBLBase` ya no genera XML UBL minimo/inventado: ahora emite

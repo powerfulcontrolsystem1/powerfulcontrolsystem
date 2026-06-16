@@ -809,6 +809,18 @@ afecte dinero, documentos, licencias o seguridad.
    credenciales, ejecutar al menos un envio manual de factura de prueba y correr
    el set automatico real; despues consultar `GetStatusZip` hasta cierre real
    del acuse.
+19. Para pruebas reales de produccion de Powerful Control System, usar siempre
+   `https://powerfulcontrolsystem.com` con `empresa_id=12`; no iniciar por
+   localhost si el usuario pide comprobar DIAN real. El flujo debe crear o
+   reutilizar una venta controlada, emitir/reintentar la factura electronica,
+   guardar la respuesta saneada de DIAN y validar visualmente carrito/factura
+   solo despues de confirmar que la API llego al servicio.
+20. Si DIAN devuelve `FAB05c`, el rango de numeracion no corresponde al
+   `SoftwareID` enviado. Antes de tocar firma o transporte, verificar en el
+   portal DIAN que la resolucion/prefijo/rango este asociado al software que
+   PCS tiene configurado para esa empresa. Si devuelve `FAD06`, revisar CUFE
+   con numero legal, fecha/hora Colombia `-05:00`, totales/impuestos y llave
+   tecnica/PIN segun ambiente. No documentar ni imprimir valores secretos.
 
 ## Login usuarios operativos
 

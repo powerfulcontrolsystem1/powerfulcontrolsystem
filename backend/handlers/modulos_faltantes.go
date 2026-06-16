@@ -7621,7 +7621,11 @@ func syncDIANConfigToAdvanced(dbEmp *sql.DB, empresaID int64, cfg map[string]int
 }
 
 func dianNowLocal() string {
-	return time.Now().In(time.Local).Format("2006-01-02 15:04:05")
+	return time.Now().In(dianColombiaLocation()).Format("2006-01-02 15:04:05")
+}
+
+func dianColombiaLocation() *time.Location {
+	return time.FixedZone("America/Bogota", -5*60*60)
 }
 
 const (
@@ -8578,22 +8582,31 @@ func dianFormatQuantity(raw string, fallback float64) string {
 
 func dianIssuepcs_ts(raw string) (string, string) {
 	raw = strings.TrimSpace(raw)
+	loc := dianColombiaLocation()
 	if raw == "" {
-		now := time.Now()
+		now := time.Now().In(loc)
 		return now.Format("2006-01-02"), now.Format("15:04:05-07:00")
 	}
 	for _, layout := range []string{time.RFC3339, "2006-01-02T15:04:05-07:00", "2006-01-02T15:04:05", "2006-01-02 15:04:05", "2006-01-02"} {
-		if parsed, err := time.Parse(layout, raw); err == nil {
+		var parsed time.Time
+		var err error
+		if layout == time.RFC3339 || strings.Contains(layout, "-07:00") {
+			parsed, err = time.Parse(layout, raw)
+		} else {
+			parsed, err = time.ParseInLocation(layout, raw, loc)
+		}
+		if err == nil {
+			parsed = parsed.In(loc)
 			if layout == "2006-01-02" {
-				return parsed.Format("2006-01-02"), time.Now().Format("15:04:05-07:00")
+				return parsed.Format("2006-01-02"), time.Now().In(loc).Format("15:04:05-07:00")
 			}
 			return parsed.Format("2006-01-02"), parsed.Format("15:04:05-07:00")
 		}
 	}
 	if len(raw) >= 10 {
-		return raw[:10], time.Now().Format("15:04:05-07:00")
+		return raw[:10], time.Now().In(loc).Format("15:04:05-07:00")
 	}
-	now := time.Now()
+	now := time.Now().In(loc)
 	return now.Format("2006-01-02"), now.Format("15:04:05-07:00")
 }
 
@@ -9626,7 +9639,7 @@ func dianBuildXAdESBaseSignature(xmlPayload string, privateKey *rsa.PrivateKey, 
 	if err != nil {
 		return nil, fmt.Errorf("no se pudo canonicalizar XML DIAN para digest: %w", err)
 	}
-	signingTime := time.Now().Format(time.RFC3339)
+	signingTime := time.Now().In(dianColombiaLocation()).Format(time.RFC3339)
 	signedPropertiesID := "SignedPropertiesPCS"
 	signatureID := "SignaturePCS"
 	keyInfoID := "KeyInfoPCS"

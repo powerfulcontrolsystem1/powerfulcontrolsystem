@@ -1427,7 +1427,7 @@ func normalizeFacturacionEstadoEnvio(raw string) string {
 }
 
 func facturacionNowLocal() string {
-	return time.Now().In(time.Local).Format("2006-01-02 15:04:05")
+	return time.Now().In(dianColombiaLocation()).Format("2006-01-02 15:04:05")
 }
 
 func facturacionNextRetryAt(intentos int64) string {
@@ -1441,7 +1441,7 @@ func facturacionNextRetryAt(intentos int64) string {
 	if minutes > 120 {
 		minutes = 120
 	}
-	return time.Now().In(time.Local).Add(time.Duration(minutes) * time.Minute).Format("2006-01-02 15:04:05")
+	return time.Now().In(dianColombiaLocation()).Add(time.Duration(minutes) * time.Minute).Format("2006-01-02 15:04:05")
 }
 
 func facturacionFirstNonBlank(values ...string) string {
@@ -1758,7 +1758,7 @@ func dispatchFacturacionDIANOficial(dbEmp *sql.DB, payload facturacionOperacionP
 	impuesto := firstPositiveFloat64(payload.Impuestos, payload.IVA)
 	fechaEmision := strings.TrimSpace(doc.FechaDocumento)
 	if fechaEmision == "" {
-		fechaEmision = time.Now().Format("2006-01-02T15:04:05-07:00")
+		fechaEmision = time.Now().In(dianColombiaLocation()).Format("2006-01-02T15:04:05-07:00")
 	}
 	moneda := strings.ToUpper(strings.TrimSpace(facturacionFirstNonBlank(doc.Moneda, payload.Moneda, "COP")))
 	docPayload := map[string]interface{}{

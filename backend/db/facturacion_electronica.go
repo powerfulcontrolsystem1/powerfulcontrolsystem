@@ -1369,7 +1369,7 @@ func PrepareFacturacionDocumentoLegal(dbConn *sql.DB, empresaID int64, paisCodig
 		return nil, fmt.Errorf("falta resolucion_numero en configuracion de facturacion")
 	}
 
-	now := time.Now().In(time.Local)
+	now := time.Now().In(facturacionColombiaLocation())
 	fechaHoy := now.Format("2006-01-02")
 	if strings.TrimSpace(resolucionFechaDesde) != "" {
 		fechaDesde, err := parseFechaISODate(resolucionFechaDesde)
@@ -1518,7 +1518,7 @@ func normalizeFacturacionRetryItem(payload *FacturacionElectronicaRetryItem) {
 	payload.Observaciones = strings.TrimSpace(payload.Observaciones)
 
 	if payload.ProximoIntento == "" && (payload.EstadoEnvio == "pendiente" || payload.EstadoEnvio == "fallido") {
-		payload.ProximoIntento = time.Now().In(time.Local).Format("2006-01-02 15:04:05")
+		payload.ProximoIntento = time.Now().In(facturacionColombiaLocation()).Format("2006-01-02 15:04:05")
 	}
 
 	payload.ContingenciaActiva = payload.ContingenciaActiva || payload.EstadoEnvio == "contingencia"
@@ -1528,6 +1528,10 @@ func normalizeFacturacionRetryItem(payload *FacturacionElectronicaRetryItem) {
 }
 
 func int64ToBoolFE(v int64) bool { return v > 0 }
+
+func facturacionColombiaLocation() *time.Location {
+	return time.FixedZone("America/Bogota", -5*60*60)
+}
 
 // GetFacturacionElectronicaRetryByDocumento consulta el estado de integracion fiscal por documento FE.
 func GetFacturacionElectronicaRetryByDocumento(dbConn *sql.DB, empresaID int64, tipoDocumento, documentoCodigo string) (*FacturacionElectronicaRetryItem, error) {
