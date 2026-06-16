@@ -8914,7 +8914,11 @@ func validateDIANDocumentPreflight(cfg map[string]interface{}, empresaID int64, 
 	}
 
 	prefijo := dianFirstNonBlank(genericStringValue(payload["prefijo"]), genericStringValue(cfg["prefijo"]))
-	documentoCodigo := dianFirstNonBlank(genericStringValue(payload["documento_codigo"]), genericStringValue(payload["numero"]), genericStringValue(payload["id_documento"]))
+	documentoCodigo := dianFirstNonBlank(genericStringValue(payload["numero_legal"]), genericStringValue(payload["documento_codigo"]), genericStringValue(payload["numero"]), genericStringValue(payload["id_documento"]))
+	documentoCodigo = strings.ReplaceAll(strings.TrimSpace(documentoCodigo), " ", "")
+	if strings.EqualFold(dianFirstNonBlank(genericStringValue(cfg["pais_codigo"]), genericStringValue(payload["pais_codigo"])), "CO") {
+		documentoCodigo = strings.ReplaceAll(documentoCodigo, "-", "")
+	}
 	if documentoCodigo == "" {
 		dianAppendValidationIssue(&issues, &warnings, "DIAN-DOC-001", "error", "documento_codigo", "codigo/numero del documento es obligatorio", "anexo_tecnico_dian")
 	} else if prefijo != "" && !strings.HasPrefix(strings.ToUpper(documentoCodigo), strings.ToUpper(prefijo)) {
