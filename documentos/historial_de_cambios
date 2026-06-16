@@ -34805,3 +34805,13 @@ Archivos modificados:
 - Se prepara el esquema de carritos antes de listar/modificar items para evitar error 500 al abrir `Buscar Productos`.
 - Se compacta el scanner de venta directa/estaciones para que se vean selector, codigo de barras, SKU, nombre, cantidad con `-`/`+`, agregar y catalogo.
 - El detalle de productos queda sin desplazamiento horizontal, con columnas fijas mas pequenas y nombres en una sola fila.
+
+2026-06-15: rs: actualizar repositorio y sincronizar VPS
+PushStatus: OK
+Archivos modificados:
+- CHANGELOG.md
+- backend/handlers/carritos_compras.go
+- documentos/descripcion_de_archivos
+- documentos/historial_de_cambios
+- web/estilos.css
+- web/img/Logo con espacio.png
