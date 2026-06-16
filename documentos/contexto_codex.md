@@ -167,6 +167,36 @@ decisiones en cada tarea.
   produccion exige ademas que el rango autorizado quede vinculado al software
   correcto y que el CUFE use la hora Colombia `-05:00`.
 
+## Actualizacion 2026-06-16 - Guia Codex para navegador, VPS y carrito PCS
+
+- En chats nuevos, Codex debe leer primero este archivo y
+  `documentos/comandos_codex.md` antes de tocar carrito, ventas, caja,
+  facturacion, permisos o despliegue.
+- Para pruebas visuales usar el navegador interno de Codex cuando este
+  disponible. El flujo es abrir o reutilizar una pestana, navegar a
+  `https://powerfulcontrolsystem.com`, conservar la sesion existente y validar
+  con interacciones reales de mouse/teclado mas lecturas puntuales del DOM.
+- Para responsive movil del carrito usar el control de viewport del navegador
+  interno o una ventana equivalente de celular, revisar que no exista scroll
+  horizontal y que buscador, cliente, detalle de productos, pagos, acciones y
+  totales queden en una sola columna usable.
+- Para pruebas de produccion solicitadas por el usuario, usar siempre PCS
+  (`empresa_id=12`) salvo instruccion contraria. No probar primero en localhost
+  cuando el reporte es de `powerfulcontrolsystem.com`.
+- El flujo minimo del carrito PCS es: abrir venta directa, buscar producto por
+  nombre con mouse/teclado, seleccionar o usar el primer resultado visible,
+  presionar `Agregar`, comprobar que aparece o aumenta la linea del producto,
+  cambiar cantidad con los botones `+/-`, revisar totales, probar medios de
+  pago visibles sin cerrar ventas reales salvo autorizacion explicita y revisar
+  que no haya errores de consola.
+- Si el usuario pide `rs`, ejecutar `.\rs.ps1` desde la raiz. Ese wrapper hace
+  preflight, actualiza repositorio cuando aplica, sincroniza con VPS, reconstruye
+  servicios Docker y verifica salud publica. No imprimir secretos ni rutas
+  privadas sensibles.
+- Despues de publicar con `rs`, repetir la prueba visual contra
+  `https://powerfulcontrolsystem.com/...&empresa_id=12&qa={timestamp}` para
+  evitar cache viejo.
+
 ## Actualizacion 2026-06-08 - UBL DIAN realista y errores completos
 
 - `generateDIANUBLBase` ya no genera XML UBL minimo/inventado: ahora emite

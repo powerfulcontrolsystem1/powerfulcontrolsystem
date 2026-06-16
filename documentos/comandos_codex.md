@@ -128,6 +128,54 @@ Para frontend, hacer prueba visual cuando el cambio afecte pantallas, botones,
 formularios, impresion o responsive. En impresiones POS/carta, revisar captura o
 HTML imprimible en blanco y negro.
 
+### Navegador interno de Codex
+
+Cuando el plugin Browser este disponible, preferir el navegador interno para
+validar PCS visualmente. En un chat nuevo:
+
+1. Leer el skill `control-in-app-browser` instalado en
+   `%USERPROFILE%\.codex\plugins\cache\openai-bundled\browser\*\skills\control-in-app-browser\SKILL.md`.
+2. Inicializar el runtime con `scripts/browser-client.mjs` del mismo plugin y
+   seleccionar `iab`.
+3. Emitir y leer completa la documentacion de `browser.documentation()`.
+4. Reutilizar una pestana existente si ya esta en PCS; si no, crear una nueva.
+5. Para acciones visibles, usar locators estables (`id`, `data-*`, labels) y
+   confirmar que apuntan a un unico elemento antes de hacer clic o escribir.
+6. Para responsive, usar la capacidad `viewport` del navegador si esta
+   disponible; si no, validar con dimensiones de ventana equivalentes y una
+   lectura DOM de `documentElement.scrollWidth <= innerWidth`.
+
+No usar el navegador para enviar formularios destructivos, cerrar ventas reales,
+cancelar carritos, enviar correos o cambiar permisos sin autorizacion explicita.
+
+### Prueba visual rapida del carrito PCS
+
+URL base:
+
+```text
+https://powerfulcontrolsystem.com/administrar_empresa/carrito_de_compras.html?modo=venta_directa&perm_page=linkVentaDirecta&empresa_id=12&qa={timestamp}
+```
+
+Checklist:
+
+- Confirmar sesion activa y que no aparezca login.
+- Buscar por nombre, por ejemplo `menta`.
+- Esperar resultados visibles y seleccionar uno con mouse, o usar el primer
+  resultado resaltado.
+- Presionar `Agregar` y comprobar que el item aparece en el detalle o que sube
+  su cantidad.
+- Usar los botones `+` y `-` de cantidad del item y confirmar que el numero se
+  ve y los totales cambian.
+- Revisar que nombres de producto, cantidad, precios, descuento, impuesto,
+  total y acciones esten alineados y legibles.
+- Probar campos de medios de pago combinados escribiendo, borrando y cambiando
+  entre efectivo, credito, debito y transferencias sin que el foco salte al
+  buscador.
+- En celular, confirmar que no haya scroll horizontal y que las tarjetas queden
+  apiladas: buscador, cliente, productos, pago, acciones y totales.
+- No presionar `Pagar y cerrar carrito`, `Cancelar carrito` ni acciones de
+  devolucion/cierre si el usuario no lo autorizo para datos reales.
+
 ## Pruebas reales en produccion PCS
 
 Cuando el usuario pida probar `powerfulcontrolsystem.com`, DIAN, carrito o una
@@ -166,6 +214,10 @@ Usar navegador interno o Chrome solo para validar pantallas y flujo visible:
 login, seleccionar empresa, carrito, cliente, totales, factura/impresion. Para
 consultas de estado y reintentos DIAN preferir API autenticada porque conserva
 la evidencia exacta y reduce errores visuales.
+
+Despues de `.\rs.ps1`, validar siempre contra el dominio publico con parametro
+`qa={timestamp}`. Si el navegador conserva cache anterior, recargar la pestana
+o cambiar el parametro `qa`.
 
 ## Validacion de diff
 

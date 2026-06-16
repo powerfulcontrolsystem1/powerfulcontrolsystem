@@ -1,3 +1,10 @@
+2026-06-16: Documentacion operativa Codex y reparacion Agregar por nombre en carrito PCS.
+- Modulos afectados: `carritos`, `venta_directa`, `estaciones`, `frontend_ux`, `documentacion_operativa`.
+- Documentacion: `documentos/contexto_codex.md` y `documentos/comandos_codex.md` explican como usar el navegador interno, validar responsive, probar PCS (`empresa_id=12`) y publicar/verificar con `rs` en VPS para que chats nuevos de Codex no pierdan contexto operativo.
+- Frontend carrito: `web/administrar_empresa/carrito_de_compras.html` mantiene seleccionada la primera coincidencia visible de busqueda por nombre y encola el clic manual de `Agregar` si la busqueda automatica sigue procesando, evitando que buscar `menta` muestre resultados pero no agregue producto.
+- UX carrito: `web/estilos.css` resalta en negrita encabezados, producto y cantidad del detalle para lectura POS; no cambia endpoints, tablas, permisos ni reglas de inventario.
+- Seguridad/datos: se conserva aislamiento por `empresa_id`; no se crean rutas nuevas ni se imprimen secretos. Las pruebas de cierre no deben cancelar ni cerrar ventas reales sin autorizacion explicita.
+
 2026-06-15: Caja asociada a bodega e icono IA unico.
 - Modulos afectados: `carritos`, `estaciones`, `inventario`, `chat_ia`, `frontend_ux`.
 - Backend carrito: `backend/db/carritos_compras.go` agrega `bodega_id` a items del carrito y usa la bodega de la caja detectada para reservar/liberar stock, validando pertenencia a `empresa_id`.
@@ -34832,6 +34839,12 @@ Archivos modificados:
 2026-06-16: Carrito PCS - buscar productos por botones
 - Se corrige la validacion de esquema de `carrito_compra_items` para exigir `bodega_id` antes de listar items.
 - Se ajusta el control de cantidad del scanner para que el boton `+` se vea completo en venta directa.
+
+2026-06-16: Carrito PCS - agregar por nombre y detalle resaltado
+- Modulos afectados: `carritos`, `venta_directa`, `estaciones`.
+- Frontend: `web/administrar_empresa/carrito_de_compras.html` selecciona automaticamente la primera coincidencia del buscador por nombre para que el boton `Agregar` use un producto efectivo cuando el cajero busca, por ejemplo, `menta`.
+- UX: el detalle de productos del carrito muestra en negrita nombre, cantidad, precio y total de linea para mejorar lectura en POS.
+- QA: validacion estatica de JavaScript y revision visual local pendiente de runtime completo si PostgreSQL/servidor empresarial no estan disponibles.
 
 2026-06-16: rs: actualizar repositorio y sincronizar VPS
 PushStatus: OK

@@ -33,6 +33,7 @@
     .carrito-fullscreen-card[hidden]{display:none!important}
     .carrito-fullscreen-btn{width:38px;height:38px;min-width:38px;padding:0;display:inline-flex;align-items:center;justify-content:center}
     .carrito-fullscreen-btn .cart-btn-icon{font-size:1rem}
+    .cart-item-detail-strong{font-weight:800;color:var(--text)}
     .cart-button-feedback-vibrate{animation:cartButtonFeedbackVibrate 130ms linear 1}
     @keyframes cartButtonFeedbackVibrate{0%,100%{transform:translateX(0)}25%{transform:translateX(-1px)}50%{transform:translateX(1px)}75%{transform:translateX(-1px)}}
     body.carrito-direct-fullscreen{background:var(--carrito-page-bg,var(--bg))}
@@ -1087,6 +1088,8 @@
     let itemSearchDebounceTimer = null;
     let scannerAutoTimer = null;
     let scannerProcessing = false;
+    let scannerProcessingStartedAt = 0;
+    let scannerManualProcessQueued = false;
     let scannerAutofocusPaused = false;
     const REQUEST_TIMEOUT_MS = 45000;
 
@@ -7528,17 +7531,33 @@
       });
 
       box.hidden = false;
+      setScannerResultSelection(0, { scroll: false });
+      if (!state.scannerSelectedProductID && state.scannerProductResults.length > 0) {
+        const firstProduct = state.scannerProductResults[0];
+        state.scannerSelectedProductID = Number(firstProduct && firstProduct.id || 0);
+        state.scannerActiveResultIndex = 0;
+        const firstButton = box.querySelector('.scanner-product-result');
+        if (firstButton) {
+          firstButton.classList.add('is-selected');
+          firstButton.setAttribute('aria-selected', 'true');
+        }
+      }
       const nameInput = document.getElementById('scannerNombre');
       if (nameInput) nameInput.setAttribute('aria-expanded', 'true');
     }
 
-    function getSelectedScannerProduct() {
+    function getSelectedScannerProduct(options) {
+      const opts = options || {};
       const selectedID = Number(state.scannerSelectedProductID || 0);
       if (selectedID > 0) {
         const selected = state.scannerProductResults.find(function(row) {
           return Number(row && row.id || 0) === selectedID;
         });
         if (selected) return selected;
+      }
+      if (opts.fallbackFirst && state.scannerProductResults.length > 0) {
+        const index = state.scannerActiveResultIndex >= 0 ? state.scannerActiveResultIndex : 0;
+        return state.scannerProductResults[index] || state.scannerProductResults[0];
       }
       return state.scannerProductResults.length === 1 ? state.scannerProductResults[0] : null;
     }
@@ -7761,7 +7780,20 @@
         clearTimeout(scannerAutoTimer);
         scannerAutoTimer = null;
       }
-      if (scannerProcessing) return;
+      if (scannerProcessing) {
+        const processingAgeMs = Date.now() - Number(scannerProcessingStartedAt || 0);
+        if (processOptions.manual && processingAgeMs < 2500) {
+          scannerManualProcessQueued = true;
+          setScannerMessage('Terminando busqueda. El producto se agregara automaticamente.', false);
+          return;
+        }
+        if (processOptions.manual && processingAgeMs >= 2500) {
+          scannerProcessing = false;
+          scannerManualProcessQueued = false;
+        } else {
+          return;
+        }
+      }
       const caps = getBarcodeCapabilities();
       if (!caps.enabled) {
         setScannerMessage('El lector y buscador rápido de productos está deshabilitado para esta empresa.', true);
@@ -7787,9 +7819,14 @@
         return;
       }
 
-      const selectedResult = getSelectedScannerProduct();
-      if (selectedResult && state.scannerSelectedProductID > 0) {
+      const selectedResult = getSelectedScannerProduct({ fallbackFirst: !processOptions.auto });
+      if (selectedResult && (state.scannerSelectedProductID > 0 || !processOptions.auto)) {
+        if (!state.scannerSelectedProductID) {
+          const selectedIndex = Math.max(0, state.scannerProductResults.indexOf(selectedResult));
+          setScannerResultSelection(selectedIndex, { scroll: false });
+        }
         scannerProcessing = true;
+        scannerProcessingStartedAt = Date.now();
         try {
           const msgAction = await addScannerProductToCart(selectedResult, 'agregado desde busqueda rapida del carrito', scanCode);
           setScannerMessage(msgAction, false);
@@ -7802,11 +7839,19 @@
           if (!handleBusinessPrerequisiteError(err, msg, setScannerMessage)) setScannerMessage(msg, true);
         } finally {
           scannerProcessing = false;
+          scannerProcessingStartedAt = 0;
+          if (scannerManualProcessQueued) {
+            scannerManualProcessQueued = false;
+            setTimeout(function() {
+              processScannerInput({ manual: true });
+            }, 0);
+          }
         }
         return;
       }
 
       scannerProcessing = true;
+      scannerProcessingStartedAt = Date.now();
       try {
         setScannerMessage('Buscando producto en catálogo...', false);
         const rows = await fetchScannerProductRows(query);
@@ -7848,6 +7893,13 @@
         }
       } finally {
         scannerProcessing = false;
+        scannerProcessingStartedAt = 0;
+        if (scannerManualProcessQueued) {
+          scannerManualProcessQueued = false;
+          setTimeout(function() {
+            processScannerInput({ manual: true });
+          }, 0);
+        }
       }
     }
     function scheduleScannerAutoProcess() {
@@ -10122,10 +10174,10 @@
         let row = '<td>' + Number(item.id || 0) + '</td>' +
           '<td>' + escapeHtml(normalize(item.tipo_item) || '-') + '</td>' +
           '<td>' + escapeHtml(normalize(item.codigo_item) || '-') + '</td>' +
-          '<td>' + escapeHtml(normalize(item.descripcion) || '-') + '</td>' +
-          '<td>' + String(Number(item.cantidad || 0)) + '</td>' +
-          '<td>' + escapeHtml(formatAmount(item.precio_unitario || 0, moneda)) + '</td>';
-        if (showTotal) row += '<td>' + escapeHtml(formatAmount(item.total_linea || 0, moneda)) + '</td>';
+          '<td><strong class="cart-item-detail-strong">' + escapeHtml(normalize(item.descripcion) || '-') + '</strong></td>' +
+          '<td><strong class="cart-item-detail-strong">' + String(Number(item.cantidad || 0)) + '</strong></td>' +
+          '<td><strong class="cart-item-detail-strong">' + escapeHtml(formatAmount(item.precio_unitario || 0, moneda)) + '</strong></td>';
+        if (showTotal) row += '<td><strong class="cart-item-detail-strong">' + escapeHtml(formatAmount(item.total_linea || 0, moneda)) + '</strong></td>';
         row += '<td>' + escapeHtml(normalize(item.estado) || 'activo') + '</td>';
         tr.innerHTML = row;
         tbody.appendChild(tr);
@@ -10278,18 +10330,18 @@
         const unidad = normalize(item.unidad_medida) || 'unidad';
         const qtyValue = escapeHtml(formatQuantityForInput(item.cantidad || 1, unidad));
         let row = '<td>' + item.id + '</td>' +
-          '<td>' + escapeHtml(normalize(item.descripcion) || '') + '<div class="form-help">' + escapeHtml(normalize(item.codigo_item) || '-') + '</div></td>' +
+          '<td><strong class="cart-item-detail-strong">' + escapeHtml(normalize(item.descripcion) || '') + '</strong><div class="form-help">' + escapeHtml(normalize(item.codigo_item) || '-') + '</div></td>' +
           '<td class="cart-item-qty-cell">' +
             '<div class="cart-item-qty-control" data-id="' + Number(item.id || 0) + '">' +
               '<button type="button" class="cart-item-qty-step cart-item-qty-step--minus" data-id="' + Number(item.id || 0) + '" data-step="-1" title="Restar cantidad" aria-label="Restar cantidad">-</button>' +
-              '<input class="form-input cart-item-qty-input" type="number" min="' + (isWeightUnit(unidad) ? '0.001' : '1') + '" step="' + (isWeightUnit(unidad) ? '0.001' : '1') + '" inputmode="decimal" data-id="' + Number(item.id || 0) + '" data-original="' + qtyValue + '" data-unit="' + escapeHtml(unidad) + '" value="' + qtyValue + '" title="Cambiar cantidad">' +
+              '<input class="form-input cart-item-qty-input cart-item-detail-strong" type="number" min="' + (isWeightUnit(unidad) ? '0.001' : '1') + '" step="' + (isWeightUnit(unidad) ? '0.001' : '1') + '" inputmode="decimal" data-id="' + Number(item.id || 0) + '" data-original="' + qtyValue + '" data-unit="' + escapeHtml(unidad) + '" value="' + qtyValue + '" title="Cambiar cantidad">' +
               '<button type="button" class="cart-item-qty-step cart-item-qty-step--plus" data-id="' + Number(item.id || 0) + '" data-step="1" title="Sumar cantidad" aria-label="Sumar cantidad">+</button>' +
             '</div>' +
           '</td>' +
-          '<td>' + escapeHtml(formatAmount(item.precio_unitario || 0, moneda)) + '</td>' +
+          '<td><strong class="cart-item-detail-strong">' + escapeHtml(formatAmount(item.precio_unitario || 0, moneda)) + '</strong></td>' +
           '<td>' + Number(item.descuento_porcentaje || 0).toFixed(2) + '</td>' +
           '<td>' + Number(item.impuesto_porcentaje || 0).toFixed(2) + '</td>';
-        if (showTotal) row += '<td>' + escapeHtml(formatAmount(item.total_linea || 0, moneda)) + '</td>';
+        if (showTotal) row += '<td><strong class="cart-item-detail-strong">' + escapeHtml(formatAmount(item.total_linea || 0, moneda)) + '</strong></td>';
         row += '<td class="actions">' +
             (readOnlyMode
               ? '<span class="form-help">Solo lectura</span>'
@@ -11713,7 +11765,7 @@
     const scannerAgregarBtn = document.getElementById('scannerAgregarBtn');
     if (scannerAgregarBtn) {
       scannerAgregarBtn.addEventListener('click', async function() {
-        await processScannerInput();
+        await processScannerInput({ manual: true });
       });
     }
 
@@ -11731,7 +11783,7 @@
       scannerCodigoInput.addEventListener('keydown', function(e) {
         if (e.key !== 'Enter') return;
         e.preventDefault();
-        processScannerInput();
+        processScannerInput({ manual: true });
       });
     }
 
@@ -11749,7 +11801,7 @@
       scannerSkuInput.addEventListener('keydown', function(e) {
         if (e.key !== 'Enter') return;
         e.preventDefault();
-        processScannerInput();
+        processScannerInput({ manual: true });
       });
     }
 
@@ -11768,7 +11820,7 @@
         if (handleScannerResultKeydown(e)) return;
         if (e.key !== 'Enter') return;
         e.preventDefault();
-        processScannerInput();
+        processScannerInput({ manual: true });
       });
     }
 
@@ -11785,7 +11837,7 @@
     document.getElementById('scannerCantidad').addEventListener('keydown', function(e) {
       if (e.key !== 'Enter') return;
       e.preventDefault();
-      processScannerInput();
+      processScannerInput({ manual: true });
     });
     document.getElementById('scannerCantidad').addEventListener('input', function() {
       if (!allowsDecimalScannerQuantity()) enforceNaturalQuantityInput(this);

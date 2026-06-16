@@ -20358,6 +20358,18 @@ body.carrito-flat-page .carrito-items-box .table td{
   text-overflow:ellipsis !important;
 }
 
+body.carrito-flat-page .carrito-items-box .table th{
+  font-weight:900 !important;
+  color:var(--text) !important;
+}
+
+body.carrito-flat-page .carrito-items-box .table td:nth-child(2),
+body.carrito-flat-page .carrito-items-box .table td:nth-child(3),
+body.carrito-flat-page .carrito-items-box .cart-item-qty-input{
+  font-weight:900 !important;
+  color:var(--text) !important;
+}
+
 body.carrito-flat-page .carrito-items-box .table th:nth-child(1),
 body.carrito-flat-page .carrito-items-box .table td:nth-child(1){
   width:44px !important;

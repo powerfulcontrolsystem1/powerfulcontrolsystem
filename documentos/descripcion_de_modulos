@@ -1,3 +1,9 @@
+2026-06-16: Carrito PCS - agregar por nombre
+- Modulos afectados: `carritos`, `venta_directa` y `estaciones`.
+- UX: el buscador rapido por nombre selecciona la primera coincidencia visible para que el boton `Agregar` agregue el producto seleccionado sin exigir un clic adicional sobre la lista.
+- Detalle: las tablas de productos del carrito resaltan nombre, cantidad, precio y total de linea en negrita para lectura POS.
+- Persistencia/API: no cambia endpoints, tablas ni permisos; reutiliza `/api/empresa/productos` y `/api/empresa/carritos_compra/items`.
+
 2026-06-12: Carrito cantidades y pagos combinados legibles
 - Modulo afectado: Carrito / Venta directa / Estaciones.
 - Cambio UX: `web/estilos.css` fija ancho, contraste y numeracion tabular para las cantidades editables dentro de `Productos agregados al carrito`.
