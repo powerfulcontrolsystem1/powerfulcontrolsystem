@@ -10881,7 +10881,11 @@ func sendDIANDocumentoReal(dbEmp *sql.DB, cfg map[string]interface{}, empresaID 
 		return nil, http.StatusBadRequest, fmt.Errorf("no existe configuracion DIAN para la empresa")
 	}
 
-	documentoCodigo := dianFirstNonBlank(genericStringValue(payload["documento_codigo"]), "FV-"+time.Now().Format("20060102150405"))
+	documentoCodigo := dianFirstNonBlank(genericStringValue(payload["numero_legal"]), genericStringValue(payload["documento_codigo"]), "FV"+time.Now().Format("20060102150405"))
+	documentoCodigo = strings.ReplaceAll(strings.TrimSpace(documentoCodigo), " ", "")
+	if strings.EqualFold(dianFirstNonBlank(genericStringValue(cfg["pais_codigo"]), genericStringValue(payload["pais_codigo"])), "CO") {
+		documentoCodigo = strings.ReplaceAll(documentoCodigo, "-", "")
+	}
 	xmlFirmado := dianFirstNonBlank(genericStringValue(payload["xml_firmado"]), genericStringValue(payload["xml"]))
 	if xmlFirmado == "" {
 		return nil, http.StatusBadRequest, fmt.Errorf("xml_firmado o xml es obligatorio para envio real")
@@ -10923,6 +10927,7 @@ func sendDIANDocumentoReal(dbEmp *sql.DB, cfg map[string]interface{}, empresaID 
 	requestBody := map[string]interface{}{
 		"empresa_id":       empresaID,
 		"documento_codigo": documentoCodigo,
+		"numero_legal":     documentoCodigo,
 		"documento_tipo":   documentoTipo,
 		"fecha_emision":    fechaEmision,
 		"total":            total,
