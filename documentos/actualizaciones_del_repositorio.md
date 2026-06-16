@@ -14876,3 +14876,10 @@ Archivos modificados:
 2026-06-15 20:02:40 - Mensaje: rs: actualizar repositorio y sincronizar VPS; Commit: fd40a703; PushStatus: OK
 Archivos modificados:
 - web/estilos.css
+
+2026-06-15 20:26:33 - Mensaje: rs: actualizar repositorio y sincronizar VPS; Commit: 8b149a66; PushStatus: OK
+Archivos modificados:
+- web/administrar_empresa/buscar_producto_botones.html
+- web/administrar_empresa/carrito_de_compras.html
+- web/administrar_empresa/facturacion_electronica_tutorial_dian.html
+- web/estilos.css
