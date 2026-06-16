@@ -783,7 +783,7 @@ func empresaCarritosSchemaLooksReady(dbConn *sql.DB) (bool, error) {
 		},
 		"carrito_compra_items": {
 			"id", "empresa_id", "carrito_id", "tipo_item", "referencia_id", "codigo_item",
-			"descripcion", "unidad_medida", "cantidad", "precio_unitario",
+			"bodega_id", "descripcion", "unidad_medida", "cantidad", "precio_unitario",
 			"descuento_porcentaje", "impuesto_porcentaje", "impuesto_codigo", "base_gravable",
 			"valor_descuento", "valor_impuesto", "subtotal_linea", "total_linea",
 			"fecha_creacion", "fecha_actualizacion", "usuario_creador", "estado", "observaciones",

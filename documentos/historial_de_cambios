@@ -34828,3 +34828,7 @@ Archivos modificados:
 - documentos/historial_de_cambios
 - web/administrar_empresa/administrar_productos.html
 - web/administrar_empresa/historial_productos.html
+
+2026-06-16: Carrito PCS - buscar productos por botones
+- Se corrige la validacion de esquema de `carrito_compra_items` para exigir `bodega_id` antes de listar items.
+- Se ajusta el control de cantidad del scanner para que el boton `+` se vea completo en venta directa.

@@ -11413,3 +11413,9 @@ backend/handlers/user_config.go - Controlador que expone /api/user/configuracion
 	- permite descargar el historial de precios en CSV, JSON, HTML y PDF desde el endpoint existente.
 - `web/administrar_empresa/historial_productos.html` y `web/administrar_empresa/administrar_productos.html`:
 	- agregan botones de exportacion para el historial de productos.
+
+2026-06-16 - Carrito PCS: catalogo por botones
+- `backend/db/carritos_compras.go`:
+	- incluye `bodega_id` como columna obligatoria en la verificacion de esquema de items del carrito.
+- `web/estilos.css`:
+	- reduce el control de cantidad del scanner para evitar que el boton `+` quede cortado.
