@@ -12695,7 +12695,7 @@ func dian1876FindRange(text string) (string, string, int64, int64, string, int64
 						n := dian1876ParseInt(tokenDigits)
 						if n > 1 && n < 10 && i+1 < len(cleanTokens) && regexp.MustCompile(`^\d$`).MatchString(cleanTokens[i+1]) {
 							joined := dian1876ParseInt(tokenDigits + dian1876DigitsOnly(cleanTokens[i+1]))
-							if joined >= 12 && joined <= 36 {
+							if dian1876IsValidVigenciaMeses(joined) {
 								vigencia = joined
 								break
 							}
@@ -12703,12 +12703,12 @@ func dian1876FindRange(text string) (string, string, int64, int64, string, int64
 						if n > 1 && n < 10 && i+1 < len(cleanTokens) {
 							nextDigits := dian1876DigitsOnly(cleanTokens[i+1])
 							joined := dian1876ParseInt(tokenDigits + nextDigits)
-							if joined >= 12 && joined <= 36 {
+							if dian1876IsValidVigenciaMeses(joined) {
 								vigencia = joined
 								break
 							}
 						}
-						if n >= 12 && n <= 36 {
+						if dian1876IsValidVigenciaMeses(n) {
 							vigencia = n
 							break
 						}
@@ -12748,6 +12748,15 @@ func dian1876IsSolicitudAutorizacion(raw string) bool {
 		"Ñ", "N",
 	).Replace(upper)
 	return strings.Contains(upper, "AUTORIZ")
+}
+
+func dian1876IsValidVigenciaMeses(n int64) bool {
+	switch n {
+	case 6, 12, 18, 24, 36:
+		return true
+	default:
+		return false
+	}
 }
 
 func dian1876Preview(text string, max int) string {
