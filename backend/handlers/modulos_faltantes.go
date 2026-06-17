@@ -12599,6 +12599,17 @@ func dian1876FindIssuer(text, formulario string) (string, string, string) {
 			search = text[idx+len(formulario):]
 		}
 	}
+	lineRe := regexp.MustCompile(`(?i)^\s*(\d{7,13})\s+([A-ZÁÉÍÓÚÑ][A-ZÁÉÍÓÚÑ ]{5,90})\s*$`)
+	for _, line := range strings.Split(search, "\n") {
+		if m := lineRe.FindStringSubmatch(strings.TrimSpace(line)); len(m) > 2 {
+			combined := strings.TrimSpace(m[1])
+			razon := strings.TrimSpace(regexp.MustCompile(`\s+`).ReplaceAllString(m[2], " "))
+			if len(combined) >= 8 {
+				return combined[:len(combined)-1], combined[len(combined)-1:], razon
+			}
+			return combined, "", razon
+		}
+	}
 	re := regexp.MustCompile(`(?i)\b(\d{7,13})\s+([A-ZÁÉÍÓÚÑ][A-ZÁÉÍÓÚÑ0-9 .,&-]{5,90}?)(?:\s+Impuestos|\s+SUBDIRECCION|\s+C[eé]dula|\s+Colombia|\s+FACTURA|\s+CL\s|\s+20\d{2}|$)`)
 	if m := re.FindStringSubmatch(search); len(m) > 2 {
 		combined := strings.TrimSpace(m[1])
@@ -12616,7 +12627,64 @@ func dian1876FindRange(text string) (string, string, int64, int64, string, int64
 	if m := re.FindStringSubmatch(text); len(m) > 6 {
 		return strings.TrimSpace(m[1]), strings.TrimSpace(m[2]), dian1876ParseInt(m[3]), dian1876ParseInt(m[4]), strings.TrimSpace(m[5]), dian1876ParseInt(m[6])
 	}
-	return "", "", 0, 0, "", 0
+	modRe := regexp.MustCompile(`(?i)FACTURA\s+ELECTR[ÓO]NICA\s+DE\s+VENTA`)
+	loc := modRe.FindStringIndex(text)
+	if loc == nil {
+		return "", "", 0, 0, "", 0
+	}
+	modalidad := strings.TrimSpace(text[loc[0]:loc[1]])
+	tail := strings.TrimSpace(text[loc[1]:])
+	tokens := regexp.MustCompile(`\s+`).Split(tail, -1)
+	cleanTokens := make([]string, 0, len(tokens))
+	for _, token := range tokens {
+		token = strings.TrimSpace(token)
+		if token != "" {
+			cleanTokens = append(cleanTokens, token)
+		}
+	}
+	i := 0
+	if i < len(cleanTokens) && regexp.MustCompile(`^\d+$`).MatchString(cleanTokens[i]) {
+		i++
+	}
+	for i < len(cleanTokens) && !regexp.MustCompile(`(?i)^[A-Z0-9-]{1,12}$`).MatchString(cleanTokens[i]) {
+		i++
+	}
+	if i >= len(cleanTokens) {
+		return "", "", 0, 0, "", 0
+	}
+	prefijo := strings.TrimSpace(cleanTokens[i])
+	i++
+	nums := []int64{}
+	for i < len(cleanTokens) && len(nums) < 2 {
+		if regexp.MustCompile(`^[0-9][0-9.,]*$`).MatchString(cleanTokens[i]) {
+			nums = append(nums, dian1876ParseInt(cleanTokens[i]))
+		}
+		i++
+	}
+	if len(nums) < 2 {
+		return "", "", 0, 0, "", 0
+	}
+	solicitud := ""
+	for i < len(cleanTokens) {
+		if regexp.MustCompile(`(?i)^[A-ZÁÉÍÓÚÑ]+$`).MatchString(cleanTokens[i]) {
+			solicitud = cleanTokens[i]
+			i++
+			break
+		}
+		i++
+	}
+	vigencia := int64(0)
+	for i < len(cleanTokens) {
+		if regexp.MustCompile(`^\d{1,3}$`).MatchString(cleanTokens[i]) {
+			n := dian1876ParseInt(cleanTokens[i])
+			if n > 1 {
+				vigencia = n
+				break
+			}
+		}
+		i++
+	}
+	return modalidad, prefijo, nums[0], nums[1], solicitud, vigencia
 }
 
 func dian1876ParseInt(raw string) int64 {
