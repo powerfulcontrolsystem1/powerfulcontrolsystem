@@ -12749,7 +12749,7 @@ func dian1876IsSolicitudAutorizacion(raw string) bool {
 		"Ú", "U",
 		"Ñ", "N",
 	).Replace(upper)
-	return strings.Contains(upper, "AUTORIZ")
+	return strings.Contains(upper, "AUTORIZACI")
 }
 
 func dian1876IsValidVigenciaMeses(n int64) bool {
