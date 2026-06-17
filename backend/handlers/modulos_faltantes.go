@@ -12562,13 +12562,21 @@ func dian1876Normalize(raw string) string {
 	s := strings.ReplaceAll(raw, "\u00a0", " ")
 	s = strings.ReplaceAll(s, "\r", "\n")
 	joinDigits := regexp.MustCompile(`(\d)[ \t]{1,2}(\d)`)
-	for {
-		joined := joinDigits.ReplaceAllString(s, "$1$2")
-		if joined == s {
-			break
+	lines := strings.Split(s, "\n")
+	for idx, line := range lines {
+		if strings.ContainsAny(line, ",.") {
+			continue
 		}
-		s = joined
+		for {
+			joined := joinDigits.ReplaceAllString(line, "$1$2")
+			if joined == line {
+				break
+			}
+			line = joined
+		}
+		lines[idx] = line
 	}
+	s = strings.Join(lines, "\n")
 	s = regexp.MustCompile(`[ \t]+`).ReplaceAllString(s, " ")
 	s = regexp.MustCompile(`\n+`).ReplaceAllString(s, "\n")
 	return strings.TrimSpace(s)

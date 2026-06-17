@@ -96,3 +96,11 @@ func TestDIAN1876NormalizeDoesNotJoinTableColumns(t *testing.T) {
 		t.Fatalf("prefijo = %#v, want 1PCS; fields=%#v", got, fields)
 	}
 }
+
+func TestDIAN1876NormalizeDoesNotJoinThousandRangeWithVigencia(t *testing.T) {
+	text := "FACTURA ELECTRONICA DE VENTA 4          1PCS 1 100,000 24 AUTORIZACION 1 24"
+	fields, _ := parseDIANNumeracion1876Text(text)
+	if got := fields["rango_hasta"]; got != int64(100000) {
+		t.Fatalf("rango_hasta = %#v, want 100000; fields=%#v", got, fields)
+	}
+}
