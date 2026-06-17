@@ -84,6 +84,9 @@ AUTORIZACION  1
 	if got := fields["rango_hasta"]; got != int64(100000) {
 		t.Fatalf("rango_hasta = %#v, want 100000", got)
 	}
+	if got := fields["vigencia_meses"]; got != int64(24) {
+		t.Fatalf("vigencia_meses = %#v, want 24; fields=%#v", got, fields)
+	}
 }
 
 func TestDIAN1876NormalizeDoesNotJoinTableColumns(t *testing.T) {
