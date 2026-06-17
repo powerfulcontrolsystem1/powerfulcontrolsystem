@@ -12717,6 +12717,9 @@ func dian1876FindRange(text string) (string, string, int64, int64, string, int64
 					}
 					i++
 				}
+				if directVigencia := dian1876FindVigenciaAfterSolicitud(text); directVigencia > 0 {
+					vigencia = directVigencia
+				}
 				return modalidad, prefijo, nums[0], nums[1], solicitud, vigencia
 			}
 		}
@@ -12759,6 +12762,16 @@ func dian1876IsValidVigenciaMeses(n int64) bool {
 	default:
 		return false
 	}
+}
+
+func dian1876FindVigenciaAfterSolicitud(text string) int64 {
+	flat := regexp.MustCompile(`\s+`).ReplaceAllString(text, " ")
+	re := regexp.MustCompile(`(?i)AUTORIZACI\S*\s+1\s+(6|12|18|24|36)\b`)
+	matches := re.FindAllStringSubmatch(flat, -1)
+	if len(matches) == 0 {
+		return 0
+	}
+	return dian1876ParseInt(matches[len(matches)-1][1])
 }
 
 func dian1876Preview(text string, max int) string {
