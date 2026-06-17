@@ -15066,3 +15066,8 @@ Archivos modificados:
 - documentos/historial_de_cambios
 - web/administrar_empresa/facturacion_electronica.html
 - web/administrar_empresa/facturacion_electronica_tutorial_dian.html
+
+2026-06-17 18:41:02 - Mensaje: rs: actualizar repositorio y sincronizar VPS; Commit: 01d096b8; PushStatus: OK
+Archivos modificados:
+- documentos/historial_de_cambios
+- web/administrar_empresa/facturacion_electronica.html
