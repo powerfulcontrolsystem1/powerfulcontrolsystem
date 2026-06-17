@@ -12664,6 +12664,21 @@ func dian1876FindRange(text string) (string, string, int64, int64, string, int64
 			}
 			if len(nums) >= 2 {
 				solicitud := ""
+				solicitudStart := i
+				for i < len(cleanTokens) {
+					if dian1876IsSolicitudAutorizacion(cleanTokens[i]) {
+						solicitud = cleanTokens[i]
+						i++
+						break
+					}
+					i++
+				}
+				if solicitud == "" {
+					i = solicitudStart
+				}
+				if solicitud != "" {
+					goto dian1876VigenciaScan
+				}
 				for i < len(cleanTokens) {
 					if regexp.MustCompile(`(?i)^[A-ZÁÉÍÓÚÑ]+$`).MatchString(cleanTokens[i]) {
 						solicitud = cleanTokens[i]
@@ -12672,6 +12687,7 @@ func dian1876FindRange(text string) (string, string, int64, int64, string, int64
 					}
 					i++
 				}
+			dian1876VigenciaScan:
 				vigencia := int64(0)
 				for i < len(cleanTokens) {
 					tokenDigits := dian1876DigitsOnly(cleanTokens[i])
@@ -12719,6 +12735,19 @@ func dian1876ParseInt(raw string) int64 {
 
 func dian1876DigitsOnly(raw string) string {
 	return regexp.MustCompile(`\D+`).ReplaceAllString(strings.TrimSpace(raw), "")
+}
+
+func dian1876IsSolicitudAutorizacion(raw string) bool {
+	upper := strings.ToUpper(strings.TrimSpace(raw))
+	upper = strings.NewReplacer(
+		"Á", "A",
+		"É", "E",
+		"Í", "I",
+		"Ó", "O",
+		"Ú", "U",
+		"Ñ", "N",
+	).Replace(upper)
+	return strings.Contains(upper, "AUTORIZ")
 }
 
 func dian1876Preview(text string, max int) string {
