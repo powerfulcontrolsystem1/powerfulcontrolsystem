@@ -12676,6 +12676,13 @@ func dian1876FindRange(text string) (string, string, int64, int64, string, int64
 				for i < len(cleanTokens) {
 					if regexp.MustCompile(`^\d{1,3}$`).MatchString(cleanTokens[i]) {
 						n := dian1876ParseInt(cleanTokens[i])
+						if n > 1 && n < 10 && i+1 < len(cleanTokens) && regexp.MustCompile(`^\d$`).MatchString(cleanTokens[i+1]) {
+							joined := dian1876ParseInt(cleanTokens[i] + cleanTokens[i+1])
+							if joined >= 12 && joined <= 36 {
+								vigencia = joined
+								break
+							}
+						}
 						if n > 1 {
 							vigencia = n
 							break

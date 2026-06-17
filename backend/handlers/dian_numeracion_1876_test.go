@@ -107,3 +107,14 @@ func TestDIAN1876NormalizeDoesNotJoinThousandRangeWithVigencia(t *testing.T) {
 		t.Fatalf("rango_hasta = %#v, want 100000; fields=%#v", got, fields)
 	}
 }
+
+func TestParseDIANNumeracion1876TextJoinsSplitVigenciaAfterThousands(t *testing.T) {
+	text := "FACTURA ELECTRONICA DE VENTA 4 1PCS 1 100,000 AUTORIZACION 1 2 4"
+	fields, _ := parseDIANNumeracion1876Text(text)
+	if got := fields["vigencia_meses"]; got != int64(24) {
+		t.Fatalf("vigencia_meses = %#v, want 24; fields=%#v", got, fields)
+	}
+	if got := fields["resolucion_fecha_hasta"]; got != nil {
+		t.Fatalf("resolucion_fecha_hasta = %#v, want nil without fecha formalizacion", got)
+	}
+}
