@@ -5,12 +5,13 @@ queda incompleta al implementar una mejora, actualizarla en el mismo cambio.
 
 Actualizacion 2026-06-17: `Facturacion electronica Colombia` permite cargar el
 PDF de Autorizacion de Numeracion DIAN Formulario 1876 desde
-`web/administrar_empresa/facturacion_electronica.html`. El frontend llama
-`POST /api/empresa/facturacion_electronica/dian?action=importar_numeracion_pdf`
-con `empresa_id`; el backend lee el PDF con `pdftotext`, detecta formulario,
-NIT/DV, razon social, prefijo, rango y vigencia, y devuelve valores sugeridos
-para aplicar al formulario antes de guardar. No se guardan secretos ni se
-sobrescribe la configuracion sin confirmacion del usuario.
+`web/administrar_empresa/facturacion_electronica.html`. El unico boton visible
+del PDF llama `POST /api/empresa/facturacion_electronica/dian?action=importar_numeracion_pdf_ia`
+con `empresa_id` y usa IA `openai:gpt-5.5` para detectar formulario, NIT/DV,
+razon social, prefijo, rango y vigencia. El formulario conserva los campos
+manuales para que el usuario pueda digitar o corregir datos antes de guardar. El
+endpoint local `importar_numeracion_pdf` queda como respaldo tecnico/test. No se
+guardan secretos ni se sobrescribe la configuracion sin confirmacion del usuario.
 
 Actualizacion 2026-06-17: el parser del Formulario 1876 soporta prefijos
 alfanumericos que empiezan por numero, como `1PCS`, y vigencias que el extractor

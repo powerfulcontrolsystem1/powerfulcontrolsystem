@@ -6991,6 +6991,19 @@ func EmpresaDIANColombiaHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 			writeJSON(w, status, response)
 			return
 
+		case "importar_numeracion_pdf_ia", "importar_formulario_1876_ia", "leer_numeracion_pdf_ia":
+			if r.Method != http.MethodPost && r.Method != http.MethodPut {
+				http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+				return
+			}
+			response, status, err := importDIANNumeracionPDFIA(dbEmp, dbSuper, r)
+			if err != nil {
+				http.Error(w, err.Error(), status)
+				return
+			}
+			writeJSON(w, status, response)
+			return
+
 		case "importar_numeracion_pdf", "importar_formulario_1876", "leer_numeracion_pdf":
 			if r.Method != http.MethodPost && r.Method != http.MethodPut {
 				http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
@@ -12404,36 +12417,9 @@ func resolveEmpresaIDFromMultipartRequest(r *http.Request) (int64, error) {
 }
 
 func importDIANNumeracionPDF(r *http.Request) (map[string]interface{}, int, error) {
-	const maxPDFBytes int64 = 12 << 20
-	if err := r.ParseMultipartForm(maxPDFBytes + (1 << 20)); err != nil {
-		return nil, http.StatusBadRequest, fmt.Errorf("payload multipart invalido")
-	}
-	empresaID, err := resolveEmpresaIDFromMultipartRequest(r)
+	upload, status, err := readDIANNumeracionPDFUpload(r)
 	if err != nil {
-		return nil, http.StatusBadRequest, err
-	}
-
-	file, header, err := r.FormFile("archivo")
-	if err != nil {
-		file, header, err = r.FormFile("pdf")
-	}
-	if err != nil {
-		file, header, err = r.FormFile("file")
-	}
-	if err != nil {
-		return nil, http.StatusBadRequest, fmt.Errorf("pdf de autorizacion DIAN es obligatorio")
-	}
-	defer file.Close()
-
-	fileName := "formulario_1876.pdf"
-	if header != nil && strings.TrimSpace(header.Filename) != "" {
-		fileName = filepath.Base(header.Filename)
-	}
-	if !strings.EqualFold(filepath.Ext(fileName), ".pdf") {
-		return nil, http.StatusBadRequest, fmt.Errorf("solo se permite cargar PDF de autorizacion DIAN")
-	}
-	if header != nil && header.Size > maxPDFBytes {
-		return nil, http.StatusBadRequest, fmt.Errorf("el PDF supera el limite de 12 MB")
+		return nil, status, err
 	}
 
 	tmp, err := os.CreateTemp("", "pcs-dian-1876-*.pdf")
@@ -12442,17 +12428,12 @@ func importDIANNumeracionPDF(r *http.Request) (map[string]interface{}, int, erro
 	}
 	tmpName := tmp.Name()
 	defer os.Remove(tmpName)
-
-	written, err := io.Copy(tmp, io.LimitReader(file, maxPDFBytes+1))
-	closeErr := tmp.Close()
-	if err != nil {
-		return nil, http.StatusBadRequest, fmt.Errorf("no se pudo leer el PDF cargado")
+	if _, err := tmp.Write(upload.Bytes); err != nil {
+		_ = tmp.Close()
+		return nil, http.StatusInternalServerError, fmt.Errorf("no se pudo guardar el PDF temporal")
 	}
-	if closeErr != nil {
+	if err := tmp.Close(); err != nil {
 		return nil, http.StatusInternalServerError, fmt.Errorf("no se pudo cerrar el PDF temporal")
-	}
-	if written > maxPDFBytes {
-		return nil, http.StatusBadRequest, fmt.Errorf("el PDF supera el limite de 12 MB")
 	}
 
 	text, err := extractDIANPDFText(tmpName)
@@ -12465,13 +12446,226 @@ func importDIANNumeracionPDF(r *http.Request) (map[string]interface{}, int, erro
 	}
 	return map[string]interface{}{
 		"ok":                    true,
-		"empresa_id":            empresaID,
-		"archivo_nombre":        fileName,
+		"empresa_id":            upload.EmpresaID,
+		"archivo_nombre":        upload.FileName,
+		"metodo_extraccion":     "parser_local",
 		"campos_detectados":     fields,
 		"valores_configuracion": fields,
 		"advertencias":          warnings,
 		"preview":               dian1876Preview(text, 900),
 	}, http.StatusOK, nil
+}
+
+type dianNumeracionPDFUpload struct {
+	EmpresaID int64
+	FileName  string
+	Bytes     []byte
+}
+
+func readDIANNumeracionPDFUpload(r *http.Request) (dianNumeracionPDFUpload, int, error) {
+	const maxPDFBytes int64 = 12 << 20
+	if err := r.ParseMultipartForm(maxPDFBytes + (1 << 20)); err != nil {
+		return dianNumeracionPDFUpload{}, http.StatusBadRequest, fmt.Errorf("payload multipart invalido")
+	}
+	empresaID, err := resolveEmpresaIDFromMultipartRequest(r)
+	if err != nil {
+		return dianNumeracionPDFUpload{}, http.StatusBadRequest, err
+	}
+
+	file, header, err := r.FormFile("archivo")
+	if err != nil {
+		file, header, err = r.FormFile("pdf")
+	}
+	if err != nil {
+		file, header, err = r.FormFile("file")
+	}
+	if err != nil {
+		return dianNumeracionPDFUpload{}, http.StatusBadRequest, fmt.Errorf("pdf de autorizacion DIAN es obligatorio")
+	}
+	defer file.Close()
+
+	fileName := "formulario_1876.pdf"
+	if header != nil && strings.TrimSpace(header.Filename) != "" {
+		fileName = filepath.Base(header.Filename)
+	}
+	if !strings.EqualFold(filepath.Ext(fileName), ".pdf") {
+		return dianNumeracionPDFUpload{}, http.StatusBadRequest, fmt.Errorf("solo se permite cargar PDF de autorizacion DIAN")
+	}
+	if header != nil && header.Size > maxPDFBytes {
+		return dianNumeracionPDFUpload{}, http.StatusBadRequest, fmt.Errorf("el PDF supera el limite de 12 MB")
+	}
+
+	var buf bytes.Buffer
+	written, err := io.Copy(&buf, io.LimitReader(file, maxPDFBytes+1))
+	if err != nil {
+		return dianNumeracionPDFUpload{}, http.StatusBadRequest, fmt.Errorf("no se pudo leer el PDF cargado")
+	}
+	if written > maxPDFBytes {
+		return dianNumeracionPDFUpload{}, http.StatusBadRequest, fmt.Errorf("el PDF supera el limite de 12 MB")
+	}
+	return dianNumeracionPDFUpload{EmpresaID: empresaID, FileName: fileName, Bytes: buf.Bytes()}, http.StatusOK, nil
+}
+
+func importDIANNumeracionPDFIA(dbEmp, dbSuper *sql.DB, r *http.Request) (map[string]interface{}, int, error) {
+	upload, status, err := readDIANNumeracionPDFUpload(r)
+	if err != nil {
+		return nil, status, err
+	}
+	if !isSuperAIEnabled(dbSuper) {
+		return nil, http.StatusServiceUnavailable, fmt.Errorf("la IA esta desactivada desde configuracion avanzada")
+	}
+	model, ok := availableEmpresaAIModelMap(dbSuper)["openai:gpt-5.5"]
+	if !ok {
+		return nil, http.StatusServiceUnavailable, fmt.Errorf("el modelo openai:gpt-5.5 no esta disponible en el catalogo de IA")
+	}
+	ctrl := NewEmpresaAIChatController(dbEmp, dbSuper)
+	att := &aiAttachment{Filename: upload.FileName, MimeType: "application/pdf", Bytes: upload.Bytes}
+	systemPrompt := dianNumeracion1876IASystemPrompt()
+	pregunta := "Extrae los campos del Formulario 1876 de autorizacion de numeracion DIAN adjunto. Responde solo JSON valido."
+	respuesta, promptTokens, completionTokens, err := ctrl.callOpenAIResponsesWithSystemPrompt(model, pregunta, nil, systemPrompt, att)
+	if err != nil {
+		return nil, http.StatusBadGateway, err
+	}
+	fields, warnings, err := parseDIANNumeracion1876AIResponse(respuesta)
+	if err != nil {
+		return nil, http.StatusUnprocessableEntity, err
+	}
+	if len(fields) == 0 {
+		return nil, http.StatusUnprocessableEntity, fmt.Errorf("la IA no detecto datos de numeracion DIAN en el PDF")
+	}
+	_, _ = dbpkg.RegisterEmpresaAIConsulta(dbEmp, dbpkg.EmpresaAIConsulta{
+		EmpresaID:        upload.EmpresaID,
+		Provider:         model.Provider,
+		ModelID:          model.ID,
+		Pregunta:         "extraccion_formulario_1876_dian_pdf",
+		Respuesta:        respuesta,
+		PromptTokens:     promptTokens,
+		CompletionTokens: completionTokens,
+		TotalTokens:      promptTokens + completionTokens,
+		UsuarioCreador:   adminEmailFromRequest(r),
+		Estado:           "activo",
+		Observaciones:    "Extraccion IA de autorizacion de numeracion DIAN Formulario 1876",
+	})
+	return map[string]interface{}{
+		"ok":                    true,
+		"empresa_id":            upload.EmpresaID,
+		"archivo_nombre":        upload.FileName,
+		"metodo_extraccion":     "ia_gpt_5_5",
+		"modelo_ia":             model.ID,
+		"campos_detectados":     fields,
+		"valores_configuracion": fields,
+		"advertencias":          warnings,
+	}, http.StatusOK, nil
+}
+
+func dianNumeracion1876IASystemPrompt() string {
+	return `Eres un extractor profesional de documentos DIAN Colombia.
+Lee el PDF Formulario 1876 de autorizacion de numeracion de facturacion.
+Devuelve exclusivamente JSON valido con estas claves:
+{
+  "numero_formulario": "",
+  "resolucion_numero": "",
+  "fecha_formalizacion": "YYYY-MM-DD",
+  "nit": "",
+  "dv": "",
+  "razon_social": "",
+  "modalidad": "FACTURA ELECTRONICA DE VENTA",
+  "prefijo": "",
+  "rango_desde": 0,
+  "rango_hasta": 0,
+  "tipo_solicitud": "AUTORIZACION",
+  "vigencia_meses": 0,
+  "resolucion_fecha_desde": "YYYY-MM-DD",
+  "resolucion_fecha_hasta": "YYYY-MM-DD",
+  "tipo_ambiente": "produccion",
+  "url_dian_sugerida": "https://vpfe.dian.gov.co",
+  "observaciones_sugeridas": ""
+}
+Reglas: usa solo datos visibles del documento; no inventes. Si el prefijo empieza por numero, conservalo tal cual. Para el rango autorizado toma la fila real de numeracion, no los numeros de encabezados. En vigencia_meses toma el valor de la columna 38 Vigencia de esa misma fila. Usa numeros sin separadores de miles.`
+}
+
+func parseDIANNumeracion1876AIResponse(raw string) (map[string]interface{}, []string, error) {
+	candidate := extractJSONCandidate(raw)
+	var data map[string]interface{}
+	if err := json.Unmarshal([]byte(candidate), &data); err != nil {
+		return nil, nil, fmt.Errorf("respuesta IA invalida para Formulario 1876")
+	}
+	fields := map[string]interface{}{}
+	copyString := func(dst, src string) {
+		if v := strings.TrimSpace(genericStringValue(data[src])); v != "" {
+			fields[dst] = v
+		}
+	}
+	copyString("numero_formulario", "numero_formulario")
+	copyString("resolucion_numero", "resolucion_numero")
+	copyString("fecha_formalizacion", "fecha_formalizacion")
+	copyString("resolucion_fecha_desde", "resolucion_fecha_desde")
+	copyString("resolucion_fecha_hasta", "resolucion_fecha_hasta")
+	copyString("nit", "nit")
+	copyString("dv", "dv")
+	copyString("razon_social", "razon_social")
+	copyString("modalidad", "modalidad")
+	copyString("tipo_solicitud", "tipo_solicitud")
+	copyString("tipo_ambiente", "tipo_ambiente")
+	copyString("url_dian_sugerida", "url_dian_sugerida")
+	copyString("observaciones_sugeridas", "observaciones_sugeridas")
+	if prefijo := sanitizeDIANPrefix(genericStringValue(data["prefijo"])); prefijo != "" {
+		fields["prefijo"] = prefijo
+	}
+	if n := anyToInt64(data["rango_desde"]); n > 0 {
+		fields["rango_desde"] = n
+		fields["consecutivo_actual"] = n
+	}
+	if n := anyToInt64(data["rango_hasta"]); n > 0 {
+		fields["rango_hasta"] = n
+	}
+	if n := anyToInt64(data["vigencia_meses"]); dian1876IsValidVigenciaMeses(n) {
+		fields["vigencia_meses"] = n
+	}
+	if genericStringValue(fields["resolucion_numero"]) == "" {
+		if form := genericStringValue(fields["numero_formulario"]); form != "" {
+			fields["resolucion_numero"] = form
+		}
+	}
+	if genericStringValue(fields["resolucion_fecha_desde"]) == "" {
+		if formDate := genericStringValue(fields["fecha_formalizacion"]); formDate != "" {
+			fields["resolucion_fecha_desde"] = formDate
+		}
+	}
+	if genericStringValue(fields["resolucion_fecha_hasta"]) == "" {
+		if desde := genericStringValue(fields["resolucion_fecha_desde"]); desde != "" {
+			if vigencia := anyToInt64(fields["vigencia_meses"]); vigencia > 0 {
+				if start, ok := parseDIANDate(desde); ok {
+					fields["resolucion_fecha_hasta"] = start.AddDate(0, int(vigencia), 0).Format("2006-01-02")
+				}
+			}
+		}
+	}
+	if genericStringValue(fields["tipo_ambiente"]) == "" {
+		fields["tipo_ambiente"] = "produccion"
+	}
+	if genericStringValue(fields["url_dian_sugerida"]) == "" {
+		fields["url_dian_sugerida"] = "https://vpfe.dian.gov.co"
+	}
+	if genericStringValue(fields["observaciones_sugeridas"]) == "" {
+		if form := genericStringValue(fields["numero_formulario"]); form != "" {
+			fields["observaciones_sugeridas"] = "Numeracion importada con IA desde Formulario 1876 DIAN " + form + ". Revise y guarde la configuracion."
+		}
+	}
+	warnings := []string{}
+	required := map[string]string{
+		"numero_formulario": "numero de formulario 1876",
+		"nit":               "NIT",
+		"prefijo":           "prefijo",
+		"rango_desde":       "rango desde",
+		"rango_hasta":       "rango hasta",
+	}
+	for key, label := range required {
+		if _, ok := fields[key]; !ok {
+			warnings = append(warnings, "No se detecto "+label+".")
+		}
+	}
+	return fields, warnings, nil
 }
 
 func extractDIANPDFText(path string) (string, error) {
@@ -12766,9 +12960,26 @@ func dian1876IsValidVigenciaMeses(n int64) bool {
 
 func dian1876FindVigenciaAfterSolicitud(text string) int64 {
 	flat := regexp.MustCompile(`\s+`).ReplaceAllString(text, " ")
-	re := regexp.MustCompile(`(?i)AUTORIZACI\S*\s+1\s+(6|12|18|24|36)\b`)
+	re := regexp.MustCompile(`(?i)AUTORIZACI\S*\D+1\D+(6|12|18|24|36)\b`)
 	matches := re.FindAllStringSubmatch(flat, -1)
 	if len(matches) == 0 {
+		lines := strings.Split(text, "\n")
+		for i := len(lines) - 1; i >= 0; i-- {
+			if !dian1876IsSolicitudAutorizacion(lines[i]) {
+				continue
+			}
+			for j := i + 1; j < len(lines) && j <= i+14; j++ {
+				digits := dian1876DigitsOnly(lines[j])
+				if !regexp.MustCompile(`^\d{1,2}$`).MatchString(digits) {
+					continue
+				}
+				n := dian1876ParseInt(digits)
+				if dian1876IsValidVigenciaMeses(n) {
+					return n
+				}
+			}
+			break
+		}
 		return 0
 	}
 	return dian1876ParseInt(matches[len(matches)-1][1])

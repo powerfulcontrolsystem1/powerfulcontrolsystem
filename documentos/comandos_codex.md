@@ -204,14 +204,19 @@ PDF autorizado por el usuario:
 C:\Users\ivanm\Documents\18764111318575 Autorizacion numercion DIAN 17 JUNIO 2026.pdf
 ```
 
-Importar PDF Formulario 1876:
+Importar PDF Formulario 1876 con IA GPT-5.5, igual que el boton visible de
+`facturacion_electronica.html`:
 
 ```powershell
 curl.exe --ssl-no-revoke -sS -b .gotmp\pcs_api_cookie.txt `
-  -X POST "https://powerfulcontrolsystem.com/api/empresa/facturacion_electronica/dian?action=importar_numeracion_pdf&empresa_id=12" `
+  -X POST "https://powerfulcontrolsystem.com/api/empresa/facturacion_electronica/dian?action=importar_numeracion_pdf_ia&empresa_id=12" `
   -F "archivo=@C:\Users\ivanm\Documents\18764111318575 Autorizacion numercion DIAN 17 JUNIO 2026.pdf;type=application/pdf" `
   -F "empresa_id=12"
 ```
+
+El endpoint `action=importar_numeracion_pdf` queda como respaldo tecnico local
+para pruebas automatizadas cuando IA no este disponible, pero el flujo visual
+principal debe usar IA y permitir digitacion manual en los campos existentes.
 
 Valores esperados del PDF PCS:
 

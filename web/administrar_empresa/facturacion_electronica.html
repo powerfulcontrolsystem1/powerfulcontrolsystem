@@ -178,7 +178,7 @@
           <div class="form-row">
             <div class="form-col"><label class="form-label">PDF Formulario 1876</label><input id="dianNumeracionPdfInput" type="file" accept="application/pdf,.pdf" class="form-input"></div>
             <div class="form-col" style="display:flex; align-items:flex-end; gap:8px; flex-wrap:wrap;">
-              <button id="btnDianNumeracionPdf" type="button" class="btn secondary">Cargar PDF 1876</button>
+              <button id="btnDianNumeracionPdf" type="button" class="btn secondary">Cargar PDF con IA GPT-5.5</button>
               <button id="btnDianNumeracionAplicar" type="button" class="btn" disabled>Aplicar valores</button>
             </div>
           </div>
@@ -1268,11 +1268,11 @@
       var formData = new FormData();
       formData.append("archivo", file);
       formData.append("empresa_id", String(state.empresaID || ""));
-      var url = "/api/empresa/facturacion_electronica/dian?action=importar_numeracion_pdf&empresa_id=" + encodeURIComponent(state.empresaID || "");
+      var url = "/api/empresa/facturacion_electronica/dian?action=importar_numeracion_pdf_ia&empresa_id=" + encodeURIComponent(state.empresaID || "");
       var res = await fetch(url, { method: "POST", credentials: "same-origin", body: formData });
       var data = await readJSONResponse(res);
       renderDianNumeracionPdfResult(data);
-      setDianNumeracionPdfMessage("PDF leido. Revisa los valores detectados y aplica si son correctos.", false);
+      setDianNumeracionPdfMessage("PDF leido con IA GPT-5.5. Revisa los valores detectados y aplica si son correctos.", false);
       return data;
     }
 
@@ -2355,13 +2355,13 @@
     if (btnDianNumeracionPdf) {
       btnDianNumeracionPdf.addEventListener("click", function() {
         btnDianNumeracionPdf.disabled = true;
-        btnDianNumeracionPdf.textContent = "Leyendo PDF...";
+        btnDianNumeracionPdf.textContent = "Leyendo con IA...";
         uploadDianNumeracionPdf().catch(function(err) {
           renderDianNumeracionPdfResult(null);
           setDianNumeracionPdfMessage(err && err.message ? err.message : "No se pudo leer el PDF DIAN.", true);
         }).finally(function() {
           btnDianNumeracionPdf.disabled = false;
-          btnDianNumeracionPdf.textContent = "Cargar PDF 1876";
+          btnDianNumeracionPdf.textContent = "Cargar PDF con IA GPT-5.5";
         });
       });
     }

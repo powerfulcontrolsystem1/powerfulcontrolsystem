@@ -9737,6 +9737,8 @@ html[data-theme^="light"] .estaciones-page .empresa-section{
   text-shadow:none;
   caret-color:#0f172a;
   color-scheme:light;
+  appearance:textfield;
+  -moz-appearance:textfield;
 }
 .carrito-items-box .cart-item-qty-input:disabled{
   color:#334155 !important;
@@ -9745,8 +9747,12 @@ html[data-theme^="light"] .estaciones-page .empresa-section{
   opacity:1 !important;
 }
 .carrito-items-box .cart-item-qty-input::-webkit-inner-spin-button,
-.carrito-items-box .cart-item-qty-input::-webkit-outer-spin-button{
-  opacity:.65;
+.carrito-items-box .cart-item-qty-input::-webkit-outer-spin-button,
+.scanner-qty-control .cart-item-qty-input::-webkit-inner-spin-button,
+.scanner-qty-control .cart-item-qty-input::-webkit-outer-spin-button{
+  -webkit-appearance:none;
+  margin:0;
+  display:none;
 }
 .carrito-scanner-stack{display:grid;grid-template-columns:minmax(240px,1fr) minmax(110px,150px);gap:10px;align-items:start;width:100%;max-width:720px;}
 .carrito-scanner-compact-grid{grid-template-columns:minmax(128px,.72fr) minmax(170px,1fr) minmax(150px,.9fr) minmax(190px,1.05fr) minmax(88px,110px) minmax(104px,124px) minmax(146px,174px);max-width:none;align-items:end;gap:8px;}
