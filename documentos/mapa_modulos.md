@@ -12,6 +12,15 @@ NIT/DV, razon social, prefijo, rango y vigencia, y devuelve valores sugeridos
 para aplicar al formulario antes de guardar. No se guardan secretos ni se
 sobrescribe la configuracion sin confirmacion del usuario.
 
+Actualizacion 2026-06-17: el parser del Formulario 1876 soporta prefijos
+alfanumericos que empiezan por numero, como `1PCS`, y vigencias que el extractor
+del PDF separa visualmente como `2 4`. La autorizacion PCS cargada en produccion
+quedo con resolucion `18764111318575`, prefijo `1PCS`, rango `1-100000`,
+vigencia `2026-06-17` a `2028-06-17`. Una prueba real de carrito genero
+`FV-FE-MENTA-20260617151719` con numero legal `1PCS1`; DIAN recibio el envio y
+lo rechazo por configuracion/validacion (`FAK61`, `FAB05c`, `FAD06`), no por
+prefijo ni rango.
+
 Actualizacion 2026-06-11: `Chat IA flotante operativo` permite lectura real
 controlada de la base de datos de la empresa activa solo para
 `super_administrador`, `administrador_total` y `admin_empresa`. La respuesta

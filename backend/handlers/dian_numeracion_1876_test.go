@@ -118,3 +118,50 @@ func TestParseDIANNumeracion1876TextJoinsSplitVigenciaAfterThousands(t *testing.
 		t.Fatalf("resolucion_fecha_hasta = %#v, want nil without fecha formalizacion", got)
 	}
 }
+
+func TestParseDIANNumeracion1876TextFromRealPCSLayout(t *testing.T) {
+	text := `
+18764111318575
+      8 4 4 5 6 7 7 9 1 CAYON GUARNIZO IVAN FRANCISCO
+2026-06-17 / 01:46:03 PM
+29. Establecimiento
+33. Hasta el numero 34. Tipo solicitud Cod.30. Modalidad Cod.
+31. Prefijo 32. Desde el numero
+38. Vigencia
+1
+29. Establecimiento
+33. Hasta el numero 34. Tipo solicitud Cod.30. Modalidad Cod.
+31. Prefijo 32. Desde el numero
+38. Vigencia
+2
+10
+11
+18764111318575
+      8 4 4 5 6 7 7 9 1 CAYON GUARNIZO IVAN FRANCISCO
+2 2
+CAYON GUARNIZO IVAN FRANCISCO CL 28   5   116 BRR LOS ANGELES
+FACTURA ELECTRONICA DE VENTA 4
+
+1PCS
+1
+
+100,000
+
+AUTORIZACION  1
+
+24
+`
+	fields, warnings := parseDIANNumeracion1876Text(text)
+	if len(warnings) != 0 {
+		t.Fatalf("warnings = %v; fields=%#v", warnings, fields)
+	}
+	if got := fields["prefijo"]; got != "1PCS" {
+		t.Fatalf("prefijo = %#v, want 1PCS; fields=%#v", got, fields)
+	}
+	if got := fields["vigencia_meses"]; got != int64(24) {
+		t.Fatalf("vigencia_meses = %#v, want 24; fields=%#v", got, fields)
+	}
+	if got := fields["resolucion_fecha_hasta"]; got != "2028-06-17" {
+		t.Fatalf("resolucion_fecha_hasta = %#v, want 2028-06-17; fields=%#v", got, fields)
+	}
+}

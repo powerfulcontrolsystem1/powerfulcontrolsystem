@@ -158,6 +158,19 @@ decisiones en cada tarea.
   despues de llegar a `SendBillSync` por `FAB05c` (Software ID no corresponde
   al rango de numeracion) y `FAD06` (CUFE no calculado correctamente); ya no
   hay rechazo por guion/rango tras normalizar el numero legal a `PCS1`, `PCS2`.
+- Actualizacion 2026-06-17: la nueva Autorizacion de Numeracion DIAN Formulario
+  1876 `18764111318575` para PCS usa prefijo `1PCS`, rango `1-100000`, fecha
+  inicial `2026-06-17`, vigencia 24 meses y fecha final `2028-06-17`. El PDF de
+  prueba local del usuario fue `C:\Users\ivanm\Documents\18764111318575 Autorizacion numercion DIAN 17 JUNIO 2026.pdf`.
+- La prueba real autorizada del 2026-06-17 creo venta de una `menta` para el
+  cliente IVAN FRANCISCO CAYON GUARNIZO y genero factura `FV-FE-MENTA-20260617151719`
+  con numero legal `1PCS1`. La factura llego a DIAN y fue rechazada por
+  `FAK61`, `FAB05c` y `FAD06`; ya no se observo rechazo por rango/prefijo
+  `FAD05a/FAD05b/FAD05c`.
+- Cliente PCS para pruebas de facturacion autorizadas por el usuario: IVAN
+  FRANCISCO CAYON GUARNIZO, CC `84456779`, persona natural, Colombia,
+  Magdalena, Santa Marta, direccion `calle 28 N5-116`, celular `3043306506`.
+  En PCS existe como cliente `id=22`.
 - Si aparece `FAB05c`, revisar primero en el portal DIAN que la resolucion/rango
   de numeracion este asociado al mismo Software ID configurado en PCS. No
   sustituirlo por el TestSetId de habilitacion ni por valores copiados en
@@ -166,6 +179,9 @@ decisiones en cada tarea.
   transporte SOAP y la firma XAdES base pueden llegar a acuse `StatusCode=00`;
   produccion exige ademas que el rango autorizado quede vinculado al software
   correcto y que el CUFE use la hora Colombia `-05:00`.
+- Nunca guardar claves de usuario, software PIN, certificados, token, llave
+  tecnica ni contrasenas en documentacion. Si un chat nuevo necesita login, debe
+  pedir autorizacion al usuario o reutilizar sesion activa/cookie temporal.
 
 ## Actualizacion 2026-06-16 - Guia Codex para navegador, VPS y carrito PCS
 

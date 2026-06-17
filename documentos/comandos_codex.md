@@ -178,6 +178,74 @@ Checklist:
 
 ## Pruebas reales en produccion PCS
 
+### Login API seguro para pruebas PCS
+
+- Usar solo credenciales autorizadas explicitamente por el usuario en el chat.
+- No escribir claves en documentacion, commits ni respuestas finales.
+- Guardar cookies solo en `.gotmp` y eliminarlas al terminar si ya no se
+  necesitan.
+
+Ejemplo de flujo sin imprimir secretos:
+
+```powershell
+$cookie = ".gotmp\pcs_api_cookie.txt"
+# Construir el payload en memoria con la clave autorizada por el usuario.
+curl.exe --ssl-no-revoke -sS -c $cookie -b $cookie `
+  -X POST "https://powerfulcontrolsystem.com/login" `
+  -H "Content-Type: application/json" `
+  --data-binary "@.gotmp\login_payload.json"
+```
+
+### Numeracion DIAN PCS 2026-06-17
+
+PDF autorizado por el usuario:
+
+```text
+C:\Users\ivanm\Documents\18764111318575 Autorizacion numercion DIAN 17 JUNIO 2026.pdf
+```
+
+Importar PDF Formulario 1876:
+
+```powershell
+curl.exe --ssl-no-revoke -sS -b .gotmp\pcs_api_cookie.txt `
+  -X POST "https://powerfulcontrolsystem.com/api/empresa/facturacion_electronica/dian?action=importar_numeracion_pdf&empresa_id=12" `
+  -F "archivo=@C:\Users\ivanm\Documents\18764111318575 Autorizacion numercion DIAN 17 JUNIO 2026.pdf;type=application/pdf" `
+  -F "empresa_id=12"
+```
+
+Valores esperados del PDF PCS:
+
+```text
+Formulario: 18764111318575
+Prefijo: 1PCS
+Rango: 1-100000
+Fecha desde: 2026-06-17
+Fecha hasta: 2028-06-17
+Vigencia: 24 meses
+```
+
+### Venta de prueba DIAN PCS
+
+Datos controlados:
+
+- Empresa: PCS, `empresa_id=12`.
+- Producto: `menta`, producto `id=103`, SKU `1`, precio COP 100.
+- Cliente: IVAN FRANCISCO CAYON GUARNIZO, cliente `id=22`, CC `84456779`.
+
+Flujo API equivalente al carrito:
+
+1. Crear carrito en `/api/empresa/carritos_compra?empresa_id=12&modo=venta_directa&perm_page=linkVentaDirecta`.
+2. Activarlo con `PUT action=activar_estacion`.
+3. Agregar producto por `/api/empresa/carritos_compra/items` con `permitir_sin_stock=true` si la empresa lo permite.
+4. Abrir caja con `PUT action=abrir_caja_cobro`.
+5. Cerrar pago con `PUT action=pagar_estacion`.
+6. Si no autoemite FE, llamar `/api/empresa/facturacion_electronica?action=facturar_desde_venta&empresa_id=12` con `tipo_documento=comprobante_pago`, `documento_codigo` y `cliente_id=22`.
+7. Revisar `integracion_fiscal.cola_reintentos`, numero legal y reglas DIAN.
+
+Resultado de referencia 2026-06-17: factura `FV-FE-MENTA-20260617151719`,
+numero legal `1PCS1`, enviada a DIAN y rechazada por `FAK61`, `FAB05c` y
+`FAD06`. El error de rango/prefijo de la resolucion anterior ya no aparecio.
+
 Cuando el usuario pida probar `powerfulcontrolsystem.com`, DIAN, carrito o una
 venta real de la empresa Powerful Control System, no iniciar probando en local
 salvo que la tarea diga explicitamente localhost. Usar:
