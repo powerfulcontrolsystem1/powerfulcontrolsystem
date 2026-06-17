@@ -12708,7 +12708,7 @@ func dian1876FindRange(text string) (string, string, int64, int64, string, int64
 								break
 							}
 						}
-						if n > 1 {
+						if n >= 12 && n <= 36 {
 							vigencia = n
 							break
 						}
