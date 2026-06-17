@@ -12665,13 +12665,15 @@ func dian1876FindRange(text string) (string, string, int64, int64, string, int64
 			if len(nums) >= 2 {
 				solicitud := ""
 				solicitudStart := i
-				for i < len(cleanTokens) {
-					if dian1876IsSolicitudAutorizacion(cleanTokens[i]) {
-						solicitud = cleanTokens[i]
-						i++
-						break
+				authIndex := -1
+				for j := i; j < len(cleanTokens); j++ {
+					if dian1876IsSolicitudAutorizacion(cleanTokens[j]) {
+						authIndex = j
 					}
-					i++
+				}
+				if authIndex >= 0 {
+					solicitud = cleanTokens[authIndex]
+					i = authIndex + 1
 				}
 				if solicitud == "" {
 					i = solicitudStart
