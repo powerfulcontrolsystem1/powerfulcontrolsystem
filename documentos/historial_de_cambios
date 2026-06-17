@@ -35049,6 +35049,7 @@ Cambios:
 - Se completa el adquiriente desde clientes por empresa_id y cliente_id antes de enviar a DIAN.
 - Se agrega bloque de persona natural en XML UBL cuando el adquiriente usa CC u otro documento no NIT.
 - Se normaliza CUFE/CUDE con montos a dos decimales y se reutiliza el UUID real del XML en el envio.
+- Se corrige el guardado del check de facturacion electronica automatica para persistir modo_documento_venta=factura_electronica.
 Pruebas:
 - go test ./handlers -run "TestGenerateDIANUBLBase|TestValidateDIANDocumentPreflight|TestExtractDIAN"
 - web/super/configuracion_avanzada.html

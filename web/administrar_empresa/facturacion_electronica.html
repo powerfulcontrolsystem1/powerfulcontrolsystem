@@ -971,9 +971,11 @@
     }
 
     function collectAdvancedPayload() {
+      var facturacionElectronicaActiva = !!document.getElementById("adv_facturacion_electronica_activa").checked;
       return {
         empresa_id: Number(state.empresaID),
-        facturacion_electronica_activa: !!document.getElementById("adv_facturacion_electronica_activa").checked,
+        facturacion_electronica_activa: facturacionElectronicaActiva,
+        modo_documento_venta: facturacionElectronicaActiva ? "factura_electronica" : "comprobante_pago",
         enviar_email_venta: !!document.getElementById("adv_enviar_email_venta").checked,
         enviar_factura_electronica_venta: getEnviarFacturaEmailClienteAutoValue(),
         tipo_documento_emisor: txt(document.getElementById("adv_tipo_documento_emisor").value) || "NIT",
