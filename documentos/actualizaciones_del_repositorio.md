@@ -14959,3 +14959,12 @@ Archivos modificados:
 - documentos/historial_de_cambios
 - web/administrar_empresa/carrito_de_compras.html
 - web/estilos.css
+
+2026-06-17 12:57:08 - Mensaje: rs: actualizar repositorio y sincronizar VPS; Commit: b0ebb774; PushStatus: OK
+Archivos modificados:
+- backend/handlers/dian_numeracion_1876_test.go
+- backend/handlers/modulos_faltantes.go
+- documentos/descripcion_de_archivos
+- documentos/historial_de_cambios
+- documentos/mapa_modulos.md
+- web/administrar_empresa/facturacion_electronica.html
