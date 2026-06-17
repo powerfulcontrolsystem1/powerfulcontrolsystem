@@ -12561,7 +12561,7 @@ func parseDIANNumeracion1876Text(raw string) (map[string]interface{}, []string) 
 func dian1876Normalize(raw string) string {
 	s := strings.ReplaceAll(raw, "\u00a0", " ")
 	s = strings.ReplaceAll(s, "\r", "\n")
-	joinDigits := regexp.MustCompile(`(\d)[ \t]+(\d)`)
+	joinDigits := regexp.MustCompile(`(\d)[ \t]{1,2}(\d)`)
 	for {
 		joined := joinDigits.ReplaceAllString(s, "$1$2")
 		if joined == s {

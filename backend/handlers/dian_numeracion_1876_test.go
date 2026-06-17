@@ -85,3 +85,14 @@ AUTORIZACION  1
 		t.Fatalf("rango_hasta = %#v, want 100000", got)
 	}
 }
+
+func TestDIAN1876NormalizeDoesNotJoinTableColumns(t *testing.T) {
+	text := "FACTURA ELECTRONICA DE VENTA 4          1PCS 1 100,000 AUTORIZACION 1 24"
+	fields, warnings := parseDIANNumeracion1876Text(text)
+	if len(warnings) != 2 {
+		t.Fatalf("warnings = %v", warnings)
+	}
+	if got := fields["prefijo"]; got != "1PCS" {
+		t.Fatalf("prefijo = %#v, want 1PCS; fields=%#v", got, fields)
+	}
+}
