@@ -35052,3 +35052,16 @@ Cambios:
 Pruebas:
 - go test ./handlers -run "TestGenerateDIANUBLBase|TestValidateDIANDocumentPreflight|TestExtractDIAN"
 - web/super/configuracion_avanzada.html
+
+2026-06-17: rs: actualizar repositorio y sincronizar VPS
+PushStatus: OK
+Archivos modificados:
+- backend/handlers/dian_signature_upload_test.go
+- backend/handlers/facturacion_electronica.go
+- backend/handlers/modulos_faltantes.go
+- documentos/comandos_codex.md
+- documentos/contexto_codex.md
+- documentos/docker_vps_operacion.md
+- documentos/historial_de_cambios
+- web/administrar_empresa/facturacion_electronica.html
+- web/administrar_empresa/facturacion_electronica_tutorial_dian.html

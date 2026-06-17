@@ -15054,3 +15054,15 @@ Archivos modificados:
 - web/index.html
 - web/super/administradores.html
 - web/super/configuracion_avanzada.html
+
+2026-06-17 18:29:20 - Mensaje: rs: actualizar repositorio y sincronizar VPS; Commit: a0503612; PushStatus: OK
+Archivos modificados:
+- backend/handlers/dian_signature_upload_test.go
+- backend/handlers/facturacion_electronica.go
+- backend/handlers/modulos_faltantes.go
+- documentos/comandos_codex.md
+- documentos/contexto_codex.md
+- documentos/docker_vps_operacion.md
+- documentos/historial_de_cambios
+- web/administrar_empresa/facturacion_electronica.html
+- web/administrar_empresa/facturacion_electronica_tutorial_dian.html
