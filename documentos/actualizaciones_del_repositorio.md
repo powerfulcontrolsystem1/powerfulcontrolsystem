@@ -14993,3 +14993,8 @@ Archivos modificados:
 Archivos modificados:
 - backend/handlers/dian_numeracion_1876_test.go
 - backend/handlers/modulos_faltantes.go
+
+2026-06-17 15:07:18 - Mensaje: rs: actualizar repositorio y sincronizar VPS; Commit: 36cf8e1e; PushStatus: OK
+Archivos modificados:
+- backend/handlers/dian_numeracion_1876_test.go
+- backend/handlers/modulos_faltantes.go
