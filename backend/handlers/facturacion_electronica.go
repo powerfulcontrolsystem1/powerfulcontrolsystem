@@ -36,6 +36,48 @@ func firstPositiveFloat64(values ...float64) float64 {
 	return 0
 }
 
+func completarClientePayloadFacturacion(dbEmp *sql.DB, empresaID int64, payload *facturacionOperacionPayload, doc dbpkg.EmpresaDocumentoFacturacion) {
+	if dbEmp == nil || payload == nil || empresaID <= 0 {
+		return
+	}
+	clienteID := payload.ClienteID
+	if clienteID <= 0 {
+		clienteID = payload.EntidadID
+	}
+	if clienteID <= 0 {
+		clienteID = doc.EntidadRelacionadaID
+	}
+	if clienteID <= 0 {
+		return
+	}
+	cliente, err := dbpkg.GetClienteByID(dbEmp, empresaID, clienteID)
+	if err != nil || cliente == nil {
+		return
+	}
+	payload.ClienteID = clienteID
+	if payload.EntidadID <= 0 {
+		payload.EntidadID = clienteID
+	}
+	if strings.TrimSpace(payload.ClienteNombre) == "" {
+		payload.ClienteNombre = strings.TrimSpace(cliente.NombreRazonSocial)
+	}
+	if strings.TrimSpace(payload.ClienteNumeroDocumento) == "" {
+		payload.ClienteNumeroDocumento = strings.TrimSpace(cliente.NumeroDocumento)
+	}
+	if strings.TrimSpace(payload.ClienteTipoDocumento) == "" {
+		payload.ClienteTipoDocumento = strings.TrimSpace(cliente.TipoDocumento)
+	}
+	if strings.TrimSpace(payload.ClienteEmail) == "" {
+		payload.ClienteEmail = strings.TrimSpace(cliente.Email)
+	}
+	if strings.TrimSpace(payload.ClienteTelefono) == "" {
+		payload.ClienteTelefono = strings.TrimSpace(cliente.Telefono)
+	}
+	if strings.TrimSpace(payload.ClienteDireccion) == "" {
+		payload.ClienteDireccion = strings.TrimSpace(cliente.Direccion)
+	}
+}
+
 type facturacionOperacionPayload struct {
 	EmpresaID               int64   `json:"empresa_id"`
 	EntidadID               int64   `json:"entidad_id"`
@@ -1746,6 +1788,7 @@ func dispatchFacturacionDIANOficial(dbEmp *sql.DB, payload facturacionOperacionP
 	if dbEmp == nil || doc.EmpresaID <= 0 {
 		return facturacionProveedorDispatchResult{Success: false, Error: "conexion o empresa invalida para DIAN oficial"}
 	}
+	completarClientePayloadFacturacion(dbEmp, doc.EmpresaID, &payload, doc)
 	dianCfg, err := getEmpresaDIANConfig(dbEmp, doc.EmpresaID)
 	if err != nil || len(dianCfg) == 0 {
 		return facturacionProveedorDispatchResult{Success: false, Error: "configuracion DIAN Colombia no disponible"}

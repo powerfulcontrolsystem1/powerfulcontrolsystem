@@ -17,6 +17,11 @@ decisiones en cada tarea.
 - `.env.platform`, certificados, llaves y secretos no se incluyen por defecto.
   Cualquier restauracion real debe revisar el manifiesto y configurar secretos
   manualmente en la VPS destino.
+- Para conectarse por SSH, compilar, publicar, consultar Docker/PostgreSQL y
+  probar salud del VPS, leer `documentos/comandos_codex.md` secciones
+  `Conexion SSH al VPS`, `Compilar y publicar en VPS` y
+  `documentos/docker_vps_operacion.md`. La configuracion privada local vive en
+  `scripts/pcs_deployment.local.ps1`; no imprimir host, llaves, DSN ni secretos.
 
 ## Actualizacion 2026-06-11 - Empresa de pruebas operativas
 
@@ -175,6 +180,10 @@ decisiones en cada tarea.
   de numeracion este asociado al mismo Software ID configurado en PCS. No
   sustituirlo por el TestSetId de habilitacion ni por valores copiados en
   documentacion.
+- Despues de solicitar la numeracion y obtener el Formulario 1876, es obligatorio
+  entrar al portal DIAN de produccion `https://catalogo-vpfe.dian.gov.co/User/Login`
+  y asociar el prefijo/rango autorizado con el Software ID. Si este paso falta,
+  DIAN rechaza con `FAB05c` aunque el PDF de numeracion este cargado en PCS.
 - La aceptacion de habilitacion historica `SETP990000195` demuestra que el
   transporte SOAP y la firma XAdES base pueden llegar a acuse `StatusCode=00`;
   produccion exige ademas que el rango autorizado quede vinculado al software

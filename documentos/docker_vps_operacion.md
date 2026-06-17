@@ -97,6 +97,54 @@ Arranque base:
 - `pcs-backend`: API Go de la plataforma.
 - `pcs-frontend`: Nginx interno que sirve `web` y reenvia API al backend.
 
+## Acceso SSH operativo desde Codex
+
+Desde Windows/Codex, la conexion al VPS se resuelve con el archivo local privado:
+
+```text
+scripts/pcs_deployment.local.ps1
+```
+
+Ese archivo no se versiona. Contiene el host, usuario, puerto, ruta remota y
+opcionalmente llave privada/host key. No copiar esos valores a commits,
+documentacion publica ni respuestas.
+
+Patron seguro para ejecutar comandos remotos:
+
+```powershell
+Set-Location D:\powerfulcontrolsystem
+. .\scripts\pcs_deployment.local.ps1
+$ssh = "C:\Windows\System32\OpenSSH\ssh.exe"
+$target = "$script:PcsVpsUser@$script:PcsVpsHost"
+$args = @("-p", [string]$script:PcsVpsPort, "-o", "StrictHostKeyChecking=accept-new")
+if ($script:PcsVpsIdentityFile) { $args += @("-i", [string]$script:PcsVpsIdentityFile) }
+& $ssh @args $target "cd '$script:PcsVpsRemotePath' && docker compose --env-file deploy/.env.platform -f deploy/docker-compose.platform.yml ps"
+```
+
+Comandos de diagnostico permitidos por defecto:
+
+```bash
+cd /root/powerfulcontrolsystem
+docker compose --env-file deploy/.env.platform -f deploy/docker-compose.platform.yml ps
+docker logs --tail 160 pcs-backend
+curl -I http://127.0.0.1:8081/
+curl -I https://powerfulcontrolsystem.com/
+```
+
+Comando de PostgreSQL por contenedor, sin imprimir password:
+
+```bash
+docker exec -i pcs-postgres sh -lc 'psql -U "$POSTGRES_USER" -d pcs_empresas -c "select 1"'
+```
+
+Para SQL de escritura:
+
+- usar siempre `WHERE empresa_id = ...` cuando sean datos empresariales;
+- crear respaldo o consulta previa cuando el cambio sea masivo;
+- pasar el SQL por archivo temporal en `/tmp`;
+- eliminar el temporal al finalizar;
+- no imprimir secretos ni dumps completos.
+
 Comando de verificacion:
 
 ```bash
@@ -105,6 +153,41 @@ docker compose --env-file deploy/.env.platform -f deploy/docker-compose.platform
 curl -I http://127.0.0.1:8081/
 curl -I https://powerfulcontrolsystem.com
 ```
+
+## Compilacion y publicacion
+
+Flujo recomendado desde Codex/PowerShell:
+
+```powershell
+Set-Location D:\powerfulcontrolsystem
+.\rs.ps1
+```
+
+`rs.ps1` debe ser el primer camino cuando el usuario pide `rs`, publicar o
+sincronizar. Ejecuta las validaciones del repositorio, sincroniza el workspace al
+VPS y reconstruye/recarga servicios segun el modo activo.
+
+Flujo manual equivalente:
+
+```powershell
+.\scripts\profesional_preflight.ps1
+.\scripts\actualizar_repositorio.ps1
+.\scripts\sync_to_vps.ps1
+```
+
+Verificacion posterior minima:
+
+```powershell
+. .\scripts\pcs_deployment.local.ps1
+$ssh = "C:\Windows\System32\OpenSSH\ssh.exe"
+$target = "$script:PcsVpsUser@$script:PcsVpsHost"
+$args = @("-p", [string]$script:PcsVpsPort, "-o", "StrictHostKeyChecking=accept-new")
+if ($script:PcsVpsIdentityFile) { $args += @("-i", [string]$script:PcsVpsIdentityFile) }
+& $ssh @args $target "cd '$script:PcsVpsRemotePath' && docker compose --env-file deploy/.env.platform -f deploy/docker-compose.platform.yml ps && curl -I http://127.0.0.1:8081/ && curl -I https://powerfulcontrolsystem.com/"
+```
+
+Si el cambio afecta UI, abrir la URL publicada con `?qa={timestamp}` y validar
+visualmente con el navegador interno, Chrome o Playwright segun disponibilidad.
 
 ## Limpieza automatica durante sync
 

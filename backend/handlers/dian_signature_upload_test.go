@@ -790,6 +790,60 @@ func TestGenerateDIANUBLBaseUsesCorrectNoteLines(t *testing.T) {
 	}
 }
 
+func TestGenerateDIANUBLBaseUsesNaturalPersonCustomerAndFormattedCUFE(t *testing.T) {
+	cfg := map[string]interface{}{
+		"nit":                    "84456779",
+		"digito_verificacion":    "1",
+		"razon_social":           "CAYON GUARNIZO IVAN FRANCISCO",
+		"tipo_ambiente":          "produccion",
+		"prefijo":                "1PCS",
+		"resolucion_numero":      "18764111318575",
+		"resolucion_fecha_desde": "2026-06-17",
+		"resolucion_fecha_hasta": "2028-06-17",
+		"rango_desde":            1,
+		"rango_hasta":            100000,
+		"llave_tecnica":          "technical-key-test",
+		"software_id":            "b266de9c-425a-4aaf-b465-6d6957aa21dd",
+		"software_pin":           "software-pin-test",
+	}
+	payload := map[string]interface{}{
+		"documento_codigo":       "1PCS2",
+		"documento_tipo":         "factura_electronica",
+		"fecha_emision":          "2026-06-17T23:19:55-05:00",
+		"cliente_nombre":         "IVAN FRANCISCO CAYON GUARNIZO",
+		"cliente_nit":            "84456779",
+		"cliente_tipo_documento": "CC",
+		"total":                  "100",
+		"impuesto_total":         "0",
+		"moneda":                 "COP",
+	}
+	result, status, err := generateDIANUBLBase(cfg, 12, payload)
+	if err != nil || status != http.StatusOK {
+		t.Fatalf("generate status=%d err=%v result=%#v", status, err, result)
+	}
+	xmlPayload := genericStringValue(result["xml_ubl_base"])
+	for _, expected := range []string{
+		"<cbc:AdditionalAccountID>2</cbc:AdditionalAccountID>",
+		`schemeName="13">84456779</cbc:CompanyID>`,
+		"<cac:Person>",
+		"<cbc:FirstName>IVAN FRANCISCO CAYON</cbc:FirstName>",
+		"<cbc:FamilyName>GUARNIZO</cbc:FamilyName>",
+		"<cbc:PayableAmount currencyID=\"COP\">100.00</cbc:PayableAmount>",
+		"<cbc:TaxAmount currencyID=\"COP\">0.00</cbc:TaxAmount>",
+	} {
+		if !strings.Contains(xmlPayload, expected) {
+			t.Fatalf("expected %q in XML: %s", expected, xmlPayload)
+		}
+	}
+	if strings.Contains(xmlPayload, "2222222222") {
+		t.Fatalf("real customer invoice must not fall back to consumidor final: %s", xmlPayload)
+	}
+	expectedUUID := strings.ToLower(buildDIANCUFEFacturaVenta("1PCS2", "2026-06-17", "23:19:55-05:00", "100.00", "0.00", "0.00", "0.00", "100.00", "84456779", "84456779", "technical-key-test", "1"))
+	if got := genericStringValue(result["uuid"]); got != expectedUUID {
+		t.Fatalf("expected formatted CUFE %s, got %s", expectedUUID, got)
+	}
+}
+
 func TestValidateDIANDocumentPreflightBlocksDemoMarkersForRealSend(t *testing.T) {
 	cfg := map[string]interface{}{
 		"nit":                    "900373913",

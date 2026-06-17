@@ -91,6 +91,52 @@ Modos utiles segun necesidad:
 
 No mostrar credenciales, llaves ni hosts privados sensibles en respuestas.
 
+## Conexion SSH al VPS
+
+La configuracion local privada vive en:
+
+```text
+scripts/pcs_deployment.local.ps1
+```
+
+Ese archivo esta ignorado por Git y puede contener host, usuario, puerto, ruta
+remota, host key y llave privada. No imprimir sus valores completos en consola,
+documentacion ni respuestas.
+
+Para cargar la configuracion y abrir una sesion SSH manual desde PowerShell:
+
+```powershell
+Set-Location D:\powerfulcontrolsystem
+. .\scripts\pcs_deployment.local.ps1
+$ssh = "C:\Windows\System32\OpenSSH\ssh.exe"
+$target = "$script:PcsVpsUser@$script:PcsVpsHost"
+$args = @("-p", [string]$script:PcsVpsPort, "-o", "StrictHostKeyChecking=accept-new")
+if ($script:PcsVpsIdentityFile) { $args += @("-i", [string]$script:PcsVpsIdentityFile) }
+& $ssh @args $target
+```
+
+Para ejecutar un comando remoto puntual sin abrir consola interactiva:
+
+```powershell
+. .\scripts\pcs_deployment.local.ps1
+$ssh = "C:\Windows\System32\OpenSSH\ssh.exe"
+$target = "$script:PcsVpsUser@$script:PcsVpsHost"
+$args = @("-p", [string]$script:PcsVpsPort, "-o", "StrictHostKeyChecking=accept-new")
+if ($script:PcsVpsIdentityFile) { $args += @("-i", [string]$script:PcsVpsIdentityFile) }
+& $ssh @args $target "cd '$script:PcsVpsRemotePath' && docker compose --env-file deploy/.env.platform -f deploy/docker-compose.platform.yml ps"
+```
+
+Reglas de seguridad:
+
+- Nunca imprimir `deploy/.env.platform`, DSN completos, `CONFIG_ENC_KEY`,
+  `POSTGRES_PASSWORD`, certificados, PIN DIAN, tokens ni claves privadas.
+- Preferir comandos de solo lectura primero: `docker ps`, `docker logs --tail`,
+  `curl -I`, `git status`, `docker compose ps`.
+- Antes de ejecutar SQL de escritura, confirmar que el `WHERE empresa_id = ...`
+  esta presente y que el cambio no afecta otras empresas.
+- Pasar SQL por archivo temporal en `/tmp` y eliminarlo al finalizar; no dejar
+  secretos ni dumps en el repositorio.
+
 ## Docker y VPS
 
 Consultar:
@@ -102,6 +148,53 @@ Consultar:
 
 Antes de cambios Docker, validar que el proyecto pueda moverse sin incluir
 `.env`, uploads privados, backups, certificados o datos runtime.
+
+### Compilar y publicar en VPS
+
+Flujo normal cuando el usuario pide publicar, sincronizar o `rs`:
+
+```powershell
+Set-Location D:\powerfulcontrolsystem
+.\rs.ps1
+```
+
+`rs.ps1` es el wrapper preferido porque encadena las validaciones del proyecto,
+sincroniza al VPS, reconstruye/recarga servicios y verifica salud publica segun
+la configuracion vigente.
+
+Flujo manual si se necesita separar pasos:
+
+```powershell
+.\scripts\profesional_preflight.ps1
+.\scripts\actualizar_repositorio.ps1
+.\scripts\sync_to_vps.ps1
+```
+
+Validacion remota despues de compilar/desplegar:
+
+```powershell
+. .\scripts\pcs_deployment.local.ps1
+$ssh = "C:\Windows\System32\OpenSSH\ssh.exe"
+$target = "$script:PcsVpsUser@$script:PcsVpsHost"
+$args = @("-p", [string]$script:PcsVpsPort, "-o", "StrictHostKeyChecking=accept-new")
+if ($script:PcsVpsIdentityFile) { $args += @("-i", [string]$script:PcsVpsIdentityFile) }
+& $ssh @args $target "cd '$script:PcsVpsRemotePath' && docker compose --env-file deploy/.env.platform -f deploy/docker-compose.platform.yml ps && curl -I http://127.0.0.1:8081/ && curl -I https://powerfulcontrolsystem.com/"
+```
+
+Para revisar errores del backend sin exponer secretos:
+
+```powershell
+& $ssh @args $target "docker logs --tail 160 pcs-backend"
+```
+
+Para revisar PostgreSQL por consola del contenedor:
+
+```powershell
+& $ssh @args $target "docker exec -i pcs-postgres sh -lc 'psql -U \"$POSTGRES_USER\" -d pcs_empresas -c \"select 1\"'"
+```
+
+Si se actualizan datos operativos en produccion, registrar el motivo en
+`documentos/historial_de_cambios` y validar por API o pantalla publicada.
 
 ## Validacion visual
 
@@ -191,10 +284,14 @@ Ejemplo de flujo sin imprimir secretos:
 $cookie = ".gotmp\pcs_api_cookie.txt"
 # Construir el payload en memoria con la clave autorizada por el usuario.
 curl.exe --ssl-no-revoke -sS -c $cookie -b $cookie `
-  -X POST "https://powerfulcontrolsystem.com/login" `
+  -X POST "https://powerfulcontrolsystem.com/super/api/administradores/login" `
   -H "Content-Type: application/json" `
   --data-binary "@.gotmp\login_payload.json"
 ```
+
+El login por correo de `login.html` usa `/super/api/administradores/login`.
+Si reCAPTCHA o 2FA estan activos, preferir la sesion real del navegador interno
+o Chrome autorizado por el usuario.
 
 ### Numeracion DIAN PCS 2026-06-17
 

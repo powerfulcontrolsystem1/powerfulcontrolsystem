@@ -171,7 +171,7 @@
           <div class="dian-capture-head">
             <div>
               <h3>Autorizaci&oacute;n de numeraci&oacute;n DIAN (Formulario 1876)</h3>
-              <p class="form-help">Carga el PDF oficial para detectar NIT, DV, raz&oacute;n social, prefijo, rango y vigencia. Luego revisa y guarda.</p>
+              <p class="form-help">Carga el PDF oficial para detectar NIT, DV, raz&oacute;n social, prefijo, rango y vigencia. Luego revisa, guarda y asocia la numeraci&oacute;n al software en el portal DIAN.</p>
             </div>
             <span class="dian-chip">PDF DIAN</span>
           </div>
@@ -183,6 +183,11 @@
             </div>
           </div>
           <div id="dianNumeracionPdfMsg" class="form-help"></div>
+          <div class="form-help" style="margin-top:8px;">
+            <strong>Paso obligatorio despu&eacute;s del Formulario 1876:</strong>
+            entra al portal DIAN de producci&oacute;n y registra/asocia el rango autorizado con el Software ID antes de emitir.
+            <a href="https://catalogo-vpfe.dian.gov.co/User/Login" target="_blank" rel="noopener">Abrir portal DIAN</a>
+          </div>
           <div id="dianNumeracionPdfResultado" class="dian-readable-result is-empty"></div>
         </div>
         <div class="form-row">
@@ -227,6 +232,7 @@
           <button id="btnDianConfigValidar" type="button" class="btn secondary">Validar checklist</button>
           <button id="btnDianConfigRecargar" type="button" class="btn secondary">Recargar</button>
           <a id="btnDianAyudaNumeracion" class="btn secondary" href="https://micrositios.dian.gov.co/sistema-de-facturacion-electronica/numeracion-autorizacion/" target="_blank" rel="noopener">Ayuda numeración DIAN</a>
+          <a id="btnDianAsociarNumeracion" class="btn secondary" href="https://catalogo-vpfe.dian.gov.co/User/Login" target="_blank" rel="noopener">Asociar numeraci&oacute;n DIAN</a>
           <a id="btnDianPasarTest" class="btn secondary" href="/administrar_empresa/facturacion_electronica_pruebas_dian.html">Centro de habilitación DIAN</a>
         </div>
         <div id="feDianConfigMsg" class="form-help"></div>

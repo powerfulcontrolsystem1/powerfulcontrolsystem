@@ -1,3 +1,15 @@
+2026-06-17: Guia Codex para SSH, compilacion y pruebas VPS.
+- Modulos afectados: `documentacion_operativa`, `vps`, `qa_operacion`, `despliegue`.
+- `documentos/comandos_codex.md`: agrega flujo de conexion SSH usando `scripts/pcs_deployment.local.ps1`, comandos seguros para Docker/PostgreSQL, publicacion con `rs`, validacion remota y correccion del endpoint de login por correo a `/super/api/administradores/login`.
+- `documentos/docker_vps_operacion.md`: documenta acceso SSH operativo desde Codex, diagnostico remoto, SQL seguro por `empresa_id`, compilacion/publicacion y verificacion posterior del VPS.
+- `documentos/contexto_codex.md`: apunta a las secciones obligatorias para que chats nuevos sepan donde leer SSH, compilacion, despliegue y pruebas sin exponer secretos.
+
+2026-06-17: DIAN asociacion de numeracion posterior al Formulario 1876.
+- Modulos afectados: `facturacion_electronica`, `dian_colombia`, `frontend_ux`, `documentacion_operativa`.
+- Frontend DIAN: `web/administrar_empresa/facturacion_electronica.html` agrega aviso y enlace directo al portal DIAN de produccion para asociar el prefijo/rango autorizado con el Software ID despues de cargar el PDF de numeracion.
+- Tutorial DIAN: `web/administrar_empresa/facturacion_electronica_tutorial_dian.html` explica que solicitar numeracion no basta; tambien hay que asociarla en `https://catalogo-vpfe.dian.gov.co/User/Login` antes de emitir en produccion.
+- Documentacion Codex: `documentos/contexto_codex.md` registra la regla operativa para futuros chats; si DIAN devuelve `FAB05c`, revisar primero esta asociacion rango/software.
+
 2026-06-17: Importador PDF DIAN Formulario 1876.
 - Modulos afectados: `facturacion_electronica`, `dian_colombia`, `frontend_ux`, `qa_operacion`.
 - Backend DIAN: `backend/handlers/modulos_faltantes.go` agrega la accion `importar_numeracion_pdf` en `/api/empresa/facturacion_electronica/dian`, valida `empresa_id`, acepta PDF, extrae texto con `pdftotext` del servidor y detecta numero de formulario, NIT/DV, razon social, prefijo, rango, vigencia y ambiente sugerido sin guardar automaticamente.
@@ -35031,4 +35043,12 @@ Archivos modificados:
 - web/administrar_empresa/facturas_electronicas.html
 - web/index.html
 - web/super/administradores.html
+
+2026-06-17: facturacion electronica DIAN Colombia
+Cambios:
+- Se completa el adquiriente desde clientes por empresa_id y cliente_id antes de enviar a DIAN.
+- Se agrega bloque de persona natural en XML UBL cuando el adquiriente usa CC u otro documento no NIT.
+- Se normaliza CUFE/CUDE con montos a dos decimales y se reutiliza el UUID real del XML en el envio.
+Pruebas:
+- go test ./handlers -run "TestGenerateDIANUBLBase|TestValidateDIANDocumentPreflight|TestExtractDIAN"
 - web/super/configuracion_avanzada.html
