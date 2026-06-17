@@ -119,6 +119,14 @@ func TestParseDIANNumeracion1876TextJoinsSplitVigenciaAfterThousands(t *testing.
 	}
 }
 
+func TestParseDIANNumeracion1876TextJoinsSplitVigenciaWithNoisyToken(t *testing.T) {
+	text := "FACTURA ELECTRONICA DE VENTA 4 1PCS 1 100,000 AUTORIZACION 1 2 4\u00a0"
+	fields, _ := parseDIANNumeracion1876Text(text)
+	if got := fields["vigencia_meses"]; got != int64(24) {
+		t.Fatalf("vigencia_meses = %#v, want 24; fields=%#v", got, fields)
+	}
+}
+
 func TestParseDIANNumeracion1876TextFromRealPCSLayout(t *testing.T) {
 	text := `
 18764111318575

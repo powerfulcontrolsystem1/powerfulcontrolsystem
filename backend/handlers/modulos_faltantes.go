@@ -12674,10 +12674,19 @@ func dian1876FindRange(text string) (string, string, int64, int64, string, int64
 				}
 				vigencia := int64(0)
 				for i < len(cleanTokens) {
-					if regexp.MustCompile(`^\d{1,3}$`).MatchString(cleanTokens[i]) {
-						n := dian1876ParseInt(cleanTokens[i])
+					tokenDigits := dian1876DigitsOnly(cleanTokens[i])
+					if regexp.MustCompile(`^\d{1,3}$`).MatchString(tokenDigits) {
+						n := dian1876ParseInt(tokenDigits)
 						if n > 1 && n < 10 && i+1 < len(cleanTokens) && regexp.MustCompile(`^\d$`).MatchString(cleanTokens[i+1]) {
-							joined := dian1876ParseInt(cleanTokens[i] + cleanTokens[i+1])
+							joined := dian1876ParseInt(tokenDigits + dian1876DigitsOnly(cleanTokens[i+1]))
+							if joined >= 12 && joined <= 36 {
+								vigencia = joined
+								break
+							}
+						}
+						if n > 1 && n < 10 && i+1 < len(cleanTokens) {
+							nextDigits := dian1876DigitsOnly(cleanTokens[i+1])
+							joined := dian1876ParseInt(tokenDigits + nextDigits)
 							if joined >= 12 && joined <= 36 {
 								vigencia = joined
 								break
@@ -12706,6 +12715,10 @@ func dian1876ParseInt(raw string) int64 {
 	clean := strings.NewReplacer(",", "", ".", "", " ", "").Replace(strings.TrimSpace(raw))
 	n, _ := strconv.ParseInt(clean, 10, 64)
 	return n
+}
+
+func dian1876DigitsOnly(raw string) string {
+	return regexp.MustCompile(`\D+`).ReplaceAllString(strings.TrimSpace(raw), "")
 }
 
 func dian1876Preview(text string, max int) string {
