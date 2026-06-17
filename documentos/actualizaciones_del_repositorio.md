@@ -14968,3 +14968,8 @@ Archivos modificados:
 - documentos/historial_de_cambios
 - documentos/mapa_modulos.md
 - web/administrar_empresa/facturacion_electronica.html
+
+2026-06-17 14:24:59 - Mensaje: rs: actualizar repositorio y sincronizar VPS; Commit: a45df4d7; PushStatus: OK
+Archivos modificados:
+- backend/handlers/dian_numeracion_1876_test.go
+- backend/handlers/modulos_faltantes.go
