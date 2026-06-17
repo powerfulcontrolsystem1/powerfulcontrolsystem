@@ -3,6 +3,15 @@
 Tabla de ubicacion rapida para no buscar desde cero cada modulo. Si una fila
 queda incompleta al implementar una mejora, actualizarla en el mismo cambio.
 
+Actualizacion 2026-06-17: `Facturacion electronica Colombia` permite cargar el
+PDF de Autorizacion de Numeracion DIAN Formulario 1876 desde
+`web/administrar_empresa/facturacion_electronica.html`. El frontend llama
+`POST /api/empresa/facturacion_electronica/dian?action=importar_numeracion_pdf`
+con `empresa_id`; el backend lee el PDF con `pdftotext`, detecta formulario,
+NIT/DV, razon social, prefijo, rango y vigencia, y devuelve valores sugeridos
+para aplicar al formulario antes de guardar. No se guardan secretos ni se
+sobrescribe la configuracion sin confirmacion del usuario.
+
 Actualizacion 2026-06-11: `Chat IA flotante operativo` permite lectura real
 controlada de la base de datos de la empresa activa solo para
 `super_administrador`, `administrador_total` y `admin_empresa`. La respuesta

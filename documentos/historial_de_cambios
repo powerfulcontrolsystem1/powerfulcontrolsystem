@@ -1,3 +1,9 @@
+2026-06-17: Importador PDF DIAN Formulario 1876.
+- Modulos afectados: `facturacion_electronica`, `dian_colombia`, `frontend_ux`, `qa_operacion`.
+- Backend DIAN: `backend/handlers/modulos_faltantes.go` agrega la accion `importar_numeracion_pdf` en `/api/empresa/facturacion_electronica/dian`, valida `empresa_id`, acepta PDF, extrae texto con `pdftotext` del servidor y detecta numero de formulario, NIT/DV, razon social, prefijo, rango, vigencia y ambiente sugerido sin guardar automaticamente.
+- Frontend DIAN: `web/administrar_empresa/facturacion_electronica.html` agrega boton para cargar el PDF de Autorizacion de Numeracion DIAN, muestra los valores detectados y permite aplicarlos al formulario DIAN antes de guardar.
+- QA: `backend/handlers/dian_numeracion_1876_test.go` cubre el parser con datos del documento PCS; tambien se verifico lectura local del PDF `D:\Autorizacion numercion DIAN.pdf` con runtime de Codex.
+
 2026-06-16: Documentacion operativa Codex y reparacion Agregar por nombre en carrito PCS.
 - Modulos afectados: `carritos`, `venta_directa`, `estaciones`, `frontend_ux`, `documentacion_operativa`.
 - Documentacion: `documentos/contexto_codex.md` y `documentos/comandos_codex.md` explican como usar el navegador interno, validar responsive, probar PCS (`empresa_id=12`) y publicar/verificar con `rs` en VPS para que chats nuevos de Codex no pierdan contexto operativo.

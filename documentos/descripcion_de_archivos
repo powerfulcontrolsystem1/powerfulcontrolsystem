@@ -1,3 +1,6 @@
+2026-06-17 - Importador PDF DIAN Formulario 1876
+- `backend/handlers/dian_numeracion_1876_test.go`: prueba enfocada del parser de Autorizacion de Numeracion DIAN Formulario 1876 con datos de PCS, validando formulario, NIT/DV, prefijo, rango y vigencia.
+
 2026-06-15 - Caja-bodega e icono IA unico
 - `web/img/pcs_ia_logo.svg`: logo IA unico con fondo transparente y letras blancas para el boton de inteligencia artificial en todas las apariencias.
 - `backend/db/carritos_compras.go`: conserva `bodega_id` por item del carrito para que la caja detectada descuente de su bodega asignada.

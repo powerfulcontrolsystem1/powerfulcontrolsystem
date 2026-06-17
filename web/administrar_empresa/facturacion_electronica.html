@@ -167,6 +167,24 @@
         <input type="hidden" id="dian_set_facturas_aceptadas_requeridas">
         <input type="hidden" id="dian_set_notas_debito_aceptadas_requeridas">
         <input type="hidden" id="dian_set_notas_credito_aceptadas_requeridas">
+        <div class="dian-capture-panel" id="dianNumeracion1876Panel">
+          <div class="dian-capture-head">
+            <div>
+              <h3>Autorizaci&oacute;n de numeraci&oacute;n DIAN (Formulario 1876)</h3>
+              <p class="form-help">Carga el PDF oficial para detectar NIT, DV, raz&oacute;n social, prefijo, rango y vigencia. Luego revisa y guarda.</p>
+            </div>
+            <span class="dian-chip">PDF DIAN</span>
+          </div>
+          <div class="form-row">
+            <div class="form-col"><label class="form-label">PDF Formulario 1876</label><input id="dianNumeracionPdfInput" type="file" accept="application/pdf,.pdf" class="form-input"></div>
+            <div class="form-col" style="display:flex; align-items:flex-end; gap:8px; flex-wrap:wrap;">
+              <button id="btnDianNumeracionPdf" type="button" class="btn secondary">Cargar PDF 1876</button>
+              <button id="btnDianNumeracionAplicar" type="button" class="btn" disabled>Aplicar valores</button>
+            </div>
+          </div>
+          <div id="dianNumeracionPdfMsg" class="form-help"></div>
+          <div id="dianNumeracionPdfResultado" class="dian-readable-result is-empty"></div>
+        </div>
         <div class="form-row">
           <div class="form-col"><label class="form-label">NIT</label><input id="dian_nit" class="form-input" placeholder="900123456"></div>
           <div class="form-col"><label class="form-label">DV</label><input id="dian_dv" class="form-input" placeholder="0"></div>
@@ -641,6 +659,7 @@
       catalog: [],
       dianConfig: null,
       dianCatalogo: null,
+      dianNumeracionImport: null,
     };
 
     const advancedConfigState = {
@@ -1157,6 +1176,104 @@
     function dianFieldValue(id) {
       var el = document.getElementById(id);
       return el ? txt(el.value) : "";
+    }
+
+    function setDianNumeracionPdfMessage(text, isError) {
+      var el = document.getElementById("dianNumeracionPdfMsg");
+      if (!el) return;
+      el.textContent = text || "";
+      el.className = isError ? "form-help error" : "form-help";
+    }
+
+    function renderDianNumeracionPdfResult(data) {
+      var box = document.getElementById("dianNumeracionPdfResultado");
+      var applyBtn = document.getElementById("btnDianNumeracionAplicar");
+      if (!box) return;
+      var fields = data && (data.campos_detectados || data.valores_configuracion);
+      state.dianNumeracionImport = fields || null;
+      if (applyBtn) applyBtn.disabled = !fields;
+      if (!fields) {
+        box.innerHTML = "";
+        box.classList.add("is-empty");
+        return;
+      }
+      var rows = [
+        ["NIT", fields.nit],
+        ["DV", fields.dv],
+        ["Razon social", fields.razon_social],
+        ["Formulario / resolucion", fields.resolucion_numero || fields.numero_formulario],
+        ["Prefijo", fields.prefijo],
+        ["Rango", (fields.rango_desde || "") + " - " + (fields.rango_hasta || "")],
+        ["Vigencia", (fields.resolucion_fecha_desde || "") + " - " + (fields.resolucion_fecha_hasta || "")],
+        ["Ambiente sugerido", fields.tipo_ambiente]
+      ];
+      var html = '<div class="dian-readable-grid">';
+      rows.forEach(function(row) {
+        if (!txt(row[1])) return;
+        html += '<div><strong>' + row[0] + '</strong><span>' + escapeHTML(row[1]) + '</span></div>';
+      });
+      html += "</div>";
+      if (Array.isArray(data.advertencias) && data.advertencias.length) {
+        html += '<p class="form-help error">' + escapeHTML(data.advertencias.join(" ")) + "</p>";
+      }
+      box.classList.remove("is-empty");
+      box.innerHTML = html;
+    }
+
+    function setInputValue(id, value) {
+      var el = document.getElementById(id);
+      if (!el || value === undefined || value === null || value === "") return;
+      el.value = value;
+      el.dispatchEvent(new Event("input", { bubbles: true }));
+      el.dispatchEvent(new Event("change", { bubbles: true }));
+    }
+
+    function applyDianNumeracionPdfValues() {
+      var fields = state.dianNumeracionImport || {};
+      if (!Object.keys(fields).length) {
+        setDianNumeracionPdfMessage("Primero carga el PDF de autorizacion DIAN.", true);
+        return;
+      }
+      setInputValue("dian_nit", fields.nit);
+      setInputValue("dian_dv", fields.dv);
+      setInputValue("dian_razon_social", fields.razon_social);
+      setInputValue("dian_tipo_ambiente", fields.tipo_ambiente || "produccion");
+      setInputValue("dian_url", fields.url_dian_sugerida || "https://vpfe.dian.gov.co");
+      setInputValue("dian_prefijo", fields.prefijo);
+      setInputValue("dian_resolucion_numero", fields.resolucion_numero || fields.numero_formulario);
+      setInputValue("dian_consecutivo_actual", fields.consecutivo_actual || fields.rango_desde);
+      setInputValue("dian_resolucion_fecha_desde", fields.resolucion_fecha_desde || fields.fecha_formalizacion);
+      setInputValue("dian_resolucion_fecha_hasta", fields.resolucion_fecha_hasta);
+      setInputValue("dian_rango_desde", fields.rango_desde);
+      setInputValue("dian_rango_hasta", fields.rango_hasta);
+      var obs = document.getElementById("dian_observaciones");
+      if (obs && fields.observaciones_sugeridas && obs.value.indexOf(fields.observaciones_sugeridas) === -1) {
+        obs.value = txt(obs.value ? (obs.value + "\n" + fields.observaciones_sugeridas) : fields.observaciones_sugeridas);
+      }
+      renderDianSetupProgress();
+      setDianNumeracionPdfMessage("Valores aplicados. Revisa los datos y pulsa Guardar DIAN Colombia.", false);
+    }
+
+    async function uploadDianNumeracionPdf() {
+      var input = document.getElementById("dianNumeracionPdfInput");
+      if (!input || !input.files || !input.files.length) {
+        setDianNumeracionPdfMessage("Selecciona el PDF del Formulario 1876.", true);
+        return null;
+      }
+      var file = input.files[0];
+      if (!/\.pdf$/i.test(file.name || "")) {
+        setDianNumeracionPdfMessage("Solo se permite PDF.", true);
+        return null;
+      }
+      var formData = new FormData();
+      formData.append("archivo", file);
+      formData.append("empresa_id", String(state.empresaID || ""));
+      var url = "/api/empresa/facturacion_electronica/dian?action=importar_numeracion_pdf&empresa_id=" + encodeURIComponent(state.empresaID || "");
+      var res = await fetch(url, { method: "POST", credentials: "same-origin", body: formData });
+      var data = await readJSONResponse(res);
+      renderDianNumeracionPdfResult(data);
+      setDianNumeracionPdfMessage("PDF leido. Revisa los valores detectados y aplica si son correctos.", false);
+      return data;
     }
 
     function dianNumberValue(id) {
@@ -2232,6 +2349,26 @@
           setDianConfigMessage(err && err.message ? err.message : "No se pudo guardar DIAN Colombia", true);
         });
       });
+    }
+
+    var btnDianNumeracionPdf = document.getElementById("btnDianNumeracionPdf");
+    if (btnDianNumeracionPdf) {
+      btnDianNumeracionPdf.addEventListener("click", function() {
+        btnDianNumeracionPdf.disabled = true;
+        btnDianNumeracionPdf.textContent = "Leyendo PDF...";
+        uploadDianNumeracionPdf().catch(function(err) {
+          renderDianNumeracionPdfResult(null);
+          setDianNumeracionPdfMessage(err && err.message ? err.message : "No se pudo leer el PDF DIAN.", true);
+        }).finally(function() {
+          btnDianNumeracionPdf.disabled = false;
+          btnDianNumeracionPdf.textContent = "Cargar PDF 1876";
+        });
+      });
+    }
+
+    var btnDianNumeracionAplicar = document.getElementById("btnDianNumeracionAplicar");
+    if (btnDianNumeracionAplicar) {
+      btnDianNumeracionAplicar.addEventListener("click", applyDianNumeracionPdfValues);
     }
 
     var dianResolutionBtn = document.getElementById("btnDianResolucionVencimiento");

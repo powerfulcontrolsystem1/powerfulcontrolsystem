@@ -6991,6 +6991,19 @@ func EmpresaDIANColombiaHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 			writeJSON(w, status, response)
 			return
 
+		case "importar_numeracion_pdf", "importar_formulario_1876", "leer_numeracion_pdf":
+			if r.Method != http.MethodPost && r.Method != http.MethodPut {
+				http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+				return
+			}
+			response, status, err := importDIANNumeracionPDF(r)
+			if err != nil {
+				http.Error(w, err.Error(), status)
+				return
+			}
+			writeJSON(w, status, response)
+			return
+
 		case "vencimiento_certificado", "verificar_vencimiento_certificado", "alerta_certificado":
 			empresaID, err := parseEmpresaIDQuery(r)
 			if err != nil {
@@ -12388,6 +12401,236 @@ func resolveEmpresaIDFromMultipartRequest(r *http.Request) (int64, error) {
 		return 0, fmt.Errorf("empresa_id invalido")
 	}
 	return id, nil
+}
+
+func importDIANNumeracionPDF(r *http.Request) (map[string]interface{}, int, error) {
+	const maxPDFBytes int64 = 12 << 20
+	if err := r.ParseMultipartForm(maxPDFBytes + (1 << 20)); err != nil {
+		return nil, http.StatusBadRequest, fmt.Errorf("payload multipart invalido")
+	}
+	empresaID, err := resolveEmpresaIDFromMultipartRequest(r)
+	if err != nil {
+		return nil, http.StatusBadRequest, err
+	}
+
+	file, header, err := r.FormFile("archivo")
+	if err != nil {
+		file, header, err = r.FormFile("pdf")
+	}
+	if err != nil {
+		file, header, err = r.FormFile("file")
+	}
+	if err != nil {
+		return nil, http.StatusBadRequest, fmt.Errorf("pdf de autorizacion DIAN es obligatorio")
+	}
+	defer file.Close()
+
+	fileName := "formulario_1876.pdf"
+	if header != nil && strings.TrimSpace(header.Filename) != "" {
+		fileName = filepath.Base(header.Filename)
+	}
+	if !strings.EqualFold(filepath.Ext(fileName), ".pdf") {
+		return nil, http.StatusBadRequest, fmt.Errorf("solo se permite cargar PDF de autorizacion DIAN")
+	}
+	if header != nil && header.Size > maxPDFBytes {
+		return nil, http.StatusBadRequest, fmt.Errorf("el PDF supera el limite de 12 MB")
+	}
+
+	tmp, err := os.CreateTemp("", "pcs-dian-1876-*.pdf")
+	if err != nil {
+		return nil, http.StatusInternalServerError, fmt.Errorf("no se pudo preparar el PDF temporal")
+	}
+	tmpName := tmp.Name()
+	defer os.Remove(tmpName)
+
+	written, err := io.Copy(tmp, io.LimitReader(file, maxPDFBytes+1))
+	closeErr := tmp.Close()
+	if err != nil {
+		return nil, http.StatusBadRequest, fmt.Errorf("no se pudo leer el PDF cargado")
+	}
+	if closeErr != nil {
+		return nil, http.StatusInternalServerError, fmt.Errorf("no se pudo cerrar el PDF temporal")
+	}
+	if written > maxPDFBytes {
+		return nil, http.StatusBadRequest, fmt.Errorf("el PDF supera el limite de 12 MB")
+	}
+
+	text, err := extractDIANPDFText(tmpName)
+	if err != nil {
+		return nil, http.StatusInternalServerError, err
+	}
+	fields, warnings := parseDIANNumeracion1876Text(text)
+	if len(fields) == 0 {
+		return nil, http.StatusUnprocessableEntity, fmt.Errorf("no se detectaron datos de numeracion DIAN en el PDF")
+	}
+	return map[string]interface{}{
+		"ok":                    true,
+		"empresa_id":            empresaID,
+		"archivo_nombre":        fileName,
+		"campos_detectados":     fields,
+		"valores_configuracion": fields,
+		"advertencias":          warnings,
+		"preview":               dian1876Preview(text, 900),
+	}, http.StatusOK, nil
+}
+
+func extractDIANPDFText(path string) (string, error) {
+	bin, err := exec.LookPath("pdftotext")
+	if err != nil {
+		return "", fmt.Errorf("pdftotext no esta disponible en el servidor para leer el Formulario 1876")
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
+	defer cancel()
+	cmd := exec.CommandContext(ctx, bin, "-layout", "-enc", "UTF-8", path, "-")
+	var stdout, stderr bytes.Buffer
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+	if err := cmd.Run(); err != nil {
+		msg := strings.TrimSpace(stderr.String())
+		if msg == "" {
+			msg = err.Error()
+		}
+		return "", fmt.Errorf("no se pudo leer el PDF DIAN: %s", msg)
+	}
+	if ctx.Err() != nil {
+		return "", fmt.Errorf("lectura del PDF DIAN excedio el tiempo permitido")
+	}
+	text := strings.TrimSpace(stdout.String())
+	if text == "" {
+		return "", fmt.Errorf("el PDF DIAN no contiene texto legible")
+	}
+	return text, nil
+}
+
+func parseDIANNumeracion1876Text(raw string) (map[string]interface{}, []string) {
+	fields := map[string]interface{}{}
+	warnings := []string{}
+	text := dian1876Normalize(raw)
+
+	if m := regexp.MustCompile(`\b(1876\d{8,})\b`).FindStringSubmatch(text); len(m) > 1 {
+		fields["numero_formulario"] = m[1]
+		fields["resolucion_numero"] = m[1]
+	}
+	if date := dian1876FindDate(text); date != "" {
+		fields["fecha_formalizacion"] = date
+		fields["resolucion_fecha_desde"] = date
+	}
+	if nit, dv, razon := dian1876FindIssuer(text, genericStringValue(fields["numero_formulario"])); nit != "" {
+		fields["nit"] = nit
+		fields["dv"] = dv
+		fields["razon_social"] = razon
+	}
+	if modalidad, prefijo, desde, hasta, solicitud, vigencia := dian1876FindRange(text); prefijo != "" {
+		fields["modalidad"] = modalidad
+		fields["prefijo"] = sanitizeDIANPrefix(prefijo)
+		fields["rango_desde"] = desde
+		fields["rango_hasta"] = hasta
+		fields["consecutivo_actual"] = desde
+		fields["tipo_solicitud"] = solicitud
+		fields["vigencia_meses"] = vigencia
+	}
+
+	if desde := genericStringValue(fields["resolucion_fecha_desde"]); desde != "" {
+		if vigencia := anyToInt64(fields["vigencia_meses"]); vigencia > 0 {
+			if start, ok := parseDIANDate(desde); ok {
+				fields["resolucion_fecha_hasta"] = start.AddDate(0, int(vigencia), 0).Format("2006-01-02")
+			}
+		}
+	}
+	fields["tipo_ambiente"] = "produccion"
+	fields["url_dian_sugerida"] = "https://vpfe.dian.gov.co"
+	if form := genericStringValue(fields["numero_formulario"]); form != "" {
+		fields["observaciones_sugeridas"] = "Numeracion importada desde Formulario 1876 DIAN " + form + ". Revise y guarde la configuracion."
+	}
+
+	required := map[string]string{
+		"numero_formulario": "numero de formulario 1876",
+		"nit":               "NIT",
+		"prefijo":           "prefijo",
+		"rango_desde":       "rango desde",
+		"rango_hasta":       "rango hasta",
+	}
+	for key, label := range required {
+		if _, ok := fields[key]; !ok {
+			warnings = append(warnings, "No se detecto "+label+".")
+		}
+	}
+	return fields, warnings
+}
+
+func dian1876Normalize(raw string) string {
+	s := strings.ReplaceAll(raw, "\u00a0", " ")
+	s = strings.ReplaceAll(s, "\r", "\n")
+	joinDigits := regexp.MustCompile(`(\d)[ \t]+(\d)`)
+	for {
+		joined := joinDigits.ReplaceAllString(s, "$1$2")
+		if joined == s {
+			break
+		}
+		s = joined
+	}
+	s = regexp.MustCompile(`[ \t]+`).ReplaceAllString(s, " ")
+	s = regexp.MustCompile(`\n+`).ReplaceAllString(s, "\n")
+	return strings.TrimSpace(s)
+}
+
+func dian1876FindDate(text string) string {
+	patterns := []string{
+		`(20\d{2})\s*[-/]\s*(\d{1,2})\s*[-/]\s*(\d{1,2})\s*/`,
+		`(20\d{2})\s*[-/]\s*(\d{1,2})\s*[-/]\s*(\d{1,2})`,
+	}
+	for _, pattern := range patterns {
+		if m := regexp.MustCompile(pattern).FindStringSubmatch(text); len(m) > 3 {
+			year, _ := strconv.Atoi(m[1])
+			month, _ := strconv.Atoi(m[2])
+			day, _ := strconv.Atoi(m[3])
+			if year >= 2000 && month >= 1 && month <= 12 && day >= 1 && day <= 31 {
+				return fmt.Sprintf("%04d-%02d-%02d", year, month, day)
+			}
+		}
+	}
+	return ""
+}
+
+func dian1876FindIssuer(text, formulario string) (string, string, string) {
+	search := text
+	if formulario != "" {
+		if idx := strings.Index(text, formulario); idx >= 0 {
+			search = text[idx+len(formulario):]
+		}
+	}
+	re := regexp.MustCompile(`(?i)\b(\d{7,13})\s+([A-ZÁÉÍÓÚÑ][A-ZÁÉÍÓÚÑ0-9 .,&-]{5,90}?)(?:\s+Impuestos|\s+SUBDIRECCION|\s+C[eé]dula|\s+Colombia|\s+FACTURA|\s+CL\s|\s+20\d{2}|$)`)
+	if m := re.FindStringSubmatch(search); len(m) > 2 {
+		combined := strings.TrimSpace(m[1])
+		razon := strings.TrimSpace(regexp.MustCompile(`\s+`).ReplaceAllString(m[2], " "))
+		if len(combined) >= 8 {
+			return combined[:len(combined)-1], combined[len(combined)-1:], razon
+		}
+		return combined, "", razon
+	}
+	return "", "", ""
+}
+
+func dian1876FindRange(text string) (string, string, int64, int64, string, int64) {
+	re := regexp.MustCompile(`(?i)(FACTURA\s+ELECTR[ÓO]NICA\s+DE\s+VENTA)\s+\d+\s+([A-Z0-9-]{1,10})\s+([0-9][0-9.,]*)\s+([0-9][0-9.,]*)\s+([A-ZÁÉÍÓÚÑ ]{6,40})\s+\d+\s+(\d{1,3})`)
+	if m := re.FindStringSubmatch(text); len(m) > 6 {
+		return strings.TrimSpace(m[1]), strings.TrimSpace(m[2]), dian1876ParseInt(m[3]), dian1876ParseInt(m[4]), strings.TrimSpace(m[5]), dian1876ParseInt(m[6])
+	}
+	return "", "", 0, 0, "", 0
+}
+
+func dian1876ParseInt(raw string) int64 {
+	clean := strings.NewReplacer(",", "", ".", "", " ", "").Replace(strings.TrimSpace(raw))
+	n, _ := strconv.ParseInt(clean, 10, 64)
+	return n
+}
+
+func dian1876Preview(text string, max int) string {
+	preview := strings.TrimSpace(regexp.MustCompile(`\s+`).ReplaceAllString(text, " "))
+	if len(preview) <= max {
+		return preview
+	}
+	return preview[:max] + "..."
 }
 
 func analyzeDIANScreenshotUpload(dbEmp *sql.DB, r *http.Request) (map[string]interface{}, int, error) {
