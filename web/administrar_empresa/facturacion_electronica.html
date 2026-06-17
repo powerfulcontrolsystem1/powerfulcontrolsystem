@@ -91,7 +91,7 @@
 <body class="super-page form-bg-dark">
   <div class="container fe-page-stack">
     <div id="feCountrySelectorCard" class="fe-country-state" hidden aria-hidden="true">
-      <select id="pais_codigo" aria-label="Pais fiscal interno"></select>
+      <select id="pais_codigo" aria-label="País fiscal interno"></select>
       <strong id="detectedCountry">Detectando...</strong>
       <span id="detectedSource">Fuente pendiente</span>
       <button id="detectBtn" type="button">Detectar de nuevo</button>
@@ -140,7 +140,7 @@
       <p class="form-help">
         Checklist operativo para dejar lista la empresa: datos fiscales, Software ID/PIN, TestSetId, resolucion, rangos, firma/certificado X.509 y token de proveedor si aplica.
       </p>
-      <div class="fe-config-progress-panel" aria-label="Porcentaje de configuracion DIAN Colombia">
+      <div class="fe-config-progress-panel" aria-label="Porcentaje de configuración DIAN Colombia">
         <div class="fe-config-progress-head">
           <div>
             <h3>Avance de configuraci&oacute;n DIAN</h3>
@@ -148,7 +148,7 @@
           </div>
           <div id="feDianSetupPercent" class="fe-config-progress-percent">0%</div>
         </div>
-        <div id="feDianSetupTrack" class="fe-config-progress-track" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-label="Avance de configuracion DIAN Colombia">
+        <div id="feDianSetupTrack" class="fe-config-progress-track" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-label="Avance de configuración DIAN Colombia">
           <div id="feDianSetupFill" class="fe-config-progress-fill"></div>
         </div>
         <div id="feDianSetupSteps" class="fe-config-progress-steps"></div>
@@ -216,7 +216,7 @@
           <div class="form-col"><div id="feDianResolutionExpiryText" class="form-help">Resoluci&oacute;n sin verificar.</div></div>
         </div>
         <div class="form-row">
-          <div class="form-col"><label class="form-label">Llave tÃ©cnica DIAN</label><input id="dian_llave_tecnica" class="form-input" placeholder="Llave tÃ©cnica del rango de numeraciÃ³n"></div>
+          <div class="form-col"><label class="form-label">Llave t&eacute;cnica DIAN</label><input id="dian_llave_tecnica" class="form-input" placeholder="Llave t&eacute;cnica del rango de numeraci&oacute;n"></div>
           <div class="form-col"><label class="form-label">Token proveedor/API (opcional en DIAN oficial)</label><input id="dian_token_emisor_ref" class="form-input" placeholder="Solo si usa proveedor/API bearer: env:DIAN_TOKEN_EMPRESA_1"></div>
           <div class="form-col"><label class="form-label">Certificado X.509</label><input id="dian_certificado_url" class="form-input" placeholder="Se completa al cargar P12/PFX o PEM con certificado"></div>
           <div class="form-col"><label class="form-label">Llave privada</label><input id="dian_certificado_clave_ref" class="form-input" placeholder="Se completa al cargar firma"></div>
@@ -226,7 +226,7 @@
           <button id="btnDianConfigGuardar" type="submit" class="btn">Guardar DIAN Colombia</button>
           <button id="btnDianConfigValidar" type="button" class="btn secondary">Validar checklist</button>
           <button id="btnDianConfigRecargar" type="button" class="btn secondary">Recargar</button>
-          <a id="btnDianAyudaNumeracion" class="btn secondary" href="https://micrositios.dian.gov.co/sistema-de-facturacion-electronica/numeracion-autorizacion/" target="_blank" rel="noopener">Ayuda numeracion DIAN</a>
+          <a id="btnDianAyudaNumeracion" class="btn secondary" href="https://micrositios.dian.gov.co/sistema-de-facturacion-electronica/numeracion-autorizacion/" target="_blank" rel="noopener">Ayuda numeración DIAN</a>
           <a id="btnDianPasarTest" class="btn secondary" href="/administrar_empresa/facturacion_electronica_pruebas_dian.html">Centro de habilitación DIAN</a>
         </div>
         <div id="feDianConfigMsg" class="form-help"></div>
@@ -236,7 +236,7 @@
 
     <div id="feDianDocumentosCard" class="card is-hidden">
       <h2>Documentos electronicos DIAN Colombia</h2>
-      <p class="form-help">Activa los documentos del Sistema de Facturacion Electronica que la empresa usara. Las obligaciones de contador se separan para no mezclarlas con documentos UBL de venta.</p>
+      <p class="form-help">Activa los documentos del Sistema de Facturación Electrónica que la empresa usará. Las obligaciones de contador se separan para no mezclarlas con documentos UBL de venta.</p>
       <div id="feDianEssentialDocs" class="dian-essential-grid"></div>
       <div id="feRadianStatus" class="fe-radian-panel is-hidden"></div>
       <div class="form-row">
@@ -331,7 +331,7 @@
 
     <form id="feForm" class="form card">
       <h2>Configuracion de facturacion por pais</h2>
-      <p class="form-help">Define el proveedor, ambiente, moneda, datos fiscales generales y preferencias de envio para el pais seleccionado.</p>
+      <p class="form-help">Define el proveedor, ambiente, moneda, datos fiscales generales y preferencias de envío para el país seleccionado.</p>
       <input type="hidden" id="empresa_id">
       <div class="form-row">
         <div class="form-col">
@@ -603,7 +603,7 @@
           </div>
           <div class="form-col">
             <label class="form-label">Logo de factura</label>
-            <input id="adv_logo_url" class="form-input" placeholder="/uploads/empresas/empresa_1_nombre/imagenes/logos/factura/logo.png o URL publica">
+            <input id="adv_logo_url" class="form-input" placeholder="/uploads/empresas/empresa_1_nombre/imagenes/logos/factura/logo.png o URL pública">
             <div class="form-help"><label><input id="adv_mostrar_logo" type="checkbox" checked> Mostrar logo en factura</label></div>
           </div>
         </div>

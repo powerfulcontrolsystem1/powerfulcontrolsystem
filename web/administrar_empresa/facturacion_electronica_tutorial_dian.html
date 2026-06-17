@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Tutorial DIAN - Conexion y emision electronica</title>
+  <title>Tutorial DIAN - Conexión y emisión electrónica</title>
   <link rel="stylesheet" href="/estilos.css">
   <script src="/js/empresa_submenu_context.js"></script>
   <style>
@@ -65,19 +65,19 @@
       <h2>Antes de empezar</h2>
       <p class="form-help">
         Ten a mano los datos del portal DIAN, la firma digital de la empresa y el acceso de administrador de la empresa en el sistema.
-        No pegues claves, PIN, certificados ni contrasenas en soportes, chats o documentacion.
+        No pegues claves, PIN, certificados ni contraseñas en soportes, chats o documentación.
       </p>
       <div class="dian-guide-alert">
-        En habilitacion, DIAN puede responder primero <strong>Batch en proceso de validacion</strong>. Ese mensaje confirma recepcion inicial, pero la empresa solo debe pasar a produccion local cuando el acuse final quede aceptado.
+        En habilitación, DIAN puede responder primero <strong>Batch en proceso de validación</strong>. Ese mensaje confirma recepción inicial, pero la empresa solo debe pasar a producción local cuando el acuse final quede aceptado.
       </div>
     </div>
 
     <div class="dian-guide-grid">
       <section class="dian-guide-step">
-        <h2><span class="dian-guide-number">1</span>Registra el modo de operacion</h2>
+        <h2><span class="dian-guide-number">1</span>Registra el modo de operación</h2>
         <ul>
-          <li>En el portal DIAN selecciona el modo de operacion: software propio o proveedor tecnologico.</li>
-          <li>Copia al sistema el <code>TestSetId</code>, identificacion del software, PIN, URL de habilitacion, prefijo, resolucion y rango de prueba.</li>
+          <li>En el portal DIAN selecciona el modo de operación: software propio o proveedor tecnológico.</li>
+          <li>Copia al sistema el <code>TestSetId</code>, identificación del software, PIN, URL de habilitación, prefijo, resolución y rango de prueba.</li>
           <li>Verifica que el NIT, DV y razon social coincidan con la empresa que va a emitir.</li>
         </ul>
       </section>
@@ -85,18 +85,18 @@
       <section class="dian-guide-step">
         <h2><span class="dian-guide-number">2</span>Configura DIAN en el sistema</h2>
         <ul>
-          <li>Abre <strong>Facturacion electronica</strong> y usa el bloque Colombia / DIAN.</li>
-          <li>Guarda ambiente de habilitacion, URL oficial DIAN o proveedor, datos del software, rango, resolucion y llave tecnica.</li>
-          <li>Revisa que la configuracion se guarde para el <code>empresa_id</code> actual antes de probar.</li>
+          <li>Abre <strong>Facturación electrónica</strong> y usa el bloque Colombia / DIAN.</li>
+          <li>Guarda ambiente de habilitación, URL oficial DIAN o proveedor, datos del software, rango, resolución y llave técnica.</li>
+          <li>Revisa que la configuración se guarde para el <code>empresa_id</code> actual antes de probar.</li>
         </ul>
       </section>
 
       <section class="dian-guide-step">
         <h2><span class="dian-guide-number">3</span>Carga la firma digital</h2>
         <ul>
-          <li>Sube el certificado <code>.p12</code>, <code>.pfx</code> o PEM desde la tarjeta de firma electronica.</li>
+          <li>Sube el certificado <code>.p12</code>, <code>.pfx</code> o PEM desde la tarjeta de firma electrónica.</li>
           <li>La clave se usa solo para abrir la firma; no debe mostrarse ni quedar escrita en la consola.</li>
-          <li>Confirma titular, serial y vencimiento. Si el certificado esta vencido, DIAN rechazara el envio.</li>
+          <li>Confirma titular, serial y vencimiento. Si el certificado está vencido, DIAN rechazará el envío.</li>
         </ul>
       </section>
 
@@ -104,7 +104,7 @@
         <h2><span class="dian-guide-number">4</span>Valida credenciales y objetivo</h2>
         <ul>
           <li>En <strong>Centro de habilitación DIAN</strong> pulsa recargar, validar credenciales y diagnóstico DIAN.</li>
-          <li>Guarda el objetivo exacto asignado por el portal DIAN antes de ejecutar envios reales.</li>
+          <li>Guarda el objetivo exacto asignado por el portal DIAN antes de ejecutar envíos reales.</li>
           <li>Usa la consola DIAN para revisar HTTP, TrackId, ZipKey, mensajes y errores saneados.</li>
         </ul>
       </section>
@@ -113,17 +113,17 @@
         <h2><span class="dian-guide-number">5</span>Ejecuta el set completo</h2>
         <ul>
           <li>Guarda el objetivo del portal DIAN: documentos requeridos y minimos aceptados por tipo.</li>
-          <li>Ejecuta el set automatico. El sistema puede dividirlo en tandas reales para evitar timeout del proxy.</li>
+          <li>Ejecuta el set automático. El sistema puede dividirlo en tandas reales para evitar timeout del proxy.</li>
           <li>No repitas el set completo sin revisar primero la respuesta y los TrackId generados.</li>
         </ul>
       </section>
 
       <section class="dian-guide-step">
-        <h2><span class="dian-guide-number">6</span>Cierra acuse y activa produccion</h2>
+        <h2><span class="dian-guide-number">6</span>Cierra acuse y activa producción</h2>
         <ul>
           <li>Consulta el estado final con <code>GetStatusZip</code> hasta tener aceptado o rechazado.</li>
           <li>Si DIAN rechaza, corrige la causa del XML, firma, rango, impuestos o datos de empresa y reenvia.</li>
-          <li>Activa produccion local solo cuando DIAN confirme habilitacion y el set cumpla los minimos exigidos.</li>
+          <li>Activa producción local solo cuando DIAN confirme habilitación y el set cumpla los mínimos exigidos.</li>
         </ul>
       </section>
     </div>
@@ -135,55 +135,55 @@
         <div class="dian-guide-check"><span>✓</span><span>TestSetId, software ID, PIN, URL y llave tecnica guardados.</span></div>
         <div class="dian-guide-check"><span>✓</span><span>Prefijo, resolucion y rango DIAN coinciden con el portal.</span></div>
         <div class="dian-guide-check"><span>✓</span><span>Firma digital cargada, vigente y con llave privada valida.</span></div>
-        <div class="dian-guide-check"><span>✓</span><span>Objetivo del portal guardado y validado antes del envio real.</span></div>
+        <div class="dian-guide-check"><span>✓</span><span>Objetivo del portal guardado y validado antes del envío real.</span></div>
         <div class="dian-guide-check"><span>✓</span><span>Set completo enviado y acuse final DIAN consultado.</span></div>
       </div>
       <p class="dian-guide-note">
-        La consola de la pagina de pruebas debe ser la evidencia operativa principal: muestra respuestas DIAN saneadas sin exponer secretos.
+        La consola de la página de pruebas debe ser la evidencia operativa principal: muestra respuestas DIAN saneadas sin exponer secretos.
       </p>
     </div>
 
     <div class="card">
       <h2>Documentos oficiales DIAN y descargas</h2>
       <p class="form-help">
-        Estos enlaces son fuentes oficiales de DIAN o del micrositio oficial del Sistema de Facturacion Electronica. Usalos para validar el proceso antes de cambiar la empresa a produccion.
+        Estos enlaces son fuentes oficiales de DIAN o del micrositio oficial del Sistema de Facturación Electrónica. Úsalos para validar el proceso antes de cambiar la empresa a producción.
       </p>
       <div class="dian-guide-resources">
         <article class="dian-guide-resource">
-          <h3>Instructivo de Registro y Habilitacion</h3>
-          <p>Documento oficial para registrar el facturador, seleccionar modo de operacion y entender el paso a estado habilitado.</p>
+          <h3>Instructivo de Registro y Habilitación</h3>
+          <p>Documento oficial para registrar el facturador, seleccionar modo de operación y entender el paso a estado habilitado.</p>
           <div class="dian-guide-resource-actions">
             <a class="btn secondary" href="https://www.dian.gov.co/impuestos/factura-electronica/Documents/Registro_y_seleccion_modo_de_operacion_Facturacion_Electronica_DIAN.pdf" target="_blank" rel="noopener">Descargar PDF</a>
-            <a class="btn secondary" href="https://www.dian.gov.co/impuestos/factura-electronica/como-hacerlo/Paginas/ser-facturador-electronico.aspx" target="_blank" rel="noopener">Ver pagina DIAN</a>
+            <a class="btn secondary" href="https://www.dian.gov.co/impuestos/factura-electronica/como-hacerlo/Paginas/ser-facturador-electronico.aspx" target="_blank" rel="noopener">Ver página DIAN</a>
           </div>
         </article>
         <article class="dian-guide-resource">
-          <h3>Proceso de Registro y Habilitacion</h3>
-          <p>Flujo general: registro, pruebas, estado habilitado, fecha de inicio de produccion, numeracion y asociacion de prefijos.</p>
+          <h3>Proceso de Registro y Habilitación</h3>
+          <p>Flujo general: registro, pruebas, estado habilitado, fecha de inicio de producción, numeración y asociación de prefijos.</p>
           <div class="dian-guide-resource-actions">
             <a class="btn secondary" href="https://www.dian.gov.co/impuestos/factura-electronica/como-hacerlo/Paginas/ser-facturador-electronico.aspx" target="_blank" rel="noopener">Abrir proceso</a>
-            <a class="btn secondary" href="https://catalogo-vpfe-hab.dian.gov.co/User/Login" target="_blank" rel="noopener">Portal habilitacion</a>
+            <a class="btn secondary" href="https://catalogo-vpfe-hab.dian.gov.co/User/Login" target="_blank" rel="noopener">Portal habilitación</a>
           </div>
         </article>
         <article class="dian-guide-resource">
-          <h3>Requerimientos para ser Facturador Electronico</h3>
-          <p>Requisitos previos: RUT actualizado, correo del RUT, software, firma digital, acceso al portal y datos de modo de operacion.</p>
+          <h3>Requerimientos para ser Facturador Electrónico</h3>
+          <p>Requisitos previos: RUT actualizado, correo del RUT, software, firma digital, acceso al portal y datos de modo de operación.</p>
           <div class="dian-guide-resource-actions">
             <a class="btn secondary" href="https://micrositios.dian.gov.co/sistema-de-facturacion-electronica/requerimientos-para-ser-facturador-electronico/" target="_blank" rel="noopener">Ver requerimientos</a>
             <a class="btn secondary" href="https://www.dian.gov.co/impuestos/factura-electronica/Documents/Registro_y_seleccion_modo_de_operacion_Facturacion_Electronica_DIAN.pdf" target="_blank" rel="noopener">PDF relacionado</a>
           </div>
         </article>
         <article class="dian-guide-resource">
-          <h3>Guia de Facturacion Gratuita DIAN</h3>
-          <p>Manual oficial para el servicio gratuito DIAN, util como referencia para registro, habilitacion, numeracion, prefijos y emision.</p>
+          <h3>Guía de Facturación Gratuita DIAN</h3>
+          <p>Manual oficial para el servicio gratuito DIAN, útil como referencia para registro, habilitación, numeración, prefijos y emisión.</p>
           <div class="dian-guide-resource-actions">
             <a class="btn secondary" href="https://www.dian.gov.co/impuestos/factura-electronica/Documents/Guia_uso_facturacion_gratuita_DIAN.pdf" target="_blank" rel="noopener">Descargar PDF</a>
-            <a class="btn secondary" href="https://micrositios.dian.gov.co/sistema-de-facturacion-electronica/guia-de-facturacion-gratuita-dian/" target="_blank" rel="noopener">Ver guia</a>
+            <a class="btn secondary" href="https://micrositios.dian.gov.co/sistema-de-facturacion-electronica/guia-de-facturacion-gratuita-dian/" target="_blank" rel="noopener">Ver guía</a>
           </div>
         </article>
         <article class="dian-guide-resource">
-          <h3>Nueva numeracion de facturacion</h3>
-          <p>Enlace oficial DIAN para solicitar o renovar la autorizacion de numeracion de facturacion y asociar prefijos nuevos.</p>
+          <h3>Nueva numeración de facturación</h3>
+          <p>Enlace oficial DIAN para solicitar o renovar la autorización de numeración de facturación y asociar prefijos nuevos.</p>
           <div class="dian-guide-resource-actions">
             <a class="btn secondary" href="https://www.dian.gov.co/impuestos/factura-electronica/Documents/Solicitud-autorizacion-de-numeracion-facturacion.pdf" target="_blank" rel="noopener">Abrir PDF oficial</a>
             <a class="btn secondary" href="https://youtu.be/QteUmJ2qkn0?si=nSRp_IDMyVMCCKEU" target="_blank" rel="noopener">Ver tutorial en video</a>
@@ -191,10 +191,10 @@
           </div>
         </article>
         <article class="dian-guide-resource">
-          <h3>Como pasar pruebas de habilitacion</h3>
-          <p>Documento y ruta oficial DIAN para registro, modo de operacion, pruebas, set de habilitacion y paso a produccion.</p>
+          <h3>Cómo pasar pruebas de habilitación</h3>
+          <p>Documento y ruta oficial DIAN para registro, modo de operación, pruebas, set de habilitación y paso a producción.</p>
           <div class="dian-guide-resource-actions">
-            <a class="btn secondary" href="https://www.dian.gov.co/impuestos/factura-electronica/Documents/Registro_y_seleccion_modo_de_operacion_Facturacion_Electronica_DIAN.pdf" target="_blank" rel="noopener">PDF habilitacion</a>
+            <a class="btn secondary" href="https://www.dian.gov.co/impuestos/factura-electronica/Documents/Registro_y_seleccion_modo_de_operacion_Facturacion_Electronica_DIAN.pdf" target="_blank" rel="noopener">PDF habilitación</a>
             <a class="btn secondary" href="https://micrositios.dian.gov.co/sistema-de-facturacion-electronica/proceso-de-registro-y-habilitacion-como-facturador-electronico/" target="_blank" rel="noopener">Ruta oficial DIAN</a>
           </div>
         </article>
@@ -204,20 +204,20 @@
     <div class="card">
       <h2>Despues de quedar ACEPTADO o HABILITADO</h2>
       <p class="form-help">
-        Cuando DIAN ya acepta el set de pruebas, no basta con dejar el sistema en pruebas. Completa estos pasos para empezar a facturar en produccion.
+        Cuando DIAN ya acepta el set de pruebas, no basta con dejar el sistema en pruebas. Completa estos pasos para empezar a facturar en producción.
       </p>
       <div class="dian-guide-flow">
-        <div class="dian-guide-flow-step"><strong>1. Reingresar al portal</strong><span>Entra al portal de habilitacion y confirma que el estado cambio a habilitado.</span></div>
-        <div class="dian-guide-flow-step"><strong>2. Fecha de produccion</strong><span>Registra la fecha de inicio de operacion que solicita DIAN.</span></div>
+        <div class="dian-guide-flow-step"><strong>1. Reingresar al portal</strong><span>Entra al portal de habilitación y confirma que el estado cambió a habilitado.</span></div>
+        <div class="dian-guide-flow-step"><strong>2. Fecha de producción</strong><span>Registra la fecha de inicio de operación que solicita DIAN.</span></div>
         <div class="dian-guide-flow-step"><strong>3. RUT responsabilidad 52</strong><span>DIAN actualiza automaticamente el RUT con responsabilidad 52 en la fecha indicada.</span></div>
-        <div class="dian-guide-flow-step"><strong>4. Numeracion MUISCA</strong><span>Solicita autorizacion de numeracion para factura electronica y talonario de contingencia.</span></div>
-        <div class="dian-guide-flow-step"><strong>5. Asociar prefijos</strong><span>Asocia prefijos y rangos autorizados en el portal de Facturacion Electronica.</span></div>
-        <div class="dian-guide-flow-step"><strong>6. Configurar PCS</strong><span>Actualiza resolucion, prefijo, rango, llave tecnica y URL de produccion en PCS.</span></div>
-        <div class="dian-guide-flow-step"><strong>7. Activar produccion local</strong><span>Marca la confirmacion y activa produccion local solo con DIAN habilitado.</span></div>
-        <div class="dian-guide-flow-step"><strong>8. Emitir real</strong><span>Empieza a emitir facturas en produccion y revisa acuses, numeracion y reportes.</span></div>
+        <div class="dian-guide-flow-step"><strong>4. Numeración MUISCA</strong><span>Solicita autorización de numeración para factura electrónica y talonario de contingencia.</span></div>
+        <div class="dian-guide-flow-step"><strong>5. Asociar prefijos</strong><span>Asocia prefijos y rangos autorizados en el portal de Facturación Electrónica.</span></div>
+        <div class="dian-guide-flow-step"><strong>6. Configurar PCS</strong><span>Actualiza resolución, prefijo, rango, llave técnica y URL de producción en PCS.</span></div>
+        <div class="dian-guide-flow-step"><strong>7. Activar producción local</strong><span>Marca la confirmación y activa producción local solo con DIAN habilitado.</span></div>
+        <div class="dian-guide-flow-step"><strong>8. Emitir real</strong><span>Empieza a emitir facturas en producción y revisa acuses, numeración y reportes.</span></div>
       </div>
       <p class="dian-guide-note">
-        Resumen rapido: Registro -> Pruebas -> Estado habilitado -> Fecha de produccion -> RUT 52 -> Solicitar numeracion -> Asociar prefijos -> Facturar en produccion.
+        Resumen rápido: Registro -> Pruebas -> Estado habilitado -> Fecha de producción -> RUT 52 -> Solicitar numeración -> Asociar prefijos -> Facturar en producción.
       </p>
     </div>
 
@@ -231,17 +231,17 @@
           <tr>
             <td><code>InvalidSecurity</code></td>
             <td>Firma WS-Security, certificado, hora del servidor y endpoint.</td>
-            <td>Recargar configuracion, validar credenciales y revisar que la firma cargada sea la vigente.</td>
+            <td>Recargar configuración, validar credenciales y revisar que la firma cargada sea la vigente.</td>
           </tr>
           <tr>
             <td><code>504 Gateway Time-out</code></td>
             <td>Solicitud demasiado larga frente al proxy.</td>
-            <td>Ejecutar el set por tandas desde el boton automatico y revisar la consola por cada lote.</td>
+            <td>Ejecutar el set por tandas desde el botón automático y revisar la consola por cada lote.</td>
           </tr>
           <tr>
             <td>Batch en proceso</td>
             <td>DIAN recibio el ZIP, pero aun no entrego acuse final.</td>
-            <td>Esperar y consultar <code>GetStatusZip</code>; no activar produccion local con solo recepcion inicial.</td>
+            <td>Esperar y consultar <code>GetStatusZip</code>; no activar producción local con solo recepción inicial.</td>
           </tr>
           <tr>
             <td>Documento rechazado</td>

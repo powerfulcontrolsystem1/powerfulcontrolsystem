@@ -2568,7 +2568,7 @@
             saveBtn.disabled = true;
             msg.innerText = 'ERROR: cifrado obligatorio no disponible en este servidor (CONFIG_ENC_KEY no definido). Configure la variable de entorno en el servidor.';
           } else if (!smtpPasswordDecryptOK) {
-            msg.innerText = cfg.smtp_app_password_error || 'La contraseÃ±a SMTP guardada no se puede descifrar. Regraba la contraseÃ±a de aplicaciÃ³n y guarda.';
+            msg.innerText = cfg.smtp_app_password_error || 'La contraseña SMTP guardada no se puede descifrar. Regraba la contraseña de aplicación y guarda.';
           } else if (!msg.innerText || msg.innerText.indexOf('ERROR:') === -1) {
             msg.innerText = 'Puede editar y guardar directamente la configuración Gmail de confirmación.';
           }
@@ -2590,8 +2590,8 @@
           }
 
           if (cfg.smtp_app_password_set && !smtpPasswordDecryptOK) {
-            const ts2 = cfg.smtp_app_password_updated ? (' - Ãšltima actualizaciÃ³n: ' + cfg.smtp_app_password_updated) : '';
-            statusPass.innerText = 'ContraseÃ±a guardada, pero no se puede descifrar. Regraba la contraseÃ±a de aplicaciÃ³n.' + ts2;
+            const ts2 = cfg.smtp_app_password_updated ? (' - Última actualización: ' + cfg.smtp_app_password_updated) : '';
+            statusPass.innerText = 'Contraseña guardada, pero no se puede descifrar. Regraba la contraseña de aplicación.' + ts2;
           } else if (cfg.smtp_app_password_set) {
             const ts2 = cfg.smtp_app_password_updated ? (' - Última actualización: ' + cfg.smtp_app_password_updated) : '';
             statusPass.innerText = 'Contraseña de aplicación guardada (' + (cfg.smtp_app_password_masked || '****') + ')' + ts2;

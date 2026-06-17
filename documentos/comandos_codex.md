@@ -218,6 +218,39 @@ El endpoint `action=importar_numeracion_pdf` queda como respaldo tecnico local
 para pruebas automatizadas cuando IA no este disponible, pero el flujo visual
 principal debe usar IA y permitir digitacion manual en los campos existentes.
 
+### Pruebas visuales con navegador desde Codex
+
+Cuando el usuario pida "prueba visualmente", Codex debe intentar primero la
+herramienta de navegador interna o la extension de Chrome si esta disponible en
+el hilo. Si esas herramientas no aparecen en `tool_search`, usar Playwright
+desde el workspace contra la URL publicada o local.
+
+Flujo recomendado con Playwright:
+
+```powershell
+# Usar una carpeta temporal ignorada por Git para capturas.
+New-Item -ItemType Directory -Force .gotmp\visual | Out-Null
+
+# Abrir paginas publicadas y guardar evidencia visual.
+node .gotmp\visual_check.mjs
+```
+
+El script debe:
+
+- Abrir `https://powerfulcontrolsystem.com/login.html` y autenticar solo si el
+  usuario autorizo credenciales en el chat actual.
+- Entrar a PCS con `empresa_id=12`.
+- Probar escritorio y celular con `page.setViewportSize`.
+- Capturar consola, errores de pagina y screenshots en `.gotmp\visual`.
+- Revisar que no haya texto cortado, botones fuera de tarjeta, selects
+  ilegibles, spinners numericos indeseados ni errores JavaScript.
+- Para carrito, probar busqueda por nombre, botones `+`/`-`, cantidad visible,
+  pagos combinados y flujo de cliente sin enviar documentos externos si el
+  usuario no lo autorizo.
+
+No guardar claves ni cookies en documentacion. Borrar cookies temporales de
+`.gotmp` al terminar si contienen sesiones.
+
 Valores esperados del PDF PCS:
 
 ```text

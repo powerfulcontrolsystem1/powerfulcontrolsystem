@@ -902,7 +902,7 @@
             var blobWin = window.open(blobUrl, "pcs_factura_electronica_print", "width=980,height=760,scrollbars=yes,resizable=yes");
             if (!blobWin) {
               window.URL.revokeObjectURL(blobUrl);
-              showMessage("No se pudo abrir la ventana de impresiÃ³n. Revisa el bloqueador de popups.", "error");
+              showMessage("No se pudo abrir la ventana de impresión. Revisa el bloqueador de popups.", "error");
               return;
             }
             try { blobWin.focus(); } catch (_) {}
