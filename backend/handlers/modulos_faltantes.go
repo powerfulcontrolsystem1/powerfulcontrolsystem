@@ -12628,10 +12628,11 @@ func dian1876FindRange(text string) (string, string, int64, int64, string, int64
 		return strings.TrimSpace(m[1]), strings.TrimSpace(m[2]), dian1876ParseInt(m[3]), dian1876ParseInt(m[4]), strings.TrimSpace(m[5]), dian1876ParseInt(m[6])
 	}
 	modRe := regexp.MustCompile(`(?i)FACTURA\s+ELECTR[ÓO]NICA\s+DE\s+VENTA`)
-	loc := modRe.FindStringIndex(text)
-	if loc == nil {
+	locs := modRe.FindAllStringIndex(text, -1)
+	if len(locs) == 0 {
 		return "", "", 0, 0, "", 0
 	}
+	loc := locs[len(locs)-1]
 	modalidad := strings.TrimSpace(text[loc[0]:loc[1]])
 	tail := strings.TrimSpace(text[loc[1]:])
 	tokens := regexp.MustCompile(`\s+`).Split(tail, -1)

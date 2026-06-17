@@ -48,6 +48,10 @@ func TestParseDIANNumeracion1876TextKeepsNumericPrefix(t *testing.T) {
       8 4 4 5 6 7 7 9 1 CAYON GUARNIZO IVAN FRANCISCO
 2 0 2 6 -0 6 -1 7 /0 1 :5 1 :1 1
 Rangos de numeracion para autorizar, habilitar o inhabilitar
+29. Establecimiento
+33. Hasta el numero 34. Tipo solicitud Cod.30. Modalidad Cod.
+31. Prefijo 32. Desde el numero
+38. Vigencia
 FACTURA ELECTRONICA DE VENTA 4
 
 
