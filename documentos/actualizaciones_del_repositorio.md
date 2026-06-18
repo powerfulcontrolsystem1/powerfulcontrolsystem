@@ -15082,3 +15082,8 @@ Archivos modificados:
 2026-06-17 19:35:11 - Mensaje: rs: actualizar repositorio y sincronizar VPS; Commit: 7a2ed6d7; PushStatus: OK
 Archivos modificados:
 - web/administrar_empresa/ventas.html
+
+2026-06-17 19:50:55 - Mensaje: rs: actualizar repositorio y sincronizar VPS; Commit: b6edda65; PushStatus: OK
+Archivos modificados:
+- backend/handlers/dian_signature_upload_test.go
+- backend/handlers/modulos_faltantes.go
