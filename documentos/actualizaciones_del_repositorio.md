@@ -15097,3 +15097,7 @@ Archivos modificados:
 2026-06-17 20:17:19 - Mensaje: rs: actualizar repositorio y sincronizar VPS; Commit: 5a4055dd; PushStatus: OK
 Archivos modificados:
 - backend/handlers/facturacion_electronica.go
+
+2026-06-17 20:23:31 - Mensaje: rs: actualizar repositorio y sincronizar VPS; Commit: 90d82958; PushStatus: OK
+Archivos modificados:
+- backend/handlers/facturacion_electronica.go
