@@ -1032,3 +1032,40 @@ Antes de ejecutar scripts operativos revisar `documentos/comandos_codex.md`.
 - La politica operativa mantiene lectura preparada por servidor, roles,
   aislamiento por `empresa_id` y acciones estructuradas solo contra endpoints
   autorizados; no hay SQL libre ni secretos expuestos a la IA.
+
+## Facturacion electronica Colombia DIAN 2026-06-17
+
+- PCS (`empresa_id=12`) ya usa la autorizacion DIAN Formulario 1876 con
+  resolucion `18764111318575`, prefijo `1PCS`, rango `1-100000` y vigencia
+  `2026-06-17` a `2028-06-17`.
+- La numeracion nueva debe estar asociada en el portal DIAN de produccion
+  `https://catalogo-vpfe.dian.gov.co/User/Login` al software
+  `Powerful Control System` antes de emitir. Si falta ese paso, DIAN responde
+  `FAB05c`.
+- El sistema consulta `GetNumberingRange` para traer/actualizar la clave tecnica
+  del rango; esa clave es necesaria para calcular CUFE correctamente y no debe
+  imprimirse.
+- Prueba real cerrada: venta de producto `menta` en PCS con cliente IVAN
+  FRANCISCO CAYON GUARNIZO genero factura `1PCS2` aceptada por DIAN. Si se
+  reintenta el mismo documento, DIAN puede devolver `Regla: 90, Documento
+  procesado anteriormente`; PCS lo considera aceptacion idempotente cuando el
+  documento ya fue procesado.
+- Cliente de prueba autorizado: IVAN FRANCISCO CAYON GUARNIZO, CC `84456779`,
+  Colombia, Santa Marta, direccion `calle 28 N5-116`, celular `3043306506`,
+  persona natural. No guardar contrasenas en documentacion.
+- Los errores DIAN visibles se explican en
+  `web/administrar_empresa/facturacion_electronica_tutorial_dian.html` y la
+  consola de `facturacion_electronica_pruebas_dian.html` los muestra en rojo con
+  solucion operativa.
+- Si un envio DIAN queda fallido, `processFacturacionIntegracionForDocumento`
+  crea una alerta en `empresa_buzon_mensajes` para el administrador/creador de la
+  empresa, con prioridad alta, modulo `facturacion_electronica` y enlace directo
+  al centro DIAN.
+
+## IA super administrador 2026-06-17
+
+- El menu lateral del super administrador debe mostrar solo una opcion bajo `IA`:
+  `Configuracion IA` -> `web/super/configuracion/ia_global.html`.
+- Las paginas tecnicas antiguas de IA pueden existir como soporte interno, pero
+  no deben repetirse como cinco entradas del submenu. La pagina unica concentra
+  proveedor, credencial, reglas, contexto, chat global y voz.

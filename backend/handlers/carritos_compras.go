@@ -3421,6 +3421,7 @@ func registrarFacturaElectronicaDesdeDocumentoVenta(dbEmp, dbSuper *sql.DB, vent
 			*docPersistido,
 			"emitir",
 			strings.TrimSpace(usuario),
+			dbSuper,
 		)
 		if integErr != nil {
 			integracionFiscal["error"] = integErr.Error()

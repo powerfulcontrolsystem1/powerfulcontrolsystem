@@ -643,7 +643,7 @@ func EmpresaFacturacionElectronicaHandler(dbEmp, dbSuper *sql.DB) http.HandlerFu
 				if strings.TrimSpace(payload.ClienteDireccion) != "" {
 					merged.ClienteDireccion = payload.ClienteDireccion
 				}
-				resultado, retryItem, err := processFacturacionIntegracionForDocumento(dbEmp, merged, *doc, "emitir", strings.TrimSpace(adminEmailFromRequest(r)))
+				resultado, retryItem, err := processFacturacionIntegracionForDocumento(dbEmp, merged, *doc, "emitir", strings.TrimSpace(adminEmailFromRequest(r)), dbSuper)
 				if err != nil {
 					http.Error(w, "No se pudo reintentar envio DIAN", http.StatusInternalServerError)
 					return
@@ -847,6 +847,7 @@ func EmpresaFacturacionElectronicaHandler(dbEmp, dbSuper *sql.DB) http.HandlerFu
 						*docPersistido,
 						transition.Accion,
 						strings.TrimSpace(adminEmailFromRequest(r)),
+						dbSuper,
 					)
 					if integErr != nil {
 						log.Printf("[facturacion_electronica] error integracion fiscal empresa_id=%d documento=%s accion=%s err=%v", payload.EmpresaID, payload.DocumentoCodigo, transition.Accion, integErr)
@@ -2184,7 +2185,7 @@ func facturacionOfflineDianPreflight(dbEmp *sql.DB, payload facturacionOperacion
 	return status, nil
 }
 
-func processFacturacionIntegracionForDocumento(dbEmp *sql.DB, payload facturacionOperacionPayload, doc dbpkg.EmpresaDocumentoFacturacion, accion, usuario string) (facturacionIntegracionResultado, *dbpkg.FacturacionElectronicaRetryItem, error) {
+func processFacturacionIntegracionForDocumento(dbEmp *sql.DB, payload facturacionOperacionPayload, doc dbpkg.EmpresaDocumentoFacturacion, accion, usuario string, dbSuperOpt ...*sql.DB) (facturacionIntegracionResultado, *dbpkg.FacturacionElectronicaRetryItem, error) {
 	resultado := facturacionIntegracionResultado{
 		Aplica:             false,
 		Accion:             strings.ToLower(strings.TrimSpace(accion)),
@@ -2220,6 +2221,10 @@ func processFacturacionIntegracionForDocumento(dbEmp *sql.DB, payload facturacio
 	}
 	if strings.TrimSpace(usuario) == "" {
 		usuario = "sistema_facturacion"
+	}
+	var dbSuper *sql.DB
+	if len(dbSuperOpt) > 0 {
+		dbSuper = dbSuperOpt[0]
 	}
 
 	paisCodigo := strings.ToUpper(strings.TrimSpace(facturacionFirstNonBlank(doc.PaisCodigo, payload.PaisCodigo)))
@@ -2398,6 +2403,9 @@ func processFacturacionIntegracionForDocumento(dbEmp *sql.DB, payload facturacio
 		resultado.Error = "no se pudo persistir estado de integracion FE"
 		return resultado, nil, err
 	}
+	if normalizeFacturacionEstadoEnvio(persistido.EstadoEnvio) == "fallido" {
+		notificarFalloFacturacionElectronica(dbEmp, dbSuper, persistido, resultado, doc, usuario)
+	}
 
 	resultado.EstadoEnvio = normalizeFacturacionEstadoEnvio(persistido.EstadoEnvio)
 	resultado.Intentos = persistido.Intentos
@@ -2412,6 +2420,75 @@ func processFacturacionIntegracionForDocumento(dbEmp *sql.DB, payload facturacio
 	}
 
 	return resultado, persistido, nil
+}
+
+func notificarFalloFacturacionElectronica(dbEmp, dbSuper *sql.DB, retry *dbpkg.FacturacionElectronicaRetryItem, resultado facturacionIntegracionResultado, doc dbpkg.EmpresaDocumentoFacturacion, usuario string) {
+	if dbEmp == nil || retry == nil || retry.EmpresaID <= 0 {
+		return
+	}
+	ownerEmail := getEmpresaOwnerEmail(dbEmp, retry.EmpresaID)
+	if ownerEmail == "" {
+		ownerEmail = strings.ToLower(strings.TrimSpace(usuario))
+	}
+	if ownerEmail == "" || ownerEmail == "sistema" || ownerEmail == "sistema_facturacion" {
+		return
+	}
+	actor, err := dbpkg.ResolveEmpresaBuzonActor(dbEmp, dbSuper, retry.EmpresaID, ownerEmail)
+	if err != nil {
+		actor = dbpkg.EmpresaBuzonActor{Tipo: "admin", Ref: ownerEmail, Email: ownerEmail, Nombre: ownerEmail, Rol: "administrador"}
+	}
+	errorText := strings.TrimSpace(firstNonEmptyString(resultado.Error, retry.UltimoError, "DIAN/proveedor rechazo o no confirmo el documento electronico"))
+	causa := dianErrorUserHelp(errorText)
+	mensaje := "La facturacion electronica requiere revision.\n\n" +
+		"Documento: " + strings.TrimSpace(retry.TipoDocumento) + " " + strings.TrimSpace(retry.DocumentoCodigo) + "\n" +
+		"Numero legal: " + strings.TrimSpace(firstNonEmptyString(retry.NumeroLegal, doc.NumeroLegal)) + "\n" +
+		"Estado: " + strings.TrimSpace(retry.EstadoEnvio) + "\n" +
+		"Error DIAN: " + errorText + "\n\n" +
+		"Que hacer: " + causa + "\n\n" +
+		"Abra Facturacion electronica > Pruebas DIAN para ver la consola, corregir configuracion y reenviar."
+	_, _ = dbpkg.CreateEmpresaBuzonMensaje(dbEmp, dbpkg.EmpresaBuzonMensaje{
+		EmpresaID:          retry.EmpresaID,
+		DestinatarioTipo:   actor.Tipo,
+		DestinatarioRef:    actor.Ref,
+		DestinatarioEmail:  actor.Email,
+		DestinatarioNombre: actor.Nombre,
+		RemitenteTipo:      "sistema",
+		RemitenteRef:       "facturacion_electronica",
+		RemitenteNombre:    "Facturacion electronica PCS",
+		Titulo:             "Error DIAN en facturacion electronica",
+		Mensaje:            mensaje,
+		Tipo:               "alerta_facturacion_electronica",
+		Prioridad:          "alta",
+		Modulo:             "facturacion_electronica",
+		ReferenciaTipo:     strings.TrimSpace(retry.TipoDocumento),
+		ReferenciaID:       retry.ID,
+		EnlaceURL:          fmt.Sprintf("/administrar_empresa/facturacion_electronica_pruebas_dian.html?empresa_id=%d", retry.EmpresaID),
+		UsuarioCreador:     usuario,
+	})
+}
+
+func dianErrorUserHelp(raw string) string {
+	lower := strings.ToLower(strings.TrimSpace(raw))
+	switch {
+	case strings.Contains(lower, "fab05c") || (strings.Contains(lower, "identificador del software") && strings.Contains(lower, "rango")):
+		return "Asocie en el portal DIAN el prefijo/rango de numeracion al software correcto y verifique Software ID, prefijo, resolucion y rango en PCS."
+	case strings.Contains(lower, "fad06") || strings.Contains(lower, "cufe"):
+		return "Consulte de nuevo la clave tecnica con GetNumberingRange y revise prefijo, numero legal, fecha/hora, impuestos y totales."
+	case strings.Contains(lower, "fad05") || strings.Contains(lower, "rango de numeracion") || strings.Contains(lower, "resolucion"):
+		return "Revise que la resolucion DIAN este vigente, asociada al software, con prefijo y consecutivo dentro del rango autorizado."
+	case strings.Contains(lower, "fad10") || strings.Contains(lower, "softwaresecuritycode"):
+		return "Revise Software ID, PIN tecnico y el numero completo de la factura usado para calcular el codigo de seguridad."
+	case strings.Contains(lower, "fak61") || strings.Contains(lower, "party") || strings.Contains(lower, "cliente"):
+		return "Corrija los datos del cliente: tipo de persona, tipo y numero de documento, municipio, direccion y regimen tributario."
+	case strings.Contains(lower, "ze02") || strings.Contains(lower, "signature") || strings.Contains(lower, "firma"):
+		return "Revise el certificado digital P12, su clave, vigencia y que corresponda al NIT emisor."
+	case strings.Contains(lower, "vencid") || strings.Contains(lower, "expired"):
+		return "Renueve certificado digital o resolucion vencida, cargue los nuevos datos en PCS y vuelva a probar DIAN."
+	case strings.Contains(lower, "90") && strings.Contains(lower, "procesado anteriormente"):
+		return "El documento ya fue procesado por DIAN. Consulte el CUFE/TrackId antes de reenviar para evitar duplicados."
+	default:
+		return "Lea el mensaje exacto de DIAN en la consola, valide configuracion, certificado, resolucion, rango, cliente y reintente el envio."
+	}
 }
 
 func facturacionBuildOperacionPayloadFromDocumento(doc dbpkg.EmpresaDocumentoFacturacion) facturacionOperacionPayload {

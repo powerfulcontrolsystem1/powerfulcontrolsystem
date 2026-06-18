@@ -1285,3 +1285,40 @@ afecte dinero, documentos, licencias o seguridad.
 5. El destinatario finaliza una tarea desde su propio buzon; debe escribir descripcion de cierre y puede adjuntar evidencia. El backend valida que el mensaje pertenezca a su buzon antes de adjuntar o cerrar.
 6. En traslados de bodega, el endpoint de inventario crea una notificacion de buzon para el responsable de la bodega destino o usuarios de inventario/administracion.
 7. Super administrador controla la cuota global por empresa desde Configuracion avanzada > Almacenamiento: limite MB, porcentaje de alerta, maximo por archivo, bloqueo al superar cuota y limpieza de archivos antiguos del buzon.
+### Facturacion electronica Colombia despues de la reparacion PCS
+
+1. En DIAN se solicita la autorizacion de numeracion y luego se asocia el rango
+   al software en `https://catalogo-vpfe.dian.gov.co/User/Login`.
+2. En PCS se carga o digita la resolucion, prefijo, rango, vigencia y datos de
+   empresa desde `Facturacion electronica`.
+3. En `Centro de habilitacion DIAN` se pulsa `Consultar clave tecnica DIAN` para
+   ejecutar `GetNumberingRange` y guardar la clave tecnica del rango.
+4. Se valida configuracion, firma digital, certificado, software ID/PIN, NIT/DV,
+   ambiente, prefijo, rango y cliente antes de emitir.
+5. La factura se genera con UBL 2.1, `DianExtensions`, `SoftwareSecurityCode`,
+   CUFE/CUDE, QR, parties, impuestos, totales y lineas. El backend bloquea XML
+   incompleto en preflight.
+6. El envio oficial usa DIAN SOAP/WCF con WS-Security y firma RSA-SHA256. No
+   modificar canonicacion/firma sin prueba real DIAN.
+7. Un acuse aceptado deja `estado_envio=aceptado`. `Regla 90` por documento ya
+   procesado se trata como aceptacion idempotente cuando corresponde.
+8. Un rechazo deja el documento en cola/reintentos y crea alerta en el buzon del
+   administrador de la empresa. La consola DIAN muestra el error en rojo con
+   guia de solucion.
+
+### Errores DIAN que el usuario puede resolver
+
+1. `FAB05c`: asociar el prefijo/rango al Software ID correcto en portal DIAN y
+   revisar prefijo/resolucion/rango en PCS.
+2. `FAD06`: consultar clave tecnica con `GetNumberingRange`; revisar CUFE,
+   numero legal, fecha/hora, NIT, cliente, impuestos y totales.
+3. `FAD05`: la numeracion/resolucion no esta autorizada o el consecutivo esta
+   fuera de rango.
+4. `FAD10`: revisar Software ID, PIN tecnico y calculo de SoftwareSecurityCode.
+5. `FAK61`: corregir datos del cliente o estructura Party: tipo de persona,
+   documento, municipio, direccion, regimen y responsabilidades.
+6. `ZE02`: revisar certificado digital, llave privada, clave, vigencia y NIT.
+7. `RUT01`: revisar NIT/DV/razon social o reintentar si el servicio DIAN no
+   responde.
+8. Firma o resolucion vencida: renovar, cargar en PCS, asociar en DIAN y volver a
+   probar.

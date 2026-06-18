@@ -8,19 +8,22 @@
   <style>
     html,body{height:100%}
     body{margin:0;background:var(--bg);color:var(--text)}
-    .ai-governance-page{min-height:100vh;display:grid;grid-template-rows:auto auto minmax(640px,1fr);gap:12px;padding:14px}
+    .ai-governance-page{min-height:100vh;display:grid;grid-template-rows:auto auto auto;gap:12px;padding:14px}
     .ai-governance-header{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:16px;border:1px solid var(--border);border-radius:8px;background:var(--surface)}
     .ai-governance-header h1{margin:0;color:var(--text);font-size:1.45rem}
     .ai-governance-header p{margin:4px 0 0;color:var(--muted);font-size:.9rem;line-height:1.4;max-width:760px}
     .ai-governance-actions{display:flex;gap:8px;flex-wrap:wrap}
+    .ai-governance-actions .btn{cursor:pointer}
     .ai-governance-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
     .ai-governance-kpi{padding:12px;border:1px solid var(--border);border-radius:8px;background:var(--surface)}
     .ai-governance-kpi strong{display:block;color:var(--text);font-size:.92rem;margin-bottom:5px}
     .ai-governance-kpi span{display:block;color:var(--muted);font-size:.82rem;line-height:1.35}
-    .ai-governance-frame-card{border:1px solid var(--border);border-radius:8px;background:var(--surface);overflow:hidden;min-height:640px}
+    .ai-governance-frame-list{display:grid;grid-template-columns:1fr;gap:12px}
+    .ai-governance-frame-card{border:1px solid var(--border);border-radius:8px;background:var(--surface);overflow:hidden;min-height:520px}
     .ai-governance-frame-title{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;border-bottom:1px solid var(--border)}
     .ai-governance-frame-title strong{font-size:.95rem;color:var(--text)}
-    .ai-governance-frame{width:100%;height:calc(100vh - 265px);min-height:590px;border:0;background:transparent}
+    .ai-governance-frame{width:100%;height:660px;min-height:520px;border:0;background:transparent}
+    .ai-governance-frame-card.compact .ai-governance-frame{height:560px;min-height:480px}
     @media(max-width:1000px){.ai-governance-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.ai-governance-frame{height:720px}}
     @media(max-width:640px){.ai-governance-page{padding:10px}.ai-governance-grid{grid-template-columns:1fr}.ai-governance-actions .btn{flex:1 1 auto}.ai-governance-frame{height:760px}}
   </style>
@@ -30,13 +33,14 @@
     <header class="ai-governance-header">
       <div>
         <h1>Gobierno de inteligencia artificial</h1>
-        <p>Centro super administrador para habilitar IA, administrar la credencial OpenAI cifrada, probar conectividad real y entrar a limites, contexto de negocio y voz.</p>
+        <p>Unica pagina del super administrador para habilitar IA, administrar credenciales cifradas, limites, contexto de negocio, chat global y voz sin repetir opciones en el menu lateral.</p>
       </div>
       <div class="ai-governance-actions">
-        <a class="btn secondary" href="/super/configuracion_logica_del_chat_con_ia.html">Limites</a>
-        <a class="btn secondary" href="/super/contexto_ia_logica_negocio.html">Contexto</a>
-        <a class="btn secondary" href="/super/configuracion/voz_ia.html">Voz</a>
-        <a class="btn secondary" href="/super/configuracion_avanzada.html">Todas</a>
+        <a class="btn secondary" href="#proveedor">Proveedor</a>
+        <a class="btn secondary" href="#reglas">Reglas</a>
+        <a class="btn secondary" href="#contexto">Contexto</a>
+        <a class="btn secondary" href="#chat">Chat</a>
+        <a class="btn secondary" href="#voz">Voz</a>
       </div>
     </header>
 
@@ -59,12 +63,42 @@
       </div>
     </section>
 
-    <section class="ai-governance-frame-card">
-      <div class="ai-governance-frame-title">
-        <strong>Proveedor, estado global y prueba OpenAI</strong>
-        <span class="form-help">Panel operativo real</span>
-      </div>
-      <iframe class="ai-governance-frame" src="/super/configuracion_avanzada.html?single=1&section=aiConfigCard" title="Gobierno IA"></iframe>
+    <section class="ai-governance-frame-list" aria-label="Configuraciones IA unificadas">
+      <article id="proveedor" class="ai-governance-frame-card">
+        <div class="ai-governance-frame-title">
+          <strong>Proveedor, estado global y prueba OpenAI</strong>
+          <span class="form-help">Credencial y conectividad</span>
+        </div>
+        <iframe class="ai-governance-frame" src="/super/configuracion_avanzada.html?single=1&section=aiConfigCard" title="Proveedor IA"></iframe>
+      </article>
+      <article id="reglas" class="ai-governance-frame-card compact">
+        <div class="ai-governance-frame-title">
+          <strong>Reglas, limites y comportamiento del chat</strong>
+          <span class="form-help">Configuracion logica</span>
+        </div>
+        <iframe class="ai-governance-frame" src="/super/configuracion_logica_del_chat_con_ia.html" title="Reglas IA"></iframe>
+      </article>
+      <article id="contexto" class="ai-governance-frame-card compact">
+        <div class="ai-governance-frame-title">
+          <strong>Contexto de negocio para IA</strong>
+          <span class="form-help">Conocimiento editable</span>
+        </div>
+        <iframe class="ai-governance-frame" src="/super/contexto_ia_logica_negocio.html" title="Contexto IA"></iframe>
+      </article>
+      <article id="chat" class="ai-governance-frame-card compact">
+        <div class="ai-governance-frame-title">
+          <strong>Chat IA global</strong>
+          <span class="form-help">Prueba operativa</span>
+        </div>
+        <iframe class="ai-governance-frame" src="/super/chat_con_ia_global.html" title="Chat IA global"></iframe>
+      </article>
+      <article id="voz" class="ai-governance-frame-card compact">
+        <div class="ai-governance-frame-title">
+          <strong>Voz IA streaming</strong>
+          <span class="form-help">Audio y respuesta en vivo</span>
+        </div>
+        <iframe class="ai-governance-frame" src="/super/voz_streaming_ia.html" title="Voz IA streaming"></iframe>
+      </article>
     </section>
   </main>
 </body>

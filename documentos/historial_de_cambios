@@ -35119,3 +35119,9 @@ Archivos modificados:
 PushStatus: OK
 Archivos modificados:
 - backend/db/facturacion_electronica.go
+2026-06-17 - Facturacion electronica DIAN: ayuda de errores, alertas y documentacion
+- Facturacion electronica Colombia: la consola DIAN ahora resalta errores en rojo con ayuda para FAB05c, FAD06, FAD05, FAD10, FAK61, ZE02, RUT01, vencimientos y Regla 90.
+- Backend: los fallos de envio DIAN crean alerta interna en el buzon del administrador/creador de la empresa, con enlace al centro DIAN y sin exponer secretos.
+- Licencias: los codigos de descuento globales pueden enviarse por correo desde el sistema usando SMTP/test mode configurado, no mailto.
+- Super administrador: el submenu IA queda reducido a una sola pagina de configuracion IA consolidada.
+- Documentacion: contexto, mapa, flujos, decisiones y comandos registran el flujo DIAN PCS corregido, la aceptacion real de 1PCS2 y el uso de GetNumberingRange.

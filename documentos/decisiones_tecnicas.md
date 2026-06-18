@@ -87,6 +87,24 @@ trazabilidad en `documentos/historial_de_cambios`.
 - El submenu de facturacion electronica permanece, pero las paginas internas se
   muestran segun pais detectado, licencia y permisos.
 - No guardar certificados, tokens o claves en documentacion ni logs.
+- Para Colombia, `GetNumberingRange` es parte obligatoria del flujo de
+  produccion porque actualiza la clave tecnica usada para CUFE. La llave tecnica
+  se trata como secreto y solo se guarda en base de datos.
+- `Regla 90, Documento procesado anteriormente` no debe romper el estado de la
+  factura si el documento ya fue procesado por DIAN; se considera respuesta
+  idempotente y se mantiene como aceptada cuando corresponde.
+- Los errores DIAN deben mostrarse al usuario en consola con letras grandes,
+  rojas y ayuda accionable. Ademas, un fallo de envio debe crear alerta interna
+  en el buzon del administrador/creador de la empresa sin exponer XML, claves ni
+  certificados.
+
+## IA super administrador
+
+- El menu `IA` debe tener una sola pagina visible:
+  `web/super/configuracion/ia_global.html`.
+- Esa pagina unica puede embeber o enlazar internamente secciones tecnicas, pero
+  el menu lateral no debe repetir `Integracion IA`, `Chat IA global`, `Voz IA`,
+  `Reglas de chat` y `Contexto negocio` como entradas separadas.
 
 ## Caja, turnos y carritos
 

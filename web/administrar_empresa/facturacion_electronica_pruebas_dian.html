@@ -102,6 +102,9 @@
     .dian-console-entry.ok{border-left:4px solid var(--success)}
     .dian-console-entry.warn{border-left:4px solid var(--accent-yellow,#facc15)}
     .dian-console-entry.error{border-left:4px solid var(--danger)}
+    .dian-console-help{margin:0 10px 10px;border:2px solid #dc2626;border-radius:8px;background:color-mix(in srgb,#dc2626 10%,var(--surface));padding:10px 12px;color:#dc2626;font-family:inherit}
+    .dian-console-help strong{display:block;font-size:1.08rem;font-weight:950;line-height:1.25}
+    .dian-console-help span{display:block;margin-top:6px;color:color-mix(in srgb,#dc2626 82%,var(--text));font-size:.92rem;font-weight:850;line-height:1.4;white-space:normal}
     .dian-console-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;padding:8px 10px;border-bottom:1px solid color-mix(in srgb,var(--border) 72%,transparent)}
     .dian-console-title{display:flex;align-items:center;gap:8px;min-width:0;flex-wrap:wrap}
     .dian-console-title strong{color:var(--text);font-size:.86rem;overflow-wrap:anywhere}
@@ -417,6 +420,17 @@
       actual: { facturas: 30, debito: 10, credito: 10, aceptadosTotal: 1, aceptadasFacturas: 1, aceptadasDebito: 0, aceptadasCredito: 0 },
       historico: { facturas: 60, debito: 20, credito: 20, aceptadosTotal: 1, aceptadasFacturas: 1, aceptadasDebito: 0, aceptadasCredito: 0 }
     };
+    const DIAN_ERROR_HELP = [
+      { match: /fab05c|identificador del software.*rango|software.*no corresponde.*rango/i, title: "FAB05c: software no asociado al rango DIAN", help: "Asocia en el portal DIAN de produccion el prefijo/rango al Software ID correcto. En PCS revisa Software ID, prefijo, resolucion, rango y ambiente." },
+      { match: /fad06|cufe/i, title: "FAD06: CUFE no coincide", help: "Consulta de nuevo la clave tecnica con GetNumberingRange y valida prefijo, numero legal, fecha/hora, impuestos, totales, NIT emisor y documento del cliente." },
+      { match: /fad05|rango de numeracion|resolucion|numeraci[oó]n.*no/i, title: "FAD05: numeracion o resolucion no valida", help: "Confirma que la resolucion este vigente, asociada al software, y que el consecutivo este dentro del rango autorizado." },
+      { match: /fad10|softwaresecuritycode|security code/i, title: "FAD10: codigo de seguridad del software invalido", help: "Revisa Software ID, PIN tecnico y numero completo de factura usado para calcular el SoftwareSecurityCode." },
+      { match: /fak61|party|cliente|customer/i, title: "FAK61: datos del cliente o estructura Party", help: "Corrige tipo de persona, tipo y numero de documento, municipio, direccion, regimen y responsabilidades fiscales del cliente." },
+      { match: /ze02|signature|firma|digest/i, title: "ZE02: firma digital invalida", help: "Revisa que el certificado P12/PFX este vigente, tenga llave privada, corresponda al NIT emisor y que la clave sea correcta." },
+      { match: /vencid|expired|expiration|expir/i, title: "Vencimiento de firma o resolucion", help: "Renueva la firma digital o la autorizacion de numeracion, carga los nuevos datos en PCS y vuelve a consultar clave tecnica DIAN." },
+      { match: /regla:\s*90|procesado anteriormente/i, title: "Regla 90: documento procesado anteriormente", help: "DIAN ya recibio ese documento. Consulta el CUFE/TrackId antes de reenviar para no duplicar consecutivos." },
+      { match: /rut01|rut/i, title: "RUT01: validacion RUT", help: "Verifica NIT, DV, razon social y datos fiscales. Si DIAN indica servicio RUT no disponible, reintenta mas tarde." }
+    ];
     let dianConfirmResolve = null;
 
     function txt(v) {
@@ -544,11 +558,13 @@
         const cls = entry.ok ? "ok" : (entry.error ? "error" : "warn");
         const status = entry.httpStatus ? ("HTTP " + entry.httpStatus) : "local";
         const duration = typeof entry.durationMs === "number" ? (" · " + entry.durationMs + " ms") : "";
+        const help = getDianErrorHelp(entry.payload);
         return '<article class="dian-console-entry ' + cls + '">' +
           '<div class="dian-console-head">' +
             '<div class="dian-console-title">' + renderPill(entry.ok ? "ok" : (entry.error ? "error" : "pendiente")) + '<strong>' + escapeHTML(entry.label || "Respuesta DIAN") + '</strong></div>' +
             '<span class="dian-console-meta">' + escapeHTML(entry.time || "") + ' · ' + escapeHTML(status) + escapeHTML(duration) + '</span>' +
           '</div>' +
+          (help ? '<div class="dian-console-help"><strong>' + escapeHTML(help.title) + '</strong><span>' + escapeHTML(help.help) + '</span></div>' : '') +
           '<pre class="dian-console-body">' + escapeHTML(formatConsolePayload(entry.payload)) + '</pre>' +
         '</article>';
       }).join("");
@@ -557,17 +573,52 @@
 
     function addDianConsoleEntry(label, payload, options) {
       options = options || {};
+      const dianHelp = getDianErrorHelp(payload);
       state.dianConsole.push({
         label: label || "Respuesta DIAN",
         payload: payload,
         httpStatus: options.httpStatus || 0,
         durationMs: options.durationMs,
         ok: !!options.ok,
-        error: !!options.error,
+        error: !!options.error || !!dianHelp,
         time: new Date().toLocaleTimeString("es-CO", { hour12: false })
       });
       if (state.dianConsole.length > 60) state.dianConsole = state.dianConsole.slice(-60);
       renderDianConsole();
+    }
+
+    function getDianErrorHelp(payload) {
+      const text = collectDianText(payload).join(" \n ");
+      if (!text) return null;
+      for (let i = 0; i < DIAN_ERROR_HELP.length; i += 1) {
+        if (DIAN_ERROR_HELP[i].match.test(text)) return DIAN_ERROR_HELP[i];
+      }
+      if (/rechazo|rechazado|error|fault|no acept/i.test(text)) {
+        return {
+          title: "DIAN rechazo el documento",
+          help: "Lee el mensaje exacto, corrige configuracion, firma, resolucion, rango, cliente, impuestos o totales y reintenta desde esta consola."
+        };
+      }
+      return null;
+    }
+
+    function collectDianText(value, out) {
+      out = out || [];
+      if (value == null) return out;
+      if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") {
+        out.push(String(value));
+        return out;
+      }
+      if (Array.isArray(value)) {
+        value.forEach(function(item) { collectDianText(item, out); });
+        return out;
+      }
+      if (typeof value === "object") {
+        ["error", "motivo", "mensaje", "message", "acuse_mensaje", "status_description", "status_message", "estado_dian", "acuse_estado", "respuesta_dian", "raw_response"].forEach(function(key) {
+          if (Object.prototype.hasOwnProperty.call(value, key)) collectDianText(value[key], out);
+        });
+      }
+      return out;
     }
 
     function clearDianConsole() {

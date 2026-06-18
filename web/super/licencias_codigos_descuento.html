@@ -206,7 +206,7 @@
         await requestJSON("/super/api/licencias/codigos_descuento?codigo=" + encodeURIComponent(code), {method:"DELETE"});
         await load();
       }
-      function emailCode(code){
+      async function emailCode(code){
         var item = state.items.find(function(x){return x.codigo === code;});
         if (!item) return;
         var email = window.prompt("Correo destino para enviar el codigo:", "");
@@ -216,15 +216,13 @@
           setMsg("El correo destino es obligatorio.", true);
           return;
         }
-        var subject = "Codigo de descuento " + item.codigo;
-        var body = [
-          "Codigo de descuento: " + item.codigo,
-          "Descuento: " + (item.descripcion || item.spec || ""),
-          "Estado: " + (item.activo ? "Activo" : "Inactivo"),
-          "Uso: checkout de licencias de Powerful Control System."
-        ].join("\n");
-        window.location.href = "mailto:" + encodeURIComponent(email) + "?subject=" + encodeURIComponent(subject) + "&body=" + encodeURIComponent(body);
-        setMsg("Se abrio el correo para enviar el codigo a " + email + ".", false);
+        setMsg("Enviando codigo a " + email + "...", false);
+        await requestJSON("/super/api/licencias/codigos_descuento?action=enviar_correo", {
+          method:"POST",
+          headers:{"Content-Type":"application/json"},
+          body:JSON.stringify({codigo:item.codigo,email:email})
+        });
+        setMsg("Codigo enviado a " + email + ".", false);
       }
       document.getElementById("type").addEventListener("change", toggleValueField);
       document.getElementById("reloadBtn").addEventListener("click", function(){load().catch(function(err){setMsg(err.message || String(err), true);});});

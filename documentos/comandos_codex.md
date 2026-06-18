@@ -381,6 +381,12 @@ Resultado de referencia 2026-06-17: factura `FV-FE-MENTA-20260617151719`,
 numero legal `1PCS1`, enviada a DIAN y rechazada por `FAK61`, `FAB05c` y
 `FAD06`. El error de rango/prefijo de la resolucion anterior ya no aparecio.
 
+Resultado corregido 2026-06-17: despues de asociar la numeracion en portal DIAN
+produccion y consultar `GetNumberingRange`, PCS emitio factura `1PCS2` por
+producto `menta` y DIAN la acepto. Si se reintenta el mismo documento, DIAN puede
+responder `Regla: 90, Documento procesado anteriormente`; tratarlo como
+idempotente, no como nuevo fallo, cuando el documento/CUFE ya fue aceptado.
+
 Cuando el usuario pida probar `powerfulcontrolsystem.com`, DIAN, carrito o una
 venta real de la empresa Powerful Control System, no iniciar probando en local
 salvo que la tarea diga explicitamente localhost. Usar:
@@ -412,6 +418,10 @@ Para facturacion electronica DIAN de PCS, el cierre minimo es:
   y reglas DIAN (`FAB05c`, `FAD06`, etc.).
 - Si DIAN responde HTTP 200 con `StatusCode=99`, la conexion funciono y el
   rechazo es normativo/configuracion/XML, no caida de red.
+- Si el rechazo incluye `FAB05c`, verificar primero la asociacion del rango en
+  `https://catalogo-vpfe.dian.gov.co/User/Login`.
+- Si incluye `FAD06`, volver a consultar clave tecnica DIAN y revisar CUFE,
+  prefijo, consecutivo, fecha/hora, impuestos y totales.
 
 Usar navegador interno o Chrome solo para validar pantallas y flujo visible:
 login, seleccionar empresa, carrito, cliente, totales, factura/impresion. Para

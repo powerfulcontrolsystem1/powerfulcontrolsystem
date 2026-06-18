@@ -46,6 +46,7 @@
     .dian-guide-resolve-card ol{margin:8px 0 0;padding-left:20px;color:var(--text)}
     .dian-guide-resolve-card li{margin:5px 0;line-height:1.4}
     .dian-guide-pill{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--border);border-radius:999px;padding:4px 8px;background:var(--surface);font-weight:800;color:var(--text);font-size:.82rem}
+    .dian-error-code{display:inline-flex;align-items:center;justify-content:center;min-width:82px;border-radius:8px;background:color-mix(in srgb,#dc2626 14%,var(--surface));border:1px solid #dc2626;color:#dc2626;font-weight:950;font-size:1rem;padding:6px 8px}
     @keyframes dianGuideEnter{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
     @keyframes dianGuidePulse{0%,100%{transform:scale(.9);opacity:.45}50%{transform:scale(1.08);opacity:.85}}
     @media (max-width:900px){.dian-guide-grid{grid-template-columns:1fr}.dian-guide-checklist,.dian-guide-resources,.dian-guide-flow{grid-template-columns:repeat(2,minmax(0,1fr))}}
@@ -152,6 +153,27 @@
       <p class="dian-guide-note">
         La consola de la página de pruebas debe ser la evidencia operativa principal: muestra respuestas DIAN saneadas sin exponer secretos.
       </p>
+    </div>
+
+    <div class="card">
+      <h2>Errores DIAN y como solucionarlos</h2>
+      <p class="form-help">
+        La consola DIAN del centro de habilitacion muestra estos errores en letras grandes y rojas. Si el envio falla, PCS tambien deja una alerta en el buzon del administrador de la empresa.
+      </p>
+      <table class="dian-guide-table">
+        <thead><tr><th>Error</th><th>Que significa</th><th>Solucion operativa</th></tr></thead>
+        <tbody>
+          <tr><td><span class="dian-error-code">FAB05c</span></td><td>El Software ID no corresponde al rango/prefijo informado.</td><td>Asocia en el portal DIAN de produccion el prefijo y rango al software correcto. En PCS valida Software ID, prefijo, resolucion, rango y ambiente.</td></tr>
+          <tr><td><span class="dian-error-code">FAD06</span></td><td>El CUFE calculado no coincide con lo que espera DIAN.</td><td>Consulta la clave tecnica con GetNumberingRange y revisa prefijo, consecutivo, fecha/hora, NIT, cliente, impuestos y totales.</td></tr>
+          <tr><td><span class="dian-error-code">FAD05</span></td><td>Numeracion, prefijo o resolucion no autorizada para el documento.</td><td>Confirma que la resolucion DIAN este vigente, asociada al software y que el consecutivo este dentro del rango autorizado.</td></tr>
+          <tr><td><span class="dian-error-code">FAD10</span></td><td>SoftwareSecurityCode invalido.</td><td>Revisa Software ID, PIN tecnico y numero completo de factura usado en el calculo del codigo de seguridad.</td></tr>
+          <tr><td><span class="dian-error-code">FAK61</span></td><td>Error en datos del cliente o estructura Party del XML.</td><td>Corrige tipo de persona, tipo y numero de documento, municipio, direccion, responsabilidades y regimen fiscal del cliente.</td></tr>
+          <tr><td><span class="dian-error-code">ZE02</span></td><td>Firma digital, digest o certificado invalido.</td><td>Verifica certificado P12/PFX, clave, vigencia, llave privada y que pertenezca al NIT emisor.</td></tr>
+          <tr><td><span class="dian-error-code">Regla 90</span></td><td>Documento procesado anteriormente.</td><td>Consulta el CUFE/TrackId. Si ya esta aceptado, no reenvies; PCS lo trata como respuesta idempotente.</td></tr>
+          <tr><td><span class="dian-error-code">RUT01</span></td><td>Validacion de RUT o servicio RUT no disponible.</td><td>Revisa NIT, DV y razon social. Si el servicio DIAN esta temporalmente no disponible, reintenta mas tarde.</td></tr>
+          <tr><td><span class="dian-error-code">Vencida</span></td><td>Firma digital o resolucion vencida.</td><td>Renueva la firma o solicita nueva autorizacion de numeracion, asociala en DIAN, cargala en PCS y vuelve a consultar clave tecnica.</td></tr>
+        </tbody>
+      </table>
     </div>
 
     <div class="card">

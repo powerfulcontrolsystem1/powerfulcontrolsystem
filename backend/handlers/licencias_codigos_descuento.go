@@ -36,6 +36,12 @@ type licenciaDiscountCodeAdminPayload struct {
 	Descripcion string  `json:"descripcion,omitempty"`
 }
 
+type licenciaDiscountCodeEmailPayload struct {
+	Codigo string `json:"codigo"`
+	Email  string `json:"email"`
+	Nombre string `json:"nombre,omitempty"`
+}
+
 // SuperLicenciasCodigosDescuentoHandler administra los codigos promocionales
 // globales que el checkout de licencias ya valida y limita a un uso por empresa.
 func SuperLicenciasCodigosDescuentoHandler(dbSuper *sql.DB) http.HandlerFunc {
@@ -63,6 +69,10 @@ func SuperLicenciasCodigosDescuentoHandler(dbSuper *sql.DB) http.HandlerFunc {
 				"updated_at": time.Now().Format(time.RFC3339),
 			})
 		case http.MethodPost:
+			if strings.EqualFold(strings.TrimSpace(r.URL.Query().Get("action")), "enviar_correo") {
+				handleLicenciaDiscountCodeEmail(w, r, dbSuper, admin.Email)
+				return
+			}
 			var payload licenciaDiscountCodeAdminPayload
 			if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
 				http.Error(w, "payload invalido", http.StatusBadRequest)
@@ -165,6 +175,49 @@ func SuperLicenciasCodigosDescuentoHandler(dbSuper *sql.DB) http.HandlerFunc {
 			http.Error(w, "metodo no permitido", http.StatusMethodNotAllowed)
 		}
 	}
+}
+
+func handleLicenciaDiscountCodeEmail(w http.ResponseWriter, r *http.Request, dbSuper *sql.DB, actorEmail string) {
+	var payload licenciaDiscountCodeEmailPayload
+	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+		http.Error(w, "payload invalido", http.StatusBadRequest)
+		return
+	}
+	code := normalizeLicenciaDiscountCode(payload.Codigo)
+	email := strings.ToLower(strings.TrimSpace(payload.Email))
+	if code == "" || email == "" {
+		http.Error(w, "codigo y email son obligatorios", http.StatusBadRequest)
+		return
+	}
+	items, _, err := readLicenciaDiscountCodeAdminItems(dbSuper)
+	if err != nil {
+		http.Error(w, "no se pudieron leer los codigos: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+	var item *licenciaDiscountCodeAdminItem
+	for i := range items {
+		if strings.EqualFold(items[i].Codigo, code) {
+			item = &items[i]
+			break
+		}
+	}
+	if item == nil {
+		http.Error(w, "codigo no encontrado", http.StatusNotFound)
+		return
+	}
+	subject := "Codigo de descuento " + item.Codigo
+	status := "Activo"
+	if !item.Activo {
+		status = "Inactivo"
+	}
+	body := fmt.Sprintf("Codigo de descuento: %s\nDescuento: %s\nEstado: %s\nUso: checkout de licencias de Powerful Control System.\nRegla: un uso por empresa.\n", item.Codigo, firstNonEmptyString(item.Descripcion, item.Spec), status)
+	html := fmt.Sprintf("<html><body><h2>Codigo de descuento</h2><p><strong>Codigo:</strong> %s</p><p><strong>Descuento:</strong> %s</p><p><strong>Estado:</strong> %s</p><p>Uso: checkout de licencias de Powerful Control System. Regla: un uso por empresa.</p></body></html>", htmlEscape(item.Codigo), htmlEscape(firstNonEmptyString(item.Descripcion, item.Spec)), htmlEscape(status))
+	metadata := fmt.Sprintf(`{"codigo":%q,"tipo":%q,"valor":%g}`, item.Codigo, item.Tipo, item.Valor)
+	if err := sendPCSSystemEmail(dbSuper, email, payload.Nombre, subject, body, html, "licencias_codigo_descuento", metadata, actorEmail); err != nil {
+		http.Error(w, "no se pudo enviar el correo: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "codigo": item.Codigo, "email": email})
 }
 
 func readLicenciaDiscountCodeAdminItems(dbSuper *sql.DB) ([]licenciaDiscountCodeAdminItem, string, error) {

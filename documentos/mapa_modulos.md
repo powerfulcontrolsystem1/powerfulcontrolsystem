@@ -13,6 +13,26 @@ manuales para que el usuario pueda digitar o corregir datos antes de guardar. El
 endpoint local `importar_numeracion_pdf` queda como respaldo tecnico/test. No se
 guardan secretos ni se sobrescribe la configuracion sin confirmacion del usuario.
 
+Actualizacion 2026-06-17: la prueba real PCS con resolucion DIAN nueva quedo
+aceptada. La factura de producto `menta` emitida como `1PCS2` fue aceptada por
+DIAN; un reintento posterior puede devolver `Regla: 90, Documento procesado
+anteriormente`, que PCS trata como aceptacion idempotente si el documento/CUFE ya
+fue procesado. El flujo correcto es: asociar la numeracion en
+`https://catalogo-vpfe.dian.gov.co/User/Login`, cargar resolucion/prefijo/rango
+en PCS, consultar clave tecnica con `GetNumberingRange`, emitir y revisar
+acuse/TrackId en `facturacion_electronica_pruebas_dian.html`.
+
+Actualizacion 2026-06-17: la consola DIAN muestra errores de rechazo en rojo con
+ayuda operativa para `FAB05c`, `FAD06`, `FAD05`, `FAD10`, `FAK61`, `ZE02`,
+`RUT01`, vencimientos y `Regla 90`. Si un envio queda `fallido`, el backend crea
+una alerta de buzon para el administrador/creador de la empresa con documento,
+estado, error y enlace al centro DIAN.
+
+Actualizacion 2026-06-17: el submenu `IA` del super administrador queda reducido
+a una sola pagina, `web/super/configuracion/ia_global.html`. Esa pagina consolida
+proveedor/credencial, reglas, contexto, chat global y voz mediante secciones
+internas; no debe volver a repetirse como cinco opciones de menu lateral.
+
 Actualizacion 2026-06-17: el parser del Formulario 1876 soporta prefijos
 alfanumericos que empiezan por numero, como `1PCS`, y vigencias que el extractor
 del PDF separa visualmente como `2 4`. La autorizacion PCS cargada en produccion
