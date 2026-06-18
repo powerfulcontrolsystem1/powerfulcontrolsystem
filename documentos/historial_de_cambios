@@ -35114,3 +35114,8 @@ Archivos modificados:
 PushStatus: OK
 Archivos modificados:
 - backend/handlers/facturacion_electronica.go
+
+2026-06-17: rs: actualizar repositorio y sincronizar VPS
+PushStatus: OK
+Archivos modificados:
+- backend/db/facturacion_electronica.go
