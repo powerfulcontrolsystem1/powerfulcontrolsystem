@@ -15141,3 +15141,26 @@ Archivos modificados:
 Archivos modificados:
 - CHANGELOG.md
 - backend/handlers/licencias_codigos_descuento.go
+
+2026-06-18 13:22:29 - Mensaje: rs: actualizar repositorio y sincronizar VPS; Commit: 8dc616d2; PushStatus: OK
+Archivos modificados:
+- CHANGELOG.md
+- backend/handlers/dian_signature_upload_test.go
+- backend/handlers/facturacion_electronica.go
+- backend/handlers/modulos_faltantes.go
+- documentos/CHANGELOG.md
+- documentos/README.md
+- documentos/comandos_codex.md
+- documentos/contexto_codex.md
+- documentos/decisiones_tecnicas.md
+- documentos/descripcion_de_archivos
+- documentos/descripcion_de_modulos
+- documentos/descripcion_del_proyecto
+- documentos/diagramas/estructura_del_codigo.md
+- documentos/flujos_operativos.md
+- documentos/gobernanza_tecnica/contratos/contrato_facturacion_electronica_y_documentos_transaccionales.md
+- documentos/gobernanza_tecnica/runbooks/runbook_dian_set_pruebas_y_diagnostico_oficial.md
+- documentos/historial_de_cambios
+- documentos/mapa_modulos.md
+- documentos/matriz_roles_permisos_pos_multiempresa.md
+- web/administrar_empresa/facturacion_electronica_tutorial_dian.html
