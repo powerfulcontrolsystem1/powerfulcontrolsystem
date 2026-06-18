@@ -1,3 +1,11 @@
+2026-06-17: Facturacion electronica PCS aceptada e idempotencia DIAN Regla 90.
+- Modulos afectados: `facturacion_electronica`, `dian_colombia`, `qa_operacion`.
+- Evidencia produccion PCS: la configuracion de `empresa_id=12` quedo en ambiente produccion con prefijo `1PCS`, resolucion `18764111318575`, rango `1-100000`, Software ID `b266de9c-425a-4aaf-b465-6d6957aa21dd` y llave tecnica cargada desde numeracion DIAN.
+- Evidencia DIAN/PCS: la factura real `1PCS2` quedo en cola de integracion como `aceptado`, con CUFE registrado; un reenvio posterior recibio `Regla: 90, Documento procesado anteriormente`, senal de idempotencia sobre documento ya procesado.
+- Backend: `resolveDIANAcuseFromResponse` interpreta `Regla: 90, Documento procesado anteriormente` como acuse aceptado/idempotente para no ensuciar reintentos de documentos ya conocidos por DIAN.
+- QA automatizada: se agrega prueba `TestResolveDIANAcuseTreatsAlreadyProcessedAsAccepted` y se mantiene cobertura de XML UBL/CUFE para persona natural PCS con prefijo `1PCS`.
+- Seguridad: no se documentan PIN, certificado, clave privada, llave tecnica completa ni credenciales; se conserva aislamiento por `empresa_id`.
+
 2026-06-17: Guia Codex para SSH, compilacion y pruebas VPS.
 - Modulos afectados: `documentacion_operativa`, `vps`, `qa_operacion`, `despliegue`.
 - `documentos/comandos_codex.md`: agrega flujo de conexion SSH usando `scripts/pcs_deployment.local.ps1`, comandos seguros para Docker/PostgreSQL, publicacion con `rs`, validacion remota y correccion del endpoint de login por correo a `/super/api/administradores/login`.

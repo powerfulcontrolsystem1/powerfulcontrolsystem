@@ -225,11 +225,15 @@
           return;
         }
         setMsg("Enviando codigo a " + email + "...", false);
-        await requestJSON("/super/api/licencias/codigos_descuento?action=enviar_correo", {
+        var result = await requestJSON("/super/api/licencias/codigos_descuento?action=enviar_correo", {
           method:"POST",
           headers:{"Content-Type":"application/json"},
           body:JSON.stringify({codigo:item.codigo,email:email})
         });
+        if (result && result.captured) {
+          setMsg("SMTP no disponible: codigo capturado para envio/revision a " + email + ".", true);
+          return;
+        }
         setMsg("Codigo enviado a " + email + ".", false);
       }
       document.getElementById("type").addEventListener("change", toggleValueField);

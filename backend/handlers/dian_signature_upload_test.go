@@ -911,6 +911,17 @@ func TestGenerateDIANUBLBaseUsesNaturalPersonCustomerAndFormattedCUFE(t *testing
 	}
 }
 
+func TestResolveDIANAcuseTreatsAlreadyProcessedAsAccepted(t *testing.T) {
+	status, message := resolveDIANAcuseFromResponse(http.StatusOK, map[string]interface{}{
+		"is_valid":      "false",
+		"status_code":   "99",
+		"error_message": "Regla: 90, Rechazo: Documento procesado anteriormente.",
+	})
+	if status != "aceptado" {
+		t.Fatalf("status = %q, want aceptado; message=%s", status, message)
+	}
+}
+
 func TestValidateDIANDocumentPreflightBlocksDemoMarkersForRealSend(t *testing.T) {
 	cfg := map[string]interface{}{
 		"nit":                    "900373913",

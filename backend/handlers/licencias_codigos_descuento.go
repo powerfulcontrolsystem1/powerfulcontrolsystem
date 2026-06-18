@@ -214,10 +214,24 @@ func handleLicenciaDiscountCodeEmail(w http.ResponseWriter, r *http.Request, dbS
 	html := fmt.Sprintf("<html><body><h2>Codigo de descuento</h2><p><strong>Codigo:</strong> %s</p><p><strong>Descuento:</strong> %s</p><p><strong>Estado:</strong> %s</p><p>Uso: checkout de licencias de Powerful Control System. Regla: un uso por empresa.</p></body></html>", htmlEscape(item.Codigo), htmlEscape(firstNonEmptyString(item.Descripcion, item.Spec)), htmlEscape(status))
 	metadata := fmt.Sprintf(`{"codigo":%q,"tipo":%q,"valor":%g}`, item.Codigo, item.Tipo, item.Valor)
 	if err := sendPCSSystemEmail(dbSuper, email, payload.Nombre, subject, body, html, "licencias_codigo_descuento", metadata, actorEmail); err != nil {
-		http.Error(w, "no se pudo enviar el correo: "+err.Error(), http.StatusInternalServerError)
+		if isEmpresaUsuarioMailActionableConfigError(err) {
+			captureErr := captureEmpresaUsuarioMailNotification(dbSuper, "licencias_codigo_descuento", 0, email, subject, body, "", metadata, actorEmail)
+			if captureErr == nil {
+				writeJSON(w, http.StatusAccepted, map[string]interface{}{
+					"ok":       true,
+					"codigo":   item.Codigo,
+					"email":    email,
+					"sent":     false,
+					"captured": true,
+					"warning":  "SMTP no disponible; correo capturado en notificaciones de prueba",
+				})
+				return
+			}
+		}
+		http.Error(w, "no se pudo enviar el correo", http.StatusInternalServerError)
 		return
 	}
-	writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "codigo": item.Codigo, "email": email})
+	writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "codigo": item.Codigo, "email": email, "sent": true})
 }
 
 func readLicenciaDiscountCodeAdminItems(dbSuper *sql.DB) ([]licenciaDiscountCodeAdminItem, string, error) {

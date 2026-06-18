@@ -8549,6 +8549,9 @@ func resolveDIANAcuseFromResponse(statusCode int, response map[string]interface{
 	)
 	statusCodeDIAN := strings.TrimSpace(genericStringValue(response["status_code"]))
 	isValidRaw := strings.ToLower(strings.TrimSpace(genericStringValue(response["is_valid"])))
+	if isDIANDocumentAlreadyProcessedMessage(message) {
+		return "aceptado", dianFirstNonBlank(message, "documento procesado anteriormente por DIAN")
+	}
 	if isValidRaw == "true" && (statusCodeDIAN == "" || statusCodeDIAN == "00") {
 		return "aceptado", dianFirstNonBlank(message, "documento aceptado por DIAN")
 	}
@@ -8592,6 +8595,16 @@ func resolveDIANAcuseFromResponse(statusCode int, response map[string]interface{
 		return "rechazado", "DIAN rechazo la solicitud"
 	}
 	return "pendiente", dianFirstNonBlank(message, "sin acuse concluyente")
+}
+
+func isDIANDocumentAlreadyProcessedMessage(message string) bool {
+	normalized := strings.ToLower(strings.TrimSpace(message))
+	normalized = strings.ReplaceAll(normalized, "á", "a")
+	normalized = strings.ReplaceAll(normalized, "é", "e")
+	normalized = strings.ReplaceAll(normalized, "í", "i")
+	normalized = strings.ReplaceAll(normalized, "ó", "o")
+	normalized = strings.ReplaceAll(normalized, "ú", "u")
+	return strings.Contains(normalized, "regla: 90") && strings.Contains(normalized, "documento procesado anteriormente")
 }
 
 func buildDIANSHA384Hex(parts ...string) string {

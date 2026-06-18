@@ -85,3 +85,16 @@ func sendPCSSystemEmail(dbSuper *sql.DB, toEmail, toName, subject, textBody, htm
 	auth := smtp.PlainAuth("", smtpEmail, smtpPass, hostForAuth)
 	return smtp.SendMail(addr, auth, smtpEmail, []string{toEmail}, []byte(msg))
 }
+
+func isEmpresaUsuarioMailConfigError(err error) bool {
+	if err == nil {
+		return false
+	}
+	if isEmpresaUsuarioMailSecretDecryptError(err) {
+		return true
+	}
+	msg := strings.ToLower(strings.TrimSpace(err.Error()))
+	return strings.Contains(msg, "gmail.smtp_") ||
+		strings.Contains(msg, "smtp gmail no configurado") ||
+		strings.Contains(msg, "no configurado")
+}
