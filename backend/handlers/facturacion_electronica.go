@@ -649,7 +649,7 @@ func EmpresaFacturacionElectronicaHandler(dbEmp, dbSuper *sql.DB) http.HandlerFu
 					return
 				}
 				resp := map[string]interface{}{
-					"ok":                 resultado.EstadoEnvio == "enviado" || strings.TrimSpace(resultado.ReferenciaExterna) != "",
+					"ok":                 resultado.EstadoEnvio == "enviado" || resultado.EstadoEnvio == "aceptado" || strings.TrimSpace(resultado.ReferenciaExterna) != "",
 					"accion":             action,
 					"empresa_id":         payload.EmpresaID,
 					"tipo_documento":     doc.TipoDocumento,
@@ -1461,7 +1461,7 @@ func EmpresaFacturacionElectronicaPaisesDisponiblesHandler() http.HandlerFunc {
 
 func normalizeFacturacionEstadoEnvio(raw string) string {
 	switch strings.ToLower(strings.TrimSpace(raw)) {
-	case "pendiente", "fallido", "enviado", "reconciliado", "contingencia", "no_aplica":
+	case "pendiente", "fallido", "enviado", "aceptado", "reconciliado", "contingencia", "no_aplica":
 		return strings.ToLower(strings.TrimSpace(raw))
 	default:
 		return "pendiente"
@@ -2323,7 +2323,16 @@ func processFacturacionIntegracionForDocumento(dbEmp *sql.DB, payload facturacio
 	resultado.MaxIntentos = retryPayload.MaxIntentos
 
 	if dispatch.Success {
-		retryPayload.EstadoEnvio = "enviado"
+		estadoExito := "enviado"
+		var dispatchMap map[string]interface{}
+		if strings.TrimSpace(dispatch.RespuestaJSON) != "" && json.Unmarshal([]byte(dispatch.RespuestaJSON), &dispatchMap) == nil {
+			estadoDIAN := strings.ToLower(strings.TrimSpace(genericStringValue(dispatchMap["estado_dian"])))
+			acuseDIAN := strings.ToLower(strings.TrimSpace(genericStringValue(dispatchMap["acuse_estado"])))
+			if estadoDIAN == "aceptado" || acuseDIAN == "aceptado" {
+				estadoExito = "aceptado"
+			}
+		}
+		retryPayload.EstadoEnvio = estadoExito
 		retryPayload.ProximoIntento = ""
 		retryPayload.UltimoError = ""
 		retryPayload.ContingenciaActiva = false
@@ -2332,7 +2341,7 @@ func processFacturacionIntegracionForDocumento(dbEmp *sql.DB, payload facturacio
 		if retryPayload.ReferenciaExterna == "" {
 			retryPayload.ReferenciaExterna = fmt.Sprintf("EXT-%d", time.Now().UnixNano())
 		}
-		resultado.EstadoEnvio = "enviado"
+		resultado.EstadoEnvio = estadoExito
 		resultado.ReferenciaExterna = retryPayload.ReferenciaExterna
 		resultado.Error = ""
 		resultado.ConexionEstado = "online"
