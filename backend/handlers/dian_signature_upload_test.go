@@ -266,6 +266,70 @@ func TestBuildDIANSOAPEnvelopeSendTestSetAsync(t *testing.T) {
 	}
 }
 
+func TestBuildDIANGetNumberingRangeEnvelopeWithWSSecurity(t *testing.T) {
+	keyPEM, certPEM := testDIANKeyAndCertPEM(t)
+	privateKey, err := parseDIANRSAPrivateKey(keyPEM)
+	if err != nil {
+		t.Fatalf("parse key: %v", err)
+	}
+	certificate, err := parseDIANCertificate(certPEM)
+	if err != nil {
+		t.Fatalf("parse cert: %v", err)
+	}
+	envelope, meta, err := buildDIANGetNumberingRangeEnvelopeWithWSSecurity(
+		"https://vpfe.dian.gov.co/WcfDianCustomerServices.svc",
+		"84456779",
+		"84456779",
+		"b266de9c-425a-4aaf-b465-6d6957aa21dd",
+		privateKey,
+		certificate,
+		time.Date(2026, 6, 17, 12, 0, 0, 0, time.UTC),
+	)
+	if err != nil {
+		t.Fatalf("build envelope: %v", err)
+	}
+	for _, expected := range []string{
+		"GetNumberingRange",
+		"<wcf:accountCode>84456779</wcf:accountCode>",
+		"<wcf:accountCodeT>84456779</wcf:accountCodeT>",
+		"<wcf:softwareCode>b266de9c-425a-4aaf-b465-6d6957aa21dd</wcf:softwareCode>",
+		"http://wcf.dian.colombia/IWcfDianCustomerServices/GetNumberingRange",
+	} {
+		if !strings.Contains(envelope, expected) {
+			t.Fatalf("expected %q in envelope: %s", expected, envelope)
+		}
+	}
+	if !parseTruthy(genericStringValue(meta["ws_security"])) {
+		t.Fatalf("expected ws-security meta, got %#v", meta)
+	}
+}
+
+func TestExtractDIANNumberingRangesMasksTechnicalKey(t *testing.T) {
+	raw := `<s:Envelope><s:Body><GetNumberingRangeResponse><GetNumberingRangeResult><NumberRangeResponse><ResolutionNumber>18764111318575</ResolutionNumber><Prefix>1PCS</Prefix><FromNumber>1</FromNumber><ToNumber>100000</ToNumber><TechnicalKey>abcdef1234567890abcdef1234567890</TechnicalKey></NumberRangeResponse></GetNumberingRangeResult></GetNumberingRangeResponse></s:Body></s:Envelope>`
+	ranges := extractDIANNumberingRanges(raw)
+	if len(ranges) != 1 {
+		t.Fatalf("expected one range, got %#v", ranges)
+	}
+	if ranges[0].Prefix != "1PCS" || ranges[0].ResolutionNumber != "18764111318575" {
+		t.Fatalf("unexpected range: %#v", ranges[0])
+	}
+	if ranges[0].TechnicalKey == "" || !ranges[0].TechnicalKeySet {
+		t.Fatalf("expected technical key internally")
+	}
+	if ranges[0].TechnicalKeyMask != "abcd...7890" {
+		t.Fatalf("expected masked key, got %q", ranges[0].TechnicalKeyMask)
+	}
+	selected, ok := chooseDIANNumberingRange(map[string]interface{}{
+		"prefijo":           "1PCS",
+		"resolucion_numero": "18764111318575",
+		"rango_desde":       1,
+		"rango_hasta":       100000,
+	}, ranges)
+	if !ok || selected.TechnicalKey == "" {
+		t.Fatalf("expected selected range with key, got ok=%v selected=%#v", ok, selected)
+	}
+}
+
 func TestBuildDIANSOAPEnvelopeWithWSSecuritySendTestSetAsync(t *testing.T) {
 	keyPEM, certPEM := testDIANKeyAndCertPEM(t)
 	privateKey, err := parseDIANRSAPrivateKey(keyPEM)

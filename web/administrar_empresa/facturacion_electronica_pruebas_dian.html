@@ -146,6 +146,7 @@
       <div class="form-actions">
         <button id="btnDianRecargarConfig" type="button" class="btn secondary">Recargar configuracion</button>
         <button id="btnDianValidarCredenciales" type="button" class="btn secondary">Validar credenciales</button>
+        <button id="btnDianConsultarRango" type="button" class="btn secondary">Consultar clave tecnica DIAN</button>
         <button id="btnDianDiagnostico" type="button" class="btn secondary">Diagnóstico DIAN</button>
       </div>
       <div id="feDianConfigMsg" class="form-help"></div>
@@ -1416,6 +1417,27 @@
       await ejecutarDianSet(payload, labels[tipo] || "documento de prueba");
     }
 
+    async function consultarDianRangoNumeracion() {
+      if (!state.empresaID) return;
+      setText("feDianPruebasMsg", "Consultando rango y clave tecnica en DIAN...", false);
+      setJSON("feDianPruebasResultado", null);
+      try {
+        const url = "/api/empresa/facturacion_electronica/dian?action=get_numbering_range&empresa_id=" + encodeURIComponent(state.empresaID);
+        const data = await dianFetchJSON(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ empresa_id: Number(state.empresaID) }),
+          credentials: "same-origin"
+        }, "GetNumberingRange DIAN");
+        setJSON("feDianPruebasResultado", data);
+        setText("feDianPruebasMsg", data && data.ok ? "Clave tecnica DIAN actualizada desde el rango oficial." : (data && data.mensaje ? data.mensaje : "DIAN no devolvio clave tecnica para el rango configurado."), !(data && data.ok));
+        await loadDianConfigStatus().catch(function() {});
+      } catch (err) {
+        setJSON("feDianPruebasResultado", err && err.data ? err.data : null);
+        setText("feDianPruebasMsg", err && err.message ? err.message : "No se pudo consultar GetNumberingRange DIAN.", true);
+      }
+    }
+
     async function activarProduccionDianLocal() {
       const checkbox = document.getElementById("feDianConfirmarHabilitado");
       const confirmado = !!(checkbox && checkbox.checked);
@@ -1527,6 +1549,7 @@
     document.getElementById("btnDianDiagnostico").addEventListener("click", ejecutarDianDiagnostico);
     document.getElementById("btnDianRecargarConfig").addEventListener("click", loadDianConfigStatus);
     document.getElementById("btnDianValidarCredenciales").addEventListener("click", validarDianCredenciales);
+    document.getElementById("btnDianConsultarRango").addEventListener("click", consultarDianRangoNumeracion);
     document.getElementById("btnDianGuardarObjetivo").addEventListener("click", guardarDianObjetivo);
     document.getElementById("btnDianPruebas").addEventListener("click", ejecutarDianPruebas);
     document.getElementById("btnDianEnviarFactura").addEventListener("click", function() { ejecutarDianDocumentoManual("factura"); });

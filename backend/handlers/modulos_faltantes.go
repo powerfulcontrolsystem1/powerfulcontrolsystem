@@ -7340,6 +7340,30 @@ func EmpresaDIANColombiaHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 			writeJSON(w, status, response)
 			return
 
+		case "consultar_rango_numeracion", "get_numbering_range", "consultar_clave_tecnica":
+			if r.Method != http.MethodPost && r.Method != http.MethodPut {
+				http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+				return
+			}
+			payload, err := decodeGenericBodyMapOptional(r)
+			if err != nil {
+				http.Error(w, "JSON invalido", http.StatusBadRequest)
+				return
+			}
+			empresaID, err := resolveEmpresaIDFromPayloadOrRequest(r, payload)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusBadRequest)
+				return
+			}
+			cfg, _ := getEmpresaDIANConfig(dbEmp, empresaID)
+			response, status, err := consultarDIANNumberingRange(dbEmp, cfg, empresaID, payload)
+			if err != nil {
+				http.Error(w, err.Error(), status)
+				return
+			}
+			writeJSON(w, status, response)
+			return
+
 		case "historial_tracks", "historial_trackid", "track_history":
 			empresaID, err := parseEmpresaIDQuery(r)
 			if err != nil {
@@ -10318,6 +10342,81 @@ func buildDIANGetStatusZipEnvelopeWithWSSecurity(endpoint, trackID string, priva
 	return envelope, meta, nil
 }
 
+func buildDIANGetNumberingRangeEnvelopeWithWSSecurity(endpoint, accountCode, accountCodeT, softwareCode string, privateKey *rsa.PrivateKey, cert *x509.Certificate, now time.Time) (string, map[string]interface{}, error) {
+	if privateKey == nil {
+		return "", nil, fmt.Errorf("llave privada DIAN requerida para WS-Security")
+	}
+	if cert == nil {
+		return "", nil, fmt.Errorf("certificado X.509 requerido para WS-Security")
+	}
+	if now.IsZero() {
+		now = time.Now().UTC()
+	} else {
+		now = now.UTC()
+	}
+	action := dianSOAPAction("GetNumberingRange")
+	toID := dianSOAPSafeID("ID")
+	timestampID := dianSOAPSafeID("PCSTS")
+	tokenID := dianSOAPSafeID("X509")
+	signatureID := dianSOAPSafeID("SIG")
+	keyInfoID := dianSOAPSafeID("KI")
+	strID := dianSOAPSafeID("STR")
+	messageID := "urn:uuid:" + strings.TrimPrefix(dianSOAPSafeID(""), "-")
+
+	created := now.Format("2006-01-02T15:04:05.000Z")
+	expires := now.Add(60 * time.Second).Format("2006-01-02T15:04:05.000Z")
+	actionHeader := fmt.Sprintf(`<wsa:Action xmlns:wsa="%s">%s</wsa:Action>`,
+		dianAddressingNamespace, escapeXML(action))
+	messageIDHeader := fmt.Sprintf(`<wsa:MessageID xmlns:wsa="%s">%s</wsa:MessageID>`,
+		dianAddressingNamespace, escapeXML(messageID))
+	replyToHeader := fmt.Sprintf(`<wsa:ReplyTo xmlns:wsa="%s"><wsa:Address>http://www.w3.org/2005/08/addressing/anonymous</wsa:Address></wsa:ReplyTo>`,
+		dianAddressingNamespace)
+	toHeader := fmt.Sprintf(`<wsa:To xmlns:wsu="%s" wsu:Id="%s">%s</wsa:To>`,
+		dianWSUSecurityNS, toID, escapeXML(endpoint))
+	body := fmt.Sprintf(`<soap:Body xmlns:soap="%s" xmlns:wcf="%s"><wcf:GetNumberingRange><wcf:accountCode>%s</wcf:accountCode><wcf:accountCodeT>%s</wcf:accountCodeT><wcf:softwareCode>%s</wcf:softwareCode></wcf:GetNumberingRange></soap:Body>`,
+		dianSOAPNamespace, dianWCFNamespace, escapeXML(accountCode), escapeXML(accountCodeT), escapeXML(softwareCode))
+	timestamp := fmt.Sprintf(`<wsu:Timestamp wsu:Id="%s" xmlns:wsu="%s"><wsu:Created>%s</wsu:Created><wsu:Expires>%s</wsu:Expires></wsu:Timestamp>`,
+		timestampID, dianWSUSecurityNS, created, expires)
+	binaryToken := fmt.Sprintf(`<wsse:BinarySecurityToken wsu:Id="%s" EncodingType="%s" ValueType="%s" xmlns:wsse="%s" xmlns:wsu="%s">%s</wsse:BinarySecurityToken>`,
+		tokenID, dianWSSBase64Encoding, dianWSSX509ValueType, dianWSSESecurityNS, dianWSUSecurityNS, base64.StdEncoding.EncodeToString(cert.Raw))
+
+	signedInfo := dianSOAPCanonicalSignedInfoForTo(toID, dianSOAPCanonicalToHeader(toID, endpoint))
+	signedInfoDigest := sha256.Sum256([]byte(signedInfo))
+	signatureValue, err := rsa.SignPKCS1v15(rand.Reader, privateKey, crypto.SHA256, signedInfoDigest[:])
+	if err != nil {
+		return "", nil, fmt.Errorf("no se pudo firmar WS-Security DIAN")
+	}
+	signature := fmt.Sprintf(`<ds:Signature Id="%s" xmlns:ds="%s">%s<ds:SignatureValue>%s</ds:SignatureValue><ds:KeyInfo Id="%s"><wsse:SecurityTokenReference wsu:Id="%s" xmlns:wsse="%s" xmlns:wsu="%s"><wsse:Reference URI="#%s" ValueType="%s"></wsse:Reference></wsse:SecurityTokenReference></ds:KeyInfo></ds:Signature>`,
+		signatureID,
+		dianDSigNamespace,
+		signedInfo,
+		base64.StdEncoding.EncodeToString(signatureValue),
+		keyInfoID,
+		strID,
+		dianWSSESecurityNS,
+		dianWSUSecurityNS,
+		tokenID,
+		dianWSSX509ValueType,
+	)
+	security := fmt.Sprintf(`<wsse:Security xmlns:wsse="%s" xmlns:wsu="%s">%s%s%s</wsse:Security>`,
+		dianWSSESecurityNS, dianWSUSecurityNS, timestamp, binaryToken, signature)
+	envelope := fmt.Sprintf(`<soap:Envelope xmlns:soap="%s" xmlns:wcf="%s"><soap:Header xmlns:wsa="%s">%s%s%s%s%s</soap:Header>%s</soap:Envelope>`,
+		dianSOAPNamespace, dianWCFNamespace, dianAddressingNamespace, security, actionHeader, messageIDHeader, replyToHeader, toHeader, body)
+	meta := map[string]interface{}{
+		"ws_security":         true,
+		"signed_parts":        []string{"To"},
+		"key_reference":       "BinarySecurityTokenReference",
+		"signature_algorithm": "RSA-SHA256",
+		"digest_algorithm":    "SHA-256",
+		"canonicalization":    "exclusive_c14n",
+		"timestamp_created":   created,
+		"timestamp_expires":   expires,
+		"security_layout":     "strict_timestamp_token_signature",
+		"message_id":          messageID,
+	}
+	return envelope, meta, nil
+}
+
 func shouldUseDIANSOAPTransport(endpoint string, cfg map[string]interface{}, payload map[string]interface{}) bool {
 	if isDIANOfficialEndpoint(endpoint) {
 		return true
@@ -10446,6 +10545,132 @@ func extractDIANSOAPResponseMap(raw string) map[string]interface{} {
 	}
 	out["raw_xml"] = raw
 	return out
+}
+
+type dianNumberingRange struct {
+	ResolutionNumber string `json:"resolucion_numero,omitempty"`
+	Prefix           string `json:"prefijo,omitempty"`
+	FromNumber       string `json:"rango_desde,omitempty"`
+	ToNumber         string `json:"rango_hasta,omitempty"`
+	ValidDateFrom    string `json:"fecha_desde,omitempty"`
+	ValidDateTo      string `json:"fecha_hasta,omitempty"`
+	TechnicalKey     string `json:"-"`
+	TechnicalKeySet  bool   `json:"llave_tecnica_detectada"`
+	TechnicalKeyMask string `json:"llave_tecnica_mascara,omitempty"`
+}
+
+func dianXMLUnescapeText(raw string) string {
+	replacements := map[string]string{
+		"&lt;":   "<",
+		"&gt;":   ">",
+		"&amp;":  "&",
+		"&quot;": `"`,
+		"&#34;":  `"`,
+		"&#39;":  "'",
+		"&apos;": "'",
+	}
+	for old, repl := range replacements {
+		raw = strings.ReplaceAll(raw, old, repl)
+	}
+	return raw
+}
+
+func dianMaskSecret(value string) string {
+	value = strings.TrimSpace(value)
+	if value == "" {
+		return ""
+	}
+	if len(value) <= 8 {
+		return "[oculto]"
+	}
+	return value[:4] + "..." + value[len(value)-4:]
+}
+
+func extractDIANNumberingRanges(raw string) []dianNumberingRange {
+	raw = dianXMLUnescapeText(strings.TrimSpace(raw))
+	if raw == "" {
+		return nil
+	}
+	blockRE := regexp.MustCompile(`(?is)<(?:[A-Za-z0-9_.-]+:)?(?:NumberRangeResponse|NumberRange|NumberingRange|GetNumberingRangeResult)[^>]*>(.*?)</(?:[A-Za-z0-9_.-]+:)?(?:NumberRangeResponse|NumberRange|NumberingRange|GetNumberingRangeResult)>`)
+	blocks := []string{}
+	for _, match := range blockRE.FindAllStringSubmatch(raw, -1) {
+		if len(match) > 1 {
+			blocks = append(blocks, match[1])
+		}
+	}
+	if len(blocks) == 0 {
+		blocks = []string{raw}
+	}
+	out := make([]dianNumberingRange, 0, len(blocks))
+	seen := map[string]bool{}
+	for _, block := range blocks {
+		row := dianNumberingRange{
+			ResolutionNumber: extractDIANSOAPTag(block, "ResolutionNumber", "Resolution", "NumberResolution"),
+			Prefix:           extractDIANSOAPTag(block, "Prefix", "PrefixCode"),
+			FromNumber:       extractDIANSOAPTag(block, "FromNumber", "From", "RangeFrom", "InitialNumber"),
+			ToNumber:         extractDIANSOAPTag(block, "ToNumber", "To", "RangeTo", "FinalNumber"),
+			ValidDateFrom:    extractDIANSOAPTag(block, "ValidDateFrom", "DateFrom", "StartDate", "FromDate"),
+			ValidDateTo:      extractDIANSOAPTag(block, "ValidDateTo", "DateTo", "EndDate", "ToDate"),
+			TechnicalKey:     extractDIANSOAPTag(block, "TechnicalKey", "TechnicalKeyValue", "ClaveTecnica", "TechnicalKeyDian"),
+		}
+		row.Prefix = strings.ToUpper(strings.TrimSpace(row.Prefix))
+		row.ResolutionNumber = dianOnlyDigits(row.ResolutionNumber)
+		row.FromNumber = dianOnlyDigits(row.FromNumber)
+		row.ToNumber = dianOnlyDigits(row.ToNumber)
+		row.TechnicalKey = strings.TrimSpace(row.TechnicalKey)
+		row.TechnicalKeySet = row.TechnicalKey != ""
+		row.TechnicalKeyMask = dianMaskSecret(row.TechnicalKey)
+		key := strings.Join([]string{row.ResolutionNumber, row.Prefix, row.FromNumber, row.ToNumber, row.TechnicalKeyMask}, "|")
+		if row.ResolutionNumber == "" && row.Prefix == "" && row.FromNumber == "" && row.ToNumber == "" && row.TechnicalKey == "" {
+			continue
+		}
+		if seen[key] {
+			continue
+		}
+		seen[key] = true
+		out = append(out, row)
+	}
+	return out
+}
+
+func chooseDIANNumberingRange(cfg map[string]interface{}, ranges []dianNumberingRange) (dianNumberingRange, bool) {
+	if len(ranges) == 0 {
+		return dianNumberingRange{}, false
+	}
+	cfgPrefix := strings.ToUpper(strings.TrimSpace(genericStringValue(cfg["prefijo"])))
+	cfgResolution := dianOnlyDigits(genericStringValue(cfg["resolucion_numero"]))
+	cfgFrom := anyToInt64(cfg["rango_desde"])
+	cfgTo := anyToInt64(cfg["rango_hasta"])
+	scoreRange := func(row dianNumberingRange) int {
+		score := 0
+		if cfgPrefix != "" && strings.EqualFold(row.Prefix, cfgPrefix) {
+			score += 4
+		}
+		if cfgResolution != "" && row.ResolutionNumber == cfgResolution {
+			score += 4
+		}
+		rowFrom := anyToInt64(row.FromNumber)
+		rowTo := anyToInt64(row.ToNumber)
+		if cfgFrom > 0 && rowFrom == cfgFrom {
+			score += 2
+		}
+		if cfgTo > 0 && rowTo == cfgTo {
+			score += 2
+		}
+		if row.TechnicalKey != "" {
+			score++
+		}
+		return score
+	}
+	best := ranges[0]
+	bestScore := scoreRange(best)
+	for _, row := range ranges[1:] {
+		if score := scoreRange(row); score > bestScore {
+			best = row
+			bestScore = score
+		}
+	}
+	return best, true
 }
 
 func dianSafeTrackHistoryJSON(raw map[string]interface{}) string {
@@ -10954,6 +11179,138 @@ func consultarDIANStatusZipSOAP(dbEmp *sql.DB, cfg map[string]interface{}, empre
 		"latency_ms":     time.Since(startedAt).Milliseconds(),
 		"respuesta_dian": responseMap,
 		"raw_response":   rawResponse,
+	}, http.StatusOK, nil
+}
+
+func consultarDIANNumberingRange(dbEmp *sql.DB, cfg map[string]interface{}, empresaID int64, payload map[string]interface{}) (map[string]interface{}, int, error) {
+	if empresaID <= 0 {
+		return nil, http.StatusBadRequest, fmt.Errorf("empresa_id es obligatorio")
+	}
+	if len(cfg) == 0 {
+		return nil, http.StatusBadRequest, fmt.Errorf("configuracion DIAN no existe para la empresa")
+	}
+	accountCode := dianOnlyDigits(dianFirstNonBlank(
+		genericStringValue(payload["account_code"]),
+		genericStringValue(payload["nit"]),
+		genericStringValue(cfg["nit"]),
+	))
+	accountCodeT := dianOnlyDigits(dianFirstNonBlank(
+		genericStringValue(payload["account_code_t"]),
+		genericStringValue(payload["nit_tecnico"]),
+		accountCode,
+	))
+	if accountCode == "" || accountCodeT == "" {
+		return nil, http.StatusBadRequest, fmt.Errorf("NIT DIAN requerido para consultar rango de numeracion")
+	}
+	softwareID, _, _, softwareErr := resolveDIANSoftwareCredentials(cfg, payload)
+	if softwareErr != nil {
+		softwareID = dianFirstNonBlank(genericStringValue(payload["software_code"]), genericStringValue(payload["software_id"]), genericStringValue(cfg["software_id"]))
+	}
+	softwareID = strings.TrimSpace(softwareID)
+	if softwareID == "" {
+		return nil, http.StatusBadRequest, fmt.Errorf("software_id DIAN requerido para GetNumberingRange")
+	}
+	endpoint := normalizeDIANSOAPEndpoint(dianConfiguredEndpoint(cfg, payload))
+	if endpoint == "" {
+		return nil, http.StatusBadRequest, fmt.Errorf("url_dian requerida para GetNumberingRange")
+	}
+	privateKey, keyErr := parseDIANRSAPrivateKey(genericStringValue(cfg["certificado_clave_ref"]))
+	certificate, certErr := parseDIANCertificate(genericStringValue(cfg["certificado_url"]))
+	if keyErr != nil || certErr != nil {
+		return map[string]interface{}{
+			"ok":             false,
+			"empresa_id":     empresaID,
+			"endpoint":       endpoint,
+			"operacion_soap": "GetNumberingRange",
+			"error":          "no se pudo preparar WS-Security DIAN para consultar numeracion",
+		}, http.StatusOK, nil
+	}
+	envelope, meta, err := buildDIANGetNumberingRangeEnvelopeWithWSSecurity(endpoint, accountCode, accountCodeT, softwareID, privateKey, certificate, time.Now())
+	if err != nil {
+		return nil, http.StatusInternalServerError, err
+	}
+	action := dianSOAPAction("GetNumberingRange")
+	req, err := http.NewRequest(http.MethodPost, endpoint, strings.NewReader(envelope))
+	if err != nil {
+		return nil, http.StatusInternalServerError, fmt.Errorf("no se pudo construir GetNumberingRange DIAN")
+	}
+	req.Header.Set("Content-Type", `application/soap+xml; charset=utf-8; action="`+action+`"`)
+	req.Header.Set("SOAPAction", action)
+	req.Header.Set("Accept", "application/soap+xml, text/xml")
+	req.Header.Set("User-Agent", "powerfulcontrolsystem-dian-soap/1.0")
+
+	startedAt := time.Now()
+	resp, err := (&http.Client{Timeout: 30 * time.Second}).Do(req)
+	if err != nil {
+		return map[string]interface{}{
+			"ok":             false,
+			"empresa_id":     empresaID,
+			"endpoint":       endpoint,
+			"operacion_soap": "GetNumberingRange",
+			"error":          dianTruncate(err.Error(), 240),
+			"latency_ms":     time.Since(startedAt).Milliseconds(),
+		}, http.StatusOK, nil
+	}
+	defer resp.Body.Close()
+
+	responseBytes, _ := io.ReadAll(io.LimitReader(resp.Body, 2<<20))
+	rawResponse := strings.TrimSpace(string(responseBytes))
+	responseMap := extractDIANSOAPResponseMap(rawResponse)
+	ranges := extractDIANNumberingRanges(rawResponse)
+	selected, hasSelected := chooseDIANNumberingRange(cfg, ranges)
+	llaveActualizada := false
+	estado := "observado"
+	mensaje := dianFirstNonBlank(
+		genericStringValue(responseMap["status_description"]),
+		genericStringValue(responseMap["status_message"]),
+		genericStringValue(responseMap["error_message"]),
+		fmt.Sprintf("HTTP %d", resp.StatusCode),
+	)
+	if resp.StatusCode >= 200 && resp.StatusCode < 300 && hasSelected && selected.TechnicalKey != "" {
+		if err := updateDIANConfigFields(dbEmp, empresaID, cfg, map[string]interface{}{
+			"llave_tecnica": selected.TechnicalKey,
+			"observaciones": appendStateMachineObservation(
+				genericStringValue(cfg["observaciones"]),
+				genericStringValue(cfg["estado_dian"]),
+				genericStringValue(cfg["estado_dian"]),
+				"Clave tecnica actualizada desde GetNumberingRange DIAN para el rango configurado",
+				"dian_get_numbering_range",
+			),
+		}); err != nil {
+			return nil, http.StatusInternalServerError, fmt.Errorf("DIAN devolvio la numeracion, pero no se pudo guardar la clave tecnica")
+		}
+		llaveActualizada = true
+		estado = "ok"
+		mensaje = "Numeracion DIAN consultada y clave tecnica actualizada"
+	}
+	if resp.StatusCode >= 200 && resp.StatusCode < 300 && len(ranges) > 0 && !llaveActualizada {
+		mensaje = dianFirstNonBlank(mensaje, "DIAN devolvio rangos, pero no se encontro clave tecnica para el rango configurado")
+	}
+	if len(ranges) == 0 && genericStringValue(responseMap["error_message"]) == "" {
+		mensaje = dianFirstNonBlank(mensaje, "DIAN no devolvio rangos de numeracion para este software/NIT")
+	}
+	safeResponse := map[string]interface{}{
+		"status_code":        genericStringValue(responseMap["status_code"]),
+		"status_message":     genericStringValue(responseMap["status_message"]),
+		"status_description": genericStringValue(responseMap["status_description"]),
+		"error_message":      genericStringValue(responseMap["error_message"]),
+	}
+	return map[string]interface{}{
+		"ok":                        llaveActualizada,
+		"empresa_id":                empresaID,
+		"endpoint":                  endpoint,
+		"operacion_soap":            "GetNumberingRange",
+		"http_status":               resp.StatusCode,
+		"estado":                    estado,
+		"mensaje":                   mensaje,
+		"prefijo_configurado":       genericStringValue(cfg["prefijo"]),
+		"resolucion_configurada":    genericStringValue(cfg["resolucion_numero"]),
+		"rangos_detectados":         ranges,
+		"rango_seleccionado":        selected,
+		"llave_tecnica_actualizada": llaveActualizada,
+		"seguridad_soap":            meta,
+		"respuesta_dian":            safeResponse,
+		"latency_ms":                time.Since(startedAt).Milliseconds(),
 	}, http.StatusOK, nil
 }
 
