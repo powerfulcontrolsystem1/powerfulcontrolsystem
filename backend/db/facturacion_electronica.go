@@ -1465,6 +1465,8 @@ func normalizeFacturacionRetryEstado(raw string) string {
 		return "fallido"
 	case "enviado":
 		return "enviado"
+	case "aceptado":
+		return "aceptado"
 	case "reconciliado":
 		return "reconciliado"
 	case "contingencia":
@@ -1786,7 +1788,7 @@ func ListFacturacionElectronicaRetriesByEmpresa(dbConn *sql.DB, empresaID int64,
 		offset = 0
 	}
 
-	query += " ORDER BY CASE estado_envio WHEN 'pendiente' THEN 0 WHEN 'fallido' THEN 1 WHEN 'contingencia' THEN 2 WHEN 'enviado' THEN 3 ELSE 4 END, COALESCE(proximo_intento, ''), id DESC LIMIT ? OFFSET ?"
+	query += " ORDER BY CASE estado_envio WHEN 'pendiente' THEN 0 WHEN 'fallido' THEN 1 WHEN 'contingencia' THEN 2 WHEN 'enviado' THEN 3 WHEN 'aceptado' THEN 4 ELSE 5 END, COALESCE(proximo_intento, ''), id DESC LIMIT ? OFFSET ?"
 	args = append(args, limit, offset)
 
 	rows, err := dbConn.Query(query, args...)
