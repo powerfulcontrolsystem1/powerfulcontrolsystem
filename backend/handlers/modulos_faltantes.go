@@ -8754,6 +8754,23 @@ func dianPersonNameXML(customerName string) string {
 	return fmt.Sprintf(`<cac:Person><cbc:FirstName>%s</cbc:FirstName><cbc:FamilyName>%s</cbc:FamilyName></cac:Person>`, escapeXML(firstName), escapeXML(familyName))
 }
 
+func dianCustomerPartyIdentificationXML(customerNITDigits, schemeName string) string {
+	customerNITDigits = dianOnlyDigits(customerNITDigits)
+	if strings.TrimSpace(customerNITDigits) == "" {
+		customerNITDigits = "2222222222"
+	}
+	schemeName = dianFirstNonBlank(schemeName, "13")
+	schemeID := ""
+	if schemeName == "31" {
+		schemeID = dianCompanyIDSchemeID(customerNITDigits, "")
+	}
+	attrs := fmt.Sprintf(`schemeAgencyID="195" schemeAgencyName="%s" schemeName="%s"`, escapeXML(dianAgencyName), escapeXML(schemeName))
+	if schemeID != "" {
+		attrs += fmt.Sprintf(` schemeID="%s"`, escapeXML(schemeID))
+	}
+	return fmt.Sprintf(`<cac:PartyIdentification><cbc:ID %s>%s</cbc:ID></cac:PartyIdentification>`, attrs, escapeXML(customerNITDigits))
+}
+
 func dianCustomerPartyXML(customerName, customerNIT string, rawTipoDocumento ...string) string {
 	customerName = escapeXML(dianFirstNonBlank(customerName, "CONSUMIDOR FINAL"))
 	customerNITDigits := dianOnlyDigits(dianFirstNonBlank(customerNIT, "2222222222"))
@@ -8776,15 +8793,19 @@ func dianCustomerPartyXML(customerName, customerNIT string, rawTipoDocumento ...
 			`<cac:AccountingCustomerParty>`+
 				`<cbc:AdditionalAccountID>2</cbc:AdditionalAccountID>`+
 				`<cac:Party>`+
+				`%s`+
 				`<cac:PartyName><cbc:Name>%s</cbc:Name></cac:PartyName>`+
 				`<cac:PartyTaxScheme><cbc:RegistrationName>%s</cbc:RegistrationName><cbc:CompanyID schemeAgencyID="195" schemeAgencyName="%s" schemeName="13">%s</cbc:CompanyID><cbc:TaxLevelCode listName="49">R-99-PN</cbc:TaxLevelCode><cac:TaxScheme><cbc:ID>ZZ</cbc:ID><cbc:Name>No aplica</cbc:Name></cac:TaxScheme></cac:PartyTaxScheme>`+
+				`<cac:Contact><cbc:Name>%s</cbc:Name><cbc:ElectronicMail>cliente@example.com</cbc:ElectronicMail></cac:Contact>`+
 				`%s`+
 				`</cac:Party>`+
 				`</cac:AccountingCustomerParty>`,
+			dianCustomerPartyIdentificationXML(customerNITDigits, "13"),
 			customerName,
 			customerName,
 			escapeXML(dianAgencyName),
 			escapeXML(customerNITDigits),
+			customerName,
 			dianPersonNameXML(customerName),
 		)
 	}
@@ -8804,20 +8825,22 @@ func dianCustomerPartyXML(customerName, customerNIT string, rawTipoDocumento ...
 		`<cac:AccountingCustomerParty>`+
 			`<cbc:AdditionalAccountID>%s</cbc:AdditionalAccountID>`+
 			`<cac:Party>`+
+			`%s`+
 			`<cac:PartyName><cbc:Name>%s</cbc:Name></cac:PartyName>`+
 			`<cac:PhysicalLocation><cac:Address><cbc:ID>11001</cbc:ID><cbc:CityName>Bogota, D.C.</cbc:CityName><cbc:CountrySubentity>Bogota</cbc:CountrySubentity><cbc:CountrySubentityCode>11</cbc:CountrySubentityCode><cac:AddressLine><cbc:Line>Direccion del adquiriente</cbc:Line></cac:AddressLine><cac:Country><cbc:IdentificationCode>CO</cbc:IdentificationCode><cbc:Name languageID="es">Colombia</cbc:Name></cac:Country></cac:Address></cac:PhysicalLocation>`+
 			`<cac:PartyTaxScheme><cbc:RegistrationName>%s</cbc:RegistrationName><cbc:CompanyID %s>%s</cbc:CompanyID><cbc:TaxLevelCode listName="%s">R-99-PN</cbc:TaxLevelCode><cac:RegistrationAddress><cbc:ID>11001</cbc:ID><cbc:CityName>Bogota, D.C.</cbc:CityName><cbc:CountrySubentity>Bogota</cbc:CountrySubentity><cbc:CountrySubentityCode>11</cbc:CountrySubentityCode><cac:AddressLine><cbc:Line>Direccion del adquiriente</cbc:Line></cac:AddressLine><cac:Country><cbc:IdentificationCode>CO</cbc:IdentificationCode><cbc:Name languageID="es">Colombia</cbc:Name></cac:Country></cac:RegistrationAddress><cac:TaxScheme><cbc:ID>01</cbc:ID><cbc:Name>IVA</cbc:Name></cac:TaxScheme></cac:PartyTaxScheme>`+
 			`<cac:PartyLegalEntity><cbc:RegistrationName>%s</cbc:RegistrationName><cbc:CompanyID %s>%s</cbc:CompanyID></cac:PartyLegalEntity>`+
-			`%s`+
 			`<cac:Contact><cbc:Name>%s</cbc:Name><cbc:ElectronicMail>cliente@example.com</cbc:ElectronicMail></cac:Contact>`+
+			`%s`+
 			`</cac:Party>`+
 			`</cac:AccountingCustomerParty>`,
 		additionalAccountID,
+		dianCustomerPartyIdentificationXML(customerNITDigits, schemeName),
 		customerName,
 		customerName, companyIDAttrs, escapeXML(customerNITDigits), escapeXML(taxLevelListName),
 		customerName, companyIDAttrs, escapeXML(customerNITDigits),
-		personBlock,
 		customerName,
+		personBlock,
 	)
 }
 

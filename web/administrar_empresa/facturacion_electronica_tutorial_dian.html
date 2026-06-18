@@ -38,7 +38,18 @@
     .dian-guide-table th,.dian-guide-table td{border-bottom:1px solid var(--border);padding:9px 7px;text-align:left;vertical-align:top;font-size:.9rem}
     .dian-guide-table th{color:var(--muted);font-size:.76rem;text-transform:uppercase;letter-spacing:.04em}
     .dian-guide-note{margin-top:12px;color:var(--muted);font-size:.9rem;line-height:1.5}
+    .dian-guide-resolve-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:12px}
+    .dian-guide-resolve-card{position:relative;overflow:hidden;border:1px solid var(--border);border-radius:10px;background:linear-gradient(135deg,color-mix(in srgb,var(--surface) 92%,var(--accent) 8%),var(--surface-soft));padding:14px;animation:dianGuideEnter .32s ease both}
+    .dian-guide-resolve-card:before{content:"";position:absolute;inset:auto -24px -34px auto;width:96px;height:96px;border-radius:999px;background:color-mix(in srgb,var(--accent) 14%,transparent);animation:dianGuidePulse 2.8s ease-in-out infinite}
+    .dian-guide-resolve-card h3{margin:0 0 8px;color:var(--text);font-size:1rem}
+    .dian-guide-resolve-card p{margin:0 0 8px;color:var(--muted);line-height:1.45}
+    .dian-guide-resolve-card ol{margin:8px 0 0;padding-left:20px;color:var(--text)}
+    .dian-guide-resolve-card li{margin:5px 0;line-height:1.4}
+    .dian-guide-pill{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--border);border-radius:999px;padding:4px 8px;background:var(--surface);font-weight:800;color:var(--text);font-size:.82rem}
+    @keyframes dianGuideEnter{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+    @keyframes dianGuidePulse{0%,100%{transform:scale(.9);opacity:.45}50%{transform:scale(1.08);opacity:.85}}
     @media (max-width:900px){.dian-guide-grid{grid-template-columns:1fr}.dian-guide-checklist,.dian-guide-resources,.dian-guide-flow{grid-template-columns:repeat(2,minmax(0,1fr))}}
+    @media (max-width:900px){.dian-guide-resolve-grid{grid-template-columns:1fr}}
     @media (max-width:560px){.dian-guide-actions{width:100%}.dian-guide-actions .btn{width:100%;justify-content:center}.dian-guide-checklist,.dian-guide-resources,.dian-guide-flow{grid-template-columns:1fr}.dian-guide-table{display:block;overflow-x:auto;white-space:nowrap}}
   </style>
 </head>
@@ -224,6 +235,48 @@
 
     <div class="card">
       <h2>Errores frecuentes</h2>
+      <div class="dian-guide-resolve-grid">
+        <article class="dian-guide-resolve-card">
+          <h3><span class="dian-guide-pill">FAB05c</span> Software no coincide con el rango</h3>
+          <p>DIAN suele devolverlo cuando el prefijo/rango no esta asociado al Software ID que envia la factura.</p>
+          <ol>
+            <li>Entrar al portal de produccion DIAN.</li>
+            <li>Asociar el prefijo autorizado al software Powerful Control System.</li>
+            <li>Verificar en PCS prefijo, resolucion, rango desde/hasta y ambiente produccion.</li>
+            <li>Reenviar la factura desde Ventas con el boton Reenviar DIAN.</li>
+          </ol>
+        </article>
+        <article class="dian-guide-resolve-card">
+          <h3><span class="dian-guide-pill">FAD06</span> CUFE calculado incorrectamente</h3>
+          <p>Se presenta si DIAN calcula un CUFE diferente al XML recibido.</p>
+          <ol>
+            <li>Confirmar llave tecnica, numero legal sin espacios, fecha/hora, NIT emisor y documento del adquiriente.</li>
+            <li>Revisar que subtotales, IVA y total tengan dos decimales.</li>
+            <li>Si se cargo una nueva resolucion, volver a guardar la configuracion y reenviar.</li>
+          </ol>
+        </article>
+        <article class="dian-guide-resolve-card">
+          <h3><span class="dian-guide-pill">FAK61</span> Persona natural sin grupo informado</h3>
+          <p>Cuando el cliente es persona natural, el XML debe informar correctamente el bloque de persona y su documento.</p>
+          <ol>
+            <li>En clientes, verificar tipo CC, numero de documento, nombre completo y direccion.</li>
+            <li>Evitar marcarlo como NIT si no es empresa.</li>
+            <li>Generar o reenviar la factura para que PCS emita el bloque de persona natural.</li>
+          </ol>
+        </article>
+        <article class="dian-guide-resolve-card">
+          <h3><span class="dian-guide-pill">RUT01</span> Notificacion de datos RUT</h3>
+          <p>Normalmente es advertencia; no siempre bloquea la aceptacion, pero conviene corregir datos maestros.</p>
+          <ol>
+            <li>Comparar razon social, NIT/DV y responsabilidades con el RUT.</li>
+            <li>Actualizar empresa y cliente si DIAN reporta diferencias.</li>
+            <li>Guardar trazabilidad del ajuste antes del siguiente envio.</li>
+          </ol>
+        </article>
+      </div>
+      <p class="dian-guide-note">
+        Esta guia PCS resume causas comunes reportadas por DIAN y por mesas de ayuda de proveedores. No copia contenido privado de terceros: adapta el flujo para operar dentro del sistema y deja los enlaces oficiales abajo para validar cada paso.
+      </p>
       <table class="dian-guide-table">
         <thead>
           <tr><th>Mensaje</th><th>Que revisar</th><th>Accion recomendada</th></tr>

@@ -664,10 +664,13 @@
           var accionesFactura = "";
           if (tipo === "comprobante_pago") {
             if (facturaRelacionada) {
-              accionesFactura = '<button type="button" class="btn secondary" data-action="ver_fe" data-target-key="'+esc(makeKey(facturaRelacionada))+'">Abrir factura FE</button> ';
+              accionesFactura = '<button type="button" class="btn secondary" data-action="ver_fe" data-target-key="'+esc(makeKey(facturaRelacionada))+'">Abrir factura FE</button> ' +
+                '<button type="button" class="btn secondary" data-action="reenviar_dian" data-target-key="'+esc(makeKey(facturaRelacionada))+'">Reenviar DIAN</button> ';
             } else {
               accionesFactura = '<button type="button" class="btn secondary" data-action="facturar" data-key="'+esc(key)+'">Hacer factura electrónica</button> ';
             }
+          } else if (tipo === "factura_electronica") {
+            accionesFactura = '<button type="button" class="btn secondary" data-action="reenviar_dian" data-key="'+esc(key)+'">Reenviar DIAN</button> ';
           }
           var accionesAnulacion = tipo !== "comprobante_pago" || norm(it.estado_documento).toLowerCase() === "anulada"
             ? ''
@@ -908,6 +911,43 @@
         });
       }
 
+      function dianEstadoLabel(out){
+        var integ = out && out.integracion_fiscal ? out.integracion_fiscal : {};
+        var acuse = norm(integ.acuse_estado || integ.estado_dian || integ.estado_envio);
+        var ref = norm(integ.referencia_externa || integ.cufe || integ.track_id || out && out.codigo_validacion);
+        var err = norm(integ.error || integ.ultimo_error || integ.mensaje);
+        if(acuse){
+          return "DIAN: " + acuse + (ref ? " (" + ref + ")" : "");
+        }
+        if(err) return "DIAN respondio: " + err;
+        return "Reenvio DIAN procesado.";
+      }
+
+      function reenviarDIAN(item){
+        if(!item || !norm(item.documento_codigo)){
+          msg("No hay factura electronica seleccionada para reenviar a DIAN.", "error");
+          return Promise.resolve();
+        }
+        msg("Reenviando factura a DIAN...", "");
+        return api("/api/empresa/facturacion_electronica?action=reenviar_dian&empresa_id=" + encodeURIComponent(String(empresaID)), {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            empresa_id: empresaID,
+            tipo_documento: "factura_electronica",
+            documento_codigo: item.documento_codigo,
+            cliente_id: Number(item.entidad_relacionada_id || 0),
+            cliente_nombre: norm(item.cliente_nombre),
+            cliente_email: norm(item.cliente_email)
+          })
+        }).then(function(out){
+          msg(dianEstadoLabel(out), out && out.ok ? "ok" : "error");
+          return run();
+        }).catch(function(err){
+          msg(err.message || "No se pudo reenviar a DIAN.", "error");
+        });
+      }
+
       function anularVentaDesdeDocumento(item){
         var codigoDoc = norm(item && item.documento_codigo);
         var base = ventaBaseCode(codigoDoc);
@@ -1024,6 +1064,10 @@
           }
           return;
         }
+        if(action === "reenviar_dian" && targetKey && state.index[targetKey]){
+          item = state.index[targetKey];
+          key = targetKey;
+        }
         if(!item) return;
         state.selectedKey = key;
         if(action==="visualizar"){ renderDetail(item); visualizar(item); return; }
@@ -1035,6 +1079,10 @@
           anularVentaDesdeDocumento(item).catch(function(err){
             msg(err.message || "No se pudo anular la venta.", "error");
           });
+          return;
+        }
+        if(action==="reenviar_dian"){
+          reenviarDIAN(item);
           return;
         }
         if(action==="enviar"){ reenviarCorreo(item); return; }

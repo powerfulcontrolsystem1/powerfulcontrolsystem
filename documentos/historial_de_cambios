@@ -33363,6 +33363,12 @@ Archivos modificados:
 - web/administrar_empresa/facturacion_electronica_pruebas_dian.html
 - web/administrar_empresa/facturacion_electronica_tutorial_dian.html
 
+2026-06-17: facturacion electronica DIAN PCS - reenvio visual y ayuda de errores
+- Backend: `backend/handlers/modulos_faltantes.go` refuerza el XML del adquiriente DIAN agregando `cac:PartyIdentification` y ubicando el bloque `cac:Person` despues de contacto para clientes persona natural, evitando rechazos por grupo no informado cuando `AdditionalAccountID=2`.
+- Frontend: `web/administrar_empresa/ventas.html` agrega boton `Reenviar DIAN` para facturas electronicas y ventas con factura asociada, usando la sesion visual del administrador y el endpoint existente `action=reenviar_dian`.
+- Tutorial: `web/administrar_empresa/facturacion_electronica_tutorial_dian.html` agrega tarjetas operativas originales para FAB05c, FAD06, FAK61 y RUT01, con pasos de correccion en PCS y enlaces oficiales DIAN ya enlazados en la guia.
+- Seguridad: se mantiene aislamiento por `empresa_id`, no se imprimen secretos y no se cambian credenciales, certificados ni DSN.
+
 2026-06-08: Facturacion electronica: selector unico de pais fiscal
 PushStatus: Pendiente
 Archivos modificados:
