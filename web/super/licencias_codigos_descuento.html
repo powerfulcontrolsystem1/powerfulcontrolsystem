@@ -29,10 +29,11 @@
     .discount-badge.ok{background:rgba(16,185,129,.12);border-color:rgba(16,185,129,.35);color:#047857}
     .discount-badge.off{background:rgba(239,68,68,.11);border-color:rgba(239,68,68,.35);color:#b91c1c}
     .discount-actions{display:flex;gap:6px;flex-wrap:wrap}
+    .discount-email-bar{display:grid;grid-template-columns:minmax(220px,1fr);gap:8px;align-items:end;margin-top:8px}
     .discount-empty{padding:18px;text-align:center;color:var(--muted)}
     .discount-raw{white-space:pre-wrap;font-family:Consolas,monospace;font-size:.78rem;line-height:1.35;border:1px solid var(--border);border-radius:12px;background:var(--surface-soft);padding:10px;color:var(--muted)}
     .discount-shell [hidden]{display:none!important}
-    @media(max-width:860px){body{padding:10px}.discount-grid,.discount-row,.discount-rules{grid-template-columns:1fr}.discount-hero{display:grid}}
+    @media(max-width:860px){body{padding:10px}.discount-grid,.discount-row,.discount-rules,.discount-email-bar{grid-template-columns:1fr}.discount-hero{display:grid}}
   </style>
 </head>
 <body>
@@ -93,6 +94,12 @@
           <div>
             <h2>Codigos registrados</h2>
             <p class="form-help">Los codigos inactivos quedan comentados y no aplican en el checkout.</p>
+            <div class="discount-email-bar">
+              <div>
+                <label class="form-label" for="emailDestinoCodigo">Correo destino para enviar codigo</label>
+                <input id="emailDestinoCodigo" class="form-input" type="email" placeholder="correo@empresa.com">
+              </div>
+            </div>
           </div>
         </div>
         <div id="codesBox" class="discount-table-wrap">
@@ -209,11 +216,12 @@
       async function emailCode(code){
         var item = state.items.find(function(x){return x.codigo === code;});
         if (!item) return;
-        var email = window.prompt("Correo destino para enviar el codigo:", "");
-        if (email === null) return;
+        var emailField = document.getElementById("emailDestinoCodigo");
+        var email = emailField ? emailField.value : "";
         email = String(email || "").trim().toLowerCase();
         if (!email) {
-          setMsg("El correo destino es obligatorio.", true);
+          setMsg("Escribe el correo destino antes de enviar el codigo.", true);
+          if (emailField) emailField.focus();
           return;
         }
         setMsg("Enviando codigo a " + email + "...", false);
