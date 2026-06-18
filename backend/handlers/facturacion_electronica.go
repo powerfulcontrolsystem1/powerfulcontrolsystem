@@ -1468,6 +1468,14 @@ func normalizeFacturacionEstadoEnvio(raw string) string {
 	}
 }
 
+func facturacionDianDocumentoProcesadoAnteriormente(raw string) bool {
+	raw = strings.ToLower(strings.TrimSpace(raw))
+	if raw == "" {
+		return false
+	}
+	return strings.Contains(raw, "documento procesado anteriormente") || strings.Contains(raw, "regla: 90")
+}
+
 func facturacionNowLocal() string {
 	return time.Now().In(dianColombiaLocation()).Format("2006-01-02 15:04:05")
 }
@@ -1877,6 +1885,9 @@ func dispatchFacturacionDIANOficial(dbEmp *sql.DB, payload facturacionOperacionP
 	ok := parseTruthy(genericStringValue(envioResp["ok"])) || trackID != "" || estado == "enviado" || estado == "aceptado"
 	if !ok {
 		errMsg := dianFirstNonBlank(genericStringValue(envioResp["acuse_mensaje"]), genericStringValue(envioResp["error"]), genericStringValue(envioResp["mensaje_recepcion"]), "DIAN no acepto el documento")
+		if facturacionDianDocumentoProcesadoAnteriormente(errMsg) {
+			return facturacionProveedorDispatchResult{Success: true, ReferenciaExterna: genericStringValue(envioResp["cufe"]), RespuestaJSON: string(raw), HTTPStatus: int(anyToInt64(envioResp["http_status"]))}
+		}
 		return facturacionProveedorDispatchResult{Success: false, Error: errMsg, RespuestaJSON: string(raw), HTTPStatus: int(anyToInt64(envioResp["http_status"]))}
 	}
 	ref := trackID
@@ -2328,7 +2339,8 @@ func processFacturacionIntegracionForDocumento(dbEmp *sql.DB, payload facturacio
 		if strings.TrimSpace(dispatch.RespuestaJSON) != "" && json.Unmarshal([]byte(dispatch.RespuestaJSON), &dispatchMap) == nil {
 			estadoDIAN := strings.ToLower(strings.TrimSpace(genericStringValue(dispatchMap["estado_dian"])))
 			acuseDIAN := strings.ToLower(strings.TrimSpace(genericStringValue(dispatchMap["acuse_estado"])))
-			if estadoDIAN == "aceptado" || acuseDIAN == "aceptado" {
+			mensajeDIAN := dianFirstNonBlank(genericStringValue(dispatchMap["acuse_mensaje"]), genericStringValue(dispatchMap["error"]), genericStringValue(dispatchMap["mensaje_recepcion"]))
+			if estadoDIAN == "aceptado" || acuseDIAN == "aceptado" || facturacionDianDocumentoProcesadoAnteriormente(mensajeDIAN) {
 				estadoExito = "aceptado"
 			}
 		}
