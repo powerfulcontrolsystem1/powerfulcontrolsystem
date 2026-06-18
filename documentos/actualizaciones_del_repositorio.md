@@ -15093,3 +15093,7 @@ Archivos modificados:
 - backend/handlers/dian_signature_upload_test.go
 - backend/handlers/modulos_faltantes.go
 - web/administrar_empresa/facturacion_electronica_pruebas_dian.html
+
+2026-06-17 20:17:19 - Mensaje: rs: actualizar repositorio y sincronizar VPS; Commit: 5a4055dd; PushStatus: OK
+Archivos modificados:
+- backend/handlers/facturacion_electronica.go
