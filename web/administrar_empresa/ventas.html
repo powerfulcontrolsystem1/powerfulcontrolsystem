@@ -941,8 +941,11 @@
             cliente_email: norm(item.cliente_email)
           })
         }).then(function(out){
-          msg(dianEstadoLabel(out), out && out.ok ? "ok" : "error");
-          return run();
+          var label = dianEstadoLabel(out);
+          var kind = out && out.ok ? "ok" : "error";
+          return run().then(function(){
+            msg(label, kind);
+          });
         }).catch(function(err){
           msg(err.message || "No se pudo reenviar a DIAN.", "error");
         });
