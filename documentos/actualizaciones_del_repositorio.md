@@ -15087,3 +15087,9 @@ Archivos modificados:
 Archivos modificados:
 - backend/handlers/dian_signature_upload_test.go
 - backend/handlers/modulos_faltantes.go
+
+2026-06-17 20:06:19 - Mensaje: rs: actualizar repositorio y sincronizar VPS; Commit: f25fecd5; PushStatus: OK
+Archivos modificados:
+- backend/handlers/dian_signature_upload_test.go
+- backend/handlers/modulos_faltantes.go
+- web/administrar_empresa/facturacion_electronica_pruebas_dian.html
