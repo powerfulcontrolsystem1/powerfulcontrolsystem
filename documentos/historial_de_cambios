@@ -1,3 +1,43 @@
+2026-06-18: Panel super reinicia indicadores y rs en scripts.
+- Super administrador: `web/super/licencias_resumen.html` agrega acciones
+  confirmadas para reiniciar metricas del panel e indicadores de errores.
+- Backend: `backend/handlers/super_panel_control_handlers.go` expone
+  `/super/api/panel_control/reset?action=metricas|errores`; `backend/db/db.go`
+  agrega `ResetMetricsHistory` y `backend/db/super_errores_sistema.go` agrega
+  `ResetSuperErroresSistema`.
+- Seguridad: acceso exclusivo super administrador con auditoria
+  `super_panel_control_reset`; no borra empresas, licencias ni datos operativos.
+- Scripts: `scripts/rs.ps1` queda como ruta canonica y se retira el wrapper
+  `rs.ps1` de la raiz; `scripts/profesional_preflight.ps1` y
+  `documentos/comandos_codex.md` quedan alineados.
+
+2026-06-18: Facturacion electronica, IA GPT-5.5 y barras de preparacion.
+- Alcance: retiro del modulo OCR activo, mejoras de bandeja/visualizacion/anulacion
+  de facturacion electronica y barras 0-100 para Nomina e Impuestos.
+- Backend: se eliminan rutas OCR y configuracion super OCR; `facturacion_electronica`
+  agrega anulacion por nota credito electronica total para documentos emitidos,
+  con motivo obligatorio, control de duplicado basico y evento contable no
+  bloqueante.
+- Frontend: `facturas_electronicas.html` compacta tarjetas, exporta CSV/XLS,
+  elimina el boton roto `Ver factura`, conserva `Visualizar`, mejora carta/POS
+  y permite ajustar fuente. `nomina_sueldos.html` e `impuestos.html` agregan
+  barras de preparacion con faltantes visibles.
+- Operacion: soportes de compras/gastos y Grafologia quedan orientados a IA
+  GPT-5.5; Tesseract/pdftoppm se retiran de Docker. Nombres internos `ocr_*`
+  historicos solo se conservan por compatibilidad de datos existentes.
+- QA: `go test ./db ./handlers`, chequeo sintactico JS de las paginas afectadas
+  y pruebas visuales locales con datos simulados. No se anulo una factura real
+  de PCS en DIAN sin confirmacion exacta del documento por efecto fiscal.
+
+2026-06-18: Agentes de mantenimiento IA super y consumo OpenAI.
+- Modulos afectados: `super_administrador`, `ia_global`, `mensajeria_y_alertas`, `dian_colombia`, `qa_operacion`.
+- Frontend: `web/super/agentes_de_mantenimiento_qutomatico.html` agrega panel para habilitar el agente DIAN diario, definir hora/correo, ejecutar revision manual y leer hallazgos en el mismo panel.
+- Centro de mando: `web/super/licencias_resumen.html` agrega tarjeta `Consumo OpenAI` con barras de ultimos 30 dias usando estadistica real de tokens/consultas.
+- Gobierno IA: `web/super/configuracion/ia_global.html` autoajusta sus iframes para quitar sub barras de desplazamiento y dejar una pagina larga con scroll principal.
+- Backend: `/super/api/agentes_mantenimiento` y `super.mantenimiento_agentes_worker` leen fuentes DIAN, usan OpenAI si esta habilitado, guardan hallazgos y envian notificacion por Gmail SMTP configurado.
+- Base de datos: `super_mantenimiento_agentes` y `super_mantenimiento_agente_hallazgos` registran configuracion y hallazgos globales; `hash_contenido` evita duplicados.
+- Seguridad: acceso exclusivo super administrador, sin `empresa_id`, sin credenciales DIAN, sin secretos en logs y consumo OpenAI registrado en tablas IA existentes.
+
 2026-06-18: Facturacion electronica PCS aceptada en produccion y Regla 90 pendiente de acuse.
 - Modulos afectados: `facturacion_electronica`, `dian_colombia`, `qa_operacion`.
 - Evidencia produccion PCS: la configuracion de `empresa_id=12` quedo en ambiente produccion con prefijo `1PCS`, resolucion `18764111318575`, rango `1-100000`, Software ID `b266de9c-425a-4aaf-b465-6d6957aa21dd` y llave tecnica cargada desde numeracion DIAN.

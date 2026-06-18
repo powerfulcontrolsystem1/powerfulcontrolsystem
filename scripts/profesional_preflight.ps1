@@ -99,7 +99,6 @@ try {
     $files = @(
       (Join-Path "scripts" "sync_to_vps.ps1"),
       (Join-Path "scripts" "rs.ps1"),
-      "rs.ps1",
       (Join-Path "scripts" "actualizar_repositorio.ps1"),
       (Join-Path "scripts" "profesional_preflight.ps1"),
       (Join-Path "scripts" "vps_backup_operacion.ps1"),

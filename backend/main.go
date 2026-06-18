@@ -1058,9 +1058,6 @@ func main() {
 	if err := dbpkg.EnsureEmpresaGrafologiaSchema(dbEmpresas); err != nil {
 		log.Fatalf("failed to ensure grafologia schema in empresas db: %v", err)
 	}
-	if err := dbpkg.EnsureEmpresaOCRSchema(dbEmpresas); err != nil {
-		log.Fatalf("failed to ensure ocr schema in empresas db: %v", err)
-	}
 	if err := dbpkg.EnsureEmpresaCarnetsSchema(dbEmpresas); err != nil {
 		log.Fatalf("failed to ensure carnets empresa schema in empresas db: %v", err)
 	}
@@ -1158,6 +1155,11 @@ func main() {
 	stopVPSSnapshotWorker := make(chan struct{})
 	go utils.RunProtectedProcess("super.vps_snapshot_worker", map[string]interface{}{"interval_hours": 1}, func() {
 		handlers.StartSuperVPSSnapshotWorker(dbSuper, time.Hour, stopVPSSnapshotWorker)
+	})
+
+	stopMantenimientoAgentesWorker := make(chan struct{})
+	go utils.RunProtectedProcess("super.mantenimiento_agentes_worker", map[string]interface{}{"interval_minutes": 1}, func() {
+		handlers.StartSuperMantenimientoAgentesWorker(dbSuper, time.Minute, stopMantenimientoAgentesWorker)
 	})
 
 	stopParametrosLegales := make(chan struct{})
@@ -1354,7 +1356,6 @@ func main() {
 	http.HandleFunc("/api/empresa/energia_solar", handlers.WithEmpresaEnergiaSolarPermissions(dbEmpresas, dbSuper, handlers.EmpresaEnergiaSolarHandler(dbEmpresas, dbSuper)))
 	http.HandleFunc("/api/empresa/camaras", handlers.WithEmpresaCamarasPermissions(dbEmpresas, dbSuper, handlers.EmpresaCamarasHandler(dbEmpresas, dbSuper)))
 	http.HandleFunc("/api/empresa/grafologia", handlers.WithEmpresaGrafologiaPermissions(dbEmpresas, dbSuper, handlers.EmpresaGrafologiaHandler(dbEmpresas, dbSuper)))
-	http.HandleFunc("/api/empresa/ocr", handlers.WithEmpresaOCRPermissions(dbEmpresas, dbSuper, handlers.EmpresaOCRHandler(dbEmpresas, dbSuper)))
 	http.HandleFunc("/api/empresa/bolsa", handlers.WithEmpresaBolsaPermissions(dbEmpresas, dbSuper, handlers.EmpresaBolsaHandler(dbEmpresas, dbSuper)))
 	http.HandleFunc("/api/empresa/ia_empresarial", handlers.WithEmpresaReportesPermissions(dbEmpresas, dbSuper, handlers.EmpresaIAEmpresarialHandler(dbEmpresas, dbSuper)))
 	http.HandleFunc("/api/empresa/chat_tareas/conversaciones", handlers.WithEmpresaChatTareasPermissions(dbEmpresas, dbSuper, handlers.EmpresaChatTareasConversacionesHandler(dbEmpresas)))
@@ -1497,7 +1498,6 @@ func main() {
 	http.HandleFunc("/super/api/config/mantenimiento", handlers.WithSuperAuditoria(dbSuper, "super_config_mantenimiento", handlers.SuperMantenimientoConfigHandler(dbSuper)))
 	http.HandleFunc("/api/empresa/mantenimiento_programado", handlers.WithEmpresaSelfServicePermissions(dbEmpresas, dbSuper, handlers.EmpresaMantenimientoProgramadoHandler(dbSuper)))
 	http.HandleFunc("/super/api/config/onlyoffice", handlers.WithSuperAuditoria(dbSuper, "super_config_onlyoffice", handlers.OnlyOfficeConfigHandler(dbSuper)))
-	http.HandleFunc("/super/api/config/ocr", handlers.WithSuperAuditoria(dbSuper, "super_config_ocr", handlers.OCRConfigHandler(dbSuper)))
 	http.HandleFunc("/super/api/config/empresa_storage", handlers.WithSuperAuditoria(dbSuper, "super_config_empresa_storage", handlers.SuperEmpresaStorageConfigHandler(dbSuper, dbEmpresas)))
 	// Endpoint super para administrar contrato versionado y su historial
 	http.HandleFunc("/super/api/contrato", handlers.SuperContratoHandler(dbSuper))
@@ -1505,6 +1505,8 @@ func main() {
 	http.HandleFunc("/super/api/errores", handlers.SuperErroresSistemaHandler(dbSuper))
 	// Endpoint super para consumos (OpenAI/Hostinger/Cursor) y contador de errores
 	http.HandleFunc("/super/api/consumos", handlers.WithSuperAuditoria(dbSuper, "super_config_consumos", handlers.SuperConsumosHandler(dbEmpresas, dbSuper)))
+	http.HandleFunc("/super/api/panel_control/reset", handlers.WithSuperAuditoria(dbSuper, "super_panel_control_reset", handlers.SuperPanelControlResetHandler(dbSuper)))
+	http.HandleFunc("/super/api/agentes_mantenimiento", handlers.WithSuperAuditoria(dbSuper, "super_agentes_mantenimiento", handlers.SuperMantenimientoAgentesHandler(dbSuper)))
 	http.HandleFunc("/super/api/alertas_sistema", handlers.WithSuperAuditoria(dbSuper, "super_alertas_sistema", handlers.SuperAlertasSistemaHandler(dbSuper)))
 	http.HandleFunc("/super/api/config/portal_chat_ia_info", handlers.WithSuperAuditoria(dbSuper, "super_config_chat_flotante", handlers.SuperPortalChatIAInfoHandler(dbSuper)))
 	http.HandleFunc("/super/api/config/contexto_ia_logica_negocio", handlers.WithSuperAuditoria(dbSuper, "super_config_contexto_ia", handlers.SuperContextoIALogicaNegocioHandler(dbSuper)))

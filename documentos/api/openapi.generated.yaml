@@ -1541,19 +1541,6 @@ paths:
       responses:
         "200":
           description: Respuesta exitosa o manejada por el handler real.
-  "/api/empresa/ocr":
-    get:
-      tags: [empresa]
-      summary: Ruta inventariada /api/empresa/ocr
-      responses:
-        "200":
-          description: Respuesta exitosa o manejada por el handler real.
-    post:
-      tags: [empresa]
-      summary: Ruta inventariada /api/empresa/ocr
-      responses:
-        "200":
-          description: Respuesta exitosa o manejada por el handler real.
   "/api/empresa/odontologia":
     get:
       tags: [empresa]
@@ -2919,6 +2906,19 @@ paths:
       responses:
         "200":
           description: Respuesta exitosa o manejada por el handler real.
+  "/super/api/agentes_mantenimiento":
+    get:
+      tags: [super-administrador]
+      summary: Ruta inventariada /super/api/agentes_mantenimiento
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [super-administrador]
+      summary: Ruta inventariada /super/api/agentes_mantenimiento
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
   "/super/api/alertas_sistema":
     get:
       tags: [super-administrador]
@@ -3189,19 +3189,6 @@ paths:
     post:
       tags: [super-administrador]
       summary: Ruta inventariada /super/api/config/mantenimiento
-      responses:
-        "200":
-          description: Respuesta exitosa o manejada por el handler real.
-  "/super/api/config/ocr":
-    get:
-      tags: [super-administrador]
-      summary: Ruta inventariada /super/api/config/ocr
-      responses:
-        "200":
-          description: Respuesta exitosa o manejada por el handler real.
-    post:
-      tags: [super-administrador]
-      summary: Ruta inventariada /super/api/config/ocr
       responses:
         "200":
           description: Respuesta exitosa o manejada por el handler real.
@@ -3553,6 +3540,19 @@ paths:
     post:
       tags: [super-administrador]
       summary: Ruta inventariada /super/api/pagina_principal
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/super/api/panel_control/reset":
+    get:
+      tags: [super-administrador]
+      summary: Ruta inventariada /super/api/panel_control/reset
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [super-administrador]
+      summary: Ruta inventariada /super/api/panel_control/reset
       responses:
         "200":
           description: Respuesta exitosa o manejada por el handler real.

@@ -1,3 +1,21 @@
+## [2026-06-18] Panel super reinicia indicadores y rs en scripts
+- [Super] `licencias_resumen.html` agrega botones `Reiniciar metricas` y `Reiniciar errores` con confirmacion antes de limpiar indicadores.
+- [Backend] `/super/api/panel_control/reset?action=metricas|errores` limpia respectivamente `metrics` o `super_errores_sistema`, con acceso super administrador y auditoria.
+- [Operación] `scripts/rs.ps1` queda como ruta canonica; se retira el wrapper `rs.ps1` de la raiz y se actualiza `documentos/comandos_codex.md`.
+
+## [2026-06-18] Facturacion electronica, IA y barras de preparacion
+- [OCR] Se retira el modulo empresarial OCR, su pagina, rutas, configuracion super, permisos y dependencias Docker. La captura operativa de compras/gastos queda como IA GPT-5.5 controlada por las limitaciones de Super Administrador.
+- [Facturacion electronica] La bandeja compacta `Documentos y cumplimiento` y `Filtros de busqueda`, exporta resultados CSV/XLS, deja solo `Visualizar`, mejora la representacion POS/carta con tamano de letra y agrega anulacion trazable mediante nota credito electronica total.
+- [Nomina/Impuestos] `nomina_sueldos.html` e `impuestos.html` muestran barra 0-100 con datos faltantes para preparar nomina electronica/nomina e impuestos.
+- [QA] `go test ./db ./handlers`; validacion sintactica de scripts embebidos; pruebas visuales locales de Facturas electronicas, Nomina e Impuestos.
+
+## [2026-06-18] Agentes de mantenimiento IA super
+- [Super] `web/super/agentes_de_mantenimiento_qutomatico.html` permite habilitar el agente DIAN, definir hora diaria, correo de notificacion, ejecutar ahora y leer hallazgos en el mismo panel.
+- [Backend] `/super/api/agentes_mantenimiento` y el worker `super.mantenimiento_agentes_worker` revisan fuentes oficiales DIAN, clasifican relevancia con OpenAI si esta disponible y registran hallazgos sin duplicar por hash.
+- [Consumo] `Centro de mando` muestra `Consumo OpenAI` con barras de 30 dias usando las tablas existentes de uso IA super/empresa.
+- [UX] `configuracion/ia_global.html` autoajusta iframes para evitar sub barras de desplazamiento en la pagina de gobierno IA.
+- [QA] `go test ./db ./handlers`.
+
 ## [2026-06-18] DIAN produccion PCS aceptada y ayuda operativa
 - [DIAN] El portal de produccion muestra `1PCS2` y `1PCS3` como `Aprobado con notificacion`; `1PCS3` tambien fue aceptada por SOAP/WCF `SendBillSync`.
 - [Operacion] `Regla 90` ya no se documenta como aceptacion automatica; exige acuse original, portal DIAN o evidencia oficial equivalente.

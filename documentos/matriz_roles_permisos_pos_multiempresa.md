@@ -1,3 +1,9 @@
+2026-06-18: Nota de agentes de mantenimiento IA super
+- `/super/api/agentes_mantenimiento` queda protegido por `paginaPrincipalRequireSuperAdmin` y auditoria `super_agentes_mantenimiento`; solo `super_administrador` puede leer, configurar, ejecutar manualmente o activar el agente.
+- No aplica `empresa_id` ni roles empresariales porque es una funcion global del panel super. El agente no concede permisos a empresas ni usuarios operativos.
+- El correo de notificacion se valida como direccion de email; el envio usa la configuracion Gmail SMTP existente sin exponer contrasenas ni claves.
+- La clasificacion con OpenAI registra consumo en las tablas IA existentes y no habilita SQL libre ni acciones automaticas sobre facturacion electronica.
+
 2026-06-18: Nota de auditoria DIAN produccion PCS
 - `facturacion_electronica` conserva sus wrappers existentes (`WithEmpresaFacturacionPermissions`) y no agrega permisos nuevos.
 - Para declarar DIAN produccion estable se exige evidencia de acuse oficial o portal DIAN; en PCS quedaron `1PCS2` y `1PCS3` como `Aprobado con notificacion`.
@@ -83,6 +89,26 @@
   recuadro normal. Robot y secretaria se retiran de la experiencia visual.
 - Las acciones propuestas por IA siguen requiriendo confirmacion y endpoints
   permitidos; la IA no concede permisos ni ejecuta SQL libre.
+
+2026-06-18: Centro de mando super
+- `/super/api/panel_control/reset` queda reservado a `super_administrador` y
+  protegido con auditoria super.
+- Acciones permitidas: `metricas` limpia `metrics`; `errores` limpia
+  `super_errores_sistema`. No hay alcance empresarial ni permisos delegados.
+
+2026-06-18: Retiro OCR y preparacion operativa
+- Se retira del catalogo activo el modulo `ocr`, la pagina `linkOCR`, el wrapper
+  `WithEmpresaOCRPermissions` y las rutas `/api/empresa/ocr` y
+  `/super/api/config/ocr`.
+- La captura de soportes de compras/gastos se conserva en
+  `soportes_compras_ia` y debe operar con IA GPT-5.5 bajo los limites definidos
+  por Super Administrador.
+- Nomina e Impuestos no agregan permisos nuevos para la barra 0-100; usan los
+  permisos existentes del modulo y solo muestran faltantes calculados con datos
+  de la empresa activa.
+- Facturacion electronica mantiene aislamiento por `empresa_id`; la anulacion
+  nueva exige documento emitido y motivo operativo antes de crear nota credito
+  total.
 
 2026-06-08: Nota de OCR documental sin IA
 - Se agrega modulo `ocr`, pagina `linkOCR` y wrapper `WithEmpresaOCRPermissions`.

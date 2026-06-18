@@ -1,4 +1,4 @@
-# Captura inteligente de compras y gastos con foto/OCR e IA
+# Captura inteligente de compras y gastos con IA GPT-5.5
 
 ## Alcance
 
@@ -7,7 +7,7 @@ Modulo empresarial para radicar soportes de compras y gastos por `empresa_id` de
 ## Superficies
 
 - Pagina: `/administrar_empresa/soportes_compras_ia.html`.
-- Menu: `Administrar empresa > Compras > Captura IA/OCR`.
+- Menu: `Administrar empresa > Compras > Captura IA GPT-5.5`.
 - API: `/api/empresa/soportes_compras_ia`.
 - Wrapper: `WithEmpresaSoportesComprasIAPermissions`.
 - Modulo de permiso/licencia: `soportes_compras_ia`.
@@ -17,7 +17,7 @@ Modulo empresarial para radicar soportes de compras y gastos por `empresa_id` de
 1. Radicar soporte con archivo o datos manuales.
 2. Guardar archivo bajo `/uploads/soportes_compras_ia/empresa_<id>/`.
 3. Calcular hash SHA-256 y detectar duplicados por archivo o documento.
-4. Ejecutar extraccion OCR/IA con `openai:gpt-5.5`.
+4. Ejecutar extraccion con IA GPT-5.5 usando las limitaciones configuradas en Super Administrador.
 5. Normalizar proveedor, NIT, tipo/numero de documento, fechas, subtotal, IVA, retenciones, total, categoria, centro de costo e impacto en inventario.
 6. Marcar revision humana cuando la confianza sea baja o el modelo lo indique.
 7. Aprobar o rechazar.

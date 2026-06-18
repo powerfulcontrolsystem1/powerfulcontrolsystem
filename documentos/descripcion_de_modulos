@@ -1,3 +1,10 @@
+2026-06-18: Agentes de mantenimiento IA super
+- Modulos afectados: `super_administrador`, `IA global`, `mensajeria_y_alertas`, `DIAN Colombia`.
+- Navegacion: `Super administrador > Mensajeria y alertas > Agentes mantenimiento` abre `web/super/agentes_de_mantenimiento_qutomatico.html`.
+- Backend: `/super/api/agentes_mantenimiento` gestiona configuracion y ejecucion del agente `dian_noticias`; el worker lo evalua una vez al dia despues de la hora configurada.
+- Operacion: lee fuentes oficiales DIAN, usa OpenAI para clasificar impacto cuando la IA global esta disponible, registra hallazgos y envia notificacion por Gmail SMTP si hay correo configurado.
+- Seguridad: acceso exclusivo super administrador, sin credenciales DIAN, sin secretos en logs y sin `empresa_id` porque es gobierno global del sistema.
+
 2026-06-18: Facturacion electronica DIAN produccion PCS
 - Modulos afectados: `facturacion_electronica`, `DIAN Colombia`, `auditoria`, `qa_operacion`.
 - Evidencia real: el portal DIAN produccion muestra `1PCS2` y `1PCS3` como `Aprobado con notificacion`; `1PCS3` tambien fue aceptada por SOAP/WCF `SendBillSync`.
@@ -188,6 +195,32 @@
 - Backend: el catalogo DIAN Colombia marca `eventos_radian_recepcion` como `operativo`, con firma requerida, bandera de evento y alcance de habilitacion mientras la empresa no active produccion.
 - Frontend: el resumen de cobertura esencial muestra RADIAN como operativo en habilitacion y enlaza al Centro de habilitacion DIAN para registrar el evento documental.
 - Alcance: RADIAN sigue separado de factura, nota, documento soporte y nomina; opera sobre facturas electronicas existentes y no crea una venta nueva.
+
+2026-06-18: Centro de mando super con reinicio de indicadores.
+- Modulo afectado: `super_administrador`.
+- Frontend: `web/super/licencias_resumen.html` agrega botones para reiniciar
+  metricas del panel e indicadores de errores, ambos con confirmacion.
+- Backend: `/super/api/panel_control/reset` acepta `action=metricas` o
+  `action=errores`, valida super administrador y deja auditoria.
+- Datos: solo limpia `metrics` o `super_errores_sistema`; no afecta empresas,
+  licencias, usuarios, consumos ni configuraciones.
+
+2026-06-18: Facturacion electronica, IA GPT-5.5 y barras de preparacion.
+- Modulos afectados: `facturacion_electronica`, `soportes_compras_ia`,
+  `nomina`, `impuestos`, `grafologia` y permisos empresariales.
+- OCR documental queda retirado como modulo activo: se eliminan pagina
+  empresarial, configuracion super, rutas backend, permisos, licencias y
+  dependencias Docker asociadas a Tesseract/pdftoppm. Los nombres internos
+  historicos que existan en datos previos quedan solo por compatibilidad.
+- Soportes de compras y gastos opera como captura con IA GPT-5.5 y limites de
+  Super Administrador, sin flujo OCR independiente.
+- Facturacion electronica compacta tarjetas de cumplimiento/filtros, exporta
+  resultados de busqueda, deja un unico boton `Visualizar`, agrega vista carta
+  y POS con tamano de letra ajustable y anula facturas emitidas mediante nota
+  credito electronica total.
+- Nomina e Impuestos muestran barra 0-100 con faltantes operativos para
+  preparar nomina electronica/nomina e impuestos usando datos existentes por
+  `empresa_id`.
 
 2026-06-08: OCR documental sin IA
 - Modulo afectado: `ocr`.

@@ -78,6 +78,12 @@
         width: 100%;
       }
     }
+    .nomina-readiness{display:grid;gap:10px;margin:14px 0;padding:14px;border:1px solid var(--border);border-radius:8px;background:var(--surface-soft)}
+    .nomina-readiness-head{display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap}
+    .nomina-readiness-head strong{font-size:16px}
+    .nomina-readiness-bar{height:12px;border-radius:999px;background:color-mix(in srgb,var(--border) 70%,transparent);overflow:hidden}
+    .nomina-readiness-bar span{display:block;height:100%;width:0;background:linear-gradient(90deg,#16a34a,#2563eb)}
+    .nomina-readiness-list{margin:0;padding-left:18px;color:var(--muted);display:grid;gap:4px}
   </style>
 </head>
 <body class="empresa-subpage nomina-page">
@@ -131,6 +137,14 @@
         </div>
       </div>
       <div id="mainMsg" class="form-help"></div>
+      <div class="nomina-readiness" aria-label="Preparacion de nomina y nomina electronica">
+        <div class="nomina-readiness-head">
+          <strong>Preparacion nomina / nomina electronica</strong>
+          <span id="nominaReadinessPct">0%</span>
+        </div>
+        <div class="nomina-readiness-bar"><span id="nominaReadinessBar"></span></div>
+        <ul id="nominaReadinessMissing" class="nomina-readiness-list"></ul>
+      </div>
       <div class="nomina-subnav-grid" aria-label="Subpaginas de nomina">
         <a class="nomina-subnav-card" data-nomina-nav="empleados" href="/administrar_empresa/nomina_sueldos.html?seccion=empleados">
           <strong>Empleados de nomina</strong>
@@ -829,6 +843,7 @@
         provisiones: null,
         controlContable: null,
         dianNomina: null,
+        nominaDianReady: false,
         parametrosLegales: null
       };
 
@@ -1901,7 +1916,59 @@
         document.getElementById('kpiNeto').textContent = money(neto);
         document.getElementById('kpiPagos').textContent = String(pagos.length || Number(dashboard.pagos_generados || 0));
         document.getElementById('kpiCostoEmpresa').textContent = money(provisiones.costo_empresa_estimado || dashboard.costo_empresa_estimado || 0);
+        updateNominaReadiness();
       }
+
+      function updateNominaReadiness() {
+        const empleados = Array.isArray(state.empleados) ? state.empleados : [];
+        const empleadosActivos = empleados.filter(function (item) {
+          return normalize(item.estado || 'activo').toLowerCase() === 'activo';
+        });
+        const liquidaciones = Array.isArray(state.liquidaciones) ? state.liquidaciones : [];
+        const pagos = Array.isArray(state.pagos) ? state.pagos : [];
+        const festivos = Array.isArray(state.festivos) ? state.festivos : [];
+        const cfg = state.config || {};
+        const provisiones = state.provisiones || {};
+        const items = [
+          { ok: empleadosActivos.length > 0, label: 'Crear empleados activos de nomina' },
+          { ok: empleadosActivos.some(function (e) { return normalize(e.numero_documento || e.documento || e.identificacion); }), label: 'Completar documentos de empleados' },
+          { ok: empleadosActivos.some(function (e) { return toNumber(e.salario_base || e.salario_mensual || e.salario, 0) > 0; }), label: 'Registrar salarios base' },
+          { ok: toNumber(cfg.salario_minimo_mensual || cfg.salario_minimo || 0, 0) > 0, label: 'Configurar salario minimo legal' },
+          { ok: festivos.length > 0, label: 'Cargar festivos y parametros legales' },
+          { ok: liquidaciones.length > 0, label: 'Calcular liquidaciones del periodo' },
+          { ok: pagos.length > 0 || Number((state.dashboard || {}).pagos_generados || 0) > 0, label: 'Generar o registrar pagos de nomina' },
+          { ok: toNumber(provisiones.costo_empresa_estimado || (state.dashboard || {}).costo_empresa_estimado || 0, 0) > 0, label: 'Revisar provisiones y costo empresa' },
+          { ok: liquidaciones.some(function (l) { return normalize(l.estado || '').toLowerCase() !== 'borrador'; }), label: 'Revisar/guardar liquidaciones definitivas' },
+          { ok: state.nominaDianReady === true || liquidaciones.length > 0, label: 'Preparar lote de nomina electronica DIAN' }
+        ];
+        const done = items.filter(function (item) { return item.ok; }).length;
+        const pctValue = Math.round((done / items.length) * 100);
+        const bar = document.getElementById('nominaReadinessBar');
+        const pct = document.getElementById('nominaReadinessPct');
+        const list = document.getElementById('nominaReadinessMissing');
+        if (bar) bar.style.width = pctValue + '%';
+        if (pct) pct.textContent = pctValue + '%';
+        if (list) {
+          const missing = items.filter(function (item) { return !item.ok; });
+          list.innerHTML = missing.length
+            ? missing.map(function (item) { return '<li>' + escapeNominaReadinessHTML(item.label) + '</li>'; }).join('')
+            : '<li>Listo para revisar y enviar nomina electronica segun configuracion DIAN.</li>';
+        }
+      }
+
+      function escapeNominaReadinessHTML(value) {
+        return String(value == null ? '' : value)
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#39;');
+      }
+
+      window.PCSNominaReadinessSetDianReady = function (ready) {
+        state.nominaDianReady = ready === true;
+        updateNominaReadiness();
+      };
 
       function countEmployeeSedes(rows) {
         const map = {};
@@ -2089,12 +2156,14 @@
         setDefaultDates();
         bindEvents();
         setEmpresaInfo();
+        updateNominaReadiness();
 
         try {
           await loadEmpresaInfo();
           await refreshAll();
           setMessage('mainMsg', 'Modulo de nomina listo para operar.', 'success');
         } catch (err) {
+          updateNominaReadiness();
           setMessage('mainMsg', err.message || 'No se pudo inicializar el modulo de nomina.', 'error');
         }
       }
@@ -2249,6 +2318,9 @@
 
       function renderNominaDian(data) {
         state.dianNomina = data || null;
+        if (typeof window.PCSNominaReadinessSetDianReady === 'function') {
+          window.PCSNominaReadinessSetDianReady(!!(data && typeof data === 'object' && Array.isArray(data.documentos_preparados) && data.documentos_preparados.length > 0 && !(Array.isArray(data.requisitos_pendientes) && data.requisitos_pendientes.length)));
+        }
         const panel = document.getElementById('nomCoDianPanel');
         const resumen = document.getElementById('nomCoDianResumen');
         if (!panel || !resumen) return;

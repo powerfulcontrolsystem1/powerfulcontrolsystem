@@ -126,6 +126,97 @@ func GetSuperAIUsoDiarioOpenAITokensGlobal(dbConn *sql.DB, adminEmail string, pr
 	return consultas, tokens, nil
 }
 
+// AIUsoDiarioResumen agrega el uso de IA por fecha para graficas de consumo.
+type AIUsoDiarioResumen struct {
+	Fecha     string `json:"fecha"`
+	Consultas int64  `json:"consultas"`
+	Tokens    int64  `json:"tokens"`
+}
+
+// GetSuperAIUsoDiarioOpenAITokensPorRango retorna consumo agregado por dia para super admin.
+func GetSuperAIUsoDiarioOpenAITokensPorRango(dbConn *sql.DB, adminEmail, provider, desde, hasta string) ([]AIUsoDiarioResumen, error) {
+	if dbConn == nil {
+		return nil, nil
+	}
+	provider = strings.ToLower(strings.TrimSpace(provider))
+	if provider == "" {
+		provider = "openai"
+	}
+	if strings.TrimSpace(desde) == "" || strings.TrimSpace(hasta) == "" {
+		return nil, fmt.Errorf("rango de fechas obligatorio")
+	}
+	if err := EnsureSuperAIChatSchema(dbConn); err != nil {
+		return nil, err
+	}
+	adminEmail = strings.TrimSpace(strings.ToLower(adminEmail))
+	query := `SELECT COALESCE(fecha_uso, '') AS fecha,
+		COALESCE(SUM(COALESCE(consultas_total, 0)), 0) AS consultas,
+		COALESCE(SUM(COALESCE(tokens_total, 0)), 0) AS tokens
+		FROM super_ai_uso_diario
+		WHERE LOWER(COALESCE(provider,'')) = ?
+		  AND COALESCE(fecha_uso,'') >= ?
+		  AND COALESCE(fecha_uso,'') <= ?`
+	args := []interface{}{provider, desde, hasta}
+	if adminEmail != "" {
+		query += ` AND LOWER(COALESCE(admin_email,'')) = ?`
+		args = append(args, adminEmail)
+	}
+	query += ` GROUP BY COALESCE(fecha_uso, '') ORDER BY COALESCE(fecha_uso, '') ASC`
+	rows, err := querySQLCompat(dbConn, query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := []AIUsoDiarioResumen{}
+	for rows.Next() {
+		var item AIUsoDiarioResumen
+		if err := rows.Scan(&item.Fecha, &item.Consultas, &item.Tokens); err != nil {
+			return nil, err
+		}
+		out = append(out, item)
+	}
+	return out, rows.Err()
+}
+
+// GetEmpresaAIUsoDiarioOpenAITokensPorRango retorna consumo agregado por dia para empresas.
+func GetEmpresaAIUsoDiarioOpenAITokensPorRango(dbConn *sql.DB, provider, desde, hasta string) ([]AIUsoDiarioResumen, error) {
+	if dbConn == nil {
+		return nil, nil
+	}
+	provider = strings.ToLower(strings.TrimSpace(provider))
+	if provider == "" {
+		provider = "openai"
+	}
+	if strings.TrimSpace(desde) == "" || strings.TrimSpace(hasta) == "" {
+		return nil, fmt.Errorf("rango de fechas obligatorio")
+	}
+	if err := EnsureEmpresaAIChatSchema(dbConn); err != nil {
+		return nil, err
+	}
+	rows, err := querySQLCompat(dbConn, `SELECT COALESCE(fecha_uso, '') AS fecha,
+		COALESCE(SUM(COALESCE(consultas_total, 0)), 0) AS consultas,
+		COALESCE(SUM(COALESCE(tokens_total, 0)), 0) AS tokens
+		FROM empresa_ai_uso_diario
+		WHERE LOWER(COALESCE(provider,'')) = ?
+		  AND COALESCE(fecha_uso,'') >= ?
+		  AND COALESCE(fecha_uso,'') <= ?
+		GROUP BY COALESCE(fecha_uso, '')
+		ORDER BY COALESCE(fecha_uso, '') ASC`, provider, desde, hasta)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := []AIUsoDiarioResumen{}
+	for rows.Next() {
+		var item AIUsoDiarioResumen
+		if err := rows.Scan(&item.Fecha, &item.Consultas, &item.Tokens); err != nil {
+			return nil, err
+		}
+		out = append(out, item)
+	}
+	return out, rows.Err()
+}
+
 // EmpresaAIConsulta representa una consulta/respuesta de IA por empresa.
 type EmpresaAIConsulta struct {
 	ID               int64  `json:"id"`

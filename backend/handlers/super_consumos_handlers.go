@@ -16,12 +16,12 @@ import (
 // Config keys (super) para consumos externos / costos aproximados.
 const (
 	// OpenAI (estimación monetaria opcional)
-	openAIProviderKey          = "openai"
+	openAIProviderKey           = "openai"
 	openAICostPer1MTokensUSDKey = "ai.openai.cost_per_1m_tokens_usd" // número, opcional
 
 	// Hostinger (manual/API pendiente)
-	hostingerEnabledKey        = "hostinger.enabled"
-	hostingerAPITokenKey       = "hostinger.api_token" // cifrado, opcional (tarjeta de configuración)
+	hostingerEnabledKey          = "hostinger.enabled"
+	hostingerAPITokenKey         = "hostinger.api_token" // cifrado, opcional (tarjeta de configuración)
 	hostingerBandwidthUsedGBKey  = "hostinger.bandwidth.used_gb"
 	hostingerBandwidthLimitGBKey = "hostinger.bandwidth.limit_gb"
 	hostingerDiskUsedGBKey       = "hostinger.disk.used_gb"
@@ -29,10 +29,10 @@ const (
 	hostingerCostUSDMonthKey     = "hostinger.cost.usd_month"
 
 	// Cursor (manual/API pendiente)
-	cursorEnabledKey        = "cursor.enabled"
-	cursorAPIKeyKey         = "cursor.api_key" // cifrado, opcional (tarjeta de configuración)
-	cursorCostUSDMonthKey   = "cursor.cost.usd_month"
-	cursorNotesKey          = "cursor.notes"
+	cursorEnabledKey      = "cursor.enabled"
+	cursorAPIKeyKey       = "cursor.api_key" // cifrado, opcional (tarjeta de configuración)
+	cursorCostUSDMonthKey = "cursor.cost.usd_month"
+	cursorNotesKey        = "cursor.notes"
 )
 
 func parseFloatConfig(raw string) float64 {
@@ -76,6 +76,9 @@ func SuperConsumosHandler(dbEmpresas *sql.DB, dbSuper *sql.DB) http.HandlerFunc 
 			// 1) OpenAI (tokens/consultas) desde tabla de uso diario (super y empresas)
 			superConsultas, superTokens, _ := dbpkg.GetSuperAIUsoDiarioOpenAITokensGlobal(dbSuper, adminEmail, openAIProviderKey, fecha)
 			empConsultas, empTokens, _ := dbpkg.GetEmpresaAIUsoDiarioOpenAITokensGlobal(dbEmpresas, openAIProviderKey, fecha)
+			desdeMes := time.Now().AddDate(0, 0, -29).Format("2006-01-02")
+			superMes, _ := dbpkg.GetSuperAIUsoDiarioOpenAITokensPorRango(dbSuper, adminEmail, openAIProviderKey, desdeMes, fecha)
+			empMes, _ := dbpkg.GetEmpresaAIUsoDiarioOpenAITokensPorRango(dbEmpresas, openAIProviderKey, desdeMes, fecha)
 
 			costPer1M := parseFloatConfig(mustGetConfigPlain(dbSuper, openAICostPer1MTokensUSDKey))
 			var superCostUSD float64
@@ -88,26 +91,26 @@ func SuperConsumosHandler(dbEmpresas *sql.DB, dbSuper *sql.DB) http.HandlerFunc 
 			// 2) Hostinger (valores manuales)
 			hostEnabled := strings.TrimSpace(mustGetConfigPlain(dbSuper, hostingerEnabledKey))
 			host := map[string]any{
-				"enabled":          strings.ToLower(hostEnabled) == "1" || strings.ToLower(hostEnabled) == "true" || strings.ToLower(hostEnabled) == "on",
-				"bandwidth_used_gb":  parseFloatConfig(mustGetConfigPlain(dbSuper, hostingerBandwidthUsedGBKey)),
-				"bandwidth_limit_gb": parseFloatConfig(mustGetConfigPlain(dbSuper, hostingerBandwidthLimitGBKey)),
-				"disk_used_gb":       parseFloatConfig(mustGetConfigPlain(dbSuper, hostingerDiskUsedGBKey)),
-				"disk_limit_gb":      parseFloatConfig(mustGetConfigPlain(dbSuper, hostingerDiskLimitGBKey)),
-				"cost_usd_month":     parseFloatConfig(mustGetConfigPlain(dbSuper, hostingerCostUSDMonthKey)),
-				"api_token_set":      isEncryptedValueSet(dbSuper, hostingerAPITokenKey),
+				"enabled":              strings.ToLower(hostEnabled) == "1" || strings.ToLower(hostEnabled) == "true" || strings.ToLower(hostEnabled) == "on",
+				"bandwidth_used_gb":    parseFloatConfig(mustGetConfigPlain(dbSuper, hostingerBandwidthUsedGBKey)),
+				"bandwidth_limit_gb":   parseFloatConfig(mustGetConfigPlain(dbSuper, hostingerBandwidthLimitGBKey)),
+				"disk_used_gb":         parseFloatConfig(mustGetConfigPlain(dbSuper, hostingerDiskUsedGBKey)),
+				"disk_limit_gb":        parseFloatConfig(mustGetConfigPlain(dbSuper, hostingerDiskLimitGBKey)),
+				"cost_usd_month":       parseFloatConfig(mustGetConfigPlain(dbSuper, hostingerCostUSDMonthKey)),
+				"api_token_set":        isEncryptedValueSet(dbSuper, hostingerAPITokenKey),
 				"encryption_available": utils.EncryptionAvailable(),
-				"note":              "API automática de Hostinger pendiente; por ahora se soporta captura manual (y se deja tarjeta para token).",
+				"note":                 "API automática de Hostinger pendiente; por ahora se soporta captura manual (y se deja tarjeta para token).",
 			}
 
 			// 3) Cursor (valores manuales)
 			cursorEnabled := strings.TrimSpace(mustGetConfigPlain(dbSuper, cursorEnabledKey))
 			cur := map[string]any{
-				"enabled":          strings.ToLower(cursorEnabled) == "1" || strings.ToLower(cursorEnabled) == "true" || strings.ToLower(cursorEnabled) == "on",
-				"cost_usd_month":   parseFloatConfig(mustGetConfigPlain(dbSuper, cursorCostUSDMonthKey)),
-				"notes":            strings.TrimSpace(mustGetConfigPlain(dbSuper, cursorNotesKey)),
-				"api_key_set":      isEncryptedValueSet(dbSuper, cursorAPIKeyKey),
+				"enabled":              strings.ToLower(cursorEnabled) == "1" || strings.ToLower(cursorEnabled) == "true" || strings.ToLower(cursorEnabled) == "on",
+				"cost_usd_month":       parseFloatConfig(mustGetConfigPlain(dbSuper, cursorCostUSDMonthKey)),
+				"notes":                strings.TrimSpace(mustGetConfigPlain(dbSuper, cursorNotesKey)),
+				"api_key_set":          isEncryptedValueSet(dbSuper, cursorAPIKeyKey),
 				"encryption_available": utils.EncryptionAvailable(),
-				"note":             "Cursor usage API no implementada; se soporta captura manual (y tarjeta para API key si se habilita en el futuro).",
+				"note":                 "Cursor usage API no implementada; se soporta captura manual (y tarjeta para API key si se habilita en el futuro).",
 			}
 
 			// 4) Contador de errores del sistema (solo número)
@@ -117,6 +120,11 @@ func SuperConsumosHandler(dbEmpresas *sql.DB, dbSuper *sql.DB) http.HandlerFunc 
 				"ok": true,
 				"openai": map[string]any{
 					"fecha": fecha,
+					"rango_mes": map[string]any{
+						"desde": desdeMes,
+						"hasta": fecha,
+						"dias":  mergeOpenAIUsageSeries(superMes, empMes),
+					},
 					"provider": openAIProviderKey,
 					"cost_per_1m_tokens_usd": func() any {
 						if costPer1M > 0 {
@@ -145,8 +153,8 @@ func SuperConsumosHandler(dbEmpresas *sql.DB, dbSuper *sql.DB) http.HandlerFunc 
 						}(),
 					},
 				},
-				"hostinger": host,
-				"cursor":    cur,
+				"hostinger":     host,
+				"cursor":        cur,
 				"errores_total": totalErrores,
 			})
 			return
@@ -157,13 +165,13 @@ func SuperConsumosHandler(dbEmpresas *sql.DB, dbSuper *sql.DB) http.HandlerFunc 
 				OpenAICostPer1MTokensUSD *float64 `json:"openai_cost_per_1m_tokens_usd"`
 
 				Hostinger struct {
-					Enabled           *bool    `json:"enabled"`
-					APIToken          string   `json:"api_token"`
-					BandwidthUsedGB   *float64 `json:"bandwidth_used_gb"`
-					BandwidthLimitGB  *float64 `json:"bandwidth_limit_gb"`
-					DiskUsedGB        *float64 `json:"disk_used_gb"`
-					DiskLimitGB       *float64 `json:"disk_limit_gb"`
-					CostUSDMonth      *float64 `json:"cost_usd_month"`
+					Enabled          *bool    `json:"enabled"`
+					APIToken         string   `json:"api_token"`
+					BandwidthUsedGB  *float64 `json:"bandwidth_used_gb"`
+					BandwidthLimitGB *float64 `json:"bandwidth_limit_gb"`
+					DiskUsedGB       *float64 `json:"disk_used_gb"`
+					DiskLimitGB      *float64 `json:"disk_limit_gb"`
+					CostUSDMonth     *float64 `json:"cost_usd_month"`
 				} `json:"hostinger"`
 
 				Cursor struct {
@@ -315,3 +323,53 @@ func superConsumosRound2(v float64) float64 {
 	return f
 }
 
+func mergeOpenAIUsageSeries(superRows, empresaRows []dbpkg.AIUsoDiarioResumen) []map[string]any {
+	type agg struct {
+		SuperConsultas   int64
+		SuperTokens      int64
+		EmpresaConsultas int64
+		EmpresaTokens    int64
+	}
+	byDate := map[string]*agg{}
+	add := func(rows []dbpkg.AIUsoDiarioResumen, super bool) {
+		for _, row := range rows {
+			fecha := strings.TrimSpace(row.Fecha)
+			if fecha == "" {
+				continue
+			}
+			item := byDate[fecha]
+			if item == nil {
+				item = &agg{}
+				byDate[fecha] = item
+			}
+			if super {
+				item.SuperConsultas += row.Consultas
+				item.SuperTokens += row.Tokens
+			} else {
+				item.EmpresaConsultas += row.Consultas
+				item.EmpresaTokens += row.Tokens
+			}
+		}
+	}
+	add(superRows, true)
+	add(empresaRows, false)
+	out := make([]map[string]any, 0, 30)
+	start := time.Now().AddDate(0, 0, -29)
+	for i := 0; i < 30; i++ {
+		fecha := start.AddDate(0, 0, i).Format("2006-01-02")
+		item := byDate[fecha]
+		if item == nil {
+			item = &agg{}
+		}
+		out = append(out, map[string]any{
+			"fecha":             fecha,
+			"super_consultas":   item.SuperConsultas,
+			"super_tokens":      item.SuperTokens,
+			"empresa_consultas": item.EmpresaConsultas,
+			"empresa_tokens":    item.EmpresaTokens,
+			"consultas_total":   item.SuperConsultas + item.EmpresaConsultas,
+			"tokens_total":      item.SuperTokens + item.EmpresaTokens,
+		})
+	}
+	return out
+}

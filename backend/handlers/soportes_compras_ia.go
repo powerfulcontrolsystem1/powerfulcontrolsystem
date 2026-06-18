@@ -322,13 +322,13 @@ func extraerSoporteComprasIAGPT55(r *http.Request, dbEmp, dbSuper *sql.DB, empre
 		TotalTokens:      promptTokens + completionTokens,
 		UsuarioCreador:   usuario,
 		Estado:           "activo",
-		Observaciones:    "Extraccion OCR/IA de soporte de compra o gasto",
+		Observaciones:    "Extraccion IA GPT-5.5 de soporte de compra o gasto",
 	})
 	return updated, nil
 }
 
 func soporteComprasIASystemPrompt() string {
-	return `Eres un motor profesional de captura inteligente OCR/IA para compras y gastos en Colombia.
+	return `Eres un motor profesional de captura inteligente con IA GPT-5.5 para compras y gastos en Colombia.
 Lee fotos, PDFs o XML de facturas de compra, documentos soporte, cuentas de cobro, recibos y gastos.
 Devuelve exclusivamente JSON valido con estas claves:
 {
@@ -404,7 +404,7 @@ func extractJSONCandidate(raw string) string {
 
 func loadSoporteComprasIAAttachment(row dbpkg.EmpresaSoporteComprasIA) (*aiAttachment, error) {
 	if strings.TrimSpace(row.ArchivoURL) == "" {
-		return nil, errors.New("el soporte no tiene archivo adjunto para OCR")
+		return nil, errors.New("el soporte no tiene archivo adjunto para analisis IA")
 	}
 	path, err := safeSoporteComprasIAPathFromURL(row.ArchivoURL)
 	if err != nil {

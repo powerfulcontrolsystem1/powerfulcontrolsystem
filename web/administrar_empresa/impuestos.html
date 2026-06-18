@@ -24,6 +24,12 @@
     .impuestos-export { display:flex; gap:8px; flex-wrap:wrap; }
     .impuestos-table-note { margin-top:10px; color:var(--muted); font-size:13px; }
     .impuestos-pais { font-weight:700; color:var(--text); }
+    .impuestos-readiness{display:grid;gap:10px;margin-top:10px;padding:14px;border:1px solid var(--border);border-radius:8px;background:var(--surface-soft)}
+    .impuestos-readiness-head{display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap}
+    .impuestos-readiness-head strong{font-size:16px}
+    .impuestos-readiness-bar{height:12px;border-radius:999px;background:color-mix(in srgb,var(--border) 70%,transparent);overflow:hidden}
+    .impuestos-readiness-bar span{display:block;height:100%;width:0;background:linear-gradient(90deg,#f59e0b,#16a34a)}
+    .impuestos-readiness-list{margin:0;padding-left:18px;color:var(--muted);display:grid;gap:4px}
     @media (max-width: 980px) {
       .impuestos-grid-2 { grid-template-columns:1fr; }
     }
@@ -63,6 +69,14 @@
             </div>
           </div>
           <div id="impuestosMsg" class="form-help" style="margin-top:10px;"></div>
+          <div class="impuestos-readiness" aria-label="Preparacion de impuestos">
+            <div class="impuestos-readiness-head">
+              <strong>Preparacion de impuestos</strong>
+              <span id="impuestosReadinessPct">0%</span>
+            </div>
+            <div class="impuestos-readiness-bar"><span id="impuestosReadinessBar"></span></div>
+            <ul id="impuestosReadinessMissing" class="impuestos-readiness-list"></ul>
+          </div>
         </div>
 
         <div class="impuestos-kpis" id="impuestosKpis"></div>
@@ -248,6 +262,43 @@
           + '<p class="impuestos-kpi-help">' + esc(card.help) + '</p>'
           + '</article>';
       }).join('');
+      updateImpuestosReadiness();
+    }
+
+    function updateImpuestosReadiness(){
+      var ctx = state.context || {};
+      var dash = state.dashboard || {};
+      var summary = dash.resumen || {};
+      var configurados = Array.isArray(ctx.configurados) ? ctx.configurados : [];
+      var activos = configurados.filter(function(it){ return Number(it.habilitado || 0) === 1; });
+      var porCodigo = Array.isArray(dash.por_codigo) ? dash.por_codigo : [];
+      var diario = Array.isArray(dash.diario) ? dash.diario : [];
+      var asientos = Array.isArray(dash.asientos) ? dash.asientos : [];
+      var items = [
+        { ok: !!String(ctx.pais_codigo || '').trim(), label: 'Detectar pais fiscal de la empresa' },
+        { ok: configurados.length > 0, label: 'Cargar catalogo tributario base' },
+        { ok: activos.length > 0 || Number(summary.impuestos_activos || 0) > 0, label: 'Activar impuestos aplicables' },
+        { ok: !!(desdeInput && desdeInput.value) && !!(hastaInput && hastaInput.value), label: 'Definir periodo desde/hasta' },
+        { ok: Number(summary.ventas_cerradas || 0) > 0, label: 'Tener ventas cerradas en el periodo' },
+        { ok: Number(summary.base_gravable || 0) > 0, label: 'Generar base gravable conciliable' },
+        { ok: Number(summary.impuesto_generado || 0) > 0, label: 'Calcular impuesto generado' },
+        { ok: porCodigo.length > 0, label: 'Revisar resumen fiscal por codigo' },
+        { ok: diario.length > 0, label: 'Revisar detalle diario' },
+        { ok: asientos.length > 0, label: 'Revisar asientos contables sugeridos' }
+      ];
+      var done = items.filter(function(item){ return item.ok; }).length;
+      var pctValue = Math.round((done / items.length) * 100);
+      var bar = document.getElementById('impuestosReadinessBar');
+      var pct = document.getElementById('impuestosReadinessPct');
+      var list = document.getElementById('impuestosReadinessMissing');
+      if (bar) bar.style.width = pctValue + '%';
+      if (pct) pct.textContent = pctValue + '%';
+      if (list) {
+        var missing = items.filter(function(item){ return !item.ok; });
+        list.innerHTML = missing.length
+          ? missing.map(function(item){ return '<li>' + esc(item.label) + '</li>'; }).join('')
+          : '<li>Listo para revision fiscal y exportacion de soporte contable.</li>';
+      }
     }
 
     function renderCodigos(rows){

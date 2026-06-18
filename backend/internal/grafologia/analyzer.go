@@ -139,7 +139,7 @@ func AnalyzeImageBytes(data []byte, ocrText string) (AnalysisResult, error) {
 		Traits:  traits,
 		TechnicalNotes: []string{
 			"Analisis heuristico orientativo: no es diagnostico psicologico, medico, juridico ni prueba de seleccion de personal.",
-			"El motor inicial usa geometria de imagen en Go puro; Tesseract OCR puede complementar el texto cuando este instalado en la VPS.",
+			"El motor inicial usa geometria de imagen en Go puro; la transcripcion manual opcional puede complementar el analisis con IA configurada.",
 			"Las metricas dependen de iluminacion, resolucion, angulo de captura y calidad del manuscrito.",
 		},
 		OCRText: strings.TrimSpace(ocrText),

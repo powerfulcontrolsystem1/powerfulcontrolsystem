@@ -473,3 +473,19 @@ func ListSuperErroresSistema(dbConn *sql.DB, filter SuperErrorSistemaFiltro) ([]
 
 	return items, summary.Total, summary, nil
 }
+
+// ResetSuperErroresSistema limpia los indicadores del monitor centralizado de errores.
+func ResetSuperErroresSistema(dbConn *sql.DB) (int64, error) {
+	if dbConn == nil {
+		return 0, fmt.Errorf("db connection is required")
+	}
+	if err := EnsureSuperErroresSistemaSchema(dbConn); err != nil {
+		return 0, err
+	}
+	res, err := execSQLCompat(dbConn, "DELETE FROM super_errores_sistema")
+	if err != nil {
+		return 0, err
+	}
+	affected, _ := res.RowsAffected()
+	return affected, nil
+}

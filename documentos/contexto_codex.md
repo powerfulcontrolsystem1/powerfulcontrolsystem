@@ -586,8 +586,8 @@ decisiones en cada tarea.
   `WithEmpresaGrafologiaPermissions`.
 - Backend: `backend/internal/grafologia` contiene el motor Go puro; no usa
   dependencias externas.
-- Docker/VPS: la imagen del backend instala Tesseract OCR libre y lo habilita
-  con `GRAFOLOGIA_TESSERACT_ENABLED=1`, idioma `spa+eng`.
+- Docker/VPS: desde 2026-06-18 no se instala Tesseract/pdftoppm para OCR; el
+  analisis complementario debe usar IA GPT-5.5 y transcripcion manual opcional.
 - BD: `empresa_grafologia_analisis` en `pcs_empresas`.
 - UI: `web/administrar_empresa/grafologia.html` y `web/js/grafologia.js`.
 - La pantalla asocia cada manuscrito a un cliente central de la empresa:

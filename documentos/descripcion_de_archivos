@@ -1,3 +1,8 @@
+2026-06-18 - Agentes de mantenimiento IA super
+- `web/super/agentes_de_mantenimiento_qutomatico.html`: panel super para habilitar el agente diario de noticias DIAN, configurar hora/correo, ejecutar revision manual y leer hallazgos registrados.
+- `backend/handlers/super_mantenimiento_agentes.go`: API `/super/api/agentes_mantenimiento`, worker diario, lectura de fuentes DIAN, clasificacion con OpenAI cuando esta disponible y notificacion por Gmail SMTP.
+- `backend/db/super_mantenimiento_agentes.go`: esquema y CRUD de `super_mantenimiento_agentes` y `super_mantenimiento_agente_hallazgos` en `pcs_superadministrador`.
+
 2026-06-18 - DIAN produccion PCS aceptada y ayuda operativa
 - `web/administrar_empresa/facturacion_electronica_tutorial_dian.html`: agrega estado real de PCS en DIAN produccion con `1PCS2` y `1PCS3` aprobadas con notificacion, control diario de consecutivos, lectura de `RUT01` y manejo seguro de `Regla 90`.
 - `backend/handlers/facturacion_electronica.go`: evita que `Regla 90, Documento procesado anteriormente` marque una factura como aceptada sin acuse original o evidencia DIAN independiente.
@@ -266,6 +271,32 @@
 - `web/administrar_empresa/configuracion.html`: agrega la seccion `Perfil tributario Colombia` para persona natural/juridica, subcategoria, regimen, IVA, consumo, responsabilidades RUT y obligaciones sugeridas por empresa.
 - `web/administrar_empresa/configuracion_menu.html`: agrega el acceso de submenu a `Perfil tributario Colombia`.
 - `backend/db/empresa_configuracion_avanzada.go`: amplia `empresa_configuracion_avanzada` con campos estructurados de perfil fiscal Colombia, normalizacion de valores permitidos y persistencia por `empresa_id`.
+
+2026-06-18 - Panel super y rs canonico
+- `backend/handlers/super_panel_control_handlers.go`: endpoint super auditado
+  para reiniciar metricas o indicadores de errores del centro de mando.
+- `backend/db/db.go`: `ResetMetricsHistory` limpia la tabla `metrics`.
+- `backend/db/super_errores_sistema.go`: `ResetSuperErroresSistema` limpia el
+  monitor centralizado `super_errores_sistema`.
+- `web/super/licencias_resumen.html`: botones de reinicio confirmados en Estado
+  general.
+- `scripts/rs.ps1`: ruta canonica para ejecutar `rs`; el wrapper raiz
+  `rs.ps1` fue retirado.
+
+2026-06-18 - Facturacion electronica, IA GPT-5.5 y preparacion 0-100
+- `backend/handlers/facturacion_electronica.go`: agrega accion de anulacion por
+  nota credito electronica total, con validacion de documento emitido, motivo y
+  trazabilidad contable.
+- `web/administrar_empresa/facturas_electronicas.html`: compacta tarjetas,
+  exporta busquedas, deja `Visualizar`, mejora la representacion POS/carta y
+  agrega selector de tamano de letra.
+- `web/administrar_empresa/nomina_sueldos.html`: agrega barra 0-100 de datos
+  faltantes para nomina electronica/nomina.
+- `web/administrar_empresa/impuestos.html`: agrega barra 0-100 de preparacion
+  tributaria.
+- `backend/db/ocr.go`, `backend/handlers/ocr.go`,
+  `web/administrar_empresa/ocr.html` y `web/super/configuracion/ocr.html`:
+  eliminados del flujo activo; la captura operativa queda en IA GPT-5.5.
 
 2026-06-08 - OCR documental sin IA
 - `backend/db/ocr.go`: esquema y consultas de `empresa_ocr_documentos`, aisladas por `empresa_id`.

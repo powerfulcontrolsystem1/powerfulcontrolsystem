@@ -3,6 +3,19 @@
 Version: 2026-05-15.1.0
 Ultima actualizacion: 2026-05-15
 
+Actualizacion 2026-06-18 (agentes de mantenimiento super)
+- Nuevas tablas en `pcs_superadministrador`:
+  - `super_mantenimiento_agentes`: define agentes automaticos por `codigo`, con
+    habilitacion, `hora_ejecucion`, correo de notificacion, ultima ejecucion y
+    estado operativo. El primer codigo registrado es `dian_noticias`.
+  - `super_mantenimiento_agente_hallazgos`: guarda noticias o hallazgos
+    detectados por agente con titulo, URL, fuente, resumen, impacto, relevancia,
+    fecha detectada, correo notificado y `hash_contenido` unico para no duplicar.
+- El agente DIAN usa las tablas existentes `super_ai_consultas` y
+  `super_ai_uso_diario` para registrar consumo OpenAI cuando clasifica noticias.
+- No hay `empresa_id` porque el agente es gobierno global del super
+  administrador; no almacena secretos ni credenciales DIAN.
+
 Actualizacion 2026-06-12 (motor contable automatico)
 - No se agregan tablas nuevas. Se fortalece el contrato existente
   `empresa_eventos_contables` -> `empresa_asientos_contables`.
@@ -85,6 +98,26 @@ Actualizacion 2026-06-09 (logos corporativo y factura por empresa)
   `web/uploads/empresas/empresa_{id}_{slug}/imagenes/logos/factura/`.
 - No se crean datos operativos ni documentos electronicos; solo configuracion
   visual aislada por `empresa_id`.
+
+Actualizacion 2026-06-18 (reinicio de indicadores super)
+- `metrics`: el centro de mando super puede limpiar el historico de muestras con
+  `/super/api/panel_control/reset?action=metricas`. La tabla se conserva y el
+  recolector vuelve a poblarla con nuevas lecturas.
+- `super_errores_sistema`: el monitor de errores puede limpiarse con
+  `/super/api/panel_control/reset?action=errores`. La accion reinicia
+  indicadores del panel, no corrige causas tecnicas ni borra auditoria super.
+
+Actualizacion 2026-06-18 (retiro OCR y barras de preparacion)
+- El modulo OCR documental queda retirado del runtime: ya no se asegura
+  `empresa_ocr_documentos`, no se registran rutas `/api/empresa/ocr` ni
+  `/super/api/config/ocr`, y no se instala Tesseract/pdftoppm en la imagen
+  Docker del backend. Si una base antigua conserva tablas o columnas con nombre
+  `ocr_*`, quedan como compatibilidad historica y no como flujo activo.
+- No se agregan tablas nuevas para las barras 0-100 de Nomina e Impuestos:
+  ambas calculan el porcentaje desde datos existentes por `empresa_id`.
+- La anulacion de factura electronica se registra como nota credito electronica
+  total usando los documentos de facturacion existentes; el documento original
+  queda marcado como `anulada` y con observaciones de trazabilidad.
 
 Actualizacion 2026-06-08 (OCR documental sin IA)
 - Nueva tabla `empresa_ocr_documentos`: guarda por `empresa_id` cada documento

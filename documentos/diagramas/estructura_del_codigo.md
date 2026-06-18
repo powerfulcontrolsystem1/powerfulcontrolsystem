@@ -59,27 +59,20 @@
   `backup/vps_snapshots` + `super_vps_snapshots` -> descarga/restauracion o
   nube `rclone`.
 
-## Actualizacion 2026-06-08 - OCR documental sin IA
+## Actualizacion 2026-06-18 - OCR documental retirado
 
-- `backend/db/ocr.go`
-  - Define `empresa_ocr_documentos`, consultas de historial y lectura por
-    `empresa_id`.
-- `backend/handlers/ocr.go`
-  - Implementa `/api/empresa/ocr` con upload multipart, Tesseract CLI,
-    conversion PDF con `pdftoppm`, parser de campos y configuracion super
-    `/super/api/config/ocr`.
+- `backend/db/ocr.go` y `backend/handlers/ocr.go`
+  - Eliminados del runtime activo. Ya no se asegura esquema OCR ni se registran
+    `/api/empresa/ocr` o `/super/api/config/ocr`.
 - `backend/handlers/empresa_permisos.go`
-  - Agrega modulo `ocr`, pagina `linkOCR` y wrapper
+  - Retira modulo `ocr`, pagina `linkOCR` y wrapper
     `WithEmpresaOCRPermissions`.
-- `web/administrar_empresa/ocr.html`
-  - Pantalla empresarial independiente para procesar OCR, ver sugerencias,
-    texto extraido e historial.
-- `web/super/configuracion/ocr.html`
-  - Pantalla super para activar/probar binarios e idioma del motor OCR.
+- `web/administrar_empresa/ocr.html` y `web/super/configuracion/ocr.html`
+  - Eliminadas; la captura de soportes usa `soportes_compras_ia` con IA GPT-5.5.
 - `deploy/docker/backend.Dockerfile`
-  - Incluye `poppler-utils` para PDFs, junto con Tesseract y datos `spa+eng`.
-- Flujo: Administrar empresa -> OCR -> `/api/empresa/ocr` ->
-  `empresa_ocr_documentos` -> sugerencias revisables para modulos destino.
+  - Retira Tesseract y `poppler-utils`; no hay OCR local como dependencia de
+    despliegue.
+- Flujo vigente: Compras -> Captura IA GPT-5.5 -> `/api/empresa/soportes_compras_ia`.
 
 ## Actualizacion 2026-06-08 - Ayuda contextual en formularios
 

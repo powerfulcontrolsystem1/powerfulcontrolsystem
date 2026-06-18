@@ -168,7 +168,7 @@ func handleEmpresaGrafologiaPOST(w http.ResponseWriter, r *http.Request, dbEmp, 
 			http.Error(w, "solo se permiten imagenes", http.StatusBadRequest)
 			return
 		}
-		imageURL, fileName, absPath, err := saveEmpresaGrafologiaImage(data, header.Filename, empresaID)
+		imageURL, fileName, _, err := saveEmpresaGrafologiaImage(data, header.Filename, empresaID)
 		if err != nil {
 			log.Printf("[grafologia] save empresa_id=%d error: %v", empresaID, err)
 			http.Error(w, "No se pudo guardar la imagen del analisis", http.StatusInternalServerError)
@@ -201,12 +201,6 @@ func handleEmpresaGrafologiaPOST(w http.ResponseWriter, r *http.Request, dbEmp, 
 			clienteDocumento = strings.TrimSpace(strings.TrimSpace(cliente.TipoDocumento) + " " + strings.TrimSpace(cliente.NumeroDocumento))
 		}
 		ocrMotor := "go_heuristico"
-		if ocrTexto == "" {
-			if text, ok := runOptionalTesseractOCR(r.Context(), absPath); ok {
-				ocrTexto = text
-				ocrMotor = "tesseract_cli"
-			}
-		}
 		result, err := grafologix.AnalyzeImageBytes(data, ocrTexto)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
@@ -484,7 +478,7 @@ func buildGrafologiaIASystemPrompt() string {
 	return strings.TrimSpace(`Eres un analista profesional de GRAFOLOGIX. Analiza la imagen manuscrita con criterio visual, matematico y heuristico, en espanol claro.
 
 Reglas:
-- Usa la imagen como fuente principal y el texto OCR solo como apoyo.
+- Usa la imagen como fuente principal y la transcripcion opcional solo como apoyo.
 - No emitas diagnosticos clinicos, legales, laborales definitivos ni decisiones automaticas de contratacion.
 - No infieras rasgos sensibles o protegidos como salud, religion, orientacion, origen etnico, ideologia o condiciones medicas.
 - Si la imagen no permite concluir algo, indicalo con baja confianza y recomienda una nueva captura.
@@ -531,7 +525,7 @@ func buildGrafologiaIAPrompt(titulo, clienteNombre, clienteDocumento, personaDes
 		}
 	}
 	if strings.TrimSpace(ocrTexto) != "" {
-		b.WriteString("\nTexto OCR o transcripcion opcional:\n")
+		b.WriteString("\nTranscripcion opcional:\n")
 		b.WriteString(strings.TrimSpace(ocrTexto))
 		b.WriteString("\n")
 	}
@@ -551,9 +545,9 @@ func buildGrafologiaCatalogo() grafologiaCatalogo {
 		},
 		Exportaciones: []string{"HTML imprimible", "PDF real", "Word compatible", "JSON", "CSV", "TXT"},
 		OCR: map[string]string{
-			"go":        "Analisis geometrico integrado en Go puro.",
-			"tesseract": "OCR libre opcional por CLI cuando GRAFOLOGIA_TESSERACT_ENABLED=1.",
-			"opencv":    "Recomendado como sidecar futuro para perspectiva avanzada, Canny y Hough sin acoplar dependencias Go.",
+			"go":            "Analisis geometrico integrado en Go puro.",
+			"transcripcion": "Texto opcional pegado manualmente para complementar el analisis IA.",
+			"opencv":        "Recomendado como sidecar futuro para perspectiva avanzada, Canny y Hough sin acoplar dependencias Go.",
 		},
 		Advertencia: "La grafologia se maneja como lectura heuristica orientativa, no como diagnostico psicologico ni decision automatizada.",
 	}

@@ -664,6 +664,161 @@ func EmpresaFacturacionElectronicaHandler(dbEmp, dbSuper *sql.DB) http.HandlerFu
 				writeJSON(w, http.StatusOK, resp)
 				return
 			}
+			if action == "anular_factura_nota_credito" || action == "anular_factura" {
+				var payload facturacionOperacionPayload
+				if r.Body != nil {
+					_ = json.NewDecoder(r.Body).Decode(&payload)
+				}
+				if payload.EmpresaID <= 0 {
+					if empresaID, err := parseInt64QueryOptional(r, "empresa_id"); err == nil && empresaID > 0 {
+						payload.EmpresaID = empresaID
+					}
+				}
+				if payload.EmpresaID <= 0 {
+					http.Error(w, "empresa_id es obligatorio", http.StatusBadRequest)
+					return
+				}
+				if strings.TrimSpace(payload.DocumentoCodigo) == "" {
+					payload.DocumentoCodigo = strings.TrimSpace(r.URL.Query().Get("documento_codigo"))
+				}
+				if strings.TrimSpace(payload.DocumentoCodigo) == "" {
+					http.Error(w, "documento_codigo es obligatorio", http.StatusBadRequest)
+					return
+				}
+				motivo := strings.TrimSpace(payload.Observaciones)
+				if motivo == "" {
+					motivo = strings.TrimSpace(r.URL.Query().Get("motivo"))
+				}
+				if len(motivo) < 10 {
+					http.Error(w, "motivo de anulacion es obligatorio y debe tener minimo 10 caracteres", http.StatusBadRequest)
+					return
+				}
+				factura, err := dbpkg.GetEmpresaDocumentoFacturacionByCodigo(dbEmp, payload.EmpresaID, "factura_electronica", payload.DocumentoCodigo)
+				if err != nil {
+					if errors.Is(err, sql.ErrNoRows) {
+						http.Error(w, "factura no encontrada", http.StatusNotFound)
+						return
+					}
+					http.Error(w, "No se pudo consultar la factura", http.StatusInternalServerError)
+					return
+				}
+				if strings.ToLower(strings.TrimSpace(factura.EstadoDocumento)) != "emitida" {
+					http.Error(w, "solo se puede anular una factura electronica emitida", http.StatusConflict)
+					return
+				}
+				if strings.TrimSpace(factura.CodigoValidacion) == "" {
+					http.Error(w, "la factura no tiene CUFE/CUDE/codigo de validacion para relacionar la nota credito", http.StatusConflict)
+					return
+				}
+				existentes, err := dbpkg.ListEmpresaDocumentosFacturacionByEmpresa(dbEmp, dbpkg.EmpresaDocumentoFacturacionListFilter{
+					EmpresaID:       payload.EmpresaID,
+					TipoDocumento:   "nota_credito",
+					DocumentoQuery:  factura.DocumentoCodigo,
+					IncludeInactive: true,
+					Limit:           20,
+				})
+				if err != nil {
+					http.Error(w, "No se pudo validar notas credito existentes", http.StatusInternalServerError)
+					return
+				}
+				for _, nc := range existentes {
+					if strings.Contains(strings.ToUpper(nc.Observaciones), strings.ToUpper(factura.DocumentoCodigo)) {
+						http.Error(w, "ya existe una nota credito relacionada con esta factura", http.StatusConflict)
+						return
+					}
+				}
+				colombiaLoc, locErr := time.LoadLocation("America/Bogota")
+				if locErr != nil {
+					colombiaLoc = time.FixedZone("COT", -5*60*60)
+				}
+				nowCode := time.Now().In(colombiaLoc).Format("20060102150405")
+				notaCodigo := "NC-" + strings.TrimSpace(factura.DocumentoCodigo) + "-" + nowCode
+				usuario := strings.TrimSpace(adminEmailFromRequest(r))
+				observaciones := fmt.Sprintf("Anulacion total de factura %s. Numero legal original: %s. CUFE/CUDE original: %s. Motivo: %s", factura.DocumentoCodigo, factura.NumeroLegal, factura.CodigoValidacion, motivo)
+				notaPayload := dbpkg.EmpresaDocumentoFacturacion{
+					EmpresaID:            factura.EmpresaID,
+					TipoDocumento:        "nota_credito",
+					DocumentoCodigo:      notaCodigo,
+					EstadoDocumento:      "emitida",
+					EstadoAnterior:       "borrador",
+					EventoUltimo:         "nota_credito_emitida",
+					PeriodoContable:      factura.PeriodoContable,
+					MontoTotal:           factura.MontoTotal,
+					Moneda:               factura.Moneda,
+					PaisCodigo:           factura.PaisCodigo,
+					AmbienteFE:           factura.AmbienteFE,
+					EntidadRelacionadaID: factura.EntidadRelacionadaID,
+					UsuarioCreador:       usuario,
+					Observaciones:        observaciones,
+				}
+				nota, err := dbpkg.UpsertEmpresaDocumentoFacturacion(dbEmp, notaPayload)
+				if err != nil {
+					http.Error(w, "No se pudo crear la nota credito de anulacion", http.StatusInternalServerError)
+					return
+				}
+				notaOperacion := facturacionBuildOperacionPayloadFromDocumento(*nota)
+				completarClientePayloadFacturacion(dbEmp, factura.EmpresaID, &notaOperacion, *factura)
+				integracionFiscal, retryRegistro, integErr := processFacturacionIntegracionForDocumento(dbEmp, notaOperacion, *nota, "nota_credito", usuario, dbSuper)
+				if integErr != nil {
+					log.Printf("[facturacion_electronica] error nota credito anulacion empresa_id=%d factura=%s nota=%s err=%v", factura.EmpresaID, factura.DocumentoCodigo, nota.DocumentoCodigo, integErr)
+				}
+				facturaAnulada, err := dbpkg.UpsertEmpresaDocumentoFacturacion(dbEmp, dbpkg.EmpresaDocumentoFacturacion{
+					EmpresaID:            factura.EmpresaID,
+					TipoDocumento:        factura.TipoDocumento,
+					DocumentoCodigo:      factura.DocumentoCodigo,
+					EstadoDocumento:      "anulada",
+					EstadoAnterior:       factura.EstadoDocumento,
+					EventoUltimo:         "factura_anulada_por_nota_credito",
+					PeriodoContable:      factura.PeriodoContable,
+					MontoTotal:           factura.MontoTotal,
+					Moneda:               factura.Moneda,
+					NumeroLegal:          factura.NumeroLegal,
+					CodigoValidacion:     factura.CodigoValidacion,
+					PaisCodigo:           factura.PaisCodigo,
+					AmbienteFE:           factura.AmbienteFE,
+					FechaDocumento:       factura.FechaDocumento,
+					EntidadRelacionadaID: factura.EntidadRelacionadaID,
+					UsuarioCreador:       usuario,
+					Observaciones:        strings.TrimSpace(factura.Observaciones + "\nAnulada por nota credito " + nota.DocumentoCodigo + ". Motivo: " + motivo),
+				})
+				if err != nil {
+					http.Error(w, "La nota credito fue creada, pero no se pudo marcar la factura como anulada", http.StatusInternalServerError)
+					return
+				}
+				registrarEventoContableNoBloqueante(dbEmp, r, "facturacion", dbpkg.EmpresaEventoContable{
+					EmpresaID:       factura.EmpresaID,
+					Modulo:          "facturacion",
+					Evento:          "factura_anulada_por_nota_credito",
+					Entidad:         "factura_electronica",
+					EntidadID:       facturaAnulada.ID,
+					DocumentoTipo:   factura.TipoDocumento,
+					DocumentoCodigo: factura.DocumentoCodigo,
+					PeriodoContable: factura.PeriodoContable,
+					MontoTotal:      factura.MontoTotal,
+					Moneda:          factura.Moneda,
+					Origen:          "api_facturacion_electronica",
+					Observaciones:   motivo,
+				}, map[string]interface{}{
+					"nota_credito_codigo": nota.DocumentoCodigo,
+					"factura_codigo":      factura.DocumentoCodigo,
+					"numero_legal":        factura.NumeroLegal,
+					"codigo_validacion":   factura.CodigoValidacion,
+					"empresa_id":          factura.EmpresaID,
+				})
+				resp := map[string]interface{}{
+					"ok":                 true,
+					"accion":             "anular_factura_nota_credito",
+					"empresa_id":         factura.EmpresaID,
+					"factura_original":   facturaAnulada,
+					"nota_credito":       nota,
+					"integracion_fiscal": integracionFiscal,
+				}
+				if retryRegistro != nil {
+					resp["cola_reintentos"] = retryRegistro
+				}
+				writeJSON(w, http.StatusOK, resp)
+				return
+			}
 			if !facturacionActionIsPaisConfig(action) && facturacionActionRequiresFiscalIntegration(action) {
 				var payload facturacionOperacionPayload
 				if r.Body != nil {

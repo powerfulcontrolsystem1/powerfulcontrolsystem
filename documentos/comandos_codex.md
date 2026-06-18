@@ -59,20 +59,16 @@ causa concreta o dejar el riesgo documentado.
 
 ## rs
 
-El usuario suele pedir `ejecuta rs`. El wrapper raiz es:
-
-```powershell
-.\rs.ps1
-```
-
-El script interno relacionado es:
+El usuario suele pedir `ejecuta rs`. El script canonico vive en `scripts`:
 
 ```powershell
 .\scripts\rs.ps1
 ```
 
-Revisar el contenido del script antes de asumir su alcance. Puede encadenar
-preflight, actualizacion, sincronizacion y pasos operativos.
+No depender de un wrapper en la raiz del proyecto. Revisar el contenido del
+script antes de asumir su alcance. Puede encadenar preflight, actualizacion,
+sincronizacion y pasos operativos.
+
 
 ## sync_to_vps
 
@@ -155,10 +151,10 @@ Flujo normal cuando el usuario pide publicar, sincronizar o `rs`:
 
 ```powershell
 Set-Location D:\powerfulcontrolsystem
-.\rs.ps1
+.\scripts\rs.ps1
 ```
 
-`rs.ps1` es el wrapper preferido porque encadena las validaciones del proyecto,
+`scripts\rs.ps1` es el orquestador preferido porque encadena las validaciones del proyecto,
 sincroniza al VPS, reconstruye/recarga servicios y verifica salud publica segun
 la configuracion vigente.
 
@@ -444,7 +440,7 @@ login, seleccionar empresa, carrito, cliente, totales, factura/impresion. Para
 consultas de estado y reintentos DIAN preferir API autenticada porque conserva
 la evidencia exacta y reduce errores visuales.
 
-Despues de `.\rs.ps1`, validar siempre contra el dominio publico con parametro
+Despues de `.\scripts\rs.ps1`, validar siempre contra el dominio publico con parametro
 `qa={timestamp}`. Si el navegador conserva cache anterior, recargar la pestana
 o cambiar el parametro `qa`.
 

@@ -338,7 +338,6 @@ try {
   var permModuleAuditoria = "auditoria";
   var permModuleEnergiaSolar = "energia_solar";
   var permModuleGrafologia = "grafologia";
-  var permModuleOCR = "ocr";
   var permModuleBolsa = "bolsa";
   var permModuleBackups = "backups";
   var permModuleDocumentosOnlyOffice = "documentos_onlyoffice";
@@ -482,7 +481,6 @@ try {
     linkCalidadProcesos: { module: permModuleCalidadProcesos, action: permActionCreate },
     linkEnergiaSolar: { module: permModuleEnergiaSolar, action: permActionCreate },
     linkGrafologia: { module: permModuleGrafologia, action: permActionCreate },
-    linkOCR: { module: permModuleOCR, action: permActionCreate },
     linkBolsa: { module: permModuleBolsa, action: permActionRead },
     linkBackups: { module: permModuleBackups, action: permActionApprove },
 
@@ -1236,7 +1234,6 @@ try {
       case permModuleCalidadProcesos:
       case permModuleEnergiaSolar:
       case permModuleGrafologia:
-      case permModuleOCR:
       case permModuleAuditoria:
       case permModuleBackups:
       case permModuleDocumentosOnlyOffice:

@@ -2882,3 +2882,19 @@ func GetMetricsHistory(dbConn *sql.DB, limit int) ([]Metric, error) {
 	}
 	return out, nil
 }
+
+// ResetMetricsHistory elimina las muestras historicas del panel super.
+func ResetMetricsHistory(dbConn *sql.DB) (int64, error) {
+	if dbConn == nil {
+		return 0, fmt.Errorf("db connection is required")
+	}
+	if err := InitMetricsTable(dbConn); err != nil {
+		return 0, err
+	}
+	res, err := execSQLCompat(dbConn, "DELETE FROM metrics")
+	if err != nil {
+		return 0, err
+	}
+	affected, _ := res.RowsAffected()
+	return affected, nil
+}
