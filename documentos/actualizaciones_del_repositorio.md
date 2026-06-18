@@ -15105,3 +15105,21 @@ Archivos modificados:
 2026-06-17 20:29:21 - Mensaje: rs: actualizar repositorio y sincronizar VPS; Commit: 04c88dbc; PushStatus: OK
 Archivos modificados:
 - backend/db/facturacion_electronica.go
+
+2026-06-17 20:44:41 - Mensaje: rs: actualizar repositorio y sincronizar VPS; Commit: 17aa3186; PushStatus: OK
+Archivos modificados:
+- backend/handlers/carritos_compras.go
+- backend/handlers/facturacion_electronica.go
+- backend/handlers/licencias_codigos_descuento.go
+- backend/handlers/mail_utils.go
+- documentos/comandos_codex.md
+- documentos/contexto_codex.md
+- documentos/decisiones_tecnicas.md
+- documentos/flujos_operativos.md
+- documentos/historial_de_cambios
+- documentos/mapa_modulos.md
+- web/administrar_empresa/facturacion_electronica_pruebas_dian.html
+- web/administrar_empresa/facturacion_electronica_tutorial_dian.html
+- web/super/configuracion/ia_global.html
+- web/super/licencias_codigos_descuento.html
+- web/super_administrador.html
