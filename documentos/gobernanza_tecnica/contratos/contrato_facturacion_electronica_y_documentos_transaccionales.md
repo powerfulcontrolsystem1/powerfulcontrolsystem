@@ -3,6 +3,13 @@
 Fecha: 2026-04-18
 Estado: vigente
 
+Actualizacion 2026-06-18:
+
+- PCS quedo validado en DIAN produccion para `empresa_id=12` con prefijo `1PCS`, resolucion `18764111318575`, rango `1-100000` y Software ID asociado.
+- Evidencia fiscal aceptada: portal DIAN produccion muestra `1PCS2` y `1PCS3` como `Aprobado con notificacion`; `1PCS3` tambien obtuvo acuse SOAP/WCF `estado_dian=aceptado` y `acuse_estado=aceptado`.
+- `Regla 90, Documento procesado anteriormente` no es aceptacion automatica. Solo se considera cierre aceptado si existe acuse oficial aceptado, documento visible en portal DIAN o evidencia equivalente.
+- Despues de una prueba directa fuera del flujo documental, los contadores deben quedar adelantados para no reutilizar el folio ya aprobado.
+
 ## Alcance
 
 Este contrato cubre el ciclo documental empresarial de facturacion y documentos de venta, la persistencia comun en `empresa_facturacion_documentos`, la configuracion por pais de facturacion electronica, el envio automatico de resumen por correo al cliente, la cola de reintentos y reconciliacion fiscal, y la base operativa actual del endpoint DIAN Colombia.
@@ -182,6 +189,10 @@ Restriccion clave:
 18. El set de pruebas DIAN respeta consecutivos y rango configurado; si el rango no alcanza, la operacion debe fallar con conflicto.
 19. La documentacion debe distinguir explicitamente entre `firma base` y `firma oficial`, y entre `envio real base` y `transporte oficial DIAN`.
 20. Para Colombia, el objetivo base vigente del set DIAN en software propio o proveedor tecnologico es 30 facturas, 10 notas debito y 10 notas credito; la UI permite cambiarlo cuando el portal DIAN asigne un objetivo diferente.
+21. En produccion Colombia, un documento solo queda fiscalmente aceptado cuando DIAN devuelve acuse aceptado, el portal DIAN lo muestra aprobado o existe evidencia oficial equivalente; `Regla 90` por si sola deja el caso pendiente de consulta.
+22. `Aprobado con notificacion` en portal DIAN cuenta como documento aprobado; la notificacion debe conservarse como observacion operativa y corregirse si apunta a datos maestros.
+23. Antes de reenviar un documento con el mismo prefijo/folio, el sistema u operador debe consultar historial DIAN, cola de reintentos, CUFE/TrackId o portal para evitar duplicados y consumo de consecutivos.
+24. Si se ejecuta una prueba directa contra DIAN por fuera de `empresa_facturacion_documentos`, debe registrarse en historial de cambios y adelantar `empresa_dian_configuracion.consecutivo_actual` y `empresa_configuracion_avanzada.proximo_consecutivo` al siguiente folio disponible.
 
 ## Salidas y estados funcionales
 

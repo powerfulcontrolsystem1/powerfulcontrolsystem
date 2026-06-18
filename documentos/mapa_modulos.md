@@ -13,18 +13,22 @@ manuales para que el usuario pueda digitar o corregir datos antes de guardar. El
 endpoint local `importar_numeracion_pdf` queda como respaldo tecnico/test. No se
 guardan secretos ni se sobrescribe la configuracion sin confirmacion del usuario.
 
-Actualizacion 2026-06-17: la prueba real PCS con resolucion DIAN nueva quedo
-aceptada. La factura de producto `menta` emitida como `1PCS2` fue aceptada por
-DIAN; un reintento posterior puede devolver `Regla: 90, Documento procesado
-anteriormente`, que PCS trata como aceptacion idempotente si el documento/CUFE ya
-fue procesado. El flujo correcto es: asociar la numeracion en
+Actualizacion 2026-06-18: la prueba real PCS con resolucion DIAN nueva quedo
+aceptada. La factura de producto `menta` emitida como `1PCS2` y la prueba
+posterior `1PCS3` aparecen en portal DIAN produccion como `Aprobado con
+notificacion`; `1PCS3` tambien fue aceptada por SOAP/WCF con acuse `aceptado` y
+notificacion `RUT01`. PCS debe tratar `Regla: 90, Documento procesado
+anteriormente` como pendiente de consulta del acuse original, no como aceptacion
+automatica. El flujo
+correcto es: asociar la numeracion en
 `https://catalogo-vpfe.dian.gov.co/User/Login`, cargar resolucion/prefijo/rango
 en PCS, consultar clave tecnica con `GetNumberingRange`, emitir y revisar
 acuse/TrackId en `facturacion_electronica_pruebas_dian.html`.
 
 Actualizacion 2026-06-17: la consola DIAN muestra errores de rechazo en rojo con
 ayuda operativa para `FAB05c`, `FAD06`, `FAD05`, `FAD10`, `FAK61`, `ZE02`,
-`RUT01`, vencimientos y `Regla 90`. Si un envio queda `fallido`, el backend crea
+`RUT01`, vencimientos y `Regla 90`. Si un envio queda `fallido` o pendiente de
+acuse original, el backend crea
 una alerta de buzon para el administrador/creador de la empresa con documento,
 estado, error y enlace al centro DIAN.
 

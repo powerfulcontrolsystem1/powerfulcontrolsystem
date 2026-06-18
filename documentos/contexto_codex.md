@@ -1045,11 +1045,20 @@ Antes de ejecutar scripts operativos revisar `documentos/comandos_codex.md`.
 - El sistema consulta `GetNumberingRange` para traer/actualizar la clave tecnica
   del rango; esa clave es necesaria para calcular CUFE correctamente y no debe
   imprimirse.
-- Prueba real cerrada: venta de producto `menta` en PCS con cliente IVAN
-  FRANCISCO CAYON GUARNIZO genero factura `1PCS2` aceptada por DIAN. Si se
-  reintenta el mismo documento, DIAN puede devolver `Regla: 90, Documento
-  procesado anteriormente`; PCS lo considera aceptacion idempotente cuando el
-  documento ya fue procesado.
+- Revalidacion 2026-06-18: la venta de producto `menta` en PCS con cliente IVAN
+  FRANCISCO CAYON GUARNIZO genero factura `1PCS2`; el usuario confirmo luego en
+  portal DIAN produccion que aparece como `Aprobado con notificacion`. Un
+  reenvio puede devolver `Regla: 90, Documento procesado anteriormente`; PCS no
+  debe marcar esa regla como aceptacion automatica sin acuse original, portal
+  DIAN, CUFE/TrackId o evidencia oficial equivalente.
+- Prueba real cerrada 2026-06-18: se emitio `1PCS3` en produccion mediante
+  SOAP/WCF `SendBillSync`; DIAN respondio HTTP 200 con `estado_dian=aceptado`,
+  `acuse_estado=aceptado`, CUFE registrado y notificacion `RUT01` informativa.
+- Confirmacion de portal 2026-06-18: el usuario valido en DIAN produccion,
+  documentos recibidos, que `1PCS3` (18-06-2026) y `1PCS2` (17-06-2026) aparecen
+  como `Aprobado con notificacion`, factura electronica, valor `$ 100`.
+- El siguiente consecutivo operativo despues de la prueba directa quedo en
+  `1PCS4`; no reutilizar `1PCS2` ni `1PCS3`.
 - Cliente de prueba autorizado: IVAN FRANCISCO CAYON GUARNIZO, CC `84456779`,
   Colombia, Santa Marta, direccion `calle 28 N5-116`, celular `3043306506`,
   persona natural. No guardar contrasenas en documentacion.

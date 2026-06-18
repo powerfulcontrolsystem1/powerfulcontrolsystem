@@ -156,6 +156,23 @@
     </div>
 
     <div class="card">
+      <h2>Estado real PCS en produccion</h2>
+      <p class="form-help">
+        Powerful Control System ya emite facturas electronicas reales en DIAN produccion con prefijo <strong>1PCS</strong>. Cuando el emisor y el receptor son el mismo NIT, el portal DIAN puede mostrar esas facturas tambien en <strong>Documentos recibidos</strong>.
+      </p>
+      <table class="dian-guide-table">
+        <thead><tr><th>Documento</th><th>Fecha DIAN</th><th>Resultado</th><th>Lectura operativa</th></tr></thead>
+        <tbody>
+          <tr><td><code>1PCS3</code></td><td>18-06-2026</td><td>Aprobado con notificacion</td><td>Factura real aceptada por DIAN por $100. La notificacion <code>RUT01</code> no bloqueo la aceptacion.</td></tr>
+          <tr><td><code>1PCS2</code></td><td>17-06-2026</td><td>Aprobado con notificacion</td><td>Factura real visible en el portal DIAN. Si se reenvia, DIAN puede responder <code>Regla 90</code> porque ya la proceso.</td></tr>
+        </tbody>
+      </table>
+      <p class="dian-guide-note">
+        Antes de reenviar una factura, busca por prefijo y folio en DIAN. Si ya aparece aprobada, conserva el CUFE/acuse y continua con el siguiente consecutivo.
+      </p>
+    </div>
+
+    <div class="card">
       <h2>Errores DIAN y como solucionarlos</h2>
       <p class="form-help">
         La consola DIAN del centro de habilitacion muestra estos errores en letras grandes y rojas. Si el envio falla, PCS tambien deja una alerta en el buzon del administrador de la empresa.
@@ -169,8 +186,8 @@
           <tr><td><span class="dian-error-code">FAD10</span></td><td>SoftwareSecurityCode invalido.</td><td>Revisa Software ID, PIN tecnico y numero completo de factura usado en el calculo del codigo de seguridad.</td></tr>
           <tr><td><span class="dian-error-code">FAK61</span></td><td>Error en datos del cliente o estructura Party del XML.</td><td>Corrige tipo de persona, tipo y numero de documento, municipio, direccion, responsabilidades y regimen fiscal del cliente.</td></tr>
           <tr><td><span class="dian-error-code">ZE02</span></td><td>Firma digital, digest o certificado invalido.</td><td>Verifica certificado P12/PFX, clave, vigencia, llave privada y que pertenezca al NIT emisor.</td></tr>
-          <tr><td><span class="dian-error-code">Regla 90</span></td><td>Documento procesado anteriormente.</td><td>Consulta el CUFE/TrackId. Si ya esta aceptado, no reenvies; PCS lo trata como respuesta idempotente.</td></tr>
-          <tr><td><span class="dian-error-code">RUT01</span></td><td>Validacion de RUT o servicio RUT no disponible.</td><td>Revisa NIT, DV y razon social. Si el servicio DIAN esta temporalmente no disponible, reintenta mas tarde.</td></tr>
+          <tr><td><span class="dian-error-code">Regla 90</span></td><td>Documento procesado anteriormente.</td><td>No equivale por si sola a aceptacion. Busca el documento en DIAN por CUFE o prefijo/folio; si ya esta aprobado, no lo reenvies y continua con el siguiente consecutivo.</td></tr>
+          <tr><td><span class="dian-error-code">RUT01</span></td><td>Notificacion sobre validacion RUT.</td><td>No siempre bloquea. Si el resultado es <strong>Aprobado con notificacion</strong>, la factura quedo aceptada; de todos modos revisa NIT, DV, razon social y datos del adquiriente.</td></tr>
           <tr><td><span class="dian-error-code">Vencida</span></td><td>Firma digital o resolucion vencida.</td><td>Renueva la firma o solicita nueva autorizacion de numeracion, asociala en DIAN, cargala en PCS y vuelve a consultar clave tecnica.</td></tr>
         </tbody>
       </table>
@@ -256,6 +273,18 @@
     </div>
 
     <div class="card">
+      <h2>Control diario para no romper DIAN</h2>
+      <div class="dian-guide-checklist">
+        <div class="dian-guide-check"><span>1</span><span>Verifica que el siguiente consecutivo PCS no repita una factura ya aprobada en DIAN.</span></div>
+        <div class="dian-guide-check"><span>2</span><span>Si DIAN responde <code>Regla 90</code>, consulta primero el documento original; no lo marques aceptado solo por esa regla.</span></div>
+        <div class="dian-guide-check"><span>3</span><span>Si aparece <code>Aprobado con notificacion</code>, guarda la evidencia y corrige solo la advertencia indicada.</span></div>
+        <div class="dian-guide-check"><span>4</span><span>No cambies Software ID, PIN, prefijo, resolucion, rango ni llave tecnica sin prueba real posterior.</span></div>
+        <div class="dian-guide-check"><span>5</span><span>Revisa certificado y resolucion antes de vencer; PCS alerta, pero la renovacion requiere accion del administrador.</span></div>
+        <div class="dian-guide-check"><span>6</span><span>Despues de desplegar cambios de facturacion, ejecuta pruebas Go y una validacion controlada contra DIAN o el portal.</span></div>
+      </div>
+    </div>
+
+    <div class="card">
       <h2>Errores frecuentes</h2>
       <div class="dian-guide-resolve-grid">
         <article class="dian-guide-resolve-card">
@@ -293,6 +322,15 @@
             <li>Comparar razon social, NIT/DV y responsabilidades con el RUT.</li>
             <li>Actualizar empresa y cliente si DIAN reporta diferencias.</li>
             <li>Guardar trazabilidad del ajuste antes del siguiente envio.</li>
+          </ol>
+        </article>
+        <article class="dian-guide-resolve-card">
+          <h3><span class="dian-guide-pill">Regla 90</span> Documento ya procesado</h3>
+          <p>Es comun cuando se reenvia una factura que DIAN ya recibio. La respuesta sola no prueba aceptacion fiscal.</p>
+          <ol>
+            <li>Buscar el documento en DIAN por prefijo y folio, por ejemplo <code>1PCS3</code>.</li>
+            <li>Si aparece aprobado, conservar la evidencia y no reenviar el mismo numero.</li>
+            <li>Si no aparece, consultar CUFE/acuse original antes de decidir si se debe emitir un nuevo documento.</li>
           </ol>
         </article>
       </div>

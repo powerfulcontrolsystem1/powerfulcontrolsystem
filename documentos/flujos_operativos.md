@@ -1301,10 +1301,18 @@ afecte dinero, documentos, licencias o seguridad.
 6. El envio oficial usa DIAN SOAP/WCF con WS-Security y firma RSA-SHA256. No
    modificar canonicacion/firma sin prueba real DIAN.
 7. Un acuse aceptado deja `estado_envio=aceptado`. `Regla 90` por documento ya
-   procesado se trata como aceptacion idempotente cuando corresponde.
+   procesado queda como pendiente de consulta del acuse original; no equivale por
+   si sola a aceptacion.
 8. Un rechazo deja el documento en cola/reintentos y crea alerta en el buzon del
    administrador de la empresa. La consola DIAN muestra el error en rojo con
    guia de solucion.
+9. En produccion PCS, el portal DIAN confirmo `1PCS2` y `1PCS3` como `Aprobado
+   con notificacion`; el siguiente consecutivo esperado despues de esa prueba es
+   `1PCS4`.
+10. `Aprobado con notificacion` cuenta como documento aprobado; la notificacion
+    se conserva como observacion y se corrigen datos maestros si aplica.
+11. Antes de reenviar un mismo prefijo/folio, consultar historial DIAN, cola de
+    reintentos, CUFE/TrackId o portal DIAN para evitar duplicados y `Regla 90`.
 
 ### Errores DIAN que el usuario puede resolver
 
@@ -1318,7 +1326,8 @@ afecte dinero, documentos, licencias o seguridad.
 5. `FAK61`: corregir datos del cliente o estructura Party: tipo de persona,
    documento, municipio, direccion, regimen y responsabilidades.
 6. `ZE02`: revisar certificado digital, llave privada, clave, vigencia y NIT.
-7. `RUT01`: revisar NIT/DV/razon social o reintentar si el servicio DIAN no
-   responde.
+7. `RUT01`: si el resultado DIAN es `Aprobado con notificacion`, el documento
+   queda aprobado; revisar NIT/DV/razon social y datos del adquiriente como
+   correccion posterior.
 8. Firma o resolucion vencida: renovar, cargar en PCS, asociar en DIAN y volver a
    probar.

@@ -1,3 +1,11 @@
+2026-06-18: Facturacion electronica DIAN produccion PCS
+- Modulos afectados: `facturacion_electronica`, `DIAN Colombia`, `auditoria`, `qa_operacion`.
+- Evidencia real: el portal DIAN produccion muestra `1PCS2` y `1PCS3` como `Aprobado con notificacion`; `1PCS3` tambien fue aceptada por SOAP/WCF `SendBillSync`.
+- Operacion: el siguiente consecutivo de PCS quedo en `1PCS4`; no reutilizar `1PCS2` ni `1PCS3`.
+- Regla fiscal: `Regla 90, Documento procesado anteriormente` no es aceptacion automatica; requiere portal DIAN, acuse original, CUFE/TrackId o evidencia oficial equivalente.
+- Ayuda: `facturacion_electronica_tutorial_dian.html` queda adaptada a PCS con estado real, control diario, lectura de `RUT01`, `Aprobado con notificacion` y pasos para no reenviar documentos ya aprobados.
+- Auditoria: conservar evidencia en historial DIAN, cola de reintentos, portal DIAN, bitacora de cambios y contadores antes/despues de pruebas directas.
+
 2026-06-16: Carrito PCS - agregar por nombre
 - Modulos afectados: `carritos`, `venta_directa` y `estaciones`.
 - UX: el buscador rapido por nombre selecciona la primera coincidencia visible para que el boton `Agregar` agregue el producto seleccionado sin exigir un clic adicional sobre la lista.
@@ -2931,7 +2939,7 @@ Actualizacion 2026-04-18 (gobernanza tecnica: soporte remoto y contingencia de r
 
 Actualizacion 2026-04-18 (gobernanza tecnica: DIAN, alertas de reinicio y reportes multiformato):
 - Se extiende el paquete transversal `gobernanza tecnica` con tres artefactos nuevos orientados a diagnostico y contratos de comportamiento real.
-- `documentos/gobernanza_tecnica/runbooks/runbook_dian_set_pruebas_y_diagnostico_oficial.md` fija el procedimiento operativo de DIAN para onboarding, checklist, credenciales, firma base, set de pruebas y clasificacion de brechas entre configuracion y transporte oficial aun pendiente.
+- `documentos/gobernanza_tecnica/runbooks/runbook_dian_set_pruebas_y_diagnostico_oficial.md` fija el procedimiento operativo de DIAN para onboarding, checklist, credenciales, firma base, set de pruebas y clasificacion de brechas entre configuracion y transporte oficial. Nota 2026-06-18: PCS ya cuenta con evidencia de produccion aceptada para `1PCS2` y `1PCS3`.
 - `documentos/gobernanza_tecnica/runbooks/runbook_alertas_reinicio_y_monitoreo_gmail_smtp.md` documenta el uso de `POST /super/api/config/gmailaction=test`, `super_servidor_eventos`, `gmail.restart_alert_to`, `gmail.restart_alert_enabled` y `gmail.smtp_test_mode`.
 - `documentos/gobernanza_tecnica/contratos/contrato_reportes_contables_financieros_y_exportacion_multiformato.md` formaliza el modulo de reportes empresariales y globales super, incluyendo datasets, exportes, plantillas, programacion, ejecuciones y consistencia multiformato.
 - Impacto de permisos: sin cambios en roles ni visibilidad; la mejora es documental, operativa y de gobernanza transversal.
@@ -3730,7 +3738,7 @@ Actualizacion 2026-04-18 (gobernanza tecnica de permisos empresariales):
 
 Actualizacion 2026-04-18 (gobernanza tecnica de facturacion y documentos transaccionales):
 - Se formaliza el contrato tecnico del ciclo documental en `documentos/gobernanza_tecnica/contratos/contrato_facturacion_electronica_y_documentos_transaccionales.md`.
-- El artefacto fija la maquina de estados de emision, anulacion y nota credito, la persistencia comun en `empresa_facturacion_documentos`, el comportamiento de `modo_documento_venta`, la cola de reintentos y reconciliacion fiscal, y la separacion entre la base DIAN actual y la integracion oficial aun pendiente.
+- El artefacto fija la maquina de estados de emision, anulacion y nota credito, la persistencia comun en `empresa_facturacion_documentos`, el comportamiento de `modo_documento_venta`, la cola de reintentos y reconciliacion fiscal, y la separacion entre configuracion DIAN, transporte oficial y evidencia fiscal aceptada. Nota 2026-06-18: PCS ya tiene facturas reales aceptadas en DIAN produccion.
 
 Actualizacion 2026-04-12 (autenticacion administrativa: contrato y verificacion humana):
 - Se unifica el flujo de login de administradores en `login.html -> OAuth Google -> /accept.html -> /accept/complete`.

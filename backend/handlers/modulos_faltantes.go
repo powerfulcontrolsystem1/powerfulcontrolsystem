@@ -8549,13 +8549,13 @@ func resolveDIANAcuseFromResponse(statusCode int, response map[string]interface{
 	)
 	statusCodeDIAN := strings.TrimSpace(genericStringValue(response["status_code"]))
 	isValidRaw := strings.ToLower(strings.TrimSpace(genericStringValue(response["is_valid"])))
-	if isDIANDocumentAlreadyProcessedMessage(message) {
-		return "aceptado", dianFirstNonBlank(message, "documento procesado anteriormente por DIAN")
-	}
 	if isValidRaw == "true" && (statusCodeDIAN == "" || statusCodeDIAN == "00") {
 		return "aceptado", dianFirstNonBlank(message, "documento aceptado por DIAN")
 	}
 	if isValidRaw == "false" {
+		if isDIANDocumentAlreadyProcessedMessage(message) {
+			return "enviado", dianFirstNonBlank(message, "documento procesado anteriormente por DIAN; requiere consulta/acuse original para confirmar aceptacion")
+		}
 		normalizedMessage := normalizeDIANAcuseEstado(message)
 		if normalizedMessage == "pendiente" {
 			return "pendiente", dianFirstNonBlank(message, "Batch en proceso de validacion.")

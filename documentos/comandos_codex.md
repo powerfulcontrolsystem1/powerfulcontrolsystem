@@ -381,11 +381,22 @@ Resultado de referencia 2026-06-17: factura `FV-FE-MENTA-20260617151719`,
 numero legal `1PCS1`, enviada a DIAN y rechazada por `FAK61`, `FAB05c` y
 `FAD06`. El error de rango/prefijo de la resolucion anterior ya no aparecio.
 
-Resultado corregido 2026-06-17: despues de asociar la numeracion en portal DIAN
+Revalidacion 2026-06-18: despues de asociar la numeracion en portal DIAN
 produccion y consultar `GetNumberingRange`, PCS emitio factura `1PCS2` por
-producto `menta` y DIAN la acepto. Si se reintenta el mismo documento, DIAN puede
-responder `Regla: 90, Documento procesado anteriormente`; tratarlo como
-idempotente, no como nuevo fallo, cuando el documento/CUFE ya fue aceptado.
+producto `menta`. Luego el usuario confirmo en portal DIAN produccion que
+`1PCS2` aparece como `Aprobado con notificacion`. Si un reenvio devuelve
+`Regla: 90, Documento procesado anteriormente`, tratar esa regla como pendiente
+de consulta del acuse original y revisar portal/CUFE antes de reenviar.
+
+Resultado real 2026-06-18: prueba viva en VPS emitio `1PCS3` contra DIAN
+produccion por SOAP/WCF `SendBillSync`; DIAN respondio HTTP 200 con
+`estado_dian=aceptado`, `acuse_estado=aceptado`, CUFE registrado y notificacion
+`RUT01` informativa.
+
+Confirmacion portal DIAN 2026-06-18: el usuario encontro en produccion, consulta
+de documentos recibidos, las facturas `1PCS3` del 18-06-2026 y `1PCS2` del
+17-06-2026 como `Aprobado con notificacion`, valor `$ 100`. Despues de esa
+prueba los contadores quedaron en siguiente consecutivo `1PCS4`.
 
 Cuando el usuario pida probar `powerfulcontrolsystem.com`, DIAN, carrito o una
 venta real de la empresa Powerful Control System, no iniciar probando en local
@@ -422,6 +433,11 @@ Para facturacion electronica DIAN de PCS, el cierre minimo es:
   `https://catalogo-vpfe.dian.gov.co/User/Login`.
 - Si incluye `FAD06`, volver a consultar clave tecnica DIAN y revisar CUFE,
   prefijo, consecutivo, fecha/hora, impuestos y totales.
+- Si incluye `Regla 90`, no marcar como aceptado por esa regla sola; consultar
+  primero portal DIAN, CUFE o acuse original. Si el documento ya aparece
+  aprobado, continuar con el siguiente consecutivo y no reenviar el mismo folio.
+- `Aprobado con notificacion` en DIAN cuenta como documento aprobado; documentar
+  la notificacion (`RUT01`, etc.) y corregir datos maestros si aplica.
 
 Usar navegador interno o Chrome solo para validar pantallas y flujo visible:
 login, seleccionar empresa, carrito, cliente, totales, factura/impresion. Para

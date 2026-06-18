@@ -1,3 +1,10 @@
+## [2026-06-18] DIAN produccion PCS aceptada y ayuda operativa
+- [DIAN] El portal de produccion muestra `1PCS2` y `1PCS3` como `Aprobado con notificacion`; `1PCS3` tambien fue aceptada por SOAP/WCF `SendBillSync`.
+- [Operacion] `Regla 90` ya no se documenta como aceptacion automatica; exige acuse original, portal DIAN o evidencia oficial equivalente.
+- [Consecutivos] Despues de la prueba directa, PCS queda con siguiente folio operativo `1PCS4`.
+- [Ayuda] `facturacion_electronica_tutorial_dian.html` agrega estado real PCS, control diario, lectura de `Aprobado con notificacion`, `RUT01` y reglas para no reenviar documentos aprobados.
+- [QA] `go test ./handlers -count=1`; VPS reconstruido saludable y frontend HTTP 200.
+
 ## [2026-06-12] Cantidad del carrito visible con contraste fijo
 - [UX] `carrito_de_compras.html` agrega una celda dedicada para el campo Cantidad del detalle de productos.
 - [Frontend] `web/estilos.css` fija fondo claro, texto oscuro, borde y dimensiones del input de cantidad para que el numero sea visible aunque el tema global cambie colores.

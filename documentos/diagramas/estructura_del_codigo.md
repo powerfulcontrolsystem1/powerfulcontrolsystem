@@ -1,3 +1,14 @@
+## Actualizacion 2026-06-18 - DIAN produccion PCS validada
+
+- `backend/handlers/facturacion_electronica.go`
+  - El envio oficial DIAN Colombia no marca `Regla 90` como aceptacion automatica; exige acuse original o evidencia DIAN independiente.
+- `backend/handlers/modulos_faltantes.go`
+  - `resolveDIANAcuseFromResponse` deja `Regla 90` con `IsValid=false` como `enviado`/pendiente de consulta.
+- `web/administrar_empresa/facturacion_electronica_tutorial_dian.html`
+  - Documenta `1PCS2` y `1PCS3` aprobadas con notificacion en portal DIAN, control diario de consecutivos y siguiente folio `1PCS4`.
+- Evidencia operativa:
+  - Portal DIAN produccion confirma `1PCS2` y `1PCS3` como `Aprobado con notificacion`; `1PCS3` tambien tuvo acuse SOAP/WCF aceptado.
+
 ## Actualizacion 2026-06-11 - Chat IA con lectura administrativa por empresa
 
 - `backend/handlers/chat_con_inteligencia_artificial_admin_queries.go`

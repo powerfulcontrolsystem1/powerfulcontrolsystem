@@ -90,9 +90,11 @@ trazabilidad en `documentos/historial_de_cambios`.
 - Para Colombia, `GetNumberingRange` es parte obligatoria del flujo de
   produccion porque actualiza la clave tecnica usada para CUFE. La llave tecnica
   se trata como secreto y solo se guarda en base de datos.
-- `Regla 90, Documento procesado anteriormente` no debe romper el estado de la
-  factura si el documento ya fue procesado por DIAN; se considera respuesta
-  idempotente y se mantiene como aceptada cuando corresponde.
+- `Regla 90, Documento procesado anteriormente` no equivale por si sola a
+  aceptacion DIAN; debe quedar como envio pendiente de consulta del acuse
+  original salvo que exista evidencia independiente `IsValid=true`/`StatusCode=00`,
+  `estado_dian=aceptado`/`acuse_estado=aceptado` del SOAP oficial o documento
+  visible en DIAN.
 - Los errores DIAN deben mostrarse al usuario en consola con letras grandes,
   rojas y ayuda accionable. Ademas, un fallo de envio debe crear alerta interna
   en el buzon del administrador/creador de la empresa sin exponer XML, claves ni

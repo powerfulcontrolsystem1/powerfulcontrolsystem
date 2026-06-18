@@ -1,3 +1,9 @@
+2026-06-18: Nota de auditoria DIAN produccion PCS
+- `facturacion_electronica` conserva sus wrappers existentes (`WithEmpresaFacturacionPermissions`) y no agrega permisos nuevos.
+- Para declarar DIAN produccion estable se exige evidencia de acuse oficial o portal DIAN; en PCS quedaron `1PCS2` y `1PCS3` como `Aprobado con notificacion`.
+- `Regla 90` no concede aceptacion automatica. Debe revisarse CUFE/TrackId, historial DIAN, cola de reintentos o portal antes de cerrar el documento.
+- La auditoria operativa minima de un incidente DIAN debe incluir usuario/empresa, accion ejecutada, prefijo/folio, resultado DIAN, estado de cola, contador siguiente y si hubo cambio de configuracion, firma, rango o certificado.
+
 2026-06-11: Nota de configuracion dedicada del rol cajero
 - `linkConfiguracionRolCajero` queda en el menu de Configuracion bajo modulo
   `seguridad` y accion `U`; solo roles con administracion de configuracion

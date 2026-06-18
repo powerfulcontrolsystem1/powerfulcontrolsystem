@@ -911,14 +911,14 @@ func TestGenerateDIANUBLBaseUsesNaturalPersonCustomerAndFormattedCUFE(t *testing
 	}
 }
 
-func TestResolveDIANAcuseTreatsAlreadyProcessedAsAccepted(t *testing.T) {
+func TestResolveDIANAcuseTreatsAlreadyProcessedAsSentPendingOriginalAcuse(t *testing.T) {
 	status, message := resolveDIANAcuseFromResponse(http.StatusOK, map[string]interface{}{
 		"is_valid":      "false",
 		"status_code":   "99",
 		"error_message": "Regla: 90, Rechazo: Documento procesado anteriormente.",
 	})
-	if status != "aceptado" {
-		t.Fatalf("status = %q, want aceptado; message=%s", status, message)
+	if status != "enviado" {
+		t.Fatalf("status = %q, want enviado; message=%s", status, message)
 	}
 }
 

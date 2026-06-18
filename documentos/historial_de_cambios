@@ -1,9 +1,13 @@
-2026-06-17: Facturacion electronica PCS aceptada e idempotencia DIAN Regla 90.
+2026-06-18: Facturacion electronica PCS aceptada en produccion y Regla 90 pendiente de acuse.
 - Modulos afectados: `facturacion_electronica`, `dian_colombia`, `qa_operacion`.
 - Evidencia produccion PCS: la configuracion de `empresa_id=12` quedo en ambiente produccion con prefijo `1PCS`, resolucion `18764111318575`, rango `1-100000`, Software ID `b266de9c-425a-4aaf-b465-6d6957aa21dd` y llave tecnica cargada desde numeracion DIAN.
-- Evidencia DIAN/PCS: la factura real `1PCS2` quedo en cola de integracion como `aceptado`, con CUFE registrado; un reenvio posterior recibio `Regla: 90, Documento procesado anteriormente`, senal de idempotencia sobre documento ya procesado.
-- Backend: `resolveDIANAcuseFromResponse` interpreta `Regla: 90, Documento procesado anteriormente` como acuse aceptado/idempotente para no ensuciar reintentos de documentos ya conocidos por DIAN.
-- QA automatizada: se agrega prueba `TestResolveDIANAcuseTreatsAlreadyProcessedAsAccepted` y se mantiene cobertura de XML UBL/CUFE para persona natural PCS con prefijo `1PCS`.
+- Evidencia portal DIAN 2026-06-18: en `Sistema de factura electronica - Ambiente de Produccion`, consulta de documentos recibidos para el NIT `84456779`, aparecen `1PCS3` del 18-06-2026 y `1PCS2` del 17-06-2026 como `Aprobado con notificacion`, tipo `Factura electronica`, valor `$ 100`.
+- Evidencia real nueva: se envio factura `1PCS3` contra DIAN produccion por SOAP/WCF `SendBillSync`; DIAN respondio HTTP 200 con `estado_dian=aceptado`, `acuse_estado=aceptado`, CUFE registrado y notificacion `RUT01` informativa.
+- Operacion VPS: despues de la prueba directa se adelantaron los contadores de `empresa_dian_configuracion.consecutivo_actual` y `empresa_configuracion_avanzada.proximo_consecutivo` a `4` para que el siguiente documento PCS use `1PCS4` y no repita `1PCS3`.
+- Backend: `resolveDIANAcuseFromResponse` interpreta `Regla: 90, Documento procesado anteriormente` como `enviado`/pendiente de consulta del acuse original, no como `aceptado`.
+- QA automatizada: se agrega prueba `TestResolveDIANAcuseTreatsAlreadyProcessedAsSentPendingOriginalAcuse` y se mantiene cobertura de XML UBL/CUFE para persona natural PCS con prefijo `1PCS`.
+- QA real VPS: se ejecuto prueba viva temporal `TestDIANLiveProductionInvoicePCS` en red Docker del VPS; el arnes temporal fue eliminado despues de obtener el acuse y no queda en el repositorio.
+- Ayuda operativa: `facturacion_electronica_tutorial_dian.html` queda adaptada a PCS con evidencia real `1PCS2`/`1PCS3`, control diario de consecutivos, lectura de `Aprobado con notificacion`, `RUT01` y `Regla 90`, tomando como estilo una mesa de ayuda tipo proveedor sin copiar contenido privado de terceros.
 - Seguridad: no se documentan PIN, certificado, clave privada, llave tecnica completa ni credenciales; se conserva aislamiento por `empresa_id`.
 
 2026-06-17: Guia Codex para SSH, compilacion y pruebas VPS.

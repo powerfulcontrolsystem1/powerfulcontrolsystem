@@ -1,3 +1,5 @@
+Revision DIAN produccion PCS 2026-06-18: la facturacion electronica Colombia de Powerful Control System quedo validada en produccion DIAN. El portal DIAN muestra las facturas `1PCS2` y `1PCS3` como `Aprobado con notificacion`, `1PCS3` tambien tuvo acuse SOAP/WCF aceptado, y el siguiente consecutivo operativo quedo en `1PCS4`. `Regla 90, Documento procesado anteriormente` no se considera aceptacion automatica: requiere acuse original, portal DIAN, CUFE/TrackId o evidencia oficial equivalente antes de cerrar el documento. La ayuda `web/administrar_empresa/facturacion_electronica_tutorial_dian.html` queda adaptada a PCS con control diario de consecutivos, lectura de `RUT01` y pasos para no reenviar folios aprobados.
+
 Revision snapshot completo VPS 2026-06-10: el modulo super `Docker VPS` permite
 crear una copia restaurable de la infraestructura en `backup/vps_snapshots`.
 Incluye proyecto portable sin secretos, dump PostgreSQL cuando esta disponible,

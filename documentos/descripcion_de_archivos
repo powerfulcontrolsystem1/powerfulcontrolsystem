@@ -1,3 +1,11 @@
+2026-06-18 - DIAN produccion PCS aceptada y ayuda operativa
+- `web/administrar_empresa/facturacion_electronica_tutorial_dian.html`: agrega estado real de PCS en DIAN produccion con `1PCS2` y `1PCS3` aprobadas con notificacion, control diario de consecutivos, lectura de `RUT01` y manejo seguro de `Regla 90`.
+- `backend/handlers/facturacion_electronica.go`: evita que `Regla 90, Documento procesado anteriormente` marque una factura como aceptada sin acuse original o evidencia DIAN independiente.
+- `backend/handlers/modulos_faltantes.go`: normaliza el acuse DIAN para dejar `Regla 90` como `enviado`/pendiente de consulta cuando `IsValid=false`.
+- `backend/handlers/dian_signature_upload_test.go`: cubre la regresion de `Regla 90` para asegurar que no vuelva a tratarse como aceptacion automatica.
+- `documentos/gobernanza_tecnica/contratos/contrato_facturacion_electronica_y_documentos_transaccionales.md`: fija las invariantes de aceptacion fiscal, portal DIAN, `Aprobado con notificacion` y contadores despues de pruebas directas.
+- `documentos/gobernanza_tecnica/runbooks/runbook_dian_set_pruebas_y_diagnostico_oficial.md`: documenta la evidencia `1PCS2`/`1PCS3`, siguiente consecutivo `1PCS4`, recuperacion ante `Regla 90` y cierre operativo en produccion.
+
 2026-06-17 - Importador PDF DIAN Formulario 1876
 - `backend/handlers/dian_numeracion_1876_test.go`: prueba enfocada del parser de Autorizacion de Numeracion DIAN Formulario 1876 con datos de PCS, validando formulario, NIT/DV, prefijo, rango y vigencia.
 
@@ -2867,7 +2875,7 @@ Actualizacion 2026-04-18: gobernanza tecnica extiende facturacion electronica y 
 	 - documentos/descripcion_de_archivos
 	 - documentos/historial_de_cambios
 	 - CHANGELOG.md
- - Descripcion: La gobernanza tecnica ahora formaliza el contrato de los documentos de venta y facturacion electronica, aclarando el ciclo de estados, el rol de la tabla documental comun, los side effects de correo e integracion fiscal, y el limite real entre la base tecnica DIAN ya implementada y el transporte oficial aun pendiente.
+ - Descripcion: La gobernanza tecnica ahora formaliza el contrato de los documentos de venta y facturacion electronica, aclarando el ciclo de estados, el rol de la tabla documental comun, los side effects de correo e integracion fiscal, y el limite real entre configuracion DIAN, transporte oficial y evidencia fiscal aceptada. Nota 2026-06-18: PCS ya tiene facturas reales aceptadas en DIAN produccion.
 
 Actualizacion 2026-04-18: gobernanza tecnica extiende permisos_contexto y wrappers de api empresa
  - Archivos creados:
