@@ -15123,3 +15123,7 @@ Archivos modificados:
 - web/super/configuracion/ia_global.html
 - web/super/licencias_codigos_descuento.html
 - web/super_administrador.html
+
+2026-06-17 20:52:02 - Mensaje: rs: actualizar repositorio y sincronizar VPS; Commit: ee0d8697; PushStatus: OK
+Archivos modificados:
+- web/super/licencias_codigos_descuento.html

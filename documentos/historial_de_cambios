@@ -35144,3 +35144,8 @@ Archivos modificados:
 - web/super/configuracion/ia_global.html
 - web/super/licencias_codigos_descuento.html
 - web/super_administrador.html
+
+2026-06-17: rs: actualizar repositorio y sincronizar VPS
+PushStatus: OK
+Archivos modificados:
+- web/super/licencias_codigos_descuento.html
