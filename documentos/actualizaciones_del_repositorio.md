@@ -15127,3 +15127,12 @@ Archivos modificados:
 2026-06-17 20:52:02 - Mensaje: rs: actualizar repositorio y sincronizar VPS; Commit: ee0d8697; PushStatus: OK
 Archivos modificados:
 - web/super/licencias_codigos_descuento.html
+
+2026-06-17 21:04:03 - Mensaje: rs: actualizar repositorio y sincronizar VPS; Commit: a08e391f; PushStatus: OK
+Archivos modificados:
+- backend/handlers/dian_signature_upload_test.go
+- backend/handlers/licencias_codigos_descuento.go
+- backend/handlers/mail_utils.go
+- backend/handlers/modulos_faltantes.go
+- documentos/historial_de_cambios
+- web/super/licencias_codigos_descuento.html
