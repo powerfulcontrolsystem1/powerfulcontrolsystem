@@ -8739,6 +8739,21 @@ func dianCustomerDocumentSchemeName(rawTipoDocumento, customerNIT string) string
 	return "13"
 }
 
+func dianNormalizeCustomerDocumentNumber(raw, rawTipoDocumento string) string {
+	value := strings.TrimSpace(raw)
+	schemeName := dianCustomerDocumentSchemeName(rawTipoDocumento, value)
+	if schemeName == "31" {
+		return dianOnlyDigits(value)
+	}
+	if idx := strings.Index(value, "-"); idx > 0 {
+		left := dianOnlyDigits(value[:idx])
+		if left != "" {
+			return left
+		}
+	}
+	return dianOnlyDigits(value)
+}
+
 func dianPersonNameXML(customerName string) string {
 	name := strings.TrimSpace(customerName)
 	if name == "" {
@@ -8773,11 +8788,11 @@ func dianCustomerPartyIdentificationXML(customerNITDigits, schemeName string) st
 
 func dianCustomerPartyXML(customerName, customerNIT string, rawTipoDocumento ...string) string {
 	customerName = escapeXML(dianFirstNonBlank(customerName, "CONSUMIDOR FINAL"))
-	customerNITDigits := dianOnlyDigits(dianFirstNonBlank(customerNIT, "2222222222"))
 	tipoDocumento := ""
 	if len(rawTipoDocumento) > 0 {
 		tipoDocumento = rawTipoDocumento[0]
 	}
+	customerNITDigits := dianNormalizeCustomerDocumentNumber(dianFirstNonBlank(customerNIT, "2222222222"), tipoDocumento)
 	schemeName := dianCustomerDocumentSchemeName(tipoDocumento, customerNITDigits)
 	additionalAccountID := "2"
 	if schemeName == "31" {
@@ -9357,14 +9372,15 @@ func generateDIANUBLBase(cfg map[string]interface{}, empresaID int64, payload ma
 	moneda := strings.ToUpper(dianFirstNonBlank(genericStringValue(payload["moneda"]), "COP"))
 	clienteNombre := dianFirstNonBlank(genericStringValue(payload["cliente_nombre"]), genericStringValue(payload["adquiriente_nombre"]), "CONSUMIDOR FINAL")
 	clienteTipoDocumento := dianFirstNonBlank(genericStringValue(payload["cliente_tipo_documento"]), genericStringValue(payload["adquiriente_tipo_documento"]), genericStringValue(payload["tipo_documento_cliente"]))
-	clienteNIT := dianOnlyDigits(dianFirstNonBlank(
+	clienteNITRaw := dianFirstNonBlank(
 		genericStringValue(payload["cliente_nit"]),
 		genericStringValue(payload["cliente_numero_documento"]),
 		genericStringValue(payload["cliente_documento"]),
 		genericStringValue(payload["adquiriente_nit"]),
 		genericStringValue(payload["adquiriente_documento"]),
 		"2222222222",
-	))
+	)
+	clienteNIT := dianNormalizeCustomerDocumentNumber(clienteNITRaw, clienteTipoDocumento)
 	emisorNIT := dianOnlyDigits(dianFirstNonBlank(genericStringValue(cfg["nit"]), "000000000"))
 	emisorDV := dianFirstNonBlank(genericStringValue(cfg["digito_verificacion"]), genericStringValue(payload["digito_verificacion"]))
 	emisorRazon := dianFirstNonBlank(genericStringValue(cfg["razon_social"]), "EMPRESA SIN RAZON SOCIAL CONFIGURADA")

@@ -811,7 +811,7 @@ func TestGenerateDIANUBLBaseUsesNaturalPersonCustomerAndFormattedCUFE(t *testing
 		"documento_tipo":         "factura_electronica",
 		"fecha_emision":          "2026-06-17T23:19:55-05:00",
 		"cliente_nombre":         "IVAN FRANCISCO CAYON GUARNIZO",
-		"cliente_nit":            "84456779",
+		"cliente_nit":            "84456779-1",
 		"cliente_tipo_documento": "CC",
 		"total":                  "100",
 		"impuesto_total":         "0",
@@ -837,6 +837,9 @@ func TestGenerateDIANUBLBaseUsesNaturalPersonCustomerAndFormattedCUFE(t *testing
 	}
 	if strings.Contains(xmlPayload, "2222222222") {
 		t.Fatalf("real customer invoice must not fall back to consumidor final: %s", xmlPayload)
+	}
+	if strings.Contains(xmlPayload, "844567791") {
+		t.Fatalf("CC customer must not include a NIT-style DV in XML/CUFE inputs: %s", xmlPayload)
 	}
 	expectedUUID := strings.ToLower(buildDIANCUFEFacturaVenta("1PCS2", "2026-06-17", "23:19:55-05:00", "100.00", "0.00", "0.00", "0.00", "100.00", "84456779", "84456779", "technical-key-test", "1"))
 	if got := genericStringValue(result["uuid"]); got != expectedUUID {
