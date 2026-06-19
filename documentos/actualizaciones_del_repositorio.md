@@ -15290,3 +15290,9 @@ Archivos modificados:
 - web/js/ai_chat_drawer.js
 - web/js/egresos_ingresos.js
 - web/js/seleccionar_empresa.js
+
+2026-06-18 23:45:50 - Mensaje: rs: actualizar repositorio y sincronizar VPS; Commit: 17fa61a5; PushStatus: OK
+Archivos modificados:
+- web/administrar_empresa.html
+- web/index.html
+- web/super_administrador.html
