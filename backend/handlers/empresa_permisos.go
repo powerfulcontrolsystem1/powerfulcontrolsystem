@@ -448,10 +448,8 @@ type permissionPageRule struct {
 }
 
 var defaultHiddenEnterpriseIAPages = map[string]bool{
-	"linkCentroIAEmpresarial":   true,
-	"linkRentaIA":               true,
-	"linkSoportesComprasIA":     true,
-	"linkSoportesComprasIAMenu": true,
+	"linkCentroIAEmpresarial": true,
+	"linkRentaIA":             true,
 }
 
 var permissionPagesCatalogOrdered = []permissionPageRule{

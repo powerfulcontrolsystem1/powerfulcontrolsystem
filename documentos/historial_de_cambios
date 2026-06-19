@@ -35680,3 +35680,7 @@ Archivos modificados:
 PushStatus: OK
 Archivos modificados:
 - web/estilos.css
+2026-06-19: Captura inteligente de compras/gastos: acceso por rol reparado.
+- Backend: `backend/handlers/empresa_permisos.go` deja de tratar `linkSoportesComprasIA` y `linkSoportesComprasIAMenu` como paginas IA ocultas por defecto.
+- Seguridad: `/api/empresa/soportes_compras_ia` mantiene `WithEmpresaSoportesComprasIAPermissions`, aislamiento por `empresa_id`, licencia de modulo, matriz de rol/accion y auditoria.
+- Prueba: `backend/handlers/empresa_permisos_test.go` cubre que las paginas de captura IA de compras/gastos permanezcan visibles cuando el rol tiene permiso del modulo, mientras Centro IA/Renta IA siguen ocultos por defecto.

@@ -16,6 +16,12 @@ Labels del carrito y controles de cantidad comparten el mismo fondo adaptable a
 tema claro/oscuro; `Efectivo recibido` solo aumenta tamano y conserva el color
 normal del tema.
 
+Actualizacion 2026-06-19: `Captura inteligente de compras y gastos` ya no queda
+clasificada como pagina IA oculta por defecto en permisos. El endpoint
+`/api/empresa/soportes_compras_ia` conserva validacion de empresa, licencia,
+rol y accion con `WithEmpresaSoportesComprasIAPermissions`, pero permite abrir
+la pantalla cuando el rol tiene acceso al modulo operativo `soportes_compras_ia`.
+
 Actualizacion 2026-06-19: `Super administrador` mantiene `Seleccionar empresa`
 en `web/super_administrador.html` como boton integrado del toolbar, con estilo
 azul claro en `web/estilos.css` y navegacion directa a `/seleccionar_empresa.html`.

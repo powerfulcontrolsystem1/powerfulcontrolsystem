@@ -79,9 +79,14 @@ func TestDefaultHiddenEnterpriseIAPagesRequireExplicitCompanyEnable(t *testing.T
 	}
 
 	hidden := applyDefaultHiddenEnterpriseIAPages(pages, map[string]bool{})
-	for _, page := range []string{"linkCentroIAEmpresarial", "linkRentaIA", "linkSoportesComprasIA", "linkSoportesComprasIAMenu"} {
+	for _, page := range []string{"linkCentroIAEmpresarial", "linkRentaIA"} {
 		if hidden[page] {
 			t.Fatalf("%s debe quedar oculto por defecto", page)
+		}
+	}
+	for _, page := range []string{"linkSoportesComprasIA", "linkSoportesComprasIAMenu"} {
+		if !hidden[page] {
+			t.Fatalf("%s es modulo operativo de compras/gastos y no debe ocultarse por defecto", page)
 		}
 	}
 	if !hidden["linkReportes"] {
