@@ -15413,3 +15413,16 @@ Archivos modificados:
 - web/super/seguridad_2fa.html
 - web/super/seguridad_2fa.js
 - web/super_administrador.html
+
+2026-06-19 17:32:42 - Mensaje: rs: actualizar repositorio y sincronizar VPS; Commit: 6e0df0ab; PushStatus: OK
+Archivos modificados:
+- CHANGELOG.md
+- backend/db/carritos_compras.go
+- documentos/historial_de_cambios
+- documentos/mapa_modulos.md
+- web/administrar_empresa.html
+- web/administrar_empresa/carrito_de_compras.html
+- web/administrar_empresa/configuracion_carrito_de_compra_empresa.html
+- web/estilos.css
+- web/js/administrar_empresa.js
+- web/super_administrador.html

@@ -35624,3 +35624,17 @@ Archivos modificados:
 - Carrito/UX: `web/administrar_empresa/carrito_de_compras.html` agrega estilos Consola, Simple, Moderno y Supermercado, con boton superior izquierdo y preferencia local por usuario.
 - Seguridad y datos: no se agregan endpoints; se conserva aislamiento por `empresa_id` en las rutas existentes. La preferencia visual del carrito se guarda por usuario en `localStorage`, no por empresa.
 - QA: `go test ./db -run Carrito -count=1`, chequeos sintacticos JS previos del carrito/configuracion, verificacion DOM del nuevo submenu y del selector de estilo; `rs` queda como validacion operativa final.
+
+2026-06-19: rs: actualizar repositorio y sincronizar VPS
+PushStatus: OK
+Archivos modificados:
+- CHANGELOG.md
+- backend/db/carritos_compras.go
+- documentos/historial_de_cambios
+- documentos/mapa_modulos.md
+- web/administrar_empresa.html
+- web/administrar_empresa/carrito_de_compras.html
+- web/administrar_empresa/configuracion_carrito_de_compra_empresa.html
+- web/estilos.css
+- web/js/administrar_empresa.js
+- web/super_administrador.html
