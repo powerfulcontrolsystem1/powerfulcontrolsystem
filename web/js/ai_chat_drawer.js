@@ -333,6 +333,7 @@
 
   function ensureDrawerShell() {
     if (document.getElementById(TOGGLE_ID) && document.getElementById(DRAWER_ID) && document.getElementById(BACKDROP_ID)) {
+      ensureAgentControl();
       return true;
     }
     if (!shouldAutoInjectDrawerShell()) {
@@ -430,7 +431,49 @@
           '</form>' +
         '</div>' +
       '</section>');
+    ensureAgentControl();
     return true;
+  }
+
+  function buildAgentOptionsMarkup() {
+    return '<option value="general">General</option>' +
+      '<option value="agente_configuracion_de_empresa">Configuracion</option>' +
+      '<option value="ventas">Ventas</option>' +
+      '<option value="inventario">Inventario</option>' +
+      '<option value="compras">Compras</option>' +
+      '<option value="nomina">Nomina</option>' +
+      '<option value="impuestos">Impuestos</option>' +
+      '<option value="agente_internet">Internet</option>';
+  }
+
+  function ensureAgentControl() {
+    var form = document.getElementById(FORM_ID);
+    var controls = form && form.querySelector('.ai-chat-controls');
+    if (!form || !controls) return;
+
+    var agentEl = document.getElementById(AGENT_ID);
+    if (!agentEl) {
+      var label = document.createElement('label');
+      label.className = 'ai-chat-control-field';
+      label.setAttribute('for', AGENT_ID);
+      label.innerHTML = '<span>Agente</span>' +
+        '<select id="' + AGENT_ID + '" class="form-input" aria-label="Agente IA">' +
+        buildAgentOptionsMarkup() +
+        '</select>';
+      var attachmentField = document.getElementById(ATTACHMENT_INPUT_ID);
+      var attachmentHost = attachmentField && attachmentField.closest('.ai-chat-control-field');
+      controls.insertBefore(label, attachmentHost || null);
+      return;
+    }
+
+    var hasConfigAgent = Array.prototype.some.call(agentEl.options || [], function (option) {
+      return option && option.value === 'agente_configuracion_de_empresa';
+    });
+    if (!hasConfigAgent) {
+      var currentValue = agentEl.value || 'general';
+      agentEl.innerHTML = buildAgentOptionsMarkup();
+      agentEl.value = currentValue;
+    }
   }
 
   function buildTextEndpoint() {
