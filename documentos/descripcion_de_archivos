@@ -11483,3 +11483,13 @@ backend/handlers/user_config.go - Controlador que expone /api/user/configuracion
 	- incluye `bodega_id` como columna obligatoria en la verificacion de esquema de items del carrito.
 - `web/estilos.css`:
 	- reduce el control de cantidad del scanner para evitar que el boton `+` quede cortado.
+
+2026-06-19 - Logo corporativo en correos Mailu
+- `backend/handlers/email_corporativo_handlers.go`:
+	- agrega `email_corporativo.logo_url` a la configuracion global de Email corporativo Mailu y convierte la prueba de envio a HTML multipart.
+- `backend/handlers/usuarios_empresa.go`:
+	- inserta el logo configurado como cabecera visual en los correos HTML del motor corporativo, con fallback a `/img/Logo pcs 1.png`.
+- `web/super/email_corporativo.html`:
+	- agrega campo y vista previa para cambiar el logo que se muestra en los correos corporativos.
+- `CHANGELOG.md`, `documentos/mapa_modulos.md`, `documentos/flujos_operativos.md`, `documentos/descripcion_de_archivos`:
+	- documentan el flujo y la trazabilidad del logo configurable para correos Mailu.

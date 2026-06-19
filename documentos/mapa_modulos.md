@@ -3,6 +3,12 @@
 Tabla de ubicacion rapida para no buscar desde cero cada modulo. Si una fila
 queda incompleta al implementar una mejora, actualizarla en el mismo cambio.
 
+Actualizacion 2026-06-19: `Email corporativo Mailu` agrega configuracion
+`email_corporativo.logo_url` desde `web/super/email_corporativo.html`, con
+fallback a `/img/Logo pcs 1.png`. Los correos HTML enviados por el motor
+corporativo (`backend/handlers/usuarios_empresa.go`) insertan el logo como
+cabecera visual y la accion `test_send` valida el render multipart con Mailu.
+
 Actualizacion 2026-06-18: `Configuracion guiada inicial` ahora se abre de forma
 interactiva desde `web/administrar_empresa/panel.html` cuando una empresa nueva
 con preconfiguracion entra por primera vez. Backend: `/api/empresa/configuracion_guiada`

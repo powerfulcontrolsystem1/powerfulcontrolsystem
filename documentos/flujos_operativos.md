@@ -1245,11 +1245,14 @@ afecte dinero, documentos, licencias o seguridad.
    `ventas@powerfulcontrolsystem.com`; alertas, invitaciones, recuperaciones,
    agente DIAN y pruebas salen por `soporte@powerfulcontrolsystem.com`.
 13. `Probar envio` valida envio real por Mailu al destinatario indicado. No usa
-   SMTP Gmail.
-14. Pruebas: guardar configuracion, sincronizar empresas existentes, crear empresa
-   duplicada de nombre similar, comprobar sufijo unico, abrir webmail, desactivar
-   autoapertura, cambiar clave sin exponerla, provisionar ventas/soporte y
-   enviar correo de prueba.
+    SMTP Gmail.
+14. `Logo para correos` guarda `email_corporativo.logo_url`; por defecto usa
+    `/img/Logo pcs 1.png` y se inserta como cabecera visual en los correos HTML
+    enviados por el motor corporativo.
+15. Pruebas: guardar configuracion, sincronizar empresas existentes, crear empresa
+    duplicada de nombre similar, comprobar sufijo unico, abrir webmail, desactivar
+    autoapertura, cambiar clave sin exponerla, provisionar ventas/soporte y
+   enviar correo de prueba verificando que el logo configurado se vea.
 
 ## Nomina multi-sede y documentos DIAN Colombia
 

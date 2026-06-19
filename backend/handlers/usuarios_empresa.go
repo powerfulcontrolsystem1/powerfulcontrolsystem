@@ -2170,7 +2170,7 @@ func corporateSystemSenderAddress(dbSuper *sql.DB, purpose string) (string, stri
 	}
 }
 
-func buildEmpresaUsuarioMultipartMessage(baseURL, fromName, fromEmail, toEmail, subject, bodyPlain, bodyHTML string) string {
+func buildEmpresaUsuarioMultipartMessage(dbSuper *sql.DB, baseURL, fromName, fromEmail, toEmail, subject, bodyPlain, bodyHTML string) string {
 	boundary := "==PCS_BOUNDARY_" + strconv.FormatInt(time.Now().UnixNano(), 10)
 	listUnsub := ""
 	if u, err := url.Parse(baseURL); err == nil {
@@ -2182,6 +2182,7 @@ func buildEmpresaUsuarioMultipartMessage(baseURL, fromName, fromEmail, toEmail, 
 			listUnsub = "<mailto:postmaster@" + strings.TrimSpace(host) + ">"
 		}
 	}
+	bodyHTML = wrapEmpresaUsuarioHTMLWithCorporateLogo(dbSuper, baseURL, fromName, bodyHTML)
 
 	headers := "From: " + strings.TrimSpace(fromName) + " <" + strings.TrimSpace(fromEmail) + ">\r\n" +
 		"To: " + strings.TrimSpace(toEmail) + "\r\n" +
@@ -2204,6 +2205,57 @@ func buildEmpresaUsuarioMultipartMessage(baseURL, fromName, fromEmail, toEmail, 
 		"--" + boundary + "--\r\n"
 }
 
+func resolveCorporateEmailLogoURL(baseURL, logoURL string) string {
+	logoURL = strings.TrimSpace(logoURL)
+	if logoURL == "" {
+		logoURL = "/img/Logo pcs 1.png"
+	}
+	parsedLogo, err := url.Parse(logoURL)
+	if err == nil && parsedLogo.Scheme != "" && parsedLogo.Host != "" {
+		return parsedLogo.String()
+	}
+	base, err := url.Parse(strings.TrimSpace(baseURL))
+	if err != nil || base.Scheme == "" || base.Host == "" {
+		base, _ = url.Parse("https://powerfulcontrolsystem.com")
+	}
+	rel, err := url.Parse(logoURL)
+	if err != nil {
+		rel = &url.URL{Path: "/img/Logo pcs 1.png"}
+	}
+	if rel.Path == "" {
+		rel.Path = "/img/Logo pcs 1.png"
+	}
+	return base.ResolveReference(rel).String()
+}
+
+func wrapEmpresaUsuarioHTMLWithCorporateLogo(dbSuper *sql.DB, baseURL, fromName, bodyHTML string) string {
+	bodyHTML = strings.TrimSpace(bodyHTML)
+	if bodyHTML == "" {
+		return bodyHTML
+	}
+	if strings.Contains(strings.ToLower(bodyHTML), "data-pcs-email-logo") {
+		return bodyHTML
+	}
+	logoURL := resolveCorporateEmailLogoURL(baseURL, getCorporateEmailConfig(dbSuper).LogoURL)
+	brand := html.EscapeString(strings.TrimSpace(fromName))
+	if brand == "" {
+		brand = "Powerful Control System"
+	}
+	logoBlock := "<div data-pcs-email-logo=\"1\" style=\"text-align:center;margin:0 0 18px 0;padding:10px 0;\">" +
+		"<img src=\"" + html.EscapeString(logoURL) + "\" alt=\"" + brand + "\" style=\"display:inline-block;max-width:148px;max-height:96px;width:auto;height:auto;border:0;outline:none;text-decoration:none;\">" +
+		"</div>"
+	lower := strings.ToLower(bodyHTML)
+	if idx := strings.Index(lower, "<body"); idx >= 0 {
+		if end := strings.Index(bodyHTML[idx:], ">"); end >= 0 {
+			insertAt := idx + end + 1
+			return bodyHTML[:insertAt] + logoBlock + bodyHTML[insertAt:]
+		}
+	}
+	return "<!doctype html><html><body style=\"margin:0;padding:24px;background:#f6f8fb;color:#172033;font-family:Arial,sans-serif;\">" +
+		"<div style=\"max-width:680px;margin:0 auto;background:#ffffff;border:1px solid #dbe2ee;border-radius:8px;padding:24px;\">" +
+		logoBlock + bodyHTML + "</div></body></html>"
+}
+
 func buildEmpresaUsuarioPlainMessage(fromName, fromEmail, toEmail, subject, body string) string {
 	return "From: " + strings.TrimSpace(fromName) + " <" + strings.TrimSpace(fromEmail) + ">\r\n" +
 		"To: " + strings.TrimSpace(toEmail) + "\r\n" +
@@ -2215,7 +2267,7 @@ func buildEmpresaUsuarioPlainMessage(fromName, fromEmail, toEmail, subject, body
 
 func sendEmpresaUsuarioGmailMultipart(dbSuper *sql.DB, baseURL, toEmail, subject, bodyPlain, bodyHTML string) error {
 	fromName, fromEmail := corporateSystemSenderAddress(dbSuper, "soporte")
-	msg := buildEmpresaUsuarioMultipartMessage(baseURL, fromName, fromEmail, toEmail, subject, bodyPlain, bodyHTML)
+	msg := buildEmpresaUsuarioMultipartMessage(dbSuper, baseURL, fromName, fromEmail, toEmail, subject, bodyPlain, bodyHTML)
 	return sendEmpresaUsuarioMailuMessage(dbSuper, fromEmail, toEmail, []byte(msg))
 }
 
@@ -2289,7 +2341,7 @@ func sendEmpresaUsuarioMailuMessage(dbSuper *sql.DB, fromEmail, toEmail string, 
 
 func sendEmpresaUsuarioMailuMultipart(dbSuper *sql.DB, baseURL, toEmail, subject, bodyPlain, bodyHTML string) error {
 	fromName, fromEmail := empresaUsuarioMailuSender(dbSuper)
-	msg := buildEmpresaUsuarioMultipartMessage(baseURL, fromName, fromEmail, toEmail, subject, bodyPlain, bodyHTML)
+	msg := buildEmpresaUsuarioMultipartMessage(dbSuper, baseURL, fromName, fromEmail, toEmail, subject, bodyPlain, bodyHTML)
 	return sendEmpresaUsuarioMailuMessage(dbSuper, fromEmail, toEmail, []byte(msg))
 }
 

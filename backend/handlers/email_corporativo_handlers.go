@@ -34,6 +34,7 @@ const (
 	corporateEmailAutoCreateKey    = "email_corporativo.auto_create"
 	corporateEmailDomainKey        = "email_corporativo.domain"
 	corporateEmailWebmailURLKey    = "email_corporativo.webmail_url"
+	corporateEmailLogoURLKey       = "email_corporativo.logo_url"
 	corporateEmailProvisionModeKey = "email_corporativo.provision_mode"
 	corporateEmailAPIBaseURLKey    = "email_corporativo.mailu_api_base_url"
 	corporateEmailAPIAdminKey      = "email_corporativo.mailu_admin"
@@ -51,6 +52,7 @@ type CorporateEmailConfig struct {
 	AutoCreate     bool   `json:"auto_create"`
 	Domain         string `json:"domain"`
 	WebmailURL     string `json:"webmail_url"`
+	LogoURL        string `json:"logo_url"`
 	ProvisionMode  string `json:"provision_mode"`
 	APIBaseURL     string `json:"mailu_api_base_url"`
 	APIAdmin       string `json:"mailu_admin"`
@@ -115,6 +117,7 @@ func getCorporateEmailConfig(dbSuper *sql.DB) CorporateEmailConfig {
 		AutoCreate:    true,
 		Domain:        "powerfulcontrolsystem.com",
 		WebmailURL:    "https://mail.powerfulcontrolsystem.com/webmail/",
+		LogoURL:       "/img/Logo pcs 1.png",
 		ProvisionMode: "manual",
 		QuotaMB:       1024,
 		MaxAccounts:   corporateEmailDefaultMax,
@@ -133,6 +136,9 @@ func getCorporateEmailConfig(dbSuper *sql.DB) CorporateEmailConfig {
 	}
 	if value, err := getDecryptedConfigValue(dbSuper, corporateEmailWebmailURLKey); err == nil && strings.TrimSpace(value) != "" {
 		cfg.WebmailURL = strings.TrimSpace(value)
+	}
+	if value, err := getDecryptedConfigValue(dbSuper, corporateEmailLogoURLKey); err == nil && strings.TrimSpace(value) != "" {
+		cfg.LogoURL = strings.TrimSpace(value)
 	}
 	if value, err := getDecryptedConfigValue(dbSuper, corporateEmailProvisionModeKey); err == nil && strings.TrimSpace(value) != "" {
 		cfg.ProvisionMode = normalizeCorporateEmailProvisionMode(value)
@@ -563,6 +569,10 @@ func saveCorporateEmailConfig(dbSuper *sql.DB, cfg CorporateEmailConfig, plainPa
 	}
 	cfg.Domain = normalizeCorporateEmailDomain(cfg.Domain)
 	cfg.WebmailURL = strings.TrimSpace(cfg.WebmailURL)
+	cfg.LogoURL = strings.TrimSpace(cfg.LogoURL)
+	if cfg.LogoURL == "" {
+		cfg.LogoURL = "/img/Logo pcs 1.png"
+	}
 	cfg.APIBaseURL = strings.TrimRight(strings.TrimSpace(cfg.APIBaseURL), "/")
 	cfg.APIAdmin = strings.TrimSpace(cfg.APIAdmin)
 	cfg.ProvisionMode = normalizeCorporateEmailProvisionMode(cfg.ProvisionMode)
@@ -580,6 +590,7 @@ func saveCorporateEmailConfig(dbSuper *sql.DB, cfg CorporateEmailConfig, plainPa
 		{corporateEmailAutoCreateKey, strconv.FormatBool(cfg.AutoCreate), false},
 		{corporateEmailDomainKey, cfg.Domain, false},
 		{corporateEmailWebmailURLKey, cfg.WebmailURL, false},
+		{corporateEmailLogoURLKey, cfg.LogoURL, false},
 		{corporateEmailProvisionModeKey, cfg.ProvisionMode, false},
 		{corporateEmailAPIBaseURLKey, cfg.APIBaseURL, false},
 		{corporateEmailAPIAdminKey, cfg.APIAdmin, false},
@@ -728,7 +739,9 @@ func sendCorporateEmailTest(dbSuper *sql.DB, toEmail string) error {
 	}
 	subject := "Prueba de correo corporativo PCS"
 	body := "Esta es una prueba enviada desde el motor Mailu de Powerful Control System.\r\n\r\nRemitente esperado: soporte@powerfulcontrolsystem.com\r\nCanal: email corporativo propio."
-	return sendEmpresaUsuarioMailuPlain(dbSuper, toEmail, subject, body)
+	bodyHTML := "<p>Esta es una prueba enviada desde el motor Mailu de Powerful Control System.</p>" +
+		"<p><strong>Remitente esperado:</strong> soporte@powerfulcontrolsystem.com<br><strong>Canal:</strong> email corporativo propio.</p>"
+	return sendEmpresaUsuarioMailuMultipart(dbSuper, "https://powerfulcontrolsystem.com", toEmail, subject, body, bodyHTML)
 }
 
 func provisionEmpresaEmailAccountWithTheme(dbSuper *sql.DB, cfg CorporateEmailConfig, account dbpkg.EmpresaEmailCorporativo, password, theme string) corporateEmailProvisionResult {
@@ -1243,6 +1256,7 @@ func SuperEmailCorporativoHandler(dbSuper, dbEmp *sql.DB) http.HandlerFunc {
 				AutoCreate    *bool  `json:"auto_create"`
 				Domain        string `json:"domain"`
 				WebmailURL    string `json:"webmail_url"`
+				LogoURL       string `json:"logo_url"`
 				ProvisionMode string `json:"provision_mode"`
 				APIBaseURL    string `json:"mailu_api_base_url"`
 				APIAdmin      string `json:"mailu_admin"`
@@ -1268,6 +1282,7 @@ func SuperEmailCorporativoHandler(dbSuper, dbEmp *sql.DB) http.HandlerFunc {
 			if strings.TrimSpace(payload.WebmailURL) != "" {
 				cfg.WebmailURL = payload.WebmailURL
 			}
+			cfg.LogoURL = payload.LogoURL
 			if strings.TrimSpace(payload.ProvisionMode) != "" {
 				cfg.ProvisionMode = payload.ProvisionMode
 			}

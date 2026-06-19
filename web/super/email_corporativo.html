@@ -58,6 +58,9 @@
     .status { margin: 0 0 12px; min-height: 20px; font-weight: 700; color: #0f766e; }
     .status.error { color: #b42318; }
     .test-send-row { display: grid; grid-template-columns: minmax(220px, 1fr) auto; gap: 10px; align-items: end; margin-top: 12px; max-width: 620px; }
+    .logo-preview-row { display: grid; grid-template-columns: minmax(0, 1fr) 96px; gap: 10px; align-items: end; }
+    .logo-preview { width: 96px; height: 76px; border: 1px solid var(--mail-border); border-radius: 8px; background: var(--mail-input); display: grid; place-items: center; overflow: hidden; }
+    .logo-preview img { max-width: 84px; max-height: 64px; display: block; }
     .table-wrap { overflow-x: auto; border: 1px solid var(--mail-border); border-radius: 8px; }
     table { width: 100%; border-collapse: collapse; min-width: 640px; }
     th, td { padding: 9px; border-bottom: 1px solid var(--mail-border); text-align: left; font-size: .86rem; vertical-align: top; overflow-wrap: anywhere; }
@@ -133,6 +136,14 @@
             <label>Webmail
               <input id="webmailURL" placeholder="https://mail.powerfulcontrolsystem.com/webmail/" autocomplete="off">
             </label>
+            <div class="logo-preview-row">
+              <label>Logo para correos
+                <input id="logoURL" placeholder="/img/Logo pcs 1.png" autocomplete="off">
+              </label>
+              <div class="logo-preview" aria-label="Vista previa del logo de correo">
+                <img id="logoPreview" src="/img/Logo pcs 1.png" alt="Logo correo">
+              </div>
+            </div>
             <label>Modo de provision
               <select id="provisionMode">
                 <option value="manual">Manual / pendiente</option>
@@ -203,6 +214,8 @@
         autoCreate: document.getElementById("autoCreate"),
         domain: document.getElementById("domain"),
         webmailURL: document.getElementById("webmailURL"),
+        logoURL: document.getElementById("logoURL"),
+        logoPreview: document.getElementById("logoPreview"),
         provisionMode: document.getElementById("provisionMode"),
         apiBaseURL: document.getElementById("apiBaseURL"),
         apiAdmin: document.getElementById("apiAdmin"),
@@ -234,6 +247,8 @@
         fields.autoCreate.checked = config.auto_create !== false;
         fields.domain.value = config.domain || "powerfulcontrolsystem.com";
         fields.webmailURL.value = config.webmail_url || "https://mail.powerfulcontrolsystem.com/webmail/";
+        fields.logoURL.value = config.logo_url || "/img/Logo pcs 1.png";
+        updateLogoPreview();
         fields.provisionMode.value = config.provision_mode || "manual";
         fields.apiBaseURL.value = config.mailu_api_base_url || "";
         fields.apiAdmin.value = config.mailu_admin || "";
@@ -349,6 +364,7 @@
           auto_create: !!fields.autoCreate.checked,
           domain: fields.domain.value,
           webmail_url: fields.webmailURL.value,
+          logo_url: fields.logoURL.value,
           provision_mode: fields.provisionMode.value,
           mailu_api_base_url: fields.apiBaseURL.value,
           mailu_admin: fields.apiAdmin.value,
@@ -456,11 +472,19 @@
       }
 
       document.getElementById("configForm").addEventListener("submit", save);
+      fields.logoURL.addEventListener("input", updateLogoPreview);
       document.getElementById("syncBtn").addEventListener("click", sync);
       document.getElementById("testMailuBtn").addEventListener("click", testMailu);
       document.getElementById("provisionSystemBtn").addEventListener("click", provisionSystemMailboxes);
       document.getElementById("testSendBtn").addEventListener("click", testSend);
       load();
+
+      function updateLogoPreview() {
+        var value = String(fields.logoURL.value || "").trim() || "/img/Logo pcs 1.png";
+        if (fields.logoPreview) {
+          fields.logoPreview.src = value;
+        }
+      }
     })();
   </script>
 </body>
