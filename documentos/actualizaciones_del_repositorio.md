@@ -15296,3 +15296,7 @@ Archivos modificados:
 - web/administrar_empresa.html
 - web/index.html
 - web/super_administrador.html
+
+2026-06-18 23:51:30 - Mensaje: rs: actualizar repositorio y sincronizar VPS; Commit: a2367716; PushStatus: OK
+Archivos modificados:
+- web/js/ai_chat_drawer.js
