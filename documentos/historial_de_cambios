@@ -35684,3 +35684,11 @@ Archivos modificados:
 - Backend: `backend/handlers/empresa_permisos.go` deja de tratar `linkSoportesComprasIA` y `linkSoportesComprasIAMenu` como paginas IA ocultas por defecto.
 - Seguridad: `/api/empresa/soportes_compras_ia` mantiene `WithEmpresaSoportesComprasIAPermissions`, aislamiento por `empresa_id`, licencia de modulo, matriz de rol/accion y auditoria.
 - Prueba: `backend/handlers/empresa_permisos_test.go` cubre que las paginas de captura IA de compras/gastos permanezcan visibles cuando el rol tiene permiso del modulo, mientras Centro IA/Renta IA siguen ocultos por defecto.
+
+2026-06-19: rs: actualizar repositorio y sincronizar VPS
+PushStatus: OK
+Archivos modificados:
+- backend/handlers/empresa_permisos.go
+- backend/handlers/empresa_permisos_test.go
+- documentos/historial_de_cambios
+- documentos/mapa_modulos.md

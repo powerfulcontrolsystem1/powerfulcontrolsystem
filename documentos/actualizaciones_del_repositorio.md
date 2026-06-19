@@ -15452,3 +15452,10 @@ Archivos modificados:
 2026-06-19 18:49:38 - Mensaje: rs: actualizar repositorio y sincronizar VPS; Commit: 6a9442ed; PushStatus: OK
 Archivos modificados:
 - web/estilos.css
+
+2026-06-19 18:56:20 - Mensaje: rs: actualizar repositorio y sincronizar VPS; Commit: cd090f04; PushStatus: OK
+Archivos modificados:
+- backend/handlers/empresa_permisos.go
+- backend/handlers/empresa_permisos_test.go
+- documentos/historial_de_cambios
+- documentos/mapa_modulos.md
