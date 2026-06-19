@@ -3,6 +3,18 @@
 Tabla de ubicacion rapida para no buscar desde cero cada modulo. Si una fila
 queda incompleta al implementar una mejora, actualizarla en el mismo cambio.
 
+Actualizacion 2026-06-19: `Super administrador` mantiene `Seleccionar empresa`
+en `web/super_administrador.html` como boton integrado del toolbar, con estilo
+azul claro en `web/estilos.css` y navegacion directa a `/seleccionar_empresa.html`.
+`Administrar empresa` crea el submenu `Usuarios, clientes y personas` en
+`web/administrar_empresa.html` para Usuarios, Clientes y Login de usuarios. El
+menu Beta se controla desde `web/js/administrar_empresa.js`; Estaciones/Puntos
+de venta, Corte de caja, Compras, Centro financiero y contable y Clientes quedan
+como modulos sin etiqueta Beta. `Carrito de compras` mantiene la venta sin stock
+habilitada por defecto en frontend y backend (`backend/db/carritos_compras.go`)
+y agrega estilos visuales por usuario desde
+`web/administrar_empresa/carrito_de_compras.html`.
+
 Actualizacion 2026-06-19: `Correo corporativo Mailu` usa logo inline en todos
 los correos del motor corporativo. `backend/handlers/usuarios_empresa.go` arma
 `multipart/related` con `Content-ID` y carga el logo desde

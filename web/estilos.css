@@ -1948,9 +1948,15 @@ html.empresa-module-submenu-content .chat-workspace-page{max-width:none!importan
 .gym-module-body.gym-submenu-content{background:var(--bg)}
 .admin-content{position:relative;flex:1;padding:10px;overflow:hidden;display:flex;flex-direction:column;min-height:0;background:linear-gradient(180deg,var(--bg-alt),var(--bg))}
 .admin-frame-toolbar{position:absolute;right:18px;top:18px;z-index:12;display:flex;align-items:center;gap:8px;pointer-events:none}
+.super-admin-shell .super-frame-toolbar{position:static;align-self:flex-end;margin:0 8px 10px auto;pointer-events:auto}
+.super-admin-shell .super-toolbar-select-company{pointer-events:auto;background:#bfdbfe;border-color:#93c5fd;color:#0f3a6d;box-shadow:none}
+.super-admin-shell .super-toolbar-select-company:hover,
+.super-admin-shell .super-toolbar-select-company:focus-visible{background:#dbeafe;border-color:#60a5fa;color:#0b315f;outline:2px solid rgba(96,165,250,.35);outline-offset:2px}
 .admin-favorite-btn{pointer-events:auto;display:inline-flex;align-items:center;justify-content:center;width:42px;height:42px;border-radius:999px;border:1px solid color-mix(in srgb,var(--border) 76%,var(--accent-yellow,#facc15) 24%);background:color-mix(in srgb,var(--surface) 88%,transparent);color:color-mix(in srgb,var(--muted) 78%,var(--text) 22%);font-size:1.28rem;line-height:1;box-shadow:0 14px 34px rgba(0,0,0,.16);cursor:pointer;transition:transform .16s ease,background .16s ease,color .16s ease,border-color .16s ease}
 body.ai-chat-drawer-open .admin-frame-toolbar,
 body:has(#aiChatDrawer.open) .admin-frame-toolbar{display:none!important}
+body.ai-chat-drawer-open .admin-content,
+body:has(#aiChatDrawer.open) .admin-content{overflow:hidden!important}
 .admin-empresa-shell.has-floating-menu .admin-frame-toolbar,
 body.has-floating-menu.admin-empresa-shell .admin-frame-toolbar{top:calc(var(--floating-menu-clearance, 72px) + 10px)}
 .admin-favorite-btn:hover,.admin-favorite-btn:focus-visible{transform:translateY(-1px);background:var(--surface-soft);color:var(--accent-yellow,#facc15);outline:none}

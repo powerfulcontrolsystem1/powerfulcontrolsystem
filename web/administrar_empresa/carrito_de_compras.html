@@ -39,10 +39,28 @@
     body.carrito-direct-fullscreen{background:var(--carrito-page-bg,var(--bg))}
     body.carrito-direct-fullscreen .container{max-width:none;width:100%;min-height:100vh;padding:8px}
     body.carrito-direct-fullscreen .carrito-customer-header{position:sticky;top:0;z-index:120;background:var(--surface,var(--bg));padding:6px 0}
+    .cart-style-toggle{position:fixed;left:12px;top:12px;z-index:230;display:inline-flex;align-items:center;gap:6px;min-height:34px;padding:7px 10px;border-radius:8px;border:1px solid var(--cart-style-border,#bfdbfe);background:var(--cart-style-button,#dbeafe);color:var(--cart-style-button-text,#0f3a6d);font-size:.78rem;font-weight:900;box-shadow:0 12px 30px rgba(15,23,42,.16);cursor:pointer}
+    .cart-style-toggle:hover,.cart-style-toggle:focus-visible{outline:2px solid rgba(96,165,250,.35);outline-offset:2px;background:var(--cart-style-button-hover,#eff6ff)}
+    body[data-cart-style="consola"]{--cart-style-button:#07130e;--cart-style-button-hover:#0b2219;--cart-style-button-text:#bbf7d0;--cart-style-border:#14532d;--carrito-page-bg:#020617;--surface:#07130e;--surface-soft:#0b2219;--card:#07130e;--border:#14532d;--text:#dcfce7;--muted:#86efac;font-family:Consolas,"Courier New",monospace}
+    body[data-cart-style="simple"]{--cart-style-button:#f8fafc;--cart-style-button-hover:#fff;--cart-style-button-text:#1f2937;--cart-style-border:#cbd5e1}
+    body[data-cart-style="moderno"]{--cart-style-button:#dbeafe;--cart-style-button-hover:#eff6ff;--cart-style-button-text:#0f3a6d;--cart-style-border:#93c5fd}
+    body[data-cart-style="supermercado"]{--cart-style-button:#dcfce7;--cart-style-button-hover:#f0fdf4;--cart-style-button-text:#14532d;--cart-style-border:#86efac;--accent:#16a34a}
+    body[data-cart-style] .carrito-workspace-card,
+    body[data-cart-style] .empresa-section,
+    body[data-cart-style] .form,
+    body[data-cart-style] .card{border-radius:8px}
+    body[data-cart-style="consola"] .btn{border-radius:4px;box-shadow:none;text-transform:uppercase}
+    body[data-cart-style="simple"] .carrito-workspace-card,
+    body[data-cart-style="simple"] .empresa-section,
+    body[data-cart-style="simple"] .form{box-shadow:none}
+    body[data-cart-style="moderno"] .carrito-workspace-card{box-shadow:0 18px 42px rgba(15,23,42,.14)}
+    body[data-cart-style="supermercado"] .btn.add,
+    body[data-cart-style="supermercado"] .btn:not(.secondary){background:#16a34a;border-color:#15803d;color:#fff}
     @media(max-width:760px){.carrito-direct-sale-tools{justify-content:flex-end}.carrito-customer-header-actions{width:100%;justify-content:flex-end}.carrito-fullscreen-btn{width:38px!important}}
   </style>
 </head>
 <body class="super-page form-bg-dark carrito-flat-page admin-subpage" data-auto-estacion-labels="true">
+  <button id="cartStyleToggleBtn" class="cart-style-toggle" type="button" aria-label="Cambiar estilo del carrito" title="Cambiar estilo del carrito" data-button-icons="off">Estilo</button>
   <div class="container">
 <div class="page-header">
       <div class="carrito-title-line">
@@ -2043,7 +2061,7 @@
         mostrar_boton_clientes_carrito: true,
         mostrar_boton_abonos_carrito: true,
         mostrar_boton_vehiculo_carrito: true,
-        permitir_venta_sin_stock_carrito: false,
+        permitir_venta_sin_stock_carrito: true,
         mostrar_alerta_tiempo_carrito: false,
         alerta_tiempo_minutos: 10,
         alerta_tiempo_activa_default: false,
@@ -2204,7 +2222,7 @@
         mostrar_boton_clientes_carrito: src.mostrar_boton_clientes_carrito === undefined ? base.mostrar_boton_clientes_carrito : Boolean(src.mostrar_boton_clientes_carrito),
         mostrar_boton_abonos_carrito: src.mostrar_boton_abonos_carrito === undefined ? base.mostrar_boton_abonos_carrito : Boolean(src.mostrar_boton_abonos_carrito),
         mostrar_boton_vehiculo_carrito: src.mostrar_boton_vehiculo_carrito === undefined ? base.mostrar_boton_vehiculo_carrito : Boolean(src.mostrar_boton_vehiculo_carrito),
-        permitir_venta_sin_stock_carrito: src.permitir_venta_sin_stock_carrito === undefined ? base.permitir_venta_sin_stock_carrito : Boolean(src.permitir_venta_sin_stock_carrito),
+        permitir_venta_sin_stock_carrito: true,
         mostrar_alerta_tiempo_carrito: src.mostrar_alerta_tiempo_carrito === undefined ? base.mostrar_alerta_tiempo_carrito : Boolean(src.mostrar_alerta_tiempo_carrito),
         alerta_tiempo_minutos: clampCarritoAlertMinutes(src.alerta_tiempo_minutos === undefined ? base.alerta_tiempo_minutos : src.alerta_tiempo_minutos),
         alerta_tiempo_activa_default: src.alerta_tiempo_activa_default === undefined ? base.alerta_tiempo_activa_default : Boolean(src.alerta_tiempo_activa_default),
@@ -2242,8 +2260,7 @@
     }
 
     function allowsStocklessCarritoSale() {
-      const cfg = state.stationConfig && state.stationConfig.carrito_ui_global ? state.stationConfig.carrito_ui_global : {};
-      return Boolean(cfg && cfg.permitir_venta_sin_stock_carrito);
+      return true;
     }
 
     function parseStationConfigValue(raw) {
@@ -12065,6 +12082,70 @@
     });
 
     document.addEventListener('click', handleCartButtonFeedback, true);
+
+    const CART_STYLE_STORAGE_KEY = 'pcs_cart_style_by_user_v1';
+    const CART_STYLE_OPTIONS = [
+      { value: 'consola', label: 'Consola' },
+      { value: 'simple', label: 'Simple' },
+      { value: 'moderno', label: 'Moderno' },
+      { value: 'supermercado', label: 'Supermercado' }
+    ];
+
+    function getCartStyleUserKey() {
+      const candidates = [
+        typeof currentOfflineOperatorEmail === 'function' ? currentOfflineOperatorEmail() : '',
+        localStorage.getItem('pcs_usuario_email') || '',
+        localStorage.getItem('usuario_email') || '',
+        sessionStorage.getItem('usuario_email') || ''
+      ];
+      const found = candidates.map(function(value) { return normalize(value).toLowerCase(); }).find(Boolean);
+      return found || 'usuario_local';
+    }
+
+    function readCartStylePrefs() {
+      try {
+        return JSON.parse(localStorage.getItem(CART_STYLE_STORAGE_KEY) || '{}') || {};
+      } catch (_) {
+        return {};
+      }
+    }
+
+    function writeCartStylePref(style) {
+      const prefs = readCartStylePrefs();
+      prefs[getCartStyleUserKey()] = style;
+      localStorage.setItem(CART_STYLE_STORAGE_KEY, JSON.stringify(prefs));
+    }
+
+    function normalizeCartStyle(style) {
+      const value = normalize(style).toLowerCase();
+      return CART_STYLE_OPTIONS.some(function(item) { return item.value === value; }) ? value : 'moderno';
+    }
+
+    function applyCartStyle(style, persist) {
+      const normalized = normalizeCartStyle(style);
+      document.body.setAttribute('data-cart-style', normalized);
+      const option = CART_STYLE_OPTIONS.find(function(item) { return item.value === normalized; }) || CART_STYLE_OPTIONS[2];
+      const btn = document.getElementById('cartStyleToggleBtn');
+      if (btn) btn.textContent = option.label;
+      if (persist) writeCartStylePref(normalized);
+      return normalized;
+    }
+
+    function initCartStylePreference() {
+      const prefs = readCartStylePrefs();
+      const current = normalizeCartStyle(prefs[getCartStyleUserKey()] || 'moderno');
+      applyCartStyle(current, false);
+      const btn = document.getElementById('cartStyleToggleBtn');
+      if (!btn) return;
+      btn.addEventListener('click', function() {
+        const active = normalizeCartStyle(document.body.getAttribute('data-cart-style') || current);
+        const idx = CART_STYLE_OPTIONS.findIndex(function(item) { return item.value === active; });
+        const next = CART_STYLE_OPTIONS[(idx + 1) % CART_STYLE_OPTIONS.length].value;
+        applyCartStyle(next, true);
+      });
+    }
+
+    initCartStylePreference();
 
     (async function init() {
       const empresaID = Number(getQueryParam('empresa_id') || 0);
