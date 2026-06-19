@@ -1,7 +1,8 @@
-## [2026-06-19] Pagos de licencias listos para produccion
-- [Pagos] Epayco y Wompi quedan revisados como pasarelas activas por pais/credenciales desde `/api/public/licencias/payment_methods`; los endpoints de creacion vuelven a validar disponibilidad antes de iniciar checkout.
+## [2026-06-19] Pagos de licencias y promo produccion
+- [Pagos] Epayco queda disponible en el checkout publico de licencias para PCS/Colombia. Wompi esta habilitado por configuracion y pais, pero no queda disponible porque `wompi.integrity_key` no descifra con la `CONFIG_ENC_KEY` vigente; debe reingresarse desde Super administrador antes de usarlo en produccion.
+- [Seguridad] El backend bloquea Wompi cuando no puede firmar `signature:integrity`, evitando abrir un checkout hospedado con configuracion invalida.
 - [Licencias] `elegir_licencia.html` muestra precio anterior tachado para COP 60.000, COP 110.000 y COP 200.000, manteniendo el precio actual como valor principal.
-- [QA] `go test ./handlers -run "Epayco|Wompi|Licencia.*Payment|Payment.*Licencia|Checkout|PaymentCredential|Discount|PaymentContext|Gratis" -count=1`; `go test ./db -run "Licencia|Payment|Gratis" -count=1`; chequeo sintactico JS de `elegir_licencia.html` y `pagar_licencia.html`.
+- [QA] `go test ./handlers -run "Epayco|Wompi|Licencia.*Payment|Payment.*Licencia|Checkout|PaymentCredential|Discount|PaymentContext|Gratis" -count=1`; `go test ./db -run "Licencia|Payment|Gratis" -count=1`; chequeo sintactico JS de `elegir_licencia.html` y `pagar_licencia.html`; `rs` completo con Docker healthy; validacion publica de `/api/public/licencias/payment_methods` y checkout Epayco.
 
 ## [2026-06-18] Panel super reinicia indicadores y rs en scripts
 - [Super] `licencias_resumen.html` agrega botones `Reiniciar metricas` y `Reiniciar errores` con confirmacion antes de limpiar indicadores.
