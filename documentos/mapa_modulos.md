@@ -10,6 +10,12 @@ pendiente local y persisten `no_mostrar_mas` en
 `/api/empresa/configuracion_guiada`. La reapertura manual sigue disponible en
 `web/administrar_empresa/configuracion_guiada.html`.
 
+Actualizacion 2026-06-19: `Carrito de compras` centraliza en
+`web/estilos.css` el sombreado de etiquetas inspirado en `Detalle del pago`.
+Labels del carrito y controles de cantidad comparten el mismo fondo adaptable a
+tema claro/oscuro; `Efectivo recibido` solo aumenta tamano y conserva el color
+normal del tema.
+
 Actualizacion 2026-06-19: `Super administrador` mantiene `Seleccionar empresa`
 en `web/super_administrador.html` como boton integrado del toolbar, con estilo
 azul claro en `web/estilos.css` y navegacion directa a `/seleccionar_empresa.html`.

@@ -35662,3 +35662,8 @@ Archivos modificados:
 - documentos/historial_de_cambios
 - documentos/mapa_modulos.md
 - web/administrar_empresa/panel.html
+2026-06-19: Carrito sombreado uniforme.
+- Frontend: `web/estilos.css` define un sombreado de etiqueta para `carrito-flat-page` basado en la tarjeta `Detalle del pago`.
+- UX: labels como `Buscar por` y los demas campos del carrito usan el mismo fondo sombreado adaptable a tema claro/oscuro.
+- Cantidad: los botones `-` y `+` y el campo central de cantidad usan el mismo fondo sombreado.
+- Ajuste pedido: `Efectivo recibido` mantiene el color normal del tema y solo aumenta su tamano/fuerza visual.
