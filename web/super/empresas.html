@@ -35,6 +35,8 @@
     .emp-kpi strong{display:block;margin-top:8px;font-size:1.28rem;line-height:1;color:var(--emp-text)}
     .emp-kpi.ok strong{color:var(--emp-green)}.emp-kpi.warn strong{color:var(--emp-amber)}.emp-kpi.crit strong{color:var(--emp-red)}
     .emp-panel{border:1px solid var(--emp-line);border-radius:8px;background:var(--emp-panel)}
+    .emp-maintenance{display:grid;grid-template-columns:minmax(0,1fr) 150px auto auto;gap:8px;align-items:end;margin:0 0 10px;padding:10px;border:1px solid var(--emp-line);border-radius:8px;background:var(--emp-panel)}
+    .emp-maintenance p{margin:4px 0 0;color:var(--emp-muted);font-size:.78rem}
     .emp-filters{display:grid;grid-template-columns:minmax(220px,1fr) minmax(190px,260px) auto auto;gap:8px;align-items:end;padding:10px;border-bottom:1px solid var(--emp-line)}
     .emp-field{display:grid;gap:5px}
     .emp-field label{font-size:.72rem;font-weight:900;color:var(--emp-muted);text-transform:uppercase;letter-spacing:.05em}
@@ -53,8 +55,8 @@
     .emp-pill.info{background:var(--emp-info-bg);border-color:color-mix(in srgb,var(--emp-blue) 28%,var(--emp-line));color:var(--emp-blue)}
     .emp-empty{padding:24px;text-align:center;color:var(--emp-muted);font-weight:800}
     .emp-status{padding:8px 10px;color:var(--emp-muted);font-size:.78rem;border-top:1px solid var(--emp-line)}
-    @media(max-width:980px){.emp-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.emp-filters{grid-template-columns:1fr 1fr}.emp-head{display:grid}}
-    @media(max-width:560px){.emp-shell{width:min(100vw - 16px,1180px);padding-top:8px}.emp-grid,.emp-filters{grid-template-columns:1fr}}
+    @media(max-width:980px){.emp-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.emp-filters,.emp-maintenance{grid-template-columns:1fr 1fr}.emp-head{display:grid}}
+    @media(max-width:560px){.emp-shell{width:min(100vw - 16px,1180px);padding-top:8px}.emp-grid,.emp-filters,.emp-maintenance{grid-template-columns:1fr}}
   </style>
 </head>
 <body>
@@ -73,6 +75,19 @@
       <article class="emp-kpi warn"><span>Sin licencia activa</span><strong id="inactiveCompanies">--</strong></article>
       <article class="emp-kpi"><span>Licencia 15 dias</span><strong id="trialCompanies">--</strong></article>
       <article class="emp-kpi crit"><span>Licencia vencida</span><strong id="expiredCompanies">--</strong></article>
+    </section>
+
+    <section class="emp-maintenance" aria-label="Limpieza de empresas sin licencia">
+      <div>
+        <strong>Eliminar empresas sin licencia activa</strong>
+        <p>Previsualiza y elimina empresas creadas hace varios meses sin licencia activa. El mínimo permitido es 6 meses.</p>
+      </div>
+      <div class="emp-field">
+        <label for="retentionMonths">Meses</label>
+        <input id="retentionMonths" type="number" min="6" step="1" value="6">
+      </div>
+      <button id="previewCleanupBtn" class="emp-btn" type="button">Previsualizar</button>
+      <button id="deleteCleanupBtn" class="emp-btn" type="button">Eliminar candidatas</button>
     </section>
 
     <section class="emp-panel">
@@ -144,6 +159,24 @@
         if(ini && fin) return ini + " - " + fin;
         return ini || fin;
       }
+      async function maintenanceRequest(action, payload){
+        var res = await fetch("/super/api/empresas_estado?action=" + encodeURIComponent(action), {
+          method: "POST",
+          credentials: "same-origin",
+          headers: {"Content-Type":"application/json"},
+          body: JSON.stringify(payload || {})
+        });
+        var raw = await res.text();
+        var data = null;
+        try{ data = raw ? JSON.parse(raw) : null; }catch(_err){}
+        if(!res.ok) throw new Error((data && (data.error || data.message)) || raw || ("HTTP " + res.status));
+        return data || {};
+      }
+      function retentionMonths(){
+        var months = Math.max(6, Number($("retentionMonths").value || 6));
+        $("retentionMonths").value = String(months);
+        return months;
+      }
       function applyUrlFilter(){
         var params = new URLSearchParams(window.location.search || "");
         var license = params.get("licencia") || "";
@@ -202,6 +235,28 @@
       $("filtersForm").addEventListener("submit", function(event){ event.preventDefault(); load(); });
       $("refreshBtn").addEventListener("click", load);
       $("clearBtn").addEventListener("click", function(){ $("searchInput").value = ""; $("licenseFilter").value = ""; load(); });
+      $("previewCleanupBtn").addEventListener("click", async function(){
+        try{
+          var months = retentionMonths();
+          $("statusText").textContent = "Buscando candidatas...";
+          var data = await maintenanceRequest("preview_eliminar_sin_licencia", { meses: months });
+          $("statusText").textContent = "Candidatas sin licencia activa por mas de " + months + " meses: " + fmt(data.total) + ".";
+        }catch(e){ $("statusText").textContent = e.message || "No se pudo previsualizar."; }
+      });
+      $("deleteCleanupBtn").addEventListener("click", async function(){
+        try{
+          var months = retentionMonths();
+          var preview = await maintenanceRequest("preview_eliminar_sin_licencia", { meses: months });
+          var total = Number(preview.total || 0);
+          if(!total){ $("statusText").textContent = "No hay empresas candidatas para eliminar."; return; }
+          var confirmText = window.prompt("Se eliminaran " + total + " empresas sin licencia activa por mas de " + months + " meses. Escribe ELIMINAR SIN LICENCIA para continuar.", "");
+          if(String(confirmText || "").trim().toUpperCase() !== "ELIMINAR SIN LICENCIA") return;
+          $("statusText").textContent = "Eliminando empresas candidatas...";
+          var result = await maintenanceRequest("eliminar_sin_licencia", { meses: months, confirmacion: confirmText });
+          $("statusText").textContent = "Limpieza terminada. Procesadas: " + fmt(result.total) + ".";
+          load();
+        }catch(e){ $("statusText").textContent = e.message || "No se pudo eliminar."; }
+      });
       applyUrlFilter();
       load();
     })();

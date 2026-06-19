@@ -7,7 +7,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"html"
-	"mime"
 	"net/http"
 	"net/mail"
 	"sort"
@@ -426,30 +425,12 @@ func sendSuperCorreoMasivoCampaign(r *http.Request, dbSuper *sql.DB, adminEmail 
 
 func sendSuperCorreoMasivoSMTP(dbSuper *sql.DB, toEmail, toName, subject, bodyPlain, bodyHTML string) error {
 	fromName, fromEmail := corporateSystemSenderAddress(dbSuper, "soporte")
-
-	toAddress := mail.Address{Name: strings.TrimSpace(toName), Address: strings.TrimSpace(toEmail)}
-	fromAddress := mail.Address{Name: fromName, Address: fromEmail}
-
 	bodyPlain = strings.TrimSpace(bodyPlain)
 	if bodyHTML == "" {
 		bodyHTML = buildSuperCorreoMasivoHTMLFromText(bodyPlain)
 	}
-	boundary := "==PCS_MASS_MAIL_" + strconv.FormatInt(time.Now().UnixNano(), 10)
-	headers := "From: " + fromAddress.String() + "\r\n" +
-		"To: " + toAddress.String() + "\r\n" +
-		"Subject: " + mime.QEncoding.Encode("utf-8", strings.TrimSpace(subject)) + "\r\n" +
-		"MIME-Version: 1.0\r\n" +
-		"Content-Type: multipart/alternative; boundary=\"" + boundary + "\"\r\n\r\n"
-	msg := headers +
-		"--" + boundary + "\r\n" +
-		"Content-Type: text/plain; charset=UTF-8\r\n" +
-		"Content-Transfer-Encoding: 8bit\r\n\r\n" +
-		normalizeMailBodyCRLF(bodyPlain) + "\r\n" +
-		"--" + boundary + "\r\n" +
-		"Content-Type: text/html; charset=UTF-8\r\n" +
-		"Content-Transfer-Encoding: 8bit\r\n\r\n" +
-		strings.TrimSpace(bodyHTML) + "\r\n" +
-		"--" + boundary + "--\r\n"
+	_ = strings.TrimSpace(toName)
+	msg := buildEmpresaUsuarioMultipartMessage(dbSuper, "https://powerfulcontrolsystem.com", fromName, fromEmail, strings.TrimSpace(toEmail), strings.TrimSpace(subject), normalizeMailBodyCRLF(bodyPlain), strings.TrimSpace(bodyHTML))
 
 	return sendEmpresaUsuarioMailuMessage(dbSuper, fromEmail, strings.TrimSpace(toEmail), []byte(msg))
 }

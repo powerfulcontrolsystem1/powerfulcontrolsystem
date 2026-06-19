@@ -813,7 +813,7 @@
 - `backend/handlers/auth_admin_handlers.go` exige `otp_code` solo cuando la bandera global y el TOTP de la cuenta estan activos.
 - `backend/handlers/recaptcha.go` publica `window.ADMIN_2FA_LOGIN_ENABLED` dentro de `/config.js` para que el login oculte/muestre el campo sin una llamada adicional.
 - `web/login.html` y `web/js/login.js` mantienen oculto y deshabilitado el input `adminOtpCode` cuando la bandera global esta apagada.
-- `web/super/configuracion_avanzada.html` agrega la tarjeta `2FA login`; `web/super/seguridad_2fa.html` sigue siendo la vista para generar, confirmar o desactivar el secreto TOTP de la cuenta.
+- `web/super/configuracion_avanzada.html` agrega la tarjeta `2FA login`; la vista legacy `web/super/seguridad_2fa.html` fue retirada del panel super por decision operativa.
 
 ## Actualizacion 2026-05-11 (catalogos publicos de plantillas sin sesion)
 

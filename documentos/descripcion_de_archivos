@@ -785,8 +785,10 @@
 - `backend/handlers/licencias_codigos_descuento.go`:
 	- nuevo handler super para listar, crear, actualizar, activar/desactivar y eliminar codigos globales de descuento de licencias.
 	- persiste en `configuraciones.licencias.discount_codes`, compatible con el formato existente del checkout.
+	- desde 2026-06-19 genera codigos automaticamente y guarda metadata compatible: nombre, descripcion, email, vencimiento, estado de envio y ultimo reenvio.
 - `backend/handlers/licencias_codigos_descuento_test.go`:
 	- cubre parseo de codigos activos/inactivos y validacion de codigo/spec.
+	- desde 2026-06-19 cubre metadata y vencimiento de codigos.
 - `backend/handlers/payments_handlers.go`:
 	- normaliza codigos de descuento reemplazando espacios por guion antes de resolverlos.
 - `backend/main.go`:
@@ -11515,3 +11517,10 @@ backend/handlers/user_config.go - Controlador que expone /api/user/configuracion
 	- el boton `Despues` llama el endpoint de posponer, limpia el flag local y cierra el modal sin mostrarlo de nuevo en proximos logins.
 - `documentos/mapa_modulos.md` y `documentos/descripcion_de_archivos`:
 	- documentan la regla de apertura unica del asistente inicial.
+2026-06-19 - Correos con logo inline y super administrador compacto
+- `backend/handlers/email_logo_multipart_test.go`:
+	- prueba que los correos corporativos se generen como `multipart/related` con logo inline `Content-ID`.
+- `backend/handlers/usuarios_empresa.go`, `backend/handlers/mail_utils.go`, `backend/handlers/licencias_vencimiento_alertas.go`, `backend/handlers/super_correos_masivos.go`:
+	- centralizan el armado de correos corporativos con logo embebido y fallback local a `web/img/Logo pcs 1.png`.
+- `web/super/seguridad_2fa.html`, `web/super/seguridad_2fa.js`:
+	- archivos retirados por decision operativa; no deben volver a enlazarse desde el panel super.

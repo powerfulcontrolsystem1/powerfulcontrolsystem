@@ -1,4 +1,4 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="es">
 <head>
   <meta charset="utf-8">
@@ -6,20 +6,20 @@
   <title>Licencias</title>
   <link rel="stylesheet" href="/estilos.css">
   <style>
-    .lic-admin-hero{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(280px,.8fr);gap:14px;margin:0 0 14px;padding:16px;border:1px solid var(--border);border-radius:18px;background:linear-gradient(135deg,color-mix(in srgb,var(--surface) 88%,#0f766e 12%),color-mix(in srgb,var(--surface-soft) 82%,#f59e0b 18%));box-shadow:0 18px 48px rgba(15,23,42,.13)}
-    .lic-admin-hero h2{margin:0;color:var(--text);font-size:1.35rem;line-height:1.1}
-    .lic-admin-hero p{margin:8px 0 0;color:var(--muted);line-height:1.45}
+    .lic-admin-hero{display:grid;grid-template-columns:minmax(0,1fr) minmax(260px,.68fr);gap:10px;margin:0 0 10px;padding:11px 12px;border:1px solid var(--border);border-radius:10px;background:var(--surface);box-shadow:0 8px 22px rgba(15,23,42,.08)}
+    .lic-admin-hero h2{margin:0;color:var(--text);font-size:1.06rem;line-height:1.12}
+    .lic-admin-hero p{margin:5px 0 0;color:var(--muted);font-size:.82rem;line-height:1.32}
     .lic-admin-kicker{margin:0 0 6px;color:var(--muted);font-size:.72rem;font-weight:900;letter-spacing:.08em;text-transform:uppercase}
     .lic-admin-hero-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
     .lic-admin-health{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
-    .lic-admin-health-card{padding:11px;border:1px solid color-mix(in srgb,var(--border) 75%,white 25%);border-radius:14px;background:rgba(255,255,255,.58)}
+    .lic-admin-health-card{padding:8px 9px;border:1px solid var(--border);border-radius:8px;background:var(--surface-soft)}
     .lic-admin-health-card span{display:block;color:var(--muted);font-size:.7rem;font-weight:800;text-transform:uppercase;letter-spacing:.04em}
-    .lic-admin-health-card strong{display:block;margin-top:4px;color:var(--text);font-size:1.12rem}
+    .lic-admin-health-card strong{display:block;margin-top:3px;color:var(--text);font-size:.96rem}
     .lic-admin-panel{margin:0 0 12px}
-    .lic-admin-kpis{display:grid;grid-template-columns:repeat(5,minmax(130px,1fr));gap:8px;margin-bottom:10px}
-    .lic-admin-kpi{padding:10px 11px;border:1px solid var(--border);border-radius:14px;background:var(--surface);box-shadow:0 10px 24px rgba(15,23,42,.08)}
+    .lic-admin-kpis{display:grid;grid-template-columns:repeat(5,minmax(120px,1fr));gap:7px;margin-bottom:9px}
+    .lic-admin-kpi{padding:8px 9px;border:1px solid var(--border);border-radius:10px;background:var(--surface)}
     .lic-admin-kpi span{display:block;color:var(--muted);font-size:.68rem;font-weight:850;text-transform:uppercase;letter-spacing:.045em}
-    .lic-admin-kpi strong{display:block;margin-top:5px;color:var(--text);font-size:1.25rem;line-height:1}
+    .lic-admin-kpi strong{display:block;margin-top:4px;color:var(--text);font-size:1.06rem;line-height:1}
     .lic-admin-kpi small{display:block;margin-top:4px;color:var(--muted);font-size:.68rem;line-height:1.15}
     .lic-admin-toolbar{display:grid;grid-template-columns:minmax(210px,1.2fr) repeat(4,minmax(135px,.7fr));gap:8px;align-items:end;margin:10px 0;padding:10px;border:1px solid var(--border);border-radius:16px;background:var(--surface)}
     .lic-admin-toolbar .btn{min-height:38px}
@@ -178,16 +178,16 @@
           <li>Los planes base son globales y aplican para todos los tipos de empresa.</li>
           <li>Una empresa con licencia activa solo puede adelantar la misma licencia el número de veces configurado por super administrador.</li>
           <li>Las licencias vencidas se renuevan con planes comerciales, no con otra prueba gratis.</li>
-          <li>El codigo de asesor de ventas queda registrado durante la activacion cuando aplique.</li>
-          <li>El correo de compra da la bienvenida a PCS y puede adjuntar la factura electronica en PDF; la licencia del software se descarga desde Administrar empresa.</li>
+          <li>El código de asesor de ventas queda registrado durante la activación cuando aplique.</li>
+          <li>El correo de compra da la bienvenida a PCS y puede adjuntar la factura electrónica en PDF; la licencia del software se descarga desde Administrar empresa.</li>
         </ul>
         <div class="lic-admin-rule-config">
           <label class="form-label" for="maxAdvanceSameLicense">Compras adelantadas de la misma licencia</label>
           <input id="maxAdvanceSameLicense" class="form-input" type="number" min="0" max="24" step="1" value="2">
           <p class="form-help">Valor por defecto: 2. Con licencia activa, el cliente puede comprar máximo dos renovaciones adicionales de ese mismo plan y volver a comprar cuando una se venza.</p>
           <label class="lic-superrol-item"><input id="licenseWelcomeEmailEnabled" type="checkbox" checked> Enviar correo de bienvenida cuando se aprueba una compra de licencia.</label>
-          <label class="lic-superrol-item"><input id="licenseAutoInvoiceEnabled" type="checkbox" checked> Emitir automaticamente la factura electronica desde la empresa Powerful Control System.</label>
-          <label class="lic-superrol-item"><input id="licenseAttachInvoicePdfEnabled" type="checkbox" checked> Adjuntar la factura electronica en PDF en el correo de bienvenida.</label>
+          <label class="lic-superrol-item"><input id="licenseAutoInvoiceEnabled" type="checkbox" checked> Emitir automáticamente la factura electrónica desde la empresa Powerful Control System.</label>
+          <label class="lic-superrol-item"><input id="licenseAttachInvoicePdfEnabled" type="checkbox" checked> Adjuntar la factura electrónica en PDF en el correo de bienvenida.</label>
           <p class="form-help">La licencia del software no se adjunta por correo. El cliente la descarga desde Administrar empresa > Licencia del sistema.</p>
           <div class="form-actions">
             <button id="saveLicenseConfigBtn" class="btn secondary" type="button">Guardar reglas</button>
@@ -848,7 +848,7 @@
           const invoiceEl = document.getElementById('licenseAutoInvoiceEnabled');
           const attachEl = document.getElementById('licenseAttachInvoicePdfEnabled');
           if (welcomeEl) welcomeEl.checked = cfg.email_bienvenida_compra_enabled !== false;
-          if (invoiceEl) invoiceEl.checked = cfg.factura_electronica_automatica_enabled !== false;
+          if (invoiceEl) invoiceEl.checked = cfg.factura_electrónica_automatica_enabled !== false;
           if (attachEl) attachEl.checked = cfg.email_adjuntar_factura_pdf_enabled !== false;
           if (licenseConfigMsg) licenseConfigMsg.textContent = 'Reglas vigentes cargadas.';
         } catch (err) {
@@ -875,7 +875,7 @@
             body: JSON.stringify({
               max_compras_adelantadas_misma_licencia: value,
               email_bienvenida_compra_enabled: welcomeEl ? !!welcomeEl.checked : true,
-              factura_electronica_automatica_enabled: invoiceEl ? !!invoiceEl.checked : true,
+              factura_electrónica_automatica_enabled: invoiceEl ? !!invoiceEl.checked : true,
               email_adjuntar_factura_pdf_enabled: attachEl ? !!attachEl.checked : true
             })
           });

@@ -35571,3 +35571,10 @@ Archivos modificados:
 - web/js/seleccionar_empresa.js
 - web/super/licencias.html
 - web/venta_publica.html
+2026-06-19: Correo corporativo con logo inline, descuentos profesionales y panel super compacto.
+- Backend: `buildEmpresaUsuarioMultipartMessage` ahora arma correos `multipart/related` y embebe el logo corporativo real como `Content-ID`, con fallback robusto a `web/img/Logo pcs 1.png`; los correos de sistema, vencimientos de licencia y masivos reutilizan el mismo constructor.
+- Super administrador: se compactan Auditoría global, Auditoría super, Códigos de descuento y Licencias; `Seleccionar empresa` sale del menú y queda en el toolbar superior; se elimina la página `2FA super` y sus referencias de navegación.
+- Licencias/descuentos: los códigos globales se generan automáticamente, guardan nombre, descripción, email y fecha de vencimiento, envían/reenvían correo corporativo y el checkout ignora códigos vencidos.
+- Empresas: `web/super/empresas.html` agrega limpieza con previsualización y confirmación de empresas sin licencia activa por mínimo 6 meses.
+- Operación: `sync_to_vps.ps1` usa 900 segundos también en timeouts internos de reinicio y healthcheck; `actualizar_repositorio.ps1` se revisa como flujo apto para la copia del repositorio.
+- QA: `go test ./handlers -count=1`, pruebas enfocadas de logo/descuentos, validación sintáctica JS de páginas super tocadas y parseo PowerShell de `rs`, `sync_to_vps` y `actualizar_repositorio`.

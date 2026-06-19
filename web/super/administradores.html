@@ -34,7 +34,6 @@
           <select id="role" class="form-input">
             <option value="administrador">administrador</option>
             <option value="super_administrador">super_administrador</option>
-            <option value="control_super_administrador">control_super_administrador</option>
           </select>
         </div>
       </div>
@@ -111,7 +110,10 @@
         table.className = 'table table-compact';
         table.innerHTML = '<thead><tr><th>ID</th><th>Email</th><th>Nombre</th><th>Rol</th><th>Invitación</th><th>Estado cuenta</th><th>Acciones</th></tr></thead>';
         const tbody = document.createElement('tbody');
-        data.forEach(i=>{
+        data.filter(i=>{
+          const role = normalizeRole(i.role);
+          return role === 'administrador' || role === 'super_administrador';
+        }).forEach(i=>{
           const tr = document.createElement('tr');
           const confirmado = Number(i.email_confirmado || 0) === 1;
           const invitationStatus = invitationStatusLabel(i.invitation_status || (confirmado ? 'aceptada' : 'pendiente'));

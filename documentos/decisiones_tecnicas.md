@@ -53,6 +53,13 @@ trazabilidad en `documentos/historial_de_cambios`.
 
 ## Configuracion empresarial
 
+## Correo corporativo
+
+- Todo correo automatico del dominio `powerfulcontrolsystem.com` debe usar el
+  constructor corporativo comun y llevar el logo de empresa como imagen inline
+  `cid:` cuando exista archivo local configurado. No depender solo de una URL
+  externa para el logo, porque algunos clientes muestran un avatar con inicial.
+
 - Usar `empresa_estacion_prefs.estaciones_config` para configuracion flexible de
   estaciones, carrito y preferencias operativas cuando aplique.
 - Usar `carrito_ui_global` como base global del carrito y overrides por estacion

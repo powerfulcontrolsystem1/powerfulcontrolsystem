@@ -619,7 +619,7 @@
 - `security.admin_2fa.enabled` vive en configuracion avanzada y solo lo gobierna `super_administrador` mediante `/super/api/config/admin_2fa`.
 - Cuando el switch global esta apagado, `login.html` oculta el campo de codigo 2FA y `AdminLoginHandler` no exige OTP aunque la cuenta conserve secreto TOTP guardado.
 - Cuando el switch global esta activo, solo las cuentas con `administradores.totp_enabled=1` y secreto confirmado deben enviar `otp_code`; las demas mantienen el flujo normal de correo/contrasena.
-- La vista `web/super/seguridad_2fa.html` sigue siendo el control por cuenta para generar, confirmar o desactivar el secreto; no concede permisos adicionales ni cambia roles de empresa.
+- La vista legacy `web/super/seguridad_2fa.html` fue retirada del panel super; el gobierno vigente del 2FA de login se mantiene desde Configuracion avanzada sin conceder permisos adicionales ni cambiar roles de empresa.
 
 2026-05-11: Nota operativa para alcance vertical por licencia
 - El permiso efectivo de una empresa combina rol, licencia activa, reglas finas de empresa y `vertical_scope`.

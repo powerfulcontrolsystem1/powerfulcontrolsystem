@@ -834,11 +834,19 @@ func EmpresasHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 	}
 }
 
-// SuperEmpresasEstadoHandler entrega una vista global read-only de empresas y licencias para super administrador.
+// SuperEmpresasEstadoHandler entrega una vista global de empresas y licencias para super administrador.
 func SuperEmpresasEstadoHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodGet {
+		if r.Method != http.MethodGet && r.Method != http.MethodPost {
 			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+		if r.Method == http.MethodPost {
+			if _, ok, status, msg := requireSuperAdmin(r, dbSuper); !ok {
+				http.Error(w, msg, status)
+				return
+			}
+			handleSuperEmpresasEstadoMaintenance(w, r, dbEmp, dbSuper)
 			return
 		}
 		if _, err := dbpkg.SyncEmpresasEstadoPorLicencia(dbEmp, dbSuper); err != nil {
@@ -869,4 +877,92 @@ func SuperEmpresasEstadoHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 			"items":   items,
 		})
 	}
+}
+
+func handleSuperEmpresasEstadoMaintenance(w http.ResponseWriter, r *http.Request, dbEmp, dbSuper *sql.DB) {
+	action := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("action")))
+	if action != "preview_eliminar_sin_licencia" && action != "eliminar_sin_licencia" {
+		http.Error(w, "accion no soportada", http.StatusBadRequest)
+		return
+	}
+	var payload struct {
+		Meses        int    `json:"meses"`
+		Confirmacion string `json:"confirmacion"`
+	}
+	if r.Body != nil {
+		defer r.Body.Close()
+		_ = json.NewDecoder(r.Body).Decode(&payload)
+	}
+	if payload.Meses == 0 {
+		payload.Meses, _ = strconv.Atoi(strings.TrimSpace(r.URL.Query().Get("meses")))
+	}
+	if payload.Meses < 6 {
+		http.Error(w, "meses debe ser minimo 6", http.StatusBadRequest)
+		return
+	}
+	items, _, err := dbpkg.ListEmpresasLicenciaEstado(dbEmp, dbSuper, dbpkg.EmpresaLicenciaEstadoFilter{
+		LicenciaFiltro: "sin_activa",
+		Limit:          2000,
+	})
+	if err != nil {
+		http.Error(w, "failed to list empresas estado", http.StatusInternalServerError)
+		return
+	}
+	cutoff := time.Now().AddDate(0, -payload.Meses, 0)
+	candidates := make([]dbpkg.EmpresaLicenciaEstado, 0)
+	for _, item := range items {
+		createdAt, ok := parseEmpresaEstadoDate(item.FechaCreacion)
+		if !ok || createdAt.After(cutoff) {
+			continue
+		}
+		if item.LicenciaActiva {
+			continue
+		}
+		candidates = append(candidates, item)
+	}
+	if action == "preview_eliminar_sin_licencia" {
+		writeJSON(w, http.StatusOK, map[string]interface{}{
+			"ok":         true,
+			"meses":      payload.Meses,
+			"total":      len(candidates),
+			"candidatas": candidates,
+		})
+		return
+	}
+	if strings.ToUpper(strings.TrimSpace(payload.Confirmacion)) != "ELIMINAR SIN LICENCIA" {
+		http.Error(w, "confirmacion debe ser ELIMINAR SIN LICENCIA", http.StatusBadRequest)
+		return
+	}
+	results := make([]map[string]interface{}, 0, len(candidates))
+	for _, item := range candidates {
+		id := item.EmpresaID
+		if id <= 0 {
+			id = item.ID
+		}
+		if id <= 0 {
+			continue
+		}
+		result, err := dbpkg.DeleteEmpresaCascade(dbEmp, dbSuper, id)
+		if err != nil {
+			results = append(results, map[string]interface{}{"empresa_id": id, "nombre": item.Nombre, "ok": false, "error": err.Error()})
+			continue
+		}
+		fileCleanup := cleanupEmpresaOwnedFiles(id)
+		results = append(results, map[string]interface{}{"empresa_id": id, "nombre": item.Nombre, "ok": true, "result": result, "archivos": fileCleanup})
+	}
+	writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "meses": payload.Meses, "total": len(candidates), "resultados": results})
+}
+
+func parseEmpresaEstadoDate(raw string) (time.Time, bool) {
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		return time.Time{}, false
+	}
+	layouts := []string{"2006-01-02 15:04:05", time.RFC3339, "2006-01-02"}
+	for _, layout := range layouts {
+		if t, err := time.ParseInLocation(layout, raw, time.Local); err == nil {
+			return t, true
+		}
+	}
+	return time.Time{}, false
 }

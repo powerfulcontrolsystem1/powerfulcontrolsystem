@@ -8,23 +8,25 @@
   <style>
     .auditoria-global-page .container{max-width:1180px}
     .auditoria-global-header{align-items:flex-end;gap:12px}
-    .auditoria-global-header h1{margin-bottom:4px;font-size:1.45rem;line-height:1.05}
-    .auditoria-global-header .page-subtitle{max-width:840px;margin:0;font-size:.9rem;line-height:1.32}
+    .auditoria-global-header h1{margin-bottom:4px;font-size:1.35rem;line-height:1.05}
+    .auditoria-global-header .page-subtitle{max-width:840px;margin:0;font-size:.86rem;line-height:1.28}
     .auditoria-global-actions{display:flex;gap:8px;flex-wrap:wrap}
-    .auditoria-global-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin:10px 0}
-    .auditoria-global-kpis article{padding:10px 12px;border:1px solid var(--border);border-radius:8px;background:var(--surface-soft)}
-    .auditoria-global-kpis span{display:block;font-size:.7rem;line-height:1.1}
-    .auditoria-global-kpis strong{display:block;margin-top:4px;font-size:1rem;line-height:1}
-    .auditoria-global-filtros{padding:12px 14px}
-    .auditoria-global-filtros .form-row{gap:10px;margin-bottom:8px}
-    .auditoria-global-filtros .form-label{margin-bottom:4px;font-size:.78rem}
-    .auditoria-global-filtros .form-input{min-height:38px;padding:8px 10px}
-    .auditoria-global-filtros .form-actions{margin-top:6px;gap:8px}
-    .auditoria-global-filtros #msg{margin-top:6px}
+    .auditoria-global-control-card{padding:10px 12px;margin:8px 0 10px}
+    .auditoria-global-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin:0 0 8px}
+    .auditoria-global-kpis article{padding:8px 10px;border:1px solid var(--border);border-radius:8px;background:var(--surface-soft)}
+    .auditoria-global-kpis span{display:block;font-size:.68rem;line-height:1.1}
+    .auditoria-global-kpis strong{display:block;margin-top:3px;font-size:.96rem;line-height:1}
+    .auditoria-global-filtros{padding:0}
+    .auditoria-global-filtros .form-row{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-bottom:7px}
+    .auditoria-global-filtros .form-row:nth-of-type(2){grid-template-columns:minmax(150px,.8fr) minmax(120px,.55fr) minmax(260px,1.65fr)}
+    .auditoria-global-filtros .form-label{margin-bottom:3px;font-size:.72rem}
+    .auditoria-global-filtros .form-input{min-height:34px;padding:6px 9px}
+    .auditoria-global-filtros .form-actions{margin-top:5px;gap:7px}
+    .auditoria-global-filtros #msg{margin-top:5px}
     .auditoria-global-table-card{margin-top:10px}
     .auditoria-global-table-head,.auditoria-global-pagination{padding:10px 12px}
-    @media(max-width:860px){.auditoria-global-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
-    @media(max-width:640px){.auditoria-global-kpis{grid-template-columns:1fr}.auditoria-global-header h1{font-size:1.2rem}.auditoria-global-header .page-subtitle{font-size:.84rem}}
+    @media(max-width:860px){.auditoria-global-kpis,.auditoria-global-filtros .form-row,.auditoria-global-filtros .form-row:nth-of-type(2){grid-template-columns:repeat(2,minmax(0,1fr))}}
+    @media(max-width:640px){.auditoria-global-kpis,.auditoria-global-filtros .form-row,.auditoria-global-filtros .form-row:nth-of-type(2){grid-template-columns:1fr}.auditoria-global-header h1{font-size:1.2rem}.auditoria-global-header .page-subtitle{font-size:.84rem}}
   </style>
 </head>
 <body class="super-page auditoria-global-page" data-audit-scope="principal" data-audit-download-prefix="auditoria_global">
@@ -40,67 +42,69 @@
       </div>
     </div>
 
-    <section class="auditoria-global-kpis" aria-label="Resumen de auditoría">
-      <article><span>Total filtrado</span><strong id="kpiTotal">0</strong></article>
-      <article><span>Errores</span><strong id="kpiErrores">0</strong></article>
-      <article><span>Usuarios</span><strong id="kpiUsuarios">0</strong></article>
-      <article><span>Alcance</span><strong id="kpiScope">-</strong></article>
-    </section>
+    <section class="card auditoria-global-control-card">
+      <div class="auditoria-global-kpis" aria-label="Resumen de auditoría">
+        <article><span>Total filtrado</span><strong id="kpiTotal">0</strong></article>
+        <article><span>Errores</span><strong id="kpiErrores">0</strong></article>
+        <article><span>Usuarios</span><strong id="kpiUsuarios">0</strong></article>
+        <article><span>Alcance</span><strong id="kpiScope">-</strong></article>
+      </div>
 
-    <form id="filtros" class="form auditoria-global-filtros">
-      <div class="form-row">
-        <div class="form-col">
-          <label class="form-label" for="desde">Desde</label>
-          <input id="desde" type="date" class="form-input">
+      <form id="filtros" class="auditoria-global-filtros">
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-label" for="desde">Desde</label>
+            <input id="desde" type="date" class="form-input">
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="hasta">Hasta</label>
+            <input id="hasta" type="date" class="form-input">
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="modulo">Módulo</label>
+            <select id="modulo" class="form-input">
+              <option value="">Todos</option>
+              <option value="selector_empresas">Empresas</option>
+              <option value="selector_empresa_ui">Interacciones UI</option>
+              <option value="administradores">Administradores</option>
+              <option value="empresas_compartidas">Empresas compartidas</option>
+              <option value="licencias">Licencias</option>
+              <option value="reportes_globales">Reportes globales</option>
+              <option value="tipos_empresas">Tipos de empresas</option>
+            </select>
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="resultado">Resultado</label>
+            <select id="resultado" class="form-input">
+              <option value="">Todos</option>
+              <option value="ok">OK</option>
+              <option value="error">Error</option>
+              <option value="rechazado">Rechazado</option>
+            </select>
+          </div>
         </div>
-        <div class="form-col">
-          <label class="form-label" for="hasta">Hasta</label>
-          <input id="hasta" type="date" class="form-input">
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-label" for="usuario">Usuario</label>
+            <input id="usuario" class="form-input" placeholder="correo o usuario">
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="empresaId">Empresa ID</label>
+            <input id="empresaId" class="form-input" inputmode="numeric" placeholder="Opcional">
+          </div>
+          <div class="form-col form-col-wide">
+            <label class="form-label" for="search">Buscar</label>
+            <input id="search" class="form-input" placeholder="acción, endpoint, recurso, IP, observación">
+          </div>
         </div>
-        <div class="form-col">
-          <label class="form-label" for="modulo">Módulo</label>
-          <select id="modulo" class="form-input">
-            <option value="">Todos</option>
-            <option value="selector_empresas">Empresas</option>
-            <option value="selector_empresa_ui">Interacciones UI</option>
-            <option value="administradores">Administradores</option>
-            <option value="empresas_compartidas">Empresas compartidas</option>
-            <option value="licencias">Licencias</option>
-            <option value="reportes_globales">Reportes globales</option>
-            <option value="tipos_empresas">Tipos de empresas</option>
-          </select>
+        <div class="form-actions">
+          <button class="btn" type="submit">Ver auditoría</button>
+          <button id="btnCSV" class="btn secondary" type="button">Exportar CSV</button>
+          <button id="btnJSON" class="btn secondary" type="button">Exportar JSON</button>
         </div>
-        <div class="form-col">
-          <label class="form-label" for="resultado">Resultado</label>
-          <select id="resultado" class="form-input">
-            <option value="">Todos</option>
-            <option value="ok">OK</option>
-            <option value="error">Error</option>
-            <option value="rechazado">Rechazado</option>
-          </select>
-        </div>
-      </div>
-      <div class="form-row">
-        <div class="form-col">
-          <label class="form-label" for="usuario">Usuario</label>
-          <input id="usuario" class="form-input" placeholder="correo o usuario">
-        </div>
-        <div class="form-col">
-          <label class="form-label" for="empresaId">Empresa ID</label>
-          <input id="empresaId" class="form-input" inputmode="numeric" placeholder="Opcional">
-        </div>
-        <div class="form-col form-col-wide">
-          <label class="form-label" for="search">Buscar</label>
-          <input id="search" class="form-input" placeholder="acción, endpoint, recurso, IP, observación">
-        </div>
-      </div>
-      <div class="form-actions">
-        <button class="btn" type="submit">Ver auditoría</button>
-        <button id="btnCSV" class="btn secondary" type="button">Exportar CSV</button>
-        <button id="btnJSON" class="btn secondary" type="button">Exportar JSON</button>
-      </div>
-      <div id="msg" class="form-help"></div>
-    </form>
+        <div id="msg" class="form-help"></div>
+      </form>
+    </section>
 
     <section class="card auditoria-global-table-card">
       <div class="auditoria-global-table-head">

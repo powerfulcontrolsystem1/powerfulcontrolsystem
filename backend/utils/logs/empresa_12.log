@@ -1,0 +1,4 @@
+2026-06-19T15:13:18-05:00 [ERROR] req_id=req-1781899998765478100-8116aa05169d event=api_error method=POST path=/api/empresa/usuarios/establecer_password status=500 error="No se pudo validar el contrato vigente."
+2026-06-19T15:13:18-05:00 [ERROR] req_id=req-1781899998765478100-6fdaeca201da event=api_error method=POST path=/api/empresa/usuarios/establecer_password status=500 error="sql: private detail"
+2026-06-19T15:14:08-05:00 [ERROR] req_id=req-1781900048200245800-758e923fce33 event=api_error method=POST path=/api/empresa/usuarios/establecer_password status=500 error="No se pudo validar el contrato vigente."
+2026-06-19T15:14:08-05:00 [ERROR] req_id=req-1781900048201396500-268e57ff0c21 event=api_error method=POST path=/api/empresa/usuarios/establecer_password status=500 error="sql: private detail"

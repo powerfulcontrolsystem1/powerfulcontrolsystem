@@ -5,8 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
-	"mime"
-	"net"
 	"net/http"
 	"net/mail"
 	"net/url"
@@ -579,36 +577,7 @@ func buildLicenciaVencimientoRenewURL(baseURL string, empresaID int64) string {
 
 func sendLicenciaVencimientoSMTP(dbSuper *sql.DB, toEmail, subject, bodyPlain, bodyHTML, baseURL string) error {
 	fromName, fromEmail := corporateSystemSenderAddress(dbSuper, "ventas")
-	boundary := "==PCS_LICENSE_EXPIRY_" + strconv.FormatInt(time.Now().UnixNano(), 10)
-	listUnsub := ""
-	if u, err := url.Parse(baseURL); err == nil {
-		host := u.Host
-		if strings.Contains(host, ":") {
-			host, _, _ = net.SplitHostPort(host)
-		}
-		if host != "" {
-			listUnsub = "<mailto:postmaster@" + host + ">"
-		}
-	}
-	from := (&mail.Address{Name: fromName, Address: fromEmail}).String()
-	headers := "From: " + from + "\r\n" +
-		"To: " + strings.TrimSpace(toEmail) + "\r\n" +
-		"Subject: " + mime.QEncoding.Encode("utf-8", sanitizeEmailHeader(subject)) + "\r\n"
-	if listUnsub != "" {
-		headers += "List-Unsubscribe: " + listUnsub + "\r\n"
-	}
-	headers += "MIME-Version: 1.0\r\n" +
-		"Content-Type: multipart/alternative; boundary=\"" + boundary + "\"\r\n\r\n"
-	msg := headers +
-		"--" + boundary + "\r\n" +
-		"Content-Type: text/plain; charset=UTF-8\r\n" +
-		"Content-Transfer-Encoding: 8bit\r\n\r\n" +
-		bodyPlain + "\r\n" +
-		"--" + boundary + "\r\n" +
-		"Content-Type: text/html; charset=UTF-8\r\n" +
-		"Content-Transfer-Encoding: 8bit\r\n\r\n" +
-		bodyHTML + "\r\n" +
-		"--" + boundary + "--\r\n"
+	msg := buildEmpresaUsuarioMultipartMessage(dbSuper, baseURL, fromName, fromEmail, strings.TrimSpace(toEmail), sanitizeEmailHeader(subject), bodyPlain, bodyHTML)
 	return sendEmpresaUsuarioMailuMessage(dbSuper, fromEmail, strings.TrimSpace(toEmail), []byte(msg))
 }
 

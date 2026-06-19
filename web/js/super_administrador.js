@@ -48,7 +48,6 @@
     "/super/contrato.html": true,
     "/super/roles_de_usuario.html": true,
     "/super/permisos_rol.html": true,
-    "/super/seguridad_2fa.html": true,
     "/super/auditoria_super_admin.html": true,
     "/super/integracion_ia.html": true,
     "/super/chat_con_ia_global.html": true,
@@ -352,7 +351,6 @@
       "/super/licencias_resumen.html": true,
       "/super/administradores.html": true,
       "/super/seguridad.html": true,
-      "/super/seguridad_2fa.html": true
     };
     links.forEach(function (a) {
       var normalized = normalizeHref(a.getAttribute("href")).split("?")[0];

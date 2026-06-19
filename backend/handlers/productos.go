@@ -2961,7 +2961,7 @@ func EmpresaProductoImagenUploadHandler(dbEmp *sql.DB) http.HandlerFunc {
 }
 
 func resolveWebRootDir() string {
-	candidates := []string{"../web", "web"}
+	candidates := []string{"../web", "web", "../../web"}
 	if exe, err := os.Executable(); err == nil {
 		candidates = append(candidates, filepath.Join(filepath.Dir(exe), "..", "web"))
 	}

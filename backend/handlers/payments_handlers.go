@@ -2429,7 +2429,7 @@ func validateLicenciaAsesorCode(dbSuper *sql.DB, asesorID string) (string, error
 }
 
 func parseLicenciaDiscountSpec(spec string, originalValue float64) (float64, string, bool) {
-	spec = strings.TrimSpace(spec)
+	spec = splitLicenciaDiscountSpecOnly(spec)
 	if spec == "" || originalValue <= 0 {
 		return 0, "", false
 	}
@@ -2486,6 +2486,9 @@ func resolveLicenciaDiscountAmount(dbSuper *sql.DB, discountCode string, origina
 			}
 			if normalizeLicenciaDiscountCode(parts[0]) != normalizedCode {
 				continue
+			}
+			if licenciaDiscountCodeExpired(parts[1], time.Now()) {
+				return 0, "", false, nil
 			}
 			amount, label, ok := parseLicenciaDiscountSpec(parts[1], originalValue)
 			return amount, label, ok, nil

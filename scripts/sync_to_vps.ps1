@@ -1471,7 +1471,7 @@ function Invoke-PuttySync {
     [string]$RestartBinaryRelativePath = "backend/bin/server_linux_amd64",
     [string]$RestartStdoutLogRelativePath = "backend/server.log",
     [string]$RestartStderrLogRelativePath = "backend/server.err",
-    [int]$RestartHealthTimeout = 45
+    [int]$RestartHealthTimeout = 900
   )
 
   if (-not (Test-Path $IdentityPath)) {
@@ -1796,7 +1796,7 @@ function Invoke-RemoteDockerComposeRedeploy {
     [Parameter(Mandatory=$true)][bool]$Enabled,
     [Parameter(Mandatory=$true)][bool]$IsDryRun,
     [Parameter(Mandatory=$true)][bool]$IsPreviewOnly,
-    [int]$HealthTimeoutSeconds = 180
+    [int]$HealthTimeoutSeconds = 900
   )
 
   if (-not $Enabled) {

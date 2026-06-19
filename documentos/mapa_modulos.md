@@ -3,6 +3,29 @@
 Tabla de ubicacion rapida para no buscar desde cero cada modulo. Si una fila
 queda incompleta al implementar una mejora, actualizarla en el mismo cambio.
 
+Actualizacion 2026-06-19: `Correo corporativo Mailu` usa logo inline en todos
+los correos del motor corporativo. `backend/handlers/usuarios_empresa.go` arma
+`multipart/related` con `Content-ID` y carga el logo desde
+`web/img/Logo pcs 1.png` o desde `email_corporativo.logo_url` cuando apunta a
+un recurso local permitido (`img/` o `uploads/`). `mail_utils.go`,
+`licencias_vencimiento_alertas.go` y `super_correos_masivos.go` reutilizan ese
+constructor para evitar correos sin marca.
+
+Actualizacion 2026-06-19: `Super administrador > Codigos descuento` queda en
+`web/super/licencias_codigos_descuento.html` y
+`/super/api/licencias/codigos_descuento`. Los codigos se generan
+automaticamente, guardan nombre, descripcion, email y vencimiento, permiten
+reenvio y el checkout de licencias ignora codigos vencidos. `Super
+administrador > Empresas` agrega limpieza controlada de empresas sin licencia
+activa con minimo 6 meses desde `/super/api/empresas_estado`.
+
+Actualizacion 2026-06-19: el menu de `web/super_administrador.html` ya no
+incluye `Seleccionar empresa` ni `2FA super`. `Seleccionar empresa` queda como
+boton en el toolbar superior derecho y la pagina legacy
+`web/super/seguridad_2fa.html` fue retirada; el control vigente de login 2FA
+permanece en `web/super/configuracion_avanzada.html` y
+`web/super/configuracion/login_2fa.html`.
+
 Actualizacion 2026-06-19: `Super administrador > Empresas` queda disponible en
 `web/super/empresas.html` y consume `/super/api/empresas_estado` para listar en
 modo solo lectura empresas por nombre/NIT/tipo/licencia, con filtros de

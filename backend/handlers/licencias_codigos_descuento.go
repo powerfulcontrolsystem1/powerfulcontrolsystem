@@ -1,11 +1,14 @@
 package handlers
 
 import (
+	"crypto/rand"
 	"database/sql"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
+	"net/mail"
 	"sort"
 	"strconv"
 	"strings"
@@ -22,7 +25,12 @@ type licenciaDiscountCodeAdminItem struct {
 	Tipo          string  `json:"tipo"`
 	Valor         float64 `json:"valor"`
 	Activo        bool    `json:"activo"`
+	Nombre        string  `json:"nombre,omitempty"`
 	Descripcion   string  `json:"descripcion,omitempty"`
+	Email         string  `json:"email,omitempty"`
+	Vence         string  `json:"vence,omitempty"`
+	EnviadoEmail  bool    `json:"enviado_email,omitempty"`
+	UltimoEnvio   string  `json:"ultimo_envio,omitempty"`
 	LineaOriginal string  `json:"linea_original,omitempty"`
 }
 
@@ -33,7 +41,10 @@ type licenciaDiscountCodeAdminPayload struct {
 	Valor       float64 `json:"valor"`
 	Spec        string  `json:"spec,omitempty"`
 	Activo      bool    `json:"activo"`
+	Nombre      string  `json:"nombre,omitempty"`
 	Descripcion string  `json:"descripcion,omitempty"`
+	Email       string  `json:"email,omitempty"`
+	Vence       string  `json:"vence,omitempty"`
 }
 
 type licenciaDiscountCodeEmailPayload struct {
@@ -78,6 +89,14 @@ func SuperLicenciasCodigosDescuentoHandler(dbSuper *sql.DB) http.HandlerFunc {
 				http.Error(w, "payload invalido", http.StatusBadRequest)
 				return
 			}
+			if normalizeLicenciaDiscountCode(payload.Codigo) == "" {
+				generated, err := generateLicenciaDiscountCode()
+				if err != nil {
+					http.Error(w, "no se pudo generar el codigo", http.StatusInternalServerError)
+					return
+				}
+				payload.Codigo = generated
+			}
 			item, err := buildLicenciaDiscountCodeAdminItem(payload)
 			if err != nil {
 				http.Error(w, err.Error(), http.StatusBadRequest)
@@ -99,7 +118,17 @@ func SuperLicenciasCodigosDescuentoHandler(dbSuper *sql.DB) http.HandlerFunc {
 				http.Error(w, "no se pudo guardar el codigo: "+err.Error(), http.StatusInternalServerError)
 				return
 			}
-			writeJSON(w, http.StatusCreated, map[string]interface{}{"ok": true, "item": item})
+			sent := false
+			if strings.TrimSpace(item.Email) != "" {
+				if err := sendLicenciaDiscountCodeEmail(dbSuper, &item, item.Email, item.Nombre, admin.Email); err == nil {
+					item.EnviadoEmail = true
+					item.UltimoEnvio = time.Now().Format(time.RFC3339)
+					items[len(items)-1] = item
+					_ = saveLicenciaDiscountCodeAdminItems(dbSuper, items, admin.Email)
+					sent = true
+				}
+			}
+			writeJSON(w, http.StatusCreated, map[string]interface{}{"ok": true, "item": item, "email_sent": sent})
 		case http.MethodPut:
 			var payload licenciaDiscountCodeAdminPayload
 			if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
@@ -124,6 +153,17 @@ func SuperLicenciasCodigosDescuentoHandler(dbSuper *sql.DB) http.HandlerFunc {
 			found := false
 			for i, existing := range items {
 				if strings.EqualFold(existing.Codigo, oldCode) {
+					if item.Email == "" {
+						item.Email = existing.Email
+					}
+					if item.Nombre == "" {
+						item.Nombre = existing.Nombre
+					}
+					if item.Vence == "" {
+						item.Vence = existing.Vence
+					}
+					item.EnviadoEmail = existing.EnviadoEmail
+					item.UltimoEnvio = existing.UltimoEnvio
 					items[i] = item
 					found = true
 					continue
@@ -185,8 +225,8 @@ func handleLicenciaDiscountCodeEmail(w http.ResponseWriter, r *http.Request, dbS
 	}
 	code := normalizeLicenciaDiscountCode(payload.Codigo)
 	email := strings.ToLower(strings.TrimSpace(payload.Email))
-	if code == "" || email == "" {
-		http.Error(w, "codigo y email son obligatorios", http.StatusBadRequest)
+	if code == "" {
+		http.Error(w, "codigo es obligatorio", http.StatusBadRequest)
 		return
 	}
 	items, _, err := readLicenciaDiscountCodeAdminItems(dbSuper)
@@ -194,9 +234,11 @@ func handleLicenciaDiscountCodeEmail(w http.ResponseWriter, r *http.Request, dbS
 		http.Error(w, "no se pudieron leer los codigos: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
+	itemIndex := -1
 	var item *licenciaDiscountCodeAdminItem
 	for i := range items {
 		if strings.EqualFold(items[i].Codigo, code) {
+			itemIndex = i
 			item = &items[i]
 			break
 		}
@@ -205,15 +247,24 @@ func handleLicenciaDiscountCodeEmail(w http.ResponseWriter, r *http.Request, dbS
 		http.Error(w, "codigo no encontrado", http.StatusNotFound)
 		return
 	}
-	subject := "Codigo de descuento " + item.Codigo
-	status := "Activo"
-	if !item.Activo {
-		status = "Inactivo"
+	if email == "" {
+		email = strings.TrimSpace(item.Email)
 	}
-	body := fmt.Sprintf("Codigo de descuento: %s\nDescuento: %s\nEstado: %s\nUso: checkout de licencias de Powerful Control System.\nRegla: un uso por empresa.\n", item.Codigo, firstNonEmptyString(item.Descripcion, item.Spec), status)
-	html := fmt.Sprintf("<html><body><h2>Codigo de descuento</h2><p><strong>Codigo:</strong> %s</p><p><strong>Descuento:</strong> %s</p><p><strong>Estado:</strong> %s</p><p>Uso: checkout de licencias de Powerful Control System. Regla: un uso por empresa.</p></body></html>", htmlEscape(item.Codigo), htmlEscape(firstNonEmptyString(item.Descripcion, item.Spec)), htmlEscape(status))
-	metadata := fmt.Sprintf(`{"codigo":%q,"tipo":%q,"valor":%g}`, item.Codigo, item.Tipo, item.Valor)
-	if err := sendPCSSystemEmail(dbSuper, email, payload.Nombre, subject, body, html, "licencias_codigo_descuento", metadata, actorEmail); err != nil {
+	if email == "" {
+		http.Error(w, "email es obligatorio", http.StatusBadRequest)
+		return
+	}
+	if _, err := mail.ParseAddress(email); err != nil {
+		http.Error(w, "email invalido", http.StatusBadRequest)
+		return
+	}
+	if strings.TrimSpace(payload.Nombre) != "" {
+		item.Nombre = strings.TrimSpace(payload.Nombre)
+	}
+	item.Email = email
+	err = sendLicenciaDiscountCodeEmail(dbSuper, item, email, item.Nombre, actorEmail)
+	if err != nil {
+		subject, body, metadata := licenciaDiscountCodeEmailContent(item)
 		captureErr := captureEmpresaUsuarioMailNotification(dbSuper, "licencias_codigo_descuento", 0, email, subject, body, "", metadata, actorEmail)
 		writeJSON(w, http.StatusAccepted, map[string]interface{}{
 			"ok":            true,
@@ -226,7 +277,43 @@ func handleLicenciaDiscountCodeEmail(w http.ResponseWriter, r *http.Request, dbS
 		})
 		return
 	}
+	item.EnviadoEmail = true
+	item.UltimoEnvio = time.Now().Format(time.RFC3339)
+	if itemIndex >= 0 {
+		items[itemIndex] = *item
+		_ = saveLicenciaDiscountCodeAdminItems(dbSuper, items, actorEmail)
+	}
 	writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "codigo": item.Codigo, "email": email, "sent": true})
+}
+
+func licenciaDiscountCodeEmailContent(item *licenciaDiscountCodeAdminItem) (string, string, string) {
+	if item == nil {
+		return "Codigo de descuento Powerful Control System", "", "{}"
+	}
+	status := "Activo"
+	if !item.Activo {
+		status = "Inactivo"
+	}
+	discount := firstNonEmptyString(item.Descripcion, item.Spec)
+	expiry := strings.TrimSpace(item.Vence)
+	if expiry == "" {
+		expiry = "Sin fecha de vencimiento"
+	}
+	subject := "Tu codigo de descuento PCS: " + item.Codigo
+	body := fmt.Sprintf("Hola %s,\n\nTu codigo de descuento para licencias de Powerful Control System es: %s\nDescuento: %s\nVence: %s\nEstado: %s\n\nUsalo en el checkout de licencias. Cada codigo se puede usar una vez por empresa.\n", firstNonEmptyString(item.Nombre, "cliente"), item.Codigo, discount, expiry, status)
+	metadata := fmt.Sprintf(`{"codigo":%q,"tipo":%q,"valor":%g,"vence":%q}`, item.Codigo, item.Tipo, item.Valor, item.Vence)
+	return subject, body, metadata
+}
+
+func sendLicenciaDiscountCodeEmail(dbSuper *sql.DB, item *licenciaDiscountCodeAdminItem, email, toName, actorEmail string) error {
+	subject, body, metadata := licenciaDiscountCodeEmailContent(item)
+	htmlBody := fmt.Sprintf(`<html><body><h2>Codigo de descuento PCS</h2><p>Hola %s,</p><p>Tu codigo para licencias de Powerful Control System es:</p><p style="font-size:22px;font-weight:800;letter-spacing:.08em">%s</p><p><strong>Descuento:</strong> %s<br><strong>Vence:</strong> %s</p><p>Usalo en el checkout de licencias. Cada codigo se puede usar una vez por empresa.</p></body></html>`,
+		htmlEscape(firstNonEmptyString(toName, "cliente")),
+		htmlEscape(item.Codigo),
+		htmlEscape(firstNonEmptyString(item.Descripcion, item.Spec)),
+		htmlEscape(firstNonEmptyString(item.Vence, "Sin fecha de vencimiento")),
+	)
+	return sendPCSSystemEmail(dbSuper, email, toName, subject, body, htmlBody, "licencias_codigo_descuento", metadata, actorEmail)
 }
 
 func readLicenciaDiscountCodeAdminItems(dbSuper *sql.DB) ([]licenciaDiscountCodeAdminItem, string, error) {
@@ -282,13 +369,15 @@ func parseLicenciaDiscountCodeAdminLines(raw string) []licenciaDiscountCodeAdmin
 		}
 		seen[code] = struct{}{}
 		spec := strings.TrimSpace(parts[1])
+		discountSpec, meta := splitLicenciaDiscountSpecMetadata(spec)
 		item := licenciaDiscountCodeAdminItem{
 			Codigo:        code,
-			Spec:          spec,
+			Spec:          discountSpec,
 			Activo:        active,
 			LineaOriginal: originalLine,
 		}
-		item.Tipo, item.Valor, item.Descripcion = describeLicenciaDiscountSpec(spec)
+		item.Tipo, item.Valor, item.Descripcion = describeLicenciaDiscountSpec(discountSpec)
+		item.applyMetadata(meta)
 		out = append(out, item)
 	}
 	return out
@@ -311,17 +400,128 @@ func buildLicenciaDiscountCodeAdminItem(payload licenciaDiscountCodeAdminPayload
 	if spec == "" {
 		spec = buildLicenciaDiscountSpecFromPayload(payload)
 	}
-	if _, _, ok := parseLicenciaDiscountSpec(spec, 100000); !ok {
+	if _, _, ok := parseLicenciaDiscountSpec(splitLicenciaDiscountSpecOnly(spec), 100000); !ok {
 		return licenciaDiscountCodeAdminItem{}, fmt.Errorf("descuento invalido; usa porcentaje, valor fijo o gratis")
 	}
 	item := licenciaDiscountCodeAdminItem{
 		Codigo:      code,
-		Spec:        spec,
+		Spec:        splitLicenciaDiscountSpecOnly(spec),
 		Activo:      payload.Activo,
+		Nombre:      strings.TrimSpace(payload.Nombre),
 		Descripcion: strings.TrimSpace(payload.Descripcion),
+		Email:       strings.ToLower(strings.TrimSpace(payload.Email)),
+		Vence:       strings.TrimSpace(payload.Vence),
 	}
-	item.Tipo, item.Valor, item.Descripcion = describeLicenciaDiscountSpec(spec)
+	if item.Email != "" {
+		if _, err := mail.ParseAddress(item.Email); err != nil {
+			return licenciaDiscountCodeAdminItem{}, fmt.Errorf("email invalido")
+		}
+	}
+	if item.Vence != "" {
+		if _, err := time.Parse("2006-01-02", item.Vence); err != nil {
+			return licenciaDiscountCodeAdminItem{}, fmt.Errorf("fecha de vencimiento invalida")
+		}
+	}
+	item.Tipo, item.Valor, _ = describeLicenciaDiscountSpec(item.Spec)
+	if item.Descripcion == "" {
+		_, _, item.Descripcion = describeLicenciaDiscountSpec(item.Spec)
+	}
 	return item, nil
+}
+
+func generateLicenciaDiscountCode() (string, error) {
+	var b [4]byte
+	if _, err := rand.Read(b[:]); err != nil {
+		return "", err
+	}
+	return "PCS-" + strings.ToUpper(hex.EncodeToString(b[:])), nil
+}
+
+func splitLicenciaDiscountSpecOnly(spec string) string {
+	discount, _ := splitLicenciaDiscountSpecMetadata(spec)
+	return discount
+}
+
+func splitLicenciaDiscountSpecMetadata(spec string) (string, map[string]string) {
+	spec = strings.TrimSpace(spec)
+	if spec == "" {
+		return "", nil
+	}
+	parts := strings.SplitN(spec, "|", 2)
+	discount := strings.TrimSpace(parts[0])
+	if len(parts) < 2 {
+		return discount, nil
+	}
+	raw := strings.TrimSpace(parts[1])
+	if raw == "" {
+		return discount, nil
+	}
+	meta := map[string]string{}
+	if strings.HasPrefix(raw, "{") {
+		_ = json.Unmarshal([]byte(raw), &meta)
+	}
+	return discount, meta
+}
+
+func licenciaDiscountCodeExpired(spec string, now time.Time) bool {
+	_, meta := splitLicenciaDiscountSpecMetadata(spec)
+	if len(meta) == 0 {
+		return false
+	}
+	vence := strings.TrimSpace(meta["vence"])
+	if vence == "" {
+		return false
+	}
+	day, err := time.Parse("2006-01-02", vence)
+	if err != nil {
+		return true
+	}
+	return now.After(day.Add(24 * time.Hour))
+}
+
+func (item *licenciaDiscountCodeAdminItem) applyMetadata(meta map[string]string) {
+	if item == nil || len(meta) == 0 {
+		return
+	}
+	item.Nombre = strings.TrimSpace(meta["nombre"])
+	if descripcion := strings.TrimSpace(meta["descripcion"]); descripcion != "" {
+		item.Descripcion = descripcion
+	}
+	item.Email = strings.ToLower(strings.TrimSpace(meta["email"]))
+	item.Vence = strings.TrimSpace(meta["vence"])
+	item.UltimoEnvio = strings.TrimSpace(meta["ultimo_envio"])
+	item.EnviadoEmail = parseBoolConfigValue(meta["enviado_email"])
+}
+
+func formatLicenciaDiscountCodeLineSpec(item licenciaDiscountCodeAdminItem) string {
+	spec := splitLicenciaDiscountSpecOnly(item.Spec)
+	meta := map[string]string{}
+	if nombre := strings.TrimSpace(item.Nombre); nombre != "" {
+		meta["nombre"] = nombre
+	}
+	if descripcion := strings.TrimSpace(item.Descripcion); descripcion != "" {
+		meta["descripcion"] = descripcion
+	}
+	if email := strings.ToLower(strings.TrimSpace(item.Email)); email != "" {
+		meta["email"] = email
+	}
+	if vence := strings.TrimSpace(item.Vence); vence != "" {
+		meta["vence"] = vence
+	}
+	if item.EnviadoEmail {
+		meta["enviado_email"] = "true"
+	}
+	if ultimoEnvio := strings.TrimSpace(item.UltimoEnvio); ultimoEnvio != "" {
+		meta["ultimo_envio"] = ultimoEnvio
+	}
+	if len(meta) == 0 {
+		return spec
+	}
+	raw, err := json.Marshal(meta)
+	if err != nil {
+		return spec
+	}
+	return spec + " | " + string(raw)
 }
 
 func buildLicenciaDiscountSpecFromPayload(payload licenciaDiscountCodeAdminPayload) string {
@@ -346,7 +546,7 @@ func buildLicenciaDiscountSpecFromPayload(payload licenciaDiscountCodeAdminPaylo
 }
 
 func describeLicenciaDiscountSpec(spec string) (string, float64, string) {
-	spec = strings.TrimSpace(spec)
+	spec = splitLicenciaDiscountSpecOnly(spec)
 	lower := strings.ToLower(spec)
 	switch lower {
 	case "gratis", "cortesia", "free", "full", "100%", "total0", "total_cero":
@@ -379,7 +579,7 @@ func saveLicenciaDiscountCodeAdminItems(dbSuper *sql.DB, items []licenciaDiscoun
 		if code == "" || spec == "" {
 			continue
 		}
-		line := code + "=" + spec
+		line := code + "=" + formatLicenciaDiscountCodeLineSpec(item)
 		if !item.Activo {
 			line = "# " + line
 		}
