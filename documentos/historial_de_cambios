@@ -35451,3 +35451,14 @@ Archivos modificados:
 PushStatus: OK
 Archivos modificados:
 - web/js/ai_chat_drawer.js
+
+2026-06-19: rs: actualizar repositorio y sincronizar VPS
+PushStatus: OK
+Archivos modificados:
+- CHANGELOG.md
+- backend/handlers/email_corporativo_handlers.go
+- backend/handlers/usuarios_empresa.go
+- documentos/descripcion_de_archivos
+- documentos/flujos_operativos.md
+- documentos/mapa_modulos.md
+- web/super/email_corporativo.html
