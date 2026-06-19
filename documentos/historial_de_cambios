@@ -35647,3 +35647,10 @@ Archivos modificados:
 - documentos/mapa_modulos.md
 - web/administrar_empresa/carrito_de_compras.html
 - web/estilos.css
+2026-06-19: Configuracion guiada una sola vez.
+- Frontend: `web/administrar_empresa/panel.html` cambia el boton `Despues` por `No volver a mostrar`.
+- UX: marcar el check `No volver a mostrar` o pulsar el boton oculta el modal inmediatamente, sin presionar Guardar ni Aplicar configuracion.
+- Persistencia: el panel guarda una bandera local por `empresa_id`, limpia el pendiente local y llama `POST /api/empresa/configuracion_guiada?action=no_mostrar_mas`.
+- Backend: se reutiliza el handler empresarial existente, que guarda `configuracion_guiada_resumen.estado=no_mostrar_mas`; no se agregan endpoints nuevos.
+- Alcance: el asistente inicial solo se autoabre una vez en el panel; despues queda disponible manualmente desde Configuracion > Configuracion guiada.
+- QA: validacion de scripts embebidos de `panel.html` y `go test ./handlers -run "ConfiguracionGuiada|^$" -count=1`.

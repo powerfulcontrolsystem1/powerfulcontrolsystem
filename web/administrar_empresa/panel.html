@@ -3637,6 +3637,10 @@
         return "pcs_config_assistant_pending_" + String(empresaId || "");
       }
 
+      function guidedDismissedKey() {
+        return "pcs_config_assistant_dismissed_" + String(empresaId || "");
+      }
+
       function hasGuidedPendingFlag() {
         if (!empresaId) return false;
         try {
@@ -3650,6 +3654,21 @@
         if (!empresaId) return;
         try { window.localStorage.removeItem(guidedPendingKey()); } catch (e) {}
         try { window.sessionStorage.removeItem(guidedPendingKey()); } catch (e) {}
+      }
+
+      function hasGuidedDismissedFlag() {
+        if (!empresaId) return false;
+        try {
+          return window.localStorage.getItem(guidedDismissedKey()) === "1";
+        } catch (e) {
+          return false;
+        }
+      }
+
+      function setGuidedDismissedFlag() {
+        if (!empresaId) return;
+        clearGuidedPendingFlag();
+        try { window.localStorage.setItem(guidedDismissedKey(), "1"); } catch (e) {}
       }
 
       function renderGuidedInput(question) {
@@ -3686,9 +3705,14 @@
 
       function openGuidedSetupModal(configData) {
         if (!empresaId || !configData || !configData.wizard) return;
+        if (hasGuidedDismissedFlag()) {
+          clearGuidedPendingFlag();
+          return;
+        }
         var estado = configData.estado || {};
         var dismissed = isGuidedSetupDismissed(configData);
         if (dismissed) {
+          setGuidedDismissedFlag();
           clearGuidedPendingFlag();
           return;
         }
@@ -3707,7 +3731,7 @@
             '<div class="empresa-guided-head">' +
               '<div><h2 id="empresaGuidedTitle" class="empresa-guided-title">' + escapeHTML(wizard.title || "Configuracion guiada inicial") + '</h2>' +
               '<p class="empresa-guided-description">' + escapeHTML(wizard.description || "Responde estas preguntas para dejar la empresa lista para operar.") + '</p></div>' +
-              '<button id="empresaGuidedClose" class="btn secondary" type="button">Despues</button>' +
+              '<button id="empresaGuidedClose" class="btn secondary" type="button">No volver a mostrar</button>' +
             '</div>' +
             '<form id="empresaGuidedForm">' +
               '<div class="empresa-guided-body">' +
@@ -3723,32 +3747,46 @@
               '</div>' +
               '<div class="empresa-guided-actions">' +
                 '<p id="empresaGuidedStatus" class="empresa-guided-status" aria-live="polite"></p>' +
-                '<label class="empresa-guided-status" style="display:flex;align-items:center;gap:8px;margin-right:auto;"><input id="empresaGuidedNoMostrarMas" type="checkbox"> No mostrar mas</label>' +
+                '<label class="empresa-guided-status" style="display:flex;align-items:center;gap:8px;margin-right:auto;"><input id="empresaGuidedNoMostrarMas" type="checkbox"> No volver a mostrar</label>' +
                 '<button id="empresaGuidedApply" class="btn" type="submit">Aplicar configuracion</button>' +
               '</div>' +
             '</form>' +
           '</section>';
         document.body.appendChild(overlay);
-        document.getElementById("empresaGuidedClose").addEventListener("click", function () {
+        var dismissingGuidedSetup = false;
+        function dismissGuidedSetupPermanently(source) {
+          if (dismissingGuidedSetup) return;
+          dismissingGuidedSetup = true;
           var closeBtn = document.getElementById("empresaGuidedClose");
           var status = document.getElementById("empresaGuidedStatus");
           var noMostrarMas = document.getElementById("empresaGuidedNoMostrarMas");
-          var action = noMostrarMas && noMostrarMas.checked ? "no_mostrar_mas" : "posponer";
+          var apply = document.getElementById("empresaGuidedApply");
+          var action = "no_mostrar_mas";
+          if (noMostrarMas) noMostrarMas.checked = true;
+          setGuidedDismissedFlag();
           if (closeBtn) closeBtn.disabled = true;
+          if (apply) apply.disabled = true;
           if (status) status.textContent = "Guardando decision...";
+          overlay.classList.remove("is-visible");
           fetchJSON("/api/empresa/configuracion_guiada?empresa_id=" + encodeURIComponent(empresaId) + "&action=" + encodeURIComponent(action), {
             method: "POST",
             headers: { "Content-Type": "application/json", "X-PCS-Source": "empresa_panel_guided_setup_later" },
-            body: JSON.stringify({ answers: {}, decision: action })
+            body: JSON.stringify({ answers: {}, decision: action, source: source || "panel" })
           }).then(function () {
-            clearGuidedPendingFlag();
-            overlay.classList.remove("is-visible");
+            setGuidedDismissedFlag();
           }).catch(function () {
-            clearGuidedPendingFlag();
-            overlay.classList.remove("is-visible");
+            setGuidedDismissedFlag();
           }).finally(function () {
-            if (closeBtn) closeBtn.disabled = false;
+            if (overlay && overlay.parentNode) overlay.parentNode.removeChild(overlay);
           });
+        }
+        document.getElementById("empresaGuidedClose").addEventListener("click", function () {
+          dismissGuidedSetupPermanently("boton_no_volver_a_mostrar");
+        });
+        document.getElementById("empresaGuidedNoMostrarMas").addEventListener("change", function (event) {
+          if (event && event.target && event.target.checked) {
+            dismissGuidedSetupPermanently("check_no_volver_a_mostrar");
+          }
         });
         document.getElementById("empresaGuidedForm").addEventListener("submit", function (event) {
           event.preventDefault();

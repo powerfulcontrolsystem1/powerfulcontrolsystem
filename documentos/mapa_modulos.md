@@ -3,6 +3,13 @@
 Tabla de ubicacion rapida para no buscar desde cero cada modulo. Si una fila
 queda incompleta al implementar una mejora, actualizarla en el mismo cambio.
 
+Actualizacion 2026-06-19: `Configuracion guiada inicial` en
+`web/administrar_empresa/panel.html` solo se autoabre una vez. El check y el
+boton `No volver a mostrar` cierran el modal sin guardar formulario, limpian el
+pendiente local y persisten `no_mostrar_mas` en
+`/api/empresa/configuracion_guiada`. La reapertura manual sigue disponible en
+`web/administrar_empresa/configuracion_guiada.html`.
+
 Actualizacion 2026-06-19: `Super administrador` mantiene `Seleccionar empresa`
 en `web/super_administrador.html` como boton integrado del toolbar, con estilo
 azul claro en `web/estilos.css` y navegacion directa a `/seleccionar_empresa.html`.
