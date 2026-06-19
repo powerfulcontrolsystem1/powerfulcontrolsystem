@@ -35654,3 +35654,11 @@ Archivos modificados:
 - Backend: se reutiliza el handler empresarial existente, que guarda `configuracion_guiada_resumen.estado=no_mostrar_mas`; no se agregan endpoints nuevos.
 - Alcance: el asistente inicial solo se autoabre una vez en el panel; despues queda disponible manualmente desde Configuracion > Configuracion guiada.
 - QA: validacion de scripts embebidos de `panel.html` y `go test ./handlers -run "ConfiguracionGuiada|^$" -count=1`.
+
+2026-06-19: rs: actualizar repositorio y sincronizar VPS
+PushStatus: OK
+Archivos modificados:
+- CHANGELOG.md
+- documentos/historial_de_cambios
+- documentos/mapa_modulos.md
+- web/administrar_empresa/panel.html
