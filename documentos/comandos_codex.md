@@ -47,6 +47,22 @@ C:\Users\ivanm\.cache\codex-runtimes\codex-primary-runtime\dependencies\node\bin
 Para paginas HTML con scripts embebidos, preferir helpers existentes si los hay
 o usar Node para extraer scripts y validarlos sin ejecutar llamadas reales.
 
+## Validacion de textos y codificacion
+
+Antes de cerrar cambios que toquen textos visibles, ayudas, plantillas de correo,
+mensajes backend o documentacion operativa, buscar caracteres rotos por
+codificacion. El objetivo es no publicar palabras con tildes rotas, secuencias
+de doble codificacion o caracteres de reemplazo en pantallas del sistema.
+
+```powershell
+$badEncodingPattern = ([char]0xFFFD) + "|" + ([char]0x00C3) + "|" + ([char]0x00D2) + "|[A-Za-zÁÉÍÓÚáéíóúÑñ]\?[A-Za-zÁÉÍÓÚáéíóúÑñ]"
+rg -n $badEncodingPattern web backend scripts documentos CHANGELOG.md AGENTS.md -g "*.html" -g "*.js" -g "*.css" -g "*.go" -g "*.md" -g "*.txt" -g "*.ps1" -g "*.json" -g "*.yaml" -g "*.yml" -g "*.sql" -g "!web/Juegos/**" -g "!juegos/**" -g "!documentos/historial_de_cambios"
+```
+
+Revisar manualmente los resultados porque las URLs con query string pueden dar
+falsos positivos por `?action=...`. Si se corrige un archivo, conservarlo en
+UTF-8 y volver a ejecutar el barrido.
+
 ## Preflight
 
 ```powershell

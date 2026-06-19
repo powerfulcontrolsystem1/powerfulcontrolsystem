@@ -300,7 +300,7 @@ func LicenciasHandler(dbSuper *sql.DB) http.HandlerFunc {
 			json.NewEncoder(w).Encode(licencias)
 			return
 		case http.MethodPost:
-			// Accion especial: crear y activar licencia de prueba 15 dÃ­as (valor 0) para una empresa.
+			// Accion especial: crear y activar licencia de prueba 15 días (valor 0) para una empresa.
 			if strings.EqualFold(strings.TrimSpace(r.URL.Query().Get("action")), "crear_prueba_15_dias") {
 				q := r.URL.Query()
 				var trialPayload struct {
@@ -353,11 +353,11 @@ func LicenciasHandler(dbSuper *sql.DB) http.HandlerFunc {
 					return
 				}
 
-				nombre := "Licencia de prueba (15 dÃ­as)"
-				descripcion := "Licencia de prueba por 15 dÃ­as, valor 0."
+				nombre := "Licencia de prueba (15 días)"
+				descripcion := "Licencia de prueba por 15 días, valor 0."
 				valor := 0.0
 				duracion := 15
-				modulos := "" // vacÃ­o = sin restricciones de mÃ³dulos
+				modulos := "" // vacío = sin restricciones de módulos
 				superRol := 0
 
 				licID, err := dbpkg.CreateLicenciaAdvancedWithLimits(dbSuper, tipoID, pais, nombre, descripcion, valor, duracion, modulos, 0, "", superRol, 250)
@@ -388,8 +388,8 @@ func LicenciasHandler(dbSuper *sql.DB) http.HandlerFunc {
 					invalidateEmpresaPermissionCacheForEmpresa(empresaID)
 				}
 
-				// Enviar correo de bienvenida/activaciÃ³n para pruebas.
-				// Se registra un pago sintÃ©tico en pagos_epayco para trazabilidad y para evitar duplicados.
+				// Enviar correo de bienvenida/activación para pruebas.
+				// Se registra un pago sintético en pagos_epayco para trazabilidad y para evitar duplicados.
 				empresa, _ := dbpkg.GetEmpresaByScopeID(dbpkg.GetDB(), empresaID)
 				toEmail := ""
 				if empresa != nil {
@@ -499,7 +499,7 @@ func LicenciasHandler(dbSuper *sql.DB) http.HandlerFunc {
 				http.Error(w, "invalid id", http.StatusBadRequest)
 				return
 			}
-			// soporte para acciÃ³n de activar/desactivar vÃ­a query param
+			// soporte para acción de activar/desactivar vía query param
 			if q.Get("action") == "activar" {
 				existing, err := dbpkg.GetLicenciaByID(dbSuper, id)
 				if err != nil {
@@ -528,7 +528,7 @@ func LicenciasHandler(dbSuper *sql.DB) http.HandlerFunc {
 				w.WriteHeader(http.StatusNoContent)
 				return
 			}
-			// actualizaciÃ³n normal (payload JSON)
+			// actualización normal (payload JSON)
 			var payloadUpdate struct {
 				TipoID                 int64   `json:"tipo_id"`
 				PaisCodigo             string  `json:"pais_codigo"`
@@ -2655,9 +2655,9 @@ func resolveLicenciaCheckoutSummary(dbSuper *sql.DB, lic *dbpkg.Licencia, empres
 			summary.Message = "Esta licencia gratuita solo puede activarse una vez por empresa."
 		}
 	} else if isZeroTotal {
-		summary.Message = "El total quedÃ³ en cero. Puedes activar la licencia sin pasar por la pasarela."
+		summary.Message = "El total quedó en cero. Puedes activar la licencia sin pasar por la pasarela."
 	} else if summary.DiscountApplied || summary.AdvisorDiscountApplied {
-		summary.Message = "Se aplicÃ³ el descuento y el total ya estÃ¡ actualizado para el checkout."
+		summary.Message = "Se aplicó el descuento y el total ya está actualizado para el checkout."
 	} else if advisorMessage != "" {
 		summary.Message = advisorMessage
 	}
@@ -2810,12 +2810,12 @@ func resolveLicenciaCheckoutSummaryWithMode(dbSuper *sql.DB, lic *dbpkg.Licencia
 	}
 	switch mode {
 	case "empresa_addons":
-		summary.Message = "El checkout incluye solo licencias adicionales para ampliar mÃ³dulos o funciones de la empresa."
+		summary.Message = "El checkout incluye solo licencias adicionales para ampliar módulos o funciones de la empresa."
 	case "empresa_bundle":
-		summary.Message = "El checkout agrupa la renovaciÃ³n de la licencia base y de los adicionales marcados para cobro periÃ³dico."
+		summary.Message = "El checkout agrupa la renovación de la licencia base y de los adicionales marcados para cobro periódico."
 	}
 	if summary.DiscountApplied {
-		summary.Message += " Se aplicÃ³ el descuento al total agrupado."
+		summary.Message += " Se aplicó el descuento al total agrupado."
 	}
 	if summary.AdvisorDiscountApplied {
 		summary.Message += " Se aplico la promocion por codigo de asesor."
@@ -4413,7 +4413,7 @@ func WompiConfigHandler(dbSuper *sql.DB) http.HandlerFunc {
 			modeInput := strings.TrimSpace(payload.Mode)
 			normalizedMode := normalizeWompiMode(modeInput)
 			if modeInput != "" && normalizedMode == "" {
-				http.Error(w, "mode invÃ¡lido: usa sandbox o real", http.StatusBadRequest)
+				http.Error(w, "mode inválido: usa sandbox o real", http.StatusBadRequest)
 				return
 			}
 			if strings.TrimSpace(payload.PublicKey) == "" && strings.TrimSpace(payload.PrivateKey) == "" && strings.TrimSpace(payload.IntegrityKey) == "" && normalizedMode == "" && payload.Enabled == nil {
@@ -4422,15 +4422,15 @@ func WompiConfigHandler(dbSuper *sql.DB) http.HandlerFunc {
 			}
 
 			if payload.PublicKey != "" && !strings.HasPrefix(payload.PublicKey, "pub_") {
-				http.Error(w, "public_key invÃ¡lida: debe iniciar con pub_", http.StatusBadRequest)
+				http.Error(w, "public_key inválida: debe iniciar con pub_", http.StatusBadRequest)
 				return
 			}
 			if payload.PrivateKey != "" && !strings.HasPrefix(payload.PrivateKey, "prv_") {
-				http.Error(w, "private_key invÃ¡lida: debe iniciar con prv_", http.StatusBadRequest)
+				http.Error(w, "private_key inválida: debe iniciar con prv_", http.StatusBadRequest)
 				return
 			}
 			if payload.IntegrityKey != "" && !strings.Contains(payload.IntegrityKey, "integrity") {
-				http.Error(w, "integrity_key invÃ¡lida: prefijo esperado *_integrity_*", http.StatusBadRequest)
+				http.Error(w, "integrity_key inválida: prefijo esperado *_integrity_*", http.StatusBadRequest)
 				return
 			}
 
@@ -4497,7 +4497,7 @@ func WompiConfigHandler(dbSuper *sql.DB) http.HandlerFunc {
 	}
 }
 
-// EpaycoConfigHandler gestiona credenciales de Epayco (public/private key y customer ID opcional) y flag de activaciÃ³n.
+// EpaycoConfigHandler gestiona credenciales de Epayco (public/private key y customer ID opcional) y flag de activación.
 func EpaycoConfigHandler(dbSuper *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
@@ -4805,7 +4805,7 @@ func EpaycoConfigHandler(dbSuper *sql.DB) http.HandlerFunc {
 	}
 }
 
-// WompiTermsHandler devuelve links de tÃ©rminos y autorizaciones para cumplimiento de aceptaciÃ³n.
+// WompiTermsHandler devuelve links de términos y autorizaciones para cumplimiento de aceptación.
 func WompiTermsHandler(dbSuper *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
@@ -5059,7 +5059,7 @@ func WompiCreateCheckoutHandler(dbSuper *sql.DB) http.HandlerFunc {
 	}
 }
 
-// WompiCreateNequiTransactionHandler crea una transacciÃ³n Wompi usando mÃ©todo de pago NEQUI.
+// WompiCreateNequiTransactionHandler crea una transacción Wompi usando método de pago NEQUI.
 func WompiCreateNequiTransactionHandler(dbSuper *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
@@ -5084,12 +5084,12 @@ func WompiCreateNequiTransactionHandler(dbSuper *sql.DB) http.HandlerFunc {
 		}
 
 		if payload.LicenciaID <= 0 {
-			http.Error(w, "licencia_id invÃ¡lido", http.StatusBadRequest)
+			http.Error(w, "licencia_id inválido", http.StatusBadRequest)
 			return
 		}
 		phone := strings.TrimSpace(payload.PhoneNumber)
 		if ok, _ := regexp.MatchString(`^3\d{9}$`, phone); !ok {
-			http.Error(w, "phone_number invÃ¡lido: usa 10 dÃ­gitos colombianos (ej. 3991111111 en sandbox)", http.StatusBadRequest)
+			http.Error(w, "phone_number inválido: usa 10 dígitos colombianos (ej. 3991111111 en sandbox)", http.StatusBadRequest)
 			return
 		}
 		status, err := getLicenciaPaymentMethodStatus(dbSuper, "wompi")
@@ -5150,13 +5150,13 @@ func WompiCreateNequiTransactionHandler(dbSuper *sql.DB) http.HandlerFunc {
 			http.Error(w, "licencia not found", http.StatusBadRequest)
 			return
 		}
-		// Si no llegÃ³ empresa_id (algunos flujos solo pasan licencia_id), usar la empresa ya asociada a la licencia.
+		// Si no llegó empresa_id (algunos flujos solo pasan licencia_id), usar la empresa ya asociada a la licencia.
 		// Esto es clave para registrar trazabilidad y comisiones por asesor.
 		if payload.EmpresaID <= 0 && lic.EmpresaID > 0 {
 			payload.EmpresaID = lic.EmpresaID
 		}
 		if payload.EmpresaID <= 0 {
-			http.Error(w, "empresa_id requerido para crear la transacciÃ³n", http.StatusBadRequest)
+			http.Error(w, "empresa_id requerido para crear la transacción", http.StatusBadRequest)
 			return
 		}
 		if rejectLicenciaNoDisponibleParaCheckout(w, lic, payload.EmpresaID) {
@@ -5166,11 +5166,11 @@ func WompiCreateNequiTransactionHandler(dbSuper *sql.DB) http.HandlerFunc {
 		if payload.AsesorID != "" {
 			advisor, aerr := dbpkg.GetAsesorComercialByCode(dbSuper, payload.AsesorID)
 			if aerr != nil {
-				http.Error(w, "no se pudo validar el cÃ³digo de asesor", http.StatusInternalServerError)
+				http.Error(w, "no se pudo validar el código de asesor", http.StatusInternalServerError)
 				return
 			}
 			if advisor == nil || !strings.EqualFold(strings.TrimSpace(advisor.EstadoInvitacion), "aceptada") || strings.EqualFold(strings.TrimSpace(advisor.Estado), "inactivo") {
-				http.Error(w, "cÃ³digo de asesor invÃ¡lido o no aceptado: "+payload.AsesorID, http.StatusBadRequest)
+				http.Error(w, "código de asesor inválido o no aceptado: "+payload.AsesorID, http.StatusBadRequest)
 				return
 			}
 		}
@@ -5204,7 +5204,7 @@ func WompiCreateNequiTransactionHandler(dbSuper *sql.DB) http.HandlerFunc {
 
 		amountInCents := int64(math.Round(summary.TotalValue * 100))
 		if amountInCents <= 0 {
-			http.Error(w, "valor de licencia invÃ¡lido para Wompi", http.StatusBadRequest)
+			http.Error(w, "valor de licencia inválido para Wompi", http.StatusBadRequest)
 			return
 		}
 
@@ -5220,7 +5220,7 @@ func WompiCreateNequiTransactionHandler(dbSuper *sql.DB) http.HandlerFunc {
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusBadRequest)
 			json.NewEncoder(w).Encode(map[string]interface{}{
-				"error":                   "Debes aceptar tÃ©rminos y autorizaciÃ³n de datos para continuar con Nequi",
+				"error":                   "Debes aceptar términos y autorización de datos para continuar con Nequi",
 				"acceptance_permalink":    acceptancePermalink,
 				"personal_data_permalink": personalPermalink,
 			})
@@ -5228,7 +5228,7 @@ func WompiCreateNequiTransactionHandler(dbSuper *sql.DB) http.HandlerFunc {
 		}
 
 		if acceptanceToken == "" || personalToken == "" {
-			http.Error(w, "Wompi no devolviÃ³ tokens de aceptaciÃ³n vÃ¡lidos", http.StatusBadGateway)
+			http.Error(w, "Wompi no devolvió tokens de aceptación válidos", http.StatusBadGateway)
 			return
 		}
 
@@ -5237,7 +5237,7 @@ func WompiCreateNequiTransactionHandler(dbSuper *sql.DB) http.HandlerFunc {
 			email = strings.TrimSpace(r.Header.Get("X-Admin-Email"))
 		}
 		if email == "" {
-			http.Error(w, "customer_email requerido para crear la transacciÃ³n", http.StatusBadRequest)
+			http.Error(w, "customer_email requerido para crear la transacción", http.StatusBadRequest)
 			return
 		}
 
@@ -5346,7 +5346,7 @@ func WompiCreateNequiTransactionHandler(dbSuper *sql.DB) http.HandlerFunc {
 	}
 }
 
-// recordAsesorComercialComision busca el pago y registra la comisiÃ³n si hay cÃ³digo o asociaciÃ³n vigente.
+// recordAsesorComercialComision busca el pago y registra la comisión si hay código o asociación vigente.
 func recordAsesorComercialComision(db *sql.DB, provider, transactionID, reference string, licenciaID, empresaID int64) {
 	var payRec *dbpkg.WompiPaymentRecord
 	var err error
@@ -5588,7 +5588,7 @@ func paymentPayloadAmount(raw string) float64 {
 	return 0
 }
 
-// WompiTransactionStatusHandler consulta estado de la transacciÃ³n y activa licencia si quedÃ³ APPROVED.
+// WompiTransactionStatusHandler consulta estado de la transacción y activa licencia si quedó APPROVED.
 func WompiTransactionStatusHandler(dbSuper *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
@@ -5731,7 +5731,7 @@ func WompiTransactionStatusHandler(dbSuper *sql.DB) http.HandlerFunc {
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusConflict)
 			json.NewEncoder(w).Encode(map[string]interface{}{
-				"error":                "El pago consultado no corresponde a la empresa o licencia abierta en esta pÃ¡gina.",
+				"error":                "El pago consultado no corresponde a la empresa o licencia abierta en esta página.",
 				"provider":             "wompi",
 				"transaction_id":       transactionID,
 				"reference":            reference,
@@ -6137,7 +6137,7 @@ func EpaycoCreateTransactionHandler(dbSuper *sql.DB) http.HandlerFunc {
 			payload.EmpresaID = lic.EmpresaID
 		}
 		if payload.EmpresaID <= 0 {
-			http.Error(w, "empresa_id requerido para crear la transacciÃ³n", http.StatusBadRequest)
+			http.Error(w, "empresa_id requerido para crear la transacción", http.StatusBadRequest)
 			return
 		}
 		if rejectLicenciaNoDisponibleParaCheckout(w, lic, payload.EmpresaID) {
@@ -6168,11 +6168,11 @@ func EpaycoCreateTransactionHandler(dbSuper *sql.DB) http.HandlerFunc {
 		if payload.AsesorID != "" {
 			advisor, aerr := dbpkg.GetAsesorComercialByCode(dbSuper, payload.AsesorID)
 			if aerr != nil {
-				http.Error(w, "no se pudo validar el cÃ³digo de asesor", http.StatusInternalServerError)
+				http.Error(w, "no se pudo validar el código de asesor", http.StatusInternalServerError)
 				return
 			}
 			if advisor == nil || !strings.EqualFold(strings.TrimSpace(advisor.EstadoInvitacion), "aceptada") || strings.EqualFold(strings.TrimSpace(advisor.Estado), "inactivo") {
-				http.Error(w, "cÃ³digo de asesor invÃ¡lido o no aceptado: "+payload.AsesorID, http.StatusBadRequest)
+				http.Error(w, "código de asesor inválido o no aceptado: "+payload.AsesorID, http.StatusBadRequest)
 				return
 			}
 		}
@@ -6674,7 +6674,7 @@ func EpaycoTransactionStatusHandler(dbSuper *sql.DB) http.HandlerFunc {
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusConflict)
 			json.NewEncoder(w).Encode(map[string]interface{}{
-				"error":                "El pago consultado no corresponde a la empresa o licencia abierta en esta pÃ¡gina.",
+				"error":                "El pago consultado no corresponde a la empresa o licencia abierta en esta página.",
 				"provider":             "epayco",
 				"transaction_id":       firstNonEmptyString(transactionID, recordTransactionID, originalTransactionID),
 				"reference":            firstNonEmptyString(reference, recordReference, invoiceReference, originalReference),
@@ -7029,11 +7029,11 @@ func ActivateLicenciaSinPagoHandler(dbSuper *sql.DB, dbEmpresas *sql.DB) http.Ha
 			return
 		}
 		if payload.LicenciaID <= 0 {
-			http.Error(w, "licencia_id invÃ¡lido", http.StatusBadRequest)
+			http.Error(w, "licencia_id inválido", http.StatusBadRequest)
 			return
 		}
 		if payload.EmpresaID <= 0 {
-			http.Error(w, "empresa_id invÃ¡lido", http.StatusBadRequest)
+			http.Error(w, "empresa_id inválido", http.StatusBadRequest)
 			return
 		}
 
@@ -7188,8 +7188,8 @@ func ActivateLicenciaSinPagoHandler(dbSuper *sql.DB, dbEmpresas *sql.DB) http.Ha
 
 		log.Printf("Licencia activada sin pago: licencia=%d empresa=%d motivo=%q", payload.LicenciaID, payload.EmpresaID, payload.Motivo)
 
-		// Enviar correo de bienvenida/activaciÃ³n tambiÃ©n para licencias gratuitas / activaciÃ³n sin pasarela.
-		// Se registra un pago sintÃ©tico en pagos_epayco para trazabilidad y anti-duplicaciÃ³n.
+		// Enviar correo de bienvenida/activación también para licencias gratuitas / activación sin pasarela.
+		// Se registra un pago sintético en pagos_epayco para trazabilidad y anti-duplicación.
 		ref := fmt.Sprintf("MANUAL-LIC-%d-EMP-%d-%d", payload.LicenciaID, payload.EmpresaID, time.Now().UnixNano())
 		toEmail := ""
 		empresaDB := dbEmpresas
@@ -7240,7 +7240,7 @@ func ActivateLicenciaSinPagoHandler(dbSuper *sql.DB, dbEmpresas *sql.DB) http.Ha
 			}
 		}
 
-		// Registrar la activaciÃ³n en pagos_wompi para trazabilidad (provider=MANUAL)
+		// Registrar la activación en pagos_wompi para trazabilidad (provider=MANUAL)
 		go func() {
 			reference := ref
 

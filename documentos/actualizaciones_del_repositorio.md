@@ -667,7 +667,7 @@ Archivos modificados:
 - web/index.html
 - web/super/pagina_principal.html
 
-2026-04-24 16:52:40 - Mensaje: Portal index: subtítulo IA; documentación; retiro banner promocional fijo; Commit: fe6844c; PushStatus: OK
+2026-04-24 16:52:40 - Mensaje: Portal index: subtÃ­tulo IA; documentaciÃ³n; retiro banner promocional fijo; Commit: fe6844c; PushStatus: OK
 Archivos modificados:
 - Pendiente Notas
 - documentos/descripcion_de_archivos
@@ -855,7 +855,7 @@ Archivos modificados:
 Archivos modificados:
 - web/index.html
 
-2026-04-25 15:44:16 - Mensaje: Portal: chat IA público index + switch; mensajes privados; eliminar banners; mejorar título; Commit: 84e7e09; PushStatus: OK
+2026-04-25 15:44:16 - Mensaje: Portal: chat IA pÃºblico index + switch; mensajes privados; eliminar banners; mejorar tÃ­tulo; Commit: 84e7e09; PushStatus: OK
 Archivos modificados:
 - backend/handlers/pagina_principal_handlers.go
 - backend/handlers/public_chat_portal.go
@@ -7777,7 +7777,7 @@ Archivos modificados:
 - web/estilos.css
 - web/js/editar_empresa.js
 
-2026-05-08 13:39:27 - Mensaje: Ajustes de juegos, emulador y red social en pestaña nueva; Commit: bac901b3; PushStatus: OK
+2026-05-08 13:39:27 - Mensaje: Ajustes de juegos, emulador y red social en pestaÃ±a nueva; Commit: bac901b3; PushStatus: OK
 Archivos modificados:
 - backend/db/crm_ventas_avanzadas.go
 - backend/db/crm_ventas_avanzadas_test.go

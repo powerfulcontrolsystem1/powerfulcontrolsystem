@@ -1524,7 +1524,7 @@ Fecha de actualizacion: 2026-04-18
 ## Actualizacion 2026-04-18 (checkout Epayco: correo de activacion reintentable sin duplicados)
 
 - Backend:
-  - `backend/handlers/payments_handlers.go` separa la decision de enviar el correo de la condicion de â€œlicencia recien activadaâ€, de modo que un pago `APPROVED` pueda completar la notificacion despues si el webhook aprobÃ³ primero o el primer intento no se consolidÃ³.
+  - `backend/handlers/payments_handlers.go` separa la decision de enviar el correo de la condicion de â€œlicencia recien activadaâ€, de modo que un pago `APPROVED` pueda completar la notificacion despues si el webhook aprobó primero o el primer intento no se consolidó.
   - El mismo archivo marca en `raw_payload` los campos `licencia_activation_email_sent`, `licencia_activation_email_to` y `licencia_activation_email_sent_at` para impedir duplicados en polls o webhooks posteriores.
   - La extraccion del destinatario ahora reconoce tambien `data.customer_email` en la respuesta de validacion Epayco.
 - Testing:

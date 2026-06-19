@@ -857,10 +857,10 @@
 - `/generate` y `/download` para documentos dinamicos requieren sesion y deben asociarse al contexto empresarial cuando se usen desde empresa; no entregan credenciales ni SQL libre a la IA.
 - La consulta/revocacion de administradores compartidos se controla por pertenencia administrativa a la empresa compartida; quien compartio y quien recibio pueden retirar acceso, registrando actor y fecha.
 - El fallback clasico de Epayco no cambia permisos de checkout: solo modifica el transporte hacia la pasarela usando POST firmado cuando Smart Checkout no entrega token.
-2026-04-25: Nota de gobernanza (permisos por rol, licencia y menÒº empresa)
-- El panel `web/super/permisos_rol.html` configura la **matriz por rol** (mÃƒÂ³dulo Ãƒâ€” R/C/U/D/A) y **anulaciones por funciÃƒÂ³n** del menÃƒÂº `administrar_empresa` (claves `link*`). El backend expone en `GET /super/api/roles_de_usuario/permisos` etiquetas legibles y agrupaciÃƒÂ³n para auditorÃƒÂ­a y UI.
-- La **licencia** (`licencias.modulos_habilitados` en `web/super/licencias.html`) define el **techo** de mÒ³dulos contratados: lista vacÒ­a = sin restricciÒ³n de mÒ³dulo; lista con valores = solo esos mÒ³dulos para la empresa, aplicada antes de la matriz de rol.
-- No se agrega un tercer sistema Ã¢â‚¬Å“universalÃ¢â‚¬Â paralelo: la combinaciÃƒÂ³n licencia + rol + reglas de pÃƒÂ¡gina del catÃƒÂ¡logo `permissionPagesCatalogOrdered` en `empresa_permisos.go` es el modelo soportado.
+2026-04-25: Nota de gobernanza (permisos por rol, licencia y menú empresa)
+- El panel `web/super/permisos_rol.html` configura la **matriz por rol** (módulo x R/C/U/D/A) y **anulaciones por función** del menú `administrar_empresa` (claves `link*`). El backend expone en `GET /super/api/roles_de_usuario/permisos` etiquetas legibles y agrupación para auditoría y UI.
+- La **licencia** (`licencias.modulos_habilitados` en `web/super/licencias.html`) define el **techo** de módulos contratados: lista vacía = sin restricción de módulo; lista con valores = solo esos módulos para la empresa, aplicada antes de la matriz de rol.
+- No se agrega un tercer sistema -Å“universal- paralelo: la combinación licencia + rol + reglas de página del catálogo `permissionPagesCatalogOrdered` en `empresa_permisos.go` es el modelo soportado.
 
 2026-04-26: Nota operativa para `inventario`, `finanzas`, `asistencia` y `usuarios`
 - El nuevo acceso `linkGeneradorCodigosBarras` queda bajo modulo `inventario` con accion `U` porque actualiza `productos.codigo_barras`; no crea wrapper nuevo ni ruta publica.
@@ -891,14 +891,14 @@
 - No se crean permisos nuevos ni se amplian privilegios de `administrador`; se corrige un default funcional de la vista para que coincida con la operacion simplificada del modulo.
 
 2026-04-21: Nota operativa para `compras`, `finanzas` y `administrar_empresa` sobre comprobantes adjuntos
-- `administrador` y demÒ¡s perfiles empresariales ya autorizados en los mÒ³dulos de compras y finanzas pueden adjuntar y consultar comprobantes solo dentro del mismo `empresa_id`; el cambio no crea roles nuevos ni expone rutas pÒºblicas adicionales.
-- `POST /api/empresa/compras/documentos/comprobante` reutiliza `WithEmpresaComprasPermissions` y `POST /api/empresa/finanzas/movimientos/comprobante` reutiliza `WithEmpresaFinanzasPermissions`; por tanto el alcance efectivo queda igual que en el CRUD principal de cada mÒ³dulo.
-- La visualizaciÒ³n posterior del comprobante en listados usa una URL servida desde el mismo Ò¡rbol web del sistema, pero la referencia solo se genera para registros ya permitidos por el contexto autenticado de empresa.
+- `administrador` y demás perfiles empresariales ya autorizados en los módulos de compras y finanzas pueden adjuntar y consultar comprobantes solo dentro del mismo `empresa_id`; el cambio no crea roles nuevos ni expone rutas públicas adicionales.
+- `POST /api/empresa/compras/documentos/comprobante` reutiliza `WithEmpresaComprasPermissions` y `POST /api/empresa/finanzas/movimientos/comprobante` reutiliza `WithEmpresaFinanzasPermissions`; por tanto el alcance efectivo queda igual que en el CRUD principal de cada módulo.
+- La visualización posterior del comprobante en listados usa una URL servida desde el mismo árbol web del sistema, pero la referencia solo se genera para registros ya permitidos por el contexto autenticado de empresa.
 
 2026-04-21: Nota operativa para `soporte remoto`, `super`, `administrar_empresa` y `portal_publico` sobre RustDesk simplificado
 - `super_administrador` mantiene el control exclusivo del servicio base RustDesk desde `web/super/servidores.html`, incluyendo acciones de encendido, apagado, reinicio y prueba. El cambio no crea un rol nuevo ni delega esas acciones al panel empresarial.
 - `administrador` de empresa sigue limitado a configurar los datos visibles del acceso remoto de su empresa en `web/administrar_empresa/soporte_remoto.html`: host, clave, instrucciones y enlaces de descarga. No obtiene permisos para operar el servicio del VPS.
-- La pÒ¡gina pÒºblica `web/soporte_remoto_acceso.html` continÒºa siendo solo de consulta del acceso compartido por sesiÒ³n; expone descargas y datos de conexiÒ³n ya autorizados, sin ampliar privilegios a visitantes o usuarios sin sesiÒ³n.
+- La página pública `web/soporte_remoto_acceso.html` continúa siendo solo de consulta del acceso compartido por sesión; expone descargas y datos de conexión ya autorizados, sin ampliar privilegios a visitantes o usuarios sin sesión.
 
 2026-05-12: Nota operativa para `documentos_onlyoffice` y `backups`
 - Los modos locales agregados para documentos y backups no abren permisos nuevos: siguen protegidos por `WithEmpresaDocumentosOnlyOfficePermissions` y `WithEmpresaBackupsPermissions`.
@@ -931,25 +931,25 @@
 - La evolucion de `Notas` a multiples recordatorios, countdown persistente y repeticion automatica no introduce endpoints nuevos ni modifica wrappers backend. Sigue dependiendo del mismo permiso de acceso a `administrar_empresa/estaciones.html`.
 - El runtime multiple queda aislado en navegador por `empresa_id`; por eso no amplifica alcance entre roles o empresas, pero tampoco constituye respaldo compartido ni evidencia multiusuario persistida en servidor.
 
-2026-04-20: Nota operativa para `autenticacion y sesiones` sobre correccion del ojito de contraseÒ±a
-- La correccion del toggle visual en el login administrativo no cambia permisos, wrappers ni alcance publico de `/login.html`; solo restaura el comportamiento del control cliente sobre el campo de contraseÒ±a.
+2026-04-20: Nota operativa para `autenticacion y sesiones` sobre correccion del ojito de contraseña
+- La correccion del toggle visual en el login administrativo no cambia permisos, wrappers ni alcance publico de `/login.html`; solo restaura el comportamiento del control cliente sobre el campo de contraseña.
 - El acceso sigue siendo publico para administradores y la autorizacion efectiva continua igual bajo el backend existente.
 
 2026-04-20: Nota operativa para `autenticacion y sesiones` sobre recuperacion administrativa por enlace directo
-- El restablecimiento de contraseÒ±a administrativa sigue siendo publico solo para la cuenta que recibe el correo de recuperaciÒ³n; el cambio no abre rutas nuevas ni amplÒ­a roles, solo elimina la necesidad de copiar un token manual al formulario.
-- La validaciÒ³n efectiva continÒºa en backend con el mismo cÒ³digo de recuperaciÒ³n y expiraciÒ³n existentes; la diferencia es de UX y no de privilegios.
+- El restablecimiento de contraseña administrativa sigue siendo publico solo para la cuenta que recibe el correo de recuperación; el cambio no abre rutas nuevas ni amplía roles, solo elimina la necesidad de copiar un token manual al formulario.
+- La validación efectiva continúa en backend con el mismo código de recuperación y expiración existentes; la diferencia es de UX y no de privilegios.
 
 2026-04-20: Nota operativa para `portal_publico`, `autenticacion`, `super`, `administrar_empresa` y vistas embebidas sobre contraste de apariencias
-- La correcciÒ³n de contraste y color para los seis temas no crea rutas nuevas ni modifica permisos por rol; solo garantiza que textos, tarjetas, estados vacÒ­os y componentes mantengan legibilidad coherente segÒºn la apariencia elegida.
-- Los mÒ³dulos afectados conservan exactamente el mismo alcance pÒºblico o autenticado que ya tenÒ­an; el cambio es exclusivamente de presentaciÒ³n y consistencia visual.
+- La corrección de contraste y color para los seis temas no crea rutas nuevas ni modifica permisos por rol; solo garantiza que textos, tarjetas, estados vacíos y componentes mantengan legibilidad coherente según la apariencia elegida.
+- Los módulos afectados conservan exactamente el mismo alcance público o autenticado que ya tenían; el cambio es exclusivamente de presentación y consistencia visual.
 
 2026-04-20: Nota operativa para `super`, `portal_publico` y `pagina principal publica` sobre WhatsApp configurable
-- La nueva tarjeta de WhatsApp en configuraciÒ³n avanzada solo permite cambiar el nÒºmero del CTA flotante pÒºblico del `index.html`; no introduce rutas nuevas, permisos adicionales ni cambios de wrapper.
-- El botÒ³n flotante del portal sigue siendo pÒºblico y de solo lectura/uso para todos los roles; la ediciÒ³n del nÒºmero continÒºa limitada al panel super ya existente.
+- La nueva tarjeta de WhatsApp en configuración avanzada solo permite cambiar el número del CTA flotante público del `index.html`; no introduce rutas nuevas, permisos adicionales ni cambios de wrapper.
+- El botón flotante del portal sigue siendo público y de solo lectura/uso para todos los roles; la edición del número continúa limitada al panel super ya existente.
 
 2026-04-20: Nota operativa para `portal_publico`, `pagina principal publica` y `autenticacion y sesiones` sobre CTA superior de registro
-- El nuevo botÒ³n `Crear cuenta` en `web/index.html` reutiliza el estilo visual del header de `/descripcion_de_los_sistemas.ht`, pero mantiene el mismo alcance pÒºblico del portal y solo deriva al registro administrativo ya existente en `/registrar_nuevo_usuario_administrador.html`.
-- No se crean wrappers, permisos ni rutas nuevas: el cambio solo expone mejor un flujo pÒºblico ya permitido, mantiene `Iniciar sesiÒ³n` con la misma funciÒ³n anterior y compacta el header mÒ³vil sin alterar el alcance del portal.
+- El nuevo botón `Crear cuenta` en `web/index.html` reutiliza el estilo visual del header de `/descripcion_de_los_sistemas.ht`, pero mantiene el mismo alcance público del portal y solo deriva al registro administrativo ya existente en `/registrar_nuevo_usuario_administrador.html`.
+- No se crean wrappers, permisos ni rutas nuevas: el cambio solo expone mejor un flujo público ya permitido, mantiene `Iniciar sesión` con la misma función anterior y compacta el header móvil sin alterar el alcance del portal.
 
 2026-04-20: Nota operativa para `portal_publico` y `pagina principal publica` sobre simplificacion visual
 - Retirar el hero y la tarjeta de accesos rapidos de `/descripcion_de_los_sistemas.ht` no cambia permisos, wrappers ni el destino del flujo publico; solo hace que la landing llegue directo al contenido detallado.
@@ -976,15 +976,15 @@
 - El cambio solo estabiliza persistencia y lectura por `empresa_id` en PostgreSQL para que las publicaciones creadas por la empresa aparezcan tanto en su panel como en el feed publico sin error `500`.
 
 2026-04-24: Nota operativa para `red_social_empresarial` y `venta_publica`
-- La red social empresarial conserva escritura bajo `/api/empresa/publicaciones` con `WithEmpresaVentasPermissions`; la lectura pÒºblica `/api/public/publicaciones` no expone datos sensibles y ahora muestra nombre de empresa para el feed.
+- La red social empresarial conserva escritura bajo `/api/empresa/publicaciones` con `WithEmpresaVentasPermissions`; la lectura pública `/api/public/publicaciones` no expone datos sensibles y ahora muestra nombre de empresa para el feed.
 - Venta publica se administra desde el modulo independiente `venta_publica`; `/api/empresa/venta_publicaaction=paginas|config|catalogo` usa `WithEmpresaVentaPublicaPermissions`, mientras `/api/public/venta_publica` permanece publico solo para catalogo, creacion/estado de pago y datos sanitizados.
 
 2026-04-20: Nota operativa para apariencia global, autenticacion y acceso publico a Juegos
 - La reparacion de `menu.js`, `login.js`, `login_usuario.js` y los endpoints de login solo sincroniza una preferencia visual por usuario (`apariencia`) y no agrega permisos nuevos ni altera wrappers de acceso.
-- La entrada `Juegos` vuelve al menÒº flotante como acceso pÒºblico controlado a `/Juegos/menu_juegos.html` y `/Juegos/n64/index.html`, sin exponer mÒ³dulos privados ni modificar el alcance de `super_administrador`, `administrador` o usuarios de empresa.
+- La entrada `Juegos` vuelve al menú flotante como acceso público controlado a `/Juegos/menu_juegos.html` y `/Juegos/n64/index.html`, sin exponer módulos privados ni modificar el alcance de `super_administrador`, `administrador` o usuarios de empresa.
 
 2026-04-19: Nota operativa para mensajeria multiusuario en `administrar_empresa` y `chat_y_tareas`
-- La administradora puede buscar y marcar varios usuarios activos de su misma empresa para crear o ampliar conversaciones, pero el cambio no amplÒ­a roles ni wrappers: la operaciÒ³n sigue limitada al contexto autenticado y al `empresa_id` ya permitido.
+- La administradora puede buscar y marcar varios usuarios activos de su misma empresa para crear o ampliar conversaciones, pero el cambio no amplía roles ni wrappers: la operación sigue limitada al contexto autenticado y al `empresa_id` ya permitido.
 - El backend ahora rechaza participantes tipo `usuario` cuyo `participante_ref_id` o correo pertenezcan a otra empresa, cerrando un cruce de datos sin conceder privilegios nuevos a administradores o usuarios empresa.
 
 2026-04-19: Nota operativa de robustez para `administrar_empresa` y `chat_y_tareas`
@@ -993,16 +993,16 @@
 
 2026-04-19: Nota operativa para `administrar_empresa` y `chat_y_tareas`
 - El panel empresa ahora prioriza visualmente `Chat y tareas` como punto de entrada, pero solo cuando ese enlace sigue visible para el rol autenticado dentro del contexto real de permisos.
-- La agenda de reuniones continÒºa compartida por `empresa_id`; mover el mÒ³dulo al inicio del shell y hacer protagonista el calendario no crea rutas nuevas ni amplÒ­a privilegios. Solo reduce fricciÒ³n para los mismos usuarios autorizados a consultar o registrar citas de la empresa.
+- La agenda de reuniones continúa compartida por `empresa_id`; mover el módulo al inicio del shell y hacer protagonista el calendario no crea rutas nuevas ni amplía privilegios. Solo reduce fricción para los mismos usuarios autorizados a consultar o registrar citas de la empresa.
 
 2026-04-19: Nota operativa de UX para `estaciones` y `carritos`
-- La mejora del estado visible de error en `carrito_de_compras.html` no cambia roles, wrappers ni acciones permitidas. Solo traduce y presenta mejor los fallos iniciales del flujo de apertura para que el mismo usuario autorizado pueda reintentar o volver a `estaciones.html` con menor ambigÒ¼edad operativa.
+- La mejora del estado visible de error en `carrito_de_compras.html` no cambia roles, wrappers ni acciones permitidas. Solo traduce y presenta mejor los fallos iniciales del flujo de apertura para que el mismo usuario autorizado pueda reintentar o volver a `estaciones.html` con menor ambigüedad operativa.
 
 2026-04-19: Nota operativa para `estaciones` y `carritos` en PostgreSQL
 - La correccion del listado y de los totales de `carritos_compra` no altera wrappers, roles ni alcance por `empresa_id`. El ajuste solo cambia la forma de consultar y redondear datos para que `WithEmpresaVentasPermissions` siga permitiendo la misma operacion de estaciones/carritos cuando el runtime usa PostgreSQL.
 
 2026-04-19: Nota operativa para `estaciones` y `carritos`
-- La apertura de una estaciÒ³n debe seguir funcionando para los mismos roles que ya tienen acceso operativo al mÒ³dulo, incluso si el carrito enlazado proviene de datos legado. La resoluciÒ³n del carrito por referencia o nombre no cambia permisos ni alcance por `empresa_id`; solo evita recreaciones fallidas del carrito base.
+- La apertura de una estación debe seguir funcionando para los mismos roles que ya tienen acceso operativo al módulo, incluso si el carrito enlazado proviene de datos legado. La resolución del carrito por referencia o nombre no cambia permisos ni alcance por `empresa_id`; solo evita recreaciones fallidas del carrito base.
 
 # Matriz base de roles y permisos POS multiempresa
 
@@ -1011,21 +1011,21 @@ Alcance: punto 3 del plan maestro (permisos y seguridad)
 
 - Actualizacion 2026-04-19 (super: plantillas de email y guardado unificado de configuracion avanzada):
 	- `super_administrador` agrega la capacidad operativa de editar plantillas reales desde `/super/formato_para_emviar_email.html` y persistirlas por `GET/PUT /super/api/config/email_templates`.
-	- Las plantillas controlan correos administrativos, usuarios de empresa, pagos de licencia, recuperaciÒ³n de contraseÒ±a y alertas de reinicio, pero no cambian el modelo de permisos ni abren acceso a otros roles.
-	- `web/super/configuracion_avanzada.html` deja de guardar por tarjetas separadas y usa un botÒ³n global arriba y abajo de la vista para persistir Wompi, Epayco, Gmail e IA dentro del mismo mÒ³dulo ya protegido.
-	- Impacto de matriz: sin rutas abiertas al pÒºblico ni nuevos wrappers; se fortalece la operabilidad del panel `super` bajo el mismo rol exclusivo existente.
+	- Las plantillas controlan correos administrativos, usuarios de empresa, pagos de licencia, recuperación de contraseña y alertas de reinicio, pero no cambian el modelo de permisos ni abren acceso a otros roles.
+	- `web/super/configuracion_avanzada.html` deja de guardar por tarjetas separadas y usa un botón global arriba y abajo de la vista para persistir Wompi, Epayco, Gmail e IA dentro del mismo módulo ya protegido.
+	- Impacto de matriz: sin rutas abiertas al público ni nuevos wrappers; se fortalece la operabilidad del panel `super` bajo el mismo rol exclusivo existente.
 
 - Actualizacion 2026-04-19 (portal publico y selector: visibilidad por alcance real):
-	- El CTA `Probar Gratis` de la landing descriptiva ya no debe conducir a pantallas administrativas como `administrar_empresa`, `super_administrador` o `seleccionar_empresa`; cuando la tarjeta original apunta a un flujo protegido, el destino pÒºblico correcto pasa a ser el registro de administrador.
-	- En `seleccionar_empresa`, `Licencias` puede seguir visible para cuentas con gestiÒ³n propia de empresas/licencias, pero `Administradores` y `Reportes globales` quedan reservados a `super_administrador` principal.
-	- Los administradores delegados dejan de ver navegaciÒ³n global aunque mantengan rol heredado `super_administrador`, alineando la UI con el alcance efectivo ya impuesto por backend.
-	- Impacto de matriz: no cambian endpoints ni wrappers; se endurece la visibilidad operativa del panel y la coherencia del portal pÒºblico.
+	- El CTA `Probar Gratis` de la landing descriptiva ya no debe conducir a pantallas administrativas como `administrar_empresa`, `super_administrador` o `seleccionar_empresa`; cuando la tarjeta original apunta a un flujo protegido, el destino público correcto pasa a ser el registro de administrador.
+	- En `seleccionar_empresa`, `Licencias` puede seguir visible para cuentas con gestión propia de empresas/licencias, pero `Administradores` y `Reportes globales` quedan reservados a `super_administrador` principal.
+	- Los administradores delegados dejan de ver navegación global aunque mantengan rol heredado `super_administrador`, alineando la UI con el alcance efectivo ya impuesto por backend.
+	- Impacto de matriz: no cambian endpoints ni wrappers; se endurece la visibilidad operativa del panel y la coherencia del portal público.
 
-- Actualizacion 2026-04-19 (super/licencias: cierre de alcance delegado y publicaciÒ³n pÒºblica de Epayco):
-	- `super_administrador` delegado ya no obtiene acceso global implÒ­cito por el nombre del rol; si fue creado por otro administrador, su alcance efectivo queda limitado al conjunto de empresas del administrador principal resuelto por cadena de creaciÒ³n.
+- Actualizacion 2026-04-19 (super/licencias: cierre de alcance delegado y publicación pública de Epayco):
+	- `super_administrador` delegado ya no obtiene acceso global implícito por el nombre del rol; si fue creado por otro administrador, su alcance efectivo queda limitado al conjunto de empresas del administrador principal resuelto por cadena de creación.
 	- `super_administrador` principal conserva visibilidad global, mientras el delegado solo administra empresas dentro de su portafolio autorizado y recibe `403` al consultar empresas externas.
 	- `GET /api/public/licencias/payment_methods` puede anunciar `epayco` cuando existe `public_key`, sin convertir ese anuncio en permiso para ejecutar cobros sin credenciales privadas en los pasos internos del checkout.
-	- Impacto de matriz: no se abren rutas ni roles nuevos; se endurece el control real del mÒ³dulo crÒ­tico de empresas y se aclara la diferencia entre visibilidad pÒºblica de mÒ©todo y autorizaciÒ³n de cobro.
+	- Impacto de matriz: no se abren rutas ni roles nuevos; se endurece el control real del módulo crítico de empresas y se aclara la diferencia entre visibilidad pública de método y autorización de cobro.
 
 ## Regla de mantenimiento por modulo
 
@@ -1038,7 +1038,7 @@ Alcance: punto 3 del plan maestro (permisos y seguridad)
 	- `web/administrar_empresa/estaciones.html` abre siempre `carrito_de_compras.html`; `ventas_simple.html` queda solo como compatibilidad de redireccion para URLs legacy.
 	- Impacto de matriz: sin cambios de roles ni wrappers; el ajuste es de operacion y UX dentro del mismo alcance autenticado del modulo critico `carritos`.
 
-- Actualizacion 2026-04-18 (chat con IA: simplificacion visual) Ã¢â‚¬â€ **obsoleta** (ver 2026-04-24 layout Gemini): en su momento se oculto selector e historial; la revision posterior los restituye en sidebar y topbar sin tocar permisos.
+- Actualizacion 2026-04-18 (chat con IA: simplificacion visual)  -  **obsoleta** (ver 2026-04-24 layout Gemini): en su momento se oculto selector e historial; la revision posterior los restituye en sidebar y topbar sin tocar permisos.
 
 - Actualizacion 2026-04-24 (super pagina principal: tema en iframe y mp-card en modo claro):
 	- `web/super/pagina_principal.html` sincroniza tema al cargar; `web/estilos.css` ajusta `body.super-page`, titulo de cabecera y el contenedor del editor (`pp-main-card`, evitando gradientes rosados de `mp-card`) para contraste en tema claro y oscuro.
@@ -1053,9 +1053,9 @@ Alcance: punto 3 del plan maestro (permisos y seguridad)
 	- Impacto de matriz: sin cambios de permisos, rutas protegidas ni wrappers; solo UX, persistencia local opcional y mensajes al usuario.
 
 - Actualizacion 2026-04-19 (chat IA Gemini-only):
-	- `super_administrador` mantiene la facultad exclusiva de activar o desactivar el servicio IA y el proveedor `google` desde `ConfiguraciÒ³n avanzada`.
-	- `administrador` de empresa y `super_administrador` consumidor del chat ya no eligen entre proveedores; ambos usan exclusivamente `google:gemini-2.0-flash` cuando el servicio estÒ¡ habilitado.
-	- Impacto de matriz: sin cambios en wrappers o alcance por `empresa_id`; se reduce la superficie funcional del mÒ³dulo IA al proveedor Gemini.
+	- `super_administrador` mantiene la facultad exclusiva de activar o desactivar el servicio IA y el proveedor `google` desde `Configuración avanzada`.
+	- `administrador` de empresa y `super_administrador` consumidor del chat ya no eligen entre proveedores; ambos usan exclusivamente `google:gemini-2.0-flash` cuando el servicio está habilitado.
+	- Impacto de matriz: sin cambios en wrappers o alcance por `empresa_id`; se reduce la superficie funcional del módulo IA al proveedor Gemini.
 
 - Actualizacion 2026-04-18 (inventario/productos: compras con vista dedicada dentro del submodulo):
 	- `web/administrar_empresa/administrar_productos.html` agrega `view=compras` para aislar compras preventivas, consolidado por proveedor y ciclo de orden del frente de inventario puro.
@@ -1069,7 +1069,7 @@ Alcance: punto 3 del plan maestro (permisos y seguridad)
 
 - Actualizacion 2026-04-18 (chat IA super/empresa: resiliencia PostgreSQL legacy y timeout operativo de Ambis):
 	- `backend/db/chat_inteligencia_artificial.go` autorrepara el esquema `empresa_ai_*` y `super_ai_*` cuando una instalacion heredada llega con tablas o columnas faltantes, sin abrir endpoints nuevos ni alterar wrappers.
-	- `backend/handlers/chat_con_inteligencia_artificial_controller.go` amplÒ­a el timeout usado solo por `ollama:ambis` para soportar respuestas lentas del modelo local/VPS, sin cambiar permisos de acceso ni catÒ¡logo por rol.
+	- `backend/handlers/chat_con_inteligencia_artificial_controller.go` amplía el timeout usado solo por `ollama:ambis` para soportar respuestas lentas del modelo local/VPS, sin cambiar permisos de acceso ni catálogo por rol.
 	- Impacto de matriz: sin cambios en roles, permisos, wrappers o visibilidad; el ajuste solo mejora estabilidad operativa del mismo modulo IA ya autorizado.
 
 - Actualizacion 2026-04-18 (portal publico: solo queda el emulador N64):
@@ -1091,17 +1091,17 @@ Alcance: punto 3 del plan maestro (permisos y seguridad)
 
 - Actualizacion 2026-04-18 (chat IA super/empresa: interruptor global de servicio):
 	- `web/super/configuracion_avanzada.html` y `backend/handlers/ai_config_handlers.go` agregan el interruptor global `ai.global.enabled` sin abrir rutas nuevas ni ampliar privilegios.
-	- `/api/empresa/chat_con_inteligencia_artificial/*` y `/super/api/chat_con_ia_global/*` conservan los mismos wrappers y controles de acceso, pero ahora rechazan el uso cuando la IA global estÒ¡ desactivada desde super.
+	- `/api/empresa/chat_con_inteligencia_artificial/*` y `/super/api/chat_con_ia_global/*` conservan los mismos wrappers y controles de acceso, pero ahora rechazan el uso cuando la IA global está desactivada desde super.
 
 - Actualizacion 2026-04-18 (chat IA super/empresa: control por proveedor):
-	- `super_administrador` puede habilitar o deshabilitar por separado `DeepSeek Chat` y `Ambis Local` desde `ConfiguraciÒ³n avanzada`.
+	- `super_administrador` puede habilitar o deshabilitar por separado `DeepSeek Chat` y `Ambis Local` desde `Configuración avanzada`.
 	- `administrador` de empresa solo puede usar los proveedores que el panel super mantenga habilitados; no puede reactivar proveedores desde empresa.
-	- Impacto de matriz: sin rutas nuevas ni ampliaciÒ³n de roles; se endurece el control operativo del catÒ¡logo IA desde super.
-	- Impacto de matriz: sin cambios en roles, wrappers ni visibilidad base; solo se aÒ±ade una compuerta operativa global administrada por `super_administrador`.
+	- Impacto de matriz: sin rutas nuevas ni ampliación de roles; se endurece el control operativo del catálogo IA desde super.
+	- Impacto de matriz: sin cambios en roles, wrappers ni visibilidad base; solo se añade una compuerta operativa global administrada por `super_administrador`.
 
 - Actualizacion 2026-04-18 (chat IA super/empresa: aviso visual y prueba operativa):
-	- `web/administrar_empresa/chat_con_inteligencia_artificial.html` y `web/super/chat_con_ia_global.html` comunican explÒ­citamente el estado `IA desactivada` sin cambiar permisos efectivos.
-	- `web/super/configuracion_avanzada.html` expone el botÒ³n `Probar IA contra VPS` como acciÒ³n operativa de diagnÒ³stico para `super_administrador`.
+	- `web/administrar_empresa/chat_con_inteligencia_artificial.html` y `web/super/chat_con_ia_global.html` comunican explícitamente el estado `IA desactivada` sin cambiar permisos efectivos.
+	- `web/super/configuracion_avanzada.html` expone el botón `Probar IA contra VPS` como acción operativa de diagnóstico para `super_administrador`.
 	- Impacto de matriz: sin cambios en roles ni wrappers; mejora solo la claridad operativa del panel y de los chats.
 
 - Actualizacion 2026-04-18 (gobernanza tecnica documental: integraciones externas y reconciliacion documental):
@@ -1111,12 +1111,12 @@ Alcance: punto 3 del plan maestro (permisos y seguridad)
 
 - Actualizacion 2026-04-18 (gobernanza tecnica documental: repositorio documental y firmas externas):
 	- `documentos/gobernanza_tecnica/contratos/contrato_repositorio_documental_y_firmas_externas.md` formaliza el comportamiento de `/api/empresa/documentos/gestion` y `/api/empresa/documentos/firmas`, incluyendo `acceso`, `repositorio`, `versiones`, `versionar` y herencia de permisos desde el modulo documental.
-	- `documentos/gobernanza_tecnica/runbooks/runbook_versionado_documental_y_firmas_externas.md` fija el procedimiento reproducible para diagnosticar accesos denegados, historial incompleto, firmas huÒ©rfanas y versiones no marcadas como historicas.
+	- `documentos/gobernanza_tecnica/runbooks/runbook_versionado_documental_y_firmas_externas.md` fija el procedimiento reproducible para diagnosticar accesos denegados, historial incompleto, firmas huérfanas y versiones no marcadas como historicas.
 	- Impacto de matriz: sin cambios en permisos, wrappers o visibilidad; el alcance es documental y operativo transversal sobre reglas ya existentes.
 
 - Actualizacion 2026-04-18 (gobernanza tecnica documental: reconciliacion y evidencia regulatoria endurecida):
-	- Los contratos de repositorio documental, interoperabilidad y reportes ahora exigen reconciliar exportes regulatorios con la versiÒ³n documental vigente y la firma asociada cuando exista.
-	- Los runbooks documentales dejan explÒ­cito que `include_denegados=1` solo sirve para diagnÒ³stico y que un exporte no otorga acceso ni sustituye evidencia firmada.
+	- Los contratos de repositorio documental, interoperabilidad y reportes ahora exigen reconciliar exportes regulatorios con la versión documental vigente y la firma asociada cuando exista.
+	- Los runbooks documentales dejan explícito que `include_denegados=1` solo sirve para diagnóstico y que un exporte no otorga acceso ni sustituye evidencia firmada.
 	- Impacto de matriz: sin cambios en permisos, wrappers o visibilidad; el ajuste solo endurece reglas de trazabilidad y uso operativo de la evidencia.
 
 - Actualizacion 2026-04-18 (gobernanza tecnica documental: checklist rapida para QA/soporte):
@@ -1135,13 +1135,13 @@ Alcance: punto 3 del plan maestro (permisos y seguridad)
 
 - Actualizacion 2026-04-18 (gobernanza tecnica documental: soporte remoto y contingencia de reportes):
 	- `documentos/gobernanza_tecnica/contratos/contrato_soporte_remoto_por_empresa_y_mesa_tecnica_central.md` formaliza el comportamiento de `/api/empresa/soporte_remoto`, `/api/public/soporte_remoto` y `/super/api/soporte_remoto` sin cambiar wrappers ni roles vigentes.
-	- `documentos/gobernanza_tecnica/runbooks/runbook_reportes_programados_y_exportaciones_contables.md` y `documentos/gobernanza_tecnica/runbooks/runbook_soporte_remoto_sesiones_y_dispositivos.md` fijan diagnÒ³stico operativo reproducible para exportes/reportes y para sesiones/dispositivos remotos.
-	- Impacto de matriz: sin cambios en permisos, wrappers o visibilidad de pÒ¡ginas; el alcance es documental y operativo transversal.
+	- `documentos/gobernanza_tecnica/runbooks/runbook_reportes_programados_y_exportaciones_contables.md` y `documentos/gobernanza_tecnica/runbooks/runbook_soporte_remoto_sesiones_y_dispositivos.md` fijan diagnóstico operativo reproducible para exportes/reportes y para sesiones/dispositivos remotos.
+	- Impacto de matriz: sin cambios en permisos, wrappers o visibilidad de páginas; el alcance es documental y operativo transversal.
 
 - Actualizacion 2026-04-18 (estaciones: tarjeta especial YouTube):
 	- `web/administrar_empresa/configuracion_de_estaciones.html`, `web/administrar_empresa/estaciones.html`, `web/administrar_empresa/youtube_station_browser.html` y `web/estilos.css` agregan una estacion especial `YouTube` dentro del mismo modulo autenticado de estaciones.
-	- La estacion especial reproduce solo videos o playlists embebibles vÒ¡lidos; cuando la referencia configurada es texto libre, el fallback sigue siendo abrir YouTube fuera del sistema y no cambia permisos ni alcance del modulo.
-	- La operadora tambiÒ©n puede pegar y guardar desde la propia tarjeta la URL o ID del video, playlist o `Shorts` sin salir de `estaciones.html`; el cambio sigue usando el mismo permiso autenticado del modulo y no abre capacidades nuevas por rol.
+	- La estacion especial reproduce solo videos o playlists embebibles válidos; cuando la referencia configurada es texto libre, el fallback sigue siendo abrir YouTube fuera del sistema y no cambia permisos ni alcance del modulo.
+	- La operadora también puede pegar y guardar desde la propia tarjeta la URL o ID del video, playlist o `Shorts` sin salir de `estaciones.html`; el cambio sigue usando el mismo permiso autenticado del modulo y no abre capacidades nuevas por rol.
 	- `web/descripcion_de_los_sistemas.ht` adopta el mismo lenguaje visual de las tarjetas del index, pero el modulo sigue siendo publico y sin cambios en permisos, CRUD/A ni wrappers.
 	- Impacto de matriz: sin cambios en permisos, roles o wrappers; la nueva tarjeta reutiliza la misma autorizacion empresarial y no abre endpoints ni acciones administrativas adicionales.
 
@@ -1175,7 +1175,7 @@ Alcance: punto 3 del plan maestro (permisos y seguridad)
 	- Impacto de matriz: sin cambios en permisos funcionales, wrappers ni visibilidad de paginas; la mejora sigue siendo interna a la disciplina del equipo tecnico.
 
 - Actualizacion 2026-04-18 (checkout Epayco: correo de activacion recuperable e idempotente):
-	- `backend/handlers/payments_handlers.go` reintenta el correo de activacion en aprobados posteriores cuando la licencia ya quedÒ³ activa pero la notificacion aun no se habia confirmado, y marca el envio dentro del `raw_payload` para no duplicarlo.
+	- `backend/handlers/payments_handlers.go` reintenta el correo de activacion en aprobados posteriores cuando la licencia ya quedó activa pero la notificacion aun no se habia confirmado, y marca el envio dentro del `raw_payload` para no duplicarlo.
 	- Impacto de matriz: sin cambios en roles ni wrappers; `/epayco/*` sigue siendo un flujo publico de checkout y la mejora solo fortalece la entrega del correo transaccional.
 
 - Actualizacion 2026-04-18 (checkout de licencias: validacion de contexto esperado por empresa/licencia):
@@ -1200,9 +1200,9 @@ Alcance: punto 3 del plan maestro (permisos y seguridad)
 	- Impacto de matriz: sin cambios en permisos, roles o alcance; el selector mantiene la misma operacion autenticada.
 
 - Actualizacion 2026-04-18 (arcade publico: N64 vertical mobile para ROM legal del usuario):
-	- `web/Juegos/n64/index.html`, `web/Juegos/n64/styles.css` y `web/Juegos/n64/n64-wrapper.js` agregan una pÒ¡gina pÒºblica especÒ­fica para mÒ³vil con controles tÒ¡ctiles, ROM legal persistida en IndexedDB y respaldo local de la memoria del cartucho.
+	- `web/Juegos/n64/index.html`, `web/Juegos/n64/styles.css` y `web/Juegos/n64/n64-wrapper.js` agregan una página pública específica para móvil con controles táctiles, ROM legal persistida en IndexedDB y respaldo local de la memoria del cartucho.
 	- `web/Juegos/menu_juegos.html` publica la entrada del nuevo juego en el lobby general del arcade.
-	- Impacto de matriz: sin cambios en roles, wrappers ni permisos; `Juegos` continÒºa siendo una superficie pÒºblica sin autenticaciÒ³n bajo `/Juegos/*`.
+	- Impacto de matriz: sin cambios en roles, wrappers ni permisos; `Juegos` continúa siendo una superficie pública sin autenticación bajo `/Juegos/*`.
 
 - Actualizacion 2026-04-18 (super configuracion avanzada: prueba real de Gmail):
 	- `backend/handlers/usuarios_empresa.go` agrega `POST /super/api/config/gmailaction=test` para enviar un correo de prueba real con la configuracion SMTP ya guardada, y `web/super/configuracion_avanzada.html` lo invoca desde el boton `Probar Gmail`.
@@ -1212,8 +1212,8 @@ Alcance: punto 3 del plan maestro (permisos y seguridad)
 	- `web/Juegos/brigada_burbujas_3d_plus.html` incorpora apuntado tactil sobre el canvas, ayudas visuales en pantalla y un layout mas comodo en vertical para completar el flujo movil del juego.
 	- Impacto de matriz: sin cambios en roles, wrappers ni permisos; `Juegos` sigue siendo una superficie publica sin autenticacion bajo `/Juegos/*`.
 
-- Actualizacion 2026-04-17 (arcade publico: Brigada burbujas 3D plus suma campaÒ±a y rivales de pasarela caricaturesca):
-	- `web/Juegos/brigada_burbujas_3d_plus.html` amplÒ­a el juego con transformaciones especiales y rivales adultas estilizadas tipo pasarela, sin desnudez ni contenido explicito, manteniendo la experiencia dentro de un tono arcade apto para portal publico.
+- Actualizacion 2026-04-17 (arcade publico: Brigada burbujas 3D plus suma campaña y rivales de pasarela caricaturesca):
+	- `web/Juegos/brigada_burbujas_3d_plus.html` amplía el juego con transformaciones especiales y rivales adultas estilizadas tipo pasarela, sin desnudez ni contenido explicito, manteniendo la experiencia dentro de un tono arcade apto para portal publico.
 	- Impacto de matriz: sin cambios en roles, wrappers ni permisos; `Juegos` sigue siendo una superficie publica sin autenticacion bajo `/Juegos/*`.
 
 - Actualizacion 2026-04-18 (arcade publico: Brigada burbujas 3D plus agrega arsenal y sectores mixtos):
@@ -1229,7 +1229,7 @@ Alcance: punto 3 del plan maestro (permisos y seguridad)
 	- Impacto de matriz: sin cambios en roles, wrappers ni permisos; `Juegos` sigue siendo una superficie publica sin autenticacion bajo `/Juegos/*`.
 
 - Actualizacion 2026-04-18 (arcade publico: Brigada burbujas 3D plus agrega ajustes tactiles persistentes):
-	- `web/Juegos/brigada_burbujas_3d_plus.html` aÒ±ade auto-disparo opcional, vibracion y ajustes de sensibilidad persistidos en `localStorage`, sin alterar el modelo de acceso del arcade.
+	- `web/Juegos/brigada_burbujas_3d_plus.html` añade auto-disparo opcional, vibracion y ajustes de sensibilidad persistidos en `localStorage`, sin alterar el modelo de acceso del arcade.
 	- Impacto de matriz: sin cambios en roles, wrappers ni permisos; `Juegos` sigue siendo una superficie publica sin autenticacion bajo `/Juegos/*`.
 
 - Actualizacion 2026-04-18 (arcade publico: Brigada burbujas 3D plus refina HUD y ayuda de mira movil):
@@ -1250,9 +1250,9 @@ Alcance: punto 3 del plan maestro (permisos y seguridad)
 	- Impacto de matriz: sin cambios en roles, wrappers ni permisos; solo se ajusta la experiencia responsive sobre paginas ya autorizadas.
 
 - Actualizacion 2026-04-18 (submenu configuracion: ocultar/mostrar en movil):
-	- `web/administrar_empresa/configuracion_menu.html` adopta el mismo wrapper `admin-sidebar-mobile-collapsible` y el mismo boton final de `Ocultar menÒº` / `Mostrar menÒº` del shell administrativo principal.
+	- `web/administrar_empresa/configuracion_menu.html` adopta el mismo wrapper `admin-sidebar-mobile-collapsible` y el mismo boton final de `Ocultar menú` / `Mostrar menú` del shell administrativo principal.
 	- `web/menu.js` reaprovecha la misma logica de colapso sin abrir nuevas rutas ni modificar accesos del submodulo de configuracion.
-	- Impacto de matriz: sin cambios en roles, wrappers ni permisos; solo se amplÒ­a el mismo patron responsive a otra vista ya autenticada.
+	- Impacto de matriz: sin cambios en roles, wrappers ni permisos; solo se amplía el mismo patron responsive a otra vista ya autenticada.
 
 - Actualizacion 2026-04-18 (submenu configuracion: permisos reales y guardado real de integraciones):
 	- `web/administrar_empresa/configuracion_permisos.html` deja de fingir alta/guardado de roles y pasa a consumir `GET /api/empresa/permisos_contextoempresa_id=...&include_matrix=1`, mostrando solo informacion permitida por el wrapper de seguridad existente.
@@ -1266,7 +1266,7 @@ Alcance: punto 3 del plan maestro (permisos y seguridad)
 
 - Actualizacion 2026-04-17 (ventas: selector de documento por empresa):
 	- `web/administrar_empresa/configuracion.html` agrega el selector `Documento al vender` y `backend/handlers/carritos_compras.go` lo aplica al cierre de `pagar_estacion` para emitir `factura_electronica` o `comprobante_pago`.
-	- `web/administrar_empresa/facturas_electronicas.html` amplÒ­a la consulta del historial para incluir comprobantes dentro del mismo modulo documental empresarial.
+	- `web/administrar_empresa/facturas_electronicas.html` amplía la consulta del historial para incluir comprobantes dentro del mismo modulo documental empresarial.
 	- Impacto de matriz: sin ampliacion de privilegios; el cambio reutiliza permisos existentes de configuracion de empresa, carritos y consulta documental bajo el mismo `empresa_id` autenticado.
 
 - Actualizacion 2026-04-17 (editar empresa: comprar licencia si esta vencida):
@@ -1276,8 +1276,8 @@ Alcance: punto 3 del plan maestro (permisos y seguridad)
 
 - Actualizacion 2026-04-17 (editar empresa y eliminacion total confirmada):
 	- `web/editar_empresa.html` y `web/js/editar_empresa.js` habilitan una vista autenticada para editar `nombre` y `descripcion` de la empresa seleccionada y para ejecutar su cierre total solo si el usuario escribe el nombre exacto como confirmacion.
-	- `backend/utils/utils.go` amplÒ­a la excepcion del rol `administrador` sobre `/super/api/empresas` para permitir `PUT` y `DELETE`, manteniendo `GET` como unica accion disponible en `/super/api/tipos_empresas` y `/super/api/licencias`.
-	- Impacto de matriz: `administrador` pasa a tener `R/U/D` solo sobre sus empresas en el flujo del selector; `POST /super/api/empresas` y el resto de `/super/*` continÒºan reservados a `super_administrador`.
+	- `backend/utils/utils.go` amplía la excepcion del rol `administrador` sobre `/super/api/empresas` para permitir `PUT` y `DELETE`, manteniendo `GET` como unica accion disponible en `/super/api/tipos_empresas` y `/super/api/licencias`.
+	- Impacto de matriz: `administrador` pasa a tener `R/U/D` solo sobre sus empresas en el flujo del selector; `POST /super/api/empresas` y el resto de `/super/*` continúan reservados a `super_administrador`.
 
 - Actualizacion 2026-04-17 (selector de empresas: editar sale de la tarjeta y pasa al menu):
 	- `web/seleccionar_empresa.html` agrega la entrada lateral `Editar empresa` y `web/js/seleccionar_empresa.js` usa la empresa activa del contexto para abrir `editar_empresa.html` sin necesitar un boton extra dentro de cada tarjeta.
@@ -1309,9 +1309,9 @@ Alcance: punto 3 del plan maestro (permisos y seguridad)
 	- Impacto de matriz: sin cambios en permisos, roles ni wrappers; `index.html` sigue siendo una pagina publica de solo consulta con los mismos accesos visibles.
 
 - Actualizacion 2026-04-17 (venta publica por empresa: pasarelas propias Wompi/Epayco):
-	- `web/administrar_empresa/configuracion.html` aÒ±ade una seccion de `Pasarelas de pago` y `web/administrar_empresa/venta_publica.html` conserva la ediciÒ³n detallada de la misma configuraciÒ³n empresarial.
-	- `backend/handlers/venta_publica.go` y `backend/handlers/payments_handlers.go` mantienen el alcance por `empresa_id`: la empresa autenticada solo administra sus propias credenciales, mientras el checkout pÒºblico solo recibe flags sanitizados y nunca secretos.
-	- Impacto de matriz: sin nuevos roles; el permiso sigue dentro del mÒ³dulo de administraciÒ³n de empresa, y la tienda pÒºblica conserva acceso abierto solo a catÒ¡logo, creaciÒ³n de pago y consulta de estado.
+	- `web/administrar_empresa/configuracion.html` añade una seccion de `Pasarelas de pago` y `web/administrar_empresa/venta_publica.html` conserva la edición detallada de la misma configuración empresarial.
+	- `backend/handlers/venta_publica.go` y `backend/handlers/payments_handlers.go` mantienen el alcance por `empresa_id`: la empresa autenticada solo administra sus propias credenciales, mientras el checkout público solo recibe flags sanitizados y nunca secretos.
+	- Impacto de matriz: sin nuevos roles; el permiso sigue dentro del módulo de administración de empresa, y la tienda pública conserva acceso abierto solo a catálogo, creación de pago y consulta de estado.
 
 - Actualizacion 2026-04-17 (autenticacion administrativa: super restringido al correo reservado):
 	- `backend/handlers/auth_admin_handlers.go` hace que el registro administrativo publico, el login por correo y el callback Google dejen las cuentas nuevas en rol `administrador` por defecto.
@@ -1329,11 +1329,11 @@ Alcance: punto 3 del plan maestro (permisos y seguridad)
 	- `web/estilos.css` ajusta solo la presentacion del flujo, incluyendo una tarjeta blanca centrada para Epayco y conservando intacto el alcance publico del checkout.
 	- Impacto de matriz: sin cambios en permisos, roles, wrappers ni visibilidad; las mismas rutas publicas de checkout conservan su alcance actual y el panel super mantiene la administracion exclusiva de configuracion/licencias.
 
-- Actualizacion 2026-04-17 (navegacion general: misma pestaÒ±a por defecto):
-	- Se retiran aperturas automÒ¡ticas en nueva ventana para navegaciÒ³n normal entre mÒ³dulos, portales pÒºblicos, ayudas y exportes comunes del sistema.
-	- Los reportes/exportes de `Clientes`, `Asistencia`, `Backups`, `Tarifas por dÒ­a` y `Soporte remoto` descargan el archivo sin sacar al usuario del mÒ³dulo actual.
-	- Se conservan como excepciÒ³n los documentos legales (`contrato`, tÒ©rminos de pasarela) y los popups tÒ©cnicos de impresiÒ³n o vista previa documental.
-	- Impacto de matriz: sin cambios en roles ni permisos; solo cambia el comportamiento de navegaciÒ³n de rutas ya permitidas.
+- Actualizacion 2026-04-17 (navegacion general: misma pestaña por defecto):
+	- Se retiran aperturas automáticas en nueva ventana para navegación normal entre módulos, portales públicos, ayudas y exportes comunes del sistema.
+	- Los reportes/exportes de `Clientes`, `Asistencia`, `Backups`, `Tarifas por día` y `Soporte remoto` descargan el archivo sin sacar al usuario del módulo actual.
+	- Se conservan como excepción los documentos legales (`contrato`, términos de pasarela) y los popups técnicos de impresión o vista previa documental.
+	- Impacto de matriz: sin cambios en roles ni permisos; solo cambia el comportamiento de navegación de rutas ya permitidas.
 
 - Actualizacion 2026-04-17 (checkout publico de licencias: Epayco activa licencia y limpia rechazos finales):
 	- `backend/handlers/payments_handlers.go`, `backend/handlers/payments_handlers_test.go` y `web/pagar_licencia.html` refuerzan el post-pago de Epayco para activar la licencia con fallback por `invoice`, enviar correo al cliente al quedar activa y detener el estado `pending` cuando el retorno ya es final rechazado o fallido.
@@ -1424,7 +1424,7 @@ Alcance: punto 3 del plan maestro (permisos y seguridad)
 - Actualizacion 2026-04-17 (portal publico de usuarios de empresa con contrato y subdominio propio):
 	- `backend/handlers/usuarios_empresa.go` exige aceptacion del contrato vigente antes de login, primer password, reset o cambio de contrasena; la restriccion aplica al mismo usuario autenticandose, no a un rol administrativo nuevo.
 	- `web/login_usuario.html` y `web/js/login_usuario.js` pasan a ser una puerta publica de acceso por invitacion, mientras `web/administrar_empresa.html` y `web/js/administrar_empresa.js` resuelven el enlace correcto por empresa usando `empresa_slug` o `dominio_publico` de la configuracion publica.
-	- Impacto de matriz: sin cambios en CRUD/A ni en wrappers empresariales; el portal publico no amplÒ­a privilegios y la visibilidad final del panel sigue determinada por rol/permisos_contexto ya existentes.
+	- Impacto de matriz: sin cambios en CRUD/A ni en wrappers empresariales; el portal publico no amplía privilegios y la visibilidad final del panel sigue determinada por rol/permisos_contexto ya existentes.
 
 - Actualizacion 2026-04-16 (estaciones: carrito base sincronizado desde backend):
 	- `backend/handlers/empresa_estacion_prefs.go` sincroniza automaticamente los carritos enlazados al guardar `estaciones_config`, y `backend/db/empresa_estacion_prefs.go` asegura la regla `una estacion -> un carrito base` por `empresa_id`.
@@ -1438,16 +1438,16 @@ Alcance: punto 3 del plan maestro (permisos y seguridad)
 - Actualizacion 2026-04-17 (soporte remoto: limites por plan y mesa tecnica super):
 	- `backend/handlers/soporte_remoto.go` mantiene el alcance empresarial en modulo `seguridad`, pero ahora devuelve `uso` y bloquea sesiones/dispositivos cuando la empresa supera los topes configurados.
 	- `backend/handlers/super_soporte_remoto.go` expone `/super/api/soporte_remoto` y `web/super/soporte_remoto.html` agrega una mesa tecnica central solo para `super_administrador`.
-	- Impacto de matriz: `linkSoporteRemoto` sigue requiriendo accion `A` sobre `seguridad` en panel empresa; el nuevo panel super de soporte remoto es exclusivo de `super_administrador` y no amplÒ­a permisos de roles empresariales.
+	- Impacto de matriz: `linkSoporteRemoto` sigue requiriendo accion `A` sobre `seguridad` en panel empresa; el nuevo panel super de soporte remoto es exclusivo de `super_administrador` y no amplía permisos de roles empresariales.
 
-- Actualizacion 2026-04-20 (soporte remoto: portal pÒºblico RustDesk y configuraciÒ³n desde super):
-	- `backend/handlers/soporte_remoto.go` y `backend/handlers/super_soporte_remoto.go` mantienen el mismo wrapper empresarial/super, pero ahora la mesa tÒ©cnica super tambiÒ©n puede editar la configuraciÒ³n pÒºblica por empresa vÒ­a `action=config`.
-	- `web/administrar_empresa/soporte_remoto.html` y `web/super/soporte_remoto.html` muestran descargas de cliente/servidor y portal pÒºblico sin ampliar los permisos del resto de mÒ³dulos.
-	- Impacto de matriz: `linkSoporteRemoto` sigue exigiendo acciÒ³n `A` sobre `seguridad` en empresa; el portal pÒºblico `soporte_remoto_acceso.html` es libre por token de sesiÒ³n y no agrega privilegios permanentes; la ediciÒ³n central sigue reservada a `super_administrador`.
+- Actualizacion 2026-04-20 (soporte remoto: portal público RustDesk y configuración desde super):
+	- `backend/handlers/soporte_remoto.go` y `backend/handlers/super_soporte_remoto.go` mantienen el mismo wrapper empresarial/super, pero ahora la mesa técnica super también puede editar la configuración pública por empresa vía `action=config`.
+	- `web/administrar_empresa/soporte_remoto.html` y `web/super/soporte_remoto.html` muestran descargas de cliente/servidor y portal público sin ampliar los permisos del resto de módulos.
+	- Impacto de matriz: `linkSoporteRemoto` sigue exigiendo acción `A` sobre `seguridad` en empresa; el portal público `soporte_remoto_acceso.html` es libre por token de sesión y no agrega privilegios permanentes; la edición central sigue reservada a `super_administrador`.
 
 - Actualizacion 2026-04-20.2 (soporte remoto: tope diario RustDesk):
-	- La ediciÒ³n del nuevo campo `max_minutos_dia_rustdesk` se concentra en `/super/api/soporte_remotoaction=config` y su vista super asociada.
-	- Impacto de matriz: no se amplÒ­an permisos empresariales; el control del tope diario sigue reservado a `super_administrador` y solo afecta la creaciÒ³n/aprobaciÒ³n de sesiones RustDesk para la empresa configurada.
+	- La edición del nuevo campo `max_minutos_dia_rustdesk` se concentra en `/super/api/soporte_remotoaction=config` y su vista super asociada.
+	- Impacto de matriz: no se amplían permisos empresariales; el control del tope diario sigue reservado a `super_administrador` y solo afecta la creación/aprobación de sesiones RustDesk para la empresa configurada.
 
 - Actualizacion 2026-04-16 (deploy VPS: limpieza de procesos previos del backend):
 	- `scripts/sync_to_vps.ps1` limpia procesos previos asociados a `backend/bin/server_linux_amd64` antes del arranque y genera una unidad `systemd` sin el warning de clave invalida en `Service`.
@@ -1459,7 +1459,7 @@ Alcance: punto 3 del plan maestro (permisos y seguridad)
 
 - Actualizacion 2026-04-16 (portal publico: arcade activo con ocho juegos):
 	- `web/Juegos/menu_juegos.html` publica ocho juegos activos y fija popup uniforme `700x700` sin barras en escritorio, manteniendo apertura directa en movil.
-	- `web/Juegos/arcade_window.css` y los ocho juegos `*_plus.html` mantienen una experiencia publica homogÒ©nea con pausa real, records locales y nombre de jugador compartido.
+	- `web/Juegos/arcade_window.css` y los ocho juegos `*_plus.html` mantienen una experiencia publica homogénea con pausa real, records locales y nombre de jugador compartido.
 	- Impacto de matriz: sin cambios en roles, CRUD/A ni wrappers; `Portal publico - Juegos` sigue siendo de lectura/uso para todos los roles y tambien sin autenticacion.
 
 - Actualizacion 2026-04-17 (portal publico: nuevo Ajedrez 3D plus):
@@ -1469,11 +1469,11 @@ Alcance: punto 3 del plan maestro (permisos y seguridad)
 
 - Actualizacion 2026-04-16 (checkout publico de licencias: metodo unico y compatibilidad Epayco legacy):
 	- `web/pagar_licencia.html` omite el selector de forma de pago cuando solo hay una pasarela disponible y entra directo al panel correspondiente.
-	- `backend/handlers/payments_handlers.go` aÒ±ade `p_key` al checkout de Epayco cuando existe `epayco.private_key`, manteniendo el mismo alcance publico de `/epayco/*` y `/api/public/licencias/payment_methods`.
+	- `backend/handlers/payments_handlers.go` añade `p_key` al checkout de Epayco cuando existe `epayco.private_key`, manteniendo el mismo alcance publico de `/epayco/*` y `/api/public/licencias/payment_methods`.
 	- Impacto de matriz: sin cambios en roles ni permisos; el ajuste es funcional en checkout publico.
 
 - Actualizacion 2026-04-16 (checkout publico de licencias: Epayco sin popup intermedio):
-	- `web/pagar_licencia.html` ya no deja el pago en una pestaÒ±a emergente; ahora redirige la misma pestaÒ±a al checkout de Epayco y reutiliza `/epayco/respuesta.html` para volver con contexto a la pantalla de licencia.
+	- `web/pagar_licencia.html` ya no deja el pago en una pestaña emergente; ahora redirige la misma pestaña al checkout de Epayco y reutiliza `/epayco/respuesta.html` para volver con contexto a la pantalla de licencia.
 	- Impacto de matriz: sin cambios en roles, CRUD/A, wrappers o visibilidad por rol; `/epayco/*` sigue siendo publico y de solo consumo para el flujo comercial.
 
 - Actualizacion 2026-04-16 (home publico: ajuste visual de accesos superiores):
@@ -1500,7 +1500,7 @@ Alcance: punto 3 del plan maestro (permisos y seguridad)
 - Actualizacion 2026-04-16 (infraestructura publica: wildcard HTTPS y subdominio venta digital):
 	- `venta-digital.powerfulcontrolsystem.com` queda publicado como acceso publico HTTPS hacia la pagina global `venta_digital.html`.
 	- La raiz generica de subdominios por empresa sigue en `venta_publica.html`; no cambia la matriz de permisos ni la visibilidad de modulos internos.
-	- Impacto de matriz: sin cambios en roles, CRUD/A ni permisos; la modificacion solo amplÒ­a una entrada publica servida por infraestructura.
+	- Impacto de matriz: sin cambios en roles, CRUD/A ni permisos; la modificacion solo amplía una entrada publica servida por infraestructura.
 
 - Actualizacion 2026-04-16 (autenticacion administrativa: registro con pais y ciudad):
 	- `web/registrar_nuevo_usuario_administrador.html` y `web/js/registrar_nuevo_usuario_administrador.js` amplian el formulario de alta administrativa para capturar `pais` y `ciudad`.
@@ -1523,21 +1523,21 @@ Alcance: punto 3 del plan maestro (permisos y seguridad)
 	- Impacto de matriz: sin cambios en roles, CRUD/A ni wrappers; el ajuste es visual y no altera autorizacion.
 
 - Actualizacion 2026-04-16 (autenticacion estable multi-host sin recordar usuario/cuenta):
-	- `web/login.html` y `web/login_usuario.html` eliminan los checkboxes de `Recordar cuenta` y `Recordar usuario`, reduciendo divergencias por almacenamiento local entre `localhost`, dominio raÒ­z y `www`.
+	- `web/login.html` y `web/login_usuario.html` eliminan los checkboxes de `Recordar cuenta` y `Recordar usuario`, reduciendo divergencias por almacenamiento local entre `localhost`, dominio raíz y `www`.
 	- `backend/handlers/auth_admin_handlers.go` deja de propagar `login_hint` en el inicio OAuth; el login Google arranca limpio y consistente.
-	- `web/menu.js`, `web/js/super_administrador.js`, `web/js/seleccionar_empresa.js`, `web/super/licencias.html` y `web/super/tipos_empresas.html` retiran lÒ³gica `remember*` y conservan solo seÒ±al de sesiÒ³n para navegaciÒ³n/autenticaciÒ³n visible.
-	- Impacto de matriz: sin cambios en roles, CRUD/A ni wrappers; la modificaciÒ³n es operativa/UX y no amplÒ­a privilegios.
+	- `web/menu.js`, `web/js/super_administrador.js`, `web/js/seleccionar_empresa.js`, `web/super/licencias.html` y `web/super/tipos_empresas.html` retiran lógica `remember*` y conservan solo señal de sesión para navegación/autenticación visible.
+	- Impacto de matriz: sin cambios en roles, CRUD/A ni wrappers; la modificación es operativa/UX y no amplía privilegios.
 
 - Actualizacion 2026-04-16 (autenticacion administrativa: registro separado y recuperacion guiada):
-	- `web/login.html` mantiene acceso publico por Google o correo/clave, pero mueve el registro administrativo a `/registrar_nuevo_usuario_administrador.html` y deja la recuperaciÒ³n en formularios propios dentro del login.
-	- `backend/handlers/auth_admin_handlers.go` endurece el alta y la recuperaciÒ³n de administradores, mientras `backend/utils/utils.go` libera `/registrar_nuevo_usuario_administrador.html` y `/auth/confirmar_admin` como rutas pÒºblicas reales.
-	- `backend/handlers/auth_admin_handlers_test.go` y `backend/handlers/auth_users_carritos_test.go` cubren el alta/login/reset administrativo y la nueva superficie pÒºblica del middleware.
-	- Impacto de matriz: sin cambios en roles, CRUD/A, wrappers o visibilidad por rol; el login/registro/confirmaciÒ³n administrativa sigue siendo pÒºblico y la administraciÒ³n global continÒºa bajo `super_administrador`.
+	- `web/login.html` mantiene acceso publico por Google o correo/clave, pero mueve el registro administrativo a `/registrar_nuevo_usuario_administrador.html` y deja la recuperación en formularios propios dentro del login.
+	- `backend/handlers/auth_admin_handlers.go` endurece el alta y la recuperación de administradores, mientras `backend/utils/utils.go` libera `/registrar_nuevo_usuario_administrador.html` y `/auth/confirmar_admin` como rutas públicas reales.
+	- `backend/handlers/auth_admin_handlers_test.go` y `backend/handlers/auth_users_carritos_test.go` cubren el alta/login/reset administrativo y la nueva superficie pública del middleware.
+	- Impacto de matriz: sin cambios en roles, CRUD/A, wrappers o visibilidad por rol; el login/registro/confirmación administrativa sigue siendo público y la administración global continúa bajo `super_administrador`.
 
-- Actualizacion 2026-04-16 (autenticacion administrativa: creaciÒ³n de clave local tras Google):
-	- `backend/handlers/auth_admin_handlers.go` y `backend/handlers/accept_handlers.go` redirigen a `/registrar_contrasena_usuario_de_google.html` cuando la cuenta autenticada por Google todavÒ­a no tiene `password_set`.
-	- `backend/handlers/account_handlers.go` expone `/api/account/set_google_password` como endpoint autenticado de solo autoservicio para el administrador en sesiÒ³n.
-	- `web/registrar_contrasena_usuario_de_google.html` completa el alta de contraseÒ±a local sin ampliar permisos ni abrir una nueva superficie pÒºblica.
+- Actualizacion 2026-04-16 (autenticacion administrativa: creación de clave local tras Google):
+	- `backend/handlers/auth_admin_handlers.go` y `backend/handlers/accept_handlers.go` redirigen a `/registrar_contrasena_usuario_de_google.html` cuando la cuenta autenticada por Google todavía no tiene `password_set`.
+	- `backend/handlers/account_handlers.go` expone `/api/account/set_google_password` como endpoint autenticado de solo autoservicio para el administrador en sesión.
+	- `web/registrar_contrasena_usuario_de_google.html` completa el alta de contraseña local sin ampliar permisos ni abrir una nueva superficie pública.
 	- Impacto de matriz: sin cambios en roles, CRUD/A o wrappers; la capacidad sigue restringida al mismo administrador autenticado sobre su propia cuenta.
 
 - Actualizacion 2026-04-16 (Epayco: respuesta publica fija):
@@ -1604,7 +1604,7 @@ Leyenda:
 ## Estado de implementacion tecnica inicial (2026-04-04)
 
 - Actualizacion 2026-04-16 (super: seguridad VPS Linux):
-	- `web/super/seguridad.html` amplÒ­a el monitor de seguridad del panel super para cubrir configuracion, ejecucion de escaneo, hallazgos, historial, comparacion y exportes del VPS.
+	- `web/super/seguridad.html` amplía el monitor de seguridad del panel super para cubrir configuracion, ejecucion de escaneo, hallazgos, historial, comparacion y exportes del VPS.
 	- `backend/handlers/security_vps_handlers.go` y `backend/vpssecurity/*` mantienen el modulo encapsulado y protegido solo para `super_administrador`.
 	- `backend/tools/vps_security_scan/main.go` junto a los scripts Linux permiten operacion manual y por cron sin ampliar privilegios a otros roles.
 	- Impacto de matriz: nuevo modulo `Seguridad VPS Linux (super)` con `CRUA` exclusivo de `super_administrador`; sin cambios para roles de empresa.
@@ -1614,10 +1614,10 @@ Leyenda:
 	- Impacto de matriz: sin cambios en roles, CRUD/A, wrappers o visibilidad por rol.
 
 - Actualizacion 2026-04-16 (autenticacion administrativa: registro separado y recuperacion guiada):
-	- `web/login.html` centra el acceso por correo, deja debajo `Registrarse` y `Ã‚Â¿OlvidÃƒÂ³ su contraseÃƒÂ±a`, y sustituye los `prompt()` por formularios reales para recuperaciÃƒÂ³n y restablecimiento.
-	- `web/registrar_nuevo_usuario_administrador.html` agrega una superficie pÒºblica especÒ­fica para alta administrativa y `backend/utils/utils.go` la libera junto con `/auth/confirmar_admin`.
-	- `backend/handlers/auth_admin_handlers.go` evita sobrescribir cuentas confirmadas y exige `nombre`, `telefono` y contraseÒ±a mÒ­nima para el registro administrativo.
-	- Impacto de matriz: sin cambios en roles, CRUD/A ni wrappers; el ajuste corrige el flujo pÒºblico de autenticaciÒ³n administrativa sin ampliar permisos.
+	- `web/login.html` centra el acceso por correo, deja debajo `Registrarse` y `¿Olvidó su contraseña`, y sustituye los `prompt()` por formularios reales para recuperación y restablecimiento.
+	- `web/registrar_nuevo_usuario_administrador.html` agrega una superficie pública específica para alta administrativa y `backend/utils/utils.go` la libera junto con `/auth/confirmar_admin`.
+	- `backend/handlers/auth_admin_handlers.go` evita sobrescribir cuentas confirmadas y exige `nombre`, `telefono` y contraseña mínima para el registro administrativo.
+	- Impacto de matriz: sin cambios en roles, CRUD/A ni wrappers; el ajuste corrige el flujo público de autenticación administrativa sin ampliar permisos.
 
 - Actualizacion 2026-04-16 (super: tamano estimado por empresa en administracion PostgreSQL):
 	- `web/super/administrar_base_de_datos.html` suma una lectura puntual del peso estimado por empresa en la base operativa compartida y la presenta ordenada de mayor a menor.
@@ -1636,7 +1636,7 @@ Leyenda:
 	- Impacto de matriz: sin cambios en roles, CRUD/A, wrappers o visibilidad por rol; el ajuste es transversal de frontend.
 
 - Actualizacion 2026-04-16 (portal publico: botones superiores alineados al CTA de ofertas):
-	- `web/estilos.css` hace que `Registrarse o iniciar sesiÒ³n` e `Informacion de contacto` reutilicen el mismo tratamiento visual del boton `Explorar oferta` de las tarjetas del home.
+	- `web/estilos.css` hace que `Registrarse o iniciar sesión` e `Informacion de contacto` reutilicen el mismo tratamiento visual del boton `Explorar oferta` de las tarjetas del home.
 	- Impacto de matriz: sin cambios en roles, CRUD/A, wrappers o visibilidad por rol; el ajuste es visual dentro del portal publico.
 
 - Actualizacion 2026-04-16 (checkout de licencias: Epayco sandbox estable en PostgreSQL):
@@ -1669,7 +1669,7 @@ Leyenda:
 
 - Actualizacion 2026-04-15 (portal publico: segundo juego `Pollitos al cataplum`):
 	- `web/Juegos/menu_juegos.html` agrega una segunda tarjeta jugable y soporta popup por `slug`, ancho y alto por juego.
-	- `web/Juegos/pollitos_cataplum.html` aÒ±ade un juego publico de resortera con control arrastrar/soltar y niveles cortos.
+	- `web/Juegos/pollitos_cataplum.html` añade un juego publico de resortera con control arrastrar/soltar y niveles cortos.
 	- Impacto de matriz: sin cambios en roles, CRUD/A ni wrappers; `Portal publico - Juegos` sigue siendo de lectura/uso para todos los roles y tambien sin autenticacion.
 
 - Actualizacion 2026-04-15 (checkout de licencias: fallback canonico para Epayco/Wompi):
@@ -1716,7 +1716,7 @@ Leyenda:
 	- Impacto de matriz: sin cambios en roles, CRUD/A, wrappers o visibilidad por rol; `Pagina principal (tarjetas index)` se mantiene como CRUA exclusivo de `super_administrador` y el portal sigue siendo publico de solo lectura.
 
 - Actualizacion 2026-04-15 (portal publico: landing descriptiva configurable desde pagina_principal):
-	- `backend/handlers/pagina_principal_handlers.go` amplÒ­a la configuracion de tarjetas del portal para incluir el contenido extendido consumido por `/descripcion_de_los_sistemas.ht`.
+	- `backend/handlers/pagina_principal_handlers.go` amplía la configuracion de tarjetas del portal para incluir el contenido extendido consumido por `/descripcion_de_los_sistemas.ht`.
 	- `web/super/pagina_principal.html` agrega campos de edicion para etiqueta, titular ampliado, parrafos y capacidades clave; `web/descripcion_de_los_sistemas.ht` renderiza ese contenido desde la API publica y deja de depender de textos fijos por nombre de tarjeta.
 	- `backend/handlers/pagina_principal_handlers_test.go` cubre la normalizacion y exposicion de esos campos ampliados.
 	- Impacto de matriz: sin cambios en roles, CRUD/A, wrappers o visibilidad por rol; `Pagina principal (tarjetas index)` mantiene CRUA exclusivo de `super_administrador` y la landing descriptiva sigue siendo publica de solo lectura.
@@ -1727,21 +1727,21 @@ Leyenda:
 	- `backend/handlers/payments_handlers_test.go` cubre la recuperacion por referencia y la URL de retorno enriquecida del checkout.
 	- Impacto de matriz: sin cambios en roles, CRUD/A, wrappers o visibilidad por rol; `Pasarelas de licencias (Wompi/Epayco)` sigue siendo CRUA exclusivo de `super_administrador` y el checkout continua siendo publico de solo consumo.
 
-- Actualizacion 2026-04-15 (fix Epayco: llave pÒºblica correcta y callbacks con dominio pÒºblico):
-	- `backend/handlers/payments_handlers.go` corrige el contrato de Epayco para separar `public_key`, `private_key` y `customer_id`, ademÒ¡s de reutilizar una base pÒºblica vÒ¡lida en los callbacks de Epayco/Wompi para licencias.
-	- `web/super/configuracion_avanzada.html` ajusta Òºnicamente la semÒ¡ntica y persistencia de la configuraciÒ³n global de pasarelas; no crea nuevas acciones empresariales ni altera wrappers de autorizaciÒ³n.
-	- `backend/handlers/payments_handlers_test.go` cubre el escenario de checkout pÒºblico con dominio canÒ³nico y credenciales coherentes.
+- Actualizacion 2026-04-15 (fix Epayco: llave pública correcta y callbacks con dominio público):
+	- `backend/handlers/payments_handlers.go` corrige el contrato de Epayco para separar `public_key`, `private_key` y `customer_id`, además de reutilizar una base pública válida en los callbacks de Epayco/Wompi para licencias.
+	- `web/super/configuracion_avanzada.html` ajusta únicamente la semántica y persistencia de la configuración global de pasarelas; no crea nuevas acciones empresariales ni altera wrappers de autorización.
+	- `backend/handlers/payments_handlers_test.go` cubre el escenario de checkout público con dominio canónico y credenciales coherentes.
 	- Impacto de matriz: sin cambios en roles, CRUD/A ni visibilidad por rol; `Pasarelas de licencias (Wompi/Epayco)` permanece como CRUA exclusivo de `super_administrador`.
 
-- Actualizacion 2026-04-15 (host canÒ³nico para login Google y carga visible en estaciones):
-	- `backend/utils/utils.go` incorpora un middleware de host canÒ³nico que redirige `www.powerfulcontrolsystem.com` al dominio raÒ­z antes de autenticaciÒ³n, evitando mezclar cookies y `redirect_uri` entre dos hosts pÒºblicos.
-	- `backend/main.go` integra ese middleware sin crear rutas nuevas ni ampliar privilegios; el acceso administrativo conserva el mismo modelo de sesiÒ³n y rol existente.
-	- `web/administrar_empresa/estaciones.html` aÒ±ade un estado visual `Cargando estaciones...` y mensaje de error de carga, sin modificar endpoints ni permisos del mÒ³dulo estaciones.
+- Actualizacion 2026-04-15 (host canónico para login Google y carga visible en estaciones):
+	- `backend/utils/utils.go` incorpora un middleware de host canónico que redirige `www.powerfulcontrolsystem.com` al dominio raíz antes de autenticación, evitando mezclar cookies y `redirect_uri` entre dos hosts públicos.
+	- `backend/main.go` integra ese middleware sin crear rutas nuevas ni ampliar privilegios; el acceso administrativo conserva el mismo modelo de sesión y rol existente.
+	- `web/administrar_empresa/estaciones.html` añade un estado visual `Cargando estaciones...` y mensaje de error de carga, sin modificar endpoints ni permisos del módulo estaciones.
 	- Impacto de matriz: sin cambios en roles, CRUD/A, wrappers o visibilidad administrativa por rol; solo se estabiliza el acceso y la UX operativa.
 
 - Actualizacion 2026-04-15 (portal publico: contacto visible y pagina de informacion):
 	- `web/index.html` incorpora un enlace superior a `/Informacion_de_contacto.html` y un CTA flotante `Contactenos` que abre WhatsApp con el numero publico comercial.
-	- El acceso principal del header se renombra a `Registrarse o iniciar sesiÒ³n` y queda agrupado junto al enlace de contacto, sin alterar rutas protegidas ni permisos.
+	- El acceso principal del header se renombra a `Registrarse o iniciar sesión` y queda agrupado junto al enlace de contacto, sin alterar rutas protegidas ni permisos.
 	- `AuthMiddleware` trata `index.html` y `/Informacion_de_contacto.html` como rutas publicas exactas, por lo que el portal comercial no requiere sesion.
 	- `web/Informacion_de_contacto.html` expone descripcion general del sistema y datos de contacto (`powerfulcontrolsystem@hmail.com`, `3043306506`) sin requerir autenticacion.
 	- `web/estilos.css` solo agrega soporte visual para el CTA flotante y la nueva landing de contacto; no se agregan endpoints protegidos ni cambios de wrappers.
@@ -1831,8 +1831,8 @@ Leyenda:
 	- Se preserva aislamiento por `empresa_id` para operacion concurrente de multiples estaciones y carritos por empresa.
 
 - Actualizacion 2026-04-12 (login admin: contrato + reCAPTCHA real):
-	- Se consolida la ruta administrativa `login.html -> /auth/google/* -> /accept.html -> /accept/complete` con persistencia de aceptaciÒ³n por cuenta en `administradores.acepta_contrato`.
-	- No cambia la matriz CRUD por rol/modulo para rutas empresariales; el ajuste aplica al acceso administrativo global y al endurecimiento de autenticaciÒ³n.
+	- Se consolida la ruta administrativa `login.html -> /auth/google/* -> /accept.html -> /accept/complete` con persistencia de aceptación por cuenta en `administradores.acepta_contrato`.
+	- No cambia la matriz CRUD por rol/modulo para rutas empresariales; el ajuste aplica al acceso administrativo global y al endurecimiento de autenticación.
 	- Se mantiene aislamiento por `empresa_id` en acceso posterior, ya dentro de wrappers `/api/empresa/*` existentes.
 
 - Actualizacion 2026-04-18 (gobernanza tecnica de autenticacion y tunel PostgreSQL):
@@ -1974,7 +1974,7 @@ Regla de lectura comun (R):
 | `/api/empresa/chat_tareas/mensajes/adjunto` | `WithEmpresaVentasPermissions` | SA, AE, SS, CJ | SA, AE, SS, CJ | multipart con `empresa_id` obligatorio |
 | `/api/empresa/chat_tareas/tareas` | `WithEmpresaVentasPermissions` | SA, AE, SS, CJ | SA, AE, SS, CJ | colaboracion operativa bajo modulo ventas |
 | `/api/empresa/chat_tareas/citas` | `WithEmpresaVentasPermissions` | SA, AE, SS, CJ | SA, AE, SS, CJ | agenda de citas compartida por empresa con recordatorios y estado operativo |
-| `/api/empresa/publicaciones` | `WithEmpresaVentasPermissions` | SA, AE, SS, CJ | SA, AE, SS, CJ | posts de red social empresarial por `empresa_id`; lectura pÒºblica separada en `/api/public/publicaciones` |
+| `/api/empresa/publicaciones` | `WithEmpresaVentasPermissions` | SA, AE, SS, CJ | SA, AE, SS, CJ | posts de red social empresarial por `empresa_id`; lectura pública separada en `/api/public/publicaciones` |
 | `/api/empresa/venta_publica` | `WithEmpresaVentaPublicaPermissions` | SA, AE, SS, CJ | SA, AE, SS, CJ | configura tienda/pasarelas propias, paginas publicas (`action=paginas`), productos publicados y ordenes por empresa |
 | `/api/empresa/bodegas` | `WithEmpresaInventarioPermissions` | SA, AE, SS, IN | SA, AE, SS, IN | CRUD inventario |
 | `/api/empresa/categorias_productos` | `WithEmpresaInventarioPermissions` | SA, AE, SS, IN | SA, AE, SS, IN | CRUD inventario |

@@ -1874,7 +1874,7 @@ func facturacionPanamaBool(extra map[string]interface{}, key string) bool {
 		return v != 0
 	case string:
 		switch strings.ToLower(strings.TrimSpace(v)) {
-		case "1", "true", "si", "sÃ­", "yes", "activo", "ok", "validado":
+		case "1", "true", "si", "sí", "yes", "activo", "ok", "validado":
 			return true
 		}
 	}

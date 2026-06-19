@@ -15,9 +15,21 @@
         Vamos a convertir la preconfiguración inicial en una puesta en marcha real: estaciones, documento de venta, impresión y reglas básicas.
       </p>
       <div style="display:flex;gap:12px;flex-wrap:wrap;">
-        <button id="guidedStartBtn" type="button" class="btn btn-primary">Iniciar con el robot</button>
+        <button id="guidedFormBtn" type="button" class="btn btn-primary">Abrir formulario guiado</button>
+        <button id="guidedStartBtn" type="button" class="btn">Abrir chat IA</button>
         <button id="guidedReloadBtn" type="button" class="btn">Actualizar resumen</button>
       </div>
+    </section>
+
+    <section id="guidedFormCard" class="erp-card" style="display:none;margin-top:16px;">
+      <div class="erp-kicker">Formulario guiado</div>
+      <form id="guidedSetupForm">
+        <div id="guidedQuestionsGrid" class="erp-metric-grid" style="grid-template-columns:repeat(auto-fit,minmax(240px,1fr));"></div>
+        <div style="display:flex;gap:10px;align-items:center;justify-content:flex-end;flex-wrap:wrap;margin-top:16px;">
+          <span id="guidedFormStatus" class="muted" style="margin-right:auto;"></span>
+          <button type="submit" class="btn btn-primary">Guardar configuracion guiada</button>
+        </div>
+      </form>
     </section>
 
     <section class="erp-card" style="margin-top:16px;">
@@ -130,6 +142,76 @@
         }).join('');
       }
 
+      function renderQuestionInput(question) {
+        var type = String(question && question.type || 'text').toLowerCase();
+        var value = question && question.default_value != null ? String(question.default_value) : '';
+        if (type === 'boolean') {
+          return '<select class="form-input" data-guided-answer="' + escapeHtml(question.id) + '">' +
+            '<option value="si"' + (value === 'si' || value === 'true' ? ' selected' : '') + '>Si</option>' +
+            '<option value="no"' + (value === 'no' || value === 'false' ? ' selected' : '') + '>No</option>' +
+          '</select>';
+        }
+        if (type === 'select' && Array.isArray(question.options)) {
+          return '<select class="form-input" data-guided-answer="' + escapeHtml(question.id) + '">' +
+            question.options.map(function (option) {
+              option = String(option || '');
+              return '<option value="' + escapeHtml(option) + '"' + (option === value ? ' selected' : '') + '>' + escapeHtml(option) + '</option>';
+            }).join('') +
+          '</select>';
+        }
+        if (type === 'textarea') {
+          return '<textarea class="form-input" rows="3" data-guided-answer="' + escapeHtml(question.id) + '" placeholder="' + escapeHtml(question.placeholder || '') + '">' + escapeHtml(value) + '</textarea>';
+        }
+        return '<input class="form-input" data-guided-answer="' + escapeHtml(question.id) + '" type="' + (type === 'number' ? 'number' : 'text') + '" value="' + escapeHtml(value) + '" placeholder="' + escapeHtml(question.placeholder || '') + '">';
+      }
+
+      function renderGuidedForm(data) {
+        var wizard = data && data.wizard ? data.wizard : {};
+        var questions = Array.isArray(wizard.questions) ? wizard.questions : [];
+        var grid = document.getElementById('guidedQuestionsGrid');
+        if (!grid) return;
+        grid.innerHTML = questions.map(function (question) {
+          return '<label class="erp-metric-card" style="display:grid;gap:8px;text-align:left;">' +
+            '<span class="erp-metric-label">' + escapeHtml(question.label || question.id || 'Pregunta') + (question.required ? ' *' : '') + '</span>' +
+            '<span class="muted" style="font-size:.82rem;">' + escapeHtml(question.prompt || '') + '</span>' +
+            renderQuestionInput(question || {}) +
+            (question.help ? '<span class="muted" style="font-size:.78rem;">' + escapeHtml(question.help) + '</span>' : '') +
+          '</label>';
+        }).join('');
+      }
+
+      function saveGuidedForm() {
+        var empresaId = getEmpresaId();
+        var status = document.getElementById('guidedFormStatus');
+        if (!empresaId) {
+          if (status) status.textContent = 'No se encontro la empresa activa.';
+          return Promise.resolve();
+        }
+        var answers = {};
+        Array.prototype.forEach.call(document.querySelectorAll('#guidedQuestionsGrid [data-guided-answer]'), function (input) {
+          answers[input.getAttribute('data-guided-answer')] = input.value;
+        });
+        if (status) status.textContent = 'Guardando configuracion...';
+        return fetch('/api/empresa/configuracion_guiada?empresa_id=' + encodeURIComponent(empresaId) + '&action=aplicar', {
+          method: 'POST',
+          credentials: 'same-origin',
+          headers: { 'Content-Type': 'application/json', 'X-PCS-Source': 'empresa_configuracion_guiada_form' },
+          body: JSON.stringify({ answers: answers })
+        }).then(function (resp) {
+          if (!resp.ok) {
+            return resp.text().then(function (text) {
+              throw new Error(text || 'No se pudo guardar la configuracion guiada.');
+            });
+          }
+          return resp.json();
+        }).then(function (data) {
+          if (status) status.textContent = (data.resultado && data.resultado.mensaje) || 'Configuracion guiada guardada.';
+          return load();
+        }).catch(function (err) {
+          if (status) status.textContent = err.message || 'No se pudo guardar la configuracion guiada.';
+        });
+      }
+
       function notifyParentStart(data) {
         try {
           if (window.parent && window.parent !== window) {
@@ -146,6 +228,7 @@
           window.__pcsGuidedSetupState = data;
           renderStatus(data);
           renderLastSummary(data);
+          renderGuidedForm(data);
           return data;
         });
       }
@@ -167,6 +250,24 @@
         }).catch(function (err) {
           alert(err.message || 'No se pudo iniciar la configuración guiada.');
         });
+      });
+
+      document.getElementById('guidedFormBtn').addEventListener('click', function () {
+        var card = document.getElementById('guidedFormCard');
+        if (card) card.style.display = 'block';
+        var current = window.__pcsGuidedSetupState;
+        if (current) {
+          renderGuidedForm(current);
+        } else {
+          load().catch(function (err) {
+            alert(err.message || 'No se pudo abrir el formulario guiado.');
+          });
+        }
+      });
+
+      document.getElementById('guidedSetupForm').addEventListener('submit', function (event) {
+        event.preventDefault();
+        saveGuidedForm();
       });
 
       load().catch(function (err) {

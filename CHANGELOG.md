@@ -1,3 +1,6 @@
+- 2026-06-19: `Prevención de errores de codificación` documenta la regla permanente de mantener UI, ayudas, correos, mensajes backend y documentación operativa en UTF-8 real, sin signos de reemplazo ni mojibake. `documentos/comandos_codex.md` agrega el barrido `rg` recomendado antes de cerrar cambios textuales o ejecutar `rs`.
+- 2026-06-19: `Corrección de codificación y tildes` normaliza textos dañados por mojibake en pantallas y documentación clave. Se corrigen cadenas visibles como `Canales digitales y colaboración`, `Facturación electrónica`, `Venta pública`, `Catálogo público`, `Configuración`, textos de licencias, pagos y configuración guiada; también se corrigen mensajes Go de pagos/licencias y referencias documentales afectadas. QA: barrido `rg` sobre archivos web/backend/scripts/documentos principales sin remanentes visibles de codificación rota en pantallas activas intervenidas, chequeos sintácticos JS/Go y `git diff --check`.
+- 2026-06-19: `Configuracion guiada no invasiva` corrige el panel empresarial para que el asistente inicial no vuelva a abrirse si la empresa ya quedo `pospuesta` o con `no_mostrar_mas`. El modal agrega check `No mostrar mas` y la pagina `Configuracion guiada` permite abrir el formulario directo o iniciar el chat IA/agente de configuracion manualmente desde Configuracion.
 - 2026-06-19: `Menu empresarial con estado Beta` agrega una etiqueta `Beta` a los botones del menu principal de `administrar_empresa.html`, excepto Productos, Venta directa/Buscar ventas, Nomina, Reportes, Facturacion electronica y Configuracion. El cambio es visual y no modifica permisos, rutas ni licencias.
 - 2026-06-19: `Empresas y licencias en super administrador` agrega al Centro de mando el conteo de empresas con licencia activa y sin licencia activa, con boton `Ver` hacia la lista filtrada. Nueva pagina `web/super/empresas.html` muestra empresas en modo solo lectura con filtros por nombre/NIT, licencia activa, sin activa, licencia de 15 dias y vencida. Backend: `/super/api/empresas_estado` entrega resumen consolidado con auditoria super.
 - 2026-06-19: `Pagos de licencias y promo produccion` revisa el flujo de licencias con Epayco y Wompi: Epayco queda disponible en checkout publico y Wompi queda bloqueado de forma segura porque `wompi.integrity_key` no descifra con la `CONFIG_ENC_KEY` vigente; requiere reingresar la llave desde Super administrador para quedar operativo. Las tarjetas de licencias muestran precio anterior tachado para COP 60.000 (antes 70.000), COP 110.000 (antes 120.000) y COP 200.000 (antes 220.000). QA: pruebas enfocadas Go de pagos/licencias, chequeo sintactico JS, `rs` y validacion publica de checkout Epayco.
@@ -605,7 +608,7 @@
 
 - Super ? **Página principal** (`/super/pagina_principal.html`): sincronización de tema en iframe (cookie/localStorage), fondo del `body` con variables del tema, título de cabecera legible en modo claro y contenedor del editor con superficie neutra (`pp-main-card`) para evitar gradientes rosados en algunos temas oscuros; contraste consistente en todas las apariencias.
 
-- **Permisos por rol** (`/super/permisos_rol.html`): consola empresarial para activar/desactivar acciones por módulo (R/C/U/D/A) y visibilidad por función del menú; API `GET /super/api/roles_de_usuario/permisos` con `modulos_etiqueta`, `acciones_etiqueta` y en cada `pagina` `titulo` y `grupo` (cat?logo en `empresa_permisos.go`). **Licencias** (`/super/licencias.html`): secci?n de cobertura por módulos con descripciones y enlace a la matriz de roles. Modelo: licencia = techo de módulos; rol = matriz y overrides de menú; sin un sistema ?universal? duplicado.
+- **Permisos por rol** (`/super/permisos_rol.html`): consola empresarial para activar/desactivar acciones por módulo (R/C/U/D/A) y visibilidad por función del menú; API `GET /super/api/roles_de_usuario/permisos` con `modulos_etiqueta`, `acciones_etiqueta` y en cada `pagina` `titulo` y `grupo` (catálogo en `empresa_permisos.go`). **Licencias** (`/super/licencias.html`): sección de cobertura por módulos con descripciones y enlace a la matriz de roles. Modelo: licencia = techo de módulos; rol = matriz y overrides de menú; sin un sistema ?universal? duplicado.
 
 - Chat IA (empresa y super): interfaz tipo **Gemini** con barra lateral (chats guardados en el navegador + historial del servidor), barra superior con **modelo en uso** y resumen de cupo diario, **compartir** respuestas del asistente (compartir nativo o copiar), y **mensaje explicativo** cuando se alcanza el límite diario o el chat está bloqueado. Se retiran el encabezado largo y la tarjeta de chips en el chat empresarial; mejor contraste en modo claro. Archivos: `web/administrar_empresa/chat_con_inteligencia_artificial.html`, `web/super/chat_con_ia_global.html`, `web/estilos.css`, documentación relacionada.
 - Chat IA: **acciones operativas confirmables** desde el chat (chat transaccional). El asistente propone un bloque `PCS_ACTION` (JSON) solo cuando tiene datos completos; el usuario confirma en la UI y el sistema ejecuta el endpoint real (productos, precios, finanzas, tarifas, servicios) manteniendo permisos y **auditoría**. La auditoría crítica registra `source=chat_ia` y `chat_conversation_id` en metadata. Archivos: `backend/handlers/chat_con_inteligencia_artificial_controller.go`, `backend/handlers/chat_con_ia_global_super.go`, `backend/handlers/auditoria_empresa.go`, `web/administrar_empresa/chat_con_inteligencia_artificial.html`, `web/super/chat_con_ia_global.html`, `web/estilos.css`.
@@ -632,22 +635,22 @@
 - Soporte remoto: portal publico RustDesk con cliente/servidor y configuracion central desde super.
 	- Tipo: mejora mayor.
 	- Archivos modificados: `backend/db/soporte_remoto.go`, `backend/handlers/soporte_remoto.go`, `backend/handlers/super_soporte_remoto.go`, `backend/handlers/soporte_remoto_test.go`, `backend/handlers/super_soporte_remoto_test.go`, `backend/handlers/auth_users_carritos_test.go`, `backend/utils/utils.go`, `web/administrar_empresa/soporte_remoto.html`, `web/super/soporte_remoto.html`, `web/soporte_remoto_acceso.html`, `documentos/descripcion_de_modulos`, `documentos/matriz_roles_permisos_pos_multiempresa.md`, `documentos/estructura_bd.md`, `documentos/diagramas/estructura_del_codigo.md`, `documentos/descripcion_de_archivos`, `documentos/historial_de_cambios`, `CHANGELOG.md`.
-	- DescripciÒ³n: el mÒ³dulo de soporte remoto ahora puede entregar una pÒ¡gina pÒºblica por sesiÒ³n que funciona como portal de asistencia estilo RustDesk. Esa pÒ¡gina expone descargas del cliente y del servidor, host, clave pÒºblica, ID/contraseÒ±a del dispositivo y visor web opcional. El panel de empresa y la mesa tÒ©cnica super comparten la misma configuraciÒ³n pÒºblica por `empresa_id`, y super puede editarla directamente sin salir de `/super/api/soporte_remoto`.
+	- Descripción: el módulo de soporte remoto ahora puede entregar una página pública por sesión que funciona como portal de asistencia estilo RustDesk. Esa página expone descargas del cliente y del servidor, host, clave pública, ID/contraseña del dispositivo y visor web opcional. El panel de empresa y la mesa técnica super comparten la misma configuración pública por `empresa_id`, y super puede editarla directamente sin salir de `/super/api/soporte_remoto`.
 
-- Soporte remoto: lÒ­mite diario RustDesk por empresa desde super.
+- Soporte remoto: límite diario RustDesk por empresa desde super.
 	- Tipo: mejora funcional.
 	- Archivos modificados: `backend/db/soporte_remoto.go`, `backend/handlers/soporte_remoto.go`, `backend/handlers/super_soporte_remoto.go`, `backend/db/soporte_remoto_test.go`, `backend/handlers/soporte_remoto_test.go`, `backend/handlers/super_soporte_remoto_test.go`, `web/super/soporte_remoto.html`, `documentos/descripcion_de_modulos`, `documentos/matriz_roles_permisos_pos_multiempresa.md`, `documentos/estructura_bd.md`, `documentos/diagramas/estructura_del_codigo.md`, `documentos/descripcion_de_archivos`, `documentos/historial_de_cambios`, `CHANGELOG.md`.
-	- DescripciÒ³n: super ahora puede definir por empresa un tope diario en minutos para conexiones RustDesk. El backend calcula consumo diario real, bloquea nuevas sesiones o aprobaciones que excedan el cupo del dÒ­a y devuelve el resumen de uso para que la mesa tÒ©cnica vea el motivo exacto del bloqueo.
+	- Descripción: super ahora puede definir por empresa un tope diario en minutos para conexiones RustDesk. El backend calcula consumo diario real, bloquea nuevas sesiones o aprobaciones que excedan el cupo del día y devuelve el resumen de uso para que la mesa técnica vea el motivo exacto del bloqueo.
 
-- Apariencia: primera visita del menÒº flotante ahora inicia en Blanco Corporativo.
+- Apariencia: primera visita del menú flotante ahora inicia en Blanco Corporativo.
 	- Tipo: ajuste UX.
 	- Archivos modificados: `web/menu.js`, `documentos/historial_de_cambios`, `CHANGELOG.md`.
-	- DescripciÒ³n: cuando un usuario abre por primera vez una pÒ¡gina con menÒº flotante y todavÒ­a no tiene preferencia guardada en `localStorage`, cookie o backend, el sistema ahora arranca con la apariencia `light` (Blanco Corporativo) en lugar del tema oscuro. Las preferencias ya guardadas siguen respetÒ¡ndose sin cambios.
+	- Descripción: cuando un usuario abre por primera vez una página con menú flotante y todavía no tiene preferencia guardada en `localStorage`, cookie o backend, el sistema ahora arranca con la apariencia `light` (Blanco Corporativo) en lugar del tema oscuro. Las preferencias ya guardadas siguen respetándose sin cambios.
 
 - Apariencia: contraste corregido para modo claro en portada y estilos compartidos.
 	- Tipo: ajuste UX.
 	- Archivos modificados: `web/index.html`, `web/estilos.css`, `documentos/historial_de_cambios`, `CHANGELOG.md`.
-	- DescripciÒ³n: se quitÒ³ el blanco forzado del tÒ­tulo superior del index y se migraron varios bloques compartidos a variables de tema para que botones, tablas, login y secciones pÒºblicas cambien su color correctamente al alternar entre modo oscuro y claro.
+	- Descripción: se quitó el blanco forzado del título superior del index y se migraron varios bloques compartidos a variables de tema para que botones, tablas, login y secciones públicas cambien su color correctamente al alternar entre modo oscuro y claro.
 # CHANGELOG
 
 ## 2026-05-06
@@ -809,97 +812,97 @@
 ## 2026-04-20
 - Apariencia frontend: limpieza estructural final en ayuda y vendedores.
 	- Archivos modificados: `web/estilos.css`, `web/super/vendedores_licencias.html`, `web/ayuda/ayuda.html`, `documentos/historial_de_cambios`, `CHANGELOG.md`.
-	- DescripciÒ³n: `vendedores_licencias.html` elimina los `style=` residuales de layout y estados, mientras `ayuda.html` se normaliza por secciones completas de encabezados y pÒ¡rrafos auxiliares. El resultado es una herencia de tema mÒ¡s consistente y menos deuda visual repetida en pÒ¡ginas largas del panel super y de ayuda.
-	- VerificaciÒ³n: diagnÒ³stico del editor sin errores en los tres archivos tocados y bÒºsqueda sin remanentes de `style="` en `web/super/vendedores_licencias.html` ni en `web/ayuda/ayuda.html`.
+	- Descripción: `vendedores_licencias.html` elimina los `style=` residuales de layout y estados, mientras `ayuda.html` se normaliza por secciones completas de encabezados y párrafos auxiliares. El resultado es una herencia de tema más consistente y menos deuda visual repetida en páginas largas del panel super y de ayuda.
+	- Verificación: diagnóstico del editor sin errores en los tres archivos tocados y búsqueda sin remanentes de `style="` en `web/super/vendedores_licencias.html` ni en `web/ayuda/ayuda.html`.
 
-- Soporte remoto y RustDesk: simplificaciÒ³n operativa del mÒ³dulo y control real del servicio desde super.
+- Soporte remoto y RustDesk: simplificación operativa del módulo y control real del servicio desde super.
 	- Archivos modificados: `backend/db/soporte_remoto.go`, `backend/handlers/soporte_remoto.go`, `backend/handlers/super_soporte_remoto.go`, `backend/handlers/super_servidores_handlers.go`, `backend/main.go`, `backend/handlers/soporte_remoto_test.go`, `backend/handlers/super_soporte_remoto_test.go`, `web/super/servidores.html`, `web/administrar_empresa/soporte_remoto.html`, `web/super/soporte_remoto.html`, `web/soporte_remoto_acceso.html`, `documentos/descripcion_de_archivos`, `documentos/descripcion_de_modulos`, `documentos/matriz_roles_permisos_pos_multiempresa.md`, `documentos/historial_de_cambios`, `CHANGELOG.md`.
-	- DescripciÒ³n: el frente de soporte remoto se simplifica para dejar solo la configuraciÒ³n esencial de RustDesk por empresa y el panel super pasa a tener control operativo del servicio del VPS con prueba real. Se agregan URLs macOS, se consolidan descargas oficiales para cliente y servidor y se elimina de las pantallas la lÒ³gica extensa de visor/sesiones como superficie principal. La UI super se unifica ademÒ¡s en una sola vista `RustDesk`, donde conviven estado del servidor, acciones del VPS y configuraciÒ³n mÒ­nima por empresa.
-	- VerificaciÒ³n: `get_errors` sin errores en las cuatro vistas HTML nuevas y `go test ./handlers -run 'Test(SuperSoporteRemotoHandlerConfigGetAndUpdate|PublicSoporteRemotoResolverAccesoExponeDescargasRustDesk|SuperServidoresProbeHandlerReturnsRustDeskStatus|SuperSoporteRemotoHandlerListsCompaniesAndCreatesSession)$' -count=1`.
+	- Descripción: el frente de soporte remoto se simplifica para dejar solo la configuración esencial de RustDesk por empresa y el panel super pasa a tener control operativo del servicio del VPS con prueba real. Se agregan URLs macOS, se consolidan descargas oficiales para cliente y servidor y se elimina de las pantallas la lógica extensa de visor/sesiones como superficie principal. La UI super se unifica además en una sola vista `RustDesk`, donde conviven estado del servidor, acciones del VPS y configuración mínima por empresa.
+	- Verificación: `get_errors` sin errores en las cuatro vistas HTML nuevas y `go test ./handlers -run 'Test(SuperSoporteRemotoHandlerConfigGetAndUpdate|PublicSoporteRemotoResolverAccesoExponeDescargasRustDesk|SuperServidoresProbeHandlerReturnsRustDeskStatus|SuperSoporteRemotoHandlerListsCompaniesAndCreatesSession)$' -count=1`.
 
 ## 2026-04-20
 - Portal publico: el header del home ahora comparte estilo con la landing y expone `Crear cuenta`.
 	- Archivos modificados: `web/index.html`, `web/estilos.css`, `documentos/descripcion_de_modulos`, `documentos/matriz_roles_permisos_pos_multiempresa.md`, `documentos/historial_de_cambios`, `CHANGELOG.md`.
-	- DescripciÒ³n: `index.html` reemplaza el botÒ³n superior propio por el mismo estilo `btn dark` usado en `descripcion_de_los_sistemas.ht`, agrega un CTA `Crear cuenta` hacia `/registrar_nuevo_usuario_administrador.html` junto a `Iniciar sesiÒ³n` y ajusta el responsive del header para que ambos botones se mantengan compactos y legibles en mÒ³vil.
-	- VerificaciÒ³n: diagnÒ³stico del editor sin errores en `web/index.html` y `web/estilos.css`.
+	- Descripción: `index.html` reemplaza el botón superior propio por el mismo estilo `btn dark` usado en `descripcion_de_los_sistemas.ht`, agrega un CTA `Crear cuenta` hacia `/registrar_nuevo_usuario_administrador.html` junto a `Iniciar sesión` y ajusta el responsive del header para que ambos botones se mantengan compactos y legibles en móvil.
+	- Verificación: diagnóstico del editor sin errores en `web/index.html` y `web/estilos.css`.
 
-- Apariencia frontend: segunda pasada de limpieza de estilos inline en mÒ³dulos operativos.
+- Apariencia frontend: segunda pasada de limpieza de estilos inline en módulos operativos.
 	- Archivos modificados: `web/estilos.css`, `web/login.html`, `web/login_usuario.html`, `web/accept.html`, `web/configuracion_de_la_cuenta.html`, `web/administrar_empresa/administrar_productos.html`, `web/administrar_empresa/carrito_de_compras.html`, `web/administrar_empresa/administrar_clientes.html`, `web/administrar_empresa/administrar_usuarios.html`, `web/administrar_empresa/compras.html`, `web/administrar_empresa/facturas_electronicas.html`, `web/administrar_empresa/chat_con_inteligencia_artificial.html`, `web/red_social_comercial.html`, `web/administrar_empresa/graficos_estadisticas.html`, `web/administrar_empresa/estaciones.html`, `web/js/super_reportes_globales.js`, `web/super/chat_con_ia_global.html`, `web/super/configuracion_avanzada.html`, `web/super/reportes_globales.html`, `web/super/vendedores_licencias.html`, `web/ayuda/login_administradores.html`, `web/administrar_empresa/soporte_remoto_view.html`, `web/administrar_empresa/historial_productos.html`, `documentos/historial_de_cambios`, `CHANGELOG.md`.
-	- DescripciÒ³n: se reemplazan estilos inline de color, gradiente, ocultaciÒ³n, espaciado y alineaciÒ³n por utilidades CSS y clases semÒ¡nticas para reducir deuda visual y mejorar consistencia entre los seis temas del sistema. Parte del HTML generado desde JavaScript ahora usa clases y `data-*`, y los mensajes de error/Ò©xito en runtime dejan de depender de hex fijos.
-	- VerificaciÒ³n: diagnÒ³stico del editor sin errores en los archivos principales tocados, bÒºsqueda sin remanentes de `style="...color/background..."` en el frente intervenido, sin asignaciones `style.color = "#..."` en los JS afectados y corrida dirigida `go test ./handlers -run 'Test(SuperSoporteRemotoHandlerConfigGetAndUpdate|PublicSoporteRemotoResolverAccesoExponeDescargasRustDesk|SuperServidoresProbeHandlerReturnsRustDeskStatus)$' -count=1` satisfactoria.
+	- Descripción: se reemplazan estilos inline de color, gradiente, ocultación, espaciado y alineación por utilidades CSS y clases semánticas para reducir deuda visual y mejorar consistencia entre los seis temas del sistema. Parte del HTML generado desde JavaScript ahora usa clases y `data-*`, y los mensajes de error/éxito en runtime dejan de depender de hex fijos.
+	- Verificación: diagnóstico del editor sin errores en los archivos principales tocados, búsqueda sin remanentes de `style="...color/background..."` en el frente intervenido, sin asignaciones `style.color = "#..."` en los JS afectados y corrida dirigida `go test ./handlers -run 'Test(SuperSoporteRemotoHandlerConfigGetAndUpdate|PublicSoporteRemotoResolverAccesoExponeDescargasRustDesk|SuperServidoresProbeHandlerReturnsRustDeskStatus)$' -count=1` satisfactoria.
 
 - Permisos super: pruebas dirigidas migradas a PostgreSQL y middleware robustecido.
 	- Archivos modificados: `backend/handlers/postgres_test_helpers_test.go`, `backend/handlers/system_empresas_handlers_test.go`, `backend/handlers/auth_users_carritos_test.go`, `backend/handlers/auth_admin_handlers_test.go`, `backend/utils/utils.go`, `documentos/historial_de_cambios`, `CHANGELOG.md`.
-	- DescripciÒ³n: el bloque de pruebas de permisos del panel super ya no depende de motor legado retirado y ahora usa esquemas efÒ­meros en PostgreSQL, alineados con el tÒºnel local documentado del proyecto. En la misma iteraciÒ³n, `AuthMiddleware` deja de fallar cuando no hay conexiÒ³n `dbSuper` en flujos pÒºblicos, evitando un `panic` en la validaciÒ³n de rutas pÒºblicas de licencias.
-	- VerificaciÒ³n: `go test ./handlers -run 'TestSuperEndpointsPermisosPorRol|TestAdministradorPuedeEditarYEliminarEmpresaDesdeRutaSuperProtegida|TestNuevoAdminRegistradoPuedeCrearSuPrimeraEmpresaViaRutaSuperProtegida' -count=1` y `go test ./utils -run '^TestAuthMiddlewareAllowsPublicLicenciaPaymentRoutesWithoutSession$' -count=1`.
+	- Descripción: el bloque de pruebas de permisos del panel super ya no depende de motor legado retirado y ahora usa esquemas efímeros en PostgreSQL, alineados con el túnel local documentado del proyecto. En la misma iteración, `AuthMiddleware` deja de fallar cuando no hay conexión `dbSuper` en flujos públicos, evitando un `panic` en la validación de rutas públicas de licencias.
+	- Verificación: `go test ./handlers -run 'TestSuperEndpointsPermisosPorRol|TestAdministradorPuedeEditarYEliminarEmpresaDesdeRutaSuperProtegida|TestNuevoAdminRegistradoPuedeCrearSuPrimeraEmpresaViaRutaSuperProtegida' -count=1` y `go test ./utils -run '^TestAuthMiddlewareAllowsPublicLicenciaPaymentRoutesWithoutSession$' -count=1`.
 
 - Apariencia global: contraste y componentes alineados en los seis temas.
 	- Archivos modificados: `web/estilos.css`, `web/administrar_empresa/soporte_remoto.html`, `web/super/soporte_remoto.html`, `web/administrar_empresa/publicar_red_social.html`, `web/red_social_comercial.html`, `web/pantalla_publica.html`, `documentos/descripcion_de_modulos`, `documentos/matriz_roles_permisos_pos_multiempresa.md`, `documentos/historial_de_cambios`, `CHANGELOG.md`.
-	- DescripciÒ³n: el sistema deja de depender de varios colores fijos que rompÒ­an el contraste en modo claro y pasa a usar variables de tema para paneles, tarjetas, mÒ³dulos embebidos, estaciones especiales y estados informativos. Con esto, los seis modos de apariencia mantienen mejor legibilidad y coherencia visual.
-	- VerificaciÒ³n: diagnÒ³stico del editor sin errores en los archivos frontend tocados.
+	- Descripción: el sistema deja de depender de varios colores fijos que rompían el contraste en modo claro y pasa a usar variables de tema para paneles, tarjetas, módulos embebidos, estaciones especiales y estados informativos. Con esto, los seis modos de apariencia mantienen mejor legibilidad y coherencia visual.
+	- Verificación: diagnóstico del editor sin errores en los archivos frontend tocados.
 
-- Login administrativo: recuperaciÒ³n por enlace directo sin token manual.
+- Login administrativo: recuperación por enlace directo sin token manual.
 	- Archivos modificados: `backend/handlers/auth_admin_handlers.go`, `backend/handlers/super_email_templates.go`, `backend/handlers/auth_admin_handlers_test.go`, `web/login.html`, `web/js/login.js`, `documentos/descripcion_del_proyecto`, `documentos/diagramas/estructura_del_codigo.md`, `documentos/descripcion_de_modulos`, `documentos/matriz_roles_permisos_pos_multiempresa.md`, `documentos/historial_de_cambios`, `CHANGELOG.md`.
-	- DescripciÒ³n: el correo de recuperaciÒ³n administrativa ahora dirige al usuario a un enlace directo de restablecimiento y la pantalla de `login.html` ya no solicita ingresar token manual. El token sigue validÒ¡ndose en backend, pero queda encapsulado en el enlace recibido por correo.
-	- VerificaciÒ³n: prueba dirigida del handler administrativo de recuperaciÒ³n/restablecimiento y diagnÒ³stico del editor sin errores en archivos tocados.
+	- Descripción: el correo de recuperación administrativa ahora dirige al usuario a un enlace directo de restablecimiento y la pantalla de `login.html` ya no solicita ingresar token manual. El token sigue validándose en backend, pero queda encapsulado en el enlace recibido por correo.
+	- Verificación: prueba dirigida del handler administrativo de recuperación/restablecimiento y diagnóstico del editor sin errores en archivos tocados.
 
-- Correo de recuperaciÒ³n: el enlace largo se reemplaza por un botÒ³n `Cambiar contraseÒ±a`.
+- Correo de recuperación: el enlace largo se reemplaza por un botón `Cambiar contraseña`.
 	- Archivos modificados: `backend/handlers/auth_admin_handlers.go`, `backend/handlers/super_email_templates.go`, `backend/handlers/auth_admin_handlers_test.go`, `documentos/historial_de_cambios`, `CHANGELOG.md`.
-	- DescripciÒ³n: la versiÒ³n HTML de los correos de recuperaciÒ³n ahora prioriza un botÒ³n `Cambiar contraseÒ±a` y deja la URL extensa solo como respaldo visible. El envÒ­o administrativo tambiÒ©n se genera como `multipart/alternative` para servir texto plano y HTML en el mismo mensaje.
-	- VerificaciÒ³n: `go test ./handlers -run '^TestAdminPasswordRecoveryTemplateRendersButton$' -count=1` y diagnÒ³stico del editor sin errores en `backend/handlers/auth_admin_handlers.go` y `backend/handlers/super_email_templates.go`.
+	- Descripción: la versión HTML de los correos de recuperación ahora prioriza un botón `Cambiar contraseña` y deja la URL extensa solo como respaldo visible. El envío administrativo también se genera como `multipart/alternative` para servir texto plano y HTML en el mismo mensaje.
+	- Verificación: `go test ./handlers -run '^TestAdminPasswordRecoveryTemplateRendersButton$' -count=1` y diagnóstico del editor sin errores en `backend/handlers/auth_admin_handlers.go` y `backend/handlers/super_email_templates.go`.
 
 - Backups empresariales: se implementa la Fase 2 de exportar/importar configuracion por empresa.
 	- Archivos modificados: `backend/db/backups_empresariales.go`, `backend/handlers/backups_empresariales.go`, `backend/handlers/backups_empresariales_test.go`, `web/administrar_empresa/backups.html`, `backend/.env.example`, `backend/main.go`, `documentos/descripcion_de_modulos`, `documentos/matriz_roles_permisos_pos_multiempresa.md`, `documentos/diagramas/estructura_del_codigo.md`, `documentos/descripcion_de_archivos`, `documentos/historial_de_cambios`, `CHANGELOG.md`.
-	- DescripciÒ³n: el mÒ³dulo de backups ahora exporta e importa configuraciÒ³n completa por empresa en JSON canÒ³nico, con restauraciÒ³n sobre PostgreSQL y trazabilidad del origen importado. En la misma iteraciÒ³n se limpian referencias operativas falsas a motor legado retirado del entorno y de comentarios de arranque.
-	- VerificaciÒ³n: prueba dirigida del handler de configuraciÒ³n empresarial y diagnÒ³stico del editor sin errores en los archivos tocados.
+	- Descripción: el módulo de backups ahora exporta e importa configuración completa por empresa en JSON canónico, con restauración sobre PostgreSQL y trazabilidad del origen importado. En la misma iteración se limpian referencias operativas falsas a motor legado retirado del entorno y de comentarios de arranque.
+	- Verificación: prueba dirigida del handler de configuración empresarial y diagnóstico del editor sin errores en los archivos tocados.
 
 - PostgreSQL: gobernanza endurecida y limpieza de soporte residual motor legado retirado.
 	- Archivos modificados: `.github/agents/agente_go.agent.md`, `.github/agents/agente_backend_db.agent.md`, `copilot-instructions.md`, `backend/db/compat_wrappers.go`, `backend/db/sql_compat.go`, `backend/db/horarios_trabajadores.go`, `.gitignore`, `documentos/descripcion_del_proyecto`, `documentos/historial_de_cambios`, `CHANGELOG.md`.
-	- DescripciÒ³n: el repositorio formaliza PostgreSQL como Òºnico motor permitido en reglas de agentes e instrucciones del proyecto. TambiÒ©n se elimina el fallback motor legado retirado en memoria del paquete `db`, el dialecto SQL por defecto deja de aceptar motor legado retirado y el esquema de horarios queda solamente en sintaxis PostgreSQL.
+	- Descripción: el repositorio formaliza PostgreSQL como único motor permitido en reglas de agentes e instrucciones del proyecto. También se elimina el fallback motor legado retirado en memoria del paquete `db`, el dialecto SQL por defecto deja de aceptar motor legado retirado y el esquema de horarios queda solamente en sintaxis PostgreSQL.
 
-- Estaciones: la tarjeta `Notas` ahora soporta mÒºltiples recordatorios persistentes con repeticiÒ³n automÒ¡tica local.
+- Estaciones: la tarjeta `Notas` ahora soporta múltiples recordatorios persistentes con repetición automática local.
 	- Archivos modificados: `web/administrar_empresa/configuracion_de_estaciones.html`, `web/administrar_empresa/estaciones.html`, `web/administrar_empresa/configuracion_carrito_de_compra_empresa.html`, `web/estilos.css`, `documentos/descripcion_de_modulos`, `documentos/matriz_roles_permisos_pos_multiempresa.md`, `documentos/diagramas/estructura_del_codigo.md`, `documentos/historial_de_cambios`, `CHANGELOG.md`.
-	- DescripciÒ³n: la estaciÒ³n especial `Notas` deja la lÒ³gica de una sola nota y pasa a manejar varias notas dentro de la misma tarjeta, con selecciÒ³n activa, temporizadores independientes, restauraciÒ³n del countdown tras recargar y repeticiÒ³n automÒ¡tica configurable por minutos. El valor por defecto de repeticiÒ³n entra a `estaciones_config`, mientras el runtime mÒºltiple se persiste localmente por `empresa_id`.
-	- VerificaciÒ³n: diagnÒ³stico del editor sin errores en los archivos frontend tocados; revisiÒ³n de QA y backend sin cambios contractuales obligatorios en servidor.
+	- Descripción: la estación especial `Notas` deja la lógica de una sola nota y pasa a manejar varias notas dentro de la misma tarjeta, con selección activa, temporizadores independientes, restauración del countdown tras recargar y repetición automática configurable por minutos. El valor por defecto de repetición entra a `estaciones_config`, mientras el runtime múltiple se persiste localmente por `empresa_id`.
+	- Verificación: diagnóstico del editor sin errores en los archivos frontend tocados; revisión de QA y backend sin cambios contractuales obligatorios en servidor.
 
 - PostgreSQL: se cierra la Fase 1 de limpieza postmigracion del repositorio.
 	- Archivos modificados: `backend/db/pcs_superadministrador`, `documentos/estructura_bd.md`, `documentos/descripcion_de_archivos`, `documentos/erp_multiempresa/02_diseno_tecnico_erp_multiempresa.md`, `Pendiente Notas`, `documentos/historial_de_cambios`, `CHANGELOG.md`.
 	- Descripcion: se elimina el ultimo `.db` legacy que seguia versionado en el repo, se confirman las referencias activas y se corrige la documentacion vigente para dejar PostgreSQL como unica base operativa canonica. El backlog deja Fase 1 completada y aterriza las fases 2 y 3.
 
-- Estaciones: se agrega la estaciÒ³n especial Notas y el orden configurable de estaciones especiales.
+- Estaciones: se agrega la estación especial Notas y el orden configurable de estaciones especiales.
 	- Archivos modificados: `web/administrar_empresa/configuracion_de_estaciones.html`, `web/administrar_empresa/estaciones.html`, `web/administrar_empresa/configuracion_carrito_de_compra_empresa.html`, `web/estilos.css`, `documentos/descripcion_de_modulos`, `documentos/matriz_roles_permisos_pos_multiempresa.md`, `documentos/diagramas/estructura_del_codigo.md`, `documentos/historial_de_cambios`, `CHANGELOG.md`.
-	- DescripciÒ³n: el mÒ³dulo de estaciones ahora permite decidir si `Caja`, `YouTube` y la nueva estaciÒ³n especial `Notas` se cargan antes o despuÒ©s del listado normal. `Notas` aÒ±ade una tarjeta operativa con texto editable, temporizador programable, guardado del texto base y alerta visual/sonora cuando vence el recordatorio.
-	- VerificaciÒ³n: diagnÒ³stico del editor sin errores en los archivos frontend tocados.
+	- Descripción: el módulo de estaciones ahora permite decidir si `Caja`, `YouTube` y la nueva estación especial `Notas` se cargan antes o después del listado normal. `Notas` añade una tarjeta operativa con texto editable, temporizador programable, guardado del texto base y alerta visual/sonora cuando vence el recordatorio.
+	- Verificación: diagnóstico del editor sin errores en los archivos frontend tocados.
 
 - Documentacion: se depura `Pendiente Notas` y queda como backlog vigente.
 	- Archivos modificados: `Pendiente Notas`, `documentos/historial_de_cambios`, `CHANGELOG.md`.
-	- DescripciÒ³n: se elimina del archivo la mezcla de credenciales y notas obsoletas, se retiran tareas ya implementadas y se reorganiza lo faltante en un plan priorizado con fases de ejecuciÒ³n y criterio de cierre.
-	- VerificaciÒ³n: revisiÒ³n documental contra `documentos/descripcion_del_proyecto`, `documentos/diagramas/estructura_del_codigo.md` y el estado actual del repositorio.
+	- Descripción: se elimina del archivo la mezcla de credenciales y notas obsoletas, se retiran tareas ya implementadas y se reorganiza lo faltante en un plan priorizado con fases de ejecución y criterio de cierre.
+	- Verificación: revisión documental contra `documentos/descripcion_del_proyecto`, `documentos/diagramas/estructura_del_codigo.md` y el estado actual del repositorio.
 
-- Login administrativo: se corrige la activacion del ojito para mostrar la contraseÒ±a.
+- Login administrativo: se corrige la activacion del ojito para mostrar la contraseña.
 	- Archivos modificados: `web/js/login.js`, `documentos/descripcion_de_modulos`, `documentos/matriz_roles_permisos_pos_multiempresa.md`, `documentos/historial_de_cambios`, `CHANGELOG.md`.
-	- DescripciÒ³n: la inicializaciÒ³n del toggle de visibilidad quedÒ³ insertada en el lugar incorrecto dentro de `showMsg`, asÒ­ que el control podÒ­a aparecer sin activar el cambio real del input. Ahora `initPasswordVisibilityToggles()` se ejecuta en el flujo principal de carga de `login.js`.
-	- VerificaciÒ³n: diagnÒ³stico del editor sin errores en `web/js/login.js`.
+	- Descripción: la inicialización del toggle de visibilidad quedó insertada en el lugar incorrecto dentro de `showMsg`, así que el control podía aparecer sin activar el cambio real del input. Ahora `initPasswordVisibilityToggles()` se ejecuta en el flujo principal de carga de `login.js`.
+	- Verificación: diagnóstico del editor sin errores en `web/js/login.js`.
 
-- Super y portal pÒºblico: el WhatsApp del botÒ³n flotante de la portada ahora es configurable.
+- Super y portal público: el WhatsApp del botón flotante de la portada ahora es configurable.
 	- Archivos modificados: `backend/handlers/usuarios_empresa.go`, `backend/handlers/pagina_principal_handlers.go`, `backend/handlers/pagina_principal_handlers_test.go`, `backend/handlers/system_empresas_handlers_test.go`, `backend/handlers/super_config_backup_handlers.go`, `web/super/configuracion_avanzada.html`, `web/index.html`, `documentos/descripcion_de_modulos`, `documentos/matriz_roles_permisos_pos_multiempresa.md`, `documentos/historial_de_cambios`, `CHANGELOG.md`.
-	- DescripciÒ³n: se agrega una tarjeta en configuraciÒ³n avanzada para editar el nÒºmero del botÒ³n flotante de WhatsApp de la portada pÒºblica. El valor queda persistido en configuraciÒ³n super y el `index.html` ahora lo consume desde `/api/public/pagina_principal` en vez de mantenerlo fijo en el marcado.
-	- VerificaciÒ³n: `go test ./handlers -run "Test(PublicPaginaPrincipalHandlerExposesLandingFields|GmailConfigHandlerSaveWhatsAppContactNumber)$" -count=1`.
+	- Descripción: se agrega una tarjeta en configuración avanzada para editar el número del botón flotante de WhatsApp de la portada pública. El valor queda persistido en configuración super y el `index.html` ahora lo consume desde `/api/public/pagina_principal` en vez de mantenerlo fijo en el marcado.
+	- Verificación: `go test ./handlers -run "Test(PublicPaginaPrincipalHandlerExposesLandingFields|GmailConfigHandlerSaveWhatsAppContactNumber)$" -count=1`.
 
-- Login administrativo: se agrega control visual para mostrar u ocultar la contraseÒ±a.
+- Login administrativo: se agrega control visual para mostrar u ocultar la contraseña.
 	- Archivos modificados: `web/login.html`, `web/js/login.js`, `documentos/historial_de_cambios`, `CHANGELOG.md`.
-	- DescripciÒ³n: el campo de contraseÒ±a de `/login.html` ahora incluye un botÒ³n tipo ojo que permite alternar la visibilidad del texto escrito, reutilizando el mismo patrÒ³n visual de contraseÒ±as usado en otros formularios del portal.
-	- VerificaciÒ³n: inspecciÒ³n estÒ¡tica de `web/login.html` y `web/js/login.js`.
+	- Descripción: el campo de contraseña de `/login.html` ahora incluye un botón tipo ojo que permite alternar la visibilidad del texto escrito, reutilizando el mismo patrón visual de contraseñas usado en otros formularios del portal.
+	- Verificación: inspección estática de `web/login.html` y `web/js/login.js`.
 
-- Portal pÒºblico: la landing descriptiva elimina el hero superior y la tarjeta de accesos rÒ¡pidos.
+- Portal público: la landing descriptiva elimina el hero superior y la tarjeta de accesos rápidos.
 	- Archivos modificados: `web/descripcion_de_los_sistemas.ht`, `web/estilos.css`, `documentos/descripcion_de_modulos`, `documentos/matriz_roles_permisos_pos_multiempresa.md`, `documentos/historial_de_cambios`, `CHANGELOG.md`.
-	- DescripciÒ³n: `/descripcion_de_los_sistemas.ht` ahora abre directamente en el contenido detallado de soluciones. Se retiran el bloque `Catalogo unificado` y toda la tarjeta de `Accesos rapidos`, manteniendo el soporte de hash y los CTA pÒºblicos existentes.
-	- VerificaciÒ³n: inspecciÒ³n estÒ¡tica de `web/descripcion_de_los_sistemas.ht` y `web/estilos.css`.
+	- Descripción: `/descripcion_de_los_sistemas.ht` ahora abre directamente en el contenido detallado de soluciones. Se retiran el bloque `Catalogo unificado` y toda la tarjeta de `Accesos rapidos`, manteniendo el soporte de hash y los CTA públicos existentes.
+	- Verificación: inspección estática de `web/descripcion_de_los_sistemas.ht` y `web/estilos.css`.
 
-- Portal pÒºblico: la landing descriptiva ahora adopta la apariencia activa y un menÒº interno mÒ¡s profesional.
+- Portal público: la landing descriptiva ahora adopta la apariencia activa y un menú interno más profesional.
 	- Archivos modificados: `web/descripcion_de_los_sistemas.ht`, `web/estilos.css`, `documentos/descripcion_de_modulos`, `documentos/matriz_roles_permisos_pos_multiempresa.md`, `documentos/historial_de_cambios`, `CHANGELOG.md`.
-	- DescripciÒ³n: la zona `Accesos rapidos` de `/descripcion_de_los_sistemas.ht` deja la grilla plana y pasa a un menÒº ejecutivo con numeraciÒ³n, subtÒ­tulo y estado activo segÒºn la secciÒ³n visible. TambiÒ©n se reemplazan fondos y colores fijos por variables del sistema de apariencia para que la landing siga correctamente el modo claro u oscuro del portal pÒºblico.
-	- VerificaciÒ³n: inspecciÒ³n estÒ¡tica de `web/descripcion_de_los_sistemas.ht` y `web/estilos.css`.
+	- Descripción: la zona `Accesos rapidos` de `/descripcion_de_los_sistemas.ht` deja la grilla plana y pasa a un menú ejecutivo con numeración, subtítulo y estado activo según la sección visible. También se reemplazan fondos y colores fijos por variables del sistema de apariencia para que la landing siga correctamente el modo claro u oscuro del portal público.
+	- Verificación: inspección estática de `web/descripcion_de_los_sistemas.ht` y `web/estilos.css`.
 
 - PostgreSQL runtime: inventario avanzado, tablero financiero y salida PEPS quedan operativos por API en Motel Calipso.
 	- Archivos modificados: `backend/db/productos.go`, `backend/db/finanzas.go`, `documentos/descripcion_de_modulos`, `documentos/matriz_roles_permisos_pos_multiempresa.md`, `documentos/historial_de_cambios`, `CHANGELOG.md`.
@@ -929,44 +932,44 @@
 
 - PostgreSQL runtime: se corrige el patrón `LastInsertId` en módulos críticos y se reencamina `/api/empresa/proveedores` al CRUD coherente con compras e inventario.
 	- Archivos modificados: `backend/db/auditoria_empresa.go`, `backend/db/usuarios_empresa.go`, `backend/db/clientes.go`, `backend/db/asistencia_empleados.go`, `backend/db/chat_tareas.go`, `backend/db/creditos.go`, `backend/db/finanzas.go`, `backend/db/productos.go`, `backend/db/venta_publica.go`, `backend/db/red_social.go`, `backend/handlers/productos.go`, `backend/main.go`, `documentos/historial_de_cambios`, `CHANGELOG.md`.
-	- Descripción: las altas que antes respondían con `LastInsertId is not supported by this driver` ahora usan `insertSQLCompat` o `insertTxSQLCompat`, con lo cual PostgreSQL puede devolver `id` vía `RETURNING`. También se asegura el esquema de venta pública antes de guardar configuraci?n, items u ?rdenes y se fuerza la ruta `/api/empresa/proveedores` a usar la tabla `proveedores`, que es la misma validada por productos y compras.
+	- Descripción: las altas que antes respondían con `LastInsertId is not supported by this driver` ahora usan `insertSQLCompat` o `insertTxSQLCompat`, con lo cual PostgreSQL puede devolver `id` vía `RETURNING`. También se asegura el esquema de venta pública antes de guardar configuración, items u órdenes y se fuerza la ruta `/api/empresa/proveedores` a usar la tabla `proveedores`, que es la misma validada por productos y compras.
 	- Verificación: `go test ./db ./handlers -run '^Test(CreateEmpresaVentaPublicaConfigPersistsTemaVisual|EmpresaVentaPublicaHandlerConfigCatalogoYToggle|EmpresaPublicacionesRedSocialHandler|EmpresaChatTareasCitasSharedByEmpresa|EmpresaCategoriasProductosHandlerCRUD|EmpresaClientesHandler|EmpresaCreditos|EmpresaAsistencia)' -count=1`; `go test ./ ./auth ./db ./handlers ./metrics ./utils -run '^$' -count=1`.
 
 ## 2026-04-19
 - Apariencia global: se reparan los 6 temas, el menú flotante y el guardado automático al iniciar sesión.
 	- Archivos modificados: `web/menu.js`, `web/estilos.css`, `web/js/login.js`, `web/js/login_usuario.js`, `web/login_usuario.html`, `web/configuracion_de_la_cuenta.html`, `web/red_social_comercial.html`, `backend/handlers/auth_admin_handlers.go`, `backend/handlers/usuarios_empresa.go`, `documentos/diagramas/estructura_del_codigo.md`, `documentos/descripcion_de_modulos`, `documentos/matriz_roles_permisos_pos_multiempresa.md`, `documentos/descripcion_de_archivos`, `documentos/historial_de_cambios`, `CHANGELOG.md`.
 	- Archivos creados: `web/Juegos/menu_juegos.html`, `web/Juegos/n64/index.html`.
-	- Descripción: el `menu.js` compartido ahora aplica el tema desde el arranque, sincroniza iframes mismo origen, guarda selección en `localStorage`/cookie y refresca la preferencia desde backend cuando existe sesión. Los logins administrativo y de usuario empresa devuelven `apariencia` para fijarla antes de redirigir. Además, vuelve la entrada `Juegos` y se publican rutas funcionales m?nimas para no dejar el enlace roto.
+	- Descripción: el `menu.js` compartido ahora aplica el tema desde el arranque, sincroniza iframes mismo origen, guarda selección en `localStorage`/cookie y refresca la preferencia desde backend cuando existe sesión. Los logins administrativo y de usuario empresa devuelven `apariencia` para fijarla antes de redirigir. Además, vuelve la entrada `Juegos` y se publican rutas funcionales mínimas para no dejar el enlace roto.
 	- Verificación: `get_errors` sobre los archivos tocados y tarea `validar-permisos-selector-empresas-5`.
 
-- Modelo de base de datos ERP (MÃƒÂ¯Ã‚Â¿Ã‚Â½dulo interdependiente de Compras / Proveedores).
+- Modelo de base de datos ERP (Módulo interdependiente de Compras / Proveedores).
         - Archivos modificados: backend/db/compras_y_proveedores.go, backend/db/compras_y_proveedores_test.go, backend/main.go, documentos/descripcion_de_archivos, documentos/historial_de_cambios, documentos/estructura_bd.md, CHANGELOG.md.
-        - Descripción: Se crearon las tablas operativas empresa_proveedores, empresa_ordenes_compra, empresa_ordenes_compra_items, y empresa_compras_recepciones para soportar el ciclo de abastecimiento. Se conectÃƒÂ¯Ã‚Â¿Ã‚Â½ EnsureEmpresasComprasSchema al bootstrap del servidor.
-        - Verificación: EjecuciÃƒÂ¯Ã‚Â¿Ã‚Â½n local exitosa de tests para esquema relacional.
+        - Descripción: Se crearon las tablas operativas empresa_proveedores, empresa_ordenes_compra, empresa_ordenes_compra_items, y empresa_compras_recepciones para soportar el ciclo de abastecimiento. Se conectó EnsureEmpresasComprasSchema al bootstrap del servidor.
+        - Verificación: Ejecución local exitosa de tests para esquema relacional.
 
-- Eliminaci?n de páginas hu?rfanas frontend al carecer de uso actual.
+- Eliminaci?n de páginas huérfanas frontend al carecer de uso actual.
 	- Archivos modificados: \web/administrar_empresa/bodegas.html\, \web/administrar_empresa/productos/bodegas.html\, \web/administrar_empresa/sensor_puertas_mensajes.html\, \web/administrar_empresa/ventas_simple.html\, \web/super/activar_asesor.html\, \web/super/asesor_comercial.html\, \web/super/vendedor_config_avanzado.html\, \web/ultimas_mejoras.html\ (eliminados), \documentos/descripcion_de_archivos\, \documentos/historial_de_cambios\, \CHANGELOG.md\.
-	- Descripción: Se limpiaron del proyecto 8 archivos \.html\ obsoletos o hu?rfanos para reducir el tama?o del repositorio y evitar confusiones en los directorios de operación y super admin.
-	- Verificación: No existen referencias de enrutamiento ni clics a estas páginas en los menús o vistas din?micas.
+	- Descripción: Se limpiaron del proyecto 8 archivos \.html\ obsoletos o hu?rfanos para reducir el tamaño del repositorio y evitar confusiones en los directorios de operación y super admin.
+	- Verificación: No existen referencias de enrutamiento ni clics a estas páginas en los menús o vistas dinámicas.
 
 - Juegos globales: ranking público para 3 juegos integrados (Buscaminas, Solitario, Pacman).
 	- Archivos modificados: `backend/db/super_juegos.go`, `backend/handlers/super_juegos.go`, `backend/main.go`, `documentos/descripcion_de_archivos`, `documentos/historial_de_cambios`, `documentos/estructura_bd.md`, `CHANGELOG.md`.
-	- Descripción: Se agrega un nuevo modulo para almacenar y consultar records globales de juegos en la base `superadministrador`. La tabla `super_juegos_records` registra `juego`, `nombre_jugador`, `empresa_id` (o 'Publico'), puntaje y nivel. Se exponen los endpoints `GET` y `POST` en `/api/public/juegos/records` para permitir que cualquier jugador (empresa o público) consulte el top 10 o env?e su puntaje desde el frontend.
-	- Verificación: Compilaci?n exitosa en `agente_backend_db`. Rutas registradas correctamente en `main.go`.
+	- Descripción: Se agrega un nuevo modulo para almacenar y consultar records globales de juegos en la base `superadministrador`. La tabla `super_juegos_records` registra `juego`, `nombre_jugador`, `empresa_id` (o 'Publico'), puntaje y nivel. Se exponen los endpoints `GET` y `POST` en `/api/public/juegos/records` para permitir que cualquier jugador (empresa o público) consulte el top 10 o envíe su puntaje desde el frontend.
+	- Verificación: Compilación exitosa en `agente_backend_db`. Rutas registradas correctamente en `main.go`.
 
-- Portal público: la landing `Explorar oferta` adopta el estilo de tarjetas del index y una est?tica propia m?s comercial.
+- Portal público: la landing `Explorar oferta` adopta el estilo de tarjetas del index y una estética propia más comercial.
 	- Archivos modificados: `web/descripcion_de_los_sistemas.ht`, `web/estilos.css`, `documentos/descripcion_de_modulos`, `documentos/matriz_roles_permisos_pos_multiempresa.md`, `documentos/historial_de_cambios`, `CHANGELOG.md`.
-	- Descripción: la página descriptiva de ofertas deja el bloque visual oscuro anterior y pasa a reutilizar el estilo `home-offer-card` del index en sus tarjetas ampliadas. El hero y la navegaci?n r?pida tambi?n se refinan para que la landing se perciba como extensi?n natural del portal principal, manteniendo los mismos enlaces seguros de `Probar Gratis`.
+	- Descripción: la página descriptiva de ofertas deja el bloque visual oscuro anterior y pasa a reutilizar el estilo `home-offer-card` del index en sus tarjetas ampliadas. El hero y la navegación rápida tambi?n se refinan para que la landing se perciba como extensión natural del portal principal, manteniendo los mismos enlaces seguros de `Probar Gratis`.
 	- Verificación: `get_errors` sin errores en `web/descripcion_de_los_sistemas.ht`, `web/estilos.css`, `documentos/descripcion_de_modulos` y `documentos/matriz_roles_permisos_pos_multiempresa.md`.
 
-- Chat y tareas: selección m?ltiple de usuarios, fotos y validación estricta de empresa.
+- Chat y tareas: selección múltiple de usuarios, fotos y validación estricta de empresa.
 	- Archivos modificados: `backend/handlers/chat_tareas.go`, `backend/handlers/chat_tareas_test.go`, `web/administrar_empresa/chat_y_tareas.html`, `web/estilos.css`, `documentos/descripcion_del_proyecto`, `documentos/diagramas/estructura_del_codigo.md`, `documentos/descripcion_de_modulos`, `documentos/matriz_roles_permisos_pos_multiempresa.md`, `documentos/historial_de_cambios`, `CHANGELOG.md`.
-	- Descripción: `chat_y_tareas.html` ahora permite buscar y marcar uno o varios usuarios activos de la misma empresa para crear chats directos o grupales y agregar varios participantes a una conversación existente. El formulario de mensajes deja explícito el env?o de fotos adem?s de audio y documentos. En paralelo, `chat_tareas.go` valida que cada participante tipo `usuario` pertenezca realmente a la empresa antes de persistirlo, bloqueando cruces entre empresas en creación grupal o agregado posterior.
+	- Descripción: `chat_y_tareas.html` ahora permite buscar y marcar uno o varios usuarios activos de la misma empresa para crear chats directos o grupales y agregar varios participantes a una conversación existente. El formulario de mensajes deja explícito el envío de fotos además de audio y documentos. En paralelo, `chat_tareas.go` valida que cada participante tipo `usuario` pertenezca realmente a la empresa antes de persistirlo, bloqueando cruces entre empresas en creación grupal o agregado posterior.
 	- Verificación: `get_errors` sin errores en `backend/handlers/chat_tareas.go`, `backend/handlers/chat_tareas_test.go`, `web/administrar_empresa/chat_y_tareas.html` y `web/estilos.css`; `go test ./handlers -run '^TestEmpresaChatTareas(AdjuntoUploadAllowsImage|AdjuntoUploadAllowsDocx|ConversacionesAddsOwnerAdminParticipant|ConversacionesCreatesGrupoConUsuariosSeleccionados|ConversacionesRejectsUsuarioDeOtraEmpresa|ParticipantesRejectsUsuarioDeOtraEmpresa|CitasSharedByEmpresa|MensajesHandlerDerivesUsuarioActor|MensajesHandlerRejectsInvalidConversacion|TareasHandlerRejectsInvalidConversacion|CitasHandlerRejectsInvalidConversacion)$' -count=1`.
 
 - Panel empresa y chat/tareas: el módulo colaborativo se refuerza como dashboard principal y valida referencias empresariales antes de persistir.
 	- Archivos modificados: `backend/handlers/chat_tareas.go`, `backend/handlers/chat_tareas_test.go`, `web/administrar_empresa/chat_y_tareas.html`, `web/estilos.css`, `documentos/descripcion_del_proyecto`, `documentos/diagramas/estructura_del_codigo.md`, `documentos/descripcion_de_modulos`, `documentos/matriz_roles_permisos_pos_multiempresa.md`, `documentos/historial_de_cambios`, `CHANGELOG.md`.
-	- Descripción: `chat_y_tareas.html` ahora se comporta como home operativo del panel empresa con tarjetas resumen, acciones r?pidas y estados vac?os guiados. En paralelo, `chat_tareas.go` valida que conversaciones y tareas referenciadas existan dentro de la empresa antes de crear participantes, mensajes, tareas, citas o notas de voz, y limpia archivos de adjuntos si falla la persistencia posterior para no dejar hu?rfanos.
+	- Descripción: `chat_y_tareas.html` ahora se comporta como home operativo del panel empresa con tarjetas resumen, acciones rápidas y estados vac?os guiados. En paralelo, `chat_tareas.go` valida que conversaciones y tareas referenciadas existan dentro de la empresa antes de crear participantes, mensajes, tareas, citas o notas de voz, y limpia archivos de adjuntos si falla la persistencia posterior para no dejar hu?rfanos.
 	- Verificación: `get_errors` sin errores en `backend/handlers/chat_tareas.go`, `backend/handlers/chat_tareas_test.go`, `web/administrar_empresa/chat_y_tareas.html` y `web/estilos.css`; `go test ./handlers -run '^TestEmpresaChatTareas(MensajesHandlerDerivesUsuarioActor|AdjuntoUploadAllowsDocx|ConversacionesAddsOwnerAdminParticipant|CitasSharedByEmpresa|MensajesHandlerRejectsInvalidConversacion|TareasHandlerRejectsInvalidConversacion|CitasHandlerRejectsInvalidConversacion)$' -count=1`.
 
 - Autenticaci?n administrativa: `login.html` vuelve a ofrecer `Recordar usuario` para el acceso por correo.
@@ -976,22 +979,22 @@
 
 - Portal público: el home resalta la marca principal y unifica el pie de página con la nueva leyenda corporativa.
 	- Archivos modificados: `web/index.html`, `web/estilos.css`, `web/login.html`, `web/registrar_nuevo_usuario_administrador.html`, `web/ayuda/ayuda.html`, `web/descripcion_de_los_sistemas.ht`, `web/Informacion_de_contacto.html`, `documentos/historial_de_cambios`, `CHANGELOG.md`.
-	- Descripción: el botón `Registrarse o iniciar sesión` del portal principal adopta una apariencia tipo tarjeta con texto reforzado, y el título `Sistema de Facturaci?n Electr?nica` queda destacado sobre una barra semitransparente para darle m?s presencia visual. Además, se reemplaza la leyenda visible anterior por `@ 2026 - Powerful Control System - Sistema POS Multiempresa` en los pies públicos afectados y se actualizan los títulos de páginas que todavía cargaban la marca `POS Multiempresa` como nombre principal.
+	- Descripción: el botón `Registrarse o iniciar sesión` del portal principal adopta una apariencia tipo tarjeta con texto reforzado, y el título `Sistema de Facturación Electrónica` queda destacado sobre una barra semitransparente para darle más presencia visual. Además, se reemplaza la leyenda visible anterior por `@ 2026 - Powerful Control System - Sistema POS Multiempresa` en los pies públicos afectados y se actualizan los títulos de páginas que todavía cargaban la marca `POS Multiempresa` como nombre principal.
 	- Verificación: `get_errors` sin errores en `web/index.html`, `web/estilos.css`, `web/login.html`, `web/registrar_nuevo_usuario_administrador.html`, `web/ayuda/ayuda.html`, `web/descripcion_de_los_sistemas.ht` y `web/Informacion_de_contacto.html`.
 
 - Panel empresa: Chat y tareas pasa a ser la vista inicial y su calendario compartido queda en primer plano.
 	- Archivos modificados: `web/administrar_empresa.html`, `web/js/administrar_empresa.js`, `web/administrar_empresa/chat_y_tareas.html`, `web/estilos.css`, `documentos/diagramas/estructura_del_codigo.md`, `documentos/descripcion_de_modulos`, `documentos/matriz_roles_permisos_pos_multiempresa.md`, `documentos/historial_de_cambios`, `CHANGELOG.md`.
-	- Descripción: `administrar_empresa.html` ahora abre preferentemente `chat_y_tareas.html` al entrar y mueve ese acceso al primer lugar del menú. La página colaborativa sube el calendario mensual al inicio, refuerza la explicaci?n de agenda compartida por empresa y ampl?a el peso visual del tablero para que la administradora registre reuniones y los dem?s usuarios autorizados las consulten desde su cuenta.
+	- Descripción: `administrar_empresa.html` ahora abre preferentemente `chat_y_tareas.html` al entrar y mueve ese acceso al primer lugar del menú. La página colaborativa sube el calendario mensual al inicio, refuerza la explicaci?n de agenda compartida por empresa y ampl?a el peso visual del tablero para que la administradora registre reuniones y los demás usuarios autorizados las consulten desde su cuenta.
 	- Verificación: `get_errors` sin errores en `web/administrar_empresa.html`, `web/js/administrar_empresa.js`, `web/administrar_empresa/chat_y_tareas.html` y `web/estilos.css`; `go test ./handlers -run '^TestEmpresaChatTareasCitasSharedByEmpresa$' -count=1`.
 
-- Venta pública y pagos: el cat?logo público deja de fallar con error interno sobre esquemas legacy.
+- Venta pública y pagos: el catálogo público deja de fallar con error interno sobre esquemas legacy.
 	- Archivos modificados: `backend/db/venta_publica.go`, `backend/handlers/venta_publica_test.go`, `documentos/historial_de_cambios`, `CHANGELOG.md`.
-	- Descripción: el backend ahora autorrepara columnas faltantes de configuracion, items y ordenes en `empresa_venta_publica_*` antes de consultar la tienda pública. Con esto, `GET /api/public/venta_publicaaction=catalogo` deja de caer en instalaciones legado que no ten?an campos evolutivos como `tema_visual`, `estado`, `destacado`, `stock_publicado` o payloads de orden. Se agrega adem?s una regresi?n espec?fica para cat?logo público sobre esquema legacy.
+	- Descripción: el backend ahora autorrepara columnas faltantes de configuracion, items y ordenes en `empresa_venta_publica_*` antes de consultar la tienda pública. Con esto, `GET /api/public/venta_publicaaction=catalogo` deja de caer en instalaciones legado que no ten?an campos evolutivos como `tema_visual`, `estado`, `destacado`, `stock_publicado` o payloads de orden. Se agrega además una regresi?n espec?fica para catálogo público sobre esquema legacy.
 	- Verificación: `go test ./db -run '^TestEmpresaVentaPublicaConfigPersistsTemaVisual$' -count=1`; `go test ./handlers -run '^Test(PublicVentaPublicaHandlerCatalogoWithLegacySchemaMissingColumns|PublicVentaPublicaHandlerCatalogoYPagoConWompiInactivo|EmpresaVentaPublicaHandlerConfigCatalogoYToggle)$' -count=1`; `get_errors` sin errores en `backend/db/venta_publica.go` y `backend/handlers/venta_publica_test.go`.
 
 - Panel empresa: reservas endurece sus queries y evita URLs infladas que pod?an terminar en error 414.
 	- Archivos modificados: `web/administrar_empresa/reservas_hotel.html`, `documentos/historial_de_cambios`, `CHANGELOG.md`.
-	- Descripción: la vista de reservas ahora resuelve `empresa_id` desde el contexto activo del panel, limita el texto de búsqueda antes de enviarlo por query string y centraliza la construcci?n de URLs del módulo para no propagar par?metros largos o innecesarios. Además, la tabla deja de incrustar el JSON completo de cada reserva en atributos HTML y usa el estado local para editar, reduciendo el tama?o del DOM y evitando crecimiento accidental de la navegaci?n.
+	- Descripción: la vista de reservas ahora resuelve `empresa_id` desde el contexto activo del panel, limita el texto de búsqueda antes de enviarlo por query string y centraliza la construcción de URLs del módulo para no propagar par?metros largos o innecesarios. Además, la tabla deja de incrustar el JSON completo de cada reserva en atributos HTML y usa el estado local para editar, reduciendo el tamaño del DOM y evitando crecimiento accidental de la navegación.
 	- Verificación: `get_errors` sin errores en `web/administrar_empresa/reservas_hotel.html`.
 
 - Panel empresa: administrar productos deja de caer por la carga obligatoria de proveedores en la vista principal.
@@ -999,19 +1002,19 @@
 	- Descripción: la vista `Administrar Productos` ya no arranca consultando proveedores de forma obligatoria cuando el modo visible es `productos`. El selector de proveedor principal pasa a cargarse de forma perezosa al abrir el formulario del producto, de modo que una falla o restricci?n del submódulo de compras/proveedores no tumba toda la pantalla principal de inventario.
 	- Verificación: `get_errors` sin errores en `web/administrar_empresa/administrar_productos.html`.
 
-- Panel empresa: se corrige la duplicaci?n recursiva del submenú de productos y dem?s shells anidados.
+- Panel empresa: se corrige la duplicaci?n recursiva del submenú de productos y demás shells anidados.
 	- Archivos modificados: `web/js/administrar_empresa.js`, `documentos/historial_de_cambios`, `CHANGELOG.md`.
 	- Descripción: el script compartido del panel empresa ahora detecta los enlaces y el iframe del shell actual antes de resolver la página inicial. Con esto, los submenús internos como `Productos` dejan de cargarse a sí mismos dentro de su propio iframe y pasan a abrir su contenido real, evitando el efecto de menú duplicado.
-	- Verificación: `get_errors` sin errores en `web/js/administrar_empresa.js`; validación est?tica en `http://127.0.0.1:8091/administrar_empresa/administrar_productos_menu.htmlempresa_id=1` con snapshot mostrando el iframe apuntando a `administrar_productos.htmlview=productos&empresa_id=1` en lugar de recargar `administrar_productos_menu.html`.
+	- Verificación: `get_errors` sin errores en `web/js/administrar_empresa.js`; validación estética en `http://127.0.0.1:8091/administrar_empresa/administrar_productos_menu.htmlempresa_id=1` con snapshot mostrando el iframe apuntando a `administrar_productos.htmlview=productos&empresa_id=1` en lugar de recargar `administrar_productos_menu.html`.
 
 - Frontend web: se endurece la adaptaci?n autom?tica a celular sin alterar la estructura de menús.
 	- Archivos modificados: `web/estilos.css`, `web/super/administrar_base_de_datos.html`, `web/super/errores.html`, `web/super/seguridad.html`, `web/super/soporte_remoto.html`, `documentos/historial_de_cambios`, `CHANGELOG.md`.
-	- Descripción: la hoja compartida ahora fuerza en m?vil el apilado real de filas de formulario, toolbars y filtros, neutraliza anchos m?nimos e inline widths problem?ticos en controles, y mejora el comportamiento de tablas y bloques con scroll horizontal cuando hace falta. Además, las vistas super de base de datos, errores, seguridad VPS y soporte remoto reciben media queries puntuales para evitar desbordes y columnas r?gidas en celular sin tocar los menús existentes.
+	- Descripción: la hoja compartida ahora fuerza en m?vil el apilado real de filas de formulario, toolbars y filtros, neutraliza anchos mínimos e inline widths problem?ticos en controles, y mejora el comportamiento de tablas y bloques con scroll horizontal cuando hace falta. Además, las vistas super de base de datos, errores, seguridad VPS y soporte remoto reciben media queries puntuales para evitar desbordes y columnas r?gidas en celular sin tocar los menús existentes.
 	- Verificación: `get_errors` sin errores en `web/estilos.css`, `web/super/administrar_base_de_datos.html`, `web/super/errores.html`, `web/super/seguridad.html` y `web/super/soporte_remoto.html`.
 
 - Estaciones y carritos: se reutilizan carritos legado al abrir una estación y se evita el error de carga por duplicado.
 	- Archivos modificados: `web/administrar_empresa/carrito_de_compras.html`, `documentos/diagramas/estructura_del_codigo.md`, `documentos/descripcion_de_modulos`, `documentos/matriz_roles_permisos_pos_multiempresa.md`, `documentos/historial_de_cambios`, `CHANGELOG.md`.
-	- Descripción: al entrar desde `estaciones.html`, el carrito unificado ya no asume que siempre existe un carrito con el código can?nico `EST-empresa-estacion`. Ahora intenta reutilizar primero un carrito ya existente por código, `referencia_externa=ESTACION_<id>` o nombre de estación antes de crear uno nuevo, evitando conflictos con datos legado que antes terminaban en `Error cargando carritos`.
+	- Descripción: al entrar desde `estaciones.html`, el carrito unificado ya no asume que siempre existe un carrito con el código canúnico `EST-empresa-estacion`. Ahora intenta reutilizar primero un carrito ya existente por código, `referencia_externa=ESTACION_<id>` o nombre de estación antes de crear uno nuevo, evitando conflictos con datos legado que antes terminaban en `Error cargando carritos`.
 	- Verificación: `get_errors` sobre `web/administrar_empresa/carrito_de_compras.html` y validación dirigida del flujo de estación.
 
 - Estaciones: la estación especial de YouTube cambia a un visor embebido estable con búsqueda funcional.
@@ -1019,27 +1022,27 @@
 	- Descripción: se elimina la dependencia de la API del reproductor que no estaba resolviendo bien la carga en la tarjeta y se reemplaza por un visor embebido basado en `youtube-nocookie` que sí permite mostrar resultados y lanzar búsquedas desde la propia estación. Se agrega un botón `Inicio` para volver a una portada embebida ?til y se conserva `Abrir YouTube` para abrir la página real completa en otra pesta?a, porque el home oficial de YouTube no se puede incrustar de forma fiable dentro de un iframe normal.
 	- Verificación: `get_errors` sin errores en `web/administrar_empresa/youtube_station_browser.html`.
 
-- Super administrador: se agrega un panel real para formatos de email y se unifica el guardado de configuraci?n avanzada.
+- Super administrador: se agrega un panel real para formatos de email y se unifica el guardado de configuración avanzada.
 	- Archivos creados: `backend/handlers/super_email_templates.go`, `web/super/formato_para_emviar_email.html`.
 	- Archivos modificados: `backend/main.go`, `backend/handlers/auth_admin_handlers.go`, `backend/handlers/usuarios_empresa.go`, `backend/handlers/payments_handlers.go`, `backend/handlers/server_runtime_notifications.go`, `backend/handlers/system_empresas_handlers_test.go`, `web/super/configuracion_avanzada.html`, `web/super_administrador.html`, `documentos/descripcion_del_proyecto`, `documentos/diagramas/estructura_del_codigo.md`, `documentos/descripcion_de_modulos`, `documentos/matriz_roles_permisos_pos_multiempresa.md`, `documentos/descripcion_de_archivos`, `documentos/historial_de_cambios`, `CHANGELOG.md`.
-	- Descripción: el panel super ahora expone `/super/formato_para_emviar_email.html` para administrar plantillas reales de confirmación de correo, activaci?n por pago de licencia, recuperaci?n de contrase?a y alertas de reinicio. El backend centraliza esas plantillas en `/super/api/config/email_templates` y reemplaza textos hardcodeados en correos administrativos, usuarios de empresa, licencias y monitoreo del servidor. Además, `configuracion_avanzada.html` deja botones sueltos por bloque y pasa a guardar Wompi, Epayco, Gmail e IA con un solo botón arriba y otro abajo de la página.
+	- Descripción: el panel super ahora expone `/super/formato_para_emviar_email.html` para administrar plantillas reales de confirmación de correo, activaci?n por pago de licencia, recuperación de contraseña y alertas de reinicio. El backend centraliza esas plantillas en `/super/api/config/email_templates` y reemplaza textos hardcodeados en correos administrativos, usuarios de empresa, licencias y monitoreo del servidor. Además, `configuracion_avanzada.html` deja botones sueltos por bloque y pasa a guardar Wompi, Epayco, Gmail e IA con un solo botón arriba y otro abajo de la página.
 	- Verificación: `go test ./handlers -run 'Test(SuperEmailTemplatesHandlerSaveAndGet|ApplySuperEmailTemplateUsesConfiguredValues|GmailConfigHandlerTestActionCapturesNotification)$' -count=1`; tarea `validar-permisos-selector-empresas-5`; `get_errors` sin errores en `backend/handlers/super_email_templates.go`, `web/super/formato_para_emviar_email.html` y `web/super/configuracion_avanzada.html`.
 
-- Portal público y selector de empresas: se corrigen CTA públicos y se oculta navegaci?n global fuera del alcance super principal.
+- Portal público y selector de empresas: se corrigen CTA públicos y se oculta navegación global fuera del alcance super principal.
 	- Archivos modificados: `web/descripcion_de_los_sistemas.ht`, `web/js/seleccionar_empresa.js`, `documentos/diagramas/estructura_del_codigo.md`, `documentos/descripcion_de_modulos`, `documentos/matriz_roles_permisos_pos_multiempresa.md`, `documentos/historial_de_cambios`, `CHANGELOG.md`.
-	- Descripción: la landing descriptiva ya no reutiliza destinos privados como `/administrar_empresa.html` en el CTA `Probar Gratis`; cuando una tarjeta apunta a una ruta protegida, el flujo público redirige al registro de administrador. En el selector de empresas, el menú lateral ahora toma el perfil real desde `/me` y solo mantiene visibles `Administradores` y `Reportes globales` para cuentas super principales; la navegaci?n sensible queda oculta por defecto hasta resolver la sesión.
+	- Descripción: la landing descriptiva ya no reutiliza destinos privados como `/administrar_empresa.html` en el CTA `Probar Gratis`; cuando una tarjeta apunta a una ruta protegida, el flujo público redirige al registro de administrador. En el selector de empresas, el menú lateral ahora toma el perfil real desde `/me` y solo mantiene visibles `Administradores` y `Reportes globales` para cuentas super principales; la navegación sensible queda oculta por defecto hasta resolver la sesión.
 	- Verificación: `get_errors` sin errores en `web/descripcion_de_los_sistemas.ht`, `web/js/seleccionar_empresa.js` y `web/seleccionar_empresa.html`; sondeo runtime local con `200` en `/descripcion_de_los_sistemas.ht` y `/registrar_nuevo_usuario_administrador.html`, y `401` en `/seleccionar_empresa.html` sin sesión; `go test ./ ./auth ./db ./handlers ./metrics ./utils -count=1`.
 
 - Integridad super/licencias: se endurece el alcance delegado, se recupera compatibilidad de backup legacy y se corrige la validación pública de métodos de pago.
 	- Archivos modificados: `backend/db/chat_inteligencia_artificial.go`, `backend/handlers/system_empresas_handlers.go`, `backend/handlers/postgres_performance.go`, `backend/handlers/super_config_backup_handlers.go`, `backend/handlers/payments_handlers.go`, `documentos/diagramas/estructura_del_codigo.md`, `documentos/descripcion_de_modulos`, `documentos/matriz_roles_permisos_pos_multiempresa.md`, `documentos/historial_de_cambios`, `CHANGELOG.md`.
-	- Descripción: los administradores delegados ya no heredan acceso global por tener rol `super_administrador`, sino que quedan restringidos al portafolio del administrador principal. El backup/restore super vuelve a aceptar claves sensibles legacy de IA para restauraciones compatibes, `GET /api/public/licencias/payment_methods` puede anunciar Epayco cuando existe `public_key`, y el panel de rendimiento PostgreSQL valida primero la acci?n solicitada para devolver `400` en acciones no soportadas aunque el runtime no est? sobre PostgreSQL.
+	- Descripción: los administradores delegados ya no heredan acceso global por tener rol `super_administrador`, sino que quedan restringidos al portafolio del administrador principal. El backup/restore super vuelve a aceptar claves sensibles legacy de IA para restauraciones compatibes, `GET /api/public/licencias/payment_methods` puede anunciar Epayco cuando existe `public_key`, y el panel de rendimiento PostgreSQL valida primero la acci?n solicitada para devolver `400` en acciones no soportadas aunque el runtime no está sobre PostgreSQL.
 	- Verificación: `go test ./handlers -run 'Test(PostgresPerformanceHandlerUnknownAction|EmpresasHandlerFiltraEmpresasPorAdministradorPrincipal|SuperConfigBackupHandlerRestoreEncryptsSensitivePlaintext|PublicLicenciasPaymentMethodsHandlerAllowsEpaycoWithPublicKeyOnly|SuperConfigBackupHandlerExportYRestore|PublicLicenciasPaymentMethodsHandlerOrdersAndAvailability)$' -count=1`; tarea `validar-permisos-selector-empresas-5`; `go test ./ ./auth ./db ./handlers ./metrics ./utils -count=1`; sondeo runtime local de `/`, `/index.html`, `/login.html`, `/api/public/pagina_principal`, `/api/public/licencias/payment_methods` y `/seleccionar_empresa.html`.
 
 ## 2026-04-18
 
 - Estaciones: la tarjeta de YouTube ahora permite guardar la fuente desde el mismo bloque y acepta Shorts.
 	- Archivos modificados: `web/administrar_empresa/estaciones.html`, `web/estilos.css`, `documentos/descripcion_de_modulos`, `documentos/matriz_roles_permisos_pos_multiempresa.md`, `documentos/historial_de_cambios`, `CHANGELOG.md`.
-	- Descripción: la propia tarjeta de YouTube en `estaciones.html` ahora incluye un campo para pegar la URL o el ID del contenido, un botón `Guardar y cargar` y un enlace externo alineado con el valor actual. El navegador interno ya interpreta tambi?n URLs de `Shorts` como video v?lido y recarga la vista sin obligar a entrar a la configuraci?n general de estaciones.
+	- Descripción: la propia tarjeta de YouTube en `estaciones.html` ahora incluye un campo para pegar la URL o el ID del contenido, un botón `Guardar y cargar` y un enlace externo alineado con el valor actual. El navegador interno ya interpreta tambi?n URLs de `Shorts` como video v?lido y recarga la vista sin obligar a entrar a la configuración general de estaciones.
 	- Verificación: `get_errors` sin errores en `web/administrar_empresa/estaciones.html` y `web/estilos.css`.
 
 - Estaciones: la tarjeta de YouTube deja de depender de búsquedas embebidas rotas y pasa a reproducir referencias v?lidas.
@@ -1049,8 +1052,8 @@
 
 - Estaciones y carritos: se mejora el mensaje visible cuando falla la apertura del carrito por estación.
 	- Archivos modificados: `web/administrar_empresa/carrito_de_compras.html`, `documentos/diagramas/estructura_del_codigo.md`, `documentos/descripcion_de_modulos`, `documentos/matriz_roles_permisos_pos_multiempresa.md`, `documentos/historial_de_cambios`, `CHANGELOG.md`.
-	- Descripción: el carrito unificado ya no deja al usuario solo con `Error cargando carritos` al fallar la carga inicial. Ahora muestra un estado contextual con traducci?n segura del error, botón `Reintentar carga` y retorno explícito a `estaciones.html` cuando el flujo viene desde una estación, evitando exponer literales t?cnicos del backend como `unauthenticated` o `forbidden`.
-	- Verificación: `get_errors` sin errores en `web/administrar_empresa/carrito_de_compras.html`; validación est?tica de apertura en `http://127.0.0.1:8080/administrar_empresa/carrito_de_compras.htmlempresa_id=6&estacion_id=1&estacion_nombre=Estacion%201&carrito_codigo=EST-6-1`.
+	- Descripción: el carrito unificado ya no deja al usuario solo con `Error cargando carritos` al fallar la carga inicial. Ahora muestra un estado contextual con traducci?n segura del error, botón `Reintentar carga` y retorno explícito a `estaciones.html` cuando el flujo viene desde una estación, evitando exponer literales técnicos del backend como `unauthenticated` o `forbidden`.
+	- Verificación: `get_errors` sin errores en `web/administrar_empresa/carrito_de_compras.html`; validación estética de apertura en `http://127.0.0.1:8080/administrar_empresa/carrito_de_compras.htmlempresa_id=6&estacion_id=1&estacion_nombre=Estacion%201&carrito_codigo=EST-6-1`.
 
 - Estaciones y carritos: se corrige la carga del carrito por estación sobre PostgreSQL real.
 	- Archivos modificados: `backend/db/carritos_compras.go`, `backend/handlers/carritos_compras.go`, `backend/db/carritos_inventario_test.go`, `backend/handlers/auth_users_carritos_test.go`, `documentos/diagramas/estructura_del_codigo.md`, `documentos/descripcion_de_modulos`, `documentos/matriz_roles_permisos_pos_multiempresa.md`, `documentos/historial_de_cambios`, `CHANGELOG.md`.
@@ -1063,15 +1066,15 @@
 	- Descripción: el carrito unificado ahora permite configurar tambi?n la visibilidad del cliente, el bloque de descuento/impuestos por item, el resumen total del carrito y el desglose del cobro. Además, se retira del runtime el script antiguo de `ventas_simple` y se elimina el bloque muerto de carrito compacto en `configuracion_general`.
 	- Verificación: pruebas dirigidas de handlers/db del modulo y validacion funcional del redirect de compatibilidad.
 
-- IA: el proyecto migra a Google Gemini como ?nico proveedor y retira Ollama/DeepSeek del flujo operativo.
+- IA: el proyecto migra a Google Gemini como único proveedor y retira Ollama/DeepSeek del flujo operativo.
 	- Archivos modificados: `backend/handlers/ai_credentials_catalog.go`, `backend/handlers/ai_config_handlers.go`, `backend/handlers/chat_con_inteligencia_artificial_controller.go`, `backend/handlers/chat_con_ia_global_super_test.go`, `backend/handlers/chat_con_inteligencia_artificial_controller_test.go`, `backend/handlers/system_empresas_handlers_test.go`, `backend/db/chat_inteligencia_artificial_test.go`, `backend/tools/set_ai_provider_enabled.go`, `backend/.env.example`, `backend/.env.local`, `scripts/iniciar_servidor.ps1`, `web/super/configuracion_avanzada.html`, `web/super/chat_con_ia_global.html`, `web/administrar_empresa/chat_con_inteligencia_artificial.html`, `documentos/descripcion_del_proyecto`, `documentos/descripcion_de_archivos`, `documentos/descripcion_de_modulos`, `documentos/matriz_roles_permisos_pos_multiempresa.md`, `documentos/diagramas/estructura_del_codigo.md`, `documentos/historial_de_cambios`, `CHANGELOG.md`.
 	- Archivos eliminados: `backend/tools/check_deepseek_key/main.go`.
-	- Descripción: se reemplaza la IA en VPS basada en Ollama por Google Gemini en el chat global super y el chat con IA por empresa. Configuraci?n avanzada queda reducida a una sola API key cifrada, un interruptor global y un interruptor del proveedor `google`. El script de arranque ya no abre t?nel a Ollama y el VPS queda sin `ollama.service` ni binario asociado.
+	- Descripción: se reemplaza la IA en VPS basada en Ollama por Google Gemini en el chat global super y el chat con IA por empresa. Configuración avanzada queda reducida a una sola API key cifrada, un interruptor global y un interruptor del proveedor `google`. El script de arranque ya no abre t?nel a Ollama y el VPS queda sin `ollama.service` ni binario asociado.
 	- Verificación: `go test ./handlers -run 'Test(SuperAIModelosHandlerReturnsCatalog|SuperAIModelosHandlerFiltersDisabledProvider|ModelosHandlerReturnsPreferredModelForGoogleAccount|ModeloPreferidoHandlerAcceptsGemini|ModelosHandlerFiltersDisabledProvider|AIModelsConfigHandlerSaveGeminiEncrypted|AIModelsConfigHandlerSavesProviderEnabledState|AIModelsConfigHandlerTogglesGlobalServiceState)$' -count=1`; `go test ./db -run 'Test(EmpresaAIModeloPreferidoUpsertAndGet|RegisterEmpresaAIConsultaAcumulaUsoDiario|SuperAIModeloPreferidoUpsertAndGet|RegisterSuperAIConsultaAcumulaUsoDiario|GetSuperAIModeloPreferidoRepairsMissingSchema|GetSuperAIUsoDiarioRepairsMissingSchema|RegisterSuperAIConsultaRepairsMissingSchema)$' -count=1`.
 
 - Carritos y estaciones: el sistema adopta un carrito unificado configurable por empresa y por estación.
 	- Archivos modificados: `web/administrar_empresa/carrito_de_compras.html`, `web/administrar_empresa/estaciones.html`, `web/administrar_empresa/ventas_simple.html`, `web/administrar_empresa/configuracion_de_estaciones.html`, `web/administrar_empresa/configuracion_carrito_de_compra_empresa.html`, `web/administrar_empresa/configuracion_menu.html`, `documentos/diagramas/estructura_del_codigo.md`, `documentos/descripcion_de_modulos`, `documentos/matriz_roles_permisos_pos_multiempresa.md`, `documentos/descripcion_de_archivos`, `documentos/historial_de_cambios`, `CHANGELOG.md`.
-	- Descripción: desaparece la bifurcaci?n de UI entre carrito de compras, venta simple y carrito compacto. Las estaciones abren siempre `carrito_de_compras.html` y la pantalla muestra u oculta bloques seg?n configuraci?n global por empresa y configuraci?n individual por estación almacenadas en `estaciones_config`.
+	- Descripción: desaparece la bifurcaci?n de UI entre carrito de compras, venta simple y carrito compacto. Las estaciones abren siempre `carrito_de_compras.html` y la pantalla muestra u oculta bloques seg?n configuración global por empresa y configuración individual por estación almacenadas en `estaciones_config`.
 	- Verificación: tarea `validar-permisos-selector-empresas-5`; `get_errors` sin errores en los archivos frontend modificados.
 
 
@@ -1086,7 +1089,7 @@
 	- Descripción: se elimina el boton `Calculadora`, se retira el acceso rapido del menu flotante y se borra la pagina frontend asociada para que deje de existir como frente visible del panel empresa.
 	- Verificación: `get_errors` y busqueda de referencias frontend activas a `calculadora.html`.
 
-- Inventario y productos: las compras preventivas y por proveedor pasan a la secci?n `Compras` del submódulo.
+- Inventario y productos: las compras preventivas y por proveedor pasan a la sección `Compras` del submódulo.
 	- Archivos modificados: `web/administrar_empresa/administrar_productos.html`, `web/administrar_empresa/productos/compras.html`, `documentos/diagramas/estructura_del_codigo.md`, `documentos/descripcion_de_modulos`, `documentos/matriz_roles_permisos_pos_multiempresa.md`, `documentos/descripcion_de_archivos`, `documentos/historial_de_cambios`, `CHANGELOG.md`.
 	- Descripción: la vista central del módulo ahora expone `view=compras` y concentra all? el plan de reposici?n por proveedor, el consolidado de compra y el borrador/ciclo de orden; la ruta `productos/compras.html` deja el placeholder y redirige a esa vista real.
 	- Verificación: `get_errors` sobre los HTML y documentos modificados.
@@ -1105,12 +1108,12 @@
 
 - Chat IA super y empresarial: se autorrepara el esquema legacy `super_ai_*` y `empresa_ai_*` y se ampl?a el timeout de Ambis Local sobre el t?nel VPS.
 	- Archivos modificados: `backend/db/chat_inteligencia_artificial.go`, `backend/db/chat_inteligencia_artificial_test.go`, `backend/handlers/chat_con_inteligencia_artificial_controller.go`, `documentos/descripcion_de_modulos`, `documentos/diagramas/estructura_del_codigo.md`, `documentos/matriz_roles_permisos_pos_multiempresa.md`, `documentos/historial_de_cambios`, `CHANGELOG.md`.
-	- Descripción: el chat super ya no falla al consultar modelo preferido o uso diario sobre instalaciones PostgreSQL heredadas; la capa DB repara tablas/columnas faltantes al vuelo y el cliente de Ollama ahora soporta tiempos de respuesta m?s largos de `codellama:7b` cuando la consulta viaja por el t?nel local al VPS.
+	- Descripción: el chat super ya no falla al consultar modelo preferido o uso diario sobre instalaciones PostgreSQL heredadas; la capa DB repara tablas/columnas faltantes al vuelo y el cliente de Ollama ahora soporta tiempos de respuesta más largos de `codellama:7b` cuando la consulta viaja por el t?nel local al VPS.
 	- Verificación: `go test ./db -run 'Test(SuperAIModeloPreferidoUpsertAndGet|RegisterSuperAIConsultaAcumulaUsoDiario|GetSuperAIModeloPreferidoRepairsMissingSchema|GetSuperAIUsoDiarioRepairsMissingSchema|RegisterSuperAIConsultaRepairsMissingSchema)$' -count=1`; `go test ./handlers -run '^$' -count=1`; `curl http://localhost:8080/super/api/chat_con_ia_global/modelos` -> `200 OK`; `curl http://localhost:8080/super/api/chat_con_ia_global/consultar` -> `200 OK`.
 
 - IA super y empresarial: se agregan switches por proveedor para desactivar DeepSeek sin afectar Ambis Local.
 	- Archivos modificados: `backend/handlers/ai_credentials_catalog.go`, `backend/handlers/ai_config_handlers.go`, `backend/handlers/chat_con_inteligencia_artificial_controller.go`, `backend/handlers/chat_con_ia_global_super.go`, `backend/handlers/system_empresas_handlers_test.go`, `backend/handlers/chat_con_inteligencia_artificial_controller_test.go`, `backend/handlers/chat_con_ia_global_super_test.go`, `web/super/configuracion_avanzada.html`, `documentos/descripcion_de_modulos`, `documentos/diagramas/estructura_del_codigo.md`, `documentos/matriz_roles_permisos_pos_multiempresa.md`, `documentos/historial_de_cambios`, `CHANGELOG.md`.
-	- Descripción: configuraci?n avanzada ahora puede habilitar o bloquear por separado `DeepSeek Chat` y `Ambis Local`; los chats empresarial y global super solo muestran proveedores activos y hacen fallback automático cuando el modelo preferido qued? apagado.
+	- Descripción: configuración avanzada ahora puede habilitar o bloquear por separado `DeepSeek Chat` y `Ambis Local`; los chats empresarial y global super solo muestran proveedores activos y hacen fallback automático cuando el modelo preferido qued? apagado.
 	- Verificación: `go test ./handlers -run 'Test(AIModelsConfigHandlerSaveDeepSeekEncrypted|AIModelsConfigHandlerSavesProviderEnabledState|ModelosHandlerFiltersDisabledProvider|ModelosHandlerRejectsWhenAIDisabled|SuperAIModelosHandlerFiltersDisabledProvider|SuperAIModelosHandlerRejectsWhenAIDisabled)$' -count=1`.
 
 - Portal público: se elimina el arcade y solo queda el emulador N64 adaptado para m?vil.
@@ -1119,15 +1122,15 @@
 	- Descripción: el proyecto retira todas las experiencias de juego y el emulador NES. El portal conserva solo el emulador N64 con acceso público y dise?o m?vil, y el menú global enlaza de forma directa a esa ?nica experiencia.
 	- Verificación: búsqueda global en `web/**` y `backend/**` sin referencias funcionales a los juegos eliminados.
 
-- Selector de empresas: las tarjetas quedan alineadas a la izquierda y conservan un tama?o visual uniforme.
+- Selector de empresas: las tarjetas quedan alineadas a la izquierda y conservan un tamaño visual uniforme.
 	- Archivos modificados: `web/estilos.css`, `documentos/historial_de_cambios`, `CHANGELOG.md`.
-	- Descripción: se elimina el centrado del grid en `seleccionar_empresa.html` y se fija una relaci?n de aspecto com?n para que todas las tarjetas se vean del mismo tama?o dentro del selector.
+	- Descripción: se elimina el centrado del grid en `seleccionar_empresa.html` y se fija una relaci?n de aspecto com?n para que todas las tarjetas se vean del mismo tamaño dentro del selector.
 	- Verificación: `get_errors` sin errores en `web/estilos.css`.
 
-- Portal público: el menú flotante deja de mostrar accesos r?pidos de juegos y centraliza la navegaci?n en la página del arcade.
+- Portal público: el menú flotante deja de mostrar accesos rápidos de juegos y centraliza la navegación en la página del arcade.
 	- Archivos eliminados: `web/Juegos/games.json`.
 	- Archivos modificados: `web/menu.js`, `documentos/descripcion_de_archivos`, `documentos/historial_de_cambios`, `CHANGELOG.md`.
-	- Descripción: se retira el manifiesto JSON que alimentaba el menú flotante y se deja un ?nico enlace a `/Juegos/menu_juegos.html`, evitando duplicar la lista de juegos fuera del lobby principal.
+	- Descripción: se retira el manifiesto JSON que alimentaba el menú flotante y se deja un único enlace a `/Juegos/menu_juegos.html`, evitando duplicar la lista de juegos fuera del lobby principal.
 	- Verificación: búsqueda global sin referencias activas a `games.json` en `web/**`.
 
 - Arcade público: se agrega `N64 vertical mobile` para jugar desde celular con ROM legal del usuario.
@@ -1169,14 +1172,14 @@
 	- Descripción: la gobernanza tecnica ahora cubre formalmente `/api/empresa/documentos/gestion` y `/api/empresa/documentos/firmas`, incluyendo reglas de acceso por rol/modulo, versionado con historial, herencia de permisos para firmas y el procedimiento operativo para diagnosticar documentos no visibles, versiones incompletas o firmas huerfanas.
 	- Verificación: `get_errors` sobre la documentacion creada y modificada.
 
-- Super administrador: se agrega interruptor global para activar o desactivar la IA desde configuraci?n avanzada.
+- Super administrador: se agrega interruptor global para activar o desactivar la IA desde configuración avanzada.
 	- Archivos modificados: `backend/handlers/ai_config_handlers.go`, `backend/handlers/chat_con_inteligencia_artificial_controller.go`, `backend/handlers/chat_con_ia_global_super.go`, `backend/handlers/chat_con_inteligencia_artificial_controller_test.go`, `backend/handlers/chat_con_ia_global_super_test.go`, `backend/handlers/system_empresas_handlers_test.go`, `web/super/configuracion_avanzada.html`, `documentos/diagramas/estructura_del_codigo.md`, `documentos/descripcion_de_modulos`, `documentos/matriz_roles_permisos_pos_multiempresa.md`, `documentos/historial_de_cambios`, `CHANGELOG.md`.
-	- Descripción: configuraci?n avanzada ahora puede apagar completamente el servicio IA mediante `ai.global.enabled`; cuando queda desactivado, el chat empresarial y el chat global super bloquean consultas nuevas y así se libera carga del servidor. Además, el botón `Probar IA` ejecuta una prueba real contra Ollama a trav?s del backend.
+	- Descripción: configuración avanzada ahora puede apagar completamente el servicio IA mediante `ai.global.enabled`; cuando queda desactivado, el chat empresarial y el chat global super bloquean consultas nuevas y así se libera carga del servidor. Además, el botón `Probar IA` ejecuta una prueba real contra Ollama a trav?s del backend.
 	- Verificación: prueba real por SSH en el VPS con `curl http://127.0.0.1:11434/api/tags` y `curl http://127.0.0.1:11434/api/generate`, ambas exitosas.
 
 - Chat IA super y empresarial: se agrega aviso visible de servicio apagado y se explicita la prueba contra VPS.
 	- Archivos modificados: `web/administrar_empresa/chat_con_inteligencia_artificial.html`, `web/super/chat_con_ia_global.html`, `web/super/configuracion_avanzada.html`, `documentos/descripcion_de_modulos`, `documentos/matriz_roles_permisos_pos_multiempresa.md`, `documentos/historial_de_cambios`, `CHANGELOG.md`.
-	- Descripción: cuando la IA global est? desactivada, ambos chats muestran un mensaje visible, deshabilitan el formulario y evitan que el usuario siga intentando consultar. En configuraci?n avanzada, el botón queda rotulado como `Probar IA contra VPS` para reflejar que la prueba es real y no solo de cat?logo.
+	- Descripción: cuando la IA global está desactivada, ambos chats muestran un mensaje visible, deshabilitan el formulario y evitan que el usuario siga intentando consultar. En configuración avanzada, el botón queda rotulado como `Probar IA contra VPS` para reflejar que la prueba es real y no solo de catálogo.
 	- Verificación: diagn?stico del editor sin errores en los HTML modificados.
 
 - Super administrador: se agrega chat IA global con contexto consolidado del sistema.
@@ -1211,7 +1214,7 @@
 - Estaciones: se agrega tarjeta especial `YouTube` con vista embebida y ampliacion.
 	- Archivos creados: `web/administrar_empresa/youtube_station_browser.html`.
 	- Archivos modificados: `web/administrar_empresa/configuracion_de_estaciones.html`, `web/administrar_empresa/estaciones.html`, `web/estilos.css`, `documentos/descripcion_del_proyecto`, `documentos/diagramas/estructura_del_codigo.md`, `documentos/descripcion_de_modulos`, `documentos/matriz_roles_permisos_pos_multiempresa.md`, `documentos/descripcion_de_archivos`, `documentos/historial_de_cambios`, `CHANGELOG.md`.
-	- Descripción: el modulo de estaciones ahora permite activar una tarjeta especial `YouTube` desde `estaciones_config`, mostrar una vista embebida adaptable al tama?o de la tarjeta y abrirla en un overlay aproximado de `500 x 500` mediante un cuadrito de maximizaci?n `[]`.
+	- Descripción: el modulo de estaciones ahora permite activar una tarjeta especial `YouTube` desde `estaciones_config`, mostrar una vista embebida adaptable al tamaño de la tarjeta y abrirla en un overlay aproximado de `500 x 500` mediante un cuadrito de maximizaci?n `[]`.
 	- Verificación: diagnostico del editor sin errores en `web/administrar_empresa/configuracion_de_estaciones.html`, `web/administrar_empresa/estaciones.html`, `web/administrar_empresa/youtube_station_browser.html` y `web/estilos.css`.
 
 - Gobernanza tecnica: se documentan soporte remoto multiempresa y contingencias operativas de reportes.
@@ -1229,7 +1232,7 @@
 - Gobernanza interna: se implementa un equipo base de cuatro agentes con direccion centralizada en `agente_go`.
 	- Archivos creados: `.github/agents/agente_backend_db.agent.md`, `.github/agents/agente_frontend_ux.agent.md`, `.github/agents/agente_qa_operacion.agent.md`, `.github/agents/README.md`.
 	- Archivos modificados: `.github/agents/agente_go.agent.md`, `copilot-instructions.md`, `documentos/descripcion_del_proyecto`, `documentos/diagramas/estructura_del_codigo.md`, `documentos/descripcion_de_modulos`, `documentos/matriz_roles_permisos_pos_multiempresa.md`, `documentos/descripcion_de_archivos`, `documentos/historial_de_cambios`, `CHANGELOG.md`.
-	- Descripción: `agente_go` queda formalizado como agente principal, seleccionado por defecto a nivel de gobernanza del repositorio y responsable de dirigir a backend/DB, frontend/UX y QA/operacion, integrando una sola salida t?cnica y documental.
+	- Descripción: `agente_go` queda formalizado como agente principal, seleccionado por defecto a nivel de gobernanza del repositorio y responsable de dirigir a backend/DB, frontend/UX y QA/operacion, integrando una sola salida técnica y documental.
 	- Verificación: validacion documental y de estructura del equipo interno de agentes completada en el repositorio.
 
 - Gobernanza tecnica: se documenta formalmente el ciclo de facturacion electronica y documentos transaccionales.
@@ -1294,9 +1297,9 @@
 	- Descripción: la vista de carrito por estacion ahora ofrece un retorno directo a `administrar_empresa/estaciones.html`, manteniendo el `empresa_id` activo para volver al tablero de estaciones sin depender del historial del navegador.
 	- Verificación: diagnostico del editor sin errores en `web/administrar_empresa/ventas_simple.html` y `web/js/ventas_simple.js`.
 
-- Configuracion empresarial: el submenú `Configuraci?n` ahora puede ocultar y mostrar su menú lateral en celular.
+- Configuracion empresarial: el submenú `Configuración` ahora puede ocultar y mostrar su menú lateral en celular.
 	- Archivos modificados: `web/administrar_empresa/configuracion_menu.html`, `documentos/descripcion_del_proyecto`, `documentos/descripcion_de_modulos`, `documentos/matriz_roles_permisos_pos_multiempresa.md`, `documentos/historial_de_cambios`, `CHANGELOG.md`.
-	- Descripción: la página `administrar_empresa/configuracion_menu.html` carga `menu.js`, adopta el wrapper `admin-sidebar-mobile-collapsible` y agrega el mismo botón final de `Ocultar menú` / `Mostrar menú` usado por otros shells administrativos, para que el submenú de configuraci?n tambi?n sea plegable en m?vil.
+	- Descripción: la página `administrar_empresa/configuracion_menu.html` carga `menu.js`, adopta el wrapper `admin-sidebar-mobile-collapsible` y agrega el mismo botón final de `Ocultar menú` / `Mostrar menú` usado por otros shells administrativos, para que el submenú de configuración tambi?n sea plegable en m?vil.
 	- Verificación: diagnostico del editor sin errores en `web/administrar_empresa/configuracion_menu.html`.
 
 - Estaciones: se elimina el circulo inferior de la tarjeta y se conserva solo el indicador cuadrado del sensor.
@@ -1309,7 +1312,7 @@
 	- Descripción: el backend ahora resuelve la empresa por `empresa_id` logico al construir el correo de activacion, endurece los helpers de `pagos_epayco` y `pagos_wompi` con autorreparacion del esquema, y rechaza conciliaciones de `transaction_status` cuando la referencia pertenece a otra empresa o licencia distinta de la pagina abierta; el frontend envia ese contexto esperado en cada polling y lo mantiene al cerrar el pago aprobado.
 	- Verificación: `go test ./handlers -run 'Test(EpaycoTransactionStatusHandlerActivatesOnceAndCapturesEmail|EpaycoTransactionStatusHandlerUsesEmpresaScopeForActivationMailBody|EpaycoTransactionStatusHandlerRejectsUnexpectedEmpresaContext|EpaycoWebhookHandlerFindsContextUsingInvoiceFallback|EpaycoTransactionStatusHandlerRetriesActivationEmailAfterWebhookActivatedFirst|WompiTransactionStatusHandlerAllowsReferenceLookup)' -count=1`; `go test ./ ./auth ./db ./handlers ./metrics ./utils -run '^$' -count=1`.
 
-- Selector de empresas: tarjetas mas peque?as y botones alineados al pie.
+- Selector de empresas: tarjetas mas pequeñas y botones alineados al pie.
 	- Archivos modificados: `web/estilos.css`, `documentos/descripcion_del_proyecto`, `documentos/descripcion_de_modulos`, `documentos/matriz_roles_permisos_pos_multiempresa.md`, `documentos/descripcion_de_archivos`, `documentos/historial_de_cambios`, `CHANGELOG.md`.
 	- Descripción: `seleccionar_empresa.html` mantiene su mismo flujo, pero las tarjetas del grid se compactan en escritorio y la botonera inferior queda centrada y pegada al pie de cada bloque para que la fila de acciones no quede flotando a media altura.
 	- Verificación: diagnostico del editor sin errores en `web/estilos.css`.
@@ -1336,7 +1339,7 @@
 
 - Licencias Epayco: el correo de activaci?n ahora se reintenta de forma idempotente despu?s de aprobados posteriores si la licencia ya qued? activa pero la notificaci?n todavía no qued? confirmada.
 	- Archivos modificados: `backend/handlers/payments_handlers.go`, `backend/handlers/payments_handlers_test.go`, `documentos/descripcion_del_proyecto`, `documentos/descripcion_de_modulos`, `documentos/matriz_roles_permisos_pos_multiempresa.md`, `documentos/diagramas/estructura_del_codigo.md`, `documentos/descripcion_de_archivos`, `documentos/historial_de_cambios`, `CHANGELOG.md`.
-	- Descripción: el flujo Epayco deja de depender de una activaci?n ÃƒÂ¢Ã¢â€šÂ¬Ã…?reci?n creadaÃƒÂ¢Ã¢â€šÂ¬Ã‚Â para enviar el correo; adem?s, ahora tambi?n recupera el `customer_email` cuando la validación lo devuelve anidado en `data`, evitando perder la notificaci?n si el webhook aprob? primero o si el primer intento fall? temporalmente.
+	- Descripción: el flujo Epayco deja de depender de una activaci?n “reci?n creada” para enviar el correo; además, ahora tambi?n recupera el `customer_email` cuando la validación lo devuelve anidado en `data`, evitando perder la notificaci?n si el webhook aprobó primero o si el primer intento falló temporalmente.
 	- Verificación: `go test ./handlers -run 'TestEpayco(TransactionStatusHandlerActivatesOnceAndCapturesEmail|WebhookHandlerFindsContextUsingInvoiceFallback|TransactionStatusHandlerRetriesActivationEmailAfterWebhookActivatedFirst)' -count=1`; `go test ./ ./auth ./db ./handlers ./metrics ./utils -run '^$' -count=1`.
 
 - Arcade publico: Brigada burbujas 3D plus agrega boton Auto visible, ayuda de mira movil y ajuste fino de impacto.
@@ -1498,7 +1501,7 @@
 
 - Venta pública por empresa: Wompi y Epayco con credenciales propias por empresa.
 	- Archivos modificados: `backend/db/venta_publica.go`, `backend/handlers/venta_publica.go`, `backend/handlers/payments_handlers.go`, `backend/handlers/venta_publica_test.go`, `backend/main.go`, `web/venta_publica.html`, `web/administrar_empresa/venta_publica.html`, `web/administrar_empresa/configuracion.html`, `documentos/estructura_bd.md`, `documentos/descripcion_del_proyecto`, `documentos/diagramas/estructura_del_codigo.md`, `documentos/descripcion_de_modulos`, `documentos/matriz_roles_permisos_pos_multiempresa.md`, `documentos/descripcion_de_archivos`, `documentos/historial_de_cambios`, `CHANGELOG.md`.
-	- Descripción: cada empresa puede activar o desactivar Wompi y Epayco con sus propias credenciales, administrar esas llaves desde `configuracion.html` y reutilizarlas en su tienda pública; adem?s los webhooks de ambas pasarelas ya actualizan las ?rdenes de `empresa_venta_publica_ordenes`.
+	- Descripción: cada empresa puede activar o desactivar Wompi y Epayco con sus propias credenciales, administrar esas llaves desde `configuracion.html` y reutilizarlas en su tienda pública; además los webhooks de ambas pasarelas ya actualizan las órdenes de `empresa_venta_publica_ordenes`.
 	- Verificación: `go test ./handlers -run "Test(EmpresaVentaPublicaHandlerConfigCatalogoYToggle|PublicVentaPublicaHandlerCatalogoYPagoConWompiInactivo|PublicVentaPublicaHandlerEstadoPagoRequiereOrderCode)" -count=1`; `go test ./ ./auth ./db ./handlers ./metrics ./utils -run "^$" -count=1`.
 
 - Seleccionar empresa: nueva pagina para descargar informacion empresarial en formatos profesionales.
@@ -1544,7 +1547,7 @@
 
 - Navegacion general: misma pesta?a por defecto.
 	- Archivos modificados: `web/super_administrador.html`, `web/administrar_empresa.html`, `web/js/administrar_empresa.js`, `web/js/seleccionar_empresa.js`, `web/login.html`, `web/registrar_nuevo_usuario_administrador.html`, `web/registrar_contrasena_usuario_de_google.html`, `web/super/venta_digital.html`, `web/super/pagina_principal.html`, `web/super/configuracion_avanzada.html`, `web/administrar_empresa/venta_publica.html`, `web/administrar_empresa/soporte_remoto.html`, `web/super/soporte_remoto.html`, `web/administrar_empresa/administrar_clientes.html`, `web/administrar_empresa/asistencia_empleados.html`, `web/administrar_empresa/backups.html`, `web/administrar_empresa/tarifas_por_dia.html`, `web/administrar_empresa/chat_con_inteligencia_artificial.html`, `web/administrar_empresa/chat_y_tareas.html`, `web/index.html`, `web/Informacion_de_contacto.html`, `documentos/diagramas/estructura_del_codigo.md`, `documentos/descripcion_de_modulos`, `documentos/matriz_roles_permisos_pos_multiempresa.md`, `documentos/descripcion_de_archivos`, `documentos/historial_de_cambios`, `CHANGELOG.md`.
-	- Descripción: la navegaci?n normal del sistema deja de abrir pesta?as nuevas y reutiliza la misma ventana actual. Se mantienen como excepci?n solo el contrato, los t?rminos legales de pasarela y los popups t?cnicos de impresión o vista previa documental.
+	- Descripción: la navegación normal del sistema deja de abrir pesta?as nuevas y reutiliza la misma ventana actual. Se mantienen como excepci?n solo el contrato, los t?rminos legales de pasarela y los popups técnicos de impresión o vista previa documental.
 	- Verificación: búsqueda final de `target="_blank"|window.open(` limitada a excepciones esperadas; diagn?stico del editor sin errores en los archivos modificados.
 
 - Licencias super: valor 0 ya no se oculta en edici?n ni en listado.
@@ -1579,7 +1582,7 @@
 
 - Login administrativo: Google y correo quedan en una sola tarjeta visual.
 	- Archivos modificados: `web/login.html`, `web/estilos.css`, `documentos/diagramas/estructura_del_codigo.md`, `documentos/descripcion_de_modulos`, `documentos/matriz_roles_permisos_pos_multiempresa.md`, `documentos/descripcion_de_archivos`, `documentos/historial_de_cambios`, `CHANGELOG.md`.
-	- Descripción: el bloque de acceso por correo deja de renderizarse como un formulario en caja separado dentro de `login.html`. Google, correo, recuperaci?n y reset ahora comparten el mismo contenedor visual principal.
+	- Descripción: el bloque de acceso por correo deja de renderizarse como un formulario en caja separado dentro de `login.html`. Google, correo, recuperación y reset ahora comparten el mismo contenedor visual principal.
 	- Verificación: diagnostico del editor sin errores en `web/login.html` y `web/estilos.css`.
 
 - Arcade publico: runtime comun de poderes y premios en los nueve juegos activos.
@@ -1711,9 +1714,9 @@
 	- Descripción: el arcade publico deja de operar con el set anterior y pasa a un lobby de ocho juegos activos con records compartidos por navegador, popup uniforme `700x700` en escritorio y pausa real en todas las experiencias, incluyendo congelacion de IA u oponentes cuando aplica.
 	- Verificación: diagnostico del editor sin errores en `web/Juegos/menu_juegos.html` y en los ocho archivos `*_plus.html` del nuevo arcade.
 
-- Home público: botones superiores m?s compactos y centrados en m?vil.
+- Home público: botones superiores más compactos y centrados en m?vil.
 	- Archivos modificados: `web/estilos.css`, `documentos/descripcion_del_proyecto`, `documentos/diagramas/estructura_del_codigo.md`, `documentos/descripcion_de_modulos`, `documentos/matriz_roles_permisos_pos_multiempresa.md`, `documentos/descripcion_de_archivos`, `documentos/historial_de_cambios`, `CHANGELOG.md`.
-	- Descripción: los botones `Registrarse o iniciar sesión` e `Informacion de contacto` del `index.html` ahora comparten un ancho m?s peque?o, menor altura visual y en celular se muestran centrados dentro del header.
+	- Descripción: los botones `Registrarse o iniciar sesión` e `Informacion de contacto` del `index.html` ahora comparten un ancho más peque?o, menor altura visual y en celular se muestran centrados dentro del header.
 	- Verificación: diagnostico del editor sin errores en `web/estilos.css`.
 
 - Licencias super: autorreparaci?n del esquema y validación real de guardado del valor.
@@ -1723,7 +1726,7 @@
 
 - Seleccionar empresa: tarjetas adaptables con contenido interno completo y m?rgenes estrechos.
 	- Archivos modificados: `web/js/seleccionar_empresa.js`, `web/estilos.css`, `documentos/descripcion_del_proyecto`, `documentos/diagramas/estructura_del_codigo.md`, `documentos/descripcion_de_modulos`, `documentos/matriz_roles_permisos_pos_multiempresa.md`, `documentos/descripcion_de_archivos`, `documentos/historial_de_cambios`, `CHANGELOG.md`.
-	- Descripción: la vista `seleccionar_empresa.html` pasa a renderizar tarjetas con estructura interna avanzada (`empresa-card`) y estilos flexibles que permiten envolver títulos, descripciones, estados y metadatos sin cortar contenido. Se mantienen m?rgenes peque?os y el interior se adapta autom?ticamente al texto disponible.
+	- Descripción: la vista `seleccionar_empresa.html` pasa a renderizar tarjetas con estructura interna avanzada (`empresa-card`) y estilos flexibles que permiten envolver títulos, descripciones, estados y metadatos sin cortar contenido. Se mantienen m?rgenes peque?os y el interior se adapta automáticamente al texto disponible.
 	- Verificación: diagnostico del editor sin errores en `web/js/seleccionar_empresa.js` y `web/estilos.css`.
 
 - Super pagina principal: el editor ya no recorta tarjetas cargadas por usar el valor inicial del input de cantidad.
@@ -1761,10 +1764,10 @@
 - Login Google: registro obligatorio de contrasena local cuando falta password_set.
 	- Archivos creados: `web/registrar_contrasena_usuario_de_google.html`, `web/js/registrar_contrasena_usuario_de_google.js`.
 	- Archivos modificados: `backend/handlers/auth_admin_handlers.go`, `backend/handlers/accept_handlers.go`, `backend/handlers/account_handlers.go`, `backend/main.go`, `backend/handlers/auth_admin_handlers_test.go`, `backend/handlers/e2e_login_acceptance_test.go`, `web/ayuda/login_administradores.html`, `documentos/descripcion_del_proyecto`, `documentos/diagramas/estructura_del_codigo.md`, `documentos/descripcion_de_modulos`, `documentos/matriz_roles_permisos_pos_multiempresa.md`, `documentos/descripcion_de_archivos`, `documentos/historial_de_cambios`, `CHANGELOG.md`.
-	- Descripción: el callback Google y la aceptaci?n de contrato ya no envían al panel final cuando la cuenta administrativa a?n no tiene contrase?a local; ahora redirigen a `registrar_contrasena_usuario_de_google.html`, que guarda la primera clave mediante `/api/account/set_google_password` para habilitar despu?s el acceso por correo y contrase?a.
+	- Descripción: el callback Google y la aceptaci?n de contrato ya no envían al panel final cuando la cuenta administrativa a?n no tiene contraseña local; ahora redirigen a `registrar_contrasena_usuario_de_google.html`, que guarda la primera clave mediante `/api/account/set_google_password` para habilitar despu?s el acceso por correo y contraseña.
 	- Verificación: `go test -work ./handlers -run "Test(AccountSetGooglePasswordHandlerCreatesInitialPassword|E2E_AcceptContractCreatesSession|AdminLoginHandlerCreatesSessionForConfirmedAdmin)" -count=1`.
 
-- Super: panel PostgreSQL con carga de tama?o por empresa.
+- Super: panel PostgreSQL con carga de tamaño por empresa.
 	- Archivos modificados: `backend/handlers/postgres_performance.go`, `backend/handlers/postgres_performance_test.go`, `web/super/administrar_base_de_datos.html`, `documentos/descripcion_del_proyecto`, `documentos/diagramas/estructura_del_codigo.md`, `documentos/descripcion_de_modulos`, `documentos/matriz_roles_permisos_pos_multiempresa.md`, `documentos/descripcion_de_archivos`, `documentos/historial_de_cambios`, `CHANGELOG.md`.
 	- Descripción: el panel super de administracion PostgreSQL ahora puede cargar bajo demanda una tabla de consumo estimado por empresa dentro de `pcs_empresas`, ordenada de mayor a menor y mostrando tambien filas estimadas, tablas con datos y la tabla mas pesada por empresa.
 	- Verificación: `go test -work ./handlers -run "TestPostgresPerformanceHandler|TestHumanizeBytesBinary" -count=1`.
@@ -1782,10 +1785,10 @@
 	- Archivos modificados: `backend/handlers/payments_handlers.go`, `backend/handlers/payments_handlers_test.go`, `documentos/descripcion_del_proyecto`, `documentos/diagramas/estructura_del_codigo.md`, `documentos/descripcion_de_modulos`, `documentos/matriz_roles_permisos_pos_multiempresa.md`, `documentos/descripcion_de_archivos`, `documentos/historial_de_cambios`, `CHANGELOG.md`.
 	- Descripción: el retorno de Epayco ya no depende de enviar al usuario directamente a `pagar_licencia.html`; ahora existe la landing publica fija `/epayco/respuesta.html`, que puedes registrar en el panel de Epayco y que reenvia al resumen del pago con el contexto necesario para validar y activar la licencia.
 	- Verificación: `go test -work ./handlers -run "TestEpaycoCreateTransactionHandlerUsesConfiguredPublicBaseURLAndKeys|TestEpaycoCreateTransactionHandlerAllowsCheckoutWithoutPrivateKey|TestEpaycoTransactionStatusHandlerPreservesPendingOnGenericValidationError|TestResolvePaymentBaseURL" -count=1`.
-- Login administrativo: registro separado, confirmación pública corregida y recuperaci?n sin prompts.
+- Login administrativo: registro separado, confirmación pública corregida y recuperación sin prompts.
 	- Archivos creados: `web/registrar_nuevo_usuario_administrador.html`, `web/js/registrar_nuevo_usuario_administrador.js`, `backend/handlers/auth_admin_handlers_test.go`.
 	- Archivos modificados: `backend/handlers/auth_admin_handlers.go`, `backend/utils/utils.go`, `web/login.html`, `web/js/login.js`, `web/estilos.css`, `web/ayuda/login_administradores.html`, `backend/handlers/auth_users_carritos_test.go`, `documentos/descripcion_del_proyecto`, `documentos/diagramas/estructura_del_codigo.md`, `documentos/descripcion_de_modulos`, `documentos/matriz_roles_permisos_pos_multiempresa.md`, `documentos/descripcion_de_archivos`, `documentos/historial_de_cambios`, `CHANGELOG.md`.
-	- Descripción: el login administrativo ahora deja el registro en una página pública espec?fica, elimina el campo de nombre incrustado del acceso principal, centra `Iniciar por correo` y agrega debajo `Registrarse` y `Ãƒâ€šÃ‚Â¿Olvid? su contrase?a`. El backend valida `nombre`, `telefono` y contrase?a segura, evita sobrescribir cuentas confirmadas, corrige el whitelist público para `/auth/confirmar_admin` y sustituye la recuperaci?n por formularios reales dentro de `login.html`.
+	- Descripción: el login administrativo ahora deja el registro en una página pública espec?fica, elimina el campo de nombre incrustado del acceso principal, centra `Iniciar por correo` y agrega debajo `Registrarse` y `¿Olvid? su contraseña`. El backend valida `nombre`, `telefono` y contraseña segura, evita sobrescribir cuentas confirmadas, corrige el whitelist público para `/auth/confirmar_admin` y sustituye la recuperación por formularios reales dentro de `login.html`.
 	- Verificación: `go test -work ./handlers -run "Test(Admin|AuthMiddlewareAllowsPublicPortalPagesAssetsAndHomeCardsAPI|HandleGoogleLogin|E2E_AcceptContractCreatesSession)" -count=1`; `go test -work ./ ./auth ./db ./handlers ./metrics ./utils -run "^$" -count=1`.
 
 - Arcade publico: Patito volando ahora inicia con cuenta regresiva y los cinco juegos refuerzan su modo celular.
@@ -1874,7 +1877,7 @@
 	- Descripción: el backend deja de exigir `epayco.private_key` para mostrar Epayco en el checkout actual y usa `epayco.public_key` como requisito minimo operativo junto al flag `enabled`. Tambien se corrige `AuthMiddleware` para dejar publicas `/api/public/licencias/payment_methods`, `/wompi/*` y `/epayco/*`, y `web/pagar_licencia.html` ahora indica si la pasarela esta desactivada o si falta la `Public Key`.
 	- Verificación: `go test ./handlers -run "Test(EpaycoCreateTransactionHandlerUsesConfiguredPublicBaseURLAndKeys|EpaycoCreateTransactionHandlerAllowsCheckoutWithoutPrivateKey|PublicLicenciasPaymentMethodsHandlerOrdersAndAvailability|PublicLicenciasPaymentMethodsHandlerAllowsEpaycoWithPublicKeyOnly)" -count=1`; `go test ./utils -run "Test(AuthMiddlewareAllowsPublicLicenciaPaymentRoutesWithoutSession|JSONErrorMiddlewareWrapsEpaycoNonJSONError)" -count=1`; diagnostico del editor sin errores en los archivos Go/HTML tocados.
 
-- Login admin y configuraci?n Gmail: se simplifica el hint visual y se habilita edici?n directa.
+- Login admin y configuración Gmail: se simplifica el hint visual y se habilita edici?n directa.
 	- Archivos modificados: `web/login.html`, `web/super/configuracion_avanzada.html`, `documentos/descripcion_del_proyecto`, `documentos/diagramas/estructura_del_codigo.md`, `documentos/descripcion_de_modulos`, `documentos/matriz_roles_permisos_pos_multiempresa.md`, `documentos/descripcion_de_archivos`, `documentos/historial_de_cambios`, `CHANGELOG.md`.
 	- Descripción: el login administrativo ya no muestra el bloque `Se recordar? ... / Olvidar`, aunque conserva la logica de `Recordar cuenta`, y la seccion Gmail SMTP del panel super deja de bloquear el correo remitente y los demas campos cuando ya existe una configuracion guardada.
 	- Verificación: `go test ./handlers -run "TestGmailConfigHandlerSaveRestartAlertTo" -count=1`; diagnostico del editor sin errores en los archivos HTML tocados.
@@ -1903,12 +1906,12 @@
 - Checkout de licencias: fix Epayco con `public_key` real y callbacks sobre dominio público.
 	- Archivos creados: `backend/handlers/payments_handlers_test.go`.
 	- Archivos modificados: `backend/handlers/payments_handlers.go`, `backend/handlers/system_empresas_handlers_test.go`, `web/super/configuracion_avanzada.html`, `documentos/descripcion_del_proyecto`, `documentos/diagramas/estructura_del_codigo.md`, `documentos/descripcion_de_modulos`, `documentos/matriz_roles_permisos_pos_multiempresa.md`, `documentos/descripcion_de_archivos`, `documentos/historial_de_cambios`, `CHANGELOG.md`.
-	- Descripción: se corrige el flujo de Epayco para separar `public_key`, `private_key` y `customer_id`, mantener compatibilidad con configuraciones legacy y resolver `response`/`confirmation` desde una base pública v?lida en vez de `localhost`. La pantalla de configuraci?n avanzada deja de confundir la llave pública con el identificador del comercio y Wompi reutiliza la misma base pública para su `redirect_url`.
+	- Descripción: se corrige el flujo de Epayco para separar `public_key`, `private_key` y `customer_id`, mantener compatibilidad con configuraciones legacy y resolver `response`/`confirmation` desde una base pública v?lida en vez de `localhost`. La pantalla de configuración avanzada deja de confundir la llave pública con el identificador del comercio y Wompi reutiliza la misma base pública para su `redirect_url`.
 	- Verificación: `go test ./handlers -run "TestResolvePaymentBaseURL|TestEpaycoCreateTransactionHandlerUsesConfiguredPublicBaseURLAndKeys|TestPublicLicenciasPaymentMethodsHandlerOrdersAndAvailability" -count=1`; `go test ./ ./auth ./db ./handlers ./metrics ./utils -run "^$" -count=1`; diagnostico del editor sin errores en los archivos tocados.
 
-- Login Google: host can?nico en dominio ra?z y estaciones con carga visible.
+- Login Google: host canúnico en dominio ra?z y estaciones con carga visible.
 	- Archivos modificados: `backend/utils/utils.go`, `backend/utils/utils_test.go`, `backend/main.go`, `backend/.env.example`, `scripts/sync_to_vps.ps1`, `web/administrar_empresa/estaciones.html`, `web/estilos.css`, `documentos/descripcion_del_proyecto`, `documentos/diagramas/estructura_del_codigo.md`, `documentos/descripcion_de_modulos`, `documentos/matriz_roles_permisos_pos_multiempresa.md`, `documentos/descripcion_de_archivos`, `documentos/historial_de_cambios`, `CHANGELOG.md`.
-	- Descripción: se corrige la inestabilidad del acceso administrativo tras registrar el dominio público, redirigiendo `www.powerfulcontrolsystem.com` al host can?nico `powerfulcontrolsystem.com` antes de procesar OAuth y alineando los defaults de `GOOGLE_REDIRECT_URL` al callback del dominio ra?z. Además, la página de estaciones ahora muestra `Cargando estaciones...` mientras consulta configuraci?n, carritos y sensores, con mensaje visible en caso de error.
+	- Descripción: se corrige la inestabilidad del acceso administrativo tras registrar el dominio público, redirigiendo `www.powerfulcontrolsystem.com` al host canúnico `powerfulcontrolsystem.com` antes de procesar OAuth y alineando los defaults de `GOOGLE_REDIRECT_URL` al callback del dominio ra?z. Además, la página de estaciones ahora muestra `Cargando estaciones...` mientras consulta configuración, carritos y sensores, con mensaje visible en caso de error.
 	- Verificación: `go test ./utils -run "Test(CanonicalPublicHostMiddleware|LoggingMiddlewareSetsContextAndWritesLogs|JSONErrorMiddlewareWrapsNonJSONError)" -count=1`; `go test ./handlers -run "TestHandleGoogleLogin" -count=1`; diagn?stico del editor sin errores nuevos en los archivos tocados.
 
 - Portal publico: home, landing descriptiva y contacto liberados sin sesion.
@@ -1983,12 +1986,12 @@
 
 - Portal principal: título en una sola l?nea con subtítulo debajo en la misma columna.
 	- Archivos modificados: `web/index.html`, `web/estilos.css`, `documentos/historial_de_cambios`, `CHANGELOG.md`.
-	- Descripción: se agrega el contenedor `portal-intro-copy` para apilar verticalmente el encabezado del home, manteniendo `Sistema de Facturaci?n Electr?nica` en una sola fila y moviendo `Toma el control de tu negocio con Powerful Control System` justo debajo, centrado en el mismo bloque visual.
+	- Descripción: se agrega el contenedor `portal-intro-copy` para apilar verticalmente el encabezado del home, manteniendo `Sistema de Facturación Electrónica` en una sola fila y moviendo `Toma el control de tu negocio con Powerful Control System` justo debajo, centrado en el mismo bloque visual.
 	- Verificación: revision estatica de estructura HTML/CSS confirmando el nuevo contenedor y la regla `white-space: nowrap` aplicada al título.
 
 - Login administrativo Google: correccion para VPS y local + recordar cuenta estable.
 	- Archivos modificados: `backend/handlers/auth_admin_handlers.go`, `backend/utils/utils.go`, `backend/handlers/auth_users_carritos_test.go`, `web/login.html`, `web/menu.js`, `web/js/login.js`, `web/index.html`, `web/estilos.css`, `documentos/diagramas/estructura_del_codigo.md`, `documentos/descripcion_de_archivos`, `documentos/descripcion_de_modulos`, `documentos/matriz_roles_permisos_pos_multiempresa.md`, `documentos/historial_de_cambios`, `CHANGELOG.md`.
-	- Descripción: se corrige el flujo OAuth para adaptar `redirect_uri` al host real de la solicitud y forzar `https` en dominio publico (`powerfulcontrolsystem.com`), se habilitan rutas publicas que bloqueaban el login (`/js/login.js` y `/api/public/pagina_principal`), se evita consulta a `/me` sin sesion para eliminar ruido `401` en F12 y se completa la experiencia de `recordar cuenta`; adicionalmente se actualiza el encabezado del home a `Sistema de Facturaci?n Electr?nica` con subtitulo operativo.
+	- Descripción: se corrige el flujo OAuth para adaptar `redirect_uri` al host real de la solicitud y forzar `https` en dominio publico (`powerfulcontrolsystem.com`), se habilitan rutas publicas que bloqueaban el login (`/js/login.js` y `/api/public/pagina_principal`), se evita consulta a `/me` sin sesion para eliminar ruido `401` en F12 y se completa la experiencia de `recordar cuenta`; adicionalmente se actualiza el encabezado del home a `Sistema de Facturación Electrónica` con subtitulo operativo.
 	- Verificación: `go test ./handlers -run "TestHandleGoogleLogin|TestAuthMiddlewareAllowsPublicLoginAssetsAndHomeCardsAPI" -v -count=1` en verde; en VPS `GET /js/login.js` y `GET /api/public/pagina_principal` responden `200`; `GET /auth/google/login` emite `redirect_uri=https://powerfulcontrolsystem.com/auth/google/callback`; `google.redirect_url` en BD super qued? en HTTPS.
 
 - Inicio local: diagnostico robusto para tunel SSH de PostgreSQL en VPS.
@@ -2077,20 +2080,20 @@
 
 - OAuth Google VPS: prioridad de entorno sobre DB + soporte de `GOOGLE_REDIRECT_URL` en despliegue.
 	- Archivos modificados: `backend/main.go`, `scripts/sync_to_vps.ps1`, `scripts/sync_to_vps.sh`.
-	- Descripción: se ajusta la carga OAuth para que `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` y `GOOGLE_REDIRECT_URL` del entorno tengan prioridad sobre valores almacenados en tabla `configuraciones` (la DB solo completa faltantes). Se a?ade adem?s propagaci?n de `GOOGLE_REDIRECT_URL` en bootstrap remoto de scripts de sincronización.
+	- Descripción: se ajusta la carga OAuth para que `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` y `GOOGLE_REDIRECT_URL` del entorno tengan prioridad sobre valores almacenados en tabla `configuraciones` (la DB solo completa faltantes). Se a?ade además propagaci?n de `GOOGLE_REDIRECT_URL` en bootstrap remoto de scripts de sincronización.
 	- Verificación: `go test ./handlers -run "TestHandleGoogleLoginRedirect" -count=1` y `go test ./ -count=1` en verde. Diagn?stico en VPS confirma que el bloqueo actual es de pol?tica OAuth en Google (`secure-response-handling` / `redirect_uri_mismatch`) y no de base de datos.
 
 - OAuth Google: correcci?n de callback para evitar `localhost` en entorno VPS.
 	- Archivos modificados: `backend/handlers/auth_admin_handlers.go`, `backend/handlers/auth_users_carritos_test.go`, `backend/main.go`.
-	- Descripción: se implementa resolución din?mica del `redirect_uri` por host/protocolo de la solicitud y una regla de reescritura segura cuando la configuraci?n existente apunta a loopback (`localhost/127.0.0.1`) pero el acceso real es público (VPS). El callback reutiliza la URL efectiva mediante cookie t?cnica de corta duraci?n para mantener consistencia en intercambio de token.
+	- Descripción: se implementa resolución dinámica del `redirect_uri` por host/protocolo de la solicitud y una regla de reescritura segura cuando la configuración existente apunta a loopback (`localhost/127.0.0.1`) pero el acceso real es público (VPS). El callback reutiliza la URL efectiva mediante cookie técnica de corta duraci?n para mantener consistencia en intercambio de token.
 	- Verificación: despliegue real a VPS con `DEPLOY_OK:pid=53618 port=8080`; validación HTTP de `/auth/google/login` devuelve `redirect_uri=http://2.24.197.58:8080/auth/google/callback`.
 
-- Sync VPS: guard estricto de DSN para PostgreSQL y recuperaci?n de despliegue estable.
+- Sync VPS: guard estricto de DSN para PostgreSQL y recuperación de despliegue estable.
 	- Archivos modificados: `scripts/sync_to_vps.ps1`, `scripts/sync_to_vps.sh`, `scripts/README_sync.md`, `documentos/diagramas/estructura_del_codigo.md`, `CHANGELOG.md`, `documentos/historial_de_cambios`, `documentos/descripcion_de_archivos`.
-	- Descripción: el bootstrap remoto ahora conserva valores DB existentes, valida el modo efectivo y bloquea el despliegue con `BOOTSTRAP_ERROR:POSTGRES_MISSING_DSN` cuando `postgres` no tiene ambos DSN; adem?s usa el ?ltimo valor de cada clave (`tail -n1`) y evita llegar a `DEPLOY_ERROR:process_not_running` por arranque inv?lido. En paralelo se restableci? configuraci?n DSN operativa en VPS para retomar despliegues en modo PostgreSQL.
+	- Descripción: el bootstrap remoto ahora conserva valores DB existentes, valida el modo efectivo y bloquea el despliegue con `BOOTSTRAP_ERROR:POSTGRES_MISSING_DSN` cuando `postgres` no tiene ambos DSN; además usa el ?ltimo valor de cada clave (`tail -n1`) y evita llegar a `DEPLOY_ERROR:process_not_running` por arranque inv?lido. En paralelo se restableci? configuración DSN operativa en VPS para retomar despliegues en modo PostgreSQL.
 	- Verificación: ejecución real `./scripts/sync_to_vps.ps1 -SkipBuild -RetryCount 1` primero falla en bootstrap con mensaje explícito de DSN faltantes, luego (tras restablecer DSN en VPS) finaliza con `DEPLOY_OK:pid=... port=8080` y `GET /` = `200`.
 
-- VPS web root: correcci?n de resolución de est?ticos para index/login.
+- VPS web root: correcci?n de resolución de estáticos para index/login.
 	- Archivos modificados: `backend/main.go`, `scripts/sync_to_vps.ps1`, `CHANGELOG.md`, `documentos/historial_de_cambios`, `documentos/diagramas/estructura_del_codigo.md`, `documentos/descripcion_de_archivos`.
 	- Descripción: se ajusta `resolveWebDir()` para priorizar correctamente `.../web` cuando el binario corre desde `backend/bin`, evitando que el servidor sirva `backend/web/uploads/` como ra?z. Se redepliega en VPS y se valida apertura autom?tica de la URL pública.
 	- Verificación: `GET /` = `200` con HTML de portal, `GET /index.html` = `200`, `GET /login.html` = `200`, proceso remoto activo en `:8080` y runtime PostgreSQL operativo.
@@ -2102,12 +2105,12 @@
 
 - Migraci?n PostgreSQL (fase 4): estabilizaci?n de salida operativa en contabilidad y runtime VPS.
 	- Archivos modificados: `backend/db/eventos_contables.go`, `documentos/diagramas/estructura_del_codigo.md`, `documentos/descripcion_de_modulos`, `documentos/matriz_roles_permisos_pos_multiempresa.md`, `Pendiente Notas`, `documentos/descripcion_de_archivos`, `documentos/historial_de_cambios`.
-	- Descripción: se corrige el flujo del worker de asientos/eventos para PostgreSQL usando wrappers SQL portables y retorno de `id` compatible, eliminando el error `syntax error at or near "ORDER"` en runtime. Se restaura adem?s el entorno VPS con DSN PostgreSQL v?lidos en `backend/.env.local` y se valida arranque estable.
+	- Descripción: se corrige el flujo del worker de asientos/eventos para PostgreSQL usando wrappers SQL portables y retorno de `id` compatible, eliminando el error `syntax error at or near "ORDER"` en runtime. Se restaura además el entorno VPS con DSN PostgreSQL v?lidos en `backend/.env.local` y se valida arranque estable.
 	- Verificación: `go test ./ ./auth ./db ./handlers ./metrics ./utils` en verde; validación remota en VPS con proceso activo, sin errores recientes de `asientos_worker` y healthcheck `HTTP=200`.
 
 - Migraci?n PostgreSQL (fase 3): cierre documental del plan y sincronización de gobernanza por módulos.
 	- Archivos modificados: `Pendiente Notas`, `documentos/descripcion_de_modulos`, `documentos/matriz_roles_permisos_pos_multiempresa.md`, `documentos/historial_de_cambios`.
-	- Descripción: se marca Fase 3 como completada en el plan operativo, se agrega evidencia t?cnica de conmutaci?n a PostgreSQL y se alinea la documentaci?n de módulos/permisos sin cambios de privilegios en la matriz CRUD/A.
+	- Descripción: se marca Fase 3 como completada en el plan operativo, se agrega evidencia técnica de conmutaci?n a PostgreSQL y se alinea la documentaci?n de módulos/permisos sin cambios de privilegios en la matriz CRUD/A.
 	- Verificación: se mantiene evidencia de pruebas del bloque core en verde (`go test ./ ./auth ./db ./handlers ./metrics ./utils -count=1`).
 
 - Migraci?n PostgreSQL (fase 3): conmutaci?n de runtime backend a motor PostgreSQL en VPS.
@@ -2148,7 +2151,7 @@
 
 - Migraci?n de datos a PostgreSQL en VPS: instalaci?n, ejecución por etapas y validación inicial.
 	- Archivos modificados: `Pendiente Notas`, `documentos/regla_agente_go.md`, `copilot-instructions.md`, `documentos/descripcion_de_las_bases_De_datos`, `documentos/estructura_bd.md`, `estructura_bd.md`, `documentos/diagramas/estructura_del_codigo.md`, `documentos/descripcion_de_archivos`, `documentos/historial_de_cambios`.
-	- Descripción: se instala PostgreSQL en VPS por SSH, se crean las bases `pcs_superadministrador` y `pcs_empresas`, y se inicia la migraci?n desde motor legado retirado con `pgloader` en dos etapas (superadministrador y empresas), validando consistencia por conteo de tablas en cada base. Se formaliza adem?s la regla operativa: base productiva en VPS con PostgreSQL y motor legado retirado local como legado de migraci?n/contingencia.
+	- Descripción: se instala PostgreSQL en VPS por SSH, se crean las bases `pcs_superadministrador` y `pcs_empresas`, y se inicia la migraci?n desde motor legado retirado con `pgloader` en dos etapas (superadministrador y empresas), validando consistencia por conteo de tablas en cada base. Se formaliza además la regla operativa: base productiva en VPS con PostgreSQL y motor legado retirado local como legado de migraci?n/contingencia.
 	- Verificación: `VALIDACION_SUPER_OK` y `VALIDACION_EMPRESAS_OK` tras comparaci?n motor legado retirado vs PostgreSQL por tabla.
 
 - Login administrativo: eliminación del mensaje visual de cuenta recordada y ajuste de OAuth.
@@ -2159,14 +2162,14 @@
 - Login administrativo: correcci?n de "Recordar cuenta" para evitar sesión parcial.
 	- Archivos modificados: `web/js/login.js`, `web/menu.js`.
 	- Descripción: se corrige el flujo para que cerrar sesión no elimine la preferencia cuando `rememberAccount=1`, se mantiene el correo recordado hasta que el usuario pulse "Olvidar" y se agrega sincronización de `rememberedEmail` desde `/me` cuando existe sesión activa.
-	- Verificación: revisi?n de errores en frontend sin incidencias (`get_errors` en ambos archivos).
+	- Verificación: revisión de errores en frontend sin incidencias (`get_errors` en ambos archivos).
 
 - Inicio local: hardening de scripts/iniciar_servidor para evitar ca?das del host de PowerShell/VS Code.
 	- Archivo modificado: `scripts/iniciar_servidor.ps1`.
-	- Descripción: se refuerza la liberaci?n de puerto 8080 para terminar ?nicamente procesos del backend (`server.exe`, `pos-backend`, `go run` del proyecto) y no procesos ajenos. Cuando el puerto est? ocupado por un proceso no gestionado, el script ahora informa el PID/nombre y aborta con mensaje claro en lugar de forzar `taskkill` indiscriminado. También se elimina el `Clear-Host` inicial para evitar efectos colaterales en consolas integradas.
+	- Descripción: se refuerza la liberaci?n de puerto 8080 para terminar ?nicamente procesos del backend (`server.exe`, `pos-backend`, `go run` del proyecto) y no procesos ajenos. Cuando el puerto está ocupado por un proceso no gestionado, el script ahora informa el PID/nombre y aborta con mensaje claro en lugar de forzar `taskkill` indiscriminado. También se elimina el `Clear-Host` inicial para evitar efectos colaterales en consolas integradas.
 	- Verificación: ejecución local `./scripts/iniciar_servidor.ps1 -Background` con `SCRIPT_EXIT=0` y comprobaci?n HTTP local `HTTP_STATUS=200`.
 
-- Unificaci?n de bases motor legado retirado: solo dos archivos can?nicos del sistema.
+- Unificaci?n de bases motor legado retirado: solo dos archivos canúnicos del sistema.
 	- Archivos modificados: `backend/main.go`, `documentos/estructura_bd.md`, `estructura_bd.md`, `documentos/diagramas/estructura_del_codigo.md`, `documentos/descripcion_de_archivos`, `documentos/historial_de_cambios`.
 	- Descripción: se normaliza la resolución de rutas en runtime para que el backend use por defecto `backend/db/pcs_empresas` y `backend/db/pcs_superadministrador` aunque se ejecute desde otro directorio. Se depuran copias operativas duplicadas en ra?z y en `backend/`, dejando ?nicamente dos archivos `.db` activos.
 	- Verificación: inventario local posterior muestra exactamente dos DB (`backend/db/pcs_empresas` y `backend/db/pcs_superadministrador`) y pruebas backend en verde con `go test ./ ./auth ./db ./handlers ./metrics ./utils`.
@@ -2188,13 +2191,13 @@
 		- scripts/sync_to_vps.ps1 (manejo de errores sin cerrar terminal de VS Code, build Linux local previo y fallback PuTTY sin WSL con empaquetado tar)
 		- scripts/README_sync.md (guía de ejecución en un comando)
 		- web/login.html y web/js/login.js (completa UX de "Recordar cuenta" para login admin)
-	- Descripción: se habilita un flujo operativo de un solo comando para preparar acceso por clave pública al VPS y se corrige la causa de cierres de terminal por `exit` en script PowerShell. `sync_to_vps.ps1` ahora compila en local un binario Linux (`backend/bin/server_linux_amd64`) antes de sincronizar y, sin Ubuntu/WSL, opera empaquetando el proyecto en `.tar`, subi?ndolo por `pscp.exe` y extray?ndolo en VPS por `plink.exe`, con trazas detalladas y exclusi?n de archivos sensibles/locales (`*.ppk`, `*.pem`, `*.key`, DB, logs, temporales); adem?s aplica `chmod +x` al binario remoto configurado. Se a?adi? manejo de `Connection timed out` con prechequeo TCP y reintentos automáticos configurables (`-RetryCount`) por etapa de conexi?n/subida/extracci?n.
+	- Descripción: se habilita un flujo operativo de un solo comando para preparar acceso por clave pública al VPS y se corrige la causa de cierres de terminal por `exit` en script PowerShell. `sync_to_vps.ps1` ahora compila en local un binario Linux (`backend/bin/server_linux_amd64`) antes de sincronizar y, sin Ubuntu/WSL, opera empaquetando el proyecto en `.tar`, subi?ndolo por `pscp.exe` y extray?ndolo en VPS por `plink.exe`, con trazas detalladas y exclusi?n de archivos sensibles/locales (`*.ppk`, `*.pem`, `*.key`, DB, logs, temporales); además aplica `chmod +x` al binario remoto configurado. Se a?adi? manejo de `Connection timed out` con prechequeo TCP y reintentos automáticos configurables (`-RetryCount`) por etapa de conexi?n/subida/extracci?n.
 	- Verificación: `scripts/instalar_clave_publica_vps.ps1 -PreviewOnly -RemoteHost 2.24.197.58` ejecuta correctamente; `scripts/sync_to_vps.ps1 -BuildOnly`, `-DryRun` y ejecución real con `-IdentityFile "D:\powerfulcontrolsystem\clave privada ssh.ppk"` completan con `exit code 0`; en VPS el artefacto qued? como ELF Linux en `/root/powerfulcontrolsystem/backend/bin/server_linux_amd64`.
 
-- M?dulo Vendedores / Asesores comerciales: integraci?n de código de descuento y registro de asesor/vendedor en pagos
+- Módulo Vendedores / Asesores comerciales: integración de código de descuento y registro de asesor/vendedor en pagos
 	- Archivos a?adidos/modificados:
 		- backend/handlers/payments_handlers.go (extiende payload y persistencia de `pagos_wompi` con `discount_code` y `asesor_id`/`vendedor_id`)
-		- backend/db/db.go (helpers para `asesores`, `asesor_comercial` y `asesor_comisiones`, y claves de configuraci?n `vendedor.*`)
+		- backend/db/db.go (helpers para `asesores`, `asesor_comercial` y `asesor_comisiones`, y claves de configuración `vendedor.*`)
 		- backend/handlers/vendedores_handlers.go (nuevo: CRUD de asesores / vendedores)
 		- backend/handlers/vendedor_config_handlers.go (nuevo: GET/PUT /super/api/vendedor_config)
 		- backend/main.go (migraciones: tablas `asesores`, `asesor_comercial`, `asesor_comisiones`; registro de rutas `/super/api/vendedores`, `/super/api/asesor_comercial`, `/super/api/vendedor_config`)
@@ -2218,7 +2221,7 @@
 
 - Reparaci?n integral de acceso empresarial y estaciones.
 	- Archivos modificados: `web/login_usuario.html`, `web/js/login_usuario.js`, `web/js/seleccionar_empresa.js`, `web/administrar_empresa/configuracion_de_estaciones.html`.
-	- Descripción: se corrige la continuidad del flujo `login usuario empresa -> seleccionar empresa -> administrar empresa` con persistencia de `empresa_id` y opci?n de recordar correo. La página de configuraci?n de estaciones se reconstruye y soporta generaci?n/sincronización masiva de estaciones (incluyendo 10+) con manejo tolerante de conflictos idempotentes al cerrar/inactivar carritos.
+	- Descripción: se corrige la continuidad del flujo `login usuario empresa -> seleccionar empresa -> administrar empresa` con persistencia de `empresa_id` y opci?n de recordar correo. La página de configuración de estaciones se reconstruye y soporta generaci?n/sincronización masiva de estaciones (incluyendo 10+) con manejo tolerante de conflictos idempotentes al cerrar/inactivar carritos.
 	- Verificación: pruebas backend de paquetes principales en verde (`go test ./ ./auth ./db ./handlers ./metrics ./utils`).
 
 ## 2026-04-12
@@ -2227,13 +2230,13 @@
 	- Descripción: se unific? el flujo en `login.html -> OAuth -> /accept.html -> /accept/complete -> panel`, usando `administradores.acepta_contrato` como fuente canonica de aceptaci?n (sin depender de cookie global), validación server-side de reCAPTCHA y prompt OAuth `select_account consent` para evitar reutilizaci?n silenciosa de cuenta incorrecta.
 	- Verificación: pruebas dirigidas en verde (`TestE2E_AcceptContractCreatesSession` y `TestHandleGoogleLoginRedirectIncludesLoginHint`).
 
-- M?dulo sensor de puertas (Raspberry Pi): backend, handlers, UI y tests.
+- Módulo sensor de puertas (Raspberry Pi): backend, handlers, UI y tests.
 	- Archivos agregados/modificados:
 		- backend/db/sensor_puertas.go (nuevo módulo DB: dispositivos y heartbeats)
-		- backend/handlers/sensor_puertas.go (handlers: endpoint público `action=heartbeat` y configuraci?n protegida)
+		- backend/handlers/sensor_puertas.go (handlers: endpoint público `action=heartbeat` y configuración protegida)
 		- backend/db/sensor_puertas_test.go (pruebas unitarias DB)
-		- backend/handlers/sensor_puertas_test.go (pruebas handlers: heartbeat y configuraci?n)
-		- web/administrar_empresa/configuracion_de_estaciones.html (UI: registrar device ÃƒÂ¢Ã¢â‚¬Â ? estación)
+		- backend/handlers/sensor_puertas_test.go (pruebas handlers: heartbeat y configuración)
+		- web/administrar_empresa/configuracion_de_estaciones.html (UI: registrar device  ->  estación)
 		- web/administrar_empresa/estaciones.html (indicador visual sensor a?adido)
 		- web/estilos.css (estilos del indicador)
 	- Descripción: Se implement? un módulo ligero para registrar dispositivos Raspberry Pi por empresa y estación, recibir heartbeats públicos y reflejar el estado (negro/verde) en las tarjetas de estaciones. Incluye pruebas unitarias para DB y handlers.
@@ -2242,7 +2245,7 @@
 ## 2026-04-11
 - Generador automático de códigos de descuento: formato moderno `PREFIJO-XXXX-XXXX` (`DSCT-AB12-CD34`).
 	- Archivos modificados: `backend/db/codigos_descuento.go`, `web/administrar_empresa/codigos_de_descuento.html`.
-	- Se mantiene ?ndice ?nico por `(empresa_id, codigo)` y se implement? reintentos en inserci?n para manejar colisiones raras.
+	- Se mantiene ?ndice único por `(empresa_id, codigo)` y se implement? reintentos en inserci?n para manejar colisiones raras.
 	- Se actualizaron `documentos/estructura_bd.md`, `documentos/descripcion_de_archivos` y `documentos/historial_de_cambios`.
 	- Pruebas unitarias de DB asociadas: todas en verde.
 
@@ -2300,21 +2303,21 @@
 	- Se centraliza el manejo de reintentos con `-ForcePush` y confirmacion explicita (`SI`) para mantener seguridad operacional.
 	- Se refuerza el flujo de bitacoras automaticas para reportar mejor cuando falla el push documental.
 
-- Arranque local y est?ticos web: mejoras en `scripts/iniciar_servidor.ps1` y correcci?n de ra?z `/`.
+- Arranque local y estáticos web: mejoras en `scripts/iniciar_servidor.ps1` y correcci?n de ra?z `/`.
 	- `scripts/iniciar_servidor.ps1` ahora muestra progreso por etapas (`1/8` a `8/8`), mensajes `[INFO]/[OK]/[AVISO]/[ERROR]` y salida expl?cita para `-Background` sin abrir navegador.
 	- `backend/main.go` corrige la resolución de carpeta web para priorizar candidatos con `index.html`, evitando servir accidentalmente `backend/web` (solo `uploads/`).
 	- `backend/main.go` agrega manejo de `/favicon.ico` con fallback a `web/img/punto_venta.png` para evitar 404 en consola.
 	- `web/index.html` declara favicon explícito con `link rel="icon"`.
-	- Validaciones: compilaci?n de `backend/main.go` (`go test . -run "^$"`) y parseo de PowerShell de `scripts/iniciar_servidor.ps1` OK.
+	- Validaciones: compilación de `backend/main.go` (`go test . -run "^$"`) y parseo de PowerShell de `scripts/iniciar_servidor.ps1` OK.
 
 - Backups empresariales: nueva opci?n para eliminar información por fecha de corte.
 	- `backend/handlers/backups_empresariales.go` agrega `action=depurar_fecha` en `/api/empresa/backups`, con validación de `fecha_corte` y filtros opcionales `include_tables`/`exclude_tables`.
 	- `backend/db/backups_empresariales.go` incorpora `PurgeEmpresaDataByDateCorte` para eliminar registros por `empresa_id` con fecha <= corte (inclusive), con detalle de eliminaciones por tabla.
-	- La depuraci?n permite generar backup previo automático antes de ejecutar borrado para trazabilidad y recuperaci?n.
+	- La depuraci?n permite generar backup previo automático antes de ejecutar borrado para trazabilidad y recuperación.
 	- `backend/handlers/empresa_permisos.go` clasifica esta acci?n como `permActionApprove` en módulo seguridad.
 	- `web/administrar_empresa/backups.html` incorpora UI de depuraci?n por fecha con confirmación expl?cita y resumen de resultados.
 	- Se agregan pruebas: `TestEmpresaBackupsPurgeByDateCorte` (DB) y `TestEmpresaBackupsHandlerPurgeByDate` (handler).
-	- Validaciones: pruebas de backups en verde y compilaci?n dirigida de paquetes backend críticos OK.
+	- Validaciones: pruebas de backups en verde y compilación dirigida de paquetes backend críticos OK.
 
 - Chat y tareas: documentos/fotos entre usuarios de empresa y administrador.
 	- `backend/handlers/chat_tareas.go` deriva autor desde sesion autenticada (usuario/admin), evita suplantacion de `autor_*` y auto-registra participantes emisores en conversaciones.
@@ -2329,19 +2332,19 @@
 	- Se retiran artefactos locales residuales de validacion (`.docx` y binarios `.test.exe`) para evitar ruido en el arbol de cambios.
 	- Validaciones: `go test ./handlers -run "TestEmpresaChatTareas" -count=1` y compilacion dirigida de paquetes backend (`./auth ./db ./handlers ./metrics ./utils`) en verde.
 
-- Configuraci?n monetaria y num?rica por empresa en panel de configuraci?n.
+- Configuración monetaria y num?rica por empresa en panel de configuración.
 	- `backend/db/empresa_configuracion_avanzada.go` ampl?a `empresa_configuracion_avanzada` con `moneda_codigo`, `sistema_numerico`, `usar_decimales` y `cantidad_decimales`.
 	- `web/administrar_empresa/configuracion.html` agrega tarjeta para configurar moneda operativa, sistema num?rico y precisi?n decimal por empresa.
 	- `backend/db/carritos_compras.go` aplica la moneda configurada por empresa como fallback al crear carritos sin moneda expl?cita.
 	- `backend/main.go` registra la migraci?n `2026-04-08-030-configuracion-monetaria-numerica`.
-	- Validaciones: compilaci?n de `db`, `handlers` y `main` en backend OK.
+	- Validaciones: compilación de `db`, `handlers` y `main` en backend OK.
 
-- Configuraci?n IA migrada de Gemini a DeepSeek en super administrador y chat empresarial corregido.
+- Configuración IA migrada de Gemini a DeepSeek en super administrador y chat empresarial corregido.
 	- `web/super/configuracion_avanzada.html` ahora gestiona credencial `deepseek:deepseek-chat` y corrige flujo de guardado de credenciales IA.
 	- `backend/handlers/ai_credentials_catalog.go` registra `DEEPSEEK_API_KEY` como credencial IA activa en panel super.
 	- `backend/handlers/chat_con_inteligencia_artificial_controller.go` usa DeepSeek como proveedor del chat IA por empresa.
 	- `web/administrar_empresa/chat_con_inteligencia_artificial.html` actualiza etiquetas/mensajes para modelo IA gen?rico (sin acoplamiento a Gemini).
-	- Validaciones: compilaci?n de `handlers` y `main` en backend OK.
+	- Validaciones: compilación de `handlers` y `main` en backend OK.
 
 - Gobernanza documental reforzada para Agente Go y limpieza de documentos obsoletos.
 	- Se actualiza `copilot-instructions.md` con regla obligatoria: si un modulo se crea o modifica, deben actualizarse `documentos/descripcion_de_modulos` y `documentos/matriz_roles_permisos_pos_multiempresa.md` en la misma iteracion.
@@ -2350,12 +2353,12 @@
 	- Se actualizan `documentos/descripcion_del_proyecto`, `documentos/descripcion_de_modulos` y `documentos/matriz_roles_permisos_pos_multiempresa.md` con la politica nueva.
 
 - Cierre de pasos operativos 1, 2 y 3 solicitados en pendientes.
-	- Paso 1: revisi?n/ajuste de accesos directos de módulos.
+	- Paso 1: revisión/ajuste de accesos directos de módulos.
 		- validación de consistencia de enlaces del panel empresa.
 		- se agrega panel de accesos directos din?mico en `web/administrar_empresa/inicio.html` con visibilidad por permisos/licencia.
 	- Paso 2: notas de voz en chat y tareas.
 		- backend: `chat_tareas` incorpora campos `nota_voz_*` y endpoint `POST /api/empresa/chat_tareas/tareas/nota_voz`.
-		- frontend: `chat_y_tareas.html` incorpora grabaci?n con MediaRecorder para mensajes/tareas, env?o y reproducci?n de audio.
+		- frontend: `chat_y_tareas.html` incorpora grabaci?n con MediaRecorder para mensajes/tareas, envío y reproducción de audio.
 	- Paso 3: super rol/permisos por licencia.
 		- `licencias` incorpora `modulos_habilitados` y `super_rol_habilitado`.
 		- middleware de permisos aplica restricciones por licencia y rol efectivo por empresa.
@@ -2899,11 +2902,11 @@
 		- `POST/PUT action=convertir_pedido` en cotizaciones para convertir cotizacion aprobada/emitida a pedido trazable (`cotizacion_id`, `convertido_pedido_id`).
 		- `POST/PUT action=convertir_documento_final` en cotizaciones y pedidos para generar documento final en `empresa_facturacion_documentos`.
 		- `GET action=embudo` en cotizaciones para monitoreo operativo con SLA y alertas de vencimiento.
-	- Se incorpora snapshot de embudo comercial cotizacionÃƒÂ¢Ã¢â‚¬Â ?pedidoÃƒÂ¢Ã¢â‚¬Â ?documento final con trazabilidad por `empresa_id`.
+	- Se incorpora snapshot de embudo comercial cotizacion -> pedido -> documento final con trazabilidad por `empresa_id`.
 	- Se agrega dataset exportable `operativo_ventas_embudo_conversion` en `backend/handlers/reportes.go` con formatos `json/csv/txt/xls/pdf`.
 	- Se actualiza `backend/handlers/empresa_permisos.go` para clasificar `convertir_pedido` y `convertir_documento_final` como acciones de aprobacion en ventas.
 	- Se agregan pruebas en `backend/handlers/modulos_faltantes_test.go` y `backend/handlers/reportes_test.go` para:
-		- conversion cotizacionÃƒÂ¢Ã¢â‚¬Â ?pedidoÃƒÂ¢Ã¢â‚¬Â ?documento final,
+		- conversion cotizacion -> pedido -> documento final,
 		- alertas SLA del embudo,
 		- dataset/export CSV del nuevo reporte de conversion.
 	- Validaciones ejecutadas:
@@ -3218,9 +3221,9 @@
 		- `go test ./handlers -run "Test(EmpresaAsistenciaEmpleadosHandlerCRUDFlow|EmpresaAsistenciaEmpleadosHandlerConfigTurnosYTolerancia|EmpresaAsistenciaEmpleadosHandlerCierrePeriodoBloqueaEdicion|EmpresaReportesHandlerDatasetOperativoAsistenciaNominaAuditoria)$" -count=1`.
 		- `go test ./... -run "^$" -count=1`.
 - Cierre del modulo 3 (Usuarios de empresa) de Fase 1:
-	- Se agrega cambio autogestionado de contrase?a para usuario empresa:
+	- Se agrega cambio autogestionado de contraseña para usuario empresa:
 		- `POST /api/empresa/usuarios/cambiar_password`.
-	- Se implementan politicas de contrase?a configurables desde `configuraciones`:
+	- Se implementan politicas de contraseña configurables desde `configuraciones`:
 		- `usuarios.password_min_length`
 		- `usuarios.password_require_uppercase`
 		- `usuarios.password_require_lowercase`
@@ -3279,10 +3282,10 @@
 	- Se valida la matriz de estado de modulos/reportes y no quedan modulos marcados como incompletos (`Pendiente` o `Parcial`) en `documentos/modulos del proyecto.md`.
 	- Se actualiza `Pendiente Notas` marcando como completado el pendiente de pasarela unica Wompi.
 - Pasarela de pago unificada en Wompi:
-	- Se retira la configuraci?n de Mercado Pago de `web/super/configuracion_avanzada.html` y se deja ?nicamente la secci?n de credenciales de Wompi en configuraci?n avanzada del panel super administrador.
+	- Se retira la configuración de Mercado Pago de `web/super/configuracion_avanzada.html` y se deja ?nicamente la sección de credenciales de Wompi en configuración avanzada del panel super administrador.
 	- Se simplifica `web/pagar_licencia.html` eliminando selector/panel/flujo de Mercado Pago para operar solo con Nequi (Wompi) y activaci?n manual interna.
 	- Se desregistran rutas de Mercado Pago en `backend/main.go` (`/super/api/config/mercadopago`, `/mercadopago/create_preference`, `/mercadopago/webhook`, `/mercadopago/reconcile`, `/mercadopago/test_preference`).
-	- Validaci?n t?cnica ejecutada: `go test ./... -run "^$" -count=1` (compilaci?n global OK).
+	- Validaci?n técnica ejecutada: `go test ./... -run "^$" -count=1` (compilación global OK).
 - Cierre de trazabilidad y validacion final del plan de reportes:
 	- Se revalida la presencia de los datasets operativos de cierre (`operativo_propinas_acumulado`, `operativo_comisiones_lavador`, `operativo_facturacion_trazabilidad`, `operativo_auditoria_acciones`) en `backend/handlers/reportes.go`.
 	- Se ejecuta validacion completa de `backend/handlers/reportes_test.go` con resultado `16/16` pruebas aprobadas.
@@ -3570,11 +3573,11 @@
 
 ## 2026-04-05
 - Se agrega `ventas_simple.html` como carrito alterno por estación (modo supermercado) con activaci?n/desactivaci?n por estación.
-	- `web/administrar_empresa/ventas_simple.html` (nuevo) incorpora flujo r?pido para buscar productos, agregarlos al carrito, ajustar cantidades y visualizar total consolidado por estación.
+	- `web/administrar_empresa/ventas_simple.html` (nuevo) incorpora flujo rápido para buscar productos, agregarlos al carrito, ajustar cantidades y visualizar total consolidado por estación.
 	- Se corrige la visibilidad del campo de referencia de pago para métodos que la requieren (`tarjeta_credito`, `tarjeta_debito`, `transferencia_bancaria`).
 	- El cobro se ejecuta con flujo simplificado usando `action=pagar_estacion` y permite iniciar nueva venta con `action=activar_estacion`.
 	- `web/administrar_empresa/configuracion_de_estaciones.html` agrega la bandera local `venta_simple_habilitada` por estación.
-	- `web/administrar_empresa/estaciones.html` enruta autom?ticamente cada estación al carrito completo (`carrito_de_compras.html`) o al carrito simple (`ventas_simple.html`) seg?n su configuraci?n.
+	- `web/administrar_empresa/estaciones.html` enruta automáticamente cada estación al carrito completo (`carrito_de_compras.html`) o al carrito simple (`ventas_simple.html`) seg?n su configuración.
 	- `web/estilos.css` integra estilos responsive para el nuevo módulo y etiqueta visual del modo por estación.
 
 ## 2026-04-05
@@ -3639,11 +3642,11 @@
 	- Se evita repetir listados tabla-por-tabla en dos archivos distintos.
 
 ## 2026-04-05
-- Se consolida Configuraci?n avanzada dentro de Facturaci?n electrónica en el panel de empresa.
-	- `web/administrar_empresa/facturacion_electronica.html` integra el formulario completo de configuraci?n avanzada fiscal/impresión y su persistencia mediante `/api/empresa/configuracion_avanzada`.
-	- `web/administrar_empresa.html` elimina el enlace lateral independiente `Configuraci?n avanzada` para dejar una ?nica entrada funcional en `Facturaci?n electrónica`.
-	- `web/js/administrar_empresa.js` retira `linkConfigAvanzada` del cat?logo de enlaces/permisos del menú.
-	- `web/ayuda/ayuda.html` actualiza el tutorial para indicar que la configuraci?n avanzada ahora se gestiona desde `facturacion_electronica.html`.
+- Se consolida Configuración avanzada dentro de Facturación electrónica en el panel de empresa.
+	- `web/administrar_empresa/facturacion_electronica.html` integra el formulario completo de configuración avanzada fiscal/impresión y su persistencia mediante `/api/empresa/configuracion_avanzada`.
+	- `web/administrar_empresa.html` elimina el enlace lateral independiente `Configuración avanzada` para dejar una ?nica entrada funcional en `Facturación electrónica`.
+	- `web/js/administrar_empresa.js` retira `linkConfigAvanzada` del catálogo de enlaces/permisos del menú.
+	- `web/ayuda/ayuda.html` actualiza el tutorial para indicar que la configuración avanzada ahora se gestiona desde `facturacion_electronica.html`.
 	- `web/administrar_empresa/configuracion_avanzada.html` se elimina del repositorio por consolidaci?n funcional.
 
 ## 2026-04-05
@@ -3740,13 +3743,13 @@
 		- `go test ./auth ./db ./handlers ./metrics ./utils -count=1` (ok).
 
 ## 2026-04-05
-- Facturaci?n electrónica: env?o automático del resumen de factura al correo del cliente al emitir.
+- Facturación electrónica: envío automático del resumen de factura al correo del cliente al emitir.
 	- `backend/handlers/facturacion_electronica.go` ahora intenta enviar correo en `action=emitir` de `factura_electronica`.
 	- Soporta destinatario por `cliente_email` o por `cliente_id`/`entidad_id` consultando clientes.
-	- La respuesta incluye bloque `factura_email` con estado de intento/env?o/error sin bloquear la emisi?n legal.
+	- La respuesta incluye bloque `factura_email` con estado de intento/envío/error sin bloquear la emisi?n legal.
 	- `backend/db/clientes.go` agrega `GetClienteByID` para resolver destinatario desde la base de datos.
 	- `backend/main.go` actualiza la inyecci?n de `dbSuper` al handler de facturación para lectura de SMTP.
-	- `web/administrar_empresa/facturacion_electronica.html` agrega campos de cliente y muestra el resultado de env?o en pantalla.
+	- `web/administrar_empresa/facturacion_electronica.html` agrega campos de cliente y muestra el resultado de envío en pantalla.
 	- Cobertura a?adida en `backend/db/clientes_test.go` y `backend/handlers/eventos_contables_modulos_test.go`.
 
 ## 2026-04-05
@@ -3804,7 +3807,7 @@
 
 ## 2026-04-04
 - Centro de ayuda actualizado con tutorial por cada módulo del sistema.
-	- `web/ayuda/ayuda.html` ampl?a el contenido con una secci?n de tutoriales por módulos de administraci?n global y módulos del panel de empresa.
+	- `web/ayuda/ayuda.html` ampl?a el contenido con una sección de tutoriales por módulos de administraci?n global y módulos del panel de empresa.
 	- Se agregan pasos operativos por módulo y enlaces directos a cada pantalla para facilitar onboarding y uso diario.
 
 ## 2026-04-04
@@ -3925,7 +3928,7 @@
 	- `get_errors` sobre backend/frontend modificado (ok).
 
 ## 2026-04-04
-- Punto 5 (control de inventarios) ÃƒÂ¢Ã¢â€šÂ¬? continuidad preventiva-compras ciclo documental desde reposicion.
+- Punto 5 (control de inventarios)  -  continuidad preventiva-compras ciclo documental desde reposicion.
 	- `backend/db/productos.go` agrega `InventarioPlanReposicionOrdenEstadoActualizado` y `ActualizarEstadoOrdenCompraDesdeReposicion` para transiciones `recepcionar_compra` y `contabilizar_compra`.
 	- `backend/handlers/productos.go` agrega endpoint `POST /api/empresa/compras/plan_reposicion/actualizar_estado`.
 	- `backend/main.go` registra `/api/empresa/compras/plan_reposicion/actualizar_estado` bajo permisos de compras.
@@ -3939,7 +3942,7 @@
 	- `get_errors` sobre backend/frontend modificado (ok).
 
 ## 2026-04-04
-- Punto 5 (control de inventarios) ÃƒÂ¢Ã¢â€šÂ¬? continuidad preventiva-compras emitible desde borrador.
+- Punto 5 (control de inventarios)  -  continuidad preventiva-compras emitible desde borrador.
 	- `backend/db/productos.go` agrega `InventarioPlanReposicionOrdenEmitida` y `EmitirOrdenCompraDesdePlanReposicionBorrador` para emitir OC desde el borrador y persistirla en documentos de compras.
 	- `backend/handlers/productos.go` agrega endpoint `POST /api/empresa/compras/plan_reposicion/emitir_orden`.
 	- `backend/main.go` registra `/api/empresa/compras/plan_reposicion/emitir_orden` bajo permisos de compras.
@@ -3952,7 +3955,7 @@
 	- `get_errors` sobre backend/frontend modificado (ok).
 
 ## 2026-04-04
-- Punto 5 (control de inventarios) ÃƒÂ¢Ã¢â€šÂ¬? continuidad preventiva-compras ordenable por proveedor.
+- Punto 5 (control de inventarios)  -  continuidad preventiva-compras ordenable por proveedor.
 	- `backend/db/productos.go` agrega `InventarioPlanReposicionBorradorItem`, `InventarioPlanReposicionBorradorCompra` y `GetInventarioPlanReposicionBorradorByEmpresa` para generar borradores de orden por proveedor con detalle y totales.
 	- `backend/handlers/productos.go` agrega endpoint `GET /api/empresa/inventario/plan_reposicion_borrador`.
 	- `backend/main.go` registra `/api/empresa/inventario/plan_reposicion_borrador` bajo permisos de inventario.
@@ -3965,7 +3968,7 @@
 	- `get_errors` sobre backend/frontend modificado (ok).
 
 ## 2026-04-04
-- Punto 5 (control de inventarios) ÃƒÂ¢Ã¢â€šÂ¬? continuidad preventiva-compras consolidada por proveedor.
+- Punto 5 (control de inventarios)  -  continuidad preventiva-compras consolidada por proveedor.
 	- `backend/db/productos.go` agrega `InventarioPlanReposicionProveedorResumen` y `GetInventarioPlanReposicionResumenByEmpresa` para consolidar compra preventiva por proveedor.
 	- `backend/handlers/productos.go` agrega endpoint `GET /api/empresa/inventario/plan_reposicion_resumen`.
 	- `backend/main.go` registra `/api/empresa/inventario/plan_reposicion_resumen` bajo permisos de inventario.
@@ -3978,7 +3981,7 @@
 	- `get_errors` sobre `web/administrar_empresa/administrar_productos.html` (ok).
 
 ## 2026-04-04
-- Punto 5 (control de inventarios) ÃƒÂ¢Ã¢â€šÂ¬? continuidad preventiva-compras con plan de reposicion por proveedor.
+- Punto 5 (control de inventarios)  -  continuidad preventiva-compras con plan de reposicion por proveedor.
 	- `backend/db/productos.go` agrega `InventarioPlanReposicionItem` y `GetInventarioPlanReposicionByEmpresa` para consolidar sugerencias por proveedor con costo estimado.
 	- `backend/handlers/productos.go` agrega endpoint `GET /api/empresa/inventario/plan_reposicion` con validaciones operativas.
 	- `backend/main.go` registra `/api/empresa/inventario/plan_reposicion` bajo permisos de inventario.
@@ -3991,7 +3994,7 @@
 	- `get_errors` sobre `web/administrar_empresa/administrar_productos.html` (ok).
 
 ## 2026-04-04
-- Punto 5 (control de inventarios) ÃƒÂ¢Ã¢â€šÂ¬? continuidad preventiva con proyeccion de quiebre.
+- Punto 5 (control de inventarios)  -  continuidad preventiva con proyeccion de quiebre.
 	- `backend/db/productos.go` agrega `InventarioProyeccionQuiebre` y `GetInventarioProyeccionQuiebreByEmpresa` para estimar consumo diario, cobertura y sugerido de reposicion por producto/bodega.
 	- `backend/handlers/productos.go` agrega endpoint `GET /api/empresa/inventario/proyeccion_quiebre` con validacion de `dias_ventana`, `bodega_id`, `limit` y `offset`.
 	- `backend/main.go` registra `/api/empresa/inventario/proyeccion_quiebre` bajo permisos de inventario.
@@ -4004,7 +4007,7 @@
 	- `get_errors` sobre `web/administrar_empresa/administrar_productos.html` (ok).
 
 ## 2026-04-04
-- Punto 5 (control de inventarios) ÃƒÂ¢Ã¢â€šÂ¬? continuidad operativa-analitica con balance por bodega.
+- Punto 5 (control de inventarios)  -  continuidad operativa-analitica con balance por bodega.
 	- `backend/db/productos.go` agrega `InventarioBalanceBodega` y `GetInventarioBalanceBodegasByEmpresa` para consolidar entradas/salidas/traslados/neto por bodega en rango.
 	- `backend/handlers/productos.go` agrega endpoint `GET /api/empresa/inventario/balance_bodegas` con validacion de fechas y filtros por bodega/rango.
 	- `backend/main.go` registra `/api/empresa/inventario/balance_bodegas` bajo permisos de inventario.
@@ -4017,7 +4020,7 @@
 	- `get_errors` sobre `web/administrar_empresa/administrar_productos.html` (ok).
 
 ## 2026-04-04
-- Punto 5 (control de inventarios) ÃƒÂ¢Ã¢â€šÂ¬? continuidad analitica con tendencia diaria.
+- Punto 5 (control de inventarios)  -  continuidad analitica con tendencia diaria.
 	- `backend/db/productos.go` agrega `InventarioTendenciaDia` y `GetInventarioTendenciaByEmpresa` para serie diaria por empresa con filtros por bodega/rango.
 	- `backend/handlers/productos.go` agrega endpoint `GET /api/empresa/inventario/tendencia` con validacion de fechas y ventana por `dias`.
 	- `backend/main.go` registra `/api/empresa/inventario/tendencia` bajo permisos de inventario.
@@ -4030,16 +4033,16 @@
 	- `get_errors` sobre `web/administrar_empresa/administrar_productos.html` (ok).
 
 ## 2026-04-04
-- Punto 5 (control de inventarios) ÃƒÂ¢Ã¢â€šÂ¬? continuidad operacional en panel de productos.
+- Punto 5 (control de inventarios)  -  continuidad operacional en panel de productos.
 	- `web/administrar_empresa/administrar_productos.html` agrega:
-		- bloque `Top productos críticos (d?ficit)` alimentado desde alertas de inventario,
-		- priorizaci?n de críticos por `sin_stock` y mayor d?ficit,
+		- bloque `Top productos críticos (déficit)` alimentado desde alertas de inventario,
+		- priorizaci?n de críticos por `sin_stock` y mayor déficit,
 		- acci?n `Preparar reposici?n` para precargar ajuste de inventario con producto, bodega y cantidad sugerida.
 - Validacion tecnica:
 	- `get_errors` sobre `web/administrar_empresa/administrar_productos.html` (ok).
 
 ## 2026-04-04
-- Punto 5 (control de inventarios) ÃƒÂ¢Ã¢â€šÂ¬? continuidad KPI operativo en panel de productos.
+- Punto 5 (control de inventarios)  -  continuidad KPI operativo en panel de productos.
 	- `backend/db/productos.go` agrega `InventarioResumen` y `GetInventarioResumenByEmpresa` para consolidar existencias, alertas y movimientos por rango.
 	- `backend/handlers/productos.go` agrega endpoint `GET /api/empresa/inventario/resumen` con validacion de fechas `YYYY-MM-DD`.
 	- `backend/main.go` registra `/api/empresa/inventario/resumen` bajo permisos de inventario.
@@ -4052,7 +4055,7 @@
 	- `get_errors` sobre `web/administrar_empresa/administrar_productos.html` (ok).
 
 ## 2026-04-04
-- Punto 5 (control de inventarios) ÃƒÂ¢Ã¢â€šÂ¬? continuidad UI operativa en panel de productos.
+- Punto 5 (control de inventarios)  -  continuidad UI operativa en panel de productos.
 	- `web/administrar_empresa/administrar_productos.html` agrega:
 		- filtro por bodega para alertas de quiebre,
 		- filtros de kardex por bodega, tipo y rango de fechas,
@@ -4062,7 +4065,7 @@
 	- `get_errors` sobre `web/administrar_empresa/administrar_productos.html` (ok).
 
 ## 2026-04-04
-- Punto 5 (control de inventarios) ÃƒÂ¢Ã¢â€šÂ¬? inicio tecnico: kardex operativo + reglas de stock + alertas de quiebre por bodega.
+- Punto 5 (control de inventarios)  -  inicio tecnico: kardex operativo + reglas de stock + alertas de quiebre por bodega.
 	- `backend/db/productos.go`:
 		- valida `stock_minimo/stock_maximo` en creacion y edicion de productos,
 		- agrega `GetAlertasQuiebreByEmpresa`,
@@ -4082,7 +4085,7 @@
 	- `go test ./handlers ./db -count=1` en `backend` (ok).
 
 ## 2026-04-04
-- Punto 3 (permisos y seguridad) ÃƒÂ¢Ã¢â€šÂ¬? continuidad operativa: catalogo frontend por rol + regresion endpoints sin wrapper.
+- Punto 3 (permisos y seguridad)  -  continuidad operativa: catalogo frontend por rol + regresion endpoints sin wrapper.
 	- `web/js/administrar_empresa.js` agrega catalogo de permisos por enlace y aplica ocultamiento de opciones no autorizadas segun rol autenticado (`GET /me`).
 	- Se agrega fallback de navegacion en iframe cuando la ultima pagina guardada no es visible para el rol actual.
 	- `backend/handlers/auth_users_carritos_test.go` agrega regresiones de alcance por `empresa_id` para:
@@ -4098,7 +4101,7 @@
 	- `get_errors` sobre `web/js/administrar_empresa.js`: sin errores.
 
 ## 2026-04-04
-- Punto 3 (permisos y seguridad) ÃƒÂ¢Ã¢â€šÂ¬? consolidacion documental endpoint/rol y checklist UAT:
+- Punto 3 (permisos y seguridad)  -  consolidacion documental endpoint/rol y checklist UAT:
 	- `documentos/matriz_roles_permisos_pos_multiempresa.md` agrega matriz final endpoint/rol alineada con wrappers reales y reglas por accion.
 	- Se documentan endpoints fuera de wrapper con control alterno por handler/cuenta Google.
 	- Se agrega checklist UAT de punto 3 con evidencia automatizada.
@@ -4115,7 +4118,7 @@
 	- cambio documental (sin ejecucion de pruebas automatizadas).
 
 ## 2026-04-04
-- Punto 1 + Punto 2 (plan maestro) ÃƒÂ¢Ã¢â€šÂ¬? cierre de backlog inmediato con formalizacion tecnica documental.
+- Punto 1 + Punto 2 (plan maestro)  -  cierre de backlog inmediato con formalizacion tecnica documental.
 	- `documentos/matriz_kpi_pos_multiempresa.md` se actualiza a formato formal con:
 		- formula implementada por KPI,
 		- endpoint canonico de lectura/exportacion,
@@ -4129,7 +4132,7 @@
 	- cambio documental (sin ejecucion de pruebas automatizadas).
 
 ## 2026-04-04
-- Punto 11 (reportes financieros) ÃƒÂ¢Ã¢â€šÂ¬? continuidad de backlog inmediato: exportacion unificada del tablero por rango.
+- Punto 11 (reportes financieros)  -  continuidad de backlog inmediato: exportacion unificada del tablero por rango.
 	- `backend/handlers/finanzas.go` agrega `action=tablero_export` en `GET /api/empresa/finanzas/movimientos` con:
 		- `format=json` para payload unificado del tablero,
 		- `format=csv` para matriz unificada por bloque/metrica/valor.
@@ -4144,7 +4147,7 @@
 	- `go test ./db -count=1` (ok).
 
 ## 2026-04-04
-- Punto 10 (modulo contable integrado) ÃƒÂ¢Ã¢â€šÂ¬? continuidad de backlog inmediato: vista de conciliacion por periodo (eventos vs asientos).
+- Punto 10 (modulo contable integrado)  -  continuidad de backlog inmediato: vista de conciliacion por periodo (eventos vs asientos).
 	- `backend/db/eventos_contables.go` agrega modelos y funcion `GetEmpresaConciliacionContablePorPeriodo` para consolidar por periodo:
 		- eventos totales/procesados/pendientes/con error,
 		- asientos generados,
@@ -4161,7 +4164,7 @@
 	- `go test ./handlers -count=1` (ok).
 
 ## 2026-04-04
-- Punto 10 (modulo contable integrado) ÃƒÂ¢Ã¢â€šÂ¬? continuidad de backlog inmediato: ejecucion automatica por lotes de asientos.
+- Punto 10 (modulo contable integrado)  -  continuidad de backlog inmediato: ejecucion automatica por lotes de asientos.
 	- `backend/db/eventos_contables.go` agrega:
 		- `ProcessEmpresaEventosContablesPendientesConPolitica` con soporte de `max_reintentos`,
 		- `RunEmpresaAsientosContablesWorkerCycle`,
@@ -4180,7 +4183,7 @@
 	- `go test ./db -count=1` (ok).
 
 ## 2026-04-04
-- Punto 15 (auditoria por empresa) ÃƒÂ¢Ã¢â€šÂ¬? continuacion de backlog inmediato 1 y 2:
+- Punto 15 (auditoria por empresa)  -  continuacion de backlog inmediato 1 y 2:
 	- `backend/db/auditoria_empresa.go` agrega filtros avanzados de consulta por `recurso_id` y `codigo_http` en `ListEmpresaAuditoriaEventos`.
 	- `backend/handlers/auditoria_empresa.go` valida y expone nuevos filtros en `GET /api/empresa/auditoria/eventos`:
 		- `recurso_id`.
@@ -4197,7 +4200,7 @@
 	- `go test ./db -count=1` (ok).
 
 ## 2026-04-04
-- Punto 15 (auditoria por empresa) ÃƒÂ¢Ã¢â€šÂ¬? continuacion de backlog 1, 2 y 3:
+- Punto 15 (auditoria por empresa)  -  continuacion de backlog 1, 2 y 3:
 	- `backend/handlers/empresa_permisos.go` refuerza clasificacion de acciones criticas en `ventas`, `compras` y `facturacion` (alias operativos de aprobacion/eliminacion).
 	- `backend/handlers/auditoria_empresa.go` amplia metadata de trazabilidad para recursos de ventas/compras/facturacion (`carrito_id`, `proveedor_id`, `entidad_id`, `documento_codigo`).
 	- `backend/handlers/auditoria_empresa_test.go` agrega pruebas de registro automatico de auditoria en acciones criticas de:
@@ -4219,7 +4222,7 @@
 	- `go test ./db -count=1` (ok).
 
 ## 2026-04-04
-- Punto 15 (auditoria por empresa) ÃƒÂ¢Ã¢â€šÂ¬? implementacion base minima:
+- Punto 15 (auditoria por empresa)  -  implementacion base minima:
 	- `backend/db/auditoria_empresa.go` agrega tabla `empresa_auditoria_eventos`, filtros de consulta y purga por retencion.
 	- `backend/handlers/auditoria_empresa.go` agrega endpoint protegido:
 		- `GET /api/empresa/auditoria/eventos`.
@@ -4271,7 +4274,7 @@
 	- `go test ./handlers -run "TestWithEmpresaFinanzasPermissions(DeniesCajeroAprobarCierreCaja|DeniesSupervisorAprobarCierreCaja|AllowsAdminAprobarCierreCaja)" -count=1` (ok).
 
 ## 2026-04-04
-- Punto 12 (cierres de caja) ÃƒÂ¢Ã¢â€šÂ¬? continuacion con UI operativa en panel empresa:
+- Punto 12 (cierres de caja)  -  continuacion con UI operativa en panel empresa:
 	- `web/administrar_empresa/finanzas.html` integra modulo visual de cierres de caja por sucursal con:
 		- formulario de apertura/actualizacion,
 		- calculo de `caja_teorica` y `diferencia_caja`,
@@ -4282,7 +4285,7 @@
 	- `get_errors` sobre `web/administrar_empresa/finanzas.html` (ok).
 
 ## 2026-04-04
-- Punto 12 (cierres de caja) ÃƒÂ¢Ã¢â€šÂ¬? inicio de flujo operativo por sucursal:
+- Punto 12 (cierres de caja)  -  inicio de flujo operativo por sucursal:
 	- `backend/db/finanzas.go` agrega `empresa_cierres_caja` con soporte de apertura, arqueo, cierre, reapertura, aprobacion y anulacion.
 	- `backend/handlers/finanzas.go` incorpora `GET/POST/PUT/DELETE /api/empresa/finanzas/cierres_caja`.
 	- `backend/main.go` publica la ruta de cierres de caja y registra migracion `2026-04-04-009-cierres-caja`.
@@ -4296,7 +4299,7 @@
 	- `go test ./auth ./db ./handlers ./metrics ./utils -count=1` (ok).
 
 ## 2026-04-04
-- Punto 11 (reportes financieros) ÃƒÂ¢Ã¢â€šÂ¬? inicio de tablero minimo financiero-operativo:
+- Punto 11 (reportes financieros)  -  inicio de tablero minimo financiero-operativo:
 	- `backend/db/finanzas.go` agrega `GetEmpresaReportesTableroResumen` con KPI consolidados:
 		- operativos (ventas/ticket/clientes/productos/compras),
 		- financieros (ingresos/egresos/balance/periodos),
@@ -4312,7 +4315,7 @@
 	- `go test ./... -count=1` en `backend` (ok).
 
 ## 2026-04-04
-- Punto 8 + Punto 9 + Punto 10 (facturacion/compras) ÃƒÂ¢Ã¢â€šÂ¬? persistencia canonica de documentos transaccionales para `entidad_id`:
+- Punto 8 + Punto 9 + Punto 10 (facturacion/compras)  -  persistencia canonica de documentos transaccionales para `entidad_id`:
 	- Se agrega `backend/db/documentos_transaccionales.go` con tablas y APIs de upsert/lectura para:
 		- `empresa_facturacion_documentos`.
 		- `empresa_compras_documentos`.
@@ -4331,7 +4334,7 @@
 	- `go test ./...` en `backend` (ok).
 
 ## 2026-04-04
-- Punto 8 + Punto 9 + Punto 10 (facturacion/compras) ÃƒÂ¢Ã¢â€šÂ¬? estandarizacion de estados en ciclo documental transaccional:
+- Punto 8 + Punto 9 + Punto 10 (facturacion/compras)  -  estandarizacion de estados en ciclo documental transaccional:
 	- Se agrega `backend/handlers/documentos_lifecycle.go` con reglas de transicion por accion y estado previo para facturacion/compras.
 	- `backend/handlers/facturacion_electronica.go` ahora valida `estado_actual` en `emitir/anular/nota_credito`, devuelve `409` en conflictos y responde `estado_anterior`/`estado_nuevo` cuando la transicion es valida.
 	- `backend/handlers/productos.go` (`EmpresaProveedoresHandler`) aplica validacion equivalente para `emitir_orden/recepcionar_compra/contabilizar_compra`.
@@ -4341,7 +4344,7 @@
 	- `go test ./...` en `backend` (ok).
 
 ## 2026-04-04
-- Punto 8 + Punto 9 + Punto 10 (facturacion/compras) ÃƒÂ¢Ã¢â€šÂ¬? eventos transaccionales de factura y orden:
+- Punto 8 + Punto 9 + Punto 10 (facturacion/compras)  -  eventos transaccionales de factura y orden:
 	- `backend/handlers/facturacion_electronica.go` agrega acciones transaccionales:
 		- `action=emitir` -> `factura_emitida`.
 		- `action=anular` -> `factura_anulada`.
@@ -4357,7 +4360,7 @@
 	- `go test ./...` en `backend` (ok).
 
 ## 2026-04-04
-- Punto 8 + Punto 9 + Punto 10 (facturacion/compras/finanzas) ÃƒÂ¢Ã¢â€šÂ¬? extension de emision de eventos contables por modulo:
+- Punto 8 + Punto 9 + Punto 10 (facturacion/compras/finanzas)  -  extension de emision de eventos contables por modulo:
 	- Se agrega `backend/handlers/eventos_contables.go` para registro no bloqueante y reutilizable de eventos contables en handlers.
 	- Se amplia `backend/db/eventos_contables.go` con eventos operativos de:
 		- `facturacion`: `configuracion_facturacion_actualizada`.
@@ -4374,7 +4377,7 @@
 	- `go test ./...` en `backend` (ok).
 
 ## 2026-04-04
-- Punto 4 + Punto 10 (gestion de ventas + modulo contable integrado) ÃƒÂ¢Ã¢â€šÂ¬? contrato de eventos contables por modulo:
+- Punto 4 + Punto 10 (gestion de ventas + modulo contable integrado)  -  contrato de eventos contables por modulo:
 	- Se agrega `backend/db/eventos_contables.go` con contrato base de eventos para `ventas`, `facturacion`, `compras` y `finanzas`.
 	- Se crea tabla `empresa_eventos_contables` en `pcs_empresas` para registrar trazabilidad contable por empresa (`modulo`, `evento`, `entidad`, `documento`, `periodo_contable`, `monto`, `payload_json`, `procesado`).
 	- Se integra bootstrap en `backend/main.go`:
@@ -4390,7 +4393,7 @@
 	- `go test ./...` en `backend` (ok).
 
 ## 2026-04-04
-- Punto 4 (gestion de ventas) ÃƒÂ¢Ã¢â€šÂ¬? formalizacion de transiciones del ciclo de venta en carritos:
+- Punto 4 (gestion de ventas)  -  formalizacion de transiciones del ciclo de venta en carritos:
 	- `backend/handlers/carritos_compras.go` ahora valida transiciones por accion y estado actual del carrito.
 	- Se agregan respuestas de control para integridad de flujo:
 		- `404` para carrito inexistente,
@@ -4446,7 +4449,7 @@
 	- Validacion tecnica: `go test ./handlers -run "WithEmpresa|ConsultarHandlerRejectsEmpresaFueraDeAlcance" -count=1` (ok) y `go test ./...` (ok).
 
 ## 2026-04-04
-- Se registra nueva credencial Gemini cifrada en configuraci?n avanzada (`ai.model.google.gemini_2_0_flash.api_key` en `pcs_superadministrador`).
+- Se registra nueva credencial Gemini cifrada en configuración avanzada (`ai.model.google.gemini_2_0_flash.api_key` en `pcs_superadministrador`).
 - Se valida consumo de Gemini con la nueva credencial: respuesta del proveedor `429` por cuota excedida (sin error de credencial/servicio bloqueado).
 - Se verifica la presencia de la tarjeta de Gemini en `web/super/configuracion_avanzada.html` y se corrige un bloque JavaScript en la carga de estado para mantener consistencia de la vista.
 - Se agrega prueba de seguridad de alcance por empresa para chat IA en `backend/handlers/chat_con_inteligencia_artificial_controller_test.go`:
@@ -4456,11 +4459,11 @@
 ## 2026-04-04
 - Chat IA empresarial migrado a Gemini-only:
 	- `backend/handlers/chat_con_inteligencia_artificial_controller.go` ahora integra Google Gemini (`generateContent`) y elimina dependencias de OpenAI/DeepSeek/Hugging Face para este módulo.
-	- El cat?logo y la configuraci?n de credenciales IA quedan en un ?nico modelo soportado: `google:gemini-2.0-flash` (`GEMINI_API_KEY`).
+	- El catálogo y la configuración de credenciales IA quedan en un único modelo soportado: `google:gemini-2.0-flash` (`GEMINI_API_KEY`).
 	- `web/super/configuracion_avanzada.html` simplifica la tarjeta IA a una sola credencial Gemini con trazabilidad por cuenta Google.
 	- `web/administrar_empresa/chat_con_inteligencia_artificial.html` se redise?a con experiencia visual tipo Gemini, chips de contexto y flujo explícito de autenticaci?n Google.
 	- Pruebas ajustadas y validadas: `go test ./auth ./db ./handlers ./metrics ./utils` (ok) en `backend`.
-- Se agrega gesti?n de credenciales IA en `super/configuracion_avanzada.html` para 5 modelos populares con plan gratuito limitado:
+- Se agrega gestión de credenciales IA en `super/configuracion_avanzada.html` para 5 modelos populares con plan gratuito limitado:
 	- OpenAI GPT-4o mini,
 	- OpenAI GPT-4.1 mini,
 	- DeepSeek Chat,
@@ -4468,10 +4471,10 @@
 	- Meta Llama 3.1 8B Instruct (Hugging Face).
 - Se crea endpoint `GET/PUT /super/api/config/ai` en backend para guardar/consultar credenciales con registro de la cuenta Google logueada que realiza cambios.
 - El módulo `chat_con_inteligencia_artificial` ahora resuelve credenciales en este orden:
-	- configuraci?n guardada por modelo,
-	- configuraci?n por proveedor,
+	- configuración guardada por modelo,
+	- configuración por proveedor,
 	- variable de entorno.
-- Validaci?n t?cnica ejecutada:
+- Validaci?n técnica ejecutada:
 	- `go test ./handlers -run "AIModelsConfigHandler|Chat|ModelosHandler" -count=1` (ok).
 	- `go test ./...` en `backend` (ok).
 - Se implementa la primera fase tecnica del punto 3 (permisos y seguridad) con middleware de autorizacion por rol + alcance de empresa:
@@ -4486,14 +4489,14 @@
 	- nueva `documentos/matriz_kpi_pos_multiempresa.md` con formulas/frecuencia/fuentes de KPI,
 	- nueva `documentos/matriz_roles_permisos_pos_multiempresa.md` para iniciar el punto 3 de permisos y seguridad,
 	- actualizacion de `documentos/descripcion_del_proyecto` para referenciar estos documentos como base de seguimiento.
-- Continuaci?n de implementaci?n en `chat_con_inteligencia_artificial`:
+- Continuaci?n de implementación en `chat_con_inteligencia_artificial`:
 	- Se corrige el orden de validación de autenticaci?n para cuenta Google en `backend/handlers/chat_con_inteligencia_artificial_controller.go`.
 	- Cuando no hay cuenta Google autenticada, los endpoints del módulo IA ahora responden `401` de forma consistente (en lugar de caer en validación de alcance con `403`).
 	- Se centraliza validación de alcance con `ensureEmpresaAccessByAccount` para reutilizar la cuenta ya validada.
 - Se agregan pruebas autom?ticas del módulo IA:
 	- `backend/db/chat_inteligencia_artificial_test.go` (upsert/get de modelo preferido y acumulaci?n de uso diario).
 	- `backend/handlers/chat_con_inteligencia_artificial_controller_test.go` (autorizaci?n por cuenta Google y respuesta con modelo preferido).
-- Validaci?n t?cnica ejecutada en esta continuaci?n:
+- Validaci?n técnica ejecutada en esta continuaci?n:
 	- `go test ./db -run EmpresaAI -count=1` (ok).
 	- `go test ./handlers -run ModelosHandler -count=1` (ok).
 	- `go test ./...` en `backend` (ok).
@@ -4504,10 +4507,10 @@
 	- `GET /modelos` ahora devuelve `google_account` y `modelo_preferido`.
 	- `POST /consultar` ahora persiste el `model_id` usado como preferencia de la cuenta Google y devuelve confirmación en respuesta.
 - Se actualiza `web/administrar_empresa/chat_con_inteligencia_artificial.html` para:
-	- cargar autom?ticamente el modelo preferido de la cuenta Google,
+	- cargar automáticamente el modelo preferido de la cuenta Google,
 	- guardar el modelo preferido al cambiar selección,
 	- mostrar la cuenta Google vinculada en el bloque de uso diario.
-- Validaci?n t?cnica ejecutada para esta ampliaci?n:
+- Validaci?n técnica ejecutada para esta ampliaci?n:
 	- `gofmt -w backend/db/chat_inteligencia_artificial.go backend/handlers/chat_con_inteligencia_artificial_controller.go backend/handlers/chat_con_inteligencia_artificial_router.go` (ok).
 	- `go test ./...` en `backend` (ok).
 - Se fortalece `backend/utils/utils.go` para observabilidad profesional:
@@ -4519,7 +4522,7 @@
 - Se endurece `backend/handlers/usuarios_empresa.go` en autenticaci?n/primer ingreso:
 	- se reemplazan respuestas `500` que expon?an detalles internos por mensajes profesionales y seguros,
 	- se agrega logging servidor con contexto (`empresa_id`, `email`, `id`) para trazabilidad sin filtrar errores sensibles al cliente.
-- Se endurece `scripts/iniciar_servidor.ps1` para detectar ca?da temprana de `server.exe`: ahora conserva el `PID`, valida salida prematura y muestra las ?ltimas l?neas de `backend/server.err` para diagn?stico inmediato.
+- Se endurece `scripts/iniciar_servidor.ps1` para detectar ca?da temprana de `server.exe`: ahora conserva el `PID`, valida salida prematura y muestra las últimas l?neas de `backend/server.err` para diagn?stico inmediato.
 - Validaci?n de correcci?n ejecutada:
 	- `gofmt -w backend/utils/utils.go` (ok).
 	- `go test ./...` en `backend` (ok).
@@ -4544,7 +4547,7 @@
 	- tabla `empresa_finanzas_periodos`.
 	- endpoint `GET/POST/PUT /api/empresa/finanzas/periodos`.
 	- acciones de cierre y reapertura de periodo.
-- Se aplican bloqueos de integridad contable: no se permite crear/editar/eliminar/activar/desactivar movimientos cuando su periodo est? cerrado.
+- Se aplican bloqueos de integridad contable: no se permite crear/editar/eliminar/activar/desactivar movimientos cuando su periodo está cerrado.
 - Se ampl?a `empresa_finanzas_movimientos` con:
 	- `periodo_contable`,
 	- retenciones (`retencion_fuente`, `retencion_ica`, `retencion_iva`, `total_retenciones`),
@@ -4557,7 +4560,7 @@
 	- exportar `balance general`, `libro diario` y `libro mayor` en CSV.
 - Se corrige el escaneo de puertos de seguridad para compatibilidad IPv6 usando `net.JoinHostPort` en `backend/handlers/system_empresas_handlers.go`.
 - Se ajusta `scripts/iniciar_servidor.ps1` para usar nombre de función con verbo aprobado de PowerShell en la carga de `.env`.
-- Validaci?n t?cnica ejecutada: `go test ./...` en `backend` (ok).
+- Validaci?n técnica ejecutada: `go test ./...` en `backend` (ok).
 - Se implementa el módulo financiero multiempresa con enfoque unificado de ingresos y egresos en `web/administrar_empresa/finanzas.html`.
 - Se crea `backend/db/finanzas.go` con esquema, validaciones y CRUD de:
 	- `empresa_finanzas_movimientos`
@@ -4567,8 +4570,8 @@
 	- `GET/POST/PUT /api/empresa/finanzas/configuracion`
 - Se actualiza `backend/main.go` para asegurar el esquema financiero y registrar la migraci?n `2026-04-03-003-finanzas`.
 - Se integra el acceso al módulo en `web/administrar_empresa.html` y `web/js/administrar_empresa.js`.
-- Se agrega `backend/db/finanzas_test.go` con pruebas de configuraci?n y flujo CRUD de movimientos financieros.
-- Se ampl?a `backend/tools/seed_motel_malibu/main.go` para sembrar configuraci?n financiera y movimientos demo de ingreso/egreso.
+- Se agrega `backend/db/finanzas_test.go` con pruebas de configuración y flujo CRUD de movimientos financieros.
+- Se ampl?a `backend/tools/seed_motel_malibu/main.go` para sembrar configuración financiera y movimientos demo de ingreso/egreso.
 - Se separa visualmente el libro financiero en dos pesta?as operativas dentro del módulo: `Ingresos` y `Egresos`.
 - Se agrega la pesta?a `Todos` para consolidar ingresos y egresos en una sola vista del libro financiero.
 - Se agrega exportación del libro financiero filtrado por fechas a:
@@ -4579,9 +4582,9 @@
 - `web/administrar_empresa/configuracion.html` queda como nucleo unico con modo aislado por `section`, manteniendo los mismos botones de guardar y endpoints.
 - Se agregan claves de permisos para las nuevas paginas del submenu y se verifica visualmente en escritorio y movil.
 
-	- JSON contable para integraci?n externa (incluye resumen, detalle y asientos recomendados).
-- Se ampl?a la configuraci?n financiera por empresa para contabilidad externa con parametrizaci?n de:
-	- destino de integraci?n (`generico`, `siigo`, `world_office`, `alegra`),
+	- JSON contable para integración externa (incluye resumen, detalle y asientos recomendados).
+- Se ampl?a la configuración financiera por empresa para contabilidad externa con parametrizaci?n de:
+	- destino de integración (`generico`, `siigo`, `world_office`, `alegra`),
 	- cuentas base (caja/bancos, ingresos, IVA generado, gastos, IVA descontable),
 	- cuentas por categor?a para ingresos y egresos.
 - La exportación `JSON contable` deja de usar cuentas fijas y ahora construye asientos con la parametrizaci?n real guardada por empresa.
@@ -4592,34 +4595,34 @@
 	- Balance de prueba (CSV).
 	- Estado de resultados (CSV).
 - Se crea `documentos/plantillas/siigo_plantilla_importacion_asientos.csv` como plantilla de referencia ERP.
-- Se crea `documentos/informe_contable_directivo_2026-04-03.md` con revisi?n de cumplimiento contable/directivo, brechas y plan recomendado.
-- Validaci?n t?cnica ejecutada:
+- Se crea `documentos/informe_contable_directivo_2026-04-03.md` con revisión de cumplimiento contable/directivo, brechas y plan recomendado.
+- Validaci?n técnica ejecutada:
 	- `go test ./... -count=1` (ok).
 	- `go run ./tools/seed_motel_malibu` (ok, incluye creación de 4 movimientos financieros demo).
 	- `runTests` global (ok: 3/3).
 
 ## 2026-04-03
-- Se implementa control de inventario en carrito: al agregar items de producto se descuenta stock y al desactivar/eliminar items abiertos se revierte autom?ticamente.
+- Se implementa control de inventario en carrito: al agregar items de producto se descuenta stock y al desactivar/eliminar items abiertos se revierte automáticamente.
 - Se asegura que, al cerrar una venta, el descuento de inventario permanezca aplicado y no se revierta en el pago.
 - Se mejoran respuestas de API para stock insuficiente en operaciones de items de carrito.
 - Se agrega `backend/db/carritos_inventario_test.go` con pruebas de descuento de inventario y caso de stock insuficiente.
 - Se ampl?a `backend/tools/seed_motel_malibu/main.go` para registrar 10 clientes y 10 usuarios de empresa.
-- La semilla valida autom?ticamente el flujo comercial completo: venta cerrada, descuento de inventario al agregar y persistencia tras pagar.
+- La semilla valida automáticamente el flujo comercial completo: venta cerrada, descuento de inventario al agregar y persistencia tras pagar.
 - Se confirma en seed la validación de impresión con vista previa POS y Carta.
 - Se ampl?a `web/administrar_empresa/reportes.html` con reporte de ventas, reporte de productos y reporte de compra de productos, todos con búsqueda por rango de fechas.
-- Validaci?n t?cnica ejecutada: `go test ./auth ./db ./handlers ./metrics ./utils` (ok) y `go run ./tools/seed_motel_malibu` (ok).
-- Se agrega el v?nculo `Ayuda` en el menú flotante global (`web/menu.js`) y se reestructura `web/ayuda/ayuda.html` como centro de ayuda con menú interno y secci?n de APIs.
+- Validaci?n técnica ejecutada: `go test ./auth ./db ./handlers ./metrics ./utils` (ok) y `go run ./tools/seed_motel_malibu` (ok).
+- Se agrega el vínculo `Ayuda` en el menú flotante global (`web/menu.js`) y se reestructura `web/ayuda/ayuda.html` como centro de ayuda con menú interno y sección de APIs.
 - Se adapta `web/administrar_empresa/carrito_de_compras.html` para operación con lector de código de barras (escaneo por código/SKU, Enter para agregar y acumulaci?n opcional de cantidad).
-- Se extiende `web/administrar_empresa/configuracion.html` con configuraci?n por empresa para el lector: habilitar, autofoco y acumulaci?n.
-- Se ampl?a `web/administrar_empresa/reportes.html` con KPI de productos bajo m?nimo y reporte de inventario actual por bodega.
-- Validaci?n t?cnica ejecutada para flujo carrito/inventario multiempresa: `go test ./db -run Carrito -count=1` (ok) y `go test ./handlers -run Carritos -count=1` (ok).
+- Se extiende `web/administrar_empresa/configuracion.html` con configuración por empresa para el lector: habilitar, autofoco y acumulaci?n.
+- Se ampl?a `web/administrar_empresa/reportes.html` con KPI de productos bajo mínimo y reporte de inventario actual por bodega.
+- Validaci?n técnica ejecutada para flujo carrito/inventario multiempresa: `go test ./db -run Carrito -count=1` (ok) y `go test ./handlers -run Carritos -count=1` (ok).
 
 ## 2026-04-02
 - Se crea la herramienta `backend/tools/seed_motel_malibu/main.go` para cargar datos demo comerciales en la empresa Motel Malibu.
 - La semilla inserta 10 productos con precios COP, 5 clientes y crea una venta de prueba cerrada para validar el flujo comercial.
 - Se valida la configuracion de impresion con vista previa de formatos POS y Carta desde la herramienta de seed.
 - Se implementa la seccion `web/administrar_empresa/reportes.html` con KPIs, ventas cerradas, top productos, top clientes y resumen de impresion.
-- Se reestructura `backend/tools` en subcarpetas por herramienta para eliminar conflictos de compilaci?n por m?ltiples `main`.
+- Se reestructura `backend/tools` en subcarpetas por herramienta para eliminar conflictos de compilación por múltiples `main`.
 - Se valida backend completo con `go test ./...` (ok).
 - Se valida el módulo GPS con pruebas espec?ficas:
 	- `go test ./db -run TestEmpresaGPSDispositivosYRecorridosCRUD -count=1` (ok).
@@ -4634,7 +4637,7 @@
 
 
 ### Added
-- ImplementaciÃƒÂ¯Ã‚Â¿Ã‚Â½n de controladores HTTP (Handlers) para el CRUD de Proveedores integrado en el nuevo mÃƒÂ¯Ã‚Â¿Ã‚Â½dulo de compras y logÃƒÂ¯Ã‚Â¿Ã‚Â½stica ERP.
+- Implementación de controladores HTTP (Handlers) para el CRUD de Proveedores integrado en el nuevo módulo de compras y logística ERP.
 
 
 

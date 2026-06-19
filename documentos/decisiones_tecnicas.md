@@ -19,6 +19,10 @@ trazabilidad en `documentos/historial_de_cambios`.
 - Frontend tradicional con HTML, CSS y JavaScript estatico.
 - No migrar a frameworks ni bundlers sin aprobacion explicita.
 - Mantener responsive real para PC y celular.
+- Mantener textos de UI, ayuda y mensajes backend en UTF-8 real. No reemplazar
+  tildes o eñes por signos `?`, caracteres de reemplazo ni secuencias mojibake;
+  si aparece una palabra con tilde rota, signos de reemplazo o secuencias de
+  doble codificacion, debe corregirse antes de cerrar o ejecutar `rs`.
 - Validar visualmente cambios de pantallas, formularios, botones, carritos,
   reportes e impresion.
 - Los botones deben tener iconos relacionados usando la infraestructura global

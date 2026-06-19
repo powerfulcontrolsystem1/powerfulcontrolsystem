@@ -3675,9 +3675,23 @@
         return '<input class="form-input empresa-guided-input" data-guided-answer="' + escapeAttr(question.id) + '" type="' + (type === "number" ? "number" : "text") + '" value="' + escapeAttr(value) + '" placeholder="' + escapeAttr(question.placeholder || "") + '">';
       }
 
+      function isGuidedSetupDismissed(configData) {
+        var resumen = configData && configData.resumen ? configData.resumen : null;
+        var estado = configData && configData.estado ? configData.estado : {};
+        var anterior = estado && estado.resumen_anterior ? estado.resumen_anterior : null;
+        var meta = resumen || anterior || {};
+        var rawEstado = String(meta.estado || "").toLowerCase();
+        return !!(meta.no_mostrar_mas || meta.pospuesta || rawEstado === "pospuesta" || rawEstado === "no_mostrar_mas");
+      }
+
       function openGuidedSetupModal(configData) {
         if (!empresaId || !configData || !configData.wizard) return;
         var estado = configData.estado || {};
+        var dismissed = isGuidedSetupDismissed(configData);
+        if (dismissed) {
+          clearGuidedPendingFlag();
+          return;
+        }
         var shouldOpen = hasGuidedPendingFlag() || !estado.configurada_anterior;
         if (!shouldOpen) return;
         var wizard = configData.wizard || {};
@@ -3709,6 +3723,7 @@
               '</div>' +
               '<div class="empresa-guided-actions">' +
                 '<p id="empresaGuidedStatus" class="empresa-guided-status" aria-live="polite"></p>' +
+                '<label class="empresa-guided-status" style="display:flex;align-items:center;gap:8px;margin-right:auto;"><input id="empresaGuidedNoMostrarMas" type="checkbox"> No mostrar mas</label>' +
                 '<button id="empresaGuidedApply" class="btn" type="submit">Aplicar configuracion</button>' +
               '</div>' +
             '</form>' +
@@ -3717,12 +3732,14 @@
         document.getElementById("empresaGuidedClose").addEventListener("click", function () {
           var closeBtn = document.getElementById("empresaGuidedClose");
           var status = document.getElementById("empresaGuidedStatus");
+          var noMostrarMas = document.getElementById("empresaGuidedNoMostrarMas");
+          var action = noMostrarMas && noMostrarMas.checked ? "no_mostrar_mas" : "posponer";
           if (closeBtn) closeBtn.disabled = true;
           if (status) status.textContent = "Guardando decision...";
-          fetchJSON("/api/empresa/configuracion_guiada?empresa_id=" + encodeURIComponent(empresaId) + "&action=posponer", {
+          fetchJSON("/api/empresa/configuracion_guiada?empresa_id=" + encodeURIComponent(empresaId) + "&action=" + encodeURIComponent(action), {
             method: "POST",
             headers: { "Content-Type": "application/json", "X-PCS-Source": "empresa_panel_guided_setup_later" },
-            body: JSON.stringify({ answers: {}, decision: "despues" })
+            body: JSON.stringify({ answers: {}, decision: action })
           }).then(function () {
             clearGuidedPendingFlag();
             overlay.classList.remove("is-visible");

@@ -1986,7 +1986,7 @@
     var view = readView();
     var linkAgregar = document.getElementById("linkAgregarEmpresa");
 
-    // Si el usuario volvi? con bot?n "atr?s" desde otra p?gina (bfcache / back-forward),
+    // Si el usuario volvi? con bot?n "atr?s" desde otra página (bfcache / back-forward),
     // priorizamos mostrar la lista de empresas. Esto evita que quede oculta por un view
     // previo en modo "frame" (licencias/reportes) y parezca que "desaparecieron" las tarjetas.
     var forceEmpresas = false;
@@ -2001,7 +2001,7 @@
       if (!forceEmpresas) {
         var ref = String(document.referrer || '').trim();
         if (ref && ref.indexOf(window.location.origin) === 0) {
-          // si venimos desde otra p?gina del mismo sitio (no desde seleccionar_empresa),
+          // si venimos desde otra página del mismo sitio (no desde seleccionar_empresa),
           // mostramos tarjetas por defecto.
           var refPath = '';
           try { refPath = (new URL(ref)).pathname || ''; } catch (e) { refPath = ''; }
@@ -2153,7 +2153,7 @@
       restoreLastView();
     });
 
-    // Cuando el navegador restaura la p?gina desde el cache de "atr?s/adelante",
+    // Cuando el navegador restaura la página desde el cache de "atr?s/adelante",
     // aseguramos que el panel de empresas quede visible y el listado se refresque.
     window.addEventListener('pageshow', function (ev) {
       try {

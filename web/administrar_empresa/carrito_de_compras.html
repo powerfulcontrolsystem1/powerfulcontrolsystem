@@ -5727,10 +5727,10 @@
       const bodyStyle = formato === 'pos'
         ? 'body{font-family:monospace;padding:6px;color:#111;font-size:11px;line-height:1.25}h1{font-size:14px;text-align:center;margin:0 0 6px}.muted{color:#555;font-size:10px}table{width:100%;border-collapse:collapse;font-size:10.5px}td,th{border-bottom:1px dashed #999;padding:4px 2px;vertical-align:top}th{text-align:left}.tot{font-weight:bold;font-size:13px;text-align:right}hr{border:0;border-top:1px dashed #999;margin:7px 0}.logo{max-height:48px;display:block;margin:0 auto 6px;max-width:160px}.invoice-tax-deduction{border-top:1px dashed #999;border-bottom:1px dashed #999;margin:7px 0;padding:5px 0}.invoice-tax-deduction h2{font-size:11px;margin:0 0 3px;text-align:center}.invoice-tax-deduction p{display:flex;justify-content:space-between;gap:5px;margin:2px 0;font-size:10px}.invoice-tax-deduction strong{text-align:right;white-space:nowrap}.invoice-access-qr{text-align:center;border-top:1px dashed #999;margin-top:8px;padding-top:7px}.invoice-access-qr img{width:92px;height:92px;display:block;margin:0 auto 4px}.invoice-access-qr strong,.invoice-access-qr span{display:block;font-size:9px;overflow-wrap:anywhere}'
         : 'body{font-family:Arial,sans-serif;padding:14px;color:#111}.logo{max-height:72px;max-width:220px;display:block;margin:0 0 10px}.muted{color:#666;font-size:12px}table{width:100%;border-collapse:collapse;font-size:13px}td,th{border-bottom:1px solid #ddd;padding:6px 4px}th{text-align:left}.tot{font-weight:bold}.meta{display:flex;justify-content:space-between;gap:14px;flex-wrap:wrap}.invoice-tax-deduction{border-top:1px solid #ddd;border-bottom:1px solid #ddd;margin:10px 0;padding:6px 0}.invoice-tax-deduction h2{font-size:13px;margin:0 0 5px}.invoice-tax-deduction p{display:flex;justify-content:space-between;gap:10px;margin:3px 0;font-size:12px}.invoice-tax-deduction strong{text-align:right;white-space:nowrap}.invoice-access-qr{text-align:center;border-top:1px dashed #aaa;margin-top:14px;padding-top:12px}.invoice-access-qr img{width:126px;height:126px;display:block;margin:0 auto 6px}.invoice-access-qr strong,.invoice-access-qr span{display:block;font-size:11px;overflow-wrap:anywhere}';
-      const html = '<!doctype html><html><head><meta charset="utf-8"><title>' + escapeHtml(normalize(doc.documento_codigo || doc.numero_legal || 'Factura electr?nica')) + '</title>' +
+      const html = '<!doctype html><html><head><meta charset="utf-8"><title>' + escapeHtml(normalize(doc.documento_codigo || doc.numero_legal || 'Factura electrónica')) + '</title>' +
         '<style>' + pageStyle + bodyStyle + '</style></head><body>' +
         (logoUrl && cfg.mostrar_logo_empresa !== false && cfg.mostrar_logo !== false ? ('<img class="logo" src="' + escapeHtml(logoUrl) + '" alt="Logo empresa">') : '') +
-        '<h1>Factura electr?nica</h1>' +
+        '<h1>Factura electrónica</h1>' +
         '<div class="meta">' +
           '<div><strong>Empresa:</strong> ' + escapeHtml(empresaLabel) + '</div>' +
           '<div><strong>N?mero:</strong> ' + escapeHtml(normalize(doc.numero_legal || doc.documento_codigo || 'Pendiente')) + '</div>' +
@@ -5752,7 +5752,7 @@
 
       const printed = printHTMLDocument(html, formato === 'pos' ? 'width=320,height=760' : 'width=860,height=940', printTarget);
       if (!printed) {
-        setStationPaymentMessage('La factura se emiti?, pero el navegador bloque? la impresi?n autom?tica.', true);
+        setStationPaymentMessage('La factura se emiti?, pero el navegador bloque? la impresión autom?tica.', true);
       }
       return printed;
     }

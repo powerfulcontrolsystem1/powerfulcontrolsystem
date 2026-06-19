@@ -1,3 +1,8 @@
+2026-06-19 - Configuracion guiada no invasiva
+- `backend/handlers/configuracion_guiada.go`: agrega `action=no_mostrar_mas|ocultar` para guardar la decision permanente de no autoabrir el asistente guiado.
+- `web/administrar_empresa/panel.html`: respeta estados `pospuesta` y `no_mostrar_mas`, limpia banderas locales heredadas y agrega check `No mostrar mas` en el modal.
+- `web/administrar_empresa/configuracion_guiada.html`: agrega formulario guiado manual y boton separado para iniciar el chat IA/agente de configuracion.
+
 2026-06-19 - Empresas y licencias en super administrador
 - `backend/db/empresas_licencias_estado.go`: consolida empresas operativas con licencias super para resumen read-only de licencia activa, sin activa, 15 dias y vencida.
 - `backend/handlers/system_empresas_handlers.go`: agrega `SuperEmpresasEstadoHandler` para `/super/api/empresas_estado`, solo GET y sin mutaciones.

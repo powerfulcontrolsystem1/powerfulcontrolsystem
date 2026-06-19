@@ -3074,7 +3074,7 @@
         params.set('hasta', hasta);
       }
 
-      const resumen = await requestJSON('/api/empresa/inventario/resumen?' + params.toString());
+      const resumen = await requestJSON('/api/empresa/inventario/resumenú' + params.toString());
 
       document.getElementById('kpiInventarioAlertas').textContent = String(Number(resumen.alertas_total || 0));
       document.getElementById('kpiInventarioSinStock').textContent = String(Number(resumen.alertas_sin_stock || 0));
@@ -3362,7 +3362,7 @@
         params.set('bodega_id', String(bodegaID));
       }
 
-      const rows = await requestJSON('/api/empresa/inventario/plan_reposicion_resumen?' + params.toString());
+      const rows = await requestJSON('/api/empresa/inventario/plan_reposicion_resumenú' + params.toString());
       const tbody = document.querySelector('#inventarioPlanReposicionResumenTable tbody');
       if (!rows.length) {
         tbody.innerHTML = '<tr><td colspan="8">Sin consolidado de compra para el alcance actual.</td></tr>';

@@ -2218,5 +2218,5 @@ Actualizacion 2026-04-29 (auditoria como fuente de contexto IA)
 ### Tabla: super_juegos_records (pcs_superadministrador)
 Almacena los top scores globales de todos los juegos publicados en `/Juegos/*` y el emulador, para todas las empresas y el público. El frontend envía records mediante `/api/public/juegos/records` con `juego`, `nombre_jugador`, `empresa_id`, `puntaje` y `nivel`.
 - **Columnas**: `id` (INTEGER/SERIAL), `juego` (TEXT), `nombre_jugador` (TEXT), `empresa_id` (TEXT, DEFAULT 'Publico'), `puntaje` (INTEGER), `nivel` (INTEGER), `fecha_creacion` (TEXT/TIMESTAMP), `fecha_actualizacion` (TEXT/TIMESTAMP), `usuario_creador` (TEXT), `estado` (TEXT), `observaciones` (TEXT).
-- **Ãšnico**: `id` autoincremental.
+- **Único**: `id` autoincremental.
 - **Índice**: `idx_super_juegos_records_top` en (`juego`, `puntaje` DESC, `fecha_creacion` ASC).

@@ -1,3 +1,23 @@
+2026-06-19: Prevención documental de errores de codificación.
+- Decisión técnica: `documentos/decisiones_tecnicas.md` deja como regla permanente mantener textos visibles, ayudas, correos, mensajes backend y documentación operativa en UTF-8 real.
+- Comandos: `documentos/comandos_codex.md` agrega el barrido `rg` recomendado para detectar caracteres rotos antes de cerrar cambios textuales o ejecutar `rs`.
+- Alcance: prevención documental; no cambia lógica de negocio, permisos, endpoints ni base de datos.
+
+2026-06-19: Corrección de codificación y tildes.
+- Frontend: se corrigen textos visibles con caracteres dañados en `web/administrar_empresa.html`, `web/venta_publica.html`, `web/super/licencias.html` y scripts relacionados.
+- Backend: se normalizan mensajes y comentarios de pagos/licencias y configuración guiada que podían mostrarse con mojibake.
+- Documentación: se corrigen referencias afectadas en changelog, matriz de roles, mapa de módulos, estructura BD y registros operativos principales.
+- Alcance: corrección textual/codificación; no cambia permisos, rutas, endpoints, licencias ni lógica de negocio.
+- QA: barrido de patrones de codificación rota sobre archivos principales, chequeos de sintaxis JS/HTML y pruebas Go enfocadas.
+
+2026-06-19: Configuracion guiada no invasiva.
+- Backend: `/api/empresa/configuracion_guiada` acepta `action=no_mostrar_mas|ocultar` y guarda `configuracion_guiada_resumen.estado=no_mostrar_mas`, ademas de la bandera `no_mostrar_mas`.
+- Frontend: `web/administrar_empresa/panel.html` no autoabre el asistente si el resumen anterior esta `pospuesta` o `no_mostrar_mas`, incluso si queda una bandera vieja en localStorage/sessionStorage.
+- UX: el modal inicial agrega check `No mostrar mas`; si se marca y se pulsa `Despues`, queda oculto automaticamente para esa empresa.
+- Configuracion: `web/administrar_empresa/configuracion_guiada.html` agrega boton para abrir formulario guiado y conserva boton para iniciar el chat IA/agente de configuracion.
+- Seguridad: se mantiene `/api/empresa/configuracion_guiada` con `empresa_id` validado por los wrappers existentes; no se agregan rutas publicas ni cambios de permisos.
+- QA: `go test ./handlers -run "ConfiguracionGuiada|^$" -count=1`, chequeo sintactico JS de `panel.html`, `configuracion_guiada.html` y `configuracion_menu.html`.
+
 2026-06-19: Menu empresarial con etiqueta Beta.
 - Frontend: `web/js/administrar_empresa.js` agrega automaticamente la palabra `Beta` a los botones del menu principal de `administrar_empresa.html`.
 - Excepciones: no se marca `Productos`, `Venta directa`, `Buscar ventas y facturas`, `Nomina`, `Reportes ejecutivos`, `Facturacion electronica` ni `Configuracion`.

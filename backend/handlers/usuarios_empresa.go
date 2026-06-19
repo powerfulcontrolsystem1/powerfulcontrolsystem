@@ -634,7 +634,7 @@ func EmpresaUsuariosHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 					return
 				}
 				if item.EmailConfirmado == 1 {
-					http.Error(w, "el correo ya est? confirmado", http.StatusConflict)
+					http.Error(w, "el correo ya está confirmado", http.StatusConflict)
 					return
 				}
 
@@ -790,7 +790,7 @@ func EmpresaUsuariosHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 	}
 }
 
-// EmpresaUsuarioLoginHandler valida credenciales de usuario de empresa y crea sesi?n de acceso.
+// EmpresaUsuarioLoginHandler valida credenciales de usuario de empresa y crea sesión de acceso.
 func EmpresaUsuarioLoginHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
@@ -844,11 +844,11 @@ func EmpresaUsuarioLoginHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 		}
 
 		if item.EmailConfirmado != 1 {
-			http.Error(w, "debes confirmar tu correo antes de iniciar sesi?n", http.StatusForbidden)
+			http.Error(w, "debes confirmar tu correo antes de iniciar sesión", http.StatusForbidden)
 			return
 		}
 		if strings.EqualFold(strings.TrimSpace(item.Estado), "inactivo") && item.EmailConfirmado == 1 {
-			http.Error(w, "tu usuario est? inactivo", http.StatusForbidden)
+			http.Error(w, "tu usuario está inactivo", http.StatusForbidden)
 			return
 		}
 		if blocked, lockUntil := dbpkg.IsEmpresaUsuarioLocked(item, time.Now()); blocked {
@@ -907,7 +907,7 @@ func EmpresaUsuarioLoginHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 				"empresa_id":                 item.EmpresaID,
 				"email":                      item.Email,
 				"password_age_days":          edadDias,
-				"message":                    "Debes cambiar tu contrase?a antes de continuar por politica de seguridad.",
+				"message":                    "Debes cambiar tu contraseña antes de continuar por politica de seguridad.",
 				"password_policy":            empresaUsuarioPasswordPolicyToMap(policy),
 			})
 			return
@@ -915,14 +915,14 @@ func EmpresaUsuarioLoginHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 
 		if err := createEmpresaUsuarioSessionAndRespond(w, r, dbSuper, item); err != nil {
 			log.Printf("[usuarios_empresa] failed to create session (login) empresa_id=%d email=%s error=%v", item.EmpresaID, item.Email, err)
-			http.Error(w, "No se pudo iniciar sesi?n del usuario", http.StatusInternalServerError)
+			http.Error(w, "No se pudo iniciar sesión del usuario", http.StatusInternalServerError)
 			return
 		}
 		warmEmpresaPermissionSnapshot(dbEmp, dbSuper, item)
 	}
 }
 
-// EmpresaUsuarioSetPasswordHandler define la contrase?a en el primer ingreso y abre sesi?n.
+// EmpresaUsuarioSetPasswordHandler define la contraseña en el primer ingreso y abre sesión.
 func EmpresaUsuarioSetPasswordHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
@@ -961,11 +961,11 @@ func EmpresaUsuarioSetPasswordHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 			}
 		}
 		if strings.TrimSpace(payload.Password) == "" {
-			http.Error(w, "debes ingresar una contrase?a", http.StatusBadRequest)
+			http.Error(w, "debes ingresar una contraseña", http.StatusBadRequest)
 			return
 		}
 		if payload.PasswordConfirm != "" && payload.Password != payload.PasswordConfirm {
-			http.Error(w, "la confirmaci?n de contrase?a no coincide", http.StatusBadRequest)
+			http.Error(w, "la confirmaci?n de contraseña no coincide", http.StatusBadRequest)
 			return
 		}
 		if err := validateRecaptchaToken(dbSuper, r, payload.RecaptchaToken); err != nil {
@@ -1011,11 +1011,11 @@ func EmpresaUsuarioSetPasswordHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 			return
 		}
 		if empresaUsuarioEstadoBloqueaPrimerIngreso(item) {
-			http.Error(w, "tu usuario est? inactivo", http.StatusForbidden)
+			http.Error(w, "tu usuario está inactivo", http.StatusForbidden)
 			return
 		}
 		if item.PasswordSet == 1 && strings.TrimSpace(item.PasswordHash) != "" {
-			http.Error(w, "el usuario ya tiene contrase?a configurada", http.StatusConflict)
+			http.Error(w, "el usuario ya tiene contraseña configurada", http.StatusConflict)
 			return
 		}
 
@@ -1058,7 +1058,7 @@ func EmpresaUsuarioSetPasswordHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 	}
 }
 
-// EmpresaUsuarioRequestPasswordRecoveryHandler genera un token de recuperaci?n de contrase?a.
+// EmpresaUsuarioRequestPasswordRecoveryHandler genera un token de recuperación de contraseña.
 func EmpresaUsuarioRequestPasswordRecoveryHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
@@ -1100,7 +1100,7 @@ func EmpresaUsuarioRequestPasswordRecoveryHandler(dbEmp, dbSuper *sql.DB) http.H
 			json.NewEncoder(w).Encode(map[string]interface{}{
 				"ok":       true,
 				"delivery": delivery,
-				"message":  "Si el correo existe, enviaremos instrucciones para recuperar la contrase?a.",
+				"message":  "Si el correo existe, enviaremos instrucciones para recuperar la contraseña.",
 			})
 		}
 
@@ -1126,7 +1126,7 @@ func EmpresaUsuarioRequestPasswordRecoveryHandler(dbEmp, dbSuper *sql.DB) http.H
 		}
 		if err := dbpkg.SetEmpresaUsuarioPasswordResetToken(dbEmp, item.EmpresaID, item.ID, token, expira); err != nil {
 			log.Printf("[usuarios_empresa] failed to set recovery token empresa_id=%d id=%d email=%s error=%v", item.EmpresaID, item.ID, item.Email, err)
-			http.Error(w, "No se pudo registrar la recuperaci?n", http.StatusInternalServerError)
+			http.Error(w, "No se pudo registrar la recuperación", http.StatusInternalServerError)
 			return
 		}
 
@@ -1222,7 +1222,7 @@ func EmpresaUsuarioRequestInvitationRecoveryHandler(dbEmp, dbSuper *sql.DB) http
 	}
 }
 
-// EmpresaUsuarioResetPasswordHandler permite restablecer contrase?a con token de recuperaci?n.
+// EmpresaUsuarioResetPasswordHandler permite restablecer contraseña con token de recuperación.
 func EmpresaUsuarioResetPasswordHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
@@ -1259,11 +1259,11 @@ func EmpresaUsuarioResetPasswordHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc
 			return
 		}
 		if strings.TrimSpace(payload.Password) == "" {
-			http.Error(w, "debes ingresar una contrase?a", http.StatusBadRequest)
+			http.Error(w, "debes ingresar una contraseña", http.StatusBadRequest)
 			return
 		}
 		if payload.PasswordConfirm != "" && payload.PasswordConfirm != payload.Password {
-			http.Error(w, "la confirmaci?n de contrase?a no coincide", http.StatusBadRequest)
+			http.Error(w, "la confirmaci?n de contraseña no coincide", http.StatusBadRequest)
 			return
 		}
 		if err := validateRecaptchaToken(dbSuper, r, payload.RecaptchaToken); err != nil {
@@ -1280,7 +1280,7 @@ func EmpresaUsuarioResetPasswordHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc
 		item, err := resolveEmpresaUsuarioForPasswordReset(dbEmp, email, token, payload.EmpresaID)
 		if err != nil {
 			if errors.Is(err, sql.ErrNoRows) {
-				http.Error(w, "token de recuperaci?n inv?lido", http.StatusUnauthorized)
+				http.Error(w, "token de recuperación inv?lido", http.StatusUnauthorized)
 				return
 			}
 			if errors.Is(err, errEmpresaUsuarioEmailAmbiguo) {
@@ -1292,23 +1292,23 @@ func EmpresaUsuarioResetPasswordHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc
 			return
 		}
 		if item.EmailConfirmado != 1 {
-			http.Error(w, "debes confirmar tu correo antes de restablecer contrase?a", http.StatusForbidden)
+			http.Error(w, "debes confirmar tu correo antes de restablecer contraseña", http.StatusForbidden)
 			return
 		}
 		if strings.EqualFold(strings.TrimSpace(item.Estado), "inactivo") {
-			http.Error(w, "tu usuario est? inactivo", http.StatusForbidden)
+			http.Error(w, "tu usuario está inactivo", http.StatusForbidden)
 			return
 		}
 
 		storedToken := strings.TrimSpace(item.PasswordResetToken)
 		if storedToken == "" || subtle.ConstantTimeCompare([]byte(token), []byte(storedToken)) != 1 {
-			http.Error(w, "token de recuperaci?n inv?lido", http.StatusUnauthorized)
+			http.Error(w, "token de recuperación inv?lido", http.StatusUnauthorized)
 			return
 		}
 		expiraAt, ok := parseEmpresaUsuarioDateTime(strings.TrimSpace(item.PasswordResetExpira))
 		if !ok || time.Now().After(expiraAt) {
 			_ = dbpkg.ClearEmpresaUsuarioPasswordResetToken(dbEmp, item.EmpresaID, item.ID)
-			http.Error(w, "token de recuperaci?n expirado", http.StatusUnauthorized)
+			http.Error(w, "token de recuperación expirado", http.StatusUnauthorized)
 			return
 		}
 
@@ -1319,7 +1319,7 @@ func EmpresaUsuarioResetPasswordHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc
 		}
 		if err := dbpkg.SetEmpresaUsuarioPassword(dbEmp, item.EmpresaID, item.ID, hash, salt); err != nil {
 			log.Printf("[usuarios_empresa] failed to reset password empresa_id=%d id=%d email=%s error=%v", item.EmpresaID, item.ID, item.Email, err)
-			http.Error(w, "No se pudo actualizar la contrase?a", http.StatusInternalServerError)
+			http.Error(w, "No se pudo actualizar la contraseña", http.StatusInternalServerError)
 			return
 		}
 
@@ -1329,14 +1329,14 @@ func EmpresaUsuarioResetPasswordHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc
 
 		if err := createEmpresaUsuarioSessionAndRespond(w, r, dbSuper, item); err != nil {
 			log.Printf("[usuarios_empresa] failed to create session (password_reset) empresa_id=%d email=%s error=%v", item.EmpresaID, item.Email, err)
-			http.Error(w, "No se pudo iniciar sesi?n del usuario", http.StatusInternalServerError)
+			http.Error(w, "No se pudo iniciar sesión del usuario", http.StatusInternalServerError)
 			return
 		}
 		warmEmpresaPermissionSnapshot(dbEmp, dbSuper, item)
 	}
 }
 
-// EmpresaUsuarioChangePasswordHandler permite cambiar contrase?a con credenciales actuales.
+// EmpresaUsuarioChangePasswordHandler permite cambiar contraseña con credenciales actuales.
 func EmpresaUsuarioChangePasswordHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
@@ -1393,7 +1393,7 @@ func EmpresaUsuarioChangePasswordHandler(dbEmp, dbSuper *sql.DB) http.HandlerFun
 			return
 		}
 		if strings.TrimSpace(newPasswordConfirm) != "" && newPasswordConfirm != newPassword {
-			http.Error(w, "la confirmaci?n de contrase?a no coincide", http.StatusBadRequest)
+			http.Error(w, "la confirmaci?n de contraseña no coincide", http.StatusBadRequest)
 			return
 		}
 
@@ -1413,15 +1413,15 @@ func EmpresaUsuarioChangePasswordHandler(dbEmp, dbSuper *sql.DB) http.HandlerFun
 		}
 
 		if item.EmailConfirmado != 1 {
-			http.Error(w, "debes confirmar tu correo antes de cambiar contrase?a", http.StatusForbidden)
+			http.Error(w, "debes confirmar tu correo antes de cambiar contraseña", http.StatusForbidden)
 			return
 		}
 		if strings.EqualFold(strings.TrimSpace(item.Estado), "inactivo") {
-			http.Error(w, "tu usuario est? inactivo", http.StatusForbidden)
+			http.Error(w, "tu usuario está inactivo", http.StatusForbidden)
 			return
 		}
 		if item.PasswordSet != 1 || strings.TrimSpace(item.PasswordHash) == "" || strings.TrimSpace(item.PasswordSalt) == "" {
-			http.Error(w, "debes establecer tu contrase?a inicial antes de cambiarla", http.StatusConflict)
+			http.Error(w, "debes establecer tu contraseña inicial antes de cambiarla", http.StatusConflict)
 			return
 		}
 		if !currentPasswordAlreadyVerified && !verifyEmpresaUsuarioPassword(currentPassword, item) {
@@ -1429,7 +1429,7 @@ func EmpresaUsuarioChangePasswordHandler(dbEmp, dbSuper *sql.DB) http.HandlerFun
 			return
 		}
 		if currentPassword == newPassword {
-			http.Error(w, "la nueva contrase?a debe ser diferente a la actual", http.StatusBadRequest)
+			http.Error(w, "la nueva contraseña debe ser diferente a la actual", http.StatusBadRequest)
 			return
 		}
 
@@ -1446,7 +1446,7 @@ func EmpresaUsuarioChangePasswordHandler(dbEmp, dbSuper *sql.DB) http.HandlerFun
 		}
 		if err := dbpkg.SetEmpresaUsuarioPassword(dbEmp, item.EmpresaID, item.ID, hash, salt); err != nil {
 			log.Printf("[usuarios_empresa] failed to change password empresa_id=%d id=%d email=%s error=%v", item.EmpresaID, item.ID, item.Email, err)
-			http.Error(w, "No se pudo actualizar la contrase?a", http.StatusInternalServerError)
+			http.Error(w, "No se pudo actualizar la contraseña", http.StatusInternalServerError)
 			return
 		}
 
@@ -1456,7 +1456,7 @@ func EmpresaUsuarioChangePasswordHandler(dbEmp, dbSuper *sql.DB) http.HandlerFun
 
 		if err := createEmpresaUsuarioSessionAndRespond(w, r, dbSuper, item); err != nil {
 			log.Printf("[usuarios_empresa] failed to create session (change_password) empresa_id=%d email=%s error=%v", item.EmpresaID, item.Email, err)
-			http.Error(w, "No se pudo iniciar sesi?n del usuario", http.StatusInternalServerError)
+			http.Error(w, "No se pudo iniciar sesión del usuario", http.StatusInternalServerError)
 			return
 		}
 		warmEmpresaPermissionSnapshot(dbEmp, dbSuper, item)
@@ -1496,7 +1496,7 @@ func ConfirmarCorreoUsuarioHandler(dbEmp *sql.DB) http.HandlerFunc {
 	}
 }
 
-// GmailConfigHandler gestiona configuraci?n de env?o SMTP por Gmail.
+// GmailConfigHandler gestiona configuración de envío SMTP por Gmail.
 func GmailConfigHandler(dbSuper *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
@@ -1993,12 +1993,12 @@ func resolveEmpresaUsuarioPasswordPolicy(dbSuper *sql.DB) empresaUsuarioPassword
 
 func validateEmpresaUsuarioPasswordWithPolicy(password string, policy empresaUsuarioPasswordPolicy) error {
 	if strings.TrimSpace(password) == "" {
-		return fmt.Errorf("debes ingresar una contrase?a")
+		return fmt.Errorf("debes ingresar una contraseña")
 	}
 
 	runes := []rune(password)
 	if len(runes) < policy.MinLength {
-		return fmt.Errorf("la contrase?a debe tener al menos %d caracteres", policy.MinLength)
+		return fmt.Errorf("la contraseña debe tener al menos %d caracteres", policy.MinLength)
 	}
 
 	hasUpper := false
@@ -2022,7 +2022,7 @@ func validateEmpresaUsuarioPasswordWithPolicy(password string, policy empresaUsu
 	}
 
 	if hasSpace {
-		return fmt.Errorf("la contrase?a no debe contener espacios")
+		return fmt.Errorf("la contraseña no debe contener espacios")
 	}
 
 	missing := make([]string, 0)
@@ -2039,7 +2039,7 @@ func validateEmpresaUsuarioPasswordWithPolicy(password string, policy empresaUsu
 		missing = append(missing, "un s?mbolo")
 	}
 	if len(missing) > 0 {
-		return fmt.Errorf("la contrase?a debe incluir %s", strings.Join(missing, ", "))
+		return fmt.Errorf("la contraseña debe incluir %s", strings.Join(missing, ", "))
 	}
 
 	return nil

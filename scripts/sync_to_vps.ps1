@@ -1809,7 +1809,7 @@ function Invoke-RemoteDockerComposeRedeploy {
   }
 
   if (-not (Test-Path $IdentityPath)) {
-    throw "No se encontrÃ³ la clave de identidad: $IdentityPath"
+    throw "No se encontró la clave de identidad: $IdentityPath"
   }
   $resolvedIdentityPath = (Resolve-Path $IdentityPath).Path
   $identityContext = [pscustomobject]@{
@@ -1891,7 +1891,7 @@ function Invoke-RemoteUnusedFilesCleanup {
   }
 
   if (-not (Test-Path $IdentityPath)) {
-    throw "No se encontrÃ³ la clave de identidad: $IdentityPath"
+    throw "No se encontró la clave de identidad: $IdentityPath"
   }
   $resolvedIdentityPath = (Resolve-Path $IdentityPath).Path
   $identityContext = [pscustomobject]@{

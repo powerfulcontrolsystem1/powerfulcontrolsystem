@@ -70,13 +70,13 @@ func EmpresaConfiguracionGuiadaHandler(dbEmp *sql.DB) http.HandlerFunc {
 			if action == "" {
 				action = "aplicar"
 			}
-			if action == "posponer" || action == "despues" {
+			if action == "posponer" || action == "despues" || action == "no_mostrar_mas" || action == "ocultar" {
 				state, err := loadEmpresaConfiguracionGuiadaState(dbEmp, empresaID)
 				if err != nil {
 					http.Error(w, "no se pudo cargar el contexto guiado: "+err.Error(), http.StatusInternalServerError)
 					return
 				}
-				result, err := postponeEmpresaConfiguracionGuiada(dbEmp, state, strings.TrimSpace(adminEmailFromRequest(r)))
+				result, err := postponeEmpresaConfiguracionGuiada(dbEmp, state, strings.TrimSpace(adminEmailFromRequest(r)), action == "no_mostrar_mas" || action == "ocultar")
 				if err != nil {
 					http.Error(w, "no se pudo posponer la configuracion guiada: "+err.Error(), http.StatusInternalServerError)
 					return
@@ -120,7 +120,7 @@ func EmpresaConfiguracionGuiadaHandler(dbEmp *sql.DB) http.HandlerFunc {
 	}
 }
 
-func postponeEmpresaConfiguracionGuiada(dbEmp *sql.DB, state *empresaConfiguracionGuiadaState, usuario string) (map[string]interface{}, error) {
+func postponeEmpresaConfiguracionGuiada(dbEmp *sql.DB, state *empresaConfiguracionGuiadaState, usuario string, noMostrarMas bool) (map[string]interface{}, error) {
 	if state == nil || state.EmpresaID <= 0 {
 		return nil, fmt.Errorf("empresa invalida")
 	}
@@ -128,12 +128,21 @@ func postponeEmpresaConfiguracionGuiada(dbEmp *sql.DB, state *empresaConfiguraci
 		usuario = "sistema.configuracion_guiada"
 	}
 	now := time.Now().Format(time.RFC3339)
+	estado := "pospuesta"
+	mensaje := "Listo. No volveremos a mostrar automaticamente la configuracion guiada inicial para esta empresa."
+	observaciones := "[configuracion_guiada] asistente inicial pospuesto por el usuario"
+	if noMostrarMas {
+		estado = "no_mostrar_mas"
+		mensaje = "Listo. La configuracion guiada no se mostrara automaticamente para esta empresa. Puedes abrirla desde Configuracion cuando la necesites."
+		observaciones = "[configuracion_guiada] asistente inicial oculto permanentemente por el usuario"
+	}
 	resumen := map[string]interface{}{
 		"empresa_id":          state.EmpresaID,
 		"empresa_nombre":      state.EmpresaNombre,
 		"tipo_empresa_nombre": state.TipoEmpresaNombre,
-		"estado":              "pospuesta",
+		"estado":              estado,
 		"pospuesta":           true,
+		"no_mostrar_mas":      noMostrarMas,
 		"configurada":         false,
 		"aplicado_en":         now,
 		"pospuesta_en":        now,
@@ -149,12 +158,12 @@ func postponeEmpresaConfiguracionGuiada(dbEmp *sql.DB, state *empresaConfiguraci
 		Valor:          string(rawResumen),
 		UsuarioCreador: usuario,
 		Estado:         "activo",
-		Observaciones:  "[configuracion_guiada] asistente inicial pospuesto por el usuario",
+		Observaciones:  observaciones,
 	}); err != nil {
 		return nil, err
 	}
 	return map[string]interface{}{
-		"mensaje": "Listo. No volveremos a mostrar automaticamente la configuracion guiada inicial para esta empresa.",
+		"mensaje": mensaje,
 		"resumen": resumen,
 	}, nil
 }
@@ -574,7 +583,7 @@ func buildGuidedBusinessSpecificQuestions(kind, singular, plural string) []empre
 		)
 		return questions
 	}
-	if guidedTypeContains(kind, "restaurante", "restaurant", "bar", "cafeteria", "cafeterÃ­a", "panaderia", "panaderÃ­a") {
+	if guidedTypeContains(kind, "restaurante", "restaurant", "bar", "cafeteria", "cafetería", "panaderia", "panadería") {
 		questions = append(questions,
 			empresaConfiguracionGuiadaQuestion{ID: "servicio_mesa", Label: "Servicio a la mesa", Prompt: fmt.Sprintf("Quieres que las %s trabajen con pedido abierto y cierre por cuenta?", strings.ToLower(plural)), Type: "boolean", Required: true, DefaultValue: "si"},
 			empresaConfiguracionGuiadaQuestion{ID: "nombre_area_cocina", Label: "Area de preparacion", Prompt: "Nombre del area que recibira comandas.", Type: "text", Placeholder: "Cocina", DefaultValue: "Cocina"},
@@ -583,7 +592,7 @@ func buildGuidedBusinessSpecificQuestions(kind, singular, plural string) []empre
 		)
 		return questions
 	}
-	if guidedTypeContains(kind, "salon", "salÃ³n", "belleza", "spa", "barberia", "barberÃ­a", "veterinaria", "consultorio", "gimnasio", "taller", "lavadero") {
+	if guidedTypeContains(kind, "salon", "salón", "belleza", "spa", "barberia", "barbería", "veterinaria", "consultorio", "gimnasio", "taller", "lavadero") {
 		questions = append(questions,
 			empresaConfiguracionGuiadaQuestion{ID: "servicios_base", Label: "Servicios base", Prompt: "Lista los servicios principales separados por coma.", Type: "textarea", Placeholder: "Corte, Barba, Lavado", DefaultValue: ""},
 			empresaConfiguracionGuiadaQuestion{ID: "duracion_servicio_minutos", Label: "Duracion base", Prompt: "Duracion promedio de un servicio en minutos.", Type: "number", Placeholder: "45", DefaultValue: "45"},

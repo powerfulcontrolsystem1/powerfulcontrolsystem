@@ -2845,7 +2845,7 @@
 - [Empresas compartidas] El editor de empresa permite consultar y retirar administradores compartidos desde ambos lados del acceso, con trazabilidad del actor.
 - [Administrar empresa] Se implementa la hoja de vida operativa universal para motos de taller, pacientes, vehiculos, equipos, activos o mascotas, con ficha, eventos, servicios, alertas y resumen operativo.
 - [Documentos IA] Se documenta el flujo `/generate` + `/download` para generar documentos dinamicos con IA/templates y exportar PDF, DOCX, XLSX, HTML, TXT o JSON.
-- Nueva funcionalidad: MÒ³dulo Red Social Comercial con portal pÒºblico y administraciÒ³n por empresa. EliminaciÒ³n de modulo juegos y venta de licencias desde cliente.
+- Nueva funcionalidad: Módulo Red Social Comercial con portal público y administración por empresa. Eliminación de módulo juegos y venta de licencias desde cliente.
 
 ## [2026-04-23] Retiro Tipos de usuario (panel super)
 - [Super/DB] Eliminación del módulo Tipos de usuario: sin API ni UI; tabla `tipos_de_usuario` removida al arranque; documentación alineada.
