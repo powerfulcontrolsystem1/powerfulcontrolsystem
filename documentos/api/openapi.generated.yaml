@@ -3400,6 +3400,19 @@ paths:
       responses:
         "200":
           description: Respuesta exitosa o manejada por el handler real.
+  "/super/api/empresas_estado":
+    get:
+      tags: [super-administrador]
+      summary: Ruta inventariada /super/api/empresas_estado
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [super-administrador]
+      summary: Ruta inventariada /super/api/empresas_estado
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
   "/super/api/empresas/compartidos":
     get:
       tags: [super-administrador]

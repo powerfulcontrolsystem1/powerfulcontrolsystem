@@ -833,3 +833,40 @@ func EmpresasHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 		}
 	}
 }
+
+// SuperEmpresasEstadoHandler entrega una vista global read-only de empresas y licencias para super administrador.
+func SuperEmpresasEstadoHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+		if _, err := dbpkg.SyncEmpresasEstadoPorLicencia(dbEmp, dbSuper); err != nil {
+			log.Println("GET /super/api/empresas_estado licencia sync warning:", err)
+		}
+		limit := 500
+		if raw := strings.TrimSpace(r.URL.Query().Get("limit")); raw != "" {
+			parsed, err := strconv.Atoi(raw)
+			if err != nil || parsed < 0 {
+				http.Error(w, "invalid limit", http.StatusBadRequest)
+				return
+			}
+			limit = parsed
+		}
+		items, summary, err := dbpkg.ListEmpresasLicenciaEstado(dbEmp, dbSuper, dbpkg.EmpresaLicenciaEstadoFilter{
+			Query:          r.URL.Query().Get("q"),
+			LicenciaFiltro: r.URL.Query().Get("licencia"),
+			Limit:          limit,
+		})
+		if err != nil {
+			log.Println("GET /super/api/empresas_estado error:", err)
+			http.Error(w, "failed to list empresas estado", http.StatusInternalServerError)
+			return
+		}
+		writeJSON(w, http.StatusOK, map[string]interface{}{
+			"ok":      true,
+			"summary": summary,
+			"items":   items,
+		})
+	}
+}

@@ -1,3 +1,12 @@
+2026-06-19 - Empresas y licencias en super administrador
+- `backend/db/empresas_licencias_estado.go`: consolida empresas operativas con licencias super para resumen read-only de licencia activa, sin activa, 15 dias y vencida.
+- `backend/handlers/system_empresas_handlers.go`: agrega `SuperEmpresasEstadoHandler` para `/super/api/empresas_estado`, solo GET y sin mutaciones.
+- `backend/main.go`: registra `/super/api/empresas_estado` con auditoria super.
+- `backend/utils/utils.go`: permite cargar `web/super/empresas.html` y consultar `/super/api/empresas_estado` desde roles de control super.
+- `web/super/licencias_resumen.html`: agrega tarjetas superiores con empresas con licencia activa y sin licencia activa, mas boton `Ver`.
+- `web/super/empresas.html`: nueva pagina super de consulta de empresas con filtros, KPIs y tabla solo lectura.
+- `web/super_administrador.html`: agrega la entrada `Empresas` al grupo Comercial y licencias.
+
 2026-06-18 - Configuracion interactiva e IA documental por empresa
 - `backend/handlers/configuracion_guiada.go`: amplia el asistente inicial con preguntas interactivas por tipo de empresa y guarda `configuracion_guiada_interactiva` por `empresa_id`.
 - `backend/handlers/chat_con_inteligencia_artificial_controller.go`: agrega el agente empresarial `agente_configuracion_de_empresa` al catalogo de chat y documenta acciones `UI_CLICK` confirmadas.

@@ -610,6 +610,7 @@ func allowSuperControlRoute(path, method, role string) bool {
 	}
 	switch strings.TrimSpace(path) {
 	case "/super/licencias_resumen.html",
+		"/super/empresas.html",
 		"/super/administradores.html",
 		"/super/seguridad.html",
 		"/super/api/administradores",
@@ -618,6 +619,7 @@ func allowSuperControlRoute(path, method, role string) bool {
 		"/super/api/errores",
 		"/super/api/metrics/current",
 		"/super/api/metrics/history",
+		"/super/api/empresas_estado",
 		"/super/api/security/ports",
 		"/super/api/security/processes",
 		"/super/api/security/vps/config",

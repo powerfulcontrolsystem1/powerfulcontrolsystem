@@ -1,3 +1,12 @@
+2026-06-19: Nota de Empresas en super administrador
+- `/super/api/empresas_estado` es exclusivo del panel super y queda envuelto en
+  `WithSuperAuditoria` como `super_empresas_estado`; no concede permisos a
+  usuarios empresariales ni acepta mutaciones.
+- `web/super/empresas.html` es una vista de solo lectura para
+  `super_administrador`, con filtros por nombre/NIT y estado de licencia.
+- El boton `Ver` del Centro de mando abre la misma vista filtrada por licencia
+  activa; no permite editar, crear, borrar ni reasignar licencias.
+
 2026-06-18: Nota de configuracion interactiva e IA documental
 - El asistente inicial de `panel.html` aplica configuracion solo desde contexto
   empresarial autenticado y endpoint `/api/empresa/configuracion_guiada` con

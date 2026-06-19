@@ -1219,6 +1219,7 @@ func main() {
 	http.HandleFunc("/super/api/roles_de_usuario/permisos", handlers.RolesDeUsuarioPermisosHandler(dbSuper))
 	// Endpoint CRUD para empresas (persistidas en pcs_empresas PostgreSQL)
 	http.HandleFunc("/super/api/empresas", handlers.WithSuperAuditoria(dbSuper, "selector_empresas", handlers.EmpresasHandler(dbEmpresas, dbSuper)))
+	http.HandleFunc("/super/api/empresas_estado", handlers.WithSuperAuditoria(dbSuper, "super_empresas_estado", handlers.SuperEmpresasEstadoHandler(dbEmpresas, dbSuper)))
 	http.HandleFunc("/super/api/empresas/compartidos", handlers.WithSuperAuditoria(dbSuper, "empresas_compartidas", handlers.EmpresaCompartidaHandler(dbEmpresas, dbSuper)))
 	http.HandleFunc("/super/api/empresas/compartidos/aceptar", handlers.WithSuperAuditoria(dbSuper, "empresas_compartidas", handlers.EmpresaCompartidaAcceptHandler(dbEmpresas, dbSuper)))
 	http.HandleFunc("/super/api/email_corporativo", handlers.WithSuperAuditoria(dbSuper, "super_email_corporativo", handlers.SuperEmailCorporativoHandler(dbSuper, dbEmpresas)))

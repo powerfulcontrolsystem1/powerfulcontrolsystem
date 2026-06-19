@@ -1,3 +1,10 @@
+2026-06-19: Empresas en super administrador.
+- Modulos afectados: `super_administrador`, `empresas`, `licencias`, `auditoria_super`.
+- Navegacion: `Super administrador > Comercial y licencias > Empresas` abre `web/super/empresas.html`.
+- Centro de mando: `web/super/licencias_resumen.html` muestra empresas con licencia activa y empresas sin licencia activa; el boton `Ver` abre la lista filtrada por activas.
+- Backend: `/super/api/empresas_estado` consolida empresas operativas con licencias asignadas y devuelve resumen total, activas, sin activa, 15 dias y vencidas.
+- Seguridad: vista solo lectura, sin botones de edicion, sin mutaciones y con auditoria super mediante `WithSuperAuditoria`.
+
 2026-06-18: Configuracion interactiva y captura IA documental.
 - Modulos afectados: `empresas`, `configuracion_guiada`, `chat_ia`, `productos`, `compras`, `ingresos`, `egresos`, `soportes_compras_ia`, `frontend_ux`.
 - Flujo de empresa nueva: al crear una empresa con tipo/preconfiguracion se abre en el primer ingreso un asistente interactivo que pregunta datos reales por negocio y guarda `configuracion_guiada_interactiva` por `empresa_id`.

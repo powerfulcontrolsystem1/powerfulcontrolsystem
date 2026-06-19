@@ -1857,6 +1857,7 @@ p{color:var(--muted);line-height:1.5}
 .admin-sidebar .nav .admin-nav-sublist{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
 .admin-sidebar .nav .admin-nav-sublist li{min-width:0}
 .admin-sidebar .nav .admin-nav-sublist a{min-height:40px;padding:9px 12px;border-radius:8px;font-size:.9rem}
+.admin-sidebar .nav .admin-nav-sublist a .menu-beta-badge{margin-left:auto;display:inline-flex;align-items:center;justify-content:center;min-width:38px;padding:2px 7px;border-radius:999px;border:1px solid color-mix(in srgb,var(--accent,#0f6fcb) 24%,var(--border));background:color-mix(in srgb,var(--accent,#0f6fcb) 10%,var(--surface));color:var(--accent,#0f6fcb);font-size:.66rem;font-weight:900;line-height:1;text-transform:uppercase;letter-spacing:.04em;white-space:nowrap}
 .admin-menu-visibility-item{display:none}
 .admin-menu-visibility-toggle{display:flex;align-items:center;justify-content:flex-start;gap:8px;width:100%;padding:10px 14px;border-radius:10px;border:1px dashed var(--border);background:var(--surface-soft);color:var(--text);font-weight:800;font-size:0.95rem;min-height:44px;cursor:pointer;box-sizing:border-box}
 .admin-menu-visibility-toggle:hover{background:linear-gradient(180deg,var(--focus),var(--surface));color:var(--text)}

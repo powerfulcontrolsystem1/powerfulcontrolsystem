@@ -59,6 +59,12 @@
     .cmd-openai-bars{display:flex;align-items:end;gap:3px;height:42px;padding-top:4px;border-top:1px solid var(--cmd-line)}
     .cmd-openai-bar{flex:1;min-width:3px;border-radius:3px 3px 0 0;background:color-mix(in srgb,var(--cmd-blue) 70%,var(--cmd-panel));opacity:.9}
     .cmd-openai-meta{display:flex;justify-content:space-between;gap:8px;color:var(--cmd-muted);font-size:.68rem;font-weight:850}
+    .cmd-license-overview{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-bottom:10px}
+    .cmd-license-card{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px;border:1px solid var(--cmd-line);border-radius:8px;background:var(--cmd-panel)}
+    .cmd-license-card span{display:block;color:var(--cmd-muted);font-size:.72rem;font-weight:900;text-transform:uppercase;letter-spacing:.05em}
+    .cmd-license-card strong{display:block;margin-top:5px;color:var(--cmd-text);font-size:1.45rem;line-height:1}
+    .cmd-license-card.ok strong{color:var(--cmd-green)}
+    .cmd-license-card.warn strong{color:var(--cmd-amber)}
     .cmd-layout{display:grid;grid-template-columns:minmax(0,1fr);gap:10px;align-items:start}
     .cmd-panel{border:1px solid var(--cmd-line);border-radius:8px;background:var(--cmd-panel)}
     .cmd-panel+.cmd-panel{margin-top:12px}
@@ -101,7 +107,7 @@
     @media(max-width:1120px){.cmd-layout{grid-template-columns:1fr}}
     @media(max-width:860px){.cmd-summary{grid-template-columns:1fr}.cmd-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
     @media(max-width:980px){.cmd-top-row{grid-template-columns:1fr}.cmd-email-card,.cmd-openai-card{min-height:auto}}
-    @media(max-width:560px){.cmd-shell{width:min(100vw - 16px,1320px);padding-top:8px}.cmd-kpis,.cmd-favorites-grid{grid-template-columns:1fr}.cmd-panel-head{display:grid}.cmd-panel-actions{justify-content:flex-start}.cmd-favorites-heading{gap:5px}.cmd-favorites-title{font-size:.9rem}.cmd-favorites-kicker{font-size:.64rem}}
+    @media(max-width:560px){.cmd-shell{width:min(100vw - 16px,1320px);padding-top:8px}.cmd-kpis,.cmd-favorites-grid,.cmd-license-overview{grid-template-columns:1fr}.cmd-panel-head{display:grid}.cmd-panel-actions{justify-content:flex-start}.cmd-favorites-heading{gap:5px}.cmd-favorites-title{font-size:.9rem}.cmd-favorites-kicker{font-size:.64rem}}
   </style>
 </head>
 <body class="super-page">
@@ -141,6 +147,22 @@
         <div class="cmd-openai-meta"><span id="openaiMonthCalls">-- consultas</span><span id="openaiMonthToday">Hoy --</span></div>
       </section>
     </div>
+
+    <section class="cmd-license-overview" aria-label="Estado de licencias por empresa">
+      <article class="cmd-license-card ok">
+        <div>
+          <span>Empresas con licencia activa</span>
+          <strong id="licenseActiveCompanies">--</strong>
+        </div>
+        <a class="cmd-btn primary" href="/super/empresas.html?licencia=activa">Ver</a>
+      </article>
+      <article class="cmd-license-card warn">
+        <div>
+          <span>Empresas sin licencia activa</span>
+          <strong id="licenseInactiveCompanies">--</strong>
+        </div>
+      </article>
+    </section>
 
     <section class="cmd-layout">
       <div>
@@ -259,7 +281,7 @@
   <script>
     (function(){
       "use strict";
-      var state = { metric:null, history:[], postgres:null, alerts:null, errors:null, services:[], licenses:[], companies:[], consumos:null };
+      var state = { metric:null, history:[], postgres:null, alerts:null, errors:null, services:[], licenses:[], companies:[], empresasEstado:null, consumos:null };
       var $ = function(id){ return document.getElementById(id); };
       var favoritesKey = "super_admin:favorites";
       function num(v){ var n = Number(v); return Number.isFinite(n) ? n : 0; }
@@ -431,8 +453,14 @@
         var triggered = alertCandidates().filter(function(a){ return a.triggered; }).length;
         setCard("kpiSecurity", critical ? "crit" : (last24 || triggered ? "warn" : "ok"), triggered + " alertas activas", last24 + " errores en 24h | " + critical + " criticos");
 
-        setCard("kpiCompanies", "ok", state.companies.length.toLocaleString("es-CO"), "Empresas registradas");
-        setCard("kpiLicenses", "ok", state.licenses.length.toLocaleString("es-CO"), "Licencias activas con empresa");
+        var empresasSummary = (state.empresasEstado && state.empresasEstado.summary) || {};
+        var totalEmpresas = num(empresasSummary.total) || state.companies.length;
+        var activas = num(empresasSummary.con_licencia_activa) || state.licenses.length;
+        var sinActiva = num(empresasSummary.sin_licencia_activa);
+        text("licenseActiveCompanies", activas.toLocaleString("es-CO"));
+        text("licenseInactiveCompanies", sinActiva.toLocaleString("es-CO"));
+        setCard("kpiCompanies", "ok", totalEmpresas.toLocaleString("es-CO"), "Empresas registradas");
+        setCard("kpiLicenses", activas ? "ok" : "warn", activas.toLocaleString("es-CO"), "Empresas con licencia activa");
 
         var serviceCrit = state.services.filter(function(s){ return serviceStatus(s.estado) === "crit"; }).length;
         setCard("kpiContinuity", serviceCrit ? "crit" : scoreStatus(computeScore()), serviceCrit ? serviceCrit + " servicio(s)" : "Controlada", "Score " + computeScore() + "/100");
@@ -492,6 +520,7 @@
           getJSON("/super/api/servidores", null),
           getJSON("/super/api/licencias?activo=1&con_empresa=1", []),
           getJSON("/super/api/empresas", []),
+          getJSON("/super/api/empresas_estado?limit=1", null),
           getJSON("/super/api/consumos", null)
         ]);
         state.metric = results[0] || {};
@@ -502,7 +531,8 @@
         state.services = (results[5] && Array.isArray(results[5].servicios)) ? results[5].servicios : [];
         state.licenses = Array.isArray(results[6]) ? results[6] : (results[6] && (results[6].licencias || results[6].items)) || [];
         state.companies = Array.isArray(results[7]) ? results[7] : (results[7] && (results[7].empresas || results[7].items)) || [];
-        state.consumos = results[8] || {};
+        state.empresasEstado = results[8] || {};
+        state.consumos = results[9] || {};
         renderAll();
         $("cmdRefresh").disabled = false;
       }

@@ -1,3 +1,9 @@
+## [2026-06-19] Empresas y licencias en super administrador
+- [Super] `Centro de mando` muestra arriba empresas con licencia activa y empresas sin licencia activa; el boton `Ver` abre la nueva consulta de empresas filtrada por activas.
+- [Empresas] `web/super/empresas.html` es una pagina de solo lectura con busqueda por nombre/NIT/tipo/licencia y filtros por licencia activa, sin activa, licencia de 15 dias y vencida.
+- [Backend] `/super/api/empresas_estado` devuelve resumen e items consolidados desde empresas y licencias, protegido por `WithSuperAuditoria` y sin operaciones de escritura.
+- [Seguridad] La vista no expone secretos ni permite crear, editar o borrar empresas; conserva el aislamiento operativo y solo agrega lectura global para super administrador.
+
 ## [2026-06-19] Pagos de licencias y promo produccion
 - [Pagos] Epayco queda disponible en el checkout publico de licencias para PCS/Colombia. Wompi esta habilitado por configuracion y pais, pero no queda disponible porque `wompi.integrity_key` no descifra con la `CONFIG_ENC_KEY` vigente; debe reingresarse desde Super administrador antes de usarlo en produccion.
 - [Seguridad] El backend bloquea Wompi cuando no puede firmar `signature:integrity`, evitando abrir un checkout hospedado con configuracion invalida.

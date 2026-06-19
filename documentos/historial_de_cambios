@@ -1,3 +1,17 @@
+2026-06-19: Menu empresarial con etiqueta Beta.
+- Frontend: `web/js/administrar_empresa.js` agrega automaticamente la palabra `Beta` a los botones del menu principal de `administrar_empresa.html`.
+- Excepciones: no se marca `Productos`, `Venta directa`, `Buscar ventas y facturas`, `Nomina`, `Reportes ejecutivos`, `Facturacion electronica` ni `Configuracion`.
+- UX: `web/estilos.css` define un badge compacto que no reemplaza el texto ni los iconos del menu.
+- Alcance: cambio visual solamente; no modifica rutas, permisos, licencias, endpoints ni aislamiento por `empresa_id`.
+- QA: `node --check web/js/administrar_empresa.js`, verificacion de excepciones del menu y `git diff --check`.
+
+2026-06-19: Empresas y licencias en super administrador.
+- Backend: se agrega `/super/api/empresas_estado` como lectura global auditada para super administrador. Devuelve resumen total, empresas con licencia activa, sin licencia activa, con licencia de 15 dias y con licencia vencida.
+- Frontend: `web/super/licencias_resumen.html` muestra arriba los conteos solicitados y boton `Ver` para abrir empresas con licencia activa.
+- Frontend: nueva pagina `web/super/empresas.html` lista empresas en modo solo lectura con filtros por busqueda, licencia activa, sin activa, 15 dias y vencida.
+- Seguridad: no se agregan acciones de edicion ni mutacion; la ruta queda protegida por `WithSuperAuditoria` y las respuestas no incluyen secretos.
+- QA: pruebas Go dirigidas de `db` y `handlers`, chequeo sintactico JS de paginas super y `git diff --check`.
+
 2026-06-19: Pagos de licencias y promo produccion.
 - Frontend: `web/elegir_licencia.html` agrega precio anterior tachado en las tarjetas comerciales para los planes COP 60.000, COP 110.000 y COP 200.000.
 - Pagos: se reviso el flujo publico de metodos de pago y checkout de licencias. Epayco queda disponible y con boton habilitado en checkout publico de PCS/Colombia. Wompi esta habilitado por pais/configuracion, pero queda no disponible porque `wompi.integrity_key` no descifra con la `CONFIG_ENC_KEY` vigente; se debe reingresar la llave desde Super administrador para habilitarlo realmente.

@@ -137,6 +137,15 @@ try {
     linkConfiguracionMenuVisual: true,
     linkVolverEmpresas: true
   };
+  var stableMenuLinksWithoutBeta = {
+    linkProductos: true,
+    linkVentaDirecta: true,
+    linkVentas: true,
+    linkNominaMenu: true,
+    linkReportes: true,
+    linkFacturacionElectronica: true,
+    linkConfiguracion: true
+  };
   try {
     storage = window.sessionStorage;
   } catch (e) {
@@ -277,6 +286,21 @@ try {
     document.getElementById("linkFrecuenciaFE"),
   ].concat(nuevasPlantillasMenuLinks);
   var frameLinks = [];
+
+  function applyBetaBadgesToEnterpriseMenu() {
+    var nav = document.getElementById("adminSidebarNav");
+    if (!nav) return;
+    Array.prototype.slice.call(nav.querySelectorAll("a[id]")).forEach(function (link) {
+      if (!link || stableMenuLinksWithoutBeta[link.id]) return;
+      if (link.querySelector(".menu-beta-badge")) return;
+      var badge = document.createElement("span");
+      badge.className = "menu-beta-badge";
+      badge.textContent = "Beta";
+      badge.setAttribute("aria-label", "Modulo en beta");
+      link.appendChild(badge);
+    });
+  }
+  applyBetaBadgesToEnterpriseMenu();
 
   var permActionRead = "R";
   var permActionCreate = "C";

@@ -3,6 +3,13 @@
 Tabla de ubicacion rapida para no buscar desde cero cada modulo. Si una fila
 queda incompleta al implementar una mejora, actualizarla en el mismo cambio.
 
+Actualizacion 2026-06-19: `Super administrador > Empresas` queda disponible en
+`web/super/empresas.html` y consume `/super/api/empresas_estado` para listar en
+modo solo lectura empresas por nombre/NIT/tipo/licencia, con filtros de
+licencia activa, sin licencia activa, 15 dias y vencida. `Centro de mando`
+(`web/super/licencias_resumen.html`) muestra los conteos de empresas con y sin
+licencia activa y enlaza con la lista filtrada.
+
 Actualizacion 2026-06-19: `Email corporativo Mailu` agrega configuracion
 `email_corporativo.logo_url` desde `web/super/email_corporativo.html`, con
 fallback a `/img/Logo pcs 1.png`. Los correos HTML enviados por el motor
