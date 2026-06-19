@@ -9,7 +9,6 @@ import (
 	"net"
 	"net/http"
 	"net/mail"
-	"net/smtp"
 	"net/url"
 	"sort"
 	"strconv"
@@ -579,51 +578,7 @@ func buildLicenciaVencimientoRenewURL(baseURL string, empresaID int64) string {
 }
 
 func sendLicenciaVencimientoSMTP(dbSuper *sql.DB, toEmail, subject, bodyPlain, bodyHTML, baseURL string) error {
-	smtpEmail, err := getDecryptedConfigValue(dbSuper, "gmail.smtp_email")
-	if err != nil {
-		return err
-	}
-	smtpEmail = strings.TrimSpace(smtpEmail)
-	if smtpEmail == "" {
-		return fmt.Errorf("gmail.smtp_email no configurado")
-	}
-	if _, err := mail.ParseAddress(smtpEmail); err != nil {
-		return fmt.Errorf("gmail.smtp_email invalido")
-	}
-	smtpPass, err := getDecryptedConfigValue(dbSuper, "gmail.smtp_app_password")
-	if err != nil {
-		return err
-	}
-	smtpPass = strings.TrimSpace(smtpPass)
-	if smtpPass == "" {
-		return fmt.Errorf("gmail.smtp_app_password no configurado")
-	}
-	smtpHost, _ := getDecryptedConfigValue(dbSuper, "gmail.smtp_host")
-	smtpPort, _ := getDecryptedConfigValue(dbSuper, "gmail.smtp_port")
-	fromName, _ := getDecryptedConfigValue(dbSuper, "gmail.smtp_from_name")
-	smtpHost = strings.TrimSpace(smtpHost)
-	if smtpHost == "" {
-		smtpHost = "smtp.gmail.com"
-	}
-	smtpPort = strings.TrimSpace(smtpPort)
-	if smtpPort == "" {
-		smtpPort = "587"
-	}
-	fromName = strings.TrimSpace(fromName)
-	if fromName == "" {
-		fromName = "Powerful Control System"
-	}
-	mailHostForAuth := smtpHost
-	if strings.Contains(smtpHost, ":") {
-		if h, _, err := net.SplitHostPort(smtpHost); err == nil {
-			mailHostForAuth = h
-		}
-	}
-	addr := smtpHost
-	if !strings.Contains(addr, ":") {
-		addr = smtpHost + ":" + smtpPort
-	}
-	auth := smtp.PlainAuth("", smtpEmail, smtpPass, mailHostForAuth)
+	fromName, fromEmail := corporateSystemSenderAddress(dbSuper, "ventas")
 	boundary := "==PCS_LICENSE_EXPIRY_" + strconv.FormatInt(time.Now().UnixNano(), 10)
 	listUnsub := ""
 	if u, err := url.Parse(baseURL); err == nil {
@@ -635,7 +590,7 @@ func sendLicenciaVencimientoSMTP(dbSuper *sql.DB, toEmail, subject, bodyPlain, b
 			listUnsub = "<mailto:postmaster@" + host + ">"
 		}
 	}
-	from := (&mail.Address{Name: fromName, Address: smtpEmail}).String()
+	from := (&mail.Address{Name: fromName, Address: fromEmail}).String()
 	headers := "From: " + from + "\r\n" +
 		"To: " + strings.TrimSpace(toEmail) + "\r\n" +
 		"Subject: " + mime.QEncoding.Encode("utf-8", sanitizeEmailHeader(subject)) + "\r\n"
@@ -654,7 +609,7 @@ func sendLicenciaVencimientoSMTP(dbSuper *sql.DB, toEmail, subject, bodyPlain, b
 		"Content-Transfer-Encoding: 8bit\r\n\r\n" +
 		bodyHTML + "\r\n" +
 		"--" + boundary + "--\r\n"
-	return smtp.SendMail(addr, auth, smtpEmail, []string{strings.TrimSpace(toEmail)}, []byte(msg))
+	return sendEmpresaUsuarioMailuMessage(dbSuper, fromEmail, strings.TrimSpace(toEmail), []byte(msg))
 }
 
 func sanitizeEmailHeader(value string) string {

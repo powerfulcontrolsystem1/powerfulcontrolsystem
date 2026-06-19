@@ -6,10 +6,8 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"net"
 	"net/http"
 	"net/mail"
-	"net/smtp"
 	"net/url"
 	"strconv"
 	"strings"
@@ -488,61 +486,7 @@ func sendAdminEmpresaCompartidaInvitationEmail(r *http.Request, dbEmp, dbSuper *
 		}
 		return acceptURL, nil
 	}
-	smtpEmail, err := getDecryptedConfigValue(dbSuper, "gmail.smtp_email")
-	if err != nil {
-		return acceptURL, err
-	}
-	smtpPass, err := getDecryptedConfigValue(dbSuper, "gmail.smtp_app_password")
-	if err != nil {
-		return acceptURL, err
-	}
-	smtpEmail = strings.TrimSpace(smtpEmail)
-	smtpPass = strings.TrimSpace(smtpPass)
-	if smtpEmail == "" || smtpPass == "" {
-		return acceptURL, fmt.Errorf("smtp gmail no configurado")
-	}
-	smtpHost, _ := getDecryptedConfigValue(dbSuper, "gmail.smtp_host")
-	smtpPort, _ := getDecryptedConfigValue(dbSuper, "gmail.smtp_port")
-	fromName, _ := getDecryptedConfigValue(dbSuper, "gmail.smtp_from_name")
-	smtpHost = strings.TrimSpace(smtpHost)
-	if smtpHost == "" {
-		smtpHost = "smtp.gmail.com"
-	}
-	smtpPort = strings.TrimSpace(smtpPort)
-	if smtpPort == "" {
-		smtpPort = "587"
-	}
-	fromName = strings.TrimSpace(fromName)
-	if fromName == "" {
-		fromName = "Powerful Control System"
-	}
-	mailHostForAuth := smtpHost
-	if strings.Contains(smtpHost, ":") {
-		if h, _, splitErr := net.SplitHostPort(smtpHost); splitErr == nil {
-			mailHostForAuth = h
-		}
-	}
-	addr := smtpHost
-	if !strings.Contains(addr, ":") {
-		addr = smtpHost + ":" + smtpPort
-	}
-	auth := smtp.PlainAuth("", smtpEmail, smtpPass, mailHostForAuth)
-	boundary := "==PCS_BOUNDARY_" + strconv.FormatInt(time.Now().UnixNano(), 10)
-	msg := "From: " + fromName + " <" + smtpEmail + ">\r\n" +
-		"To: " + toEmail + "\r\n" +
-		"Subject: " + asunto + "\r\n" +
-		"MIME-Version: 1.0\r\n" +
-		"Content-Type: multipart/alternative; boundary=\"" + boundary + "\"\r\n\r\n" +
-		"--" + boundary + "\r\n" +
-		"Content-Type: text/plain; charset=UTF-8\r\n" +
-		"Content-Transfer-Encoding: 7bit\r\n\r\n" +
-		cuerpoPlano + "\r\n" +
-		"--" + boundary + "\r\n" +
-		"Content-Type: text/html; charset=UTF-8\r\n" +
-		"Content-Transfer-Encoding: 7bit\r\n\r\n" +
-		cuerpoHTML + "\r\n" +
-		"--" + boundary + "--\r\n"
-	if err := smtp.SendMail(addr, auth, smtpEmail, []string{toEmail}, []byte(msg)); err != nil {
+	if err := sendEmpresaUsuarioMailuMultipart(dbSuper, resolveBaseURLForConfirmation(r, dbSuper), toEmail, asunto, cuerpoPlano, cuerpoHTML); err != nil {
 		return acceptURL, err
 	}
 	return acceptURL, nil

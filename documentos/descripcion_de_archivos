@@ -1,7 +1,17 @@
 2026-06-18 - Agentes de mantenimiento IA super
-- `web/super/agentes_de_mantenimiento_qutomatico.html`: panel super para habilitar el agente diario de noticias DIAN, configurar hora/correo, ejecutar revision manual y leer hallazgos registrados.
-- `backend/handlers/super_mantenimiento_agentes.go`: API `/super/api/agentes_mantenimiento`, worker diario, lectura de fuentes DIAN, clasificacion con OpenAI cuando esta disponible y notificacion por Gmail SMTP.
+- `web/super/agentes_de_mantenimiento_qutomatico.html`: panel super para habilitar el agente diario de noticias DIAN, configurar hora/correo, ejecutar revision manual, guardar limites por empresa y leer hallazgos registrados.
+- `backend/handlers/super_mantenimiento_agentes.go`: API `/super/api/agentes_mantenimiento`, worker diario, lectura de fuentes DIAN, clasificacion con OpenAI cuando esta disponible, cuotas globales de agentes por empresa y notificacion por correo corporativo Mailu.
 - `backend/db/super_mantenimiento_agentes.go`: esquema y CRUD de `super_mantenimiento_agentes` y `super_mantenimiento_agente_hallazgos` en `pcs_superadministrador`.
+- `backend/db/empresa_agentes_uso.go`: esquema y helpers de `empresa_agentes_uso_diario` para registrar segundos, consultas avanzadas y consultas ligeras por `empresa_id` y fecha.
+- `backend/handlers/agente_internet_fiscal.go`: endpoints empresariales de `Agente internet` para Nomina e Impuestos; consumen cuota diaria, devuelven comparacion actual vs sugerida y no aplican cambios automaticamente.
+
+2026-06-18 - Chat IA empresarial con agentes
+- `backend/handlers/chat_con_inteligencia_artificial_controller.go`: expone catalogo de agentes, acepta `agent_id` en consulta normal, adjunto y streaming, aplica cuotas por empresa para agentes no generales y registra auditoria `agente=...`.
+- `backend/handlers/ia_pedidos_estacion.go`: pedidos con IA usan por defecto el agente `ventas`, descuentan cuota diaria de agente y siguen agregando productos solo por endpoint validado con permisos de ventas.
+- `backend/handlers/empresa_ia_empresarial.go`: Centro IA empresarial acepta selector de agente, aplica cuotas cuando corresponde y mantiene respuestas como borradores/recomendaciones sin mutaciones.
+- `web/administrar_empresa/estacion_ia_pedidos.html`: agrega selector de agente y modelo para pedidos por texto/voz.
+- `web/administrar_empresa/centro_ia_empresarial.html`: agrega selector de agente para diagnostico ERP, factura/cotizacion, inventario, compras e impuestos.
+- `web/administrar_empresa/estaciones.html`: las recomendaciones IA de YouTube se etiquetan como agente `ventas`.
 
 2026-06-18 - DIAN produccion PCS aceptada y ayuda operativa
 - `web/administrar_empresa/facturacion_electronica_tutorial_dian.html`: agrega estado real de PCS en DIAN produccion con `1PCS2` y `1PCS3` aprobadas con notificacion, control diario de consecutivos, lectura de `RUT01` y manejo seguro de `Regla 90`.

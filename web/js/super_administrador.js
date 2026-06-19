@@ -77,7 +77,6 @@
     "/super/configuracion/voz_ia.html": true,
     "/super/configuracion/epayco.html": true,
     "/super/configuracion/wompi_nequi.html": true,
-    "/super/configuracion/gmail_smtp.html": true,
     "/super/configuracion/alertas_licencia.html": true,
     "/super/configuracion/whatsapp_portal.html": true,
     "/super/configuracion/recaptcha.html": true,

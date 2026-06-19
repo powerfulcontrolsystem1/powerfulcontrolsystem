@@ -4,9 +4,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
-	"net"
 	"net/mail"
-	"net/smtp"
 	"os"
 	"path/filepath"
 	"strings"
@@ -102,15 +100,24 @@ func RegisterServerStartupEvent(dbSuper *sql.DB, opts ServerStartupRegistration)
 	alertaReinicioHabilitada := true
 	alertaReinicioReadErr := ""
 	if dbSuper != nil {
-		if configured, readErr := getDecryptedConfigValue(dbSuper, "gmail.restart_alert_to"); readErr != nil {
-			correoDestinoReadErr = readErr.Error()
-		} else {
+		if configured, readErr := getDecryptedConfigValue(dbSuper, "email_corporativo.restart_alert_to"); readErr == nil {
 			correoDestino = strings.TrimSpace(configured)
 		}
-		if configured, readErr := getDecryptedConfigValue(dbSuper, "gmail.restart_alert_enabled"); readErr != nil {
-			alertaReinicioReadErr = readErr.Error()
-		} else {
+		if correoDestino == "" {
+			if configured, readErr := getDecryptedConfigValue(dbSuper, "gmail.restart_alert_to"); readErr != nil {
+				correoDestinoReadErr = readErr.Error()
+			} else {
+				correoDestino = strings.TrimSpace(configured)
+			}
+		}
+		if configured, readErr := getDecryptedConfigValue(dbSuper, "email_corporativo.restart_alert_enabled"); readErr == nil && strings.TrimSpace(configured) != "" {
 			alertaReinicioHabilitada = parseEmpresaUsuarioBool(configured, true)
+		} else {
+			if configured, readErr := getDecryptedConfigValue(dbSuper, "gmail.restart_alert_enabled"); readErr != nil {
+				alertaReinicioReadErr = readErr.Error()
+			} else {
+				alertaReinicioHabilitada = parseEmpresaUsuarioBool(configured, true)
+			}
 		}
 	} else {
 		correoDestinoReadErr = "db super no disponible"
@@ -137,18 +144,18 @@ func RegisterServerStartupEvent(dbSuper *sql.DB, opts ServerStartupRegistration)
 	correoEnviado := false
 	correoError := ""
 	if !alertaReinicioHabilitada {
-		correoError = "alerta de reinicio desactivada en gmail.restart_alert_enabled"
+		correoError = "alerta de reinicio desactivada"
 	} else if correoDestino == "" {
 		if correoDestinoReadErr != "" {
-			correoError = "no se pudo leer gmail.restart_alert_to: " + correoDestinoReadErr
+			correoError = "no se pudo leer destinatario de alerta: " + correoDestinoReadErr
 		} else {
-			correoError = "gmail.restart_alert_to no configurado"
+			correoError = "destinatario de alerta no configurado"
 		}
 		if alertaReinicioReadErr != "" {
 			correoError += " | gmail.restart_alert_enabled: " + alertaReinicioReadErr
 		}
 	} else if _, addrErr := mail.ParseAddress(correoDestino); addrErr != nil {
-		correoError = "gmail.restart_alert_to invalido: " + addrErr.Error()
+		correoError = "destinatario de alerta invalido: " + addrErr.Error()
 	} else if dbSuper != nil && isEmpresaUsuarioMailTestMode(dbSuper) {
 		metadataJSON := fmt.Sprintf(`{"motivo":%q,"reinicio_inesperado":%t,"listen_addr":%q}`, motivo, reinicioInesperado, listenAddr)
 		if captureErr := captureEmpresaUsuarioMailNotification(
@@ -425,59 +432,13 @@ func sendServerStartupEmail(dbSuper *sql.DB, toEmail, subject, body string) erro
 		return fmt.Errorf("correo destino invalido: %w", err)
 	}
 
-	smtpEmail, err := getDecryptedConfigValue(dbSuper, "gmail.smtp_email")
-	if err != nil {
-		return err
-	}
-	smtpEmail = strings.TrimSpace(smtpEmail)
-	if smtpEmail == "" {
-		return fmt.Errorf("gmail.smtp_email no configurado")
-	}
-
-	smtpPass, err := getDecryptedConfigValue(dbSuper, "gmail.smtp_app_password")
-	if err != nil {
-		return err
-	}
-	smtpPass = strings.TrimSpace(smtpPass)
-	if smtpPass == "" {
-		return fmt.Errorf("gmail.smtp_app_password no configurado")
-	}
-
-	smtpHost, _ := getDecryptedConfigValue(dbSuper, "gmail.smtp_host")
-	smtpPort, _ := getDecryptedConfigValue(dbSuper, "gmail.smtp_port")
-	fromName, _ := getDecryptedConfigValue(dbSuper, "gmail.smtp_from_name")
-
-	smtpHost = strings.TrimSpace(smtpHost)
-	if smtpHost == "" {
-		smtpHost = "smtp.gmail.com"
-	}
-	smtpPort = strings.TrimSpace(smtpPort)
-	if smtpPort == "" {
-		smtpPort = "587"
-	}
-	fromName = strings.TrimSpace(fromName)
-	if fromName == "" {
-		fromName = "Powerful Control System"
-	}
-
-	mailHostForAuth := smtpHost
-	if strings.Contains(smtpHost, ":") {
-		if h, _, splitErr := net.SplitHostPort(smtpHost); splitErr == nil {
-			mailHostForAuth = h
-		}
-	}
-	addr := smtpHost
-	if !strings.Contains(addr, ":") {
-		addr = smtpHost + ":" + smtpPort
-	}
-
-	auth := smtp.PlainAuth("", smtpEmail, smtpPass, mailHostForAuth)
-	msg := "From: " + fromName + " <" + smtpEmail + ">\r\n" +
+	fromName, fromEmail := corporateSystemSenderAddress(dbSuper, "soporte")
+	msg := "From: " + fromName + " <" + fromEmail + ">\r\n" +
 		"To: " + strings.TrimSpace(toEmail) + "\r\n" +
 		"Subject: " + strings.TrimSpace(subject) + "\r\n" +
 		"MIME-Version: 1.0\r\n" +
 		"Content-Type: text/plain; charset=UTF-8\r\n\r\n" +
 		body
 
-	return smtp.SendMail(addr, auth, smtpEmail, []string{strings.TrimSpace(toEmail)}, []byte(msg))
+	return sendEmpresaUsuarioMailuMessage(dbSuper, fromEmail, strings.TrimSpace(toEmail), []byte(msg))
 }

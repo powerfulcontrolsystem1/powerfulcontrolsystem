@@ -1,3 +1,40 @@
+2026-06-18: Correo corporativo Mailu como canal principal.
+- Backend: los envios comunes del sistema salen por Mailu; licencias y compras usan
+  `ventas@powerfulcontrolsystem.com`, mientras alertas, invitaciones,
+  recuperaciones, agente DIAN y pruebas usan `soporte@powerfulcontrolsystem.com`.
+- Backend ampliado: se migran tambien los envios directos de autenticacion
+  administrativa, asesor comercial, empresas compartidas, codigos de descuento,
+  venta digital, pagos rechazados, vencimientos de licencia, reportes con
+  adjunto, correos masivos y notificaciones de facturacion electronica; ya no
+  queda `smtp.PlainAuth` contra Gmail en `backend/handlers`.
+- Super administrador: `web/super/email_corporativo.html` corrige contraste
+  claro/oscuro y agrega `Provisionar ventas/soporte` y `Probar envio` para validar
+  buzones y salida real sin mostrar claves.
+- Navegacion: se retira `Gmail SMTP` del menu super y del registro de paginas
+  principales; tambien se oculta la tarjeta legacy dentro de Configuracion
+  avanzada para evitar reactivar Gmail por error. Email corporativo Mailu queda
+  como configuracion operativa.
+- Operacion/DNS: se documento SPF y DMARC publicados, MX apuntando al dominio raiz
+  como riesgo a corregir hacia `mail.powerfulcontrolsystem.com`, y pendiente DKIM/PTR
+  antes de subir volumen de correo.
+- QA: `go test ./handlers -run "EmailCorporativo|Mail|LicenciaActivation|ServerStartup|Payment|Usuario|Admin|FacturaElectronica|CorreoMasivo|Reporte|LicenciaVencimiento|CodigoDescuento|AsesorComercial|EmpresaCompartida|VentaDigital|^$" -count=1`,
+  chequeo sintactico JS de `web/super/email_corporativo.html`, consulta DNS y
+  verificacion visual local de botones/contraste sin overflow horizontal.
+
+2026-06-18: Agentes con limites por empresa y agente internet fiscal inicial.
+- Super administrador: `web/super/agentes_de_mantenimiento_qutomatico.html`
+  agrega limites diarios por empresa: segundos de agente, consultas avanzadas
+  GPT-5.5 y consultas ligeras GPT-5.4 mini.
+- Backend: `backend/db/empresa_agentes_uso.go` crea
+  `empresa_agentes_uso_diario`; `backend/handlers/super_mantenimiento_agentes.go`
+  guarda limites en `configuraciones.agentes.empresa.*`.
+- Empresas: se agregan endpoints protegidos
+  `/api/empresa/nomina/agente_internet` y
+  `/api/empresa/impuestos/agente_internet`, con botones en nomina e impuestos.
+  Devuelven comparacion actual vs sugerido y no aplican cambios sin aprobacion.
+- QA: `go test ./db ./handlers -run "Agente|Mantenimiento|EmailCorporativo|Mail|^$" -count=1`
+  y chequeo sintactico JS de agentes, nomina e impuestos.
+
 2026-06-18: Panel super reinicia indicadores y rs en scripts.
 - Super administrador: `web/super/licencias_resumen.html` agrega acciones
   confirmadas para reiniciar metricas del panel e indicadores de errores.
@@ -34,7 +71,7 @@
 - Frontend: `web/super/agentes_de_mantenimiento_qutomatico.html` agrega panel para habilitar el agente DIAN diario, definir hora/correo, ejecutar revision manual y leer hallazgos en el mismo panel.
 - Centro de mando: `web/super/licencias_resumen.html` agrega tarjeta `Consumo OpenAI` con barras de ultimos 30 dias usando estadistica real de tokens/consultas.
 - Gobierno IA: `web/super/configuracion/ia_global.html` autoajusta sus iframes para quitar sub barras de desplazamiento y dejar una pagina larga con scroll principal.
-- Backend: `/super/api/agentes_mantenimiento` y `super.mantenimiento_agentes_worker` leen fuentes DIAN, usan OpenAI si esta habilitado, guardan hallazgos y envian notificacion por Gmail SMTP configurado.
+- Backend: `/super/api/agentes_mantenimiento` y `super.mantenimiento_agentes_worker` leen fuentes DIAN, usan OpenAI si esta habilitado, guardan hallazgos y envian notificacion por el correo corporativo Mailu configurado.
 - Base de datos: `super_mantenimiento_agentes` y `super_mantenimiento_agente_hallazgos` registran configuracion y hallazgos globales; `hash_contenido` evita duplicados.
 - Seguridad: acceso exclusivo super administrador, sin `empresa_id`, sin credenciales DIAN, sin secretos en logs y consumo OpenAI registrado en tablas IA existentes.
 
@@ -35217,6 +35254,38 @@ PushStatus: OK
 Archivos modificados:
 - CHANGELOG.md
 - backend/handlers/licencias_codigos_descuento.go
+
+2026-06-18: Chat IA empresarial con agentes y limites por empresa
+Archivos modificados:
+- backend/db/empresa_agentes_uso.go
+- backend/handlers/agente_internet_fiscal.go
+- backend/handlers/chat_con_inteligencia_artificial_controller.go
+- backend/handlers/empresa_ia_empresarial.go
+- backend/handlers/ia_pedidos_estacion.go
+- backend/handlers/super_mantenimiento_agentes.go
+- web/administrar_empresa/centro_ia_empresarial.html
+- web/administrar_empresa/estacion_ia_pedidos.html
+- web/administrar_empresa/estaciones.html
+- web/administrar_empresa/impuestos.html
+- web/administrar_empresa/nomina_sueldos.html
+- web/super/agentes_de_mantenimiento_qutomatico.html
+- web/js/ai_button_icons.js
+- web/js/button_icons.js
+- documentos/descripcion_de_archivos
+- documentos/estructura_bd.md
+- documentos/flujos_operativos.md
+- documentos/mapa_modulos.md
+- CHANGELOG.md
+Resumen:
+- El chat empresarial publica catalogo de agentes y acepta `agent_id` en consulta normal, adjuntos y streaming.
+- Los agentes no generales consumen cuota diaria por empresa en `empresa_agentes_uso_diario`, ademas del limite de modelo/proveedor.
+- Centro IA empresarial y Pedidos con IA incorporan selector de agente; Pedidos con IA usa `ventas` por defecto y conserva mutaciones solo por endpoint validado.
+- Nomina e Impuestos conservan el boton `Agente internet` con propuesta actual vs sugerida y sin aplicar cambios automaticos.
+Pruebas:
+- `go test ./db ./handlers -run "Agente|Mantenimiento|Chat|IAPedidos|EmpresaAI|EmailCorporativo|Mail|^$" -count=1`
+- `go test ./... -run "^$" -count=1`
+- Validacion sintactica JS de paginas y scripts tocados.
+- Revision visual local escritorio/movil en Pedidos con IA, Centro IA, Nomina, Impuestos, Agentes super, Email corporativo e IA global.
 
 2026-06-18: rs: actualizar repositorio y sincronizar VPS
 PushStatus: OK

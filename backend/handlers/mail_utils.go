@@ -3,9 +3,7 @@ package handlers
 import (
 	"database/sql"
 	"fmt"
-	"net"
 	"net/mail"
-	"net/smtp"
 	"strings"
 )
 
@@ -27,48 +25,11 @@ func sendPCSSystemEmail(dbSuper *sql.DB, toEmail, toName, subject, textBody, htm
 		return captureEmpresaUsuarioMailNotification(dbSuper, notificationType, 0, toEmail, subject, textBody, "", metadataJSON, actorEmail)
 	}
 
-	smtpEmail, err := getDecryptedConfigValue(dbSuper, "gmail.smtp_email")
-	if err != nil {
-		return err
-	}
-	smtpPass, err := getDecryptedConfigValue(dbSuper, "gmail.smtp_app_password")
-	if err != nil {
-		return err
-	}
-	smtpEmail = strings.TrimSpace(smtpEmail)
-	smtpPass = strings.TrimSpace(smtpPass)
-	if smtpEmail == "" || smtpPass == "" {
-		return fmt.Errorf("smtp gmail no configurado")
-	}
-	smtpHost, _ := getDecryptedConfigValue(dbSuper, "gmail.smtp_host")
-	smtpPort, _ := getDecryptedConfigValue(dbSuper, "gmail.smtp_port")
-	fromName, _ := getDecryptedConfigValue(dbSuper, "gmail.smtp_from_name")
-	smtpHost = strings.TrimSpace(smtpHost)
-	if smtpHost == "" {
-		smtpHost = "smtp.gmail.com"
-	}
-	smtpPort = strings.TrimSpace(smtpPort)
-	if smtpPort == "" {
-		smtpPort = "587"
-	}
-	fromName = strings.TrimSpace(fromName)
-	if fromName == "" {
-		fromName = "Powerful Control System"
-	}
-	hostForAuth := smtpHost
-	if strings.Contains(smtpHost, ":") {
-		if h, _, splitErr := net.SplitHostPort(smtpHost); splitErr == nil {
-			hostForAuth = h
-		}
-	}
-	addr := smtpHost
-	if !strings.Contains(addr, ":") {
-		addr = smtpHost + ":" + smtpPort
-	}
+	fromName, fromEmail := corporateSystemSenderAddress(dbSuper, "soporte")
 	if strings.TrimSpace(toName) == "" {
 		toName = toEmail
 	}
-	from := (&mail.Address{Name: fromName, Address: smtpEmail}).String()
+	from := (&mail.Address{Name: fromName, Address: fromEmail}).String()
 	to := (&mail.Address{Name: toName, Address: toEmail}).String()
 	boundary := "pcs-system-mail"
 	if strings.TrimSpace(htmlBody) == "" {
@@ -82,8 +43,7 @@ func sendPCSSystemEmail(dbSuper *sql.DB, toEmail, toName, subject, textBody, htm
 		"--" + boundary + "\r\nContent-Type: text/plain; charset=UTF-8\r\n\r\n" + textBody + "\r\n" +
 		"--" + boundary + "\r\nContent-Type: text/html; charset=UTF-8\r\n\r\n" + htmlBody + "\r\n" +
 		"--" + boundary + "--\r\n"
-	auth := smtp.PlainAuth("", smtpEmail, smtpPass, hostForAuth)
-	return smtp.SendMail(addr, auth, smtpEmail, []string{toEmail}, []byte(msg))
+	return sendEmpresaUsuarioMailuMessage(dbSuper, fromEmail, toEmail, []byte(msg))
 }
 
 func isEmpresaUsuarioMailConfigError(err error) bool {
@@ -96,5 +56,6 @@ func isEmpresaUsuarioMailConfigError(err error) bool {
 	msg := strings.ToLower(strings.TrimSpace(err.Error()))
 	return strings.Contains(msg, "gmail.smtp_") ||
 		strings.Contains(msg, "smtp gmail no configurado") ||
+		strings.Contains(msg, "mailu") ||
 		strings.Contains(msg, "no configurado")
 }

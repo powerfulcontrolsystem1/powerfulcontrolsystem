@@ -128,12 +128,17 @@
     schedule(document);
   }
 
-  new MutationObserver(function(records) {
-    for (var i = 0; i < records.length; i += 1) {
-      if (records[i].type === "childList" || records[i].type === "characterData") {
-        schedule(document);
-        break;
-      }
+  if (window.MutationObserver) {
+    var mutationTarget = document.documentElement || document.body;
+    if (mutationTarget && mutationTarget.nodeType === 1) {
+      new MutationObserver(function(records) {
+        for (var i = 0; i < records.length; i += 1) {
+          if (records[i].type === "childList" || records[i].type === "characterData") {
+            schedule(document);
+            break;
+          }
+        }
+      }).observe(mutationTarget, { childList: true, characterData: true, subtree: true });
     }
-  }).observe(document.documentElement, { childList: true, characterData: true, subtree: true });
+  }
 })();

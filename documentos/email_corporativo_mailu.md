@@ -65,6 +65,21 @@ admin, IMAP, SMTP, antispam, webmail SnappyMail y Redis. El proxy publico lo adm
     valida longitud, cifra la clave con `CONFIG_ENC_KEY`, actualiza
     `empresa_email_corporativo.initial_password_enc` y reprovisiona Mailu cuando
     el modo directo esta activo.
+19. Los correos automaticos del sistema salen por Mailu como dominio propio. Los
+    correos comerciales y de compra/activacion de licencias usan
+    `ventas@powerfulcontrolsystem.com`; alertas, recuperaciones, invitaciones,
+    agente DIAN y pruebas usan `soporte@powerfulcontrolsystem.com`.
+20. La pagina super permite `Provisionar ventas/soporte` para crear o actualizar
+    esos buzones de sistema mediante el mismo comando directo Mailu, sin mostrar
+    la clave generada.
+21. La accion `Probar envio` envia un correo real desde el motor Mailu al
+    destinatario indicado para validar el camino util de salida.
+22. Los flujos legacy que antes usaban `gmail.smtp_*` para enviar directamente
+    ahora construyen el mismo mensaje pero lo entregan por Mailu: confirmacion y
+    recuperacion de administradores, invitaciones empresariales, asesor comercial,
+    codigos de descuento, venta digital, pagos rechazados, vencimiento de
+    licencias, reportes con adjunto, correos masivos y notificaciones de
+    facturacion electronica.
 
 ## Seguridad
 
@@ -122,7 +137,13 @@ admin, IMAP, SMTP, antispam, webmail SnappyMail y Redis. El proxy publico lo adm
   - `email_corporativo.mailu_admin`
   - `email_corporativo.mailu_api_token`
   - `email_corporativo.quota_mb`
-  - `email_corporativo.direct_provision_command`
+- `email_corporativo.direct_provision_command`
+- `email_corporativo.restart_alert_to`
+- `email_corporativo.restart_alert_enabled`
+
+Las claves historicas `gmail.*` pueden existir en bases antiguas por
+compatibilidad de configuracion y restauracion, pero el menu operativo y los
+envios reales del sistema deben usar Email corporativo Mailu.
 
 ## Variables VPS
 
@@ -177,8 +198,21 @@ deploy/scripts/vps-configure-mailu-host-nginx.sh
 Antes de activar correo real:
 
 - Validar DNS A y MX para `mail.powerfulcontrolsystem.com`.
-- Validar SPF, DKIM, DMARC y PTR.
+- Validar SPF, DKIM, DMARC y PTR/rDNS.
 - Revisar puertos SMTP/IMAP segun la politica del proveedor VPS.
 - Mantener Mailu inicialmente en loopback y publicar webmail por Nginx del host.
 - Probar creacion de buzon desde `web/super/email_corporativo.html` con
   `Probar Mailu`.
+- Probar `Provisionar ventas/soporte` y luego `Probar envio`.
+
+## Diagnostico 2026-06-18
+
+- `mail.powerfulcontrolsystem.com` resuelve a `2.24.197.58`.
+- SPF publicado: `v=spf1 a mx ~all`.
+- DMARC publicado: `v=DMARC1; p=none; rua=mailto:postmaster@powerfulcontrolsystem.com`.
+- Riesgo pendiente: el MX consultado responde `powerfulcontrolsystem.com` con
+  prioridad 10. Para Mailu es preferible apuntar el MX del dominio a
+  `mail.powerfulcontrolsystem.com` y confirmar que el PTR/rDNS de `2.24.197.58`
+  tambien identifica al host de correo.
+- Pendiente operativo en VPS: revisar DKIM generado por Mailu/Rspamd y publicar
+  el TXT correspondiente antes de subir volumen de correo.

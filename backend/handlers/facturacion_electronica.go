@@ -11,7 +11,6 @@ import (
 	"net"
 	"net/http"
 	"net/mail"
-	"net/smtp"
 	"strings"
 	"time"
 
@@ -1455,56 +1454,10 @@ func resolverDestinoCorreoFactura(dbEmp *sql.DB, payload facturacionOperacionPay
 
 func sendFacturaElectronicaEmail(dbSuper *sql.DB, toEmail, toName string, doc dbpkg.EmpresaDocumentoFacturacion, payload facturacionOperacionPayload) error {
 	if dbSuper == nil {
-		return fmt.Errorf("configuracion SMTP no disponible")
+		return fmt.Errorf("configuracion de correo corporativo no disponible")
 	}
 
-	smtpEmail, err := getDecryptedConfigValue(dbSuper, "gmail.smtp_email")
-	if err != nil {
-		return err
-	}
-	smtpEmail = strings.TrimSpace(smtpEmail)
-	if smtpEmail == "" {
-		return fmt.Errorf("gmail.smtp_email no configurado")
-	}
-
-	smtpPass, err := getDecryptedConfigValue(dbSuper, "gmail.smtp_app_password")
-	if err != nil {
-		return err
-	}
-	smtpPass = strings.TrimSpace(smtpPass)
-	if smtpPass == "" {
-		return fmt.Errorf("gmail.smtp_app_password no configurado")
-	}
-
-	smtpHost, _ := getDecryptedConfigValue(dbSuper, "gmail.smtp_host")
-	smtpPort, _ := getDecryptedConfigValue(dbSuper, "gmail.smtp_port")
-	fromName, _ := getDecryptedConfigValue(dbSuper, "gmail.smtp_from_name")
-
-	smtpHost = strings.TrimSpace(smtpHost)
-	if smtpHost == "" {
-		smtpHost = "smtp.gmail.com"
-	}
-	smtpPort = strings.TrimSpace(smtpPort)
-	if smtpPort == "" {
-		smtpPort = "587"
-	}
-	fromName = strings.TrimSpace(fromName)
-	if fromName == "" {
-		fromName = "Powerful Control System"
-	}
-
-	mailHostForAuth := smtpHost
-	if strings.Contains(smtpHost, ":") {
-		if h, _, err := net.SplitHostPort(smtpHost); err == nil {
-			mailHostForAuth = h
-		}
-	}
-	addr := smtpHost
-	if !strings.Contains(addr, ":") {
-		addr = smtpHost + ":" + smtpPort
-	}
-
-	auth := smtp.PlainAuth("", smtpEmail, smtpPass, mailHostForAuth)
+	fromName, fromEmail := corporateSystemSenderAddress(dbSuper, "soporte")
 	safeName := strings.TrimSpace(toName)
 	if safeName == "" {
 		safeName = "cliente"
@@ -1546,14 +1499,14 @@ func sendFacturaElectronicaEmail(dbSuper *sql.DB, toEmail, toName string, doc db
 		feDetail + "\r\n" +
 		"Gracias por tu compra.\r\n"
 
-	msg := "From: " + fromName + " <" + smtpEmail + ">\r\n" +
+	msg := "From: " + (&mail.Address{Name: fromName, Address: fromEmail}).String() + "\r\n" +
 		"To: " + toEmail + "\r\n" +
 		"Subject: " + subject + "\r\n" +
 		"MIME-Version: 1.0\r\n" +
 		"Content-Type: text/plain; charset=UTF-8\r\n\r\n" +
 		body
 
-	return smtp.SendMail(addr, auth, smtpEmail, []string{toEmail}, []byte(msg))
+	return sendEmpresaUsuarioMailuMessage(dbSuper, fromEmail, toEmail, []byte(msg))
 }
 
 // EmpresaFacturacionElectronicaPaisDetectadoHandler detecta automáticamente país FE.

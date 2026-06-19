@@ -8,10 +8,8 @@ import (
 	"fmt"
 	"html"
 	"mime"
-	"net"
 	"net/http"
 	"net/mail"
-	"net/smtp"
 	"sort"
 	"strconv"
 	"strings"
@@ -427,51 +425,10 @@ func sendSuperCorreoMasivoCampaign(r *http.Request, dbSuper *sql.DB, adminEmail 
 }
 
 func sendSuperCorreoMasivoSMTP(dbSuper *sql.DB, toEmail, toName, subject, bodyPlain, bodyHTML string) error {
-	smtpEmail, err := getDecryptedConfigValue(dbSuper, "gmail.smtp_email")
-	if err != nil {
-		return err
-	}
-	smtpEmail = strings.TrimSpace(smtpEmail)
-	if smtpEmail == "" {
-		return fmt.Errorf("gmail.smtp_email no configurado")
-	}
-	smtpPass, err := getDecryptedConfigValue(dbSuper, "gmail.smtp_app_password")
-	if err != nil {
-		return err
-	}
-	smtpPass = strings.TrimSpace(smtpPass)
-	if smtpPass == "" {
-		return fmt.Errorf("gmail.smtp_app_password no configurado")
-	}
-	smtpHost, _ := getDecryptedConfigValue(dbSuper, "gmail.smtp_host")
-	smtpPort, _ := getDecryptedConfigValue(dbSuper, "gmail.smtp_port")
-	fromName, _ := getDecryptedConfigValue(dbSuper, "gmail.smtp_from_name")
-	smtpHost = strings.TrimSpace(smtpHost)
-	if smtpHost == "" {
-		smtpHost = "smtp.gmail.com"
-	}
-	smtpPort = strings.TrimSpace(smtpPort)
-	if smtpPort == "" {
-		smtpPort = "587"
-	}
-	fromName = strings.TrimSpace(fromName)
-	if fromName == "" {
-		fromName = "Powerful Control System"
-	}
+	fromName, fromEmail := corporateSystemSenderAddress(dbSuper, "soporte")
 
 	toAddress := mail.Address{Name: strings.TrimSpace(toName), Address: strings.TrimSpace(toEmail)}
-	fromAddress := mail.Address{Name: fromName, Address: smtpEmail}
-
-	mailHostForAuth := smtpHost
-	if strings.Contains(smtpHost, ":") {
-		if h, _, err := net.SplitHostPort(smtpHost); err == nil {
-			mailHostForAuth = h
-		}
-	}
-	addr := smtpHost
-	if !strings.Contains(addr, ":") {
-		addr = smtpHost + ":" + smtpPort
-	}
+	fromAddress := mail.Address{Name: fromName, Address: fromEmail}
 
 	bodyPlain = strings.TrimSpace(bodyPlain)
 	if bodyHTML == "" {
@@ -494,8 +451,7 @@ func sendSuperCorreoMasivoSMTP(dbSuper *sql.DB, toEmail, toName, subject, bodyPl
 		strings.TrimSpace(bodyHTML) + "\r\n" +
 		"--" + boundary + "--\r\n"
 
-	auth := smtp.PlainAuth("", smtpEmail, smtpPass, mailHostForAuth)
-	return smtp.SendMail(addr, auth, smtpEmail, []string{toEmail}, []byte(msg))
+	return sendEmpresaUsuarioMailuMessage(dbSuper, fromEmail, strings.TrimSpace(toEmail), []byte(msg))
 }
 
 func buildSuperCorreoMasivoHTMLFromText(body string) string {

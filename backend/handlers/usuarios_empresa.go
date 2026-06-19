@@ -1731,57 +1731,22 @@ func sendSuperGmailTestEmail(dbSuper *sql.DB, usuarioCreador string) error {
 		return fmt.Errorf("db super no disponible")
 	}
 
-	smtpEmail, err := getDecryptedConfigValue(dbSuper, "gmail.smtp_email")
-	if err != nil {
-		return friendlyEmpresaUsuarioMailConfigError(err)
-	}
-	smtpEmail = strings.TrimSpace(smtpEmail)
-	if smtpEmail == "" {
-		return fmt.Errorf("gmail.smtp_email no configurado")
-	}
-
-	smtpPass, err := getDecryptedConfigValue(dbSuper, "gmail.smtp_app_password")
-	if err != nil {
-		return friendlyEmpresaUsuarioMailConfigError(err)
-	}
-	smtpPass = strings.TrimSpace(smtpPass)
-	if smtpPass == "" {
-		return fmt.Errorf("gmail.smtp_app_password no configurado")
-	}
-
-	smtpHost, _ := getDecryptedConfigValue(dbSuper, "gmail.smtp_host")
-	smtpPort, _ := getDecryptedConfigValue(dbSuper, "gmail.smtp_port")
-	fromName, _ := getDecryptedConfigValue(dbSuper, "gmail.smtp_from_name")
-
-	smtpHost = strings.TrimSpace(smtpHost)
-	if smtpHost == "" {
-		smtpHost = "smtp.gmail.com"
-	}
-	smtpPort = strings.TrimSpace(smtpPort)
-	if smtpPort == "" {
-		smtpPort = "587"
-	}
-	fromName = strings.TrimSpace(fromName)
-	if fromName == "" {
-		fromName = "Powerful Control System"
-	}
-
+	fromName, fromEmail := corporateSystemSenderAddress(dbSuper, "soporte")
+	_, toEmail := corporateSystemSenderAddress(dbSuper, "soporte")
 	stamp := time.Now().Format(time.RFC3339)
-	subject := "Prueba Gmail - Configuracion avanzada Powerful Control System"
-	body := "Esta es una prueba del boton Probar Gmail desde configuracion avanzada.\r\n\r\n" +
+	subject := "Prueba correo corporativo - Powerful Control System"
+	body := "Esta es una prueba del correo corporativo Mailu desde configuracion avanzada.\r\n\r\n" +
 		"Fecha: " + stamp + "\r\n" +
-		"Host SMTP: " + smtpHost + "\r\n" +
-		"Puerto SMTP: " + smtpPort + "\r\n" +
-		"Remitente: " + smtpEmail + "\r\n" +
-		"Destino: " + superGmailTestRecipient + "\r\n"
+		"Remitente: " + fromEmail + "\r\n" +
+		"Destino: " + toEmail + "\r\n"
 
 	if isEmpresaUsuarioMailTestMode(dbSuper) {
-		metadataJSON := fmt.Sprintf(`{"mail_mode":%q,"smtp_host":%q,"smtp_port":%q,"from":%q}`, "test", smtpHost, smtpPort, smtpEmail)
+		metadataJSON := fmt.Sprintf(`{"mail_mode":%q,"from":%q,"transport":%q}`, "test", fromEmail, "mailu")
 		return captureEmpresaUsuarioMailNotification(
 			dbSuper,
 			superCorreoNotificacionTipoPruebaGmail,
 			0,
-			superGmailTestRecipient,
+			toEmail,
 			subject,
 			body,
 			"",
@@ -1790,29 +1755,14 @@ func sendSuperGmailTestEmail(dbSuper *sql.DB, usuarioCreador string) error {
 		)
 	}
 
-	mailHostForAuth := smtpHost
-	if strings.Contains(smtpHost, ":") {
-		if host, _, err := net.SplitHostPort(smtpHost); err == nil && strings.TrimSpace(host) != "" {
-			mailHostForAuth = host
-		}
-	}
-	addr := smtpHost
-	if !strings.Contains(addr, ":") {
-		addr = net.JoinHostPort(smtpHost, smtpPort)
-	}
-
-	auth := smtp.PlainAuth("", smtpEmail, smtpPass, mailHostForAuth)
-	msg := "From: " + fromName + " <" + smtpEmail + ">\r\n" +
-		"To: " + superGmailTestRecipient + "\r\n" +
+	msg := "From: " + (&mail.Address{Name: fromName, Address: fromEmail}).String() + "\r\n" +
+		"To: " + toEmail + "\r\n" +
 		"Subject: " + subject + "\r\n" +
 		"MIME-Version: 1.0\r\n" +
 		"Content-Type: text/plain; charset=UTF-8\r\n\r\n" +
 		body
 
-	if err := smtp.SendMail(addr, auth, smtpEmail, []string{superGmailTestRecipient}, []byte(msg)); err != nil {
-		return err
-	}
-	return nil
+	return sendEmpresaUsuarioMailuMessage(dbSuper, fromEmail, toEmail, []byte(msg))
 }
 
 func handleEmpresaUsuarioFotoUpload(r *http.Request, dbEmp, dbSuper *sql.DB, empresaID int64) (int64, string, error) {
@@ -2197,71 +2147,27 @@ func friendlyEmpresaUsuarioMailConfigError(err error) error {
 		return nil
 	}
 	if isEmpresaUsuarioMailSecretDecryptError(err) {
-		return fmt.Errorf("la contrasena SMTP guardada no se puede descifrar. Regraba Gmail SMTP en Super administrador > Mensajeria y alertas > Gmail SMTP para cifrarla con la clave actual del servidor")
+		return fmt.Errorf("la contrasena SMTP historica no se puede descifrar. Usa Email corporativo Mailu como canal operativo")
 	}
 	return err
 }
 
-type empresaUsuarioSMTPConfig struct {
-	Email    string
-	Password string
-	Host     string
-	Port     string
-	FromName string
-}
-
-func getEmpresaUsuarioGmailSMTPConfig(dbSuper *sql.DB) (empresaUsuarioSMTPConfig, error) {
-	var cfg empresaUsuarioSMTPConfig
-	smtpEmail, err := getDecryptedConfigValue(dbSuper, "gmail.smtp_email")
-	if err != nil {
-		return cfg, friendlyEmpresaUsuarioMailConfigError(err)
+func corporateSystemSenderAddress(dbSuper *sql.DB, purpose string) (string, string) {
+	cfg := getCorporateEmailConfig(dbSuper)
+	domain := normalizeCorporateEmailDomain(cfg.Domain)
+	if domain == "" {
+		domain = normalizeCorporateEmailDomain(firstNonEmptyEnv("EMAIL_CORPORATIVO_DOMAIN", "MAILU_DOMAIN"))
 	}
-	cfg.Email = strings.TrimSpace(smtpEmail)
-	if cfg.Email == "" {
-		return cfg, fmt.Errorf("gmail.smtp_email no configurado")
+	if domain == "" {
+		domain = "powerfulcontrolsystem.com"
 	}
-
-	smtpPass, err := getDecryptedConfigValue(dbSuper, "gmail.smtp_app_password")
-	if err != nil {
-		return cfg, friendlyEmpresaUsuarioMailConfigError(err)
+	name := "Powerful Control System"
+	switch strings.ToLower(strings.TrimSpace(purpose)) {
+	case "ventas", "sales", "licencias", "license", "licencia":
+		return name + " - Ventas", "ventas@" + domain
+	default:
+		return name + " - Soporte", "soporte@" + domain
 	}
-	cfg.Password = strings.TrimSpace(smtpPass)
-	if cfg.Password == "" {
-		return cfg, fmt.Errorf("gmail.smtp_app_password no configurado")
-	}
-
-	cfg.Host, _ = getDecryptedConfigValue(dbSuper, "gmail.smtp_host")
-	cfg.Port, _ = getDecryptedConfigValue(dbSuper, "gmail.smtp_port")
-	cfg.FromName, _ = getDecryptedConfigValue(dbSuper, "gmail.smtp_from_name")
-
-	cfg.Host = strings.TrimSpace(cfg.Host)
-	if cfg.Host == "" {
-		cfg.Host = "smtp.gmail.com"
-	}
-	cfg.Port = strings.TrimSpace(cfg.Port)
-	if cfg.Port == "" {
-		cfg.Port = "587"
-	}
-	cfg.FromName = strings.TrimSpace(cfg.FromName)
-	if cfg.FromName == "" {
-		cfg.FromName = "Powerful Control System"
-	}
-	return cfg, nil
-}
-
-func sendEmpresaUsuarioSMTPMessage(cfg empresaUsuarioSMTPConfig, toEmail string, msg []byte) error {
-	mailHostForAuth := cfg.Host
-	if strings.Contains(cfg.Host, ":") {
-		if h, _, err := net.SplitHostPort(cfg.Host); err == nil {
-			mailHostForAuth = h
-		}
-	}
-	addr := cfg.Host
-	if !strings.Contains(addr, ":") {
-		addr = net.JoinHostPort(cfg.Host, cfg.Port)
-	}
-	auth := smtp.PlainAuth("", cfg.Email, cfg.Password, mailHostForAuth)
-	return smtp.SendMail(addr, auth, cfg.Email, []string{toEmail}, msg)
 }
 
 func buildEmpresaUsuarioMultipartMessage(baseURL, fromName, fromEmail, toEmail, subject, bodyPlain, bodyHTML string) string {
@@ -2308,21 +2214,15 @@ func buildEmpresaUsuarioPlainMessage(fromName, fromEmail, toEmail, subject, body
 }
 
 func sendEmpresaUsuarioGmailMultipart(dbSuper *sql.DB, baseURL, toEmail, subject, bodyPlain, bodyHTML string) error {
-	cfg, err := getEmpresaUsuarioGmailSMTPConfig(dbSuper)
-	if err != nil {
-		return err
-	}
-	msg := buildEmpresaUsuarioMultipartMessage(baseURL, cfg.FromName, cfg.Email, toEmail, subject, bodyPlain, bodyHTML)
-	return sendEmpresaUsuarioSMTPMessage(cfg, toEmail, []byte(msg))
+	fromName, fromEmail := corporateSystemSenderAddress(dbSuper, "soporte")
+	msg := buildEmpresaUsuarioMultipartMessage(baseURL, fromName, fromEmail, toEmail, subject, bodyPlain, bodyHTML)
+	return sendEmpresaUsuarioMailuMessage(dbSuper, fromEmail, toEmail, []byte(msg))
 }
 
 func sendEmpresaUsuarioGmailPlain(dbSuper *sql.DB, toEmail, subject, body string) error {
-	cfg, err := getEmpresaUsuarioGmailSMTPConfig(dbSuper)
-	if err != nil {
-		return err
-	}
-	msg := buildEmpresaUsuarioPlainMessage(cfg.FromName, cfg.Email, toEmail, subject, body)
-	return sendEmpresaUsuarioSMTPMessage(cfg, toEmail, []byte(msg))
+	fromName, fromEmail := corporateSystemSenderAddress(dbSuper, "soporte")
+	msg := buildEmpresaUsuarioPlainMessage(fromName, fromEmail, toEmail, subject, body)
+	return sendEmpresaUsuarioMailuMessage(dbSuper, fromEmail, toEmail, []byte(msg))
 }
 
 func empresaUsuarioMailuFallbackEnabled(dbSuper *sql.DB) bool {
@@ -2334,19 +2234,7 @@ func empresaUsuarioMailuFallbackEnabled(dbSuper *sql.DB) bool {
 }
 
 func empresaUsuarioMailuSender(dbSuper *sql.DB) (string, string) {
-	cfg := getCorporateEmailConfig(dbSuper)
-	domain := normalizeCorporateEmailDomain(cfg.Domain)
-	if domain == "" {
-		domain = normalizeCorporateEmailDomain(firstNonEmptyEnv("EMAIL_CORPORATIVO_DOMAIN", "MAILU_DOMAIN"))
-	}
-	if domain == "" {
-		domain = "powerfulcontrolsystem.com"
-	}
-	fromName := strings.TrimSpace(getEmpresaUsuarioConfigValue(dbSuper, "gmail.smtp_from_name"))
-	if fromName == "" {
-		fromName = "Powerful Control System"
-	}
-	return fromName, "postmaster@" + domain
+	return corporateSystemSenderAddress(dbSuper, "soporte")
 }
 
 func sanitizeEmpresaUsuarioMailerError(err error, output []byte) string {

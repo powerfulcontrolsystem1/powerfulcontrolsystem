@@ -25,6 +25,7 @@ type openAIStreamEvent struct {
 	Done          bool   `json:"done,omitempty"`
 	Error         string `json:"error,omitempty"`
 	ModelID       string `json:"model_id,omitempty"`
+	AgentID       string `json:"agent_id,omitempty"`
 	Provider      string `json:"provider,omitempty"`
 	DisplayName   string `json:"display_name,omitempty"`
 	UpstreamModel string `json:"upstream_model,omitempty"`
@@ -175,6 +176,7 @@ type empresaAIChatMensaje struct {
 type empresaAIChatRequest struct {
 	EmpresaID      int64                  `json:"empresa_id"`
 	ModelID        string                 `json:"model_id"`
+	AgentID        string                 `json:"agent_id,omitempty"`
 	Pregunta       string                 `json:"pregunta"`
 	Historial      []empresaAIChatMensaje `json:"historial"`
 	Temperatura    float64                `json:"temperatura"`
@@ -301,6 +303,50 @@ func firstAvailableEmpresaAIModelID(dbSuper *sql.DB) string {
 	return catalog[0].ID
 }
 
+func empresaAIChatAgentCatalog() []map[string]interface{} {
+	return []map[string]interface{}{
+		{"id": "general", "nombre": "Asistente general", "descripcion": "Ayuda operativa general de la empresa."},
+		{"id": "ventas", "nombre": "Agente ventas", "descripcion": "Carritos, pedidos, estaciones, clientes y caja."},
+		{"id": "inventario", "nombre": "Agente inventario", "descripcion": "Productos, precios, stock, categorias y compras."},
+		{"id": "compras", "nombre": "Agente compras", "descripcion": "Facturas de compra, proveedores, gastos y soportes."},
+		{"id": "nomina", "nombre": "Agente nomina", "descripcion": "Parametros, empleados, liquidaciones y nomina electronica."},
+		{"id": "impuestos", "nombre": "Agente impuestos", "descripcion": "Impuestos, retenciones, reportes fiscales y agente internet."},
+		{"id": "agente_internet", "nombre": "Agente internet", "descripcion": "Consulta y compara datos normativos vigentes antes de proponer actualizaciones."},
+	}
+}
+
+func normalizeEmpresaAIChatAgentID(raw string) string {
+	v := strings.ToLower(strings.TrimSpace(raw))
+	switch v {
+	case "", "general", "ventas", "inventario", "compras", "nomina", "impuestos", "agente_internet":
+		if v == "" {
+			return "general"
+		}
+		return v
+	default:
+		return "general"
+	}
+}
+
+func buildEmpresaAIChatAgentInstruction(agentID string) string {
+	switch normalizeEmpresaAIChatAgentID(agentID) {
+	case "ventas":
+		return "AGENTE_ACTIVO: ventas. Prioriza flujos de venta, estaciones, carritos, clientes, pedidos y caja. Para vender o agregar items usa endpoints permitidos y pide confirmacion humana antes de PCS_ACTION."
+	case "inventario":
+		return "AGENTE_ACTIVO: inventario. Prioriza productos, categorias, precios, existencias, compras y reposicion. Para crear/editar productos solo propone PCS_ACTION si el rol tiene inventario y el usuario confirma."
+	case "compras":
+		return "AGENTE_ACTIVO: compras. Prioriza proveedores, facturas de compra, gastos, soportes y contabilizacion. Para ingresar facturas de compra solicita datos faltantes, presenta borrador revisable y no confirma registro sin aprobacion humana."
+	case "nomina":
+		return "AGENTE_ACTIVO: nomina. Prioriza empleados, parametros legales, liquidaciones, asistencia, PILA y nomina electronica. Puede sugerir usar /api/empresa/nomina/agente_internet para comparar datos actuales vs sugeridos."
+	case "impuestos":
+		return "AGENTE_ACTIVO: impuestos. Prioriza impuestos, retenciones, calendarios fiscales y reportes. Puede sugerir usar /api/empresa/impuestos/agente_internet para comparar datos actuales vs sugeridos."
+	case "agente_internet":
+		return "AGENTE_ACTIVO: agente_internet. Antes de recomendar cambios normativos, explica fuente, fecha, dato actual vs sugerido y pide aprobacion humana. Respeta cuotas por empresa y no apliques cambios automaticamente."
+	default:
+		return "AGENTE_ACTIVO: general. Ayuda con tareas empresariales respetando roles, empresa_id, limites y confirmacion humana."
+	}
+}
+
 func (c *EmpresaAIChatController) ModelosHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		http.Error(w, "Metodo no permitido", http.StatusMethodNotAllowed)
@@ -375,6 +421,8 @@ func (c *EmpresaAIChatController) ModelosHandler(w http.ResponseWriter, r *http.
 		"google_account":    googleAccount,
 		"modelo_preferido":  modeloPreferido,
 		"streaming_enabled": streamingEnabled,
+		"agentes":           empresaAIChatAgentCatalog(),
+		"agent_preferido":   "general",
 		"modelos":           items,
 	})
 }
@@ -553,6 +601,13 @@ func (c *EmpresaAIChatController) ConsultarHandler(w http.ResponseWriter, r *htt
 		http.Error(w, "pregunta supera el maximo permitido (2500 caracteres)", http.StatusBadRequest)
 		return
 	}
+	payload.AgentID = normalizeEmpresaAIChatAgentID(payload.AgentID)
+	if payload.AgentID != "general" {
+		if _, _, err := reserveAgenteInternetLightUsage(c.dbEmp, c.dbSuper, payload.EmpresaID, googleAccount); err != nil {
+			writeJSON(w, http.StatusTooManyRequests, map[string]interface{}{"ok": false, "code": "empresa_agent_limit_reached", "error": err.Error()})
+			return
+		}
+	}
 
 	fechaUso := time.Now().Format("2006-01-02")
 	usoActual, err := dbpkg.GetEmpresaAIUsoDiario(c.dbEmp, payload.EmpresaID, model.Provider, model.ID, fechaUso)
@@ -621,6 +676,7 @@ func (c *EmpresaAIChatController) ConsultarHandler(w http.ResponseWriter, r *htt
 		contexto = appendContextoIALogicaNegocio(contexto, c.dbSuper)
 		modoAsistente := normalizeAIAssistantMode(payload.ModoAsistente)
 		systemPrompt := buildEmpresaAISystemPrompt(contexto, modoAsistente)
+		systemPrompt += "\n\n" + buildEmpresaAIChatAgentInstruction(payload.AgentID)
 		respuesta, promptTokens, completionTokens, err = c.generateResponseWithSystemPrompt(model, payload.Pregunta, payload.Historial, systemPrompt)
 		if err != nil {
 			if isProviderLimitError(err) {
@@ -668,7 +724,7 @@ func (c *EmpresaAIChatController) ConsultarHandler(w http.ResponseWriter, r *htt
 		PlanActual:       planActual,
 		UsuarioCreador:   adminEmail,
 		Estado:           "activo",
-		Observaciones:    "consulta desde chat_con_inteligencia_artificial",
+		Observaciones:    "consulta desde chat_con_inteligencia_artificial agente=" + payload.AgentID,
 	})
 	if err != nil {
 		http.Error(w, "No se pudo registrar auditoria de consulta", http.StatusInternalServerError)
@@ -694,6 +750,7 @@ func (c *EmpresaAIChatController) ConsultarHandler(w http.ResponseWriter, r *htt
 		"model_id":                 model.ID,
 		"display_name":             model.DisplayName,
 		"upstream_model":           model.UpstreamModel,
+		"agent_id":                 payload.AgentID,
 		"respuesta":                respuesta,
 		"usage": map[string]interface{}{
 			"plan":              planActual,
@@ -785,6 +842,13 @@ func (c *EmpresaAIChatController) ConsultarConAdjuntoHandler(w http.ResponseWrit
 		http.Error(w, err.Error(), http.StatusForbidden)
 		return
 	}
+	agentID := normalizeEmpresaAIChatAgentID(r.FormValue("agent_id"))
+	if agentID != "general" {
+		if _, _, err := reserveAgenteInternetLightUsage(c.dbEmp, c.dbSuper, empresaID, googleAccount); err != nil {
+			writeJSON(w, http.StatusTooManyRequests, map[string]interface{}{"ok": false, "code": "empresa_agent_limit_reached", "error": err.Error()})
+			return
+		}
+	}
 
 	empresaChatEnabled, _, _, err := getChatIAEmpresaEnabled(c.dbSuper)
 	if err != nil {
@@ -859,6 +923,7 @@ func (c *EmpresaAIChatController) ConsultarConAdjuntoHandler(w http.ResponseWrit
 	}
 
 	systemPrompt := buildEmpresaAISystemPrompt(contexto, modoAsistente)
+	systemPrompt += "\n\n" + buildEmpresaAIChatAgentInstruction(agentID)
 	respuesta, promptTokens, completionTokens, err := c.generateResponseWithSystemPromptAndAttachment(model, preguntaFinal, historial, systemPrompt, att)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadGateway)
@@ -892,7 +957,7 @@ func (c *EmpresaAIChatController) ConsultarConAdjuntoHandler(w http.ResponseWrit
 		PlanActual:       planActual,
 		UsuarioCreador:   adminEmail,
 		Estado:           "activo",
-		Observaciones:    "consulta con adjunto/gpt55 desde chat_con_inteligencia_artificial",
+		Observaciones:    "consulta con adjunto/gpt55 desde chat_con_inteligencia_artificial agente=" + agentID,
 	})
 	if err != nil {
 		http.Error(w, "No se pudo registrar auditoria de consulta", http.StatusInternalServerError)
@@ -912,6 +977,7 @@ func (c *EmpresaAIChatController) ConsultarConAdjuntoHandler(w http.ResponseWrit
 		"model_id":       model.ID,
 		"display_name":   model.DisplayName,
 		"upstream_model": model.UpstreamModel,
+		"agent_id":       agentID,
 		"respuesta":      respuesta,
 		"usage": map[string]interface{}{
 			"plan":              planActual,
@@ -966,6 +1032,16 @@ func (c *EmpresaAIChatController) ConsultarStreamHandler(w http.ResponseWriter, 
 	if payload.Pregunta == "" {
 		http.Error(w, "pregunta es obligatoria", http.StatusBadRequest)
 		return
+	}
+	payload.AgentID = normalizeEmpresaAIChatAgentID(payload.AgentID)
+	if payload.AgentID != "general" {
+		if _, _, err := reserveAgenteInternetLightUsage(c.dbEmp, c.dbSuper, payload.EmpresaID, googleAccount); err != nil {
+			w.Header().Set("Content-Type", "text/event-stream; charset=utf-8")
+			w.Header().Set("Cache-Control", "no-cache")
+			_ = sseWriteJSON(w, openAIStreamEvent{Error: err.Error()})
+			_ = sseWriteJSON(w, openAIStreamEvent{Done: true})
+			return
+		}
 	}
 
 	empresaChatEnabled, _, _, err := getChatIAEmpresaEnabled(c.dbSuper)
@@ -1022,6 +1098,7 @@ func (c *EmpresaAIChatController) ConsultarStreamHandler(w http.ResponseWriter, 
 		}
 		_ = sseWriteJSON(w, openAIStreamEvent{
 			ModelID:       model.ID,
+			AgentID:       payload.AgentID,
 			Provider:      model.Provider,
 			DisplayName:   model.DisplayName,
 			UpstreamModel: model.UpstreamModel,
@@ -1041,7 +1118,7 @@ func (c *EmpresaAIChatController) ConsultarStreamHandler(w http.ResponseWriter, 
 			PlanActual:     planActual,
 			UsuarioCreador: googleAccount,
 			Estado:         "activo",
-			Observaciones:  "consulta administrativa directa desde chat_con_inteligencia_artificial",
+			Observaciones:  "consulta administrativa directa desde chat_con_inteligencia_artificial agente=" + payload.AgentID,
 		})
 		_ = sseWriteJSON(w, openAIStreamEvent{Done: true})
 		return
@@ -1055,12 +1132,14 @@ func (c *EmpresaAIChatController) ConsultarStreamHandler(w http.ResponseWriter, 
 	contexto = appendContextoIALogicaNegocio(contexto, c.dbSuper)
 	modoAsistente := normalizeAIAssistantMode(payload.ModoAsistente)
 	systemPrompt := buildEmpresaAISystemPrompt(contexto, modoAsistente)
+	systemPrompt += "\n\n" + buildEmpresaAIChatAgentInstruction(payload.AgentID)
 
 	w.Header().Set("Content-Type", "text/event-stream; charset=utf-8")
 	w.Header().Set("Cache-Control", "no-cache")
 	w.Header().Set("Connection", "keep-alive")
 	_ = sseWriteJSON(w, openAIStreamEvent{
 		ModelID:       model.ID,
+		AgentID:       payload.AgentID,
 		Provider:      model.Provider,
 		DisplayName:   model.DisplayName,
 		UpstreamModel: model.UpstreamModel,
@@ -1101,7 +1180,7 @@ func (c *EmpresaAIChatController) ConsultarStreamHandler(w http.ResponseWriter, 
 		PlanActual:       planActual,
 		UsuarioCreador:   googleAccount,
 		Estado:           "activo",
-		Observaciones:    "consulta streaming desde chat_con_inteligencia_artificial",
+		Observaciones:    "consulta streaming desde chat_con_inteligencia_artificial agente=" + payload.AgentID,
 	})
 
 	_ = sseWriteJSON(w, openAIStreamEvent{Done: true})

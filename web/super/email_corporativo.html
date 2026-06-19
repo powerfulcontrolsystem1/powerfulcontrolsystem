@@ -6,38 +6,61 @@
   <title>Email corporativo Mailu</title>
   <link rel="stylesheet" href="/css/admin_theme.css">
   <style>
-    body { margin: 0; font-family: Inter, Arial, sans-serif; background: var(--page-bg, #f5f7fb); color: var(--text, #172033); }
+    :root {
+      --mail-bg: var(--page-bg, #f5f7fb);
+      --mail-card: var(--card-bg, #ffffff);
+      --mail-text: var(--text, #172033);
+      --mail-muted: var(--muted, #5f6b7a);
+      --mail-border: var(--border, #dbe2ee);
+      --mail-input: var(--input-bg, #ffffff);
+      --mail-soft: #edf2f8;
+      --mail-soft-text: #172033;
+      --mail-primary: #1f6feb;
+    }
+    body[data-theme="dark"], .theme-dark, html[data-theme="dark"] {
+      --mail-bg: #0d1117;
+      --mail-card: #161b22;
+      --mail-text: #e6edf3;
+      --mail-muted: #9aa7b4;
+      --mail-border: #30363d;
+      --mail-input: #0d1117;
+      --mail-soft: #21262d;
+      --mail-soft-text: #e6edf3;
+      --mail-primary: #58a6ff;
+    }
+    body { margin: 0; font-family: Inter, Arial, sans-serif; background: var(--mail-bg); color: var(--mail-text); }
     .page { max-width: 1180px; margin: 0 auto; padding: 22px; }
     .hero { display: flex; justify-content: space-between; gap: 18px; align-items: flex-start; margin-bottom: 16px; }
     .hero h1 { margin: 0 0 6px; font-size: clamp(1.45rem, 2.2vw, 2rem); }
-    .hero p { margin: 0; max-width: 760px; color: var(--muted, #5f6b7a); line-height: 1.45; }
+    .hero p { margin: 0; max-width: 760px; color: var(--mail-muted); line-height: 1.45; }
     .grid { display: grid; grid-template-columns: minmax(340px, .85fr) minmax(0, 1.45fr); gap: 14px; align-items: start; }
-    .card { background: var(--card-bg, #fff); border: 1px solid var(--border, #dbe2ee); border-radius: 8px; padding: 16px; box-shadow: none; }
+    .card { background: var(--mail-card); border: 1px solid var(--mail-border); border-radius: 8px; padding: 16px; box-shadow: none; }
     .card h2 { margin: 0 0 12px; font-size: 1.06rem; }
     .form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
-    label { display: grid; gap: 6px; font-size: .84rem; font-weight: 700; color: var(--text, #172033); }
-    input, select { width: 100%; box-sizing: border-box; min-height: 38px; border: 1px solid var(--border, #ccd6e4); border-radius: 6px; padding: 8px 10px; background: var(--input-bg, #fff); color: var(--text, #172033); }
+    label { display: grid; gap: 6px; font-size: .84rem; font-weight: 700; color: var(--mail-text); }
+    input, select { width: 100%; box-sizing: border-box; min-height: 38px; border: 1px solid var(--mail-border); border-radius: 6px; padding: 8px 10px; background: var(--mail-input); color: var(--mail-text); }
     .check-row { display: flex; gap: 10px; align-items: center; min-height: 38px; padding: 8px 0; }
     .check-row input { width: auto; min-height: auto; }
     .actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; }
-    button, .btn { border: 0; border-radius: 7px; padding: 10px 14px; font-weight: 800; cursor: pointer; background: #1f6feb; color: #fff; text-decoration: none; }
+    button, .btn { border: 0; border-radius: 7px; padding: 10px 14px; font-weight: 800; cursor: pointer; background: var(--mail-primary); color: #fff; text-decoration: none; }
     td button { padding: 8px 10px; font-size: .82rem; white-space: nowrap; }
-    button.secondary { background: #edf2f8; color: #172033; border: 1px solid #ccd6e4; }
+    button.secondary { background: var(--mail-soft); color: var(--mail-soft-text); border: 1px solid var(--mail-border); }
     button.danger { background: #9b1c31; }
     button:disabled { cursor: not-allowed; opacity: .62; }
     .diagnostics { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin-bottom: 14px; }
-    .metric { border: 1px solid var(--border, #dbe2ee); border-radius: 8px; padding: 10px; background: color-mix(in srgb, var(--card-bg, #fff) 88%, #1f6feb 12%); }
-    .metric span { display: block; color: var(--muted, #5f6b7a); font-size: .74rem; font-weight: 800; text-transform: uppercase; letter-spacing: .04em; }
-    .metric strong { display: block; margin-top: 5px; color: var(--text, #172033); font-size: .95rem; overflow-wrap: anywhere; }
+    .metric { border: 1px solid var(--mail-border); border-radius: 8px; padding: 10px; background: color-mix(in srgb, var(--mail-card) 88%, var(--mail-primary) 12%); }
+    .metric span { display: block; color: var(--mail-muted); font-size: .74rem; font-weight: 800; text-transform: uppercase; letter-spacing: .04em; }
+    .metric strong { display: block; margin-top: 5px; color: var(--mail-text); font-size: .95rem; overflow-wrap: anywhere; }
     .alert { margin: 0 0 14px; border: 1px solid #f59e0b; border-left-width: 4px; border-radius: 8px; padding: 10px 12px; background: #fffbeb; color: #78350f; font-weight: 700; line-height: 1.4; }
     .alert.ok { border-color: #16a34a; background: #f0fdf4; color: #14532d; }
     .alert.error { border-color: #dc2626; background: #fef2f2; color: #7f1d1d; }
-    .hint { margin-top: 10px; color: var(--muted, #5f6b7a); font-size: .88rem; line-height: 1.45; }
+    .hint { margin-top: 10px; color: var(--mail-muted); font-size: .88rem; line-height: 1.45; }
     .status { margin: 0 0 12px; min-height: 20px; font-weight: 700; color: #0f766e; }
     .status.error { color: #b42318; }
-    .table-wrap { overflow-x: auto; border: 1px solid var(--border, #dbe2ee); border-radius: 8px; }
+    .test-send-row { display: grid; grid-template-columns: minmax(220px, 1fr) auto; gap: 10px; align-items: end; margin-top: 12px; max-width: 620px; }
+    .table-wrap { overflow-x: auto; border: 1px solid var(--mail-border); border-radius: 8px; }
     table { width: 100%; border-collapse: collapse; min-width: 640px; }
-    th, td { padding: 9px; border-bottom: 1px solid var(--border, #e5eaf2); text-align: left; font-size: .86rem; vertical-align: top; overflow-wrap: anywhere; }
+    th, td { padding: 9px; border-bottom: 1px solid var(--mail-border); text-align: left; font-size: .86rem; vertical-align: top; overflow-wrap: anywhere; }
     th { background: rgba(31, 111, 235, .08); font-size: .78rem; text-transform: uppercase; letter-spacing: .04em; }
     tr:last-child td { border-bottom: 0; }
     .badge { display: inline-flex; align-items: center; min-height: 22px; border-radius: 999px; padding: 2px 8px; font-size: .76rem; font-weight: 800; background: #eef2ff; color: #3730a3; }
@@ -53,6 +76,7 @@
     }
     @media (max-width: 520px) {
       .diagnostics { grid-template-columns: 1fr; }
+      .test-send-row { grid-template-columns: 1fr; }
     }
   </style>
 </head>
@@ -79,8 +103,15 @@
       </div>
       <div class="actions">
         <button id="testMailuBtn" type="button" class="secondary">Probar Mailu</button>
+        <button id="provisionSystemBtn" type="button" class="secondary">Provisionar ventas/soporte</button>
       </div>
-      <p class="hint">Esta prueba valida que el sistema tenga listo el comando directo de Mailu para crear buzones. No muestra ni imprime claves.</p>
+      <div class="test-send-row">
+        <label>Destinatario de prueba
+          <input id="testRecipient" type="email" placeholder="soporte@powerfulcontrolsystem.com" autocomplete="off">
+        </label>
+        <button id="testSendBtn" type="button">Probar envio</button>
+      </div>
+      <p class="hint">Estas pruebas validan Mailu, crean o actualizan los buzones del sistema y envian un correo real desde el dominio propio. No muestra ni imprime claves.</p>
     </section>
 
     <div class="grid">
@@ -249,7 +280,7 @@
         diagWebmail.textContent = webmail.checked
           ? ((webmail.status ? ("HTTP " + webmail.status + " - ") : "") + (webmail.message || "Consultado"))
           : (webmail.message || "Sin verificar");
-        diagCuentas.textContent = (accounts.total || 0) + " total, " + (accounts.provisionado || 0) + " activas, " + (accounts.error || 0) + " con error · cupo " + (config.max_accounts_per_empresa || 5) + " por empresa";
+        diagCuentas.textContent = (accounts.total || 0) + " total, " + (accounts.provisionado || 0) + " activas, " + (accounts.error || 0) + " con error - cupo " + (config.max_accounts_per_empresa || 5) + " por empresa";
         diagnosticAlert.textContent = diagnostics.recommended_action || "Revisa la configuracion del servicio.";
         diagnosticAlert.className = "alert" + (accounts.error > 0 || !directReady && diagnostics.provision_mode === "mailu_direct" ? " error" : (webmail.ok && diagnostics.enabled ? " ok" : ""));
       }
@@ -387,9 +418,48 @@
           });
       }
 
+      function provisionSystemMailboxes() {
+        setStatus("Provisionando ventas@ y soporte@...");
+        requestJSON("/super/api/email_corporativo?action=provision_system", { method: "POST" })
+          .then(function (data) {
+            return load().then(function () {
+              if (data && data.ok) {
+                setStatus("Buzones ventas@ y soporte@ provisionados.");
+              } else {
+                var detail = (data && data.results || []).map(function (item) {
+                  return item.email + ": " + (item.error || item.status || "fallo");
+                }).join(" | ");
+                setStatus("Hay buzones pendientes: " + (detail || "validacion fallida"), true);
+              }
+            });
+          })
+          .catch(function (err) {
+            return load().then(function () {
+              setStatus("No se pudieron provisionar buzones del sistema: " + (err.message || String(err)), true);
+            });
+          });
+      }
+
+      function testSend() {
+        var input = document.getElementById("testRecipient");
+        var recipient = input ? input.value : "";
+        setStatus("Enviando correo de prueba...");
+        requestJSON("/super/api/email_corporativo?action=test_send", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ to: recipient })
+        }).then(function (data) {
+          setStatus("Correo de prueba enviado a " + ((data && data.recipient) || recipient || "destinatario configurado") + ".");
+        }).catch(function (err) {
+          setStatus(err.message || String(err), true);
+        });
+      }
+
       document.getElementById("configForm").addEventListener("submit", save);
       document.getElementById("syncBtn").addEventListener("click", sync);
       document.getElementById("testMailuBtn").addEventListener("click", testMailu);
+      document.getElementById("provisionSystemBtn").addEventListener("click", provisionSystemMailboxes);
+      document.getElementById("testSendBtn").addEventListener("click", testSend);
       load();
     })();
   </script>

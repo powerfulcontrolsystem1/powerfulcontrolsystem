@@ -2,14 +2,12 @@ package handlers
 
 import (
 	"bytes"
+	"database/sql"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"net"
-	"net/mail"
-	"net/smtp"
 	"net/http"
-	"database/sql"
+	"net/mail"
 	"strings"
 	"time"
 
@@ -79,46 +77,8 @@ func sendReportesEmailWithAttachment(r *http.Request, dbSuper *sql.DB, empresaID
 		return captureEmpresaUsuarioMailNotification(dbSuper, "reportes_export_email", empresaID, toEmail, subject, bodyText, attachmentName, metadataJSON, adminEmailFromRequest(r))
 	}
 
-	smtpEmail, err := getDecryptedConfigValue(dbSuper, "gmail.smtp_email")
-	if err != nil {
-		return err
-	}
-	smtpPass, err := getDecryptedConfigValue(dbSuper, "gmail.smtp_app_password")
-	if err != nil {
-		return err
-	}
-	smtpEmail = strings.TrimSpace(smtpEmail)
-	smtpPass = strings.TrimSpace(smtpPass)
-	if smtpEmail == "" || smtpPass == "" {
-		return fmt.Errorf("smtp gmail no configurado")
-	}
-	smtpHost, _ := getDecryptedConfigValue(dbSuper, "gmail.smtp_host")
-	smtpPort, _ := getDecryptedConfigValue(dbSuper, "gmail.smtp_port")
-	fromName, _ := getDecryptedConfigValue(dbSuper, "gmail.smtp_from_name")
-	smtpHost = strings.TrimSpace(smtpHost)
-	if smtpHost == "" {
-		smtpHost = "smtp.gmail.com"
-	}
-	smtpPort = strings.TrimSpace(smtpPort)
-	if smtpPort == "" {
-		smtpPort = "587"
-	}
-	fromName = strings.TrimSpace(fromName)
-	if fromName == "" {
-		fromName = "Powerful Control System"
-	}
-	hostForAuth := smtpHost
-	if strings.Contains(smtpHost, ":") {
-		if h, _, splitErr := net.SplitHostPort(smtpHost); splitErr == nil && strings.TrimSpace(h) != "" {
-			hostForAuth = h
-		}
-	}
-	addr := smtpHost
-	if !strings.Contains(addr, ":") {
-		addr = net.JoinHostPort(smtpHost, smtpPort)
-	}
-
-	from := (&mail.Address{Name: fromName, Address: smtpEmail}).String()
+	fromName, fromEmail := corporateSystemSenderAddress(dbSuper, "soporte")
+	from := (&mail.Address{Name: fromName, Address: fromEmail}).String()
 	to := (&mail.Address{Name: "", Address: toEmail}).String()
 	boundary := "pcs-reportes-" + fmt.Sprint(time.Now().UnixNano())
 
@@ -150,8 +110,7 @@ func sendReportesEmailWithAttachment(r *http.Request, dbSuper *sql.DB, empresaID
 	}
 	msg.WriteString("\r\n--" + boundary + "--\r\n")
 
-	auth := smtp.PlainAuth("", smtpEmail, smtpPass, hostForAuth)
-	return smtp.SendMail(addr, auth, smtpEmail, []string{toEmail}, msg.Bytes())
+	return sendEmpresaUsuarioMailuMessage(dbSuper, fromEmail, toEmail, msg.Bytes())
 }
 
 func reportesDefaultEmailSubject(prefix, datasetTitle string, empresaLabel string) string {
@@ -184,4 +143,3 @@ func reportesResolveEmpresaLabel(dbSuper *sql.DB, empresaID int64) string {
 	}
 	return name
 }
-

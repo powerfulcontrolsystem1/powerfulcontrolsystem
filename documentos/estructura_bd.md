@@ -16,6 +16,20 @@ Actualizacion 2026-06-18 (agentes de mantenimiento super)
 - No hay `empresa_id` porque el agente es gobierno global del super
   administrador; no almacena secretos ni credenciales DIAN.
 
+Actualizacion 2026-06-18 (limites agentes por empresa)
+- Nueva tabla en base empresarial: `empresa_agentes_uso_diario`, con
+  `empresa_id`, `fecha_uso`, `segundos_usados`, `consultas_avanzadas` y
+  `consultas_ligeras`. Permite controlar el consumo diario de `agente_internet`,
+  agentes del Chat IA empresarial, Centro IA empresarial, Pedidos con IA y
+  futuros agentes empresariales por empresa.
+- Configuracion global super:
+  - `agentes.empresa.limite_segundos_diarios` default `120`.
+  - `agentes.empresa.limite_consultas_avanzadas_diarias` default `5`.
+  - `agentes.empresa.limite_consultas_ligeras_diarias` default `20`.
+- Las consultas siguen registrando modelo/tokens en `empresa_ai_consultas` y
+  `empresa_ai_uso_diario`; `empresa_agentes_uso_diario` es una capa adicional
+  de cupo por agente, no reemplaza los limites del proveedor/modelo.
+
 Actualizacion 2026-06-12 (motor contable automatico)
 - No se agregan tablas nuevas. Se fortalece el contrato existente
   `empresa_eventos_contables` -> `empresa_asientos_contables`.
@@ -2132,6 +2146,7 @@ Actualizacion 2026-04-29 (auditoria como fuente de contexto IA)
 - 2026-05-19: `empresa_configuracion_general` agrega `cajas_simultaneas_habilitadas` y `max_cajas_simultaneas_empresa` para activar/desactivar varias cajas abiertas por empresa y limitar su cupo interno sin superar `licencias.max_cajas_simultaneas`. Los reportes de turno continuan aislados por `empresa_cierres_caja.id`/`cierre_caja_id`.
 - 2026-05-19: `empresa_impresoras` usa `POS_80MM` como codigo operativo predeterminado por empresa activa; `empresa_impresoras_funcionalidades` lo asigna a `general`, `corte_caja`, `turno_reporte` y `cajon_monedero` manteniendo indices unicos por `empresa_id`.
 - 2026-05-29: `empresa_email_corporativo` soporta provision directa `mailu_direct`; el backend conserva en `configuraciones.email_corporativo.direct_provision_command` la ruta del script operativo y marca `estado_provision='provisionado'` solo despues de crear/validar el buzon real en Mailu.
+- 2026-06-18: el sistema de correos automaticos deja Gmail como canal operativo y usa Mailu con remitentes de dominio propio: `ventas@powerfulcontrolsystem.com` para compras/activacion de licencias y `soporte@powerfulcontrolsystem.com` para alertas, invitaciones, recuperaciones y pruebas. No se agregan tablas; se reutiliza `empresa_email_corporativo` y `configuraciones.email_corporativo.*`.
 - 2026-05-28: se agrega `empresa_email_corporativo` en `pcs_superadministrador` para mapear cada empresa a un email corporativo unico bajo el dominio configurado. Guarda `empresa_id`, nombre, correo, dominio, webmail, estado de provision Mailu, intentos, ultimo error, clave inicial cifrada y trazabilidad. Tiene indices unicos activos por `empresa_id` y por `lower(email)` para evitar duplicados.
 - 2026-05-13: el aseguramiento ligero de `carritos_compras`, `carrito_compra_items` y `empresa_ventas_estacion_metricas` valida y completa ahora todas las columnas usadas por el listado operativo antes de marcar el esquema como listo, con cache por base/esquema PostgreSQL. Esto evita 500 en `/api/empresa/carritos_compra` cuando una empresa conserva migraciones rezagadas; no crea tablas nuevas ni cambia relaciones.
 - 2026-05-13: `licencias` incorpora `max_cajas_simultaneas` para limitar cajas abiertas simultaneas por empresa segun licencia activa. El valor por defecto es 2 cajas; los planes globales escalan cajas segun catalogo vigente, incluyendo COP 200000 con 4 cajas. `carritos_compras`, `empresa_ventas_estacion_metricas` y `empresa_finanzas_movimientos` enlazan operaciones con `cierre_caja_id`, `caja_codigo`, `caja_turno` y `caja_sucursal_id` para cierres separados por caja.

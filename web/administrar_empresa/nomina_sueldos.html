@@ -103,6 +103,7 @@
             Ayuda
           </a>
           <button id="btnRecargarTodo" class="btn secondary" type="button">Actualizar</button>
+          <button id="btnNominaAgenteInternet" class="btn secondary" type="button">Agente internet</button>
         </div>
       </div>
       <p class="form-help">Módulo de nómina integrado con asistencia para calcular horas ordinarias, recargos nocturnos, horas extras, provisiones, pagos y liquidación salarial por período.</p>
@@ -137,6 +138,7 @@
         </div>
       </div>
       <div id="mainMsg" class="form-help"></div>
+      <div id="nominaAgenteInternetResult" class="form-help"></div>
       <div class="nomina-readiness" aria-label="Preparacion de nomina y nomina electronica">
         <div class="nomina-readiness-head">
           <strong>Preparacion nomina / nomina electronica</strong>
@@ -2136,12 +2138,29 @@
               setMessage('mainMsg', err.message || 'No se pudo actualizar el modulo de nomina.', 'error');
             });
         });
+        var agenteBtn = document.getElementById('btnNominaAgenteInternet');
+        if (agenteBtn) agenteBtn.addEventListener('click', function () {
+          ejecutarAgenteInternetNomina().catch(function (err) {
+            setMessage('nominaAgenteInternetResult', err.message || 'No se pudo ejecutar agente internet.', 'error');
+          });
+        });
 
         window.addEventListener('nomina:refresh-all', function () {
           refreshAll().catch(function (err) {
             setMessage('mainMsg', err.message || 'No se pudo actualizar el modulo de nomina.', 'error');
           });
         });
+      }
+
+      async function ejecutarAgenteInternetNomina() {
+        var box = document.getElementById('nominaAgenteInternetResult');
+        if (!box) return;
+        box.textContent = 'Consultando agente internet...';
+        var data = await requestJSON('/api/empresa/nomina/agente_internet?empresa_id=' + encodeURIComponent(String(state.empresaID)), { method: 'POST' });
+        var proposals = data.proposals || [];
+        box.innerHTML = '<strong>Propuesta del agente internet</strong><ul>' + proposals.map(function (p) {
+          return '<li><b>' + esc(p.campo || '') + ':</b> actual: ' + esc(p.actual || '-') + ' | sugerido: ' + esc(p.sugerido || '-') + '</li>';
+        }).join('') + '</ul><span>No se aplicaron cambios. Revisa y confirma manualmente antes de actualizar parametros.</span>';
       }
 
       async function bootstrap() {

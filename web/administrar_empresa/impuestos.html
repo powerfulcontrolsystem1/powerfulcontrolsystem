@@ -49,6 +49,7 @@
           <div class="impuestos-actions">
             <div id="impuestosPaisBadge" class="form-help impuestos-pais"></div>
             <button id="btnImpuestosRefrescar" class="btn secondary" type="button">Actualizar</button>
+            <button id="btnImpuestosAgenteInternet" class="btn secondary" type="button">Agente internet</button>
             <button id="btnImpuestosSembrar" class="btn" type="button">Cargar catálogo base</button>
           </div>
         </div>
@@ -69,6 +70,7 @@
             </div>
           </div>
           <div id="impuestosMsg" class="form-help" style="margin-top:10px;"></div>
+          <div id="impuestosAgenteInternetResult" class="form-help" style="margin-top:10px;"></div>
           <div class="impuestos-readiness" aria-label="Preparacion de impuestos">
             <div class="impuestos-readiness-head">
               <strong>Preparacion de impuestos</strong>
@@ -537,7 +539,25 @@
       }
     }
 
+    async function ejecutarAgenteInternetImpuestos(){
+      var box = document.getElementById('impuestosAgenteInternetResult');
+      if (!box) return;
+      box.textContent = 'Consultando agente internet...';
+      var url = '/api/empresa/impuestos/agente_internet?empresa_id=' + encodeURIComponent(empresaId || '');
+      var data = await fetch(url, { method:'POST', credentials:'same-origin' }).then(async function(res){
+        if(!res.ok) throw new Error(await res.text() || ('HTTP ' + res.status));
+        return res.json();
+      });
+      var items = data.proposals || [];
+      box.innerHTML = '<strong>Propuesta del agente internet</strong><ul>' + items.map(function(p){
+        return '<li><b>' + esc(p.campo || '') + ':</b> actual: ' + esc(p.actual || '-') + ' | sugerido: ' + esc(p.sugerido || '-') + '</li>';
+      }).join('') + '</ul><span>No se aplicaron cambios. Revisa y confirma manualmente antes de actualizar impuestos.</span>';
+    }
+
     document.getElementById('btnImpuestosRefrescar').addEventListener('click', loadAll);
+    document.getElementById('btnImpuestosAgenteInternet').addEventListener('click', function(){
+      ejecutarAgenteInternetImpuestos().catch(function(e){ setMsg('Error agente internet: ' + (e && e.message ? e.message : String(e)), true); });
+    });
     document.getElementById('btnImpuestosSembrar').addEventListener('click', sembrar);
     document.getElementById('btnImpuestosAplicar').addEventListener('click', loadDashboard);
     document.getElementById('btnImpuestosMes').addEventListener('click', function(){

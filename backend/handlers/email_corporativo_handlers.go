@@ -16,6 +16,7 @@ import (
 	"log"
 	"net"
 	"net/http"
+	"net/mail"
 	"net/url"
 	"os"
 	"os/exec"
@@ -60,6 +61,13 @@ type CorporateEmailConfig struct {
 }
 
 type corporateEmailProvisionResult struct {
+	OK     bool   `json:"ok"`
+	Status string `json:"status"`
+	Error  string `json:"error,omitempty"`
+}
+
+type corporateSystemMailboxResult struct {
+	Email  string `json:"email"`
 	OK     bool   `json:"ok"`
 	Status string `json:"status"`
 	Error  string `json:"error,omitempty"`
@@ -678,6 +686,51 @@ func provisionEmpresaEmailAccount(dbSuper *sql.DB, cfg CorporateEmailConfig, acc
 	return provisionEmpresaEmailAccountWithTheme(dbSuper, cfg, account, password, "")
 }
 
+func provisionCorporateSystemMailboxes(dbSuper *sql.DB, cfg CorporateEmailConfig) []corporateSystemMailboxResult {
+	systemAccounts := []struct {
+		local string
+		name  string
+	}{
+		{local: "ventas", name: "Powerful Control System - Ventas"},
+		{local: "soporte", name: "Powerful Control System - Soporte"},
+	}
+	domain := normalizeCorporateEmailDomain(cfg.Domain)
+	if domain == "" {
+		domain = "powerfulcontrolsystem.com"
+	}
+	results := make([]corporateSystemMailboxResult, 0, len(systemAccounts))
+	for i, item := range systemAccounts {
+		password, err := generateCorporateEmailPassword()
+		email := item.local + "@" + domain
+		if err != nil {
+			results = append(results, corporateSystemMailboxResult{Email: email, OK: false, Status: "error_clave", Error: "No se pudo generar clave del buzon"})
+			continue
+		}
+		result := provisionEmpresaEmailAccountWithTheme(dbSuper, cfg, dbpkg.EmpresaEmailCorporativo{
+			EmpresaID:         int64(-9000 - i),
+			EmpresaNombre:     item.name,
+			Email:             email,
+			LocalPart:         item.local,
+			Domain:            domain,
+			WebmailURL:        cfg.WebmailURL,
+			EstadoProvision:   "pendiente",
+			ProvisionProvider: "mailu",
+		}, password, "")
+		results = append(results, corporateSystemMailboxResult{Email: email, OK: result.OK, Status: result.Status, Error: result.Error})
+	}
+	return results
+}
+
+func sendCorporateEmailTest(dbSuper *sql.DB, toEmail string) error {
+	toEmail = strings.TrimSpace(toEmail)
+	if _, err := mail.ParseAddress(toEmail); err != nil {
+		return fmt.Errorf("correo destino invalido: %w", err)
+	}
+	subject := "Prueba de correo corporativo PCS"
+	body := "Esta es una prueba enviada desde el motor Mailu de Powerful Control System.\r\n\r\nRemitente esperado: soporte@powerfulcontrolsystem.com\r\nCanal: email corporativo propio."
+	return sendEmpresaUsuarioMailuPlain(dbSuper, toEmail, subject, body)
+}
+
 func provisionEmpresaEmailAccountWithTheme(dbSuper *sql.DB, cfg CorporateEmailConfig, account dbpkg.EmpresaEmailCorporativo, password, theme string) corporateEmailProvisionResult {
 	if !cfg.Enabled {
 		_ = dbpkg.MarkEmpresaEmailProvisionResult(dbSuper, account.EmpresaID, "pendiente_modulo_desactivado", "El modulo global esta desactivado", false)
@@ -1125,6 +1178,43 @@ func SuperEmailCorporativoHandler(dbSuper, dbEmp *sql.DB) http.HandlerFunc {
 			if action == "test_mailu" {
 				result := testCorporateEmailMailuProvision(getCorporateEmailConfig(dbSuper))
 				writeJSON(w, http.StatusOK, result)
+				return
+			}
+			if action == "provision_system" {
+				results := provisionCorporateSystemMailboxes(dbSuper, getCorporateEmailConfig(dbSuper))
+				ok := true
+				for _, item := range results {
+					if !item.OK {
+						ok = false
+						break
+					}
+				}
+				writeJSON(w, http.StatusOK, map[string]interface{}{"ok": ok, "results": results})
+				return
+			}
+			if action == "test_send" {
+				var payload struct {
+					To string `json:"to"`
+				}
+				_ = json.NewDecoder(r.Body).Decode(&payload)
+				to := strings.TrimSpace(payload.To)
+				if to == "" {
+					if configured, err := getDecryptedConfigValue(dbSuper, "email_corporativo.restart_alert_to"); err == nil {
+						to = strings.TrimSpace(configured)
+					}
+				}
+				if to == "" {
+					domain := normalizeCorporateEmailDomain(getCorporateEmailConfig(dbSuper).Domain)
+					if domain == "" {
+						domain = "powerfulcontrolsystem.com"
+					}
+					to = "soporte@" + domain
+				}
+				if err := sendCorporateEmailTest(dbSuper, to); err != nil {
+					http.Error(w, "No se pudo enviar prueba Mailu: "+err.Error(), http.StatusBadGateway)
+					return
+				}
+				writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "recipient": to})
 				return
 			}
 			if action == "provision" {

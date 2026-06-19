@@ -31,6 +31,7 @@ type empresaIAEmpresarialPayload struct {
 	Consulta  string `json:"consulta"`
 	Desde     string `json:"desde"`
 	Hasta     string `json:"hasta"`
+	AgentID   string `json:"agent_id,omitempty"`
 }
 
 type empresaIAEmpresarialSnapshot struct {
@@ -69,6 +70,7 @@ func EmpresaIAEmpresarialHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 		resp := map[string]interface{}{
 			"ok":        true,
 			"funciones": empresaIAEmpresarialFunciones(),
+			"agentes":   empresaAIChatAgentCatalog(),
 			"snapshot":  snapshot,
 		}
 		if r.Method == http.MethodPost {
@@ -106,6 +108,13 @@ func parseEmpresaIAEmpresarialPayload(r *http.Request) (empresaIAEmpresarialPayl
 	}
 	if strings.TrimSpace(payload.Hasta) == "" {
 		payload.Hasta = strings.TrimSpace(q.Get("hasta"))
+	}
+	if strings.TrimSpace(payload.AgentID) == "" {
+		payload.AgentID = strings.TrimSpace(q.Get("agent_id"))
+	}
+	payload.AgentID = normalizeEmpresaAIChatAgentID(payload.AgentID)
+	if payload.AgentID == "general" {
+		payload.AgentID = defaultEmpresaIAAgentForAction(payload.Accion)
 	}
 	payload.Desde, payload.Hasta = normalizeEmpresaIADateRange(payload.Desde, payload.Hasta)
 	if len([]rune(payload.Consulta)) > 1800 {
@@ -151,6 +160,21 @@ func normalizeEmpresaIAAccion(raw string) string {
 			return ""
 		}
 		return "diagnostico_erp"
+	}
+}
+
+func defaultEmpresaIAAgentForAction(accion string) string {
+	switch normalizeEmpresaIAAccion(accion) {
+	case "borrador_factura", "cobranza_pagos":
+		return "ventas"
+	case "inventario_productos":
+		return "inventario"
+	case "compras_gastos":
+		return "compras"
+	case "cumplimiento_dian":
+		return "impuestos"
+	default:
+		return "general"
 	}
 }
 
@@ -284,12 +308,22 @@ func buildEmpresaIAEmpresarialResponse(r *http.Request, dbEmp, dbSuper *sql.DB, 
 			"usage": reportesIAUsagePayload(uso.Consultas, empresaIAEmpresarialLimit, 0, 0),
 		}
 	}
+	if payload.AgentID != "general" {
+		user := adminEmailFromRequest(r)
+		if user == "" {
+			user = googleAccountFromRequest(r)
+		}
+		if _, _, err := reserveAgenteInternetLightUsage(dbEmp, dbSuper, payload.EmpresaID, user); err != nil {
+			return map[string]interface{}{"ok": false, "code": "empresa_agent_limit_reached", "error": err.Error()}
+		}
+	}
 	consulta := strings.TrimSpace(payload.Consulta)
 	if consulta == "" {
 		consulta = defaultEmpresaIAConsulta(payload.Accion)
 	}
 	raw, _ := json.Marshal(snapshot)
 	system := "Eres un agente IA ERP y contable para Powerful Control System. Responde en espanol profesional y accionable. Usa solo el snapshot real filtrado por empresa_id; no inventes cifras, NIT, estados DIAN ni registros. No ejecutes mutaciones: si el usuario pide factura, pago, cliente o producto, entrega un borrador revisable, datos faltantes y siguiente boton/ruta sugerida. No digas que emitiste, registraste o conciliaste algo. Entrega secciones cortas: diagnostico, hallazgos, riesgos, siguiente accion y datos faltantes. Si la accion es borrador_factura, usa formato JSON visible con cliente, items, impuestos sugeridos, faltantes y advertencias.\n\nACCION_SOLICITADA: " + payload.Accion + "\nSNAPSHOT_REAL_JSON:\n" + truncateText(string(raw), 9000)
+	system += "\n\n" + buildEmpresaAIChatAgentInstruction(payload.AgentID)
 	ctrl := &EmpresaAIChatController{dbEmp: dbEmp, dbSuper: dbSuper, client: &http.Client{Timeout: 45 * time.Second}}
 	respuesta, pt, ct, err := ctrl.generateResponseWithSystemPrompt(model, consulta, nil, system)
 	if err != nil {
@@ -300,7 +334,7 @@ func buildEmpresaIAEmpresarialResponse(r *http.Request, dbEmp, dbSuper *sql.DB, 
 		EmpresaID: payload.EmpresaID, Provider: model.Provider, ModelID: empresaIAEmpresarialUsageID,
 		Pregunta: consulta, Respuesta: respuesta, PromptTokens: pt, CompletionTokens: ct, TotalTokens: pt + ct,
 		FechaConsulta: time.Now().Format("2006-01-02 15:04:05"), PlanActual: strings.TrimSpace(uso.PlanActual),
-		UsuarioCreador: adminEmailFromRequest(r), Estado: "activo", Observaciones: "centro_ia_empresarial:" + payload.Accion,
+		UsuarioCreador: adminEmailFromRequest(r), Estado: "activo", Observaciones: "centro_ia_empresarial:" + payload.Accion + " agente=" + payload.AgentID,
 	}); err != nil {
 		return map[string]interface{}{"ok": false, "code": "usage_register_error", "error": "No se pudo registrar uso IA."}
 	}
@@ -308,6 +342,7 @@ func buildEmpresaIAEmpresarialResponse(r *http.Request, dbEmp, dbSuper *sql.DB, 
 	return map[string]interface{}{
 		"ok":        true,
 		"modelo":    "openai:gpt-5.4-mini",
+		"agent_id":  payload.AgentID,
 		"respuesta": respuesta,
 		"usage":     reportesIAUsagePayload(usoNuevo.Consultas, empresaIAEmpresarialLimit, pt, ct),
 	}

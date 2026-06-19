@@ -347,10 +347,13 @@ afecte dinero, documentos, licencias o seguridad.
 7. La IA no emite documentos, no registra pagos, no crea clientes, no cambia
    inventario y no activa DIAN; devuelve borradores revisables, riesgos, datos
    faltantes y siguiente accion sugerida.
-8. Cada ejecucion IA usa el modelo mini configurado, registra consumo diario por empresa y
-   muestra error saneado si la IA global, la IA empresarial o la credencial del
-   proveedor no estan disponibles.
-9. Los botones que ejecutan funciones IA deben mostrar el icono GPT y badge
+8. Cada ejecucion IA usa el modelo mini configurado, registra consumo diario por
+   empresa, permite elegir agente (`general`, `ventas`, `inventario`, `compras`,
+   `nomina`, `impuestos` o `agente_internet`) y descuenta cuota diaria de
+   agente cuando no se usa el agente general.
+9. El selector de agente solo cambia contexto, limites y recomendaciones; no
+   concede permisos adicionales ni ejecuta mutaciones.
+10. Los botones que ejecutan funciones IA deben mostrar el icono GPT y badge
    `IA` mediante `web/js/ai_button_icons.js`.
 
 ## Chat IA flotante operativo
@@ -383,6 +386,16 @@ afecte dinero, documentos, licencias o seguridad.
    consultas controladas, omite secretos y filtra por `empresa_id`; cualquier
    cambio de datos debe ejecutarse por una funcion PCS existente con permisos y
    confirmacion, no por SQL libre del modelo.
+10. `/api/empresa/chat_con_inteligencia_artificial/modelos` devuelve tambien el
+   catalogo de agentes disponibles; consulta normal, adjuntos y streaming aceptan
+   `agent_id` y registran auditoria `agente=...`.
+11. Agentes no generales consumen `empresa_agentes_uso_diario.consultas_ligeras`
+   ademas del limite normal de modelo/proveedor. Si se supera la cuota, el
+   backend responde `empresa_agent_limit_reached` sin llamar al proveedor.
+12. `Pedidos con IA` usa por defecto el agente `ventas`, muestra selector de
+   agente/modelo y solo agrega items al carrito mediante
+   `/api/empresa/ia_pedidos_estacion/ejecutar`, filtrando productos,
+   estaciones y carritos por `empresa_id`.
 
 ## Auditoria integral de modulos
 
@@ -1193,9 +1206,18 @@ afecte dinero, documentos, licencias o seguridad.
 10. Si aparecen estados de error, usar `Probar Mailu` en super administrador para
    validar el contenedor `pcs-mailu-admin` y el comando directo antes de
    reintentar provision.
-11. Pruebas: guardar configuracion, sincronizar empresas existentes, crear empresa
+11. Desde super administrador, `Provisionar ventas/soporte` crea o actualiza los
+   buzones `ventas@powerfulcontrolsystem.com` y
+   `soporte@powerfulcontrolsystem.com` como remitentes del sistema.
+12. Los correos de compra/activacion de licencias salen por
+   `ventas@powerfulcontrolsystem.com`; alertas, invitaciones, recuperaciones,
+   agente DIAN y pruebas salen por `soporte@powerfulcontrolsystem.com`.
+13. `Probar envio` valida envio real por Mailu al destinatario indicado. No usa
+   SMTP Gmail.
+14. Pruebas: guardar configuracion, sincronizar empresas existentes, crear empresa
    duplicada de nombre similar, comprobar sufijo unico, abrir webmail, desactivar
-   autoapertura y cambiar clave sin exponerla.
+   autoapertura, cambiar clave sin exponerla, provisionar ventas/soporte y
+   enviar correo de prueba.
 
 ## Nomina multi-sede y documentos DIAN Colombia
 

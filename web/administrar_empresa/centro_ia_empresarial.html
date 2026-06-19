@@ -75,6 +75,7 @@
       <div class="ai-card">
         <h2>Ejecutar funcion IA</h2>
         <div class="ai-query">
+          <label><span class="form-label">Agente</span><select id="agentSelect" class="form-input"></select></label>
           <textarea id="consulta" class="form-input" maxlength="1800" placeholder="Ej: prepara un borrador de factura para Cliente X por 2 servicios de consultoria de 350000 cada uno, o revisa por que no cuadran ventas e ingresos."></textarea>
           <div class="ai-center-actions" style="justify-content:flex-start">
             <button id="btnDiagnostico" class="btn" type="button" data-ai-button="true">Diagnostico ERP</button>
@@ -94,7 +95,7 @@
 
   <script>
     (function(){
-      var state = { empresaId: 0, funciones: [], snapshot: null, accion: "diagnostico_erp" };
+      var state = { empresaId: 0, funciones: [], agents: [], agentId: "general", snapshot: null, accion: "diagnostico_erp" };
       function $(id){ return document.getElementById(id); }
       function esc(v){ return String(v == null ? "" : v).replace(/[&<>"']/g,function(ch){return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[ch];}); }
       function money(v){ return new Intl.NumberFormat("es-CO",{style:"currency",currency:"COP",maximumFractionDigits:0}).format(Number(v||0)); }
@@ -138,6 +139,26 @@
         }).join("");
         if(window.PCSApplyAIButtonIcons) window.PCSApplyAIButtonIcons(document);
       }
+      function defaultAgentForAction(accion){
+        var a = String(accion || "").trim();
+        if(a === "borrador_factura" || a === "cobranza_pagos") return "ventas";
+        if(a === "inventario_productos") return "inventario";
+        if(a === "compras_gastos") return "compras";
+        if(a === "cumplimiento_dian") return "impuestos";
+        return "general";
+      }
+      function renderAgents(){
+        var sel = $("agentSelect");
+        if(!sel) return;
+        var agents = Array.isArray(state.agents) ? state.agents : [];
+        sel.innerHTML = agents.map(function(a){
+          var id = String(a && a.id || "").trim();
+          var label = String(a && (a.nombre || a.id) || id).trim();
+          if(!id) return "";
+          return '<option value="'+esc(id)+'"'+(id === state.agentId ? ' selected' : '')+'>'+esc(label)+'</option>';
+        }).join("");
+        if(sel.value) state.agentId = sel.value;
+      }
       async function load(){
         state.empresaId = empresaId();
         if(!state.empresaId){ setEstado("No se encontro empresa_id.", true); return; }
@@ -146,6 +167,8 @@
         var data = await res.json().catch(function(){ return null; });
         if(!res.ok || !data){ throw new Error((data && data.error) || "No se pudo cargar Centro IA."); }
         state.funciones = Array.isArray(data.funciones) ? data.funciones : [];
+        state.agents = Array.isArray(data.agentes) ? data.agentes : [];
+        renderAgents();
         state.snapshot = data.snapshot || null;
         renderSnapshot();
         renderFunciones();
@@ -153,10 +176,14 @@
       }
       async function run(accion){
         state.accion = accion || state.accion || "diagnostico_erp";
+        if(state.agentId === "general"){
+          state.agentId = defaultAgentForAction(state.accion);
+          renderAgents();
+        }
         $("resultado").className = "ai-result";
         $("resultado").textContent = "Consultando IA empresarial...";
         setEstado("Ejecutando funcion IA...", false);
-        var body = { empresa_id: state.empresaId, accion: state.accion, consulta: $("consulta").value.trim(), desde: $("desde").value, hasta: $("hasta").value };
+        var body = { empresa_id: state.empresaId, accion: state.accion, agent_id: state.agentId, consulta: $("consulta").value.trim(), desde: $("desde").value, hasta: $("hasta").value };
         var res = await fetch("/api/empresa/ia_empresarial", { method: "POST", credentials: "same-origin", headers: {"Content-Type":"application/json"}, body: JSON.stringify(body) });
         var data = await res.json().catch(function(){ return null; });
         if(!res.ok || !data){ throw new Error((data && data.error) || "No se pudo ejecutar IA empresarial."); }
@@ -177,6 +204,7 @@
         if(btn){ run(btn.getAttribute("data-run-ai")).catch(function(e){ $("resultado").className="ai-result is-error"; $("resultado").textContent=e.message; setEstado(e.message,true); }); }
       });
       $("btnActualizar").addEventListener("click", function(){ load().catch(function(e){ setEstado(e.message,true); }); });
+      $("agentSelect").addEventListener("change", function(){ state.agentId = $("agentSelect").value || "general"; });
       $("btnDiagnostico").addEventListener("click", function(){ run("diagnostico_erp").catch(function(e){ $("resultado").className="ai-result is-error"; $("resultado").textContent=e.message; setEstado(e.message,true); }); });
       $("btnCustom").addEventListener("click", function(){ run(state.accion || "diagnostico_erp").catch(function(e){ $("resultado").className="ai-result is-error"; $("resultado").textContent=e.message; setEstado(e.message,true); }); });
       defaultDates();

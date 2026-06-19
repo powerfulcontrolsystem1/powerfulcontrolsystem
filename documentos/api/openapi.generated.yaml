@@ -1268,6 +1268,19 @@ paths:
       responses:
         "200":
           description: Respuesta exitosa o manejada por el handler real.
+  "/api/empresa/impuestos/agente_internet":
+    get:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/impuestos/agente_internet
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/impuestos/agente_internet
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
   "/api/empresa/inventario_avanzado":
     get:
       tags: [empresa]
@@ -1538,6 +1551,19 @@ paths:
     post:
       tags: [empresa]
       summary: Ruta inventariada /api/empresa/nomina
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/api/empresa/nomina/agente_internet":
+    get:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/nomina/agente_internet
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/nomina/agente_internet
       responses:
         "200":
           description: Respuesta exitosa o manejada por el handler real.

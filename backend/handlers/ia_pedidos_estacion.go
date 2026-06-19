@@ -258,6 +258,7 @@ func (c *EmpresaAIChatController) IaPedidosEstacionEjecutarHandler(w http.Respon
 		ModelID   string                 `json:"model_id"`
 		Mensaje   string                 `json:"mensaje"`
 		Historial []empresaAIChatMensaje `json:"historial"`
+		AgentID   string                 `json:"agent_id,omitempty"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 		writeJSON(w, http.StatusBadRequest, map[string]interface{}{"ok": false, "error": "JSON invalido"})
@@ -309,6 +310,14 @@ func (c *EmpresaAIChatController) IaPedidosEstacionEjecutarHandler(w http.Respon
 	}
 	if len([]rune(body.Mensaje)) > 2500 {
 		writeJSON(w, http.StatusBadRequest, map[string]interface{}{"ok": false, "error": "mensaje supera el maximo permitido (2500 caracteres)"})
+		return
+	}
+	agentID := normalizeEmpresaAIChatAgentID(body.AgentID)
+	if agentID == "general" {
+		agentID = "ventas"
+	}
+	if _, _, err := reserveAgenteInternetLightUsage(c.dbEmp, c.dbSuper, body.EmpresaID, googleAccount); err != nil {
+		writeJSON(w, http.StatusTooManyRequests, map[string]interface{}{"ok": false, "code": "empresa_agent_limit_reached", "error": err.Error()})
 		return
 	}
 
@@ -384,6 +393,7 @@ func (c *EmpresaAIChatController) IaPedidosEstacionEjecutarHandler(w http.Respon
 	}
 
 	systemPrompt := buildIAPedidosSystemPrompt(estaciones, productos)
+	systemPrompt += "\n\n" + buildEmpresaAIChatAgentInstruction(agentID)
 	respText, promptTokens, completionTokens, err := c.generateResponseWithSystemPrompt(model, body.Mensaje, body.Historial, systemPrompt)
 	if err != nil {
 		if isProviderLimitError(err) {
@@ -537,7 +547,7 @@ func (c *EmpresaAIChatController) IaPedidosEstacionEjecutarHandler(w http.Respon
 		PlanActual:       planActual,
 		UsuarioCreador:   googleAccount,
 		Estado:           "activo",
-		Observaciones:    "ia_pedidos_estacion",
+		Observaciones:    "ia_pedidos_estacion agente=" + agentID,
 	})
 	if err != nil {
 		writeJSON(w, http.StatusInternalServerError, map[string]interface{}{"ok": false, "error": "No se pudo registrar auditoria de consulta"})
@@ -563,6 +573,7 @@ func (c *EmpresaAIChatController) IaPedidosEstacionEjecutarHandler(w http.Respon
 		"empresa_id":          body.EmpresaID,
 		"model_id":            model.ID,
 		"provider":            model.Provider,
+		"agent_id":            agentID,
 		"respuesta_natural":   natural,
 		"acciones_ejecutadas": resultados,
 		"raw_model":           truncateText(respText, 1200),

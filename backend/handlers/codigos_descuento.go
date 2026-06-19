@@ -6,10 +6,8 @@ import (
 	"errors"
 	"fmt"
 	"log"
-	"net"
 	"net/http"
 	"net/mail"
-	"net/smtp"
 	"strconv"
 	"strings"
 
@@ -360,61 +358,7 @@ func sendCodigoDescuentoEmail(r *http.Request, dbSuper *sql.DB, empresaID int64,
 		metadataJSON := fmt.Sprintf(`{"codigo":%q,"mail_mode":"test"}`, strings.TrimSpace(codigo))
 		return captureEmpresaUsuarioMailNotification(dbSuper, "codigo_descuento_enviado", empresaID, toEmail, subject, body, strings.TrimSpace(codigo), metadataJSON, adminEmailFromRequest(r))
 	}
-
-	smtpEmail, err := getDecryptedConfigValue(dbSuper, "gmail.smtp_email")
-	if err != nil {
-		return err
-	}
-	smtpPass, err := getDecryptedConfigValue(dbSuper, "gmail.smtp_app_password")
-	if err != nil {
-		return err
-	}
-	smtpEmail = strings.TrimSpace(smtpEmail)
-	smtpPass = strings.TrimSpace(smtpPass)
-	if smtpEmail == "" {
-		return fmt.Errorf("gmail.smtp_email no configurado")
-	}
-	if smtpPass == "" {
-		return fmt.Errorf("gmail.smtp_app_password no configurado")
-	}
-
-	smtpHost, _ := getDecryptedConfigValue(dbSuper, "gmail.smtp_host")
-	smtpPort, _ := getDecryptedConfigValue(dbSuper, "gmail.smtp_port")
-	fromName, _ := getDecryptedConfigValue(dbSuper, "gmail.smtp_from_name")
-	smtpHost = strings.TrimSpace(smtpHost)
-	if smtpHost == "" {
-		smtpHost = "smtp.gmail.com"
-	}
-	smtpPort = strings.TrimSpace(smtpPort)
-	if smtpPort == "" {
-		smtpPort = "587"
-	}
-	fromName = strings.TrimSpace(fromName)
-	if fromName == "" {
-		fromName = "Powerful Control System"
-	}
-
-	hostForAuth := smtpHost
-	if strings.Contains(smtpHost, ":") {
-		if h, _, splitErr := net.SplitHostPort(smtpHost); splitErr == nil && strings.TrimSpace(h) != "" {
-			hostForAuth = h
-		}
-	}
-	addr := smtpHost
-	if !strings.Contains(addr, ":") {
-		addr = net.JoinHostPort(smtpHost, smtpPort)
-	}
-
-	from := (&mail.Address{Name: fromName, Address: smtpEmail}).String()
-	to := (&mail.Address{Address: toEmail}).String()
-	msg := "From: " + from + "\r\n" +
-		"To: " + to + "\r\n" +
-		"Subject: " + subject + "\r\n" +
-		"MIME-Version: 1.0\r\n" +
-		"Content-Type: text/plain; charset=UTF-8\r\n\r\n" +
-		body
-	auth := smtp.PlainAuth("", smtpEmail, smtpPass, hostForAuth)
-	return smtp.SendMail(addr, auth, smtpEmail, []string{toEmail}, []byte(msg))
+	return sendEmpresaUsuarioMailuPlain(dbSuper, toEmail, subject, body)
 }
 
 func codigoDescuentoMaxInt64(a, b int64) int64 {

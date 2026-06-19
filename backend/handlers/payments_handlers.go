@@ -19,7 +19,6 @@ import (
 	"net"
 	"net/http"
 	"net/mail"
-	"net/smtp"
 	"net/url"
 	"regexp"
 	"strconv"
@@ -1734,50 +1733,7 @@ func sendLicenciaPaymentRejectedEmail(r *http.Request, dbSuper *sql.DB, empresaI
 	if isEmpresaUsuarioMailTestMode(dbSuper) {
 		return captureEmpresaUsuarioMailNotification(dbSuper, "licencia_pago_rechazado", empresaID, toEmail, asunto, cuerpo, reference, metadataJSON, adminEmailFromRequest(r))
 	}
-	smtpEmail, err := getDecryptedConfigValue(dbSuper, "gmail.smtp_email")
-	if err != nil {
-		return err
-	}
-	smtpEmail = strings.TrimSpace(smtpEmail)
-	if smtpEmail == "" {
-		return fmt.Errorf("gmail.smtp_email no configurado")
-	}
-	smtpPass, err := getDecryptedConfigValue(dbSuper, "gmail.smtp_app_password")
-	if err != nil {
-		return err
-	}
-	smtpPass = strings.TrimSpace(smtpPass)
-	if smtpPass == "" {
-		return fmt.Errorf("gmail.smtp_app_password no configurado")
-	}
-	smtpHost, _ := getDecryptedConfigValue(dbSuper, "gmail.smtp_host")
-	smtpPort, _ := getDecryptedConfigValue(dbSuper, "gmail.smtp_port")
-	fromName, _ := getDecryptedConfigValue(dbSuper, "gmail.smtp_from_name")
-	smtpHost = strings.TrimSpace(smtpHost)
-	smtpPort = strings.TrimSpace(smtpPort)
-	fromName = strings.TrimSpace(fromName)
-	if smtpHost == "" {
-		smtpHost = "smtp.gmail.com"
-	}
-	if smtpPort == "" {
-		smtpPort = "587"
-	}
-	if fromName == "" {
-		fromName = "Powerful Control System"
-	}
-	mailHostForAuth := smtpHost
-	if h, _, splitErr := net.SplitHostPort(smtpHost); splitErr == nil && strings.TrimSpace(h) != "" {
-		mailHostForAuth = h
-	}
-	auth := smtp.PlainAuth("", smtpEmail, smtpPass, mailHostForAuth)
-	addr := net.JoinHostPort(smtpHost, smtpPort)
-	msg := "From: " + fromName + " <" + smtpEmail + ">\r\n" +
-		"To: " + toEmail + "\r\n" +
-		"Subject: " + asunto + "\r\n" +
-		"MIME-Version: 1.0\r\n" +
-		"Content-Type: text/plain; charset=UTF-8\r\n\r\n" +
-		cuerpo
-	return smtp.SendMail(addr, auth, smtpEmail, []string{toEmail}, []byte(msg))
+	return sendEmpresaUsuarioMailuPlain(dbSuper, toEmail, asunto, cuerpo)
 }
 
 func trySendLicenciaPaymentRejectedEmailForEpayco(r *http.Request, dbSuper *sql.DB, empresaID int64, lic *dbpkg.Licencia, payRec *dbpkg.EpaycoPaymentRecord, provider, reference, status string) error {
@@ -1980,59 +1936,19 @@ func sendLicenciaActivationEmailWithAttachments(r *http.Request, dbSuper *sql.DB
 }
 
 func sendLicenciaActivationMailViaConfiguredChannels(dbSuper *sql.DB, toEmail, asunto, cuerpo string, attachments []licenciaEmailAttachment) error {
-	smtpEmail, err := getDecryptedConfigValue(dbSuper, "gmail.smtp_email")
-	if err != nil {
-		return sendLicenciaActivationMailViaMailuFallback(dbSuper, toEmail, asunto, cuerpo, attachments, err)
-	}
-	smtpEmail = strings.TrimSpace(smtpEmail)
-	if smtpEmail == "" {
-		return sendLicenciaActivationMailViaMailuFallback(dbSuper, toEmail, asunto, cuerpo, attachments, fmt.Errorf("gmail.smtp_email no configurado"))
-	}
-	smtpPass, err := getDecryptedConfigValue(dbSuper, "gmail.smtp_app_password")
-	if err != nil {
-		return sendLicenciaActivationMailViaMailuFallback(dbSuper, toEmail, asunto, cuerpo, attachments, err)
-	}
-	smtpPass = strings.TrimSpace(smtpPass)
-	if smtpPass == "" {
-		return sendLicenciaActivationMailViaMailuFallback(dbSuper, toEmail, asunto, cuerpo, attachments, fmt.Errorf("gmail.smtp_app_password no configurado"))
-	}
-	smtpHost, _ := getDecryptedConfigValue(dbSuper, "gmail.smtp_host")
-	smtpPort, _ := getDecryptedConfigValue(dbSuper, "gmail.smtp_port")
-	fromName, _ := getDecryptedConfigValue(dbSuper, "gmail.smtp_from_name")
-	smtpHost = strings.TrimSpace(smtpHost)
-	smtpPort = strings.TrimSpace(smtpPort)
-	fromName = strings.TrimSpace(fromName)
-	if smtpHost == "" {
-		smtpHost = "smtp.gmail.com"
-	}
-	if smtpPort == "" {
-		smtpPort = "587"
-	}
-	if fromName == "" {
-		fromName = "Powerful Control System"
-	}
-
-	mailHostForAuth := smtpHost
-	if h, _, splitErr := net.SplitHostPort(smtpHost); splitErr == nil && strings.TrimSpace(h) != "" {
-		mailHostForAuth = h
-	}
-	auth := smtp.PlainAuth("", smtpEmail, smtpPass, mailHostForAuth)
-	addr := net.JoinHostPort(smtpHost, smtpPort)
-	msg := buildLicenciaActivationEmailMessageWithAttachments(fromName, smtpEmail, toEmail, asunto, cuerpo, attachments)
-	if err := smtp.SendMail(addr, auth, smtpEmail, []string{toEmail}, msg); err != nil {
-		return sendLicenciaActivationMailViaMailuFallback(dbSuper, toEmail, asunto, cuerpo, attachments, err)
-	}
-	return nil
+	fromName, fromEmail := corporateSystemSenderAddress(dbSuper, "ventas")
+	msg := buildLicenciaActivationEmailMessageWithAttachments(fromName, fromEmail, toEmail, asunto, cuerpo, attachments)
+	return sendEmpresaUsuarioMailuMessage(dbSuper, fromEmail, toEmail, msg)
 }
 
 func sendLicenciaActivationMailViaMailuFallback(dbSuper *sql.DB, toEmail, asunto, cuerpo string, attachments []licenciaEmailAttachment, primaryErr error) error {
 	if !empresaUsuarioMailuFallbackEnabled(dbSuper) {
 		return primaryErr
 	}
-	fromName, fromEmail := empresaUsuarioMailuSender(dbSuper)
+	fromName, fromEmail := corporateSystemSenderAddress(dbSuper, "ventas")
 	msg := buildLicenciaActivationEmailMessageWithAttachments(fromName, fromEmail, toEmail, asunto, cuerpo, attachments)
 	if err := sendEmpresaUsuarioMailuMessage(dbSuper, fromEmail, toEmail, msg); err != nil {
-		return fmt.Errorf("Gmail SMTP fallo (%v) y Mailu fallback fallo: %w", primaryErr, err)
+		return fmt.Errorf("Mailu no pudo enviar correo de licencia: %w", err)
 	}
 	return nil
 }

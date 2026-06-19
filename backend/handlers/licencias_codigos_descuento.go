@@ -221,7 +221,7 @@ func handleLicenciaDiscountCodeEmail(w http.ResponseWriter, r *http.Request, dbS
 			"email":         email,
 			"sent":          false,
 			"captured":      captureErr == nil,
-			"smtp_warning":  "SMTP no confirmo el envio; revisar configuracion Gmail SMTP",
+			"smtp_warning":  "El correo corporativo no confirmo el envio; revisar Email corporativo Mailu",
 			"capture_error": captureErr != nil,
 		})
 		return

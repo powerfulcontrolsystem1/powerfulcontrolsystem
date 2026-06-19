@@ -12,6 +12,7 @@ import (
 	"net/http"
 	"net/mail"
 	"regexp"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -20,6 +21,12 @@ import (
 )
 
 var superMantenimientoAgentesRunMu sync.Mutex
+
+const (
+	agentLimitSecondsKey  = "agentes.empresa.limite_segundos_diarios"
+	agentLimitAdvancedKey = "agentes.empresa.limite_consultas_avanzadas_diarias"
+	agentLimitLightKey    = "agentes.empresa.limite_consultas_ligeras_diarias"
+)
 
 type dianNewsCandidate struct {
 	Title  string `json:"title"`
@@ -63,7 +70,7 @@ func SuperMantenimientoAgentesHandler(dbSuper *sql.DB) http.HandlerFunc {
 				writeJSON(w, http.StatusInternalServerError, map[string]any{"ok": false, "error": err.Error()})
 				return
 			}
-			writeJSON(w, http.StatusOK, map[string]any{"ok": true, "agents": agents, "findings": findings})
+			writeJSON(w, http.StatusOK, map[string]any{"ok": true, "agents": agents, "findings": findings, "limits": getAgentCompanyLimits(dbSuper)})
 			return
 		case http.MethodPut, http.MethodPost:
 			if action == "run_now" {
@@ -73,6 +80,23 @@ func SuperMantenimientoAgentesHandler(dbSuper *sql.DB) http.HandlerFunc {
 					status = http.StatusBadGateway
 				}
 				writeJSON(w, status, result)
+				return
+			}
+			if action == "limits" {
+				var payload struct {
+					SegundosDiarios           int64 `json:"segundos_diarios"`
+					ConsultasAvanzadasDiarias int64 `json:"consultas_avanzadas_diarias"`
+					ConsultasLigerasDiarias   int64 `json:"consultas_ligeras_diarias"`
+				}
+				if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+					http.Error(w, "payload invalido", http.StatusBadRequest)
+					return
+				}
+				if err := saveAgentCompanyLimits(dbSuper, payload.SegundosDiarios, payload.ConsultasAvanzadasDiarias, payload.ConsultasLigerasDiarias); err != nil {
+					writeJSON(w, http.StatusInternalServerError, map[string]any{"ok": false, "error": err.Error()})
+					return
+				}
+				writeJSON(w, http.StatusOK, map[string]any{"ok": true, "limits": getAgentCompanyLimits(dbSuper)})
 				return
 			}
 			var payload struct {
@@ -116,6 +140,49 @@ func SuperMantenimientoAgentesHandler(dbSuper *sql.DB) http.HandlerFunc {
 			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 		}
 	}
+}
+
+func getAgentCompanyLimits(dbSuper *sql.DB) map[string]int64 {
+	return map[string]int64{
+		"segundos_diarios":            readInt64ConfigDefault(dbSuper, agentLimitSecondsKey, 120),
+		"consultas_avanzadas_diarias": readInt64ConfigDefault(dbSuper, agentLimitAdvancedKey, 5),
+		"consultas_ligeras_diarias":   readInt64ConfigDefault(dbSuper, agentLimitLightKey, 20),
+	}
+}
+
+func saveAgentCompanyLimits(dbSuper *sql.DB, seconds, advanced, light int64) error {
+	if seconds < 0 || advanced < 0 || light < 0 {
+		return fmt.Errorf("los limites no pueden ser negativos")
+	}
+	if seconds == 0 {
+		seconds = 120
+	}
+	if advanced == 0 {
+		advanced = 5
+	}
+	if light == 0 {
+		light = 20
+	}
+	values := map[string]int64{
+		agentLimitSecondsKey:  seconds,
+		agentLimitAdvancedKey: advanced,
+		agentLimitLightKey:    light,
+	}
+	for key, value := range values {
+		if err := dbpkg.SetConfigValue(dbSuper, key, strconv.FormatInt(value, 10), false); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func readInt64ConfigDefault(dbSuper *sql.DB, key string, def int64) int64 {
+	raw, _, _, _, _ := dbpkg.GetConfigEntry(dbSuper, key)
+	v, err := strconv.ParseInt(strings.TrimSpace(raw), 10, 64)
+	if err != nil || v <= 0 {
+		return def
+	}
+	return v
 }
 
 func StartSuperMantenimientoAgentesWorker(dbSuper *sql.DB, interval time.Duration, stop <-chan struct{}) {
@@ -437,7 +504,7 @@ func sendDIANAgentNotificationEmail(dbSuper *sql.DB, to string, items []dianNews
 	if count == 0 {
 		return nil
 	}
-	return sendEmpresaUsuarioGmailPlain(dbSuper, to, "Alerta DIAN - Agente de mantenimiento PCS", strings.Join(lines, "\r\n"))
+	return sendEmpresaUsuarioMailuPlain(dbSuper, to, "Alerta DIAN - Agente de mantenimiento PCS", strings.Join(lines, "\r\n"))
 }
 
 func normalizeAgentHour(v string) string {

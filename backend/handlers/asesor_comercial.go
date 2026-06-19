@@ -7,10 +7,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"math"
-	"net"
 	"net/http"
 	"net/mail"
-	"net/smtp"
 	"net/url"
 	"strconv"
 	"strings"
@@ -108,60 +106,13 @@ func sendAsesorComercialInvitationEmail(r *http.Request, dbSuper *sql.DB, item d
 		}
 		return acceptURL, nil
 	}
-	smtpEmail, err := getDecryptedConfigValue(dbSuper, "gmail.smtp_email")
-	if err != nil {
-		return acceptURL, err
-	}
-	smtpPass, err := getDecryptedConfigValue(dbSuper, "gmail.smtp_app_password")
-	if err != nil {
-		return acceptURL, err
-	}
-	smtpEmail = strings.TrimSpace(smtpEmail)
-	smtpPass = strings.TrimSpace(smtpPass)
-	if smtpEmail == "" || smtpPass == "" {
-		return acceptURL, fmt.Errorf("smtp gmail no configurado")
-	}
-	smtpHost, _ := getDecryptedConfigValue(dbSuper, "gmail.smtp_host")
-	smtpPort, _ := getDecryptedConfigValue(dbSuper, "gmail.smtp_port")
-	fromName, _ := getDecryptedConfigValue(dbSuper, "gmail.smtp_from_name")
-	smtpHost = strings.TrimSpace(smtpHost)
-	if smtpHost == "" {
-		smtpHost = "smtp.gmail.com"
-	}
-	smtpPort = strings.TrimSpace(smtpPort)
-	if smtpPort == "" {
-		smtpPort = "587"
-	}
-	fromName = strings.TrimSpace(fromName)
-	if fromName == "" {
-		fromName = "Powerful Control System"
-	}
 	if _, err := mail.ParseAddress(item.AdminEmail); err != nil {
 		return acceptURL, fmt.Errorf("correo destino invalido: %w", err)
 	}
-	hostForAuth := smtpHost
-	if strings.Contains(smtpHost, ":") {
-		if h, _, splitErr := net.SplitHostPort(smtpHost); splitErr == nil {
-			hostForAuth = h
-		}
+	if err := sendEmpresaUsuarioMailuMultipart(dbSuper, resolveBaseURLForConfirmation(r, dbSuper), item.AdminEmail, asunto, cuerpoPlano, cuerpoHTML); err != nil {
+		return acceptURL, err
 	}
-	addr := smtpHost
-	if !strings.Contains(addr, ":") {
-		addr = smtpHost + ":" + smtpPort
-	}
-	from := (&mail.Address{Name: fromName, Address: smtpEmail}).String()
-	to := (&mail.Address{Name: name, Address: item.AdminEmail}).String()
-	boundary := "pcs-asesor-comercial"
-	msg := "From: " + from + "\r\n" +
-		"To: " + to + "\r\n" +
-		"Subject: " + asunto + "\r\n" +
-		"MIME-Version: 1.0\r\n" +
-		"Content-Type: multipart/alternative; boundary=" + boundary + "\r\n\r\n" +
-		"--" + boundary + "\r\nContent-Type: text/plain; charset=UTF-8\r\n\r\n" + cuerpoPlano + "\r\n" +
-		"--" + boundary + "\r\nContent-Type: text/html; charset=UTF-8\r\n\r\n" + cuerpoHTML + "\r\n" +
-		"--" + boundary + "--\r\n"
-	auth := smtp.PlainAuth("", smtpEmail, smtpPass, hostForAuth)
-	return acceptURL, smtp.SendMail(addr, auth, smtpEmail, []string{item.AdminEmail}, []byte(msg))
+	return acceptURL, nil
 }
 
 func asesorComercialEmailContent(name, code string, pctPrimerAnio float64, pctRenovacion float64, mesesRenovacion int, acceptURL, loginURL string) (string, string, string) {
@@ -331,7 +282,7 @@ func AsesorComercialSuperHandler(dbSuper *sql.DB) http.HandlerFunc {
 			resp := map[string]interface{}{"ok": true, "id": id, "codigo": code, "accept_url": acceptURL}
 			if mailErr != nil {
 				resp["email_sent"] = false
-				resp["message"] = "El asesor fue creado, pero el correo no pudo enviarse. Revisa Gmail SMTP."
+				resp["message"] = "El asesor fue creado, pero el correo no pudo enviarse. Revisa Email corporativo Mailu."
 				resp["error"] = mailErr.Error()
 			} else {
 				resp["email_sent"] = true

@@ -85,7 +85,10 @@
         applyAIButtonIcons(document);
         observeFrames();
       });
-      observer.observe(document.documentElement, { childList: true, subtree: true, attributes: true, attributeFilter: ["data-theme"] });
+      var target = document.documentElement || document.body;
+      if (target && target.nodeType === 1) {
+        observer.observe(target, { childList: true, subtree: true, attributes: true, attributeFilter: ["data-theme"] });
+      }
     }
   }
 
