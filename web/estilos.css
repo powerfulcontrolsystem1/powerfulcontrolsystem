@@ -21134,6 +21134,10 @@ body.pos-touch-mode .carrito-customer-quick-grid {
   background:color-mix(in srgb,var(--surface-soft,#f6f8fb) 72%,#fff 28%);
 }
 
+body.carrito-flat-page{
+  --carrito-label-shade:color-mix(in srgb,var(--surface-soft,#f6f8fb) 84%,#fff 16%);
+}
+
 body.carrito-flat-page .form:not(.carrito-workspace-card),
 body.carrito-flat-page .card,
 body.carrito-flat-page .advanced-card,
@@ -21156,7 +21160,6 @@ body.carrito-flat-page #stationVipAccessCard,
 body.carrito-flat-page #carritoTotalsPanel,
 body.carrito-flat-page #carritoSearchBlock,
 body.carrito-flat-page #carritosList{
-  --carrito-label-shade:color-mix(in srgb,var(--surface-soft,#f6f8fb) 84%,var(--surface,#fff) 16%);
   border:1px solid var(--border,#d6dee8) !important;
   border-radius:12px !important;
   background:var(--surface,#fff) !important;
@@ -21173,7 +21176,7 @@ body.carrito-flat-page .form-label{
   padding:6px 8px;
   border:1px solid var(--border,#d6dee8);
   border-radius:8px;
-  background:var(--carrito-label-shade, color-mix(in srgb,var(--surface-soft,#f6f8fb) 84%,var(--surface,#fff) 16%));
+  background:var(--carrito-label-shade, color-mix(in srgb,var(--surface-soft,#f6f8fb) 84%,#fff 16%));
   color:var(--text,#1f2937);
   font-size:.82rem;
   font-weight:850;
