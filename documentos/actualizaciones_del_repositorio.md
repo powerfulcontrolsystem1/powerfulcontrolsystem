@@ -15344,3 +15344,34 @@ Archivos modificados:
 - web/super/empresas.html
 - web/super/licencias_resumen.html
 - web/super_administrador.html
+
+2026-06-19 14:12:14 - Mensaje: rs: actualizar repositorio y sincronizar VPS; Commit: 3ce398ef; PushStatus: OK
+Archivos modificados:
+- CHANGELOG.md
+- backend/db/facturacion_electronica.go
+- backend/handlers/configuracion_guiada.go
+- backend/handlers/payments_handlers.go
+- backend/handlers/usuarios_empresa.go
+- documentos/CHANGELOG.md
+- documentos/actualizaciones_del_repositorio.md
+- documentos/comandos_codex.md
+- documentos/decisiones_tecnicas.md
+- documentos/descripcion_de_archivos
+- documentos/diagramas/estructura_del_codigo.md
+- documentos/estructura_bd.md
+- documentos/historial_de_cambios
+- documentos/mapa_modulos.md
+- documentos/matriz_roles_permisos_pos_multiempresa.md
+- scripts/sync_to_vps.ps1
+- web/administrar_empresa.html
+- web/administrar_empresa/administrar_productos.html
+- web/administrar_empresa/auditoria.html
+- web/administrar_empresa/carrito_de_compras.html
+- web/administrar_empresa/configuracion.html
+- web/administrar_empresa/configuracion_guiada.html
+- web/administrar_empresa/panel.html
+- web/descripcion_de_los_sistemas.html
+- web/js/administrar_empresa.js
+- web/js/seleccionar_empresa.js
+- web/super/licencias.html
+- web/venta_publica.html
