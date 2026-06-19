@@ -213,6 +213,85 @@
     el('totalNeto').value = neto.toFixed(2);
   }
 
+  function dateToInputValue(value) {
+    const raw = normalize(value);
+    if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) return raw + 'T12:00';
+    if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/.test(raw)) return raw.slice(0, 16);
+    return '';
+  }
+
+  function setValueIfPresent(id, value) {
+    const node = el(id);
+    if (!node) return;
+    const textValue = normalize(value);
+    if (textValue !== '') node.value = textValue;
+  }
+
+  async function analizarComprobanteIA() {
+    if (!empresaId) {
+      setMessage('No se encontro empresa_id para analizar el soporte.', 'error');
+      return;
+    }
+    const input = el('comprobanteFile');
+    const file = input && input.files && input.files[0] ? input.files[0] : null;
+    if (!file) {
+      setMessage('Selecciona primero una foto, imagen o PDF del comprobante.', 'error');
+      return;
+    }
+    const btn = el('btnAnalizarComprobanteIA');
+    const original = btn ? btn.textContent : '';
+    if (btn) {
+      btn.disabled = true;
+      btn.textContent = 'Analizando...';
+    }
+    setMessage('Radicando soporte y analizando con GPT-5.5...', '');
+    try {
+      const formData = new FormData();
+      formData.append('empresa_id', String(empresaId));
+      formData.append('archivo', file, file.name || 'soporte');
+      const radicado = await requestJSON('/api/empresa/soportes_compras_ia?empresa_id=' + encodeURIComponent(String(empresaId)) + '&action=radicar', {
+        method: 'POST',
+        body: formData
+      });
+      const soporteId = radicado && radicado.soporte && radicado.soporte.id ? radicado.soporte.id : 0;
+      if (!soporteId) throw new Error('No se pudo radicar el soporte para IA.');
+      const extraido = await requestJSON('/api/empresa/soportes_compras_ia?empresa_id=' + encodeURIComponent(String(empresaId)) + '&action=extraer_ia', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ soporte_id: soporteId })
+      });
+      const soporte = extraido && extraido.soporte ? extraido.soporte : {};
+      const fecha = dateToInputValue(soporte.fecha_documento);
+      if (fecha) setValueIfPresent('fechaMovimiento', fecha);
+      setValueIfPresent('numeroComprobante', soporte.documento_numero);
+      setValueIfPresent('referenciaExterna', soporte.codigo || soporte.documento_numero);
+      setValueIfPresent('terceroNombre', soporte.proveedor_nombre);
+      setValueIfPresent('terceroDocumento', soporte.proveedor_nit);
+      setValueIfPresent('moneda', soporte.moneda || 'COP');
+      setValueIfPresent('categoriaMovimiento', soporte.categoria_contable || (tipoMovimiento === 'ingreso' ? 'ingresos_operativos' : 'compras_gastos'));
+      setValueIfPresent('concepto', soporte.documento_tipo || soporte.tipo_soporte || (tipoMovimiento === 'ingreso' ? 'Ingreso con soporte IA' : 'Egreso con soporte IA'));
+      setValueIfPresent('descripcion', soporte.observaciones || ('Soporte IA ' + normalize(soporte.codigo || '')));
+      setValueIfPresent('comprobanteUrl', soporte.archivo_url);
+      const subtotal = Number(soporte.subtotal || 0);
+      const total = Number(soporte.total || 0);
+      const iva = Number(soporte.impuesto_iva || 0);
+      const retenciones = Number(soporte.retencion_fuente || 0) + Number(soporte.retencion_ica || 0) + Number(soporte.retencion_iva || 0);
+      if (subtotal > 0) el('monto').value = subtotal.toFixed(2);
+      else if (total > 0) el('monto').value = Math.max(0, total - iva).toFixed(2);
+      if (iva >= 0) el('impuesto').value = iva.toFixed(2);
+      if (retenciones > 0) el('totalRetenciones').value = retenciones.toFixed(2);
+      recalcTotals();
+      setMessage('Datos cargados desde IA. Revisa y guarda el movimiento cuando este correcto.', 'success');
+    } catch (err) {
+      setMessage(err && err.message ? err.message : 'No se pudo analizar el comprobante con IA.', 'error');
+    } finally {
+      if (btn) {
+        btn.disabled = false;
+        btn.textContent = original || 'Analizar con IA';
+      }
+    }
+  }
+
   function resetForm() {
     const autoPrint = getAutoPrintEnabled();
     el('movimientoForm').reset();
@@ -607,6 +686,10 @@
     el('movimientoForm').addEventListener('submit', saveMovimiento);
     el('btnNuevoMovimiento').addEventListener('click', resetForm);
     el('btnCancelarMovimiento').addEventListener('click', resetForm);
+    const aiBtn = el('btnAnalizarComprobanteIA');
+    if (aiBtn) aiBtn.addEventListener('click', () => {
+      analizarComprobanteIA().catch(err => setMessage(err.message || 'No se pudo analizar el comprobante.', 'error'));
+    });
     el('btnBuscarMovimientos').addEventListener('click', () => {
       loadMovimientos().catch(err => setMessage(err.message || 'No se pudieron cargar los movimientos.', 'error'));
     });

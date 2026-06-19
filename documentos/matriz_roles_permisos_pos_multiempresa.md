@@ -1,3 +1,15 @@
+2026-06-18: Nota de configuracion interactiva e IA documental
+- El asistente inicial de `panel.html` aplica configuracion solo desde contexto
+  empresarial autenticado y endpoint `/api/empresa/configuracion_guiada` con
+  `empresa_id`; no crea rol nuevo ni salta wrappers existentes.
+- `agente_configuracion_de_empresa` se selecciona en el chat IA, pero sus
+  acciones reales siguen limitadas por permisos del usuario, licencia,
+  endpoints permitidos y confirmacion humana. `UI_CLICK` solo opera controles
+  visibles/permitidos del frontend.
+- Botones IA en Ingresos, Egresos, Compras y Productos reutilizan
+  `soportes_compras_ia` y permisos existentes de cada modulo; la IA precarga
+  datos para revision y no guarda movimientos/productos sin accion del usuario.
+
 2026-06-18: Nota de agentes de mantenimiento IA super
 - `/super/api/agentes_mantenimiento` queda protegido por `paginaPrincipalRequireSuperAdmin` y auditoria `super_agentes_mantenimiento`; solo `super_administrador` puede leer, configurar, ejecutar manualmente o activar el agente.
 - No aplica `empresa_id` ni roles empresariales porque es una funcion global del panel super. El agente no concede permisos a empresas ni usuarios operativos.

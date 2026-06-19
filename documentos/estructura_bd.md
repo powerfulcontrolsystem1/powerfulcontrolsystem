@@ -3,6 +3,18 @@
 Version: 2026-05-15.1.0
 Ultima actualizacion: 2026-05-15
 
+Actualizacion 2026-06-18 (configuracion interactiva e IA documental)
+- No se agregan tablas nuevas.
+- `empresa_estacion_prefs` usa la nueva clave por empresa
+  `configuracion_guiada_interactiva` para guardar respuestas del asistente
+  inicial por tipo de negocio: habitaciones/categorias/tarifas, mesas/zonas,
+  servicios base, agenda o productos iniciales.
+- `empresa_estacion_prefs.configuracion_guiada_resumen` se conserva como
+  resumen operativo aplicado; ahora incluye `configuracion_interactiva`.
+- `empresa_agentes_uso_diario.consultas_avanzadas` se incrementa cuando
+  `soportes_compras_ia?action=extraer_ia` usa GPT-5.5 para compras, gastos,
+  ingresos, comprobantes o cartas/listas de precios.
+
 Actualizacion 2026-06-18 (agentes de mantenimiento super)
 - Nuevas tablas en `pcs_superadministrador`:
   - `super_mantenimiento_agentes`: define agentes automaticos por `codigo`, con

@@ -1187,6 +1187,97 @@
       color: var(--danger);
     }
 
+    .empresa-guided-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 80;
+      display: none;
+      align-items: flex-start;
+      justify-content: center;
+      padding: 28px 14px;
+      background: color-mix(in srgb, var(--bg) 76%, transparent);
+      overflow-y: auto;
+    }
+
+    .empresa-guided-overlay.is-visible {
+      display: flex;
+    }
+
+    .empresa-guided-dialog {
+      width: min(920px, 100%);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--surface);
+      color: var(--text);
+      box-shadow: 0 24px 70px var(--panel-shadow);
+    }
+
+    .empresa-guided-head,
+    .empresa-guided-actions {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 16px 18px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .empresa-guided-actions {
+      border-top: 1px solid var(--border);
+      border-bottom: 0;
+      justify-content: flex-end;
+    }
+
+    .empresa-guided-title {
+      margin: 0;
+      font-size: 1.08rem;
+    }
+
+    .empresa-guided-description,
+    .empresa-guided-status {
+      margin: 4px 0 0;
+      color: var(--muted);
+      font-size: .9rem;
+      line-height: 1.35;
+    }
+
+    .empresa-guided-body {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+      padding: 18px;
+    }
+
+    .empresa-guided-field {
+      display: grid;
+      gap: 7px;
+    }
+
+    .empresa-guided-field.is-wide {
+      grid-column: 1 / -1;
+    }
+
+    .empresa-guided-label {
+      font-weight: 700;
+      font-size: .92rem;
+    }
+
+    .empresa-guided-prompt {
+      color: var(--muted);
+      font-size: .84rem;
+      line-height: 1.32;
+    }
+
+    .empresa-guided-input {
+      min-height: 40px;
+    }
+
+    @media (max-width: 760px) {
+      .empresa-guided-body {
+        grid-template-columns: 1fr;
+      }
+    }
+
     @media (max-width: 900px) {
       .empresa-home {
         width: min(100% - 20px, 720px);
@@ -2501,6 +2592,16 @@
         return String(value == null ? "" : value).trim();
       }
 
+      function escapeHTML(value) {
+        return String(value == null ? "" : value).replace(/[&<>"']/g, function (ch) {
+          return ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[ch];
+        });
+      }
+
+      function escapeAttr(value) {
+        return escapeHTML(value);
+      }
+
       function firstName(fullName, email) {
         var raw = text(fullName);
         if (!raw) raw = text(email).split("@")[0];
@@ -3532,6 +3633,119 @@
         }
       }
 
+      function guidedPendingKey() {
+        return "pcs_config_assistant_pending_" + String(empresaId || "");
+      }
+
+      function hasGuidedPendingFlag() {
+        if (!empresaId) return false;
+        try {
+          return !!(window.localStorage.getItem(guidedPendingKey()) || window.sessionStorage.getItem(guidedPendingKey()));
+        } catch (e) {
+          return false;
+        }
+      }
+
+      function clearGuidedPendingFlag() {
+        if (!empresaId) return;
+        try { window.localStorage.removeItem(guidedPendingKey()); } catch (e) {}
+        try { window.sessionStorage.removeItem(guidedPendingKey()); } catch (e) {}
+      }
+
+      function renderGuidedInput(question) {
+        var type = String(question.type || "text").toLowerCase();
+        var value = question.default_value == null ? "" : String(question.default_value);
+        if (type === "boolean") {
+          return '<select class="form-input empresa-guided-input" data-guided-answer="' + escapeAttr(question.id) + '">' +
+            '<option value="si"' + (value === "si" || value === "true" ? " selected" : "") + '>Si</option>' +
+            '<option value="no"' + (value === "no" || value === "false" ? " selected" : "") + '>No</option>' +
+            '</select>';
+        }
+        if (type === "select" && Array.isArray(question.options)) {
+          return '<select class="form-input empresa-guided-input" data-guided-answer="' + escapeAttr(question.id) + '">' +
+            question.options.map(function (option) {
+              option = String(option || "");
+              return '<option value="' + escapeAttr(option) + '"' + (option === value ? " selected" : "") + '>' + escapeHTML(option) + '</option>';
+            }).join("") +
+            '</select>';
+        }
+        if (type === "textarea") {
+          return '<textarea class="form-input empresa-guided-input" rows="3" data-guided-answer="' + escapeAttr(question.id) + '" placeholder="' + escapeAttr(question.placeholder || "") + '">' + escapeHTML(value) + '</textarea>';
+        }
+        return '<input class="form-input empresa-guided-input" data-guided-answer="' + escapeAttr(question.id) + '" type="' + (type === "number" ? "number" : "text") + '" value="' + escapeAttr(value) + '" placeholder="' + escapeAttr(question.placeholder || "") + '">';
+      }
+
+      function openGuidedSetupModal(configData) {
+        if (!empresaId || !configData || !configData.wizard) return;
+        var estado = configData.estado || {};
+        var shouldOpen = hasGuidedPendingFlag() || !estado.configurada_anterior;
+        if (!shouldOpen) return;
+        var wizard = configData.wizard || {};
+        var questions = Array.isArray(wizard.questions) ? wizard.questions : [];
+        if (!questions.length) return;
+        var existing = document.getElementById("empresaGuidedOverlay");
+        if (existing && existing.parentNode) existing.parentNode.removeChild(existing);
+        var overlay = document.createElement("div");
+        overlay.id = "empresaGuidedOverlay";
+        overlay.className = "empresa-guided-overlay is-visible";
+        overlay.innerHTML =
+          '<section class="empresa-guided-dialog" role="dialog" aria-modal="true" aria-labelledby="empresaGuidedTitle">' +
+            '<div class="empresa-guided-head">' +
+              '<div><h2 id="empresaGuidedTitle" class="empresa-guided-title">' + escapeHTML(wizard.title || "Configuracion guiada inicial") + '</h2>' +
+              '<p class="empresa-guided-description">' + escapeHTML(wizard.description || "Responde estas preguntas para dejar la empresa lista para operar.") + '</p></div>' +
+              '<button id="empresaGuidedClose" class="btn secondary" type="button">Despues</button>' +
+            '</div>' +
+            '<form id="empresaGuidedForm">' +
+              '<div class="empresa-guided-body">' +
+                questions.map(function (question) {
+                  var wide = String(question.type || "").toLowerCase() === "textarea" || String(question.prompt || "").length > 120;
+                  return '<label class="empresa-guided-field' + (wide ? " is-wide" : "") + '">' +
+                    '<span class="empresa-guided-label">' + escapeHTML(question.label || question.id || "Pregunta") + (question.required ? " *" : "") + '</span>' +
+                    '<span class="empresa-guided-prompt">' + escapeHTML(question.prompt || "") + '</span>' +
+                    renderGuidedInput(question || {}) +
+                    (question.help ? '<span class="empresa-guided-prompt">' + escapeHTML(question.help) + '</span>' : '') +
+                  '</label>';
+                }).join("") +
+              '</div>' +
+              '<div class="empresa-guided-actions">' +
+                '<p id="empresaGuidedStatus" class="empresa-guided-status" aria-live="polite"></p>' +
+                '<button id="empresaGuidedApply" class="btn" type="submit">Aplicar configuracion</button>' +
+              '</div>' +
+            '</form>' +
+          '</section>';
+        document.body.appendChild(overlay);
+        document.getElementById("empresaGuidedClose").addEventListener("click", function () {
+          overlay.classList.remove("is-visible");
+        });
+        document.getElementById("empresaGuidedForm").addEventListener("submit", function (event) {
+          event.preventDefault();
+          var answers = {};
+          Array.prototype.forEach.call(overlay.querySelectorAll("[data-guided-answer]"), function (input) {
+            answers[input.getAttribute("data-guided-answer")] = input.value;
+          });
+          var status = document.getElementById("empresaGuidedStatus");
+          var apply = document.getElementById("empresaGuidedApply");
+          if (status) status.textContent = "Aplicando configuracion...";
+          if (apply) apply.disabled = true;
+          fetchJSON("/api/empresa/configuracion_guiada?empresa_id=" + encodeURIComponent(empresaId) + "&action=aplicar", {
+            method: "POST",
+            headers: { "Content-Type": "application/json", "X-PCS-Source": "empresa_panel_guided_setup" },
+            body: JSON.stringify({ answers: answers })
+          }).then(function (data) {
+            var result = data && data.resultado ? data.resultado : {};
+            if (status) status.textContent = result.mensaje || "Configuracion aplicada.";
+            clearGuidedPendingFlag();
+            window.setTimeout(function () {
+              overlay.classList.remove("is-visible");
+            }, 900);
+          }).catch(function (err) {
+            if (status) status.textContent = err && err.message ? err.message : "No se pudo aplicar la configuracion.";
+          }).finally(function () {
+            if (apply) apply.disabled = false;
+          });
+        });
+      }
+
       function init() {
         setDateText();
         applyEmpresaLinks();
@@ -3543,15 +3757,16 @@
         window.setInterval(loadEmpresaBuzon, 60000);
         loadMaintenanceNotice();
         var adminPromise = fetchJSON("/me").catch(function () { return {}; });
-        var empresaPromise = empresaId
-          ? fetchJSON("/api/empresa/configuracion_guiada?empresa_id=" + encodeURIComponent(empresaId)).then(function (data) {
+        var guidedConfigPromise = empresaId
+          ? fetchJSON("/api/empresa/configuracion_guiada?empresa_id=" + encodeURIComponent(empresaId)).catch(function () { return {}; })
+          : Promise.resolve({});
+        var empresaPromise = guidedConfigPromise.then(function (data) {
               var estado = data && data.estado && typeof data.estado === "object" ? data.estado : data;
               return {
                 nombre: estado && (estado.empresa_nombre || estado.nombre || ""),
                 tipo_nombre: estado && (estado.tipo_empresa_nombre || "")
               };
-            }).catch(function () { return {}; })
-          : Promise.resolve({});
+            }).catch(function () { return {}; });
         var weatherConfigPromise = loadSavedWeatherLocation();
         var identidadPromise = empresaId
           ? fetchJSON("/api/empresa/configuracion_avanzada?empresa_id=" + encodeURIComponent(empresaId)).catch(function () { return {}; })
@@ -3559,15 +3774,17 @@
         var permisosPromise = empresaId
           ? fetchJSON("/api/empresa/permisos_contexto?empresa_id=" + encodeURIComponent(empresaId)).catch(function () { return {}; })
           : Promise.resolve({});
-        Promise.all([adminPromise, empresaPromise, weatherConfigPromise, identidadPromise, permisosPromise]).then(function (values) {
+        Promise.all([adminPromise, empresaPromise, weatherConfigPromise, identidadPromise, permisosPromise, guidedConfigPromise]).then(function (values) {
           var admin = values[0] || {};
           var empresa = values[1] || {};
           var savedLocation = values[2] || null;
           var identidad = values[3] || {};
           var permissionContext = values[4] || {};
+          var guidedConfig = values[5] || {};
           loadEmpresaEmailNotifications({ admin: admin, permissionContext: permissionContext });
           renderWelcome(admin, empresa);
           applyEmpresaLogo(identidad);
+          openGuidedSetupModal(guidedConfig);
           return detectLocation(admin, empresa, savedLocation).then(function (location) {
             return loadWeather(location);
           });

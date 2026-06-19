@@ -1,3 +1,10 @@
+2026-06-18: Configuracion interactiva y captura IA documental.
+- Modulos afectados: `empresas`, `configuracion_guiada`, `chat_ia`, `productos`, `compras`, `ingresos`, `egresos`, `soportes_compras_ia`, `frontend_ux`.
+- Flujo de empresa nueva: al crear una empresa con tipo/preconfiguracion se abre en el primer ingreso un asistente interactivo que pregunta datos reales por negocio y guarda `configuracion_guiada_interactiva` por `empresa_id`.
+- IA empresarial: el chat agrega selector de agente y el nuevo `agente_configuracion_de_empresa`, especializado en guiar administradores para productos, tarifas, estaciones, impresoras, caja y parametros; las acciones UI requieren confirmacion y selectores permitidos.
+- Captura documental: Ingresos, Egresos y Compras pueden analizar foto/PDF con GPT-5.5 mediante `soportes_compras_ia`; la IA precarga formularios, descuenta cuota avanzada de agente y no guarda sin revision humana.
+- Productos: el panel de importacion incluye acceso para cargar carta/lista de precios con IA desde el chat y confirmar antes de crear productos reales.
+
 2026-06-18: Agentes de mantenimiento IA super
 - Modulos afectados: `super_administrador`, `IA global`, `mensajeria_y_alertas`, `DIAN Colombia`.
 - Navegacion: `Super administrador > Mensajeria y alertas > Agentes mantenimiento` abre `web/super/agentes_de_mantenimiento_qutomatico.html`.

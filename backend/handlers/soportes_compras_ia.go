@@ -276,6 +276,9 @@ func extraerSoporteComprasIAGPT55(r *http.Request, dbEmp, dbSuper *sql.DB, empre
 	if !ok {
 		return dbpkg.EmpresaSoporteComprasIA{}, errSoporteComprasIAModeloNoDisponible
 	}
+	if _, _, err := reserveEmpresaAgentAdvancedUsage(dbEmp, dbSuper, empresaID, usuario); err != nil {
+		return dbpkg.EmpresaSoporteComprasIA{}, err
+	}
 	payload, _ := decodeSoporteComprasIAActionPayload(r)
 	if payload.SoporteID <= 0 {
 		payload.SoporteID, _ = strconv.ParseInt(strings.TrimSpace(r.URL.Query().Get("soporte_id")), 10, 64)
@@ -328,14 +331,14 @@ func extraerSoporteComprasIAGPT55(r *http.Request, dbEmp, dbSuper *sql.DB, empre
 }
 
 func soporteComprasIASystemPrompt() string {
-	return `Eres un motor profesional de captura inteligente con IA GPT-5.5 para compras y gastos en Colombia.
-Lee fotos, PDFs o XML de facturas de compra, documentos soporte, cuentas de cobro, recibos y gastos.
+	return `Eres un motor profesional de captura inteligente con IA GPT-5.5 para documentos empresariales en Colombia.
+Lee fotos, PDFs o XML de facturas de compra, documentos soporte, cuentas de cobro, recibos, gastos, ingresos, comprobantes de caja y cartas/listas de precios.
 Devuelve exclusivamente JSON valido con estas claves:
 {
-  "tipo_soporte": "compra|gasto|documento_soporte|recibo|servicio",
+  "tipo_soporte": "compra|gasto|ingreso|documento_soporte|recibo|servicio|carta_precios",
   "proveedor_nombre": "",
   "proveedor_nit": "",
-  "documento_tipo": "factura_compra|documento_soporte|cuenta_cobro|recibo_caja|gasto|otro",
+  "documento_tipo": "factura_compra|documento_soporte|cuenta_cobro|recibo_caja|gasto|ingreso|lista_precios|otro",
   "documento_numero": "",
   "fecha_documento": "YYYY-MM-DD",
   "fecha_vencimiento": "YYYY-MM-DD",
@@ -351,6 +354,7 @@ Devuelve exclusivamente JSON valido con estas claves:
   "impacta_inventario": false,
   "confianza_ia": 0.0,
   "requiere_revision_humana": true,
+  "lineas_detectadas": [],
   "observaciones": ""
 }
 Usa numeros sin separadores de miles. Si falta un dato, deja cadena vacia o 0. Marca requiere_revision_humana=true cuando haya baja confianza, documento borroso, totales inconsistentes o datos tributarios incompletos.`

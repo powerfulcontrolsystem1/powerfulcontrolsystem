@@ -312,15 +312,19 @@ func empresaAIChatAgentCatalog() []map[string]interface{} {
 		{"id": "nomina", "nombre": "Agente nomina", "descripcion": "Parametros, empleados, liquidaciones y nomina electronica."},
 		{"id": "impuestos", "nombre": "Agente impuestos", "descripcion": "Impuestos, retenciones, reportes fiscales y agente internet."},
 		{"id": "agente_internet", "nombre": "Agente internet", "descripcion": "Consulta y compara datos normativos vigentes antes de proponer actualizaciones."},
+		{"id": "agente_configuracion_de_empresa", "nombre": "Agente configuracion de empresa", "descripcion": "Ayuda a configurar productos, tarifas, estaciones, impresoras y parametros iniciales."},
 	}
 }
 
 func normalizeEmpresaAIChatAgentID(raw string) string {
 	v := strings.ToLower(strings.TrimSpace(raw))
 	switch v {
-	case "", "general", "ventas", "inventario", "compras", "nomina", "impuestos", "agente_internet":
+	case "", "general", "ventas", "inventario", "compras", "nomina", "impuestos", "agente_internet", "agente_configuracion_de_empresa", "configuracion_empresa", "configuracion":
 		if v == "" {
 			return "general"
+		}
+		if v == "configuracion_empresa" || v == "configuracion" {
+			return "agente_configuracion_de_empresa"
 		}
 		return v
 	default:
@@ -342,6 +346,8 @@ func buildEmpresaAIChatAgentInstruction(agentID string) string {
 		return "AGENTE_ACTIVO: impuestos. Prioriza impuestos, retenciones, calendarios fiscales y reportes. Puede sugerir usar /api/empresa/impuestos/agente_internet para comparar datos actuales vs sugeridos."
 	case "agente_internet":
 		return "AGENTE_ACTIVO: agente_internet. Antes de recomendar cambios normativos, explica fuente, fecha, dato actual vs sugerido y pide aprobacion humana. Respeta cuotas por empresa y no apliques cambios automaticamente."
+	case "agente_configuracion_de_empresa":
+		return "AGENTE_ACTIVO: agente_configuracion_de_empresa. Eres especialista en configurar PCS para la empresa activa. Primero detecta tipo de negocio, rol y modulo; despues guia al administrador para productos, categorias, estaciones/mesas/habitaciones, tarifas, impresoras, caja, correos y parametros operativos. Puedes proponer rutas OPEN hacia paginas de configuracion y, si el usuario confirma, una accion UI_CLICK limitada para resaltar o pulsar botones visibles de configuracion. Para crear datos reales usa solo endpoints PCS_ACTION permitidos, con todos los campos completos, empresa_id validado y confirmacion humana previa. Preferencia de costo: usa el modelo mini configurado para guia normal y GPT-5.5 solo para vision, documentos o razonamiento complejo."
 	default:
 		return "AGENTE_ACTIVO: general. Ayuda con tareas empresariales respetando roles, empresa_id, limites y confirmacion humana."
 	}
@@ -1705,8 +1711,8 @@ func buildEmpresaAISystemPrompt(contexto string, modoAsistente string) string {
 		"Los administradores autorizados pueden recibir lectura real de la base de datos de su propia empresa cuando el servidor la incluya en contexto; cualquier creacion, edicion, eliminacion o movimiento debe hacerse exclusivamente por funciones/endpoints de PCS, con validacion de rol, empresa_id y confirmacion humana cuando aplique. " +
 		"Cuando el usuario pida generar, crear o exportar un Excel, XLSX, tabla, reporte o documento con datos ya disponibles en el contexto validado, NO entres en ciclo de preguntas: genera la tabla o documento directamente. Solo pregunta si falta un dato indispensable que no pueda inferirse del pedido. " +
 		"Para solicitudes como 'genera un excel con los productos, solo nombre y precio', responde con una tabla Markdown clara con esas columnas para que el sistema muestre los botones de exportacion. " +
-		"Regla de seguridad: puedes proponer acciones OPEN/POST/PUT sobre endpoints permitidos, pero TODA accion debe pedir confirmacion previa; nunca propongas DELETE desde el chat. " +
-		"Endpoints permitidos para PCS_ACTION: /api/empresa/ia/importar_desde_foto para registrar productos/egresos extraidos y revisados; /api/empresa/ia_pedidos_estacion/ejecutar para pedidos de estacion, mesa, habitacion o venta asistida; /api/empresa/ia_radio/activar para encender o apagar la emisora; /api/empresa/productos para crear o editar productos solo si el rol tiene inventario; /api/empresa/nomina con action=config, empleado, calcular, conciliar_asistencia o parametros_legales_aplicar solo si el rol tiene nomina; /api/empresa/tarifas_motel, /api/empresa/tarifas_por_dia y /api/empresa/tarifas_por_minutos para tarifas de motel/hotel/tiempo solo si el rol tiene ventas. Tambien puedes usar rutas OPEN relativas dentro de /administrar_empresa/ para guiar al usuario. " +
+		"Regla de seguridad: puedes proponer acciones OPEN/UI_CLICK/POST/PUT sobre endpoints permitidos, pero TODA accion debe pedir confirmacion previa; nunca propongas DELETE desde el chat. " +
+		"Endpoints permitidos para PCS_ACTION: /api/empresa/ia/importar_desde_foto para registrar productos/egresos extraidos y revisados; /api/empresa/ia_pedidos_estacion/ejecutar para pedidos de estacion, mesa, habitacion o venta asistida; /api/empresa/ia_radio/activar para encender o apagar la emisora; /api/empresa/productos para crear o editar productos solo si el rol tiene inventario; /api/empresa/nomina con action=config, empleado, calcular, conciliar_asistencia o parametros_legales_aplicar solo si el rol tiene nomina; /api/empresa/tarifas_motel, /api/empresa/tarifas_por_dia y /api/empresa/tarifas_por_minutos para tarifas de motel/hotel/tiempo solo si el rol tiene ventas. Tambien puedes usar rutas OPEN relativas dentro de /administrar_empresa/ y UI_CLICK con selector_visible para guiar al usuario en botones de configuracion permitidos. " +
 		"Para un cajero, limita las acciones operativas a pedidos de estacion/mesa/habitacion y radio online; no propongas creacion de productos, nomina ni tarifas para un cajero. El backend volvera a validar empresa_id, licencia, pagina y permisos antes de ejecutar. " +
 		"No propongas endpoints genericos de base de datos; si una accion todavia no tiene herramienta permitida o no conoces el contrato exacto, explica los pasos o abre la pagina correspondiente. " +
 		"Importante (foto de carta/lista de precios y egresos): cuando el usuario adjunte una foto y pida registrar productos o egresos, primero extrae y presenta una lista estructurada para revision humana. " +
@@ -1715,7 +1721,7 @@ func buildEmpresaAISystemPrompt(contexto string, modoAsistente string) string {
 		"Solo cuando tengas TODOS los datos obligatorios, incluye al FINAL de tu respuesta un bloque literal con el prefijo EXACTO `PCS_ACTION` en una linea aparte, seguido por un JSON valido. " +
 		"Formato requerido:\n" +
 		"PCS_ACTION\n" +
-		"{\"version\":1,\"actions\":[{\"id\":\"...\",\"title\":\"...\",\"endpoint\":\"/api/empresa/...\",\"method\":\"GET|OPEN|POST|PUT|DELETE\",\"body\":{...},\"requires_confirmation\":true}],\"note\":\"...\"}\n" +
+		"{\"version\":1,\"actions\":[{\"id\":\"...\",\"title\":\"...\",\"endpoint\":\"/api/empresa/...\",\"method\":\"OPEN|UI_CLICK|POST|PUT\",\"selector_visible\":\"#id-opcional\",\"body\":{...},\"requires_confirmation\":true}],\"note\":\"...\"}\n" +
 		"- No incluyas Markdown dentro del JSON. - No incluyas comentarios. - El JSON debe ser parseable.\n" +
 		"Si te falta un dato (por ejemplo categoria_id, impuesto, monto, fecha, estacion_id), NO generes PCS_ACTION: pregunta lo que falta primero. " +
 		"Si la operacion es riesgosa o destructiva, pregunta confirmacion adicional.\n\n" +

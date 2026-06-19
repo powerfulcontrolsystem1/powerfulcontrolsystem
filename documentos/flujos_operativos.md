@@ -916,6 +916,38 @@ afecte dinero, documentos, licencias o seguridad.
    fechas.
 7. `Cerrar turno e imprimir reporte` imprime y luego cierra sesion.
 8. Pruebas: abrir caja con dos usuarios, registrar movimientos, cerrar una caja
+
+## Configuracion inicial interactiva con IA
+
+1. Cuando Super administrador crea una empresa con tipo/preconfiguracion, el
+   selector marca `pcs_config_assistant_pending_{empresa_id}` en el navegador.
+2. Al primer ingreso a `Panel de empresa`, PCS consulta
+   `/api/empresa/configuracion_guiada` y muestra un asistente interactivo si la
+   empresa aun no tiene resumen aplicado o si quedo pendiente desde creacion.
+3. El asistente pregunta datos base comunes y preguntas por negocio: mesas,
+   zonas y cocina para restaurante/bar; habitaciones, categorias, tarifa base,
+   persona adicional, check-in/check-out para hotel/motel; servicios, agenda y
+   precio base para negocios de servicios.
+4. Al aplicar, backend actualiza configuracion operativa, avanzada, estaciones
+   y guarda `configuracion_guiada_interactiva` y
+   `configuracion_guiada_resumen` por `empresa_id`.
+5. El agente `agente_configuracion_de_empresa` del chat ayuda a continuar con
+   productos, categorias, tarifas, impresoras, caja y parametros. Puede abrir
+   paginas o pulsar controles visibles mediante `UI_CLICK`, siempre con
+   confirmacion humana y selector permitido; no ejecuta cambios destructivos.
+
+## Captura IA de documentos operativos
+
+1. Ingresos, Egresos y Compras tienen boton de analisis IA junto al adjunto.
+2. El archivo se radica en `/api/empresa/soportes_compras_ia` con `empresa_id`;
+   luego `extraer_ia` usa GPT-5.5 y descuenta una consulta avanzada diaria del
+   limite de agentes de la empresa.
+3. La IA precarga campos del formulario (tercero/proveedor, numero, fecha,
+   subtotal, IVA, retenciones, total, moneda y observaciones), pero el usuario
+   revisa y guarda manualmente.
+4. Productos agrega acceso "Cargar carta/precios con IA", que abre el chat con
+   `agente_configuracion_de_empresa` para adjuntar carta/lista, extraer tabla y
+   confirmar antes de registrar productos.
    sin afectar la otra.
 
 ## Venta directa

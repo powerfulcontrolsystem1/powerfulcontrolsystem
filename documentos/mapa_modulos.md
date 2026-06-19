@@ -3,6 +3,23 @@
 Tabla de ubicacion rapida para no buscar desde cero cada modulo. Si una fila
 queda incompleta al implementar una mejora, actualizarla en el mismo cambio.
 
+Actualizacion 2026-06-18: `Configuracion guiada inicial` ahora se abre de forma
+interactiva desde `web/administrar_empresa/panel.html` cuando una empresa nueva
+con preconfiguracion entra por primera vez. Backend: `/api/empresa/configuracion_guiada`
+GET/POST con `empresa_id`; guarda `estaciones_config`,
+`preconfiguracion_tipo_empresa_operacion`, `configuracion_guiada_resumen` y
+`configuracion_guiada_interactiva`. El chat flotante agrega selector de agente y
+`agente_configuracion_de_empresa` para guiar productos, tarifas, estaciones,
+impresoras, caja y parametros, con acciones UI confirmadas.
+
+Actualizacion 2026-06-18: captura IA documental por empresa. Ingresos,
+Egresos y Compras llaman `/api/empresa/soportes_compras_ia?action=radicar` y
+`action=extraer_ia` para foto/PDF/XML; la extraccion usa GPT-5.5, descuenta
+cuota avanzada en `empresa_agentes_uso_diario` y solo precarga formularios.
+Productos agrega acceso "Cargar carta/precios con IA" desde
+`web/administrar_empresa/administrar_productos.html`, abriendo el chat con
+`agente_configuracion_de_empresa` para revision antes de guardar.
+
 Actualizacion 2026-06-17: `Facturacion electronica Colombia` permite cargar el
 PDF de Autorizacion de Numeracion DIAN Formulario 1876 desde
 `web/administrar_empresa/facturacion_electronica.html`. El unico boton visible

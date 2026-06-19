@@ -21211,3 +21211,9 @@ body.corte-touch-mode .cash-close-actions.is-compact .btn {
     padding: 14px;
   }
 }
+
+.ai-chat-action-highlight {
+  outline: 3px solid var(--accent, #2563eb) !important;
+  outline-offset: 3px !important;
+  box-shadow: 0 0 0 6px color-mix(in srgb, var(--accent, #2563eb) 24%, transparent) !important;
+}

@@ -5,6 +5,7 @@
   var FORM_ID = 'aiChatForm';
   var INPUT_ID = 'aiChatInput';
   var MODE_ID = 'aiChatMode';
+  var AGENT_ID = 'aiChatAgent';
   var ATTACHMENT_INPUT_ID = 'aiChatAttachment';
   var ATTACH_BTN_ID = 'aiChatAttachBtn';
   var CLEAR_ATTACHMENT_ID = 'aiChatClearAttachment';
@@ -396,6 +397,19 @@
                   '<select id="' + MODE_ID + '" class="form-input" aria-label="Modo del asistente IA">' +
                     '<option value="operativo">Operativo</option>' +
                     '<option value="ayudante">Ayudante por pasos</option>' +
+                  '</select>' +
+                '</label>' +
+                '<label class="ai-chat-control-field" for="' + AGENT_ID + '">' +
+                  '<span>Agente</span>' +
+                  '<select id="' + AGENT_ID + '" class="form-input" aria-label="Agente IA">' +
+                    '<option value="general">General</option>' +
+                    '<option value="agente_configuracion_de_empresa">Configuracion</option>' +
+                    '<option value="ventas">Ventas</option>' +
+                    '<option value="inventario">Inventario</option>' +
+                    '<option value="compras">Compras</option>' +
+                    '<option value="nomina">Nomina</option>' +
+                    '<option value="impuestos">Impuestos</option>' +
+                    '<option value="agente_internet">Internet</option>' +
                   '</select>' +
                 '</label>' +
                 '<div class="ai-chat-control-field">' +
@@ -3099,6 +3113,9 @@
     endpoint = normalize(endpoint);
     method = normalize(method).toUpperCase() || 'POST';
     if (!endpoint || endpoint[0] !== '/') return false;
+    if (method === 'UI_CLICK') {
+      return endpoint === window.location.pathname || endpoint.indexOf('/administrar_empresa/') === 0 || endpoint.indexOf('/administrar_empresa.html') === 0;
+    }
     if (method === 'OPEN') {
       return endpoint.indexOf('/administrar_empresa/') === 0 || endpoint.indexOf('/administrar_empresa.html') === 0 || endpoint.indexOf('/ayuda/') === 0;
     }
@@ -3111,6 +3128,47 @@
       endpoint.indexOf('/api/empresa/tarifas_motel') === 0 ||
       endpoint.indexOf('/api/empresa/tarifas_por_dia') === 0 ||
       endpoint.indexOf('/api/empresa/tarifas_por_minutos') === 0;
+  }
+
+  function isAllowedAIActionSelector(selector) {
+    selector = normalize(selector);
+    if (!selector || selector.length > 160) return false;
+    if (/script|iframe|object|embed|html|body/i.test(selector)) return false;
+    return selector.indexOf('#') === 0 ||
+      selector.indexOf('[data-agent-action=') === 0 ||
+      selector.indexOf('[data-action=') === 0 ||
+      selector.indexOf('.agent-action-') === 0 ||
+      selector.indexOf('button#') === 0 ||
+      selector.indexOf('a#') === 0;
+  }
+
+  function executeAIUIClick(selector, title) {
+    selector = normalize(selector);
+    if (!isAllowedAIActionSelector(selector)) {
+      throw new Error('Accion UI bloqueada: selector no permitido.');
+    }
+    var target = document.querySelector(selector);
+    if (!target) {
+      throw new Error('No encontre el control visible solicitado por el agente: ' + selector);
+    }
+    var rect = target.getBoundingClientRect ? target.getBoundingClientRect() : null;
+    if (!rect || rect.width <= 0 || rect.height <= 0) {
+      throw new Error('El control solicitado no esta visible en esta pagina.');
+    }
+    try {
+      target.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
+    } catch (e) {
+      target.scrollIntoView();
+    }
+    target.classList.add('ai-chat-action-highlight');
+    window.setTimeout(function () {
+      target.classList.remove('ai-chat-action-highlight');
+    }, 2600);
+    if (typeof target.click !== 'function') {
+      throw new Error('El control solicitado no se puede pulsar desde el navegador.');
+    }
+    target.click();
+    appendMessage('assistant', 'Accion ejecutada: ' + normalize(title || 'clic de configuracion') + '.');
   }
 
   function inferDocumentExportType(text) {
@@ -3720,10 +3778,13 @@
 
     var endpoint = attachment ? buildAttachmentEndpoint() : buildTextEndpoint();
     var mode = getAssistantMode();
+    var agentEl = document.getElementById(AGENT_ID);
+    var agentID = agentEl ? normalize(agentEl.value) : 'general';
     var pageContext = String(window.location.pathname || '') + String(window.location.search || '');
     var body = {
       pregunta: query,
       modo_asistente: mode,
+      agent_id: agentID || 'general',
     };
 
     if (pageContext) {
@@ -3767,6 +3828,7 @@
       var formData = new FormData();
       formData.set('pregunta', query);
       formData.set('modo_asistente', mode);
+      formData.set('agent_id', agentID || 'general');
       if (pageContext) {
         formData.set('pagina_contexto', pageContext);
       }
@@ -4475,6 +4537,10 @@
           if (!isAllowedAIActionEndpoint(endpoint, method)) {
             throw new Error('Accion bloqueada: endpoint no permitido para ejecucion desde IA. Abre el modulo correspondiente y ejecuta la accion con tus permisos.');
           }
+          if (method === 'UI_CLICK') {
+            executeAIUIClick(act.selector_visible || act.selector || '', act.title || '');
+            return;
+          }
           if (method === 'OPEN') {
             if (!endpoint || endpoint[0] !== '/') {
               throw new Error('Accion OPEN bloqueada: la URL debe ser relativa.');
@@ -4847,6 +4913,10 @@
       if (modeEl && normalize(data.mode)) {
         modeEl.value = normalize(data.mode);
         syncModeUI();
+      }
+      var agentEl = document.getElementById(AGENT_ID);
+      if (agentEl && normalize(data.agent_id)) {
+        agentEl.value = normalize(data.agent_id);
       }
       if (input && normalize(data.prompt)) {
         input.value = normalize(data.prompt);

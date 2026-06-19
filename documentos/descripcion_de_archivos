@@ -1,3 +1,15 @@
+2026-06-18 - Configuracion interactiva e IA documental por empresa
+- `backend/handlers/configuracion_guiada.go`: amplia el asistente inicial con preguntas interactivas por tipo de empresa y guarda `configuracion_guiada_interactiva` por `empresa_id`.
+- `backend/handlers/chat_con_inteligencia_artificial_controller.go`: agrega el agente empresarial `agente_configuracion_de_empresa` al catalogo de chat y documenta acciones `UI_CLICK` confirmadas.
+- `backend/handlers/agente_internet_fiscal.go`: agrega reserva de cuota avanzada diaria para agentes GPT-5.5 por empresa.
+- `backend/handlers/soportes_compras_ia.go`: la extraccion GPT-5.5 descuenta cuota avanzada y acepta compras, gastos, ingresos, comprobantes y cartas/listas de precios.
+- `web/administrar_empresa/panel.html`: muestra asistente de configuracion inicial cuando la empresa es nueva o quedo pendiente desde creacion.
+- `web/js/seleccionar_empresa.js`: marca empresas nuevas con preconfiguracion para abrir el asistente interactivo al primer ingreso.
+- `web/js/ai_chat_drawer.js`: agrega selector de agente, accion `UI_CLICK` segura y resaltado de controles confirmados.
+- `web/administrar_empresa/ingresos.html`, `web/administrar_empresa/egresos.html`, `web/js/egresos_ingresos.js`: agregan boton IA para cargar comprobantes y completar el formulario.
+- `web/administrar_empresa/compras.html`: agrega analisis IA de factura/soporte para precargar proveedor, factura, periodo y monto.
+- `web/administrar_empresa/administrar_productos.html`: agrega acceso para cargar carta/lista de precios con el agente de configuracion.
+
 2026-06-18 - Agentes de mantenimiento IA super
 - `web/super/agentes_de_mantenimiento_qutomatico.html`: panel super para habilitar el agente diario de noticias DIAN, configurar hora/correo, ejecutar revision manual, guardar limites por empresa y leer hallazgos registrados.
 - `backend/handlers/super_mantenimiento_agentes.go`: API `/super/api/agentes_mantenimiento`, worker diario, lectura de fuentes DIAN, clasificacion con OpenAI cuando esta disponible, cuotas globales de agentes por empresa y notificacion por correo corporativo Mailu.

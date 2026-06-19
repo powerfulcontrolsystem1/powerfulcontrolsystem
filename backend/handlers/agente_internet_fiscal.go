@@ -87,6 +87,29 @@ func reserveAgenteInternetLightUsage(dbEmp, dbSuper *sql.DB, empresaID int64, us
 	return usage, limits, nil
 }
 
+func reserveEmpresaAgentAdvancedUsage(dbEmp, dbSuper *sql.DB, empresaID int64, user string) (dbpkg.EmpresaAgenteUsoDiario, map[string]int64, error) {
+	limits := getAgentCompanyLimits(dbSuper)
+	today := time.Now().Format("2006-01-02")
+	usage, err := dbpkg.GetEmpresaAgenteUsoDiario(dbEmp, empresaID, today)
+	if err != nil {
+		return usage, limits, err
+	}
+	if usage.ConsultasAvanzadas >= limits["consultas_avanzadas_diarias"] {
+		return usage, limits, fmt.Errorf("limite diario de consultas avanzadas del agente alcanzado")
+	}
+	if err := dbpkg.AddEmpresaAgenteUsoDiario(dbEmp, dbpkg.EmpresaAgenteUsoDiario{
+		EmpresaID:          empresaID,
+		FechaUso:           today,
+		ConsultasAvanzadas: 1,
+		SegundosUsados:     5,
+		UsuarioCreador:     user,
+	}); err != nil {
+		return usage, limits, err
+	}
+	usage, _ = dbpkg.GetEmpresaAgenteUsoDiario(dbEmp, empresaID, today)
+	return usage, limits, nil
+}
+
 func buildAgenteInternetFiscalProposals(modulo, country string) []agenteInternetFiscalProposal {
 	if strings.EqualFold(modulo, "nomina") {
 		return []agenteInternetFiscalProposal{

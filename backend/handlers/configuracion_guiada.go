@@ -274,6 +274,8 @@ func buildEmpresaConfiguracionGuiadaWizard(state *empresaConfiguracionGuiadaStat
 		})
 	}
 
+	questions = append(questions, buildGuidedBusinessSpecificQuestions(kind, singular, plural)...)
+
 	return map[string]interface{}{
 		"title":       "Configuración guiada inicial",
 		"description": "El robot te hace preguntas concretas y aplica la configuración operativa base de la empresa sin pedirte que recorras todo el sistema a mano.",
@@ -304,6 +306,7 @@ func applyEmpresaConfiguracionGuiada(dbEmp *sql.DB, state *empresaConfiguracionG
 	imprimirFE := answerBoolGuided(answers["imprimir_factura_electronica"], boolOrFalseGuided(state.Advanced, func(cfg *dbpkg.EmpresaConfiguracionAvanzada) bool { return cfg.ImprimirFacturaElectronica }))
 	usaImpresionCocina := answerBoolGuided(answers["usa_impresion_cocina"], false)
 	habilitarPropinas := answerBoolGuided(answers["habilitar_propinas"], boolOrFalseGuided(state.Operativa, func(cfg *dbpkg.EmpresaConfiguracionOperativa) bool { return cfg.HabilitarPropinas }))
+	configInteractiva := buildGuidedInteractiveConfig(state, answers)
 
 	operacion := state.Operacion
 	operacion.VentaDirectaEnabled = ventaDirecta
@@ -409,6 +412,19 @@ func applyEmpresaConfiguracionGuiada(dbEmp *sql.DB, state *empresaConfiguracionG
 		return nil, err
 	}
 
+	rawInteractiva, _ := json.Marshal(configInteractiva)
+	if _, err := dbpkg.UpsertEmpresaEstacionPref(dbEmp, dbpkg.EmpresaEstacionPref{
+		EmpresaID:      state.EmpresaID,
+		EstacionID:     0,
+		Clave:          "configuracion_guiada_interactiva",
+		Valor:          string(rawInteractiva),
+		UsuarioCreador: usuario,
+		Estado:         "activo",
+		Observaciones:  "[configuracion_guiada] respuestas interactivas por tipo de empresa",
+	}); err != nil {
+		return nil, err
+	}
+
 	pendientes := make([]string, 0)
 	if usaImpresionCocina {
 		if err := dbpkg.EnsureEmpresaImpresorasSchema(dbEmp); err == nil {
@@ -451,6 +467,7 @@ func applyEmpresaConfiguracionGuiada(dbEmp *sql.DB, state *empresaConfiguracionG
 		"imprimir_factura_electronica": imprimirFE,
 		"usa_impresion_cocina":         usaImpresionCocina,
 		"habilitar_propinas":           habilitarPropinas,
+		"configuracion_interactiva":    configInteractiva,
 		"aplicado_en":                  time.Now().Format(time.RFC3339),
 		"pendientes":                   pendientes,
 	}
@@ -486,6 +503,96 @@ func buildConfiguracionGuiadaSuccessMessage(state *empresaConfiguracionGuiadaSta
 		partes = append(partes, "Todavía quedan pendientes controlados: "+strings.Join(pendientes, " "))
 	}
 	return strings.Join(partes, " ")
+}
+
+func buildGuidedBusinessSpecificQuestions(kind, singular, plural string) []empresaConfiguracionGuiadaQuestion {
+	questions := make([]empresaConfiguracionGuiadaQuestion, 0)
+	if guidedTypeContains(kind, "hotel", "hostal", "hospedaje", "apartamento", "apartamentos", "motel") {
+		questions = append(questions,
+			empresaConfiguracionGuiadaQuestion{ID: "categorias_habitaciones", Label: "Categorias de habitaciones", Prompt: "Indica las categorias principales separadas por coma.", Type: "text", Placeholder: "Estandar, Doble, Suite", DefaultValue: "Estandar, Doble, Suite", Help: "El agente guardara esta base para tarifas y organizacion de habitaciones."},
+			empresaConfiguracionGuiadaQuestion{ID: "tarifa_base", Label: "Tarifa base", Prompt: "Valor base mas usado para una noche o servicio principal.", Type: "number", Placeholder: "120000", DefaultValue: "0"},
+			empresaConfiguracionGuiadaQuestion{ID: "valor_persona_adicional", Label: "Persona adicional", Prompt: "Valor por persona adicional si aplica.", Type: "number", Placeholder: "30000", DefaultValue: "0"},
+			empresaConfiguracionGuiadaQuestion{ID: "tipo_tarifa", Label: "Tipo de tarifa", Prompt: "Selecciona como se cobrara normalmente.", Type: "select", Required: true, DefaultValue: defaultGuidedTariffType(kind), Options: []string{"por_noche", "por_hora", "por_dia", "por_persona"}},
+			empresaConfiguracionGuiadaQuestion{ID: "hora_checkin", Label: "Hora check-in", Prompt: "Hora normal de ingreso.", Type: "text", Placeholder: "15:00", DefaultValue: "15:00"},
+			empresaConfiguracionGuiadaQuestion{ID: "hora_checkout", Label: "Hora check-out", Prompt: "Hora normal de salida.", Type: "text", Placeholder: "12:00", DefaultValue: "12:00"},
+		)
+		return questions
+	}
+	if guidedTypeContains(kind, "restaurante", "restaurant", "bar", "cafeteria", "cafeterÃ­a", "panaderia", "panaderÃ­a") {
+		questions = append(questions,
+			empresaConfiguracionGuiadaQuestion{ID: "servicio_mesa", Label: "Servicio a la mesa", Prompt: fmt.Sprintf("Quieres que las %s trabajen con pedido abierto y cierre por cuenta?", strings.ToLower(plural)), Type: "boolean", Required: true, DefaultValue: "si"},
+			empresaConfiguracionGuiadaQuestion{ID: "nombre_area_cocina", Label: "Area de preparacion", Prompt: "Nombre del area que recibira comandas.", Type: "text", Placeholder: "Cocina", DefaultValue: "Cocina"},
+			empresaConfiguracionGuiadaQuestion{ID: "porcentaje_propina", Label: "Propina sugerida", Prompt: "Porcentaje sugerido de propina si la empresa lo usa.", Type: "number", Placeholder: "10", DefaultValue: "10"},
+			empresaConfiguracionGuiadaQuestion{ID: "zonas_mesas", Label: "Zonas o salones", Prompt: "Escribe las zonas separadas por coma.", Type: "text", Placeholder: "Salon principal, Terraza, Barra", DefaultValue: "Salon principal"},
+		)
+		return questions
+	}
+	if guidedTypeContains(kind, "salon", "salÃ³n", "belleza", "spa", "barberia", "barberÃ­a", "veterinaria", "consultorio", "gimnasio", "taller", "lavadero") {
+		questions = append(questions,
+			empresaConfiguracionGuiadaQuestion{ID: "servicios_base", Label: "Servicios base", Prompt: "Lista los servicios principales separados por coma.", Type: "textarea", Placeholder: "Corte, Barba, Lavado", DefaultValue: ""},
+			empresaConfiguracionGuiadaQuestion{ID: "duracion_servicio_minutos", Label: "Duracion base", Prompt: "Duracion promedio de un servicio en minutos.", Type: "number", Placeholder: "45", DefaultValue: "45"},
+			empresaConfiguracionGuiadaQuestion{ID: "precio_servicio_base", Label: "Precio base", Prompt: "Precio promedio inicial de servicio.", Type: "number", Placeholder: "30000", DefaultValue: "0"},
+			empresaConfiguracionGuiadaQuestion{ID: "maneja_agenda", Label: "Agenda", Prompt: "Quieres activar la organizacion por agenda/citas desde el inicio?", Type: "boolean", Required: true, DefaultValue: "si"},
+		)
+		return questions
+	}
+	questions = append(questions,
+		empresaConfiguracionGuiadaQuestion{ID: "productos_servicios_iniciales", Label: "Productos o servicios iniciales", Prompt: "Escribe productos o servicios clave separados por coma para que el agente de configuracion te ayude a crearlos.", Type: "textarea", Placeholder: "Producto A, Servicio B", DefaultValue: ""},
+		empresaConfiguracionGuiadaQuestion{ID: "precio_base_referencia", Label: "Precio de referencia", Prompt: "Precio base o ticket promedio que usa esta empresa.", Type: "number", Placeholder: "50000", DefaultValue: "0"},
+	)
+	_ = singular
+	return questions
+}
+
+func buildGuidedInteractiveConfig(state *empresaConfiguracionGuiadaState, answers map[string]interface{}) map[string]interface{} {
+	out := map[string]interface{}{
+		"tipo_empresa_nombre": "",
+		"tipo_negocio":        "",
+		"respuestas":          map[string]interface{}{},
+		"fecha":               time.Now().Format(time.RFC3339),
+	}
+	if state != nil {
+		out["tipo_empresa_nombre"] = strings.TrimSpace(state.TipoEmpresaNombre)
+		out["tipo_negocio"] = strings.TrimSpace(state.Operacion.TipoNegocio)
+	}
+	keys := []string{
+		"categorias_habitaciones", "tarifa_base", "valor_persona_adicional", "tipo_tarifa", "hora_checkin", "hora_checkout",
+		"servicio_mesa", "nombre_area_cocina", "porcentaje_propina", "zonas_mesas",
+		"servicios_base", "duracion_servicio_minutos", "precio_servicio_base", "maneja_agenda",
+		"productos_servicios_iniciales", "precio_base_referencia",
+	}
+	respuestas := map[string]interface{}{}
+	for _, key := range keys {
+		if answers == nil {
+			continue
+		}
+		if value, ok := answers[key]; ok {
+			respuestas[key] = normalizeGuidedAnswerValue(value)
+		}
+	}
+	out["respuestas"] = respuestas
+	return out
+}
+
+func normalizeGuidedAnswerValue(value interface{}) interface{} {
+	switch v := value.(type) {
+	case string:
+		return strings.TrimSpace(v)
+	case float64, float32, int, int64, bool:
+		return v
+	default:
+		if v == nil {
+			return ""
+		}
+		return strings.TrimSpace(fmt.Sprint(v))
+	}
+}
+
+func defaultGuidedTariffType(kind string) string {
+	if guidedTypeContains(kind, "motel") {
+		return "por_hora"
+	}
+	return "por_noche"
 }
 
 func firstNonEmptyGuidedValue(values ...string) string {

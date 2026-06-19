@@ -405,6 +405,18 @@
     try { window.sessionStorage.removeItem(key); } catch (e) {}
   }
 
+  function setConfigurationAssistantPending(empresaId, metadata) {
+    if (!empresaId) return;
+    var key = "pcs_config_assistant_pending_" + String(empresaId);
+    var payload = JSON.stringify({
+      empresa_id: Number(empresaId) || empresaId,
+      metadata: metadata || {},
+      created_at: new Date().toISOString()
+    });
+    try { window.localStorage.setItem(key, payload); } catch (e) {}
+    try { window.sessionStorage.setItem(key, payload); } catch (e) {}
+  }
+
   function readEmpresaContext() {
     var sources = [window.sessionStorage, window.localStorage];
     for (var i = 0; i < sources.length; i += 1) {
@@ -1232,26 +1244,8 @@
     var productos = Number(preconfig.productos_creados || 0);
     var usuarios = Number(preconfig.usuarios_creados || 0);
     var tipo = String(preconfig.tipo_empresa_nombre || "").trim();
-    var message = "La empresa fue creada con una preconfiguracion inicial" +
-      (tipo ? " para " + tipo : "") + ".\n\n" +
-      "Se generaron " + estaciones + " estaciones, " + productos + " productos guia y " + usuarios + " usuarios guia inactivos.\n\n" +
-      "Aceptar: conservar esta preconfiguracion.\n" +
-      "Cancelar: eliminarla y dejar la empresa sin configuracion personalizada.";
-    var keep = window.confirm(message);
-    if (keep) {
-      clearConfigurationAssistantPending(createData.id);
-      setShareNotice("Empresa creada con preconfiguracion inicial conservada.", false);
-      return;
-    }
-    setShareNotice("Eliminando preconfiguracion inicial...", false);
-    var cleanData = await fetchJSON("/super/api/empresas?id=" + encodeURIComponent(createData.id) + "&action=limpiar_preconfiguracion", {
-      method: "PUT",
-      credentials: "same-origin"
-    });
-    var cleanMsg = cleanData && cleanData.result && cleanData.result.mensaje
-      ? cleanData.result.mensaje
-      : "Preconfiguracion eliminada. La empresa quedo sin datos guia.";
-    setShareNotice(cleanMsg, false);
+    setConfigurationAssistantPending(createData.id, preconfig);
+    setShareNotice("Empresa creada" + (tipo ? " para " + tipo : "") + " con preconfiguracion inicial: " + estaciones + " estaciones, " + productos + " productos guia y " + usuarios + " usuarios guia. Al entrar se abrira el asistente interactivo para ajustar los datos reales.", false);
   }
 
   function isEmpresaDragInteractiveTarget(target) {

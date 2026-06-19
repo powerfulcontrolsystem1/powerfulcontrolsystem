@@ -117,6 +117,7 @@
             <label class="form-label" for="comprobanteArchivo">Adjuntar comprobante</label>
             <input id="comprobanteArchivo" class="form-input" type="file" accept=".png,.jpg,.jpeg,.gif,.webp,.pdf,.txt,.csv,.doc,.docx,.xls,.xlsx">
             <div class="form-help">Se guarda en la carpeta de comprobantes de esta empresa.</div>
+            <button id="btnAnalizarCompraIA" class="btn secondary" type="button">Analizar compra con IA</button>
           </div>
         </div>
 
@@ -227,6 +228,7 @@
     var filtroBusqueda = document.getElementById("filtroBusqueda");
     var filtroInactivos = document.getElementById("filtroInactivos");
     var compraComprobanteUploadInput = document.getElementById("comprobanteArchivo");
+    var btnAnalizarCompraIA = document.getElementById("btnAnalizarCompraIA");
 
     var state = {
       proveedores: [],
@@ -310,6 +312,88 @@
         method: 'POST',
         body: formData
       });
+    }
+
+    function normalizeText(value) {
+      return String(value || '').trim();
+    }
+
+    function periodoFromDate(value) {
+      var raw = normalizeText(value);
+      if (/^\d{4}-\d{2}/.test(raw)) return raw.slice(0, 7);
+      return toPeriodoActual();
+    }
+
+    function findProveedorByExtraction(soporte) {
+      var nit = normalizeText(soporte && soporte.proveedor_nit).toLowerCase();
+      var nombre = normalizeText(soporte && soporte.proveedor_nombre).toLowerCase();
+      for (var i = 0; i < state.proveedores.length; i += 1) {
+        var item = state.proveedores[i] || {};
+        var itemDoc = normalizeText(item.documento || item.nit || item.identificacion).toLowerCase();
+        var itemName = normalizeText(item.nombre || item.razon_social).toLowerCase();
+        if (nit && itemDoc && itemDoc === nit) return item;
+        if (nombre && itemName && itemName.indexOf(nombre) >= 0) return item;
+      }
+      return null;
+    }
+
+    async function analizarCompraIA() {
+      if (!empresaID) {
+        showMessage('empresa_id es obligatorio para analizar con IA.', 'error');
+        return;
+      }
+      var file = compraComprobanteUploadInput && compraComprobanteUploadInput.files && compraComprobanteUploadInput.files[0] ? compraComprobanteUploadInput.files[0] : null;
+      if (!file) {
+        showMessage('Selecciona primero una imagen o PDF del comprobante.', 'error');
+        return;
+      }
+      var original = btnAnalizarCompraIA ? btnAnalizarCompraIA.textContent : '';
+      if (btnAnalizarCompraIA) {
+        btnAnalizarCompraIA.disabled = true;
+        btnAnalizarCompraIA.textContent = 'Analizando...';
+      }
+      showMessage('Radicando soporte y extrayendo datos con GPT-5.5...');
+      try {
+        var formData = new FormData();
+        formData.append('empresa_id', String(empresaID));
+        formData.append('archivo', file, file.name || 'comprobante');
+        var radicado = await apiRequest('/api/empresa/soportes_compras_ia?empresa_id=' + encodeURIComponent(String(empresaID)) + '&action=radicar', {
+          method: 'POST',
+          body: formData
+        });
+        var soporteId = radicado && radicado.soporte && radicado.soporte.id ? radicado.soporte.id : 0;
+        if (!soporteId) throw new Error('No se pudo radicar el soporte para IA.');
+        var extraido = await apiRequest('/api/empresa/soportes_compras_ia?empresa_id=' + encodeURIComponent(String(empresaID)) + '&action=extraer_ia', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ soporte_id: soporteId })
+        });
+        var soporte = extraido && extraido.soporte ? extraido.soporte : {};
+        var proveedor = findProveedorByExtraction(soporte);
+        if (proveedor && proveedor.id) {
+          proveedorSelect.value = String(proveedor.id);
+        }
+        document.getElementById('proveedorDocRef').value = normalizeText(soporte.proveedor_nit);
+        document.getElementById('facturaDocRef').value = normalizeText(soporte.documento_numero);
+        document.getElementById('montoTotal').value = String(Number(soporte.total || soporte.subtotal || 0).toFixed(2));
+        document.getElementById('moneda').value = normalizeText(soporte.moneda || 'COP').toUpperCase();
+        document.getElementById('periodoContable').value = periodoFromDate(soporte.fecha_documento);
+        var notes = [];
+        if (!proveedor && normalizeText(soporte.proveedor_nombre)) {
+          notes.push('Proveedor sugerido por IA: ' + normalizeText(soporte.proveedor_nombre) + ' ' + normalizeText(soporte.proveedor_nit));
+        }
+        if (soporte.codigo) notes.push('Soporte IA: ' + normalizeText(soporte.codigo));
+        if (soporte.observaciones) notes.push(normalizeText(soporte.observaciones));
+        document.getElementById('observaciones').value = notes.join('\n');
+        showMessage('Datos cargados desde IA. Revisa proveedor, monto y periodo antes de guardar.', 'ok');
+      } catch (err) {
+        showMessage(err.message || 'No se pudo analizar la compra con IA.', 'error');
+      } finally {
+        if (btnAnalizarCompraIA) {
+          btnAnalizarCompraIA.disabled = false;
+          btnAnalizarCompraIA.textContent = original || 'Analizar compra con IA';
+        }
+      }
     }
 
     function accionesDocumento(doc) {
@@ -621,6 +705,14 @@
       state.pendingUploadDocumento = null;
       showMessage('Formulario limpio.');
     });
+
+    if (btnAnalizarCompraIA) {
+      btnAnalizarCompraIA.addEventListener('click', function () {
+        analizarCompraIA().catch(function (err) {
+          showMessage(err.message || 'No se pudo analizar la compra con IA.', 'error');
+        });
+      });
+    }
 
     proveedorSelect.addEventListener('change', function () {
       var proveedor = proveedorByID(proveedorSelect.value);

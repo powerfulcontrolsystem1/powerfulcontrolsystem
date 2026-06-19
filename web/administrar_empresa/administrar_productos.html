@@ -547,6 +547,7 @@
           <div class="producto-transfer-actions">
             <input id="productoImportArchivo" class="form-input" type="file" accept=".csv,text/csv">
             <button id="btnImportarProductos" type="button" class="btn">Importar productos</button>
+            <button id="btnCartaPreciosIA" type="button" class="btn secondary">Cargar carta/precios con IA</button>
           </div>
           <div id="productoImportResultado" class="producto-import-result" aria-live="polite"></div>
         </div>
@@ -1536,6 +1537,19 @@
       await loadProductos();
       await loadExistencias();
       showMessage('Importacion procesada. Revisa el resumen de filas.', Number(data.errores || 0) > 0 ? 'error' : 'success');
+    }
+
+    function abrirCartaPreciosIA() {
+      const prompt = 'Actua como agente_configuracion_de_empresa. Voy a adjuntar una foto, PDF o imagen de una carta/lista de precios. Extrae productos, categorias, precios, impuestos, costos si aparecen, y presentame una tabla para revision humana. No guardes nada hasta que yo confirme. Si falta SKU o categoria, propon valores seguros por empresa_id.';
+      try {
+        window.postMessage({
+          type: 'pcs-ai-drawer-open',
+          mode: 'operativo',
+          agent_id: 'agente_configuracion_de_empresa',
+          prompt: prompt
+        }, window.location.origin);
+      } catch (_) {}
+      showMessage('Chat IA abierto. Adjunta la carta o lista de precios y envia la consulta para extraer productos.', 'success');
     }
 
     function sanitize(v) {
@@ -3989,6 +4003,10 @@
           showMessage(e.message || 'No se pudieron importar productos.', 'error');
         }
       });
+      const btnCartaPreciosIA = document.getElementById('btnCartaPreciosIA');
+      if (btnCartaPreciosIA) {
+        btnCartaPreciosIA.addEventListener('click', abrirCartaPreciosIA);
+      }
 
       document.getElementById('productoForm').addEventListener('submit', async ev => {
         try {
