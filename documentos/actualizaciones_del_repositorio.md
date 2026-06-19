@@ -15324,3 +15324,23 @@ Archivos modificados:
 - documentos/CHANGELOG.md
 - documentos/historial_de_cambios
 - web/elegir_licencia.html
+
+2026-06-19 13:36:18 - Mensaje: rs: actualizar repositorio y sincronizar VPS; Commit: dadf446a; PushStatus: OK
+Archivos modificados:
+- CHANGELOG.md
+- backend/db/empresas_licencias_estado.go
+- backend/handlers/system_empresas_handlers.go
+- backend/main.go
+- backend/utils/utils.go
+- documentos/CHANGELOG.md
+- documentos/api/openapi.generated.yaml
+- documentos/descripcion_de_archivos
+- documentos/descripcion_de_modulos
+- documentos/historial_de_cambios
+- documentos/mapa_modulos.md
+- documentos/matriz_roles_permisos_pos_multiempresa.md
+- web/estilos.css
+- web/js/administrar_empresa.js
+- web/super/empresas.html
+- web/super/licencias_resumen.html
+- web/super_administrador.html
