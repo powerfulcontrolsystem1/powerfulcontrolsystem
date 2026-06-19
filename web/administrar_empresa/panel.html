@@ -3715,7 +3715,23 @@
           '</section>';
         document.body.appendChild(overlay);
         document.getElementById("empresaGuidedClose").addEventListener("click", function () {
-          overlay.classList.remove("is-visible");
+          var closeBtn = document.getElementById("empresaGuidedClose");
+          var status = document.getElementById("empresaGuidedStatus");
+          if (closeBtn) closeBtn.disabled = true;
+          if (status) status.textContent = "Guardando decision...";
+          fetchJSON("/api/empresa/configuracion_guiada?empresa_id=" + encodeURIComponent(empresaId) + "&action=posponer", {
+            method: "POST",
+            headers: { "Content-Type": "application/json", "X-PCS-Source": "empresa_panel_guided_setup_later" },
+            body: JSON.stringify({ answers: {}, decision: "despues" })
+          }).then(function () {
+            clearGuidedPendingFlag();
+            overlay.classList.remove("is-visible");
+          }).catch(function () {
+            clearGuidedPendingFlag();
+            overlay.classList.remove("is-visible");
+          }).finally(function () {
+            if (closeBtn) closeBtn.disabled = false;
+          });
         });
         document.getElementById("empresaGuidedForm").addEventListener("submit", function (event) {
           event.preventDefault();

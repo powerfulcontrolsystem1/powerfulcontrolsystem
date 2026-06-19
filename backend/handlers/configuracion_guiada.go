@@ -70,6 +70,23 @@ func EmpresaConfiguracionGuiadaHandler(dbEmp *sql.DB) http.HandlerFunc {
 			if action == "" {
 				action = "aplicar"
 			}
+			if action == "posponer" || action == "despues" {
+				state, err := loadEmpresaConfiguracionGuiadaState(dbEmp, empresaID)
+				if err != nil {
+					http.Error(w, "no se pudo cargar el contexto guiado: "+err.Error(), http.StatusInternalServerError)
+					return
+				}
+				result, err := postponeEmpresaConfiguracionGuiada(dbEmp, state, strings.TrimSpace(adminEmailFromRequest(r)))
+				if err != nil {
+					http.Error(w, "no se pudo posponer la configuracion guiada: "+err.Error(), http.StatusInternalServerError)
+					return
+				}
+				writeJSON(w, http.StatusOK, map[string]interface{}{
+					"ok":        true,
+					"resultado": result,
+				})
+				return
+			}
 			if action != "aplicar" {
 				http.Error(w, "accion no soportada", http.StatusBadRequest)
 				return
@@ -101,6 +118,45 @@ func EmpresaConfiguracionGuiadaHandler(dbEmp *sql.DB) http.HandlerFunc {
 
 		http.Error(w, "Metodo no permitido", http.StatusMethodNotAllowed)
 	}
+}
+
+func postponeEmpresaConfiguracionGuiada(dbEmp *sql.DB, state *empresaConfiguracionGuiadaState, usuario string) (map[string]interface{}, error) {
+	if state == nil || state.EmpresaID <= 0 {
+		return nil, fmt.Errorf("empresa invalida")
+	}
+	if strings.TrimSpace(usuario) == "" {
+		usuario = "sistema.configuracion_guiada"
+	}
+	now := time.Now().Format(time.RFC3339)
+	resumen := map[string]interface{}{
+		"empresa_id":          state.EmpresaID,
+		"empresa_nombre":      state.EmpresaNombre,
+		"tipo_empresa_nombre": state.TipoEmpresaNombre,
+		"estado":              "pospuesta",
+		"pospuesta":           true,
+		"configurada":         false,
+		"aplicado_en":         now,
+		"pospuesta_en":        now,
+		"pendientes": []string{
+			"El usuario eligio configurar despues. La configuracion guiada inicial no se mostrara automaticamente de nuevo.",
+		},
+	}
+	rawResumen, _ := json.Marshal(resumen)
+	if _, err := dbpkg.UpsertEmpresaEstacionPref(dbEmp, dbpkg.EmpresaEstacionPref{
+		EmpresaID:      state.EmpresaID,
+		EstacionID:     0,
+		Clave:          "configuracion_guiada_resumen",
+		Valor:          string(rawResumen),
+		UsuarioCreador: usuario,
+		Estado:         "activo",
+		Observaciones:  "[configuracion_guiada] asistente inicial pospuesto por el usuario",
+	}); err != nil {
+		return nil, err
+	}
+	return map[string]interface{}{
+		"mensaje": "Listo. No volveremos a mostrar automaticamente la configuracion guiada inicial para esta empresa.",
+		"resumen": resumen,
+	}, nil
 }
 
 func loadEmpresaConfiguracionGuiadaState(dbEmp *sql.DB, empresaID int64) (*empresaConfiguracionGuiadaState, error) {

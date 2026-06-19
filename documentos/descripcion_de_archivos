@@ -11493,3 +11493,11 @@ backend/handlers/user_config.go - Controlador que expone /api/user/configuracion
 	- agrega campo y vista previa para cambiar el logo que se muestra en los correos corporativos.
 - `CHANGELOG.md`, `documentos/mapa_modulos.md`, `documentos/flujos_operativos.md`, `documentos/descripcion_de_archivos`:
 	- documentan el flujo y la trazabilidad del logo configurable para correos Mailu.
+
+2026-06-19 - Configuracion guiada se muestra una sola vez
+- `backend/handlers/configuracion_guiada.go`:
+	- agrega `action=posponer` para guardar que el usuario eligio `Despues` en `configuracion_guiada_resumen` y evitar reaperturas automaticas.
+- `web/administrar_empresa/panel.html`:
+	- el boton `Despues` llama el endpoint de posponer, limpia el flag local y cierra el modal sin mostrarlo de nuevo en proximos logins.
+- `documentos/mapa_modulos.md` y `documentos/descripcion_de_archivos`:
+	- documentan la regla de apertura unica del asistente inicial.

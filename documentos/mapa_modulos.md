@@ -17,6 +17,10 @@ GET/POST con `empresa_id`; guarda `estaciones_config`,
 `configuracion_guiada_interactiva`. El chat flotante agrega selector de agente y
 `agente_configuracion_de_empresa` para guiar productos, tarifas, estaciones,
 impresoras, caja y parametros, con acciones UI confirmadas.
+Actualizacion 2026-06-19: si el usuario pulsa `Despues`, el panel llama
+`POST /api/empresa/configuracion_guiada?action=posponer` y guarda
+`configuracion_guiada_resumen.estado=pospuesta`; por tanto el asistente no se
+abre de nuevo en el siguiente arranque o login de esa empresa.
 
 Actualizacion 2026-06-18: captura IA documental por empresa. Ingresos,
 Egresos y Compras llaman `/api/empresa/soportes_compras_ia?action=radicar` y
