@@ -1,3 +1,8 @@
+2026-06-19: Pagos de licencias listos para produccion.
+- Frontend: `web/elegir_licencia.html` agrega precio anterior tachado en las tarjetas comerciales para los planes COP 60.000, COP 110.000 y COP 200.000.
+- Pagos: se reviso el flujo publico de metodos de pago y checkout de licencias. Epayco y Wompi quedan activos cuando pais/credenciales lo permiten y los endpoints de creacion revalidan disponibilidad antes de abrir pasarela.
+- QA: pruebas enfocadas de handlers para Epayco/Wompi/licencias, pruebas de db para pagos/licencias y chequeo sintactico JS de elegir/pagar licencia.
+
 2026-06-18: Correo corporativo Mailu como canal principal.
 - Backend: los envios comunes del sistema salen por Mailu; licencias y compras usan
   `ventas@powerfulcontrolsystem.com`, mientras alertas, invitaciones,

@@ -1,3 +1,8 @@
+## [2026-06-19] Pagos de licencias listos para produccion
+- [Pagos] Epayco y Wompi quedan revisados como pasarelas activas por pais/credenciales desde `/api/public/licencias/payment_methods`; los endpoints de creacion vuelven a validar disponibilidad antes de iniciar checkout.
+- [Licencias] `elegir_licencia.html` muestra precio anterior tachado para COP 60.000, COP 110.000 y COP 200.000, manteniendo el precio actual como valor principal.
+- [QA] `go test ./handlers -run "Epayco|Wompi|Licencia.*Payment|Payment.*Licencia|Checkout|PaymentCredential|Discount|PaymentContext|Gratis" -count=1`; `go test ./db -run "Licencia|Payment|Gratis" -count=1`; chequeo sintactico JS de `elegir_licencia.html` y `pagar_licencia.html`.
+
 ## [2026-06-18] Panel super reinicia indicadores y rs en scripts
 - [Super] `licencias_resumen.html` agrega botones `Reiniciar metricas` y `Reiniciar errores` con confirmacion antes de limpiar indicadores.
 - [Backend] `/super/api/panel_control/reset?action=metricas|errores` limpia respectivamente `metrics` o `super_errores_sistema`, con acceso super administrador y auditoria.

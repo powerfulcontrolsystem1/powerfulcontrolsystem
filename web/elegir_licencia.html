@@ -165,6 +165,38 @@
       font-size:.98rem;
       line-height:1.2;
     }
+    body.elegir-licencia-page .license-price-stack{
+      display:grid;
+      gap:3px;
+      align-content:start;
+    }
+    body.elegir-licencia-page .license-price-before{
+      position:relative;
+      display:inline-block;
+      width:max-content;
+      max-width:100%;
+      color:var(--muted);
+      font-size:.82rem;
+      font-weight:850;
+      line-height:1.08;
+    }
+    body.elegir-licencia-page .license-price-before::after{
+      content:"";
+      position:absolute;
+      left:0;
+      right:0;
+      top:50%;
+      height:2px;
+      background:currentColor;
+      transform:translateY(-50%);
+    }
+    body.elegir-licencia-page .license-price-current{
+      display:block;
+      color:var(--text);
+      font-size:1rem;
+      font-weight:900;
+      line-height:1.12;
+    }
     body.elegir-licencia-page .license-sales-card .card-actions{
       margin-top:auto;
     }
@@ -411,6 +443,29 @@
         return amount;
       }
 
+      function getLicenciaPrecioAntes(valor) {
+        var amount = Math.round(Number(valor || 0));
+        if (amount === 60000) return 70000;
+        if (amount === 110000) return 120000;
+        if (amount === 200000) return 220000;
+        return 0;
+      }
+
+      function buildLicenciaPrecioMarkup(valor, currencyCtx) {
+        var currency = currencyCtx && currencyCtx.currency;
+        var locale = currencyCtx && currencyCtx.locale;
+        var current = formatMoney(valor, currency, locale);
+        var before = getLicenciaPrecioAntes(valor);
+        if (!before) {
+          return '<strong>' + escapeHtml(current) + '</strong>';
+        }
+        return '' +
+          '<strong class="license-price-stack">' +
+          '  <span class="license-price-before">' + escapeHtml(formatMoney(before, currency, locale)) + '</span>' +
+          '  <span class="license-price-current">' + escapeHtml(current) + '</span>' +
+          '</strong>';
+      }
+
       function normalizeCountryCode(raw) {
         var code = String(raw || '').trim().toUpperCase();
         return code.length === 2 ? code : '';
@@ -466,7 +521,7 @@
         var icono = normalizeImage(getLicenciaIcon(licencia, tipoNombre));
         var descripcion = String(licencia.descripcion || licencia.Descripcion || '').trim();
         var actionLabel = valor <= 0 ? 'Activar licencia' : 'Comprar licencia';
-        var money = formatMoney(valor, currencyCtx && currencyCtx.currency, currencyCtx && currencyCtx.locale);
+        var moneyMarkup = buildLicenciaPrecioMarkup(valor, currencyCtx);
         var toneClass = getLicenciaToneClass(licencia, tipoNombre, idx);
         var kicker = getLicenciaKicker(licencia, tipoNombre);
         var trial15 = isTrial15License(licencia);
@@ -491,7 +546,7 @@
           '  <div class="license-sales-body">' +
           '    <p class="license-sales-description">' + escapeHtml(descripcion || ('Licencia con duración de ' + String(duracion || '--') + ' días y activación para la empresa seleccionada.')) + '</p>' +
           '    <div class="license-sales-meta">' +
-          '      <div class="license-sales-metric"><span>Valor</span><strong>' + escapeHtml(money) + '</strong></div>' +
+          '      <div class="license-sales-metric"><span>Valor</span>' + moneyMarkup + '</div>' +
           '      <div class="license-sales-metric"><span>Duración</span><strong>' + escapeHtml(String(duracion || '--')) + ' días</strong></div>' +
           '    </div>' +
           advisorField +
