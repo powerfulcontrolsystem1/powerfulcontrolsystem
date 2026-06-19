@@ -35667,3 +35667,11 @@ Archivos modificados:
 - UX: labels como `Buscar por` y los demas campos del carrito usan el mismo fondo sombreado adaptable a tema claro/oscuro.
 - Cantidad: los botones `-` y `+` y el campo central de cantidad usan el mismo fondo sombreado.
 - Ajuste pedido: `Efectivo recibido` mantiene el color normal del tema y solo aumenta su tamano/fuerza visual.
+
+2026-06-19: rs: actualizar repositorio y sincronizar VPS
+PushStatus: OK
+Archivos modificados:
+- CHANGELOG.md
+- documentos/historial_de_cambios
+- documentos/mapa_modulos.md
+- web/estilos.css
