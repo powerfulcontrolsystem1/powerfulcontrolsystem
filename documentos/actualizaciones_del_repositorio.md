@@ -15267,3 +15267,26 @@ Archivos modificados:
 - web/super/configuracion_avanzada.html
 - web/super/email_corporativo.html
 - web/super_administrador.html
+
+2026-06-18 23:37:39 - Mensaje: rs: actualizar repositorio y sincronizar VPS; Commit: 535ad43e; PushStatus: OK
+Archivos modificados:
+- CHANGELOG.md
+- backend/handlers/agente_internet_fiscal.go
+- backend/handlers/chat_con_inteligencia_artificial_controller.go
+- backend/handlers/configuracion_guiada.go
+- backend/handlers/soportes_compras_ia.go
+- documentos/descripcion_de_archivos
+- documentos/descripcion_de_modulos
+- documentos/estructura_bd.md
+- documentos/flujos_operativos.md
+- documentos/mapa_modulos.md
+- documentos/matriz_roles_permisos_pos_multiempresa.md
+- web/administrar_empresa/administrar_productos.html
+- web/administrar_empresa/compras.html
+- web/administrar_empresa/egresos.html
+- web/administrar_empresa/ingresos.html
+- web/administrar_empresa/panel.html
+- web/estilos.css
+- web/js/ai_chat_drawer.js
+- web/js/egresos_ingresos.js
+- web/js/seleccionar_empresa.js
