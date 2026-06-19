@@ -12,8 +12,8 @@ menu Beta se controla desde `web/js/administrar_empresa.js`; Estaciones/Puntos
 de venta, Corte de caja, Compras, Centro financiero y contable y Clientes quedan
 como modulos sin etiqueta Beta. `Carrito de compras` mantiene la venta sin stock
 habilitada por defecto en frontend y backend (`backend/db/carritos_compras.go`)
-y agrega estilos visuales por usuario desde
-`web/administrar_empresa/carrito_de_compras.html`.
+y usa un estilo unico basado en la tarjeta `Detalle del pago`, definido entre
+`web/administrar_empresa/carrito_de_compras.html` y `web/estilos.css`.
 
 Actualizacion 2026-06-19: `Correo corporativo Mailu` usa logo inline en todos
 los correos del motor corporativo. `backend/handlers/usuarios_empresa.go` arma

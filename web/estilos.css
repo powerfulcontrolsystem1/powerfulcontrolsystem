@@ -21134,6 +21134,46 @@ body.pos-touch-mode .carrito-customer-quick-grid {
   background:color-mix(in srgb,var(--surface-soft,#f6f8fb) 72%,#fff 28%);
 }
 
+body.carrito-flat-page .form:not(.carrito-workspace-card),
+body.carrito-flat-page .card,
+body.carrito-flat-page .advanced-card,
+body.carrito-flat-page .empresa-section,
+body.carrito-flat-page .carrito-summary-card,
+body.carrito-flat-page .carrito-item-card,
+body.carrito-flat-page .carrito-payment-section-card,
+body.carrito-flat-page .carrito-actions-card,
+body.carrito-flat-page .carrito-worker-card,
+body.carrito-flat-page .carrito-vip-card,
+body.carrito-flat-page .carrito-payment-amounts-card,
+body.carrito-flat-page .carrito-payment-qr-card,
+body.carrito-flat-page #scannerPanel,
+body.carrito-flat-page #stationCheckoutPanel,
+body.carrito-flat-page #stationCartActionsCard,
+body.carrito-flat-page #stationPaymentAmountsCard,
+body.carrito-flat-page #stationPaymentQrCard,
+body.carrito-flat-page #stationWorkerCommissionCard,
+body.carrito-flat-page #stationVipAccessCard,
+body.carrito-flat-page #carritoTotalsPanel,
+body.carrito-flat-page #carritoSearchBlock,
+body.carrito-flat-page #carritosList{
+  border:1px solid var(--border,#d6dee8) !important;
+  border-radius:12px !important;
+  background:var(--surface,#fff) !important;
+  box-shadow:none !important;
+}
+
+body.carrito-flat-page .empresa-section-header,
+body.carrito-flat-page .page-header,
+body.carrito-flat-page .carrito-summary-card .section-heading{
+  border-color:var(--border,#d6dee8) !important;
+}
+
+body.carrito-flat-page .carrito-payment-compact-row label[for="stationCashReceivedDisplay"]{
+  font-size:1.08rem;
+  color:#14532d;
+  font-weight:950;
+}
+
 body.pos-touch-mode #carritoActionToolbar,
 body.pos-touch-mode .carrito-station-toolbar {
   align-items: stretch;

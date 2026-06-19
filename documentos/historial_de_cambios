@@ -35621,8 +35621,8 @@ Archivos modificados:
 - Super administrador: `web/super_administrador.html` deja `Seleccionar empresa` como boton integrado, no flotante, azul claro y con `target=_top`; `web/estilos.css` ajusta la barra super y evita doble desplazamiento del fondo cuando el chat IA esta abierto.
 - Menu empresarial: `web/administrar_empresa.html` crea el submenu `Usuarios, clientes y personas` y mueve alli Usuarios, Clientes y Login de usuarios. `web/js/administrar_empresa.js` deja sin etiqueta `Beta` Estaciones/Puntos de venta, Corte de caja, Compras, Centro financiero y contable y Clientes.
 - Carrito/stock: `web/administrar_empresa/configuracion_carrito_de_compra_empresa.html`, `web/administrar_empresa/carrito_de_compras.html` y `backend/db/carritos_compras.go` dejan la venta sin stock habilitada de forma fija para permitir inventario negativo operativo.
-- Carrito/UX: `web/administrar_empresa/carrito_de_compras.html` agrega estilos Consola, Simple, Moderno y Supermercado, con boton superior izquierdo y preferencia local por usuario.
-- Seguridad y datos: no se agregan endpoints; se conserva aislamiento por `empresa_id` en las rutas existentes. La preferencia visual del carrito se guarda por usuario en `localStorage`, no por empresa.
+- Carrito/UX: `web/administrar_empresa/carrito_de_compras.html` conserva un solo estilo visual y retira el boton flotante de apariencias. `web/estilos.css` extiende a todo el carrito el estilo compacto de la tarjeta `Detalle del pago` y destaca `Efectivo recibido` con letra mas grande y verde oscuro.
+- Seguridad y datos: no se agregan endpoints; se conserva aislamiento por `empresa_id` en las rutas existentes. No queda persistencia de apariencias del carrito.
 - QA: `go test ./db -run Carrito -count=1`, chequeos sintacticos JS previos del carrito/configuracion, verificacion DOM del nuevo submenu y del selector de estilo; `rs` queda como validacion operativa final.
 
 2026-06-19: rs: actualizar repositorio y sincronizar VPS
