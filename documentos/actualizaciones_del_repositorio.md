@@ -15500,3 +15500,17 @@ Archivos modificados:
 - web/js/administrar_empresa.js
 - web/super/licencias_resumen.html
 - web/super_administrador.html
+
+2026-06-20 13:41:13 - Mensaje: rs: actualizar repositorio y sincronizar VPS; Commit: 332ead89; PushStatus: OK
+Archivos modificados:
+- CHANGELOG.md
+- backend/handlers/empresa_permisos.go
+- backend/handlers/panel_empresa_config.go
+- backend/main.go
+- documentos/CHANGELOG.md
+- documentos/api/openapi.generated.yaml
+- documentos/descripcion_de_archivos
+- documentos/mapa_modulos.md
+- web/administrar_empresa/configuracion/panel_inicio.html
+- web/administrar_empresa/configuracion_menu.html
+- web/administrar_empresa/panel.html
