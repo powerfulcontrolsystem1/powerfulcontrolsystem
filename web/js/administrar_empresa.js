@@ -313,7 +313,44 @@ try {
       link.appendChild(badge);
     });
   }
+
+  function normalizeMenuGroupTitle(rawTitle) {
+    return String(rawTitle || "")
+      .trim()
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/\s+/g, " ");
+  }
+
+  function findAdminMenuGroupByTitle(rawTitle) {
+    var expected = normalizeMenuGroupTitle(rawTitle);
+    var groups = Array.prototype.slice.call(document.querySelectorAll("#adminSidebarNav > .admin-nav-group"));
+    for (var i = 0; i < groups.length; i += 1) {
+      var title = groups[i].querySelector(".admin-nav-group-title");
+      if (title && normalizeMenuGroupTitle(title.textContent) === expected) return groups[i];
+    }
+    return null;
+  }
+
+  function applyAdminMenuPreferredOrder() {
+    var nav = document.getElementById("adminSidebarNav");
+    if (!nav) return;
+    var inventory = findAdminMenuGroupByTitle("Inventario y compras");
+    if (!inventory) return;
+    [
+      "Usuarios, clientes y personas",
+      "Finanzas y cumplimiento",
+      "Control de asistencia y horarios"
+    ].reverse().forEach(function (title) {
+      var group = findAdminMenuGroupByTitle(title);
+      if (group) {
+        nav.insertBefore(group, inventory.nextSibling);
+      }
+    });
+  }
   applyBetaBadgesToEnterpriseMenu();
+  applyAdminMenuPreferredOrder();
 
   var permActionRead = "R";
   var permActionCreate = "C";
@@ -1785,6 +1822,7 @@ try {
   }
 
   function refreshMenuGroups() {
+    applyAdminMenuPreferredOrder();
     refreshNuevasPlantillasMenuVisibility();
     var groups = Array.prototype.slice.call(document.querySelectorAll(".admin-sidebar .admin-nav-group"));
     groups.forEach(function (group) {

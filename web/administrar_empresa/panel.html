@@ -729,6 +729,56 @@
       outline-offset: 2px;
     }
 
+    .empresa-news-card {
+      margin-top: 12px;
+      padding: 14px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--card);
+      color: var(--text);
+      box-shadow: 0 14px 30px var(--panel-card-shadow);
+    }
+
+    .empresa-news-card[hidden] {
+      display: none;
+    }
+
+    .empresa-news-link {
+      display: grid;
+      gap: 6px;
+      color: inherit;
+      text-decoration: none;
+    }
+
+    .empresa-news-link:hover strong,
+    .empresa-news-link:focus-visible strong {
+      color: var(--accent);
+    }
+
+    .empresa-news-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      color: var(--muted);
+      font-size: .76rem;
+      font-weight: 800;
+      text-transform: uppercase;
+    }
+
+    .empresa-news-title {
+      margin: 0;
+      color: var(--text);
+      font-size: 1rem;
+      line-height: 1.18;
+    }
+
+    .empresa-news-summary {
+      margin: 0;
+      color: var(--muted);
+      font-size: .84rem;
+      line-height: 1.38;
+    }
+
     .empresa-buzon-grid {
       display: grid;
       grid-template-columns: minmax(0, 1fr) minmax(320px, .82fr);
@@ -1882,6 +1932,20 @@
     </section>
     </div>
 
+    <section id="empresaNoticiasCard" class="empresa-news-card" aria-labelledby="empresaNoticiasTitle" hidden>
+      <div class="empresa-favorites-head">
+        <div class="empresa-favorites-heading">
+          <p class="empresa-favorites-kicker">Noticias</p>
+          <h2 id="empresaNoticiasTitle" class="empresa-favorites-title">Ultima noticia</h2>
+        </div>
+      </div>
+      <a id="empresaNoticiasLink" class="empresa-news-link" href="/noticias.html" target="_blank" rel="noopener">
+        <span id="empresaNoticiasMeta" class="empresa-news-meta"></span>
+        <strong id="empresaNoticiasHeadline" class="empresa-news-title">Cargando noticia...</strong>
+        <p id="empresaNoticiasSummary" class="empresa-news-summary"></p>
+      </a>
+    </section>
+
     <section class="empresa-buzon-grid" aria-label="Buzon y chat interno">
       <article class="empresa-buzon-card" aria-labelledby="empresaBuzonTitle">
         <div class="empresa-buzon-head">
@@ -1986,6 +2050,11 @@
       var empresaEmailNotificationTitleEl = document.getElementById("empresaEmailNotificationTitle");
       var empresaEmailNotificationMetaEl = document.getElementById("empresaEmailNotificationMeta");
       var empresaEmailNotificationLinkEl = document.getElementById("empresaEmailNotificationLink");
+      var empresaNoticiasCardEl = document.getElementById("empresaNoticiasCard");
+      var empresaNoticiasLinkEl = document.getElementById("empresaNoticiasLink");
+      var empresaNoticiasMetaEl = document.getElementById("empresaNoticiasMeta");
+      var empresaNoticiasHeadlineEl = document.getElementById("empresaNoticiasHeadline");
+      var empresaNoticiasSummaryEl = document.getElementById("empresaNoticiasSummary");
       var empresaBuzonListEl = document.getElementById("empresaBuzonList");
       var empresaBuzonUnreadBadgeEl = document.getElementById("empresaBuzonUnreadBadge");
       var empresaBuzonStorageEl = document.getElementById("empresaBuzonStorage");
@@ -2581,6 +2650,37 @@
           .then(renderMaintenanceNotice)
           .catch(function () {
             renderMaintenanceNotice(null);
+          });
+      }
+
+      function loadLatestSystemNews() {
+        if (!empresaNoticiasCardEl) return Promise.resolve();
+        return fetchJSON("/api/public/noticias")
+          .then(function (data) {
+            var cfg = data && data.config ? data.config : {};
+            var news = Array.isArray(cfg.noticias) ? cfg.noticias.filter(function (item) {
+              return item && item.activa !== false;
+            }) : [];
+            if (!news.length) {
+              empresaNoticiasCardEl.hidden = true;
+              return;
+            }
+            var item = news[0];
+            if (empresaNoticiasHeadlineEl) empresaNoticiasHeadlineEl.textContent = text(item.titulo) || "Noticia del sistema";
+            if (empresaNoticiasSummaryEl) empresaNoticiasSummaryEl.textContent = text(item.resumen || item.contenido) || "Consulta la noticia completa en la pagina del sistema.";
+            if (empresaNoticiasMetaEl) {
+              var meta = [];
+              if (text(item.categoria)) meta.push(text(item.categoria));
+              if (text(item.fecha)) meta.push(text(item.fecha));
+              empresaNoticiasMetaEl.textContent = meta.join(" / ");
+            }
+            if (empresaNoticiasLinkEl) {
+              empresaNoticiasLinkEl.href = text(item.fuente_url) || "/noticias.html";
+            }
+            empresaNoticiasCardEl.hidden = false;
+          })
+          .catch(function () {
+            empresaNoticiasCardEl.hidden = true;
           });
       }
 
@@ -3856,6 +3956,7 @@
         loadEmpresaBuzon();
         window.setInterval(loadEmpresaBuzon, 60000);
         loadMaintenanceNotice();
+        loadLatestSystemNews();
         var adminPromise = fetchJSON("/me").catch(function () { return {}; });
         var guidedConfigPromise = empresaId
           ? fetchJSON("/api/empresa/configuracion_guiada?empresa_id=" + encodeURIComponent(empresaId)).catch(function () { return {}; })

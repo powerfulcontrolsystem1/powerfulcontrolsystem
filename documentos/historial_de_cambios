@@ -35733,3 +35733,13 @@ Archivos modificados:
 - web/super_administrador.html
 - web/venta_publica.html
 - web/visualizar_productos_y_precios_publico.html
+
+## [2026-06-20] Paneles, noticias, carrito credito y correo de factura electronica
+- [Super administrador] El menu principal renombra `Centro de mando` a `Panel`; el panel reemplaza la tarjeta `Email corporativo` por `Seleccionar empresa` y mueve `Analitica publica / Visitas al portal por pais` al final de la pagina.
+- [Panel empresa] Se agrega tarjeta `Noticias` debajo de favoritos/email; consume `/api/public/noticias`, muestra solo la ultima noticia activa y se oculta cuando no hay publicaciones.
+- [Carrito] El selector `Selecciona una accion` incluye `Cupo de credito`; al elegirlo activa `credito_cliente`, actualiza el panel de pago y orienta al cajero a seleccionar cliente con cupo.
+- [Carrito UX] Los titulos/labels del carrito usan sombreado tambien en temas claros, con variantes pastel por tema, manteniendo esquinas cuadradas.
+- [Menu empresa] `Personas y activos` pasa a `Control de asistencia y horarios`; el orden visual queda Inventario y compras, Usuarios/clientes/personas, Finanzas/cumplimiento y Control de asistencia/horarios para reforzar la integracion con Nomina.
+- [Facturacion electronica] El correo automatico/manual al cliente pasa a `multipart/mixed`: cuerpo texto, cuerpo HTML, adjunto HTML, adjunto TXT y enlace QR DIAN cuando el documento tiene codigo de validacion.
+- [Login] Se verifico que `login.html` ya usa flujo de recuperacion con token enviado por correo para super administradores y usuarios de empresa; no se envia la clave en texto plano.
+- [QA] `go test ./handlers ./db` desde `backend`; `node --check` de `web/js/administrar_empresa.js` y scripts embebidos de panel, carrito, facturas electronicas y panel super; verificacion visual/DOM local en `127.0.0.1:8399`.

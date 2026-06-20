@@ -3061,3 +3061,10 @@
 ## [2026-06-11] Carrito - Busqueda por nombre
 - [UX] El panel de coincidencias del buscador rapido por nombre se oculta al seleccionar un producto y mantiene la seleccion para agregarlo al carrito.
 - [QA] Validado con sintaxis JS embebida, prueba visual Playwright aislada y `git diff --check`.
+
+## [2026-06-20] Paneles, noticias y factura electronica por correo
+- [Super] `Centro de mando` ahora se muestra como `Panel`; el dashboard reemplaza la tarjeta de Email corporativo por `Seleccionar empresa` y baja la analitica publica al final.
+- [Empresa] El panel muestra una tarjeta `Noticias` con la ultima publicacion activa del sistema.
+- [Carrito] Se agrega `Cupo de credito` al selector de acciones y se sombrean titulos tambien en temas claros.
+- [Facturacion electronica] Los correos al cliente ahora salen en multipart con HTML, adjuntos HTML/TXT y enlace QR DIAN cuando hay codigo de validacion.
+- [QA] Pruebas Go de `handlers/db`, chequeos JS y validacion visual/DOM local.

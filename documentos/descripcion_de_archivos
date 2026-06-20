@@ -11524,3 +11524,17 @@ backend/handlers/user_config.go - Controlador que expone /api/user/configuracion
 	- centralizan el armado de correos corporativos con logo embebido y fallback local a `web/img/Logo pcs 1.png`.
 - `web/super/seguridad_2fa.html`, `web/super/seguridad_2fa.js`:
 	- archivos retirados por decision operativa; no deben volver a enlazarse desde el panel super.
+
+2026-06-20 - Paneles, carrito credito y factura electronica por correo
+- `backend/handlers/facturacion_electronica.go`:
+	- arma los correos de factura electronica como multipart con cuerpo texto/HTML, adjuntos HTML/TXT y enlace de consulta DIAN cuando existe codigo de validacion.
+- `web/super_administrador.html`:
+	- renombra el acceso principal `Centro de mando` a `Panel`.
+- `web/super/licencias_resumen.html`:
+	- cambia la tarjeta superior de Email corporativo por `Seleccionar empresa` y ubica la analitica publica al final del panel.
+- `web/administrar_empresa/panel.html`:
+	- agrega tarjeta `Noticias` que lee la ultima noticia activa desde `/api/public/noticias`.
+- `web/administrar_empresa/carrito_de_compras.html`:
+	- agrega accion `Cupo de credito` y sombreado de titulos para temas claros del carrito.
+- `web/administrar_empresa.html` y `web/js/administrar_empresa.js`:
+	- renombran y reordenan el grupo de asistencia/horarios junto a usuarios y finanzas.

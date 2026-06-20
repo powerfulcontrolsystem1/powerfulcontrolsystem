@@ -3,6 +3,17 @@
 Tabla de ubicacion rapida para no buscar desde cero cada modulo. Si una fila
 queda incompleta al implementar una mejora, actualizarla en el mismo cambio.
 
+Actualizacion 2026-06-20: `Super administrador` renombra `Centro de mando` a
+`Panel`, reemplaza la tarjeta superior de `Email corporativo` por
+`Seleccionar empresa` y envia `Analitica publica / Visitas al portal por pais`
+al final del panel. `Administrar empresa > Panel` agrega la tarjeta `Noticias`
+alimentada por `/api/public/noticias`, visible solo cuando hay noticias activas.
+`Carrito de compras` agrega la accion `Cupo de credito`, que selecciona el pago
+`credito_cliente`, conserva validacion de cliente/cupo y usa sombreado de
+titulos tambien en apariencias claras. `Facturacion electronica` envia correo
+al cliente con cuerpo HTML/texto, adjuntos HTML/TXT y enlace QR DIAN cuando hay
+codigo de validacion.
+
 Actualizacion 2026-06-20: `Administrar empresa` mueve
 `Importaciones y costeo`, `Produccion / MRP` y `Logistica WMS` al grupo
 `Produccion, logistica e importaciones`; `Panel` queda sin etiqueta Beta y

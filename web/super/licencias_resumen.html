@@ -125,15 +125,15 @@
           <p class="cmd-favorites-empty">Marca cualquier pagina con la estrella para verla aqui.</p>
         </div>
       </section>
-      <a class="cmd-email-card" href="/super/email_corporativo.html" aria-label="Abrir Email corporativo">
+      <a class="cmd-email-card" href="/seleccionar_empresa.html" target="_top" aria-label="Seleccionar empresa">
         <div class="cmd-email-card-top">
-          <span class="cmd-email-icon"><img src="/img/network-color.svg" alt=""></span>
+          <span class="cmd-email-icon"><img src="/img/company-briefcase-color.svg" alt=""></span>
           <div>
-            <h2>Email corporativo</h2>
-            <p>Mailu, cuentas y webmail</p>
+            <h2>Seleccionar empresa</h2>
+            <p>Cambiar el alcance operativo</p>
           </div>
         </div>
-        <span class="cmd-email-status">Abrir</span>
+        <span class="cmd-email-status">Ver</span>
       </a>
       <section class="cmd-openai-card" aria-label="Consumo OpenAI">
         <div class="cmd-openai-card-head">
@@ -239,27 +239,6 @@
           </div>
         </section>
 
-        <section id="superPortalVisitCounter" class="cmd-panel portal-visit-counter super-portal-visit-counter" aria-labelledby="superPortalVisitTitle" data-portal-visits-widget data-count-visit="0">
-          <div class="cmd-panel-head">
-            <div>
-              <span class="portal-visit-kicker">Analitica publica</span>
-              <h2 id="superPortalVisitTitle">Visitas al portal por pais</h2>
-              <p class="portal-visit-status" data-portal-visits-status>Cargando contador...</p>
-            </div>
-            <div class="portal-visit-total" aria-label="Total de visitas registradas">
-              <strong data-portal-visits-total>0</strong>
-              <span>visitas registradas</span>
-            </div>
-          </div>
-          <div class="portal-visit-shell">
-            <div class="portal-visit-main">
-              <div class="portal-visit-map" aria-live="polite" data-portal-visits-map></div>
-            </div>
-            <aside class="portal-visit-side" aria-label="Visitas por pais">
-              <div data-portal-visits-countries></div>
-            </aside>
-          </div>
-        </section>
       </div>
 
       <aside>
@@ -274,6 +253,27 @@
         </section>
 
       </aside>
+    </section>
+    <section id="superPortalVisitCounter" class="cmd-panel portal-visit-counter super-portal-visit-counter" aria-labelledby="superPortalVisitTitle" data-portal-visits-widget data-count-visit="0">
+      <div class="cmd-panel-head">
+        <div>
+          <span class="portal-visit-kicker">Analitica publica</span>
+          <h2 id="superPortalVisitTitle">Visitas al portal por pais</h2>
+          <p class="portal-visit-status" data-portal-visits-status>Cargando contador...</p>
+        </div>
+        <div class="portal-visit-total" aria-label="Total de visitas registradas">
+          <strong data-portal-visits-total>0</strong>
+          <span>visitas registradas</span>
+        </div>
+      </div>
+      <div class="portal-visit-shell">
+        <div class="portal-visit-main">
+          <div class="portal-visit-map" aria-live="polite" data-portal-visits-map></div>
+        </div>
+        <aside class="portal-visit-side" aria-label="Visitas por pais">
+          <div data-portal-visits-countries></div>
+        </aside>
+      </div>
     </section>
   </main>
   <div id="cmdToast" class="cmd-toast" role="status"></div>

@@ -3,14 +3,17 @@ package handlers
 import (
 	"bytes"
 	"database/sql"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"html"
 	"io"
 	"log"
 	"net"
 	"net/http"
 	"net/mail"
+	"net/url"
 	"strings"
 	"time"
 
@@ -1481,6 +1484,7 @@ func sendFacturaElectronicaEmail(dbSuper *sql.DB, toEmail, toName string, doc db
 
 	documentLabel := "Factura electronica"
 	introLine := "Tu factura electronica fue emitida correctamente."
+	qrURL := facturaElectronicaDIANQRURL(doc)
 	feDetail := "Pais FE: " + strings.ToUpper(strings.TrimSpace(doc.PaisCodigo)) + "\r\n" +
 		"Ambiente FE: " + strings.TrimSpace(doc.AmbienteFE) + "\r\n"
 	if strings.EqualFold(strings.TrimSpace(doc.TipoDocumento), "comprobante_pago") {
@@ -1497,19 +1501,123 @@ func sendFacturaElectronicaEmail(dbSuper *sql.DB, toEmail, toName string, doc db
 		"Codigo de validacion: " + codigoValidacion + "\r\n" +
 		"Total: " + fmt.Sprintf("%.2f", monto) + " " + moneda + "\r\n" +
 		feDetail + "\r\n" +
+		func() string {
+			if qrURL == "" {
+				return ""
+			}
+			return "Consulta DIAN / QR: " + qrURL + "\r\n\r\n"
+		}() +
 		"Gracias por tu compra.\r\n"
 
+	bodyHTML := facturaElectronicaEmailHTML(safeName, introLine, documentLabel, numeroLegal, codigoValidacion, monto, moneda, doc, qrURL)
+	baseName := facturaElectronicaAttachmentBaseName(numeroLegal, doc.DocumentoCodigo)
+	boundaryMixed := "pcs_fe_mixed_" + time.Now().UTC().Format("20060102150405")
+	boundaryAlt := "pcs_fe_alt_" + time.Now().UTC().Format("150405")
 	msg := "From: " + (&mail.Address{Name: fromName, Address: fromEmail}).String() + "\r\n" +
 		"To: " + toEmail + "\r\n" +
 		"Subject: " + subject + "\r\n" +
 		"MIME-Version: 1.0\r\n" +
-		"Content-Type: text/plain; charset=UTF-8\r\n\r\n" +
-		body
+		"Content-Type: multipart/mixed; boundary=\"" + boundaryMixed + "\"\r\n\r\n" +
+		"--" + boundaryMixed + "\r\n" +
+		"Content-Type: multipart/alternative; boundary=\"" + boundaryAlt + "\"\r\n\r\n" +
+		"--" + boundaryAlt + "\r\n" +
+		"Content-Type: text/plain; charset=UTF-8\r\n" +
+		"Content-Transfer-Encoding: 8bit\r\n\r\n" +
+		body + "\r\n" +
+		"--" + boundaryAlt + "\r\n" +
+		"Content-Type: text/html; charset=UTF-8\r\n" +
+		"Content-Transfer-Encoding: 8bit\r\n\r\n" +
+		bodyHTML + "\r\n" +
+		"--" + boundaryAlt + "--\r\n" +
+		facturaElectronicaEmailAttachmentPart(boundaryMixed, baseName+".html", "text/html; charset=UTF-8", []byte(bodyHTML)) +
+		facturaElectronicaEmailAttachmentPart(boundaryMixed, baseName+".txt", "text/plain; charset=UTF-8", []byte(body)) +
+		"--" + boundaryMixed + "--\r\n"
 
 	return sendEmpresaUsuarioMailuMessage(dbSuper, fromEmail, toEmail, []byte(msg))
 }
 
 // EmpresaFacturacionElectronicaPaisDetectadoHandler detecta automáticamente país FE.
+func facturaElectronicaDIANQRURL(doc dbpkg.EmpresaDocumentoFacturacion) string {
+	key := strings.TrimSpace(doc.CodigoValidacion)
+	if key == "" {
+		return ""
+	}
+	base := "https://catalogo-vpfe.dian.gov.co/document/searchqr?documentkey="
+	ambiente := strings.ToLower(strings.TrimSpace(doc.AmbienteFE))
+	if strings.Contains(ambiente, "hab") || strings.Contains(ambiente, "test") || ambiente == "2" {
+		base = "https://catalogo-vpfe-hab.dian.gov.co/document/searchqr?documentkey="
+	}
+	return base + url.QueryEscape(key)
+}
+
+func facturaElectronicaEmailHTML(toName, introLine, documentLabel, numeroLegal, codigoValidacion string, monto float64, moneda string, doc dbpkg.EmpresaDocumentoFacturacion, qrURL string) string {
+	qrBlock := ""
+	if qrURL != "" {
+		qrBlock = `<p><a href="` + html.EscapeString(qrURL) + `" style="display:inline-block;padding:12px 18px;background:#0f4c81;color:#ffffff;text-decoration:none;font-weight:700;">Verificar en DIAN / QR</a></p>` +
+			`<p style="font-size:12px;color:#475569;word-break:break-all;">` + html.EscapeString(qrURL) + `</p>`
+	}
+	return `<!doctype html><html><body style="font-family:Arial,Helvetica,sans-serif;color:#111827;line-height:1.45;">` +
+		`<h1 style="font-size:20px;margin:0 0 12px;">` + html.EscapeString(documentLabel) + `</h1>` +
+		`<p>Hola ` + html.EscapeString(toName) + `,</p>` +
+		`<p>` + html.EscapeString(introLine) + `</p>` +
+		`<table style="border-collapse:collapse;width:100%;max-width:620px;font-size:14px;">` +
+		facturaElectronicaEmailRow("Documento", doc.DocumentoCodigo) +
+		facturaElectronicaEmailRow("Numero legal", numeroLegal) +
+		facturaElectronicaEmailRow("Codigo de validacion", codigoValidacion) +
+		facturaElectronicaEmailRow("Total", fmt.Sprintf("%.2f %s", monto, moneda)) +
+		facturaElectronicaEmailRow("Pais FE", strings.ToUpper(strings.TrimSpace(doc.PaisCodigo))) +
+		facturaElectronicaEmailRow("Ambiente FE", doc.AmbienteFE) +
+		`</table>` + qrBlock +
+		`<p style="font-size:12px;color:#475569;">Adjuntamos una representacion HTML y TXT del documento para tu archivo. Conserva tambien el XML/ZIP validado por DIAN cuando tu empresa lo descargue desde el sistema.</p>` +
+		`</body></html>`
+}
+
+func facturaElectronicaEmailRow(label, value string) string {
+	return `<tr><th style="text-align:left;border:1px solid #d1d5db;background:#f3f4f6;padding:8px;">` + html.EscapeString(label) + `</th><td style="border:1px solid #d1d5db;padding:8px;">` + html.EscapeString(strings.TrimSpace(value)) + `</td></tr>`
+}
+
+func facturaElectronicaAttachmentBaseName(numeroLegal, documentoCodigo string) string {
+	raw := strings.TrimSpace(numeroLegal)
+	if raw == "" {
+		raw = strings.TrimSpace(documentoCodigo)
+	}
+	if raw == "" {
+		raw = "factura_electronica"
+	}
+	var b strings.Builder
+	for _, r := range raw {
+		if (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') || (r >= '0' && r <= '9') || r == '-' || r == '_' {
+			b.WriteRune(r)
+		} else {
+			b.WriteByte('_')
+		}
+	}
+	out := strings.Trim(b.String(), "_")
+	if out == "" {
+		return "factura_electronica"
+	}
+	return out
+}
+
+func facturaElectronicaEmailAttachmentPart(boundary, filename, contentType string, content []byte) string {
+	encoded := base64.StdEncoding.EncodeToString(content)
+	var wrapped strings.Builder
+	for len(encoded) > 76 {
+		wrapped.WriteString(encoded[:76])
+		wrapped.WriteString("\r\n")
+		encoded = encoded[76:]
+	}
+	if encoded != "" {
+		wrapped.WriteString(encoded)
+		wrapped.WriteString("\r\n")
+	}
+	return "--" + boundary + "\r\n" +
+		"Content-Type: " + contentType + "; name=\"" + filename + "\"\r\n" +
+		"Content-Disposition: attachment; filename=\"" + filename + "\"\r\n" +
+		"Content-Transfer-Encoding: base64\r\n\r\n" +
+		wrapped.String()
+}
+
 func EmpresaFacturacionElectronicaPaisDetectadoHandler(dbEmp *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
