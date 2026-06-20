@@ -15466,3 +15466,23 @@ Archivos modificados:
 - documentos/mapa_modulos.md
 - web/administrar_empresa/carrito_de_compras.html
 - web/estilos.css
+
+2026-06-20 02:40:46 - Mensaje: rs: actualizar repositorio y sincronizar VPS; Commit: 1f9d5524; PushStatus: OK
+Archivos modificados:
+- backend/db/venta_publica.go
+- backend/handlers/venta_publica.go
+- documentos/CHANGELOG.md
+- documentos/historial_de_cambios
+- documentos/mapa_modulos.md
+- web/administrar_empresa.html
+- web/administrar_empresa/carrito_de_compras.html
+- web/administrar_empresa/carta_productos_publica.html
+- web/administrar_empresa/configuracion_carrito_de_compra_empresa.html
+- web/administrar_empresa/finanzas_menu.html
+- web/administrar_empresa/panel.html
+- web/administrar_empresa/venta_publica.html
+- web/js/administrar_empresa.js
+- web/super/licencias_codigos_descuento.html
+- web/super_administrador.html
+- web/venta_publica.html
+- web/visualizar_productos_y_precios_publico.html
