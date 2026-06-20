@@ -15,6 +15,11 @@ Actualizacion 2026-06-19: `Carrito de compras` centraliza en
 Labels del carrito y controles de cantidad comparten el mismo fondo adaptable a
 tema claro/oscuro; `Efectivo recibido` solo aumenta tamano y conserva el color
 normal del tema.
+Actualizacion 2026-06-19: el mismo modulo refuerza el modo tabla plana: todo el
+carrito usa fuente unificada, esquinas cuadradas, sin separaciones entre
+tarjetas, botones con estilo unico, selector de acciones sin texto visible
+`Accion del carrito`, encabezados de items sombreados y `Totales y detalles`
+con etiquetas sombreadas en modo claro y oscuro.
 
 Actualizacion 2026-06-19: `Captura inteligente de compras y gastos` ya no queda
 clasificada como pagina IA oculta por defecto en permisos. El endpoint

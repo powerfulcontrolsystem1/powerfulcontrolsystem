@@ -35684,6 +35684,10 @@ Archivos modificados:
 - Backend: `backend/handlers/empresa_permisos.go` deja de tratar `linkSoportesComprasIA` y `linkSoportesComprasIAMenu` como paginas IA ocultas por defecto.
 - Seguridad: `/api/empresa/soportes_compras_ia` mantiene `WithEmpresaSoportesComprasIAPermissions`, aislamiento por `empresa_id`, licencia de modulo, matriz de rol/accion y auditoria.
 - Prueba: `backend/handlers/empresa_permisos_test.go` cubre que las paginas de captura IA de compras/gastos permanezcan visibles cuando el rol tiene permiso del modulo, mientras Centro IA/Renta IA siguen ocultos por defecto.
+2026-06-19: Carrito plano tipo tabla.
+- Frontend: `web/estilos.css` agrega un override final para que el carrito no tenga esquinas redondeadas, gaps ni margenes entre tarjetas y conserve una sola fuente/tamano base.
+- UX: `web/administrar_empresa/carrito_de_compras.html` mantiene el selector de acciones accesible, pero oculta visualmente el texto `Accion del carrito`.
+- Visual: encabezados de la tabla de items y etiquetas de `Totales y detalles` usan el mismo sombreado que los demas titulos del carrito en modo claro y oscuro.
 
 2026-06-19: rs: actualizar repositorio y sincronizar VPS
 PushStatus: OK

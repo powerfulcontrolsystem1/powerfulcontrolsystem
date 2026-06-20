@@ -610,6 +610,8 @@ body.carrito-flat-page *{
   box-shadow:none !important;
   text-shadow:none !important;
   filter:none !important;
+  font-family:Inter,system-ui,-apple-system,"Segoe UI",Arial,sans-serif !important;
+  letter-spacing:0 !important;
 }
 
 body.carrito-flat-page .container,
@@ -20142,7 +20144,7 @@ body.carrito-flat-page #carritoActionToolbar{
 
 body.carrito-flat-page .carrito-action-select-wrap{
   display:grid !important;
-  grid-template-columns:minmax(130px,170px) minmax(180px,300px) !important;
+  grid-template-columns:minmax(180px,300px) !important;
   align-items:center !important;
   gap:6px !important;
   padding:6px !important;
@@ -20153,10 +20155,15 @@ body.carrito-flat-page .carrito-action-select-wrap[hidden]{
 }
 
 body.carrito-flat-page .carrito-action-select-wrap .form-label{
-  margin:0 !important;
-  font-size:.98rem !important;
-  font-weight:900 !important;
-  color:var(--text) !important;
+  position:absolute !important;
+  width:1px !important;
+  height:1px !important;
+  margin:-1px !important;
+  padding:0 !important;
+  border:0 !important;
+  overflow:hidden !important;
+  clip:rect(0 0 0 0) !important;
+  white-space:nowrap !important;
 }
 
 body.carrito-flat-page .carrito-action-select{
@@ -20169,6 +20176,41 @@ body.carrito-flat-page .carrito-action-select{
   background:var(--surface) !important;
   color:var(--text) !important;
   color-scheme:light dark !important;
+}
+
+body.carrito-flat-page .btn,
+body.carrito-flat-page button.btn,
+body.carrito-flat-page a.btn,
+body.carrito-flat-page .carrito-payment-card,
+body.carrito-flat-page .domotica-device-button{
+  min-height:38px !important;
+  border:1px solid var(--border,#d6dee8) !important;
+  border-radius:8px !important;
+  background:var(--carrito-label-shade, color-mix(in srgb,var(--surface-soft,#f6f8fb) 84%,#fff 16%)) !important;
+  color:var(--text,#1f2937) !important;
+  font-size:.86rem !important;
+  font-weight:850 !important;
+  line-height:1.1 !important;
+  text-align:center !important;
+}
+
+body.carrito-flat-page .btn:hover,
+body.carrito-flat-page button.btn:hover,
+body.carrito-flat-page a.btn:hover,
+body.carrito-flat-page .carrito-payment-card:hover,
+body.carrito-flat-page .domotica-device-button:hover{
+  border-color:color-mix(in srgb,var(--accent,#2563eb) 48%,var(--border,#d6dee8)) !important;
+  background:color-mix(in srgb,var(--carrito-label-shade, var(--surface-soft,#f6f8fb)) 72%,var(--accent,#2563eb) 28%) !important;
+  color:var(--text,#1f2937) !important;
+}
+
+body.carrito-flat-page .btn.primary,
+body.carrito-flat-page .btn.add,
+body.carrito-flat-page .btn.secondary,
+body.carrito-flat-page .carrito-items-box .returnItem{
+  background:var(--carrito-label-shade, color-mix(in srgb,var(--surface-soft,#f6f8fb) 84%,#fff 16%)) !important;
+  color:var(--text,#1f2937) !important;
+  border-color:var(--border,#d6dee8) !important;
 }
 
 body.carrito-flat-page .cart-btn-with-icon{
@@ -20374,6 +20416,8 @@ body.carrito-flat-page .carrito-items-box .table td{
 body.carrito-flat-page .carrito-items-box .table th{
   font-weight:900 !important;
   color:var(--text) !important;
+  background:var(--carrito-label-shade, color-mix(in srgb,var(--surface-soft,#f6f8fb) 84%,#fff 16%)) !important;
+  border:1px solid var(--border,#d6dee8) !important;
 }
 
 body.carrito-flat-page .carrito-items-box .table td:nth-child(2),
@@ -21210,6 +21254,139 @@ body.carrito-flat-page .scanner-qty-control .cart-item-qty-step:hover,
 body.carrito-flat-page .carrito-items-box .cart-item-qty-input:focus,
 body.carrito-flat-page .scanner-qty-control .cart-item-qty-input:focus{
   background:color-mix(in srgb,var(--carrito-label-shade, var(--surface-soft,#f6f8fb)) 72%,var(--accent,#2563eb) 28%) !important;
+}
+
+body.carrito-flat-page,
+body.carrito-flat-page *{
+  border-radius:0 !important;
+}
+
+body.carrito-flat-page .container,
+body.carrito-flat-page .carrito-workspace-card,
+body.carrito-flat-page .carrito-primary-layout,
+body.carrito-flat-page .carrito-primary-main,
+body.carrito-flat-page .carrito-side-column,
+body.carrito-flat-page .carrito-grid,
+body.carrito-flat-page .carrito-grid-main,
+body.carrito-flat-page .carrito-station-split,
+body.carrito-flat-page .carrito-station-split-main,
+body.carrito-flat-page .carrito-station-toolbar,
+body.carrito-flat-page .form-row,
+body.carrito-flat-page .form-actions,
+body.carrito-flat-page .actions-wrap-gap-10,
+body.carrito-flat-page .carrito-scanner-compact-grid,
+body.carrito-flat-page .carrito-customer-search-grid,
+body.carrito-flat-page .carrito-customer-quick-grid,
+body.carrito-flat-page .carrito-payment-compact-table,
+body.carrito-flat-page .carrito-payment-cards,
+body.carrito-flat-page .carrito-summary-content{
+  gap:0 !important;
+  row-gap:0 !important;
+  column-gap:0 !important;
+}
+
+body.carrito-flat-page .form:not(.carrito-workspace-card),
+body.carrito-flat-page .card,
+body.carrito-flat-page .advanced-card,
+body.carrito-flat-page .empresa-section,
+body.carrito-flat-page .carrito-summary-card,
+body.carrito-flat-page .carrito-item-card,
+body.carrito-flat-page .carrito-payment-section-card,
+body.carrito-flat-page .carrito-actions-card,
+body.carrito-flat-page .carrito-worker-card,
+body.carrito-flat-page .carrito-vip-card,
+body.carrito-flat-page .carrito-payment-amounts-card,
+body.carrito-flat-page .carrito-payment-qr-card,
+body.carrito-flat-page #scannerPanel,
+body.carrito-flat-page #stationCustomerCard,
+body.carrito-flat-page #stationCartSplitRow,
+body.carrito-flat-page #stationCheckoutPanel,
+body.carrito-flat-page #stationCartActionsCard,
+body.carrito-flat-page #stationPaymentAmountsCard,
+body.carrito-flat-page #stationPaymentQrCard,
+body.carrito-flat-page #stationWorkerCommissionCard,
+body.carrito-flat-page #stationVipAccessCard,
+body.carrito-flat-page #carritoTotalsPanel,
+body.carrito-flat-page #carritoSearchBlock,
+body.carrito-flat-page #carritosList{
+  margin:0 !important;
+  border-radius:0 !important;
+}
+
+body.carrito-flat-page .form-label,
+body.carrito-flat-page .form-input,
+body.carrito-flat-page .form-textarea,
+body.carrito-flat-page select,
+body.carrito-flat-page .btn,
+body.carrito-flat-page button,
+body.carrito-flat-page .carrito-items-box,
+body.carrito-flat-page .carrito-summary-row,
+body.carrito-flat-page .carrito-summary-profile,
+body.carrito-flat-page .carrito-payment-compact-row,
+body.carrito-flat-page .carrito-payment-compact-label,
+body.carrito-flat-page .carrito-payment-compact-input,
+body.carrito-flat-page .carrito-payment-card,
+body.carrito-flat-page .cart-item-qty-step,
+body.carrito-flat-page .cart-item-qty-input{
+  border-radius:0 !important;
+}
+
+body.carrito-flat-page :is(h1,h2,h3,h4,.section-heading,.form-label,.carrito-payment-compact-label,.carrito-summary-row span,.carrito-summary-profile span,.table th){
+  font-size:.82rem !important;
+  font-weight:850 !important;
+  line-height:1.1 !important;
+}
+
+body.carrito-flat-page :is(.form-input,.form-textarea,select,.btn,button,.table td,.carrito-payment-compact-input,.carrito-summary-row strong,.carrito-summary-profile strong,.form-help){
+  font-size:.82rem !important;
+  line-height:1.12 !important;
+}
+
+body.carrito-flat-page .page-header h1{
+  font-size:1rem !important;
+  font-weight:900 !important;
+}
+
+body.carrito-flat-page #carritoTotalsPanel .section-heading,
+body.carrito-flat-page .carrito-station-totals-aside .section-heading,
+body.carrito-flat-page .carrito-summary-row span,
+body.carrito-flat-page .carrito-summary-profile span{
+  display:flex !important;
+  align-items:center !important;
+  min-height:28px !important;
+  padding:5px 7px !important;
+  border:1px solid var(--border,#d6dee8) !important;
+  background:var(--carrito-label-shade, color-mix(in srgb,var(--surface-soft,#f6f8fb) 84%,#fff 16%)) !important;
+  color:var(--text,#1f2937) !important;
+}
+
+body.carrito-flat-page .carrito-summary-row{
+  display:grid !important;
+  grid-template-columns:minmax(92px,.82fr) minmax(0,1fr) !important;
+  align-items:stretch !important;
+  padding:0 !important;
+  border:1px solid var(--border,#d6dee8) !important;
+  background:var(--surface,#fff) !important;
+}
+
+body.carrito-flat-page .carrito-summary-row strong,
+body.carrito-flat-page .carrito-summary-profile strong{
+  display:flex !important;
+  align-items:center !important;
+  justify-content:flex-end !important;
+  min-height:28px !important;
+  padding:5px 7px !important;
+  border-left:1px solid var(--border,#d6dee8) !important;
+  color:var(--text,#1f2937) !important;
+}
+
+body.carrito-flat-page .carrito-summary-profile{
+  display:grid !important;
+  grid-template-columns:minmax(92px,.82fr) minmax(0,1fr) !important;
+  align-items:stretch !important;
+  padding:0 !important;
+  border:1px solid var(--border,#d6dee8) !important;
+  background:var(--surface,#fff) !important;
 }
 
 body.pos-touch-mode #carritoActionToolbar,
