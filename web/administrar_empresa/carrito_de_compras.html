@@ -1323,6 +1323,21 @@
       return (v || '').toString().trim();
     }
 
+    function normalizeCustomPaymentMethods(raw) {
+      const rows = Array.isArray(raw) ? raw : String(raw || '').split(/\r?\n|,/);
+      const seen = {};
+      const out = [];
+      rows.forEach(function(item) {
+        const label = normalize(item && typeof item === 'object' ? (item.label || item.nombre || item.name) : item);
+        if (!label) return;
+        const key = label.toLowerCase();
+        if (seen[key]) return;
+        seen[key] = true;
+        out.push(label.slice(0, 40));
+      });
+      return out.slice(0, 12);
+    }
+
     function normalizedCode(v) {
       return normalize(v).toUpperCase();
     }
@@ -2004,6 +2019,7 @@
         metodo_pago_nequi: true,
         metodo_pago_otras_transferencias: true,
         metodo_pago_credito_cliente: true,
+        metodos_pago_personalizados: [],
         mostrar_resumen_totales_carrito: true,
         mostrar_desglose_cobro: false,
         mostrar_resumen_productos: true,
@@ -2154,6 +2170,7 @@
         metodo_pago_nequi: src.metodo_pago_nequi === undefined ? base.metodo_pago_nequi : Boolean(src.metodo_pago_nequi),
         metodo_pago_otras_transferencias: src.metodo_pago_otras_transferencias === undefined ? (src.metodo_pago_transferencia_otro === undefined ? base.metodo_pago_otras_transferencias : Boolean(src.metodo_pago_transferencia_otro)) : Boolean(src.metodo_pago_otras_transferencias),
         metodo_pago_credito_cliente: src.metodo_pago_credito_cliente === undefined ? base.metodo_pago_credito_cliente : Boolean(src.metodo_pago_credito_cliente),
+        metodos_pago_personalizados: normalizeCustomPaymentMethods(src.metodos_pago_personalizados || src.formas_pago_personalizadas || src.medios_pago_personalizados),
         mostrar_resumen_totales_carrito: src.mostrar_resumen_totales_carrito === undefined ? base.mostrar_resumen_totales_carrito : Boolean(src.mostrar_resumen_totales_carrito),
         mostrar_desglose_cobro: src.mostrar_desglose_cobro === undefined ? base.mostrar_desglose_cobro : Boolean(src.mostrar_desglose_cobro),
         mostrar_resumen_productos: src.mostrar_resumen_productos === undefined ? base.mostrar_resumen_productos : Boolean(src.mostrar_resumen_productos),
@@ -3068,6 +3085,7 @@
         metodo_pago_nequi: true,
         metodo_pago_otras_transferencias: true,
         metodo_pago_credito_cliente: true,
+        metodos_pago_personalizados: [],
         metodo_pago_mixto: true,
         metodo_pago_codigo_descuento: true,
         habilitar_propinas: true,
@@ -3088,6 +3106,7 @@
         metodo_pago_nequi: src.metodo_pago_nequi === undefined ? base.metodo_pago_nequi : Boolean(src.metodo_pago_nequi),
         metodo_pago_otras_transferencias: src.metodo_pago_otras_transferencias === undefined ? (src.metodo_pago_transferencia_otro === undefined ? base.metodo_pago_otras_transferencias : Boolean(src.metodo_pago_transferencia_otro)) : Boolean(src.metodo_pago_otras_transferencias),
         metodo_pago_credito_cliente: src.metodo_pago_credito_cliente === undefined ? base.metodo_pago_credito_cliente : Boolean(src.metodo_pago_credito_cliente),
+        metodos_pago_personalizados: normalizeCustomPaymentMethods(src.metodos_pago_personalizados || src.formas_pago_personalizadas || src.medios_pago_personalizados),
         metodo_pago_mixto: src.metodo_pago_mixto === undefined ? base.metodo_pago_mixto : Boolean(src.metodo_pago_mixto),
         metodo_pago_codigo_descuento: src.metodo_pago_codigo_descuento === undefined ? base.metodo_pago_codigo_descuento : Boolean(src.metodo_pago_codigo_descuento),
         habilitar_propinas: src.habilitar_propinas === undefined ? base.habilitar_propinas : Boolean(src.habilitar_propinas),
@@ -3186,6 +3205,28 @@
       });
     }
 
+    function ensureCustomPaymentOptions(selectEl) {
+      if (!selectEl) return;
+      Array.from(selectEl.querySelectorAll('option[data-custom-payment="1"]')).forEach(function(opt) {
+        opt.remove();
+      });
+      const stationUI = (state.stationMode || state.directSaleMode) ? getCurrentStationCartUIConfig() : defaultUnifiedCartUIConfig();
+      const custom = normalizeCustomPaymentMethods(stationUI.metodos_pago_personalizados);
+      if (!custom.length) return;
+      const baseOption = selectEl.querySelector('option[value="transferencia_otro"]');
+      custom.forEach(function(label) {
+        const option = document.createElement('option');
+        option.value = 'transferencia_otro';
+        option.textContent = label;
+        option.setAttribute('data-custom-payment', '1');
+        if (baseOption && baseOption.parentNode) {
+          baseOption.parentNode.insertBefore(option, baseOption.nextSibling);
+        } else {
+          selectEl.appendChild(option);
+        }
+      });
+    }
+
     function ensurePaymentMethodInputsFromOperativa() {
       const paymentMethodEl = document.getElementById('paymentMethod');
       const abonoMethodEl = document.getElementById('carritoAbonoMetodo');
@@ -3195,6 +3236,7 @@
       const allowedMixed = getAllowedMixedMethods();
 
       if (paymentMethodEl) {
+        ensureCustomPaymentOptions(paymentMethodEl);
         Array.from(paymentMethodEl.options).forEach(function(opt) {
           opt.disabled = !isPaymentMethodAllowed(opt.value);
         });

@@ -125,6 +125,7 @@
       function safe(v){return String(v == null ? "" : v).replace(/[&<>"']/g, function(s){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[s];});}
       function field(id){var el=document.getElementById(id); return el ? String(el.value || "").trim() : "";}
       function setMsg(text, error){var el=document.getElementById("msg"); if(!el)return; el.textContent=text||""; el.style.color=error?"var(--danger)":"var(--success)";}
+      function defaultExpirationDate(){var d=new Date();d.setDate(d.getDate()+30);return d.toISOString().slice(0,10);}
       async function requestJSON(url, options){
         var res = await fetch(url, Object.assign({credentials:"same-origin"}, options || {}));
         var raw = await res.text();
@@ -139,6 +140,7 @@
         document.getElementById("active").checked = true;
         document.getElementById("type").value = "porcentaje";
         document.getElementById("value").value = "10";
+        document.getElementById("expires").value = defaultExpirationDate();
         document.getElementById("formTitle").textContent = "Crear código";
         document.getElementById("saveBtn").textContent = "Crear y enviar";
         document.getElementById("cancelBtn").hidden = true;
@@ -280,6 +282,7 @@
         }catch(err){setMsg(err.message || String(err), true);}
       });
       toggleValueField();
+      document.getElementById("expires").value = defaultExpirationDate();
       load().catch(function(err){setMsg(err.message || String(err), true);});
     })();
   </script>

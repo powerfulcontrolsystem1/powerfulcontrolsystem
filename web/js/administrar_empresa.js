@@ -144,6 +144,7 @@ try {
     linkEstaciones: true,
     linkCorteCaja: true,
     linkCompras: true,
+    linkPanelEmpresa: true,
     linkFinanzas: true,
     linkFinanzasMain: true,
     linkClientes: true,
@@ -297,7 +298,13 @@ try {
     var nav = document.getElementById("adminSidebarNav");
     if (!nav) return;
     Array.prototype.slice.call(nav.querySelectorAll("a[id]")).forEach(function (link) {
-      if (!link || stableMenuLinksWithoutBeta[link.id]) return;
+      if (!link) return;
+      if (stableMenuLinksWithoutBeta[link.id]) {
+        Array.prototype.slice.call(link.querySelectorAll(".menu-beta-badge")).forEach(function (badge) {
+          badge.remove();
+        });
+        return;
+      }
       if (link.querySelector(".menu-beta-badge")) return;
       var badge = document.createElement("span");
       badge.className = "menu-beta-badge";
@@ -1046,6 +1053,8 @@ try {
   }
 
   if (portalUsuariosLink) {
+  portalUsuariosLink.target = "_blank";
+  portalUsuariosLink.rel = "noopener";
   resolvePortalUsuariosURL(id).then(function (url) {
     portalUsuariosLink.href = url;
   }).catch(function () {
@@ -1055,9 +1064,9 @@ try {
     event.preventDefault();
     resolvePortalUsuariosURL(id).then(function (url) {
     portalUsuariosLink.href = url;
-    window.location.href = url;
+    window.open(url, "_blank", "noopener");
     }).catch(function () {
-    window.location.href = buildPortalUsuariosURL(id, null);
+    window.open(buildPortalUsuariosURL(id, null), "_blank", "noopener");
     });
   });
   }

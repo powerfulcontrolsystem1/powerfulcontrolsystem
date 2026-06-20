@@ -216,6 +216,8 @@ type EmpresaVentaPublicaConfig struct {
 	TemaVisual                      string `json:"tema_visual,omitempty"`
 	Moneda                          string `json:"moneda"`
 	DominioPublico                  string `json:"dominio_publico,omitempty"`
+	WhatsappFlotanteActivo          bool   `json:"whatsapp_flotante_activo"`
+	WhatsappNumero                  string `json:"whatsapp_numero,omitempty"`
 	MostrarStock                    bool   `json:"mostrar_stock"`
 	ContactoFormularioActivo        bool   `json:"contacto_formulario_activo"`
 	PedidosRestauranteActivo        bool   `json:"pedidos_restaurante_activo"`
@@ -766,6 +768,12 @@ func EnsureEmpresaVentaPublicaSchema(dbConn *sql.DB) error {
 	if err := ensureColumnIfMissing(dbConn, "empresa_venta_publica_configuracion", "dominio_publico", "TEXT"); err != nil {
 		return err
 	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_venta_publica_configuracion", "whatsapp_flotante_activo", "INTEGER DEFAULT 0"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_venta_publica_configuracion", "whatsapp_numero", "TEXT"); err != nil {
+		return err
+	}
 	if err := ensureColumnIfMissing(dbConn, "empresa_venta_publica_configuracion", "pedidos_restaurante_activo", "INTEGER DEFAULT 0"); err != nil {
 		return err
 	}
@@ -1144,6 +1152,7 @@ func GetEmpresaVentaPublicaConfig(dbConn *sql.DB, empresaID int64) (EmpresaVenta
 	var out EmpresaVentaPublicaConfig
 	var mostrarStock sql.NullInt64
 	var contactoFormularioActivo sql.NullInt64
+	var whatsappFlotanteActivo sql.NullInt64
 	var pedidosRestauranteActivo sql.NullInt64
 	var pedidosRegistroOpcional sql.NullInt64
 	var pedidosPermitirRecoger sql.NullInt64
@@ -1164,6 +1173,8 @@ func GetEmpresaVentaPublicaConfig(dbConn *sql.DB, empresaID int64) (EmpresaVenta
 		COALESCE(tema_visual, ''),
 		COALESCE(moneda, 'COP'),
 		COALESCE(dominio_publico, ''),
+		COALESCE(whatsapp_flotante_activo, 0),
+		COALESCE(whatsapp_numero, ''),
 		COALESCE(mostrar_stock, 1),
 		COALESCE(contacto_formulario_activo, 1),
 		COALESCE(pedidos_restaurante_activo, 0),
@@ -1204,6 +1215,8 @@ func GetEmpresaVentaPublicaConfig(dbConn *sql.DB, empresaID int64) (EmpresaVenta
 		&out.TemaVisual,
 		&out.Moneda,
 		&out.DominioPublico,
+		&whatsappFlotanteActivo,
+		&out.WhatsappNumero,
 		&mostrarStock,
 		&contactoFormularioActivo,
 		&pedidosRestauranteActivo,
@@ -1290,6 +1303,8 @@ func GetEmpresaVentaPublicaConfig(dbConn *sql.DB, empresaID int64) (EmpresaVenta
 		out.MostrarStock = true
 	}
 	out.ContactoFormularioActivo = !contactoFormularioActivo.Valid || contactoFormularioActivo.Int64 > 0
+	out.WhatsappFlotanteActivo = whatsappFlotanteActivo.Valid && whatsappFlotanteActivo.Int64 > 0
+	out.WhatsappNumero = strings.TrimSpace(out.WhatsappNumero)
 	out.PedidosRestauranteActivo = pedidosRestauranteActivo.Valid && pedidosRestauranteActivo.Int64 > 0
 	out.PedidosRegistroOpcionalCliente = !pedidosRegistroOpcional.Valid || pedidosRegistroOpcional.Int64 > 0
 	out.PedidosPermitirRecogerEnTienda = !pedidosPermitirRecoger.Valid || pedidosPermitirRecoger.Int64 > 0
@@ -1368,6 +1383,8 @@ func UpsertEmpresaVentaPublicaConfig(dbConn *sql.DB, cfg EmpresaVentaPublicaConf
 			tema_visual = ?,
 				moneda = ?,
 				dominio_publico = ?,
+				whatsapp_flotante_activo = ?,
+				whatsapp_numero = ?,
 				mostrar_stock = ?,
 				contacto_formulario_activo = ?,
 				pedidos_restaurante_activo = ?,
@@ -1403,6 +1420,8 @@ func UpsertEmpresaVentaPublicaConfig(dbConn *sql.DB, cfg EmpresaVentaPublicaConf
 			strings.TrimSpace(cfg.TemaVisual),
 			cfg.Moneda,
 			strings.TrimSpace(cfg.DominioPublico),
+			ventaPublicaBoolToInt(cfg.WhatsappFlotanteActivo),
+			strings.TrimSpace(cfg.WhatsappNumero),
 			ventaPublicaBoolToInt(cfg.MostrarStock),
 			ventaPublicaBoolToInt(cfg.ContactoFormularioActivo),
 			ventaPublicaBoolToInt(cfg.PedidosRestauranteActivo),
@@ -1446,6 +1465,8 @@ func UpsertEmpresaVentaPublicaConfig(dbConn *sql.DB, cfg EmpresaVentaPublicaConf
 		tema_visual,
 		moneda,
 		dominio_publico,
+		whatsapp_flotante_activo,
+		whatsapp_numero,
 		mostrar_stock,
 		contacto_formulario_activo,
 		pedidos_restaurante_activo,
@@ -1470,7 +1491,7 @@ func UpsertEmpresaVentaPublicaConfig(dbConn *sql.DB, cfg EmpresaVentaPublicaConf
 		usuario_creador,
 		estado,
 		observaciones
-	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 		cfg.EmpresaID,
 		cfg.EmpresaSlug,
 		cfg.NombreTienda,
@@ -1481,6 +1502,8 @@ func UpsertEmpresaVentaPublicaConfig(dbConn *sql.DB, cfg EmpresaVentaPublicaConf
 		strings.TrimSpace(cfg.TemaVisual),
 		cfg.Moneda,
 		strings.TrimSpace(cfg.DominioPublico),
+		ventaPublicaBoolToInt(cfg.WhatsappFlotanteActivo),
+		strings.TrimSpace(cfg.WhatsappNumero),
 		ventaPublicaBoolToInt(cfg.MostrarStock),
 		ventaPublicaBoolToInt(cfg.ContactoFormularioActivo),
 		ventaPublicaBoolToInt(cfg.PedidosRestauranteActivo),

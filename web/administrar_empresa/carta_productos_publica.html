@@ -594,6 +594,15 @@
               <input id="contactoFormularioActivo" type="checkbox" checked>
             </label>
 
+            <label class="switch-row">
+              <span>Mostrar icono flotante de WhatsApp</span>
+              <input id="whatsappFlotanteActivo" type="checkbox">
+            </label>
+
+            <label>WhatsApp publico de la empresa
+              <input id="whatsappNumero" maxlength="32" placeholder="573001112233">
+            </label>
+
             <hr>
 
             <div class="two-cols">
@@ -671,6 +680,8 @@
         dominioPublico: document.getElementById('dominioPublico'),
         mostrarStock: document.getElementById('mostrarStock'),
         contactoFormularioActivo: document.getElementById('contactoFormularioActivo'),
+        whatsappFlotanteActivo: document.getElementById('whatsappFlotanteActivo'),
+        whatsappNumero: document.getElementById('whatsappNumero'),
         paginaSlug: document.getElementById('paginaSlug'),
         paginaNombre: document.getElementById('paginaNombre'),
         paginaDescripcion: document.getElementById('paginaDescripcion'),
@@ -1263,6 +1274,8 @@
         els.dominioPublico.value = cfg.dominio_publico || '';
         els.mostrarStock.checked = cfg.mostrar_stock !== false;
         els.contactoFormularioActivo.checked = cfg.contacto_formulario_activo !== false;
+        els.whatsappFlotanteActivo.checked = !!cfg.whatsapp_flotante_activo;
+        els.whatsappNumero.value = cfg.whatsapp_numero || '';
         if (!els.paginaSlug.value) els.paginaSlug.value = 'productos';
         if (!els.paginaNombre.value) els.paginaNombre.value = 'Productos';
         buildPublicUrl();
@@ -1284,6 +1297,8 @@
           dominio_publico: els.dominioPublico.value.trim(),
           mostrar_stock: !!els.mostrarStock.checked,
           contacto_formulario_activo: !!els.contactoFormularioActivo.checked,
+          whatsapp_flotante_activo: !!els.whatsappFlotanteActivo.checked,
+          whatsapp_numero: els.whatsappNumero.value.trim(),
           pedidos_restaurante_activo: !!current.pedidos_restaurante_activo,
           pedidos_registro_opcional_cliente: current.pedidos_registro_opcional_cliente !== false,
           pedidos_permitir_recoger_en_tienda: current.pedidos_permitir_recoger_en_tienda !== false,

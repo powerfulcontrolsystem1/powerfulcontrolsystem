@@ -213,6 +213,26 @@
       border-color: var(--public-accent);
     }
 
+    .whatsapp-float {
+      position: fixed;
+      right: 18px;
+      bottom: 18px;
+      z-index: 20;
+      width: 56px;
+      height: 56px;
+      border-radius: 999px;
+      background: #25d366;
+      color: #fff;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      text-decoration: none;
+      font-weight: 950;
+      box-shadow: var(--public-shadow);
+      border: 2px solid rgba(255,255,255,.78);
+    }
+    .whatsapp-float.is-visible { display: flex; }
+
     .tabs {
       display: flex;
       gap: 8px;
@@ -516,6 +536,7 @@
 
     <footer class="footer">Pagina publica de solo lectura. Los precios publicados pueden cambiar sin previo aviso.</footer>
   </div>
+  <a id="whatsappFloat" class="whatsapp-float" href="#" target="_blank" rel="noopener" aria-label="WhatsApp">WA</a>
 
   <script>
     (function() {
@@ -640,6 +661,20 @@
         }
         if (els.contactSection) {
           els.contactSection.hidden = tienda.contacto_formulario_activo === false;
+        }
+        renderWhatsappFloat(tienda);
+      }
+
+      function renderWhatsappFloat(tienda) {
+        const btn = document.getElementById('whatsappFloat');
+        if (!btn) return;
+        const digits = String(tienda && tienda.whatsapp_numero || '').replace(/\D+/g, '');
+        if (tienda && tienda.whatsapp_flotante_activo && digits.length >= 8) {
+          btn.href = 'https://wa.me/' + encodeURIComponent(digits) + '?text=' + encodeURIComponent('Hola, vi la carta publica de ' + (tienda.nombre_tienda || 'la empresa'));
+          btn.classList.add('is-visible');
+        } else {
+          btn.classList.remove('is-visible');
+          btn.href = '#';
         }
       }
 

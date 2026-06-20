@@ -8,7 +8,11 @@
   <script src="/js/empresa_submenu_context.js"></script>
   <script src="/js/ai_button_icons.js?v=20260607"></script>
   <style>
-    .fin-center{display:grid;grid-template-rows:auto minmax(0,1fr);gap:12px;height:100%;min-height:0}
+    html,body{min-height:100%;height:auto}
+    body.admin-empresa-shell{overflow:auto}
+    .admin-layout{min-height:100vh}
+    .admin-content{min-height:100vh;overflow:visible}
+    .fin-center{display:grid;grid-template-rows:minmax(640px,1fr);gap:12px;min-height:100vh}
     .fin-center-overview{display:grid;grid-template-columns:1fr;gap:10px;padding:14px;border-bottom:1px solid var(--border);background:var(--surface)}
     .fin-center-title{display:grid;gap:4px}
     .fin-center-title h1{margin:0;color:var(--text);font-size:1.15rem;line-height:1.15}
@@ -24,7 +28,7 @@
     .fin-center-metric{border:1px solid var(--border);border-radius:8px;background:var(--surface-soft);padding:10px}
     .fin-center-metric span{display:block;color:var(--muted);font-size:.72rem;font-weight:850;text-transform:uppercase}
     .fin-center-metric strong{display:block;color:var(--text);font-size:1rem;margin-top:4px}
-    .fin-center-frame-wrap{position:relative;min-height:0}
+    .fin-center-frame-wrap{position:relative;min-height:640px}
     .fin-center-loading{position:absolute;right:18px;top:12px;z-index:2;display:none;padding:7px 10px;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--muted);box-shadow:0 10px 22px rgba(15,23,42,.12)}
     .fin-center-loading.is-visible{display:block}
     @media(max-width:920px){.fin-center-overview{grid-template-columns:1fr}.fin-center-health{grid-template-columns:repeat(2,minmax(0,1fr))}.fin-center-access-grid{grid-template-columns:1fr}}
@@ -38,7 +42,6 @@
       <p class="admin-sidebar-kicker">Finanzas, contabilidad y cumplimiento</p>
       <ul class="nav" id="finanzasSidebarNav">
         <li><a id="linkFinanzasMain" href="/administrar_empresa/finanzas.html" target="finanzasContentFrame"><img class="icon" src="/img/analytics-color.svg" alt="">Finanzas operativas</a></li>
-        <li><a id="linkNominaMenu" href="/administrar_empresa/nomina_menu.html" target="finanzasContentFrame"><img class="icon" src="/img/analytics-color.svg" alt="">Nomina</a></li>
         <li hidden><a id="linkRentaIA" href="/administrar_empresa/renta_ia.html" target="finanzasContentFrame"><img class="icon" data-ai-logo="true" src="/img/pcs_ia_logo.svg" alt="">Renta IA</a></li>
         <li hidden><a id="linkCentroIAEmpresarial" href="/administrar_empresa/centro_ia_empresarial.html" target="finanzasContentFrame"><img class="icon" data-ai-logo="true" src="/img/pcs_ia_logo.svg" alt="">Centro IA empresarial</a></li>
         <li><a id="linkSuiteContador" href="/administrar_empresa/suite_contador.html" target="finanzasContentFrame"><img class="icon" src="/img/report.svg" alt="">Suite contador</a></li>

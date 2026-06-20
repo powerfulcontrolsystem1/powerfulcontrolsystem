@@ -3641,6 +3641,16 @@
         return "pcs_config_assistant_dismissed_" + String(empresaId || "");
       }
 
+      function guidedDismissedKeys() {
+        var id = String(empresaId || "");
+        return [
+          guidedDismissedKey(),
+          "pcs_guided_setup_dismissed_" + id,
+          "pcs_empresa_configuracion_guiada_oculta_" + id,
+          "pcs_config_assistant_dismissed"
+        ];
+      }
+
       function hasGuidedPendingFlag() {
         if (!empresaId) return false;
         try {
@@ -3659,7 +3669,9 @@
       function hasGuidedDismissedFlag() {
         if (!empresaId) return false;
         try {
-          return window.localStorage.getItem(guidedDismissedKey()) === "1";
+          return guidedDismissedKeys().some(function (key) {
+            return window.localStorage.getItem(key) === "1" || window.sessionStorage.getItem(key) === "1";
+          });
         } catch (e) {
           return false;
         }
@@ -3668,7 +3680,10 @@
       function setGuidedDismissedFlag() {
         if (!empresaId) return;
         clearGuidedPendingFlag();
-        try { window.localStorage.setItem(guidedDismissedKey(), "1"); } catch (e) {}
+        guidedDismissedKeys().forEach(function (key) {
+          try { window.localStorage.setItem(key, "1"); } catch (e) {}
+          try { window.sessionStorage.setItem(key, "1"); } catch (e) {}
+        });
       }
 
       function renderGuidedInput(question) {
@@ -3700,7 +3715,20 @@
         var anterior = estado && estado.resumen_anterior ? estado.resumen_anterior : null;
         var meta = resumen || anterior || {};
         var rawEstado = String(meta.estado || "").toLowerCase();
-        return !!(meta.no_mostrar_mas || meta.pospuesta || rawEstado === "pospuesta" || rawEstado === "no_mostrar_mas");
+        var noMostrar = String(meta.no_mostrar_mas || "").toLowerCase();
+        var pospuesta = String(meta.pospuesta || "").toLowerCase();
+        return !!(
+          meta.no_mostrar_mas === true ||
+          meta.pospuesta === true ||
+          noMostrar === "1" ||
+          noMostrar === "true" ||
+          pospuesta === "1" ||
+          pospuesta === "true" ||
+          rawEstado === "pospuesta" ||
+          rawEstado === "no_mostrar_mas" ||
+          rawEstado === "oculta" ||
+          rawEstado === "oculto"
+        );
       }
 
       function openGuidedSetupModal(configData) {
@@ -3768,6 +3796,7 @@
           if (apply) apply.disabled = true;
           if (status) status.textContent = "Guardando decision...";
           overlay.classList.remove("is-visible");
+          overlay.setAttribute("hidden", "hidden");
           fetchJSON("/api/empresa/configuracion_guiada?empresa_id=" + encodeURIComponent(empresaId) + "&action=" + encodeURIComponent(action), {
             method: "POST",
             headers: { "Content-Type": "application/json", "X-PCS-Source": "empresa_panel_guided_setup_later" },

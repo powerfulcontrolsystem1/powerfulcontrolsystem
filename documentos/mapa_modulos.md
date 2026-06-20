@@ -3,6 +3,29 @@
 Tabla de ubicacion rapida para no buscar desde cero cada modulo. Si una fila
 queda incompleta al implementar una mejora, actualizarla en el mismo cambio.
 
+Actualizacion 2026-06-20: `Administrar empresa` mueve
+`Importaciones y costeo`, `Produccion / MRP` y `Logistica WMS` al grupo
+`Produccion, logistica e importaciones`; `Panel` queda sin etiqueta Beta y
+`Login de usuarios` abre en ventana nueva sin cerrar la consola. El `Centro
+financiero y contable` (`web/administrar_empresa/finanzas_menu.html`) ya no
+duplica Nomina y usa altura minima real para que sus paginas no se vean mochas.
+`Configuracion guiada inicial` refuerza el ocultamiento en celular: el boton y
+el check `No volver a mostrar` guardan marcas locales compatibles, limpian el
+pendiente y persisten `no_mostrar_mas` en el API; el panel se carga con version
+nueva para evitar cache viejo.
+
+Actualizacion 2026-06-20: `Carrito de compras` conserva el catalogo base de
+medios de pago por permisos y agrega `metodos_pago_personalizados` en
+`web/administrar_empresa/configuracion_carrito_de_compra_empresa.html`. Las
+formas nuevas se muestran al cajero como opciones del selector y se registran
+internamente sobre `transferencia_otro` para no romper reportes, caja ni
+validaciones de backend. `Venta publica` y `Carta publica` agregan WhatsApp
+flotante configurable por empresa (`whatsapp_flotante_activo`,
+`whatsapp_numero`) en `empresa_venta_publica_configuracion`, visible en
+`web/venta_publica.html` y `web/visualizar_productos_y_precios_publico.html`.
+En super administrador queda una sola auditoria visible, `Auditoria global`, y
+los codigos de descuento nuevos vencen por defecto a 30 dias.
+
 Actualizacion 2026-06-19: `Configuracion guiada inicial` en
 `web/administrar_empresa/panel.html` solo se autoabre una vez. El check y el
 boton `No volver a mostrar` cierran el modal sin guardar formulario, limpian el

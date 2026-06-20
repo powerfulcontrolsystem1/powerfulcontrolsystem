@@ -203,6 +203,8 @@ type empresaVentaPublicaConfigPayload struct {
 	TemaVisual                      string `json:"tema_visual"`
 	Moneda                          string `json:"moneda"`
 	DominioPublico                  string `json:"dominio_publico"`
+	WhatsappFlotanteActivo          *bool  `json:"whatsapp_flotante_activo"`
+	WhatsappNumero                  string `json:"whatsapp_numero"`
 	MostrarStock                    *bool  `json:"mostrar_stock"`
 	ContactoFormularioActivo        *bool  `json:"contacto_formulario_activo"`
 	PedidosRestauranteActivo        *bool  `json:"pedidos_restaurante_activo"`
@@ -609,6 +611,8 @@ func sanitizeVentaPublicaConfigForPublic(cfg dbpkg.EmpresaVentaPublicaConfig) ma
 		"tema_visual":                        cfg.TemaVisual,
 		"moneda":                             cfg.Moneda,
 		"dominio_publico":                    cfg.DominioPublico,
+		"whatsapp_flotante_activo":           cfg.WhatsappFlotanteActivo,
+		"whatsapp_numero":                    cfg.WhatsappNumero,
 		"mostrar_stock":                      cfg.MostrarStock,
 		"contacto_formulario_activo":         cfg.ContactoFormularioActivo,
 		"pedidos_restaurante_activo":         cfg.PedidosRestauranteActivo,
@@ -1067,6 +1071,10 @@ func handleEmpresaVentaPublicaConfigUpsert(w http.ResponseWriter, r *http.Reques
 	if payload.ContactoFormularioActivo != nil {
 		contactoFormularioActivo = *payload.ContactoFormularioActivo
 	}
+	whatsappFlotanteActivo := false
+	if payload.WhatsappFlotanteActivo != nil {
+		whatsappFlotanteActivo = *payload.WhatsappFlotanteActivo
+	}
 	pedidosRestauranteActivo := false
 	if payload.PedidosRestauranteActivo != nil {
 		pedidosRestauranteActivo = *payload.PedidosRestauranteActivo
@@ -1131,6 +1139,8 @@ func handleEmpresaVentaPublicaConfigUpsert(w http.ResponseWriter, r *http.Reques
 		TemaVisual:                      payload.TemaVisual,
 		Moneda:                          payload.Moneda,
 		DominioPublico:                  payload.DominioPublico,
+		WhatsappFlotanteActivo:          whatsappFlotanteActivo,
+		WhatsappNumero:                  payload.WhatsappNumero,
 		MostrarStock:                    mostrarStock,
 		ContactoFormularioActivo:        contactoFormularioActivo,
 		PedidosRestauranteActivo:        pedidosRestauranteActivo,

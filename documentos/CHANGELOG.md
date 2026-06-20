@@ -1,3 +1,12 @@
+## [2026-06-20] Admin empresa, carrito por pais y WhatsApp publico
+- [Administrar empresa] `Panel` queda sin Beta; `Login de usuarios` abre en ventana nueva; Importaciones/Produccion/Logistica pasan a su propio grupo; Nomina queda solo en el menu principal.
+- [Configuracion guiada] El panel refuerza `No volver a mostrar` para escritorio y celular, limpia pendientes locales, guarda marcas compatibles y persiste `no_mostrar_mas` en `/api/empresa/configuracion_guiada`.
+- [Finanzas] `finanzas_menu.html` usa altura minima real y deja de duplicar Nomina para evitar paginas mochas dentro del centro financiero y contable.
+- [Carrito] La configuracion del carrito permite agregar formas de pago personalizadas por empresa/pais; se muestran al cajero y se registran como `transferencia_otro` para conservar reportes y validaciones.
+- [Venta publica] Perfil y carta publica agregan WhatsApp flotante configurable por empresa en `empresa_venta_publica_configuracion`.
+- [Super] Se deja una sola auditoria visible en el menu y los codigos de descuento nuevos vencen por defecto a 30 dias.
+- [QA] `go test ./db ./handlers`; `node --check` de scripts embebidos tocados; `git diff --check`.
+
 ## [2026-06-19] Empresas y licencias en super administrador
 - [Super] `Centro de mando` muestra arriba empresas con licencia activa y empresas sin licencia activa; el boton `Ver` abre la nueva consulta de empresas filtrada por activas.
 - [Empresas] `web/super/empresas.html` es una pagina de solo lectura con busqueda por nombre/NIT/tipo/licencia y filtros por licencia activa, sin activa, licencia de 15 dias y vencida.

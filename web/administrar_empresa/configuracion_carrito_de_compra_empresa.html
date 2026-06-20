@@ -115,6 +115,9 @@
               <div class="form-help">Por defecto queda apagada. Al activarla, el cajero podrá conectar el puerto local de la báscula y aplicar el peso a la cantidad del producto.</div>
             </div>
           </div>
+          <label class="form-label" for="carritoCfgMetodosPagoPersonalizados">Formas de pago adicionales por pais o por empresa</label>
+          <textarea id="carritoCfgMetodosPagoPersonalizados" class="form-input" rows="3" placeholder="Una por linea. Ej: Yape, Plin, Zelle, Daviplata, PayPal"></textarea>
+          <div class="form-help">Estas formas aparecen en el carrito como opciones rapidas y se registran internamente como otra transferencia para conservar reportes y conciliacion.</div>
         </div>
 
         <div class="empresa-section mt-12">
@@ -762,6 +765,21 @@
       return out;
     }
 
+    function normalizeCustomPaymentMethods(raw) {
+      const rows = Array.isArray(raw) ? raw : String(raw || '').split(/\r?\n|,/);
+      const seen = {};
+      const out = [];
+      rows.forEach(function(item) {
+        const label = normalizeText(item && typeof item === 'object' ? (item.label || item.nombre || item.name) : item);
+        if (!label) return;
+        const key = label.toLowerCase();
+        if (seen[key]) return;
+        seen[key] = true;
+        out.push(label.slice(0, 40));
+      });
+      return out.slice(0, 12);
+    }
+
     function normalizeShortcutKey(value, fallback) {
       const raw = String(value == null ? '' : value).trim().toUpperCase().replace(/\s+/g, '');
       if (!raw) return '';
@@ -809,6 +827,7 @@
         metodo_pago_nequi: true,
         metodo_pago_otras_transferencias: true,
         metodo_pago_credito_cliente: true,
+        metodos_pago_personalizados: [],
         mostrar_resumen_totales_carrito: true,
         mostrar_desglose_cobro: false,
         mostrar_resumen_productos: true,
@@ -910,6 +929,7 @@
         metodo_pago_nequi: src.metodo_pago_nequi === undefined ? base.metodo_pago_nequi : !!src.metodo_pago_nequi,
         metodo_pago_otras_transferencias: src.metodo_pago_otras_transferencias === undefined ? (src.metodo_pago_transferencia_otro === undefined ? base.metodo_pago_otras_transferencias : !!src.metodo_pago_transferencia_otro) : !!src.metodo_pago_otras_transferencias,
         metodo_pago_credito_cliente: src.metodo_pago_credito_cliente === undefined ? base.metodo_pago_credito_cliente : !!src.metodo_pago_credito_cliente,
+        metodos_pago_personalizados: normalizeCustomPaymentMethods(src.metodos_pago_personalizados || src.formas_pago_personalizadas || src.medios_pago_personalizados),
         mostrar_resumen_totales_carrito: src.mostrar_resumen_totales_carrito === undefined ? base.mostrar_resumen_totales_carrito : !!src.mostrar_resumen_totales_carrito,
         mostrar_desglose_cobro: src.mostrar_desglose_cobro === undefined ? base.mostrar_desglose_cobro : !!src.mostrar_desglose_cobro,
         mostrar_resumen_productos: src.mostrar_resumen_productos === undefined ? base.mostrar_resumen_productos : !!src.mostrar_resumen_productos,
@@ -1317,6 +1337,7 @@
       document.getElementById('carritoCfgMetodoPagoNequi').checked = !!normalized.metodo_pago_nequi;
       document.getElementById('carritoCfgMetodoPagoOtraTransferencia').checked = !!normalized.metodo_pago_otras_transferencias;
       document.getElementById('carritoCfgMetodoPagoCreditoCliente').checked = !!normalized.metodo_pago_credito_cliente;
+      document.getElementById('carritoCfgMetodosPagoPersonalizados').value = normalizeCustomPaymentMethods(normalized.metodos_pago_personalizados).join('\n');
       document.getElementById('carritoCfgResumenTotales').checked = !!normalized.mostrar_resumen_totales_carrito;
       document.getElementById('carritoCfgDesgloseCobro').checked = !!normalized.mostrar_desglose_cobro;
       document.getElementById('carritoCfgFacturacionOffline').checked = !!normalized.facturacion_offline_habilitada;
@@ -1408,6 +1429,7 @@
           'carritoCfgMetodoPagoNequi',
           'carritoCfgMetodoPagoOtraTransferencia',
           'carritoCfgMetodoPagoCreditoCliente',
+          'carritoCfgMetodosPagoPersonalizados',
           'carritoCfgResumenTotales',
           'carritoCfgDesgloseCobro',
           'carritoCfgFacturacionOffline',
@@ -1509,6 +1531,7 @@
           metodo_pago_nequi: document.getElementById('carritoCfgMetodoPagoNequi').checked,
           metodo_pago_otras_transferencias: document.getElementById('carritoCfgMetodoPagoOtraTransferencia').checked,
           metodo_pago_credito_cliente: document.getElementById('carritoCfgMetodoPagoCreditoCliente').checked,
+          metodos_pago_personalizados: normalizeCustomPaymentMethods(document.getElementById('carritoCfgMetodosPagoPersonalizados').value),
           mostrar_resumen_totales_carrito: document.getElementById('carritoCfgResumenTotales').checked,
           mostrar_desglose_cobro: document.getElementById('carritoCfgDesgloseCobro').checked,
           facturacion_offline_habilitada: document.getElementById('carritoCfgFacturacionOffline').checked,

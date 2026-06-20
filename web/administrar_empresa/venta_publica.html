@@ -102,6 +102,14 @@
               <option value="hospitality">Hospitalidad</option>
             </select>
           </div>
+          <div>
+            <label class="form-label" for="whatsappPublicNumber">WhatsApp flotante</label>
+            <input id="whatsappPublicNumber" class="form-input" placeholder="Ej: 573001112233">
+            <div class="vp-field-note">Numero internacional sin espacios. Se mostrara en perfil publico y carta publica.</div>
+          </div>
+          <div>
+            <label style="display:flex;align-items:center;gap:8px;margin-top:28px;"><input id="whatsappFloatActive" type="checkbox"> Mostrar icono flotante de WhatsApp</label>
+          </div>
         </div>
         <label class="form-label" for="storeDesc">Descripción de la tienda</label>
         <textarea id="storeDesc" class="form-textarea" rows="3" placeholder="Describe la oferta pública de esta empresa"></textarea>
@@ -280,6 +288,8 @@
       storeBanner.value=txt(cfg.banner_url);
       storeColor.value=txt(cfg.color_primario||'#0f4c81') || '#0f4c81';
       storeTheme.value=txt(cfg.tema_visual||'default') || 'default';
+      whatsappPublicNumber.value=txt(cfg.whatsapp_numero);
+      whatsappFloatActive.checked=!!cfg.whatsapp_flotante_activo;
       pedidosActivo.checked=!!cfg.pedidos_restaurante_activo;
       pedidosRegistroOpcional.checked=cfg.pedidos_registro_opcional_cliente!==false;
       pedidosRecojo.checked=cfg.pedidos_permitir_recoger_en_tienda!==false;
@@ -312,6 +322,8 @@
         banner_url:txt(storeBanner.value),
         color_primario:txt(storeColor.value)||'#0f4c81',
         tema_visual:txt(storeTheme.value)||'default',
+        whatsapp_flotante_activo:whatsappFloatActive.checked,
+        whatsapp_numero:txt(whatsappPublicNumber.value),
         mostrar_stock:true,
         pedidos_restaurante_activo:pedidosActivo.checked,
         pedidos_registro_opcional_cliente:pedidosRegistroOpcional.checked,
