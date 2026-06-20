@@ -35743,3 +35743,18 @@ Archivos modificados:
 - [Facturacion electronica] El correo automatico/manual al cliente pasa a `multipart/mixed`: cuerpo texto, cuerpo HTML, adjunto HTML, adjunto TXT y enlace QR DIAN cuando el documento tiene codigo de validacion.
 - [Login] Se verifico que `login.html` ya usa flujo de recuperacion con token enviado por correo para super administradores y usuarios de empresa; no se envia la clave en texto plano.
 - [QA] `go test ./handlers ./db` desde `backend`; `node --check` de `web/js/administrar_empresa.js` y scripts embebidos de panel, carrito, facturas electronicas y panel super; verificacion visual/DOM local en `127.0.0.1:8399`.
+
+2026-06-20: rs: actualizar repositorio y sincronizar VPS
+PushStatus: OK
+Archivos modificados:
+- backend/handlers/facturacion_electronica.go
+- documentos/CHANGELOG.md
+- documentos/descripcion_de_archivos
+- documentos/historial_de_cambios
+- documentos/mapa_modulos.md
+- web/administrar_empresa.html
+- web/administrar_empresa/carrito_de_compras.html
+- web/administrar_empresa/panel.html
+- web/js/administrar_empresa.js
+- web/super/licencias_resumen.html
+- web/super_administrador.html

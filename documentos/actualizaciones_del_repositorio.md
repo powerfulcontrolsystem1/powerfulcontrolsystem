@@ -15486,3 +15486,17 @@ Archivos modificados:
 - web/super_administrador.html
 - web/venta_publica.html
 - web/visualizar_productos_y_precios_publico.html
+
+2026-06-20 13:01:35 - Mensaje: rs: actualizar repositorio y sincronizar VPS; Commit: 964a2a06; PushStatus: OK
+Archivos modificados:
+- backend/handlers/facturacion_electronica.go
+- documentos/CHANGELOG.md
+- documentos/descripcion_de_archivos
+- documentos/historial_de_cambios
+- documentos/mapa_modulos.md
+- web/administrar_empresa.html
+- web/administrar_empresa/carrito_de_compras.html
+- web/administrar_empresa/panel.html
+- web/js/administrar_empresa.js
+- web/super/licencias_resumen.html
+- web/super_administrador.html
