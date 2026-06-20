@@ -8,6 +8,11 @@ Actualizacion 2026-06-20: `Super administrador` renombra `Centro de mando` a
 `Seleccionar empresa` y envia `Analitica publica / Visitas al portal por pais`
 al final del panel. `Administrar empresa > Panel` agrega la tarjeta `Noticias`
 alimentada por `/api/public/noticias`, visible solo cuando hay noticias activas.
+La nueva pagina `Configuracion empresarial > Panel de inicio`
+(`web/administrar_empresa/configuracion/panel_inicio.html`) permite desactivar
+por `empresa_id` las tarjetas `Noticias`, `Buzon de usuario` y `Chat de la
+empresa` mediante `/api/empresa/panel_configuracion`; si no hay preferencia
+guardada, las tres quedan activas para empresas nuevas y existentes.
 `Carrito de compras` agrega la accion `Cupo de credito`, que selecciona el pago
 `credito_cliente`, conserva validacion de cliente/cupo y usa sombreado de
 titulos tambien en apariencias claras. `Facturacion electronica` envia correo

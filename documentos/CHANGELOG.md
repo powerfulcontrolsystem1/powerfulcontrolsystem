@@ -1,5 +1,6 @@
 ## [2026-06-20] Admin empresa, carrito por pais y WhatsApp publico
 - [Administrar empresa] `Panel` queda sin Beta; `Login de usuarios` abre en ventana nueva; Importaciones/Produccion/Logistica pasan a su propio grupo; Nomina queda solo en el menu principal.
+- [Panel empresa] Nueva configuracion `Panel de inicio` permite activar/desactivar por empresa las tarjetas `Noticias`, `Buzon de usuario` y `Chat de la empresa`; las empresas nuevas quedan activas por defecto mientras no exista una preferencia guardada.
 - [Configuracion guiada] El panel refuerza `No volver a mostrar` para escritorio y celular, limpia pendientes locales, guarda marcas compatibles y persiste `no_mostrar_mas` en `/api/empresa/configuracion_guiada`.
 - [Finanzas] `finanzas_menu.html` usa altura minima real y deja de duplicar Nomina para evitar paginas mochas dentro del centro financiero y contable.
 - [Carrito] La configuracion del carrito permite agregar formas de pago personalizadas por empresa/pais; se muestran al cajero y se registran como `transferencia_otro` para conservar reportes y validaciones.

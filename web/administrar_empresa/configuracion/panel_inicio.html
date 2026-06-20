@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Panel de inicio</title>
+  <link rel="stylesheet" href="/estilos.css">
+  <script src="/menu.js"></script>
+  <style>
+    .panel-config-shell{max-width:980px;margin:0 auto;padding:20px}
+    .panel-config-card{border:1px solid var(--border-color,#d7dce5);background:var(--card-bg,#fff);padding:18px;border-radius:8px;box-shadow:var(--shadow-sm,0 1px 4px rgba(15,23,42,.08))}
+    .panel-config-head{display:flex;justify-content:space-between;gap:16px;align-items:flex-start;margin-bottom:16px}
+    .panel-config-head h1{margin:0;font-size:1.35rem}
+    .panel-config-head p{margin:6px 0 0;color:var(--muted-text,#5f6b7a)}
+    .panel-config-options{display:grid;gap:12px}
+    .panel-config-option{display:flex;justify-content:space-between;gap:16px;align-items:center;border:1px solid var(--border-color,#d7dce5);padding:12px;background:var(--surface-muted,#f8fafc)}
+    .panel-config-option strong{display:block;margin-bottom:4px}
+    .panel-config-option span{display:block;color:var(--muted-text,#5f6b7a);font-size:.92rem}
+    .panel-config-switch input{width:22px;height:22px}
+    .panel-config-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:16px}
+    .panel-config-status{min-height:1.4em;margin:12px 0 0;color:var(--muted-text,#5f6b7a)}
+    .panel-config-status.is-error{color:#b42318}
+    @media (max-width:700px){
+      .panel-config-shell{padding:12px}
+      .panel-config-head,.panel-config-option{display:block}
+      .panel-config-switch{display:block;margin-top:10px}
+      .panel-config-actions{justify-content:stretch}
+      .panel-config-actions .btn{width:100%}
+    }
+  </style>
+</head>
+<body class="admin-empresa-shell">
+  <main class="panel-config-shell">
+    <section class="panel-config-card" aria-labelledby="panelConfigTitle">
+      <div class="panel-config-head">
+        <div>
+          <h1 id="panelConfigTitle">Panel de inicio</h1>
+          <p>Activa u oculta las tarjetas que se muestran en el panel principal de esta empresa.</p>
+        </div>
+      </div>
+      <form id="panelConfigForm">
+        <div class="panel-config-options">
+          <label class="panel-config-option">
+            <span>
+              <strong>Noticias del sistema</strong>
+              <span>Muestra la ultima noticia publicada para las empresas.</span>
+            </span>
+            <span class="panel-config-switch"><input id="noticiasEnabled" type="checkbox" checked></span>
+          </label>
+          <label class="panel-config-option">
+            <span>
+              <strong>Buzon de usuario</strong>
+              <span>Permite ver mensajes internos, tareas, adjuntos y notas de voz.</span>
+            </span>
+            <span class="panel-config-switch"><input id="buzonEnabled" type="checkbox" checked></span>
+          </label>
+          <label class="panel-config-option">
+            <span>
+              <strong>Chat de la empresa</strong>
+              <span>Habilita el chat interno rapido entre usuarios registrados.</span>
+            </span>
+            <span class="panel-config-switch"><input id="chatEnabled" type="checkbox" checked></span>
+          </label>
+        </div>
+        <p id="panelConfigStatus" class="panel-config-status" aria-live="polite"></p>
+        <div class="panel-config-actions">
+          <button id="panelConfigSave" class="btn" type="submit">Guardar configuracion</button>
+        </div>
+      </form>
+    </section>
+  </main>
+  <script>
+    (function () {
+      var form = document.getElementById("panelConfigForm");
+      var statusEl = document.getElementById("panelConfigStatus");
+      var saveBtn = document.getElementById("panelConfigSave");
+      var noticiasEl = document.getElementById("noticiasEnabled");
+      var buzonEl = document.getElementById("buzonEnabled");
+      var chatEl = document.getElementById("chatEnabled");
+
+      function queryParam(name) {
+        try { return new URLSearchParams(window.location.search || "").get(name) || ""; } catch (e) { return ""; }
+      }
+
+      function readEmpresaId() {
+        var direct = queryParam("empresa_id") || queryParam("id");
+        if (/^[1-9]\d*$/.test(direct)) return direct;
+        var stores = [];
+        try { stores.push(window.sessionStorage); } catch (e) {}
+        try { stores.push(window.localStorage); } catch (e) {}
+        for (var i = 0; i < stores.length; i += 1) {
+          var store = stores[i];
+          if (!store) continue;
+          var keys = ["active_empresa_id", "empresa_id", "admin_empresa_id"];
+          for (var k = 0; k < keys.length; k += 1) {
+            var value = "";
+            try { value = store.getItem(keys[k]) || ""; } catch (e) {}
+            if (/^[1-9]\d*$/.test(value)) return value;
+          }
+        }
+        return "";
+      }
+
+      var empresaId = readEmpresaId();
+
+      function setStatus(message, isError) {
+        statusEl.textContent = message || "";
+        statusEl.classList.toggle("is-error", !!isError);
+      }
+
+      function apiURL() {
+        return "/api/empresa/panel_configuracion?empresa_id=" + encodeURIComponent(empresaId || "");
+      }
+
+      function applyData(data) {
+        data = data || {};
+        noticiasEl.checked = data.noticias_enabled !== false;
+        buzonEl.checked = data.buzon_enabled !== false;
+        chatEl.checked = data.chat_enabled !== false;
+      }
+
+      function loadConfig() {
+        if (!empresaId) {
+          setStatus("No se pudo detectar la empresa activa.", true);
+          if (saveBtn) saveBtn.disabled = true;
+          return;
+        }
+        setStatus("Cargando configuracion...");
+        fetch(apiURL(), { credentials: "same-origin" })
+          .then(function (res) { if (!res.ok) throw new Error("HTTP " + res.status); return res.json(); })
+          .then(function (data) {
+            applyData(data);
+            setStatus("Configuracion cargada.");
+          })
+          .catch(function () {
+            applyData({});
+            setStatus("No se pudo cargar la configuracion. Se muestran los valores predeterminados activos.", true);
+          });
+      }
+
+      form.addEventListener("submit", function (event) {
+        event.preventDefault();
+        if (!empresaId) return;
+        if (saveBtn) saveBtn.disabled = true;
+        setStatus("Guardando configuracion...");
+        fetch(apiURL(), {
+          method: "POST",
+          credentials: "same-origin",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            empresa_id: Number(empresaId),
+            noticias_enabled: !!noticiasEl.checked,
+            buzon_enabled: !!buzonEl.checked,
+            chat_enabled: !!chatEl.checked
+          })
+        }).then(function (res) {
+          if (!res.ok) throw new Error("HTTP " + res.status);
+          return res.json();
+        }).then(function (data) {
+          applyData(data);
+          setStatus("Configuracion guardada.");
+        }).catch(function () {
+          setStatus("No se pudo guardar la configuracion.", true);
+        }).finally(function () {
+          if (saveBtn) saveBtn.disabled = false;
+        });
+      });
+
+      loadConfig();
+    })();
+  </script>
+</body>
+</html>

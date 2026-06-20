@@ -598,6 +598,7 @@ var permissionPagesCatalogOrdered = []permissionPageRule{
 	{PaginaClave: "linkConfiguracionMain", Modulo: permModuleSeguridad, Accion: permActionUpdate, Titulo: "Productos y pedidos", Grupo: "Administracion y configuracion"},
 	{PaginaClave: "linkConfiguracionIdentidadVisual", Modulo: permModuleSeguridad, Accion: permActionUpdate, Titulo: "Identidad visual", Grupo: "Administracion y configuracion"},
 	{PaginaClave: "linkConfiguracionCobroOperativo", Modulo: permModuleSeguridad, Accion: permActionUpdate, Titulo: "Cobro operativo", Grupo: "Administracion y configuracion"},
+	{PaginaClave: "linkConfiguracionPanelInicio", Modulo: permModuleSeguridad, Accion: permActionUpdate, Titulo: "Panel de inicio", Grupo: "Administracion y configuracion"},
 	{PaginaClave: "linkConfiguracionReporteCorte", Modulo: permModuleSeguridad, Accion: permActionUpdate, Titulo: "Reporte de corte", Grupo: "Administracion y configuracion"},
 	{PaginaClave: "linkConfiguracionBackupsPasarelas", Modulo: permModuleSeguridad, Accion: permActionUpdate, Titulo: "Respaldo de configuracion", Grupo: "Administracion y configuracion"},
 	{PaginaClave: "linkConfiguracionPasarelasPago", Modulo: permModuleSeguridad, Accion: permActionUpdate, Titulo: "Pasarelas de pago", Grupo: "Administracion y configuracion"},

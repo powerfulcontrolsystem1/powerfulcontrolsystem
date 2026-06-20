@@ -2055,6 +2055,9 @@
       var empresaNoticiasMetaEl = document.getElementById("empresaNoticiasMeta");
       var empresaNoticiasHeadlineEl = document.getElementById("empresaNoticiasHeadline");
       var empresaNoticiasSummaryEl = document.getElementById("empresaNoticiasSummary");
+      var empresaBuzonGridEl = document.querySelector(".empresa-buzon-grid");
+      var empresaBuzonCardEl = document.querySelector(".empresa-buzon-card");
+      var empresaChatCardEl = document.querySelector(".empresa-chat-card");
       var empresaBuzonListEl = document.getElementById("empresaBuzonList");
       var empresaBuzonUnreadBadgeEl = document.getElementById("empresaBuzonUnreadBadge");
       var empresaBuzonStorageEl = document.getElementById("empresaBuzonStorage");
@@ -2091,6 +2094,12 @@
       var empresaBuzonRecorder = null;
       var empresaBuzonRecordingChunks = [];
       var empresaSelectedTask = null;
+      var empresaPanelConfig = {
+        noticias_enabled: true,
+        buzon_enabled: true,
+        chat_enabled: true
+      };
+      var empresaBuzonInterval = null;
       var weatherCodeMap = {
         0: ["Soleado", "clear", "\u2600"],
         1: ["Mayormente despejado", "clear", "\u2600"],
@@ -2168,8 +2177,53 @@
         return "/api/empresa/buzon?empresa_id=" + encodeURIComponent(String(empresaId || "")) + "&action=" + encodeURIComponent(action || "resumen");
       }
 
+      function panelConfigURL() {
+        return "/api/empresa/panel_configuracion?empresa_id=" + encodeURIComponent(String(empresaId || ""));
+      }
+
+      function normalizePanelConfig(data) {
+        data = data || {};
+        return {
+          noticias_enabled: data.noticias_enabled !== false,
+          buzon_enabled: data.buzon_enabled !== false,
+          chat_enabled: data.chat_enabled !== false
+        };
+      }
+
+      function applyPanelConfig(config) {
+        empresaPanelConfig = normalizePanelConfig(config);
+        if (empresaNoticiasCardEl && !empresaPanelConfig.noticias_enabled) {
+          empresaNoticiasCardEl.hidden = true;
+        }
+        if (empresaBuzonCardEl) empresaBuzonCardEl.hidden = !empresaPanelConfig.buzon_enabled;
+        if (empresaChatCardEl) empresaChatCardEl.hidden = !empresaPanelConfig.chat_enabled;
+        if (empresaBuzonGridEl) {
+          empresaBuzonGridEl.hidden = !empresaPanelConfig.buzon_enabled && !empresaPanelConfig.chat_enabled;
+        }
+      }
+
+      function loadPanelConfig() {
+        if (!empresaId) {
+          applyPanelConfig(null);
+          return Promise.resolve(empresaPanelConfig);
+        }
+        return fetchJSON(panelConfigURL())
+          .then(function (data) {
+            applyPanelConfig(data);
+            return empresaPanelConfig;
+          })
+          .catch(function () {
+            applyPanelConfig(null);
+            return empresaPanelConfig;
+          });
+      }
+
       function renderEmpresaBuzonStorage(storage) {
         if (!empresaBuzonStorageEl) return;
+        if (!empresaPanelConfig.buzon_enabled) {
+          empresaBuzonStorageEl.hidden = true;
+          return;
+        }
         if (!storage || !storage.quota_enabled) {
           empresaBuzonStorageEl.hidden = true;
           return;
@@ -2193,6 +2247,7 @@
       }
 
       function renderEmpresaBuzonMessages(items, unread) {
+        if (!empresaPanelConfig.buzon_enabled) return;
         if (empresaBuzonUnreadBadgeEl) empresaBuzonUnreadBadgeEl.textContent = String(unread || 0);
         if (!empresaBuzonListEl) return;
         empresaBuzonListEl.innerHTML = "";
@@ -2248,6 +2303,7 @@
       }
 
       function renderEmpresaChat(items) {
+        if (!empresaPanelConfig.chat_enabled) return;
         if (!empresaChatListEl) return;
         empresaChatListEl.innerHTML = "";
         items = Array.isArray(items) ? items : [];
@@ -2276,20 +2332,25 @@
       }
 
       function loadEmpresaBuzon() {
-        if (!empresaId || !empresaBuzonListEl) return Promise.resolve();
+        if (!empresaId || (!empresaPanelConfig.buzon_enabled && !empresaPanelConfig.chat_enabled)) return Promise.resolve();
         return fetchJSON(empresaBuzonURL("resumen"))
           .then(function (data) {
-            renderEmpresaBuzonMessages(data.mensajes || [], data.unread || 0);
-            renderEmpresaChat(data.chat || []);
-            renderEmpresaBuzonStorage(data.storage || null);
+            if (empresaPanelConfig.buzon_enabled) {
+              renderEmpresaBuzonMessages(data.mensajes || [], data.unread || 0);
+              renderEmpresaBuzonStorage(data.storage || null);
+            }
+            if (empresaPanelConfig.chat_enabled) {
+              renderEmpresaChat(data.chat || []);
+            }
           })
           .catch(function () {
-            if (empresaBuzonListEl) empresaBuzonListEl.innerHTML = '<p class="empresa-favorites-empty">No se pudo cargar el buzon.</p>';
+            if (empresaPanelConfig.buzon_enabled && empresaBuzonListEl) empresaBuzonListEl.innerHTML = '<p class="empresa-favorites-empty">No se pudo cargar el buzon.</p>';
+            if (empresaPanelConfig.chat_enabled && empresaChatListEl) empresaChatListEl.innerHTML = '<p class="empresa-favorites-empty">No se pudo cargar el chat.</p>';
           });
       }
 
       function loadEmpresaBuzonUsuarios() {
-        if (!empresaId || !empresaBuzonRecipientEl) return Promise.resolve();
+        if (!empresaPanelConfig.buzon_enabled || !empresaId || !empresaBuzonRecipientEl) return Promise.resolve();
         empresaBuzonRecipientEl.innerHTML = '<option value="">Cargando usuarios...</option>';
         return fetchJSON(empresaBuzonURL("usuarios"))
           .then(function (data) {
@@ -2352,6 +2413,7 @@
 
       function sendEmpresaBuzonPayload(event) {
         if (event) event.preventDefault();
+        if (!empresaPanelConfig.buzon_enabled) return;
         if (!empresaId || !empresaBuzonRecipientEl) return;
         var mode = empresaBuzonModeEl && empresaBuzonModeEl.value === "tarea" ? "tarea" : "mensaje";
         var recipient = empresaBuzonRecipientEl.value || "";
@@ -2408,6 +2470,7 @@
       }
 
       function toggleEmpresaBuzonRecording() {
+        if (!empresaPanelConfig.buzon_enabled) return;
         if (empresaBuzonRecorder && empresaBuzonRecorder.state === "recording") {
           empresaBuzonRecorder.stop();
           return;
@@ -2438,6 +2501,7 @@
       }
 
       function completeEmpresaSelectedTask() {
+        if (!empresaPanelConfig.buzon_enabled) return;
         if (!empresaSelectedTask || !empresaSelectedTask.id) return;
         var desc = text(empresaTaskCompleteDescriptionEl && empresaTaskCompleteDescriptionEl.value);
         if (!desc) {
@@ -2477,6 +2541,7 @@
 
       function sendEmpresaChat(event) {
         if (event) event.preventDefault();
+        if (!empresaPanelConfig.chat_enabled) return;
         var message = text(empresaChatMessageInputEl && empresaChatMessageInputEl.value);
         if (!message) return;
         fetch(empresaBuzonURL("chat"), {
@@ -2654,6 +2719,10 @@
       }
 
       function loadLatestSystemNews() {
+        if (!empresaPanelConfig.noticias_enabled) {
+          if (empresaNoticiasCardEl) empresaNoticiasCardEl.hidden = true;
+          return Promise.resolve();
+        }
         if (!empresaNoticiasCardEl) return Promise.resolve();
         return fetchJSON("/api/public/noticias")
           .then(function (data) {
@@ -3952,11 +4021,16 @@
         renderFavorites();
         setupWeatherControls();
         setupEmpresaBuzonControls();
-        loadEmpresaBuzonUsuarios();
-        loadEmpresaBuzon();
-        window.setInterval(loadEmpresaBuzon, 60000);
         loadMaintenanceNotice();
-        loadLatestSystemNews();
+        loadPanelConfig().then(function () {
+          if (empresaPanelConfig.buzon_enabled) loadEmpresaBuzonUsuarios();
+          if (empresaPanelConfig.buzon_enabled || empresaPanelConfig.chat_enabled) {
+            loadEmpresaBuzon();
+            if (empresaBuzonInterval) window.clearInterval(empresaBuzonInterval);
+            empresaBuzonInterval = window.setInterval(loadEmpresaBuzon, 60000);
+          }
+          if (empresaPanelConfig.noticias_enabled) loadLatestSystemNews();
+        });
         var adminPromise = fetchJSON("/me").catch(function () { return {}; });
         var guidedConfigPromise = empresaId
           ? fetchJSON("/api/empresa/configuracion_guiada?empresa_id=" + encodeURIComponent(empresaId)).catch(function () { return {}; })
