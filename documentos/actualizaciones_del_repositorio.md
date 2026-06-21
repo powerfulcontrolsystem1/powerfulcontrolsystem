@@ -15514,3 +15514,30 @@ Archivos modificados:
 - web/administrar_empresa/configuracion/panel_inicio.html
 - web/administrar_empresa/configuracion_menu.html
 - web/administrar_empresa/panel.html
+
+2026-06-21 03:35:00 - Mensaje: rs: actualizar repositorio y sincronizar VPS; Commit: 410eb5aa; PushStatus: OK
+Archivos modificados:
+- CHANGELOG.md
+- backend/db/empresa_estacion_prefs.go
+- backend/handlers/chat_con_ia_global_super.go
+- backend/handlers/chat_con_inteligencia_artificial_controller.go
+- backend/handlers/server_runtime_notifications.go
+- backend/main.go
+- documentos/CHANGELOG.md
+- documentos/historial_de_cambios
+- documentos/mapa_modulos.md
+- web/administrar_empresa.html
+- web/administrar_empresa/compras.html
+- web/administrar_empresa/egresos.html
+- web/administrar_empresa/finanzas_breb_qr_tutorial.html
+- web/administrar_empresa/ingresos.html
+- web/administrar_empresa/panel.html
+- web/administrar_empresa/radio_online.html
+- web/estilos.css
+- web/js/ai_chat_drawer.js
+- web/js/egresos_ingresos.js
+- web/js/radio_online.js
+- web/js/radio_player.js
+- web/seleccionar_empresa.html
+- web/super/informacion_de_la_empresa_y_de_los_sistemas_para_ia.html
+- web/super_administrador.html
