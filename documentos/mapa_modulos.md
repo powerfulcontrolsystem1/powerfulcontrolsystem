@@ -3,6 +3,17 @@
 Tabla de ubicacion rapida para no buscar desde cero cada modulo. Si una fila
 queda incompleta al implementar una mejora, actualizarla en el mismo cambio.
 
+Actualizacion 2026-06-21: `Chat IA` queda en modo operativo/ayudante sin
+autoconvertir respuestas a documentos ni mostrar exportaciones no solicitadas;
+la voz se migra apagada por defecto con
+`DisableFloatingChatVoicePrefs`. `Ingresos`, `Egresos` y `Compras` usan botones
+con logo IA que cargan el archivo al chat para revisar calidad de captura y
+novedades, ademas de precargar datos cuando el endpoint de soportes IA responde.
+`Radio online` simplifica la lista a boton `Reproducir`, activa la emisora si
+hace falta y minimiza al reproductor compacto. `Super administrador >
+Informacion de la empresa y de los sistemas para IA` carga con textos UTF-8 y
+textarea amplio dentro del panel.
+
 Actualizacion 2026-06-20: `Super administrador` renombra `Centro de mando` a
 `Panel`, reemplaza la tarjeta superior de `Email corporativo` por
 `Seleccionar empresa` y envia `Analitica publica / Visitas al portal por pais`

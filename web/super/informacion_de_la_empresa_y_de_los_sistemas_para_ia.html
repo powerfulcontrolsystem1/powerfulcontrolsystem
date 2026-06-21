@@ -5,9 +5,14 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Información para IA (Portal)</title>
   <link rel="stylesheet" href="/estilos.css">
+  <style>
+    .super-info-ia-page{max-width:1180px;margin:0 auto;padding:16px}
+    .super-info-ia-page .page-header{align-items:flex-start;gap:12px;flex-wrap:wrap}
+    .super-info-ia-page textarea{min-height:58vh;resize:vertical;line-height:1.5}
+  </style>
 </head>
 <body class="super-page">
-  <div class="container">
+  <div class="container super-info-ia-page">
     <div class="page-header">
       <h1>Información de la empresa y de los sistemas para IA (Portal)</h1>
       <div class="row" style="gap:10px;flex-wrap:wrap">
@@ -19,7 +24,7 @@
     <section class="card empresa-section">
       <div class="form-help">
         Este contenido alimenta el <strong>chat público del index</strong> (`/api/public/chat_portal`). Úsalo para:
-        módulos, oferta comercial, políticas, términos, pasos de compra, soporte, y cualquier texto “oficial” que quieras que la IA use.
+        módulos, oferta comercial, políticas, términos, pasos de compra, soporte y cualquier texto oficial que quieras que la IA use.
         <br>
         El chat también inyecta automáticamente un resumen de <strong>precios de licencias</strong> desde la base de datos (no lo repitas aquí si no quieres).
       </div>
@@ -93,4 +98,3 @@
   </script>
 </body>
 </html>
-

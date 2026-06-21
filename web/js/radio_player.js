@@ -169,7 +169,7 @@
         '    <span>' + escapeHTML(station.genre) + '</span>' +
         '  </div>' +
         '  <div class="radio-station-actions">' +
-        '    <button type="button" class="btn' + (active ? '' : ' secondary') + ' small" data-radio-play="' + escapeHTML(station.id) + '"' + (!state.enabled ? ' disabled' : '') + '>' + (!state.enabled ? 'Desactivada' : (active && state.playing ? 'Sonando' : 'Escuchar')) + '</button>' +
+        '    <button type="button" class="btn' + (active ? '' : ' secondary') + ' small" data-radio-play="' + escapeHTML(station.id) + '">' + (active && state.playing ? 'Sonando' : 'Reproducir') + '</button>' +
         (station.sourceUrl ? '    <a href="' + escapeHTML(station.sourceUrl) + '" target="_blank" rel="noopener" class="btn secondary small">Fuente</a>' : '') +
         (station.custom ? '    <button type="button" class="btn danger small" data-radio-delete="' + escapeHTML(station.id) + '">Eliminar</button>' : '') +
         '  </div>' +
@@ -199,7 +199,10 @@
   }
 
   function playStation(id, autoplay) {
-    if (!state.enabled) return;
+    if (!state.enabled) {
+      setRadioEnabled(true);
+      persistRadioConfig();
+    }
     var station = stationById(id);
     if (!station) return;
     state.stationId = station.id;
@@ -221,6 +224,7 @@
     } else {
       state.playing = false;
     }
+    setDrawerOpen(false);
     updateMiniPlayer();
     saveState();
   }
@@ -401,7 +405,10 @@
   function wireEvents() {
     if (openBtn) openBtn.addEventListener("click", function () {
       if (!drawer) return;
-      if (!state.enabled) return;
+      if (!state.enabled) {
+        setRadioEnabled(true);
+        persistRadioConfig();
+      }
       setDrawerOpen(!drawer.classList.contains("is-open"));
     });
     if (closeBtn) closeBtn.addEventListener("click", function () { setDrawerOpen(false); });
@@ -449,7 +456,6 @@
         }
         var button = ev.target.closest("[data-radio-play]");
         if (!button) return;
-        if (!state.enabled) return;
         playStation(button.getAttribute("data-radio-play"), true);
       });
     }

@@ -125,7 +125,7 @@
           '  <p>' + escapeHTML(station.tagline) + '</p>' +
           '  <div class="radio-station-meta"><span>' + escapeHTML(station.genre) + '</span></div>' +
           '  <div class="radio-station-actions">' +
-          '    <button type="button" class="btn small" data-radio-page-play="' + escapeHTML(station.id) + '"' + (!state.enabled ? ' disabled' : '') + '>' + (state.enabled ? 'Escuchar' : 'Desactivada') + '</button>' +
+          '    <button type="button" class="btn small" data-radio-page-play="' + escapeHTML(station.id) + '">Reproducir</button>' +
           (station.sourceUrl ? '    <a href="' + escapeHTML(station.sourceUrl) + '" target="_blank" rel="noopener" class="btn secondary small">Fuente</a>' : '') +
           (station.custom ? '    <button type="button" class="btn danger small" data-radio-page-delete="' + escapeHTML(station.id) + '">Eliminar</button>' : '') +
           '  </div>' +
@@ -133,7 +133,7 @@
       }).join("");
     }
     if (enabledToggle) enabledToggle.checked = !!state.enabled;
-    setStatus(state.enabled ? "Emisora online activa." : "Emisora online desactivada.");
+    setStatus(state.enabled ? "Emisora online activa." : "Elige una emisora y el sistema la activara automaticamente.");
     updateCountryControls();
   }
 
@@ -295,8 +295,11 @@
     var button = ev.target.closest("[data-radio-page-play]");
     if (!button) return;
     if (!state.enabled) {
+      state.enabled = true;
+      writeEnabled(true);
+      notifyParent();
       render();
-      return;
+      persist();
     }
     var id = button.getAttribute("data-radio-page-play");
     if (window.parent && typeof window.parent.__pcsRadioPlayerOpenStation === "function") {

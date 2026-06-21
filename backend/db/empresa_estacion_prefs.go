@@ -130,6 +130,43 @@ func DisableLegacyFloatingRobotAndRadioPrefs(dbConn *sql.DB) error {
 	})
 }
 
+// DisableFloatingChatVoicePrefs deja el chat IA en modo texto por defecto para
+// empresas existentes; la voz queda como opcion manual del usuario.
+func DisableFloatingChatVoicePrefs(dbConn *sql.DB) error {
+	if dbConn == nil {
+		return nil
+	}
+	if err := EnsureEmpresaEstacionPrefsSchema(dbConn); err != nil {
+		return err
+	}
+	return ApplySchemaMigration(dbConn, "empresas", "20260620_chat_ia_voz_apagada_empresas", "Desactiva la voz del chat IA por defecto en empresas existentes", func(tx *sql.DB) error {
+		_, err := execSQLCompat(tx, `
+			INSERT INTO empresa_estacion_prefs (
+				empresa_id, estacion_id, clave, valor, fecha_creacion, fecha_actualizacion, usuario_creador, estado, observaciones
+			)
+			SELECT COALESCE(NULLIF(e.empresa_id, 0), e.id),
+			       0,
+			       'chat_flotante.voice_enabled',
+			       '0',
+			       CURRENT_TIMESTAMP,
+			       CURRENT_TIMESTAMP,
+			       'sistema.preproduccion',
+			       'activo',
+			       '[preproduccion_2026-06-20] voz del chat IA apagada por defecto; el usuario puede activarla manualmente'
+			FROM empresas e
+			WHERE COALESCE(NULLIF(e.empresa_id, 0), e.id) > 0
+			  AND LOWER(COALESCE(NULLIF(TRIM(e.estado), ''), 'activo')) NOT IN ('inactivo', 'eliminado')
+			ON CONFLICT(empresa_id, estacion_id, clave) DO UPDATE SET
+				valor = EXCLUDED.valor,
+				fecha_actualizacion = CURRENT_TIMESTAMP,
+				usuario_creador = 'sistema.preproduccion',
+				estado = 'activo',
+				observaciones = '[preproduccion_2026-06-20] voz del chat IA apagada por defecto; el usuario puede activarla manualmente'
+		`)
+		return err
+	})
+}
+
 // ListEmpresaEstacionPrefs lista preferencias por empresa y opcionalmente por estacion.
 func ListEmpresaEstacionPrefs(dbConn *sql.DB, empresaID int64, estacionID int64, includeInactive bool) ([]EmpresaEstacionPref, error) {
 	if dbConn == nil {

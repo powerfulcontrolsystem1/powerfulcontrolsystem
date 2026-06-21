@@ -227,6 +227,29 @@
     if (textValue !== '') node.value = textValue;
   }
 
+  function openAIChatWithComprobante(file, summary) {
+    const prompt = (tipoMovimiento === 'ingreso'
+      ? 'Analiza este comprobante de ingreso. Resume los datos detectados, dime si la foto o documento se ve bien y avísame si falta información antes de guardar.'
+      : 'Analiza este comprobante de egreso o compra. Resume proveedor, fecha, número, impuestos y total; dime si la foto o documento se ve bien y avísame si falta información antes de guardar.');
+    const payload = {
+      file,
+      title: summary || 'Captura inteligente de ' + tipoMovimiento,
+      prompt,
+      autoSend: false
+    };
+    try {
+      if (window.parent && typeof window.parent.__pcsAIChatAnalyzeFile === 'function') {
+        return window.parent.__pcsAIChatAnalyzeFile(payload);
+      }
+    } catch (_) {}
+    try {
+      if (typeof window.__pcsAIChatAnalyzeFile === 'function') {
+        return window.__pcsAIChatAnalyzeFile(payload);
+      }
+    } catch (_) {}
+    return false;
+  }
+
   async function analizarComprobanteIA() {
     if (!empresaId) {
       setMessage('No se encontro empresa_id para analizar el soporte.', 'error');
@@ -238,6 +261,7 @@
       setMessage('Selecciona primero una foto, imagen o PDF del comprobante.', 'error');
       return;
     }
+    openAIChatWithComprobante(file, 'Archivo cargado para revisar la calidad del soporte');
     const btn = el('btnAnalizarComprobanteIA');
     const original = btn ? btn.textContent : '';
     if (btn) {
@@ -281,7 +305,8 @@
       if (iva >= 0) el('impuesto').value = iva.toFixed(2);
       if (retenciones > 0) el('totalRetenciones').value = retenciones.toFixed(2);
       recalcTotals();
-      setMessage('Datos cargados desde IA. Revisa y guarda el movimiento cuando este correcto.', 'success');
+      openAIChatWithComprobante(file, 'Datos extraidos desde IA. Revisa el formulario antes de guardar');
+      setMessage('Datos cargados desde IA. Revisa y guarda el movimiento cuando este correcto. El chat IA quedo abierto con el archivo para validar novedades.', 'success');
     } catch (err) {
       setMessage(err && err.message ? err.message : 'No se pudo analizar el comprobante con IA.', 'error');
     } finally {

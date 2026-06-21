@@ -767,7 +767,9 @@
       state.chatEnabled = (isPublicPortalContext() || isEnterpriseAIContext()) ? true : readEnabledPreference(CHAT_ENABLED_STORAGE_KEY, true);
       state.robotEnabled = false;
       state.radioEnabled = false;
-      state.voiceEnabled = window.localStorage.getItem(VOICE_COMMAND_STORAGE_KEY) === '1';
+      state.voiceEnabled = false;
+      state.conversationMode = false;
+      window.localStorage.setItem(VOICE_COMMAND_STORAGE_KEY, '0');
       setRobotVoicePreference(window.localStorage.getItem(ROBOT_VOICE_STORAGE_KEY) || state.robotVoice);
     } catch (error) {}
     applyChatPersonalityMode();
@@ -1664,8 +1666,6 @@
     if (isPublicPortalContext()) {
       return value === 'ayudante' ? 'ayudante' : 'operativo';
     }
-    if (value === 'reportes') return 'reportes';
-    if (value === 'documentos') return 'documentos';
     return value === 'ayudante' ? 'ayudante' : 'operativo';
   }
 
@@ -1678,12 +1678,7 @@
   }
 
   function shouldAutoUseDocumentMode(query) {
-    if (isSuperContext() || isPublicPortalContext()) return false;
-    var text = normalize(String(query || ''));
-    if (!text) return false;
-    var hasAction = /\b(genera|generar|crea|crear|haz|hacer|redacta|redactar|prepara|preparar|exporta|exportar)\b/.test(text);
-    var hasDocument = /\b(documento|contrato|factura|reporte|informe|acta|cotizacion|presupuesto|excel|xlsx|word|docx|pdf|tabla|listado)\b/.test(text);
-    return hasAction && hasDocument;
+    return false;
   }
 
   function isImageFileForAI(file) {
@@ -1727,69 +1722,24 @@
   }
 
   function ensureDocumentModeUI() {
-    if (isPublicPortalContext()) {
-      return null;
-    }
     var modeEl = document.getElementById(MODE_ID);
-    if (modeEl && !modeEl.querySelector('option[value="documentos"]')) {
-      var option = document.createElement('option');
-      option.value = 'documentos';
-      option.textContent = 'Documentos IA';
-      var reportOption = modeEl.querySelector('option[value="reportes"]');
-      if (reportOption && reportOption.parentNode === modeEl) {
-        modeEl.insertBefore(option, reportOption);
-      } else {
-        modeEl.appendChild(option);
+    if (modeEl) {
+      ['documentos', 'reportes'].forEach(function (value) {
+        var option = modeEl.querySelector('option[value="' + value + '"]');
+        if (option && option.parentNode === modeEl) {
+          modeEl.removeChild(option);
+        }
+      });
+      if (modeEl.value === 'documentos' || modeEl.value === 'reportes') {
+        modeEl.value = 'operativo';
       }
     }
-
     var tools = document.getElementById(DOCUMENT_TOOLS_ID);
-    if (tools) return tools;
-    var controls = modeEl && modeEl.closest('.ai-chat-controls');
-    if (!controls) return null;
-
-    tools = document.createElement('div');
-      tools.id = DOCUMENT_TOOLS_ID;
-      tools.className = 'ai-chat-control-field ai-chat-document-tools is-hidden';
-      tools.innerHTML =
-        '<span>Archivo IA</span>' +
-        '<div class="ai-chat-document-tool-row">' +
-        '<select id="' + DOCUMENT_FORMAT_ID + '" class="form-input" aria-label="Formato de descarga del documento">' +
-      '<option value="pdf">PDF</option>' +
-      '<option value="docx">Word</option>' +
-      '<option value="xlsx">Excel</option>' +
-        '<option value="txt">TXT</option>' +
-        '<option value="json">JSON</option>' +
-        '</select>' +
-        '<button id="' + DOCUMENT_DOWNLOAD_ID + '" type="button" class="btn secondary small ai-chat-document-download" disabled>Descargar</button>' +
-        '<button id="' + DOCUMENT_EMAIL_ID + '" type="button" class="btn secondary small ai-chat-document-download" disabled>Correo</button>' +
-        '<button id="' + DOCUMENT_WHATSAPP_ID + '" type="button" class="btn secondary small ai-chat-document-download" disabled>WhatsApp</button>' +
-        '</div>';
-    controls.appendChild(tools);
-
-      var downloadBtn = document.getElementById(DOCUMENT_DOWNLOAD_ID);
-      if (downloadBtn) {
-        downloadBtn.addEventListener('click', function (event) {
-          event.preventDefault();
-          downloadCurrentGeneratedDocument();
-        });
-      }
-      var emailBtn = document.getElementById(DOCUMENT_EMAIL_ID);
-      if (emailBtn) {
-        emailBtn.addEventListener('click', function (event) {
-          event.preventDefault();
-          shareCurrentArtifactByEmail();
-        });
-      }
-      var whatsAppBtn = document.getElementById(DOCUMENT_WHATSAPP_ID);
-      if (whatsAppBtn) {
-        whatsAppBtn.addEventListener('click', function (event) {
-          event.preventDefault();
-          shareCurrentArtifactByWhatsApp();
-        });
-      }
-      return tools;
+    if (tools && tools.parentNode) {
+      tools.parentNode.removeChild(tools);
     }
+    return null;
+  }
 
   function setGeneratedDocument(doc) {
     state.generatedDocument = doc || null;
@@ -2942,14 +2892,10 @@
     var attachBtn = document.getElementById(ATTACH_BTN_ID);
     var clearBtn = document.getElementById(CLEAR_ATTACHMENT_ID);
     var attachName = document.getElementById(ATTACHMENT_NAME_ID);
-    var reportOption = modeEl && modeEl.querySelector('option[value="reportes"]');
-    var documentOption = modeEl && modeEl.querySelector('option[value="documentos"]');
     var documentTools = document.getElementById(DOCUMENT_TOOLS_ID);
     var documentFormatSelect = document.getElementById(DOCUMENT_FORMAT_ID);
     var configBtn = document.getElementById('aiChatConfigBtn');
     var attachField = attachBtn && attachBtn.closest('.ai-chat-control-field');
-    var reportMode = isReportMode();
-    var documentMode = isDocumentMode();
     var superContext = isSuperContext();
     var publicContext = isPublicPortalContext();
 
@@ -2963,25 +2909,6 @@
       if (normalize(modeEl.value) !== 'operativo' && normalize(modeEl.value) !== 'ayudante') {
         modeEl.value = 'operativo';
       }
-      reportMode = false;
-      documentMode = false;
-    }
-
-    if (reportOption) {
-      reportOption.hidden = superContext || publicContext;
-      reportOption.disabled = superContext || publicContext;
-      if ((superContext || publicContext) && normalize(modeEl.value) === 'reportes') {
-        modeEl.value = 'operativo';
-        reportMode = false;
-      }
-    }
-    if (documentOption) {
-      documentOption.hidden = superContext || publicContext;
-      documentOption.disabled = superContext || publicContext;
-      if ((superContext || publicContext) && normalize(modeEl.value) === 'documentos') {
-        modeEl.value = 'operativo';
-        documentMode = false;
-      }
     }
 
     if (configBtn) {
@@ -2992,39 +2919,28 @@
     }
 
     if (documentTools) {
-      documentTools.classList.toggle('is-hidden', publicContext || !(documentMode || reportMode));
+      documentTools.classList.add('is-hidden');
     }
     if (documentFormatSelect) {
-      documentFormatSelect.disabled = publicContext || reportMode;
+      documentFormatSelect.disabled = true;
     }
-    if (!documentMode) {
-      updateDocumentDownloadButton();
-    }
-    if (!reportMode && !documentMode && !state.generatedDocument) {
+    updateDocumentDownloadButton();
+    if (!state.generatedDocument) {
       setShareArtifact(null);
     }
 
-    if (attachBtn) attachBtn.disabled = publicContext || reportMode || documentMode;
-    if (clearBtn) clearBtn.disabled = publicContext || reportMode || documentMode;
+    if (attachBtn) attachBtn.disabled = publicContext;
+    if (clearBtn) clearBtn.disabled = publicContext;
     if (attachName) {
       if (publicContext) {
         attachName.textContent = isPublicStoreContext()
           ? 'Este chat publico esta restringido a preguntas sobre los productos, precios y paginas visibles de esta empresa.'
           : 'Este chat publico responde sobre planes, modulos, precios, contacto y licencias de Powerful Control System.';
         attachName.classList.remove('is-hidden');
-      } else if (reportMode) {
-        attachName.textContent = 'Modo reportes: el asistente usará el flujo centralizado de reportes y exportaciones.';
-        attachName.classList.remove('is-hidden');
-      } else if (documentMode) {
-        attachName.textContent = 'Modo Documentos IA: el sistema seleccionara automaticamente el mejor modelo disponible para generar el documento. Los adjuntos quedan desactivados; el analisis visual se reserva para fotos.';
-        attachName.classList.remove('is-hidden');
       } else if (!getCurrentAttachment()) {
         attachName.textContent = '';
         attachName.classList.add('is-hidden');
       }
-    }
-    if ((reportMode || documentMode) && getCurrentAttachment()) {
-      clearAttachmentSelection();
     }
   }
 
@@ -3226,14 +3142,7 @@
   }
 
   function shouldShowDocumentExports(text) {
-    var raw = String(text || '').trim();
-    if (!raw) return false;
-    var value = normalizeVoiceCommandText(raw);
-    var hasDocumentKeyword = /\b(documento|contrato|factura|reporte|informe|acta|cotizacion|cotización|tabla|excel|presupuesto|propuesta|certificado)\b/.test(value);
-    if (raw.length < 120 && raw.indexOf('|') < 0 && !hasDocumentKeyword) return false;
-    return raw.indexOf('|') >= 0 ||
-      hasDocumentKeyword ||
-      raw.length > 650;
+    return false;
   }
 
   function createDocumentExportElement(text, sourceModule) {
@@ -4446,6 +4355,49 @@
     return true;
   }
 
+  function startFileAnalysisAssistant(rawPayload) {
+    var payload = rawPayload && typeof rawPayload === 'object' ? rawPayload : {};
+    var file = payload.file || null;
+    var prompt = normalize(payload.prompt || '');
+    var title = normalize(payload.title || 'Análisis inteligente');
+    if (!file) {
+      return false;
+    }
+    if (Number(file.size || 0) > MAX_ATTACHMENT_BYTES) {
+      setNotice('El archivo supera el tamaño permitido para el chat IA.', true);
+      return false;
+    }
+    if (!state.chatEnabled) {
+      if (!openChatDrawerForHelpPanel()) return false;
+      appendMessage('assistant', title + '\n\nLa caja de IA está desactivada para esta empresa. Actívala desde la configuración del panel para analizar fotos o documentos.');
+      return false;
+    }
+    openChatDrawerFromUser();
+    var modeEl = document.getElementById(MODE_ID);
+    var input = document.getElementById(INPUT_ID);
+    var form = document.getElementById(FORM_ID);
+    if (modeEl) {
+      modeEl.value = 'operativo';
+      syncModeUI();
+    }
+    state.selectedAttachment = file;
+    renderAttachmentState();
+    appendMessage('assistant', title + '\n\nVoy a revisar el archivo adjunto. Si la foto está borrosa, cortada o falta información, te lo diré antes de sugerir guardar datos.');
+    if (input) {
+      input.value = prompt || 'Analiza esta imagen o documento y dime qué datos detectas. Si la foto no quedó bien tomada, avísame claramente antes de proponer guardar información.';
+      input.focus();
+    }
+    setNotice('Archivo cargado en el chat IA. Revisa el mensaje y envíalo para analizar.');
+    if (payload.autoSend && form) {
+      window.setTimeout(function () {
+        submitFormSafely(form, handleSubmit);
+      }, 120);
+    }
+    return true;
+  }
+
+  window.__pcsAIChatAnalyzeFile = startFileAnalysisAssistant;
+
   function handleSubmit(event) {
     event.preventDefault();
     if (!state.chatEnabled) return;
@@ -4799,11 +4751,7 @@
     if (modeEl) {
       modeEl.addEventListener('change', function () {
         syncModeUI();
-        setNotice(isDocumentMode()
-          ? 'Modo Documentos IA activo. El sistema elegira automaticamente el mejor modelo disponible para generar documentos descargables.'
-          : (isReportMode()
-            ? 'Modo reportes activo. Este chat central usará el flujo de reportes y exportaciones de la empresa.'
-            : 'Modo actualizado. Puedes seguir consultando normalmente.'));
+        setNotice('Modo actualizado. Puedes seguir consultando normalmente.');
       });
     }
     if (hintToggle && hints) {

@@ -35773,3 +35773,11 @@ Archivos modificados:
 - web/administrar_empresa/configuracion/panel_inicio.html
 - web/administrar_empresa/configuracion_menu.html
 - web/administrar_empresa/panel.html
+2026-06-21: IA enfocada, capturas IA y radio simple.
+- Backend IA: los prompts base responden solo lo solicitado, no ofrecen exportar/emitir/descargar sin pedido explicito y evitan mostrar `empresa_id` al usuario.
+- Preferencias IA: nueva migracion deja la voz del chat apagada por defecto para empresas existentes.
+- Correos automaticos: las notificaciones de arranque usan HTML corporativo con logo PCS y Mailu multipart.
+- Frontend IA: el chat retira autoseleccion de Documentos/Reportes, oculta exportaciones automaticas y expone una entrada segura para cargar archivos desde botones de captura.
+- Ingresos, Egresos y Compras: los botones IA con logo abren el chat con la foto/documento para reportar calidad de captura y novedades antes de guardar.
+- Radio online: `Reproducir` activa la radio si hace falta, reproduce y minimiza al reproductor compacto.
+- Super administrador: la pagina de informacion para IA queda con texto UTF-8 y area de edicion amplia.

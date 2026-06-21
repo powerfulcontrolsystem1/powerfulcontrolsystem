@@ -2174,17 +2174,20 @@ body.has-floating-menu.admin-empresa-shell .admin-frame-toolbar{top:calc(var(--f
 .ai-chat-hints ul{margin:0;padding-left:20px}
 .ai-chat-hints li{margin:6px 0}
 .ai-chat-form{display:flex;flex-direction:column;align-items:stretch;gap:8px;padding:12px;border-top:1px solid var(--border);background:linear-gradient(180deg,var(--surface),var(--surface-soft));flex-shrink:0}
-.ai-chat-toolbar-row{display:flex;align-items:center;flex-wrap:nowrap;gap:8px}
-.ai-chat-voice-toolbar{display:flex;align-items:center;gap:6px;flex-wrap:nowrap;margin-bottom:0}
+.ai-chat-toolbar-row{display:grid;grid-template-columns:1fr;gap:8px}
+.ai-chat-voice-toolbar{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:0}
 .ai-chat-icon-btn{width:40px;height:40px;min-width:40px;border-radius:12px;border:1px solid var(--border);background:var(--surface-soft);color:var(--text);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;padding:0;transition:background .15s ease,box-shadow .15s ease}
 .ai-chat-icon-btn:hover{background:var(--focus)}
 .ai-chat-icon-btn[aria-pressed="true"]{box-shadow:0 0 0 2px rgba(96,165,250,.45);background:rgba(96,165,250,.12)}
 .ai-chat-stop-btn.is-active{border-color:rgba(220,38,38,.42);background:rgba(220,38,38,.12);color:#dc2626;box-shadow:0 0 0 2px rgba(220,38,38,.18)}
 .ai-chat-icon-btn:disabled{opacity:.45;cursor:not-allowed}
 .ai-chat-icon-btn svg{display:block}
-.ai-chat-controls{display:flex;align-items:center;gap:8px;min-width:0;flex:1 1 auto}
+.ai-action-btn{display:inline-flex;align-items:center;justify-content:center;gap:8px}
+.ai-action-btn img{width:18px;height:18px;display:block;flex:0 0 auto}
+.ai-chat-controls{display:grid;grid-template-columns:minmax(140px,1fr) minmax(140px,1fr) auto;align-items:end;gap:8px;min-width:0;flex:1 1 auto}
 .ai-chat-control-field{display:flex;flex-direction:column;gap:4px;min-width:0}
 .ai-chat-control-field > span{font-size:.78rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+.ai-chat-control-field select.form-input{width:100%;min-width:0}
 .ai-chat-document-tools.is-hidden{display:none}
 .ai-chat-document-tool-row{display:flex;align-items:center;gap:6px;flex-wrap:nowrap}
 .ai-chat-document-tool-row select.form-input{min-width:92px}
@@ -2199,14 +2202,14 @@ body.has-floating-menu.admin-empresa-shell .admin-frame-toolbar{top:calc(var(--f
 .ai-chat-form > button[type="submit"]{align-self:flex-end;min-width:120px;white-space:nowrap}
 @media (max-width: 540px){
   .ai-chat-form{gap:6px;padding:8px 10px 10px}
-  .ai-chat-toolbar-row{justify-content:flex-start;overflow-x:auto;overflow-y:hidden;padding-bottom:2px;scrollbar-width:none}
+  .ai-chat-toolbar-row{overflow:visible;padding-bottom:2px}
   .ai-chat-toolbar-row::-webkit-scrollbar{display:none}
   .ai-chat-icon-btn{width:34px;height:34px;min-width:34px;border-radius:10px}
   .ai-chat-icon-btn svg{width:18px;height:18px}
-  .ai-chat-controls{display:flex;flex-wrap:nowrap;gap:6px;align-items:center;flex:0 0 auto}
-  .ai-chat-control-field{flex:0 0 auto;min-width:0;gap:0}
-  .ai-chat-control-field > span{display:none}
-  .ai-chat-control-field select.form-input{width:108px;min-height:34px;height:34px;padding:5px 8px;font-size:.82rem;border-radius:10px}
+  .ai-chat-controls{display:grid;grid-template-columns:1fr 1fr;gap:6px;align-items:end;width:100%;flex:1 1 auto}
+  .ai-chat-control-field{min-width:0;gap:3px}
+  .ai-chat-control-field > span{display:block;font-size:.68rem}
+  .ai-chat-control-field select.form-input{width:100%;min-height:34px;height:34px;padding:5px 8px;font-size:.82rem;border-radius:10px}
   .ai-chat-document-tool-row{gap:5px;flex-wrap:wrap;align-items:stretch}
   .ai-chat-document-tool-row select.form-input{width:100%;min-width:0;flex:1 1 100%}
   .ai-chat-document-download{min-height:34px;padding:5px 8px;font-size:.78rem;flex:1 1 calc(50% - 5px);justify-content:center}
@@ -14257,22 +14260,23 @@ html.theme-light .ai-gemini-inline-alert{
 }
 
 .ai-chat-drawer .ai-chat-form{gap:8px;padding:12px}
-.ai-chat-drawer .ai-chat-toolbar-row{display:flex;align-items:center;flex-wrap:nowrap;gap:8px}
-.ai-chat-drawer .ai-chat-voice-toolbar{display:flex;align-items:center;gap:6px;flex-wrap:nowrap;margin-bottom:0}
-.ai-chat-drawer .ai-chat-controls{display:flex;align-items:center;gap:8px;min-width:0;flex:1 1 auto}
+.ai-chat-drawer .ai-chat-toolbar-row{display:grid;grid-template-columns:1fr;gap:8px}
+.ai-chat-drawer .ai-chat-voice-toolbar{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:0}
+.ai-chat-drawer .ai-chat-controls{display:grid;grid-template-columns:minmax(140px,1fr) minmax(140px,1fr) auto;align-items:end;gap:8px;min-width:0;flex:1 1 auto}
+.ai-chat-drawer .ai-chat-control-field select.form-input{width:100%;min-width:0}
 .ai-chat-drawer .ai-chat-document-tool-row{display:flex;align-items:center;gap:6px;flex-wrap:nowrap}
 .ai-chat-drawer .ai-chat-attachment-row{display:flex;align-items:center;gap:6px;flex-wrap:nowrap}
 
 @media (max-width:540px){
   .ai-chat-drawer .ai-chat-form{gap:6px;padding:8px 10px 10px}
-  .ai-chat-drawer .ai-chat-toolbar-row{overflow-x:auto;overflow-y:hidden;padding-bottom:2px;scrollbar-width:none}
+  .ai-chat-drawer .ai-chat-toolbar-row{overflow:visible;padding-bottom:2px}
   .ai-chat-drawer .ai-chat-toolbar-row::-webkit-scrollbar{display:none}
   .ai-chat-drawer .ai-chat-icon-btn{width:34px;height:34px;min-width:34px;border-radius:10px}
   .ai-chat-drawer .ai-chat-icon-btn svg{width:18px;height:18px}
-  .ai-chat-drawer .ai-chat-controls{flex:0 0 auto;flex-wrap:nowrap;gap:6px}
-  .ai-chat-drawer .ai-chat-control-field{flex:0 0 auto;min-width:0;gap:0}
-  .ai-chat-drawer .ai-chat-control-field > span{display:none}
-  .ai-chat-drawer .ai-chat-control-field select.form-input{width:108px;min-height:34px;height:34px;padding:5px 8px;font-size:.82rem;border-radius:10px}
+  .ai-chat-drawer .ai-chat-controls{display:grid;grid-template-columns:1fr 1fr;gap:6px;align-items:end;width:100%;flex:1 1 auto}
+  .ai-chat-drawer .ai-chat-control-field{min-width:0;gap:3px}
+  .ai-chat-drawer .ai-chat-control-field > span{display:block;font-size:.68rem}
+  .ai-chat-drawer .ai-chat-control-field select.form-input{width:100%;min-height:34px;height:34px;padding:5px 8px;font-size:.82rem;border-radius:10px}
   .ai-chat-drawer .ai-chat-document-tool-row{gap:5px;flex-wrap:wrap;align-items:stretch}
   .ai-chat-drawer .ai-chat-document-tool-row select.form-input{width:100%;min-width:0;flex:1 1 100%}
   .ai-chat-drawer .ai-chat-document-download{min-height:34px;padding:5px 8px;font-size:.78rem;flex:1 1 calc(50% - 5px);justify-content:center}

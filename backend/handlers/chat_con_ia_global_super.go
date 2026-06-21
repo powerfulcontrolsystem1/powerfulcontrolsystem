@@ -352,13 +352,13 @@ func (c *SuperAIChatController) ConsultarHandler(w http.ResponseWriter, r *http.
 	}
 
 	writeJSON(w, http.StatusOK, map[string]interface{}{
-		"ok":          true,
-		"admin_email": adminEmail,
-		"provider":    model.Provider,
-		"model_id":    model.ID,
-		"display_name": model.DisplayName,
+		"ok":             true,
+		"admin_email":    adminEmail,
+		"provider":       model.Provider,
+		"model_id":       model.ID,
+		"display_name":   model.DisplayName,
 		"upstream_model": model.UpstreamModel,
-		"respuesta":   respuesta,
+		"respuesta":      respuesta,
 		"usage": map[string]interface{}{
 			"plan":              planActual,
 			"daily_used":        usoActualizado.Consultas,
@@ -735,7 +735,8 @@ func buildSuperAISystemPrompt(contexto string, superEsquemaCompleto, empresaSolo
 			"Si la operacion es riesgosa o destructiva, pide confirmacion adicional antes de cualquier PCS_ACTION. "
 	}
 	return "Eres un asistente global del sistema POS multiempresa para uso exclusivo de super administracion. " +
-		"Responde en espanol claro y accionable. Usa solo el contexto agregado validado del sistema completo. " +
+		"Responde en espanol claro y accionable, solo lo que el usuario pregunte o mande a hacer. Usa solo el contexto agregado validado del sistema completo. " +
+		"No agregues cierres ofreciendo exportar, emitir documentos, descargar archivos ni ejecutar acciones si el usuario no lo pidio explicitamente. Cuando menciones empresas, usa nombres comerciales o razon social y evita mostrar identificadores tecnicos salvo que el usuario pida diagnostico tecnico. " +
 		"No reveles secretos, credenciales, hashes, tokens, llaves privadas ni datos sensibles. " +
 		extra + "\n\n" +
 		assistantInstruction + "\n\n" +

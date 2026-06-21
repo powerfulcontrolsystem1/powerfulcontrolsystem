@@ -3069,3 +3069,4 @@
 - [Carrito] Se agrega `Cupo de credito` al selector de acciones y se sombrean titulos tambien en temas claros.
 - [Facturacion electronica] Los correos al cliente ahora salen en multipart con HTML, adjuntos HTML/TXT y enlace QR DIAN cuando hay codigo de validacion.
 - [QA] Pruebas Go de `handlers/db`, chequeos JS y validacion visual/DOM local.
+- 2026-06-21: Se ajusta el chat IA para responder solo lo solicitado, sin exportaciones/documentos automaticos ni voz activa por defecto; los correos de arranque usan HTML corporativo con logo PCS. Ingresos, Egresos y Compras abren el chat con la foto/documento cargado al usar IA. Radio online reproduce con un boton y minimiza al reproductor compacto. La pagina super de informacion para IA queda corregida en UTF-8 y con area de edicion amplia.

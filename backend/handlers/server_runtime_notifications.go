@@ -432,13 +432,18 @@ func sendServerStartupEmail(dbSuper *sql.DB, toEmail, subject, body string) erro
 		return fmt.Errorf("correo destino invalido: %w", err)
 	}
 
-	fromName, fromEmail := corporateSystemSenderAddress(dbSuper, "soporte")
-	msg := "From: " + fromName + " <" + fromEmail + ">\r\n" +
-		"To: " + strings.TrimSpace(toEmail) + "\r\n" +
-		"Subject: " + strings.TrimSpace(subject) + "\r\n" +
-		"MIME-Version: 1.0\r\n" +
-		"Content-Type: text/plain; charset=UTF-8\r\n\r\n" +
-		body
+	htmlBody := buildServerStartupCorporateHTML(dbSuper, body)
+	return sendEmpresaUsuarioMailuMultipart(dbSuper, "https://powerfulcontrolsystem.com", strings.TrimSpace(toEmail), subject, body, htmlBody)
+}
 
-	return sendEmpresaUsuarioMailuMessage(dbSuper, fromEmail, strings.TrimSpace(toEmail), []byte(msg))
+func buildServerStartupCorporateHTML(dbSuper *sql.DB, body string) string {
+	config := getCorporateEmailConfig(dbSuper)
+	logoURL := resolveCorporateEmailLogoURL("https://powerfulcontrolsystem.com", config.LogoURL)
+	content := plainTextToCorporateEmailHTML(body)
+	return `<div data-pcs-email-logo="true" style="font-family:Arial,sans-serif;color:#111827;line-height:1.55">
+  <div style="text-align:center;margin:0 0 18px">
+    <img src="` + logoURL + `" alt="Powerful Control System" style="width:96px;max-width:96px;height:auto;border-radius:18px;display:inline-block">
+  </div>
+  ` + content + `
+</div>`
 }

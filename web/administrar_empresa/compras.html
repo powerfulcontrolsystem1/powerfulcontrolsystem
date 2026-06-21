@@ -116,8 +116,8 @@
           <div class="form-col">
             <label class="form-label" for="comprobanteArchivo">Adjuntar comprobante</label>
             <input id="comprobanteArchivo" class="form-input" type="file" accept=".png,.jpg,.jpeg,.gif,.webp,.pdf,.txt,.csv,.doc,.docx,.xls,.xlsx">
-            <div class="form-help">Se guarda en la carpeta de comprobantes de esta empresa.</div>
-            <button id="btnAnalizarCompraIA" class="btn secondary" type="button">Analizar compra con IA</button>
+            <div class="form-help">Puedes tomar una foto o subir imagen/PDF; se guarda en la carpeta de comprobantes.</div>
+            <button id="btnAnalizarCompraIA" class="btn secondary ai-action-btn" type="button"><img src="/img/pcs_ia_logo.svg" alt="" aria-hidden="true">Analizar compra con IA</button>
           </div>
         </div>
 
@@ -337,6 +337,26 @@
       return null;
     }
 
+    function openAIChatWithCompra(file, summary) {
+      var payload = {
+        file: file,
+        title: summary || 'Captura inteligente de compra',
+        prompt: 'Analiza esta compra o factura de proveedor. Resume proveedor, fecha, numero, impuestos, total y dime si la foto/documento se ve claro o si debo tomarla de nuevo antes de guardar.',
+        autoSend: false
+      };
+      try {
+        if (window.parent && typeof window.parent.__pcsAIChatAnalyzeFile === 'function') {
+          return window.parent.__pcsAIChatAnalyzeFile(payload);
+        }
+      } catch (_) {}
+      try {
+        if (typeof window.__pcsAIChatAnalyzeFile === 'function') {
+          return window.__pcsAIChatAnalyzeFile(payload);
+        }
+      } catch (_) {}
+      return false;
+    }
+
     async function analizarCompraIA() {
       if (!empresaID) {
         showMessage('empresa_id es obligatorio para analizar con IA.', 'error');
@@ -347,6 +367,7 @@
         showMessage('Selecciona primero una imagen o PDF del comprobante.', 'error');
         return;
       }
+      openAIChatWithCompra(file, 'Archivo cargado para revisar la compra');
       var original = btnAnalizarCompraIA ? btnAnalizarCompraIA.textContent : '';
       if (btnAnalizarCompraIA) {
         btnAnalizarCompraIA.disabled = true;
@@ -385,7 +406,8 @@
         if (soporte.codigo) notes.push('Soporte IA: ' + normalizeText(soporte.codigo));
         if (soporte.observaciones) notes.push(normalizeText(soporte.observaciones));
         document.getElementById('observaciones').value = notes.join('\n');
-        showMessage('Datos cargados desde IA. Revisa proveedor, monto y periodo antes de guardar.', 'ok');
+        openAIChatWithCompra(file, 'Datos extraidos desde IA. Revisa la compra antes de guardar');
+        showMessage('Datos cargados desde IA. Revisa proveedor, monto y periodo antes de guardar. El chat IA quedo abierto con el archivo para validar novedades.', 'ok');
       } catch (err) {
         showMessage(err.message || 'No se pudo analizar la compra con IA.', 'error');
       } finally {
