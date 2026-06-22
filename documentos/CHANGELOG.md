@@ -1,3 +1,9 @@
+## [2026-06-21] Backup completo VPS PCS
+- [Operacion] `scripts/crear_backup_vps.ps1` crea backups versionados en `D:\Backup vps PCS` y mantiene cada copia anterior en una carpeta con timestamp.
+- [VPS] El paquete remoto incluye inventario Docker/sistema, dump logico PostgreSQL, imagenes locales PCS, volumenes Docker, archivos del proyecto sin secretos ni temporales, SHA256 y `restore_to_new_vps.sh`.
+- [Restauracion] El mismo script tiene modo `-Restore` para subir el paquete a un VPS nuevo y preparar la restauracion; la ejecucion real exige `-ExecuteRemoteRestore`.
+- [QA] Parser PowerShell en verde y primera copia real descargada y validada localmente con lectura del tar.
+
 ## [2026-06-20] Admin empresa, carrito por pais y WhatsApp publico
 - [Administrar empresa] `Panel` queda sin Beta; `Login de usuarios` abre en ventana nueva; Importaciones/Produccion/Logistica pasan a su propio grupo; Nomina queda solo en el menu principal.
 - [Panel empresa] Nueva configuracion `Panel de inicio` permite activar/desactivar por empresa las tarjetas `Noticias`, `Buzon de usuario` y `Chat de la empresa`; las empresas nuevas quedan activas por defecto mientras no exista una preferencia guardada.

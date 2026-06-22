@@ -1,3 +1,11 @@
+2026-06-21 - Backup completo VPS PCS
+- `scripts/crear_backup_vps.ps1`:
+	- crea una copia versionada del VPS en `D:\Backup vps PCS` con ventana WinForms de progreso, salida de consola y manifest local.
+	- genera en el VPS un paquete con dump logico PostgreSQL, imagenes Docker locales PCS, volumenes Docker, inventario operativo, archivos del proyecto filtrados, SHA256 y script `restore_to_new_vps.sh`.
+	- permite modo `-Restore` para subir el paquete a un VPS nuevo y preparar la restauracion; la ejecucion remota destructiva exige `-ExecuteRemoteRestore`.
+- `documentos/comandos_codex.md`, `documentos/mapa_modulos.md`, `documentos/CHANGELOG.md`, `CHANGELOG.md`:
+	- documentan el uso operativo, alcance, verificacion y restauracion del backup VPS.
+
 2026-06-20 - Panel de inicio configurable por empresa
 - `backend/handlers/panel_empresa_config.go`: agrega `/api/empresa/panel_configuracion` para leer y guardar preferencias de tarjetas del panel por `empresa_id`, usando `empresa_estacion_prefs` y valores activos por defecto.
 - `backend/main.go`: registra el endpoint con `WithEmpresaSeguridadPermissions`.

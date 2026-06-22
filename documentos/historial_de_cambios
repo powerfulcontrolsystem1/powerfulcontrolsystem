@@ -35769,6 +35769,13 @@ Archivos modificados:
 - documentos/CHANGELOG.md
 - documentos/api/openapi.generated.yaml
 - documentos/descripcion_de_archivos
+2026-06-21: Backup completo VPS PCS.
+- Operacion: se agrega `scripts/crear_backup_vps.ps1` como herramienta independiente para crear una copia versionada del VPS en `D:\Backup vps PCS`.
+- Alcance del respaldo: dump logico PostgreSQL, imagenes Docker locales PCS, volumenes Docker, archivos del proyecto filtrados, inventario operativo, SHA256, manifest local y script de restauracion.
+- Restauracion: el modo `-Restore` sube el paquete a un VPS nuevo y prepara `restore_to_new_vps.sh`; para ejecutar la restauracion remota se requiere `-ExecuteRemoteRestore`.
+- Seguridad: el paquete excluye `.env`, llaves, certificados, temporales y caches del proyecto; no imprime secretos ni contenido privado de configuracion.
+- QA: parser PowerShell en verde; primera copia real descargada en `D:\Backup vps PCS` y validada localmente con lectura del tar.
+
 - documentos/mapa_modulos.md
 - web/administrar_empresa/configuracion/panel_inicio.html
 - web/administrar_empresa/configuracion_menu.html

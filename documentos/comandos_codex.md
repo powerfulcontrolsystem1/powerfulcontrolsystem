@@ -85,6 +85,37 @@ No depender de un wrapper en la raiz del proyecto. Revisar el contenido del
 script antes de asumir su alcance. Puede encadenar preflight, actualizacion,
 sincronizacion y pasos operativos.
 
+## Backup completo del VPS
+
+El backup operativo independiente del VPS se ejecuta con:
+
+```powershell
+.\scripts\crear_backup_vps.ps1
+```
+
+El script abre una ventana pequena con progreso de 0 a 100 y guarda cada copia
+en una carpeta nueva bajo:
+
+```text
+D:\Backup vps PCS
+```
+
+Cada backup incluye inventario del VPS, dump logico PostgreSQL, imagenes Docker
+locales PCS, volumenes Docker, archivos del proyecto filtrados, SHA256, manifest
+local y un restaurador `restore_to_new_vps.sh` dentro del paquete. No imprimir
+secretos, `.env`, claves privadas, certificados ni DSN durante la ejecucion o al
+reportar resultados.
+
+Para subir una copia a un VPS nuevo y dejar preparada la restauracion:
+
+```powershell
+.\scripts\crear_backup_vps.ps1 -Restore -BackupPath "D:\Backup vps PCS\PCS_VPS_backup_YYYYMMDD_HHMMSS\pcs_vps_full_backup_YYYYMMDD_HHMMSS.tar.gz" -TargetHost "IP_NUEVO_VPS"
+```
+
+Por seguridad, el modo `-Restore` solo sube y prepara el paquete. Ejecutar la
+restauracion remota destructiva requiere agregar `-ExecuteRemoteRestore` despues
+de validar que el VPS destino es el correcto.
+
 
 ## sync_to_vps
 
