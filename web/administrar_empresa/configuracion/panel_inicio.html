@@ -57,9 +57,9 @@
           <label class="panel-config-option">
             <span>
               <strong>Chat de la empresa</strong>
-              <span>Habilita el chat interno rapido entre usuarios registrados.</span>
+              <span>Habilita el chat interno rapido entre usuarios registrados. Por defecto permanece apagado y se activa solo si la empresa lo necesita.</span>
             </span>
-            <span class="panel-config-switch"><input id="chatEnabled" type="checkbox" checked></span>
+            <span class="panel-config-switch"><input id="chatEnabled" type="checkbox"></span>
           </label>
         </div>
         <p id="panelConfigStatus" class="panel-config-status" aria-live="polite"></p>
@@ -116,7 +116,7 @@
         data = data || {};
         noticiasEl.checked = data.noticias_enabled !== false;
         buzonEl.checked = data.buzon_enabled !== false;
-        chatEl.checked = data.chat_enabled !== false;
+        chatEl.checked = data.chat_enabled === true;
       }
 
       function loadConfig() {
@@ -134,7 +134,7 @@
           })
           .catch(function () {
             applyData({});
-            setStatus("No se pudo cargar la configuracion. Se muestran los valores predeterminados activos.", true);
+            setStatus("No se pudo cargar la configuracion. Noticias y buzon quedan activos; chat queda apagado por defecto.", true);
           });
       }
 

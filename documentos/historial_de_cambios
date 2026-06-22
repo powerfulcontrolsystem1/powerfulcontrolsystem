@@ -35769,6 +35769,13 @@ Archivos modificados:
 - documentos/CHANGELOG.md
 - documentos/api/openapi.generated.yaml
 - documentos/descripcion_de_archivos
+2026-06-22: Portal publico y panel empresarial.
+- Portal publico: `index.html` agrega secciones internas para Contacto, Privacidad y datos, Quienes somos y Sistema Hotel / Motel, abiertas desde el menu `Mas` bajo la barra superior.
+- Privacidad: se informa que los datos se separan por empresa, que cada empresa es responsable de sus respaldos y que el sistema ofrece descarga de informacion y eliminacion definitiva.
+- Panel empresa: `panel_empresa.chat_enabled` queda apagado por defecto; las empresas pueden activarlo desde `Configuracion > Panel de inicio`.
+- Panel empresa: el buzon queda centrado cuando el chat esta apagado, mantiene historico de mensajes/tareas, se restablece la tarjeta de Email corporativo junto a Favoritos y Noticias enlaza a la pagina publica de noticias.
+- QA: sintaxis JS inline de `index.html` y `panel.html`; `go test ./handlers -run "PanelConfiguracion|ChatFlotante|EmailCorporativo|^$" -count=1`.
+
 2026-06-21: Backup completo VPS PCS.
 - Operacion: se agrega `scripts/crear_backup_vps.ps1` como herramienta independiente para crear una copia versionada del VPS en `D:\Backup vps PCS`.
 - Alcance del respaldo: dump logico PostgreSQL, imagenes Docker locales PCS, volumenes Docker, archivos del proyecto filtrados, inventario operativo, SHA256, manifest local y script de restauracion.

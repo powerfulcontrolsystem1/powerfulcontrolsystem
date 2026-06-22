@@ -1,3 +1,15 @@
+2026-06-22 - Portal publico y panel empresarial
+- `web/index.html`:
+	- agrega paginas internas para `Informacion de contacto`, `Privacidad y datos`, `Quienes somos` y `Sistema Hotel / Motel`, abiertas desde el menu `Mas` debajo de la barra superior.
+- `web/Informacion_de_contacto.html`, `web/privacidad_y_datos.html`, `web/quienes_somos.html`, `web/hotel_motel_domotica.html`:
+	- quedan como rutas publicas de respaldo que redirigen a la seccion correspondiente de `index.html`.
+- `backend/handlers/panel_empresa_config.go`:
+	- cambia el valor predeterminado de `panel_empresa.chat_enabled` a apagado.
+- `web/administrar_empresa/configuracion/panel_inicio.html`:
+	- muestra el check del chat interno apagado por defecto para que la empresa lo active manualmente.
+- `web/administrar_empresa/panel.html`:
+	- centra el buzon cuando el chat esta apagado, conserva el historico visible de mensajes/tareas, recupera la tarjeta de Email corporativo y mejora la tarjeta de Noticias con enlace a `/noticias.html`.
+
 2026-06-21 - Backup completo VPS PCS
 - `scripts/crear_backup_vps.ps1`:
 	- crea una copia versionada del VPS en `D:\Backup vps PCS` con ventana WinForms de progreso, salida de consola y manifest local.

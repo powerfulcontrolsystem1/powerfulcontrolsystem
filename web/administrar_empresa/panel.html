@@ -767,16 +767,33 @@
 
     .empresa-news-title {
       margin: 0;
-      color: var(--text);
-      font-size: 1rem;
+      color: color-mix(in srgb, var(--accent) 78%, var(--text) 22%);
+      font-family: "Montserrat", "Segoe UI", system-ui, sans-serif;
+      font-size: 1.08rem;
+      font-weight: 950;
       line-height: 1.18;
     }
 
     .empresa-news-summary {
       margin: 0;
       color: var(--muted);
-      font-size: .84rem;
-      line-height: 1.38;
+      font-family: "Inter", "Segoe UI", system-ui, sans-serif;
+      font-size: .9rem;
+      line-height: 1.5;
+    }
+
+    .empresa-news-footer {
+      display: inline-flex;
+      align-items: center;
+      justify-content: flex-start;
+      width: fit-content;
+      margin-top: 2px;
+      padding: 7px 10px;
+      border-radius: 999px;
+      background: color-mix(in srgb, var(--accent) 12%, var(--surface) 88%);
+      color: color-mix(in srgb, var(--accent) 82%, var(--text) 18%);
+      font-size: .78rem;
+      font-weight: 900;
     }
 
     .empresa-buzon-grid {
@@ -784,6 +801,11 @@
       grid-template-columns: minmax(0, 1fr) minmax(320px, .82fr);
       gap: 12px;
       margin-top: 12px;
+    }
+
+    .empresa-buzon-grid.buzon-only {
+      grid-template-columns: minmax(0, 860px);
+      justify-content: center;
     }
 
     .sr-only {
@@ -818,7 +840,8 @@
     }
 
     .empresa-home-top-cards .empresa-favorites-panel,
-    .empresa-home-top-cards .empresa-mail-notification {
+    .empresa-home-top-cards .empresa-mail-notification,
+    .empresa-home-top-cards .empresa-email-panel {
       margin-top: 0;
       min-height: 100%;
       box-sizing: border-box;
@@ -863,7 +886,7 @@
     .empresa-chat-list {
       display: grid;
       gap: 8px;
-      max-height: 310px;
+      max-height: 420px;
       overflow: auto;
       padding-right: 3px;
     }
@@ -906,6 +929,12 @@
       font-size: .8rem;
       line-height: 1.35;
       overflow-wrap: anywhere;
+    }
+
+    .empresa-buzon-item .empresa-buzon-thread-meta {
+      color: color-mix(in srgb, var(--accent) 62%, var(--muted) 38%);
+      font-size: .76rem;
+      font-weight: 850;
     }
 
     .empresa-buzon-attachments {
@@ -1921,6 +1950,26 @@
       </div>
     </section>
 
+    <section id="empresaEmailPanel" class="empresa-email-panel" aria-labelledby="empresaEmailTitle">
+      <div class="empresa-email-head">
+        <div class="empresa-email-identity">
+          <p class="empresa-email-kicker">Email corporativo</p>
+          <h2 id="empresaEmailTitle" class="empresa-email-title">Notificaciones del correo</h2>
+          <p id="empresaEmailMeta" class="empresa-email-meta">Consultando buzon corporativo...</p>
+        </div>
+        <div class="empresa-email-actions">
+          <a id="empresaEmailOpenBtn" class="empresa-email-button" href="/administrar_empresa/email_corporativo.html" target="_blank" rel="noopener">Abrir</a>
+          <a id="empresaEmailConfigBtn" class="empresa-email-button secondary" href="/administrar_empresa/configuracion/email_corporativo.html" target="_blank" rel="noopener">Configurar</a>
+        </div>
+      </div>
+      <div class="empresa-email-diagnostics" aria-label="Estado del correo corporativo">
+        <div class="empresa-email-diagnostic"><span>Mensajes</span><strong id="empresaEmailMessages">--</strong></div>
+        <div class="empresa-email-diagnostic"><span>No leidos</span><strong id="empresaEmailUnread">--</strong></div>
+        <div class="empresa-email-diagnostic"><span>Estado</span><strong id="empresaEmailStatus">--</strong></div>
+      </div>
+      <p id="empresaEmailAlert" class="empresa-email-alert" hidden></p>
+    </section>
+
     </div>
 
     <section id="empresaNoticiasCard" class="empresa-news-card" aria-labelledby="empresaNoticiasTitle" hidden>
@@ -1934,6 +1983,7 @@
         <span id="empresaNoticiasMeta" class="empresa-news-meta"></span>
         <strong id="empresaNoticiasHeadline" class="empresa-news-title">Cargando noticia...</strong>
         <p id="empresaNoticiasSummary" class="empresa-news-summary"></p>
+        <span class="empresa-news-footer">Ver todas las noticias</span>
       </a>
     </section>
 
@@ -2037,6 +2087,14 @@
       var empresaBuzonGridEl = document.querySelector(".empresa-buzon-grid");
       var empresaBuzonCardEl = document.querySelector(".empresa-buzon-card");
       var empresaChatCardEl = document.querySelector(".empresa-chat-card");
+      var empresaEmailPanelEl = document.getElementById("empresaEmailPanel");
+      var empresaEmailMetaEl = document.getElementById("empresaEmailMeta");
+      var empresaEmailMessagesEl = document.getElementById("empresaEmailMessages");
+      var empresaEmailUnreadEl = document.getElementById("empresaEmailUnread");
+      var empresaEmailStatusEl = document.getElementById("empresaEmailStatus");
+      var empresaEmailAlertEl = document.getElementById("empresaEmailAlert");
+      var empresaEmailOpenBtnEl = document.getElementById("empresaEmailOpenBtn");
+      var empresaEmailConfigBtnEl = document.getElementById("empresaEmailConfigBtn");
       var empresaBuzonListEl = document.getElementById("empresaBuzonList");
       var empresaBuzonUnreadBadgeEl = document.getElementById("empresaBuzonUnreadBadge");
       var empresaBuzonStorageEl = document.getElementById("empresaBuzonStorage");
@@ -2159,12 +2217,60 @@
         return "/api/empresa/panel_configuracion?empresa_id=" + encodeURIComponent(String(empresaId || ""));
       }
 
+      function emailCorporativoPanelURL() {
+        return "/api/empresa/email_corporativo?empresa_id=" + encodeURIComponent(String(empresaId || "")) + "&check_unread=1";
+      }
+
+      function setEmpresaEmailAlert(message, isError) {
+        if (!empresaEmailAlertEl) return;
+        empresaEmailAlertEl.textContent = message || "";
+        empresaEmailAlertEl.hidden = !message;
+        empresaEmailAlertEl.style.borderColor = isError ? "color-mix(in srgb, #ef4444 44%, var(--border))" : "";
+      }
+
+      function updateEmpresaEmailLinks() {
+        if (!empresaId) return;
+        if (empresaEmailOpenBtnEl) empresaEmailOpenBtnEl.href = "/administrar_empresa/email_corporativo.html?empresa_id=" + encodeURIComponent(String(empresaId));
+        if (empresaEmailConfigBtnEl) empresaEmailConfigBtnEl.href = "/administrar_empresa/configuracion/email_corporativo.html?empresa_id=" + encodeURIComponent(String(empresaId));
+      }
+
+      function renderEmpresaEmailPanel(data) {
+        if (!empresaEmailPanelEl) return;
+        data = data || {};
+        var account = data.account || {};
+        var unread = data.unread || {};
+        var enabled = data.enabled !== false;
+        var email = account.email || "";
+        var messages = Number(unread.messages || 0);
+        var unseen = Number(unread.unseen || 0);
+        if (empresaEmailMessagesEl) empresaEmailMessagesEl.textContent = unread.checked ? String(messages) : "--";
+        if (empresaEmailUnreadEl) empresaEmailUnreadEl.textContent = unread.checked ? String(unseen) : "--";
+        if (empresaEmailStatusEl) empresaEmailStatusEl.textContent = enabled && email ? "Activo" : (enabled ? "Sin buzon" : "Apagado");
+        if (empresaEmailMetaEl) {
+          empresaEmailMetaEl.textContent = email ? email : (enabled ? "Correo corporativo disponible para configurar." : "Correo corporativo global desactivado.");
+        }
+        if (empresaEmailOpenBtnEl) empresaEmailOpenBtnEl.classList.toggle("is-disabled", !enabled || !email);
+        setEmpresaEmailAlert(unread && unread.message ? unread.message : "", unread && unread.ok === false);
+      }
+
+      function loadEmpresaEmailPanel() {
+        if (!empresaId || !empresaEmailPanelEl) return Promise.resolve();
+        updateEmpresaEmailLinks();
+        return fetchJSON(emailCorporativoPanelURL())
+          .then(renderEmpresaEmailPanel)
+          .catch(function () {
+            if (empresaEmailStatusEl) empresaEmailStatusEl.textContent = "Sin conexion";
+            if (empresaEmailMetaEl) empresaEmailMetaEl.textContent = "No se pudo consultar el correo corporativo.";
+            setEmpresaEmailAlert("Revisa la configuracion de email corporativo si esta tarjeta permanece sin datos.", true);
+          });
+      }
+
       function normalizePanelConfig(data) {
         data = data || {};
         return {
           noticias_enabled: data.noticias_enabled !== false,
           buzon_enabled: data.buzon_enabled !== false,
-          chat_enabled: data.chat_enabled !== false
+          chat_enabled: data.chat_enabled === true
         };
       }
 
@@ -2177,6 +2283,7 @@
         if (empresaChatCardEl) empresaChatCardEl.hidden = !empresaPanelConfig.chat_enabled;
         if (empresaBuzonGridEl) {
           empresaBuzonGridEl.hidden = !empresaPanelConfig.buzon_enabled && !empresaPanelConfig.chat_enabled;
+          empresaBuzonGridEl.classList.toggle("buzon-only", !!empresaPanelConfig.buzon_enabled && !empresaPanelConfig.chat_enabled);
         }
       }
 
@@ -2247,6 +2354,7 @@
           var msg = document.createElement("p");
           msg.textContent = item.mensaje || "";
           var meta = document.createElement("p");
+          meta.className = "empresa-buzon-thread-meta";
           meta.textContent = formatEmpresaBuzonMeta(item);
           button.appendChild(title);
           button.appendChild(msg);
@@ -2604,7 +2712,7 @@
               empresaNoticiasMetaEl.textContent = meta.join(" / ");
             }
             if (empresaNoticiasLinkEl) {
-              empresaNoticiasLinkEl.href = text(item.fuente_url) || "/noticias.html";
+              empresaNoticiasLinkEl.href = "/noticias.html";
             }
             empresaNoticiasCardEl.hidden = false;
           })
@@ -3742,6 +3850,7 @@
         setupWeatherControls();
         setupEmpresaBuzonControls();
         loadMaintenanceNotice();
+        loadEmpresaEmailPanel();
         loadPanelConfig().then(function () {
           if (empresaPanelConfig.buzon_enabled) loadEmpresaBuzonUsuarios();
           if (empresaPanelConfig.buzon_enabled || empresaPanelConfig.chat_enabled) {

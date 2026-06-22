@@ -49,7 +49,7 @@
     html[data-theme="dark-violet"] .portal-header .brand-logo,
     html[data-theme="dark-emerald"] .portal-header .brand-logo,
     html[data-theme="dark-corporate"] .portal-header .brand-logo {
-      /* Más claro en modo oscuro: mejor contraste y legibilidad */
+      /* MÃ¡s claro en modo oscuro: mejor contraste y legibilidad */
       color: var(--text);
       text-shadow:
         0 1px 0 color-mix(in srgb, #020617 30%, transparent),
@@ -479,7 +479,7 @@
       display: block;
     }
 
-    /* Arriba: logo pequeño + título */
+    /* Arriba: logo pequeÃ±o + tÃ­tulo */
     .home-offer-head {
       display: flex;
       align-items: center;
@@ -509,14 +509,14 @@
       color: var(--text);
       line-height: 1.2;
       text-align: left;
-      /* Mantener simetría entre tarjetas sin recortar con "..." */
+      /* Mantener simetrÃ­a entre tarjetas sin recortar con "..." */
       line-height: 1.15;
       max-height: calc(1.15em * 3);
       overflow: hidden;
       flex: 1 1 auto;
     }
 
-    /* Imagen principal debajo del título, centrada (mismo tamaño en todas las tarjetas) */
+    /* Imagen principal debajo del tÃ­tulo, centrada (mismo tamaÃ±o en todas las tarjetas) */
     .home-offer-figure {
       margin: 0 0 18px;
       display: flex;
@@ -534,7 +534,7 @@
       max-width: 100%;
       max-height: 100%;
       object-fit: fill;
-      /* estirar para garantizar mismo tamaño visual */
+      /* estirar para garantizar mismo tamaÃ±o visual */
       display: block;
       opacity: 0.98;
       filter: none;
@@ -546,7 +546,7 @@
         height: 158px;
       }
 
-  /* +12.5% vs 140px (≈157.5px) */
+  /* +12.5% vs 140px (â‰ˆ157.5px) */
       .home-offer-head {
         min-height: 58px;
       }
@@ -739,6 +739,190 @@
       background: color-mix(in srgb, var(--accent) 14%, var(--surface));
     }
 
+    .portal-public-page {
+      display: none;
+      max-width: 1180px;
+      margin: 22px auto 72px;
+      padding: 0 20px;
+    }
+
+    .portal-public-page.is-active {
+      display: block;
+    }
+
+    .portal-public-hero {
+      display: grid;
+      grid-template-columns: minmax(0, 1.05fr) minmax(320px, .95fr);
+      gap: 24px;
+      align-items: stretch;
+      min-height: 390px;
+      border: 1px solid color-mix(in srgb, var(--border) 78%, var(--accent) 22%);
+      border-radius: 10px;
+      background: linear-gradient(135deg, color-mix(in srgb, var(--surface) 90%, var(--accent) 10%), var(--surface-soft));
+      box-shadow: 0 24px 58px color-mix(in srgb, #020617 16%, transparent);
+      overflow: hidden;
+    }
+
+    .portal-public-copy {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 14px;
+      padding: clamp(24px, 5vw, 48px);
+    }
+
+    .portal-public-kicker {
+      width: fit-content;
+      margin: 0;
+      padding: 7px 10px;
+      border-radius: 999px;
+      background: color-mix(in srgb, var(--accent) 13%, var(--surface) 87%);
+      color: color-mix(in srgb, var(--accent) 82%, var(--text) 18%);
+      font-size: .78rem;
+      font-weight: 900;
+      text-transform: uppercase;
+    }
+
+    .portal-public-copy h1 {
+      margin: 0;
+      color: var(--text);
+      font-family: "Montserrat", "Segoe UI", system-ui, sans-serif;
+      font-size: clamp(2rem, 4.3vw, 3.4rem);
+      line-height: 1.02;
+      letter-spacing: 0;
+    }
+
+    .portal-public-copy p {
+      margin: 0;
+      color: var(--muted);
+      font-size: clamp(1rem, 1.8vw, 1.16rem);
+      line-height: 1.62;
+    }
+
+    .portal-public-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 4px;
+    }
+
+    .portal-public-media {
+      position: relative;
+      min-height: 330px;
+      overflow: hidden;
+      background: var(--surface);
+    }
+
+    .portal-public-media img {
+      width: 100%;
+      height: 100%;
+      min-height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    .portal-public-media::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, transparent, color-mix(in srgb, #020617 34%, transparent));
+      pointer-events: none;
+    }
+
+    .portal-public-metrics {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+      margin: 20px 0;
+    }
+
+    .portal-public-metric,
+    .portal-public-card,
+    .portal-contact-channel {
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--surface);
+      color: var(--text);
+      box-shadow: 0 14px 34px color-mix(in srgb, #020617 10%, transparent);
+    }
+
+    .portal-public-metric {
+      padding: 16px;
+    }
+
+    .portal-public-metric span,
+    .portal-public-card span {
+      display: block;
+      color: var(--muted);
+      font-size: .78rem;
+      font-weight: 900;
+      text-transform: uppercase;
+    }
+
+    .portal-public-metric strong {
+      display: block;
+      margin-top: 6px;
+      color: var(--text);
+      font-size: clamp(1.25rem, 2.2vw, 1.75rem);
+      line-height: 1.08;
+    }
+
+    .portal-public-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+      margin-top: 18px;
+    }
+
+    .portal-public-card {
+      padding: 18px;
+    }
+
+    .portal-public-card h2,
+    .portal-contact-channel h2 {
+      margin: 8px 0 8px;
+      color: var(--text);
+      font-size: 1.08rem;
+      line-height: 1.2;
+    }
+
+    .portal-public-card p,
+    .portal-contact-channel p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.5;
+      font-size: .95rem;
+    }
+
+    .portal-contact-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+      margin-top: 18px;
+    }
+
+    .portal-contact-channel {
+      display: grid;
+      grid-template-columns: 72px minmax(0, 1fr);
+      gap: 14px;
+      align-items: center;
+      padding: 18px;
+      text-decoration: none;
+    }
+
+    .portal-contact-avatar {
+      width: 72px;
+      height: 72px;
+      border-radius: 8px;
+      object-fit: cover;
+      background: color-mix(in srgb, var(--accent) 12%, var(--surface));
+      border: 1px solid color-mix(in srgb, var(--accent) 30%, var(--border));
+    }
+
+    .portal-home-content.is-hidden {
+      display: none !important;
+    }
+
     .ai-chat-bubble {
       display: flex;
       margin: 10px 0;
@@ -780,7 +964,7 @@
       color: var(--danger);
     }
 
-    /* Chat (Index): input del mismo ancho del panel y tipografía más grande */
+    /* Chat (Index): input del mismo ancho del panel y tipografÃ­a mÃ¡s grande */
     #pcsPublicChatForm {
       width: 100%;
     }
@@ -961,6 +1145,35 @@
         padding-inline: 14px;
       }
 
+      .portal-public-page {
+        padding: 0 14px;
+        margin-top: 14px;
+      }
+
+      .portal-public-hero,
+      .portal-public-grid,
+      .portal-public-metrics,
+      .portal-contact-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .portal-public-copy {
+        padding: 22px 18px;
+      }
+
+      .portal-public-media {
+        min-height: 220px;
+      }
+
+      .portal-contact-channel {
+        grid-template-columns: 56px minmax(0, 1fr);
+      }
+
+      .portal-contact-avatar {
+        width: 56px;
+        height: 56px;
+      }
+
       .portal-systems-carousel {
         padding-inline: 14px;
         margin-bottom: 32px;
@@ -1082,26 +1295,107 @@
         <img src="/img/pwa-icon-192.png" alt="Logo" width="32" height="32" style="border-radius: 4px;">
         <span class="brand-title-wrap">
           <span>Powerful Control System - Plataforma SaaS POS Multiempresa</span>
-          <span class="brand-subtitle">Sistema de Facturación Electrónica con domótica integrada</span>
+          <span class="brand-subtitle">Sistema de Facturaci&oacute;n Electr&oacute;nica con dom&oacute;tica integrada</span>
         </span>
       </a>
       <nav class="nav-actions">
-        <a class="btn dark" href="/login.html">Iniciar sesión</a>
+        <a class="btn dark" href="/login.html">Iniciar sesi&oacute;n</a>
         <a class="btn dark" href="/registrar_nuevo_usuario_administrador.html">Crear cuenta</a>
         <div class="header-dropdown" id="headerMoreMenu">
           <button type="button" class="header-dropdown-toggle" aria-haspopup="true" aria-expanded="false"
             aria-controls="headerMoreMenuList" id="headerMoreMenuToggle">
-            Más <span class="caret" aria-hidden="true">▾</span>
+            M&aacute;s <span class="caret" aria-hidden="true">▾</span>
           </button>
-          <div class="header-dropdown-menu" role="menu" id="headerMoreMenuList" aria-label="Más opciones">
-            <a role="menuitem" href="/Informacion_de_contacto.html">Información de contacto</a>
+          <div class="header-dropdown-menu" role="menu" id="headerMoreMenuList" aria-label="M&aacute;s opciones">
+            <a role="menuitem" data-public-page-link href="/index.html?pagina=contacto">Informaci&oacute;n de contacto</a>
+            <a role="menuitem" data-public-page-link href="/index.html?pagina=privacidad">Privacidad y datos</a>
+            <a role="menuitem" data-public-page-link href="/index.html?pagina=quienes-somos">Qui&eacute;nes somos</a>
+            <a role="menuitem" data-public-page-link href="/index.html?pagina=hotel-motel">Sistema Hotel / Motel</a>
           </div>
         </div>
       </nav>
     </header>
 
     <main class="portal-main container">
-      <!-- Sección principal reservada para tarjetas, sin texto introductorio superior -->
+      <section id="publicPageContacto" class="portal-public-page" data-public-page="contacto" aria-labelledby="publicContactoTitle">
+        <div class="portal-public-hero">
+          <div class="portal-public-copy">
+            <p class="portal-public-kicker">Atencion empresarial</p>
+            <h1 id="publicContactoTitle">Conversemos sobre la operacion de tu empresa</h1>
+            <p>Powerful Control System acompana a negocios que necesitan ordenar ventas, inventario, facturacion, usuarios, reportes y crecimiento desde una plataforma profesional.</p>
+            <div class="portal-public-actions">
+              <a class="btn dark" href="https://wa.me/573043306506" rel="noopener noreferrer">WhatsApp principal</a>
+              <a class="btn secondary" href="mailto:soporte@powerfulcontrolsystem.com">Enviar correo</a>
+            </div>
+          </div>
+          <figure class="portal-public-media"><img src="/img/portal-systems/realistic/punto-venta.jpg" alt="Punto de venta moderno con atencion al cliente" loading="lazy"></figure>
+        </div>
+        <div class="portal-contact-grid">
+          <a class="portal-contact-channel" href="mailto:soporte@powerfulcontrolsystem.com"><img class="portal-contact-avatar" src="/img/Logo pcs 1.png" alt="" loading="lazy"><span><span>Soporte</span><h2>soporte@powerfulcontrolsystem.com</h2><p>Ayuda operativa, configuracion y continuidad del sistema.</p></span></a>
+          <a class="portal-contact-channel" href="mailto:ventas@powerfulcontrolsystem.com"><img class="portal-contact-avatar" src="/img/brand/pcs-logo-concepts/pcs-wordmark-v4-clean-pos.png" alt="" loading="lazy"><span><span>Ventas</span><h2>ventas@powerfulcontrolsystem.com</h2><p>Planes, licencias, implementacion y demostraciones.</p></span></a>
+          <a class="portal-contact-channel" href="https://wa.me/573043306506" rel="noopener noreferrer"><img class="portal-contact-avatar" src="/img/red social.png" alt="" loading="lazy"><span><span>WhatsApp comercial</span><h2>+57 304 330 6506</h2><p>Contacto rapido para orientacion y seguimiento.</p></span></a>
+          <a class="portal-contact-channel" href="https://wa.me/573332745198" rel="noopener noreferrer"><img class="portal-contact-avatar" src="/img/company-briefcase-color.svg" alt="" loading="lazy"><span><span>Asesor en ventas</span><h2>Jose Lubo Guarnizo</h2><p>Asesoria comercial y acompanamiento inicial.</p></span></a>
+        </div>
+      </section>
+
+      <section id="publicPagePrivacidad" class="portal-public-page" data-public-page="privacidad" aria-labelledby="publicPrivacidadTitle">
+        <div class="portal-public-hero">
+          <div class="portal-public-copy">
+            <p class="portal-public-kicker">Privacidad y datos</p>
+            <h1 id="publicPrivacidadTitle">Cada empresa conserva la responsabilidad y el control de su informacion</h1>
+            <p>Los datos operativos de cada empresa se manejan de forma separada por empresa y se protegen con mecanismos de seguridad del sistema. Powerful Control System no debe acceder al contenido privado de una empresa para operar sus ventas, clientes, inventario o documentos.</p>
+            <p>Es responsabilidad de cada empresa respaldar su informacion. El sistema ofrece opciones para descargar la informacion de la empresa y tambien para solicitar o ejecutar eliminacion permanente cuando corresponda.</p>
+          </div>
+          <figure class="portal-public-media"><img src="/img/portal-systems/realistic/gestion-documental-contratos.jpg" alt="Documentos empresariales protegidos" loading="lazy"></figure>
+        </div>
+        <div class="portal-public-metrics">
+          <article class="portal-public-metric"><span>Separacion</span><strong>Datos por empresa</strong></article>
+          <article class="portal-public-metric"><span>Control</span><strong>Descarga de informacion</strong></article>
+          <article class="portal-public-metric"><span>Salida</span><strong>Eliminacion definitiva</strong></article>
+        </div>
+        <div class="portal-public-grid">
+          <article class="portal-public-card"><span>Seguridad</span><h2>Datos empresariales protegidos</h2><p>La arquitectura multiempresa evita mezclar informacion operativa entre negocios y mantiene trazabilidad por empresa.</p></article>
+          <article class="portal-public-card"><span>Responsabilidad</span><h2>Respaldos por empresa</h2><p>Cada empresa debe descargar y conservar sus copias cuando su operacion lo requiera.</p></article>
+          <article class="portal-public-card"><span>Transparencia</span><h2>Descargar o eliminar</h2><p>El sistema contempla herramientas para exportar informacion y para retirar datos de forma permanente cuando sea necesario.</p></article>
+        </div>
+      </section>
+
+      <section id="publicPageQuienes" class="portal-public-page" data-public-page="quienes-somos" aria-labelledby="publicQuienesTitle">
+        <div class="portal-public-hero">
+          <div class="portal-public-copy">
+            <p class="portal-public-kicker">Quienes somos</p>
+            <h1 id="publicQuienesTitle">Mas de 20 anos creando soluciones para puntos de venta</h1>
+            <p>Powerful Control System nace de experiencia real en sistemas POS, cajas, inventarios, estaciones de trabajo y operacion empresarial. Esa experiencia evoluciono hacia una plataforma SaaS multiempresa con tecnologia moderna.</p>
+            <p>Trabajamos con Go, PostgreSQL, Docker, interfaces web responsivas e inteligencia artificial integrada con GPT-5.5 para ayudar a las empresas a operar, revisar documentos, entender informacion y crecer con herramientas profesionales.</p>
+          </div>
+          <figure class="portal-public-media"><img src="/img/baner_ia.png" alt="Tecnologia e inteligencia artificial empresarial" loading="lazy"></figure>
+        </div>
+        <div class="portal-public-grid">
+          <article class="portal-public-card"><span>Experiencia</span><h2>POS y operacion real</h2><p>Conocemos el dia a dia de ventas, caja, inventario, clientes, turnos y reportes.</p></article>
+          <article class="portal-public-card"><span>Tecnologia</span><h2>Go, PostgreSQL y Docker</h2><p>Base tecnica moderna para estabilidad, rendimiento, despliegue y crecimiento.</p></article>
+          <article class="portal-public-card"><span>Vision</span><h2>Herramientas al alcance de todos</h2><p>Queremos darle a pequenas empresas en crecimiento funciones que antes solo tenian sistemas costosos.</p></article>
+        </div>
+      </section>
+
+      <section id="publicPageHotelMotel" class="portal-public-page" data-public-page="hotel-motel" aria-labelledby="publicHotelTitle">
+        <div class="portal-public-hero">
+          <div class="portal-public-copy">
+            <p class="portal-public-kicker">Hotel / Motel inteligente</p>
+            <h1 id="publicHotelTitle">Control de habitaciones, cuentas y sensores de puertas</h1>
+            <p>El sistema para hotel y motel permite administrar habitaciones, tarifas, estados, cuentas, permanencia, caja y reportes. La domotica y los sensores de puertas ayudan a controlar eventos reales de ocupacion y operacion.</p>
+            <p>La meta es que cada negocio tenga trazabilidad clara: cuando una habitacion se ocupa, cuando queda disponible, cuanto tiempo lleva activa y que cuenta debe cobrarse.</p>
+          </div>
+          <figure class="portal-public-media"><img src="/img/sistema motel con sensor en puertas.png" alt="Sistema motel con sensor en puertas" loading="lazy"></figure>
+        </div>
+        <div class="portal-public-grid">
+          <article class="portal-public-card"><span>Habitaciones</span><h2>Tarifas y estados</h2><p>Control por categoria, precio, ocupacion, aseo, disponibilidad y tiempos de uso.</p></article>
+          <article class="portal-public-card"><span>Domotica</span><h2>Sensores de puertas</h2><p>Eventos de apertura/cierre para apoyar control de cuentas, permanencia y trazabilidad.</p></article>
+          <article class="portal-public-card"><span>Caja</span><h2>Cobro y reportes</h2><p>Integracion con POS, turnos, cortes, pagos y reportes de operacion.</p></article>
+        </div>
+      </section>
+
+      <div id="portalHomeContent" class="portal-home-content">
+      <!-- SecciÃ³n principal reservada para tarjetas, sin texto introductorio superior -->
       <p id="portalCardsStatus" class="form-help portal-cards-status" role="status" style="text-align:center;"></p>
       <section id="portalCardsGrid" class="portal-grid portal-home-grid" aria-live="polite"></section>
       <section id="portalCardsCarouselSection" class="portal-systems-carousel" aria-labelledby="portalCardsCarouselTitle" hidden>
@@ -1125,13 +1419,14 @@
             <li><img class="portal-module-icon" src="/img/taxes.svg" alt="" loading="lazy"><div class="portal-module-text"><strong>Finanzas y cumplimiento:</strong><ul class="portal-module-feature-list"><li>Suite contador 360</li><li>Portal contador multicliente</li><li>PUC/NIIF Colombia</li><li>IVA, retenciones e ICA</li><li>Documentos DIAN</li><li>Declaraciones tributarias</li><li>Certificados tributarios</li><li>Renta IA</li><li>Cierres fiscales</li><li>Reportes financieros</li></ul></div></li>
             <li><img class="portal-module-icon" src="/img/hotel-logo.svg" alt="" loading="lazy"><div class="portal-module-text"><strong>Operaci&oacute;n por estaciones:</strong><ul class="portal-module-feature-list"><li>Estaciones</li><li>Mesas</li><li>Habitaciones</li><li>Zonas o bah&iacute;as configurables</li><li>Control de estados</li><li>Turnos</li><li>Reservas</li><li>Alertas de tiempo</li><li>Aseo</li><li>Cierre/corte de caja</li></ul></div></li>
             <li><img class="portal-module-icon" data-ai-logo="true" src="/img/pcs_ia_logo.svg" alt="" loading="lazy"><div class="portal-module-text"><strong>Automatizaci&oacute;n e IA:</strong><ul class="portal-module-feature-list"><li>Integraci&oacute;n con IA</li><li>Documentos inteligentes</li><li>IA GPT-5.5 para compras</li><li>Soporte operativo</li><li>Reportes asistidos</li><li>Acciones confirmables</li></ul></div></li>
-            <li><img class="portal-module-icon" src="/img/solar-energy.svg" alt="" loading="lazy"><div class="portal-module-text"><strong>Energía solar:</strong><ul class="portal-module-feature-list"><li>Monitoreo de paneles</li><li>Controladoras Victron</li><li>SMA Sunny Portal</li><li>SolarEdge Monitoring</li><li>Baterías Powerwall, BYD, Pylontech y Enphase</li><li>Alertas por correo</li><li>Lecturas por gateway local</li><li>BMS y estado de salud</li></ul></div></li>
+            <li><img class="portal-module-icon" src="/img/solar-energy.svg" alt="" loading="lazy"><div class="portal-module-text"><strong>EnergÃ­a solar:</strong><ul class="portal-module-feature-list"><li>Monitoreo de paneles</li><li>Controladoras Victron</li><li>SMA Sunny Portal</li><li>SolarEdge Monitoring</li><li>BaterÃ­as Powerwall, BYD, Pylontech y Enphase</li><li>Alertas por correo</li><li>Lecturas por gateway local</li><li>BMS y estado de salud</li></ul></div></li>
             <li><img class="portal-module-icon" src="/img/sensor.png" alt="" loading="lazy"><div class="portal-module-text"><strong>Dom&oacute;tica y control f&iacute;sico:</strong><ul class="portal-module-feature-list"><li>Dom&oacute;tica por estaci&oacute;n</li><li>Manejo de sensores</li><li>Puertas</li><li>Aparatos</li><li>Permanencia</li><li>Acceso</li><li>Veh&iacute;culos</li><li>Parqueaderos</li><li>Trazabilidad operativa</li></ul></div></li>
             <li><img class="portal-module-icon" src="/img/company-briefcase-color.svg" alt="" loading="lazy"><div class="portal-module-text"><strong>Gesti&oacute;n empresarial:</strong><ul class="portal-module-feature-list"><li>Clientes</li><li>CRM</li><li>Usuarios</li><li>Roles</li><li>Permisos</li><li>Licencias</li><li>Auditor&iacute;a</li><li>Backups</li><li>Comunicaciones</li><li>Soporte</li><li>Chat y tareas</li></ul></div></li>
             <li><img class="portal-module-icon" src="/img/analytics-color.svg" alt="" loading="lazy"><div class="portal-module-text"><strong>Plantillas listas:</strong><ul class="portal-module-feature-list"><li>Hotel</li><li>Motel</li><li>Restaurante</li><li>Gimnasio</li><li>Odontolog&iacute;a</li><li>Propiedad horizontal</li><li>Domicilios</li><li>Taxi</li><li>Carta QR</li><li>Venta p&uacute;blica</li><li>Red social comercial</li></ul></div></li>
           </ul>
         </div>
       </section>
+      </div>
 
     </main>
     <div hidden data-portal-visits-widget data-count-visit="1" aria-hidden="true"></div>
@@ -1186,6 +1481,58 @@
             try { toggle.focus(); } catch (e) { }
           }
         });
+      })();
+
+      (function initPublicPages() {
+        var home = document.getElementById('portalHomeContent');
+        var pages = Array.prototype.slice.call(document.querySelectorAll('[data-public-page]'));
+        var links = Array.prototype.slice.call(document.querySelectorAll('[data-public-page-link]'));
+        var allowed = { contacto: true, privacidad: true, 'quienes-somos': true, 'hotel-motel': true };
+
+        function currentPage() {
+          var params = new URLSearchParams(window.location.search || '');
+          var page = String(params.get('pagina') || '').trim().toLowerCase();
+          if (!allowed[page]) page = '';
+          return page;
+        }
+
+        function showPage(page, push) {
+          page = allowed[page] ? page : '';
+          pages.forEach(function (section) {
+            section.classList.toggle('is-active', section.getAttribute('data-public-page') === page);
+          });
+          if (home) home.classList.toggle('is-hidden', !!page);
+          links.forEach(function (link) {
+            var hrefPage = '';
+            try { hrefPage = new URL(link.href, window.location.origin).searchParams.get('pagina') || ''; } catch (e) {}
+            link.setAttribute('aria-current', hrefPage === page && page ? 'page' : 'false');
+          });
+          if (push) {
+            var url = page ? ('/index.html?pagina=' + encodeURIComponent(page)) : '/index.html';
+            window.history.pushState({ publicPage: page }, '', url);
+          }
+          if (page) {
+            var active = document.querySelector('[data-public-page="' + page + '"]');
+            if (active) active.scrollIntoView({ block: 'start' });
+          }
+        }
+
+        links.forEach(function (link) {
+          link.addEventListener('click', function (event) {
+            var page = '';
+            try { page = new URL(link.href, window.location.origin).searchParams.get('pagina') || ''; } catch (e) {}
+            if (!allowed[page]) return;
+            event.preventDefault();
+            showPage(page, true);
+            var menu = document.getElementById('headerMoreMenu');
+            var toggle = document.getElementById('headerMoreMenuToggle');
+            if (menu) menu.classList.remove('is-open');
+            if (toggle) toggle.setAttribute('aria-expanded', 'false');
+          });
+        });
+
+        window.addEventListener('popstate', function () { showPage(currentPage(), false); });
+        showPage(currentPage(), false);
       })();
 
       var gridEl = document.getElementById('portalCardsGrid');
@@ -1270,7 +1617,7 @@
           enlace: '/administrar_empresa.html?module=gimnasio'
         },
         {
-          titulo: 'Sistema para consultorios odontológicos',
+          titulo: 'Sistema para consultorios odontolÃ³gicos',
           descripcion: 'Gestiona agenda clinica, pacientes, historias, odontograma, tratamientos, presupuestos, pagos y saldos por paciente.',
           imagen_url: '/img/dental-logo.svg',
           imagen_secundaria_url: '/img/portal-systems/realistic/consultorios-odontologicos.jpg',
@@ -1826,7 +2173,7 @@
             '    <h3 class="home-offer-title">' + escapeHTML(card.titulo) + '</h3>' +
             '  </div>' +
             '  <div class="home-offer-figure">' +
-            '    <img class="card-figure-img" src="' + escapeHTML(figureSrc) + '" alt="Ilustración: ' + escapeHTML(card.titulo) + '">' +
+            '    <img class="card-figure-img" src="' + escapeHTML(figureSrc) + '" alt="IlustraciÃ³n: ' + escapeHTML(card.titulo) + '">' +
             '  </div>' +
             '  <div class="home-offer-body">' +
             '    <p>' + escapeHTML(card.descripcion) + '</p>' +
@@ -1928,7 +2275,7 @@
           var el = titles[i];
           if (!el) continue;
 
-          // Reset a tamaño base antes de ajustar.
+          // Reset a tamaÃ±o base antes de ajustar.
           el.style.fontSize = '';
           var cs = window.getComputedStyle(el);
 
@@ -1948,7 +2295,7 @@
           }
           var maxHeightPx = Math.ceil(lineHeightPx * 3 + 0.5);
 
-          // Reducir hasta que quepa en 3 líneas (sin recorte con "...")
+          // Reducir hasta que quepa en 3 lÃ­neas (sin recorte con "...")
           var current = basePx;
           var guard = 0;
           while (el.scrollHeight > maxHeightPx && current > minPx && guard < 40) {
@@ -1988,7 +2335,7 @@
         }
       }
 
-      // Chat público (portal) — 10 consultas/5 min por usuario
+      // Chat pÃºblico (portal) â€” 10 consultas/5 min por usuario
       (function initPublicPortalChat() {
         if (window.__pcsUseFloatingPublicChat) return;
         var box = document.getElementById("pcsPublicChat");
@@ -2053,13 +2400,13 @@
           if (!q) return;
           var pre = localLimitCheck();
           if (!pre.ok) {
-            setMsg("Límite alcanzado. Espera " + pre.retry + "s o escríbenos por WhatsApp.", true);
+            setMsg("LÃ­mite alcanzado. Espera " + pre.retry + "s o escrÃ­benos por WhatsApp.", true);
             return;
           }
           input.value = "";
           append("user", q);
           pushHistory("user", q);
-            setMsg("Consultando…", false);
+            setMsg("Consultandoâ€¦", false);
           btnSend.disabled = true;
           try {
             var res = await fetch("/api/public/chat_portal", {
@@ -2077,7 +2424,7 @@
                 setMsg(err, true);
                 append("assistant", err);
                 pushHistory("assistant", err);
-                // bloquear solo en el cliente también
+                // bloquear solo en el cliente tambiÃ©n
                 try {
                   window.localStorage.setItem(localKey, JSON.stringify({ resetAt: Date.now() + (retry * 1000), used: 10 }));
                 } catch (e2) { }
@@ -2103,7 +2450,7 @@
           if (!q) return;
           var pre = localLimitCheck();
           if (!pre.ok) {
-            setMsg("Límite alcanzado. Espera " + pre.retry + "s.", true);
+            setMsg("LÃ­mite alcanzado. Espera " + pre.retry + "s.", true);
             return;
           }
           input.value = "";
@@ -2222,7 +2569,7 @@
       loadCards();
       loadModuleInfo();
 
-      // Reajustar títulos si cambia el ancho (móvil/desktop)
+      // Reajustar tÃ­tulos si cambia el ancho (mÃ³vil/desktop)
       try {
         window.addEventListener('resize', function () {
           stopCarouselAutoScroll();

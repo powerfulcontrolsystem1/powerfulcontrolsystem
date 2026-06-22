@@ -102,7 +102,7 @@ func empresaPanelConfigResponseFromDB(dbEmp *sql.DB, empresaID int64) empresaPan
 		EmpresaID:        empresaID,
 		NoticiasEnabled:  getEmpresaPanelPref(dbEmp, empresaID, panelEmpresaNoticiasEnabledKey, true),
 		BuzonEnabled:     getEmpresaPanelPref(dbEmp, empresaID, panelEmpresaBuzonEnabledKey, true),
-		ChatEnabled:      getEmpresaPanelPref(dbEmp, empresaID, panelEmpresaChatEnabledKey, true),
+		ChatEnabled:      getEmpresaPanelPref(dbEmp, empresaID, panelEmpresaChatEnabledKey, false),
 		DefaultEnabled:   true,
 		PreferenciasBase: true,
 	}

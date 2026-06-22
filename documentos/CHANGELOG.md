@@ -1,3 +1,10 @@
+## [2026-06-22] Portal publico y panel empresarial
+- [Portal] `index.html` incorpora secciones publicas internas para Contacto, Privacidad y datos, Quienes somos y Sistema Hotel / Motel; el menu `Mas` las abre debajo de la barra superior sin salir del portal.
+- [Privacidad] La nueva seccion informa separacion de datos por empresa, responsabilidad de respaldo por cada empresa, descarga de informacion y eliminacion definitiva.
+- [Panel empresa] El chat interno queda apagado por defecto y se activa desde `Configuracion > Panel de inicio`; el buzon queda centrado cuando el chat esta apagado y conserva historico de mensajes/tareas.
+- [Panel empresa] Se restablece la tarjeta de Email corporativo junto a Favoritos y Noticias enlaza a `/noticias.html` con tipografia destacada.
+- [QA] Sintaxis JS inline de `index.html` y `panel.html`; `go test ./handlers -run "PanelConfiguracion|ChatFlotante|EmailCorporativo|^$" -count=1`.
+
 ## [2026-06-21] Backup completo VPS PCS
 - [Operacion] `scripts/crear_backup_vps.ps1` crea backups versionados en `D:\Backup vps PCS` y mantiene cada copia anterior en una carpeta con timestamp.
 - [VPS] El paquete remoto incluye inventario Docker/sistema, dump logico PostgreSQL, imagenes locales PCS, volumenes Docker, archivos del proyecto sin secretos ni temporales, SHA256 y `restore_to_new_vps.sh`.
