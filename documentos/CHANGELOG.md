@@ -2,6 +2,7 @@
 - [Usuarios empresa] `login_usuario.html` valida en frontend que la contrasena y la confirmacion esten completas y coincidan antes de llamar al backend.
 - [Backend] `/api/empresa/usuarios/establecer_password` acepta alias comunes de confirmacion (`password_confirm`, `password_confirmation`, `confirm_password`, `confirmar_password`, `confirmar_contrasena`) y mantiene obligatorios token de invitacion, correo, documento y `empresa_id` cuando viene indicado.
 - [PostgreSQL] Las mutaciones de `users` usadas por invitacion, contrato, recuperacion, bloqueo, foto, estado y reenvio pasan por `execSQLCompat`, evitando fallos por placeholders `?` en el runtime del VPS.
+- [PostgreSQL] Los campos historicos guardados como texto usan `CAST(CURRENT_TIMESTAMP AS TEXT)`, evitando el error `CASE types text and timestamp with time zone cannot be matched` al completar la invitacion.
 - [Seguridad] El alta sigue resolviendo el usuario por token de invitacion y compara empresa, correo y documento antes de activar la cuenta.
 - [QA] `node --check web/js/login_usuario.js`; `go test ./db -run "EmpresaUsuario|UsuariosEmpresa" -count=1`; `go test ./handlers -run "EmpresaUsuario|Cajero" -count=1`.
 

@@ -896,7 +896,7 @@ func SetEmpresaUsuarioPassword(dbConn *sql.DB, empresaID, id int64, passwordHash
 		SET password_hash = ?,
 			password_salt = ?,
 			password_set = 1,
-			password_actualizada_en = CURRENT_TIMESTAMP,
+			password_actualizada_en = CAST(CURRENT_TIMESTAMP AS TEXT),
 			password_reset_token = '',
 			password_reset_expira = '',
 			password_reset_requested_en = '',
@@ -917,9 +917,9 @@ func CompleteEmpresaUsuarioInvitationPassword(dbConn *sql.DB, empresaID, id int6
 		SET password_hash = ?,
 			password_salt = ?,
 			password_set = 1,
-			password_actualizada_en = CURRENT_TIMESTAMP,
+			password_actualizada_en = CAST(CURRENT_TIMESTAMP AS TEXT),
 			email_confirmado = 1,
-			email_confirmado_en = CASE WHEN COALESCE(email_confirmado_en, '') = '' THEN CURRENT_TIMESTAMP ELSE email_confirmado_en END,
+			email_confirmado_en = CASE WHEN COALESCE(email_confirmado_en, '') = '' THEN CAST(CURRENT_TIMESTAMP AS TEXT) ELSE email_confirmado_en END,
 			email_confirm_token = '',
 			email_confirm_expira = '',
 			password_reset_token = '',
@@ -948,7 +948,7 @@ func CompleteEmpresaUsuarioInvitationGoogle(dbConn *sql.DB, empresaID, id int64)
 	}
 	_, err := execSQLCompat(dbConn, `UPDATE users
 		SET email_confirmado = 1,
-			email_confirmado_en = CASE WHEN COALESCE(email_confirmado_en, '') = '' THEN CURRENT_TIMESTAMP ELSE email_confirmado_en END,
+			email_confirmado_en = CASE WHEN COALESCE(email_confirmado_en, '') = '' THEN CAST(CURRENT_TIMESTAMP AS TEXT) ELSE email_confirmado_en END,
 			email_confirm_token = '',
 			email_confirm_expira = '',
 			password_reset_token = '',
@@ -1273,7 +1273,7 @@ func ConfirmEmpresaUsuarioByToken(dbConn *sql.DB, token string) (int64, error) {
 
 	_, err := execSQLCompat(dbConn, `UPDATE users
 		SET email_confirmado = 1,
-			email_confirmado_en = CURRENT_TIMESTAMP,
+			email_confirmado_en = CAST(CURRENT_TIMESTAMP AS TEXT),
 			estado = 'activo',
 			email_confirm_token = '',
 			email_confirm_expira = '',
@@ -1292,7 +1292,7 @@ func SetEmpresaUsuarioContratoAceptado(dbConn *sql.DB, empresaID, id int64, vers
 	_, err := execSQLCompat(dbConn, `UPDATE users
 		SET acepta_contrato = 1,
 			contrato_version_aceptada = ?,
-			fecha_acepta_contrato = CURRENT_TIMESTAMP,
+			fecha_acepta_contrato = CAST(CURRENT_TIMESTAMP AS TEXT),
 			fecha_actualizacion = CURRENT_TIMESTAMP
 		WHERE id = ? AND empresa_id = ?`, version, id, empresaID)
 	return err

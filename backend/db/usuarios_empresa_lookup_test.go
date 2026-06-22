@@ -35,8 +35,10 @@ func TestUsuariosEmpresaMutacionesUsanCompatPostgres(t *testing.T) {
 	required := []string{
 		"func CompleteEmpresaUsuarioInvitationPassword",
 		"res, err := execSQLCompat(dbConn, `UPDATE users",
+		"email_confirmado_en = CASE WHEN COALESCE(email_confirmado_en, '') = '' THEN CAST(CURRENT_TIMESTAMP AS TEXT) ELSE email_confirmado_en END",
 		"func SetEmpresaUsuarioContratoAceptado",
 		"_, err := execSQLCompat(dbConn, `UPDATE users",
+		"fecha_acepta_contrato = CAST(CURRENT_TIMESTAMP AS TEXT)",
 		"func SetEmpresaUsuarioConfirmToken",
 	}
 	for _, fragment := range required {
