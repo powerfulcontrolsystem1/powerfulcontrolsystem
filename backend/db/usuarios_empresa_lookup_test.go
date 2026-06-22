@@ -24,3 +24,27 @@ func TestEmpresaUsuarioEmailLookupPrefiereCuentaConfirmadaActiva(t *testing.T) {
 		}
 	}
 }
+
+func TestUsuariosEmpresaMutacionesUsanCompatPostgres(t *testing.T) {
+	src, err := os.ReadFile("usuarios_empresa.go")
+	if err != nil {
+		t.Fatalf("no se pudo leer usuarios_empresa.go: %v", err)
+	}
+	body := string(src)
+
+	required := []string{
+		"func CompleteEmpresaUsuarioInvitationPassword",
+		"res, err := execSQLCompat(dbConn, `UPDATE users",
+		"func SetEmpresaUsuarioContratoAceptado",
+		"_, err := execSQLCompat(dbConn, `UPDATE users",
+		"func SetEmpresaUsuarioConfirmToken",
+	}
+	for _, fragment := range required {
+		if !strings.Contains(body, fragment) {
+			t.Fatalf("mutaciones de usuarios empresa deben usar execSQLCompat para PostgreSQL; falta fragmento: %s", fragment)
+		}
+	}
+	if strings.Contains(body, "dbConn.Exec(`UPDATE users") || strings.Contains(body, "dbConn.Exec(`DELETE FROM users") {
+		t.Fatal("usuarios_empresa.go no debe usar dbConn.Exec directo para mutaciones parametrizadas de users")
+	}
+}

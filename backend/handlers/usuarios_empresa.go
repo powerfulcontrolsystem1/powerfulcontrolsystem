@@ -925,6 +925,33 @@ func EmpresaUsuarioLoginHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 }
 
 // EmpresaUsuarioSetPasswordHandler define la contraseña en el primer ingreso y abre sesión.
+type empresaUsuarioPasswordConfirmPayload struct {
+	PasswordConfirm        string `json:"password_confirm"`
+	PasswordConfirmation   string `json:"password_confirmation"`
+	ConfirmPassword        string `json:"confirm_password"`
+	ConfirmarPassword      string `json:"confirmar_password"`
+	ConfirmarContrasena    string `json:"confirmar_contrasena"`
+	ConfirmarContrasenia   string `json:"confirmar_contrasenia"`
+	ConfirmacionContrasena string `json:"confirmacion_contrasena"`
+}
+
+func (payload empresaUsuarioPasswordConfirmPayload) value() string {
+	for _, candidate := range []string{
+		payload.PasswordConfirm,
+		payload.PasswordConfirmation,
+		payload.ConfirmPassword,
+		payload.ConfirmarPassword,
+		payload.ConfirmarContrasena,
+		payload.ConfirmarContrasenia,
+		payload.ConfirmacionContrasena,
+	} {
+		if candidate != "" {
+			return candidate
+		}
+	}
+	return ""
+}
+
 func EmpresaUsuarioSetPasswordHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
@@ -937,10 +964,10 @@ func EmpresaUsuarioSetPasswordHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 			Email              string `json:"email"`
 			DocumentoIdentidad string `json:"documento_identidad"`
 			Password           string `json:"password"`
-			PasswordConfirm    string `json:"password_confirm"`
 			TokenInvitacion    string `json:"token_invitacion"`
 			AcceptContract     bool   `json:"accept_contract"`
 			RecaptchaToken     string `json:"recaptcha_token"`
+			empresaUsuarioPasswordConfirmPayload
 		}
 		if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
 			http.Error(w, "invalid payload", http.StatusBadRequest)
@@ -954,7 +981,7 @@ func EmpresaUsuarioSetPasswordHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 			return
 		}
 		if _, err := mail.ParseAddress(email); err != nil {
-			http.Error(w, "email inv?lido", http.StatusBadRequest)
+			http.Error(w, "email invalido", http.StatusBadRequest)
 			return
 		}
 		if payload.EmpresaID <= 0 {
@@ -963,11 +990,16 @@ func EmpresaUsuarioSetPasswordHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 			}
 		}
 		if strings.TrimSpace(payload.Password) == "" {
-			http.Error(w, "debes ingresar una contraseña", http.StatusBadRequest)
+			http.Error(w, "debes ingresar una contrasena", http.StatusBadRequest)
 			return
 		}
-		if payload.PasswordConfirm != "" && payload.Password != payload.PasswordConfirm {
-			http.Error(w, "la confirmaci?n de contraseña no coincide", http.StatusBadRequest)
+		passwordConfirm := payload.empresaUsuarioPasswordConfirmPayload.value()
+		if strings.TrimSpace(passwordConfirm) == "" {
+			http.Error(w, "debes confirmar la contrasena", http.StatusBadRequest)
+			return
+		}
+		if payload.Password != passwordConfirm {
+			http.Error(w, "la confirmacion de contrasena no coincide", http.StatusBadRequest)
 			return
 		}
 		if err := validateRecaptchaToken(dbSuper, r, payload.RecaptchaToken); err != nil {
@@ -1005,7 +1037,7 @@ func EmpresaUsuarioSetPasswordHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 			return
 		}
 		if !strings.EqualFold(strings.TrimSpace(item.DocumentoIdentidad), documento) {
-			http.Error(w, "documento inv?lido", http.StatusUnauthorized)
+			http.Error(w, "documento invalido", http.StatusUnauthorized)
 			return
 		}
 		if status, msg := validateEmpresaUsuarioInvitationToken(item, invitationToken, time.Now()); status != http.StatusOK {
@@ -1013,11 +1045,11 @@ func EmpresaUsuarioSetPasswordHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 			return
 		}
 		if empresaUsuarioEstadoBloqueaPrimerIngreso(item) {
-			http.Error(w, "tu usuario está inactivo", http.StatusForbidden)
+			http.Error(w, "tu usuario esta inactivo", http.StatusForbidden)
 			return
 		}
 		if item.PasswordSet == 1 && strings.TrimSpace(item.PasswordHash) != "" {
-			http.Error(w, "el usuario ya tiene contraseña configurada", http.StatusConflict)
+			http.Error(w, "el usuario ya tiene contrasena configurada", http.StatusConflict)
 			return
 		}
 

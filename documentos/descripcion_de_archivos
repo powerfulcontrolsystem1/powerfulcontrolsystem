@@ -1,3 +1,15 @@
+2026-06-22 - Primer ingreso de usuarios por invitacion
+- `backend/handlers/usuarios_empresa.go`:
+	- endurece `/api/empresa/usuarios/establecer_password` para exigir confirmacion de contrasena, aceptar alias compatibles de confirmacion y responder mensajes claros sin texto corrupto.
+- `backend/db/usuarios_empresa.go`:
+	- mueve las mutaciones parametrizadas de `users` a `execSQLCompat` para PostgreSQL, incluyendo completar invitacion, aceptar contrato, recuperacion, bloqueo, foto, estado y reenvio.
+- `backend/db/usuarios_empresa_lookup_test.go`:
+	- agrega regresion estatica para impedir que vuelvan `dbConn.Exec` directos en mutaciones parametrizadas de `users`.
+- `backend/handlers/usuarios_empresa_invitation_test.go`:
+	- agrega regresion para los alias de confirmacion usados por el flujo de invitacion.
+- `web/js/login_usuario.js`:
+	- valida localmente contrasena y confirmacion antes de enviar el formulario `Crear contrasena y entrar`.
+
 2026-06-22 - Portal publico y panel empresarial
 - `web/index.html`:
 	- agrega paginas internas para `Informacion de contacto`, `Privacidad y datos`, `Quienes somos` y `Sistema Hotel / Motel`, abiertas desde el menu `Mas` debajo de la barra superior.

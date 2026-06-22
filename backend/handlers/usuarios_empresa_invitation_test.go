@@ -43,6 +43,23 @@ func TestEmpresaUsuarioEstadoBloqueaPrimerIngresoPermiteConfirmadoSinPassword(t 
 	}
 }
 
+func TestEmpresaUsuarioPasswordConfirmPayloadAceptaAliases(t *testing.T) {
+	cases := []empresaUsuarioPasswordConfirmPayload{
+		{PasswordConfirm: "ClaveSegura123"},
+		{PasswordConfirmation: "ClaveSegura123"},
+		{ConfirmPassword: "ClaveSegura123"},
+		{ConfirmarPassword: "ClaveSegura123"},
+		{ConfirmarContrasena: "ClaveSegura123"},
+		{ConfirmarContrasenia: "ClaveSegura123"},
+		{ConfirmacionContrasena: "ClaveSegura123"},
+	}
+	for _, tc := range cases {
+		if got := tc.value(); got != "ClaveSegura123" {
+			t.Fatalf("confirmacion normalizada=%q, want ClaveSegura123", got)
+		}
+	}
+}
+
 func TestNormalizePermissionRoleCajaEsCajero(t *testing.T) {
 	for _, raw := range []string{"Caja", "caja", "Caja principal", "caja_turno"} {
 		if got := normalizePermissionRole(raw); got != "cajero" {

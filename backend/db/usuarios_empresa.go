@@ -892,7 +892,7 @@ func SetEmpresaUsuarioPassword(dbConn *sql.DB, empresaID, id int64, passwordHash
 	if err := EnsureEmpresaUsuariosAuthSchema(dbConn); err != nil {
 		return err
 	}
-	_, err := dbConn.Exec(`UPDATE users
+	_, err := execSQLCompat(dbConn, `UPDATE users
 		SET password_hash = ?,
 			password_salt = ?,
 			password_set = 1,
@@ -913,7 +913,7 @@ func CompleteEmpresaUsuarioInvitationPassword(dbConn *sql.DB, empresaID, id int6
 	if err := EnsureEmpresaUsuariosAuthSchema(dbConn); err != nil {
 		return err
 	}
-	res, err := dbConn.Exec(`UPDATE users
+	res, err := execSQLCompat(dbConn, `UPDATE users
 		SET password_hash = ?,
 			password_salt = ?,
 			password_set = 1,
@@ -946,7 +946,7 @@ func CompleteEmpresaUsuarioInvitationGoogle(dbConn *sql.DB, empresaID, id int64)
 	if err := EnsureEmpresaUsuariosAuthSchema(dbConn); err != nil {
 		return err
 	}
-	_, err := dbConn.Exec(`UPDATE users
+	_, err := execSQLCompat(dbConn, `UPDATE users
 		SET email_confirmado = 1,
 			email_confirmado_en = CASE WHEN COALESCE(email_confirmado_en, '') = '' THEN CURRENT_TIMESTAMP ELSE email_confirmado_en END,
 			email_confirm_token = '',
@@ -968,7 +968,7 @@ func SetEmpresaUsuarioPasswordResetToken(dbConn *sql.DB, empresaID, id int64, to
 	if err := EnsureEmpresaUsuariosAuthSchema(dbConn); err != nil {
 		return err
 	}
-	_, err := dbConn.Exec(`UPDATE users
+	_, err := execSQLCompat(dbConn, `UPDATE users
 		SET password_reset_token = ?,
 			password_reset_expira = ?,
 			password_reset_requested_en = CURRENT_TIMESTAMP,
@@ -982,7 +982,7 @@ func ClearEmpresaUsuarioPasswordResetToken(dbConn *sql.DB, empresaID, id int64) 
 	if err := EnsureEmpresaUsuariosAuthSchema(dbConn); err != nil {
 		return err
 	}
-	_, err := dbConn.Exec(`UPDATE users
+	_, err := execSQLCompat(dbConn, `UPDATE users
 		SET password_reset_token = '',
 			password_reset_expira = '',
 			password_reset_requested_en = '',
@@ -1038,7 +1038,7 @@ func RegisterEmpresaUsuarioLoginFailure(dbConn *sql.DB, empresaID, id int64, max
 		}
 	}
 
-	_, err := dbConn.Exec(`UPDATE users
+	_, err := execSQLCompat(dbConn, `UPDATE users
 		SET login_failed_attempts = ?,
 			login_failed_last_at = ?,
 			login_locked_until = ?,
@@ -1062,7 +1062,7 @@ func ClearEmpresaUsuarioLoginFailures(dbConn *sql.DB, empresaID, id int64) error
 	if err := EnsureEmpresaUsuariosAuthSchema(dbConn); err != nil {
 		return err
 	}
-	_, err := dbConn.Exec(`UPDATE users
+	_, err := execSQLCompat(dbConn, `UPDATE users
 		SET login_failed_attempts = 0,
 			login_failed_last_at = '',
 			login_locked_until = '',
@@ -1122,7 +1122,7 @@ func UpdateEmpresaUsuario(
 		return err
 	}
 	if resetConfirmacion {
-		_, err := dbConn.Exec(`UPDATE users
+		_, err := execSQLCompat(dbConn, `UPDATE users
 			SET email = ?,
 				name = ?,
 				documento_identidad = ?,
@@ -1152,7 +1152,7 @@ func UpdateEmpresaUsuario(
 		return err
 	}
 
-	_, err := dbConn.Exec(`UPDATE users
+	_, err := execSQLCompat(dbConn, `UPDATE users
 		SET email = ?,
 			name = ?,
 			documento_identidad = ?,
@@ -1180,7 +1180,7 @@ func UpdateEmpresaUsuarioFoto(dbConn *sql.DB, empresaID, id int64, fotoURL strin
 	if err := EnsureEmpresaUsuariosAuthSchema(dbConn); err != nil {
 		return err
 	}
-	res, err := dbConn.Exec(`UPDATE users
+	res, err := execSQLCompat(dbConn, `UPDATE users
 		SET foto_url = ?,
 			fecha_actualizacion = CURRENT_TIMESTAMP
 		WHERE id = ? AND empresa_id = ?`,
@@ -1203,7 +1203,7 @@ func DeleteEmpresaUsuario(dbConn *sql.DB, empresaID, id int64) error {
 	if err := EnsureEmpresaUsuariosAuthSchema(dbConn); err != nil {
 		return err
 	}
-	_, err := dbConn.Exec(`DELETE FROM users WHERE id = ? AND empresa_id = ?`, id, empresaID)
+	_, err := execSQLCompat(dbConn, `DELETE FROM users WHERE id = ? AND empresa_id = ?`, id, empresaID)
 	return err
 }
 
@@ -1234,7 +1234,7 @@ func SetEmpresaUsuarioEstado(dbConn *sql.DB, empresaID, id int64, estado string)
 	if err := EnsureEmpresaUsuariosAuthSchema(dbConn); err != nil {
 		return err
 	}
-	_, err := dbConn.Exec(`UPDATE users SET estado = ?, fecha_actualizacion = CURRENT_TIMESTAMP WHERE id = ? AND empresa_id = ?`, estado, id, empresaID)
+	_, err := execSQLCompat(dbConn, `UPDATE users SET estado = ?, fecha_actualizacion = CURRENT_TIMESTAMP WHERE id = ? AND empresa_id = ?`, estado, id, empresaID)
 	return err
 }
 
@@ -1243,7 +1243,7 @@ func SetEmpresaUsuarioConfirmToken(dbConn *sql.DB, empresaID, id int64, confirmT
 	if err := EnsureEmpresaUsuariosAuthSchema(dbConn); err != nil {
 		return err
 	}
-	_, err := dbConn.Exec(`UPDATE users
+	_, err := execSQLCompat(dbConn, `UPDATE users
 		SET email_confirm_token = ?,
 			email_confirm_expira = ?,
 			fecha_actualizacion = CURRENT_TIMESTAMP
@@ -1271,7 +1271,7 @@ func ConfirmEmpresaUsuarioByToken(dbConn *sql.DB, token string) (int64, error) {
 		}
 	}
 
-	_, err := dbConn.Exec(`UPDATE users
+	_, err := execSQLCompat(dbConn, `UPDATE users
 		SET email_confirmado = 1,
 			email_confirmado_en = CURRENT_TIMESTAMP,
 			estado = 'activo',
@@ -1289,7 +1289,7 @@ func SetEmpresaUsuarioContratoAceptado(dbConn *sql.DB, empresaID, id int64, vers
 	if err := EnsureEmpresaUsuariosAuthSchema(dbConn); err != nil {
 		return err
 	}
-	_, err := dbConn.Exec(`UPDATE users
+	_, err := execSQLCompat(dbConn, `UPDATE users
 		SET acepta_contrato = 1,
 			contrato_version_aceptada = ?,
 			fecha_acepta_contrato = CURRENT_TIMESTAMP,

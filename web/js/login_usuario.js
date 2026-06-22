@@ -460,6 +460,33 @@
       .replace(/^_+|_+$/g, "");
   }
 
+  function readInputValue(id) {
+    var input = document.getElementById(id);
+    return input ? String(input.value || "") : "";
+  }
+
+  function validatePasswordConfirmation(formKey, passwordID, confirmID) {
+    var password = readInputValue(passwordID);
+    var confirmation = readInputValue(confirmID);
+    if (!password) {
+      setMessage(formKey, "Debes ingresar una contrasena.", true);
+      return null;
+    }
+    if (!confirmation) {
+      setMessage(formKey, "Debes confirmar la contrasena.", true);
+      return null;
+    }
+    if (password !== confirmation) {
+      setMessage(formKey, "La confirmacion de contrasena no coincide.", true);
+      var confirmInput = document.getElementById(confirmID);
+      if (confirmInput && typeof confirmInput.focus === "function") {
+        confirmInput.focus();
+      }
+      return null;
+    }
+    return { password: password, confirmation: confirmation };
+  }
+
   function normalizeCashierRole(value) {
     var raw = String(value || "").trim().toLowerCase();
     return raw.replace(/\s+/g, "_");
@@ -830,6 +857,10 @@
       setMessage("setup", invitationRequiredMessage(), true);
       return;
     }
+    var passwords = validatePasswordConfirmation("setup", "setupPassword", "setupPasswordConfirm");
+    if (!passwords) {
+      return;
+    }
     setSetupBusy(true);
 
     ensureRecaptcha("setup").then(function (token) {
@@ -837,8 +868,8 @@
       return submitJSON("/api/empresa/usuarios/establecer_password", withBasePayload({
         email: document.getElementById("setupEmail").value,
         documento_identidad: document.getElementById("setupDocumento").value,
-        password: document.getElementById("setupPassword").value,
-        password_confirm: document.getElementById("setupPasswordConfirm").value,
+        password: passwords.password,
+        password_confirm: passwords.confirmation,
         token_invitacion: invitationToken,
         accept_contract: !!(contractCheckbox && contractCheckbox.checked),
         recaptcha_token: token

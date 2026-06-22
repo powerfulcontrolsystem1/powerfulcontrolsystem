@@ -1,3 +1,10 @@
+## [2026-06-22] Primer ingreso de usuarios por invitacion
+- [Usuarios empresa] `login_usuario.html` valida en frontend que la contrasena y la confirmacion esten completas y coincidan antes de llamar al backend.
+- [Backend] `/api/empresa/usuarios/establecer_password` acepta alias comunes de confirmacion (`password_confirm`, `password_confirmation`, `confirm_password`, `confirmar_password`, `confirmar_contrasena`) y mantiene obligatorios token de invitacion, correo, documento y `empresa_id` cuando viene indicado.
+- [PostgreSQL] Las mutaciones de `users` usadas por invitacion, contrato, recuperacion, bloqueo, foto, estado y reenvio pasan por `execSQLCompat`, evitando fallos por placeholders `?` en el runtime del VPS.
+- [Seguridad] El alta sigue resolviendo el usuario por token de invitacion y compara empresa, correo y documento antes de activar la cuenta.
+- [QA] `node --check web/js/login_usuario.js`; `go test ./db -run "EmpresaUsuario|UsuariosEmpresa" -count=1`; `go test ./handlers -run "EmpresaUsuario|Cajero" -count=1`.
+
 ## [2026-06-22] Portal publico y panel empresarial
 - [Portal] `index.html` incorpora secciones publicas internas para Contacto, Privacidad y datos, Quienes somos y Sistema Hotel / Motel; el menu `Mas` las abre debajo de la barra superior sin salir del portal.
 - [Privacidad] La nueva seccion informa separacion de datos por empresa, responsabilidad de respaldo por cada empresa, descarga de informacion y eliminacion definitiva.

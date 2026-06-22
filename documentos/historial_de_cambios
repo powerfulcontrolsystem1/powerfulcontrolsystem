@@ -35835,6 +35835,24 @@ Archivos modificados:
 - documentos/mapa_modulos.md
 - scripts/crear_backup_vps.ps1
 
+2026-06-22: Primer ingreso de usuarios empresariales por invitacion
+- Descripcion: Se corrige el flujo en el que un usuario creado desde Administrar empresa recibia invitacion, abria el enlace, digitaba documento y contrasenas, pero no lograba crear la cuenta por validacion/guardado de confirmacion. El frontend ahora valida que la contrasena y la confirmacion existan y coincidan antes de llamar al backend. El endpoint `/api/empresa/usuarios/establecer_password` exige confirmacion y acepta alias compatibles como `password_confirm`, `password_confirmation`, `confirm_password`, `confirmar_password` y `confirmar_contrasena`. Ademas, las mutaciones parametrizadas de `users` en `backend/db/usuarios_empresa.go` pasan por `execSQLCompat` para evitar fallos en PostgreSQL del VPS al completar la invitacion, aceptar contrato o actualizar datos del usuario.
+- Seguridad: El backend mantiene el aislamiento por token de invitacion, `empresa_id`, correo y documento antes de activar el usuario. No se relajan permisos ni se exponen datos de otra empresa.
+- Archivos:
+    - `backend/handlers/usuarios_empresa.go`
+    - `backend/handlers/usuarios_empresa_invitation_test.go`
+    - `backend/db/usuarios_empresa.go`
+    - `backend/db/usuarios_empresa_lookup_test.go`
+    - `web/js/login_usuario.js`
+    - `CHANGELOG.md`
+    - `documentos/CHANGELOG.md`
+    - `documentos/descripcion_de_archivos`
+    - `documentos/mapa_modulos.md`
+- Verificacion:
+    - `C:\Users\ivanm\.cache\codex-runtimes\codex-primary-runtime\dependencies\node\bin\node.exe --check web\js\login_usuario.js` -> OK.
+    - `go test ./db -run "EmpresaUsuario|UsuariosEmpresa" -count=1` desde `backend` -> OK.
+    - `go test ./handlers -run "EmpresaUsuario|Cajero" -count=1` desde `backend` -> OK.
+
 2026-06-22: rs: actualizar repositorio y sincronizar VPS
 PushStatus: OK
 Archivos modificados:
