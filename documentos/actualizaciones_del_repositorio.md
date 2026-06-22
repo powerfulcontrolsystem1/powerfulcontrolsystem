@@ -15581,3 +15581,10 @@ Archivos modificados:
 - documentos/historial_de_cambios
 - documentos/mapa_modulos.md
 - web/js/login_usuario.js
+
+2026-06-22 03:24:12 - Mensaje: rs: actualizar repositorio y sincronizar VPS; Commit: 2f41f612; PushStatus: OK
+Archivos modificados:
+- CHANGELOG.md
+- backend/db/usuarios_empresa.go
+- backend/db/usuarios_empresa_lookup_test.go
+- documentos/CHANGELOG.md
