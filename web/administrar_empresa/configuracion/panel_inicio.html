@@ -42,6 +42,20 @@
         <div class="panel-config-options">
           <label class="panel-config-option">
             <span>
+              <strong>Favoritos</strong>
+              <span>Muestra los accesos rapidos marcados con estrella por el usuario.</span>
+            </span>
+            <span class="panel-config-switch"><input id="favoritosEnabled" type="checkbox" checked></span>
+          </label>
+          <label class="panel-config-option">
+            <span>
+              <strong>Email corporativo</strong>
+              <span>Muestra el estado del correo de la empresa y accesos a bandeja/configuracion.</span>
+            </span>
+            <span class="panel-config-switch"><input id="emailEnabled" type="checkbox" checked></span>
+          </label>
+          <label class="panel-config-option">
+            <span>
               <strong>Noticias del sistema</strong>
               <span>Muestra la ultima noticia publicada para las empresas.</span>
             </span>
@@ -74,6 +88,8 @@
       var form = document.getElementById("panelConfigForm");
       var statusEl = document.getElementById("panelConfigStatus");
       var saveBtn = document.getElementById("panelConfigSave");
+      var favoritosEl = document.getElementById("favoritosEnabled");
+      var emailEl = document.getElementById("emailEnabled");
       var noticiasEl = document.getElementById("noticiasEnabled");
       var buzonEl = document.getElementById("buzonEnabled");
       var chatEl = document.getElementById("chatEnabled");
@@ -114,6 +130,8 @@
 
       function applyData(data) {
         data = data || {};
+        favoritosEl.checked = data.favoritos_enabled !== false;
+        emailEl.checked = data.email_enabled !== false;
         noticiasEl.checked = data.noticias_enabled !== false;
         buzonEl.checked = data.buzon_enabled !== false;
         chatEl.checked = data.chat_enabled === true;
@@ -149,6 +167,8 @@
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             empresa_id: Number(empresaId),
+            favoritos_enabled: !!favoritosEl.checked,
+            email_enabled: !!emailEl.checked,
             noticias_enabled: !!noticiasEl.checked,
             buzon_enabled: !!buzonEl.checked,
             chat_enabled: !!chatEl.checked

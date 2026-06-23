@@ -1,3 +1,10 @@
+## [2026-06-23] Panel empresa, carrito y recuperacion operativa
+- [Panel empresa] `panel.html` compacta Favoritos y Email corporativo, oculta mensajes tecnicos de IMAP, deja Buzon/Chat a ancho completo y agrega soporte para desactivar Favoritos y Email desde configuracion del panel.
+- [Noticias] Se agrega `administrar_empresa/noticias.html` para abrir noticias del sistema dentro del panel privado de empresa y se mejora el contraste visual de la tarjeta de Noticias.
+- [Carrito] Se ajustan botones cuadrados, `Devolver`, posicion de Vuelto bajo Efectivo recibido, mensaje junto a `Detalle del pago`, mayor tamano para efectivo/total y menor margen inferior en la tarjeta de busqueda.
+- [Operacion] Se agrega `scripts/consola_de_recuperacion.ps1` con botones para backup, restauracion preparada, `sync_to_vps`, `actualizar_repositorio` y `rs`.
+- [Correo] Se publica `web/img/bimi-pcs.svg` y se documenta que el avatar de Gmail requiere BIMI/DMARC en DNS; el logo HTML embebido no controla la inicial de Gmail.
+
 ## [2026-06-22] Primer ingreso de usuarios por invitacion
 - [Usuarios empresa] `login_usuario.html` valida en frontend que la contrasena y la confirmacion esten completas y coincidan antes de llamar al backend.
 - [Backend] `/api/empresa/usuarios/establecer_password` acepta alias comunes de confirmacion (`password_confirm`, `password_confirmation`, `confirm_password`, `confirmar_password`, `confirmar_contrasena`) y mantiene obligatorios token de invitacion, correo, documento y `empresa_id` cuando viene indicado.

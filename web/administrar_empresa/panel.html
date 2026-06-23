@@ -471,8 +471,8 @@
     }
 
     .empresa-favorites-panel {
-      margin-top: 14px;
-      padding: 14px;
+      margin-top: 8px;
+      padding: 8px 10px;
       border-radius: 8px;
       border: 1px solid var(--border);
       background: var(--card);
@@ -483,8 +483,8 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 10px;
-      margin-bottom: 10px;
+      gap: 5px;
+      margin-bottom: 6px;
     }
 
     .empresa-favorites-heading {
@@ -533,8 +533,8 @@
 
     .empresa-favorites-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
-      gap: 6px;
+      grid-template-columns: repeat(auto-fit, minmax(168px, 1fr));
+      gap: 4px;
     }
 
     .empresa-favorite-card {
@@ -542,9 +542,9 @@
       align-items: center;
       justify-content: flex-start;
       gap: 8px;
-      min-height: 40px;
-      padding: 8px 11px;
-      border-radius: 10px;
+      min-height: 32px;
+      padding: 5px 8px;
+      border-radius: 8px;
       border: 1px solid var(--border);
       background: linear-gradient(180deg, var(--surface-soft), var(--surface));
       color: var(--text);
@@ -610,7 +610,7 @@
     .empresa-favorite-text strong {
       display: block;
       color: var(--text);
-      font-size: .88rem;
+      font-size: .8rem;
       line-height: 1.14;
       white-space: nowrap;
       overflow: hidden;
@@ -619,9 +619,9 @@
 
     .empresa-favorite-text span {
       display: block;
-      margin-top: 2px;
+      margin-top: 1px;
       color: var(--muted);
-      font-size: .7rem;
+      font-size: .64rem;
       line-height: 1.15;
       white-space: nowrap;
       overflow: hidden;
@@ -645,7 +645,7 @@
       gap: 10px;
       align-items: center;
       margin-top: 10px;
-      padding: 10px 12px;
+      padding: 6px 8px;
       border-radius: 8px;
       border: 1px solid color-mix(in srgb, var(--accent) 28%, var(--border));
       background: linear-gradient(135deg, color-mix(in srgb, var(--surface) 88%, var(--accent) 12%), var(--card));
@@ -730,13 +730,16 @@
     }
 
     .empresa-news-card {
+      --empresa-news-accent: #0f766e;
+      --empresa-news-warm: #facc15;
+      --empresa-news-ink: #102033;
       margin-top: 12px;
       padding: 14px;
       border-radius: 8px;
-      border: 1px solid var(--border);
-      background: var(--card);
-      color: var(--text);
-      box-shadow: 0 14px 30px var(--panel-card-shadow);
+      border: 1px solid color-mix(in srgb, var(--empresa-news-accent) 42%, #ffffff 58%);
+      background: linear-gradient(135deg, color-mix(in srgb, var(--empresa-news-warm) 18%, #ffffff 82%), color-mix(in srgb, #38bdf8 13%, #ffffff 87%));
+      color: var(--empresa-news-ink);
+      box-shadow: 0 10px 24px color-mix(in srgb, #0f172a 14%, transparent);
     }
 
     .empresa-news-card[hidden] {
@@ -759,7 +762,7 @@
       display: flex;
       flex-wrap: wrap;
       gap: 6px;
-      color: var(--muted);
+      color: color-mix(in srgb, var(--empresa-news-accent) 72%, #1f2937 28%);
       font-size: .76rem;
       font-weight: 800;
       text-transform: uppercase;
@@ -767,7 +770,7 @@
 
     .empresa-news-title {
       margin: 0;
-      color: color-mix(in srgb, var(--accent) 78%, var(--text) 22%);
+      color: #0f3f3a;
       font-family: "Montserrat", "Segoe UI", system-ui, sans-serif;
       font-size: 1.08rem;
       font-weight: 950;
@@ -776,7 +779,7 @@
 
     .empresa-news-summary {
       margin: 0;
-      color: var(--muted);
+      color: #1e293b;
       font-family: "Inter", "Segoe UI", system-ui, sans-serif;
       font-size: .9rem;
       line-height: 1.5;
@@ -790,22 +793,22 @@
       margin-top: 2px;
       padding: 7px 10px;
       border-radius: 999px;
-      background: color-mix(in srgb, var(--accent) 12%, var(--surface) 88%);
-      color: color-mix(in srgb, var(--accent) 82%, var(--text) 18%);
+      background: color-mix(in srgb, var(--empresa-news-accent) 18%, #ffffff 82%);
+      color: #064e3b;
       font-size: .78rem;
       font-weight: 900;
     }
 
     .empresa-buzon-grid {
       display: grid;
-      grid-template-columns: minmax(0, 1fr) minmax(320px, .82fr);
-      gap: 12px;
+      grid-template-columns: minmax(0, 1fr);
+      gap: 6px;
       margin-top: 12px;
     }
 
     .empresa-buzon-grid.buzon-only {
-      grid-template-columns: minmax(0, 860px);
-      justify-content: center;
+      grid-template-columns: minmax(0, 1fr);
+      justify-content: stretch;
     }
 
     .sr-only {
@@ -831,10 +834,14 @@
       box-shadow: 0 14px 30px var(--panel-card-shadow);
     }
 
+    .empresa-chat-card[hidden] {
+      display: none !important;
+    }
+
     .empresa-home-top-cards {
       display: grid;
-      grid-template-columns: minmax(0, 1fr) minmax(260px, 360px);
-      gap: 12px;
+      grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr));
+      gap: 8px;
       align-items: stretch;
       margin-top: 18px;
     }
@@ -885,8 +892,8 @@
     .empresa-buzon-list,
     .empresa-chat-list {
       display: grid;
-      gap: 8px;
-      max-height: 420px;
+      gap: 6px;
+      max-height: 300px;
       overflow: auto;
       padding-right: 3px;
     }
@@ -986,8 +993,13 @@
 
     .empresa-buzon-form-row {
       display: grid;
-      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      grid-template-columns: minmax(180px, 1fr) minmax(170px, .95fr) minmax(150px, .85fr);
       gap: 8px;
+      align-items: end;
+    }
+
+    .empresa-buzon-form-row + .empresa-buzon-form-row {
+      grid-template-columns: minmax(170px, .7fr) minmax(0, 1.3fr);
     }
 
     .empresa-buzon-form textarea,
@@ -1021,13 +1033,13 @@
       grid-template-columns: minmax(0, 1fr);
       gap: 12px;
       align-items: stretch;
-      margin-top: 12px;
-      padding: 16px 18px;
+      margin-top: 6px;
+      padding: 8px 10px;
       border-radius: 8px;
       border: 1px solid var(--border);
       background: var(--card);
       color: var(--text);
-      box-shadow: 0 14px 30px var(--panel-card-shadow);
+      box-shadow: 0 8px 18px var(--panel-card-shadow);
       color-scheme: light;
     }
 
@@ -1042,21 +1054,21 @@
     }
 
     .empresa-email-kicker {
-      margin: 0 0 4px;
+      margin: 0 0 2px;
       color: var(--muted);
-      font-size: .74rem;
+      font-size: .68rem;
       font-weight: 900;
       text-transform: uppercase;
     }
 
     .empresa-email-title {
       margin: 0;
-      font-size: 1.12rem;
-      line-height: 1.25;
+      font-size: .92rem;
+      line-height: 1.15;
     }
 
     .empresa-email-meta {
-      margin: 5px 0 0;
+      margin: 2px 0 0;
       color: var(--muted);
       font-size: .84rem;
     }
@@ -1085,7 +1097,7 @@
 
     .empresa-email-diagnostic strong {
       display: block;
-      margin-top: 4px;
+      margin-top: 2px;
       color: var(--text);
       font-size: .9rem;
       line-height: 1.25;
@@ -1126,9 +1138,9 @@
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      gap: 8px;
-      min-height: 38px;
-      padding: 9px 14px;
+      gap: 6px;
+      min-height: 30px;
+      padding: 6px 10px;
       border-radius: 8px;
       border: 1px solid color-mix(in srgb, var(--accent, #2563eb) 48%, var(--border));
       background: color-mix(in srgb, var(--accent, #2563eb) 18%, var(--surface) 82%);
@@ -1160,7 +1172,7 @@
     .empresa-email-embed {
       position: relative;
       overflow: hidden;
-      min-height: 96px;
+      min-height: 70px;
       border-radius: 8px;
       border: 1px solid var(--border);
       background: color-mix(in srgb, var(--surface) 88%, var(--bg) 12%);
@@ -1179,8 +1191,8 @@
       display: flex;
       align-items: center;
       gap: 10px;
-      min-height: 96px;
-      padding: 16px;
+      min-height: 70px;
+      padding: 10px;
       color: var(--muted);
       font-size: .86rem;
       line-height: 1.4;
@@ -1194,7 +1206,7 @@
     .empresa-email-frame {
       display: block;
       width: 100%;
-      height: 520px;
+      height: 280px;
       border: 0;
       background: #f8fafc;
     }
@@ -1288,6 +1300,7 @@
       border-radius: 8px;
       background: var(--surface);
       color: var(--text);
+      font-size: .78rem;
       box-shadow: 0 24px 70px var(--panel-shadow);
     }
 
@@ -1316,7 +1329,7 @@
     .empresa-guided-status {
       margin: 4px 0 0;
       color: var(--muted);
-      font-size: .9rem;
+      font-size: .78rem;
       line-height: 1.35;
     }
 
@@ -1343,7 +1356,7 @@
 
     .empresa-guided-prompt {
       color: var(--muted);
-      font-size: .84rem;
+      font-size: .72rem;
       line-height: 1.32;
     }
 
@@ -1937,7 +1950,7 @@
       </div>
     </section>
     <div class="empresa-home-top-cards">
-    <section class="empresa-favorites-panel" aria-labelledby="empresaFavoritesTitle">
+    <section id="empresaFavoritesPanel" class="empresa-favorites-panel" aria-labelledby="empresaFavoritesTitle">
       <div class="empresa-favorites-head">
         <div class="empresa-favorites-heading">
           <p class="empresa-favorites-kicker">Accesos r&aacute;pidos</p>
@@ -1979,7 +1992,7 @@
           <h2 id="empresaNoticiasTitle" class="empresa-favorites-title">Ultima noticia</h2>
         </div>
       </div>
-      <a id="empresaNoticiasLink" class="empresa-news-link" href="/noticias.html" target="_blank" rel="noopener">
+      <a id="empresaNoticiasLink" class="empresa-news-link" href="/administrar_empresa/noticias.html">
         <span id="empresaNoticiasMeta" class="empresa-news-meta"></span>
         <strong id="empresaNoticiasHeadline" class="empresa-news-title">Cargando noticia...</strong>
         <p id="empresaNoticiasSummary" class="empresa-news-summary"></p>
@@ -2079,6 +2092,7 @@
       var maintenanceNoticeMetaEl = document.getElementById("maintenanceNoticeMeta");
       var favoritesListEl = document.getElementById("empresaFavoritesList");
       var favoritesCountEl = document.getElementById("empresaFavoritesCount");
+      var empresaFavoritesPanelEl = document.getElementById("empresaFavoritesPanel");
       var empresaNoticiasCardEl = document.getElementById("empresaNoticiasCard");
       var empresaNoticiasLinkEl = document.getElementById("empresaNoticiasLink");
       var empresaNoticiasMetaEl = document.getElementById("empresaNoticiasMeta");
@@ -2131,6 +2145,8 @@
       var empresaBuzonRecordingChunks = [];
       var empresaSelectedTask = null;
       var empresaPanelConfig = {
+        favoritos_enabled: true,
+        email_enabled: true,
         noticias_enabled: true,
         buzon_enabled: true,
         chat_enabled: true
@@ -2234,6 +2250,15 @@
         if (empresaEmailConfigBtnEl) empresaEmailConfigBtnEl.href = "/administrar_empresa/configuracion/email_corporativo.html?empresa_id=" + encodeURIComponent(String(empresaId));
       }
 
+      function updateEmpresaNoticiasLink() {
+        if (!empresaNoticiasLinkEl) return;
+        var url = "/administrar_empresa/noticias.html";
+        if (empresaId) url += "?empresa_id=" + encodeURIComponent(String(empresaId));
+        empresaNoticiasLinkEl.href = url;
+        empresaNoticiasLinkEl.removeAttribute("target");
+        empresaNoticiasLinkEl.removeAttribute("rel");
+      }
+
       function renderEmpresaEmailPanel(data) {
         if (!empresaEmailPanelEl) return;
         data = data || {};
@@ -2250,11 +2275,16 @@
           empresaEmailMetaEl.textContent = email ? email : (enabled ? "Correo corporativo disponible para configurar." : "Correo corporativo global desactivado.");
         }
         if (empresaEmailOpenBtnEl) empresaEmailOpenBtnEl.classList.toggle("is-disabled", !enabled || !email);
-        setEmpresaEmailAlert(unread && unread.message ? unread.message : "", unread && unread.ok === false);
+        if (unread && unread.ok === false) {
+          setEmpresaEmailAlert("", false);
+          if (empresaEmailStatusEl && enabled && email) empresaEmailStatusEl.textContent = "Activo";
+        } else {
+          setEmpresaEmailAlert(unread && unread.message ? unread.message : "", false);
+        }
       }
 
       function loadEmpresaEmailPanel() {
-        if (!empresaId || !empresaEmailPanelEl) return Promise.resolve();
+        if (!empresaId || !empresaEmailPanelEl || !empresaPanelConfig.email_enabled) return Promise.resolve();
         updateEmpresaEmailLinks();
         return fetchJSON(emailCorporativoPanelURL())
           .then(renderEmpresaEmailPanel)
@@ -2268,6 +2298,8 @@
       function normalizePanelConfig(data) {
         data = data || {};
         return {
+          favoritos_enabled: data.favoritos_enabled !== false,
+          email_enabled: data.email_enabled !== false,
           noticias_enabled: data.noticias_enabled !== false,
           buzon_enabled: data.buzon_enabled !== false,
           chat_enabled: data.chat_enabled === true
@@ -2276,6 +2308,8 @@
 
       function applyPanelConfig(config) {
         empresaPanelConfig = normalizePanelConfig(config);
+        if (empresaFavoritesPanelEl) empresaFavoritesPanelEl.hidden = !empresaPanelConfig.favoritos_enabled;
+        if (empresaEmailPanelEl) empresaEmailPanelEl.hidden = !empresaPanelConfig.email_enabled;
         if (empresaNoticiasCardEl && !empresaPanelConfig.noticias_enabled) {
           empresaNoticiasCardEl.hidden = true;
         }
@@ -2712,7 +2746,7 @@
               empresaNoticiasMetaEl.textContent = meta.join(" / ");
             }
             if (empresaNoticiasLinkEl) {
-              empresaNoticiasLinkEl.href = "/noticias.html";
+              updateEmpresaNoticiasLink();
             }
             empresaNoticiasCardEl.hidden = false;
           })
@@ -3850,8 +3884,8 @@
         setupWeatherControls();
         setupEmpresaBuzonControls();
         loadMaintenanceNotice();
-        loadEmpresaEmailPanel();
         loadPanelConfig().then(function () {
+          if (empresaPanelConfig.email_enabled) loadEmpresaEmailPanel();
           if (empresaPanelConfig.buzon_enabled) loadEmpresaBuzonUsuarios();
           if (empresaPanelConfig.buzon_enabled || empresaPanelConfig.chat_enabled) {
             loadEmpresaBuzon();

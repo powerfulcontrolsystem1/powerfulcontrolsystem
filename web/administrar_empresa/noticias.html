@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Noticias del sistema</title>
+  <link rel="stylesheet" href="/estilos.css">
+  <script src="/menu.js"></script>
+  <style>
+    .empresa-news-private{min-height:100vh;padding:14px;background:linear-gradient(180deg,color-mix(in srgb,var(--bg) 92%,#0f766e 8%),var(--bg));color:var(--text)}
+    .empresa-news-private-shell{width:min(100%,1060px);margin:0 auto;display:grid;gap:12px}
+    .empresa-news-private-head{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;padding:14px;border:1px solid color-mix(in srgb,#0f766e 32%,var(--border));background:linear-gradient(135deg,color-mix(in srgb,#facc15 16%,var(--card) 84%),color-mix(in srgb,#38bdf8 12%,var(--card) 88%))}
+    .empresa-news-private-head h1{margin:0;color:#0f3f3a;font-size:1.32rem;line-height:1.1}
+    .empresa-news-private-head p{margin:4px 0 0;color:#1e293b;font-weight:750}
+    .empresa-news-private-list{display:grid;gap:10px}
+    .empresa-news-private-post{display:grid;gap:9px;padding:14px;border:1px solid var(--border);background:var(--card);color:var(--text)}
+    .empresa-news-private-post h2{margin:0;color:color-mix(in srgb,#0f766e 78%,var(--text) 22%);font-size:1.08rem;line-height:1.18}
+    .empresa-news-private-meta{display:flex;gap:8px;flex-wrap:wrap;color:var(--muted);font-size:.76rem;font-weight:900;text-transform:uppercase}
+    .empresa-news-private-summary{margin:0;color:var(--text);font-weight:760;line-height:1.45}
+    .empresa-news-private-content{margin:0;color:var(--muted);line-height:1.55;white-space:pre-line}
+    .empresa-news-private-empty{padding:14px;border:1px dashed var(--border);background:var(--card);color:var(--muted)}
+    .empresa-news-private-post img{width:100%;max-height:260px;object-fit:contain;border:1px solid var(--border);background:var(--surface)}
+    @media(max-width:640px){.empresa-news-private{padding:8px}.empresa-news-private-head{display:grid}.empresa-news-private-head h1{font-size:1.08rem}}
+  </style>
+</head>
+<body class="admin-empresa-shell">
+  <main class="empresa-news-private">
+    <div class="empresa-news-private-shell">
+      <header class="empresa-news-private-head">
+        <div>
+          <h1>Noticias del sistema</h1>
+          <p>Comunicados privados visibles para las empresas registradas.</p>
+        </div>
+        <a class="btn secondary" href="/administrar_empresa/panel.html">Volver al panel</a>
+      </header>
+      <section id="newsList" class="empresa-news-private-list" aria-live="polite">
+        <p class="empresa-news-private-empty">Cargando noticias...</p>
+      </section>
+    </div>
+  </main>
+  <script>
+    (function(){
+      var list = document.getElementById("newsList");
+      function esc(v){return String(v == null ? "" : v).replace(/[&<>"']/g,function(ch){return({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"})[ch];});}
+      function text(v){return String(v == null ? "" : v).trim();}
+      function render(data){
+        var cfg = data && data.config ? data.config : {};
+        var items = Array.isArray(cfg.noticias) ? cfg.noticias.filter(function(item){ return item && item.activa !== false; }) : [];
+        if(!items.length){ list.innerHTML = '<p class="empresa-news-private-empty">No hay noticias publicadas en este momento.</p>'; return; }
+        list.innerHTML = items.map(function(item){
+          var meta = [];
+          if(text(item.categoria)) meta.push(text(item.categoria));
+          if(text(item.fecha)) meta.push(text(item.fecha));
+          var image = text(item.imagen_url || item.imagen);
+          return '<article class="empresa-news-private-post">' +
+            (meta.length ? '<div class="empresa-news-private-meta">' + meta.map(esc).join(' / ') + '</div>' : '') +
+            '<h2>' + esc(text(item.titulo) || 'Noticia del sistema') + '</h2>' +
+            (image ? '<img src="' + esc(image) + '" alt="">' : '') +
+            (text(item.resumen) ? '<p class="empresa-news-private-summary">' + esc(item.resumen) + '</p>' : '') +
+            (text(item.contenido) ? '<p class="empresa-news-private-content">' + esc(item.contenido) + '</p>' : '') +
+          '</article>';
+        }).join('');
+      }
+      fetch('/api/public/noticias',{credentials:'same-origin'})
+        .then(function(res){ if(!res.ok) throw new Error('HTTP '+res.status); return res.json(); })
+        .then(render)
+        .catch(function(){ list.innerHTML = '<p class="empresa-news-private-empty">No se pudieron cargar las noticias.</p>'; });
+    })();
+  </script>
+</body>
+</html>

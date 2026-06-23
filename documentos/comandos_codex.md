@@ -116,6 +116,38 @@ Por seguridad, el modo `-Restore` solo sube y prepara el paquete. Ejecutar la
 restauracion remota destructiva requiere agregar `-ExecuteRemoteRestore` despues
 de validar que el VPS destino es el correcto.
 
+## Consola de recuperacion
+
+Interfaz local con botones para operaciones de recuperacion y publicacion:
+
+```powershell
+.\scripts\consola_de_recuperacion.ps1
+```
+
+La ventana permite ejecutar `crear_backup_vps`, preparar restauracion de un
+backup en un VPS nuevo, `sync_to_vps`, `actualizar_repositorio` y `rs`. Cada
+ejecucion escribe log en `scripts\logs\consola_de_recuperacion_*.log`.
+
+## Logo de correos en Gmail
+
+Los correos HTML de `@powerfulcontrolsystem.com` incrustan el logo corporativo,
+pero el avatar circular que muestra Gmail en celular no se toma del HTML del
+mensaje. Para que Gmail reemplace la letra por el logo del dominio se debe
+publicar BIMI en DNS, con DMARC alineado. Activo publico preparado:
+
+```text
+https://powerfulcontrolsystem.com/img/bimi-pcs.svg
+```
+
+Registro DNS esperado cuando el dominio ya tenga DMARC en enforcement:
+
+```text
+default._bimi.powerfulcontrolsystem.com TXT "v=BIMI1; l=https://powerfulcontrolsystem.com/img/bimi-pcs.svg; a="
+```
+
+Si se adquiere certificado VMC/CMC, completar `a=` con la URL publica del
+certificado. Sin BIMI/DMARC en DNS, Gmail puede seguir mostrando una inicial.
+
 
 ## sync_to_vps
 

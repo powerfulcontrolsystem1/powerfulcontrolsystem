@@ -11,14 +11,18 @@ import (
 )
 
 const (
-	panelEmpresaNoticiasEnabledKey = "panel_empresa.noticias_enabled"
-	panelEmpresaBuzonEnabledKey    = "panel_empresa.buzon_enabled"
-	panelEmpresaChatEnabledKey     = "panel_empresa.chat_enabled"
+	panelEmpresaFavoritosEnabledKey = "panel_empresa.favoritos_enabled"
+	panelEmpresaEmailEnabledKey     = "panel_empresa.email_enabled"
+	panelEmpresaNoticiasEnabledKey  = "panel_empresa.noticias_enabled"
+	panelEmpresaBuzonEnabledKey     = "panel_empresa.buzon_enabled"
+	panelEmpresaChatEnabledKey      = "panel_empresa.chat_enabled"
 )
 
 type empresaPanelConfigResponse struct {
 	OK               bool  `json:"ok"`
 	EmpresaID        int64 `json:"empresa_id"`
+	FavoritosEnabled bool  `json:"favoritos_enabled"`
+	EmailEnabled     bool  `json:"email_enabled"`
 	NoticiasEnabled  bool  `json:"noticias_enabled"`
 	BuzonEnabled     bool  `json:"buzon_enabled"`
 	ChatEnabled      bool  `json:"chat_enabled"`
@@ -27,10 +31,12 @@ type empresaPanelConfigResponse struct {
 }
 
 type empresaPanelConfigPayload struct {
-	EmpresaID       int64 `json:"empresa_id"`
-	NoticiasEnabled *bool `json:"noticias_enabled"`
-	BuzonEnabled    *bool `json:"buzon_enabled"`
-	ChatEnabled     *bool `json:"chat_enabled"`
+	EmpresaID        int64 `json:"empresa_id"`
+	FavoritosEnabled *bool `json:"favoritos_enabled"`
+	EmailEnabled     *bool `json:"email_enabled"`
+	NoticiasEnabled  *bool `json:"noticias_enabled"`
+	BuzonEnabled     *bool `json:"buzon_enabled"`
+	ChatEnabled      *bool `json:"chat_enabled"`
 }
 
 func parsePanelEmpresaBool(raw string, fallback bool) bool {
@@ -100,6 +106,8 @@ func empresaPanelConfigResponseFromDB(dbEmp *sql.DB, empresaID int64) empresaPan
 	return empresaPanelConfigResponse{
 		OK:               true,
 		EmpresaID:        empresaID,
+		FavoritosEnabled: getEmpresaPanelPref(dbEmp, empresaID, panelEmpresaFavoritosEnabledKey, true),
+		EmailEnabled:     getEmpresaPanelPref(dbEmp, empresaID, panelEmpresaEmailEnabledKey, true),
 		NoticiasEnabled:  getEmpresaPanelPref(dbEmp, empresaID, panelEmpresaNoticiasEnabledKey, true),
 		BuzonEnabled:     getEmpresaPanelPref(dbEmp, empresaID, panelEmpresaBuzonEnabledKey, true),
 		ChatEnabled:      getEmpresaPanelPref(dbEmp, empresaID, panelEmpresaChatEnabledKey, false),
@@ -132,6 +140,18 @@ func EmpresaPanelConfiguracionHandler(dbEmp *sql.DB) http.HandlerFunc {
 				return
 			}
 			usuario := adminEmailFromRequest(r)
+			if payload.FavoritosEnabled != nil {
+				if err := setEmpresaPanelPref(dbEmp, empresaID, panelEmpresaFavoritosEnabledKey, *payload.FavoritosEnabled, usuario); err != nil {
+					http.Error(w, "no se pudo guardar favoritos: "+err.Error(), http.StatusInternalServerError)
+					return
+				}
+			}
+			if payload.EmailEnabled != nil {
+				if err := setEmpresaPanelPref(dbEmp, empresaID, panelEmpresaEmailEnabledKey, *payload.EmailEnabled, usuario); err != nil {
+					http.Error(w, "no se pudo guardar email corporativo: "+err.Error(), http.StatusInternalServerError)
+					return
+				}
+			}
 			if payload.NoticiasEnabled != nil {
 				if err := setEmpresaPanelPref(dbEmp, empresaID, panelEmpresaNoticiasEnabledKey, *payload.NoticiasEnabled, usuario); err != nil {
 					http.Error(w, "no se pudo guardar noticias: "+err.Error(), http.StatusInternalServerError)

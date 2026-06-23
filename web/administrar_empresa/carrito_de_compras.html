@@ -737,6 +737,7 @@
           <div>
             <h3 class="section-heading">Detalle del pago</h3>
           </div>
+          <div id="stationPaymentAmountsMsg" class="carrito-payment-amounts-msg form-help">Haz clic en un medio para cargar saldo o edita valores para pago combinado.</div>
         </div>
         <div id="stationPaymentAmountsRow" class="carrito-payment-compact-table" role="table" aria-label="Detalle del pago">
           <div class="carrito-payment-compact-row" role="row">
@@ -771,11 +772,10 @@
             <label class="carrito-payment-compact-label" for="stationCashReceivedDisplay" role="rowheader">Efectivo recibido</label>
             <input id="stationCashReceivedDisplay" type="text" inputmode="decimal" class="form-input carrito-payment-compact-input" value="" autocomplete="off" placeholder="COP 0">
           </div>
-          <div class="carrito-payment-compact-summary" role="row">
+          <div class="carrito-payment-compact-summary carrito-payment-cash-change-row" role="row">
             <div id="stationCashChangeHint" class="cash-change-hint">Vuelto: COP 0</div>
           </div>
         </div>
-        <div id="stationPaymentAmountsMsg" class="carrito-payment-amounts-msg form-help mt-8">Haz clic en un medio de pago para cargar el total. Puedes editar los valores para pago combinado.</div>
       </section>
 
       <section id="stationPaymentQrCard" class="card empresa-section carrito-payment-qr-card is-hidden mt-12" hidden>
@@ -10400,7 +10400,7 @@
         row += '<td class="actions">' +
             (readOnlyMode
               ? '<span class="form-help">Solo lectura</span>'
-              : '<button data-id="' + item.id + '" class="returnItem btn secondary">Devolver producto</button>') +
+              : '<button data-id="' + item.id + '" class="returnItem btn secondary">Devolver</button>') +
           '</td>';
         tr.innerHTML = row;
         tbody.appendChild(tr);
@@ -10502,7 +10502,7 @@
         setTimeout(function() {
           if (!triggerButton || triggerButton.getAttribute('data-confirming') !== '1') return;
           triggerButton.removeAttribute('data-confirming');
-          triggerButton.textContent = 'Devolver producto';
+          triggerButton.textContent = 'Devolver';
         }, 7000);
         return;
       }
