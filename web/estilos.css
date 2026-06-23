@@ -21402,66 +21402,6 @@ body.carrito-flat-page .cart-item-qty-input{
   border-radius:0 !important;
 }
 
-body.carrito-flat-page #stationPaymentAmountsCard .carrito-payment-amounts-header{
-  display:grid !important;
-  grid-template-columns:auto minmax(180px,1fr) !important;
-  align-items:center !important;
-  gap:10px !important;
-  padding:5px 7px !important;
-}
-
-body.carrito-flat-page #stationPaymentAmountsCard .carrito-payment-amounts-header .section-heading{
-  font-size:.94rem !important;
-  font-weight:950 !important;
-  white-space:nowrap !important;
-}
-
-body.carrito-flat-page #stationPaymentAmountsMsg{
-  margin:0 !important;
-  color:var(--text,#1f2937) !important;
-  font-size:.88rem !important;
-  font-weight:850 !important;
-  line-height:1.18 !important;
-  text-align:right !important;
-}
-
-body.carrito-flat-page .carrito-payment-compact-table{
-  grid-template-columns:repeat(auto-fit,minmax(132px,1fr)) !important;
-}
-
-body.carrito-flat-page .carrito-payment-cash-change-row{
-  grid-column:auto !important;
-}
-
-body.carrito-flat-page .carrito-payment-compact-row:has(#stationCashReceivedDisplay),
-body.carrito-flat-page .carrito-payment-cash-change-row{
-  grid-column:1 / span 1 !important;
-}
-
-body.carrito-flat-page .carrito-payment-compact-row label[for="stationCashReceivedDisplay"]{
-  min-height:34px !important;
-  font-size:1rem !important;
-  font-weight:950 !important;
-}
-
-body.carrito-flat-page #stationCashReceivedDisplay{
-  min-height:40px !important;
-  font-size:1.06rem !important;
-  font-weight:950 !important;
-}
-
-body.carrito-flat-page .cash-change-hint{
-  display:flex !important;
-  align-items:center !important;
-  min-height:34px !important;
-  padding:6px 8px !important;
-  border:1px solid var(--border,#d6dee8) !important;
-  background:var(--carrito-label-shade, color-mix(in srgb,var(--surface-soft,#f6f8fb) 84%,#fff 16%)) !important;
-  color:var(--text,#1f2937) !important;
-  font-size:.95rem !important;
-  font-weight:900 !important;
-}
-
 body.carrito-flat-page .carrito-catalog-card{
   padding-bottom:2px !important;
 }
