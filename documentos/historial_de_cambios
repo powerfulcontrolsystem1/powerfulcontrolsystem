@@ -35957,3 +35957,22 @@ Archivos modificados:
 - `web/administrar_empresa/corte_de_caja.html`: compacta filtros arriba, deja acciones en fila, muestra el reporte como papel blanco con texto negro, agrega tutorial de turno y check para imprimir sin cerrar sesion.
 - `web/administrar_empresa/panel.html` y `web/estilos.css`: la tarjeta de noticias vuelve al tema claro/oscuro configurado y el carrito mantiene botones cuadrados con color diferenciado y vuelto alineado a la derecha.
 - QA: `go test ./db ./handlers` desde `backend`.
+
+2026-06-24: rs: actualizar repositorio y sincronizar VPS
+PushStatus: OK
+Archivos modificados:
+- CHANGELOG.md
+- backend/db/carritos_compras.go
+- backend/handlers/carritos_compras.go
+- backend/main.go
+- documentos/api/openapi.generated.yaml
+- documentos/descripcion_de_archivos
+- documentos/descripcion_de_modulos
+- documentos/historial_de_cambios
+- web/administrar_empresa.html
+- web/administrar_empresa/carrito_de_compras.html
+- web/administrar_empresa/carrito_historial_productos.html
+- web/administrar_empresa/corte_de_caja.html
+- web/administrar_empresa/panel.html
+- web/estilos.css
+- web/js/radio_player.js
