@@ -15609,3 +15609,21 @@ Archivos modificados:
 Archivos modificados:
 - web/administrar_empresa/carrito_de_compras.html
 - web/estilos.css
+
+2026-06-23 19:47:34 - Mensaje: rs: actualizar repositorio y sincronizar VPS; Commit: b50cb8b3; PushStatus: OK
+Archivos modificados:
+- CHANGELOG.md
+- backend/handlers/pagina_principal_handlers.go
+- backend/main.go
+- backend/utils/auth_middleware_test.go
+- backend/utils/utils.go
+- documentos/CHANGELOG.md
+- documentos/api/openapi.generated.yaml
+- documentos/descripcion_de_archivos
+- web/administrar_empresa.html
+- web/administrar_empresa/carrito_de_compras.html
+- web/administrar_empresa/noticias.html
+- web/administrar_empresa/ventas.html
+- web/estilos.css
+- web/img/Portada pagina de noticias.png
+- web/menu.js
