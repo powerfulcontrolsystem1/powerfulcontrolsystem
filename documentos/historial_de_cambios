@@ -35989,3 +35989,23 @@ Archivos modificados:
 - Cuando la opcion esta activa, el carrito muestra un modal antes de cobrar para elegir `Venta sola` o `Venta con factura electronica`; cancelar no registra el pago.
 - El backend de `pagar_estacion` recibe `modo_documento_venta` y fuerza la factura electronica solo en esa transaccion, o la omite cuando se elige venta sola. Si no llega eleccion, mantiene el comportamiento automatico existente de la empresa y su frecuencia.
 - Validaciones ejecutadas: `go test ./handlers -run "^$" -count=1`, parseo de scripts embebidos de carrito/configuracion/panel/productos con Node y `git diff --check`.
+
+2026-06-24: rs: actualizar repositorio y sincronizar VPS
+PushStatus: OK
+Archivos modificados:
+- CHANGELOG.md
+- backend/handlers/carritos_compras.go
+- backend/handlers/empresa_buzon.go
+- backend/handlers/offline_ventas.go
+- documentos/descripcion_de_archivos
+- documentos/historial_de_cambios
+- documentos/mapa_modulos.md
+- web/administrar_empresa/administrar_productos.html
+- web/administrar_empresa/carrito_de_compras.html
+- web/administrar_empresa/configuracion_carrito_de_compra_empresa.html
+- web/administrar_empresa/corte_de_caja.html
+- web/administrar_empresa/panel.html
+- web/img/red-social-empresarial-portada.png
+- web/js/ai_chat_drawer.js
+- web/js/radio_player.js
+- web/red_social_comercial.html

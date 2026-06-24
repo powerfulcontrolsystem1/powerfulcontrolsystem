@@ -15659,3 +15659,22 @@ Archivos modificados:
 - web/administrar_empresa/panel.html
 - web/estilos.css
 - web/js/radio_player.js
+
+2026-06-24 18:20:52 - Mensaje: rs: actualizar repositorio y sincronizar VPS; Commit: aa0883e3; PushStatus: OK
+Archivos modificados:
+- CHANGELOG.md
+- backend/handlers/carritos_compras.go
+- backend/handlers/empresa_buzon.go
+- backend/handlers/offline_ventas.go
+- documentos/descripcion_de_archivos
+- documentos/historial_de_cambios
+- documentos/mapa_modulos.md
+- web/administrar_empresa/administrar_productos.html
+- web/administrar_empresa/carrito_de_compras.html
+- web/administrar_empresa/configuracion_carrito_de_compra_empresa.html
+- web/administrar_empresa/corte_de_caja.html
+- web/administrar_empresa/panel.html
+- web/img/red-social-empresarial-portada.png
+- web/js/ai_chat_drawer.js
+- web/js/radio_player.js
+- web/red_social_comercial.html
