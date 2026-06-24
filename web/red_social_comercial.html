@@ -8,15 +8,15 @@
   <script src="/menu.js"></script>
   <style>
     body{margin:0;color:var(--text);min-height:100vh;background:linear-gradient(180deg,var(--bg-alt),var(--bg));font-family:"Segoe UI Variable","Segoe UI",Tahoma,sans-serif}
-    .social-shell{width:100%;max-width:1180px;margin:0 auto;padding:18px 14px 64px;box-sizing:border-box}
+    .social-shell{width:100%;max-width:1360px;margin:0 auto;padding:18px 14px 64px;box-sizing:border-box}
     .social-topbar{
       position:sticky;top:0;z-index:20;
-      width:min(100%,720px);
+      width:100%;
       box-sizing:border-box;
-      padding:12px 14px;
+      padding:14px 16px;
       border:1px solid var(--border);
       border-radius:8px;
-      background:color-mix(in srgb,var(--surface) 94%,var(--accent) 6%);
+      background:linear-gradient(135deg,color-mix(in srgb,var(--surface) 88%,var(--accent) 12%),color-mix(in srgb,var(--surface-soft) 90%,var(--accent-2) 10%));
       box-shadow:0 12px 28px color-mix(in srgb,#020617 16%,transparent);
       margin: 8px auto 16px;
       display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;
@@ -24,8 +24,13 @@
     .social-topbar h1{font-size:clamp(1.14rem,2.1vw,1.45rem);margin:0;font-weight:900;letter-spacing:0;color:var(--text)}
     .social-topbar p{margin:0;color:var(--muted);max-width:48rem;line-height:1.35;font-size:0.92rem}
     .social-session-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+    .social-icon-btn{width:42px;height:42px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text);display:grid;place-items:center;font-weight:950;text-decoration:none;cursor:pointer}
+    .social-notification{position:relative}
+    .social-notification-badge{position:absolute;right:-5px;top:-5px;min-width:18px;height:18px;border-radius:999px;background:var(--danger);color:#fff;font-size:.72rem;font-weight:900;display:grid;place-items:center;padding:0 4px}
+    .social-follow-summary{width:100%;display:none;gap:8px;padding:10px 12px;border:1px solid var(--border);background:color-mix(in srgb,var(--surface) 86%,var(--accent) 14%);border-radius:8px;color:var(--text);font-weight:800}
+    .social-follow-summary.show{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap}
     .feed{display:flex;flex-direction:column;gap:14px;align-items:center;width:100%}
-    .post-card{width:min(100%,560px);background:var(--surface);border:1px solid var(--border);border-radius:8px;box-shadow:0 10px 24px color-mix(in srgb,#020617 14%,transparent);overflow:hidden;display:flex;flex-direction:column;box-sizing:border-box}
+    .post-card{width:min(100%,760px);background:var(--surface);border:1px solid var(--border);border-radius:8px;box-shadow:0 10px 24px color-mix(in srgb,#020617 14%,transparent);overflow:hidden;display:flex;flex-direction:column;box-sizing:border-box}
     .post-cover{height:220px;background:linear-gradient(135deg,color-mix(in srgb,var(--accent) 14%,var(--surface-soft)),color-mix(in srgb,var(--accent-2) 12%,var(--surface)));background-size:cover;background-position:center;display:grid;place-items:center;color:var(--muted);font-weight:800}
     .post-media{width:100%;height:auto;aspect-ratio:16/9;border:0;display:block;background:var(--surface-soft)}
     .post-body{padding:12px 14px 14px;display:flex;flex-direction:column;gap:9px;flex:1}
@@ -56,6 +61,7 @@
     .comment-form input{flex:1;min-width:180px}
     .comment-form textarea{flex:1;min-width:240px;min-height:42px;resize:vertical}
     .comment-form .btn-send{background:linear-gradient(180deg,var(--accent),var(--accent-2));color:var(--btn-primary-text);border:none;padding:10px 14px;border-radius:8px;font-weight:950;cursor:pointer}
+    @media(min-width:1180px){.post-card{width:min(100%,860px)}}
     @media(max-width:640px){.social-shell{padding:12px 10px 44px}.social-topbar{width:100%;position:static}.post-card,.empty-state,.load-more{width:100%}.post-cover{height:180px}.react-row{grid-template-columns:1fr}.comment-form textarea,.comment-form input{min-width:100%}}
   </style>
 </head>
@@ -67,8 +73,11 @@
         <p>Feed público de publicaciones empresariales. Baja para cargar más (estilo Facebook).</p>
       </div>
       <div class="social-session-actions" id="socialSessionActions">
+        <button class="social-icon-btn social-notification" id="socialNotificationsBtn" type="button" title="Notificaciones">N<span id="socialNotificationsBadge" class="social-notification-badge" hidden>0</span></button>
+        <a class="social-icon-btn" id="socialProfileIcon" href="/seleccionar_empresa.html" title="Mi perfil">P</a>
         <a class="btn secondary" id="socialSessionBtn" href="/login_usuario.html" style="text-decoration:none;">Iniciar sesión</a>
       </div>
+      <div id="socialFollowSummary" class="social-follow-summary"></div>
     </header>
     <div class="feed" id="feedContenedor">
       <div class="empty-state">Cargando publicaciones...</div>
@@ -142,6 +151,7 @@
     function syncSessionButton() {
       var btn = document.getElementById('socialSessionBtn');
       var actions = document.getElementById('socialSessionActions');
+      var profileIcon = document.getElementById('socialProfileIcon');
       if (!btn || !actions) return;
       var empresaId = pageEmpresaId || getStoredEmpresaId();
       var loggedIn = hasVisibleSessionCookie() || empresaId > 0;
@@ -154,6 +164,7 @@
       btn.href = empresaId > 0
         ? '/administrar_empresa.html?id=' + encodeURIComponent(String(empresaId)) + '&empresa_id=' + encodeURIComponent(String(empresaId))
         : '/seleccionar_empresa.html';
+      if (profileIcon) profileIcon.href = btn.href;
       if (empresaId > 0 && !document.getElementById('socialPublishBtn')) {
         var publish = document.createElement('a');
         publish.id = 'socialPublishBtn';
@@ -243,6 +254,7 @@
             <div class="post-actions">
               <span class="post-chip">Post empresarial</span>
               <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap; justify-content:flex-end;">
+                <button class="btn-profile" type="button" data-follow-company="${escapeHtml(p.empresa_id)}">Seguir</button>
                 ${profileUrl ? `<a class="btn-profile" href="${escapeHtml(profileUrl)}" target="_blank" rel="noopener">Ver perfil</a>` : ''}
                 <button class="btn-private" type="button" data-empresa-id="${escapeHtml(p.empresa_id)}" data-post-nombre="${escapeHtml(p.nombre||'')}">Mensaje privado</button>
                 <a href="https://api.whatsapp.com/send?text=${encodeURIComponent('Me interesa esta publicación: ' + (p.nombre || ''))}" target="_blank" rel="noopener" class="btn-contact">WhatsApp</a>
@@ -258,6 +270,51 @@
       opts.headers = opts.headers || {};
       opts.headers['X-Actor-Key'] = getActorKey();
       return fetch(url, opts);
+    }
+
+    async function refreshFollowSummary() {
+      try {
+        const res = await apiFetch('/api/public/publicaciones/seguimientos/resumen');
+        const data = await res.json();
+        if (!res.ok) throw new Error('No se pudo cargar seguimientos');
+        const items = Array.isArray(data.items) ? data.items : [];
+        const total = items.reduce((acc, item) => acc + Number(item.nuevas || 0), 0);
+        const badge = document.getElementById('socialNotificationsBadge');
+        const box = document.getElementById('socialFollowSummary');
+        if (badge) {
+          badge.hidden = total <= 0;
+          badge.textContent = String(total);
+        }
+        if (!box) return;
+        if (total > 0) {
+          const first = items.find(item => Number(item.nuevas || 0) > 0) || items[0];
+          box.classList.add('show');
+          box.innerHTML = '<span>Nuevas publicaciones de empresas que sigues: ' + escapeHtml(String(total)) + (first ? ' - ' + escapeHtml(first.empresa_nombre || ('Empresa #' + first.empresa_id)) : '') + '</span><button class="btn secondary small" type="button" id="markFollowSeenBtn">Marcar vistas</button>';
+          const btn = document.getElementById('markFollowSeenBtn');
+          if (btn && first && first.empresa_id) {
+            btn.onclick = async function () {
+              await apiFetch('/api/public/publicaciones/seguimientos/' + encodeURIComponent(first.empresa_id) + '/visto', { method: 'POST' });
+              refreshFollowSummary();
+            };
+          }
+        } else {
+          box.classList.remove('show');
+          box.innerHTML = '';
+        }
+      } catch (_) {}
+    }
+
+    async function toggleFollowCompany(empresaId, button) {
+      if (!empresaId) return;
+      const active = button && button.getAttribute('data-following') === '1';
+      const res = await apiFetch('/api/public/publicaciones/seguimientos/' + encodeURIComponent(empresaId) + '/seguir', { method: active ? 'DELETE' : 'POST' });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'No se pudo actualizar seguimiento');
+      if (button) {
+        button.setAttribute('data-following', data.seguido ? '1' : '0');
+        button.textContent = data.seguido ? 'Siguiendo' : 'Seguir';
+      }
+      refreshFollowSummary();
     }
 
     function renderComment(c) {
@@ -370,6 +427,19 @@
           });
         });
 
+        feed.querySelectorAll('button[data-follow-company]').forEach(btn => {
+          btn.addEventListener('click', async function(){
+            try {
+              btn.disabled = true;
+              await toggleFollowCompany(Number(btn.getAttribute('data-follow-company') || 0), btn);
+            } catch (e) {
+              alert(e.message || 'No se pudo seguir la empresa.');
+            } finally {
+              btn.disabled = false;
+            }
+          });
+        });
+
         feed.querySelectorAll('button.react-btn[data-react]').forEach(btn => {
           btn.addEventListener('click', async function(){
             try {
@@ -463,6 +533,7 @@
       }, { rootMargin: "900px 0px" });
       io.observe(sentinel);
       cargarPublico(true);
+      refreshFollowSummary();
     })();
   </script>
   <script src="/js/ai_chat_drawer.js"></script>

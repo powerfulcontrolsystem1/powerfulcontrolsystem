@@ -1,3 +1,10 @@
+## [2026-06-23] Ventas, noticias, emisora y red social comercial
+- [Ventas] `ventas.html` inicia con fecha desde/hasta del dia actual, ejecuta la busqueda al entrar y compacta filtros a todo el ancho.
+- [Noticias] Las noticias DIAN/facturacion electronica quedan asociadas a Colombia para no ocultarse por filtro de pais.
+- [Menu/IA] El menu flotante retira `Robot / IA`; `ai_chat_drawer.js` queda protegido para no crear doble instancia si una pagina lo carga mas de una vez.
+- [Radio] El cierre del reproductor compacto apaga la emisora y tambien oculta el icono flotante.
+- [Red social] La red social comercial agrega seguimiento por empresa, resumen de notificaciones de publicaciones nuevas y cabecera/feed mas anchos en PC.
+
 ## [2026-06-23] Noticias privadas, QR Bre-B y botones de archivo
 - [Noticias] `administrar_empresa/noticias.html` queda como vista privada dentro del panel empresarial; `/noticias.html` y `/api/public/noticias` dejan de ser rutas publicas sin sesion.
 - [Noticias] La pagina usa portada real de `web/img/Portada pagina de noticias.png`, filtra por pais detectado y no renderiza imagenes por noticia.

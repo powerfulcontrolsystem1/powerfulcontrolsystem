@@ -79,6 +79,16 @@ type PublicacionRedSocialReaccion struct {
 	Fecha         time.Time `json:"fecha"`
 }
 
+type RedSocialEmpresaSeguida struct {
+	EmpresaID              int    `json:"empresa_id"`
+	EmpresaNombre          string `json:"empresa_nombre,omitempty"`
+	Seguido                bool   `json:"seguido"`
+	UltimaPublicacionID    int    `json:"ultima_publicacion_id,omitempty"`
+	UltimaPublicacion      string `json:"ultima_publicacion,omitempty"`
+	UltimaPublicacionFecha string `json:"ultima_publicacion_fecha,omitempty"`
+	Nuevas                 int    `json:"nuevas"`
+}
+
 func EnsureEmpresaRedSocialInteraccionesSchema(db *sql.DB) error {
 	if err := EnsureEmpresaPublicacionesRedSocialSchema(db); err != nil {
 		return err
@@ -104,9 +114,20 @@ func EnsureEmpresaRedSocialInteraccionesSchema(db *sql.DB) error {
 		reaccion TEXT NOT NULL,
 		fecha DATETIME DEFAULT CURRENT_TIMESTAMP
 	);`
+	follows := `
+	CREATE TABLE IF NOT EXISTS empresa_publicaciones_red_social_seguidores (
+		id BIGSERIAL PRIMARY KEY,
+		empresa_id INTEGER NOT NULL,
+		actor_key TEXT NOT NULL,
+		fecha_creacion DATETIME DEFAULT CURRENT_TIMESTAMP,
+		ultima_vista_publicacion_id INTEGER DEFAULT 0,
+		estado TEXT DEFAULT 'activo'
+	);`
 	uniq := `CREATE UNIQUE INDEX IF NOT EXISTS ux_red_social_reacciones_unique ON empresa_publicaciones_red_social_reacciones(publicacion_id, actor_key);`
+	uniqFollow := `CREATE UNIQUE INDEX IF NOT EXISTS ux_red_social_seguidores_unique ON empresa_publicaciones_red_social_seguidores(empresa_id, actor_key);`
 	ixC := `CREATE INDEX IF NOT EXISTS ix_red_social_comentarios_post_fecha ON empresa_publicaciones_red_social_comentarios(publicacion_id, fecha_creacion DESC);`
 	ixR := `CREATE INDEX IF NOT EXISTS ix_red_social_reacciones_post_fecha ON empresa_publicaciones_red_social_reacciones(publicacion_id, fecha DESC);`
+	ixF := `CREATE INDEX IF NOT EXISTS ix_red_social_seguidores_actor ON empresa_publicaciones_red_social_seguidores(actor_key, estado);`
 
 	if shouldUsePostgresCompat(db) {
 		comments = `
@@ -129,14 +150,26 @@ func EnsureEmpresaRedSocialInteraccionesSchema(db *sql.DB) error {
 			reaccion TEXT NOT NULL,
 			fecha TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 		);`
+		follows = `
+		CREATE TABLE IF NOT EXISTS empresa_publicaciones_red_social_seguidores (
+			id BIGSERIAL PRIMARY KEY,
+			empresa_id BIGINT NOT NULL,
+			actor_key TEXT NOT NULL,
+			fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+			ultima_vista_publicacion_id BIGINT DEFAULT 0,
+			estado TEXT DEFAULT 'activo'
+		);`
 	}
 
 	stmts := []string{
 		comments,
 		reactions,
+		follows,
 		uniq,
+		uniqFollow,
 		ixC,
 		ixR,
+		ixF,
 	}
 	for _, stmt := range stmts {
 		if _, err := execSQLCompat(db, stmt); err != nil {
@@ -148,6 +181,9 @@ func EnsureEmpresaRedSocialInteraccionesSchema(db *sql.DB) error {
 	_ = ensureColumnIfMissing(db, "empresa_publicaciones_red_social_comentarios", "nombre", "TEXT")
 	_ = ensureColumnIfMissing(db, "empresa_publicaciones_red_social_reacciones", "actor_key", "TEXT")
 	_ = ensureColumnIfMissing(db, "empresa_publicaciones_red_social_reacciones", "reaccion", "TEXT")
+	_ = ensureColumnIfMissing(db, "empresa_publicaciones_red_social_seguidores", "actor_key", "TEXT")
+	_ = ensureColumnIfMissing(db, "empresa_publicaciones_red_social_seguidores", "ultima_vista_publicacion_id", "INTEGER DEFAULT 0")
+	_ = ensureColumnIfMissing(db, "empresa_publicaciones_red_social_seguidores", "estado", "TEXT DEFAULT 'activo'")
 	return nil
 }
 
@@ -484,4 +520,118 @@ func GetUserReaction(db *sql.DB, publicacionID int, actorKey string) (string, er
 		return "", err
 	}
 	return normalizeReaccion(reaccion), nil
+}
+
+func SetRedSocialEmpresaSeguida(db *sql.DB, empresaID int, actorKey string, seguir bool) error {
+	if err := EnsureEmpresaRedSocialInteraccionesSchema(db); err != nil {
+		return err
+	}
+	if empresaID <= 0 {
+		return fmt.Errorf("empresa_id es obligatorio")
+	}
+	actorKey = normalizeActorKey(actorKey)
+	if actorKey == "" {
+		return fmt.Errorf("actor_key es obligatorio")
+	}
+	if shouldUsePostgresCompat(db) {
+		_, err := execSQLCompat(db, `INSERT INTO empresa_publicaciones_red_social_seguidores
+			(empresa_id, actor_key, estado)
+			VALUES ($1,$2,$3)
+			ON CONFLICT (empresa_id, actor_key)
+			DO UPDATE SET estado = EXCLUDED.estado`,
+			empresaID, actorKey, map[bool]string{true: "activo", false: "inactivo"}[seguir])
+		return err
+	}
+	_, err := execSQLCompat(db, `INSERT INTO empresa_publicaciones_red_social_seguidores
+		(empresa_id, actor_key, estado)
+		VALUES (?,?,?)
+		ON CONFLICT(empresa_id, actor_key)
+		DO UPDATE SET estado=excluded.estado`,
+		empresaID, actorKey, map[bool]string{true: "activo", false: "inactivo"}[seguir])
+	return err
+}
+
+func IsRedSocialEmpresaSeguida(db *sql.DB, empresaID int, actorKey string) (bool, error) {
+	if err := EnsureEmpresaRedSocialInteraccionesSchema(db); err != nil {
+		return false, err
+	}
+	actorKey = normalizeActorKey(actorKey)
+	if empresaID <= 0 || actorKey == "" {
+		return false, nil
+	}
+	var estado string
+	err := queryRowSQLCompat(db, `SELECT COALESCE(estado,'') FROM empresa_publicaciones_red_social_seguidores WHERE empresa_id=? AND actor_key=? LIMIT 1`, empresaID, actorKey).Scan(&estado)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return false, nil
+		}
+		return false, err
+	}
+	return strings.EqualFold(strings.TrimSpace(estado), "activo"), nil
+}
+
+func ListRedSocialSeguimientos(db *sql.DB, actorKey string) ([]RedSocialEmpresaSeguida, error) {
+	if err := EnsureEmpresaRedSocialInteraccionesSchema(db); err != nil {
+		return nil, err
+	}
+	actorKey = normalizeActorKey(actorKey)
+	if actorKey == "" {
+		return []RedSocialEmpresaSeguida{}, nil
+	}
+	rows, err := querySQLCompat(db, `SELECT
+		s.empresa_id,
+		COALESCE(e.nombre, ''),
+		COALESCE(s.ultima_vista_publicacion_id, 0),
+		COALESCE(lp.id, 0),
+		COALESCE(lp.nombre, ''),
+		COALESCE(CAST(lp.fecha_creacion AS TEXT), ''),
+		COALESCE((
+			SELECT COUNT(1)
+			FROM empresa_publicaciones_red_social p
+			WHERE p.empresa_id = s.empresa_id
+			  AND p.estado = 'activo'
+			  AND p.id > COALESCE(s.ultima_vista_publicacion_id, 0)
+		), 0)
+	FROM empresa_publicaciones_red_social_seguidores s
+	LEFT JOIN empresas e ON e.id = s.empresa_id OR COALESCE(e.empresa_id, 0) = s.empresa_id
+	LEFT JOIN empresa_publicaciones_red_social lp ON lp.id = (
+		SELECT p2.id
+		FROM empresa_publicaciones_red_social p2
+		WHERE p2.empresa_id = s.empresa_id AND p2.estado = 'activo'
+		ORDER BY p2.fecha_creacion DESC
+		LIMIT 1
+	)
+	WHERE s.actor_key = ? AND COALESCE(s.estado, 'activo') = 'activo'
+	ORDER BY lp.fecha_creacion DESC`, actorKey)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := []RedSocialEmpresaSeguida{}
+	for rows.Next() {
+		var item RedSocialEmpresaSeguida
+		var lastSeen int
+		if err := rows.Scan(&item.EmpresaID, &item.EmpresaNombre, &lastSeen, &item.UltimaPublicacionID, &item.UltimaPublicacion, &item.UltimaPublicacionFecha, &item.Nuevas); err != nil {
+			return nil, err
+		}
+		item.Seguido = true
+		out = append(out, item)
+	}
+	return out, nil
+}
+
+func MarkRedSocialSeguimientoVisto(db *sql.DB, empresaID int, actorKey string) error {
+	if err := EnsureEmpresaRedSocialInteraccionesSchema(db); err != nil {
+		return err
+	}
+	actorKey = normalizeActorKey(actorKey)
+	if empresaID <= 0 || actorKey == "" {
+		return nil
+	}
+	_, err := execSQLCompat(db, `UPDATE empresa_publicaciones_red_social_seguidores
+		SET ultima_vista_publicacion_id = COALESCE((
+			SELECT MAX(id) FROM empresa_publicaciones_red_social WHERE empresa_id = ? AND estado = 'activo'
+		), ultima_vista_publicacion_id)
+		WHERE empresa_id = ? AND actor_key = ?`, empresaID, empresaID, actorKey)
+	return err
 }

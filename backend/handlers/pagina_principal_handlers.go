@@ -376,7 +376,7 @@ func noticiasPortalDefaultConfig() noticiasPortalConfig {
 				ImagenURL:    "/img/shield-license-color.svg",
 				FuenteNombre: "DIAN - Comunicado de Prensa No. 014",
 				FuenteURL:    "https://www.dian.gov.co/scripts/HPublishing?id=3813&type=NewsPdf",
-				Etiquetas:    []string{"Control", "Facturacion electronica", "Soportes", "Fiscalizacion"},
+				Etiquetas:    []string{"Control", "Facturacion electronica", "Soportes", "Fiscalizacion", "Colombia"},
 				Destacada:    false,
 				Activa:       true,
 			},

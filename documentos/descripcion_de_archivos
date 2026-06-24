@@ -1,3 +1,15 @@
+2026-06-23 - Ventas, noticias, emisora y red social comercial
+- `web/administrar_empresa/ventas.html`:
+	- inicia filtros en la fecha actual, compacta la tarjeta de filtros a todo el ancho y mantiene resultados visibles sin mostrar detalle/vista previa.
+- `backend/db/red_social.go`, `backend/handlers/red_social.go`, `web/red_social_comercial.html`:
+	- agregan seguimiento anonimo por empresa en la red social comercial, resumen de publicaciones nuevas y cabecera/feed mas ancho.
+- `web/menu.js`, `web/js/ai_chat_drawer.js`:
+	- retiran la opcion `Robot / IA` del menu flotante y evitan doble instancia del chat IA si el script se carga dos veces.
+- `web/js/radio_player.js`:
+	- el boton cerrar del reproductor compacto apaga la emisora y oculta el icono flotante.
+- `backend/handlers/pagina_principal_handlers.go`, `web/administrar_empresa/noticias.html`:
+	- asignan noticias DIAN/facturacion electronica a Colombia para que carguen en el panel privado de noticias.
+
 2026-06-23 - Noticias privadas, QR Bre-B y botones de archivo
 - `backend/handlers/pagina_principal_handlers.go`:
 	- agrega `EmpresaNoticiasPortalHandler` para leer noticias del sistema desde `/api/empresa/noticias` con sesion y `empresa_id` validado por middleware.

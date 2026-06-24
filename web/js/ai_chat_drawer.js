@@ -1,4 +1,9 @@
 ﻿(function () {
+  if (window.__pcsAIChatDrawerLoaded) {
+    return;
+  }
+  window.__pcsAIChatDrawerLoaded = true;
+
   var DRAWER_ID = 'aiChatDrawer';
   var TOGGLE_ID = 'openAIDrawer';
   var CLOSE_ID = 'closeAIDrawer';

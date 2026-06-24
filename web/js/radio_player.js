@@ -240,6 +240,24 @@
     renderGrid();
   }
 
+  function closeRadioCompletely() {
+    setDrawerOpen(false);
+    state.enabled = false;
+    try {
+      window.localStorage.setItem(ENABLED_KEY, "0");
+    } catch (_) {}
+    stopPlayback();
+    if (enabledToggle) enabledToggle.checked = false;
+    if (enabledStatus) enabledStatus.textContent = "Reproductor apagado";
+    if (openBtn) {
+      openBtn.hidden = true;
+      openBtn.setAttribute("aria-hidden", "true");
+      openBtn.setAttribute("aria-pressed", "false");
+      openBtn.classList.add("is-disabled");
+    }
+    persistRadioConfig();
+  }
+
   function setRadioEnabled(enabled) {
     state.enabled = !!enabled;
     try {
@@ -440,7 +458,7 @@
       ev.preventDefault();
       addCustomStation();
     });
-    if (miniClose) miniClose.addEventListener("click", stopPlayback);
+    if (miniClose) miniClose.addEventListener("click", closeRadioCompletely);
     if (miniPlayPause) miniPlayPause.addEventListener("click", togglePlayback);
     if (miniVolume) miniVolume.addEventListener("input", function () {
       state.volume = Number(miniVolume.value || 0.7);

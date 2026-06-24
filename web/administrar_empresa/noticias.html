@@ -64,7 +64,7 @@
         var values = [item.pais, item.country, item.codigo_pais, item.categoria].concat(Array.isArray(item.etiquetas) ? item.etiquetas : []);
         var joined = values.map(text).join(" ").toUpperCase();
         if(!joined) return "";
-        if(joined.indexOf("COLOMB") >= 0 || /\bCO\b/.test(joined)) return "CO";
+        if(joined.indexOf("COLOMB") >= 0 || joined.indexOf("DIAN") >= 0 || joined.indexOf("FACTURACION ELECTRONICA") >= 0 || joined.indexOf("FACTURACI") >= 0 || /\bCO\b/.test(joined)) return "CO";
         if(joined.indexOf("PANAM") >= 0 || /\bPA\b/.test(joined)) return "PA";
         if(joined.indexOf("ECUAD") >= 0 || /\bEC\b/.test(joined)) return "EC";
         return "";

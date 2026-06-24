@@ -20,11 +20,14 @@
     .ventas-relation-badge.with-fe{background:rgba(16,185,129,.12);border-color:rgba(16,185,129,.42);color:#047857}
     .ventas-relation-badge.fe-doc{background:rgba(59,130,246,.12);border-color:rgba(59,130,246,.42);color:#1d4ed8}
     .ventas-relation-badge.neutral{background:var(--surface-muted);color:var(--muted)}
-    .ventas-filtros-compact{padding-block:10px}
-    .ventas-filtros-compact .empresa-section-header{margin-bottom:6px}
-    .ventas-filtros-compact .form-row{margin-bottom:8px;gap:10px}
+    .ventas-filtros-compact{width:100%;padding:8px 10px}
+    .ventas-filtros-compact .empresa-section-header{margin-bottom:4px}
+    .ventas-filtros-compact .page-header-lead{display:none}
+    .ventas-filtros-compact .form{display:grid;gap:6px}
+    .ventas-filtros-compact .form-row{display:grid;grid-template-columns:repeat(6,minmax(130px,1fr));margin-bottom:0;gap:8px;align-items:end}
     .ventas-filtros-compact .form-label{margin-bottom:3px}
-    .ventas-filtros-compact .form-actions{margin-top:2px}
+    .ventas-filtros-compact .form-col{min-width:0}
+    .ventas-filtros-compact .form-actions{margin-top:0;display:flex;align-items:end;gap:8px}
     .ventas-hidden-preview{display:none!important}
     .empresa-module > .card.empresa-module-header{display:none!important}
     .empresa-module > .card.empresa-section:nth-of-type(3){padding-block:10px;width:100%}
@@ -33,7 +36,9 @@
     .empresa-module > .card.empresa-section:nth-of-type(3) .form-row{margin-bottom:8px;gap:10px}
     .empresa-module > .card.empresa-section:nth-of-type(3) .form-label{margin-bottom:3px}
     .empresa-module > .card.empresa-section:nth-of-type(3) .form-actions{margin-top:2px}
-    .empresa-module > .card.empresa-section:nth-of-type(5){display:none!important}
+    .empresa-module > .card.ventas-hidden-preview{display:none!important}
+    @media(max-width:980px){.ventas-filtros-compact .form-row{grid-template-columns:repeat(2,minmax(0,1fr))}}
+    @media(max-width:620px){.ventas-filtros-compact .form-row{grid-template-columns:1fr}.ventas-filtros-compact{padding:8px}}
   </style>
 </head>
 <body class="empresa-subpage">
@@ -218,7 +223,7 @@
       </form>
     </section>
 
-    <section class="card empresa-section ventas-hidden-preview">
+    <section class="card empresa-section">
       <div class="empresa-section-header">
         <h2>Resultados</h2>
       </div>
@@ -242,7 +247,7 @@
       </div>
     </section>
 
-    <section class="card empresa-section">
+    <section class="card empresa-section ventas-hidden-preview">
       <div class="empresa-section-header">
         <h2>Detalle / vista previa</h2>
       </div>
@@ -495,7 +500,7 @@
 
       function setDefaultDates(){
         var now=new Date(); var y=now.getFullYear(); var m=String(now.getMonth()+1).padStart(2,"0"); var d=String(now.getDate()).padStart(2,"0");
-        document.getElementById("fechaDesde").value = y+"-"+m+"-01";
+        document.getElementById("fechaDesde").value = y+"-"+m+"-"+d;
         document.getElementById("fechaHasta").value = y+"-"+m+"-"+d;
       }
 

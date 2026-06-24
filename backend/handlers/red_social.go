@@ -3,8 +3,8 @@ package handlers
 import (
 	"crypto/sha256"
 	"database/sql"
-	"encoding/json"
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -81,6 +81,65 @@ func PublicRedSocialInteraccionesHandler(dbEmpresas *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		path := strings.TrimSpace(r.URL.Path)
 		parts := strings.Split(strings.Trim(path, "/"), "/")
+		if len(parts) >= 5 && strings.EqualFold(parts[3], "seguimientos") {
+			actorKey := redSocialActorKeyFromRequest(r)
+			if actorKey == "" {
+				http.Error(w, "actor_key requerido", http.StatusBadRequest)
+				return
+			}
+			if len(parts) == 5 && strings.EqualFold(parts[4], "resumen") && r.Method == http.MethodGet {
+				rows, err := db.ListRedSocialSeguimientos(dbEmpresas, actorKey)
+				if err != nil {
+					http.Error(w, err.Error(), http.StatusInternalServerError)
+					return
+				}
+				writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "items": rows})
+				return
+			}
+			if len(parts) >= 6 {
+				empresaID, _ := strconv.Atoi(parts[4])
+				if empresaID <= 0 {
+					http.Error(w, "empresa_id invalido", http.StatusBadRequest)
+					return
+				}
+				switch strings.ToLower(strings.TrimSpace(parts[5])) {
+				case "seguir":
+					if r.Method != http.MethodPost && r.Method != http.MethodDelete && r.Method != http.MethodGet {
+						http.Error(w, "Metodo no permitido", http.StatusMethodNotAllowed)
+						return
+					}
+					if r.Method == http.MethodGet {
+						following, err := db.IsRedSocialEmpresaSeguida(dbEmpresas, empresaID, actorKey)
+						if err != nil {
+							http.Error(w, err.Error(), http.StatusInternalServerError)
+							return
+						}
+						writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "seguido": following})
+						return
+					}
+					following := r.Method == http.MethodPost
+					if err := db.SetRedSocialEmpresaSeguida(dbEmpresas, empresaID, actorKey, following); err != nil {
+						http.Error(w, err.Error(), http.StatusBadRequest)
+						return
+					}
+					writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "seguido": following})
+					return
+				case "visto":
+					if r.Method != http.MethodPost {
+						http.Error(w, "Metodo no permitido", http.StatusMethodNotAllowed)
+						return
+					}
+					if err := db.MarkRedSocialSeguimientoVisto(dbEmpresas, empresaID, actorKey); err != nil {
+						http.Error(w, err.Error(), http.StatusInternalServerError)
+						return
+					}
+					writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true})
+					return
+				}
+			}
+			http.Error(w, "accion de seguimiento invalida", http.StatusBadRequest)
+			return
+		}
 		// expected: api public publicaciones {id} comentarios|reacciones
 		if len(parts) < 5 {
 			http.Error(w, "ruta invalida", http.StatusBadRequest)
