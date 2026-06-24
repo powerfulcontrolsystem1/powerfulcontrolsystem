@@ -1,3 +1,8 @@
+2026-06-24: Carritos de compra con historial no agrupado.
+- Modulos afectados: `carritos`, `ventas`, `corte_caja`.
+- Nuevo historial operativo: cada adicion de producto al carrito se guarda con hora, usuario, cantidad, precio y total, sin agrupar aunque el detalle visible del carrito consolide cantidades.
+- Uso operativo: desde el selector de acciones del carrito se abre `Historial de productos` para auditar a que hora pidio cada producto el cliente.
+
 2026-06-19: Empresas en super administrador.
 - Modulos afectados: `super_administrador`, `empresas`, `licencias`, `auditoria_super`.
 - Navegacion: `Super administrador > Comercial y licencias > Empresas` abre `web/super/empresas.html`.

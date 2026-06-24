@@ -12,6 +12,7 @@
   var drawer = document.getElementById("radioDrawer");
   var openBtn = document.getElementById("openRadioDrawer");
   var closeBtn = document.getElementById("closeRadioDrawer");
+  var closeBtnBottom = document.getElementById("closeRadioDrawerBottom");
   var grid = document.getElementById("radioStationGrid");
   var mini = document.getElementById("radioMiniPlayer");
   var miniAudio = document.getElementById("radioMiniAudio");
@@ -429,7 +430,8 @@
       }
       setDrawerOpen(!drawer.classList.contains("is-open"));
     });
-    if (closeBtn) closeBtn.addEventListener("click", function () { setDrawerOpen(false); });
+    if (closeBtn) closeBtn.addEventListener("click", closeRadioCompletely);
+    if (closeBtnBottom) closeBtnBottom.addEventListener("click", closeRadioCompletely);
     if (enabledToggle) enabledToggle.addEventListener("change", function () {
       setRadioEnabled(!!enabledToggle.checked);
       persistRadioConfig();

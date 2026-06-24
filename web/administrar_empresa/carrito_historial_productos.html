@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Historial de productos del carrito</title>
+  <link rel="stylesheet" href="/estilos.css">
+  <script src="/js/empresa_submenu_context.js"></script>
+  <style>
+    .historial-carrito-toolbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between}
+    .historial-carrito-table th,.historial-carrito-table td{white-space:nowrap}
+    .historial-carrito-table td:nth-child(3){white-space:normal;min-width:220px}
+    .historial-carrito-total{text-align:right;font-weight:900}
+  </style>
+</head>
+<body class="empresa-subpage">
+  <div class="container">
+    <section class="card empresa-section">
+      <div class="empresa-section-header historial-carrito-toolbar">
+        <div>
+          <h1 class="empresa-section-title">Historial de productos</h1>
+          <p id="historialMeta" class="form-help">Cargando historial del carrito...</p>
+        </div>
+        <div class="form-actions">
+          <button id="btnActualizar" type="button" class="btn secondary">Actualizar</button>
+          <button id="btnImprimir" type="button" class="btn">Imprimir</button>
+        </div>
+      </div>
+      <div id="msg" class="form-help"></div>
+      <div class="table-wrap mt-12">
+        <table class="table historial-carrito-table">
+          <thead>
+            <tr>
+              <th>Hora</th>
+              <th>Código</th>
+              <th>Producto</th>
+              <th>Cant.</th>
+              <th>Precio</th>
+              <th>Total</th>
+              <th>Usuario</th>
+            </tr>
+          </thead>
+          <tbody id="historialBody">
+            <tr><td colspan="7">Sin datos cargados.</td></tr>
+          </tbody>
+          <tfoot>
+            <tr>
+              <td colspan="5" class="historial-carrito-total">Total histórico</td>
+              <td id="historialTotal" class="historial-carrito-total">COP 0</td>
+              <td></td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    const empresaId = Number(params.get('empresa_id') || 0);
+    const carritoId = Number(params.get('carrito_id') || 0);
+    const carritoCodigo = String(params.get('carrito_codigo') || '').trim();
+    const body = document.getElementById('historialBody');
+    const msg = document.getElementById('msg');
+    const meta = document.getElementById('historialMeta');
+    const totalBox = document.getElementById('historialTotal');
+
+    function escapeHtml(value) {
+      return String(value == null ? '' : value).replace(/[&<>"']/g, function(ch) {
+        return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]);
+      });
+    }
+
+    function formatDateTime(value) {
+      if (!value) return '';
+      const d = new Date(value);
+      if (!Number.isNaN(d.getTime())) return d.toLocaleString('es-CO');
+      return String(value);
+    }
+
+    function money(value) {
+      return new Intl.NumberFormat('es-CO', { style:'currency', currency:'COP', maximumFractionDigits:0 }).format(Number(value || 0));
+    }
+
+    async function requestJSON(url) {
+      const res = await fetch(url, { credentials:'same-origin' });
+      if (!res.ok) throw new Error(await res.text() || 'No se pudo consultar el historial.');
+      return res.json();
+    }
+
+    async function cargar() {
+      if (!empresaId || !carritoId) {
+        msg.textContent = 'Falta empresa_id o carrito_id para consultar el historial.';
+        return;
+      }
+      msg.textContent = 'Consultando historial...';
+      const url = '/api/empresa/carritos_compra/historial_productos?empresa_id=' + encodeURIComponent(empresaId) + '&carrito_id=' + encodeURIComponent(carritoId);
+      const rows = await requestJSON(url);
+      meta.textContent = 'Carrito ' + (carritoCodigo || ('#' + carritoId)) + ' | ' + rows.length + ' movimiento(s) sin agrupar.';
+      let total = 0;
+      if (!rows.length) {
+        body.innerHTML = '<tr><td colspan="7">Este carrito todavía no tiene historial de productos.</td></tr>';
+      } else {
+        body.innerHTML = rows.map(function(row) {
+          total += Number(row.total_linea || 0);
+          return '<tr>' +
+            '<td>' + escapeHtml(formatDateTime(row.fecha_evento)) + '</td>' +
+            '<td>' + escapeHtml(row.codigo_item || '') + '</td>' +
+            '<td>' + escapeHtml(row.descripcion || '') + '</td>' +
+            '<td>' + escapeHtml(row.cantidad || 0) + '</td>' +
+            '<td>' + escapeHtml(money(row.precio_unitario || 0)) + '</td>' +
+            '<td>' + escapeHtml(money(row.total_linea || 0)) + '</td>' +
+            '<td>' + escapeHtml(row.usuario_creador || '') + '</td>' +
+          '</tr>';
+        }).join('');
+      }
+      totalBox.textContent = money(total);
+      msg.textContent = 'Historial actualizado.';
+    }
+
+    document.getElementById('btnActualizar').addEventListener('click', function() { cargar().catch(function(err) { msg.textContent = err.message; }); });
+    document.getElementById('btnImprimir').addEventListener('click', function() { window.print(); });
+    cargar().catch(function(err) { msg.textContent = err.message; });
+  </script>
+</body>
+</html>

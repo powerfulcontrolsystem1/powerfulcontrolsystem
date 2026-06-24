@@ -183,6 +183,27 @@ type CarritoCompraItem struct {
 	PermitirSinStock    bool    `json:"permitir_sin_stock,omitempty"`
 }
 
+// CarritoCompraProductoHistorial conserva cada adicion operativa sin agrupar cantidades.
+type CarritoCompraProductoHistorial struct {
+	ID             int64   `json:"id"`
+	EmpresaID      int64   `json:"empresa_id"`
+	CarritoID      int64   `json:"carrito_id"`
+	ItemID         int64   `json:"item_id,omitempty"`
+	TipoEvento     string  `json:"tipo_evento"`
+	TipoItem       string  `json:"tipo_item,omitempty"`
+	ReferenciaID   int64   `json:"referencia_id,omitempty"`
+	CodigoItem     string  `json:"codigo_item,omitempty"`
+	Descripcion    string  `json:"descripcion"`
+	UnidadMedida   string  `json:"unidad_medida,omitempty"`
+	Cantidad       float64 `json:"cantidad"`
+	PrecioUnitario float64 `json:"precio_unitario"`
+	SubtotalLinea  float64 `json:"subtotal_linea"`
+	TotalLinea     float64 `json:"total_linea"`
+	FechaEvento    string  `json:"fecha_evento"`
+	UsuarioCreador string  `json:"usuario_creador,omitempty"`
+	Observaciones  string  `json:"observaciones,omitempty"`
+}
+
 // CarritoStationMetricInput representa una medicion operativa por estacion.
 type CarritoStationMetricInput struct {
 	EmpresaID           int64
@@ -326,6 +347,25 @@ func EnsureEmpresaCarritosSchema(dbConn *sql.DB) error {
 			fecha_actualizacion TEXT DEFAULT (CURRENT_TIMESTAMP),
 			usuario_creador TEXT,
 			estado TEXT DEFAULT 'activo',
+			observaciones TEXT
+		);`,
+		`CREATE TABLE IF NOT EXISTS carrito_compra_producto_historial (
+			id BIGSERIAL PRIMARY KEY,
+			empresa_id INTEGER NOT NULL,
+			carrito_id INTEGER NOT NULL,
+			item_id INTEGER DEFAULT 0,
+			tipo_evento TEXT DEFAULT 'adicion',
+			tipo_item TEXT DEFAULT 'producto',
+			referencia_id INTEGER,
+			codigo_item TEXT,
+			descripcion TEXT NOT NULL,
+			unidad_medida TEXT DEFAULT 'unidad',
+			cantidad REAL NOT NULL DEFAULT 1,
+			precio_unitario REAL NOT NULL DEFAULT 0,
+			subtotal_linea REAL DEFAULT 0,
+			total_linea REAL DEFAULT 0,
+			fecha_evento TEXT DEFAULT (CURRENT_TIMESTAMP),
+			usuario_creador TEXT,
 			observaciones TEXT
 		);`,
 		`CREATE TABLE IF NOT EXISTS carrito_compra_abonos (
@@ -542,6 +582,55 @@ func EnsureEmpresaCarritosSchema(dbConn *sql.DB) error {
 		return err
 	}
 
+	if err := ensureColumnIfMissing(dbConn, "carrito_compra_producto_historial", "empresa_id", "INTEGER NOT NULL DEFAULT 0"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "carrito_compra_producto_historial", "carrito_id", "INTEGER NOT NULL DEFAULT 0"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "carrito_compra_producto_historial", "item_id", "INTEGER DEFAULT 0"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "carrito_compra_producto_historial", "tipo_evento", "TEXT DEFAULT 'adicion'"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "carrito_compra_producto_historial", "tipo_item", "TEXT DEFAULT 'producto'"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "carrito_compra_producto_historial", "referencia_id", "INTEGER"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "carrito_compra_producto_historial", "codigo_item", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "carrito_compra_producto_historial", "descripcion", "TEXT DEFAULT ''"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "carrito_compra_producto_historial", "unidad_medida", "TEXT DEFAULT 'unidad'"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "carrito_compra_producto_historial", "cantidad", "REAL DEFAULT 1"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "carrito_compra_producto_historial", "precio_unitario", "REAL DEFAULT 0"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "carrito_compra_producto_historial", "subtotal_linea", "REAL DEFAULT 0"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "carrito_compra_producto_historial", "total_linea", "REAL DEFAULT 0"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "carrito_compra_producto_historial", "fecha_evento", "TEXT DEFAULT (CURRENT_TIMESTAMP)"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "carrito_compra_producto_historial", "usuario_creador", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "carrito_compra_producto_historial", "observaciones", "TEXT"); err != nil {
+		return err
+	}
+
 	if err := ensureColumnIfMissing(dbConn, "carrito_compra_abonos", "empresa_id", "INTEGER NOT NULL DEFAULT 0"); err != nil {
 		return err
 	}
@@ -683,6 +772,7 @@ func EnsureEmpresaCarritosSchema(dbConn *sql.DB) error {
 		{name: "ix_carritos_empresa_caja_codigo", query: `CREATE INDEX IF NOT EXISTS ix_carritos_empresa_caja_codigo ON carritos_compras(empresa_id, caja_codigo, caja_turno, pagado_en DESC);`},
 		{name: "ix_carrito_items_empresa_carrito", query: `CREATE INDEX IF NOT EXISTS ix_carrito_items_empresa_carrito ON carrito_compra_items(empresa_id, carrito_id);`},
 		{name: "ix_carrito_items_empresa_referencia", query: `CREATE INDEX IF NOT EXISTS ix_carrito_items_empresa_referencia ON carrito_compra_items(empresa_id, referencia_id);`},
+		{name: "ix_carrito_producto_historial_carrito", query: `CREATE INDEX IF NOT EXISTS ix_carrito_producto_historial_carrito ON carrito_compra_producto_historial(empresa_id, carrito_id, fecha_evento DESC, id DESC);`},
 		{name: "ix_carrito_abonos_empresa_carrito", query: `CREATE INDEX IF NOT EXISTS ix_carrito_abonos_empresa_carrito ON carrito_compra_abonos(empresa_id, carrito_id, fecha_abono DESC);`},
 		{name: "ix_carrito_abonos_empresa_caja", query: `CREATE INDEX IF NOT EXISTS ix_carrito_abonos_empresa_caja ON carrito_compra_abonos(empresa_id, cierre_caja_id, fecha_abono DESC);`},
 		{name: "ix_ventas_estacion_metricas_empresa_estacion_fecha", query: `CREATE INDEX IF NOT EXISTS ix_ventas_estacion_metricas_empresa_estacion_fecha ON empresa_ventas_estacion_metricas(empresa_id, estacion_id, fecha_evento DESC);`},
@@ -743,6 +833,7 @@ func empresaCarritosSchemaLooksReady(dbConn *sql.DB) (bool, error) {
 	requiredTables := []string{
 		"carritos_compras",
 		"carrito_compra_items",
+		"carrito_compra_producto_historial",
 		"carrito_compra_abonos",
 		"empresa_ventas_estacion_metricas",
 	}
@@ -759,6 +850,7 @@ func empresaCarritosSchemaLooksReady(dbConn *sql.DB) (bool, error) {
 	requiredIndexes := []string{
 		"ux_carritos_empresa_codigo",
 		"ix_carrito_items_empresa_carrito",
+		"ix_carrito_producto_historial_carrito",
 		"ix_carrito_abonos_empresa_carrito",
 		"ix_ventas_estacion_metricas_carrito",
 	}
@@ -787,6 +879,11 @@ func empresaCarritosSchemaLooksReady(dbConn *sql.DB) (bool, error) {
 			"descuento_porcentaje", "impuesto_porcentaje", "impuesto_codigo", "base_gravable",
 			"valor_descuento", "valor_impuesto", "subtotal_linea", "total_linea",
 			"fecha_creacion", "fecha_actualizacion", "usuario_creador", "estado", "observaciones",
+		},
+		"carrito_compra_producto_historial": {
+			"id", "empresa_id", "carrito_id", "item_id", "tipo_evento", "tipo_item", "referencia_id",
+			"codigo_item", "descripcion", "unidad_medida", "cantidad", "precio_unitario",
+			"subtotal_linea", "total_linea", "fecha_evento", "usuario_creador", "observaciones",
 		},
 		"carrito_compra_abonos": {
 			"id", "empresa_id", "carrito_id", "monto", "metodo_pago", "referencia_pago",
@@ -3171,6 +3268,9 @@ func CreateCarritoCompraItem(dbConn *sql.DB, payload CarritoCompraItem) (int64, 
 			return insertErr
 		}
 		id = itemID
+		if err := insertCarritoProductoHistorialTx(tx, payload, id, "adicion", payload.Cantidad, "adicion al carrito"); err != nil {
+			return err
+		}
 
 		if isItemActivo(payload.Estado) {
 			referencia := fmt.Sprintf("carrito:%d:item:%d", payload.CarritoID, id)
@@ -3278,6 +3378,117 @@ func GetCarritoCompraItems(dbConn *sql.DB, empresaID, carritoID int64, includeIn
 	return out, nil
 }
 
+func insertCarritoProductoHistorialTx(tx *sql.Tx, item CarritoCompraItem, itemID int64, tipoEvento string, cantidad float64, observaciones string) error {
+	if tx == nil || item.EmpresaID <= 0 || item.CarritoID <= 0 || cantidad <= 0 {
+		return nil
+	}
+	event := strings.TrimSpace(strings.ToLower(tipoEvento))
+	if event == "" {
+		event = "adicion"
+	}
+	line := item
+	line.Cantidad = cantidad
+	calcItemTotals(&line)
+	_, err := execTxSQLCompat(tx, `INSERT INTO carrito_compra_producto_historial (
+		empresa_id,
+		carrito_id,
+		item_id,
+		tipo_evento,
+		tipo_item,
+		referencia_id,
+		codigo_item,
+		descripcion,
+		unidad_medida,
+		cantidad,
+		precio_unitario,
+		subtotal_linea,
+		total_linea,
+		fecha_evento,
+		usuario_creador,
+		observaciones
+	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, ?, ?)`,
+		item.EmpresaID,
+		item.CarritoID,
+		itemID,
+		event,
+		defaultTipoItem(item.TipoItem),
+		nullableInt64(item.ReferenciaID),
+		strings.TrimSpace(item.CodigoItem),
+		strings.TrimSpace(item.Descripcion),
+		defaultUnidadCarrito(item.UnidadMedida),
+		cantidad,
+		item.PrecioUnitario,
+		line.SubtotalLinea,
+		line.TotalLinea,
+		strings.TrimSpace(item.UsuarioCreador),
+		strings.TrimSpace(observaciones),
+	)
+	return err
+}
+
+// ListCarritoCompraProductoHistorial lista cada adicion operativa sin agrupar por producto.
+func ListCarritoCompraProductoHistorial(dbConn *sql.DB, empresaID, carritoID int64) ([]CarritoCompraProductoHistorial, error) {
+	if empresaID <= 0 || carritoID <= 0 {
+		return nil, fmt.Errorf("empresa_id y carrito_id son obligatorios")
+	}
+	rows, err := querySQLCompat(dbConn, `SELECT
+		id,
+		empresa_id,
+		carrito_id,
+		COALESCE(item_id, 0),
+		COALESCE(tipo_evento, 'adicion'),
+		COALESCE(tipo_item, 'producto'),
+		COALESCE(referencia_id, 0),
+		COALESCE(codigo_item, ''),
+		COALESCE(descripcion, ''),
+		COALESCE(unidad_medida, 'unidad'),
+		COALESCE(cantidad, 0),
+		COALESCE(precio_unitario, 0),
+		COALESCE(subtotal_linea, 0),
+		COALESCE(total_linea, 0),
+		COALESCE(fecha_evento, ''),
+		COALESCE(usuario_creador, ''),
+		COALESCE(observaciones, '')
+	FROM carrito_compra_producto_historial
+	WHERE empresa_id = ? AND carrito_id = ?
+	ORDER BY fecha_evento ASC, id ASC`, empresaID, carritoID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	out := make([]CarritoCompraProductoHistorial, 0)
+	for rows.Next() {
+		var item CarritoCompraProductoHistorial
+		if err := rows.Scan(
+			&item.ID,
+			&item.EmpresaID,
+			&item.CarritoID,
+			&item.ItemID,
+			&item.TipoEvento,
+			&item.TipoItem,
+			&item.ReferenciaID,
+			&item.CodigoItem,
+			&item.Descripcion,
+			&item.UnidadMedida,
+			&item.Cantidad,
+			&item.PrecioUnitario,
+			&item.SubtotalLinea,
+			&item.TotalLinea,
+			&item.FechaEvento,
+			&item.UsuarioCreador,
+			&item.Observaciones,
+		); err != nil {
+			return nil, err
+		}
+		out = append(out, item)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // UpdateCarritoCompraItem actualiza un item del carrito y recalcula totales.
 func UpdateCarritoCompraItem(dbConn *sql.DB, payload CarritoCompraItem) error {
 	payload.TipoItem = defaultTipoItem(payload.TipoItem)
@@ -3313,6 +3524,9 @@ func UpdateCarritoCompraItem(dbConn *sql.DB, payload CarritoCompraItem) error {
 						payload.UsuarioCreador,
 						"reserva adicional por actualizacion de item",
 					); err != nil {
+						return err
+					}
+					if err := insertCarritoProductoHistorialTx(tx, payload, payload.ID, "adicion", delta, "adicion por aumento de cantidad"); err != nil {
 						return err
 					}
 				}
@@ -3371,6 +3585,9 @@ func UpdateCarritoCompraItem(dbConn *sql.DB, payload CarritoCompraItem) error {
 						payload.UsuarioCreador,
 						"reserva por cambio de referencia de item",
 					); err != nil {
+						return err
+					}
+					if err := insertCarritoProductoHistorialTx(tx, payload, payload.ID, "adicion", payload.Cantidad, "adicion por cambio de referencia"); err != nil {
 						return err
 					}
 				}

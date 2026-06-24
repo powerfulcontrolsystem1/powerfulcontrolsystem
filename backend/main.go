@@ -1309,6 +1309,7 @@ func main() {
 	http.HandleFunc("/api/empresa/crm_avanzado", handlers.WithEmpresaCRMUnificadoPermissions(dbEmpresas, dbSuper, handlers.EmpresaCRMVentasAvanzadasHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/carritos_compra", handlers.WithEmpresaVentasPermissions(dbEmpresas, dbSuper, handlers.EmpresaCarritosCompraHandler(dbEmpresas, dbSuper)))
 	http.HandleFunc("/api/empresa/carritos_compra/items", handlers.WithEmpresaVentasPermissions(dbEmpresas, dbSuper, handlers.EmpresaCarritoItemsHandler(dbEmpresas)))
+	http.HandleFunc("/api/empresa/carritos_compra/historial_productos", handlers.WithEmpresaVentasPermissions(dbEmpresas, dbSuper, handlers.EmpresaCarritoProductoHistorialHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/offline_ventas", handlers.WithEmpresaVentasPermissions(dbEmpresas, dbSuper, handlers.EmpresaOfflineVentasHandler(dbEmpresas, dbSuper)))
 	http.HandleFunc("/api/empresa/datafonos", handlers.WithEmpresaVentasPermissions(dbEmpresas, dbSuper, handlers.EmpresaDatafonosHandler(dbEmpresas, dbSuper)))
 	http.HandleFunc("/api/empresa/venta_publica", handlers.WithEmpresaVentaPublicaPermissions(dbEmpresas, dbSuper, handlers.EmpresaVentaPublicaHandler(dbEmpresas)))

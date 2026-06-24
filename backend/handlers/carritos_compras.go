@@ -2316,6 +2316,46 @@ Si necesita ayuda, consulte la sección de Inventario o contacte al administrado
 	}
 }
 
+// EmpresaCarritoProductoHistorialHandler expone el historial no agrupado de productos pedidos en un carrito.
+func EmpresaCarritoProductoHistorialHandler(dbEmp *sql.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if isStationBoardOnlyCarritoRequest(r) {
+			http.Error(w, "forbidden: este rol no puede consultar historial del carrito", http.StatusForbidden)
+			return
+		}
+		if r.Method != http.MethodGet {
+			http.Error(w, "Metodo no permitido", http.StatusMethodNotAllowed)
+			return
+		}
+		if err := dbpkg.EnsureEmpresaCarritosSchema(dbEmp); err != nil {
+			log.Printf("[carritos_historial] ensure schema error: %v", err)
+			http.Error(w, "No se pudo preparar el modulo de carritos", http.StatusInternalServerError)
+			return
+		}
+		empresaID, err := parseEmpresaIDQuery(r)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		carritoID, err := parseInt64Query(r, "carrito_id")
+		if err != nil {
+			http.Error(w, "carrito_id es obligatorio", http.StatusBadRequest)
+			return
+		}
+		if err := ensureCarritoStationAccessByID(dbEmp, empresaID, carritoID, adminEmailFromRequest(r)); err != nil {
+			writeCarritoStationAccessError(w, err)
+			return
+		}
+		rows, err := dbpkg.ListCarritoCompraProductoHistorial(dbEmp, empresaID, carritoID)
+		if err != nil {
+			log.Printf("[carritos_historial] list empresa_id=%d carrito_id=%d error: %v", empresaID, carritoID, err)
+			http.Error(w, "No se pudo listar el historial del carrito", http.StatusInternalServerError)
+			return
+		}
+		writeJSON(w, http.StatusOK, rows)
+	}
+}
+
 func validateCarritoPayload(payload dbpkg.CarritoCompra) error {
 	if payload.EmpresaID <= 0 {
 		return fmt.Errorf("empresa_id es obligatorio")

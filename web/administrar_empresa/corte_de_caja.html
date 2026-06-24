@@ -6,12 +6,12 @@
   <title>Corte de caja</title>
   <link rel="stylesheet" href="/estilos.css">
   <style>
-    .cash-close-hero { display:grid; grid-template-columns:minmax(0,1.35fr) minmax(260px,.65fr); gap:12px; align-items:stretch; }
-    .cash-close-panel { border:1px solid var(--border); border-radius:8px; padding:14px; background:linear-gradient(135deg,var(--card),color-mix(in srgb, var(--surface-soft) 88%, var(--card))); box-shadow:0 18px 50px color-mix(in srgb, #020617 14%, transparent); color:var(--text); }
+    .cash-close-hero { display:grid; grid-template-columns:1fr; gap:8px; align-items:stretch; }
+    .cash-close-panel { border:1px solid var(--border); border-radius:8px; padding:8px; background:linear-gradient(135deg,var(--card),color-mix(in srgb, var(--surface-soft) 88%, var(--card))); box-shadow:none; color:var(--text); }
     .cash-close-panel.dark { background:linear-gradient(135deg,color-mix(in srgb, var(--surface) 76%, #020617),var(--surface-soft)); color:var(--text); }
     .cash-close-actions { display:flex; flex-wrap:wrap; gap:10px; align-items:center; }
-    .cash-close-actions.is-compact { display:flex; flex-direction:column; align-items:stretch; gap:6px; margin:10px 0; }
-    .cash-close-actions.is-compact .btn { width:100%; justify-content:center; }
+    .cash-close-actions.is-compact { display:flex; flex-direction:row; flex-wrap:wrap; align-items:center; gap:6px; margin:8px 0; }
+    .cash-close-actions.is-compact .btn { width:auto; justify-content:center; }
     .cash-close-panel.dark .cash-close-actions.is-compact .btn,
     .cash-close-panel.dark .cash-close-actions.is-compact .btn.secondary,
     .cash-close-panel.dark .cash-close-actions.is-compact .btn.success {
@@ -42,19 +42,20 @@
     .cash-close-panel .form-input{min-height:38px;padding:8px 10px}
     .cash-close-panel .form-help{font-size:.8rem;line-height:1.2}
     .corte-report-section[hidden], .corte-summary-grid[hidden] { display:none !important; }
-    .corte-caja-report.turno-operativo-sheet { margin-top:18px; border:1px solid var(--border); border-radius:8px; background:var(--card); color:var(--text); box-shadow:none; overflow:hidden; }
-    .corte-caja-report .corte-report-header { padding:16px 18px 12px; border-bottom:2px solid var(--border); margin-bottom:0; background:var(--surface-soft); }
-    .corte-caja-report .corte-report-header h2 { margin:0 0 6px; color:var(--text); font-size:1.22rem; }
-    .corte-caja-report .corte-report-header .form-help { color:var(--muted); margin:0; }
-    .corte-caja-report .corte-report-badge { align-self:flex-start; border:1px solid var(--border); background:var(--card); color:var(--text); border-radius:8px; padding:8px 10px; font-size:.82rem; }
-    .turno-report-company { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:12px; align-items:start; padding:12px 18px; border-bottom:1px solid var(--border); background:var(--card); margin:0; }
-    .turno-report-company h3 { margin:0; color:var(--text); font-size:1.1rem; }
-    .turno-report-company p { margin:4px 0 0; color:var(--muted); font-size:.86rem; }
+    .corte-caja-report.turno-operativo-sheet { margin-top:10px; border:1px solid #111827; border-radius:0; background:#fff; color:#111827; box-shadow:none; overflow:hidden; }
+    .corte-caja-report,.corte-caja-report * { color:#111827 !important; }
+    .corte-caja-report .corte-report-header { padding:16px 18px 12px; border-bottom:2px solid #111827; margin-bottom:0; background:#fff; }
+    .corte-caja-report .corte-report-header h2 { margin:0 0 6px; color:#111827; font-size:1.22rem; }
+    .corte-caja-report .corte-report-header .form-help { color:#374151; margin:0; }
+    .corte-caja-report .corte-report-badge { align-self:flex-start; border:1px solid #111827; background:#fff; color:#111827; border-radius:0; padding:8px 10px; font-size:.82rem; }
+    .turno-report-company { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:12px; align-items:start; padding:12px 18px; border-bottom:1px solid #d1d5db; background:#fff; margin:0; }
+    .turno-report-company h3 { margin:0; color:#111827; font-size:1.1rem; }
+    .turno-report-company p { margin:4px 0 0; color:#374151; font-size:.86rem; }
     .turno-report-meta,.corte-summary-grid,.turno-detail-list { display:flex; flex-direction:column; gap:0; margin:0; border-top:0; }
-    .turno-report-meta div,.corte-summary-row,.turno-detail-row { display:grid; grid-template-columns:minmax(108px,.42fr) minmax(0,1fr); gap:10px; align-items:start; padding:7px 0; border-bottom:1px solid var(--border); background:transparent; }
+    .turno-report-meta div,.corte-summary-row,.turno-detail-row { display:grid; grid-template-columns:minmax(108px,.42fr) minmax(0,1fr); gap:10px; align-items:start; padding:7px 0; border-bottom:1px solid #d1d5db; background:#fff; }
     .corte-summary-row { grid-template-columns:minmax(150px,.34fr) minmax(132px,.24fr) minmax(180px,1fr); }
-    .corte-caja-report .turno-report-panel { margin:12px 18px 0; border:1px solid var(--border); border-radius:8px; background:var(--card); padding:12px; }
-    .corte-caja-report .turno-report-panel h3 { margin:0 0 8px; color:var(--text); font-size:1rem; }
+    .corte-caja-report .turno-report-panel { margin:12px 18px 0; border:1px solid #d1d5db; border-radius:0; background:#fff; padding:12px; }
+    .corte-caja-report .turno-report-panel h3 { margin:0 0 8px; color:#111827; font-size:1rem; }
     .corte-caja-report .turno-report-panel:last-child { margin-bottom:18px; }
     .corte-caja-report .corte-report-section .section-heading { margin:14px 18px 0; color:var(--text); font-size:1rem; }
     .corte-caja-report .turno-detail-line { display:block; color:var(--text); font-weight:600; line-height:1.42; text-align:left; }
@@ -336,7 +337,12 @@
             <button id="btnCerrar" class="btn success" type="button" disabled>Guardar cierre</button>
             <button id="btnCerrarImprimirSesion" class="btn success" type="button" disabled>Cerrar turno e imprimir reporte</button>
             <button id="btnImprimir" class="btn secondary" type="button" disabled>Imprimir seleccion</button>
+            <button id="btnTutorialTurno" class="btn secondary" type="button">Tutorial</button>
           </div>
+          <label class="form-help" style="display:flex;gap:8px;align-items:flex-start;margin:6px 0 8px">
+            <input id="mantenerSesionCierre" type="checkbox" style="margin-top:2px">
+            <span>Al cerrar turno, imprimir reportes pero no cerrar la sesión automáticamente.</span>
+          </label>
           <div id="quickKpis" class="cash-close-kpis">
             <div class="cash-kpi"><span>Ventas</span><strong>COP 0</strong><small>0 operaciones</small></div>
             <div class="cash-kpi"><span>Efectivo esperado</span><strong>COP 0</strong><small>Incluye apertura</small></div>
@@ -1198,6 +1204,19 @@
     window.print();
   }
 
+  function mostrarTutorialTurno() {
+    window.alert([
+      'Tutorial de turno y corte de caja',
+      '',
+      '1. El turno inicia cuando el trabajador ingresa al sistema.',
+      '2. Durante el turno, el sistema registra ventas, pagos, anulaciones, productos y movimientos según los permisos del usuario.',
+      '3. Al presionar "Cerrar turno e imprimir reporte", primero se guardan los reportes seleccionados en la configuración del corte.',
+      '4. Luego se imprime el reporte del usuario que está cerrando el turno. Si hay reportes activos, se incluyen en la impresión configurada.',
+      '5. Al finalizar la impresión, por defecto el sistema cierra la sesión del usuario.',
+      '6. Si marcas "no cerrar la sesión", el sistema imprime y guarda el cierre sin sacar al usuario.'
+    ].join('\n'));
+  }
+
   async function cerrarCorte(options) {
     options = options || {};
     var msg = document.getElementById('msg');
@@ -1206,7 +1225,9 @@
     if (lastReport && lastReport.caja_actual && Number(lastReport.caja_actual.id || 0) > 0) {
       applyAutomaticCajaContext(lastReport);
     }
-    var ok = window.confirm(options.logoutAfterPrint
+    var keepSession = !!(document.getElementById('mantenerSesionCierre') && document.getElementById('mantenerSesionCierre').checked);
+    var logoutAfterPrint = !!(options.logoutAfterPrint && !keepSession);
+    var ok = window.confirm(logoutAfterPrint
       ? 'Cerrar turno, imprimir el reporte y cerrar la sesion del usuario?'
       : 'Guardar cierre de caja con los reportes seleccionados?');
     if (!ok) return;
@@ -1237,13 +1258,13 @@
       automaticCierreCajaID = 0;
       msg.textContent = 'Cierre guardado correctamente. ID: ' + (res && res.cierre_id ? res.cierre_id : 'registrado');
       if (res && res.imprimir_auto) {
-        if (options.logoutAfterPrint) {
+        if (logoutAfterPrint) {
           msg.textContent += ' Imprimiendo reporte; al finalizar se cerrara la sesion.';
           printReportAndLogout();
         } else {
           window.print();
         }
-      } else if (options.logoutAfterPrint) {
+      } else if (logoutAfterPrint) {
         await logoutUsuarioActual();
       }
     } catch (err) {
@@ -1276,6 +1297,7 @@
     document.getElementById('btnCerrar').addEventListener('click', cerrarCorte);
     document.getElementById('btnCerrarImprimirSesion').addEventListener('click', function() { cerrarCorte({ logoutAfterPrint:true }); });
     document.getElementById('btnImprimir').addEventListener('click', function() { if (lastReport) { applyPrintFormat(document.getElementById('modoVista').value); renderReport(lastReport); window.print(); } });
+    document.getElementById('btnTutorialTurno').addEventListener('click', mostrarTutorialTurno);
     document.getElementById('cajaCodigo').addEventListener('input', function() { setCajaDisplay(this.value, pageContext.cajaNombre, pageContext.cajaDescripcion); });
     document.getElementById('modoVista').addEventListener('change', function() { applyPrintFormat(this.value); reporteConfig.formato_impresion = normalizePrintFormat(this.value); if (lastReport) renderReport(lastReport); });
     document.getElementById('cajaFisica').addEventListener('input', function() { if (lastReport) updateQuickKpis(lastReport.resumen || {}); });

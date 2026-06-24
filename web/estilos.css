@@ -2053,6 +2053,8 @@ body.has-floating-menu.admin-empresa-shell .admin-frame-toolbar{top:calc(var(--f
 .radio-custom-fields{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .radio-custom-fields .form-input,.radio-custom-fields .btn{min-height:38px}
 .radio-station-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px}
+.radio-drawer-footer{display:flex;justify-content:stretch;padding-top:12px}
+.radio-drawer-footer .btn{width:100%;justify-content:center}
 .radio-station-card{padding:16px;border-radius:18px;background:rgba(255,255,255,.08);border:1px solid rgba(148,163,184,.18);display:grid;gap:10px}
 .radio-station-card.is-active{border-color:rgba(59,130,246,.7);box-shadow:0 16px 32px rgba(37,99,235,.16)}
 .radio-station-card.is-custom{border-color:rgba(34,197,94,.42)}
@@ -21461,6 +21463,29 @@ body.carrito-flat-page .carrito-summary-row-bottom-total strong{
 
 body.carrito-flat-page .carrito-summary-row-bottom-total strong{
   color:color-mix(in srgb,var(--accent,#2563eb) 72%,var(--text,#1f2937) 28%) !important;
+}
+
+body.carrito-flat-page .btn,
+body.carrito-flat-page button,
+body.carrito-flat-page a.btn{
+  border-radius:0 !important;
+  background:color-mix(in srgb,var(--accent,#2563eb) 20%,var(--surface-soft,#f6f8fb) 80%) !important;
+  border-color:color-mix(in srgb,var(--accent,#2563eb) 42%,var(--border,#d6dee8) 58%) !important;
+  color:var(--text,#1f2937) !important;
+}
+
+body.carrito-flat-page .btn.primary,
+body.carrito-flat-page button.primary,
+body.carrito-flat-page .btn.success,
+body.carrito-flat-page button.success{
+  background:color-mix(in srgb,var(--accent,#2563eb) 34%,var(--surface-soft,#f6f8fb) 66%) !important;
+}
+
+body.carrito-flat-page .cash-change-hint,
+body.carrito-flat-page #stationCashChangeHint{
+  justify-content:flex-end !important;
+  text-align:right !important;
+  width:100% !important;
 }
 
 body.pos-touch-mode #carritoActionToolbar,

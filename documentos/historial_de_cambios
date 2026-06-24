@@ -35949,3 +35949,11 @@ Archivos modificados:
 - web/js/radio_player.js
 - web/menu.js
 - web/red_social_comercial.html
+
+2026-06-24 - Radio, historial de carrito y corte de caja
+- `web/administrar_empresa.html` y `web/js/radio_player.js`: el reproductor de emisoras se puede cerrar por completo desde el boton superior o inferior del panel, apagando audio, mini reproductor e icono flotante.
+- `backend/db/carritos_compras.go`, `backend/handlers/carritos_compras.go` y `backend/main.go`: se agrega `carrito_compra_producto_historial`, registro transaccional de adiciones al carrito y endpoint protegido `/api/empresa/carritos_compra/historial_productos` aislado por `empresa_id` y `carrito_id`.
+- `web/administrar_empresa/carrito_de_compras.html` y `web/administrar_empresa/carrito_historial_productos.html`: el selector de acciones abre una pagina privada con el historial no agrupado de productos, mostrando hora, cantidad, precio, total y usuario.
+- `web/administrar_empresa/corte_de_caja.html`: compacta filtros arriba, deja acciones en fila, muestra el reporte como papel blanco con texto negro, agrega tutorial de turno y check para imprimir sin cerrar sesion.
+- `web/administrar_empresa/panel.html` y `web/estilos.css`: la tarjeta de noticias vuelve al tema claro/oscuro configurado y el carrito mantiene botones cuadrados con color diferenciado y vuelto alineado a la derecha.
+- QA: `go test ./db ./handlers` desde `backend`.

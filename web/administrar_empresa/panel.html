@@ -730,16 +730,13 @@
     }
 
     .empresa-news-card {
-      --empresa-news-accent: #0f766e;
-      --empresa-news-warm: #facc15;
-      --empresa-news-ink: #102033;
       margin-top: 12px;
       padding: 14px;
       border-radius: 8px;
-      border: 1px solid color-mix(in srgb, var(--empresa-news-accent) 42%, #ffffff 58%);
-      background: linear-gradient(135deg, color-mix(in srgb, var(--empresa-news-warm) 18%, #ffffff 82%), color-mix(in srgb, #38bdf8 13%, #ffffff 87%));
-      color: var(--empresa-news-ink);
-      box-shadow: 0 10px 24px color-mix(in srgb, #0f172a 14%, transparent);
+      border: 1px solid var(--border);
+      background: var(--card);
+      color: var(--text);
+      box-shadow: none;
     }
 
     .empresa-news-card[hidden] {
@@ -762,7 +759,7 @@
       display: flex;
       flex-wrap: wrap;
       gap: 6px;
-      color: color-mix(in srgb, var(--empresa-news-accent) 72%, #1f2937 28%);
+      color: var(--muted);
       font-size: .76rem;
       font-weight: 800;
       text-transform: uppercase;
@@ -770,7 +767,7 @@
 
     .empresa-news-title {
       margin: 0;
-      color: #0f3f3a;
+      color: var(--text);
       font-family: "Montserrat", "Segoe UI", system-ui, sans-serif;
       font-size: 1.08rem;
       font-weight: 950;
@@ -779,7 +776,7 @@
 
     .empresa-news-summary {
       margin: 0;
-      color: #1e293b;
+      color: var(--muted);
       font-family: "Inter", "Segoe UI", system-ui, sans-serif;
       font-size: .9rem;
       line-height: 1.5;
@@ -792,9 +789,10 @@
       width: fit-content;
       margin-top: 2px;
       padding: 7px 10px;
-      border-radius: 999px;
-      background: color-mix(in srgb, var(--empresa-news-accent) 18%, #ffffff 82%);
-      color: #064e3b;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--surface-soft);
+      color: var(--text);
       font-size: .78rem;
       font-weight: 900;
     }

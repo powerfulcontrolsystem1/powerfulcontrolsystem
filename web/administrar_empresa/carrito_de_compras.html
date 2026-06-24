@@ -436,6 +436,7 @@
           <label class="form-label carrito-action-select-label" for="carritoActionSelect">Acción del carrito</label>
           <select id="carritoActionSelect" class="form-input carrito-action-select" aria-label="Seleccionar acción del carrito">
             <option value="">Selecciona una acción</option>
+            <option value="historial_productos">Historial de productos</option>
             <option value="carritoBtnDescuentos">☑ Descuentos</option>
             <option value="carritoBtnCambiarTarifa">☑ Cambiar tarifa</option>
             <option value="carritoBtnTransferirCuenta">☐ Transferir cuenta</option>
@@ -11588,6 +11589,19 @@
         const buttonID = normalize(carritoActionSelect.value);
         carritoActionSelect.value = '';
         if (!buttonID) return;
+        if (buttonID === 'historial_productos') {
+          const selected = getSelectedCarrito();
+          if (!selected || !selected.id) {
+            setMessage('itemMsg', 'Selecciona un carrito para ver su historial de productos.', true);
+            return;
+          }
+          const params = new URLSearchParams();
+          params.set('empresa_id', String(empresaId || selected.empresa_id || ''));
+          params.set('carrito_id', String(selected.id));
+          if (selected.codigo) params.set('carrito_codigo', String(selected.codigo));
+          window.open('/administrar_empresa/carrito_historial_productos.html?' + params.toString(), '_blank', 'noopener');
+          return;
+        }
         if (buttonID === 'cupo_credito') {
           const paymentMethodEl = document.getElementById('paymentMethod');
           if (paymentMethodEl) {

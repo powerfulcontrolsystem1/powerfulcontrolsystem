@@ -1,3 +1,6 @@
+2026-06-24 - Historial de productos del carrito
+- `web/administrar_empresa/carrito_historial_productos.html`: pagina privada empresarial para consultar e imprimir el historial no agrupado de productos pedidos en un carrito. Consume `/api/empresa/carritos_compra/historial_productos` y conserva aislamiento por `empresa_id` y `carrito_id`.
+
 2026-06-23 - Ventas, noticias, emisora y red social comercial
 - `web/administrar_empresa/ventas.html`:
 	- inicia filtros en la fecha actual, compacta la tarjeta de filtros a todo el ancho y mantiene resultados visibles sin mostrar detalle/vista previa.
