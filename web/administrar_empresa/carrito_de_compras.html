@@ -783,6 +783,10 @@
           <div>
             <h3 class="section-heading">Pago por QR</h3>
             <p id="paymentQrSubtitle" class="form-help mt-0">Genera un QR para recibir el pago por Bre-B o Nequi.</p>
+            <label class="empresa-config-check inline-check mt-6" for="paymentQrEnabledCheck">
+              <input id="paymentQrEnabledCheck" type="checkbox">
+              <span>Mostrar y generar codigo QR Bre-B para esta venta</span>
+            </label>
           </div>
           <div class="form-actions actions-wrap-gap-10">
             <button type="button" id="paymentQrGenerateBtn" class="btn secondary">Generar QR</button>
@@ -798,6 +802,7 @@
             <select id="paymentQrAccountSelect" class="form-input"></select>
             <div id="paymentQrMeta" class="carrito-payment-qr-meta"></div>
             <div id="paymentQrPayloadPreview" class="form-help carrito-payment-qr-preview"></div>
+            <div class="form-help mt-8">La venta se cierra cuando el cajero confirma el pago recibido o cuando exista una integracion bancaria/webhook que reporte la referencia como pagada.</div>
             <div id="paymentQrStatus" class="form-help mt-8"></div>
           </div>
         </div>
@@ -4740,6 +4745,7 @@
     function renderPaymentQrCard(carrito, pay, force) {
       const card = document.getElementById('stationPaymentQrCard');
       const button = document.getElementById('carritoBtnPagoQR');
+      const enabledCheck = document.getElementById('paymentQrEnabledCheck');
       const cfg = getPaymentQrConfig();
       const focusedSaleMode = state.stationMode || state.directSaleMode;
       const showButton = focusedSaleMode && cfg.enabled;
@@ -4754,9 +4760,11 @@
         card.style.display = visible ? '' : 'none';
       }
       if (!visible) {
+        if (enabledCheck) enabledCheck.checked = false;
         clearPaymentQrCanvas();
         return;
       }
+      if (enabledCheck) enabledCheck.checked = true;
 
       const breakdown = pay || getStationPaymentBreakdown(carrito);
       const account = getSelectedPaymentQrAccount(cfg);
@@ -11828,6 +11836,16 @@
     const paymentQrUseBtn = document.getElementById('paymentQrUseBtn');
     if (paymentQrUseBtn) {
       paymentQrUseBtn.addEventListener('click', applyPaymentQrToCheckout);
+    }
+    const paymentQrEnabledCheck = document.getElementById('paymentQrEnabledCheck');
+    if (paymentQrEnabledCheck) {
+      paymentQrEnabledCheck.addEventListener('change', function() {
+        state.paymentQr.open = Boolean(paymentQrEnabledCheck.checked);
+        const selected = getSelectedCarrito();
+        if (selected) {
+          renderPaymentQrCard(selected, getStationPaymentBreakdown(selected), Boolean(paymentQrEnabledCheck.checked));
+        }
+      });
     }
     document.getElementById('carritoBtnVehiculo').addEventListener('click', function() {
       window.location.href = '/administrar_empresa/vehiculos_registro.html';

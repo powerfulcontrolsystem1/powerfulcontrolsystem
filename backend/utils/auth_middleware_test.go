@@ -21,7 +21,6 @@ func TestAuthMiddlewarePublicAndProtectedSuperRoutes(t *testing.T) {
 		"/api/public/venta_publica",
 		"/api/public/market_symbol",
 		"/api/public/informacion_de_modulos",
-		"/api/public/noticias",
 		"/api/public/plantillas_nuevas/catalogo",
 		"/api/public/plantillas_integracion/catalogo",
 		"/api/public/juegos/records",
@@ -33,7 +32,6 @@ func TestAuthMiddlewarePublicAndProtectedSuperRoutes(t *testing.T) {
 		"/descripcion_de_los_sistemas.html",
 		"/descripcion_de_los_sistemas.ht",
 		"/red_social_comercial.html",
-		"/noticias.html",
 		"/visualizar_productos_y_precios_publico.html",
 		"/motel-calipso/visualizar_productos_y_precios_publico.html",
 		"/emulador",
@@ -66,6 +64,8 @@ func TestAuthMiddlewarePublicAndProtectedSuperRoutes(t *testing.T) {
 		"/super/api/reportes_globales",
 		"/ayuda/ayuda.html",
 		"/super_administrador.html",
+		"/noticias.html",
+		"/api/public/noticias",
 	}
 	for _, path := range protectedPaths {
 		path := path

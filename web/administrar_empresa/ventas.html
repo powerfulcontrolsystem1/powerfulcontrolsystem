@@ -20,6 +20,20 @@
     .ventas-relation-badge.with-fe{background:rgba(16,185,129,.12);border-color:rgba(16,185,129,.42);color:#047857}
     .ventas-relation-badge.fe-doc{background:rgba(59,130,246,.12);border-color:rgba(59,130,246,.42);color:#1d4ed8}
     .ventas-relation-badge.neutral{background:var(--surface-muted);color:var(--muted)}
+    .ventas-filtros-compact{padding-block:10px}
+    .ventas-filtros-compact .empresa-section-header{margin-bottom:6px}
+    .ventas-filtros-compact .form-row{margin-bottom:8px;gap:10px}
+    .ventas-filtros-compact .form-label{margin-bottom:3px}
+    .ventas-filtros-compact .form-actions{margin-top:2px}
+    .ventas-hidden-preview{display:none!important}
+    .empresa-module > .card.empresa-module-header{display:none!important}
+    .empresa-module > .card.empresa-section:nth-of-type(3){padding-block:10px;width:100%}
+    .empresa-module > .card.empresa-section:nth-of-type(3) .empresa-section-header{margin-bottom:6px}
+    .empresa-module > .card.empresa-section:nth-of-type(3) .page-header-lead{display:none}
+    .empresa-module > .card.empresa-section:nth-of-type(3) .form-row{margin-bottom:8px;gap:10px}
+    .empresa-module > .card.empresa-section:nth-of-type(3) .form-label{margin-bottom:3px}
+    .empresa-module > .card.empresa-section:nth-of-type(3) .form-actions{margin-top:2px}
+    .empresa-module > .card.empresa-section:nth-of-type(5){display:none!important}
   </style>
 </head>
 <body class="empresa-subpage">
@@ -137,7 +151,7 @@
       </div>
     </div>
 
-    <section class="card empresa-section">
+    <section class="card empresa-section ventas-filtros-compact">
       <div class="empresa-section-header">
         <h2>Filtros</h2>
         <div class="empresa-inline-actions">
@@ -204,7 +218,7 @@
       </form>
     </section>
 
-    <section class="card empresa-section">
+    <section class="card empresa-section ventas-hidden-preview">
       <div class="empresa-section-header">
         <h2>Resultados</h2>
       </div>

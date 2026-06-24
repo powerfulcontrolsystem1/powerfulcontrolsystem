@@ -1269,6 +1269,7 @@ func main() {
 	http.HandleFunc("/api/empresa/contratos_obligaciones", handlers.WithEmpresaContratosObligacionesPermissions(dbEmpresas, dbSuper, handlers.EmpresaModuloColombiaHandler(dbEmpresas, "contratos_obligaciones")))
 	http.HandleFunc("/api/empresa/tickets_ayuda", handlers.WithEmpresaSelfServicePermissions(dbEmpresas, dbSuper, handlers.EmpresaAyudaTicketsHandler(dbEmpresas, dbSuper)))
 	http.HandleFunc("/api/empresa/buzon", handlers.WithEmpresaSelfServicePermissions(dbEmpresas, dbSuper, handlers.EmpresaBuzonHandler(dbEmpresas, dbSuper)))
+	http.HandleFunc("/api/empresa/noticias", handlers.WithEmpresaSelfServicePermissions(dbEmpresas, dbSuper, handlers.EmpresaNoticiasPortalHandler(dbSuper)))
 	http.HandleFunc("/api/empresa/drogueria_farmacia", handlers.WithEmpresaDrogueriaFarmaciaPermissions(dbEmpresas, dbSuper, handlers.EmpresaModuloColombiaHandler(dbEmpresas, "drogueria_farmacia")))
 	http.HandleFunc("/api/empresa/proveedores", handlers.WithEmpresaComprasPermissions(dbEmpresas, dbSuper, handlers.EmpresaProveedoresHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/importaciones_costeo", handlers.WithEmpresaImportacionesCosteoPermissions(dbEmpresas, dbSuper, handlers.EmpresaImportacionesCosteoHandler(dbEmpresas)))

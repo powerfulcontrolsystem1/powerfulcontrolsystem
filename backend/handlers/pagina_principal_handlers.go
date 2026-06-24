@@ -1314,25 +1314,59 @@ func SuperNoticiasPortalHandler(dbSuper *sql.DB, webDir string) http.HandlerFunc
 	}
 }
 
-// PublicNoticiasPortalHandler expone la pagina de noticias para el menu flotante.
+func activeNoticiasPortalConfig(dbSuper *sql.DB) (noticiasPortalConfig, string, error) {
+	cfg, updatedAt, _, err := noticiasPortalLoadConfig(dbSuper)
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
+		return cfg, "", err
+	}
+	activeNews := make([]noticiaPortalItem, 0, len(cfg.Noticias))
+	for _, item := range cfg.Noticias {
+		if item.Activa {
+			activeNews = append(activeNews, item)
+		}
+	}
+	cfg.Noticias = activeNews
+	return cfg, updatedAt, nil
+}
+
+// EmpresaNoticiasPortalHandler expone noticias del sistema dentro del panel privado de empresa.
+func EmpresaNoticiasPortalHandler(dbSuper *sql.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+		empresaID := parseEmpresaIDFromContext(r)
+		if empresaID <= 0 {
+			http.Error(w, "empresa_id required", http.StatusBadRequest)
+			return
+		}
+		cfg, updatedAt, err := activeNoticiasPortalConfig(dbSuper)
+		if err != nil {
+			http.Error(w, "failed to read noticias: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+		writeJSON(w, http.StatusOK, map[string]interface{}{
+			"ok":         true,
+			"empresa_id": empresaID,
+			"config":     cfg,
+			"updated_at": updatedAt,
+		})
+	}
+}
+
+// PublicNoticiasPortalHandler expone la pagina de noticias para el portal publico.
 func PublicNoticiasPortalHandler(dbSuper *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 			return
 		}
-		cfg, updatedAt, _, err := noticiasPortalLoadConfig(dbSuper)
-		if err != nil && !errors.Is(err, sql.ErrNoRows) {
+		cfg, updatedAt, err := activeNoticiasPortalConfig(dbSuper)
+		if err != nil {
 			http.Error(w, "failed to read noticias: "+err.Error(), http.StatusInternalServerError)
 			return
 		}
-		publicNews := make([]noticiaPortalItem, 0, len(cfg.Noticias))
-		for _, item := range cfg.Noticias {
-			if item.Activa {
-				publicNews = append(publicNews, item)
-			}
-		}
-		cfg.Noticias = publicNews
 		writeJSON(w, http.StatusOK, map[string]interface{}{
 			"ok":         true,
 			"config":     cfg,

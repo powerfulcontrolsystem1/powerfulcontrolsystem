@@ -1,3 +1,10 @@
+## [2026-06-23] Noticias privadas, QR Bre-B y botones de archivo
+- [Noticias] `administrar_empresa/noticias.html` queda como vista privada dentro del panel empresarial; `/noticias.html` y `/api/public/noticias` dejan de ser rutas publicas sin sesion.
+- [Noticias] La pagina usa portada real de `web/img/Portada pagina de noticias.png`, filtra por pais detectado y no renderiza imagenes por noticia.
+- [Ventas] `ventas.html` retira visualmente las tarjetas superiores y `Detalle / vista previa`, y compacta `Filtros` a ancho completo.
+- [Carrito] `Pago por QR` agrega check para mostrar/generar QR Bre-B en la venta y aplica la referencia como `Transferencia Bre-B`; la deteccion automatica queda condicionada a webhook/API bancaria real.
+- [UX] Los botones nativos de seleccionar archivo se tematizan globalmente con claro/oscuro e icono.
+
 ## [2026-06-23] Panel empresa, carrito y recuperacion operativa
 - [Panel empresa] `panel.html` compacta Favoritos y Email corporativo, oculta mensajes tecnicos de IMAP, deja Buzon/Chat a ancho completo y agrega soporte para desactivar Favoritos y Email desde configuracion del panel.
 - [Noticias] Se agrega `administrar_empresa/noticias.html` para abrir noticias del sistema dentro del panel privado de empresa y se mejora el contraste visual de la tarjeta de Noticias.

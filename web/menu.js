@@ -420,9 +420,9 @@
           '<div class="fm-notification-panel-head"><strong>Buz&oacute;n de usuario</strong><button id="floatingNotificationRefresh" type="button">Actualizar</button></div>' +
           '<div id="floatingNotificationList" class="fm-notification-list"><p class="fm-notification-empty">Sin mensajes pendientes.</p></div>' +
         '</div>' +
-        '<a class="fm-item fm-icon-item" href="/index.html"><img class="fm-item-icon" src="/img/company-briefcase-color.svg" alt="">Portal</a>' +
-        '<a class="fm-item fm-icon-item" href="/red_social_comercial.html" target="_blank" rel="noopener"><img class="fm-item-icon" src="/img/social.svg" alt="">Red social comercial</a>' +
-        '<a class="fm-item fm-icon-item" href="/noticias.html"><img class="fm-item-icon" src="/img/report.svg" alt="">Noticias</a>' +
+        '<a class="fm-item fm-icon-item" href="/index.html" data-admin-frame-url="/index.html"><img class="fm-item-icon" src="/img/company-briefcase-color.svg" alt="">Portal</a>' +
+        '<a class="fm-item fm-icon-item" href="/red_social_comercial.html" data-admin-frame-url="/red_social_comercial.html"><img class="fm-item-icon" src="/img/social.svg" alt="">Red social comercial</a>' +
+        '<a class="fm-item fm-icon-item" href="/administrar_empresa/noticias.html" data-admin-frame-url="/administrar_empresa/noticias.html"><img class="fm-item-icon" src="/img/report.svg" alt="">Noticias</a>' +
         '<button id="createHelpTicketLink" class="fm-item fm-action-item fm-icon-item" type="button"><img class="fm-item-icon" src="/img/shield-security-color.svg" alt="">Crear ticket de ayuda</button>' +
         '<button id="openFloatingAILink" class="fm-item fm-action-item fm-icon-item" type="button"><img class="fm-item-icon" data-ai-logo="true" src="/img/pcs_ia_logo.svg" alt="">Robot / IA</button>' +
         '<button id="openFloatingRadioLink" class="fm-item fm-action-item fm-icon-item" type="button"><img class="fm-item-icon" src="/img/play.svg" alt="">Emisoras</button>' +
@@ -431,11 +431,11 @@
           '<div id="utilitiesMenuPopup" class="fm-submenu-popup" aria-hidden="true" role="menu">' +
             '<a class="fm-item fm-subitem fm-icon-item" href="/calculadora.html?compact=1" data-open-calculator="1"><img class="fm-item-icon" src="/img/analytics-color.svg" alt="">Calculadora</a>' +
             '<button class="fm-item fm-subitem fm-action-item fm-icon-item" type="button" data-share-current="email"><img class="fm-item-icon" src="/img/network-color.svg" alt="">Compartir por correo</button>' +
-            '<a class="fm-item fm-subitem fm-icon-item" href="/Juegos/menu_juegos.html" target="_blank" rel="noopener"><img class="fm-item-icon" src="/img/play.svg" alt="">Juegos</a>' +
-            '<a class="fm-item fm-subitem fm-icon-item" href="/emulador/" target="_blank" rel="noopener"><img class="fm-item-icon" src="/img/settings-color.svg" alt="">Emulador</a>' +
+            '<a class="fm-item fm-subitem fm-icon-item" href="/Juegos/menu_juegos.html" data-admin-frame-url="/Juegos/menu_juegos.html"><img class="fm-item-icon" src="/img/play.svg" alt="">Juegos</a>' +
+            '<a class="fm-item fm-subitem fm-icon-item" href="/emulador/" data-admin-frame-url="/emulador/"><img class="fm-item-icon" src="/img/settings-color.svg" alt="">Emulador</a>' +
           '</div>' +
         '</div>' +
-        '<a class="fm-item" href="/configuracion_de_la_cuenta.html">Configuración de la cuenta</a>' +
+        '<a class="fm-item" href="/configuracion_de_la_cuenta.html" data-admin-frame-url="/configuracion_de_la_cuenta.html">Configuración de la cuenta</a>' +
         '' +
         '<div class="theme-selector-item" id="themeToggleWrapper" style="position:relative;">' +
           '<button id="themeToggle" class="fm-item theme-toggle-btn" type="button" aria-expanded="false" aria-haspopup="true" aria-label="Cambiar apariencia">Cambiar apariencia \u25BC</button>' +
@@ -1179,6 +1179,20 @@
       sessionLink.href = '/login.html';
     }
 
+    function openInsideAdminFrame(anchor, event){
+      if (!anchor || !document.body || !document.body.classList.contains('admin-empresa-shell')) return false;
+      var targetUrl = anchor.getAttribute('data-admin-frame-url') || '';
+      if (!targetUrl) return false;
+      var frame = document.querySelector('iframe[name="contentFrame"], #contentFrame');
+      if (!frame) return false;
+      event.preventDefault();
+      frame.src = targetUrl;
+      closeThemePopup();
+      closeUtilitiesPopup();
+      closePanel();
+      return true;
+    }
+
     setSessionLinkAuthenticated(hasBrowserSessionCookie());
     themeManager.applyTheme(themeManager.getTheme());
 
@@ -1192,6 +1206,9 @@
       panel.addEventListener('click', function(event){
         event.stopPropagation();
         var item = event.target && event.target.closest ? event.target.closest('.fm-item') : null;
+        if (item && openInsideAdminFrame(item, event)) {
+          return;
+        }
         if (item && item.id !== 'themeToggle' && item.id !== 'utilitiesMenuToggle' && !item.classList.contains('fm-country')) {
           closeThemePopup();
           closeUtilitiesPopup();

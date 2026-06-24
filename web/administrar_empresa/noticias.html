@@ -5,33 +5,42 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Noticias del sistema</title>
   <link rel="stylesheet" href="/estilos.css">
-  <script src="/menu.js"></script>
   <style>
+    html,body{min-height:100%;overflow:auto}
+    body{margin:0}
     .empresa-news-private{min-height:100vh;padding:14px;background:linear-gradient(180deg,color-mix(in srgb,var(--bg) 92%,#0f766e 8%),var(--bg));color:var(--text)}
-    .empresa-news-private-shell{width:min(100%,1060px);margin:0 auto;display:grid;gap:12px}
-    .empresa-news-private-head{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;padding:14px;border:1px solid color-mix(in srgb,#0f766e 32%,var(--border));background:linear-gradient(135deg,color-mix(in srgb,#facc15 16%,var(--card) 84%),color-mix(in srgb,#38bdf8 12%,var(--card) 88%))}
-    .empresa-news-private-head h1{margin:0;color:#0f3f3a;font-size:1.32rem;line-height:1.1}
-    .empresa-news-private-head p{margin:4px 0 0;color:#1e293b;font-weight:750}
+    .empresa-news-private-shell{width:min(100%,1080px);margin:0 auto;display:grid;gap:12px}
+    .empresa-news-private-hero{position:relative;min-height:220px;display:flex;align-items:flex-end;padding:16px;border:1px solid color-mix(in srgb,#0f766e 38%,var(--border));background:var(--surface);overflow:hidden}
+    .empresa-news-private-hero img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+    .empresa-news-private-hero:after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(2,6,23,.08),rgba(2,6,23,.68))}
+    .empresa-news-private-head{position:relative;z-index:1;width:100%;display:flex;align-items:flex-end;justify-content:space-between;gap:12px;color:#fff;text-shadow:0 2px 10px rgba(0,0,0,.32)}
+    .empresa-news-private-head h1{margin:0;font-size:clamp(1.35rem,4vw,2.25rem);line-height:1.05}
+    .empresa-news-private-head p{margin:5px 0 0;color:#f8fafc;font-weight:800}
+    .empresa-news-country{display:inline-flex;align-items:center;gap:6px;padding:7px 10px;border:1px solid rgba(255,255,255,.45);background:rgba(15,23,42,.58);font-weight:900;font-size:.82rem;text-transform:uppercase}
     .empresa-news-private-list{display:grid;gap:10px}
-    .empresa-news-private-post{display:grid;gap:9px;padding:14px;border:1px solid var(--border);background:var(--card);color:var(--text)}
-    .empresa-news-private-post h2{margin:0;color:color-mix(in srgb,#0f766e 78%,var(--text) 22%);font-size:1.08rem;line-height:1.18}
-    .empresa-news-private-meta{display:flex;gap:8px;flex-wrap:wrap;color:var(--muted);font-size:.76rem;font-weight:900;text-transform:uppercase}
-    .empresa-news-private-summary{margin:0;color:var(--text);font-weight:760;line-height:1.45}
-    .empresa-news-private-content{margin:0;color:var(--muted);line-height:1.55;white-space:pre-line}
+    .empresa-news-private-post{display:grid;gap:8px;padding:13px 14px;border:1px solid var(--border);background:var(--card);color:var(--text)}
+    .empresa-news-private-post h2{margin:0;color:color-mix(in srgb,#0f766e 78%,var(--text) 22%);font-size:1.04rem;line-height:1.18}
+    .empresa-news-private-meta{display:flex;gap:8px;flex-wrap:wrap;color:var(--muted);font-size:.74rem;font-weight:900;text-transform:uppercase}
+    .empresa-news-private-summary{margin:0;color:var(--text);font-weight:760;line-height:1.42}
+    .empresa-news-private-content{margin:0;color:var(--muted);line-height:1.5;white-space:pre-line}
+    .empresa-news-private-source{color:var(--accent);font-weight:900;text-decoration:none;width:max-content}
+    .empresa-news-private-source:hover{text-decoration:underline}
     .empresa-news-private-empty{padding:14px;border:1px dashed var(--border);background:var(--card);color:var(--muted)}
-    .empresa-news-private-post img{width:100%;max-height:260px;object-fit:contain;border:1px solid var(--border);background:var(--surface)}
-    @media(max-width:640px){.empresa-news-private{padding:8px}.empresa-news-private-head{display:grid}.empresa-news-private-head h1{font-size:1.08rem}}
+    @media(max-width:640px){.empresa-news-private{padding:8px}.empresa-news-private-hero{min-height:180px;padding:12px}.empresa-news-private-head{display:grid;align-items:end}.empresa-news-private-head h1{font-size:1.22rem}}
   </style>
 </head>
-<body class="admin-empresa-shell">
+<body class="empresa-subpage">
   <main class="empresa-news-private">
     <div class="empresa-news-private-shell">
-      <header class="empresa-news-private-head">
-        <div>
-          <h1>Noticias del sistema</h1>
-          <p>Comunicados privados visibles para las empresas registradas.</p>
+      <header class="empresa-news-private-hero">
+        <img src="/img/Portada%20pagina%20de%20noticias.png" alt="">
+        <div class="empresa-news-private-head">
+          <div>
+            <h1>Noticias del sistema</h1>
+            <p>Comunicados privados para empresas registradas.</p>
+          </div>
+          <span id="countryBadge" class="empresa-news-country">Pais detectado</span>
         </div>
-        <a class="btn secondary" href="/administrar_empresa/panel.html">Volver al panel</a>
       </header>
       <section id="newsList" class="empresa-news-private-list" aria-live="polite">
         <p class="empresa-news-private-empty">Cargando noticias...</p>
@@ -43,25 +52,51 @@
       var list = document.getElementById("newsList");
       function esc(v){return String(v == null ? "" : v).replace(/[&<>"']/g,function(ch){return({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"})[ch];});}
       function text(v){return String(v == null ? "" : v).trim();}
+      function qp(name){ try { return new URLSearchParams(window.location.search||"").get(name) || ""; } catch(e){ return ""; } }
+      function detectedCountry(){
+        var raw = (qp("pais") || qp("country") || (navigator.language || "") || "es-CO").toUpperCase();
+        if(raw.indexOf("CO") >= 0 || raw.indexOf("COLOMB") >= 0) return { code:"CO", label:"Colombia" };
+        if(raw.indexOf("PA") >= 0 || raw.indexOf("PANAM") >= 0) return { code:"PA", label:"Panama" };
+        if(raw.indexOf("EC") >= 0 || raw.indexOf("ECUAD") >= 0) return { code:"EC", label:"Ecuador" };
+        return { code:"GLOBAL", label:"General" };
+      }
+      function itemCountry(item){
+        var values = [item.pais, item.country, item.codigo_pais, item.categoria].concat(Array.isArray(item.etiquetas) ? item.etiquetas : []);
+        var joined = values.map(text).join(" ").toUpperCase();
+        if(!joined) return "";
+        if(joined.indexOf("COLOMB") >= 0 || /\bCO\b/.test(joined)) return "CO";
+        if(joined.indexOf("PANAM") >= 0 || /\bPA\b/.test(joined)) return "PA";
+        if(joined.indexOf("ECUAD") >= 0 || /\bEC\b/.test(joined)) return "EC";
+        return "";
+      }
       function render(data){
+        var country = detectedCountry();
+        var badge = document.getElementById("countryBadge");
+        if(badge) badge.textContent = "Noticias: " + country.label;
         var cfg = data && data.config ? data.config : {};
-        var items = Array.isArray(cfg.noticias) ? cfg.noticias.filter(function(item){ return item && item.activa !== false; }) : [];
+        var items = Array.isArray(cfg.noticias) ? cfg.noticias.filter(function(item){
+          if(!item || item.activa === false) return false;
+          var c = itemCountry(item);
+          return !c || country.code === "GLOBAL" || c === country.code;
+        }) : [];
         if(!items.length){ list.innerHTML = '<p class="empresa-news-private-empty">No hay noticias publicadas en este momento.</p>'; return; }
         list.innerHTML = items.map(function(item){
+          var countryCode = itemCountry(item);
           var meta = [];
           if(text(item.categoria)) meta.push(text(item.categoria));
           if(text(item.fecha)) meta.push(text(item.fecha));
-          var image = text(item.imagen_url || item.imagen);
+          if(countryCode) meta.push(country.label);
+          var fuente = text(item.fuente_url);
           return '<article class="empresa-news-private-post">' +
             (meta.length ? '<div class="empresa-news-private-meta">' + meta.map(esc).join(' / ') + '</div>' : '') +
             '<h2>' + esc(text(item.titulo) || 'Noticia del sistema') + '</h2>' +
-            (image ? '<img src="' + esc(image) + '" alt="">' : '') +
             (text(item.resumen) ? '<p class="empresa-news-private-summary">' + esc(item.resumen) + '</p>' : '') +
             (text(item.contenido) ? '<p class="empresa-news-private-content">' + esc(item.contenido) + '</p>' : '') +
+            (fuente ? '<a class="empresa-news-private-source" href="' + esc(fuente) + '" target="_blank" rel="noopener">Ver fuente</a>' : '') +
           '</article>';
         }).join('');
       }
-      fetch('/api/public/noticias',{credentials:'same-origin'})
+      fetch('/api/empresa/noticias',{credentials:'same-origin'})
         .then(function(res){ if(!res.ok) throw new Error('HTTP '+res.status); return res.json(); })
         .then(render)
         .catch(function(){ list.innerHTML = '<p class="empresa-news-private-empty">No se pudieron cargar las noticias.</p>'; });

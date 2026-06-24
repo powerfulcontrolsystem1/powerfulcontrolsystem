@@ -1,3 +1,17 @@
+2026-06-23 - Noticias privadas, QR Bre-B y botones de archivo
+- `backend/handlers/pagina_principal_handlers.go`:
+	- agrega `EmpresaNoticiasPortalHandler` para leer noticias del sistema desde `/api/empresa/noticias` con sesion y `empresa_id` validado por middleware.
+- `backend/main.go`, `backend/utils/utils.go`, `backend/utils/auth_middleware_test.go`:
+	- registran noticias privadas para empresas y retiran `/noticias.html` y `/api/public/noticias` del allowlist publico.
+- `web/administrar_empresa.html`, `web/menu.js`, `web/administrar_empresa/noticias.html`:
+	- abren noticias dentro del panel de administrar empresa, usan portada `/img/Portada pagina de noticias.png`, no muestran imagenes en publicaciones y filtran por pais detectado.
+- `web/administrar_empresa/ventas.html`:
+	- oculta las tarjetas superiores y la tarjeta de detalle/vista previa, compacta filtros a ancho completo y conserva los nodos internos que usa la impresion.
+- `web/administrar_empresa/carrito_de_compras.html`:
+	- agrega check dentro de la tarjeta `Pago por QR` para mostrar/generar QR Bre-B en la venta y deja claro que el cierre exige confirmacion del cajero o integracion bancaria/webhook.
+- `web/estilos.css`:
+	- aplica estilo global claro/oscuro a `input[type=file]` y su boton nativo con icono de carga.
+
 2026-06-22 - Primer ingreso de usuarios por invitacion
 - `backend/handlers/usuarios_empresa.go`:
 	- endurece `/api/empresa/usuarios/establecer_password` para exigir confirmacion de contrasena, aceptar alias compatibles de confirmacion y responder mensajes claros sin texto corrupto.
