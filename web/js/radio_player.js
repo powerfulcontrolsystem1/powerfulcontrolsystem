@@ -310,6 +310,11 @@
     if (data && typeof data.radio_online_enabled === "boolean") {
       state.enabled = data.radio_online_enabled;
       try { window.localStorage.setItem(ENABLED_KEY, state.enabled ? "1" : "0"); } catch (_) {}
+      if (!state.enabled) {
+        state.stationId = "";
+        state.playing = false;
+        saveState();
+      }
     }
     if (data && Array.isArray(data.radio_custom_stations)) {
       state.customStations = countryTools.normalizeCustomList(data.radio_custom_stations);
@@ -503,6 +508,10 @@
   };
 
   window.__pcsRadioPlayerOpenDrawer = function () {
+    if (!state.enabled) {
+      setRadioEnabled(true);
+      persistRadioConfig();
+    }
     if (openBtn) {
       openBtn.hidden = false;
       openBtn.setAttribute("aria-hidden", "false");
@@ -523,7 +532,7 @@
   renderGrid();
   setRadioEnabled(state.enabled);
   loadCompanyRadioPreference();
-  if (state.stationId) {
+  if (state.enabled && state.stationId) {
     playStation(state.stationId, false);
     updateMiniPlayer();
   }

@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Red Social Comercial</title>
+  <title>Red Social Empresarial</title>
   <link rel="stylesheet" href="/estilos.css">
   <script src="/menu.js"></script>
   <style>
@@ -13,17 +13,20 @@
       position:sticky;top:0;z-index:20;
       width:100%;
       box-sizing:border-box;
-      padding:14px 16px;
-      border:1px solid var(--border);
+      min-height:clamp(180px,24vw,300px);
+      padding:18px 18px;
+      border:1px solid color-mix(in srgb,#38bdf8 34%,transparent);
       border-radius:8px;
-      background:linear-gradient(135deg,color-mix(in srgb,var(--surface) 88%,var(--accent) 12%),color-mix(in srgb,var(--surface-soft) 90%,var(--accent-2) 10%));
+      background:
+        linear-gradient(90deg,rgba(2,6,23,.74),rgba(2,6,23,.18) 58%,rgba(2,6,23,.42)),
+        url("/img/red-social-empresarial-portada.png") center/cover no-repeat;
       box-shadow:0 12px 28px color-mix(in srgb,#020617 16%,transparent);
       margin: 8px auto 16px;
-      display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;
+      display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap;
     }
-    .social-topbar h1{font-size:clamp(1.14rem,2.1vw,1.45rem);margin:0;font-weight:900;letter-spacing:0;color:var(--text)}
-    .social-topbar p{margin:0;color:var(--muted);max-width:48rem;line-height:1.35;font-size:0.92rem}
-    .social-session-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+    .social-topbar-title{align-self:flex-end;display:flex;align-items:flex-end;min-height:100%}
+    .social-topbar h1{font-size:clamp(1.35rem,2.8vw,2.35rem);margin:0;font-weight:950;letter-spacing:0;color:#fff;text-shadow:0 3px 14px rgba(0,0,0,.58)}
+    .social-session-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end;background:rgba(2,6,23,.52);border:1px solid rgba(148,163,184,.35);border-radius:8px;padding:8px;backdrop-filter:blur(8px)}
     .social-icon-btn{width:42px;height:42px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text);display:grid;place-items:center;font-weight:950;text-decoration:none;cursor:pointer}
     .social-notification{position:relative}
     .social-notification-badge{position:absolute;right:-5px;top:-5px;min-width:18px;height:18px;border-radius:999px;background:var(--danger);color:#fff;font-size:.72rem;font-weight:900;display:grid;place-items:center;padding:0 4px}
@@ -62,15 +65,14 @@
     .comment-form textarea{flex:1;min-width:240px;min-height:42px;resize:vertical}
     .comment-form .btn-send{background:linear-gradient(180deg,var(--accent),var(--accent-2));color:var(--btn-primary-text);border:none;padding:10px 14px;border-radius:8px;font-weight:950;cursor:pointer}
     @media(min-width:1180px){.post-card{width:min(100%,860px)}}
-    @media(max-width:640px){.social-shell{padding:12px 10px 44px}.social-topbar{width:100%;position:static}.post-card,.empty-state,.load-more{width:100%}.post-cover{height:180px}.react-row{grid-template-columns:1fr}.comment-form textarea,.comment-form input{min-width:100%}}
+    @media(max-width:640px){.social-shell{padding:12px 10px 44px}.social-topbar{width:100%;position:static;min-height:190px;background-position:center top}.social-session-actions{width:100%;justify-content:flex-start}.post-card,.empty-state,.load-more{width:100%}.post-cover{height:180px}.react-row{grid-template-columns:1fr}.comment-form textarea,.comment-form input{min-width:100%}}
   </style>
 </head>
 <body>
   <div class="social-shell">
     <header class="social-topbar">
-      <div>
-        <h1>Red Social Comercial</h1>
-        <p>Feed público de publicaciones empresariales. Baja para cargar más (estilo Facebook).</p>
+      <div class="social-topbar-title">
+        <h1>Red Social Empresarial</h1>
       </div>
       <div class="social-session-actions" id="socialSessionActions">
         <button class="social-icon-btn social-notification" id="socialNotificationsBtn" type="button" title="Notificaciones">N<span id="socialNotificationsBadge" class="social-notification-badge" hidden>0</span></button>

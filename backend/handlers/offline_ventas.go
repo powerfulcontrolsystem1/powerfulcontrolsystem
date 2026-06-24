@@ -354,7 +354,7 @@ func syncOfflineVenta(r *http.Request, dbEmp, dbSuper *sql.DB, empresaID int64, 
 			log.Printf("[offline_ventas] efectivo caja omitido empresa_id=%d cierre_id=%d error=%v", empresaID, caja.ID, err)
 		}
 	}
-	documentoVenta, errDocumento := registrarDocumentoVentaDesdeCarritoPagado(dbEmp, dbSuper, carritoPagado, totalPagado, usuario)
+	documentoVenta, errDocumento := registrarDocumentoVentaDesdeCarritoPagado(dbEmp, dbSuper, carritoPagado, totalPagado, usuario, "")
 	if errDocumento != nil {
 		log.Printf("[offline_ventas] documento venta empresa_id=%d carrito_id=%d error=%v", empresaID, carritoPagado.ID, errDocumento)
 	}

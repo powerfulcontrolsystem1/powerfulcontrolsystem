@@ -26,13 +26,29 @@
     .domotica-device-meta span{display:block;border:1px solid var(--border);border-radius:8px;padding:8px;background:var(--surface-soft);color:var(--muted)}
     .domotica-device-meta strong{display:block;color:var(--text)}
     .domotica-schedule-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+    .carrito-document-mode-actions{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:10px;padding:14px}
+    .carrito-document-mode-actions .btn{min-height:54px;border-radius:0;font-weight:900}
+    .carrito-document-mode-copy{padding:14px 14px 0;color:var(--muted);font-size:.92rem}
     .carrito-direct-sale-tools{align-items:center;justify-content:flex-end;gap:8px}
     .carrito-direct-sale-tools button[hidden]{display:none!important}
+    .carrito-scanner-header{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px}
+    .carrito-scanner-header-title{margin:0;font-size:.9rem;font-weight:900;color:var(--muted);text-transform:uppercase}
     .carrito-customer-header-actions{display:flex;align-items:center;justify-content:flex-end;gap:8px;flex-wrap:wrap}
-    .carrito-fullscreen-card{display:flex;align-items:center;justify-content:center;border:1px solid var(--border);border-radius:8px;background:var(--surface-soft,var(--surface));padding:4px;color:var(--text);min-height:46px}
+    .carrito-fullscreen-card{display:flex;align-items:center;justify-content:center;border:1px solid var(--border);border-radius:0;background:var(--surface-soft,var(--surface));padding:4px;color:var(--text);min-height:42px}
     .carrito-fullscreen-card[hidden]{display:none!important}
-    .carrito-fullscreen-btn{width:38px;height:38px;min-width:38px;padding:0;display:inline-flex;align-items:center;justify-content:center}
+    .carrito-fullscreen-btn{min-height:36px;padding:0 10px;display:inline-flex;align-items:center;justify-content:center;gap:7px;border-radius:0}
     .carrito-fullscreen-btn .cart-btn-icon{font-size:1rem}
+    .carrito-fullscreen-label{font-size:.82rem;font-weight:900}
+    .carrito-logo-card{display:grid;gap:8px;justify-items:center;text-align:center}
+    .carrito-logo-card[hidden]{display:none!important}
+    .carrito-logo-toggle{display:flex;align-items:center;justify-content:center;gap:8px;font-size:.78rem;font-weight:850;color:var(--muted)}
+    .carrito-logo-preview{display:none;max-width:96px;max-height:58px;object-fit:contain}
+    .carrito-logo-card.is-enabled .carrito-logo-preview{display:block}
+    .carrito-station-side{display:grid;gap:0;align-content:start}
+    .carrito-workspace-card{border-color:color-mix(in srgb,var(--accent) 34%,var(--border) 66%)!important;border-width:2px!important;padding:8px!important;background:color-mix(in srgb,var(--carrito-card-bg,var(--card)) 94%,var(--accent) 6%)!important}
+    .carrito-workspace-card :is(.card,.empresa-section,.carrito-summary-card,#scannerPanel,#stationCustomerCard,#stationCartSplitRow,#stationCheckoutPanel,#stationCartActionsCard,#stationPaymentAmountsCard,#stationPaymentQrCard,#stationWorkerCommissionCard,#stationVipAccessCard,#carritoTotalsPanel,.carrito-logo-card){margin-top:0!important;border-radius:0!important}
+    .carrito-workspace-card :is(.carrito-primary-layout,.carrito-primary-main,.carrito-side-column,.carrito-station-side,.carrito-station-split,.carrito-station-split-main){gap:0!important}
+    .carrito-workspace-card .carrito-summary-card{border-left-color:color-mix(in srgb,var(--accent) 26%,var(--border) 74%)!important}
     .cart-item-detail-strong{font-weight:800;color:var(--text)}
     .carrito-flat-page{--cart-title-shade:color-mix(in srgb,var(--surface-soft) 78%,var(--accent) 8%);--cart-title-border:color-mix(in srgb,var(--border) 82%,var(--accent) 18%)}
     html[data-theme^="dark"] .carrito-flat-page{--cart-title-shade:color-mix(in srgb,var(--surface) 72%,#000 28%);--cart-title-border:color-mix(in srgb,var(--border) 80%,#38bdf8 20%)}
@@ -52,7 +68,10 @@
     body.carrito-direct-fullscreen{background:var(--carrito-page-bg,var(--bg))}
     body.carrito-direct-fullscreen .container{max-width:none;width:100%;min-height:100vh;padding:8px}
     body.carrito-direct-fullscreen .carrito-customer-header{position:sticky;top:0;z-index:120;background:var(--surface,var(--bg));padding:6px 0}
-    @media(max-width:760px){.carrito-direct-sale-tools{justify-content:flex-end}.carrito-customer-header-actions{width:100%;justify-content:flex-end}.carrito-fullscreen-btn{width:38px!important}}
+    body.carrito-direct-fullscreen #openAIDrawer,
+    body.carrito-direct-fullscreen .ai-chat-toggle-button,
+    body.carrito-direct-fullscreen .floating-menu{display:none!important}
+    @media(max-width:760px){.carrito-direct-sale-tools{justify-content:flex-end}.carrito-customer-header-actions{width:100%;justify-content:flex-end}.carrito-scanner-header{align-items:stretch}.carrito-fullscreen-label{display:none}.carrito-fullscreen-btn{min-width:38px!important;padding:0 9px}}
   </style>
 </head>
 <body class="super-page form-bg-dark carrito-flat-page admin-subpage" data-auto-estacion-labels="true">
@@ -157,6 +176,15 @@
       </section>
 
       <div id="scannerPanel" class="card empresa-section mt-10">
+        <div class="carrito-scanner-header">
+          <h3 class="carrito-scanner-header-title">Buscar producto</h3>
+          <div id="directSaleFullscreenCard" class="carrito-fullscreen-card" hidden>
+            <button id="directSaleFullscreenBtn" class="btn secondary carrito-fullscreen-btn" type="button" hidden title="Pantalla completa" aria-label="Abrir venta directa en pantalla completa">
+              <span class="carrito-fullscreen-label">Pantalla completa</span>
+              <span class="cart-btn-icon cart-btn-icon-info" aria-hidden="true">⛶</span>
+            </button>
+          </div>
+        </div>
         <div class="empresa-section-header" hidden>
           <h3 class="section-heading"></h3>
         </div>
@@ -264,11 +292,6 @@
           </div>
           <div class="carrito-customer-header-actions">
             <div id="stationClienteActual" class="form-help carrito-customer-current">Cliente actual: Cliente General.</div>
-            <div id="directSaleFullscreenCard" class="carrito-fullscreen-card" hidden>
-              <button id="directSaleFullscreenBtn" class="btn secondary carrito-fullscreen-btn" type="button" hidden title="Pantalla completa" aria-label="Abrir venta directa en pantalla completa">
-                <span class="cart-btn-icon cart-btn-icon-info" aria-hidden="true">⛶</span>
-              </button>
-            </div>
           </div>
         </div>
         <div id="stationClienteSelectorRow" class="form-row" hidden>
@@ -422,10 +445,16 @@
           <p class="form-help mb-8 mt-0" hidden></p>
           <div id="itemsListStation" class="carrito-items-box carrito-items-box--station-fixed">Selecciona un carrito para gestionar sus ítems.</div>
         </div>
-        <aside class="card carrito-summary-card carrito-station-totals-aside">
-          <h3 id="carritoTotalsTitleStation" class="section-heading">Totales y detalles</h3>
-          <div id="carritoTotalsContentStation" class="carrito-summary-content mt-10">Selecciona un carrito para ver el resumen.</div>
-        </aside>
+        <div class="carrito-station-side">
+          <aside id="carritoLogoCardStation" class="card carrito-logo-card carrito-station-logo-card" hidden>
+            <label class="carrito-logo-toggle"><input id="carritoLogoToggleStation" type="checkbox"> Mostrar logo</label>
+            <img id="carritoLogoPreviewStation" class="carrito-logo-preview" alt="Logo de la empresa">
+          </aside>
+          <aside class="card carrito-summary-card carrito-station-totals-aside">
+            <h3 id="carritoTotalsTitleStation" class="section-heading">Totales y detalles</h3>
+            <div id="carritoTotalsContentStation" class="carrito-summary-content mt-10">Selecciona un carrito para ver el resumen.</div>
+          </aside>
+        </div>
       </div>
 
       <section id="stationCartActionsCard" class="card empresa-section carrito-actions-card is-hidden mt-12" hidden>
@@ -575,6 +604,24 @@
             <button type="button" id="domoticaDeviceOnBtn" class="btn add">Encender</button>
             <button type="button" id="domoticaDeviceSaveScheduleBtn" class="btn primary">Guardar programacion</button>
           </footer>
+        </article>
+      </div>
+
+      <div id="carritoDocumentModeModal" class="domotica-device-modal" hidden role="dialog" aria-modal="true" aria-labelledby="carritoDocumentModeTitle">
+        <div class="domotica-device-backdrop" data-carrito-document-mode="cancelar"></div>
+        <article class="domotica-device-dialog">
+          <header class="domotica-device-head">
+            <div>
+              <p class="form-help mt-0 mb-4">Tipo de venta</p>
+              <h3 id="carritoDocumentModeTitle" class="section-heading">Selecciona como cerrar el carrito</h3>
+            </div>
+            <button type="button" class="btn secondary" data-carrito-document-mode="cancelar">Cancelar</button>
+          </header>
+          <p class="carrito-document-mode-copy">Elige si esta venta se cierra solo como comprobante interno o si debe generar factura electronica.</p>
+          <div class="carrito-document-mode-actions">
+            <button type="button" class="btn secondary" data-carrito-document-mode="comprobante_pago">Venta sola</button>
+            <button type="button" class="btn add" data-carrito-document-mode="factura_electronica">Venta con factura electronica</button>
+          </div>
         </article>
       </div>
 
@@ -949,6 +996,10 @@
         </div>
 
         <div id="carritoSideColumn" class="carrito-side-column">
+          <aside id="carritoLogoCard" class="card carrito-logo-card" hidden>
+            <label class="carrito-logo-toggle"><input id="carritoLogoToggle" type="checkbox"> Mostrar logo</label>
+            <img id="carritoLogoPreview" class="carrito-logo-preview" alt="Logo de la empresa">
+          </aside>
           <aside id="carritoTotalsPanel" class="card carrito-summary-card mt-10">
             <h3 id="carritoTotalsTitle" class="section-heading">Totales y detalles</h3>
             <div id="carritoTotalsContent" class="carrito-summary-content mt-10">Selecciona un carrito para ver el resumen.</div>
@@ -1392,6 +1443,68 @@
 
     function moneyPrecision(moneda) {
       return shouldUseWholeMoney(moneda) ? 0 : 2;
+    }
+
+    function cartLogoStorageKey() {
+      return 'pcs_carrito_mostrar_logo:' + String(state.empresaID || 0);
+    }
+
+    function getCartLogoUrl() {
+      const cfg = state.empresaAvanzadaConfig || {};
+      return normalize(
+        cfg.logo_url ||
+        cfg.logo_empresa_url ||
+        cfg.logo_factura_url ||
+        cfg.logo_sistema_url ||
+        cfg.logo ||
+        ''
+      );
+    }
+
+    function isCartLogoEnabled() {
+      try {
+        return window.localStorage.getItem(cartLogoStorageKey()) === '1';
+      } catch (_) {
+        return false;
+      }
+    }
+
+    function setCartLogoEnabled(enabled) {
+      try {
+        window.localStorage.setItem(cartLogoStorageKey(), enabled ? '1' : '0');
+      } catch (_) {}
+      syncCartLogoCards();
+    }
+
+    function syncCartLogoCards() {
+      const logoUrl = getCartLogoUrl();
+      const enabled = Boolean(logoUrl && isCartLogoEnabled());
+      [
+        ['carritoLogoCard', 'carritoLogoToggle', 'carritoLogoPreview'],
+        ['carritoLogoCardStation', 'carritoLogoToggleStation', 'carritoLogoPreviewStation']
+      ].forEach(function(ids) {
+        const card = document.getElementById(ids[0]);
+        const toggle = document.getElementById(ids[1]);
+        const img = document.getElementById(ids[2]);
+        if (!card) return;
+        card.hidden = !logoUrl;
+        card.classList.toggle('is-enabled', enabled);
+        if (toggle) toggle.checked = enabled;
+        if (img) {
+          img.src = logoUrl || '';
+          img.hidden = !enabled;
+        }
+      });
+    }
+
+    function setupCartLogoToggles() {
+      ['carritoLogoToggle', 'carritoLogoToggleStation'].forEach(function(id) {
+        const toggle = document.getElementById(id);
+        if (!toggle) return;
+        toggle.addEventListener('change', function() {
+          setCartLogoEnabled(!!toggle.checked);
+        });
+      });
     }
 
     function normalizeMoneyValue(value, moneda) {
@@ -2044,6 +2157,7 @@
         mostrar_desglose_cobro: false,
         mostrar_resumen_productos: true,
         mostrar_boton_pagar: true,
+        preguntar_tipo_documento_al_pagar: false,
         mostrar_tarjetas_pago: true,
         mostrar_tarjeta_lector_codigo: true,
         mostrar_tarjeta_items_carrito: true,
@@ -2195,6 +2309,7 @@
         mostrar_desglose_cobro: src.mostrar_desglose_cobro === undefined ? base.mostrar_desglose_cobro : Boolean(src.mostrar_desglose_cobro),
         mostrar_resumen_productos: src.mostrar_resumen_productos === undefined ? base.mostrar_resumen_productos : Boolean(src.mostrar_resumen_productos),
         mostrar_boton_pagar: src.mostrar_boton_pagar === undefined ? base.mostrar_boton_pagar : Boolean(src.mostrar_boton_pagar),
+        preguntar_tipo_documento_al_pagar: src.preguntar_tipo_documento_al_pagar === undefined ? base.preguntar_tipo_documento_al_pagar : Boolean(src.preguntar_tipo_documento_al_pagar),
         mostrar_tarjetas_pago: src.mostrar_tarjetas_pago === undefined ? base.mostrar_tarjetas_pago : Boolean(src.mostrar_tarjetas_pago),
         mostrar_tarjeta_lector_codigo: src.mostrar_tarjeta_lector_codigo === undefined ? base.mostrar_tarjeta_lector_codigo : Boolean(src.mostrar_tarjeta_lector_codigo),
         mostrar_tarjeta_items_carrito: src.mostrar_tarjeta_items_carrito === undefined ? base.mostrar_tarjeta_items_carrito : Boolean(src.mostrar_tarjeta_items_carrito),
@@ -6833,7 +6948,55 @@
       }
     }
 
-    async function payStationSession() {
+    function shouldAskDocumentModeOnPayment() {
+      const ui = normalizeUnifiedCartUIConfig(state.stationCartUI || getCurrentStationCartUIConfig());
+      return Boolean(ui.preguntar_tipo_documento_al_pagar);
+    }
+
+    function askDocumentModeForPayment() {
+      if (!shouldAskDocumentModeOnPayment()) {
+        return Promise.resolve('');
+      }
+      const modal = document.getElementById('carritoDocumentModeModal');
+      if (!modal) {
+        return Promise.resolve('');
+      }
+      return new Promise(function(resolve) {
+        let resolved = false;
+        const cleanup = function(value) {
+          if (resolved) return;
+          resolved = true;
+          modal.hidden = true;
+          document.body.classList.remove('modal-open');
+          modal.removeEventListener('click', onClick);
+          document.removeEventListener('keydown', onKeydown);
+          resolve(value || '');
+        };
+        const onClick = function(ev) {
+          const btn = ev.target && typeof ev.target.closest === 'function'
+            ? ev.target.closest('[data-carrito-document-mode]')
+            : null;
+          if (!btn) return;
+          const mode = normalize(btn.getAttribute('data-carrito-document-mode'));
+          if (mode === 'cancelar') {
+            cleanup('');
+            return;
+          }
+          cleanup(mode);
+        };
+        const onKeydown = function(ev) {
+          if (ev && ev.key === 'Escape') cleanup('');
+        };
+        modal.addEventListener('click', onClick);
+        document.addEventListener('keydown', onKeydown);
+        modal.hidden = false;
+        document.body.classList.add('modal-open');
+        const firstAction = modal.querySelector('[data-carrito-document-mode="comprobante_pago"]');
+        if (firstAction && typeof firstAction.focus === 'function') firstAction.focus();
+      });
+    }
+
+    async function payStationSession(documentModeOverride) {
       if (state.paymentInProgress) return;
       const selected = getSelectedCarrito();
       if (!selected) {
@@ -6952,7 +7115,10 @@
       try {
         state.paymentInProgress = true;
         setStationPayButtonState({ loading: true });
-        setStationPaymentMessage('Registrando pago y cerrando carrito...', false);
+        const documentMode = normalize(documentModeOverride);
+        setStationPaymentMessage(documentMode === 'factura_electronica'
+          ? 'Registrando pago y generando factura electronica...'
+          : 'Registrando pago y cerrando carrito...', false);
         let payEndpoint = '/api/empresa/carritos_compra?empresa_id=' + encodeURIComponent(state.empresaID) + '&id=' + encodeURIComponent(selected.id) + '&action=pagar_estacion';
         if (state.stationMode) {
           payEndpoint += '&perm_page=linkEstaciones';
@@ -6979,6 +7145,7 @@
             abonos_total: pay.abonosTotal,
             total_pagado: pay.totalPagarFinal,
             aplicar_propina: pay.tipApplied,
+            modo_documento_venta: documentMode,
             usuario_lavador: state.optionalSections.showWorkerCommission ? normalize(document.getElementById('commissionWorker').value) : '',
             usuario_lavador_id: state.optionalSections.showWorkerCommission ? usuarioEmpresaIDPorEntrada(document.getElementById('commissionWorker').value) : 0,
             cierre_caja_id: Number(cashForPayment.id || 0),
@@ -9490,10 +9657,20 @@
       rowVisibility[profile.paidLabel] = !!ui.totales_detalles_mostrar_pagado;
       rowVisibility[profile.balanceLabel] = !!ui.totales_detalles_mostrar_saldo;
 
+      function summaryRowIsZero(row) {
+        if (!row) return false;
+        const raw = normalize(row.value).toLowerCase();
+        if (!raw || raw === '-') return false;
+        const numeric = Number(raw.replace(/[^\d,-]/g, '').replace(/\./g, '').replace(',', '.'));
+        if (Number.isFinite(numeric) && numeric === 0) return true;
+        return /(^|\s)(0|0\.00|0,00)$/.test(raw) || raw.indexOf('$ 0') >= 0 || raw.indexOf('cop 0') >= 0;
+      }
+
       const compactRows = rows.filter(function(row) {
         if (row.hidden) return false;
         if (row.optionalTime && !profile.showTimeRow && row.value === '-') return false;
         if (Object.prototype.hasOwnProperty.call(rowVisibility, row.label) && !rowVisibility[row.label]) return false;
+        if (summaryRowIsZero(row)) return false;
         return true;
       });
       const totalRows = compactRows.filter(function(row) {
@@ -11596,7 +11773,7 @@
             return;
           }
           const params = new URLSearchParams();
-          params.set('empresa_id', String(empresaId || selected.empresa_id || ''));
+          params.set('empresa_id', String(state.empresaID || selected.empresa_id || ''));
           params.set('carrito_id', String(selected.id));
           if (selected.codigo) params.set('carrito_codigo', String(selected.codigo));
           window.open('/administrar_empresa/carrito_historial_productos.html?' + params.toString(), '_blank', 'noopener');
@@ -12125,7 +12302,12 @@
       }
       btn.dataset.paymentClickLock = '1';
       try {
-        await payStationSession();
+        const documentMode = await askDocumentModeForPayment();
+        if (shouldAskDocumentModeOnPayment() && !documentMode) {
+          setStationPaymentMessage('Pago cancelado. Selecciona venta sola o factura electronica para continuar.', true);
+          return;
+        }
+        await payStationSession(documentMode);
       } catch (err) {
         state.paymentInProgress = false;
         setStationPayButtonState({ disabled: false });
@@ -12239,6 +12421,7 @@
         await loadEmpresaGeneralConfigFromServer();
         applyCartMoneyInputScale('COP');
         await loadEmpresaAvanzadaConfigFromServer();
+        syncCartLogoCards();
         await loadEmpresaPermissionsContextFromServer();
         await loadStationConfigFromServer();
         await loadTarifaMinutosConfigFromServer();
@@ -12285,6 +12468,7 @@
         renderInitialLoadError(err);
       }
     })();
+    setupCartLogoToggles();
   </script>
   <script>
     (function decorateCarritoButtonsWithIcons() {

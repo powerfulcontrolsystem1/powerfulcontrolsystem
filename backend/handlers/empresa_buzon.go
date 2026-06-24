@@ -497,13 +497,17 @@ func empresaBuzonActorCanAttach(actor dbpkg.EmpresaBuzonActor, msg dbpkg.Empresa
 func listEmpresaBuzonRecipients(dbEmp, dbSuper *sql.DB, empresaID int64, actor dbpkg.EmpresaBuzonActor) ([]map[string]interface{}, error) {
 	out := make([]map[string]interface{}, 0)
 	seen := map[string]bool{}
-	add := func(tipo, ref, nombre, rol, email string, id int64) {
+	add := func(tipo, ref, nombre, rol, email, estado string, id int64) {
 		tipo = strings.ToLower(strings.TrimSpace(tipo))
 		ref = strings.TrimSpace(ref)
 		email = strings.ToLower(strings.TrimSpace(email))
 		nombre = strings.TrimSpace(nombre)
 		rol = strings.TrimSpace(rol)
+		estado = strings.ToLower(strings.TrimSpace(estado))
 		if tipo == "" || ref == "" {
+			return
+		}
+		if estado == "eliminado" || estado == "borrado" || estado == "deleted" {
 			return
 		}
 		key := tipo + ":" + strings.ToLower(ref)
@@ -529,15 +533,23 @@ func listEmpresaBuzonRecipients(dbEmp, dbSuper *sql.DB, empresaID int64, actor d
 			"email":  email,
 			"nombre": nombre,
 			"rol":    rol,
+			"estado": estado,
 		})
 	}
 
-	users, err := dbpkg.GetEmpresaUsuarios(dbEmp, empresaID, false)
+	users, err := dbpkg.GetEmpresaUsuarios(dbEmp, empresaID, true)
 	if err != nil {
 		return nil, err
 	}
 	for _, user := range users {
-		add("usuario", strconv.FormatInt(user.ID, 10), user.Nombre, user.RolNombre, user.Email, user.ID)
+		estado := strings.ToLower(strings.TrimSpace(user.Estado))
+		if estado == "" {
+			estado = "activo"
+		}
+		if user.EmailConfirmado == 0 {
+			estado = "pendiente"
+		}
+		add("usuario", strconv.FormatInt(user.ID, 10), user.Nombre, user.RolNombre, user.Email, estado, user.ID)
 	}
 
 	if dbEmp != nil {
@@ -555,7 +567,7 @@ func listEmpresaBuzonRecipients(dbEmp, dbSuper *sql.DB, empresaID int64, actor d
 					role = firstNonEmptyString(admin.Role, role)
 				}
 			}
-			add("admin", ownerEmail, name, role, ownerEmail, 0)
+			add("admin", ownerEmail, name, role, ownerEmail, "activo", 0)
 		}
 	}
 
@@ -575,12 +587,12 @@ func listEmpresaBuzonRecipients(dbEmp, dbSuper *sql.DB, empresaID int64, actor d
 				name = firstNonEmptyString(admin.Name, name)
 				role = firstNonEmptyString(admin.Role, role)
 			}
-			add("admin", email, name, role, email, 0)
+			add("admin", email, name, role, email, "activo", 0)
 		}
 	}
 
 	if actor.Ref != "" {
-		add(actor.Tipo, actor.Ref, actor.Nombre, actor.Rol, actor.Email, actor.UsuarioID)
+		add(actor.Tipo, actor.Ref, actor.Nombre, actor.Rol, actor.Email, "activo", actor.UsuarioID)
 	}
 	return out, nil
 }

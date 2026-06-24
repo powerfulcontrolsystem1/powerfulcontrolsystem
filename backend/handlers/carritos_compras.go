@@ -1004,33 +1004,26 @@ func EmpresaCarritosCompraHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 					http.Error(w, "cliente obligatorio: registra o selecciona un cliente antes de pagar el carrito", http.StatusConflict)
 					return
 				}
-				if prerequisite, err := validateCarritoPaymentPrerequisites(dbEmp, carrito); err != nil {
-					log.Printf("[carritos] preflight pago empresa_id=%d id=%d error: %v", empresaID, id, err)
-					http.Error(w, "No se pudieron validar las dependencias operativas del pago", http.StatusInternalServerError)
-					return
-				} else if prerequisite != nil {
-					writeCarritoBusinessPrerequisite(w, http.StatusConflict, *prerequisite)
-					return
-				}
 
 				var payload struct {
-					MetodoPago      string                    `json:"metodo_pago"`
-					ReferenciaPago  string                    `json:"referencia_pago"`
-					PagosMixtos     []carritoPagoMixtoEntrada `json:"pagos_mixtos"`
-					Pagos           []carritoPagoMixtoEntrada `json:"pagos"`
-					DescuentoTipo   string                    `json:"descuento_tipo"`
-					DescuentoCodigo string                    `json:"descuento_codigo"`
-					CodigoDescuento string                    `json:"codigo_descuento"`
-					DescuentoValor  float64                   `json:"descuento_valor"`
-					DevolucionTotal float64                   `json:"devolucion_total"`
-					AbonosTotal     float64                   `json:"abonos_total"`
-					TotalPagado     float64                   `json:"total_pagado"`
-					AplicarPropina  *bool                     `json:"aplicar_propina"`
-					UsuarioLavador  string                    `json:"usuario_lavador"`
-					CierreCajaID    int64                     `json:"cierre_caja_id"`
-					CajaCodigo      string                    `json:"caja_codigo"`
-					CajaTurno       string                    `json:"caja_turno"`
-					CajaSucursalID  int64                     `json:"caja_sucursal_id"`
+					MetodoPago         string                    `json:"metodo_pago"`
+					ReferenciaPago     string                    `json:"referencia_pago"`
+					PagosMixtos        []carritoPagoMixtoEntrada `json:"pagos_mixtos"`
+					Pagos              []carritoPagoMixtoEntrada `json:"pagos"`
+					DescuentoTipo      string                    `json:"descuento_tipo"`
+					DescuentoCodigo    string                    `json:"descuento_codigo"`
+					CodigoDescuento    string                    `json:"codigo_descuento"`
+					DescuentoValor     float64                   `json:"descuento_valor"`
+					DevolucionTotal    float64                   `json:"devolucion_total"`
+					AbonosTotal        float64                   `json:"abonos_total"`
+					TotalPagado        float64                   `json:"total_pagado"`
+					AplicarPropina     *bool                     `json:"aplicar_propina"`
+					ModoDocumentoVenta string                    `json:"modo_documento_venta"`
+					UsuarioLavador     string                    `json:"usuario_lavador"`
+					CierreCajaID       int64                     `json:"cierre_caja_id"`
+					CajaCodigo         string                    `json:"caja_codigo"`
+					CajaTurno          string                    `json:"caja_turno"`
+					CajaSucursalID     int64                     `json:"caja_sucursal_id"`
 				}
 				if r.Body != nil {
 					if err := json.NewDecoder(r.Body).Decode(&payload); err != nil && err != io.EOF {
@@ -1040,6 +1033,15 @@ func EmpresaCarritosCompraHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 				}
 				if len(payload.PagosMixtos) == 0 && len(payload.Pagos) > 0 {
 					payload.PagosMixtos = payload.Pagos
+				}
+				modoDocumentoVenta := normalizeCarritoPaymentDocumentMode(payload.ModoDocumentoVenta)
+				if prerequisite, err := validateCarritoPaymentPrerequisites(dbEmp, carrito, modoDocumentoVenta); err != nil {
+					log.Printf("[carritos] preflight pago empresa_id=%d id=%d modo_documento=%s error: %v", empresaID, id, modoDocumentoVenta, err)
+					http.Error(w, "No se pudieron validar las dependencias operativas del pago", http.StatusInternalServerError)
+					return
+				} else if prerequisite != nil {
+					writeCarritoBusinessPrerequisite(w, http.StatusConflict, *prerequisite)
+					return
 				}
 
 				metodoPago := dbpkg.NormalizeMetodoPagoCarrito(payload.MetodoPago)
@@ -1494,7 +1496,7 @@ func EmpresaCarritosCompraHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 					}
 				}
 
-				documentoVenta, errDocumentoVenta := registrarDocumentoVentaDesdeCarritoPagado(dbEmp, dbSuper, carritoPagado, totalDocumentoConPropina, usuarioOperacion)
+				documentoVenta, errDocumentoVenta := registrarDocumentoVentaDesdeCarritoPagado(dbEmp, dbSuper, carritoPagado, totalDocumentoConPropina, usuarioOperacion, modoDocumentoVenta)
 				if errDocumentoVenta != nil {
 					log.Printf("[carritos] documento_venta empresa_id=%d carrito_id=%d error: %v", empresaID, id, errDocumentoVenta)
 				}
@@ -1570,8 +1572,9 @@ func EmpresaCarritosCompraHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 						"caja_sucursal_id": cierreCaja.SucursalID,
 						"efectivo_sumado":  montoEfectivoCaja,
 					},
-					"credito_venta":   creditoVenta,
-					"documento_venta": documentoVenta,
+					"credito_venta":        creditoVenta,
+					"documento_venta":      documentoVenta,
+					"modo_documento_venta": modoDocumentoVenta,
 				})
 				return
 			}
@@ -3301,6 +3304,20 @@ func normalizeVentaDocumentMode(raw string) string {
 	return "comprobante_pago"
 }
 
+func normalizeCarritoPaymentDocumentMode(raw string) string {
+	raw = strings.TrimSpace(strings.ToLower(raw))
+	switch raw {
+	case "", "auto", "automatico":
+		return ""
+	case "factura", "factura_electronica", "venta_con_factura", "venta_factura_electronica":
+		return "factura_electronica"
+	case "venta_sola", "comprobante", "comprobante_pago", "sin_factura", "venta_simple":
+		return "comprobante_pago"
+	default:
+		return ""
+	}
+}
+
 func extractVentaDocumentoBase(raw string) string {
 	base := strings.ToUpper(strings.TrimSpace(raw))
 	base = strings.ReplaceAll(base, " ", "")
@@ -3532,7 +3549,7 @@ func registrarFacturaElectronicaDesdeDocumentoVenta(dbEmp, dbSuper *sql.DB, vent
 	}, nil
 }
 
-func registrarDocumentoVentaDesdeCarritoPagado(dbEmp, dbSuper *sql.DB, carrito *dbpkg.CarritoCompra, montoTotal float64, usuario string) (map[string]interface{}, error) {
+func registrarDocumentoVentaDesdeCarritoPagado(dbEmp, dbSuper *sql.DB, carrito *dbpkg.CarritoCompra, montoTotal float64, usuario, modoDocumentoVenta string) (map[string]interface{}, error) {
 	if dbEmp == nil || carrito == nil || carrito.EmpresaID <= 0 || carrito.ID <= 0 {
 		return nil, nil
 	}
@@ -3546,13 +3563,21 @@ func registrarDocumentoVentaDesdeCarritoPagado(dbEmp, dbSuper *sql.DB, carrito *
 		cfg = &empty
 	}
 
+	modoDocumentoVenta = normalizeCarritoPaymentDocumentMode(modoDocumentoVenta)
 	emitirFacturaEnEstaVenta := carritoAutoFacturaElectronicaActiva(cfg)
 	frecuenciaAplicada := false
 	frecuenciaCadaNNo := int64(0)
 	frecuenciaContadorAnterior := int64(0)
 	frecuenciaContadorNuevo := int64(0)
 
-	if emitirFacturaEnEstaVenta && cfg.FacturacionFrecuenciaAutomaticaActiva && cfg.FacturacionFrecuenciaCadaNNo > 0 {
+	switch modoDocumentoVenta {
+	case "factura_electronica":
+		emitirFacturaEnEstaVenta = true
+	case "comprobante_pago":
+		emitirFacturaEnEstaVenta = false
+	}
+
+	if modoDocumentoVenta == "" && emitirFacturaEnEstaVenta && cfg.FacturacionFrecuenciaAutomaticaActiva && cfg.FacturacionFrecuenciaCadaNNo > 0 {
 		frecuenciaAplicada = true
 		frecuenciaCadaNNo = cfg.FacturacionFrecuenciaCadaNNo
 		ciclo := frecuenciaCadaNNo + 1
@@ -3661,6 +3686,7 @@ func registrarDocumentoVentaDesdeCarritoPagado(dbEmp, dbSuper *sql.DB, carrito *
 			"emitio_en_esta_venta": emitirFacturaEnEstaVenta,
 		},
 		"facturacion_automatica_activa": emitirFacturaEnEstaVenta,
+		"modo_documento_pago":           modoDocumentoVenta,
 		"envio_correo_venta":            envioCorreoVenta,
 		"factura_electronica":           facturaElectronica,
 	}, nil
@@ -3723,7 +3749,7 @@ func writeCarritoBusinessPrerequisite(w http.ResponseWriter, status int, prerequ
 	writeJSON(w, status, prerequisite)
 }
 
-func validateCarritoPaymentPrerequisites(dbEmp *sql.DB, carrito *dbpkg.CarritoCompra) (*carritoBusinessPrerequisite, error) {
+func validateCarritoPaymentPrerequisites(dbEmp *sql.DB, carrito *dbpkg.CarritoCompra, modoDocumentoVenta string) (*carritoBusinessPrerequisite, error) {
 	if dbEmp == nil || carrito == nil || carrito.EmpresaID <= 0 || carrito.ID <= 0 {
 		return nil, nil
 	}
@@ -3749,7 +3775,15 @@ func validateCarritoPaymentPrerequisites(dbEmp *sql.DB, carrito *dbpkg.CarritoCo
 	if err != nil {
 		return nil, err
 	}
-	if !carritoShouldEmitFacturaElectronica(cfg) {
+	if cfg == nil {
+		cfg = &dbpkg.EmpresaConfiguracionAvanzada{EmpresaID: carrito.EmpresaID}
+	}
+	modoDocumentoVenta = normalizeCarritoPaymentDocumentMode(modoDocumentoVenta)
+	if modoDocumentoVenta == "comprobante_pago" {
+		return nil, nil
+	}
+	requiereFacturaElectronica := modoDocumentoVenta == "factura_electronica" || carritoShouldEmitFacturaElectronica(cfg)
+	if !requiereFacturaElectronica {
 		return nil, nil
 	}
 
@@ -3779,11 +3813,15 @@ func validateCarritoPaymentPrerequisites(dbEmp *sql.DB, carrito *dbpkg.CarritoCo
 
 	configURL := fmt.Sprintf("/administrar_empresa/facturacion_electronica.html?empresa_id=%d", carrito.EmpresaID)
 	message := "Antes de pagar debes completar el formato y la configuracion de facturacion electronica de la empresa. Faltan: " + strings.Join(missing, ", ") + "."
+	robotMessage := "Alto un momento: esta empresa tiene factura electronica automatica al cerrar la venta, pero la configuracion todavia no esta completa. Abre Facturacion electronica, completa datos fiscales, resolucion, numeracion y formato de impresion, guarda los cambios y vuelve al carrito para pagar."
+	if modoDocumentoVenta == "factura_electronica" {
+		robotMessage = "Alto un momento: elegiste venta con factura electronica, pero la configuracion todavia no esta completa. Abre Facturacion electronica, completa datos fiscales, resolucion, numeracion y formato de impresion, guarda los cambios y vuelve al carrito para pagar."
+	}
 	return &carritoBusinessPrerequisite{
 		Code:         "facturacion_configuracion_incompleta",
 		Title:        "Configura la factura antes de pagar",
 		Message:      message,
-		RobotMessage: "Alto un momento: esta empresa tiene factura electronica automatica al cerrar la venta, pero la configuracion todavia no esta completa. Abre Facturacion electronica, completa datos fiscales, resolucion, numeracion y formato de impresion, guarda los cambios y vuelve al carrito para pagar.",
+		RobotMessage: robotMessage,
 		Scope:        "pagar_estacion",
 		Missing:      missing,
 		Steps: []string{

@@ -35976,3 +35976,16 @@ Archivos modificados:
 - web/administrar_empresa/panel.html
 - web/estilos.css
 - web/js/radio_player.js
+2026-06-24: Panel, red social, radio e IA flotante.
+- Frontend: `web/administrar_empresa/panel.html` agrega el boton `Ocultar noticia` en la tarjeta Noticias. El boton marca como leida solo la noticia actual por `empresa_id` en almacenamiento local del navegador, sin desactivar la tarjeta del panel; una noticia nueva genera otra clave y vuelve a mostrarse.
+- Frontend: `web/red_social_comercial.html` cambia a `Red Social Empresarial`, retira el subtitulo del feed y usa `web/img/red-social-empresarial-portada.png` como portada real.
+- Frontend global: `web/js/radio_player.js` evita que una emisora guardada en el navegador reactive la radio cuando la preferencia empresarial esta apagada.
+- Frontend global: `web/js/ai_chat_drawer.js` hace idempotente la autoinyeccion del drawer para conservar una sola IA flotante por pagina.
+- Alcance: no agrega endpoints, tablas, dependencias ni runtime Python al sistema. Python solo se uso temporalmente fuera del sistema para servir archivos estaticos locales durante una prueba visual.
+- QA: verificacion visual local de red social con portada, titulo y un unico boton IA; `git diff --check` sin errores.
+## 2026-06-24 - Carrito con decision venta sola o factura electronica
+
+- Se agrega en Configuracion carrito la opcion `Preguntar venta sola o factura electronica al pagar`, persistida como `preguntar_tipo_documento_al_pagar`.
+- Cuando la opcion esta activa, el carrito muestra un modal antes de cobrar para elegir `Venta sola` o `Venta con factura electronica`; cancelar no registra el pago.
+- El backend de `pagar_estacion` recibe `modo_documento_venta` y fuerza la factura electronica solo en esa transaccion, o la omite cuando se elige venta sola. Si no llega eleccion, mantiene el comportamiento automatico existente de la empresa y su frecuencia.
+- Validaciones ejecutadas: `go test ./handlers -run "^$" -count=1`, parseo de scripts embebidos de carrito/configuracion/panel/productos con Node y `git diff --check`.

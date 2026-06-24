@@ -797,6 +797,38 @@
       font-weight: 900;
     }
 
+    .empresa-news-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 10px;
+    }
+
+    .empresa-news-hide-btn {
+      appearance: none;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 34px;
+      padding: 7px 10px;
+      border-radius: 8px;
+      border: 1px solid color-mix(in srgb, var(--accent) 28%, var(--border));
+      background: color-mix(in srgb, var(--accent) 10%, var(--surface) 90%);
+      color: var(--text);
+      font: inherit;
+      font-size: .78rem;
+      font-weight: 900;
+      cursor: pointer;
+    }
+
+    .empresa-news-hide-btn:hover,
+    .empresa-news-hide-btn:focus-visible {
+      outline: 2px solid color-mix(in srgb, var(--accent) 24%, transparent);
+      outline-offset: 2px;
+      background: color-mix(in srgb, var(--accent) 16%, var(--surface) 84%);
+    }
+
     .empresa-buzon-grid {
       display: grid;
       grid-template-columns: minmax(0, 1fr);
@@ -1996,6 +2028,9 @@
         <p id="empresaNoticiasSummary" class="empresa-news-summary"></p>
         <span class="empresa-news-footer">Ver todas las noticias</span>
       </a>
+      <div class="empresa-news-actions">
+        <button id="empresaNoticiasHideBtn" class="empresa-news-hide-btn" type="button">Ocultar noticia</button>
+      </div>
     </section>
 
     <section class="empresa-buzon-grid" aria-label="Buzon y chat interno">
@@ -2096,6 +2131,7 @@
       var empresaNoticiasMetaEl = document.getElementById("empresaNoticiasMeta");
       var empresaNoticiasHeadlineEl = document.getElementById("empresaNoticiasHeadline");
       var empresaNoticiasSummaryEl = document.getElementById("empresaNoticiasSummary");
+      var empresaNoticiasHideBtnEl = document.getElementById("empresaNoticiasHideBtn");
       var empresaBuzonGridEl = document.querySelector(".empresa-buzon-grid");
       var empresaBuzonCardEl = document.querySelector(".empresa-buzon-card");
       var empresaChatCardEl = document.querySelector(".empresa-chat-card");
@@ -2150,6 +2186,7 @@
         chat_enabled: true
       };
       var empresaBuzonInterval = null;
+      var empresaCurrentNewsKey = "";
       var weatherCodeMap = {
         0: ["Soleado", "clear", "\u2600"],
         1: ["Mayormente despejado", "clear", "\u2600"],
@@ -2255,6 +2292,51 @@
         empresaNoticiasLinkEl.href = url;
         empresaNoticiasLinkEl.removeAttribute("target");
         empresaNoticiasLinkEl.removeAttribute("rel");
+      }
+
+      function normalizeNewsKeyPart(value) {
+        return text(value).toLowerCase().replace(/\s+/g, " ").slice(0, 160);
+      }
+
+      function buildEmpresaNewsKey(item) {
+        var parts = [
+          item && (item.id || item.uuid || item.codigo || ""),
+          item && item.fecha,
+          item && item.pais,
+          item && item.categoria,
+          item && item.titulo
+        ].map(normalizeNewsKeyPart).filter(Boolean);
+        return parts.length ? parts.join("|") : "";
+      }
+
+      function empresaNewsSeenStorageKey(newsKey) {
+        return "pcs_panel_noticia_leida:" + String(empresaId || "sin_empresa") + ":" + newsKey;
+      }
+
+      function isEmpresaNewsSeen(newsKey) {
+        if (!newsKey) return false;
+        try {
+          return window.localStorage.getItem(empresaNewsSeenStorageKey(newsKey)) === "1";
+        } catch (error) {
+          return false;
+        }
+      }
+
+      function markEmpresaNewsSeen(newsKey) {
+        if (!newsKey) return;
+        try {
+          window.localStorage.setItem(empresaNewsSeenStorageKey(newsKey), "1");
+        } catch (error) {}
+      }
+
+      function hideCurrentEmpresaNews() {
+        if (!empresaCurrentNewsKey) return;
+        markEmpresaNewsSeen(empresaCurrentNewsKey);
+        if (empresaNoticiasHideBtnEl) {
+          empresaNoticiasHideBtnEl.disabled = true;
+          empresaNoticiasHideBtnEl.textContent = "Noticia leida";
+        }
+        if (empresaNoticiasCardEl) empresaNoticiasCardEl.hidden = true;
       }
 
       function renderEmpresaEmailPanel(data) {
@@ -2486,8 +2568,9 @@
               var nombre = user.nombre || user.email || ("Usuario " + user.id);
               var rol = user.rol || (user.tipo === "admin" ? "administrador" : "usuario");
               var email = user.email || "";
+              var estado = user.estado && user.estado !== "activo" ? user.estado : "";
               opt.value = String(user.value || user.ref || user.id || user.email || "");
-              opt.textContent = [nombre, rol, email].filter(Boolean).join(" | ");
+              opt.textContent = [nombre, rol, estado, email].filter(Boolean).join(" | ");
               opt.dataset.email = user.email || "";
               opt.dataset.tipo = user.tipo || "";
               opt.title = opt.textContent;
@@ -2683,6 +2766,7 @@
         if (empresaBuzonFormEl) empresaBuzonFormEl.addEventListener("submit", sendEmpresaBuzonPayload);
         if (empresaBuzonRecordBtnEl) empresaBuzonRecordBtnEl.addEventListener("click", toggleEmpresaBuzonRecording);
         if (empresaChatFormEl) empresaChatFormEl.addEventListener("submit", sendEmpresaChat);
+        if (empresaNoticiasHideBtnEl) empresaNoticiasHideBtnEl.addEventListener("click", hideCurrentEmpresaNews);
         if (empresaTaskCompleteCancelEl) empresaTaskCompleteCancelEl.addEventListener("click", function () {
           empresaSelectedTask = null;
           if (empresaTaskCompletePanelEl) empresaTaskCompletePanelEl.classList.remove("is-visible");
@@ -2735,6 +2819,12 @@
               return;
             }
             var item = news[0];
+            var newsKey = buildEmpresaNewsKey(item);
+            empresaCurrentNewsKey = newsKey;
+            if (isEmpresaNewsSeen(newsKey)) {
+              empresaNoticiasCardEl.hidden = true;
+              return;
+            }
             if (empresaNoticiasHeadlineEl) empresaNoticiasHeadlineEl.textContent = text(item.titulo) || "Noticia del sistema";
             if (empresaNoticiasSummaryEl) empresaNoticiasSummaryEl.textContent = text(item.resumen || item.contenido) || "Consulta la noticia completa en la pagina del sistema.";
             if (empresaNoticiasMetaEl) {
@@ -2745,6 +2835,10 @@
             }
             if (empresaNoticiasLinkEl) {
               updateEmpresaNoticiasLink();
+            }
+            if (empresaNoticiasHideBtnEl) {
+              empresaNoticiasHideBtnEl.disabled = false;
+              empresaNoticiasHideBtnEl.textContent = "Ocultar noticia";
             }
             empresaNoticiasCardEl.hidden = false;
           })

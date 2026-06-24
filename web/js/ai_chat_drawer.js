@@ -337,7 +337,10 @@
   }
 
   function ensureDrawerShell() {
-    if (document.getElementById(TOGGLE_ID) && document.getElementById(DRAWER_ID) && document.getElementById(BACKDROP_ID)) {
+    var existingToggle = document.getElementById(TOGGLE_ID);
+    var existingDrawer = document.getElementById(DRAWER_ID);
+    var existingBackdrop = document.getElementById(BACKDROP_ID);
+    if (existingToggle && existingDrawer && existingBackdrop) {
       ensureAgentControl();
       return true;
     }
@@ -350,12 +353,15 @@
     var title = buildPublicDrawerTitle();
     var placeholder = buildPublicDrawerPlaceholder();
     var hintsMarkup = buildPublicDrawerExamplesMarkup();
-    document.body.insertAdjacentHTML('beforeend',
+    var toggleMarkup = existingToggle ? '' : (
       '<button id="' + TOGGLE_ID + '" class="ai-chat-toggle-button" aria-haspopup="dialog" aria-expanded="false" type="button">' +
         AI_TOGGLE_ICON + '<span class="ai-chat-toggle-label">Asistente IA</span>' +
-      '</button>' +
-      '<div id="' + BACKDROP_ID + '" class="ai-chat-backdrop" aria-hidden="true"></div>' +
-      '<section id="' + DRAWER_ID + '" class="ai-chat-drawer" role="dialog" aria-modal="true" aria-labelledby="aiChatTitle">' +
+      '</button>'
+    );
+    document.body.insertAdjacentHTML('beforeend',
+      toggleMarkup +
+      (existingBackdrop ? '' : '<div id="' + BACKDROP_ID + '" class="ai-chat-backdrop" aria-hidden="true"></div>') +
+      (existingDrawer ? '' : '<section id="' + DRAWER_ID + '" class="ai-chat-drawer" role="dialog" aria-modal="true" aria-labelledby="aiChatTitle">' +
         '<div class="ai-chat-minibar" id="' + MINIBAR_ID + '" hidden>' +
           '<span class="ai-chat-minibar-label">Asistente IA</span>' +
           '<button type="button" id="' + MINIBAR_EXPAND_ID + '" class="ai-chat-minibar-btn" aria-label="Abrir asistente IA">' +
@@ -435,7 +441,7 @@
             '<button type="submit" class="btn primary">Enviar</button>' +
           '</form>' +
         '</div>' +
-      '</section>');
+      '</section>'));
     ensureAgentControl();
     return true;
   }

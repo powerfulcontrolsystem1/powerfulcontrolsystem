@@ -3,6 +3,25 @@
 Tabla de ubicacion rapida para no buscar desde cero cada modulo. Si una fila
 queda incompleta al implementar una mejora, actualizarla en el mismo cambio.
 
+Actualizacion 2026-06-24: `Administrar empresa > Panel` mantiene la tarjeta
+`Noticias` configurable por empresa, pero el boton `Ocultar noticia` solo marca
+como leida la noticia actual en el navegador para esa empresa; cuando el sistema
+publique una noticia distinta, la tarjeta vuelve a mostrarse. `Red social
+empresarial` usa `web/img/red-social-empresarial-portada.png` como portada,
+retira el subtitulo del feed y centraliza la inyeccion del chat IA para evitar
+doble icono. `Radio online` sigue apagada por defecto y limpia emisoras viejas
+del navegador cuando la preferencia empresarial esta apagada.
+
+Actualizacion 2026-06-24: `Configuracion carrito` agrega
+`preguntar_tipo_documento_al_pagar` en
+`web/administrar_empresa/configuracion_carrito_de_compra_empresa.html`. Cuando
+esta activo, `web/administrar_empresa/carrito_de_compras.html` abre un modal al
+presionar Pagar para elegir `Venta sola` o `Venta con factura electronica`. El
+endpoint `/api/empresa/carritos_compra?action=pagar_estacion` recibe
+`modo_documento_venta`; `backend/handlers/carritos_compras.go` fuerza la factura
+electronica solo para esa venta o la omite si se eligio venta sola, manteniendo
+el modo automatico/frecuencia si la opcion no se usa.
+
 Actualizacion 2026-06-22: `Portal publico` abre desde `index.html` las secciones
 `Contacto`, `Privacidad y datos`, `Quienes somos` y `Sistema Hotel / Motel`
 debajo de la barra superior, con rutas de respaldo que redirigen al mismo
