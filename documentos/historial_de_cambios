@@ -35976,6 +35976,12 @@ Archivos modificados:
 - web/administrar_empresa/panel.html
 - web/estilos.css
 - web/js/radio_player.js
+2026-06-25 - Modo rapido del carrito y verificacion del logo PCS
+- `web/administrar_empresa/configuracion_carrito_de_compra_empresa.html`: agrega el check `Activar modo rapido del carrito`, guardado en `estaciones_config.carrito_ui_global.modo_rapido_carrito`.
+- `web/administrar_empresa/carrito_de_compras.html`: aplica `body.cart-fast-mode` para una vista compacta tipo texto/tabla con menos decoracion visual, sin crear un carrito paralelo ni duplicar reglas de pago, inventario, descuentos, credito o facturacion.
+- `web/administrar_empresa/carrito_de_compras.html`: el logo del carrito queda blindado con `onerror` para ocultarse si la imagen no existe y no dejar iconos rotos.
+- Operacion PCS: se configuro empresa `12` con `/img/Logo pcs 1.png`, `mostrar_logo_empresa_carrito=true` y `logo_empresa_carrito_tamano=mediano`; la verificacion visual en el carrito confirma `naturalWidth=1022` y logo dentro de `Totales y detalles`.
+
 2026-06-25 - Opciones de logo en identidad visual y carrito
 - `web/administrar_empresa/configuracion.html`: la tarjeta Identidad visual agrega checks repetidos para logo en factura y logo en carrito, sincroniza el check de factura con la configuracion de impresion/factura y guarda la opcion de carrito en `estaciones_config.carrito_ui_global`.
 - `web/administrar_empresa/configuracion_carrito_de_compra_empresa.html`: el check `Mostrar logo de la empresa en el carrito` suma selector `Tamano del logo en el carrito` con valores `pequeno`, `mediano` y `grande`.

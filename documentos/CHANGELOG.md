@@ -1,3 +1,9 @@
+## [2026-06-25] Modo rapido del carrito
+- [Configuracion carrito] Agrega `Activar modo rapido del carrito`, persistido como `modo_rapido_carrito`.
+- [Carrito] El modo rapido usa una vista compacta tipo texto/tabla con menos sombras, espaciado y decoracion, manteniendo el mismo carrito, APIs, pagos, inventario, descuentos y facturacion.
+- [Logo] Se refuerza la carga del logo para ocultarlo si la imagen no existe y evitar iconos rotos.
+- [QA] PCS queda configurada con logo `/img/Logo pcs 1.png`, logo de carrito activo y tamano mediano; verificacion visual confirma que el logo carga encima de `Totales y detalles`.
+
 ## [2026-06-25] Opciones de logo en identidad visual
 - [Identidad visual] Agrega checks para mostrar logo en factura y en carrito, mas selector de tamano del logo de carrito: pequeno, mediano o grande.
 - [Configuracion carrito] El check del logo conserva su funcion y suma el mismo selector de tamano, persistido como `logo_empresa_carrito_tamano`.

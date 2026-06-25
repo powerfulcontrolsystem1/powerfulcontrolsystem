@@ -45,6 +45,14 @@
     .carrito-logo-card.logo-size-pequeno .carrito-logo-preview{max-width:72px;max-height:44px}
     .carrito-logo-card.logo-size-mediano .carrito-logo-preview{max-width:96px;max-height:58px}
     .carrito-logo-card.logo-size-grande .carrito-logo-preview{max-width:136px;max-height:82px}
+    .cart-fast-mode{--cart-title-shade:color-mix(in srgb,var(--surface) 92%,#000 8%)}
+    .cart-fast-mode .carrito-workspace-card{padding:4px!important;background:var(--surface)!important}
+    .cart-fast-mode .card,.cart-fast-mode .empresa-section,.cart-fast-mode .carrito-summary-card{box-shadow:none!important}
+    .cart-fast-mode .carrito-items-box,.cart-fast-mode table,.cart-fast-mode .table{font-family:Consolas,"Courier New",monospace;font-size:12px;line-height:1.25}
+    .cart-fast-mode .form-row{gap:4px!important}
+    .cart-fast-mode .form-input,.cart-fast-mode .btn{min-height:34px!important;padding:6px 8px!important}
+    .cart-fast-mode .carrito-summary-content{font-size:12px}
+    .cart-fast-mode .carrito-summary-pay-actions{margin-top:6px}
     .carrito-station-side{display:grid;gap:0;align-content:start}
     .carrito-workspace-card{border-color:color-mix(in srgb,var(--accent) 34%,var(--border) 66%)!important;border-width:2px!important;padding:8px!important;background:color-mix(in srgb,var(--carrito-card-bg,var(--card)) 94%,var(--accent) 6%)!important}
     .carrito-workspace-card :is(.card,.empresa-section,.carrito-summary-card,#scannerPanel,#stationCustomerCard,#stationCartSplitRow,#stationCheckoutPanel,#stationCartActionsCard,#stationPaymentAmountsCard,#stationPaymentQrCard,#stationWorkerCommissionCard,#stationVipAccessCard,#carritoTotalsPanel,.carrito-logo-card){margin-top:0!important;border-radius:0!important}
@@ -1505,6 +1513,11 @@
         card.classList.remove('logo-size-pequeno', 'logo-size-mediano', 'logo-size-grande');
         card.classList.add('logo-size-' + logoSize);
         if (img) {
+          img.onerror = function() {
+            card.hidden = true;
+            img.hidden = true;
+            img.removeAttribute('src');
+          };
           img.src = shouldShow ? logoUrl : '';
           img.hidden = !shouldShow;
         }
@@ -2164,6 +2177,7 @@
         preguntar_tipo_documento_al_pagar: false,
         mostrar_logo_empresa_carrito: true,
         logo_empresa_carrito_tamano: 'mediano',
+        modo_rapido_carrito: false,
         mostrar_tarjetas_pago: true,
         mostrar_tarjeta_lector_codigo: true,
         mostrar_tarjeta_items_carrito: true,
@@ -2295,6 +2309,7 @@
         permitir_cantidad_decimal_carrito: src.permitir_cantidad_decimal_carrito === undefined ? base.permitir_cantidad_decimal_carrito : Boolean(src.permitir_cantidad_decimal_carrito),
         ajustar_alto_items_contenido_carrito: src.ajustar_alto_items_contenido_carrito === undefined ? base.ajustar_alto_items_contenido_carrito : Boolean(src.ajustar_alto_items_contenido_carrito),
         mostrar_todos_items_carrito: src.mostrar_todos_items_carrito === undefined ? base.mostrar_todos_items_carrito : Boolean(src.mostrar_todos_items_carrito),
+        modo_rapido_carrito: src.modo_rapido_carrito === undefined ? (src.carrito_modo_rapido === undefined ? base.modo_rapido_carrito : Boolean(src.carrito_modo_rapido)) : Boolean(src.modo_rapido_carrito),
         habilitar_bascula_electronica: src.habilitar_bascula_electronica === undefined
           ? (src.bascula_electronica_habilitada === undefined ? base.habilitar_bascula_electronica : Boolean(src.bascula_electronica_habilitada))
           : Boolean(src.habilitar_bascula_electronica),
@@ -3043,6 +3058,7 @@
       publishConnectivityContext();
       document.body.classList.toggle('cart-touch-mode', Boolean(ui.modo_pantalla_tactil));
       document.body.classList.toggle('pos-touch-mode', Boolean(ui.modo_pantalla_tactil));
+      document.body.classList.toggle('cart-fast-mode', Boolean(ui.modo_rapido_carrito));
       syncScannerSearchModeUI();
       syncScannerQuantityInput();
       syncCartLogoCards();

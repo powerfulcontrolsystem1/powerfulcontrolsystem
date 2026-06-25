@@ -30,6 +30,12 @@ guarda esa decision en `localStorage`; solo renderiza una imagen encima de
 `Totales y detalles`, en la columna activa del carrito, cuando la preferencia
 esta activa y la empresa tiene logo real cargado.
 
+Actualizacion 2026-06-25: `Configuracion carrito` agrega
+`modo_rapido_carrito` como modo compacto del mismo carrito. No crea un carrito
+paralelo: conserva los endpoints, reglas de inventario, pagos, descuentos,
+credito, facturacion e impresion, pero reduce decoracion visual, espaciado y
+usa tabla/texto compacto para operar mas rapido en equipos lentos.
+
 Actualizacion 2026-06-22: `Portal publico` abre desde `index.html` las secciones
 `Contacto`, `Privacidad y datos`, `Quienes somos` y `Sistema Hotel / Motel`
 debajo de la barra superior, con rutas de respaldo que redirigen al mismo
