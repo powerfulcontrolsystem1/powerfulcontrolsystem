@@ -1548,7 +1548,7 @@
       const showDefaultLogo = enabled && !showStationLogo;
       [
         ['carritoLogoCard', 'carritoLogoPreview', showDefaultLogo],
-        ['carritoLogoCardStation', 'carritoLogoPreviewStation', showStationLogo]
+        ['carritoLogoCardStation', 'carritoLogoPreviewStation', showStationLogo, 'grande']
       ].forEach(function(ids) {
         const card = document.getElementById(ids[0]);
         const img = document.getElementById(ids[1]);
@@ -1556,7 +1556,7 @@
         if (!card) return;
         card.hidden = !shouldShow;
         card.classList.remove('logo-size-pequeno', 'logo-size-mediano', 'logo-size-grande');
-        card.classList.add('logo-size-' + logoSize);
+        card.classList.add('logo-size-' + (ids[3] || logoSize));
         if (img) {
           img.onerror = function() {
             card.hidden = true;
