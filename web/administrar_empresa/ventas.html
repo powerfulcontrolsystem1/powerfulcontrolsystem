@@ -293,6 +293,24 @@
       var preview = document.getElementById("preview");
       var state = { items: [], index: Object.create(null), facturasPorBase: Object.create(null), selectedKey: "", empresaNombre: "", cfg: null, viewMode: "carta", clientes: [], facturarItem: null };
 
+      function vistaImpresionStorageKey(){
+        return "pcs_ventas_vista_impresion_" + String(empresaID || 0);
+      }
+
+      function loadSavedViewMode(){
+        try {
+          var saved = localStorage.getItem(vistaImpresionStorageKey());
+          if(saved === "carta" || saved === "pos" || saved === "compacta") return saved;
+        } catch(e) {}
+        return "carta";
+      }
+
+      function saveViewMode(value){
+        try {
+          localStorage.setItem(vistaImpresionStorageKey(), value || "carta");
+        } catch(e) {}
+      }
+
       function safeUrl(raw){
         var v = norm(raw);
         if(!v) return "";
@@ -1138,8 +1156,11 @@
       (function init(){
         if(!empresaID){ msg("empresa_id es obligatorio en la URL", "error"); return; }
         setDefaultDates();
+        state.viewMode = loadSavedViewMode();
+        document.getElementById("modoVisualizacion").value = state.viewMode;
         document.getElementById("modoVisualizacion").addEventListener("change", function(){
           state.viewMode = currentViewMode();
+          saveViewMode(state.viewMode);
           if(state.selectedKey && state.index[state.selectedKey]) renderDetail(state.index[state.selectedKey]);
         });
         Promise.all([loadEmpresa(), loadEmpresaConfigAvanzada(), loadClientes()]).finally(run);

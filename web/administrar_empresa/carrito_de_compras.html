@@ -36,10 +36,10 @@
     .carrito-customer-header-actions{display:flex;align-items:center;justify-content:flex-end;gap:8px;flex-wrap:wrap}
     #buscarProductosActions{position:absolute;top:0;right:0;z-index:3;margin:0!important;padding:0!important;border:0!important;background:transparent!important;box-shadow:none!important;min-height:0!important}
     #buscarProductosActions .btn:not(#directSaleFullscreenBtn){display:none!important}
-    .carrito-fullscreen-card{display:flex;align-items:center;justify-content:center;border:0;border-radius:0;background:transparent;padding:0;color:var(--text);min-height:0}
+    .carrito-fullscreen-card{display:flex;align-items:center;justify-content:center;gap:4px;border:0;border-radius:0;background:transparent;padding:0;color:var(--text);min-height:0}
     .carrito-fullscreen-card[hidden]{display:none!important}
-    .carrito-fullscreen-btn{width:38px!important;min-width:38px!important;height:34px!important;min-height:34px!important;padding:0!important;display:inline-flex;align-items:center;justify-content:center;border-radius:0}
-    .carrito-fullscreen-btn .cart-btn-icon{font-size:1.25rem;line-height:1}
+    .carrito-fullscreen-btn,.carrito-fast-mode-btn{width:38px!important;min-width:38px!important;height:34px!important;min-height:34px!important;padding:0!important;display:inline-flex;align-items:center;justify-content:center;border-radius:0}
+    .carrito-fullscreen-btn .cart-btn-icon,.carrito-fast-mode-btn .cart-btn-icon{font-size:1.25rem;line-height:1}
     .carrito-fullscreen-label{display:none!important}
     .carrito-logo-card{display:grid;gap:8px;justify-items:center;text-align:center;width:100%;min-height:68px;margin:0 0 8px!important;padding:6px;border:1px solid var(--cart-title-border,var(--border));background:var(--cart-title-shade,var(--surface-soft));align-content:center}
     .carrito-logo-card[hidden]{display:none!important}
@@ -202,6 +202,9 @@
         <div class="carrito-scanner-header">
           <h3 class="carrito-scanner-header-title">Buscar producto</h3>
           <div id="directSaleFullscreenCard" class="carrito-fullscreen-card" hidden>
+            <button id="directSaleFastModeBtn" class="btn secondary carrito-fast-mode-btn" type="button" hidden title="Carrito rápido" aria-label="Activar carrito rápido">
+              <span class="cart-btn-icon" aria-hidden="true">▦</span>
+            </button>
             <button id="directSaleFullscreenBtn" class="btn secondary carrito-fullscreen-btn" type="button" hidden title="Pantalla completa" aria-label="Abrir venta directa en pantalla completa">
               <span class="carrito-fullscreen-label">Pantalla completa</span>
               <span class="cart-btn-icon cart-btn-icon-info" aria-hidden="true">⛶</span>
@@ -469,10 +472,10 @@
           <div id="itemsListStation" class="carrito-items-box carrito-items-box--station-fixed">Selecciona un carrito para gestionar sus ítems.</div>
         </div>
         <div class="carrito-station-side">
+          <div id="carritoLogoCardStation" class="card carrito-logo-card carrito-station-logo-card" hidden>
+            <img id="carritoLogoPreviewStation" class="carrito-logo-preview" alt="Logo de la empresa">
+          </div>
           <aside class="card carrito-summary-card carrito-station-totals-aside">
-            <div id="carritoLogoCardStation" class="carrito-logo-card carrito-station-logo-card" hidden>
-              <img id="carritoLogoPreviewStation" class="carrito-logo-preview" alt="Logo de la empresa">
-            </div>
             <h3 id="carritoTotalsTitleStation" class="section-heading">Totales y detalles</h3>
             <div id="carritoTotalsContentStation" class="carrito-summary-content mt-10">Selecciona un carrito para ver el resumen.</div>
           </aside>
@@ -1497,6 +1500,44 @@
     function getCartLogoSize() {
       const ui = normalizeUnifiedCartUIConfig(state.stationCartUI || getCurrentStationCartUIConfig());
       return normalizeCartLogoSize(ui.logo_empresa_carrito_tamano || ui.tamano_logo_empresa_carrito);
+    }
+
+    function fastModeStorageKey() {
+      return 'pcs_carrito_modo_rapido_' + String(state.empresaID || 0);
+    }
+
+    function readFastModeOverride() {
+      try {
+        const raw = localStorage.getItem(fastModeStorageKey());
+        if (raw === '1' || raw === 'true') return true;
+        if (raw === '0' || raw === 'false') return false;
+      } catch (_) {}
+      return null;
+    }
+
+    function setFastModeOverride(value) {
+      try {
+        localStorage.setItem(fastModeStorageKey(), value ? '1' : '0');
+      } catch (_) {}
+    }
+
+    function effectiveFastMode(ui) {
+      const override = readFastModeOverride();
+      if (override !== null) return override;
+      return Boolean(ui && ui.modo_rapido_carrito);
+    }
+
+    function syncFastModeButton(active) {
+      const btn = document.getElementById('directSaleFastModeBtn');
+      if (!btn) return;
+      const visible = Boolean(state.directSaleMode || state.stationMode);
+      btn.hidden = !visible;
+      btn.style.display = visible ? '' : 'none';
+      btn.classList.toggle('primary', Boolean(active));
+      btn.classList.toggle('secondary', !active);
+      btn.title = active ? 'Salir de carrito rápido' : 'Carrito rápido';
+      btn.setAttribute('aria-label', active ? 'Desactivar carrito rápido' : 'Activar carrito rápido');
+      btn.setAttribute('aria-pressed', active ? 'true' : 'false');
     }
 
     function syncCartLogoCards() {
@@ -3064,7 +3105,9 @@
       publishConnectivityContext();
       document.body.classList.toggle('cart-touch-mode', Boolean(ui.modo_pantalla_tactil));
       document.body.classList.toggle('pos-touch-mode', Boolean(ui.modo_pantalla_tactil));
-      document.body.classList.toggle('cart-fast-mode', Boolean(ui.modo_rapido_carrito));
+      const fastModeActive = effectiveFastMode(ui);
+      document.body.classList.toggle('cart-fast-mode', fastModeActive);
+      syncFastModeButton(fastModeActive);
       syncScannerSearchModeUI();
       syncScannerQuantityInput();
       syncCartLogoCards();
@@ -3076,8 +3119,10 @@
         const backToStationsBtn = document.getElementById('backToStationsHeaderBtn');
         const directSaleFullscreenBtn = document.getElementById('directSaleFullscreenBtn');
         const showBackToStations = Boolean(backToStationsBtn && !backToStationsBtn.hidden && backToStationsBtn.style.display !== 'none');
+        const fastModeBtn = document.getElementById('directSaleFastModeBtn');
         const showDirectSaleFullscreen = Boolean(directSaleFullscreenBtn && !directSaleFullscreenBtn.hidden && directSaleFullscreenBtn.style.display !== 'none');
-        const showSearchActions = showBackToStations || showDirectSaleFullscreen;
+        const showFastMode = Boolean(fastModeBtn && !fastModeBtn.hidden && fastModeBtn.style.display !== 'none');
+        const showSearchActions = showBackToStations || showDirectSaleFullscreen || showFastMode;
         searchActions.hidden = !showSearchActions;
         searchActions.style.display = showSearchActions ? '' : 'none';
       }
@@ -12375,6 +12420,16 @@
     const directSaleFullscreenBtn = document.getElementById('directSaleFullscreenBtn');
     if (directSaleFullscreenBtn) {
       directSaleFullscreenBtn.addEventListener('click', toggleDirectSaleFullscreen);
+    }
+    const directSaleFastModeBtn = document.getElementById('directSaleFastModeBtn');
+    if (directSaleFastModeBtn) {
+      directSaleFastModeBtn.addEventListener('click', function() {
+        const ui = state.stationCartUI || getCurrentStationCartUIConfig();
+        const next = !effectiveFastMode(ui);
+        setFastModeOverride(next);
+        document.body.classList.toggle('cart-fast-mode', next);
+        syncFastModeButton(next);
+      });
     }
     ['fullscreenchange', 'webkitfullscreenchange', 'msfullscreenchange'].forEach(function(eventName) {
       document.addEventListener(eventName, updateDirectSaleFullscreenButton);
