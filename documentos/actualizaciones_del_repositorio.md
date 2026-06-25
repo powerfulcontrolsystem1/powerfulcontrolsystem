@@ -15698,3 +15698,12 @@ Archivos modificados:
 - web/administrar_empresa/corte_de_caja.html
 - web/administrar_empresa/facturacion_electronica.html
 - web/js/ai_button_icons.js
+
+2026-06-25 13:15:54 - Mensaje: rs: actualizar repositorio y sincronizar VPS; Commit: 660eba9f; PushStatus: OK
+Archivos modificados:
+- CHANGELOG.md
+- backend/db/licencias_empresa_sistema.go
+- documentos/CHANGELOG.md
+- documentos/historial_de_cambios
+- web/administrar_empresa/configuracion/identidad_visual.html
+- web/js/empresa_submenu_context.js
