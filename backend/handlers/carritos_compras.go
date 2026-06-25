@@ -994,7 +994,6 @@ func EmpresaCarritosCompraHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 					writeCarritoStationAccessError(w, err)
 					return
 				}
-				log.Printf("[carritos] debug intentar %s empresa_id=%d id=%d estado=%q estado_carrito=%q pagado_en=%q", action, empresaID, id, carrito.Estado, carrito.EstadoCarrito, carrito.PagadoEn)
 				if err := validateCarritoTransitionForAction(carrito, action); err != nil {
 					log.Printf("[carritos] validate failed action=%s empresa_id=%d id=%d estado=%q estado_carrito=%q pagado_en=%q err=%v", action, empresaID, id, carrito.Estado, carrito.EstadoCarrito, carrito.PagadoEn, err)
 					http.Error(w, err.Error(), http.StatusConflict)

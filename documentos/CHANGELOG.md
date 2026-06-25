@@ -1,6 +1,7 @@
 ## [2026-06-25] Carrito logo, pantalla completa y vuelto
 - [Carrito] El boton de pantalla completa queda como icono compacto en la esquina superior derecha de `Buscar producto`.
 - [Logo] El logo de empresa se refuerza visualmente encima de `Totales y detalles`, con cache-buster CSS nuevo para evitar estilos viejos en produccion.
+- [Logo] La carga de configuracion avanzada toma `payload.configuracion` cuando el endpoint devuelve el wrapper estandar, evitando que `logo_url` quede oculto en el objeto padre.
 - [Pagos] `Efectivo recibido` y `Vuelto` pasan a celdas alineadas tipo tabla 2x2, sin duplicar el texto `Vuelto` dentro del valor.
 - [QA] Se valida sintaxis JS embebida del carrito y se preparan reglas globales para neutralizar estilos antiguos que ocultaban el boton de pantalla completa.
 

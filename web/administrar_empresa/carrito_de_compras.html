@@ -2540,7 +2540,9 @@
         });
         if (!res.ok) throw new Error('No se pudo cargar la configuración avanzada.');
         const payload = await res.json();
-        state.empresaAvanzadaConfig = payload && typeof payload === 'object' ? payload : {};
+        state.empresaAvanzadaConfig = payload && typeof payload === 'object'
+          ? (payload.configuracion && typeof payload.configuracion === 'object' ? payload.configuracion : payload)
+          : {};
       } catch (err) {
         console.warn('No se pudo cargar configuración avanzada; se usan valores seguros.', err);
         state.empresaAvanzadaConfig = {};
