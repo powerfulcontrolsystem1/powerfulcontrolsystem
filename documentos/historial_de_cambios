@@ -36034,3 +36034,16 @@ Archivos modificados:
 - `web/administrar_empresa.html` agrupa Productos en `Produccion`.
 - `web/administrar_empresa/corte_de_caja.html` corrige color legible de botones de cierre y agrega checks por campo del reporte de turno.
 - Validacion: sintaxis JS inline con Node empaquetado; `go test ./db ./handlers -run "Carrito|Corte|ConfiguracionAvanzada|^$" -count=1` desde `backend` reporto `ok` en paquetes y fallo solo al remover un exe temporal bloqueado por Windows; prueba visual local con Playwright guardo capturas en `.gotmp/visual-carrito-20260624`.
+
+2026-06-24: rs: actualizar repositorio y sincronizar VPS
+PushStatus: OK
+Archivos modificados:
+- backend/db/carritos_compras.go
+- documentos/CHANGELOG.md
+- documentos/historial_de_cambios
+- web/administrar_empresa.html
+- web/administrar_empresa/administrar_productos.html
+- web/administrar_empresa/carrito_de_compras.html
+- web/administrar_empresa/corte_de_caja.html
+- web/administrar_empresa/facturacion_electronica.html
+- web/js/ai_button_icons.js
