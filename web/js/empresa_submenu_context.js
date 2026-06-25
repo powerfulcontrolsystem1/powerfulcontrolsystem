@@ -20,6 +20,39 @@
     return allowed[theme] ? theme : 'light';
   }
 
+  function redirectHardReloadedAdminSubpageToShell() {
+    if (!isTopLevelWindow()) return false;
+    var pathname = String(window.location.pathname || '');
+    if (pathname.indexOf('/administrar_empresa/') !== 0) return false;
+    if (pathname === '/administrar_empresa.html') return false;
+    var params;
+    try {
+      params = new URLSearchParams(window.location.search || '');
+    } catch (_) {
+      return false;
+    }
+    if (params.get('shell_admin') !== '1') return false;
+    var empresaId = params.get('empresa_id') || params.get('id') || '';
+    params.delete('shell_admin');
+    var pagePath = pathname;
+    if (pathname === '/administrar_empresa/configuracion.html' && params.get('single') === '1' && params.get('section') === 'configuracionIdentidadVisual') {
+      pagePath = '/administrar_empresa/configuracion/identidad_visual.html';
+      params.delete('single');
+      params.delete('section');
+    }
+    var page = pagePath + (params.toString() ? ('?' + params.toString()) : '') + String(window.location.hash || '');
+    var target = new URL('/administrar_empresa.html', window.location.origin);
+    if (empresaId) {
+      target.searchParams.set('empresa_id', empresaId);
+      target.searchParams.set('id', empresaId);
+    }
+    target.searchParams.set('page', page);
+    window.location.replace(target.pathname + target.search);
+    return true;
+  }
+
+  if (redirectHardReloadedAdminSubpageToShell()) return;
+
   function readCookieTheme() {
     const match = String(document.cookie || '').match(/(?:^|;\s*)pcs_theme=([^;]+)/);
     return match ? decodeURIComponent(match[1] || '') : '';

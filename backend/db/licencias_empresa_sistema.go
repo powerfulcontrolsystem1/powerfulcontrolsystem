@@ -12,6 +12,7 @@ const (
 	PowerfulSystemEmpresaNameLegacyTypo   = "Powerful Control Systen"
 	PowerfulSystemEmpresaConfigKey        = "licencias.facturacion_empresa_sistema_id"
 	PowerfulSystemEmpresaLicenseCode      = "PCS_SYSTEM_INTERNAL_PERPETUAL"
+	PowerfulSystemEmpresaDefaultLogoURL   = "/img/Logo pcs 1.png"
 	powerfulSystemEmpresaUsuarioCreador   = "sistema.powerful_control_system"
 	powerfulSystemEmpresaObservacionMarca = "Empresa interna del SaaS para facturar licencias de Powerful Control System."
 )
@@ -54,6 +55,9 @@ func EnsurePowerfulSystemEmpresa(dbEmp, dbSuper *sql.DB) (*Empresa, error) {
 		if err := DisablePowerfulSystemEmpresaInternalLicense(dbSuper, empresa.EmpresaID, powerfulSystemEmpresaUsuarioCreador); err != nil {
 			return nil, err
 		}
+		if err := EnsurePowerfulSystemEmpresaDefaultLogo(dbEmp, empresa.EmpresaID); err != nil {
+			return nil, err
+		}
 		return empresa, nil
 	}
 
@@ -89,7 +93,36 @@ func EnsurePowerfulSystemEmpresa(dbEmp, dbSuper *sql.DB) (*Empresa, error) {
 	if err := DisablePowerfulSystemEmpresaInternalLicense(dbSuper, empresa.EmpresaID, powerfulSystemEmpresaUsuarioCreador); err != nil {
 		return nil, err
 	}
+	if err := EnsurePowerfulSystemEmpresaDefaultLogo(dbEmp, empresa.EmpresaID); err != nil {
+		return nil, err
+	}
 	return empresa, nil
+}
+
+// EnsurePowerfulSystemEmpresaDefaultLogo mantiene un logo corporativo visible para
+// la empresa interna PCS sin pisar logos personalizados subidos a /uploads/.
+func EnsurePowerfulSystemEmpresaDefaultLogo(dbEmp *sql.DB, empresaID int64) error {
+	if dbEmp == nil || empresaID <= 0 {
+		return nil
+	}
+	cfg, err := GetEmpresaConfiguracionAvanzada(dbEmp, empresaID)
+	if err != nil {
+		return err
+	}
+	logoURL := strings.TrimSpace(cfg.LogoURL)
+	shouldSetCorporateLogo := logoURL == "" || strings.HasPrefix(logoURL, "/img/")
+	if shouldSetCorporateLogo {
+		cfg.LogoURL = PowerfulSystemEmpresaDefaultLogoURL
+		cfg.MostrarLogoEmpresa = true
+	}
+	if strings.TrimSpace(cfg.LogoFacturaURL) == "" || strings.HasPrefix(strings.TrimSpace(cfg.LogoFacturaURL), "/img/") {
+		cfg.LogoFacturaURL = PowerfulSystemEmpresaDefaultLogoURL
+		cfg.MostrarLogoFactura = true
+	}
+	cfg.MostrarLogo = cfg.MostrarLogoEmpresa || cfg.MostrarLogoFactura || cfg.MostrarLogoSistema
+	cfg.UsuarioCreador = powerfulSystemEmpresaUsuarioCreador
+	_, err = UpsertEmpresaConfiguracionAvanzada(dbEmp, *cfg)
+	return err
 }
 
 // DisablePowerfulSystemEmpresaInternalLicense retira la licencia tecnica antigua

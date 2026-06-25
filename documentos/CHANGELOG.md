@@ -1,3 +1,9 @@
+## [2026-06-25] Identidad visual y recarga del panel empresarial
+- [Administrar empresa] Las subpaginas abiertas con `shell_admin=1` vuelven al contenedor `/administrar_empresa.html` al recargar con Control+F5, conservando menu lateral/superior y la pagina activa.
+- [Identidad visual] `configuracion/identidad_visual.html` deja de usar un iframe interno sin contexto y redirige a la seccion real `configuracion.html?single=1&section=configuracionIdentidadVisual` con `empresa_id`.
+- [PCS] La empresa interna `Powerful Control System` asegura por defecto `/img/Logo pcs 1.png` como logo de empresa y factura, sin sobrescribir logos personalizados subidos a `/uploads/`.
+- [QA] Sintaxis JS, `go test ./db -run "PowerfulSystem|ConfiguracionAvanzada|Logo" -count=1` y validacion visual local con Playwright para recarga del shell y vista previa de logo.
+
 ## [2026-06-24] Carrito, IA, facturacion y corte de caja
 - [Carrito] `Historial de productos` abre dentro del panel empresarial y el backend reconstruye una vista desde los items actuales si aun no hay eventos historicos persistidos.
 - [Carrito] El logo del carrito tambien lee la configuracion general de empresa, el boton de pantalla completa queda visible en `Buscar producto`, los botones resaltan frente al sombreado y `Pagar` queda mas grande.

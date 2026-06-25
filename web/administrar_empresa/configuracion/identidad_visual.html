@@ -5,15 +5,16 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Identidad visual - Configuracion</title>
   <link rel="stylesheet" href="/estilos.css">
+  <script src="/js/empresa_submenu_context.js"></script>
   <style>
-    html,body{height:100%}
-    body{margin:0;background:var(--bg);color:var(--text)}
-    .empresa-config-section-page{height:100vh;display:grid;grid-template-rows:auto minmax(0,1fr);min-width:0;overflow-x:hidden}
+    html,body{min-height:100%}
+    body{margin:0;background:var(--bg);color:var(--text);overflow-x:hidden}
+    .empresa-config-section-page{min-height:100vh;display:grid;grid-template-rows:auto minmax(0,1fr);min-width:0;overflow-x:hidden}
     .empresa-config-section-header{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:14px 16px;border-bottom:1px solid var(--border);background:var(--surface)}
     .empresa-config-section-header h1{margin:0;color:var(--text);font-size:1.35rem}
     .empresa-config-section-header p{margin:3px 0 0;color:var(--muted);font-size:.82rem;line-height:1.35}
     .empresa-config-section-actions{display:flex;gap:8px;flex-wrap:wrap}
-    .empresa-config-section-frame{width:100%;min-width:0;height:100%;border:0;background:transparent}
+    .empresa-config-section-status{padding:16px;color:var(--muted);font-weight:800}
     @media(max-width:760px){.empresa-config-section-header{display:grid;grid-template-columns:1fr;padding:12px}.empresa-config-section-actions{width:100%}.empresa-config-section-actions .btn{flex:1 1 auto;width:100%;box-sizing:border-box;text-align:center}}
   </style>
 </head>
@@ -28,7 +29,24 @@
         <a class="btn secondary" href="/administrar_empresa/configuracion.html">Ver todas</a>
       </div>
     </header>
-    <iframe class="empresa-config-section-frame" src="/administrar_empresa/configuracion.html?single=1&amp;section=configuracionIdentidadVisual" title="Identidad visual"></iframe>
+    <div class="empresa-config-section-status">Cargando identidad visual...</div>
   </main>
+  <script>
+    (function openIdentitySection() {
+      var params = new URLSearchParams(window.location.search || "");
+      var empresaId = params.get("empresa_id") || params.get("id") || "";
+      try {
+        if (!empresaId && window.__empresaModuleGuard && typeof window.__empresaModuleGuard.resolveEmpresaId === "function") {
+          empresaId = String(window.__empresaModuleGuard.resolveEmpresaId() || "");
+        }
+      } catch (_) {}
+      var target = new URL("/administrar_empresa/configuracion.html", window.location.origin);
+      target.searchParams.set("single", "1");
+      target.searchParams.set("section", "configuracionIdentidadVisual");
+      if (empresaId) target.searchParams.set("empresa_id", empresaId);
+      if (params.get("shell_admin") === "1") target.searchParams.set("shell_admin", "1");
+      window.location.replace(target.pathname + target.search + target.hash);
+    })();
+  </script>
 </body>
 </html>
