@@ -427,6 +427,21 @@
             <input id="empresaMostrarLogoSistema" type="checkbox">
             <span>Usar logo del sistema como marca auxiliar cuando los documentos lo permitan</span>
           </label>
+          <label class="empresa-config-check" for="empresaMostrarLogoFacturaIdentidad">
+            <input id="empresaMostrarLogoFacturaIdentidad" type="checkbox">
+            <span>Mostrar logo en factura</span>
+          </label>
+          <label class="empresa-config-check" for="empresaMostrarLogoCarrito">
+            <input id="empresaMostrarLogoCarrito" type="checkbox" checked>
+            <span>Mostrar logo de la empresa en el carrito</span>
+          </label>
+          <label class="form-label" for="empresaLogoCarritoTamano">Tamano del logo en el carrito</label>
+          <select id="empresaLogoCarritoTamano" class="form-input">
+            <option value="pequeno">Pequeno</option>
+            <option value="mediano">Mediano</option>
+            <option value="grande">Grande</option>
+          </select>
+          <p class="form-help">El logo del carrito se muestra encima de Totales y detalles solo cuando hay logo cargado.</p>
         </div>
         <div class="form">
           <label class="form-label" for="btnSubirLogoEmpresa">Subir logo</label>
@@ -3264,7 +3279,14 @@
       document.getElementById('facturaImprimirFacturaElectronica').checked = src.imprimir_factura_electronica === true;
       document.getElementById('facturaImprimirCopia').checked = src.imprimir_copia_factura === true;
       document.getElementById('facturaMostrarLogo').checked = src.mostrar_logo_factura !== false && src.mostrar_logo !== false;
+      const identityFacturaLogo = document.getElementById('empresaMostrarLogoFacturaIdentidad');
+      if (identityFacturaLogo) identityFacturaLogo.checked = src.mostrar_logo_factura !== false && src.mostrar_logo !== false;
       document.getElementById('facturaLogoURL').value = facturaLogoURL;
+    }
+
+    function normalizeCartLogoSize(value) {
+      const raw = String(value || '').trim().toLowerCase();
+      return ['pequeno', 'mediano', 'grande'].indexOf(raw) >= 0 ? raw : 'mediano';
     }
 
     function normalizeLogoURL(value) {
@@ -3357,6 +3379,7 @@
       document.getElementById('empresaLogoURL').value = logoURL;
       document.getElementById('empresaMostrarLogoEmpresa').checked = mostrarLogoEmpresa;
       document.getElementById('empresaMostrarLogoSistema').checked = mostrarLogoSistema;
+      document.getElementById('empresaMostrarLogoFacturaIdentidad').checked = src.mostrar_logo_factura !== false && src.mostrar_logo !== false;
       setEmpresaLogoPreview(logoURL, mostrarLogoEmpresa);
       setEmpresaLogoRegisteredCard(logoURL, mostrarLogoEmpresa, mostrarLogoSistema);
     }
@@ -3364,11 +3387,13 @@
     function getIdentidadVisualFormData() {
       const mostrarLogoEmpresa = document.getElementById('empresaMostrarLogoEmpresa').checked;
       const mostrarLogoSistema = document.getElementById('empresaMostrarLogoSistema').checked;
+      const mostrarLogoFactura = document.getElementById('empresaMostrarLogoFacturaIdentidad').checked;
       return {
         empresa_id: Number(empresaId),
         logo_url: normalizeLogoURL(document.getElementById('empresaLogoURL').value),
         mostrar_logo_empresa: mostrarLogoEmpresa,
-        mostrar_logo_sistema: mostrarLogoSistema
+        mostrar_logo_sistema: mostrarLogoSistema,
+        mostrar_logo_factura: mostrarLogoFactura
       };
     }
 
@@ -3581,6 +3606,67 @@
       return payload;
     }
 
+    function parseJSONSafe(value, fallback) {
+      if (!value) return fallback;
+      try {
+        const parsed = typeof value === 'string' ? JSON.parse(value) : value;
+        return parsed && typeof parsed === 'object' ? parsed : fallback;
+      } catch (_) {
+        return fallback;
+      }
+    }
+
+    function normalizeIdentidadCartLogoConfig(raw) {
+      const src = raw && typeof raw === 'object' ? raw : {};
+      return {
+        mostrar_logo_empresa_carrito: src.mostrar_logo_empresa_carrito !== false,
+        logo_empresa_carrito_tamano: normalizeCartLogoSize(src.logo_empresa_carrito_tamano || src.tamano_logo_empresa_carrito)
+      };
+    }
+
+    async function fetchEmpresaEstacionesConfig() {
+      const res = await fetch('/api/empresa/estacion_prefs?empresa_id=' + encodeURIComponent(empresaId), { credentials: 'same-origin' });
+      if (!res.ok) throw new Error(await res.text() || 'No se pudo cargar configuracion del carrito.');
+      const data = await res.json();
+      const prefs = data && Array.isArray(data.prefs) ? data.prefs : [];
+      const pref = prefs.find(function(item) {
+        return item && String(item.clave) === 'estaciones_config' && Number(item.estacion_id) === 0;
+      });
+      return parseJSONSafe(pref && pref.valor, {});
+    }
+
+    async function loadIdentidadCarritoLogoConfig() {
+      if (!empresaId) return;
+      try {
+        const root = await fetchEmpresaEstacionesConfig();
+        const cfg = normalizeIdentidadCartLogoConfig(root.carrito_ui_global || root.carrito || root.carrito_configuracion_global || {});
+        document.getElementById('empresaMostrarLogoCarrito').checked = cfg.mostrar_logo_empresa_carrito;
+        document.getElementById('empresaLogoCarritoTamano').value = cfg.logo_empresa_carrito_tamano;
+      } catch (err) {
+        setIdentidadVisualMessage('No se pudo cargar la configuracion de logo del carrito: ' + (err && err.message ? err.message : err), 'error');
+      }
+    }
+
+    async function saveIdentidadCarritoLogoConfig() {
+      if (!empresaId) return;
+      const root = await fetchEmpresaEstacionesConfig();
+      const carrito = Object.assign({}, root.carrito_ui_global || root.carrito || root.carrito_configuracion_global || {});
+      carrito.mostrar_logo_empresa_carrito = document.getElementById('empresaMostrarLogoCarrito').checked;
+      carrito.logo_empresa_carrito_tamano = normalizeCartLogoSize(document.getElementById('empresaLogoCarritoTamano').value);
+      root.carrito_ui_global = carrito;
+      const res = await fetch('/api/empresa/estacion_prefs?empresa_id=' + encodeURIComponent(empresaId), {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify({
+          estacion_id: 0,
+          clave: 'estaciones_config',
+          valor: JSON.stringify(root)
+        })
+      });
+      if (!res.ok) throw new Error(await res.text() || 'No se pudo guardar logo del carrito.');
+    }
+
     async function loadFacturaConfig() {
       if (!empresaId) return;
       try {
@@ -3589,6 +3675,7 @@
         setIdentidadVisualFormData(cfg || {});
         setFormatoNumericoFormData(cfg || {});
         setPerfilTributarioCOFormData(cfg || {});
+        loadIdentidadCarritoLogoConfig();
       } catch (err) {
         setFacturaMessage('No se pudo cargar configuración de facturas: ' + (err && err.message ? err.message : err), 'error');
         setFormatoNumericoMessage('No se pudo cargar configuración monetaria: ' + (err && err.message ? err.message : err), 'error');
@@ -3607,6 +3694,7 @@
           return;
         }
         const cfg = await upsertEmpresaConfigAvanzada(payload);
+        await saveIdentidadCarritoLogoConfig();
         setIdentidadVisualFormData(cfg || payload);
         setFacturaFormData(cfg || payload);
         setIdentidadVisualMessage('Identidad visual guardada para panel, reportes y documentos generales.', 'success');
@@ -3999,6 +4087,12 @@
       document.getElementById('btnGuardarLogoEmpresa').addEventListener('click', guardarIdentidadVisualConfig);
       document.getElementById('btnSubirLogoEmpresa').addEventListener('click', seleccionarYSubirLogoEmpresa);
       document.getElementById('empresaLogoFile').addEventListener('change', subirLogoEmpresa);
+      document.getElementById('empresaMostrarLogoFacturaIdentidad').addEventListener('change', function() {
+        document.getElementById('facturaMostrarLogo').checked = document.getElementById('empresaMostrarLogoFacturaIdentidad').checked;
+      });
+      document.getElementById('facturaMostrarLogo').addEventListener('change', function() {
+        document.getElementById('empresaMostrarLogoFacturaIdentidad').checked = document.getElementById('facturaMostrarLogo').checked;
+      });
       document.getElementById('empresaLogoURL').addEventListener('input', function() {
         const logoURL = document.getElementById('empresaLogoURL').value;
         const mostrarEmpresa = document.getElementById('empresaMostrarLogoEmpresa').checked;

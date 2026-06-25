@@ -22,11 +22,13 @@ endpoint `/api/empresa/carritos_compra?action=pagar_estacion` recibe
 electronica solo para esa venta o la omite si se eligio venta sola, manteniendo
 el modo automatico/frecuencia si la opcion no se usa.
 
-Actualizacion 2026-06-24: `Configuracion carrito` tambien controla
-`mostrar_logo_empresa_carrito`. El carrito ya no tiene checks internos para
-mostrar logo ni guarda esa decision en `localStorage`; solo renderiza una imagen
-encima de `Totales y detalles`, en la columna activa del carrito, cuando la
-preferencia esta activa y la empresa tiene logo real cargado.
+Actualizacion 2026-06-25: `Configuracion carrito` e `Identidad visual`
+controlan `mostrar_logo_empresa_carrito` y `logo_empresa_carrito_tamano`
+(`pequeno`, `mediano`, `grande`) desde la misma preferencia
+`estaciones_config.carrito_ui_global`. El carrito ya no tiene checks internos ni
+guarda esa decision en `localStorage`; solo renderiza una imagen encima de
+`Totales y detalles`, en la columna activa del carrito, cuando la preferencia
+esta activa y la empresa tiene logo real cargado.
 
 Actualizacion 2026-06-22: `Portal publico` abre desde `index.html` las secciones
 `Contacto`, `Privacidad y datos`, `Quienes somos` y `Sistema Hotel / Motel`

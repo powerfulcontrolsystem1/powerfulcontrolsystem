@@ -35976,6 +35976,13 @@ Archivos modificados:
 - web/administrar_empresa/panel.html
 - web/estilos.css
 - web/js/radio_player.js
+2026-06-25 - Opciones de logo en identidad visual y carrito
+- `web/administrar_empresa/configuracion.html`: la tarjeta Identidad visual agrega checks repetidos para logo en factura y logo en carrito, sincroniza el check de factura con la configuracion de impresion/factura y guarda la opcion de carrito en `estaciones_config.carrito_ui_global`.
+- `web/administrar_empresa/configuracion_carrito_de_compra_empresa.html`: el check `Mostrar logo de la empresa en el carrito` suma selector `Tamano del logo en el carrito` con valores `pequeno`, `mediano` y `grande`.
+- `web/administrar_empresa/carrito_de_compras.html`: el render del logo lee `logo_empresa_carrito_tamano` y aplica clases de tamano sin mostrar imagen si la opcion esta apagada o no hay URL/logo disponible.
+- `web/administrar_empresa/carrito_historial_productos.html`: se agrega boton `Regresar al carrito` con `empresa_id` y `carrito_id`.
+- Validacion: parseo Node de scripts embebidos en las cuatro paginas, comprobacion DOM de controles y `git diff --check`.
+
 2026-06-25 - Subida unificada de logos y logo del carrito
 - `web/administrar_empresa/configuracion.html`: en Identidad visual y logo de factura se oculta el input nativo de archivo y queda un solo boton visible `Subir Archivo`; al seleccionar imagen se ejecuta la subida automaticamente con los mismos endpoints existentes.
 - `web/administrar_empresa/carrito_de_compras.html`: el logo de empresa deja de ser una tarjeta separada y se renderiza dentro de `Totales y detalles`, antes del titulo, tanto en carrito normal como en modo estacion/venta directa.

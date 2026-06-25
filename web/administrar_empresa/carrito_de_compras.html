@@ -42,6 +42,9 @@
     .carrito-logo-card{display:grid;gap:8px;justify-items:center;text-align:center}
     .carrito-logo-card[hidden]{display:none!important}
     .carrito-logo-preview{display:block;max-width:96px;max-height:58px;object-fit:contain}
+    .carrito-logo-card.logo-size-pequeno .carrito-logo-preview{max-width:72px;max-height:44px}
+    .carrito-logo-card.logo-size-mediano .carrito-logo-preview{max-width:96px;max-height:58px}
+    .carrito-logo-card.logo-size-grande .carrito-logo-preview{max-width:136px;max-height:82px}
     .carrito-station-side{display:grid;gap:0;align-content:start}
     .carrito-workspace-card{border-color:color-mix(in srgb,var(--accent) 34%,var(--border) 66%)!important;border-width:2px!important;padding:8px!important;background:color-mix(in srgb,var(--carrito-card-bg,var(--card)) 94%,var(--accent) 6%)!important}
     .carrito-workspace-card :is(.card,.empresa-section,.carrito-summary-card,#scannerPanel,#stationCustomerCard,#stationCartSplitRow,#stationCheckoutPanel,#stationCartActionsCard,#stationPaymentAmountsCard,#stationPaymentQrCard,#stationWorkerCommissionCard,#stationVipAccessCard,#carritoTotalsPanel,.carrito-logo-card){margin-top:0!important;border-radius:0!important}
@@ -1474,9 +1477,20 @@
       return ui.mostrar_logo_empresa_carrito !== false;
     }
 
+    function normalizeCartLogoSize(value) {
+      const raw = normalize(value).toLowerCase();
+      return ['pequeno', 'mediano', 'grande'].indexOf(raw) >= 0 ? raw : 'mediano';
+    }
+
+    function getCartLogoSize() {
+      const ui = normalizeUnifiedCartUIConfig(state.stationCartUI || getCurrentStationCartUIConfig());
+      return normalizeCartLogoSize(ui.logo_empresa_carrito_tamano || ui.tamano_logo_empresa_carrito);
+    }
+
     function syncCartLogoCards() {
       const logoUrl = getCartLogoUrl();
       const enabled = Boolean(logoUrl && isCartLogoEnabled());
+      const logoSize = getCartLogoSize();
       const showStationLogo = enabled && (state.stationMode || state.directSaleMode);
       const showDefaultLogo = enabled && !showStationLogo;
       [
@@ -1488,6 +1502,8 @@
         const shouldShow = Boolean(ids[2]);
         if (!card) return;
         card.hidden = !shouldShow;
+        card.classList.remove('logo-size-pequeno', 'logo-size-mediano', 'logo-size-grande');
+        card.classList.add('logo-size-' + logoSize);
         if (img) {
           img.src = shouldShow ? logoUrl : '';
           img.hidden = !shouldShow;
@@ -2147,6 +2163,7 @@
         mostrar_boton_pagar: true,
         preguntar_tipo_documento_al_pagar: false,
         mostrar_logo_empresa_carrito: true,
+        logo_empresa_carrito_tamano: 'mediano',
         mostrar_tarjetas_pago: true,
         mostrar_tarjeta_lector_codigo: true,
         mostrar_tarjeta_items_carrito: true,
@@ -2300,6 +2317,7 @@
         mostrar_boton_pagar: src.mostrar_boton_pagar === undefined ? base.mostrar_boton_pagar : Boolean(src.mostrar_boton_pagar),
         preguntar_tipo_documento_al_pagar: src.preguntar_tipo_documento_al_pagar === undefined ? base.preguntar_tipo_documento_al_pagar : Boolean(src.preguntar_tipo_documento_al_pagar),
         mostrar_logo_empresa_carrito: src.mostrar_logo_empresa_carrito === undefined ? base.mostrar_logo_empresa_carrito : Boolean(src.mostrar_logo_empresa_carrito),
+        logo_empresa_carrito_tamano: normalizeCartLogoSize(src.logo_empresa_carrito_tamano || src.tamano_logo_empresa_carrito || base.logo_empresa_carrito_tamano),
         mostrar_tarjetas_pago: src.mostrar_tarjetas_pago === undefined ? base.mostrar_tarjetas_pago : Boolean(src.mostrar_tarjetas_pago),
         mostrar_tarjeta_lector_codigo: src.mostrar_tarjeta_lector_codigo === undefined ? base.mostrar_tarjeta_lector_codigo : Boolean(src.mostrar_tarjeta_lector_codigo),
         mostrar_tarjeta_items_carrito: src.mostrar_tarjeta_items_carrito === undefined ? base.mostrar_tarjeta_items_carrito : Boolean(src.mostrar_tarjeta_items_carrito),

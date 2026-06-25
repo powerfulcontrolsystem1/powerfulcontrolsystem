@@ -1,3 +1,9 @@
+## [2026-06-25] Opciones de logo en identidad visual
+- [Identidad visual] Agrega checks para mostrar logo en factura y en carrito, mas selector de tamano del logo de carrito: pequeno, mediano o grande.
+- [Configuracion carrito] El check del logo conserva su funcion y suma el mismo selector de tamano, persistido como `logo_empresa_carrito_tamano`.
+- [Carrito] Aplica clases visuales por tamano al logo mostrado sobre `Totales y detalles`.
+- [Historial carrito] `carrito_historial_productos.html` recupera el boton `Regresar al carrito`.
+
 ## [2026-06-25] Subida unificada de logos y logo de carrito
 - [Identidad visual] La carga del logo corporativo queda con un solo boton visible `Subir Archivo`; el boton abre el selector de archivo y, al elegir imagen, la sube automaticamente.
 - [Facturas] El logo de factura aplica el mismo patron de un unico boton visible para seleccionar y subir.

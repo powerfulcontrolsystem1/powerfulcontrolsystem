@@ -22,6 +22,7 @@
           <p id="historialMeta" class="form-help">Cargando historial del carrito...</p>
         </div>
         <div class="form-actions">
+          <button id="btnRegresarCarrito" type="button" class="btn secondary">Regresar al carrito</button>
           <button id="btnActualizar" type="button" class="btn secondary">Actualizar</button>
           <button id="btnImprimir" type="button" class="btn">Imprimir</button>
         </div>
@@ -120,6 +121,12 @@
 
     document.getElementById('btnActualizar').addEventListener('click', function() { cargar().catch(function(err) { msg.textContent = err.message; }); });
     document.getElementById('btnImprimir').addEventListener('click', function() { window.print(); });
+    document.getElementById('btnRegresarCarrito').addEventListener('click', function() {
+      const backParams = new URLSearchParams();
+      if (empresaId) backParams.set('empresa_id', String(empresaId));
+      if (carritoId) backParams.set('carrito_id', String(carritoId));
+      window.location.href = '/administrar_empresa/carrito_de_compras.html' + (backParams.toString() ? ('?' + backParams.toString()) : '');
+    });
     cargar().catch(function(err) { msg.textContent = err.message; });
   </script>
 </body>

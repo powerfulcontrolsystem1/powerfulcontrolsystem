@@ -258,6 +258,14 @@
             <div class="form-help">Se muestra encima de Totales y detalles solo cuando la empresa tiene logo cargado.</div>
           </div>
           <div class="form-col">
+            <label class="form-label" for="carritoCfgLogoEmpresaTamano">Tamano del logo en el carrito</label>
+            <select id="carritoCfgLogoEmpresaTamano" class="form-input">
+              <option value="pequeno">Pequeno</option>
+              <option value="mediano">Mediano</option>
+              <option value="grande">Grande</option>
+            </select>
+          </div>
+          <div class="form-col">
             <label class="form-help" style="display:flex;align-items:center;gap:8px;">
               <input id="carritoCfgMostrarTarjetasPago" type="checkbox" checked>
               Mostrar tarjetas de pago
@@ -689,6 +697,11 @@
       return String(value == null ? '' : value).trim();
     }
 
+    function normalizeCartLogoSize(value) {
+      const raw = normalizeText(value).toLowerCase();
+      return ['pequeno', 'mediano', 'grande'].indexOf(raw) >= 0 ? raw : 'mediano';
+    }
+
     function paymentQrProviderLabel(provider) {
       const p = normalizeText(provider).toLowerCase();
       if (p === 'nequi') return 'Nequi';
@@ -848,6 +861,7 @@
         mostrar_boton_pagar: true,
         preguntar_tipo_documento_al_pagar: false,
         mostrar_logo_empresa_carrito: true,
+        logo_empresa_carrito_tamano: 'mediano',
         mostrar_tarjetas_pago: true,
         mostrar_tarjeta_lector_codigo: true,
         mostrar_tarjeta_items_carrito: true,
@@ -952,6 +966,7 @@
         mostrar_boton_pagar: src.mostrar_boton_pagar === undefined ? base.mostrar_boton_pagar : !!src.mostrar_boton_pagar,
         preguntar_tipo_documento_al_pagar: src.preguntar_tipo_documento_al_pagar === undefined ? base.preguntar_tipo_documento_al_pagar : !!src.preguntar_tipo_documento_al_pagar,
         mostrar_logo_empresa_carrito: src.mostrar_logo_empresa_carrito === undefined ? base.mostrar_logo_empresa_carrito : !!src.mostrar_logo_empresa_carrito,
+        logo_empresa_carrito_tamano: normalizeCartLogoSize(src.logo_empresa_carrito_tamano || src.tamano_logo_empresa_carrito || base.logo_empresa_carrito_tamano),
         mostrar_tarjetas_pago: src.mostrar_tarjetas_pago === undefined ? base.mostrar_tarjetas_pago : !!src.mostrar_tarjetas_pago,
         mostrar_tarjeta_lector_codigo: src.mostrar_tarjeta_lector_codigo === undefined ? base.mostrar_tarjeta_lector_codigo : !!src.mostrar_tarjeta_lector_codigo,
         mostrar_tarjeta_items_carrito: src.mostrar_tarjeta_items_carrito === undefined ? base.mostrar_tarjeta_items_carrito : !!src.mostrar_tarjeta_items_carrito,
@@ -1304,6 +1319,7 @@
       document.getElementById('carritoCfgMostrarPagar').checked = !!normalized.mostrar_boton_pagar;
       document.getElementById('carritoCfgPreguntarDocumentoPago').checked = !!normalized.preguntar_tipo_documento_al_pagar;
       document.getElementById('carritoCfgMostrarLogoEmpresa').checked = !!normalized.mostrar_logo_empresa_carrito;
+      document.getElementById('carritoCfgLogoEmpresaTamano').value = normalizeCartLogoSize(normalized.logo_empresa_carrito_tamano);
       document.getElementById('carritoCfgMostrarTarjetasPago').checked = !!normalized.mostrar_tarjetas_pago;
       document.getElementById('carritoCfgTarjetaLector').checked = !!normalized.mostrar_tarjeta_lector_codigo;
       document.getElementById('carritoCfgTarjetaItems').checked = !!normalized.mostrar_tarjeta_items_carrito;
@@ -1503,6 +1519,7 @@
           mostrar_boton_pagar: document.getElementById('carritoCfgMostrarPagar').checked,
           preguntar_tipo_documento_al_pagar: document.getElementById('carritoCfgPreguntarDocumentoPago').checked,
           mostrar_logo_empresa_carrito: document.getElementById('carritoCfgMostrarLogoEmpresa').checked,
+          logo_empresa_carrito_tamano: normalizeCartLogoSize(document.getElementById('carritoCfgLogoEmpresaTamano').value),
           mostrar_tarjetas_pago: document.getElementById('carritoCfgMostrarTarjetasPago').checked,
           mostrar_tarjeta_lector_codigo: document.getElementById('carritoCfgTarjetaLector').checked,
           mostrar_tarjeta_items_carrito: document.getElementById('carritoCfgTarjetaItems').checked,
