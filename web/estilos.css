@@ -21313,6 +21313,19 @@ body.carrito-flat-page .carrito-logo-card{
   text-align:center;
 }
 
+body.carrito-flat-page .carrito-summary-card{
+  display:flex !important;
+  flex-direction:column !important;
+  align-items:stretch !important;
+}
+
+body.carrito-flat-page .carrito-summary-card > .carrito-logo-card,
+body.carrito-flat-page .carrito-summary-card > .section-heading,
+body.carrito-flat-page .carrito-summary-card > .carrito-summary-content{
+  flex:0 0 auto !important;
+  width:100% !important;
+}
+
 body.carrito-flat-page .carrito-logo-card[hidden]{
   display:none !important;
 }
