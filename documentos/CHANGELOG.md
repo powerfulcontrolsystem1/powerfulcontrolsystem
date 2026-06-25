@@ -1,3 +1,9 @@
+## [2026-06-25] Subida unificada de logos y logo de carrito
+- [Identidad visual] La carga del logo corporativo queda con un solo boton visible `Subir Archivo`; el boton abre el selector de archivo y, al elegir imagen, la sube automaticamente.
+- [Facturas] El logo de factura aplica el mismo patron de un unico boton visible para seleccionar y subir.
+- [Carrito] El logo de empresa queda dentro del panel `Totales y detalles`, encima del titulo, y conserva la regla de mostrarse solo cuando la configuracion esta activa y hay logo disponible.
+- [QA] Parseo de scripts embebidos de `configuracion.html` y `carrito_de_compras.html`, comprobacion DOM de ubicacion del logo y boton visible, `git diff --check`.
+
 ## [2026-06-25] Identidad visual y recarga del panel empresarial
 - [Administrar empresa] Las subpaginas abiertas con `shell_admin=1` vuelven al contenedor `/administrar_empresa.html` al recargar con Control+F5, conservando menu lateral/superior y la pagina activa.
 - [Identidad visual] `configuracion/identidad_visual.html` deja de usar un iframe interno sin contexto y redirige a la seccion real `configuracion.html?single=1&section=configuracionIdentidadVisual` con `empresa_id`.

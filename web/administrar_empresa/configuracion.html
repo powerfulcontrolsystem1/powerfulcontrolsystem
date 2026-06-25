@@ -270,6 +270,16 @@
       height: 16px;
       flex: 0 0 auto;
     }
+    .empresa-upload-file-input {
+      position: absolute;
+      inline-size: 1px;
+      block-size: 1px;
+      opacity: 0;
+      overflow: hidden;
+      clip: rect(0 0 0 0);
+      clip-path: inset(50%);
+      white-space: nowrap;
+    }
     @media (max-width: 760px) {
       body.empresa-config-single-section .container {
         padding: 10px;
@@ -419,11 +429,11 @@
           </label>
         </div>
         <div class="form">
-          <label class="form-label" for="empresaLogoFile">Subir logo</label>
-          <input id="empresaLogoFile" class="form-input" type="file" accept="image/png,image/jpeg,image/webp,image/gif">
+          <label class="form-label" for="btnSubirLogoEmpresa">Subir logo</label>
+          <input id="empresaLogoFile" class="empresa-upload-file-input" type="file" accept="image/png,image/jpeg,image/webp,image/gif" tabindex="-1" aria-hidden="true">
           <p class="form-help">Formatos permitidos: PNG, JPG, WEBP o GIF. Tamano maximo: 5 MB.</p>
           <div class="form-actions">
-            <button id="btnSubirLogoEmpresa" type="button" class="btn secondary">Subir archivo</button>
+            <button id="btnSubirLogoEmpresa" type="button" class="btn secondary">Subir Archivo</button>
           </div>
           <label class="form-label" for="empresaLogoURL">URL del logo</label>
           <input id="empresaLogoURL" class="form-input" placeholder="/uploads/empresas/empresa_1_nombre/imagenes/logos/empresa/logo.png o URL publica">
@@ -1037,11 +1047,11 @@
         <div class="form">
           <div class="form-row">
             <div class="form-col">
-              <label class="form-label" for="facturaLogoFile">Subir logo de factura</label>
-              <input id="facturaLogoFile" class="form-input" type="file" accept="image/png,image/jpeg,image/webp,image/gif">
+              <label class="form-label" for="btnSubirLogoFactura">Subir logo de factura</label>
+              <input id="facturaLogoFile" class="empresa-upload-file-input" type="file" accept="image/png,image/jpeg,image/webp,image/gif" tabindex="-1" aria-hidden="true">
               <p class="form-help">Opcional. Si lo subes, la factura usara este logo aunque el logo corporativo sea diferente.</p>
               <div class="form-actions">
-                <button id="btnSubirLogoFactura" type="button" class="btn secondary">Subir logo de factura</button>
+                <button id="btnSubirLogoFactura" type="button" class="btn secondary">Subir Archivo</button>
               </div>
               <label class="form-label" for="facturaLogoURL">URL del logo de factura</label>
               <input id="facturaLogoURL" class="form-input" placeholder="/uploads/empresas/empresa_1_nombre/imagenes/logos/factura/logo.png o URL publica">
@@ -3640,9 +3650,17 @@
         const cfg = data && data.configuracion ? data.configuracion : { logo_url: data.logo_url, mostrar_logo: true, mostrar_logo_empresa: true };
         setIdentidadVisualFormData(cfg);
         setIdentidadVisualMessage('Logo corporativo subido y guardado para panel, reportes y documentos generales.', 'success');
+        if (input) input.value = '';
       } catch (err) {
         setIdentidadVisualMessage('No se pudo subir el logo: ' + (err && err.message ? err.message : err), 'error');
       }
+    }
+
+    function seleccionarYSubirLogoEmpresa() {
+      const input = document.getElementById('empresaLogoFile');
+      if (!input) return;
+      input.value = '';
+      input.click();
     }
 
     async function subirLogoFactura() {
@@ -3680,9 +3698,17 @@
         const cfg = data && data.configuracion ? data.configuracion : { logo_factura_url: data.logo_url, mostrar_logo_factura: true };
         setFacturaFormData(cfg);
         setFacturaMessage('Logo de factura subido y guardado en la carpeta de la empresa.', 'success');
+        if (input) input.value = '';
       } catch (err) {
         setFacturaMessage('No se pudo subir el logo de factura: ' + (err && err.message ? err.message : err), 'error');
       }
+    }
+
+    function seleccionarYSubirLogoFactura() {
+      const input = document.getElementById('facturaLogoFile');
+      if (!input) return;
+      input.value = '';
+      input.click();
     }
 
     async function guardarFacturaConfig() {
@@ -3966,11 +3992,13 @@
       document.getElementById('opPoliticaSucursalId').addEventListener('change', syncOperativaPoliticaFormFromCache);
       document.getElementById('opPoliticaTurno').addEventListener('blur', syncOperativaPoliticaFormFromCache);
       document.getElementById('btnGuardarFacturaConfig').addEventListener('click', guardarFacturaConfig);
-      document.getElementById('btnSubirLogoFactura').addEventListener('click', subirLogoFactura);
+      document.getElementById('btnSubirLogoFactura').addEventListener('click', seleccionarYSubirLogoFactura);
+      document.getElementById('facturaLogoFile').addEventListener('change', subirLogoFactura);
       document.getElementById('btnGuardarConfigReporte').addEventListener('click', saveCorteReporteConfig);
       document.getElementById('btnRestaurarConfigReporte').addEventListener('click', restoreCorteReporteConfig);
       document.getElementById('btnGuardarLogoEmpresa').addEventListener('click', guardarIdentidadVisualConfig);
-      document.getElementById('btnSubirLogoEmpresa').addEventListener('click', subirLogoEmpresa);
+      document.getElementById('btnSubirLogoEmpresa').addEventListener('click', seleccionarYSubirLogoEmpresa);
+      document.getElementById('empresaLogoFile').addEventListener('change', subirLogoEmpresa);
       document.getElementById('empresaLogoURL').addEventListener('input', function() {
         const logoURL = document.getElementById('empresaLogoURL').value;
         const mostrarEmpresa = document.getElementById('empresaMostrarLogoEmpresa').checked;

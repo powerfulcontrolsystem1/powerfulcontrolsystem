@@ -35976,6 +35976,12 @@ Archivos modificados:
 - web/administrar_empresa/panel.html
 - web/estilos.css
 - web/js/radio_player.js
+2026-06-25 - Subida unificada de logos y logo del carrito
+- `web/administrar_empresa/configuracion.html`: en Identidad visual y logo de factura se oculta el input nativo de archivo y queda un solo boton visible `Subir Archivo`; al seleccionar imagen se ejecuta la subida automaticamente con los mismos endpoints existentes.
+- `web/administrar_empresa/carrito_de_compras.html`: el logo de empresa deja de ser una tarjeta separada y se renderiza dentro de `Totales y detalles`, antes del titulo, tanto en carrito normal como en modo estacion/venta directa.
+- Alcance: no cambia endpoints, permisos ni persistencia; conserva la condicion de mostrar logo solo si `mostrar_logo_empresa_carrito` esta activo y hay URL de logo disponible.
+- Validacion: parseo Node de scripts embebidos, comprobacion DOM de boton/logo y `git diff --check`.
+
 2026-06-25 - Identidad visual, logo PCS y recarga Control+F5
 - `web/js/empresa_submenu_context.js`: agrega proteccion para recargas duras de subpaginas de Administrar empresa con `shell_admin=1`; si el usuario presiona Control+F5 en una subpagina, el navegador vuelve al shell `/administrar_empresa.html` con `page` apuntando a la vista activa para no tapar el menu.
 - `web/administrar_empresa/configuracion/identidad_visual.html`: elimina el iframe interno que no recibia `empresa_id` y abre la seccion real de identidad visual con el contexto de empresa, reparando el caso donde el logo subido no aparecia y al volver decia `No hay logo registrado`.
