@@ -41,9 +41,7 @@
     .carrito-fullscreen-label{font-size:.82rem;font-weight:900}
     .carrito-logo-card{display:grid;gap:8px;justify-items:center;text-align:center}
     .carrito-logo-card[hidden]{display:none!important}
-    .carrito-logo-toggle{display:flex;align-items:center;justify-content:center;gap:8px;font-size:.78rem;font-weight:850;color:var(--muted)}
-    .carrito-logo-preview{display:none;max-width:96px;max-height:58px;object-fit:contain}
-    .carrito-logo-card.is-enabled .carrito-logo-preview{display:block}
+    .carrito-logo-preview{display:block;max-width:96px;max-height:58px;object-fit:contain}
     .carrito-station-side{display:grid;gap:0;align-content:start}
     .carrito-workspace-card{border-color:color-mix(in srgb,var(--accent) 34%,var(--border) 66%)!important;border-width:2px!important;padding:8px!important;background:color-mix(in srgb,var(--carrito-card-bg,var(--card)) 94%,var(--accent) 6%)!important}
     .carrito-workspace-card :is(.card,.empresa-section,.carrito-summary-card,#scannerPanel,#stationCustomerCard,#stationCartSplitRow,#stationCheckoutPanel,#stationCartActionsCard,#stationPaymentAmountsCard,#stationPaymentQrCard,#stationWorkerCommissionCard,#stationVipAccessCard,#carritoTotalsPanel,.carrito-logo-card){margin-top:0!important;border-radius:0!important}
@@ -447,7 +445,6 @@
         </div>
         <div class="carrito-station-side">
           <aside id="carritoLogoCardStation" class="card carrito-logo-card carrito-station-logo-card" hidden>
-            <label class="carrito-logo-toggle"><input id="carritoLogoToggleStation" type="checkbox"> Mostrar logo</label>
             <img id="carritoLogoPreviewStation" class="carrito-logo-preview" alt="Logo de la empresa">
           </aside>
           <aside class="card carrito-summary-card carrito-station-totals-aside">
@@ -997,7 +994,6 @@
 
         <div id="carritoSideColumn" class="carrito-side-column">
           <aside id="carritoLogoCard" class="card carrito-logo-card" hidden>
-            <label class="carrito-logo-toggle"><input id="carritoLogoToggle" type="checkbox"> Mostrar logo</label>
             <img id="carritoLogoPreview" class="carrito-logo-preview" alt="Logo de la empresa">
           </aside>
           <aside id="carritoTotalsPanel" class="card carrito-summary-card mt-10">
@@ -1445,65 +1441,40 @@
       return shouldUseWholeMoney(moneda) ? 0 : 2;
     }
 
-    function cartLogoStorageKey() {
-      return 'pcs_carrito_mostrar_logo:' + String(state.empresaID || 0);
-    }
-
     function getCartLogoUrl() {
       const cfg = state.empresaAvanzadaConfig || {};
       return normalize(
         cfg.logo_url ||
         cfg.logo_empresa_url ||
         cfg.logo_factura_url ||
-        cfg.logo_sistema_url ||
         cfg.logo ||
         ''
       );
     }
 
     function isCartLogoEnabled() {
-      try {
-        return window.localStorage.getItem(cartLogoStorageKey()) === '1';
-      } catch (_) {
-        return false;
-      }
-    }
-
-    function setCartLogoEnabled(enabled) {
-      try {
-        window.localStorage.setItem(cartLogoStorageKey(), enabled ? '1' : '0');
-      } catch (_) {}
-      syncCartLogoCards();
+      const ui = normalizeUnifiedCartUIConfig(state.stationCartUI || getCurrentStationCartUIConfig());
+      return ui.mostrar_logo_empresa_carrito !== false;
     }
 
     function syncCartLogoCards() {
       const logoUrl = getCartLogoUrl();
       const enabled = Boolean(logoUrl && isCartLogoEnabled());
+      const showStationLogo = enabled && (state.stationMode || state.directSaleMode);
+      const showDefaultLogo = enabled && !showStationLogo;
       [
-        ['carritoLogoCard', 'carritoLogoToggle', 'carritoLogoPreview'],
-        ['carritoLogoCardStation', 'carritoLogoToggleStation', 'carritoLogoPreviewStation']
+        ['carritoLogoCard', 'carritoLogoPreview', showDefaultLogo],
+        ['carritoLogoCardStation', 'carritoLogoPreviewStation', showStationLogo]
       ].forEach(function(ids) {
         const card = document.getElementById(ids[0]);
-        const toggle = document.getElementById(ids[1]);
-        const img = document.getElementById(ids[2]);
+        const img = document.getElementById(ids[1]);
+        const shouldShow = Boolean(ids[2]);
         if (!card) return;
-        card.hidden = !logoUrl;
-        card.classList.toggle('is-enabled', enabled);
-        if (toggle) toggle.checked = enabled;
+        card.hidden = !shouldShow;
         if (img) {
-          img.src = logoUrl || '';
-          img.hidden = !enabled;
+          img.src = shouldShow ? logoUrl : '';
+          img.hidden = !shouldShow;
         }
-      });
-    }
-
-    function setupCartLogoToggles() {
-      ['carritoLogoToggle', 'carritoLogoToggleStation'].forEach(function(id) {
-        const toggle = document.getElementById(id);
-        if (!toggle) return;
-        toggle.addEventListener('change', function() {
-          setCartLogoEnabled(!!toggle.checked);
-        });
       });
     }
 
@@ -2158,6 +2129,7 @@
         mostrar_resumen_productos: true,
         mostrar_boton_pagar: true,
         preguntar_tipo_documento_al_pagar: false,
+        mostrar_logo_empresa_carrito: true,
         mostrar_tarjetas_pago: true,
         mostrar_tarjeta_lector_codigo: true,
         mostrar_tarjeta_items_carrito: true,
@@ -2310,6 +2282,7 @@
         mostrar_resumen_productos: src.mostrar_resumen_productos === undefined ? base.mostrar_resumen_productos : Boolean(src.mostrar_resumen_productos),
         mostrar_boton_pagar: src.mostrar_boton_pagar === undefined ? base.mostrar_boton_pagar : Boolean(src.mostrar_boton_pagar),
         preguntar_tipo_documento_al_pagar: src.preguntar_tipo_documento_al_pagar === undefined ? base.preguntar_tipo_documento_al_pagar : Boolean(src.preguntar_tipo_documento_al_pagar),
+        mostrar_logo_empresa_carrito: src.mostrar_logo_empresa_carrito === undefined ? base.mostrar_logo_empresa_carrito : Boolean(src.mostrar_logo_empresa_carrito),
         mostrar_tarjetas_pago: src.mostrar_tarjetas_pago === undefined ? base.mostrar_tarjetas_pago : Boolean(src.mostrar_tarjetas_pago),
         mostrar_tarjeta_lector_codigo: src.mostrar_tarjeta_lector_codigo === undefined ? base.mostrar_tarjeta_lector_codigo : Boolean(src.mostrar_tarjeta_lector_codigo),
         mostrar_tarjeta_items_carrito: src.mostrar_tarjeta_items_carrito === undefined ? base.mostrar_tarjeta_items_carrito : Boolean(src.mostrar_tarjeta_items_carrito),
@@ -3037,6 +3010,7 @@
       document.body.classList.toggle('pos-touch-mode', Boolean(ui.modo_pantalla_tactil));
       syncScannerSearchModeUI();
       syncScannerQuantityInput();
+      syncCartLogoCards();
       placeVipCardBelowTotals();
       syncCarritoActionButtons(ui);
 
@@ -12421,7 +12395,6 @@
         await loadEmpresaGeneralConfigFromServer();
         applyCartMoneyInputScale('COP');
         await loadEmpresaAvanzadaConfigFromServer();
-        syncCartLogoCards();
         await loadEmpresaPermissionsContextFromServer();
         await loadStationConfigFromServer();
         await loadTarifaMinutosConfigFromServer();
@@ -12468,7 +12441,6 @@
         renderInitialLoadError(err);
       }
     })();
-    setupCartLogoToggles();
   </script>
   <script>
     (function decorateCarritoButtonsWithIcons() {

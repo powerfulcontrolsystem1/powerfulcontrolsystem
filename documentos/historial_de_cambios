@@ -35983,6 +35983,14 @@ Archivos modificados:
 - Frontend global: `web/js/ai_chat_drawer.js` hace idempotente la autoinyeccion del drawer para conservar una sola IA flotante por pagina.
 - Alcance: no agrega endpoints, tablas, dependencias ni runtime Python al sistema. Python solo se uso temporalmente fuera del sistema para servir archivos estaticos locales durante una prueba visual.
 - QA: verificacion visual local de red social con portada, titulo y un unico boton IA; `git diff --check` sin errores.
+## 2026-06-24 - Logo de empresa en carrito desde configuracion
+
+- Se retiro del carrito el check visible `Mostrar logo` y la persistencia local `pcs_carrito_mostrar_logo`.
+- Se agrego en Configuracion carrito el check `Mostrar logo de la empresa en el carrito`, guardado como `mostrar_logo_empresa_carrito`.
+- El carrito muestra un unico logo encima de `Totales y detalles`, en la columna activa del carrito, solo si la opcion esta activa y existe un logo real de empresa cargado.
+- Si la opcion esta activa pero no hay logo cargado, no se muestra ningun espacio ni imagen vacia.
+- Validaciones ejecutadas: parseo de scripts embebidos, `git diff --check` y comprobacion DOM con Chrome headless.
+
 ## 2026-06-24 - Carrito con decision venta sola o factura electronica
 
 - Se agrega en Configuracion carrito la opcion `Preguntar venta sola o factura electronica al pagar`, persistida como `preguntar_tipo_documento_al_pagar`.
