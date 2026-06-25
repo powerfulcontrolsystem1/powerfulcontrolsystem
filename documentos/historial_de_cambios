@@ -36144,3 +36144,11 @@ PushStatus: OK
 Archivos modificados:
 - web/administrar_empresa/carrito_de_compras.html
 - 2026-06-25: Carrito y ventas - se corrige la distribucion solicitada por captura: el logo del carrito queda como tarjeta independiente en la columna derecha, arriba de Totales y detalles; se agrega boton de carrito rapido junto a pantalla completa; Buscar ventas y facturas recuerda por empresa la ultima opcion de Vista e impresion.
+
+2026-06-25: rs: actualizar repositorio y sincronizar VPS
+PushStatus: OK
+Archivos modificados:
+- CHANGELOG.md
+- documentos/historial_de_cambios
+- web/administrar_empresa/carrito_de_compras.html
+- web/administrar_empresa/ventas.html
