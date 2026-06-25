@@ -21229,6 +21229,21 @@ body.pos-touch-mode .carrito-customer-quick-grid {
   border-top:1px solid var(--border,#d6dee8);
   background:color-mix(in srgb,var(--surface-soft,#f6f8fb) 72%,#fff 28%);
 }
+.carrito-payment-cash-row,
+.carrito-payment-change-row{
+  grid-column:span 2;
+}
+.carrito-payment-change-row .carrito-payment-compact-label{
+  font-size:1.08rem;
+  font-weight:950;
+}
+.carrito-payment-change-row .cash-change-hint{
+  display:flex;
+  align-items:center;
+  justify-content:flex-end;
+  min-height:32px;
+  margin:0;
+}
 
 body.carrito-flat-page{
   --carrito-label-shade:color-mix(in srgb,var(--surface-soft,#f6f8fb) 84%,#fff 16%);
@@ -21282,6 +21297,46 @@ body.carrito-flat-page .empresa-section-header,
 body.carrito-flat-page .page-header,
 body.carrito-flat-page .carrito-summary-card .section-heading{
   border-color:var(--border,#d6dee8) !important;
+}
+
+body.carrito-flat-page .carrito-logo-card{
+  display:grid;
+  justify-items:center;
+  align-content:center;
+  width:100%;
+  min-height:68px;
+  margin:0 0 8px !important;
+  padding:6px;
+  border:1px solid var(--cart-title-border,var(--border,#d6dee8));
+  border-radius:0 !important;
+  background:var(--cart-title-shade,var(--carrito-label-shade, var(--surface-soft,#f6f8fb)));
+  text-align:center;
+}
+
+body.carrito-flat-page .carrito-logo-card[hidden]{
+  display:none !important;
+}
+
+body.carrito-flat-page .carrito-logo-preview{
+  display:block;
+  max-width:116px;
+  max-height:64px;
+  object-fit:contain;
+}
+
+body.carrito-flat-page .carrito-logo-card.logo-size-pequeno .carrito-logo-preview{
+  max-width:72px;
+  max-height:44px;
+}
+
+body.carrito-flat-page .carrito-logo-card.logo-size-mediano .carrito-logo-preview{
+  max-width:116px;
+  max-height:64px;
+}
+
+body.carrito-flat-page .carrito-logo-card.logo-size-grande .carrito-logo-preview{
+  max-width:136px;
+  max-height:82px;
 }
 
 body.carrito-flat-page .carrito-payment-compact-row label[for="stationCashReceivedDisplay"]{
@@ -21486,6 +21541,53 @@ body.carrito-flat-page #stationCashChangeHint{
   justify-content:flex-end !important;
   text-align:right !important;
   width:100% !important;
+}
+
+body.carrito-flat-page .carrito-scanner-header{
+  position:relative !important;
+  padding-right:50px !important;
+}
+
+body.carrito-flat-page #buscarProductosActions:not([hidden]){
+  display:flex !important;
+  position:absolute !important;
+  top:0 !important;
+  right:0 !important;
+  z-index:3 !important;
+  width:auto !important;
+  height:auto !important;
+  min-height:0 !important;
+  margin:0 !important;
+  padding:0 !important;
+  border:0 !important;
+  overflow:visible !important;
+  background:transparent !important;
+  box-shadow:none !important;
+}
+
+body.carrito-flat-page #buscarProductosActions .btn:not(#directSaleFullscreenBtn){
+  display:none !important;
+}
+
+body.carrito-flat-page #directSaleFullscreenCard:not([hidden]){
+  display:flex !important;
+  min-height:0 !important;
+  padding:0 !important;
+  border:0 !important;
+  background:transparent !important;
+}
+
+body.carrito-flat-page #directSaleFullscreenBtn:not([hidden]){
+  display:inline-flex !important;
+  width:38px !important;
+  min-width:38px !important;
+  height:34px !important;
+  min-height:34px !important;
+  padding:0 !important;
+}
+
+body.carrito-flat-page #directSaleFullscreenBtn .carrito-fullscreen-label{
+  display:none !important;
 }
 
 body.pos-touch-mode #carritoActionToolbar,

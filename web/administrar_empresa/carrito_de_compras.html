@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Carrito de compras</title>
-  <link rel="stylesheet" href="/estilos.css?v=20260615-cart-ia-visual">
+  <link rel="stylesheet" href="/estilos.css?v=20260625-cart-layout-visual">
   <script src="/js/empresa_submenu_context.js"></script>
   <script src="/vendor/qrcode.min.js"></script>
   <script src="/js/print_documents.js"></script>
@@ -31,19 +31,21 @@
     .carrito-document-mode-copy{padding:14px 14px 0;color:var(--muted);font-size:.92rem}
     .carrito-direct-sale-tools{align-items:center;justify-content:flex-end;gap:8px}
     .carrito-direct-sale-tools button[hidden]{display:none!important}
-    .carrito-scanner-header{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px}
+    .carrito-scanner-header{position:relative;display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px;padding-right:50px}
     .carrito-scanner-header-title{margin:0;font-size:.9rem;font-weight:900;color:var(--muted);text-transform:uppercase}
     .carrito-customer-header-actions{display:flex;align-items:center;justify-content:flex-end;gap:8px;flex-wrap:wrap}
-    .carrito-fullscreen-card{display:flex;align-items:center;justify-content:center;border:1px solid var(--border);border-radius:0;background:var(--surface-soft,var(--surface));padding:4px;color:var(--text);min-height:42px}
+    #buscarProductosActions{position:absolute;top:0;right:0;z-index:3;margin:0!important;padding:0!important;border:0!important;background:transparent!important;box-shadow:none!important;min-height:0!important}
+    #buscarProductosActions .btn:not(#directSaleFullscreenBtn){display:none!important}
+    .carrito-fullscreen-card{display:flex;align-items:center;justify-content:center;border:0;border-radius:0;background:transparent;padding:0;color:var(--text);min-height:0}
     .carrito-fullscreen-card[hidden]{display:none!important}
-    .carrito-fullscreen-btn{min-height:36px;padding:0 10px;display:inline-flex;align-items:center;justify-content:center;gap:7px;border-radius:0}
-    .carrito-fullscreen-btn .cart-btn-icon{font-size:1rem}
-    .carrito-fullscreen-label{font-size:.82rem;font-weight:900}
-    .carrito-logo-card{display:grid;gap:8px;justify-items:center;text-align:center}
+    .carrito-fullscreen-btn{width:38px!important;min-width:38px!important;height:34px!important;min-height:34px!important;padding:0!important;display:inline-flex;align-items:center;justify-content:center;border-radius:0}
+    .carrito-fullscreen-btn .cart-btn-icon{font-size:1.25rem;line-height:1}
+    .carrito-fullscreen-label{display:none!important}
+    .carrito-logo-card{display:grid;gap:8px;justify-items:center;text-align:center;width:100%;min-height:68px;margin:0 0 8px!important;padding:6px;border:1px solid var(--cart-title-border,var(--border));background:var(--cart-title-shade,var(--surface-soft));align-content:center}
     .carrito-logo-card[hidden]{display:none!important}
-    .carrito-logo-preview{display:block;max-width:96px;max-height:58px;object-fit:contain}
+    .carrito-logo-preview{display:block;max-width:116px;max-height:64px;object-fit:contain}
     .carrito-logo-card.logo-size-pequeno .carrito-logo-preview{max-width:72px;max-height:44px}
-    .carrito-logo-card.logo-size-mediano .carrito-logo-preview{max-width:96px;max-height:58px}
+    .carrito-logo-card.logo-size-mediano .carrito-logo-preview{max-width:116px;max-height:64px}
     .carrito-logo-card.logo-size-grande .carrito-logo-preview{max-width:136px;max-height:82px}
     .cart-fast-mode{--cart-title-shade:color-mix(in srgb,var(--surface) 92%,#000 8%)}
     .cart-fast-mode .carrito-workspace-card{padding:4px!important;background:var(--surface)!important}
@@ -82,7 +84,8 @@
     .carrito-flat-page .carrito-items-box th,
     .carrito-flat-page .carrito-summary-content strong,
     .carrito-flat-page .carrito-payment-compact-label{background:var(--cart-title-shade);border:1px solid var(--cart-title-border);color:var(--text);padding:6px 8px;border-radius:0;line-height:1.15}
-    .carrito-flat-page .carrito-payment-compact-label[for="stationCashReceivedDisplay"]{font-size:1rem}
+    .carrito-flat-page .carrito-payment-compact-label[for="stationCashReceivedDisplay"],
+    .carrito-flat-page .carrito-payment-change-row .carrito-payment-compact-label{font-size:1rem}
     .cart-button-feedback-vibrate{animation:cartButtonFeedbackVibrate 130ms linear 1}
     @keyframes cartButtonFeedbackVibrate{0%,100%{transform:translateX(0)}25%{transform:translateX(-1px)}50%{transform:translateX(1px)}75%{transform:translateX(-1px)}}
     body.carrito-direct-fullscreen{background:var(--carrito-page-bg,var(--bg))}
@@ -91,7 +94,7 @@
     body.carrito-direct-fullscreen #openAIDrawer,
     body.carrito-direct-fullscreen .ai-chat-toggle-button,
     body.carrito-direct-fullscreen .floating-menu{display:none!important}
-    @media(max-width:760px){.carrito-direct-sale-tools{justify-content:flex-end}.carrito-customer-header-actions{width:100%;justify-content:flex-end}.carrito-scanner-header{align-items:stretch}.carrito-fullscreen-label{display:none}.carrito-fullscreen-btn{min-width:38px!important;padding:0 9px}}
+    @media(max-width:760px){.carrito-direct-sale-tools{justify-content:flex-end}.carrito-customer-header-actions{width:100%;justify-content:flex-end}.carrito-scanner-header{align-items:stretch}.carrito-fullscreen-btn{min-width:38px!important;padding:0!important}}
   </style>
 </head>
 <body class="super-page form-bg-dark carrito-flat-page admin-subpage" data-auto-estacion-labels="true">
@@ -834,12 +837,13 @@
             <label class="carrito-payment-compact-label" for="stationPayDisplayCreditoCliente" role="rowheader">Crédito cliente</label>
             <input id="stationPayDisplayCreditoCliente" type="text" inputmode="decimal" class="form-input carrito-payment-compact-input" value="" autocomplete="off" data-payment-amount-method="credito_cliente">
           </div>
-          <div class="carrito-payment-compact-row" role="row">
+          <div class="carrito-payment-compact-row carrito-payment-cash-row" role="row">
             <label class="carrito-payment-compact-label" for="stationCashReceivedDisplay" role="rowheader">Efectivo recibido</label>
             <input id="stationCashReceivedDisplay" type="text" inputmode="decimal" class="form-input carrito-payment-compact-input" value="" autocomplete="off" placeholder="COP 0">
           </div>
-          <div class="carrito-payment-compact-summary" role="row">
-            <div id="stationCashChangeHint" class="cash-change-hint">Vuelto: COP 0</div>
+          <div class="carrito-payment-compact-row carrito-payment-change-row" role="row">
+            <span class="carrito-payment-compact-label" role="rowheader">Vuelto</span>
+            <output id="stationCashChangeHint" class="form-input carrito-payment-compact-input cash-change-hint" aria-live="polite">COP 0</output>
           </div>
         </div>
         <div id="stationPaymentAmountsMsg" class="carrito-payment-amounts-msg form-help mt-8">Haz clic en un medio de pago para cargar el total. Puedes editar los valores para pago combinado.</div>
@@ -4620,13 +4624,13 @@
 
       if (hint) {
         if (recibido <= 0) {
-          hint.textContent = 'Vuelto: ' + formatAmount(0, moneda);
+          hint.textContent = formatAmount(0, moneda);
           hint.classList.remove('value-negative');
         } else if (faltante > 0) {
           hint.textContent = 'Falta: ' + formatAmount(faltante, moneda);
           hint.classList.add('value-negative');
         } else {
-          hint.textContent = 'Vuelto: ' + formatAmount(cambio, moneda);
+          hint.textContent = formatAmount(cambio, moneda);
           hint.classList.remove('value-negative');
         }
       }
@@ -7381,7 +7385,7 @@
       const cashReceived = document.getElementById('stationCashReceivedDisplay');
       if (cashReceived) cashReceived.placeholder = formatAmount(0, m);
       const changeHint = document.getElementById('stationCashChangeHint');
-      if (changeHint && !state.cashReceivedAmount) changeHint.textContent = 'Vuelto: ' + formatAmount(0, m);
+      if (changeHint && !state.cashReceivedAmount) changeHint.textContent = formatAmount(0, m);
     }
 
     function normalizeMoneyNumberInputElement(el, moneda) {

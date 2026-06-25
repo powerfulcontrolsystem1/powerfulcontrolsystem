@@ -36113,3 +36113,4 @@ Archivos modificados:
 - documentos/mapa_modulos.md
 - web/administrar_empresa/carrito_de_compras.html
 - web/administrar_empresa/configuracion_carrito_de_compra_empresa.html
+- 2026-06-25: Carrito PCS - se ajusta la distribucion visual segun captura operativa: pantalla completa queda como icono en la esquina de Buscar producto, el logo de empresa queda reforzado antes de Totales y detalles y Efectivo recibido/Vuelto se organizan como celdas 2x2. Archivos: web/administrar_empresa/carrito_de_compras.html, web/estilos.css, CHANGELOG.md, documentos/CHANGELOG.md. Validacion: sintaxis JS embebida y diff-check antes de rs.
