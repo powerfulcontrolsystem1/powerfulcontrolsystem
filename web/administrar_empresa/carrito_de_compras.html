@@ -3155,7 +3155,7 @@
       } else {
         setCardVisibility('carritoGrid', false);
       }
-      setCardVisibility('carritoTotalsPanel', Boolean(ui.mostrar_tarjeta_totales_detalles));
+      setCardVisibility('carritoTotalsPanel', !focusedSaleMode && Boolean(ui.mostrar_tarjeta_totales_detalles));
       setOptionalSectionsControlsVisibility(ui, selectedCarrito);
       setCardVisibility('stationCheckoutPanel', Boolean(state.optionalSections.showCheckoutAdvanced) && focusedSaleMode && Boolean(selectedCarrito));
 
