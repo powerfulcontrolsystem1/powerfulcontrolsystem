@@ -87,6 +87,7 @@
     @media (max-width:900px){.fe-country-grid{grid-template-columns:1fr}}
     @media (max-width:560px){.fe-config-progress-steps,.dian-readable-grid,.dian-capture-guide,.dian-capture-fields,.dian-essential-grid{grid-template-columns:1fr}.fe-config-progress-percent{font-size:1.45rem}.fe-radian-panel{align-items:flex-start;flex-direction:column}.fe-radian-panel a{width:100%;text-align:center}}
   </style>
+  <script src="/js/ai_button_icons.js?v=20260624-ia-button-icons"></script>
 </head>
 <body class="super-page form-bg-dark">
   <div class="container fe-page-stack">
@@ -178,7 +179,7 @@
           <div class="form-row">
             <div class="form-col"><label class="form-label">PDF Formulario 1876</label><input id="dianNumeracionPdfInput" type="file" accept="application/pdf,.pdf" class="form-input"></div>
             <div class="form-col" style="display:flex; align-items:flex-end; gap:8px; flex-wrap:wrap;">
-              <button id="btnDianNumeracionPdf" type="button" class="btn secondary">Cargar PDF con IA GPT-5.5</button>
+              <button id="btnDianNumeracionPdf" type="button" class="btn secondary" data-ai-button="true">Cargar PDF con IA GPT-5.5</button>
               <button id="btnDianNumeracionAplicar" type="button" class="btn" disabled>Aplicar valores</button>
             </div>
           </div>
@@ -606,6 +607,7 @@
               <option value="pos">Impresora POS (tirilla)</option>
             </select>
             <div class="form-help"><label><input id="adv_imprimir_copia_factura" type="checkbox"> Imprimir copia de la factura</label></div>
+            <div class="form-help"><label><input id="adv_total_en_letras" type="checkbox" checked> Mostrar total de la factura en letras</label></div>
           </div>
           <div class="form-col">
             <label class="form-label">Logo de factura</label>
@@ -669,7 +671,8 @@
     };
 
     const advancedConfigState = {
-      allowed: true
+      allowed: true,
+      current: {}
     };
 
     function removeFacturacionIntroCards() {
@@ -932,7 +935,43 @@
       form.style.display = allowed ? "" : "none";
     }
 
+    const DEFAULT_RECIBO_PRINT_ITEMS_FE = {
+      fecha: true,
+      cliente: true,
+      identificacion_cliente: true,
+      productos: true,
+      subtotal: true,
+      descuento: true,
+      impuestos: true,
+      total: true,
+      total_en_letras: true,
+      pagos: true,
+      qr: true,
+      cufe: true,
+      resolucion: true,
+      notas: true
+    };
+
+    function parsePrintItemsJSON(value) {
+      if (!value) return Object.assign({}, DEFAULT_RECIBO_PRINT_ITEMS_FE);
+      if (typeof value === "object") return Object.assign({}, DEFAULT_RECIBO_PRINT_ITEMS_FE, value || {});
+      try {
+        const parsed = JSON.parse(String(value));
+        return Object.assign({}, DEFAULT_RECIBO_PRINT_ITEMS_FE, parsed && typeof parsed === "object" ? parsed : {});
+      } catch (_) {
+        return Object.assign({}, DEFAULT_RECIBO_PRINT_ITEMS_FE);
+      }
+    }
+
+    function collectReciboPrintItemsFromForm(cfg) {
+      const items = parsePrintItemsJSON(cfg && cfg.impresion_recibo_items_json);
+      const box = document.getElementById("adv_total_en_letras");
+      if (box) items.total_en_letras = !!box.checked;
+      return items;
+    }
+
     function setAdvancedFormData(cfg) {
+      advancedConfigState.current = cfg && typeof cfg === "object" ? Object.assign({}, cfg) : {};
       document.getElementById("adv_facturacion_electronica_activa").checked = cfg.facturacion_electronica_activa === true || txt(cfg.modo_documento_venta) === "factura_electronica";
       document.getElementById("adv_enviar_email_venta").checked = cfg.enviar_email_venta === true;
       document.getElementById("adv_enviar_factura_electronica_venta").checked = cfg.enviar_factura_electronica_venta === true;
@@ -961,6 +1000,7 @@
       document.getElementById("adv_proximo_consecutivo").value = toInt(cfg.proximo_consecutivo, 1);
       document.getElementById("adv_formato_impresion").value = txt(cfg.formato_impresion) || "carta";
       document.getElementById("adv_imprimir_copia_factura").checked = cfg.imprimir_copia_factura === true;
+      document.getElementById("adv_total_en_letras").checked = parsePrintItemsJSON(cfg.impresion_recibo_items_json).total_en_letras !== false;
       document.getElementById("adv_logo_url").value = txt(cfg.logo_factura_url || cfg.logo_url);
       document.getElementById("adv_mostrar_logo").checked = cfg.mostrar_logo_factura !== false && cfg.mostrar_logo !== false;
       document.getElementById("adv_pie_factura").value = txt(cfg.pie_factura);
@@ -1003,6 +1043,7 @@
         proximo_consecutivo: toInt(document.getElementById("adv_proximo_consecutivo").value, 1),
         formato_impresion: txt(document.getElementById("adv_formato_impresion").value) || "carta",
         imprimir_copia_factura: !!document.getElementById("adv_imprimir_copia_factura").checked,
+        impresion_recibo_items_json: JSON.stringify(collectReciboPrintItemsFromForm(advancedConfigState.current || {})),
         mostrar_logo_factura: !!document.getElementById("adv_mostrar_logo").checked,
         logo_factura_url: txt(document.getElementById("adv_logo_url").value),
         pie_factura: txt(document.getElementById("adv_pie_factura").value),

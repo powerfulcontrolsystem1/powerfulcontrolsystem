@@ -36026,3 +36026,11 @@ Archivos modificados:
 - documentos/mapa_modulos.md
 - web/administrar_empresa/carrito_de_compras.html
 - web/administrar_empresa/configuracion_carrito_de_compra_empresa.html
+2026-06-24 - Carrito, IA, facturacion y corte de caja:
+- `web/administrar_empresa/carrito_de_compras.html` abre `carrito_historial_productos.html` en la misma pagina del panel, muestra pantalla completa en la tarjeta de busqueda, refuerza botones/selector/pago y lee logo desde configuracion general o avanzada.
+- `backend/db/carritos_compras.go` agrega respaldo para que el historial de productos muestre items actuales del carrito cuando todavia no existen eventos persistidos en `carrito_compra_producto_historial`.
+- `web/js/ai_button_icons.js`, `facturacion_electronica.html` y `administrar_productos.html` normalizan botones IA con icono y mayor tamano.
+- `facturacion_electronica.html` agrega check de total en letras y persiste el campo en `impresion_recibo_items_json` para formatos imprimibles.
+- `web/administrar_empresa.html` agrupa Productos en `Produccion`.
+- `web/administrar_empresa/corte_de_caja.html` corrige color legible de botones de cierre y agrega checks por campo del reporte de turno.
+- Validacion: sintaxis JS inline con Node empaquetado; `go test ./db ./handlers -run "Carrito|Corte|ConfiguracionAvanzada|^$" -count=1` desde `backend` reporto `ok` en paquetes y fallo solo al remover un exe temporal bloqueado por Windows; prueba visual local con Playwright guardo capturas en `.gotmp/visual-carrito-20260624`.

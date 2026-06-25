@@ -211,6 +211,33 @@
     .corte-caja-page.print-preview-active.report-print-ejecutivo .corte-report-section[data-section="sensores"] {
       display:none !important;
     }
+    .cash-close-actions .btn.success,
+    .cash-close-actions .btn.success:visited {
+      background:#15803d !important;
+      border-color:#166534 !important;
+      color:#fff !important;
+      font-weight:900;
+    }
+    .turno-field-config {
+      display:flex;
+      flex-wrap:wrap;
+      gap:6px 10px;
+      align-items:center;
+      padding:8px 10px;
+      border:1px solid var(--border);
+      background:var(--surface-soft);
+    }
+    .turno-field-config strong { margin-right:4px; font-size:.86rem; }
+    .turno-field-config label {
+      display:inline-flex;
+      align-items:center;
+      gap:5px;
+      margin:0;
+      font-size:.78rem;
+      font-weight:750;
+      color:var(--text);
+      white-space:nowrap;
+    }
     @media (max-width: 1100px) { .cash-close-panel .form{grid-template-columns:repeat(3,minmax(0,1fr))} }
     @media (max-width: 860px) { .cash-close-hero { grid-template-columns:1fr; } .cash-close-panel .form{grid-template-columns:repeat(2,minmax(0,1fr))} .cash-close-panel .form-col-wide{grid-column:1 / -1} .turno-report-company { grid-template-columns:1fr; } .corte-summary-row { grid-template-columns:minmax(108px,.45fr) minmax(0,1fr); } .corte-summary-row small { grid-column:1 / -1; } }
     @media print {
@@ -331,6 +358,7 @@
             <input id="mantenerSesionCierre" type="checkbox" style="margin-top:2px">
             <span>Al cerrar turno, imprimir reportes pero no cerrar la sesión automáticamente.</span>
           </label>
+          <div id="turnoFieldConfig" class="turno-field-config" aria-label="Campos visibles del reporte de turno"></div>
         </div>
       </div>
     </section>
@@ -604,6 +632,54 @@
     detalle_medio_pago: true,
     detalle_total: true
   };
+
+  var TURNO_FIELD_CONFIG = [
+    ['mostrar_empresa_datos', 'Empresa'],
+    ['mostrar_fecha_hora', 'Fecha/hora'],
+    ['mostrar_usuario_reporte', 'Usuario'],
+    ['mostrar_caja', 'Caja'],
+    ['mostrar_consecutivo', 'Consecutivo'],
+    ['mostrar_resumen', 'Resumen'],
+    ['mostrar_numero_facturas', 'Facturas'],
+    ['mostrar_total_ventas', 'Ventas'],
+    ['mostrar_total_descuentos', 'Descuentos'],
+    ['mostrar_efectivo', 'Efectivo'],
+    ['mostrar_debito', 'Debito'],
+    ['mostrar_credito', 'Credito'],
+    ['mostrar_transferencias', 'Transferencias'],
+    ['mostrar_otros_medios', 'Otros pagos'],
+    ['mostrar_ingresos', 'Ingresos'],
+    ['mostrar_egresos', 'Egresos'],
+    ['mostrar_anulaciones', 'Anulaciones'],
+    ['mostrar_devoluciones', 'Devoluciones'],
+    ['mostrar_caja_esperada', 'Caja esperada'],
+    ['mostrar_diferencia_caja', 'Diferencia'],
+    ['mostrar_ventas_detalle', 'Detalle ventas'],
+    ['mostrar_detalle_fecha_entrada', 'Entrada'],
+    ['mostrar_detalle_fecha_salida', 'Salida'],
+    ['mostrar_detalle_numero_venta', 'No. venta'],
+    ['mostrar_detalle_estacion', 'Estacion'],
+    ['mostrar_detalle_cajero', 'Cajero'],
+    ['mostrar_detalle_medio_pago', 'Medio pago'],
+    ['mostrar_detalle_total', 'Total detalle'],
+    ['mostrar_movimientos', 'Movimientos'],
+    ['mostrar_items', 'Items'],
+    ['mostrar_total_productos', 'Productos'],
+    ['mostrar_total_servicios', 'Servicios'],
+    ['mostrar_sensores_puertas', 'Sensores'],
+    ['mostrar_auditoria', 'Auditoria']
+  ];
+
+  function renderTurnoFieldConfigControls() {
+    var box = document.getElementById('turnoFieldConfig');
+    if (!box) return;
+    box.innerHTML = '<strong>Campos del reporte</strong>' + TURNO_FIELD_CONFIG.map(function(item) {
+      var key = item[0];
+      var label = item[1];
+      var checked = reporteConfig[key] !== false ? ' checked' : '';
+      return '<label><input type="checkbox" data-config-key="' + escapeHtml(key) + '"' + checked + '> ' + escapeHtml(label) + '</label>';
+    }).join('');
+  }
 
   function parsePrintItemsJSON(raw, defaults) {
     var base = Object.assign({}, defaults || {});
@@ -1268,6 +1344,7 @@
     setDefaultDates();
     applyPageContext();
     applyPrintFormat(document.getElementById('modoVista').value);
+    renderTurnoFieldConfigControls();
     cargarModoTactilPOS();
     cargarConfigReporte();
     Promise.allSettled([preloadAccount(), preloadCajaDefaults()]).then(function() {

@@ -3486,6 +3486,39 @@ func ListCarritoCompraProductoHistorial(dbConn *sql.DB, empresaID, carritoID int
 	if err := rows.Err(); err != nil {
 		return nil, err
 	}
+	if len(out) == 0 {
+		items, err := GetCarritoCompraItems(dbConn, empresaID, carritoID, false)
+		if err != nil {
+			return nil, err
+		}
+		for _, item := range items {
+			if item.Cantidad <= 0 {
+				continue
+			}
+			fecha := strings.TrimSpace(item.FechaCreacion)
+			if fecha == "" {
+				fecha = strings.TrimSpace(item.FechaActualizacion)
+			}
+			out = append(out, CarritoCompraProductoHistorial{
+				EmpresaID:      empresaID,
+				CarritoID:      carritoID,
+				ItemID:         item.ID,
+				TipoEvento:     "actual",
+				TipoItem:       defaultTipoItem(item.TipoItem),
+				ReferenciaID:   item.ReferenciaID,
+				CodigoItem:     strings.TrimSpace(item.CodigoItem),
+				Descripcion:    strings.TrimSpace(item.Descripcion),
+				UnidadMedida:   defaultUnidadCarrito(item.UnidadMedida),
+				Cantidad:       item.Cantidad,
+				PrecioUnitario: item.PrecioUnitario,
+				SubtotalLinea:  item.SubtotalLinea,
+				TotalLinea:     item.TotalLinea,
+				FechaEvento:    fecha,
+				UsuarioCreador: strings.TrimSpace(item.UsuarioCreador),
+				Observaciones:  "vista reconstruida desde items actuales del carrito",
+			})
+		}
+	}
 	return out, nil
 }
 

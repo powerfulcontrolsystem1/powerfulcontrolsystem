@@ -3,7 +3,23 @@
 
   var ICON_URL = "/img/pcs_ia_logo.svg";
   var IA_TEXT = /\b(ia|i\.a\.|inteligencia artificial|gpt|chatgpt)\b/i;
-  var IA_ACTIONS = /(analizar|generar|extraer|diagnosticar|consultar|preparar|borrador|asistente|centro).*(ia|gpt)|(ia|gpt).*(analizar|generar|extraer|diagnosticar|consultar|preparar|borrador|asistente|centro)/i;
+  var IA_ACTIONS = /(analizar|generar|extraer|diagnosticar|consultar|preparar|borrador|asistente|centro|cargar|leer|buscar|capturar).*(ia|gpt)|(ia|gpt).*(analizar|generar|extraer|diagnosticar|consultar|preparar|borrador|asistente|centro|cargar|leer|buscar|capturar)/i;
+  var STYLE_ID = "pcs-ai-button-icon-styles";
+
+  function ensureAIButtonStyles(doc) {
+    doc = doc || document;
+    if (!doc || doc.getElementById(STYLE_ID)) return;
+    var style = doc.createElement("style");
+    style.id = STYLE_ID;
+    style.textContent = [
+      ".ai-action-button{display:inline-flex!important;align-items:center!important;justify-content:center!important;gap:8px!important;min-height:44px!important;padding:10px 14px!important;font-weight:900!important;line-height:1.15!important;}",
+      ".ai-action-button .ai-button-icon,.ai-action-button img[data-ai-logo='true']{width:18px!important;height:18px!important;object-fit:contain!important;flex:0 0 auto!important;}",
+      ".ai-action-button.capture-btn,.capture-btn.ai-action-button{min-height:48px!important;padding:11px 15px!important;}",
+      ".ai-action-button.small,.ai-action-button.btn-sm{min-height:38px!important;padding:8px 11px!important;}",
+      ".ai-action-button.small .ai-button-icon,.ai-action-button.btn-sm .ai-button-icon{width:15px!important;height:15px!important;}"
+    ].join("");
+    (doc.head || doc.documentElement).appendChild(style);
+  }
 
   function textOf(el) {
     return String((el && (el.textContent || el.getAttribute("aria-label") || el.title)) || "").replace(/\s+/g, " ").trim();
@@ -53,7 +69,8 @@
 
   function applyAIButtonIcons(root) {
     var scope = root && root.querySelectorAll ? root : document;
-    Array.prototype.slice.call(scope.querySelectorAll("button, a.btn, .btn, .capture-btn, .fin-center-chip")).forEach(enhance);
+    ensureAIButtonStyles(scope.ownerDocument || scope);
+    Array.prototype.slice.call(scope.querySelectorAll("button, a.btn, .btn, .capture-btn, .fin-center-chip, .ai-action-btn")).forEach(enhance);
     syncAILogos(scope);
   }
 

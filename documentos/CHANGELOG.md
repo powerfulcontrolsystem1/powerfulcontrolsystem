@@ -1,3 +1,11 @@
+## [2026-06-24] Carrito, IA, facturacion y corte de caja
+- [Carrito] `Historial de productos` abre dentro del panel empresarial y el backend reconstruye una vista desde los items actuales si aun no hay eventos historicos persistidos.
+- [Carrito] El logo del carrito tambien lee la configuracion general de empresa, el boton de pantalla completa queda visible en `Buscar producto`, los botones resaltan frente al sombreado y `Pagar` queda mas grande.
+- [IA] `ai_button_icons.js` reconoce mas botones operativos con IA/GPT, les agrega icono/tamano consistente y se carga en facturacion electronica y productos cuando se abren como paginas directas.
+- [Facturacion] La configuracion avanzada agrega check para mostrar el total en letras usando `impresion_recibo_items_json`, que ya consumen los formatos POS/carta.
+- [Menu empresa] Productos pasa al grupo `Produccion` junto con importaciones, MRP y WMS.
+- [Corte de caja] Los botones de cierre usan texto blanco legible y el reporte de turno expone checks para activar/desactivar campos.
+
 ## [2026-06-23] Ventas, noticias, emisora y red social comercial
 - [Ventas] `ventas.html` inicia con fecha desde/hasta del dia actual, ejecuta la busqueda al entrar y compacta filtros a todo el ancho.
 - [Noticias] Las noticias DIAN/facturacion electronica quedan asociadas a Colombia para no ocultarse por filtro de pais.
