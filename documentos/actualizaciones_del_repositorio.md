@@ -15793,3 +15793,15 @@ Archivos modificados:
 2026-06-25 19:49:02 - Mensaje: rs: actualizar repositorio y sincronizar VPS; Commit: 5f2afc9f; PushStatus: OK
 Archivos modificados:
 - web/administrar_empresa/configuracion/corte_de_caja.html
+
+2026-06-26 11:12:58 - Mensaje: rs: actualizar repositorio y sincronizar VPS; Commit: b80d2e68; PushStatus: OK
+Archivos modificados:
+- CHANGELOG.md
+- documentos/CHANGELOG.md
+- documentos/historial_de_cambios
+- documentos/mapa_modulos.md
+- web/administrar_empresa/carrito_de_compras.html
+- web/administrar_empresa/configuracion_carrito_de_compra_empresa.html
+- web/administrar_empresa/corte_de_caja.html
+- web/administrar_empresa/ventas.html
+- web/estilos.css
