@@ -379,7 +379,7 @@ func corteCajaConfigCacheFingerprint(cfg *dbpkg.EmpresaCorteCajaConfiguracion) s
 		return "default"
 	}
 	values := []bool{
-		cfg.MostrarEncabezado, cfg.MostrarEmpresaDatos, cfg.MostrarFechaHora, cfg.MostrarUsuarioReporte, cfg.MostrarConsecutivo,
+		cfg.MostrarEncabezado, cfg.MostrarEmpresaDatos, cfg.MostrarFechaHora, cfg.MostrarUsuarioReporte, cfg.MostrarCaja, cfg.MostrarConsecutivo,
 		cfg.MostrarResumen, cfg.MostrarNumeroFacturas, cfg.MostrarCantidadVentas, cfg.MostrarTotalDescuentos, cfg.MostrarTotalVentas,
 		cfg.MostrarEfectivo, cfg.MostrarDebito, cfg.MostrarCredito, cfg.MostrarTransferencias, cfg.MostrarOtrosMedios,
 		cfg.MostrarIngresos, cfg.MostrarEgresos, cfg.MostrarAnulaciones, cfg.MostrarDevoluciones,

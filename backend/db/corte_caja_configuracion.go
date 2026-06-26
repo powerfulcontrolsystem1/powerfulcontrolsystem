@@ -15,6 +15,7 @@ type EmpresaCorteCajaConfiguracion struct {
 	MostrarEmpresaDatos    bool   `json:"mostrar_empresa_datos"`
 	MostrarFechaHora       bool   `json:"mostrar_fecha_hora"`
 	MostrarUsuarioReporte  bool   `json:"mostrar_usuario_reporte"`
+	MostrarCaja            bool   `json:"mostrar_caja"`
 	MostrarConsecutivo     bool   `json:"mostrar_consecutivo"`
 	MostrarResumen         bool   `json:"mostrar_resumen"`
 	MostrarNumeroFacturas  bool   `json:"mostrar_numero_facturas"`
@@ -61,6 +62,7 @@ func DefaultEmpresaCorteCajaConfiguracion(empresaID int64) EmpresaCorteCajaConfi
 		MostrarEmpresaDatos:    true,
 		MostrarFechaHora:       true,
 		MostrarUsuarioReporte:  true,
+		MostrarCaja:            true,
 		MostrarConsecutivo:     true,
 		MostrarResumen:         true,
 		MostrarNumeroFacturas:  true,
@@ -109,6 +111,7 @@ func EnsureEmpresaCorteCajaConfiguracionSchema(dbConn *sql.DB) error {
 			mostrar_empresa_datos INTEGER DEFAULT 1,
 			mostrar_fecha_hora INTEGER DEFAULT 1,
 			mostrar_usuario_reporte INTEGER DEFAULT 1,
+			mostrar_caja INTEGER DEFAULT 1,
 			mostrar_consecutivo INTEGER DEFAULT 1,
 			mostrar_resumen INTEGER DEFAULT 1,
 			mostrar_numero_facturas INTEGER DEFAULT 1,
@@ -162,6 +165,7 @@ func EnsureEmpresaCorteCajaConfiguracionSchema(dbConn *sql.DB) error {
 		{"mostrar_empresa_datos", "INTEGER DEFAULT 1"},
 		{"mostrar_fecha_hora", "INTEGER DEFAULT 1"},
 		{"mostrar_usuario_reporte", "INTEGER DEFAULT 1"},
+		{"mostrar_caja", "INTEGER DEFAULT 1"},
 		{"mostrar_consecutivo", "INTEGER DEFAULT 1"},
 		{"mostrar_resumen", "INTEGER DEFAULT 1"},
 		{"mostrar_numero_facturas", "INTEGER DEFAULT 1"},
@@ -223,6 +227,7 @@ func GetEmpresaCorteCajaConfiguracion(dbConn *sql.DB, empresaID int64) (*Empresa
 		COALESCE(mostrar_empresa_datos, 1),
 		COALESCE(mostrar_fecha_hora, 1),
 		COALESCE(mostrar_usuario_reporte, 1),
+		COALESCE(mostrar_caja, 1),
 		COALESCE(mostrar_consecutivo, 1),
 		COALESCE(mostrar_resumen, 1),
 		COALESCE(mostrar_numero_facturas, 1),
@@ -265,13 +270,13 @@ func GetEmpresaCorteCajaConfiguracion(dbConn *sql.DB, empresaID int64) (*Empresa
 	LIMIT 1`, empresaID)
 
 	var out EmpresaCorteCajaConfiguracion
-	var b [35]int
+	var b [36]int
 	err := row.Scan(
 		&out.ID, &out.EmpresaID,
 		&b[0], &b[1], &b[2], &b[3], &b[4], &b[5], &b[6], &b[7], &b[8], &b[9],
 		&b[10], &b[11], &b[12], &b[13], &b[14], &b[15], &b[16], &b[17], &b[18], &b[19],
 		&b[20], &b[21], &b[22], &b[23], &b[24], &b[25], &b[26], &b[27], &b[28], &b[29],
-		&b[30], &b[31], &b[32], &b[33], &b[34],
+		&b[30], &b[31], &b[32], &b[33], &b[34], &b[35],
 		&out.FormatoImpresion,
 		&out.FechaCreacion, &out.FechaActualizacion, &out.UsuarioCreador, &out.Estado, &out.Observaciones,
 	)
@@ -291,37 +296,38 @@ func GetEmpresaCorteCajaConfiguracion(dbConn *sql.DB, empresaID int64) (*Empresa
 	out.MostrarEmpresaDatos = b[1] > 0
 	out.MostrarFechaHora = b[2] > 0
 	out.MostrarUsuarioReporte = b[3] > 0
-	out.MostrarConsecutivo = b[4] > 0
-	out.MostrarResumen = b[5] > 0
-	out.MostrarNumeroFacturas = b[6] > 0
-	out.MostrarCantidadVentas = b[7] > 0
-	out.MostrarTotalDescuentos = b[8] > 0
-	out.MostrarTotalVentas = b[9] > 0
-	out.MostrarEfectivo = b[10] > 0
-	out.MostrarDebito = b[11] > 0
-	out.MostrarCredito = b[12] > 0
-	out.MostrarTransferencias = b[13] > 0
-	out.MostrarOtrosMedios = b[14] > 0
-	out.MostrarIngresos = b[15] > 0
-	out.MostrarEgresos = b[16] > 0
-	out.MostrarAnulaciones = b[17] > 0
-	out.MostrarDevoluciones = b[18] > 0
-	out.MostrarCajaEsperada = b[19] > 0
-	out.MostrarDiferenciaCaja = b[20] > 0
-	out.MostrarVentasDetalle = b[21] > 0
-	out.MostrarDetalleEntrada = b[22] > 0
-	out.MostrarDetalleSalida = b[23] > 0
-	out.MostrarDetalleNumero = b[24] > 0
-	out.MostrarDetalleEstacion = b[25] > 0
-	out.MostrarDetalleCajero = b[26] > 0
-	out.MostrarDetalleMetodo = b[27] > 0
-	out.MostrarDetalleTotal = b[28] > 0
-	out.MostrarMovimientos = b[29] > 0
-	out.MostrarItems = b[30] > 0
-	out.MostrarTotalProductos = b[31] > 0
-	out.MostrarTotalServicios = b[32] > 0
-	out.MostrarSensoresPuertas = b[33] > 0
-	out.MostrarAuditoria = b[34] > 0
+	out.MostrarCaja = b[4] > 0
+	out.MostrarConsecutivo = b[5] > 0
+	out.MostrarResumen = b[6] > 0
+	out.MostrarNumeroFacturas = b[7] > 0
+	out.MostrarCantidadVentas = b[8] > 0
+	out.MostrarTotalDescuentos = b[9] > 0
+	out.MostrarTotalVentas = b[10] > 0
+	out.MostrarEfectivo = b[11] > 0
+	out.MostrarDebito = b[12] > 0
+	out.MostrarCredito = b[13] > 0
+	out.MostrarTransferencias = b[14] > 0
+	out.MostrarOtrosMedios = b[15] > 0
+	out.MostrarIngresos = b[16] > 0
+	out.MostrarEgresos = b[17] > 0
+	out.MostrarAnulaciones = b[18] > 0
+	out.MostrarDevoluciones = b[19] > 0
+	out.MostrarCajaEsperada = b[20] > 0
+	out.MostrarDiferenciaCaja = b[21] > 0
+	out.MostrarVentasDetalle = b[22] > 0
+	out.MostrarDetalleEntrada = b[23] > 0
+	out.MostrarDetalleSalida = b[24] > 0
+	out.MostrarDetalleNumero = b[25] > 0
+	out.MostrarDetalleEstacion = b[26] > 0
+	out.MostrarDetalleCajero = b[27] > 0
+	out.MostrarDetalleMetodo = b[28] > 0
+	out.MostrarDetalleTotal = b[29] > 0
+	out.MostrarMovimientos = b[30] > 0
+	out.MostrarItems = b[31] > 0
+	out.MostrarTotalProductos = b[32] > 0
+	out.MostrarTotalServicios = b[33] > 0
+	out.MostrarSensoresPuertas = b[34] > 0
+	out.MostrarAuditoria = b[35] > 0
 	out = normalizeEmpresaCorteCajaConfiguracion(out)
 	return &out, nil
 }
@@ -349,6 +355,7 @@ func UpsertEmpresaCorteCajaConfiguracion(dbConn *sql.DB, cfg EmpresaCorteCajaCon
 		corteCajaConfigBoolToInt(cfg.MostrarEmpresaDatos),
 		corteCajaConfigBoolToInt(cfg.MostrarFechaHora),
 		corteCajaConfigBoolToInt(cfg.MostrarUsuarioReporte),
+		corteCajaConfigBoolToInt(cfg.MostrarCaja),
 		corteCajaConfigBoolToInt(cfg.MostrarConsecutivo),
 		corteCajaConfigBoolToInt(cfg.MostrarResumen),
 		corteCajaConfigBoolToInt(cfg.MostrarNumeroFacturas),
@@ -388,7 +395,7 @@ func UpsertEmpresaCorteCajaConfiguracion(dbConn *sql.DB, cfg EmpresaCorteCajaCon
 	if err == sql.ErrNoRows {
 		return insertSQLCompat(dbConn, `INSERT INTO empresa_corte_caja_configuracion (
 			empresa_id,
-			mostrar_encabezado, mostrar_empresa_datos, mostrar_fecha_hora, mostrar_usuario_reporte, mostrar_consecutivo,
+			mostrar_encabezado, mostrar_empresa_datos, mostrar_fecha_hora, mostrar_usuario_reporte, mostrar_caja, mostrar_consecutivo,
 			mostrar_resumen, mostrar_numero_facturas, mostrar_cantidad_ventas, mostrar_total_descuentos, mostrar_total_ventas,
 			mostrar_efectivo, mostrar_debito, mostrar_credito, mostrar_transferencias, mostrar_otros_medios,
 			mostrar_ingresos, mostrar_egresos, mostrar_anulaciones, mostrar_devoluciones,
@@ -401,7 +408,7 @@ func UpsertEmpresaCorteCajaConfiguracion(dbConn *sql.DB, cfg EmpresaCorteCajaCon
 			formato_impresion, fecha_creacion, fecha_actualizacion, usuario_creador, estado, observaciones
 		) VALUES (
 			?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
-			?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
+			?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
 			CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, ?, ?, ?
 		)`, args...)
 	}
@@ -412,6 +419,7 @@ func UpsertEmpresaCorteCajaConfiguracion(dbConn *sql.DB, cfg EmpresaCorteCajaCon
 		mostrar_empresa_datos = ?,
 		mostrar_fecha_hora = ?,
 		mostrar_usuario_reporte = ?,
+		mostrar_caja = ?,
 		mostrar_consecutivo = ?,
 		mostrar_resumen = ?,
 		mostrar_numero_facturas = ?,

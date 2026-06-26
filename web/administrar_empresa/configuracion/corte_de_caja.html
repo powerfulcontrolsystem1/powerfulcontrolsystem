@@ -5,30 +5,321 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Reporte de corte - Configuracion</title>
   <link rel="stylesheet" href="/estilos.css">
+  <script src="/js/empresa_submenu_context.js"></script>
   <style>
-    html,body{height:100%}
     body{margin:0;background:var(--bg);color:var(--text)}
-    .empresa-config-section-page{height:100vh;display:grid;grid-template-rows:auto minmax(0,1fr);min-width:0;overflow-x:hidden}
-    .empresa-config-section-header{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:14px 16px;border-bottom:1px solid var(--border);background:var(--surface)}
-    .empresa-config-section-header h1{margin:0;color:var(--text);font-size:1.35rem}
-    .empresa-config-section-header p{margin:3px 0 0;color:var(--muted);font-size:.82rem;line-height:1.35}
-    .empresa-config-section-actions{display:flex;gap:8px;flex-wrap:wrap}
-    .empresa-config-section-frame{width:100%;min-width:0;height:100%;border:0;background:transparent}
-    @media(max-width:760px){.empresa-config-section-header{display:grid;grid-template-columns:1fr;padding:12px}.empresa-config-section-actions{width:100%}.empresa-config-section-actions .btn{flex:1 1 auto;width:100%;box-sizing:border-box;text-align:center}}
+    .corte-config-page{width:min(1180px,100%);margin:0 auto;padding:16px;box-sizing:border-box}
+    .corte-config-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:12px}
+    .corte-config-head h1{margin:0;font-size:1.35rem;color:var(--text)}
+    .corte-config-head p{margin:4px 0 0;color:var(--muted);line-height:1.35}
+    .corte-config-actions{display:flex;gap:8px;flex-wrap:wrap}
+    .corte-config-strip{display:grid;grid-template-columns:minmax(220px,320px) minmax(0,1fr);gap:12px;align-items:end;margin-bottom:12px}
+    .corte-config-group{border:1px solid var(--border);background:var(--surface);border-radius:8px;padding:12px;margin-bottom:12px}
+    .corte-config-group h2{margin:0 0 10px;font-size:1rem;color:var(--text)}
+    .corte-config-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(178px,1fr));gap:8px}
+    .corte-config-check{display:flex;align-items:center;gap:9px;min-height:42px;border:1px solid var(--border);border-radius:8px;padding:8px 10px;background:var(--card);color:var(--text);font-weight:800}
+    .corte-config-check input{flex:0 0 auto}
+    .corte-config-msg{min-height:24px;margin-top:8px}
+    @media(max-width:760px){
+      .corte-config-page{padding:12px}
+      .corte-config-strip{grid-template-columns:1fr}
+      .corte-config-actions,.corte-config-actions .btn{width:100%}
+    }
   </style>
 </head>
 <body class="empresa-subpage">
-  <main class="empresa-config-section-page">
-    <header class="empresa-config-section-header">
+  <main class="corte-config-page">
+    <header class="corte-config-head">
       <div>
         <h1>Reporte de corte</h1>
-        <p>Formato y secciones que se imprimen al cerrar o revisar un turno.</p>
+        <p>Configura los campos que aparecen en el reporte de turno, corte de caja, impresion POS 80mm y vista carta.</p>
       </div>
-      <div class="empresa-config-section-actions">
-        <a class="btn secondary" href="/administrar_empresa/configuracion.html">Ver todas</a>
+      <div class="corte-config-actions">
+        <button id="btnGuardarConfigReporte" class="btn" type="button">Guardar configuracion</button>
+        <button id="btnRestaurarConfigReporte" class="btn secondary" type="button">Restaurar profesional</button>
       </div>
     </header>
-    <iframe class="empresa-config-section-frame" src="/administrar_empresa/configuracion.html?single=1&amp;section=configuracionReporteCorte" title="Reporte de corte"></iframe>
+
+    <section class="card empresa-section">
+      <div class="corte-config-strip">
+        <div class="form-col">
+          <label class="form-label" for="corteFormatoImpresion">Formato por defecto</label>
+          <select id="corteFormatoImpresion" class="form-input">
+            <option value="pos">Ticket POS 80mm</option>
+            <option value="ejecutivo">Ejecutivo compacto</option>
+          </select>
+        </div>
+        <div id="configReporteMsg" class="form-help corte-config-msg">Cargando configuracion...</div>
+      </div>
+
+      <div id="corteConfigGroups"></div>
+    </section>
   </main>
+
+  <script>
+  (function(){
+    'use strict';
+
+    var FIELD_GROUPS = [
+      { title:'Encabezado', items:[
+        ['mostrar_encabezado','Encabezado'],
+        ['mostrar_empresa_datos','Empresa'],
+        ['mostrar_fecha_hora','Fecha/hora'],
+        ['mostrar_usuario_reporte','Usuario'],
+        ['mostrar_caja','Caja'],
+        ['mostrar_consecutivo','Consecutivo']
+      ]},
+      { title:'Resumen y ventas', items:[
+        ['mostrar_resumen','Resumen'],
+        ['mostrar_numero_facturas','Facturas'],
+        ['mostrar_total_ventas','Ventas'],
+        ['mostrar_total_descuentos','Descuentos'],
+        ['mostrar_anulaciones','Anulaciones'],
+        ['mostrar_devoluciones','Devoluciones']
+      ]},
+      { title:'Medios de pago y caja', items:[
+        ['mostrar_efectivo','Efectivo'],
+        ['mostrar_debito','Debito'],
+        ['mostrar_credito','Credito'],
+        ['mostrar_transferencias','Transferencias'],
+        ['mostrar_otros_medios','Otros pagos'],
+        ['mostrar_ingresos','Ingresos'],
+        ['mostrar_egresos','Egresos'],
+        ['mostrar_caja_esperada','Caja esperada'],
+        ['mostrar_diferencia_caja','Diferencia']
+      ]},
+      { title:'Detalle de ventas', items:[
+        ['mostrar_ventas_detalle','Detalle ventas'],
+        ['mostrar_detalle_fecha_entrada','Entrada'],
+        ['mostrar_detalle_fecha_salida','Salida'],
+        ['mostrar_detalle_numero_venta','No. venta'],
+        ['mostrar_detalle_estacion','Estacion'],
+        ['mostrar_detalle_cajero','Cajero'],
+        ['mostrar_detalle_medio_pago','Medio pago'],
+        ['mostrar_detalle_total','Total detalle']
+      ]},
+      { title:'Operacion y auditoria', items:[
+        ['mostrar_movimientos','Movimientos'],
+        ['mostrar_items','Items'],
+        ['mostrar_total_productos','Productos'],
+        ['mostrar_total_servicios','Servicios'],
+        ['mostrar_sensores_puertas','Sensores'],
+        ['mostrar_auditoria','Auditoria']
+      ]}
+    ];
+
+    var DEFAULT_CONFIG = {
+      mostrar_encabezado:true,
+      mostrar_empresa_datos:true,
+      mostrar_fecha_hora:true,
+      mostrar_usuario_reporte:true,
+      mostrar_caja:true,
+      mostrar_consecutivo:true,
+      mostrar_resumen:true,
+      mostrar_numero_facturas:true,
+      mostrar_total_ventas:true,
+      mostrar_total_descuentos:true,
+      mostrar_anulaciones:true,
+      mostrar_devoluciones:true,
+      mostrar_efectivo:true,
+      mostrar_debito:true,
+      mostrar_credito:true,
+      mostrar_transferencias:true,
+      mostrar_otros_medios:true,
+      mostrar_ingresos:true,
+      mostrar_egresos:true,
+      mostrar_caja_esperada:true,
+      mostrar_diferencia_caja:true,
+      mostrar_ventas_detalle:true,
+      mostrar_detalle_fecha_entrada:true,
+      mostrar_detalle_fecha_salida:true,
+      mostrar_detalle_numero_venta:true,
+      mostrar_detalle_estacion:true,
+      mostrar_detalle_cajero:true,
+      mostrar_detalle_medio_pago:true,
+      mostrar_detalle_total:true,
+      mostrar_movimientos:true,
+      mostrar_items:true,
+      mostrar_total_productos:true,
+      mostrar_total_servicios:true,
+      mostrar_sensores_puertas:true,
+      mostrar_auditoria:true,
+      formato_impresion:'pos',
+      estado:'activo'
+    };
+
+    var empresaId = resolveEmpresaId();
+    var cache = Object.assign({}, DEFAULT_CONFIG);
+
+    function esc(s){
+      return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){
+        return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c];
+      });
+    }
+
+    function parsePositiveInt(raw){
+      var n = Number(String(raw || '').trim());
+      return Number.isFinite(n) && n > 0 ? Math.trunc(n) : 0;
+    }
+
+    function resolveEmpresaId(){
+      try {
+        var params = new URLSearchParams(location.search || '');
+        var own = parsePositiveInt(params.get('empresa_id') || params.get('id'));
+        if (own > 0) return own;
+      } catch (_) {}
+      try {
+        if (window.parent && window.parent !== window && typeof window.parent.__resolveEmpresaIdContext === 'function') {
+          var fromParentFn = parsePositiveInt(window.parent.__resolveEmpresaIdContext());
+          if (fromParentFn > 0) return fromParentFn;
+        }
+      } catch (_) {}
+      try {
+        var candidates = [
+          sessionStorage.getItem('active_empresa_id'),
+          sessionStorage.getItem('empresa_id'),
+          localStorage.getItem('active_empresa_id'),
+          localStorage.getItem('empresa_id')
+        ];
+        for (var i = 0; i < candidates.length; i += 1) {
+          var parsed = parsePositiveInt(candidates[i]);
+          if (parsed > 0) return parsed;
+        }
+      } catch (_) {}
+      return 0;
+    }
+
+    function msg(text, type){
+      var box = document.getElementById('configReporteMsg');
+      if (!box) return;
+      box.textContent = text || '';
+      box.className = type === 'error' ? 'error corte-config-msg' : (type === 'success' ? 'success corte-config-msg' : 'form-help corte-config-msg');
+    }
+
+    function normalizeFormato(value){
+      var v = String(value || '').trim().toLowerCase();
+      if (v === 'ejecutivo' || v === 'compacto') return 'ejecutivo';
+      return 'pos';
+    }
+
+    function normalizeConfig(raw){
+      var src = raw && typeof raw === 'object' ? raw : {};
+      var out = Object.assign({}, DEFAULT_CONFIG);
+      Object.keys(DEFAULT_CONFIG).forEach(function(key){
+        if (key === 'formato_impresion') {
+          out[key] = normalizeFormato(src[key] || out[key]);
+        } else if (key === 'estado') {
+          out[key] = String(src[key] || out[key]).trim().toLowerCase() === 'inactivo' ? 'inactivo' : 'activo';
+        } else if (Object.prototype.hasOwnProperty.call(src, key)) {
+          out[key] = Boolean(src[key]);
+        }
+      });
+      out.empresa_id = parsePositiveInt(src.empresa_id || empresaId);
+      return out;
+    }
+
+    function renderFields(){
+      var mount = document.getElementById('corteConfigGroups');
+      if (!mount) return;
+      mount.innerHTML = FIELD_GROUPS.map(function(group){
+        return '<section class="corte-config-group"><h2>' + esc(group.title) + '</h2><div class="corte-config-grid">' +
+          group.items.map(function(item){
+            return '<label class="corte-config-check"><input type="checkbox" data-corte-config-key="' + esc(item[0]) + '"> <span>' + esc(item[1]) + '</span></label>';
+          }).join('') +
+          '</div></section>';
+      }).join('');
+    }
+
+    function setForm(cfg){
+      cache = normalizeConfig(cfg);
+      document.querySelectorAll('[data-corte-config-key]').forEach(function(input){
+        var key = input.getAttribute('data-corte-config-key');
+        input.checked = cache[key] !== false;
+      });
+      var formato = document.getElementById('corteFormatoImpresion');
+      if (formato) formato.value = normalizeFormato(cache.formato_impresion);
+    }
+
+    function collectForm(){
+      var cfg = normalizeConfig(cache);
+      document.querySelectorAll('[data-corte-config-key]').forEach(function(input){
+        cfg[input.getAttribute('data-corte-config-key')] = Boolean(input.checked);
+      });
+      cfg.formato_impresion = normalizeFormato(document.getElementById('corteFormatoImpresion').value);
+      cfg.estado = 'activo';
+      cfg.empresa_id = empresaId;
+      return cfg;
+    }
+
+    async function loadConfig(){
+      if (!empresaId) {
+        setForm(DEFAULT_CONFIG);
+        msg('No se encontro empresa activa en la URL.', 'error');
+        return;
+      }
+      msg('Cargando configuracion...', '');
+      try {
+        var res = await fetch('/api/empresa/corte_caja/configuracion?empresa_id=' + encodeURIComponent(empresaId), { credentials:'same-origin' });
+        var text = await res.text();
+        var data = text ? JSON.parse(text) : {};
+        if (!res.ok) throw new Error((data && (data.error || data.message)) || text || ('HTTP ' + res.status));
+        setForm(data && data.configuracion ? data.configuracion : DEFAULT_CONFIG);
+        msg('Configuracion cargada.', 'success');
+      } catch (err) {
+        setForm(DEFAULT_CONFIG);
+        msg('No se pudo cargar la configuracion: ' + (err && err.message ? err.message : err), 'error');
+      }
+    }
+
+    async function saveConfig(){
+      if (!empresaId) return msg('No se puede guardar sin empresa activa.', 'error');
+      msg('Guardando configuracion...', '');
+      var payload = collectForm();
+      try {
+        var res = await fetch('/api/empresa/corte_caja/configuracion?empresa_id=' + encodeURIComponent(empresaId), {
+          method:'POST',
+          credentials:'same-origin',
+          headers:{'Content-Type':'application/json'},
+          body:JSON.stringify(payload)
+        });
+        var text = await res.text();
+        var data = text ? JSON.parse(text) : {};
+        if (!res.ok) throw new Error((data && (data.error || data.message)) || text || ('HTTP ' + res.status));
+        setForm(data && data.configuracion ? data.configuracion : payload);
+        msg('Configuracion guardada correctamente.', 'success');
+      } catch (err) {
+        msg('No se pudo guardar la configuracion: ' + (err && err.message ? err.message : err), 'error');
+      }
+    }
+
+    async function restoreConfig(){
+      if (!empresaId) return msg('No se puede restaurar sin empresa activa.', 'error');
+      msg('Restaurando configuracion profesional...', '');
+      try {
+        var res = await fetch('/api/empresa/corte_caja/configuracion?empresa_id=' + encodeURIComponent(empresaId) + '&action=restaurar', {
+          method:'POST',
+          credentials:'same-origin',
+          headers:{'Content-Type':'application/json'},
+          body:'{}'
+        });
+        var text = await res.text();
+        var data = text ? JSON.parse(text) : {};
+        if (!res.ok) throw new Error((data && (data.error || data.message)) || text || ('HTTP ' + res.status));
+        setForm(data && data.configuracion ? data.configuracion : DEFAULT_CONFIG);
+        msg('Configuracion profesional restaurada.', 'success');
+      } catch (err) {
+        msg('No se pudo restaurar la configuracion: ' + (err && err.message ? err.message : err), 'error');
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', function(){
+      renderFields();
+      setForm(DEFAULT_CONFIG);
+      document.getElementById('btnGuardarConfigReporte').addEventListener('click', saveConfig);
+      document.getElementById('btnRestaurarConfigReporte').addEventListener('click', restoreConfig);
+      loadConfig();
+    });
+  })();
+  </script>
 </body>
 </html>

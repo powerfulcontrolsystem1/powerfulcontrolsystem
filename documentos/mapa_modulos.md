@@ -36,6 +36,14 @@ paralelo: conserva los endpoints, reglas de inventario, pagos, descuentos,
 credito, facturacion e impresion, pero reduce decoracion visual, espaciado y
 usa tabla/texto compacto para operar mas rapido en equipos lentos.
 
+Actualizacion 2026-06-25: `Administrar empresa` ubica `Productos` dentro del
+grupo `Inventario y compras`. `Configuracion empresarial > Fiscal y
+automatizacion > Reporte de corte` carga una pagina propia para activar o
+desactivar los campos del reporte de turno/caja por empresa, usando
+`/api/empresa/corte_caja/configuracion` y la tabla
+`empresa_corte_caja_configuracion`; incluye `Caja`, encabezado, resumen, pagos,
+detalle de ventas, movimientos, items, sensores y auditoria.
+
 Actualizacion 2026-06-22: `Portal publico` abre desde `index.html` las secciones
 `Contacto`, `Privacidad y datos`, `Quienes somos` y `Sistema Hotel / Motel`
 debajo de la barra superior, con rutas de respaldo que redirigen al mismo
