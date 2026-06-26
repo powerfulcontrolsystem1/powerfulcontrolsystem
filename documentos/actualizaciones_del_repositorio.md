@@ -15789,3 +15789,7 @@ Archivos modificados:
 - web/administrar_empresa.html
 - web/administrar_empresa/configuracion/corte_de_caja.html
 - web/administrar_empresa/corte_de_caja.html
+
+2026-06-25 19:49:02 - Mensaje: rs: actualizar repositorio y sincronizar VPS; Commit: 5f2afc9f; PushStatus: OK
+Archivos modificados:
+- web/administrar_empresa/configuracion/corte_de_caja.html

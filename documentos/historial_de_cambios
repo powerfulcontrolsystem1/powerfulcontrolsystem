@@ -36181,3 +36181,8 @@ Archivos modificados:
 - web/administrar_empresa.html
 - web/administrar_empresa/configuracion/corte_de_caja.html
 - web/administrar_empresa/corte_de_caja.html
+
+2026-06-25: rs: actualizar repositorio y sincronizar VPS
+PushStatus: OK
+Archivos modificados:
+- web/administrar_empresa/configuracion/corte_de_caja.html
