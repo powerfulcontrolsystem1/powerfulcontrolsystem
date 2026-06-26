@@ -471,15 +471,6 @@
           <p class="form-help mb-8 mt-0" hidden></p>
           <div id="itemsListStation" class="carrito-items-box carrito-items-box--station-fixed">Selecciona un carrito para gestionar sus ítems.</div>
         </div>
-        <div class="carrito-station-side">
-          <div id="carritoLogoCardStation" class="card carrito-logo-card carrito-station-logo-card" hidden>
-            <img id="carritoLogoPreviewStation" class="carrito-logo-preview" alt="Logo de la empresa">
-          </div>
-          <aside class="card carrito-summary-card carrito-station-totals-aside">
-            <h3 id="carritoTotalsTitleStation" class="section-heading">Totales y detalles</h3>
-            <div id="carritoTotalsContentStation" class="carrito-summary-content mt-10">Selecciona un carrito para ver el resumen.</div>
-          </aside>
-        </div>
       </div>
 
       <section id="stationCartActionsCard" class="card empresa-section carrito-actions-card is-hidden mt-12" hidden>
@@ -1022,10 +1013,10 @@
         </div>
 
         <div id="carritoSideColumn" class="carrito-side-column">
+          <div id="carritoLogoCard" class="card carrito-logo-card carrito-station-logo-card" hidden>
+            <img id="carritoLogoPreview" class="carrito-logo-preview" alt="Logo de la empresa">
+          </div>
           <aside id="carritoTotalsPanel" class="card carrito-summary-card mt-10">
-            <div id="carritoLogoCard" class="carrito-logo-card" hidden>
-              <img id="carritoLogoPreview" class="carrito-logo-preview" alt="Logo de la empresa">
-            </div>
             <h3 id="carritoTotalsTitle" class="section-heading">Totales y detalles</h3>
             <div id="carritoTotalsContent" class="carrito-summary-content mt-10">Selecciona un carrito para ver el resumen.</div>
             <div class="carrito-summary-pay-actions">
@@ -1547,8 +1538,7 @@
       const showStationLogo = enabled && (state.stationMode || state.directSaleMode);
       const showDefaultLogo = enabled && !showStationLogo;
       [
-        ['carritoLogoCard', 'carritoLogoPreview', showDefaultLogo],
-        ['carritoLogoCardStation', 'carritoLogoPreviewStation', showStationLogo, 'grande']
+        ['carritoLogoCard', 'carritoLogoPreview', showDefaultLogo || showStationLogo, 'grande']
       ].forEach(function(ids) {
         const card = document.getElementById(ids[0]);
         const img = document.getElementById(ids[1]);
@@ -3200,7 +3190,7 @@
       } else {
         setCardVisibility('carritoGrid', false);
       }
-      setCardVisibility('carritoTotalsPanel', !focusedSaleMode && Boolean(ui.mostrar_tarjeta_totales_detalles));
+      setCardVisibility('carritoTotalsPanel', Boolean(ui.mostrar_tarjeta_totales_detalles) && (!focusedSaleMode || Boolean(selectedCarrito)));
       setOptionalSectionsControlsVisibility(ui, selectedCarrito);
       setCardVisibility('stationCheckoutPanel', Boolean(state.optionalSections.showCheckoutAdvanced) && focusedSaleMode && Boolean(selectedCarrito));
 

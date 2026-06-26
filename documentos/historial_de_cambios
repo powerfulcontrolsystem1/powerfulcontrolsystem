@@ -36143,6 +36143,8 @@ Archivos modificados:
 PushStatus: OK
 Archivos modificados:
 - web/administrar_empresa/carrito_de_compras.html
+
+- 2026-06-25: Ajuste final del carrito para ubicar logo grande y `Totales y detalles` en la columna lateral derecha real, mantener ancho completo en pantalla completa, agregar boton de carrito rapido junto a pantalla completa y conservar por empresa la vista de impresion elegida en Buscar ventas y facturas.
 - 2026-06-25: Carrito y ventas - se corrige la distribucion solicitada por captura: el logo del carrito queda como tarjeta independiente en la columna derecha, arriba de Totales y detalles; se agrega boton de carrito rapido junto a pantalla completa; Buscar ventas y facturas recuerda por empresa la ultima opcion de Vista e impresion.
 
 2026-06-25: rs: actualizar repositorio y sincronizar VPS

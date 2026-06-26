@@ -311,6 +311,14 @@
         } catch(e) {}
       }
 
+      function applySavedViewMode(){
+        var el = document.getElementById("modoVisualizacion");
+        var saved = loadSavedViewMode();
+        state.viewMode = saved;
+        if(el) el.value = saved;
+        return saved;
+      }
+
       function safeUrl(raw){
         var v = norm(raw);
         if(!v) return "";
@@ -1156,14 +1164,20 @@
       (function init(){
         if(!empresaID){ msg("empresa_id es obligatorio en la URL", "error"); return; }
         setDefaultDates();
-        state.viewMode = loadSavedViewMode();
-        document.getElementById("modoVisualizacion").value = state.viewMode;
+        applySavedViewMode();
         document.getElementById("modoVisualizacion").addEventListener("change", function(){
           state.viewMode = currentViewMode();
           saveViewMode(state.viewMode);
           if(state.selectedKey && state.index[state.selectedKey]) renderDetail(state.index[state.selectedKey]);
         });
-        Promise.all([loadEmpresa(), loadEmpresaConfigAvanzada(), loadClientes()]).finally(run);
+        document.getElementById("modoVisualizacion").addEventListener("input", function(){
+          state.viewMode = currentViewMode();
+          saveViewMode(state.viewMode);
+        });
+        Promise.all([loadEmpresa(), loadEmpresaConfigAvanzada(), loadClientes()]).finally(function(){
+          applySavedViewMode();
+          run();
+        });
       })();
     })();
   </script>
