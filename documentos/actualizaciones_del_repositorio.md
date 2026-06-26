@@ -15778,3 +15778,14 @@ Archivos modificados:
 - web/administrar_empresa/carrito_de_compras.html
 - web/administrar_empresa/ventas.html
 - web/estilos.css
+
+2026-06-25 19:43:44 - Mensaje: rs: actualizar repositorio y sincronizar VPS; Commit: f66c3657; PushStatus: OK
+Archivos modificados:
+- CHANGELOG.md
+- backend/db/corte_caja_configuracion.go
+- backend/handlers/corte_caja.go
+- documentos/historial_de_cambios
+- documentos/mapa_modulos.md
+- web/administrar_empresa.html
+- web/administrar_empresa/configuracion/corte_de_caja.html
+- web/administrar_empresa/corte_de_caja.html
