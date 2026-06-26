@@ -1,3 +1,9 @@
+## [2026-06-26] Carrito, corte de caja y ventas
+- [Carrito] Retira el boton y las funciones de carrito rapido para mantener un unico flujo de venta directa.
+- [Carrito] El acceso superior muestra `Pantalla completa` con texto e icono; `Efectivo recibido` queda mas grande y en negrita, y `Vuelto` queda amarillo y en negrita.
+- [Corte de caja] La lista `Campos del reporte` deja de verse en la pagina operativa y queda reservada para configuracion.
+- [Buscar ventas y facturas] Compacta los filtros en una franja de ancho completo, con adaptacion responsive.
+
 ## [2026-06-25] Carrito logo, pantalla completa y vuelto
 - [Carrito] El boton de pantalla completa queda como icono compacto en la esquina superior derecha de `Buscar producto`.
 - [Logo] El logo de empresa se refuerza visualmente encima de `Totales y detalles`, con cache-buster CSS nuevo para evitar estilos viejos en produccion.
@@ -5,11 +11,11 @@
 - [Pagos] `Efectivo recibido` y `Vuelto` pasan a celdas alineadas tipo tabla 2x2, sin duplicar el texto `Vuelto` dentro del valor.
 - [QA] Se valida sintaxis JS embebida del carrito y se preparan reglas globales para neutralizar estilos antiguos que ocultaban el boton de pantalla completa.
 
-## [2026-06-25] Modo rapido del carrito
-- [Configuracion carrito] Agrega `Activar modo rapido del carrito`, persistido como `modo_rapido_carrito`.
-- [Carrito] El modo rapido usa una vista compacta tipo texto/tabla con menos sombras, espaciado y decoracion, manteniendo el mismo carrito, APIs, pagos, inventario, descuentos y facturacion.
+## [2026-06-25] Prueba de vista compacta del carrito
+- [Carrito] La prueba de vista compacta queda supersedida por la limpieza del 2026-06-26.
+- [Configuracion carrito] El carrito conserva un unico flujo de venta directa, sin control separado de vista rapida.
 - [Logo] Se refuerza la carga del logo para ocultarlo si la imagen no existe y evitar iconos rotos.
-- [QA] PCS queda configurada con logo `/img/Logo pcs 1.png`, logo de carrito activo y tamano mediano; verificacion visual confirma que el logo carga encima de `Totales y detalles`.
+- [QA] PCS queda configurada con logo `/img/Logo pcs 1.png`, logo de carrito activo y tamano mediano.
 
 ## [2026-06-25] Opciones de logo en identidad visual
 - [Identidad visual] Agrega checks para mostrar logo en factura y en carrito, mas selector de tamano del logo de carrito: pequeno, mediano o grande.

@@ -30,11 +30,10 @@ guarda esa decision en `localStorage`; solo renderiza una imagen encima de
 `Totales y detalles`, en la columna activa del carrito, cuando la preferencia
 esta activa y la empresa tiene logo real cargado.
 
-Actualizacion 2026-06-25: `Configuracion carrito` agrega
-`modo_rapido_carrito` como modo compacto del mismo carrito. No crea un carrito
-paralelo: conserva los endpoints, reglas de inventario, pagos, descuentos,
-credito, facturacion e impresion, pero reduce decoracion visual, espaciado y
-usa tabla/texto compacto para operar mas rapido en equipos lentos.
+Actualizacion 2026-06-26: `Configuracion carrito` retira la prueba de vista
+rapida y su boton en venta directa. La venta directa conserva un unico carrito
+operativo; el acceso superior queda dedicado a `Pantalla completa`, con el
+mismo flujo de pagos, inventario, descuentos, credito, facturacion e impresion.
 
 Actualizacion 2026-06-25: `Administrar empresa` ubica `Productos` dentro del
 grupo `Inventario y compras`. `Configuracion empresarial > Fiscal y

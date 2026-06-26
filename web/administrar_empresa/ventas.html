@@ -20,14 +20,17 @@
     .ventas-relation-badge.with-fe{background:rgba(16,185,129,.12);border-color:rgba(16,185,129,.42);color:#047857}
     .ventas-relation-badge.fe-doc{background:rgba(59,130,246,.12);border-color:rgba(59,130,246,.42);color:#1d4ed8}
     .ventas-relation-badge.neutral{background:var(--surface-muted);color:var(--muted)}
-    .ventas-filtros-compact{width:100%;padding:8px 10px}
+    .ventas-filtros-compact{width:100%;max-width:none!important;padding:6px 8px}
     .ventas-filtros-compact .empresa-section-header{margin-bottom:4px}
     .ventas-filtros-compact .page-header-lead{display:none}
-    .ventas-filtros-compact .form{display:grid;gap:6px}
-    .ventas-filtros-compact .form-row{display:grid;grid-template-columns:repeat(6,minmax(130px,1fr));margin-bottom:0;gap:8px;align-items:end}
+    .ventas-filtros-compact .form{display:grid;grid-template-columns:minmax(112px,.75fr) minmax(112px,.75fr) minmax(180px,1.35fr) minmax(118px,.9fr) minmax(130px,.9fr) minmax(126px,.8fr) minmax(142px,.9fr) auto;gap:6px;align-items:end;width:100%}
+    .ventas-filtros-compact .form-row{display:contents;margin:0}
     .ventas-filtros-compact .form-label{margin-bottom:3px}
     .ventas-filtros-compact .form-col{min-width:0}
-    .ventas-filtros-compact .form-actions{margin-top:0;display:flex;align-items:end;gap:8px}
+    .ventas-filtros-compact .form-input{min-height:36px}
+    .ventas-filtros-compact .empresa-config-check.inline-check{min-height:36px;padding:6px 8px}
+    .ventas-filtros-compact .form-actions{margin:0;display:flex;align-items:end;justify-content:flex-end;gap:6px}
+    .ventas-filtros-compact .form-actions .btn{min-height:36px;padding:7px 10px}
     .ventas-hidden-preview{display:none!important}
     .empresa-module > .card.empresa-module-header{display:none!important}
     .empresa-module > .card.empresa-section:nth-of-type(3){padding-block:10px;width:100%}
@@ -37,8 +40,9 @@
     .empresa-module > .card.empresa-section:nth-of-type(3) .form-label{margin-bottom:3px}
     .empresa-module > .card.empresa-section:nth-of-type(3) .form-actions{margin-top:2px}
     .empresa-module > .card.ventas-hidden-preview{display:none!important}
-    @media(max-width:980px){.ventas-filtros-compact .form-row{grid-template-columns:repeat(2,minmax(0,1fr))}}
-    @media(max-width:620px){.ventas-filtros-compact .form-row{grid-template-columns:1fr}.ventas-filtros-compact{padding:8px}}
+    @media(max-width:1180px){.ventas-filtros-compact .form{grid-template-columns:repeat(4,minmax(0,1fr))}.ventas-filtros-compact .form-row{display:contents}}
+    @media(max-width:760px){.ventas-filtros-compact .form{grid-template-columns:repeat(2,minmax(0,1fr))}.ventas-filtros-compact .form-actions{grid-column:1/-1}}
+    @media(max-width:520px){.ventas-filtros-compact .form{grid-template-columns:1fr}.ventas-filtros-compact .form-actions{grid-column:auto;flex-direction:column;align-items:stretch}.ventas-filtros-compact{padding:8px}}
   </style>
 </head>
 <body class="empresa-subpage">

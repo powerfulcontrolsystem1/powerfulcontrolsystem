@@ -36186,3 +36186,19 @@ Archivos modificados:
 PushStatus: OK
 Archivos modificados:
 - web/administrar_empresa/configuracion/corte_de_caja.html
+
+2026-06-26: Carrito, corte de caja y ventas
+- Carrito: se retira el boton y la logica de carrito rapido para conservar un unico flujo operativo.
+- Carrito: el control superior queda como `Pantalla completa`; `Efectivo recibido` se refuerza en tamano/negrita y `Vuelto` queda amarillo en negrita.
+- Corte de caja: la lista de `Campos del reporte` deja de mostrarse en la pagina operativa y se mantiene para configuracion.
+- Buscar ventas y facturas: los filtros se compactan en una franja de ancho completo con respuesta para pantallas pequenas.
+Archivos modificados:
+- CHANGELOG.md
+- documentos/CHANGELOG.md
+- documentos/historial_de_cambios
+- documentos/mapa_modulos.md
+- web/administrar_empresa/carrito_de_compras.html
+- web/administrar_empresa/configuracion_carrito_de_compra_empresa.html
+- web/administrar_empresa/corte_de_caja.html
+- web/administrar_empresa/ventas.html
+- web/estilos.css

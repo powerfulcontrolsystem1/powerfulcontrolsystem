@@ -38,23 +38,15 @@
     #buscarProductosActions .btn:not(#directSaleFullscreenBtn){display:none!important}
     .carrito-fullscreen-card{display:flex;align-items:center;justify-content:center;gap:4px;border:0;border-radius:0;background:transparent;padding:0;color:var(--text);min-height:0}
     .carrito-fullscreen-card[hidden]{display:none!important}
-    .carrito-fullscreen-btn,.carrito-fast-mode-btn{width:38px!important;min-width:38px!important;height:34px!important;min-height:34px!important;padding:0!important;display:inline-flex;align-items:center;justify-content:center;border-radius:0}
-    .carrito-fullscreen-btn .cart-btn-icon,.carrito-fast-mode-btn .cart-btn-icon{font-size:1.25rem;line-height:1}
-    .carrito-fullscreen-label{display:none!important}
+    .carrito-fullscreen-btn{width:auto!important;min-width:160px!important;height:34px!important;min-height:34px!important;padding:0 10px!important;display:inline-flex;align-items:center;justify-content:center;gap:8px;border-radius:0}
+    .carrito-fullscreen-btn .cart-btn-icon{font-size:1.25rem;line-height:1}
+    .carrito-fullscreen-label{display:inline!important;font-weight:900}
     .carrito-logo-card{display:grid;gap:8px;justify-items:center;text-align:center;width:100%;min-height:68px;margin:0 0 8px!important;padding:6px;border:1px solid var(--cart-title-border,var(--border));background:var(--cart-title-shade,var(--surface-soft));align-content:center}
     .carrito-logo-card[hidden]{display:none!important}
     .carrito-logo-preview{display:block;max-width:116px;max-height:64px;object-fit:contain}
     .carrito-logo-card.logo-size-pequeno .carrito-logo-preview{max-width:72px;max-height:44px}
     .carrito-logo-card.logo-size-mediano .carrito-logo-preview{max-width:116px;max-height:64px}
     .carrito-logo-card.logo-size-grande .carrito-logo-preview{max-width:136px;max-height:82px}
-    .cart-fast-mode{--cart-title-shade:color-mix(in srgb,var(--surface) 92%,#000 8%)}
-    .cart-fast-mode .carrito-workspace-card{padding:4px!important;background:var(--surface)!important}
-    .cart-fast-mode .card,.cart-fast-mode .empresa-section,.cart-fast-mode .carrito-summary-card{box-shadow:none!important}
-    .cart-fast-mode .carrito-items-box,.cart-fast-mode table,.cart-fast-mode .table{font-family:Consolas,"Courier New",monospace;font-size:12px;line-height:1.25}
-    .cart-fast-mode .form-row{gap:4px!important}
-    .cart-fast-mode .form-input,.cart-fast-mode .btn{min-height:34px!important;padding:6px 8px!important}
-    .cart-fast-mode .carrito-summary-content{font-size:12px}
-    .cart-fast-mode .carrito-summary-pay-actions{margin-top:6px}
     .carrito-station-side{display:grid;gap:0;align-content:start}
     .carrito-workspace-card{border-color:color-mix(in srgb,var(--accent) 34%,var(--border) 66%)!important;border-width:2px!important;padding:8px!important;background:color-mix(in srgb,var(--carrito-card-bg,var(--card)) 94%,var(--accent) 6%)!important}
     .carrito-workspace-card :is(.card,.empresa-section,.carrito-summary-card,#scannerPanel,#stationCustomerCard,#stationCartSplitRow,#stationCheckoutPanel,#stationCartActionsCard,#stationPaymentAmountsCard,#stationPaymentQrCard,#stationWorkerCommissionCard,#stationVipAccessCard,#carritoTotalsPanel,.carrito-logo-card){margin-top:0!important;border-radius:0!important}
@@ -85,7 +77,9 @@
     .carrito-flat-page .carrito-summary-content strong,
     .carrito-flat-page .carrito-payment-compact-label{background:var(--cart-title-shade);border:1px solid var(--cart-title-border);color:var(--text);padding:6px 8px;border-radius:0;line-height:1.15}
     .carrito-flat-page .carrito-payment-compact-label[for="stationCashReceivedDisplay"],
-    .carrito-flat-page .carrito-payment-change-row .carrito-payment-compact-label{font-size:1rem}
+    .carrito-flat-page #stationCashReceivedDisplay{font-size:1.05rem!important;font-weight:900!important}
+    .carrito-flat-page .carrito-payment-change-row .carrito-payment-compact-label,
+    .carrito-flat-page #stationCashChangeHint{font-size:1.05rem!important;font-weight:900!important;color:#facc15!important}
     .cart-button-feedback-vibrate{animation:cartButtonFeedbackVibrate 130ms linear 1}
     @keyframes cartButtonFeedbackVibrate{0%,100%{transform:translateX(0)}25%{transform:translateX(-1px)}50%{transform:translateX(1px)}75%{transform:translateX(-1px)}}
     body.carrito-direct-fullscreen{background:var(--carrito-page-bg,var(--bg))}
@@ -202,9 +196,6 @@
         <div class="carrito-scanner-header">
           <h3 class="carrito-scanner-header-title">Buscar producto</h3>
           <div id="directSaleFullscreenCard" class="carrito-fullscreen-card" hidden>
-            <button id="directSaleFastModeBtn" class="btn secondary carrito-fast-mode-btn" type="button" hidden title="Carrito rápido" aria-label="Activar carrito rápido">
-              <span class="cart-btn-icon" aria-hidden="true">▦</span>
-            </button>
             <button id="directSaleFullscreenBtn" class="btn secondary carrito-fullscreen-btn" type="button" hidden title="Pantalla completa" aria-label="Abrir venta directa en pantalla completa">
               <span class="carrito-fullscreen-label">Pantalla completa</span>
               <span class="cart-btn-icon cart-btn-icon-info" aria-hidden="true">⛶</span>
@@ -1493,44 +1484,6 @@
       return normalizeCartLogoSize(ui.logo_empresa_carrito_tamano || ui.tamano_logo_empresa_carrito);
     }
 
-    function fastModeStorageKey() {
-      return 'pcs_carrito_modo_rapido_' + String(state.empresaID || 0);
-    }
-
-    function readFastModeOverride() {
-      try {
-        const raw = localStorage.getItem(fastModeStorageKey());
-        if (raw === '1' || raw === 'true') return true;
-        if (raw === '0' || raw === 'false') return false;
-      } catch (_) {}
-      return null;
-    }
-
-    function setFastModeOverride(value) {
-      try {
-        localStorage.setItem(fastModeStorageKey(), value ? '1' : '0');
-      } catch (_) {}
-    }
-
-    function effectiveFastMode(ui) {
-      const override = readFastModeOverride();
-      if (override !== null) return override;
-      return Boolean(ui && ui.modo_rapido_carrito);
-    }
-
-    function syncFastModeButton(active) {
-      const btn = document.getElementById('directSaleFastModeBtn');
-      if (!btn) return;
-      const visible = Boolean(state.directSaleMode || state.stationMode);
-      btn.hidden = !visible;
-      btn.style.display = visible ? '' : 'none';
-      btn.classList.toggle('primary', Boolean(active));
-      btn.classList.toggle('secondary', !active);
-      btn.title = active ? 'Salir de carrito rápido' : 'Carrito rápido';
-      btn.setAttribute('aria-label', active ? 'Desactivar carrito rápido' : 'Activar carrito rápido');
-      btn.setAttribute('aria-pressed', active ? 'true' : 'false');
-    }
-
     function syncCartLogoCards() {
       const logoUrl = getCartLogoUrl();
       const enabled = Boolean(logoUrl && isCartLogoEnabled());
@@ -2212,7 +2165,6 @@
         preguntar_tipo_documento_al_pagar: false,
         mostrar_logo_empresa_carrito: true,
         logo_empresa_carrito_tamano: 'mediano',
-        modo_rapido_carrito: false,
         mostrar_tarjetas_pago: true,
         mostrar_tarjeta_lector_codigo: true,
         mostrar_tarjeta_items_carrito: true,
@@ -2344,7 +2296,6 @@
         permitir_cantidad_decimal_carrito: src.permitir_cantidad_decimal_carrito === undefined ? base.permitir_cantidad_decimal_carrito : Boolean(src.permitir_cantidad_decimal_carrito),
         ajustar_alto_items_contenido_carrito: src.ajustar_alto_items_contenido_carrito === undefined ? base.ajustar_alto_items_contenido_carrito : Boolean(src.ajustar_alto_items_contenido_carrito),
         mostrar_todos_items_carrito: src.mostrar_todos_items_carrito === undefined ? base.mostrar_todos_items_carrito : Boolean(src.mostrar_todos_items_carrito),
-        modo_rapido_carrito: src.modo_rapido_carrito === undefined ? (src.carrito_modo_rapido === undefined ? base.modo_rapido_carrito : Boolean(src.carrito_modo_rapido)) : Boolean(src.modo_rapido_carrito),
         habilitar_bascula_electronica: src.habilitar_bascula_electronica === undefined
           ? (src.bascula_electronica_habilitada === undefined ? base.habilitar_bascula_electronica : Boolean(src.bascula_electronica_habilitada))
           : Boolean(src.habilitar_bascula_electronica),
@@ -3095,9 +3046,6 @@
       publishConnectivityContext();
       document.body.classList.toggle('cart-touch-mode', Boolean(ui.modo_pantalla_tactil));
       document.body.classList.toggle('pos-touch-mode', Boolean(ui.modo_pantalla_tactil));
-      const fastModeActive = effectiveFastMode(ui);
-      document.body.classList.toggle('cart-fast-mode', fastModeActive);
-      syncFastModeButton(fastModeActive);
       syncScannerSearchModeUI();
       syncScannerQuantityInput();
       syncCartLogoCards();
@@ -3109,10 +3057,8 @@
         const backToStationsBtn = document.getElementById('backToStationsHeaderBtn');
         const directSaleFullscreenBtn = document.getElementById('directSaleFullscreenBtn');
         const showBackToStations = Boolean(backToStationsBtn && !backToStationsBtn.hidden && backToStationsBtn.style.display !== 'none');
-        const fastModeBtn = document.getElementById('directSaleFastModeBtn');
         const showDirectSaleFullscreen = Boolean(directSaleFullscreenBtn && !directSaleFullscreenBtn.hidden && directSaleFullscreenBtn.style.display !== 'none');
-        const showFastMode = Boolean(fastModeBtn && !fastModeBtn.hidden && fastModeBtn.style.display !== 'none');
-        const showSearchActions = showBackToStations || showDirectSaleFullscreen || showFastMode;
+        const showSearchActions = showBackToStations || showDirectSaleFullscreen;
         searchActions.hidden = !showSearchActions;
         searchActions.style.display = showSearchActions ? '' : 'none';
       }
@@ -12410,16 +12356,6 @@
     const directSaleFullscreenBtn = document.getElementById('directSaleFullscreenBtn');
     if (directSaleFullscreenBtn) {
       directSaleFullscreenBtn.addEventListener('click', toggleDirectSaleFullscreen);
-    }
-    const directSaleFastModeBtn = document.getElementById('directSaleFastModeBtn');
-    if (directSaleFastModeBtn) {
-      directSaleFastModeBtn.addEventListener('click', function() {
-        const ui = state.stationCartUI || getCurrentStationCartUIConfig();
-        const next = !effectiveFastMode(ui);
-        setFastModeOverride(next);
-        document.body.classList.toggle('cart-fast-mode', next);
-        syncFastModeButton(next);
-      });
     }
     ['fullscreenchange', 'webkitfullscreenchange', 'msfullscreenchange'].forEach(function(eventName) {
       document.addEventListener(eventName, updateDirectSaleFullscreenButton);

@@ -21664,15 +21664,19 @@ body.carrito-flat-page #directSaleFullscreenCard:not([hidden]){
 
 body.carrito-flat-page #directSaleFullscreenBtn:not([hidden]){
   display:inline-flex !important;
-  width:38px !important;
-  min-width:38px !important;
+  width:auto !important;
+  min-width:160px !important;
   height:34px !important;
   min-height:34px !important;
-  padding:0 !important;
+  padding:0 10px !important;
+  gap:8px !important;
+  align-items:center !important;
+  justify-content:center !important;
 }
 
 body.carrito-flat-page #directSaleFullscreenBtn .carrito-fullscreen-label{
-  display:none !important;
+  display:inline !important;
+  font-weight:900 !important;
 }
 
 body.pos-touch-mode #carritoActionToolbar,

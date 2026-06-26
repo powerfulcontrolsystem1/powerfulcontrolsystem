@@ -300,7 +300,6 @@
               <div class="form-col">
                 <label class="form-label" for="cajaCodigo">Caja</label>
                 <input id="cajaCodigo" class="form-input" value="CAJA-PRINCIPAL">
-                <p id="cajaNombreDisplay" class="form-help">Caja principal</p>
               </div>
               <div class="form-col">
                 <label class="form-label" for="turno">Turno</label>
@@ -358,7 +357,6 @@
             <input id="mantenerSesionCierre" type="checkbox" style="margin-top:2px">
             <span>Al cerrar turno, imprimir reportes pero no cerrar la sesión automáticamente.</span>
           </label>
-          <div id="turnoFieldConfig" class="turno-field-config" aria-label="Campos visibles del reporte de turno"></div>
         </div>
       </div>
     </section>
@@ -549,11 +547,6 @@
 
   function setCajaDisplay(codigo, nombre, descripcion) {
     var label = cajaDisplayName(codigo, nombre);
-    var help = document.getElementById('cajaNombreDisplay');
-    if (help) {
-      var desc = String(descripcion || pageContext.cajaDescripcion || '').trim();
-      help.textContent = label + (desc ? (' | ' + desc) : '');
-    }
     var title = document.getElementById('pageTitle');
     if (title) title.textContent = 'Cierre de turno y corte de caja - ' + label;
   }
@@ -633,54 +626,6 @@
     detalle_medio_pago: true,
     detalle_total: true
   };
-
-  var TURNO_FIELD_CONFIG = [
-    ['mostrar_empresa_datos', 'Empresa'],
-    ['mostrar_fecha_hora', 'Fecha/hora'],
-    ['mostrar_usuario_reporte', 'Usuario'],
-    ['mostrar_caja', 'Caja'],
-    ['mostrar_consecutivo', 'Consecutivo'],
-    ['mostrar_resumen', 'Resumen'],
-    ['mostrar_numero_facturas', 'Facturas'],
-    ['mostrar_total_ventas', 'Ventas'],
-    ['mostrar_total_descuentos', 'Descuentos'],
-    ['mostrar_efectivo', 'Efectivo'],
-    ['mostrar_debito', 'Debito'],
-    ['mostrar_credito', 'Credito'],
-    ['mostrar_transferencias', 'Transferencias'],
-    ['mostrar_otros_medios', 'Otros pagos'],
-    ['mostrar_ingresos', 'Ingresos'],
-    ['mostrar_egresos', 'Egresos'],
-    ['mostrar_anulaciones', 'Anulaciones'],
-    ['mostrar_devoluciones', 'Devoluciones'],
-    ['mostrar_caja_esperada', 'Caja esperada'],
-    ['mostrar_diferencia_caja', 'Diferencia'],
-    ['mostrar_ventas_detalle', 'Detalle ventas'],
-    ['mostrar_detalle_fecha_entrada', 'Entrada'],
-    ['mostrar_detalle_fecha_salida', 'Salida'],
-    ['mostrar_detalle_numero_venta', 'No. venta'],
-    ['mostrar_detalle_estacion', 'Estacion'],
-    ['mostrar_detalle_cajero', 'Cajero'],
-    ['mostrar_detalle_medio_pago', 'Medio pago'],
-    ['mostrar_detalle_total', 'Total detalle'],
-    ['mostrar_movimientos', 'Movimientos'],
-    ['mostrar_items', 'Items'],
-    ['mostrar_total_productos', 'Productos'],
-    ['mostrar_total_servicios', 'Servicios'],
-    ['mostrar_sensores_puertas', 'Sensores'],
-    ['mostrar_auditoria', 'Auditoria']
-  ];
-
-  function renderTurnoFieldConfigControls() {
-    var box = document.getElementById('turnoFieldConfig');
-    if (!box) return;
-    box.innerHTML = '<strong>Campos del reporte</strong>' + TURNO_FIELD_CONFIG.map(function(item) {
-      var key = item[0];
-      var label = item[1];
-      var checked = reporteConfig[key] !== false ? ' checked' : '';
-      return '<label><input type="checkbox" data-config-key="' + escapeHtml(key) + '"' + checked + '> ' + escapeHtml(label) + '</label>';
-    }).join('');
-  }
 
   function parsePrintItemsJSON(raw, defaults) {
     var base = Object.assign({}, defaults || {});
@@ -1345,7 +1290,6 @@
     setDefaultDates();
     applyPageContext();
     applyPrintFormat(document.getElementById('modoVista').value);
-    renderTurnoFieldConfigControls();
     cargarModoTactilPOS();
     cargarConfigReporte();
     Promise.allSettled([preloadAccount(), preloadCajaDefaults()]).then(function() {
