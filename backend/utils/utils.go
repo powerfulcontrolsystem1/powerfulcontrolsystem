@@ -620,6 +620,7 @@ func allowSuperControlRoute(path, method, role string) bool {
 		"/super/api/metrics/current",
 		"/super/api/metrics/history",
 		"/super/api/empresas_estado",
+		"/super/api/vps2",
 		"/super/api/security/ports",
 		"/super/api/security/processes",
 		"/super/api/security/vps/config",

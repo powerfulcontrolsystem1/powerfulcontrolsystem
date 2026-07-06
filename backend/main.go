@@ -1216,6 +1216,7 @@ func main() {
 	http.HandleFunc("/super/api/servidores", handlers.SuperServidoresListHandler(dbSuper))
 	http.HandleFunc("/super/api/servidores/toggle", handlers.SuperServidoresToggleHandler(dbSuper))
 	http.HandleFunc("/super/api/servidores/probar", handlers.SuperServidoresProbeHandler(dbSuper))
+	http.HandleFunc("/super/api/vps2", handlers.WithSuperAuditoria(dbSuper, "super_vps2", handlers.SuperVPS2Handler(dbSuper)))
 	http.HandleFunc("/super/api/vps/procesos", handlers.SuperVPSProcessesHandler(dbSuper))
 	http.HandleFunc("/super/api/plantillas_nuevas/catalogo", handlers.SuperPlantillasNuevosCatalogoHandler(dbSuper))
 	http.HandleFunc("/super/api/plantillas_integracion/catalogo", handlers.SuperPlantillasIntegracionCatalogoHandler())

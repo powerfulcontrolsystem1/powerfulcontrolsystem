@@ -1,0 +1,202 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>VPS2</title>
+  <link rel="stylesheet" href="/estilos.css?v=20260615-cart-ia-visual">
+  <style>
+    :root{color-scheme:light dark;--vps-bg:var(--bg,#f4f7fb);--vps-panel:var(--surface,#fff);--vps-soft:var(--surface-soft,#f7f9fc);--vps-line:var(--border,rgba(15,35,64,.16));--vps-text:var(--text,#10243f);--vps-muted:var(--muted,#52627a);--vps-blue:var(--accent,#0f6fcb);--vps-green:#15803d;--vps-amber:#b45309;--vps-red:#b91c1c}
+    html.theme-dark,html[data-theme^="dark"]{color-scheme:dark;--vps-bg:var(--bg,#0c1420);--vps-panel:color-mix(in srgb,var(--surface,#16253a) 94%,#000 6%);--vps-soft:color-mix(in srgb,var(--surface-soft,#1d2f48) 86%,#000 14%);--vps-line:color-mix(in srgb,var(--border,rgba(152,176,206,.26)) 78%,var(--text,#e8f0fb) 8%);--vps-green:#4ade80;--vps-amber:#fbbf24;--vps-red:#f87171}
+    body{margin:0;background:var(--vps-bg);color:var(--vps-text);font-family:system-ui,-apple-system,Segoe UI,sans-serif}
+    .vps-shell{width:min(100% - 18px,1320px);margin:0 auto;padding:10px 0 18px}
+    .vps-top{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}
+    .vps-title h1{margin:0;font-size:1.15rem;letter-spacing:0}
+    .vps-title p{margin:3px 0 0;color:var(--vps-muted);font-size:.82rem}
+    .vps-actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+    .vps-btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:34px;padding:8px 12px;border:1px solid var(--vps-line);border-radius:6px;background:var(--vps-panel);color:var(--vps-text);font-weight:850;font-size:.82rem;text-decoration:none;cursor:pointer}
+    .vps-btn.primary{background:color-mix(in srgb,var(--vps-blue) 16%,var(--vps-panel));border-color:color-mix(in srgb,var(--vps-blue) 45%,var(--vps-line))}
+    .vps-btn.warn{background:color-mix(in srgb,var(--vps-amber) 16%,var(--vps-panel));border-color:color-mix(in srgb,var(--vps-amber) 45%,var(--vps-line))}
+    .vps-btn.danger{background:color-mix(in srgb,var(--vps-red) 14%,var(--vps-panel));border-color:color-mix(in srgb,var(--vps-red) 45%,var(--vps-line))}
+    .vps-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-bottom:8px}
+    .vps-card{border:1px solid var(--vps-line);border-radius:8px;background:var(--vps-panel);padding:10px}
+    .vps-card h2{margin:0 0 8px;font-size:.88rem}
+    .vps-kpi{display:grid;gap:4px;min-height:78px}
+    .vps-kpi span{color:var(--vps-muted);font-size:.7rem;text-transform:uppercase;font-weight:850;letter-spacing:.04em}
+    .vps-kpi strong{font-size:1.05rem}
+    .vps-kpi small{color:var(--vps-muted);font-size:.78rem}
+    .vps-pill{display:inline-flex;align-items:center;gap:6px;width:max-content;padding:4px 8px;border:1px solid var(--vps-line);border-radius:999px;background:var(--vps-soft);font-size:.78rem;font-weight:800}
+    .vps-dot{width:8px;height:8px;border-radius:50%;background:var(--vps-red)}
+    .vps-dot.ok{background:var(--vps-green)}
+    .vps-dot.warn{background:var(--vps-amber)}
+    .vps-main{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(320px,.9fr);gap:8px}
+    .vps-table{width:100%;border-collapse:collapse;font-size:.82rem}
+    .vps-table th,.vps-table td{border:1px solid var(--vps-line);padding:7px;text-align:left;vertical-align:top}
+    .vps-table th{background:var(--vps-soft);color:var(--vps-muted);font-size:.72rem;text-transform:uppercase}
+    .vps-progress{height:9px;border:1px solid var(--vps-line);background:var(--vps-soft);overflow:hidden;border-radius:999px}
+    .vps-progress span{display:block;height:100%;background:var(--vps-blue);width:0}
+    .vps-message{display:none;margin:0 0 8px;padding:9px 10px;border:1px solid var(--vps-line);border-radius:8px;background:var(--vps-soft);font-size:.82rem}
+    .vps-message.is-visible{display:block}
+    .vps-message.is-error{border-color:color-mix(in srgb,var(--vps-red) 45%,var(--vps-line));color:var(--vps-red)}
+    @media(max-width:900px){.vps-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.vps-main{grid-template-columns:1fr}.vps-top{display:grid}.vps-actions{justify-content:flex-start}}
+    @media(max-width:560px){.vps-grid{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+  <main class="vps-shell">
+    <div class="vps-top">
+      <div class="vps-title">
+        <h1>VPS2</h1>
+        <p>Estado operativo, recursos, Docker, Nextcloud y acciones controladas.</p>
+      </div>
+      <div class="vps-actions">
+        <button class="vps-btn primary" id="refreshBtn" type="button">Actualizar</button>
+        <button class="vps-btn" id="restartCloudBtn" type="button">Reiniciar Nextcloud</button>
+        <button class="vps-btn warn" id="rebootBtn" type="button">Reiniciar VPS2</button>
+        <button class="vps-btn danger" id="shutdownBtn" type="button">Apagar VPS2</button>
+      </div>
+    </div>
+    <div id="message" class="vps-message"></div>
+
+    <section class="vps-grid">
+      <article class="vps-card vps-kpi">
+        <span>Conexion</span>
+        <strong id="connectionText">-</strong>
+        <small id="hostText">-</small>
+      </article>
+      <article class="vps-card vps-kpi">
+        <span>Procesador</span>
+        <strong id="cpuText">-</strong>
+        <small id="loadText">-</small>
+      </article>
+      <article class="vps-card vps-kpi">
+        <span>Memoria RAM</span>
+        <strong id="memText">-</strong>
+        <div class="vps-progress"><span id="memBar"></span></div>
+      </article>
+      <article class="vps-card vps-kpi">
+        <span>Disco /</span>
+        <strong id="diskText">-</strong>
+        <div class="vps-progress"><span id="diskBar"></span></div>
+      </article>
+    </section>
+
+    <section class="vps-main">
+      <article class="vps-card">
+        <h2>Sistema</h2>
+        <table class="vps-table">
+          <tbody id="systemRows"></tbody>
+        </table>
+      </article>
+      <article class="vps-card">
+        <h2>Servicios</h2>
+        <table class="vps-table">
+          <tbody id="serviceRows"></tbody>
+        </table>
+      </article>
+      <article class="vps-card">
+        <h2>Nextcloud</h2>
+        <table class="vps-table">
+          <thead><tr><th>Contenedor</th><th>Estado</th><th>Puertos</th></tr></thead>
+          <tbody id="nextcloudRows"></tbody>
+        </table>
+      </article>
+      <article class="vps-card">
+        <h2>Docker</h2>
+        <table class="vps-table">
+          <tbody id="dockerRows"></tbody>
+        </table>
+      </article>
+    </section>
+  </main>
+
+  <script>
+    (function(){
+      var state = null;
+      var message = document.getElementById("message");
+      function fmtBytes(n){
+        n = Number(n || 0);
+        if (!n) return "-";
+        var units = ["B","KB","MB","GB","TB"];
+        var i = 0;
+        while (n >= 1024 && i < units.length - 1) { n = n / 1024; i++; }
+        return n.toFixed(i ? 1 : 0) + " " + units[i];
+      }
+      function pct(used,total){ return total ? Math.max(0, Math.min(100, Math.round((used/total)*100))) : 0; }
+      function show(msg, error){
+        message.textContent = msg || "";
+        message.className = "vps-message" + (msg ? " is-visible" : "") + (error ? " is-error" : "");
+      }
+      function row(k,v){ return "<tr><th>"+escapeHTML(k)+"</th><td>"+escapeHTML(v || "-")+"</td></tr>"; }
+      function escapeHTML(s){ return String(s == null ? "" : s).replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c];}); }
+      async function requestStatus(){
+        var res = await fetch("/super/api/vps2", {credentials:"same-origin"});
+        var data = await res.json().catch(function(){ return {}; });
+        if (!res.ok) throw new Error(data.error || "No se pudo consultar VPS2");
+        state = data;
+        render(data);
+      }
+      async function runAction(action, text){
+        if (!confirm(text)) return;
+        show("Ejecutando accion...");
+        var res = await fetch("/super/api/vps2?action=" + encodeURIComponent(action), {method:"POST", credentials:"same-origin"});
+        var data = await res.json().catch(function(){ return {}; });
+        if (!res.ok) {
+          render(data);
+          throw new Error((data.errors && data.errors[0]) || "No se pudo ejecutar la accion");
+        }
+        render(data);
+        show(data.last_message || "Accion ejecutada.");
+      }
+      function render(data){
+        var cfg = data.config || {};
+        var sys = data.system || {};
+        var res = data.resources || {};
+        var mem = res.memory || {};
+        var disk = res.disk_root || {};
+        var services = data.services || {};
+        var docker = data.docker || {};
+        var reachable = data.reachable || {};
+        var connected = reachable.ssh;
+        document.getElementById("connectionText").innerHTML = '<span class="vps-pill"><i class="vps-dot '+(connected ? "ok" : "")+'"></i>'+(connected ? "SSH activo" : "Sin SSH")+'</span>';
+        document.getElementById("hostText").textContent = (cfg.user || "-") + "@" + (cfg.host || "-") + ":" + (cfg.port || "-");
+        document.getElementById("cpuText").textContent = (res.cpu_cores || "-") + " nucleos";
+        document.getElementById("loadText").textContent = "Carga: " + (res.load || "-") + (res.temperature_c ? " | Temp: " + res.temperature_c + " C" : "");
+        var memPct = pct(mem.used, mem.total);
+        document.getElementById("memText").textContent = fmtBytes(mem.used) + " / " + fmtBytes(mem.total);
+        document.getElementById("memBar").style.width = memPct + "%";
+        var diskPct = pct(disk.used, disk.total);
+        document.getElementById("diskText").textContent = fmtBytes(disk.used) + " / " + fmtBytes(disk.total) + (disk.percent ? " ("+disk.percent+")" : "");
+        document.getElementById("diskBar").style.width = diskPct + "%";
+        document.getElementById("systemRows").innerHTML = [
+          row("Host", sys.hostname),
+          row("IP", sys.ip),
+          row("Encendido", sys.uptime),
+          row("Kernel", sys.kernel),
+          row("Modo arranque", sys.default_target),
+          row("VNC", reachable.vnc ? "Activo" : "No responde")
+        ].join("");
+        document.getElementById("serviceRows").innerHTML = [
+          row("Docker", services.docker),
+          row("SSH", services.ssh)
+        ].join("");
+        document.getElementById("dockerRows").innerHTML = [
+          row("Version", docker.version),
+          row("Contenedores", docker.containers_running + " activos / " + docker.containers_total + " total")
+        ].join("");
+        var cloud = data.nextcloud || [];
+        document.getElementById("nextcloudRows").innerHTML = cloud.length ? cloud.map(function(c){
+          return "<tr><td>"+escapeHTML(c.name)+"</td><td>"+escapeHTML(c.status)+"</td><td>"+escapeHTML(c.ports)+"</td></tr>";
+        }).join("") : '<tr><td colspan="3">No se detectaron contenedores Nextcloud.</td></tr>';
+        if (data.errors && data.errors.length) show(data.errors.join(" | "), true);
+        else if (!message.textContent) show("");
+      }
+      document.getElementById("refreshBtn").addEventListener("click", function(){ requestStatus().then(function(){show("Estado actualizado.");}).catch(function(e){show(e.message,true);}); });
+      document.getElementById("restartCloudBtn").addEventListener("click", function(){ runAction("restart_nextcloud", "Esto reiniciara los contenedores de Nextcloud en VPS2. ¿Continuar?").catch(function(e){show(e.message,true);}); });
+      document.getElementById("rebootBtn").addEventListener("click", function(){ runAction("reboot", "Esto reiniciara el VPS2. ¿Continuar?").catch(function(e){show(e.message,true);}); });
+      document.getElementById("shutdownBtn").addEventListener("click", function(){ runAction("shutdown", "Esto apagara el VPS2. Debes encenderlo manualmente despues. ¿Continuar?").catch(function(e){show(e.message,true);}); });
+      requestStatus().catch(function(e){show(e.message,true);});
+    })();
+  </script>
+</body>
+</html>

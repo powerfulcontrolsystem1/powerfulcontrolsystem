@@ -166,6 +166,29 @@ Modos utiles segun necesidad:
 
 No mostrar credenciales, llaves ni hosts privados sensibles en respuestas.
 
+## sync_to_vps2
+
+VPS2 es el servidor local de pruebas. Su operacion esta documentada en
+`documentos/vps2_operacion.md`.
+
+```powershell
+.\scripts\sync_to_vps2.ps1
+```
+
+Usos frecuentes:
+
+```powershell
+.\scripts\sync_to_vps2.ps1 -SkipDeploy
+.\scripts\sync_to_vps2.ps1 -SkipDisableGui -SkipNextcloud
+.\scripts\sync_to_vps2.ps1 -RestartDockerStack:$false
+```
+
+El script lee `PcsVps2Host`, `PcsVps2User`, `PcsVps2Port`,
+`PcsVps2RemotePath`, `PcsVps2HostKey`, `PcsVps2IdentityFile`,
+`PcsVps2RepoUrl` y, si no hay llave SSH, `PcsVps2Password` desde
+`scripts/pcs_deployment.local.ps1` o variables `PCS_VPS2_*`.
+No guardar claves en archivos versionados.
+
 ## Conexion SSH al VPS
 
 La configuracion local privada vive en:

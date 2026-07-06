@@ -1,3 +1,13 @@
+2026-07-06 - Panel super VPS2
+- `backend/handlers/super_vps2.go`: endpoint super administrador `/super/api/vps2` para consultar estado del VPS2 por SSH, recursos del sistema, Docker, servicios y contenedores Nextcloud, con acciones cerradas de reinicio de Nextcloud, reinicio y apagado.
+- `web/super/vps2.html`: pagina del panel super para ver estado, temperatura, procesador, disco, memoria, Docker, servicios y ejecutar acciones confirmadas sobre VPS2.
+- `web/super_administrador.html`: agrega acceso `VPS2` dentro del grupo Plataforma.
+
+2026-07-06 - VPS2 operacion y sincronizacion
+- `scripts/sync_to_vps2.ps1`: script PowerShell para validar SSH del VPS2, actualizar el repo remoto por `git pull --ff-only` o clonar si hay URL configurada, reiniciar Docker cuando corresponda, deshabilitar modo grafico y asegurar Nextcloud con `restart unless-stopped`.
+- `documentos/vps2_operacion.md`: runbook del VPS2 con ruta de conexion, host key verificada, reglas para no versionar secretos y estado aplicado del mantenimiento.
+- `scripts/pcs_deployment.local.ps1.example`: agrega plantilla saneada para variables `PcsVps2*`.
+
 2026-06-24 - Portada red social empresarial
 - `web/img/red-social-empresarial-portada.png`: imagen corporativa usada como portada de la cabecera en `web/red_social_comercial.html`.
 

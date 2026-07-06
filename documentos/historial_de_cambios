@@ -36352,3 +36352,14 @@ Archivos modificados:
 - web/administrar_empresa/configuracion_impresora.html
 - web/ayuda/ayuda.html
 - web/super/licencias.html
+2026-07-06: Panel super administrador para VPS2.
+- Backend: se agrega `/super/api/vps2` protegido con auditoria super para consultar VPS2 por SSH usando configuracion privada `PcsVps2*`/`PCS_VPS2_*`, sin aceptar comandos libres ni exponer claves.
+- Frontend: nueva pagina `web/super/vps2.html` con tarjetas de conexion, CPU/carga/temperatura, RAM, disco, sistema, servicios, Docker y Nextcloud.
+- Operacion: la pagina permite acciones cerradas con confirmacion: actualizar estado, reiniciar Nextcloud, reiniciar VPS2 y apagar VPS2.
+- Seguridad: la credencial queda solo en `scripts/pcs_deployment.local.ps1` o entorno privado; el repo versionado solo guarda plantilla saneada.
+
+2026-07-06: VPS2 operacion y sincronizacion.
+- Scripts: se agrega `scripts/sync_to_vps2.ps1` para validar SSH, actualizar el repo remoto por Git, reiniciar Docker si hay compose, dejar el VPS2 en modo texto y asegurar contenedores Nextcloud con reinicio automatico.
+- Documentacion: se agrega `documentos/vps2_operacion.md` y se amplian `documentos/comandos_codex.md` y `scripts/pcs_deployment.local.ps1.example` con configuracion privada `PcsVps2*` sin claves versionadas.
+- Operacion: se verifico SSH y VNC en VPS2, se aplico `multi-user.target` y se detectaron `nextcloud-app`, `nextcloud-redis` y `nextcloud-db` activos con `restart unless-stopped`.
+- Seguridad: las claves suministradas no se escriben en documentacion ni archivos versionados; el script puede leerlas desde configuracion local ignorada o variables de entorno.

@@ -3158,3 +3158,12 @@
 - [Facturacion electronica] Los correos al cliente ahora salen en multipart con HTML, adjuntos HTML/TXT y enlace QR DIAN cuando hay codigo de validacion.
 - [QA] Pruebas Go de `handlers/db`, chequeos JS y validacion visual/DOM local.
 - 2026-06-21: Se ajusta el chat IA para responder solo lo solicitado, sin exportaciones/documentos automaticos ni voz activa por defecto; los correos de arranque usan HTML corporativo con logo PCS. Ingresos, Egresos y Compras abren el chat con la foto/documento cargado al usar IA. Radio online reproduce con un boton y minimiza al reproductor compacto. La pagina super de informacion para IA queda corregida en UTF-8 y con area de edicion amplia.
+## [2026-07-06] Panel super VPS2
+- [Backend] Agrega `/super/api/vps2` protegido con auditoria super para consultar VPS2 por SSH usando configuracion privada `PcsVps2*`/`PCS_VPS2_*`, sin aceptar comandos libres ni exponer claves.
+- [Frontend] Nueva pagina `web/super/vps2.html` con estado, temperatura, procesador, memoria, disco, Docker, servicios y Nextcloud.
+- [Operacion] Permite acciones cerradas con confirmacion: reiniciar Nextcloud, reiniciar VPS2 y apagar VPS2.
+
+## [2026-07-06] VPS2 operacion y sincronizacion
+- [Scripts] Agrega `scripts/sync_to_vps2.ps1` para validar SSH, actualizar el repo remoto por Git, reiniciar Docker si hay compose, dejar el VPS2 en `multi-user.target` y asegurar Nextcloud con `restart unless-stopped`.
+- [Documentacion] Agrega `documentos/vps2_operacion.md` con host key verificada, configuracion local privada `PcsVps2*` y evidencia operativa sin versionar claves.
+- [Operacion] VPS2 respondio por SSH/VNC; `nextcloud-app`, `nextcloud-redis` y `nextcloud-db` quedaron activos con reinicio automatico.

@@ -22,3 +22,15 @@ $script:PcsVpsHostKey = "SHA256:mDBX0SnNik0QapfC2K0rsZ8hE23TvOR5Wi2yKtdhl1U"
 # $script:PcsVpsIdentityFile = "clave privada ssh.ppk"
 # $script:PcsVpsServerPort = "8080"
 # $script:PcsVpsPublicBaseUrl = "https://powerfulcontrolsystem.com/"
+
+# --- VPS2 local de pruebas (sync_to_vps2) ---
+# No guardes claves reales en archivos versionados. Este archivo es solo plantilla.
+$script:PcsVps2Host = "192.168.1.188"
+$script:PcsVps2User = "admin1"
+$script:PcsVps2RemotePath = "/home/admin1/powerfulcontrolsystem"
+$script:PcsVps2Port = 22
+$script:PcsVps2HostKey = "SHA256:QQmT0ZjCVNNxw7ICwV7FKwrzzzfWrOrtZ9zTrEGkwH0"
+# $script:PcsVps2RepoUrl = $script:PcsGitRemoteUrl
+# $script:PcsVps2IdentityFile = "clave privada ssh.ppk"
+# $script:PcsVps2Branch = "main"
+# $script:PcsVps2Password = "usar solo en scripts/pcs_deployment.local.ps1 real o PCS_VPS2_PASSWORD"

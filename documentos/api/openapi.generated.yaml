@@ -3972,6 +3972,19 @@ paths:
       responses:
         "200":
           description: Respuesta exitosa o manejada por el handler real.
+  "/super/api/vps2":
+    get:
+      tags: [super-administrador]
+      summary: Ruta inventariada /super/api/vps2
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [super-administrador]
+      summary: Ruta inventariada /super/api/vps2
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
   "/super/sesiones":
     get:
       tags: [super-administrador]

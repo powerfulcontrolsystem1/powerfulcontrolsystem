@@ -35,6 +35,10 @@ __pycache__/
 *.pyc
 .DS_Store
 Thumbs.db
+Desktop.ini
+.nextcloudsync.log
+.sync_*.db-wal
+backend/.gotmp/
 backend/.env.local
 .env.local
 deploy/.env.platform
