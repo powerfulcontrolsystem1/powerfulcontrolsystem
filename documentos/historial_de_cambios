@@ -36325,3 +36325,30 @@ Archivos modificados:
 - UX: `web/super/licencias.html` retira el campo de cajas simultaneas de las licencias y muestra que las cajas no tienen limite por licencia. La configuracion de empresa aclara que las licencias solo limitan documentos/ventas.
 - Regla comercial: una venta, una factura electronica u otro documento electronico emitido cuenta como un documento; si una venta ya genero factura electronica no se duplica el consumo.
 - Documentacion: se actualizan contexto, flujos, mapa de modulos, decisiones tecnicas, estructura BD, matriz de roles, ayuda, README, descripcion del proyecto, descripcion de modulos y changelog.
+
+2026-07-05: rs: actualizar repositorio y sincronizar VPS
+PushStatus: OK
+Archivos modificados:
+- CHANGELOG.md
+- backend/db/db.go
+- backend/db/licencias_globales.go
+- backend/db/licencias_globales_test.go
+- backend/handlers/finanzas.go
+- documentos/CHANGELOG.md
+- documentos/README.md
+- documentos/contexto_codex.md
+- documentos/decisiones_tecnicas.md
+- documentos/descripcion_de_archivos
+- documentos/descripcion_de_modulos
+- documentos/descripcion_del_proyecto
+- documentos/diagramas/estructura_del_codigo.md
+- documentos/estado_documentacion_2026-05-13.md
+- documentos/estructura_bd.md
+- documentos/flujos_operativos.md
+- documentos/historial_de_cambios
+- documentos/mapa_modulos.md
+- documentos/matriz_roles_permisos_pos_multiempresa.md
+- web/administrar_empresa/configuracion.html
+- web/administrar_empresa/configuracion_impresora.html
+- web/ayuda/ayuda.html
+- web/super/licencias.html
