@@ -195,7 +195,8 @@ printf 'docker_running=%s\n' "$(docker ps -q 2>/dev/null | wc -l | tr -d " ")";
 ip -4 -o addr show scope global 2>/dev/null | awk '{print "ip="$2" "$4}';
 docker ps -a --format '{{.Names}}|{{.Status}}|{{.Ports}}' 2>/dev/null | grep -Ei '(^|[-_])(nextcloud|cloud)([-_]|$)|nextcloud' | sed 's/^/nextcloud=/' || true
 '@
-  $out = Invoke-Vps2Ssh -Command $statusCommand
+  $encodedStatus = [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes($statusCommand))
+  $out = Invoke-Vps2Ssh -Command "echo $encodedStatus | base64 -d | bash"
   $kv = @{}
   foreach ($line in ($out -split "`r?`n")) {
     if ($line -notmatch '=') { continue }
@@ -293,7 +294,9 @@ function Publish-VPS2SnapshotToMainVPS {
     return
   }
   $tmp = Join-Path ([System.IO.Path]::GetTempPath()) "pcs_vps2_status.json"
-  $Snapshot | ConvertTo-Json -Depth 8 | Set-Content -LiteralPath $tmp -Encoding UTF8
+  $json = $Snapshot | ConvertTo-Json -Depth 8
+  $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
+  [System.IO.File]::WriteAllText($tmp, $json, $utf8NoBom)
   $plink = Resolve-Plink
   $pscp = Resolve-Pscp
   $target = "$mainUser@$mainHost"

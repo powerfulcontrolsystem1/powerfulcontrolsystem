@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"bytes"
 	"context"
 	"database/sql"
 	"encoding/json"
@@ -27,19 +28,19 @@ type superVPS2Config struct {
 }
 
 type superVPS2Status struct {
-	OK          bool                     `json:"ok"`
-	CheckedAt   string                   `json:"checked_at"`
-	Config      superVPS2Config          `json:"config"`
-	Reachable   map[string]bool          `json:"reachable"`
-	System      map[string]string        `json:"system"`
-	Resources   map[string]interface{}   `json:"resources"`
-	Docker      map[string]interface{}   `json:"docker"`
-	Services    map[string]string        `json:"services"`
-	Nextcloud   []map[string]string      `json:"nextcloud"`
-	LastAction  string                   `json:"last_action,omitempty"`
-	LastMessage string                   `json:"last_message,omitempty"`
-	Errors      []string                 `json:"errors,omitempty"`
-	Raw         map[string][]string      `json:"raw,omitempty"`
+	OK          bool                   `json:"ok"`
+	CheckedAt   string                 `json:"checked_at"`
+	Config      superVPS2Config        `json:"config"`
+	Reachable   map[string]bool        `json:"reachable"`
+	System      map[string]string      `json:"system"`
+	Resources   map[string]interface{} `json:"resources"`
+	Docker      map[string]interface{} `json:"docker"`
+	Services    map[string]string      `json:"services"`
+	Nextcloud   []map[string]string    `json:"nextcloud"`
+	LastAction  string                 `json:"last_action,omitempty"`
+	LastMessage string                 `json:"last_message,omitempty"`
+	Errors      []string               `json:"errors,omitempty"`
+	Raw         map[string][]string    `json:"raw,omitempty"`
 }
 
 // SuperVPS2Handler administra solo acciones cerradas sobre el VPS2. No acepta comandos libres.
@@ -173,6 +174,7 @@ func loadSuperVPS2Snapshot() (superVPS2Status, bool) {
 		if err != nil || len(raw) == 0 {
 			continue
 		}
+		raw = bytes.TrimPrefix(raw, []byte{0xEF, 0xBB, 0xBF})
 		var status superVPS2Status
 		if err := json.Unmarshal(raw, &status); err != nil {
 			continue
