@@ -36230,3 +36230,59 @@ Archivos modificados:
   - `go test . -run "TestNoSuchTest" -count=1` en `backend` finalizo correctamente.
   - Validacion de sintaxis JS con Node incluido por Codex para `administrar_empresa.js` y scripts embebidos modificados.
   - Verificacion visual estatica local de WhatsApp notificaciones, recordatorios externos, licencia y rol cajero sin overflow horizontal.
+
+2026-07-05: rs: actualizar repositorio y sincronizar VPS
+PushStatus: OK
+Archivos modificados:
+- .codex_tmp/vps2_antispam_logs.sh
+- .codex_tmp/vps2_base_setup.sh
+- .codex_tmp/vps2_check_rspamd_tags.sh
+- .codex_tmp/vps2_check_vnc.sh
+- .codex_tmp/vps2_clean_start_pcs.sh
+- .codex_tmp/vps2_disable_rspamd_jit.sh
+- .codex_tmp/vps2_expose_pcs.sh
+- .codex_tmp/vps2_final_check.sh
+- .codex_tmp/vps2_finish_base.sh
+- .codex_tmp/vps2_finish_vnc.sh
+- .codex_tmp/vps2_fix_apt_mirror.sh
+- .codex_tmp/vps2_fix_fstab.sh
+- .codex_tmp/vps2_fix_mailu_override_format.sh
+- .codex_tmp/vps2_fix_vnc_configdir.sh
+- .codex_tmp/vps2_fix_vnc_pidfile.sh
+- .codex_tmp/vps2_inspect_current.sh
+- .codex_tmp/vps2_inspect_mail.sh
+- .codex_tmp/vps2_install_nextcloud.sh
+- .codex_tmp/vps2_install_vnc_xfce.sh
+- .codex_tmp/vps2_mail_status.sh
+- .codex_tmp/vps2_move_nextcloud_start_pcs.sh
+- .codex_tmp/vps2_repair_mail_antispam.sh
+- .codex_tmp/vps2_repair_rspamd_override.sh
+- .codex_tmp/vps2_resize_mount.sh
+- .codex_tmp/vps2_set_pcs_http_bind.sh
+- .codex_tmp/vps2_set_static_ip.sh
+- .codex_tmp/vps2_start_mail_profile.sh
+- .codex_tmp/vps2_start_pcs_no_mail.sh
+- .codex_tmp/vps2_status_vnc.sh
+- .codex_tmp/vps2_try_rspamd_19.sh
+- .codex_tmp/vps2_tune_nextcloud.sh
+- CHANGELOG.md
+- backend/handlers/auth_admin_handlers.go
+- backend/handlers/licencias_vencimiento_alertas.go
+- backend/handlers/mail_utils.go
+- backend/handlers/payments_handlers.go
+- backend/handlers/super_recordatorios_infraestructura.go
+- backend/handlers/whatsapp_notifications.go
+- backend/main.go
+- documentos/api/openapi.generated.yaml
+- documentos/descripcion_de_archivos
+- documentos/estructura_bd.md
+- documentos/historial_de_cambios
+- documentos/mapa_modulos.md
+- web/administrar_empresa/configuracion_rol_cajero.html
+- web/administrar_empresa/licencia_sistema.html
+- web/administrar_empresa/panel.html
+- web/administrar_empresa/productos/bodegas.html
+- web/js/administrar_empresa.js
+- web/super/configuracion/whatsapp_notificaciones.html
+- web/super/recordatorios_infraestructura.html
+- web/super_administrador.html
