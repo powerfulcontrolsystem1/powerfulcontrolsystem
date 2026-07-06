@@ -3322,6 +3322,19 @@ paths:
       responses:
         "200":
           description: Respuesta exitosa o manejada por el handler real.
+  "/super/api/config/whatsapp_notificaciones":
+    get:
+      tags: [super-administrador]
+      summary: Ruta inventariada /super/api/config/whatsapp_notificaciones
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [super-administrador]
+      summary: Ruta inventariada /super/api/config/whatsapp_notificaciones
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
   "/super/api/config/wompi":
     get:
       tags: [super-administrador]
@@ -3670,6 +3683,19 @@ paths:
     post:
       tags: [super-administrador]
       summary: Ruta inventariada /super/api/postgres/performance
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/super/api/recordatorios_infraestructura":
+    get:
+      tags: [super-administrador]
+      summary: Ruta inventariada /super/api/recordatorios_infraestructura
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [super-administrador]
+      summary: Ruta inventariada /super/api/recordatorios_infraestructura
       responses:
         "200":
           description: Respuesta exitosa o manejada por el handler real.

@@ -1929,10 +1929,17 @@ func sendLicenciaActivationEmailWithAttachments(r *http.Request, dbSuper *sql.DB
 	metadataJSON := fmt.Sprintf(`{"provider":%q,"licencia_id":%d,"empresa_id":%d,"reference":%q,"discount_code":%q,"asesor_id":%q,"total_value":%q,"invoice_pdf_attachments":%d,"license_download_url":%q}`, provider, lic.ID, empresaID, reference, discountCode, asesorID, totalValue, len(attachments), licenseDownloadURL)
 
 	if isEmpresaUsuarioMailTestMode(dbSuper) {
+		sendPCSWhatsAppForEmailRecipient(dbSuper, "licencia_activada_pago", toEmail, asunto, cuerpo, metadataJSON, adminEmailFromRequest(r))
 		return captureEmpresaUsuarioMailNotification(dbSuper, "licencia_activada_pago", empresaID, toEmail, asunto, cuerpo, reference, metadataJSON, adminEmailFromRequest(r))
 	}
 
-	return sendLicenciaActivationMailViaConfiguredChannels(dbSuper, toEmail, asunto, cuerpo, attachments)
+	if isPCSEmailEventEnabled(dbSuper, "licencia_activada_pago") {
+		if err := sendLicenciaActivationMailViaConfiguredChannels(dbSuper, toEmail, asunto, cuerpo, attachments); err != nil {
+			return err
+		}
+	}
+	sendPCSWhatsAppForEmailRecipient(dbSuper, "licencia_activada_pago", toEmail, asunto, cuerpo, metadataJSON, adminEmailFromRequest(r))
+	return nil
 }
 
 func sendLicenciaActivationMailViaConfiguredChannels(dbSuper *sql.DB, toEmail, asunto, cuerpo string, attachments []licenciaEmailAttachment) error {

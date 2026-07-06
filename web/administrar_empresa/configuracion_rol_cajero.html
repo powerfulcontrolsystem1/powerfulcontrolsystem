@@ -138,6 +138,7 @@
         <p class="form-help">El cajero ya no elige caja al iniciar sesion. PCS usa el computador detectado y las reglas de estacion configuradas por empresa.</p>
         <label class="cashier-check" for="stationAccessEnabled"><input id="stationAccessEnabled" type="checkbox"><span>Activar control de estaciones por cajero</span></label>
         <label class="cashier-check" for="stationAccessCaja"><input id="stationAccessCaja" type="checkbox"><span>Permitir estacion Caja y corte de turno para cajeros asignados</span></label>
+        <label class="cashier-check" for="cashierAutoDirectSale"><input id="cashierAutoDirectSale" type="checkbox"><span>Cuando el usuario sea cajero, entrar automaticamente a Venta directa</span></label>
         <div class="cashier-actions">
           <button id="btnGuardarEstaciones" type="button" class="btn secondary">Guardar estaciones</button>
           <a id="linkEstacionesConfig" class="btn secondary" href="/administrar_empresa/configuracion_de_estaciones.html">Configurar estaciones</a>
@@ -360,7 +361,8 @@
             habilitado: !!access.habilitado,
             caja_por_cajero: access.caja_por_cajero === undefined ? true : !!access.caja_por_cajero,
             usuarios: access.usuarios && typeof access.usuarios === 'object' ? access.usuarios : {}
-          }
+          },
+          cajero_auto_venta_directa: !!src.cajero_auto_venta_directa
         });
       }
       function fillCart() {
@@ -476,6 +478,7 @@
         state.station.acceso_estaciones_cajeros = state.station.acceso_estaciones_cajeros || {};
         state.station.acceso_estaciones_cajeros.habilitado = byId('stationAccessEnabled').checked;
         state.station.acceso_estaciones_cajeros.caja_por_cajero = byId('stationAccessCaja').checked;
+        state.station.cajero_auto_venta_directa = byId('cashierAutoDirectSale').checked;
         delete state.station.acceso_estaciones_por_cajero;
         var res = await fetch('/api/empresa/estacion_prefs?empresa_id=' + encodeURIComponent(state.empresaID), {
           method:'PUT',
@@ -540,6 +543,7 @@
         var access = normalizeStation(state.station || {}).acceso_estaciones_cajeros;
         byId('stationAccessEnabled').checked = !!access.habilitado;
         byId('stationAccessCaja').checked = access.caja_por_cajero !== false;
+        byId('cashierAutoDirectSale').checked = !!normalizeStation(state.station || {}).cajero_auto_venta_directa;
       }
       function renderUsers() {
         var users = cashierUsers();

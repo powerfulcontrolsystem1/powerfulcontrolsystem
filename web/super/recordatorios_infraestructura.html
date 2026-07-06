@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Vencimientos externos</title>
+  <link rel="stylesheet" href="/estilos.css">
+  <style>
+    .infra-page{max-width:1180px;margin:0 auto;padding:16px;display:grid;gap:12px}
+    .infra-card{border:1px solid var(--border);border-radius:8px;background:var(--surface);padding:14px;color:var(--text)}
+    .infra-grid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px;align-items:end}
+    .infra-table{width:100%;border-collapse:collapse}.infra-table th,.infra-table td{border:1px solid var(--border);padding:8px;text-align:left}
+    .infra-table th{background:var(--surface-soft);font-size:.82rem;text-transform:uppercase}
+    .infra-status{min-height:20px;font-weight:750;color:var(--muted)}.infra-status.ok{color:var(--success,#15803d)}.infra-status.err{color:var(--danger,#dc2626)}
+    @media(max-width:980px){.infra-grid{grid-template-columns:1fr 1fr}.infra-grid .wide{grid-column:1/-1}}
+  </style>
+</head>
+<body class="empresa-subpage">
+  <main class="infra-page">
+    <section class="infra-card">
+      <h1>Recordatorios de dominios, hosting y servicios externos</h1>
+      <p class="form-help">Registra vencimientos críticos para que super administrador tenga una lista central antes de producción.</p>
+      <p id="status" class="infra-status"></p>
+    </section>
+    <section class="infra-card">
+      <div class="infra-grid">
+        <label><span class="form-label">Tipo</span><select id="tipo" class="form-input"><option value="dominio">Dominio</option><option value="hosting">Hosting</option><option value="vps">VPS</option><option value="certificado_ssl">Certificado SSL</option><option value="otro">Otro</option></select></label>
+        <label class="wide"><span class="form-label">Nombre</span><input id="nombre" class="form-input" placeholder="powerfulcontrolsystem.com"></label>
+        <label><span class="form-label">Proveedor</span><input id="proveedor" class="form-input"></label>
+        <label><span class="form-label">Vence</span><input id="fecha" class="form-input" type="date"></label>
+        <label><span class="form-label">Avisar días antes</span><input id="dias" class="form-input" type="number" min="1" max="365" value="30"></label>
+        <button id="addBtn" type="button" class="btn primary">Agregar</button>
+      </div>
+    </section>
+    <section class="infra-card">
+      <table class="infra-table">
+        <thead><tr><th>Servicio</th><th>Vence</th><th>Aviso</th><th>Canales</th><th>Estado</th><th></th></tr></thead>
+        <tbody id="body"></tbody>
+      </table>
+      <div style="margin-top:10px"><button id="saveBtn" type="button" class="btn primary">Guardar cambios</button></div>
+    </section>
+  </main>
+  <script>
+    (function(){
+      var items=[];
+      function byId(id){return document.getElementById(id);}
+      function esc(v){return String(v==null?'':v).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+      function status(msg,type){var el=byId('status');el.textContent=msg||'';el.className='infra-status '+(type||'');}
+      function ensure(res){if(res.ok)return res;return res.text().then(function(t){throw new Error(t||('HTTP '+res.status));});}
+      function render(){
+        byId('body').innerHTML=items.map(function(it,i){
+          return '<tr data-i="'+i+'"><td><strong>'+esc(it.nombre)+'</strong><br><span class="form-help">'+esc(it.tipo)+' '+esc(it.proveedor||'')+'</span></td>'+
+            '<td><input class="form-input" data-k="fecha_vencimiento" type="date" value="'+esc(it.fecha_vencimiento)+'"></td>'+
+            '<td><input class="form-input" data-k="dias_aviso" type="number" min="1" max="365" value="'+esc(it.dias_aviso||30)+'"></td>'+
+            '<td><label><input data-k="email_enabled" type="checkbox" '+(it.email_enabled?'checked':'')+'> Email</label><br><label><input data-k="whatsapp_enabled" type="checkbox" '+(it.whatsapp_enabled?'checked':'')+'> WhatsApp</label></td>'+
+            '<td><label><input data-k="activo" type="checkbox" '+(it.activo!==false?'checked':'')+'> Activo</label></td>'+
+            '<td><button class="btn secondary" data-del="'+i+'" type="button">Quitar</button></td></tr>';
+        }).join('');
+      }
+      function sync(){
+        Array.prototype.forEach.call(document.querySelectorAll('#body tr'),function(row){
+          var i=Number(row.getAttribute('data-i')); if(!items[i]) return;
+          Array.prototype.forEach.call(row.querySelectorAll('[data-k]'),function(input){
+            var k=input.getAttribute('data-k');
+            items[i][k]=input.type==='checkbox'?!!input.checked:input.value;
+          });
+        });
+      }
+      byId('body').addEventListener('click',function(ev){var btn=ev.target.closest('[data-del]'); if(!btn)return; items.splice(Number(btn.getAttribute('data-del')),1); render();});
+      byId('addBtn').addEventListener('click',function(){
+        var nombre=byId('nombre').value.trim(); if(!nombre){status('El nombre es obligatorio.','err'); return;}
+        items.push({id:'rec_'+Date.now(),tipo:byId('tipo').value,nombre:nombre,proveedor:byId('proveedor').value,fecha_vencimiento:byId('fecha').value,dias_aviso:Number(byId('dias').value||30),email_enabled:true,whatsapp_enabled:false,activo:true});
+        byId('nombre').value=''; render(); status('Recordatorio agregado. Guarda para conservarlo.','ok');
+      });
+      byId('saveBtn').addEventListener('click',async function(){
+        try{sync();status('Guardando...');var res=await fetch('/super/api/recordatorios_infraestructura',{method:'PUT',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({items:items})});items=(await (await ensure(res)).json()).items||[];render();status('Recordatorios guardados.','ok');}
+        catch(err){status(err.message||String(err),'err');}
+      });
+      fetch('/super/api/recordatorios_infraestructura',{credentials:'same-origin'}).then(ensure).then(function(r){return r.json();}).then(function(data){items=data.items||[];render();status('Lista cargada.','ok');}).catch(function(err){status(err.message||String(err),'err');});
+    })();
+  </script>
+</body>
+</html>

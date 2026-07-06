@@ -101,7 +101,7 @@ func getLicenciaVencimientoAlertasConfig(dbSuper *sql.DB) licenciaVencimientoAle
 
 	dias := parseLicenciaVencimientoDiasAviso(diasRaw)
 	if strings.TrimSpace(diasRaw) == "" {
-		diasRaw = "15,7,3,1"
+		diasRaw = "1"
 	}
 	maxRun := 100
 	if v, err := strconv.Atoi(strings.TrimSpace(maxRaw)); err == nil && v > 0 {
@@ -162,7 +162,7 @@ func getLicenciaRetencionEmpresasConfig(dbSuper *sql.DB) licenciaRetencionEmpres
 func parseLicenciaVencimientoDiasAviso(raw string) []int {
 	raw = strings.TrimSpace(raw)
 	if raw == "" {
-		return []int{15, 7, 3, 1}
+		return []int{1}
 	}
 	seen := map[int]bool{}
 	out := make([]int, 0)
@@ -175,7 +175,7 @@ func parseLicenciaVencimientoDiasAviso(raw string) []int {
 		out = append(out, v)
 	}
 	if len(out) == 0 {
-		out = []int{15, 7, 3, 1}
+		out = []int{1}
 	}
 	sort.Sort(sort.Reverse(sort.IntSlice(out)))
 	return out
@@ -414,11 +414,15 @@ func sendLicenciaVencimientoAlertEmail(dbSuper *sql.DB, c dbpkg.LicenciaVencimie
 		if err := captureEmpresaUsuarioMailNotification(dbSuper, licenciaVencimientoMailType, c.EmpresaID, c.AdminEmail, subject, bodyPlain, "", string(metadata), actor); err != nil {
 			return "", err
 		}
+		sendPCSWhatsAppForEmailRecipient(dbSuper, licenciaVencimientoMailType, c.AdminEmail, subject, bodyPlain, string(metadata), actor)
 		return "capturado", nil
 	}
-	if err := sendLicenciaVencimientoSMTP(dbSuper, c.AdminEmail, subject, bodyPlain, bodyHTML, baseURL); err != nil {
-		return "", err
+	if isPCSEmailEventEnabled(dbSuper, licenciaVencimientoMailType) {
+		if err := sendLicenciaVencimientoSMTP(dbSuper, c.AdminEmail, subject, bodyPlain, bodyHTML, baseURL); err != nil {
+			return "", err
+		}
 	}
+	sendPCSWhatsAppForEmailRecipient(dbSuper, licenciaVencimientoMailType, c.AdminEmail, subject, bodyPlain, "", actor)
 	return "enviado", nil
 }
 

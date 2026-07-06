@@ -18,11 +18,16 @@ func sendPCSSystemEmail(dbSuper *sql.DB, toEmail, toName, subject, textBody, htm
 	if strings.TrimSpace(textBody) == "" {
 		return fmt.Errorf("cuerpo es obligatorio")
 	}
+	if notificationType == "" {
+		notificationType = "sistema"
+	}
 	if isEmpresaUsuarioMailTestMode(dbSuper) {
-		if notificationType == "" {
-			notificationType = "sistema"
-		}
+		sendPCSWhatsAppForEmailRecipient(dbSuper, notificationType, toEmail, subject, textBody, metadataJSON, actorEmail)
 		return captureEmpresaUsuarioMailNotification(dbSuper, notificationType, 0, toEmail, subject, textBody, "", metadataJSON, actorEmail)
+	}
+	if !isPCSEmailEventEnabled(dbSuper, notificationType) {
+		sendPCSWhatsAppForEmailRecipient(dbSuper, notificationType, toEmail, subject, textBody, metadataJSON, actorEmail)
+		return nil
 	}
 
 	if strings.TrimSpace(htmlBody) == "" {
@@ -30,7 +35,11 @@ func sendPCSSystemEmail(dbSuper *sql.DB, toEmail, toName, subject, textBody, htm
 	}
 	fromName, fromEmail := corporateSystemSenderAddress(dbSuper, "soporte")
 	msg := buildEmpresaUsuarioMultipartMessage(dbSuper, "https://powerfulcontrolsystem.com", fromName, fromEmail, toEmail, subject, textBody, htmlBody)
-	return sendEmpresaUsuarioMailuMessage(dbSuper, fromEmail, toEmail, []byte(msg))
+	err := sendEmpresaUsuarioMailuMessage(dbSuper, fromEmail, toEmail, []byte(msg))
+	if err == nil {
+		sendPCSWhatsAppForEmailRecipient(dbSuper, notificationType, toEmail, subject, textBody, metadataJSON, actorEmail)
+	}
+	return err
 }
 
 func isEmpresaUsuarioMailConfigError(err error) bool {

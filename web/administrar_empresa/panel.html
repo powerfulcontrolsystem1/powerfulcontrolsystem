@@ -3790,22 +3790,15 @@
       }
 
       function hasGuidedDismissedFlag() {
-        if (!empresaId) return false;
-        try {
-          return guidedDismissedKeys().some(function (key) {
-            return window.localStorage.getItem(key) === "1" || window.sessionStorage.getItem(key) === "1";
-          });
-        } catch (e) {
-          return false;
-        }
+        return false;
       }
 
       function setGuidedDismissedFlag() {
         if (!empresaId) return;
         clearGuidedPendingFlag();
         guidedDismissedKeys().forEach(function (key) {
-          try { window.localStorage.setItem(key, "1"); } catch (e) {}
-          try { window.sessionStorage.setItem(key, "1"); } catch (e) {}
+          try { window.localStorage.removeItem(key); } catch (e) {}
+          try { window.sessionStorage.removeItem(key); } catch (e) {}
         });
       }
 
@@ -3863,7 +3856,6 @@
         var estado = configData.estado || {};
         var dismissed = isGuidedSetupDismissed(configData);
         if (dismissed) {
-          setGuidedDismissedFlag();
           clearGuidedPendingFlag();
           return;
         }
@@ -3914,7 +3906,6 @@
           var apply = document.getElementById("empresaGuidedApply");
           var action = "no_mostrar_mas";
           if (noMostrarMas) noMostrarMas.checked = true;
-          setGuidedDismissedFlag();
           if (closeBtn) closeBtn.disabled = true;
           if (apply) apply.disabled = true;
           if (status) status.textContent = "Guardando decision...";

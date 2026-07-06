@@ -1473,6 +1473,8 @@ func main() {
 	http.HandleFunc("/super/api/config/epayco", handlers.WithSuperAuditoria(dbSuper, "super_config_epayco", handlers.EpaycoConfigHandler(dbSuper)))
 	// Endpoint para gestionar SMTP Gmail (GET/PUT)
 	http.HandleFunc("/super/api/config/gmail", handlers.WithSuperAuditoria(dbSuper, "super_config_gmail", handlers.GmailConfigHandler(dbSuper)))
+	http.HandleFunc("/super/api/config/whatsapp_notificaciones", handlers.WithSuperAuditoria(dbSuper, "super_config_whatsapp_notificaciones", handlers.SuperWhatsAppNotificationsHandler(dbSuper)))
+	http.HandleFunc("/super/api/recordatorios_infraestructura", handlers.WithSuperAuditoria(dbSuper, "super_recordatorios_infraestructura", handlers.SuperRecordatoriosInfraestructuraHandler(dbSuper)))
 	// Endpoint para activar o desactivar Google reCAPTCHA (GET/PUT)
 	http.HandleFunc("/super/api/config/recaptcha", handlers.WithSuperAuditoria(dbSuper, "super_config_recaptcha", handlers.RecaptchaConfigHandler(dbSuper)))
 	// Endpoint para administrar plantillas de correo del panel super

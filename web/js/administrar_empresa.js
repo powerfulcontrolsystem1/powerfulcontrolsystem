@@ -128,6 +128,7 @@ try {
   };
   var enterpriseAIVisibleLinks = {};
   var enterpriseMenuVisualConfig = { hiddenLinks: {} };
+  var cashierAutoDirectSaleEnabled = false;
   var adminPageURLsConfig = { enabled: false };
   var lastPermissionContext = null;
   var lastPermissionRole = "";
@@ -2074,6 +2075,10 @@ try {
     if (requested) {
       return requested;
     }
+    var effectiveRole = normalizePermissionRole((lastPermissionContext && (lastPermissionContext.rol_efectivo || lastPermissionContext.rol || lastPermissionContext.role)) || lastPermissionRole || "");
+    if (cashierAutoDirectSaleEnabled && effectiveRole === "cajero" && empresaId) {
+      return "/administrar_empresa/carrito_de_compras.html?empresa_id=" + encodeURIComponent(empresaId) + "&modo=venta_directa&perm_page=linkVentaDirecta";
+    }
     var preferred = preferredStartupFrameSrc(empresaId);
     if (preferred) {
       return preferred;
@@ -2101,6 +2106,31 @@ try {
         } else {
           setMenuPermissionsEvidence("Permisos de menú: sin rol detectado | fuente local de respaldo.", true);
         }
+      });
+  }
+
+  function fetchCashierAutoDirectSalePreference(empresaId) {
+    cashierAutoDirectSaleEnabled = false;
+    if (!empresaId) return Promise.resolve(false);
+    return fetch("/api/empresa/estacion_prefs?empresa_id=" + encodeURIComponent(empresaId), { credentials: "same-origin" })
+      .then(function (resp) {
+        if (!resp.ok) return false;
+        return resp.json();
+      })
+      .then(function (data) {
+        var prefs = data && Array.isArray(data.prefs) ? data.prefs : [];
+        var pref = prefs.find(function (item) {
+          return item && Number(item.estacion_id || 0) === 0 && String(item.clave || "") === "estaciones_config";
+        });
+        if (!pref || !pref.valor) return false;
+        var parsed = null;
+        try { parsed = JSON.parse(pref.valor); } catch (e) { parsed = null; }
+        cashierAutoDirectSaleEnabled = !!(parsed && parsed.cajero_auto_venta_directa);
+        return cashierAutoDirectSaleEnabled;
+      })
+      .catch(function () {
+        cashierAutoDirectSaleEnabled = false;
+        return false;
       });
   }
 
@@ -2552,6 +2582,9 @@ try {
           })
           .then(function () {
             return applyMenuPermissionsWithSource(id, role);
+          })
+          .then(function () {
+            return fetchCashierAutoDirectSalePreference(id);
           })
           .then(function () {
             initializeMenuAndFrame(id);

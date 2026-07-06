@@ -4803,3 +4803,11 @@
 - 2026-06-19: `Carrito sombreado uniforme` extiende a las etiquetas del carrito el sombreado de `Detalle del pago`, conserva `Efectivo recibido` con color normal del tema pero mayor tamaño, y alinea los controles de cantidad `- / valor / +` con el mismo fondo adaptable a claro/oscuro.
 - 2026-06-25: `Carrito columna derecha y vista de impresion` usa la columna lateral real del carrito para mostrar el logo grande encima de `Totales y detalles`, mantiene el carrito a ancho completo en pantalla completa, agrega un boton de carrito rapido junto al boton de pantalla completa y guarda por empresa la ultima opcion del select `Vista e impresion` en Buscar ventas y facturas.
 - 2026-06-25: `Menu empresa y reporte de corte` mueve Productos al grupo Inventario y compras, convierte la configuracion de Reporte de corte en pagina dedicada de Configuracion empresarial y agrega persistencia backend para el campo Caja dentro de `empresa_corte_caja_configuracion`.
+# 2026-07-05
+
+- Super administrador: se agrego configuracion global de WhatsApp para notificaciones internas del sistema, con apagado global, modo prueba, credenciales Meta Cloud API, prueba manual y toggles por evento sin afectar los botones publicos `wa.me` del portal, carta publica, pagina publica o red social.
+- Licencias: la pagina de licencia de empresa ahora muestra dias restantes y permite configurar recordatorios por empresa con email, WhatsApp y buzon, dejando 1 dia como valor predeterminado.
+- Administrar empresa: el rol cajero incluye un check para entrar automaticamente a Venta directa cuando el usuario efectivo sea cajero; la decision se guarda en base de datos mediante `empresa_estacion_prefs`.
+- Inventario: se agrego compatibilidad para la ruta antigua `administrar_empresa/productos/bodegas.html`, redirigiendo a la vista vigente `administrar_productos.html?view=bodegas`.
+- Super administrador: nueva seccion de recordatorios de vencimientos externos para dominios, hosting, VPS y certificados.
+- Configuracion guiada: el panel deja de usar almacenamiento local como fuente de verdad para ocultar la configuracion inicial; la decision queda gobernada por el backend/base de datos.

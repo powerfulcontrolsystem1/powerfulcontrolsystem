@@ -145,7 +145,7 @@ func AdminRegisterHandler(dbSuper *sql.DB) http.HandlerFunc {
 			writeAdminAuthError(w, http.StatusBadRequest, "El correo electrónico no es válido.")
 			return
 		}
-		if countAdminPhoneDigits(payload.Telefono) < 7 {
+		if normalizeWhatsAppPhone(payload.Telefono) == "" {
 			writeAdminAuthError(w, http.StatusBadRequest, "El teléfono debe contener al menos 7 dígitos.")
 			return
 		}
@@ -571,15 +571,19 @@ func sendAdminConfirmationEmail(r *http.Request, dbSuper *sql.DB, toEmail, toNam
 
 	if isEmpresaUsuarioMailTestMode(dbSuper) {
 		metadataJSON := fmt.Sprintf(`{"confirm_url":%q,"login_url":%q,"mail_mode":"test"}`, confirmURL, loginURL)
+		sendPCSWhatsAppForEmailRecipient(dbSuper, "admin_registro", toEmail, subject, body, metadataJSON, adminEmailFromRequest(r))
 		if err := captureEmpresaUsuarioMailNotification(dbSuper, "confirmacion_correo_admin", 0, toEmail, subject, body, token, metadataJSON, adminEmailFromRequest(r)); err != nil {
 			return confirmURL, err
 		}
 		return confirmURL, nil
 	}
 
-	if err := sendEmpresaUsuarioMailuPlain(dbSuper, toEmail, subject, body); err != nil {
-		return confirmURL, err
+	if isPCSEmailEventEnabled(dbSuper, "admin_registro") {
+		if err := sendEmpresaUsuarioMailuPlain(dbSuper, toEmail, subject, body); err != nil {
+			return confirmURL, err
+		}
 	}
+	sendPCSWhatsAppForEmailRecipient(dbSuper, "admin_registro", toEmail, subject, body, "", adminEmailFromRequest(r))
 	return confirmURL, nil
 }
 

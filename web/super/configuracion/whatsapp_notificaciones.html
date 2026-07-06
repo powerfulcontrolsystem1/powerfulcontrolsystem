@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>WhatsApp notificaciones</title>
+  <link rel="stylesheet" href="/estilos.css">
+  <style>
+    .wa-page{max-width:1180px;margin:0 auto;padding:16px;display:grid;gap:12px}
+    .wa-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(300px,.55fr);gap:12px}
+    .wa-card{border:1px solid var(--border);border-radius:8px;background:var(--surface);padding:14px;color:var(--text)}
+    .wa-card h1,.wa-card h2{margin:0 0 8px}
+    .wa-form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+    .wa-form .wide{grid-column:1/-1}
+    .wa-switch{display:flex;align-items:center;gap:8px;margin:6px 0}
+    .wa-events{width:100%;border-collapse:collapse}
+    .wa-events th,.wa-events td{border:1px solid var(--border);padding:8px;text-align:left;vertical-align:top}
+    .wa-events th{background:var(--surface-soft);font-size:.82rem;text-transform:uppercase}
+    .wa-status{min-height:20px;font-weight:750;color:var(--muted)}
+    .wa-status.ok{color:var(--success,#15803d)}.wa-status.err{color:var(--danger,#dc2626)}
+    @media(max-width:860px){.wa-grid,.wa-form{grid-template-columns:1fr}}
+  </style>
+</head>
+<body class="empresa-subpage">
+  <main class="wa-page">
+    <section class="wa-card">
+      <h1>WhatsApp para notificaciones del sistema</h1>
+      <p class="form-help">Canal interno para avisos automáticos: licencias, registros, alertas y agentes. No modifica los botones públicos de WhatsApp usados por clientes.</p>
+      <p id="status" class="wa-status"></p>
+    </section>
+
+    <div class="wa-grid">
+      <section class="wa-card">
+        <h2>API</h2>
+        <div class="wa-form">
+          <label class="wa-switch wide"><input id="enabled" type="checkbox"> Servicio WhatsApp activo para todo el sistema</label>
+          <label class="wa-switch wide"><input id="testMode" type="checkbox"> Modo prueba: no enviar al proveedor</label>
+          <label><span class="form-label">Proveedor</span><select id="provider" class="form-input"><option value="meta_cloud">Meta Cloud API</option></select></label>
+          <label><span class="form-label">Versión API</span><input id="apiVersion" class="form-input" placeholder="v20.0"></label>
+          <label class="wide"><span class="form-label">Phone Number ID</span><input id="phoneNumberId" class="form-input" autocomplete="off"></label>
+          <label class="wide"><span class="form-label">Access token</span><input id="accessToken" class="form-input" type="password" autocomplete="new-password" placeholder="Dejar vacío para conservar el actual"></label>
+          <div class="wide"><button id="saveBtn" class="btn primary" type="button">Guardar configuración</button></div>
+        </div>
+      </section>
+
+      <section class="wa-card">
+        <h2>Prueba</h2>
+        <label class="form-label" for="testPhone">WhatsApp destino</label>
+        <input id="testPhone" class="form-input" placeholder="3001234567 o 573001234567">
+        <label class="form-label" for="testMessage">Mensaje</label>
+        <textarea id="testMessage" class="form-textarea" rows="5">Prueba de WhatsApp desde Powerful Control System.</textarea>
+        <div style="margin-top:10px"><button id="testBtn" class="btn secondary" type="button">Enviar prueba</button></div>
+      </section>
+    </div>
+
+    <section class="wa-card">
+      <h2>Eventos configurables</h2>
+      <table class="wa-events">
+        <thead><tr><th>Evento</th><th>Correo</th><th>WhatsApp</th></tr></thead>
+        <tbody id="eventsBody"></tbody>
+      </table>
+    </section>
+  </main>
+  <script>
+    (function(){
+      var state = { events: [] };
+      function byId(id){ return document.getElementById(id); }
+      function esc(v){ return String(v == null ? '' : v).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];}); }
+      function status(msg,type){ var el=byId('status'); el.textContent=msg||''; el.className='wa-status '+(type||''); }
+      function ensure(res){ if(res.ok) return res; return res.text().then(function(t){ throw new Error(t||('HTTP '+res.status)); }); }
+      function render(data){
+        state.events = Array.isArray(data.events) ? data.events : [];
+        byId('enabled').checked = !!data.enabled;
+        byId('testMode').checked = !!data.test_mode;
+        byId('provider').value = data.provider || 'meta_cloud';
+        byId('apiVersion').value = data.api_version || 'v20.0';
+        byId('phoneNumberId').value = data.phone_number_id || '';
+        byId('accessToken').placeholder = data.access_token_configured ? 'Token configurado. Dejar vacío para conservarlo.' : 'Pega el token de Meta Cloud API';
+        byId('eventsBody').innerHTML = state.events.map(function(ev,i){
+          return '<tr data-index="'+i+'"><td><strong>'+esc(ev.nombre||ev.key)+'</strong><br><span class="form-help">'+esc(ev.descripcion||'')+'</span></td>'+
+            '<td><label class="wa-switch"><input data-field="email_enabled" type="checkbox" '+(ev.email_enabled?'checked':'')+'> Enviar email</label></td>'+
+            '<td><label class="wa-switch"><input data-field="whatsapp_enabled" type="checkbox" '+(ev.whatsapp_enabled?'checked':'')+'> Enviar WhatsApp</label></td></tr>';
+        }).join('');
+      }
+      async function load(){
+        status('Cargando configuración...');
+        var res = await fetch('/super/api/config/whatsapp_notificaciones',{credentials:'same-origin'});
+        render(await (await ensure(res)).json());
+        status('Configuración lista.','ok');
+      }
+      function collect(){
+        Array.prototype.forEach.call(document.querySelectorAll('#eventsBody tr'), function(row){
+          var i = Number(row.getAttribute('data-index'));
+          if (!state.events[i]) return;
+          Array.prototype.forEach.call(row.querySelectorAll('input[data-field]'), function(input){
+            state.events[i][input.getAttribute('data-field')] = !!input.checked;
+          });
+        });
+        return {
+          enabled: byId('enabled').checked,
+          test_mode: byId('testMode').checked,
+          provider: byId('provider').value,
+          api_version: byId('apiVersion').value,
+          phone_number_id: byId('phoneNumberId').value,
+          access_token: byId('accessToken').value,
+          events: state.events
+        };
+      }
+      byId('saveBtn').addEventListener('click', async function(){
+        try{
+          status('Guardando...');
+          var res = await fetch('/super/api/config/whatsapp_notificaciones',{method:'PUT',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify(collect())});
+          render(await (await ensure(res)).json());
+          byId('accessToken').value='';
+          status('Configuración guardada.','ok');
+        }catch(err){ status(err.message||String(err),'err'); }
+      });
+      byId('testBtn').addEventListener('click', async function(){
+        try{
+          status('Enviando prueba...');
+          var res = await fetch('/super/api/config/whatsapp_notificaciones?action=test',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({to:byId('testPhone').value,message:byId('testMessage').value})});
+          var out = await (await ensure(res)).json();
+          status('Prueba procesada: '+(out.status||'ok'),'ok');
+        }catch(err){ status(err.message||String(err),'err'); }
+      });
+      load().catch(function(err){ status(err.message||String(err),'err'); });
+    })();
+  </script>
+</body>
+</html>

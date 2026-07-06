@@ -2220,3 +2220,19 @@ Almacena los top scores globales de todos los juegos publicados en `/Juegos/*` y
 - **Columnas**: `id` (INTEGER/SERIAL), `juego` (TEXT), `nombre_jugador` (TEXT), `empresa_id` (TEXT, DEFAULT 'Publico'), `puntaje` (INTEGER), `nivel` (INTEGER), `fecha_creacion` (TEXT/TIMESTAMP), `fecha_actualizacion` (TEXT/TIMESTAMP), `usuario_creador` (TEXT), `estado` (TEXT), `observaciones` (TEXT).
 - **Único**: `id` autoincremental.
 - **Índice**: `idx_super_juegos_records_top` en (`juego`, `puntaje` DESC, `fecha_creacion` ASC).
+## 2026-07-05 - Preferencias y configuraciones de notificacion
+
+- No se agregan motores ni dependencias externas. PostgreSQL sigue siendo el unico runtime de datos.
+- Configuracion global en `configuraciones`:
+  - `whatsapp.notifications.enabled`
+  - `whatsapp.notifications.provider`
+  - `whatsapp.notifications.api_version`
+  - `whatsapp.notifications.phone_number_id`
+  - `whatsapp.notifications.access_token` cifrado cuando la llave de cifrado esta disponible
+  - `whatsapp.notifications.test_mode`
+  - `whatsapp.event.<evento>.email_enabled`
+  - `whatsapp.event.<evento>.whatsapp_enabled`
+  - `super.recordatorios_infraestructura.items_json`
+- Configuracion por empresa en `empresa_estacion_prefs`:
+  - `estacion_id=0`, `clave='licencia_notificaciones'`: dias de aviso, canales email/WhatsApp/buzon y mensaje de vencimiento de licencia.
+  - `estacion_id=0`, `clave='estaciones_config'`, campo JSON `cajero_auto_venta_directa`: entrada automatica a venta directa cuando el rol efectivo es cajero.

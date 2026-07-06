@@ -508,3 +508,24 @@ por permisos empresariales y siempre filtrado por `empresa_id`.
 | Portal publico | `web/index.html`, rutas de respaldo `web/Informacion_de_contacto.html`, `web/privacidad_y_datos.html`, `web/quienes_somos.html`, `web/hotel_motel_domotica.html`, `web/js/portal_visits.js`, assets del carrusel en `web/img/portal-systems/` y fotos realistas en `web/img/portal-systems/realistic/` | `/api/public/*` | portal, visitas agregadas | publico/super lectura | Modo claro/oscuro, movil, abrir `Mas > Contacto/Privacidad y datos/Quienes somos/Sistema Hotel Motel` dentro de `index.html`, verificar rutas de respaldo, contacto publico, mapa en super y que `Mas sistemas` muestre foto realista distinta por tarjeta |
 | Docker y VPS | `deploy/`, `web/super/docker_portabilidad.html`, `scripts/crear_backup_vps.ps1` | `/super/api/docker_portabilidad`, `/super/api/vps_snapshots`, worker `super.vps_snapshot_worker`; backup externo por PuTTY/SSH desde PowerShell | paquete portable sin secretos; `super_vps_snapshots`; configuraciones `super.vps_snapshot.*`; copias fisicas en `backup/vps_snapshots`; nube via `rclone` externo; backups completos versionados en `D:\Backup vps PCS` con dump PostgreSQL, volumenes Docker, imagenes PCS, inventario, SHA256 y restaurador | super_administrador / operacion local autorizada | Exportar paquete portable, crear snapshot manual, descargar `.tar.gz`, verificar que no incluya `.env.platform` por defecto, configurar ruta `rclone`, revisar historial, retencion local/remota, ejecutar `.\scripts\crear_backup_vps.ps1`, validar manifest/tar y probar restauracion en VPS desechable antes de produccion |
 | Apariencias / menu flotante | `web/menu.js`, paginas con selector de tema y campana global de notificaciones | `/api/user/configuracion`; consume `/api/empresa/buzon?action=resumen` y marca leido con `action=leer` por `empresa_id` | `usuario_configuracion.apariencia`; notificaciones de buzon por `empresa_id` | Sesion autenticada cuando guarda en servidor; lectura visual de notificaciones empresariales | Cambiar tema en escritorio y movil; validar iframes con `dark-corporate`, `dark-absolute`, `dark-obsidian` y `light`; verificar que el boton flotante muestre contador, que la campana sea el primer item del panel, que despliegue el resumen del buzon dentro del menu y que el clic navegue al enlace relacionado |
+## 2026-07-05 - WhatsApp interno, licencias y recordatorios
+
+- Super administrador / Mensajeria y alertas:
+  - UI: `web/super/configuracion/whatsapp_notificaciones.html`
+  - API: `GET|PUT|POST /super/api/config/whatsapp_notificaciones`
+  - Backend: `backend/handlers/whatsapp_notifications.go`
+  - Alcance: notificaciones internas del sistema por evento; no reemplaza los enlaces publicos de WhatsApp para clientes.
+- Super administrador / Vencimientos externos:
+  - UI: `web/super/recordatorios_infraestructura.html`
+  - API: `GET|PUT /super/api/recordatorios_infraestructura`
+  - Backend: `backend/handlers/super_recordatorios_infraestructura.go`
+- Administrar empresa / Licencia del sistema:
+  - UI: `web/administrar_empresa/licencia_sistema.html`
+  - Preferencia: `empresa_estacion_prefs.clave='licencia_notificaciones'`
+- Administrar empresa / Rol cajero:
+  - UI: `web/administrar_empresa/configuracion_rol_cajero.html`
+  - Shell: `web/js/administrar_empresa.js`
+  - Preferencia: `empresa_estacion_prefs.clave='estaciones_config'`, campo `cajero_auto_venta_directa`
+- Inventario y compras / Bodegas y traslados:
+  - Vista actual: `web/administrar_empresa/administrar_productos.html?view=bodegas`
+  - Compatibilidad: `web/administrar_empresa/productos/bodegas.html`

@@ -11618,3 +11618,9 @@ backend/handlers/user_config.go - Controlador que expone /api/user/configuracion
 	- agrega accion `Cupo de credito` y sombreado de titulos para temas claros del carrito.
 - `web/administrar_empresa.html` y `web/js/administrar_empresa.js`:
 	- renombran y reordenan el grupo de asistencia/horarios junto a usuarios y finanzas.
+2026-07-05 - Archivos agregados para notificaciones y compatibilidad
+- backend/handlers/whatsapp_notifications.go: configuracion global y envio de notificaciones internas por WhatsApp usando Meta Cloud API configurable desde super administrador.
+- backend/handlers/super_recordatorios_infraestructura.go: API super para guardar recordatorios de vencimiento de dominios, hosting, VPS, certificados y otros servicios externos.
+- web/super/configuracion/whatsapp_notificaciones.html: pantalla super para activar/desactivar WhatsApp interno, guardar credenciales, probar envio y controlar eventos.
+- web/super/recordatorios_infraestructura.html: pantalla super para administrar vencimientos externos de infraestructura.
+- web/administrar_empresa/productos/bodegas.html: redireccion de compatibilidad para enlaces antiguos de bodegas y traslados.

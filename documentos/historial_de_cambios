@@ -36215,3 +36215,18 @@ Archivos modificados:
 - web/administrar_empresa/corte_de_caja.html
 - web/administrar_empresa/ventas.html
 - web/estilos.css
+2026-07-05 19:23 - Notificaciones WhatsApp, licencias y configuracion inicial
+- Modulos afectados: super_administrador, licencias, administrar_empresa, inventario, configuracion_guiada.
+- Cambios:
+  - Nueva configuracion global `/super/configuracion/whatsapp_notificaciones.html` y API `/super/api/config/whatsapp_notificaciones` para notificaciones internas por WhatsApp.
+  - Los botones publicos de WhatsApp para clientes se mantienen como enlaces directos y no usan la API interna.
+  - Nueva seccion `/super/recordatorios_infraestructura.html` y API `/super/api/recordatorios_infraestructura` para dominios, hosting, VPS y certificados.
+  - `licencia_sistema.html` muestra dias restantes y guarda recordatorios por empresa en `empresa_estacion_prefs.clave='licencia_notificaciones'`.
+  - `configuracion_rol_cajero.html` guarda `cajero_auto_venta_directa` en `estaciones_config` y `administrar_empresa.js` lo usa para cargar venta directa a cajeros.
+  - `panel.html` ya no usa localStorage/sessionStorage como fuente de verdad para ocultar la configuracion guiada.
+  - Se agrego `web/administrar_empresa/productos/bodegas.html` como redireccion compatible hacia `administrar_productos.html?view=bodegas`.
+- Verificacion:
+  - `go test ./handlers -run "TestNoSuchTest" -count=1` y `go test ./db -run "TestNoSuchTest" -count=1` compilaron; Windows bloqueo la limpieza del binario temporal despues de compilar.
+  - `go test . -run "TestNoSuchTest" -count=1` en `backend` finalizo correctamente.
+  - Validacion de sintaxis JS con Node incluido por Codex para `administrar_empresa.js` y scripts embebidos modificados.
+  - Verificacion visual estatica local de WhatsApp notificaciones, recordatorios externos, licencia y rol cajero sin overflow horizontal.
