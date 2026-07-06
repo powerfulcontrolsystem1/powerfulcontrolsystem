@@ -36357,6 +36357,7 @@ Archivos modificados:
 - Frontend: nueva pagina `web/super/vps2.html` con tarjetas de conexion, CPU/carga/temperatura, RAM, disco, sistema, servicios, Docker y Nextcloud.
 - Operacion: la pagina permite acciones cerradas con confirmacion: actualizar estado, reiniciar Nextcloud, reiniciar VPS2 y apagar VPS2.
 - Seguridad: la credencial queda solo en `scripts/pcs_deployment.local.ps1` o entorno privado; el repo versionado solo guarda plantilla saneada.
+- Deploy: `sync_to_vps.ps1` excluye archivos volatiles de Nextcloud Sync, `Desktop.ini` y `backend/.gotmp` para evitar fallos de TAR durante `rs`.
 
 2026-07-06: VPS2 operacion y sincronizacion.
 - Scripts: se agrega `scripts/sync_to_vps2.ps1` para validar SSH, actualizar el repo remoto por Git, reiniciar Docker si hay compose, dejar el VPS2 en modo texto y asegurar contenedores Nextcloud con reinicio automatico.

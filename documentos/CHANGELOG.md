@@ -3162,6 +3162,7 @@
 - [Backend] Agrega `/super/api/vps2` protegido con auditoria super para consultar VPS2 por SSH usando configuracion privada `PcsVps2*`/`PCS_VPS2_*`, sin aceptar comandos libres ni exponer claves.
 - [Frontend] Nueva pagina `web/super/vps2.html` con estado, temperatura, procesador, memoria, disco, Docker, servicios y Nextcloud.
 - [Operacion] Permite acciones cerradas con confirmacion: reiniciar Nextcloud, reiniciar VPS2 y apagar VPS2.
+- [Deploy] `sync_to_vps.ps1` excluye archivos volatiles de Nextcloud Sync, `Desktop.ini` y `backend/.gotmp` para evitar fallos de TAR durante `rs`.
 
 ## [2026-07-06] VPS2 operacion y sincronizacion
 - [Scripts] Agrega `scripts/sync_to_vps2.ps1` para validar SSH, actualizar el repo remoto por Git, reiniciar Docker si hay compose, dejar el VPS2 en `multi-user.target` y asegurar Nextcloud con `restart unless-stopped`.
