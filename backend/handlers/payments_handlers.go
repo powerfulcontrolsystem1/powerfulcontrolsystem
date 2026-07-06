@@ -501,8 +501,7 @@ func LicenciasHandler(dbSuper *sql.DB) http.HandlerFunc {
 			}
 			// soporte para acción de activar/desactivar vía query param
 			if q.Get("action") == "activar" {
-				existing, err := dbpkg.GetLicenciaByID(dbSuper, id)
-				if err != nil {
+				if _, err := dbpkg.GetLicenciaByID(dbSuper, id); err != nil {
 					http.Error(w, "licencia no encontrada", http.StatusNotFound)
 					return
 				}
@@ -514,10 +513,6 @@ func LicenciasHandler(dbSuper *sql.DB) http.HandlerFunc {
 				act, err := strconv.Atoi(activoStr)
 				if err != nil || (act != 0 && act != 1) {
 					http.Error(w, "invalid activo value", http.StatusBadRequest)
-					return
-				}
-				if dbpkg.IsGlobalLicenciaCatalogItem(*existing) && act == 0 {
-					http.Error(w, "las licencias globales canonicas no se pueden ocultar desde la API", http.StatusConflict)
 					return
 				}
 				if err := dbpkg.SetLicenciaActivo(dbSuper, id, act); err != nil {

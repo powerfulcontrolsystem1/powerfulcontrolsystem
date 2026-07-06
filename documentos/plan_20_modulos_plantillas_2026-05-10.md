@@ -104,7 +104,7 @@ Si una licencia tiene `modulos_habilitados` vacio, no restringe modulos. Si una 
 
 ## Tipos de empresa y licencias
 
-El arranque del backend ejecuta `EnsureNuevasPlantillasTipoEmpresaYLicencias`, que verifica los 20 tipos de empresa en `tipos_de_empresas`, crea/actualiza sus preconfiguraciones iniciales y asegura las 7 licencias globales base:
+El arranque del backend ejecuta `EnsureNuevasPlantillasTipoEmpresaYLicencias`, que verifica los 20 tipos de empresa en `tipos_de_empresas`, crea/actualiza sus preconfiguraciones iniciales y asegura las 8 licencias globales base:
 
 - prueba 15 dias: 250 documentos;
 - 30 dias: 1000 documentos;

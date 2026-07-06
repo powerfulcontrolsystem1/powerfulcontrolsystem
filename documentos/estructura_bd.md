@@ -404,7 +404,8 @@ Actualizacion 2026-06-01 (renovaciones anticipadas de licencias)
   la pasarela reenvia el webhook.
 
 Actualizacion 2026-05-31 (catalogo global de licencias)
-- `pcs_superadministrador.licencias`: el catalogo base comercial queda normalizado en siete planes globales con `tipo_id=0` y `pais_codigo='GLOBAL'`: prueba gratis 15 dias, COP 60000, COP 110000, COP 200000, COP 600000 anual, COP 1100000 anual y COP 2200000 anual.
+- `pcs_superadministrador.licencias`: el catalogo base comercial queda normalizado en ocho planes globales con `tipo_id=0` y `pais_codigo='GLOBAL'`: prueba gratis 15 dias, prueba de 1 dia COP 1000, COP 60000, COP 110000, COP 200000, COP 600000 anual, COP 1100000 anual y COP 2200000 anual.
+- El campo `activo` gobierna la visibilidad global de cada plan en el checkout; el bootstrap conserva el valor existente para que un plan desactivado por super administrador no se reactive solo.
 - Las licencias heredadas sin empresa asignada, incluidos addons de catalogo, que no correspondan a esos codigos globales se eliminan del catalogo para no exponer ni conservar planes duplicados por tipo de empresa.
 - Las licencias ya asignadas a empresas no se eliminan; el historial y las renovaciones siguen usando `empresa_id`.
 - `licencias_activaciones_gratis` mantiene la regla de una sola prueba/gratis activa por empresa mediante el indice unico parcial por `empresa_id`.

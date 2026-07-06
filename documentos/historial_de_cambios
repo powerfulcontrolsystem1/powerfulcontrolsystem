@@ -36286,3 +36286,10 @@ Archivos modificados:
 - web/super/configuracion/whatsapp_notificaciones.html
 - web/super/recordatorios_infraestructura.html
 - web/super_administrador.html
+
+2026-07-05: Licencia global de 1 dia y visibilidad por plan
+- Modulos afectados: licencias, checkout de licencias, super administrador y plantillas de empresas.
+- Cambio funcional: se agrega la licencia global `1 dia de prueba` por COP 1000 con duracion de 1 dia y limites base de 250 documentos/ventas mensuales y 2 cajas simultaneas.
+- Backend: `backend/db/licencias_globales.go` amplia el catalogo canonico a 8 planes y conserva el campo `activo` existente en el bootstrap para que un plan desactivado por super administrador no se reactive automaticamente.
+- API/UX: `/super/api/licencias?action=activar` permite cambiar la visibilidad de planes canonicos; `web/super/licencias.html` muestra un check por licencia para activar/desactivar su disponibilidad global para empresas y checkout.
+- Pruebas/documentacion: se actualizan pruebas de catalogo global, plantillas verticales y contexto IA; se documenta el nuevo catalogo en contexto, flujos, mapa de modulos, estructura BD, ayuda y changelog.

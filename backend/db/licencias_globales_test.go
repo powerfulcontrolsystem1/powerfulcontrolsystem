@@ -4,16 +4,17 @@ import "testing"
 
 func TestDefaultGlobalLicenciaPlans(t *testing.T) {
 	plans := DefaultGlobalLicenciaPlans()
-	if len(plans) != 7 {
-		t.Fatalf("planes globales = %d, want 7", len(plans))
+	if len(plans) != 8 {
+		t.Fatalf("planes globales = %d, want 8", len(plans))
 	}
 
 	seenCodes := map[string]bool{}
-	expectedDocs := []int{250, 1000, 2000, 4000, 12000, 24000, 36000}
-	expectedCajas := []int{2, 2, 3, 4, 4, 5, 6}
-	expectedValues := []float64{0, 60000, 110000, 200000, 600000, 1100000, 2200000}
+	expectedDocs := []int{250, 250, 1000, 2000, 4000, 12000, 24000, 36000}
+	expectedCajas := []int{2, 2, 2, 3, 4, 4, 5, 6}
+	expectedValues := []float64{0, 1000, 60000, 110000, 200000, 600000, 1100000, 2200000}
 	expectedNames := []string{
 		"Prueba gratis 15 dias",
+		"1 dia de prueba",
 		"Plan mensual COP 60000",
 		"Plan mensual COP 110000",
 		"Plan mensual COP 200000",
@@ -48,7 +49,10 @@ func TestDefaultGlobalLicenciaPlans(t *testing.T) {
 	if plans[0].Valor != 0 {
 		t.Fatalf("valor prueba gratis = %.2f, want 0", plans[0].Valor)
 	}
-	for _, idx := range []int{4, 5, 6} {
+	if plans[1].DuracionDias != 1 || plans[1].Valor != 1000 {
+		t.Fatalf("prueba de 1 dia invalida: %+v", plans[1])
+	}
+	for _, idx := range []int{5, 6, 7} {
 		if plans[idx].DuracionDias != 365 {
 			t.Fatalf("duracion plan anual %d = %d, want 365", idx, plans[idx].DuracionDias)
 		}
@@ -59,7 +63,7 @@ func TestIsGlobalLicenciaCatalogItem(t *testing.T) {
 	item := Licencia{
 		TipoID:        0,
 		PaisCodigo:    "GLOBAL",
-		CodigoFuncion: LicenciaCodigoBasicoGlobal,
+		CodigoFuncion: LicenciaCodigoTrial1DiaGlobal,
 		Activo:        1,
 	}
 	if !IsGlobalLicenciaCatalogItem(item) {

@@ -15,7 +15,7 @@ func TestDefaultContextoIALogicaNegocioIncluyePlantillas2026(t *testing.T) {
 		"cooperativa/fondo de empleados",
 		"empresa_modulos_colombia",
 		"/api/public/plantillas_nuevas/catalogo",
-		"siete licencias globales",
+		"ocho licencias globales",
 		"COP 200000",
 		"dos compras adicionales",
 	}

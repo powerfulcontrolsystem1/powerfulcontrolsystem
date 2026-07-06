@@ -699,7 +699,7 @@
 
 2026-05-30: Licencias globales compartidas
 - Modulos afectados: `licencias`, `checkout_licencias`, `super_administrador`, `plantillas`.
-- Cambio funcional: el catalogo base queda normalizado en siete planes globales para todos los tipos de empresa: prueba gratis 15 dias, mensuales de 1000, 2000 y 4000 documentos, y anuales de 12000, 24000 y 36000 documentos.
+- Cambio funcional: el catalogo base queda normalizado en ocho planes globales para todos los tipos de empresa: prueba gratis 15 dias, prueba pagada de 1 dia por COP 1000, mensuales de 1000, 2000 y 4000 documentos, y anuales de 12000, 24000 y 36000 documentos.
 - Backend: `EnsureLicenciasSchema` asegura esos planes con `tipo_id=0` y `pais_codigo=GLOBAL`; los bootstraps de nuevos tipos y plantillas dejan de crear planes repetidos por tipo y ocultan licencias base heredadas no asignadas.
 - UX: `web/super/licencias.html` agrega una tarjeta de reglas comerciales donde se deja visible que la prueba de 15 dias solo se aplica una vez por empresa y permite configurar cuantas compras adelantadas de la misma licencia se permiten, por defecto 2.
 - Seguridad/datos: las licencias ya asignadas a empresas no se eliminan; solo se oculta el catalogo base legado. El bloqueo de prueba gratis por empresa sigue en `licencias_activaciones_gratis`.

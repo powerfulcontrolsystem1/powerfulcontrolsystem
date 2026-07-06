@@ -990,7 +990,7 @@
 
 2026-05-30 - Licencias globales compartidas
 - `backend/db/licencias_globales.go`:
-	- catalogo canonico de siete planes globales aplicables a todos los tipos de empresa y rutina idempotente para ocultar licencias base heredadas por tipo.
+	- catalogo canonico de ocho planes globales aplicables a todos los tipos de empresa, incluida la prueba de 1 dia COP 1000, y rutina idempotente para ocultar licencias base heredadas por tipo sin reactivar planes deshabilitados por super administrador.
 - `backend/db/licencias_globales_test.go`:
 	- prueba unitaria de cantidad, codigos, documentos, cajas y valor de los planes globales.
 - `backend/handlers/licencias_advance_limit_test.go`:

@@ -465,7 +465,8 @@
 - [Alcance] No cambia autenticacion, endpoints, sesiones ni manejo de credenciales.
 
 ## [2026-06-09] Licencias globales actualizadas y limite de renovacion adelantada
-- [Backend] El catalogo canonico queda en 7 planes globales: prueba gratis, tres mensuales y tres anuales; COP 110000 conserva 2000 documentos, COP 200000 conserva 4000 documentos y los anuales cubren 12000, 24000 y 36000 documentos.
+- [Backend] El catalogo canonico queda en 8 planes globales: prueba gratis, prueba pagada de 1 dia COP 1000, tres mensuales y tres anuales; COP 110000 conserva 2000 documentos, COP 200000 conserva 4000 documentos y los anuales cubren 12000, 24000 y 36000 documentos.
+- [Backend] El catalogo canonico queda ampliado a 8 planes globales al agregar `1 dia de prueba` por COP 1000 y duracion de 1 dia; Super administrador puede activar o desactivar cada plan global sin que el bootstrap reactive los ocultos.
 - [Pagos] Checkout, Wompi, Epayco y activacion sin pago bloquean compras adelantadas de la misma licencia cuando la empresa ya acumulo la licencia activa mas el maximo configurado.
 - [Super] `web/super/licencias.html` agrega configuracion global de compras adelantadas de la misma licencia, por defecto 2, usando `/super/api/licencias/configuracion`.
 - [Tests] Se actualizan pruebas del catalogo y se agrega cobertura del calculo de ventanas adelantadas.
@@ -1006,7 +1007,7 @@
 - [Alcance] `Reportes globales` se conserva para abrirse desde `seleccionar_empresa.html`, con el mismo alcance de empresas visibles.
 
 ## [2026-05-31] Licencias fijas globales
-- [Backend] `backend/db/licencias_globales.go` asegura el catalogo global compartido; desde 2026-06-09 son siete planes canonicos con prueba, mensuales y anuales.
+- [Backend] `backend/db/licencias_globales.go` asegura el catalogo global compartido; desde 2026-07-05 son ocho planes canonicos con prueba gratis, prueba pagada de 1 dia, mensuales y anuales.
 - [Datos] La limpieza de catalogo elimina licencias sobrantes sin empresa asignada, incluidos addons antiguos y duplicados de catalogo; las licencias asignadas a empresas se conservan para historial y pagos.
 - [Super] `web/super/licencias.html` muestra el catalogo como fijo y retira acciones de agregar, eliminar u ocultar licencias.
 - [QA] `go test ./db -run "GlobalLicencia|LicenciaCatalog" -count=1` y `go test ./handlers -run TestLicencia -count=1`.
@@ -2473,7 +2474,7 @@
 
 ## [2026-05-11] Aseguramiento comercial de plantillas
 - [Backend] `POST /super/api/plantillas_nuevas/catalogoaction=asegurar_20_licencias` llama `EnsureNuevasPlantillasProduccionMasivaLicencias`; `asegurar_v1_licencias` queda como alias compatible.
-- [Producto] La accion asegura tipos de empresa, preconfiguraciones y planes recomendados para los 20 plantillas; desde 2026-06-09 usa el catalogo global de siete planes.
+- [Producto] La accion asegura tipos de empresa, preconfiguraciones y planes recomendados para los 20 plantillas; desde 2026-07-05 usa el catalogo global de ocho planes.
 - [Frontend] `web/super/plantillas_produccion_masiva.html` agrega `Asegurar 20` y refresca el semaforo despues de ejecutar.
 - [Alcance] No hay tablas, rutas nuevas, permisos nuevos ni dependencias.
 
@@ -3033,7 +3034,7 @@
 - [Super administrador] `Asesores de ventas` pasa a ser el primer boton del grupo `Comercial y licencias`.
 - [Navegacion] Se enlazan las paginas super que no tenian boton directo: reportes globales, auditoria global, metricas de trafico, preconfiguracion, contrato, administradores Frecuencia FE, chat IA global, voz IA, servidores, soporte remoto y configuracion avanzada.
 - [QA] Validado cruce menu/paginas: 52 paginas HTML en `web/super`, 52 enlaces super en el menu y ningun enlace fuera de paginas permitidas.
-- 2026-05-30: `Licencias globales compartidas` reduce el catalogo base a planes globales para todos los tipos de empresa; desde 2026-06-09 el catalogo canonico vigente tiene siete planes, elimina planes heredados repetidos sin empresa asignada, mantiene la prueba gratis de 15 dias una sola vez por empresa y agrega una tarjeta visible de reglas en Super administrador > Licencias.
+- 2026-05-30: `Licencias globales compartidas` reduce el catalogo base a planes globales para todos los tipos de empresa; desde 2026-07-05 el catalogo canonico vigente tiene ocho planes, elimina planes heredados repetidos sin empresa asignada, mantiene la prueba gratis de 15 dias una sola vez por empresa y agrega una tarjeta visible de reglas en Super administrador > Licencias.
 - 2026-05-30: `Configuracion general PostgreSQL` corrige el esquema y consultas de `empresa_configuracion_general` para usar `BIGSERIAL`, fecha compatible y placeholders traducidos, evitando 500 al entrar al panel de empresas nuevas.
 - 2026-05-30: `Checkout Wompi de licencias` ajusta la consulta publica de terminos del comercio para no enviar cabecera `Authorization` al endpoint merchants de Wompi y desbloquear la prueba visual de planes comerciales.
 ## [2026-05-31] Encabezado visual compacto en logins

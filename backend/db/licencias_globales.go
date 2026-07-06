@@ -8,6 +8,7 @@ import (
 
 const (
 	LicenciaCodigoTrial15Global     = "PLAN_GLOBAL_TRIAL_15"
+	LicenciaCodigoTrial1DiaGlobal   = "PLAN_GLOBAL_TRIAL_1D_1000"
 	LicenciaCodigoBasicoGlobal      = "PLAN_GLOBAL_BASICO_1000"
 	LicenciaCodigoProfesionalGlobal = "PLAN_GLOBAL_PROFESIONAL_2000"
 	// Codigo historico conservado para no romper renovaciones de clientes existentes.
@@ -35,6 +36,15 @@ func DefaultGlobalLicenciaPlans() []GlobalLicenciaPlan {
 			Descripcion:            "Licencia gratuita de prueba para cualquier tipo de empresa. Solo puede activarse una vez por empresa.",
 			Valor:                  0,
 			DuracionDias:           15,
+			MaxDocumentosMensuales: 250,
+			MaxCajasSimultaneas:    2,
+		},
+		{
+			Codigo:                 LicenciaCodigoTrial1DiaGlobal,
+			Nombre:                 "1 dia de prueba",
+			Descripcion:            "Licencia de prueba de 1 dia para validar pagos, activacion y operacion real antes de contratar un plan mensual o anual.",
+			Valor:                  1000,
+			DuracionDias:           1,
 			MaxDocumentosMensuales: 250,
 			MaxCajasSimultaneas:    2,
 		},
@@ -218,8 +228,8 @@ func upsertGlobalLicenciaPlan(dbConn *sql.DB, usuario string, plan GlobalLicenci
 				super_rol_habilitado = 0,
 				fecha_inicio = '',
 				fecha_fin = '',
-				activo = 1,
-				estado = 'activo',
+				activo = COALESCE(activo, 1),
+				estado = CASE WHEN COALESCE(activo, 1) = 1 THEN 'activo' ELSE 'inactivo' END,
 				usuario_creador = COALESCE(NULLIF(TRIM(usuario_creador), ''), ?),
 				observaciones = 'Plan global compartido por todos los tipos de empresa.',
 				fecha_actualizacion = `+nowExpr+`

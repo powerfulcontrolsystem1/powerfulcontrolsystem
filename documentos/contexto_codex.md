@@ -685,11 +685,14 @@ botones, desde handlers estaticos del backend.
   `/super/api/licencias/codigos_descuento`, `/licencias/activar_sin_pago` y
   `/api/empresa/licencia_sistema/pdf`.
   El catalogo base vigente es global para todos
-  los tipos de empresa (`tipo_id=0`, `pais_codigo=GLOBAL`) con siete planes:
-  prueba gratis 15 dias, mensuales COP 60000, COP 110000 y COP 200000, y
-  anuales COP 600000, COP 1100000 y COP 2200000. La
+  los tipos de empresa (`tipo_id=0`, `pais_codigo=GLOBAL`) con ocho planes:
+  prueba gratis 15 dias, prueba pagada de 1 dia por COP 1000, mensuales
+  COP 60000, COP 110000 y COP 200000, y anuales COP 600000, COP 1100000 y
+  COP 2200000. La
   prueba gratis solo se puede activar una vez por empresa, incluso cuando la
-  prueba anterior ya vencio, quedo inactiva o viene de datos antiguos; las
+  prueba anterior ya vencio, quedo inactiva o viene de datos antiguos; cada
+  plan global puede ocultarse o mostrarse desde Super administrador > Licencias
+  sin que el bootstrap vuelva a activarlo automaticamente; las
   licencias base antiguas por tipo y addons de catalogo sin empresa asignada se
   eliminan del catalogo comercial. La renovacion adelantada de la misma licencia
   se limita con `licencias.max_compras_adelantadas_misma_licencia`, por defecto

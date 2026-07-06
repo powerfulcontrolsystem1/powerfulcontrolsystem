@@ -626,10 +626,13 @@ afecte dinero, documentos, licencias o seguridad.
 ## Licencia gratis 15 dias
 
 1. El catalogo base de licencias es global para todos los tipos de empresa:
-   prueba gratis 15 dias, planes mensuales COP 60000, COP 110000 y COP 200000,
-   y planes anuales COP 600000, COP 1100000 y COP 2200000.
+   prueba gratis 15 dias, prueba pagada de 1 dia por COP 1000, planes mensuales
+   COP 60000, COP 110000 y COP 200000, y planes anuales COP 600000,
+   COP 1100000 y COP 2200000.
    Las licencias base antiguas por tipo y addons de catalogo se eliminan del
    catalogo sin empresa asignada.
+   Cada licencia global tiene un check de visibilidad en Super administrador >
+   Licencias; al desactivarse deja de aparecer en el checkout para empresas.
    El super administrador configura cuantas compras adelantadas de la misma
    licencia se permiten; el valor por defecto es 2.
 2. Desde el checkout de licencia se obtiene resumen publico.
