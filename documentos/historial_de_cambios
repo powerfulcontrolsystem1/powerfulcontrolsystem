@@ -36363,3 +36363,22 @@ Archivos modificados:
 - Documentacion: se agrega `documentos/vps2_operacion.md` y se amplian `documentos/comandos_codex.md` y `scripts/pcs_deployment.local.ps1.example` con configuracion privada `PcsVps2*` sin claves versionadas.
 - Operacion: se verifico SSH y VNC en VPS2, se aplico `multi-user.target` y se detectaron `nextcloud-app`, `nextcloud-redis` y `nextcloud-db` activos con `restart unless-stopped`.
 - Seguridad: las claves suministradas no se escriben en documentacion ni archivos versionados; el script puede leerlas desde configuracion local ignorada o variables de entorno.
+
+2026-07-06: rs: actualizar repositorio y sincronizar VPS
+PushStatus: OK
+Archivos modificados:
+- .gitignore
+- CHANGELOG.md
+- backend/handlers/super_vps2.go
+- backend/main.go
+- backend/utils/utils.go
+- documentos/CHANGELOG.md
+- documentos/api/openapi.generated.yaml
+- documentos/comandos_codex.md
+- documentos/descripcion_de_archivos
+- documentos/historial_de_cambios
+- documentos/vps2_operacion.md
+- scripts/pcs_deployment.local.ps1.example
+- scripts/sync_to_vps2.ps1
+- web/super/vps2.html
+- web/super_administrador.html
