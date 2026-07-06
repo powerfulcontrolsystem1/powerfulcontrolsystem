@@ -291,7 +291,7 @@
 
 - 2026-05-19: `Corte de caja` unifica el color de los botones de `Lectura rapida` para que se vean mas claros que el panel y mantengan estados visuales consistentes.
 
-- 2026-05-19: `Configuracion de empresa` agrega control para activar/desactivar cajas simultaneas y limite interno por empresa; la apertura manual/automatica respeta configuracion y licencia, y `Ver reporte de mi turno` conserva caja/turno/cierre para reportes independientes por caja.
+- 2026-07-05: las licencias dejan de limitar cajas simultaneas; solo limitan documentos/ventas emitidas. `Configuracion de empresa` conserva el control para activar/desactivar varias cajas y un limite interno opcional por empresa.
 
 - 2026-05-19: `Impresoras` deja `POS_80MM` como impresora predeterminada global por empresa activa, asignada a caja, reporte de turno, corte de caja, general y cajon monedero; las empresas nuevas intentan crear este default al registrarse.
 

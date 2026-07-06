@@ -1750,7 +1750,7 @@
 - `backend/db/licencias_gratis.go`:
 	- agrega `asesor_id` a `licencias_activaciones_gratis`, normaliza duplicados activos historicos y crea el indice unico activo por `empresa_id`.
 - `backend/db/db.go`:
-	- conserva `max_documentos_mensuales` y `max_cajas_simultaneas` al copiar una licencia catalogo hacia la licencia asignada a empresa.
+	- conserva `max_documentos_mensuales` al copiar una licencia catalogo hacia la licencia asignada a empresa; `max_cajas_simultaneas` queda historico en 0 porque las licencias no limitan cajas.
 - `backend/handlers/payments_handlers.go`:
 	- valida codigo de asesor en prueba de 15 dias y activacion sin pago, y registra trazabilidad comercial.
 - `web/pagar_licencia.html`:

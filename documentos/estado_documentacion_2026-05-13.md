@@ -32,10 +32,10 @@ Este documento consolida el estado actual del proyecto despues de las actualizac
 
 ## Licencias y cajas simultaneas
 
-- Cada licencia define `max_cajas_simultaneas`.
-- Valor por defecto: 2 cajas abiertas simultaneas por empresa.
-- Licencias de 4000 documentos: 4 cajas abiertas simultaneas.
-- Abrir o reabrir caja valida el cupo contra la licencia activa.
+- Actualizacion 2026-07-05: las licencias no limitan cajas simultaneas.
+- Las licencias solo limitan documentos/ventas emitidas.
+- Las cajas simultaneas se controlan desde configuracion empresarial: desactivar varias cajas permite solo una; limite interno 0 significa sin limite interno.
+- Abrir o reabrir caja valida la configuracion empresarial de cajas, no la licencia activa.
 - Cada pago de carrito debe asociarse a una caja abierta para mantener cierres, arqueos y efectivo separados por `cierre_caja_id`.
 
 ## Finanzas, ventas y documentos

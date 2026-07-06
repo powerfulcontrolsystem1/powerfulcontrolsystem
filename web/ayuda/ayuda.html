@@ -380,7 +380,7 @@
             <li>Usa <strong>Panel</strong> para ver estado general, metricas, empresas y alertas.</li>
             <li>Usa <strong>Ayuda super administrador</strong> para abrir esta guia privada dentro del panel; no se muestra al rol <code>control_super_administrador</code> ni a administradores de empresa.</li>
             <li>Usa <strong>Tipos de empresas</strong> y <strong>Preconfiguracion de tipos</strong> para preparar empresas nuevas con estaciones, productos, usuarios guia y reglas por tipo.</li>
-            <li>Usa <strong>Licencias</strong> para crear planes, pruebas de 15 dias, valores por pais, descuentos, vigencias, documentos mensuales y maximo de cajas simultaneas.</li>
+            <li>Usa <strong>Licencias</strong> para administrar planes, pruebas, valores, descuentos, vigencias, visibilidad y limite de documentos/ventas mensuales. Las licencias no limitan cajas simultaneas.</li>
             <li>Usa <strong>Correos masivos</strong> para comunicar politicas, mantenimientos, actualizaciones o avisos importantes a administradores y usuarios.</li>
             <li>Usa <strong>Configuración avanzada</strong> para Epayco, Gmail, OnlyOffice, RustDesk, voz IA, seguridad, base de datos y costos.</li>
             <li>Usa <strong>Contexto IA negocio</strong> para editar el documento que la IA debe tomar como marco permanente de negocio.</li>
@@ -523,7 +523,7 @@
             </article>
             <article class="help-mini-card">
               <h3>Cajas simultaneas</h3>
-              <p>Cada licencia define cuantas cajas puede abrir una empresa al mismo tiempo. La prueba y el plan COP 60000 usan 2 cajas; el plan COP 110000 usa 3 y el plan COP 200000 usa 4. Los planes anuales escalan cajas segun su cupo documental. Cada pago debe seleccionar una caja abierta.</p>
+              <p>Las cajas simultaneas se controlan por configuracion de la empresa, no por licencia. Una empresa puede operar varias cajas; la licencia solo limita documentos/ventas emitidas. Cada pago debe seleccionar una caja abierta.</p>
             </article>
             <article class="help-mini-card">
               <h3>Sensores y tarifas por minutos</h3>
@@ -800,7 +800,7 @@
 
         <section id="estado-operativo" class="card empresa-section help-section" data-help="estado operativo modulos terminados errores estaciones carrito tarjetas dolar cop vps calidad">
           <h2>Estado operativo de modulos</h2>
-          <p class="form-help">Actualizacion 2026-05-13: la plataforma tiene los modulos principales implementados u operativos, con roles finos, operacion conectada obligatoria, cajas simultaneas por licencia, tickets propios, documentos locales, backups locales y comunicaciones globales. No se debe declarar cero errores absoluto sin pruebas integrales por rol, hardware real y proveedores externos.</p>
+          <p class="form-help">Actualizacion 2026-07-05: la plataforma tiene los modulos principales implementados u operativos, con roles finos, operacion conectada obligatoria, cajas simultaneas por configuracion empresarial, licencias limitadas por documentos/ventas, tickets propios, documentos locales, backups locales y comunicaciones globales. No se debe declarar cero errores absoluto sin pruebas integrales por rol, hardware real y proveedores externos.</p>
           <div class="help-grid">
             <article class="help-mini-card">
               <h3>Estaciones y carrito</h3>
@@ -849,7 +849,7 @@
             </article>
             <article class="help-mini-card">
               <h3>No permite abrir otra caja</h3>
-              <p>La licencia activa llego al maximo de cajas simultaneas. Cierra una caja abierta o ajusta el cupo desde Super administrador &gt; Licencias.</p>
+              <p>Revisa Configuracion de empresa &gt; Caja: si varias cajas estan desactivadas solo se permite una, y si existe limite interno de cajas debes cerrarla o aumentar ese valor. La licencia no limita cajas.</p>
             </article>
             <article class="help-mini-card">
               <h3>La voz de IA es lenta</h3>

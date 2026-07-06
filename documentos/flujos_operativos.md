@@ -633,6 +633,9 @@ afecte dinero, documentos, licencias o seguridad.
    catalogo sin empresa asignada.
    Cada licencia global tiene un check de visibilidad en Super administrador >
    Licencias; al desactivarse deja de aparecer en el checkout para empresas.
+   La licencia limita documentos/ventas emitidas, no numero de cajas. Una venta,
+   factura electronica u otro documento electronico cuenta como un documento; si
+   la venta ya genero factura electronica no se duplica el consumo.
    El super administrador configura cuantas compras adelantadas de la misma
    licencia se permiten; el valor por defecto es 2.
 2. Desde el checkout de licencia se obtiene resumen publico.

@@ -36317,3 +36317,11 @@ Archivos modificados:
 - documentos/plan_20_modulos_plantillas_2026-05-10.md
 - web/ayuda/ayuda.html
 - web/super/licencias.html
+
+2026-07-05: Licencias limitadas por documentos, no por cajas
+- Modulos afectados: licencias, finanzas/corte de caja, carrito, configuracion empresarial y documentacion operativa.
+- Backend: `backend/db/db.go` normaliza `licencias.max_cajas_simultaneas` a 0 y mantiene el campo solo por compatibilidad historica; los planes globales ya no definen cupo de cajas.
+- Finanzas: `backend/handlers/finanzas.go` deja de consultar la licencia para abrir o reabrir cajas. Solo respeta `cajas_simultaneas_habilitadas` y `max_cajas_simultaneas_empresa`; valor 0 significa sin limite interno.
+- UX: `web/super/licencias.html` retira el campo de cajas simultaneas de las licencias y muestra que las cajas no tienen limite por licencia. La configuracion de empresa aclara que las licencias solo limitan documentos/ventas.
+- Regla comercial: una venta, una factura electronica u otro documento electronico emitido cuenta como un documento; si una venta ya genero factura electronica no se duplica el consumo.
+- Documentacion: se actualizan contexto, flujos, mapa de modulos, decisiones tecnicas, estructura BD, matriz de roles, ayuda, README, descripcion del proyecto, descripcion de modulos y changelog.

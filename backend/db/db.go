@@ -262,7 +262,7 @@ func EnsureLicenciasSchema(dbConn *sql.DB) error {
 			valor DOUBLE PRECISION DEFAULT 0,
 			duracion_dias INTEGER DEFAULT 0,
 			max_documentos_mensuales INTEGER DEFAULT 0,
-			max_cajas_simultaneas INTEGER DEFAULT 2,
+			max_cajas_simultaneas INTEGER DEFAULT 0,
 			modulos_habilitados TEXT,
 			es_adicional INTEGER DEFAULT 0,
 			codigo_funcion TEXT,
@@ -284,7 +284,7 @@ func EnsureLicenciasSchema(dbConn *sql.DB) error {
 		`ALTER TABLE licencias ADD COLUMN IF NOT EXISTS valor DOUBLE PRECISION DEFAULT 0`,
 		`ALTER TABLE licencias ADD COLUMN IF NOT EXISTS duracion_dias INTEGER DEFAULT 0`,
 		`ALTER TABLE licencias ADD COLUMN IF NOT EXISTS max_documentos_mensuales INTEGER DEFAULT 0`,
-		`ALTER TABLE licencias ADD COLUMN IF NOT EXISTS max_cajas_simultaneas INTEGER DEFAULT 2`,
+		`ALTER TABLE licencias ADD COLUMN IF NOT EXISTS max_cajas_simultaneas INTEGER DEFAULT 0`,
 		`ALTER TABLE licencias ADD COLUMN IF NOT EXISTS modulos_habilitados TEXT`,
 		`ALTER TABLE licencias ADD COLUMN IF NOT EXISTS es_adicional INTEGER DEFAULT 0`,
 		`ALTER TABLE licencias ADD COLUMN IF NOT EXISTS codigo_funcion TEXT`,
@@ -329,13 +329,8 @@ func EnsureLicenciasSchema(dbConn *sql.DB) error {
 			OR LOWER(COALESCE(nombre, '')) LIKE '%trial%'
 			OR LOWER(COALESCE(descripcion, '')) LIKE '%trial%'
 		  )`)
-	_, _ = dbConn.Exec(`UPDATE licencias
-		SET max_cajas_simultaneas = 2
-		WHERE COALESCE(max_cajas_simultaneas, 0) <= 0`)
-	_, _ = dbConn.Exec(`UPDATE licencias
-		SET max_cajas_simultaneas = 4
-		WHERE COALESCE(max_documentos_mensuales, 0) = 4000
-		  AND COALESCE(max_cajas_simultaneas, 0) <> 4`)
+	// Las licencias no limitan cajas. El cupo comercial se gobierna solo por documentos/ventas.
+	_, _ = dbConn.Exec(`UPDATE licencias SET max_cajas_simultaneas = 0 WHERE COALESCE(max_cajas_simultaneas, 0) <> 0`)
 	if _, err := ensureLicenciasCatalogoGlobalNoSchema(dbConn, "sistema.licencias_globales"); err != nil {
 		return err
 	}
@@ -528,21 +523,12 @@ type Licencia struct {
 	Activo                 int     `json:"activo"`
 }
 
-func DefaultLicenciaMaxCajasSimultaneas(maxDocumentosMensuales int) int {
-	if maxDocumentosMensuales == 4000 {
-		return 4
-	}
-	return 2
+func DefaultLicenciaMaxCajasSimultaneas(_ int) int {
+	return 0
 }
 
-func ResolveLicenciaMaxCajasSimultaneas(lic *Licencia) int {
-	if lic == nil {
-		return 2
-	}
-	if lic.MaxCajasSimultaneas > 0 {
-		return lic.MaxCajasSimultaneas
-	}
-	return DefaultLicenciaMaxCajasSimultaneas(lic.MaxDocumentosMensuales)
+func ResolveLicenciaMaxCajasSimultaneas(_ *Licencia) int {
+	return 0
 }
 
 // CreateLicencia inserta una nueva licencia en dbSuper
@@ -562,9 +548,7 @@ func CreateLicenciaAdvancedWithLimitsAndCajas(dbConn *sql.DB, tipoID int64, pais
 	if maxDocumentosMensuales < 0 {
 		maxDocumentosMensuales = 0
 	}
-	if maxCajasSimultaneas <= 0 {
-		maxCajasSimultaneas = DefaultLicenciaMaxCajasSimultaneas(maxDocumentosMensuales)
-	}
+	maxCajasSimultaneas = 0
 	nowExpr := sqlNowExpr()
 	query := "INSERT INTO licencias (tipo_id, pais_codigo, nombre, descripcion, valor, duracion_dias, max_documentos_mensuales, max_cajas_simultaneas, modulos_habilitados, es_adicional, codigo_funcion, super_rol_habilitado, fecha_creacion, fecha_actualizacion, activo, estado) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, " + nowExpr + ", " + nowExpr + ", 1, 'activo')"
 	id, err := insertSQLCompat(dbConn, query, tipoID, strings.TrimSpace(paisCodigo), nombre, descripcion, valor, duracionDias, maxDocumentosMensuales, maxCajasSimultaneas, strings.TrimSpace(modulosHabilitados), esAdicional, strings.TrimSpace(codigoFuncion), superRolHabilitado)
@@ -611,7 +595,7 @@ func GetLicenciasFilteredByPais(dbConn *sql.DB, soloActivas bool, usuarioCreador
 
 // GetLicenciasFiltered obtiene licencias con filtros opcionales.
 func GetLicenciasFiltered(dbConn *sql.DB, soloActivas bool, usuarioCreador string, conEmpresa bool) ([]Licencia, error) {
-	q := `SELECT l.id, l.empresa_id, l.tipo_id, t.nombre, COALESCE(l.pais_codigo,'CO'), l.nombre, l.descripcion, l.valor, l.duracion_dias, COALESCE(l.max_documentos_mensuales, 0), COALESCE(NULLIF(l.max_cajas_simultaneas, 0), CASE WHEN COALESCE(l.max_documentos_mensuales, 0) = 4000 THEN 4 ELSE 2 END), COALESCE(l.modulos_habilitados, ''), COALESCE(l.es_adicional, 0), COALESCE(l.codigo_funcion, ''), COALESCE(l.super_rol_habilitado, 0), COALESCE(l.fecha_inicio, ''), COALESCE(l.fecha_fin, ''), l.fecha_creacion, l.activo`
+	q := `SELECT l.id, l.empresa_id, l.tipo_id, t.nombre, COALESCE(l.pais_codigo,'CO'), l.nombre, l.descripcion, l.valor, l.duracion_dias, COALESCE(l.max_documentos_mensuales, 0), 0, COALESCE(l.modulos_habilitados, ''), COALESCE(l.es_adicional, 0), COALESCE(l.codigo_funcion, ''), COALESCE(l.super_rol_habilitado, 0), COALESCE(l.fecha_inicio, ''), COALESCE(l.fecha_fin, ''), l.fecha_creacion, l.activo`
 	baseFrom := `
 		FROM licencias l LEFT JOIN tipos_de_empresas t ON l.tipo_id = t.id`
 	q += baseFrom
@@ -723,7 +707,7 @@ func GetLicenciasFiltered(dbConn *sql.DB, soloActivas bool, usuarioCreador strin
 
 // GetLicenciaByID devuelve una licencia por id
 func GetLicenciaByID(dbConn *sql.DB, id int64) (*Licencia, error) {
-	q := `SELECT id, empresa_id, tipo_id, COALESCE(pais_codigo,'CO'), nombre, descripcion, valor, duracion_dias, COALESCE(max_documentos_mensuales, 0), COALESCE(NULLIF(max_cajas_simultaneas, 0), CASE WHEN COALESCE(max_documentos_mensuales, 0) = 4000 THEN 4 ELSE 2 END), COALESCE(modulos_habilitados, ''), COALESCE(es_adicional, 0), COALESCE(codigo_funcion, ''), COALESCE(super_rol_habilitado, 0), COALESCE(fecha_inicio, ''), COALESCE(fecha_fin, ''), fecha_creacion, activo FROM licencias WHERE id = ? LIMIT 1`
+	q := `SELECT id, empresa_id, tipo_id, COALESCE(pais_codigo,'CO'), nombre, descripcion, valor, duracion_dias, COALESCE(max_documentos_mensuales, 0), 0, COALESCE(modulos_habilitados, ''), COALESCE(es_adicional, 0), COALESCE(codigo_funcion, ''), COALESCE(super_rol_habilitado, 0), COALESCE(fecha_inicio, ''), COALESCE(fecha_fin, ''), fecha_creacion, activo FROM licencias WHERE id = ? LIMIT 1`
 	scanLicencia := func() (*Licencia, error) {
 		row := queryRowSQLCompat(dbConn, q, id)
 		var lic Licencia
@@ -781,7 +765,7 @@ func GetActiveLicenciaByEmpresa(dbConn *sql.DB, empresaID int64) (*Licencia, err
 	if empresaID <= 0 {
 		return nil, sql.ErrNoRows
 	}
-	q := `SELECT id, empresa_id, tipo_id, COALESCE(pais_codigo,'CO'), nombre, descripcion, valor, duracion_dias, COALESCE(max_documentos_mensuales, 0), COALESCE(NULLIF(max_cajas_simultaneas, 0), CASE WHEN COALESCE(max_documentos_mensuales, 0) = 4000 THEN 4 ELSE 2 END), COALESCE(modulos_habilitados, ''), COALESCE(es_adicional, 0), COALESCE(codigo_funcion, ''), COALESCE(super_rol_habilitado, 0), COALESCE(fecha_inicio, ''), COALESCE(fecha_fin, ''), fecha_creacion, activo
+	q := `SELECT id, empresa_id, tipo_id, COALESCE(pais_codigo,'CO'), nombre, descripcion, valor, duracion_dias, COALESCE(max_documentos_mensuales, 0), 0, COALESCE(modulos_habilitados, ''), COALESCE(es_adicional, 0), COALESCE(codigo_funcion, ''), COALESCE(super_rol_habilitado, 0), COALESCE(fecha_inicio, ''), COALESCE(fecha_fin, ''), fecha_creacion, activo
 	FROM licencias
 	WHERE empresa_id = ?
 		AND COALESCE(activo, 1) = 1
@@ -793,7 +777,7 @@ func GetActiveLicenciaByEmpresa(dbConn *sql.DB, empresaID int64) (*Licencia, err
 		id DESC
 	LIMIT 1`
 	if isPostgresDialect() {
-		q = `SELECT id, empresa_id, tipo_id, COALESCE(pais_codigo,'CO'), nombre, descripcion, valor, duracion_dias, COALESCE(max_documentos_mensuales, 0), COALESCE(NULLIF(max_cajas_simultaneas, 0), CASE WHEN COALESCE(max_documentos_mensuales, 0) = 4000 THEN 4 ELSE 2 END), COALESCE(modulos_habilitados, ''), COALESCE(es_adicional, 0), COALESCE(codigo_funcion, ''), COALESCE(super_rol_habilitado, 0), COALESCE(fecha_inicio, ''), COALESCE(fecha_fin, ''), fecha_creacion, activo
+		q = `SELECT id, empresa_id, tipo_id, COALESCE(pais_codigo,'CO'), nombre, descripcion, valor, duracion_dias, COALESCE(max_documentos_mensuales, 0), 0, COALESCE(modulos_habilitados, ''), COALESCE(es_adicional, 0), COALESCE(codigo_funcion, ''), COALESCE(super_rol_habilitado, 0), COALESCE(fecha_inicio, ''), COALESCE(fecha_fin, ''), fecha_creacion, activo
 		FROM licencias
 		WHERE empresa_id = ?
 			AND COALESCE(activo, 1) = 1
@@ -864,9 +848,7 @@ func updateLicenciaAdvancedInternal(dbConn *sql.DB, id, tipoID int64, paisCodigo
 	if maxDocumentosMensuales < 0 {
 		maxDocumentosMensuales = 0
 	}
-	if maxCajasSimultaneas <= 0 {
-		maxCajasSimultaneas = DefaultLicenciaMaxCajasSimultaneas(maxDocumentosMensuales)
-	}
+	maxCajasSimultaneas = 0
 	nowExpr := sqlNowExpr()
 	query := "UPDATE licencias SET tipo_id = ?, pais_codigo = ?, nombre = ?, descripcion = ?, valor = ?, duracion_dias = ?, modulos_habilitados = ?, es_adicional = ?, codigo_funcion = ?, super_rol_habilitado = ?, fecha_actualizacion = " + nowExpr + " WHERE id = ?"
 	fallbackQuery := "UPDATE licencias SET tipo_id = ?, pais_codigo = ?, nombre = ?, descripcion = ?, valor = ?, duracion_dias = ?, modulos_habilitados = ?, es_adicional = ?, codigo_funcion = ?, super_rol_habilitado = ? WHERE id = ?"
@@ -2692,7 +2674,7 @@ func activateLicenciaForEmpresaTx(tx *sql.Tx, licenciaID, empresaID int64, fecha
 		valor.Float64,
 		int(duracionDias.Int64),
 		int(maxDocumentosMensuales.Int64),
-		int(maxCajasSimultaneas.Int64),
+		0,
 		modulosHabilitados.String,
 		strings.TrimSpace(codigoFuncion.String),
 		int(superRol.Int64),

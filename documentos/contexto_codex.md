@@ -694,7 +694,12 @@ botones, desde handlers estaticos del backend.
   plan global puede ocultarse o mostrarse desde Super administrador > Licencias
   sin que el bootstrap vuelva a activarlo automaticamente; las
   licencias base antiguas por tipo y addons de catalogo sin empresa asignada se
-  eliminan del catalogo comercial. La renovacion adelantada de la misma licencia
+  eliminan del catalogo comercial. Las licencias solo limitan documentos/ventas:
+  una venta, una factura electronica u otro documento electronico emitido cuenta
+  como un uso documental, sin sumar dos veces una venta que tambien genero
+  factura electronica. Las cajas simultaneas no son un atributo comercial de la
+  licencia; cada empresa puede operar varias cajas y solo puede fijar un limite
+  interno desde su configuracion de caja. La renovacion adelantada de la misma licencia
   se limita con `licencias.max_compras_adelantadas_misma_licencia`, por defecto
   2 compras adicionales. Al activarse una licencia por pago o por flujo de valor
   cero permitido, `backend/handlers/payments_handlers.go` puede enviar un correo

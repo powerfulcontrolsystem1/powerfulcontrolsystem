@@ -1319,8 +1319,8 @@
 2026-05-19: Cajas multiples configurables por empresa.
 - Modulos afectados: `configuracion_empresarial`, `finanzas`, `corte_de_caja`, `carritos`.
 - `Configuracion de empresa > Caja y cajon monedero` permite activar/desactivar varias cajas abiertas al mismo tiempo y definir un limite interno opcional por empresa.
-- El limite efectivo de apertura toma el menor valor entre licencia y configuracion empresarial; si el check de cajas simultaneas esta apagado, la empresa opera con una sola caja abierta.
-- La apertura automatica desde carrito y la apertura/reapertura desde finanzas validan caja activa, cupo interno, cupo de licencia y cajas abiertas existentes.
+- El limite efectivo de apertura lo define solo la configuracion empresarial; si el check de cajas simultaneas esta apagado, la empresa opera con una sola caja abierta. Si el limite interno queda en 0, no hay cupo interno de cajas.
+- La apertura automatica desde carrito y la apertura/reapertura desde finanzas validan caja activa, limite interno empresarial y cajas abiertas existentes. La licencia no limita cajas.
 - `corte_de_caja.html` conserva caja, turno, sucursal y `cierre_caja_id` al consultar `Ver reporte de mi turno` o `Corte automatico`, dejando cada caja con reporte independiente.
 - Sin dependencias nuevas ni cambios de permisos.
 
@@ -4037,15 +4037,15 @@ Captura inteligente de compras y gastos
 - Se retira la opcion de operar o facturar sin conexion. El sistema requiere conexion activa con el backend para ventas, cobros, facturas, documentos y reintentos fiscales.
 - En facturacion electronica Colombia, la pantalla ya no muestra controles de modo offline/contingencia DIAN; si DIAN/proveedor no responde, el backend bloquea la emision y registra el fallo para reintentar cuando vuelva la conexion.
 
-2026-05-13: Cajas simultaneas por licencia
+2026-07-05: Cajas simultaneas por empresa, no por licencia
 - Modulos afectados: `licencias`, `finanzas`, `corte de caja`, `carritos`, `ventas por estacion`.
-- Cada licencia define `max_cajas_simultaneas`; por defecto son 2 cajas por empresa y 4 en planes de 4000 documentos.
-- El backend valida el cupo al abrir o reabrir cajas, y cada pago de carrito debe asociarse a una caja abierta para mantener cierres, arqueos y movimientos de efectivo separados.
+- Las licencias dejan de definir cupo de cajas. Solo limitan documentos/ventas emitidas; una venta, factura electronica u otro documento electronico cuenta como un uso documental.
+- El backend valida solo la configuracion empresarial de caja al abrir o reabrir cajas, y cada pago de carrito debe asociarse a una caja abierta para mantener cierres, arqueos y movimientos de efectivo separados.
 
 2026-05-13: Actualizacion general de documentacion y ayuda
 - Modulos afectados: `documentacion`, `ayuda`, `super_administrador`, `administrar_empresa`, `licencias`, `soporte`, `operacion`.
 - Se agrega `documentos/estado_documentacion_2026-05-13.md` como mapa consolidado de reglas vigentes, rutas canonicas, operacion conectada, licencias/cajas, soporte, comunicaciones, portal publico, VPS y validacion recomendada.
-- `web/ayuda/ayuda.html` incorpora secciones de acceso global de usuarios, operacion conectada obligatoria, cajas simultaneas por licencia, soporte por tickets, correos masivos, mantenimiento programado, documentos locales y backups.
+- `web/ayuda/ayuda.html` incorpora secciones de acceso global de usuarios, operacion conectada obligatoria, cajas simultaneas por configuracion empresarial, soporte por tickets, correos masivos, mantenimiento programado, documentos locales y backups.
 
 2026-05-19: Administrar empresa responsive en movil
 - Modulos afectados: `administrar_empresa`, `PWA/cache`, `frontend_ux`.

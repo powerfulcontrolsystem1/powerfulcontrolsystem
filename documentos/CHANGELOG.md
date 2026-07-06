@@ -1638,7 +1638,7 @@
 
 ## [2026-05-19] Cajas multiples por empresa
 - [Configuracion] `empresa_configuracion_general` permite activar/desactivar cajas simultaneas y definir un limite interno por empresa.
-- [Backend] Abrir, reabrir y abrir caja automatica para cobro validan caja activa, cupo por empresa, cupo de licencia y cajas abiertas.
+- [Backend] Abrir, reabrir y abrir caja automatica para cobro validan caja activa, limite interno de empresa cuando exista y cajas abiertas. La licencia no limita cajas.
 - [Reportes] `Ver reporte de mi turno` mantiene caja, turno, sucursal y `cierre_caja_id` para no mezclar reportes entre cajas.
 
 ## [2026-05-19] Impresora POS default global
@@ -2142,11 +2142,11 @@
 - [Indice] `documentos/README.md` y `documentos/descripcion_del_proyecto` quedan alineados con operacion conectada, cajas simultaneas, login global, comunicaciones, soporte, Docker/VPS y validacion.
 - [Ayuda] `web/ayuda/ayuda.html` suma secciones de acceso de usuarios, operacion conectada, cajas simultaneas, soporte/comunicaciones, documentos locales y backups.
 
-## [2026-05-13] Cajas simultaneas por licencia
-- [Licencias] Se agrega `max_cajas_simultaneas` con default 2 y cupo mayor para el plan global superior.
-- [Finanzas] Apertura y reapertura de cajas validan el cupo contra la licencia activa de la empresa.
+## [2026-07-05] Cajas simultaneas por empresa
+- [Licencias] `max_cajas_simultaneas` queda historico y normalizado a 0; las licencias solo limitan documentos/ventas emitidas.
+- [Finanzas] Apertura y reapertura de cajas validan la configuracion empresarial de caja, no la licencia activa.
 - [Ventas] Cada pago de carrito se enlaza a una caja abierta para mantener cierres y arqueos separados.
-- [Super] La pantalla de licencias permite configurar el maximo de cajas simultaneas.
+- [Super] La pantalla de licencias deja de configurar maximo de cajas simultaneas.
 
 ## [2026-05-13] Conexion obligatoria para operacion y facturacion
 - [Facturacion] `web/administrar_empresa/facturacion_electronica.html` retira controles de modo offline/contingencia DIAN y muestra conexion obligatoria.

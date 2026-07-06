@@ -368,34 +368,24 @@ func validarCupoCajasLicencia(dbEmp *sql.DB, dbSuper *sql.DB, empresaID int64, e
 	if empresaID <= 0 {
 		return 0, 0, fmt.Errorf("empresa_id es obligatorio")
 	}
-	maxCajas := 2
-	if dbSuper != nil {
-		if lic, err := dbpkg.GetActiveLicenciaByEmpresa(dbSuper, empresaID); err == nil {
-			maxCajas = dbpkg.ResolveLicenciaMaxCajasSimultaneas(lic)
-		} else if !errors.Is(err, sql.ErrNoRows) {
-			return 0, 0, err
-		}
-	}
+	maxCajas := 0
 	if cfg, err := dbpkg.GetEmpresaConfiguracionGeneral(dbEmp, empresaID); err == nil && cfg != nil {
 		if !cfg.CajaActiva {
 			return maxCajas, 0, fmt.Errorf("la caja esta desactivada en la configuracion de la empresa")
 		}
 		if !cfg.CajasSimultaneasHabilitadas {
 			maxCajas = 1
-		} else if cfg.MaxCajasSimultaneasEmpresa > 0 && cfg.MaxCajasSimultaneasEmpresa < int64(maxCajas) {
+		} else if cfg.MaxCajasSimultaneasEmpresa > 0 {
 			maxCajas = int(cfg.MaxCajasSimultaneasEmpresa)
 		}
 	} else if err != nil {
 		return 0, 0, err
 	}
-	if maxCajas < 1 {
-		maxCajas = 1
-	}
 	abiertas, err := dbpkg.CountEmpresaCierresCajaAbiertosExcepto(dbEmp, empresaID, excludeCierreID)
 	if err != nil {
 		return maxCajas, abiertas, err
 	}
-	if abiertas >= maxCajas {
+	if maxCajas > 0 && abiertas >= maxCajas {
 		return maxCajas, abiertas, fmt.Errorf("la configuracion actual permite maximo %d caja(s) abiertas simultaneamente; cierre una caja antes de abrir otra o ajuste la configuracion de la empresa", maxCajas)
 	}
 	return maxCajas, abiertas, nil

@@ -10,7 +10,6 @@ func TestDefaultGlobalLicenciaPlans(t *testing.T) {
 
 	seenCodes := map[string]bool{}
 	expectedDocs := []int{250, 250, 1000, 2000, 4000, 12000, 24000, 36000}
-	expectedCajas := []int{2, 2, 2, 3, 4, 4, 5, 6}
 	expectedValues := []float64{0, 1000, 60000, 110000, 200000, 600000, 1100000, 2200000}
 	expectedNames := []string{
 		"Prueba gratis 15 dias",
@@ -33,8 +32,8 @@ func TestDefaultGlobalLicenciaPlans(t *testing.T) {
 		if plan.MaxDocumentosMensuales != expectedDocs[i] {
 			t.Fatalf("documentos plan %d = %d, want %d", i, plan.MaxDocumentosMensuales, expectedDocs[i])
 		}
-		if plan.MaxCajasSimultaneas != expectedCajas[i] {
-			t.Fatalf("cajas plan %d = %d, want %d", i, plan.MaxCajasSimultaneas, expectedCajas[i])
+		if plan.MaxCajasSimultaneas != 0 {
+			t.Fatalf("cajas plan %d = %d, want 0 sin limite por licencia", i, plan.MaxCajasSimultaneas)
 		}
 		if plan.Valor != expectedValues[i] {
 			t.Fatalf("valor plan %d = %.2f, want %.2f", i, plan.Valor, expectedValues[i])

@@ -123,8 +123,9 @@ trazabilidad en `documentos/historial_de_cambios`.
 
 - Caja y turno deben funcionar de manera independiente por usuario/caja dentro de
   una misma empresa.
-- Varias cajas pueden operar simultaneamente si la configuracion/licencia lo
-  permite.
+- Varias cajas pueden operar simultaneamente si la configuracion empresarial lo
+  permite. Las licencias no limitan cajas; solo limitan documentos/ventas
+  emitidas.
 - Los estados de estaciones deben sincronizarse para que otros usuarios vean
   cambios operativos.
 - Venta directa y estaciones deben compartir el mismo carrito unificado y las

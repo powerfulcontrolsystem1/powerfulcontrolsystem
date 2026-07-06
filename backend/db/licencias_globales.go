@@ -37,7 +37,7 @@ func DefaultGlobalLicenciaPlans() []GlobalLicenciaPlan {
 			Valor:                  0,
 			DuracionDias:           15,
 			MaxDocumentosMensuales: 250,
-			MaxCajasSimultaneas:    2,
+			MaxCajasSimultaneas:    0,
 		},
 		{
 			Codigo:                 LicenciaCodigoTrial1DiaGlobal,
@@ -46,7 +46,7 @@ func DefaultGlobalLicenciaPlans() []GlobalLicenciaPlan {
 			Valor:                  1000,
 			DuracionDias:           1,
 			MaxDocumentosMensuales: 250,
-			MaxCajasSimultaneas:    2,
+			MaxCajasSimultaneas:    0,
 		},
 		{
 			Codigo:                 LicenciaCodigoBasicoGlobal,
@@ -55,7 +55,7 @@ func DefaultGlobalLicenciaPlans() []GlobalLicenciaPlan {
 			Valor:                  60000,
 			DuracionDias:           30,
 			MaxDocumentosMensuales: 1000,
-			MaxCajasSimultaneas:    2,
+			MaxCajasSimultaneas:    0,
 		},
 		{
 			Codigo:                 LicenciaCodigoProfesionalGlobal,
@@ -64,7 +64,7 @@ func DefaultGlobalLicenciaPlans() []GlobalLicenciaPlan {
 			Valor:                  110000,
 			DuracionDias:           30,
 			MaxDocumentosMensuales: 2000,
-			MaxCajasSimultaneas:    3,
+			MaxCajasSimultaneas:    0,
 		},
 		{
 			Codigo:                 LicenciaCodigoEmpresarialGlobal,
@@ -73,7 +73,7 @@ func DefaultGlobalLicenciaPlans() []GlobalLicenciaPlan {
 			Valor:                  200000,
 			DuracionDias:           30,
 			MaxDocumentosMensuales: 4000,
-			MaxCajasSimultaneas:    4,
+			MaxCajasSimultaneas:    0,
 		},
 		{
 			Codigo:                 LicenciaCodigoAnual12000Global,
@@ -82,7 +82,7 @@ func DefaultGlobalLicenciaPlans() []GlobalLicenciaPlan {
 			Valor:                  600000,
 			DuracionDias:           365,
 			MaxDocumentosMensuales: 12000,
-			MaxCajasSimultaneas:    4,
+			MaxCajasSimultaneas:    0,
 		},
 		{
 			Codigo:                 LicenciaCodigoAnual24000Global,
@@ -91,7 +91,7 @@ func DefaultGlobalLicenciaPlans() []GlobalLicenciaPlan {
 			Valor:                  1100000,
 			DuracionDias:           365,
 			MaxDocumentosMensuales: 24000,
-			MaxCajasSimultaneas:    5,
+			MaxCajasSimultaneas:    0,
 		},
 		{
 			Codigo:                 LicenciaCodigoAnual36000Global,
@@ -100,7 +100,7 @@ func DefaultGlobalLicenciaPlans() []GlobalLicenciaPlan {
 			Valor:                  2200000,
 			DuracionDias:           365,
 			MaxDocumentosMensuales: 36000,
-			MaxCajasSimultaneas:    6,
+			MaxCajasSimultaneas:    0,
 		},
 	}
 }

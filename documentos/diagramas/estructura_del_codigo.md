@@ -6613,9 +6613,9 @@ La ayuda funcional se actualiza en `web/ayuda/ayuda.html` y el estado compacto d
 - Backend handlers: `backend/handlers/super_correos_masivos.go` publica `/super/api/correos_masivos`, resuelve administradores y usuarios de empresa, deduplica emails, valida payload y envia por SMTP existente.
 - Frontend: `web/super/correos_masivos.html` agrega consola de previsualizacion, formulario de comunicado, confirmacion de envio e historial; `web/super_administrador.html` y `web/js/super_administrador.js` incorporan la opcion al menu super.
 
-## Actualizacion 2026-05-13 - Cajas simultaneas por licencia
+## Actualizacion 2026-07-05 - Cajas simultaneas por empresa
 
-- Backend DB: `backend/db/db.go` agrega `max_cajas_simultaneas` a `licencias` y `backend/db/finanzas.go` expone conteo de cajas abiertas activas por `empresa_id`.
+- Backend DB: `backend/db/db.go` conserva `max_cajas_simultaneas` en `licencias` como campo historico normalizado a 0; `backend/handlers/finanzas.go` valida cajas solo con configuracion empresarial y conteo de cajas abiertas activas por `empresa_id`.
 - Backend handlers: `/api/empresa/finanzas/cierres_caja` recibe `dbSuper` para resolver la licencia activa y bloquear aperturas/reaperturas cuando se supera el cupo.
 - Carrito/ventas: `carritos_compras` y metricas de estacion guardan `cierre_caja_id`, `caja_codigo`, `caja_turno` y sucursal para separar arqueos.
 - Frontend: `web/super/licencias.html` administra el cupo y `web/administrar_empresa/carrito_de_compras.html` exige seleccionar caja abierta antes de cobrar.
