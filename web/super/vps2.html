@@ -189,6 +189,7 @@
           return "<tr><td>"+escapeHTML(c.name)+"</td><td>"+escapeHTML(c.status)+"</td><td>"+escapeHTML(c.ports)+"</td></tr>";
         }).join("") : '<tr><td colspan="3">No se detectaron contenedores Nextcloud.</td></tr>';
         if (data.errors && data.errors.length) show(data.errors.join(" | "), true);
+        else if (data.last_message) show(data.last_message);
         else if (!message.textContent) show("");
       }
       document.getElementById("refreshBtn").addEventListener("click", function(){ requestStatus().then(function(){show("Estado actualizado.");}).catch(function(e){show(e.message,true);}); });

@@ -3,6 +3,7 @@ package handlers
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"net"
 	"net/http"
@@ -118,8 +119,14 @@ func buildSuperVPS2Status(cfg superVPS2Config) superVPS2Status {
 		Raw:       map[string][]string{},
 	}
 	if !status.Reachable["ssh"] {
+		if snapshot, ok := loadSuperVPS2Snapshot(); ok {
+			snapshot.LastMessage = "Datos cargados desde el ultimo snapshot publicado por sync_to_vps2."
+			snapshot.Reachable = status.Reachable
+			snapshot.Config = cfg
+			return snapshot
+		}
 		status.OK = false
-		status.Errors = append(status.Errors, "SSH no responde en VPS2")
+		status.Errors = append(status.Errors, "SSH no responde en VPS2 desde este servidor. Si VPS2 esta en una red privada, ejecuta sync_to_vps2 para publicar un snapshot.")
 		return status
 	}
 
@@ -149,6 +156,33 @@ func buildSuperVPS2Status(cfg superVPS2Config) superVPS2Status {
 	status.Docker["containers_running"] = firstLine(lines, "docker_running")
 	status.Nextcloud = parsePipeRows(lines["nextcloud"])
 	return status
+}
+
+func loadSuperVPS2Snapshot() (superVPS2Status, bool) {
+	candidates := []string{
+		os.Getenv("PCS_VPS2_STATUS_FILE"),
+		filepath.Join(projectRootFromHandlers(), "backup", "vps2_status.json"),
+		"/app/backup/vps2_status.json",
+	}
+	for _, candidate := range candidates {
+		candidate = strings.TrimSpace(candidate)
+		if candidate == "" {
+			continue
+		}
+		raw, err := os.ReadFile(candidate)
+		if err != nil || len(raw) == 0 {
+			continue
+		}
+		var status superVPS2Status
+		if err := json.Unmarshal(raw, &status); err != nil {
+			continue
+		}
+		if status.CheckedAt == "" {
+			status.CheckedAt = time.Now().Format(time.RFC3339)
+		}
+		return status, true
+	}
+	return superVPS2Status{}, false
 }
 
 func executeSuperVPS2Action(cfg superVPS2Config, action string) (string, error) {

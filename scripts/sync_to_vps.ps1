@@ -1493,7 +1493,12 @@ function Invoke-PuttySync {
   $transportLabel = "OpenSSH"
   $excludePatterns = Get-SyncExcludePatterns -ExcludeFile $ExcludeFile -ExcludeEvidence $ExcludeEvidence
 
-  $tmpDir = Join-Path $LocalResolvedPath ".gotmp\pcs_sync_staging"
+  $repoTempName = ($LocalResolvedPath -replace '[^A-Za-z0-9_.-]', '_').Trim('_')
+  if ($repoTempName.Length -gt 80) {
+    $repoTempName = $repoTempName.Substring($repoTempName.Length - 80)
+  }
+  $tmpRoot = Join-Path ([System.IO.Path]::GetTempPath()) "pcs_sync_staging"
+  $tmpDir = Join-Path $tmpRoot $repoTempName
   if (-not (Test-Path $tmpDir)) {
     New-Item -ItemType Directory -Path $tmpDir -Force | Out-Null
   }
@@ -1648,7 +1653,20 @@ function Invoke-PuttySync {
 
   try {
     Write-Host "[INFO] Empaquetando proyecto local para sincronización..."
-    & tar @tarArgs
+    $archiveCreatedWithGit = $false
+    if ((Get-Command git -ErrorAction SilentlyContinue) -and (Test-Path (Join-Path $LocalResolvedPath ".git"))) {
+      $gitFormat = if ($UseCompression) { "tar.gz" } else { "tar" }
+      Write-Host "[INFO] Usando git archive para evitar archivos volatiles de Nextcloud Sync."
+      & git -C $LocalResolvedPath archive --format=$gitFormat -o $archivePath HEAD
+      if ($LASTEXITCODE -eq 0 -and (Test-Path $archivePath)) {
+        $archiveCreatedWithGit = $true
+      } else {
+        Write-Warning "git archive no pudo crear el paquete; se intentara TAR de directorio con exclusiones."
+      }
+    }
+    if (-not $archiveCreatedWithGit) {
+      & tar @tarArgs
+    }
     if ($LASTEXITCODE -ne 0 -or -not (Test-Path $archivePath)) {
       throw "Falló la creación del paquete TAR local (código $LASTEXITCODE)."
     }
@@ -1850,6 +1868,10 @@ echo "[INFO] Limpiando caches locales que no pertenecen al runtime Docker..."
 rm -rf .codex-gocache .codex-tmp-go .gocache .gotmp tmp \
   backend/.codex-gocache backend/.codex-tmp-go backend/.gocache backend/.gotmp \
   backend/.tmp-go-test-* backend/tmp 2>/dev/null || true
+if [ -d deploy/scripts ]; then
+  find deploy/scripts -type f -name '*.sh' -exec sed -i 's/\r$//' {} +
+  find deploy/scripts -type f -name '*.sh' -exec chmod +x {} +
+fi
 export HEALTH_TIMEOUT_SECONDS=$HealthTimeoutSeconds
 bash deploy/scripts/vps-compose-sidecar-up.sh
 echo "[INFO] Revisando proxy Nginx del host para Mailu..."
