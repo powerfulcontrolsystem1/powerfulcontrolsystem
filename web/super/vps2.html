@@ -18,7 +18,7 @@
     .vps-btn.primary{background:color-mix(in srgb,var(--vps-blue) 16%,var(--vps-panel));border-color:color-mix(in srgb,var(--vps-blue) 45%,var(--vps-line))}
     .vps-btn.warn{background:color-mix(in srgb,var(--vps-amber) 16%,var(--vps-panel));border-color:color-mix(in srgb,var(--vps-amber) 45%,var(--vps-line))}
     .vps-btn.danger{background:color-mix(in srgb,var(--vps-red) 14%,var(--vps-panel));border-color:color-mix(in srgb,var(--vps-red) 45%,var(--vps-line))}
-    .vps-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-bottom:8px}
+    .vps-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;margin-bottom:8px}
     .vps-card{border:1px solid var(--vps-line);border-radius:8px;background:var(--vps-panel);padding:10px}
     .vps-card h2{margin:0 0 8px;font-size:.88rem}
     .vps-kpi{display:grid;gap:4px;min-height:78px}
@@ -38,7 +38,20 @@
     .vps-message{display:none;margin:0 0 8px;padding:9px 10px;border:1px solid var(--vps-line);border-radius:8px;background:var(--vps-soft);font-size:.82rem}
     .vps-message.is-visible{display:block}
     .vps-message.is-error{border-color:color-mix(in srgb,var(--vps-red) 45%,var(--vps-line));color:var(--vps-red)}
+    .vps-config{display:grid;grid-template-columns:1.2fr .55fr .8fr 1fr 1fr auto;gap:8px;align-items:end;margin-bottom:8px}
+    .vps-field{display:grid;gap:4px}
+    .vps-field label{font-size:.7rem;text-transform:uppercase;font-weight:850;color:var(--vps-muted)}
+    .vps-input{min-height:34px;border:1px solid var(--vps-line);border-radius:6px;background:var(--vps-soft);color:var(--vps-text);padding:7px 9px;font:inherit;font-size:.82rem}
+    .vps-explorer{margin-top:8px}
+    .vps-explorer-bar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px}
+    .vps-path{flex:1;min-width:240px;border:1px solid var(--vps-line);border-radius:6px;background:var(--vps-soft);padding:8px 10px;font-size:.82rem;word-break:break-all}
+    .vps-file-name{display:flex;align-items:center;gap:8px;font-weight:800}
+    .vps-file-icon{width:24px;height:24px;border:1px solid var(--vps-line);border-radius:5px;display:inline-flex;align-items:center;justify-content:center;background:var(--vps-soft)}
+    .vps-file-row[data-type="dir"]{cursor:pointer}
+    .vps-file-row[data-type="dir"]:hover td{background:color-mix(in srgb,var(--vps-blue) 10%,transparent)}
+    @media(max-width:1120px){.vps-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.vps-config{grid-template-columns:repeat(3,minmax(0,1fr))}}
     @media(max-width:900px){.vps-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.vps-main{grid-template-columns:1fr}.vps-top{display:grid}.vps-actions{justify-content:flex-start}}
+    @media(max-width:760px){.vps-config{grid-template-columns:1fr}}
     @media(max-width:560px){.vps-grid{grid-template-columns:1fr}}
   </style>
 </head>
@@ -57,6 +70,33 @@
       </div>
     </div>
     <div id="message" class="vps-message"></div>
+
+    <section class="vps-card">
+      <h2>Configuracion de conexion VPS2</h2>
+      <div class="vps-config">
+        <div class="vps-field">
+          <label for="cfgHost">IP o host</label>
+          <input id="cfgHost" class="vps-input" type="text" autocomplete="off" placeholder="192.168.1.188">
+        </div>
+        <div class="vps-field">
+          <label for="cfgPort">Puerto SSH</label>
+          <input id="cfgPort" class="vps-input" type="number" min="1" max="65535" step="1" placeholder="22">
+        </div>
+        <div class="vps-field">
+          <label for="cfgUser">Usuario</label>
+          <input id="cfgUser" class="vps-input" type="text" autocomplete="off" placeholder="admin1">
+        </div>
+        <div class="vps-field">
+          <label for="cfgRemotePath">Ruta proyecto</label>
+          <input id="cfgRemotePath" class="vps-input" type="text" autocomplete="off" placeholder="/home/admin1/powerfulcontrolsystem">
+        </div>
+        <div class="vps-field">
+          <label for="cfgNextcloudPath">Datos Nextcloud</label>
+          <input id="cfgNextcloudPath" class="vps-input" type="text" autocomplete="off" placeholder="/srv/data/nextcloud/data">
+        </div>
+        <button class="vps-btn primary" id="saveConfigBtn" type="button">Guardar</button>
+      </div>
+    </section>
 
     <section class="vps-grid">
       <article class="vps-card vps-kpi">
@@ -78,6 +118,12 @@
         <span>Disco /</span>
         <strong id="diskText">-</strong>
         <div class="vps-progress"><span id="diskBar"></span></div>
+      </article>
+      <article class="vps-card vps-kpi">
+        <span>Disco Nextcloud</span>
+        <strong id="nextcloudDiskText">-</strong>
+        <small id="nextcloudPathText">-</small>
+        <div class="vps-progress"><span id="nextcloudDiskBar"></span></div>
       </article>
     </section>
 
@@ -108,11 +154,25 @@
         </table>
       </article>
     </section>
+
+    <section class="vps-card vps-explorer">
+      <h2>Administrador de archivos Nextcloud</h2>
+      <div class="vps-explorer-bar">
+        <button class="vps-btn" id="filesUpBtn" type="button">Subir</button>
+        <button class="vps-btn primary" id="filesRefreshBtn" type="button">Actualizar</button>
+        <div class="vps-path" id="filesPath">/</div>
+      </div>
+      <table class="vps-table">
+        <thead><tr><th>Nombre</th><th>Tipo</th><th>Tamano</th><th>Modificado</th></tr></thead>
+        <tbody id="filesRows"><tr><td colspan="4">Cargando archivos...</td></tr></tbody>
+      </table>
+    </section>
   </main>
 
   <script>
     (function(){
       var state = null;
+      var filesState = { path: "", parent: "" };
       var message = document.getElementById("message");
       function fmtBytes(n){
         n = Number(n || 0);
@@ -135,6 +195,36 @@
         if (!res.ok) throw new Error(data.error || "No se pudo consultar VPS2");
         state = data;
         render(data);
+      }
+      async function saveConfig(){
+        var payload = {
+          host: document.getElementById("cfgHost").value,
+          port: Number(document.getElementById("cfgPort").value || 22),
+          user: document.getElementById("cfgUser").value,
+          remote_path: document.getElementById("cfgRemotePath").value,
+          nextcloud_data_path: document.getElementById("cfgNextcloudPath").value
+        };
+        show("Guardando configuracion VPS2...");
+        var res = await fetch("/super/api/vps2?action=config", {
+          method: "POST",
+          credentials: "same-origin",
+          headers: {"Content-Type":"application/json"},
+          body: JSON.stringify(payload)
+        });
+        var data = await res.json().catch(function(){ return {}; });
+        if (!res.ok) throw new Error(data.error || "No se pudo guardar VPS2");
+        show(data.last_message || "Configuracion VPS2 guardada.");
+        await requestStatus();
+        await loadFiles("");
+      }
+      async function loadFiles(path){
+        var nextPath = path == null ? filesState.path : String(path || "");
+        var res = await fetch("/super/api/vps2?action=files&path=" + encodeURIComponent(nextPath), {credentials:"same-origin"});
+        var data = await res.json().catch(function(){ return {}; });
+        if (!res.ok || data.ok === false) throw new Error((data.errors && data.errors[0]) || "No se pudo cargar archivos VPS2");
+        filesState.path = data.path || "";
+        filesState.parent = data.parent || "";
+        renderFiles(data);
       }
       async function runAction(action, text){
         if (!confirm(text)) return;
@@ -168,6 +258,16 @@
         var diskPct = pct(disk.used, disk.total);
         document.getElementById("diskText").textContent = fmtBytes(disk.used) + " / " + fmtBytes(disk.total) + (disk.percent ? " ("+disk.percent+")" : "");
         document.getElementById("diskBar").style.width = diskPct + "%";
+        var cloudDisk = res.disk_nextcloud || {};
+        var cloudDiskPct = pct(cloudDisk.used, cloudDisk.total);
+        document.getElementById("nextcloudDiskText").textContent = fmtBytes(cloudDisk.used) + " / " + fmtBytes(cloudDisk.total) + (cloudDisk.percent ? " ("+cloudDisk.percent+")" : "");
+        document.getElementById("nextcloudDiskBar").style.width = cloudDiskPct + "%";
+        document.getElementById("nextcloudPathText").textContent = cfg.nextcloud_data_path || "-";
+        document.getElementById("cfgHost").value = cfg.host || "";
+        document.getElementById("cfgPort").value = cfg.port || "";
+        document.getElementById("cfgUser").value = cfg.user || "";
+        document.getElementById("cfgRemotePath").value = cfg.remote_path || "";
+        document.getElementById("cfgNextcloudPath").value = cfg.nextcloud_data_path || "";
         document.getElementById("systemRows").innerHTML = [
           row("Host", sys.hostname),
           row("IP", sys.ip),
@@ -192,11 +292,44 @@
         else if (data.last_message) show(data.last_message);
         else if (!message.textContent) show("");
       }
+      function renderFiles(data){
+        var root = data.root_path || "";
+        var current = data.path || "";
+        document.getElementById("filesPath").textContent = root + (current ? "/" + current : "");
+        var rows = document.getElementById("filesRows");
+        var entries = Array.isArray(data.entries) ? data.entries.slice() : [];
+        entries.sort(function(a,b){
+          if (a.type !== b.type) return a.type === "dir" ? -1 : 1;
+          return String(a.name || "").localeCompare(String(b.name || ""));
+        });
+        if (!entries.length) {
+          rows.innerHTML = '<tr><td colspan="4">No hay archivos o la carpeta no esta incluida en el snapshot actual.</td></tr>';
+          return;
+        }
+        rows.innerHTML = entries.map(function(item){
+          var isDir = item.type === "dir";
+          var icon = isDir ? "&#128193;" : "&#128196;";
+          return '<tr class="vps-file-row" data-type="'+escapeHTML(item.type)+'" data-path="'+escapeHTML(item.path)+'">' +
+            '<td><span class="vps-file-name"><span class="vps-file-icon">'+icon+'</span>'+escapeHTML(item.name || "-")+'</span></td>' +
+            '<td>'+escapeHTML(isDir ? "Carpeta" : "Archivo")+'</td>' +
+            '<td>'+escapeHTML(isDir ? "-" : fmtBytes(item.size))+'</td>' +
+            '<td>'+escapeHTML(item.modified || "-")+'</td>' +
+            '</tr>';
+        }).join("");
+      }
       document.getElementById("refreshBtn").addEventListener("click", function(){ requestStatus().then(function(){show("Estado actualizado.");}).catch(function(e){show(e.message,true);}); });
+      document.getElementById("saveConfigBtn").addEventListener("click", function(){ saveConfig().catch(function(e){show(e.message,true);}); });
       document.getElementById("restartCloudBtn").addEventListener("click", function(){ runAction("restart_nextcloud", "Esto reiniciara los contenedores de Nextcloud en VPS2. ¿Continuar?").catch(function(e){show(e.message,true);}); });
       document.getElementById("rebootBtn").addEventListener("click", function(){ runAction("reboot", "Esto reiniciara el VPS2. ¿Continuar?").catch(function(e){show(e.message,true);}); });
       document.getElementById("shutdownBtn").addEventListener("click", function(){ runAction("shutdown", "Esto apagara el VPS2. Debes encenderlo manualmente despues. ¿Continuar?").catch(function(e){show(e.message,true);}); });
-      requestStatus().catch(function(e){show(e.message,true);});
+      document.getElementById("filesRefreshBtn").addEventListener("click", function(){ loadFiles(filesState.path).catch(function(e){show(e.message,true);}); });
+      document.getElementById("filesUpBtn").addEventListener("click", function(){ loadFiles(filesState.parent).catch(function(e){show(e.message,true);}); });
+      document.getElementById("filesRows").addEventListener("click", function(ev){
+        var rowEl = ev.target && ev.target.closest ? ev.target.closest(".vps-file-row") : null;
+        if (!rowEl || rowEl.getAttribute("data-type") !== "dir") return;
+        loadFiles(rowEl.getAttribute("data-path") || "").catch(function(e){show(e.message,true);});
+      });
+      requestStatus().then(function(){ return loadFiles(""); }).catch(function(e){show(e.message,true);});
     })();
   </script>
 </body>

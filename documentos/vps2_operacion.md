@@ -55,6 +55,28 @@ El script:
 - reconstruye el stack Docker si encuentra un archivo compose compatible;
 - deja el VPS2 en `multi-user.target` para no abrir modo grafico al reiniciar;
 - aplica `restart unless-stopped` a contenedores Nextcloud detectados.
+- publica un snapshot de estado para el panel de super administrador, incluyendo
+  CPU, RAM, disco raiz, disco de datos Nextcloud y un indice limitado de
+  archivos bajo la ruta de datos de Nextcloud.
+
+## Panel super administrador
+
+La pagina `Super administrador > VPS2` permite:
+
+- ver estado general, servicios, Docker y contenedores Nextcloud;
+- ver el disco raiz y el disco grande donde se guardan los datos de Nextcloud;
+- registrar IP/host, puerto SSH, usuario, ruta del proyecto y ruta de datos
+  Nextcloud para poder cambiar el VPS2 en el futuro;
+- navegar un administrador de archivos de solo lectura limitado a la ruta de
+  datos de Nextcloud.
+
+Si el VPS principal no puede alcanzar la IP privada del VPS2, la pagina usa el
+ultimo snapshot publicado por `sync_to_vps2.ps1`. Para refrescar datos de disco
+o archivos, ejecutar:
+
+```powershell
+.\scripts\sync_to_vps2.ps1 -SkipDeploy -SkipDisableGui -SkipNextcloud
+```
 
 ## Estado aplicado el 2026-07-06
 

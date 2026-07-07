@@ -26,6 +26,7 @@ param(
   [string]$RemotePath = "",
   [string]$Branch = "",
   [string]$RepoUrl = "",
+  [string]$NextcloudDataPath = "",
   [string]$SshHostKey = "",
   [string]$IdentityFile = "",
   [string]$Password = "",
@@ -187,6 +188,8 @@ temp="$(for f in /sys/class/thermal/thermal_zone*/temp; do [ -r "$f" ] && awk '{
 printf 'temperature_c=%s\n' "$temp";
 printf 'memory=%s\n' "$(free -b 2>/dev/null | awk '/Mem:/ {print $2" "$3" "$7}')";
 printf 'disk_root=%s\n' "$(df -PB1 / 2>/dev/null | awk 'NR==2 {print $2" "$3" "$4" "$5}')";
+nextcloud_data_path=__NEXTCLOUD_DATA_PATH__;
+printf 'disk_nextcloud=%s\n' "$(df -PB1 "$nextcloud_data_path" 2>/dev/null | awk 'NR==2 {print $2" "$3" "$4" "$5}')";
 printf 'service_docker=%s\n' "$(systemctl is-active docker 2>/dev/null || true)";
 printf 'service_ssh=%s\n' "$(systemctl is-active ssh 2>/dev/null || systemctl is-active sshd 2>/dev/null || true)";
 printf 'docker_version=%s\n' "$(docker --version 2>/dev/null || true)";
@@ -194,7 +197,11 @@ printf 'docker_total=%s\n' "$(docker ps -a -q 2>/dev/null | wc -l | tr -d " ")";
 printf 'docker_running=%s\n' "$(docker ps -q 2>/dev/null | wc -l | tr -d " ")";
 ip -4 -o addr show scope global 2>/dev/null | awk '{print "ip="$2" "$4}';
 docker ps -a --format '{{.Names}}|{{.Status}}|{{.Ports}}' 2>/dev/null | grep -Ei '(^|[-_])(nextcloud|cloud)([-_]|$)|nextcloud' | sed 's/^/nextcloud=/' || true
+if [ -d "$nextcloud_data_path" ]; then
+  find "$nextcloud_data_path" -mindepth 1 -maxdepth 3 -printf 'file=%P\t%y\t%s\t%TY-%Tm-%Td %TH:%TM\n' 2>/dev/null | sort | head -n 900
+fi
 '@
+  $statusCommand = $statusCommand.Replace("__NEXTCLOUD_DATA_PATH__", (Convert-ToBashLiteral $script:ResolvedNextcloudDataPath))
   $encodedStatus = [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes($statusCommand))
   $out = Invoke-Vps2Ssh -Command "echo $encodedStatus | base64 -d | bash"
   $kv = @{}
@@ -227,6 +234,50 @@ docker ps -a --format '{{.Names}}|{{.Status}}|{{.Ports}}' 2>/dev/null | grep -Ei
       percent = if ($p.Count -gt 3) { [string]$p[3] } else { "" }
     }
   }
+  function Normalize-SnapshotPath([string]$raw) {
+    $value = ([string]$raw).Trim().Replace('\', '/').Trim('/')
+    if ($value -eq "." -or $value.Contains("..")) { return "" }
+    return $value
+  }
+  function Add-DirectoryItem([hashtable]$directories, [string]$dir, [hashtable]$item) {
+    $key = Normalize-SnapshotPath $dir
+    if (-not $directories.ContainsKey($key)) { $directories[$key] = @() }
+    $directories[$key] += $item
+  }
+  function Build-FileBrowserIndex {
+    $directories = @{}
+    $directories[""] = @()
+    if ($kv.ContainsKey("file")) {
+      foreach ($row in $kv["file"]) {
+        $p = $row.Split("`t", 5)
+        if ($p.Count -lt 4) { continue }
+        $path = Normalize-SnapshotPath $p[0]
+        if ([string]::IsNullOrWhiteSpace($path)) { continue }
+        $segments = @($path -split '/' | Where-Object { $_ })
+        if ($segments.Count -eq 0) { continue }
+        $name = $segments[$segments.Count - 1]
+        $parent = ""
+        if ($segments.Count -gt 1) {
+          $parent = ($segments[0..($segments.Count - 2)] -join '/')
+        }
+        $itemType = if ($p[1] -eq "d") { "dir" } else { "file" }
+        $item = @{
+          name = $name
+          path = $path
+          type = $itemType
+          size = if ($p.Count -gt 2 -and $p[2] -match '^\d+$') { [int64]$p[2] } else { 0 }
+          modified = if ($p.Count -gt 3) { [string]$p[3] } else { "" }
+        }
+        Add-DirectoryItem $directories $parent $item
+      }
+    }
+    return @{
+      root_path = $script:ResolvedNextcloudDataPath
+      generated_at = (Get-Date).ToString("o")
+      mode = "snapshot"
+      directories = $directories
+    }
+  }
   $cloud = @()
   if ($kv.ContainsKey("nextcloud")) {
     foreach ($row in $kv["nextcloud"]) {
@@ -246,6 +297,7 @@ docker ps -a --format '{{.Names}}|{{.Status}}|{{.Ports}}' 2>/dev/null | grep -Ei
       port = $script:ResolvedPort
       user = $script:ResolvedRemoteUser
       remote_path = $script:ResolvedRemotePath
+      nextcloud_data_path = $script:ResolvedNextcloudDataPath
       host_key = $script:ResolvedSshHostKey
       has_password = -not [string]::IsNullOrWhiteSpace($script:ResolvedPassword)
     }
@@ -263,6 +315,7 @@ docker ps -a --format '{{.Names}}|{{.Status}}|{{.Ports}}' 2>/dev/null | grep -Ei
       temperature_c = FirstValue "temperature_c"
       memory = ParseBytesTriple (FirstValue "memory")
       disk_root = ParseDisk (FirstValue "disk_root")
+      disk_nextcloud = ParseDisk (FirstValue "disk_nextcloud")
     }
     docker = @{
       version = FirstValue "docker_version"
@@ -274,6 +327,7 @@ docker ps -a --format '{{.Names}}|{{.Status}}|{{.Ports}}' 2>/dev/null | grep -Ei
       ssh = FirstValue "service_ssh"
     }
     nextcloud = $cloud
+    file_browser = Build-FileBrowserIndex
     last_message = "Snapshot publicado por sync_to_vps2."
   }
 }
@@ -320,6 +374,7 @@ $script:ResolvedRemoteHost = Resolve-ConfigValue -Name "RemoteHost" -CurrentValu
 $script:ResolvedRemoteUser = Resolve-ConfigValue -Name "RemoteUser" -CurrentValue $RemoteUser -ScriptVariableName "PcsVps2User" -EnvironmentName "PCS_VPS2_USER" -DefaultValue "admin1"
 $script:ResolvedPort = Resolve-ConfigInt -CurrentValue $Port -ScriptVariableName "PcsVps2Port" -EnvironmentName "PCS_VPS2_PORT" -DefaultValue 22
 $script:ResolvedRemotePath = Resolve-ConfigValue -Name "RemotePath" -CurrentValue $RemotePath -ScriptVariableName "PcsVps2RemotePath" -EnvironmentName "PCS_VPS2_REMOTE_PATH" -DefaultValue "/home/admin1/powerfulcontrolsystem"
+$script:ResolvedNextcloudDataPath = Resolve-ConfigValue -Name "NextcloudDataPath" -CurrentValue $NextcloudDataPath -ScriptVariableName "PcsVps2NextcloudDataPath" -EnvironmentName "PCS_VPS2_NEXTCLOUD_DATA_PATH" -DefaultValue "/srv/data/nextcloud/data"
 $script:ResolvedRepoUrl = Resolve-ConfigValue -Name "RepoUrl" -CurrentValue $RepoUrl -ScriptVariableName "PcsVps2RepoUrl" -EnvironmentName "PCS_VPS2_REPO_URL" -DefaultValue ""
 if ([string]::IsNullOrWhiteSpace($script:ResolvedRepoUrl)) {
   $script:ResolvedRepoUrl = Resolve-ConfigValue -Name "RepoUrl" -CurrentValue "" -ScriptVariableName "PcsGitRemoteUrl" -EnvironmentName "PCS_REPO_URL" -DefaultValue ""
