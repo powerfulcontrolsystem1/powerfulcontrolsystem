@@ -197,11 +197,16 @@ printf 'docker_total=%s\n' "$(docker ps -a -q 2>/dev/null | wc -l | tr -d " ")";
 printf 'docker_running=%s\n' "$(docker ps -q 2>/dev/null | wc -l | tr -d " ")";
 ip -4 -o addr show scope global 2>/dev/null | awk '{print "ip="$2" "$4}';
 docker ps -a --format '{{.Names}}|{{.Status}}|{{.Ports}}' 2>/dev/null | grep -Ei '(^|[-_])(nextcloud|cloud)([-_]|$)|nextcloud' | sed 's/^/nextcloud=/' || true
-if [ -d "$nextcloud_data_path" ]; then
-  find "$nextcloud_data_path" -mindepth 1 -maxdepth 3 -printf 'file=%P\t%y\t%s\t%TY-%Tm-%Td %TH:%TM\n' 2>/dev/null | sort | head -n 900
+if __SUDO_PREFIX__ test -d "$nextcloud_data_path"; then
+  __SUDO_PREFIX__ find "$nextcloud_data_path" -mindepth 1 -maxdepth 3 -printf 'file=%P\t%y\t%s\t%TY-%Tm-%Td %TH:%TM\n' 2>/dev/null | sort | head -n 900
 fi
 '@
   $statusCommand = $statusCommand.Replace("__NEXTCLOUD_DATA_PATH__", (Convert-ToBashLiteral $script:ResolvedNextcloudDataPath))
+  $sudoPrefix = "sudo -n"
+  if (-not [string]::IsNullOrWhiteSpace($script:ResolvedPassword)) {
+    $sudoPrefix = "printf " + (Convert-ToBashLiteral ($script:ResolvedPassword + "`n")) + " | sudo -S -p ''"
+  }
+  $statusCommand = $statusCommand.Replace("__SUDO_PREFIX__", $sudoPrefix)
   $encodedStatus = [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes($statusCommand))
   $out = Invoke-Vps2Ssh -Command "echo $encodedStatus | base64 -d | bash"
   $kv = @{}
