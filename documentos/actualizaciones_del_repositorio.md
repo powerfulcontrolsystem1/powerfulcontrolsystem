@@ -16059,3 +16059,9 @@ Archivos modificados:
 - documentos/historial_de_cambios
 - documentos/mapa_modulos.md
 - web/administrar_empresa/panel.html
+
+2026-07-08 12:39:23 - Mensaje: Blindar rs ante CRLF en comandos remotos; Commit: a74ec493; PushStatus: OK
+Archivos modificados:
+- documentos/CHANGELOG.md
+- documentos/historial_de_cambios
+- scripts/sync_to_vps.ps1
