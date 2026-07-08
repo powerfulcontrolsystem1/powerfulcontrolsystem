@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Facturas electrónicas y comprobantes</title>
+  <title>Facturas electrónicas</title>
   <link rel="stylesheet" href="/estilos.css">
   <script src="/js/empresa_submenu_context.js"></script>
   <script src="/vendor/qrcode.min.js"></script>
@@ -28,6 +28,17 @@
     .fe-share-dropdown summary::-webkit-details-marker{display:none}
     .fe-share-menu{position:absolute;right:0;top:calc(100% + 4px);z-index:20;display:grid;gap:4px;min-width:170px;padding:6px;border:1px solid var(--border);border-radius:8px;background:var(--surface);box-shadow:var(--shadow)}
     .fe-share-menu .btn{width:100%;justify-content:flex-start}
+    .fe-export-dropdown{display:inline-block;position:relative}
+    .fe-export-dropdown summary{list-style:none;cursor:pointer}
+    .fe-export-dropdown summary::-webkit-details-marker{display:none}
+    .fe-export-menu{position:absolute;right:0;top:calc(100% + 4px);z-index:18;display:grid;gap:4px;min-width:150px;padding:6px;border:1px solid var(--border);border-radius:8px;background:var(--surface);box-shadow:var(--shadow)}
+    .fe-export-menu .btn{width:100%;justify-content:flex-start}
+    .fe-result-summary[hidden]{display:none}
+    .fe-result-summary{padding:12px 14px}
+    .fe-result-summary .empresa-module-kpis{gap:8px}
+    .fe-result-summary .kpi-box{padding:9px 10px;min-height:0}
+    .fe-result-summary .kpi-box strong{display:block;font-size:1.04rem}
+    .fe-result-summary .kpi-box small{display:block;color:var(--muted);font-weight:700;margin-top:2px}
     .factura-print-preview{background:#f3f4f6;padding:18px;overflow:auto}
     .factura-print-sheet{background:#fff;color:#111;border:1px solid #d1d5db;max-width:960px;margin:0 auto;padding:26px;font-family:Arial,Helvetica,sans-serif;box-shadow:none}
     .factura-print-head{display:flex;justify-content:space-between;gap:18px;border-bottom:2px solid #111;padding-bottom:16px;margin-bottom:14px}
@@ -69,55 +80,6 @@
 </head>
 <body class="empresa-subpage">
   <div class="container empresa-module">
-    <section class="card empresa-module-header fe-compact-header">
-      <div>
-        <span class="empresa-module-kicker">Documentos y cumplimiento</span>
-        <h2 style="margin:6px 0 8px;">Emisión, consulta y trazabilidad electrónica</h2>
-        <p class="page-header-lead" style="margin:0;">
-          Supervisa facturas, comprobantes y notas desde una bandeja más clara para auditoría, soporte y seguimiento documental.
-        </p>
-      </div>
-      <div class="empresa-module-overview">
-        <div class="empresa-module-kpi">
-          <strong>Emisión</strong>
-          <span>Facturas y comprobantes</span>
-        </div>
-        <div class="empresa-module-kpi">
-          <strong>Control</strong>
-          <span>Estados, validación y cliente</span>
-        </div>
-        <div class="empresa-module-kpi">
-          <strong>Soporte</strong>
-          <span>Detalle e impresión rápida</span>
-        </div>
-      </div>
-    </section>
-
-    <section class="card empresa-module-header fe-compact-header">
-      <div>
-        <h1 id="pageTitle">Facturas electrónicas y comprobantes</h1>
-        <p id="empresaInfo">Empresa: cargando...</p>
-      </div>
-      <div class="empresa-module-kpis">
-        <div class="kpi-box">
-          <span class="kpi-label">Documentos</span>
-          <strong id="kpiTotal">0</strong>
-        </div>
-        <div class="kpi-box">
-          <span class="kpi-label">Emitidas</span>
-          <strong id="kpiEmitidas">0</strong>
-        </div>
-        <div class="kpi-box">
-          <span class="kpi-label">Anuladas</span>
-          <strong id="kpiAnuladas">0</strong>
-        </div>
-        <div class="kpi-box">
-          <span class="kpi-label">Monto total</span>
-          <strong id="kpiMonto">$0</strong>
-        </div>
-      </div>
-    </section>
-
     <div id="messageBox" class="form-help"></div>
 
     <section class="card empresa-section fe-compact-filter">
@@ -130,12 +92,12 @@
       <form id="filtrosForm" class="form">
         <div class="form-row">
           <div class="form-col">
-            <label class="form-label" for="tipoDocumento">Tipo documento</label>
+            <label class="form-label" for="tipoDocumento">Tipo</label>
             <select id="tipoDocumento" class="form-input">
               <option value="">Todos</option>
-              <option value="factura_electronica">Factura electrónica</option>
-              <option value="comprobante_pago">Comprobante de pago</option>
-              <option value="nota_credito">Nota crédito</option>
+              <option value="comprobante_pago">Ventas</option>
+              <option value="factura_electronica">Facturas electrónicas</option>
+              <option value="nota_credito">Notas crédito</option>
             </select>
           </div>
           <div class="form-col">
@@ -194,10 +156,40 @@
         <div class="form-actions">
           <button id="btnBuscar" type="submit" class="btn">Buscar documentos</button>
           <button id="btnLimpiar" type="button" class="btn secondary">Limpiar filtros</button>
-          <button id="btnExportCsv" type="button" class="btn secondary">Exportar CSV</button>
-          <button id="btnExportExcel" type="button" class="btn secondary">Exportar Excel</button>
+          <details class="fe-export-dropdown">
+            <summary class="btn secondary">Exportar</summary>
+            <div class="fe-export-menu">
+              <button id="btnExportCsv" type="button" class="btn secondary">CSV</button>
+              <button id="btnExportExcel" type="button" class="btn secondary">Excel</button>
+            </div>
+          </details>
         </div>
       </form>
+    </section>
+
+    <section id="resultSummary" class="card empresa-section fe-result-summary" hidden>
+      <div class="empresa-module-kpis">
+        <div class="kpi-box">
+          <span class="kpi-label">Ventas</span>
+          <strong id="kpiVentasCount">0</strong>
+          <small id="kpiVentasMonto">$0</small>
+        </div>
+        <div class="kpi-box">
+          <span class="kpi-label">Facturas electrónicas</span>
+          <strong id="kpiFacturasCount">0</strong>
+          <small id="kpiFacturasMonto">$0</small>
+        </div>
+        <div class="kpi-box">
+          <span class="kpi-label">Ventas anuladas</span>
+          <strong id="kpiVentasAnuladasCount">0</strong>
+          <small id="kpiVentasAnuladasMonto">$0</small>
+        </div>
+        <div class="kpi-box">
+          <span class="kpi-label">Facturas anuladas</span>
+          <strong id="kpiFacturasAnuladasCount">0</strong>
+          <small id="kpiFacturasAnuladasMonto">$0</small>
+        </div>
+      </div>
     </section>
 
     <section class="card empresa-section">
@@ -279,6 +271,14 @@
         return '<span class="badge high">' + escapeHtml(norm || "borrador") + "</span>";
       }
 
+      function typeLabel(tipo) {
+        var norm = normalize(tipo).toLowerCase();
+        if (norm === "comprobante_pago") return "Venta";
+        if (norm === "factura_electronica") return "Factura electrónica";
+        if (norm === "nota_credito") return "Nota crédito";
+        return normalize(tipo) || "-";
+      }
+
       function apiRequest(url, options) {
         return fetch(url, Object.assign({ credentials: "same-origin" }, options || {})).then(function (resp) {
           if (!resp.ok) {
@@ -300,6 +300,7 @@
       var facturasBody = document.querySelector("#facturasTable tbody");
       var detalleFactura = document.getElementById("detalleFactura");
       var printPreview = document.getElementById("printPreview");
+      var resultSummary = document.getElementById("resultSummary");
 
       var state = {
         items: [],
@@ -621,22 +622,44 @@
       }
 
       function updateKPIs() {
-        var total = state.items.length;
-        var emitidas = 0;
-        var anuladas = 0;
-        var monto = 0;
+        var summary = {
+          ventas: { count: 0, amount: 0 },
+          facturas: { count: 0, amount: 0 },
+          ventasAnuladas: { count: 0, amount: 0 },
+          facturasAnuladas: { count: 0, amount: 0 }
+        };
 
         state.items.forEach(function (item) {
+          var tipo = normalize(item.tipo_documento).toLowerCase();
           var estadoDoc = normalize(item.estado_documento).toLowerCase();
-          if (estadoDoc === "emitida") emitidas += 1;
-          if (estadoDoc === "anulada") anuladas += 1;
-          monto += Number(item.monto_total || 0);
+          var estado = normalize(item.estado).toLowerCase();
+          var amount = Number(item.monto_total || 0);
+          var anulada = estadoDoc === "anulada" || estado === "inactivo";
+          var bucket = null;
+
+          if (tipo === "factura_electronica") {
+            bucket = anulada ? summary.facturasAnuladas : summary.facturas;
+          } else if (tipo === "comprobante_pago") {
+            bucket = anulada ? summary.ventasAnuladas : summary.ventas;
+          }
+
+          if (!bucket) return;
+          bucket.count += 1;
+          bucket.amount += Number.isFinite(amount) ? amount : 0;
         });
 
-        document.getElementById("kpiTotal").textContent = String(total);
-        document.getElementById("kpiEmitidas").textContent = String(emitidas);
-        document.getElementById("kpiAnuladas").textContent = String(anuladas);
-        document.getElementById("kpiMonto").textContent = formatMoney(monto, "COP");
+        function setSummary(idCount, idAmount, data) {
+          var countEl = document.getElementById(idCount);
+          var amountEl = document.getElementById(idAmount);
+          if (countEl) countEl.textContent = String(data.count);
+          if (amountEl) amountEl.textContent = formatMoney(data.amount, "COP");
+        }
+
+        setSummary("kpiVentasCount", "kpiVentasMonto", summary.ventas);
+        setSummary("kpiFacturasCount", "kpiFacturasMonto", summary.facturas);
+        setSummary("kpiVentasAnuladasCount", "kpiVentasAnuladasMonto", summary.ventasAnuladas);
+        setSummary("kpiFacturasAnuladasCount", "kpiFacturasAnuladasMonto", summary.facturasAnuladas);
+        if (resultSummary) resultSummary.hidden = false;
       }
 
       function renderDetalle(item) {
@@ -953,7 +976,7 @@
           var canCancel = canCancelInvoice(item);
           return '<tr data-key="' + escapeHtml(key) + '">' +
             '<td>' + escapeHtml(formatDate(item.fecha_documento || item.fecha_creacion)) + '</td>' +
-            '<td>' + escapeHtml(item.tipo_documento || "") + '</td>' +
+            '<td>' + escapeHtml(typeLabel(item.tipo_documento)) + '</td>' +
             '<td>' + escapeHtml(item.documento_codigo || "") + '</td>' +
             '<td>' + escapeHtml(item.numero_legal || "") + '</td>' +
             '<td>' + escapeHtml(clienteLabel) + '</td>' +
@@ -1255,13 +1278,13 @@
       }
 
       function loadEmpresa() {
-        empresaInfo.textContent = "Empresa ID: " + String(empresaID);
+        if (empresaInfo) empresaInfo.textContent = "Empresa ID: " + String(empresaID);
         return apiRequest("/super/api/empresas?id=" + encodeURIComponent(String(empresaID)))
           .then(function (empresa) {
             if (empresa && empresa.nombre) {
               state.empresaNombre = empresa.nombre;
-              pageTitle.textContent = "Facturas electrónicas y comprobantes - " + empresa.nombre;
-              empresaInfo.textContent = "Empresa: " + empresa.nombre + " (ID " + empresaID + ")";
+              if (pageTitle) pageTitle.textContent = "Facturas electrónicas - " + empresa.nombre;
+              if (empresaInfo) empresaInfo.textContent = "Empresa: " + empresa.nombre + " (ID " + empresaID + ")";
             }
           })
           .catch(function () {

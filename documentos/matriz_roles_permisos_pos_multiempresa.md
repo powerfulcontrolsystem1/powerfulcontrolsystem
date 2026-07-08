@@ -228,7 +228,7 @@
 - Defensa backend: las restricciones de roles especializados se reaplican despues de licencia, vertical, empresa y acceso compartido.
 - `cajero`: las variantes historicas `Caja`, `Caja principal` y `Caja turno`
   se normalizan como `cajero`. En `login_usuario.html` el menu queda limitado a
-  `Venta directa`, `Estaciones`, `Corte de Caja` y `Buscar ventas y facturas`,
+  `Venta directa`, `Estaciones`, `Corte de Caja` y `Facturas electronicas`,
   aunque el rol conserve permisos operativos internos para cobrar, facturar,
   cerrar turno, consultar catalogo de inventario, crear/actualizar clientes
   desde el carrito y reimprimir o reenviar documentos ya generados. Las APIs
@@ -236,9 +236,9 @@
   descuento, propinas y comisiones pueden ejecutarse sin mostrar las paginas
   administrativas de Productos o Clientes en el menu.
 
-2026-06-11: Nota de busqueda de ventas y facturas para cajero
-- `linkVentas` pasa a ser acceso operativo permitido para `cajero` con
-  `ventas:R`, usando `web/administrar_empresa/ventas.html`.
+2026-07-08: Nota de bandeja documental unica para cajero
+- `linkFacturasElectronicas` queda como acceso operativo permitido para
+  `cajero`, usando `web/administrar_empresa/facturas_electronicas.html`.
 - Alcance del cajero: consultar ventas/facturas, previsualizar, reimprimir,
   abrir facturas electronicas relacionadas y reenviar correo al cliente cuando
   el documento lo permita.

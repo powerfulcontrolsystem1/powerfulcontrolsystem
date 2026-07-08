@@ -142,6 +142,7 @@ try {
     linkProductos: true,
     linkVentaDirecta: true,
     linkVentas: true,
+    linkFacturasElectronicas: true,
     linkEstaciones: true,
     linkCorteCaja: true,
     linkCompras: true,
@@ -1577,7 +1578,7 @@ try {
       return;
     }
     if (normalizePermissionRole(permissionContext.rol || permissionContext.role || "") === "cajero") {
-      var cajeroLinksContext = ["linkVentaDirecta", "linkEstaciones", "linkCorteCaja", "linkVentas"];
+      var cajeroLinksContext = ["linkVentaDirecta", "linkEstaciones", "linkCorteCaja", "linkFacturasElectronicas"];
       links.forEach(function (link) {
         setMenuLinkVisible(link, !!link && cajeroLinksContext.indexOf(link.id) !== -1);
       });
@@ -1878,7 +1879,7 @@ try {
       return;
     }
     if (normalizedRole === "cajero") {
-      var cajeroLinks = ["linkVentaDirecta", "linkEstaciones", "linkCorteCaja", "linkVentas"];
+      var cajeroLinks = ["linkVentaDirecta", "linkEstaciones", "linkCorteCaja", "linkFacturasElectronicas"];
       links.forEach(function (link) {
         setMenuLinkVisible(link, !!link && cajeroLinks.indexOf(link.id) !== -1);
       });

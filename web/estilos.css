@@ -2006,7 +2006,7 @@ body:has(#aiChatDrawer.open) .admin-frame-toolbar{display:none!important}
 body.ai-chat-drawer-open .admin-content,
 body:has(#aiChatDrawer.open) .admin-content{overflow:hidden!important}
 .admin-empresa-shell.has-floating-menu .admin-frame-toolbar,
-body.has-floating-menu.admin-empresa-shell .admin-frame-toolbar{top:calc(var(--floating-menu-clearance, 72px) + 10px)}
+body.has-floating-menu.admin-empresa-shell .admin-frame-toolbar{top:max(var(--floating-menu-edge), env(safe-area-inset-top, 0px));right:calc(var(--floating-menu-clearance, 72px) + env(safe-area-inset-right, 0px))}
 .admin-favorite-btn:hover,.admin-favorite-btn:focus-visible{transform:translateY(-1px);background:var(--surface-soft);color:var(--accent-yellow,#facc15);outline:none}
 .admin-favorite-btn[aria-pressed="true"]{background:color-mix(in srgb,var(--accent-yellow,#facc15) 22%,var(--surface) 78%);border-color:var(--accent-yellow,#facc15);color:var(--accent-yellow,#facc15);box-shadow:0 16px 36px color-mix(in srgb,var(--accent-yellow,#facc15) 26%,transparent)}
 .ai-chat-backdrop{position:fixed;inset:0;z-index:1648;background:rgba(8,12,24,.42);opacity:0;pointer-events:none;transition:opacity .22s ease}
@@ -20098,6 +20098,11 @@ html[data-theme^="dark"] .mc-bulk select {
   body.admin-empresa-shell .admin-frame-toolbar {
     right: 10px;
     top: 10px;
+  }
+  body.has-floating-menu.admin-empresa-shell .admin-frame-toolbar,
+  body.admin-empresa-shell.has-floating-menu .admin-frame-toolbar {
+    right: calc(var(--floating-menu-clearance, 60px) + env(safe-area-inset-right, 0px));
+    top: max(var(--floating-menu-edge), env(safe-area-inset-top, 0px));
   }
 
   body.admin-empresa-shell .admin-content {

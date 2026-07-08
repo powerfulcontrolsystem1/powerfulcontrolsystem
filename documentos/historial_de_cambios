@@ -1,3 +1,9 @@
+2026-07-08: Facturas electronicas como bandeja unica operativa.
+- Administrar empresa retira `Buscar ventas y facturas` del menu y conserva `Facturas electronicas` sin etiqueta Beta como acceso documental principal.
+- Facturacion electronica elimina cabeceras comerciales, permite filtrar por ventas/facturas electronicas, muestra resumen de conteo y monto para ventas/facturas/anuladas y centraliza exportacion en un solo boton con submenu de formatos.
+- Rol cajero pasa a ver `Facturas electronicas` dentro del menu reducido y conserva permisos internos para consultar, reimprimir, reenviar y anular solo cuando el permiso efectivo lo permita.
+- UX: el boton de favoritos de paginas embebidas se posiciona a la izquierda del menu flotante para evitar solapamientos.
+
 2026-07-08: Bandejas de ventas/facturacion, menu flotante y permisos de anulacion.
 - Frontend: el menu flotante elimina compartir por correo, juegos, emulador y submenu Utilidades; Calculadora queda como accion principal y Cambiar apariencia/Cerrar sesion conservan icono.
 - Super administrador: se agrega enlace a Juegos; el emulador sigue dentro del lobby de Juegos y no aparece como item flotante.
