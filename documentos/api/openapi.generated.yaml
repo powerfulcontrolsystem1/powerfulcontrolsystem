@@ -1840,6 +1840,19 @@ paths:
       responses:
         "200":
           description: Respuesta exitosa o manejada por el handler real.
+  "/api/empresa/rappi":
+    get:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/rappi
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/rappi
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
   "/api/empresa/recetas_productos":
     get:
       tags: [empresa]
@@ -2526,6 +2539,19 @@ paths:
     post:
       tags: [publico]
       summary: Ruta inventariada /api/public/publicaciones/
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/api/public/rappi/webhook":
+    get:
+      tags: [publico]
+      summary: Ruta inventariada /api/public/rappi/webhook
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [publico]
+      summary: Ruta inventariada /api/public/rappi/webhook
       responses:
         "200":
           description: Respuesta exitosa o manejada por el handler real.

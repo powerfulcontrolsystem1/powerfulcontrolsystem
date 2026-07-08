@@ -1,3 +1,15 @@
+2026-07-07 - Favoritos y retorno al panel super
+- `web/js/super_page_tools.js`: herramienta comun para paginas de `web/super`, agrega botones `Favorito` y `Panel super` dentro de cada pagina, funcionando en iframe o como pagina abierta directamente.
+- `web/super/**/*.html`: paginas super actuales cargan `super_page_tools.js` para conservar una ruta visible al panel y permitir marcar favoritos desde la propia pagina.
+- `web/js/super_administrador.js`: completa la lista de paginas super permitidas para favoritos con Empresas, WhatsApp notificaciones, Vencimientos externos y VPS2.
+
+2026-07-07 - Diagramas tecnicos para super administrador y Codex
+- `web/js/super_diagramas_data.js`: fuente estructurada de los 15 diagramas del sistema, con nodos, relaciones, rutas del panel super y codigo Mermaid para lectura interna de Codex.
+- `web/js/super_diagramas.js`: visor estatico reusable que renderiza cada diagrama en SVG/HTML y muestra la fuente Mermaid copiable sin depender de librerias externas.
+- `web/super/diagramas/*.html`: paginas individuales del super administrador para modulos, ERD, multiempresa, arquitectura, ventas POS, DIAN, inventario, roles, API, despliegue, seguridad, auditoria, reportes, integraciones y agentes automaticos.
+- `documentos/diagramas/diagramas_sistema_pcs.md`: documento canonico con los 15 bloques Mermaid para lectura humana y uso de Codex al programar.
+- `documentos/diagramas/diagramas_sistema_pcs_manifest.json`: manifiesto estructurado de los diagramas, rutas, resumenes y fuentes Mermaid para herramientas internas.
+
 2026-07-06 - Panel super VPS2
 - `backend/handlers/super_vps2.go`: endpoint super administrador `/super/api/vps2` para consultar estado del VPS2 por SSH, recursos del sistema, Docker, servicios y contenedores Nextcloud, con acciones cerradas de reinicio de Nextcloud, reinicio y apagado.
 - `web/super/vps2.html`: pagina del panel super para ver estado, temperatura, procesador, disco, memoria, Docker, servicios y ejecutar acciones confirmadas sobre VPS2.
@@ -11634,3 +11646,15 @@ backend/handlers/user_config.go - Controlador que expone /api/user/configuracion
 - web/super/configuracion/whatsapp_notificaciones.html: pantalla super para activar/desactivar WhatsApp interno, guardar credenciales, probar envio y controlar eventos.
 - web/super/recordatorios_infraestructura.html: pantalla super para administrar vencimientos externos de infraestructura.
 - web/administrar_empresa/productos/bodegas.html: redireccion de compatibilidad para enlaces antiguos de bodegas y traslados.
+2026-07-07 - Integracion Rappi por empresa
+
+- `backend/db/rappi.go`: define esquema y helpers de persistencia para
+  `empresa_rappi_configuracion` y `empresa_rappi_ordenes`, siempre filtrados por
+  `empresa_id`.
+- `backend/handlers/rappi.go`: expone `/api/empresa/rappi` para configuracion,
+  prueba OAuth, tiendas, ordenes, acciones operativas y
+  `/api/public/rappi/webhook` con verificacion opcional de firma HMAC; valida
+  que los dominios salientes sean HTTPS de Rappi.
+- `web/administrar_empresa/rappi.html`: consola empresarial para activar Rappi,
+  guardar referencias de credenciales, probar API, listar tiendas/ordenes y
+  operar estados basicos.

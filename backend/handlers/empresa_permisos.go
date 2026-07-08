@@ -460,6 +460,7 @@ var permissionPagesCatalogOrdered = []permissionPageRule{
 	{PaginaClave: "linkCarritoCompras", Modulo: permModuleVentas, Accion: permActionCreate, Titulo: "Carritos", Grupo: "Configuracion - Ventas y cobro"},
 	{PaginaClave: "linkCodigosDescuento", Modulo: permModuleVentas, Accion: permActionCreate, Titulo: "Codigos de descuento", Grupo: "Canales digitales y colaboracion"},
 	{PaginaClave: "linkRedSocialComercial", Modulo: permModuleVentas, Accion: permActionCreate, Titulo: "Red social empresarial", Grupo: "Canales digitales y colaboracion"},
+	{PaginaClave: "linkRappi", Modulo: permModuleVentaPublica, Accion: permActionCreate, Titulo: "Rappi", Grupo: "Canales digitales y colaboracion"},
 	{PaginaClave: "linkChatIA", Modulo: permModuleVentas, Accion: permActionRead, Titulo: "Asistente IA (chat empresarial)", Grupo: "Canales digitales y colaboracion"},
 	{PaginaClave: "linkCentroIAEmpresarial", Modulo: permModuleReportes, Accion: permActionRead, Titulo: "Centro IA empresarial", Grupo: "Canales digitales y colaboracion"},
 	{PaginaClave: "linkReservasHotel", Modulo: permModuleReservasHotel, Accion: permActionCreate, Titulo: "Reservas (hotel / estaciones)", Grupo: "Plantillas de negocio"},
@@ -3776,6 +3777,8 @@ func resolvePermissionPageKeyForRequest(r *http.Request) string {
 			return "linkCartaProductosPublica"
 		}
 		return "linkVentaPublica"
+	case path == "/api/empresa/rappi":
+		return "linkRappi"
 	case strings.HasPrefix(path, "/api/empresa/carritos_compra"):
 		modo := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("modo")))
 		carritoCodigo := strings.ToUpper(strings.TrimSpace(r.URL.Query().Get("carrito_codigo")))

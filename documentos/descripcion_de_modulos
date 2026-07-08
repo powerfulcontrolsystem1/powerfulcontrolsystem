@@ -1,3 +1,15 @@
+2026-07-07: Favoritos y retorno al panel super.
+- Modulos afectados: `super_administrador`, `navegacion_super`.
+- Favoritos: todas las paginas listadas en el menu super quedan permitidas para el boton de estrella del shell; se completan rutas faltantes como `Empresas`, `WhatsApp notificaciones`, `Vencimientos externos` y `VPS2`.
+- Retorno al panel: todas las paginas bajo `web/super` cargan una herramienta comun con boton `Panel super`; si la pagina esta dentro del iframe, lleva el iframe a `licencias_resumen.html`, y si esta abierta directamente, vuelve al shell `/super_administrador.html`.
+- Alcance: frontend estatico; no agrega endpoints, tablas, permisos ni dependencias.
+
+2026-07-07: Diagramas tecnicos en super administrador.
+- Modulos afectados: `super_administrador`, `documentacion_tecnica`, `arquitectura`.
+- Navegacion: `Super administrador > Diagramas tecnicos` abre una pagina propia para cada diagrama solicitado: modulos, base de datos/ERD, multiempresa, arquitectura, ventas POS, facturacion DIAN, inventario, roles/permisos, API/endpoints, despliegue, seguridad, auditoria/logs, reportes, integraciones y agentes automaticos.
+- Fuente para Codex: `documentos/diagramas/diagramas_sistema_pcs.md` y `documentos/diagramas/diagramas_sistema_pcs_manifest.json` conservan las fuentes Mermaid y metadatos para uso interno de programacion asistida.
+- Alcance: frontend y documentacion estatica; no agrega endpoints, tablas, permisos empresariales ni dependencias externas.
+
 2026-06-24: Carritos de compra con historial no agrupado.
 - Modulos afectados: `carritos`, `ventas`, `corte_caja`.
 - Nuevo historial operativo: cada adicion de producto al carrito se guarda con hora, usuario, cantidad, precio y total, sin agrupar aunque el detalle visible del carrito consolide cantidades.
@@ -4307,3 +4319,12 @@ Captura inteligente de compras y gastos
 - El modulo contable automatico procesa `empresa_eventos_contables` por `empresa_id` y genera `empresa_asientos_contables` con partida doble, idempotencia y bloqueo por descuadre.
 - Cobertura de reglas: ventas/facturas/notas, pagos y abonos, compras/documento soporte, CxC/CxP, anticipos, inventario/costo de venta, nomina causada/pagada, nomina electronica y activos fijos/depreciacion/deterioro.
 - Los eventos precontables que no tengan base monetaria suficiente quedan fallidos con error saneado hasta que el modulo origen emita un evento contable real o complete el payload.
+## Rappi por empresa
+
+Modulo de canal digital para que cada empresa conecte sus tiendas Rappi al POS.
+La pantalla vive en `web/administrar_empresa/rappi.html`, protegida por
+`venta_publica:C`, y el backend usa `/api/empresa/rappi`. Permite guardar
+configuracion por empresa, probar credenciales, consultar tiendas, recibir
+ordenes nuevas/SENT, tomar/rechazar/marcar listas y registrar webhooks firmados.
+No crea ventas internas automaticamente hasta que la empresa configure mapeo real
+de productos/SKUs, caja, impuestos, cliente y reglas de facturacion.

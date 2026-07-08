@@ -37,6 +37,7 @@ __pycache__/
 Thumbs.db
 Desktop.ini
 .nextcloudsync.log
+.sync_*
 .sync_*.db-wal
 backend/.gotmp/
 backend/.env.local

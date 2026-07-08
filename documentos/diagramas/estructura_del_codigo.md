@@ -6075,13 +6075,16 @@ flowchart TD
 
 ## Indice de diagramas de referencia
 
+- diagramas_sistema_pcs.md
+- diagramas_sistema_pcs_manifest.json
 - diagrama_entidad_relacion.md
 - diagrama_entidad_relacion.svg
 - docker_vps_estructura.svg
 
 Nota:
 - Los nombres historicos `diagrama_casos_de_uso.md`, `diagrama_roles_permisos.md`, `diagrama_flujo_procesos.md`, `diagrama_arquitectura_sistema.md` y `versionado.md` ya no se conservan como artefactos vigentes en `documentos/diagramas`.
-- La referencia canonica actual para relaciones de datos es `diagrama_entidad_relacion.md` junto con `documentos/estructura_bd.md`.
+- La referencia canonica actual para el paquete de diagramas funcionales, arquitectura, ERD, multiempresa, flujos, seguridad e integraciones es `diagramas_sistema_pcs.md`.
+- La referencia canonica actual para relaciones de datos detalladas sigue siendo `diagrama_entidad_relacion.md` junto con `documentos/estructura_bd.md`.
 
 ## Actualizacion 2026-04-03 (observabilidad transversal por empresa)
 
@@ -6646,3 +6649,16 @@ La ayuda funcional se actualiza en `web/ayuda/ayuda.html` y el estado compacto d
 - `web/administrar_empresa.html`, `web/administrar_empresa/finanzas_menu.html`
   y `web/js/administrar_empresa.js` incorporan el enlace en el menu principal,
   centro financiero y catalogo de permisos frontend.
+## 2026-07-07 - Rappi
+
+- Ruta empresarial: `/api/empresa/rappi` en `backend/main.go`, protegida con
+  `WithEmpresaVentaPublicaPermissions`.
+- Webhook publico: `/api/public/rappi/webhook`, exige `empresa_id` y valida
+  `Rappi-Signature` si hay secreto configurado.
+- Backend: `backend/handlers/rappi.go` consume OAuth/API Rappi con libreria
+  estandar y guarda bitacora.
+- Datos: `backend/db/rappi.go` crea y consulta `empresa_rappi_configuracion` y
+  `empresa_rappi_ordenes`.
+- Frontend: `web/administrar_empresa/rappi.html` se enlaza desde
+  `web/administrar_empresa.html` y permisos/menu en
+  `web/js/administrar_empresa.js`.

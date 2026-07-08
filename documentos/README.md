@@ -11,15 +11,17 @@ Este archivo organiza la lectura tecnica y funcional del repositorio para desarr
 
 1. `documentos/descripcion_del_proyecto`
 2. `documentos/estructura_bd.md`
-3. `documentos/diagramas/diagrama_entidad_relacion.md`
-4. `documentos/diagramas/estructura_del_codigo.md`
-5. `documentos/matriz_roles_permisos_pos_multiempresa.md`
-6. `documentos/reporte_estado_modulos_2026-05-05.md`
-7. `documentos/gobernanza_tecnica/README.md`
-8. `documentos/historial_de_cambios`
-9. `CHANGELOG.md`
+3. `documentos/diagramas/diagramas_sistema_pcs.md`
+4. `documentos/diagramas/diagrama_entidad_relacion.md`
+5. `documentos/diagramas/estructura_del_codigo.md`
+6. `documentos/matriz_roles_permisos_pos_multiempresa.md`
+7. `documentos/reporte_estado_modulos_2026-05-05.md`
+8. `documentos/gobernanza_tecnica/README.md`
+9. `documentos/historial_de_cambios`
+10. `CHANGELOG.md`
 
 ## Estado documental reciente
+- 2026-07-07: se agregan 15 diagramas tecnicos visibles en `Super administrador > Diagramas tecnicos` y fuentes internas Mermaid/JSON para Codex en `documentos/diagramas/diagramas_sistema_pcs.md` y `diagramas_sistema_pcs_manifest.json`.
 - 2026-06-10: Docker/VPS incorpora snapshot completo desde super administrador,
   con descarga restaurable, historial, retencion y subida opcional por `rclone`
   sin guardar secretos de nube ni incluir `.env.platform` por defecto.
@@ -84,6 +86,8 @@ Este archivo organiza la lectura tecnica y funcional del repositorio para desarr
 - Esquema fisico de base de datos: `documentos/estructura_bd.md`
 - Ayuda tecnica de APIs e integraciones: `documentos/api/ayuda_apis.md`
 - Inventario OpenAPI generado: `documentos/api/openapi.generated.yaml`
+- Diagramas tecnicos para super administrador y Codex: `documentos/diagramas/diagramas_sistema_pcs.md`
+- Manifiesto estructurado de diagramas: `documentos/diagramas/diagramas_sistema_pcs_manifest.json`
 - Diagrama entidad relacion vigente: `documentos/diagramas/diagrama_entidad_relacion.md`
 - Imagen del DER: `documentos/diagramas/diagrama_entidad_relacion.svg`
 - Arquitectura tecnica y mapa de archivos: `documentos/diagramas/estructura_del_codigo.md`

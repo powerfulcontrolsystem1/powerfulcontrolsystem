@@ -8366,6 +8366,59 @@ html[data-theme^="dark"] .checkout-payment-hub{
 }
 
 /* Subpáginas internas del módulo administrar_empresa */
+
+.rappi-page .form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+}
+
+.rappi-page .form-grid.compact {
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  margin-top: 12px;
+}
+
+.rappi-page .form-field,
+.rappi-page .check-row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.rappi-page .check-row {
+  flex-direction: row;
+  align-items: center;
+}
+
+.rappi-page .form-field.full {
+  margin-top: 12px;
+}
+
+.rappi-page .json-output {
+  max-height: 280px;
+  overflow: auto;
+  margin-top: 12px;
+  padding: 12px;
+  border: 1px solid var(--border-color, #d7dde8);
+  background: var(--panel-muted-bg, #f7f9fc);
+  white-space: pre-wrap;
+}
+
+.rappi-page .status-line {
+  margin: 10px 0;
+  color: var(--text-muted, #526070);
+}
+
+.rappi-page .status-line.error {
+  color: #b42318;
+  font-weight: 700;
+}
+
+.rappi-page .action-cell {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
 .empresa-subpage{
   background:var(--bg);
   color:var(--text);

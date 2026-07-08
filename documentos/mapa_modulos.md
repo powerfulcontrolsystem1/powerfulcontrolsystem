@@ -3,6 +3,32 @@
 Tabla de ubicacion rapida para no buscar desde cero cada modulo. Si una fila
 queda incompleta al implementar una mejora, actualizarla en el mismo cambio.
 
+Actualizacion 2026-07-07: `Super administrador > Diagramas tecnicos` agrega
+15 paginas estaticas bajo `web/super/diagramas/` para modulos, ERD,
+multiempresa, arquitectura, ventas POS, facturacion DIAN, inventario,
+roles/permisos, API/endpoints, despliegue, seguridad, auditoria/logs, reportes,
+integraciones y agentes automaticos. El visor usa `web/js/super_diagramas.js`
+y la fuente estructurada `web/js/super_diagramas_data.js`; para Codex quedan
+fuentes Mermaid/JSON en `documentos/diagramas/diagramas_sistema_pcs.md` y
+`documentos/diagramas/diagramas_sistema_pcs_manifest.json`. No agrega APIs,
+tablas, permisos empresariales ni dependencias externas.
+
+Actualizacion 2026-07-07: la navegacion del super administrador queda
+homologada para favoritos y retorno al panel. `web/js/super_administrador.js`
+permite marcar como favorito todas las rutas del menu super, y
+`web/js/super_page_tools.js` se carga en las paginas `web/super/**/*.html` para
+mostrar `Favorito` y `Panel super` dentro de cada pagina, tanto en iframe como
+en apertura directa.
+
+Actualizacion 2026-07-07: `Administrar empresa > Canales digitales y
+colaboracion > Rappi` queda en `web/administrar_empresa/rappi.html` y usa
+`/api/empresa/rappi` con permiso `venta_publica:C`. El modulo guarda
+configuracion por `empresa_id` en `empresa_rappi_configuracion`, registra
+ordenes/webhooks en `empresa_rappi_ordenes` y recibe eventos en
+`/api/public/rappi/webhook?empresa_id=...` verificando `Rappi-Signature` con
+HMAC-SHA256 cuando la empresa configure `webhook_secret_ref`. La API oficial de
+Rappi requiere onboarding/credenciales del aliado; PCS no hardcodea secretos.
+
 Actualizacion 2026-06-24: `Administrar empresa > Panel` mantiene la tarjeta
 `Noticias` configurable por empresa, pero el boton `Ocultar noticia` solo marca
 como leida la noticia actual en el navegador para esa empresa; cuando el sistema
@@ -506,6 +532,7 @@ por permisos empresariales y siempre filtrado por `empresa_id`.
 | Noticias portal | `web/noticias.html`, editor `web/super/noticias.html`, enlace `Noticias` en `web/menu.js` y menu `Portal publico e index` del super | `/api/public/noticias`, `/super/api/noticias`, `backend/handlers/pagina_principal_handlers.go` | `pcs_superadministrador.configuraciones` claves `super.noticias_portal.v1` y `super.noticias_portal.v1.updated_by` | publico lectura; super_administrador edicion | Abrir Noticias desde menu flotante, verificar portada/foto/feed en PC y celular, editar noticia DIAN en super, guardar, publicar/desactivar |
 | Informacion modulos index | `web/super/informacion_de_modulos.html`, `web/index.html` | `/super/api/informacion_de_modulos`, `/api/public/informacion_de_modulos` | `pcs_superadministrador.configuraciones` | super_administrador | Editar vineta, ver index con fallback |
 | Portal publico | `web/index.html`, rutas de respaldo `web/Informacion_de_contacto.html`, `web/privacidad_y_datos.html`, `web/quienes_somos.html`, `web/hotel_motel_domotica.html`, `web/js/portal_visits.js`, assets del carrusel en `web/img/portal-systems/` y fotos realistas en `web/img/portal-systems/realistic/` | `/api/public/*` | portal, visitas agregadas | publico/super lectura | Modo claro/oscuro, movil, abrir `Mas > Contacto/Privacidad y datos/Quienes somos/Sistema Hotel Motel` dentro de `index.html`, verificar rutas de respaldo, contacto publico, mapa en super y que `Mas sistemas` muestre foto realista distinta por tarjeta |
+| Rappi | `web/administrar_empresa/rappi.html`, acceso `linkRappi` en Canales digitales y colaboracion | `/api/empresa/rappi?action=config|stores|orders|orders_sent|events|test|take|reject|ready`, `/api/public/rappi/webhook`, `backend/handlers/rappi.go` | `empresa_rappi_configuracion`, `empresa_rappi_ordenes` | `venta_publica:C`, wrapper `WithEmpresaVentaPublicaPermissions`; webhook publico exige `empresa_id` y firma HMAC si hay secreto | Guardar credenciales por referencia, probar token/stores, listar tiendas, traer ordenes READY/SENT, tomar/rechazar/listo, recibir webhook firmado, confirmar bitacora por `empresa_id`; venta interna real queda pendiente de mapeo de productos/caja por empresa |
 | Docker y VPS | `deploy/`, `web/super/docker_portabilidad.html`, `scripts/crear_backup_vps.ps1` | `/super/api/docker_portabilidad`, `/super/api/vps_snapshots`, worker `super.vps_snapshot_worker`; backup externo por PuTTY/SSH desde PowerShell | paquete portable sin secretos; `super_vps_snapshots`; configuraciones `super.vps_snapshot.*`; copias fisicas en `backup/vps_snapshots`; nube via `rclone` externo; backups completos versionados en `D:\Backup vps PCS` con dump PostgreSQL, volumenes Docker, imagenes PCS, inventario, SHA256 y restaurador | super_administrador / operacion local autorizada | Exportar paquete portable, crear snapshot manual, descargar `.tar.gz`, verificar que no incluya `.env.platform` por defecto, configurar ruta `rclone`, revisar historial, retencion local/remota, ejecutar `.\scripts\crear_backup_vps.ps1`, validar manifest/tar y probar restauracion en VPS desechable antes de produccion |
 | Apariencias / menu flotante | `web/menu.js`, paginas con selector de tema y campana global de notificaciones | `/api/user/configuracion`; consume `/api/empresa/buzon?action=resumen` y marca leido con `action=leer` por `empresa_id` | `usuario_configuracion.apariencia`; notificaciones de buzon por `empresa_id` | Sesion autenticada cuando guarda en servidor; lectura visual de notificaciones empresariales | Cambiar tema en escritorio y movil; validar iframes con `dark-corporate`, `dark-absolute`, `dark-obsidian` y `light`; verificar que el boton flotante muestre contador, que la campana sea el primer item del panel, que despliegue el resumen del buzon dentro del menu y que el clic navegue al enlace relacionado |
 ## 2026-07-05 - WhatsApp interno, licencias y recordatorios

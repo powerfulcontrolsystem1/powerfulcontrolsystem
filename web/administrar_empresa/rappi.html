@@ -1,0 +1,290 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Rappi</title>
+  <link rel="stylesheet" href="/estilos.css">
+  <script src="/menu.js"></script>
+  <script src="/js/empresa_submenu_context.js"></script>
+</head>
+<body class="admin-empresa-shell">
+  <main class="admin-page-container rappi-page">
+    <header class="admin-page-header">
+      <div>
+        <h1>Rappi</h1>
+        <p>Canal de venta conectado al POS de la empresa.</p>
+      </div>
+      <div class="admin-page-actions">
+        <button type="button" class="btn" id="btnRappiTest">Probar API</button>
+        <button type="button" class="btn btn-primary" id="btnRappiSave">Guardar</button>
+      </div>
+    </header>
+
+    <section class="admin-section">
+      <div class="form-grid">
+        <label class="form-field">
+          <span>Activo</span>
+          <select id="rappiActivo">
+            <option value="false">No</option>
+            <option value="true">Si</option>
+          </select>
+        </label>
+        <label class="form-field">
+          <span>Ambiente</span>
+          <select id="rappiAmbiente">
+            <option value="development">Desarrollo</option>
+            <option value="production">Produccion</option>
+          </select>
+        </label>
+        <label class="form-field">
+          <span>Country domain</span>
+          <input id="rappiCountryDomain" autocomplete="off" placeholder="https://api.rappi.com.co">
+        </label>
+        <label class="form-field">
+          <span>Auth domain</span>
+          <input id="rappiNewDomain" autocomplete="off" placeholder="https://api.rappi.com.co">
+        </label>
+        <label class="form-field">
+          <span>Client ID</span>
+          <input id="rappiClientID" autocomplete="off">
+        </label>
+        <label class="form-field">
+          <span>Client secret ref</span>
+          <input id="rappiClientSecretRef" autocomplete="off" placeholder="env:RAPPI_CLIENT_SECRET_EMPRESA_12">
+        </label>
+        <label class="form-field">
+          <span>Webhook secret ref</span>
+          <input id="rappiWebhookSecretRef" autocomplete="off" placeholder="env:RAPPI_WEBHOOK_SECRET_EMPRESA_12">
+        </label>
+        <label class="form-field">
+          <span>Store integration ID</span>
+          <input id="rappiStoreIntegrationID" autocomplete="off">
+        </label>
+        <label class="form-field">
+          <span>Rappi store ID</span>
+          <input id="rappiStoreID" autocomplete="off">
+        </label>
+        <label class="form-field">
+          <span>Tiempo de cocina</span>
+          <input id="rappiCookingTime" type="number" min="1" max="180" step="1" value="15">
+        </label>
+      </div>
+      <div class="form-grid compact">
+        <label class="check-row">
+          <input id="rappiAutoTake" type="checkbox">
+          <span>Tomar ordenes automaticamente cuando el flujo lo permita</span>
+        </label>
+        <label class="check-row">
+          <input id="rappiCrearVenta" type="checkbox">
+          <span>Preparar conversion a venta interna despues de mapear productos y caja</span>
+        </label>
+      </div>
+      <label class="form-field full">
+        <span>Observaciones</span>
+        <textarea id="rappiObservaciones" rows="3"></textarea>
+      </label>
+    </section>
+
+    <section class="admin-section">
+      <div class="admin-section-heading">
+        <h2>Operacion</h2>
+        <div class="admin-page-actions">
+          <button type="button" class="btn" id="btnRappiStores">Tiendas</button>
+          <button type="button" class="btn" id="btnRappiOrders">Ordenes nuevas</button>
+          <button type="button" class="btn" id="btnRappiSent">Ordenes SENT</button>
+        </div>
+      </div>
+      <div class="status-line" id="rappiStatus">Cargando...</div>
+      <div class="table-responsive">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Orden</th>
+              <th>Tienda</th>
+              <th>Estado</th>
+              <th>Total</th>
+              <th>Origen</th>
+              <th>Actualizada</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="rappiOrdersBody"></tbody>
+        </table>
+      </div>
+      <pre class="json-output" id="rappiRawOutput"></pre>
+    </section>
+  </main>
+
+  <script>
+    (function () {
+      var state = { empresaId: "", config: {}, orders: [] };
+      function $(id) { return document.getElementById(id); }
+      function getEmpresaId() {
+        try {
+          var params = new URLSearchParams(window.location.search || "");
+          return String(params.get("empresa_id") || params.get("id") || "").trim();
+        } catch (e) { return ""; }
+      }
+      function api(action) {
+        var url = "/api/empresa/rappi?empresa_id=" + encodeURIComponent(state.empresaId || "");
+        if (action) url += "&action=" + encodeURIComponent(action);
+        return url;
+      }
+      function setStatus(text, isError) {
+        var el = $("rappiStatus");
+        if (!el) return;
+        el.textContent = text || "";
+        el.className = "status-line" + (isError ? " error" : "");
+      }
+      function setRaw(data) {
+        var el = $("rappiRawOutput");
+        if (!el) return;
+        el.textContent = data ? JSON.stringify(data, null, 2) : "";
+      }
+      function fillConfig(cfg) {
+        cfg = cfg || {};
+        state.config = cfg;
+        $("rappiActivo").value = cfg.activo ? "true" : "false";
+        $("rappiAmbiente").value = cfg.ambiente || "development";
+        $("rappiCountryDomain").value = cfg.country_domain || "https://api.rappi.com.co";
+        $("rappiNewDomain").value = cfg.new_domain || "https://api.rappi.com.co";
+        $("rappiClientID").value = cfg.client_id || "";
+        $("rappiClientSecretRef").value = cfg.client_secret_ref === "configurado" ? "" : (cfg.client_secret_ref || "");
+        $("rappiWebhookSecretRef").value = cfg.webhook_secret_ref === "configurado" ? "" : (cfg.webhook_secret_ref || "");
+        $("rappiStoreIntegrationID").value = cfg.store_integration_id || "";
+        $("rappiStoreID").value = cfg.rappi_store_id || "";
+        $("rappiCookingTime").value = cfg.cooking_time_minutes || 15;
+        $("rappiAutoTake").checked = !!cfg.auto_tomar_ordenes;
+        $("rappiCrearVenta").checked = !!cfg.crear_venta_interna;
+        $("rappiObservaciones").value = cfg.observaciones || "";
+      }
+      function collectConfig() {
+        var keepClientSecret = state.config && state.config.client_secret_ref === "configurado" && !$("rappiClientSecretRef").value.trim();
+        var keepWebhookSecret = state.config && state.config.webhook_secret_ref === "configurado" && !$("rappiWebhookSecretRef").value.trim();
+        return {
+          empresa_id: Number(state.empresaId || 0),
+          activo: $("rappiActivo").value === "true",
+          ambiente: $("rappiAmbiente").value,
+          country_domain: $("rappiCountryDomain").value.trim(),
+          new_domain: $("rappiNewDomain").value.trim(),
+          client_id: $("rappiClientID").value.trim(),
+          client_secret_ref: keepClientSecret ? state.config.client_secret_ref : $("rappiClientSecretRef").value.trim(),
+          webhook_secret_ref: keepWebhookSecret ? state.config.webhook_secret_ref : $("rappiWebhookSecretRef").value.trim(),
+          store_integration_id: $("rappiStoreIntegrationID").value.trim(),
+          rappi_store_id: $("rappiStoreID").value.trim(),
+          auto_tomar_ordenes: $("rappiAutoTake").checked,
+          cooking_time_minutes: Number($("rappiCookingTime").value || 15),
+          crear_venta_interna: $("rappiCrearVenta").checked,
+          observaciones: $("rappiObservaciones").value.trim()
+        };
+      }
+      async function requestJSON(url, options) {
+        var res = await fetch(url, Object.assign({ credentials: "same-origin" }, options || {}));
+        var text = await res.text();
+        var data = {};
+        try { data = text ? JSON.parse(text) : {}; } catch (e) { data = { raw: text }; }
+        if (!res.ok) {
+          throw new Error((data && (data.error || data.message || data.raw)) || ("HTTP " + res.status));
+        }
+        return data;
+      }
+      function renderOrders(rows) {
+        var body = $("rappiOrdersBody");
+        if (!body) return;
+        rows = rows || [];
+        state.orders = rows;
+        body.innerHTML = rows.length ? rows.map(function (row) {
+          var orderId = String(row.rappi_order_id || "");
+          return "<tr>" +
+            "<td>" + esc(orderId) + "</td>" +
+            "<td>" + esc(row.rappi_store_id || row.store_integration_id || "") + "</td>" +
+            "<td>" + esc(row.estado_local || row.estado_rappi || "") + "</td>" +
+            "<td>" + esc((row.moneda || "COP") + " " + (row.total || 0)) + "</td>" +
+            "<td>" + esc(row.origen || "") + "</td>" +
+            "<td>" + esc(row.fecha_actualizacion || "") + "</td>" +
+            "<td class=\"action-cell\">" +
+              "<button type=\"button\" class=\"btn btn-small\" data-action=\"take\" data-order=\"" + escAttr(orderId) + "\">Tomar</button>" +
+              "<button type=\"button\" class=\"btn btn-small\" data-action=\"ready\" data-order=\"" + escAttr(orderId) + "\">Listo</button>" +
+              "<button type=\"button\" class=\"btn btn-small danger\" data-action=\"reject\" data-order=\"" + escAttr(orderId) + "\">Rechazar</button>" +
+            "</td>" +
+          "</tr>";
+        }).join("") : "<tr><td colspan=\"7\">Sin ordenes registradas.</td></tr>";
+      }
+      function esc(value) {
+        return String(value == null ? "" : value).replace(/[&<>"']/g, function (ch) {
+          return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[ch];
+        });
+      }
+      function escAttr(value) { return esc(value).replace(/`/g, "&#96;"); }
+      async function load() {
+        state.empresaId = getEmpresaId();
+        if (!state.empresaId) {
+          setStatus("Falta empresa_id en la URL.", true);
+          return;
+        }
+        try {
+          var data = await requestJSON(api(""));
+          fillConfig(data.config || {});
+          renderOrders(data.ordenes || []);
+          setStatus("Webhook sugerido: " + (data.webhook_url_sugerida || ""));
+        } catch (e) {
+          setStatus(e.message, true);
+        }
+      }
+      async function save() {
+        try {
+          setStatus("Guardando...");
+          var data = await requestJSON(api(""), {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(collectConfig())
+          });
+          fillConfig(data.config || {});
+          setStatus("Configuracion guardada.");
+        } catch (e) {
+          setStatus(e.message, true);
+        }
+      }
+      async function runAction(action) {
+        try {
+          setStatus("Consultando Rappi...");
+          var data = await requestJSON(api(action), { method: action === "test" ? "POST" : "GET" });
+          setRaw(data.rappi_response || data);
+          if (data.ordenes) renderOrders(data.ordenes);
+          setStatus("Respuesta Rappi recibida.");
+        } catch (e) {
+          setStatus(e.message, true);
+        }
+      }
+      async function orderAction(action, orderId) {
+        if (!orderId) return;
+        try {
+          setStatus("Enviando accion a Rappi...");
+          var data = await requestJSON(api(action), {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ order_id: orderId, cooking_time_minutes: Number($("rappiCookingTime").value || 15) })
+          });
+          setRaw(data.rappi_response || data);
+          await load();
+          setStatus("Accion enviada.");
+        } catch (e) {
+          setStatus(e.message, true);
+        }
+      }
+      $("btnRappiSave").addEventListener("click", save);
+      $("btnRappiTest").addEventListener("click", function () { runAction("test"); });
+      $("btnRappiStores").addEventListener("click", function () { runAction("stores"); });
+      $("btnRappiOrders").addEventListener("click", function () { runAction("orders"); });
+      $("btnRappiSent").addEventListener("click", function () { runAction("orders_sent"); });
+      $("rappiOrdersBody").addEventListener("click", function (event) {
+        var btn = event.target && event.target.closest ? event.target.closest("button[data-action]") : null;
+        if (!btn) return;
+        orderAction(btn.getAttribute("data-action"), btn.getAttribute("data-order"));
+      });
+      load();
+    })();
+  </script>
+</body>
+</html>

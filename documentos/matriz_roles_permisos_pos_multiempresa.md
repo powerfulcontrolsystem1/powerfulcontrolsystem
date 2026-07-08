@@ -1,3 +1,8 @@
+2026-07-07: Nota de diagramas tecnicos super administrador
+- `web/super/diagramas/*.html` queda dentro del panel super como lectura tecnica para `super_administrador`.
+- No se agrega modulo empresarial, wrapper `/api/empresa`, licencia, rol operativo ni permiso nuevo.
+- La fuente para Codex vive en `documentos/diagramas/diagramas_sistema_pcs.md` y `documentos/diagramas/diagramas_sistema_pcs_manifest.json`; es documentacion interna y no concede acceso a datos.
+
 2026-06-19: Nota de Empresas en super administrador
 - `/super/api/empresas_estado` es exclusivo del panel super y queda envuelto en
   `WithSuperAuditoria` como `super_empresas_estado`; no concede permisos a
@@ -2070,3 +2075,9 @@ Ejecucion de validacion actual (2026-04-05):
 ## Actualizacion 2026-05-03 - Criterio operativo por rol
 
 Para declarar un modulo listo en produccion se debe validar por rol: acceso a la empresa correcta, visibilidad de menu, permiso de lectura, permiso de escritura, accion principal, reporte asociado y auditoria. Los modulos con hardware o proveedor externo requieren prueba adicional con el dispositivo o servicio real: impresoras, cajon monedero, RFID/NFC, GPS, pasarela de pago, facturacion electronica, SMTP, Nextcloud, OnlyOffice e IA.
+## 2026-07-07 - Rappi
+
+- Pagina `linkRappi`: modulo `venta_publica`, accion `C`.
+- API `/api/empresa/rappi`: wrapper `WithEmpresaVentaPublicaPermissions`.
+- Webhook `/api/public/rappi/webhook`: publico tecnico para Rappi; no concede
+  lectura de datos, exige `empresa_id` y firma HMAC si hay secreto configurado.

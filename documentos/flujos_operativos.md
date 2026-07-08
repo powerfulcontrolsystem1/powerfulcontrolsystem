@@ -1339,6 +1339,34 @@ afecte dinero, documentos, licencias o seguridad.
    de banco o proveedor; hasta entonces PCS conserva trazabilidad y conciliacion
    manual sin simular confirmaciones.
 
+## Rappi por empresa
+
+1. La empresa debe estar afiliada/onboarded en Rappi y contar con `client_id`,
+   `client_secret`, dominios API y tiendas asociadas por Rappi.
+2. Abrir `Administrar empresa > Canales digitales y colaboracion > Rappi`.
+3. Activar el modulo, registrar `client_id`, `country_domain`, `new_domain`,
+   `store_integration_id` o `rappi_store_id` si aplica, y guardar las claves solo
+   como referencias (`env:...` o referencia secreta equivalente), nunca como
+   texto visible en documentacion.
+4. Usar `Probar API` o `Tiendas` para validar OAuth y que Rappi devuelva tiendas
+   asociadas al `clientId`.
+5. Configurar en Rappi el webhook publico
+   `/api/public/rappi/webhook?empresa_id={empresa_id}` y, si se usa secreto,
+   guardar `webhook_secret_ref`; PCS valida `Rappi-Signature` con HMAC-SHA256.
+6. `Ordenes nuevas` consulta `GET orders`; Rappi puede moverlas de `READY` a
+   `SENT` al leerlas, por lo que esta accion debe usarse operativamente.
+7. `Ordenes SENT` permite recuperar ordenes recientes dentro de la ventana de
+   Rappi. Desde la tabla se puede tomar, rechazar o marcar lista la orden.
+8. PCS registra cada orden en `empresa_rappi_ordenes` con `empresa_id`, estado,
+   tienda, total, payload saneado y origen (`api_ready`, `api_sent`, `webhook` o
+   accion manual).
+9. La conversion automatica a venta/caja interna queda condicionada al mapeo real
+   de SKUs/productos, caja, impuestos, cliente y reglas de facturacion de cada
+   empresa; no se simulan ventas ni pagos internos sin ese mapeo.
+10. Pruebas minimas: guardar configuracion, probar credenciales validas/invalidas,
+    consultar tiendas, recibir webhook firmado y rechazado por firma invalida,
+    traer ordenes y verificar que otra empresa no vea la bitacora.
+
 ## Buzon de usuario, tareas y almacenamiento empresarial
 
 1. El panel de `Administrar empresa` carga `/api/empresa/buzon?action=resumen` con el `empresa_id` activo y muestra campana, contador de no leidos, ultimos mensajes, chat y estado de almacenamiento.

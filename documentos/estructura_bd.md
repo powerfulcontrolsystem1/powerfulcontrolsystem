@@ -2237,3 +2237,20 @@ Almacena los top scores globales de todos los juegos publicados en `/Juegos/*` y
 - Configuracion por empresa en `empresa_estacion_prefs`:
   - `estacion_id=0`, `clave='licencia_notificaciones'`: dias de aviso, canales email/WhatsApp/buzon y mensaje de vencimiento de licencia.
   - `estacion_id=0`, `clave='estaciones_config'`, campo JSON `cajero_auto_venta_directa`: entrada automatica a venta directa cuando el rol efectivo es cajero.
+
+## 2026-07-07 - Integracion Rappi por empresa
+
+- `empresa_rappi_configuracion`: configuracion por `empresa_id` para vender por
+  Rappi. Guarda estado activo, ambiente, dominios de API/autenticacion,
+  `client_id`, referencias a secretos (`client_secret_ref`,
+  `webhook_secret_ref`), tienda Rappi/POS, toma automatica, tiempo de cocina,
+  bandera de conversion a venta interna, usuario y timestamps. Indice unico por
+  `empresa_id`.
+- `empresa_rappi_ordenes`: bitacora por `empresa_id` y `rappi_order_id` para
+  ordenes recibidas por API o webhook. Guarda tienda, estado Rappi/local, total,
+  moneda, `items_json`, payload original de integracion, origen, usuario,
+  observaciones y timestamps. Indice unico por `(empresa_id, rappi_order_id)` e
+  indice por empresa/fecha.
+- El webhook publico no resuelve empresas por payload libre: exige
+  `empresa_id` en la URL y valida firma HMAC-SHA256 cuando la empresa tiene
+  secreto configurado.

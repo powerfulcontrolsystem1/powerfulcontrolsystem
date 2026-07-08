@@ -1,3 +1,19 @@
+## [2026-07-07] Integracion Rappi por empresa
+- [Canales digitales] Agrega `Rappi` en Administrar empresa para configurar credenciales, dominios, tiendas y webhook por empresa.
+- [Backend] Nuevo `/api/empresa/rappi` para probar OAuth, consultar tiendas/ordenes y enviar acciones tomar, rechazar y listo; nuevo `/api/public/rappi/webhook` con HMAC opcional.
+- [Datos] Agrega `empresa_rappi_configuracion` y `empresa_rappi_ordenes`, aisladas por `empresa_id`.
+- [Seguridad] No agrega dependencias ni guarda secretos en claro; los dominios salientes deben ser HTTPS de Rappi y la venta interna automatica queda condicionada a mapeo real de productos/caja por empresa.
+
+## [2026-07-07] Favoritos y panel super
+- [Super administrador] Todas las rutas visibles del menu super quedan permitidas para agregarse a favoritos desde la estrella del shell.
+- [Paginas super] Agrega una herramienta comun con `Favorito` y `Panel super` para paginas abiertas en iframe o directamente.
+- [Arquitectura] Cambio frontend estatico; no agrega endpoints, tablas, permisos ni dependencias.
+
+## [2026-07-07] Diagramas tecnicos super administrador
+- [Super administrador] Agrega el grupo `Diagramas tecnicos` con 15 paginas: modulos, ERD, multiempresa, arquitectura, ventas POS, DIAN, inventario, roles/permisos, API, despliegue, seguridad, auditoria, reportes, integraciones y agentes.
+- [Codex] Agrega fuentes Mermaid/JSON en `documentos/diagramas/diagramas_sistema_pcs.md` y `diagramas_sistema_pcs_manifest.json`.
+- [Arquitectura] Implementa un visor estatico sin endpoints, tablas, permisos nuevos ni dependencias externas.
+
 ## [2026-06-26] Carrito, corte de caja y ventas
 - [Carrito] Retira el boton y las funciones de carrito rapido para mantener un unico flujo de venta directa.
 - [Carrito] El acceso superior muestra `Pantalla completa` con texto e icono; `Efectivo recibido` queda mas grande y en negrita, y `Vuelto` queda amarillo y en negrita.

@@ -79,5 +79,6 @@
       fetch('/super/api/recordatorios_infraestructura',{credentials:'same-origin'}).then(ensure).then(function(r){return r.json();}).then(function(data){items=data.items||[];render();status('Lista cargada.','ok');}).catch(function(err){status(err.message||String(err),'err');});
     })();
   </script>
+  <script src="/js/super_page_tools.js?v=20260707"></script>
 </body>
 </html>
