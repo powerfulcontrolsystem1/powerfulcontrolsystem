@@ -16049,3 +16049,13 @@ Archivos modificados:
 - web/super/voz_streaming_ia.html
 - web/super/vps2.html
 - web/super_administrador.html
+
+2026-07-08 12:32:55 - Mensaje: Reparar configuracion guiada inicial persistente por empresa; Commit: ec56f4a5; PushStatus: OK
+Archivos modificados:
+- backend/handlers/configuracion_guiada.go
+- backend/handlers/configuracion_guiada_test.go
+- documentos/CHANGELOG.md
+- documentos/descripcion_de_archivos
+- documentos/historial_de_cambios
+- documentos/mapa_modulos.md
+- web/administrar_empresa/panel.html
