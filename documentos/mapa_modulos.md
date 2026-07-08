@@ -3,6 +3,15 @@
 Tabla de ubicacion rapida para no buscar desde cero cada modulo. Si una fila
 queda incompleta al implementar una mejora, actualizarla en el mismo cambio.
 
+Actualizacion 2026-07-08: `Administrar empresa > Panel` corrige la
+`Configuracion guiada inicial` para que `No volver a mostrar` se guarde de forma
+real en `/api/empresa/configuracion_guiada` con `action=no_mostrar_mas`. El
+estado queda persistido en `empresa_estacion_prefs` con clave
+`configuracion_guiada_resumen`, filtrado por `empresa_id`, y el GET del endpoint
+devuelve `auto_abrir=false` y `oculta_por_usuario=true` cuando la empresa ya la
+oculto o la pospuso. El frontend ya no depende de cookies/localStorage para
+decidir la autoapertura y solo cierra el modal despues de un POST correcto.
+
 Actualizacion 2026-07-07: `Super administrador > Diagramas tecnicos` agrega
 15 paginas estaticas bajo `web/super/diagramas/` para modulos, ERD,
 multiempresa, arquitectura, ventas POS, facturacion DIAN, inventario,

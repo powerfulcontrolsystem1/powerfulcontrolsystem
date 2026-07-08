@@ -36540,3 +36540,14 @@ Archivos modificados:
 - web/super/voz_streaming_ia.html
 - web/super/vps2.html
 - web/super_administrador.html
+2026-07-08 12:30:19 - Configuracion guiada inicial persistente
+- Causa: `web/administrar_empresa/panel.html` llamaba `fetchJSON(url, options)`,
+  pero la funcion ignoraba `options`; por eso el boton `No volver a mostrar`
+  ejecutaba GET en lugar de POST y no guardaba `no_mostrar_mas` en PostgreSQL.
+- Backend: `/api/empresa/configuracion_guiada` conserva aislamiento por
+  `empresa_id` y ahora responde `auto_abrir`/`oculta_por_usuario` calculados
+  desde `empresa_estacion_prefs.configuracion_guiada_resumen`.
+- Frontend: el modal no se cierra si falla el POST; muestra error y permite
+  reintentar para que la decision quede registrada en la base de datos.
+- QA: `go test ./handlers -run TestConfiguracionGuiada -count=1` y parseo JS de
+  `web/administrar_empresa/panel.html`.

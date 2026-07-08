@@ -2252,8 +2252,12 @@
         return "pcs_empresa_panel_weather_location_" + (empresaId || "general");
       }
 
-      function fetchJSON(url) {
-        return fetch(url, { credentials: url.indexOf(window.location.origin) === 0 || url.charAt(0) === "/" ? "same-origin" : "omit" })
+      function fetchJSON(url, options) {
+        options = options && typeof options === "object" ? Object.assign({}, options) : {};
+        if (!options.credentials) {
+          options.credentials = url.indexOf(window.location.origin) === 0 || url.charAt(0) === "/" ? "same-origin" : "omit";
+        }
+        return fetch(url, options)
           .then(function (res) {
             if (!res.ok) throw new Error("HTTP " + res.status);
             return res.json();
@@ -3849,6 +3853,10 @@
 
       function openGuidedSetupModal(configData) {
         if (!empresaId || !configData || !configData.wizard) return;
+        if (configData.auto_abrir === false || configData.oculta_por_usuario === true) {
+          clearGuidedPendingFlag();
+          return;
+        }
         if (hasGuidedDismissedFlag()) {
           clearGuidedPendingFlag();
           return;
@@ -3859,7 +3867,7 @@
           clearGuidedPendingFlag();
           return;
         }
-        var shouldOpen = hasGuidedPendingFlag() || !estado.configurada_anterior;
+        var shouldOpen = configData.auto_abrir === true || hasGuidedPendingFlag() || !estado.configurada_anterior;
         if (!shouldOpen) return;
         var wizard = configData.wizard || {};
         var questions = Array.isArray(wizard.questions) ? wizard.questions : [];
@@ -3909,18 +3917,21 @@
           if (closeBtn) closeBtn.disabled = true;
           if (apply) apply.disabled = true;
           if (status) status.textContent = "Guardando decision...";
-          overlay.classList.remove("is-visible");
-          overlay.setAttribute("hidden", "hidden");
           fetchJSON("/api/empresa/configuracion_guiada?empresa_id=" + encodeURIComponent(empresaId) + "&action=" + encodeURIComponent(action), {
             method: "POST",
             headers: { "Content-Type": "application/json", "X-PCS-Source": "empresa_panel_guided_setup_later" },
             body: JSON.stringify({ answers: {}, decision: action, source: source || "panel" })
           }).then(function () {
             setGuidedDismissedFlag();
-          }).catch(function () {
-            setGuidedDismissedFlag();
-          }).finally(function () {
+            overlay.classList.remove("is-visible");
+            overlay.setAttribute("hidden", "hidden");
             if (overlay && overlay.parentNode) overlay.parentNode.removeChild(overlay);
+          }).catch(function (err) {
+            dismissingGuidedSetup = false;
+            if (closeBtn) closeBtn.disabled = false;
+            if (apply) apply.disabled = false;
+            if (noMostrarMas) noMostrarMas.checked = false;
+            if (status) status.textContent = err && err.message ? "No se pudo guardar. Intenta de nuevo." : "No se pudo guardar. Intenta de nuevo.";
           });
         }
         document.getElementById("empresaGuidedClose").addEventListener("click", function () {

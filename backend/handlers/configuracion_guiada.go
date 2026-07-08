@@ -57,11 +57,13 @@ func EmpresaConfiguracionGuiadaHandler(dbEmp *sql.DB) http.HandlerFunc {
 				return
 			}
 			writeJSON(w, http.StatusOK, map[string]interface{}{
-				"ok":         true,
-				"estado":     state,
-				"wizard":     buildEmpresaConfiguracionGuiadaWizard(state),
-				"resumen":    state.ResumenAnterior,
-				"pendientes": state.PendientesAnteriores,
+				"ok":                 true,
+				"estado":             state,
+				"wizard":             buildEmpresaConfiguracionGuiadaWizard(state),
+				"resumen":            state.ResumenAnterior,
+				"pendientes":         state.PendientesAnteriores,
+				"auto_abrir":         shouldAutoOpenEmpresaConfiguracionGuiada(state),
+				"oculta_por_usuario": isEmpresaConfiguracionGuiadaHidden(state),
 			})
 			return
 
@@ -163,9 +165,67 @@ func postponeEmpresaConfiguracionGuiada(dbEmp *sql.DB, state *empresaConfiguraci
 		return nil, err
 	}
 	return map[string]interface{}{
-		"mensaje": mensaje,
-		"resumen": resumen,
+		"mensaje":            mensaje,
+		"resumen":            resumen,
+		"auto_abrir":         false,
+		"oculta_por_usuario": noMostrarMas,
 	}, nil
+}
+
+func shouldAutoOpenEmpresaConfiguracionGuiada(state *empresaConfiguracionGuiadaState) bool {
+	if state == nil || state.EmpresaID <= 0 {
+		return false
+	}
+	if isEmpresaConfiguracionGuiadaHidden(state) {
+		return false
+	}
+	return !state.ConfiguradaAnterior
+}
+
+func isEmpresaConfiguracionGuiadaHidden(state *empresaConfiguracionGuiadaState) bool {
+	if state == nil {
+		return false
+	}
+	return isEmpresaConfiguracionGuiadaResumenHidden(state.ResumenAnterior)
+}
+
+func isEmpresaConfiguracionGuiadaResumenHidden(meta map[string]interface{}) bool {
+	if len(meta) == 0 {
+		return false
+	}
+	rawEstado := strings.ToLower(strings.TrimSpace(fmt.Sprint(meta["estado"])))
+	noMostrar := strings.ToLower(strings.TrimSpace(fmt.Sprint(meta["no_mostrar_mas"])))
+	pospuesta := strings.ToLower(strings.TrimSpace(fmt.Sprint(meta["pospuesta"])))
+	return boolishGuidedMeta(meta["no_mostrar_mas"]) ||
+		boolishGuidedMeta(meta["pospuesta"]) ||
+		noMostrar == "1" ||
+		noMostrar == "true" ||
+		noMostrar == "si" ||
+		pospuesta == "1" ||
+		pospuesta == "true" ||
+		pospuesta == "si" ||
+		rawEstado == "pospuesta" ||
+		rawEstado == "no_mostrar_mas" ||
+		rawEstado == "oculta" ||
+		rawEstado == "oculto"
+}
+
+func boolishGuidedMeta(value interface{}) bool {
+	switch v := value.(type) {
+	case bool:
+		return v
+	case string:
+		raw := strings.ToLower(strings.TrimSpace(v))
+		return raw == "1" || raw == "true" || raw == "si" || raw == "sí" || raw == "yes"
+	case float64:
+		return v != 0
+	case int:
+		return v != 0
+	case int64:
+		return v != 0
+	default:
+		return false
+	}
 }
 
 func loadEmpresaConfiguracionGuiadaState(dbEmp *sql.DB, empresaID int64) (*empresaConfiguracionGuiadaState, error) {

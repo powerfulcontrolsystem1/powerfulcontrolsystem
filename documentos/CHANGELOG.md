@@ -1,3 +1,9 @@
+## [2026-07-08] Configuracion guiada inicial persistente
+- [Panel empresa] Corrige el boton y check `No volver a mostrar`: `fetchJSON` ahora respeta `method`, `headers` y `body`, por lo que el panel envia realmente el POST a `/api/empresa/configuracion_guiada`.
+- [Backend] El endpoint devuelve `auto_abrir` y `oculta_por_usuario` calculados desde `configuracion_guiada_resumen` por `empresa_id`; si la base de datos registra `no_mostrar_mas` o `pospuesta`, el modal no se autoabre.
+- [UX] El modal solo se cierra despues de guardar correctamente; si falla el POST, muestra error y permite reintentar.
+- [QA] Agrega pruebas unitarias para estados `no_mostrar_mas`, `pospuesta` y empresa nueva sin resumen.
+
 ## [2026-07-07] Integracion Rappi por empresa
 - [Canales digitales] Agrega `Rappi` en Administrar empresa para configurar credenciales, dominios, tiendas y webhook por empresa.
 - [Backend] Nuevo `/api/empresa/rappi` para probar OAuth, consultar tiendas/ordenes y enviar acciones tomar, rechazar y listo; nuevo `/api/public/rappi/webhook` con HMAC opcional.

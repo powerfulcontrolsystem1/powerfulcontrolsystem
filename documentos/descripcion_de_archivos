@@ -11658,3 +11658,13 @@ backend/handlers/user_config.go - Controlador que expone /api/user/configuracion
 - `web/administrar_empresa/rappi.html`: consola empresarial para activar Rappi,
   guardar referencias de credenciales, probar API, listar tiendas/ordenes y
   operar estados basicos.
+
+2026-07-08 - Configuracion guiada inicial persistente
+
+- `backend/handlers/configuracion_guiada.go`: agrega decision explicita
+  `auto_abrir`/`oculta_por_usuario` desde `configuracion_guiada_resumen` por
+  `empresa_id`.
+- `backend/handlers/configuracion_guiada_test.go`: cubre `no_mostrar_mas`,
+  `pospuesta` y empresa nueva sin resumen para evitar regresiones.
+- `web/administrar_empresa/panel.html`: corrige `fetchJSON` para respetar
+  opciones de POST y solo cerrar el modal despues de guardar en base de datos.
