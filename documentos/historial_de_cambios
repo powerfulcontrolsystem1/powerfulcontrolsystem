@@ -36612,3 +36612,16 @@ Archivos modificados:
 2026-07-08: Diagramas tecnicos sin submenu duplicado.
 - UX super administrador: `web/js/super_diagramas.js` elimina la navegacion interna repetida del visor de diagramas; el unico submenu visible queda en la barra lateral del super administrador.
 - Validacion visual: se abrio `super_administrador.html`, se navego a `Base de datos / ERD` y se confirmo que el iframe conserva diagrama SVG y fuente Mermaid sin `.diagram-nav` interna.
+
+2026-07-08: rs: actualizar repositorio y sincronizar VPS
+PushStatus: OK
+Archivos modificados:
+- documentos/CHANGELOG.md
+- documentos/descripcion_de_archivos
+- documentos/descripcion_de_modulos
+- documentos/historial_de_cambios
+- documentos/mapa_modulos.md
+- documentos/matriz_roles_permisos_pos_multiempresa.md
+- web/ayuda/ayuda.html
+- web/index.html
+- web/js/super_diagramas.js
