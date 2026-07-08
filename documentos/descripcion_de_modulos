@@ -4319,6 +4319,15 @@ Captura inteligente de compras y gastos
 - El modulo contable automatico procesa `empresa_eventos_contables` por `empresa_id` y genera `empresa_asientos_contables` con partida doble, idempotencia y bloqueo por descuadre.
 - Cobertura de reglas: ventas/facturas/notas, pagos y abonos, compras/documento soporte, CxC/CxP, anticipos, inventario/costo de venta, nomina causada/pagada, nomina electronica y activos fijos/depreciacion/deterioro.
 - Los eventos precontables que no tengan base monetaria suficiente quedan fallidos con error saneado hasta que el modulo origen emita un evento contable real o complete el payload.
+2026-07-08: Bandejas de ventas/facturacion y menu flotante
+- Modulos afectados: `ventas`, `facturacion_electronica`, `administrar_empresa`, `super_administrador`, `menu_flotante`, `configuracion`, `portal_publico`.
+- Cambio funcional: `Buscar ventas y facturas` muestra tipo documental como Venta o Factura electronica, elimina la columna `Relacion FE`, mantiene un unico desplegable de compartir por fila y solo ofrece `Hacer factura electronica` cuando la venta no tiene FE asociada.
+- Cambio funcional: `Facturas electronicas` queda como bandeja principal de consulta; las tarjetas de detalle/vista previa embebidas se retiran y la visualizacion abre la impresion bajo demanda.
+- Seguridad: las anulaciones de facturacion electronica se clasifican como accion `D`; el permiso base queda reservado a `admin_empresa` y la UI oculta anular cuando el contexto efectivo no lo permite.
+- UX: el menu flotante elimina compartir por correo, juegos, emulador y submenu Utilidades; Calculadora queda visible como accion principal, mientras Juegos queda en Super administrador y el emulador dentro de Juegos.
+- Configuracion: el tamano de letra de factura carta/POS se configura por empresa en `Documento de venta e impresion`.
+- Portal: el index actualiza la descripcion de Domicilios y entregas para mencionar la integracion Rappi configurable por empresa.
+
 ## Rappi por empresa
 
 Modulo de canal digital para que cada empresa conecte sus tiendas Rappi al POS.

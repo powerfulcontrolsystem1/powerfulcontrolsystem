@@ -12,11 +12,8 @@
       ".diagram-header h1{margin:0;font-size:clamp(1.35rem,2.3vw,2rem);line-height:1.12}",
       ".diagram-header p{margin:8px 0 0;max-width:860px;color:var(--muted,#64748b);line-height:1.45}",
       ".diagram-badge{display:inline-flex;align-items:center;justify-content:center;min-height:28px;padding:4px 10px;border:1px solid var(--border,#cbd5e1);border-radius:999px;background:var(--surface,#fff);font-size:.82rem;font-weight:800;color:var(--accent,#0f6fcb);white-space:nowrap}",
-      ".diagram-layout{display:grid;grid-template-columns:minmax(190px,250px) minmax(0,1fr);gap:16px}",
-      ".diagram-nav,.diagram-panel{background:var(--surface,#fff);border:1px solid var(--border,#dbe3ef);border-radius:8px;box-shadow:0 10px 28px rgba(15,23,42,.08)}",
-      ".diagram-nav{padding:10px;align-self:start;position:sticky;top:12px;max-height:calc(100vh - 24px);overflow:auto}",
-      ".diagram-nav a{display:block;padding:9px 10px;border-radius:7px;color:var(--text,#111827);text-decoration:none;font-size:.88rem;font-weight:700;line-height:1.2}",
-      ".diagram-nav a.active{background:color-mix(in srgb,var(--accent,#0f6fcb) 12%,var(--surface,#fff));color:var(--accent,#0f6fcb)}",
+      ".diagram-layout{display:block}",
+      ".diagram-panel{background:var(--surface,#fff);border:1px solid var(--border,#dbe3ef);border-radius:8px;box-shadow:0 10px 28px rgba(15,23,42,.08)}",
       ".diagram-panel{padding:14px;margin-bottom:16px;overflow:hidden}",
       ".diagram-canvas{overflow:auto;border:1px solid var(--border,#dbe3ef);border-radius:8px;background:linear-gradient(180deg,#f8fbff,#eef5ff);padding:8px}",
       ".diagram-canvas svg{display:block;min-width:1180px;width:100%;height:auto}",
@@ -26,7 +23,7 @@
       ".diagram-note{margin:12px 0 0;color:var(--muted,#64748b);font-size:.9rem;line-height:1.45}",
       ".diagram-actions{display:flex;gap:8px;flex-wrap:wrap}",
       ".diagram-actions button{border:1px solid var(--border,#cbd5e1);background:var(--surface,#fff);color:var(--text,#111827);border-radius:7px;padding:7px 10px;font-weight:800;cursor:pointer}",
-      "@media(max-width:860px){.diagram-shell{padding:12px}.diagram-layout{grid-template-columns:1fr}.diagram-nav{position:relative;top:auto;max-height:none}.diagram-header{display:block}.diagram-badge{margin-top:10px}}"
+      "@media(max-width:860px){.diagram-shell{padding:12px}.diagram-header{display:block}.diagram-badge{margin-top:10px}}"
     ].join("\n");
     document.head.appendChild(style);
   }
@@ -100,13 +97,6 @@
     ].join("");
   }
 
-  function renderNav(target) {
-    target.innerHTML = data.order.map(function (item) {
-      var active = item.id === diagramId ? " active" : "";
-      return '<a class="' + active + '" href="' + item.path + '">' + escapeHtml(item.title) + "</a>";
-    }).join("");
-  }
-
   function copySource(button, source) {
     button.addEventListener("click", function () {
       if (!navigator.clipboard) return;
@@ -129,7 +119,6 @@
       '<span class="diagram-badge">' + escapeHtml(diagram.badge || "Diagrama") + '</span>',
       "</header>",
       '<div class="diagram-layout">',
-      '<nav class="diagram-nav" id="diagramNav" aria-label="Diagramas del sistema"></nav>',
       '<section>',
       '<article class="diagram-panel"><div class="diagram-canvas" id="diagramCanvas"></div><p class="diagram-note">Vista interna para super administrador. La fuente Mermaid queda abajo para Codex y mantenimiento tecnico.</p></article>',
       '<article class="diagram-panel"><div class="diagram-source-head"><h2>Fuente Mermaid para Codex</h2><div class="diagram-actions"><button id="copyDiagramSource" type="button">Copiar Mermaid</button></div></div><pre class="diagram-source" id="diagramSource"></pre></article>',
@@ -137,7 +126,6 @@
       "</div>",
       "</main>"
     ].join("");
-    renderNav(document.getElementById("diagramNav"));
     renderSvg(document.getElementById("diagramCanvas"), diagram);
     var source = document.getElementById("diagramSource");
     source.textContent = diagram.source || "";

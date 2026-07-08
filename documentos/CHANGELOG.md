@@ -5,6 +5,14 @@
 - [Deploy] `sync_to_vps.ps1` normaliza a LF los bloques Bash remotos antes de enviarlos por `bash -lc`, evitando fallos `set: invalid option` causados por CRLF de Windows.
 - [QA] Agrega pruebas unitarias para estados `no_mostrar_mas`, `pospuesta` y empresa nueva sin resumen.
 
+## [2026-07-08] Bandejas de ventas/facturacion y menu flotante
+- [Menu flotante] Retira compartir por correo, juegos, emulador y el submenu Utilidades; Calculadora queda como accion principal y Cambiar apariencia/Cerrar sesion muestran icono.
+- [Super administrador] Agrega acceso a Juegos desde el panel super; el emulador permanece dentro del lobby de Juegos.
+- [Ventas] `Buscar ventas y facturas` elimina la columna Relacion FE, muestra Tipo como Venta o Factura electronica, compacta filtros y consolida compartir en un unico boton desplegable por fila.
+- [Facturacion electronica] La bandeja principal es `facturas_electronicas.html`; se retiran tarjetas de detalle/vista previa, se consolida compartir por correo/WhatsApp y la anulacion queda visible solo con permiso efectivo.
+- [Permisos] Las anulaciones de factura electronica usan accion `D` y quedan reservadas a roles autorizados por la matriz.
+- [Configuracion] El tamano de letra de factura carta/POS se mueve a Administrar empresa > Configuracion > Documento de venta e impresion.
+
 ## [2026-07-07] Integracion Rappi por empresa
 - [Canales digitales] Agrega `Rappi` en Administrar empresa para configurar credenciales, dominios, tiendas y webhook por empresa.
 - [Backend] Nuevo `/api/empresa/rappi` para probar OAuth, consultar tiendas/ordenes y enviar acciones tomar, rechazar y listo; nuevo `/api/public/rappi/webhook` con HMAC opcional.
@@ -20,6 +28,7 @@
 - [Super administrador] Agrega el grupo `Diagramas tecnicos` con 15 paginas: modulos, ERD, multiempresa, arquitectura, ventas POS, DIAN, inventario, roles/permisos, API, despliegue, seguridad, auditoria, reportes, integraciones y agentes.
 - [Codex] Agrega fuentes Mermaid/JSON en `documentos/diagramas/diagramas_sistema_pcs.md` y `diagramas_sistema_pcs_manifest.json`.
 - [Arquitectura] Implementa un visor estatico sin endpoints, tablas, permisos nuevos ni dependencias externas.
+- [UX] El visor ya no renderiza un segundo submenu interno de diagramas; la navegacion queda centralizada en el menu lateral del super administrador.
 
 ## [2026-06-26] Carrito, corte de caja y ventas
 - [Carrito] Retira el boton y las funciones de carrito rapido para mantener un unico flujo de venta directa.

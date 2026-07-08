@@ -1,3 +1,12 @@
+2026-07-08: Bandejas de ventas/facturacion, menu flotante y permisos de anulacion.
+- Frontend: el menu flotante elimina compartir por correo, juegos, emulador y submenu Utilidades; Calculadora queda como accion principal y Cambiar apariencia/Cerrar sesion conservan icono.
+- Super administrador: se agrega enlace a Juegos; el emulador sigue dentro del lobby de Juegos y no aparece como item flotante.
+- Ventas/facturas: `Buscar ventas y facturas` elimina columna `Relacion FE`, mantiene la relacion internamente para mostrar `Hacer factura electronica` solo en ventas sin FE, y consolida compartir por correo/WhatsApp en un unico desplegable por fila.
+- Facturacion electronica: `facturas_electronicas.html` queda como bandeja principal, sin tarjetas de detalle/vista previa embebidas; la visualizacion se abre bajo demanda y compartir/anular quedan por fila.
+- Configuracion: el tamano de letra para factura carta/POS se administra desde `Documento de venta e impresion` por empresa.
+- Seguridad: `anular_factura`, `anular_factura_nota_credito` y `anular` resuelven a accion `D`; el permiso base de eliminacion/anulacion de facturacion queda reservado a `admin_empresa`.
+- Documentacion/ayuda: se actualizan ayuda de menu flotante/Juegos y referencia operativa de Rappi.
+
 2026-06-19: Prevención documental de errores de codificación.
 - Decisión técnica: `documentos/decisiones_tecnicas.md` deja como regla permanente mantener textos visibles, ayudas, correos, mensajes backend y documentación operativa en UTF-8 real.
 - Comandos: `documentos/comandos_codex.md` agrega el barrido `rg` recomendado para detectar caracteres rotos antes de cerrar cambios textuales o ejecutar `rs`.
@@ -36599,3 +36608,7 @@ Archivos modificados:
 - web/super/diagramas/seguridad.html
 - web/super/diagramas/ventas_pos.html
 - web/super_administrador.html
+
+2026-07-08: Diagramas tecnicos sin submenu duplicado.
+- UX super administrador: `web/js/super_diagramas.js` elimina la navegacion interna repetida del visor de diagramas; el unico submenu visible queda en la barra lateral del super administrador.
+- Validacion visual: se abrio `super_administrador.html`, se navego a `Base de datos / ERD` y se confirmo que el iframe conserva diagrama SVG y fuente Mermaid sin `.diagram-nav` interna.

@@ -1,3 +1,14 @@
+2026-07-08 - Bandejas de ventas/facturacion y menu flotante
+- `web/menu.js`: retira compartir por correo, juegos, emulador y submenu Utilidades del menu flotante; deja Calculadora como item principal y conserva iconos en cambio de apariencia y sesion.
+- `web/super_administrador.html`: agrega enlace a Juegos en el panel super; el emulador se mantiene dentro del lobby de Juegos.
+- `web/administrar_empresa.html`: agrega acceso directo a `Facturas electronicas` en Operacion y ventas.
+- `web/administrar_empresa/ventas.html`: elimina columna Relacion FE, conserva deteccion interna de FE asociada, muestra un unico desplegable de compartir por fila y solo ofrece generar FE cuando la venta no tiene factura electronica.
+- `web/administrar_empresa/facturas_electronicas.html`: deja la bandeja como pagina principal, quita detalle/vista previa embebidos, agrega compartir por correo/WhatsApp en un desplegable y respeta permisos para anular.
+- `web/administrar_empresa/facturacion_electronica_menu.html`: abre por defecto la bandeja completa de facturas electronicas.
+- `web/administrar_empresa/configuracion.html`: mueve la configuracion del tamano de letra de factura carta/POS a Documento de venta e impresion.
+- `backend/handlers/empresa_permisos.go`: clasifica anulaciones de facturacion electronica como accion `D` y limita el permiso base a `admin_empresa`.
+- `web/ayuda/ayuda.html`: actualiza la ayuda de menu flotante/Juegos y agrega referencia operativa a Rappi.
+
 2026-07-07 - Favoritos y retorno al panel super
 - `web/js/super_page_tools.js`: herramienta comun para paginas de `web/super`, agrega botones `Favorito` y `Panel super` dentro de cada pagina, funcionando en iframe o como pagina abierta directamente.
 - `web/super/**/*.html`: paginas super actuales cargan `super_page_tools.js` para conservar una ruta visible al panel y permitir marcar favoritos desde la propia pagina.
