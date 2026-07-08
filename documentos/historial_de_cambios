@@ -36572,3 +36572,30 @@ Archivos modificados:
 - documentos/CHANGELOG.md
 - documentos/historial_de_cambios
 - scripts/sync_to_vps.ps1
+
+2026-07-08: rs: actualizar repositorio y sincronizar VPS
+PushStatus: OK
+Archivos modificados:
+- backend/handlers/empresa_permisos.go
+- web/administrar_empresa.html
+- web/administrar_empresa/configuracion.html
+- web/administrar_empresa/facturacion_electronica_menu.html
+- web/administrar_empresa/facturas_electronicas.html
+- web/administrar_empresa/ventas.html
+- web/menu.js
+- web/super/diagramas/agentes_automaticos.html
+- web/super/diagramas/api_endpoints.html
+- web/super/diagramas/arquitectura.html
+- web/super/diagramas/auditoria_logs.html
+- web/super/diagramas/base_de_datos_erd.html
+- web/super/diagramas/despliegue.html
+- web/super/diagramas/facturacion_dian.html
+- web/super/diagramas/integraciones.html
+- web/super/diagramas/inventario.html
+- web/super/diagramas/modulos.html
+- web/super/diagramas/multiempresa.html
+- web/super/diagramas/reportes.html
+- web/super/diagramas/roles_permisos.html
+- web/super/diagramas/seguridad.html
+- web/super/diagramas/ventas_pos.html
+- web/super_administrador.html
