@@ -1051,6 +1051,18 @@
           </div>
           <div class="form-row">
             <div class="form-col">
+              <label class="form-label" for="facturaFuenteCarta">TamaÃ±o de letra factura carta</label>
+              <input id="facturaFuenteCarta" class="form-input" type="number" min="10" max="22" step="1">
+              <p class="form-help">Aplica a la visualizaciÃ³n e impresiÃ³n tipo carta.</p>
+            </div>
+            <div class="form-col">
+              <label class="form-label" for="facturaFuentePOS">TamaÃ±o de letra factura POS</label>
+              <input id="facturaFuentePOS" class="form-input" type="number" min="8" max="16" step="1">
+              <p class="form-help">Aplica a la tirilla POS de 80 mm.</p>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-col">
               <label class="empresa-config-check" for="facturaImprimirCopia" >
                 <input id="facturaImprimirCopia" type="checkbox">
                 <span>Imprimir copia adicional de la factura</span>
@@ -3238,6 +3250,13 @@
       return raw === 'pos' ? 'pos' : 'carta';
     }
 
+    function normalizePrintFontSize(value, fallback, min, max) {
+      const n = Number(value);
+      const base = Number.isFinite(Number(fallback)) ? Number(fallback) : min;
+      if (!Number.isFinite(n)) return Math.max(min, Math.min(max, Math.trunc(base)));
+      return Math.max(min, Math.min(max, Math.trunc(n)));
+    }
+
     function normalizeMonedaCodigo(v) {
       const value = String(v || '').trim().toUpperCase();
       if (!value || value.length > 10) return 'COP';
@@ -3278,6 +3297,8 @@
       document.getElementById('facturaImprimirVenta').checked = src.imprimir_venta === true;
       document.getElementById('facturaImprimirFacturaElectronica').checked = src.imprimir_factura_electronica === true;
       document.getElementById('facturaImprimirCopia').checked = src.imprimir_copia_factura === true;
+      document.getElementById('facturaFuenteCarta').value = String(normalizePrintFontSize(src.impresion_factura_fuente_carta, 13, 10, 22));
+      document.getElementById('facturaFuentePOS').value = String(normalizePrintFontSize(src.impresion_factura_fuente_pos, 11, 8, 16));
       document.getElementById('facturaMostrarLogo').checked = src.mostrar_logo_factura !== false && src.mostrar_logo !== false;
       const identityFacturaLogo = document.getElementById('empresaMostrarLogoFacturaIdentidad');
       if (identityFacturaLogo) identityFacturaLogo.checked = src.mostrar_logo_factura !== false && src.mostrar_logo !== false;
@@ -3566,6 +3587,8 @@
         imprimir_venta: document.getElementById('facturaImprimirVenta').checked,
         imprimir_factura_electronica: document.getElementById('facturaImprimirFacturaElectronica').checked,
         imprimir_copia_factura: document.getElementById('facturaImprimirCopia').checked,
+        impresion_factura_fuente_carta: normalizePrintFontSize(document.getElementById('facturaFuenteCarta').value, 13, 10, 22),
+        impresion_factura_fuente_pos: normalizePrintFontSize(document.getElementById('facturaFuentePOS').value, 11, 8, 16),
         mostrar_logo_factura: document.getElementById('facturaMostrarLogo').checked,
         logo_factura_url: normalizeLogoURL(document.getElementById('facturaLogoURL').value)
       };

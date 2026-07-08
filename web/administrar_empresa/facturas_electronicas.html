@@ -23,6 +23,11 @@
     .fe-font-control input{width:140px}
     .fe-actions-cell{white-space:nowrap}
     .fe-only-action{min-width:104px}
+    .fe-share-dropdown{display:inline-block;position:relative}
+    .fe-share-dropdown summary{list-style:none;cursor:pointer}
+    .fe-share-dropdown summary::-webkit-details-marker{display:none}
+    .fe-share-menu{position:absolute;right:0;top:calc(100% + 4px);z-index:20;display:grid;gap:4px;min-width:170px;padding:6px;border:1px solid var(--border);border-radius:8px;background:var(--surface);box-shadow:var(--shadow)}
+    .fe-share-menu .btn{width:100%;justify-content:flex-start}
     .factura-print-preview{background:#f3f4f6;padding:18px;overflow:auto}
     .factura-print-sheet{background:#fff;color:#111;border:1px solid #d1d5db;max-width:960px;margin:0 auto;padding:26px;font-family:Arial,Helvetica,sans-serif;box-shadow:none}
     .factura-print-head{display:flex;justify-content:space-between;gap:18px;border-bottom:2px solid #111;padding-bottom:16px;margin-bottom:14px}
@@ -219,30 +224,6 @@
       </div>
     </section>
 
-    <section class="card empresa-section">
-      <div class="empresa-section-header">
-        <h2>Detalle del documento seleccionado</h2>
-      </div>
-      <div class="empresa-inline-actions" style="margin-top:10px;">
-        <button id="btnVisualizarSeleccionado" type="button" class="btn secondary" disabled>Visualizar</button>
-        <button id="btnAnularSeleccionado" type="button" class="btn danger" disabled>Anular factura</button>
-      </div>
-      <div class="fe-view-tools">
-        <label class="fe-font-control" for="facturaFontSize">
-          <span>Tamaño letra</span>
-          <input id="facturaFontSize" type="range" min="8" max="22" step="1">
-          <strong id="facturaFontSizeValue">13 px</strong>
-        </label>
-      </div>
-      <div id="detalleFactura" class="form-help">Selecciona un documento para ver su detalle.</div>
-    </section>
-
-    <section class="card empresa-section">
-      <div class="empresa-section-header">
-        <h2>Vista previa de impresión</h2>
-      </div>
-      <div id="printPreview" class="factura-print-preview-empty">Selecciona un documento para ver cómo saldrá impreso.</div>
-    </section>
   </div>
 
   <script>
@@ -327,7 +308,8 @@
         empresaNombre: "",
         cfg: null,
         viewMode: "carta",
-        fontSizeOverride: 0
+        fontSizeOverride: 0,
+        canCancelInvoices: false
       };
 
       function currentViewMode() {
@@ -659,7 +641,7 @@
 
       function renderDetalle(item) {
         if (!item) {
-          detalleFactura.textContent = "Selecciona un documento para ver su detalle.";
+          if (detalleFactura) detalleFactura.textContent = "Selecciona un documento para ver su detalle.";
           var vbtn0 = document.getElementById("btnVisualizarSeleccionado");
           if (vbtn0) vbtn0.disabled = true;
           var abtn0 = document.getElementById("btnAnularSeleccionado");
@@ -673,7 +655,7 @@
         var clienteEmail = normalize(item.cliente_email) || "Sin correo";
         var clienteDocumento = normalize(item.cliente_documento) || "Sin documento";
 
-        detalleFactura.innerHTML =
+        if (detalleFactura) detalleFactura.innerHTML =
           '<div class="form-row">' +
             '<div class="form-col"><strong>Tipo:</strong> ' + escapeHtml(item.tipo_documento || "") + '</div>' +
             '<div class="form-col"><strong>Código:</strong> ' + escapeHtml(item.documento_codigo || "") + '</div>' +
@@ -717,6 +699,7 @@
       function canCancelInvoice(item) {
         var tipo = normalize(item && item.tipo_documento).toLowerCase();
         var estado = normalize(item && item.estado_documento).toLowerCase();
+        if (!state.canCancelInvoices) return false;
         if (tipo !== "factura_electronica") return false;
         if (estado !== "emitida") return false;
         if (normalize(item && item.estado).toLowerCase() === "inactivo") return false;
@@ -923,7 +906,24 @@
           .catch(function() { state.cfg = state.cfg || {}; });
       }
 
+      function loadPermissionContext() {
+        return apiRequest('/api/empresa/permisos_contexto?empresa_id=' + encodeURIComponent(String(empresaID)))
+          .then(function(ctx) {
+            state.canCancelInvoices = false;
+            var mods = Array.isArray(ctx && ctx.modulos) ? ctx.modulos : [];
+            for (var i = 0; i < mods.length; i += 1) {
+              var row = mods[i] || {};
+              if (normalize(row.modulo).toLowerCase() === "facturacion") {
+                state.canCancelInvoices = row.delete === true || (row.acciones && row.acciones.D === true);
+                break;
+              }
+            }
+          })
+          .catch(function() { state.canCancelInvoices = false; });
+      }
+
       function renderPrintPreview(item) {
+        if (!printPreview) return;
         if (!item) {
           printPreview.className = "factura-print-preview-empty";
           printPreview.textContent = "Selecciona un documento para ver cómo saldrá impreso.";
@@ -950,6 +950,7 @@
 
           var clienteLabel = normalize(item.cliente_nombre) || normalize(item.cliente_email) || "Sin cliente";
 
+          var canCancel = canCancelInvoice(item);
           return '<tr data-key="' + escapeHtml(key) + '">' +
             '<td>' + escapeHtml(formatDate(item.fecha_documento || item.fecha_creacion)) + '</td>' +
             '<td>' + escapeHtml(item.tipo_documento || "") + '</td>' +
@@ -961,6 +962,14 @@
             '<td>' + escapeHtml(item.estado || "activo") + '</td>' +
             '<td class="fe-actions-cell">' +
               '<button type="button" class="btn secondary fe-only-action" data-action="imprimir" data-key="' + escapeHtml(key) + '">Visualizar</button>' +
+              (canCancel ? ' <button type="button" class="btn danger fe-only-action" data-action="anular" data-key="' + escapeHtml(key) + '">Anular</button>' : '') +
+              ' <details class="fe-share-dropdown">' +
+                '<summary class="btn secondary" title="Compartir"><img class="icon" src="/img/network-color.svg" alt="">Compartir</summary>' +
+                '<div class="fe-share-menu">' +
+                  '<button type="button" class="btn secondary" data-action="enviar" data-key="' + escapeHtml(key) + '">Correo</button>' +
+                  '<button type="button" class="btn secondary" data-action="compartir_whatsapp" data-key="' + escapeHtml(key) + '">WhatsApp</button>' +
+                '</div>' +
+              '</details>' +
             '</td>' +
           '</tr>';
         });
@@ -1304,6 +1313,10 @@
           shareInvoice(item, "email");
           return;
         }
+        if (action === "anular") {
+          cancelInvoice(item);
+          return;
+        }
         if (action === "imprimir") {
           printInvoice(item).catch(function(err) {
             showMessage((err && err.message) || "No se pudo preparar la visualizacion de la factura.", "error");
@@ -1370,7 +1383,7 @@
         state.autoPrintDone = false;
         clearFilters();
         applyFiltersFromQueryParams();
-        Promise.all([loadEmpresa(), loadEmpresaConfigAvanzada()]).finally(runSearch);
+        Promise.all([loadEmpresa(), loadEmpresaConfigAvanzada(), loadPermissionContext()]).finally(runSearch);
       }
 
       init();

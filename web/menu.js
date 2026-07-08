@@ -425,19 +425,11 @@
         '<a class="fm-item fm-icon-item" href="/administrar_empresa/noticias.html" data-admin-frame-url="/administrar_empresa/noticias.html"><img class="fm-item-icon" src="/img/report.svg" alt="">Noticias</a>' +
         '<button id="createHelpTicketLink" class="fm-item fm-action-item fm-icon-item" type="button"><img class="fm-item-icon" src="/img/shield-security-color.svg" alt="">Crear ticket de ayuda</button>' +
         '<button id="openFloatingRadioLink" class="fm-item fm-action-item fm-icon-item" type="button"><img class="fm-item-icon" src="/img/play.svg" alt="">Emisoras</button>' +
-        '<div class="fm-submenu" id="utilitiesMenuWrapper">' +
-          '<button id="utilitiesMenuToggle" class="fm-item fm-submenu-toggle fm-icon-item" type="button" aria-expanded="false" aria-haspopup="true"><img class="fm-item-icon" src="/img/settings-color.svg" alt="">Utilidades \u25BC</button>' +
-          '<div id="utilitiesMenuPopup" class="fm-submenu-popup" aria-hidden="true" role="menu">' +
-            '<a class="fm-item fm-subitem fm-icon-item" href="/calculadora.html?compact=1" data-open-calculator="1"><img class="fm-item-icon" src="/img/analytics-color.svg" alt="">Calculadora</a>' +
-            '<button class="fm-item fm-subitem fm-action-item fm-icon-item" type="button" data-share-current="email"><img class="fm-item-icon" src="/img/network-color.svg" alt="">Compartir por correo</button>' +
-            '<a class="fm-item fm-subitem fm-icon-item" href="/Juegos/menu_juegos.html" data-admin-frame-url="/Juegos/menu_juegos.html"><img class="fm-item-icon" src="/img/play.svg" alt="">Juegos</a>' +
-            '<a class="fm-item fm-subitem fm-icon-item" href="/emulador/" data-admin-frame-url="/emulador/"><img class="fm-item-icon" src="/img/settings-color.svg" alt="">Emulador</a>' +
-          '</div>' +
-        '</div>' +
+        '<a class="fm-item fm-icon-item" href="/calculadora.html?compact=1" data-open-calculator="1"><img class="fm-item-icon" src="/img/analytics-color.svg" alt="">Calculadora</a>' +
         '<a class="fm-item" href="/configuracion_de_la_cuenta.html" data-admin-frame-url="/configuracion_de_la_cuenta.html">Configuración de la cuenta</a>' +
         '' +
         '<div class="theme-selector-item" id="themeToggleWrapper" style="position:relative;">' +
-          '<button id="themeToggle" class="fm-item theme-toggle-btn" type="button" aria-expanded="false" aria-haspopup="true" aria-label="Cambiar apariencia">Cambiar apariencia \u25BC</button>' +
+          '<button id="themeToggle" class="fm-item theme-toggle-btn fm-icon-item" type="button" aria-expanded="false" aria-haspopup="true" aria-label="Cambiar apariencia"><img class="fm-item-icon" src="/img/settings-color.svg" alt="">Cambiar apariencia \u25BC</button>' +
           '<div id="themeSelectorPopup" class="theme-selector-popup" aria-hidden="true" role="menu">' +
             '<div class="theme-opt-group">Oscuros</div>' +
             '<button class="theme-option" type="button" data-theme-value="dark">Azul Elegante</button>' +
@@ -454,7 +446,7 @@
             '<button class="theme-option" type="button" data-theme-value="light-wood">Madera Clara</button>' +
           '</div>' +
         '</div>' +
-        '<a id="sessionLink" class="fm-item" href="/login.html">Iniciar sesión</a>' +
+        '<a id="sessionLink" class="fm-item fm-icon-item" href="/login.html"><img class="fm-item-icon" src="/img/shield-security-color.svg" alt="">Iniciar sesión</a>' +
       '</div>';
 
     if (document.body && document.body.firstChild) document.body.insertBefore(wrapper, document.body.firstChild);
@@ -1170,11 +1162,13 @@
       if (!sessionLink) return;
       sessionLink.onclick = null;
       if (isAuthenticated) {
-        sessionLink.textContent = 'Cerrar sesión';
+        sessionLink.innerHTML = '<img class="fm-item-icon" src="/img/shield-security-color.svg" alt="">Cerrar sesión';
+        sessionLink.classList.add('fm-icon-item');
         sessionLink.href = '/auth/logout';
         return;
       }
-      sessionLink.textContent = 'Iniciar sesión';
+      sessionLink.innerHTML = '<img class="fm-item-icon" src="/img/shield-security-color.svg" alt="">Iniciar sesión';
+      sessionLink.classList.add('fm-icon-item');
       sessionLink.href = '/login.html';
     }
 

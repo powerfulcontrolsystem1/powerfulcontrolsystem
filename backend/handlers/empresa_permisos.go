@@ -2143,7 +2143,7 @@ func resolveFacturacionPermissionAction(r *http.Request) string {
 	if action == "aprobar" || action == "emitir" || action == "emitir_factura" || action == "emitir_documento" || action == "nota_credito" || action == "emitir_nota_credito" {
 		return permActionApprove
 	}
-	if action == "anular" {
+	if action == "anular" || action == "anular_factura" || action == "anular_factura_nota_credito" {
 		return permActionDelete
 	}
 	return defaultPermissionActionFromMethod(r.Method)
@@ -2405,7 +2405,7 @@ func roleAllowsModuleAction(role, module, action string) bool {
 		case permActionCreate, permActionUpdate, permActionApprove:
 			return roleIn(role, "admin_empresa", "supervisor_sucursal", "cajero", "vendedor", "recepcion")
 		case permActionDelete:
-			return false
+			return roleIn(role, "admin_empresa")
 		}
 
 	case permModuleCompras:
@@ -2438,7 +2438,7 @@ func roleAllowsModuleAction(role, module, action string) bool {
 		case permActionCreate, permActionUpdate, permActionApprove:
 			return roleIn(role, "admin_empresa", "cajero")
 		case permActionDelete:
-			return false
+			return roleIn(role, "admin_empresa")
 		}
 
 	case permModuleAIUConstruccion:

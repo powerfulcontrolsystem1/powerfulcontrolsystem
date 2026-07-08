@@ -20,6 +20,11 @@
     .ventas-relation-badge.with-fe{background:rgba(16,185,129,.12);border-color:rgba(16,185,129,.42);color:#047857}
     .ventas-relation-badge.fe-doc{background:rgba(59,130,246,.12);border-color:rgba(59,130,246,.42);color:#1d4ed8}
     .ventas-relation-badge.neutral{background:var(--surface-muted);color:var(--muted)}
+    .ventas-share-dropdown{display:inline-block;position:relative}
+    .ventas-share-dropdown summary{list-style:none;cursor:pointer}
+    .ventas-share-dropdown summary::-webkit-details-marker{display:none}
+    .ventas-share-menu{position:absolute;right:0;top:calc(100% + 4px);z-index:20;display:grid;gap:4px;min-width:170px;padding:6px;border:1px solid var(--border);border-radius:8px;background:var(--surface);box-shadow:var(--shadow)}
+    .ventas-share-menu .btn{width:100%;justify-content:flex-start}
     .ventas-filtros-compact{width:100%;max-width:none!important;padding:6px 8px}
     .ventas-filtros-compact .empresa-section-header{margin-bottom:4px}
     .ventas-filtros-compact .page-header-lead{display:none}
@@ -33,12 +38,6 @@
     .ventas-filtros-compact .form-actions .btn{min-height:36px;padding:7px 10px}
     .ventas-hidden-preview{display:none!important}
     .empresa-module > .card.empresa-module-header{display:none!important}
-    .empresa-module > .card.empresa-section:nth-of-type(3){padding-block:10px;width:100%}
-    .empresa-module > .card.empresa-section:nth-of-type(3) .empresa-section-header{margin-bottom:6px}
-    .empresa-module > .card.empresa-section:nth-of-type(3) .page-header-lead{display:none}
-    .empresa-module > .card.empresa-section:nth-of-type(3) .form-row{margin-bottom:8px;gap:10px}
-    .empresa-module > .card.empresa-section:nth-of-type(3) .form-label{margin-bottom:3px}
-    .empresa-module > .card.empresa-section:nth-of-type(3) .form-actions{margin-top:2px}
     .empresa-module > .card.ventas-hidden-preview{display:none!important}
     @media(max-width:1180px){.ventas-filtros-compact .form{grid-template-columns:repeat(4,minmax(0,1fr))}.ventas-filtros-compact .form-row{display:contents}}
     @media(max-width:760px){.ventas-filtros-compact .form{grid-template-columns:repeat(2,minmax(0,1fr))}.ventas-filtros-compact .form-actions{grid-column:1/-1}}
@@ -237,7 +236,6 @@
             <tr>
               <th>Fecha</th>
               <th>Tipo</th>
-              <th>Relacion FE</th>
               <th>Código</th>
               <th>Número legal</th>
               <th>Cliente</th>
@@ -663,7 +661,6 @@
         detalle.innerHTML =
           '<div class="form-row">' +
             '<div class="form-col"><strong>Tipo:</strong> '+esc(typeLabel(item))+'</div>' +
-            '<div class="form-col"><strong>Relacion FE:</strong> '+esc(relacion.label)+'</div>' +
             '<div class="form-col"><strong>Código:</strong> '+esc(item.documento_codigo||"")+'</div>' +
             '<div class="form-col"><strong>Número legal:</strong> '+esc(item.numero_legal||"")+'</div>' +
           '</div>' +
@@ -700,7 +697,7 @@
         });
         state.facturasPorBase = facturasPorBase;
         if(!state.items.length){
-          tbody.innerHTML='<tr><td colspan="9">No se encontraron ventas para los filtros seleccionados.</td></tr>';
+          tbody.innerHTML='<tr><td colspan="8">No se encontraron ventas para los filtros seleccionados.</td></tr>';
           renderDetail(null);
           updateKPIs();
           return;
@@ -727,7 +724,6 @@
           return '<tr data-key="'+esc(key)+'">' +
             '<td>'+esc(formatDate(it.fecha_documento||it.fecha_creacion))+'</td>' +
             '<td>'+esc(typeLabel(it))+'</td>' +
-            '<td>'+relationBadge(it)+'</td>' +
             '<td>'+esc(it.documento_codigo||"")+'</td>' +
             '<td>'+esc(it.numero_legal||"")+'</td>' +
             '<td>'+esc(clienteLabel)+'</td>' +
@@ -737,9 +733,13 @@
               '<button type="button" class="btn secondary" data-action="visualizar" data-key="'+esc(key)+'">Ver / imprimir</button> ' +
               accionesFactura +
               accionesAnulacion +
-              '<button type="button" class="btn secondary" data-action="enviar" data-key="'+esc(key)+'">Enviar correo</button> ' +
-              '<button type="button" class="btn secondary" data-action="compartir_whatsapp" data-key="'+esc(key)+'">WhatsApp</button> ' +
-              '<button type="button" class="btn secondary" data-action="compartir_correo" data-key="'+esc(key)+'">Compartir correo</button>' +
+              '<details class="ventas-share-dropdown">' +
+                '<summary class="btn secondary" title="Compartir"><img class="icon" src="/img/network-color.svg" alt="">Compartir</summary>' +
+                '<div class="ventas-share-menu">' +
+                  '<button type="button" class="btn secondary" data-action="enviar" data-key="'+esc(key)+'">Correo</button>' +
+                  '<button type="button" class="btn secondary" data-action="compartir_whatsapp" data-key="'+esc(key)+'">WhatsApp</button>' +
+                '</div>' +
+              '</details>' +
             '</td>' +
           '</tr>';
         });

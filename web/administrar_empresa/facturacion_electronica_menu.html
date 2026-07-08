@@ -39,7 +39,7 @@
     </aside>
 
     <main class="admin-content">
-      <iframe name="facturacionContentFrame" id="facturacionContentFrame" src="/administrar_empresa/facturacion_electronica.html" title="Contenido de facturación" class="admin-empresa-frame"></iframe>
+      <iframe name="facturacionContentFrame" id="facturacionContentFrame" src="/administrar_empresa/facturas_electronicas.html" title="Contenido de facturación" class="admin-empresa-frame"></iframe>
     </main>
   </div>
   <script src="/js/administrar_empresa.js"></script>
@@ -159,7 +159,7 @@
         country = String(country || '').trim().toUpperCase();
         if (country === 'EC') return '/administrar_empresa/facturacion_electronica_ecuador.html';
         if (country === 'PA') return '/administrar_empresa/facturacion_electronica_panama.html';
-        return '/administrar_empresa/facturacion_electronica.html';
+        return '/administrar_empresa/facturas_electronicas.html';
       }
 
       function countrySourceLabel(raw) {
