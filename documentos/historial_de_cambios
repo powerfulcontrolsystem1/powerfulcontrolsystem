@@ -36551,6 +36551,9 @@ Archivos modificados:
   reintentar para que la decision quede registrada en la base de datos.
 - QA: `go test ./handlers -run TestConfiguracionGuiada -count=1` y parseo JS de
   `web/administrar_empresa/panel.html`.
+- Deploy: tras el primer `rs`, PuTTY/plink fallo en redeploy Docker por bloques
+  Bash con CRLF (`set: invalid option`). `scripts/sync_to_vps.ps1` normaliza los
+  scripts remotos a LF con `Convert-ToRemoteBashCommand` antes de `bash -lc`.
 
 2026-07-08: Reparar configuracion guiada inicial persistente por empresa
 PushStatus: OK

@@ -125,6 +125,15 @@ function Convert-ToBashLiteral {
   return "'" + $escaped + "'"
 }
 
+function Convert-ToRemoteBashCommand {
+  param([AllowNull()][AllowEmptyString()][string]$Script = "")
+  if ($null -eq $Script) {
+    $Script = ""
+  }
+  $normalized = $Script -replace "`r", ""
+  return "bash -lc " + (Convert-ToBashLiteral $normalized)
+}
+
 function Redact-SyncCommandForLog {
   param([AllowNull()][AllowEmptyString()][string]$Command = "")
   if ($null -eq $Command) {
@@ -1883,7 +1892,7 @@ fi
 echo "[INFO] Estado Docker despues del redeploy:"
 docker ps --format 'table {{.Names}}\t{{.Status}}\t{{.Ports}}' | grep -E 'pcs-(backend|frontend|postgres|mailu)|NAMES' || true
 "@
-  $command = "bash -lc " + (Convert-ToBashLiteral $remoteScript)
+  $command = Convert-ToRemoteBashCommand $remoteScript
   Invoke-RemoteCommandSimple -RemoteUser $RemoteUser -RemoteHost $RemoteHost -Port $Port -IdentityContext $identityContext -Command $command
 }
 
@@ -1989,7 +1998,7 @@ set -- `$(df -h / | tail -n 1)
 echo "[INFO] Disco despues limpieza: usado=`$5 libre=`$4 total=`$2"
 echo "[OK] Limpieza VPS completada sin tocar volumenes ni bases de datos."
 "@
-  $command = "bash -lc " + (Convert-ToBashLiteral $remoteScript)
+  $command = Convert-ToRemoteBashCommand $remoteScript
   Invoke-RemoteCommandSimple -RemoteUser $RemoteUser -RemoteHost $RemoteHost -Port $Port -IdentityContext $identityContext -Command $command
 }
 
