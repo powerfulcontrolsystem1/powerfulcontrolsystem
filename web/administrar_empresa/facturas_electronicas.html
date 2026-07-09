@@ -39,6 +39,14 @@
     .fe-result-summary .kpi-box{padding:9px 10px;min-height:0}
     .fe-result-summary .kpi-box strong{display:block;font-size:1.04rem}
     .fe-result-summary .kpi-box small{display:block;color:var(--muted);font-weight:700;margin-top:2px}
+    #facturasTable th,#facturasTable td{padding:6px 8px;line-height:1.18;vertical-align:middle}
+    #facturasTable .btn{min-height:30px;padding:5px 8px;border-radius:6px;font-size:.82rem;line-height:1.1}
+    #facturasTable .icon,.fe-export-menu .icon,.fe-actions-cell .icon{width:14px;height:14px;flex:0 0 14px;margin-right:4px}
+    .fe-actions-cell{display:flex;align-items:center;gap:4px;flex-wrap:wrap}
+    .fe-actions-cell .btn,.fe-export-menu .btn,.form-actions .btn{display:inline-flex;align-items:center;justify-content:center;gap:4px}
+    .fe-share-dropdown summary{min-width:34px}
+    .fe-share-dropdown summary .icon{margin:0;width:13px;height:13px}
+    .fe-cashier-cell{max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
     .factura-print-preview{background:#f3f4f6;padding:18px;overflow:auto}
     .factura-print-sheet{background:#fff;color:#111;border:1px solid #d1d5db;max-width:960px;margin:0 auto;padding:26px;font-family:Arial,Helvetica,sans-serif;box-shadow:none}
     .factura-print-head{display:flex;justify-content:space-between;gap:18px;border-bottom:2px solid #111;padding-bottom:16px;margin-bottom:14px}
@@ -137,6 +145,11 @@
             <input id="busquedaGlobal" class="form-input" placeholder="Observaciones, cliente, código...">
           </div>
           <div class="form-col">
+            <label class="form-label" for="cajeroFiltro">Cajero</label>
+            <input id="cajeroFiltro" class="form-input" list="cajerosList" placeholder="Correo o usuario del cajero">
+            <datalist id="cajerosList"></datalist>
+          </div>
+          <div class="form-col">
             <label class="form-label">Opciones</label>
             <label class="empresa-config-check inline-check" for="includeInactive">
               <input id="includeInactive" type="checkbox">
@@ -154,13 +167,13 @@
         </div>
 
         <div class="form-actions">
-          <button id="btnBuscar" type="submit" class="btn">Buscar documentos</button>
-          <button id="btnLimpiar" type="button" class="btn secondary">Limpiar filtros</button>
+          <button id="btnBuscar" type="submit" class="btn"><img class="icon" src="/img/analytics-color.svg" alt="">Buscar documentos</button>
+          <button id="btnLimpiar" type="button" class="btn secondary"><img class="icon" src="/img/settings-color.svg" alt="">Limpiar filtros</button>
           <details class="fe-export-dropdown">
-            <summary class="btn secondary">Exportar</summary>
+            <summary class="btn secondary"><img class="icon" src="/img/excel.svg" alt="">Exportar</summary>
             <div class="fe-export-menu">
-              <button id="btnExportCsv" type="button" class="btn secondary">CSV</button>
-              <button id="btnExportExcel" type="button" class="btn secondary">Excel</button>
+              <button id="btnExportCsv" type="button" class="btn secondary"><img class="icon" src="/img/invoice.svg" alt="">CSV</button>
+              <button id="btnExportExcel" type="button" class="btn secondary"><img class="icon" src="/img/excel.svg" alt="">Excel</button>
             </div>
           </details>
         </div>
@@ -205,6 +218,7 @@
               <th>Código</th>
               <th>Número legal</th>
               <th>Cliente</th>
+              <th>Cajero</th>
               <th>Total</th>
               <th>Estado doc.</th>
               <th>Estado</th>
@@ -273,10 +287,22 @@
 
       function typeLabel(tipo) {
         var norm = normalize(tipo).toLowerCase();
-        if (norm === "comprobante_pago") return "Venta";
+        if (norm === "comprobante_pago") return "Venta sola";
         if (norm === "factura_electronica") return "Factura electrónica";
         if (norm === "nota_credito") return "Nota crédito";
         return normalize(tipo) || "-";
+      }
+
+      function storageKey(name) {
+        return "pcs_facturas_electronicas_" + name + "_" + String(empresaID || "global");
+      }
+
+      function safeStorageGet(key) {
+        try { return window.localStorage.getItem(key) || ""; } catch (_) { return ""; }
+      }
+
+      function safeStorageSet(key, value) {
+        try { window.localStorage.setItem(key, value); } catch (_) {}
       }
 
       function apiRequest(url, options) {
@@ -310,7 +336,10 @@
         cfg: null,
         viewMode: "carta",
         fontSizeOverride: 0,
-        canCancelInvoices: false
+        canCancelInvoices: false,
+        currentUserEmail: "",
+        currentRole: "",
+        cajeroFilterLocked: false
       };
 
       function currentViewMode() {
@@ -318,6 +347,16 @@
         var v = normalize(el && el.value).toLowerCase();
         if (v === "pos" || v === "compacta") return v;
         return "carta";
+      }
+
+      function restoreSavedViewMode() {
+        var el = document.getElementById("modoVisualizacionFactura");
+        if (!el) return;
+        var saved = normalize(safeStorageGet(storageKey("vista_impresion"))).toLowerCase();
+        if (saved === "pos" || saved === "compacta" || saved === "carta") {
+          el.value = saved;
+          state.viewMode = saved;
+        }
       }
 
       function normalizePrintFontSize(value, fallback, min, max) {
@@ -710,10 +749,10 @@
         }
         var abtn = document.getElementById("btnAnularSeleccionado");
         if (abtn) {
-          var canCancel = canCancelInvoice(item);
-          abtn.disabled = !canCancel;
+          var cancelInfo = cancelAvailability(item);
+          abtn.disabled = !cancelInfo.enabled;
           abtn.setAttribute("data-key", makeKey(item));
-          abtn.title = canCancel ? "Anular con confirmacion y trazabilidad" : "Solo aplica a facturas electronicas emitidas y no anuladas.";
+          abtn.title = cancelInfo.reason;
         }
         renderPrintPreview(item);
         updateFontSizeControl();
@@ -727,6 +766,33 @@
         if (estado !== "emitida") return false;
         if (normalize(item && item.estado).toLowerCase() === "inactivo") return false;
         return true;
+      }
+
+      function canCancelSale(item) {
+        var tipo = normalize(item && item.tipo_documento).toLowerCase();
+        var estadoDoc = normalize(item && item.estado_documento).toLowerCase();
+        var estado = normalize(item && item.estado).toLowerCase();
+        if (!state.canCancelInvoices) return false;
+        if (tipo !== "comprobante_pago") return false;
+        if (estadoDoc === "anulada" || estado === "inactivo") return false;
+        return true;
+      }
+
+      function cancelAvailability(item) {
+        var tipo = normalize(item && item.tipo_documento).toLowerCase();
+        var estadoDoc = normalize(item && item.estado_documento).toLowerCase();
+        if (!state.canCancelInvoices) {
+          return { enabled: false, reason: "Tu rol no tiene permiso para anular documentos." };
+        }
+        if (tipo === "factura_electronica") {
+          if (canCancelInvoice(item)) return { enabled: true, reason: "Anular factura electronica con nota credito." };
+          return { enabled: false, reason: estadoDoc === "anulada" ? "Factura ya anulada." : "Solo se anulan facturas electronicas emitidas." };
+        }
+        if (tipo === "comprobante_pago") {
+          if (canCancelSale(item)) return { enabled: true, reason: "Anular venta simple." };
+          return { enabled: false, reason: "Venta ya anulada o inactiva." };
+        }
+        return { enabled: false, reason: "Este tipo de documento no se anula desde esta accion." };
       }
 
       function getPrintableDocumentMeta(item) {
@@ -933,6 +999,8 @@
         return apiRequest('/api/empresa/permisos_contexto?empresa_id=' + encodeURIComponent(String(empresaID)))
           .then(function(ctx) {
             state.canCancelInvoices = false;
+            state.currentUserEmail = normalize(ctx && (ctx.admin_email || ctx.usuario_email || ctx.email)).toLowerCase();
+            state.currentRole = normalize(ctx && (ctx.rol_efectivo || ctx.rol || ctx.role)).toLowerCase();
             var mods = Array.isArray(ctx && ctx.modulos) ? ctx.modulos : [];
             for (var i = 0; i < mods.length; i += 1) {
               var row = mods[i] || {};
@@ -941,6 +1009,7 @@
                 break;
               }
             }
+            applyCajeroAutoFilter();
           })
           .catch(function() { state.canCancelInvoices = false; });
       }
@@ -961,9 +1030,10 @@
         state.index = Object.create(null);
 
         if (!state.items.length) {
-          facturasBody.innerHTML = '<tr><td colspan="9">No se encontraron documentos para los filtros seleccionados.</td></tr>';
+          facturasBody.innerHTML = '<tr><td colspan="10">No se encontraron documentos para los filtros seleccionados.</td></tr>';
           renderDetalle(null);
           updateKPIs();
+          populateCajerosList();
           return;
         }
 
@@ -972,25 +1042,27 @@
           state.index[key] = item;
 
           var clienteLabel = normalize(item.cliente_nombre) || normalize(item.cliente_email) || "Sin cliente";
+          var cajeroLabel = normalize(item.usuario_creador) || "-";
 
-          var canCancel = canCancelInvoice(item);
+          var cancelInfo = cancelAvailability(item);
           return '<tr data-key="' + escapeHtml(key) + '">' +
             '<td>' + escapeHtml(formatDate(item.fecha_documento || item.fecha_creacion)) + '</td>' +
             '<td>' + escapeHtml(typeLabel(item.tipo_documento)) + '</td>' +
             '<td>' + escapeHtml(item.documento_codigo || "") + '</td>' +
             '<td>' + escapeHtml(item.numero_legal || "") + '</td>' +
             '<td>' + escapeHtml(clienteLabel) + '</td>' +
+            '<td class="fe-cashier-cell" title="' + escapeHtml(cajeroLabel) + '">' + escapeHtml(cajeroLabel) + '</td>' +
             '<td>' + escapeHtml(formatMoney(item.monto_total, item.moneda || "COP")) + '</td>' +
             '<td>' + statusBadge(item.estado_documento) + '</td>' +
             '<td>' + escapeHtml(item.estado || "activo") + '</td>' +
             '<td class="fe-actions-cell">' +
-              '<button type="button" class="btn secondary fe-only-action" data-action="imprimir" data-key="' + escapeHtml(key) + '">Visualizar</button>' +
-              (canCancel ? ' <button type="button" class="btn danger fe-only-action" data-action="anular" data-key="' + escapeHtml(key) + '">Anular</button>' : '') +
+              '<button type="button" class="btn secondary fe-only-action" data-action="imprimir" data-key="' + escapeHtml(key) + '"><img class="icon" src="/img/print-color.svg" alt="">Visualizar</button>' +
+              '<button type="button" class="btn danger fe-only-action" data-action="anular" data-key="' + escapeHtml(key) + '"' + (cancelInfo.enabled ? '' : ' disabled') + ' title="' + escapeHtml(cancelInfo.reason) + '"><img class="icon" src="/img/shield-security-color.svg" alt="">Anular</button>' +
               ' <details class="fe-share-dropdown">' +
-                '<summary class="btn secondary" title="Compartir"><img class="icon" src="/img/network-color.svg" alt="">Compartir</summary>' +
+                '<summary class="btn secondary" title="Compartir"><img class="icon" src="/img/network-color.svg" alt=""><span class="sr-only">Compartir</span></summary>' +
                 '<div class="fe-share-menu">' +
-                  '<button type="button" class="btn secondary" data-action="enviar" data-key="' + escapeHtml(key) + '">Correo</button>' +
-                  '<button type="button" class="btn secondary" data-action="compartir_whatsapp" data-key="' + escapeHtml(key) + '">WhatsApp</button>' +
+                  '<button type="button" class="btn secondary" data-action="enviar" data-key="' + escapeHtml(key) + '"><img class="icon" src="/img/invoice.svg" alt="">Correo</button>' +
+                  '<button type="button" class="btn secondary" data-action="compartir_whatsapp" data-key="' + escapeHtml(key) + '"><img class="icon" src="/img/network-color.svg" alt="">WhatsApp</button>' +
                 '</div>' +
               '</details>' +
             '</td>' +
@@ -999,6 +1071,7 @@
 
         facturasBody.innerHTML = rows.join("");
         updateKPIs();
+        populateCajerosList();
 
         if (state.selectedKey && state.index[state.selectedKey]) {
           renderDetalle(state.index[state.selectedKey]);
@@ -1020,11 +1093,13 @@
         var fechaDesde = normalize(document.getElementById("fechaDesde").value);
         var fechaHasta = normalize(document.getElementById("fechaHasta").value);
         var q = normalize(document.getElementById("busquedaGlobal").value);
+        var cajero = normalize(document.getElementById("cajeroFiltro").value);
 
         if (tipoDocumento) params.set("tipo_documento", tipoDocumento);
         if (estadoDocumento) params.set("estado_documento", estadoDocumento);
         if (cliente) params.set("cliente", cliente);
         if (documento) params.set("documento", documento);
+        if (cajero) params.set("cajero", cajero);
         if (fechaDesde) params.set("fecha_desde", fechaDesde);
         if (fechaHasta) params.set("fecha_hasta", fechaHasta);
         if (q) params.set("q", q);
@@ -1052,8 +1127,41 @@
         document.getElementById("clienteFiltro").value = "";
         document.getElementById("documentoFiltro").value = "";
         document.getElementById("busquedaGlobal").value = "";
+        var cajeroFiltro = document.getElementById("cajeroFiltro");
+        if (cajeroFiltro && !state.cajeroFilterLocked) cajeroFiltro.value = "";
         document.getElementById("includeInactive").checked = false;
         setDefaultDateRange();
+        applyCajeroAutoFilter();
+      }
+
+      function applyCajeroAutoFilter() {
+        var cajeroFiltro = document.getElementById("cajeroFiltro");
+        if (!cajeroFiltro) return;
+        var isCajero = normalize(state.currentRole).toLowerCase() === "cajero";
+        state.cajeroFilterLocked = !!(isCajero && state.currentUserEmail);
+        if (state.cajeroFilterLocked) {
+          cajeroFiltro.value = state.currentUserEmail;
+          cajeroFiltro.readOnly = true;
+          cajeroFiltro.title = "Filtro automatico por el cajero de la sesion.";
+        } else {
+          cajeroFiltro.readOnly = false;
+          cajeroFiltro.title = "Filtra por correo o usuario que creo la venta/factura.";
+        }
+      }
+
+      function populateCajerosList() {
+        var list = document.getElementById("cajerosList");
+        if (!list) return;
+        var seen = Object.create(null);
+        var options = [];
+        (state.items || []).forEach(function(item) {
+          var cajero = normalize(item && item.usuario_creador);
+          var key = cajero.toLowerCase();
+          if (!cajero || seen[key]) return;
+          seen[key] = true;
+          options.push('<option value="' + escapeHtml(cajero) + '"></option>');
+        });
+        list.innerHTML = options.join("");
       }
 
       function applyFiltersFromQueryParams() {
@@ -1066,6 +1174,7 @@
           var fechaDesde = normalize(getQueryParam("fecha_desde"));
           var fechaHasta = normalize(getQueryParam("fecha_hasta"));
           var q = normalize(getQueryParam("q"));
+          var cajero = normalize(getQueryParam("cajero"));
           var includeInactive = normalize(getQueryParam("include_inactive"));
 
           if (tipo) document.getElementById("tipoDocumento").value = tipo;
@@ -1075,6 +1184,7 @@
           if (fechaDesde) document.getElementById("fechaDesde").value = fechaDesde;
           if (fechaHasta) document.getElementById("fechaHasta").value = fechaHasta;
           if (q) document.getElementById("busquedaGlobal").value = q;
+          if (cajero && !state.cajeroFilterLocked) document.getElementById("cajeroFiltro").value = cajero;
           if (includeInactive) document.getElementById("includeInactive").checked = includeInactive === "1" || includeInactive.toLowerCase() === "true";
           if (autoPrint) {
             state.autoPrintRequested = autoPrint === "1" || autoPrint.toLowerCase() === "true";
@@ -1200,12 +1310,17 @@
       }
 
       function cancelInvoice(item) {
-        if (!item || !canCancelInvoice(item)) {
-          showMessage("La factura seleccionada no se puede anular desde esta bandeja.", "error");
+        var cancelInfo = cancelAvailability(item);
+        if (!item || !cancelInfo.enabled) {
+          showMessage(cancelInfo.reason || "El documento seleccionado no se puede anular desde esta bandeja.", "error");
           return;
         }
+        var tipo = normalize(item.tipo_documento).toLowerCase();
         var code = normalize(item.numero_legal) || normalize(item.documento_codigo);
-        var first = window.prompt("Esta accion genera una NOTA CREDITO electronica total y marca la factura como anulada. Escribe ANULAR para continuar con " + code + ":");
+        var facturaElectronica = tipo === "factura_electronica";
+        var first = window.prompt((facturaElectronica
+          ? "Esta accion genera una NOTA CREDITO electronica total y marca la factura como anulada."
+          : "Esta accion anula la venta simple y registra la trazabilidad contable interna.") + " Escribe ANULAR para continuar con " + code + ":");
         if (first !== "ANULAR") return;
         var motivo = window.prompt("Motivo de anulacion (obligatorio, minimo 10 caracteres):", "");
         if (motivo === null) return;
@@ -1214,24 +1329,25 @@
           showMessage("El motivo debe tener minimo 10 caracteres.", "error");
           return;
         }
-        var second = window.confirm("Confirmas la anulacion fiscal de " + code + " mediante nota credito total?");
+        var second = window.confirm(facturaElectronica ? ("Confirmas la anulacion fiscal de " + code + " mediante nota credito total?") : ("Confirmas la anulacion de la venta " + code + "?"));
         if (!second) return;
-        showMessage("Generando nota credito de anulacion...");
-        apiRequest("/api/empresa/facturacion_electronica?action=anular_factura_nota_credito&empresa_id=" + encodeURIComponent(String(empresaID)), {
+        showMessage(facturaElectronica ? "Generando nota credito de anulacion..." : "Anulando venta...");
+        var action = facturaElectronica ? "anular_factura_nota_credito" : "anular_venta";
+        apiRequest("/api/empresa/facturacion_electronica?action=" + action + "&empresa_id=" + encodeURIComponent(String(empresaID)), {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             empresa_id: empresaID,
-            tipo_documento: "factura_electronica",
+            tipo_documento: facturaElectronica ? "factura_electronica" : "comprobante_pago",
             documento_codigo: item.documento_codigo,
             observaciones: motivo
           })
         }).then(function(out) {
           var nota = out && out.nota_credito ? out.nota_credito : null;
-          showMessage("Factura anulada por nota credito " + (nota && nota.documento_codigo ? nota.documento_codigo : ""), "ok");
+          showMessage(facturaElectronica ? ("Factura anulada por nota credito " + (nota && nota.documento_codigo ? nota.documento_codigo : "")) : "Venta anulada correctamente.", "ok");
           return runSearch();
         }).catch(function(err) {
-          showMessage(err.message || "No se pudo anular la factura.", "error");
+          showMessage(err.message || "No se pudo anular el documento.", "error");
         });
       }
 
@@ -1389,6 +1505,7 @@
       if (modoVisualizacionFactura) {
         modoVisualizacionFactura.addEventListener("change", function () {
           state.viewMode = currentViewMode();
+          safeStorageSet(storageKey("vista_impresion"), state.viewMode);
           state.fontSizeOverride = 0;
           updateFontSizeControl();
           if (state.selectedKey && state.index && state.index[state.selectedKey]) {
@@ -1405,6 +1522,7 @@
         state.autoPrintRequested = false;
         state.autoPrintDone = false;
         clearFilters();
+        restoreSavedViewMode();
         applyFiltersFromQueryParams();
         Promise.all([loadEmpresa(), loadEmpresaConfigAvanzada(), loadPermissionContext()]).finally(runSearch);
       }

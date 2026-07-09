@@ -2143,7 +2143,7 @@ func resolveFacturacionPermissionAction(r *http.Request) string {
 	if action == "aprobar" || action == "emitir" || action == "emitir_factura" || action == "emitir_documento" || action == "nota_credito" || action == "emitir_nota_credito" {
 		return permActionApprove
 	}
-	if action == "anular" || action == "anular_factura" || action == "anular_factura_nota_credito" {
+	if action == "anular" || action == "anular_factura" || action == "anular_factura_nota_credito" || action == "anular_venta" || action == "anular_comprobante" {
 		return permActionDelete
 	}
 	return defaultPermissionActionFromMethod(r.Method)

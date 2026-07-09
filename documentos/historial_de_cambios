@@ -1,3 +1,9 @@
+2026-07-09: Bandeja de facturas con cajero, anulacion y vista recordada.
+- Facturas electronicas: columna Tipo distingue `Venta sola` de `Factura electronica`, agrega columna/filtro de cajero y compacta la altura de filas y acciones.
+- Cajero: el rol `cajero` queda prefiltrado por su usuario de sesion en frontend y backend; administradores pueden filtrar por cualquier `usuario_creador`.
+- Anulacion: cada venta/factura muestra boton de anular segun permiso efectivo. Las facturas generan nota credito y las ventas simples se anulan internamente con evento contable `venta_anulada`.
+- Impresion: `Vista e impresion` recuerda en `localStorage` por empresa la ultima opcion elegida por el usuario.
+
 2026-07-08: Facturas electronicas como bandeja unica operativa.
 - Administrar empresa retira `Buscar ventas y facturas` del menu y conserva `Facturas electronicas` sin etiqueta Beta como acceso documental principal.
 - Facturacion electronica elimina cabeceras comerciales, permite filtrar por ventas/facturas electronicas, muestra resumen de conteo y monto para ventas/facturas/anuladas y centraliza exportacion en un solo boton con submenu de formatos.

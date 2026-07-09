@@ -81,6 +81,7 @@ type EmpresaDocumentoFacturacionListFilter struct {
 	IncludeInactive bool
 	ClienteQuery    string
 	DocumentoQuery  string
+	CajeroQuery     string
 	FechaDesde      string
 	FechaHasta      string
 	Query           string
@@ -592,6 +593,7 @@ func ListEmpresaDocumentosFacturacionByEmpresa(dbConn *sql.DB, filter EmpresaDoc
 	estadoDoc := normalizeDocumentoTransaccionalEstado(filter.EstadoDocumento, "")
 	clienteQuery := strings.TrimSpace(filter.ClienteQuery)
 	documentoQuery := strings.TrimSpace(filter.DocumentoQuery)
+	cajeroQuery := strings.TrimSpace(filter.CajeroQuery)
 	fechaDesde := strings.TrimSpace(filter.FechaDesde)
 	fechaHasta := strings.TrimSpace(filter.FechaHasta)
 	busqueda := strings.TrimSpace(filter.Query)
@@ -660,6 +662,10 @@ func ListEmpresaDocumentosFacturacionByEmpresa(dbConn *sql.DB, filter EmpresaDoc
 		)`
 		documentoLike := "%" + strings.ToUpper(documentoQuery) + "%"
 		args = append(args, documentoLike, documentoLike, documentoLike)
+	}
+	if cajeroQuery != "" {
+		query += ` AND lower(COALESCE(d.usuario_creador, '')) LIKE lower(?)`
+		args = append(args, "%"+cajeroQuery+"%")
 	}
 	if fechaDesde != "" {
 		query += ` AND ` + fechaDocumentoDiaExpr + ` >= ?`

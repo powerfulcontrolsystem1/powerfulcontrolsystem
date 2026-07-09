@@ -241,7 +241,8 @@
   `cajero`, usando `web/administrar_empresa/facturas_electronicas.html`.
 - Alcance del cajero: consultar ventas/facturas, previsualizar, reimprimir,
   abrir facturas electronicas relacionadas y reenviar correo al cliente cuando
-  el documento lo permita.
+  el documento lo permita. La bandeja `Facturas electronicas` fuerza en backend
+  el filtro por el cajero de la sesion cuando el rol efectivo es `cajero`.
 - Para evitar 403 en la consulta documental, `linkFacturasElectronicas` y
   `linkFacturacionElectronica` quedan permitidos como soporte interno del flujo,
   pero el frontend de cajero no los expone como botones de menu.

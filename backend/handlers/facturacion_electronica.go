@@ -215,6 +215,10 @@ func EmpresaFacturacionElectronicaHandler(dbEmp, dbSuper *sql.DB) http.HandlerFu
 					http.Error(w, "fecha_hasta invalida (use YYYY-MM-DD)", http.StatusBadRequest)
 					return
 				}
+				cajeroQuery := strings.TrimSpace(r.URL.Query().Get("cajero"))
+				if normalizePermissionRole(effectiveAdminRoleFromRequest(r)) == "cajero" {
+					cajeroQuery = strings.TrimSpace(adminEmailFromRequest(r))
+				}
 
 				items, err := dbpkg.ListEmpresaDocumentosFacturacionByEmpresa(dbEmp, dbpkg.EmpresaDocumentoFacturacionListFilter{
 					EmpresaID:       empresaID,
@@ -223,6 +227,7 @@ func EmpresaFacturacionElectronicaHandler(dbEmp, dbSuper *sql.DB) http.HandlerFu
 					IncludeInactive: parseTruthy(r.URL.Query().Get("include_inactive")) || parseTruthy(r.URL.Query().Get("incluir_inactivas")),
 					ClienteQuery:    strings.TrimSpace(r.URL.Query().Get("cliente")),
 					DocumentoQuery:  strings.TrimSpace(r.URL.Query().Get("documento")),
+					CajeroQuery:     cajeroQuery,
 					FechaDesde:      fechaDesde,
 					FechaHasta:      fechaHasta,
 					Query:           strings.TrimSpace(r.URL.Query().Get("q")),
@@ -664,6 +669,98 @@ func EmpresaFacturacionElectronicaHandler(dbEmp, dbSuper *sql.DB) http.HandlerFu
 					resp["cola_reintentos"] = retryItem
 				}
 				writeJSON(w, http.StatusOK, resp)
+				return
+			}
+			if action == "anular_venta" || action == "anular_comprobante" {
+				var payload facturacionOperacionPayload
+				if r.Body != nil {
+					_ = json.NewDecoder(r.Body).Decode(&payload)
+				}
+				if payload.EmpresaID <= 0 {
+					if empresaID, err := parseInt64QueryOptional(r, "empresa_id"); err == nil && empresaID > 0 {
+						payload.EmpresaID = empresaID
+					}
+				}
+				if payload.EmpresaID <= 0 {
+					http.Error(w, "empresa_id es obligatorio", http.StatusBadRequest)
+					return
+				}
+				if strings.TrimSpace(payload.DocumentoCodigo) == "" {
+					payload.DocumentoCodigo = strings.TrimSpace(r.URL.Query().Get("documento_codigo"))
+				}
+				if strings.TrimSpace(payload.DocumentoCodigo) == "" {
+					http.Error(w, "documento_codigo es obligatorio", http.StatusBadRequest)
+					return
+				}
+				motivo := strings.TrimSpace(payload.Observaciones)
+				if motivo == "" {
+					motivo = strings.TrimSpace(r.URL.Query().Get("motivo"))
+				}
+				if len(motivo) < 10 {
+					http.Error(w, "motivo de anulacion es obligatorio y debe tener minimo 10 caracteres", http.StatusBadRequest)
+					return
+				}
+				venta, err := dbpkg.GetEmpresaDocumentoFacturacionByCodigo(dbEmp, payload.EmpresaID, "comprobante_pago", payload.DocumentoCodigo)
+				if err != nil {
+					if errors.Is(err, sql.ErrNoRows) {
+						http.Error(w, "venta no encontrada", http.StatusNotFound)
+						return
+					}
+					http.Error(w, "No se pudo consultar la venta", http.StatusInternalServerError)
+					return
+				}
+				if strings.ToLower(strings.TrimSpace(venta.EstadoDocumento)) == "anulada" || strings.ToLower(strings.TrimSpace(venta.Estado)) == "inactivo" {
+					http.Error(w, "la venta ya esta anulada", http.StatusConflict)
+					return
+				}
+				usuario := strings.TrimSpace(adminEmailFromRequest(r))
+				ventaAnulada, err := dbpkg.UpsertEmpresaDocumentoFacturacion(dbEmp, dbpkg.EmpresaDocumentoFacturacion{
+					EmpresaID:            venta.EmpresaID,
+					TipoDocumento:        venta.TipoDocumento,
+					DocumentoCodigo:      venta.DocumentoCodigo,
+					EstadoDocumento:      "anulada",
+					EstadoAnterior:       venta.EstadoDocumento,
+					EventoUltimo:         "venta_anulada",
+					PeriodoContable:      venta.PeriodoContable,
+					MontoTotal:           venta.MontoTotal,
+					Moneda:               venta.Moneda,
+					NumeroLegal:          venta.NumeroLegal,
+					CodigoValidacion:     venta.CodigoValidacion,
+					PaisCodigo:           venta.PaisCodigo,
+					AmbienteFE:           venta.AmbienteFE,
+					FechaDocumento:       venta.FechaDocumento,
+					EntidadRelacionadaID: venta.EntidadRelacionadaID,
+					UsuarioCreador:       usuario,
+					Observaciones:        strings.TrimSpace(venta.Observaciones + "\nVenta anulada. Motivo: " + motivo),
+				})
+				if err != nil {
+					http.Error(w, "No se pudo anular la venta", http.StatusInternalServerError)
+					return
+				}
+				registrarEventoContableNoBloqueante(dbEmp, r, "facturacion", dbpkg.EmpresaEventoContable{
+					EmpresaID:       venta.EmpresaID,
+					Modulo:          "ventas",
+					Evento:          "venta_anulada",
+					Entidad:         "comprobante_pago",
+					EntidadID:       ventaAnulada.ID,
+					DocumentoTipo:   venta.TipoDocumento,
+					DocumentoCodigo: venta.DocumentoCodigo,
+					PeriodoContable: venta.PeriodoContable,
+					MontoTotal:      venta.MontoTotal,
+					Moneda:          venta.Moneda,
+					Origen:          "api_facturacion_electronica",
+					Observaciones:   motivo,
+				}, map[string]interface{}{
+					"documento_codigo": venta.DocumentoCodigo,
+					"empresa_id":       venta.EmpresaID,
+				})
+				writeJSON(w, http.StatusOK, map[string]interface{}{
+					"ok":               true,
+					"accion":           "anular_venta",
+					"empresa_id":       venta.EmpresaID,
+					"venta_original":   ventaAnulada,
+					"documento_codigo": venta.DocumentoCodigo,
+				})
 				return
 			}
 			if action == "anular_factura_nota_credito" || action == "anular_factura" {
