@@ -53,8 +53,27 @@ function Invoke-Step {
 
   Write-Host ""
   Write-Host "==> $Name" -ForegroundColor Cyan
+  # Cada script operativo se ejecuta en un proceso hijo. Varios scripts
+  # historicos usan `exit` para devolver su resultado; invocarlos en el mismo
+  # proceso cerraba `rs` antes de ejecutar los pasos siguientes.
+  $childArgs = @("-NoProfile", "-ExecutionPolicy", "Bypass", "-File", $Path)
+  foreach ($key in $Arguments.Keys) {
+    $value = $Arguments[$key]
+    if ($value -is [System.Management.Automation.SwitchParameter]) {
+      if ($value.IsPresent) {
+        $childArgs += "-$key"
+      }
+      continue
+    }
+    if ($value -is [bool]) {
+      $childArgs += "-$key`:$value"
+      continue
+    }
+    $childArgs += "-$key"
+    $childArgs += [string]$value
+  }
   $global:LASTEXITCODE = 0
-  & $Path @Arguments
+  & (Join-Path $PSHOME "powershell.exe") @childArgs
   $exitCode = if ($null -ne $LASTEXITCODE) { [int]$LASTEXITCODE } else { 0 }
   if ($exitCode -ne 0) {
     Write-Host "[ERROR] $Name fallo con codigo $exitCode." -ForegroundColor Red

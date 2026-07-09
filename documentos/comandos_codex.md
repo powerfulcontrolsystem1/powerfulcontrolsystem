@@ -85,6 +85,11 @@ No depender de un wrapper en la raiz del proyecto. Revisar el contenido del
 script antes de asumir su alcance. Puede encadenar preflight, actualizacion,
 sincronizacion y pasos operativos.
 
+`rs.ps1` ejecuta cada script interno en un proceso PowerShell hijo. Esta regla
+evita que un `exit` de preflight, actualizacion o sincronizacion cierre el
+orquestador antes de los pasos restantes; el codigo de salida se conserva y
+detiene el flujo solo cuando el paso correspondiente falla.
+
 ## Backup completo del VPS
 
 El backup operativo independiente del VPS se ejecuta con:

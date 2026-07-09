@@ -4,6 +4,7 @@
 - `backend/db/entertainment_decommission.go`: elimina de forma idempotente la tabla retirada `super_juegos_records` al iniciar el backend.
 - Se retiran `juegos/`, `web/Juegos/`, `web/img/juegos/`, el handler/rutas/pruebas de emulacion y los mounts Docker asociados.
 - `AGENTS.md`, `copilot-instructions.md`, `documentos/README.md` y `documentos/contexto_codex.md`: exigen leer el contexto general antes de cualquier tarea y usar el contexto especifico como indice.
+- `scripts/rs.ps1`: ejecuta preflight, actualizacion y sincronizacion en procesos hijo para propagar su codigo de salida sin que un `exit` interno interrumpa el flujo antes de tiempo.
 
 2026-07-09 - Facturas electronicas compactas y tutorial DIAN acordeon
 - `web/super_administrador.html`: mueve el grupo `Diagramas tecnicos` debajo de `Configuracion`.

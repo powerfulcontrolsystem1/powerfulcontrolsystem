@@ -2,6 +2,7 @@
 - Se elimina el modulo recreativo completo: frontend `web/Juegos`, runtime `juegos`, assets, enlace super, rutas `/emulador`, endpoint publico de records, schema/handler/pruebas y volumenes Docker.
 - El backend ejecuta `DecommissionRemovedEntertainmentArtifacts` para retirar `super_juegos_records` de forma idempotente; cambio destructivo solicitado explicitamente para datos exclusivos del modulo retirado.
 - Se crean `contexto_general_del_sistema.md` y `contexto_especifico_del_sistema.md`; AGENTS/Copilot/README/contexto Codex fijan la lectura del primero como requisito para todo agente.
+- Se corrige `scripts/rs.ps1`: sus pasos corren en procesos hijo para que un `exit` interno no cancele el despliegue antes de sincronizar el VPS.
 
 2026-07-09: Facturas electronicas compactas y tutorial DIAN acordeon.
 - Super administrador: `Diagramas tecnicos` queda debajo de `Configuracion` y no inicia desplegado al entrar al panel.
