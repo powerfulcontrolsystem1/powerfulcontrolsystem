@@ -431,7 +431,7 @@
 
   if (iframe) {
     var defaultIframeSrc = iframe.getAttribute("src") || "/super/licencias_resumen.html";
-    var initialIframeSrc = restoreLastPage(defaultIframeSrc);
+    var initialIframeSrc = normalizeHref(defaultIframeSrc) || "/super/licencias_resumen.html";
     iframe.setAttribute("src", initialIframeSrc);
     setActiveByHref(initialIframeSrc);
     updateFavoriteButton(initialIframeSrc);

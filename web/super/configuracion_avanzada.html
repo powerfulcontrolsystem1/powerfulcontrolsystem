@@ -86,14 +86,9 @@
       </div>
       <ul id="advancedCategoryList" class="nav admin-nav-grouped advanced-category-map">
         <li class="admin-nav-group is-open">
-          <div class="admin-nav-group-title">Gobierno</div>
-          <ul class="admin-nav-sublist">
-            <li><button type="button" data-target="consumosExternosCard" data-search="consumos costos hostinger cursor openai tokens presupuesto" aria-label="Consumos Costos externos"><img class="icon" src="/img/analytics-color.svg" alt=""><strong>Consumos</strong><span>Costos externos</span></button></li>
-          </ul>
-        </li>
-        <li class="admin-nav-group">
           <div class="admin-nav-group-title">Infraestructura</div>
           <ul class="admin-nav-sublist">
+            <li><button type="button" data-target="consumosExternosCard" data-search="consumos costos hostinger cursor openai tokens presupuesto whatsapp api presupuesto" aria-label="Consumos Costos externos"><img class="icon" src="/img/analytics-color.svg" alt=""><strong>Consumos</strong><span>Costos externos</span></button></li>
             <li><button type="button" data-target="rustdeskVpsCard" data-search="infraestructura vps rustdesk soporte remoto hbbs hbbr" aria-label="RustDesk VPS Soporte remoto"><img class="icon" src="/img/network-color.svg" alt=""><strong>RustDesk VPS</strong><span>Soporte remoto</span></button></li>
             <li><button type="button" data-target="empresaLimitacionesCard" data-search="limitaciones empresa api db ia gps rustdesk cuotas base datos" aria-label="Limitaciones API, DB, cuotas"><img class="icon" src="/img/shield-license-color.svg" alt=""><strong>Limitaciones</strong><span>API, DB, cuotas</span></button></li>
             <li><button type="button" data-target="empresaStorageCard" data-search="almacenamiento empresa archivos adjuntos buzon cuota limpieza" aria-label="Almacenamiento por empresa"><img class="icon" src="/img/report.svg" alt=""><strong>Almacenamiento</strong><span>Archivos por empresa</span></button></li>
@@ -2059,32 +2054,8 @@
           });
         };
 
-        const existingTargets = new Set(Array.from(listEl.querySelectorAll('button[data-target]')).map(function(button){
-          return button.dataset.target || '';
-        }));
-        const nodes = Array.from(document.querySelectorAll('section.advanced-card[id]'));
-        nodes.forEach(function(node){
-          const id = node.getAttribute('id');
-          if (!id || existingTargets.has(id)) return;
-          const titleEl = node.querySelector('h2');
-          const title = titleEl ? titleEl.textContent.trim() : id;
-          const help = node.querySelector('.form-help');
-          const hint = help ? help.textContent.trim() : 'Seccion';
-          const button = document.createElement('button');
-          button.type = 'button';
-          button.dataset.target = id;
-          button.dataset.search = normalizeText(title + ' ' + hint + ' ' + id);
-          button.innerHTML = '<strong>' + title + '</strong><span>' + hint.slice(0, 34) + (hint.length > 34 ? '...' : '') + '</span>';
-          const item = document.createElement('li');
-          item.appendChild(button);
-          if (dynamicListEl) {
-            button.insertAdjacentHTML('afterbegin', '<img class="icon" src="/img/settings-color.svg" alt="">');
-            dynamicListEl.appendChild(item);
-            if (dynamicGroupEl) dynamicGroupEl.hidden = false;
-          } else {
-            listEl.appendChild(item);
-          }
-        });
+        if (dynamicGroupEl) dynamicGroupEl.hidden = true;
+        if (dynamicListEl) dynamicListEl.innerHTML = '';
 
         const sectionButtons = Array.from(listEl.querySelectorAll('button[data-target]'));
         setupGroups();

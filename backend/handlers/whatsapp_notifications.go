@@ -24,6 +24,7 @@ const (
 	whatsAppConfigPhoneNumberID = "whatsapp.notifications.phone_number_id"
 	whatsAppConfigAccessToken   = "whatsapp.notifications.access_token"
 	whatsAppConfigTestMode      = "whatsapp.notifications.test_mode"
+	whatsAppUsagePrefix         = "whatsapp.usage."
 )
 
 type whatsAppEventConfig struct {
@@ -274,37 +275,91 @@ func resolveAdminWhatsAppPhoneByEmail(dbSuper *sql.DB, email string) string {
 	return normalizeWhatsAppPhone(admin.Telefono)
 }
 
-func sendPCSWhatsAppNotification(dbSuper *sql.DB, eventKey, toPhone, message, metadataJSON, actorEmail string) (string, error) {
+func sendPCSWhatsAppNotification(dbSuper *sql.DB, eventKey, toPhone, message, metadataJSON, actorEmail string) (status string, err error) {
 	eventKey = strings.ToLower(strings.TrimSpace(eventKey))
 	if eventKey == "" {
 		eventKey = "alerta_sistema"
 	}
+	status = "unknown"
+	defer func() {
+		recordPCSWhatsAppUsage(dbSuper, eventKey, status)
+	}()
 	if !isPCSWhatsAppEventEnabled(dbSuper, eventKey) {
+		status = "disabled"
 		return "disabled", nil
 	}
 	cfg := getWhatsAppNotificationsConfig(dbSuper)
 	to := normalizeWhatsAppPhone(toPhone)
 	if to == "" {
+		status = "invalid_phone"
 		return "invalid_phone", fmt.Errorf("telefono WhatsApp invalido")
 	}
 	body := truncateWhatsAppMessage(message)
 	if body == "" {
+		status = "empty_message"
 		return "empty_message", fmt.Errorf("mensaje WhatsApp vacio")
 	}
 	if cfg.TestMode {
+		status = "captured_test_mode"
 		return "captured_test_mode", nil
 	}
 	token, err := getDecryptedConfigValue(dbSuper, whatsAppConfigAccessToken)
 	if err != nil {
+		status = "config_error"
 		return "config_error", fmt.Errorf("no se pudo leer token WhatsApp: %w", err)
 	}
 	if strings.TrimSpace(cfg.PhoneNumberID) == "" || strings.TrimSpace(token) == "" {
+		status = "not_configured"
 		return "not_configured", fmt.Errorf("WhatsApp API no esta configurada")
 	}
 	if strings.TrimSpace(cfg.Provider) != "" && !strings.EqualFold(strings.TrimSpace(cfg.Provider), "meta_cloud") {
+		status = "provider_unsupported"
 		return "provider_unsupported", fmt.Errorf("proveedor WhatsApp no soportado: %s", cfg.Provider)
 	}
-	return sendMetaCloudWhatsAppText(cfg, token, to, body)
+	status, err = sendMetaCloudWhatsAppText(cfg, token, to, body)
+	return status, err
+}
+
+func recordPCSWhatsAppUsage(dbSuper *sql.DB, eventKey, status string) {
+	if dbSuper == nil {
+		return
+	}
+	date := time.Now().Format("2006-01-02")
+	status = strings.ToLower(strings.TrimSpace(status))
+	if status == "" {
+		status = "unknown"
+	}
+	keys := []string{
+		whatsAppUsageCounterKey(date, "total"),
+		whatsAppUsageCounterKey(date, normalizeWhatsAppUsageStatus(status)),
+	}
+	if strings.TrimSpace(eventKey) != "" {
+		keys = append(keys, whatsAppUsageCounterKey(date, "event."+strings.ToLower(strings.TrimSpace(eventKey))))
+	}
+	for _, key := range keys {
+		raw, _, _, _, _ := dbpkg.GetConfigEntry(dbSuper, key)
+		current, _ := strconv.ParseInt(strings.TrimSpace(raw), 10, 64)
+		_ = dbpkg.SetConfigValue(dbSuper, key, strconv.FormatInt(current+1, 10), false)
+	}
+}
+
+func whatsAppUsageCounterKey(date, metric string) string {
+	return whatsAppUsagePrefix + strings.TrimSpace(date) + "." + strings.ToLower(strings.TrimSpace(metric))
+}
+
+func normalizeWhatsAppUsageStatus(status string) string {
+	switch strings.ToLower(strings.TrimSpace(status)) {
+	case "sent":
+		return "sent"
+	case "captured_test_mode":
+		return "captured"
+	case "disabled":
+		return "disabled"
+	case "invalid_phone", "empty_message", "config_error", "not_configured", "provider_unsupported", "provider_error", "send_error", "request_error":
+		return "errors"
+	default:
+		return "other"
+	}
 }
 
 func sendMetaCloudWhatsAppText(cfg whatsAppNotificationsConfig, token, to, message string) (string, error) {

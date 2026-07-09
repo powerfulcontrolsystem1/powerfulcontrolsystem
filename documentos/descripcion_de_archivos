@@ -1,3 +1,13 @@
+2026-07-09 - Panel super compacto, WhatsApp y ventas de licencias
+- `backend/handlers/super_licencias_ventas_resumen.go`: nuevo handler super `/super/api/licencias/ventas_resumen` que consolida pagos aprobados de `pagos_epayco` y `pagos_wompi`, calcula barras mensuales, total COP y cantidad para el panel.
+- `backend/handlers/super_consumos_handlers.go`: agrega a `/super/api/consumos` el bloque `whatsapp` con configuracion saneada y serie diaria de uso.
+- `backend/handlers/whatsapp_notifications.go`: registra contadores diarios de uso WhatsApp por estado y evento sin guardar secretos ni payloads sensibles.
+- `backend/main.go`: registra la ruta auditada del resumen de ventas de licencias.
+- `web/super_administrador.html`, `web/js/super_administrador.js`: colocan `Panel` como primer acceso fuera de grupos, mueven `Auditoria global` a Plataforma y cargan siempre el panel al entrar al super administrador.
+- `web/super/licencias_resumen.html`: compacta el panel, agrega tarjetas de consumo WhatsApp API y ventas de licencias de Powerful Control System.
+- `web/super/configuracion_avanzada.html`: elimina el grupo interno `Gobierno`, mueve `Consumos` a Infraestructura y evita duplicar secciones dinamicas en el submenu.
+- `web/estilos.css`: agrega estilo para acceso independiente de Panel y desplaza la estrella super para no chocar con el menu flotante.
+
 2026-07-09 - Filtros de facturas por usuario y anulacion por rol
 - `web/administrar_empresa/facturas_electronicas.html`: compacta `Filtros de busqueda` sin subtarjeta interna, corrige iconos de acciones/exportacion a tamano estable, cambia el filtro de cajero a selector con usuario actual detectado y lista de usuarios de la empresa, y solo renderiza `Anular` cuando el permiso efectivo del rol incluye `facturacion:D`.
 

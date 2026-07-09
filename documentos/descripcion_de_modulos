@@ -1,3 +1,10 @@
+2026-07-09: Panel super compacto, consumo WhatsApp y ventas de licencias.
+- Modulos afectados: `super_administrador`, `licencias`, `whatsapp_notificaciones`, `panel_control`.
+- Navegacion: `Panel` queda como primer acceso independiente del menu super, `Auditoria global` pasa a Plataforma y el shell de super administrador carga el panel al entrar.
+- Panel: `web/super/licencias_resumen.html` muestra Favoritos, Seleccionar empresa, OpenAI, WhatsApp API, conteo compacto de empresas con/sin licencia y ventas mensuales de licencias de la empresa interna `Powerful Control System`.
+- Backend: `/super/api/consumos` agrega serie diaria de WhatsApp y `/super/api/licencias/ventas_resumen` consolida pagos aprobados de Epayco/Wompi con idempotencia de lectura.
+- Alcance: no agrega tablas nuevas ni dependencias; usa `pcs_superadministrador.configuraciones`, `pagos_epayco`, `pagos_wompi` y `licencias`.
+
 2026-07-09: Facturas electronicas - filtros por usuario y permisos de anulacion.
 - Modulos afectados: `facturacion_electronica`, `ventas`, `roles_permisos`, `frontend_ux`.
 - Filtros: la bandeja `Facturas electronicas` muestra el usuario actual en `Filtros de busqueda`, carga usuarios/cajeros de la empresa para administradores y mantiene filtro automatico por usuario cuando el rol efectivo es `cajero`.

@@ -3608,6 +3608,19 @@ paths:
       responses:
         "200":
           description: Respuesta exitosa o manejada por el handler real.
+  "/super/api/licencias/ventas_resumen":
+    get:
+      tags: [super-administrador]
+      summary: Ruta inventariada /super/api/licencias/ventas_resumen
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [super-administrador]
+      summary: Ruta inventariada /super/api/licencias/ventas_resumen
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
   "/super/api/metrics/current":
     get:
       tags: [super-administrador]

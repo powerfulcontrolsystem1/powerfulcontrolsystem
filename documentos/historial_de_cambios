@@ -1,3 +1,9 @@
+2026-07-09: Panel super compacto con consumo WhatsApp y ventas de licencias.
+- Super administrador: `Panel` queda como primer acceso fuera de grupos, el grupo `Gobierno` se elimina, `Auditoria global` se mueve a Plataforma y el shell abre siempre `web/super/licencias_resumen.html` al entrar.
+- Panel: se compactan tarjetas sin bajar la fuente, se distingue visualmente `Seleccionar empresa`, se agrega consumo WhatsApp API de 30 dias junto a OpenAI y se agrega resumen mensual de ventas de licencias emitidas por la empresa interna `Powerful Control System`.
+- Backend: `/super/api/consumos` incluye estadistica WhatsApp agregada por dia; `/super/api/licencias/ventas_resumen` resume pagos aprobados de `pagos_epayco` y `pagos_wompi` para el panel.
+- UX super: la estrella de favoritos queda corrida para evitar solaparse con el menu flotante.
+
 2026-07-09: Filtros de facturas por usuario y anulacion por rol.
 - Facturas electronicas: la tarjeta `Filtros de busqueda` queda en una sola tarjeta, sin subtarjeta interna para opciones, y limita los iconos de acciones a tamano compacto para evitar superposiciones.
 - Usuarios/cajeros: el filtro de cajero detecta el usuario actual, lista usuarios de la empresa cuando el rol lo permite y conserva fallback con cajeros vistos en resultados; el rol `cajero` queda prefiltrado por su propio usuario.

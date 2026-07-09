@@ -707,6 +707,11 @@ afecte dinero, documentos, licencias o seguridad.
    pago anticipado con licencia vigente y validar que `fecha_inicio` queda en el
    vencimiento anterior, que `fecha_fin` suma la duracion comprada y que repetir
    la misma referencia no vuelve a extender.
+14. El panel de super administrador lee `/super/api/licencias/ventas_resumen`
+   para mostrar el dinero aprobado y la cantidad de ventas de licencias de los
+   ultimos meses. Ese resumen no activa licencias ni emite documentos; solo
+   consolida pagos aprobados ya registrados en `pagos_epayco` y `pagos_wompi`
+   con referencia a `licencias`.
 
 ## Configurar empresa
 

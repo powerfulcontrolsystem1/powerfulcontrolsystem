@@ -115,6 +115,8 @@ func SuperConsumosHandler(dbEmpresas *sql.DB, dbSuper *sql.DB) http.HandlerFunc 
 
 			// 4) Contador de errores del sistema (solo número)
 			totalErrores, _ := countSuperErrores(dbSuper)
+			whatsappCfg := getWhatsAppNotificationsConfig(dbSuper)
+			whatsappUsage := buildWhatsAppUsageSeries(dbSuper, desdeMes, fecha)
 
 			writeJSON(w, http.StatusOK, map[string]any{
 				"ok": true,
@@ -151,6 +153,19 @@ func SuperConsumosHandler(dbEmpresas *sql.DB, dbSuper *sql.DB) http.HandlerFunc 
 							}
 							return nil
 						}(),
+					},
+				},
+				"whatsapp": map[string]any{
+					"enabled":                 whatsappCfg.Enabled,
+					"provider":                whatsappCfg.Provider,
+					"phone_number_configured": strings.TrimSpace(whatsappCfg.PhoneNumberID) != "",
+					"access_token_configured": whatsappCfg.AccessTokenConfigured,
+					"test_mode":               whatsappCfg.TestMode,
+					"fecha":                   fecha,
+					"rango_mes": map[string]any{
+						"desde": desdeMes,
+						"hasta": fecha,
+						"dias":  whatsappUsage,
 					},
 				},
 				"hostinger":     host,
@@ -315,6 +330,42 @@ func countSuperErrores(dbSuper *sql.DB) (int64, error) {
 		return 0, err
 	}
 	return total, nil
+}
+
+func buildWhatsAppUsageSeries(dbSuper *sql.DB, desde, hasta string) []map[string]any {
+	out := make([]map[string]any, 0, 30)
+	start, err := time.Parse("2006-01-02", strings.TrimSpace(desde))
+	if err != nil {
+		start = time.Now().AddDate(0, 0, -29)
+	}
+	end, err := time.Parse("2006-01-02", strings.TrimSpace(hasta))
+	if err != nil {
+		end = time.Now()
+	}
+	if start.After(end) {
+		start = end.AddDate(0, 0, -29)
+	}
+	for d := start; !d.After(end); d = d.AddDate(0, 0, 1) {
+		fecha := d.Format("2006-01-02")
+		out = append(out, map[string]any{
+			"fecha":    fecha,
+			"total":    int64Config(dbSuper, whatsAppUsageCounterKey(fecha, "total")),
+			"sent":     int64Config(dbSuper, whatsAppUsageCounterKey(fecha, "sent")),
+			"captured": int64Config(dbSuper, whatsAppUsageCounterKey(fecha, "captured")),
+			"errors":   int64Config(dbSuper, whatsAppUsageCounterKey(fecha, "errors")),
+			"disabled": int64Config(dbSuper, whatsAppUsageCounterKey(fecha, "disabled")),
+		})
+	}
+	return out
+}
+
+func int64Config(dbSuper *sql.DB, key string) int64 {
+	raw, _, _, _, _ := dbpkg.GetConfigEntry(dbSuper, key)
+	value, err := strconv.ParseInt(strings.TrimSpace(raw), 10, 64)
+	if err != nil || value < 0 {
+		return 0
+	}
+	return value
 }
 
 func superConsumosRound2(v float64) float64 {
