@@ -16116,3 +16116,15 @@ Archivos modificados:
 - web/administrar_empresa/facturas_electronicas.html
 - web/estilos.css
 - web/js/administrar_empresa.js
+
+2026-07-09 02:42:17 - Mensaje: rs: actualizar repositorio y sincronizar VPS; Commit: 8c808d3f; PushStatus: OK
+Archivos modificados:
+- CHANGELOG.md
+- backend/db/documentos_transaccionales.go
+- backend/handlers/empresa_permisos.go
+- backend/handlers/facturacion_electronica.go
+- documentos/descripcion_de_archivos
+- documentos/descripcion_de_modulos
+- documentos/historial_de_cambios
+- documentos/matriz_roles_permisos_pos_multiempresa.md
+- web/administrar_empresa/facturas_electronicas.html
