@@ -90,6 +90,11 @@ evita que un `exit` de preflight, actualizacion o sincronizacion cierre el
 orquestador antes de los pasos restantes; el codigo de salida se conserva y
 detiene el flujo solo cuando el paso correspondiente falla.
 
+Durante la extraccion remota, `sync_to_vps.ps1` borra las rutas retiradas
+`web/Juegos`, `juegos` y `web/img/juegos` antes de aplicar el paquete. Esto
+evita que los archivos estaticos de un modulo eliminado sobrevivan a una
+sincronizacion incremental.
+
 ## Backup completo del VPS
 
 El backup operativo independiente del VPS se ejecuta con:
