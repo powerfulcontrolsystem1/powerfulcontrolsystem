@@ -1,3 +1,6 @@
+2026-07-09 - Filtros de facturas por usuario y anulacion por rol
+- `web/administrar_empresa/facturas_electronicas.html`: compacta `Filtros de busqueda` sin subtarjeta interna, corrige iconos de acciones/exportacion a tamano estable, cambia el filtro de cajero a selector con usuario actual detectado y lista de usuarios de la empresa, y solo renderiza `Anular` cuando el permiso efectivo del rol incluye `facturacion:D`.
+
 2026-07-08 - Bandejas de ventas/facturacion y menu flotante
 - `web/menu.js`: retira compartir por correo, juegos, emulador y submenu Utilidades del menu flotante; deja Calculadora como item principal y conserva iconos en cambio de apariencia y sesion.
 - `web/super_administrador.html`: agrega enlace a Juegos en el panel super; el emulador se mantiene dentro del lobby de Juegos.

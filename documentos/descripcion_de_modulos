@@ -1,3 +1,9 @@
+2026-07-09: Facturas electronicas - filtros por usuario y permisos de anulacion.
+- Modulos afectados: `facturacion_electronica`, `ventas`, `roles_permisos`, `frontend_ux`.
+- Filtros: la bandeja `Facturas electronicas` muestra el usuario actual en `Filtros de busqueda`, carga usuarios/cajeros de la empresa para administradores y mantiene filtro automatico por usuario cuando el rol efectivo es `cajero`.
+- UX: se elimina la subtarjeta interna de opciones de filtros y se fijan iconos compactos para evitar superposicion visual.
+- Seguridad: el boton `Anular` depende del permiso efectivo `facturacion:D`; si el rol no lo tiene, no se renderiza. El backend conserva la autorizacion en el wrapper de facturacion para bloquear llamadas forzadas.
+
 2026-07-07: Favoritos y retorno al panel super.
 - Modulos afectados: `super_administrador`, `navegacion_super`.
 - Favoritos: todas las paginas listadas en el menu super quedan permitidas para el boton de estrella del shell; se completan rutas faltantes como `Empresas`, `WhatsApp notificaciones`, `Vencimientos externos` y `VPS2`.

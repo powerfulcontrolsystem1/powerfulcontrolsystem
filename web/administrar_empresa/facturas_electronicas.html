@@ -41,12 +41,16 @@
     .fe-result-summary .kpi-box small{display:block;color:var(--muted);font-weight:700;margin-top:2px}
     #facturasTable th,#facturasTable td{padding:6px 8px;line-height:1.18;vertical-align:middle}
     #facturasTable .btn{min-height:30px;padding:5px 8px;border-radius:6px;font-size:.82rem;line-height:1.1}
-    #facturasTable .icon,.fe-export-menu .icon,.fe-actions-cell .icon{width:14px;height:14px;flex:0 0 14px;margin-right:4px}
+    #facturasTable .icon,.fe-export-menu .icon,.fe-actions-cell .icon,.fe-compact-filter .form-actions .icon,.fe-compact-filter summary.btn .icon{width:14px!important;height:14px!important;max-width:14px!important;max-height:14px!important;flex:0 0 14px;margin-right:4px;object-fit:contain}
     .fe-actions-cell{display:flex;align-items:center;gap:4px;flex-wrap:wrap}
     .fe-actions-cell .btn,.fe-export-menu .btn,.form-actions .btn{display:inline-flex;align-items:center;justify-content:center;gap:4px}
+    .fe-compact-filter summary.btn{display:inline-flex;align-items:center;justify-content:center;gap:4px}
     .fe-share-dropdown summary{min-width:34px}
     .fe-share-dropdown summary .icon{margin:0;width:13px;height:13px}
     .fe-cashier-cell{max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .fe-filter-check{display:inline-flex;align-items:center;gap:7px;min-height:40px;padding:0;background:transparent;border:0;box-shadow:none;color:var(--text);font-weight:700}
+    .fe-filter-check input{width:16px;height:16px;margin:0;accent-color:var(--accent)}
+    .fe-current-user-hint{margin-top:4px;color:var(--muted);font-size:.78rem;line-height:1.25}
     .factura-print-preview{background:#f3f4f6;padding:18px;overflow:auto}
     .factura-print-sheet{background:#fff;color:#111;border:1px solid #d1d5db;max-width:960px;margin:0 auto;padding:26px;font-family:Arial,Helvetica,sans-serif;box-shadow:none}
     .factura-print-head{display:flex;justify-content:space-between;gap:18px;border-bottom:2px solid #111;padding-bottom:16px;margin-bottom:14px}
@@ -146,12 +150,14 @@
           </div>
           <div class="form-col">
             <label class="form-label" for="cajeroFiltro">Cajero</label>
-            <input id="cajeroFiltro" class="form-input" list="cajerosList" placeholder="Correo o usuario del cajero">
-            <datalist id="cajerosList"></datalist>
+            <select id="cajeroFiltro" class="form-input">
+              <option value="">Todos los usuarios</option>
+            </select>
+            <div id="usuarioActualHint" class="fe-current-user-hint">Usuario actual: detectando...</div>
           </div>
           <div class="form-col">
             <label class="form-label">Opciones</label>
-            <label class="empresa-config-check inline-check" for="includeInactive">
+            <label class="fe-filter-check" for="includeInactive">
               <input id="includeInactive" type="checkbox">
               <span>Incluir inactivos</span>
             </label>
@@ -339,7 +345,8 @@
         canCancelInvoices: false,
         currentUserEmail: "",
         currentRole: "",
-        cajeroFilterLocked: false
+        cajeroFilterLocked: false,
+        usuariosEmpresa: []
       };
 
       function currentViewMode() {
@@ -782,17 +789,17 @@
         var tipo = normalize(item && item.tipo_documento).toLowerCase();
         var estadoDoc = normalize(item && item.estado_documento).toLowerCase();
         if (!state.canCancelInvoices) {
-          return { enabled: false, reason: "Tu rol no tiene permiso para anular documentos." };
+          return { enabled: false, visible: false, reason: "Tu rol no tiene permiso para anular documentos." };
         }
         if (tipo === "factura_electronica") {
-          if (canCancelInvoice(item)) return { enabled: true, reason: "Anular factura electronica con nota credito." };
-          return { enabled: false, reason: estadoDoc === "anulada" ? "Factura ya anulada." : "Solo se anulan facturas electronicas emitidas." };
+          if (canCancelInvoice(item)) return { enabled: true, visible: true, reason: "Anular factura electronica con nota credito." };
+          return { enabled: false, visible: true, reason: estadoDoc === "anulada" ? "Factura ya anulada." : "Solo se anulan facturas electronicas emitidas." };
         }
         if (tipo === "comprobante_pago") {
-          if (canCancelSale(item)) return { enabled: true, reason: "Anular venta simple." };
-          return { enabled: false, reason: "Venta ya anulada o inactiva." };
+          if (canCancelSale(item)) return { enabled: true, visible: true, reason: "Anular venta simple." };
+          return { enabled: false, visible: true, reason: "Venta ya anulada o inactiva." };
         }
-        return { enabled: false, reason: "Este tipo de documento no se anula desde esta accion." };
+        return { enabled: false, visible: true, reason: "Este tipo de documento no se anula desde esta accion." };
       }
 
       function getPrintableDocumentMeta(item) {
@@ -1014,6 +1021,18 @@
           .catch(function() { state.canCancelInvoices = false; });
       }
 
+      function loadEmpresaUsuarios() {
+        return apiRequest('/api/empresa/usuarios?empresa_id=' + encodeURIComponent(String(empresaID)))
+          .then(function(items) {
+            state.usuariosEmpresa = Array.isArray(items) ? items : [];
+            populateCajerosList();
+          })
+          .catch(function() {
+            state.usuariosEmpresa = [];
+            populateCajerosList();
+          });
+      }
+
       function renderPrintPreview(item) {
         if (!printPreview) return;
         if (!item) {
@@ -1045,6 +1064,8 @@
           var cajeroLabel = normalize(item.usuario_creador) || "-";
 
           var cancelInfo = cancelAvailability(item);
+          var cancelActionHTML = cancelInfo.visible === false ? '' :
+            '<button type="button" class="btn danger fe-only-action" data-action="anular" data-key="' + escapeHtml(key) + '"' + (cancelInfo.enabled ? '' : ' disabled') + ' title="' + escapeHtml(cancelInfo.reason) + '"><img class="icon" src="/img/shield-security-color.svg" alt="">Anular</button>';
           return '<tr data-key="' + escapeHtml(key) + '">' +
             '<td>' + escapeHtml(formatDate(item.fecha_documento || item.fecha_creacion)) + '</td>' +
             '<td>' + escapeHtml(typeLabel(item.tipo_documento)) + '</td>' +
@@ -1057,7 +1078,7 @@
             '<td>' + escapeHtml(item.estado || "activo") + '</td>' +
             '<td class="fe-actions-cell">' +
               '<button type="button" class="btn secondary fe-only-action" data-action="imprimir" data-key="' + escapeHtml(key) + '"><img class="icon" src="/img/print-color.svg" alt="">Visualizar</button>' +
-              '<button type="button" class="btn danger fe-only-action" data-action="anular" data-key="' + escapeHtml(key) + '"' + (cancelInfo.enabled ? '' : ' disabled') + ' title="' + escapeHtml(cancelInfo.reason) + '"><img class="icon" src="/img/shield-security-color.svg" alt="">Anular</button>' +
+              cancelActionHTML +
               ' <details class="fe-share-dropdown">' +
                 '<summary class="btn secondary" title="Compartir"><img class="icon" src="/img/network-color.svg" alt=""><span class="sr-only">Compartir</span></summary>' +
                 '<div class="fe-share-menu">' +
@@ -1136,32 +1157,57 @@
 
       function applyCajeroAutoFilter() {
         var cajeroFiltro = document.getElementById("cajeroFiltro");
+        var hint = document.getElementById("usuarioActualHint");
         if (!cajeroFiltro) return;
         var isCajero = normalize(state.currentRole).toLowerCase() === "cajero";
         state.cajeroFilterLocked = !!(isCajero && state.currentUserEmail);
         if (state.cajeroFilterLocked) {
           cajeroFiltro.value = state.currentUserEmail;
-          cajeroFiltro.readOnly = true;
+          cajeroFiltro.disabled = true;
           cajeroFiltro.title = "Filtro automatico por el cajero de la sesion.";
         } else {
-          cajeroFiltro.readOnly = false;
+          cajeroFiltro.disabled = false;
           cajeroFiltro.title = "Filtra por correo o usuario que creo la venta/factura.";
         }
+        if (hint) {
+          hint.textContent = state.currentUserEmail
+            ? ("Usuario actual: " + state.currentUserEmail + (state.cajeroFilterLocked ? " (filtro automático)" : ""))
+            : "Usuario actual: no detectado";
+        }
+        populateCajerosList();
       }
 
       function populateCajerosList() {
-        var list = document.getElementById("cajerosList");
-        if (!list) return;
+        var select = document.getElementById("cajeroFiltro");
+        if (!select) return;
+        var previous = normalize(select.value);
         var seen = Object.create(null);
-        var options = [];
+        var options = ['<option value="">Todos los usuarios</option>'];
+        function addOption(value, label, extra) {
+          value = normalize(value);
+          if (!value) return;
+          var key = value.toLowerCase();
+          if (seen[key]) return;
+          seen[key] = true;
+          options.push('<option value="' + escapeHtml(value) + '">' + escapeHtml(label || value) + (extra ? ' - ' + escapeHtml(extra) : '') + '</option>');
+        }
+        addOption(state.currentUserEmail, state.currentUserEmail, "usuario actual");
+        (state.usuariosEmpresa || []).forEach(function(user) {
+          var email = normalize(user && (user.email || user.usuario_email || user.correo));
+          var nombre = normalize(user && (user.nombre || user.nombre_completo || user.name));
+          var rol = normalize(user && (user.rol_nombre || user.rol || user.role));
+          addOption(email, nombre ? (nombre + " <" + email + ">") : email, rol);
+        });
         (state.items || []).forEach(function(item) {
           var cajero = normalize(item && item.usuario_creador);
-          var key = cajero.toLowerCase();
-          if (!cajero || seen[key]) return;
-          seen[key] = true;
-          options.push('<option value="' + escapeHtml(cajero) + '"></option>');
+          addOption(cajero, cajero, "en resultados");
         });
-        list.innerHTML = options.join("");
+        select.innerHTML = options.join("");
+        if (state.cajeroFilterLocked && state.currentUserEmail) {
+          select.value = state.currentUserEmail;
+        } else if (previous && Array.from(select.options).some(function(opt) { return opt.value === previous; })) {
+          select.value = previous;
+        }
       }
 
       function applyFiltersFromQueryParams() {
@@ -1524,7 +1570,7 @@
         clearFilters();
         restoreSavedViewMode();
         applyFiltersFromQueryParams();
-        Promise.all([loadEmpresa(), loadEmpresaConfigAvanzada(), loadPermissionContext()]).finally(runSearch);
+        Promise.all([loadEmpresa(), loadEmpresaConfigAvanzada(), loadPermissionContext(), loadEmpresaUsuarios()]).finally(runSearch);
       }
 
       init();

@@ -1,3 +1,8 @@
+2026-07-09: Filtros de facturas por usuario y anulacion por rol.
+- Facturas electronicas: la tarjeta `Filtros de busqueda` queda en una sola tarjeta, sin subtarjeta interna para opciones, y limita los iconos de acciones a tamano compacto para evitar superposiciones.
+- Usuarios/cajeros: el filtro de cajero detecta el usuario actual, lista usuarios de la empresa cuando el rol lo permite y conserva fallback con cajeros vistos en resultados; el rol `cajero` queda prefiltrado por su propio usuario.
+- Permisos: el boton `Anular` solo se renderiza si el rol efectivo tiene permiso `facturacion:D`; el endpoint ya clasifica las anulaciones como accion `D`, por lo que una llamada forzada queda bajo la misma matriz de permisos.
+
 2026-07-09: Bandeja de facturas con cajero, anulacion y vista recordada.
 - Facturas electronicas: columna Tipo distingue `Venta sola` de `Factura electronica`, agrega columna/filtro de cajero y compacta la altura de filas y acciones.
 - Cajero: el rol `cajero` queda prefiltrado por su usuario de sesion en frontend y backend; administradores pueden filtrar por cualquier `usuario_creador`.
