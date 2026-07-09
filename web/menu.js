@@ -490,7 +490,6 @@
         if (item.matches('a[href*="index"]')) src = '/img/company-briefcase-color.svg';
         if (item.matches('a[href*="red_social"]')) src = '/img/social.svg';
         if (item.matches('a[href*="calculadora"]')) src = '/img/analytics-color.svg';
-        if (item.matches('a[href*="Juegos"],a[href*="emulador"]')) src = '/img/play.svg';
         var img = document.createElement('img');
         img.className = 'fm-item-icon';
         img.src = src;

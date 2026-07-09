@@ -2,7 +2,8 @@
 - `linkFacturasElectronicas` queda disponible como lectura de documentos en Operacion y ventas y conserva aislamiento por `empresa_id`.
 - Las acciones de anulacion de facturacion electronica (`anular`, `anular_factura`, `anular_factura_nota_credito`) resuelven a accion `D`; el rol base autorizado es `admin_empresa`.
 - El rol `cajero` puede consultar y operar ventas segun su matriz, pero no ve anulacion de factura electronica si no tiene permiso efectivo `facturacion:D`.
-- El menu flotante ya no expone compartir por correo, Juegos ni Emulador; Juegos queda en el panel de Super administrador y el emulador dentro del lobby de Juegos.
+- El menu flotante no expone compartir por correo, juegos ni emuladores. PCS no
+  mantiene superficies recreativas publicas o administrativas.
 
 2026-07-07: Nota de diagramas tecnicos super administrador
 - `web/super/diagramas/*.html` queda dentro del panel super como lectura tecnica para `super_administrador`.

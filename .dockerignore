@@ -46,7 +46,6 @@ backups/
 logs/
 node_modules/
 web/uploads/
-juegos/
 clave privada ssh.ppk
 *.ppk
 *.pem

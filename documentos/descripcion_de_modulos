@@ -1,3 +1,10 @@
+2026-07-09: Retiro de juegos y emuladores.
+- Modulos afectados: `portal_publico`, `super_administrador`, `documentacion_tecnica`, `infraestructura`.
+- Se retiran de codigo, frontend, Docker, rutas publicas, pruebas, OpenAPI y datos el arcade, el emulador y los records globales.
+- `DecommissionRemovedEntertainmentArtifacts` elimina la tabla exclusiva `super_juegos_records` al arrancar, de forma idempotente.
+- No se afecta el catalogo fiscal DIAN de documentos equivalentes para juegos de suerte y azar, porque corresponde a una categoria legal ajena al modulo recreativo.
+- La nueva lectura obligatoria de agentes inicia en `contexto_general_del_sistema.md` y se amplia por `contexto_especifico_del_sistema.md`.
+
 2026-07-09: Facturas electronicas compactas y tutorial DIAN.
 - Modulos afectados: `facturacion_electronica`, `ventas`, `super_administrador`, `documentacion_ayuda`.
 - Bandeja: `web/administrar_empresa/facturas_electronicas.html` conserva una sola pagina documental, compacta `Filtros de busqueda`, mejora `Visualizar` con tablas organizadas y marca ventas con factura asociada como `Factura electronica` en la columna Tipo.

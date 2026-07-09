@@ -715,11 +715,9 @@
 - `backend/handlers/facturacion_documentos_electronicos_test.go` cubre que solo Colombia produccion exige acuse fiscal para mantener la factura automatica como emitida.
 - No se agregan tablas, rutas ni permisos; se reutilizan `empresa_facturacion_documentos` y `facturacion_electronica_reintentos`.
 
-## Actualizacion 2026-05-13 (juegos moviles con records)
-- `backend/main.go` asegura `super_juegos_records` y publica `/api/public/juegos/records` usando `backend/handlers/super_juegos.go`.
-- `web/Juegos/menu_juegos.html` funciona como lobby responsive con tarjetas uniformes y portadas PNG reales en `web/img/juegos/`.
-- `web/Juegos/juegos_records.js` centraliza ranking y guardado; `arcade_embed.js` orquesta iframes, controles tactiles, sonido y panel de records; `open_game_embed.js` reporta puntajes desde los juegos embebidos.
-- `juegos/public/*` es el frontend del emulador web servido por `/emulador/`; ahora incorpora controles tactiles y `web/Juegos/n64/index.html` lo embebe como pantalla N64.
+## Actualizacion 2026-07-09 (retiro de juegos y emulador)
+- El modulo recreativo, sus rutas publicas, assets, runtime de emulacion,
+  endpoint de puntajes y tabla `super_juegos_records` fueron retirados.
 
 ## Actualizacion 2026-05-13 (submenu de Configuracion super)
 - `web/super/configuracion_avanzada.html` mantiene sus tarjetas de configuracion y buscador, pero el submenu interno adopta el patron de sidebar simple usado por `seleccionar_empresa.html`.

@@ -25,7 +25,7 @@ Relación con `agente_go`:
 
 Cobertura prioritaria por modulo:
 
-- `portal publico`: home, menu flotante, contacto, juegos, accesos comerciales y experiencia movil.
+- `portal publico`: home, menu flotante, contacto, accesos comerciales y experiencia movil.
 - `login`, `login_usuario`, `registrar_nuevo_usuario_administrador`, `registrar_contrasena_usuario_de_google`: formularios, claridad del flujo, errores visibles y responsive.
 - `seleccionar_empresa`, `super`, `administrar_empresa`: shells administrativos, navegacion lateral, estados de carga y consistencia de CTA.
 - `estaciones`, `ventas_simple`, `carritos`, `venta_publica`, `pagar_licencia`: rapidez operativa, pasos claros, feedback de acciones y adaptacion movil.

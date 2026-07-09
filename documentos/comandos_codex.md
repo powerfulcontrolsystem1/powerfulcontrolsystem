@@ -56,7 +56,7 @@ de doble codificacion o caracteres de reemplazo en pantallas del sistema.
 
 ```powershell
 $badEncodingPattern = ([char]0xFFFD) + "|" + ([char]0x00C3) + "|" + ([char]0x00D2) + "|[A-Za-zÁÉÍÓÚáéíóúÑñ]\?[A-Za-zÁÉÍÓÚáéíóúÑñ]"
-rg -n $badEncodingPattern web backend scripts documentos CHANGELOG.md AGENTS.md -g "*.html" -g "*.js" -g "*.css" -g "*.go" -g "*.md" -g "*.txt" -g "*.ps1" -g "*.json" -g "*.yaml" -g "*.yml" -g "*.sql" -g "!web/Juegos/**" -g "!juegos/**" -g "!documentos/historial_de_cambios"
+rg -n $badEncodingPattern web backend scripts documentos CHANGELOG.md AGENTS.md -g "*.html" -g "*.js" -g "*.css" -g "*.go" -g "*.md" -g "*.txt" -g "*.ps1" -g "*.json" -g "*.yaml" -g "*.yml" -g "*.sql" -g "!documentos/historial_de_cambios"
 ```
 
 Revisar manualmente los resultados porque las URLs con query string pueden dar

@@ -702,7 +702,6 @@ func AuthMiddleware(dbSuper *sql.DB, next http.Handler) http.Handler {
 			"/api/public/plantillas_integracion/catalogo":           {},
 			"/api/internal/email_corporativo/autologin":             {},
 			"/api/public/contrato":                                  {},
-			"/api/public/juegos/records":                            {},
 			"/api/public/turnos_atencion":                           {},
 			"/api/public/webrtc/signaling":                          {},
 			"/api/public/licencias/payment_methods":                 {},
@@ -730,7 +729,6 @@ func AuthMiddleware(dbSuper *sql.DB, next http.Handler) http.Handler {
 			"/favicon.ico":                                          {},
 			"/manifest.webmanifest":                                 {},
 			"/sw.js":                                                {},
-			"/emulador":                                             {},
 		}
 		if _, ok := publicExact[path]; ok {
 			next.ServeHTTP(w, r)
@@ -766,7 +764,7 @@ func AuthMiddleware(dbSuper *sql.DB, next http.Handler) http.Handler {
 		}
 
 		// Recursos estáticos públicos
-		publicPrefixes := []string{"/assets/", "/img/", "/uploads/", "/descargas/", "/emulador/"}
+		publicPrefixes := []string{"/assets/", "/img/", "/uploads/", "/descargas/"}
 		publicPrefixes = append(publicPrefixes, "/js/")
 		if strings.HasPrefix(path, "/ayuda/") && path != "/ayuda/ayuda.html" {
 			next.ServeHTTP(w, r)

@@ -43,6 +43,11 @@ checklist interno y entregar una sola salida integrada.
 
 Antes de iniciar cambios funcionales relevantes:
 
+- `documentos/contexto_general_del_sistema.md` es la primera lectura obligatoria
+  para cualquier consulta, analisis, correccion, prueba o cambio del proyecto.
+  Solo despues se debe abrir el contexto especifico y la documentacion del tema.
+- `documentos/contexto_especifico_del_sistema.md` funciona como indice de
+  ampliacion: se consulta segun el modulo, dato, integracion o operacion tocada.
 - `documentos/contexto_codex.md` como entrada rapida obligatoria del proyecto.
 - `documentos/mapa_modulos.md` cuando haya que ubicar paginas, APIs, tablas,
   configuraciones, permisos o pruebas de un modulo.

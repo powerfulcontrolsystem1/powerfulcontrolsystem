@@ -1,5 +1,10 @@
 # Contexto rapido para Codex
 
+> Regla de lectura: antes de usar este documento, todo agente debe leer
+> `documentos/contexto_general_del_sistema.md`. Para ampliar un tema, debe usar
+> `documentos/contexto_especifico_del_sistema.md` como indice y abrir solo las
+> fuentes necesarias.
+
 Este archivo es la primera lectura operativa antes de tocar el proyecto. Resume
 lo que Codex debe tener en memoria para evitar redescubrir rutas, flujos y
 decisiones en cada tarea.

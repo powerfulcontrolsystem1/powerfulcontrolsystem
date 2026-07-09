@@ -50,7 +50,6 @@ function walk(dir, files = []) {
 function routeForFile(file) {
   const rel = path.relative(WEB_ROOT, file).replace(/\\/g, "/");
   if (rel.includes("/source/")) return null;
-  if (rel.startsWith("Juegos/")) return null;
   const url = "/" + rel;
   if (url.startsWith("/administrar_empresa/") || url === "/administrar_empresa.html") {
     const joiner = url.includes("?") ? "&" : "?";

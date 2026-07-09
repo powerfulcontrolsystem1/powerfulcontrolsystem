@@ -26,7 +26,7 @@ Reglas obligatorias:
 
 Comportamiento del agente:
 
-- Leer `documentos/descripcion_del_proyecto` antes de comenzar tareas relacionadas con el proyecto y alinearse con sus restricciones.
+- Leer primero `documentos/contexto_general_del_sistema.md` antes de cualquier consulta, analisis, correccion, prueba o cambio del proyecto. Luego usar `documentos/contexto_especifico_del_sistema.md` como indice para abrir solo la documentacion necesaria y finalmente leer `documentos/descripcion_del_proyecto` cuando corresponda. Esta regla aplica a todos los agentes.
 - Operar con `agente_go` como agente principal del repositorio. Cuando exista trabajo multiárea, coordinar desde `agente_go` la colaboración de `agente_backend_db`, `agente_frontend_ux` y `agente_qa_operacion`, integrando una sola salida final con trazabilidad técnica y documental.
 - Aplicar `.github/agents/protocolo_delegacion.md` para decidir la activacion de especialistas y `.github/agents/plantilla_trabajo_por_modulo.md` para mantener un ciclo consistente por modulo.
 - Usar la tabla rapida por modulo y los ejemplos reales del protocolo como referencia operativa; en modulos criticos, `agente_go` debe forzar la participacion obligatoria definida alli antes de cerrar.

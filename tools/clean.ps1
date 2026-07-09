@@ -1,6 +1,5 @@
 $files = Get-ChildItem -Path web -Recurse -Include *.html,*.js
 foreach ($file in $files) {
-    if ($file.Name -eq "patito_volando.html" -or $file.Name -match "Juegos") { continue }
     $content = Get-Content $file.FullName -Raw
     
     # Remplazos HTML de estilos fijos

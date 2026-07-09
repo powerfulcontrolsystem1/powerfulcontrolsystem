@@ -9,16 +9,18 @@ Este archivo organiza la lectura tecnica y funcional del repositorio para desarr
 
 ## Orden de lectura recomendado
 
-1. `documentos/descripcion_del_proyecto`
-2. `documentos/estructura_bd.md`
-3. `documentos/diagramas/diagramas_sistema_pcs.md`
-4. `documentos/diagramas/diagrama_entidad_relacion.md`
-5. `documentos/diagramas/estructura_del_codigo.md`
-6. `documentos/matriz_roles_permisos_pos_multiempresa.md`
-7. `documentos/reporte_estado_modulos_2026-05-05.md`
-8. `documentos/gobernanza_tecnica/README.md`
-9. `documentos/historial_de_cambios`
-10. `CHANGELOG.md`
+1. `documentos/contexto_general_del_sistema.md`
+2. `documentos/contexto_especifico_del_sistema.md`
+3. `documentos/descripcion_del_proyecto`
+4. `documentos/estructura_bd.md`
+5. `documentos/diagramas/diagramas_sistema_pcs.md`
+6. `documentos/diagramas/diagrama_entidad_relacion.md`
+7. `documentos/diagramas/estructura_del_codigo.md`
+8. `documentos/matriz_roles_permisos_pos_multiempresa.md`
+9. `documentos/reporte_estado_modulos_2026-05-05.md`
+10. `documentos/gobernanza_tecnica/README.md`
+11. `documentos/historial_de_cambios`
+12. `CHANGELOG.md`
 
 ## Estado documental reciente
 - 2026-07-07: se agregan 15 diagramas tecnicos visibles en `Super administrador > Diagramas tecnicos` y fuentes internas Mermaid/JSON para Codex en `documentos/diagramas/diagramas_sistema_pcs.md` y `diagramas_sistema_pcs_manifest.json`.
@@ -82,6 +84,8 @@ Este archivo organiza la lectura tecnica y funcional del repositorio para desarr
 
 ## Fuentes canonicas por tema
 
+- Contexto obligatorio para agentes: `documentos/contexto_general_del_sistema.md`
+- Indice de contexto por modulo: `documentos/contexto_especifico_del_sistema.md`
 - Vision funcional y alcance actual: `documentos/descripcion_del_proyecto`
 - Esquema fisico de base de datos: `documentos/estructura_bd.md`
 - Ayuda tecnica de APIs e integraciones: `documentos/api/ayuda_apis.md`

@@ -5,6 +5,7 @@ backend/*.log
 backend/*.err
 backend/logs/*.log
 backend/logs/
+backend/utils/logs/*.log
 backend/handlers/logs/
 backend/tmp/
 backend/tmp_*
@@ -49,11 +50,6 @@ deploy/.env.staging
 .codex-gocache/
 .codex-tmp-go/
 .codex-chrome*/
-juegos/roms/*
-!juegos/roms/README.md
-juegos/empresas/*
-!juegos/empresas/README.md
-juegos/tmp/
 # VSCode
 .vscode/
 # Archivos compilados

@@ -1,3 +1,10 @@
+2026-07-09 - Retiro de juegos/emuladores y contexto documental obligatorio
+- `documentos/contexto_general_del_sistema.md`: resumen obligatorio y compacto del producto, arquitectura, reglas y flujos criticos para toda consulta de agentes.
+- `documentos/contexto_especifico_del_sistema.md`: indice enlazado del contexto general hacia la documentacion de modulos, seguridad, datos, despliegue y QA.
+- `backend/db/entertainment_decommission.go`: elimina de forma idempotente la tabla retirada `super_juegos_records` al iniciar el backend.
+- Se retiran `juegos/`, `web/Juegos/`, `web/img/juegos/`, el handler/rutas/pruebas de emulacion y los mounts Docker asociados.
+- `AGENTS.md`, `copilot-instructions.md`, `documentos/README.md` y `documentos/contexto_codex.md`: exigen leer el contexto general antes de cualquier tarea y usar el contexto especifico como indice.
+
 2026-07-09 - Facturas electronicas compactas y tutorial DIAN acordeon
 - `web/super_administrador.html`: mueve el grupo `Diagramas tecnicos` debajo de `Configuracion`.
 - `web/administrar_empresa/facturas_electronicas.html`: compacta filtros en una sola grilla, mejora la representacion imprimible con tabla de documento y totales, y etiqueta como factura electronica las ventas con `FV-*` asociada.

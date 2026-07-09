@@ -3,6 +3,11 @@
 Version: 2026-05-15.1.0
 Ultima actualizacion: 2026-05-15
 
+Actualizacion 2026-07-09: la tabla exclusiva del modulo retirado
+`super_juegos_records` se elimina de `pcs_superadministrador` en el arranque
+mediante `DecommissionRemovedEntertainmentArtifacts`. No afecta datos
+empresariales ni las categorias fiscales DIAN de juegos de suerte y azar.
+
 Actualizacion 2026-06-18 (configuracion interactiva e IA documental)
 - No se agregan tablas nuevas.
 - `empresa_estacion_prefs` usa la nueva clave por empresa
@@ -2216,11 +2221,6 @@ Actualizacion 2026-04-29 (auditoria como fuente de contexto IA)
 - 2026-04-02: se agrega `categorias_productos`, se incorpora `productos.categoria_id` y se documentan relaciones del catálogo de categorías por empresa.
 - 2026-04-02: se agregan tablas del modulo chat_y_tareas en pcs_empresas y se actualiza este documento.
 - 2026-04-02: se agregan `empresa_gps_dispositivos` y `empresa_gps_recorridos` para tracking de ubicacion GPS por empresa, con registro periodico de recorridos.
-### Tabla: super_juegos_records (pcs_superadministrador)
-Almacena los top scores globales de todos los juegos publicados en `/Juegos/*` y el emulador, para todas las empresas y el público. El frontend envía records mediante `/api/public/juegos/records` con `juego`, `nombre_jugador`, `empresa_id`, `puntaje` y `nivel`.
-- **Columnas**: `id` (INTEGER/SERIAL), `juego` (TEXT), `nombre_jugador` (TEXT), `empresa_id` (TEXT, DEFAULT 'Publico'), `puntaje` (INTEGER), `nivel` (INTEGER), `fecha_creacion` (TEXT/TIMESTAMP), `fecha_actualizacion` (TEXT/TIMESTAMP), `usuario_creador` (TEXT), `estado` (TEXT), `observaciones` (TEXT).
-- **Único**: `id` autoincremental.
-- **Índice**: `idx_super_juegos_records_top` en (`juego`, `puntaje` DESC, `fecha_creacion` ASC).
 ## 2026-07-05 - Preferencias y configuraciones de notificacion
 
 - No se agregan motores ni dependencias externas. PostgreSQL sigue siendo el unico runtime de datos.

@@ -857,10 +857,6 @@ func main() {
 			log.Fatalf("failed to ensure licencia empresa retencion schema in superadministrador db: %v", err)
 		}
 		startupTrace("after_ensure_licencia_empresa_retencion_schema")
-		if err := dbpkg.EnsureSuperJuegosSchema(dbSuper); err != nil {
-			log.Fatalf("failed to ensure super juegos schema in superadministrador db: %v", err)
-		}
-		startupTrace("after_ensure_super_juegos_schema")
 		if err := dbpkg.EnsureUsuarioConfiguracionSchema(dbSuper); err != nil {
 			log.Fatalf("failed to ensure usuario configuracion schema in superadministrador db: %v", err)
 		}
@@ -885,6 +881,10 @@ func main() {
 			log.Printf("warning: no se pudieron retirar artefactos Nextcloud obsoletos: %v", err)
 		}
 		startupTrace("after_nextcloud_decommission")
+		if err := dbpkg.DecommissionRemovedEntertainmentArtifacts(dbSuper); err != nil {
+			log.Printf("warning: no se pudieron retirar artefactos de juegos y emulador: %v", err)
+		}
+		startupTrace("after_entertainment_decommission")
 		if err := dbpkg.EnsureAsesorComercialSchema(dbSuper); err != nil {
 			log.Fatalf("failed to ensure asesor comercial schema in superadministrador db: %v", err)
 		}
@@ -1334,7 +1334,6 @@ func main() {
 	http.HandleFunc("/api/public/plantillas_nuevas/catalogo", handlers.PublicPlantillasNuevosCatalogoHandler())
 	http.HandleFunc("/api/public/plantillas_integracion/catalogo", handlers.PublicPlantillasIntegracionCatalogoHandler())
 	http.HandleFunc("/api/public/contrato", handlers.PublicContratoHandler(dbSuper))
-	http.HandleFunc("/api/public/juegos/records", handlers.PublicJuegosRecordsHandler(dbSuper))
 	http.HandleFunc("/api/public/geo", handlers.PublicGeoHandler())
 	http.HandleFunc("/api/empresa/reservas_hotel", handlers.WithEmpresaReservasHotelPermissions(dbEmpresas, dbSuper, handlers.EmpresaReservasHotelHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/tarifas_por_minutos", handlers.WithEmpresaVentasPermissions(dbEmpresas, dbSuper, handlers.EmpresaTarifasPorMinutosHandler(dbEmpresas)))
@@ -1602,7 +1601,6 @@ func main() {
 	// Servir assets centralizados (CSS, JS)
 	http.Handle("/assets/", http.StripPrefix("/assets/", http.FileServer(http.Dir(webDir))))
 	http.Handle("/descargas/", http.StripPrefix("/descargas/", http.FileServer(http.Dir(downloadsDir))))
-	registerLocalEmulatorRoutes(backendDir, webDir)
 	startupTrace("after_static_helper_routes")
 
 	// Servir páginas estáticas desde la carpeta `web` detectada

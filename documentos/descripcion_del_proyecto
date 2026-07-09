@@ -290,7 +290,8 @@ Revision logos empresariales 2026-05-13: Motel Calipso (`empresa_id=7`) y Gimnas
 
 Revision indicadores economicos movil 2026-05-13: el panel empresarial `web/administrar_empresa/panel.html` muestra `Indicadores economicos importantes` con textos completos y mas grandes en celulares. En movil normal usa tarjetas de dos columnas; en pantallas muy estrechas o bajas pasa a una columna con scroll, sin ocultar referencia, variacion, nombre ni valor.
 
-Juegos publico opera como lobby multi-juego profesional: tarjetas uniformes con capturas reales, adaptacion movil/tactil, sonido WebAudio, emulador responsive y records globales guardados en `super_juegos_records` mediante `/api/public/juegos/records`.
+El sistema no incorpora juegos ni emuladores. El producto se concentra en la
+operacion empresarial, administrativa y comercial.
 
 Sistema POS/ERP multiempresa con backend en Go y persistencia PostgreSQL, orientado a operacion comercial por empresa: usuarios, clientes, inventario, carritos, pagos, facturacion, venta publica, red social comercial, carta QR, domicilios, taxi/flotas, odontologia, gimnasio, turnos, carnets empresariales, bancos y pagos masivos, gestion documental, KYC/KYB y riesgo LAFT, contratos y obligaciones, tickets de ayuda propios, calidad/procesos, centros de costo/rentabilidad, activos fijos e intangibles NIIF/Fiscal, certificados tributarios para terceros, contabilidad Colombia avanzada, control electrico y configuracion modular por roles/licencias.
 
@@ -547,7 +548,6 @@ Actualizacion operativa 2026-05-05:
 - El portal publico incorpora contacto comercial visible en `index.html` mediante un acceso dedicado a `/Informacion_de_contacto.html` ubicado debajo del bloque de tarjetas y un CTA flotante `Contactenos` que redirige a WhatsApp (`+573043306506`). En escritorio ese CTA se mantiene arriba a la derecha; en movil colapsa a un boton circular en la esquina inferior derecha para no tapar los accesos superiores. Los accesos `Registrarse o iniciar sesión` e `Informacion de contacto` reutilizan el mismo estilo visual del CTA `Explorar oferta` de las tarjetas para mantener consistencia comercial en la portada. La pagina `/Informacion_de_contacto.html` usa una vista empresarial responsive con hero comercial, canales de correo/WhatsApp, asesor de ventas y areas de atencion. `AuthMiddleware` mantiene libres sin sesion `index.html`, `/descripcion_de_los_sistemas.ht` y `/Informacion_de_contacto.html` como paginas publicas del portal.
 - En la cabecera del `index.html`, el boton `Registrarse o iniciar sesión` se mantiene compacto y centrado en móvil; el acceso `Informacion de contacto` queda reubicado debajo de todas las tarjetas del home, centrado y con el mismo lenguaje visual comercial.
 - El menu flotante publico (`web/menu.js`) cierra su panel al seleccionar una opcion, especialmente en movil, para descubrir de inmediato la pagina destino y evitar que el overlay tape el contenido mientras navega. En pantallas tactiles, el cierre de cada enlace se ejecuta sobre `click` y no sobre `touchstart`, evitando que la navegacion se cancele antes de tiempo.
-- El portal publico conserva una unica entrada visible al emulador N64, enlazada desde el menu flotante hacia `/Juegos/n64/index.html`. La pagina `web/Juegos/menu_juegos.html` queda solo como acceso complementario y ya no funciona como lobby de arcade. La vista `N64` mantiene carga de ROM legal del usuario, diseno vertical optimizado para celular y respaldo local de la memoria del cartucho con botones `Guardar/Cargar`. `AuthMiddleware` deja publico `/Juegos/*` para no exigir sesion en este acceso puntual del portal.
 
 3) Operacion por empresa
 - Usuarios de empresa (alta, confirmacion, estado, primer ingreso).
@@ -636,8 +636,6 @@ El panel empresarial y la configuracion de documentos comparten una sola identid
 
 - Landing descriptiva del portal: `/descripcion_de_los_sistemas.ht`.
 - Informacion de contacto publica: `/Informacion_de_contacto.html`.
-- Entrada publica del emulador N64: `/Juegos/menu_juegos.html`.
-- Emulador publico `N64 mobile`: `/Juegos/n64/index.html`.
 - Login admin: `/login.html`.
 - Registro admin: `/registrar_nuevo_usuario_administrador.html`.
 - Registro de contraseña para cuenta Google: `/registrar_contrasena_usuario_de_google.html`.
@@ -670,7 +668,6 @@ El panel empresarial y la configuracion de documentos comparten una sola identid
 - API checkout licencias (publica): `/wompi/*`, `/epayco/*`.
 - Respuesta publica fija de Epayco para panel externo: `/epayco/respuesta.html`.
 - Pantalla publica de cierre exitoso para Epayco: `/epayco/pago_exitoso.html`.
-- `AuthMiddleware` mantiene tambien publicas las paginas y activos de `/Juegos/*` para que el portal pueda abrir el acceso del emulador N64 sin autenticacion.
 - `AuthMiddleware` mantiene publicas sin sesion las rutas de disponibilidad y checkout de licencias (`/api/public/licencias/payment_methods`, `/wompi/*`, `/epayco/*`) para que el portal pueda consultar estado y reanudar pagos al volver desde la pasarela.
 - API de impresoras por empresa: `/api/empresa/impresoras`.
 - API de resolucion de impresora: `/api/empresa/impresoras/resolver`.

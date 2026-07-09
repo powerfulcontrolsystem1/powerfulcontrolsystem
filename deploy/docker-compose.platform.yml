@@ -107,7 +107,6 @@ services:
       - pcs_web_uploads:/app/web/uploads
       - pcs_backups:/app/backup
       - pcs_downloads:/app/descargas
-      - ../juegos:/app/juegos:ro
       - /var/run/docker.sock:/var/run/docker.sock
     expose:
       - "8080"

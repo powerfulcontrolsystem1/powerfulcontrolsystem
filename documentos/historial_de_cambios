@@ -1,3 +1,8 @@
+2026-07-09: Retiro integral de juegos/emuladores y contexto documental.
+- Se elimina el modulo recreativo completo: frontend `web/Juegos`, runtime `juegos`, assets, enlace super, rutas `/emulador`, endpoint publico de records, schema/handler/pruebas y volumenes Docker.
+- El backend ejecuta `DecommissionRemovedEntertainmentArtifacts` para retirar `super_juegos_records` de forma idempotente; cambio destructivo solicitado explicitamente para datos exclusivos del modulo retirado.
+- Se crean `contexto_general_del_sistema.md` y `contexto_especifico_del_sistema.md`; AGENTS/Copilot/README/contexto Codex fijan la lectura del primero como requisito para todo agente.
+
 2026-07-09: Facturas electronicas compactas y tutorial DIAN acordeon.
 - Super administrador: `Diagramas tecnicos` queda debajo de `Configuracion` y no inicia desplegado al entrar al panel.
 - Facturas electronicas: `Filtros de busqueda` queda como una sola grilla compacta de ancho completo, sin cortes visuales de subtarjeta; la vista `Visualizar` usa tablas claras para documento, totales y control documental.

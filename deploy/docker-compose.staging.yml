@@ -19,7 +19,6 @@ services:
       - pcs_staging_web_uploads:/app/web/uploads
       - pcs_staging_backups:/app/backup
       - pcs_staging_downloads:/app/descargas
-      - ../juegos:/app/juegos:ro
 
   frontend:
     container_name: pcs-staging-frontend
