@@ -713,6 +713,18 @@ afecte dinero, documentos, licencias o seguridad.
    consolida pagos aprobados ya registrados en `pagos_epayco` y `pagos_wompi`
    con referencia a `licencias`.
 
+## Facturacion electronica - lectura de ventas y facturas
+
+1. El carrito puede registrar primero una venta/comprobante `CP-*` y, si la
+   facturacion electronica aplica por configuracion o eleccion del usuario,
+   generar una factura electronica relacionada `FV-*`.
+2. La bandeja `Facturas electronicas` debe mostrar en la columna Tipo
+   `Factura electronica` cuando detecta que una venta `CP-*` tiene su factura
+   `FV-*` asociada, para no confundir una venta facturada con una venta sola.
+3. En Colombia, la configuracion operativa de PCS usa la modalidad DIAN
+   `Software propio`; el tutorial no debe sugerir proveedor tecnologico ni
+   solucion gratuita como modalidad de PCS.
+
 ## Configurar empresa
 
 1. El menu `Configuracion` abre paginas independientes por seccion.

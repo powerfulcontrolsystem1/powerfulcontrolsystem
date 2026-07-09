@@ -1,3 +1,9 @@
+2026-07-09: Facturas electronicas compactas y tutorial DIAN.
+- Modulos afectados: `facturacion_electronica`, `ventas`, `super_administrador`, `documentacion_ayuda`.
+- Bandeja: `web/administrar_empresa/facturas_electronicas.html` conserva una sola pagina documental, compacta `Filtros de busqueda`, mejora `Visualizar` con tablas organizadas y marca ventas con factura asociada como `Factura electronica` en la columna Tipo.
+- Tutorial: `facturacion_electronica_tutorial_dian.html` muestra pasos desplegables, con `Software propio` como unica modalidad operativa para PCS y enlaces oficiales DIAN por paso.
+- Navegacion: `Tutorial DIAN` queda al final del menu de facturacion y `Diagramas tecnicos` queda debajo de Configuracion en el super administrador.
+
 2026-07-09: Panel super compacto, consumo WhatsApp y ventas de licencias.
 - Modulos afectados: `super_administrador`, `licencias`, `whatsapp_notificaciones`, `panel_control`.
 - Navegacion: `Panel` queda como primer acceso independiente del menu super, `Auditoria global` pasa a Plataforma y el shell de super administrador carga el panel al entrar.

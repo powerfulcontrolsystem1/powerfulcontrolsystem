@@ -14,10 +14,15 @@
     .fe-compact-header .page-header-lead{font-size:.92rem;line-height:1.35}
     .fe-compact-header .empresa-module-overview,.fe-compact-header .empresa-module-kpis{gap:8px}
     .fe-compact-header .empresa-module-kpi,.fe-compact-header .kpi-box{padding:8px 10px;min-height:0}
-    .fe-compact-filter{padding:14px 16px}
-    .fe-compact-filter .empresa-section-header{margin-bottom:8px}
-    .fe-compact-filter .form-row{gap:10px;margin-bottom:10px}
-    .fe-compact-filter .form-label{margin-bottom:4px;font-size:.86rem}
+    .fe-compact-filter{padding:10px 12px;width:100%;max-width:none}
+    .fe-compact-filter .empresa-section-header{margin-bottom:6px}
+    .fe-compact-filter .page-header-lead{display:none}
+    .fe-filter-grid{display:grid;grid-template-columns:repeat(6,minmax(130px,1fr));gap:7px;align-items:end}
+    .fe-filter-grid .form-col{min-width:0}
+    .fe-compact-filter .form-label{margin-bottom:3px;font-size:.78rem}
+    .fe-compact-filter .form-input{min-height:34px;padding:6px 8px;font-size:.86rem}
+    .fe-compact-filter .form-actions{margin-top:8px;gap:6px}
+    .fe-compact-filter .form-actions .btn{min-height:32px;padding:6px 9px;font-size:.82rem}
     .fe-view-tools{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:8px 0 0}
     .fe-font-control{display:flex;align-items:center;gap:8px;min-width:220px}
     .fe-font-control input{width:140px}
@@ -52,7 +57,7 @@
     .fe-filter-check input{width:16px;height:16px;margin:0;accent-color:var(--accent)}
     .fe-current-user-hint{margin-top:4px;color:var(--muted);font-size:.78rem;line-height:1.25}
     .factura-print-preview{background:#f3f4f6;padding:18px;overflow:auto}
-    .factura-print-sheet{background:#fff;color:#111;border:1px solid #d1d5db;max-width:960px;margin:0 auto;padding:26px;font-family:Arial,Helvetica,sans-serif;box-shadow:none}
+    .factura-print-sheet{background:#fff;color:#111;border:1px solid #d1d5db;max-width:960px;margin:0 auto;padding:22px;font-family:Arial,Helvetica,sans-serif;box-shadow:none}
     .factura-print-head{display:flex;justify-content:space-between;gap:18px;border-bottom:2px solid #111;padding-bottom:16px;margin-bottom:14px}
     .factura-print-logo{display:flex;gap:14px;align-items:flex-start}
     .factura-print-logo img{max-width:120px;max-height:70px;object-fit:contain}
@@ -76,6 +81,14 @@
     .factura-print-panel dt{color:#4b5563}
     .factura-print-panel dd{margin:0;text-align:right;font-weight:700;overflow-wrap:anywhere}
     .factura-print-note,.factura-print-legal{border-top:1px dashed #9ca3af;margin-top:12px;padding-top:10px;white-space:pre-wrap}
+    .factura-print-table{width:100%;border-collapse:collapse;margin:12px 0;color:#111;background:#fff}
+    .factura-print-table th,.factura-print-table td{border:1px solid #111;padding:8px 9px;text-align:left;vertical-align:top}
+    .factura-print-table th{background:#eef2f7;text-transform:uppercase;font-size:11px;letter-spacing:0}
+    .factura-print-table td:last-child,.factura-print-table th:last-child{text-align:right}
+    .factura-print-total-table{width:360px;max-width:100%;margin:12px 0 0 auto;border-collapse:collapse;color:#111}
+    .factura-print-total-table th,.factura-print-total-table td{border:1px solid #111;padding:8px 10px}
+    .factura-print-total-table th{text-align:left;background:#eef2f7;text-transform:uppercase;font-size:11px}
+    .factura-print-total-table td{text-align:right;font-weight:900}
     .factura-print-compacta{max-width:760px;padding:18px}
     .factura-print-compacta .factura-print-strip{grid-template-columns:repeat(2,minmax(0,1fr))}
     .factura-print-pos-preview{max-width:330px;font-family:Consolas,"Courier New",monospace;font-size:var(--fe-pos-font,11px);padding:12px}
@@ -87,7 +100,8 @@
     .factura-print-pos-preview .factura-print-strip,.factura-print-pos-preview .factura-print-grid{display:block;border:0}
     .factura-print-pos-preview .factura-print-strip div,.factura-print-pos-preview .factura-print-panel{border:0;border-top:1px dashed #111;padding:7px 0}
     .factura-print-pos-preview .factura-print-panel dl>div{font-size:1em}
-    @media (max-width:760px){.factura-print-head,.factura-print-grid{display:block}.factura-print-company{text-align:left;max-width:none;margin-top:10px}.factura-print-strip{grid-template-columns:repeat(2,minmax(0,1fr))}}
+    @media (max-width:1100px){.fe-filter-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+    @media (max-width:760px){.fe-filter-grid{grid-template-columns:1fr}.factura-print-head,.factura-print-grid{display:block}.factura-print-company{text-align:left;max-width:none;margin-top:10px}.factura-print-strip{grid-template-columns:repeat(2,minmax(0,1fr))}}
   </style>
 </head>
 <body class="empresa-subpage">
@@ -102,7 +116,7 @@
         Filtra por tipo, estado, cliente o rango de fechas para responder más rápido a consultas operativas, contables o fiscales.
       </p>
       <form id="filtrosForm" class="form">
-        <div class="form-row">
+        <div class="fe-filter-grid">
           <div class="form-col">
             <label class="form-label" for="tipoDocumento">Tipo</label>
             <select id="tipoDocumento" class="form-input">
@@ -126,9 +140,6 @@
             <label class="form-label" for="clienteFiltro">Cliente</label>
             <input id="clienteFiltro" class="form-input" placeholder="Nombre, correo o documento">
           </div>
-        </div>
-
-        <div class="form-row">
           <div class="form-col">
             <label class="form-label" for="documentoFiltro">Documento</label>
             <input id="documentoFiltro" class="form-input" placeholder="Código, número legal o validación">
@@ -141,9 +152,6 @@
             <label class="form-label" for="fechaHasta">Fecha hasta</label>
             <input id="fechaHasta" class="form-input" type="date">
           </div>
-        </div>
-
-        <div class="form-row">
           <div class="form-col">
             <label class="form-label" for="busquedaGlobal">Búsqueda libre</label>
             <input id="busquedaGlobal" class="form-input" placeholder="Observaciones, cliente, código...">
@@ -297,6 +305,27 @@
         if (norm === "factura_electronica") return "Factura electrónica";
         if (norm === "nota_credito") return "Nota crédito";
         return normalize(tipo) || "-";
+      }
+
+      function ventaDocumentoBase(codigo) {
+        var base = normalize(codigo).toUpperCase().replace(/\s+/g, "");
+        if (base.indexOf("CP-") === 0 || base.indexOf("FV-") === 0) {
+          base = base.slice(3);
+        }
+        return base;
+      }
+
+      function facturaAsociadaParaVenta(item) {
+        if (!item || normalize(item.tipo_documento).toLowerCase() !== "comprobante_pago") return null;
+        var base = ventaDocumentoBase(item.documento_codigo);
+        if (!base) return null;
+        var facturaCodigo = "FV-" + base;
+        return state.index["factura_electronica::" + facturaCodigo] || null;
+      }
+
+      function visibleTypeLabel(item) {
+        if (facturaAsociadaParaVenta(item)) return "Factura electrónica";
+        return typeLabel(item && item.tipo_documento);
       }
 
       function storageKey(name) {
@@ -677,6 +706,7 @@
 
         state.items.forEach(function (item) {
           var tipo = normalize(item.tipo_documento).toLowerCase();
+          if (facturaAsociadaParaVenta(item)) tipo = "factura_electronica";
           var estadoDoc = normalize(item.estado_documento).toLowerCase();
           var estado = normalize(item.estado).toLowerCase();
           var amount = Number(item.monto_total || 0);
@@ -875,6 +905,27 @@
           printFieldEnabled(printItems, "pais", item) ? '<div><dt>Pais</dt><dd>' + escapeHtml(item.pais_codigo || "No aplica") + '</dd></div>' : '',
           printFieldEnabled(printItems, "ambiente", item) ? '<div><dt>Ambiente</dt><dd>' + escapeHtml(meta.ambienteText) + '</dd></div>' : ''
         ].filter(Boolean).join("");
+        var documentoTabla = printFieldEnabled(printItems, "items", item) ? (
+          '<table class="factura-print-table">' +
+            '<thead><tr><th>Codigo</th><th>Descripcion</th><th>Cant.</th><th>Vr unitario</th><th>Total</th></tr></thead>' +
+            '<tbody><tr>' +
+              '<td>' + escapeHtml(item.documento_codigo || "") + '</td>' +
+              '<td>' + escapeHtml(meta.title + " " + numeroLegal) + '</td>' +
+              '<td>1</td>' +
+              '<td>' + escapeHtml(formatMoney(item.monto_total, item.moneda || "COP")) + '</td>' +
+              '<td>' + escapeHtml(formatMoney(item.monto_total, item.moneda || "COP")) + '</td>' +
+            '</tr></tbody>' +
+          '</table>'
+        ) : "";
+        var tablaTotales = printFieldEnabled(printItems, "total", item) ? (
+          '<table class="factura-print-total-table">' +
+            '<tbody>' +
+              '<tr><th>Subtotal</th><td>' + escapeHtml(formatMoney(item.monto_total, item.moneda || "COP")) + '</td></tr>' +
+              '<tr><th>Impuestos</th><td>' + escapeHtml(formatMoney(0, item.moneda || "COP")) + '</td></tr>' +
+              '<tr><th>Total</th><td>' + escapeHtml(formatMoney(item.monto_total, item.moneda || "COP")) + '</td></tr>' +
+            '</tbody>' +
+          '</table>'
+        ) : "";
 
         return '' +
           '<article class="factura-print-sheet ' + escapeHtml(meta.accentClass) + (viewMode === "compacta" ? " factura-print-compacta" : "") + (viewMode === "pos" ? " factura-print-pos-preview" : "") + '">' +
@@ -903,6 +954,8 @@
                 '<dl>' + resumenRows + '</dl>' +
               '</section>' : '') +
             '</div>' +
+            documentoTabla +
+            tablaTotales +
             (controlRows ? '<section class="factura-print-panel factura-print-panel--full">' +
               '<h4>Control documental</h4>' +
               '<dl class="factura-print-doc-meta">' + controlRows + '</dl>' +
@@ -1056,9 +1109,12 @@
           return;
         }
 
+        state.items.forEach(function(item) {
+          state.index[makeKey(item)] = item;
+        });
+
         var rows = state.items.map(function (item) {
           var key = makeKey(item);
-          state.index[key] = item;
 
           var clienteLabel = normalize(item.cliente_nombre) || normalize(item.cliente_email) || "Sin cliente";
           var cajeroLabel = normalize(item.usuario_creador) || "-";
@@ -1068,7 +1124,7 @@
             '<button type="button" class="btn danger fe-only-action" data-action="anular" data-key="' + escapeHtml(key) + '"' + (cancelInfo.enabled ? '' : ' disabled') + ' title="' + escapeHtml(cancelInfo.reason) + '"><img class="icon" src="/img/shield-security-color.svg" alt="">Anular</button>';
           return '<tr data-key="' + escapeHtml(key) + '">' +
             '<td>' + escapeHtml(formatDate(item.fecha_documento || item.fecha_creacion)) + '</td>' +
-            '<td>' + escapeHtml(typeLabel(item.tipo_documento)) + '</td>' +
+            '<td>' + escapeHtml(visibleTypeLabel(item)) + '</td>' +
             '<td>' + escapeHtml(item.documento_codigo || "") + '</td>' +
             '<td>' + escapeHtml(item.numero_legal || "") + '</td>' +
             '<td>' + escapeHtml(clienteLabel) + '</td>' +

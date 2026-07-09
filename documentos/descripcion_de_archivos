@@ -1,3 +1,9 @@
+2026-07-09 - Facturas electronicas compactas y tutorial DIAN acordeon
+- `web/super_administrador.html`: mueve el grupo `Diagramas tecnicos` debajo de `Configuracion`.
+- `web/administrar_empresa/facturas_electronicas.html`: compacta filtros en una sola grilla, mejora la representacion imprimible con tabla de documento y totales, y etiqueta como factura electronica las ventas con `FV-*` asociada.
+- `web/administrar_empresa/facturacion_electronica_tutorial_dian.html`: convierte los pasos DIAN a acordeones, fija `Software propio` como modalidad PCS y agrega enlaces oficiales DIAN por paso.
+- `web/administrar_empresa/facturacion_electronica_menu.html`: mueve `Tutorial DIAN` al final del submenu de facturacion electronica.
+
 2026-07-09 - Panel super compacto, WhatsApp y ventas de licencias
 - `backend/handlers/super_licencias_ventas_resumen.go`: nuevo handler super `/super/api/licencias/ventas_resumen` que consolida pagos aprobados de `pagos_epayco` y `pagos_wompi`, calcula barras mensuales, total COP y cantidad para el panel.
 - `backend/handlers/super_consumos_handlers.go`: agrega a `/super/api/consumos` el bloque `whatsapp` con configuracion saneada y serie diaria de uso.

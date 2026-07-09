@@ -1,3 +1,9 @@
+2026-07-09: Facturas electronicas compactas y tutorial DIAN acordeon.
+- Super administrador: `Diagramas tecnicos` queda debajo de `Configuracion` y no inicia desplegado al entrar al panel.
+- Facturas electronicas: `Filtros de busqueda` queda como una sola grilla compacta de ancho completo, sin cortes visuales de subtarjeta; la vista `Visualizar` usa tablas claras para documento, totales y control documental.
+- Facturas electronicas: si una venta simple tiene factura electronica asociada `FV-*`, la columna Tipo la muestra como `Factura electronica` para evitar confundirla con una venta sin factura.
+- Tutorial DIAN: los pasos quedan desplegables uno debajo del otro, el paso 1 exige seleccionar solo `Software propio` para PCS y cada paso incluye enlace oficial DIAN relacionado.
+
 2026-07-09: Panel super compacto con consumo WhatsApp y ventas de licencias.
 - Super administrador: `Panel` queda como primer acceso fuera de grupos, el grupo `Gobierno` se elimina, `Auditoria global` se mueve a Plataforma y el shell abre siempre `web/super/licencias_resumen.html` al entrar.
 - Panel: se compactan tarjetas sin bajar la fuente, se distingue visualmente `Seleccionar empresa`, se agrega consumo WhatsApp API de 30 dias junto a OpenAI y se agrega resumen mensual de ventas de licencias emitidas por la empresa interna `Powerful Control System`.
