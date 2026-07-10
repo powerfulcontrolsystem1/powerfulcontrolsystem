@@ -1,6 +1,6 @@
 2026-07-09: Panel super - falsos errores de continuidad.
 - Causa: el monitor leía `systemctl` desde `pcs-backend`, aunque Backend, Nginx y PostgreSQL se ejecutan como contenedores Docker; eso convertía servicios operativos en prioridades criticas.
-- Correccion: `/super/api/servidores` consulta el estado Docker con timeout y usa systemd solo como fallback; RustDesk deshabilitado queda neutral. Las acciones listar, probar y administrar exigen directamente el rol `super_administrador`.
+- Correccion: `/super/api/servidores` consulta el estado Docker con timeout y usa systemd solo como fallback; RustDesk deshabilitado queda neutral. Las acciones listar, probar y administrar exigen directamente el rol `super_administrador` y quedan trazadas con `WithSuperAuditoria`.
 - Pruebas: `go test ./handlers -run 'Test(DockerInspectStatus|PreferServiceStatus)$' -count=1`, compilacion dirigida de handlers y verificacion visual posterior al despliegue.
 
 2026-07-09: Retiro integral de juegos/emuladores y contexto documental.

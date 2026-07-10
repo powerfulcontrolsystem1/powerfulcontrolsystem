@@ -2,7 +2,7 @@
 - Modulos afectados: `super_administrador`, `infraestructura`, `qa_operacion`.
 - `/super/api/servidores` detecta `pcs-backend`, `pcs-frontend`/`pcs-edge` y `pcs-postgres` por Docker, evitando falsos errores de `systemd` en el panel.
 - RustDesk sin configurar queda en estado `disabled` y no reduce el score ni se muestra como prioridad critica.
-- Seguridad: cada accion del endpoint exige sesion y rol `super_administrador`; no recibe empresa_id, mutaciones nuevas ni secretos.
+- Seguridad: cada accion del endpoint exige sesion y rol `super_administrador`, queda trazada con `WithSuperAuditoria` y no recibe empresa_id, mutaciones nuevas ni secretos.
 
 2026-07-09: Retiro de juegos y emuladores.
 - Modulos afectados: `portal_publico`, `super_administrador`, `documentacion_tecnica`, `infraestructura`.

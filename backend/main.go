@@ -1213,9 +1213,9 @@ func main() {
 	// Endpoints CRUD para tipos de empresas
 	http.HandleFunc("/super/api/tipos_empresas", handlers.WithSuperAuditoria(dbSuper, "tipos_empresas", handlers.TiposEmpresasHandler(dbSuper)))
 	http.HandleFunc("/super/api/tipos_empresas/preconfiguracion", handlers.SuperTipoEmpresaPreconfiguracionHandler(dbSuper))
-	http.HandleFunc("/super/api/servidores", handlers.SuperServidoresListHandler(dbSuper))
-	http.HandleFunc("/super/api/servidores/toggle", handlers.SuperServidoresToggleHandler(dbSuper))
-	http.HandleFunc("/super/api/servidores/probar", handlers.SuperServidoresProbeHandler(dbSuper))
+	http.HandleFunc("/super/api/servidores", handlers.WithSuperAuditoria(dbSuper, "super_servidores", handlers.SuperServidoresListHandler(dbSuper)))
+	http.HandleFunc("/super/api/servidores/toggle", handlers.WithSuperAuditoria(dbSuper, "super_servidores", handlers.SuperServidoresToggleHandler(dbSuper)))
+	http.HandleFunc("/super/api/servidores/probar", handlers.WithSuperAuditoria(dbSuper, "super_servidores", handlers.SuperServidoresProbeHandler(dbSuper)))
 	http.HandleFunc("/super/api/vps2", handlers.WithSuperAuditoria(dbSuper, "super_vps2", handlers.SuperVPS2Handler(dbSuper)))
 	http.HandleFunc("/super/api/vps/procesos", handlers.SuperVPSProcessesHandler(dbSuper))
 	http.HandleFunc("/super/api/plantillas_nuevas/catalogo", handlers.SuperPlantillasNuevosCatalogoHandler(dbSuper))
