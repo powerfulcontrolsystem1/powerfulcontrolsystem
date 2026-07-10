@@ -42,6 +42,10 @@
           <input id="estacion_nombre" class="form-input" placeholder="Ej: Habitación 10">
         </div>
         <div class="form-col">
+          <label class="form-label">Nombre de tarifa</label>
+          <input id="nombre_tarifa" class="form-input" placeholder="Ej: Noche pareja">
+        </div>
+        <div class="form-col">
           <label class="form-label">Servicio</label>
           <input id="servicio_nombre" class="form-input" placeholder="Ej: hospedaje" value="hospedaje">
         </div>
@@ -60,6 +64,18 @@
           <label class="form-label">Valor por día</label>
           <input id="valor_dia" class="form-input" type="number" min="0" step="0.01" value="0" required>
         </div>
+        <div class="form-col">
+          <label class="form-label">Personas desde</label>
+          <input id="personas_desde" class="form-input" type="number" min="1" step="1" value="1" required>
+        </div>
+        <div class="form-col">
+          <label class="form-label">Personas hasta</label>
+          <input id="personas_hasta" class="form-input" type="number" min="0" step="1" value="0" required>
+          <small class="form-help">Usa 0 cuando no exista un límite superior.</small>
+        </div>
+      </div>
+
+      <div class="form-row">
         <div class="form-col">
           <label class="form-label">Hora check-in</label>
           <input id="hora_check_in" class="form-input" type="time" value="15:00" required>
@@ -154,6 +170,10 @@
         <div class="form-col">
           <label class="form-label">Fecha de corte</label>
           <input id="sim_fecha_corte" class="form-input" type="datetime-local">
+        </div>
+        <div class="form-col">
+          <label class="form-label">Personas</label>
+          <input id="sim_personas" class="form-input" type="number" min="1" step="1" value="1">
         </div>
       </div>
       <div class="form-actions">
@@ -423,8 +443,11 @@
         estacion_id: estacionID,
         estacion_codigo: normalize(document.getElementById("estacion_codigo").value) || defaultStationCode(state.empresaID, estacionID),
         estacion_nombre: normalize(document.getElementById("estacion_nombre").value),
+        nombre_tarifa: normalize(document.getElementById("nombre_tarifa").value),
         servicio_nombre: normalize(document.getElementById("servicio_nombre").value) || "hospedaje",
         valor_dia: Number(document.getElementById("valor_dia").value || 0),
+        personas_desde: Number(document.getElementById("personas_desde").value || 1),
+        personas_hasta: Number(document.getElementById("personas_hasta").value || 0),
         hora_check_in: normalize(document.getElementById("hora_check_in").value) || "15:00",
         hora_check_out: normalize(document.getElementById("hora_check_out").value) || "12:00",
         moneda: normalize(document.getElementById("moneda").value || "COP"),
@@ -441,8 +464,11 @@
       document.getElementById("estacion_id").value = "";
       document.getElementById("estacion_codigo").value = "";
       document.getElementById("estacion_nombre").value = "";
+      document.getElementById("nombre_tarifa").value = "";
       document.getElementById("servicio_nombre").value = "hospedaje";
       document.getElementById("valor_dia").value = "0";
+      document.getElementById("personas_desde").value = "1";
+      document.getElementById("personas_hasta").value = "0";
       document.getElementById("hora_check_in").value = "15:00";
       document.getElementById("hora_check_out").value = "12:00";
       document.getElementById("moneda").value = "COP";
@@ -490,7 +516,8 @@
 
         return "<tr>" +
           "<td><strong>" + esc(item.estacion_nombre || ("Estación #" + item.estacion_id)) + "</strong><br><small>ID " + esc(String(item.estacion_id || "")) + (item.estacion_codigo ? (" · " + esc(item.estacion_codigo)) : "") + "</small></td>" +
-          "<td>" + esc(item.servicio_nombre || "hospedaje") + "</td>" +
+          "<td><strong>" + esc(item.nombre_tarifa || item.servicio_nombre || "hospedaje") + "</strong><br><small>" + esc(item.servicio_nombre || "hospedaje") + "</small></td>" +
+          "<td>" + esc(String(item.personas_desde || 1)) + " a " + esc(Number(item.personas_hasta || 0) > 0 ? String(item.personas_hasta) : "sin límite") + "</td>" +
           "<td>" + esc(formatMoney(item.valor_dia || 0, item.moneda || "COP")) + "</td>" +
           "<td>" + esc((item.hora_check_in || "15:00") + " / " + (item.hora_check_out || "12:00")) + "</td>" +
           "<td>" + esc(autoLabel) + "</td>" +
@@ -506,7 +533,8 @@
 
       root.innerHTML = '<div class="table-wrap"><table class="table"><thead><tr>' +
         "<th>Estación</th>" +
-        "<th>Servicio</th>" +
+        "<th>Tarifa / servicio</th>" +
+        "<th>Personas</th>" +
         "<th>Valor día</th>" +
         "<th>Check-in / Check-out</th>" +
         "<th>Auto</th>" +
@@ -529,8 +557,11 @@
           document.getElementById("estacion_id").value = String(item.estacion_id || "");
           document.getElementById("estacion_codigo").value = normalize(item.estacion_codigo);
           document.getElementById("estacion_nombre").value = normalize(item.estacion_nombre);
+          document.getElementById("nombre_tarifa").value = normalize(item.nombre_tarifa);
           document.getElementById("servicio_nombre").value = normalize(item.servicio_nombre) || "hospedaje";
           document.getElementById("valor_dia").value = String(toNumber(item.valor_dia, 0));
+          document.getElementById("personas_desde").value = String(toNumber(item.personas_desde, 1));
+          document.getElementById("personas_hasta").value = String(toNumber(item.personas_hasta, 0));
           document.getElementById("hora_check_in").value = normalize(item.hora_check_in) || "15:00";
           document.getElementById("hora_check_out").value = normalize(item.hora_check_out) || "12:00";
           document.getElementById("moneda").value = normalize(item.moneda) || "COP";
@@ -661,6 +692,7 @@
       const estacionID = Number(document.getElementById("sim_estacion_id").value || 0);
       const activadoEn = normalizeDateTimeForQuery(document.getElementById("sim_activado_en").value);
       const fechaCorte = normalizeDateTimeForQuery(document.getElementById("sim_fecha_corte").value);
+      const personas = Math.max(1, Number(document.getElementById("sim_personas").value || 1));
 
       if (!estacionID || !activadoEn || !fechaCorte) {
         setSimResult("Selecciona estación y fechas válidas", true);
@@ -674,6 +706,7 @@
         params.set("estacion_id", String(estacionID));
         params.set("activado_en", activadoEn);
         params.set("fecha_corte", fechaCorte);
+        params.set("personas", String(personas));
 
         const resp = await fetch("/api/empresa/tarifas_por_dia?" + params.toString(), { credentials: "same-origin" });
         await ensureOk(resp);
