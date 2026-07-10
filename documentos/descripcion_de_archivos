@@ -5,6 +5,9 @@
 - `web/js/super_documentacion_tecnica.js`: visor web complementario para navegar los diagramas completos, ver una vista estructurada y copiar la fuente Mermaid.
 - `web/super/diagramas/documentacion_tecnica_completa.html` y paginas individuales generadas desde el paquete: hacen visibles los diagramas completos dentro del panel de super administrador.
 
+2026-07-10 - Orquestador rs
+- `scripts/rs.ps1`: ejecuta los scripts hijos preservando booleanos como literales PowerShell para que los parametros de sincronizacion mantengan su tipo.
+
 2026-07-09 - Panel super: deteccion real de servicios Docker
 - `backend/handlers/super_servidores_handlers.go`: consulta estados de contenedor con timeout, prioriza Docker sobre systemd y clasifica RustDesk deshabilitado como no incidente.
 - `backend/handlers/super_servidores_handlers_test.go`: cubre la conversion de estados Docker y la seleccion de la mejor fuente de estado.

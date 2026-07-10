@@ -1,5 +1,6 @@
 ## [2026-07-10] Diagramas tecnicos consolidados
 - [Super administrador] `Diagramas tecnicos` conserva los 19 diagramas detallados de la documentacion tecnica completa y retira del menu los 15 esquemas generales redundantes.
+- [Despliegue] `rs` conserva parametros booleanos al invocar `sync_to_vps.ps1`, evitando el fallo de conversion previo a la sincronizacion.
 
 ## [2026-07-09] Documentacion tecnica completa de diagramas
 - [Docs] Agrega `documentos/diagramas/documentacion_tecnica_completa.md` con arquitectura general, mapa de modulos, navegacion, ERD PostgreSQL, casos de uso, clases UML, secuencias, actividades, estados, componentes, despliegue, paquetes y flujo de datos.

@@ -56,22 +56,24 @@ function Invoke-Step {
   # Cada script operativo se ejecuta en un proceso hijo. Varios scripts
   # historicos usan `exit` para devolver su resultado; invocarlos en el mismo
   # proceso cerraba `rs` antes de ejecutar los pasos siguientes.
-  $childArgs = @("-NoProfile", "-ExecutionPolicy", "Bypass", "-File", $Path)
+  $commandParts = @("&", ("'{0}'" -f $Path.Replace("'", "''")))
   foreach ($key in $Arguments.Keys) {
     $value = $Arguments[$key]
     if ($value -is [System.Management.Automation.SwitchParameter]) {
       if ($value.IsPresent) {
-        $childArgs += "-$key"
+        $commandParts += "-$key"
       }
       continue
     }
     if ($value -is [bool]) {
-      $childArgs += "-$key`:$value"
+      $boolLiteral = if ($value) { '$true' } else { '$false' }
+      $commandParts += "-$key`:$boolLiteral"
       continue
     }
-    $childArgs += "-$key"
-    $childArgs += [string]$value
+    $commandParts += "-$key"
+    $commandParts += ("'{0}'" -f ([string]$value).Replace("'", "''"))
   }
+  $childArgs = @("-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", ($commandParts -join " "))
   $global:LASTEXITCODE = 0
   & (Join-Path $PSHOME "powershell.exe") @childArgs
   $exitCode = if ($null -ne $LASTEXITCODE) { [int]$LASTEXITCODE } else { 0 }
