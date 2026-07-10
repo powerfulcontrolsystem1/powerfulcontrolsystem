@@ -117,7 +117,7 @@
             <label class="form-label" for="comprobanteArchivo">Adjuntar comprobante</label>
             <input id="comprobanteArchivo" class="form-input" type="file" accept=".png,.jpg,.jpeg,.gif,.webp,.pdf,.txt,.csv,.doc,.docx,.xls,.xlsx">
             <div class="form-help">Puedes tomar una foto o subir imagen/PDF; se guarda en la carpeta de comprobantes.</div>
-            <button id="btnAnalizarCompraIA" class="btn secondary ai-action-btn" type="button"><img src="/img/pcs_ia_logo.svg" alt="" aria-hidden="true">Analizar compra con IA</button>
+            <button id="btnAnalizarCompraIA" class="btn secondary ai-action-btn" type="button"><img src="/img/pcs_ia_logo.svg" alt="" aria-hidden="true">Carga automática de factura de compra</button>
           </div>
         </div>
 
@@ -413,7 +413,7 @@
       } finally {
         if (btnAnalizarCompraIA) {
           btnAnalizarCompraIA.disabled = false;
-          btnAnalizarCompraIA.textContent = original || 'Analizar compra con IA';
+          btnAnalizarCompraIA.textContent = original || 'Carga automática de factura de compra';
         }
       }
     }

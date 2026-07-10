@@ -37196,6 +37196,9 @@ Archivos modificados:
 - Registro de administrador: preselecciona el pais con geolocalizacion publica cuando el proxy lo informa, conserva el detector de navegador como respaldo y carga ciudades segun el pais. Colombia, Panama y los paises latinoamericanos tienen catalogo inicial; `Otra ciudad o municipio` mantiene el registro abierto para cualquier localidad.
 - Panel super: `Incidentes recientes` excluye de la lectura operativa los 401/403 esperados de navegacion o sondas sin sesion. Esos eventos permanecen en trazabilidad de acceso, sin ocultar errores reales del sistema.
 
+2026-07-10: Compras - carga automatica de factura.
+- El acceso de captura IA en Compras se denomina `Carga automática de factura de compra`. Conserva el flujo existente: adjunta el archivo, lo radica por empresa, solicita extraccion IA, precarga los campos y abre el chat para revision humana antes de guardar el documento de compra.
+
 2026-07-10: rs: actualizar repositorio y sincronizar VPS
 PushStatus: OK
 Archivos modificados:

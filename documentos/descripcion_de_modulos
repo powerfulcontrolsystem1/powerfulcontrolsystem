@@ -4408,3 +4408,6 @@ de productos/SKUs, caja, impuestos, cliente y reglas de facturacion.
 
 2026-07-10: Registro publico de administrador
 - El formulario de alta preselecciona el pais con la mejor senal disponible (proxy de geolocalizacion o navegador) y presenta ciudades dependientes para paises de Latinoamerica. La ciudad libre se habilita unicamente al elegir `Otra ciudad o municipio`.
+
+2026-07-10: Compras y captura IA
+- El boton de Compras se presenta como `Carga automática de factura de compra`; la extraccion no crea una compra de forma silenciosa: deja proveedor, referencia, monto, moneda y periodo precargados para que el usuario revise y confirme el guardado.
