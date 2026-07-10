@@ -42,11 +42,12 @@
             <div class="form-col">
               <label class="form-label" for="registerCountry">País</label>
               <select id="registerCountry" class="form-input" autocomplete="country-name" required></select>
-              <div class="form-help">Se detecta automáticamente según tu navegador y zona horaria, pero puedes cambiarlo manualmente.</div>
+              <div id="registerCountryHelp" class="form-help">Detectamos tu país automáticamente; puedes cambiarlo manualmente.</div>
             </div>
             <div class="form-col">
               <label class="form-label" for="registerCity">Ciudad</label>
-              <input id="registerCity" class="form-input" type="text" autocomplete="address-level2" placeholder="Ciudad o municipio" required>
+              <select id="registerCity" class="form-input" autocomplete="address-level2" required></select>
+              <input id="registerCityCustom" class="form-input" type="text" autocomplete="address-level2" placeholder="Escribe tu ciudad o municipio" hidden>
             </div>
           </div>
           <div class="form-row">

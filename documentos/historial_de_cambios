@@ -37192,6 +37192,10 @@ Archivos modificados:
 - VPS: Nginx del host conserva respaldo previo y ahora restringe `ssl_protocols` a TLS 1.2 y TLS 1.3; se valido la configuracion y se recargo Nginx sin interrumpir PCS.
 - Escaner: `/etc/shadow` con propietario `root:shadow` y modo Ubuntu `640` se considera correcto. La regla anterior trataba indebidamente la lectura del grupo `shadow` como exposicion y generaba un falso positivo.
 
+2026-07-10: Registro publico y panel super.
+- Registro de administrador: preselecciona el pais con geolocalizacion publica cuando el proxy lo informa, conserva el detector de navegador como respaldo y carga ciudades segun el pais. Colombia, Panama y los paises latinoamericanos tienen catalogo inicial; `Otra ciudad o municipio` mantiene el registro abierto para cualquier localidad.
+- Panel super: `Incidentes recientes` excluye de la lectura operativa los 401/403 esperados de navegacion o sondas sin sesion. Esos eventos permanecen en trazabilidad de acceso, sin ocultar errores reales del sistema.
+
 2026-07-10: rs: actualizar repositorio y sincronizar VPS
 PushStatus: OK
 Archivos modificados:

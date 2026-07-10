@@ -536,12 +536,19 @@
       }
       function renderErrors(){
         var items = (state.errors && (state.errors.items || state.errors.errores || state.errors.rows)) || [];
-        $("errorRows").innerHTML = items.length ? items.slice(0,4).map(function(e){
+        // Los 401/403 esperados de navegacion o sondas sin sesion quedan en la
+        // auditoria de acceso; no deben ocultar incidentes operativos reales.
+        var operationalItems = items.filter(function(e){
+          var status = num(e.codigo_http || e.http_status || e.status);
+          var message = String(e.mensaje || e.message || e.error || e.detalle || "").toLowerCase();
+          return !((status === 401 || status === 403) && /unauthorized|unauthenticated|no autorizado|sesion no autenticada/.test(message));
+        });
+        $("errorRows").innerHTML = operationalItems.length ? operationalItems.slice(0,4).map(function(e){
           var st = severityStatus(e.nivel || e.level || e.severidad);
           var msg = e.mensaje || e.message || e.error || e.detalle || "Evento";
           var date = e.fecha_creacion || e.created_at || e.fecha || "";
           return '<tr><td><span class="cmd-pill '+st+'">'+esc(e.nivel || e.level || e.severidad || "info")+'</span></td><td>'+esc(msg)+'</td><td>'+esc(date)+'</td></tr>';
-        }).join("") : '<tr><td colspan="3">Sin errores recientes.</td></tr>';
+        }).join("") : '<tr><td colspan="3">Sin incidentes operativos recientes.</td></tr>';
       }
       function renderOpenAIUsage(){
         var data = (state.consumos && state.consumos.openai && state.consumos.openai.rango_mes && state.consumos.openai.rango_mes.dias) || [];

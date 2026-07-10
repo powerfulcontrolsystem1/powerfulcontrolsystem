@@ -9,6 +9,8 @@
   var phoneInput = document.getElementById('registerPhone');
   var countryInput = document.getElementById('registerCountry');
   var cityInput = document.getElementById('registerCity');
+  var cityCustomInput = document.getElementById('registerCityCustom');
+  var countryHelp = document.getElementById('registerCountryHelp');
   var passwordInput = document.getElementById('registerPassword');
   var passwordConfirmInput = document.getElementById('registerPasswordConfirm');
   var submitButton = document.getElementById('adminRegisterBtn');
@@ -81,6 +83,28 @@
     'Asia/Tokyo': 'JP',
     'Australia/Sydney': 'AU'
   };
+  var latinAmericaCities = {
+    AR: ['Buenos Aires', 'Córdoba', 'Rosario', 'Mendoza', 'La Plata', 'Mar del Plata', 'Salta', 'Santa Fe', 'Neuquén'],
+    BO: ['La Paz', 'Santa Cruz de la Sierra', 'Cochabamba', 'Sucre', 'Oruro', 'Tarija', 'Potosí', 'Trinidad'],
+    BR: ['São Paulo', 'Río de Janeiro', 'Brasília', 'Salvador', 'Fortaleza', 'Belo Horizonte', 'Manaos', 'Curitiba', 'Recife'],
+    CL: ['Santiago', 'Valparaíso', 'Viña del Mar', 'Concepción', 'Antofagasta', 'Temuco', 'Iquique', 'Puerto Montt', 'La Serena'],
+    CO: ['Arauca', 'Armenia', 'Barrancabermeja', 'Barranquilla', 'Bello', 'Bogotá, D. C.', 'Bucaramanga', 'Buenaventura', 'Cali', 'Cartagena', 'Cartago', 'Caucasia', 'Chía', 'Ciénaga', 'Cúcuta', 'Dosquebradas', 'Duitama', 'Envigado', 'Florencia', 'Floridablanca', 'Fusagasugá', 'Girardot', 'Girón', 'Ibagué', 'Ipiales', 'Itagüí', 'Jamundí', 'Maicao', 'Manizales', 'Medellín', 'Montería', 'Neiva', 'Palmira', 'Pamplona', 'Pasto', 'Pereira', 'Piedecuesta', 'Pitalito', 'Popayán', 'Puerto Carreño', 'Puerto Inírida', 'Puerto Asís', 'Quibdó', 'Riohacha', 'Rionegro', 'Sabaneta', 'San Andrés', 'San José del Guaviare', 'Santa Marta', 'Sincelejo', 'Soacha', 'Sogamoso', 'Tuluá', 'Tunja', 'Turbo', 'Valledupar', 'Villavicencio', 'Yopal', 'Zipaquirá'],
+    CR: ['San José', 'Alajuela', 'Cartago', 'Heredia', 'Liberia', 'Limón', 'Puntarenas', 'San Isidro de El General'],
+    CU: ['La Habana', 'Santiago de Cuba', 'Camagüey', 'Holguín', 'Santa Clara', 'Guantánamo', 'Matanzas', 'Cienfuegos'],
+    DO: ['Santo Domingo', 'Santiago de los Caballeros', 'San Pedro de Macorís', 'La Romana', 'Puerto Plata', 'Higüey'],
+    EC: ['Quito', 'Guayaquil', 'Cuenca', 'Santo Domingo', 'Machala', 'Manta', 'Ambato', 'Loja', 'Riobamba'],
+    SV: ['San Salvador', 'Santa Ana', 'San Miguel', 'Soyapango', 'Mejicanos', 'Apopa', 'Sonsonate', 'Santa Tecla'],
+    GT: ['Ciudad de Guatemala', 'Quetzaltenango', 'Escuintla', 'Mixco', 'Villa Nueva', 'Cobán', 'Chimaltenango'],
+    HN: ['Tegucigalpa', 'San Pedro Sula', 'Choloma', 'La Ceiba', 'El Progreso', 'Comayagua', 'Puerto Cortés'],
+    MX: ['Ciudad de México', 'Guadalajara', 'Monterrey', 'Puebla', 'Tijuana', 'León', 'Ciudad Juárez', 'Mérida', 'Querétaro', 'Cancún'],
+    NI: ['Managua', 'León', 'Masaya', 'Matagalpa', 'Chinandega', 'Granada', 'Estelí', 'Jinotega'],
+    PA: ['Ciudad de Panamá', 'San Miguelito', 'Colón', 'David', 'La Chorrera', 'Santiago de Veraguas', 'Chitré', 'Penonomé', 'Aguadulce', 'Las Tablas'],
+    PY: ['Asunción', 'Ciudad del Este', 'San Lorenzo', 'Luque', 'Capiatá', 'Encarnación', 'Pedro Juan Caballero'],
+    PE: ['Lima', 'Arequipa', 'Trujillo', 'Chiclayo', 'Piura', 'Cusco', 'Iquitos', 'Huancayo', 'Tacna'],
+    PR: ['San Juan', 'Bayamón', 'Carolina', 'Ponce', 'Caguas', 'Guaynabo', 'Mayagüez', 'Arecibo'],
+    UY: ['Montevideo', 'Salto', 'Ciudad de la Costa', 'Paysandú', 'Las Piedras', 'Rivera', 'Maldonado'],
+    VE: ['Caracas', 'Maracaibo', 'Valencia', 'Barquisimeto', 'Maracay', 'Ciudad Guayana', 'Maturín', 'Mérida']
+  };
 
   function normalize(value) {
     return String(value || '').trim();
@@ -105,6 +129,44 @@
       options.push('<option value="' + item.code + '">' + item.name + '</option>');
     }
     countryInput.innerHTML = options.join('');
+  }
+
+  function escapeHtml(value) {
+    return String(value == null ? '' : value).replace(/[&<>"']/g, function (character) {
+      return {'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[character];
+    });
+  }
+
+  function updateCityInput() {
+    if (!cityInput || !countryInput) {
+      return;
+    }
+    var cities = latinAmericaCities[countryInput.value] || [];
+    var options = ['<option value="" selected disabled>Selecciona una ciudad</option>'];
+    for (var index = 0; index < cities.length; index += 1) {
+      options.push('<option value="' + escapeHtml(cities[index]) + '">' + escapeHtml(cities[index]) + '</option>');
+    }
+    options.push('<option value="__other__">Otra ciudad o municipio</option>');
+    cityInput.innerHTML = options.join('');
+    if (cityCustomInput) {
+      cityCustomInput.hidden = true;
+      cityCustomInput.required = false;
+      cityCustomInput.value = '';
+    }
+  }
+
+  function updateCustomCityVisibility() {
+    if (!cityInput || !cityCustomInput) {
+      return;
+    }
+    var isOther = cityInput.value === '__other__';
+    cityCustomInput.hidden = !isOther;
+    cityCustomInput.required = isOther;
+    if (isOther) {
+      cityCustomInput.focus();
+    } else {
+      cityCustomInput.value = '';
+    }
   }
 
   function detectCountryCode() {
@@ -149,7 +211,32 @@
   populateCountryOptions();
   if (countryInput) {
     countryInput.value = detectCountryCode();
+    updateCityInput();
+    countryInput.addEventListener('change', function () {
+      updateCityInput();
+      if (countryHelp) {
+        countryHelp.textContent = 'Puedes cambiar el país y la ciudad antes de registrar la cuenta.';
+      }
+    });
   }
+  if (cityInput) {
+    cityInput.addEventListener('change', updateCustomCityVisibility);
+  }
+
+  fetch('/api/public/geo', {credentials: 'same-origin'})
+    .then(function (response) { return response.ok ? response.json() : null; })
+    .then(function (geo) {
+      var country = normalize(geo && geo.pais_codigo).toUpperCase();
+      if (!countryInput || !hasCountry(country) || normalize(geo && geo.source) === 'default') {
+        return;
+      }
+      countryInput.value = country;
+      updateCityInput();
+      if (countryHelp) {
+        countryHelp.textContent = 'País detectado automáticamente. Puedes cambiarlo si no es correcto.';
+      }
+    })
+    .catch(function () {});
   if (invitationToken) {
     var invitedEmail = normalize(queryParams.get('email'));
     if (emailInput && invitedEmail) {
@@ -241,6 +328,9 @@
     var telefono = normalize(phoneInput && phoneInput.value);
     var pais = getSelectedCountryName();
     var ciudad = normalize(cityInput && cityInput.value);
+    if (ciudad === '__other__') {
+      ciudad = normalize(cityCustomInput && cityCustomInput.value);
+    }
     var password = passwordInput && passwordInput.value ? passwordInput.value : '';
     var passwordConfirm = passwordConfirmInput && passwordConfirmInput.value ? passwordConfirmInput.value : '';
 
