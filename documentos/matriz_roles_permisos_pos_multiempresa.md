@@ -2098,3 +2098,14 @@ Para declarar un modulo listo en produccion se debe validar por rol: acceso a la
 2026-07-09: Soporte remoto y RustDesk.
 - `/super/api/soporte_remoto` queda reservado a `super_administrador`, con `WithSuperAuditoria`; no concede acceso empresarial ni acepta un usuario sin sesion super.
 - `/api/empresa/soporte_remoto` conserva wrapper de seguridad empresarial y valida el `empresa_id` efectivo antes de leer o cambiar dispositivos, sesiones o configuracion.
+2026-07-09: Credito, cobranza y Nomina.
+- Paz y salvo, configuracion de cobranza y ejecucion de recordatorios conservan
+  los wrappers empresariales de Finanzas/Cobranza; toda consulta y mutacion
+  exige `empresa_id` autorizado y no acepta cambiar el alcance desde el payload.
+- El PDF de paz y salvo solo se entrega si el credito pertenece a la empresa y
+  no tiene saldo ni cuotas pendientes/vencidas.
+- El agente de Nomina conserva `WithEmpresaNominaSueldosPermissions`; consultar
+  propuestas consume cuota del agente y guardar usa el permiso efectivo de
+  configuracion de nomina. No aplica cambios en bloque ni sin confirmacion.
+- Los envios de WhatsApp tambien requieren que el evento global
+  `cobranza_cliente` este habilitado por super administrador.

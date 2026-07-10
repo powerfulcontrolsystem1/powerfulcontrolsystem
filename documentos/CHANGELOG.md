@@ -3210,3 +3210,9 @@
 - [Scripts] Agrega `scripts/sync_to_vps2.ps1` para validar SSH, actualizar el repo remoto por Git, reiniciar Docker si hay compose, dejar el VPS2 en `multi-user.target` y asegurar Nextcloud con `restart unless-stopped`.
 - [Documentacion] Agrega `documentos/vps2_operacion.md` con host key verificada, configuracion local privada `PcsVps2*` y evidencia operativa sin versionar claves.
 - [Operacion] VPS2 respondio por SSH/VNC; `nextcloud-app`, `nextcloud-redis` y `nextcloud-db` quedaron activos con reinicio automatico.
+## [2026-07-09] Credito, cobranza y nomina guiada
+- [Credito] Agrega `Paz y salvo` en cartera. El backend rechaza la expedicion si existe saldo o cuota pendiente/vencida, genera PDF con codigo de verificacion y registra auditoria.
+- [Cobranza] Reemplaza la simulacion como unica salida por recordatorios reales configurables por empresa. La automatizacion inicia apagada, separa correo/WhatsApp, respeta anticipacion, frecuencia, hora local e idempotencia por cuenta/canal.
+- [Nomina] El agente internet muestra valor actual, valor oficial propuesto, vigencia y enlace de fuente; cada campo se aplica solo tras confirmacion humana.
+- [Tutoriales] Agrega `creditos_tutorial.html` al final del submenu de Credito; Nomina conserva su tutorial al final del submenu.
+- [IA documental] Se verifica el flujo existente de Compras, Ingresos y Egresos: carga imagen/PDF, extrae con GPT-5.5, precarga formulario, abre chat para reportar legibilidad y exige revision antes de guardar.

@@ -99,6 +99,15 @@ afecte dinero, documentos, licencias o seguridad.
 7. El carrito usa el mismo modulo cuando el medio de pago es `Credito cliente`:
    valida que el cliente tenga cupo activo y crea la cartera ligada a la venta,
    sin sumar ese valor como efectivo de caja.
+8. Cuando el saldo y todas las cuotas queden en cero, usar `Cartera > Paz y
+   salvo`; el backend vuelve a validar la deuda, genera el PDF y registra la
+   expedicion en auditoria.
+9. Para cobranza automatica, abrir `Gestion de cobranza`, guardar canales,
+   anticipacion, frecuencia, hora y plantilla. La opcion inicia apagada; usar
+   `Probar sin enviar` antes de activarla. Correo y WhatsApp dependen tambien de
+   la configuracion global del proveedor.
+10. El tutorial queda como ultima opcion del submenu y enlaza cada paso con la
+    vista operativa correspondiente.
 
 ## Menu visible por empresa
 
@@ -119,6 +128,8 @@ afecte dinero, documentos, licencias o seguridad.
 1. Abrir `Administrar empresa > Finanzas y cumplimiento > Nomina`.
 2. Usar el submenu interno para configurar parametros legales, crear empleados
    de nomina, registrar festivos y revisar liquidaciones.
+   El boton `Agente internet` muestra una tabla actual vs propuesto con fuente y
+   vigencia; cada parametro se actualiza por separado y exige confirmacion.
 3. En `Liquidaciones`, elegir periodo, calcular nomina y conciliar asistencia
    antes de continuar.
 4. En `Pagos y PILA`, validar control contable, consultar provisiones, generar

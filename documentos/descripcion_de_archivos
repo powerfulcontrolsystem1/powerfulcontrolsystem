@@ -11726,3 +11726,9 @@ backend/handlers/user_config.go - Controlador que expone /api/user/configuracion
   `pospuesta` y empresa nueva sin resumen para evitar regresiones.
 - `web/administrar_empresa/panel.html`: corrige `fetchJSON` para respetar
   opciones de POST y solo cerrar el modal despues de guardar en base de datos.
+2026-07-09 - Credito, cobranza y Nomina
+- `web/administrar_empresa/creditos_tutorial.html`: tutorial paso a paso del ciclo de credito y paz y salvo.
+- `backend/handlers/creditos_paz_salvo_test.go`: valida estructura y contenido minimo del certificado PDF y propuestas oficiales de Nomina.
+- `backend/handlers/cobranza_test.go`: valida sustitucion segura de plantillas y horario de automatizacion.
+- `backend/db/cobranza.go`: agrega configuracion e historial idempotente de recordatorios por empresa.
+- `backend/handlers/cobranza.go`: envio multicanal, ejecucion manual/dry-run y worker opt-in.

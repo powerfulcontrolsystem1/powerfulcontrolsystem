@@ -1179,6 +1179,11 @@ func main() {
 		dbpkg.StartEmpresaParametrosLegalesWorker(dbEmpresas, 24*time.Hour, stopParametrosLegales)
 	})
 
+	stopCobranzaRecordatorios := make(chan struct{})
+	go utils.RunProtectedProcess("cobranza.recordatorios_worker", map[string]interface{}{"interval_hours": 1}, func() {
+		handlers.StartEmpresaCobranzaRecordatoriosWorker(dbEmpresas, dbSuper, time.Hour, stopCobranzaRecordatorios)
+	})
+
 	asientosInterval, asientosBatchSize, asientosMaxRetries := resolveAsientosWorkerPolicy()
 	log.Printf("[asientos_worker] policy interval=%s batch=%d max_reintentos=%d", asientosInterval, asientosBatchSize, asientosMaxRetries)
 	stopAsientosWorker := make(chan struct{})
@@ -1417,7 +1422,7 @@ func main() {
 	}
 	http.HandleFunc("/api/empresa/calculadora", handlers.WithEmpresaFinanzasPermissions(dbEmpresas, dbSuper, handlers.EmpresaCalculadoraHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/creditos", handlers.WithEmpresaFinanzasPermissions(dbEmpresas, dbSuper, handlers.EmpresaCreditosHandler(dbEmpresas)))
-	http.HandleFunc("/api/empresa/cobranza", handlers.WithEmpresaCobranzaPermissions(dbEmpresas, dbSuper, handlers.EmpresaCobranzaHandler(dbEmpresas)))
+	http.HandleFunc("/api/empresa/cobranza", handlers.WithEmpresaCobranzaPermissions(dbEmpresas, dbSuper, handlers.EmpresaCobranzaHandler(dbEmpresas, dbSuper)))
 	http.HandleFunc("/api/empresa/portal_contador", handlers.WithEmpresaPortalContadorPermissions(dbEmpresas, dbSuper, handlers.EmpresaPortalContadorHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/portal_terceros_certificados", handlers.WithEmpresaPortalTercerosPermissions(dbEmpresas, dbSuper, handlers.EmpresaPortalTercerosCertificadosHandler(dbEmpresas)))
 	http.HandleFunc("/api/public/certificados_tributarios", handlers.PublicCertificadosTributariosHandler(dbEmpresas))

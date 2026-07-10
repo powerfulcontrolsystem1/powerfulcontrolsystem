@@ -41,7 +41,9 @@
     .cob-list-actions{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
     .cob-hidden{display:none!important}
     .cob-result{white-space:pre-wrap;max-height:160px;overflow:auto}
-    @media (max-width:1180px){.cob-kpis{grid-template-columns:repeat(3,minmax(0,1fr))}.cob-grid{grid-template-columns:1fr}.cob-form-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+    .cob-auto{display:grid;grid-template-columns:repeat(6,minmax(130px,1fr));gap:10px;align-items:end}
+    .cob-auto .wide{grid-column:span 2}.cob-auto .full{grid-column:1/-1}.cob-check{display:flex;gap:8px;align-items:center;min-height:42px}
+    @media (max-width:1180px){.cob-kpis{grid-template-columns:repeat(3,minmax(0,1fr))}.cob-grid{grid-template-columns:1fr}.cob-form-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.cob-auto{grid-template-columns:repeat(3,minmax(0,1fr))}}
     @media (max-width:720px){.cob-page{padding:14px}.cob-header{display:block}.cob-actions{justify-content:flex-start;margin-top:12px}.cob-kpis{grid-template-columns:1fr}.cob-form-grid{grid-template-columns:1fr}.cob-form-grid .wide{grid-column:auto}.cob-table thead{display:none}.cob-table,.cob-table tbody,.cob-table tr,.cob-table td{display:block;width:100%}.cob-table tr{border:1px solid var(--border);border-radius:8px;margin-bottom:8px;padding:6px}.cob-table td{border:0;text-align:left!important}.cob-table td::before{content:attr(data-label);display:block;color:var(--muted);font-size:.76rem;margin-bottom:2px}.cob-list-actions{justify-content:flex-start}}
   </style>
   <script src="/js/empresa_submenu_context.js"></script>
@@ -59,6 +61,24 @@
         <button class="btn" type="button" id="btnRefrescar">Actualizar</button>
       </div>
     </header>
+
+    <section class="cob-panel">
+      <h2>Recordatorios automaticos</h2>
+      <div class="cob-auto">
+        <label class="cob-check"><input id="auto_activo" type="checkbox"> Activar automatizacion</label>
+        <label class="cob-check"><input id="email_activo" type="checkbox"> Correo</label>
+        <label class="cob-check"><input id="whatsapp_activo" type="checkbox"> WhatsApp</label>
+        <div><label class="form-label" for="dias_antes">Avisar dias antes</label><input id="dias_antes" class="form-input" type="number" min="0" max="90" value="1"></div>
+        <div><label class="form-label" for="frecuencia_dias">Frecuencia dias</label><input id="frecuencia_dias" class="form-input" type="number" min="1" max="90" value="3"></div>
+        <div><label class="form-label" for="hora_local">Hora local</label><input id="hora_local" class="form-input" type="time" value="09:00"></div>
+        <div class="wide"><label class="form-label" for="auto_asunto">Asunto</label><input id="auto_asunto" class="form-input" value="Recordatorio de pago"></div>
+        <div class="full"><label class="form-label" for="auto_mensaje">Mensaje</label><textarea id="auto_mensaje" class="form-textarea">Hola {{cliente}}, el documento {{documento}} registra un saldo de {{saldo}} con vencimiento {{vencimiento}}.</textarea><small class="cob-muted">Variables: {{cliente}}, {{documento}}, {{saldo}}, {{vencimiento}}, {{empresa}}.</small></div>
+        <button id="btnGuardarAuto" class="btn" type="button">Guardar configuracion</button>
+        <button id="btnProbarAuto" class="btn secondary" type="button">Probar sin enviar</button>
+        <button id="btnEjecutarAuto" class="btn secondary" type="button">Ejecutar ahora</button>
+        <span id="autoEstado" class="cob-muted"></span>
+      </div>
+    </section>
 
     <section class="cob-kpis" aria-label="Indicadores de cobranza">
       <div class="cob-kpi"><span>Saldo total</span><strong id="kpiSaldo">$0</strong></div>
@@ -187,7 +207,7 @@
   </main>
   <script>
     (function(){
-      var state = { empresaId: resolveEmpresaId(), cuentas: [], gestiones: [], campanas: [], plantillas: [], promesas: [], dashboard: null, selectedCuenta: null };
+      var state = { empresaId: resolveEmpresaId(), cuentas: [], gestiones: [], campanas: [], plantillas: [], promesas: [], dashboard: null, config: null, selectedCuenta: null };
       var fmtMoney = new Intl.NumberFormat("es-CO", { style:"currency", currency:"COP", maximumFractionDigits:0 });
 
       function el(id){ return document.getElementById(id); }
@@ -225,7 +245,8 @@
           api("gestiones"),
           api("campanas"),
           api("plantillas"),
-          api("promesas")
+          api("promesas"),
+          api("configuracion")
         ]).then(function(rows){
           state.dashboard = rows[0] || {};
           state.cuentas = rows[1] || [];
@@ -233,6 +254,7 @@
           state.campanas = rows[3] || [];
           state.plantillas = rows[4] || [];
           state.promesas = rows[5] || [];
+          state.config = rows[6] || {};
           render();
         }).catch(function(err){
           setMsg(err.message || "No se pudo cargar cobranza", false);
@@ -254,7 +276,18 @@
         renderCampanas();
         renderPlantillas();
         renderPromesas();
+        renderConfiguracion();
       }
+
+      function renderConfiguracion(){
+        var c=state.config||{};
+        el("auto_activo").checked=!!c.auto_activo; el("email_activo").checked=c.email_activo!==false; el("whatsapp_activo").checked=!!c.whatsapp_activo;
+        el("dias_antes").value=Number(c.dias_antes == null ? 1 : c.dias_antes); el("frecuencia_dias").value=Number(c.frecuencia_dias||3); el("hora_local").value=c.hora_local||"09:00";
+        el("auto_asunto").value=c.asunto||"Recordatorio de pago"; el("auto_mensaje").value=c.mensaje||"";
+        el("autoEstado").textContent=c.ultima_ejecucion ? "Ultima ejecucion: "+c.ultima_ejecucion : "Aun no se ha ejecutado";
+      }
+
+      function configPayload(){ return {auto_activo:el("auto_activo").checked,email_activo:el("email_activo").checked,whatsapp_activo:el("whatsapp_activo").checked,dias_antes:Number(el("dias_antes").value||0),frecuencia_dias:Number(el("frecuencia_dias").value||1),hora_local:value("hora_local"),asunto:value("auto_asunto"),mensaje:value("auto_mensaje")}; }
 
       function renderAlertas(alertas){
         el("alertasList").innerHTML = alertas.length ? alertas.map(function(a){ return '<div class="cob-alert">'+escapeHtml(a)+'</div>'; }).join("") : '<div class="cob-muted">Sin alertas activas.</div>';
@@ -351,6 +384,9 @@
       el("btnFiltrar").addEventListener("click", loadAll);
       el("btnExportar").addEventListener("click", exportCsv);
       el("btnDemo").addEventListener("click", function(){ api("seed_demo", {method:"POST", body:"{}"}).then(loadAll).catch(function(err){ setMsg(err.message, false); }); });
+      el("btnGuardarAuto").addEventListener("click", function(){ api("configuracion", {method:"PUT", body:JSON.stringify(configPayload())}).then(function(res){state.config=res.configuracion||{};renderConfiguracion();setMsg("Configuracion de cobranza guardada",true);}).catch(function(err){setMsg(err.message,false);}); });
+      el("btnProbarAuto").addEventListener("click", function(){ api("ejecutar_recordatorios&dry_run=1", {method:"POST", body:"{}"}).then(function(res){el("resultadoOutput").textContent=JSON.stringify(res,null,2);setMsg("Prueba terminada sin enviar mensajes",true);}).catch(function(err){setMsg(err.message,false);}); });
+      el("btnEjecutarAuto").addEventListener("click", function(){ if(!confirm("Se enviaran recordatorios reales por los canales activos. Continuar?"))return; api("ejecutar_recordatorios", {method:"POST", body:"{}"}).then(function(res){el("resultadoOutput").textContent=JSON.stringify(res,null,2);setMsg("Ejecucion de recordatorios terminada",true);return loadAll();}).catch(function(err){setMsg(err.message,false);}); });
       el("btnSimularEnvio").addEventListener("click", function(){
         api("simular_envio", {method:"POST", body:JSON.stringify(gestionPayload())}).then(function(res){ el("resultadoOutput").textContent = JSON.stringify(res, null, 2); return loadAll(); }).catch(function(err){ setMsg(err.message, false); });
       });

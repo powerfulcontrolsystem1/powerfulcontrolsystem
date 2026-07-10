@@ -4826,3 +4826,4 @@
 - RustDesk pasa a ser administrado como perfil Docker preservando su directorio de identidad existente, con puertos de clientes completos y control/probe desde Super administrador.
 - El bootstrap crea la configuracion aislada de soporte remoto para empresas existentes y futuras sin sobrescribir personalizaciones.
 - El endpoint super de soporte remoto ahora exige rol super administrador y registra auditoria.
+- 2026-07-09: `Credito, cobranza y nomina guiada` agrega paz y salvo PDF con validacion de saldo/cuotas y auditoria, tutorial propio de credito, recordatorios de cartera por empresa con correo/WhatsApp opt-in e idempotencia, y convierte el agente de Nomina Colombia en una comparacion oficial campo por campo con confirmacion individual. Los valores 2026 incluyen salario minimo, auxilio, jornada de 42 horas, jornada nocturna desde 19:00 y recargo de descanso obligatorio del 90% vigente desde julio.

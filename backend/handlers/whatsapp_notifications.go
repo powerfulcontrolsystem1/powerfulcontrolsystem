@@ -55,6 +55,7 @@ func defaultWhatsAppNotificationEvents() []whatsAppEventConfig {
 		{Key: licenciaRetencionEmpresaMailType, Nombre: "Retencion de empresas vencidas", Descripcion: "Preavisos antes de limpieza de empresas vencidas.", EmailEnabled: true, WhatsAppEnabled: false},
 		{Key: "alerta_sistema", Nombre: "Alertas del sistema", Descripcion: "Alertas operativas, seguridad y mantenimiento.", EmailEnabled: true, WhatsAppEnabled: false},
 		{Key: "agente_mantenimiento_dian", Nombre: "Agente DIAN", Descripcion: "Noticias o cambios DIAN detectados por agentes.", EmailEnabled: true, WhatsAppEnabled: false},
+		{Key: cobranzaClienteNotificationType, Nombre: "Cobranza a clientes", Descripcion: "Recordatorios de cartera configurados por cada empresa.", EmailEnabled: true, WhatsAppEnabled: false},
 	}
 }
 

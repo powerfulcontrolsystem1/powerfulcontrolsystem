@@ -4389,3 +4389,9 @@ de productos/SKUs, caja, impuestos, cliente y reglas de facturacion.
 - Cada empresa conserva una fila aislada en `empresa_soporte_remoto_configuracion` con proveedor `rustdesk_oss`, cliente local, clave publica y servidor propios; el bootstrap no sobrescribe configuraciones existentes.
 - El panel super controla `pcs-rustdesk-hbbs` y `pcs-rustdesk-hbbr` desde Docker y deja SSH como alternativa de compatibilidad para instalaciones heredadas.
 - Seguridad: la pagina super exige sesion `super_administrador`, registra auditoria y la clave distribuida a clientes es la clave publica del servidor, no una clave privada ni credencial SSH.
+2026-07-09: Credito, cartera, cobranza y Nomina.
+- `Creditos` conserva limites, cuotas, abonos, estados de cuenta, mora, refinanciacion y workflows; suma paz y salvo PDF solo para creditos totalmente pagados.
+- `Cobranza` permite configurar por empresa recordatorios automaticos con email y WhatsApp, dias previos, frecuencia, hora y plantilla. El opt-in es obligatorio y cada intento queda en historial para evitar duplicados.
+- `Nomina` usa el agente internet como comparador normativo: muestra actual vs propuesto, fuente y vigencia, y aplica exclusivamente el campo confirmado.
+- `web/administrar_empresa/creditos_tutorial.html` explica cliente/cupo, creacion, abonos, mora, aprobaciones, cierre y paz y salvo; queda al final del submenu.
+- Compras, Ingresos y Egresos mantienen captura IA con revision humana y chat de diagnostico del archivo.

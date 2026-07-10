@@ -610,3 +610,10 @@ Actualizacion 2026-07-09: RustDesk operativo multiempresa.
 - Servicio VPS: `deploy/docker-compose.platform.yml` contiene el perfil `rustdesk` con `pcs-rustdesk-hbbs` y `pcs-rustdesk-hbbr`; comparten el directorio persistente `/var/lib/rustdesk-server` para conservar la identidad del servidor.
 - Panel super: `web/super/configuracion_avanzada.html`, `/super/api/config/rustdesk`, `/super/api/servidores` y `/super/api/soporte_remoto` administran configuracion, estado, prueba y trazabilidad global bajo rol super.
 - Empresa: `/api/empresa/soporte_remoto` y las tablas `empresa_soporte_remoto_configuracion`, `empresa_soporte_remoto_dispositivos`, `empresa_soporte_remoto_sesiones` conservan aislamiento por `empresa_id`.
+Actualizacion 2026-07-09: `Administrar empresa > Finanzas y cumplimiento >
+Credito` abre `creditos_menu.html`; su ultimo acceso es
+`creditos_tutorial.html`. La API principal es `/api/empresa/creditos` y el paz
+y salvo usa `action=paz_y_salvo`. La cobranza profesional vive en
+`cobranza.html` y `/api/empresa/cobranza`, con configuracion/worker por empresa.
+`Nomina > Configuracion legal > Agente internet` consulta propuestas Colombia
+2026 y guarda solo el campo aprobado a traves de `/api/empresa/nomina`.

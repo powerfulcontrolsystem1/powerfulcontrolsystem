@@ -6662,3 +6662,14 @@ La ayuda funcional se actualiza en `web/ayuda/ayuda.html` y el estado compacto d
 - Frontend: `web/administrar_empresa/rappi.html` se enlaza desde
   `web/administrar_empresa.html` y permisos/menu en
   `web/js/administrar_empresa.js`.
+## Actualizacion 2026-07-09 (credito, cobranza y nomina guiada)
+
+- `backend/handlers/creditos.go` agrega `action=paz_y_salvo`, validacion de
+  saldo/cuotas, PDF nativo y auditoria empresarial.
+- `backend/db/cobranza.go` agrega configuracion por empresa e historial de
+  envios con clave idempotente; `backend/handlers/cobranza.go` agrega ejecucion
+  manual, dry-run y worker horario opt-in para correo/WhatsApp.
+- `backend/handlers/agente_internet_fiscal.go` construye propuestas Colombia
+  2026 desde la configuracion real de Nomina y adjunta fuente/vigencia.
+- `web/administrar_empresa/nomina_sueldos.html` aplica un campo confirmado por
+  vez; `creditos_tutorial.html` se carga al final de `creditos_menu.html`.

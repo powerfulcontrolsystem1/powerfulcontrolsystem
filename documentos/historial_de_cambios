@@ -37175,3 +37175,9 @@ Archivos modificados:
 - documentos/descripcion_de_archivos
 - documentos/historial_de_cambios
 - scripts/rs.ps1
+2026-07-09: Credito, cobranza multicanal y Nomina Colombia con aprobacion individual.
+- Credito: `/api/empresa/creditos?action=paz_y_salvo&id=...` valida empresa, credito, saldo y cuotas; genera PDF nativo sin dependencias nuevas y audita la expedicion.
+- Cobranza: `/api/empresa/cobranza` administra configuracion por `empresa_id` y ejecuta recordatorios por correo corporativo o WhatsApp. El worker solo procesa empresas con opt-in y reserva una clave idempotente antes del envio.
+- Nomina: `/api/empresa/nomina/agente_internet` compara la configuracion guardada con fuentes oficiales Colombia 2026. El frontend confirma y guarda un campo por vez mediante el endpoint de configuracion existente.
+- Ayuda: nuevo tutorial operativo de Credito; el tutorial de Nomina permanece como ultimo acceso de su submenu.
+- QA: pruebas Go para PDF, propuestas normativas, plantillas de cobranza y horario del worker; preflight y validacion visual se ejecutan antes de `rs`.

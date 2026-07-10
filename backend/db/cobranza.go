@@ -134,6 +134,20 @@ type EmpresaCobranzaDashboard struct {
 	Alertas             []string                 `json:"alertas"`
 }
 
+type EmpresaCobranzaConfiguracion struct {
+	EmpresaID       int64  `json:"empresa_id"`
+	AutoActivo      bool   `json:"auto_activo"`
+	EmailActivo     bool   `json:"email_activo"`
+	WhatsAppActivo  bool   `json:"whatsapp_activo"`
+	DiasAntes       int    `json:"dias_antes"`
+	FrecuenciaDias  int    `json:"frecuencia_dias"`
+	Asunto          string `json:"asunto"`
+	Mensaje         string `json:"mensaje"`
+	HoraLocal       string `json:"hora_local"`
+	UltimaEjecucion string `json:"ultima_ejecucion,omitempty"`
+	Usuario         string `json:"usuario_creador,omitempty"`
+}
+
 func EnsureEmpresaCobranzaSchema(dbConn *sql.DB) error {
 	if dbConn == nil {
 		return errors.New("db connection is nil")
@@ -229,6 +243,34 @@ func EnsureEmpresaCobranzaSchema(dbConn *sql.DB) error {
 			observaciones TEXT
 		);`,
 		`CREATE INDEX IF NOT EXISTS ix_cobranza_promesas_empresa ON empresa_cobranza_promesas(empresa_id, estado_promesa, fecha_promesa);`,
+		`CREATE TABLE IF NOT EXISTS empresa_cobranza_configuracion (
+			empresa_id INTEGER PRIMARY KEY,
+			auto_activo INTEGER DEFAULT 0,
+			email_activo INTEGER DEFAULT 1,
+			whatsapp_activo INTEGER DEFAULT 0,
+			dias_antes INTEGER DEFAULT 1,
+			frecuencia_dias INTEGER DEFAULT 3,
+			asunto TEXT DEFAULT 'Recordatorio de pago',
+			mensaje TEXT DEFAULT 'Hola {{cliente}}, el documento {{documento}} registra un saldo de {{saldo}} con vencimiento {{vencimiento}}.',
+			hora_local TEXT DEFAULT '09:00',
+			ultima_ejecucion TEXT,
+			fecha_actualizacion TEXT DEFAULT (CURRENT_TIMESTAMP),
+			usuario_creador TEXT
+		);`,
+		`CREATE TABLE IF NOT EXISTS empresa_cobranza_envios (
+			id BIGSERIAL PRIMARY KEY,
+			empresa_id INTEGER NOT NULL,
+			cuenta_id INTEGER NOT NULL,
+			canal TEXT NOT NULL,
+			dedupe_key TEXT NOT NULL,
+			destino TEXT,
+			resultado TEXT,
+			detalle TEXT,
+			fecha_creacion TEXT DEFAULT (CURRENT_TIMESTAMP),
+			usuario_creador TEXT,
+			UNIQUE(empresa_id, dedupe_key)
+		);`,
+		`CREATE INDEX IF NOT EXISTS ix_cobranza_envios_empresa ON empresa_cobranza_envios(empresa_id, cuenta_id, canal, fecha_creacion DESC);`,
 	}
 	for _, stmt := range stmts {
 		if _, err := ExecCompat(dbConn, stmt); err != nil {
@@ -236,6 +278,115 @@ func EnsureEmpresaCobranzaSchema(dbConn *sql.DB) error {
 		}
 	}
 	return nil
+}
+
+func GetEmpresaCobranzaConfiguracion(dbConn *sql.DB, empresaID int64) (EmpresaCobranzaConfiguracion, error) {
+	if err := EnsureEmpresaCobranzaSchema(dbConn); err != nil {
+		return EmpresaCobranzaConfiguracion{}, err
+	}
+	cfg := EmpresaCobranzaConfiguracion{EmpresaID: empresaID, EmailActivo: true, DiasAntes: 1, FrecuenciaDias: 3, Asunto: "Recordatorio de pago", Mensaje: "Hola {{cliente}}, el documento {{documento}} registra un saldo de {{saldo}} con vencimiento {{vencimiento}}.", HoraLocal: "09:00"}
+	var autoActivo, emailActivo, whatsappActivo int
+	err := QueryRowCompat(dbConn, `SELECT empresa_id,COALESCE(auto_activo,0),COALESCE(email_activo,1),COALESCE(whatsapp_activo,0),COALESCE(dias_antes,1),COALESCE(frecuencia_dias,3),COALESCE(asunto,'Recordatorio de pago'),COALESCE(mensaje,''),COALESCE(hora_local,'09:00'),COALESCE(ultima_ejecucion,''),COALESCE(usuario_creador,'') FROM empresa_cobranza_configuracion WHERE empresa_id=?`, empresaID).Scan(&cfg.EmpresaID, &autoActivo, &emailActivo, &whatsappActivo, &cfg.DiasAntes, &cfg.FrecuenciaDias, &cfg.Asunto, &cfg.Mensaje, &cfg.HoraLocal, &cfg.UltimaEjecucion, &cfg.Usuario)
+	if err == sql.ErrNoRows {
+		return cfg, nil
+	}
+	if err != nil {
+		return cfg, err
+	}
+	cfg.AutoActivo = autoActivo != 0
+	cfg.EmailActivo = emailActivo != 0
+	cfg.WhatsAppActivo = whatsappActivo != 0
+	if cfg.DiasAntes < 0 {
+		cfg.DiasAntes = 0
+	}
+	if cfg.DiasAntes > 90 {
+		cfg.DiasAntes = 90
+	}
+	if cfg.FrecuenciaDias < 1 {
+		cfg.FrecuenciaDias = 1
+	}
+	if cfg.FrecuenciaDias > 90 {
+		cfg.FrecuenciaDias = 90
+	}
+	return cfg, nil
+}
+
+func UpsertEmpresaCobranzaConfiguracion(dbConn *sql.DB, cfg EmpresaCobranzaConfiguracion) (EmpresaCobranzaConfiguracion, error) {
+	if cfg.EmpresaID <= 0 {
+		return cfg, errors.New("empresa_id es obligatorio")
+	}
+	if err := EnsureEmpresaCobranzaSchema(dbConn); err != nil {
+		return cfg, err
+	}
+	if cfg.DiasAntes < 0 {
+		cfg.DiasAntes = 0
+	}
+	if cfg.DiasAntes > 90 {
+		cfg.DiasAntes = 90
+	}
+	if cfg.FrecuenciaDias < 1 {
+		cfg.FrecuenciaDias = 1
+	}
+	if cfg.FrecuenciaDias > 90 {
+		cfg.FrecuenciaDias = 90
+	}
+	if strings.TrimSpace(cfg.Asunto) == "" {
+		cfg.Asunto = "Recordatorio de pago"
+	}
+	if strings.TrimSpace(cfg.Mensaje) == "" {
+		cfg.Mensaje = "Hola {{cliente}}, el documento {{documento}} registra un saldo de {{saldo}} con vencimiento {{vencimiento}}."
+	}
+	if strings.TrimSpace(cfg.HoraLocal) == "" {
+		cfg.HoraLocal = "09:00"
+	}
+	_, err := ExecCompat(dbConn, `INSERT INTO empresa_cobranza_configuracion (empresa_id,auto_activo,email_activo,whatsapp_activo,dias_antes,frecuencia_dias,asunto,mensaje,hora_local,fecha_actualizacion,usuario_creador) VALUES (?,?,?,?,?,?,?,?,?,CURRENT_TIMESTAMP,?) ON CONFLICT (empresa_id) DO UPDATE SET auto_activo=excluded.auto_activo,email_activo=excluded.email_activo,whatsapp_activo=excluded.whatsapp_activo,dias_antes=excluded.dias_antes,frecuencia_dias=excluded.frecuencia_dias,asunto=excluded.asunto,mensaje=excluded.mensaje,hora_local=excluded.hora_local,fecha_actualizacion=CURRENT_TIMESTAMP,usuario_creador=excluded.usuario_creador`, cfg.EmpresaID, boolToInt(cfg.AutoActivo), boolToInt(cfg.EmailActivo), boolToInt(cfg.WhatsAppActivo), cfg.DiasAntes, cfg.FrecuenciaDias, strings.TrimSpace(cfg.Asunto), strings.TrimSpace(cfg.Mensaje), strings.TrimSpace(cfg.HoraLocal), strings.TrimSpace(cfg.Usuario))
+	if err != nil {
+		return cfg, err
+	}
+	return GetEmpresaCobranzaConfiguracion(dbConn, cfg.EmpresaID)
+}
+
+func ListEmpresaCobranzaConfiguracionesActivas(dbConn *sql.DB) ([]EmpresaCobranzaConfiguracion, error) {
+	if err := EnsureEmpresaCobranzaSchema(dbConn); err != nil {
+		return nil, err
+	}
+	rows, err := ExecQueryCompat(dbConn, `SELECT empresa_id FROM empresa_cobranza_configuracion WHERE COALESCE(auto_activo,0)=1 ORDER BY empresa_id`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := []EmpresaCobranzaConfiguracion{}
+	for rows.Next() {
+		var empresaID int64
+		if err := rows.Scan(&empresaID); err != nil {
+			return nil, err
+		}
+		cfg, err := GetEmpresaCobranzaConfiguracion(dbConn, empresaID)
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, cfg)
+	}
+	return out, rows.Err()
+}
+
+func RegisterEmpresaCobranzaEnvio(dbConn *sql.DB, empresaID, cuentaID int64, canal, dedupeKey, destino, resultado, detalle, usuario string) (bool, error) {
+	res, err := ExecCompat(dbConn, `INSERT INTO empresa_cobranza_envios (empresa_id,cuenta_id,canal,dedupe_key,destino,resultado,detalle,usuario_creador) VALUES (?,?,?,?,?,?,?,?) ON CONFLICT (empresa_id,dedupe_key) DO NOTHING`, empresaID, cuentaID, strings.TrimSpace(canal), strings.TrimSpace(dedupeKey), strings.TrimSpace(destino), strings.TrimSpace(resultado), strings.TrimSpace(detalle), strings.TrimSpace(usuario))
+	if err != nil {
+		return false, err
+	}
+	n, _ := res.RowsAffected()
+	return n > 0, nil
+}
+
+func UpdateEmpresaCobranzaEnvioResultado(dbConn *sql.DB, empresaID int64, dedupeKey, resultado, detalle string) error {
+	_, err := ExecCompat(dbConn, `UPDATE empresa_cobranza_envios SET resultado=?,detalle=? WHERE empresa_id=? AND dedupe_key=?`, strings.TrimSpace(resultado), strings.TrimSpace(detalle), empresaID, strings.TrimSpace(dedupeKey))
+	return err
+}
+
+func MarkEmpresaCobranzaUltimaEjecucion(dbConn *sql.DB, empresaID int64, value string) error {
+	_, err := ExecCompat(dbConn, `UPDATE empresa_cobranza_configuracion SET ultima_ejecucion=?,fecha_actualizacion=CURRENT_TIMESTAMP WHERE empresa_id=?`, strings.TrimSpace(value), empresaID)
+	return err
 }
 
 func ListEmpresaCobranzaCuentas(dbConn *sql.DB, empresaID int64, filtro EmpresaCobranzaCuentaFiltro) ([]EmpresaCobranzaCuenta, error) {
