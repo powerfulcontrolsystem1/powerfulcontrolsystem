@@ -16579,3 +16579,22 @@ Archivos modificados:
 - documentos/descripcion_de_archivos
 - documentos/historial_de_cambios
 - scripts/rs.ps1
+
+2026-07-10 00:22:34 - Mensaje: rs: actualizar repositorio y sincronizar VPS; Commit: 125a28cb; PushStatus: OK
+Archivos modificados:
+- CHANGELOG.md
+- backend/db/cobranza.go
+- backend/handlers/cobranza.go
+- backend/handlers/cobranza_test.go
+- backend/handlers/whatsapp_notifications.go
+- backend/main.go
+- documentos/CHANGELOG.md
+- documentos/descripcion_de_archivos
+- documentos/descripcion_de_modulos
+- documentos/diagramas/estructura_del_codigo.md
+- documentos/estructura_bd.md
+- documentos/flujos_operativos.md
+- documentos/historial_de_cambios
+- documentos/mapa_modulos.md
+- documentos/matriz_roles_permisos_pos_multiempresa.md
+- web/administrar_empresa/cobranza.html
