@@ -4402,3 +4402,6 @@ de productos/SKUs, caja, impuestos, cliente y reglas de facturacion.
 
 2026-07-10: Ubicacion GPS
 - Los recorridos se aceptan unicamente para dispositivos activos de la misma empresa. Se rechazan coordenadas y telemetria fuera de limites operativos para proteger la calidad de rutas, mapas e indicadores.
+
+2026-07-10: Seguridad VPS
+- El analizador reconoce el modo Ubuntu valido `640 root:shadow` como una configuracion segura para `/etc/shadow`. El panel conserva hallazgos reales y evita elevar alertas por la lectura requerida del grupo `shadow`.

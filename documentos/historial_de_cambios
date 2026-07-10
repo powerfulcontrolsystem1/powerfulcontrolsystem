@@ -37188,6 +37188,10 @@ Archivos modificados:
 - GPS: el backend valida telemetria antes de persistirla y, dentro de la transaccion, confirma que el dispositivo pertenezca a la misma empresa y este activo. Un punto no puede actualizar la ultima ubicacion de un equipo ajeno o desactivado.
 - Panel super: agrega la tarjeta `Ciberseguridad`, basada en el ultimo analisis VPS y el monitor de eventos. Los hallazgos y puertos se presentan como senales para revisar, no como afirmaciones de ataque; enlaza a la pagina de Seguridad VPS.
 
+2026-07-10: Correccion de lectura TLS y permisos VPS.
+- VPS: Nginx del host conserva respaldo previo y ahora restringe `ssl_protocols` a TLS 1.2 y TLS 1.3; se valido la configuracion y se recargo Nginx sin interrumpir PCS.
+- Escaner: `/etc/shadow` con propietario `root:shadow` y modo Ubuntu `640` se considera correcto. La regla anterior trataba indebidamente la lectura del grupo `shadow` como exposicion y generaba un falso positivo.
+
 2026-07-10: rs: actualizar repositorio y sincronizar VPS
 PushStatus: OK
 Archivos modificados:

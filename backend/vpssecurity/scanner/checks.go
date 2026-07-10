@@ -2,9 +2,9 @@ package scanner
 
 import (
 	"context"
-	"os/exec"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"runtime"
 	"sort"
@@ -152,7 +152,7 @@ func checkNginxConfig() ([]reports.Finding, string, bool) {
 			continue
 		}
 		text := string(raw)
-		combined.WriteString("# "+cfg+"\n")
+		combined.WriteString("# " + cfg + "\n")
 		combined.WriteString(text)
 		combined.WriteString("\n")
 		lower := strings.ToLower(text)
@@ -217,16 +217,18 @@ func checkSSHConfig() ([]reports.Finding, string, bool) {
 
 func checkCriticalPermissions() ([]reports.Finding, string) {
 	paths := []struct {
-		Path      string
-		Mask      os.FileMode
-		Severity  reports.Severity
-		Title     string
-		Action    string
+		Path          string
+		ForbiddenMask os.FileMode
+		Severity      reports.Severity
+		Title         string
+		Action        string
 	}{
-		{Path: "/etc/shadow", Mask: 0o077, Severity: reports.SeverityHigh, Title: "Permisos inseguros en /etc/shadow", Action: "Ajuste permisos a 640 o mas restrictivos y valide propietario root:shadow."},
-		{Path: "/etc/sudoers", Mask: 0o022, Severity: reports.SeverityHigh, Title: "Permisos inseguros en /etc/sudoers", Action: "Mantenga /etc/sudoers solo editable por root y valide sintaxis con visudo."},
-		{Path: "/root/.ssh", Mask: 0o077, Severity: reports.SeverityMedium, Title: "Permisos inseguros en /root/.ssh", Action: "Ajuste el directorio a 700 y los archivos sensibles a 600."},
-		{Path: "/root/.ssh/authorized_keys", Mask: 0o077, Severity: reports.SeverityMedium, Title: "Permisos inseguros en authorized_keys", Action: "Mantenga authorized_keys con permisos 600 y propietario root."},
+		// Ubuntu permite root:shadow 640: la lectura del grupo shadow es necesaria
+		// para PAM, pero no se permiten escritura/ejecucion de grupo ni acceso otros.
+		{Path: "/etc/shadow", ForbiddenMask: 0o037, Severity: reports.SeverityHigh, Title: "Permisos inseguros en /etc/shadow", Action: "Ajuste permisos a 640 o mas restrictivos y valide propietario root:shadow."},
+		{Path: "/etc/sudoers", ForbiddenMask: 0o022, Severity: reports.SeverityHigh, Title: "Permisos inseguros en /etc/sudoers", Action: "Mantenga /etc/sudoers solo editable por root y valide sintaxis con visudo."},
+		{Path: "/root/.ssh", ForbiddenMask: 0o077, Severity: reports.SeverityMedium, Title: "Permisos inseguros en /root/.ssh", Action: "Ajuste el directorio a 700 y los archivos sensibles a 600."},
+		{Path: "/root/.ssh/authorized_keys", ForbiddenMask: 0o077, Severity: reports.SeverityMedium, Title: "Permisos inseguros en authorized_keys", Action: "Mantenga authorized_keys con permisos 600 y propietario root."},
 	}
 	findings := make([]reports.Finding, 0)
 	builder := &strings.Builder{}
@@ -237,7 +239,7 @@ func checkCriticalPermissions() ([]reports.Finding, string) {
 		}
 		mode := info.Mode().Perm()
 		builder.WriteString(item.Path + " -> " + mode.String() + "\n")
-		if mode&item.Mask != 0 {
+		if mode&item.ForbiddenMask != 0 {
 			findings = append(findings, reports.Finding{Tool: "custom", Category: "permisos", Severity: item.Severity, Title: item.Title, Description: "Se detectaron permisos mas amplios de lo recomendado sobre un archivo/directorio sensible.", Recommendation: item.Action, Target: settingsTargetLocalhost(), Evidence: fmt.Sprintf("%s=%s", item.Path, mode.String())})
 		}
 	}
