@@ -1,5 +1,6 @@
 2026-07-10: Super administrador - diagramas tecnicos consolidados.
 - `Super administrador > Diagramas tecnicos` conserva solamente los 19 accesos de la documentacion tecnica completa: arquitectura, modulos, navegacion, ERD PostgreSQL, UML, procesos, estados, componentes, despliegue, paquetes y flujo de datos.
+- `ERD PostgreSQL completo` abre el catalogo navegable de las 365 tablas extraidas, con atributos, PK, FKs fisicas y relaciones logicas por tabla.
 - El paquete previo de esquemas generales se retira de la navegacion para evitar duplicidad; queda como referencia historica sin presentarse como flujo operativo.
 - El visor completo y cada pagina individual se mantienen disponibles para favoritos y retorno al panel super.
 

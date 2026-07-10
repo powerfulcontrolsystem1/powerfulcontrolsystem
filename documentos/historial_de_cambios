@@ -1,5 +1,6 @@
 2026-07-10: Super administrador - diagramas tecnicos consolidados.
 - Se retiraron del submenu los 15 diagramas generales anteriores y se mantuvieron los 19 diagramas profesionales del paquete `documentacion_tecnica_completa`, accesibles desde visor general y paginas individuales.
+- Se completa el ERD PostgreSQL con catalogo navegable de tablas, atributos, PK, FKs fisicas y relaciones logicas; sustituye el acceso resumido en el submenu super.
 - Alcance: navegacion y visualizacion estatica; no agrega endpoints, tablas, permisos ni cambios de runtime.
 
 2026-07-10: Orquestador `rs` - parametros booleanos a sincronizacion.

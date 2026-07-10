@@ -39,6 +39,7 @@
     "/super/diagramas/mapa_de_modulos.html": true,
     "/super/diagramas/mapa_de_navegacion.html": true,
     "/super/diagramas/erd_global_resumido_por_dominios.html": true,
+    "/super/diagramas/diagrama_entidad_relacion_postgresql.html": true,
     "/super/diagramas/casos_de_uso.html": true,
     "/super/diagramas/diagrama_de_clases_uml.html": true,
     "/super/diagramas/login_y_resolucion_de_empresa.html": true,
