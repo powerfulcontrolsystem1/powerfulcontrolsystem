@@ -16553,3 +16553,22 @@ Archivos modificados:
 - web/super/diagramas/mapa_de_navegacion.html
 - web/super/diagramas/venta_pos_con_inventario_y_caja.html
 - web/super/diagramas/webhook_rappi_separado_por_empresa.html
+
+2026-07-10 00:08:14 - Mensaje: rs: actualizar repositorio y sincronizar VPS; Commit: 2355e3ec; PushStatus: OK
+Archivos modificados:
+- backend/db/nomina_sueldos.go
+- backend/handlers/agente_internet_fiscal.go
+- backend/handlers/creditos.go
+- backend/handlers/creditos_paz_salvo_test.go
+- documentos/CHANGELOG.md
+- documentos/descripcion_de_archivos
+- documentos/descripcion_de_modulos
+- documentos/historial_de_cambios
+- documentos/mapa_modulos.md
+- web/administrar_empresa/creditos.html
+- web/administrar_empresa/creditos_menu.html
+- web/administrar_empresa/creditos_tutorial.html
+- web/administrar_empresa/nomina_sueldos.html
+- web/js/super_administrador.js
+- web/js/super_documentacion_tecnica.js
+- web/super_administrador.html
