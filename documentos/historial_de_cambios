@@ -37093,3 +37093,49 @@ Archivos modificados:
 - Docker conserva `/var/lib/rustdesk-server` como almacenamiento de RustDesk y publica los puertos 21115 a 21119 requeridos por el servidor ID/Relay y clientes compatibles.
 - El arranque asegura/migra `empresa_soporte_remoto_*`, crea configuracion `rustdesk_oss` aislada para cada empresa que falte y completa solo campos de host/clave publica vacios desde la configuracion global.
 - El panel super administra contenedores RustDesk cuando existen, conserva SSH solo como compatibilidad y protege `/super/api/soporte_remoto` con rol super y auditoria.
+
+2026-07-09: rs: actualizar repositorio y sincronizar VPS
+PushStatus: OK
+Archivos modificados:
+- CHANGELOG.md
+- backend/db/soporte_remoto.go
+- backend/handlers/super_rustdesk_config.go
+- backend/handlers/super_servidores_handlers.go
+- backend/handlers/super_servidores_handlers_test.go
+- backend/handlers/super_soporte_remoto.go
+- backend/main.go
+- deploy/docker-compose.platform.yml
+- documentos/CHANGELOG.md
+- documentos/descripcion_de_archivos
+- documentos/descripcion_de_modulos
+- documentos/diagramas/diagramas_sistema_pcs.md
+- documentos/diagramas/documentacion_tecnica_completa.md
+- documentos/diagramas/documentacion_tecnica_completa_manifest.json
+- documentos/diagramas/estructura_del_codigo.md
+- documentos/estructura_bd.md
+- documentos/historial_de_cambios
+- documentos/mapa_modulos.md
+- documentos/matriz_roles_permisos_pos_multiempresa.md
+- web/js/super_documentacion_tecnica_data.js
+- web/super/configuracion_avanzada.html
+- web/super/diagramas/arquitectura_general.html
+- web/super/diagramas/casos_de_uso.html
+- web/super/diagramas/cierre_de_venta.html
+- web/super/diagramas/despliegue_rs.html
+- web/super/diagramas/diagrama_de_clases_uml.html
+- web/super/diagramas/diagrama_de_componentes.html
+- web/super/diagramas/diagrama_de_despliegue.html
+- web/super/diagramas/diagrama_de_flujo_de_datos.html
+- web/super/diagramas/diagrama_de_paquetes.html
+- web/super/diagramas/diagrama_entidad_relacion_postgresql.html
+- web/super/diagramas/diagramas_de_estados.html
+- web/super/diagramas/diagramas_de_estados_2.html
+- web/super/diagramas/diagramas_de_estados_3.html
+- web/super/diagramas/documentacion_tecnica_completa.html
+- web/super/diagramas/erd_global_resumido_por_dominios.html
+- web/super/diagramas/facturacion_electronica_dian.html
+- web/super/diagramas/login_y_resolucion_de_empresa.html
+- web/super/diagramas/mapa_de_modulos.html
+- web/super/diagramas/mapa_de_navegacion.html
+- web/super/diagramas/venta_pos_con_inventario_y_caja.html
+- web/super/diagramas/webhook_rappi_separado_por_empresa.html
