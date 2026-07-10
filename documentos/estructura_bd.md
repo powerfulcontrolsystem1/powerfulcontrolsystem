@@ -2266,3 +2266,7 @@ Actualizacion 2026-07-09 (cobranza automatizada)
   proveedor para impedir envios duplicados concurrentes.
 - El paz y salvo no crea una tabla paralela: su expedicion queda en la auditoria
   empresarial del recurso `empresa_creditos`, con codigo de verificacion.
+
+Actualizacion 2026-07-10 (integridad GPS y auditoria super)
+- `empresa_gps_recorridos` mantiene su aislamiento por `empresa_id`; al crear un punto, la transaccion verifica que `empresa_gps_dispositivos.id` pertenezca a la misma empresa y este en estado `activo` antes de actualizar la ultima lectura del equipo.
+- `super_auditoria_eventos` conserva fechas como `TEXT` por compatibilidad historica. Las escrituras convierten las fechas generadas por PostgreSQL a texto de forma explicita para no mezclar tipos en `COALESCE`.

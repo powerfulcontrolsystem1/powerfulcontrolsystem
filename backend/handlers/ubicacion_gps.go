@@ -230,6 +230,10 @@ func EmpresaUbicacionGPSRecorridosHandler(dbEmp *sql.DB) http.HandlerFunc {
 				http.Error(w, err.Error(), http.StatusBadRequest)
 				return
 			}
+			if err := validateGPSTelemetry(payload); err != nil {
+				http.Error(w, err.Error(), http.StatusBadRequest)
+				return
+			}
 			payload.UsuarioCreador = strings.TrimSpace(adminEmailFromRequest(r))
 			if strings.TrimSpace(payload.Fuente) == "" {
 				payload.Fuente = "manual"
@@ -284,6 +288,10 @@ func EmpresaUbicacionGPSRecorridosHandler(dbEmp *sql.DB) http.HandlerFunc {
 				http.Error(w, err.Error(), http.StatusBadRequest)
 				return
 			}
+			if err := validateGPSTelemetry(payload); err != nil {
+				http.Error(w, err.Error(), http.StatusBadRequest)
+				return
+			}
 			if err := dbpkg.UpdateEmpresaGPSRecorrido(dbEmp, payload); err != nil {
 				if errors.Is(err, sql.ErrNoRows) {
 					http.Error(w, "punto gps no encontrado", http.StatusNotFound)
@@ -328,6 +336,25 @@ func validateGPSCoordinates(lat, lng float64) error {
 	}
 	if lng < -180 || lng > 180 {
 		return fmt.Errorf("longitud fuera de rango")
+	}
+	return nil
+}
+
+func validateGPSTelemetry(p dbpkg.EmpresaGPSRecorrido) error {
+	if p.PrecisionMetros < 0 || p.PrecisionMetros > 100000 {
+		return fmt.Errorf("precision GPS fuera de rango")
+	}
+	if p.VelocidadKMH < 0 || p.VelocidadKMH > 1000 {
+		return fmt.Errorf("velocidad GPS fuera de rango")
+	}
+	if p.RumboGrados < 0 || p.RumboGrados >= 360 {
+		return fmt.Errorf("rumbo GPS fuera de rango")
+	}
+	if p.BateriaPorcentaje < 0 || p.BateriaPorcentaje > 100 || p.SenalPorcentaje < 0 || p.SenalPorcentaje > 100 {
+		return fmt.Errorf("bateria o senal GPS fuera de rango")
+	}
+	if p.AltitudMetros < -11000 || p.AltitudMetros > 100000 {
+		return fmt.Errorf("altitud GPS fuera de rango")
 	}
 	return nil
 }

@@ -188,9 +188,9 @@ func CreateSuperAuditoriaEvento(dbConn *sql.DB, in SuperAuditoriaEvento) (int64,
 		fecha_creacion, fecha_actualizacion, usuario_creador, estado, observaciones
 	) VALUES (
 		?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
-		COALESCE(NULLIF(?, ''), CURRENT_TIMESTAMP),
-		pcs_ts(COALESCE(NULLIF(?, ''), 'now'), ?),
-		CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, ?, ?, ?
+		COALESCE(NULLIF(?, ''), CAST(CURRENT_TIMESTAMP AS TEXT)),
+		CAST(pcs_ts(COALESCE(NULLIF(?, ''), 'now'), ?) AS TEXT),
+		CAST(CURRENT_TIMESTAMP AS TEXT), CAST(CURRENT_TIMESTAMP AS TEXT), ?, ?, ?
 	)`,
 		in.EmpresaID, in.PrincipalEmail, in.Modulo, in.Accion, in.Recurso, in.RecursoID,
 		in.MetodoHTTP, in.Endpoint, in.Resultado, in.CodigoHTTP, in.RequestID, in.IPOrigen,

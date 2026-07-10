@@ -37183,6 +37183,11 @@ Archivos modificados:
 - Ayuda: nuevo tutorial operativo de Credito; el tutorial de Nomina permanece como ultimo acceso de su submenu.
 - QA: pruebas Go para PDF, propuestas normativas, plantillas de cobranza y horario del worker; preflight y validacion visual se ejecutan antes de `rs`.
 
+2026-07-10: Auditoria global, GPS y postura de ciberseguridad.
+- Auditoria: la insercion de eventos super convierte explicitamente las marcas de tiempo a texto, que es el tipo historico de sus columnas. Evita el error PostgreSQL por mezclar `TEXT` con `CURRENT_TIMESTAMP` y restaura la trazabilidad de eventos del panel.
+- GPS: el backend valida telemetria antes de persistirla y, dentro de la transaccion, confirma que el dispositivo pertenezca a la misma empresa y este activo. Un punto no puede actualizar la ultima ubicacion de un equipo ajeno o desactivado.
+- Panel super: agrega la tarjeta `Ciberseguridad`, basada en el ultimo analisis VPS y el monitor de eventos. Los hallazgos y puertos se presentan como senales para revisar, no como afirmaciones de ataque; enlaza a la pagina de Seguridad VPS.
+
 2026-07-10: rs: actualizar repositorio y sincronizar VPS
 PushStatus: OK
 Archivos modificados:

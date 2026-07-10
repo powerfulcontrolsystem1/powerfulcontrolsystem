@@ -2,6 +2,7 @@ package db
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -491,6 +492,18 @@ func CreateEmpresaGPSRecorrido(dbConn *sql.DB, p EmpresaGPSRecorrido) (int64, er
 	tx, err := dbConn.Begin()
 	if err != nil {
 		return 0, err
+	}
+	var estado string
+	if err := tx.QueryRow(`SELECT COALESCE(estado, 'activo') FROM empresa_gps_dispositivos WHERE empresa_id = ? AND id = ?`, p.EmpresaID, p.DispositivoID).Scan(&estado); err != nil {
+		_ = tx.Rollback()
+		if errors.Is(err, sql.ErrNoRows) {
+			return 0, fmt.Errorf("dispositivo gps no encontrado para la empresa")
+		}
+		return 0, err
+	}
+	if strings.ToLower(strings.TrimSpace(estado)) != "activo" {
+		_ = tx.Rollback()
+		return 0, fmt.Errorf("el dispositivo gps esta inactivo")
 	}
 
 	res, err := tx.Exec(`INSERT INTO empresa_gps_recorridos (

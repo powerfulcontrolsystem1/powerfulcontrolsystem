@@ -293,6 +293,16 @@
           </div>
         </section>
 
+        <section class="cmd-panel" aria-label="Ciberseguridad">
+          <div class="cmd-panel-head">
+            <div><h2>Ciberseguridad</h2><p>Lectura del ultimo analisis y de alertas operativas.</p></div>
+            <a class="cmd-btn" href="/super/seguridad.html">Revisar</a>
+          </div>
+          <div id="cybersecurityList" class="cmd-list">
+            <div class="cmd-alert"><i class="cmd-dot info"></i><div><strong>Cargando postura</strong><span>Consultando las fuentes disponibles.</span></div></div>
+          </div>
+        </section>
+
       </aside>
     </section>
     <section id="superPortalVisitCounter" class="cmd-panel portal-visit-counter super-portal-visit-counter" aria-labelledby="superPortalVisitTitle" data-portal-visits-widget data-count-visit="0">
@@ -322,7 +332,7 @@
   <script>
     (function(){
       "use strict";
-      var state = { metric:null, history:[], postgres:null, alerts:null, errors:null, services:[], licenses:[], companies:[], empresasEstado:null, consumos:null, licenseSales:null };
+      var state = { metric:null, history:[], postgres:null, alerts:null, errors:null, services:[], licenses:[], companies:[], empresasEstado:null, consumos:null, licenseSales:null, securityScan:null };
       var $ = function(id){ return document.getElementById(id); };
       var favoritesKey = "super_admin:favorites";
       function num(v){ var n = Number(v); return Number.isFinite(n) ? n : 0; }
@@ -549,6 +559,38 @@
           return '<span class="cmd-openai-bar" style="height:'+h+'px" title="'+esc(item.fecha || "")+' | '+num(item.tokens_total).toLocaleString("es-CO")+' tokens"></span>';
         }).join("");
       }
+      function renderCybersecurity(){
+        var host = $("cybersecurityList");
+        if(!host) return;
+        var status = state.securityScan || {};
+        var report = status.report || {};
+        var summary = report.summary || {};
+        var findings = Array.isArray(report.findings) ? report.findings : [];
+        var items = [];
+        function add(st,title,detail){ items.push({st:st,title:title,detail:detail}); }
+        if(status.active){
+          add("info", "Analisis de seguridad en curso", "La lectura se actualizara cuando termine el analisis.");
+        } else if(status.status === "failed") {
+          add("warn", "Analisis de seguridad no disponible", status.error || "Revisa la configuracion del analizador VPS.");
+        } else if(report && report.scan_id){
+          var hardening = num(summary.hardening_index);
+          var level = String(summary.highest_severity || "").toLowerCase();
+          var severity = level === "critico" || level === "critical" ? "crit" : (level === "alto" || level === "high" || hardening < 70 ? "warn" : "ok");
+          add(severity, "Indice de endurecimiento: " + hardening + "/100", (summary.total_findings || 0) + " hallazgo(s) en el ultimo analisis.");
+          if(Array.isArray(summary.open_ports) && summary.open_ports.length){
+            add("info", "Puertos observados", summary.open_ports.join(", ") + ". Valida que cada uno sea necesario.");
+          }
+          findings.filter(function(f){ return /CRITICO|CRITICAL|ALTO|HIGH/i.test(String(f.severity || "")); }).slice(0,2).forEach(function(f){
+            add(/CRITICO|CRITICAL/i.test(String(f.severity || "")) ? "crit" : "warn", f.title || "Hallazgo de seguridad", f.recommendation || f.description || "Revisar en Seguridad VPS.");
+          });
+        } else {
+          add("info", "Sin analisis VPS reciente", "Ejecuta el analisis desde Seguridad antes de interpretar la postura.");
+        }
+        var errSummary = (state.errors && state.errors.summary) || {};
+        if(num(errSummary.critical)) add("crit", "Eventos criticos del monitor", num(errSummary.critical) + " evento(s) requieren investigacion.");
+        if(!items.length) add("ok", "Sin alertas detectadas", "No se reportaron senales en las fuentes consultadas.");
+        host.innerHTML = items.slice(0,5).map(function(item){ return '<div class="cmd-alert"><i class="cmd-dot '+item.st+'"></i><div><strong>'+esc(item.title)+'</strong><span>'+esc(item.detail)+'</span></div></div>'; }).join("");
+      }
       function renderWhatsAppUsage(){
         var data = (state.consumos && state.consumos.whatsapp && state.consumos.whatsapp.rango_mes && state.consumos.whatsapp.rango_mes.dias) || [];
         var bars = $("whatsappMonthBars");
@@ -582,7 +624,7 @@
           return '<span class="cmd-usage-bar sales" style="height:'+h+'px" title="'+esc(item.mes || "")+' | '+moneyCOP(item.total_cop)+' | '+num(item.cantidad).toLocaleString("es-CO")+' venta(s)"></span>';
         }).join("");
       }
-      function renderAll(){ renderFavorites(); renderTop(); renderCards(); renderRisks(); renderErrors(); renderSpark(); renderOpenAIUsage(); renderWhatsAppUsage(); renderLicenseSales(); }
+      function renderAll(){ renderFavorites(); renderTop(); renderCards(); renderRisks(); renderErrors(); renderCybersecurity(); renderSpark(); renderOpenAIUsage(); renderWhatsAppUsage(); renderLicenseSales(); }
       async function loadAll(){
         $("cmdRefresh").disabled = true;
         text("cmdLastUpdate","Actualizando...");
@@ -597,7 +639,8 @@
           getJSON("/super/api/empresas", []),
           getJSON("/super/api/empresas_estado?limit=1", null),
           getJSON("/super/api/consumos", null),
-          getJSON("/super/api/licencias/ventas_resumen?months=6", null)
+          getJSON("/super/api/licencias/ventas_resumen?months=6", null),
+          getJSON("/super/api/security/vps/status", null)
         ]);
         state.metric = results[0] || {};
         state.history = Array.isArray(results[1]) ? results[1] : [];
@@ -610,6 +653,7 @@
         state.empresasEstado = results[8] || {};
         state.consumos = results[9] || {};
         state.licenseSales = results[10] || {};
+        state.securityScan = (results[11] && results[11].status) || {};
         renderAll();
         $("cmdRefresh").disabled = false;
       }
