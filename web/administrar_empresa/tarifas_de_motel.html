@@ -303,6 +303,7 @@
         <p>Administra planes express, amanecidas, VIP y promociones por estacion, con horarios de validez, tolerancia, minutos incluidos, bloque extra, aplicacion automatica y simulacion de cobro para recepcion.</p>
       </div>
       <div class="motel-header-actions">
+        <a id="motelTutorialLink" class="btn secondary" href="/administrar_empresa/tutorial_tarifas_motel.html">Tutorial</a>
         <button id="reloadRates" class="btn secondary" type="button">Actualizar</button>
         <button id="quickExpress" class="btn" type="button">Express 3 horas</button>
         <button id="quickNight" class="btn secondary" type="button">Amanecida</button>
@@ -497,5 +498,12 @@
       </section>
     </section>
   </main>
+  <script>
+    (function () {
+      var id = new URLSearchParams(window.location.search).get('empresa_id');
+      var link = document.getElementById('motelTutorialLink');
+      if (id && link) link.href += '?empresa_id=' + encodeURIComponent(id);
+    })();
+  </script>
 </body>
 </html>

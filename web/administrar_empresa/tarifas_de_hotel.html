@@ -329,6 +329,7 @@
         <h1>Tarifas de hotel y motel</h1>
         <p>Configura precios por noche, day-use, planes express de motel, fracciones, tolerancias, topes y reglas de cobro por estacion. Esta pantalla centraliza la operacion tarifaria para recepcion, caja y reservas.</p>
         <div class="hotel-actions">
+          <a id="hotelTutorialLink" class="btn secondary" href="/administrar_empresa/tutorial_tarifas_hotel.html">Tutorial</a>
           <button class="btn" type="button" data-scroll-target="nightSection">Nueva tarifa por noche</button>
           <button class="btn secondary" type="button" data-scroll-target="motelSection">Plan motel</button>
           <button class="btn secondary" type="button" data-scroll-target="dayUseSection">Configurar day-use</button>
@@ -718,5 +719,12 @@
   </main>
 
   <script src="/js/tarifas_de_hotel.js"></script>
+  <script>
+    (function () {
+      var id = new URLSearchParams(window.location.search).get('empresa_id');
+      var link = document.getElementById('hotelTutorialLink');
+      if (id && link) link.href += '?empresa_id=' + encodeURIComponent(id);
+    })();
+  </script>
 </body>
 </html>

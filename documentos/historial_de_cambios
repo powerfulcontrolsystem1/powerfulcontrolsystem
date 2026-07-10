@@ -16517,6 +16517,12 @@ Archivos modificados:
 - web/administrar_empresa/administrar_clientes.html
 - web/administrar_empresa/administrar_productos.html
 - web/administrar_empresa/compras.html
+
+2026-07-10: Estaciones mixtas, tarifas y compensaciones operativas.
+- La configuracion de estaciones conserva por empresa el tipo operativo (`motel`, `hotel`, `restaurante`, `lavadero` o general), informacion visible y usuario responsable.
+- El tablero muestra operacion, detalle y responsable junto al estado, tarifa, duracion y total de cada estacion.
+- El cierre separa el total documental del cobro: la propina se cobra y audita como movimiento independiente, pero no aumenta la venta ni la factura; la comision de lavado permanece informativa y se registra para el trabajador.
+- Se agregan tutoriales empresariales de tarifas de motel y hotel.
 - web/administrar_empresa/facturacion_electronica.html
 - web/ayuda/ayuda.html
 - web/js/administrar_empresa.js

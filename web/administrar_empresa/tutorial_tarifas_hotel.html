@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Tutorial de tarifas de hotel</title>
+  <link rel="stylesheet" href="/estilos.css">
+  <style>
+    .tutorial-shell{max-width:1050px;margin:0 auto;padding:20px}.tutorial-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;flex-wrap:wrap}.tutorial-steps{display:grid;gap:10px;margin-top:14px}.tutorial-step{border:1px solid var(--border);background:var(--card);border-radius:8px;padding:14px}.tutorial-step h2{font-size:1.05rem;margin:0 0 6px}.tutorial-step p{margin:0;color:var(--muted);line-height:1.55}.tutorial-example{margin-top:14px;border-left:4px solid var(--accent);padding:12px 14px;background:var(--surface-soft)}
+  </style>
+</head>
+<body class="empresa-subpage">
+  <main class="tutorial-shell">
+    <header class="tutorial-head">
+      <div><h1>Tutorial de tarifas de hotel</h1><p class="form-help">Configura precios por ocupación, horarios y prioridad para cada habitación.</p></div>
+      <a id="backLink" class="btn secondary" href="/administrar_empresa/tarifas_de_hotel.html">Volver a tarifas</a>
+    </header>
+    <section class="tutorial-steps">
+      <article class="tutorial-step"><h2>1. Selecciona la habitación</h2><p>Relaciona la tarifa con la estación que representa la habitación. Evita usar una tarifa global cuando las capacidades o categorías sean diferentes.</p></article>
+      <article class="tutorial-step"><h2>2. Crea rangos de ocupación</h2><p>Usa una regla para 1 a 2 personas y otra para 3 a 4 personas. Los rangos no deben quedar superpuestos.</p></article>
+      <article class="tutorial-step"><h2>3. Define check-in y check-out</h2><p>Registra la hora contractual de entrada y salida. El motor usa estas horas para calcular noches y prorrateos fuera de la ventana.</p></article>
+      <article class="tutorial-step"><h2>4. Ordena prioridades</h2><p>Cuando varias tarifas puedan aplicar, la de menor número de prioridad se toma primero. Mantén activas únicamente las reglas vigentes.</p></article>
+      <article class="tutorial-step"><h2>5. Simula y valida</h2><p>Prueba pareja, ocupación máxima, entrada anticipada y salida tardía. Confirma el cálculo antes de usar la habitación en una venta real.</p></article>
+    </section>
+    <div class="tutorial-example"><strong>Ejemplo:</strong> pareja COP 100.000 por noche y hasta 4 personas COP 200.000, check-in 2:00 p. m. y check-out 1:00 p. m.</div>
+  </main>
+  <script>(function(){var id=new URLSearchParams(location.search).get('empresa_id');if(id)document.getElementById('backLink').href+='?empresa_id='+encodeURIComponent(id);}());</script>
+</body>
+</html>

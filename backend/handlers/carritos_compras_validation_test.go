@@ -44,3 +44,18 @@ func TestValidateCarritoItemPayloadRequiresNaturalPositiveQuantity(t *testing.T)
 		})
 	}
 }
+
+func TestCarritoDocumentoYCobroKeepsTipOutsideDocumentTotal(t *testing.T) {
+	documento, cobro := carritoDocumentoYCobro(100000, 10000, "COP")
+	if documento != 100000 {
+		t.Fatalf("document total must exclude tip, got %v", documento)
+	}
+	if cobro != 110000 {
+		t.Fatalf("collection total must include tip, got %v", cobro)
+	}
+
+	documento, cobro = carritoDocumentoYCobro(100000, -5000, "COP")
+	if documento != 100000 || cobro != 100000 {
+		t.Fatalf("negative tip must be ignored, got document=%v collection=%v", documento, cobro)
+	}
+}

@@ -1216,7 +1216,7 @@ func EmpresaCarritosCompraHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 						montoPropina = 0
 					}
 				}
-				totalDocumentoConPropina := roundMoneyCarritoForMoneda(totalEsperado+montoPropina, carrito.Moneda)
+				montoDocumento, totalCobroConPropina := carritoDocumentoYCobro(totalEsperado, montoPropina, carrito.Moneda)
 				totalEsperadoConPropina := roundMoneyCarritoForMoneda(saldoEsperado+montoPropina, carrito.Moneda)
 
 				montoCreditoVenta := carritoCreditoAmount(metodoPago, pagosMixtos, totalEsperadoConPropina, carrito.Moneda)
@@ -1339,9 +1339,9 @@ func EmpresaCarritosCompraHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 				} else if desactivadas > 0 {
 					log.Printf("[licencias] empresa_id=%d licencia desactivada por limite mensual despues de pago carrito=%d", empresaID, id)
 				}
-				montoEvento := totalPagadoCarrito
-				if montoEvento <= 0 {
-					montoEvento = totalDocumentoConPropina
+				montoCobrado := totalPagadoCarrito
+				if montoCobrado <= 0 {
+					montoCobrado = totalCobroConPropina
 				}
 
 				propinaRegistroID := int64(0)
@@ -1400,15 +1400,15 @@ func EmpresaCarritosCompraHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 						comisionResultado = result
 					}
 				}
-				registrarEventoContableVentaCarrito(dbEmp, r, carrito, "venta_pagada", montoEvento, map[string]interface{}{
+				registrarEventoContableVentaCarrito(dbEmp, r, carrito, "venta_pagada", montoDocumento, map[string]interface{}{
 					"action":                "pagar_estacion",
 					"rol_operacion":         rolOperacion,
 					"forma_pago":            metodoPago,
 					"metodo_pago":           metodoPago,
 					"referencia_pago":       referenciaPago,
-					"subtotal":              montoEvento,
-					"base_gravable":         montoEvento,
-					"total_neto":            montoEvento,
+					"subtotal":              montoDocumento,
+					"base_gravable":         montoDocumento,
+					"total_neto":            montoDocumento,
 					"pagos_mixtos":          pagosMixtosToEventPayload(pagosMixtos),
 					"cfg_metodo_efectivo":   permisosOperativos.MetodoPagoEfectivo,
 					"cfg_metodo_tc":         permisosOperativos.MetodoPagoTarjetaCredito,
@@ -1429,7 +1429,8 @@ func EmpresaCarritosCompraHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 					"total_pagado_carrito":  totalPagadoCarrito,
 					"total_esperado":        totalEsperado,
 					"total_esperado_final":  totalEsperadoConPropina,
-					"total_documento_final": totalDocumentoConPropina,
+					"total_documento_final": montoDocumento,
+					"total_cobrado_final":   montoCobrado,
 					"cierre_caja_id":        cierreCaja.ID,
 					"caja_codigo":           cierreCaja.CajaCodigo,
 					"caja_turno":            cierreCaja.Turno,
@@ -1475,7 +1476,7 @@ func EmpresaCarritosCompraHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 					MetodoPago:          metodoPago,
 					Moneda:              carritoPagado.Moneda,
 					MontoTotal:          carritoPagado.Total,
-					MontoPagado:         montoEvento,
+					MontoPagado:         montoCobrado,
 					DevolucionTotal:     devolucionTotal,
 					ActivadoEn:          carritoPagado.ActivadoEn,
 					PagadoEn:            carritoPagado.PagadoEn,
@@ -1495,7 +1496,7 @@ func EmpresaCarritosCompraHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 					}
 				}
 
-				documentoVenta, errDocumentoVenta := registrarDocumentoVentaDesdeCarritoPagado(dbEmp, dbSuper, carritoPagado, totalDocumentoConPropina, usuarioOperacion, modoDocumentoVenta)
+				documentoVenta, errDocumentoVenta := registrarDocumentoVentaDesdeCarritoPagado(dbEmp, dbSuper, carritoPagado, montoDocumento, usuarioOperacion, modoDocumentoVenta)
 				if errDocumentoVenta != nil {
 					log.Printf("[carritos] documento_venta empresa_id=%d carrito_id=%d error: %v", empresaID, id, errDocumentoVenta)
 				}
@@ -1517,17 +1518,18 @@ func EmpresaCarritosCompraHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 				dispatchControlElectricoEstacionAsync(dbEmp, carritoPagado, false, usuarioOperacion, "pagar_estacion")
 
 				writeJSON(w, http.StatusOK, map[string]interface{}{
-					"ok":                          true,
-					"estado":                      "inactivo",
-					"estado_carrito":              "cerrado",
-					"estado_venta":                "venta_pagada",
-					"tarifa_por_dia":              tarifasTiempo.TarifaPorDia,
-					"tarifa_por_minutos":          tarifasTiempo.TarifaPorMinutos,
-					"total_esperado":              totalEsperado,
-					"abonos_total":                abonosAplicados,
-					"saldo_esperado":              saldoEsperado,
-					"total_esperado_con_propina":  totalEsperadoConPropina,
-					"total_documento_con_propina": totalDocumentoConPropina,
+					"ok":                         true,
+					"estado":                     "inactivo",
+					"estado_carrito":             "cerrado",
+					"estado_venta":               "venta_pagada",
+					"tarifa_por_dia":             tarifasTiempo.TarifaPorDia,
+					"tarifa_por_minutos":         tarifasTiempo.TarifaPorMinutos,
+					"total_esperado":             totalEsperado,
+					"abonos_total":               abonosAplicados,
+					"saldo_esperado":             saldoEsperado,
+					"total_esperado_con_propina": totalEsperadoConPropina,
+					"total_documento":            montoDocumento,
+					"total_cobro_con_propina":    totalCobroConPropina,
 					"propina": map[string]interface{}{
 						"aplicada":          propinaAplicada,
 						"habilitada":        propinaHabilitada,
@@ -3204,6 +3206,18 @@ func roundMoneyCarritoForMoneda(v float64, moneda string) float64 {
 		return math.Round(v)
 	}
 	return roundMoneyCarritoHandler(v)
+}
+
+func carritoDocumentoYCobro(totalVenta, propina float64, moneda string) (float64, float64) {
+	totalDocumento := roundMoneyCarritoForMoneda(totalVenta, moneda)
+	if totalDocumento < 0 {
+		totalDocumento = 0
+	}
+	propina = roundMoneyCarritoForMoneda(propina, moneda)
+	if propina < 0 {
+		propina = 0
+	}
+	return totalDocumento, roundMoneyCarritoForMoneda(totalDocumento+propina, moneda)
 }
 
 func carritoMetodoPagoRequiereReferencia(metodoPago string) bool {

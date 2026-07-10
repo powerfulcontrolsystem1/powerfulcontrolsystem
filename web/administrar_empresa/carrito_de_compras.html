@@ -5750,6 +5750,33 @@
       }).join('') + '</tr>';
     }
 
+    function operationalCompensationPrintRows(pay, moneda) {
+      const rows = [];
+      const propina = pay && pay.propinaResultado && typeof pay.propinaResultado === 'object' ? pay.propinaResultado : null;
+      const comision = pay && pay.comisionResultado && typeof pay.comisionResultado === 'object' ? pay.comisionResultado : null;
+      if (propina && Number(propina.monto || 0) > 0) {
+        rows.push({
+          label: 'Propina voluntaria (no incluida en el total del documento)',
+          value: formatAmount(Number(propina.monto || 0), moneda)
+        });
+      }
+      if (comision && Number(comision.porcentaje_comision || 0) > 0) {
+        rows.push({
+          label: 'Comisión de lavado (informativa, no cobrada al cliente)',
+          value: Number(comision.porcentaje_comision || 0).toFixed(2) + '% - ' + normalize(comision.usuario_lavador || 'lavador asignado')
+        });
+      }
+      return rows;
+    }
+
+    function operationalCompensationFallbackHTML(pay, moneda) {
+      const rows = operationalCompensationPrintRows(pay, moneda);
+      if (!rows.length) return '';
+      return '<div class="receipt-operational-info">' + rows.map(function(row) {
+        return '<p><strong>' + escapeHtml(row.label) + ':</strong> ' + escapeHtml(row.value) + '</p>';
+      }).join('') + '</div>';
+    }
+
     async function printSaleReceiptIfEnabled(carrito, pay, items, printTarget, documentoVenta) {
       const cfg = state.empresaAvanzadaConfig && typeof state.empresaAvanzadaConfig === 'object' ? state.empresaAvanzadaConfig : {};
       if (!shouldPrintCartReceipt(cfg)) return false;
@@ -5767,6 +5794,7 @@
       const invoiceQR = await buildElectronicInvoiceQRForPrint(documentoVenta, printFormat);
       const taxDeduction = shouldShowTaxDeductionOnInvoice(cfg) ? buildTaxDeductionSummary(items) : null;
       const taxSummaryRows = taxDeductionSummaryRows(taxDeduction, moneda);
+      const operationalRows = operationalCompensationPrintRows(pay, moneda);
       const creditSaleInfo = buildCreditSalePrintInfo(pay, moneda);
       const cajeroNombre = receiptCashierName(pay);
       const customFieldMeta = receiptCustomFieldMeta(printItems);
@@ -5804,7 +5832,7 @@
           totalLabel: 'Total a pagar',
           totalValue: formatAmount(pay.totalPagarFinal, moneda),
           totalWords: receiptItemEnabled(printItems, 'total_en_letras') && window.PCSPrint && typeof window.PCSPrint.amountToWords === 'function' ? window.PCSPrint.amountToWords(Number(pay.totalPagarFinal || 0), moneda) : '',
-          summaryRows: taxSummaryRows,
+          summaryRows: taxSummaryRows.concat(operationalRows),
           footer: markOfflinePending ? 'Documento provisional emitido sin internet. Se sincroniza y valida al recuperar conexion.' : 'Gracias por su compra.',
           qr: invoiceQR,
           signatures: false
@@ -5835,6 +5863,7 @@
         '<hr>' +
         '<table><thead>' + fiscalInvoiceFallbackHeaderHTML() + '</thead><tbody>' + rowsHtml + '</tbody></table>' +
         '<p class="tot">Total a pagar: ' + escapeHtml(formatAmount(pay.totalPagarFinal, moneda)) + '</p>' +
+        operationalCompensationFallbackHTML(pay, moneda) +
         (receiptItemEnabled(printItems, 'total_en_letras') && window.PCSPrint && typeof window.PCSPrint.amountToWords === 'function' ? '<p><strong>Total en letras:</strong> ' + escapeHtml(window.PCSPrint.amountToWords(Number(pay.totalPagarFinal || 0), moneda)) + '</p>' : '') +
         taxDeductionFallbackHTML(taxDeduction, moneda) +
         (receiptItemEnabled(printItems, 'metodo_pago') ? '<p>Método: ' + escapeHtml(normalize(pay.paymentLabel || pay.paymentMethod || '')) + '</p>' : '') +
@@ -5875,6 +5904,7 @@
       const notas = normalize(cfg.notas_legales);
       const taxDeduction = shouldShowTaxDeductionOnInvoice(cfg) ? buildTaxDeductionSummary(items) : null;
       const taxSummaryRows = taxDeductionSummaryRows(taxDeduction, moneda);
+      const operationalRows = operationalCompensationPrintRows(pay, moneda);
       const rowsHtml = fiscalInvoiceFallbackRowsHTML(items, moneda);
       const now = new Date();
       const invoiceQR = await buildElectronicInvoiceQRForPrint(doc, formato);
@@ -5902,7 +5932,7 @@
           totalLabel: fieldEnabled('total') ? 'Total documento' : '',
           totalValue: fieldEnabled('total') ? formatAmount(Number(doc.monto_total || pay.totalPagarFinal || 0), moneda) : '',
           totalWords: fieldEnabled('total_en_letras') && window.PCSPrint && typeof window.PCSPrint.amountToWords === 'function' ? window.PCSPrint.amountToWords(Number(doc.monto_total || pay.totalPagarFinal || 0), moneda) : '',
-          summaryRows: taxSummaryRows,
+          summaryRows: taxSummaryRows.concat(operationalRows),
           note: [notas, pie].filter(Boolean).join('\n'),
           footer: normalize(doc.codigo_validacion) ? ('Validacion: ' + normalize(doc.codigo_validacion)) : '',
           qr: invoiceQR,
@@ -5933,6 +5963,7 @@
         '<hr>' +
         '<table><thead>' + fiscalInvoiceFallbackHeaderHTML() + '</thead><tbody>' + rowsHtml + '</tbody></table>' +
         '<p class="tot">Total documento: ' + escapeHtml(formatAmount(Number(doc.monto_total || pay.totalPagarFinal || 0), moneda)) + '</p>' +
+        operationalCompensationFallbackHTML(pay, moneda) +
         (fieldEnabled('total_en_letras') && window.PCSPrint && typeof window.PCSPrint.amountToWords === 'function' ? '<p><strong>Total en letras:</strong> ' + escapeHtml(window.PCSPrint.amountToWords(Number(doc.monto_total || pay.totalPagarFinal || 0), moneda)) + '</p>' : '') +
         taxDeductionFallbackHTML(taxDeduction, moneda) +
         (notas ? ('<p><strong>Notas legales:</strong> ' + escapeHtml(notas) + '</p>') : '') +
@@ -7172,6 +7203,8 @@
         const facturaElectronica = payResp && payResp.factura_electronica && typeof payResp.factura_electronica === 'object' ? payResp.factura_electronica : null;
         const creditoVenta = payResp && payResp.credito_venta && typeof payResp.credito_venta === 'object' ? payResp.credito_venta : null;
         pay.creditoVenta = creditoVenta;
+        pay.propinaResultado = payResp && payResp.propina && typeof payResp.propina === 'object' ? payResp.propina : null;
+        pay.comisionResultado = payResp && payResp.comision && typeof payResp.comision === 'object' ? payResp.comision : null;
         var successMsg = 'Pago registrado. El carrito quedó inactivo.';
         if (payResp && payResp.propina && Number(payResp.propina.monto || 0) > 0) {
           successMsg += ' Propina registrada: ' + formatAmount(payResp.propina.monto, selected.moneda) + '.';

@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Tutorial de tarifas de motel</title>
+  <link rel="stylesheet" href="/estilos.css">
+  <style>
+    .tutorial-shell{max-width:1050px;margin:0 auto;padding:20px}.tutorial-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;flex-wrap:wrap}.tutorial-steps{display:grid;gap:10px;margin-top:14px}.tutorial-step{border:1px solid var(--border);background:var(--card);border-radius:8px;padding:14px}.tutorial-step h2{font-size:1.05rem;margin:0 0 6px}.tutorial-step p{margin:0;color:var(--muted);line-height:1.55}.tutorial-example{margin-top:14px;border-left:4px solid var(--accent);padding:12px 14px;background:var(--surface-soft)}
+  </style>
+</head>
+<body class="empresa-subpage">
+  <main class="tutorial-shell">
+    <header class="tutorial-head">
+      <div><h1>Tutorial de tarifas de motel</h1><p class="form-help">Configura planes por horario y día sin mezclar el cobro del alojamiento con consumos adicionales.</p></div>
+      <a id="backLink" class="btn secondary" href="/administrar_empresa/tarifas_de_motel.html">Volver a tarifas</a>
+    </header>
+    <section class="tutorial-steps">
+      <article class="tutorial-step"><h2>1. Identifica la habitación</h2><p>Selecciona la estación correcta y confirma que su nombre y código coincidan con la habitación mostrada en el tablero.</p></article>
+      <article class="tutorial-step"><h2>2. Define la vigencia</h2><p>Crea reglas separadas para lunes a viernes y para sábado a domingo. La prioridad menor se evalúa primero cuando dos reglas coinciden.</p></article>
+      <article class="tutorial-step"><h2>3. Configura el tiempo base</h2><p>Indica los minutos incluidos, el valor base, el bloque adicional y su valor. Activa cobro por fracción cuando una parte del bloque extra deba cobrarse completa.</p></article>
+      <article class="tutorial-step"><h2>4. Simula antes de operar</h2><p>Prueba exactamente el tiempo incluido, un minuto adicional y varias horas extra. El resultado debe mostrar por separado base, bloques extra y total.</p></article>
+      <article class="tutorial-step"><h2>5. Verifica el tablero y el cierre</h2><p>Activa la habitación desde Estaciones. La tarjeta debe mostrar inicio, fin estimado, tarifa, extras y total; el cierre debe conservar trazabilidad por caja y usuario.</p></article>
+    </section>
+    <div class="tutorial-example"><strong>Ejemplo:</strong> 2 horas por COP 20.000 de lunes a viernes, bloque extra de 60 minutos por COP 10.000; fin de semana COP 30.000 y extra COP 15.000.</div>
+  </main>
+  <script>(function(){var id=new URLSearchParams(location.search).get('empresa_id');if(id)document.getElementById('backLink').href+='?empresa_id='+encodeURIComponent(id);}());</script>
+</body>
+</html>

@@ -257,6 +257,22 @@
       return visible;
     }
 
+    function normalizeStationOperationType(raw) {
+      const value = String(raw || '').trim().toLowerCase();
+      return ['motel', 'hotel', 'restaurante', 'lavadero', 'general'].indexOf(value) >= 0 ? value : 'general';
+    }
+
+    function stationOperationLabel(raw) {
+      const labels = {
+        motel: 'Motel',
+        hotel: 'Hotel',
+        restaurante: 'Restaurante',
+        lavadero: 'Lavadero',
+        general: 'Operación general'
+      };
+      return labels[normalizeStationOperationType(raw)] || labels.general;
+    }
+
     function normalizeConfig(cfg) {
       cfg = cfg && typeof cfg === 'object' ? cfg : {};
       const labels = normalizeStationLabels(cfg);
@@ -325,6 +341,10 @@
           mostrar_fecha_hora_inicio: current.mostrar_fecha_hora_inicio === undefined ? true : toBool(current.mostrar_fecha_hora_inicio),
           mostrar_fecha_hora_fin_tarifa: current.mostrar_fecha_hora_fin_tarifa === undefined ? true : toBool(current.mostrar_fecha_hora_fin_tarifa),
           mostrar_total: current.mostrar_total === undefined ? true : toBool(current.mostrar_total),
+          tipo_operacion: normalizeStationOperationType(current.tipo_operacion || current.operacion_tipo),
+          descripcion: String(current.descripcion || current.informacion || '').trim(),
+          usuario_asignado: String(current.usuario_asignado || current.responsable || '').trim(),
+          usuario_asignado_id: Math.max(0, Math.trunc(Number(current.usuario_asignado_id || current.responsable_id || 0) || 0)),
           tipo_estacion: String(current.tipo_estacion || current.tipo || '').trim().toLowerCase() === 'camara' ? 'camara' : 'normal',
           camara_id: Math.max(0, Math.trunc(Number(current.camara_id || current.camaraId || 0) || 0)),
           carrito: normalizeStationCarritoConfig(current.carrito || current.carrito_ui)
@@ -1277,6 +1297,9 @@
 
     const estado = isDirty ? 'Sucia' : (meta.activo ? (meta.alerta ? 'Alerta' : 'Ocupada') : 'Disponible');
     setStationMetaRow(card, 'estado', estado, true);
+    setStationMetaRow(card, 'operation', stationOperationLabel(stationCfg && stationCfg.tipo_operacion), true);
+    setStationMetaRow(card, 'info', stationCfg && stationCfg.descripcion, !!(stationCfg && stationCfg.descripcion));
+    setStationMetaRow(card, 'assigned', stationCfg && stationCfg.usuario_asignado, !!(stationCfg && stationCfg.usuario_asignado));
     setStationMetaRow(card, 'cliente', meta.cliente, meta.cliente);
     setStationMetaRow(card, 'tarifa', stripStationRowPrefix(meta.tarifaResumen, 'Tarifa:'), meta.tarifaResumen);
     setStationMetaRow(card, 'duration', meta.duracionActiva, meta.duracionActiva);
@@ -2286,6 +2309,9 @@
 
           const stationDataHtml = '<div class="station-data">' +
             stationMetaRowHtml('estado', 'Estado', estado, true) +
+            stationMetaRowHtml('operation', 'Operación', stationOperationLabel(est.tipo_operacion), true) +
+            stationMetaRowHtml('info', 'Información', est.descripcion || '', !!est.descripcion) +
+            stationMetaRowHtml('assigned', 'Asignado', est.usuario_asignado || '', !!est.usuario_asignado) +
             stationMetaRowHtml('cliente', 'Cliente', meta.cliente, !!meta.cliente) +
             stationMetaRowHtml('tarifa', 'Tarifa', stripStationRowPrefix(meta.tarifaResumen, 'Tarifa:'), !!meta.tarifaResumen) +
             stationMetaRowHtml('duration', 'Duracion', meta.duracionActiva, !!meta.duracionActiva) +

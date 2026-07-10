@@ -348,13 +348,17 @@
                 <br>
                 <label><input id="masterMostrarTotal" type="checkbox" title="Marcar/desmarcar mostrar total para todas"></label>
               </th>
-              <th>Tipo</th>
+              <th>Operación</th>
+              <th>Información visible</th>
+              <th>Usuario asignado</th>
+              <th>Tipo técnico</th>
               <th>Camara</th>
               <th>Carrito unificado</th>
             </tr>
           </thead>
           <tbody></tbody>
         </table>
+        <datalist id="estacionesUsuariosList"></datalist>
       </div>
     </section>
 
@@ -1297,6 +1301,13 @@
       };
     }
 
+    var stationUsersCatalog = [];
+
+    function normalizeStationOperationType(raw) {
+      var value = String(raw || '').trim().toLowerCase();
+      return ['motel', 'hotel', 'restaurante', 'lavadero', 'general'].indexOf(value) >= 0 ? value : 'general';
+    }
+
     function normalizeConfig(cfg) {
       var stationLabels = normalizeStationLabels(cfg || {});
       var cantidad = Math.max(1, Math.min(500, Number(cfg && cfg.cantidad ? cfg.cantidad : 1)));
@@ -1312,6 +1323,10 @@
           mostrar_fecha_hora_inicio: current.mostrar_fecha_hora_inicio === undefined ? true : toBool(current.mostrar_fecha_hora_inicio),
           mostrar_fecha_hora_fin_tarifa: current.mostrar_fecha_hora_fin_tarifa === undefined ? true : toBool(current.mostrar_fecha_hora_fin_tarifa),
           mostrar_total: current.mostrar_total === undefined ? true : toBool(current.mostrar_total),
+          tipo_operacion: normalizeStationOperationType(current.tipo_operacion || current.operacion_tipo),
+          descripcion: String(current.descripcion || current.informacion || '').trim(),
+          usuario_asignado: String(current.usuario_asignado || current.responsable || '').trim(),
+          usuario_asignado_id: Math.max(0, Math.trunc(Number(current.usuario_asignado_id || current.responsable_id || 0) || 0)),
           tipo_estacion: String(current.tipo_estacion || current.tipo || '').trim().toLowerCase() === 'camara' ? 'camara' : 'normal',
           camara_id: Math.max(0, Math.trunc(Number(current.camara_id || current.camaraId || 0) || 0)),
           carrito: normalizeStationCarritoConfig(current.carrito || current.carrito_ui)
@@ -1948,10 +1963,34 @@
       return html;
     }
 
+    async function loadStationUsersCatalog() {
+      stationUsersCatalog = [];
+      var list = document.getElementById('estacionesUsuariosList');
+      if (list) list.innerHTML = '';
+      if (!empresaId) return;
+      try {
+        var rows = await requestJSON('/api/empresa/usuarios?empresa_id=' + encodeURIComponent(empresaId));
+        stationUsersCatalog = Array.isArray(rows) ? rows.filter(function (user) {
+          return user && String(user.estado || 'activo').toLowerCase() === 'activo';
+        }) : [];
+        if (list) {
+          list.innerHTML = stationUsersCatalog.map(function (user) {
+            var email = String(user.email || '').trim();
+            var name = String(user.name || user.nombre || '').trim();
+            var label = [name, String(user.rol || '').trim()].filter(Boolean).join(' | ');
+            return '<option value="' + sanitize(email || name) + '">' + sanitize(label) + '</option>';
+          }).join('');
+        }
+      } catch (err) {
+        stationUsersCatalog = [];
+        console.warn('No se pudo cargar el personal asignable a estaciones:', err);
+      }
+    }
+
     function renderRows(cfg) {
       var tbody = document.querySelector('#estacionesTable tbody');
       if (!cfg || !cfg.estaciones || !cfg.estaciones.length) {
-        tbody.innerHTML = '<tr><td colspan="9">No hay estaciones configuradas.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="12">No hay estaciones configuradas.</td></tr>';
         applyStationLabelsToDOM(cfg, tbody);
         updateMasterCheckboxes();
         return;
@@ -1966,6 +2005,15 @@
             '<td><label><input type="checkbox" data-mostrar-inicio-idx="' + idx + '" ' + (est.mostrar_fecha_hora_inicio !== false ? 'checked' : '') + '> Mostrar inicio</label></td>' +
             '<td><label><input type="checkbox" data-mostrar-fin-tarifa-idx="' + idx + '" ' + (est.mostrar_fecha_hora_fin_tarifa !== false ? 'checked' : '') + '> Mostrar fin</label></td>' +
           '<td><label><input type="checkbox" data-mostrar-total-idx="' + idx + '" ' + (est.mostrar_total !== false ? 'checked' : '') + '> Mostrar total</label></td>' +
+          '<td><select class="form-input" data-operacion-idx="' + idx + '">' +
+            '<option value="general"' + (est.tipo_operacion === 'general' ? ' selected' : '') + '>General</option>' +
+            '<option value="motel"' + (est.tipo_operacion === 'motel' ? ' selected' : '') + '>Motel</option>' +
+            '<option value="hotel"' + (est.tipo_operacion === 'hotel' ? ' selected' : '') + '>Hotel</option>' +
+            '<option value="restaurante"' + (est.tipo_operacion === 'restaurante' ? ' selected' : '') + '>Restaurante</option>' +
+            '<option value="lavadero"' + (est.tipo_operacion === 'lavadero' ? ' selected' : '') + '>Lavadero</option>' +
+          '</select></td>' +
+          '<td><input class="form-input" data-descripcion-idx="' + idx + '" value="' + sanitize(est.descripcion || '') + '" placeholder="Tarifa, capacidad o uso"></td>' +
+          '<td><input class="form-input" data-usuario-idx="' + idx + '" value="' + sanitize(est.usuario_asignado || '') + '" list="estacionesUsuariosList" placeholder="Nombre o correo"></td>' +
           '<td><select class="form-input" data-tipo-estacion-idx="' + idx + '"><option value="normal"' + (est.tipo_estacion !== 'camara' ? ' selected' : '') + '>Normal</option><option value="camara"' + (est.tipo_estacion === 'camara' ? ' selected' : '') + '>Camara</option></select></td>' +
           '<td><select class="form-input" data-camara-id-idx="' + idx + '">' + buildCamaraOptions(est.camara_id) + '</select></td>' +
           '<td><button type="button" class="btn secondary" data-config-station="' + Number(est.id || 0) + '">Editar checks</button></td>' +
@@ -1999,6 +2047,9 @@
       var inicioInputs = document.querySelectorAll('#estacionesTable tbody input[data-mostrar-inicio-idx]');
       var finInputs = document.querySelectorAll('#estacionesTable tbody input[data-mostrar-fin-tarifa-idx]');
       var totalInputs = document.querySelectorAll('#estacionesTable tbody input[data-mostrar-total-idx]');
+      var operacionInputs = document.querySelectorAll('#estacionesTable tbody select[data-operacion-idx]');
+      var descripcionInputs = document.querySelectorAll('#estacionesTable tbody input[data-descripcion-idx]');
+      var usuarioInputs = document.querySelectorAll('#estacionesTable tbody input[data-usuario-idx]');
       var tipoInputs = document.querySelectorAll('#estacionesTable tbody select[data-tipo-estacion-idx]');
       var camaraInputs = document.querySelectorAll('#estacionesTable tbody select[data-camara-id-idx]');
 
@@ -2006,17 +2057,36 @@
         var input = Array.prototype.find.call(inputs, function (x) { return Number(x.dataset.idx) === idx; });
 		var simpleInput = Array.prototype.find.call(simpleInputs, function (x) { return Number(x.dataset.globalIdx) === idx; });
 		var inicioInput = Array.prototype.find.call(inicioInputs, function (x) { return Number(x.dataset.mostrarInicioIdx) === idx; });
-		var finInput = Array.prototype.find.call(finInputs, function (x) { return Number(x.dataset.mostrarFinTarifaIdx) === idx; });
+        var finInput = Array.prototype.find.call(finInputs, function (x) { return Number(x.dataset.mostrarFinTarifaIdx) === idx; });
         var totalInput = Array.prototype.find.call(totalInputs, function (x) { return Number(x.dataset.mostrarTotalIdx) === idx; });
+        var operacionInput = Array.prototype.find.call(operacionInputs, function (x) { return Number(x.dataset.operacionIdx) === idx; });
+        var descripcionInput = Array.prototype.find.call(descripcionInputs, function (x) { return Number(x.dataset.descripcionIdx) === idx; });
+        var usuarioInput = Array.prototype.find.call(usuarioInputs, function (x) { return Number(x.dataset.usuarioIdx) === idx; });
         var tipoInput = Array.prototype.find.call(tipoInputs, function (x) { return Number(x.dataset.tipoEstacionIdx) === idx; });
         var camaraInput = Array.prototype.find.call(camaraInputs, function (x) { return Number(x.dataset.camaraIdIdx) === idx; });
         var nombre = input ? String(input.value || '').trim() : '';
+        var usuarioAsignado = usuarioInput ? String(usuarioInput.value || '').trim() : '';
+        var usuarioAsignadoID = 0;
+        stationUsersCatalog.some(function (user) {
+          var email = String(user.email || '').trim();
+          var name = String(user.name || user.nombre || '').trim();
+          var candidate = usuarioAsignado.toLowerCase();
+          if (candidate && [email.toLowerCase(), name.toLowerCase(), (name + ' - ' + email).toLowerCase()].indexOf(candidate) >= 0) {
+            usuarioAsignadoID = Number(user.id || 0);
+            return true;
+          }
+          return false;
+        });
         return {
           id: est.id,
           nombre: nombre || stationDefaultName(est.id, current),
           mostrar_fecha_hora_inicio: inicioInput ? !!inicioInput.checked : (est.mostrar_fecha_hora_inicio !== false),
           mostrar_fecha_hora_fin_tarifa: finInput ? !!finInput.checked : (est.mostrar_fecha_hora_fin_tarifa !== false),
           mostrar_total: totalInput ? !!totalInput.checked : (est.mostrar_total !== false),
+          tipo_operacion: normalizeStationOperationType(operacionInput ? operacionInput.value : est.tipo_operacion),
+          descripcion: descripcionInput ? String(descripcionInput.value || '').trim() : String(est.descripcion || '').trim(),
+          usuario_asignado: usuarioAsignado,
+          usuario_asignado_id: usuarioAsignadoID || Number(est.usuario_asignado_id || 0),
           tipo_estacion: tipoInput && String(tipoInput.value || '').trim().toLowerCase() === 'camara' ? 'camara' : 'normal',
           camara_id: Math.max(0, Math.trunc(Number(camaraInput && camaraInput.value || 0) || 0)),
           carrito: normalizeStationCarritoConfig({
@@ -2703,7 +2773,7 @@
 
       wireEvents();
       initTarifasPorMinutosFrame();
-      await Promise.all([cargarEmpresa(), loadEstadoCarritoConfig(), loadCamarasCatalog(), loadBodegasCatalog()]);
+      await Promise.all([cargarEmpresa(), loadEstadoCarritoConfig(), loadCamarasCatalog(), loadBodegasCatalog(), loadStationUsersCatalog()]);
 
       var cfg = await getConfigFromServer();
       if (!cfg) {

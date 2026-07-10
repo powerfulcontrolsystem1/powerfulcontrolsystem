@@ -4409,5 +4409,10 @@ de productos/SKUs, caja, impuestos, cliente y reglas de facturacion.
 2026-07-10: Registro publico de administrador
 - El formulario de alta preselecciona el pais con la mejor senal disponible (proxy de geolocalizacion o navegador) y presenta ciudades dependientes para paises de Latinoamerica. La ciudad libre se habilita unicamente al elegir `Otra ciudad o municipio`.
 
+2026-07-10: Estaciones para operacion mixta
+- Una empresa puede identificar estaciones como motel, hotel, restaurante, lavadero u operacion general y asignarles descripcion y responsable.
+- Las tarifas por minutos permiten reglas distintas por dia de semana; las tarifas diarias permiten rangos de personas y horarios de check-in/check-out.
+- Propinas por usuario o universales y comisiones por servicio permanecen auditadas por empresa. La propina no forma parte del total documental ni de la venta contable y se muestra separada en la impresion.
+
 2026-07-10: Compras y captura IA
 - El boton de Compras se presenta como `Carga automática de factura de compra`; la extraccion no crea una compra de forma silenciosa: deja proveedor, referencia, monto, moneda y periodo precargados para que el usuario revise y confirme el guardado.

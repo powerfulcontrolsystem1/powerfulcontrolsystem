@@ -11733,3 +11733,7 @@ backend/handlers/user_config.go - Controlador que expone /api/user/configuracion
 - `backend/handlers/cobranza_test.go`: valida sustitucion segura de plantillas y horario de automatizacion.
 - `backend/db/cobranza.go`: agrega configuracion e historial idempotente de recordatorios por empresa.
 - `backend/handlers/cobranza.go`: envio multicanal, ejecucion manual/dry-run y worker opt-in.
+2026-07-10 - Tutoriales de tarifas y estaciones mixtas
+- `web/administrar_empresa/tutorial_tarifas_motel.html`: guia para reglas por dias, tiempo base, bloques extra y simulacion de moteles.
+- `web/administrar_empresa/tutorial_tarifas_hotel.html`: guia para tarifas por ocupacion, check-in/check-out, prioridad y simulacion hotelera.
+- `web/administrar_empresa/configuracion_de_estaciones.html`: administra tipo operativo, informacion visible y usuario asignado dentro de `estaciones_config`.
