@@ -11,10 +11,12 @@ import (
 )
 
 type rustDeskConfigPayload struct {
-	Enabled bool   `json:"enabled"`
-	Host    string `json:"host"`
-	User    string `json:"user"`
-	KeyPath string `json:"key_path"`
+	Enabled    bool   `json:"enabled"`
+	Host       string `json:"host"`
+	User       string `json:"user"`
+	KeyPath    string `json:"key_path"`
+	ServerHost string `json:"server_host"`
+	ServerKey  string `json:"server_key"`
 }
 
 // RustDeskConfigHandler gestiona la configuración del control RustDesk en VPS por SSH (GET/PUT).
@@ -29,6 +31,8 @@ func RustDeskConfigHandler(dbSuper *sql.DB) http.HandlerFunc {
 			host, _, _, _, _ := dbpkg.GetConfigEntry(dbSuper, "rustdesk.vps_ssh_host")
 			user, _, _, _, _ := dbpkg.GetConfigEntry(dbSuper, "rustdesk.vps_ssh_user")
 			keyPath, _, _, _, _ := dbpkg.GetConfigEntry(dbSuper, "rustdesk.vps_ssh_key_path")
+			serverHost, _, _, _, _ := dbpkg.GetConfigEntry(dbSuper, "rustdesk.server_host")
+			serverKey, _, _, _, _ := dbpkg.GetConfigEntry(dbSuper, "rustdesk.server_key")
 
 			enabled := false
 			switch strings.ToLower(strings.TrimSpace(enabledRaw)) {
@@ -39,7 +43,7 @@ func RustDeskConfigHandler(dbSuper *sql.DB) http.HandlerFunc {
 				Enabled: enabled,
 				Host:    strings.TrimSpace(host),
 				User:    strings.TrimSpace(user),
-				KeyPath: strings.TrimSpace(keyPath),
+				KeyPath: strings.TrimSpace(keyPath), ServerHost: strings.TrimSpace(serverHost), ServerKey: strings.TrimSpace(serverKey),
 			})
 			return
 
@@ -53,6 +57,8 @@ func RustDeskConfigHandler(dbSuper *sql.DB) http.HandlerFunc {
 			payload.Host = strings.TrimSpace(payload.Host)
 			payload.User = strings.TrimSpace(payload.User)
 			payload.KeyPath = strings.TrimSpace(payload.KeyPath)
+			payload.ServerHost = strings.TrimSpace(payload.ServerHost)
+			payload.ServerKey = strings.TrimSpace(payload.ServerKey)
 
 			if payload.Enabled {
 				if payload.Host == "" || payload.User == "" {
@@ -81,6 +87,14 @@ func RustDeskConfigHandler(dbSuper *sql.DB) http.HandlerFunc {
 				http.Error(w, "No se pudo guardar rustdesk.vps_ssh_key_path: "+err.Error(), http.StatusInternalServerError)
 				return
 			}
+			if err := dbpkg.SetConfigValue(dbSuper, "rustdesk.server_host", payload.ServerHost, false); err != nil {
+				http.Error(w, "No se pudo guardar rustdesk.server_host", http.StatusInternalServerError)
+				return
+			}
+			if err := dbpkg.SetConfigValue(dbSuper, "rustdesk.server_key", payload.ServerKey, false); err != nil {
+				http.Error(w, "No se pudo guardar rustdesk.server_key", http.StatusInternalServerError)
+				return
+			}
 
 			writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true})
 			return
@@ -91,4 +105,3 @@ func RustDeskConfigHandler(dbSuper *sql.DB) http.HandlerFunc {
 		}
 	}
 }
-

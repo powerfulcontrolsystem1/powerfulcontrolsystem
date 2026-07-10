@@ -28,3 +28,22 @@ func TestPreferServiceStatus(t *testing.T) {
 		t.Fatalf("preferServiceStatus() = %q, want unavailable", got)
 	}
 }
+
+func TestRustDeskOverallStatus(t *testing.T) {
+	tests := []struct {
+		hbbs string
+		hbbr string
+		want string
+	}{
+		{"active", "active", "active"},
+		{"active", "inactive", "degraded"},
+		{"inactive", "inactive", "inactive"},
+		{"error", "active", "error"},
+		{"unavailable", "unavailable", "unavailable"},
+	}
+	for _, test := range tests {
+		if got := rustDeskOverallStatus(test.hbbs, test.hbbr); got != test.want {
+			t.Errorf("rustDeskOverallStatus(%q, %q) = %q, want %q", test.hbbs, test.hbbr, got, test.want)
+		}
+	}
+}

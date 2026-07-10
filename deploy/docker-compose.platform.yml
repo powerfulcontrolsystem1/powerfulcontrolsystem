@@ -409,11 +409,14 @@ services:
     restart: unless-stopped
     command: hbbs -r rustdesk-hbbr:21117
     volumes:
-      - pcs_rustdesk_data:/data
+      # Conserva la identidad/llave publica del servicio RustDesk existente.
+      - /var/lib/rustdesk-server:/data
     ports:
       - "${RUSTDESK_BIND:-0.0.0.0}:21115:21115"
       - "${RUSTDESK_BIND:-0.0.0.0}:21116:21116"
       - "${RUSTDESK_BIND:-0.0.0.0}:21116:21116/udp"
+      - "${RUSTDESK_BIND:-0.0.0.0}:21118:21118"
+      - "${RUSTDESK_BIND:-0.0.0.0}:21119:21119"
     networks:
       - pcs_internal
 
@@ -424,7 +427,7 @@ services:
     restart: unless-stopped
     command: hbbr
     volumes:
-      - pcs_rustdesk_data:/data
+      - /var/lib/rustdesk-server:/data
     ports:
       - "${RUSTDESK_BIND:-0.0.0.0}:21117:21117"
     networks:

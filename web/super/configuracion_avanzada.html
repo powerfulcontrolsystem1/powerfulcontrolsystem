@@ -248,6 +248,19 @@
 
       <div class="form-row">
         <div class="form-col">
+          <label class="form-label">Servidor RustDesk para empresas</label>
+          <input id="rustdeskServerHost" class="form-input" type="text" placeholder="Dominio o IP publico del servidor RustDesk">
+          <div class="form-help">Se copia a la configuracion aislada de cada empresa nueva o sin servidor definido.</div>
+        </div>
+        <div class="form-col">
+          <label class="form-label">Clave publica del servidor</label>
+          <input id="rustdeskServerKey" class="form-input" type="text" placeholder="Clave publica id_ed25519.pub">
+          <div class="form-help">Clave publica que los clientes RustDesk usan para validar el servidor propio.</div>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-col">
           <label class="form-label">Activar / desactivar</label>
           <label class="mode-switch-row" for="rustdeskActiveToggle">
             <span class="mode-label">Off</span>
@@ -1301,7 +1314,7 @@
       }
 
       function setRustDeskSshEditMode(isEditing){
-        setDisabledByIds(['rustdeskSshEnabledToggle','rustdeskSshHost','rustdeskSshUser','rustdeskSshKeyPath'], !isEditing);
+        setDisabledByIds(['rustdeskSshEnabledToggle','rustdeskSshHost','rustdeskSshUser','rustdeskSshKeyPath','rustdeskServerHost','rustdeskServerKey'], !isEditing);
         setEditButtons('rustdeskSaveSshBtn', 'rustdeskEditSshBtn', 'rustdeskCancelSshBtn', isEditing);
       }
 
@@ -1436,7 +1449,9 @@
         const hostEl = document.getElementById('rustdeskSshHost');
         const userEl = document.getElementById('rustdeskSshUser');
         const keyEl = document.getElementById('rustdeskSshKeyPath');
-        if (!enabledToggle || !hostEl || !userEl || !keyEl) return;
+        const serverHostEl = document.getElementById('rustdeskServerHost');
+        const serverKeyEl = document.getElementById('rustdeskServerKey');
+        if (!enabledToggle || !hostEl || !userEl || !keyEl || !serverHostEl || !serverKeyEl) return;
 
         try {
           const res = await fetch('/super/api/config/rustdesk', { credentials: 'same-origin' });
@@ -1447,6 +1462,8 @@
           hostEl.value = data.host || '';
           userEl.value = data.user || '';
           keyEl.value = data.key_path || '';
+          serverHostEl.value = data.server_host || '';
+          serverKeyEl.value = data.server_key || '';
           if (helpEl) helpEl.innerText = data.enabled ? 'Control por SSH activo.' : 'Control por SSH apagado.';
           if (msgEl) msgEl.innerText = '';
           setRustDeskSshEditMode(false);
@@ -1463,8 +1480,10 @@
         const hostEl = document.getElementById('rustdeskSshHost');
         const userEl = document.getElementById('rustdeskSshUser');
         const keyEl = document.getElementById('rustdeskSshKeyPath');
+        const serverHostEl = document.getElementById('rustdeskServerHost');
+        const serverKeyEl = document.getElementById('rustdeskServerKey');
         const btn = document.getElementById('rustdeskSaveSshBtn');
-        if (!enabledToggle || !hostEl || !userEl || !keyEl || !btn) return;
+        if (!enabledToggle || !hostEl || !userEl || !keyEl || !serverHostEl || !serverKeyEl || !btn) return;
 
         btn.disabled = true;
         const prevText = btn.innerText;
@@ -1475,7 +1494,9 @@
             enabled: !!enabledToggle.checked,
             host: String(hostEl.value || '').trim(),
             user: String(userEl.value || '').trim(),
-            key_path: String(keyEl.value || '').trim()
+            key_path: String(keyEl.value || '').trim(),
+            server_host: String(serverHostEl.value || '').trim(),
+            server_key: String(serverKeyEl.value || '').trim()
           };
           const res = await fetch('/super/api/config/rustdesk', {
             method: 'PUT',

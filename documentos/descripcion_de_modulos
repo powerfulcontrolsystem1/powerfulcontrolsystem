@@ -1,3 +1,9 @@
+2026-07-09: Documentacion tecnica completa con diagramas profesionales.
+- Modulos afectados: `documentacion_tecnica`, `super_administrador`, `arquitectura`, `base_de_datos`.
+- Se agrega un paquete documental ampliado en `documentos/diagramas/documentacion_tecnica_completa.md` con diagramas Mermaid alineados: arquitectura general, mapa de modulos, mapa de navegacion, ERD, casos de uso, clases UML, secuencias, actividades, estados, componentes, despliegue, paquetes y flujo de datos.
+- Para Codex queda un manifiesto JSON en `documentos/diagramas/documentacion_tecnica_completa_manifest.json` con inventario estructurado de tablas, columnas, FKs fisicas detectadas y relaciones logicas de aplicacion.
+- Alcance: documentacion estatica; no agrega endpoints, tablas, permisos, dependencias ni cambios de runtime.
+
 2026-07-09: Panel super - continuidad Docker real.
 - Modulos afectados: `super_administrador`, `infraestructura`, `qa_operacion`.
 - `/super/api/servidores` detecta `pcs-backend`, `pcs-frontend`/`pcs-edge` y `pcs-postgres` por Docker, evitando falsos errores de `systemd` en el panel.
@@ -4372,3 +4378,8 @@ configuracion por empresa, probar credenciales, consultar tiendas, recibir
 ordenes nuevas/SENT, tomar/rechazar/marcar listas y registrar webhooks firmados.
 No crea ventas internas automaticamente hasta que la empresa configure mapeo real
 de productos/SKUs, caja, impuestos, cliente y reglas de facturacion.
+2026-07-09: RustDesk por empresa y servicio Docker.
+- Modulos afectados: `soporte_remoto`, `rustdesk`, `super_administrador`, `infraestructura`.
+- Cada empresa conserva una fila aislada en `empresa_soporte_remoto_configuracion` con proveedor `rustdesk_oss`, cliente local, clave publica y servidor propios; el bootstrap no sobrescribe configuraciones existentes.
+- El panel super controla `pcs-rustdesk-hbbs` y `pcs-rustdesk-hbbr` desde Docker y deja SSH como alternativa de compatibilidad para instalaciones heredadas.
+- Seguridad: la pagina super exige sesion `super_administrador`, registra auditoria y la clave distribuida a clientes es la clave publica del servidor, no una clave privada ni credencial SSH.

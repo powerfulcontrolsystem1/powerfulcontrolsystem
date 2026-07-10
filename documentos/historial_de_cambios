@@ -1,3 +1,10 @@
+2026-07-09: Documentacion tecnica completa con diagramas profesionales.
+- Se crea `documentos/diagramas/documentacion_tecnica_completa.md` como paquete tecnico ampliado con diagramas Mermaid de arquitectura general, modulos, navegacion, ERD, casos de uso, clases UML, secuencias, actividades, estados, componentes, despliegue, paquetes y flujo de datos.
+- Se crea `documentos/diagramas/documentacion_tecnica_completa_manifest.json` para Codex/herramientas internas con inventario estructurado extraido desde `CREATE TABLE` del backend PostgreSQL.
+- Resultado de extraccion: 365 tablas, 2 FKs fisicas declaradas detectadas y 438 relaciones logicas de aplicacion por columnas como `empresa_id`, `cliente_id`, `producto_id`, `usuario_id`, `carrito_id` y equivalentes.
+- Criterio tecnico: el ERD distingue relaciones fisicas de PostgreSQL y relaciones logicas mantenidas por la aplicacion para no documentar constraints que no existen en el SQL extraido.
+- Alcance: documentacion estatica; no modifica endpoints, runtime, permisos, tablas, migraciones ni dependencias.
+
 2026-07-09: Panel super - falsos errores de continuidad.
 - Causa: el monitor leía `systemctl` desde `pcs-backend`, aunque Backend, Nginx y PostgreSQL se ejecutan como contenedores Docker; eso convertía servicios operativos en prioridades criticas.
 - Correccion: `/super/api/servidores` consulta el estado Docker con timeout y usa systemd solo como fallback; RustDesk deshabilitado queda neutral. Las acciones listar, probar y administrar exigen directamente el rol `super_administrador` y quedan trazadas con `WithSuperAuditoria`.
@@ -37081,3 +37088,8 @@ Archivos modificados:
 - backend/main.go
 - documentos/descripcion_de_modulos
 - documentos/historial_de_cambios
+2026-07-09: RustDesk multiempresa recuperado sobre Docker.
+- Se detecto que `rustdesk-hbbs` y `rustdesk-hbbr` seguian activos como servicios host, mientras el panel super esperaba un perfil Docker y el esquema empresarial no tenia sus columnas modernas.
+- Docker conserva `/var/lib/rustdesk-server` como almacenamiento de RustDesk y publica los puertos 21115 a 21119 requeridos por el servidor ID/Relay y clientes compatibles.
+- El arranque asegura/migra `empresa_soporte_remoto_*`, crea configuracion `rustdesk_oss` aislada para cada empresa que falte y completa solo campos de host/clave publica vacios desde la configuracion global.
+- El panel super administra contenedores RustDesk cuando existen, conserva SSH solo como compatibilidad y protege `/super/api/soporte_remoto` con rol super y auditoria.

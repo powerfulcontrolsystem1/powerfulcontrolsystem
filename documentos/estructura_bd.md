@@ -2254,3 +2254,6 @@ Actualizacion 2026-04-29 (auditoria como fuente de contexto IA)
 - El webhook publico no resuelve empresas por payload libre: exige
   `empresa_id` en la URL y valida firma HMAC-SHA256 cuando la empresa tiene
   secreto configurado.
+2026-07-09: Soporte remoto RustDesk multiempresa.
+- `empresa_soporte_remoto_configuracion` mantiene una fila por `empresa_id`: proveedor, modo, habilitacion, limites, host y clave publica RustDesk.
+- El bootstrap asegura las columnas modernas y crea filas faltantes sin reemplazar valores existentes; las contrasenas de dispositivos se guardan cifradas en `empresa_soporte_remoto_dispositivos.rustdesk_password_enc` y no se usan para el servidor global.

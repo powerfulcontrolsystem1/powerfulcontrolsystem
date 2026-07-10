@@ -2095,3 +2095,6 @@ Para declarar un modulo listo en produccion se debe validar por rol: acceso a la
 - API `/api/empresa/rappi`: wrapper `WithEmpresaVentaPublicaPermissions`.
 - Webhook `/api/public/rappi/webhook`: publico tecnico para Rappi; no concede
   lectura de datos, exige `empresa_id` y firma HMAC si hay secreto configurado.
+2026-07-09: Soporte remoto y RustDesk.
+- `/super/api/soporte_remoto` queda reservado a `super_administrador`, con `WithSuperAuditoria`; no concede acceso empresarial ni acepta un usuario sin sesion super.
+- `/api/empresa/soporte_remoto` conserva wrapper de seguridad empresarial y valida el `empresa_id` efectivo antes de leer o cambiar dispositivos, sesiones o configuracion.

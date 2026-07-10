@@ -1,3 +1,7 @@
+2026-07-09 - Documentacion tecnica completa con diagramas profesionales
+- `documentos/diagramas/documentacion_tecnica_completa.md`: paquete canonico ampliado con arquitectura general, mapa de modulos, navegacion, ERD PostgreSQL, casos de uso, clases UML, secuencias, actividades, estados, componentes, despliegue, paquetes, flujo de datos y catalogo completo de tablas extraido del backend.
+- `documentos/diagramas/documentacion_tecnica_completa_manifest.json`: manifiesto estructurado para Codex y herramientas internas con tablas, atributos, FKs fisicas detectadas, relaciones logicas por aplicacion y lista de diagramas incluidos.
+
 2026-07-09 - Panel super: deteccion real de servicios Docker
 - `backend/handlers/super_servidores_handlers.go`: consulta estados de contenedor con timeout, prioriza Docker sobre systemd y clasifica RustDesk deshabilitado como no incidente.
 - `backend/handlers/super_servidores_handlers_test.go`: cubre la conversion de estados Docker y la seleccion de la mejor fuente de estado.

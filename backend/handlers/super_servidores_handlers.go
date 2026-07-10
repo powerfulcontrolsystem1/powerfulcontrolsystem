@@ -74,39 +74,31 @@ func loadRustDeskPanelConfig(dbSuper *sql.DB) rustDeskPanelConfig {
 	return cfg
 }
 
+func isRustDeskServiceEnabled(dbSuper *sql.DB) bool {
+	value, _, _, _, _ := dbpkg.GetConfigEntry(dbSuper, "rustdesk.service_enabled")
+	switch strings.ToLower(strings.TrimSpace(value)) {
+	case "1", "true", "on", "activo", "enabled":
+		return true
+	default:
+		return false
+	}
+}
+
 func buildRustDeskServiceState(dbSuper *sql.DB, includeProbe bool) ServicioEstado {
-	panelCfg := loadRustDeskPanelConfig(dbSuper)
-	if !panelCfg.Enabled && !shouldUseRustDeskRemoteExec(dbSuper) {
-		return ServicioEstado{
-			ID:          "rustdesk",
-			Nombre:      "RustDesk (Soporte Remoto)",
-			Estado:      "disabled",
-			Detalle:     "Soporte remoto no configurado. No afecta la continuidad de PCS mientras permanezca deshabilitado.",
-			Habilitado:  false,
-			Componentes: map[string]string{},
-		}
+	hbbsStatus, _ := dockerServiceStatus("pcs-rustdesk-hbbs")
+	hbbrStatus, _ := dockerServiceStatus("pcs-rustdesk-hbbr")
+	overall := rustDeskOverallStatus(hbbsStatus, hbbrStatus)
+	detalle := "Servidor ID/Relay para soporte remoto administrado por Docker."
+	if overall == "unavailable" && shouldUseRustDeskRemoteExec(dbSuper) {
+		hbbsStatus = checkSystemctlStatus(dbSuper, resolveRustDeskServiceName(dbSuper, rustDeskHBBSCandidates))
+		hbbrStatus = checkSystemctlStatus(dbSuper, resolveRustDeskServiceName(dbSuper, rustDeskHBBRCandidates))
+		overall = rustDeskOverallStatus(hbbsStatus, hbbrStatus)
+		detalle = "Servidor ID/Relay para soporte remoto gestionado por SSH de compatibilidad."
 	}
-	hbbsService := resolveRustDeskServiceName(dbSuper, rustDeskHBBSCandidates)
-	hbbrService := resolveRustDeskServiceName(dbSuper, rustDeskHBBRCandidates)
-	hbbsStatus := checkSystemctlStatus(dbSuper, hbbsService)
-	hbbrStatus := checkSystemctlStatus(dbSuper, hbbrService)
-	overall := "inactive"
-	switch {
-	case hbbsStatus == "active" && hbbrStatus == "active":
-		overall = "active"
-	case hbbsStatus == "error" || hbbrStatus == "error":
-		overall = "error"
-	case hbbsStatus == "active" || hbbrStatus == "active":
-		overall = "degraded"
-	}
-
-	if runtime.GOOS == "windows" && !shouldUseRustDeskRemoteExec(dbSuper) {
-		overall = "unavailable"
-	}
-
-	detalle := "Servidor ID/Relay para soporte remoto de clientes a traves de VPS."
-	if overall == "unavailable" {
-		detalle = "Este backend corre en Windows. Para gestionar RustDesk en el VPS, activa 'Control por SSH' y configura host/usuario/llave en esta misma pantalla."
+	serviceEnabled := isRustDeskServiceEnabled(dbSuper)
+	if overall == "unavailable" && !serviceEnabled {
+		overall = "disabled"
+		detalle = "Soporte remoto deshabilitado. Activalo para iniciar los contenedores RustDesk del VPS."
 	}
 
 	state := ServicioEstado{
@@ -114,7 +106,7 @@ func buildRustDeskServiceState(dbSuper *sql.DB, includeProbe bool) ServicioEstad
 		Nombre:     "RustDesk (Soporte Remoto)",
 		Estado:     overall,
 		Detalle:    detalle,
-		Habilitado: panelCfg.Enabled,
+		Habilitado: serviceEnabled,
 		Componentes: map[string]string{
 			"rustdesk-hbbs": hbbsStatus,
 			"rustdesk-hbbr": hbbrStatus,
@@ -125,6 +117,21 @@ func buildRustDeskServiceState(dbSuper *sql.DB, includeProbe bool) ServicioEstad
 		state.Prueba = &probe
 	}
 	return state
+}
+
+func rustDeskOverallStatus(hbbsStatus, hbbrStatus string) string {
+	switch {
+	case hbbsStatus == "active" && hbbrStatus == "active":
+		return "active"
+	case hbbsStatus == "error" || hbbrStatus == "error":
+		return "error"
+	case hbbsStatus == "active" || hbbrStatus == "active" || hbbsStatus == "degraded" || hbbrStatus == "degraded":
+		return "degraded"
+	case hbbsStatus == "inactive" || hbbrStatus == "inactive":
+		return "inactive"
+	default:
+		return "unavailable"
+	}
 }
 
 func SuperServidoresListHandler(dbSuper *sql.DB) http.HandlerFunc {
@@ -388,19 +395,26 @@ func SuperServidoresToggleHandler(dbSuper *sql.DB) http.HandlerFunc {
 			}
 
 			if action == "start" || action == "stop" || action == "restart" {
-				if runtime.GOOS == "windows" && !shouldUseRustDeskRemoteExec(dbSuper) {
-					http.Error(w, "Control local no disponible en Windows. Activa 'Control por SSH' y configura la conexión al VPS.", http.StatusBadRequest)
+				managedByDocker, dockerErr := runRustDeskDockerAction(action)
+				if dockerErr != nil {
+					http.Error(w, dockerErr.Error(), http.StatusInternalServerError)
 					return
 				}
-				err1 := runSystemctl(dbSuper, action, resolveRustDeskServiceName(dbSuper, rustDeskHBBSCandidates))
-				err2 := runSystemctl(dbSuper, action, resolveRustDeskServiceName(dbSuper, rustDeskHBBRCandidates))
-				if err1 != nil {
-					http.Error(w, err1.Error(), http.StatusInternalServerError)
-					return
-				}
-				if err2 != nil {
-					http.Error(w, err2.Error(), http.StatusInternalServerError)
-					return
+				if !managedByDocker {
+					if runtime.GOOS == "windows" && !shouldUseRustDeskRemoteExec(dbSuper) {
+						http.Error(w, "Control local no disponible en Windows. Activa 'Control por SSH' y configura la conexión al VPS.", http.StatusBadRequest)
+						return
+					}
+					err1 := runSystemctl(dbSuper, action, resolveRustDeskServiceName(dbSuper, rustDeskHBBSCandidates))
+					err2 := runSystemctl(dbSuper, action, resolveRustDeskServiceName(dbSuper, rustDeskHBBRCandidates))
+					if err1 != nil {
+						http.Error(w, err1.Error(), http.StatusInternalServerError)
+						return
+					}
+					if err2 != nil {
+						http.Error(w, err2.Error(), http.StatusInternalServerError)
+						return
+					}
 				}
 			}
 		}
@@ -427,6 +441,26 @@ func SuperServidoresProbeHandler(dbSuper *sql.DB) http.HandlerFunc {
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(map[string]interface{}{"ok": true, "servicio": state})
 	}
+}
+
+func runRustDeskDockerAction(action string) (bool, error) {
+	hbbsStatus, _ := dockerServiceStatus("pcs-rustdesk-hbbs")
+	hbbrStatus, _ := dockerServiceStatus("pcs-rustdesk-hbbr")
+	if hbbsStatus == "unavailable" && hbbrStatus == "unavailable" {
+		return false, nil
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
+	defer cancel()
+	switch action {
+	case "start", "stop", "restart":
+	default:
+		return true, fmt.Errorf("accion Docker RustDesk no soportada")
+	}
+	out, err := exec.CommandContext(ctx, "docker", action, "pcs-rustdesk-hbbs", "pcs-rustdesk-hbbr").CombinedOutput()
+	if err != nil {
+		return true, fmt.Errorf("no se pudo %s RustDesk en Docker: %s", action, strings.TrimSpace(string(out)))
+	}
+	return true, nil
 }
 
 func checkSystemctlStatus(dbSuper *sql.DB, service string) string {
@@ -482,6 +516,24 @@ func runSystemctl(dbSuper *sql.DB, accion string, service string) error {
 }
 
 func probeRustDeskService(dbSuper *sql.DB) ServicioPrueba {
+	dockerHBBS, _ := dockerServiceStatus("pcs-rustdesk-hbbs")
+	dockerHBBR, _ := dockerServiceStatus("pcs-rustdesk-hbbr")
+	if dockerHBBS != "unavailable" || dockerHBBR != "unavailable" {
+		probe := ServicioPrueba{
+			OK:       dockerHBBS == "active" && dockerHBBR == "active",
+			Revisado: time.Now().In(time.Local).Format("2006-01-02 15:04:05"),
+			Puertos: map[string]string{
+				"21115": "publicado", "21116": "publicado", "21117": "publicado", "21118": "publicado", "21119": "publicado",
+			},
+			Servicios: map[string]string{"rustdesk-hbbs": dockerHBBS, "rustdesk-hbbr": dockerHBBR},
+		}
+		if probe.OK {
+			probe.Resumen = "RustDesk Docker responde: hbbs y hbbr activos con puertos publicados."
+		} else {
+			probe.Resumen = fmt.Sprintf("RustDesk Docker con alertas: hbbs=%s, hbbr=%s.", dockerHBBS, dockerHBBR)
+		}
+		return probe
+	}
 	probe := ServicioPrueba{
 		OK:       false,
 		Resumen:  "Comprobacion no disponible en este entorno.",
@@ -668,7 +720,7 @@ func setRustDeskPanelEnabled(dbSuper *sql.DB, enabled bool) error {
 	if enabled {
 		val = "1"
 	}
-	return dbpkg.SetConfigValue(dbSuper, "rustdesk.vps_ssh_enabled", val, false)
+	return dbpkg.SetConfigValue(dbSuper, "rustdesk.service_enabled", val, false)
 }
 
 func resolvePlinkPath() string {

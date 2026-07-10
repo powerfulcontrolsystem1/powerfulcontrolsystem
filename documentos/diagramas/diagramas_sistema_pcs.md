@@ -4,6 +4,13 @@ Actualizacion: 2026-07-07
 
 Este documento concentra los 15 diagramas solicitados para que el super administrador los vea en paginas propias y para que Codex pueda leer la fuente tecnica en texto. La fuente visual del panel vive en `web/js/super_diagramas_data.js` y cada pagina estatica esta en `web/super/diagramas/`.
 
+Para documentacion tecnica ampliada y escalable, usar tambien
+`documentos/diagramas/documentacion_tecnica_completa.md`. Ese paquete agrega
+ERD PostgreSQL extraido del backend con catalogo completo de tablas y atributos,
+casos de uso, clases UML, secuencias, actividades, estados, componentes,
+despliegue, paquetes, mapa de navegacion y flujo de datos. Su manifiesto para
+Codex vive en `documentos/diagramas/documentacion_tecnica_completa_manifest.json`.
+
 ## Indice
 
 - [Diagrama de modulos del sistema](#modulos) -> `/super/diagramas/modulos.html`

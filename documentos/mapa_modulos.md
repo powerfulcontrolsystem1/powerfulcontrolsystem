@@ -3,6 +3,15 @@
 Tabla de ubicacion rapida para no buscar desde cero cada modulo. Si una fila
 queda incompleta al implementar una mejora, actualizarla en el mismo cambio.
 
+Actualizacion 2026-07-09: `documentos/diagramas/documentacion_tecnica_completa.md`
+queda como paquete ampliado de diagramas profesionales para Codex y
+mantenimiento interno. Incluye ERD PostgreSQL con catalogo de 365 tablas
+extraidas del backend, atributos, PK/FK fisicas detectadas y relaciones logicas
+por aplicacion, mas casos de uso, clases UML, secuencias, actividades, estados,
+componentes, despliegue, paquetes, mapa de navegacion y flujo de datos. El
+manifiesto estructurado vive en
+`documentos/diagramas/documentacion_tecnica_completa_manifest.json`.
+
 Actualizacion 2026-07-09: `Super administrador > Panel` obtiene el estado de
 continuidad desde `/super/api/servidores` con conciencia del despliegue Docker.
 `pcs-backend`, `pcs-frontend`/`pcs-edge` y `pcs-postgres` se verifican por
@@ -594,3 +603,7 @@ por permisos empresariales y siempre filtrado por `empresa_id`.
 - Inventario y compras / Bodegas y traslados:
   - Vista actual: `web/administrar_empresa/administrar_productos.html?view=bodegas`
   - Compatibilidad: `web/administrar_empresa/productos/bodegas.html`
+Actualizacion 2026-07-09: RustDesk operativo multiempresa.
+- Servicio VPS: `deploy/docker-compose.platform.yml` contiene el perfil `rustdesk` con `pcs-rustdesk-hbbs` y `pcs-rustdesk-hbbr`; comparten el directorio persistente `/var/lib/rustdesk-server` para conservar la identidad del servidor.
+- Panel super: `web/super/configuracion_avanzada.html`, `/super/api/config/rustdesk`, `/super/api/servidores` y `/super/api/soporte_remoto` administran configuracion, estado, prueba y trazabilidad global bajo rol super.
+- Empresa: `/api/empresa/soporte_remoto` y las tablas `empresa_soporte_remoto_configuracion`, `empresa_soporte_remoto_dispositivos`, `empresa_soporte_remoto_sesiones` conservan aislamiento por `empresa_id`.

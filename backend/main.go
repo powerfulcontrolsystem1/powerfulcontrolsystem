@@ -1097,6 +1097,14 @@ func main() {
 	if err := dbpkg.EnsureEmpresaCRMVentasAvanzadasSchema(dbEmpresas); err != nil {
 		log.Fatalf("failed to ensure crm ventas avanzadas schema in empresas db: %v", err)
 	}
+	if err := dbpkg.EnsureEmpresaSoporteRemotoSchema(dbEmpresas); err != nil {
+		log.Fatalf("failed to ensure soporte remoto schema in empresas db: %v", err)
+	}
+	if created, updated, err := dbpkg.SeedEmpresaSoporteRemotoDefaults(dbEmpresas, dbSuper); err != nil {
+		log.Printf("warning: no se pudieron preparar configuraciones RustDesk por empresa: %v", err)
+	} else {
+		log.Printf("INFO: soporte remoto RustDesk preparado: configuraciones creadas=%d actualizadas=%d", created, updated)
+	}
 	startupTrace("after_empresa_sensor_puertas_schema")
 	if runtimePostgres {
 		if err := handlers.EnsureSensitiveSuperConfigEncrypted(dbSuper); err != nil {
@@ -1233,7 +1241,7 @@ func main() {
 	http.HandleFunc("/super/api/asesor_comercial", handlers.AsesorComercialSuperHandler(dbSuper))
 	http.HandleFunc("/api/asesor_comercial/aceptar", handlers.AsesorComercialAcceptHandler(dbSuper))
 	http.HandleFunc("/api/asesor_comercial/mis_clientes", handlers.AsesorComercialMisClientesHandler(dbSuper))
-	http.HandleFunc("/super/api/soporte_remoto", handlers.SuperSoporteRemotoHandler(dbEmpresas))
+	http.HandleFunc("/super/api/soporte_remoto", handlers.WithSuperAuditoria(dbSuper, "super_soporte_remoto", handlers.SuperSoporteRemotoHandler(dbEmpresas, dbSuper)))
 	http.HandleFunc("/super/api/tickets_ayuda", handlers.SuperAyudaTicketsHandler(dbSuper))
 	http.HandleFunc("/super/api/correos_masivos", handlers.SuperCorreosMasivosHandler(dbEmpresas, dbSuper))
 	startupTrace("after_super_and_core_routes")

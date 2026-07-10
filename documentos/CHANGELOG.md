@@ -1,3 +1,8 @@
+## [2026-07-09] Documentacion tecnica completa de diagramas
+- [Docs] Agrega `documentos/diagramas/documentacion_tecnica_completa.md` con arquitectura general, mapa de modulos, navegacion, ERD PostgreSQL, casos de uso, clases UML, secuencias, actividades, estados, componentes, despliegue, paquetes y flujo de datos.
+- [Codex] Agrega `documentos/diagramas/documentacion_tecnica_completa_manifest.json` con inventario estructurado de 365 tablas extraidas del backend, atributos, FKs fisicas detectadas y relaciones logicas de aplicacion.
+- [Arquitectura] El ERD distingue constraints fisicos declarados de relaciones logicas usadas por la aplicacion, evitando documentar FKs que PostgreSQL no declara en el SQL extraido.
+
 ## [2026-07-08] Configuracion guiada inicial persistente
 - [Panel empresa] Corrige el boton y check `No volver a mostrar`: `fetchJSON` ahora respeta `method`, `headers` y `body`, por lo que el panel envia realmente el POST a `/api/empresa/configuracion_guiada`.
 - [Backend] El endpoint devuelve `auto_abrir` y `oculta_por_usuario` calculados desde `configuracion_guiada_resumen` por `empresa_id`; si la base de datos registra `no_mostrar_mas` o `pospuesta`, el modal no se autoabre.

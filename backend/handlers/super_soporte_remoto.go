@@ -52,8 +52,11 @@ func normalizeSuperSoporteRemotoAction(raw string) string {
 	}
 }
 
-func SuperSoporteRemotoHandler(dbEmp *sql.DB) http.HandlerFunc {
+func SuperSoporteRemotoHandler(dbEmp *sql.DB, dbSuper *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		if _, ok := paginaPrincipalRequireSuperAdmin(w, r, dbSuper); !ok {
+			return
+		}
 		action := normalizeSuperSoporteRemotoAction(r.URL.Query().Get("action"))
 		if action == "" {
 			http.Error(w, "action invalida", http.StatusBadRequest)
@@ -266,34 +269,34 @@ func superSoporteRemotoReporteGet(w http.ResponseWriter, r *http.Request, dbEmp 
 			continue
 		}
 		rows = append(rows, map[string]interface{}{
-			"empresa_id": empresa.EmpresaID,
-			"empresa": empresa.Nombre,
-			"nit": empresa.Nit,
-			"proveedor": cfg.ProveedorPreferido,
-			"modo_operacion": cfg.ModoOperacion,
-			"portal_publico_habilitado": cfg.PortalPublicoHabilitado,
-			"rustdesk_server_host": cfg.RustDeskServerHost,
-			"max_minutos_dia_rustdesk": cfg.MaxMinutosDiaRustDesk,
-			"cliente_windows_url": cfg.ClienteWindowsURL,
-			"cliente_linux_url": cfg.ClienteLinuxURL,
-			"cliente_mac_url": cfg.ClienteMacURL,
-			"servidor_windows_url": cfg.ServidorWindowsURL,
-			"servidor_linux_url": cfg.ServidorLinuxURL,
-			"servidor_mac_url": cfg.ServidorMacURL,
-			"carpeta_transferencia": cfg.CarpetaTransferencia,
-			"instrucciones_publicas": cfg.InstruccionesPublicas,
-			"dia_referencia": uso.DiaReferencia,
-			"minutos_consumidos_dia_rustdesk": uso.MinutosConsumidosDiaRustDesk,
+			"empresa_id":                       empresa.EmpresaID,
+			"empresa":                          empresa.Nombre,
+			"nit":                              empresa.Nit,
+			"proveedor":                        cfg.ProveedorPreferido,
+			"modo_operacion":                   cfg.ModoOperacion,
+			"portal_publico_habilitado":        cfg.PortalPublicoHabilitado,
+			"rustdesk_server_host":             cfg.RustDeskServerHost,
+			"max_minutos_dia_rustdesk":         cfg.MaxMinutosDiaRustDesk,
+			"cliente_windows_url":              cfg.ClienteWindowsURL,
+			"cliente_linux_url":                cfg.ClienteLinuxURL,
+			"cliente_mac_url":                  cfg.ClienteMacURL,
+			"servidor_windows_url":             cfg.ServidorWindowsURL,
+			"servidor_linux_url":               cfg.ServidorLinuxURL,
+			"servidor_mac_url":                 cfg.ServidorMacURL,
+			"carpeta_transferencia":            cfg.CarpetaTransferencia,
+			"instrucciones_publicas":           cfg.InstruccionesPublicas,
+			"dia_referencia":                   uso.DiaReferencia,
+			"minutos_consumidos_dia_rustdesk":  uso.MinutosConsumidosDiaRustDesk,
 			"minutos_disponibles_dia_rustdesk": uso.MinutosDisponiblesDiaRustDesk,
-			"dispositivos_activos": uso.DispositivosActivos,
-			"dispositivos_online": uso.DispositivosOnline,
-			"sesiones_mes": uso.SesionesMes,
-			"intentos_bloqueados_mes": uso.IntentosBloqueadosMes,
-			"minutos_consumidos_mes": uso.MinutosConsumidosMes,
-			"max_dispositivos": uso.MaxDispositivos,
-			"max_conexiones_mes": uso.MaxConexionesMes,
-			"max_minutos_mes": uso.MaxMinutosMes,
-			"bloqueo_motivo": uso.BloqueoMotivo,
+			"dispositivos_activos":             uso.DispositivosActivos,
+			"dispositivos_online":              uso.DispositivosOnline,
+			"sesiones_mes":                     uso.SesionesMes,
+			"intentos_bloqueados_mes":          uso.IntentosBloqueadosMes,
+			"minutos_consumidos_mes":           uso.MinutosConsumidosMes,
+			"max_dispositivos":                 uso.MaxDispositivos,
+			"max_conexiones_mes":               uso.MaxConexionesMes,
+			"max_minutos_mes":                  uso.MaxMinutosMes,
+			"bloqueo_motivo":                   uso.BloqueoMotivo,
 		})
 	}
 	ds := empresaReporteDataset{
@@ -311,7 +314,7 @@ func superSoporteRemotoReporteGet(w http.ResponseWriter, r *http.Request, dbEmp 
 		},
 		Rows:     rows,
 		RowCount: len(rows),
-		Summary: map[string]interface{}{"empresas_exportadas": len(rows), "formato_trazable": "json,csv,txt,xls,pdf"},
+		Summary:  map[string]interface{}{"empresas_exportadas": len(rows), "formato_trazable": "json,csv,txt,xls,pdf"},
 	}
 	if err := writeReportesDatasetExport(w, ds, format); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)

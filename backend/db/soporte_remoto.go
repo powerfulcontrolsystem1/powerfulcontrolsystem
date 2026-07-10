@@ -569,6 +569,66 @@ func EnsureEmpresaSoporteRemotoSchema(dbConn *sql.DB) error {
 	return nil
 }
 
+// SeedEmpresaSoporteRemotoDefaults deja una configuracion RustDesk persistida
+// para cada empresa sin reemplazar decisiones particulares ya guardadas.
+func SeedEmpresaSoporteRemotoDefaults(dbEmp, dbSuper *sql.DB) (created, updated int64, err error) {
+	if dbEmp == nil || dbSuper == nil {
+		return 0, 0, errors.New("db connection is nil")
+	}
+	if err := EnsureEmpresaSoporteRemotoSchema(dbEmp); err != nil {
+		return 0, 0, err
+	}
+
+	host, _, _, _, err := GetConfigEntry(dbSuper, "rustdesk.server_host")
+	if err != nil {
+		return 0, 0, err
+	}
+	publicKey, _, _, _, err := GetConfigEntry(dbSuper, "rustdesk.server_key")
+	if err != nil {
+		return 0, 0, err
+	}
+	host = strings.TrimSpace(host)
+	publicKey = strings.TrimSpace(publicKey)
+
+	result, err := execSQLCompat(dbEmp, `
+		INSERT INTO empresa_soporte_remoto_configuracion (
+			empresa_id, habilitado, proveedor_preferido, modo_operacion,
+			requiere_aprobacion_operador, auto_cerrar_minutos,
+			max_conexiones_mes, max_minutos_mes, max_minutos_dia_rustdesk,
+			max_dispositivos, portal_publico_habilitado,
+			rustdesk_server_host, rustdesk_server_key, usuario_creador, estado
+		)
+		SELECT COALESCE(NULLIF(empresa_id, 0), id), 1, 'rustdesk_oss', 'cliente_local',
+			1, 30, 0, 0, 30, 0, 1, ?, ?, 'sistema.rustdesk', 'activo'
+		FROM empresas
+		WHERE COALESCE(NULLIF(empresa_id, 0), id) > 0
+		ON CONFLICT (empresa_id) DO NOTHING`, host, publicKey)
+	if err != nil {
+		return 0, 0, err
+	}
+	if result != nil {
+		created, _ = result.RowsAffected()
+	}
+
+	if host == "" && publicKey == "" {
+		return created, 0, nil
+	}
+	result, err = execSQLCompat(dbEmp, `
+		UPDATE empresa_soporte_remoto_configuracion
+		SET rustdesk_server_host = CASE WHEN ? <> '' AND BTRIM(COALESCE(rustdesk_server_host, '')) = '' THEN ? ELSE rustdesk_server_host END,
+			rustdesk_server_key = CASE WHEN ? <> '' AND BTRIM(COALESCE(rustdesk_server_key, '')) = '' THEN ? ELSE rustdesk_server_key END,
+			fecha_actualizacion = CURRENT_TIMESTAMP
+		WHERE BTRIM(COALESCE(rustdesk_server_host, '')) = ''
+			OR BTRIM(COALESCE(rustdesk_server_key, '')) = ''`, host, host, publicKey, publicKey)
+	if err != nil {
+		return created, 0, err
+	}
+	if result != nil {
+		updated, _ = result.RowsAffected()
+	}
+	return created, updated, nil
+}
+
 // GetEmpresaSoporteRemotoConfig consulta configuracion de soporte remoto por empresa.
 func GetEmpresaSoporteRemotoConfig(dbConn *sql.DB, empresaID int64) (EmpresaSoporteRemotoConfig, error) {
 	if dbConn == nil {

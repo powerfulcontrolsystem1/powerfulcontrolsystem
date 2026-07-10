@@ -6073,6 +6073,8 @@ flowchart TD
 
 ## Indice de diagramas de referencia
 
+- documentacion_tecnica_completa.md
+- documentacion_tecnica_completa_manifest.json
 - diagramas_sistema_pcs.md
 - diagramas_sistema_pcs_manifest.json
 - diagrama_entidad_relacion.md
