@@ -1387,6 +1387,9 @@
           var btnInactivar = estadoFila === 'inactivo'
             ? '<button class="btn secondary" data-action="row" data-id="' + id + '" data-value="activar">Activar fila</button>'
             : '<button class="btn secondary" data-action="row" data-id="' + id + '" data-value="desactivar">Inactivar fila</button>';
+          var btnPazSalvo = canClose
+            ? '<button class="btn secondary" data-action="paz_salvo" data-id="' + id + '"><img class="icon" src="/img/report.svg" alt="">Paz y salvo</button>'
+            : '<button class="btn secondary" disabled title="Disponible cuando el credito no tenga saldo ni cuotas pendientes"><img class="icon" src="/img/report.svg" alt="">Paz y salvo</button>';
           var tr = document.createElement('tr');
           tr.innerHTML = '' +
             '<td>' + esc(id) + '</td>' +
@@ -1406,7 +1409,7 @@
               '<button class="btn" data-action="detalle" data-id="' + id + '">Estado cuenta</button>' +
               '<button class="btn secondary" data-action="prefill_abono" data-id="' + id + '">Abono</button>' +
               '<button class="btn secondary" data-action="prefill_refi" data-id="' + id + '">Refinanciar</button>' +
-              btnSuspender + btnCerrar + btnInactivar +
+              btnPazSalvo + btnSuspender + btnCerrar + btnInactivar +
             '</td>';
           body.appendChild(tr);
         });
@@ -2200,6 +2203,11 @@
             if (!sameView('operaciones')) return goToView('operaciones', { refi_id: id });
             prefillRefinanciacion(id);
             scrollToId('rfCreditoId');
+            return;
+          }
+          if (action === 'paz_salvo' && id > 0) {
+            var url = buildApiURL('paz_y_salvo', { id: id });
+            window.location.href = url.toString();
             return;
           }
           if (action === 'estado' && id > 0 && value) return cambiarEstadoCredito(id, value);

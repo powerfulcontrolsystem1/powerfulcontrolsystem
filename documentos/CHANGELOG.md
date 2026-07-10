@@ -1,6 +1,10 @@
+## [2026-07-10] Diagramas tecnicos consolidados
+- [Super administrador] `Diagramas tecnicos` conserva los 19 diagramas detallados de la documentacion tecnica completa y retira del menu los 15 esquemas generales redundantes.
+
 ## [2026-07-09] Documentacion tecnica completa de diagramas
 - [Docs] Agrega `documentos/diagramas/documentacion_tecnica_completa.md` con arquitectura general, mapa de modulos, navegacion, ERD PostgreSQL, casos de uso, clases UML, secuencias, actividades, estados, componentes, despliegue, paquetes y flujo de datos.
 - [Codex] Agrega `documentos/diagramas/documentacion_tecnica_completa_manifest.json` con inventario estructurado de 365 tablas extraidas del backend, atributos, FKs fisicas detectadas y relaciones logicas de aplicacion.
+- [Super administrador] Agrega `Documentacion tecnica completa` y paginas individuales del paquete ampliado dentro de `Diagramas tecnicos`.
 - [Arquitectura] El ERD distingue constraints fisicos declarados de relaciones logicas usadas por la aplicacion, evitando documentar FKs que PostgreSQL no declara en el SQL extraido.
 
 ## [2026-07-08] Configuracion guiada inicial persistente

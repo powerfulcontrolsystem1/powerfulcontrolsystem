@@ -1,8 +1,14 @@
+2026-07-10: Super administrador - diagramas tecnicos consolidados.
+- `Super administrador > Diagramas tecnicos` conserva solamente los 19 accesos de la documentacion tecnica completa: arquitectura, modulos, navegacion, ERD PostgreSQL, UML, procesos, estados, componentes, despliegue, paquetes y flujo de datos.
+- El paquete previo de esquemas generales se retira de la navegacion para evitar duplicidad; queda como referencia historica sin presentarse como flujo operativo.
+- El visor completo y cada pagina individual se mantienen disponibles para favoritos y retorno al panel super.
+
 2026-07-09: Documentacion tecnica completa con diagramas profesionales.
 - Modulos afectados: `documentacion_tecnica`, `super_administrador`, `arquitectura`, `base_de_datos`.
 - Se agrega un paquete documental ampliado en `documentos/diagramas/documentacion_tecnica_completa.md` con diagramas Mermaid alineados: arquitectura general, mapa de modulos, mapa de navegacion, ERD, casos de uso, clases UML, secuencias, actividades, estados, componentes, despliegue, paquetes y flujo de datos.
 - Para Codex queda un manifiesto JSON en `documentos/diagramas/documentacion_tecnica_completa_manifest.json` con inventario estructurado de tablas, columnas, FKs fisicas detectadas y relaciones logicas de aplicacion.
-- Alcance: documentacion estatica; no agrega endpoints, tablas, permisos, dependencias ni cambios de runtime.
+- Navegacion: `Super administrador > Diagramas tecnicos > Documentacion tecnica completa` abre el visor completo, y el submenu incluye paginas individuales para mapa de navegacion, casos de uso, clases UML, secuencias, actividades, estados, componentes, paquetes y flujo de datos.
+- Alcance: documentacion y frontend estatico; no agrega endpoints, tablas, permisos, dependencias ni cambios de runtime.
 
 2026-07-09: Panel super - continuidad Docker real.
 - Modulos afectados: `super_administrador`, `infraestructura`, `qa_operacion`.

@@ -1,6 +1,8 @@
 package handlers
 
 import (
+	"bytes"
+	"crypto/sha256"
 	"database/sql"
 	"encoding/json"
 	"fmt"
@@ -123,6 +125,9 @@ func EmpresaCreditosHandler(dbEmp *sql.DB) http.HandlerFunc {
 			case "reporte", "export", "exportar":
 				handleEmpresaCreditosReporte(w, r, dbEmp)
 				return
+			case "paz_y_salvo", "paz_salvo":
+				handleEmpresaCreditosPazYSalvo(w, r, dbEmp)
+				return
 			default:
 				http.Error(w, "action invalida", http.StatusBadRequest)
 				return
@@ -190,6 +195,98 @@ func EmpresaCreditosHandler(dbEmp *sql.DB) http.HandlerFunc {
 			return
 		}
 	}
+}
+
+func handleEmpresaCreditosPazYSalvo(w http.ResponseWriter, r *http.Request, dbEmp *sql.DB) {
+	empresaID, err := parseEmpresaIDQuery(r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	creditoID, err := parseInt64QueryOptional(r, "id")
+	if err != nil || creditoID <= 0 {
+		http.Error(w, "credito_id invalido", http.StatusBadRequest)
+		return
+	}
+	credito, err := dbpkg.GetEmpresaCreditoByID(dbEmp, empresaID, creditoID)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			http.Error(w, "credito no encontrado", http.StatusNotFound)
+			return
+		}
+		http.Error(w, "No se pudo consultar el credito", http.StatusInternalServerError)
+		return
+	}
+	if credito.SaldoActual > 0.009 || credito.CuotasPendientes > 0 || credito.CuotasVencidas > 0 {
+		http.Error(w, "El paz y salvo solo se genera cuando el saldo y todas las cuotas estan pagadas", http.StatusConflict)
+		return
+	}
+
+	empresa, err := dbpkg.GetEmpresaByScopeID(dbEmp, empresaID)
+	if err != nil || empresa == nil {
+		http.Error(w, "No se pudo consultar la empresa", http.StatusInternalServerError)
+		return
+	}
+	var documentoCliente string
+	if credito.ClienteID > 0 {
+		_ = dbEmp.QueryRow(`SELECT COALESCE(numero_documento,'') FROM clientes WHERE empresa_id=? AND id=? LIMIT 1`, empresaID, credito.ClienteID).Scan(&documentoCliente)
+	}
+	var totalPagado float64
+	_ = dbEmp.QueryRow(`SELECT COALESCE(SUM(CASE WHEN LOWER(COALESCE(estado,'activo'))='activo' AND LOWER(COALESCE(tipo_movimiento,'')) IN ('abono','pago') THEN monto ELSE 0 END),0) FROM empresa_creditos_movimientos WHERE empresa_id=? AND credito_id=?`, empresaID, creditoID).Scan(&totalPagado)
+
+	now := time.Now().In(time.Local)
+	digest := sha256.Sum256([]byte(fmt.Sprintf("%d|%d|%s|%s", empresaID, creditoID, credito.Codigo, now.Format(time.RFC3339Nano))))
+	verificationCode := fmt.Sprintf("PCS-PS-%X", digest[:6])
+	pdf := buildEmpresaCreditoPazYSalvoPDF(*empresa, *credito, documentoCliente, totalPagado, verificationCode, now)
+	filename := fmt.Sprintf("paz-y-salvo-%s.pdf", strings.ToLower(strings.ReplaceAll(strings.TrimSpace(credito.Codigo), " ", "-")))
+	if filename == "paz-y-salvo-.pdf" {
+		filename = fmt.Sprintf("paz-y-salvo-credito-%d.pdf", creditoID)
+	}
+	registrarAuditoriaCreditosNoBloqueante(dbEmp, r, empresaID, "empresa_creditos", creditoID, "credito_paz_y_salvo_generado", http.StatusOK, map[string]interface{}{
+		"codigo_credito":      credito.Codigo,
+		"codigo_verificacion": verificationCode,
+		"saldo":               credito.SaldoActual,
+	}, "Paz y salvo PDF generado con saldo y cuotas validados")
+	w.Header().Set("Content-Type", "application/pdf")
+	w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=%q", filename))
+	w.Header().Set("Cache-Control", "no-store")
+	w.WriteHeader(http.StatusOK)
+	_, _ = w.Write(pdf)
+}
+
+func buildEmpresaCreditoPazYSalvoPDF(empresa dbpkg.Empresa, credito dbpkg.EmpresaCredito, documentoCliente string, totalPagado float64, verificationCode string, issuedAt time.Time) []byte {
+	var content bytes.Buffer
+	pdfLine(&content, "q 0 0 0 RG 0.90 0.95 1 rg 1 w 54 781 38 28 re B Q")
+	pdfText(&content, "F2", 13, 62, 790, "PCS")
+	pdfText(&content, "F2", 20, 104, 790, emptyPDFValue(empresa.Nombre, "Empresa"))
+	pdfText(&content, "F1", 9, 105, 775, "NIT: "+emptyPDFValue(empresa.Nit, "No registrado"))
+	pdfLine(&content, "q 0 0 0 RG 1.4 w 46 760 m 548 760 l S Q")
+	pdfText(&content, "F2", 17, 54, 728, "CERTIFICADO DE PAZ Y SALVO")
+
+	paragraph := fmt.Sprintf("La empresa %s certifica que %s, identificado con %s, se encuentra a paz y salvo por el credito %s. A la fecha de expedicion no registra saldo de capital, cuotas pendientes ni cuotas vencidas asociadas a este credito.", emptyPDFValue(empresa.Nombre, "la empresa emisora"), emptyPDFValue(credito.ClienteNombre, "el cliente"), emptyPDFValue(documentoCliente, "documento no registrado"), emptyPDFValue(credito.Codigo, fmt.Sprintf("ID %d", credito.ID)))
+	y := 692
+	for _, line := range wrapPDFText(paragraph, 90) {
+		pdfText(&content, "F1", 11, 54, y, line)
+		y -= 16
+	}
+	y -= 18
+	rows := []string{
+		"Credito: " + emptyPDFValue(credito.Codigo, fmt.Sprintf("ID %d", credito.ID)),
+		"Cliente: " + emptyPDFValue(credito.ClienteNombre, "No registrado"),
+		"Documento: " + emptyPDFValue(documentoCliente, "No registrado"),
+		fmt.Sprintf("Monto aprobado: %.2f", credito.MontoAprobado),
+		fmt.Sprintf("Total de pagos registrados: %.2f", totalPagado),
+		fmt.Sprintf("Saldo certificado: %.2f", credito.SaldoActual),
+		"Fecha de expedicion: " + issuedAt.Format("2006-01-02 15:04:05"),
+		"Codigo de verificacion: " + verificationCode,
+	}
+	for _, line := range rows {
+		pdfText(&content, "F1", 10, 66, y, line)
+		y -= 17
+	}
+	pdfLine(&content, "q 0 0 0 RG 0.8 w 46 52 m 548 52 l S Q")
+	pdfText(&content, "F1", 8, 54, 38, "Documento generado por Powerful Control System y registrado en la auditoria empresarial.")
+	return assembleSimplePDF(content.Bytes())
 }
 
 func handleEmpresaCreditosCreate(w http.ResponseWriter, r *http.Request, dbEmp *sql.DB) {

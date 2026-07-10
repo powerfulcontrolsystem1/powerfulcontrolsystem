@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Tutorial de credito y cartera</title>
+  <link rel="stylesheet" href="/estilos.css">
+  <script src="/js/empresa_submenu_context.js"></script>
+  <style>
+    .credit-tutorial{max-width:1080px;margin:0 auto;padding:22px}
+    .credit-tutorial header{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:18px}
+    .credit-tutorial h1{margin:0 0 6px;font-size:1.8rem}
+    .credit-tutorial header p{margin:0;color:var(--muted);line-height:1.55}
+    .credit-steps{display:grid;gap:10px}
+    .credit-step{border:1px solid var(--border);border-radius:8px;background:var(--surface)}
+    .credit-step summary{display:flex;align-items:center;gap:12px;padding:14px;cursor:pointer;font-weight:850}
+    .credit-step summary::marker{content:""}
+    .credit-step-number{display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:6px;background:var(--accent);color:var(--accent-contrast);flex:0 0 30px}
+    .credit-step-body{padding:0 16px 16px 58px;color:var(--muted);line-height:1.6}
+    .credit-step-body ul{margin:8px 0 14px;padding-left:18px}
+    .credit-step-actions{display:flex;gap:8px;flex-wrap:wrap}
+    .credit-check{margin-top:16px;padding:16px;border:1px solid var(--border);border-radius:8px;background:var(--surface-soft)}
+    .credit-check h2{margin:0 0 10px;font-size:1.1rem}
+    .credit-check label{display:flex;gap:9px;align-items:flex-start;margin:8px 0}
+    @media(max-width:680px){.credit-tutorial{padding:14px}.credit-tutorial header{display:block}.credit-step-body{padding-left:16px}}
+  </style>
+</head>
+<body class="empresa-subpage">
+  <main class="credit-tutorial">
+    <header>
+      <div>
+        <h1>Tutorial de credito y cartera</h1>
+        <p>Flujo recomendado para otorgar credito, recaudar cuotas, controlar mora y expedir el paz y salvo con trazabilidad.</p>
+      </div>
+      <a class="btn secondary" data-credit-link="panel" href="/administrar_empresa/creditos.html?view=panel">Ir al panel</a>
+    </header>
+
+    <section class="credit-steps" aria-label="Pasos del credito">
+      <details class="credit-step" open>
+        <summary><span class="credit-step-number">1</span>Preparar el cliente y su limite</summary>
+        <div class="credit-step-body">
+          <ul><li>Registra al cliente con documento, correo y telefono vigentes.</li><li>Define el limite de saldo y la cantidad maxima de creditos activos.</li><li>Activa aprobacion adicional cuando el cupo solicitado supere la politica del cliente.</li></ul>
+          <div class="credit-step-actions"><a class="btn secondary" data-credit-link="limites" href="/administrar_empresa/creditos.html?view=limites">Abrir riesgo y limites</a></div>
+        </div>
+      </details>
+      <details class="credit-step">
+        <summary><span class="credit-step-number">2</span>Crear el credito</summary>
+        <div class="credit-step-body"><ul><li>Selecciona el tipo de credito, monto, plazo, periodicidad y tasas.</li><li>Verifica fecha de vencimiento y valor de cuota antes de guardar.</li><li>El sistema separa cada empresa y genera el plan de cuotas correspondiente.</li></ul><div class="credit-step-actions"><a class="btn secondary" data-credit-link="crear" href="/administrar_empresa/creditos.html?view=crear">Crear credito</a></div></div>
+      </details>
+      <details class="credit-step">
+        <summary><span class="credit-step-number">3</span>Registrar abonos y revisar el estado de cuenta</summary>
+        <div class="credit-step-body"><ul><li>Registra metodo, referencia, comprobante y observacion del pago.</li><li>Comprueba la aplicacion a capital, intereses, mora y cuotas.</li><li>Consulta el estado de cuenta después de cada movimiento.</li></ul><div class="credit-step-actions"><a class="btn secondary" data-credit-link="operaciones" href="/administrar_empresa/creditos.html?view=operaciones">Abrir abonos</a><a class="btn secondary" data-credit-link="estado" href="/administrar_empresa/creditos.html?view=estado">Ver estado de cuenta</a></div></div>
+      </details>
+      <details class="credit-step">
+        <summary><span class="credit-step-number">4</span>Gestionar mora y cobranza</summary>
+        <div class="credit-step-body"><ul><li>Prioriza vencidos por dias de mora y saldo.</li><li>Registra cada contacto, promesa de pago y proxima gestion.</li><li>Usa las plantillas y canales habilitados por la empresa; los fallos quedan visibles y no alteran la deuda.</li></ul><div class="credit-step-actions"><a class="btn secondary" data-credit-link="morosidad" href="/administrar_empresa/creditos.html?view=morosidad">Revisar morosos</a><a class="btn secondary" href="/administrar_empresa/cobranza.html">Gestion de cobranza</a></div></div>
+      </details>
+      <details class="credit-step">
+        <summary><span class="credit-step-number">5</span>Refinanciar o reversar con aprobacion</summary>
+        <div class="credit-step-body"><ul><li>Solicita refinanciacion o reverso indicando el motivo y soporte.</li><li>Un usuario autorizado debe aprobar o rechazar el workflow.</li><li>No edites saldos directamente: usa las operaciones trazables.</li></ul><div class="credit-step-actions"><a class="btn secondary" data-credit-link="aprobaciones" href="/administrar_empresa/creditos.html?view=aprobaciones">Abrir aprobaciones</a></div></div>
+      </details>
+      <details class="credit-step">
+        <summary><span class="credit-step-number">6</span>Cerrar y generar paz y salvo</summary>
+        <div class="credit-step-body"><ul><li>Confirma saldo cero y que no existan cuotas pendientes o vencidas.</li><li>Cierra el credito y pulsa “Paz y salvo” en la cartera.</li><li>El PDF incluye empresa, cliente, credito, valores, fecha y codigo de verificacion; la expedicion queda auditada.</li></ul><div class="credit-step-actions"><a class="btn secondary" data-credit-link="cartera" href="/administrar_empresa/creditos.html?view=cartera">Abrir cartera</a></div></div>
+      </details>
+    </section>
+
+    <section class="credit-check">
+      <h2>Control antes de finalizar</h2>
+      <label><input type="checkbox"> Cliente y datos de contacto verificados.</label>
+      <label><input type="checkbox"> Cupo, plazo, tasas y cuota revisados.</label>
+      <label><input type="checkbox"> Pagos y comprobantes conciliados.</label>
+      <label><input type="checkbox"> Saldo y cuotas en cero antes del paz y salvo.</label>
+    </section>
+  </main>
+  <script>
+    (function(){
+      var params = new URLSearchParams(location.search);
+      var empresaID = params.get('empresa_id') || '';
+      document.querySelectorAll('a[href]').forEach(function(link){
+        if(!empresaID) return;
+        var url = new URL(link.getAttribute('href'), location.origin);
+        url.searchParams.set('empresa_id', empresaID);
+        link.setAttribute('href', url.pathname + url.search);
+      });
+    })();
+  </script>
+</body>
+</html>

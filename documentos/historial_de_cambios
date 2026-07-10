@@ -1,6 +1,11 @@
+2026-07-10: Super administrador - diagramas tecnicos consolidados.
+- Se retiraron del submenu los 15 diagramas generales anteriores y se mantuvieron los 19 diagramas profesionales del paquete `documentacion_tecnica_completa`, accesibles desde visor general y paginas individuales.
+- Alcance: navegacion y visualizacion estatica; no agrega endpoints, tablas, permisos ni cambios de runtime.
+
 2026-07-09: Documentacion tecnica completa con diagramas profesionales.
 - Se crea `documentos/diagramas/documentacion_tecnica_completa.md` como paquete tecnico ampliado con diagramas Mermaid de arquitectura general, modulos, navegacion, ERD, casos de uso, clases UML, secuencias, actividades, estados, componentes, despliegue, paquetes y flujo de datos.
 - Se crea `documentos/diagramas/documentacion_tecnica_completa_manifest.json` para Codex/herramientas internas con inventario estructurado extraido desde `CREATE TABLE` del backend PostgreSQL.
+- Se publica el paquete en `Super administrador > Diagramas tecnicos` mediante `web/js/super_documentacion_tecnica*.js`, `web/super/diagramas/documentacion_tecnica_completa.html` y paginas individuales para los diagramas ampliados.
 - Resultado de extraccion: 365 tablas, 2 FKs fisicas declaradas detectadas y 438 relaciones logicas de aplicacion por columnas como `empresa_id`, `cliente_id`, `producto_id`, `usuario_id`, `carrito_id` y equivalentes.
 - Criterio tecnico: el ERD distingue relaciones fisicas de PostgreSQL y relaciones logicas mantenidas por la aplicacion para no documentar constraints que no existen en el SQL extraido.
 - Alcance: documentacion estatica; no modifica endpoints, runtime, permisos, tablas, migraciones ni dependencias.

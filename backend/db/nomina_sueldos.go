@@ -391,19 +391,19 @@ func EnsureEmpresaNominaSchema(dbConn *sql.DB) error {
 			moneda TEXT DEFAULT 'COP',
 			salario_minimo_mensual REAL DEFAULT 1750905,
 			auxilio_transporte_legal_mensual REAL DEFAULT 249095,
-			horas_ordinarias_semana REAL DEFAULT 44,
+			horas_ordinarias_semana REAL DEFAULT 42,
 			horas_ordinarias_dia REAL DEFAULT 8,
 			dias_nomina_mes INTEGER DEFAULT 30,
-			divisor_hora_ordinaria REAL DEFAULT 220,
-			hora_nocturna_desde TEXT DEFAULT '21:00:00',
+			divisor_hora_ordinaria REAL DEFAULT 210,
+			hora_nocturna_desde TEXT DEFAULT '19:00:00',
 			hora_nocturna_hasta TEXT DEFAULT '06:00:00',
 			recargo_nocturno_porcentaje REAL DEFAULT 35,
 			hora_extra_diurna_porcentaje REAL DEFAULT 25,
 			hora_extra_nocturna_porcentaje REAL DEFAULT 75,
-			recargo_dominical_diurno_porcentaje REAL DEFAULT 75,
-			recargo_dominical_nocturno_porcentaje REAL DEFAULT 110,
-			hora_extra_dominical_diurna_porcentaje REAL DEFAULT 100,
-			hora_extra_dominical_nocturna_porcentaje REAL DEFAULT 150,
+			recargo_dominical_diurno_porcentaje REAL DEFAULT 90,
+			recargo_dominical_nocturno_porcentaje REAL DEFAULT 125,
+			hora_extra_dominical_diurna_porcentaje REAL DEFAULT 115,
+			hora_extra_dominical_nocturna_porcentaje REAL DEFAULT 165,
 			deduccion_salud_porcentaje REAL DEFAULT 4,
 			deduccion_pension_porcentaje REAL DEFAULT 4,
 			deduccion_fondo_solidaridad_porcentaje REAL DEFAULT 0,
@@ -636,19 +636,19 @@ func defaultEmpresaNominaConfiguracion(empresaID int64) EmpresaNominaConfiguraci
 		Moneda:                                "COP",
 		SalarioMinimoMensual:                  ColombiaSalarioMinimoMensual2026,
 		AuxilioTransporteLegalMensual:         ColombiaAuxilioTransporteMensual2026,
-		HorasOrdinariasSemana:                 44,
+		HorasOrdinariasSemana:                 42,
 		HorasOrdinariasDia:                    8,
 		DiasNominaMes:                         30,
-		DivisorHoraOrdinaria:                  220,
-		HoraNocturnaDesde:                     "21:00:00",
+		DivisorHoraOrdinaria:                  210,
+		HoraNocturnaDesde:                     "19:00:00",
 		HoraNocturnaHasta:                     "06:00:00",
 		RecargoNocturnoPorcentaje:             35,
 		HoraExtraDiurnaPorcentaje:             25,
 		HoraExtraNocturnaPorcentaje:           75,
-		RecargoDominicalDiurnoPorcentaje:      75,
-		RecargoDominicalNocturnoPorcentaje:    110,
-		HoraExtraDominicalDiurnaPorcentaje:    100,
-		HoraExtraDominicalNocturnaPorcentaje:  150,
+		RecargoDominicalDiurnoPorcentaje:      90,
+		RecargoDominicalNocturnoPorcentaje:    125,
+		HoraExtraDominicalDiurnaPorcentaje:    115,
+		HoraExtraDominicalNocturnaPorcentaje:  165,
 		DeduccionSaludPorcentaje:              4,
 		DeduccionPensionPorcentaje:            4,
 		DeduccionFondoSolidaridadPorcentaje:   0,
@@ -728,11 +728,11 @@ func normalizeNominaHoras(v, fallback float64) float64 {
 func recommendedNominaHourDivisor(horasSemana float64) float64 {
 	h := horasSemana
 	if h <= 0 {
-		h = 44
+		h = 42
 	}
 	div := h * 30.0 / 6.0
 	if div <= 0 {
-		div = 220
+		div = 210
 	}
 	return round2(div)
 }
@@ -779,19 +779,19 @@ func GetEmpresaNominaConfiguracion(dbConn *sql.DB, empresaID int64) (*EmpresaNom
 		COALESCE(moneda, 'COP'),
 		COALESCE(salario_minimo_mensual, 1750905),
 		COALESCE(auxilio_transporte_legal_mensual, 249095),
-		COALESCE(horas_ordinarias_semana, 44),
+		COALESCE(horas_ordinarias_semana, 42),
 		COALESCE(horas_ordinarias_dia, 8),
 		COALESCE(dias_nomina_mes, 30),
-		COALESCE(divisor_hora_ordinaria, 220),
-		COALESCE(hora_nocturna_desde, '21:00:00'),
+		COALESCE(divisor_hora_ordinaria, 210),
+		COALESCE(hora_nocturna_desde, '19:00:00'),
 		COALESCE(hora_nocturna_hasta, '06:00:00'),
 		COALESCE(recargo_nocturno_porcentaje, 35),
 		COALESCE(hora_extra_diurna_porcentaje, 25),
 		COALESCE(hora_extra_nocturna_porcentaje, 75),
-		COALESCE(recargo_dominical_diurno_porcentaje, 75),
-		COALESCE(recargo_dominical_nocturno_porcentaje, 110),
-		COALESCE(hora_extra_dominical_diurna_porcentaje, 100),
-		COALESCE(hora_extra_dominical_nocturna_porcentaje, 150),
+		COALESCE(recargo_dominical_diurno_porcentaje, 90),
+		COALESCE(recargo_dominical_nocturno_porcentaje, 125),
+		COALESCE(hora_extra_dominical_diurna_porcentaje, 115),
+		COALESCE(hora_extra_dominical_nocturna_porcentaje, 165),
 		COALESCE(deduccion_salud_porcentaje, 4),
 		COALESCE(deduccion_pension_porcentaje, 4),
 		COALESCE(deduccion_fondo_solidaridad_porcentaje, 0),
@@ -867,7 +867,7 @@ func normalizeEmpresaNominaConfiguracion(cfg EmpresaNominaConfiguracion) *Empres
 	cfg.Moneda = normalizeNominaMoneda(cfg.Moneda)
 	cfg.SalarioMinimoMensual = normalizeNominaMoney(cfg.SalarioMinimoMensual, ColombiaSalarioMinimoMensual2026)
 	cfg.AuxilioTransporteLegalMensual = normalizeNominaMoney(cfg.AuxilioTransporteLegalMensual, ColombiaAuxilioTransporteMensual2026)
-	cfg.HorasOrdinariasSemana = normalizeNominaHoras(cfg.HorasOrdinariasSemana, 44)
+	cfg.HorasOrdinariasSemana = normalizeNominaHoras(cfg.HorasOrdinariasSemana, 42)
 	cfg.HorasOrdinariasDia = normalizeNominaHoras(cfg.HorasOrdinariasDia, 8)
 	if cfg.DiasNominaMes <= 0 {
 		cfg.DiasNominaMes = 30
@@ -879,7 +879,7 @@ func normalizeEmpresaNominaConfiguracion(cfg EmpresaNominaConfiguracion) *Empres
 	if cfg.DivisorHoraOrdinaria <= 0 {
 		cfg.DivisorHoraOrdinaria = recommendedNominaHourDivisor(cfg.HorasOrdinariasSemana)
 	}
-	cfg.HoraNocturnaDesde = normalizeNominaTimeWindow(cfg.HoraNocturnaDesde, "21:00:00")
+	cfg.HoraNocturnaDesde = normalizeNominaTimeWindow(cfg.HoraNocturnaDesde, "19:00:00")
 	cfg.HoraNocturnaHasta = normalizeNominaTimeWindow(cfg.HoraNocturnaHasta, "06:00:00")
 	cfg.RecargoNocturnoPorcentaje = normalizeNominaPorcentaje(cfg.RecargoNocturnoPorcentaje)
 	cfg.HoraExtraDiurnaPorcentaje = normalizeNominaPorcentaje(cfg.HoraExtraDiurnaPorcentaje)

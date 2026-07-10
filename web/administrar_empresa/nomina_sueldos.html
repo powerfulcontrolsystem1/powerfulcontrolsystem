@@ -233,7 +233,7 @@
           </div>
           <div class="form-col">
             <label class="form-label" for="cfgHorasSemana">Horas ordinarias semana</label>
-            <input id="cfgHorasSemana" class="form-input" type="number" min="1" max="168" step="0.01" value="44">
+            <input id="cfgHorasSemana" class="form-input" type="number" min="1" max="168" step="0.01" value="42">
           </div>
           <div class="form-col">
             <label class="form-label" for="cfgHorasDia">Horas ordinarias dia</label>
@@ -245,14 +245,14 @@
           </div>
           <div class="form-col">
             <label class="form-label" for="cfgDivisorHora">Divisor hora ordinaria</label>
-            <input id="cfgDivisorHora" class="form-input" type="number" min="1" max="400" step="0.01" value="220">
+            <input id="cfgDivisorHora" class="form-input" type="number" min="1" max="400" step="0.01" value="210">
           </div>
         </div>
 
         <div class="form-row">
           <div class="form-col">
             <label class="form-label" for="cfgNocDesde">Hora nocturna desde</label>
-            <input id="cfgNocDesde" class="form-input" type="time" step="1" value="21:00:00">
+            <input id="cfgNocDesde" class="form-input" type="time" step="1" value="19:00:00">
           </div>
           <div class="form-col">
             <label class="form-label" for="cfgNocHasta">Hora nocturna hasta</label>
@@ -1076,19 +1076,19 @@
         document.getElementById('cfgMoneda').value = normalize(item.moneda || 'COP');
         document.getElementById('cfgSalarioMinimo').value = toNumber(item.salario_minimo_mensual, 1750905);
         document.getElementById('cfgAuxilioLegal').value = toNumber(item.auxilio_transporte_legal_mensual, 249095);
-        document.getElementById('cfgHorasSemana').value = toNumber(item.horas_ordinarias_semana, 44);
+        document.getElementById('cfgHorasSemana').value = toNumber(item.horas_ordinarias_semana, 42);
         document.getElementById('cfgHorasDia').value = toNumber(item.horas_ordinarias_dia, 8);
         document.getElementById('cfgDiasMes').value = toNumber(item.dias_nomina_mes, 30);
-        document.getElementById('cfgDivisorHora').value = toNumber(item.divisor_hora_ordinaria, 220);
-        document.getElementById('cfgNocDesde').value = normalize(item.hora_nocturna_desde || '21:00:00');
+        document.getElementById('cfgDivisorHora').value = toNumber(item.divisor_hora_ordinaria, 210);
+        document.getElementById('cfgNocDesde').value = normalize(item.hora_nocturna_desde || '19:00:00');
         document.getElementById('cfgNocHasta').value = normalize(item.hora_nocturna_hasta || '06:00:00');
         document.getElementById('cfgRecargoNocturno').value = toNumber(item.recargo_nocturno_porcentaje, 35);
         document.getElementById('cfgExtraDiurna').value = toNumber(item.hora_extra_diurna_porcentaje, 25);
         document.getElementById('cfgExtraNocturna').value = toNumber(item.hora_extra_nocturna_porcentaje, 75);
-        document.getElementById('cfgDomDiurno').value = toNumber(item.recargo_dominical_diurno_porcentaje, 75);
-        document.getElementById('cfgDomNocturno').value = toNumber(item.recargo_dominical_nocturno_porcentaje, 110);
-        document.getElementById('cfgExtraDomDiurna').value = toNumber(item.hora_extra_dominical_diurna_porcentaje, 100);
-        document.getElementById('cfgExtraDomNocturna').value = toNumber(item.hora_extra_dominical_nocturna_porcentaje, 150);
+        document.getElementById('cfgDomDiurno').value = toNumber(item.recargo_dominical_diurno_porcentaje, 90);
+        document.getElementById('cfgDomNocturno').value = toNumber(item.recargo_dominical_nocturno_porcentaje, 125);
+        document.getElementById('cfgExtraDomDiurna').value = toNumber(item.hora_extra_dominical_diurna_porcentaje, 115);
+        document.getElementById('cfgExtraDomNocturna').value = toNumber(item.hora_extra_dominical_nocturna_porcentaje, 165);
         document.getElementById('cfgDedSalud').value = toNumber(item.deduccion_salud_porcentaje, 4);
         document.getElementById('cfgDedPension').value = toNumber(item.deduccion_pension_porcentaje, 4);
         document.getElementById('cfgDedSolidaridad').value = toNumber(item.deduccion_fondo_solidaridad_porcentaje, 0);
@@ -1122,19 +1122,19 @@
           moneda: normalize(document.getElementById('cfgMoneda').value).toUpperCase(),
           salario_minimo_mensual: toNumber(document.getElementById('cfgSalarioMinimo').value, 1750905),
           auxilio_transporte_legal_mensual: toNumber(document.getElementById('cfgAuxilioLegal').value, 249095),
-          horas_ordinarias_semana: toNumber(document.getElementById('cfgHorasSemana').value, 44),
+          horas_ordinarias_semana: toNumber(document.getElementById('cfgHorasSemana').value, 42),
           horas_ordinarias_dia: toNumber(document.getElementById('cfgHorasDia').value, 8),
           dias_nomina_mes: Math.max(1, Math.round(toNumber(document.getElementById('cfgDiasMes').value, 30))),
-          divisor_hora_ordinaria: toNumber(document.getElementById('cfgDivisorHora').value, 220),
+          divisor_hora_ordinaria: toNumber(document.getElementById('cfgDivisorHora').value, 210),
           hora_nocturna_desde: normalize(document.getElementById('cfgNocDesde').value),
           hora_nocturna_hasta: normalize(document.getElementById('cfgNocHasta').value),
           recargo_nocturno_porcentaje: toNumber(document.getElementById('cfgRecargoNocturno').value, 35),
           hora_extra_diurna_porcentaje: toNumber(document.getElementById('cfgExtraDiurna').value, 25),
           hora_extra_nocturna_porcentaje: toNumber(document.getElementById('cfgExtraNocturna').value, 75),
-          recargo_dominical_diurno_porcentaje: toNumber(document.getElementById('cfgDomDiurno').value, 75),
-          recargo_dominical_nocturno_porcentaje: toNumber(document.getElementById('cfgDomNocturno').value, 110),
-          hora_extra_dominical_diurna_porcentaje: toNumber(document.getElementById('cfgExtraDomDiurna').value, 100),
-          hora_extra_dominical_nocturna_porcentaje: toNumber(document.getElementById('cfgExtraDomNocturna').value, 150),
+          recargo_dominical_diurno_porcentaje: toNumber(document.getElementById('cfgDomDiurno').value, 90),
+          recargo_dominical_nocturno_porcentaje: toNumber(document.getElementById('cfgDomNocturno').value, 125),
+          hora_extra_dominical_diurna_porcentaje: toNumber(document.getElementById('cfgExtraDomDiurna').value, 115),
+          hora_extra_dominical_nocturna_porcentaje: toNumber(document.getElementById('cfgExtraDomNocturna').value, 165),
           deduccion_salud_porcentaje: toNumber(document.getElementById('cfgDedSalud').value, 4),
           deduccion_pension_porcentaje: toNumber(document.getElementById('cfgDedPension').value, 4),
           deduccion_fondo_solidaridad_porcentaje: toNumber(document.getElementById('cfgDedSolidaridad').value, 0),
@@ -2144,6 +2144,14 @@
             setMessage('nominaAgenteInternetResult', err.message || 'No se pudo ejecutar agente internet.', 'error');
           });
         });
+        var agenteResult = document.getElementById('nominaAgenteInternetResult');
+        if (agenteResult) agenteResult.addEventListener('click', function (ev) {
+          var btn = ev.target.closest('button[data-nomina-agent-field]');
+          if (!btn) return;
+          aplicarPropuestaNomina(btn).catch(function (err) {
+            setMessage('nominaAgenteInternetResult', err.message || 'No se pudo aplicar el dato seleccionado.', 'error');
+          });
+        });
 
         window.addEventListener('nomina:refresh-all', function () {
           refreshAll().catch(function (err) {
@@ -2158,9 +2166,40 @@
         box.textContent = 'Consultando agente internet...';
         var data = await requestJSON('/api/empresa/nomina/agente_internet?empresa_id=' + encodeURIComponent(String(state.empresaID)), { method: 'POST' });
         var proposals = data.proposals || [];
-        box.innerHTML = '<strong>Propuesta del agente internet</strong><ul>' + proposals.map(function (p) {
-          return '<li><b>' + esc(p.campo || '') + ':</b> actual: ' + esc(p.actual || '-') + ' | sugerido: ' + esc(p.sugerido || '-') + '</li>';
-        }).join('') + '</ul><span>No se aplicaron cambios. Revisa y confirma manualmente antes de actualizar parametros.</span>';
+        box.innerHTML = '<strong>Comparacion normativa para aprobar campo por campo</strong><div class="table-wrap"><table><thead><tr><th>Dato</th><th>Actual</th><th>Propuesto</th><th>Vigencia y fuente</th><th>Accion</th></tr></thead><tbody>' + proposals.map(function (p) {
+          var source = p.fuente_url ? '<a href="' + esc(p.fuente_url) + '" target="_blank" rel="noopener">' + esc(p.fuente || 'Fuente oficial') + '</a>' : esc(p.fuente || '-');
+          var value = typeof p.valor_sugerido === 'undefined' ? p.sugerido : p.valor_sugerido;
+          return '<tr><td><b>' + esc(p.campo || '') + '</b><br><small>' + esc(p.observacion || '') + '</small></td><td>' + esc(p.actual || '-') + '</td><td>' + esc(p.sugerido || '-') + '</td><td>' + source + '<br><small>' + esc(p.vigencia || '') + '</small></td><td><button type="button" class="btn secondary" data-nomina-agent-field="' + esc(p.campo_config || '') + '" data-nomina-agent-value="' + esc(String(value == null ? '' : value)) + '">Aplicar este dato</button></td></tr>';
+        }).join('') + '</tbody></table></div><span>Ningun valor se modifica hasta presionar su boton de confirmacion.</span>';
+      }
+
+      async function aplicarPropuestaNomina(btn) {
+        var field = normalize(btn.getAttribute('data-nomina-agent-field'));
+        var rawValue = normalize(btn.getAttribute('data-nomina-agent-value'));
+        var inputByField = {
+          salario_minimo_mensual: 'cfgSalarioMinimo',
+          auxilio_transporte_legal_mensual: 'cfgAuxilioLegal',
+          horas_ordinarias_semana: 'cfgHorasSemana',
+          divisor_hora_ordinaria: 'cfgDivisorHora',
+          hora_nocturna_desde: 'cfgNocDesde',
+          recargo_dominical_diurno_porcentaje: 'cfgDomDiurno',
+          recargo_dominical_nocturno_porcentaje: 'cfgDomNocturno',
+          hora_extra_dominical_diurna_porcentaje: 'cfgExtraDomDiurna',
+          hora_extra_dominical_nocturna_porcentaje: 'cfgExtraDomNocturna'
+        };
+        var input = document.getElementById(inputByField[field] || '');
+        if (!field || !input) throw new Error('La propuesta no corresponde a un campo editable.');
+        if (!window.confirm('Actualizar solo "' + field + '" de ' + input.value + ' a ' + rawValue + '?')) return;
+        input.value = rawValue;
+        var payload = buildConfigPayload();
+        var resp = await requestJSON('/api/empresa/nomina?empresa_id=' + encodeURIComponent(state.empresaID) + '&action=config', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        applyConfig(resp && resp.configuracion ? resp.configuracion : payload);
+        setMessage('cfgMsg', 'Dato normativo actualizado: ' + field + '.', 'success');
+        await ejecutarAgenteInternetNomina();
       }
 
       async function bootstrap() {

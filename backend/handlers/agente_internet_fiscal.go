@@ -12,12 +12,16 @@ import (
 )
 
 type agenteInternetFiscalProposal struct {
-	Campo       string `json:"campo"`
-	Actual      string `json:"actual"`
-	Sugerido    string `json:"sugerido"`
-	Fuente      string `json:"fuente"`
-	RequiereOK  bool   `json:"requiere_confirmacion"`
-	Observacion string `json:"observacion"`
+	Campo         string      `json:"campo"`
+	CampoConfig   string      `json:"campo_config,omitempty"`
+	Actual        string      `json:"actual"`
+	Sugerido      string      `json:"sugerido"`
+	ValorSugerido interface{} `json:"valor_sugerido,omitempty"`
+	Fuente        string      `json:"fuente"`
+	FuenteURL     string      `json:"fuente_url,omitempty"`
+	Vigencia      string      `json:"vigencia,omitempty"`
+	RequiereOK    bool        `json:"requiere_confirmacion"`
+	Observacion   string      `json:"observacion"`
 }
 
 func EmpresaAgenteInternetNominaHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
@@ -48,7 +52,15 @@ func empresaAgenteInternetFiscalHandler(dbEmp, dbSuper *sql.DB, modulo string) h
 		if country == "" {
 			country = "CO"
 		}
-		proposals := buildAgenteInternetFiscalProposals(modulo, country)
+		proposals := buildAgenteInternetFiscalProposals(modulo, country, nil)
+		if strings.EqualFold(modulo, "nomina") {
+			cfg, cfgErr := dbpkg.GetEmpresaNominaConfiguracion(dbEmp, empresaID)
+			if cfgErr != nil {
+				writeJSON(w, http.StatusInternalServerError, map[string]any{"ok": false, "error": "No se pudo consultar la configuracion actual de nomina"})
+				return
+			}
+			proposals = buildAgenteInternetFiscalProposals(modulo, country, cfg)
+		}
 		writeJSON(w, http.StatusOK, map[string]any{
 			"ok":          true,
 			"modulo":      modulo,
@@ -110,11 +122,26 @@ func reserveEmpresaAgentAdvancedUsage(dbEmp, dbSuper *sql.DB, empresaID int64, u
 	return usage, limits, nil
 }
 
-func buildAgenteInternetFiscalProposals(modulo, country string) []agenteInternetFiscalProposal {
+func buildAgenteInternetFiscalProposals(modulo, country string, nominaCfg *dbpkg.EmpresaNominaConfiguracion) []agenteInternetFiscalProposal {
 	if strings.EqualFold(modulo, "nomina") {
+		if !strings.EqualFold(country, "CO") {
+			return []agenteInternetFiscalProposal{{Campo: "pais_normativo", Actual: "configuracion actual de la empresa", Sugerido: country, Fuente: "Autoridad laboral del pais", RequiereOK: true, Observacion: "No hay un catalogo oficial verificado para este pais; no se aplican cambios."}}
+		}
+		cfg := dbpkg.EmpresaNominaConfiguracion{}
+		if nominaCfg != nil {
+			cfg = *nominaCfg
+		}
+		money := func(v float64) string { return fmt.Sprintf("%.2f", v) }
 		return []agenteInternetFiscalProposal{
-			{Campo: "pais_normativo", Actual: "configuracion actual de la empresa", Sugerido: country, Fuente: "agente_internet: fuentes oficiales pendientes de revision", RequiereOK: true, Observacion: "El agente prepara comparacion antes de actualizar parametros legales."},
-			{Campo: "parametros_nomina", Actual: "valores guardados", Sugerido: "revisar salario minimo, auxilio, aportes, recargos y calendario laboral vigente", Fuente: "Ministerio de Trabajo/DIAN/UGPP segun pais", RequiereOK: true, Observacion: "No se modifica nada sin confirmacion del usuario."},
+			{Campo: "Salario minimo mensual", CampoConfig: "salario_minimo_mensual", Actual: money(cfg.SalarioMinimoMensual), Sugerido: "1750905", ValorSugerido: 1750905, Fuente: "Decreto 1469 de 2025 - Presidencia", FuenteURL: "https://www.presidencia.gov.co/Documents/251230-Decreto-1469-MinTrabajo.pdf", Vigencia: "2026", RequiereOK: true, Observacion: "Valor oficial para Colombia durante 2026."},
+			{Campo: "Auxilio de transporte mensual", CampoConfig: "auxilio_transporte_legal_mensual", Actual: money(cfg.AuxilioTransporteLegalMensual), Sugerido: "249095", ValorSugerido: 249095, Fuente: "Decreto 1470 de 2025 - Presidencia", FuenteURL: "https://www.presidencia.gov.co/Documents/251230-Decreto-1470-MinTrabajo.pdf", Vigencia: "2026", RequiereOK: true, Observacion: "Aplica a quienes cumplan los requisitos legales."},
+			{Campo: "Horas ordinarias por semana", CampoConfig: "horas_ordinarias_semana", Actual: money(cfg.HorasOrdinariasSemana), Sugerido: "42", ValorSugerido: 42, Fuente: "Ley 2101 de 2021 y Ley 2466 de 2025", FuenteURL: "https://www.funcionpublica.gov.co/eva/gestornormativo/norma.php?i=260676", Vigencia: "Desde julio de 2026", RequiereOK: true, Observacion: "Jornada maxima ordinaria general; valida excepciones del sector."},
+			{Campo: "Divisor de hora ordinaria", CampoConfig: "divisor_hora_ordinaria", Actual: money(cfg.DivisorHoraOrdinaria), Sugerido: "210", ValorSugerido: 210, Fuente: "Calculo derivado de jornada semanal de 42 horas", FuenteURL: "https://www.funcionpublica.gov.co/eva/gestornormativo/norma.php?i=166506", Vigencia: "Desde julio de 2026", RequiereOK: true, Observacion: "42 horas por 30 dias dividido entre 6 dias laborales."},
+			{Campo: "Inicio de jornada nocturna", CampoConfig: "hora_nocturna_desde", Actual: cfg.HoraNocturnaDesde, Sugerido: "19:00:00", ValorSugerido: "19:00:00", Fuente: "Ley 2466 de 2025, articulo 10", FuenteURL: "https://www.funcionpublica.gov.co/eva/gestornormativo/norma.php?i=260676", Vigencia: "Desde diciembre de 2025", RequiereOK: true, Observacion: "La jornada nocturna general inicia a las 7:00 p. m."},
+			{Campo: "Recargo por descanso obligatorio", CampoConfig: "recargo_dominical_diurno_porcentaje", Actual: money(cfg.RecargoDominicalDiurnoPorcentaje), Sugerido: "90", ValorSugerido: 90, Fuente: "Ley 2466 de 2025, articulo 14", FuenteURL: "https://www.funcionpublica.gov.co/eva/gestornormativo/norma.php?i=260676", Vigencia: "Desde 2026-07-01", RequiereOK: true, Observacion: "Incremento gradual vigente a la fecha de la consulta."},
+			{Campo: "Recargo nocturno en descanso obligatorio", CampoConfig: "recargo_dominical_nocturno_porcentaje", Actual: money(cfg.RecargoDominicalNocturnoPorcentaje), Sugerido: "125", ValorSugerido: 125, Fuente: "Ley 2466 de 2025, articulos 10 y 14", FuenteURL: "https://www.funcionpublica.gov.co/eva/gestornormativo/norma.php?i=260676", Vigencia: "Desde 2026-07-01", RequiereOK: true, Observacion: "Suma del recargo por descanso obligatorio vigente y el nocturno."},
+			{Campo: "Hora extra diurna en descanso obligatorio", CampoConfig: "hora_extra_dominical_diurna_porcentaje", Actual: money(cfg.HoraExtraDominicalDiurnaPorcentaje), Sugerido: "115", ValorSugerido: 115, Fuente: "Ley 2466 de 2025 y Codigo Sustantivo del Trabajo", FuenteURL: "https://www.funcionpublica.gov.co/eva/gestornormativo/norma.php?i=260676", Vigencia: "Desde 2026-07-01", RequiereOK: true, Observacion: "Suma del recargo de descanso obligatorio y hora extra diurna."},
+			{Campo: "Hora extra nocturna en descanso obligatorio", CampoConfig: "hora_extra_dominical_nocturna_porcentaje", Actual: money(cfg.HoraExtraDominicalNocturnaPorcentaje), Sugerido: "165", ValorSugerido: 165, Fuente: "Ley 2466 de 2025 y Codigo Sustantivo del Trabajo", FuenteURL: "https://www.funcionpublica.gov.co/eva/gestornormativo/norma.php?i=260676", Vigencia: "Desde 2026-07-01", RequiereOK: true, Observacion: "Suma del recargo de descanso obligatorio y hora extra nocturna."},
 		}
 	}
 	return []agenteInternetFiscalProposal{

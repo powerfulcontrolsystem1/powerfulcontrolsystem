@@ -10,7 +10,10 @@ extraidas del backend, atributos, PK/FK fisicas detectadas y relaciones logicas
 por aplicacion, mas casos de uso, clases UML, secuencias, actividades, estados,
 componentes, despliegue, paquetes, mapa de navegacion y flujo de datos. El
 manifiesto estructurado vive en
-`documentos/diagramas/documentacion_tecnica_completa_manifest.json`.
+`documentos/diagramas/documentacion_tecnica_completa_manifest.json`. En
+`Super administrador > Diagramas tecnicos`, el visor
+`documentacion_tecnica_completa.html` y sus paginas individuales muestran esos
+diagramas para lectura operativa.
 
 Actualizacion 2026-07-09: `Super administrador > Panel` obtiene el estado de
 continuidad desde `/super/api/servidores` con conciencia del despliegue Docker.
