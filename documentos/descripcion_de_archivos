@@ -1,9 +1,14 @@
+2026-07-09 - Panel super: deteccion real de servicios Docker
+- `backend/handlers/super_servidores_handlers.go`: consulta estados de contenedor con timeout, prioriza Docker sobre systemd y clasifica RustDesk deshabilitado como no incidente.
+- `backend/handlers/super_servidores_handlers_test.go`: cubre la conversion de estados Docker y la seleccion de la mejor fuente de estado.
+- `documentos/docker_vps_operacion.md`: documenta la fuente real de continuidad del panel super.
+
 2026-07-09 - Retiro de juegos/emuladores y contexto documental obligatorio
 - `documentos/contexto_general_del_sistema.md`: resumen obligatorio y compacto del producto, arquitectura, reglas y flujos criticos para toda consulta de agentes.
 - `documentos/contexto_especifico_del_sistema.md`: indice enlazado del contexto general hacia la documentacion de modulos, seguridad, datos, despliegue y QA.
 - `backend/db/entertainment_decommission.go`: elimina de forma idempotente la tabla retirada `super_juegos_records` al iniciar el backend.
 - Se retiran `juegos/`, `web/Juegos/`, `web/img/juegos/`, el handler/rutas/pruebas de emulacion y los mounts Docker asociados.
-- `AGENTS.md`, `copilot-instructions.md`, `documentos/README.md` y `documentos/contexto_codex.md`: exigen leer el contexto general antes de cualquier tarea y usar el contexto especifico como indice.
+- `AGENTS.md`, `documentos/README.md` y `documentos/contexto_codex.md`: exigen leer el contexto general antes de cualquier tarea y usar el contexto especifico como indice exclusivo de Codex.
 - `scripts/rs.ps1`: ejecuta preflight, actualizacion y sincronizacion en procesos hijo para propagar su codigo de salida sin que un `exit` interno interrumpa el flujo antes de tiempo.
 - `scripts/sync_to_vps.ps1`: elimina rutas retiradas antes de extraer el paquete remoto, evitando archivos estaticos huerfanos tras un despliegue incremental.
 

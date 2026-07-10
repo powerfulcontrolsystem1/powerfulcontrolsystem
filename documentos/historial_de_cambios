@@ -1,7 +1,12 @@
+2026-07-09: Panel super - falsos errores de continuidad.
+- Causa: el monitor leía `systemctl` desde `pcs-backend`, aunque Backend, Nginx y PostgreSQL se ejecutan como contenedores Docker; eso convertía servicios operativos en prioridades criticas.
+- Correccion: `/super/api/servidores` consulta el estado Docker con timeout y usa systemd solo como fallback; RustDesk deshabilitado queda neutral. Las acciones listar, probar y administrar exigen directamente el rol `super_administrador`.
+- Pruebas: `go test ./handlers -run 'Test(DockerInspectStatus|PreferServiceStatus)$' -count=1`, compilacion dirigida de handlers y verificacion visual posterior al despliegue.
+
 2026-07-09: Retiro integral de juegos/emuladores y contexto documental.
 - Se elimina el modulo recreativo completo: frontend `web/Juegos`, runtime `juegos`, assets, enlace super, rutas `/emulador`, endpoint publico de records, schema/handler/pruebas y volumenes Docker.
 - El backend ejecuta `DecommissionRemovedEntertainmentArtifacts` para retirar `super_juegos_records` de forma idempotente; cambio destructivo solicitado explicitamente para datos exclusivos del modulo retirado.
-- Se crean `contexto_general_del_sistema.md` y `contexto_especifico_del_sistema.md`; AGENTS/Copilot/README/contexto Codex fijan la lectura del primero como requisito para todo agente.
+- Se crean `contexto_general_del_sistema.md` y `contexto_especifico_del_sistema.md`; AGENTS/README/contexto Codex fijan la lectura del primero como requisito para todo agente.
 - Se corrige `scripts/rs.ps1`: sus pasos corren en procesos hijo para que un `exit` interno no cancele el despliegue antes de sincronizar el VPS.
 - Se corrige `scripts/sync_to_vps.ps1`: antes de extraer el paquete limpia las rutas retiradas de juegos/emulador para no dejar archivos estaticos antiguos expuestos en el VPS.
 

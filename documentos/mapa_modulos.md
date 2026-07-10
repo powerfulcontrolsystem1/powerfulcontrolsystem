@@ -3,6 +3,13 @@
 Tabla de ubicacion rapida para no buscar desde cero cada modulo. Si una fila
 queda incompleta al implementar una mejora, actualizarla en el mismo cambio.
 
+Actualizacion 2026-07-09: `Super administrador > Panel` obtiene el estado de
+continuidad desde `/super/api/servidores` con conciencia del despliegue Docker.
+`pcs-backend`, `pcs-frontend`/`pcs-edge` y `pcs-postgres` se verifican por
+contenedor y no se marcan como fallo por no existir unidades `systemd` dentro
+del backend. RustDesk deshabilitado se informa como `disabled`, sin crear una
+prioridad critica.
+
 Actualizacion 2026-07-09: PCS retira por completo juegos y emuladores. Ya no
 existen las rutas `/Juegos/*`, `/emulador/*` ni `/api/public/juegos/records`,
 ni sus assets, runtime, volumen Docker o tabla de records. No confundir este

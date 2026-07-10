@@ -5,7 +5,8 @@ Estado: vigente, actualizado con carrito unificado plano para venta directa/esta
 
 Actualizacion 2026-06-18: facturacion electronica DIAN Colombia queda validada en produccion para PCS. El portal DIAN muestra `1PCS2` y `1PCS3` como `Aprobado con notificacion`; el siguiente consecutivo operativo es `1PCS4`, y `Regla 90` se documenta como pendiente de acuse original, no como aceptacion automatica.
 
-Este archivo organiza la lectura tecnica y funcional del repositorio para desarrollo, soporte y trabajo asistido por Copilot.
+Este archivo organiza la lectura tecnica y funcional del repositorio para
+desarrollo, soporte y trabajo asistido por Codex.
 
 ## Orden de lectura recomendado
 

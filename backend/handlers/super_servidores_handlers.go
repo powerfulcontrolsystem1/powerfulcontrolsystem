@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"database/sql"
 	"encoding/json"
 	"fmt"
@@ -75,6 +76,16 @@ func loadRustDeskPanelConfig(dbSuper *sql.DB) rustDeskPanelConfig {
 
 func buildRustDeskServiceState(dbSuper *sql.DB, includeProbe bool) ServicioEstado {
 	panelCfg := loadRustDeskPanelConfig(dbSuper)
+	if !panelCfg.Enabled && !shouldUseRustDeskRemoteExec(dbSuper) {
+		return ServicioEstado{
+			ID:          "rustdesk",
+			Nombre:      "RustDesk (Soporte Remoto)",
+			Estado:      "disabled",
+			Detalle:     "Soporte remoto no configurado. No afecta la continuidad de PCS mientras permanezca deshabilitado.",
+			Habilitado:  false,
+			Componentes: map[string]string{},
+		}
+	}
 	hbbsService := resolveRustDeskServiceName(dbSuper, rustDeskHBBSCandidates)
 	hbbrService := resolveRustDeskServiceName(dbSuper, rustDeskHBBRCandidates)
 	hbbsStatus := checkSystemctlStatus(dbSuper, hbbsService)
@@ -118,6 +129,9 @@ func buildRustDeskServiceState(dbSuper *sql.DB, includeProbe bool) ServicioEstad
 
 func SuperServidoresListHandler(dbSuper *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		if _, ok := paginaPrincipalRequireSuperAdmin(w, r, dbSuper); !ok {
+			return
+		}
 		servicios := []ServicioEstado{
 			buildRustDeskServiceState(dbSuper, false),
 			buildOnlyOfficeServiceState(dbSuper),
@@ -181,20 +195,26 @@ func buildOnlyOfficeServiceState(dbSuper *sql.DB) ServicioEstado {
 }
 
 func buildPCSBackendServiceState(dbSuper *sql.DB) ServicioEstado {
+	systemdStatus := checkSystemctlStatus(dbSuper, "powerfulcontrolsystem.service")
+	dockerStatus, dockerContainer := dockerServiceStatus("pcs-backend")
 	state := ServicioEstado{
 		ID:         "pcs_backend",
-		Nombre:     "Backend PCS (systemd)",
+		Nombre:     "Backend PCS (Docker)",
 		Estado:     "unknown",
-		Detalle:    "Servicio principal del backend.",
+		Detalle:    "Servicio principal del backend en Docker.",
 		Habilitado: true,
 		Componentes: map[string]string{
-			"powerfulcontrolsystem.service": checkSystemctlStatus(dbSuper, "powerfulcontrolsystem.service"),
+			"powerfulcontrolsystem.service": systemdStatus,
+			"docker":                        dockerStatus,
 		},
 	}
-	if state.Componentes["powerfulcontrolsystem.service"] == "active" {
+	if dockerContainer != "" {
+		state.Componentes["docker_container"] = dockerContainer
+	}
+	if dockerStatus == "active" || systemdStatus == "active" {
 		state.Estado = "active"
 	} else {
-		state.Estado = state.Componentes["powerfulcontrolsystem.service"]
+		state.Estado = preferServiceStatus(dockerStatus, systemdStatus)
 	}
 	if runtime.GOOS != "windows" {
 		rss, _ := readLinuxProcessRSSKBByGrep("server_linux_amd64|pos-backend|powerfulcontrolsystem")
@@ -206,18 +226,26 @@ func buildPCSBackendServiceState(dbSuper *sql.DB) ServicioEstado {
 }
 
 func buildNginxServiceState(dbSuper *sql.DB) ServicioEstado {
+	systemdStatus := checkSystemctlStatus(dbSuper, "nginx")
+	dockerStatus, dockerContainer := dockerServiceStatus("pcs-edge", "pcs-frontend")
 	state := ServicioEstado{
 		ID:         "nginx",
-		Nombre:     "Nginx (reverse proxy)",
-		Estado:     checkSystemctlStatus(dbSuper, "nginx"),
-		Detalle:    "Proxy HTTPS y rutas públicas.",
+		Nombre:     "Nginx (Docker)",
+		Estado:     "unknown",
+		Detalle:    "Proxy HTTPS y rutas públicas operado por Docker.",
 		Habilitado: true,
 		Componentes: map[string]string{
-			"nginx": checkSystemctlStatus(dbSuper, "nginx"),
+			"nginx":  systemdStatus,
+			"docker": dockerStatus,
 		},
 	}
-	if state.Componentes["nginx"] == "active" {
+	if dockerContainer != "" {
+		state.Componentes["docker_container"] = dockerContainer
+	}
+	if dockerStatus == "active" || systemdStatus == "active" {
 		state.Estado = "active"
+	} else {
+		state.Estado = preferServiceStatus(dockerStatus, systemdStatus)
 	}
 	if runtime.GOOS != "windows" {
 		rss, _ := readLinuxProcessRSSKBByGrep("nginx: master|nginx: worker")
@@ -229,6 +257,7 @@ func buildNginxServiceState(dbSuper *sql.DB) ServicioEstado {
 }
 
 func buildPostgresServiceState(dbSuper *sql.DB) ServicioEstado {
+	dockerStatus, dockerContainer := dockerServiceStatus("pcs-postgres")
 	state := ServicioEstado{
 		ID:          "postgres",
 		Nombre:      "PostgreSQL",
@@ -237,14 +266,17 @@ func buildPostgresServiceState(dbSuper *sql.DB) ServicioEstado {
 		Habilitado:  true,
 		Componentes: map[string]string{},
 	}
-	if runtime.GOOS == "windows" {
-		state.Estado = "unavailable"
-		return state
-	}
-	// postgresql service name varies; try generic.
 	pgStatus := checkSystemctlStatus(dbSuper, "postgresql")
 	state.Componentes["postgresql"] = pgStatus
-	state.Estado = pgStatus
+	state.Componentes["docker"] = dockerStatus
+	if dockerContainer != "" {
+		state.Componentes["docker_container"] = dockerContainer
+	}
+	if dockerStatus == "active" || pgStatus == "active" {
+		state.Estado = "active"
+	} else {
+		state.Estado = preferServiceStatus(dockerStatus, pgStatus)
+	}
 	rss, _ := readLinuxProcessRSSKBByGrep("postgres:|postgresql")
 	if rss > 0 {
 		state.Componentes["mem_rss_kb"] = fmt.Sprintf("%d", rss)
@@ -252,8 +284,91 @@ func buildPostgresServiceState(dbSuper *sql.DB) ServicioEstado {
 	return state
 }
 
+func dockerServiceStatus(containers ...string) (string, string) {
+	if runtime.GOOS == "windows" || len(containers) == 0 {
+		return "unavailable", ""
+	}
+	bestStatus := "unavailable"
+	bestContainer := ""
+	for _, container := range containers {
+		container = strings.TrimSpace(container)
+		if container == "" {
+			continue
+		}
+		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+		out, err := exec.CommandContext(ctx, "docker", "inspect", "-f", "{{.State.Status}}|{{if .State.Health}}{{.State.Health.Status}}{{end}}", container).Output()
+		cancel()
+		status := "unavailable"
+		if err == nil {
+			status = dockerInspectStatus(string(out))
+		}
+		if serviceStatusRank(status) > serviceStatusRank(bestStatus) {
+			bestStatus = status
+			bestContainer = container
+		}
+		if status == "active" {
+			return status, container
+		}
+	}
+	return bestStatus, bestContainer
+}
+
+func dockerInspectStatus(raw string) string {
+	parts := strings.Split(strings.TrimSpace(raw), "|")
+	state, health := "", ""
+	if len(parts) > 0 {
+		state = strings.ToLower(strings.TrimSpace(parts[0]))
+	}
+	if len(parts) > 1 {
+		health = strings.ToLower(strings.TrimSpace(parts[1]))
+	}
+	if health == "unhealthy" || state == "dead" {
+		return "error"
+	}
+	if state == "running" && (health == "" || health == "healthy") {
+		return "active"
+	}
+	if state == "running" || state == "restarting" || state == "created" || health == "starting" {
+		return "degraded"
+	}
+	if state == "exited" || state == "paused" {
+		return "inactive"
+	}
+	return "unavailable"
+}
+
+func preferServiceStatus(statuses ...string) string {
+	best := "unavailable"
+	for _, status := range statuses {
+		if serviceStatusRank(status) > serviceStatusRank(best) {
+			best = status
+		}
+	}
+	return best
+}
+
+func serviceStatusRank(status string) int {
+	switch strings.ToLower(strings.TrimSpace(status)) {
+	case "active":
+		return 5
+	case "degraded", "activating":
+		return 4
+	case "unavailable", "unknown":
+		return 3
+	case "inactive", "deactivating":
+		return 2
+	case "error", "failed":
+		return 1
+	default:
+		return 0
+	}
+}
+
 func SuperServidoresToggleHandler(dbSuper *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		if _, ok := paginaPrincipalRequireSuperAdmin(w, r, dbSuper); !ok {
+			return
+		}
 		var payload struct {
 			ID     string `json:"id"`
 			Accion string `json:"accion"`
@@ -297,6 +412,9 @@ func SuperServidoresToggleHandler(dbSuper *sql.DB) http.HandlerFunc {
 
 func SuperServidoresProbeHandler(dbSuper *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		if _, ok := paginaPrincipalRequireSuperAdmin(w, r, dbSuper); !ok {
+			return
+		}
 		service := strings.TrimSpace(r.URL.Query().Get("id"))
 		if service == "" {
 			service = "rustdesk"

@@ -5,7 +5,9 @@ Estado: en ejecucion
 
 ## Objetivo
 
-Implementar una capa documental empresarial que convierta el proyecto en un sistema mas predecible, auditable y escalable, con menor margen de error para cambios asistidos por Copilot y para evoluciones futuras del equipo.
+Implementar una capa documental empresarial que convierta el proyecto en un
+sistema mas predecible, auditable y escalable, con menor margen de error para
+cambios asistidos por Codex y para evoluciones futuras del equipo.
 
 ## Principios de implantacion
 

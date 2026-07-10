@@ -1,3 +1,9 @@
+2026-07-09: Infraestructura del panel super.
+- `/super/api/servidores`, `/super/api/servidores/probar` y
+  `/super/api/servidores/toggle` exigen sesion con rol
+  `super_administrador`. Exponen y controlan solo infraestructura global; no
+  reciben `empresa_id` ni conceden acceso a roles empresariales.
+
 2026-07-08: Nota de ventas, facturacion electronica y menu flotante
 - `linkFacturasElectronicas` queda disponible como lectura de documentos en Operacion y ventas y conserva aislamiento por `empresa_id`.
 - Las acciones de anulacion de facturacion electronica (`anular`, `anular_factura`, `anular_factura_nota_credito`) resuelven a accion `D`; el rol base autorizado es `admin_empresa`.

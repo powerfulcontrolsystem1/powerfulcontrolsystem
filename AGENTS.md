@@ -1,8 +1,7 @@
 # AGENTS.md
 
-Guia operativa para Codex en este repositorio. Esta guia adapta la estructura de
-agentes usada por GitHub Copilot en `.github/agents/` y `copilot-instructions.md`
-al flujo de trabajo de Codex.
+Guia operativa exclusiva para Codex en este repositorio. `AGENTS.md` y los
+documentos de contexto son la fuente vigente para el trabajo de los agentes.
 
 ## Rol principal
 

@@ -113,7 +113,7 @@ Cuando el cambio crea o modifica un flujo tecnico, actualizar en la misma iterac
 5. `documentos/historial_de_cambios`.
 6. `CHANGELOG.md`.
 
-## Guardrails especificos para Copilot
+## Guardrails especificos para Codex
 
 - no inferir nuevas reglas de negocio si no aparecen en las fuentes canonicas.
 - no crear archivos de documentacion paralelos si ya existe una fuente canonica del mismo tema.

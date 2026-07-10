@@ -3,7 +3,9 @@
 Fecha: 2026-04-30
 Estado: vigente
 
-Este paquete instala la capa de gobernanza tecnica formal del proyecto para reducir errores de implementacion, mejorar la calidad de las decisiones, facilitar el trabajo de Copilot y sostener la escalabilidad del sistema.
+Este paquete instala la capa de gobernanza tecnica formal del proyecto para
+reducir errores de implementacion, mejorar la calidad de las decisiones,
+facilitar el trabajo de Codex y sostener la escalabilidad del sistema.
 
 ## Objetivos
 

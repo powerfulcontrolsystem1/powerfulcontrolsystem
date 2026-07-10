@@ -97,6 +97,12 @@ Arranque base:
 - `pcs-backend`: API Go de la plataforma.
 - `pcs-frontend`: Nginx interno que sirve `web` y reenvia API al backend.
 
+El monitor `Super administrador > Panel` consulta estos contenedores mediante
+`/super/api/servidores`: `pcs-backend`, `pcs-frontend`/`pcs-edge` y
+`pcs-postgres`. No debe usar `systemctl` como fuente unica, porque el backend
+corre dentro de Docker y las unidades del host no representan su estado real.
+RustDesk solo debe generar alerta cuando este habilitado y falle su comprobacion.
+
 ## Acceso SSH operativo desde Codex
 
 Desde Windows/Codex, la conexion al VPS se resuelve con el archivo local privado:
