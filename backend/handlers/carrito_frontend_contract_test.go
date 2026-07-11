@@ -14,6 +14,7 @@ func TestCarritoPaymentButtonHasDirectAndDelegatedHandler(t *testing.T) {
 	}
 	source := string(raw)
 	for _, required := range []string{
+		"onclick=\"handlePagarCarritoClick(event)\"",
 		"document.addEventListener('click'",
 		"btnPagarCarrito.addEventListener('click', handlePagarCarritoClick)",
 		"btn.dataset.paymentClickLock === '1'",

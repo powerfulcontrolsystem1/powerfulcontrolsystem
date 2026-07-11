@@ -18,6 +18,8 @@ Fecha: 2026-07-11. Alcance: empresa interna Powerful Control System (empresa 12)
   debe ser la fuente de verdad para la disponibilidad del checkout.
 - Offline: las pruebas cubren propietario de sesion, caja obligatoria y claves
   de sincronizacion idempotentes por empresa/cajero.
+- Cobro POS: el boton conserva enlace inline, directo y delegado al mismo
+  handler, todos protegidos por el cerrojo anti-doble-clic del carrito.
 
 ## Condiciones externas antes de produccion
 

@@ -37346,6 +37346,9 @@ Archivos modificados:
 2026-07-11: Reparacion del orquestador rs.
 - `scripts/rs.ps1` no vuelve a derivar un `powershell.exe` inexistente desde una instalacion PowerShell Core. Resuelve `pwsh.exe`/`powershell.exe` segun la edicion actual y conserva fallback por comando instalado antes de ejecutar preflight, actualizacion y sincronizacion.
 
+2026-07-11: Cobro POS compatible con navegadores embebidos.
+- El boton `Pagar y cerrar carrito` conserva el handler inline, directo y delegado hacia la misma funcion. El bloqueo `paymentClickLock` evita que las tres vias dupliquen una venta o pago.
+
 2026-07-11: rs: actualizar repositorio y sincronizar VPS
 PushStatus: OK
 Archivos modificados:
