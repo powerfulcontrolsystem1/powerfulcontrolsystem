@@ -25,12 +25,11 @@ Estado: preparado en la rama `security/full-hardening`; no desplegado.
 
 ## Cambios pendientes antes de desplegar
 
-- Completar CSRF con token sincronizador en todas las mutaciones autenticadas y actualizar los clientes que no envien el encabezado.
+- Validar en staging el origen CSRF para los clientes heredados y completar tokens sincronizadores solo donde una integracion no pueda enviar Origin/Referer.
 - Inventariar, firmar e idempotentizar todos los webhooks y callbacks externos.
 - Auditar cada handler multiempresa contra `RequireEmpresaAccess` y agregar pruebas cruzadas de lectura, escritura, exportacion y archivos.
-- Reemplazar el WebRTC publico actual por autenticacion, tenant validado y autorizacion por sesion; no habilitarlo en produccion hasta entonces.
-- Endurecer Docker: eliminar el montaje de Docker socket del backend, fijar tags/digests, ejecutar sin root, usar filesystem readonly y capability drop.
-- Fijar acciones GitHub por SHA, agregar `gosec`, `govulncheck`, escaneo de secretos/SBOM y proteger la rama principal desde GitHub.
+- Verificar en staging los permisos de volumen del backend no root y los flujos administrativos que antes dependian del socket Docker, ahora retirado del contenedor de negocio.
+- Configurar desde GitHub la proteccion de rama, el escaneo de secretos/SBOM y la revision requerida; son controles de plataforma que no se pueden imponer desde archivos versionados.
 
 ## Despliegue y rollback
 

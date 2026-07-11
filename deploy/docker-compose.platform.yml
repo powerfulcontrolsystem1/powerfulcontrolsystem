@@ -62,6 +62,13 @@ services:
     image: ${PCS_BACKEND_IMAGE:-pcs-backend:local}
     container_name: pcs-backend
     restart: unless-stopped
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=64m
     depends_on:
       postgres:
         condition: service_healthy
@@ -107,7 +114,6 @@ services:
       - pcs_web_uploads:/app/web/uploads
       - pcs_backups:/app/backup
       - pcs_downloads:/app/descargas
-      - /var/run/docker.sock:/var/run/docker.sock
     expose:
       - "8080"
     healthcheck:

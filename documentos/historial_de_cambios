@@ -4,6 +4,11 @@
 - Se agregan limites HTTP, cabeceras de seguridad, confianza explicita de proxy, cifrado AES-GCM versionado con clave Base64 estricta y logging sin query strings ni tenant no validado.
 - No se ejecuto `rs`, sincronizacion ni cambio de VPS: requiere revision, staging y configuracion manual de variables antes de publicar.
 
+2026-07-11: Continuacion de endurecimiento de entrega.
+- CSRF por origen se aplica a mutaciones autenticadas con cookie; WebRTC deja de ser publico y exige sesion, permiso empresarial y mismo origen.
+- Las acciones GitHub se fijan por SHA, CI agrega `go vet`, detector de carrera, `govulncheck` y `gosec`.
+- Backend Docker opera como usuario no root, read-only, sin capabilities nuevas y sin socket Docker del host; el cliente de datafonos usa timeout explicito y no expone cuerpos crudos de proveedores.
+
 2026-07-10: Super administrador - diagramas tecnicos consolidados.
 - Se retiraron del submenu los 15 diagramas generales anteriores y se mantuvieron los 19 diagramas profesionales del paquete `documentacion_tecnica_completa`, accesibles desde visor general y paginas individuales.
 - Se completa el ERD PostgreSQL con catalogo navegable de tablas, atributos, PK, FKs fisicas y relaciones logicas; sustituye el acceso resumido en el submenu super.

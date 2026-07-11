@@ -63,8 +63,10 @@ type httpDatafonoProviderClient struct {
 	httpClient *http.Client
 }
 
+var datafonoHTTPClient = &http.Client{Timeout: 15 * time.Second}
+
 func EmpresaDatafonosHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
-	client := &httpDatafonoProviderClient{httpClient: http.DefaultClient}
+	client := &httpDatafonoProviderClient{httpClient: datafonoHTTPClient}
 	return empresaDatafonosHandlerWithClient(dbEmp, dbSuper, client)
 }
 
@@ -373,7 +375,7 @@ func (c *httpDatafonoProviderClient) doProviderJSON(ctx context.Context, cfg dbp
 	}
 	httpClient := c.httpClient
 	if httpClient == nil {
-		httpClient = http.DefaultClient
+		httpClient = datafonoHTTPClient
 	}
 	resp, err := httpClient.Do(req)
 	if err != nil {
@@ -386,7 +388,7 @@ func (c *httpDatafonoProviderClient) doProviderJSON(ctx context.Context, cfg dbp
 		_ = json.Unmarshal(raw, &decoded)
 	}
 	if decoded == nil {
-		decoded = map[string]interface{}{"raw": string(raw)}
+		decoded = map[string]interface{}{}
 	}
 	out := normalizeDatafonoProviderHTTPResponse(cfg.Proveedor, decoded)
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
