@@ -7,34 +7,48 @@ import (
 	"encoding/base64"
 	"fmt"
 	"os"
+	"strings"
 )
 
-// getEncKeyFromEnv intenta obtener la clave de cifrado desde la variable `CONFIG_ENC_KEY`.
-// Se admite una cadena Base64 (preferida) o una cadena de al menos 32 bytes.
+const encryptionFormatVersion = "v1"
+const activeEncryptionKeyID = "active"
+
+// getEncKeyFromEnv requires exactly 32 random bytes in canonical Base64. Older
+// permissive behavior (padding/truncation) could silently weaken encryption.
 func getEncKeyFromEnv() ([]byte, error) {
-	s := os.Getenv("CONFIG_ENC_KEY")
+	s := strings.TrimSpace(os.Getenv("CONFIG_ENC_KEY"))
 	if s == "" {
 		return nil, fmt.Errorf("CONFIG_ENC_KEY not set")
 	}
-	if decoded, err := base64.StdEncoding.DecodeString(s); err == nil {
-		if len(decoded) >= 16 {
-			if len(decoded) >= 32 {
-				return decoded[:32], nil
-			}
-			key := make([]byte, 32)
-			copy(key, decoded)
-			return key, nil
-		}
+	decoded, err := base64.StdEncoding.DecodeString(s)
+	if err != nil || len(decoded) != 32 || base64.StdEncoding.EncodeToString(decoded) != s {
+		return nil, fmt.Errorf("CONFIG_ENC_KEY must be canonical base64 for exactly 32 bytes")
 	}
-	if len(s) >= 32 {
-		return []byte(s)[:32], nil
-	}
-	return nil, fmt.Errorf("CONFIG_ENC_KEY invalid length; provide base64 or >=32 bytes")
+	return decoded, nil
 }
 
-// EncryptString cifra texto plano usando AES-GCM y devuelve Base64(nonce|ciphertext)
+func encryptionKeyForID(keyID string) ([]byte, error) {
+	if keyID == "" || keyID == activeEncryptionKeyID {
+		return getEncKeyFromEnv()
+	}
+	for _, entry := range strings.Split(os.Getenv("CONFIG_ENC_KEY_PREVIOUS"), ",") {
+		parts := strings.SplitN(strings.TrimSpace(entry), ":", 2)
+		if len(parts) != 2 || strings.TrimSpace(parts[0]) != keyID {
+			continue
+		}
+		decoded, err := base64.StdEncoding.DecodeString(strings.TrimSpace(parts[1]))
+		if err == nil && len(decoded) == 32 && base64.StdEncoding.EncodeToString(decoded) == strings.TrimSpace(parts[1]) {
+			return decoded, nil
+		}
+		return nil, fmt.Errorf("invalid previous encryption key %q", keyID)
+	}
+	return nil, fmt.Errorf("encryption key id %q unavailable", keyID)
+}
+
+// EncryptString encrypts new data in a versioned envelope. Legacy payloads are
+// still accepted by DecryptString during a controlled key-format transition.
 func EncryptString(plain string) (string, error) {
-	key, err := getEncKeyFromEnv()
+	key, err := encryptionKeyForID(activeEncryptionKeyID)
 	if err != nil {
 		return "", err
 	}
@@ -50,18 +64,30 @@ func EncryptString(plain string) (string, error) {
 	if _, err := rand.Read(nonce); err != nil {
 		return "", err
 	}
-	ct := gcm.Seal(nil, nonce, []byte(plain), nil)
+	ct := gcm.Seal(nil, nonce, []byte(plain), []byte(encryptionFormatVersion+":"+activeEncryptionKeyID))
 	out := append(nonce, ct...)
-	return base64.StdEncoding.EncodeToString(out), nil
+	return encryptionFormatVersion + ":" + activeEncryptionKeyID + ":" + base64.StdEncoding.EncodeToString(out), nil
 }
 
 // DecryptString descifra un payload Base64(nonce|ciphertext) usando AES-GCM
 func DecryptString(payload string) (string, error) {
-	key, err := getEncKeyFromEnv()
+	keyID := activeEncryptionKeyID
+	aad := []byte(nil)
+	encoded := strings.TrimSpace(payload)
+	parts := strings.SplitN(encoded, ":", 3)
+	if len(parts) == 3 {
+		if parts[0] != encryptionFormatVersion || strings.TrimSpace(parts[1]) == "" {
+			return "", fmt.Errorf("unsupported encrypted payload format")
+		}
+		keyID = strings.TrimSpace(parts[1])
+		encoded = parts[2]
+		aad = []byte(encryptionFormatVersion + ":" + keyID)
+	}
+	key, err := encryptionKeyForID(keyID)
 	if err != nil {
 		return "", err
 	}
-	raw, err := base64.StdEncoding.DecodeString(payload)
+	raw, err := base64.StdEncoding.DecodeString(encoded)
 	if err != nil {
 		return "", err
 	}
@@ -79,7 +105,7 @@ func DecryptString(payload string) (string, error) {
 	}
 	nonce := raw[:ns]
 	ct := raw[ns:]
-	pt, err := gcm.Open(nil, nonce, ct, nil)
+	pt, err := gcm.Open(nil, nonce, ct, aad)
 	if err != nil {
 		return "", err
 	}

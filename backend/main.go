@@ -384,6 +384,9 @@ func ensureRuntimeConfigEncKey(backendDir string) error {
 		}
 		return nil
 	}
+	if strings.EqualFold(strings.TrimSpace(os.Getenv("PCS_ENV")), "production") || strings.EqualFold(strings.TrimSpace(os.Getenv("APP_ENV")), "production") {
+		return fmt.Errorf("CONFIG_ENC_KEY es obligatoria en produccion y debe ser base64 de 32 bytes")
+	}
 
 	key := make([]byte, 32)
 	if _, err := rand.Read(key); err != nil {
