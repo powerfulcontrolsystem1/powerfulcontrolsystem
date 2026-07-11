@@ -2146,6 +2146,9 @@
           setActiveButton(sectionButtons[0].dataset.target || '');
         }
         if ('IntersectionObserver' in window) {
+          const nodes = sectionButtons
+            .map(function(button){ return document.getElementById(button.dataset.target || ''); })
+            .filter(Boolean);
           const observer = new IntersectionObserver(function(entries){
             const visible = entries
               .filter(function(entry){ return entry.isIntersecting; })

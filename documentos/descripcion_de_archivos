@@ -11737,3 +11737,7 @@ backend/handlers/user_config.go - Controlador que expone /api/user/configuracion
 - `web/administrar_empresa/tutorial_tarifas_motel.html`: guia para reglas por dias, tiempo base, bloques extra y simulacion de moteles.
 - `web/administrar_empresa/tutorial_tarifas_hotel.html`: guia para tarifas por ocupacion, check-in/check-out, prioridad y simulacion hotelera.
 - `web/administrar_empresa/configuracion_de_estaciones.html`: administra tipo operativo, informacion visible y usuario asignado dentro de `estaciones_config`.
+
+2026-07-11 - Validacion preproduccion y cobro de carrito
+- `documentos/validacion_preproduccion_pcs.md`: evidencia de pruebas PCS y limites verificables de pagos, Bre-B, impresion y modo offline antes de produccion.
+- `backend/handlers/carrito_frontend_contract_test.go`: evita que el boton de pago del carrito pierda su enlace directo y su bloqueo contra doble clic.

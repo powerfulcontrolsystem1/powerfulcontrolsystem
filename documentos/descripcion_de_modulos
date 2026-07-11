@@ -4424,3 +4424,13 @@ de productos/SKUs, caja, impuestos, cliente y reglas de facturacion.
 
 2026-07-10: Compras y captura IA
 - El boton de Compras se presenta como `Carga automática de factura de compra`; la extraccion no crea una compra de forma silenciosa: deja proveedor, referencia, monto, moneda y periodo precargados para que el usuario revise y confirme el guardado.
+
+2026-07-11: Preproduccion PCS, roles operativos y cobro de carrito.
+- Carrito: `Pagar y cerrar carrito` conserva el listener delegado y agrega un listener directo con el bloqueo `paymentClickLock`; el doble clic no puede iniciar dos pagos.
+- Roles: Administrar usuarios muestra un catalogo operativo reducido para nuevas asignaciones (administrador, supervisor, cajero, vendedor, recepcion, portero, camarera/aseo, inventario, compras, talento humano, contador, propietario, auditor y operaciones). Los roles de verticales ajenas ya asignados permanecen validos y los perfiles como lavador, camarera o portero se gestionan como roles personalizados por empresa.
+- Seguridad publica: la pagina Privacidad y datos comunica cifrado en transito, secretos/configuraciones sensibles cifrados, aislamiento por empresa y control de acceso por sesion/rol sin afirmar un cifrado inexistente de toda la base de datos.
+- Super administrador: Configuracion avanzada vuelve a construir la lista de secciones observadas antes de activar `IntersectionObserver`, evitando el error `nodes is not defined`.
+- QA: ver `documentos/validacion_preproduccion_pcs.md`; Epayco/Wompi, Bre-B e impresion fisica solo se consideran aprobados en produccion despues de evidencia del proveedor, banco o hardware real.
+
+2026-07-11: Operacion de despliegue `rs`.
+- `scripts/rs.ps1` selecciona el ejecutable hijo correcto para PowerShell Core o Windows PowerShell y conserva su fallback. Esto evita que una ruta inexistente a `powershell.exe` detenga preflight, repositorio y sincronizacion antes de contactar la VPS.

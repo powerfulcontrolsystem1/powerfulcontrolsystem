@@ -37335,3 +37335,13 @@ Archivos modificados:
 PushStatus: OK
 Archivos modificados:
 - web/administrar_empresa/configuracion_de_estaciones.html
+
+2026-07-11: Revision preproduccion PCS.
+- Se ajustaron en PCS las tarifas de Habitacion 1 a COP 2.000/1.000 entre semana y COP 3.000/1.500 fin de semana; Habitacion 2 queda en COP 10.000 para pareja y COP 20.000 para tres/cuatro personas.
+- El carrito suma un enlace directo de pago, protegido por el bloqueo existente contra doble envio, y una prueba de contrato de frontend para conservarlo.
+- Administrar usuarios oculta de nuevas altas los roles globales ajenos a la operacion POS; no elimina ni modifica asignaciones historicas, y conserva roles propios por empresa.
+- Privacidad y datos se alinea con los controles tecnicos reales. Configuracion avanzada corrige el observador de secciones que usaba `nodes` sin inicializar.
+- Se registra `documentos/validacion_preproduccion_pcs.md` con evidencia verificable y limites de pasarelas, Bre-B, impresoras y offline antes de produccion.
+
+2026-07-11: Reparacion del orquestador rs.
+- `scripts/rs.ps1` no vuelve a derivar un `powershell.exe` inexistente desde una instalacion PowerShell Core. Resuelve `pwsh.exe`/`powershell.exe` segun la edicion actual y conserva fallback por comando instalado antes de ejecutar preflight, actualizacion y sincronizacion.

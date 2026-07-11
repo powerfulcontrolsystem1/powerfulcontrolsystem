@@ -12371,6 +12371,11 @@
       handlePagarCarritoClick(e);
     });
 
+    const btnPagarCarrito = document.getElementById('btnPagarCarrito');
+    if (btnPagarCarrito) {
+      btnPagarCarrito.addEventListener('click', handlePagarCarritoClick);
+    }
+
     document.getElementById('btnActivarSesionCarrito').addEventListener('click', async function() {
       const selected = getSelectedCarrito();
       if (!selected) return;

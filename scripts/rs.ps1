@@ -33,6 +33,18 @@ $scriptDir = $PSScriptRoot
 $updateScript = Join-Path $scriptDir "actualizar_repositorio.ps1"
 $syncScript = Join-Path $scriptDir "sync_to_vps.ps1"
 $preflightScript = Join-Path $scriptDir "profesional_preflight.ps1"
+$childPowerShell = if ($PSVersionTable.PSEdition -eq "Core") {
+  Join-Path $PSHOME "pwsh.exe"
+} else {
+  Join-Path $PSHOME "powershell.exe"
+}
+if (-not (Test-Path -LiteralPath $childPowerShell)) {
+  $fallbackShell = Get-Command pwsh, powershell -ErrorAction SilentlyContinue | Select-Object -First 1
+  if ($null -eq $fallbackShell) {
+    throw "No se encontro un ejecutable PowerShell para ejecutar los pasos de rs"
+  }
+  $childPowerShell = $fallbackShell.Source
+}
 
 if (-not (Test-Path -LiteralPath $updateScript)) {
   throw "No se encontro el script requerido: $updateScript"
@@ -75,7 +87,7 @@ function Invoke-Step {
   }
   $childArgs = @("-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", ($commandParts -join " "))
   $global:LASTEXITCODE = 0
-  & (Join-Path $PSHOME "powershell.exe") @childArgs
+  & $childPowerShell @childArgs
   $exitCode = if ($null -ne $LASTEXITCODE) { [int]$LASTEXITCODE } else { 0 }
   if ($exitCode -ne 0) {
     Write-Host "[ERROR] $Name fallo con codigo $exitCode." -ForegroundColor Red

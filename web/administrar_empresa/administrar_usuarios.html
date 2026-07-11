@@ -122,7 +122,7 @@
         <div class="form-col">
           <label class="form-label">Rol</label>
           <select id="rol_usuario_id" class="form-input" required></select>
-          <div class="form-help">Puedes usar roles globales o roles personalizados creados solo para esta empresa.</div>
+          <div class="form-help">Elige un rol operativo base o un rol personalizado de esta empresa. Los perfiles especializados se crean como roles propios para no mezclar verticales ajenos.</div>
         </div>
       </div>
 
@@ -343,11 +343,16 @@
       }
     }
 
+    const operationalRoleKeys = new Set([
+      'admin_empresa', 'supervisor_sucursal', 'cajero', 'vendedor', 'recepcion',
+      'portero', 'servicio_limpieza', 'inventario', 'compras', 'recursos_humanos',
+      'contador', 'empresario', 'auditor', 'operacion', 'mesero', 'tecnico_solar'
+    ]);
+
     function fillRolesSelect(selected) {
       const select = document.getElementById('rol_usuario_id');
       select.innerHTML = '<option value="">-- Seleccionar --</option>';
-      state.roles.forEach(function(role) {
-        if (role.estado && role.estado !== 'activo') return;
+      selectableRoles(selected).forEach(function(role) {
         const opt = document.createElement('option');
         opt.value = role.id;
         opt.textContent = roleLabel(role);
@@ -364,7 +369,26 @@
 
     function roleLabel(role) {
       const name = String(role && role.nombre || 'Rol sin nombre').trim();
-      return isCustomRole(role) ? (name + ' (personalizado)') : name;
+      const names = {
+        admin_empresa: 'Administrador',
+        supervisor_sucursal: 'Supervisor',
+        cajero: 'Cajero',
+        vendedor: 'Vendedor',
+        recepcion: 'Recepcion',
+        portero: 'Portero',
+        servicio_limpieza: 'Camarera / aseo',
+        inventario: 'Inventario y bodega',
+        compras: 'Compras',
+        recursos_humanos: 'Talento humano',
+        contador: 'Contador',
+        empresario: 'Propietario / gerencia',
+        auditor: 'Auditor',
+        operacion: 'Operaciones',
+        mesero: 'Mesero',
+        tecnico_solar: 'Tecnico especializado'
+      };
+      const display = isCustomRole(role) ? name : (names[canonicalRoleKey(name)] || name);
+      return isCustomRole(role) ? (display + ' (personalizado)') : display;
     }
 
     function normalizeRoleKey(value) {
@@ -407,10 +431,22 @@
         rrhh: 'recursos_humanos',
         tecnico_solar: 'tecnico_solar',
         tecnico: 'tecnico_solar',
+        contabilidad: 'contador',
+        jefe_bodega: 'inventario',
+        responsable_bodega: 'inventario',
         dueno: 'empresario',
         propietario: 'empresario'
       };
       return aliases[key] || key;
+    }
+
+    function selectableRoles(selectedID) {
+      const selected = String(selectedID || '');
+      return state.roles.filter(function(role) {
+        if (role.estado && role.estado !== 'activo') return false;
+        if (String(role.id || '') === selected) return true;
+        return isCustomRole(role) || operationalRoleKeys.has(canonicalRoleKey(role && role.nombre));
+      });
     }
 
     function roleHelpAnchor(role) {
@@ -452,7 +488,7 @@
       const select = document.getElementById('rol_usuario_id');
       if (!box || !select) return;
       const selected = String(select.value || '');
-      const roles = state.roles.filter(function(role) { return !(role.estado && role.estado !== 'activo'); });
+      const roles = selectableRoles(selected);
       if (!roles.length) {
         box.innerHTML = '<div class="form-help">No hay roles activos disponibles.</div>';
         return;
@@ -467,7 +503,7 @@
             '<button type="button" class="btn secondary role-select">Seleccionar</button>' +
             '<a class="btn secondary role-help" target="_blank" rel="noopener">Saber mas</a>' +
           '</div>';
-        row.querySelector('strong').textContent = role.nombre || 'Rol sin nombre';
+        row.querySelector('strong').textContent = roleLabel(role).replace(' (personalizado)', '');
         if (isCustomRole(role)) {
           const badge = document.createElement('span');
           badge.className = 'custom-role-badge';
@@ -503,9 +539,7 @@
     }
 
     function baseRoles() {
-      return state.roles.filter(function(role) {
-        return !isCustomRole(role) && !(role.estado && role.estado !== 'activo');
-      });
+      return selectableRoles('').filter(function(role) { return !isCustomRole(role); });
     }
 
     function customRoles() {
@@ -768,9 +802,10 @@
       });
       if (previousUser) userSelect.value = previousUser;
 
+      const user = state.users.find(function(item) { return String(item.id) === String(userSelect.value || ''); });
+      const roleToPreserve = previousRole || (user && user.rol_usuario_id);
       roleSelect.innerHTML = '<option value="">-- Seleccionar nuevo rol --</option>';
-      state.roles.forEach(function(role) {
-        if (role.estado && role.estado !== 'activo') return;
+      selectableRoles(roleToPreserve).forEach(function(role) {
         const opt = document.createElement('option');
         opt.value = String(role.id);
         opt.textContent = roleLabel(role);
@@ -778,7 +813,6 @@
       });
       if (previousRole) roleSelect.value = previousRole;
 
-      const user = state.users.find(function(item) { return String(item.id) === String(userSelect.value || ''); });
       if (!user) {
         current.innerHTML = '<strong>Sin usuario seleccionado</strong><small>Selecciona un usuario para ver su rol actual y asignar uno nuevo.</small>';
         return;

@@ -4827,3 +4827,11 @@
 - El bootstrap crea la configuracion aislada de soporte remoto para empresas existentes y futuras sin sobrescribir personalizaciones.
 - El endpoint super de soporte remoto ahora exige rol super administrador y registra auditoria.
 - 2026-07-09: `Credito, cobranza y nomina guiada` agrega paz y salvo PDF con validacion de saldo/cuotas y auditoria, tutorial propio de credito, recordatorios de cartera por empresa con correo/WhatsApp opt-in e idempotencia, y convierte el agente de Nomina Colombia en una comparacion oficial campo por campo con confirmacion individual. Los valores 2026 incluyen salario minimo, auxilio, jornada de 42 horas, jornada nocturna desde 19:00 y recargo de descanso obligatorio del 90% vigente desde julio.
+
+# 2026-07-11 - Revision preproduccion PCS
+
+- Ajustadas visualmente las tarifas de prueba de motel/hotel de PCS a los valores reducidos solicitados.
+- El boton de cobro del carrito mantiene handler delegado y directo, con prueba de regresion para prevenir doble pago.
+- El selector de usuarios deja de ofrecer perfiles de verticales no relacionadas para nuevas altas; los perfiles existentes se preservan y los especializados se manejan por empresa.
+- La pagina publica de privacidad describe aislamiento empresarial, controles de sesion/rol y cifrado real de transporte y secretos.
+- Configuracion avanzada corrige el error JavaScript del observador de secciones. La evidencia y limites de validacion externa se documentan en `documentos/validacion_preproduccion_pcs.md`.
