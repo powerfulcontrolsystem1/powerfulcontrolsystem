@@ -1,8 +1,10 @@
 package handlers
 
 import (
+	"crypto/sha256"
 	"crypto/subtle"
 	"database/sql"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -21,6 +23,10 @@ import (
 )
 
 const googleOAuthRedirectCookieName = "oauth_redirect_url"
+const googleOAuthStateAdminCookieName = "oauth_google_admin_state"
+const googleOAuthStateUsuarioCookieName = "oauth_google_usuario_state"
+const googleOAuthPKCEAdminCookieName = "oauth_google_admin_pkce"
+const googleOAuthPKCEUsuarioCookieName = "oauth_google_usuario_pkce"
 const googleOAuthUsuarioFlowCookieName = "oauth_usuario_flow"
 const googleOAuthUsuarioEmpresaCookieName = "oauth_usuario_empresa_id"
 const googleOAuthUsuarioInvitationCookieName = "oauth_usuario_invitation_token"
@@ -28,6 +34,82 @@ const googleOAuthUsuarioAcceptContractCookieName = "oauth_usuario_accept_contrac
 const browserSessionStateCookieName = "browser_session_active"
 const minAdminPasswordLength = 8
 const googlePasswordSetupPagePath = "/registrar_contrasena_usuario_de_google.html"
+
+const googleOAuthCookiePath = "/auth/google"
+const googleOAuthFlowTTL = 600
+
+func hashOAuthValue(value string) string {
+	sum := sha256.Sum256([]byte(strings.TrimSpace(value)))
+	return fmt.Sprintf("%x", sum[:])
+}
+
+func googleOAuthCookieName(usuario bool, state bool) string {
+	if usuario {
+		if state {
+			return googleOAuthStateUsuarioCookieName
+		}
+		return googleOAuthPKCEUsuarioCookieName
+	}
+	if state {
+		return googleOAuthStateAdminCookieName
+	}
+	return googleOAuthPKCEAdminCookieName
+}
+
+func setGoogleOAuthCookie(w http.ResponseWriter, r *http.Request, name, value string, maxAge int) {
+	http.SetCookie(w, &http.Cookie{Name: name, Value: value, Path: googleOAuthCookiePath, HttpOnly: true, Secure: SessionCookieSecure(r), SameSite: http.SameSiteLaxMode, MaxAge: maxAge})
+}
+
+func clearGoogleOAuthFlowCookies(w http.ResponseWriter, r *http.Request) {
+	for _, usuario := range []bool{false, true} {
+		setGoogleOAuthCookie(w, r, googleOAuthCookieName(usuario, true), "", -1)
+		setGoogleOAuthCookie(w, r, googleOAuthCookieName(usuario, false), "", -1)
+	}
+}
+
+func beginGoogleOAuthFlow(w http.ResponseWriter, r *http.Request, usuario bool) (state, verifier, challenge string, err error) {
+	state, err = utils.GenerateSecureToken(32)
+	if err != nil {
+		return "", "", "", err
+	}
+	verifier, err = utils.GenerateSecureToken(48)
+	if err != nil {
+		return "", "", "", err
+	}
+	sum := sha256.Sum256([]byte(verifier))
+	challenge = base64.RawURLEncoding.EncodeToString(sum[:])
+	clearGoogleOAuthFlowCookies(w, r)
+	setGoogleOAuthCookie(w, r, googleOAuthCookieName(usuario, true), hashOAuthValue(state), googleOAuthFlowTTL)
+	setGoogleOAuthCookie(w, r, googleOAuthCookieName(usuario, false), verifier, googleOAuthFlowTTL)
+	return state, verifier, challenge, nil
+}
+
+func validateAndConsumeGoogleOAuthState(w http.ResponseWriter, r *http.Request) (usuario bool, verifier string, err error) {
+	state := strings.TrimSpace(r.URL.Query().Get("state"))
+	if state == "" {
+		clearGoogleOAuthFlowCookies(w, r)
+		return false, "", errors.New("oauth state missing")
+	}
+	hash := hashOAuthValue(state)
+	for _, candidate := range []bool{false, true} {
+		stateCookie, stateErr := r.Cookie(googleOAuthCookieName(candidate, true))
+		verifierCookie, verifierErr := r.Cookie(googleOAuthCookieName(candidate, false))
+		if stateErr != nil || verifierErr != nil {
+			continue
+		}
+		stored := strings.TrimSpace(stateCookie.Value)
+		if len(stored) == len(hash) && subtle.ConstantTimeCompare([]byte(stored), []byte(hash)) == 1 {
+			verifier = strings.TrimSpace(verifierCookie.Value)
+			clearGoogleOAuthFlowCookies(w, r)
+			if verifier == "" {
+				return false, "", errors.New("oauth verifier missing")
+			}
+			return candidate, verifier, nil
+		}
+	}
+	clearGoogleOAuthFlowCookies(w, r)
+	return false, "", errors.New("oauth state invalid or expired")
+}
 
 // SessionCookieSecure resuelve si una cookie de sesión debe emitirse como Secure
 // considerando terminación TLS local o por proxy inverso.
@@ -899,13 +981,18 @@ func googleUsuarioCookieValue(r *http.Request, name string) string {
 // HandleGoogleLogin devuelve un http.HandlerFunc configurado con clientID y redirectURL
 func HandleGoogleLogin(clientID, redirectURL string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		state := "state-token"
 		if clientID == "" {
 			http.Error(w, "Acceso bloqueado: configuración incompleta (GOOGLE_CLIENT_ID no definido)", http.StatusInternalServerError)
 			return
 		}
 		log.Printf("handleGoogleLogin: oauth redirect requested (client configured=%t)", clientID != "")
 		clearGoogleUsuarioFlowCookies(w, r)
+		state, _, challenge, err := beginGoogleOAuthFlow(w, r, false)
+		if err != nil {
+			log.Printf("handleGoogleLogin: no se pudo iniciar oauth: %v", err)
+			http.Error(w, "No se pudo iniciar el acceso seguro con Google", http.StatusInternalServerError)
+			return
+		}
 		effectiveRedirectURL := resolveOAuthRedirectURL(r, redirectURL)
 		vals := url.Values{
 			"client_id":              {clientID},
@@ -915,6 +1002,8 @@ func HandleGoogleLogin(clientID, redirectURL string) http.HandlerFunc {
 			"include_granted_scopes": {"true"},
 			"access_type":            {"offline"},
 			"state":                  {state},
+			"code_challenge":         {challenge},
+			"code_challenge_method":  {"S256"},
 			// Forzar selección explícita de cuenta sin pedir consentimiento extra en cada login.
 			"prompt": {"select_account"},
 		}
@@ -936,9 +1025,14 @@ func HandleGoogleLogin(clientID, redirectURL string) http.HandlerFunc {
 // HandleGoogleUsuarioLogin inicia OAuth para usuarios operativos ya invitados por una empresa.
 func HandleGoogleUsuarioLogin(clientID, redirectURL string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		state := "state-token-usuario"
 		if clientID == "" {
 			http.Error(w, "Acceso bloqueado: configuracion incompleta (GOOGLE_CLIENT_ID no definido)", http.StatusInternalServerError)
+			return
+		}
+		state, _, challenge, err := beginGoogleOAuthFlow(w, r, true)
+		if err != nil {
+			log.Printf("handleGoogleUsuarioLogin: no se pudo iniciar oauth: %v", err)
+			http.Error(w, "No se pudo iniciar el acceso seguro con Google", http.StatusInternalServerError)
 			return
 		}
 		effectiveRedirectURL := resolveOAuthRedirectURL(r, redirectURL)
@@ -950,6 +1044,8 @@ func HandleGoogleUsuarioLogin(clientID, redirectURL string) http.HandlerFunc {
 			"include_granted_scopes": {"true"},
 			"access_type":            {"offline"},
 			"state":                  {state},
+			"code_challenge":         {challenge},
+			"code_challenge_method":  {"S256"},
 			"prompt":                 {"select_account"},
 		}
 
@@ -995,6 +1091,12 @@ func HandleGoogleUsuarioLogin(clientID, redirectURL string) http.HandlerFunc {
 func HandleGoogleCallback(dbEmpresas *sql.DB, dbSuper *sql.DB, clientID, clientSecret, redirectURL string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		q := r.URL.Query()
+		usuarioFlow, verifier, stateErr := validateAndConsumeGoogleOAuthState(w, r)
+		if stateErr != nil {
+			log.Printf("HandleGoogleCallback: callback OAuth rechazado: %v", stateErr)
+			http.Error(w, "Solicitud de acceso invalida o vencida", http.StatusBadRequest)
+			return
+		}
 		if errStr := q.Get("error"); errStr != "" {
 			http.Error(w, "error from provider: "+errStr, http.StatusBadRequest)
 			return
@@ -1022,7 +1124,7 @@ func HandleGoogleCallback(dbEmpresas *sql.DB, dbSuper *sql.DB, clientID, clientS
 			})
 		}
 
-		tokenResp, err := auth.ExchangeCodeForToken(code, clientID, clientSecret, effectiveRedirectURL)
+		tokenResp, err := auth.ExchangeCodeForTokenWithPKCE(r.Context(), code, clientID, clientSecret, effectiveRedirectURL, verifier)
 		if err != nil {
 			log.Println("token exchange error:", err)
 			http.Error(w, "token exchange failed", http.StatusInternalServerError)
@@ -1035,8 +1137,13 @@ func HandleGoogleCallback(dbEmpresas *sql.DB, dbSuper *sql.DB, clientID, clientS
 			http.Error(w, "failed to fetch userinfo", http.StatusInternalServerError)
 			return
 		}
+		if !userinfo.EmailVerified || strings.TrimSpace(userinfo.Email) == "" {
+			log.Printf("HandleGoogleCallback: cuenta Google sin correo verificado")
+			http.Error(w, "La cuenta de Google debe tener un correo verificado", http.StatusForbidden)
+			return
+		}
 
-		if googleUsuarioFlowActive(r) {
+		if usuarioFlow && googleUsuarioFlowActive(r) {
 			clearGoogleUsuarioFlowCookies(w, r)
 			handleGoogleUsuarioCallback(w, r, dbEmpresas, dbSuper, userinfo)
 			return
@@ -1085,7 +1192,8 @@ func HandleGoogleCallback(dbEmpresas *sql.DB, dbSuper *sql.DB, clientID, clientS
 			token, err := utils.GenerateSecureToken(32)
 			if err != nil {
 				log.Println("failed to generate session token:", err)
-				token = userinfo.Sub
+				http.Error(w, "No se pudo crear la sesion", http.StatusInternalServerError)
+				return
 			}
 			ip := r.RemoteAddr
 			ua := r.UserAgent()

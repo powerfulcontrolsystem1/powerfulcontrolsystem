@@ -15,10 +15,10 @@ func (f roundTripFunc) RoundTrip(req *http.Request) (*http.Response, error) {
 
 func withMockHTTPClient(t *testing.T, fn roundTripFunc) {
 	t.Helper()
-	original := http.DefaultClient
-	http.DefaultClient = &http.Client{Transport: fn}
+	original := googleHTTPClient
+	googleHTTPClient = &http.Client{Transport: fn}
 	t.Cleanup(func() {
-		http.DefaultClient = original
+		googleHTTPClient = original
 	})
 }
 

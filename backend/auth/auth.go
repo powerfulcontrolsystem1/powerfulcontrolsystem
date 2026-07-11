@@ -1,37 +1,60 @@
 package auth
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
 	"net/url"
 	"strings"
+	"time"
 )
+
+const maxGoogleResponseBytes = 1 << 20
+
+// googleHTTPClient is deliberately explicit: identity-provider calls must not
+// inherit global client behavior or wait forever on a remote dependency.
+var googleHTTPClient = &http.Client{Timeout: 15 * time.Second}
 
 // ExchangeCodeForToken realiza POST a Google token endpoint
 func ExchangeCodeForToken(code, clientID, clientSecret, redirectURL string) (*TokenResponse, error) {
+	return ExchangeCodeForTokenWithPKCE(context.Background(), code, clientID, clientSecret, redirectURL, "")
+}
+
+// ExchangeCodeForTokenWithPKCE exchanges a Google authorization code and uses
+// a PKCE verifier when the authorization flow supplied one.
+func ExchangeCodeForTokenWithPKCE(ctx context.Context, code, clientID, clientSecret, redirectURL, codeVerifier string) (*TokenResponse, error) {
 	data := url.Values{}
 	data.Set("code", code)
 	data.Set("client_id", clientID)
 	data.Set("client_secret", clientSecret)
 	data.Set("redirect_uri", redirectURL)
 	data.Set("grant_type", "authorization_code")
+	if strings.TrimSpace(codeVerifier) != "" {
+		data.Set("code_verifier", codeVerifier)
+	}
 
-	req, err := http.NewRequest("POST", "https://oauth2.googleapis.com/token", strings.NewReader(data.Encode()))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, "https://oauth2.googleapis.com/token", strings.NewReader(data.Encode()))
 	if err != nil {
 		return nil, err
 	}
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := googleHTTPClient.Do(req)
 	if err != nil {
 		return nil, err
 	}
 	defer resp.Body.Close()
-	b, _ := io.ReadAll(resp.Body)
+	b, readErr := io.ReadAll(io.LimitReader(resp.Body, maxGoogleResponseBytes+1))
+	if readErr != nil {
+		return nil, fmt.Errorf("read token response: %w", readErr)
+	}
+	if len(b) > maxGoogleResponseBytes {
+		return nil, fmt.Errorf("token response too large")
+	}
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("token endpoint returned %d: %s", resp.StatusCode, string(b))
+		return nil, fmt.Errorf("token endpoint returned %d", resp.StatusCode)
 	}
 	var tr TokenResponse
 	if err := json.Unmarshal(b, &tr); err != nil {
@@ -42,16 +65,25 @@ func ExchangeCodeForToken(code, clientID, clientSecret, redirectURL string) (*To
 
 // FetchUserInfo solicita el endpoint userinfo
 func FetchUserInfo(accessToken string) (*UserInfo, error) {
-	req, _ := http.NewRequest("GET", "https://www.googleapis.com/oauth2/v3/userinfo", nil)
+	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "https://www.googleapis.com/oauth2/v3/userinfo", nil)
+	if err != nil {
+		return nil, err
+	}
 	req.Header.Set("Authorization", "Bearer "+accessToken)
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := googleHTTPClient.Do(req)
 	if err != nil {
 		return nil, err
 	}
 	defer resp.Body.Close()
-	b, _ := io.ReadAll(resp.Body)
+	b, readErr := io.ReadAll(io.LimitReader(resp.Body, maxGoogleResponseBytes+1))
+	if readErr != nil {
+		return nil, fmt.Errorf("read userinfo response: %w", readErr)
+	}
+	if len(b) > maxGoogleResponseBytes {
+		return nil, fmt.Errorf("userinfo response too large")
+	}
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("userinfo endpoint %d: %s", resp.StatusCode, string(b))
+		return nil, fmt.Errorf("userinfo endpoint %d", resp.StatusCode)
 	}
 	var u UserInfo
 	if err := json.Unmarshal(b, &u); err != nil {
