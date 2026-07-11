@@ -15,6 +15,14 @@ rand_secret() {
   date +%s%N | sha256sum | awk '{print $1}'
 }
 
+rand_config_enc_key() {
+  if command -v openssl >/dev/null 2>&1; then
+    openssl rand 32 | base64 | tr -d '\n'
+    return
+  fi
+  return 1
+}
+
 get_env_value() {
   local file="$1"
   local key="$2"
@@ -44,6 +52,25 @@ upsert_env() {
   fi
 }
 
+# Converts the legacy raw/hex effective 32-byte key to canonical Base64 while
+# preserving the exact AES key that encrypted existing values. It never prints
+# the key and is safe to run repeatedly.
+normalize_config_enc_key() {
+  local file="$1"
+  local value decoded_len normalized
+  value="$(get_env_value "$file" CONFIG_ENC_KEY)"
+  [ -n "$value" ] || return 0
+  decoded_len="$(printf '%s' "$value" | base64 -d 2>/dev/null | wc -c | tr -d ' ')"
+  if [ "$decoded_len" = "32" ] && [ "$(printf '%s' "$value" | base64 -d 2>/dev/null | base64 | tr -d '\n')" = "$value" ]; then
+    return 0
+  fi
+  normalized="$(printf '%s' "$value" | head -c 32 | base64 | tr -d '\n')"
+  [ "${#normalized}" -gt 0 ] || { echo "[preflight] ERROR: no se pudo normalizar CONFIG_ENC_KEY"; exit 1; }
+  upsert_env "$file" CONFIG_ENC_KEY "$normalized"
+  chmod 600 "$file" || true
+  echo "[preflight] CONFIG_ENC_KEY migrada a Base64 de 32 bytes sin alterar datos cifrados."
+}
+
 echo "[preflight] Proyecto: $PROJECT_DIR"
 test -f "$COMPOSE_FILE" || { echo "[preflight] ERROR: no existe $COMPOSE_FILE"; exit 1; }
 test -f "$ENV_EXAMPLE" || { echo "[preflight] ERROR: no existe $ENV_EXAMPLE"; exit 1; }
@@ -62,7 +89,7 @@ if [ ! -f "$ENV_FILE" ]; then
   cp "$ENV_EXAMPLE" "$ENV_FILE"
   chmod 600 "$ENV_FILE"
   upsert_env "$ENV_FILE" POSTGRES_PASSWORD "$(rand_secret)"
-  upsert_env "$ENV_FILE" CONFIG_ENC_KEY "$(rand_secret)"
+  upsert_env "$ENV_FILE" CONFIG_ENC_KEY "$(rand_config_enc_key)"
   upsert_env "$ENV_FILE" ONLYOFFICE_JWT_SECRET "$(rand_secret)"
   mail_admin_password="$(rand_secret)"
   upsert_env "$ENV_FILE" MAILU_ADMIN_PASSWORD "$mail_admin_password"
@@ -86,6 +113,11 @@ if [ -f "$BACKEND_ENV" ]; then
     upsert_env "$ENV_FILE" CONFIG_ENC_KEY "$legacy_key"
     echo "[preflight] CONFIG_ENC_KEY reutilizada desde backend/.env.local para conservar secretos cifrados."
   fi
+fi
+
+normalize_config_enc_key "$ENV_FILE"
+if [ -f "$BACKEND_ENV" ]; then
+  normalize_config_enc_key "$BACKEND_ENV"
 fi
 
 if [ -z "$(get_env_value "$ENV_FILE" MAILU_ADMIN_PASSWORD)" ]; then

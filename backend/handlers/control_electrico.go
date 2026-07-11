@@ -677,20 +677,6 @@ func domoticaEmpresaStorageFolder(dbEmp *sql.DB, empresaID int64) string {
 
 func sanitizeDomoticaStorageSlug(raw string) string {
 	return sanitizeDomoticaASCII(raw)
-	value := strings.ToLower(strings.TrimSpace(raw))
-	replacer := strings.NewReplacer("á", "a", "é", "e", "í", "i", "ó", "o", "ú", "u", "ñ", "n", " ", "_", "-", "_", ".", "_", "/", "_", "\\", "_")
-	value = replacer.Replace(value)
-	clean := make([]rune, 0, len(value))
-	for _, r := range value {
-		if (r >= 'a' && r <= 'z') || (r >= '0' && r <= '9') || r == '_' {
-			clean = append(clean, r)
-		}
-	}
-	out := strings.Trim(string(clean), "_")
-	if len(out) > 60 {
-		out = strings.Trim(out[:60], "_")
-	}
-	return out
 }
 
 func sanitizeDomoticaASCII(raw string) string {

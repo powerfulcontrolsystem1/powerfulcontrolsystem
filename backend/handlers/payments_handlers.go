@@ -453,40 +453,6 @@ func LicenciasHandler(dbSuper *sql.DB) http.HandlerFunc {
 			http.Error(w, "catalogo fijo: solo se administran las licencias globales canonicas para todas las empresas", http.StatusConflict)
 			return
 
-			log.Printf("POST /super/api/licencias payload: TipoID=%d Nombre=%q", payload.TipoID, payload.Nombre)
-			if payload.Nombre == "" {
-				http.Error(w, "nombre required", http.StatusBadRequest)
-				return
-			}
-			pais := strings.ToUpper(strings.TrimSpace(payload.PaisCodigo))
-			if pais == "" {
-				http.Error(w, "pais_codigo required", http.StatusBadRequest)
-				return
-			}
-			activoOverride := 1
-			if payload.Activo != nil {
-				activoOverride = *payload.Activo
-				if activoOverride != 0 && activoOverride != 1 {
-					http.Error(w, "invalid activo value", http.StatusBadRequest)
-					return
-				}
-			}
-			id, err := dbpkg.CreateLicenciaAdvancedWithLimitsAndCajas(dbSuper, payload.TipoID, pais, payload.Nombre, payload.Descripcion, payload.Valor, payload.DuracionDias, payload.ModulosHab, payload.EsAdicional, payload.CodigoFuncion, payload.SuperRol, payload.MaxDocumentosMensuales, payload.MaxCajasSimultaneas)
-			if err != nil {
-				log.Println("POST /super/api/licencias error:", err)
-				http.Error(w, "failed to create licencia: "+err.Error(), http.StatusInternalServerError)
-				return
-			}
-			if payload.Activo != nil && activoOverride != 1 {
-				if err := dbpkg.SetLicenciaActivo(dbSuper, id, activoOverride); err != nil {
-					log.Println("POST /super/api/licencias set activo error:", err)
-					http.Error(w, "failed to set activo: "+err.Error(), http.StatusInternalServerError)
-					return
-				}
-			}
-			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(map[string]interface{}{"id": id})
-			return
 		case http.MethodPut:
 			q := r.URL.Query()
 			idStr := q.Get("id")

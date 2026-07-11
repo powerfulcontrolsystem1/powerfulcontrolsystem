@@ -14,6 +14,10 @@ secret_hex() {
   openssl rand -hex "${1:-24}" 2>/dev/null || date +%s%N | sha256sum | awk '{print $1}'
 }
 
+secret_base64_32() {
+  openssl rand 32 2>/dev/null | base64 | tr -d '\n'
+}
+
 replace_if_placeholder() {
   key="$1"
   value="$2"
@@ -23,7 +27,7 @@ replace_if_placeholder() {
 }
 
 replace_if_placeholder "POSTGRES_PASSWORD" "$(secret_hex 24)"
-replace_if_placeholder "CONFIG_ENC_KEY" "$(secret_hex 32)"
+replace_if_placeholder "CONFIG_ENC_KEY" "$(secret_base64_32)"
 replace_if_placeholder "ONLYOFFICE_JWT_SECRET" "$(secret_hex 24)"
 chmod 600 "$ENV_FILE" || true
 

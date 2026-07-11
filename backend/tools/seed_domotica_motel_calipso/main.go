@@ -213,23 +213,6 @@ func ensureDemoImage(empresaID int64, empresaNombre string, releID int64) (strin
 
 func sanitizeFolder(raw string) string {
 	return sanitizeFolderASCII(raw)
-	value := strings.ToLower(strings.TrimSpace(raw))
-	replacer := strings.NewReplacer("á", "a", "é", "e", "í", "i", "ó", "o", "ú", "u", "ñ", "n", " ", "_", "-", "_", ".", "_")
-	value = replacer.Replace(value)
-	var out []rune
-	for _, r := range value {
-		if (r >= 'a' && r <= 'z') || (r >= '0' && r <= '9') || r == '_' {
-			out = append(out, r)
-		}
-	}
-	clean := strings.Trim(string(out), "_")
-	if clean == "" {
-		clean = "empresa"
-	}
-	if len(clean) > 60 {
-		clean = clean[:60]
-	}
-	return clean
 }
 
 func sanitizeFolderASCII(raw string) string {
