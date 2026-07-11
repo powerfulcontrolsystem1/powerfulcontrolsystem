@@ -41,6 +41,9 @@ test -f "$COMPOSE_FILE" || { echo "ERROR: no existe $COMPOSE_FILE"; exit 1; }
 test -f "$ENV_FILE" || { echo "ERROR: no existe $ENV_FILE. Ejecuta primero vps-docker-preflight.sh"; exit 1; }
 
 cd "$PROJECT_DIR"
+# Keep the deployment environment compatible with the backend's strict
+# encryption-key validation before Compose recreates application containers.
+bash deploy/scripts/vps-docker-preflight.sh
 docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" config >/dev/null
 
 email_enabled="$(get_env_value "$ENV_FILE" EMAIL_CORPORATIVO_ENABLED)"
