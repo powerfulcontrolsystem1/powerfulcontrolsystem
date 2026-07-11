@@ -272,13 +272,15 @@ func inferEmpresaIDFromRequest(r *http.Request) int64 {
 }
 
 func requestClientIP(r *http.Request) string {
-	if v := strings.TrimSpace(r.Header.Get("X-Forwarded-For")); v != "" {
+	if RequestFromTrustedProxy(r) && strings.TrimSpace(r.Header.Get("X-Forwarded-For")) != "" {
+		v := strings.TrimSpace(r.Header.Get("X-Forwarded-For"))
 		parts := strings.Split(v, ",")
 		if len(parts) > 0 {
 			return strings.TrimSpace(parts[0])
 		}
 	}
-	if v := strings.TrimSpace(r.Header.Get("X-Real-IP")); v != "" {
+	if RequestFromTrustedProxy(r) && strings.TrimSpace(r.Header.Get("X-Real-IP")) != "" {
+		v := strings.TrimSpace(r.Header.Get("X-Real-IP"))
 		return v
 	}
 	host, _, err := net.SplitHostPort(strings.TrimSpace(r.RemoteAddr))
@@ -286,6 +288,33 @@ func requestClientIP(r *http.Request) string {
 		return host
 	}
 	return strings.TrimSpace(r.RemoteAddr)
+}
+
+// RequestFromTrustedProxy only accepts forwarding headers from explicit CIDRs.
+// With no configuration, only loopback proxies are trusted for local development.
+func RequestFromTrustedProxy(r *http.Request) bool {
+	if r == nil {
+		return false
+	}
+	host, _, err := net.SplitHostPort(strings.TrimSpace(r.RemoteAddr))
+	if err != nil {
+		host = strings.TrimSpace(r.RemoteAddr)
+	}
+	ip := net.ParseIP(host)
+	if ip == nil {
+		return false
+	}
+	configured := strings.TrimSpace(os.Getenv("PCS_TRUSTED_PROXY_CIDRS"))
+	if configured == "" {
+		return ip.IsLoopback()
+	}
+	for _, rawCIDR := range strings.Split(configured, ",") {
+		_, network, parseErr := net.ParseCIDR(strings.TrimSpace(rawCIDR))
+		if parseErr == nil && network.Contains(ip) {
+			return true
+		}
+	}
+	return false
 }
 
 func firstForwardedHeaderValue(raw string) string {
@@ -315,10 +344,36 @@ func resolveRequestHost(r *http.Request) string {
 	if r == nil {
 		return ""
 	}
-	if host := firstForwardedHeaderValue(r.Header.Get("X-Forwarded-Host")); host != "" {
-		return host
+	if RequestFromTrustedProxy(r) {
+		if host := firstForwardedHeaderValue(r.Header.Get("X-Forwarded-Host")); host != "" {
+			return host
+		}
 	}
 	return strings.TrimSpace(r.Host)
+}
+
+func sensitiveNoStorePath(path string) bool {
+	path = strings.TrimSpace(path)
+	return path == "/login.html" || strings.HasPrefix(path, "/auth/") || strings.Contains(path, "recuperacion") || strings.Contains(path, "password") || strings.Contains(path, "totp")
+}
+
+// SecurityHeadersMiddleware provides conservative browser protections while
+// retaining the currently integrated payment, Google and OnlyOffice origins.
+func SecurityHeadersMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("X-Content-Type-Options", "nosniff")
+		w.Header().Set("Referrer-Policy", "strict-origin-when-cross-origin")
+		w.Header().Set("Permissions-Policy", "camera=(), microphone=(self), geolocation=(self), payment=(self)")
+		w.Header().Set("Content-Security-Policy", "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'self'; img-src 'self' data: https:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline' https://accounts.google.com https://checkout.epayco.co https://checkout.wompi.co; connect-src 'self' https: wss:; frame-src 'self' https://accounts.google.com https://checkout.epayco.co https://checkout.wompi.co https://*.google.com")
+		if r.TLS != nil || strings.EqualFold(strings.TrimSpace(r.Header.Get("X-Forwarded-Proto")), "https") && RequestFromTrustedProxy(r) {
+			w.Header().Set("Strict-Transport-Security", "max-age=31536000; includeSubDomains")
+		}
+		if sensitiveNoStorePath(r.URL.Path) {
+			w.Header().Set("Cache-Control", "no-store")
+			w.Header().Set("Pragma", "no-cache")
+		}
+		next.ServeHTTP(w, r)
+	})
 }
 
 func CanonicalPublicHostMiddleware(next http.Handler) http.Handler {

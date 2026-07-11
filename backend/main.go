@@ -1702,7 +1702,7 @@ func main() {
 	startupTrace("after_root_handler")
 
 	// Wrap DefaultServeMux with authentication, JSON error normalization and logging middleware
-	handler := utils.LoggingMiddleware(utils.CanonicalPublicHostMiddleware(utils.JSONErrorMiddleware(utils.RecoveryMiddleware(utils.AuthMiddleware(dbSuper, http.DefaultServeMux)))))
+	handler := utils.LoggingMiddleware(utils.SecurityHeadersMiddleware(utils.CanonicalPublicHostMiddleware(utils.JSONErrorMiddleware(utils.RecoveryMiddleware(utils.AuthMiddleware(dbSuper, http.DefaultServeMux))))))
 	startupTrace("after_handler_wrap")
 
 	// Respetar la variable de entorno PORT si está definida; por defecto usar 8080
@@ -1723,8 +1723,13 @@ func main() {
 	startupTrace("after_startup_event_registration")
 
 	server := &http.Server{
-		Addr:    addr,
-		Handler: handler,
+		Addr:              addr,
+		Handler:           handler,
+		ReadHeaderTimeout: 10 * time.Second,
+		ReadTimeout:       30 * time.Second,
+		WriteTimeout:      60 * time.Second,
+		IdleTimeout:       120 * time.Second,
+		MaxHeaderBytes:    1 << 20,
 	}
 
 	signalCh := make(chan os.Signal, 1)

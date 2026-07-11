@@ -812,13 +812,15 @@ func resolveOAuthScheme(r *http.Request) string {
 		return "http"
 	}
 
-	for _, header := range []string{"X-Forwarded-Proto", "X-Forwarded-Scheme"} {
-		value := strings.ToLower(firstForwardedValue(r.Header.Get(header)))
-		if value == "https" {
-			return "https"
-		}
-		if value == "http" {
-			return "http"
+	if utils.RequestFromTrustedProxy(r) {
+		for _, header := range []string{"X-Forwarded-Proto", "X-Forwarded-Scheme"} {
+			value := strings.ToLower(firstForwardedValue(r.Header.Get(header)))
+			if value == "https" {
+				return "https"
+			}
+			if value == "http" {
+				return "http"
+			}
 		}
 	}
 
@@ -834,8 +836,10 @@ func resolveOAuthHost(r *http.Request) string {
 		return ""
 	}
 
-	if host := firstForwardedValue(r.Header.Get("X-Forwarded-Host")); host != "" {
-		return host
+	if utils.RequestFromTrustedProxy(r) {
+		if host := firstForwardedValue(r.Header.Get("X-Forwarded-Host")); host != "" {
+			return host
+		}
 	}
 
 	return strings.TrimSpace(r.Host)
