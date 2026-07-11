@@ -60,9 +60,12 @@ normalize_config_enc_key() {
   local value decoded_len normalized
   value="$(get_env_value "$file" CONFIG_ENC_KEY)"
   [ -n "$value" ] || return 0
-  decoded_len="$(printf '%s' "$value" | base64 -d 2>/dev/null | wc -c | tr -d ' ')"
-  if [ "$decoded_len" = "32" ] && [ "$(printf '%s' "$value" | base64 -d 2>/dev/null | base64 | tr -d '\n')" = "$value" ]; then
-    return 0
+  decoded_len="0"
+  if decoded_len="$(printf '%s' "$value" | base64 -d 2>/dev/null | wc -c | tr -d ' ')"; then
+    reencoded="$(printf '%s' "$value" | base64 -d 2>/dev/null | base64 | tr -d '\n' || true)"
+    if [ "$decoded_len" = "32" ] && [ "$reencoded" = "$value" ]; then
+      return 0
+    fi
   fi
   normalized="$(printf '%s' "$value" | head -c 32 | base64 | tr -d '\n')"
   [ "${#normalized}" -gt 0 ] || { echo "[preflight] ERROR: no se pudo normalizar CONFIG_ENC_KEY"; exit 1; }
