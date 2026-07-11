@@ -2,13 +2,14 @@ package handlers
 
 import (
 	"github.com/gorilla/websocket"
+	"github.com/you/pos-backend/utils"
 	"log"
 	"net/http"
 	"sync"
 )
 
 var upgrader = websocket.Upgrader{
-	CheckOrigin: func(r *http.Request) bool { return true },
+	CheckOrigin: utils.IsSameOriginRequest,
 }
 
 // Map to hold signaling connections for each empresa

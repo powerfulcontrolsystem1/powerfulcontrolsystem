@@ -1451,7 +1451,7 @@ func main() {
 	// Rutas del módulo sensor de puertas: configuración protegida y endpoint público para heartbeats
 	http.HandleFunc("/api/empresa/sensor_puertas", handlers.WithEmpresaSeguridadPermissions(dbEmpresas, dbSuper, handlers.EmpresaSensorConfigHandler(dbEmpresas)))
 	http.HandleFunc("/api/public/sensor_puertas", handlers.PublicSensorPuertasHandler(dbEmpresas))
-	http.HandleFunc("/api/public/webrtc/signaling", handlers.SoporteRemotoSignalingHandler())
+	http.HandleFunc("/api/public/webrtc/signaling", handlers.WithEmpresaSeguridadPermissions(dbEmpresas, dbSuper, handlers.SoporteRemotoSignalingHandler()))
 	http.HandleFunc("/api/empresa/sensor_puertas/messages", handlers.WithEmpresaSeguridadPermissions(dbEmpresas, dbSuper, handlers.EmpresaSensorMessagesHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/control_electrico", handlers.WithEmpresaControlElectricoPermissions(dbEmpresas, dbSuper, handlers.EmpresaControlElectricoHandler(dbEmpresas, dbSuper)))
 	http.HandleFunc("/api/empresa/roles_de_usuario", handlers.WithEmpresaSeguridadPermissions(dbEmpresas, dbSuper, handlers.EmpresaRolesDeUsuarioHandler(dbEmpresas, dbSuper)))
@@ -1705,7 +1705,7 @@ func main() {
 	startupTrace("after_root_handler")
 
 	// Wrap DefaultServeMux with authentication, JSON error normalization and logging middleware
-	handler := utils.LoggingMiddleware(utils.SecurityHeadersMiddleware(utils.CanonicalPublicHostMiddleware(utils.JSONErrorMiddleware(utils.RecoveryMiddleware(utils.AuthMiddleware(dbSuper, http.DefaultServeMux))))))
+	handler := utils.LoggingMiddleware(utils.SecurityHeadersMiddleware(utils.CanonicalPublicHostMiddleware(utils.JSONErrorMiddleware(utils.RecoveryMiddleware(utils.AuthMiddleware(dbSuper, utils.CSRFMiddleware(http.DefaultServeMux)))))))
 	startupTrace("after_handler_wrap")
 
 	// Respetar la variable de entorno PORT si está definida; por defecto usar 8080

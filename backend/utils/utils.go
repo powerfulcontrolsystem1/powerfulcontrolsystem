@@ -328,6 +328,56 @@ func resolveRequestHost(r *http.Request) string {
 	return strings.TrimSpace(r.Host)
 }
 
+// IsSameOriginRequest validates browser Origin/Referer against the effective
+// host. It is used for authenticated cookie mutations and WebSocket upgrades.
+func IsSameOriginRequest(r *http.Request) bool {
+	if r == nil {
+		return false
+	}
+	requestHost := requestHostWithoutPort(resolveRequestHost(r))
+	if requestHost == "" {
+		return false
+	}
+	for _, header := range []string{"Origin", "Referer"} {
+		raw := strings.TrimSpace(r.Header.Get(header))
+		if raw == "" {
+			continue
+		}
+		parsed, err := url.Parse(raw)
+		if err != nil || parsed.Host == "" {
+			return false
+		}
+		return strings.EqualFold(requestHostWithoutPort(parsed.Host), requestHost)
+	}
+	return false
+}
+
+func isCookieAuthenticatedMutation(r *http.Request) bool {
+	if r == nil || isWebSocketUpgrade(r) {
+		return false
+	}
+	switch r.Method {
+	case http.MethodPost, http.MethodPut, http.MethodPatch, http.MethodDelete:
+		_, err := r.Cookie("session_token")
+		return err == nil
+	default:
+		return false
+	}
+}
+
+// CSRFMiddleware applies origin validation to mutable requests authenticated
+// with the HttpOnly session cookie. Bearer and signed-webhook clients do not
+// share this cookie-CSRF threat model.
+func CSRFMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if isCookieAuthenticatedMutation(r) && !IsSameOriginRequest(r) {
+			http.Error(w, "csrf origin validation failed", http.StatusForbidden)
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
+}
+
 func sensitiveNoStorePath(path string) bool {
 	path = strings.TrimSpace(path)
 	return path == "/login.html" || strings.HasPrefix(path, "/auth/") || strings.Contains(path, "recuperacion") || strings.Contains(path, "password") || strings.Contains(path, "totp")
@@ -742,7 +792,6 @@ func AuthMiddleware(dbSuper *sql.DB, next http.Handler) http.Handler {
 			"/api/internal/email_corporativo/autologin":             {},
 			"/api/public/contrato":                                  {},
 			"/api/public/turnos_atencion":                           {},
-			"/api/public/webrtc/signaling":                          {},
 			"/api/public/licencias/payment_methods":                 {},
 			"/api/public/licencias/checkout_summary":                {},
 			"/licencias/activar_sin_pago":                           {},
