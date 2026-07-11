@@ -450,21 +450,25 @@ func SetAdministradorAceptaContrato(dbConn *sql.DB, email string, acepta bool) e
 	return err
 }
 
-const sessionTokenHashPrefix = "sha256:"
-
 func hashSessionToken(token string) string {
 	sum := sha256.Sum256([]byte(strings.TrimSpace(token)))
-	return sessionTokenHashPrefix + fmt.Sprintf("%x", sum[:])
+	return fmt.Sprintf("%x", sum[:])
 }
 
-// MigrateSessionTokensToHashes removes plaintext session tokens in place. It is
-// idempotent because protected values carry an explicit version prefix. Active
-// browser cookies remain valid because lookup hashes the cookie value too.
+// MigrateSessionTokensToHashes adds a dedicated verifier column and clears the
+// legacy plaintext value. Active browser cookies remain valid because lookup
+// hashes the cookie value too.
 func MigrateSessionTokensToHashes(dbConn *sql.DB) error {
 	if dbConn == nil {
 		return fmt.Errorf("database not available")
 	}
-	rows, err := querySQLCompat(dbConn, "SELECT id, token FROM sesiones WHERE COALESCE(token,'') <> '' AND token NOT LIKE ?", sessionTokenHashPrefix+"%")
+	if _, err := execSQLCompat(dbConn, "ALTER TABLE sesiones ADD COLUMN IF NOT EXISTS token_hash VARCHAR(64)"); err != nil {
+		return err
+	}
+	if _, err := execSQLCompat(dbConn, "CREATE UNIQUE INDEX IF NOT EXISTS ux_sesiones_token_hash ON sesiones(token_hash) WHERE token_hash IS NOT NULL"); err != nil {
+		return err
+	}
+	rows, err := querySQLCompat(dbConn, "SELECT id, token FROM sesiones WHERE COALESCE(token_hash,'') = '' AND COALESCE(token,'') <> ''")
 	if err != nil {
 		return err
 	}
@@ -480,7 +484,7 @@ func MigrateSessionTokensToHashes(dbConn *sql.DB) error {
 		if err := rows.Scan(&id, &token); err != nil {
 			return err
 		}
-		if _, err := tx.Exec(rebindCompatQuery("UPDATE sesiones SET token = ? WHERE id = ?"), hashSessionToken(token), id); err != nil {
+		if _, err := tx.Exec(rebindCompatQuery("UPDATE sesiones SET token_hash = ?, token = '' WHERE id = ?"), hashSessionToken(token), id); err != nil {
 			return err
 		}
 	}
@@ -498,15 +502,15 @@ func CreateSession(dbConn *sql.DB, adminEmail, ip, userAgent, token string) erro
 	}
 	nowExpr := sqlNowExpr()
 	expiresExpr := sqlPlusHoursExpr(24)
-	query := "INSERT INTO sesiones (admin_email, token, ip, user_agent, fecha_inicio, fecha_fin, activo, fecha_creacion) VALUES (?, ?, ?, ?, " + nowExpr + ", " + expiresExpr + ", 1, " + nowExpr + ")"
-	_, err := execSQLCompat(dbConn, query, adminEmail, hashSessionToken(token), ip, userAgent)
+	query := "INSERT INTO sesiones (admin_email, token, token_hash, ip, user_agent, fecha_inicio, fecha_fin, activo, fecha_creacion) VALUES (?, ?, ?, ?, ?, " + nowExpr + ", " + expiresExpr + ", 1, " + nowExpr + ")"
+	_, err := execSQLCompat(dbConn, query, adminEmail, "", hashSessionToken(token), ip, userAgent)
 	return err
 }
 
 // RevokeSessionByToken invalida una sesión activa por token.
 func RevokeSessionByToken(dbConn *sql.DB, token string) error {
 	nowExpr := sqlNowExpr()
-	_, err := execSQLCompat(dbConn, "UPDATE sesiones SET activo = 0, fecha_fin = "+nowExpr+" WHERE token = ? AND activo = 1", hashSessionToken(token))
+	_, err := execSQLCompat(dbConn, "UPDATE sesiones SET activo = 0, fecha_fin = "+nowExpr+" WHERE token_hash = ? AND activo = 1", hashSessionToken(token))
 	return err
 }
 
@@ -1101,7 +1105,7 @@ type Session struct {
 // GetSessionByToken devuelve una sesión activa por token
 func GetSessionByToken(dbConn *sql.DB, token string) (*Session, error) {
 	condition := sessionNotExpiredCondition("fecha_fin")
-	query := "SELECT id, admin_email, token, ip, user_agent, fecha_inicio, fecha_fin, fecha_creacion, activo FROM sesiones WHERE token = ? AND activo = 1 AND " + condition + " LIMIT 1"
+	query := "SELECT id, admin_email, token_hash, ip, user_agent, fecha_inicio, fecha_fin, fecha_creacion, activo FROM sesiones WHERE token_hash = ? AND activo = 1 AND " + condition + " LIMIT 1"
 	row := queryRowSQLCompat(dbConn, query, hashSessionToken(token))
 	var s Session
 	var fechaInicio sql.NullString
@@ -1292,7 +1296,7 @@ func GetAdministradores(dbConn *sql.DB) ([]Admin, error) {
 
 // GetSesiones lista las sesiones registradas
 func GetSesiones(dbConn *sql.DB) ([]Session, error) {
-	rows, err := querySQLCompat(dbConn, "SELECT id, admin_email, token, ip, user_agent, fecha_inicio, fecha_fin, fecha_creacion, activo FROM sesiones ORDER BY id DESC")
+	rows, err := querySQLCompat(dbConn, "SELECT id, admin_email, token_hash, ip, user_agent, fecha_inicio, fecha_fin, fecha_creacion, activo FROM sesiones ORDER BY id DESC")
 	if err != nil {
 		return nil, err
 	}
@@ -1315,6 +1319,7 @@ func GetSesiones(dbConn *sql.DB) ([]Session, error) {
 		if fechaCreacion.Valid {
 			s.FechaCreacion = fechaCreacion.String
 		}
+		s.Token = ""
 		out = append(out, s)
 	}
 	return out, nil
