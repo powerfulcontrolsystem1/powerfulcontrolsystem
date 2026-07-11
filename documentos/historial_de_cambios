@@ -1,3 +1,9 @@
+2026-07-11: Endurecimiento de seguridad en rama aislada `security/full-hardening`.
+- OAuth Google elimina state fijo, incorpora PKCE, cookies temporales protegidas, comparacion constante, consumo unico y validacion de email verificado.
+- Sesiones almacenan verificadores SHA-256 y la migracion reemplaza tokens heredados; se retira el ascenso o correccion de rol desde correo en el middleware.
+- Se agregan limites HTTP, cabeceras de seguridad, confianza explicita de proxy, cifrado AES-GCM versionado con clave Base64 estricta y logging sin query strings ni tenant no validado.
+- No se ejecuto `rs`, sincronizacion ni cambio de VPS: requiere revision, staging y configuracion manual de variables antes de publicar.
+
 2026-07-10: Super administrador - diagramas tecnicos consolidados.
 - Se retiraron del submenu los 15 diagramas generales anteriores y se mantuvieron los 19 diagramas profesionales del paquete `documentacion_tecnica_completa`, accesibles desde visor general y paginas individuales.
 - Se completa el ERD PostgreSQL con catalogo navegable de tablas, atributos, PK, FKs fisicas y relaciones logicas; sustituye el acceso resumido en el submenu super.

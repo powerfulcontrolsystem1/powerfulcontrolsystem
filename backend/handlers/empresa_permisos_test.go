@@ -120,16 +120,16 @@ func TestCajeroFinanzasManualAPIRequestSoloMovimientosPermitidos(t *testing.T) {
 	}
 }
 
-func TestResolveAdminPermissionRoleForContextPreservaSuperAdminReservado(t *testing.T) {
+func TestResolveAdminPermissionRoleForContextDoesNotElevateByEmail(t *testing.T) {
 	got := resolveAdminPermissionRoleForContext(nil, "powerfulcontrolsystem@gmail.com", "cajero")
-	if got != "super_administrador" {
-		t.Fatalf("rol contexto correo reservado = %q, want super_administrador", got)
+	if got != "cajero" {
+		t.Fatalf("rol contexto no debe elevar por correo = %q, want cajero", got)
 	}
 }
 
-func TestResolveAdminPermissionRoleForSnapshotPreservaSuperAdminReservado(t *testing.T) {
+func TestResolveAdminPermissionRoleForSnapshotDoesNotElevateByEmail(t *testing.T) {
 	got := resolveAdminPermissionRoleForSnapshot("powerfulcontrolsystem@gmail.com", "cajero")
-	if got != "super_administrador" {
-		t.Fatalf("rol snapshot correo reservado = %q, want super_administrador", got)
+	if got != "cajero" {
+		t.Fatalf("rol snapshot no debe elevar por correo = %q, want cajero", got)
 	}
 }

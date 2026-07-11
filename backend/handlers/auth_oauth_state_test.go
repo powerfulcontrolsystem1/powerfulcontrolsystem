@@ -43,7 +43,7 @@ func TestGoogleOAuthStartUsesRandomStateAndPKCE(t *testing.T) {
 		}
 		foundStateCookie := false
 		for _, cookie := range oauthCookiesFromRecorder(rec) {
-			if cookie.Name == googleOAuthStateAdminCookieName {
+			if cookie.Name == googleOAuthStateAdminCookieName && cookie.MaxAge > 0 {
 				foundStateCookie = true
 				if cookie.HttpOnly == false || cookie.Path != googleOAuthCookiePath || cookie.MaxAge != googleOAuthFlowTTL || cookie.Value == state {
 					t.Fatalf("state cookie must be protected and store only a hash")

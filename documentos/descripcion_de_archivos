@@ -1,3 +1,8 @@
+2026-07-11 - Endurecimiento de seguridad aislado
+- `SECURITY.md`: politica de divulgacion responsable, manejo de incidentes y regla de secretos.
+- `.github/CODEOWNERS`: propietario obligatorio para autenticacion, pagos, base de datos, Docker y CI.
+- `documentos/endurecimiento_seguridad_2026_07_11.md`: evidencia de la rama de endurecimiento, variables, pendientes, despliegue y rollback.
+
 2026-07-09 - Documentacion tecnica completa con diagramas profesionales
 - `documentos/diagramas/documentacion_tecnica_completa.md`: paquete canonico ampliado con arquitectura general, mapa de modulos, navegacion, ERD PostgreSQL, casos de uso, clases UML, secuencias, actividades, estados, componentes, despliegue, paquetes, flujo de datos y catalogo completo de tablas extraido del backend.
 - `documentos/diagramas/documentacion_tecnica_completa_manifest.json`: manifiesto estructurado para Codex y herramientas internas con tablas, atributos, FKs fisicas detectadas, relaciones logicas por aplicacion y lista de diagramas incluidos.

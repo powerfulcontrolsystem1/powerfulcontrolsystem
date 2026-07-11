@@ -12,11 +12,16 @@ on:
   pull_request:
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   validate:
     name: Preflight, audits and Docker config
     runs-on: ubuntu-latest
     timeout-minutes: 25
+    permissions:
+      contents: read
 
     steps:
       - name: Checkout
@@ -36,6 +41,16 @@ jobs:
       - name: Professional preflight
         shell: pwsh
         run: ./scripts/profesional_preflight.ps1 -Full -SkipDockerConfig
+
+      - name: Go test and vet
+        working-directory: backend
+        run: |
+          go test ./...
+          go vet ./...
+
+      - name: Go race detector
+        working-directory: backend
+        run: go test -race ./...
 
       - name: Security audit
         run: node tools/security_audit.mjs --out documentos/reportes_profesionales
