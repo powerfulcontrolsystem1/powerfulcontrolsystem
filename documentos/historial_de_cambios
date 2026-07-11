@@ -37345,3 +37345,19 @@ Archivos modificados:
 
 2026-07-11: Reparacion del orquestador rs.
 - `scripts/rs.ps1` no vuelve a derivar un `powershell.exe` inexistente desde una instalacion PowerShell Core. Resuelve `pwsh.exe`/`powershell.exe` segun la edicion actual y conserva fallback por comando instalado antes de ejecutar preflight, actualizacion y sincronizacion.
+
+2026-07-11: rs: actualizar repositorio y sincronizar VPS
+PushStatus: OK
+Archivos modificados:
+- CHANGELOG.md
+- backend/handlers/carrito_frontend_contract_test.go
+- documentos/comandos_codex.md
+- documentos/descripcion_de_archivos
+- documentos/descripcion_de_modulos
+- documentos/historial_de_cambios
+- documentos/validacion_preproduccion_pcs.md
+- scripts/rs.ps1
+- web/administrar_empresa/administrar_usuarios.html
+- web/administrar_empresa/carrito_de_compras.html
+- web/index.html
+- web/super/configuracion_avanzada.html
