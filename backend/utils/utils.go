@@ -9,7 +9,6 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"io"
 	"log"
 	"net"
 	"net/http"
@@ -240,35 +239,12 @@ func extractEmpresaIDFromBody(raw []byte) int64 {
 }
 
 func inferEmpresaIDFromRequest(r *http.Request) int64 {
-	if id := parsePositiveInt64(r.URL.Query().Get("empresa_id")); id > 0 {
-		return id
-	}
-	if id := parsePositiveInt64(r.Header.Get("X-Empresa-ID")); id > 0 {
-		return id
-	}
 	if id := empresaIDFromContext(r.Context()); id > 0 {
 		return id
 	}
-
-	if r.Body == nil {
-		return 0
-	}
-	method := strings.ToUpper(strings.TrimSpace(r.Method))
-	if method != http.MethodPost && method != http.MethodPut && method != http.MethodPatch {
-		return 0
-	}
-	contentType := strings.ToLower(strings.TrimSpace(r.Header.Get("Content-Type")))
-	if !strings.Contains(contentType, "application/json") {
-		return 0
-	}
-
-	raw, err := io.ReadAll(r.Body)
-	if err != nil {
-		r.Body = io.NopCloser(bytes.NewReader(raw))
-		return 0
-	}
-	r.Body = io.NopCloser(bytes.NewReader(raw))
-	return extractEmpresaIDFromBody(raw)
+	// A client-provided empresa_id is not a trusted tenant identifier. Only the
+	// authorization layer may set it in request context after validation.
+	return 0
 }
 
 func requestClientIP(r *http.Request) string {
@@ -395,7 +371,7 @@ func CanonicalPublicHostMiddleware(next http.Handler) http.Handler {
 
 func writeCompanyLogEntry(empresaID int64, level, msg string) {
 	logDir := filepath.Join(".", "logs")
-	if err := os.MkdirAll(logDir, 0o755); err != nil {
+	if err := os.MkdirAll(logDir, 0o700); err != nil {
 		log.Printf("warning: no se pudo crear carpeta de logs %s: %v", logDir, err)
 		return
 	}
@@ -405,12 +381,12 @@ func writeCompanyLogEntry(empresaID int64, level, msg string) {
 		fileName = fmt.Sprintf("empresa_%d.log", empresaID)
 	}
 	filePath := filepath.Join(logDir, fileName)
-	line := fmt.Sprintf("%s [%s] %s\n", time.Now().Format(time.RFC3339), strings.ToUpper(strings.TrimSpace(level)), strings.TrimSpace(msg))
+	line := fmt.Sprintf("%s [%s] %s\n", time.Now().Format(time.RFC3339), strings.ToUpper(strings.TrimSpace(level)), sanitizeLogValue(msg))
 
 	companyLogMu.Lock()
 	defer companyLogMu.Unlock()
 
-	f, err := os.OpenFile(filePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644)
+	f, err := os.OpenFile(filePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o600)
 	if err != nil {
 		log.Printf("warning: no se pudo abrir log de empresa %s: %v", filePath, err)
 		return
@@ -420,6 +396,11 @@ func writeCompanyLogEntry(empresaID int64, level, msg string) {
 	if _, err := f.WriteString(line); err != nil {
 		log.Printf("warning: no se pudo escribir log de empresa %s: %v", filePath, err)
 	}
+}
+
+func sanitizeLogValue(value string) string {
+	value = strings.NewReplacer("\r", " ", "\n", " ", "\x00", " ").Replace(value)
+	return strings.TrimSpace(value)
 }
 
 func truncateLogMessage(s string, max int) string {
@@ -450,8 +431,8 @@ func LoggingMiddleware(next http.Handler) http.Handler {
 		start := time.Now()
 		clientIP := requestClientIP(r)
 		lrw := &loggingResponseWriter{ResponseWriter: w, status: 200}
-		log.Printf("-> req_id=%s empresa_id=%d %s %s from %s", requestID, empresaID, r.Method, r.URL.RequestURI(), clientIP)
-		writeCompanyLogEntry(empresaID, "INFO", fmt.Sprintf("req_id=%s event=request_start method=%s path=%s ip=%s ua=%q", requestID, r.Method, r.URL.RequestURI(), clientIP, r.UserAgent()))
+		log.Printf("-> req_id=%s empresa_id=%d %s %s from %s", requestID, empresaID, r.Method, r.URL.Path, clientIP)
+		writeCompanyLogEntry(empresaID, "INFO", fmt.Sprintf("req_id=%s event=request_start method=%s path=%s ip=%s", requestID, r.Method, r.URL.Path, clientIP))
 
 		next.ServeHTTP(lrw, r)
 
@@ -469,7 +450,7 @@ func LoggingMiddleware(next http.Handler) http.Handler {
 		}
 
 		log.Printf("<- req_id=%s empresa_id=%d status=%d %s %s dur_ms=%d", requestID, finalEmpresaID, lrw.status, r.Method, r.URL.Path, elapsedMs)
-		writeCompanyLogEntry(finalEmpresaID, level, fmt.Sprintf("req_id=%s event=request_end method=%s path=%s status=%d dur_ms=%d", requestID, r.Method, r.URL.RequestURI(), lrw.status, elapsedMs))
+		writeCompanyLogEntry(finalEmpresaID, level, fmt.Sprintf("req_id=%s event=request_end method=%s path=%s status=%d dur_ms=%d", requestID, r.Method, r.URL.Path, lrw.status, elapsedMs))
 	})
 }
 
