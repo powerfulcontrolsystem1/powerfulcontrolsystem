@@ -37295,3 +37295,10 @@ Archivos modificados:
 PushStatus: OK
 Archivos modificados:
 - web/administrar_empresa/tarifas_por_dia.html
+
+2026-07-10: Cierre operativo de estaciones mixtas en PCS.
+- La tarifa diaria expone nombre comercial y rango de personas, y el simulador selecciona la regla aplicable segun ocupacion.
+- La tarifa por minutos deja de reemplazar silenciosamente el bloque extra al activar cobro por fraccion.
+- Las tarjetas de estaciones permiten leer descripcion operativa y responsable sin truncar la informacion en escritorio.
+- Los inserts de propinas y comisiones manuales usan una expresion de fecha compatible con PostgreSQL cuando la fecha se deja vacia.
+- Evidencia PCS: motel 180 minutos calcula COP 30.000 de lunes a viernes y COP 45.000 sabado/domingo; hotel calcula COP 100.000 para dos personas y COP 200.000 para cuatro personas en una noche.

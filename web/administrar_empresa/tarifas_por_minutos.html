@@ -301,7 +301,7 @@
       if (valueLabel) valueLabel.textContent = enabled ? "Valor por fracción extra" : "Valor por bloque extra";
       if (help) {
         help.textContent = enabled
-          ? "Ejemplo: después de la base, cada 15 minutos o fracción cobran 10.000."
+          ? "Después de la base se cobra el bloque configurado o cualquier fracción iniciada."
           : "Ejemplo: después de la base, cada 60 minutos o fracción cobran una hora extra.";
       }
     }
@@ -938,12 +938,6 @@
         });
       });
       document.getElementById("cobrar_por_fraccion").addEventListener("change", function() {
-        if (this.checked) {
-          const minutosExtra = document.getElementById("minutos_extra");
-          const valorExtra = document.getElementById("valor_extra");
-          if (Number(minutosExtra.value || 0) === 60) minutosExtra.value = "15";
-          if (Number(valorExtra.value || 0) === 20000) valorExtra.value = "10000";
-        }
         updateExtraModeLabels();
       });
 

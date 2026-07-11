@@ -4413,6 +4413,8 @@ de productos/SKUs, caja, impuestos, cliente y reglas de facturacion.
 - Una empresa puede identificar estaciones como motel, hotel, restaurante, lavadero u operacion general y asignarles descripcion y responsable.
 - Las tarifas por minutos permiten reglas distintas por dia de semana; las tarifas diarias permiten rangos de personas y horarios de check-in/check-out.
 - Propinas por usuario o universales y comisiones por servicio permanecen auditadas por empresa. La propina no forma parte del total documental ni de la venta contable y se muestra separada en la impresion.
+- En hotel, cada regla puede tener nombre y ocupacion minima/maxima; el simulador recibe la cantidad de personas y muestra el valor aplicable antes de operar la estacion.
+- En motel, activar cobro por fraccion no modifica el bloque ni el valor escritos por el administrador.
 
 2026-07-10: Compras y captura IA
 - El boton de Compras se presenta como `Carga automática de factura de compra`; la extraccion no crea una compra de forma silenciosa: deja proveedor, referencia, monto, moneda y periodo precargados para que el usuario revise y confirme el guardado.

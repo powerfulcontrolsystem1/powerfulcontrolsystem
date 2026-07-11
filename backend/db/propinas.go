@@ -768,7 +768,7 @@ func CreateEmpresaPropinaMovimiento(dbConn *sql.DB, payload EmpresaPropinaMovimi
 		observaciones,
 		fecha_creacion,
 		fecha_actualizacion
-	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, COALESCE(NULLIF(?, ''), CURRENT_TIMESTAMP), ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
+	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, COALESCE(NULLIF(?, ''), CAST(CURRENT_TIMESTAMP AS TEXT)), ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
 		payload.EmpresaID,
 		payload.CarritoID,
 		payload.CierreCajaID,

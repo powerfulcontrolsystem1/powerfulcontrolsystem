@@ -13,6 +13,10 @@
     .camera-station-empty{font-size:.86rem;line-height:1.35}
     .camera-station-card .station-data{display:grid;gap:4px}
     .camera-station-card .btn{align-self:flex-start;margin-top:4px}
+    #estacionesGrid:not(.estaciones-thumb-mobile){grid-template-columns:repeat(auto-fit,minmax(250px,1fr));grid-auto-rows:auto}
+    #estacionesGrid:not(.estaciones-thumb-mobile) .portal-card.station-launch-card{height:auto;min-height:170px}
+    #estacionesGrid:not(.estaciones-thumb-mobile) .station-data-row{align-items:flex-start}
+    #estacionesGrid:not(.estaciones-thumb-mobile) .station-data-value{white-space:normal;overflow:visible;text-overflow:clip;overflow-wrap:anywhere;line-height:1.2}
   </style>
 </head>
 <body class="empresa-subpage estaciones-page" data-auto-estacion-labels="true">
