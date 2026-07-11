@@ -5762,7 +5762,7 @@
       }
       if (comision && Number(comision.porcentaje_comision || 0) > 0) {
         rows.push({
-          label: 'Comisión de lavado (informativa, no cobrada al cliente)',
+          label: 'Comisión de lavado (costo laboral fiscal, no cobrada al cliente)',
           value: Number(comision.porcentaje_comision || 0).toFixed(2) + '% - ' + normalize(comision.usuario_lavador || 'lavador asignado')
         });
       }

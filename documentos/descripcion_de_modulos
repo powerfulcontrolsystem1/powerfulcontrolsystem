@@ -4416,5 +4416,11 @@ de productos/SKUs, caja, impuestos, cliente y reglas de facturacion.
 - En hotel, cada regla puede tener nombre y ocupacion minima/maxima; el simulador recibe la cantidad de personas y muestra el valor aplicable antes de operar la estacion.
 - En motel, activar cobro por fraccion no modifica el bloque ni el valor escritos por el administrador.
 
+2026-07-11: Fiscalidad de comisiones y cancelacion temporizada de estaciones.
+- La comision del lavador se causa como costo laboral fiscal enlazado a la venta y queda disponible para liquidacion de nomina; no aumenta el total cobrado al cliente.
+- La propina puede coexistir con la comision para el mismo trabajador, pero permanece separada del total fiscal del documento.
+- Configuracion de estaciones expone `Tiempo para cancelar el servicio`: al activar el check se define un limite en minutos y, una vez vencido, la estacion solo puede cerrarse mediante pago.
+- El carrito permite cambiar manualmente entre tarifa por minutos (motel) y tarifa por dia (hotel), conservando la seleccion por carrito y empresa.
+
 2026-07-10: Compras y captura IA
 - El boton de Compras se presenta como `Carga automática de factura de compra`; la extraccion no crea una compra de forma silenciosa: deja proveedor, referencia, monto, moneda y periodo precargados para que el usuario revise y confirme el guardado.

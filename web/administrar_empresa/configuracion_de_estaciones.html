@@ -163,6 +163,27 @@
     </section>
 
     <section class="card empresa-section">
+      <h2>Tiempo para cancelar el servicio</h2>
+      <p class="form-help">Define el tiempo disponible para cancelar una habitacion, mesa u otra estacion despues de activarla. Al vencer, el usuario debe usar Pagar y cerrar carrito.</p>
+      <div class="form">
+        <div class="form-row">
+          <label class="form-col form-help" style="display:flex;align-items:center;gap:8px;">
+            <input id="stationCancelTimeEnabled" type="checkbox">
+            Activar tiempo limite para cancelar el servicio
+          </label>
+          <div class="form-col">
+            <label class="form-label" for="stationCancelTimeMinutes">Minutos permitidos</label>
+            <input id="stationCancelTimeMinutes" class="form-input" type="number" min="1" max="1440" step="1" value="5">
+          </div>
+        </div>
+        <div class="form-actions">
+          <button id="saveStationCancelTimeBtn" class="btn" type="button">Guardar tiempo para cancelar</button>
+        </div>
+        <div id="stationCancelTimeMsg" class="form-help"></div>
+      </div>
+    </section>
+
+    <section class="card empresa-section">
       <h2>Apariencia de tarjetas</h2>
       <div class="form">
         <div class="form-row">
@@ -746,6 +767,7 @@
     var empresaId = resolveEmpresaIdFromContext();
     var messageBox = document.getElementById('messageBox');
     var current = null;
+    var stationCancelTimeConfig = null;
     var camarasCatalog = [];
     var bodegasCatalog = [];
 
@@ -1207,6 +1229,43 @@
         throw new Error(msg || ('HTTP ' + response.status));
       }
       return data;
+    }
+
+    function setStationCancelTimeMessage(message, isError) {
+      var el = document.getElementById('stationCancelTimeMsg');
+      if (!el) return;
+      el.textContent = String(message || '');
+      el.classList.toggle('error', !!isError);
+    }
+
+    async function loadStationCancelTimeConfig() {
+      if (!empresaId) return;
+      var data = await requestJSON('/api/empresa/tarifas_por_minutos?empresa_id=' + encodeURIComponent(empresaId) + '&action=config');
+      stationCancelTimeConfig = data && typeof data === 'object' ? data : {};
+      var enabled = !!stationCancelTimeConfig.margen_desactivacion_habilitado;
+      var minutes = Number(stationCancelTimeConfig.margen_desactivacion_minutos || 0);
+      document.getElementById('stationCancelTimeEnabled').checked = enabled;
+      document.getElementById('stationCancelTimeMinutes').value = String(minutes > 0 ? minutes : 5);
+    }
+
+    async function saveStationCancelTimeConfig() {
+      if (!empresaId) throw new Error('empresa_id es obligatorio');
+      var enabled = !!document.getElementById('stationCancelTimeEnabled').checked;
+      var minutes = Math.floor(Number(document.getElementById('stationCancelTimeMinutes').value || 0));
+      if (enabled && (minutes < 1 || minutes > 1440)) {
+        throw new Error('Los minutos deben estar entre 1 y 1440.');
+      }
+      var payload = Object.assign({}, stationCancelTimeConfig || {}, {
+        empresa_id: Number(empresaId),
+        margen_desactivacion_habilitado: enabled,
+        margen_desactivacion_minutos: enabled ? minutes : 0
+      });
+      stationCancelTimeConfig = await requestJSON('/api/empresa/tarifas_por_minutos?empresa_id=' + encodeURIComponent(empresaId) + '&action=config', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      setStationCancelTimeMessage(enabled ? 'Tiempo para cancelar el servicio guardado.' : 'Tiempo limite desactivado.', false);
     }
 
     function getCarritoCodeForStation(stationID) {
@@ -2438,6 +2497,16 @@
     }
 
     function wireEvents() {
+      var saveStationCancelTimeBtn = document.getElementById('saveStationCancelTimeBtn');
+      if (saveStationCancelTimeBtn) {
+        saveStationCancelTimeBtn.addEventListener('click', function () {
+          setStationCancelTimeMessage('Guardando...', false);
+          saveStationCancelTimeConfig().catch(function (err) {
+            setStationCancelTimeMessage(err.message || 'No se pudo guardar el tiempo para cancelar.', true);
+          });
+        });
+      }
+
       document.getElementById('cantidadForm').addEventListener('submit', async function (ev) {
         ev.preventDefault();
         var cantidad = Number(document.getElementById('cantidadEstaciones').value || 0);
@@ -2773,7 +2842,7 @@
 
       wireEvents();
       initTarifasPorMinutosFrame();
-      await Promise.all([cargarEmpresa(), loadEstadoCarritoConfig(), loadCamarasCatalog(), loadBodegasCatalog(), loadStationUsersCatalog()]);
+      await Promise.all([cargarEmpresa(), loadEstadoCarritoConfig(), loadCamarasCatalog(), loadBodegasCatalog(), loadStationUsersCatalog(), loadStationCancelTimeConfig()]);
 
       var cfg = await getConfigFromServer();
       if (!cfg) {

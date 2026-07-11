@@ -37303,6 +37303,12 @@ Archivos modificados:
 - Los inserts de propinas y comisiones manuales usan una expresion de fecha compatible con PostgreSQL cuando la fecha se deja vacia.
 - Evidencia PCS: motel 180 minutos calcula COP 30.000 de lunes a viernes y COP 45.000 sabado/domingo; hotel calcula COP 100.000 para dos personas y COP 200.000 para cuatro personas en una noche.
 
+2026-07-11: Comision fiscal, propina separada y tiempo para cancelar servicios.
+- El cierre del carrito registra la comision de lavado como costo laboral fiscal para nomina y reportes, sin sumarla al documento del cliente.
+- La respuesta e impresion distinguen comision fiscal de propina no fiscal; ambas pueden beneficiar al mismo lavador.
+- Configuracion de estaciones incorpora el check y campo en minutos `Tiempo para cancelar el servicio`, reutilizando la validacion backend por empresa.
+- Se confirma el cambio manual de tarifa motel/hotel mediante `cambiar_tarifa`, aislado por `empresa_id` y carrito.
+
 2026-07-10: rs: actualizar repositorio y sincronizar VPS
 PushStatus: OK
 Archivos modificados:
