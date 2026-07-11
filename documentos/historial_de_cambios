@@ -37302,3 +37302,13 @@ Archivos modificados:
 - Las tarjetas de estaciones permiten leer descripcion operativa y responsable sin truncar la informacion en escritorio.
 - Los inserts de propinas y comisiones manuales usan una expresion de fecha compatible con PostgreSQL cuando la fecha se deja vacia.
 - Evidencia PCS: motel 180 minutos calcula COP 30.000 de lunes a viernes y COP 45.000 sabado/domingo; hotel calcula COP 100.000 para dos personas y COP 200.000 para cuatro personas en una noche.
+
+2026-07-10: rs: actualizar repositorio y sincronizar VPS
+PushStatus: OK
+Archivos modificados:
+- backend/db/comisiones_servicio.go
+- backend/db/propinas.go
+- documentos/descripcion_de_modulos
+- documentos/historial_de_cambios
+- web/administrar_empresa/estaciones.html
+- web/administrar_empresa/tarifas_por_minutos.html
