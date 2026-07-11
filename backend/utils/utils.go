@@ -43,7 +43,6 @@ const (
 	publicAPIErrorHeader                      = "X-PCS-Public-API-Error"
 	canonicalPublicApexHost                   = "powerfulcontrolsystem.com"
 	canonicalPublicWWWHost                    = "www.powerfulcontrolsystem.com"
-	reservedSuperAdminEmail                   = "powerfulcontrolsystem@gmail.com"
 )
 
 var companyLogMu sync.Mutex
@@ -67,14 +66,20 @@ var (
 )
 
 const (
-	authMiddlewareSessionCacheTTL     = 30 * time.Second
-	authMiddlewareAdminCacheTTL       = 30 * time.Second
+	// Authentication and authorization are read on every request. A stale cache
+	// can otherwise keep a revoked session or downgraded role effective.
+	authMiddlewareSessionCacheTTL     = 0
+	authMiddlewareAdminCacheTTL       = 0
 	authMiddlewareMaintenanceCacheTTL = 30 * time.Second
 	SuperControlRole                  = "control_super_administrador"
 )
 
 func AdminShouldUseSuperRole(email string) bool {
-	return strings.EqualFold(strings.TrimSpace(email), reservedSuperAdminEmail)
+	// Roles are assigned through the audited administrative workflow, never by
+	// matching an email address. Kept only as a compatibility shim while legacy
+	// callers migrate to role/ID based checks.
+	_ = email
+	return false
 }
 
 func IsSuperAdministradorRole(role string) bool {
@@ -90,10 +95,8 @@ func IsSuperPanelRole(role string) bool {
 }
 
 func ManagedAdminRole(email, currentRole string) string {
+	_ = email
 	normalizedCurrent := strings.ToLower(strings.TrimSpace(currentRole))
-	if AdminShouldUseSuperRole(email) {
-		return "super_administrador"
-	}
 	if normalizedCurrent != "" && normalizedCurrent != "administrador" && normalizedCurrent != "super_administrador" {
 		return strings.TrimSpace(currentRole)
 	}
@@ -799,13 +802,6 @@ func AuthMiddleware(dbSuper *sql.DB, next http.Handler) http.Handler {
 		if err != nil {
 			http.Error(w, "unauthorized", http.StatusUnauthorized)
 			return
-		}
-
-		desiredRole := ManagedAdminRole(admin.Email, admin.Role)
-		if admin.ID > 0 && !strings.EqualFold(strings.TrimSpace(admin.Role), desiredRole) {
-			if err := dbpkg.UpdateAdministrador(dbSuper, admin.ID, admin.Name, desiredRole); err == nil {
-				admin.Role = desiredRole
-			}
 		}
 
 		if path == "/ayuda/ayuda.html" && !IsSuperAdministradorRole(admin.Role) {

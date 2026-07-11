@@ -450,19 +450,63 @@ func SetAdministradorAceptaContrato(dbConn *sql.DB, email string, acepta bool) e
 	return err
 }
 
-// CreateSession registra una sesión en la tabla sesiones de superadministrador
+const sessionTokenHashPrefix = "sha256:"
+
+func hashSessionToken(token string) string {
+	sum := sha256.Sum256([]byte(strings.TrimSpace(token)))
+	return sessionTokenHashPrefix + fmt.Sprintf("%x", sum[:])
+}
+
+// MigrateSessionTokensToHashes removes plaintext session tokens in place. It is
+// idempotent because protected values carry an explicit version prefix. Active
+// browser cookies remain valid because lookup hashes the cookie value too.
+func MigrateSessionTokensToHashes(dbConn *sql.DB) error {
+	if dbConn == nil {
+		return fmt.Errorf("database not available")
+	}
+	rows, err := querySQLCompat(dbConn, "SELECT id, token FROM sesiones WHERE COALESCE(token,'') <> '' AND token NOT LIKE ?", sessionTokenHashPrefix+"%")
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
+	tx, err := dbConn.Begin()
+	if err != nil {
+		return err
+	}
+	defer func() { _ = tx.Rollback() }()
+	for rows.Next() {
+		var id int64
+		var token string
+		if err := rows.Scan(&id, &token); err != nil {
+			return err
+		}
+		if _, err := tx.Exec(rebindCompatQuery("UPDATE sesiones SET token = ? WHERE id = ?"), hashSessionToken(token), id); err != nil {
+			return err
+		}
+	}
+	if err := rows.Err(); err != nil {
+		return err
+	}
+	return tx.Commit()
+}
+
+// CreateSession registers only a SHA-256 token verifier. The original token
+// never crosses the database boundary.
 func CreateSession(dbConn *sql.DB, adminEmail, ip, userAgent, token string) error {
+	if strings.TrimSpace(token) == "" {
+		return fmt.Errorf("session token required")
+	}
 	nowExpr := sqlNowExpr()
 	expiresExpr := sqlPlusHoursExpr(24)
 	query := "INSERT INTO sesiones (admin_email, token, ip, user_agent, fecha_inicio, fecha_fin, activo, fecha_creacion) VALUES (?, ?, ?, ?, " + nowExpr + ", " + expiresExpr + ", 1, " + nowExpr + ")"
-	_, err := execSQLCompat(dbConn, query, adminEmail, token, ip, userAgent)
+	_, err := execSQLCompat(dbConn, query, adminEmail, hashSessionToken(token), ip, userAgent)
 	return err
 }
 
 // RevokeSessionByToken invalida una sesión activa por token.
 func RevokeSessionByToken(dbConn *sql.DB, token string) error {
 	nowExpr := sqlNowExpr()
-	_, err := execSQLCompat(dbConn, "UPDATE sesiones SET activo = 0, fecha_fin = "+nowExpr+" WHERE token = ? AND activo = 1", token)
+	_, err := execSQLCompat(dbConn, "UPDATE sesiones SET activo = 0, fecha_fin = "+nowExpr+" WHERE token = ? AND activo = 1", hashSessionToken(token))
 	return err
 }
 
@@ -1058,7 +1102,7 @@ type Session struct {
 func GetSessionByToken(dbConn *sql.DB, token string) (*Session, error) {
 	condition := sessionNotExpiredCondition("fecha_fin")
 	query := "SELECT id, admin_email, token, ip, user_agent, fecha_inicio, fecha_fin, fecha_creacion, activo FROM sesiones WHERE token = ? AND activo = 1 AND " + condition + " LIMIT 1"
-	row := queryRowSQLCompat(dbConn, query, token)
+	row := queryRowSQLCompat(dbConn, query, hashSessionToken(token))
 	var s Session
 	var fechaInicio sql.NullString
 	var fechaFin sql.NullString
@@ -1075,6 +1119,8 @@ func GetSessionByToken(dbConn *sql.DB, token string) (*Session, error) {
 	if fechaCreacion.Valid {
 		s.FechaCreacion = fechaCreacion.String
 	}
+	// Never expose a database verifier through session-management responses.
+	s.Token = ""
 	return &s, nil
 }
 

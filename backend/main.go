@@ -821,6 +821,10 @@ func main() {
 			log.Fatalf("failed to ensure administradores auth schema in superadministrador db: %v", err)
 		}
 		startupTrace("after_ensure_administradores_auth_schema")
+		if err := dbpkg.MigrateSessionTokensToHashes(dbSuper); err != nil {
+			log.Fatalf("failed to protect existing session tokens: %v", err)
+		}
+		startupTrace("after_migrate_session_tokens_to_hashes")
 		if err := dbpkg.EnsurePaymentGatewaySchema(dbSuper); err != nil {
 			log.Fatalf("failed to ensure payment gateway schema in superadministrador db: %v", err)
 		}
