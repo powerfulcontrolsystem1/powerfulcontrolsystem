@@ -37427,3 +37427,8 @@ Archivos modificados:
   `menu.js` agrega la cabecera para fetch del mismo origen; Bearer y webhooks
   firmados permanecen fuera del modelo de cookie. Se agregan pruebas de token
   valido, ausente e incorrecto.
+
+2026-07-12: Politica de divulgacion de seguridad.
+- `SECURITY.md` define versiones soportadas, reporte privado, plazo de primera
+  respuesta, alcance, exclusiones, divulgacion coordinada, incidente y politica
+  de actualizacion sin exponer datos sensibles.
