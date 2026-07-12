@@ -26,3 +26,14 @@ func TestAdministradorEmailConfirmationTokenUsesOnlyVerifier(t *testing.T) {
 		t.Fatal("incorrect email confirmation token matched verifier")
 	}
 }
+
+func TestEmpresaUsuarioTokenUsesOnlyVerifier(t *testing.T) {
+	token := "token-empresa-temporal"
+	stored := hashOneTimeSecret(token)
+	if stored == token || !EmpresaUsuarioTokenMatches(stored, token) {
+		t.Fatal("enterprise token verifier rejected the original token")
+	}
+	if EmpresaUsuarioTokenMatches(stored, "token-empresa-incorrecto") {
+		t.Fatal("enterprise token verifier accepted an incorrect token")
+	}
+}

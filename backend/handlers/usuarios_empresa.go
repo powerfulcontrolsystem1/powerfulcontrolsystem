@@ -3,7 +3,6 @@ package handlers
 import (
 	"context"
 	"crypto/sha256"
-	"crypto/subtle"
 	"database/sql"
 	"encoding/base64"
 	"encoding/hex"
@@ -224,7 +223,7 @@ func resolveEmpresaUsuarioForPasswordReset(dbEmp *sql.DB, email, token string, e
 	var matched *dbpkg.EmpresaUsuario
 	for i := range items {
 		storedToken := strings.TrimSpace(items[i].PasswordResetToken)
-		if storedToken != "" && token != "" && subtle.ConstantTimeCompare([]byte(token), []byte(storedToken)) == 1 {
+		if storedToken != "" && token != "" && dbpkg.EmpresaUsuarioTokenMatches(storedToken, token) {
 			if matched != nil {
 				return nil, errEmpresaUsuarioEmailAmbiguo
 			}
@@ -1335,7 +1334,7 @@ func EmpresaUsuarioResetPasswordHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc
 		}
 
 		storedToken := strings.TrimSpace(item.PasswordResetToken)
-		if storedToken == "" || subtle.ConstantTimeCompare([]byte(token), []byte(storedToken)) != 1 {
+		if storedToken == "" || !dbpkg.EmpresaUsuarioTokenMatches(storedToken, token) {
 			http.Error(w, "token de recuperación inv?lido", http.StatusUnauthorized)
 			return
 		}
@@ -1950,7 +1949,7 @@ func validateEmpresaUsuarioInvitationToken(item *dbpkg.EmpresaUsuario, token str
 	}
 	storedToken := strings.TrimSpace(item.EmailConfirmToken)
 	token = strings.TrimSpace(token)
-	if storedToken == "" || token == "" || subtle.ConstantTimeCompare([]byte(storedToken), []byte(token)) != 1 {
+	if storedToken == "" || token == "" || !dbpkg.EmpresaUsuarioTokenMatches(storedToken, token) {
 		return http.StatusForbidden, "invitacion invalida o ya utilizada"
 	}
 	expiraRaw := strings.TrimSpace(item.EmailConfirmExpira)

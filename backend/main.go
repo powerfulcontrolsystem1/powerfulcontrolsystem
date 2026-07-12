@@ -976,6 +976,9 @@ func main() {
 	if err := dbpkg.EnsureEmpresaUsuariosAuthSchema(dbEmpresas); err != nil {
 		log.Fatalf("failed to ensure users auth schema in empresas db: %v", err)
 	}
+	if _, err := dbpkg.MigrateEmpresaUsuarioTemporaryTokens(dbEmpresas, strings.EqualFold(strings.TrimSpace(os.Getenv("PCS_TOTP_MIGRATION_DRY_RUN")), "1") || strings.EqualFold(strings.TrimSpace(os.Getenv("PCS_TOTP_MIGRATION_DRY_RUN")), "true")); err != nil {
+		log.Fatalf("failed to protect enterprise user temporary tokens: %v", err)
+	}
 	if err := dbpkg.EnsureEmpresaBuzonSchema(dbEmpresas); err != nil {
 		log.Fatalf("failed to ensure empresa buzon schema in empresas db: %v", err)
 	}
