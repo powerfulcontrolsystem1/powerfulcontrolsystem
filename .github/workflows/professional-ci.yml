@@ -7,14 +7,19 @@ on:
   push:
     branches:
       - main
-      - master
-      - "codex/**"
       - "security/**"
+      - "fix/**"
   pull_request:
+    branches:
+      - main
   workflow_dispatch:
 
 permissions:
   contents: read
+
+concurrency:
+  group: professional-ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   validate:
@@ -46,9 +51,13 @@ jobs:
         shell: pwsh
         run: ./scripts/profesional_preflight.ps1 -Full -SkipDockerConfig -SkipOpenAPI
 
+      - name: Git diff check
+        run: git diff --check
+
       - name: Go test and vet
         working-directory: backend
         run: |
+          go mod verify
           go test ./...
           go vet ./...
 
@@ -56,12 +65,16 @@ jobs:
         working-directory: backend
         run: go test -race ./...
 
-      - name: Go vulnerability and static security scan
+      - name: Go vulnerability scan
         working-directory: backend
         run: |
           go install golang.org/x/vuln/cmd/govulncheck@v1.1.4
+          govulncheck -show verbose ./...
+
+      - name: Go static security scan
+        working-directory: backend
+        run: |
           go install github.com/securego/gosec/v2/cmd/gosec@v2.22.7
-          govulncheck ./...
           gosec ./...
 
       - name: Security audit
@@ -131,29 +144,3 @@ jobs:
           path: documentos/reportes_profesionales/
           if-no-files-found: ignore
 
-  deploy-staging:
-    name: Deploy staging after green CI
-    runs-on: ubuntu-latest
-    needs: validate
-    if: ${{ github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master') && vars.PCS_ENABLE_STAGING_DEPLOY == 'true' }}
-    timeout-minutes: 20
-    env:
-      PCS_STAGING_HOST: ${{ secrets.PCS_STAGING_HOST }}
-      PCS_STAGING_USER: ${{ secrets.PCS_STAGING_USER }}
-      PCS_STAGING_SSH_KEY: ${{ secrets.PCS_STAGING_SSH_KEY }}
-      PCS_STAGING_PATH: ${{ secrets.PCS_STAGING_PATH }}
-    steps:
-      - name: Configure SSH
-        run: |
-          test -n "$PCS_STAGING_HOST"
-          test -n "$PCS_STAGING_USER"
-          test -n "$PCS_STAGING_SSH_KEY"
-          mkdir -p ~/.ssh
-          printf '%s\n' "$PCS_STAGING_SSH_KEY" > ~/.ssh/pcs_staging
-          chmod 600 ~/.ssh/pcs_staging
-          ssh-keyscan -H "$PCS_STAGING_HOST" >> ~/.ssh/known_hosts
-
-      - name: Pull, build and restart staging
-        run: |
-          REMOTE_PATH="${PCS_STAGING_PATH:-/root/powerfulcontrolsystem}"
-          ssh -i ~/.ssh/pcs_staging "$PCS_STAGING_USER@$PCS_STAGING_HOST" "cd '$REMOTE_PATH' && git pull --ff-only && bash deploy/scripts/vps-staging-up.sh && bash deploy/scripts/vps-refresh-staging-from-production.sh"
