@@ -42,6 +42,10 @@ Estado: preparado en la rama `security/full-hardening`; no desplegado.
   biblioteca estandar con los parches vigentes; `pgx/v5` se actualiza a 5.9.2,
   que corrige la vulnerabilidad de confusion de placeholders SQL reportada por
   el escaner.
+- El CI no despliega por eventos `push`: cualquier despliegue debe vivir en un
+  workflow manual y protegido. Las verificaciones de vulnerabilidades y analisis
+  estatico se ejecutan como pasos independientes, junto con `go mod verify` y
+  `git diff --check`.
 
 ## Variables nuevas o modificadas
 
@@ -64,7 +68,8 @@ Estado: preparado en la rama `security/full-hardening`; no desplegado.
 - Inventariar, firmar e idempotentizar todos los webhooks y callbacks externos.
 - Auditar cada handler multiempresa contra `RequireEmpresaAccess` y agregar pruebas cruzadas de lectura, escritura, exportacion y archivos.
 - Verificar en staging los permisos de volumen del backend no root y los flujos administrativos que antes dependian del socket Docker, ahora retirado del contenedor de negocio.
-- Configurar desde GitHub la proteccion de rama, el escaneo de secretos/SBOM y la revision requerida; son controles de plataforma que no se pueden imponer desde archivos versionados.
+- Configurar desde GitHub la proteccion de rama y la revision requerida; son
+  controles de plataforma que no se pueden imponer desde archivos versionados.
 
 ## Despliegue y rollback
 
