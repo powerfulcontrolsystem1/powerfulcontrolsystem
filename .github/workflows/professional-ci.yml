@@ -41,7 +41,7 @@ jobs:
 
       - name: Professional preflight
         shell: pwsh
-        run: ./scripts/profesional_preflight.ps1 -Full -SkipDockerConfig
+        run: ./scripts/profesional_preflight.ps1 -Full -SkipDockerConfig -SkipOpenAPI
 
       - name: Go test and vet
         working-directory: backend

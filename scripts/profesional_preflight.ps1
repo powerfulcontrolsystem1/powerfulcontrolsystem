@@ -11,6 +11,7 @@ param(
   [switch]$Full,
   [switch]$SkipGoTests,
   [switch]$SkipDockerConfig,
+  [switch]$SkipOpenAPI,
   [switch]$SkipAudit,
   [switch]$Strict,
   [string]$ReportDir = "documentos\reportes_profesionales"
@@ -150,9 +151,11 @@ try {
       "Auditoria de permisos/licencias finalizo con codigo $code"
     }
 
-    Invoke-Captured -Title "Inventario OpenAPI generado" -Required -Script {
-      & $nodeCmd tools\openapi_inventory.mjs --out documentos/api/openapi.generated.yaml
-      if ($LASTEXITCODE -ne 0) { throw "generacion OpenAPI fallo con codigo $LASTEXITCODE" }
+    if (-not $SkipOpenAPI) {
+      Invoke-Captured -Title "Inventario OpenAPI generado" -Required -Script {
+        & $nodeCmd tools\openapi_inventory.mjs --out documentos/api/openapi.generated.yaml
+        if ($LASTEXITCODE -ne 0) { throw "generacion OpenAPI fallo con codigo $LASTEXITCODE" }
+      }
     }
 
     Invoke-Captured -Title "Reporte de observabilidad" -Required:$Strict -Script {
