@@ -3,6 +3,7 @@ package db
 import (
 	"crypto/rand"
 	"crypto/sha256"
+	"crypto/subtle"
 	"database/sql"
 	"encoding/hex"
 	"errors"
@@ -15,6 +16,7 @@ import (
 )
 
 var ErrSoporteRemotoPlanLimit = errors.New("limite de soporte remoto alcanzado")
+var ErrSoporteRemotoSignalingCredential = errors.New("credencial de senalizacion invalida")
 
 // EmpresaSoporteRemotoConfig define configuracion operativa de soporte remoto por empresa.
 type EmpresaSoporteRemotoConfig struct {
@@ -100,6 +102,15 @@ type EmpresaSoporteRemotoSession struct {
 	Observaciones         string `json:"observaciones,omitempty"`
 
 	tokenVisualizacionHash string
+}
+
+// EmpresaSoporteRemotoSignalingCredential solo expone el secreto al crearlo.
+// La base de datos conserva exclusivamente sus verificadores SHA-256.
+type EmpresaSoporteRemotoSignalingCredential struct {
+	TokenRaw  string `json:"token"`
+	NonceRaw  string `json:"nonce"`
+	Role      string `json:"role"`
+	ExpiresAt string `json:"expires_at"`
 }
 
 // EmpresaSoporteRemotoDispositivoFilter define filtros para listar dispositivos.
@@ -266,6 +277,27 @@ func soporteRemotoHash(v string) string {
 	}
 	sum := sha256.Sum256([]byte(raw))
 	return hex.EncodeToString(sum[:])
+}
+
+func soporteRemotoHashEqual(raw, expectedHash string) bool {
+	actual := soporteRemotoHash(raw)
+	expected := strings.TrimSpace(expectedHash)
+	if actual == "" || len(actual) != len(expected) {
+		return false
+	}
+	return subtle.ConstantTimeCompare([]byte(actual), []byte(expected)) == 1
+}
+
+func soporteRemotoGenerateSecureSecret(prefix string) (string, error) {
+	buf := make([]byte, 32)
+	if _, err := rand.Read(buf); err != nil {
+		return "", fmt.Errorf("no se pudo generar secreto criptografico: %w", err)
+	}
+	base := strings.ToUpper(strings.TrimSpace(prefix))
+	if base == "" {
+		base = "SR"
+	}
+	return base + "-" + hex.EncodeToString(buf), nil
 }
 
 func soporteRemotoGenerateToken(prefix string) string {
@@ -462,6 +494,7 @@ func EnsureEmpresaSoporteRemotoSchema(dbConn *sql.DB) error {
 			duracion_minutos_consumida INTEGER DEFAULT 0,
 			bloqueada_por_limite INTEGER DEFAULT 0,
 			token_visualizacion_hash TEXT,
+			token_visualizacion_usado_en TEXT,
 			url_visualizacion TEXT,
 			iniciada_en TEXT,
 			expira_en TEXT,
@@ -476,6 +509,23 @@ func EnsureEmpresaSoporteRemotoSchema(dbConn *sql.DB) error {
 		ON empresa_soporte_remoto_sesiones(empresa_id, codigo_sesion);`,
 		`CREATE INDEX IF NOT EXISTS ix_empresa_soporte_remoto_sesiones_lookup
 		ON empresa_soporte_remoto_sesiones(empresa_id, estado_sesion, fecha_creacion DESC);`,
+		`CREATE TABLE IF NOT EXISTS empresa_soporte_remoto_signaling_tokens (
+			id BIGSERIAL PRIMARY KEY,
+			empresa_id INTEGER NOT NULL,
+			sesion_id INTEGER NOT NULL,
+			role TEXT NOT NULL,
+			token_hash TEXT NOT NULL,
+			nonce_hash TEXT NOT NULL,
+			expira_en TEXT NOT NULL,
+			usado_en TEXT,
+			revocado_en TEXT,
+			creado_por TEXT,
+			fecha_creacion TEXT DEFAULT (CURRENT_TIMESTAMP)
+		);`,
+		`CREATE UNIQUE INDEX IF NOT EXISTS ux_empresa_soporte_remoto_signaling_token
+		ON empresa_soporte_remoto_signaling_tokens(token_hash);`,
+		`CREATE INDEX IF NOT EXISTS ix_empresa_soporte_remoto_signaling_lookup
+		ON empresa_soporte_remoto_signaling_tokens(empresa_id, sesion_id, role, fecha_creacion DESC);`,
 	}
 
 	for _, stmt := range stmts {
@@ -551,6 +601,9 @@ func EnsureEmpresaSoporteRemotoSchema(dbConn *sql.DB) error {
 		return err
 	}
 	if err := ensureColumnIfMissing(dbConn, "empresa_soporte_remoto_sesiones", "token_visualizacion_hash", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_soporte_remoto_sesiones", "token_visualizacion_usado_en", "TEXT"); err != nil {
 		return err
 	}
 	if err := ensureColumnIfMissing(dbConn, "empresa_soporte_remoto_sesiones", "url_visualizacion", "TEXT"); err != nil {
@@ -1650,7 +1703,10 @@ func CreateEmpresaSoporteRemotoSession(dbConn *sql.DB, empresaID, dispositivoID 
 	}
 	expiraEn := time.Now().In(time.Local).Add(time.Duration(duracion) * time.Minute).Format("2006-01-02 15:04:05")
 	codigoSesion := soporteRemotoGenerateSessionCode()
-	tokenRaw := soporteRemotoGenerateToken("SRV")
+	tokenRaw, err := soporteRemotoGenerateSecureSecret("SRV")
+	if err != nil {
+		return EmpresaSoporteRemotoSession{}, err
+	}
 	tokenHash := soporteRemotoHash(tokenRaw)
 
 	res, err := dbConn.Exec(`INSERT INTO empresa_soporte_remoto_sesiones (
@@ -1811,19 +1867,165 @@ func ResolveEmpresaSoporteRemotoViewerSession(dbConn *sql.DB, empresaID int64, c
 	if strings.TrimSpace(session.tokenVisualizacionHash) == "" {
 		return EmpresaSoporteRemotoSession{}, sql.ErrNoRows
 	}
-	if soporteHash := soporteRemotoHash(strings.TrimSpace(tokenVisualizacion)); soporteHash != session.tokenVisualizacionHash {
+	if !soporteRemotoHashEqual(tokenVisualizacion, session.tokenVisualizacionHash) {
+		return EmpresaSoporteRemotoSession{}, sql.ErrNoRows
+	}
+	if expiry, ok := soporteRemotoParseDateTime(session.ExpiraEn); ok && !time.Now().Before(expiry) {
+		_ = SetEmpresaSoporteRemotoSessionEstadoByCodigo(dbConn, empresaID, session.CodigoSesion, "expirada", "sesion expirada automaticamente")
+		return EmpresaSoporteRemotoSession{}, sql.ErrNoRows
+	}
+	usedAt := time.Now().UTC().Format(time.RFC3339Nano)
+	result, err := dbConn.Exec(`UPDATE empresa_soporte_remoto_sesiones
+		SET token_visualizacion_usado_en = ?, fecha_actualizacion = CURRENT_TIMESTAMP
+		WHERE empresa_id = ? AND id = ? AND COALESCE(token_visualizacion_usado_en, '') = ''`,
+		usedAt, empresaID, session.ID)
+	if err != nil {
+		return EmpresaSoporteRemotoSession{}, err
+	}
+	affected, err := result.RowsAffected()
+	if err != nil || affected != 1 {
 		return EmpresaSoporteRemotoSession{}, sql.ErrNoRows
 	}
 
-	if strings.TrimSpace(session.ExpiraEn) != "" {
-		exp, err := time.ParseInLocation("2006-01-02 15:04:05", session.ExpiraEn, time.Local)
-		if err == nil && time.Now().After(exp) && session.EstadoSesion != "finalizada" && session.EstadoSesion != "rechazada" {
-			_ = SetEmpresaSoporteRemotoSessionEstadoByCodigo(dbConn, empresaID, session.CodigoSesion, "expirada", "sesion expirada automaticamente")
-			session.EstadoSesion = "expirada"
-		}
+	return session, nil
+}
+
+func soporteRemotoNormalizeSignalingRole(raw string) string {
+	switch strings.ToLower(strings.TrimSpace(raw)) {
+	case "host":
+		return "host"
+	case "viewer":
+		return "viewer"
+	default:
+		return ""
+	}
+}
+
+// CreateEmpresaSoporteRemotoSignalingCredential crea una credencial corta y
+// de un solo uso para abrir un WebSocket de senalizacion. Invalida cualquier
+// credencial anterior no consumida para la misma sesion y rol.
+func CreateEmpresaSoporteRemotoSignalingCredential(dbConn *sql.DB, empresaID int64, codigoSesion, role, actor string) (EmpresaSoporteRemotoSignalingCredential, error) {
+	if dbConn == nil || empresaID <= 0 {
+		return EmpresaSoporteRemotoSignalingCredential{}, ErrSoporteRemotoSignalingCredential
+	}
+	role = soporteRemotoNormalizeSignalingRole(role)
+	if role == "" {
+		return EmpresaSoporteRemotoSignalingCredential{}, ErrSoporteRemotoSignalingCredential
+	}
+	session, err := GetEmpresaSoporteRemotoSessionByCodigo(dbConn, empresaID, codigoSesion)
+	if err != nil || (session.EstadoSesion != "activa" && session.EstadoSesion != "aprobada") || strings.EqualFold(session.Estado, "inactivo") {
+		return EmpresaSoporteRemotoSignalingCredential{}, ErrSoporteRemotoSignalingCredential
+	}
+	if expiry, ok := soporteRemotoParseDateTime(session.ExpiraEn); ok && !time.Now().Before(expiry) {
+		return EmpresaSoporteRemotoSignalingCredential{}, ErrSoporteRemotoSignalingCredential
 	}
 
+	tokenRaw, err := soporteRemotoGenerateSecureSecret("SRSIG")
+	if err != nil {
+		return EmpresaSoporteRemotoSignalingCredential{}, err
+	}
+	nonceRaw, err := soporteRemotoGenerateSecureSecret("NONCE")
+	if err != nil {
+		return EmpresaSoporteRemotoSignalingCredential{}, err
+	}
+	expiresAt := time.Now().UTC().Add(2 * time.Minute).Format(time.RFC3339Nano)
+	now := time.Now().UTC().Format(time.RFC3339Nano)
+
+	tx, err := dbConn.Begin()
+	if err != nil {
+		return EmpresaSoporteRemotoSignalingCredential{}, err
+	}
+	defer func() { _ = tx.Rollback() }()
+	if _, err := tx.Exec(`UPDATE empresa_soporte_remoto_signaling_tokens
+		SET revocado_en = ?
+		WHERE empresa_id = ? AND sesion_id = ? AND role = ?
+			AND COALESCE(usado_en, '') = '' AND COALESCE(revocado_en, '') = ''`,
+		now, empresaID, session.ID, role); err != nil {
+		return EmpresaSoporteRemotoSignalingCredential{}, err
+	}
+	if _, err := tx.Exec(`INSERT INTO empresa_soporte_remoto_signaling_tokens (
+		empresa_id, sesion_id, role, token_hash, nonce_hash, expira_en, creado_por
+	) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+		empresaID, session.ID, role, soporteRemotoHash(tokenRaw), soporteRemotoHash(nonceRaw), expiresAt, strings.TrimSpace(actor)); err != nil {
+		return EmpresaSoporteRemotoSignalingCredential{}, err
+	}
+	if err := tx.Commit(); err != nil {
+		return EmpresaSoporteRemotoSignalingCredential{}, err
+	}
+	return EmpresaSoporteRemotoSignalingCredential{TokenRaw: tokenRaw, NonceRaw: nonceRaw, Role: role, ExpiresAt: expiresAt}, nil
+}
+
+// ConsumeEmpresaSoporteRemotoSignalingCredential valida y marca la credencial
+// como usada de forma atomica. Un segundo intento siempre falla.
+func ConsumeEmpresaSoporteRemotoSignalingCredential(dbConn *sql.DB, empresaID int64, codigoSesion, role, tokenRaw, nonceRaw string) (EmpresaSoporteRemotoSession, error) {
+	if dbConn == nil || empresaID <= 0 {
+		return EmpresaSoporteRemotoSession{}, ErrSoporteRemotoSignalingCredential
+	}
+	role = soporteRemotoNormalizeSignalingRole(role)
+	if role == "" || strings.TrimSpace(tokenRaw) == "" || strings.TrimSpace(nonceRaw) == "" {
+		return EmpresaSoporteRemotoSession{}, ErrSoporteRemotoSignalingCredential
+	}
+	session, err := GetEmpresaSoporteRemotoSessionByCodigo(dbConn, empresaID, codigoSesion)
+	if err != nil || (session.EstadoSesion != "activa" && session.EstadoSesion != "aprobada") || strings.EqualFold(session.Estado, "inactivo") {
+		return EmpresaSoporteRemotoSession{}, ErrSoporteRemotoSignalingCredential
+	}
+
+	var credentialID int64
+	var tokenHash, nonceHash, expiresAt string
+	err = dbConn.QueryRow(`SELECT id, token_hash, nonce_hash, expira_en
+		FROM empresa_soporte_remoto_signaling_tokens
+		WHERE empresa_id = ? AND sesion_id = ? AND role = ?
+			AND COALESCE(usado_en, '') = '' AND COALESCE(revocado_en, '') = ''
+		ORDER BY id DESC LIMIT 1`, empresaID, session.ID, role).Scan(&credentialID, &tokenHash, &nonceHash, &expiresAt)
+	if err != nil || !soporteRemotoHashEqual(tokenRaw, tokenHash) || !soporteRemotoHashEqual(nonceRaw, nonceHash) {
+		return EmpresaSoporteRemotoSession{}, ErrSoporteRemotoSignalingCredential
+	}
+	expires, err := time.Parse(time.RFC3339Nano, strings.TrimSpace(expiresAt))
+	if err != nil || !time.Now().UTC().Before(expires) {
+		return EmpresaSoporteRemotoSession{}, ErrSoporteRemotoSignalingCredential
+	}
+	usedAt := time.Now().UTC().Format(time.RFC3339Nano)
+	result, err := dbConn.Exec(`UPDATE empresa_soporte_remoto_signaling_tokens
+		SET usado_en = ?
+		WHERE id = ? AND empresa_id = ? AND COALESCE(usado_en, '') = '' AND COALESCE(revocado_en, '') = ''`,
+		usedAt, credentialID, empresaID)
+	if err != nil {
+		return EmpresaSoporteRemotoSession{}, err
+	}
+	affected, err := result.RowsAffected()
+	if err != nil || affected != 1 {
+		return EmpresaSoporteRemotoSession{}, ErrSoporteRemotoSignalingCredential
+	}
 	return session, nil
+}
+
+func IsEmpresaSoporteRemotoSessionActive(dbConn *sql.DB, empresaID, sessionID int64) bool {
+	if dbConn == nil || empresaID <= 0 || sessionID <= 0 {
+		return false
+	}
+	var state, status, expiresAt string
+	if err := dbConn.QueryRow(`SELECT COALESCE(estado_sesion, ''), COALESCE(estado, ''), COALESCE(expira_en, '')
+		FROM empresa_soporte_remoto_sesiones WHERE empresa_id = ? AND id = ? LIMIT 1`, empresaID, sessionID).Scan(&state, &status, &expiresAt); err != nil {
+		return false
+	}
+	if strings.EqualFold(status, "inactivo") || (state != "activa" && state != "aprobada") {
+		return false
+	}
+	if expiry, ok := soporteRemotoParseDateTime(expiresAt); ok && !time.Now().Before(expiry) {
+		return false
+	}
+	return true
+}
+
+func RevokeEmpresaSoporteRemotoSignalingCredentials(dbConn *sql.DB, empresaID, sessionID int64) error {
+	if dbConn == nil || empresaID <= 0 || sessionID <= 0 {
+		return nil
+	}
+	_, err := dbConn.Exec(`UPDATE empresa_soporte_remoto_signaling_tokens
+		SET revocado_en = ?
+		WHERE empresa_id = ? AND sesion_id = ? AND COALESCE(revocado_en, '') = ''`,
+		time.Now().UTC().Format(time.RFC3339Nano), empresaID, sessionID)
+	return err
 }
 
 // SetEmpresaSoporteRemotoSessionEstadoByCodigo actualiza estado de una sesion por codigo.
@@ -1891,6 +2093,11 @@ func SetEmpresaSoporteRemotoSessionEstadoByCodigo(dbConn *sql.DB, empresaID int6
 	}
 	if affected <= 0 {
 		return sql.ErrNoRows
+	}
+	if estado == "finalizada" || estado == "rechazada" || estado == "expirada" {
+		if err := RevokeEmpresaSoporteRemotoSignalingCredentials(dbConn, empresaID, current.ID); err != nil {
+			return err
+		}
 	}
 	return nil
 }
