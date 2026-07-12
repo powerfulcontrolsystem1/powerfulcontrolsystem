@@ -31,6 +31,9 @@ type rolPermisosUpsertPayload struct {
 // RolesDeUsuarioHandler maneja CRUD de roles configurables por tipo de empresa.
 func RolesDeUsuarioHandler(dbSuper *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		if _, ok := paginaPrincipalRequireSuperAdmin(w, r, dbSuper); !ok {
+			return
+		}
 		switch r.Method {
 		case http.MethodGet:
 			tipoEmpresaID, err := parseOptionalInt64Query(r, "tipo_empresa_id")
@@ -125,6 +128,9 @@ func RolesDeUsuarioHandler(dbSuper *sql.DB) http.HandlerFunc {
 // RolesDeUsuarioPermisosHandler gestiona permisos dinamicos por modulo/accion y por pagina para un rol.
 func RolesDeUsuarioPermisosHandler(dbSuper *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		if _, ok := paginaPrincipalRequireSuperAdmin(w, r, dbSuper); !ok {
+			return
+		}
 		if err := dbpkg.EnsureRolesPermisosSchema(dbSuper); err != nil {
 			http.Error(w, "failed to ensure roles permisos schema: "+err.Error(), http.StatusInternalServerError)
 			return

@@ -131,7 +131,7 @@ func TestSuperPlantillasNuevosCatalogoPostRequiereDB(t *testing.T) {
 	req := httptest.NewRequest(http.MethodPost, "/super/api/plantillas_nuevas/catalogo?action=asegurar_v1_licencias", nil)
 	rr := httptest.NewRecorder()
 	SuperPlantillasNuevosCatalogoHandler().ServeHTTP(rr, req)
-	if rr.Code != http.StatusInternalServerError {
+	if rr.Code != http.StatusUnauthorized {
 		t.Fatalf("status=%d body=%s", rr.Code, rr.Body.String())
 	}
 }
@@ -140,7 +140,7 @@ func TestSuperPlantillasNuevosCatalogoPostAccionInvalida(t *testing.T) {
 	req := httptest.NewRequest(http.MethodPost, "/super/api/plantillas_nuevas/catalogo?action=borrar", nil)
 	rr := httptest.NewRecorder()
 	SuperPlantillasNuevosCatalogoHandler().ServeHTTP(rr, req)
-	if rr.Code != http.StatusBadRequest {
+	if rr.Code != http.StatusUnauthorized {
 		t.Fatalf("status=%d body=%s", rr.Code, rr.Body.String())
 	}
 }

@@ -62,17 +62,24 @@ func EmpresaPlantillasNuevosCatalogoHandler() http.HandlerFunc {
 
 func SuperPlantillasNuevosCatalogoHandler(dbSuper ...*sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		var superDB *sql.DB
+		if len(dbSuper) > 0 {
+			superDB = dbSuper[0]
+		}
+		if _, ok := paginaPrincipalRequireSuperAdmin(w, r, superDB); !ok {
+			return
+		}
 		if r.Method == http.MethodPost {
 			action := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("action")))
 			if action != "asegurar_v1_licencias" && action != "asegurar_produccion_masiva" && action != "asegurar_20_licencias" {
 				http.Error(w, "accion no permitida", http.StatusBadRequest)
 				return
 			}
-			if len(dbSuper) == 0 || dbSuper[0] == nil {
+			if superDB == nil {
 				http.Error(w, "db super no disponible", http.StatusInternalServerError)
 				return
 			}
-			tipos, licencias, err := dbpkg.EnsureNuevasPlantillasProduccionMasivaLicencias(dbSuper[0], "super.plantillas_20")
+			tipos, licencias, err := dbpkg.EnsureNuevasPlantillasProduccionMasivaLicencias(superDB, "super.plantillas_20")
 			if err != nil {
 				http.Error(w, "no se pudieron asegurar plantillas de produccion: "+err.Error(), http.StatusInternalServerError)
 				return

@@ -12,6 +12,9 @@ import (
 // MetricsCurrentHandler devuelve la última muestra de métricas
 func MetricsCurrentHandler(db *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		if _, ok := paginaPrincipalRequireSuperAdmin(w, r, db); !ok {
+			return
+		}
 		m, err := dbpkg.GetLatestMetric(db)
 		if err != nil {
 			http.Error(w, "failed to get latest metric: "+err.Error(), http.StatusInternalServerError)
@@ -25,6 +28,9 @@ func MetricsCurrentHandler(db *sql.DB) http.HandlerFunc {
 // MetricsHistoryHandler devuelve histórico de métricas (limit opcional)
 func MetricsHistoryHandler(db *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		if _, ok := paginaPrincipalRequireSuperAdmin(w, r, db); !ok {
+			return
+		}
 		q := r.URL.Query()
 		limit := 200
 		if lstr := q.Get("limit"); lstr != "" {

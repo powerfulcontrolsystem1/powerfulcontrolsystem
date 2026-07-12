@@ -46,3 +46,26 @@ func TestWithSuperAuditoriaRequiresSuperAdmin(t *testing.T) {
 		t.Fatal("wrapped handler ran without an authenticated super administrator")
 	}
 }
+
+func TestUnwrappedSuperHandlersRequireSuperAdmin(t *testing.T) {
+	handlers := map[string]http.HandlerFunc{
+		"plantillas_nuevas":      SuperPlantillasNuevosCatalogoHandler(nil),
+		"plantillas_integracion": SuperPlantillasIntegracionCatalogoHandler(nil),
+		"roles":                  RolesDeUsuarioHandler(nil),
+		"roles_permisos":         RolesDeUsuarioPermisosHandler(nil),
+		"licencias_adicionales":  EmpresaLicenciasAdicionalesHandler(nil),
+		"venta_digital":          SuperVentaDigitalHandler(nil),
+		"metrics_current":        MetricsCurrentHandler(nil),
+		"metrics_history":        MetricsHistoryHandler(nil),
+	}
+	for name, handler := range handlers {
+		t.Run(name, func(t *testing.T) {
+			req := httptest.NewRequest(http.MethodGet, "/super/api/protegido", nil)
+			res := httptest.NewRecorder()
+			handler.ServeHTTP(res, req)
+			if res.Code != http.StatusUnauthorized {
+				t.Fatalf("status = %d, want %d", res.Code, http.StatusUnauthorized)
+			}
+		})
+	}
+}

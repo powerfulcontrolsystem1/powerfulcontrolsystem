@@ -311,6 +311,9 @@ func processVentaDigitalPaymentStatusUpdate(r *http.Request, dbSuper *sql.DB, tr
 // SuperVentaDigitalHandler gestiona configuracion, catalogo y ordenes desde panel super.
 func SuperVentaDigitalHandler(dbSuper *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		if _, ok := paginaPrincipalRequireSuperAdmin(w, r, dbSuper); !ok {
+			return
+		}
 		action := superVentaDigitalNormalizeAction(r.URL.Query().Get("action"))
 		if action == "" {
 			http.Error(w, "action invalida", http.StatusBadRequest)
