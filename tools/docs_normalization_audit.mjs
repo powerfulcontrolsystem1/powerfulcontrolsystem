@@ -13,6 +13,7 @@ const targets = [
   "RESUMEN_DEL_PROYECTO.md",
   "CHANGELOG.md",
   "documentos/descripcion_del_proyecto",
+  "documentos/descripcion_de_archivos",
   "documentos/descripcion_de_modulos",
   "documentos/historial_de_cambios",
   "documentos/docker_vps_operacion.md",
@@ -27,7 +28,7 @@ const refinedBadPatterns = [
   /\u00c3[\u0080-\u00bf]/g,
   /\u00c2[\u0080-\u00bf]/g,
   /\u00e2\u20ac./g,
-  /[A-Za-zÁÉÍÓÚáéíóúÑñ]\?(?:a|e|i|o|u|n|A|E|I|O|U|N)/g,
+  /\u00ef\u00bf\u00bd/g,
   /\uFFFD/g,
 ];
 
