@@ -411,6 +411,89 @@ func ensureRuntimeConfigEncKey(backendDir string) error {
 	return nil
 }
 
+func runtimeProductionMode() bool {
+	return strings.EqualFold(strings.TrimSpace(os.Getenv("PCS_ENV")), "production") ||
+		strings.EqualFold(strings.TrimSpace(os.Getenv("APP_ENV")), "production")
+}
+
+func validateProductionSecurityConfig() error {
+	if !runtimeProductionMode() {
+		return nil
+	}
+	if strings.TrimSpace(os.Getenv("PCS_CSRF_ALLOWED_ORIGINS")) == "" && strings.TrimSpace(os.Getenv("CSRF_ALLOWED_ORIGINS")) != "" {
+		if err := os.Setenv("PCS_CSRF_ALLOWED_ORIGINS", strings.TrimSpace(os.Getenv("CSRF_ALLOWED_ORIGINS"))); err != nil {
+			return err
+		}
+	}
+	required := []string{
+		"PCS_TRUSTED_PROXY_CIDRS",
+		"CONFIG_ENC_KEY_ID",
+		"PCS_CSRF_ALLOWED_ORIGINS",
+		"SESSION_TIMEOUT",
+		"MAX_REQUEST_BODY_BYTES",
+		"HTTP_READ_TIMEOUT",
+		"HTTP_WRITE_TIMEOUT",
+		"HTTP_IDLE_TIMEOUT",
+	}
+	for _, key := range required {
+		if strings.TrimSpace(os.Getenv(key)) == "" {
+			return fmt.Errorf("%s es obligatoria en produccion", key)
+		}
+	}
+	for _, key := range []string{"SESSION_TIMEOUT", "HTTP_READ_TIMEOUT", "HTTP_WRITE_TIMEOUT", "HTTP_IDLE_TIMEOUT"} {
+		if value, err := time.ParseDuration(strings.TrimSpace(os.Getenv(key))); err != nil || value <= 0 {
+			return fmt.Errorf("%s debe ser una duracion positiva valida", key)
+		}
+	}
+	maxBody, err := strconv.ParseInt(strings.TrimSpace(os.Getenv("MAX_REQUEST_BODY_BYTES")), 10, 64)
+	if err != nil || maxBody < 1<<20 || maxBody > 512<<20 {
+		return fmt.Errorf("MAX_REQUEST_BODY_BYTES debe estar entre 1 MiB y 512 MiB")
+	}
+	for _, raw := range strings.Split(os.Getenv("PCS_CSRF_ALLOWED_ORIGINS"), ",") {
+		origin, err := url.Parse(strings.TrimSpace(raw))
+		if err != nil || (origin.Scheme != "https" && origin.Scheme != "http") || origin.Host == "" || origin.User != nil || origin.Path != "" {
+			return fmt.Errorf("PCS_CSRF_ALLOWED_ORIGINS contiene un origen invalido")
+		}
+	}
+	return nil
+}
+
+func getenvDurationRange(key string, defaultValue, minValue, maxValue time.Duration) time.Duration {
+	raw := strings.TrimSpace(os.Getenv(key))
+	if raw == "" {
+		return defaultValue
+	}
+	value, err := time.ParseDuration(raw)
+	if err != nil {
+		return defaultValue
+	}
+	if value < minValue {
+		return minValue
+	}
+	if value > maxValue {
+		return maxValue
+	}
+	return value
+}
+
+func getenvInt64Range(key string, defaultValue, minValue, maxValue int64) int64 {
+	raw := strings.TrimSpace(os.Getenv(key))
+	if raw == "" {
+		return defaultValue
+	}
+	value, err := strconv.ParseInt(raw, 10, 64)
+	if err != nil {
+		return defaultValue
+	}
+	if value < minValue {
+		return minValue
+	}
+	if value > maxValue {
+		return maxValue
+	}
+	return value
+}
+
 func getenvIntRange(key string, defaultVal, minVal, maxVal int) int {
 	raw := strings.TrimSpace(os.Getenv(key))
 	if raw == "" {
@@ -761,6 +844,9 @@ func main() {
 	startupTrace("after_refresh_runtime_globals")
 	if err := ensureRuntimeConfigEncKey(backendDir); err != nil {
 		log.Fatalf("failed to ensure CONFIG_ENC_KEY: %v", err)
+	}
+	if err := validateProductionSecurityConfig(); err != nil {
+		log.Fatalf("invalid production security configuration: %v", err)
 	}
 	startupTrace("after_ensure_runtime_config_enc_key")
 	runtimeDBDialect := resolveRuntimeDBDialect()
@@ -1740,7 +1826,8 @@ func main() {
 	startupTrace("after_root_handler")
 
 	// Wrap DefaultServeMux with authentication, JSON error normalization and logging middleware
-	handler := utils.LoggingMiddleware(utils.SecurityHeadersMiddleware(utils.CanonicalPublicHostMiddleware(utils.JSONErrorMiddleware(utils.RecoveryMiddleware(utils.AuthMiddleware(dbSuper, utils.CSRFMiddleware(http.DefaultServeMux)))))))
+	maxRequestBodyBytes := getenvInt64Range("MAX_REQUEST_BODY_BYTES", 64<<20, 1<<20, 512<<20)
+	handler := utils.LoggingMiddleware(utils.SecurityHeadersMiddleware(utils.CanonicalPublicHostMiddleware(utils.JSONErrorMiddleware(utils.RecoveryMiddleware(utils.RequestBodyLimitMiddleware(utils.AuthMiddleware(dbSuper, utils.CSRFMiddleware(http.DefaultServeMux)), maxRequestBodyBytes))))))
 	startupTrace("after_handler_wrap")
 
 	// Respetar la variable de entorno PORT si está definida; por defecto usar 8080
@@ -1764,9 +1851,9 @@ func main() {
 		Addr:              addr,
 		Handler:           handler,
 		ReadHeaderTimeout: 10 * time.Second,
-		ReadTimeout:       30 * time.Second,
-		WriteTimeout:      60 * time.Second,
-		IdleTimeout:       120 * time.Second,
+		ReadTimeout:       getenvDurationRange("HTTP_READ_TIMEOUT", 30*time.Second, 5*time.Second, 5*time.Minute),
+		WriteTimeout:      getenvDurationRange("HTTP_WRITE_TIMEOUT", 60*time.Second, 5*time.Second, 10*time.Minute),
+		IdleTimeout:       getenvDurationRange("HTTP_IDLE_TIMEOUT", 120*time.Second, 15*time.Second, 15*time.Minute),
 		MaxHeaderBytes:    1 << 20,
 	}
 

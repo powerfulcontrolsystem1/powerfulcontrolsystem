@@ -257,7 +257,7 @@ func writeEmpresaUsuarioContractRequirement(w http.ResponseWriter, item *dbpkg.E
 	if contract != nil {
 		response["contract"] = contract
 	}
-	_ = json.NewEncoder(w).Encode(response)
+	_ = encodeJSONResponse(w, response)
 }
 
 func empresaUsuarioPublicPayload(item *dbpkg.EmpresaUsuario) map[string]interface{} {
@@ -305,7 +305,7 @@ func writeEmpresaUsuarioDuplicateResponse(w http.ResponseWriter, empresaID int64
 		response["email_confirmado"] = existing.EmailConfirmado
 		response["estado"] = existing.Estado
 	}
-	_ = json.NewEncoder(w).Encode(response)
+	_ = encodeJSONResponse(w, response)
 }
 
 func empresaUsuarioEstadoBloqueaPrimerIngreso(item *dbpkg.EmpresaUsuario) bool {
@@ -358,7 +358,7 @@ func EmpresaRolesDeUsuarioHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 				return
 			}
 			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(roles)
+			encodeJSONResponse(w, roles)
 			return
 
 		case http.MethodPost:
@@ -377,7 +377,7 @@ func EmpresaRolesDeUsuarioHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 				return
 			}
 			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(map[string]interface{}{"id": id, "empresa_id": empresaID})
+			encodeJSONResponse(w, map[string]interface{}{"id": id, "empresa_id": empresaID})
 			return
 
 		case http.MethodPut:
@@ -463,7 +463,7 @@ func EmpresaUsuariosHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 				return
 			}
 			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(items)
+			encodeJSONResponse(w, items)
 			return
 
 		case http.MethodPost:
@@ -480,7 +480,7 @@ func EmpresaUsuariosHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 					return
 				}
 				w.Header().Set("Content-Type", "application/json")
-				json.NewEncoder(w).Encode(map[string]interface{}{
+				encodeJSONResponse(w, map[string]interface{}{
 					"ok":       true,
 					"id":       userID,
 					"foto_url": photoURL,
@@ -555,7 +555,7 @@ func EmpresaUsuariosHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 			confirmURL, mailErr := sendEmpresaUsuarioConfirmationEmail(r, dbEmp, dbSuper, payload.EmpresaID, strings.TrimSpace(payload.Email), strings.TrimSpace(payload.Nombre), token, strings.TrimSpace(payload.MensajeInvitacion))
 			if mailErr != nil {
 				w.Header().Set("Content-Type", "application/json")
-				json.NewEncoder(w).Encode(map[string]interface{}{
+				encodeJSONResponse(w, map[string]interface{}{
 					"id":                          id,
 					"email_confirmation_required": true,
 					"email_sent":                  false,
@@ -571,7 +571,7 @@ func EmpresaUsuariosHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 				"email_confirmation_required": true,
 				"email_sent":                  true,
 			}
-			json.NewEncoder(w).Encode(resp)
+			encodeJSONResponse(w, resp)
 			return
 
 		case http.MethodPut:
@@ -667,7 +667,7 @@ func EmpresaUsuariosHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 					resp["email_error"] = mailErr.Error()
 					resp["confirm_url_preview"] = confirmURL
 				}
-				json.NewEncoder(w).Encode(resp)
+				encodeJSONResponse(w, resp)
 				return
 			}
 
@@ -763,7 +763,7 @@ func EmpresaUsuariosHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 					resp["confirm_url_preview"] = confirmURL
 				}
 			}
-			json.NewEncoder(w).Encode(resp)
+			encodeJSONResponse(w, resp)
 			return
 
 		case http.MethodDelete:
@@ -859,7 +859,7 @@ func EmpresaUsuarioLoginHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 
 		if item.PasswordSet != 1 || strings.TrimSpace(item.PasswordHash) == "" || strings.TrimSpace(item.PasswordSalt) == "" {
 			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(map[string]interface{}{
+			encodeJSONResponse(w, map[string]interface{}{
 				"ok":                      false,
 				"password_setup_required": true,
 				"empresa_id":              item.EmpresaID,
@@ -902,7 +902,7 @@ func EmpresaUsuarioLoginHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 		policy := resolveEmpresaUsuarioPasswordPolicy(dbSuper)
 		if rotationRequired, edadDias := empresaUsuarioPasswordRotationRequired(item, policy, time.Now()); rotationRequired {
 			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(map[string]interface{}{
+			encodeJSONResponse(w, map[string]interface{}{
 				"ok":                         false,
 				"password_rotation_required": true,
 				"empresa_id":                 item.EmpresaID,
@@ -1130,7 +1130,7 @@ func EmpresaUsuarioRequestPasswordRecoveryHandler(dbEmp, dbSuper *sql.DB) http.H
 
 		respondAccepted := func(delivery string) {
 			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(map[string]interface{}{
+			encodeJSONResponse(w, map[string]interface{}{
 				"ok":       true,
 				"delivery": delivery,
 				"message":  "Si el correo existe, enviaremos instrucciones para recuperar la contraseña.",
@@ -1212,7 +1212,7 @@ func EmpresaUsuarioRequestInvitationRecoveryHandler(dbEmp, dbSuper *sql.DB) http
 
 		respondAccepted := func(delivery string) {
 			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(map[string]interface{}{
+			encodeJSONResponse(w, map[string]interface{}{
 				"ok":       true,
 				"delivery": delivery,
 				"message":  "Si ese correo tiene una invitacion pendiente, enviaremos nuevamente el email de invitacion.",
@@ -1569,7 +1569,7 @@ func GmailConfigHandler(dbSuper *sql.DB) http.HandlerFunc {
 			}
 
 			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(map[string]interface{}{
+			encodeJSONResponse(w, map[string]interface{}{
 				"smtp_email_set":                  strings.TrimSpace(smtpEmail) != "",
 				"smtp_email":                      smtpEmail,
 				"smtp_email_updated":              smtpEmailUpdated,
@@ -1608,7 +1608,7 @@ func GmailConfigHandler(dbSuper *sql.DB) http.HandlerFunc {
 					}
 					w.Header().Set("Content-Type", "application/json")
 					w.WriteHeader(status)
-					json.NewEncoder(w).Encode(map[string]interface{}{
+					encodeJSONResponse(w, map[string]interface{}{
 						"sent":      false,
 						"recipient": superGmailTestRecipient,
 						"error":     friendlyEmpresaUsuarioMailConfigError(err).Error(),
@@ -1617,7 +1617,7 @@ func GmailConfigHandler(dbSuper *sql.DB) http.HandlerFunc {
 				}
 
 				w.Header().Set("Content-Type", "application/json")
-				json.NewEncoder(w).Encode(map[string]interface{}{
+				encodeJSONResponse(w, map[string]interface{}{
 					"sent":      true,
 					"recipient": superGmailTestRecipient,
 					"message":   "Correo de prueba enviado correctamente a " + superGmailTestRecipient,
@@ -1749,7 +1749,7 @@ func GmailConfigHandler(dbSuper *sql.DB) http.HandlerFunc {
 			}
 
 			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(map[string]interface{}{"saved": true})
+			encodeJSONResponse(w, map[string]interface{}{"saved": true})
 			return
 
 		default:
@@ -2771,7 +2771,7 @@ func createEmpresaUsuarioSession(w http.ResponseWriter, r *http.Request, dbSuper
 		Value:    token,
 		Path:     "/",
 		HttpOnly: true,
-		MaxAge:   86400,
+		MaxAge:   utils.SessionCookieMaxAge(),
 		Secure:   SessionCookieSecure(r),
 		SameSite: http.SameSiteLaxMode,
 	}
@@ -2802,7 +2802,7 @@ func createEmpresaUsuarioSessionAndRespond(w http.ResponseWriter, r *http.Reques
 		return err
 	}
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]interface{}{
+	encodeJSONResponse(w, map[string]interface{}{
 		"ok":           true,
 		"empresa_id":   result.EmpresaID,
 		"usuario_id":   result.UsuarioID,

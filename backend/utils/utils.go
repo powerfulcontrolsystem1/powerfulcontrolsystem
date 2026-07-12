@@ -402,7 +402,11 @@ func IsSameOriginRequest(r *http.Request) bool {
 		if strings.EqualFold(parsed.Scheme, requestScheme) && strings.EqualFold(parsed.Host, requestHost) {
 			return true
 		}
-		for _, allowed := range strings.Split(os.Getenv("PCS_CSRF_ALLOWED_ORIGINS"), ",") {
+		allowedOrigins := strings.TrimSpace(os.Getenv("PCS_CSRF_ALLOWED_ORIGINS"))
+		if allowedOrigins == "" {
+			allowedOrigins = strings.TrimSpace(os.Getenv("CSRF_ALLOWED_ORIGINS"))
+		}
+		for _, allowed := range strings.Split(allowedOrigins, ",") {
 			origin, parseErr := url.Parse(strings.TrimSpace(allowed))
 			if parseErr == nil && origin.Scheme != "" && origin.Host != "" && strings.EqualFold(parsed.Scheme, origin.Scheme) && strings.EqualFold(parsed.Host, origin.Host) {
 				return true
@@ -411,6 +415,38 @@ func IsSameOriginRequest(r *http.Request) bool {
 		return false
 	}
 	return false
+}
+
+// SessionCookieMaxAge centraliza la duracion de cookies de autenticacion.
+// SESSION_TIMEOUT usa el formato de time.ParseDuration, por ejemplo 12h.
+func SessionCookieMaxAge() int {
+	duration := 24 * time.Hour
+	if raw := strings.TrimSpace(os.Getenv("SESSION_TIMEOUT")); raw != "" {
+		if parsed, err := time.ParseDuration(raw); err == nil {
+			duration = parsed
+		}
+	}
+	if duration < 5*time.Minute {
+		duration = 5 * time.Minute
+	}
+	if duration > 7*24*time.Hour {
+		duration = 7 * 24 * time.Hour
+	}
+	return int(duration.Seconds())
+}
+
+// RequestBodyLimitMiddleware aplica un techo global antes de los limites mas
+// especificos de cada handler. Los upgrades WebSocket no transportan body HTTP.
+func RequestBodyLimitMiddleware(next http.Handler, maxBytes int64) http.Handler {
+	if maxBytes <= 0 {
+		maxBytes = 64 << 20
+	}
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Body != nil && !isWebSocketUpgrade(r) {
+			r.Body = http.MaxBytesReader(w, r.Body, maxBytes)
+		}
+		next.ServeHTTP(w, r)
+	})
 }
 
 func isCookieAuthenticatedMutation(r *http.Request) bool {

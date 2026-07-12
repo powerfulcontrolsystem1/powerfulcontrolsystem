@@ -3,7 +3,7 @@ package handlers
 import (
 	"crypto/hmac"
 	"crypto/rand"
-	"crypto/sha1"
+	"crypto/sha1" // #nosec G505 -- TOTP RFC 6238 interoperable profile uses HMAC-SHA1; not used for storage or passwords.
 	"database/sql"
 	"encoding/base32"
 	"encoding/base64"
@@ -179,7 +179,7 @@ func issueReplacementAdminSession(w http.ResponseWriter, r *http.Request, dbSupe
 	if err := dbpkg.CreateSession(dbSuper, adminEmail, r.RemoteAddr, r.UserAgent(), token); err != nil {
 		return err
 	}
-	http.SetCookie(w, &http.Cookie{Name: "session_token", Value: token, Path: "/", HttpOnly: true, MaxAge: 86400, Secure: SessionCookieSecure(r), SameSite: http.SameSiteLaxMode})
+	http.SetCookie(w, &http.Cookie{Name: "session_token", Value: token, Path: "/", HttpOnly: true, MaxAge: utils.SessionCookieMaxAge(), Secure: SessionCookieSecure(r), SameSite: http.SameSiteLaxMode})
 	SetBrowserSessionStateCookie(w, r, true)
 	return nil
 }

@@ -94,7 +94,7 @@ func AcceptCompleteHandler(dbSuper *sql.DB) http.HandlerFunc {
 			Value:    token,
 			Path:     "/",
 			HttpOnly: true,
-			MaxAge:   86400,
+			MaxAge:   utils.SessionCookieMaxAge(),
 			Secure:   SessionCookieSecure(r),
 			SameSite: http.SameSiteLaxMode,
 		}
@@ -123,6 +123,6 @@ func AcceptCompleteHandler(dbSuper *sql.DB) http.HandlerFunc {
 			}
 		}
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]interface{}{"success": true, "redirect": redirectTo, "contract_version": currentContract.Version})
+		encodeJSONResponse(w, map[string]interface{}{"success": true, "redirect": redirectTo, "contract_version": currentContract.Version})
 	}
 }

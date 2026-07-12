@@ -35,7 +35,7 @@ x-mailu-service-hosts: &mailu-service-hosts
 
 services:
   postgres:
-    image: postgres:16-alpine
+    image: postgres:16.14-alpine
     container_name: pcs-postgres
     restart: unless-stopped
     environment:
@@ -75,10 +75,22 @@ services:
     environment:
       PORT: "8080"
       TZ: ${TZ:-America/Bogota}
+      PCS_ENV: ${PCS_ENV:-production}
+      PCS_TRUSTED_PROXY_CIDRS: ${PCS_TRUSTED_PROXY_CIDRS:?Defina PCS_TRUSTED_PROXY_CIDRS}
+      PCS_CSRF_ALLOWED_ORIGINS: ${PCS_CSRF_ALLOWED_ORIGINS:?Defina PCS_CSRF_ALLOWED_ORIGINS}
+      CSRF_ALLOWED_ORIGINS: ${PCS_CSRF_ALLOWED_ORIGINS:?Defina PCS_CSRF_ALLOWED_ORIGINS}
+      SESSION_TIMEOUT: ${SESSION_TIMEOUT:?Defina SESSION_TIMEOUT}
+      MAX_REQUEST_BODY_BYTES: ${MAX_REQUEST_BODY_BYTES:?Defina MAX_REQUEST_BODY_BYTES}
+      HTTP_READ_TIMEOUT: ${HTTP_READ_TIMEOUT:?Defina HTTP_READ_TIMEOUT}
+      HTTP_WRITE_TIMEOUT: ${HTTP_WRITE_TIMEOUT:?Defina HTTP_WRITE_TIMEOUT}
+      HTTP_IDLE_TIMEOUT: ${HTTP_IDLE_TIMEOUT:?Defina HTTP_IDLE_TIMEOUT}
+      PCS_WEBRTC_IDLE_TIMEOUT_SECONDS: ${PCS_WEBRTC_IDLE_TIMEOUT_SECONDS:-300}
       DB_DIALECT: postgres
       DB_EMPRESAS_DSN: postgres://${POSTGRES_USER:-pcs}:${POSTGRES_PASSWORD}@postgres:5432/pcs_empresas?sslmode=disable
       DB_SUPERADMIN_DSN: postgres://${POSTGRES_USER:-pcs}:${POSTGRES_PASSWORD}@postgres:5432/pcs_superadministrador?sslmode=disable
       CONFIG_ENC_KEY: ${CONFIG_ENC_KEY:?Defina CONFIG_ENC_KEY}
+      CONFIG_ENC_KEY_ID: ${CONFIG_ENC_KEY_ID:?Defina CONFIG_ENC_KEY_ID}
+      CONFIG_ENC_KEY_PREVIOUS: ${CONFIG_ENC_KEY_PREVIOUS:-}
       PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:-https://powerfulcontrolsystem.com}
       GOOGLE_REDIRECT_URL: ${GOOGLE_REDIRECT_URL:-https://powerfulcontrolsystem.com/auth/google/callback}
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
@@ -127,7 +139,7 @@ services:
 
   mailu-redis:
     profiles: ["mail"]
-    image: redis:7-alpine
+    image: redis:7.4.9-alpine
     container_name: pcs-mailu-redis
     restart: unless-stopped
     volumes:
@@ -357,7 +369,7 @@ services:
 
   onlyoffice-documentserver:
     profiles: ["office"]
-    image: onlyoffice/documentserver:${ONLYOFFICE_TAG:-latest}
+    image: onlyoffice/documentserver:${ONLYOFFICE_TAG:-9.4}
     container_name: pcs-onlyoffice-documentserver
     restart: unless-stopped
     environment:
@@ -410,7 +422,7 @@ services:
 
   rustdesk-hbbs:
     profiles: ["rustdesk"]
-    image: rustdesk/rustdesk-server:${RUSTDESK_TAG:-latest}
+    image: ghcr.io/rustdesk/rustdesk-server:${RUSTDESK_TAG:-1.1.15}
     container_name: pcs-rustdesk-hbbs
     restart: unless-stopped
     command: hbbs -r rustdesk-hbbr:21117
@@ -428,7 +440,7 @@ services:
 
   rustdesk-hbbr:
     profiles: ["rustdesk"]
-    image: rustdesk/rustdesk-server:${RUSTDESK_TAG:-latest}
+    image: ghcr.io/rustdesk/rustdesk-server:${RUSTDESK_TAG:-1.1.15}
     container_name: pcs-rustdesk-hbbr
     restart: unless-stopped
     command: hbbr

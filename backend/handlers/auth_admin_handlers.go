@@ -120,7 +120,7 @@ func SessionCookieSecure(r *http.Request) bool {
 func writeAdminAuthJSON(w http.ResponseWriter, status int, payload map[string]interface{}) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
-	_ = json.NewEncoder(w).Encode(payload)
+	_ = encodeJSONResponse(w, payload)
 }
 
 func writeAdminAuthError(w http.ResponseWriter, status int, message string) {
@@ -364,12 +364,16 @@ func ConfirmarAdminHandler(dbSuper *sql.DB) http.HandlerFunc {
 			log.Println("ConfirmarAdminHandler error:", err)
 			w.Header().Set("Content-Type", "text/html; charset=utf-8")
 			w.WriteHeader(http.StatusOK)
-			w.Write([]byte(`<html><body><h3>Token inválido o expirado</h3><p>Si ya confirmaste, intenta iniciar sesión: <a href="/login.html">Iniciar</a></p></body></html>`))
+			if _, writeErr := w.Write([]byte(`<html><body><h3>Token inválido o expirado</h3><p>Si ya confirmaste, intenta iniciar sesión: <a href="/login.html">Iniciar</a></p></body></html>`)); writeErr != nil {
+				log.Printf("ConfirmarAdminHandler write response error: %v", writeErr)
+			}
 			return
 		}
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(`<html><body><h3>Correo confirmado</h3><p>Tu cuenta ha sido confirmada. Ahora puedes <a href="/login.html">iniciar sesión</a>.</p></body></html>`))
+		if _, writeErr := w.Write([]byte(`<html><body><h3>Correo confirmado</h3><p>Tu cuenta ha sido confirmada. Ahora puedes <a href="/login.html">iniciar sesión</a>.</p></body></html>`)); writeErr != nil {
+			log.Printf("ConfirmarAdminHandler write response error: %v", writeErr)
+		}
 	}
 }
 
@@ -447,7 +451,7 @@ func AdminLoginHandler(dbSuper *sql.DB) http.HandlerFunc {
 			Value:    token,
 			Path:     "/",
 			HttpOnly: true,
-			MaxAge:   86400,
+			MaxAge:   utils.SessionCookieMaxAge(),
 			Secure:   SessionCookieSecure(r),
 			SameSite: http.SameSiteLaxMode,
 		}
@@ -622,7 +626,7 @@ func AdminResetPasswordHandler(dbSuper *sql.DB) http.HandlerFunc {
 			Value:    tokenSession,
 			Path:     "/",
 			HttpOnly: true,
-			MaxAge:   86400,
+			MaxAge:   utils.SessionCookieMaxAge(),
 			Secure:   SessionCookieSecure(r),
 			SameSite: http.SameSiteLaxMode,
 		}
@@ -791,7 +795,7 @@ func SetBrowserSessionStateCookie(w http.ResponseWriter, r *http.Request, active
 	maxAge := -1
 	if active {
 		value = "1"
-		maxAge = 86400
+		maxAge = utils.SessionCookieMaxAge()
 	}
 
 	http.SetCookie(w, &http.Cookie{
@@ -1215,7 +1219,7 @@ func HandleGoogleCallback(dbEmpresas *sql.DB, dbSuper *sql.DB, clientID, clientS
 				Value:    token,
 				Path:     "/",
 				HttpOnly: true,
-				MaxAge:   86400,
+				MaxAge:   utils.SessionCookieMaxAge(),
 				Secure:   SessionCookieSecure(r),
 				SameSite: http.SameSiteLaxMode,
 			}
@@ -1425,7 +1429,7 @@ func ListAdministradoresHandler(dbSuper *sql.DB) http.HandlerFunc {
 			}
 		}
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(admins)
+		encodeJSONResponse(w, admins)
 	}
 }
 
@@ -1540,7 +1544,7 @@ func ListSesionesHandler(dbSuper *sql.DB) http.HandlerFunc {
 			return
 		}
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(sesiones)
+		encodeJSONResponse(w, sesiones)
 	}
 }
 
@@ -1573,7 +1577,7 @@ func AdministradoresHandler(dbSuper *sql.DB) http.HandlerFunc {
 				}
 			}
 			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(admins)
+			encodeJSONResponse(w, admins)
 			return
 		case http.MethodPost:
 			requesterAdmin, principalEmail, err := resolveRequesterAdminScope(dbSuper, r)
@@ -1670,7 +1674,7 @@ func AdministradoresHandler(dbSuper *sql.DB) http.HandlerFunc {
 							"message":           message,
 						}
 						w.Header().Set("Content-Type", "application/json")
-						json.NewEncoder(w).Encode(resp)
+						encodeJSONResponse(w, resp)
 						return
 					}
 					if _, err := dbpkg.UpsertAdminPrincipalDelegacionActiva(dbSuper, existing.Email, principalEmail, strings.TrimSpace(requesterAdmin.Email)); err != nil {
@@ -1692,7 +1696,7 @@ func AdministradoresHandler(dbSuper *sql.DB) http.HandlerFunc {
 						resp["error"] = mailErr.Error()
 					}
 					w.Header().Set("Content-Type", "application/json")
-					json.NewEncoder(w).Encode(resp)
+					encodeJSONResponse(w, resp)
 					return
 				}
 				if principalEmail != "" {
@@ -1746,7 +1750,7 @@ func AdministradoresHandler(dbSuper *sql.DB) http.HandlerFunc {
 				resp["message"] = "Invitacion enviada. El administrador debe aceptarla y registrarse antes de iniciar sesion."
 			}
 			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(resp)
+			encodeJSONResponse(w, resp)
 			return
 		case http.MethodPut:
 			q := r.URL.Query()
@@ -1911,7 +1915,7 @@ func TiposEmpresasHandler(dbSuper *sql.DB) http.HandlerFunc {
 				return
 			}
 			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(tipos)
+			encodeJSONResponse(w, tipos)
 			return
 		case http.MethodPost:
 			var payload struct{ Nombre, Observaciones string }
@@ -1941,7 +1945,7 @@ func TiposEmpresasHandler(dbSuper *sql.DB) http.HandlerFunc {
 			} else {
 				response["preconfiguracion_error"] = preconfigErr.Error()
 			}
-			json.NewEncoder(w).Encode(response)
+			encodeJSONResponse(w, response)
 			return
 		case http.MethodPut:
 			q := r.URL.Query()
