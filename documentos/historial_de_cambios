@@ -37492,6 +37492,11 @@ Archivos modificados:
   ejecutable y argumentos separados. Las rutas remotas usadas por acciones del
   servidor se protegen con quoting antes de invocar el cliente SSH.
 
+2026-07-12: Configuración RustDesk restringida.
+- La configuración global del acceso RustDesk exige sesión efectiva de
+  super administrador para leer o modificar parámetros de conectividad. Se
+  añade una prueba de rechazo para solicitudes sin sesión.
+
 2026-07-12: Acceso documental Nextcloud.
 - Administrar empresa incorpora un enlace separado a `/nextcloud/` dentro de
   `Documentos, nube y soporte`. La visibilidad reutiliza el permiso de lectura
