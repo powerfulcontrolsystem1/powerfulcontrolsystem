@@ -1000,7 +1000,7 @@ func GetEmpresaPropinasReporte(dbConn *sql.DB, empresaID int64, filter EmpresaPr
 		var usuario string
 		var total float64
 		if err := rows.Scan(&usuarioID, &usuario, &total); err != nil {
-			rows.Close()
+			_ = rows.Close()
 			return nil, err
 		}
 		if usuarioID == 0 {

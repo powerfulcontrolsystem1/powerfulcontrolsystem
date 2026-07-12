@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"database/sql"
-	"encoding/json"
 	"net/http"
 	"strconv"
 
@@ -21,7 +20,7 @@ func MetricsCurrentHandler(db *sql.DB) http.HandlerFunc {
 			return
 		}
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(m)
+		encodeJSONResponse(w, m)
 	}
 }
 
@@ -44,6 +43,6 @@ func MetricsHistoryHandler(db *sql.DB) http.HandlerFunc {
 			return
 		}
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(hist)
+		encodeJSONResponse(w, hist)
 	}
 }

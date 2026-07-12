@@ -341,7 +341,7 @@ func collectPostgresEmpresaStorage(ctx context.Context, dbConn *sql.DB) ([]postg
 			var rowCount int64
 			var bytes int64
 			if err := rows.Scan(&empresaID, &rowCount, &bytes); err != nil {
-				rows.Close()
+				_ = rows.Close()
 				return nil, 0, 0, err
 			}
 			acc := usageByEmpresa[empresaID]
@@ -360,10 +360,10 @@ func collectPostgresEmpresaStorage(ctx context.Context, dbConn *sql.DB) ([]postg
 			}
 		}
 		if err := rows.Err(); err != nil {
-			rows.Close()
+			_ = rows.Close()
 			return nil, 0, 0, err
 		}
-		rows.Close()
+		_ = rows.Close()
 	}
 
 	items := make([]postgresEmpresaStorageItem, 0, len(empresas))

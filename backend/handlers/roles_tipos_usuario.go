@@ -48,7 +48,7 @@ func RolesDeUsuarioHandler(dbSuper *sql.DB) http.HandlerFunc {
 				return
 			}
 			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(items)
+			encodeJSONResponse(w, items)
 			return
 		case http.MethodPost:
 			var payload struct {
@@ -70,7 +70,7 @@ func RolesDeUsuarioHandler(dbSuper *sql.DB) http.HandlerFunc {
 				return
 			}
 			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(map[string]interface{}{"id": id})
+			encodeJSONResponse(w, map[string]interface{}{"id": id})
 			return
 		case http.MethodPut:
 			id, err := parseRequiredInt64Query(r, "id")

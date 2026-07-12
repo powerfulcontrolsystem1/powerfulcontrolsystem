@@ -45,7 +45,7 @@ func TestHTTPDatafonoProviderClientInitiatePayment(t *testing.T) {
 		if payload["reference"] != "VENTA-1" {
 			t.Fatalf("reference = %v", payload["reference"])
 		}
-		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+		_ = encodeJSONResponse(w, map[string]interface{}{
 			"transaction_id":     "tx-1",
 			"status":             "approved",
 			"authorization_code": "AUT-1",

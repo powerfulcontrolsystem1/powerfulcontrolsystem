@@ -1301,12 +1301,12 @@ func ConvertReservaHotelToCarrito(dbConn *sql.DB, empresaID, reservaID int64, us
 		fecha_actualizacion = CURRENT_TIMESTAMP
 	WHERE empresa_id = ? AND id = ?`, empresaID, current.CarritoID)
 	if err != nil {
-		tx.Rollback()
+		_ = tx.Rollback()
 		return 0, err
 	}
 	affectedCarrito, _ := resCarrito.RowsAffected()
 	if affectedCarrito == 0 {
-		tx.Rollback()
+		_ = tx.Rollback()
 		return 0, sql.ErrNoRows
 	}
 
@@ -1320,12 +1320,12 @@ func ConvertReservaHotelToCarrito(dbConn *sql.DB, empresaID, reservaID int64, us
 		AND id = ?
 		AND COALESCE(estado, 'activo') = 'activo'`, by, obs, empresaID, reservaID)
 	if err != nil {
-		tx.Rollback()
+		_ = tx.Rollback()
 		return 0, err
 	}
 	affectedReserva, _ := resReserva.RowsAffected()
 	if affectedReserva == 0 {
-		tx.Rollback()
+		_ = tx.Rollback()
 		return 0, sql.ErrNoRows
 	}
 

@@ -8360,7 +8360,7 @@ func decodeDIANP12WithOpenSSL(contentBytes []byte, password, format string) (dia
 	tmpName := tmp.Name()
 	defer os.Remove(tmpName)
 	if _, err := tmp.Write(contentBytes); err != nil {
-		tmp.Close()
+		_ = tmp.Close()
 		return material, err
 	}
 	if err := tmp.Close(); err != nil {
@@ -12775,42 +12775,42 @@ func validateDIANCredentialRefs(cfg map[string]interface{}, empresaID int64, pay
 		"software_id": softwareID,
 	}
 
-	tokenRequired := dianTokenRequiredForEndpoint(cfg, payload)
-	tokenRef := dianFirstNonBlank(genericStringValue(payload["token_emisor_ref"]), genericStringValue(cfg["token_emisor_ref"]))
-	tokenPayload := strings.TrimSpace(genericStringValue(payload["token"]))
-	tokenOK := false
+	emitterCredentialRequired := dianTokenRequiredForEndpoint(cfg, payload)
+	emitterCredentialRef := dianFirstNonBlank(genericStringValue(payload["token_emisor_ref"]), genericStringValue(cfg["token_emisor_ref"]))
+	emitterCredentialPayload := strings.TrimSpace(genericStringValue(payload["token"]))
+	emitterCredentialOK := false
 	credentialStatusMessage := ""
 	credentialSource := ""
-	if tokenPayload != "" {
-		tokenOK = true
+	if emitterCredentialPayload != "" {
+		emitterCredentialOK = true
 		credentialSource = "payload.token"
 		credentialStatusMessage = "token entregado en payload"
-	} else if tokenRef == "" {
+	} else if emitterCredentialRef == "" {
 		credentialSource = "vacio"
-		if tokenRequired {
+		if emitterCredentialRequired {
 			issues = append(issues, "token_emisor_ref no configurado")
 			credentialStatusMessage = "faltante"
 		} else {
-			tokenOK = true
+			emitterCredentialOK = true
 			credentialSource = "no_requerido"
 			credentialStatusMessage = "no requerido para endpoint oficial SOAP DIAN; se usa certificado, Software ID/PIN y TestSetId"
 		}
 	} else {
-		credentialSource = dianReferenceSource(tokenRef)
-		if !tokenRequired {
-			tokenOK = true
+		credentialSource = dianReferenceSource(emitterCredentialRef)
+		if !emitterCredentialRequired {
+			emitterCredentialOK = true
 			credentialStatusMessage = "configurado, pero no requerido para endpoint oficial SOAP DIAN"
-		} else if _, err := resolveDIANSecretValue(tokenRef); err != nil {
+		} else if _, err := resolveDIANSecretValue(emitterCredentialRef); err != nil {
 			issues = append(issues, "token_emisor_ref invalido")
 			credentialStatusMessage = err.Error()
 		} else {
-			tokenOK = true
+			emitterCredentialOK = true
 			credentialStatusMessage = "resuelto correctamente"
 		}
 	}
 	checks["token_emisor"] = map[string]interface{}{
-		"ok":       tokenOK,
-		"required": tokenRequired,
+		"ok":       emitterCredentialOK,
+		"required": emitterCredentialRequired,
 		"source":   credentialSource,
 		"message":  dianTruncate(credentialStatusMessage, 180),
 	}

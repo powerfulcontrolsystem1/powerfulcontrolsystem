@@ -394,7 +394,7 @@ func SuperEmailTemplatesHandler(dbSuper *sql.DB) http.HandlerFunc {
 				return
 			}
 			w.Header().Set("Content-Type", "application/json")
-			_ = json.NewEncoder(w).Encode(map[string]interface{}{"templates": items})
+			_ = encodeJSONResponse(w, map[string]interface{}{"templates": items})
 			return
 
 		case http.MethodPut, http.MethodPost:
@@ -443,7 +443,7 @@ func SuperEmailTemplatesHandler(dbSuper *sql.DB) http.HandlerFunc {
 				return
 			}
 			w.Header().Set("Content-Type", "application/json")
-			_ = json.NewEncoder(w).Encode(map[string]interface{}{"saved": true, "templates": items})
+			_ = encodeJSONResponse(w, map[string]interface{}{"saved": true, "templates": items})
 			return
 
 		default:

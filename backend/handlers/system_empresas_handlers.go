@@ -265,7 +265,7 @@ func MeHandler(dbSuper *sql.DB) http.HandlerFunc {
 			return
 		}
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(admin)
+		encodeJSONResponse(w, admin)
 	}
 }
 
@@ -312,12 +312,12 @@ func SecurityPortsHandler(dbSuper *sql.DB) http.HandlerFunc {
 			estado := "cerrado"
 			if err == nil {
 				estado = "abierto"
-				conn.Close()
+				_ = conn.Close()
 			}
 			resp = append(resp, Entry{Puerto: p, Estado: estado, IP: ip, Firewall: "Desconocido"})
 		}
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(resp)
+		encodeJSONResponse(w, resp)
 	}
 }
 
@@ -413,7 +413,7 @@ func SecurityProcessesHandler(dbSuper *sql.DB) http.HandlerFunc {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(procs)
+		encodeJSONResponse(w, procs)
 	}
 }
 
@@ -520,7 +520,7 @@ func EmpresasHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 					return
 				}
 				w.Header().Set("Content-Type", "application/json")
-				json.NewEncoder(w).Encode(empresa)
+				encodeJSONResponse(w, empresa)
 				return
 			}
 			// Sin id: devolver lista completa
@@ -537,7 +537,7 @@ func EmpresasHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 				return
 			}
 			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(empresas)
+			encodeJSONResponse(w, empresas)
 			return
 		case http.MethodPost:
 			_, principalEmail, err := resolveRequesterAdminScope(dbSuper, r)
@@ -602,7 +602,7 @@ func EmpresasHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 				NotifySuperAdminEmpresaNueva(dbSuper, id, payload.TipoID, payload.Nombre, payload.Nit, payload.TipoNombre, payload.UsuarioCreador, preconfigResult != nil && preconfigResult.Aplicada, preconfigErrText)
 			}
 			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(map[string]interface{}{
+			encodeJSONResponse(w, map[string]interface{}{
 				"id":                        id,
 				"creada":                    created,
 				"idempotente":               !created,

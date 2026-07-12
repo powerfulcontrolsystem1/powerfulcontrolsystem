@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -1588,10 +1589,14 @@ func parseNominaHourMinute(raw string, fallback int) int {
 	if len(parts) < 2 {
 		return fallback
 	}
-	hh := 0
-	mm := 0
-	fmt.Sscanf(parts[0], "%d", &hh)
-	fmt.Sscanf(parts[1], "%d", &mm)
+	hh, err := strconv.Atoi(parts[0])
+	if err != nil {
+		return fallback
+	}
+	mm, err := strconv.Atoi(parts[1])
+	if err != nil {
+		return fallback
+	}
 	if hh < 0 {
 		hh = 0
 	}

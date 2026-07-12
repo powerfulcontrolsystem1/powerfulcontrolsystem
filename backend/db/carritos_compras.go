@@ -4132,13 +4132,13 @@ func restoreCarritoItemsStockTx(tx *sql.Tx, empresaID, carritoID int64, motivo s
 	for rows.Next() {
 		var item itemStockRestore
 		if err := rows.Scan(&item.itemID, &item.tipoItem, &item.referenciaID, &item.cantidad, &item.bodegaID, &item.usuario); err != nil {
-			rows.Close()
+			_ = rows.Close()
 			return err
 		}
 		items = append(items, item)
 	}
 	if err := rows.Err(); err != nil {
-		rows.Close()
+		_ = rows.Close()
 		return err
 	}
 	if err := rows.Close(); err != nil {

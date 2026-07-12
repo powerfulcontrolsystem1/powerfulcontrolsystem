@@ -159,7 +159,7 @@ func SuperReportesGlobalesHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 				fileName := "reportes_globales_" + datasetKey + "_admin_" + superReportesSafeFileLabel(adminEmail) + "_" + time.Now().Format("20060102_150405") + ".json"
 				w.Header().Set("Content-Type", "application/json")
 				w.Header().Set("Content-Disposition", "attachment; filename=\""+fileName+"\"")
-				_ = json.NewEncoder(w).Encode(resp)
+				_ = encodeJSONResponse(w, resp)
 				return
 			}
 			if err := writeReportesDatasetExport(w, resp.Combinado, format); err != nil {

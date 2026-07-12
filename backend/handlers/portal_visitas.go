@@ -144,7 +144,7 @@ LIMIT 48`)
 		http.Error(w, `{"ok":false,"error":"no se pudieron recorrer las visitas"}`, http.StatusInternalServerError)
 		return
 	}
-	_ = json.NewEncoder(w).Encode(resp)
+	_ = encodeJSONResponse(w, resp)
 }
 
 func portalCountryName(code string) string {

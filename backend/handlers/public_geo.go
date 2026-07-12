@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"encoding/json"
 	"net/http"
 	"strings"
 )
@@ -32,7 +31,7 @@ func PublicGeoHandler() http.HandlerFunc {
 		// Override opcional para pruebas locales: /api/public/geo?pais=CO
 		if test := normalizeCountryCode(r.URL.Query().Get("pais")); test != "" {
 			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(map[string]interface{}{
+			encodeJSONResponse(w, map[string]interface{}{
 				"pais_codigo": test,
 				"source":      "query",
 			})
@@ -62,10 +61,9 @@ func PublicGeoHandler() http.HandlerFunc {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]interface{}{
+		encodeJSONResponse(w, map[string]interface{}{
 			"pais_codigo": country,
 			"source":      source,
 		})
 	}
 }
-

@@ -147,7 +147,7 @@ func SuperServidoresListHandler(dbSuper *sql.DB) http.HandlerFunc {
 			buildPostgresServiceState(dbSuper),
 		}
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]interface{}{"ok": true, "servicios": servicios})
+		encodeJSONResponse(w, map[string]interface{}{"ok": true, "servicios": servicios})
 	}
 }
 
@@ -420,7 +420,7 @@ func SuperServidoresToggleHandler(dbSuper *sql.DB) http.HandlerFunc {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]interface{}{"ok": true, "servicio": buildRustDeskServiceState(dbSuper, false)})
+		encodeJSONResponse(w, map[string]interface{}{"ok": true, "servicio": buildRustDeskServiceState(dbSuper, false)})
 	}
 }
 
@@ -439,7 +439,7 @@ func SuperServidoresProbeHandler(dbSuper *sql.DB) http.HandlerFunc {
 		}
 		state := buildRustDeskServiceState(dbSuper, true)
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]interface{}{"ok": true, "servicio": state})
+		encodeJSONResponse(w, map[string]interface{}{"ok": true, "servicio": state})
 	}
 }
 

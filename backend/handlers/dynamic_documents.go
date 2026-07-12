@@ -884,7 +884,9 @@ func ensureDynamicDocumentFile(ctx context.Context, record dynamicDocumentRecord
 func writeDynamicDocumentXLSX(record dynamicDocumentRecord, path string) error {
 	f := excelize.NewFile()
 	sheet := "Documento"
-	f.SetSheetName("Sheet1", sheet)
+	if err := f.SetSheetName("Sheet1", sheet); err != nil {
+		return err
+	}
 	rows := extractFirstMarkdownTable(record.Content)
 	if len(rows) > 0 {
 		for r, row := range rows {

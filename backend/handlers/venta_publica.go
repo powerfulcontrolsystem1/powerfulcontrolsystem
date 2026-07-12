@@ -50,7 +50,7 @@ func AdminCreatePaginaHandler(db *sql.DB, webDir string) http.HandlerFunc {
 			return
 		}
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]interface{}{"id": id})
+		encodeJSONResponse(w, map[string]interface{}{"id": id})
 	}
 }
 
@@ -88,7 +88,7 @@ func AdminCreateProductoHandler(db *sql.DB, webDir string) http.HandlerFunc {
 			return
 		}
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]interface{}{"id": id})
+		encodeJSONResponse(w, map[string]interface{}{"id": id})
 	}
 }
 
@@ -158,7 +158,7 @@ func UploadProductImageHandler(db *sql.DB, webDir string) http.HandlerFunc {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]interface{}{"url": strings.ReplaceAll(strings.TrimPrefix(dstPath, webDir), "\\", "/")})
+		encodeJSONResponse(w, map[string]interface{}{"url": strings.ReplaceAll(strings.TrimPrefix(dstPath, webDir), "\\", "/")})
 	}
 }
 
@@ -188,7 +188,7 @@ func PublicListPaginaHandler(db *sql.DB, webDir string) http.HandlerFunc {
 			return
 		}
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(resp)
+		encodeJSONResponse(w, resp)
 	}
 }
 

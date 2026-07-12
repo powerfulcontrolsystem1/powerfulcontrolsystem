@@ -1504,13 +1504,13 @@ func revertCodigoDescuentoUsoPorCarritoTx(tx *sql.Tx, empresaID, carritoID int64
 	for rows.Next() {
 		var redencion redencionDescuento
 		if err := rows.Scan(&redencion.id, &redencion.codigoID); err != nil {
-			rows.Close()
+			_ = rows.Close()
 			return err
 		}
 		redenciones = append(redenciones, redencion)
 	}
 	if err := rows.Err(); err != nil {
-		rows.Close()
+		_ = rows.Close()
 		return err
 	}
 	if err := rows.Close(); err != nil {
