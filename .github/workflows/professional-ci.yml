@@ -143,4 +143,3 @@ jobs:
           name: professional-reports
           path: documentos/reportes_profesionales/
           if-no-files-found: ignore
-
