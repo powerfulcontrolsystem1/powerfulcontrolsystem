@@ -3217,3 +3217,8 @@
 - [Nomina] El agente internet muestra valor actual, valor oficial propuesto, vigencia y enlace de fuente; cada campo se aplica solo tras confirmacion humana.
 - [Tutoriales] Agrega `creditos_tutorial.html` al final del submenu de Credito; Nomina conserva su tutorial al final del submenu.
 - [IA documental] Se verifica el flujo existente de Compras, Ingresos y Egresos: carga imagen/PDF, extrae con GPT-5.5, precarga formulario, abre chat para reportar legibilidad y exige revision antes de guardar.
+
+## [2026-07-12] Nextcloud multiempresa
+- [Backend] Se restablece la asignacion aislada `empresa_nextcloud_accounts`, con 1024 MB por defecto para empresas existentes y nuevas, y aprovisionamiento idempotente mediante OCS.
+- [Frontend] Agrega `Administrar empresa > Nextcloud` y `Super administrador > Configuracion > Nextcloud`.
+- [Operacion] El stack `deploy/nextcloud/docker-compose.yml` usa PostgreSQL y Redis en el VPS principal, independiente del Nextcloud auxiliar de VPS2; secretos y dominio se mantienen exclusivamente en un entorno privado del VPS principal.

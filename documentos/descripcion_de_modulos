@@ -4434,3 +4434,8 @@ de productos/SKUs, caja, impuestos, cliente y reglas de facturacion.
 
 2026-07-11: Operacion de despliegue `rs`.
 - `scripts/rs.ps1` selecciona el ejecutable hijo correcto para PowerShell Core o Windows PowerShell y conserva su fallback. Esto evita que una ruta inexistente a `powershell.exe` detenga preflight, repositorio y sincronizacion antes de contactar la VPS.
+
+2026-07-12: Nextcloud empresarial.
+- Cada empresa tiene una asignacion aislada por `empresa_id`, con 1 GB inicial.
+  El super administrador configura el endpoint HTTPS y cuenta de servicio; la
+  pagina empresarial permite preparar y abrir su espacio sin revelar secretos.

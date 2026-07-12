@@ -37440,6 +37440,11 @@ Archivos modificados:
   antiguas de x/net/x/crypto/x/sys.
 
 2026-07-12: Compatibilidad CSRF para inicio de sesion.
+
+2026-07-12: Nextcloud multiempresa.
+- Se reincorpora el espacio empresarial Nextcloud con cuota predeterminada de 1 GB,
+  configuracion super cifrada, asignacion por `empresa_id` y stack PostgreSQL en
+  el VPS principal, independiente de la instancia auxiliar de VPS2.
 - `login.js` agrega el token CSRF disponible a sus solicitudes JSON sin depender
   de `menu.js`; se cubren en pruebas ambos inicios de sesion publicos aunque
   el navegador conserve una cookie de sesion anterior.

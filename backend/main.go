@@ -915,8 +915,8 @@ func main() {
 			log.Printf("INFO: emails corporativos generados para empresas existentes: %d", created)
 		}
 		startupTrace("after_empresa_email_corporativo_existing_companies")
-		if err := dbpkg.DecommissionNextcloudArtifacts(dbEmpresas, dbSuper); err != nil {
-			log.Printf("warning: no se pudieron retirar artefactos Nextcloud obsoletos: %v", err)
+		if err := dbpkg.EnsureEmpresaNextcloudSchema(dbEmpresas); err != nil {
+			log.Printf("warning: no se pudo preparar Nextcloud empresarial: %v", err)
 		}
 		startupTrace("after_nextcloud_decommission")
 		if err := dbpkg.DecommissionRemovedEntertainmentArtifacts(dbSuper); err != nil {
@@ -1271,6 +1271,7 @@ func main() {
 	http.HandleFunc("/super/api/servidores/toggle", handlers.WithSuperAuditoria(dbSuper, "super_servidores", handlers.SuperServidoresToggleHandler(dbSuper)))
 	http.HandleFunc("/super/api/servidores/probar", handlers.WithSuperAuditoria(dbSuper, "super_servidores", handlers.SuperServidoresProbeHandler(dbSuper)))
 	http.HandleFunc("/super/api/vps2", handlers.WithSuperAuditoria(dbSuper, "super_vps2", handlers.SuperVPS2Handler(dbSuper)))
+	http.HandleFunc("/super/api/config/nextcloud", handlers.WithSuperAuditoria(dbSuper, "super_config_nextcloud", handlers.NextcloudConfigHandler(dbSuper)))
 	http.HandleFunc("/super/api/vps/procesos", handlers.SuperVPSProcessesHandler(dbSuper))
 	http.HandleFunc("/super/api/plantillas_nuevas/catalogo", handlers.SuperPlantillasNuevosCatalogoHandler(dbSuper))
 	http.HandleFunc("/super/api/plantillas_integracion/catalogo", handlers.SuperPlantillasIntegracionCatalogoHandler())
@@ -1469,6 +1470,7 @@ func main() {
 	http.HandleFunc("/api/public/certificados_tributarios", handlers.PublicCertificadosTributariosHandler(dbEmpresas))
 	http.HandleFunc("/api/empresa/backups", handlers.WithEmpresaBackupsPermissions(dbEmpresas, dbSuper, handlers.EmpresaBackupsHandler(dbEmpresas, dbSuper)))
 	http.HandleFunc("/api/empresa/documentos", handlers.WithEmpresaDocumentosOnlyOfficePermissions(dbEmpresas, dbSuper, handlers.OnlyOfficeDocumentosHandler(dbSuper)))
+	http.HandleFunc("/api/empresa/nextcloud", handlers.WithEmpresaSeguridadPermissions(dbEmpresas, dbSuper, handlers.EmpresaNextcloudHandler(dbEmpresas, dbSuper)))
 	startupTrace("after_empresa_routes")
 
 	// OnlyOffice public endpoints (token temporal)

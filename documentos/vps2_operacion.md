@@ -2,6 +2,10 @@
 
 Documento operativo para el servidor VPS2 local de pruebas.
 
+> La instancia Nextcloud de VPS2 es auxiliar e independiente. No recibe cuentas,
+> cuotas ni archivos empresariales PCS. El Nextcloud que usan las empresas se
+> instala exclusivamente en el VPS principal con `deploy/nextcloud/docker-compose.yml`.
+
 ## Conexion conocida
 
 - Host SSH: `192.168.1.188`

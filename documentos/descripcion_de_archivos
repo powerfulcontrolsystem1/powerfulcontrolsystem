@@ -11746,3 +11746,9 @@ backend/handlers/user_config.go - Controlador que expone /api/user/configuracion
 2026-07-11 - Validacion preproduccion y cobro de carrito
 - `documentos/validacion_preproduccion_pcs.md`: evidencia de pruebas PCS y limites verificables de pagos, Bre-B, impresion y modo offline antes de produccion.
 - `backend/handlers/carrito_frontend_contract_test.go`: evita que el boton de pago del carrito pierda su enlace directo y su bloqueo contra doble clic.
+
+2026-07-12 - Nextcloud multiempresa
+- `backend/handlers/nextcloud.go`: configuracion super y aprovisionamiento OCS aislado por empresa.
+- `web/administrar_empresa/nextcloud.html`: estado y apertura del espacio empresarial.
+- `web/super/nextcloud.html`: configuracion segura de URL, cuenta de servicio y cuota.
+- `deploy/nextcloud/docker-compose.yml`: stack Nextcloud con PostgreSQL y Redis.

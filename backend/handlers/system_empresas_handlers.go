@@ -574,6 +574,11 @@ func EmpresasHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 			// Crear carpeta de backup en disco para esta empresa (best-effort).
 			if id > 0 {
 				_ = ensureDir(empresaBackupDir(id))
+				// La asignacion de Nextcloud se crea para empresas nuevas y es
+				// idempotente para reintentos del alta.
+				if err := dbpkg.EnsureEmpresaNextcloudSchema(dbEmp); err != nil {
+					log.Printf("POST /super/api/empresas id=%d Nextcloud warning: %v", id, err)
+				}
 				if _, folderErr := ensureEmpresaUploadFolders(dbEmp, id); folderErr != nil {
 					log.Printf("POST /super/api/empresas id=%d carpeta empresa warning: %v", id, folderErr)
 				}
