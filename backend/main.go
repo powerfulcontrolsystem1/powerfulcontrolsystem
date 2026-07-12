@@ -1622,6 +1622,7 @@ func main() {
 			if err := dbpkg.RevokeSessionByToken(dbSuper, token); err != nil {
 				log.Printf("warning: failed to revoke session token on logout: %v", err)
 			}
+			utils.InvalidateAuthCacheForToken(token)
 		}
 
 		// Invalidate common session cookie names
