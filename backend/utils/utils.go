@@ -64,6 +64,35 @@ var (
 	authMiddlewareMaintenanceLoadedAt time.Time
 )
 
+// InvalidateAuthCacheForToken removes any request-local auth lookup associated
+// with a browser token. It is safe to call even while cache TTLs are disabled.
+func InvalidateAuthCacheForToken(token string) {
+	token = strings.TrimSpace(token)
+	if token == "" {
+		return
+	}
+	authMiddlewareCacheMu.Lock()
+	delete(authMiddlewareSessionCache, token)
+	authMiddlewareCacheMu.Unlock()
+}
+
+// InvalidateAuthCacheForAdmin removes all cached authorization state that can
+// preserve a previous role, account state or session after a security event.
+func InvalidateAuthCacheForAdmin(email string) {
+	email = strings.TrimSpace(strings.ToLower(email))
+	if email == "" {
+		return
+	}
+	authMiddlewareCacheMu.Lock()
+	delete(authMiddlewareAdminCache, email)
+	for token, entry := range authMiddlewareSessionCache {
+		if entry.Session != nil && strings.EqualFold(strings.TrimSpace(entry.Session.AdminEmail), email) {
+			delete(authMiddlewareSessionCache, token)
+		}
+	}
+	authMiddlewareCacheMu.Unlock()
+}
+
 const (
 	// Authentication and authorization are read on every request. A stale cache
 	// can otherwise keep a revoked session or downgraded role effective.
