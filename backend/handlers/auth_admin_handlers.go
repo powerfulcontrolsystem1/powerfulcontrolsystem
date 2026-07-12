@@ -600,6 +600,7 @@ func AdminResetPasswordHandler(dbSuper *sql.DB) http.HandlerFunc {
 			writeAdminAuthError(w, http.StatusInternalServerError, "No se pudo proteger las sesiones anteriores.")
 			return
 		}
+		utils.InvalidateAuthCacheForAdmin(admin.Email)
 		// limpiar token
 		if err := dbpkg.ClearAdministradorPasswordResetToken(dbSuper, admin.ID); err != nil {
 			log.Println("AdminResetPasswordHandler clear token error:", err)
