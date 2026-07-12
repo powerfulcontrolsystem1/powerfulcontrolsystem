@@ -833,7 +833,7 @@ func EmpresaChatTareasAdjuntoUploadHandler(dbEmp *sql.DB) http.HandlerFunc {
 
 		webRoot := resolveWebRootDir()
 		dir := filepath.Join(webRoot, "uploads", "chat_tareas", fmt.Sprintf("empresa_%d", empresaID), fmt.Sprintf("conversacion_%d", conversacionID))
-		if err := os.MkdirAll(dir, 0o755); err != nil {
+		if err := os.MkdirAll(dir, 0o700); err != nil {
 			http.Error(w, "failed to prepare upload directory", http.StatusInternalServerError)
 			return
 		}
@@ -990,7 +990,7 @@ func EmpresaChatTareasTareaNotaVozUploadHandler(dbEmp *sql.DB) http.HandlerFunc 
 
 		webRoot := resolveWebRootDir()
 		dir := filepath.Join(webRoot, "uploads", "chat_tareas", fmt.Sprintf("empresa_%d", empresaID), "tareas")
-		if err := os.MkdirAll(dir, 0o755); err != nil {
+		if err := os.MkdirAll(dir, 0o700); err != nil {
 			http.Error(w, "failed to prepare upload directory", http.StatusInternalServerError)
 			return
 		}

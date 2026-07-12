@@ -1835,11 +1835,13 @@ func handleEmpresaUsuarioFotoUpload(r *http.Request, dbEmp, dbSuper *sql.DB, emp
 	}
 	folder := domoticaEmpresaStorageFolder(dbEmp, empresaID)
 	dir := filepath.Join(resolveWebRootDir(), "uploads", "empresas", folder, "imagenes", "usuarios")
+	// #nosec G301 -- avatar publico de usuario servido por Nginx.
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		return 0, "", fmt.Errorf("no se pudo preparar carpeta de imagenes")
 	}
 	fileName := fmt.Sprintf("usuario_%d_%d%s", userID, time.Now().UnixNano(), ext)
 	absPath := filepath.Join(dir, fileName)
+	// #nosec G304 -- nombre interno generado bajo directorio empresarial controlado.
 	out, err := os.Create(absPath)
 	if err != nil {
 		return 0, "", fmt.Errorf("no se pudo crear imagen")

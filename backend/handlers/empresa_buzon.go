@@ -434,7 +434,7 @@ func handleEmpresaBuzonAttachmentUpload(w http.ResponseWriter, r *http.Request, 
 	}
 
 	absDir, publicDir, _ := empresaUploadsSubdir(dbEmp, empresaID, "mensajeria", "buzon", fmt.Sprintf("mensaje_%d", mensajeID))
-	if err := os.MkdirAll(absDir, 0o755); err != nil {
+	if err := os.MkdirAll(absDir, 0o700); err != nil {
 		http.Error(w, "No se pudo preparar carpeta de adjuntos", http.StatusInternalServerError)
 		return
 	}

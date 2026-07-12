@@ -634,6 +634,7 @@ func handleSuperVentaDigitalUploadImage(w http.ResponseWriter, r *http.Request, 
 
 	webRoot := resolveWebRootDir()
 	dir := filepath.Join(webRoot, "uploads", "venta_digital", "imagenes")
+	// #nosec G301 -- imagen publica de venta digital servida por Nginx.
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		http.Error(w, "failed to prepare upload directory", http.StatusInternalServerError)
 		return
@@ -700,6 +701,7 @@ func handleSuperVentaDigitalUploadInstructions(w http.ResponseWriter, r *http.Re
 
 	webRoot := resolveWebRootDir()
 	dir := filepath.Join(webRoot, "uploads", "venta_digital", "instrucciones")
+	// #nosec G301 -- recurso publico descargable servido por Nginx.
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		http.Error(w, "failed to prepare upload directory", http.StatusInternalServerError)
 		return

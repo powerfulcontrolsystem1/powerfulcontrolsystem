@@ -360,7 +360,7 @@ func loadServerRuntimeState(path string) (serverRuntimeState, error) {
 }
 
 func saveServerRuntimeState(path string, state serverRuntimeState) error {
-	if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
+	if err := os.MkdirAll(filepath.Dir(path), 0700); err != nil {
 		return err
 	}
 	raw, err := json.MarshalIndent(state, "", "  ")
@@ -372,14 +372,14 @@ func saveServerRuntimeState(path string, state serverRuntimeState) error {
 }
 
 func appendServerRuntimeLog(path string, payload map[string]interface{}) error {
-	if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
+	if err := os.MkdirAll(filepath.Dir(path), 0700); err != nil {
 		return err
 	}
 	raw, err := json.Marshal(payload)
 	if err != nil {
 		return err
 	}
-	f, err := os.OpenFile(path, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0644)
+	f, err := os.OpenFile(path, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0600)
 	if err != nil {
 		return err
 	}

@@ -205,6 +205,7 @@ func EmpresaConfiguracionAvanzadaLogoUploadHandler(dbEmp *sql.DB) http.HandlerFu
 			oldLogoURL = strings.TrimSpace(cfg.LogoFacturaURL)
 		}
 		dir, publicDir, _ := empresaUploadsSubdir(dbEmp, empresaID, "imagenes", "logos", tipoLogo)
+		// #nosec G301 -- logo publico servido por Nginx.
 		if err := os.MkdirAll(dir, 0o755); err != nil {
 			http.Error(w, "no se pudo preparar el directorio de logos", http.StatusInternalServerError)
 			return

@@ -12779,40 +12779,40 @@ func validateDIANCredentialRefs(cfg map[string]interface{}, empresaID int64, pay
 	emitterCredentialRef := dianFirstNonBlank(genericStringValue(payload["token_emisor_ref"]), genericStringValue(cfg["token_emisor_ref"]))
 	emitterCredentialPayload := strings.TrimSpace(genericStringValue(payload["token"]))
 	emitterCredentialOK := false
-	credentialStatusMessage := ""
-	credentialSource := ""
+	diagnosticMessage := ""
+	diagnosticSource := ""
 	if emitterCredentialPayload != "" {
 		emitterCredentialOK = true
-		credentialSource = "payload.token"
-		credentialStatusMessage = "token entregado en payload"
+		diagnosticSource = "payload.token"
+		diagnosticMessage = "token entregado en payload"
 	} else if emitterCredentialRef == "" {
-		credentialSource = "vacio"
+		diagnosticSource = "vacio"
 		if emitterCredentialRequired {
 			issues = append(issues, "token_emisor_ref no configurado")
-			credentialStatusMessage = "faltante"
+			diagnosticMessage = "faltante"
 		} else {
 			emitterCredentialOK = true
-			credentialSource = "no_requerido"
-			credentialStatusMessage = "no requerido para endpoint oficial SOAP DIAN; se usa certificado, Software ID/PIN y TestSetId"
+			diagnosticSource = "no_requerido"
+			diagnosticMessage = "no requerido para endpoint oficial SOAP DIAN; se usa certificado, Software ID/PIN y TestSetId"
 		}
 	} else {
-		credentialSource = dianReferenceSource(emitterCredentialRef)
+		diagnosticSource = dianReferenceSource(emitterCredentialRef)
 		if !emitterCredentialRequired {
 			emitterCredentialOK = true
-			credentialStatusMessage = "configurado, pero no requerido para endpoint oficial SOAP DIAN"
+			diagnosticMessage = "configurado, pero no requerido para endpoint oficial SOAP DIAN"
 		} else if _, err := resolveDIANSecretValue(emitterCredentialRef); err != nil {
 			issues = append(issues, "token_emisor_ref invalido")
-			credentialStatusMessage = err.Error()
+			diagnosticMessage = err.Error()
 		} else {
 			emitterCredentialOK = true
-			credentialStatusMessage = "resuelto correctamente"
+			diagnosticMessage = "resuelto correctamente"
 		}
 	}
 	checks["token_emisor"] = map[string]interface{}{
 		"ok":       emitterCredentialOK,
 		"required": emitterCredentialRequired,
-		"source":   credentialSource,
-		"message":  dianTruncate(credentialStatusMessage, 180),
+		"source":   diagnosticSource,
+		"message":  dianTruncate(diagnosticMessage, 180),
 	}
 
 	ambiente := chooseDIANAmbiente(cfg)

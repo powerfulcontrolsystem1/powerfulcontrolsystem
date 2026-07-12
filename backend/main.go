@@ -329,7 +329,7 @@ func ensureRuntimeDBDir(dbPath string) error {
 	if dir == "" || dir == "." {
 		return nil
 	}
-	return os.MkdirAll(dir, 0755)
+	return os.MkdirAll(dir, 0700)
 }
 
 func persistConfigEncKey(backendDir, value string) (string, error) {

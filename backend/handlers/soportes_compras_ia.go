@@ -242,7 +242,7 @@ func saveSoporteComprasIAAttachment(att *aiAttachment, empresaID int64) (string,
 	}
 	webRoot := resolveWebRootDir()
 	dir := filepath.Join(webRoot, "uploads", "soportes_compras_ia", fmt.Sprintf("empresa_%d", empresaID))
-	if err := os.MkdirAll(dir, 0o755); err != nil {
+	if err := os.MkdirAll(dir, 0o700); err != nil {
 		return "", "", "", "", "", err
 	}
 	base := sanitizeComprobanteBaseName(strings.TrimSuffix(att.Filename, filepath.Ext(att.Filename)))
@@ -251,7 +251,7 @@ func saveSoporteComprasIAAttachment(att *aiAttachment, empresaID int64) (string,
 	}
 	fileName := base + "_" + strconv.FormatInt(time.Now().UnixNano(), 10) + ext
 	absPath := filepath.Join(dir, fileName)
-	if err := os.WriteFile(absPath, att.Bytes, 0o644); err != nil {
+	if err := os.WriteFile(absPath, att.Bytes, 0o600); err != nil {
 		return "", "", "", "", "", err
 	}
 	mimeType := strings.TrimSpace(att.MimeType)

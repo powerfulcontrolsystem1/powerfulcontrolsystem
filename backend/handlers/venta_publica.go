@@ -124,6 +124,7 @@ func UploadProductImageHandler(db *sql.DB, webDir string) http.HandlerFunc {
 			baseDir = filepath.Join(baseDir, "misc")
 		}
 		prodDir := filepath.Join(baseDir, "productos")
+		// #nosec G301 -- catalogo publico servido por Nginx.
 		if err := os.MkdirAll(prodDir, 0755); err != nil {
 			http.Error(w, "failed create dir", http.StatusInternalServerError)
 			return
@@ -1326,6 +1327,7 @@ func handleEmpresaVentaPublicaUploadImage(w http.ResponseWriter, r *http.Request
 	}
 
 	dir, publicDir, _ := empresaUploadsSubdir(dbEmp, empresaID, "imagenes", "venta_publica")
+	// #nosec G301 -- imagen publica del catalogo servida por Nginx.
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		http.Error(w, "failed to prepare upload directory", http.StatusInternalServerError)
 		return

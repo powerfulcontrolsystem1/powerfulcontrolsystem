@@ -32,7 +32,7 @@ func ensureDir(path string) error {
 	if strings.TrimSpace(path) == "" {
 		return fmt.Errorf("empty dir path")
 	}
-	return os.MkdirAll(path, 0o755)
+	return os.MkdirAll(path, 0o700)
 }
 
 func superAdminBackupDir() string {
@@ -61,7 +61,7 @@ func writeJSONBackupFile(dir string, fileName string, payload interface{}) (stri
 		return "", err
 	}
 	body = append(body, '\n')
-	if err := os.WriteFile(fullPath, body, 0o644); err != nil {
+	if err := os.WriteFile(fullPath, body, 0o600); err != nil {
 		return "", err
 	}
 	return fullPath, nil
@@ -78,4 +78,3 @@ func runtimeOSLabel() string {
 	}
 	return "unknown"
 }
-

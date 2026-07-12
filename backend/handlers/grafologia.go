@@ -633,7 +633,7 @@ func detectGrafologiaMime(data []byte, original string) string {
 func saveEmpresaGrafologiaImage(data []byte, originalFilename string, empresaID int64) (string, string, string, error) {
 	folder := fmt.Sprintf("empresa_%d", empresaID)
 	dir := filepath.Join(resolveWebRootDir(), "uploads", "empresas", folder, "imagenes", "grafologia")
-	if err := os.MkdirAll(dir, 0o755); err != nil {
+	if err := os.MkdirAll(dir, 0o700); err != nil {
 		return "", "", "", err
 	}
 	ext := strings.ToLower(filepath.Ext(originalFilename))
@@ -646,7 +646,7 @@ func saveEmpresaGrafologiaImage(data []byte, originalFilename string, empresaID 
 	}
 	fileName := fmt.Sprintf("%s_%d%s", base, time.Now().UnixNano(), ext)
 	absPath := filepath.Join(dir, fileName)
-	if err := os.WriteFile(absPath, data, 0o644); err != nil {
+	if err := os.WriteFile(absPath, data, 0o600); err != nil {
 		return "", "", "", err
 	}
 	publicURL := "/uploads/empresas/" + folder + "/imagenes/grafologia/" + fileName
@@ -659,7 +659,7 @@ func saveEmpresaGrafologiaArtifacts(artifacts map[string][]byte, empresaID int64
 	}
 	folder := fmt.Sprintf("empresa_%d", empresaID)
 	dir := filepath.Join(resolveWebRootDir(), "uploads", "empresas", folder, "imagenes", "grafologia", "procesado")
-	if err := os.MkdirAll(dir, 0o755); err != nil {
+	if err := os.MkdirAll(dir, 0o700); err != nil {
 		log.Printf("[grafologia] no se pudo crear carpeta de artefactos empresa_id=%d: %v", empresaID, err)
 		return map[string]string{}
 	}
@@ -676,7 +676,7 @@ func saveEmpresaGrafologiaArtifacts(artifacts map[string][]byte, empresaID int64
 		}
 		name := base + "_" + cleanKey + ".png"
 		abs := filepath.Join(dir, name)
-		if err := os.WriteFile(abs, data, 0o644); err != nil {
+		if err := os.WriteFile(abs, data, 0o600); err != nil {
 			log.Printf("[grafologia] no se pudo guardar artefacto %s empresa_id=%d: %v", cleanKey, empresaID, err)
 			continue
 		}

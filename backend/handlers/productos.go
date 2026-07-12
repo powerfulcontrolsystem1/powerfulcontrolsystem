@@ -2903,6 +2903,7 @@ func EmpresaProductoImagenUploadHandler(dbEmp *sql.DB) http.HandlerFunc {
 		}
 
 		dir, publicDir, _ := empresaUploadsSubdir(dbEmp, empresaID, "imagenes", "productos")
+		// #nosec G301 -- imagen publica del catalogo servida por Nginx.
 		if err := os.MkdirAll(dir, 0o755); err != nil {
 			http.Error(w, "failed to prepare upload directory", http.StatusInternalServerError)
 			return

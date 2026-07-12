@@ -174,14 +174,14 @@ func (m *Manager) Save(settings Settings) (Settings, error) {
 }
 
 func writeSettings(path string, settings Settings) error {
-	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+	if err := os.MkdirAll(filepath.Dir(path), 0o700); err != nil {
 		return err
 	}
 	raw, err := json.MarshalIndent(settings, "", "  ")
 	if err != nil {
 		return err
 	}
-	return os.WriteFile(path, append(raw, '\n'), 0o644)
+	return os.WriteFile(path, append(raw, '\n'), 0o600)
 }
 
 func normalize(settings *Settings) {
