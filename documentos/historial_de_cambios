@@ -37414,3 +37414,9 @@ Archivos modificados:
   `github.com/jackc/pgx/v5` a 5.9.2. Esto elimina la alerta de placeholders SQL
   de pgx y evita ejecutar el analisis sobre la biblioteca estandar vulnerable
   de Go 1.23. No hubo despliegue, sincronizacion ni modificacion de datos.
+
+2026-07-12: CI de seguridad sin despliegue automatico.
+- `Professional CI` queda limitado a `main`, `security/**` y `fix/**`; agrega
+  concurrencia, `git diff --check`, `go mod verify` y pasos separados para
+  vulnerabilidades y analisis estatico. Se elimina el job de staging: un push
+  nunca puede conectarse ni desplegar en ningun entorno.
