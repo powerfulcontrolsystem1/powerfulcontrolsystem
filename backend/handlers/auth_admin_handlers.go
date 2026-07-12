@@ -427,7 +427,7 @@ func AdminLoginHandler(dbSuper *sql.DB) http.HandlerFunc {
 			return
 		}
 		// crear sesión
-		if adminTOTPLoginRequiredForAdmin(admin, isAdminTOTPLoginEnabled(dbSuper)) && !verifyAdminTOTPCode(admin.TOTPSecret, payload.OTPCode, time.Now()) {
+		if adminTOTPLoginRequiredForAdmin(admin, isAdminTOTPLoginEnabled(dbSuper)) && !verifyAndConsumeAdminTOTP(dbSuper, admin, payload.OTPCode, time.Now(), true) {
 			writeAdminAuthJSON(w, http.StatusUnauthorized, map[string]interface{}{"ok": false, "two_factor_required": true, "message": "Ingresa el codigo 2FA de tu aplicacion autenticadora."})
 			return
 		}
@@ -570,7 +570,7 @@ func AdminResetPasswordHandler(dbSuper *sql.DB) http.HandlerFunc {
 			writeAdminAuthError(w, http.StatusInternalServerError, "No se pudo validar el rol de la cuenta administrativa.")
 			return
 		}
-		if strings.TrimSpace(admin.PasswordResetToken) == "" || strings.TrimSpace(admin.PasswordResetToken) != payload.Token {
+		if strings.TrimSpace(admin.PasswordResetToken) == "" || !dbpkg.AdministradorPasswordResetTokenMatches(admin.PasswordResetToken, payload.Token) {
 			writeAdminAuthError(w, http.StatusBadRequest, "El token de recuperación no es válido.")
 			return
 		}
@@ -593,6 +593,11 @@ func AdminResetPasswordHandler(dbSuper *sql.DB) http.HandlerFunc {
 		if err := dbpkg.SetAdministradorPassword(dbSuper, payload.Email, hash, salt); err != nil {
 			log.Println("AdminResetPasswordHandler set password error:", err)
 			writeAdminAuthError(w, http.StatusInternalServerError, "No se pudo guardar la nueva contraseña.")
+			return
+		}
+		if err := dbpkg.RevokeSessionsByAdminEmail(dbSuper, admin.Email); err != nil {
+			log.Println("AdminResetPasswordHandler revoke sessions error:", err)
+			writeAdminAuthError(w, http.StatusInternalServerError, "No se pudo proteger las sesiones anteriores.")
 			return
 		}
 		// limpiar token
