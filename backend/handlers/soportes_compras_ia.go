@@ -1,7 +1,9 @@
 package handlers
 
 import (
+	"crypto/rand"
 	"database/sql"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -67,7 +69,12 @@ func handleSoportesComprasIAGet(w http.ResponseWriter, r *http.Request, dbEmp *s
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
+		for i := range rows {
+			exposeSoporteComprasIAURL(&rows[i])
+		}
 		writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "soportes": rows})
+	case "descargar":
+		downloadSoporteComprasIA(w, r, dbEmp, empresaID)
 	case "eventos":
 		soporteID, _ := strconv.ParseInt(strings.TrimSpace(r.URL.Query().Get("soporte_id")), 10, 64)
 		rows, err := dbpkg.ListEmpresaSoportesComprasIAEventos(dbEmp, empresaID, soporteID, 200)
@@ -90,6 +97,7 @@ func handleSoportesComprasIAMutate(w http.ResponseWriter, r *http.Request, dbEmp
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
+		exposeSoporteComprasIAURL(&row)
 		writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "soporte": row})
 	case "extraer_ia":
 		row, err := extraerSoporteComprasIAGPT55(r, dbEmp, dbSuper, empresaID, usuario)
@@ -101,6 +109,7 @@ func handleSoportesComprasIAMutate(w http.ResponseWriter, r *http.Request, dbEmp
 			http.Error(w, err.Error(), status)
 			return
 		}
+		exposeSoporteComprasIAURL(&row)
 		writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "soporte": row})
 	case "aprobar":
 		payload, _ := decodeSoporteComprasIAActionPayload(r)
@@ -109,6 +118,7 @@ func handleSoportesComprasIAMutate(w http.ResponseWriter, r *http.Request, dbEmp
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
+		exposeSoporteComprasIAURL(&row)
 		writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "soporte": row})
 	case "rechazar":
 		payload, _ := decodeSoporteComprasIAActionPayload(r)
@@ -117,6 +127,7 @@ func handleSoportesComprasIAMutate(w http.ResponseWriter, r *http.Request, dbEmp
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
+		exposeSoporteComprasIAURL(&row)
 		writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "soporte": row})
 	case "contabilizar":
 		payload, _ := decodeSoporteComprasIAActionPayload(r)
@@ -125,6 +136,7 @@ func handleSoportesComprasIAMutate(w http.ResponseWriter, r *http.Request, dbEmp
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
+		exposeSoporteComprasIAURL(&row)
 		writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "soporte": row})
 	case "seed_demo":
 		row, err := seedSoporteComprasIADemo(dbEmp, empresaID, usuario)
@@ -240,16 +252,16 @@ func saveSoporteComprasIAAttachment(att *aiAttachment, empresaID int64) (string,
 	if !soporteComprasIAAllowedExt[ext] {
 		return "", "", "", "", "", fmt.Errorf("extension no permitida para soporte")
 	}
-	webRoot := resolveWebRootDir()
-	dir := filepath.Join(webRoot, "uploads", "soportes_compras_ia", fmt.Sprintf("empresa_%d", empresaID))
+	root := soporteComprasIAPrivateRoot()
+	dir := filepath.Join(root, fmt.Sprintf("empresa_%d", empresaID))
 	if err := os.MkdirAll(dir, 0o700); err != nil {
 		return "", "", "", "", "", err
 	}
-	base := sanitizeComprobanteBaseName(strings.TrimSuffix(att.Filename, filepath.Ext(att.Filename)))
-	if base == "" {
-		base = "soporte"
+	randomName := make([]byte, 32)
+	if _, err := rand.Read(randomName); err != nil {
+		return "", "", "", "", "", fmt.Errorf("no se pudo generar nombre privado: %w", err)
 	}
-	fileName := base + "_" + strconv.FormatInt(time.Now().UnixNano(), 10) + ext
+	fileName := hex.EncodeToString(randomName) + ext
 	absPath := filepath.Join(dir, fileName)
 	if err := os.WriteFile(absPath, att.Bytes, 0o600); err != nil {
 		return "", "", "", "", "", err
@@ -259,8 +271,59 @@ func saveSoporteComprasIAAttachment(att *aiAttachment, empresaID int64) (string,
 		mimeType = mimeFromSoporteComprasIAExt(ext)
 	}
 	origen := origenFromSoporteComprasIAExt(ext, mimeType)
-	url := "/uploads/soportes_compras_ia/" + fmt.Sprintf("empresa_%d", empresaID) + "/" + fileName
+	url := "private://soportes_compras_ia/" + fmt.Sprintf("empresa_%d", empresaID) + "/" + fileName
 	return url, fileName, mimeType, dbpkg.EmpresaSoporteComprasIAHashBytes(att.Bytes), origen, nil
+}
+
+func soporteComprasIAPrivateRoot() string {
+	if configured := strings.TrimSpace(os.Getenv("PCS_PRIVATE_STORAGE_DIR")); configured != "" {
+		return filepath.Join(configured, "soportes_compras_ia")
+	}
+	return filepath.Join(resolveProjectRootDir(), "private_storage", "soportes_compras_ia")
+}
+
+func soporteComprasIADownloadURL(empresaID, soporteID int64) string {
+	return "/api/empresa/soportes_compras_ia?empresa_id=" + strconv.FormatInt(empresaID, 10) + "&action=descargar&soporte_id=" + strconv.FormatInt(soporteID, 10)
+}
+
+func exposeSoporteComprasIAURL(row *dbpkg.EmpresaSoporteComprasIA) {
+	if row != nil && row.ID > 0 && strings.HasPrefix(strings.TrimSpace(row.ArchivoURL), "private://") {
+		row.ArchivoURL = soporteComprasIADownloadURL(row.EmpresaID, row.ID)
+	}
+}
+
+func downloadSoporteComprasIA(w http.ResponseWriter, r *http.Request, dbEmp *sql.DB, empresaID int64) {
+	soporteID, err := strconv.ParseInt(strings.TrimSpace(r.URL.Query().Get("soporte_id")), 10, 64)
+	if err != nil || soporteID <= 0 {
+		http.Error(w, "soporte invalido", http.StatusBadRequest)
+		return
+	}
+	row, err := dbpkg.GetEmpresaSoporteComprasIA(dbEmp, empresaID, soporteID)
+	if err != nil {
+		http.Error(w, "archivo no disponible", http.StatusNotFound)
+		return
+	}
+	path, err := safeSoporteComprasIAPathFromURL(row.ArchivoURL)
+	if err != nil {
+		http.Error(w, "archivo no disponible", http.StatusNotFound)
+		return
+	}
+	file, err := os.Open(path) // #nosec G304 -- path was resolved under the private tenant root without symlinks.
+	if err != nil {
+		http.Error(w, "archivo no disponible", http.StatusNotFound)
+		return
+	}
+	defer func() { _ = file.Close() }()
+	info, err := file.Stat()
+	if err != nil || !info.Mode().IsRegular() {
+		http.Error(w, "archivo no disponible", http.StatusNotFound)
+		return
+	}
+	w.Header().Set("Cache-Control", "no-store")
+	w.Header().Set("X-Content-Type-Options", "nosniff")
+	w.Header().Set("Content-Type", strings.TrimSpace(row.ArchivoMime))
+	w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=%q", sanitizeComprobanteBaseName(row.ArchivoNombre)+filepath.Ext(path)))
+	http.ServeContent(w, r, filepath.Base(path), info.ModTime(), file)
 }
 
 var (
@@ -422,13 +485,12 @@ func loadSoporteComprasIAAttachment(row dbpkg.EmpresaSoporteComprasIA) (*aiAttac
 }
 
 func safeSoporteComprasIAPathFromURL(url string) (string, error) {
-	clean := strings.TrimSpace(strings.TrimPrefix(url, "/"))
-	if !strings.HasPrefix(clean, "uploads/soportes_compras_ia/") {
+	clean := strings.TrimSpace(strings.TrimPrefix(url, "private://soportes_compras_ia/"))
+	if clean == strings.TrimSpace(url) || clean == "" {
 		return "", errors.New("ruta de soporte no permitida")
 	}
-	webRoot := resolveWebRootDir()
-	abs := filepath.Clean(filepath.Join(webRoot, filepath.FromSlash(clean)))
-	root := filepath.Clean(filepath.Join(webRoot, "uploads", "soportes_compras_ia"))
+	root := filepath.Clean(soporteComprasIAPrivateRoot())
+	abs := filepath.Clean(filepath.Join(root, filepath.FromSlash(clean)))
 	if abs != root && !strings.HasPrefix(abs, root+string(os.PathSeparator)) {
 		return "", errors.New("ruta de soporte fuera del directorio permitido")
 	}

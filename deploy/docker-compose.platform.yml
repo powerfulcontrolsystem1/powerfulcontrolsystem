@@ -85,6 +85,7 @@ services:
       HTTP_WRITE_TIMEOUT: ${HTTP_WRITE_TIMEOUT:?Defina HTTP_WRITE_TIMEOUT}
       HTTP_IDLE_TIMEOUT: ${HTTP_IDLE_TIMEOUT:?Defina HTTP_IDLE_TIMEOUT}
       PCS_WEBRTC_IDLE_TIMEOUT_SECONDS: ${PCS_WEBRTC_IDLE_TIMEOUT_SECONDS:-300}
+      PCS_PRIVATE_STORAGE_DIR: /app/private_storage
       DB_DIALECT: postgres
       DB_EMPRESAS_DSN: postgres://${POSTGRES_USER:-pcs}:${POSTGRES_PASSWORD}@postgres:5432/pcs_empresas?sslmode=disable
       DB_SUPERADMIN_DSN: postgres://${POSTGRES_USER:-pcs}:${POSTGRES_PASSWORD}@postgres:5432/pcs_superadministrador?sslmode=disable
@@ -124,6 +125,7 @@ services:
     volumes:
       - pcs_backend_logs:/app/backend/logs
       - pcs_web_uploads:/app/web/uploads
+      - pcs_private_storage:/app/private_storage
       - pcs_backups:/app/backup
       - pcs_downloads:/app/descargas
     expose:
@@ -466,6 +468,7 @@ volumes:
   pcs_postgres_data:
   pcs_backend_logs:
   pcs_web_uploads:
+  pcs_private_storage:
   pcs_backups:
   pcs_downloads:
   pcs_letsencrypt:

@@ -10,6 +10,7 @@ func setValidProductionSecurityEnv(t *testing.T) {
 	t.Setenv("PCS_CSRF_ALLOWED_ORIGINS", "https://example.com")
 	t.Setenv("SESSION_TIMEOUT", "12h")
 	t.Setenv("MAX_REQUEST_BODY_BYTES", "67108864")
+	t.Setenv("PCS_PRIVATE_STORAGE_DIR", t.TempDir())
 	t.Setenv("HTTP_READ_TIMEOUT", "30s")
 	t.Setenv("HTTP_WRITE_TIMEOUT", "60s")
 	t.Setenv("HTTP_IDLE_TIMEOUT", "2m")
