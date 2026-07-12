@@ -2,7 +2,7 @@ package reports
 
 import (
 	"bytes"
-	"crypto/sha1"
+	"crypto/sha256"
 	"encoding/csv"
 	"encoding/hex"
 	"encoding/json"
@@ -40,40 +40,40 @@ type Finding struct {
 }
 
 type ToolResult struct {
-	Name       string `json:"name"`
+	Name        string `json:"name"`
 	DisplayName string `json:"display_name"`
-	Available  bool   `json:"available"`
-	Executed   bool   `json:"executed"`
-	Status     string `json:"status"`
-	Summary    string `json:"summary,omitempty"`
-	Error      string `json:"error,omitempty"`
-	Command    string `json:"command,omitempty"`
-	DurationMs int64  `json:"duration_ms,omitempty"`
-	Artifact   string `json:"artifact,omitempty"`
+	Available   bool   `json:"available"`
+	Executed    bool   `json:"executed"`
+	Status      string `json:"status"`
+	Summary     string `json:"summary,omitempty"`
+	Error       string `json:"error,omitempty"`
+	Command     string `json:"command,omitempty"`
+	DurationMs  int64  `json:"duration_ms,omitempty"`
+	Artifact    string `json:"artifact,omitempty"`
 }
 
 type SystemInfo struct {
-	Hostname          string   `json:"hostname,omitempty"`
-	OS                string   `json:"os,omitempty"`
-	Kernel            string   `json:"kernel,omitempty"`
-	Firewall          string   `json:"firewall,omitempty"`
-	NginxDetected     bool     `json:"nginx_detected,omitempty"`
-	SSHConfigChecked  bool     `json:"ssh_config_checked,omitempty"`
-	UpgradablePackages int     `json:"upgradable_packages,omitempty"`
-	RunningServices   []string `json:"running_services,omitempty"`
+	Hostname           string   `json:"hostname,omitempty"`
+	OS                 string   `json:"os,omitempty"`
+	Kernel             string   `json:"kernel,omitempty"`
+	Firewall           string   `json:"firewall,omitempty"`
+	NginxDetected      bool     `json:"nginx_detected,omitempty"`
+	SSHConfigChecked   bool     `json:"ssh_config_checked,omitempty"`
+	UpgradablePackages int      `json:"upgradable_packages,omitempty"`
+	RunningServices    []string `json:"running_services,omitempty"`
 }
 
 type Summary struct {
-	Critical        int      `json:"critical"`
-	High            int      `json:"high"`
-	Medium          int      `json:"medium"`
-	Low             int      `json:"low"`
-	Info            int      `json:"info"`
-	TotalFindings   int      `json:"total_findings"`
-	HighestSeverity string   `json:"highest_severity"`
-	OpenPorts       []int    `json:"open_ports,omitempty"`
-	HardeningIndex  int      `json:"hardening_index,omitempty"`
-	Health          string   `json:"health,omitempty"`
+	Critical        int    `json:"critical"`
+	High            int    `json:"high"`
+	Medium          int    `json:"medium"`
+	Low             int    `json:"low"`
+	Info            int    `json:"info"`
+	TotalFindings   int    `json:"total_findings"`
+	HighestSeverity string `json:"highest_severity"`
+	OpenPorts       []int  `json:"open_ports,omitempty"`
+	HardeningIndex  int    `json:"hardening_index,omitempty"`
+	Health          string `json:"health,omitempty"`
 }
 
 type ConfigSnapshot struct {
@@ -86,14 +86,14 @@ type ConfigSnapshot struct {
 }
 
 type Comparison struct {
-	PreviousScanID     string         `json:"previous_scan_id,omitempty"`
-	PreviousGeneratedAt string        `json:"previous_generated_at,omitempty"`
-	NewFindings        int            `json:"new_findings"`
-	ResolvedFindings   int            `json:"resolved_findings"`
-	SeverityDelta      map[string]int `json:"severity_delta,omitempty"`
-	NewOpenPorts       []int          `json:"new_open_ports,omitempty"`
-	ClosedPorts        []int          `json:"closed_ports,omitempty"`
-	Summary            string         `json:"summary,omitempty"`
+	PreviousScanID      string         `json:"previous_scan_id,omitempty"`
+	PreviousGeneratedAt string         `json:"previous_generated_at,omitempty"`
+	NewFindings         int            `json:"new_findings"`
+	ResolvedFindings    int            `json:"resolved_findings"`
+	SeverityDelta       map[string]int `json:"severity_delta,omitempty"`
+	NewOpenPorts        []int          `json:"new_open_ports,omitempty"`
+	ClosedPorts         []int          `json:"closed_ports,omitempty"`
+	Summary             string         `json:"summary,omitempty"`
 }
 
 type ScanReport struct {
@@ -119,16 +119,16 @@ type ScanReport struct {
 }
 
 type HistoryEntry struct {
-	ScanID          string            `json:"scan_id"`
-	GeneratedAt     string            `json:"generated_at"`
-	TargetHost      string            `json:"target_host"`
-	Profile         string            `json:"profile"`
-	Status          string            `json:"status"`
-	TotalFindings   int               `json:"total_findings"`
-	HighestSeverity string            `json:"highest_severity"`
-	NewFindings     int               `json:"new_findings,omitempty"`
-	ResolvedFindings int              `json:"resolved_findings,omitempty"`
-	Reports         map[string]string `json:"reports,omitempty"`
+	ScanID           string            `json:"scan_id"`
+	GeneratedAt      string            `json:"generated_at"`
+	TargetHost       string            `json:"target_host"`
+	Profile          string            `json:"profile"`
+	Status           string            `json:"status"`
+	TotalFindings    int               `json:"total_findings"`
+	HighestSeverity  string            `json:"highest_severity"`
+	NewFindings      int               `json:"new_findings,omitempty"`
+	ResolvedFindings int               `json:"resolved_findings,omitempty"`
+	Reports          map[string]string `json:"reports,omitempty"`
 }
 
 func severityRank(severity Severity) int {
@@ -175,7 +175,7 @@ func NormalizeFindings(findings []Finding) []Finding {
 		finding.Recommendation = strings.TrimSpace(finding.Recommendation)
 		finding.Evidence = strings.TrimSpace(finding.Evidence)
 		if finding.ID == "" {
-			hash := sha1.Sum([]byte(strings.Join([]string{
+			hash := sha256.Sum256([]byte(strings.Join([]string{
 				string(finding.Severity),
 				finding.Tool,
 				finding.Category,
@@ -185,7 +185,7 @@ func NormalizeFindings(findings []Finding) []Finding {
 				finding.Service,
 				finding.Reference,
 			}, "|")))
-			finding.ID = hex.EncodeToString(hash[:8])
+			finding.ID = hex.EncodeToString(hash[:16])
 		}
 		normalized = append(normalized, finding)
 	}
