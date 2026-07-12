@@ -37404,3 +37404,7 @@ Archivos modificados:
 2026-07-12: Cobertura CI para endurecimiento.
 - `Professional CI` incorpora pushes sobre `security/**`; conserva pruebas Go,
   detector de carreras, vet, vulnerabilidades, gosec y validacion Compose.
+
+2026-07-12: Transicion CSP controlada.
+- Se incorpora una politica `Content-Security-Policy-Report-Only` mas estricta
+  como paso previo a retirar los origenes genericos de la politica aplicada.

@@ -448,6 +448,10 @@ func SecurityHeadersMiddleware(next http.Handler) http.Handler {
 		w.Header().Set("Referrer-Policy", "strict-origin-when-cross-origin")
 		w.Header().Set("Permissions-Policy", "camera=(), microphone=(self), geolocation=(self), payment=(self)")
 		w.Header().Set("Content-Security-Policy", "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'self'; img-src 'self' data: https:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline' https://accounts.google.com https://checkout.epayco.co https://checkout.wompi.co; connect-src 'self' https: wss:; frame-src 'self' https://accounts.google.com https://checkout.epayco.co https://checkout.wompi.co https://*.google.com")
+		// Report-only starts the controlled CSP transition without breaking the
+		// legacy static frontend. Once reports show no unexpected dependencies,
+		// this policy can replace the compatibility policy above.
+		w.Header().Set("Content-Security-Policy-Report-Only", "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'self'; form-action 'self'; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline' https://accounts.google.com https://checkout.epayco.co https://checkout.wompi.co; connect-src 'self' wss://powerfulcontrolsystem.com https://api.openai.com https://checkout.wompi.co https://secure.epayco.co; frame-src 'self' https://accounts.google.com https://checkout.epayco.co https://checkout.wompi.co")
 		if r.TLS != nil || strings.EqualFold(strings.TrimSpace(r.Header.Get("X-Forwarded-Proto")), "https") && RequestFromTrustedProxy(r) {
 			w.Header().Set("Strict-Transport-Security", "max-age=31536000; includeSubDomains")
 		}
