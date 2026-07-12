@@ -34,6 +34,35 @@
     return THEME_VALUES[value] ? value : 'light';
   }
 
+  // Adds the synchronizer token to same-origin mutations. This is centralized
+  // so existing operational pages keep their fetch contracts during the CSRF
+  // migration without exposing the HttpOnly session cookie.
+  function installCSRFFetch(){
+    if (!window.fetch || window.__pcsCSRFFetchInstalled) return;
+    window.__pcsCSRFFetchInstalled = true;
+    var originalFetch = window.fetch.bind(window);
+    window.fetch = function(input, init){
+      var options = init ? Object.assign({}, init) : {};
+      var method = String(options.method || (input && input.method) || 'GET').toUpperCase();
+      if (method === 'GET' || method === 'HEAD' || method === 'OPTIONS' || options.credentials === 'omit') {
+        return originalFetch(input, options);
+      }
+      var requestURL = typeof input === 'string' ? input : (input && input.url) || window.location.href;
+      var target;
+      try { target = new URL(requestURL, window.location.href); } catch (error) { return originalFetch(input, options); }
+      if (target.origin !== window.location.origin) return originalFetch(input, options);
+      var token = getCookie('pcs_csrf');
+      if (token) {
+        var headers = new Headers(options.headers || (input && input.headers) || undefined);
+        if (!headers.has('X-CSRF-Token')) headers.set('X-CSRF-Token', token);
+        options.headers = headers;
+      }
+      return originalFetch(input, options);
+    };
+  }
+
+  installCSRFFetch();
+
   function isLightTheme(theme){
     return normalizeTheme(theme).indexOf('light') === 0;
   }

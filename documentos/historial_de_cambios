@@ -37420,3 +37420,10 @@ Archivos modificados:
   concurrencia, `git diff --check`, `go mod verify` y pasos separados para
   vulnerabilidades y analisis estatico. Se elimina el job de staging: un push
   nunca puede conectarse ni desplegar en ningun entorno.
+
+2026-07-12: Token CSRF sincronizador para sesiones web.
+- Las mutaciones con `session_token` exigen origen exacto y coincidencia en
+  tiempo constante entre la cookie `pcs_csrf` y la cabecera `X-CSRF-Token`.
+  `menu.js` agrega la cabecera para fetch del mismo origen; Bearer y webhooks
+  firmados permanecen fuera del modelo de cookie. Se agregan pruebas de token
+  valido, ausente e incorrecto.

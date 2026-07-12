@@ -33,6 +33,11 @@ Estado: preparado en la rama `security/full-hardening`; no desplegado.
 - La cache de autenticacion tiene invalidacion explicita por token y por
   administrador, ademas del TTL cero, para que logout, reset y cambio de 2FA
   surtan efecto inmediatamente.
+- Las mutaciones autenticadas por `session_token` requieren ahora el token
+  sincronizador `pcs_csrf` en la cabecera `X-CSRF-Token`, ademas de Origin o
+  Referer de esquema, host y puerto exactos. `menu.js` lo incorpora a los
+  `fetch` same-origin; los clientes Bearer y los webhooks firmados quedan fuera
+  de este modelo porque no dependen de la cookie de sesion.
 - El workflow `Professional CI` se ejecuta tambien en ramas `security/**`,
   ademas de pull requests, ramas principales y ejecucion manual.
 - La CSP estricta se publica inicialmente mediante
@@ -70,6 +75,8 @@ Estado: preparado en la rama `security/full-hardening`; no desplegado.
 - Verificar en staging los permisos de volumen del backend no root y los flujos administrativos que antes dependian del socket Docker, ahora retirado del contenedor de negocio.
 - Configurar desde GitHub la proteccion de rama y la revision requerida; son
   controles de plataforma que no se pueden imponer desde archivos versionados.
+- Completar la migracion de las paginas heredadas que no cargan `menu.js` antes
+  de exigir el token a formularios autentificados fuera del shell principal.
 
 ## Despliegue y rollback
 
