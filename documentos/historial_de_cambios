@@ -37477,6 +37477,11 @@ Archivos modificados:
   conteo de carrito están limitadas a una lista cerrada antes de formar la
   consulta; ambos contratos quedan cubiertos por el escáner G201.
 
+2026-07-12: Aislamiento de administración VPS.
+- El handler de VPS2 exige sesión de super administrador antes de consultar
+  estado, archivos, configuración o acciones. Se añade prueba de rechazo sin
+  sesión. El visor local de procesos ejecuta `ps` sin invocar un shell.
+
 2026-07-12: rs: actualizar repositorio y sincronizar VPS
 PushStatus: OK
 Archivos modificados:
