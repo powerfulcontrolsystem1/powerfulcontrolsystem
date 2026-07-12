@@ -47,6 +47,11 @@ Estado: preparado en la rama `security/full-hardening`; no desplegado.
   biblioteca estandar con los parches vigentes; `pgx/v5` se actualiza a 5.9.2,
   que corrige la vulnerabilidad de confusion de placeholders SQL reportada por
   el escaner.
+- La version del runner queda fijada en Go 1.25.12. El escaneo previo identifico
+  GO-2026-5856 y GO-2026-4970 en Go 1.25.11, junto con vulnerabilidades
+  alcanzables en `x/net`, `x/crypto` y `x/sys`; se actualizan respectivamente
+  a 0.55.0, 0.52.0 y 0.45.0, las versiones corregidas reportadas por
+  `govulncheck`.
 - El CI no despliega por eventos `push`: cualquier despliegue debe vivir en un
   workflow manual y protegido. Las verificaciones de vulnerabilidades y analisis
   estatico se ejecutan como pasos independientes, junto con `go mod verify` y
