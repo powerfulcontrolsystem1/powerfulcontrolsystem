@@ -37463,6 +37463,14 @@ Archivos modificados:
   Administrar empresa al menú interno de Configuración. Conserva las rutas,
   claves de permiso y el aislamiento empresarial existentes.
 
+2026-07-12: Endurecimiento de conversiones y contratos criptográficos.
+- Se elimina una conversión de identificador de bloqueo que podía desbordar y
+  las conversiones de píxeles de grafología se sustituyen por tipos seguros de
+  la biblioteca estándar.
+- Las únicas excepciones criptográficas señaladas permanecen limitadas a TOTP
+  RFC 6238 y a la firma exigida por ePayco Classic; no se usan para contraseñas,
+  secretos ni integridad interna.
+
 2026-07-12: rs: actualizar repositorio y sincronizar VPS
 PushStatus: OK
 Archivos modificados:

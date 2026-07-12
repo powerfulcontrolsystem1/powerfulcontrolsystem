@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"image"
+	"image/color"
 	_ "image/gif"
 	_ "image/jpeg"
 	_ "image/png"
@@ -154,13 +155,7 @@ func buildWorkspace(img image.Image) analysisWorkspace {
 	gray := make([]uint8, 0, w*h)
 	for y := bounds.Min.Y; y < bounds.Max.Y; y++ {
 		for x := bounds.Min.X; x < bounds.Max.X; x++ {
-			r, g, b, _ := img.At(x, y).RGBA()
-			lumaValue := (299*uint32(r>>8) + 587*uint32(g>>8) + 114*uint32(b>>8)) / 1000
-			if lumaValue > 255 {
-				lumaValue = 255
-			}
-			luma := uint8(lumaValue)
-			gray = append(gray, luma)
+			gray = append(gray, color.GrayModel.Convert(img.At(x, y)).(color.Gray).Y)
 		}
 	}
 	threshold := otsuThreshold(gray)
@@ -909,8 +904,8 @@ func otsuThreshold(gray []uint8) uint8 {
 		sum += float64(t * hist[t])
 	}
 	var sumB, wB, maxVar float64
-	threshold := 160
-	for t := 0; t < 256; t++ {
+	threshold := uint8(160)
+	for t := uint8(0); ; t++ {
 		wB += float64(hist[t])
 		if wB == 0 {
 			continue
@@ -919,13 +914,16 @@ func otsuThreshold(gray []uint8) uint8 {
 		if wF == 0 {
 			break
 		}
-		sumB += float64(t * hist[t])
+		sumB += float64(t) * float64(hist[t])
 		mB := sumB / wB
 		mF := (sum - sumB) / wF
 		between := wB * wF * (mB - mF) * (mB - mF)
 		if between > maxVar {
 			maxVar = between
 			threshold = t
+		}
+		if t == 255 {
+			break
 		}
 	}
 	if threshold < 80 {
@@ -934,7 +932,7 @@ func otsuThreshold(gray []uint8) uint8 {
 	if threshold > 210 {
 		threshold = 210
 	}
-	return uint8(threshold)
+	return threshold
 }
 
 func imageContrast(gray []uint8) float64 {
