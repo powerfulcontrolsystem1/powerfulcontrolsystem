@@ -828,6 +828,27 @@ func main() {
 			log.Fatalf("failed to protect existing session tokens: %v", err)
 		}
 		startupTrace("after_migrate_session_tokens_to_hashes")
+		totpMigrationDryRun := strings.EqualFold(strings.TrimSpace(os.Getenv("PCS_TOTP_MIGRATION_DRY_RUN")), "1") || strings.EqualFold(strings.TrimSpace(os.Getenv("PCS_TOTP_MIGRATION_DRY_RUN")), "true")
+		migratedTOTP, err := dbpkg.MigrateAdministradorTOTPSecrets(dbSuper, totpMigrationDryRun)
+		if err != nil {
+			log.Fatalf("failed to protect existing TOTP secrets: %v", err)
+		}
+		if totpMigrationDryRun {
+			log.Printf("INFO: TOTP secret migration dry-run found %d legacy secret(s)", migratedTOTP)
+		} else if migratedTOTP > 0 {
+			log.Printf("INFO: encrypted %d legacy TOTP secret(s)", migratedTOTP)
+		}
+		startupTrace("after_migrate_totp_secrets")
+		migratedResetTokens, err := dbpkg.MigrateAdministradorPasswordResetTokens(dbSuper, totpMigrationDryRun)
+		if err != nil {
+			log.Fatalf("failed to protect existing password reset tokens: %v", err)
+		}
+		if totpMigrationDryRun {
+			log.Printf("INFO: password reset token migration dry-run found %d legacy token(s)", migratedResetTokens)
+		} else if migratedResetTokens > 0 {
+			log.Printf("INFO: protected %d legacy password reset token(s)", migratedResetTokens)
+		}
+		startupTrace("after_migrate_password_reset_tokens")
 		if err := dbpkg.EnsurePaymentGatewaySchema(dbSuper); err != nil {
 			log.Fatalf("failed to ensure payment gateway schema in superadministrador db: %v", err)
 		}
