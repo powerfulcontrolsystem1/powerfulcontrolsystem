@@ -1,0 +1,142 @@
+services:
+  nextcloud-db:
+    image: postgres:16.14-alpine
+    container_name: pcs-nextcloud-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: nextcloud
+      POSTGRES_USER: nextcloud
+      POSTGRES_PASSWORD_FILE: /run/secrets/nextcloud_db_password
+    secrets:
+      - nextcloud_db_password
+    volumes:
+      - pcs_nextcloud_db:/var/lib/postgresql/data
+    networks:
+      - nextcloud-internal
+    security_opt:
+      - no-new-privileges:true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=64m
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U nextcloud -d nextcloud"]
+      interval: 20s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    mem_limit: 768m
+    cpus: 1.0
+
+  nextcloud-redis:
+    image: redis:7.4.9-alpine
+    container_name: pcs-nextcloud-redis
+    restart: unless-stopped
+    command: ["sh", "-ec", "exec redis-server --appendonly yes --requirepass \"$$(cat /run/secrets/nextcloud_redis_password)\""]
+    secrets:
+      - nextcloud_redis_password
+    volumes:
+      - pcs_nextcloud_redis:/data
+    networks:
+      - nextcloud-internal
+    security_opt:
+      - no-new-privileges:true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=32m
+    healthcheck:
+      test: ["CMD-SHELL", "REDISCLI_AUTH=$$(cat /run/secrets/nextcloud_redis_password) redis-cli ping | grep -q PONG"]
+      interval: 20s
+      timeout: 5s
+      retries: 5
+    mem_limit: 256m
+    cpus: 0.5
+
+  nextcloud:
+    image: nextcloud:34.0.1-apache
+    container_name: pcs-nextcloud
+    restart: unless-stopped
+    depends_on:
+      nextcloud-db:
+        condition: service_healthy
+      nextcloud-redis:
+        condition: service_healthy
+    ports:
+      - "${NEXTCLOUD_BIND:-127.0.0.1}:${NEXTCLOUD_PORT:-8090}:80"
+    environment:
+      POSTGRES_HOST: nextcloud-db
+      POSTGRES_DB: nextcloud
+      POSTGRES_USER: nextcloud
+      POSTGRES_PASSWORD_FILE: /run/secrets/nextcloud_db_password
+      NEXTCLOUD_ADMIN_USER: ${NEXTCLOUD_ADMIN_USER:?Defina NEXTCLOUD_ADMIN_USER}
+      NEXTCLOUD_ADMIN_PASSWORD_FILE: /run/secrets/nextcloud_admin_password
+      NEXTCLOUD_TRUSTED_DOMAINS: ${NEXTCLOUD_TRUSTED_DOMAINS:?Defina NEXTCLOUD_TRUSTED_DOMAINS}
+      NEXTCLOUD_DATA_DIR: /var/www/html/data
+      REDIS_HOST: nextcloud-redis
+      REDIS_HOST_PASSWORD_FILE: /run/secrets/nextcloud_redis_password
+      TRUSTED_PROXIES: ${NEXTCLOUD_TRUSTED_PROXIES:?Defina NEXTCLOUD_TRUSTED_PROXIES}
+      OVERWRITEHOST: ${NEXTCLOUD_OVERWRITE_HOST:?Defina NEXTCLOUD_OVERWRITE_HOST}
+      OVERWRITEPROTOCOL: https
+      OVERWRITECLIURL: ${NEXTCLOUD_OVERWRITE_CLI_URL:?Defina NEXTCLOUD_OVERWRITE_CLI_URL}
+      PHP_UPLOAD_LIMIT: 2G
+      APACHE_BODY_LIMIT: "2147483648"
+    secrets:
+      - nextcloud_db_password
+      - nextcloud_admin_password
+      - nextcloud_redis_password
+    volumes:
+      - pcs_nextcloud_html:/var/www/html
+      - ${NEXTCLOUD_DATA_PATH:?Defina NEXTCLOUD_DATA_PATH}:/var/www/html/data
+    networks:
+      - nextcloud-internal
+      - nextcloud-edge
+    security_opt:
+      - no-new-privileges:true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=256m
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1/status.php | grep -q '\"installed\":true'"]
+      interval: 30s
+      timeout: 8s
+      retries: 8
+      start_period: 120s
+    mem_limit: 2g
+    cpus: 2.0
+
+  nextcloud-cron:
+    image: nextcloud:34.0.1-apache
+    container_name: pcs-nextcloud-cron
+    restart: unless-stopped
+    entrypoint: /cron.sh
+    depends_on:
+      nextcloud:
+        condition: service_healthy
+    secrets:
+      - nextcloud_db_password
+      - nextcloud_redis_password
+    volumes:
+      - pcs_nextcloud_html:/var/www/html
+      - ${NEXTCLOUD_DATA_PATH:?Defina NEXTCLOUD_DATA_PATH}:/var/www/html/data
+    networks:
+      - nextcloud-internal
+    security_opt:
+      - no-new-privileges:true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=128m
+    mem_limit: 512m
+    cpus: 0.5
+
+volumes:
+  pcs_nextcloud_db: {}
+  pcs_nextcloud_redis: {}
+  pcs_nextcloud_html: {}
+
+networks:
+  nextcloud-internal:
+    internal: true
+  nextcloud-edge: {}
+
+secrets:
+  nextcloud_db_password:
+    file: ${NEXTCLOUD_DB_PASSWORD_FILE:?Defina NEXTCLOUD_DB_PASSWORD_FILE}
+  nextcloud_admin_password:
+    file: ${NEXTCLOUD_ADMIN_PASSWORD_FILE:?Defina NEXTCLOUD_ADMIN_PASSWORD_FILE}
+  nextcloud_redis_password:
+    file: ${NEXTCLOUD_REDIS_PASSWORD_FILE:?Defina NEXTCLOUD_REDIS_PASSWORD_FILE}

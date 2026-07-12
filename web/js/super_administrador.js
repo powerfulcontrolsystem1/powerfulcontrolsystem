@@ -97,6 +97,7 @@
     "/super/configuracion/rustdesk_vps.html": true,
     "/super/configuracion/limitaciones.html": true,
     "/super/configuracion/onlyoffice.html": true,
+    "/super/configuracion/nextcloud.html": true,
     "/super/configuracion/voz_ia.html": true,
     "/super/configuracion/epayco.html": true,
     "/super/configuracion/wompi_nequi.html": true,

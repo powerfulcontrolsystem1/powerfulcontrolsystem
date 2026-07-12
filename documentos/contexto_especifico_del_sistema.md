@@ -56,7 +56,11 @@ forzadas aunque el boton se oculte en frontend.
   `comandos_codex.md` y `deploy/`.
 - Backups y restauracion: `comandos_codex.md`,
   `gobernanza_tecnica/runbooks/` y `scripts/crear_backup_vps.ps1`.
-- VPS2 y Nextcloud: `vps2_operacion.md` y `scripts/sync_to_vps2.ps1`.
+- Nextcloud empresarial del VPS principal: `nextcloud_empresarial.md` y
+  `deploy/nextcloud/`.
+- VPS2 y su Nextcloud auxiliar: `vps2_operacion.md` y
+  `scripts/sync_to_vps2.ps1`; no comparten cuentas ni datos con el servicio
+  empresarial del VPS principal.
 
 No exponer host, llaves, contrasenas, DSN ni configuracion privada local en
 salidas, documentos o commits.

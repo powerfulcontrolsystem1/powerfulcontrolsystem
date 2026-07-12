@@ -19,7 +19,7 @@ Este documento consolida el estado actual del proyecto despues de las actualizac
 - Todo dato operativo de empresa debe conservar aislamiento por `empresa_id`.
 - La operacion y la facturacion requieren conexion activa con el backend; no se mantiene modo offline para clientes.
 - El despliegue objetivo del VPS es portable bajo Docker, con PostgreSQL, backend, frontend, Nginx edge, TLS y servicios opcionales por perfil.
-- Nextcloud queda retirado del producto; la cuota antes asociada a almacenamiento se interpreta como limite maximo de base de datos por empresa.
+- Estado historico al 2026-05-13: Nextcloud estaba retirado. Este punto fue sustituido por la reactivacion endurecida del 2026-07-12 documentada en `nextcloud_empresarial.md`; la cuota de base de datos sigue siendo independiente.
 - Los documentos OnlyOffice se crean en una pantalla unica, se editan en una sesion temporal y se descargan al PC/celular del usuario cuando se guardan.
 
 ## Acceso y autenticacion

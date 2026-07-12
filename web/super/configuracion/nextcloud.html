@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Nextcloud - Configuracion</title>
+  <link rel="stylesheet" href="/estilos.css">
+  <style>
+    body{margin:0;background:var(--bg);color:var(--text)}.nextcloud-config{max-width:1100px;margin:0 auto;padding:18px;box-sizing:border-box}.nextcloud-config h1{margin:0 0 4px;font-size:1.35rem}.nextcloud-config>p{margin:0 0 16px;color:var(--muted)}
+    .nextcloud-form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));border:1px solid var(--border)}.nextcloud-form label{display:grid;gap:6px;padding:13px;border-right:1px solid var(--border);border-bottom:1px solid var(--border)}.nextcloud-form label:nth-child(2n){border-right:0}.nextcloud-form .wide{grid-column:1/-1;border-right:0}.nextcloud-form input{min-width:0}.nextcloud-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}.nextcloud-message{min-height:24px;margin-top:12px;font-weight:700}
+    @media(max-width:720px){.nextcloud-config{padding:12px}.nextcloud-form{grid-template-columns:1fr}.nextcloud-form label{border-right:0}.nextcloud-form .wide{grid-column:auto}.nextcloud-actions .btn{flex:1 1 100%}}
+  </style>
+</head>
+<body class="super-page">
+  <main class="nextcloud-config">
+    <h1>Nextcloud empresarial</h1>
+    <p>Configuracion global del servicio y cuota inicial por empresa.</p>
+    <form id="nextcloudConfigForm" class="nextcloud-form">
+      <label class="wide"><span><input id="nextcloudEnabled" type="checkbox"> Activar servicio para empresas</span></label>
+      <label class="wide">URL HTTPS<input id="nextcloudBaseURL" class="form-input" type="url" autocomplete="url" placeholder="https://nube.dominio.com"></label>
+      <label>Usuario administrador<input id="nextcloudAdminUser" class="form-input" type="text" autocomplete="username"></label>
+      <label>Cuota inicial (MB)<input id="nextcloudQuota" class="form-input" type="number" min="1" max="1048576" value="1024"></label>
+      <label class="wide">Contraseña o token de aplicación<input id="nextcloudAdminSecret" class="form-input" type="password" autocomplete="new-password" placeholder="Dejar vacio para conservar el actual"></label>
+    </form>
+    <div class="nextcloud-actions">
+      <button id="nextcloudSave" class="btn primary" type="button">Guardar configuracion</button>
+      <button id="nextcloudTest" class="btn secondary" type="button">Probar conexion</button>
+    </div>
+    <div id="nextcloudMessage" class="nextcloud-message" role="status"></div>
+  </main>
+  <script src="/js/nextcloud_super.js?v=20260712"></script>
+  <script src="/js/super_page_tools.js?v=20260707"></script>
+</body>
+</html>

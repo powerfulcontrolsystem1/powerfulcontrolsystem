@@ -69,7 +69,7 @@ bash deploy/scripts/vps-docker-preflight.sh
 bash deploy/scripts/vps-compose-sidecar-up.sh
 ```
 
-Ese arranque levanta el nucleo `postgres`, `backend` y `frontend`. En la VPS actual, OnlyOffice puede operar como contenedor separado y RustDesk ya usa los puertos publicos del host; por eso esos servicios quedan definidos en perfiles para no causar colisiones durante la migracion. Nextcloud queda retirado del producto y del Compose.
+Ese arranque levanta el nucleo `postgres`, `backend` y `frontend`. En la VPS actual, OnlyOffice puede operar como contenedor separado y RustDesk ya usa los puertos publicos del host; por eso esos servicios quedan definidos en perfiles para no causar colisiones durante la migracion. Nextcloud empresarial se levanta aparte con `deploy/scripts/vps-nextcloud-up.sh`.
 
 El wrapper local `scripts/sync_to_vps.ps1` reconstruye este stack y, por defecto, limpia temporales antiguos de sincronizacion y cache Docker no usado al final del despliegue. La limpieza no ejecuta `docker volume prune` ni elimina datos persistentes. Para desactivarla temporalmente:
 
@@ -134,7 +134,7 @@ En este modo, el host conserva solo Docker, firewall/SSH, cron de renovacion si 
 - `edge`: Nginx publico Docker para `80/443`, proxy HTTPS y ACME webroot.
 - `certbot`: emision/renovacion de certificados Let's Encrypt usando volumen Docker.
 - `onlyoffice-documentserver`: OnlyOffice con JWT.
-- Nextcloud ya no forma parte del Compose oficial. Si quedan contenedores o volumenes antiguos, ejecutar `deploy/scripts/vps-remove-nextcloud.sh` en la VPS y usar `--purge-data` solo despues de confirmar que no se requiere recuperacion.
+- `nextcloud`, `nextcloud-cron`, `nextcloud-db` y `nextcloud-redis`: stack empresarial independiente definido en `deploy/nextcloud/docker-compose.yml`.
 - `voice-stream`: servicio FastAPI/Piper para voz IA.
 - `rustdesk-hbbs`, `rustdesk-hbbr`: relay/ID server RustDesk.
 - `mailu-*`: perfil opcional `mail` para correo empresarial portable con Mailu
@@ -176,8 +176,22 @@ bash deploy/scripts/vps-staging-up.sh
 Para mover la plataforma despues:
 
 - Exporta o publica las imagenes `pcs-backend`, `pcs-frontend` y `pcs-voice-stream`.
-- Migra los volumenes `pcs_postgres_data`, `pcs_web_uploads`, `pcs_downloads`, `pcs_letsencrypt`, `pcs_certbot_www`, `pcs_onlyoffice_*`, `mailu_*`, `pcs_voice_*` y `pcs_rustdesk_data`. Los volumenes `pcs_nextcloud_*` son legado retirado.
+- Migra los volumenes `pcs_postgres_data`, `pcs_web_uploads`, `pcs_downloads`, `pcs_letsencrypt`, `pcs_certbot_www`, `pcs_onlyoffice_*`, `mailu_*`, `pcs_voice_*`, `pcs_rustdesk_data` y `pcs_nextcloud_*`, junto con la ruta configurada en `NEXTCLOUD_DATA_PATH`.
 - Conserva `deploy/.env.platform` con los mismos secretos.
 - En el nuevo servidor, restaura volumenes, copia el proyecto o las imagenes y ejecuta `docker compose --env-file deploy/.env.platform -f deploy/docker-compose.platform.yml --profile edge up -d`.
 
 No subas `deploy/.env.platform` al repositorio: contiene secretos operativos.
+
+## Nextcloud empresarial
+
+Nextcloud usa un Compose independiente en `deploy/nextcloud/docker-compose.yml`.
+Sus secretos se suministran como archivos Docker y los datos empresariales se
+montan desde `NEXTCLOUD_DATA_PATH`; no forman parte del arbol publico ni del
+repositorio. El arranque validado se realiza con:
+
+```bash
+bash deploy/scripts/vps-nextcloud-up.sh
+```
+
+No elimine contenedores, volumenes o la ruta de datos sin un backup verificado y
+una prueba de restauracion. Consulte `documentos/nextcloud_empresarial.md`.

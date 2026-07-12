@@ -319,7 +319,7 @@ Revision VPS portable Docker 2026-05-12: el despliegue oficial queda preparado p
 
 Revision explorador de archivos super 2026-05-12: el panel `super_administrador` incorpora `/super/explorador_archivos.html`, una vista de solo lectura tipo explorador para listar raices, carpetas y metadata del filesystem visible para el backend/VPS mediante `GET /super/api/explorador_archivos`. El endpoint exige rol `super_administrador`, no lee contenido de archivos y no permite escritura, borrado, subida ni descarga.
 
-Revision retiro Nextcloud 2026-05-12: Nextcloud deja de ser modulo empresarial y servicio del VPS. Se retiran pagina, menu, rutas API, configuracion super, permisos/licencias y Compose; el arranque limpia la tabla legacy `empresa_nextcloud_accounts` y claves `nextcloud.*`. El antiguo rango de GB se reutiliza como `empresa.limitaciones.db.max_gb`, cuota maxima de base de datos por empresa visible en el panel PostgreSQL por empresa.
+Revision retiro Nextcloud 2026-05-12 (registro historico, sustituido el 2026-07-12): Nextcloud dejo temporalmente de ser modulo empresarial y servicio del VPS. El rango de GB se reutilizo como `empresa.limitaciones.db.max_gb`; la reactivacion posterior usa una cuota Nextcloud independiente.
 
 Revision login usuario simplificado 2026-05-12: el acceso operativo retira controles y enlaces ajenos al usuario final (`Apariencia`, `Ir al inicio`, `Acceso de administradores`, registro/cambio redundante) y deja solo recuperacion de contrasena y recuperacion de email de invitacion. El nuevo endpoint publico `/api/empresa/usuarios/recuperar_invitacion` usa reCAPTCHA y respuesta enmascarada para reenviar la invitacion a usuarios ya creados por el administrador que aun no completan contrasena, rotando el token de invitacion sin revelar existencia de cuentas.
 
@@ -747,3 +747,10 @@ locales, ademas de baterias comunes como Tesla Powerwall, BYD Battery-Box,
 Pylontech, Enphase IQ Battery y Victron Lithium. Cada empresa configura sus
 sistemas, correos, umbrales y lecturas de forma independiente, con alertas por
 correo, eventos auditables y aislamiento por `empresa_id`.
+
+Actualizacion 2026-07-12: Nextcloud vuelve como servicio empresarial opcional en
+el VPS principal. Cada empresa recibe una cuenta tecnica aislada; PCS no guarda
+su contrasena, muestra la credencial temporal solo al aprovisionar o restablecer
+y protege las acciones mediante rol, sesion, CSRF, `empresa_id` validado y
+auditoria. El servicio usa PostgreSQL, Redis, cron, secretos Docker y una ruta de
+datos incluida en backups. Es independiente del Nextcloud auxiliar de VPS2.

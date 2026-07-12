@@ -4836,3 +4836,13 @@
 - El selector de usuarios deja de ofrecer perfiles de verticales no relacionadas para nuevas altas; los perfiles existentes se preservan y los especializados se manejan por empresa.
 - La pagina publica de privacidad describe aislamiento empresarial, controles de sesion/rol y cifrado real de transporte y secretos.
 - Configuracion avanzada corrige el error JavaScript del observador de secciones. La evidencia y limites de validacion externa se documentan en `documentos/validacion_preproduccion_pcs.md`.
+
+# 2026-07-12 - Nextcloud empresarial y seguridad documental
+
+- Nextcloud vuelve como servicio opcional por empresa con aislamiento de rol y
+  `empresa_id`, credenciales temporales aleatorias y secreto OCS cifrado.
+- Se agrega stack independiente con Nextcloud 34.0.1, PostgreSQL 16.14, Redis
+  7.4.9, cron, healthchecks, secretos por archivo y ruta de datos respaldable.
+- Se elimina el script legado que podia retirar contenedores y volumenes.
+- Los documentos dinamicos validan acceso empresarial al generar, compartir y
+  descargar; el HTML activo se normaliza antes del render.

@@ -562,7 +562,7 @@
 - El primer ingreso sigue cerrado a invitacion: `token_invitacion`, email, documento y contrato vigente se validan antes de crear sesion.
 - No se agregan roles ni privilegios nuevos; tras autenticar, el panel empresarial sigue filtrando por `/api/empresa/permisos_contexto` y `empresa_id`.
 
-2026-05-12: Retiro de Nextcloud
+2026-05-12: Retiro temporal de Nextcloud (registro historico sustituido el 2026-07-12)
 - `nextcloud` deja de ser modulo licenciado o pagina de empresa.
 - Se retiran `linkNextcloud`, `WithEmpresaNextcloudPermissions`, `/api/empresa/nextcloud` y `/super/api/config/nextcloud`.
 - Las licencias nuevas no deben incluir `nextcloud`; `documentos_onlyoffice`, `gestion_documental`, `backups` y soporte remoto conservan sus permisos independientes.
@@ -2109,3 +2109,11 @@ Para declarar un modulo listo en produccion se debe validar por rol: acceso a la
   configuracion de nomina. No aplica cambios en bloque ni sin confirmacion.
 - Los envios de WhatsApp tambien requieren que el evento global
   `cobranza_cliente` este habilitado por super administrador.
+
+2026-07-12: Nextcloud empresarial reactivado y endurecido.
+- `linkNextcloud` pertenece a `gestion_documental`; lectura consulta la cuenta y
+  escritura permite aprovisionar o restablecer su acceso segun el rol efectivo.
+- `/api/empresa/nextcloud` usa `WithEmpresaGestionDocumentalPermissions` y toma
+  el `empresa_id` exclusivamente del contexto validado por el middleware.
+- `/super/api/config/nextcloud` exige `super_administrador` mediante
+  `WithSuperAuditoria`; nunca devuelve la credencial administrativa.

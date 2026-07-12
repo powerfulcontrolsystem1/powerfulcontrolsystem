@@ -2035,12 +2035,12 @@
 - Seguridad: modo solo lectura, exclusivo de `super_administrador`; no hay lectura de contenido, descargas, cargas, edicion ni borrado.
 - Alcance: no cambia bases de datos, permisos empresariales, tablas ni dependencias.
 
-2026-05-12: Retiro de Nextcloud y cuota DB empresarial
+2026-05-12: Retiro temporal de Nextcloud y cuota DB empresarial (registro historico sustituido el 2026-07-12)
 - Modulos afectados: `administrar_empresa`, `super_administrador`, `permisos`, `licencias`, `backups`, `postgresql`, `deploy`.
 - Cambio funcional: `nextcloud` deja de ser modulo empresarial, licencia visible y servicio VPS administrado por el sistema.
 - UX: `super_administrador > Configuracion > Limitaciones` reemplaza la cuota Nextcloud por `Base de datos por empresa (tamano maximo, GB)`.
 - Backend: `/api/empresa/nextcloud` y `/super/api/config/nextcloud` quedan retirados; el arranque elimina credenciales legacy y el panel PostgreSQL muestra cuota/uso/estado por empresa.
-- Operacion: el Compose oficial ya no define Nextcloud y `deploy/scripts/vps-remove-nextcloud.sh` retira contenedores legacy.
+- Operacion historica: el Compose principal dejo de definir Nextcloud. La reactivacion de 2026-07-12 usa un stack independiente y elimina el script de purga.
 
 2026-05-12: Regreso a estaciones desde ultimos movimientos de caja
 - Modulos afectados: `estaciones`, `caja`.
@@ -4434,3 +4434,12 @@ de productos/SKUs, caja, impuestos, cliente y reglas de facturacion.
 
 2026-07-11: Operacion de despliegue `rs`.
 - `scripts/rs.ps1` selecciona el ejecutable hijo correcto para PowerShell Core o Windows PowerShell y conserva su fallback. Esto evita que una ruta inexistente a `powershell.exe` detenga preflight, repositorio y sincronizacion antes de contactar la VPS.
+
+2026-07-12: Nextcloud empresarial
+- Super administrador configura URL HTTPS, usuario OCS, secreto cifrado y cuota.
+- Cada empresa consulta, aprovisiona y restablece solo su propia cuenta desde
+  `Documentos, nube y soporte`.
+- Las contrasenas de usuarios no se persisten en PCS; se generan con 32 bytes
+  aleatorios y se muestran una sola vez.
+- El backend valida OCS real, no sigue redirecciones con Basic Auth y registra
+  auditoria de aprovisionamiento y restablecimiento.

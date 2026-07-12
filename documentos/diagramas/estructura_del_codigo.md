@@ -1165,7 +1165,7 @@
   - `estaciones.htmlempresa_id=...` -> carga `estaciones_config` -> restaura runtime de `Notas` desde `localStorage` aislado por empresa -> muestra varias notas con temporizador, repeticion y countdown persistente tras recarga.
   - `Guardar nota` sigue persistiendo solo la configuracion base de la estacion en `empresa_estacion_prefs`; el runtime multiple de recordatorios queda local al navegador.
 
-### Retiro de Nextcloud y cuota DB por empresa (2026-05-12)
+### Retiro temporal de Nextcloud y cuota DB por empresa (2026-05-12, sustituido el 2026-07-12)
 
 - `backend/main.go` ya no registra `/api/empresa/nextcloud` ni `/super/api/config/nextcloud`.
 - `backend/db/nextcloud_decommission.go` retira la tabla legacy `empresa_nextcloud_accounts` y las claves `nextcloud.*` de configuracion super.
@@ -6673,3 +6673,13 @@ La ayuda funcional se actualiza en `web/ayuda/ayuda.html` y el estado compacto d
   2026 desde la configuracion real de Nomina y adjunta fuente/vigencia.
 - `web/administrar_empresa/nomina_sueldos.html` aplica un campo confirmado por
   vez; `creditos_tutorial.html` se carga al final de `creditos_menu.html`.
+
+## Actualizacion 2026-07-12 (Nextcloud empresarial)
+
+- `backend/handlers/nextcloud.go` integra OCS con timeout, TLS minimo, bloqueo de
+  redirecciones y validacion del estado interno de Nextcloud.
+- `backend/db/nextcloud.go` conserva solo asignacion, cuota y estado por empresa.
+- `/api/empresa/nextcloud` usa el contexto empresarial validado; la configuracion
+  global usa `/super/api/config/nextcloud` con auditoria super.
+- `deploy/nextcloud/` separa PostgreSQL, Redis, aplicacion y cron en redes
+  internas, secretos por archivo y versiones de imagen fijadas.

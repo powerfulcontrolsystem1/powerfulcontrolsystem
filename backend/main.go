@@ -915,10 +915,10 @@ func main() {
 			log.Printf("INFO: emails corporativos generados para empresas existentes: %d", created)
 		}
 		startupTrace("after_empresa_email_corporativo_existing_companies")
-		if err := dbpkg.DecommissionNextcloudArtifacts(dbEmpresas, dbSuper); err != nil {
-			log.Printf("warning: no se pudieron retirar artefactos Nextcloud obsoletos: %v", err)
+		if err := dbpkg.EnsureEmpresaNextcloudSchema(dbEmpresas); err != nil {
+			log.Printf("warning: no se pudo preparar Nextcloud empresarial: %v", err)
 		}
-		startupTrace("after_nextcloud_decommission")
+		startupTrace("after_nextcloud_schema")
 		if err := dbpkg.DecommissionRemovedEntertainmentArtifacts(dbSuper); err != nil {
 			log.Printf("warning: no se pudieron retirar artefactos de juegos y emulador: %v", err)
 		}
@@ -1469,6 +1469,7 @@ func main() {
 	http.HandleFunc("/api/public/certificados_tributarios", handlers.PublicCertificadosTributariosHandler(dbEmpresas))
 	http.HandleFunc("/api/empresa/backups", handlers.WithEmpresaBackupsPermissions(dbEmpresas, dbSuper, handlers.EmpresaBackupsHandler(dbEmpresas, dbSuper)))
 	http.HandleFunc("/api/empresa/documentos", handlers.WithEmpresaDocumentosOnlyOfficePermissions(dbEmpresas, dbSuper, handlers.OnlyOfficeDocumentosHandler(dbSuper)))
+	http.HandleFunc("/api/empresa/nextcloud", handlers.WithEmpresaGestionDocumentalPermissions(dbEmpresas, dbSuper, handlers.EmpresaNextcloudHandler(dbEmpresas, dbSuper)))
 	startupTrace("after_empresa_routes")
 
 	// OnlyOffice public endpoints (token temporal)
@@ -1567,6 +1568,7 @@ func main() {
 	http.HandleFunc("/super/api/config/mantenimiento", handlers.WithSuperAuditoria(dbSuper, "super_config_mantenimiento", handlers.SuperMantenimientoConfigHandler(dbSuper)))
 	http.HandleFunc("/api/empresa/mantenimiento_programado", handlers.WithEmpresaSelfServicePermissions(dbEmpresas, dbSuper, handlers.EmpresaMantenimientoProgramadoHandler(dbSuper)))
 	http.HandleFunc("/super/api/config/onlyoffice", handlers.WithSuperAuditoria(dbSuper, "super_config_onlyoffice", handlers.OnlyOfficeConfigHandler(dbSuper)))
+	http.HandleFunc("/super/api/config/nextcloud", handlers.WithSuperAuditoria(dbSuper, "super_config_nextcloud", handlers.NextcloudConfigHandler(dbSuper)))
 	http.HandleFunc("/super/api/config/empresa_storage", handlers.WithSuperAuditoria(dbSuper, "super_config_empresa_storage", handlers.SuperEmpresaStorageConfigHandler(dbSuper, dbEmpresas)))
 	// Endpoint super para administrar contrato versionado y su historial
 	http.HandleFunc("/super/api/contrato", handlers.SuperContratoHandler(dbSuper))

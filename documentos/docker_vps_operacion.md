@@ -331,11 +331,11 @@ sudo nginx -t
 
 ## Servicios definidos como perfiles
 
-OnlyOffice, edge publico, voz IA y RustDesk estan definidos en el Compose por perfiles. Nextcloud queda retirado del producto y del Compose oficial:
+OnlyOffice, edge publico, voz IA y RustDesk estan definidos en el Compose por perfiles. Nextcloud empresarial conserva un Compose independiente para aislar datos, secretos y ciclos de actualizacion:
 
 - OnlyOffice ya existia como contenedor en `127.0.0.1:8088`.
 - RustDesk ya usaba puertos publicos `21115`, `21116` y `21117` en el host.
-- Si quedan contenedores Nextcloud legacy, retirar con `deploy/scripts/vps-remove-nextcloud.sh`; usar `--purge-data` solo despues de confirmar que no se requiere recuperacion.
+- Nextcloud se administra con `deploy/scripts/vps-nextcloud-up.sh`; cualquier retiro requiere backup verificado y un procedimiento manual de cambio aprobado.
 
 Perfiles disponibles:
 
@@ -471,3 +471,13 @@ deploy/scripts/vps-docker-preflight.sh
 deploy/scripts/vps-compose-sidecar-up.sh
 deploy/scripts/vps-configure-mailu-host-nginx.sh
 ```
+
+## Nextcloud empresarial aislado
+
+El servicio empresarial se administra con `deploy/nextcloud/docker-compose.yml`
+y `deploy/scripts/vps-nextcloud-up.sh`. PostgreSQL y Redis no publican puertos,
+las contrasenas se montan como secretos de solo lectura y el acceso web queda en
+loopback para el reverse proxy HTTPS. La ruta `NEXTCLOUD_DATA_PATH` debe formar
+parte del backup y de la prueba de restauracion. No existe un script operativo
+de purga: una eliminacion requiere una ventana de mantenimiento y confirmacion
+manual de la evidencia de backup.

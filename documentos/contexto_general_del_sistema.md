@@ -74,6 +74,10 @@ rol reservado de super administrador.
   o referencias seguras; no prometer entrega real sin credenciales/proveedor.
 - IA y agentes: se limitan por empresa, respetan roles y no ejecutan operaciones
   sensibles sin las validaciones o confirmaciones del flujo PCS.
+- Nextcloud empresarial: PCS aprovisiona una cuenta tecnica aislada por
+  `empresa_id`; las credenciales temporales se muestran una sola vez y no se
+  almacenan en la base de datos de PCS. El Nextcloud auxiliar de VPS2 sigue
+  siendo una infraestructura separada.
 
 ## Forma de trabajar
 

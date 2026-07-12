@@ -3217,3 +3217,12 @@
 - [Nomina] El agente internet muestra valor actual, valor oficial propuesto, vigencia y enlace de fuente; cada campo se aplica solo tras confirmacion humana.
 - [Tutoriales] Agrega `creditos_tutorial.html` al final del submenu de Credito; Nomina conserva su tutorial al final del submenu.
 - [IA documental] Se verifica el flujo existente de Compras, Ingresos y Egresos: carga imagen/PDF, extrae con GPT-5.5, precarga formulario, abre chat para reportar legibilidad y exige revision antes de guardar.
+
+## [2026-07-12] Nextcloud empresarial y seguridad documental
+- [Backend] Cuenta tecnica por `empresa_id`, OCS validado, secreto global cifrado,
+  contrasena temporal no persistida y auditoria empresarial.
+- [Frontend] Paginas integradas en Administrar empresa y Super administrador.
+- [Docker] Nextcloud 34.0.1, PostgreSQL 16.14, Redis 7.4.9, cron, healthchecks,
+  redes separadas, secretos por archivo y datos en ruta respaldable.
+- [Seguridad] Documentos dinamicos rechazan acceso cruzado entre empresas y
+  normalizan HTML activo antes de generar archivos.
