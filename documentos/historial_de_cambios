@@ -37443,3 +37443,10 @@ Archivos modificados:
 - `login.js` agrega el token CSRF disponible a sus solicitudes JSON sin depender
   de `menu.js`; se cubren en pruebas ambos inicios de sesion publicos aunque
   el navegador conserve una cookie de sesion anterior.
+2026-07-12: Endurecimiento de conversiones y contratos criptográficos.
+- Se elimina una conversión de identificador de bloqueo que podía desbordar y
+  las conversiones de píxeles de grafología se sustituyen por tipos seguros de
+  la biblioteca estándar.
+- Las únicas excepciones criptográficas señaladas permanecen limitadas a TOTP
+  RFC 6238 y a la firma exigida por ePayco Classic; no se usan para contraseñas,
+  secretos ni integridad interna.

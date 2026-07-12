@@ -3906,7 +3906,7 @@ func buildEpaycoClassicCheckoutForm(baseURL, customerID, checkoutKey, reference,
 	// #nosec G401 -- ePayco's Classic Checkout contract requires this exact MD5
 	// signature format. It is provider interoperability data, not a PCS password
 	// or integrity primitive; webhook validation is enforced independently.
-	signature := fmt.Sprintf("%x", md5.Sum([]byte(signatureSource)))
+	signature := fmt.Sprintf("%x", md5.Sum([]byte(signatureSource))) // #nosec G501 -- ePayco Classic Checkout requires this provider-defined signature; it is not used for passwords or internal integrity.
 
 	fields := map[string]string{
 		"p_cust_id_cliente":  strings.TrimSpace(customerID),

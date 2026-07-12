@@ -51,7 +51,7 @@ func totpCodeAt(secret string, counter int64) (string, error) {
 	}
 	var msg [8]byte
 	binary.BigEndian.PutUint64(msg[:], uint64(counter))
-	mac := hmac.New(sha1.New, key)
+	mac := hmac.New(sha1.New, key) // #nosec G505 -- RFC 6238 interoperable TOTP uses HMAC-SHA-1; the secret is independently encrypted at rest.
 	_, _ = mac.Write(msg[:])
 	sum := mac.Sum(nil)
 	offset := sum[len(sum)-1] & 0x0f

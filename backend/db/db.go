@@ -2005,7 +2005,8 @@ func empresaCreateDedupKey(tipoID int64, tipoNombre, nombre, nit, usuarioCreador
 
 func empresaCreateAdvisoryLockID(key string) int64 {
 	sum := sha256.Sum256([]byte(key))
-	return int64(binary.BigEndian.Uint64(sum[:8]) & 0x7fffffffffffffff)
+	// Shift before conversion so the value is always representable as int64.
+	return int64(binary.BigEndian.Uint64(sum[:8]) >> 1)
 }
 
 func normalizeEmpresaCreateText(value string) string {
