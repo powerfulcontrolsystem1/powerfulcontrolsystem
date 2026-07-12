@@ -37459,3 +37459,7 @@ Archivos modificados:
 - El handler de VPS2 exige sesión de super administrador antes de consultar
   estado, archivos, configuración o acciones. Se añade prueba de rechazo sin
   sesión. El visor local de procesos ejecuta `ps` sin invocar un shell.
+2026-07-12: Adjuntos privados para captura IA.
+- Los soportes de compra se resuelven como archivos regulares dentro de su
+  raíz privada. Se rechazan traversal, archivos inexistentes y enlaces
+  simbólicos que intenten salir de esa raíz antes de leerlos o analizarlos.
