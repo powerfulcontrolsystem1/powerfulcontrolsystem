@@ -30,6 +30,17 @@ func TestCSRFMiddlewareAllowsSameOriginCookieMutation(t *testing.T) {
 	}
 }
 
+func TestCSRFMiddlewareAllowsPublicLoginWithStaleSessionCookie(t *testing.T) {
+	h := CSRFMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(http.StatusNoContent) }))
+	req := httptest.NewRequest(http.MethodPost, "https://service.test/super/api/administradores/login", nil)
+	req.AddCookie(&http.Cookie{Name: "session_token", Value: "stale"})
+	rec := httptest.NewRecorder()
+	h.ServeHTTP(rec, req)
+	if rec.Code != http.StatusNoContent {
+		t.Fatalf("public login rejected because of stale cookie: %d", rec.Code)
+	}
+}
+
 func TestCSRFMiddlewareRejectsDifferentPortAndSubdomain(t *testing.T) {
 	for _, origin := range []string{"https://service.test:8443", "https://sub.service.test"} {
 		h := CSRFMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(http.StatusNoContent) }))
