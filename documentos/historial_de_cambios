@@ -37463,3 +37463,7 @@ Archivos modificados:
 - Los soportes de compra se resuelven como archivos regulares dentro de su
   raíz privada. Se rechazan traversal, archivos inexistentes y enlaces
   simbólicos que intenten salir de esa raíz antes de leerlos o analizarlos.
+2026-07-12: Ejecución SSH de VPS2 auditada.
+- Las acciones de VPS2 conservan un catálogo cerrado; SSH y Plink reciben
+  ejecutable y argumentos separados. Las rutas remotas usadas por acciones del
+  servidor se protegen con quoting antes de invocar el cliente SSH.
