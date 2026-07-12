@@ -2981,8 +2981,7 @@ func verifyWompiWebhookSignature(dbSuper *sql.DB, r *http.Request, body []byte, 
 		}
 	}
 	if rawSignature == "" || rawSignature == "<nil>" {
-		log.Println("warning: wompi webhook received without signature checksum; skipping strict validation")
-		return nil
+		return errors.New("missing wompi signature")
 	}
 
 	candidates := parseSignatureCandidates(rawSignature)
@@ -5826,6 +5825,7 @@ func WompiWebhookHandler(dbSuper *sql.DB, dbEmp ...*sql.DB) http.HandlerFunc {
 			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 			return
 		}
+		r.Body = http.MaxBytesReader(w, r.Body, 1<<20)
 
 		body, err := io.ReadAll(r.Body)
 		if err != nil {
@@ -6023,6 +6023,7 @@ func EpaycoCreateTransactionHandler(dbSuper *sql.DB) http.HandlerFunc {
 			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 			return
 		}
+		r.Body = http.MaxBytesReader(w, r.Body, 1<<20)
 
 		var payload struct {
 			LicenciaID       int64   `json:"licencia_id"`
