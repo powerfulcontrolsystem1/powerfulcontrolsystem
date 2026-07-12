@@ -37408,3 +37408,9 @@ Archivos modificados:
 2026-07-12: Transicion CSP controlada.
 - Se incorpora una politica `Content-Security-Policy-Report-Only` mas estricta
   como paso previo a retirar los origenes genericos de la politica aplicada.
+
+2026-07-12: Correccion CI de vulnerabilidades alcanzables.
+- El analizador usa Go 1.25 y el backend actualiza la dependencia existente
+  `github.com/jackc/pgx/v5` a 5.9.2. Esto elimina la alerta de placeholders SQL
+  de pgx y evita ejecutar el analisis sobre la biblioteca estandar vulnerable
+  de Go 1.23. No hubo despliegue, sincronizacion ni modificacion de datos.

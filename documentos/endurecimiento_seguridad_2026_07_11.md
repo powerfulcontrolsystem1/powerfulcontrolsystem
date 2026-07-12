@@ -38,6 +38,10 @@ Estado: preparado en la rama `security/full-hardening`; no desplegado.
 - La CSP estricta se publica inicialmente mediante
   `Content-Security-Policy-Report-Only`: elimina destinos comodin de conexiones
   y agrega `form-action 'self'` sin bloquear aun el frontend heredado.
+- El workflow y el modulo usan Go 1.25 para que `govulncheck` analice una
+  biblioteca estandar con los parches vigentes; `pgx/v5` se actualiza a 5.9.2,
+  que corrige la vulnerabilidad de confusion de placeholders SQL reportada por
+  el escaner.
 
 ## Variables nuevas o modificadas
 
