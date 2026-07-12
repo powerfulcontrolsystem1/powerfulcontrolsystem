@@ -357,14 +357,33 @@ func resolveRequestHost(r *http.Request) string {
 	return strings.TrimSpace(r.Host)
 }
 
+func resolveRequestScheme(r *http.Request) string {
+	if r == nil {
+		return ""
+	}
+	if RequestFromTrustedProxy(r) {
+		if scheme := strings.ToLower(firstForwardedHeaderValue(r.Header.Get("X-Forwarded-Proto"))); scheme == "http" || scheme == "https" {
+			return scheme
+		}
+	}
+	if r.TLS != nil {
+		return "https"
+	}
+	if scheme := strings.ToLower(strings.TrimSpace(r.URL.Scheme)); scheme == "http" || scheme == "https" {
+		return scheme
+	}
+	return "http"
+}
+
 // IsSameOriginRequest validates browser Origin/Referer against the effective
 // host. It is used for authenticated cookie mutations and WebSocket upgrades.
 func IsSameOriginRequest(r *http.Request) bool {
 	if r == nil {
 		return false
 	}
-	requestHost := requestHostWithoutPort(resolveRequestHost(r))
-	if requestHost == "" {
+	requestHost := strings.TrimSpace(resolveRequestHost(r))
+	requestScheme := resolveRequestScheme(r)
+	if requestHost == "" || requestScheme == "" {
 		return false
 	}
 	for _, header := range []string{"Origin", "Referer"} {
@@ -373,10 +392,19 @@ func IsSameOriginRequest(r *http.Request) bool {
 			continue
 		}
 		parsed, err := url.Parse(raw)
-		if err != nil || parsed.Host == "" {
+		if err != nil || parsed.Host == "" || parsed.User != nil {
 			return false
 		}
-		return strings.EqualFold(requestHostWithoutPort(parsed.Host), requestHost)
+		if strings.EqualFold(parsed.Scheme, requestScheme) && strings.EqualFold(parsed.Host, requestHost) {
+			return true
+		}
+		for _, allowed := range strings.Split(os.Getenv("PCS_CSRF_ALLOWED_ORIGINS"), ",") {
+			origin, parseErr := url.Parse(strings.TrimSpace(allowed))
+			if parseErr == nil && origin.Scheme != "" && origin.Host != "" && strings.EqualFold(parsed.Scheme, origin.Scheme) && strings.EqualFold(parsed.Host, origin.Host) {
+				return true
+			}
+		}
+		return false
 	}
 	return false
 }
