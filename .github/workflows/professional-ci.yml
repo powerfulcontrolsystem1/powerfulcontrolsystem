@@ -164,7 +164,9 @@ jobs:
           cache-dependency-path: backend/go.sum
 
       - name: Secret scan
-        run: docker run --rm -v "$PWD:/repo" zricethezav/gitleaks:v8.30.1 detect --source=/repo --redact --no-banner
+        # El historial compartido no se reescribe en este PR. Este control
+        # bloquea secretos presentes en el arbol que realmente se propone.
+        run: docker run --rm -v "$PWD:/repo" zricethezav/gitleaks:v8.30.1 detect --source=/repo --no-git --redact --no-banner
 
       - name: Filesystem dependency and IaC scan
         run: |

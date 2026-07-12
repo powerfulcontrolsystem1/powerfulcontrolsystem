@@ -56,7 +56,7 @@ func PublicMarketSymbolHandler() http.HandlerFunc {
 
 		w.Header().Set("Content-Type", "application/json")
 		w.Header().Set("Cache-Control", "public, max-age=120")
-		_ = encodeJSONResponse(w, payload)
+		encodeJSONResponse(w, payload)
 	}
 }
 
@@ -64,5 +64,5 @@ func writeEmptyMarketSymbol(w http.ResponseWriter) {
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("Cache-Control", "public, max-age=30")
 	w.WriteHeader(http.StatusOK)
-	_ = encodeJSONResponse(w, map[string]interface{}{"symbols": []interface{}{}})
+	encodeJSONResponse(w, map[string]interface{}{"symbols": []interface{}{}})
 }

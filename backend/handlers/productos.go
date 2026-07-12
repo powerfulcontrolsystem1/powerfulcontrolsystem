@@ -255,7 +255,7 @@ func writeProductosExport(w http.ResponseWriter, r *http.Request, dbEmp *sql.DB,
 	case "json":
 		w.Header().Set("Content-Type", "application/json; charset=utf-8")
 		w.Header().Set("Content-Disposition", `attachment; filename="`+filename+`.json"`)
-		_ = encodeJSONResponse(w, map[string]interface{}{"empresa_id": empresaID, "total": len(rows), "productos": rows})
+		encodeJSONResponse(w, map[string]interface{}{"empresa_id": empresaID, "total": len(rows), "productos": rows})
 	case "html", "carta", "pos", "imprimir":
 		if formato == "pos" {
 			pageSize = "pos"
@@ -458,7 +458,7 @@ func writeProductoPrecioHistorialExport(w http.ResponseWriter, r *http.Request, 
 	default:
 		w.Header().Set("Content-Type", "application/json; charset=utf-8")
 		w.Header().Set("Content-Disposition", `attachment; filename="`+filename+`.json"`)
-		_ = encodeJSONResponse(w, map[string]interface{}{"empresa_id": empresaID, "total": len(rows), "historial": rows})
+		encodeJSONResponse(w, map[string]interface{}{"empresa_id": empresaID, "total": len(rows), "historial": rows})
 	}
 }
 
@@ -524,7 +524,7 @@ func handleProductosImport(w http.ResponseWriter, r *http.Request, dbEmp *sql.DB
 		}
 	}
 	w.Header().Set("Content-Type", "application/json")
-	_ = encodeJSONResponse(w, map[string]interface{}{
+	encodeJSONResponse(w, map[string]interface{}{
 		"ok":         errores == 0,
 		"empresa_id": empresaID,
 		"creados":    creados,

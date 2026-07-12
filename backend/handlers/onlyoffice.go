@@ -925,7 +925,7 @@ func OnlyOfficeDocumentosHandler(dbSuper *sql.DB) http.HandlerFunc {
 				return
 			}
 			tmp := full + ".new"
-			if writeErr := os.WriteFile(tmp, fileBytes, 0640); writeErr != nil {
+			if writeErr := os.WriteFile(tmp, fileBytes, 0600); writeErr != nil {
 				http.Error(w, "no se pudo escribir el archivo", http.StatusInternalServerError)
 				return
 			}

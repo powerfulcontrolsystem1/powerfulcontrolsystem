@@ -120,7 +120,7 @@ func SessionCookieSecure(r *http.Request) bool {
 func writeAdminAuthJSON(w http.ResponseWriter, status int, payload map[string]interface{}) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
-	_ = encodeJSONResponse(w, payload)
+	encodeJSONResponse(w, payload)
 }
 
 func writeAdminAuthError(w http.ResponseWriter, status int, message string) {

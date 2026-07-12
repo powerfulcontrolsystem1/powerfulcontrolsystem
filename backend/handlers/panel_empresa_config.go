@@ -127,7 +127,7 @@ func EmpresaPanelConfiguracionHandler(dbEmp *sql.DB) http.HandlerFunc {
 				http.Error(w, "empresa_id es obligatorio", http.StatusBadRequest)
 				return
 			}
-			_ = encodeJSONResponse(w, empresaPanelConfigResponseFromDB(dbEmp, empresaID))
+			encodeJSONResponse(w, empresaPanelConfigResponseFromDB(dbEmp, empresaID))
 		case http.MethodPost, http.MethodPut:
 			var payload empresaPanelConfigPayload
 			if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
@@ -170,7 +170,7 @@ func EmpresaPanelConfiguracionHandler(dbEmp *sql.DB) http.HandlerFunc {
 					return
 				}
 			}
-			_ = encodeJSONResponse(w, empresaPanelConfigResponseFromDB(dbEmp, empresaID))
+			encodeJSONResponse(w, empresaPanelConfigResponseFromDB(dbEmp, empresaID))
 		default:
 			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 		}

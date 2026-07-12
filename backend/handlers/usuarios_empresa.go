@@ -257,7 +257,7 @@ func writeEmpresaUsuarioContractRequirement(w http.ResponseWriter, item *dbpkg.E
 	if contract != nil {
 		response["contract"] = contract
 	}
-	_ = encodeJSONResponse(w, response)
+	encodeJSONResponse(w, response)
 }
 
 func empresaUsuarioPublicPayload(item *dbpkg.EmpresaUsuario) map[string]interface{} {
@@ -305,7 +305,7 @@ func writeEmpresaUsuarioDuplicateResponse(w http.ResponseWriter, empresaID int64
 		response["email_confirmado"] = existing.EmailConfirmado
 		response["estado"] = existing.Estado
 	}
-	_ = encodeJSONResponse(w, response)
+	encodeJSONResponse(w, response)
 }
 
 func empresaUsuarioEstadoBloqueaPrimerIngreso(item *dbpkg.EmpresaUsuario) bool {

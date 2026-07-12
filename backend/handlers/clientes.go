@@ -233,12 +233,10 @@ func writeJSON(w http.ResponseWriter, status int, payload interface{}) {
 	}
 }
 
-func encodeJSONResponse(w http.ResponseWriter, payload interface{}) error {
+func encodeJSONResponse(w http.ResponseWriter, payload interface{}) {
 	if err := json.NewEncoder(w).Encode(payload); err != nil {
 		log.Printf("[http] write json response error: %v", err)
-		return err
 	}
-	return nil
 }
 
 func parseClienteIDFromQuery(r *http.Request) (int64, error) {
