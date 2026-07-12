@@ -37432,3 +37432,9 @@ Archivos modificados:
 - `SECURITY.md` define versiones soportadas, reporte privado, plazo de primera
   respuesta, alcance, exclusiones, divulgacion coordinada, incidente y politica
   de actualizacion sin exponer datos sensibles.
+
+2026-07-12: Correccion final de dependencias detectadas por govulncheck.
+- El CI usa Go 1.25.12 y el modulo actualiza `x/net` 0.55.0, `x/crypto` 0.52.0,
+  `x/sys` 0.45.0, `x/sync` 0.20.0 y `x/text` 0.37.0. Corrige los IDs
+  GO-2026-5856, GO-2026-4970 y los hallazgos alcanzables de las versiones
+  antiguas de x/net/x/crypto/x/sys.
