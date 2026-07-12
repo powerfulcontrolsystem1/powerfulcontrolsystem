@@ -33,6 +33,8 @@ Estado: preparado en la rama `security/full-hardening`; no desplegado.
 - La cache de autenticacion tiene invalidacion explicita por token y por
   administrador, ademas del TTL cero, para que logout, reset y cambio de 2FA
   surtan efecto inmediatamente.
+- El workflow `Professional CI` se ejecuta tambien en ramas `security/**`,
+  ademas de pull requests, ramas principales y ejecucion manual.
 
 ## Variables nuevas o modificadas
 
