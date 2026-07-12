@@ -474,7 +474,7 @@ func runSuperVPS2SSH(cfg superVPS2Config, remoteCommand string, timeout time.Dur
 			return "", fmt.Errorf("VPS2 sin llave SSH ni password configurado en entorno privado")
 		}
 		args = append(args, cfg.User+"@"+cfg.Host, remoteCommand)
-		out, err := exec.CommandContext(ctx, plink, args...).CombinedOutput()
+		out, err := exec.CommandContext(ctx, plink, args...).CombinedOutput() // #nosec G204 -- executable is resolved locally; arguments are separate and remoteCommand is built only by closed server-side actions with shell-quoted paths.
 		return string(out), err
 	}
 
@@ -483,7 +483,7 @@ func runSuperVPS2SSH(cfg superVPS2Config, remoteCommand string, timeout time.Dur
 		args = append(args, "-i", cfg.IdentityFile)
 	}
 	args = append(args, cfg.User+"@"+cfg.Host, remoteCommand)
-	out, err := exec.CommandContext(ctx, "ssh", args...).CombinedOutput()
+	out, err := exec.CommandContext(ctx, "ssh", args...).CombinedOutput() // #nosec G204 -- executable and options are fixed; the authenticated target and closed remote action are passed as separate arguments.
 	return string(out), err
 }
 
