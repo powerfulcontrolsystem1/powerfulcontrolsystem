@@ -20,6 +20,8 @@ Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 
 $repoRoot = Resolve-Path (Join-Path $PSScriptRoot "..")
+$repoRoot = $repoRoot.Path
+Set-Location -LiteralPath $repoRoot
 $reportRoot = Join-Path $repoRoot $ReportDir
 if (-not (Test-Path -LiteralPath $reportRoot)) {
   New-Item -ItemType Directory -Path $reportRoot -Force | Out-Null
