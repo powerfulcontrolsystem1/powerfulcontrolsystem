@@ -1302,6 +1302,7 @@ func ListEmpresaComisionServicioMovimientos(dbConn *sql.DB, empresaID int64, fil
 	}
 
 	whereSQL, args := buildEmpresaComisionServicioMovWhere(empresaID, filter)
+	// #nosec G201 -- whereSQL is composed only from fixed clauses in buildEmpresaComisionServicioMovWhere; every external value is kept in args.
 	query := fmt.Sprintf(`SELECT
 		id,
 		empresa_id,

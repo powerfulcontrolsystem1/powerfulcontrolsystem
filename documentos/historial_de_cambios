@@ -37450,3 +37450,8 @@ Archivos modificados:
 - Las únicas excepciones criptográficas señaladas permanecen limitadas a TOTP
   RFC 6238 y a la firma exigida por ePayco Classic; no se usan para contraseñas,
   secretos ni integridad interna.
+2026-07-12: SQL dinámico auditado en comisiones y carritos.
+- Las cláusulas dinámicas de movimientos de comisión provienen exclusivamente de
+  fragmentos internos y los filtros se mantienen parametrizados. Las tablas de
+  conteo de carrito están limitadas a una lista cerrada antes de formar la
+  consulta; ambos contratos quedan cubiertos por el escáner G201.
