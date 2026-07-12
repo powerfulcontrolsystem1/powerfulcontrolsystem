@@ -3,7 +3,6 @@ package handlers
 import (
 	"bufio"
 	"database/sql"
-	"fmt"
 	"net/http"
 	"os/exec"
 	"runtime"
@@ -48,7 +47,8 @@ func SuperVPSProcessesHandler(dbSuper *sql.DB) http.HandlerFunc {
 		}
 
 		// BusyBox/Alpine no soporta --sort ni columnas pmem/pcpu; Go ordena despues.
-		cmd := exec.Command("sh", "-lc", fmt.Sprintf("ps -o pid,comm,rss,args | head -n %d", limit+8))
+		// Ejecutar ps sin shell evita interpolar valores en un comando del sistema.
+		cmd := exec.Command("ps", "-o", "pid,comm,rss,args")
 		out, err := cmd.Output()
 		if err != nil {
 			writeJSON(w, http.StatusBadGateway, map[string]any{"ok": false, "error": "No se pudo ejecutar ps en el VPS"})

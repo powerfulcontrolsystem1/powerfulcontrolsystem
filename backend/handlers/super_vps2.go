@@ -79,6 +79,9 @@ type superVPS2FilesResponse struct {
 // SuperVPS2Handler administra solo acciones cerradas sobre el VPS2. No acepta comandos libres.
 func SuperVPS2Handler(dbSuper *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		if _, ok := paginaPrincipalRequireSuperAdmin(w, r, dbSuper); !ok {
+			return
+		}
 		cfg := loadSuperVPS2Config(dbSuper)
 		action := strings.TrimSpace(r.URL.Query().Get("action"))
 		if action == "" {
