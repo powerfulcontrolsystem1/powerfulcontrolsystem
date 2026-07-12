@@ -2,6 +2,8 @@ module github.com/you/pos-backend
 
 go 1.25.0
 
+toolchain go1.25.12
+
 require (
 	github.com/gorilla/websocket v1.5.3
 	github.com/jackc/pgx/v5 v5.9.2

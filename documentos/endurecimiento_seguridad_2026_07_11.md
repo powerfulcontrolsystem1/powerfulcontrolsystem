@@ -52,6 +52,10 @@ Estado: preparado en la rama `security/full-hardening`; no desplegado.
   alcanzables en `x/net`, `x/crypto` y `x/sys`; se actualizan respectivamente
   a 0.55.0, 0.52.0 y 0.45.0, las versiones corregidas reportadas por
   `govulncheck`.
+- El módulo y la imagen de compilación de producción fijan también el toolchain
+  Go 1.25.12. Con esa versión, `govulncheck v1.1.4` informa cero
+  vulnerabilidades alcanzables; la advertencia de módulo sobre `openpgp` no es
+  alcanzable por el código del proyecto.
 - El CI no despliega por eventos `push`: cualquier despliegue debe vivir en un
   workflow manual y protegido. Las verificaciones de vulnerabilidades y analisis
   estatico se ejecutan como pasos independientes, junto con `go mod verify` y

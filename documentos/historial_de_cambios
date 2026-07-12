@@ -37492,3 +37492,8 @@ Archivos modificados:
   archivos locales no se eliminan y quedan cubiertos por `.gitignore`.
 - La limpieza del historial público y la rotación de la credencial afectada se
   tratan como acciones separadas después del respaldo completo de referencias.
+
+2026-07-12: Runtime Go de producción alineado con parches de seguridad.
+- El módulo declara `toolchain go1.25.12` y la imagen de compilación usa
+  `golang:1.25.12-alpine`, la misma versión del CI. `govulncheck` confirma cero
+  vulnerabilidades alcanzables con esa biblioteca estándar.
