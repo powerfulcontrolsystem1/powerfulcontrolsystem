@@ -16735,3 +16735,8 @@ Archivos modificados:
 Archivos modificados:
 - documentos/historial_de_cambios
 - web/login.html
+
+2026-07-12 14:49:37 - Mensaje: rs: actualizar repositorio y sincronizar VPS; Commit: a80a44ed; PushStatus: OK
+Archivos modificados:
+- deploy/docker/backend.Dockerfile
+- documentos/historial_de_cambios
