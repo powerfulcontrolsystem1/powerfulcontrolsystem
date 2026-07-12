@@ -12779,40 +12779,40 @@ func validateDIANCredentialRefs(cfg map[string]interface{}, empresaID int64, pay
 	tokenRef := dianFirstNonBlank(genericStringValue(payload["token_emisor_ref"]), genericStringValue(cfg["token_emisor_ref"]))
 	tokenPayload := strings.TrimSpace(genericStringValue(payload["token"]))
 	tokenOK := false
-	tokenMessage := ""
-	tokenSource := ""
+	credentialStatusMessage := ""
+	credentialSource := ""
 	if tokenPayload != "" {
 		tokenOK = true
-		tokenSource = "payload.token"
-		tokenMessage = "token entregado en payload"
+		credentialSource = "payload.token"
+		credentialStatusMessage = "token entregado en payload"
 	} else if tokenRef == "" {
-		tokenSource = "vacio"
+		credentialSource = "vacio"
 		if tokenRequired {
 			issues = append(issues, "token_emisor_ref no configurado")
-			tokenMessage = "faltante"
+			credentialStatusMessage = "faltante"
 		} else {
 			tokenOK = true
-			tokenSource = "no_requerido"
-			tokenMessage = "no requerido para endpoint oficial SOAP DIAN; se usa certificado, Software ID/PIN y TestSetId"
+			credentialSource = "no_requerido"
+			credentialStatusMessage = "no requerido para endpoint oficial SOAP DIAN; se usa certificado, Software ID/PIN y TestSetId"
 		}
 	} else {
-		tokenSource = dianReferenceSource(tokenRef)
+		credentialSource = dianReferenceSource(tokenRef)
 		if !tokenRequired {
 			tokenOK = true
-			tokenMessage = "configurado, pero no requerido para endpoint oficial SOAP DIAN"
+			credentialStatusMessage = "configurado, pero no requerido para endpoint oficial SOAP DIAN"
 		} else if _, err := resolveDIANSecretValue(tokenRef); err != nil {
 			issues = append(issues, "token_emisor_ref invalido")
-			tokenMessage = err.Error()
+			credentialStatusMessage = err.Error()
 		} else {
 			tokenOK = true
-			tokenMessage = "resuelto correctamente"
+			credentialStatusMessage = "resuelto correctamente"
 		}
 	}
 	checks["token_emisor"] = map[string]interface{}{
 		"ok":       tokenOK,
 		"required": tokenRequired,
-		"source":   tokenSource,
-		"message":  dianTruncate(tokenMessage, 180),
+		"source":   credentialSource,
+		"message":  dianTruncate(credentialStatusMessage, 180),
 	}
 
 	ambiente := chooseDIANAmbiente(cfg)

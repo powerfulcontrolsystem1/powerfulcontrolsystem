@@ -1552,8 +1552,8 @@ func main() {
 	http.HandleFunc("/api/voice_stream/tts", handlers.VoiceStreamTTSProxyHandler(dbSuper))
 	http.HandleFunc("/api/chat_flotante/preferencias", handlers.ChatFlotantePreferenciasHandler(dbSuper, dbEmpresas))
 	// Endpoints para generar y descargar documentos dinamicos asistidos por IA.
-	http.HandleFunc("/generate", handlers.DynamicDocumentGenerateHandler(dbEmpresas, dbSuper))
-	http.HandleFunc("/download", handlers.DynamicDocumentDownloadHandler(dbSuper))
+	http.HandleFunc("/generate", handlers.WithEmpresaSeguridadPermissions(dbEmpresas, dbSuper, handlers.DynamicDocumentGenerateHandler(dbEmpresas, dbSuper)))
+	http.HandleFunc("/download", handlers.DynamicDocumentDownloadHandler(dbEmpresas, dbSuper))
 	superAIChatController := handlers.NewSuperAIChatController(dbEmpresas, dbSuper)
 	http.HandleFunc("/super/api/chat_con_ia_global/modelos", superAIChatController.ModelosHandler)
 	http.HandleFunc("/super/api/chat_con_ia_global/modelo_preferido", superAIChatController.ModeloPreferidoHandler)
