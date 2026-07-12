@@ -37458,6 +37458,11 @@ Archivos modificados:
   declarada por `backend/go.mod`; esto permite reconstruir el stack Docker y
   publicar las correcciones de autenticacion.
 
+2026-07-12: Navegación de soluciones por negocio.
+- El grupo `Soluciones por negocio` se traslada desde el menú principal de
+  Administrar empresa al menú interno de Configuración. Conserva las rutas,
+  claves de permiso y el aislamiento empresarial existentes.
+
 2026-07-12: rs: actualizar repositorio y sincronizar VPS
 PushStatus: OK
 Archivos modificados:
