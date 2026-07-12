@@ -413,6 +413,21 @@ func isCookieAuthenticatedMutation(r *http.Request) bool {
 	if r == nil || isWebSocketUpgrade(r) {
 		return false
 	}
+	// Login, registration and recovery endpoints are intentionally public. A
+	// stale cookie from an earlier browser session must not convert them into an
+	// authenticated mutation and block access before the handler can rotate it.
+	switch r.URL.Path {
+	case "/super/api/administradores/register",
+		"/super/api/administradores/login",
+		"/super/api/administradores/solicitar_recuperacion",
+		"/super/api/administradores/restablecer_password",
+		"/api/empresa/usuarios/login",
+		"/api/empresa/usuarios/establecer_password",
+		"/api/empresa/usuarios/recuperar_invitacion",
+		"/api/empresa/usuarios/solicitar_recuperacion_password",
+		"/api/empresa/usuarios/restablecer_password":
+		return false
+	}
 	switch r.Method {
 	case http.MethodPost, http.MethodPut, http.MethodPatch, http.MethodDelete:
 		_, err := r.Cookie("session_token")
