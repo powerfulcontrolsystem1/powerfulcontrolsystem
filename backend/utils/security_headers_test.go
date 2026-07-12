@@ -3,6 +3,7 @@ package utils
 import (
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 )
 
@@ -35,5 +36,9 @@ func TestSecurityHeadersAndNoStoreOnLogin(t *testing.T) {
 	}
 	if rec.Header().Get("Content-Security-Policy") == "" {
 		t.Fatal("CSP header missing")
+	}
+	reportOnly := rec.Header().Get("Content-Security-Policy-Report-Only")
+	if reportOnly == "" || strings.Contains(reportOnly, "connect-src 'self' https:") || !strings.Contains(reportOnly, "form-action 'self'") {
+		t.Fatalf("tightened CSP report-only policy missing or overly broad: %q", reportOnly)
 	}
 }
