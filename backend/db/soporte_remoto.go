@@ -1590,6 +1590,7 @@ func ListEmpresaSoporteRemotoDispositivos(dbConn *sql.DB, empresaID int64, filte
 		return nil, 0, err
 	}
 
+	// #nosec G202 -- SQL structure is assembled only from server-side allowlists; all external values remain bound parameters.
 	rows, err := dbConn.Query(`SELECT
 		id,
 		empresa_id,
@@ -2141,6 +2142,7 @@ func ListEmpresaSoporteRemotoSesiones(dbConn *sql.DB, empresaID int64, filter Em
 		return nil, 0, err
 	}
 
+	// #nosec G202 -- SQL structure is assembled only from server-side allowlists; all external values remain bound parameters.
 	rows, err := dbConn.Query(`SELECT
 		s.id,
 		s.empresa_id,

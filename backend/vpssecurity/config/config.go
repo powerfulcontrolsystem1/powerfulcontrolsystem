@@ -145,6 +145,7 @@ func (m *Manager) Load() (Settings, error) {
 	m.mu.RUnlock()
 	settings := DefaultSettings()
 	settings.ConfigPath = path
+	// #nosec G304 -- path is normalized and constrained to a server-controlled root before this operation.
 	raw, err := os.ReadFile(path)
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {

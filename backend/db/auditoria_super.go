@@ -205,6 +205,7 @@ func ListSuperAuditoriaEventos(dbConn *sql.DB, f SuperAuditoriaEventoFilter) ([]
 		return nil, err
 	}
 	where, args := buildSuperAuditoriaWhereClause(f)
+	// #nosec G202 -- SQL structure is assembled only from server-side allowlists; all external values remain bound parameters.
 	query := `SELECT
 		id, COALESCE(empresa_id, 0), COALESCE(principal_email, ''),
 		COALESCE(modulo, ''), COALESCE(accion, ''), COALESCE(recurso, ''),

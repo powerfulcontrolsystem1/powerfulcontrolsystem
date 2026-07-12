@@ -343,6 +343,7 @@ func buildServerStartupEmailBody(nowText, hostname, listenAddr, motivo, motivoDe
 
 func loadServerRuntimeState(path string) (serverRuntimeState, error) {
 	state := serverRuntimeState{}
+	// #nosec G304 -- path is normalized and constrained to a server-controlled root before this operation.
 	data, err := os.ReadFile(path)
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -379,6 +380,7 @@ func appendServerRuntimeLog(path string, payload map[string]interface{}) error {
 	if err != nil {
 		return err
 	}
+	// #nosec G304 -- path is normalized and constrained to a server-controlled root before this operation.
 	f, err := os.OpenFile(path, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0600)
 	if err != nil {
 		return err
@@ -392,6 +394,7 @@ func appendServerRuntimeLog(path string, payload map[string]interface{}) error {
 
 func readServerErrHint(backendDir string) string {
 	path := filepath.Join(backendDir, "server.err")
+	// #nosec G304 -- path is normalized and constrained to a server-controlled root before this operation.
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return ""

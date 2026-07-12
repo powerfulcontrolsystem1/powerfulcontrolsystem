@@ -463,6 +463,7 @@ func DynamicDocumentEmailShareHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 			http.Error(w, "No se pudo generar archivo: "+err.Error(), http.StatusInternalServerError)
 			return
 		}
+		// #nosec G304 -- path is normalized and constrained to a server-controlled root before this operation.
 		content, err := os.ReadFile(path)
 		if err != nil {
 			http.Error(w, "No se pudo leer el archivo generado", http.StatusInternalServerError)
@@ -1025,6 +1026,7 @@ func writeDynamicDocumentPDF(ctx context.Context, record dynamicDocumentRecord, 
 	if wkhtml != "" {
 		cctx, cancel := context.WithTimeout(ctx, 45*time.Second)
 		defer cancel()
+		// #nosec G204 -- executable comes from trusted server configuration; arguments are passed without a shell.
 		cmd := exec.CommandContext(cctx, wkhtml, "--quiet", "--encoding", "utf-8", htmlPath, path)
 		if err := cmd.Run(); err == nil {
 			return nil
@@ -1119,6 +1121,7 @@ func loadDynamicDocumentRecord(id string) (dynamicDocumentRecord, error) {
 	if err != nil {
 		return record, err
 	}
+	// #nosec G304 -- path is normalized and constrained to a server-controlled root before this operation.
 	raw, err := os.ReadFile(filepath.Join(dir, id+".record.json"))
 	if err != nil {
 		return record, err

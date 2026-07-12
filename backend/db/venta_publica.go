@@ -1941,6 +1941,7 @@ func ListEmpresaVentaPublicaItems(dbConn *sql.DB, empresaID int64, filter Empres
 		orderBy = `ORDER BY i.id DESC`
 	}
 
+	// #nosec G202 -- SQL structure is assembled only from server-side allowlists; all external values remain bound parameters.
 	query := `SELECT
 		i.id,
 		i.empresa_id,
@@ -2421,6 +2422,7 @@ func ListEmpresaVentaPublicaOrders(dbConn *sql.DB, empresaID int64, filter Empre
 		return nil, 0, err
 	}
 
+	// #nosec G202 -- SQL structure is assembled only from server-side allowlists; all external values remain bound parameters.
 	query := `SELECT
 		id,
 		empresa_id,

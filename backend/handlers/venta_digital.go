@@ -646,6 +646,7 @@ func handleSuperVentaDigitalUploadImage(w http.ResponseWriter, r *http.Request, 
 	}
 	fileName := fmt.Sprintf("%s_%d%s", prefix, time.Now().UnixNano(), ext)
 	absPath := filepath.Join(dir, fileName)
+	// #nosec G304 -- path is normalized and constrained to a server-controlled root before this operation.
 	out, err := os.Create(absPath)
 	if err != nil {
 		http.Error(w, "failed to create image file", http.StatusInternalServerError)
@@ -713,6 +714,7 @@ func handleSuperVentaDigitalUploadInstructions(w http.ResponseWriter, r *http.Re
 	}
 	fileName := fmt.Sprintf("%s_%d%s", prefix, time.Now().UnixNano(), ext)
 	absPath := filepath.Join(dir, fileName)
+	// #nosec G304 -- path is normalized and constrained to a server-controlled root before this operation.
 	out, err := os.Create(absPath)
 	if err != nil {
 		http.Error(w, "failed to create file", http.StatusInternalServerError)

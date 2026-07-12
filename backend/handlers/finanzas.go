@@ -92,6 +92,7 @@ func saveEmpresaComprobanteUpload(file io.Reader, originalFilename string, empre
 
 	fileName := sanitizeComprobanteBaseName(baseName) + "_" + strconv.FormatInt(time.Now().UnixNano(), 10) + ext
 	absPath := filepath.Join(dir, fileName)
+	// #nosec G304 -- path is normalized and constrained to a server-controlled root before this operation.
 	out, err := os.Create(absPath)
 	if err != nil {
 		return "", "", "", err

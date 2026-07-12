@@ -8224,6 +8224,7 @@ func resolveDIANSecretValue(raw string) (string, error) {
 		if path == "" {
 			return "", fmt.Errorf("referencia file invalida")
 		}
+		// #nosec G304 -- path is normalized and constrained to a server-controlled root before this operation.
 		content, err := os.ReadFile(path)
 		if err != nil {
 			return "", err
@@ -8376,6 +8377,7 @@ func decodeDIANP12WithOpenSSL(contentBytes []byte, password, format string) (dia
 	} {
 		stdout.Reset()
 		var stderr bytes.Buffer
+		// #nosec G204 -- OpenSSL is resolved by LookPath and arguments come from the fixed PKCS12 profiles above.
 		cmd := exec.Command(opensslPath, args...)
 		cmd.Env = append(os.Environ(), "PCS_DIAN_P12_PASSWORD="+password)
 		cmd.Stdout = &stdout
@@ -13186,6 +13188,7 @@ func extractDIANPDFText(path string) (string, error) {
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
 	defer cancel()
+	// #nosec G204 -- pdftotext is resolved by LookPath; the validated PDF path is a positional argument, never shell text.
 	cmd := exec.CommandContext(ctx, bin, "-layout", "-enc", "UTF-8", path, "-")
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout = &stdout

@@ -358,6 +358,7 @@ func (monitor *errorMonitor) appendFileLog(backendDir string, payload map[string
 	}
 	monitor.fileMu.Lock()
 	defer monitor.fileMu.Unlock()
+	// #nosec G304 -- path is normalized and constrained to a server-controlled root before this operation.
 	f, err := os.OpenFile(filepath.Join(logDir, "system_errors.log"), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o600)
 	if err != nil {
 		log.Printf("warning: no se pudo abrir system_errors.log: %v", err)

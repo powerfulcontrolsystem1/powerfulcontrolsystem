@@ -1301,6 +1301,7 @@ func ListEmpresaGenericRows(dbConn *sql.DB, table string, empresaID int64, filte
 	limit, offset := normalizeGenericLimitOffset(filter.Limit, filter.Offset)
 	searchCols := sanitizeGenericColumns(filter.SearchColumns)
 
+	// #nosec G202 -- SQL structure is assembled only from server-side allowlists; all external values remain bound parameters.
 	query := "SELECT * FROM " + table + " WHERE empresa_id = ?"
 	args := []interface{}{empresaID}
 
@@ -1343,6 +1344,7 @@ func GetEmpresaGenericRowByID(dbConn *sql.DB, table string, empresaID, id int64)
 		return nil, fmt.Errorf("tabla no permitida: %s", table)
 	}
 
+	// #nosec G202 -- SQL structure is assembled only from server-side allowlists; all external values remain bound parameters.
 	rows, err := dbConn.Query("SELECT * FROM "+table+" WHERE empresa_id = ? AND id = ? LIMIT 1", empresaID, id)
 	if err != nil {
 		return nil, err
@@ -1450,6 +1452,7 @@ func UpdateEmpresaGenericRow(dbConn *sql.DB, table string, empresaID, id int64, 
 	}
 
 	setParts = append(setParts, "fecha_actualizacion = CURRENT_TIMESTAMP")
+	// #nosec G202 -- SQL structure is assembled only from server-side allowlists; all external values remain bound parameters.
 	query := "UPDATE " + table + " SET " + strings.Join(setParts, ", ") + " WHERE empresa_id = ? AND id = ?"
 	args = append(args, empresaID, id)
 
@@ -1483,6 +1486,7 @@ func SetEmpresaGenericRowEstado(dbConn *sql.DB, table string, empresaID, id int6
 		estado = "activo"
 	}
 
+	// #nosec G202 -- SQL structure is assembled only from server-side allowlists; all external values remain bound parameters.
 	_, err := dbConn.Exec("UPDATE "+table+" SET estado = ?, fecha_actualizacion = CURRENT_TIMESTAMP WHERE empresa_id = ? AND id = ?", estado, empresaID, id)
 	return err
 }

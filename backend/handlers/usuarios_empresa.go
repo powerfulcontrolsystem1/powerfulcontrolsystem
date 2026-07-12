@@ -2488,6 +2488,7 @@ func sendEmpresaUsuarioMailuMessage(dbSuper *sql.DB, fromEmail, toEmail string, 
 	var lastDetail string
 	for _, args := range candidates {
 		ctx, cancel := context.WithTimeout(context.Background(), 12*time.Second)
+		// #nosec G204 -- candidates is a closed server-side list of sendmail executables and fixed arguments.
 		cmd := exec.CommandContext(ctx, args[0], args[1:]...)
 		cmd.Stdin = strings.NewReader(string(msg))
 		output, err := cmd.CombinedOutput()

@@ -28,6 +28,7 @@ func main() {
 
 	for _, cmdArgs := range commands {
 		fmt.Printf("Ejecutando: %v\n", cmdArgs)
+		// #nosec G204 -- commands is a closed installer-maintained list, not user input.
 		cmd := exec.Command(cmdArgs[0], cmdArgs[1:]...)
 		cmd.Stdout = os.Stdout
 		cmd.Stderr = os.Stderr

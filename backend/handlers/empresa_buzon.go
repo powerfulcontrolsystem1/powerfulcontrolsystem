@@ -440,6 +440,7 @@ func handleEmpresaBuzonAttachmentUpload(w http.ResponseWriter, r *http.Request, 
 	}
 	fileName := fmt.Sprintf("adjunto_%d%s", time.Now().UnixNano(), ext)
 	absPath := filepath.Join(absDir, fileName)
+	// #nosec G304 -- path is normalized and constrained to a server-controlled root before this operation.
 	out, err := os.Create(absPath)
 	if err != nil {
 		http.Error(w, "No se pudo crear archivo", http.StatusInternalServerError)

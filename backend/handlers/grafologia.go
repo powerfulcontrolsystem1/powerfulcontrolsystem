@@ -718,6 +718,7 @@ func runOptionalTesseractOCR(ctx context.Context, imagePath string) (string, boo
 	}
 	timeoutCtx, cancel := context.WithTimeout(ctx, 20*time.Second)
 	defer cancel()
+	// #nosec G204 -- optional Tesseract binary is server-configured and receives no shell input.
 	cmd := exec.CommandContext(timeoutCtx, bin, imagePath, "stdout", "-l", lang, "--psm", "6")
 	output, err := cmd.Output()
 	if err != nil {

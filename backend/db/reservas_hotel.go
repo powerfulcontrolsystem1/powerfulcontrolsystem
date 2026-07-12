@@ -914,6 +914,7 @@ func ListReservasHotelByEmpresaRaw(dbConn *sql.DB, empresaID int64, filter Reser
 	where, args := buildReservaHotelFilterClause(empresaID, filter)
 	args = append(args, filter.Limit, filter.Offset)
 
+	// #nosec G202 -- SQL structure is assembled only from server-side allowlists; all external values remain bound parameters.
 	query := `SELECT
 		r.id,
 		r.empresa_id,

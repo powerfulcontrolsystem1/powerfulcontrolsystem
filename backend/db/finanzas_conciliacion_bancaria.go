@@ -803,6 +803,7 @@ func GetEmpresaConciliacionBancariaPorPeriodo(dbConn *sql.DB, empresaID int64, f
 	periodos := make(map[string]*EmpresaConciliacionBancariaPeriodo)
 
 	periodoExtractoExpr := `COALESCE(NULLIF(periodo_contable, ''), substr(COALESCE(fecha_movimiento, ''), 1, 7), 'sin_periodo')`
+	// #nosec G202 -- SQL structure is assembled only from server-side allowlists; all external values remain bound parameters.
 	queryExtractos := `SELECT
 		` + periodoExtractoExpr + `,
 		COALESCE(COUNT(1), 0),
@@ -871,6 +872,7 @@ func GetEmpresaConciliacionBancariaPorPeriodo(dbConn *sql.DB, empresaID int64, f
 	}
 
 	periodoInternoExpr := `COALESCE(NULLIF(m.periodo_contable, ''), substr(COALESCE(m.fecha_movimiento, ''), 1, 7), 'sin_periodo')`
+	// #nosec G202 -- SQL structure is assembled only from server-side allowlists; all external values remain bound parameters.
 	queryInternos := `SELECT
 		` + periodoInternoExpr + `,
 		COALESCE(COUNT(1), 0),

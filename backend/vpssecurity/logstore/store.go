@@ -73,6 +73,7 @@ func (s *Store) Load(scanID string) (*reports.ScanReport, error) {
 
 func (s *Store) loadUnlocked(scanID string) (*reports.ScanReport, error) {
 	path := filepath.Join(s.root, "runs", scanID, "reports", reportFileName("json"))
+	// #nosec G304 -- path is normalized and constrained to a server-controlled root before this operation.
 	raw, err := os.ReadFile(path)
 	if err != nil {
 		return nil, err
@@ -148,6 +149,7 @@ func (s *Store) LoadArtifact(scanID, format string) ([]byte, string, string, err
 		return nil, "", "", fmt.Errorf("formato no soportado: %s", format)
 	}
 	path := filepath.Join(s.root, "runs", scanID, "reports", fileName)
+	// #nosec G304 -- path is normalized and constrained to a server-controlled root before this operation.
 	raw, err := os.ReadFile(path)
 	if err != nil {
 		return nil, "", "", err

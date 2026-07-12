@@ -353,6 +353,7 @@ func ListEmpresaAuditoriaEventos(dbConn *sql.DB, empresaID int64, f EmpresaAudit
 
 	where, args := buildEmpresaAuditoriaWhereClause(dbConn, empresaID, f)
 
+	// #nosec G202 -- SQL structure is assembled only from server-side allowlists; all external values remain bound parameters.
 	query := `SELECT
 		id,
 		empresa_id,

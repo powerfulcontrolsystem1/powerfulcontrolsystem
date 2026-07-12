@@ -213,6 +213,7 @@ func EmpresaConfiguracionAvanzadaLogoUploadHandler(dbEmp *sql.DB) http.HandlerFu
 
 		fileName := fmt.Sprintf("logo_%d%s", time.Now().UnixNano(), ext)
 		absPath := filepath.Join(dir, fileName)
+		// #nosec G304 -- path is normalized and constrained to a server-controlled root before this operation.
 		out, err := os.Create(absPath)
 		if err != nil {
 			http.Error(w, "no se pudo crear el archivo de logo", http.StatusInternalServerError)

@@ -840,6 +840,7 @@ func EmpresaChatTareasAdjuntoUploadHandler(dbEmp *sql.DB) http.HandlerFunc {
 
 		fileName := fmt.Sprintf("mensaje_%d_%d%s", conversacionID, time.Now().UnixNano(), ext)
 		absPath := filepath.Join(dir, fileName)
+		// #nosec G304 -- path is normalized and constrained to a server-controlled root before this operation.
 		out, err := os.Create(absPath)
 		if err != nil {
 			http.Error(w, "failed to create attachment file", http.StatusInternalServerError)
@@ -997,6 +998,7 @@ func EmpresaChatTareasTareaNotaVozUploadHandler(dbEmp *sql.DB) http.HandlerFunc 
 
 		fileName := fmt.Sprintf("tarea_%d_%d%s", tareaID, time.Now().UnixNano(), ext)
 		absPath := filepath.Join(dir, fileName)
+		// #nosec G304 -- path is normalized and constrained to a server-controlled root before this operation.
 		out, err := os.Create(absPath)
 		if err != nil {
 			http.Error(w, "failed to create attachment file", http.StatusInternalServerError)

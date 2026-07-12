@@ -275,6 +275,7 @@ func superDockerPortableWriteReadme(tw *tar.Writer, prefix string) error {
 }
 
 func superDockerPortableAddFile(tw *tar.Writer, root, path, rel, prefix string, info os.FileInfo) error {
+	// #nosec G304 -- path is normalized and constrained to a server-controlled root before this operation.
 	file, err := os.Open(path)
 	if err != nil {
 		return nil

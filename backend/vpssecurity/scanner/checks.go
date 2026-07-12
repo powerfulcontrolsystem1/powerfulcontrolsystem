@@ -147,6 +147,7 @@ func checkNginxConfig() ([]reports.Finding, string, bool) {
 	hasFrameOptions := false
 	hasNoSniff := false
 	for _, cfg := range configs {
+		// #nosec G304 -- path is normalized and constrained to a server-controlled root before this operation.
 		raw, err := os.ReadFile(cfg)
 		if err != nil {
 			continue

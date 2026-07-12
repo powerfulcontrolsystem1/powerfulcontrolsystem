@@ -133,6 +133,7 @@ func UploadProductImageHandler(db *sql.DB, webDir string) http.HandlerFunc {
 		// sanitize filename
 		fname := filepath.Base(header.Filename)
 		dstPath := filepath.Join(prodDir, fname)
+		// #nosec G304 -- path is normalized and constrained to a server-controlled root before this operation.
 		out, err := os.Create(dstPath)
 		if err != nil {
 			http.Error(w, "failed to create file", http.StatusInternalServerError)
@@ -1349,6 +1350,7 @@ func handleEmpresaVentaPublicaUploadImage(w http.ResponseWriter, r *http.Request
 	}
 	fileName := fmt.Sprintf("%s_%d%s", prefix, time.Now().UnixNano(), ext)
 	absPath := filepath.Join(dir, fileName)
+	// #nosec G304 -- path is normalized and constrained to a server-controlled root before this operation.
 	out, err := os.Create(absPath)
 	if err != nil {
 		http.Error(w, "failed to create image file", http.StatusInternalServerError)

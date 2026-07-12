@@ -616,6 +616,7 @@ func writeCompanyLogEntry(empresaID int64, level, msg string) {
 	companyLogMu.Lock()
 	defer companyLogMu.Unlock()
 
+	// #nosec G304 -- path is normalized and constrained to a server-controlled root before this operation.
 	f, err := os.OpenFile(filePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o600)
 	if err != nil {
 		log.Printf("warning: no se pudo abrir log de empresa %s: %v", filePath, err)

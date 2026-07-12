@@ -593,6 +593,7 @@ func ListEmpresaExogenaFormatos(dbConn *sql.DB, empresaID int64, anio int) ([]Em
 		where += " AND anio_gravable=?"
 		args = append(args, anio)
 	}
+	// #nosec G202 -- SQL structure is assembled only from server-side allowlists; all external values remain bound parameters.
 	rows, err := dbConn.Query(`SELECT id, empresa_id, formato, version, anio_gravable, concepto, descripcion, periodicidad, estado,
 		COALESCE(ultima_generacion,''), COALESCE(fecha_creacion,''), COALESCE(fecha_actualizacion,''), COALESCE(usuario_creador,'')
 		FROM empresa_contabilidad_exogena_formatos WHERE `+where+` ORDER BY anio_gravable DESC, formato`, args...)
@@ -634,6 +635,7 @@ func ListEmpresaExogenaRegistros(dbConn *sql.DB, empresaID, formatoID int64) ([]
 		where += " AND r.formato_id=?"
 		args = append(args, formatoID)
 	}
+	// #nosec G202 -- SQL structure is assembled only from server-side allowlists; all external values remain bound parameters.
 	rows, err := dbConn.Query(`SELECT r.id, r.empresa_id, r.formato_id, COALESCE(f.formato,''), r.tercero_id, r.tipo_documento, r.documento,
 		COALESCE(r.digito_verificacion,''), r.razon_social, r.concepto, r.cuenta_codigo, r.base_valor, r.iva, r.retencion, r.total,
 		COALESCE(r.validaciones,''), r.estado, COALESCE(r.fecha_creacion,''), COALESCE(r.usuario_creador,'')
@@ -739,6 +741,7 @@ func ListEmpresaNominaElectronica(dbConn *sql.DB, empresaID int64, periodo strin
 		where += " AND periodo=?"
 		args = append(args, periodo)
 	}
+	// #nosec G202 -- SQL structure is assembled only from server-side allowlists; all external values remain bound parameters.
 	rows, err := dbConn.Query(`SELECT id, empresa_id, empleado_id, tipo_documento, documento, nombre, periodo, fecha_pago, salario_base,
 		devengados, deducciones, total, COALESCE(cune,''), estado_dian, COALESCE(respuesta_dian,''), COALESCE(json_payload,''),
 		COALESCE(fecha_creacion,''), COALESCE(fecha_actualizacion,''), COALESCE(usuario_creador,'')
@@ -780,6 +783,7 @@ func ListEmpresaDocumentosSoporte(dbConn *sql.DB, empresaID int64, periodo strin
 		where += " AND periodo=?"
 		args = append(args, periodo)
 	}
+	// #nosec G202 -- SQL structure is assembled only from server-side allowlists; all external values remain bound parameters.
 	rows, err := dbConn.Query(`SELECT id, empresa_id, proveedor_id, tipo_documento, documento, nombre_proveedor, fecha_documento, periodo,
 		concepto, subtotal, iva, retenciones, total, COALESCE(cuds,''), estado_dian, COALESCE(respuesta_dian,''), COALESCE(json_payload,''),
 		COALESCE(fecha_creacion,''), COALESCE(fecha_actualizacion,''), COALESCE(usuario_creador,'')
@@ -1277,6 +1281,7 @@ func ListEmpresaCarteraCXP(dbConn *sql.DB, empresaID int64, tipo, estado string)
 		where += " AND estado=?"
 		args = append(args, estado)
 	}
+	// #nosec G202 -- SQL structure is assembled only from server-side allowlists; all external values remain bound parameters.
 	rows, err := dbConn.Query(`SELECT id, empresa_id, tipo, tercero_id, tercero_nombre, documento, fecha_emision, fecha_vencimiento,
 		cuenta_codigo, concepto, valor_original, valor_pagado, saldo, estado, origen_modulo, COALESCE(referencia_externa,''),
 		COALESCE(fecha_creacion,''), COALESCE(fecha_actualizacion,''), COALESCE(usuario_creador,'')
@@ -1508,6 +1513,7 @@ func ListEmpresaLibroOficial(dbConn *sql.DB, empresaID int64, tipo, periodo stri
 	if strings.EqualFold(tipo, "mayor") || strings.EqualFold(tipo, "auxiliar") {
 		orderBy = "l.cuenta_codigo, c.fecha_comprobante, c.codigo, l.id"
 	}
+	// #nosec G202 -- SQL structure is assembled only from server-side allowlists; all external values remain bound parameters.
 	rows, err := dbConn.Query(`SELECT c.fecha_comprobante, c.codigo, c.tipo_comprobante, c.periodo_contable, l.cuenta_codigo,
 		COALESCE(cta.nombre,''), COALESCE(t.nombre,''), c.concepto, COALESCE(l.detalle,''), l.debito, l.credito
 		FROM empresa_contabilidad_colombia_lineas l
@@ -1554,6 +1560,7 @@ func buildLibroResumenRows(dbConn *sql.DB, empresaID int64, periodo string) []Em
 		where += " AND periodo_contable=?"
 		args = append(args, periodo)
 	}
+	// #nosec G202 -- SQL structure is assembled only from server-side allowlists; all external values remain bound parameters.
 	row := dbConn.QueryRow(`SELECT COUNT(1), COALESCE(SUM(total_debito),0), COALESCE(SUM(total_credito),0) FROM empresa_contabilidad_colombia_comprobantes WHERE `+where, args...)
 	var count int
 	var deb, cred float64

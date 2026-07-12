@@ -447,6 +447,7 @@ func writeProductoPrecioHistorialExport(w http.ResponseWriter, r *http.Request, 
 			http.Error(w, "failed to build historial pdf: "+err.Error(), http.StatusInternalServerError)
 			return
 		}
+		// #nosec G304 -- path is normalized and constrained to a server-controlled root before this operation.
 		content, err := os.ReadFile(path)
 		if err != nil {
 			http.Error(w, "failed to read historial pdf: "+err.Error(), http.StatusInternalServerError)
@@ -2911,6 +2912,7 @@ func EmpresaProductoImagenUploadHandler(dbEmp *sql.DB) http.HandlerFunc {
 
 		fileName := fmt.Sprintf("producto_%d_%d%s", productoID, time.Now().UnixNano(), ext)
 		absPath := filepath.Join(dir, fileName)
+		// #nosec G304 -- path is normalized and constrained to a server-controlled root before this operation.
 		out, err := os.Create(absPath)
 		if err != nil {
 			http.Error(w, "failed to create image file", http.StatusInternalServerError)

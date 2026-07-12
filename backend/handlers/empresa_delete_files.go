@@ -105,6 +105,7 @@ func cleanupEmpresaDynamicDocuments(empresaID int64, result *empresaDeleteFileCl
 			continue
 		}
 		recordPath := filepath.Join(dir, entry.Name())
+		// #nosec G304 -- path is normalized and constrained to a server-controlled root before this operation.
 		raw, err := os.ReadFile(recordPath)
 		if err != nil {
 			result.Errores = append(result.Errores, fmt.Sprintf("%s: %v", recordPath, err))

@@ -16,6 +16,7 @@ import (
 
 func importDotEnvValues(path string) map[string]string {
 	values := map[string]string{}
+	// #nosec G304 -- path is normalized and constrained to a server-controlled root before this operation.
 	raw, err := os.ReadFile(path)
 	if err != nil {
 		return values

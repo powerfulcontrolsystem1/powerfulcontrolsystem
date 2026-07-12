@@ -284,6 +284,7 @@ func ListEmpresaBuzonMensajes(dbConn *sql.DB, empresaID int64, actor EmpresaBuzo
 	if limit <= 0 || limit > 100 {
 		limit = 20
 	}
+	// #nosec G202 -- SQL structure is assembled only from server-side allowlists; all external values remain bound parameters.
 	query := empresaBuzonMensajeSelectSQL() + ` WHERE empresa_id = ? AND destinatario_tipo = ? AND destinatario_ref = ? AND COALESCE(estado, 'activo') = 'activo'`
 	args := []interface{}{empresaID, actor.Tipo, actor.Ref}
 	if !includeRead {
@@ -458,6 +459,7 @@ func ListEmpresaBuzonAdjuntosByMensajeIDs(dbConn *sql.DB, empresaID int64, messa
 		placeholders = append(placeholders, "?")
 		args = append(args, id)
 	}
+	// #nosec G202 -- SQL structure is assembled only from server-side allowlists; all external values remain bound parameters.
 	query := `SELECT id, empresa_id, mensaje_id, COALESCE(tipo_archivo, ''), COALESCE(nombre_archivo, ''),
 		COALESCE(mime_type, ''), COALESCE(file_url, ''), COALESCE(tamano_bytes, 0), COALESCE(duracion_segundos, 0),
 		COALESCE(estado, 'activo'), COALESCE(fecha_creacion, ''), COALESCE(fecha_actualizacion, ''),

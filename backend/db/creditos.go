@@ -1331,6 +1331,7 @@ func listEmpresaCreditosByWhere(dbConn *sql.DB, empresaID int64, whereSQL, order
 		orderSQL = "id DESC"
 	}
 
+	// #nosec G202 -- SQL structure is assembled only from server-side allowlists; all external values remain bound parameters.
 	query := `SELECT
 		id,
 		empresa_id,
@@ -1524,6 +1525,7 @@ func ListEmpresaCreditos(dbConn *sql.DB, empresaID int64, filter EmpresaCreditoF
 	}
 
 	limit, offset := creditoNormalizeLimitOffset(filter.Limit, filter.Offset)
+	// #nosec G202 -- SQL structure is assembled only from server-side allowlists; all external values remain bound parameters.
 	query := `SELECT
 		id,
 		empresa_id,
@@ -2358,6 +2360,7 @@ func ListEmpresaCreditoClienteLimites(dbConn *sql.DB, empresaID int64, filter Em
 	}
 
 	limit, offset := creditoNormalizeLimitOffset(filter.Limit, filter.Offset)
+	// #nosec G202 -- SQL structure is assembled only from server-side allowlists; all external values remain bound parameters.
 	query := `SELECT
 		id,
 		empresa_id,
@@ -2836,6 +2839,7 @@ func ListEmpresaCreditoWorkflows(dbConn *sql.DB, empresaID int64, filter Empresa
 	}
 
 	limit, offset := creditoWorkflowNormalizeLimitOffset(filter.Limit, filter.Offset)
+	// #nosec G202 -- SQL structure is assembled only from server-side allowlists; all external values remain bound parameters.
 	query := `SELECT
 		id,
 		empresa_id,

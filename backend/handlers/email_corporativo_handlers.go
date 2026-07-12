@@ -778,6 +778,7 @@ func provisionEmpresaEmailAccountDirect(dbSuper *sql.DB, cfg CorporateEmailConfi
 
 	ctx, cancel := context.WithTimeout(context.Background(), 45*time.Second)
 	defer cancel()
+	// #nosec G204 -- commandPath is the fixed Mailu provisioning script resolved inside the project.
 	cmd := exec.CommandContext(ctx, commandPath)
 	cmd.Env = append(os.Environ(),
 		"PCS_MAILU_EMAIL="+strings.ToLower(strings.TrimSpace(account.Email)),

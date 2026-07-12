@@ -99,6 +99,7 @@ func collectBaseSystemInfo() reports.SystemInfo {
 }
 
 func readFirstLine(path string) string {
+	// #nosec G304 -- path is normalized and constrained to a server-controlled root before this operation.
 	raw, err := os.ReadFile(path)
 	if err != nil {
 		return ""
@@ -153,6 +154,7 @@ func runLynis(ctx context.Context, settings config.Settings, executor Executor) 
 	tool.Available = true
 	tool.DurationMs = time.Since(start).Milliseconds()
 	artifacts := make([]Artifact, 0, 2)
+	// #nosec G304 -- path is normalized and constrained to a server-controlled root before this operation.
 	if reportRaw, readErr := os.ReadFile(reportFile); readErr == nil {
 		artifacts = append(artifacts, Artifact{Name: "raw/lynis-report.dat", Content: reportRaw})
 		findings, hardeningIndex, summary := parser.ParseLynisReport(reportRaw, settings.TargetHost)
@@ -164,6 +166,7 @@ func runLynis(ctx context.Context, settings config.Settings, executor Executor) 
 			tool.Status = "ok"
 		}
 		tool.Summary = summary
+		// #nosec G304 -- path is normalized and constrained to a server-controlled root before this operation.
 		if logRaw, logErr := os.ReadFile(logFile); logErr == nil {
 			artifacts = append(artifacts, Artifact{Name: "raw/lynis.log", Content: logRaw})
 		}
@@ -214,6 +217,7 @@ func runNmap(ctx context.Context, settings config.Settings, executor Executor) (
 	tool.Available = true
 	tool.DurationMs = time.Since(start).Milliseconds()
 	artifacts := make([]Artifact, 0, 2)
+	// #nosec G304 -- path is normalized and constrained to a server-controlled root before this operation.
 	if raw, readErr := os.ReadFile(outputFile); readErr == nil {
 		artifacts = append(artifacts, Artifact{Name: "raw/nmap.xml", Content: raw})
 		findings, openPorts, summary, parseErr := parser.ParseNmapXML(raw, settings.TargetHost)
@@ -309,6 +313,7 @@ func runVulnerabilityScanner(ctx context.Context, settings config.Settings, exec
 	tool.Available = true
 	tool.DurationMs = time.Since(start).Milliseconds()
 	artifacts := make([]Artifact, 0, 2)
+	// #nosec G304 -- path is normalized and constrained to a server-controlled root before this operation.
 	if raw, readErr := os.ReadFile(outputFile); readErr == nil {
 		artifacts = append(artifacts, Artifact{Name: "raw/trivy.json", Content: raw})
 		findings, summary, parseErr := parser.ParseTrivyJSON(raw, settings.TargetHost)

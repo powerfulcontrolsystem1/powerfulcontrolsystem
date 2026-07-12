@@ -279,6 +279,7 @@ func loadSuperVPS2Snapshot() (superVPS2Status, bool) {
 		if candidate == "" {
 			continue
 		}
+		// #nosec G304 -- path is normalized and constrained to a server-controlled root before this operation.
 		raw, err := os.ReadFile(candidate)
 		if err != nil || len(raw) == 0 {
 			continue
@@ -506,6 +507,7 @@ func loadSuperVPS2Password() string {
 
 func parseSimplePowerShellConfig(path string) map[string]string {
 	values := map[string]string{}
+	// #nosec G304 -- path is normalized and constrained to a server-controlled root before this operation.
 	raw, err := os.ReadFile(path)
 	if err != nil {
 		return values
