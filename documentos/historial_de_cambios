@@ -37400,3 +37400,7 @@ Archivos modificados:
   de contraseña de `users` almacena verificadores SHA-256 en lugar del token
   original. La migracion es idempotente y admite simulacion con la bandera de
   endurecimiento existente.
+
+2026-07-12: Cobertura CI para endurecimiento.
+- `Professional CI` incorpora pushes sobre `security/**`; conserva pruebas Go,
+  detector de carreras, vet, vulnerabilidades, gosec y validacion Compose.
