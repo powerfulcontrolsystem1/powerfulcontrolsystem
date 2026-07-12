@@ -414,7 +414,7 @@ func loadSoporteComprasIAAttachment(row dbpkg.EmpresaSoporteComprasIA) (*aiAttac
 	if err != nil {
 		return nil, err
 	}
-	b, err := os.ReadFile(path)
+	b, err := os.ReadFile(path) // #nosec G304 -- path is an existing regular file resolved inside the private support root above.
 	if err != nil {
 		return nil, err
 	}
@@ -432,7 +432,41 @@ func safeSoporteComprasIAPathFromURL(url string) (string, error) {
 	if abs != root && !strings.HasPrefix(abs, root+string(os.PathSeparator)) {
 		return "", errors.New("ruta de soporte fuera del directorio permitido")
 	}
-	return abs, nil
+	return resolveExistingPrivateFileUnderRoot(root, abs)
+}
+
+// resolveExistingPrivateFileUnderRoot rejects traversal and symlink escapes before
+// an attachment is sent to an external analysis service.
+func resolveExistingPrivateFileUnderRoot(root, candidate string) (string, error) {
+	absRoot, err := filepath.Abs(root)
+	if err != nil {
+		return "", errors.New("directorio privado no disponible")
+	}
+	absCandidate, err := filepath.Abs(candidate)
+	if err != nil {
+		return "", errors.New("archivo privado no disponible")
+	}
+	rel, err := filepath.Rel(absRoot, absCandidate)
+	if err != nil || rel == "." || rel == ".." || strings.HasPrefix(rel, ".."+string(os.PathSeparator)) || filepath.IsAbs(rel) {
+		return "", errors.New("ruta de soporte fuera del directorio permitido")
+	}
+	info, err := os.Lstat(absCandidate)
+	if err != nil || !info.Mode().IsRegular() {
+		return "", errors.New("archivo de soporte no disponible")
+	}
+	resolvedRoot, err := filepath.EvalSymlinks(absRoot)
+	if err != nil {
+		return "", errors.New("directorio privado no disponible")
+	}
+	resolvedCandidate, err := filepath.EvalSymlinks(absCandidate)
+	if err != nil {
+		return "", errors.New("archivo de soporte no disponible")
+	}
+	resolvedRel, err := filepath.Rel(resolvedRoot, resolvedCandidate)
+	if err != nil || strings.HasPrefix(resolvedRel, ".."+string(os.PathSeparator)) || resolvedRel == ".." || filepath.IsAbs(resolvedRel) {
+		return "", errors.New("enlace de soporte fuera del directorio permitido")
+	}
+	return resolvedCandidate, nil
 }
 
 func seedSoporteComprasIADemo(dbEmp *sql.DB, empresaID int64, usuario string) (dbpkg.EmpresaSoporteComprasIA, error) {
