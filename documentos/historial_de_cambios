@@ -37448,3 +37448,26 @@ Archivos modificados:
 - `login.js` agrega el token CSRF disponible a sus solicitudes JSON sin depender
   de `menu.js`; se cubren en pruebas ambos inicios de sesion publicos aunque
   el navegador conserve una cookie de sesion anterior.
+
+2026-07-12: rs: actualizar repositorio y sincronizar VPS
+PushStatus: OK
+Archivos modificados:
+- backend/db/nextcloud_decommission.go
+- backend/handlers/nextcloud.go
+- backend/handlers/system_empresas_handlers.go
+- backend/main.go
+- deploy/README-compose-platform.md
+- deploy/nextcloud/.env.example
+- deploy/nextcloud/docker-compose.yml
+- deploy/scripts/vps-nextcloud-up.sh
+- documentos/CHANGELOG.md
+- documentos/api/openapi.generated.yaml
+- documentos/descripcion_de_archivos
+- documentos/descripcion_de_modulos
+- documentos/estructura_bd.md
+- documentos/historial_de_cambios
+- documentos/vps2_operacion.md
+- web/administrar_empresa.html
+- web/administrar_empresa/nextcloud.html
+- web/super/nextcloud.html
+- web/super_administrador.html

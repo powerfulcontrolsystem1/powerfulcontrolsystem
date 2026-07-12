@@ -16708,3 +16708,25 @@ Archivos modificados:
 - documentos/historial_de_cambios
 - documentos/validacion_preproduccion_pcs.md
 - web/administrar_empresa/carrito_de_compras.html
+
+2026-07-12 14:39:05 - Mensaje: rs: actualizar repositorio y sincronizar VPS; Commit: 358d2e50; PushStatus: OK
+Archivos modificados:
+- backend/db/nextcloud_decommission.go
+- backend/handlers/nextcloud.go
+- backend/handlers/system_empresas_handlers.go
+- backend/main.go
+- deploy/README-compose-platform.md
+- deploy/nextcloud/.env.example
+- deploy/nextcloud/docker-compose.yml
+- deploy/scripts/vps-nextcloud-up.sh
+- documentos/CHANGELOG.md
+- documentos/api/openapi.generated.yaml
+- documentos/descripcion_de_archivos
+- documentos/descripcion_de_modulos
+- documentos/estructura_bd.md
+- documentos/historial_de_cambios
+- documentos/vps2_operacion.md
+- web/administrar_empresa.html
+- web/administrar_empresa/nextcloud.html
+- web/super/nextcloud.html
+- web/super_administrador.html
