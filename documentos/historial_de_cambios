@@ -37449,6 +37449,10 @@ Archivos modificados:
   de `menu.js`; se cubren en pruebas ambos inicios de sesion publicos aunque
   el navegador conserve una cookie de sesion anterior.
 
+2026-07-12: Renovacion de cache para login CSRF.
+- `login.html` versiona el recurso `login.js` para que los navegadores carguen
+  inmediatamente el envio de `X-CSRF-Token` despues de la actualizacion.
+
 2026-07-12: rs: actualizar repositorio y sincronizar VPS
 PushStatus: OK
 Archivos modificados:
