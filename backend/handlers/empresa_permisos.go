@@ -591,6 +591,7 @@ var permissionPagesCatalogOrdered = []permissionPageRule{
 
 	{PaginaClave: "linkDocumentosOnlyOffice", Modulo: permModuleDocumentosOnlyOffice, Accion: permActionRead, Titulo: "Documentos OnlyOffice", Grupo: "Documentos, nube y soporte"},
 	{PaginaClave: "linkGestionDocumental", Modulo: permModuleGestionDocumental, Accion: permActionCreate, Titulo: "Gestion documental y aprobaciones", Grupo: "Documentos, nube y soporte"},
+	{PaginaClave: "linkNextcloud", Modulo: permModuleGestionDocumental, Accion: permActionRead, Titulo: "Nextcloud empresarial", Grupo: "Documentos, nube y soporte"},
 	{PaginaClave: "linkContratosObligaciones", Modulo: permModuleContratosOblig, Accion: permActionCreate, Titulo: "Contratos y obligaciones", Grupo: "Documentos, nube y soporte"},
 	{PaginaClave: "linkSoporteRemoto", Modulo: permModuleSeguridad, Accion: permActionApprove, Titulo: "Soporte remoto", Grupo: "Documentos, nube y soporte"},
 
