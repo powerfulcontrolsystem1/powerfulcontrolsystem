@@ -43,3 +43,35 @@ func TestEncryptionEnvelopeDetectsTampering(t *testing.T) {
 		t.Fatal("tampered payload accepted")
 	}
 }
+
+func TestPurposeEncryptionSeparatesTOTPAndSupportsPreviousKey(t *testing.T) {
+	active := testKey(t)
+	previous := testKey(t)
+	t.Setenv("CONFIG_ENC_KEY", active)
+	t.Setenv("CONFIG_ENC_KEY_ID", "key-current")
+	payload, err := EncryptStringForPurpose(TOTPEncryptionPurpose, "totp-secret")
+	if err != nil || !strings.HasPrefix(payload, "v1:totp:key-current:") {
+		t.Fatalf("purpose encryption failed: %q %v", payload, err)
+	}
+	if plain, err := DecryptStringForPurpose(TOTPEncryptionPurpose, payload); err != nil || plain != "totp-secret" {
+		t.Fatalf("purpose decryption failed: %q %v", plain, err)
+	}
+	if _, err := DecryptStringForPurpose("config", payload); err == nil {
+		t.Fatal("ciphertext accepted under another purpose")
+	}
+
+	// A payload encrypted with the old active key remains readable after the
+	// active key rotates and the old key is declared as previous.
+	t.Setenv("CONFIG_ENC_KEY", previous)
+	t.Setenv("CONFIG_ENC_KEY_ID", "key-previous")
+	oldPayload, err := EncryptStringForPurpose(TOTPEncryptionPurpose, "old-secret")
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("CONFIG_ENC_KEY", active)
+	t.Setenv("CONFIG_ENC_KEY_ID", "key-current")
+	t.Setenv("CONFIG_ENC_KEY_PREVIOUS", "key-previous:"+previous)
+	if plain, err := DecryptStringForPurpose(TOTPEncryptionPurpose, oldPayload); err != nil || plain != "old-secret" {
+		t.Fatalf("previous key was not accepted: %q %v", plain, err)
+	}
+}
