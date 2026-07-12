@@ -25,7 +25,7 @@ jobs:
   validate:
     name: Preflight, audits and Docker config
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 45
     permissions:
       contents: read
 
@@ -143,3 +143,66 @@ jobs:
           name: professional-reports
           path: documentos/reportes_profesionales/
           if-no-files-found: ignore
+
+  supply-chain:
+    name: Secrets, dependencies, containers and SBOM
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Go
+        uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
+        with:
+          go-version: "1.25.12"
+          cache-dependency-path: backend/go.sum
+
+      - name: Secret scan
+        run: docker run --rm -v "$PWD:/repo" zricethezav/gitleaks:v8.30.1 detect --source=/repo --redact --no-banner
+
+      - name: Filesystem dependency and IaC scan
+        run: |
+          mkdir -p security-artifacts
+          docker run --rm -v "$PWD:/repo" aquasec/trivy:0.72.0 fs --exit-code 1 --severity HIGH,CRITICAL --scanners vuln,misconfig,secret --format sarif --output /repo/security-artifacts/trivy-filesystem.sarif /repo
+
+      - name: Build modified runtime images
+        run: |
+          docker build -f deploy/docker/backend.Dockerfile -t pcs-backend:ci .
+          docker build -f deploy/docker/frontend.Dockerfile -t pcs-frontend:ci .
+          mkdir -p /tmp/pcs-images
+          docker save pcs-backend:ci -o /tmp/pcs-images/backend.tar
+          docker save pcs-frontend:ci -o /tmp/pcs-images/frontend.tar
+
+      - name: Container image scan
+        run: |
+          docker run --rm -v /tmp/pcs-images:/images:ro -v "$PWD:/repo" aquasec/trivy:0.72.0 image --input /images/backend.tar --exit-code 1 --severity HIGH,CRITICAL --format sarif --output /repo/security-artifacts/trivy-backend.sarif
+          docker run --rm -v /tmp/pcs-images:/images:ro -v "$PWD:/repo" aquasec/trivy:0.72.0 image --input /images/frontend.tar --exit-code 1 --severity HIGH,CRITICAL --format sarif --output /repo/security-artifacts/trivy-frontend.sarif
+
+      - name: Generate SBOM
+        run: docker run --rm -v "$PWD:/repo" anchore/syft:v1.46.0 dir:/repo -o cyclonedx-json=/repo/security-artifacts/sbom.cdx.json
+
+      - name: Scan SBOM dependencies
+        run: docker run --rm -v "$PWD:/repo" anchore/grype:v0.115.0 sbom:/repo/security-artifacts/sbom.cdx.json --fail-on high
+
+      - name: Go license inventory
+        working-directory: backend
+        run: |
+          go install github.com/google/go-licenses@v1.6.0
+          go-licenses report ./... > ../security-artifacts/go-licenses.csv
+
+      - name: Working tree remains clean
+        run: git diff --exit-code
+
+      - name: Upload security artifacts
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: security-artifacts
+          path: security-artifacts/
+          if-no-files-found: warn
