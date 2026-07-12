@@ -5,7 +5,9 @@ import (
 	"bytes"
 	"context"
 	"crypto/rand"
+	"crypto/subtle"
 	"database/sql"
+	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
@@ -42,6 +44,8 @@ const (
 	publicAPIErrorHeader                      = "X-PCS-Public-API-Error"
 	canonicalPublicApexHost                   = "powerfulcontrolsystem.com"
 	canonicalPublicWWWHost                    = "www.powerfulcontrolsystem.com"
+	csrfCookieName                            = "pcs_csrf"
+	csrfHeaderName                            = "X-CSRF-Token"
 )
 
 var companyLogMu sync.Mutex
@@ -430,6 +434,9 @@ func isCookieAuthenticatedMutation(r *http.Request) bool {
 	}
 	switch r.Method {
 	case http.MethodPost, http.MethodPut, http.MethodPatch, http.MethodDelete:
+		if strings.HasPrefix(strings.ToLower(strings.TrimSpace(r.Header.Get("Authorization"))), "bearer ") {
+			return false
+		}
 		_, err := r.Cookie("session_token")
 		return err == nil
 	default:
@@ -437,14 +444,75 @@ func isCookieAuthenticatedMutation(r *http.Request) bool {
 	}
 }
 
-// CSRFMiddleware applies origin validation to mutable requests authenticated
-// with the HttpOnly session cookie. Bearer and signed-webhook clients do not
-// share this cookie-CSRF threat model.
+func newCSRFToken() (string, error) {
+	buf := make([]byte, 32)
+	if _, err := rand.Read(buf); err != nil {
+		return "", err
+	}
+	return base64.RawURLEncoding.EncodeToString(buf), nil
+}
+
+func setCSRFCookie(w http.ResponseWriter, r *http.Request, token string) {
+	http.SetCookie(w, &http.Cookie{
+		Name:     csrfCookieName,
+		Value:    token,
+		Path:     "/",
+		Secure:   resolveRequestScheme(r) == "https",
+		HttpOnly: false,
+		SameSite: http.SameSiteStrictMode,
+		MaxAge:   int((12 * time.Hour).Seconds()),
+	})
+}
+
+func requestCSRFTokenValid(r *http.Request) bool {
+	cookie, err := r.Cookie(csrfCookieName)
+	if err != nil || strings.TrimSpace(cookie.Value) == "" {
+		return false
+	}
+	headerToken := strings.TrimSpace(r.Header.Get(csrfHeaderName))
+	if headerToken == "" || len(headerToken) != len(cookie.Value) {
+		return false
+	}
+	return subtle.ConstantTimeCompare([]byte(headerToken), []byte(cookie.Value)) == 1
+}
+
+func csrfShouldRotate(r *http.Request) bool {
+	if r == nil || r.Method != http.MethodPost {
+		return false
+	}
+	switch r.URL.Path {
+	case "/super/api/administradores/login", "/api/empresa/usuarios/login", "/api/empresa/usuarios/establecer_password":
+		return true
+	default:
+		return false
+	}
+}
+
+// CSRFMiddleware protects mutable requests authenticated with the HttpOnly
+// session cookie using strict origin validation and a synchronizer token. The
+// token is deliberately readable by same-origin JavaScript and is compared in
+// constant time against its independent cookie. Bearer and signed-webhook
+// clients do not share this cookie-CSRF threat model.
 func CSRFMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if isCookieAuthenticatedMutation(r) && !IsSameOriginRequest(r) {
-			http.Error(w, "csrf origin validation failed", http.StatusForbidden)
-			return
+		csrfCookie, cookieErr := r.Cookie(csrfCookieName)
+		if cookieErr != nil || strings.TrimSpace(csrfCookie.Value) == "" || csrfShouldRotate(r) {
+			token, err := newCSRFToken()
+			if err != nil {
+				http.Error(w, "csrf token generation failed", http.StatusInternalServerError)
+				return
+			}
+			setCSRFCookie(w, r, token)
+		}
+		if isCookieAuthenticatedMutation(r) {
+			if !IsSameOriginRequest(r) {
+				http.Error(w, "csrf origin validation failed", http.StatusForbidden)
+				return
+			}
+			if !requestCSRFTokenValid(r) {
+				http.Error(w, "csrf token validation failed", http.StatusForbidden)
+				return
+			}
 		}
 		next.ServeHTTP(w, r)
 	})
