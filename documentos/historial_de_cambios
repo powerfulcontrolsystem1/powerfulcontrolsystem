@@ -37492,6 +37492,8 @@ Archivos modificados:
   `Documentos, nube y soporte`. La visibilidad reutiliza el permiso de lectura
   de gestión documental; la autenticación propia de Nextcloud no se sustituye
   por un control de menú.
+- La prueba de referencias estáticas reconoce `/nextcloud/` como una ruta de
+  servicio autenticado, no como un archivo que deba existir bajo `web/`.
 
 2026-07-12: rs: actualizar repositorio y sincronizar VPS
 PushStatus: OK
