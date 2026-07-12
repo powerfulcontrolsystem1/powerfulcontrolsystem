@@ -133,6 +133,9 @@ func SuperAuditoriaHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 // WithSuperAuditoria registra trazabilidad de endpoints globales usados por el selector.
 func WithSuperAuditoria(dbSuper *sql.DB, modulo string, next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		if _, ok := paginaPrincipalRequireSuperAdmin(w, r, dbSuper); !ok {
+			return
+		}
 		start := time.Now()
 		rw := &auditCaptureResponseWriter{ResponseWriter: w, status: http.StatusOK}
 		next.ServeHTTP(rw, r)

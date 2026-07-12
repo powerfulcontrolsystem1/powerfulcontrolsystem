@@ -27,3 +27,22 @@ func TestSuperConfigHandlersRequireSuperAdmin(t *testing.T) {
 		})
 	}
 }
+
+func TestWithSuperAuditoriaRequiresSuperAdmin(t *testing.T) {
+	called := false
+	handler := WithSuperAuditoria(nil, "prueba", func(w http.ResponseWriter, r *http.Request) {
+		called = true
+		w.WriteHeader(http.StatusNoContent)
+	})
+	req := httptest.NewRequest(http.MethodGet, "/super/api/protegido", nil)
+	res := httptest.NewRecorder()
+
+	handler.ServeHTTP(res, req)
+
+	if res.Code != http.StatusUnauthorized {
+		t.Fatalf("status = %d, want %d", res.Code, http.StatusUnauthorized)
+	}
+	if called {
+		t.Fatal("wrapped handler ran without an authenticated super administrator")
+	}
+}

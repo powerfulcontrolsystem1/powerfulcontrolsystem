@@ -37477,3 +37477,8 @@ Archivos modificados:
   infraestructura validan la sesión de super administrador antes de leer o
   modificar datos. El aviso público de mantenimiento permanece separado y solo
   expone el mensaje programado.
+2026-07-12: Middleware de auditoría super con autorización efectiva.
+- `WithSuperAuditoria` ahora exige super administrador antes de ejecutar el
+  handler envuelto. Esto cubre centralmente las rutas globales que ya usan el
+  middleware y evita que la auditoría se interprete erróneamente como control
+  de acceso.
