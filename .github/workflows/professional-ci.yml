@@ -9,6 +9,7 @@ on:
       - main
       - master
       - "codex/**"
+      - "security/**"
   pull_request:
   workflow_dispatch:
 
