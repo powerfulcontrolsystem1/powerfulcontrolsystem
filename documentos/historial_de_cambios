@@ -37383,3 +37383,14 @@ Archivos modificados:
 - documentos/historial_de_cambios
 - documentos/validacion_preproduccion_pcs.md
 - web/administrar_empresa/carrito_de_compras.html
+2026-07-12: Endurecimiento de autenticacion en rama `security/full-hardening`.
+- Se agrega cifrado AES-GCM con finalidad TOTP, id de clave y soporte de
+  rotacion para secretos de autenticador; la migracion puede ejecutarse en
+  simulacion con `PCS_TOTP_MIGRATION_DRY_RUN=true`.
+- 2FA administrativo exige reautenticacion para configurar, activar o
+  desactivar; rota sesion, revoca las demas sesiones y usa codigos de
+  recuperacion de un solo uso almacenados por hash.
+- Los tokens administrativos de recuperacion de contraseña se almacenan como
+  SHA-256 y se migran de forma compatible.
+- Se agregan invalidadores explicitos para cache de autenticacion por token y
+  administrador. No se desplego, sincronizo ni modifico informacion real.
