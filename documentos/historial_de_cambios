@@ -37467,3 +37467,7 @@ Archivos modificados:
 - Las acciones de VPS2 conservan un catálogo cerrado; SSH y Plink reciben
   ejecutable y argumentos separados. Las rutas remotas usadas por acciones del
   servidor se protegen con quoting antes de invocar el cliente SSH.
+2026-07-12: Configuración RustDesk restringida.
+- La configuración global del acceso RustDesk exige sesión efectiva de
+  super administrador para leer o modificar parámetros de conectividad. Se
+  añade una prueba de rechazo para solicitudes sin sesión.
