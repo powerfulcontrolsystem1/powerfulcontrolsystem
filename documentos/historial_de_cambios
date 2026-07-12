@@ -37440,6 +37440,38 @@ Archivos modificados:
   antiguas de x/net/x/crypto/x/sys.
 
 2026-07-12: Compatibilidad CSRF para inicio de sesion.
+
+2026-07-12: Nextcloud multiempresa.
+- Se reincorpora el espacio empresarial Nextcloud con cuota predeterminada de 1 GB,
+  configuracion super cifrada, asignacion por `empresa_id` y stack PostgreSQL en
+  el VPS principal, independiente de la instancia auxiliar de VPS2.
 - `login.js` agrega el token CSRF disponible a sus solicitudes JSON sin depender
   de `menu.js`; se cubren en pruebas ambos inicios de sesion publicos aunque
   el navegador conserve una cookie de sesion anterior.
+
+2026-07-12: Renovacion de cache para login CSRF.
+- `login.html` versiona el recurso `login.js` para que los navegadores carguen
+  inmediatamente el envio de `X-CSRF-Token` despues de la actualizacion.
+
+2026-07-12: rs: actualizar repositorio y sincronizar VPS
+PushStatus: OK
+Archivos modificados:
+- backend/db/nextcloud_decommission.go
+- backend/handlers/nextcloud.go
+- backend/handlers/system_empresas_handlers.go
+- backend/main.go
+- deploy/README-compose-platform.md
+- deploy/nextcloud/.env.example
+- deploy/nextcloud/docker-compose.yml
+- deploy/scripts/vps-nextcloud-up.sh
+- documentos/CHANGELOG.md
+- documentos/api/openapi.generated.yaml
+- documentos/descripcion_de_archivos
+- documentos/descripcion_de_modulos
+- documentos/estructura_bd.md
+- documentos/historial_de_cambios
+- documentos/vps2_operacion.md
+- web/administrar_empresa.html
+- web/administrar_empresa/nextcloud.html
+- web/super/nextcloud.html
+- web/super_administrador.html
