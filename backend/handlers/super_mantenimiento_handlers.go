@@ -65,6 +65,9 @@ type mantenimientoAviso struct {
 // SuperMantenimientoConfigHandler maneja GET y PUT de modo mantenimiento.
 func SuperMantenimientoConfigHandler(dbSuper *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		if _, ok := paginaPrincipalRequireSuperAdmin(w, r, dbSuper); !ok {
+			return
+		}
 		switch r.Method {
 		case http.MethodGet:
 			writeJSON(w, http.StatusOK, loadMantenimientoConfig(dbSuper))
