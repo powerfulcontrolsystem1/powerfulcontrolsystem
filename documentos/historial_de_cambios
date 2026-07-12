@@ -37453,6 +37453,11 @@ Archivos modificados:
 - `login.html` versiona el recurso `login.js` para que los navegadores carguen
   inmediatamente el envio de `X-CSRF-Token` despues de la actualizacion.
 
+2026-07-12: Runtime Docker alineado con Go 1.25.
+- La imagen de compilacion del backend usa Go 1.25 para respetar la version
+  declarada por `backend/go.mod`; esto permite reconstruir el stack Docker y
+  publicar las correcciones de autenticacion.
+
 2026-07-12: rs: actualizar repositorio y sincronizar VPS
 PushStatus: OK
 Archivos modificados:
