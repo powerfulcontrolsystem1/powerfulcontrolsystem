@@ -17,7 +17,7 @@ import (
 const (
 	// OpenAI (estimación monetaria opcional)
 	openAIProviderKey           = "openai"
-	openAICostPer1MTokensUSDKey = "ai.openai.cost_per_1m_tokens_usd" // número, opcional
+	openAICostPer1MTokensUSDKey = "ai.openai.cost_per_1m_tokens_usd" // #nosec G101 -- nombre de metrica, no token secreto.
 
 	// Hostinger (manual/API pendiente)
 	hostingerEnabledKey          = "hostinger.enabled"
@@ -30,7 +30,7 @@ const (
 
 	// Cursor (manual/API pendiente)
 	cursorEnabledKey      = "cursor.enabled"
-	cursorAPIKeyKey       = "cursor.api_key" // cifrado, opcional (tarjeta de configuración)
+	cursorAPIKeyKey       = "cursor.api_key" // #nosec G101 -- ruta de configuracion; el valor se almacena cifrado.
 	cursorCostUSDMonthKey = "cursor.cost.usd_month"
 	cursorNotesKey        = "cursor.notes"
 )

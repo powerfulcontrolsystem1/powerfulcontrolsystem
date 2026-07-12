@@ -24,7 +24,7 @@ const (
 	superEmailTemplateKeyLicenciaExpiryWarning          = "licencia_expiry_warning"
 	superEmailTemplateKeyLicenciaEmpresaDeletionWarning = "licencia_empresa_eliminacion_warning"
 	superEmailTemplateKeyAdminPasswordRecovery          = "admin_password_recovery"
-	superEmailTemplateKeyEmpresaPasswordRecovery        = "empresa_user_password_recovery"
+	superEmailTemplateKeyEmpresaPasswordRecovery        = "empresa_user_password_recovery" // #nosec G101 -- identificador de plantilla, no credencial.
 	superEmailTemplateKeyServerRestartAlert             = "server_restart_alert"
 )
 
