@@ -37482,3 +37482,7 @@ Archivos modificados:
   handler envuelto. Esto cubre centralmente las rutas globales que ya usan el
   middleware y evita que la auditoría se interprete erróneamente como control
   de acceso.
+2026-07-12: Rutas super sin middleware central protegidas.
+- Catálogos y altas de plantillas, roles y permisos, licencias adicionales,
+  venta digital y métricas globales exigen ahora super administrador. El
+  catálogo público de integración conserva su ruta pública independiente.

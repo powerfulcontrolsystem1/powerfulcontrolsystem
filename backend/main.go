@@ -1273,7 +1273,7 @@ func main() {
 	http.HandleFunc("/super/api/vps2", handlers.WithSuperAuditoria(dbSuper, "super_vps2", handlers.SuperVPS2Handler(dbSuper)))
 	http.HandleFunc("/super/api/vps/procesos", handlers.SuperVPSProcessesHandler(dbSuper))
 	http.HandleFunc("/super/api/plantillas_nuevas/catalogo", handlers.SuperPlantillasNuevosCatalogoHandler(dbSuper))
-	http.HandleFunc("/super/api/plantillas_integracion/catalogo", handlers.SuperPlantillasIntegracionCatalogoHandler())
+	http.HandleFunc("/super/api/plantillas_integracion/catalogo", handlers.SuperPlantillasIntegracionCatalogoHandler(dbSuper))
 	http.HandleFunc("/super/api/roles_de_usuario", handlers.RolesDeUsuarioHandler(dbSuper))
 	http.HandleFunc("/super/api/roles_de_usuario/permisos", handlers.RolesDeUsuarioPermisosHandler(dbSuper))
 	// Endpoint CRUD para empresas (persistidas en pcs_empresas PostgreSQL)
