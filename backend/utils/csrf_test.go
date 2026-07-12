@@ -51,13 +51,18 @@ func TestCSRFMiddlewareRejectsMissingOrIncorrectToken(t *testing.T) {
 }
 
 func TestCSRFMiddlewareAllowsPublicLoginWithStaleSessionCookie(t *testing.T) {
-	h := CSRFMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(http.StatusNoContent) }))
-	req := httptest.NewRequest(http.MethodPost, "https://service.test/super/api/administradores/login", nil)
-	req.AddCookie(&http.Cookie{Name: "session_token", Value: "stale"})
-	rec := httptest.NewRecorder()
-	h.ServeHTTP(rec, req)
-	if rec.Code != http.StatusNoContent {
-		t.Fatalf("public login rejected because of stale cookie: %d", rec.Code)
+	for _, target := range []string{
+		"https://service.test/super/api/administradores/login",
+		"https://service.test/api/empresa/usuarios/login",
+	} {
+		h := CSRFMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(http.StatusNoContent) }))
+		req := httptest.NewRequest(http.MethodPost, target, nil)
+		req.AddCookie(&http.Cookie{Name: "session_token", Value: "stale"})
+		rec := httptest.NewRecorder()
+		h.ServeHTTP(rec, req)
+		if rec.Code != http.StatusNoContent {
+			t.Fatalf("public login %q rejected because of stale cookie: %d", target, rec.Code)
+		}
 	}
 }
 

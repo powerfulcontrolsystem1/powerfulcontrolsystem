@@ -37438,3 +37438,8 @@ Archivos modificados:
   `x/sys` 0.45.0, `x/sync` 0.20.0 y `x/text` 0.37.0. Corrige los IDs
   GO-2026-5856, GO-2026-4970 y los hallazgos alcanzables de las versiones
   antiguas de x/net/x/crypto/x/sys.
+
+2026-07-12: Compatibilidad CSRF para inicio de sesion.
+- `login.js` agrega el token CSRF disponible a sus solicitudes JSON sin depender
+  de `menu.js`; se cubren en pruebas ambos inicios de sesion publicos aunque
+  el navegador conserve una cookie de sesion anterior.
