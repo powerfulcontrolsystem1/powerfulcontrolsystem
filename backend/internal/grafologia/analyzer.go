@@ -155,7 +155,11 @@ func buildWorkspace(img image.Image) analysisWorkspace {
 	for y := bounds.Min.Y; y < bounds.Max.Y; y++ {
 		for x := bounds.Min.X; x < bounds.Max.X; x++ {
 			r, g, b, _ := img.At(x, y).RGBA()
-			luma := uint8((299*uint32(r>>8) + 587*uint32(g>>8) + 114*uint32(b>>8)) / 1000)
+			lumaValue := (299*uint32(r>>8) + 587*uint32(g>>8) + 114*uint32(b>>8)) / 1000
+			if lumaValue > 255 {
+				lumaValue = 255
+			}
+			luma := uint8(lumaValue)
 			gray = append(gray, luma)
 		}
 	}
