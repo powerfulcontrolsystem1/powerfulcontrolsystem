@@ -36,10 +36,10 @@ function Resolve-NodeRuntime {
   if ($env:PCS_NODE_PATH) {
     $candidates += $env:PCS_NODE_PATH
   }
-  $candidates += @(
-    (Join-Path $env:USERPROFILE ".cache\codex-runtimes\codex-primary-runtime\dependencies\node\bin\node.exe"),
-    "node"
-  )
+  if (-not [string]::IsNullOrWhiteSpace($env:USERPROFILE)) {
+    $candidates += Join-Path $env:USERPROFILE ".cache\codex-runtimes\codex-primary-runtime\dependencies\node\bin\node.exe"
+  }
+  $candidates += "node"
 
   foreach ($candidate in $candidates) {
     if ([string]::IsNullOrWhiteSpace($candidate)) { continue }
