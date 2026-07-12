@@ -133,7 +133,7 @@ func validatePendingAdminInvitationToken(admin *dbpkg.Admin, token string, now t
 	}
 	storedToken := strings.TrimSpace(admin.EmailConfirmToken)
 	token = strings.TrimSpace(token)
-	if storedToken == "" || token == "" || subtle.ConstantTimeCompare([]byte(storedToken), []byte(token)) != 1 {
+	if storedToken == "" || token == "" || !dbpkg.AdministradorEmailConfirmTokenMatches(storedToken, token) {
 		return http.StatusForbidden, "Invitacion invalida o ya utilizada."
 	}
 	expiraRaw := strings.TrimSpace(admin.EmailConfirmExpira)
