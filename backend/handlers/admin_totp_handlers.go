@@ -168,6 +168,7 @@ func issueReplacementAdminSession(w http.ResponseWriter, r *http.Request, dbSupe
 	if err := dbpkg.RevokeSessionsByAdminEmail(dbSuper, adminEmail); err != nil {
 		return err
 	}
+	utils.InvalidateAuthCacheForAdmin(adminEmail)
 	token, err := utils.GenerateSecureToken(32)
 	if err != nil {
 		return err
