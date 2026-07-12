@@ -42,6 +42,9 @@ func normalizeTOTPCode(code string) string {
 }
 
 func totpCodeAt(secret string, counter int64) (string, error) {
+	if counter < 0 {
+		return "", fmt.Errorf("contador TOTP invalido")
+	}
 	key, err := base32.StdEncoding.WithPadding(base32.NoPadding).DecodeString(strings.ToUpper(strings.TrimSpace(secret)))
 	if err != nil {
 		return "", err
