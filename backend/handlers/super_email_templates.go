@@ -383,6 +383,9 @@ func templateParagraphHTML(title, value string) string {
 
 func SuperEmailTemplatesHandler(dbSuper *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		if _, ok := paginaPrincipalRequireSuperAdmin(w, r, dbSuper); !ok {
+			return
+		}
 		switch r.Method {
 		case http.MethodGet:
 			items, err := listSuperEmailTemplates(dbSuper)

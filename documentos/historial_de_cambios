@@ -37497,6 +37497,13 @@ Archivos modificados:
   super administrador para leer o modificar parámetros de conectividad. Se
   añade una prueba de rechazo para solicitudes sin sesión.
 
+2026-07-12: Configuraciones globales restringidas a super administrador.
+- Chat IA global, respaldos de configuración, almacenamiento domótico, plantillas
+  de correo, limitaciones empresariales, mantenimiento y recordatorios de
+  infraestructura validan la sesión de super administrador antes de leer o
+  modificar datos. El aviso público de mantenimiento permanece separado y solo
+  expone el mensaje programado.
+
 2026-07-12: Acceso documental Nextcloud.
 - Administrar empresa incorpora un enlace separado a `/nextcloud/` dentro de
   `Documentos, nube y soporte`. La visibilidad reutiliza el permiso de lectura

@@ -28,6 +28,9 @@ type superDomoticaStorageRow struct {
 // SuperDomoticaStorageHandler administra limites y carpetas de imagenes empresariales por empresa.
 func SuperDomoticaStorageHandler(dbSuper, dbEmp *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		if _, ok := paginaPrincipalRequireSuperAdmin(w, r, dbSuper); !ok {
+			return
+		}
 		if !strings.EqualFold(r.Method, http.MethodGet) && !strings.EqualFold(r.Method, http.MethodPut) && !strings.EqualFold(r.Method, http.MethodPost) {
 			http.Error(w, "Metodo no permitido", http.StatusMethodNotAllowed)
 			return

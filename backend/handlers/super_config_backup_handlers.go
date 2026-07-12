@@ -211,6 +211,9 @@ func buildSuperConfigBackupPayload(dbSuper *sql.DB, adminEmail string) (*superCo
 // SuperConfigBackupHandler exporta/restaura configuraciones críticas de super administrador.
 func SuperConfigBackupHandler(dbSuper *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		if _, ok := paginaPrincipalRequireSuperAdmin(w, r, dbSuper); !ok {
+			return
+		}
 		switch r.Method {
 		case http.MethodGet:
 			payload, err := buildSuperConfigBackupPayload(dbSuper, adminEmailFromRequest(r))

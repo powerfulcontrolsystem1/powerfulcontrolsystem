@@ -78,6 +78,9 @@ func getLimitacionInt64WithLegacy(dbSuper *sql.DB, key, legacyKey string, fallba
 // Persistencia: tabla configuraciones en pcs_superadministrador.
 func SuperEmpresaLimitacionesConfigHandler(dbSuper *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		if _, ok := paginaPrincipalRequireSuperAdmin(w, r, dbSuper); !ok {
+			return
+		}
 		switch r.Method {
 		case http.MethodGet:
 			rustdeskMinutes, rustdeskUpdatedAt, rustdeskUpdatedBy, err := getLimitacionInt64(dbSuper, superEmpresaLimitRustDeskMinutesKey, defaultEmpresaRustDeskMaxMinutos)
