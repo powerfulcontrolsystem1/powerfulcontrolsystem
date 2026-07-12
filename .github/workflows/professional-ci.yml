@@ -32,8 +32,9 @@ jobs:
         uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
         with:
           # El proyecto conserva compatibilidad de lenguaje con Go 1.20, pero
-          # los analizadores de seguridad actuales requieren un runner Go 1.23.
-          go-version: "1.23.x"
+          # el analisis de vulnerabilidades debe ejecutarse con una biblioteca
+          # estandar corregida (Go 1.25 o posterior).
+          go-version: "1.25.x"
           cache-dependency-path: backend/go.sum
 
       - name: Setup Node
