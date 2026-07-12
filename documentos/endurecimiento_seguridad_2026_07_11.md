@@ -27,6 +27,9 @@ Estado: preparado en la rama `security/full-hardening`; no desplegado.
 - Los nuevos tokens administrativos de recuperacion de contraseña se guardan
   solo como verificadores SHA-256; la migracion conserva la validez de los
   enlaces heredados sin retener su texto plano.
+- Las invitaciones, confirmaciones y recuperaciones de usuarios empresariales
+  usan el mismo verificador SHA-256 y se migran en el arranque sin exponer los
+  valores originales. Las consultas siguen delimitadas por `empresa_id`.
 - La cache de autenticacion tiene invalidacion explicita por token y por
   administrador, ademas del TTL cero, para que logout, reset y cambio de 2FA
   surtan efecto inmediatamente.

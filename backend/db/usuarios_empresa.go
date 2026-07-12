@@ -333,6 +333,7 @@ func CreateEmpresaUsuario(
 	if err := EnsureEmpresaUsuariosAuthSchema(dbConn); err != nil {
 		return 0, err
 	}
+	confirmToken = hashOneTimeSecret(confirmToken)
 	insertUser := func() (int64, error) {
 		return insertSQLCompat(dbConn, `INSERT INTO users (
 			email,
@@ -847,7 +848,7 @@ func GetEmpresaUsuarioByConfirmToken(dbConn *sql.DB, token string) (*EmpresaUsua
 		COALESCE(observaciones, '')
 	FROM users
 	WHERE email_confirm_token = ?
-	LIMIT 1`, token)
+	LIMIT 1`, hashOneTimeSecret(token))
 
 	var item EmpresaUsuario
 	if err := row.Scan(
@@ -973,7 +974,7 @@ func SetEmpresaUsuarioPasswordResetToken(dbConn *sql.DB, empresaID, id int64, to
 			password_reset_expira = ?,
 			password_reset_requested_en = CURRENT_TIMESTAMP,
 			fecha_actualizacion = CURRENT_TIMESTAMP
-		WHERE id = ? AND empresa_id = ?`, token, expira, id, empresaID)
+		WHERE id = ? AND empresa_id = ?`, hashOneTimeSecret(token), expira, id, empresaID)
 	return err
 }
 
@@ -1247,7 +1248,7 @@ func SetEmpresaUsuarioConfirmToken(dbConn *sql.DB, empresaID, id int64, confirmT
 		SET email_confirm_token = ?,
 			email_confirm_expira = ?,
 			fecha_actualizacion = CURRENT_TIMESTAMP
-		WHERE id = ? AND empresa_id = ?`, confirmToken, confirmExpira, id, empresaID)
+		WHERE id = ? AND empresa_id = ?`, hashOneTimeSecret(confirmToken), confirmExpira, id, empresaID)
 	return err
 }
 
@@ -1256,7 +1257,7 @@ func ConfirmEmpresaUsuarioByToken(dbConn *sql.DB, token string) (int64, error) {
 	if err := EnsureEmpresaUsuariosAuthSchema(dbConn); err != nil {
 		return 0, err
 	}
-	row := queryRowSQLCompat(dbConn, `SELECT id, empresa_id, COALESCE(email_confirm_expira, '') FROM users WHERE email_confirm_token = ? LIMIT 1`, token)
+	row := queryRowSQLCompat(dbConn, `SELECT id, empresa_id, COALESCE(email_confirm_expira, '') FROM users WHERE email_confirm_token = ? LIMIT 1`, hashOneTimeSecret(token))
 	var id int64
 	var empresaID int64
 	var expiraRaw string
@@ -1283,6 +1284,63 @@ func ConfirmEmpresaUsuarioByToken(dbConn *sql.DB, token string) (int64, error) {
 		return 0, err
 	}
 	return empresaID, nil
+}
+
+// EmpresaUsuarioTokenMatches compares an original browser/email token with the
+// SHA-256 verifier persisted for an enterprise user.
+func EmpresaUsuarioTokenMatches(storedHash, suppliedToken string) bool {
+	return AdministradorPasswordResetTokenMatches(storedHash, suppliedToken)
+}
+
+// MigrateEmpresaUsuarioTemporaryTokens replaces legacy plaintext invitation
+// and password-reset tokens. dryRun reports the rows that would be changed.
+func MigrateEmpresaUsuarioTemporaryTokens(dbConn *sql.DB, dryRun bool) (int, error) {
+	if err := EnsureEmpresaUsuariosAuthSchema(dbConn); err != nil {
+		return 0, err
+	}
+	rows, err := querySQLCompat(dbConn, `SELECT id, COALESCE(password_reset_token, ''), COALESCE(email_confirm_token, '') FROM users WHERE COALESCE(password_reset_token, '') <> '' OR COALESCE(email_confirm_token, '') <> ''`)
+	if err != nil {
+		return 0, err
+	}
+	defer rows.Close()
+	type item struct {
+		id             int64
+		reset, confirm string
+	}
+	legacy := make([]item, 0)
+	for rows.Next() {
+		var value item
+		if err := rows.Scan(&value.id, &value.reset, &value.confirm); err != nil {
+			return 0, err
+		}
+		if (value.reset != "" && !isSHA256Hex(value.reset)) || (value.confirm != "" && !isSHA256Hex(value.confirm)) {
+			legacy = append(legacy, value)
+		}
+	}
+	if err := rows.Err(); err != nil || dryRun {
+		return len(legacy), err
+	}
+	tx, err := dbConn.Begin()
+	if err != nil {
+		return 0, err
+	}
+	defer func() { _ = tx.Rollback() }()
+	for _, value := range legacy {
+		reset, confirm := value.reset, value.confirm
+		if reset != "" && !isSHA256Hex(reset) {
+			reset = hashOneTimeSecret(reset)
+		}
+		if confirm != "" && !isSHA256Hex(confirm) {
+			confirm = hashOneTimeSecret(confirm)
+		}
+		if _, err := tx.Exec(rebindCompatQuery(`UPDATE users SET password_reset_token = ?, email_confirm_token = ? WHERE id = ?`), reset, confirm, value.id); err != nil {
+			return 0, err
+		}
+	}
+	if err := tx.Commit(); err != nil {
+		return 0, err
+	}
+	return len(legacy), nil
 }
 
 func SetEmpresaUsuarioContratoAceptado(dbConn *sql.DB, empresaID, id int64, version int) error {
