@@ -35,6 +35,9 @@ Estado: preparado en la rama `security/full-hardening`; no desplegado.
   surtan efecto inmediatamente.
 - El workflow `Professional CI` se ejecuta tambien en ramas `security/**`,
   ademas de pull requests, ramas principales y ejecucion manual.
+- La CSP estricta se publica inicialmente mediante
+  `Content-Security-Policy-Report-Only`: elimina destinos comodin de conexiones
+  y agrega `form-action 'self'` sin bloquear aun el frontend heredado.
 
 ## Variables nuevas o modificadas
 
