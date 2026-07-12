@@ -15,3 +15,14 @@ func TestAdministradorPasswordResetTokenUsesOnlyVerifier(t *testing.T) {
 		t.Fatal("incorrect reset token matched verifier")
 	}
 }
+
+func TestAdministradorEmailConfirmationTokenUsesOnlyVerifier(t *testing.T) {
+	token := "confirmacion-temporal"
+	hash := hashOneTimeSecret(token)
+	if !AdministradorEmailConfirmTokenMatches(hash, token) {
+		t.Fatal("valid email confirmation token did not match verifier")
+	}
+	if AdministradorEmailConfirmTokenMatches(hash, "otro-token") {
+		t.Fatal("incorrect email confirmation token matched verifier")
+	}
+}

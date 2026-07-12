@@ -849,6 +849,16 @@ func main() {
 			log.Printf("INFO: protected %d legacy password reset token(s)", migratedResetTokens)
 		}
 		startupTrace("after_migrate_password_reset_tokens")
+		migratedConfirmTokens, err := dbpkg.MigrateAdministradorEmailConfirmTokens(dbSuper, totpMigrationDryRun)
+		if err != nil {
+			log.Fatalf("failed to protect existing email confirmation tokens: %v", err)
+		}
+		if totpMigrationDryRun {
+			log.Printf("INFO: email confirmation token migration dry-run found %d legacy token(s)", migratedConfirmTokens)
+		} else if migratedConfirmTokens > 0 {
+			log.Printf("INFO: protected %d legacy email confirmation token(s)", migratedConfirmTokens)
+		}
+		startupTrace("after_migrate_email_confirmation_tokens")
 		if err := dbpkg.EnsurePaymentGatewaySchema(dbSuper); err != nil {
 			log.Fatalf("failed to ensure payment gateway schema in superadministrador db: %v", err)
 		}

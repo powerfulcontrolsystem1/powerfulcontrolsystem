@@ -1472,13 +1472,19 @@ func ReassignSessionsAdminEmail(dbConn *sql.DB, oldEmail, newEmail string) error
 // SetAdministradorConfirmToken actualiza el token de confirmación para un administrador.
 func SetAdministradorConfirmToken(dbConn *sql.DB, email, token, expira string) error {
 	nowExpr := sqlNowExpr()
-	_, err := execSQLCompat(dbConn, "UPDATE administradores SET email_confirm_token = ?, email_confirm_expira = ?, email_confirmado = 0, fecha_actualizacion = "+nowExpr+" WHERE LOWER(COALESCE(email,'')) = LOWER(?)", strings.TrimSpace(token), strings.TrimSpace(expira), strings.TrimSpace(email))
+	_, err := execSQLCompat(dbConn, "UPDATE administradores SET email_confirm_token = ?, email_confirm_expira = ?, email_confirmado = 0, fecha_actualizacion = "+nowExpr+" WHERE LOWER(COALESCE(email,'')) = LOWER(?)", hashOneTimeSecret(token), strings.TrimSpace(expira), strings.TrimSpace(email))
 	return err
+}
+
+func AdministradorEmailConfirmTokenMatches(storedHash, suppliedToken string) bool {
+	storedHash = strings.TrimSpace(storedHash)
+	expected := hashOneTimeSecret(suppliedToken)
+	return len(storedHash) == len(expected) && subtle.ConstantTimeCompare([]byte(storedHash), []byte(expected)) == 1
 }
 
 // ConfirmAdministradorByToken confirma el correo de un administrador usando su token.
 func ConfirmAdministradorByToken(dbConn *sql.DB, token string) (int64, error) {
-	row := queryRowSQLCompat(dbConn, `SELECT id, COALESCE(email_confirm_expira, '') FROM administradores WHERE email_confirm_token = ? LIMIT 1`, strings.TrimSpace(token))
+	row := queryRowSQLCompat(dbConn, `SELECT id, COALESCE(email_confirm_expira, '') FROM administradores WHERE email_confirm_token = ? LIMIT 1`, hashOneTimeSecret(token))
 	var id int64
 	var expiraRaw string
 	if err := row.Scan(&id, &expiraRaw); err != nil {
@@ -1497,6 +1503,48 @@ func ConfirmAdministradorByToken(dbConn *sql.DB, token string) (int64, error) {
 		return 0, err
 	}
 	return id, nil
+}
+
+func MigrateAdministradorEmailConfirmTokens(dbConn *sql.DB, dryRun bool) (int, error) {
+	if dbConn == nil {
+		return 0, fmt.Errorf("database not available")
+	}
+	rows, err := querySQLCompat(dbConn, "SELECT id, COALESCE(email_confirm_token, '') FROM administradores WHERE COALESCE(email_confirm_token, '') <> ''")
+	if err != nil {
+		return 0, err
+	}
+	defer rows.Close()
+	type legacyToken struct {
+		id    int64
+		token string
+	}
+	legacy := make([]legacyToken, 0)
+	for rows.Next() {
+		var item legacyToken
+		if err := rows.Scan(&item.id, &item.token); err != nil {
+			return 0, err
+		}
+		if !isSHA256Hex(item.token) {
+			legacy = append(legacy, item)
+		}
+	}
+	if err := rows.Err(); err != nil || dryRun {
+		return len(legacy), err
+	}
+	tx, err := dbConn.Begin()
+	if err != nil {
+		return 0, err
+	}
+	defer func() { _ = tx.Rollback() }()
+	for _, item := range legacy {
+		if _, err := tx.Exec(rebindCompatQuery("UPDATE administradores SET email_confirm_token = ? WHERE id = ? AND email_confirm_token = ?"), hashOneTimeSecret(item.token), item.id, item.token); err != nil {
+			return 0, err
+		}
+	}
+	if err := tx.Commit(); err != nil {
+		return 0, err
+	}
+	return len(legacy), nil
 }
 
 // SetAdministradorPassword guarda hash y salt y marca password_set.
