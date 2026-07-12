@@ -24,7 +24,7 @@ func TestGenerateEmpresaSensorToken(t *testing.T) {
 		t.Fatalf("token debe tener 64 caracteres hex, got %d", len(token))
 	}
 	if strings.Trim(token, "0123456789abcdef") != "" {
-		t.Fatalf("token no parece hexadecimal: %q", token)
+		t.Fatal("token no parece hexadecimal")
 	}
 }
 

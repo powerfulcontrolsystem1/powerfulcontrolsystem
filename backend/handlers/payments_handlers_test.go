@@ -58,7 +58,7 @@ func TestLicenciaFacturaAmountHonorsZeroAndPositivePaymentPayloads(t *testing.T)
 }
 
 func TestBuildEpaycoClassicCheckoutFormUsesSecurePaycoPostAndSignature(t *testing.T) {
-	checkoutKey := "a1c7200f0e2029d11b62bfd863422d5db10a8397"
+	checkoutKey := "test-only-checkout-key"
 	form := buildEpaycoClassicCheckoutForm(
 		"https://powerfulcontrolsystem.com",
 		"123456",
