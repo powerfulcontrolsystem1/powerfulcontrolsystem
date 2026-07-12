@@ -50,6 +50,14 @@ deploy/.env.staging
 .codex-gocache/
 .codex-tmp-go/
 .codex-chrome*/
+.codex_tmp/
+.codex-remote-attachments/
+# Credenciales y llaves privadas locales
+*.ppk
+*.pem
+*.key
+*.p12
+*.pfx
 # VSCode
 .vscode/
 # Archivos compilados

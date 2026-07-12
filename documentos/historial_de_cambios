@@ -37486,3 +37486,9 @@ Archivos modificados:
 - Catálogos y altas de plantillas, roles y permisos, licencias adicionales,
   venta digital y métricas globales exigen ahora super administrador. El
   catálogo público de integración conserva su ruta pública independiente.
+2026-07-12: Saneamiento del repositorio antes de producción.
+- Se retiran del índice Git una llave SSH privada local, artefactos temporales de
+  Codex/VPS2, adjuntos de pruebas y una base temporal de sincronización. Los
+  archivos locales no se eliminan y quedan cubiertos por `.gitignore`.
+- La limpieza del historial público y la rotación de la credencial afectada se
+  tratan como acciones separadas después del respaldo completo de referencias.
