@@ -1,6 +1,7 @@
 ﻿# Binarios y logs de backend
 backend/server.exe
 backend/**/*.exe
+herramientas/*.exe
 backend/pos-backend.exe
 backend/*.log
 backend/*.err
