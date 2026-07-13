@@ -37600,3 +37600,9 @@ Archivos modificados:
   sistema o de integraciones de respaldo.
 - El guardado de configuración responde con un error genérico, y las pruebas
   verifican el saneamiento de la respuesta pública.
+
+2026-07-13: Errores internos ocultos en configuración empresarial.
+- La configuración guiada inicial y las preferencias de tarjetas del panel
+  dejan de concatenar errores de persistencia a respuestas HTTP 5xx. Los
+  errores de entrada (400) se conservan para que el usuario pueda corregir el
+  formulario sin revelar detalles de base de datos.

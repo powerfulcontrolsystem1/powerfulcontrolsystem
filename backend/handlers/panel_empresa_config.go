@@ -142,31 +142,31 @@ func EmpresaPanelConfiguracionHandler(dbEmp *sql.DB) http.HandlerFunc {
 			usuario := adminEmailFromRequest(r)
 			if payload.FavoritosEnabled != nil {
 				if err := setEmpresaPanelPref(dbEmp, empresaID, panelEmpresaFavoritosEnabledKey, *payload.FavoritosEnabled, usuario); err != nil {
-					http.Error(w, "no se pudo guardar favoritos: "+err.Error(), http.StatusInternalServerError)
+					http.Error(w, "no se pudo guardar favoritos", http.StatusInternalServerError)
 					return
 				}
 			}
 			if payload.EmailEnabled != nil {
 				if err := setEmpresaPanelPref(dbEmp, empresaID, panelEmpresaEmailEnabledKey, *payload.EmailEnabled, usuario); err != nil {
-					http.Error(w, "no se pudo guardar email corporativo: "+err.Error(), http.StatusInternalServerError)
+					http.Error(w, "no se pudo guardar email corporativo", http.StatusInternalServerError)
 					return
 				}
 			}
 			if payload.NoticiasEnabled != nil {
 				if err := setEmpresaPanelPref(dbEmp, empresaID, panelEmpresaNoticiasEnabledKey, *payload.NoticiasEnabled, usuario); err != nil {
-					http.Error(w, "no se pudo guardar noticias: "+err.Error(), http.StatusInternalServerError)
+					http.Error(w, "no se pudo guardar noticias", http.StatusInternalServerError)
 					return
 				}
 			}
 			if payload.BuzonEnabled != nil {
 				if err := setEmpresaPanelPref(dbEmp, empresaID, panelEmpresaBuzonEnabledKey, *payload.BuzonEnabled, usuario); err != nil {
-					http.Error(w, "no se pudo guardar buzon: "+err.Error(), http.StatusInternalServerError)
+					http.Error(w, "no se pudo guardar buzon", http.StatusInternalServerError)
 					return
 				}
 			}
 			if payload.ChatEnabled != nil {
 				if err := setEmpresaPanelPref(dbEmp, empresaID, panelEmpresaChatEnabledKey, *payload.ChatEnabled, usuario); err != nil {
-					http.Error(w, "no se pudo guardar chat: "+err.Error(), http.StatusInternalServerError)
+					http.Error(w, "no se pudo guardar chat", http.StatusInternalServerError)
 					return
 				}
 			}

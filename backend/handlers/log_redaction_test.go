@@ -120,3 +120,31 @@ func TestRemoteSupportConfigurationDoesNotExposePersistenceErrors(t *testing.T) 
 		t.Fatal("remote support configuration must not expose persistence errors")
 	}
 }
+
+func TestCompanyConfigurationHandlersDoNotExposePersistenceErrors(t *testing.T) {
+	for path, forbidden := range map[string][]string{
+		"configuracion_guiada.go": {
+			"no se pudo cargar la configuracion guiada: \"+err.Error()",
+			"no se pudo cargar el contexto guiado: \"+err.Error()",
+			"no se pudo posponer la configuracion guiada: \"+err.Error()",
+			"no se pudo aplicar la configuracion guiada: \"+err.Error()",
+		},
+		"panel_empresa_config.go": {
+			"no se pudo guardar favoritos: \"+err.Error()",
+			"no se pudo guardar email corporativo: \"+err.Error()",
+			"no se pudo guardar noticias: \"+err.Error()",
+			"no se pudo guardar buzon: \"+err.Error()",
+			"no se pudo guardar chat: \"+err.Error()",
+		},
+	} {
+		contents, err := os.ReadFile(path)
+		if err != nil {
+			t.Fatalf("read %s: %v", path, err)
+		}
+		for _, value := range forbidden {
+			if strings.Contains(string(contents), value) {
+				t.Fatalf("company configuration handler must not expose persistence error: %s", path)
+			}
+		}
+	}
+}
