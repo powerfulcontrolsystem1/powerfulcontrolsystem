@@ -82,3 +82,14 @@ func TestLegacyPlaintextRustDeskDeviceImplementationRemainsRemoved(t *testing.T)
 		}
 	}
 }
+
+func TestStationPreferencesDoNotLogRawUserEmail(t *testing.T) {
+	path := filepath.Join("estaciones_columnas_pref.go")
+	contents, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("read %s: %v", path, err)
+	}
+	if strings.Contains(string(contents), "user=%s error: %v\", empresaID, p.UsuarioEmail") {
+		t.Fatal("station preferences must redact user email before logging")
+	}
+}

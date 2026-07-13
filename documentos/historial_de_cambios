@@ -18,6 +18,9 @@
 - Las utilidades de cambio directo de proveedor IA y reCAPTCHA ahora son
   simulación por defecto, no leen `.env` automáticamente y requieren
   `-apply` más una confirmación literal antes de conectarse a la base.
+- El barrido posterior corrige una traza de preferencias de estaciones que aún
+  registraba correo completo; ahora reutiliza la redacción central y cuenta con
+  regresión de fuente.
 
 2026-07-13: Auditoria de preparación - minimizacion de secretos y PII en logs.
 - Se elimina `backend/tools/query_epayco_runtime.go`, que accedía directamente
