@@ -79,3 +79,30 @@ func TestCSRFMiddlewareRejectsDifferentPortAndSubdomain(t *testing.T) {
 		}
 	}
 }
+
+func TestCSRFMiddlewareRotatesAfterCredentialAndSecondFactorChanges(t *testing.T) {
+	for _, path := range []string{
+		"/api/account/change_password",
+		"/api/account/set_google_password",
+		"/super/api/administradores/2fa",
+	} {
+		h := CSRFMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusNoContent)
+		}))
+		req := httptest.NewRequest(http.MethodPost, "https://service.test"+path, nil)
+		req.AddCookie(&http.Cookie{Name: "session_token", Value: "opaque"})
+		req.AddCookie(&http.Cookie{Name: csrfCookieName, Value: "csrf-current"})
+		req.Header.Set("Origin", "https://service.test")
+		req.Header.Set(csrfHeaderName, "csrf-current")
+		rec := httptest.NewRecorder()
+
+		h.ServeHTTP(rec, req)
+		if rec.Code != http.StatusNoContent {
+			t.Fatalf("security mutation %q rejected: %d", path, rec.Code)
+		}
+		cookies := rec.Result().Cookies()
+		if len(cookies) == 0 || cookies[0].Name != csrfCookieName || cookies[0].Value == "csrf-current" {
+			t.Fatalf("security mutation %q did not rotate the CSRF token", path)
+		}
+	}
+}

@@ -37694,3 +37694,10 @@ Archivos modificados:
 - Las operaciones empresariales contra Rappi ya no devuelven al navegador errores
   de red, proveedor o configuración; conservan un estado de error estable para
   la interfaz y el diagnóstico queda limitado al servidor.
+
+2026-07-13: Rotación CSRF en cambios de credenciales y segundo factor.
+- Las mutaciones autenticadas de cambio de contraseña, creación de la primera
+  contraseña local y administración de TOTP emiten un token CSRF nuevo en su
+  respuesta, después de validar el token recibido en la misma solicitud.
+- La cobertura de regresión protege que estas rutas no rompan la petición
+  legítima ni reutilicen el token anterior para el siguiente cambio sensible.

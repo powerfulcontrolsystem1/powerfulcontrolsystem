@@ -518,7 +518,12 @@ func csrfShouldRotate(r *http.Request) bool {
 		return false
 	}
 	switch r.URL.Path {
-	case "/super/api/administradores/login", "/api/empresa/usuarios/login", "/api/empresa/usuarios/establecer_password":
+	case "/super/api/administradores/login",
+		"/api/empresa/usuarios/login",
+		"/api/empresa/usuarios/establecer_password",
+		"/api/account/change_password",
+		"/api/account/set_google_password",
+		"/super/api/administradores/2fa":
 		return true
 	default:
 		return false
