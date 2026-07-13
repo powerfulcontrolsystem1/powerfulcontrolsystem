@@ -148,3 +148,22 @@ func TestCompanyConfigurationHandlersDoNotExposePersistenceErrors(t *testing.T) 
 		}
 	}
 }
+
+func TestAIConfigurationDoesNotExposeCredentialOrProviderDiagnostics(t *testing.T) {
+	contents, err := os.ReadFile("ai_config_handlers.go")
+	if err != nil {
+		t.Fatalf("read AI configuration handler: %v", err)
+	}
+	for _, forbidden := range []string{
+		`"error":          err.Error()`,
+		`publicErr = err.Error()`,
+		`publicErr = perr.Error()`,
+		`"failed to save "+superAIEnabledConfigKey+": "+err.Error()`,
+		`"encryption failed: "+err.Error()`,
+		`"failed to save provider key "+providerKey+": "+err.Error()`,
+	} {
+		if strings.Contains(string(contents), forbidden) {
+			t.Fatalf("AI configuration must not expose internal or provider diagnostic: %s", forbidden)
+		}
+	}
+}

@@ -37606,3 +37606,9 @@ Archivos modificados:
   dejan de concatenar errores de persistencia a respuestas HTTP 5xx. Los
   errores de entrada (400) se conservan para que el usuario pueda corregir el
   formulario sin revelar detalles de base de datos.
+
+2026-07-13: Prueba y credenciales de IA con errores públicos estables.
+- La prueba de proveedor IA conserva códigos operativos para credencial ausente,
+  rechazada, inválida o limitada, sin reenviar el diagnóstico crudo del proveedor.
+- Los errores de cifrado y persistencia de credenciales IA se reemplazan por
+  mensajes genéricos y quedan protegidos por una regresión de código fuente.
