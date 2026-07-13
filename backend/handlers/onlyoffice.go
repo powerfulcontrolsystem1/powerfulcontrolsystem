@@ -1162,6 +1162,8 @@ func urlQueryEscape(v string) string {
 // Endpoint público: sirve el archivo a OnlyOffice (token temporal).
 func OnlyOfficeFilePublicHandler(dbSuper *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Cache-Control", "no-store")
+		w.Header().Set("X-Content-Type-Options", "nosniff")
 		if dbSuper != nil && !isOnlyOfficeEnabled(dbSuper) {
 			writeJSON(w, http.StatusOK, map[string]any{"ok": false, "enabled": false, "error": "OnlyOffice disabled"})
 			return
@@ -1209,6 +1211,7 @@ func OnlyOfficeFilePublicHandler(dbSuper *sql.DB) http.HandlerFunc {
 // Endpoint público: callback de OnlyOffice (guardado).
 func OnlyOfficeCallbackPublicHandler(dbSuper *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Cache-Control", "no-store")
 		if dbSuper != nil && !isOnlyOfficeEnabled(dbSuper) {
 			writeJSON(w, http.StatusOK, map[string]any{"ok": false, "enabled": false, "error": "OnlyOffice disabled"})
 			return

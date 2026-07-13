@@ -37679,3 +37679,8 @@ Archivos modificados:
   Rappi requiere secreto por empresa, firma válida y cuerpo acotado.
 - Ambos callbacks devuelven únicamente un acuse genérico y no filtran contexto
   de licencia, empresa, pedido o estado de procesamiento.
+
+2026-07-13: Tokens temporales de OnlyOffice fuera de caché.
+- Las rutas públicas que reciben el token temporal de archivo o callback de
+  OnlyOffice emiten `Cache-Control: no-store`; la descarga también añade
+  `nosniff` para impedir reutilización desde cachés compartidas.

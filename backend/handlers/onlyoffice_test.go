@@ -3,6 +3,7 @@ package handlers
 import (
 	"archive/zip"
 	"bytes"
+	"net/http"
 	"net/http/httptest"
 	"path/filepath"
 	"testing"
@@ -121,6 +122,19 @@ func TestCopyOnlyOfficeCallbackFileKeepsCompleteAllowedDocument(t *testing.T) {
 	}
 	if !bytes.Equal(dst.Bytes(), source) {
 		t.Fatal("callback document changed during copy")
+	}
+}
+
+func TestOnlyOfficeTemporaryTokenHandlersDisableCaching(t *testing.T) {
+	for _, handler := range []http.HandlerFunc{
+		OnlyOfficeFilePublicHandler(nil),
+		OnlyOfficeCallbackPublicHandler(nil),
+	} {
+		rec := httptest.NewRecorder()
+		handler(rec, httptest.NewRequest(http.MethodGet, "/api/onlyoffice/file?token=temporary", nil))
+		if got := rec.Header().Get("Cache-Control"); got != "no-store" {
+			t.Fatalf("expected no-store for temporary OnlyOffice token, got %q", got)
+		}
 	}
 }
 
