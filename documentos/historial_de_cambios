@@ -37725,3 +37725,12 @@ Archivos modificados:
 - El chat heredado deja de ejecutar cambios de precio por la palabra CONFIRMAR y
   deja de instruir al modelo para producir bloques `PCS_ACTION`. Las escrituras
   nuevas requieren una propuesta de servidor y confirmacion HTTP independiente.
+
+2026-07-13: Restauracion de Nextcloud empresarial en VPS2.
+- Se restablecen la pagina empresarial, API protegida, configuracion super y el
+  enlace bajo `Documentos, nube y soporte`. La cuenta se asigna por empresa,
+  mantiene cuota, no guarda la contrasena del usuario y solo entrega una
+  credencial temporal durante aprovisionamiento o restablecimiento.
+- El arranque vuelve a asegurar el esquema de cuentas Nextcloud en lugar de
+  eliminarlo. La API conserva wrapper de gestion documental, contexto validado
+  de empresa, secretos cifrados, HTTPS obligatorio, timeout y auditoria.

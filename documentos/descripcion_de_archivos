@@ -11794,6 +11794,14 @@ documentos/ia_orquestador_empresarial.md
 - Contrato operativo, flags seguros, flujo de propuestas y plan de activacion
   progresiva del orquestador IA empresarial.
 
+backend/db/nextcloud.go, backend/handlers/nextcloud.go
+- Asignacion multiempresa y aprovisionamiento seguro de cuentas Nextcloud con
+  configuracion global cifrada, cuota, auditoria y credenciales temporales.
+
+web/administrar_empresa/nextcloud.html, web/js/nextcloud_empresa.js
+- Pantalla empresarial de estado, aprovisionamiento, restablecimiento y apertura
+  de Nextcloud para la empresa activa.
+
 backend/db/soporte_remoto_security_test.go
 - Pruebas criptográficas de credenciales temporales de soporte remoto.
 

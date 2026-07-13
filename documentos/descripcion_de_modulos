@@ -4434,3 +4434,9 @@ de productos/SKUs, caja, impuestos, cliente y reglas de facturacion.
 
 2026-07-11: Operacion de despliegue `rs`.
 - `scripts/rs.ps1` selecciona el ejecutable hijo correcto para PowerShell Core o Windows PowerShell y conserva su fallback. Esto evita que una ruta inexistente a `powershell.exe` detenga preflight, repositorio y sincronizacion antes de contactar la VPS.
+
+2026-07-13: Nextcloud empresarial restaurado.
+- El grupo `Documentos, nube y soporte` vuelve a incluir Nextcloud. Cada empresa
+  ve solo su cuenta tecnica, cuota, estado y enlace WebDAV; el backend deriva
+  la empresa desde el contexto protegido y audita aprovisionamiento y reinicios
+  de credencial sin guardar ni listar contrasenas de usuarios.
