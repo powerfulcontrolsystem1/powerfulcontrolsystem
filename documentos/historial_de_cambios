@@ -37547,3 +37547,6 @@ Archivos modificados:
   que el cliente fue compilado con Go 1.23.4 vulnerable. La UI ya usa el canal
   oficial de RustDesk; el contenedor conserva `/app/descargas` como volumen
   runtime para artefactos verificados fuera de Git.
+- Se retira `backend/tools/install_rustdesk`: no tenía consumidores y ejecutaba
+  como root un `setup.sh` descargado desde `master` sin versión ni checksum. El
+  flujo RustDesk vigente usa la configuración contenerizada y documentada.
