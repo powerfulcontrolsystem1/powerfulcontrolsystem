@@ -37734,3 +37734,8 @@ Archivos modificados:
 - El arranque vuelve a asegurar el esquema de cuentas Nextcloud en lugar de
   eliminarlo. La API conserva wrapper de gestion documental, contexto validado
   de empresa, secretos cifrados, HTTPS obligatorio, timeout y auditoria.
+
+2026-07-13: rs: actualizar repositorio y sincronizar VPS
+PushStatus: OK
+Archivos modificados:
+- documentos/api/openapi.generated.yaml
