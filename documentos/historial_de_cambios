@@ -37776,3 +37776,35 @@ Archivos modificados:
 
 2026-07-13: Eliminacion integral de empresa
 - La eliminacion total limpia cuentas y archivos remotos de Mailu y Nextcloud, la carpeta de documentos OnlyOffice, callbacks temporales, uploads, privados y backups antes del cascade.
+
+2026-07-13: rs: actualizar repositorio y sincronizar VPS
+PushStatus: OK
+Archivos modificados:
+- backend/ai/enterprise.go
+- backend/ai/policies.go
+- backend/ai/policies_test.go
+- backend/db/ai_enterprise.go
+- backend/db/nextcloud.go
+- backend/handlers/ai_enterprise_orchestrator.go
+- backend/handlers/email_corporativo_handlers.go
+- backend/handlers/empresa_delete_files.go
+- backend/handlers/licencias_vencimiento_alertas.go
+- backend/handlers/nextcloud.go
+- backend/handlers/system_empresas_handlers.go
+- backend/main.go
+- deploy/README-compose-platform.md
+- deploy/docker-compose.platform.yml
+- deploy/scripts/vps-delete-mailu-mailbox.sh
+- documentos/CHANGELOG.md
+- documentos/descripcion_de_archivos
+- documentos/descripcion_de_modulos
+- documentos/descripcion_del_proyecto
+- documentos/diagramas/estructura_del_codigo.md
+- documentos/docker_vps_operacion.md
+- documentos/estructura_bd.md
+- documentos/flujos_operativos.md
+- documentos/historial_de_cambios
+- documentos/matriz_roles_permisos_pos_multiempresa.md
+- documentos/nextcloud_empresarial.md
+- web/administrar_empresa/nextcloud.html
+- web/js/nextcloud_empresa.js
