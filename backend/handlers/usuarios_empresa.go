@@ -839,7 +839,7 @@ func EmpresaUsuarioLoginHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 				http.Error(w, "este correo esta asociado a mas de una empresa; solicita al administrador usar un correo unico por empresa", http.StatusConflict)
 				return
 			}
-			log.Printf("[usuarios_empresa] failed to query user (login) empresa_id=%d email=%s error=%v", payload.EmpresaID, email, err)
+			log.Printf("[usuarios_empresa] failed to query user (login) empresa_id=%d email=%s error=%v", payload.EmpresaID, redactEmailForLog(email), err)
 			writeEmpresaUsuarioPublicError(w, http.StatusInternalServerError, "usuario_login_validacion_error", "No se pudo validar el usuario para iniciar sesion.", "Intenta de nuevo. Si continua, revisa el request_id en Auditoria de errores del sistema.", nil)
 			return
 		}
@@ -883,7 +883,7 @@ func EmpresaUsuarioLoginHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 				empresaUsuarioBloqueoDuracion,
 			)
 			if registerErr != nil {
-				log.Printf("[usuarios_empresa] failed to register login failure empresa_id=%d id=%d email=%s error=%v", item.EmpresaID, item.ID, item.Email, registerErr)
+				log.Printf("[usuarios_empresa] failed to register login failure empresa_id=%d id=%d email=%s error=%v", item.EmpresaID, item.ID, redactEmailForLog(item.Email), registerErr)
 			}
 			if strings.TrimSpace(lockUntil) != "" {
 				http.Error(w, "usuario bloqueado temporalmente por intentos fallidos hasta "+lockUntil, http.StatusTooManyRequests)
@@ -894,7 +894,7 @@ func EmpresaUsuarioLoginHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 		}
 
 		if err := dbpkg.ClearEmpresaUsuarioLoginFailures(dbEmp, item.EmpresaID, item.ID); err != nil {
-			log.Printf("[usuarios_empresa] failed to clear login failures empresa_id=%d id=%d email=%s error=%v", item.EmpresaID, item.ID, item.Email, err)
+			log.Printf("[usuarios_empresa] failed to clear login failures empresa_id=%d id=%d email=%s error=%v", item.EmpresaID, item.ID, redactEmailForLog(item.Email), err)
 			http.Error(w, "No se pudo restablecer la seguridad de acceso", http.StatusInternalServerError)
 			return
 		}
@@ -915,7 +915,7 @@ func EmpresaUsuarioLoginHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 		}
 
 		if err := createEmpresaUsuarioSessionAndRespond(w, r, dbSuper, item); err != nil {
-			log.Printf("[usuarios_empresa] failed to create session (login) empresa_id=%d email=%s error=%v", item.EmpresaID, item.Email, err)
+			log.Printf("[usuarios_empresa] failed to create session (login) empresa_id=%d email=%s error=%v", item.EmpresaID, redactEmailForLog(item.Email), err)
 			http.Error(w, "No se pudo iniciar sesión del usuario", http.StatusInternalServerError)
 			return
 		}
@@ -1023,7 +1023,7 @@ func EmpresaUsuarioSetPasswordHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 				http.Error(w, "usuario no encontrado", http.StatusNotFound)
 				return
 			}
-			log.Printf("[usuarios_empresa] failed to query user (set_password) empresa_id=%d email=%s error=%v", payload.EmpresaID, email, err)
+			log.Printf("[usuarios_empresa] failed to query user (set_password) empresa_id=%d email=%s error=%v", payload.EmpresaID, redactEmailForLog(email), err)
 			writeEmpresaUsuarioPublicError(w, http.StatusInternalServerError, "usuario_invitacion_validacion_error", "No se pudo validar la invitacion del usuario.", "Recarga el enlace de invitacion o pide al administrador reenviar la invitacion desde Usuarios.", nil)
 			return
 		}
@@ -1054,7 +1054,7 @@ func EmpresaUsuarioSetPasswordHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 
 		contract, accepted, err := ensureEmpresaUsuarioCurrentContractAccepted(dbEmp, dbSuper, item, payload.AcceptContract)
 		if err != nil {
-			log.Printf("[usuarios_empresa] failed to verify contract acceptance (set_password) empresa_id=%d email=%s error=%v", item.EmpresaID, item.Email, err)
+			log.Printf("[usuarios_empresa] failed to verify contract acceptance (set_password) empresa_id=%d email=%s error=%v", item.EmpresaID, redactEmailForLog(item.Email), err)
 			writeEmpresaUsuarioPublicError(w, http.StatusInternalServerError, "contrato_validacion_error", "No se pudo validar el contrato vigente.", "Recarga la pagina, vuelve a aceptar el contrato e intenta de nuevo. Si continua, revisa la configuracion del contrato en Super Administrador.", nil)
 			return
 		}
@@ -1069,7 +1069,7 @@ func EmpresaUsuarioSetPasswordHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 			return
 		}
 		if err := dbpkg.CompleteEmpresaUsuarioInvitationPassword(dbEmp, item.EmpresaID, item.ID, hash, salt); err != nil {
-			log.Printf("[usuarios_empresa] failed to set password empresa_id=%d id=%d email=%s error=%v", item.EmpresaID, item.ID, item.Email, err)
+			log.Printf("[usuarios_empresa] failed to set password empresa_id=%d id=%d email=%s error=%v", item.EmpresaID, item.ID, redactEmailForLog(item.Email), err)
 			writeEmpresaUsuarioPublicError(w, http.StatusInternalServerError, "password_actualizacion_error", "No se pudo actualizar la contrasena del usuario.", "Verifica que la invitacion siga vigente y que el usuario pertenezca a esta empresa. Luego intenta reenviar la invitacion.", nil)
 			return
 		}
@@ -1083,7 +1083,7 @@ func EmpresaUsuarioSetPasswordHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 		item.Estado = "activo"
 
 		if err := createEmpresaUsuarioSessionAndRespond(w, r, dbSuper, item); err != nil {
-			log.Printf("[usuarios_empresa] failed to create session (set_password) empresa_id=%d email=%s error=%v", item.EmpresaID, item.Email, err)
+			log.Printf("[usuarios_empresa] failed to create session (set_password) empresa_id=%d email=%s error=%v", item.EmpresaID, redactEmailForLog(item.Email), err)
 			writeEmpresaUsuarioPublicError(w, http.StatusInternalServerError, "sesion_usuario_error", "La contrasena quedo configurada, pero no fue posible iniciar sesion automaticamente.", "Intenta iniciar sesion manualmente con tu correo y la contrasena creada.", map[string]interface{}{"password_set": true})
 			return
 		}
@@ -1143,7 +1143,7 @@ func EmpresaUsuarioRequestPasswordRecoveryHandler(dbEmp, dbSuper *sql.DB) http.H
 				respondAccepted("masked")
 				return
 			}
-			log.Printf("[usuarios_empresa] failed to query user (password_recovery_request) empresa_id=%d email=%s error=%v", payload.EmpresaID, email, err)
+			log.Printf("[usuarios_empresa] failed to query user (password_recovery_request) empresa_id=%d email=%s error=%v", payload.EmpresaID, redactEmailForLog(email), err)
 			http.Error(w, "No se pudo procesar la solicitud", http.StatusInternalServerError)
 			return
 		}
@@ -1158,13 +1158,13 @@ func EmpresaUsuarioRequestPasswordRecoveryHandler(dbEmp, dbSuper *sql.DB) http.H
 			return
 		}
 		if err := dbpkg.SetEmpresaUsuarioPasswordResetToken(dbEmp, item.EmpresaID, item.ID, token, expira); err != nil {
-			log.Printf("[usuarios_empresa] failed to set recovery token empresa_id=%d id=%d email=%s error=%v", item.EmpresaID, item.ID, item.Email, err)
+			log.Printf("[usuarios_empresa] failed to set recovery token empresa_id=%d id=%d email=%s error=%v", item.EmpresaID, item.ID, redactEmailForLog(item.Email), err)
 			http.Error(w, "No se pudo registrar la recuperación", http.StatusInternalServerError)
 			return
 		}
 
 		if _, mailErr := sendEmpresaUsuarioPasswordRecoveryEmail(r, dbEmp, dbSuper, item.EmpresaID, item.Email, item.Nombre, token); mailErr != nil {
-			log.Printf("[usuarios_empresa] password recovery email not sent empresa_id=%d id=%d email=%s error=%v", item.EmpresaID, item.ID, item.Email, mailErr)
+			log.Printf("[usuarios_empresa] password recovery email not sent empresa_id=%d id=%d email=%s error=%v", item.EmpresaID, item.ID, redactEmailForLog(item.Email), mailErr)
 			respondAccepted("manual")
 			return
 		}
@@ -1225,7 +1225,7 @@ func EmpresaUsuarioRequestInvitationRecoveryHandler(dbEmp, dbSuper *sql.DB) http
 				respondAccepted("masked")
 				return
 			}
-			log.Printf("[usuarios_empresa] failed to query user (invitation_recovery) empresa_id=%d email=%s error=%v", payload.EmpresaID, email, err)
+			log.Printf("[usuarios_empresa] failed to query user (invitation_recovery) empresa_id=%d email=%s error=%v", payload.EmpresaID, redactEmailForLog(email), err)
 			http.Error(w, "No se pudo procesar la solicitud", http.StatusInternalServerError)
 			return
 		}
@@ -1240,13 +1240,13 @@ func EmpresaUsuarioRequestInvitationRecoveryHandler(dbEmp, dbSuper *sql.DB) http
 			return
 		}
 		if err := dbpkg.SetEmpresaUsuarioConfirmToken(dbEmp, item.EmpresaID, item.ID, token, expira); err != nil {
-			log.Printf("[usuarios_empresa] failed to set invitation recovery token empresa_id=%d id=%d email=%s error=%v", item.EmpresaID, item.ID, item.Email, err)
+			log.Printf("[usuarios_empresa] failed to set invitation recovery token empresa_id=%d id=%d email=%s error=%v", item.EmpresaID, item.ID, redactEmailForLog(item.Email), err)
 			http.Error(w, "No se pudo preparar la invitacion", http.StatusInternalServerError)
 			return
 		}
 
 		if _, mailErr := sendEmpresaUsuarioConfirmationEmail(r, dbEmp, dbSuper, item.EmpresaID, item.Email, item.Nombre, token, "Reenvio de invitacion solicitado desde el portal de usuarios."); mailErr != nil {
-			log.Printf("[usuarios_empresa] invitation recovery email not sent empresa_id=%d id=%d email=%s error=%v", item.EmpresaID, item.ID, item.Email, mailErr)
+			log.Printf("[usuarios_empresa] invitation recovery email not sent empresa_id=%d id=%d email=%s error=%v", item.EmpresaID, item.ID, redactEmailForLog(item.Email), mailErr)
 			respondAccepted("manual")
 			return
 		}
@@ -1320,7 +1320,7 @@ func EmpresaUsuarioResetPasswordHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc
 				http.Error(w, "este correo esta asociado a mas de una empresa; solicita un nuevo token de recuperacion", http.StatusConflict)
 				return
 			}
-			log.Printf("[usuarios_empresa] failed to query user (password_reset) empresa_id=%d email=%s error=%v", payload.EmpresaID, email, err)
+			log.Printf("[usuarios_empresa] failed to query user (password_reset) empresa_id=%d email=%s error=%v", payload.EmpresaID, redactEmailForLog(email), err)
 			http.Error(w, "No se pudo validar el usuario", http.StatusInternalServerError)
 			return
 		}
@@ -1351,7 +1351,7 @@ func EmpresaUsuarioResetPasswordHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc
 			return
 		}
 		if err := dbpkg.SetEmpresaUsuarioPassword(dbEmp, item.EmpresaID, item.ID, hash, salt); err != nil {
-			log.Printf("[usuarios_empresa] failed to reset password empresa_id=%d id=%d email=%s error=%v", item.EmpresaID, item.ID, item.Email, err)
+			log.Printf("[usuarios_empresa] failed to reset password empresa_id=%d id=%d email=%s error=%v", item.EmpresaID, item.ID, redactEmailForLog(item.Email), err)
 			http.Error(w, "No se pudo actualizar la contraseña", http.StatusInternalServerError)
 			return
 		}
@@ -1361,7 +1361,7 @@ func EmpresaUsuarioResetPasswordHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc
 		item.PasswordSet = 1
 
 		if err := createEmpresaUsuarioSessionAndRespond(w, r, dbSuper, item); err != nil {
-			log.Printf("[usuarios_empresa] failed to create session (password_reset) empresa_id=%d email=%s error=%v", item.EmpresaID, item.Email, err)
+			log.Printf("[usuarios_empresa] failed to create session (password_reset) empresa_id=%d email=%s error=%v", item.EmpresaID, redactEmailForLog(item.Email), err)
 			http.Error(w, "No se pudo iniciar sesión del usuario", http.StatusInternalServerError)
 			return
 		}
@@ -1440,7 +1440,7 @@ func EmpresaUsuarioChangePasswordHandler(dbEmp, dbSuper *sql.DB) http.HandlerFun
 				http.Error(w, "este correo esta asociado a mas de una empresa; solicita al administrador usar un correo unico por empresa", http.StatusConflict)
 				return
 			}
-			log.Printf("[usuarios_empresa] failed to query user (change_password) empresa_id=%d email=%s error=%v", payload.EmpresaID, email, err)
+			log.Printf("[usuarios_empresa] failed to query user (change_password) empresa_id=%d email=%s error=%v", payload.EmpresaID, redactEmailForLog(email), err)
 			http.Error(w, "No se pudo validar el usuario", http.StatusInternalServerError)
 			return
 		}
@@ -1478,7 +1478,7 @@ func EmpresaUsuarioChangePasswordHandler(dbEmp, dbSuper *sql.DB) http.HandlerFun
 			return
 		}
 		if err := dbpkg.SetEmpresaUsuarioPassword(dbEmp, item.EmpresaID, item.ID, hash, salt); err != nil {
-			log.Printf("[usuarios_empresa] failed to change password empresa_id=%d id=%d email=%s error=%v", item.EmpresaID, item.ID, item.Email, err)
+			log.Printf("[usuarios_empresa] failed to change password empresa_id=%d id=%d email=%s error=%v", item.EmpresaID, item.ID, redactEmailForLog(item.Email), err)
 			http.Error(w, "No se pudo actualizar la contraseña", http.StatusInternalServerError)
 			return
 		}
@@ -1488,7 +1488,7 @@ func EmpresaUsuarioChangePasswordHandler(dbEmp, dbSuper *sql.DB) http.HandlerFun
 		item.PasswordSet = 1
 
 		if err := createEmpresaUsuarioSessionAndRespond(w, r, dbSuper, item); err != nil {
-			log.Printf("[usuarios_empresa] failed to create session (change_password) empresa_id=%d email=%s error=%v", item.EmpresaID, item.Email, err)
+			log.Printf("[usuarios_empresa] failed to create session (change_password) empresa_id=%d email=%s error=%v", item.EmpresaID, redactEmailForLog(item.Email), err)
 			http.Error(w, "No se pudo iniciar sesión del usuario", http.StatusInternalServerError)
 			return
 		}
@@ -2858,16 +2858,16 @@ func warmEmpresaPermissionSnapshot(dbEmp, dbSuper *sql.DB, item *dbpkg.EmpresaUs
 		}
 		_, _, _ = loadEmpresaPermissionOverrides(dbSuper, empresaID)
 		if _, err := dbpkg.GetLicenciaPermisoPolicyByEmpresa(dbSuper, empresaID); err != nil {
-			log.Printf("[usuarios_empresa] warm licencia policy empresa_id=%d email=%s error=%v", empresaID, adminEmail, err)
+			log.Printf("[usuarios_empresa] warm licencia policy empresa_id=%d email=%s error=%v", empresaID, redactEmailForLog(adminEmail), err)
 		}
 		if _, err := dbpkg.CanAdminAccessEmpresaIA(dbEmp, dbSuper, adminEmail, empresaID); err != nil {
-			log.Printf("[usuarios_empresa] warm admin access empresa_id=%d email=%s error=%v", empresaID, adminEmail, err)
+			log.Printf("[usuarios_empresa] warm admin access empresa_id=%d email=%s error=%v", empresaID, redactEmailForLog(adminEmail), err)
 		}
 	}()
 	go func() {
 		time.Sleep(2 * time.Second)
 		if _, err := getEmpresaPermissionSnapshot(dbEmp, dbSuper, adminEmail, empresaID); err != nil && !errors.Is(err, sql.ErrNoRows) {
-			log.Printf("[usuarios_empresa] warm permission snapshot empresa_id=%d email=%s error=%v", empresaID, adminEmail, err)
+			log.Printf("[usuarios_empresa] warm permission snapshot empresa_id=%d email=%s error=%v", empresaID, redactEmailForLog(adminEmail), err)
 		}
 	}()
 }

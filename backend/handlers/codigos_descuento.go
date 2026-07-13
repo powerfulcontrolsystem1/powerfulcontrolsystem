@@ -260,8 +260,8 @@ func empresaCodigosDescuentoEnviarCorreo(w http.ResponseWriter, r *http.Request,
 
 	subject, body := buildCodigoDescuentoEmailContent(r, dbSuper, empresaID, empresaNombre, strings.TrimSpace(payload.NombreDestinatario), strings.TrimSpace(payload.MensajePersonalizado), item)
 	if err := sendCodigoDescuentoEmail(r, dbSuper, empresaID, toEmail, subject, body, item.Codigo); err != nil {
-		log.Printf("[codigos_descuento] enviar_correo empresa_id=%d id=%d email=%q error: %v", empresaID, codigoID, toEmail, err)
-		http.Error(w, "No se pudo enviar el correo: "+err.Error(), http.StatusInternalServerError)
+		log.Printf("[codigos_descuento] enviar_correo empresa_id=%d id=%d email=%q error: %v", empresaID, codigoID, redactEmailForLog(toEmail), err)
+		http.Error(w, "No se pudo enviar el correo. Intenta nuevamente o contacta al administrador.", http.StatusInternalServerError)
 		return
 	}
 

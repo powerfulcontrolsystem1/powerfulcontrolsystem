@@ -136,7 +136,7 @@ func resolveEmpresaAseoUsuarioActual(dbEmp *sql.DB, r *http.Request, empresaID i
 	item, err := dbpkg.GetEmpresaUsuarioByEmailScoped(dbEmp, email, empresaID)
 	if err != nil {
 		if !errors.Is(err, sql.ErrNoRows) {
-			log.Printf("[estacion_aseo] usuario actual empresa_id=%d email=%s error: %v", empresaID, email, err)
+			log.Printf("[estacion_aseo] usuario actual empresa_id=%d email=%s error: %v", empresaID, redactEmailForLog(email), err)
 		}
 		return nil, normalizePermissionRole(role)
 	}

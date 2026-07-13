@@ -1,3 +1,12 @@
+2026-07-13: Auditoria de preparación - minimizacion de secretos y PII en logs.
+- Se elimina `backend/tools/query_epayco_runtime.go`, que accedía directamente
+  a DSN, configuraciones de pago y sesiones; los diagnósticos deben usar las
+  vistas auditadas del super administrador.
+- `backend/handlers/log_redaction.go` centraliza el enmascaramiento de correos
+  para trazas de autenticación, permisos y operaciones empresariales.
+- `backend/handlers/log_redaction_test.go` evita regresión de PII en logs y de
+  acceso directo heredado a runtime sensible.
+
 2026-07-11: Endurecimiento de seguridad en rama aislada `security/full-hardening`.
 - OAuth Google elimina state fijo, incorpora PKCE, cookies temporales protegidas, comparacion constante, consumo unico y validacion de email verificado.
 - Sesiones almacenan verificadores SHA-256 y la migracion reemplaza tokens heredados; se retira el ascenso o correccion de rol desde correo en el middleware.

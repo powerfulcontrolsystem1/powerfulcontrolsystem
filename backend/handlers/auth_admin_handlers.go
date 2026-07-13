@@ -1348,7 +1348,7 @@ func handleGoogleUsuarioCallback(w http.ResponseWriter, r *http.Request, dbEmpre
 		case strings.Contains(strings.ToLower(err.Error()), "pendiente"):
 			redirectGoogleUsuarioError(w, r, "invitacion_pendiente", email, empresaID, invitationToken)
 		default:
-			log.Printf("[usuarios_empresa] google login denied email=%s empresa_id=%d error=%v", email, empresaID, err)
+			log.Printf("[usuarios_empresa] google login denied email=%s empresa_id=%d error=%v", redactEmailForLog(email), empresaID, err)
 			redirectGoogleUsuarioError(w, r, "acceso_denegado", email, empresaID, invitationToken)
 		}
 		return
@@ -1366,7 +1366,7 @@ func handleGoogleUsuarioCallback(w http.ResponseWriter, r *http.Request, dbEmpre
 		acceptContract := googleUsuarioCookieValue(r, googleOAuthUsuarioAcceptContractCookieName) == "1"
 		contract, accepted, err := ensureEmpresaUsuarioCurrentContractAccepted(dbEmpresas, dbSuper, item, acceptContract)
 		if err != nil {
-			log.Printf("[usuarios_empresa] google login contract check failed empresa_id=%d email=%s error=%v", item.EmpresaID, item.Email, err)
+			log.Printf("[usuarios_empresa] google login contract check failed empresa_id=%d email=%s error=%v", item.EmpresaID, redactEmailForLog(item.Email), err)
 			redirectGoogleUsuarioError(w, r, "contrato_error", email, item.EmpresaID, invitationToken)
 			return
 		}
@@ -1379,7 +1379,7 @@ func handleGoogleUsuarioCallback(w http.ResponseWriter, r *http.Request, dbEmpre
 
 	if consumeInvitation {
 		if err := dbpkg.CompleteEmpresaUsuarioInvitationGoogle(dbEmpresas, item.EmpresaID, item.ID); err != nil {
-			log.Printf("[usuarios_empresa] google invitation completion failed empresa_id=%d id=%d email=%s error=%v", item.EmpresaID, item.ID, item.Email, err)
+			log.Printf("[usuarios_empresa] google invitation completion failed empresa_id=%d id=%d email=%s error=%v", item.EmpresaID, item.ID, redactEmailForLog(item.Email), err)
 			redirectGoogleUsuarioError(w, r, "invitacion_error", email, item.EmpresaID, invitationToken)
 			return
 		}
@@ -1390,11 +1390,11 @@ func handleGoogleUsuarioCallback(w http.ResponseWriter, r *http.Request, dbEmpre
 	}
 
 	if err := dbpkg.ClearEmpresaUsuarioLoginFailures(dbEmpresas, item.EmpresaID, item.ID); err != nil {
-		log.Printf("[usuarios_empresa] failed to clear failures after google login empresa_id=%d id=%d email=%s error=%v", item.EmpresaID, item.ID, item.Email, err)
+		log.Printf("[usuarios_empresa] failed to clear failures after google login empresa_id=%d id=%d email=%s error=%v", item.EmpresaID, item.ID, redactEmailForLog(item.Email), err)
 	}
 	sessionResult, err := createEmpresaUsuarioSession(w, r, dbSuper, item)
 	if err != nil {
-		log.Printf("[usuarios_empresa] failed to create session (google usuario) empresa_id=%d email=%s error=%v", item.EmpresaID, item.Email, err)
+		log.Printf("[usuarios_empresa] failed to create session (google usuario) empresa_id=%d email=%s error=%v", item.EmpresaID, redactEmailForLog(item.Email), err)
 		redirectGoogleUsuarioError(w, r, "sesion_error", email, item.EmpresaID, "")
 		return
 	}
