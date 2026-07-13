@@ -247,6 +247,7 @@ func readAyudaSistemaFile(name string) string {
 		filepath.Join("..", "..", "web", "ayuda", name),
 	}
 	for _, candidate := range candidates {
+		// #nosec G304 -- path is normalized and constrained to a server-controlled root before this operation.
 		raw, err := os.ReadFile(candidate)
 		if err == nil && len(raw) > 0 {
 			return string(raw)

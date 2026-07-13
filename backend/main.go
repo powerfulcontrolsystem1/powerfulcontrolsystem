@@ -83,6 +83,7 @@ func resolveBackendRuntimeDir() string {
 }
 
 func loadEnvDefaultsFromFile(path string) (int, error) {
+	// #nosec G304 -- path is selected exclusively from fixed startup environment file locations.
 	data, err := os.ReadFile(path)
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
@@ -165,6 +166,7 @@ func loadRuntimeEnvDefaults(backendDir string) {
 }
 
 func loadSelectedEnvDefaultsFromFile(path string, allowedKeys []string) (int, error) {
+	// #nosec G304 -- path is selected exclusively from fixed startup environment file locations.
 	data, err := os.ReadFile(path)
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
@@ -329,13 +331,14 @@ func ensureRuntimeDBDir(dbPath string) error {
 	if dir == "" || dir == "." {
 		return nil
 	}
-	return os.MkdirAll(dir, 0755)
+	return os.MkdirAll(dir, 0700)
 }
 
 func persistConfigEncKey(backendDir, value string) (string, error) {
 	envLocalPath := filepath.Join(backendDir, ".env.local")
 	prefix := "CONFIG_ENC_KEY="
 
+	// #nosec G304 -- envLocalPath is derived from the server-controlled backend directory.
 	data, err := os.ReadFile(envLocalPath)
 	if err != nil && !errors.Is(err, os.ErrNotExist) {
 		return "", err
@@ -409,6 +412,90 @@ func ensureRuntimeConfigEncKey(backendDir string) error {
 
 	log.Printf("INFO: CONFIG_ENC_KEY autogenerada para desarrollo y persistida en %s", envLocalPath)
 	return nil
+}
+
+func runtimeProductionMode() bool {
+	return strings.EqualFold(strings.TrimSpace(os.Getenv("PCS_ENV")), "production") ||
+		strings.EqualFold(strings.TrimSpace(os.Getenv("APP_ENV")), "production")
+}
+
+func validateProductionSecurityConfig() error {
+	if !runtimeProductionMode() {
+		return nil
+	}
+	if strings.TrimSpace(os.Getenv("PCS_CSRF_ALLOWED_ORIGINS")) == "" && strings.TrimSpace(os.Getenv("CSRF_ALLOWED_ORIGINS")) != "" {
+		if err := os.Setenv("PCS_CSRF_ALLOWED_ORIGINS", strings.TrimSpace(os.Getenv("CSRF_ALLOWED_ORIGINS"))); err != nil {
+			return err
+		}
+	}
+	required := []string{
+		"PCS_TRUSTED_PROXY_CIDRS",
+		"CONFIG_ENC_KEY_ID",
+		"PCS_CSRF_ALLOWED_ORIGINS",
+		"SESSION_TIMEOUT",
+		"MAX_REQUEST_BODY_BYTES",
+		"PCS_PRIVATE_STORAGE_DIR",
+		"HTTP_READ_TIMEOUT",
+		"HTTP_WRITE_TIMEOUT",
+		"HTTP_IDLE_TIMEOUT",
+	}
+	for _, key := range required {
+		if strings.TrimSpace(os.Getenv(key)) == "" {
+			return fmt.Errorf("%s es obligatoria en produccion", key)
+		}
+	}
+	for _, key := range []string{"SESSION_TIMEOUT", "HTTP_READ_TIMEOUT", "HTTP_WRITE_TIMEOUT", "HTTP_IDLE_TIMEOUT"} {
+		if value, err := time.ParseDuration(strings.TrimSpace(os.Getenv(key))); err != nil || value <= 0 {
+			return fmt.Errorf("%s debe ser una duracion positiva valida", key)
+		}
+	}
+	maxBody, err := strconv.ParseInt(strings.TrimSpace(os.Getenv("MAX_REQUEST_BODY_BYTES")), 10, 64)
+	if err != nil || maxBody < 1<<20 || maxBody > 512<<20 {
+		return fmt.Errorf("MAX_REQUEST_BODY_BYTES debe estar entre 1 MiB y 512 MiB")
+	}
+	for _, raw := range strings.Split(os.Getenv("PCS_CSRF_ALLOWED_ORIGINS"), ",") {
+		origin, err := url.Parse(strings.TrimSpace(raw))
+		if err != nil || (origin.Scheme != "https" && origin.Scheme != "http") || origin.Host == "" || origin.User != nil || origin.Path != "" {
+			return fmt.Errorf("PCS_CSRF_ALLOWED_ORIGINS contiene un origen invalido")
+		}
+	}
+	return nil
+}
+
+func getenvDurationRange(key string, defaultValue, minValue, maxValue time.Duration) time.Duration {
+	raw := strings.TrimSpace(os.Getenv(key))
+	if raw == "" {
+		return defaultValue
+	}
+	value, err := time.ParseDuration(raw)
+	if err != nil {
+		return defaultValue
+	}
+	if value < minValue {
+		return minValue
+	}
+	if value > maxValue {
+		return maxValue
+	}
+	return value
+}
+
+func getenvInt64Range(key string, defaultValue, minValue, maxValue int64) int64 {
+	raw := strings.TrimSpace(os.Getenv(key))
+	if raw == "" {
+		return defaultValue
+	}
+	value, err := strconv.ParseInt(raw, 10, 64)
+	if err != nil {
+		return defaultValue
+	}
+	if value < minValue {
+		return minValue
+	}
+	if value > maxValue {
+		return maxValue
+	}
+	return value
 }
 
 func getenvIntRange(key string, defaultVal, minVal, maxVal int) int {
@@ -762,6 +849,9 @@ func main() {
 	if err := ensureRuntimeConfigEncKey(backendDir); err != nil {
 		log.Fatalf("failed to ensure CONFIG_ENC_KEY: %v", err)
 	}
+	if err := validateProductionSecurityConfig(); err != nil {
+		log.Fatalf("invalid production security configuration: %v", err)
+	}
 	startupTrace("after_ensure_runtime_config_enc_key")
 	runtimeDBDialect := resolveRuntimeDBDialect()
 	startupTrace("after_resolve_runtime_db_dialect")
@@ -828,6 +918,37 @@ func main() {
 			log.Fatalf("failed to protect existing session tokens: %v", err)
 		}
 		startupTrace("after_migrate_session_tokens_to_hashes")
+		totpMigrationDryRun := strings.EqualFold(strings.TrimSpace(os.Getenv("PCS_TOTP_MIGRATION_DRY_RUN")), "1") || strings.EqualFold(strings.TrimSpace(os.Getenv("PCS_TOTP_MIGRATION_DRY_RUN")), "true")
+		migratedTOTP, err := dbpkg.MigrateAdministradorTOTPSecrets(dbSuper, totpMigrationDryRun)
+		if err != nil {
+			log.Fatalf("failed to protect existing TOTP secrets: %v", err)
+		}
+		if totpMigrationDryRun {
+			log.Printf("INFO: TOTP secret migration dry-run found %d legacy secret(s)", migratedTOTP)
+		} else if migratedTOTP > 0 {
+			log.Printf("INFO: encrypted %d legacy TOTP secret(s)", migratedTOTP)
+		}
+		startupTrace("after_migrate_totp_secrets")
+		migratedResetTokens, err := dbpkg.MigrateAdministradorPasswordResetTokens(dbSuper, totpMigrationDryRun)
+		if err != nil {
+			log.Fatalf("failed to protect existing password reset tokens: %v", err)
+		}
+		if totpMigrationDryRun {
+			log.Printf("INFO: password reset token migration dry-run found %d legacy token(s)", migratedResetTokens)
+		} else if migratedResetTokens > 0 {
+			log.Printf("INFO: protected %d legacy password reset token(s)", migratedResetTokens)
+		}
+		startupTrace("after_migrate_password_reset_tokens")
+		migratedConfirmTokens, err := dbpkg.MigrateAdministradorEmailConfirmTokens(dbSuper, totpMigrationDryRun)
+		if err != nil {
+			log.Fatalf("failed to protect existing email confirmation tokens: %v", err)
+		}
+		if totpMigrationDryRun {
+			log.Printf("INFO: email confirmation token migration dry-run found %d legacy token(s)", migratedConfirmTokens)
+		} else if migratedConfirmTokens > 0 {
+			log.Printf("INFO: protected %d legacy email confirmation token(s)", migratedConfirmTokens)
+		}
+		startupTrace("after_migrate_email_confirmation_tokens")
 		if err := dbpkg.EnsurePaymentGatewaySchema(dbSuper); err != nil {
 			log.Fatalf("failed to ensure payment gateway schema in superadministrador db: %v", err)
 		}
@@ -944,6 +1065,9 @@ func main() {
 
 	if err := dbpkg.EnsureEmpresaUsuariosAuthSchema(dbEmpresas); err != nil {
 		log.Fatalf("failed to ensure users auth schema in empresas db: %v", err)
+	}
+	if _, err := dbpkg.MigrateEmpresaUsuarioTemporaryTokens(dbEmpresas, strings.EqualFold(strings.TrimSpace(os.Getenv("PCS_TOTP_MIGRATION_DRY_RUN")), "1") || strings.EqualFold(strings.TrimSpace(os.Getenv("PCS_TOTP_MIGRATION_DRY_RUN")), "true")); err != nil {
+		log.Fatalf("failed to protect enterprise user temporary tokens: %v", err)
 	}
 	if err := dbpkg.EnsureEmpresaBuzonSchema(dbEmpresas); err != nil {
 		log.Fatalf("failed to ensure empresa buzon schema in empresas db: %v", err)
@@ -1239,7 +1363,7 @@ func main() {
 	http.HandleFunc("/super/api/vps2", handlers.WithSuperAuditoria(dbSuper, "super_vps2", handlers.SuperVPS2Handler(dbSuper)))
 	http.HandleFunc("/super/api/vps/procesos", handlers.SuperVPSProcessesHandler(dbSuper))
 	http.HandleFunc("/super/api/plantillas_nuevas/catalogo", handlers.SuperPlantillasNuevosCatalogoHandler(dbSuper))
-	http.HandleFunc("/super/api/plantillas_integracion/catalogo", handlers.SuperPlantillasIntegracionCatalogoHandler())
+	http.HandleFunc("/super/api/plantillas_integracion/catalogo", handlers.SuperPlantillasIntegracionCatalogoHandler(dbSuper))
 	http.HandleFunc("/super/api/roles_de_usuario", handlers.RolesDeUsuarioHandler(dbSuper))
 	http.HandleFunc("/super/api/roles_de_usuario/permisos", handlers.RolesDeUsuarioPermisosHandler(dbSuper))
 	// Endpoint CRUD para empresas (persistidas en pcs_empresas PostgreSQL)
@@ -1290,6 +1414,7 @@ func main() {
 	http.HandleFunc("/api/empresa/contratos_obligaciones", handlers.WithEmpresaContratosObligacionesPermissions(dbEmpresas, dbSuper, handlers.EmpresaModuloColombiaHandler(dbEmpresas, "contratos_obligaciones")))
 	http.HandleFunc("/api/empresa/tickets_ayuda", handlers.WithEmpresaSelfServicePermissions(dbEmpresas, dbSuper, handlers.EmpresaAyudaTicketsHandler(dbEmpresas, dbSuper)))
 	http.HandleFunc("/api/empresa/buzon", handlers.WithEmpresaSelfServicePermissions(dbEmpresas, dbSuper, handlers.EmpresaBuzonHandler(dbEmpresas, dbSuper)))
+	http.HandleFunc("/api/empresa/buzon/archivo", handlers.WithEmpresaSelfServicePermissions(dbEmpresas, dbSuper, handlers.EmpresaBuzonArchivoHandler()))
 	http.HandleFunc("/api/empresa/noticias", handlers.WithEmpresaSelfServicePermissions(dbEmpresas, dbSuper, handlers.EmpresaNoticiasPortalHandler(dbSuper)))
 	http.HandleFunc("/api/empresa/drogueria_farmacia", handlers.WithEmpresaDrogueriaFarmaciaPermissions(dbEmpresas, dbSuper, handlers.EmpresaModuloColombiaHandler(dbEmpresas, "drogueria_farmacia")))
 	http.HandleFunc("/api/empresa/proveedores", handlers.WithEmpresaComprasPermissions(dbEmpresas, dbSuper, handlers.EmpresaProveedoresHandler(dbEmpresas)))
@@ -1388,9 +1513,11 @@ func main() {
 	http.HandleFunc("/api/empresa/energia_solar", handlers.WithEmpresaEnergiaSolarPermissions(dbEmpresas, dbSuper, handlers.EmpresaEnergiaSolarHandler(dbEmpresas, dbSuper)))
 	http.HandleFunc("/api/empresa/camaras", handlers.WithEmpresaCamarasPermissions(dbEmpresas, dbSuper, handlers.EmpresaCamarasHandler(dbEmpresas, dbSuper)))
 	http.HandleFunc("/api/empresa/grafologia", handlers.WithEmpresaGrafologiaPermissions(dbEmpresas, dbSuper, handlers.EmpresaGrafologiaHandler(dbEmpresas, dbSuper)))
+	http.HandleFunc("/api/empresa/grafologia/archivo", handlers.WithEmpresaGrafologiaPermissions(dbEmpresas, dbSuper, handlers.EmpresaGrafologiaArchivoHandler()))
 	http.HandleFunc("/api/empresa/bolsa", handlers.WithEmpresaBolsaPermissions(dbEmpresas, dbSuper, handlers.EmpresaBolsaHandler(dbEmpresas, dbSuper)))
 	http.HandleFunc("/api/empresa/ia_empresarial", handlers.WithEmpresaReportesPermissions(dbEmpresas, dbSuper, handlers.EmpresaIAEmpresarialHandler(dbEmpresas, dbSuper)))
 	http.HandleFunc("/api/empresa/chat_tareas/conversaciones", handlers.WithEmpresaChatTareasPermissions(dbEmpresas, dbSuper, handlers.EmpresaChatTareasConversacionesHandler(dbEmpresas)))
+	http.HandleFunc("/api/empresa/chat_tareas/archivo", handlers.WithEmpresaChatTareasPermissions(dbEmpresas, dbSuper, handlers.EmpresaChatTareasArchivoHandler()))
 	http.HandleFunc("/api/empresa/chat_tareas/participantes", handlers.WithEmpresaChatTareasPermissions(dbEmpresas, dbSuper, handlers.EmpresaChatTareasParticipantesHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/chat_tareas/mensajes", handlers.WithEmpresaChatTareasPermissions(dbEmpresas, dbSuper, handlers.EmpresaChatTareasMensajesHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/chat_tareas/mensajes/adjunto", handlers.WithEmpresaChatTareasPermissions(dbEmpresas, dbSuper, handlers.EmpresaChatTareasAdjuntoUploadHandler(dbEmpresas)))
@@ -1402,6 +1529,7 @@ func main() {
 	http.HandleFunc("/api/empresa/ubicacion_gps/recorridos", handlers.WithEmpresaUbicacionGPSPermissions(dbEmpresas, dbSuper, handlers.EmpresaUbicacionGPSRecorridosHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/hoja_vida_operativa", handlers.WithEmpresaHojaVidaOperativaPermissions(dbEmpresas, dbSuper, handlers.EmpresaHojaVidaOperativaHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/finanzas/movimientos", handlers.WithEmpresaFinanzasPermissions(dbEmpresas, dbSuper, handlers.EmpresaFinanzasMovimientosHandler(dbEmpresas)))
+	http.HandleFunc("/api/empresa/finanzas/archivo", handlers.WithEmpresaFinanzasPermissions(dbEmpresas, dbSuper, handlers.EmpresaFinanzasArchivoHandler()))
 	http.HandleFunc("/api/empresa/finanzas/movimientos/comprobante", handlers.WithEmpresaFinanzasPermissions(dbEmpresas, dbSuper, handlers.EmpresaFinanzasMovimientoComprobanteUploadHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/corte_caja", handlers.WithEmpresaFinanzasPermissions(dbEmpresas, dbSuper, handlers.EmpresaCorteCajaHandler(dbEmpresas, dbSuper)))
 	http.HandleFunc("/api/empresa/corte_caja/configuracion", handlers.WithEmpresaFinanzasPermissions(dbEmpresas, dbSuper, handlers.EmpresaCorteCajaConfiguracionHandler(dbEmpresas)))
@@ -1451,7 +1579,7 @@ func main() {
 	// Rutas del módulo sensor de puertas: configuración protegida y endpoint público para heartbeats
 	http.HandleFunc("/api/empresa/sensor_puertas", handlers.WithEmpresaSeguridadPermissions(dbEmpresas, dbSuper, handlers.EmpresaSensorConfigHandler(dbEmpresas)))
 	http.HandleFunc("/api/public/sensor_puertas", handlers.PublicSensorPuertasHandler(dbEmpresas))
-	http.HandleFunc("/api/public/webrtc/signaling", handlers.WithEmpresaSeguridadPermissions(dbEmpresas, dbSuper, handlers.SoporteRemotoSignalingHandler()))
+	http.HandleFunc("/api/public/webrtc/signaling", handlers.WithEmpresaSeguridadPermissions(dbEmpresas, dbSuper, handlers.SoporteRemotoSignalingHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/sensor_puertas/messages", handlers.WithEmpresaSeguridadPermissions(dbEmpresas, dbSuper, handlers.EmpresaSensorMessagesHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/control_electrico", handlers.WithEmpresaControlElectricoPermissions(dbEmpresas, dbSuper, handlers.EmpresaControlElectricoHandler(dbEmpresas, dbSuper)))
 	http.HandleFunc("/api/empresa/roles_de_usuario", handlers.WithEmpresaSeguridadPermissions(dbEmpresas, dbSuper, handlers.EmpresaRolesDeUsuarioHandler(dbEmpresas, dbSuper)))
@@ -1518,8 +1646,8 @@ func main() {
 	http.HandleFunc("/api/voice_stream/tts", handlers.VoiceStreamTTSProxyHandler(dbSuper))
 	http.HandleFunc("/api/chat_flotante/preferencias", handlers.ChatFlotantePreferenciasHandler(dbSuper, dbEmpresas))
 	// Endpoints para generar y descargar documentos dinamicos asistidos por IA.
-	http.HandleFunc("/generate", handlers.DynamicDocumentGenerateHandler(dbEmpresas, dbSuper))
-	http.HandleFunc("/download", handlers.DynamicDocumentDownloadHandler(dbSuper))
+	http.HandleFunc("/generate", handlers.WithEmpresaSeguridadPermissions(dbEmpresas, dbSuper, handlers.DynamicDocumentGenerateHandler(dbEmpresas, dbSuper)))
+	http.HandleFunc("/download", handlers.DynamicDocumentDownloadHandler(dbEmpresas, dbSuper))
 	superAIChatController := handlers.NewSuperAIChatController(dbEmpresas, dbSuper)
 	http.HandleFunc("/super/api/chat_con_ia_global/modelos", superAIChatController.ModelosHandler)
 	http.HandleFunc("/super/api/chat_con_ia_global/modelo_preferido", superAIChatController.ModeloPreferidoHandler)
@@ -1601,6 +1729,7 @@ func main() {
 			if err := dbpkg.RevokeSessionByToken(dbSuper, token); err != nil {
 				log.Printf("warning: failed to revoke session token on logout: %v", err)
 			}
+			utils.InvalidateAuthCacheForToken(token)
 		}
 
 		// Invalidate common session cookie names
@@ -1705,7 +1834,8 @@ func main() {
 	startupTrace("after_root_handler")
 
 	// Wrap DefaultServeMux with authentication, JSON error normalization and logging middleware
-	handler := utils.LoggingMiddleware(utils.SecurityHeadersMiddleware(utils.CanonicalPublicHostMiddleware(utils.JSONErrorMiddleware(utils.RecoveryMiddleware(utils.AuthMiddleware(dbSuper, utils.CSRFMiddleware(http.DefaultServeMux)))))))
+	maxRequestBodyBytes := getenvInt64Range("MAX_REQUEST_BODY_BYTES", 64<<20, 1<<20, 512<<20)
+	handler := utils.LoggingMiddleware(utils.SecurityHeadersMiddleware(utils.CanonicalPublicHostMiddleware(utils.JSONErrorMiddleware(utils.RecoveryMiddleware(utils.RequestBodyLimitMiddleware(utils.AuthMiddleware(dbSuper, utils.CSRFMiddleware(http.DefaultServeMux)), maxRequestBodyBytes))))))
 	startupTrace("after_handler_wrap")
 
 	// Respetar la variable de entorno PORT si está definida; por defecto usar 8080
@@ -1729,9 +1859,9 @@ func main() {
 		Addr:              addr,
 		Handler:           handler,
 		ReadHeaderTimeout: 10 * time.Second,
-		ReadTimeout:       30 * time.Second,
-		WriteTimeout:      60 * time.Second,
-		IdleTimeout:       120 * time.Second,
+		ReadTimeout:       getenvDurationRange("HTTP_READ_TIMEOUT", 30*time.Second, 5*time.Second, 5*time.Minute),
+		WriteTimeout:      getenvDurationRange("HTTP_WRITE_TIMEOUT", 60*time.Second, 5*time.Second, 10*time.Minute),
+		IdleTimeout:       getenvDurationRange("HTTP_IDLE_TIMEOUT", 120*time.Second, 15*time.Second, 15*time.Minute),
 		MaxHeaderBytes:    1 << 20,
 	}
 

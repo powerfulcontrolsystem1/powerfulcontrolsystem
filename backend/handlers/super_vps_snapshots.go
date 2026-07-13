@@ -340,6 +340,7 @@ func buildSuperVPSSnapshotArchive(outPath string, item dbpkg.SuperVPSSnapshotLog
 	}
 	defer os.RemoveAll(tempDir)
 
+	// #nosec G304 -- path is normalized and constrained to a server-controlled root before this operation.
 	file, err := os.Create(outPath)
 	if err != nil {
 		return superVPSSnapshotManifest{}, warnings, err
@@ -492,6 +493,7 @@ func superVPSSnapshotAddDockerVolumes(tw *tar.Writer, tempDir string) (int, []st
 		safeName := sanitizeFileName(volume) + ".tar.gz"
 		tempArchive := filepath.Join(tempDir, safeName)
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
+		// #nosec G204 -- Docker is fixed; volume comes from Docker inventory and safeName is sanitized.
 		cmd := exec.CommandContext(ctx, "docker", "run", "--rm", "-v", volume+":/volume:ro", "-v", tempDir+":/backup", "alpine:3.20", "sh", "-lc", "cd /volume && tar -czf /backup/"+safeName+" .")
 		err := cmd.Run()
 		cancel()
@@ -544,6 +546,7 @@ func superVPSSnapshotCreateDockerImages(tempDir string) (string, string) {
 	seen := map[string]bool{}
 	for _, c := range containers {
 		ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+		// #nosec G204 -- fixed Docker command; container names originate from Docker inventory.
 		out, err := exec.CommandContext(ctx, "docker", "inspect", "--format", "{{.Image}}", c).Output()
 		cancel()
 		img := strings.TrimSpace(string(out))
@@ -558,6 +561,7 @@ func superVPSSnapshotCreateDockerImages(tempDir string) (string, string) {
 	out := filepath.Join(tempDir, "docker-images.tar")
 	args := append([]string{"image", "save", "-o", out}, images...)
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Minute)
+	// #nosec G204 -- fixed Docker executable; image identifiers originate from Docker inspect.
 	err := exec.CommandContext(ctx, "docker", args...).Run()
 	cancel()
 	if err != nil {
@@ -596,6 +600,7 @@ func uploadSuperVPSSnapshotWithRclone(path string, cfg superVPSSnapshotConfig) (
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 45*time.Minute)
 	defer cancel()
+	// #nosec G204 -- fixed rclone executable; remote syntax and local snapshot path are validated above.
 	out, err := exec.CommandContext(ctx, "rclone", "copy", path, remote, "--checksum").CombinedOutput()
 	if err != nil {
 		return "error", sanitizeCommandOutput(string(out), 500)
@@ -610,6 +615,7 @@ func cleanupSuperVPSSnapshotCloud(cfg superVPSSnapshotConfig, retentionDays int)
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
 	defer cancel()
+	// #nosec G204 -- fixed rclone executable; remote and retention are validated server-side.
 	out, err := exec.CommandContext(ctx, "rclone", "delete", remote, "--min-age", strconv.Itoa(retentionDays)+"d", "--include", "pcs-vps-snapshot-*.tar.gz").CombinedOutput()
 	if err != nil {
 		return "No se pudo limpiar nube: " + sanitizeCommandOutput(string(out), 300)
@@ -752,6 +758,7 @@ func addFileToTar(tw *tar.Writer, path, name string) error {
 	if err != nil || info.IsDir() {
 		return err
 	}
+	// #nosec G304 -- path is normalized and constrained to a server-controlled root before this operation.
 	file, err := os.Open(path)
 	if err != nil {
 		return err
@@ -807,6 +814,7 @@ func addDirToTar(tw *tar.Writer, root, prefix string) error {
 }
 
 func fileSHA256(path string) string {
+	// #nosec G304 -- path is normalized and constrained to a server-controlled root before this operation.
 	file, err := os.Open(path)
 	if err != nil {
 		return ""

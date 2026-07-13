@@ -3,9 +3,10 @@ package handlers
 import (
 	"crypto/hmac"
 	"crypto/rand"
-	"crypto/sha1"
+	"crypto/sha1" // #nosec G505 -- TOTP RFC 6238 interoperable profile uses HMAC-SHA1; not used for storage or passwords.
 	"database/sql"
 	"encoding/base32"
+	"encoding/base64"
 	"encoding/binary"
 	"encoding/json"
 	"fmt"
@@ -16,6 +17,7 @@ import (
 	"time"
 
 	dbpkg "github.com/you/pos-backend/db"
+	"github.com/you/pos-backend/utils"
 )
 
 const adminTOTPIssuer = "Powerful Control System"
@@ -40,13 +42,16 @@ func normalizeTOTPCode(code string) string {
 }
 
 func totpCodeAt(secret string, counter int64) (string, error) {
+	if counter < 0 {
+		return "", fmt.Errorf("contador TOTP invalido")
+	}
 	key, err := base32.StdEncoding.WithPadding(base32.NoPadding).DecodeString(strings.ToUpper(strings.TrimSpace(secret)))
 	if err != nil {
 		return "", err
 	}
 	var msg [8]byte
 	binary.BigEndian.PutUint64(msg[:], uint64(counter))
-	mac := hmac.New(sha1.New, key)
+	mac := hmac.New(sha1.New, key) // #nosec G505 -- RFC 6238 interoperable TOTP uses HMAC-SHA-1; the secret is independently encrypted at rest.
 	_, _ = mac.Write(msg[:])
 	sum := mac.Sum(nil)
 	offset := sum[len(sum)-1] & 0x0f
@@ -55,22 +60,27 @@ func totpCodeAt(secret string, counter int64) (string, error) {
 }
 
 func verifyAdminTOTPCode(secret, code string, now time.Time) bool {
+	_, ok := matchingAdminTOTPCounter(secret, code, now)
+	return ok
+}
+
+func matchingAdminTOTPCounter(secret, code string, now time.Time) (int64, bool) {
 	code = normalizeTOTPCode(code)
 	secret = strings.TrimSpace(secret)
 	if secret == "" || len(code) != 6 {
-		return false
+		return 0, false
 	}
 	counter := now.Unix() / 30
 	for _, drift := range []int64{-1, 0, 1} {
 		expected, err := totpCodeAt(secret, counter+drift)
 		if err != nil {
-			return false
+			return 0, false
 		}
 		if hmac.Equal([]byte(expected), []byte(code)) {
-			return true
+			return counter + drift, true
 		}
 	}
-	return false
+	return 0, false
 }
 
 func adminTOTPProvisioningURI(email, secret string) string {
@@ -96,6 +106,82 @@ func isAdminTOTPLoginEnabled(dbSuper *sql.DB) bool {
 
 func adminTOTPLoginRequiredForAdmin(admin *dbpkg.Admin, globalEnabled bool) bool {
 	return globalEnabled && admin != nil && admin.TOTPEnabled == 1 && strings.TrimSpace(admin.TOTPSecret) != ""
+}
+
+func adminTOTPSecretForVerification(admin *dbpkg.Admin) (string, error) {
+	if admin == nil || strings.TrimSpace(admin.TOTPSecret) == "" {
+		return "", fmt.Errorf("TOTP not configured")
+	}
+	secret, err := dbpkg.DecryptAdministradorTOTPSecret(admin.TOTPSecret)
+	if err == nil {
+		return secret, nil
+	}
+	// Legacy plaintext is only tolerated while the startup migration has not
+	// yet run. New writes always use the purpose-bound encrypted envelope.
+	if !strings.HasPrefix(strings.TrimSpace(admin.TOTPSecret), "v1:") {
+		return admin.TOTPSecret, nil
+	}
+	return "", err
+}
+
+func generateAdminTOTPRecoveryCodes(count int) ([]string, string, error) {
+	if count <= 0 {
+		return nil, "", fmt.Errorf("recovery code count required")
+	}
+	batchRaw := make([]byte, 16)
+	if _, err := rand.Read(batchRaw); err != nil {
+		return nil, "", err
+	}
+	codes := make([]string, 0, count)
+	for i := 0; i < count; i++ {
+		raw := make([]byte, 32)
+		if _, err := rand.Read(raw); err != nil {
+			return nil, "", err
+		}
+		codes = append(codes, base64.RawURLEncoding.EncodeToString(raw))
+	}
+	return codes, base64.RawURLEncoding.EncodeToString(batchRaw), nil
+}
+
+func verifyAndConsumeAdminTOTP(dbSuper *sql.DB, admin *dbpkg.Admin, code string, now time.Time, allowRecovery bool) bool {
+	secret, err := adminTOTPSecretForVerification(admin)
+	if err == nil {
+		if counter, ok := matchingAdminTOTPCounter(secret, code, now); ok {
+			consumed, consumeErr := dbpkg.ConsumeAdministradorTOTPCounter(dbSuper, admin.Email, counter)
+			return consumeErr == nil && consumed
+		}
+	}
+	if !allowRecovery {
+		return false
+	}
+	consumed, consumeErr := dbpkg.ConsumeAdministradorTOTPRecoveryCode(dbSuper, admin.Email, strings.TrimSpace(code))
+	return consumeErr == nil && consumed
+}
+
+func adminPasswordReauthenticated(admin *dbpkg.Admin, password string) bool {
+	if admin == nil || strings.TrimSpace(password) == "" || strings.TrimSpace(admin.PasswordHash) == "" || strings.TrimSpace(admin.PasswordSalt) == "" {
+		return false
+	}
+	expected := hashEmpresaUsuarioPassword(password, admin.PasswordSalt)
+	stored := strings.TrimSpace(admin.PasswordHash)
+	return len(expected) == len(stored) && hmac.Equal([]byte(expected), []byte(stored))
+}
+
+func issueReplacementAdminSession(w http.ResponseWriter, r *http.Request, dbSuper *sql.DB, adminEmail string) error {
+	if err := dbpkg.RevokeSessionsByAdminEmail(dbSuper, adminEmail); err != nil {
+		return err
+	}
+	utils.InvalidateAuthCacheForAdmin(adminEmail)
+	token, err := utils.GenerateSecureToken(32)
+	if err != nil {
+		return err
+	}
+	if err := dbpkg.CreateSession(dbSuper, adminEmail, r.RemoteAddr, r.UserAgent(), token); err != nil {
+		return err
+	}
+	http.SetCookie(w, &http.Cookie{Name: "session_token", Value: token, Path: "/", HttpOnly: true, MaxAge: utils.SessionCookieMaxAge(), Secure: SessionCookieSecure(r), SameSite: http.SameSiteLaxMode})
+	SetBrowserSessionStateCookie(w, r, true)
+	return nil
 }
 
 func AdminTwoFactorGlobalConfigHandler(dbSuper *sql.DB) http.HandlerFunc {
@@ -186,8 +272,9 @@ func AdminTwoFactorHandler(dbSuper *sql.DB) http.HandlerFunc {
 		}
 
 		var payload struct {
-			Action string `json:"action"`
-			Code   string `json:"code"`
+			Action          string `json:"action"`
+			Code            string `json:"code"`
+			CurrentPassword string `json:"current_password"`
 		}
 		if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
 			writeAdminAuthError(w, http.StatusBadRequest, "Solicitud 2FA invalida.")
@@ -195,6 +282,10 @@ func AdminTwoFactorHandler(dbSuper *sql.DB) http.HandlerFunc {
 		}
 		switch strings.ToLower(strings.TrimSpace(payload.Action)) {
 		case "setup":
+			if !adminPasswordReauthenticated(admin, payload.CurrentPassword) {
+				writeAdminAuthError(w, http.StatusUnauthorized, "Debes confirmar tu contraseña actual para configurar 2FA.")
+				return
+			}
 			secret, err := generateAdminTOTPSecret()
 			if err != nil {
 				writeAdminAuthError(w, http.StatusInternalServerError, "No se pudo generar el secreto 2FA.")
@@ -212,7 +303,11 @@ func AdminTwoFactorHandler(dbSuper *sql.DB) http.HandlerFunc {
 				"period":           30,
 			})
 		case "confirm":
-			if !verifyAdminTOTPCode(admin.TOTPSecret, payload.Code, time.Now()) {
+			if !adminPasswordReauthenticated(admin, payload.CurrentPassword) {
+				writeAdminAuthError(w, http.StatusUnauthorized, "Debes confirmar tu contraseña actual para activar 2FA.")
+				return
+			}
+			if !verifyAndConsumeAdminTOTP(dbSuper, admin, payload.Code, time.Now(), false) {
 				writeAdminAuthError(w, http.StatusUnauthorized, "Codigo 2FA invalido.")
 				return
 			}
@@ -220,9 +315,22 @@ func AdminTwoFactorHandler(dbSuper *sql.DB) http.HandlerFunc {
 				writeAdminAuthError(w, http.StatusInternalServerError, "No se pudo activar 2FA.")
 				return
 			}
-			writeAdminAuthJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "enabled": true})
+			codes, batchID, err := generateAdminTOTPRecoveryCodes(10)
+			if err != nil || dbpkg.ReplaceAdministradorTOTPRecoveryCodes(dbSuper, adminEmail, batchID, codes) != nil {
+				writeAdminAuthError(w, http.StatusInternalServerError, "No se pudieron crear los codigos de recuperacion.")
+				return
+			}
+			if err := issueReplacementAdminSession(w, r, dbSuper, adminEmail); err != nil {
+				writeAdminAuthError(w, http.StatusInternalServerError, "No se pudo rotar la sesión después de activar 2FA.")
+				return
+			}
+			writeAdminAuthJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "enabled": true, "recovery_codes": codes})
 		case "disable":
-			if admin.TOTPEnabled == 1 && !verifyAdminTOTPCode(admin.TOTPSecret, payload.Code, time.Now()) {
+			if !adminPasswordReauthenticated(admin, payload.CurrentPassword) {
+				writeAdminAuthError(w, http.StatusUnauthorized, "Debes confirmar tu contraseña actual para desactivar 2FA.")
+				return
+			}
+			if admin.TOTPEnabled == 1 && !verifyAndConsumeAdminTOTP(dbSuper, admin, payload.Code, time.Now(), true) {
 				writeAdminAuthError(w, http.StatusUnauthorized, "Codigo 2FA invalido.")
 				return
 			}
@@ -230,9 +338,24 @@ func AdminTwoFactorHandler(dbSuper *sql.DB) http.HandlerFunc {
 				writeAdminAuthError(w, http.StatusInternalServerError, "No se pudo desactivar 2FA.")
 				return
 			}
+			if err := issueReplacementAdminSession(w, r, dbSuper, adminEmail); err != nil {
+				writeAdminAuthError(w, http.StatusInternalServerError, "No se pudo rotar la sesión después de desactivar 2FA.")
+				return
+			}
 			writeAdminAuthJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "enabled": false})
+		case "regenerate_recovery_codes":
+			if admin.TOTPEnabled != 1 || !adminPasswordReauthenticated(admin, payload.CurrentPassword) || !verifyAndConsumeAdminTOTP(dbSuper, admin, payload.Code, time.Now(), true) {
+				writeAdminAuthError(w, http.StatusUnauthorized, "No se pudo confirmar la regeneración de códigos.")
+				return
+			}
+			codes, batchID, err := generateAdminTOTPRecoveryCodes(10)
+			if err != nil || dbpkg.ReplaceAdministradorTOTPRecoveryCodes(dbSuper, adminEmail, batchID, codes) != nil {
+				writeAdminAuthError(w, http.StatusInternalServerError, "No se pudieron regenerar los códigos de recuperación.")
+				return
+			}
+			writeAdminAuthJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "recovery_codes": codes})
 		case "verify":
-			writeAdminAuthJSON(w, http.StatusOK, map[string]interface{}{"ok": verifyAdminTOTPCode(admin.TOTPSecret, payload.Code, time.Now())})
+			writeAdminAuthJSON(w, http.StatusOK, map[string]interface{}{"ok": verifyAndConsumeAdminTOTP(dbSuper, admin, payload.Code, time.Now(), true)})
 		default:
 			writeAdminAuthError(w, http.StatusBadRequest, "Accion 2FA no soportada: "+strconv.Quote(payload.Action))
 		}

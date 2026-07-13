@@ -518,6 +518,7 @@ func ListEmpresaCalculadoraOperaciones(dbConn *sql.DB, empresaID int64, filter E
 	}
 
 	limit, offset := calcNormalizeLimitOffset(filter.Limit, filter.Offset)
+	// #nosec G202 -- SQL structure is assembled only from server-side allowlists; all external values remain bound parameters.
 	query := `SELECT
 		id,
 		empresa_id,
@@ -675,6 +676,7 @@ func SetEmpresaCalculadoraOperacionesEstado(dbConn *sql.DB, empresaID int64, fil
 	}
 
 	whereSQL, whereArgs := calcBuildOperacionesFilterClause(filter, false)
+	// #nosec G202 -- SQL structure is assembled only from server-side allowlists; all external values remain bound parameters.
 	query := "UPDATE empresa_calculadora_operaciones SET estado = ?, fecha_actualizacion = CURRENT_TIMESTAMP WHERE empresa_id = ?" + whereSQL
 	args := make([]interface{}, 0, 2+len(whereArgs))
 	args = append(args, normalizeEmpresaCalculadoraEstado(estado), empresaID)

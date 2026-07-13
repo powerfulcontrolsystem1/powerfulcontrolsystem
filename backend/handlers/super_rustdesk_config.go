@@ -22,6 +22,9 @@ type rustDeskConfigPayload struct {
 // RustDeskConfigHandler gestiona la configuración del control RustDesk en VPS por SSH (GET/PUT).
 func RustDeskConfigHandler(dbSuper *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		if _, ok := paginaPrincipalRequireSuperAdmin(w, r, dbSuper); !ok {
+			return
+		}
 		switch r.Method {
 		case http.MethodGet:
 			enabledRaw, _, _, _, err := dbpkg.GetConfigEntry(dbSuper, "rustdesk.vps_ssh_enabled")

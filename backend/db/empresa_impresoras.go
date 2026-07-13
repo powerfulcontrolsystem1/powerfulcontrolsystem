@@ -1255,16 +1255,16 @@ func TomarEmpresaImpresoraTrabajos(dbConn *sql.DB, empresaID int64, agenteID str
 	for rows.Next() {
 		var id int64
 		if err := rows.Scan(&id); err != nil {
-			rows.Close()
+			_ = rows.Close()
 			return nil, err
 		}
 		ids = append(ids, id)
 	}
 	if err := rows.Err(); err != nil {
-		rows.Close()
+		_ = rows.Close()
 		return nil, err
 	}
-	rows.Close()
+	_ = rows.Close()
 
 	out := make([]EmpresaImpresoraTrabajo, 0, len(ids))
 	for _, id := range ids {

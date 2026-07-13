@@ -2414,6 +2414,7 @@ func simpleDeleteByEmpresa(dbConn *sql.DB, empresaID, id int64, table string) er
 	if err := EnsureEmpresaGimnasioSchema(dbConn); err != nil {
 		return err
 	}
+	// #nosec G202 -- SQL structure is assembled only from server-side allowlists; all external values remain bound parameters.
 	res, err := dbConn.Exec(`DELETE FROM `+table+` WHERE id=? AND empresa_id=?`, id, empresaID)
 	if err != nil {
 		return err

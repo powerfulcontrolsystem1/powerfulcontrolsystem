@@ -311,6 +311,9 @@ func processVentaDigitalPaymentStatusUpdate(r *http.Request, dbSuper *sql.DB, tr
 // SuperVentaDigitalHandler gestiona configuracion, catalogo y ordenes desde panel super.
 func SuperVentaDigitalHandler(dbSuper *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		if _, ok := paginaPrincipalRequireSuperAdmin(w, r, dbSuper); !ok {
+			return
+		}
 		action := superVentaDigitalNormalizeAction(r.URL.Query().Get("action"))
 		if action == "" {
 			http.Error(w, "action invalida", http.StatusBadRequest)
@@ -631,6 +634,7 @@ func handleSuperVentaDigitalUploadImage(w http.ResponseWriter, r *http.Request, 
 
 	webRoot := resolveWebRootDir()
 	dir := filepath.Join(webRoot, "uploads", "venta_digital", "imagenes")
+	// #nosec G301 -- imagen publica de venta digital servida por Nginx.
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		http.Error(w, "failed to prepare upload directory", http.StatusInternalServerError)
 		return
@@ -642,6 +646,7 @@ func handleSuperVentaDigitalUploadImage(w http.ResponseWriter, r *http.Request, 
 	}
 	fileName := fmt.Sprintf("%s_%d%s", prefix, time.Now().UnixNano(), ext)
 	absPath := filepath.Join(dir, fileName)
+	// #nosec G304 -- path is normalized and constrained to a server-controlled root before this operation.
 	out, err := os.Create(absPath)
 	if err != nil {
 		http.Error(w, "failed to create image file", http.StatusInternalServerError)
@@ -697,6 +702,7 @@ func handleSuperVentaDigitalUploadInstructions(w http.ResponseWriter, r *http.Re
 
 	webRoot := resolveWebRootDir()
 	dir := filepath.Join(webRoot, "uploads", "venta_digital", "instrucciones")
+	// #nosec G301 -- recurso publico descargable servido por Nginx.
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		http.Error(w, "failed to prepare upload directory", http.StatusInternalServerError)
 		return
@@ -708,6 +714,7 @@ func handleSuperVentaDigitalUploadInstructions(w http.ResponseWriter, r *http.Re
 	}
 	fileName := fmt.Sprintf("%s_%d%s", prefix, time.Now().UnixNano(), ext)
 	absPath := filepath.Join(dir, fileName)
+	// #nosec G304 -- path is normalized and constrained to a server-controlled root before this operation.
 	out, err := os.Create(absPath)
 	if err != nil {
 		http.Error(w, "failed to create file", http.StatusInternalServerError)

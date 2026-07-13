@@ -242,6 +242,9 @@ func effectiveDailyLimitBySuperConfig(maxConfigured int64, modelFreeDailyLimit i
 // Persistencia: tabla configuraciones en pcs_superadministrador.
 func SuperChatIALogicaConfigHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		if _, ok := paginaPrincipalRequireSuperAdmin(w, r, dbSuper); !ok {
+			return
+		}
 		switch r.Method {
 		case http.MethodGet:
 			empresaEnabled, empresaEnabledAt, empresaEnabledBy, err := getChatIAEmpresaEnabled(dbSuper)

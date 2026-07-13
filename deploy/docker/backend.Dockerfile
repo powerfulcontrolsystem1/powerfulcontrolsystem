@@ -1,4 +1,4 @@
-FROM golang:1.24-alpine AS build
+FROM golang:1.25.12-alpine AS build
 
 RUN apk add --no-cache ca-certificates git
 WORKDIR /src/backend
@@ -19,7 +19,6 @@ WORKDIR /app/backend
 COPY --from=build /out/pcs-backend /app/backend/pcs-backend
 COPY web /app/web
 COPY documentos /app/documentos
-COPY descargas /app/descargas
 COPY backend /app/project_export/backend
 COPY web /app/project_export/web
 COPY deploy /app/project_export/deploy

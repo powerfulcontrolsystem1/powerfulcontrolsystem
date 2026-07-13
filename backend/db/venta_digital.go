@@ -724,6 +724,7 @@ func ListSuperVentaDigitalItems(dbConn *sql.DB, filter SuperVentaDigitalItemsFil
 		return nil, 0, err
 	}
 
+	// #nosec G202 -- SQL structure is assembled only from server-side allowlists; all external values remain bound parameters.
 	query := `SELECT
 		id,
 		COALESCE(codigo_publico, ''),
@@ -1134,6 +1135,7 @@ func ListSuperVentaDigitalOrders(dbConn *sql.DB, filter SuperVentaDigitalOrdersF
 		return nil, 0, err
 	}
 
+	// #nosec G202 -- SQL structure is assembled only from server-side allowlists; all external values remain bound parameters.
 	query := `SELECT
 		id,
 		COALESCE(codigo_orden, ''),

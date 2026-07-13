@@ -5685,7 +5685,7 @@ func seedCategoriasProductosFromLegacy(dbConn *sql.DB) error {
 		var empresaID int64
 		var nombre string
 		if err := rows.Scan(&empresaID, &nombre); err != nil {
-			rows.Close()
+			_ = rows.Close()
 			return err
 		}
 		nombre = strings.TrimSpace(nombre)
@@ -5695,7 +5695,7 @@ func seedCategoriasProductosFromLegacy(dbConn *sql.DB) error {
 		seeds = append(seeds, categoriaSeed{empresaID: empresaID, nombre: nombre})
 	}
 	if err := rows.Err(); err != nil {
-		rows.Close()
+		_ = rows.Close()
 		return err
 	}
 	if err := rows.Close(); err != nil {

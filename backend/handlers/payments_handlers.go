@@ -3,7 +3,7 @@ package handlers
 import (
 	"bytes"
 	"crypto/hmac"
-	"crypto/md5"
+	"crypto/md5" // #nosec G501 -- ePayco Classic requires this provider signature; internal integrity uses SHA-256/HMAC.
 	"crypto/sha256"
 	"crypto/subtle"
 	"database/sql"
@@ -297,7 +297,7 @@ func LicenciasHandler(dbSuper *sql.DB) http.HandlerFunc {
 				}
 			}
 			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(licencias)
+			encodeJSONResponse(w, licencias)
 			return
 		case http.MethodPost:
 			// Accion especial: crear y activar licencia de prueba 15 días (valor 0) para una empresa.
@@ -2830,7 +2830,7 @@ func LicenciaCheckoutSummaryHandler(dbSuper *sql.DB) http.HandlerFunc {
 			return
 		}
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]interface{}{
+		encodeJSONResponse(w, map[string]interface{}{
 			"licencia_id": licenciaID,
 			"empresa_id":  empresaID,
 			"licencia": map[string]interface{}{
@@ -2981,8 +2981,7 @@ func verifyWompiWebhookSignature(dbSuper *sql.DB, r *http.Request, body []byte, 
 		}
 	}
 	if rawSignature == "" || rawSignature == "<nil>" {
-		log.Println("warning: wompi webhook received without signature checksum; skipping strict validation")
-		return nil
+		return errors.New("missing wompi signature")
 	}
 
 	candidates := parseSignatureCandidates(rawSignature)
@@ -3583,7 +3582,7 @@ func PublicLicenciasPaymentMethodsHandler(dbSuper, dbEmp *sql.DB) http.HandlerFu
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]interface{}{
+		encodeJSONResponse(w, map[string]interface{}{
 			"empresa_id":        empresaID,
 			"pais_codigo":       paisCodigo,
 			"pais_source":       source,
@@ -3904,7 +3903,10 @@ func buildEpaycoClassicCheckoutForm(baseURL, customerID, checkoutKey, reference,
 		amountText,
 		currency,
 	}, "^")
-	signature := fmt.Sprintf("%x", md5.Sum([]byte(signatureSource)))
+	// #nosec G401 -- ePayco's Classic Checkout contract requires this exact MD5
+	// signature format. It is provider interoperability data, not a PCS password
+	// or integrity primitive; webhook validation is enforced independently.
+	signature := fmt.Sprintf("%x", md5.Sum([]byte(signatureSource))) // #nosec G501 -- ePayco Classic Checkout requires this provider-defined signature; it is not used for passwords or internal integrity.
 
 	fields := map[string]string{
 		"p_cust_id_cliente":  strings.TrimSpace(customerID),
@@ -4347,7 +4349,7 @@ func WompiConfigHandler(dbSuper *sql.DB) http.HandlerFunc {
 			}
 
 			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(map[string]interface{}{
+			encodeJSONResponse(w, map[string]interface{}{
 				"public_key_set":        pubSet,
 				"public_key_masked":     pubMasked,
 				"public_key_updated":    pubUpdated,
@@ -4458,7 +4460,7 @@ func WompiConfigHandler(dbSuper *sql.DB) http.HandlerFunc {
 			}
 
 			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(map[string]interface{}{"saved": true, "mode": normalizedMode, "enabled": payload.Enabled})
+			encodeJSONResponse(w, map[string]interface{}{"saved": true, "mode": normalizedMode, "enabled": payload.Enabled})
 			return
 
 		default:
@@ -4560,7 +4562,7 @@ func EpaycoConfigHandler(dbSuper *sql.DB) http.HandlerFunc {
 			}
 
 			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(map[string]interface{}{
+			encodeJSONResponse(w, map[string]interface{}{
 				"public_key_set":      publicKeySet,
 				"public_key_masked":   maskConfigValue(publicKey, 4, 4),
 				"public_key_updated":  publicKeyUpdatedAt,
@@ -4766,7 +4768,7 @@ func EpaycoConfigHandler(dbSuper *sql.DB) http.HandlerFunc {
 			}
 
 			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(map[string]interface{}{"saved": true, "mode": normalizedMode})
+			encodeJSONResponse(w, map[string]interface{}{"saved": true, "mode": normalizedMode})
 			return
 
 		default:
@@ -4791,7 +4793,7 @@ func WompiTermsHandler(dbSuper *sql.DB) http.HandlerFunc {
 		if !status.Enabled {
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusPreconditionFailed)
-			json.NewEncoder(w).Encode(map[string]interface{}{
+			encodeJSONResponse(w, map[string]interface{}{
 				"error":    "Wompi no esta activo en configuracion avanzada",
 				"provider": "wompi",
 			})
@@ -4800,7 +4802,7 @@ func WompiTermsHandler(dbSuper *sql.DB) http.HandlerFunc {
 		if !status.Configured {
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusPreconditionFailed)
-			json.NewEncoder(w).Encode(map[string]interface{}{
+			encodeJSONResponse(w, map[string]interface{}{
 				"error":    "Wompi no esta configurado completamente",
 				"provider": "wompi",
 			})
@@ -4824,7 +4826,7 @@ func WompiTermsHandler(dbSuper *sql.DB) http.HandlerFunc {
 			return
 		}
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]interface{}{
+		encodeJSONResponse(w, map[string]interface{}{
 			"provider":                    "wompi",
 			"payment_method":              "WEB_CHECKOUT",
 			"mode":                        mode,
@@ -4895,7 +4897,7 @@ func WompiCreateCheckoutHandler(dbSuper *sql.DB) http.HandlerFunc {
 		if !status.Enabled {
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusPreconditionFailed)
-			json.NewEncoder(w).Encode(map[string]interface{}{
+			encodeJSONResponse(w, map[string]interface{}{
 				"error":           "Wompi no esta habilitado para el pais configurado de esta empresa",
 				"provider":        "wompi",
 				"pais_codigo":     paisCodigo,
@@ -4907,7 +4909,7 @@ func WompiCreateCheckoutHandler(dbSuper *sql.DB) http.HandlerFunc {
 		if !status.Configured {
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusPreconditionFailed)
-			json.NewEncoder(w).Encode(map[string]interface{}{"error": "Wompi requiere Public Key e Integrity Key para Web Checkout", "provider": "wompi", "pais_codigo": paisCodigo})
+			encodeJSONResponse(w, map[string]interface{}{"error": "Wompi requiere Public Key e Integrity Key para Web Checkout", "provider": "wompi", "pais_codigo": paisCodigo})
 			return
 		}
 
@@ -4935,7 +4937,7 @@ func WompiCreateCheckoutHandler(dbSuper *sql.DB) http.HandlerFunc {
 		if summary.PurchaseBlocked {
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusConflict)
-			json.NewEncoder(w).Encode(map[string]interface{}{"error": summary.Message, "provider": "wompi", "summary": summary})
+			encodeJSONResponse(w, map[string]interface{}{"error": summary.Message, "provider": "wompi", "summary": summary})
 			return
 		}
 		if summary.IsZeroTotal {
@@ -4945,7 +4947,7 @@ func WompiCreateCheckoutHandler(dbSuper *sql.DB) http.HandlerFunc {
 			}
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(statusCode)
-			json.NewEncoder(w).Encode(map[string]interface{}{"error": summary.Message, "provider": "wompi", "requires_manual_activation": true, "summary": summary})
+			encodeJSONResponse(w, map[string]interface{}{"error": summary.Message, "provider": "wompi", "requires_manual_activation": true, "summary": summary})
 			return
 		}
 
@@ -5003,7 +5005,7 @@ func WompiCreateCheckoutHandler(dbSuper *sql.DB) http.HandlerFunc {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]interface{}{
+		encodeJSONResponse(w, map[string]interface{}{
 			"provider":            "wompi",
 			"payment_method":      "WEB_CHECKOUT",
 			"mode":                mode,
@@ -5071,7 +5073,7 @@ func WompiCreateNequiTransactionHandler(dbSuper *sql.DB) http.HandlerFunc {
 		if !status.Enabled {
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusPreconditionFailed)
-			json.NewEncoder(w).Encode(map[string]interface{}{
+			encodeJSONResponse(w, map[string]interface{}{
 				"error":    "Wompi no esta activo en configuracion avanzada",
 				"provider": "wompi",
 			})
@@ -5080,7 +5082,7 @@ func WompiCreateNequiTransactionHandler(dbSuper *sql.DB) http.HandlerFunc {
 		if !status.Configured {
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusPreconditionFailed)
-			json.NewEncoder(w).Encode(map[string]interface{}{
+			encodeJSONResponse(w, map[string]interface{}{
 				"error":    "Wompi no esta configurado completamente",
 				"provider": "wompi",
 			})
@@ -5109,7 +5111,7 @@ func WompiCreateNequiTransactionHandler(dbSuper *sql.DB) http.HandlerFunc {
 		if strings.TrimSpace(privateKey) == "" {
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusPreconditionFailed)
-			json.NewEncoder(w).Encode(map[string]interface{}{
+			encodeJSONResponse(w, map[string]interface{}{
 				"error":    "Wompi Nequi directo requiere wompi.private_key; usa /wompi/create_checkout para Web Checkout hospedado",
 				"provider": "wompi",
 			})
@@ -5154,7 +5156,7 @@ func WompiCreateNequiTransactionHandler(dbSuper *sql.DB) http.HandlerFunc {
 		if summary.PurchaseBlocked {
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusConflict)
-			json.NewEncoder(w).Encode(map[string]interface{}{"error": summary.Message, "provider": "wompi", "summary": summary})
+			encodeJSONResponse(w, map[string]interface{}{"error": summary.Message, "provider": "wompi", "summary": summary})
 			return
 		}
 		if summary.IsZeroTotal {
@@ -5164,7 +5166,7 @@ func WompiCreateNequiTransactionHandler(dbSuper *sql.DB) http.HandlerFunc {
 			}
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(statusCode)
-			json.NewEncoder(w).Encode(map[string]interface{}{
+			encodeJSONResponse(w, map[string]interface{}{
 				"error":                      summary.Message,
 				"provider":                   "wompi",
 				"requires_manual_activation": true,
@@ -5190,7 +5192,7 @@ func WompiCreateNequiTransactionHandler(dbSuper *sql.DB) http.HandlerFunc {
 		if !payload.AcceptTerms {
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusBadRequest)
-			json.NewEncoder(w).Encode(map[string]interface{}{
+			encodeJSONResponse(w, map[string]interface{}{
 				"error":                   "Debes aceptar términos y autorización de datos para continuar con Nequi",
 				"acceptance_permalink":    acceptancePermalink,
 				"personal_data_permalink": personalPermalink,
@@ -5302,7 +5304,7 @@ func WompiCreateNequiTransactionHandler(dbSuper *sql.DB) http.HandlerFunc {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]interface{}{
+		encodeJSONResponse(w, map[string]interface{}{
 			"provider":                "wompi",
 			"payment_method":          "NEQUI",
 			"mode":                    mode,
@@ -5608,11 +5610,11 @@ func WompiTransactionStatusHandler(dbSuper *sql.DB) http.HandlerFunc {
 					if hasExpectedContext && !paymentContextMatchesExpected(licenciaID, empresaID, expectedLicenciaID, expectedEmpresaID) {
 						w.Header().Set("Content-Type", "application/json")
 						w.WriteHeader(http.StatusConflict)
-						json.NewEncoder(w).Encode(map[string]interface{}{"error": "El pago consultado no corresponde a la empresa o licencia abierta en esta pagina.", "provider": "wompi", "reference": reference, "status": status, "context_found": true, "context_mismatch": true, "licencia_id": licenciaID, "empresa_id": empresaID, "expected_licencia_id": expectedLicenciaID, "expected_empresa_id": expectedEmpresaID})
+						encodeJSONResponse(w, map[string]interface{}{"error": "El pago consultado no corresponde a la empresa o licencia abierta en esta pagina.", "provider": "wompi", "reference": reference, "status": status, "context_found": true, "context_mismatch": true, "licencia_id": licenciaID, "empresa_id": empresaID, "expected_licencia_id": expectedLicenciaID, "expected_empresa_id": expectedEmpresaID})
 						return
 					}
 					w.Header().Set("Content-Type", "application/json")
-					json.NewEncoder(w).Encode(map[string]interface{}{"provider": "wompi", "mode": "unknown", "transaction_id": "", "reference": reference, "status": status, "context_found": true, "licencia_id": licenciaID, "empresa_id": empresaID, "activated": false})
+					encodeJSONResponse(w, map[string]interface{}{"provider": "wompi", "mode": "unknown", "transaction_id": "", "reference": reference, "status": status, "context_found": true, "licencia_id": licenciaID, "empresa_id": empresaID, "activated": false})
 					return
 				}
 			}
@@ -5701,7 +5703,7 @@ func WompiTransactionStatusHandler(dbSuper *sql.DB) http.HandlerFunc {
 		if hasExpectedContext && hasContext && !paymentContextMatchesExpected(licenciaID, empresaID, expectedLicenciaID, expectedEmpresaID) {
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusConflict)
-			json.NewEncoder(w).Encode(map[string]interface{}{
+			encodeJSONResponse(w, map[string]interface{}{
 				"error":                "El pago consultado no corresponde a la empresa o licencia abierta en esta página.",
 				"provider":             "wompi",
 				"transaction_id":       transactionID,
@@ -5804,7 +5806,7 @@ func WompiTransactionStatusHandler(dbSuper *sql.DB) http.HandlerFunc {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]interface{}{
+		encodeJSONResponse(w, map[string]interface{}{
 			"provider":       "wompi",
 			"mode":           mode,
 			"transaction_id": transactionID,
@@ -5826,6 +5828,7 @@ func WompiWebhookHandler(dbSuper *sql.DB, dbEmp ...*sql.DB) http.HandlerFunc {
 			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 			return
 		}
+		r.Body = http.MaxBytesReader(w, r.Body, 1<<20)
 
 		body, err := io.ReadAll(r.Body)
 		if err != nil {
@@ -5997,7 +6000,7 @@ func WompiWebhookHandler(dbSuper *sql.DB, dbEmp ...*sql.DB) http.HandlerFunc {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]interface{}{
+		encodeJSONResponse(w, map[string]interface{}{
 			"ok":                           true,
 			"provider":                     "wompi",
 			"transaction_id":               transactionID,
@@ -6023,6 +6026,7 @@ func EpaycoCreateTransactionHandler(dbSuper *sql.DB) http.HandlerFunc {
 			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 			return
 		}
+		r.Body = http.MaxBytesReader(w, r.Body, 1<<20)
 
 		var payload struct {
 			LicenciaID       int64   `json:"licencia_id"`
@@ -6047,7 +6051,7 @@ func EpaycoCreateTransactionHandler(dbSuper *sql.DB) http.HandlerFunc {
 		if err != nil && !errors.Is(err, sql.ErrNoRows) {
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusConflict)
-			json.NewEncoder(w).Encode(map[string]interface{}{
+			encodeJSONResponse(w, map[string]interface{}{
 				"error":    "failed to read epayco.enabled: " + err.Error(),
 				"provider": "epayco",
 			})
@@ -6056,7 +6060,7 @@ func EpaycoCreateTransactionHandler(dbSuper *sql.DB) http.HandlerFunc {
 		if !parseBoolConfigValue(enabledRaw) {
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusPreconditionFailed)
-			json.NewEncoder(w).Encode(map[string]interface{}{
+			encodeJSONResponse(w, map[string]interface{}{
 				"error":    "Epayco no esta activo en configuracion avanzada",
 				"provider": "epayco",
 			})
@@ -6067,7 +6071,7 @@ func EpaycoCreateTransactionHandler(dbSuper *sql.DB) http.HandlerFunc {
 		if err != nil {
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusConflict)
-			json.NewEncoder(w).Encode(map[string]interface{}{
+			encodeJSONResponse(w, map[string]interface{}{
 				"error":    "failed to read Epayco credentials: " + err.Error(),
 				"provider": "epayco",
 			})
@@ -6082,7 +6086,7 @@ func EpaycoCreateTransactionHandler(dbSuper *sql.DB) http.HandlerFunc {
 		if !smartCheckoutReady && !classicCheckoutReady {
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusConflict)
-			json.NewEncoder(w).Encode(map[string]interface{}{
+			encodeJSONResponse(w, map[string]interface{}{
 				"error":                     "Epayco no esta configurado completamente: Smart Checkout requiere Public Key y Private Key API; el checkout estandar requiere Public Key.",
 				"provider":                  "epayco",
 				"smart_checkout_ready":      smartCheckoutReady,
@@ -6118,7 +6122,7 @@ func EpaycoCreateTransactionHandler(dbSuper *sql.DB) http.HandlerFunc {
 		if statusErr != nil {
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusConflict)
-			json.NewEncoder(w).Encode(map[string]interface{}{
+			encodeJSONResponse(w, map[string]interface{}{
 				"error":    "failed to read Epayco availability: " + statusErr.Error(),
 				"provider": "epayco",
 			})
@@ -6127,7 +6131,7 @@ func EpaycoCreateTransactionHandler(dbSuper *sql.DB) http.HandlerFunc {
 		if !status.Enabled {
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusPreconditionFailed)
-			json.NewEncoder(w).Encode(map[string]interface{}{
+			encodeJSONResponse(w, map[string]interface{}{
 				"error":           "Epayco no esta habilitado para el pais configurado de esta empresa",
 				"provider":        "epayco",
 				"pais_codigo":     paisCodigo,
@@ -6152,7 +6156,7 @@ func EpaycoCreateTransactionHandler(dbSuper *sql.DB) http.HandlerFunc {
 		if err != nil {
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusConflict)
-			json.NewEncoder(w).Encode(map[string]interface{}{
+			encodeJSONResponse(w, map[string]interface{}{
 				"error":    "failed to resolve licencia summary: " + err.Error(),
 				"provider": "epayco",
 			})
@@ -6161,7 +6165,7 @@ func EpaycoCreateTransactionHandler(dbSuper *sql.DB) http.HandlerFunc {
 		if summary.PurchaseBlocked {
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusConflict)
-			json.NewEncoder(w).Encode(map[string]interface{}{"error": summary.Message, "provider": "epayco", "summary": summary})
+			encodeJSONResponse(w, map[string]interface{}{"error": summary.Message, "provider": "epayco", "summary": summary})
 			return
 		}
 		if summary.IsZeroTotal {
@@ -6171,7 +6175,7 @@ func EpaycoCreateTransactionHandler(dbSuper *sql.DB) http.HandlerFunc {
 			}
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(statusCode)
-			json.NewEncoder(w).Encode(map[string]interface{}{
+			encodeJSONResponse(w, map[string]interface{}{
 				"error":                      summary.Message,
 				"provider":                   "epayco",
 				"requires_manual_activation": true,
@@ -6194,7 +6198,7 @@ func EpaycoCreateTransactionHandler(dbSuper *sql.DB) http.HandlerFunc {
 		if !smartCheckoutReady && !classicCheckoutReady {
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusPreconditionFailed)
-			json.NewEncoder(w).Encode(map[string]interface{}{
+			encodeJSONResponse(w, map[string]interface{}{
 				"error":    "Epayco requiere Public Key para iniciar el checkout",
 				"provider": "epayco",
 			})
@@ -6217,7 +6221,7 @@ func EpaycoCreateTransactionHandler(dbSuper *sql.DB) http.HandlerFunc {
 			if !classicCheckoutReady {
 				w.Header().Set("Content-Type", "application/json")
 				w.WriteHeader(http.StatusConflict)
-				json.NewEncoder(w).Encode(map[string]interface{}{
+				encodeJSONResponse(w, map[string]interface{}{
 					"error":                     "Epayco Smart Checkout fallo y el checkout estandar no esta listo. Registra PUBLIC_KEY en configuracion avanzada de Epayco.",
 					"provider":                  "epayco",
 					"smart_checkout_error":      reason,
@@ -6266,7 +6270,7 @@ func EpaycoCreateTransactionHandler(dbSuper *sql.DB) http.HandlerFunc {
 			}
 
 			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(map[string]interface{}{
+			encodeJSONResponse(w, map[string]interface{}{
 				"provider":                "epayco",
 				"payment_method":          "CLASSIC_CHECKOUT",
 				"mode":                    classicMode,
@@ -6344,7 +6348,7 @@ func EpaycoCreateTransactionHandler(dbSuper *sql.DB) http.HandlerFunc {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]interface{}{
+		encodeJSONResponse(w, map[string]interface{}{
 			"provider":            "epayco",
 			"payment_method":      "SMART_CHECKOUT",
 			"mode":                mode,
@@ -6644,7 +6648,7 @@ func EpaycoTransactionStatusHandler(dbSuper *sql.DB) http.HandlerFunc {
 		if hasExpectedContext && hasContext && !paymentContextMatchesExpected(licenciaID, empresaID, expectedLicenciaID, expectedEmpresaID) {
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusConflict)
-			json.NewEncoder(w).Encode(map[string]interface{}{
+			encodeJSONResponse(w, map[string]interface{}{
 				"error":                "El pago consultado no corresponde a la empresa o licencia abierta en esta página.",
 				"provider":             "epayco",
 				"transaction_id":       firstNonEmptyString(transactionID, recordTransactionID, originalTransactionID),
@@ -6742,7 +6746,7 @@ func EpaycoTransactionStatusHandler(dbSuper *sql.DB) http.HandlerFunc {
 		mode, modeSource := resolveEpaycoMode(dbSuper, publicKey, privateKey)
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]interface{}{
+		encodeJSONResponse(w, map[string]interface{}{
 			"provider":         "epayco",
 			"mode":             mode,
 			"mode_source":      modeSource,
@@ -6959,7 +6963,7 @@ func EpaycoWebhookHandler(dbSuper *sql.DB, dbEmp ...*sql.DB) http.HandlerFunc {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]interface{}{
+		encodeJSONResponse(w, map[string]interface{}{
 			"ok":                          true,
 			"provider":                    "epayco",
 			"transaction_id":              transactionID,
@@ -7052,7 +7056,7 @@ func ActivateLicenciaSinPagoHandler(dbSuper *sql.DB, dbEmpresas *sql.DB) http.Ha
 					return
 				}
 				w.Header().Set("Content-Type", "application/json")
-				json.NewEncoder(w).Encode(map[string]interface{}{
+				encodeJSONResponse(w, map[string]interface{}{
 					"activated":      true,
 					"already_active": true,
 					"provider":       "manual",
@@ -7099,7 +7103,7 @@ func ActivateLicenciaSinPagoHandler(dbSuper *sql.DB, dbEmpresas *sql.DB) http.Ha
 								return
 							}
 							w.Header().Set("Content-Type", "application/json")
-							json.NewEncoder(w).Encode(map[string]interface{}{
+							encodeJSONResponse(w, map[string]interface{}{
 								"activated":      true,
 								"already_active": true,
 								"provider":       "manual",
@@ -7226,7 +7230,7 @@ func ActivateLicenciaSinPagoHandler(dbSuper *sql.DB, dbEmpresas *sql.DB) http.Ha
 			recordAsesorComercialComision(dbSuper, "manual", "", reference, payload.LicenciaID, payload.EmpresaID)
 		}()
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]interface{}{
+		encodeJSONResponse(w, map[string]interface{}{
 			"activated":      true,
 			"provider":       "manual",
 			"payment_method": "ACTIVAR_SIN_PAGO",

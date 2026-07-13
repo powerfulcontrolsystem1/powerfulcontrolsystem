@@ -38,7 +38,7 @@ const (
 	corporateEmailProvisionModeKey = "email_corporativo.provision_mode"
 	corporateEmailAPIBaseURLKey    = "email_corporativo.mailu_api_base_url"
 	corporateEmailAPIAdminKey      = "email_corporativo.mailu_admin"
-	corporateEmailAPIPasswordKey   = "email_corporativo.mailu_api_token"
+	corporateEmailAPIPasswordKey   = "email_corporativo.mailu_api_token" // #nosec G101 -- ruta de configuracion, no credencial embebida.
 	corporateEmailQuotaMBKey       = "email_corporativo.quota_mb"
 	corporateEmailDirectCommandKey = "email_corporativo.direct_provision_command"
 	corporateEmailAutologinKey     = "email_corporativo.autologin_secret"
@@ -778,6 +778,7 @@ func provisionEmpresaEmailAccountDirect(dbSuper *sql.DB, cfg CorporateEmailConfi
 
 	ctx, cancel := context.WithTimeout(context.Background(), 45*time.Second)
 	defer cancel()
+	// #nosec G204 -- commandPath is the fixed Mailu provisioning script resolved inside the project.
 	cmd := exec.CommandContext(ctx, commandPath)
 	cmd.Env = append(os.Environ(),
 		"PCS_MAILU_EMAIL="+strings.ToLower(strings.TrimSpace(account.Email)),

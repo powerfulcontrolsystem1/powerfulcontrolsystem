@@ -1,6 +1,6 @@
 services:
   onlyoffice-documentserver:
-    image: onlyoffice/documentserver:latest
+    image: onlyoffice/documentserver:9.4
     container_name: pcs-onlyoffice-documentserver
     restart: unless-stopped
     ports:

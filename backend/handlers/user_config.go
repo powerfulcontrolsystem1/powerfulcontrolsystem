@@ -35,7 +35,7 @@ func UserConfiguracionHandler(dbSuper *sql.DB) http.HandlerFunc {
 				selectorOrden = []int64{}
 			}
 			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(map[string]interface{}{
+			encodeJSONResponse(w, map[string]interface{}{
 				"ok":                       true,
 				"apariencia":               apariencia,
 				"selector_empresas_orden":  selectorOrden,
@@ -81,7 +81,7 @@ func UserConfiguracionHandler(dbSuper *sql.DB) http.HandlerFunc {
 				}
 			}
 			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(map[string]interface{}{"ok": true})
+			encodeJSONResponse(w, map[string]interface{}{"ok": true})
 			return
 		}
 

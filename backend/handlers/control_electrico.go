@@ -625,11 +625,13 @@ func handleControlElectricoReleFotoUpload(r *http.Request, dbEmp, dbSuper *sql.D
 	webRoot := resolveWebRootDir()
 	folder := domoticaEmpresaStorageFolder(dbEmp, empresaID)
 	dir := filepath.Join(webRoot, "uploads", "empresas", folder, "imagenes", "domotica")
+	// #nosec G301 -- imagen publica; Nginx requiere atravesar el directorio.
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		return 0, "", fmt.Errorf("no se pudo preparar carpeta de imagenes")
 	}
 	fileName := fmt.Sprintf("rele_%d_%d%s", releID, time.Now().UnixNano(), ext)
 	absPath := filepath.Join(dir, fileName)
+	// #nosec G304 -- nombre interno generado y raiz publica controlada por el servidor.
 	out, err := os.Create(absPath)
 	if err != nil {
 		return 0, "", fmt.Errorf("no se pudo crear imagen")

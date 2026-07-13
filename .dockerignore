@@ -33,6 +33,9 @@ backend/handlers/vendedor_config_handlers.go
 backend/handlers/vendedores_handlers.go
 backend/server.exe
 backend/server.exe~
+backend/**/*.exe
+herramientas/*.exe
+descargas/
 backend/server_linux_amd64
 backend/server.log
 backend/server.err

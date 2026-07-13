@@ -201,10 +201,12 @@ func ensureDemoImage(empresaID int64, empresaNombre string, releID int64) (strin
 	png, _ := base64.StdEncoding.DecodeString("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/p9sAAAAASUVORK5CYII=")
 	folder := "empresa_" + strconvFormat(empresaID) + "_" + sanitizeFolder(empresaNombre)
 	dir := filepath.Join("..", "web", "uploads", "empresas", folder, "imagenes", "domotica")
+	// #nosec G301 -- herramienta de seed genera una imagen publica demostrativa.
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		return "", err
 	}
 	name := fmt.Sprintf("rele_%d_demo.png", releID)
+	// #nosec G306 -- activo PNG publico sin datos sensibles.
 	if err := os.WriteFile(filepath.Join(dir, name), png, 0o644); err != nil {
 		return "", err
 	}

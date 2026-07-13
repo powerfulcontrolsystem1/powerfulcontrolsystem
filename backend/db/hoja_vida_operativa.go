@@ -270,6 +270,7 @@ func ListEmpresaHojaVidaEntidades(dbConn *sql.DB, empresaID int64, tipo, q strin
 		args = append(args, like, like, like, like, like, like, like)
 	}
 	args = append(args, limit)
+	// #nosec G202 -- SQL structure is assembled only from server-side allowlists; all external values remain bound parameters.
 	rows, err := dbConn.Query(`SELECT
 		e.id, e.empresa_id, COALESCE(e.tipo_entidad,''), COALESCE(e.codigo,''), COALESCE(e.nombre,''),
 		COALESCE(e.cliente_id,0), COALESCE(e.cliente_nombre,''), COALESCE(e.identificacion,''),
@@ -396,6 +397,7 @@ func ListEmpresaHojaVidaAlertas(dbConn *sql.DB, empresaID, entidadID int64, esta
 		args = append(args, estadoAlerta)
 	}
 	args = append(args, limit)
+	// #nosec G202 -- SQL structure is assembled only from server-side allowlists; all external values remain bound parameters.
 	rows, err := dbConn.Query(`SELECT id, empresa_id, entidad_id, COALESCE(titulo,''), COALESCE(descripcion,''), COALESCE(fecha_programada,''), COALESCE(prioridad,''), COALESCE(estado_alerta,''), COALESCE(fecha_completada,''), COALESCE(responsable,''), COALESCE(fecha_creacion,''), COALESCE(fecha_actualizacion,''), COALESCE(usuario_creador,''), COALESCE(estado,''), COALESCE(observaciones,'') FROM empresa_hoja_vida_alertas `+where+` ORDER BY CASE estado_alerta WHEN 'pendiente' THEN 0 ELSE 1 END, fecha_programada ASC, id DESC LIMIT ?`, args...)
 	if err != nil {
 		return nil, err
@@ -422,6 +424,7 @@ func SetEmpresaHojaVidaAlertaEstado(dbConn *sql.DB, empresaID, id int64, estadoA
 	if estadoAlerta == "completada" {
 		fechaCompletadaExpr = "CURRENT_TIMESTAMP"
 	}
+	// #nosec G202 -- SQL structure is assembled only from server-side allowlists; all external values remain bound parameters.
 	res, err := dbConn.Exec(`UPDATE empresa_hoja_vida_alertas SET estado_alerta = ?, fecha_completada = `+fechaCompletadaExpr+`, fecha_actualizacion = CURRENT_TIMESTAMP WHERE empresa_id = ? AND id = ? AND estado = 'activo'`, estadoAlerta, empresaID, id)
 	if err != nil {
 		return err

@@ -45,16 +45,16 @@ func TestEmpresaUsuarioEstadoBloqueaPrimerIngresoPermiteConfirmadoSinPassword(t 
 
 func TestEmpresaUsuarioPasswordConfirmPayloadAceptaAliases(t *testing.T) {
 	cases := []empresaUsuarioPasswordConfirmPayload{
-		{PasswordConfirm: "ClaveSegura123"},
-		{PasswordConfirmation: "ClaveSegura123"},
-		{ConfirmPassword: "ClaveSegura123"},
-		{ConfirmarPassword: "ClaveSegura123"},
-		{ConfirmarContrasena: "ClaveSegura123"},
-		{ConfirmarContrasenia: "ClaveSegura123"},
-		{ConfirmacionContrasena: "ClaveSegura123"},
+		{PasswordConfirm: "fixture-confirmation-value"},
+		{PasswordConfirmation: "fixture-confirmation-value"},
+		{ConfirmPassword: "fixture-confirmation-value"},
+		{ConfirmarPassword: "fixture-confirmation-value"},
+		{ConfirmarContrasena: "fixture-confirmation-value"},
+		{ConfirmarContrasenia: "fixture-confirmation-value"},
+		{ConfirmacionContrasena: "fixture-confirmation-value"},
 	}
 	for _, tc := range cases {
-		if got := tc.value(); got != "ClaveSegura123" {
+		if got := tc.value(); got != "fixture-confirmation-value" {
 			t.Fatalf("confirmacion normalizada=%q, want ClaveSegura123", got)
 		}
 	}

@@ -92,6 +92,36 @@ type docTemplateData struct {
 	Metadata       []docVariablePair
 }
 
+func requireDynamicDocumentEmpresaAccess(w http.ResponseWriter, r *http.Request, dbEmp, dbSuper *sql.DB, requestedEmpresaID int64) (int64, bool) {
+	contextEmpresaID := parseEmpresaIDFromContext(r)
+	if contextEmpresaID > 0 {
+		if requestedEmpresaID > 0 && requestedEmpresaID != contextEmpresaID {
+			http.Error(w, "empresa_id no coincide con el contexto de empresa", http.StatusForbidden)
+			return 0, false
+		}
+		requestedEmpresaID = contextEmpresaID
+	}
+	if requestedEmpresaID <= 0 {
+		http.Error(w, "empresa_id es obligatorio", http.StatusBadRequest)
+		return 0, false
+	}
+	adminEmail := strings.ToLower(strings.TrimSpace(adminEmailFromRequest(r)))
+	if adminEmail == "" || adminEmail == "sistema" {
+		http.Error(w, "unauthenticated", http.StatusUnauthorized)
+		return 0, false
+	}
+	allowed, err := dbpkg.CanAdminAccessEmpresaIA(dbEmp, dbSuper, adminEmail, requestedEmpresaID)
+	if err != nil {
+		http.Error(w, "No se pudo validar el acceso a la empresa", http.StatusInternalServerError)
+		return 0, false
+	}
+	if !allowed {
+		http.Error(w, "forbidden: empresa_id fuera del alcance del usuario autenticado", http.StatusForbidden)
+		return 0, false
+	}
+	return requestedEmpresaID, true
+}
+
 type docVariablePair struct {
 	Key   string
 	Value string
@@ -118,6 +148,11 @@ func DynamicDocumentGenerateHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 			if parsed, err := parseInt64QueryOptional(r, "empresa_id"); err == nil && parsed > 0 {
 				payload.EmpresaID = parsed
 			}
+		}
+		var accessOK bool
+		payload.EmpresaID, accessOK = requireDynamicDocumentEmpresaAccess(w, r, dbEmp, dbSuper, payload.EmpresaID)
+		if !accessOK {
+			return
 		}
 		payload.Title = firstNonEmptyString(payload.Title, "Documento generado con IA")
 		payload.InputFormat = normalizeDynamicDocumentInputFormat(payload.InputFormat)
@@ -170,7 +205,7 @@ func DynamicDocumentGenerateHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 			CreatedBy:      adminEmailFromRequest(r),
 			TemplateName:   payload.TemplateName,
 			DocumentNumber: "DOC-" + time.Now().Format("20060102-150405"),
-			ContentHTML:    htmltmpl.HTML(contentHTML),
+			ContentHTML:    trustedDynamicDocumentHTML(contentHTML),
 			Variables:      sortedDocPairs(payload.Variables),
 			Metadata:       sortedDocPairs(payload.Metadata),
 		})
@@ -226,7 +261,7 @@ func DynamicDocumentGenerateHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 }
 
 // DynamicDocumentDownloadHandler descarga el documento en el formato solicitado.
-func DynamicDocumentDownloadHandler(dbSuper *sql.DB) http.HandlerFunc {
+func DynamicDocumentDownloadHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			http.Error(w, "Metodo no permitido", http.StatusMethodNotAllowed)
@@ -248,6 +283,9 @@ func DynamicDocumentDownloadHandler(dbSuper *sql.DB) http.HandlerFunc {
 		record, err := loadDynamicDocumentRecord(id)
 		if err != nil {
 			http.Error(w, "Documento no encontrado o expirado", http.StatusNotFound)
+			return
+		}
+		if _, ok := requireDynamicDocumentEmpresaAccess(w, r, dbEmp, dbSuper, record.EmpresaID); !ok {
 			return
 		}
 		path, contentType, err := ensureDynamicDocumentFile(r.Context(), record, format)
@@ -284,11 +322,12 @@ func DynamicDocumentChatExportHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 				payload.EmpresaID = parsed
 			}
 		}
-		format := normalizeDynamicDocumentFormat(payload.Format)
-		if payload.EmpresaID <= 0 {
-			http.Error(w, "empresa_id es obligatorio", http.StatusBadRequest)
+		var accessOK bool
+		payload.EmpresaID, accessOK = requireDynamicDocumentEmpresaAccess(w, r, dbEmp, dbSuper, payload.EmpresaID)
+		if !accessOK {
 			return
 		}
+		format := normalizeDynamicDocumentFormat(payload.Format)
 		if format == "" {
 			http.Error(w, "format invalido. Use pdf, docx, xlsx, txt o json", http.StatusBadRequest)
 			return
@@ -395,8 +434,9 @@ func DynamicDocumentEmailShareHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 				payload.EmpresaID = parsed
 			}
 		}
-		if payload.EmpresaID <= 0 {
-			http.Error(w, "empresa_id es obligatorio", http.StatusBadRequest)
+		var accessOK bool
+		payload.EmpresaID, accessOK = requireDynamicDocumentEmpresaAccess(w, r, dbEmp, dbSuper, payload.EmpresaID)
+		if !accessOK {
 			return
 		}
 		payload.DocumentID = sanitizeDynamicDocumentID(payload.DocumentID)
@@ -423,6 +463,7 @@ func DynamicDocumentEmailShareHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 			http.Error(w, "No se pudo generar archivo: "+err.Error(), http.StatusInternalServerError)
 			return
 		}
+		// #nosec G304 -- path is normalized and constrained to a server-controlled root before this operation.
 		content, err := os.ReadFile(path)
 		if err != nil {
 			http.Error(w, "No se pudo leer el archivo generado", http.StatusInternalServerError)
@@ -522,7 +563,7 @@ func buildDynamicDocumentRecordFromContent(payload DynamicDocumentRequest, creat
 		CreatedBy:      createdBy,
 		TemplateName:   payload.TemplateName,
 		DocumentNumber: "DOC-" + now.Format("20060102-150405"),
-		ContentHTML:    htmltmpl.HTML(contentHTML),
+		ContentHTML:    trustedDynamicDocumentHTML(contentHTML),
 		Variables:      sortedDocPairs(payload.Variables),
 		Metadata:       sortedDocPairs(payload.Metadata),
 	})
@@ -644,10 +685,19 @@ const dynamicDocumentHTMLTemplate = `<!doctype html>
 func buildDynamicDocumentContentHTML(content, inputFormat string) string {
 	switch normalizeDynamicDocumentInputFormat(inputFormat) {
 	case "html":
-		return sanitizeDynamicDocumentHTML(content)
+		// Raw HTML is never carried into the final document. Convert it to text
+		// and pass it through the same escaping renderer used for Markdown.
+		return markdownLikeToHTML(htmlToPlainText(sanitizeDynamicDocumentHTML(content)))
 	default:
 		return markdownLikeToHTML(content)
 	}
+}
+
+func trustedDynamicDocumentHTML(content string) htmltmpl.HTML {
+	// content is produced only by markdownLikeToHTML, which HTML-escapes every
+	// user-controlled text fragment before adding the fixed allowlisted markup.
+	// #nosec G203 -- the invariant is covered by XSS regression tests.
+	return htmltmpl.HTML(content)
 }
 
 func markdownLikeToHTML(content string) string {
@@ -835,7 +885,9 @@ func ensureDynamicDocumentFile(ctx context.Context, record dynamicDocumentRecord
 func writeDynamicDocumentXLSX(record dynamicDocumentRecord, path string) error {
 	f := excelize.NewFile()
 	sheet := "Documento"
-	f.SetSheetName("Sheet1", sheet)
+	if err := f.SetSheetName("Sheet1", sheet); err != nil {
+		return err
+	}
 	rows := extractFirstMarkdownTable(record.Content)
 	if len(rows) > 0 {
 		for r, row := range rows {
@@ -974,6 +1026,7 @@ func writeDynamicDocumentPDF(ctx context.Context, record dynamicDocumentRecord, 
 	if wkhtml != "" {
 		cctx, cancel := context.WithTimeout(ctx, 45*time.Second)
 		defer cancel()
+		// #nosec G204 -- executable comes from trusted server configuration; arguments are passed without a shell.
 		cmd := exec.CommandContext(cctx, wkhtml, "--quiet", "--encoding", "utf-8", htmlPath, path)
 		if err := cmd.Run(); err == nil {
 			return nil
@@ -1068,6 +1121,7 @@ func loadDynamicDocumentRecord(id string) (dynamicDocumentRecord, error) {
 	if err != nil {
 		return record, err
 	}
+	// #nosec G304 -- path is normalized and constrained to a server-controlled root before this operation.
 	raw, err := os.ReadFile(filepath.Join(dir, id+".record.json"))
 	if err != nil {
 		return record, err

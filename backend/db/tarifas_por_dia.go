@@ -1141,7 +1141,7 @@ func listEmpresaTarifaPorDiaStationRefs(dbConn *sql.DB, empresaID int64) ([]empr
 			var codigo string
 			var nombre string
 			if err := rowsCarritos.Scan(&referenciaExterna, &codigo, &nombre); err != nil {
-				rowsCarritos.Close()
+				_ = rowsCarritos.Close()
 				return nil, err
 			}
 			estacionID := parseReservaHotelEstacionID(referenciaExterna, codigo, empresaID)
@@ -1151,10 +1151,10 @@ func listEmpresaTarifaPorDiaStationRefs(dbConn *sql.DB, empresaID int64) ([]empr
 			mergeTarifaPorDiaEstacionRef(refs, empresaTarifaPorDiaEstacionRef{ID: estacionID, Codigo: codigo, Nombre: nombre}, empresaID)
 		}
 		if err := rowsCarritos.Err(); err != nil {
-			rowsCarritos.Close()
+			_ = rowsCarritos.Close()
 			return nil, err
 		}
-		rowsCarritos.Close()
+		_ = rowsCarritos.Close()
 	}
 
 	hasReservas, err := tableExists(dbConn, "reservas_hotel")
@@ -1173,16 +1173,16 @@ func listEmpresaTarifaPorDiaStationRefs(dbConn *sql.DB, empresaID int64) ([]empr
 		for rowsReservas.Next() {
 			var estacionID int64
 			if err := rowsReservas.Scan(&estacionID); err != nil {
-				rowsReservas.Close()
+				_ = rowsReservas.Close()
 				return nil, err
 			}
 			mergeTarifaPorDiaEstacionRef(refs, empresaTarifaPorDiaEstacionRef{ID: estacionID}, empresaID)
 		}
 		if err := rowsReservas.Err(); err != nil {
-			rowsReservas.Close()
+			_ = rowsReservas.Close()
 			return nil, err
 		}
-		rowsReservas.Close()
+		_ = rowsReservas.Close()
 	}
 
 	out := make([]empresaTarifaPorDiaEstacionRef, 0, len(refs))

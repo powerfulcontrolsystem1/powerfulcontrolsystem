@@ -1,6 +1,7 @@
 package db
 
 import (
+	"encoding/hex"
 	"strings"
 	"testing"
 )
@@ -23,8 +24,8 @@ func TestGenerateEmpresaSensorToken(t *testing.T) {
 	if len(token) != 64 {
 		t.Fatalf("token debe tener 64 caracteres hex, got %d", len(token))
 	}
-	if strings.Trim(token, "0123456789abcdef") != "" {
-		t.Fatalf("token no parece hexadecimal: %q", token)
+	if _, err := hex.DecodeString(token); err != nil {
+		t.Fatal("token no parece hexadecimal")
 	}
 }
 

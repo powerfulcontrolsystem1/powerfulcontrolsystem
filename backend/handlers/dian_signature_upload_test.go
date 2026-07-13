@@ -234,17 +234,18 @@ func TestDecodeDIANSignatureUploadRejectsCertificateWithoutPrivateKey(t *testing
 	}
 }
 
-func TestEmpresaFacturacionFirmaElectronicaUsesCompanyFolder(t *testing.T) {
-	dir, publicPrefix, folder := empresaUploadsSubdir(nil, 15, empresaFacturacionElectronicaDirName, empresaFirmaElectronicaDirName)
-	expectedSuffix := filepath.Join("uploads", "empresas", "empresa_15_empresa", "facturacion_electronica", "firma_electronica")
+func TestEmpresaFacturacionFirmaElectronicaUsesPrivateCompanyFolder(t *testing.T) {
+	t.Setenv("PCS_PRIVATE_STORAGE_DIR", t.TempDir())
+	dir, folder := empresaFacturacionFirmaElectronicaDir(nil, 15)
+	expectedSuffix := filepath.Join("dian", "empresa_15")
 	if !strings.HasSuffix(filepath.Clean(dir), expectedSuffix) {
 		t.Fatalf("expected firma dir suffix %q, got %q", expectedSuffix, dir)
 	}
 	if folder != "empresa_15_empresa" {
 		t.Fatalf("expected company folder empresa_15_empresa, got %q", folder)
 	}
-	if publicPrefix != "/uploads/empresas/empresa_15_empresa/facturacion_electronica/firma_electronica" {
-		t.Fatalf("unexpected public prefix: %q", publicPrefix)
+	if strings.Contains(filepath.ToSlash(dir), "/web/uploads/") {
+		t.Fatalf("DIAN signature material must not live under the public web root: %q", dir)
 	}
 }
 

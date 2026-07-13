@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
-	"io"
 	"log"
 	"mime"
 	"net/http"
@@ -34,6 +33,21 @@ type empresaStorageConfig struct {
 	WarnPercent    int   `json:"warn_percent"`
 	BlockUploads   bool  `json:"block_uploads_over_limit"`
 	MaxUploadMB    int64 `json:"max_upload_mb"`
+}
+
+func EmpresaBuzonArchivoHandler() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+		empresaID, err := parseEmpresaIDQuery(r)
+		if err != nil || empresaID <= 0 {
+			http.Error(w, "empresa_id invalido", http.StatusBadRequest)
+			return
+		}
+		serveEmpresaPrivateFile(w, r, empresaID, "buzon")
+	}
 }
 
 type empresaStorageUsage struct {
@@ -433,26 +447,12 @@ func handleEmpresaBuzonAttachmentUpload(w http.ResponseWriter, r *http.Request, 
 		}
 	}
 
-	absDir, publicDir, _ := empresaUploadsSubdir(dbEmp, empresaID, "mensajeria", "buzon", fmt.Sprintf("mensaje_%d", mensajeID))
-	if err := os.MkdirAll(absDir, 0o755); err != nil {
-		http.Error(w, "No se pudo preparar carpeta de adjuntos", http.StatusInternalServerError)
-		return
-	}
-	fileName := fmt.Sprintf("adjunto_%d%s", time.Now().UnixNano(), ext)
-	absPath := filepath.Join(absDir, fileName)
-	out, err := os.Create(absPath)
+	fileName, absPath, size, err := saveEmpresaPrivateUpload(empresaID, "buzon", ext, file, 20<<20)
 	if err != nil {
-		http.Error(w, "No se pudo crear archivo", http.StatusInternalServerError)
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	size, err := io.Copy(out, file)
-	closeErr := out.Close()
-	if err != nil || closeErr != nil {
-		_ = os.Remove(absPath)
-		http.Error(w, "No se pudo guardar archivo", http.StatusInternalServerError)
-		return
-	}
-	fileURL := strings.TrimRight(publicDir, "/") + "/" + fileName
+	fileURL := empresaPrivateDownloadURL("/api/empresa/buzon/archivo", empresaID, fileName)
 	duracion, _ := parseFloat64FormOptional(r, "duracion_segundos")
 	adj, err := dbpkg.CreateEmpresaBuzonAdjunto(dbEmp, dbpkg.EmpresaBuzonAdjunto{
 		EmpresaID:        empresaID,

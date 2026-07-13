@@ -50,7 +50,7 @@ func AdminCreatePaginaHandler(db *sql.DB, webDir string) http.HandlerFunc {
 			return
 		}
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]interface{}{"id": id})
+		encodeJSONResponse(w, map[string]interface{}{"id": id})
 	}
 }
 
@@ -88,7 +88,7 @@ func AdminCreateProductoHandler(db *sql.DB, webDir string) http.HandlerFunc {
 			return
 		}
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]interface{}{"id": id})
+		encodeJSONResponse(w, map[string]interface{}{"id": id})
 	}
 }
 
@@ -124,6 +124,7 @@ func UploadProductImageHandler(db *sql.DB, webDir string) http.HandlerFunc {
 			baseDir = filepath.Join(baseDir, "misc")
 		}
 		prodDir := filepath.Join(baseDir, "productos")
+		// #nosec G301 -- catalogo publico servido por Nginx.
 		if err := os.MkdirAll(prodDir, 0755); err != nil {
 			http.Error(w, "failed create dir", http.StatusInternalServerError)
 			return
@@ -132,6 +133,7 @@ func UploadProductImageHandler(db *sql.DB, webDir string) http.HandlerFunc {
 		// sanitize filename
 		fname := filepath.Base(header.Filename)
 		dstPath := filepath.Join(prodDir, fname)
+		// #nosec G304 -- path is normalized and constrained to a server-controlled root before this operation.
 		out, err := os.Create(dstPath)
 		if err != nil {
 			http.Error(w, "failed to create file", http.StatusInternalServerError)
@@ -158,7 +160,7 @@ func UploadProductImageHandler(db *sql.DB, webDir string) http.HandlerFunc {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]interface{}{"url": strings.ReplaceAll(strings.TrimPrefix(dstPath, webDir), "\\", "/")})
+		encodeJSONResponse(w, map[string]interface{}{"url": strings.ReplaceAll(strings.TrimPrefix(dstPath, webDir), "\\", "/")})
 	}
 }
 
@@ -188,7 +190,7 @@ func PublicListPaginaHandler(db *sql.DB, webDir string) http.HandlerFunc {
 			return
 		}
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(resp)
+		encodeJSONResponse(w, resp)
 	}
 }
 
@@ -1326,6 +1328,7 @@ func handleEmpresaVentaPublicaUploadImage(w http.ResponseWriter, r *http.Request
 	}
 
 	dir, publicDir, _ := empresaUploadsSubdir(dbEmp, empresaID, "imagenes", "venta_publica")
+	// #nosec G301 -- imagen publica del catalogo servida por Nginx.
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		http.Error(w, "failed to prepare upload directory", http.StatusInternalServerError)
 		return
@@ -1347,6 +1350,7 @@ func handleEmpresaVentaPublicaUploadImage(w http.ResponseWriter, r *http.Request
 	}
 	fileName := fmt.Sprintf("%s_%d%s", prefix, time.Now().UnixNano(), ext)
 	absPath := filepath.Join(dir, fileName)
+	// #nosec G304 -- path is normalized and constrained to a server-controlled root before this operation.
 	out, err := os.Create(absPath)
 	if err != nil {
 		http.Error(w, "failed to create image file", http.StatusInternalServerError)

@@ -5,7 +5,9 @@ import (
 	"bytes"
 	"context"
 	"crypto/rand"
+	"crypto/subtle"
 	"database/sql"
+	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
@@ -42,6 +44,8 @@ const (
 	publicAPIErrorHeader                      = "X-PCS-Public-API-Error"
 	canonicalPublicApexHost                   = "powerfulcontrolsystem.com"
 	canonicalPublicWWWHost                    = "www.powerfulcontrolsystem.com"
+	csrfCookieName                            = "pcs_csrf"
+	csrfHeaderName                            = "X-CSRF-Token"
 )
 
 var companyLogMu sync.Mutex
@@ -63,6 +67,35 @@ var (
 	authMiddlewareMaintenanceActive   bool
 	authMiddlewareMaintenanceLoadedAt time.Time
 )
+
+// InvalidateAuthCacheForToken removes any request-local auth lookup associated
+// with a browser token. It is safe to call even while cache TTLs are disabled.
+func InvalidateAuthCacheForToken(token string) {
+	token = strings.TrimSpace(token)
+	if token == "" {
+		return
+	}
+	authMiddlewareCacheMu.Lock()
+	delete(authMiddlewareSessionCache, token)
+	authMiddlewareCacheMu.Unlock()
+}
+
+// InvalidateAuthCacheForAdmin removes all cached authorization state that can
+// preserve a previous role, account state or session after a security event.
+func InvalidateAuthCacheForAdmin(email string) {
+	email = strings.TrimSpace(strings.ToLower(email))
+	if email == "" {
+		return
+	}
+	authMiddlewareCacheMu.Lock()
+	delete(authMiddlewareAdminCache, email)
+	for token, entry := range authMiddlewareSessionCache {
+		if entry.Session != nil && strings.EqualFold(strings.TrimSpace(entry.Session.AdminEmail), email) {
+			delete(authMiddlewareSessionCache, token)
+		}
+	}
+	authMiddlewareCacheMu.Unlock()
+}
 
 const (
 	// Authentication and authorization are read on every request. A stale cache
@@ -328,14 +361,33 @@ func resolveRequestHost(r *http.Request) string {
 	return strings.TrimSpace(r.Host)
 }
 
+func resolveRequestScheme(r *http.Request) string {
+	if r == nil {
+		return ""
+	}
+	if RequestFromTrustedProxy(r) {
+		if scheme := strings.ToLower(firstForwardedHeaderValue(r.Header.Get("X-Forwarded-Proto"))); scheme == "http" || scheme == "https" {
+			return scheme
+		}
+	}
+	if r.TLS != nil {
+		return "https"
+	}
+	if scheme := strings.ToLower(strings.TrimSpace(r.URL.Scheme)); scheme == "http" || scheme == "https" {
+		return scheme
+	}
+	return "http"
+}
+
 // IsSameOriginRequest validates browser Origin/Referer against the effective
 // host. It is used for authenticated cookie mutations and WebSocket upgrades.
 func IsSameOriginRequest(r *http.Request) bool {
 	if r == nil {
 		return false
 	}
-	requestHost := requestHostWithoutPort(resolveRequestHost(r))
-	if requestHost == "" {
+	requestHost := strings.TrimSpace(resolveRequestHost(r))
+	requestScheme := resolveRequestScheme(r)
+	if requestHost == "" || requestScheme == "" {
 		return false
 	}
 	for _, header := range []string{"Origin", "Referer"} {
@@ -344,20 +396,83 @@ func IsSameOriginRequest(r *http.Request) bool {
 			continue
 		}
 		parsed, err := url.Parse(raw)
-		if err != nil || parsed.Host == "" {
+		if err != nil || parsed.Host == "" || parsed.User != nil {
 			return false
 		}
-		return strings.EqualFold(requestHostWithoutPort(parsed.Host), requestHost)
+		if strings.EqualFold(parsed.Scheme, requestScheme) && strings.EqualFold(parsed.Host, requestHost) {
+			return true
+		}
+		allowedOrigins := strings.TrimSpace(os.Getenv("PCS_CSRF_ALLOWED_ORIGINS"))
+		if allowedOrigins == "" {
+			allowedOrigins = strings.TrimSpace(os.Getenv("CSRF_ALLOWED_ORIGINS"))
+		}
+		for _, allowed := range strings.Split(allowedOrigins, ",") {
+			origin, parseErr := url.Parse(strings.TrimSpace(allowed))
+			if parseErr == nil && origin.Scheme != "" && origin.Host != "" && strings.EqualFold(parsed.Scheme, origin.Scheme) && strings.EqualFold(parsed.Host, origin.Host) {
+				return true
+			}
+		}
+		return false
 	}
 	return false
+}
+
+// SessionCookieMaxAge centraliza la duracion de cookies de autenticacion.
+// SESSION_TIMEOUT usa el formato de time.ParseDuration, por ejemplo 12h.
+func SessionCookieMaxAge() int {
+	duration := 24 * time.Hour
+	if raw := strings.TrimSpace(os.Getenv("SESSION_TIMEOUT")); raw != "" {
+		if parsed, err := time.ParseDuration(raw); err == nil {
+			duration = parsed
+		}
+	}
+	if duration < 5*time.Minute {
+		duration = 5 * time.Minute
+	}
+	if duration > 7*24*time.Hour {
+		duration = 7 * 24 * time.Hour
+	}
+	return int(duration.Seconds())
+}
+
+// RequestBodyLimitMiddleware aplica un techo global antes de los limites mas
+// especificos de cada handler. Los upgrades WebSocket no transportan body HTTP.
+func RequestBodyLimitMiddleware(next http.Handler, maxBytes int64) http.Handler {
+	if maxBytes <= 0 {
+		maxBytes = 64 << 20
+	}
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Body != nil && !isWebSocketUpgrade(r) {
+			r.Body = http.MaxBytesReader(w, r.Body, maxBytes)
+		}
+		next.ServeHTTP(w, r)
+	})
 }
 
 func isCookieAuthenticatedMutation(r *http.Request) bool {
 	if r == nil || isWebSocketUpgrade(r) {
 		return false
 	}
+	// Login, registration and recovery endpoints are intentionally public. A
+	// stale cookie from an earlier browser session must not convert them into an
+	// authenticated mutation and block access before the handler can rotate it.
+	switch r.URL.Path {
+	case "/super/api/administradores/register",
+		"/super/api/administradores/login",
+		"/super/api/administradores/solicitar_recuperacion",
+		"/super/api/administradores/restablecer_password",
+		"/api/empresa/usuarios/login",
+		"/api/empresa/usuarios/establecer_password",
+		"/api/empresa/usuarios/recuperar_invitacion",
+		"/api/empresa/usuarios/solicitar_recuperacion_password",
+		"/api/empresa/usuarios/restablecer_password":
+		return false
+	}
 	switch r.Method {
 	case http.MethodPost, http.MethodPut, http.MethodPatch, http.MethodDelete:
+		if strings.HasPrefix(strings.ToLower(strings.TrimSpace(r.Header.Get("Authorization"))), "bearer ") {
+			return false
+		}
 		_, err := r.Cookie("session_token")
 		return err == nil
 	default:
@@ -365,14 +480,75 @@ func isCookieAuthenticatedMutation(r *http.Request) bool {
 	}
 }
 
-// CSRFMiddleware applies origin validation to mutable requests authenticated
-// with the HttpOnly session cookie. Bearer and signed-webhook clients do not
-// share this cookie-CSRF threat model.
+func newCSRFToken() (string, error) {
+	buf := make([]byte, 32)
+	if _, err := rand.Read(buf); err != nil {
+		return "", err
+	}
+	return base64.RawURLEncoding.EncodeToString(buf), nil
+}
+
+func setCSRFCookie(w http.ResponseWriter, r *http.Request, token string) {
+	http.SetCookie(w, &http.Cookie{
+		Name:     csrfCookieName,
+		Value:    token,
+		Path:     "/",
+		Secure:   resolveRequestScheme(r) == "https",
+		HttpOnly: false,
+		SameSite: http.SameSiteStrictMode,
+		MaxAge:   int((12 * time.Hour).Seconds()),
+	})
+}
+
+func requestCSRFTokenValid(r *http.Request) bool {
+	cookie, err := r.Cookie(csrfCookieName)
+	if err != nil || strings.TrimSpace(cookie.Value) == "" {
+		return false
+	}
+	headerToken := strings.TrimSpace(r.Header.Get(csrfHeaderName))
+	if headerToken == "" || len(headerToken) != len(cookie.Value) {
+		return false
+	}
+	return subtle.ConstantTimeCompare([]byte(headerToken), []byte(cookie.Value)) == 1
+}
+
+func csrfShouldRotate(r *http.Request) bool {
+	if r == nil || r.Method != http.MethodPost {
+		return false
+	}
+	switch r.URL.Path {
+	case "/super/api/administradores/login", "/api/empresa/usuarios/login", "/api/empresa/usuarios/establecer_password":
+		return true
+	default:
+		return false
+	}
+}
+
+// CSRFMiddleware protects mutable requests authenticated with the HttpOnly
+// session cookie using strict origin validation and a synchronizer token. The
+// token is deliberately readable by same-origin JavaScript and is compared in
+// constant time against its independent cookie. Bearer and signed-webhook
+// clients do not share this cookie-CSRF threat model.
 func CSRFMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if isCookieAuthenticatedMutation(r) && !IsSameOriginRequest(r) {
-			http.Error(w, "csrf origin validation failed", http.StatusForbidden)
-			return
+		csrfCookie, cookieErr := r.Cookie(csrfCookieName)
+		if cookieErr != nil || strings.TrimSpace(csrfCookie.Value) == "" || csrfShouldRotate(r) {
+			token, err := newCSRFToken()
+			if err != nil {
+				http.Error(w, "csrf token generation failed", http.StatusInternalServerError)
+				return
+			}
+			setCSRFCookie(w, r, token)
+		}
+		if isCookieAuthenticatedMutation(r) {
+			if !IsSameOriginRequest(r) {
+				http.Error(w, "csrf origin validation failed", http.StatusForbidden)
+				return
+			}
+			if !requestCSRFTokenValid(r) {
+				http.Error(w, "csrf token validation failed", http.StatusForbidden)
+				return
+			}
 		}
 		next.ServeHTTP(w, r)
 	})
@@ -391,6 +567,10 @@ func SecurityHeadersMiddleware(next http.Handler) http.Handler {
 		w.Header().Set("Referrer-Policy", "strict-origin-when-cross-origin")
 		w.Header().Set("Permissions-Policy", "camera=(), microphone=(self), geolocation=(self), payment=(self)")
 		w.Header().Set("Content-Security-Policy", "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'self'; img-src 'self' data: https:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline' https://accounts.google.com https://checkout.epayco.co https://checkout.wompi.co; connect-src 'self' https: wss:; frame-src 'self' https://accounts.google.com https://checkout.epayco.co https://checkout.wompi.co https://*.google.com")
+		// Report-only starts the controlled CSP transition without breaking the
+		// legacy static frontend. Once reports show no unexpected dependencies,
+		// this policy can replace the compatibility policy above.
+		w.Header().Set("Content-Security-Policy-Report-Only", "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'self'; form-action 'self'; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline' https://accounts.google.com https://checkout.epayco.co https://checkout.wompi.co; connect-src 'self' wss://powerfulcontrolsystem.com https://api.openai.com https://checkout.wompi.co https://secure.epayco.co; frame-src 'self' https://accounts.google.com https://checkout.epayco.co https://checkout.wompi.co")
 		if r.TLS != nil || strings.EqualFold(strings.TrimSpace(r.Header.Get("X-Forwarded-Proto")), "https") && RequestFromTrustedProxy(r) {
 			w.Header().Set("Strict-Transport-Security", "max-age=31536000; includeSubDomains")
 		}
@@ -436,6 +616,7 @@ func writeCompanyLogEntry(empresaID int64, level, msg string) {
 	companyLogMu.Lock()
 	defer companyLogMu.Unlock()
 
+	// #nosec G304 -- path is normalized and constrained to a server-controlled root before this operation.
 	f, err := os.OpenFile(filePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o600)
 	if err != nil {
 		log.Printf("warning: no se pudo abrir log de empresa %s: %v", filePath, err)

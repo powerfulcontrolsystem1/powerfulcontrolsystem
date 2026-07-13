@@ -1,20 +1,79 @@
 # Politica de seguridad
 
-## Reporte responsable
+## Versiones soportadas
 
-No publique vulnerabilidades, secretos ni datos de empresas en issues publicos.
-Reporte de forma privada al canal de soporte corporativo indicado en el portal
-oficial, incluyendo pasos reproducibles, impacto y evidencia minimizada.
+La rama `main` y la ultima version publicada son las unicas lineas con
+correcciones de seguridad. Las ramas de trabajo, pruebas y presentacion no son
+canales de despliegue ni de soporte.
 
-## Manejo inicial
+## Reporte privado
 
-1. Registrar el reporte sin copiar tokens, cookies, documentos ni datos de clientes.
-2. Clasificar severidad, alcance multiempresa y posibilidad de explotacion.
-3. Contener acceso afectado: revocar sesiones, credenciales o webhook cuando corresponda.
-4. Corregir, probar aislado y desplegar mediante revision aprobada.
-5. Documentar causa, rollback y comunicacion a clientes si existe impacto.
+No publique vulnerabilidades, secretos ni datos de empresas en issues,
+discusiones, capturas o Pull Requests publicos. Reporte de forma privada por el
+canal corporativo de seguridad indicado en el portal oficial. Incluya una
+descripcion minimizada, versiones afectadas, pasos reproducibles y evidencia
+sin tokens, cookies, documentos ni informacion de clientes.
 
-## Regla de secretos
+El canal privado es `security@powerfulcontrolsystem.com`. No use issues,
+discusiones ni Pull Requests publicos para reportar vulnerabilidades.
 
-Los secretos solo viven en el gestor o archivo de entorno no versionado del
-servidor. Nunca se incluyen en commits, reportes, capturas, logs ni tickets.
+Informacion minima del reporte:
+
+- componente, ruta o version afectada;
+- impacto y condicion necesaria para reproducirlo;
+- pasos reproducibles con datos ficticios;
+- evidencia redactada, sin credenciales ni datos empresariales;
+- propuesta de mitigacion, si existe;
+- medio seguro para coordinar la respuesta.
+
+## Respuesta y alcance
+
+Se acusa recibo inicial dentro de cinco dias habiles. Se priorizan fallas de
+autenticacion, autorizacion, aislamiento multiempresa, pagos, facturacion,
+archivos privados, integraciones, infraestructura y exposicion de secretos.
+No estan permitidas pruebas sobre datos reales, denegacion de servicio,
+ingenieria social, acceso a cuentas ajenas ni exploracion fuera del alcance
+autorizado.
+
+## Clasificacion y tiempos
+
+- Critica: compromiso transversal, fuga multiempresa, ejecucion remota o fraude
+  de pagos. Triage inicial en un dia habil.
+- Alta: omision de autenticacion/autorizacion, acceso empresarial indebido o
+  exposicion de secretos explotable. Triage inicial en dos dias habiles.
+- Media: requiere privilegios, condiciones limitadas o afecta parcialmente
+  confidencialidad, integridad o disponibilidad. Triage en cinco dias habiles.
+- Baja: endurecimiento preventivo o impacto operativo reducido. Se programa en
+  el ciclo normal de mantenimiento.
+
+La severidad final considera alcance, explotabilidad, aislamiento por empresa,
+datos afectados y controles compensatorios. Los tiempos de correccion se
+acuerdan despues del triage y no sustituyen la contencion inmediata.
+
+## Divulgacion coordinada
+
+La vulnerabilidad debe mantenerse privada hasta que exista correccion,
+validacion y una fecha de divulgacion coordinada. PCS no solicita publicar
+detalles tecnicos en issues publicos antes de corregirlos.
+
+## Manejo de incidentes
+
+1. Registrar el evento sin copiar datos sensibles.
+2. Clasificar severidad, alcance empresarial y posibilidad de explotacion.
+3. Contener acceso: revocar sesiones, credenciales, tokens o webhooks cuando
+   corresponda.
+4. Corregir mediante revision, pruebas aisladas y cambios trazables.
+5. Comunicar impacto, rollback y medidas preventivas a las partes afectadas
+   cuando aplique.
+
+## Politica de actualizacion
+
+Las dependencias, imagenes y toolchains se revisan en CI. Las vulnerabilidades
+alcanzables se corrigen con una version parcheada o una mitigacion documentada;
+nunca se silencian con exclusiones genericas. Las credenciales se almacenan
+solo fuera del repositorio, en configuracion segura del entorno.
+
+Las correcciones se desarrollan en ramas dedicadas, pasan CI y revision por
+Pull Request y se validan en staging anonimizado antes de produccion. Un
+incidente puede requerir revocacion de sesiones, rotacion de claves, bloqueo de
+integraciones o desactivacion temporal del componente afectado.

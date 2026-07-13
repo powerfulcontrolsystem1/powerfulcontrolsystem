@@ -64,7 +64,7 @@ func PublicacionesRedSocialHandler(dbEmpresas *sql.DB) http.HandlerFunc {
 				}
 			}
 			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(pubs)
+			encodeJSONResponse(w, pubs)
 			return
 		}
 		http.Error(w, "Metodo no permitido", http.StatusMethodNotAllowed)
@@ -164,7 +164,7 @@ func PublicRedSocialInteraccionesHandler(dbEmpresas *sql.DB) http.HandlerFunc {
 					return
 				}
 				w.Header().Set("Content-Type", "application/json")
-				json.NewEncoder(w).Encode(rows)
+				encodeJSONResponse(w, rows)
 				return
 			}
 			if r.Method == http.MethodPost {
@@ -189,7 +189,7 @@ func PublicRedSocialInteraccionesHandler(dbEmpresas *sql.DB) http.HandlerFunc {
 					return
 				}
 				w.Header().Set("Content-Type", "application/json")
-				json.NewEncoder(w).Encode(map[string]interface{}{"ok": true, "id": id})
+				encodeJSONResponse(w, map[string]interface{}{"ok": true, "id": id})
 				return
 			}
 			http.Error(w, "Metodo no permitido", http.StatusMethodNotAllowed)
@@ -217,7 +217,7 @@ func PublicRedSocialInteraccionesHandler(dbEmpresas *sql.DB) http.HandlerFunc {
 				totalComentarios, _ := db.GetPublicacionComentariosTotal(dbEmpresas, publicacionID)
 				userReaction, _ := db.GetUserReaction(dbEmpresas, publicacionID, actorKey)
 				w.Header().Set("Content-Type", "application/json")
-				json.NewEncoder(w).Encode(map[string]interface{}{
+				encodeJSONResponse(w, map[string]interface{}{
 					"ok":                 true,
 					"publicacion_id":     publicacionID,
 					"reacciones_resumen": resumen,
@@ -234,7 +234,7 @@ func PublicRedSocialInteraccionesHandler(dbEmpresas *sql.DB) http.HandlerFunc {
 				resumen, _ := db.GetPublicacionReaccionesResumen(dbEmpresas, publicacionID)
 				totalComentarios, _ := db.GetPublicacionComentariosTotal(dbEmpresas, publicacionID)
 				w.Header().Set("Content-Type", "application/json")
-				json.NewEncoder(w).Encode(map[string]interface{}{
+				encodeJSONResponse(w, map[string]interface{}{
 					"ok":                 true,
 					"publicacion_id":     publicacionID,
 					"reacciones_resumen": resumen,
@@ -295,7 +295,7 @@ func EmpresaPublicacionesRedSocialHandler(dbEmpresas *sql.DB) http.HandlerFunc {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
 			}
-			json.NewEncoder(w).Encode(pubs)
+			encodeJSONResponse(w, pubs)
 			return
 		}
 
@@ -361,7 +361,7 @@ func EmpresaPublicacionesRedSocialHandler(dbEmpresas *sql.DB) http.HandlerFunc {
 				return
 			}
 			publicURL := "/uploads/red_social/" + fmt.Sprintf("empresa_%d/", empresaID) + name
-			json.NewEncoder(w).Encode(map[string]interface{}{"ok": true, "url": publicURL, "filename": name})
+			encodeJSONResponse(w, map[string]interface{}{"ok": true, "url": publicURL, "filename": name})
 			return
 		}
 
@@ -385,7 +385,7 @@ func EmpresaPublicacionesRedSocialHandler(dbEmpresas *sql.DB) http.HandlerFunc {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
 			}
-			json.NewEncoder(w).Encode(p)
+			encodeJSONResponse(w, p)
 			return
 		}
 
@@ -409,7 +409,7 @@ func EmpresaPublicacionesRedSocialHandler(dbEmpresas *sql.DB) http.HandlerFunc {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
 			}
-			json.NewEncoder(w).Encode(map[string]string{"status": "ok"})
+			encodeJSONResponse(w, map[string]string{"status": "ok"})
 			return
 		}
 
@@ -420,7 +420,7 @@ func EmpresaPublicacionesRedSocialHandler(dbEmpresas *sql.DB) http.HandlerFunc {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
 			}
-			json.NewEncoder(w).Encode(map[string]string{"status": "ok"})
+			encodeJSONResponse(w, map[string]string{"status": "ok"})
 			return
 		}
 

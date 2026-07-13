@@ -54,7 +54,7 @@ func empresaDeleteListCandidateTables(dbConn *sql.DB, excludeTables map[string]b
 	for rows.Next() {
 		var item empresaDeleteCandidateTable
 		if err := rows.Scan(&item.Name, &item.EmpresaIDDataType, &item.EmpresaIDUDTName); err != nil {
-			rows.Close()
+			_ = rows.Close()
 			return nil, err
 		}
 		table := strings.ToLower(strings.TrimSpace(item.Name))
@@ -70,10 +70,10 @@ func empresaDeleteListCandidateTables(dbConn *sql.DB, excludeTables map[string]b
 		out = append(out, item)
 	}
 	if err := rows.Err(); err != nil {
-		rows.Close()
+		_ = rows.Close()
 		return nil, err
 	}
-	rows.Close()
+	_ = rows.Close()
 	return out, nil
 }
 

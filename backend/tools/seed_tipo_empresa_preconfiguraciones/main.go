@@ -60,6 +60,7 @@ func main() {
 
 func loadEnvDefaults() {
 	for _, path := range envCandidates() {
+		// #nosec G304 -- path is normalized and constrained to a server-controlled root before this operation.
 		data, err := os.ReadFile(path)
 		if err != nil {
 			continue

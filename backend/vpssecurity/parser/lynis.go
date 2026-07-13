@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/you/pos-backend/vpssecurity/reports"
@@ -23,7 +24,9 @@ func ParseLynisReport(data []byte, target string) ([]reports.Finding, int, strin
 		switch {
 		case strings.HasPrefix(line, "hardening_index="):
 			value := strings.TrimSpace(strings.TrimPrefix(line, "hardening_index="))
-			fmt.Sscanf(value, "%d", &hardeningIndex)
+			if parsed, err := strconv.Atoi(value); err == nil {
+				hardeningIndex = parsed
+			}
 		case strings.HasPrefix(line, "warning[]="):
 			warnings++
 			value := strings.TrimSpace(strings.TrimPrefix(line, "warning[]="))

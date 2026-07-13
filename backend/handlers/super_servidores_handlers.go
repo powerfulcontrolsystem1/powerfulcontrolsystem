@@ -10,6 +10,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"runtime"
 	"strconv"
 	"strings"
@@ -147,7 +148,7 @@ func SuperServidoresListHandler(dbSuper *sql.DB) http.HandlerFunc {
 			buildPostgresServiceState(dbSuper),
 		}
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]interface{}{"ok": true, "servicios": servicios})
+		encodeJSONResponse(w, map[string]interface{}{"ok": true, "servicios": servicios})
 	}
 }
 
@@ -155,18 +156,31 @@ func readLinuxProcessRSSKBByGrep(expr string) (int64, error) {
 	if runtime.GOOS == "windows" {
 		return 0, fmt.Errorf("unavailable on windows")
 	}
-	// sum RSS KB of matching processes
-	cmd := exec.Command("bash", "-lc", "ps -eo rss,args | grep -E "+shellEscapeForPOSIX(expr)+" | grep -v grep | awk '{s+=$1} END{print s+0}'")
+	pattern, err := regexp.Compile(expr)
+	if err != nil {
+		return 0, err
+	}
+	cmd := exec.Command("ps", "-eo", "rss=,args=")
 	out, err := cmd.Output()
 	if err != nil {
 		return 0, err
 	}
-	v := strings.TrimSpace(string(out))
-	if v == "" {
-		return 0, nil
+	var total int64
+	for _, line := range strings.Split(string(out), "\n") {
+		line = strings.TrimSpace(line)
+		if line == "" || !pattern.MatchString(line) {
+			continue
+		}
+		fields := strings.Fields(line)
+		if len(fields) == 0 {
+			continue
+		}
+		value, parseErr := strconv.ParseInt(fields[0], 10, 64)
+		if parseErr == nil && value > 0 {
+			total += value
+		}
 	}
-	n, _ := strconv.ParseInt(v, 10, 64)
-	return n, nil
+	return total, nil
 }
 
 func buildOnlyOfficeServiceState(dbSuper *sql.DB) ServicioEstado {
@@ -303,6 +317,7 @@ func dockerServiceStatus(containers ...string) (string, string) {
 			continue
 		}
 		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+		// #nosec G204 -- Docker is fixed and container comes from the closed service inventory above.
 		out, err := exec.CommandContext(ctx, "docker", "inspect", "-f", "{{.State.Status}}|{{if .State.Health}}{{.State.Health.Status}}{{end}}", container).Output()
 		cancel()
 		status := "unavailable"
@@ -420,7 +435,7 @@ func SuperServidoresToggleHandler(dbSuper *sql.DB) http.HandlerFunc {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]interface{}{"ok": true, "servicio": buildRustDeskServiceState(dbSuper, false)})
+		encodeJSONResponse(w, map[string]interface{}{"ok": true, "servicio": buildRustDeskServiceState(dbSuper, false)})
 	}
 }
 
@@ -439,7 +454,7 @@ func SuperServidoresProbeHandler(dbSuper *sql.DB) http.HandlerFunc {
 		}
 		state := buildRustDeskServiceState(dbSuper, true)
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]interface{}{"ok": true, "servicio": state})
+		encodeJSONResponse(w, map[string]interface{}{"ok": true, "servicio": state})
 	}
 }
 
@@ -619,7 +634,7 @@ func rustDeskServiceExists(dbSuper *sql.DB, service string) bool {
 	if runtime.GOOS == "windows" {
 		return false
 	}
-	cmd := exec.Command("sh", "-lc", command)
+	cmd := exec.Command("systemctl", "cat", service)
 	return cmd.Run() == nil
 }
 
@@ -639,8 +654,10 @@ func runRustDeskRemoteShell(dbSuper *sql.DB, script string) (string, error) {
 	target := fmt.Sprintf("%s@%s", cfg.User, cfg.Host)
 	var cmd *exec.Cmd
 	if cfg.UsePlink {
+		// #nosec G204 -- ExecPath is normalized to the plink executable by resolveRustDeskRemoteConfig.
 		cmd = exec.Command(cfg.ExecPath, "-batch", "-P", strconv.Itoa(cfg.Port), "-i", cfg.KeyPath, target, "sh", "-lc", script)
 	} else {
+		// #nosec G204 -- ExecPath is normalized to the ssh executable by resolveRustDeskRemoteConfig.
 		cmd = exec.Command(cfg.ExecPath, "-o", "BatchMode=yes", "-p", strconv.Itoa(cfg.Port), "-i", cfg.KeyPath, target, "sh", "-lc", script)
 	}
 	out, runErr := cmd.CombinedOutput()

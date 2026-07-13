@@ -120,7 +120,7 @@ func SessionCookieSecure(r *http.Request) bool {
 func writeAdminAuthJSON(w http.ResponseWriter, status int, payload map[string]interface{}) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
-	_ = json.NewEncoder(w).Encode(payload)
+	encodeJSONResponse(w, payload)
 }
 
 func writeAdminAuthError(w http.ResponseWriter, status int, message string) {
@@ -133,7 +133,7 @@ func validatePendingAdminInvitationToken(admin *dbpkg.Admin, token string, now t
 	}
 	storedToken := strings.TrimSpace(admin.EmailConfirmToken)
 	token = strings.TrimSpace(token)
-	if storedToken == "" || token == "" || subtle.ConstantTimeCompare([]byte(storedToken), []byte(token)) != 1 {
+	if storedToken == "" || token == "" || !dbpkg.AdministradorEmailConfirmTokenMatches(storedToken, token) {
 		return http.StatusForbidden, "Invitacion invalida o ya utilizada."
 	}
 	expiraRaw := strings.TrimSpace(admin.EmailConfirmExpira)
@@ -364,12 +364,16 @@ func ConfirmarAdminHandler(dbSuper *sql.DB) http.HandlerFunc {
 			log.Println("ConfirmarAdminHandler error:", err)
 			w.Header().Set("Content-Type", "text/html; charset=utf-8")
 			w.WriteHeader(http.StatusOK)
-			w.Write([]byte(`<html><body><h3>Token inválido o expirado</h3><p>Si ya confirmaste, intenta iniciar sesión: <a href="/login.html">Iniciar</a></p></body></html>`))
+			if _, writeErr := w.Write([]byte(`<html><body><h3>Token inválido o expirado</h3><p>Si ya confirmaste, intenta iniciar sesión: <a href="/login.html">Iniciar</a></p></body></html>`)); writeErr != nil {
+				log.Printf("ConfirmarAdminHandler write response error: %v", writeErr)
+			}
 			return
 		}
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(`<html><body><h3>Correo confirmado</h3><p>Tu cuenta ha sido confirmada. Ahora puedes <a href="/login.html">iniciar sesión</a>.</p></body></html>`))
+		if _, writeErr := w.Write([]byte(`<html><body><h3>Correo confirmado</h3><p>Tu cuenta ha sido confirmada. Ahora puedes <a href="/login.html">iniciar sesión</a>.</p></body></html>`)); writeErr != nil {
+			log.Printf("ConfirmarAdminHandler write response error: %v", writeErr)
+		}
 	}
 }
 
@@ -427,7 +431,7 @@ func AdminLoginHandler(dbSuper *sql.DB) http.HandlerFunc {
 			return
 		}
 		// crear sesión
-		if adminTOTPLoginRequiredForAdmin(admin, isAdminTOTPLoginEnabled(dbSuper)) && !verifyAdminTOTPCode(admin.TOTPSecret, payload.OTPCode, time.Now()) {
+		if adminTOTPLoginRequiredForAdmin(admin, isAdminTOTPLoginEnabled(dbSuper)) && !verifyAndConsumeAdminTOTP(dbSuper, admin, payload.OTPCode, time.Now(), true) {
 			writeAdminAuthJSON(w, http.StatusUnauthorized, map[string]interface{}{"ok": false, "two_factor_required": true, "message": "Ingresa el codigo 2FA de tu aplicacion autenticadora."})
 			return
 		}
@@ -447,7 +451,7 @@ func AdminLoginHandler(dbSuper *sql.DB) http.HandlerFunc {
 			Value:    token,
 			Path:     "/",
 			HttpOnly: true,
-			MaxAge:   86400,
+			MaxAge:   utils.SessionCookieMaxAge(),
 			Secure:   SessionCookieSecure(r),
 			SameSite: http.SameSiteLaxMode,
 		}
@@ -570,7 +574,7 @@ func AdminResetPasswordHandler(dbSuper *sql.DB) http.HandlerFunc {
 			writeAdminAuthError(w, http.StatusInternalServerError, "No se pudo validar el rol de la cuenta administrativa.")
 			return
 		}
-		if strings.TrimSpace(admin.PasswordResetToken) == "" || strings.TrimSpace(admin.PasswordResetToken) != payload.Token {
+		if strings.TrimSpace(admin.PasswordResetToken) == "" || !dbpkg.AdministradorPasswordResetTokenMatches(admin.PasswordResetToken, payload.Token) {
 			writeAdminAuthError(w, http.StatusBadRequest, "El token de recuperación no es válido.")
 			return
 		}
@@ -595,6 +599,12 @@ func AdminResetPasswordHandler(dbSuper *sql.DB) http.HandlerFunc {
 			writeAdminAuthError(w, http.StatusInternalServerError, "No se pudo guardar la nueva contraseña.")
 			return
 		}
+		if err := dbpkg.RevokeSessionsByAdminEmail(dbSuper, admin.Email); err != nil {
+			log.Println("AdminResetPasswordHandler revoke sessions error:", err)
+			writeAdminAuthError(w, http.StatusInternalServerError, "No se pudo proteger las sesiones anteriores.")
+			return
+		}
+		utils.InvalidateAuthCacheForAdmin(admin.Email)
 		// limpiar token
 		if err := dbpkg.ClearAdministradorPasswordResetToken(dbSuper, admin.ID); err != nil {
 			log.Println("AdminResetPasswordHandler clear token error:", err)
@@ -616,7 +626,7 @@ func AdminResetPasswordHandler(dbSuper *sql.DB) http.HandlerFunc {
 			Value:    tokenSession,
 			Path:     "/",
 			HttpOnly: true,
-			MaxAge:   86400,
+			MaxAge:   utils.SessionCookieMaxAge(),
 			Secure:   SessionCookieSecure(r),
 			SameSite: http.SameSiteLaxMode,
 		}
@@ -785,7 +795,7 @@ func SetBrowserSessionStateCookie(w http.ResponseWriter, r *http.Request, active
 	maxAge := -1
 	if active {
 		value = "1"
-		maxAge = 86400
+		maxAge = utils.SessionCookieMaxAge()
 	}
 
 	http.SetCookie(w, &http.Cookie{
@@ -1209,7 +1219,7 @@ func HandleGoogleCallback(dbEmpresas *sql.DB, dbSuper *sql.DB, clientID, clientS
 				Value:    token,
 				Path:     "/",
 				HttpOnly: true,
-				MaxAge:   86400,
+				MaxAge:   utils.SessionCookieMaxAge(),
 				Secure:   SessionCookieSecure(r),
 				SameSite: http.SameSiteLaxMode,
 			}
@@ -1419,7 +1429,7 @@ func ListAdministradoresHandler(dbSuper *sql.DB) http.HandlerFunc {
 			}
 		}
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(admins)
+		encodeJSONResponse(w, admins)
 	}
 }
 
@@ -1534,7 +1544,7 @@ func ListSesionesHandler(dbSuper *sql.DB) http.HandlerFunc {
 			return
 		}
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(sesiones)
+		encodeJSONResponse(w, sesiones)
 	}
 }
 
@@ -1567,7 +1577,7 @@ func AdministradoresHandler(dbSuper *sql.DB) http.HandlerFunc {
 				}
 			}
 			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(admins)
+			encodeJSONResponse(w, admins)
 			return
 		case http.MethodPost:
 			requesterAdmin, principalEmail, err := resolveRequesterAdminScope(dbSuper, r)
@@ -1664,7 +1674,7 @@ func AdministradoresHandler(dbSuper *sql.DB) http.HandlerFunc {
 							"message":           message,
 						}
 						w.Header().Set("Content-Type", "application/json")
-						json.NewEncoder(w).Encode(resp)
+						encodeJSONResponse(w, resp)
 						return
 					}
 					if _, err := dbpkg.UpsertAdminPrincipalDelegacionActiva(dbSuper, existing.Email, principalEmail, strings.TrimSpace(requesterAdmin.Email)); err != nil {
@@ -1686,7 +1696,7 @@ func AdministradoresHandler(dbSuper *sql.DB) http.HandlerFunc {
 						resp["error"] = mailErr.Error()
 					}
 					w.Header().Set("Content-Type", "application/json")
-					json.NewEncoder(w).Encode(resp)
+					encodeJSONResponse(w, resp)
 					return
 				}
 				if principalEmail != "" {
@@ -1740,7 +1750,7 @@ func AdministradoresHandler(dbSuper *sql.DB) http.HandlerFunc {
 				resp["message"] = "Invitacion enviada. El administrador debe aceptarla y registrarse antes de iniciar sesion."
 			}
 			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(resp)
+			encodeJSONResponse(w, resp)
 			return
 		case http.MethodPut:
 			q := r.URL.Query()
@@ -1905,7 +1915,7 @@ func TiposEmpresasHandler(dbSuper *sql.DB) http.HandlerFunc {
 				return
 			}
 			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(tipos)
+			encodeJSONResponse(w, tipos)
 			return
 		case http.MethodPost:
 			var payload struct{ Nombre, Observaciones string }
@@ -1935,7 +1945,7 @@ func TiposEmpresasHandler(dbSuper *sql.DB) http.HandlerFunc {
 			} else {
 				response["preconfiguracion_error"] = preconfigErr.Error()
 			}
-			json.NewEncoder(w).Encode(response)
+			encodeJSONResponse(w, response)
 			return
 		case http.MethodPut:
 			q := r.URL.Query()

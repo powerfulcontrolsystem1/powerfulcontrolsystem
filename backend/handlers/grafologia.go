@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"bytes"
 	"context"
 	"database/sql"
 	"encoding/json"
@@ -27,6 +28,21 @@ type grafologiaCatalogo struct {
 	Exportaciones  []string          `json:"exportaciones"`
 	OCR            map[string]string `json:"ocr"`
 	Advertencia    string            `json:"advertencia"`
+}
+
+func EmpresaGrafologiaArchivoHandler() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+		empresaID, err := parseEmpresaIDQuery(r)
+		if err != nil || empresaID <= 0 {
+			http.Error(w, "empresa_id invalido", http.StatusBadRequest)
+			return
+		}
+		serveEmpresaPrivateFile(w, r, empresaID, "grafologia")
+	}
 }
 
 func EmpresaGrafologiaHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
@@ -168,12 +184,18 @@ func handleEmpresaGrafologiaPOST(w http.ResponseWriter, r *http.Request, dbEmp, 
 			http.Error(w, "solo se permiten imagenes", http.StatusBadRequest)
 			return
 		}
-		imageURL, fileName, _, err := saveEmpresaGrafologiaImage(data, header.Filename, empresaID)
+		imageURL, fileName, absPath, err := saveEmpresaGrafologiaImage(data, header.Filename, empresaID)
 		if err != nil {
 			log.Printf("[grafologia] save empresa_id=%d error: %v", empresaID, err)
 			http.Error(w, "No se pudo guardar la imagen del analisis", http.StatusInternalServerError)
 			return
 		}
+		persisted := false
+		defer func() {
+			if !persisted {
+				_ = os.Remove(absPath)
+			}
+		}()
 		ocrTexto := strings.TrimSpace(r.FormValue("ocr_texto"))
 		clienteID, err := parseGrafologiaInt64Form(r, "cliente_id")
 		if err != nil {
@@ -257,6 +279,7 @@ func handleEmpresaGrafologiaPOST(w http.ResponseWriter, r *http.Request, dbEmp, 
 			http.Error(w, "No se pudo guardar el analisis", http.StatusInternalServerError)
 			return
 		}
+		persisted = true
 		writeJSON(w, http.StatusOK, map[string]interface{}{
 			"ok":          true,
 			"id":          id,
@@ -631,42 +654,31 @@ func detectGrafologiaMime(data []byte, original string) string {
 }
 
 func saveEmpresaGrafologiaImage(data []byte, originalFilename string, empresaID int64) (string, string, string, error) {
-	folder := fmt.Sprintf("empresa_%d", empresaID)
-	dir := filepath.Join(resolveWebRootDir(), "uploads", "empresas", folder, "imagenes", "grafologia")
-	if err := os.MkdirAll(dir, 0o755); err != nil {
-		return "", "", "", err
-	}
 	ext := strings.ToLower(filepath.Ext(originalFilename))
-	if ext == "" || len(ext) > 8 {
-		ext = ".png"
+	switch ext {
+	case ".png", ".jpg", ".jpeg", ".gif", ".webp":
+	default:
+		switch strings.ToLower(http.DetectContentType(data)) {
+		case "image/jpeg":
+			ext = ".jpg"
+		case "image/gif":
+			ext = ".gif"
+		case "image/webp":
+			ext = ".webp"
+		default:
+			ext = ".png"
+		}
 	}
-	base := sanitizeGrafologiaFilename(strings.TrimSuffix(filepath.Base(originalFilename), filepath.Ext(originalFilename)))
-	if base == "" {
-		base = "manuscrito"
-	}
-	fileName := fmt.Sprintf("%s_%d%s", base, time.Now().UnixNano(), ext)
-	absPath := filepath.Join(dir, fileName)
-	if err := os.WriteFile(absPath, data, 0o644); err != nil {
+	fileName, absPath, _, err := saveEmpresaPrivateUpload(empresaID, "grafologia", ext, bytes.NewReader(data), 16<<20)
+	if err != nil {
 		return "", "", "", err
 	}
-	publicURL := "/uploads/empresas/" + folder + "/imagenes/grafologia/" + fileName
-	return publicURL, fileName, absPath, nil
+	return empresaPrivateDownloadURL("/api/empresa/grafologia/archivo", empresaID, fileName), fileName, absPath, nil
 }
 
-func saveEmpresaGrafologiaArtifacts(artifacts map[string][]byte, empresaID int64, baseFileName string) map[string]string {
+func saveEmpresaGrafologiaArtifacts(artifacts map[string][]byte, empresaID int64, _ string) map[string]string {
 	if len(artifacts) == 0 {
 		return map[string]string{}
-	}
-	folder := fmt.Sprintf("empresa_%d", empresaID)
-	dir := filepath.Join(resolveWebRootDir(), "uploads", "empresas", folder, "imagenes", "grafologia", "procesado")
-	if err := os.MkdirAll(dir, 0o755); err != nil {
-		log.Printf("[grafologia] no se pudo crear carpeta de artefactos empresa_id=%d: %v", empresaID, err)
-		return map[string]string{}
-	}
-	base := strings.TrimSuffix(filepath.Base(baseFileName), filepath.Ext(baseFileName))
-	base = sanitizeGrafologiaFilename(base)
-	if base == "" {
-		base = "analisis"
 	}
 	out := map[string]string{}
 	for key, data := range artifacts {
@@ -674,13 +686,12 @@ func saveEmpresaGrafologiaArtifacts(artifacts map[string][]byte, empresaID int64
 		if cleanKey == "" || len(data) == 0 {
 			continue
 		}
-		name := base + "_" + cleanKey + ".png"
-		abs := filepath.Join(dir, name)
-		if err := os.WriteFile(abs, data, 0o644); err != nil {
+		name, _, _, err := saveEmpresaPrivateUpload(empresaID, "grafologia", ".png", bytes.NewReader(data), 16<<20)
+		if err != nil {
 			log.Printf("[grafologia] no se pudo guardar artefacto %s empresa_id=%d: %v", cleanKey, empresaID, err)
 			continue
 		}
-		out[cleanKey] = "/uploads/empresas/" + folder + "/imagenes/grafologia/procesado/" + name
+		out[cleanKey] = empresaPrivateDownloadURL("/api/empresa/grafologia/archivo", empresaID, name)
 	}
 	return out
 }
@@ -718,6 +729,7 @@ func runOptionalTesseractOCR(ctx context.Context, imagePath string) (string, boo
 	}
 	timeoutCtx, cancel := context.WithTimeout(ctx, 20*time.Second)
 	defer cancel()
+	// #nosec G204 -- optional Tesseract binary is server-configured and receives no shell input.
 	cmd := exec.CommandContext(timeoutCtx, bin, imagePath, "stdout", "-l", lang, "--psm", "6")
 	output, err := cmd.Output()
 	if err != nil {

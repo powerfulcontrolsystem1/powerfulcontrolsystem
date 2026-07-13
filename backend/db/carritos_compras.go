@@ -2172,6 +2172,7 @@ func countActiveCarritoRowsTx(tx *sql.Tx, tableName string, empresaID, carritoID
 		return 0, fmt.Errorf("tabla de carrito no permitida")
 	}
 	var count int64
+	// #nosec G201 -- tableName is constrained to the two exact internal table names above; empresa and cart identifiers remain bound arguments.
 	query := fmt.Sprintf(`SELECT COUNT(1) FROM %s WHERE empresa_id = ? AND carrito_id = ? AND LOWER(COALESCE(estado, 'activo')) = 'activo'`, tableName)
 	if err := tx.QueryRow(query, empresaID, carritoID).Scan(&count); err != nil {
 		return 0, err
@@ -4131,13 +4132,13 @@ func restoreCarritoItemsStockTx(tx *sql.Tx, empresaID, carritoID int64, motivo s
 	for rows.Next() {
 		var item itemStockRestore
 		if err := rows.Scan(&item.itemID, &item.tipoItem, &item.referenciaID, &item.cantidad, &item.bodegaID, &item.usuario); err != nil {
-			rows.Close()
+			_ = rows.Close()
 			return err
 		}
 		items = append(items, item)
 	}
 	if err := rows.Err(); err != nil {
-		rows.Close()
+		_ = rows.Close()
 		return err
 	}
 	if err := rows.Close(); err != nil {

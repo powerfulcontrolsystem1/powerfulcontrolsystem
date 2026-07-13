@@ -30,6 +30,9 @@ func parseLicenciaIDsCSV(raw string) []int64 {
 
 func EmpresaLicenciasAdicionalesHandler(dbSuper *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		if _, ok := paginaPrincipalRequireSuperAdmin(w, r, dbSuper); !ok {
+			return
+		}
 		empresaID, err := parseInt64Query(r, "empresa_id")
 		if err != nil || empresaID <= 0 {
 			http.Error(w, "empresa_id invalido", http.StatusBadRequest)

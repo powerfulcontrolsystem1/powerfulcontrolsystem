@@ -39,26 +39,27 @@ type empresaSoporteRemotoConfigPayload struct {
 }
 
 type empresaSoporteRemotoDispositivoPayload struct {
-	ID                int64  `json:"id"`
-	CodigoDispositivo string `json:"codigo_dispositivo"`
-	NombreEquipo      string `json:"nombre_equipo"`
-	AliasOperativo    string `json:"alias_operativo"`
-	Ubicacion         string `json:"ubicacion"`
-	SistemaOperativo  string `json:"sistema_operativo"`
-	AgenteVersion     string `json:"agente_version"`
-	StreamURL         string `json:"stream_url"`
-	RustDeskDeviceID  string `json:"rustdesk_device_id"`
-	RustDeskPassword  string `json:"rustdesk_password"`
-	CarpetaTransferencia string `json:"carpeta_transferencia"`
-	AccesoPublicoHabilitado *bool `json:"acceso_publico_habilitado"`
-	EstadoConexion    string `json:"estado_conexion"`
-	AccesoPIN         string `json:"acceso_pin"`
-	Observaciones     string `json:"observaciones"`
+	ID                      int64  `json:"id"`
+	CodigoDispositivo       string `json:"codigo_dispositivo"`
+	NombreEquipo            string `json:"nombre_equipo"`
+	AliasOperativo          string `json:"alias_operativo"`
+	Ubicacion               string `json:"ubicacion"`
+	SistemaOperativo        string `json:"sistema_operativo"`
+	AgenteVersion           string `json:"agente_version"`
+	StreamURL               string `json:"stream_url"`
+	RustDeskDeviceID        string `json:"rustdesk_device_id"`
+	RustDeskPassword        string `json:"rustdesk_password"`
+	CarpetaTransferencia    string `json:"carpeta_transferencia"`
+	AccesoPublicoHabilitado *bool  `json:"acceso_publico_habilitado"`
+	EstadoConexion          string `json:"estado_conexion"`
+	AccesoPIN               string `json:"acceso_pin"`
+	Observaciones           string `json:"observaciones"`
 }
 
 type empresaSoporteRemotoSesionPayload struct {
 	DispositivoID  int64  `json:"dispositivo_id"`
 	CodigoSesion   string `json:"codigo_sesion"`
+	Role           string `json:"role"`
 	OperadorNombre string `json:"operador_nombre"`
 	OperadorEmail  string `json:"operador_email"`
 	Motivo         string `json:"motivo"`
@@ -68,22 +69,22 @@ type empresaSoporteRemotoSesionPayload struct {
 }
 
 type empresaSoporteRemotoAccessBundle struct {
-	Proveedor            string `json:"proveedor"`
-	ModoOperacion        string `json:"modo_operacion"`
-	EmbedURL             string `json:"embed_url,omitempty"`
-	PortalPublicoURL     string `json:"portal_publico_url,omitempty"`
-	RequiereCliente      bool   `json:"requiere_cliente"`
-	RustDeskServerHost   string `json:"rustdesk_server_host,omitempty"`
-	RustDeskServerKey    string `json:"rustdesk_server_key,omitempty"`
-	RustDeskDeviceID     string `json:"rustdesk_device_id,omitempty"`
-	RustDeskPassword     string `json:"rustdesk_password,omitempty"`
-	ClienteWindowsURL    string `json:"cliente_windows_url,omitempty"`
-	ClienteLinuxURL      string `json:"cliente_linux_url,omitempty"`
-	ClienteMacURL        string `json:"cliente_mac_url,omitempty"`
-	ServidorWindowsURL   string `json:"servidor_windows_url,omitempty"`
-	ServidorLinuxURL     string `json:"servidor_linux_url,omitempty"`
-	ServidorMacURL       string `json:"servidor_mac_url,omitempty"`
-	CarpetaTransferencia string `json:"carpeta_transferencia,omitempty"`
+	Proveedor             string `json:"proveedor"`
+	ModoOperacion         string `json:"modo_operacion"`
+	EmbedURL              string `json:"embed_url,omitempty"`
+	PortalPublicoURL      string `json:"portal_publico_url,omitempty"`
+	RequiereCliente       bool   `json:"requiere_cliente"`
+	RustDeskServerHost    string `json:"rustdesk_server_host,omitempty"`
+	RustDeskServerKey     string `json:"rustdesk_server_key,omitempty"`
+	RustDeskDeviceID      string `json:"rustdesk_device_id,omitempty"`
+	RustDeskPassword      string `json:"rustdesk_password,omitempty"`
+	ClienteWindowsURL     string `json:"cliente_windows_url,omitempty"`
+	ClienteLinuxURL       string `json:"cliente_linux_url,omitempty"`
+	ClienteMacURL         string `json:"cliente_mac_url,omitempty"`
+	ServidorWindowsURL    string `json:"servidor_windows_url,omitempty"`
+	ServidorLinuxURL      string `json:"servidor_linux_url,omitempty"`
+	ServidorMacURL        string `json:"servidor_mac_url,omitempty"`
+	CarpetaTransferencia  string `json:"carpeta_transferencia,omitempty"`
 	InstruccionesPublicas string `json:"instrucciones_publicas,omitempty"`
 }
 
@@ -154,6 +155,8 @@ func empresaSoporteRemotoNormalizeAction(raw string) string {
 		return "finalizar_sesion"
 	case "resolver_visualizacion", "resolver_view":
 		return "resolver_visualizacion"
+	case "crear_token_senalizacion", "signaling_token":
+		return "crear_token_senalizacion"
 	case "export_sesiones", "export":
 		return "export_sesiones"
 	case "heartbeat_dispositivo", "heartbeat":
@@ -215,20 +218,20 @@ func empresaSoporteRemotoMaskStreamURL(raw string) string {
 
 func empresaSoporteRemotoBuildAccessBundle(r *http.Request, cfg dbpkg.EmpresaSoporteRemotoConfig, device dbpkg.EmpresaSoporteRemotoDispositivo, empresaID int64, codigoSesion, token string) empresaSoporteRemotoAccessBundle {
 	bundle := empresaSoporteRemotoAccessBundle{
-		Proveedor:            cfg.ProveedorPreferido,
-		ModoOperacion:        cfg.ModoOperacion,
-		EmbedURL:             strings.TrimSpace(device.StreamURL),
-		PortalPublicoURL:     empresaSoporteRemotoBuildPublicPortalURL(r, empresaID, codigoSesion, token),
-		RustDeskServerHost:   strings.TrimSpace(cfg.RustDeskServerHost),
-		RustDeskServerKey:    strings.TrimSpace(cfg.RustDeskServerKey),
-		RustDeskDeviceID:     strings.TrimSpace(device.RustDeskDeviceID),
-		ClienteWindowsURL:    strings.TrimSpace(cfg.ClienteWindowsURL),
-		ClienteLinuxURL:      strings.TrimSpace(cfg.ClienteLinuxURL),
-		ClienteMacURL:        strings.TrimSpace(cfg.ClienteMacURL),
-		ServidorWindowsURL:   strings.TrimSpace(cfg.ServidorWindowsURL),
-		ServidorLinuxURL:     strings.TrimSpace(cfg.ServidorLinuxURL),
-		ServidorMacURL:       strings.TrimSpace(cfg.ServidorMacURL),
-		CarpetaTransferencia: strings.TrimSpace(device.CarpetaTransferencia),
+		Proveedor:             cfg.ProveedorPreferido,
+		ModoOperacion:         cfg.ModoOperacion,
+		EmbedURL:              strings.TrimSpace(device.StreamURL),
+		PortalPublicoURL:      empresaSoporteRemotoBuildPublicPortalURL(r, empresaID, codigoSesion, token),
+		RustDeskServerHost:    strings.TrimSpace(cfg.RustDeskServerHost),
+		RustDeskServerKey:     strings.TrimSpace(cfg.RustDeskServerKey),
+		RustDeskDeviceID:      strings.TrimSpace(device.RustDeskDeviceID),
+		ClienteWindowsURL:     strings.TrimSpace(cfg.ClienteWindowsURL),
+		ClienteLinuxURL:       strings.TrimSpace(cfg.ClienteLinuxURL),
+		ClienteMacURL:         strings.TrimSpace(cfg.ClienteMacURL),
+		ServidorWindowsURL:    strings.TrimSpace(cfg.ServidorWindowsURL),
+		ServidorLinuxURL:      strings.TrimSpace(cfg.ServidorLinuxURL),
+		ServidorMacURL:        strings.TrimSpace(cfg.ServidorMacURL),
+		CarpetaTransferencia:  strings.TrimSpace(device.CarpetaTransferencia),
 		InstruccionesPublicas: strings.TrimSpace(cfg.InstruccionesPublicas),
 	}
 	if bundle.CarpetaTransferencia == "" {
@@ -320,25 +323,25 @@ func empresaSoporteRemotoComposeSessionsDataset(empresaID int64, rows []dbpkg.Em
 	datasetRows := make([]map[string]interface{}, 0, len(rows))
 	for _, row := range rows {
 		datasetRows = append(datasetRows, map[string]interface{}{
-			"empresa_id":          row.EmpresaID,
-			"codigo_sesion":       row.CodigoSesion,
-			"dispositivo_id":      row.DispositivoID,
-			"dispositivo_codigo":  row.DispositivoCodigo,
-			"dispositivo_nombre":  row.DispositivoNombre,
-			"solicitada_por":      row.SolicitadaPor,
-			"operador_nombre":     row.OperadorNombre,
-			"operador_email":      row.OperadorEmail,
-			"estado_sesion":       row.EstadoSesion,
+			"empresa_id":              row.EmpresaID,
+			"codigo_sesion":           row.CodigoSesion,
+			"dispositivo_id":          row.DispositivoID,
+			"dispositivo_codigo":      row.DispositivoCodigo,
+			"dispositivo_nombre":      row.DispositivoNombre,
+			"solicitada_por":          row.SolicitadaPor,
+			"operador_nombre":         row.OperadorNombre,
+			"operador_email":          row.OperadorEmail,
+			"estado_sesion":           row.EstadoSesion,
 			"duracion_min_solicitada": row.DuracionMinSolicitada,
 			"duracion_min_consumida":  row.DuracionMinConsumida,
 			"bloqueada_por_limite":    row.BloqueadaPorLimite,
-			"motivo":              row.Motivo,
-			"url_visualizacion":   empresaSoporteRemotoMaskStreamURL(row.URLVisualizacion),
-			"iniciada_en":         row.IniciadaEn,
-			"expira_en":           row.ExpiraEn,
-			"finalizada_en":       row.FinalizadaEn,
-			"fecha_creacion":      row.FechaCreacion,
-			"fecha_actualizacion": row.FechaActualizacion,
+			"motivo":                  row.Motivo,
+			"url_visualizacion":       empresaSoporteRemotoMaskStreamURL(row.URLVisualizacion),
+			"iniciada_en":             row.IniciadaEn,
+			"expira_en":               row.ExpiraEn,
+			"finalizada_en":           row.FinalizadaEn,
+			"fecha_creacion":          row.FechaCreacion,
+			"fecha_actualizacion":     row.FechaActualizacion,
 		})
 	}
 	return empresaReporteDataset{
@@ -425,6 +428,8 @@ func EmpresaSoporteRemotoHandler(dbEmp *sql.DB) http.HandlerFunc {
 				empresaSoporteRemotoSesionAprobar(w, r, dbEmp)
 			case "finalizar_sesion":
 				empresaSoporteRemotoSesionFinalizar(w, r, dbEmp)
+			case "crear_token_senalizacion":
+				empresaSoporteRemotoSignalingCredentialCreate(w, r, dbEmp)
 			case "heartbeat_dispositivo":
 				empresaSoporteRemotoHeartbeat(w, r, dbEmp)
 			default:
@@ -458,6 +463,41 @@ func EmpresaSoporteRemotoHandler(dbEmp *sql.DB) http.HandlerFunc {
 			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 		}
 	}
+}
+
+func empresaSoporteRemotoSignalingCredentialCreate(w http.ResponseWriter, r *http.Request, dbEmp *sql.DB) {
+	empresaID := parseEmpresaIDFromContext(r)
+	if empresaID <= 0 {
+		http.Error(w, "contexto de empresa requerido", http.StatusUnauthorized)
+		return
+	}
+	var payload empresaSoporteRemotoSesionPayload
+	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 16<<10)).Decode(&payload); err != nil {
+		http.Error(w, "JSON invalido", http.StatusBadRequest)
+		return
+	}
+	payload.CodigoSesion = strings.TrimSpace(payload.CodigoSesion)
+	if payload.CodigoSesion == "" {
+		http.Error(w, "codigo_sesion es obligatorio", http.StatusBadRequest)
+		return
+	}
+	credential, err := dbpkg.CreateEmpresaSoporteRemotoSignalingCredential(
+		dbEmp,
+		empresaID,
+		payload.CodigoSesion,
+		payload.Role,
+		adminEmailFromRequest(r),
+	)
+	if err != nil {
+		if errors.Is(err, dbpkg.ErrSoporteRemotoSignalingCredential) || errors.Is(err, sql.ErrNoRows) {
+			http.Error(w, "sesion no disponible para senalizacion", http.StatusForbidden)
+			return
+		}
+		http.Error(w, "No se pudo crear credencial de senalizacion", http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Cache-Control", "no-store")
+	writeJSON(w, http.StatusCreated, map[string]interface{}{"ok": true, "credential": credential})
 }
 
 // PublicEmpresaSoporteRemotoAgentHandler expone operaciones de heartbeat/estado para plugin de agencia remota.
@@ -608,22 +648,22 @@ func empresaSoporteRemotoDispositivoCreate(w http.ResponseWriter, r *http.Reques
 		return
 	}
 	id, err := dbpkg.CreateEmpresaSoporteRemotoDispositivo(dbEmp, dbpkg.EmpresaSoporteRemotoDispositivo{
-		EmpresaID:         empresaID,
-		CodigoDispositivo: payload.CodigoDispositivo,
-		NombreEquipo:      payload.NombreEquipo,
-		AliasOperativo:    payload.AliasOperativo,
-		Ubicacion:         payload.Ubicacion,
-		SistemaOperativo:  payload.SistemaOperativo,
-		AgenteVersion:     payload.AgenteVersion,
-		StreamURL:         payload.StreamURL,
-		RustDeskDeviceID:  payload.RustDeskDeviceID,
-		RustDeskPasswordEnc: payload.RustDeskPassword,
-		CarpetaTransferencia: payload.CarpetaTransferencia,
+		EmpresaID:               empresaID,
+		CodigoDispositivo:       payload.CodigoDispositivo,
+		NombreEquipo:            payload.NombreEquipo,
+		AliasOperativo:          payload.AliasOperativo,
+		Ubicacion:               payload.Ubicacion,
+		SistemaOperativo:        payload.SistemaOperativo,
+		AgenteVersion:           payload.AgenteVersion,
+		StreamURL:               payload.StreamURL,
+		RustDeskDeviceID:        payload.RustDeskDeviceID,
+		RustDeskPasswordEnc:     payload.RustDeskPassword,
+		CarpetaTransferencia:    payload.CarpetaTransferencia,
 		AccesoPublicoHabilitado: payload.AccesoPublicoHabilitado == nil || *payload.AccesoPublicoHabilitado,
-		EstadoConexion:    payload.EstadoConexion,
-		UsuarioCreador:    adminEmailFromRequest(r),
-		Estado:            "activo",
-		Observaciones:     payload.Observaciones,
+		EstadoConexion:          payload.EstadoConexion,
+		UsuarioCreador:          adminEmailFromRequest(r),
+		Estado:                  "activo",
+		Observaciones:           payload.Observaciones,
 	}, payload.AccesoPIN)
 	if err != nil {
 		if errors.Is(err, dbpkg.ErrSoporteRemotoPlanLimit) {
@@ -663,23 +703,23 @@ func empresaSoporteRemotoDispositivoUpdate(w http.ResponseWriter, r *http.Reques
 		return
 	}
 	err = dbpkg.UpdateEmpresaSoporteRemotoDispositivo(dbEmp, dbpkg.EmpresaSoporteRemotoDispositivo{
-		ID:                payload.ID,
-		EmpresaID:         empresaID,
-		CodigoDispositivo: payload.CodigoDispositivo,
-		NombreEquipo:      payload.NombreEquipo,
-		AliasOperativo:    payload.AliasOperativo,
-		Ubicacion:         payload.Ubicacion,
-		SistemaOperativo:  payload.SistemaOperativo,
-		AgenteVersion:     payload.AgenteVersion,
-		StreamURL:         payload.StreamURL,
-		RustDeskDeviceID:  payload.RustDeskDeviceID,
-		RustDeskPasswordEnc: payload.RustDeskPassword,
-		CarpetaTransferencia: payload.CarpetaTransferencia,
+		ID:                      payload.ID,
+		EmpresaID:               empresaID,
+		CodigoDispositivo:       payload.CodigoDispositivo,
+		NombreEquipo:            payload.NombreEquipo,
+		AliasOperativo:          payload.AliasOperativo,
+		Ubicacion:               payload.Ubicacion,
+		SistemaOperativo:        payload.SistemaOperativo,
+		AgenteVersion:           payload.AgenteVersion,
+		StreamURL:               payload.StreamURL,
+		RustDeskDeviceID:        payload.RustDeskDeviceID,
+		RustDeskPasswordEnc:     payload.RustDeskPassword,
+		CarpetaTransferencia:    payload.CarpetaTransferencia,
 		AccesoPublicoHabilitado: payload.AccesoPublicoHabilitado == nil || *payload.AccesoPublicoHabilitado,
-		EstadoConexion:    payload.EstadoConexion,
-		UsuarioCreador:    adminEmailFromRequest(r),
-		Estado:            "activo",
-		Observaciones:     payload.Observaciones,
+		EstadoConexion:          payload.EstadoConexion,
+		UsuarioCreador:          adminEmailFromRequest(r),
+		Estado:                  "activo",
+		Observaciones:           payload.Observaciones,
 	}, payload.AccesoPIN)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
@@ -807,11 +847,11 @@ func empresaSoporteRemotoSesionCreate(w http.ResponseWriter, r *http.Request, db
 	viewerURL := empresaSoporteRemotoBuildViewerURL(r, empresaID, session.CodigoSesion, session.TokenVisualizacionRaw)
 	uso, _ := dbpkg.GetEmpresaSoporteRemotoUso(dbEmp, empresaID)
 	writeJSON(w, http.StatusCreated, map[string]interface{}{
-		"ok":         true,
-		"session":    session,
-		"viewer_url": viewerURL,
+		"ok":                 true,
+		"session":            session,
+		"viewer_url":         viewerURL,
 		"portal_publico_url": empresaSoporteRemotoBuildPublicPortalURL(r, empresaID, session.CodigoSesion, session.TokenVisualizacionRaw),
-		"uso":        uso,
+		"uso":                uso,
 	})
 }
 
@@ -888,6 +928,7 @@ func empresaSoporteRemotoSesionFinalizar(w http.ResponseWriter, r *http.Request,
 }
 
 func empresaSoporteRemotoResolverVisualizacion(w http.ResponseWriter, r *http.Request, dbEmp *sql.DB) {
+	w.Header().Set("Cache-Control", "no-store")
 	empresaID, err := parseEmpresaIDQuery(r)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -934,6 +975,7 @@ func empresaSoporteRemotoResolverVisualizacion(w http.ResponseWriter, r *http.Re
 }
 
 func empresaSoporteRemotoResolverAccesoPublico(w http.ResponseWriter, r *http.Request, dbEmp *sql.DB) {
+	w.Header().Set("Cache-Control", "no-store")
 	empresaID, err := parseEmpresaIDQuery(r)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)

@@ -67,7 +67,7 @@ func AccountHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(out)
+		encodeJSONResponse(w, out)
 	}
 }
 
@@ -137,7 +137,7 @@ func AccountUpdateProfileHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]interface{}{"ok": true})
+		encodeJSONResponse(w, map[string]interface{}{"ok": true})
 	}
 }
 
@@ -196,7 +196,7 @@ func AccountChangePasswordHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 			return
 		}
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]interface{}{"ok": true})
+		encodeJSONResponse(w, map[string]interface{}{"ok": true})
 	}
 }
 
@@ -224,7 +224,7 @@ func AccountSetGooglePasswordHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 		}
 		if admin.PasswordSet == 1 && strings.TrimSpace(admin.PasswordHash) != "" {
 			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(map[string]interface{}{"ok": true, "redirect_url": resolveAdminPostLoginRedirect(admin), "message": "Tu cuenta ya tiene una contraseña activa."})
+			encodeJSONResponse(w, map[string]interface{}{"ok": true, "redirect_url": resolveAdminPostLoginRedirect(admin), "message": "Tu cuenta ya tiene una contraseña activa."})
 			return
 		}
 
@@ -274,6 +274,6 @@ func AccountSetGooglePasswordHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]interface{}{"ok": true, "redirect_url": redirectURL, "message": "Contraseña registrada correctamente."})
+		encodeJSONResponse(w, map[string]interface{}{"ok": true, "redirect_url": redirectURL, "message": "Contraseña registrada correctamente."})
 	}
 }

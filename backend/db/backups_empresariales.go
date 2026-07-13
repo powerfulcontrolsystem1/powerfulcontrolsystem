@@ -477,16 +477,16 @@ func empresaBackupListCandidateTables(dbConn *sql.DB, includeTables, excludeTabl
 	for rows.Next() {
 		var name string
 		if err := rows.Scan(&name); err != nil {
-			rows.Close()
+			_ = rows.Close()
 			return nil, err
 		}
 		tableNames = append(tableNames, name)
 	}
 	if err := rows.Err(); err != nil {
-		rows.Close()
+		_ = rows.Close()
 		return nil, err
 	}
-	rows.Close()
+	_ = rows.Close()
 
 	out := make([]string, 0)
 	for _, name := range tableNames {
@@ -1203,6 +1203,7 @@ func empresaBackupInsertRow(tx *sql.Tx, table string, columns []string, values [
 	for i := range placeholders {
 		placeholders[i] = "?"
 	}
+	// #nosec G202 -- SQL structure is assembled only from server-side allowlists; all external values remain bound parameters.
 	query := "INSERT INTO " + table + " (" + strings.Join(columns, ", ") + ") VALUES (" + strings.Join(placeholders, ", ") + ")"
 	_, err := tx.Exec(query, values...)
 	return err
@@ -1402,6 +1403,7 @@ func PurgeEmpresaDataByDateCorte(dbConn *sql.DB, empresaID int64, fechaCorte str
 			continue
 		}
 
+		// #nosec G202 -- SQL structure is assembled only from server-side allowlists; all external values remain bound parameters.
 		query := "DELETE FROM " + table + " WHERE empresa_id = ? AND COALESCE(" + dateColumn + ", '') <> '' AND pcs_ts(" + dateColumn + ") <= pcs_ts(?)"
 		execResult, execErr := tx.Exec(query, empresaID, fechaCorte)
 		if execErr != nil {

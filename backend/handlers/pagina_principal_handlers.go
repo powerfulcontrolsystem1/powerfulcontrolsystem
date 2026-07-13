@@ -1078,11 +1078,13 @@ func paginaPrincipalUploadImage(w http.ResponseWriter, r *http.Request, webDir s
 	}
 	finalName := fmt.Sprintf("pagina_principal_%d_%s%s", time.Now().UnixNano(), nameWithoutExt, ext)
 	imgDir := filepath.Join(strings.TrimSpace(webDir), "img")
+	// #nosec G301 -- activos publicos del portal requieren lectura de Nginx.
 	if err := os.MkdirAll(imgDir, 0755); err != nil {
 		http.Error(w, "no se pudo preparar carpeta de imagenes: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
 	destPath := filepath.Join(imgDir, finalName)
+	// #nosec G302,G304 -- nombre saneado y exclusivo dentro de la raiz publica controlada.
 	dest, err := os.OpenFile(destPath, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0644)
 	if err != nil {
 		http.Error(w, "no se pudo guardar imagen: "+err.Error(), http.StatusInternalServerError)

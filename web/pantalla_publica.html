@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="referrer" content="no-referrer">
     <title>Pantalla en vivo</title>
     <link rel="stylesheet" href="/estilos.css">
     <script>
@@ -133,6 +134,10 @@
         let ws;
         const params = new URLSearchParams(window.location.search);
         const empresaId = Number(params.get('empresa_id') || params.get('id') || '0');
+        const codigoSesion = String(params.get('codigo_sesion') || '').trim();
+        const signalingToken = String(params.get('token') || '').trim();
+        const signalingNonce = String(params.get('nonce') || '').trim();
+        const signalingRole = String(params.get('role') || 'viewer').trim().toLowerCase();
 
         const config = {
             iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
@@ -151,13 +156,20 @@
         }
 
         function connect() {
-            if (!empresaId) {
-                setStatus('Abre esta pantalla desde el enlace publico de la empresa.');
+            if (!empresaId || !codigoSesion || !signalingToken || !signalingNonce || !['host', 'viewer'].includes(signalingRole)) {
+                setStatus('Abre esta pantalla desde una sesion remota autenticada y vigente.');
                 showEmptyState();
                 return;
             }
             const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-            const wsUrl = `${wsProtocol}//${window.location.host}/api/public/webrtc/signaling?empresa_id=${encodeURIComponent(String(empresaId))}&role=viewer`;
+            const signalingParams = new URLSearchParams({
+                empresa_id: String(empresaId),
+                codigo_sesion: codigoSesion,
+                role: signalingRole,
+                token: signalingToken,
+                nonce: signalingNonce
+            });
+            const wsUrl = `${wsProtocol}//${window.location.host}/api/public/webrtc/signaling?${signalingParams.toString()}`;
             ws = new WebSocket(wsUrl);
 
             ws.onopen = () => {

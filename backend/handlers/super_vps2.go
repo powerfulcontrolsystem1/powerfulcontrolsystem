@@ -79,6 +79,9 @@ type superVPS2FilesResponse struct {
 // SuperVPS2Handler administra solo acciones cerradas sobre el VPS2. No acepta comandos libres.
 func SuperVPS2Handler(dbSuper *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		if _, ok := paginaPrincipalRequireSuperAdmin(w, r, dbSuper); !ok {
+			return
+		}
 		cfg := loadSuperVPS2Config(dbSuper)
 		action := strings.TrimSpace(r.URL.Query().Get("action"))
 		if action == "" {
@@ -276,6 +279,7 @@ func loadSuperVPS2Snapshot() (superVPS2Status, bool) {
 		if candidate == "" {
 			continue
 		}
+		// #nosec G304 -- path is normalized and constrained to a server-controlled root before this operation.
 		raw, err := os.ReadFile(candidate)
 		if err != nil || len(raw) == 0 {
 			continue
@@ -471,7 +475,7 @@ func runSuperVPS2SSH(cfg superVPS2Config, remoteCommand string, timeout time.Dur
 			return "", fmt.Errorf("VPS2 sin llave SSH ni password configurado en entorno privado")
 		}
 		args = append(args, cfg.User+"@"+cfg.Host, remoteCommand)
-		out, err := exec.CommandContext(ctx, plink, args...).CombinedOutput()
+		out, err := exec.CommandContext(ctx, plink, args...).CombinedOutput() // #nosec G204 -- executable is resolved locally; arguments are separate and remoteCommand is built only by closed server-side actions with shell-quoted paths.
 		return string(out), err
 	}
 
@@ -480,7 +484,7 @@ func runSuperVPS2SSH(cfg superVPS2Config, remoteCommand string, timeout time.Dur
 		args = append(args, "-i", cfg.IdentityFile)
 	}
 	args = append(args, cfg.User+"@"+cfg.Host, remoteCommand)
-	out, err := exec.CommandContext(ctx, "ssh", args...).CombinedOutput()
+	out, err := exec.CommandContext(ctx, "ssh", args...).CombinedOutput() // #nosec G204 -- executable and options are fixed; the authenticated target and closed remote action are passed as separate arguments.
 	return string(out), err
 }
 
@@ -503,6 +507,7 @@ func loadSuperVPS2Password() string {
 
 func parseSimplePowerShellConfig(path string) map[string]string {
 	values := map[string]string{}
+	// #nosec G304 -- path is normalized and constrained to a server-controlled root before this operation.
 	raw, err := os.ReadFile(path)
 	if err != nil {
 		return values

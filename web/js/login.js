@@ -2,6 +2,11 @@
   var googleBtn = document.querySelector(".google-btn");
   var rememberedEmailStorageKey = 'pcs_admin_login_remembered_email';
 
+  function readCookie(name) {
+    var match = String(document.cookie || '').match('(^|;)\\s*' + name + '\\s*=\\s*([^;]+)');
+    return match ? match.pop() : '';
+  }
+
   function normalizeEmail(value) {
     return String(value || "").trim();
   }
@@ -264,9 +269,14 @@
     }, 45000);
     var res;
     try {
+      var headers = {'Content-Type': 'application/json'};
+      var csrfToken = readCookie('pcs_csrf');
+      if (csrfToken) {
+        headers['X-CSRF-Token'] = csrfToken;
+      }
       res = await fetch(url, {
         method: 'POST',
-        headers: {'Content-Type': 'application/json'},
+        headers: headers,
         body: JSON.stringify(body),
         credentials: 'same-origin',
         signal: controller.signal

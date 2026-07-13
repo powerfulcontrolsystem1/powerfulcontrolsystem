@@ -1,6 +1,8 @@
 package handlers
 
 import (
+	"crypto/sha256"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -97,7 +99,8 @@ func TestAdministradoresEffectivePrincipalScopeForScopedSuperRequest(t *testing.
 
 func TestValidatePendingAdminInvitationToken(t *testing.T) {
 	expira := time.Now().Add(time.Hour).Format("2006-01-02 15:04:05")
-	admin := &dbpkg.Admin{EmailConfirmToken: "token-ok", EmailConfirmExpira: expira}
+	sum := sha256.Sum256([]byte("token-ok"))
+	admin := &dbpkg.Admin{EmailConfirmToken: fmt.Sprintf("%x", sum[:]), EmailConfirmExpira: expira}
 
 	if status, msg := validatePendingAdminInvitationToken(admin, "token-ok", time.Now()); status != http.StatusOK || msg != "" {
 		t.Fatalf("expected valid invitation token, got status=%d msg=%q", status, msg)

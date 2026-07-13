@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"database/sql"
 	"net/http"
 	"strings"
 
@@ -68,8 +69,11 @@ func EmpresaPlantillasIntegracionCatalogoHandler() http.HandlerFunc {
 	}
 }
 
-func SuperPlantillasIntegracionCatalogoHandler() http.HandlerFunc {
+func SuperPlantillasIntegracionCatalogoHandler(dbSuper *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		if _, ok := paginaPrincipalRequireSuperAdmin(w, r, dbSuper); !ok {
+			return
+		}
 		if r.Method != http.MethodGet {
 			http.Error(w, "metodo no permitido", http.StatusMethodNotAllowed)
 			return

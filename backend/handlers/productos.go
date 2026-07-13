@@ -255,7 +255,7 @@ func writeProductosExport(w http.ResponseWriter, r *http.Request, dbEmp *sql.DB,
 	case "json":
 		w.Header().Set("Content-Type", "application/json; charset=utf-8")
 		w.Header().Set("Content-Disposition", `attachment; filename="`+filename+`.json"`)
-		_ = json.NewEncoder(w).Encode(map[string]interface{}{"empresa_id": empresaID, "total": len(rows), "productos": rows})
+		encodeJSONResponse(w, map[string]interface{}{"empresa_id": empresaID, "total": len(rows), "productos": rows})
 	case "html", "carta", "pos", "imprimir":
 		if formato == "pos" {
 			pageSize = "pos"
@@ -447,6 +447,7 @@ func writeProductoPrecioHistorialExport(w http.ResponseWriter, r *http.Request, 
 			http.Error(w, "failed to build historial pdf: "+err.Error(), http.StatusInternalServerError)
 			return
 		}
+		// #nosec G304 -- path is normalized and constrained to a server-controlled root before this operation.
 		content, err := os.ReadFile(path)
 		if err != nil {
 			http.Error(w, "failed to read historial pdf: "+err.Error(), http.StatusInternalServerError)
@@ -458,7 +459,7 @@ func writeProductoPrecioHistorialExport(w http.ResponseWriter, r *http.Request, 
 	default:
 		w.Header().Set("Content-Type", "application/json; charset=utf-8")
 		w.Header().Set("Content-Disposition", `attachment; filename="`+filename+`.json"`)
-		_ = json.NewEncoder(w).Encode(map[string]interface{}{"empresa_id": empresaID, "total": len(rows), "historial": rows})
+		encodeJSONResponse(w, map[string]interface{}{"empresa_id": empresaID, "total": len(rows), "historial": rows})
 	}
 }
 
@@ -524,7 +525,7 @@ func handleProductosImport(w http.ResponseWriter, r *http.Request, dbEmp *sql.DB
 		}
 	}
 	w.Header().Set("Content-Type", "application/json")
-	_ = json.NewEncoder(w).Encode(map[string]interface{}{
+	encodeJSONResponse(w, map[string]interface{}{
 		"ok":         errores == 0,
 		"empresa_id": empresaID,
 		"creados":    creados,
@@ -767,7 +768,7 @@ func EmpresaBodegasHandler(dbEmp *sql.DB) http.HandlerFunc {
 				return
 			}
 			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(rows)
+			encodeJSONResponse(w, rows)
 			return
 		case http.MethodPost:
 			var payload dbpkg.Bodega
@@ -790,7 +791,7 @@ func EmpresaBodegasHandler(dbEmp *sql.DB) http.HandlerFunc {
 				return
 			}
 			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(map[string]interface{}{"id": id})
+			encodeJSONResponse(w, map[string]interface{}{"id": id})
 			return
 		case http.MethodPut:
 			q := r.URL.Query()
@@ -878,7 +879,7 @@ func EmpresaCategoriasProductosHandler(dbEmp *sql.DB) http.HandlerFunc {
 				return
 			}
 			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(rows)
+			encodeJSONResponse(w, rows)
 			return
 		case http.MethodPost:
 			var payload dbpkg.CategoriaProducto
@@ -901,7 +902,7 @@ func EmpresaCategoriasProductosHandler(dbEmp *sql.DB) http.HandlerFunc {
 				return
 			}
 			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(map[string]interface{}{"id": id})
+			encodeJSONResponse(w, map[string]interface{}{"id": id})
 			return
 		case http.MethodPut:
 			q := r.URL.Query()
@@ -1017,7 +1018,7 @@ func EmpresaProductosHandler(dbEmp *sql.DB) http.HandlerFunc {
 					return
 				}
 				w.Header().Set("Content-Type", "application/json")
-				json.NewEncoder(w).Encode(rows)
+				encodeJSONResponse(w, rows)
 				return
 			}
 			if id, _ := parseInt64QueryOptional(r, "id"); id > 0 {
@@ -1031,7 +1032,7 @@ func EmpresaProductosHandler(dbEmp *sql.DB) http.HandlerFunc {
 					return
 				}
 				w.Header().Set("Content-Type", "application/json")
-				json.NewEncoder(w).Encode(p)
+				encodeJSONResponse(w, p)
 				return
 			}
 
@@ -1047,7 +1048,7 @@ func EmpresaProductosHandler(dbEmp *sql.DB) http.HandlerFunc {
 				return
 			}
 			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(rows)
+			encodeJSONResponse(w, rows)
 			return
 		case http.MethodPost:
 			q := r.URL.Query()
@@ -1099,7 +1100,7 @@ func EmpresaProductosHandler(dbEmp *sql.DB) http.HandlerFunc {
 				return
 			}
 			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(map[string]interface{}{"id": id})
+			encodeJSONResponse(w, map[string]interface{}{"id": id})
 			return
 		case http.MethodPut:
 			q := r.URL.Query()
@@ -1178,7 +1179,7 @@ func EmpresaProductosHandler(dbEmp *sql.DB) http.HandlerFunc {
 				return
 			}
 			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(updated)
+			encodeJSONResponse(w, updated)
 			return
 		case http.MethodDelete:
 			empresaID, err := parseEmpresaIDQuery(r)
@@ -1233,7 +1234,7 @@ func EmpresaInventarioExistenciasHandler(dbEmp *sql.DB) http.HandlerFunc {
 				return
 			}
 			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(rows)
+			encodeJSONResponse(w, rows)
 			return
 		}
 
@@ -1243,7 +1244,7 @@ func EmpresaInventarioExistenciasHandler(dbEmp *sql.DB) http.HandlerFunc {
 			return
 		}
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(rows)
+		encodeJSONResponse(w, rows)
 	}
 }
 
@@ -1274,7 +1275,7 @@ func EmpresaInventarioAlertasHandler(dbEmp *sql.DB) http.HandlerFunc {
 				return
 			}
 			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(rows)
+			encodeJSONResponse(w, rows)
 			return
 		}
 
@@ -1284,7 +1285,7 @@ func EmpresaInventarioAlertasHandler(dbEmp *sql.DB) http.HandlerFunc {
 			return
 		}
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(rows)
+		encodeJSONResponse(w, rows)
 	}
 }
 
@@ -1304,7 +1305,7 @@ func EmpresaInventarioConfiguracionHandler(dbEmp *sql.DB) http.HandlerFunc {
 				return
 			}
 			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(conf)
+			encodeJSONResponse(w, conf)
 			return
 		case http.MethodPut:
 			var payload struct {
@@ -1357,7 +1358,7 @@ func EmpresaInventarioConfiguracionHandler(dbEmp *sql.DB) http.HandlerFunc {
 				return
 			}
 			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(conf)
+			encodeJSONResponse(w, conf)
 			return
 		default:
 			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
@@ -1406,7 +1407,7 @@ func EmpresaInventarioConteoCiclicoHandler(dbEmp *sql.DB) http.HandlerFunc {
 				return
 			}
 			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(rows)
+			encodeJSONResponse(w, rows)
 			return
 		case http.MethodPost:
 			var payload struct {
@@ -1450,7 +1451,7 @@ func EmpresaInventarioConteoCiclicoHandler(dbEmp *sql.DB) http.HandlerFunc {
 			}
 
 			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(map[string]interface{}{"id": conteo.ID, "resultado": conteo})
+			encodeJSONResponse(w, map[string]interface{}{"id": conteo.ID, "resultado": conteo})
 			return
 		default:
 			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
@@ -1489,7 +1490,7 @@ func EmpresaInventarioResumenHandler(dbEmp *sql.DB) http.HandlerFunc {
 			return
 		}
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(resumen)
+		encodeJSONResponse(w, resumen)
 	}
 }
 
@@ -1541,7 +1542,7 @@ func EmpresaInventarioTendenciaHandler(dbEmp *sql.DB) http.HandlerFunc {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(rows)
+		encodeJSONResponse(w, rows)
 	}
 }
 
@@ -1593,7 +1594,7 @@ func EmpresaInventarioBalanceBodegasHandler(dbEmp *sql.DB) http.HandlerFunc {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(rows)
+		encodeJSONResponse(w, rows)
 	}
 }
 
@@ -1644,7 +1645,7 @@ func EmpresaInventarioProyeccionQuiebreHandler(dbEmp *sql.DB) http.HandlerFunc {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(rows)
+		encodeJSONResponse(w, rows)
 	}
 }
 
@@ -1710,7 +1711,7 @@ func EmpresaInventarioPlanReposicionHandler(dbEmp *sql.DB) http.HandlerFunc {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(rows)
+		encodeJSONResponse(w, rows)
 	}
 }
 
@@ -1776,7 +1777,7 @@ func EmpresaInventarioPlanReposicionResumenHandler(dbEmp *sql.DB) http.HandlerFu
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(rows)
+		encodeJSONResponse(w, rows)
 	}
 }
 
@@ -1841,7 +1842,7 @@ func EmpresaInventarioPlanReposicionBorradorHandler(dbEmp *sql.DB) http.HandlerF
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(row)
+		encodeJSONResponse(w, row)
 	}
 }
 
@@ -2003,7 +2004,7 @@ func EmpresaComprasPlanReposicionEmitirOrdenHandler(dbEmp *sql.DB) http.HandlerF
 		})
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]interface{}{
+		encodeJSONResponse(w, map[string]interface{}{
 			"ok":        true,
 			"resultado": resultado,
 		})
@@ -2143,7 +2144,7 @@ func EmpresaComprasPlanReposicionActualizarEstadoHandler(dbEmp *sql.DB) http.Han
 		})
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]interface{}{
+		encodeJSONResponse(w, map[string]interface{}{
 			"ok":        true,
 			"resultado": resultado,
 		})
@@ -2188,7 +2189,7 @@ func EmpresaInventarioMovimientosHandler(dbEmp *sql.DB) http.HandlerFunc {
 			return
 		}
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(rows)
+		encodeJSONResponse(w, rows)
 	}
 }
 
@@ -2257,7 +2258,7 @@ func EmpresaInventarioTransferHandler(dbEmp *sql.DB) http.HandlerFunc {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]interface{}{"moved": true, "notification": notification})
+		encodeJSONResponse(w, map[string]interface{}{"moved": true, "notification": notification})
 	}
 }
 
@@ -2314,7 +2315,7 @@ func EmpresaInventarioAjusteHandler(dbEmp *sql.DB) http.HandlerFunc {
 			return
 		}
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]interface{}{"adjusted": true})
+		encodeJSONResponse(w, map[string]interface{}{"adjusted": true})
 	}
 }
 
@@ -2368,7 +2369,7 @@ func EmpresaInventarioCambioProductoHandler(dbEmp *sql.DB) http.HandlerFunc {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]interface{}{"changed": true})
+		encodeJSONResponse(w, map[string]interface{}{"changed": true})
 	}
 }
 
@@ -2402,7 +2403,7 @@ func EmpresaProductoPrecioHistorialHandler(dbEmp *sql.DB) http.HandlerFunc {
 			return
 		}
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(rows)
+		encodeJSONResponse(w, rows)
 	}
 }
 
@@ -2423,7 +2424,7 @@ func EmpresaProveedoresHandler(dbEmp *sql.DB) http.HandlerFunc {
 				return
 			}
 			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(rows)
+			encodeJSONResponse(w, rows)
 			return
 		case http.MethodPost:
 			var payload struct {
@@ -2490,7 +2491,7 @@ func EmpresaProveedoresHandler(dbEmp *sql.DB) http.HandlerFunc {
 				"empresa_id":              payload.EmpresaID,
 			})
 			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(map[string]interface{}{"id": id})
+			encodeJSONResponse(w, map[string]interface{}{"id": id})
 			return
 		case http.MethodPut:
 			q := r.URL.Query()
@@ -2599,7 +2600,7 @@ func EmpresaProveedoresHandler(dbEmp *sql.DB) http.HandlerFunc {
 				})
 
 				w.Header().Set("Content-Type", "application/json")
-				json.NewEncoder(w).Encode(map[string]interface{}{
+				encodeJSONResponse(w, map[string]interface{}{
 					"ok":               true,
 					"accion":           transition.Accion,
 					"evento":           evento,
@@ -2763,7 +2764,7 @@ func EmpresaServiciosHandler(dbEmp *sql.DB) http.HandlerFunc {
 				return
 			}
 			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(rows)
+			encodeJSONResponse(w, rows)
 			return
 		case http.MethodPost:
 			var payload dbpkg.Servicio
@@ -2782,7 +2783,7 @@ func EmpresaServiciosHandler(dbEmp *sql.DB) http.HandlerFunc {
 				return
 			}
 			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(map[string]interface{}{"id": id})
+			encodeJSONResponse(w, map[string]interface{}{"id": id})
 			return
 		case http.MethodPut:
 			q := r.URL.Query()
@@ -2903,6 +2904,7 @@ func EmpresaProductoImagenUploadHandler(dbEmp *sql.DB) http.HandlerFunc {
 		}
 
 		dir, publicDir, _ := empresaUploadsSubdir(dbEmp, empresaID, "imagenes", "productos")
+		// #nosec G301 -- imagen publica del catalogo servida por Nginx.
 		if err := os.MkdirAll(dir, 0o755); err != nil {
 			http.Error(w, "failed to prepare upload directory", http.StatusInternalServerError)
 			return
@@ -2910,6 +2912,7 @@ func EmpresaProductoImagenUploadHandler(dbEmp *sql.DB) http.HandlerFunc {
 
 		fileName := fmt.Sprintf("producto_%d_%d%s", productoID, time.Now().UnixNano(), ext)
 		absPath := filepath.Join(dir, fileName)
+		// #nosec G304 -- path is normalized and constrained to a server-controlled root before this operation.
 		out, err := os.Create(absPath)
 		if err != nil {
 			http.Error(w, "failed to create image file", http.StatusInternalServerError)
@@ -2950,7 +2953,7 @@ func EmpresaProductoImagenUploadHandler(dbEmp *sql.DB) http.HandlerFunc {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]interface{}{
+		encodeJSONResponse(w, map[string]interface{}{
 			"saved":        true,
 			"empresa_id":   empresaID,
 			"producto_id":  productoID,

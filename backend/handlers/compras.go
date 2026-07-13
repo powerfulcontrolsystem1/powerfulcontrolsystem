@@ -50,7 +50,7 @@ func EmpresaComprasDocumentosHandler(dbEmp *sql.DB) http.HandlerFunc {
 				return
 			}
 			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(rows)
+			encodeJSONResponse(w, rows)
 			return
 
 		case http.MethodPost:
@@ -275,7 +275,7 @@ func EmpresaComprasDocumentosHandler(dbEmp *sql.DB) http.HandlerFunc {
 			})
 
 			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(map[string]interface{}{
+			encodeJSONResponse(w, map[string]interface{}{
 				"ok":        true,
 				"accion":    accionResp,
 				"evento":    evento,
@@ -741,7 +741,7 @@ func EmpresaComprasDocumentosHandler(dbEmp *sql.DB) http.HandlerFunc {
 			if hasRecepcionResumen {
 				response["recepcion_resumen"] = recepcionResumen
 			}
-			json.NewEncoder(w).Encode(response)
+			encodeJSONResponse(w, response)
 			return
 
 		case http.MethodDelete:

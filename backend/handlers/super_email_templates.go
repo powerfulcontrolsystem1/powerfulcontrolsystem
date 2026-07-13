@@ -24,7 +24,7 @@ const (
 	superEmailTemplateKeyLicenciaExpiryWarning          = "licencia_expiry_warning"
 	superEmailTemplateKeyLicenciaEmpresaDeletionWarning = "licencia_empresa_eliminacion_warning"
 	superEmailTemplateKeyAdminPasswordRecovery          = "admin_password_recovery"
-	superEmailTemplateKeyEmpresaPasswordRecovery        = "empresa_user_password_recovery"
+	superEmailTemplateKeyEmpresaPasswordRecovery        = "empresa_user_password_recovery" // #nosec G101 -- identificador de plantilla, no credencial.
 	superEmailTemplateKeyServerRestartAlert             = "server_restart_alert"
 )
 
@@ -383,6 +383,9 @@ func templateParagraphHTML(title, value string) string {
 
 func SuperEmailTemplatesHandler(dbSuper *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		if _, ok := paginaPrincipalRequireSuperAdmin(w, r, dbSuper); !ok {
+			return
+		}
 		switch r.Method {
 		case http.MethodGet:
 			items, err := listSuperEmailTemplates(dbSuper)
@@ -391,7 +394,7 @@ func SuperEmailTemplatesHandler(dbSuper *sql.DB) http.HandlerFunc {
 				return
 			}
 			w.Header().Set("Content-Type", "application/json")
-			_ = json.NewEncoder(w).Encode(map[string]interface{}{"templates": items})
+			encodeJSONResponse(w, map[string]interface{}{"templates": items})
 			return
 
 		case http.MethodPut, http.MethodPost:
@@ -440,7 +443,7 @@ func SuperEmailTemplatesHandler(dbSuper *sql.DB) http.HandlerFunc {
 				return
 			}
 			w.Header().Set("Content-Type", "application/json")
-			_ = json.NewEncoder(w).Encode(map[string]interface{}{"saved": true, "templates": items})
+			encodeJSONResponse(w, map[string]interface{}{"saved": true, "templates": items})
 			return
 
 		default:

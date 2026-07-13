@@ -35,7 +35,7 @@ x-mailu-service-hosts: &mailu-service-hosts
 
 services:
   postgres:
-    image: postgres:16-alpine
+    image: postgres:16.14-alpine
     container_name: pcs-postgres
     restart: unless-stopped
     environment:
@@ -75,10 +75,23 @@ services:
     environment:
       PORT: "8080"
       TZ: ${TZ:-America/Bogota}
+      PCS_ENV: ${PCS_ENV:-production}
+      PCS_TRUSTED_PROXY_CIDRS: ${PCS_TRUSTED_PROXY_CIDRS:?Defina PCS_TRUSTED_PROXY_CIDRS}
+      PCS_CSRF_ALLOWED_ORIGINS: ${PCS_CSRF_ALLOWED_ORIGINS:?Defina PCS_CSRF_ALLOWED_ORIGINS}
+      CSRF_ALLOWED_ORIGINS: ${PCS_CSRF_ALLOWED_ORIGINS:?Defina PCS_CSRF_ALLOWED_ORIGINS}
+      SESSION_TIMEOUT: ${SESSION_TIMEOUT:?Defina SESSION_TIMEOUT}
+      MAX_REQUEST_BODY_BYTES: ${MAX_REQUEST_BODY_BYTES:?Defina MAX_REQUEST_BODY_BYTES}
+      HTTP_READ_TIMEOUT: ${HTTP_READ_TIMEOUT:?Defina HTTP_READ_TIMEOUT}
+      HTTP_WRITE_TIMEOUT: ${HTTP_WRITE_TIMEOUT:?Defina HTTP_WRITE_TIMEOUT}
+      HTTP_IDLE_TIMEOUT: ${HTTP_IDLE_TIMEOUT:?Defina HTTP_IDLE_TIMEOUT}
+      PCS_WEBRTC_IDLE_TIMEOUT_SECONDS: ${PCS_WEBRTC_IDLE_TIMEOUT_SECONDS:-300}
+      PCS_PRIVATE_STORAGE_DIR: /app/private_storage
       DB_DIALECT: postgres
       DB_EMPRESAS_DSN: postgres://${POSTGRES_USER:-pcs}:${POSTGRES_PASSWORD}@postgres:5432/pcs_empresas?sslmode=disable
       DB_SUPERADMIN_DSN: postgres://${POSTGRES_USER:-pcs}:${POSTGRES_PASSWORD}@postgres:5432/pcs_superadministrador?sslmode=disable
       CONFIG_ENC_KEY: ${CONFIG_ENC_KEY:?Defina CONFIG_ENC_KEY}
+      CONFIG_ENC_KEY_ID: ${CONFIG_ENC_KEY_ID:?Defina CONFIG_ENC_KEY_ID}
+      CONFIG_ENC_KEY_PREVIOUS: ${CONFIG_ENC_KEY_PREVIOUS:-}
       PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:-https://powerfulcontrolsystem.com}
       GOOGLE_REDIRECT_URL: ${GOOGLE_REDIRECT_URL:-https://powerfulcontrolsystem.com/auth/google/callback}
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
@@ -112,6 +125,7 @@ services:
     volumes:
       - pcs_backend_logs:/app/backend/logs
       - pcs_web_uploads:/app/web/uploads
+      - pcs_private_storage:/app/private_storage
       - pcs_backups:/app/backup
       - pcs_downloads:/app/descargas
     expose:
@@ -127,11 +141,24 @@ services:
 
   mailu-redis:
     profiles: ["mail"]
-    image: redis:7-alpine
+    image: redis:7.4.9-alpine
     container_name: pcs-mailu-redis
     restart: unless-stopped
+    user: redis
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=16m
     volumes:
       - mailu_redis:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
     networks:
       mailu_internal:
         ipv4_address: ${MAILU_REDIS_IP:-192.168.203.2}
@@ -312,14 +339,28 @@ services:
     image: ${PCS_FRONTEND_IMAGE:-pcs-frontend:local}
     container_name: pcs-frontend
     restart: unless-stopped
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=32m
+      - /var/cache/nginx:rw,noexec,nosuid,size=32m
+      - /var/run:rw,noexec,nosuid,size=4m
     depends_on:
       backend:
         condition: service_started
     ports:
-      - "${HTTP_BIND:-127.0.0.1}:${HTTP_PORT:-8081}:80"
+      - "${HTTP_BIND:-127.0.0.1}:${HTTP_PORT:-8081}:8080"
     volumes:
       - pcs_web_uploads:/usr/share/nginx/html/uploads:ro
       - pcs_downloads:/usr/share/nginx/html/descargas:ro
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1:8080/"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
     networks:
       - pcs_internal
 
@@ -357,7 +398,7 @@ services:
 
   onlyoffice-documentserver:
     profiles: ["office"]
-    image: onlyoffice/documentserver:${ONLYOFFICE_TAG:-latest}
+    image: onlyoffice/documentserver:${ONLYOFFICE_TAG:-9.4}
     container_name: pcs-onlyoffice-documentserver
     restart: unless-stopped
     environment:
@@ -385,6 +426,11 @@ services:
     image: ${PCS_VOICE_STREAM_IMAGE:-pcs-voice-stream:local}
     container_name: pcs-voice-stream
     restart: unless-stopped
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
     environment:
       TZ: ${TZ:-America/Bogota}
       VOICE_STREAM_ENABLED: ${VOICE_STREAM_ENABLED:-true}
@@ -405,12 +451,17 @@ services:
       - "8000"
     ports:
       - "${VOICE_STREAM_BIND:-127.0.0.1}:${VOICE_STREAM_PORT:-8011}:8000"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS -H \"$${VOICE_STREAM_AUTH_HEADER}: $${VOICE_STREAM_AUTH_TOKEN}\" http://127.0.0.1:8000/health >/dev/null"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
     networks:
       - pcs_internal
 
   rustdesk-hbbs:
     profiles: ["rustdesk"]
-    image: rustdesk/rustdesk-server:${RUSTDESK_TAG:-latest}
+    image: ghcr.io/rustdesk/rustdesk-server:${RUSTDESK_TAG:-1.1.15}
     container_name: pcs-rustdesk-hbbs
     restart: unless-stopped
     command: hbbs -r rustdesk-hbbr:21117
@@ -428,7 +479,7 @@ services:
 
   rustdesk-hbbr:
     profiles: ["rustdesk"]
-    image: rustdesk/rustdesk-server:${RUSTDESK_TAG:-latest}
+    image: ghcr.io/rustdesk/rustdesk-server:${RUSTDESK_TAG:-1.1.15}
     container_name: pcs-rustdesk-hbbr
     restart: unless-stopped
     command: hbbr
@@ -454,6 +505,7 @@ volumes:
   pcs_postgres_data:
   pcs_backend_logs:
   pcs_web_uploads:
+  pcs_private_storage:
   pcs_backups:
   pcs_downloads:
   pcs_letsencrypt:

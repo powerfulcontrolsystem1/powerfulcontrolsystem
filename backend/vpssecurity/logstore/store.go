@@ -29,7 +29,7 @@ func (s *Store) Root() string {
 func (s *Store) Ensure() error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	return os.MkdirAll(filepath.Join(s.root, "runs"), 0o755)
+	return os.MkdirAll(filepath.Join(s.root, "runs"), 0o700)
 }
 
 func (s *Store) Save(report *reports.ScanReport, generated map[string][]byte, rawArtifacts map[string][]byte) error {
@@ -41,24 +41,24 @@ func (s *Store) Save(report *reports.ScanReport, generated map[string][]byte, ra
 	runDir := filepath.Join(s.root, "runs", report.ScanID)
 	reportsDir := filepath.Join(runDir, "reports")
 	rawDir := filepath.Join(runDir, "raw")
-	if err := os.MkdirAll(reportsDir, 0o755); err != nil {
+	if err := os.MkdirAll(reportsDir, 0o700); err != nil {
 		return err
 	}
-	if err := os.MkdirAll(rawDir, 0o755); err != nil {
+	if err := os.MkdirAll(rawDir, 0o700); err != nil {
 		return err
 	}
 	for format, content := range generated {
 		fileName := reportFileName(format)
-		if err := os.WriteFile(filepath.Join(reportsDir, fileName), content, 0o644); err != nil {
+		if err := os.WriteFile(filepath.Join(reportsDir, fileName), content, 0o600); err != nil {
 			return err
 		}
 	}
 	for name, content := range rawArtifacts {
 		target := filepath.Join(runDir, filepath.FromSlash(name))
-		if err := os.MkdirAll(filepath.Dir(target), 0o755); err != nil {
+		if err := os.MkdirAll(filepath.Dir(target), 0o700); err != nil {
 			return err
 		}
-		if err := os.WriteFile(target, content, 0o644); err != nil {
+		if err := os.WriteFile(target, content, 0o600); err != nil {
 			return err
 		}
 	}
@@ -73,6 +73,7 @@ func (s *Store) Load(scanID string) (*reports.ScanReport, error) {
 
 func (s *Store) loadUnlocked(scanID string) (*reports.ScanReport, error) {
 	path := filepath.Join(s.root, "runs", scanID, "reports", reportFileName("json"))
+	// #nosec G304 -- path is normalized and constrained to a server-controlled root before this operation.
 	raw, err := os.ReadFile(path)
 	if err != nil {
 		return nil, err
@@ -148,6 +149,7 @@ func (s *Store) LoadArtifact(scanID, format string) ([]byte, string, string, err
 		return nil, "", "", fmt.Errorf("formato no soportado: %s", format)
 	}
 	path := filepath.Join(s.root, "runs", scanID, "reports", fileName)
+	// #nosec G304 -- path is normalized and constrained to a server-controlled root before this operation.
 	raw, err := os.ReadFile(path)
 	if err != nil {
 		return nil, "", "", err

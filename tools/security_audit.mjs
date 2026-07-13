@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import fs from "node:fs";
 import path from "node:path";
+import { execFileSync } from "node:child_process";
 
 const repoRoot = process.cwd();
 const outArgIndex = process.argv.indexOf("--out");
@@ -15,6 +16,18 @@ function read(rel) {
 
 function exists(rel) {
   return fs.existsSync(path.join(repoRoot, rel));
+}
+
+function isTracked(rel) {
+  try {
+    execFileSync("git", ["ls-files", "--error-unmatch", "--", rel], {
+      cwd: repoRoot,
+      stdio: "ignore",
+    });
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 function walk(dirRel, predicate = () => true) {
@@ -87,8 +100,11 @@ add("empresa_scope_middleware", /WithEmpresa|empresa_id|Empresa.*Scope/.test(all
   evidence: "Existe middleware/scope multiempresa.",
 }, "high");
 
-add("secret_files_not_committed", !exists("deploy/.env.platform") && !exists("deploy/.env.staging"), {
-  evidence: "No versionar env reales con secretos.",
+const trackedRuntimeEnvFiles = ["deploy/.env.platform", "deploy/.env.staging"].filter(isTracked);
+add("secret_files_not_committed", trackedRuntimeEnvFiles.length === 0, {
+  evidence: trackedRuntimeEnvFiles.length === 0
+    ? "Los archivos runtime con secretos no estan versionados; pueden existir localmente si Git los ignora."
+    : "Hay archivos runtime con secretos versionados; deben retirarse del indice y rotarse sus valores.",
 }, "critical");
 
 const report = {

@@ -123,49 +123,49 @@
     '<span class="robot-3d-leg robot-3d-leg-right"></span>' +
     '</div>' +
     '</div>';
-  var SECRETARY_SVG = '<div id="robotAvatarGraphic" class="secretary-3d-avatar robot-mood-idle" aria-hidden="true" data-mood="idle">' +
-    '<div class="secretary-3d-stage">' +
-    '<span class="secretary-3d-shadow"></span>' +
-    '<span class="secretary-3d-side-light secretary-3d-side-light-a"></span>' +
-    '<span class="secretary-3d-side-light secretary-3d-side-light-b"></span>' +
-    '<div class="secretary-3d-hair secretary-3d-hair-back"></div>' +
-    '<span class="secretary-3d-hair-side secretary-3d-hair-side-left"></span>' +
-    '<span class="secretary-3d-hair-side secretary-3d-hair-side-right"></span>' +
-    '<div class="secretary-3d-head">' +
-    '<span class="secretary-3d-hair secretary-3d-bang-a"></span>' +
-    '<span class="secretary-3d-hair secretary-3d-bang-b"></span>' +
-    '<div class="secretary-3d-face">' +
-    '<span class="secretary-3d-lash secretary-3d-lash-left"></span>' +
-    '<span class="secretary-3d-lash secretary-3d-lash-right"></span>' +
-    '<span class="secretary-3d-eye secretary-3d-eye-left"></span>' +
-    '<span class="secretary-3d-eye secretary-3d-eye-right"></span>' +
-    '<span class="secretary-3d-cheek secretary-3d-cheek-left"></span>' +
-    '<span class="secretary-3d-cheek secretary-3d-cheek-right"></span>' +
-    '<span class="secretary-3d-mouth"></span>' +
+  var SECRETARY_SVG = '<div id="robotAvatarGraphic" class="assistant-3d-avatar robot-mood-idle" aria-hidden="true" data-mood="idle">' +
+    '<div class="assistant-3d-stage">' +
+    '<span class="assistant-3d-shadow"></span>' +
+    '<span class="assistant-3d-side-light assistant-3d-side-light-a"></span>' +
+    '<span class="assistant-3d-side-light assistant-3d-side-light-b"></span>' +
+    '<div class="assistant-3d-hair assistant-3d-hair-back"></div>' +
+    '<span class="assistant-3d-hair-side assistant-3d-hair-side-left"></span>' +
+    '<span class="assistant-3d-hair-side assistant-3d-hair-side-right"></span>' +
+    '<div class="assistant-3d-head">' +
+    '<span class="assistant-3d-hair assistant-3d-bang-a"></span>' +
+    '<span class="assistant-3d-hair assistant-3d-bang-b"></span>' +
+    '<div class="assistant-3d-face">' +
+    '<span class="assistant-3d-lash assistant-3d-lash-left"></span>' +
+    '<span class="assistant-3d-lash assistant-3d-lash-right"></span>' +
+    '<span class="assistant-3d-eye assistant-3d-eye-left"></span>' +
+    '<span class="assistant-3d-eye assistant-3d-eye-right"></span>' +
+    '<span class="assistant-3d-cheek assistant-3d-cheek-left"></span>' +
+    '<span class="assistant-3d-cheek assistant-3d-cheek-right"></span>' +
+    '<span class="assistant-3d-mouth"></span>' +
     '</div>' +
-    '<span class="secretary-3d-ear secretary-3d-ear-left"></span>' +
-    '<span class="secretary-3d-ear secretary-3d-ear-right"></span>' +
+    '<span class="assistant-3d-ear assistant-3d-ear-left"></span>' +
+    '<span class="assistant-3d-ear assistant-3d-ear-right"></span>' +
     '</div>' +
-    '<span class="secretary-3d-neck"></span>' +
-    '<div class="secretary-3d-body">' +
-    '<span class="secretary-3d-blazer"></span>' +
-    '<span class="secretary-3d-shirt"></span>' +
-    '<span class="secretary-3d-lapel secretary-3d-lapel-left"></span>' +
-    '<span class="secretary-3d-lapel secretary-3d-lapel-right"></span>' +
-    '<span class="secretary-3d-scarf"></span>' +
-    '<span class="secretary-3d-badge"></span>' +
-    '<span class="secretary-3d-nameplate"></span>' +
-    '<span class="secretary-3d-button secretary-3d-button-a"></span>' +
-    '<span class="secretary-3d-button secretary-3d-button-b"></span>' +
+    '<span class="assistant-3d-neck"></span>' +
+    '<div class="assistant-3d-body">' +
+    '<span class="assistant-3d-blazer"></span>' +
+    '<span class="assistant-3d-shirt"></span>' +
+    '<span class="assistant-3d-lapel assistant-3d-lapel-left"></span>' +
+    '<span class="assistant-3d-lapel assistant-3d-lapel-right"></span>' +
+    '<span class="assistant-3d-scarf"></span>' +
+    '<span class="assistant-3d-badge"></span>' +
+    '<span class="assistant-3d-nameplate"></span>' +
+    '<span class="assistant-3d-button assistant-3d-button-a"></span>' +
+    '<span class="assistant-3d-button assistant-3d-button-b"></span>' +
     '</div>' +
-    '<span class="secretary-3d-arm secretary-3d-arm-left"></span>' +
-    '<span class="secretary-3d-arm secretary-3d-arm-right"></span>' +
-    '<span class="secretary-3d-tablet"></span>' +
-    '<span class="secretary-3d-skirt"></span>' +
-    '<span class="secretary-3d-leg secretary-3d-leg-left"></span>' +
-    '<span class="secretary-3d-leg secretary-3d-leg-right"></span>' +
-    '<span class="secretary-3d-shoe secretary-3d-shoe-left"></span>' +
-    '<span class="secretary-3d-shoe secretary-3d-shoe-right"></span>' +
+    '<span class="assistant-3d-arm assistant-3d-arm-left"></span>' +
+    '<span class="assistant-3d-arm assistant-3d-arm-right"></span>' +
+    '<span class="assistant-3d-tablet"></span>' +
+    '<span class="assistant-3d-skirt"></span>' +
+    '<span class="assistant-3d-leg assistant-3d-leg-left"></span>' +
+    '<span class="assistant-3d-leg assistant-3d-leg-right"></span>' +
+    '<span class="assistant-3d-shoe assistant-3d-shoe-left"></span>' +
+    '<span class="assistant-3d-shoe assistant-3d-shoe-right"></span>' +
     '</div>' +
     '</div>';
 

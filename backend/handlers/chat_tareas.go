@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
-	"io"
 	"log"
 	"mime"
 	"net/http"
@@ -12,7 +11,6 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
-	"time"
 
 	dbpkg "github.com/you/pos-backend/db"
 )
@@ -20,6 +18,21 @@ import (
 func queryBool(r *http.Request, key string) bool {
 	v := strings.TrimSpace(strings.ToLower(r.URL.Query().Get(key)))
 	return v == "1" || v == "true" || v == "si" || v == "yes"
+}
+
+func EmpresaChatTareasArchivoHandler() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+		empresaID, err := parseEmpresaIDQuery(r)
+		if err != nil || empresaID <= 0 {
+			http.Error(w, "empresa_id invalido", http.StatusBadRequest)
+			return
+		}
+		serveEmpresaPrivateFile(w, r, empresaID, "chat_tareas")
+	}
 }
 
 func safeAuthorName(name, fallback string) string {
@@ -831,38 +844,11 @@ func EmpresaChatTareasAdjuntoUploadHandler(dbEmp *sql.DB) http.HandlerFunc {
 			return
 		}
 
-		webRoot := resolveWebRootDir()
-		dir := filepath.Join(webRoot, "uploads", "chat_tareas", fmt.Sprintf("empresa_%d", empresaID), fmt.Sprintf("conversacion_%d", conversacionID))
-		if err := os.MkdirAll(dir, 0o755); err != nil {
-			http.Error(w, "failed to prepare upload directory", http.StatusInternalServerError)
-			return
-		}
-
-		fileName := fmt.Sprintf("mensaje_%d_%d%s", conversacionID, time.Now().UnixNano(), ext)
-		absPath := filepath.Join(dir, fileName)
-		out, err := os.Create(absPath)
+		fileName, absPath, size, err := saveEmpresaPrivateUpload(empresaID, "chat_tareas", ext, file, 20<<20)
 		if err != nil {
-			http.Error(w, "failed to create attachment file", http.StatusInternalServerError)
+			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
-		defer func() {
-			if out != nil {
-				_ = out.Close()
-			}
-		}()
-
-		size, err := io.Copy(out, file)
-		if err != nil {
-			http.Error(w, "failed to save attachment", http.StatusInternalServerError)
-			return
-		}
-		if err := out.Close(); err != nil {
-			out = nil
-			removeChatUploadFile(absPath)
-			http.Error(w, "failed to finalize attachment", http.StatusInternalServerError)
-			return
-		}
-		out = nil
 
 		actor := resolveChatActor(dbEmp, r, empresaID)
 		autorNombre := safeAuthorName("", actor.Nombre)
@@ -896,7 +882,7 @@ func EmpresaChatTareasAdjuntoUploadHandler(dbEmp *sql.DB) http.HandlerFunc {
 
 		duracion, _ := parseFloat64FormOptional(r, "duracion_segundos")
 		tipoAdjunto := inferAttachmentType(r.FormValue("tipo_archivo"), contentType, ext)
-		fileURL := "/uploads/chat_tareas/empresa_" + strconv.FormatInt(empresaID, 10) + "/conversacion_" + strconv.FormatInt(conversacionID, 10) + "/" + fileName
+		fileURL := empresaPrivateDownloadURL("/api/empresa/chat_tareas/archivo", empresaID, fileName)
 
 		adjID, err := dbpkg.CreateChatAdjunto(dbEmp, dbpkg.ChatAdjunto{
 			EmpresaID:        empresaID,
@@ -988,31 +974,16 @@ func EmpresaChatTareasTareaNotaVozUploadHandler(dbEmp *sql.DB) http.HandlerFunc 
 			return
 		}
 
-		webRoot := resolveWebRootDir()
-		dir := filepath.Join(webRoot, "uploads", "chat_tareas", fmt.Sprintf("empresa_%d", empresaID), "tareas")
-		if err := os.MkdirAll(dir, 0o755); err != nil {
-			http.Error(w, "failed to prepare upload directory", http.StatusInternalServerError)
-			return
-		}
-
-		fileName := fmt.Sprintf("tarea_%d_%d%s", tareaID, time.Now().UnixNano(), ext)
-		absPath := filepath.Join(dir, fileName)
-		out, err := os.Create(absPath)
+		fileName, absPath, size, err := saveEmpresaPrivateUpload(empresaID, "chat_tareas", ext, file, 20<<20)
 		if err != nil {
-			http.Error(w, "failed to create attachment file", http.StatusInternalServerError)
-			return
-		}
-		defer out.Close()
-
-		size, err := io.Copy(out, file)
-		if err != nil {
-			http.Error(w, "failed to save attachment", http.StatusInternalServerError)
+			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
 
 		duracion, _ := parseFloat64FormOptional(r, "duracion_segundos")
-		fileURL := "/uploads/chat_tareas/empresa_" + strconv.FormatInt(empresaID, 10) + "/tareas/" + fileName
+		fileURL := empresaPrivateDownloadURL("/api/empresa/chat_tareas/archivo", empresaID, fileName)
 		if err := dbpkg.SetChatTareaNotaVoz(dbEmp, empresaID, tareaID, fileURL, contentType, size, duracion); err != nil {
+			removeChatUploadFile(absPath)
 			http.Error(w, "failed to update tarea nota_voz", http.StatusInternalServerError)
 			return
 		}

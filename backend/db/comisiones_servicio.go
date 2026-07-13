@@ -647,6 +647,7 @@ func ListEmpresaComisionServicioEscalas(dbConn *sql.DB, empresaID int64, include
 		args = append(args, rol)
 	}
 
+	// #nosec G202 -- SQL structure is assembled only from server-side allowlists; all external values remain bound parameters.
 	query := `SELECT
 		id,
 		empresa_id,
@@ -1302,6 +1303,7 @@ func ListEmpresaComisionServicioMovimientos(dbConn *sql.DB, empresaID int64, fil
 	}
 
 	whereSQL, args := buildEmpresaComisionServicioMovWhere(empresaID, filter)
+	// #nosec G201 -- whereSQL is composed only from fixed clauses in buildEmpresaComisionServicioMovWhere; every external value is kept in args.
 	query := fmt.Sprintf(`SELECT
 		id,
 		empresa_id,
@@ -1845,6 +1847,7 @@ func GetEmpresaComisionServicioLiquidacionResumen(dbConn *sql.DB, empresaID int6
 		args = append(args, alias)
 	}
 
+	// #nosec G202 -- SQL structure is assembled only from server-side allowlists; all external values remain bound parameters.
 	query := `SELECT
 		id,
 		COALESCE(base_servicio, 0),
@@ -1933,6 +1936,7 @@ func VincularEmpresaComisionesServicioALiquidacion(dbConn *sql.DB, empresaID, li
 		args = append(args, id)
 	}
 
+	// #nosec G202 -- SQL structure is assembled only from server-side allowlists; all external values remain bound parameters.
 	query := `UPDATE empresa_comisiones_servicio_movimientos
 	SET
 		liquidacion_nomina_id = ?,

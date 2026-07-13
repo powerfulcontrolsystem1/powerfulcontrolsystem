@@ -132,7 +132,7 @@ func createAdminEmpresaCompartidaSession(w http.ResponseWriter, r *http.Request,
 		Value:    token,
 		Path:     "/",
 		HttpOnly: true,
-		MaxAge:   86400,
+		MaxAge:   utils.SessionCookieMaxAge(),
 		Secure:   SessionCookieSecure(r),
 		SameSite: http.SameSiteLaxMode,
 	})

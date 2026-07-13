@@ -1,11 +1,11 @@
 package handlers
 
 import (
+	"crypto/rand"
 	"database/sql"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"crypto/rand"
-	"encoding/base64"
 	"net/http"
 	"os"
 	"strings"
@@ -140,7 +140,7 @@ func OnlyOfficeConfigHandler(dbSuper *sql.DB) http.HandlerFunc {
 			enabledConfigured := strings.TrimSpace(enabledRaw) != ""
 
 			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(map[string]interface{}{
+			encodeJSONResponse(w, map[string]interface{}{
 				"enabled":                 enabled,
 				"enabled_configured":      enabledConfigured,
 				"enabled_updated":         enabledUpdated,
@@ -180,7 +180,7 @@ func OnlyOfficeConfigHandler(dbSuper *sql.DB) http.HandlerFunc {
 				if !ok {
 					w.WriteHeader(http.StatusBadGateway)
 				}
-				json.NewEncoder(w).Encode(map[string]interface{}{
+				encodeJSONResponse(w, map[string]interface{}{
 					"ok":         ok,
 					"status":     res.StatusCode,
 					"health_url": dsURL + "/healthcheck",
@@ -248,7 +248,7 @@ func OnlyOfficeConfigHandler(dbSuper *sql.DB) http.HandlerFunc {
 
 			// Validación básica: si enabled=true, permitir guardar aunque falten credenciales; el UI mostrará pendientes.
 			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(map[string]interface{}{"ok": true})
+			encodeJSONResponse(w, map[string]interface{}{"ok": true})
 			return
 
 		default:

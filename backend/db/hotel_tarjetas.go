@@ -289,6 +289,7 @@ func ListHotelTarjetasAcceso(dbConn *sql.DB, empresaID int64, filter HotelTarjet
 	if filter.Limit <= 0 {
 		filter.Limit = 300
 	}
+	// #nosec G202 -- SQL structure is assembled only from server-side allowlists; all external values remain bound parameters.
 	query := hotelTarjetaSelectSQL() + ` WHERE empresa_id = ?`
 	args := []interface{}{empresaID}
 	if !filter.IncludeInactive {

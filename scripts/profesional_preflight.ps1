@@ -11,6 +11,7 @@ param(
   [switch]$Full,
   [switch]$SkipGoTests,
   [switch]$SkipDockerConfig,
+  [switch]$SkipOpenAPI,
   [switch]$SkipAudit,
   [switch]$Strict,
   [string]$ReportDir = "documentos\reportes_profesionales"
@@ -20,6 +21,8 @@ Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 
 $repoRoot = Resolve-Path (Join-Path $PSScriptRoot "..")
+$repoRoot = $repoRoot.Path
+Set-Location -LiteralPath $repoRoot
 $reportRoot = Join-Path $repoRoot $ReportDir
 if (-not (Test-Path -LiteralPath $reportRoot)) {
   New-Item -ItemType Directory -Path $reportRoot -Force | Out-Null
@@ -36,10 +39,10 @@ function Resolve-NodeRuntime {
   if ($env:PCS_NODE_PATH) {
     $candidates += $env:PCS_NODE_PATH
   }
-  $candidates += @(
-    (Join-Path $env:USERPROFILE ".cache\codex-runtimes\codex-primary-runtime\dependencies\node\bin\node.exe"),
-    "node"
-  )
+  if (-not [string]::IsNullOrWhiteSpace($env:USERPROFILE)) {
+    $candidates += Join-Path $env:USERPROFILE ".cache\codex-runtimes\codex-primary-runtime\dependencies\node\bin\node.exe"
+  }
+  $candidates += "node"
 
   foreach ($candidate in $candidates) {
     if ([string]::IsNullOrWhiteSpace($candidate)) { continue }
@@ -148,9 +151,11 @@ try {
       "Auditoria de permisos/licencias finalizo con codigo $code"
     }
 
-    Invoke-Captured -Title "Inventario OpenAPI generado" -Required -Script {
-      & $nodeCmd tools\openapi_inventory.mjs --out documentos/api/openapi.generated.yaml
-      if ($LASTEXITCODE -ne 0) { throw "generacion OpenAPI fallo con codigo $LASTEXITCODE" }
+    if (-not $SkipOpenAPI) {
+      Invoke-Captured -Title "Inventario OpenAPI generado" -Required -Script {
+        & $nodeCmd tools\openapi_inventory.mjs --out documentos/api/openapi.generated.yaml
+        if ($LASTEXITCODE -ne 0) { throw "generacion OpenAPI fallo con codigo $LASTEXITCODE" }
+      }
     }
 
     Invoke-Captured -Title "Reporte de observabilidad" -Required:$Strict -Script {

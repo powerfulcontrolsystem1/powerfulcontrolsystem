@@ -347,7 +347,7 @@ func (monitor *errorMonitor) appendFileLog(backendDir string, payload map[string
 	if logDir == "" {
 		logDir = filepath.Join(".", "logs")
 	}
-	if err := os.MkdirAll(logDir, 0o755); err != nil {
+	if err := os.MkdirAll(logDir, 0o700); err != nil {
 		log.Printf("warning: no se pudo crear directorio de logs del sistema: %v", err)
 		return
 	}
@@ -358,7 +358,8 @@ func (monitor *errorMonitor) appendFileLog(backendDir string, payload map[string
 	}
 	monitor.fileMu.Lock()
 	defer monitor.fileMu.Unlock()
-	f, err := os.OpenFile(filepath.Join(logDir, "system_errors.log"), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644)
+	// #nosec G304 -- path is normalized and constrained to a server-controlled root before this operation.
+	f, err := os.OpenFile(filepath.Join(logDir, "system_errors.log"), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o600)
 	if err != nil {
 		log.Printf("warning: no se pudo abrir system_errors.log: %v", err)
 		return

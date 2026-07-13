@@ -1148,16 +1148,16 @@ func listEmpresaTarifaPorMinutosStationRefs(dbConn *sql.DB, empresaID int64) ([]
 	for rowsTarifas.Next() {
 		var ref empresaTarifaPorMinutosEstacionRef
 		if err := rowsTarifas.Scan(&ref.ID, &ref.Codigo, &ref.Nombre); err != nil {
-			rowsTarifas.Close()
+			_ = rowsTarifas.Close()
 			return nil, err
 		}
 		mergeTarifaPorMinutosEstacionRef(refs, ref, empresaID)
 	}
 	if err := rowsTarifas.Err(); err != nil {
-		rowsTarifas.Close()
+		_ = rowsTarifas.Close()
 		return nil, err
 	}
-	rowsTarifas.Close()
+	_ = rowsTarifas.Close()
 
 	hasCarritos, err := tableExists(dbConn, "carritos_compras")
 	if err != nil {
@@ -1177,7 +1177,7 @@ func listEmpresaTarifaPorMinutosStationRefs(dbConn *sql.DB, empresaID int64) ([]
 		for rowsCarritos.Next() {
 			var referenciaExterna, codigo, nombre string
 			if err := rowsCarritos.Scan(&referenciaExterna, &codigo, &nombre); err != nil {
-				rowsCarritos.Close()
+				_ = rowsCarritos.Close()
 				return nil, err
 			}
 			estacionID := parseReservaHotelEstacionID(referenciaExterna, codigo, empresaID)
@@ -1191,10 +1191,10 @@ func listEmpresaTarifaPorMinutosStationRefs(dbConn *sql.DB, empresaID int64) ([]
 			}, empresaID)
 		}
 		if err := rowsCarritos.Err(); err != nil {
-			rowsCarritos.Close()
+			_ = rowsCarritos.Close()
 			return nil, err
 		}
-		rowsCarritos.Close()
+		_ = rowsCarritos.Close()
 	}
 
 	hasReservas, err := tableExists(dbConn, "reservas_hotel")
@@ -1212,16 +1212,16 @@ func listEmpresaTarifaPorMinutosStationRefs(dbConn *sql.DB, empresaID int64) ([]
 		for rowsReservas.Next() {
 			var estacionID int64
 			if err := rowsReservas.Scan(&estacionID); err != nil {
-				rowsReservas.Close()
+				_ = rowsReservas.Close()
 				return nil, err
 			}
 			mergeTarifaPorMinutosEstacionRef(refs, empresaTarifaPorMinutosEstacionRef{ID: estacionID}, empresaID)
 		}
 		if err := rowsReservas.Err(); err != nil {
-			rowsReservas.Close()
+			_ = rowsReservas.Close()
 			return nil, err
 		}
-		rowsReservas.Close()
+		_ = rowsReservas.Close()
 	}
 
 	out := make([]empresaTarifaPorMinutosEstacionRef, 0, len(refs))

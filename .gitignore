@@ -1,5 +1,8 @@
 ﻿# Binarios y logs de backend
 backend/server.exe
+backend/**/*.exe
+herramientas/*.exe
+descargas/*
 backend/pos-backend.exe
 backend/*.log
 backend/*.err
@@ -50,6 +53,14 @@ deploy/.env.staging
 .codex-gocache/
 .codex-tmp-go/
 .codex-chrome*/
+.codex_tmp/
+.codex-remote-attachments/
+# Credenciales y llaves privadas locales
+*.ppk
+*.pem
+*.key
+*.p12
+*.pfx
 # VSCode
 .vscode/
 # Archivos compilados

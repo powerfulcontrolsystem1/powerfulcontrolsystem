@@ -29,6 +29,21 @@ type empresaFinanzasImportacionBancariaPayload struct {
 	Movimientos     []dbpkg.EmpresaFinanzasMovimientoBancario `json:"movimientos"`
 }
 
+func EmpresaFinanzasArchivoHandler() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+		empresaID, err := parseEmpresaIDQuery(r)
+		if err != nil || empresaID <= 0 {
+			http.Error(w, "empresa_id invalido", http.StatusBadRequest)
+			return
+		}
+		serveEmpresaPrivateFile(w, r, empresaID, "finanzas")
+	}
+}
+
 type empresaFinanzasPeriodoAutorizacionPayload struct {
 	AutorizadoPor         string `json:"autorizado_por"`
 	MotivoAutorizacion    string `json:"motivo_autorizacion"`
@@ -78,31 +93,16 @@ func sanitizeComprobanteBaseName(v string) string {
 	return name
 }
 
-func saveEmpresaComprobanteUpload(file io.Reader, originalFilename string, empresaID int64, modulo, baseName string) (string, string, string, error) {
+func saveEmpresaComprobanteUpload(file io.Reader, originalFilename string, empresaID int64, _, _ string) (string, string, string, error) {
 	ext := strings.ToLower(filepath.Ext(strings.TrimSpace(originalFilename)))
 	if !empresaComprobanteAllowedExt[ext] {
 		return "", "", "", fmt.Errorf("extension de comprobante no permitida")
 	}
-
-	webRoot := resolveWebRootDir()
-	dir := filepath.Join(webRoot, "uploads", "comprobantes", fmt.Sprintf("empresa_%d", empresaID), sanitizeComprobanteBaseName(modulo))
-	if err := os.MkdirAll(dir, 0o755); err != nil {
-		return "", "", "", err
-	}
-
-	fileName := sanitizeComprobanteBaseName(baseName) + "_" + strconv.FormatInt(time.Now().UnixNano(), 10) + ext
-	absPath := filepath.Join(dir, fileName)
-	out, err := os.Create(absPath)
+	fileName, absPath, _, err := saveEmpresaPrivateUpload(empresaID, "finanzas", ext, file, 20<<20)
 	if err != nil {
 		return "", "", "", err
 	}
-	defer out.Close()
-
-	if _, err := io.Copy(out, file); err != nil {
-		return "", "", "", err
-	}
-
-	fileURL := "/uploads/comprobantes/empresa_" + strconv.FormatInt(empresaID, 10) + "/" + sanitizeComprobanteBaseName(modulo) + "/" + fileName
+	fileURL := empresaPrivateDownloadURL("/api/empresa/finanzas/archivo", empresaID, fileName)
 	return fileURL, fileName, absPath, nil
 }
 

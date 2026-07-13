@@ -4,6 +4,8 @@ import (
 	"archive/zip"
 	"context"
 	"encoding/json"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"strings"
@@ -88,7 +90,7 @@ func TestDynamicDocumentRecordFromChatContentSanitizesHTMLAndKeepsMetadata(t *te
 	record, err := buildDynamicDocumentRecordFromContent(DynamicDocumentRequest{
 		EmpresaID:    42,
 		Title:        "Contrato corto",
-		Content:      `<h2 onclick="alert(1)">Contrato</h2><a href="javascript:alert(1)">firmar</a><script>alert(1)</script><p>Total {{.total}}</p>`,
+		Content:      `<h2 onclick="alert(1)">Contrato</h2><a href="javascript:alert(1)">firmar</a><script>alert(1)</script><iframe srcdoc="<script>alert(2)</script>"></iframe><svg onload="alert(3)"></svg><p>Total {{.total}}</p>`,
 		InputFormat:  "html",
 		TemplateName: "contrato",
 		ModelID:      dynamicDocumentModelID,
@@ -107,6 +109,11 @@ func TestDynamicDocumentRecordFromChatContentSanitizesHTMLAndKeepsMetadata(t *te
 	if strings.Contains(strings.ToLower(record.HTML), "javascript:") {
 		t.Fatalf("html contiene URL javascript sin sanitizar: %s", record.HTML)
 	}
+	for _, forbidden := range []string{"<iframe", "<svg", "srcdoc="} {
+		if strings.Contains(strings.ToLower(record.HTML), forbidden) {
+			t.Fatalf("html contiene elemento activo %q: %s", forbidden, record.HTML)
+		}
+	}
 	if !strings.Contains(record.PlainText, "12000") {
 		t.Fatalf("variables no aplicadas al texto plano: %q", record.PlainText)
 	}
@@ -115,6 +122,20 @@ func TestDynamicDocumentRecordFromChatContentSanitizesHTMLAndKeepsMetadata(t *te
 	}
 	if dynamicDocumentDownloadFilename(record, "docx") != "contrato_corto.docx" {
 		t.Fatalf("filename fallback inesperado: %s", dynamicDocumentDownloadFilename(record, "docx"))
+	}
+}
+
+func TestDynamicDocumentEmpresaContextRejectsTamperingBeforeDatabaseLookup(t *testing.T) {
+	req := httptest.NewRequest(http.MethodPost, "/api/empresa/chat_documentos/generar", nil)
+	req = req.WithContext(context.WithValue(req.Context(), "empresaID", int64(42)))
+	req = req.WithContext(context.WithValue(req.Context(), "adminEmail", "admin@example.invalid"))
+	recorder := httptest.NewRecorder()
+
+	if _, ok := requireDynamicDocumentEmpresaAccess(recorder, req, nil, nil, 99); ok {
+		t.Fatal("se acepto empresa_id distinto al contexto autenticado")
+	}
+	if recorder.Code != http.StatusForbidden {
+		t.Fatalf("status = %d, esperado %d", recorder.Code, http.StatusForbidden)
 	}
 }
 
