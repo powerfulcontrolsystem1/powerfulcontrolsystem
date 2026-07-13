@@ -37654,3 +37654,10 @@ Archivos modificados:
 - Las confirmaciones ePayco exigen firma SHA-256 verificable con las
   credenciales configuradas antes de cambiar pagos, licencias o ventas. El
   acuse público deja de exponer referencias, estados internos e identificadores.
+
+2026-07-13: Rotación inmediata de sesiones por cambios de identidad.
+- Cambiar contraseña, establecer la primera contraseña local o cambiar el correo
+  del administrador revoca las sesiones anteriores, invalida su caché y crea una
+  única sesión de reemplazo.
+- Un cambio de rol administrativo también revoca sus sesiones activas e invalida
+  la caché de autorización para impedir privilegios heredados.

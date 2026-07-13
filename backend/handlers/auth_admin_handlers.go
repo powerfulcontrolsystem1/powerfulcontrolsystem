@@ -1658,6 +1658,14 @@ func AdministradoresHandler(dbSuper *sql.DB) http.HandlerFunc {
 								http.Error(w, "no se pudo actualizar el administrador", http.StatusInternalServerError)
 								return
 							}
+							if roleChanged {
+								if err := dbpkg.RevokeSessionsByAdminEmail(dbSuper, existing.Email); err != nil {
+									log.Println("AdministradoresHandler revoke sessions after role change error:", err)
+									http.Error(w, "no se pudo proteger las sesiones del administrador", http.StatusInternalServerError)
+									return
+								}
+								utils.InvalidateAuthCacheForAdmin(existing.Email)
+							}
 						}
 						message := "El administrador ya existe y su cuenta esta confirmada. No se envio una nueva invitacion."
 						if roleChanged {

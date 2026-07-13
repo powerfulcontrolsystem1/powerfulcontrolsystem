@@ -129,10 +129,19 @@ func AccountUpdateProfileHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 			return
 		}
 
-		// Si cambió el email, reasignar sesiones activas
+		// A change of login identifier is a security event. Existing sessions
+		// must not silently inherit the new identity.
 		if strings.ToLower(strings.TrimSpace(newEmail)) != strings.ToLower(strings.TrimSpace(admin.Email)) {
-			if err := dbpkg.ReassignSessionsAdminEmail(dbSuper, admin.Email, newEmail); err != nil {
-				log.Println("AccountUpdateProfileHandler reassign sessions error:", err)
+			if err := dbpkg.RevokeSessionsByAdminEmail(dbSuper, admin.Email); err != nil {
+				log.Println("AccountUpdateProfileHandler revoke previous sessions error:", err)
+				http.Error(w, "failed to protect sessions", http.StatusInternalServerError)
+				return
+			}
+			utils.InvalidateAuthCacheForAdmin(admin.Email)
+			if err := issueReplacementAdminSession(w, r, dbSuper, newEmail); err != nil {
+				log.Println("AccountUpdateProfileHandler rotate sessions error:", err)
+				http.Error(w, "failed to protect sessions", http.StatusInternalServerError)
+				return
 			}
 		}
 
@@ -193,6 +202,11 @@ func AccountChangePasswordHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 		if err := dbpkg.SetAdministradorPassword(dbSuper, admin.Email, hash, salt); err != nil {
 			log.Println("AccountChangePasswordHandler set password error:", err)
 			http.Error(w, "failed to update password", http.StatusInternalServerError)
+			return
+		}
+		if err := issueReplacementAdminSession(w, r, dbSuper, admin.Email); err != nil {
+			log.Println("AccountChangePasswordHandler rotate sessions error:", err)
+			http.Error(w, "failed to protect sessions", http.StatusInternalServerError)
 			return
 		}
 		w.Header().Set("Content-Type", "application/json")
@@ -260,6 +274,11 @@ func AccountSetGooglePasswordHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 		if err := dbpkg.SetAdministradorPassword(dbSuper, admin.Email, hash, salt); err != nil {
 			log.Println("AccountSetGooglePasswordHandler set password error:", err)
 			http.Error(w, "failed to update password", http.StatusInternalServerError)
+			return
+		}
+		if err := issueReplacementAdminSession(w, r, dbSuper, admin.Email); err != nil {
+			log.Println("AccountSetGooglePasswordHandler rotate sessions error:", err)
+			http.Error(w, "failed to protect sessions", http.StatusInternalServerError)
 			return
 		}
 
