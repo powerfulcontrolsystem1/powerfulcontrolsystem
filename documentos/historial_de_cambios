@@ -37768,6 +37768,11 @@ Archivos modificados:
 - documentos/ia_orquestador_empresarial.md
 - web/estilos.css
 - web/js/ai_chat_drawer.js
+2026-07-13: Correccion operativa de Seguridad VPS.
+- Causa: el backend se ejecuta como usuario no root y no podia crear la configuracion del escaner debajo de la raiz de la aplicacion.
+- Correccion: la configuracion mutable se guarda en `backend/logs/vps_security/config.json`, con permisos privados y migracion automatica desde la ruta heredada cuando exista.
+- QA: pruebas enfocadas de configuracion, servicio y handlers; queda pendiente la validacion visual publicada despues de `rs`.
+
 2026-07-13: Reactivacion de Nextcloud empresarial multiempresa
 - Se habilita el control global desde Super administrador y la asignacion automatica de 1024 MB a empresas existentes y nuevas.
 - Se conserva `gestion_documental:R` para la pagina empresarial y `WithSuperAuditoria` para la configuracion super.
