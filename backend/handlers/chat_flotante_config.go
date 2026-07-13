@@ -353,6 +353,11 @@ func ChatFlotantePreferenciasHandler(dbSuper, dbEmp *sql.DB) http.HandlerFunc {
 
 		switch r.Method {
 		case http.MethodGet:
+			var ok bool
+			empresaID, ok = requireDynamicDocumentEmpresaAccess(w, r, dbEmp, dbSuper, empresaID)
+			if !ok {
+				return
+			}
 			writeJSON(w, http.StatusOK, chatFlotantePrefsResponse(dbSuper, dbEmp, empresaID))
 			return
 		case http.MethodPost, http.MethodPut:
@@ -373,6 +378,11 @@ func ChatFlotantePreferenciasHandler(dbSuper, dbEmp *sql.DB) http.HandlerFunc {
 			}
 			if empresaID <= 0 && payload.EmpresaID > 0 {
 				empresaID = payload.EmpresaID
+			}
+			var ok bool
+			empresaID, ok = requireDynamicDocumentEmpresaAccess(w, r, dbEmp, dbSuper, empresaID)
+			if !ok {
+				return
 			}
 			usuario := adminEmailFromRequest(r)
 			if payload.ChatEnabled != nil {

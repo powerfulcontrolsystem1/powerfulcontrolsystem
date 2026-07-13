@@ -37634,3 +37634,9 @@ Archivos modificados:
   administradores, y la gestión de tipos de empresa, ya no devuelven errores
   de persistencia ni fallos de correo al navegador. Los permisos y las
   validaciones de entrada se mantienen sin cambios.
+
+2026-07-13: Preferencias de chat flotante aisladas por empresa.
+- La sesión autenticada propaga el correo del administrador al contexto de los
+  endpoints de voz/chat. Las preferencias del chat flotante requieren ahora
+  acceso validado a la empresa y rechazan un `empresa_id` distinto al contexto
+  autenticado, tanto en consulta como en JSON.
