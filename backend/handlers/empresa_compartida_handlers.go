@@ -987,7 +987,6 @@ func EmpresaCompartidaHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 			if mailErr != nil {
 				response["email_sent"] = false
 				response["message"] = "La invitación se actualizó, pero el correo no pudo reenviarse."
-				response["error"] = mailErr.Error()
 				writeJSON(w, http.StatusOK, response)
 				return
 			}
