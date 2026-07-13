@@ -1274,8 +1274,8 @@ afecte dinero, documentos, licencias o seguridad.
    backend cifra la clave, no la devuelve al navegador y actualiza Mailu si
    el provisionamiento automatico Mailu esta disponible.
 10. Si aparecen estados de error, usar `Probar Mailu` en super administrador para
-   validar el contenedor `pcs-mailu-admin` y el comando directo antes de
-   reintentar provision.
+   validar la API interna, el token y la salud de Mailu antes de reintentar
+   provision.
 11. Desde super administrador, `Provisionar ventas/soporte` crea o actualiza los
    buzones `ventas@powerfulcontrolsystem.com` y
    `soporte@powerfulcontrolsystem.com` como remitentes del sistema.
