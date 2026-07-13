@@ -730,6 +730,40 @@ func EnsureCorporateEmailRowsForExistingCompanies(dbSuper, dbEmp *sql.DB, usuari
 	return dbpkg.EnsureEmpresaEmailRowsForExistingEmpresas(dbSuper, dbEmp, cfg.Domain, cfg.WebmailURL, usuario, normalizeCorporateEmailMaxAccounts(cfg.MaxAccounts))
 }
 
+// EnsureCorporateEmailProvisioningForExistingCompanies finishes the idempotent
+// Mailu setup for rows created before the corporate-email service was enabled.
+// Passwords are generated only when absent and are persisted encrypted by the
+// existing provision helper; neither the password nor command output is logged.
+func EnsureCorporateEmailProvisioningForExistingCompanies(dbSuper *sql.DB) (int, error) {
+	if dbSuper == nil {
+		return 0, nil
+	}
+	cfg := getCorporateEmailConfig(dbSuper)
+	if !cfg.Enabled || cfg.ProvisionMode != "mailu_direct" {
+		return 0, nil
+	}
+	accounts, err := dbpkg.ListEmpresaEmailCorporativo(dbSuper)
+	if err != nil {
+		return 0, err
+	}
+	provisioned := 0
+	for _, account := range accounts {
+		if account.EmpresaID <= 0 || strings.EqualFold(strings.TrimSpace(account.Estado), "eliminado") || strings.EqualFold(strings.TrimSpace(account.EstadoProvision), "provisionado") {
+			continue
+		}
+		password, passErr := corporateEmailInitialPasswordForProvision(dbSuper, account)
+		if passErr != nil {
+			return provisioned, fmt.Errorf("no se pudo preparar un buzon corporativo pendiente")
+		}
+		result := provisionEmpresaEmailAccount(dbSuper, cfg, account, password)
+		if !result.OK {
+			return provisioned, fmt.Errorf("no se pudo aprovisionar un buzon corporativo pendiente")
+		}
+		provisioned++
+	}
+	return provisioned, nil
+}
+
 func provisionEmpresaEmailAccount(dbSuper *sql.DB, cfg CorporateEmailConfig, account dbpkg.EmpresaEmailCorporativo, password string) corporateEmailProvisionResult {
 	return provisionEmpresaEmailAccountWithTheme(dbSuper, cfg, account, password, "")
 }

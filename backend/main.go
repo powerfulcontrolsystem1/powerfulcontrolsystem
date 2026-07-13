@@ -1005,6 +1005,12 @@ func main() {
 			log.Printf("INFO: emails corporativos generados para empresas existentes: %d", created)
 		}
 		startupTrace("after_empresa_email_corporativo_existing_companies")
+		if provisioned, err := handlers.EnsureCorporateEmailProvisioningForExistingCompanies(dbSuper); err != nil {
+			log.Printf("warning: no se pudieron aprovisionar todos los emails corporativos existentes: %v", err)
+		} else if provisioned > 0 {
+			log.Printf("INFO: emails corporativos aprovisionados para empresas existentes: %d", provisioned)
+		}
+		startupTrace("after_empresa_email_corporativo_provisioning")
 		if err := handlers.EnsureNextcloudConfigFromEnv(dbSuper); err != nil {
 			log.Printf("warning: no se pudo registrar configuracion Nextcloud desde entorno: %v", err)
 		}
