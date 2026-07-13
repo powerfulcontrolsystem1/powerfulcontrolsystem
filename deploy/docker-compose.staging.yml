@@ -18,7 +18,6 @@ services:
       - pcs_staging_backend_logs:/app/backend/logs
       - pcs_staging_web_uploads:/app/web/uploads
       - pcs_staging_backups:/app/backup
-      - pcs_staging_downloads:/app/descargas
 
   frontend:
     container_name: pcs-staging-frontend

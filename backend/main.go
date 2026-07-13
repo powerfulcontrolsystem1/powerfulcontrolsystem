@@ -787,51 +787,6 @@ func injectButtonIconsScript(body []byte) []byte {
 	return []byte(text[:insertAt] + buttonIconsScriptTag + text[insertAt:])
 }
 
-func resolveDownloadsDir() string {
-	candidates := []string{
-		"descargas",
-		"../descargas",
-	}
-
-	if exePath, err := os.Executable(); err == nil {
-		exeDir := filepath.Dir(exePath)
-		candidates = append(candidates,
-			filepath.Join(exeDir, "descargas"),
-			filepath.Join(exeDir, "..", "descargas"),
-			filepath.Join(exeDir, "..", "..", "descargas"),
-			filepath.Join(exeDir, "..", "..", "..", "descargas"),
-		)
-	}
-
-	seen := map[string]bool{}
-	for _, cand := range candidates {
-		cand = strings.TrimSpace(cand)
-		if cand == "" {
-			continue
-		}
-
-		absCand, err := filepath.Abs(cand)
-		if err != nil {
-			absCand = cand
-		}
-		if seen[absCand] {
-			continue
-		}
-		seen[absCand] = true
-
-		info, statErr := os.Stat(absCand)
-		if statErr != nil || !info.IsDir() {
-			continue
-		}
-		return absCand
-	}
-
-	if absCand, err := filepath.Abs("../descargas"); err == nil {
-		return absCand
-	}
-	return "../descargas"
-}
-
 func main() {
 	backendDir := resolveBackendRuntimeDir()
 	startupTraceEnabled := strings.TrimSpace(os.Getenv("PCS_STARTUP_TRACE")) == "1"
@@ -1017,7 +972,7 @@ func main() {
 		startupTrace("after_nextcloud_env")
 		if err := dbpkg.EnsureEmpresaNextcloudSchema(dbEmpresas); err != nil {
 			log.Printf("warning: no se pudo preparar Nextcloud empresarial: %v", err)
-		} else if assigned, err := dbpkg.EnsureEmpresaNextcloudAssignmentsForAll(dbEmpresas, 1024); err != nil {
+		} else if assigned, err := handlers.EnsureNextcloudAssignmentsForAll(dbEmpresas, dbSuper); err != nil {
 			log.Printf("warning: no se pudieron asignar espacios Nextcloud a empresas existentes: %v", err)
 		} else if assigned > 0 {
 			log.Printf("INFO: espacios Nextcloud asignados a empresas existentes: %d", assigned)
@@ -1348,7 +1303,6 @@ func main() {
 
 	// Determinar carpeta web una sola vez para rutas estaticas y handlers que listan recursos.
 	webDir := resolveWebDir()
-	downloadsDir := resolveDownloadsDir()
 	startupTrace("after_resolve_dirs")
 	vpsSecurityService, err := vpssecurity.NewService(nil, nil, nil)
 	if err != nil {
@@ -1769,7 +1723,6 @@ func main() {
 
 	// Servir assets centralizados (CSS, JS)
 	http.Handle("/assets/", http.StripPrefix("/assets/", http.FileServer(http.Dir(webDir))))
-	http.Handle("/descargas/", http.StripPrefix("/descargas/", http.FileServer(http.Dir(downloadsDir))))
 	startupTrace("after_static_helper_routes")
 
 	// Servir páginas estáticas desde la carpeta `web` detectada

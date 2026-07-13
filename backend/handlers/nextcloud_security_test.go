@@ -29,3 +29,16 @@ func TestNextcloudAdminCredentialIsEncryptedBeforeStorage(t *testing.T) {
 		t.Fatalf("nextcloud credential cannot be decrypted safely: %v", err)
 	}
 }
+
+func TestNextcloudAccessURLsRequireActiveProvisionedAccount(t *testing.T) {
+	account := nextcloudCompanyAccount{User: "pcs_empresa_7", Active: true, Provisioned: true}
+	webURL, webDAVURL := nextcloudAccessURLs(account, "https://nextcloud.example.test")
+	if webURL == "" || webDAVURL == "" {
+		t.Fatal("active provisioned account must receive its scoped access URLs")
+	}
+	account.Active = false
+	webURL, webDAVURL = nextcloudAccessURLs(account, "https://nextcloud.example.test")
+	if webURL != "" || webDAVURL != "" {
+		t.Fatal("deactivated company account must not receive Nextcloud access URLs")
+	}
+}

@@ -133,7 +133,6 @@ services:
       - pcs_web_uploads:/app/web/uploads
       - pcs_private_storage:/app/private_storage
       - pcs_backups:/app/backup
-      - pcs_downloads:/app/descargas
     expose:
       - "8080"
     healthcheck:

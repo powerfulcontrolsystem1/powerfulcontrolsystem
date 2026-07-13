@@ -13,6 +13,9 @@
     if (!value && window.parent && typeof window.parent.__resolveEmpresaIdContext === "function") {
       value = window.parent.__resolveEmpresaIdContext();
     }
+    if (!value && window.parent && window.parent.__empresaModuleGuard && typeof window.parent.__empresaModuleGuard.resolveEmpresaId === "function") {
+      value = window.parent.__empresaModuleGuard.resolveEmpresaId();
+    }
     var parsed = Number(value || 0);
     return Number.isInteger(parsed) && parsed > 0 ? parsed : 0;
   }
@@ -25,7 +28,10 @@
     var text = await response.text();
     var data = {};
     try { data = text ? JSON.parse(text) : {}; } catch (error) { data = {}; }
-    if (!response.ok) throw new Error((data && data.error) || text || "No se pudo completar la operacion.");
+    if (!response.ok) {
+      if (response.status === 401 || response.status === 403) throw new Error("No tienes permiso para administrar el espacio documental de esta empresa.");
+      throw new Error("No se pudo completar la operacion con Nextcloud.");
+    }
     return data;
   }
   function setBusy(value) {
@@ -41,11 +47,12 @@
     byID("nextcloudToggle").textContent = state.data.active ? "Desactivar espacio" : "Activar espacio";
     var status = !state.data.enabled ? "Servicio desactivado por el super administrador."
       : !state.data.configured ? "Falta completar la configuracion global de Nextcloud."
+      : !state.data.active ? "Espacio documental desactivado para esta empresa."
       : state.data.provisioned ? "Cuenta lista para usar." : "Cuenta asignada; prepara el espacio para crearla en Nextcloud.";
     byID("nextcloudStatus").textContent = status;
-    byID("nextcloudProvision").disabled = !state.data.configured || !!state.data.provisioned;
-    byID("nextcloudReset").disabled = !state.data.configured || !state.data.provisioned;
-    byID("nextcloudOpen").disabled = !state.data.web_url || !state.data.provisioned;
+    byID("nextcloudProvision").disabled = !state.data.configured || !state.data.active || !!state.data.provisioned;
+    byID("nextcloudReset").disabled = !state.data.configured || !state.data.active || !state.data.provisioned;
+    byID("nextcloudOpen").disabled = !state.data.web_url || !state.data.active || !state.data.provisioned;
     byID("nextcloudToggle").disabled = !state.data.configured && !state.data.active;
     if (state.data.temporary_password) {
       byID("nextcloudTemporaryPassword").textContent = state.data.temporary_password;
@@ -61,7 +68,7 @@
   }
   async function load() {
     state.empresaID = resolveEmpresaID();
-    if (!state.empresaID) { byID("nextcloudStatus").textContent = "No se pudo resolver la empresa activa."; setBusy(true); return; }
+    if (!state.empresaID) { byID("nextcloudStatus").textContent = "No se pudo resolver la empresa activa. Vuelve a abrir esta opcion desde Administrar empresa."; setBusy(true); return; }
     try { render(await request("", "GET")); }
     catch (error) { byID("nextcloudStatus").textContent = error.message; setBusy(true); }
   }

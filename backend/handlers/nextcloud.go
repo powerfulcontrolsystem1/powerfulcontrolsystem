@@ -208,6 +208,22 @@ func ensureNextcloudCompanyAccount(dbEmp *sql.DB, empresaID, quotaMB int64) (nex
 	return account, err
 }
 
+// EnsureNextcloudAssignmentsForAll creates or refreshes local assignments with
+// the configured quota. It never contacts the external service, so remote OCS
+// provisioning remains an explicit administrator action per company.
+func EnsureNextcloudAssignmentsForAll(dbEmp, dbSuper *sql.DB) (int64, error) {
+	return dbpkg.EnsureEmpresaNextcloudAssignmentsForAll(dbEmp, nextcloudQuotaMB(dbSuper))
+}
+
+func nextcloudAccessURLs(account nextcloudCompanyAccount, baseURL string) (webURL, webDAVURL string) {
+	if !account.Active || !account.Provisioned || strings.TrimSpace(baseURL) == "" {
+		return "", ""
+	}
+	webURL = baseURL
+	webDAVURL = baseURL + "/remote.php/dav/files/" + url.PathEscape(account.User) + "/"
+	return webURL, webDAVURL
+}
+
 func auditNextcloudCompanyAction(dbEmp *sql.DB, r *http.Request, empresaID int64, action, result string, status int) {
 	_, _ = dbpkg.CreateEmpresaAuditoriaEvento(dbEmp, dbpkg.EmpresaAuditoriaEvento{
 		EmpresaID:      empresaID,
@@ -477,15 +493,16 @@ func EmpresaNextcloudHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 			return
 		}
 
+		webURL, webDAVURL := nextcloudAccessURLs(account, baseURL)
 		response := map[string]interface{}{
 			"ok": true, "empresa_id": empresaID, "nextcloud_user": account.User,
 			"quota_mb": account.QuotaMB, "provisioned": account.Provisioned,
 			"active":  account.Active,
 			"enabled": nextcloudEnabled(dbSuper), "configured": configured,
-			"web_url": baseURL,
+			"web_url": webURL,
 		}
-		if account.Provisioned && baseURL != "" {
-			response["webdav_url"] = baseURL + "/remote.php/dav/files/" + url.PathEscape(account.User) + "/"
+		if webDAVURL != "" {
+			response["webdav_url"] = webDAVURL
 		}
 		if temporaryPassword != "" {
 			response["temporary_password"] = temporaryPassword
@@ -551,7 +568,7 @@ func NextcloudConfigHandler(dbSuper, dbEmp *sql.DB) http.HandlerFunc {
 			return
 		}
 		if payload.Enabled {
-			if _, err := dbpkg.EnsureEmpresaNextcloudAssignmentsForAll(dbEmp, payload.DefaultQuotaMB); err != nil {
+			if _, err := EnsureNextcloudAssignmentsForAll(dbEmp, dbSuper); err != nil {
 				http.Error(w, "No se pudieron asignar los espacios Nextcloud a las empresas", http.StatusInternalServerError)
 				return
 			}
