@@ -2984,28 +2984,9 @@
 
   function extractPCSActionBlock(text) {
     var raw = normalize(text);
-    if (!raw) {
-      return { clean: raw, proposal: null };
-    }
-    var marker = '\nPCS_ACTION\n';
-    var idx = raw.lastIndexOf(marker);
-    if (idx < 0) {
-      return { clean: raw, proposal: null };
-    }
-    var before = raw.slice(0, idx).trim();
-    var after = raw.slice(idx + marker.length).trim();
-    if (!after) {
-      return { clean: before, proposal: null };
-    }
-    try {
-      var proposal = JSON.parse(after);
-      if (!proposal || proposal.version !== 1 || !Array.isArray(proposal.actions)) {
-        return { clean: raw, proposal: null };
-      }
-      return { clean: before, proposal: proposal };
-    } catch (e) {
-      return { clean: raw, proposal: null };
-    }
+    // Los bloques generados por el modelo nunca pueden convertirse en escrituras
+    // del navegador. Las propuestas enterprise se crean y confirman en servidor.
+    return { clean: raw, proposal: null };
   }
 
   function createActionProposalElement(proposal, proposalIndex) {
