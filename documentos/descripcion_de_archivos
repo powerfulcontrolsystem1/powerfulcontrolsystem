@@ -11836,3 +11836,10 @@ backend/tools/migrate_private_uploads/main.go
   confirmacion y cancelacion con JSON estricto y feature flags fail-closed.
 - `web/js/ai_chat_drawer.js`: tarjeta de revision y confirmacion empresarial;
   no ejecuta acciones heredadas generadas por el modelo.
+Actualizacion 2026-07-13: Nextcloud empresarial reactivado
+- `backend/db/nextcloud.go`: asigna automaticamente la cuenta tecnica por empresa y la cuota global.
+- `backend/handlers/nextcloud.go`: elimina la cuenta remota OCS antes de borrar una empresa y sincroniza asignaciones al activar el servicio.
+- `backend/handlers/system_empresas_handlers.go` y `backend/handlers/licencias_vencimiento_alertas.go`: integran limpieza Nextcloud en eliminacion manual y retencion automatica.
+- `documentos/nextcloud_empresarial.md`: documenta activacion global, permisos, aislamiento y eliminacion remota.
+- `backend/handlers/empresa_delete_files.go`: limpia tambien la carpeta fisica de documentos OnlyOffice por empresa.
+- `deploy/scripts/vps-delete-mailu-mailbox.sh`: desactiva/elimina el usuario Mailu y limpia maildir y datos de SnappyMail.

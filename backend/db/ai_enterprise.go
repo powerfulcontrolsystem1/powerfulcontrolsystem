@@ -63,6 +63,23 @@ type EmpresaAIConversation struct {
 	FechaExpiracion     string `json:"fecha_expiracion,omitempty"`
 }
 
+// EmpresaAIExecution stores only operational metadata and sanitized result
+// summaries. It is not a transcript and never stores provider secrets.
+type EmpresaAIExecution struct {
+	EmpresaID      int64  `json:"empresa_id"`
+	UsuarioID      string `json:"usuario_id"`
+	ConversationID string `json:"conversation_id"`
+	ProposalID     string `json:"proposal_id,omitempty"`
+	ToolName       string `json:"tool_name"`
+	Modo           string `json:"modo"`
+	RiskLevel      string `json:"risk_level"`
+	Resultado      string `json:"resultado"`
+	ErrorCategoria string `json:"error_categoria,omitempty"`
+	FuentesJSON    string `json:"fuentes_json"`
+	CategoriasJSON string `json:"categorias_datos_json"`
+	DuracionMS     int64  `json:"duracion_ms"`
+}
+
 func EnsureEmpresaAIEnterpriseSchema(dbConn *sql.DB) error {
 	if dbConn == nil {
 		return errors.New("db connection is nil")
@@ -106,6 +123,48 @@ func EnsureEmpresaAIEnterpriseSchema(dbConn *sql.DB) error {
 		);`,
 		`CREATE INDEX IF NOT EXISTS ix_empresa_ai_propuestas_empresa_estado ON empresa_ai_propuestas(empresa_id, estado, fecha_creacion DESC);`,
 		`CREATE INDEX IF NOT EXISTS ix_empresa_ai_conversaciones_scope ON empresa_ai_conversaciones(empresa_id, usuario_id, estado, fecha_actualizacion DESC);`,
+		`CREATE TABLE IF NOT EXISTS empresa_ai_ejecuciones (
+			id BIGSERIAL PRIMARY KEY,
+			empresa_id BIGINT NOT NULL,
+			usuario_id TEXT NOT NULL,
+			conversation_id TEXT NOT NULL,
+			proposal_id TEXT NOT NULL DEFAULT '',
+			tool_name TEXT NOT NULL,
+			modo TEXT NOT NULL,
+			risk_level TEXT NOT NULL,
+			resultado TEXT NOT NULL,
+			error_categoria TEXT NOT NULL DEFAULT '',
+			fuentes_json TEXT NOT NULL DEFAULT '[]',
+			categorias_datos_json TEXT NOT NULL DEFAULT '[]',
+			duracion_ms BIGINT NOT NULL DEFAULT 0,
+			fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+		);`,
+		`CREATE INDEX IF NOT EXISTS ix_empresa_ai_ejecuciones_scope ON empresa_ai_ejecuciones(empresa_id, usuario_id, fecha_creacion DESC);`,
+		`CREATE TABLE IF NOT EXISTS empresa_ai_memoria (
+			id BIGSERIAL PRIMARY KEY,
+			empresa_id BIGINT NOT NULL,
+			usuario_id TEXT NOT NULL DEFAULT '',
+			tipo TEXT NOT NULL,
+			clave TEXT NOT NULL,
+			valor_json TEXT NOT NULL,
+			consentida BOOLEAN NOT NULL DEFAULT FALSE,
+			fecha_expiracion TIMESTAMP,
+			fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+			fecha_actualizacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+			UNIQUE(empresa_id, usuario_id, tipo, clave)
+		);`,
+		`CREATE TABLE IF NOT EXISTS empresa_ai_fuentes_conocimiento (
+			document_id TEXT PRIMARY KEY,
+			empresa_id BIGINT NOT NULL DEFAULT 0,
+			ruta TEXT NOT NULL,
+			version_ref TEXT NOT NULL DEFAULT '',
+			hash_contenido TEXT NOT NULL,
+			modulo TEXT NOT NULL DEFAULT '',
+			nivel_confidencialidad TEXT NOT NULL DEFAULT 'internal',
+			permisos_requeridos TEXT NOT NULL DEFAULT '',
+			estado TEXT NOT NULL DEFAULT 'active',
+			fecha_actualizacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+		);`,
 		`CREATE INDEX IF NOT EXISTS ix_empresa_ai_propuestas_usuario_estado ON empresa_ai_propuestas(empresa_id, usuario_creador, estado);`,
 		`CREATE UNIQUE INDEX IF NOT EXISTS ux_empresa_ai_propuestas_idempotency ON empresa_ai_propuestas(empresa_id, usuario_creador, idempotency_key) WHERE idempotency_key IS NOT NULL AND idempotency_key <> '';`,
 	}
@@ -115,6 +174,17 @@ func EnsureEmpresaAIEnterpriseSchema(dbConn *sql.DB) error {
 		}
 	}
 	return nil
+}
+
+func RecordEmpresaAIExecution(dbConn *sql.DB, in EmpresaAIExecution) error {
+	if err := EnsureEmpresaAIEnterpriseSchema(dbConn); err != nil {
+		return err
+	}
+	if in.EmpresaID <= 0 || strings.TrimSpace(in.UsuarioID) == "" || strings.TrimSpace(in.ConversationID) == "" || strings.TrimSpace(in.ToolName) == "" || !json.Valid([]byte(defaultAIJSON(in.FuentesJSON, "[]"))) || !json.Valid([]byte(defaultAIJSON(in.CategoriasJSON, "[]"))) {
+		return fmt.Errorf("ejecucion IA incompleta")
+	}
+	_, err := execSQLCompat(dbConn, `INSERT INTO empresa_ai_ejecuciones (empresa_id,usuario_id,conversation_id,proposal_id,tool_name,modo,risk_level,resultado,error_categoria,fuentes_json,categorias_datos_json,duracion_ms) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`, in.EmpresaID, strings.TrimSpace(in.UsuarioID), strings.TrimSpace(in.ConversationID), strings.TrimSpace(in.ProposalID), strings.TrimSpace(in.ToolName), strings.TrimSpace(in.Modo), strings.TrimSpace(in.RiskLevel), strings.TrimSpace(in.Resultado), strings.TrimSpace(in.ErrorCategoria), defaultAIJSON(in.FuentesJSON, "[]"), defaultAIJSON(in.CategoriasJSON, "[]"), in.DuracionMS)
+	return err
 }
 
 // EnsureEmpresaAIConversation creates or resumes only a conversation belonging

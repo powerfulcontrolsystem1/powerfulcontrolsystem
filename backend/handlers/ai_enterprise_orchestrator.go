@@ -58,6 +58,19 @@ func EmpresaAIEnterpriseHandler(dbEmp *sql.DB) http.HandlerFunc {
 					return
 				}
 				writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "proposal": p})
+			case "hotel_room_snapshot":
+				stationID, err := parseOptionalInt64Query(r, "estacion_id")
+				if err != nil || stationID <= 0 {
+					http.Error(w, "estacion_id invalido", http.StatusBadRequest)
+					return
+				}
+				snapshot, err := dbpkg.GetEmpresaAIHotelRoomStationSnapshot(dbEmp, empresaID, stationID)
+				if err != nil {
+					http.Error(w, "estacion no encontrada", http.StatusNotFound)
+					return
+				}
+				_ = dbpkg.RecordEmpresaAIExecution(dbEmp, dbpkg.EmpresaAIExecution{EmpresaID: ctx.EmpresaID, UsuarioID: ctx.UserID, ConversationID: ctx.ConversationID, ToolName: aipkg.ToolHotelInspectRoomStation, Modo: aipkg.ModeConsultive, RiskLevel: "low", Resultado: "completed", FuentesJSON: `["Configuracion actual de estaciones","Tarifas por dia"]`, CategoriasJSON: `["internal"]`})
+				writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "snapshot": snapshot, "sources": []string{"Configuracion actual de estaciones", "Tarifas por dia"}})
 			default:
 				http.Error(w, "action invalida", http.StatusBadRequest)
 			}
@@ -159,6 +172,7 @@ func enterpriseAIHotelProposal(w http.ResponseWriter, r *http.Request, dbEmp *sq
 		http.Error(w, "No se pudo guardar propuesta", http.StatusInternalServerError)
 		return
 	}
+	_ = dbpkg.RecordEmpresaAIExecution(dbEmp, dbpkg.EmpresaAIExecution{EmpresaID: ctx.EmpresaID, UsuarioID: ctx.UserID, ConversationID: ctx.ConversationID, ProposalID: p.ProposalID, ToolName: p.ToolName, Modo: ctx.Mode, RiskLevel: p.RiskLevel, Resultado: "awaiting_confirmation", FuentesJSON: `["Configuracion actual de estaciones","Reglas de tarifas por dia"]`, CategoriasJSON: `["internal"]`})
 	registrarAuditoriaModuloEmpresaNoBloqueante(dbEmp, r, ctx.EmpresaID, "centro_ia_empresarial", "propuesta_hotel_creada", "empresa_ai_propuestas", 0, http.StatusCreated, map[string]interface{}{"proposal_id": p.ProposalID, "tool": p.ToolName, "risk": p.RiskLevel}, "propuesta IA creada sin ejecutar cambios")
 	writeJSON(w, http.StatusCreated, map[string]interface{}{"ok": true, "proposal": p, "sources": []string{"Configuracion actual de estaciones", "Reglas de tarifas por dia"}})
 }
@@ -205,6 +219,7 @@ func enterpriseAIConfirmProposal(w http.ResponseWriter, r *http.Request, dbEmp *
 		return
 	}
 	registrarAuditoriaModuloEmpresaNoBloqueante(dbEmp, r, ctx.EmpresaID, "centro_ia_empresarial", "propuesta_hotel_ejecutada", "empresa_ai_propuestas", 0, http.StatusOK, map[string]interface{}{"proposal_id": p.ProposalID, "tool": p.ToolName, "tarifas_creadas": len(ids)}, "configuracion hotelera IA confirmada y ejecutada")
+	_ = dbpkg.RecordEmpresaAIExecution(dbEmp, dbpkg.EmpresaAIExecution{EmpresaID: ctx.EmpresaID, UsuarioID: ctx.UserID, ConversationID: p.ConversationID, ProposalID: p.ProposalID, ToolName: p.ToolName, Modo: ctx.Mode, RiskLevel: p.RiskLevel, Resultado: "completed", FuentesJSON: `["Configuracion actual de estaciones","Tarifas por dia"]`, CategoriasJSON: `["internal"]`})
 	writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "proposal_id": p.ProposalID, "status": dbpkg.AIProposalCompleted, "result": json.RawMessage(result)})
 }
 

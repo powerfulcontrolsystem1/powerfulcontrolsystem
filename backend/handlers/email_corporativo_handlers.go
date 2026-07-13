@@ -682,6 +682,43 @@ func EnsureEmpresaCorporateEmailAfterCreate(dbSuper *sql.DB, empresaID int64, em
 	return item, nil
 }
 
+// DeleteEmpresaCorporateEmailAccounts removes provisioned Mailu mailboxes
+// before the company database cascade deletes their local records.
+func DeleteEmpresaCorporateEmailAccounts(ctx context.Context, dbSuper *sql.DB, empresaID int64) error {
+	if dbSuper == nil || empresaID <= 0 {
+		return nil
+	}
+	accounts, err := dbpkg.ListEmpresaEmailCorporativo(dbSuper)
+	if err != nil {
+		return err
+	}
+	commandPath := strings.TrimSpace(firstNonEmptyEnv("EMAIL_CORPORATIVO_DIRECT_DELETE_COMMAND", "MAILU_DIRECT_DELETE_COMMAND"))
+	if commandPath == "" {
+		commandPath = "/app/project_export/deploy/scripts/vps-delete-mailu-mailbox.sh"
+	}
+	for _, account := range accounts {
+		if account.EmpresaID != empresaID || !strings.EqualFold(strings.TrimSpace(account.EstadoProvision), "provisionado") {
+			continue
+		}
+		callCtx, cancel := context.WithTimeout(ctx, 45*time.Second)
+		cmd := exec.CommandContext(callCtx, commandPath)
+		cmd.Env = append(os.Environ(),
+			"PCS_MAILU_EMAIL="+strings.ToLower(strings.TrimSpace(account.Email)),
+			"PCS_MAILU_DOMAIN="+normalizeCorporateEmailDomain(account.Domain),
+		)
+		output, cmdErr := cmd.CombinedOutput()
+		cancel()
+		if cmdErr != nil {
+			msg := sanitizeProvisionCommandOutput(string(output))
+			if msg == "" {
+				msg = "el comando de eliminacion Mailu fallo"
+			}
+			return fmt.Errorf("no se pudo eliminar la cuenta de correo corporativo: %s", msg)
+		}
+	}
+	return nil
+}
+
 func EnsureCorporateEmailRowsForExistingCompanies(dbSuper, dbEmp *sql.DB, usuario string) (int, error) {
 	if dbSuper == nil || dbEmp == nil {
 		return 0, nil

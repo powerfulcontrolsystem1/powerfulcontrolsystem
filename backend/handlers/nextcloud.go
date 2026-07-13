@@ -45,6 +45,7 @@ type nextcloudOCSEnvelope struct {
 type nextcloudCompanyAccount struct {
 	User          string
 	QuotaMB       int64
+	Active        bool
 	Provisioned   bool
 	ProvisionedAt sql.NullTime
 }
@@ -201,9 +202,9 @@ func ensureNextcloudCompanyAccount(dbEmp *sql.DB, empresaID, quotaMB int64) (nex
 		VALUES ($1,$2,$3) ON CONFLICT (empresa_id) DO NOTHING`, empresaID, user, quotaMB); err != nil {
 		return account, err
 	}
-	err := dbEmp.QueryRow(`SELECT nextcloud_user, quota_mb, provisioned, provisioned_at
+	err := dbEmp.QueryRow(`SELECT nextcloud_user, quota_mb, activo, provisioned, provisioned_at
 		FROM empresa_nextcloud_accounts WHERE empresa_id=$1 LIMIT 1`, empresaID).
-		Scan(&account.User, &account.QuotaMB, &account.Provisioned, &account.ProvisionedAt)
+		Scan(&account.User, &account.QuotaMB, &account.Active, &account.Provisioned, &account.ProvisionedAt)
 	return account, err
 }
 
@@ -254,7 +255,10 @@ func DeleteNextcloudCompanyAccount(ctx context.Context, dbEmp, dbSuper *sql.DB, 
 		return fmt.Errorf("Nextcloud no esta configurado para eliminar la cuenta empresarial")
 	}
 	meta, err := nextcloudOCS(ctx, newNextcloudHTTPClient(), http.MethodDelete, baseURL, "/ocs/v1.php/cloud/users/"+url.PathEscape(user), adminUser, credential, nil)
-	if err != nil || !nextcloudOCSSuccess(meta) {
+	if err != nil && meta.StatusCode != http.StatusNotFound {
+		return fmt.Errorf("Nextcloud no pudo eliminar la cuenta empresarial")
+	}
+	if err == nil && !nextcloudOCSSuccess(meta) {
 		return fmt.Errorf("Nextcloud no pudo eliminar la cuenta empresarial")
 	}
 	return nil
@@ -285,6 +289,27 @@ func EmpresaNextcloudHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 				return
 			}
 		case http.MethodPost:
+			switch action {
+			case "activate", "deactivate":
+				active := action == "activate"
+				if _, err := dbEmp.Exec(`UPDATE empresa_nextcloud_accounts SET activo=$1, updated_at=CURRENT_TIMESTAMP WHERE empresa_id=$2`, active, empresaID); err != nil {
+					http.Error(w, "No se pudo cambiar el estado de Nextcloud", http.StatusInternalServerError)
+					return
+				}
+				account.Active = active
+				auditNextcloudCompanyAction(dbEmp, r, empresaID, action, "ok", http.StatusOK)
+			case "provision", "reset_password":
+				if !configured {
+					http.Error(w, "Nextcloud pendiente de configuracion", http.StatusConflict)
+					return
+				}
+			default:
+				http.Error(w, "accion invalida", http.StatusBadRequest)
+				return
+			}
+			if action == "activate" || action == "deactivate" {
+				break
+			}
 			if !configured {
 				http.Error(w, "Nextcloud pendiente de configuracion", http.StatusConflict)
 				return
@@ -366,6 +391,7 @@ func EmpresaNextcloudHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 		response := map[string]interface{}{
 			"ok": true, "empresa_id": empresaID, "nextcloud_user": account.User,
 			"quota_mb": account.QuotaMB, "provisioned": account.Provisioned,
+			"active":  account.Active,
 			"enabled": nextcloudEnabled(dbSuper), "configured": configured,
 			"web_url": baseURL,
 		}
@@ -381,7 +407,7 @@ func EmpresaNextcloudHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 	}
 }
 
-func NextcloudConfigHandler(dbSuper *sql.DB) http.HandlerFunc {
+func NextcloudConfigHandler(dbSuper, dbEmp *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Cache-Control", "no-store")
 		if r.Method == http.MethodGet {
@@ -461,6 +487,12 @@ func NextcloudConfigHandler(dbSuper *sql.DB) http.HandlerFunc {
 		if secret := strings.TrimSpace(payload.AdminSecret); secret != "" {
 			if err := dbpkg.SetConfigValue(dbSuper, nextcloudAdminCredentialKey, secret, true); err != nil {
 				http.Error(w, "No se pudo cifrar el secreto de Nextcloud", http.StatusInternalServerError)
+				return
+			}
+		}
+		if payload.Enabled {
+			if _, err := dbpkg.EnsureEmpresaNextcloudAssignmentsForAll(dbEmp, payload.DefaultQuotaMB); err != nil {
+				http.Error(w, "No se pudieron asignar los espacios Nextcloud a las empresas", http.StatusInternalServerError)
 				return
 			}
 		}

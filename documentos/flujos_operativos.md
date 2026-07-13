@@ -592,8 +592,12 @@ afecte dinero, documentos, licencias o seguridad.
 6. Ademas limpia `usuario_configuracion.selector_empresas_orden_json` de todos
    los usuarios para quitar la empresa del orden personalizado del selector,
    invalida caches de licencia, resolucion de empresa y accesos compartidos, y
-   borra carpetas empresariales asociadas.
-7. Pruebas: no permitir borrado sin validaciones, ofrecer descarga previa,
+   borra carpetas empresariales asociadas, incluidos documentos OnlyOffice,
+   temporales de callback, uploads, privados y backups.
+7. Antes del cascade se eliminan las cuentas remotas de Nextcloud y Mailu,
+   incluyendo sus archivos; luego se eliminan las filas locales de cuentas,
+   usuarios y configuraciones.
+8. Pruebas: no permitir borrado sin validaciones, ofrecer descarga previa,
    eliminar solo la empresa indicada y volver al selector sin filtrar datos de
    otra empresa; confirmar con otro administrador invitado o delegado que la
    empresa eliminada ya no aparece.

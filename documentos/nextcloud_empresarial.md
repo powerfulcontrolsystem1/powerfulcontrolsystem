@@ -8,6 +8,11 @@ empresa, aplica una cuota y conserva unicamente usuario, cuota y estado. La
 contrasena se genera con 32 bytes aleatorios, se entrega una sola vez al
 administrador autorizado y no se guarda en PCS.
 
+Al activar el servicio desde Super administrador, PCS asigna automaticamente la
+cuenta tecnica con cuota por defecto de 1024 MB a todas las empresas existentes
+y a cada empresa nueva. La activacion global no depende del Nextcloud auxiliar
+de VPS2. La cuenta remota se aprovisiona de forma idempotente con OCS.
+
 ## Seguridad
 
 - `/api/empresa/nextcloud` usa `WithEmpresaGestionDocumentalPermissions`.
@@ -19,7 +24,15 @@ administrador autorizado y no se guarda en PCS.
   interno 100/ok. El cliente no sigue redirecciones para no reenviar Basic Auth.
 - Hosts privados requieren `PCS_NEXTCLOUD_ALLOW_PRIVATE_HOSTS=true`; se usa solo
   cuando la topologia privada esta documentada.
-- Aprovisionamiento y restablecimiento dejan auditoria sin contrasenas.
+- Aprovisionamiento, restablecimiento y eliminacion dejan auditoria sin
+  contrasenas.
+- El rol empresarial requiere `gestion_documental:R` para consultar la pagina y
+  `gestion_documental:C/U` para aprovisionar, activar o desactivar el espacio.
+- Antes de eliminar una empresa, PCS elimina el usuario tecnico de Nextcloud
+  mediante OCS; si el servicio no responde, la eliminacion se detiene para no
+  dejar archivos remotos sin dueño.
+- La misma eliminacion limpia tambien Mailu, OnlyOffice, uploads, documentos
+  privados, backups y temporales asociados a `empresa_id`.
 
 ## Despliegue
 
@@ -29,7 +42,8 @@ administrador autorizado y no se guarda en PCS.
 4. Ejecutar `bash deploy/scripts/vps-nextcloud-up.sh`.
 5. Configurar en Super administrador una contrasena de aplicacion OCS distinta
    de la contrasena inicial del contenedor.
-6. Probar la conexion OCS y aprovisionar una empresa de ensayo.
+6. Probar la conexion OCS y verificar el aprovisionamiento de dos empresas de
+   ensayo.
 
 Las imagenes se fijan en Nextcloud 34.0.1 Apache, PostgreSQL 16.14 Alpine y Redis
 7.4.9 Alpine. La imagen Apache requiere iniciar como root para preparar volumenes
@@ -59,4 +73,6 @@ contenedores, volumenes ni datos sin evidencia de backup y restauracion.
 - healthchecks verdes de DB, Redis, Nextcloud y cron;
 - prueba OCS desde Super administrador;
 - aprovisionamiento, apertura, restablecimiento y rechazo cruzado entre dos
-  empresas de staging.
+  empresas de staging;
+- eliminacion de una empresa con cuenta Nextcloud, verificando que su usuario y
+  archivos remotos desaparezcan sin afectar otra empresa.

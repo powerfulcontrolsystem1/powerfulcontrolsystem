@@ -29,7 +29,7 @@
     return data;
   }
   function setBusy(value) {
-    ["nextcloudProvision", "nextcloudReset", "nextcloudOpen"].forEach(function (id) {
+    ["nextcloudProvision", "nextcloudReset", "nextcloudToggle", "nextcloudOpen"].forEach(function (id) {
       var node = byID(id); if (node) node.disabled = !!value;
     });
   }
@@ -38,6 +38,7 @@
     byID("nextcloudUser").textContent = state.data.nextcloud_user || "-";
     byID("nextcloudQuota").textContent = state.data.quota_mb ? state.data.quota_mb + " MB" : "-";
     byID("nextcloudProvisioned").textContent = state.data.provisioned ? "Aprovisionado" : "Pendiente";
+    byID("nextcloudToggle").textContent = state.data.active ? "Desactivar espacio" : "Activar espacio";
     var status = !state.data.enabled ? "Servicio desactivado por el super administrador."
       : !state.data.configured ? "Falta completar la configuracion global de Nextcloud."
       : state.data.provisioned ? "Cuenta lista para usar." : "Cuenta asignada; prepara el espacio para crearla en Nextcloud.";
@@ -45,6 +46,7 @@
     byID("nextcloudProvision").disabled = !state.data.configured || !!state.data.provisioned;
     byID("nextcloudReset").disabled = !state.data.configured || !state.data.provisioned;
     byID("nextcloudOpen").disabled = !state.data.web_url || !state.data.provisioned;
+    byID("nextcloudToggle").disabled = !state.data.configured && !state.data.active;
     if (state.data.temporary_password) {
       byID("nextcloudTemporaryPassword").textContent = state.data.temporary_password;
       byID("nextcloudCredential").classList.add("visible");
@@ -67,6 +69,10 @@
   byID("nextcloudProvision").addEventListener("click", function () { run("provision"); });
   byID("nextcloudReset").addEventListener("click", function () {
     if (window.confirm("Se invalidara la contraseña actual de Nextcloud. ¿Continuar?")) run("reset_password");
+  });
+  byID("nextcloudToggle").addEventListener("click", function () {
+    var action = state.data && state.data.active ? "deactivate" : "activate";
+    run(action);
   });
   byID("nextcloudOpen").addEventListener("click", function () {
     if (state.data && state.data.web_url) window.open(state.data.web_url, "_blank", "noopener,noreferrer");

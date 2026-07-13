@@ -1007,6 +1007,10 @@ func main() {
 		startupTrace("after_empresa_email_corporativo_existing_companies")
 		if err := dbpkg.EnsureEmpresaNextcloudSchema(dbEmpresas); err != nil {
 			log.Printf("warning: no se pudo preparar Nextcloud empresarial: %v", err)
+		} else if assigned, err := dbpkg.EnsureEmpresaNextcloudAssignmentsForAll(dbEmpresas, 1024); err != nil {
+			log.Printf("warning: no se pudieron asignar espacios Nextcloud a empresas existentes: %v", err)
+		} else if assigned > 0 {
+			log.Printf("INFO: espacios Nextcloud asignados a empresas existentes: %d", assigned)
 		}
 		startupTrace("after_nextcloud_schema")
 		if err := dbpkg.DecommissionRemovedEntertainmentArtifacts(dbSuper); err != nil {
@@ -1666,7 +1670,7 @@ func main() {
 	http.HandleFunc("/super/api/config/mantenimiento", handlers.WithSuperAuditoria(dbSuper, "super_config_mantenimiento", handlers.SuperMantenimientoConfigHandler(dbSuper)))
 	http.HandleFunc("/api/empresa/mantenimiento_programado", handlers.WithEmpresaSelfServicePermissions(dbEmpresas, dbSuper, handlers.EmpresaMantenimientoProgramadoHandler(dbSuper)))
 	http.HandleFunc("/super/api/config/onlyoffice", handlers.WithSuperAuditoria(dbSuper, "super_config_onlyoffice", handlers.OnlyOfficeConfigHandler(dbSuper)))
-	http.HandleFunc("/super/api/config/nextcloud", handlers.WithSuperAuditoria(dbSuper, "super_config_nextcloud", handlers.NextcloudConfigHandler(dbSuper)))
+	http.HandleFunc("/super/api/config/nextcloud", handlers.WithSuperAuditoria(dbSuper, "super_config_nextcloud", handlers.NextcloudConfigHandler(dbSuper, dbEmpresas)))
 	http.HandleFunc("/super/api/config/empresa_storage", handlers.WithSuperAuditoria(dbSuper, "super_config_empresa_storage", handlers.SuperEmpresaStorageConfigHandler(dbSuper, dbEmpresas)))
 	// Endpoint super para administrar contrato versionado y su historial
 	http.HandleFunc("/super/api/contrato", handlers.SuperContratoHandler(dbSuper))

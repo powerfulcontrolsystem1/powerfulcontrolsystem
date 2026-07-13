@@ -577,6 +577,9 @@ func EmpresasHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 				if _, folderErr := ensureEmpresaUploadFolders(dbEmp, id); folderErr != nil {
 					log.Printf("POST /super/api/empresas id=%d carpeta empresa warning: %v", id, folderErr)
 				}
+				if assignmentErr := dbpkg.EnsureEmpresaNextcloudAssignment(dbEmp, id, 1024); assignmentErr != nil {
+					log.Printf("POST /super/api/empresas id=%d asignacion Nextcloud warning: %v", id, assignmentErr)
+				}
 			}
 			emailCorporativo, emailCorporativoErr := EnsureEmpresaCorporateEmailAfterCreate(dbSuper, id, payload.Nombre, payload.UsuarioCreador)
 			emailCorporativoErrText := ""
@@ -812,6 +815,16 @@ func EmpresasHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 					return
 				}
 
+				if err := DeleteNextcloudCompanyAccount(r.Context(), dbEmp, dbSuper, id); err != nil {
+					log.Printf("DELETE /super/api/empresas action=%s id=%d Nextcloud cleanup error: %v", action, id, err)
+					http.Error(w, "no se pudo eliminar el espacio Nextcloud de la empresa", http.StatusBadGateway)
+					return
+				}
+				if err := DeleteEmpresaCorporateEmailAccounts(r.Context(), dbSuper, id); err != nil {
+					log.Printf("DELETE /super/api/empresas action=%s id=%d email cleanup error: %v", action, id, err)
+					http.Error(w, "no se pudieron eliminar las cuentas de correo de la empresa", http.StatusBadGateway)
+					return
+				}
 				result, err := dbpkg.DeleteEmpresaCascade(dbEmp, dbSuper, id)
 				if err != nil {
 					log.Printf("DELETE /super/api/empresas action=%s id=%d cascade error: %v", action, id, err)
@@ -940,6 +953,14 @@ func handleSuperEmpresasEstadoMaintenance(w http.ResponseWriter, r *http.Request
 			id = item.ID
 		}
 		if id <= 0 {
+			continue
+		}
+		if err := DeleteNextcloudCompanyAccount(r.Context(), dbEmp, dbSuper, id); err != nil {
+			results = append(results, map[string]interface{}{"empresa_id": id, "nombre": item.Nombre, "ok": false, "error": "no se pudo eliminar el espacio Nextcloud de la empresa"})
+			continue
+		}
+		if err := DeleteEmpresaCorporateEmailAccounts(r.Context(), dbSuper, id); err != nil {
+			results = append(results, map[string]interface{}{"empresa_id": id, "nombre": item.Nombre, "ok": false, "error": "no se pudieron eliminar las cuentas de correo de la empresa"})
 			continue
 		}
 		result, err := dbpkg.DeleteEmpresaCascade(dbEmp, dbSuper, id)

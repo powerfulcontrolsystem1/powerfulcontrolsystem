@@ -3217,3 +3217,10 @@
 - [Nomina] El agente internet muestra valor actual, valor oficial propuesto, vigencia y enlace de fuente; cada campo se aplica solo tras confirmacion humana.
 - [Tutoriales] Agrega `creditos_tutorial.html` al final del submenu de Credito; Nomina conserva su tutorial al final del submenu.
 - [IA documental] Se verifica el flujo existente de Compras, Ingresos y Egresos: carga imagen/PDF, extrae con GPT-5.5, precarga formulario, abre chat para reportar legibilidad y exige revision antes de guardar.
+## [2026-07-13] Reactivacion de Nextcloud empresarial
+- Activacion global desde Super administrador y asignacion automatica de cuota tecnica de 1 GB a todas las empresas.
+- Limpieza OCS obligatoria antes de eliminar una empresa, incluida la retencion automatica.
+- Roles/permisos conservan `gestion_documental:R` para Nextcloud y auditoria super para la configuracion.
+
+## [2026-07-13] Eliminacion integral de empresa
+- Se agregan limpieza de cuentas/archivos Mailu, carpeta OnlyOffice, temporales, uploads, privados y backups antes del cascade.

@@ -18,6 +18,7 @@ const (
 	ModeAgent      = "agent"
 
 	ToolHotelConfigureRoomStation = "hotel.configure_room_station"
+	ToolHotelInspectRoomStation   = "hotel.inspect_room_station"
 )
 
 // ExecutionContext is server-derived and must never be populated from model output.
@@ -74,6 +75,13 @@ type ToolDefinition struct {
 
 func Registry() map[string]ToolDefinition {
 	return map[string]ToolDefinition{
+		ToolHotelInspectRoomStation: {
+			Name:        ToolHotelInspectRoomStation,
+			Description: "Consulta la configuracion y tarifas actuales de una estacion hotelera.",
+			RiskLevel:   "low", RequiredPermissions: []string{"reservas_hotel:R"},
+			TenantScope: "current_company", Confirmation: "none", Idempotency: "not_applicable",
+			TimeoutSeconds: 10, RateLimitPerMinute: 20, AuditCategory: "ai_hotel_read", Rollback: "not_applicable",
+		},
 		ToolHotelConfigureRoomStation: {
 			Name:        ToolHotelConfigureRoomStation,
 			Description: "Configura una estación como habitación y registra tarifas de hospedaje.",

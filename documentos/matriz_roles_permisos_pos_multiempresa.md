@@ -562,7 +562,13 @@
 - El primer ingreso sigue cerrado a invitacion: `token_invitacion`, email, documento y contrato vigente se validan antes de crear sesion.
 - No se agregan roles ni privilegios nuevos; tras autenticar, el panel empresarial sigue filtrando por `/api/empresa/permisos_contexto` y `empresa_id`.
 
-2026-05-12: Retiro de Nextcloud
+2026-07-13: Nextcloud empresarial reactivado; sustituye la nota historica de retiro
+- `linkNextcloud` permanece bajo `gestion_documental:R` y `/api/empresa/nextcloud` usa `WithEmpresaGestionDocumentalPermissions`, siempre con `empresa_id` validado por backend.
+- Aprovisionar, activar y desactivar el espacio usan acciones empresariales de escritura (`gestion_documental:C/U`) según el rol efectivo; leer la pagina permanece en `gestion_documental:R`.
+- El Super administrador controla la activacion global, URL, credencial OCS y cuota desde `/super/api/config/nextcloud`, protegido por `WithSuperAuditoria`.
+- La activacion aplica el espacio tecnico a todas las empresas; la eliminacion total exige limpiar primero la cuenta remota y sus archivos Nextcloud. VPS2 conserva una instancia independiente.
+
+2026-05-12: Retiro historico de Nextcloud
 - `nextcloud` deja de ser modulo licenciado o pagina de empresa.
 - Se retiran `linkNextcloud`, `WithEmpresaNextcloudPermissions`, `/api/empresa/nextcloud` y `/super/api/config/nextcloud`.
 - Las licencias nuevas no deben incluir `nextcloud`; `documentos_onlyoffice`, `gestion_documental`, `backups` y soporte remoto conservan sus permisos independientes.

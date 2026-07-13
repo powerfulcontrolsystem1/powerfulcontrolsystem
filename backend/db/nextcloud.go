@@ -16,6 +16,7 @@ func EnsureEmpresaNextcloudSchema(dbEmpresas *sql.DB) error {
 		empresa_id BIGINT NOT NULL UNIQUE REFERENCES empresas(id) ON DELETE CASCADE,
 		nextcloud_user TEXT NOT NULL UNIQUE,
 		quota_mb BIGINT NOT NULL DEFAULT 1024 CHECK (quota_mb > 0),
+		activo BOOLEAN NOT NULL DEFAULT TRUE,
 		provisioned BOOLEAN NOT NULL DEFAULT FALSE,
 		provisioned_at TIMESTAMP,
 		created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -25,6 +26,9 @@ func EnsureEmpresaNextcloudSchema(dbEmpresas *sql.DB) error {
 		return err
 	}
 	if err := ensureColumnIfMissing(dbEmpresas, "empresa_nextcloud_accounts", "provisioned_at", "TIMESTAMP"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbEmpresas, "empresa_nextcloud_accounts", "activo", "BOOLEAN NOT NULL DEFAULT TRUE"); err != nil {
 		return err
 	}
 	_, err = execSQLCompat(dbEmpresas, `CREATE INDEX IF NOT EXISTS idx_empresa_nextcloud_accounts_empresa
@@ -44,8 +48,8 @@ func EnsureEmpresaNextcloudAssignment(dbEmpresas *sql.DB, empresaID, quotaMB int
 	if err := EnsureEmpresaNextcloudSchema(dbEmpresas); err != nil {
 		return err
 	}
-	_, err := dbEmpresas.Exec(`INSERT INTO empresa_nextcloud_accounts (empresa_id, nextcloud_user, quota_mb)
-		VALUES ($1, $2, $3) ON CONFLICT (empresa_id) DO UPDATE SET quota_mb=EXCLUDED.quota_mb, updated_at=CURRENT_TIMESTAMP`, empresaID, "pcs_empresa_"+strconv.FormatInt(empresaID, 10), quotaMB)
+	_, err := dbEmpresas.Exec(`INSERT INTO empresa_nextcloud_accounts (empresa_id, nextcloud_user, quota_mb, activo)
+		VALUES ($1, $2, $3, TRUE) ON CONFLICT (empresa_id) DO UPDATE SET quota_mb=EXCLUDED.quota_mb, updated_at=CURRENT_TIMESTAMP`, empresaID, "pcs_empresa_"+strconv.FormatInt(empresaID, 10), quotaMB)
 	return err
 }
 

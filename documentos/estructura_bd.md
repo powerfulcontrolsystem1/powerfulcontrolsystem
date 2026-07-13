@@ -745,7 +745,12 @@ Actualizacion 2026-05-12 (tickets de ayuda SaaS)
 - El endpoint empresarial valida alcance por `empresa_id`; el panel super consulta la bandeja central sin escribir en bases empresariales.
 - No se agregan motores, dependencias ni almacenamiento de archivos adjuntos.
 
-Actualizacion 2026-05-12 (retiro de Nextcloud y cuota DB)
+Actualizacion 2026-07-13 (Nextcloud empresarial reactivado; sustituye la nota de retiro de 2026-05-12)
+- `empresa_nextcloud_accounts` es la asignacion tecnica por `empresa_id`, con usuario unico, cuota por defecto de 1024 MB, estado de aprovisionamiento y FK `ON DELETE CASCADE`.
+- El arranque y la activacion global asignan el espacio a empresas existentes; la creacion de empresa asigna su fila automaticamente. Las credenciales administrativas se mantienen cifradas en `pcs_superadministrador.configuraciones`.
+- La eliminacion total elimina primero la cuenta remota OCS y despues la fila local y los archivos empresariales.
+
+Actualizacion 2026-05-12 (retiro historico de Nextcloud y cuota DB)
 - Se elimina el uso runtime de la tabla legacy `empresa_nextcloud_accounts`; el arranque ejecuta `DROP TABLE IF EXISTS empresa_nextcloud_accounts` para retirar credenciales antiguas de empresas.
 - Se eliminan las claves super `nextcloud.enabled`, `nextcloud.base_url`, `nextcloud.admin_user` y `nextcloud.admin_secret`.
 - No se crea una tabla nueva para cuotas. La configuracion `pcs_superadministrador.configuraciones.config_key='empresa.limitaciones.db.max_gb'` define el tamano maximo de base de datos asignado por empresa.

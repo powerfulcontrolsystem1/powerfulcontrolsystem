@@ -1165,13 +1165,19 @@
   - `estaciones.htmlempresa_id=...` -> carga `estaciones_config` -> restaura runtime de `Notas` desde `localStorage` aislado por empresa -> muestra varias notas con temporizador, repeticion y countdown persistente tras recarga.
   - `Guardar nota` sigue persistiendo solo la configuracion base de la estacion en `empresa_estacion_prefs`; el runtime multiple de recordatorios queda local al navegador.
 
-### Retiro de Nextcloud y cuota DB por empresa (2026-05-12)
+### Nota historica: retiro de Nextcloud y cuota DB por empresa (2026-05-12)
 
 - `backend/main.go` ya no registra `/api/empresa/nextcloud` ni `/super/api/config/nextcloud`.
 - `backend/db/nextcloud_decommission.go` retira la tabla legacy `empresa_nextcloud_accounts` y las claves `nextcloud.*` de configuracion super.
 - `backend/handlers/super_limitaciones_empresa.go` usa `empresa.limitaciones.db.max_gb` como cuota maxima de base de datos por empresa, leyendo el valor legacy solo como compatibilidad.
 - `backend/handlers/postgres_performance.go` agrega cuota, porcentaje y estado al ranking `action=empresas_storage`.
 - El frontend retira Nextcloud de menu empresarial, modulo menu, licencias y configuracion avanzada; el Compose oficial ya no define servicios Nextcloud.
+
+### Reactivacion de Nextcloud empresarial (2026-07-13)
+
+- `backend/db/nextcloud.go` conserva la asignacion tecnica por `empresa_id` y sincroniza la cuota global para empresas existentes y nuevas.
+- `backend/handlers/nextcloud.go` expone activacion/desactivacion por rol empresarial y elimina la cuenta remota OCS antes del cascade de empresa.
+- El servicio vive en el stack separado del VPS principal; VPS2 continua independiente.
 
 ## Actualizacion 2026-05-13 (facturacion electronica: proveedores de firma digital)
 

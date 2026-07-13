@@ -37768,3 +37768,11 @@ Archivos modificados:
 - documentos/ia_orquestador_empresarial.md
 - web/estilos.css
 - web/js/ai_chat_drawer.js
+2026-07-13: Reactivacion de Nextcloud empresarial multiempresa
+- Se habilita el control global desde Super administrador y la asignacion automatica de 1024 MB a empresas existentes y nuevas.
+- Se conserva `gestion_documental:R` para la pagina empresarial y `WithSuperAuditoria` para la configuracion super.
+- La eliminacion manual y automatica de empresa elimina primero la cuenta remota OCS y sus archivos; si falla, no continua el borrado local.
+- VPS2 sigue siendo una instancia independiente y no participa en cuentas empresariales.
+
+2026-07-13: Eliminacion integral de empresa
+- La eliminacion total limpia cuentas y archivos remotos de Mailu y Nextcloud, la carpeta de documentos OnlyOffice, callbacks temporales, uploads, privados y backups antes del cascade.
