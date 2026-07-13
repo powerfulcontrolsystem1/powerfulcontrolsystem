@@ -37640,3 +37640,9 @@ Archivos modificados:
   endpoints de voz/chat. Las preferencias del chat flotante requieren ahora
   acceso validado a la empresa y rechazan un `empresa_id` distinto al contexto
   autenticado, tanto en consulta como en JSON.
+
+2026-07-13: CSP y monitoreo alineados para transición segura.
+- Nginx agrega la misma CSP estricta en modo `Report-Only` que usa el backend,
+  con orígenes explícitos y sin comodines de conexión, antes de endurecer la
+  política aplicada. cAdvisor queda documentado como excepción de monitoreo
+  con privilegios de host y sin puerto expuesto.
