@@ -11798,6 +11798,14 @@ backend/db/nextcloud.go, backend/handlers/nextcloud.go
 - Asignacion multiempresa y aprovisionamiento seguro de cuentas Nextcloud con
   configuracion global cifrada, cuota, auditoria y credenciales temporales.
 
+backend/handlers/nextcloud_security_test.go
+- Regresion que verifica que la credencial OCS se cifra con envelope versionado
+  antes de persistirse como configuracion sensible.
+
+scripts/provision_nextcloud_service_account.sh
+- Script VPS que crea o rota la cuenta OCS exclusiva de Nextcloud y actualiza
+  el entorno root-readable sin imprimir la contrasena generada.
+
 web/administrar_empresa/nextcloud.html, web/js/nextcloud_empresa.js
 - Pantalla empresarial de estado, aprovisionamiento, restablecimiento y apertura
   de Nextcloud para la empresa activa.

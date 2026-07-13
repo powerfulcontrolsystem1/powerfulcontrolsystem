@@ -235,6 +235,95 @@ func nextcloudConfiguration(dbSuper *sql.DB) (baseURL, adminUser, adminCredentia
 	return
 }
 
+// EnsureNextcloudConfigFromEnv registers the VPS-owned OCS service account at
+// startup. The password is encrypted before it reaches PostgreSQL and is never
+// emitted by this function or its callers.
+func EnsureNextcloudConfigFromEnv(dbSuper *sql.DB) error {
+	if dbSuper == nil {
+		return nil
+	}
+	keys := []string{"NEXTCLOUD_ENABLED", "NEXTCLOUD_BASE_URL", "NEXTCLOUD_ADMIN_USER", "NEXTCLOUD_ADMIN_SECRET", "NEXTCLOUD_DEFAULT_QUOTA_MB"}
+	hasEnv := false
+	for _, key := range keys {
+		if strings.TrimSpace(os.Getenv(key)) != "" {
+			hasEnv = true
+			break
+		}
+	}
+	if !hasEnv {
+		return nil
+	}
+
+	enabled := nextcloudEnabled(dbSuper)
+	if raw := strings.TrimSpace(os.Getenv("NEXTCLOUD_ENABLED")); raw != "" {
+		enabled = raw == "1" || strings.EqualFold(raw, "true") || strings.EqualFold(raw, "on") || strings.EqualFold(raw, "yes")
+	}
+	baseURL := nextcloudConfig(dbSuper, nextcloudBaseURLKey)
+	if raw := strings.TrimSpace(os.Getenv("NEXTCLOUD_BASE_URL")); raw != "" {
+		baseURL = raw
+	}
+	adminUser := nextcloudConfig(dbSuper, nextcloudAdminUserKey)
+	if raw := strings.TrimSpace(os.Getenv("NEXTCLOUD_ADMIN_USER")); raw != "" {
+		adminUser = raw
+	}
+	quotaMB := nextcloudQuotaMB(dbSuper)
+	if raw := strings.TrimSpace(os.Getenv("NEXTCLOUD_DEFAULT_QUOTA_MB")); raw != "" {
+		parsed, err := strconv.ParseInt(raw, 10, 64)
+		if err != nil || parsed <= 0 || parsed > nextcloudMaxQuotaMB {
+			return fmt.Errorf("NEXTCLOUD_DEFAULT_QUOTA_MB invalida")
+		}
+		quotaMB = parsed
+	}
+	secret := strings.TrimSpace(os.Getenv("NEXTCLOUD_ADMIN_SECRET"))
+	return saveNextcloudConfig(dbSuper, enabled, baseURL, adminUser, secret, quotaMB)
+}
+
+func saveNextcloudConfig(dbSuper *sql.DB, enabled bool, rawBaseURL, rawAdminUser, rawSecret string, quotaMB int64) error {
+	baseURL, err := validateNextcloudBaseURL(rawBaseURL)
+	if err != nil {
+		return err
+	}
+	adminUser := strings.TrimSpace(rawAdminUser)
+	if quotaMB <= 0 || quotaMB > nextcloudMaxQuotaMB {
+		return fmt.Errorf("cuota invalida")
+	}
+	secretAlreadySet := nextcloudAdminCredential(dbSuper) != ""
+	if enabled && (baseURL == "" || adminUser == "" || (strings.TrimSpace(rawSecret) == "" && !secretAlreadySet)) {
+		return fmt.Errorf("URL, usuario y secreto son obligatorios para activar Nextcloud")
+	}
+	for _, item := range []struct{ key, value string }{
+		{nextcloudEnabledKey, strconv.FormatBool(enabled)},
+		{nextcloudBaseURLKey, baseURL},
+		{nextcloudAdminUserKey, adminUser},
+		{nextcloudDefaultQuotaMBKey, strconv.FormatInt(quotaMB, 10)},
+	} {
+		if err := dbpkg.SetConfigValue(dbSuper, item.key, item.value, false); err != nil {
+			return err
+		}
+	}
+	if secret := strings.TrimSpace(rawSecret); secret != "" {
+		encrypted, err := encryptNextcloudAdminCredential(secret)
+		if err != nil {
+			return err
+		}
+		if err := dbpkg.SetConfigValue(dbSuper, nextcloudAdminCredentialKey, encrypted, true); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func encryptNextcloudAdminCredential(secret string) (string, error) {
+	secret = strings.TrimSpace(secret)
+	if secret == "" {
+		return "", fmt.Errorf("credencial Nextcloud vacia")
+	}
+	if !utils.EncryptionAvailable() {
+		return "", fmt.Errorf("CONFIG_ENC_KEY no esta disponible para guardar la credencial Nextcloud")
+	}
+	return utils.EncryptString(secret)
+}
+
 // DeleteNextcloudCompanyAccount removes the remote user and therefore its
 // files before the company cascade deletes the local assignment row.
 func DeleteNextcloudCompanyAccount(ctx context.Context, dbEmp, dbSuper *sql.DB, empresaID int64) error {
@@ -454,41 +543,12 @@ func NextcloudConfigHandler(dbSuper, dbEmp *sql.DB) http.HandlerFunc {
 			http.Error(w, "payload invalido", http.StatusBadRequest)
 			return
 		}
-		baseURL, err := validateNextcloudBaseURL(payload.BaseURL)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
-			return
-		}
-		payload.AdminUser = strings.TrimSpace(payload.AdminUser)
 		if payload.DefaultQuotaMB <= 0 {
 			payload.DefaultQuotaMB = nextcloudDefaultQuotaMB
 		}
-		if payload.DefaultQuotaMB > nextcloudMaxQuotaMB {
-			http.Error(w, "cuota invalida", http.StatusBadRequest)
+		if err := saveNextcloudConfig(dbSuper, payload.Enabled, payload.BaseURL, payload.AdminUser, payload.AdminSecret, payload.DefaultQuotaMB); err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
-		}
-		secretAlreadySet := nextcloudAdminCredential(dbSuper) != ""
-		if payload.Enabled && (baseURL == "" || payload.AdminUser == "" || (strings.TrimSpace(payload.AdminSecret) == "" && !secretAlreadySet)) {
-			http.Error(w, "URL, usuario y secreto son obligatorios para activar Nextcloud", http.StatusBadRequest)
-			return
-		}
-		values := []struct{ key, value string }{
-			{nextcloudEnabledKey, strconv.FormatBool(payload.Enabled)},
-			{nextcloudBaseURLKey, baseURL},
-			{nextcloudAdminUserKey, payload.AdminUser},
-			{nextcloudDefaultQuotaMBKey, strconv.FormatInt(payload.DefaultQuotaMB, 10)},
-		}
-		for _, item := range values {
-			if err := dbpkg.SetConfigValue(dbSuper, item.key, item.value, false); err != nil {
-				http.Error(w, "No se pudo guardar la configuracion", http.StatusInternalServerError)
-				return
-			}
-		}
-		if secret := strings.TrimSpace(payload.AdminSecret); secret != "" {
-			if err := dbpkg.SetConfigValue(dbSuper, nextcloudAdminCredentialKey, secret, true); err != nil {
-				http.Error(w, "No se pudo cifrar el secreto de Nextcloud", http.StatusInternalServerError)
-				return
-			}
 		}
 		if payload.Enabled {
 			if _, err := dbpkg.EnsureEmpresaNextcloudAssignmentsForAll(dbEmp, payload.DefaultQuotaMB); err != nil {

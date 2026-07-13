@@ -40,16 +40,27 @@ de VPS2. La cuenta remota se aprovisiona de forma idempotente con OCS.
 2. Crear tres archivos de secreto fuera del repositorio con `chmod 600`.
 3. Definir dominio, reverse proxy, ruta `NEXTCLOUD_DATA_PATH` y proxies fiables.
 4. Ejecutar `bash deploy/scripts/vps-nextcloud-up.sh`.
-5. Configurar en Super administrador una contrasena de aplicacion OCS distinta
-   de la contrasena inicial del contenedor.
+5. Ejecutar `bash scripts/provision_nextcloud_service_account.sh /root/powerfulcontrolsystem`
+   para crear o rotar la cuenta OCS exclusiva `pcs_ocs_service`. El script no
+   imprime la contrasena; la registra como variable root-readable y el backend
+   la cifra al arrancar.
 6. Probar la conexion OCS y verificar el aprovisionamiento de dos empresas de
    ensayo.
+
+El backend toma `NEXTCLOUD_ENABLED`, `NEXTCLOUD_BASE_URL`,
+`NEXTCLOUD_ADMIN_USER`, `NEXTCLOUD_ADMIN_SECRET` y
+`NEXTCLOUD_DEFAULT_QUOTA_MB` desde `deploy/.env.platform`. Nunca se debe usar
+la cuenta administrativa inicial como credencial de integracion.
 
 Las imagenes se fijan en Nextcloud 34.0.1 Apache, PostgreSQL 16.14 Alpine y Redis
 7.4.9 Alpine. La imagen Apache requiere iniciar como root para preparar volumenes
 y luego ejecuta el servicio con `www-data`; se mitiga con red interna,
 `no-new-privileges`, secretos montados, puertos internos no publicados, tmpfs,
 healthchecks y limites de CPU/RAM.
+
+La instalacion heredada del VPS debe migrarse de forma controlada antes de
+actualizar la base de datos o la version mayor de Nextcloud. No se reemplazan
+volumenes ni se fuerza un cambio de motor durante una correccion operativa.
 
 ## Backup y restauracion
 

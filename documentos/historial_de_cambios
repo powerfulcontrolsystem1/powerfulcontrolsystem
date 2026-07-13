@@ -37813,3 +37813,13 @@ Archivos modificados:
 PushStatus: OK
 Archivos modificados:
 - deploy/docker/backend.Dockerfile
+## 2026-07-13 - Activacion segura de Nextcloud empresarial
+
+- Se corrige el guardado de la credencial OCS: antes de persistir se cifra con
+  AES-GCM y se marca como configuracion cifrada; el valor plano no queda en
+  PostgreSQL.
+- El backend puede registrar desde el entorno del VPS una cuenta tecnica OCS
+  exclusiva y asignar automaticamente la cuota empresarial al arrancar.
+- Se agrega `scripts/provision_nextcloud_service_account.sh`, que genera o rota
+  la credencial remota sin imprimirla y conserva un respaldo root-readable del
+  archivo de entorno antes de actualizarlo.

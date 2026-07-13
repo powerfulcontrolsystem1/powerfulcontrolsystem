@@ -1005,6 +1005,10 @@ func main() {
 			log.Printf("INFO: emails corporativos generados para empresas existentes: %d", created)
 		}
 		startupTrace("after_empresa_email_corporativo_existing_companies")
+		if err := handlers.EnsureNextcloudConfigFromEnv(dbSuper); err != nil {
+			log.Printf("warning: no se pudo registrar configuracion Nextcloud desde entorno: %v", err)
+		}
+		startupTrace("after_nextcloud_env")
 		if err := dbpkg.EnsureEmpresaNextcloudSchema(dbEmpresas); err != nil {
 			log.Printf("warning: no se pudo preparar Nextcloud empresarial: %v", err)
 		} else if assigned, err := dbpkg.EnsureEmpresaNextcloudAssignmentsForAll(dbEmpresas, 1024); err != nil {
