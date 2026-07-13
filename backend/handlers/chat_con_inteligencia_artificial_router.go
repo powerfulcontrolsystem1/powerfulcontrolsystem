@@ -21,7 +21,7 @@ func RegisterEmpresaChatIARoutes(dbEmp, dbSuper *sql.DB) {
 	http.HandleFunc("/api/empresa/ia_pedidos_estacion/ejecutar", WithEmpresaVentasPermissions(dbEmp, dbSuper, ctrl.IaPedidosEstacionEjecutarHandler))
 	http.HandleFunc("/api/empresa/ia_radio/activar", WithEmpresaVentasPermissions(dbEmp, dbSuper, EmpresaIARadioHandler(dbSuper, dbEmp)))
 	// El orquestador empresarial no acepta endpoints ni acciones elegidas por el modelo.
-	// The first enterprise write tool changes hotel stations and tariffs, so its
-	// wrapper is deliberately narrower than the general chat permissions.
-	http.HandleFunc("/api/empresa/ai/enterprise", WithEmpresaReservasHotelPermissions(dbEmp, dbSuper, EmpresaAIEnterpriseHandler(dbEmp)))
+	// This wrapper establishes only the authenticated company scope. Every tool
+	// then validates its own module/action against the same server snapshot.
+	http.HandleFunc("/api/empresa/ai/enterprise", WithEmpresaAIEnterprisePermissions(dbEmp, dbSuper, EmpresaAIEnterpriseHandler(dbEmp, dbSuper)))
 }

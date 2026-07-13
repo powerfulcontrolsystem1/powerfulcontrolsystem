@@ -3,6 +3,16 @@
 Version: 2026-05-15.1.0
 Ultima actualizacion: 2026-05-15
 
+Actualizacion 2026-07-13 (orquestador IA de catalogo)
+- `empresa_ai_propuestas` conserva propuestas tipadas de herramientas IA por
+  empresa y usuario, con hash del plan, vencimiento, estado de consumo,
+  idempotencia y resultado saneado. No contiene secretos, SQL ni comandos.
+- `empresa_ai_ejecuciones` conserva metadatos minimizados de consulta,
+  propuesta, confirmacion y resultado. La creacion IA de productos reutiliza
+  las tablas canonicas `productos`, `inventario_existencias`,
+  `inventario_movimientos` y `producto_precio_historial`; no crea tablas
+  paralelas ni bypass de reglas de negocio.
+
 Actualizacion 2026-07-09: la tabla exclusiva del modulo retirado
 `super_juegos_records` se elimina de `pcs_superadministrador` en el arranque
 mediante `DecommissionRemovedEntertainmentArtifacts`. No afecta datos

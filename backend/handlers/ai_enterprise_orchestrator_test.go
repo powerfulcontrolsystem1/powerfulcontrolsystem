@@ -11,7 +11,7 @@ func TestEnterpriseAIIsClosedByDefault(t *testing.T) {
 	t.Setenv("AI_ENTERPRISE_ORCHESTRATOR_ENABLED", "")
 	req := httptest.NewRequest(http.MethodGet, "/api/empresa/ai/enterprise?empresa_id=1", nil)
 	rr := httptest.NewRecorder()
-	EmpresaAIEnterpriseHandler(nil)(rr, req)
+	EmpresaAIEnterpriseHandler(nil, nil)(rr, req)
 	if rr.Code != http.StatusServiceUnavailable {
 		t.Fatalf("expected closed feature flag, got %d", rr.Code)
 	}
@@ -33,9 +33,7 @@ func TestDecodeEnterpriseJSONRejectsUnknownOrTrailingFields(t *testing.T) {
 func TestEnterpriseAgentModeFailsClosed(t *testing.T) {
 	t.Setenv("AI_ENTERPRISE_ORCHESTRATOR_ENABLED", "true")
 	t.Setenv("AI_AGENT_MODE_ENABLED", "")
-	ctx := enterpriseAIExecutionContext(httptest.NewRequest(http.MethodGet, "/", nil), 1, "user@example.test")
-	ctx.Mode = "agent"
-	if enterpriseAIAgentModeEnabled() || ctx.Mode != "agent" {
+	if enterpriseAIAgentModeEnabled() {
 		t.Fatal("agent mode unexpectedly enabled")
 	}
 }

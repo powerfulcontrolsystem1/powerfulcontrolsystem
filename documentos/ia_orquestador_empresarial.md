@@ -48,7 +48,7 @@ sola respuesta textual de un modelo.
   herramienta, riesgo, estado, duracion, categorias de datos y fuentes. No
   conservan prompts completos ni resultados privados.
 
-## Herramienta inicial
+## Herramientas implementadas
 
 `hotel.inspect_room_station` es una consulta de bajo riesgo que devuelve la
 configuracion actual de una estacion hotelera dentro de la empresa validada.
@@ -79,6 +79,43 @@ revalida usuario, empresa, licencia, permisos, hash, vencimiento y uso unico.
 El modo agente permanece bloqueado salvo `AI_AGENT_MODE_ENABLED=true` y un
 contexto acotado por servidor. La interfaz actual solo usa modo asistido para
 la herramienta hotelera.
+
+`catalog.search_products` es una consulta de bajo riesgo que devuelve un
+catalogo acotado de productos, categorias y bodegas exclusivamente de la
+empresa validada. Sirve para desambiguar referencias antes de preparar una
+accion y no expone datos de otra empresa.
+
+`catalog.create_product` prepara la creacion de un producto con precio,
+impuesto, categoria, bodega y stock inicial. Antes de crear la propuesta valida
+el plan, consulta duplicados por nombre/SKU dentro de la empresa y obliga a una
+confirmacion separada. Al confirmar reutiliza `CreateProducto`, que valida las
+relaciones empresariales y registra producto, inventario inicial e historial de
+precio en una transaccion.
+
+Las escrituras se habilitan de forma granular y permanecen apagadas por
+defecto: `AI_ENTERPRISE_ORCHESTRATOR_ENABLED=true`,
+`AI_WRITE_TOOLS_ENABLED=true` y el flag especifico de la herramienta
+(`AI_HOTEL_TOOLS_ENABLED=true` o `AI_CATALOG_TOOLS_ENABLED=true`). Un flag no
+omite permisos ni confirmaciones.
+
+## Como agregar una herramienta
+
+1. Definir una entrada de riesgo, permisos, modulo, limite y rollback en
+   `backend/ai/enterprise.go`; no aceptar endpoints, SQL ni nombres de tabla
+   desde el modelo.
+2. Crear un plan JSON tipado y normalizador en `backend/db/ai_enterprise.go`.
+   El plan no contiene `empresa_id`, usuario, rol ni valores de autoridad.
+3. Reutilizar un servicio de dominio existente que filtre por `empresa_id` y
+   use transaccion cuando toque mas de un registro.
+4. Registrar propuesta temporal, estado previo/esperado minimizado,
+   idempotencia, confirmacion y auditoria antes de exponer el boton.
+5. Revalidar herramienta, permisos, licencia, empresa, vencimiento y hash al
+   confirmar. Añadir pruebas de tenant, permisos, parametros, duplicado,
+   doble confirmacion y fallo parcial.
+
+No se debe registrar una herramienta como disponible solo porque exista una
+pagina de interfaz. Los modulos restantes se conectaran uno por uno bajo este
+contrato, con pruebas y habilitacion gradual por empresa.
 
 ## Plan de ampliacion
 

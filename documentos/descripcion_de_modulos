@@ -4464,3 +4464,12 @@ de productos/SKUs, caja, impuestos, cliente y reglas de facturacion.
 - Configuracion guiada: `no_mostrar_mas` se guarda por empresa y el panel lo persiste con CSRF same-origin.
 - Nextcloud: resuelve `empresa_id` desde contexto validado, aplica cuota global y solo entrega accesos tras activacion y aprovisionamiento.
 - Descargas: documentos empresariales no se exponen por una ruta estatica generica; solo instaladores RustDesk aprobados quedan publicos.
+
+2026-07-13: Orquestador IA empresarial de catalogo
+- El chat mantiene respuestas informativas, pero las mutaciones se preparan y
+  confirman por `/api/empresa/ai/enterprise`, con herramientas tipadas y
+  servidoras. Se implementan consulta de catalogo y propuesta de creacion de
+  producto; hotel conserva su propuesta de configuracion de habitacion.
+- Cada herramienta vuelve a validar empresa, rol, permiso, vencimiento, hash e
+  idempotencia en backend. Los flags por herramienta permanecen apagados hasta
+  una habilitacion controlada y no existen SQL, shell o endpoints arbitrarios.

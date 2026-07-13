@@ -428,6 +428,104 @@ type EmpresaAIHotelRoomRate struct {
 	Valor    float64 `json:"valor"`
 }
 
+// EmpresaAIProductCreatePlan is deliberately smaller than Producto. It accepts
+// only values that are meaningful for a first catalog entry; ownership and the
+// creator are always derived from the authenticated execution context.
+type EmpresaAIProductCreatePlan struct {
+	Nombre             string  `json:"nombre"`
+	SKU                string  `json:"sku,omitempty"`
+	Descripcion        string  `json:"descripcion,omitempty"`
+	CategoriaID        int64   `json:"categoria_id,omitempty"`
+	BodegaID           int64   `json:"bodega_id,omitempty"`
+	UnidadMedida       string  `json:"unidad_medida,omitempty"`
+	Costo              float64 `json:"costo,omitempty"`
+	Precio             float64 `json:"precio"`
+	ImpuestoPorcentaje float64 `json:"impuesto_porcentaje,omitempty"`
+	StockInicial       float64 `json:"stock_inicial,omitempty"`
+	StockMinimo        float64 `json:"stock_minimo,omitempty"`
+}
+
+func NormalizeEmpresaAIProductCreatePlan(plan *EmpresaAIProductCreatePlan) error {
+	if plan == nil {
+		return fmt.Errorf("plan de producto invalido")
+	}
+	plan.Nombre = strings.TrimSpace(plan.Nombre)
+	plan.SKU = strings.TrimSpace(plan.SKU)
+	plan.Descripcion = strings.TrimSpace(plan.Descripcion)
+	plan.UnidadMedida = strings.TrimSpace(plan.UnidadMedida)
+	if plan.Nombre == "" || len([]rune(plan.Nombre)) > 160 {
+		return fmt.Errorf("nombre de producto invalido")
+	}
+	if len([]rune(plan.SKU)) > 80 || len([]rune(plan.Descripcion)) > 1000 || len([]rune(plan.UnidadMedida)) > 40 {
+		return fmt.Errorf("texto de producto excede el limite permitido")
+	}
+	if plan.Precio < 0 || plan.Costo < 0 || plan.StockInicial < 0 || plan.StockMinimo < 0 || plan.ImpuestoPorcentaje < 0 || plan.ImpuestoPorcentaje > 100 {
+		return fmt.Errorf("valores de producto invalidos")
+	}
+	if plan.StockInicial > 0 && plan.BodegaID <= 0 {
+		return fmt.Errorf("bodega_id es obligatorio cuando se registra stock inicial")
+	}
+	return nil
+}
+
+// FindEmpresaAIProductDuplicates is a bounded, tenant-scoped duplicate check
+// used before the agent creates a product proposal.
+func FindEmpresaAIProductDuplicates(dbConn *sql.DB, empresaID int64, nombre, sku string) ([]Producto, error) {
+	if empresaID <= 0 {
+		return nil, fmt.Errorf("empresa invalida")
+	}
+	nombre = strings.TrimSpace(nombre)
+	sku = strings.TrimSpace(sku)
+	if nombre == "" && sku == "" {
+		return nil, fmt.Errorf("nombre o sku requerido")
+	}
+	where := "LOWER(COALESCE(nombre,'')) = LOWER(?)"
+	args := []interface{}{empresaID, nombre}
+	if sku != "" {
+		where = "(" + where + " OR LOWER(COALESCE(sku,'')) = LOWER(?))"
+		args = append(args, sku)
+	}
+	rows, err := dbConn.Query(`SELECT id, empresa_id, COALESCE(sku,''), COALESCE(nombre,''), COALESCE(precio,0), COALESCE(impuesto_porcentaje,0), COALESCE(estado,'activo') FROM productos WHERE empresa_id=? AND `+where+` ORDER BY id DESC LIMIT 10`, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := make([]Producto, 0)
+	for rows.Next() {
+		var product Producto
+		if err := rows.Scan(&product.ID, &product.EmpresaID, &product.SKU, &product.Nombre, &product.Precio, &product.ImpuestoPorcentaje, &product.Estado); err != nil {
+			return nil, err
+		}
+		out = append(out, product)
+	}
+	return out, rows.Err()
+}
+
+// CreateEmpresaAIProduct reuses the canonical product creation service. The
+// latter validates catalog relations and writes inventory/history atomically.
+func CreateEmpresaAIProduct(dbConn *sql.DB, empresaID int64, plan EmpresaAIProductCreatePlan, usuario string) (int64, error) {
+	if empresaID <= 0 || strings.TrimSpace(usuario) == "" {
+		return 0, fmt.Errorf("contexto empresarial invalido")
+	}
+	if err := NormalizeEmpresaAIProductCreatePlan(&plan); err != nil {
+		return 0, err
+	}
+	duplicates, err := FindEmpresaAIProductDuplicates(dbConn, empresaID, plan.Nombre, plan.SKU)
+	if err != nil {
+		return 0, err
+	}
+	if len(duplicates) > 0 {
+		return 0, fmt.Errorf("ya existe un producto con el mismo nombre o SKU")
+	}
+	return CreateProducto(dbConn, Producto{
+		EmpresaID: empresaID, BodegaPrincipalID: plan.BodegaID, CategoriaID: plan.CategoriaID,
+		SKU: plan.SKU, Nombre: plan.Nombre, Descripcion: plan.Descripcion, UnidadMedida: plan.UnidadMedida,
+		Costo: plan.Costo, Precio: plan.Precio, ImpuestoPorcentaje: plan.ImpuestoPorcentaje,
+		StockMinimo: plan.StockMinimo, UsuarioCreador: strings.TrimSpace(usuario), Estado: "activo",
+		Observaciones: "Creado mediante propuesta IA confirmada",
+	}, plan.StockInicial, "IA_PRODUCT_CREATE")
+}
+
 func NormalizeEmpresaAIHotelRoomPlan(plan *EmpresaAIHotelRoomPlan) error {
 	if plan == nil || plan.EstacionID <= 0 {
 		return fmt.Errorf("estacion_id es obligatorio")

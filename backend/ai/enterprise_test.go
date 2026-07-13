@@ -58,3 +58,13 @@ func TestHotelReadToolIsClosedAndLowRisk(t *testing.T) {
 		t.Fatalf("unexpected hotel read policy: %#v", tool)
 	}
 }
+
+func TestToolPermissionIsServerScoped(t *testing.T) {
+	tool := Registry()[ToolCatalogCreateProduct]
+	if ToolAllowed(tool, []string{"inventario:R"}) {
+		t.Fatal("read permission must not create catalog records")
+	}
+	if !ToolAllowed(tool, []string{"inventario:C", "ventas:R"}) {
+		t.Fatal("required inventory create permission was rejected")
+	}
+}

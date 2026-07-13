@@ -949,6 +949,49 @@ func WithEmpresaVentasPermissions(dbEmp, dbSuper *sql.DB, next http.HandlerFunc)
 	return withEmpresaRolePermissions(dbEmp, dbSuper, permModuleVentas, resolveVentasPermissionAction, next)
 }
 
+// WithEmpresaAIEnterprisePermissions establishes only the authenticated
+// multiempresa scope for the closed IA orchestrator. Individual capabilities
+// are deliberately checked inside the tool registry against the effective
+// permission snapshot; using ventas as a blanket gate would incorrectly block
+// a user who can administer inventario but not sell.
+func WithEmpresaAIEnterprisePermissions(dbEmp, dbSuper *sql.DB, next http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		empresaID := extractEmpresaIDForPermissions(r)
+		if empresaID <= 0 {
+			http.Error(w, "empresa_id es obligatorio", http.StatusBadRequest)
+			return
+		}
+		if err := validateEmpresaIDConsistency(r, empresaID); err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		rateLimit := empresaRateLimitMaxForRequest(dbSuper, r)
+		rateScope := "ai_enterprise:" + empresaRateLimitScopeForRequest(r)
+		allowed, remaining, retryAfter, _ := checkEmpresaRateLimitAt(time.Now(), empresaID, rateScope, rateLimit)
+		applyEmpresaRateLimitHeaders(w, rateLimit, remaining, retryAfter)
+		if !allowed {
+			http.Error(w, "limite de consumo por empresa excedido; intenta de nuevo en unos segundos", http.StatusTooManyRequests)
+			return
+		}
+		adminEmail := strings.ToLower(strings.TrimSpace(adminEmailFromRequest(r)))
+		if adminEmail == "" || adminEmail == "sistema" {
+			http.Error(w, "unauthenticated", http.StatusUnauthorized)
+			return
+		}
+		snapshot, err := getEmpresaPermissionSnapshot(dbEmp, dbSuper, adminEmail, empresaID)
+		if err != nil || !snapshot.CanAccess {
+			http.Error(w, "forbidden: empresa_id fuera del alcance del usuario autenticado", http.StatusForbidden)
+			return
+		}
+		ctx := context.WithValue(r.Context(), "adminRole", snapshot.AdminRole)
+		ctx = context.WithValue(ctx, "adminRoleEfectivo", snapshot.EffectiveRole)
+		ctx = context.WithValue(ctx, "empresaID", empresaID)
+		r = r.WithContext(ctx)
+		w.Header().Set("X-Empresa-ID", strconv.FormatInt(empresaID, 10))
+		next.ServeHTTP(w, r)
+	}
+}
+
 // WithEmpresaInventarioPermissions aplica control de alcance por empresa y permisos por rol para inventario.
 func WithEmpresaInventarioPermissions(dbEmp, dbSuper *sql.DB, next http.HandlerFunc) http.HandlerFunc {
 	return withEmpresaRolePermissions(dbEmp, dbSuper, permModuleInventario, resolveInventarioPermissionAction, next)

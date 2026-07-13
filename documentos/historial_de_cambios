@@ -37858,3 +37858,13 @@ Archivos modificados:
 2026-07-13: Endurecimiento del modo heredado Mailu.
 - Seguridad: el provisionamiento y borrado directo quedan fijados a scripts internos revisados. Una ruta configurada arbitrariamente se rechaza; el modo recomendado en produccion continua siendo `mailu_api` interno.
 - QA: se agrega regresion que rechaza rutas directas no aprobadas. El analisis completo `gosec` se valida por CI/Linux, ya que la ejecucion local quedo retenida por procesos temporales de Windows.
+
+2026-07-13: Orquestador IA empresarial, catalogo e inventario.
+- Se amplia el registro cerrado con `catalog.search_products` y
+  `catalog.create_product`, sin aceptar SQL, endpoints, empresa, usuario ni
+  permisos desde el modelo o navegador.
+- El handler deriva permisos desde el snapshot autenticado y los revalida al
+  preparar y confirmar. La creacion de producto conserva las reglas y la
+  transaccion de `CreateProducto`, incluido inventario inicial e historial.
+- Las escrituras permanecen desactivadas hasta habilitar flags globales y por
+  herramienta. Se agregan regresiones de permisos y validacion del plan.
