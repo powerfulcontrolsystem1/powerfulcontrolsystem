@@ -51,13 +51,13 @@ func EmpresaIARadioHandler(dbSuper, dbEmp *sql.DB) http.HandlerFunc {
 
 		usuario := strings.TrimSpace(adminEmailFromRequest(r))
 		if err := setChatFlotanteEmpresaPref(dbEmp, empresaID, chatFlotanteRadioOnlineEnabledKey, chatFlotanteBoolValue(enabled), usuario); err != nil {
-			http.Error(w, "No se pudo guardar chat_flotante.radio_online_enabled por empresa: "+err.Error(), http.StatusInternalServerError)
+			http.Error(w, "No se pudo guardar la configuracion de radio", http.StatusInternalServerError)
 			return
 		}
 		if payload.RadioCountry != nil {
 			value := normalizeChatFlotanteRadioCountry(*payload.RadioCountry)
 			if err := setChatFlotanteEmpresaPref(dbEmp, empresaID, chatFlotanteRadioCountryKey, value, usuario); err != nil {
-				http.Error(w, "No se pudo guardar chat_flotante.radio_country por empresa: "+err.Error(), http.StatusInternalServerError)
+				http.Error(w, "No se pudo guardar la configuracion de radio", http.StatusInternalServerError)
 				return
 			}
 		}

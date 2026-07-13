@@ -238,3 +238,13 @@ func TestAdminManagementDoesNotExposePersistenceOrMailErrors(t *testing.T) {
 		}
 	}
 }
+
+func TestIARadioDoesNotExposePersistenceErrors(t *testing.T) {
+	contents, err := os.ReadFile("ia_radio.go")
+	if err != nil {
+		t.Fatalf("read IA radio handler: %v", err)
+	}
+	if strings.Contains(string(contents), `"No se pudo guardar chat_flotante.radio_online_enabled por empresa: "+err.Error()`) || strings.Contains(string(contents), `"No se pudo guardar chat_flotante.radio_country por empresa: "+err.Error()`) {
+		t.Fatal("IA radio handler must not expose persistence errors")
+	}
+}
