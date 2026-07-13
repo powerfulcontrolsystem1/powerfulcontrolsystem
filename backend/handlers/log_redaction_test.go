@@ -260,3 +260,15 @@ func TestDiscountCodesDoNotExposePersistenceErrors(t *testing.T) {
 		}
 	}
 }
+
+func TestSharedCompanyAccessDoesNotExposePersistenceOrMailErrors(t *testing.T) {
+	contents, err := os.ReadFile("empresa_compartida_handlers.go")
+	if err != nil {
+		t.Fatalf("read shared company handler: %v", err)
+	}
+	for _, value := range []string{`"no se pudo validar empresa: "+err.Error()`, `"no se pudo crear invitación compartida: "+err.Error()`, `response["error"] = mailErr.Error()`} {
+		if strings.Contains(string(contents), value) {
+			t.Fatalf("shared company handler exposes internal error: %s", value)
+		}
+	}
+}
