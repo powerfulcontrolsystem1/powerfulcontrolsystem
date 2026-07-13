@@ -37739,3 +37739,14 @@ Archivos modificados:
 PushStatus: OK
 Archivos modificados:
 - documentos/api/openapi.generated.yaml
+2026-07-13 - Orquestador IA empresarial: propuesta hotelera asistida
+- El chat empresarial incorpora una tarjeta de propuesta para configurar una
+  estacion como habitacion hotelera. La tarjeta no ejecuta acciones desde texto
+  del modelo: prepara la propuesta por API y exige confirmacion posterior con
+  identificador, hash del plan e idempotency key.
+- Se persiste estado minimo de conversacion por `empresa_id` y usuario, con
+  expiracion. La propuesta consulta la estacion y tarifas actuales en servidor;
+  los JSON de herramientas rechazan campos desconocidos y cuerpos concatenados.
+- La primera herramienta permanece bajo `reservas_hotel` y feature flags
+  desactivados por defecto. El modo agente tambien falla cerrado hasta que se
+  habilite y tenga limites de servidor.

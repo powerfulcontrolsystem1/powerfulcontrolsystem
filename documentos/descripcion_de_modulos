@@ -4440,3 +4440,8 @@ de productos/SKUs, caja, impuestos, cliente y reglas de facturacion.
   ve solo su cuenta tecnica, cuota, estado y enlace WebDAV; el backend deriva
   la empresa desde el contexto protegido y audita aprovisionamiento y reinicios
   de credencial sin guardar ni listar contrasenas de usuarios.
+2026-07-13 - IA empresarial asistida
+- El asistente empresarial inicia con `hotel.configure_room_station`, bajo
+  permisos de reservas hoteleras, y mantiene confirmacion humana, auditoria e
+  idempotencia. No habilita operaciones fiscales, eliminaciones, pagos ni SQL
+  libre.

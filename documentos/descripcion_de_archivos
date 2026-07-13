@@ -11827,3 +11827,12 @@ backend/tools/migrate_private_uploads/main.go
 - Utilidad PostgreSQL de staging para inventariar o aplicar la migración de
   adjuntos privados antiguos. Es simulación por defecto y no imprime rutas,
   credenciales ni referencias sensibles.
+2026-07-13
+- `backend/ai/enterprise.go`: contratos puros de contexto, registro cerrado y
+  limites de modo agente del orquestador empresarial.
+- `backend/db/ai_enterprise.go`: propuestas y conversaciones empresariales
+  aisladas, snapshot seguro de estacion y ejecucion transaccional hotelera.
+- `backend/handlers/ai_enterprise_orchestrator.go`: API de propuesta,
+  confirmacion y cancelacion con JSON estricto y feature flags fail-closed.
+- `web/js/ai_chat_drawer.js`: tarjeta de revision y confirmacion empresarial;
+  no ejecuta acciones heredadas generadas por el modelo.

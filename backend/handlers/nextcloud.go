@@ -234,6 +234,32 @@ func nextcloudConfiguration(dbSuper *sql.DB) (baseURL, adminUser, adminCredentia
 	return
 }
 
+// DeleteNextcloudCompanyAccount removes the remote user and therefore its
+// files before the company cascade deletes the local assignment row.
+func DeleteNextcloudCompanyAccount(ctx context.Context, dbEmp, dbSuper *sql.DB, empresaID int64) error {
+	if dbEmp == nil || empresaID <= 0 {
+		return fmt.Errorf("empresa invalida")
+	}
+	var user string
+	var provisioned bool
+	err := dbEmp.QueryRow(`SELECT nextcloud_user, provisioned FROM empresa_nextcloud_accounts WHERE empresa_id=$1`, empresaID).Scan(&user, &provisioned)
+	if err == sql.ErrNoRows || !provisioned {
+		return nil
+	}
+	if err != nil {
+		return err
+	}
+	baseURL, adminUser, credential, _ := nextcloudConfiguration(dbSuper)
+	if baseURL == "" || adminUser == "" || credential == "" {
+		return fmt.Errorf("Nextcloud no esta configurado para eliminar la cuenta empresarial")
+	}
+	meta, err := nextcloudOCS(ctx, newNextcloudHTTPClient(), http.MethodDelete, baseURL, "/ocs/v1.php/cloud/users/"+url.PathEscape(user), adminUser, credential, nil)
+	if err != nil || !nextcloudOCSSuccess(meta) {
+		return fmt.Errorf("Nextcloud no pudo eliminar la cuenta empresarial")
+	}
+	return nil
+}
+
 // EmpresaNextcloudHandler never accepts company authority from outside the
 // validated middleware context and never persists an end-user password.
 func EmpresaNextcloudHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {

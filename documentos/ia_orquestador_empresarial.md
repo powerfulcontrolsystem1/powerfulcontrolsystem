@@ -11,9 +11,10 @@ AI_WRITE_TOOLS_ENABLED=true
 AI_HOTEL_TOOLS_ENABLED=true
 ```
 
-`AI_RAG_ENABLED` y `AI_AGENT_MODE_ENABLED` se reservan para fases posteriores
-y deben permanecer apagados. No se activa ninguna herramienta por la sola
-respuesta textual de un modelo.
+`AI_RAG_ENABLED`, `AI_AGENT_MODE_ENABLED` y `AI_INVENTORY_TOOLS_ENABLED` se
+mantienen apagados hasta que su catalogo, permisos, evaluaciones y controles de
+coste tengan evidencia de aprobacion. No se activa ninguna herramienta por la
+sola respuesta textual de un modelo.
 
 ## Contrato de seguridad
 
@@ -29,6 +30,14 @@ respuesta textual de un modelo.
 - Una propuesta ajena, vencida, alterada, cancelada o usada no se ejecuta.
 - La auditoria registra identificadores operativos y categorias, no prompts
   completos, secretos, tokens, contrasenas ni valores privados innecesarios.
+- El drawer no ejecuta bloques `PCS_ACTION` ni endpoints propuestos por el
+  modelo. La unica escritura habilitable usa una tarjeta generada desde el
+  contrato del servidor, con `proposal_id`, hash del plan e idempotency key.
+- El estado de conversacion se guarda en PostgreSQL por empresa y usuario con
+  expiracion; no depende de historial libre del navegador ni acepta una
+  conversacion de otro usuario o empresa.
+- Las entradas JSON de herramientas son estrictas: se rechazan campos
+  desconocidos, cuerpos concatenados y tamanos superiores al contrato.
 
 ## Herramienta inicial
 
@@ -40,8 +49,23 @@ si una operacion falla no se confirma ninguna parte.
 
 La herramienta no aplica cambios masivos, no elimina tarifas existentes y no
 emite documentos fiscales. El siguiente despliegue funcional debe incorporar
-la tarjeta del chat que muestre la propuesta y sus botones Confirmar/Cancelar
-antes de activar los flags para cualquier empresa.
+la tarjeta del chat ya incorpora el formulario asistido, estado actual,
+cambio propuesto, fuentes y botones Confirmar/Cancelar. Aun asi los flags
+de escritura siguen apagados hasta una prueba controlada por empresa.
+
+## Flujo visible
+
+Cuando la consulta identifica una configuracion de habitacion, el chat muestra
+un formulario para revisar estacion, tarifas por ocupacion, moneda, horarios,
+activacion y conservacion de configuracion. Los valores ausentes se dejan como
+campos obligatorios, por lo que el usuario debe completarlos. Al preparar el
+plan, el backend consulta la estacion real dentro de la empresa actual y crea
+la propuesta temporal. El boton Confirmar realiza otra peticion independiente;
+revalida usuario, empresa, licencia, permisos, hash, vencimiento y uso unico.
+
+El modo agente permanece bloqueado salvo `AI_AGENT_MODE_ENABLED=true` y un
+contexto acotado por servidor. La interfaz actual solo usa modo asistido para
+la herramienta hotelera.
 
 ## Plan de ampliacion
 

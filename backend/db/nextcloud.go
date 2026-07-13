@@ -1,6 +1,9 @@
 package db
 
-import "database/sql"
+import (
+	"database/sql"
+	"strconv"
+)
 
 // EnsureEmpresaNextcloudSchema stores only the technical assignment. Passwords
 // stay in Nextcloud and temporary credentials are returned once to the caller.
@@ -27,4 +30,43 @@ func EnsureEmpresaNextcloudSchema(dbEmpresas *sql.DB) error {
 	_, err = execSQLCompat(dbEmpresas, `CREATE INDEX IF NOT EXISTS idx_empresa_nextcloud_accounts_empresa
 		ON empresa_nextcloud_accounts(empresa_id)`)
 	return err
+}
+
+// EnsureEmpresaNextcloudAssignment creates the technical account assignment
+// immediately when a company is created. It does not contact Nextcloud.
+func EnsureEmpresaNextcloudAssignment(dbEmpresas *sql.DB, empresaID, quotaMB int64) error {
+	if dbEmpresas == nil || empresaID <= 0 {
+		return nil
+	}
+	if quotaMB <= 0 {
+		quotaMB = 1024
+	}
+	if err := EnsureEmpresaNextcloudSchema(dbEmpresas); err != nil {
+		return err
+	}
+	_, err := dbEmpresas.Exec(`INSERT INTO empresa_nextcloud_accounts (empresa_id, nextcloud_user, quota_mb)
+		VALUES ($1, $2, $3) ON CONFLICT (empresa_id) DO UPDATE SET quota_mb=EXCLUDED.quota_mb, updated_at=CURRENT_TIMESTAMP`, empresaID, "pcs_empresa_"+strconv.FormatInt(empresaID, 10), quotaMB)
+	return err
+}
+
+// EnsureEmpresaNextcloudAssignmentsForAll applies the global default to every
+// existing company, preserving the empresa_id boundary.
+func EnsureEmpresaNextcloudAssignmentsForAll(dbEmpresas *sql.DB, quotaMB int64) (int64, error) {
+	if dbEmpresas == nil {
+		return 0, nil
+	}
+	if quotaMB <= 0 {
+		quotaMB = 1024
+	}
+	if err := EnsureEmpresaNextcloudSchema(dbEmpresas); err != nil {
+		return 0, err
+	}
+	res, err := dbEmpresas.Exec(`INSERT INTO empresa_nextcloud_accounts (empresa_id, nextcloud_user, quota_mb)
+		SELECT id, 'pcs_empresa_' || id::text, $1 FROM empresas
+		ON CONFLICT (empresa_id) DO UPDATE SET quota_mb=EXCLUDED.quota_mb, updated_at=CURRENT_TIMESTAMP`, quotaMB)
+	if err != nil {
+		return 0, err
+	}
+	count, _ := res.RowsAffected()
+	return count, nil
 }

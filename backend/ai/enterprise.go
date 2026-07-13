@@ -48,6 +48,15 @@ func (c ExecutionContext) Validate() error {
 	return nil
 }
 
+// AllowsAgentMode is intentionally separate from the selected UI mode. A client
+// can ask for agent mode, but the server must still enable it explicitly.
+func AllowsAgentMode(enabled bool, c ExecutionContext) bool {
+	if c.Mode != ModeAgent {
+		return true
+	}
+	return enabled && c.MaxOperations > 0 && len(c.AuthorizedScope) > 0
+}
+
 // ToolDefinition is a closed, server-owned registry entry.
 type ToolDefinition struct {
 	Name                string   `json:"name"`

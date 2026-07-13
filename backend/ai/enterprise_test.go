@@ -38,3 +38,13 @@ func TestPlanHashAndRedaction(t *testing.T) {
 		t.Fatal("expired proposal accepted")
 	}
 }
+
+func TestAgentModeRequiresExplicitServerEnablementAndLimits(t *testing.T) {
+	ctx := ExecutionContext{UserID: "user", EmpresaID: 1, Mode: ModeAgent, AuthorizedScope: []string{"current_company"}, MaxOperations: 1}
+	if AllowsAgentMode(false, ctx) {
+		t.Fatal("agent mode must fail closed")
+	}
+	if !AllowsAgentMode(true, ctx) {
+		t.Fatal("enabled agent mode with a bounded scope was rejected")
+	}
+}

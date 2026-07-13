@@ -46,11 +46,43 @@ type EmpresaAIProposal struct {
 	ResultadoJSON   string `json:"resultado_json,omitempty"`
 }
 
+// EmpresaAIConversation keeps the execution state independent of model text.
+// It is deliberately sparse: no prompt, attachment, credential or provider
+// response is persisted here.
+type EmpresaAIConversation struct {
+	ConversationID      string `json:"conversation_id"`
+	EmpresaID           int64  `json:"empresa_id"`
+	UsuarioID           string `json:"usuario_id"`
+	Modo                string `json:"modo"`
+	Estado              string `json:"estado"`
+	Intencion           string `json:"intencion,omitempty"`
+	EntidadesJSON       string `json:"entidades_json,omitempty"`
+	CamposFaltantesJSON string `json:"campos_faltantes_json,omitempty"`
+	PlanActualJSON      string `json:"plan_actual_json,omitempty"`
+	PropuestaPendiente  string `json:"propuesta_pendiente,omitempty"`
+	FechaExpiracion     string `json:"fecha_expiracion,omitempty"`
+}
+
 func EnsureEmpresaAIEnterpriseSchema(dbConn *sql.DB) error {
 	if dbConn == nil {
 		return errors.New("db connection is nil")
 	}
 	stmts := []string{
+		`CREATE TABLE IF NOT EXISTS empresa_ai_conversaciones (
+			conversation_id TEXT PRIMARY KEY,
+			empresa_id BIGINT NOT NULL,
+			usuario_id TEXT NOT NULL,
+			modo TEXT NOT NULL,
+			estado TEXT NOT NULL DEFAULT 'active',
+			intencion TEXT NOT NULL DEFAULT '',
+			entidades_json TEXT NOT NULL DEFAULT '{}',
+			campos_faltantes_json TEXT NOT NULL DEFAULT '[]',
+			plan_actual_json TEXT NOT NULL DEFAULT '{}',
+			propuesta_pendiente TEXT NOT NULL DEFAULT '',
+			fecha_expiracion TIMESTAMP NOT NULL,
+			fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+			fecha_actualizacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+		);`,
 		`CREATE TABLE IF NOT EXISTS empresa_ai_propuestas (
 			proposal_id TEXT PRIMARY KEY,
 			conversation_id TEXT NOT NULL,
@@ -73,6 +105,7 @@ func EnsureEmpresaAIEnterpriseSchema(dbConn *sql.DB) error {
 			fecha_actualizacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 		);`,
 		`CREATE INDEX IF NOT EXISTS ix_empresa_ai_propuestas_empresa_estado ON empresa_ai_propuestas(empresa_id, estado, fecha_creacion DESC);`,
+		`CREATE INDEX IF NOT EXISTS ix_empresa_ai_conversaciones_scope ON empresa_ai_conversaciones(empresa_id, usuario_id, estado, fecha_actualizacion DESC);`,
 		`CREATE INDEX IF NOT EXISTS ix_empresa_ai_propuestas_usuario_estado ON empresa_ai_propuestas(empresa_id, usuario_creador, estado);`,
 		`CREATE UNIQUE INDEX IF NOT EXISTS ux_empresa_ai_propuestas_idempotency ON empresa_ai_propuestas(empresa_id, usuario_creador, idempotency_key) WHERE idempotency_key IS NOT NULL AND idempotency_key <> '';`,
 	}
@@ -82,6 +115,99 @@ func EnsureEmpresaAIEnterpriseSchema(dbConn *sql.DB) error {
 		}
 	}
 	return nil
+}
+
+// EnsureEmpresaAIConversation creates or resumes only a conversation belonging
+// to the authenticated user in the current company.
+func EnsureEmpresaAIConversation(dbConn *sql.DB, in EmpresaAIConversation, ttl time.Duration) (*EmpresaAIConversation, error) {
+	if err := EnsureEmpresaAIEnterpriseSchema(dbConn); err != nil {
+		return nil, err
+	}
+	if in.EmpresaID <= 0 || strings.TrimSpace(in.ConversationID) == "" || strings.TrimSpace(in.UsuarioID) == "" {
+		return nil, fmt.Errorf("conversacion IA incompleta")
+	}
+	if !json.Valid([]byte(defaultAIJSON(in.EntidadesJSON, "{}"))) || !json.Valid([]byte(defaultAIJSON(in.CamposFaltantesJSON, "[]"))) || !json.Valid([]byte(defaultAIJSON(in.PlanActualJSON, "{}"))) {
+		return nil, fmt.Errorf("estado de conversacion IA invalido")
+	}
+	if ttl <= 0 || ttl > 24*time.Hour {
+		ttl = 2 * time.Hour
+	}
+	in.Modo = strings.ToLower(strings.TrimSpace(in.Modo))
+	if in.Modo == "" {
+		in.Modo = "assisted"
+	}
+	expires := time.Now().UTC().Add(ttl)
+	_, err := execSQLCompat(dbConn, `INSERT INTO empresa_ai_conversaciones (conversation_id,empresa_id,usuario_id,modo,estado,intencion,entidades_json,campos_faltantes_json,plan_actual_json,propuesta_pendiente,fecha_expiracion,fecha_actualizacion) VALUES (?,?,?,?,?,?,?,?,?,?,?,CURRENT_TIMESTAMP) ON CONFLICT (conversation_id) DO UPDATE SET modo=EXCLUDED.modo, fecha_actualizacion=CURRENT_TIMESTAMP WHERE empresa_ai_conversaciones.empresa_id=EXCLUDED.empresa_id AND empresa_ai_conversaciones.usuario_id=EXCLUDED.usuario_id AND empresa_ai_conversaciones.fecha_expiracion>CURRENT_TIMESTAMP`, strings.TrimSpace(in.ConversationID), in.EmpresaID, strings.TrimSpace(in.UsuarioID), in.Modo, "active", strings.TrimSpace(in.Intencion), defaultAIJSON(in.EntidadesJSON, "{}"), defaultAIJSON(in.CamposFaltantesJSON, "[]"), defaultAIJSON(in.PlanActualJSON, "{}"), strings.TrimSpace(in.PropuestaPendiente), expires)
+	if err != nil {
+		return nil, err
+	}
+	in.FechaExpiracion = expires.Format(time.RFC3339)
+	return &in, nil
+}
+
+func defaultAIJSON(value, fallback string) string {
+	if strings.TrimSpace(value) == "" {
+		return fallback
+	}
+	return value
+}
+
+// EmpresaAIHotelRoomStationSnapshot is the server-derived before-state shown to
+// the user. It never exposes the full raw station configuration.
+type EmpresaAIHotelRoomStationSnapshot struct {
+	EstacionID int64                    `json:"estacion_id"`
+	Nombre     string                   `json:"nombre"`
+	Tipo       string                   `json:"tipo"`
+	Activa     bool                     `json:"activa"`
+	Moneda     string                   `json:"moneda"`
+	Tarifas    []EmpresaAIHotelRoomRate `json:"tarifas"`
+}
+
+func GetEmpresaAIHotelRoomStationSnapshot(dbConn *sql.DB, empresaID, estacionID int64) (*EmpresaAIHotelRoomStationSnapshot, error) {
+	if empresaID <= 0 || estacionID <= 0 {
+		return nil, fmt.Errorf("contexto de estacion invalido")
+	}
+	pref, err := GetEmpresaEstacionPref(dbConn, empresaID, 0, "estaciones_config")
+	if err != nil || pref == nil {
+		return nil, fmt.Errorf("no se encontro la estacion solicitada")
+	}
+	var cfg map[string]interface{}
+	if err := json.Unmarshal([]byte(pref.Valor), &cfg); err != nil {
+		return nil, fmt.Errorf("configuracion de estaciones invalida")
+	}
+	items, ok := cfg["estaciones"].([]interface{})
+	if !ok {
+		return nil, fmt.Errorf("no se encontro la estacion solicitada")
+	}
+	snapshot := &EmpresaAIHotelRoomStationSnapshot{EstacionID: estacionID, Tarifas: []EmpresaAIHotelRoomRate{}}
+	found := false
+	for _, raw := range items {
+		station, ok := raw.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		id, _ := station["id"].(float64)
+		if int64(id) != estacionID {
+			continue
+		}
+		found = true
+		snapshot.Nombre, _ = station["nombre"].(string)
+		snapshot.Tipo, _ = station["tipo_estacion"].(string)
+		snapshot.Moneda, _ = station["moneda"].(string)
+		snapshot.Activa, _ = station["activa"].(bool)
+		break
+	}
+	if !found {
+		return nil, fmt.Errorf("la estacion no pertenece a la empresa")
+	}
+	rates, err := ListEmpresaTarifasPorDia(dbConn, empresaID, EmpresaTarifaPorDiaFilter{EstacionID: estacionID, IncludeInactive: true})
+	if err != nil {
+		return nil, err
+	}
+	for _, rate := range rates {
+		snapshot.Tarifas = append(snapshot.Tarifas, EmpresaAIHotelRoomRate{Personas: rate.PersonasDesde, Valor: rate.ValorDia})
+	}
+	return snapshot, nil
 }
 
 func normalizeAIProposalState(raw string) string {

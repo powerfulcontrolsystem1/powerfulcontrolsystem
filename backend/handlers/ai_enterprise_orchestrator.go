@@ -3,6 +3,7 @@ package handlers
 import (
 	"database/sql"
 	"encoding/json"
+	"io"
 	"net/http"
 	"os"
 	"strings"
@@ -33,6 +34,14 @@ func EmpresaAIEnterpriseHandler(dbEmp *sql.DB) http.HandlerFunc {
 		ctx := enterpriseAIExecutionContext(r, empresaID, user)
 		if err := ctx.Validate(); err != nil {
 			http.Error(w, "contexto IA invalido", http.StatusForbidden)
+			return
+		}
+		if !aipkg.AllowsAgentMode(enterpriseAIAgentModeEnabled(), ctx) {
+			writeJSON(w, http.StatusForbidden, map[string]interface{}{"ok": false, "code": "ai_agent_mode_disabled", "error": "El modo agente no esta habilitado para esta empresa."})
+			return
+		}
+		if _, err := dbpkg.EnsureEmpresaAIConversation(dbEmp, dbpkg.EmpresaAIConversation{ConversationID: ctx.ConversationID, EmpresaID: ctx.EmpresaID, UsuarioID: ctx.UserID, Modo: ctx.Mode}, 2*time.Hour); err != nil {
+			http.Error(w, "No se pudo preparar la conversacion IA", http.StatusServiceUnavailable)
 			return
 		}
 		action := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("action")))
@@ -75,6 +84,9 @@ func enterpriseAIEnabled() bool {
 func enterpriseAIWriteEnabled() bool {
 	return enterpriseAIEnabled() && strings.EqualFold(strings.TrimSpace(os.Getenv("AI_WRITE_TOOLS_ENABLED")), "true") && strings.EqualFold(strings.TrimSpace(os.Getenv("AI_HOTEL_TOOLS_ENABLED")), "true")
 }
+func enterpriseAIAgentModeEnabled() bool {
+	return enterpriseAIEnabled() && strings.EqualFold(strings.TrimSpace(os.Getenv("AI_AGENT_MODE_ENABLED")), "true")
+}
 
 func enterpriseAIExecutionContext(r *http.Request, empresaID int64, user string) aipkg.ExecutionContext {
 	role, _ := r.Context().Value("adminRoleEfectivo").(string)
@@ -93,6 +105,18 @@ func enterpriseAIExecutionContext(r *http.Request, empresaID int64, user string)
 	return aipkg.ExecutionContext{UserID: user, EmpresaID: empresaID, Role: role, SessionID: strings.TrimSpace(r.Header.Get("X-Session-ID")), ConversationID: conversationID, RequestID: requestID, Mode: mode, AuthorizedScope: []string{"current_company"}, MaxOperations: 1}
 }
 
+func decodeEnterpriseJSON(w http.ResponseWriter, r *http.Request, dst interface{}, maxBytes int64) error {
+	decoder := json.NewDecoder(http.MaxBytesReader(w, r.Body, maxBytes))
+	decoder.DisallowUnknownFields()
+	if err := decoder.Decode(dst); err != nil {
+		return err
+	}
+	if err := decoder.Decode(&struct{}{}); err != io.EOF {
+		return http.ErrNotSupported
+	}
+	return nil
+}
+
 type enterpriseAIHotelProposalRequest struct {
 	ConversationID string                       `json:"conversation_id"`
 	Plan           dbpkg.EmpresaAIHotelRoomPlan `json:"plan"`
@@ -104,19 +128,24 @@ func enterpriseAIHotelProposal(w http.ResponseWriter, r *http.Request, dbEmp *sq
 		return
 	}
 	var req enterpriseAIHotelProposalRequest
-	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 128<<10)).Decode(&req); err != nil {
+	if err := decodeEnterpriseJSON(w, r, &req, 128<<10); err != nil {
 		http.Error(w, "JSON invalido", http.StatusBadRequest)
 		return
 	}
-	if strings.TrimSpace(req.ConversationID) != "" {
-		ctx.ConversationID = strings.TrimSpace(req.ConversationID)
+	if suppliedConversation := strings.TrimSpace(req.ConversationID); suppliedConversation != "" && suppliedConversation != ctx.ConversationID {
+		http.Error(w, "conversacion IA no coincide con el contexto autenticado", http.StatusForbidden)
+		return
 	}
 	if err := dbpkg.NormalizeEmpresaAIHotelRoomPlan(&req.Plan); err != nil {
 		writeJSON(w, http.StatusUnprocessableEntity, map[string]interface{}{"ok": false, "state": dbpkg.AIProposalAwaitingInformation, "missing_or_invalid": err.Error(), "questions": []string{"Indica si la tarifa es por noche, los horarios de check-in/check-out, moneda, activacion y las tarifas por ocupacion."}})
 		return
 	}
 	// Current state is read on the server and is never selected by the model or frontend.
-	current := map[string]interface{}{"estacion_id": req.Plan.EstacionID, "tarifas_actuales": "consultadas al confirmar"}
+	current, err := dbpkg.GetEmpresaAIHotelRoomStationSnapshot(dbEmp, ctx.EmpresaID, req.Plan.EstacionID)
+	if err != nil {
+		writeJSON(w, http.StatusUnprocessableEntity, map[string]interface{}{"ok": false, "state": dbpkg.AIProposalAwaitingInformation, "missing_or_invalid": "No fue posible validar la estacion de esta empresa."})
+		return
+	}
 	planJSON, _ := json.Marshal(req.Plan)
 	beforeJSON, _ := json.Marshal(current)
 	expectedJSON, _ := json.Marshal(map[string]interface{}{"tipo_estacion": "hotel", "nombre": req.Plan.NombreHabitacion, "tarifas": req.Plan.Tarifas})
@@ -144,7 +173,7 @@ func enterpriseAIConfirmProposal(w http.ResponseWriter, r *http.Request, dbEmp *
 		PlanHash       string `json:"plan_hash"`
 		IdempotencyKey string `json:"idempotency_key"`
 	}
-	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 64<<10)).Decode(&req); err != nil {
+	if err := decodeEnterpriseJSON(w, r, &req, 64<<10); err != nil {
 		http.Error(w, "JSON invalido", http.StatusBadRequest)
 		return
 	}
@@ -183,7 +212,7 @@ func enterpriseAICancelProposal(w http.ResponseWriter, r *http.Request, dbEmp *s
 	var req struct {
 		ProposalID string `json:"proposal_id"`
 	}
-	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 32<<10)).Decode(&req); err != nil {
+	if err := decodeEnterpriseJSON(w, r, &req, 32<<10); err != nil {
 		http.Error(w, "JSON invalido", http.StatusBadRequest)
 		return
 	}
