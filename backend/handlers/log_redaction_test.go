@@ -209,3 +209,20 @@ func TestPrivilegedIntegrationConfigurationsDoNotExposePersistenceErrors(t *test
 		}
 	}
 }
+
+func TestPaymentConfigurationsDoNotExposeSecretsOrPersistenceErrors(t *testing.T) {
+	contents, err := os.ReadFile("payments_handlers.go")
+	if err != nil {
+		t.Fatalf("read payments handler: %v", err)
+	}
+	for _, forbidden := range []string{
+		`"failed to save wompi.public_key: "+err.Error()`,
+		`"failed to save wompi.private_key: "+err.Error()`,
+		`"failed to save epayco.private_key: "+err.Error()`,
+		`"failed to encrypt epayco.checkout_key: "+err.Error()`,
+	} {
+		if strings.Contains(string(contents), forbidden) {
+			t.Fatalf("payment configuration must not expose secret or persistence diagnostic: %s", forbidden)
+		}
+	}
+}
