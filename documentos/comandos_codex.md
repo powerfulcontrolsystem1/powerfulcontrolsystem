@@ -94,6 +94,11 @@ El hijo se resuelve como `pwsh.exe` cuando el orquestador se ejecuta en
 PowerShell Core y como `powershell.exe` en Windows PowerShell, con fallback a
 un comando instalado. No se debe asumir que `$PSHOME` contiene ambos binarios.
 
+Si el arbol esta limpio pero la rama contiene commits locales sin upstream o
+sin publicar, `actualizar_repositorio.ps1` publica `HEAD` y configura el
+upstream antes de continuar. Asi `rs` no omite una rama de trabajo solo porque
+los cambios ya fueron commiteados manualmente.
+
 Durante la extraccion remota, `sync_to_vps.ps1` borra las rutas retiradas
 `web/Juegos`, `juegos` y `web/img/juegos` antes de aplicar el paquete. Esto
 evita que los archivos estaticos de un modulo eliminado sobrevivan a una

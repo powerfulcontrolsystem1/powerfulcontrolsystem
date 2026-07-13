@@ -37707,3 +37707,8 @@ Archivos modificados:
   aunque falle el envío de correo; ya no devuelven el detalle del proveedor.
 - La gestión de administradores autorizados para frecuencia FE deja de exponer
   errores de lectura, JSON o persistencia en la interfaz.
+
+2026-07-13: Rs publica tambien ramas limpias con commits pendientes.
+- `actualizar_repositorio.ps1` deja de terminar antes del push cuando no hay
+  archivos sin commitear: verifica/publica `HEAD` y configura el upstream. Esto
+  permite que `rs` continue con la sincronizacion normal del VPS.

@@ -307,7 +307,24 @@ if (-not (Invoke-GitAddQuietLineEndingAdvice -Paths @('-A'))) {
 }
 $statusLines = @(git status --porcelain)
 if ($statusLines.Count -eq 0) {
-    Write-WarnMsg "No hay cambios para commitear. No se realizo push."
+    # Un arbol limpio no implica que la rama ya este publicada. Esto sucede
+    # cuando Codex u otra herramienta crea commits locales antes de ejecutar
+    # rs; dejar de inmediato evitaba que sync_to_vps desplegara una rama con
+    # upstream verificable.
+    $originUrl = ((& git remote get-url origin 2>$null) | Out-String).Trim()
+    if ([string]::IsNullOrWhiteSpace($originUrl)) {
+        Write-ErrMsg "No existe remoto 'origin' para publicar la rama limpia."
+        Exit-WithCode 1
+    }
+    $cleanPush = Push-WithPolicy -AllowForce:$ForcePush -SetUpstream -Context "rama limpia"
+    if (-not $cleanPush.Ok) {
+        Write-ErrMsg "No se pudo verificar o publicar la rama limpia en origin."
+        if ($cleanPush.Result.Output) {
+            Write-Host $cleanPush.Result.Output
+        }
+        Exit-WithCode 1
+    }
+    Write-Ok ("Rama limpia verificada/publicada en origin (modo: {0})." -f $cleanPush.Mode)
     Exit-WithCode 0
 }
 Write-Info ("Archivos detectados para commit: {0}" -f $statusLines.Count)
