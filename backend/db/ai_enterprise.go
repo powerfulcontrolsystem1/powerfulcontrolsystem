@@ -479,13 +479,15 @@ func FindEmpresaAIProductDuplicates(dbConn *sql.DB, empresaID int64, nombre, sku
 	if nombre == "" && sku == "" {
 		return nil, fmt.Errorf("nombre o sku requerido")
 	}
-	where := "LOWER(COALESCE(nombre,'')) = LOWER(?)"
-	args := []interface{}{empresaID, nombre}
-	if sku != "" {
-		where = "(" + where + " OR LOWER(COALESCE(sku,'')) = LOWER(?))"
-		args = append(args, sku)
+	const selectProductsByName = `SELECT id, empresa_id, COALESCE(sku,''), COALESCE(nombre,''), COALESCE(precio,0), COALESCE(impuesto_porcentaje,0), COALESCE(estado,'activo') FROM productos WHERE empresa_id=? AND LOWER(COALESCE(nombre,'')) = LOWER(?) ORDER BY id DESC LIMIT 10`
+	const selectProductsByNameOrSKU = `SELECT id, empresa_id, COALESCE(sku,''), COALESCE(nombre,''), COALESCE(precio,0), COALESCE(impuesto_porcentaje,0), COALESCE(estado,'activo') FROM productos WHERE empresa_id=? AND (LOWER(COALESCE(nombre,'')) = LOWER(?) OR LOWER(COALESCE(sku,'')) = LOWER(?)) ORDER BY id DESC LIMIT 10`
+	var rows *sql.Rows
+	var err error
+	if sku == "" {
+		rows, err = dbConn.Query(selectProductsByName, empresaID, nombre)
+	} else {
+		rows, err = dbConn.Query(selectProductsByNameOrSKU, empresaID, nombre, sku)
 	}
-	rows, err := dbConn.Query(`SELECT id, empresa_id, COALESCE(sku,''), COALESCE(nombre,''), COALESCE(precio,0), COALESCE(impuesto_porcentaje,0), COALESCE(estado,'activo') FROM productos WHERE empresa_id=? AND `+where+` ORDER BY id DESC LIMIT 10`, args...)
 	if err != nil {
 		return nil, err
 	}
