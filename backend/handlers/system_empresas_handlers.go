@@ -582,7 +582,7 @@ func EmpresasHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 			emailCorporativoErrText := ""
 			if emailCorporativoErr != nil {
 				emailCorporativoErrText = emailCorporativoErr.Error()
-				log.Printf("POST /super/api/empresas id=%d email corporativo warning: %v", id, emailCorporativoErr)
+				log.Printf("POST /super/api/empresas id=%d email corporativo warning", id)
 			}
 			colombiaDefaults, colombiaDefaultsErr := dbpkg.ApplyEmpresaParametrosLegalesLatest(dbEmp, id, "CO", payload.UsuarioCreador, "creacion_empresa")
 			colombiaDefaultsErrText := ""

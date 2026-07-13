@@ -21,6 +21,8 @@
 - El barrido posterior corrige una traza de preferencias de estaciones que aún
   registraba correo completo; ahora reutiliza la redacción central y cuenta con
   regresión de fuente.
+- Los fallos de proveedores de correo en pagos, correo corporativo y agentes
+  dejan de imprimir el error crudo, que puede contener datos de destinatarios.
 
 2026-07-13: Auditoria de preparación - minimizacion de secretos y PII en logs.
 - Se elimina `backend/tools/query_epayco_runtime.go`, que accedía directamente

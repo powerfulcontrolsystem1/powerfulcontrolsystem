@@ -675,7 +675,7 @@ func EnsureEmpresaCorporateEmailAfterCreate(dbSuper *sql.DB, empresaID int64, em
 	if cfg.Enabled && cfg.ProvisionMode == "mailu_direct" && encryptedPassword != "" {
 		result := provisionEmpresaEmailAccount(dbSuper, cfg, *item, initialPassword)
 		if !result.OK {
-			log.Printf("email corporativo empresa_id=%d provision warning: %s", empresaID, result.Error)
+			log.Printf("email corporativo empresa_id=%d provision warning", empresaID)
 		}
 		item, _ = dbpkg.GetEmpresaEmailCorporativoByEmpresa(dbSuper, empresaID)
 	}

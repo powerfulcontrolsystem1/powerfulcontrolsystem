@@ -93,3 +93,20 @@ func TestStationPreferencesDoNotLogRawUserEmail(t *testing.T) {
 		t.Fatal("station preferences must redact user email before logging")
 	}
 }
+
+func TestProviderMailFailuresDoNotLogProviderErrors(t *testing.T) {
+	for path, forbidden := range map[string]string{
+		"payments_handlers.go":           "email:\", mailErr",
+		"email_corporativo_handlers.go":  "provision warning: %s",
+		"super_mantenimiento_agentes.go": "enviar correo DIAN: %v",
+		"system_empresas_handlers.go":    "email corporativo warning: %v",
+	} {
+		contents, err := os.ReadFile(path)
+		if err != nil {
+			t.Fatalf("read %s: %v", path, err)
+		}
+		if strings.Contains(string(contents), forbidden) {
+			t.Fatalf("provider mail failure must not log raw provider error: %s", path)
+		}
+	}
+}
