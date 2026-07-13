@@ -37884,3 +37884,13 @@ Archivos modificados:
   idempotencia y confirmacion siguen siendo verificados en el backend.
 - Validacion: `go test ./handlers ./ai ./db`, `go vet ./handlers ./ai ./db`
   y `git diff --check` desde el arbol de trabajo.
+
+# 2026-07-13 - Catalogo GPT-5.6 y esfuerzo configurable
+- Super Administrador ahora puede habilitar GPT-5.6 Luna, Terra y Sol, elegir
+  modelos separados para operaciones y adjuntos, y definir el esfuerzo por
+  modelo desde configuracion avanzada.
+- El backend valida los esfuerzos contra cada modelo y los envia solo en
+  peticiones Responses; no acepta valores arbitrarios enviados por el cliente.
+- Referencia tecnica consultada: catalogo oficial de modelos OpenAI, que
+  documenta Sol/Terra/Luna y sus niveles `none`, `low`, `medium`, `high`,
+  `xhigh`, `max`.

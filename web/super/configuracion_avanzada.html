@@ -2985,6 +2985,7 @@
           (data.modelos || []).forEach(function(item){ byModel[item.model_id] = item; });
           const policy = data.chat_model_policy || {};
           const enabledModels = policy.enabled_model_ids || {};
+          const reasoningEfforts = policy.reasoning_effort_by_model || {};
           const operationModel = document.getElementById('aiOperationModel');
           const attachmentModel = document.getElementById('aiAttachmentModel');
           const enabledModelsHost = document.getElementById('aiEnabledModels');
@@ -3009,6 +3010,11 @@
               input.type = 'checkbox'; input.value = item.model_id; input.className = 'ai-enabled-model';
               input.checked = enabledModels[item.model_id] !== false;
               label.appendChild(input); label.appendChild(document.createTextNode(' ' + (item.display_name || item.model_id)));
+              const effort = document.createElement('select');
+              effort.className = 'form-input ai-reasoning-effort'; effort.dataset.modelId = item.model_id;
+              (item.reasoning_efforts || ['none']).forEach(function(value){ const option = document.createElement('option'); option.value = value; option.textContent = value; effort.appendChild(option); });
+              effort.value = reasoningEfforts[item.model_id] || item.default_reasoning_effort || (item.reasoning_efforts || ['none'])[0];
+              label.appendChild(effort);
               enabledModelsHost.appendChild(label);
             });
           }
@@ -3102,6 +3108,7 @@
       operation_model_id: (document.getElementById('aiOperationModel').value || '').trim(),
       attachment_model_id: (document.getElementById('aiAttachmentModel').value || '').trim(),
       enabled_model_ids: Array.prototype.slice.call(document.querySelectorAll('.ai-enabled-model:checked')).map(function(input){ return input.value; })
+          , reasoning_effort_by_model: Array.prototype.slice.call(document.querySelectorAll('.ai-reasoning-effort')).reduce(function(out, select){ out[select.dataset.modelId] = select.value; return out; }, {})
         };
 
         btn.disabled = true;

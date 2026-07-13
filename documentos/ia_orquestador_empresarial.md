@@ -167,3 +167,17 @@ Los cuerpos de error de proveedores no se devuelven al navegador ni se
 propagan mediante `Error()`. La interfaz recibe un mensaje generico, mientras
 la auditoria conserva solo metadatos minimizados sin prompt, token, adjunto ni
 respuesta privada.
+
+## Modelos y esfuerzo de razonamiento
+
+Super Administrador puede habilitar y seleccionar GPT-5.4 mini, GPT-5.5,
+GPT-5.6 Luna, GPT-5.6 Terra y GPT-5.6 Sol. Terra equilibra capacidad y costo;
+Sol queda orientado a tareas profesionales complejas; Luna a volumen y costo.
+La disponibilidad efectiva depende de la cuenta y permisos del proveedor.
+
+La configuracion guarda un esfuerzo por modelo y el backend solo acepta los
+valores declarados por su catalogo. Para los modelos GPT-5.6 se permiten
+`none`, `low`, `medium`, `high`, `xhigh` y `max`; GPT-5.5 usa `none`, `low`,
+`medium`, `high` y `xhigh`; GPT-5.4 mini queda en `none` porque opera por
+Chat Completions en el flujo economico actual. El esfuerzo se envia unicamente
+al endpoint Responses y nunca es controlado directamente por el navegador.

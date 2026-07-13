@@ -82,6 +82,14 @@ func aiCredentialCatalogModels() []aiCredentialModelDef {
 			ConfigKey:    "ai.model.openai.gpt_5_4_mini.api_key",
 			FreePlanNote: "Comparte la credencial cifrada del proveedor OpenAI; validar disponibilidad antes de activarlo.",
 		},
+		{
+			ModelID: "openai:gpt-5.6-terra", Provider: "openai", DisplayName: "OpenAI GPT-5.6 Terra", ApiKeyEnv: "OPENAI_API_KEY", ConfigKey: "ai.model.openai.gpt_5_4_mini.api_key",
+			FreePlanNote: "Comparte la credencial cifrada del proveedor OpenAI; validar disponibilidad antes de activarlo.",
+		},
+		{
+			ModelID: "openai:gpt-5.6-sol", Provider: "openai", DisplayName: "OpenAI GPT-5.6 Sol", ApiKeyEnv: "OPENAI_API_KEY", ConfigKey: "ai.model.openai.gpt_5_4_mini.api_key",
+			FreePlanNote: "Comparte la credencial cifrada del proveedor OpenAI; validar disponibilidad antes de activarlo.",
+		},
 	}
 }
 

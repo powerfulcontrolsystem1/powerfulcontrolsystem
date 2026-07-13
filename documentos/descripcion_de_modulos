@@ -4492,3 +4492,6 @@ adjuntos y analisis avanzado.
   ejecucion sigue siendo de servidor, por `empresa_id` validado, permisos,
   idempotencia, duplicados y auditoria; no se ejecuta ningun bloque producido
   por el modelo.
+- Super Administrador: se agregan GPT-5.6 Terra y GPT-5.6 Sol junto con Luna;
+  cada modelo expone sus esfuerzos compatibles y puede tener un esfuerzo
+  independiente. El backend valida modelo y esfuerzo antes de persistirlos.

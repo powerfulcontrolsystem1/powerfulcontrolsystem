@@ -231,6 +231,7 @@ func AIModelsConfigHandler(dbSuper *sql.DB) http.HandlerFunc {
 			modeloOperacion, _, _, _ := getChatIAEmpresaModeloOperacion(dbSuper)
 			modeloAdjuntos, _, _, _ := getChatIAEmpresaModeloAdjuntos(dbSuper)
 			modelosHabilitados, _ := getChatIAEmpresaModelosHabilitados(dbSuper)
+			modelosEsfuerzo, _ := getChatIAEmpresaModelosEsfuerzo(dbSuper)
 			if len(modelosHabilitados) == 0 {
 				modelosHabilitados = map[string]bool{}
 				for _, model := range empresaAIModelCatalog() {
@@ -244,9 +245,10 @@ func AIModelsConfigHandler(dbSuper *sql.DB) http.HandlerFunc {
 				"service_status":       superAIServiceStatus(dbSuper),
 				"modelos":              items,
 				"chat_model_policy": map[string]interface{}{
-					"operation_model_id":  modeloOperacion,
-					"attachment_model_id": modeloAdjuntos,
-					"enabled_model_ids":   modelosHabilitados,
+					"operation_model_id":        modeloOperacion,
+					"attachment_model_id":       modeloAdjuntos,
+					"enabled_model_ids":         modelosHabilitados,
+					"reasoning_effort_by_model": modelosEsfuerzo,
 				},
 			})
 			return
@@ -257,11 +259,12 @@ func AIModelsConfigHandler(dbSuper *sql.DB) http.HandlerFunc {
 					ModelID string `json:"model_id"`
 					APIKey  string `json:"api_key"`
 				} `json:"credentials"`
-				Enabled           *bool           `json:"enabled"`
-				ProviderEnabled   map[string]bool `json:"provider_enabled"`
-				OperationModelID  string          `json:"operation_model_id"`
-				AttachmentModelID string          `json:"attachment_model_id"`
-				EnabledModelIDs   []string        `json:"enabled_model_ids"`
+				Enabled                *bool             `json:"enabled"`
+				ProviderEnabled        map[string]bool   `json:"provider_enabled"`
+				OperationModelID       string            `json:"operation_model_id"`
+				AttachmentModelID      string            `json:"attachment_model_id"`
+				EnabledModelIDs        []string          `json:"enabled_model_ids"`
+				ReasoningEffortByModel map[string]string `json:"reasoning_effort_by_model"`
 			}
 			if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
 				http.Error(w, "invalid payload: "+err.Error(), http.StatusBadRequest)
@@ -329,7 +332,7 @@ func AIModelsConfigHandler(dbSuper *sql.DB) http.HandlerFunc {
 				}
 			}
 
-			if payload.OperationModelID != "" || payload.AttachmentModelID != "" || payload.EnabledModelIDs != nil {
+			if payload.OperationModelID != "" || payload.AttachmentModelID != "" || payload.EnabledModelIDs != nil || payload.ReasoningEffortByModel != nil {
 				catalog := empresaAIModelMap()
 				enabled := make([]string, 0, len(payload.EnabledModelIDs))
 				seen := map[string]bool{}
@@ -371,6 +374,25 @@ func AIModelsConfigHandler(dbSuper *sql.DB) http.HandlerFunc {
 				entries := map[string]string{
 					superChatIAEmpresaModeloOperacionKey: operation,
 					superChatIAEmpresaModeloAdjuntosKey:  attachment,
+				}
+				if payload.ReasoningEffortByModel != nil {
+					allowedEfforts := map[string]map[string]bool{}
+					for _, model := range empresaAIModelCatalog() {
+						allowedEfforts[model.ID] = map[string]bool{}
+						for _, effort := range model.ReasoningEfforts {
+							allowedEfforts[model.ID][effort] = true
+						}
+					}
+					validatedEfforts := map[string]string{}
+					for id, effort := range payload.ReasoningEffortByModel {
+						if _, ok := catalog[id]; !ok || !allowedEfforts[id][strings.TrimSpace(effort)] {
+							http.Error(w, "esfuerzo de razonamiento no soportado", http.StatusBadRequest)
+							return
+						}
+						validatedEfforts[id] = strings.TrimSpace(effort)
+					}
+					rawEfforts, _ := json.Marshal(validatedEfforts)
+					entries[superChatIAEmpresaModelosEsfuerzoKey] = string(rawEfforts)
 				}
 				if payload.EnabledModelIDs != nil {
 					entries[superChatIAEmpresaModelosHabilitadosKey] = strings.Join(enabled, ",")

@@ -28,6 +28,7 @@ const (
 	superChatIAEmpresaModeloOperacionKey    = "ai.chat.empresa.modelo_operacion"
 	superChatIAEmpresaModeloAdjuntosKey     = "ai.chat.empresa.modelo_adjuntos"
 	superChatIAEmpresaModelosHabilitadosKey = "ai.chat.empresa.modelos_habilitados"
+	superChatIAEmpresaModelosEsfuerzoKey    = "ai.chat.empresa.modelos_esfuerzo"
 
 	superChatIALogicaUpdatedBySuffix = ".updated_by"
 
@@ -47,6 +48,16 @@ const (
 	defaultChatIAEmpresaModeloOperacion   = "openai:gpt-5.4-mini"
 	defaultChatIAEmpresaModeloAdjuntos    = "openai:gpt-5.5"
 )
+
+func defaultChatIAEmpresaModelosEsfuerzo() map[string]string {
+	return map[string]string{
+		"openai:gpt-5.4-mini":  "none",
+		"openai:gpt-5.5":       "medium",
+		"openai:gpt-5.6-sol":   "high",
+		"openai:gpt-5.6-terra": "medium",
+		"openai:gpt-5.6-luna":  "low",
+	}
+}
 
 func parseConfigBoolWithDefault(raw string, fallback bool) bool {
 	v := strings.ToLower(strings.TrimSpace(raw))
@@ -254,6 +265,24 @@ func getChatIAEmpresaModelosHabilitados(dbSuper *sql.DB) (map[string]bool, error
 		}
 	}
 	return out, nil
+}
+
+func getChatIAEmpresaModelosEsfuerzo(dbSuper *sql.DB) (map[string]string, error) {
+	defaults := defaultChatIAEmpresaModelosEsfuerzo()
+	raw, _, _, err := getSuperConfigString(dbSuper, superChatIAEmpresaModelosEsfuerzoKey)
+	if err != nil || strings.TrimSpace(raw) == "" {
+		return defaults, err
+	}
+	var stored map[string]string
+	if json.Unmarshal([]byte(raw), &stored) != nil {
+		return defaults, nil
+	}
+	for id, effort := range stored {
+		if strings.TrimSpace(id) != "" && strings.TrimSpace(effort) != "" {
+			defaults[id] = strings.TrimSpace(effort)
+		}
+	}
+	return defaults, nil
 }
 
 func effectiveDailyLimitBySuperConfig(maxConfigured int64, modelFreeDailyLimit int) int64 {

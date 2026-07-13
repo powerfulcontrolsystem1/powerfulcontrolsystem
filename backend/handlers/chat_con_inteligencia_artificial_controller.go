@@ -156,16 +156,18 @@ func (e *aiProviderHTTPError) Error() string {
 }
 
 type empresaAIModelDef struct {
-	ID             string `json:"id"`
-	Provider       string `json:"provider"`
-	DisplayName    string `json:"display_name"`
-	UpstreamModel  string `json:"upstream_model"`
-	Endpoint       string `json:"endpoint"`
-	ApiKeyEnv      string `json:"-"`
-	Famous         bool   `json:"famous"`
-	FreeDailyLimit int    `json:"free_daily_limit"`
-	Description    string `json:"description"`
-	PlanURL        string `json:"plan_url"`
+	ID                     string   `json:"id"`
+	Provider               string   `json:"provider"`
+	DisplayName            string   `json:"display_name"`
+	UpstreamModel          string   `json:"upstream_model"`
+	Endpoint               string   `json:"endpoint"`
+	ApiKeyEnv              string   `json:"-"`
+	Famous                 bool     `json:"famous"`
+	FreeDailyLimit         int      `json:"free_daily_limit"`
+	Description            string   `json:"description"`
+	PlanURL                string   `json:"plan_url"`
+	ReasoningEfforts       []string `json:"reasoning_efforts,omitempty"`
+	DefaultReasoningEffort string   `json:"default_reasoning_effort,omitempty"`
 }
 
 type empresaAIChatMensaje struct {
@@ -241,37 +243,48 @@ func (c *EmpresaAIChatController) contextoPreguntaOptionsForAccount(empresaID in
 func empresaAIModelCatalog() []empresaAIModelDef {
 	return []empresaAIModelDef{
 		{
-			ID:             "openai:gpt-5.4-mini",
-			Provider:       "openai",
-			DisplayName:    "OpenAI GPT-5.4 mini",
-			UpstreamModel:  "gpt-5.4-mini",
-			Endpoint:       "https://api.openai.com/v1/chat/completions",
-			ApiKeyEnv:      "OPENAI_API_KEY",
-			Famous:         true,
-			FreeDailyLimit: 120,
-			Description:    "Chat empresarial con OpenAI, restringido por empresa_id y con API key cifrada en el panel super.",
+			ID:               "openai:gpt-5.4-mini",
+			Provider:         "openai",
+			DisplayName:      "OpenAI GPT-5.4 mini",
+			UpstreamModel:    "gpt-5.4-mini",
+			Endpoint:         "https://api.openai.com/v1/chat/completions",
+			ApiKeyEnv:        "OPENAI_API_KEY",
+			Famous:           true,
+			FreeDailyLimit:   120,
+			Description:      "Chat empresarial con OpenAI, restringido por empresa_id y con API key cifrada en el panel super.",
+			ReasoningEfforts: []string{"none"}, DefaultReasoningEffort: "none",
 		},
 		{
-			ID:             "openai:gpt-5.5",
-			Provider:       "openai",
-			DisplayName:    "OpenAI GPT-5.5 (vision/fotos)",
-			UpstreamModel:  "gpt-5.5",
-			Endpoint:       "https://api.openai.com/v1/responses",
-			ApiKeyEnv:      "OPENAI_API_KEY",
-			Famous:         true,
-			FreeDailyLimit: 20,
-			Description:    "Analisis de fotos, documentos e imagenes con OpenAI. Puede mantenerse como alternativa compatible desde Super Administrador.",
+			ID:               "openai:gpt-5.5",
+			Provider:         "openai",
+			DisplayName:      "OpenAI GPT-5.5 (vision/fotos)",
+			UpstreamModel:    "gpt-5.5",
+			Endpoint:         "https://api.openai.com/v1/responses",
+			ApiKeyEnv:        "OPENAI_API_KEY",
+			Famous:           true,
+			FreeDailyLimit:   20,
+			Description:      "Analisis de fotos, documentos e imagenes con OpenAI. Puede mantenerse como alternativa compatible desde Super Administrador.",
+			ReasoningEfforts: []string{"none", "low", "medium", "high", "xhigh"}, DefaultReasoningEffort: "medium",
 		},
 		{
-			ID:             "openai:gpt-5.6-luna",
-			Provider:       "openai",
-			DisplayName:    "OpenAI GPT-5.6 Luna",
-			UpstreamModel:  "gpt-5.6-luna",
-			Endpoint:       "https://api.openai.com/v1/responses",
-			ApiKeyEnv:      "OPENAI_API_KEY",
-			Famous:         true,
-			FreeDailyLimit: 20,
-			Description:    "Modelo avanzado configurable para analisis de fotos, documentos y tareas complejas. Activelo solo despues de validarlo con la cuenta OpenAI.",
+			ID:               "openai:gpt-5.6-luna",
+			Provider:         "openai",
+			DisplayName:      "OpenAI GPT-5.6 Luna",
+			UpstreamModel:    "gpt-5.6-luna",
+			Endpoint:         "https://api.openai.com/v1/responses",
+			ApiKeyEnv:        "OPENAI_API_KEY",
+			Famous:           true,
+			FreeDailyLimit:   20,
+			Description:      "Modelo avanzado configurable para analisis de fotos, documentos y tareas complejas. Activelo solo despues de validarlo con la cuenta OpenAI.",
+			ReasoningEfforts: []string{"none", "low", "medium", "high", "xhigh", "max"}, DefaultReasoningEffort: "low",
+		},
+		{
+			ID: "openai:gpt-5.6-terra", Provider: "openai", DisplayName: "OpenAI GPT-5.6 Terra", UpstreamModel: "gpt-5.6-terra", Endpoint: "https://api.openai.com/v1/responses", ApiKeyEnv: "OPENAI_API_KEY", Famous: true, FreeDailyLimit: 20,
+			Description: "Modelo profesional equilibrado para operaciones y analisis con IA.", ReasoningEfforts: []string{"none", "low", "medium", "high", "xhigh", "max"}, DefaultReasoningEffort: "medium",
+		},
+		{
+			ID: "openai:gpt-5.6-sol", Provider: "openai", DisplayName: "OpenAI GPT-5.6 Sol", UpstreamModel: "gpt-5.6-sol", Endpoint: "https://api.openai.com/v1/responses", ApiKeyEnv: "OPENAI_API_KEY", Famous: true, FreeDailyLimit: 10,
+			Description: "Modelo de mayor capacidad para tareas complejas y razonamiento profesional.", ReasoningEfforts: []string{"none", "low", "medium", "high", "xhigh", "max"}, DefaultReasoningEffort: "high",
 		},
 	}
 }
@@ -290,6 +303,24 @@ func availableEmpresaAIModelCatalog(dbSuper *sql.DB) []empresaAIModelDef {
 		available = append(available, item)
 	}
 	return available
+}
+
+func configuredAIReasoningEffort(dbSuper *sql.DB, model empresaAIModelDef) string {
+	efforts := defaultChatIAEmpresaModelosEsfuerzo()
+	if dbSuper != nil {
+		stored, _ := getChatIAEmpresaModelosEsfuerzo(dbSuper)
+		efforts = stored
+	}
+	candidate := strings.TrimSpace(efforts[model.ID])
+	for _, allowed := range model.ReasoningEfforts {
+		if candidate == allowed {
+			return candidate
+		}
+	}
+	if strings.TrimSpace(model.DefaultReasoningEffort) != "" {
+		return model.DefaultReasoningEffort
+	}
+	return "none"
 }
 
 func empresaAIModelMap() map[string]empresaAIModelDef {
@@ -1417,9 +1448,11 @@ func (c *EmpresaAIChatController) callOpenAIResponsesWithSystemPrompt(model empr
 	}
 	messages = append(messages, inMsg{Role: "user", Content: parts})
 
+	reasoning := map[string]string{"effort": configuredAIReasoningEffort(c.dbSuper, model)}
 	body := map[string]interface{}{
-		"model": strings.TrimSpace(model.UpstreamModel),
-		"input": messages,
+		"model":     strings.TrimSpace(model.UpstreamModel),
+		"input":     messages,
+		"reasoning": reasoning,
 	}
 	payload, _ := json.Marshal(body)
 

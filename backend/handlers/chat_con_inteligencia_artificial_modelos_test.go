@@ -21,6 +21,24 @@ func TestEmpresaAIModelCatalogIncludesAdvancedLuna(t *testing.T) {
 	}
 }
 
+func TestEmpresaAIModelCatalogIncludesTerraAndSolWithReasoning(t *testing.T) {
+	for _, wanted := range []string{"openai:gpt-5.6-terra", "openai:gpt-5.6-sol"} {
+		found := false
+		for _, model := range empresaAIModelCatalog() {
+			if model.ID != wanted {
+				continue
+			}
+			found = true
+			if len(model.ReasoningEfforts) != 6 || configuredAIReasoningEffort(nil, model) == "" {
+				t.Fatalf("modelo %s sin esfuerzos configurables completos", wanted)
+			}
+		}
+		if !found {
+			t.Fatalf("no se encontro el modelo %s", wanted)
+		}
+	}
+}
+
 func TestSupportedAIAttachmentsAreClosedList(t *testing.T) {
 	valid := []struct {
 		filename string
