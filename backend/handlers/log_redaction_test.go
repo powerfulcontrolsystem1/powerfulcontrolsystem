@@ -226,3 +226,15 @@ func TestPaymentConfigurationsDoNotExposeSecretsOrPersistenceErrors(t *testing.T
 		}
 	}
 }
+
+func TestAdminManagementDoesNotExposePersistenceOrMailErrors(t *testing.T) {
+	contents, err := os.ReadFile("auth_admin_handlers.go")
+	if err != nil {
+		t.Fatalf("read admin handler: %v", err)
+	}
+	for _, forbidden := range []string{`"failed to upsert administrador: "+err.Error()`, `"failed to set invitation token: "+err.Error()`, `resp["error"] = mailErr.Error()`, `response["preconfiguracion_error"] = preconfigErr.Error()`} {
+		if strings.Contains(string(contents), forbidden) {
+			t.Fatalf("admin handler exposes internal diagnostic: %s", forbidden)
+		}
+	}
+}

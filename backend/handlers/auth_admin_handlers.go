@@ -1655,7 +1655,7 @@ func AdministradoresHandler(dbSuper *sql.DB) http.HandlerFunc {
 								return
 							}
 							if err := dbpkg.UpdateAdministrador(dbSuper, existing.ID, nameForUpdate, payload.Role); err != nil {
-								http.Error(w, "failed to update existing administrador: "+err.Error(), http.StatusInternalServerError)
+								http.Error(w, "no se pudo actualizar el administrador", http.StatusInternalServerError)
 								return
 							}
 						}
@@ -1678,7 +1678,7 @@ func AdministradoresHandler(dbSuper *sql.DB) http.HandlerFunc {
 						return
 					}
 					if _, err := dbpkg.UpsertAdminPrincipalDelegacionActiva(dbSuper, existing.Email, principalEmail, strings.TrimSpace(requesterAdmin.Email)); err != nil {
-						http.Error(w, "failed to share administrator portfolio: "+err.Error(), http.StatusInternalServerError)
+						http.Error(w, "no se pudo compartir el acceso del administrador", http.StatusInternalServerError)
 						return
 					}
 					inviterName := strings.TrimSpace(requesterAdmin.Name)
@@ -1693,7 +1693,6 @@ func AdministradoresHandler(dbSuper *sql.DB) http.HandlerFunc {
 					}
 					if mailErr != nil {
 						resp["message"] = "El acceso quedo activo, pero no se pudo enviar el aviso por correo."
-						resp["error"] = mailErr.Error()
 					}
 					w.Header().Set("Content-Type", "application/json")
 					encodeJSONResponse(w, resp)
@@ -1719,7 +1718,7 @@ func AdministradoresHandler(dbSuper *sql.DB) http.HandlerFunc {
 				creatorEmail = principalEmail
 			}
 			if err := dbpkg.UpsertAdministradorConCreador(dbSuper, payload.Email, payload.Name, payload.Role, payload.Photo, creatorEmail); err != nil {
-				http.Error(w, "failed to upsert administrador: "+err.Error(), http.StatusInternalServerError)
+				http.Error(w, "no se pudo guardar el administrador", http.StatusInternalServerError)
 				return
 			}
 			token, expira, tokenErr := newEmailConfirmationTokenAndExpiration()
@@ -1728,7 +1727,7 @@ func AdministradoresHandler(dbSuper *sql.DB) http.HandlerFunc {
 				return
 			}
 			if err := dbpkg.SetAdministradorConfirmToken(dbSuper, payload.Email, token, expira); err != nil {
-				http.Error(w, "failed to set invitation token: "+err.Error(), http.StatusInternalServerError)
+				http.Error(w, "no se pudo preparar la invitacion", http.StatusInternalServerError)
 				return
 			}
 			inviterName := strings.TrimSpace(requesterAdmin.Name)
@@ -1743,7 +1742,6 @@ func AdministradoresHandler(dbSuper *sql.DB) http.HandlerFunc {
 			}
 			if mailErr != nil {
 				resp["message"] = "El administrador quedo pendiente, pero no se pudo enviar la invitacion por correo."
-				resp["error"] = mailErr.Error()
 			} else if existingAdmin != nil {
 				resp["message"] = "Invitacion reenviada. El administrador debe aceptarla y registrarse antes de iniciar sesion."
 			} else {
@@ -1821,7 +1819,7 @@ func AdministradoresHandler(dbSuper *sql.DB) http.HandlerFunc {
 					}
 				}
 				if err := dbpkg.SetAdministradorEstado(dbSuper, id, estado); err != nil {
-					http.Error(w, "failed to set estado: "+err.Error(), http.StatusInternalServerError)
+					http.Error(w, "no se pudo actualizar el estado del administrador", http.StatusInternalServerError)
 					return
 				}
 				w.WriteHeader(http.StatusNoContent)
@@ -1884,7 +1882,7 @@ func AdministradoresHandler(dbSuper *sql.DB) http.HandlerFunc {
 				}
 				if !strings.EqualFold(strings.TrimSpace(targetAdmin.UsuarioCreador), principalEmail) {
 					if err := dbpkg.RevokeAdminPrincipalDelegacion(dbSuper, principalEmail, targetAdmin.Email, requesterAdmin.Email); err != nil {
-						http.Error(w, "failed to revoke shared administrator access: "+err.Error(), http.StatusInternalServerError)
+						http.Error(w, "no se pudo revocar el acceso compartido", http.StatusInternalServerError)
 						return
 					}
 					w.WriteHeader(http.StatusNoContent)
@@ -1892,7 +1890,7 @@ func AdministradoresHandler(dbSuper *sql.DB) http.HandlerFunc {
 				}
 			}
 			if err := dbpkg.DeleteAdministrador(dbSuper, id); err != nil {
-				http.Error(w, "failed to delete administrador: "+err.Error(), http.StatusInternalServerError)
+				http.Error(w, "no se pudo eliminar el administrador", http.StatusInternalServerError)
 				return
 			}
 			w.WriteHeader(http.StatusNoContent)
@@ -1929,7 +1927,7 @@ func TiposEmpresasHandler(dbSuper *sql.DB) http.HandlerFunc {
 			}
 			id, err := dbpkg.CreateTipoEmpresa(dbSuper, payload.Nombre, payload.Observaciones)
 			if err != nil {
-				http.Error(w, "failed to create tipo_empresa: "+err.Error(), http.StatusInternalServerError)
+				http.Error(w, "no se pudo crear el tipo de empresa", http.StatusInternalServerError)
 				return
 			}
 			preconfig := dbpkg.DefaultTipoEmpresaPreconfiguracion(id, payload.Nombre)
@@ -1943,7 +1941,7 @@ func TiposEmpresasHandler(dbSuper *sql.DB) http.HandlerFunc {
 			if preconfigErr == nil {
 				response["preconfiguracion_id"] = preconfigID
 			} else {
-				response["preconfiguracion_error"] = preconfigErr.Error()
+				response["preconfiguracion_error"] = "No se pudo crear la preconfiguracion inicial."
 			}
 			encodeJSONResponse(w, response)
 			return
@@ -1976,7 +1974,7 @@ func TiposEmpresasHandler(dbSuper *sql.DB) http.HandlerFunc {
 					}
 				}
 				if err := dbpkg.SetTipoEmpresaActivo(dbSuper, id, estado); err != nil {
-					http.Error(w, "failed to set estado: "+err.Error(), http.StatusInternalServerError)
+					http.Error(w, "no se pudo actualizar el estado del tipo de empresa", http.StatusInternalServerError)
 					return
 				}
 				w.WriteHeader(http.StatusNoContent)
@@ -1988,7 +1986,7 @@ func TiposEmpresasHandler(dbSuper *sql.DB) http.HandlerFunc {
 				return
 			}
 			if err := dbpkg.UpdateTipoEmpresa(dbSuper, id, payloadUpdate.Nombre, payloadUpdate.Observaciones); err != nil {
-				http.Error(w, "failed to update: "+err.Error(), http.StatusInternalServerError)
+				http.Error(w, "no se pudo actualizar el tipo de empresa", http.StatusInternalServerError)
 				return
 			}
 			w.WriteHeader(http.StatusNoContent)
@@ -2006,7 +2004,7 @@ func TiposEmpresasHandler(dbSuper *sql.DB) http.HandlerFunc {
 				return
 			}
 			if err := dbpkg.DeleteTipoEmpresa(dbSuper, id); err != nil {
-				http.Error(w, "failed to delete: "+err.Error(), http.StatusInternalServerError)
+				http.Error(w, "no se pudo eliminar el tipo de empresa", http.StatusInternalServerError)
 				return
 			}
 			w.WriteHeader(http.StatusNoContent)

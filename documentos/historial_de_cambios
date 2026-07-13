@@ -37628,3 +37628,9 @@ Archivos modificados:
   cifrado, persistencia o valores de entorno a sus respuestas de configuración.
   Se conservan las validaciones de formato de llaves y una regresión protege los
   mensajes sensibles de estas rutas administrativas.
+
+2026-07-13: Administración e invitaciones sin diagnósticos internos.
+- Las operaciones de alta, actualización, revocación e invitación de
+  administradores, y la gestión de tipos de empresa, ya no devuelven errores
+  de persistencia ni fallos de correo al navegador. Los permisos y las
+  validaciones de entrada se mantienen sin cambios.
