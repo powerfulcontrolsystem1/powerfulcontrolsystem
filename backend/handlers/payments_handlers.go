@@ -2961,7 +2961,7 @@ func verifyWompiWebhookSignature(dbSuper *sql.DB, r *http.Request, body []byte, 
 	}
 	integrityKey = strings.TrimSpace(integrityKey)
 	if integrityKey == "" {
-		return nil
+		return errors.New("wompi webhook verification is not configured")
 	}
 
 	rawSignature := ""
@@ -5854,7 +5854,7 @@ func WompiWebhookHandler(dbSuper *sql.DB, dbEmp ...*sql.DB) http.HandlerFunc {
 		}
 
 		if err := verifyWompiWebhookSignature(dbSuper, r, body, obj); err != nil {
-			http.Error(w, err.Error(), http.StatusUnauthorized)
+			http.Error(w, "invalid webhook", http.StatusUnauthorized)
 			return
 		}
 
@@ -5900,7 +5900,6 @@ func WompiWebhookHandler(dbSuper *sql.DB, dbEmp ...*sql.DB) http.HandlerFunc {
 			paymentDiscountCode = strings.TrimSpace(wompiPaymentRec.DiscountCode.String)
 		}
 
-		activated := false
 		discountBlocked := false
 		if isApprovedPaymentStatus(status) && hasContext {
 			if paymentDiscountCode != "" {
@@ -5926,11 +5925,10 @@ func WompiWebhookHandler(dbSuper *sql.DB, dbEmp ...*sql.DB) http.HandlerFunc {
 				if len(dbEmp) > 0 {
 					dbEmpConn = dbEmp[0]
 				}
-				act, assignedLicenciaID, actErr := activateLicenciaCheckoutContextForPayment(dbSuper, dbEmpConn, "wompi", transactionID, reference, licenciaID, empresaID, checkoutMode, addonLicenciaIDs)
+				_, assignedLicenciaID, actErr := activateLicenciaCheckoutContextForPayment(dbSuper, dbEmpConn, "wompi", transactionID, reference, licenciaID, empresaID, checkoutMode, addonLicenciaIDs)
 				if actErr != nil {
 					log.Println("warning: failed to activate licencia from Wompi webhook:", actErr)
 				} else {
-					activated = act
 					emailLicID := assignedLicenciaID
 					if emailLicID <= 0 {
 						emailLicID = licenciaID
@@ -5986,24 +5984,13 @@ func WompiWebhookHandler(dbSuper *sql.DB, dbEmp ...*sql.DB) http.HandlerFunc {
 			}
 		}
 
-		ventaDigitalContextFound := false
-		ventaDigitalDeliverySent := false
-		ventaDigitalDeliveryStage := "not_processed"
-		ventaPublicaContextFound := false
 		if strings.TrimSpace(status) != "" {
-			foundVD, deliveredVD, deliveryStageVD, vdErr := processVentaDigitalPaymentStatusUpdate(r, dbSuper, transactionID, reference, status, string(body))
-			ventaDigitalContextFound = foundVD
-			if strings.TrimSpace(deliveryStageVD) != "" {
-				ventaDigitalDeliveryStage = deliveryStageVD
-			}
+			_, _, _, vdErr := processVentaDigitalPaymentStatusUpdate(r, dbSuper, transactionID, reference, status, string(body))
 			if vdErr != nil {
 				log.Println("warning: failed to process venta_digital webhook update:", vdErr)
-			} else {
-				ventaDigitalDeliverySent = deliveredVD
 			}
 			if len(dbEmp) > 0 && dbEmp[0] != nil {
-				foundVP, vpErr := processVentaPublicaPaymentStatusUpdate(dbEmp[0], "wompi", transactionID, reference, status, string(body))
-				ventaPublicaContextFound = foundVP
+				_, vpErr := processVentaPublicaPaymentStatusUpdate(dbEmp[0], "wompi", transactionID, reference, status, string(body))
 				if vpErr != nil {
 					log.Println("warning: failed to process venta_publica webhook update:", vpErr)
 				}
@@ -6011,22 +5998,7 @@ func WompiWebhookHandler(dbSuper *sql.DB, dbEmp ...*sql.DB) http.HandlerFunc {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		encodeJSONResponse(w, map[string]interface{}{
-			"ok":                           true,
-			"provider":                     "wompi",
-			"transaction_id":               transactionID,
-			"reference":                    reference,
-			"status":                       status,
-			"context_found":                hasContext,
-			"licencia_id":                  licenciaID,
-			"empresa_id":                   empresaID,
-			"activated":                    activated,
-			"discount_blocked":             discountBlocked,
-			"venta_digital_context_found":  ventaDigitalContextFound,
-			"venta_digital_delivery_sent":  ventaDigitalDeliverySent,
-			"venta_digital_delivery_stage": ventaDigitalDeliveryStage,
-			"venta_publica_context_found":  ventaPublicaContextFound,
-		})
+		encodeJSONResponse(w, map[string]interface{}{"ok": true})
 	}
 }
 

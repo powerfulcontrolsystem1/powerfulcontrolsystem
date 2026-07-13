@@ -37673,3 +37673,9 @@ Archivos modificados:
   una referencia SHA-256 y lo redactan del cuerpo y metadatos guardados.
 - El script de Nginx para staging usa la misma CSP explícita en modo
   `Report-Only`, sin `unsafe-eval` ni orígenes HTTPS genéricos.
+
+2026-07-13: Webhooks Wompi y Rappi con validación obligatoria.
+- Wompi requiere una llave de integridad configurada y una firma verificable;
+  Rappi requiere secreto por empresa, firma válida y cuerpo acotado.
+- Ambos callbacks devuelven únicamente un acuse genérico y no filtran contexto
+  de licencia, empresa, pedido o estado de procesamiento.

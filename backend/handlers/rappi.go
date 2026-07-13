@@ -163,17 +163,20 @@ func PublicRappiWebhookHandler(dbEmp *sql.DB) http.HandlerFunc {
 			http.Error(w, "Rappi no esta activo para esta empresa", http.StatusForbidden)
 			return
 		}
-		body, _ := io.ReadAll(io.LimitReader(r.Body, 4<<20))
-		if strings.TrimSpace(cfg.WebhookSecretRef) != "" {
-			secret, err := resolveDIANSecretValue(cfg.WebhookSecretRef)
-			if err != nil || strings.TrimSpace(secret) == "" {
-				http.Error(w, "Webhook secret no configurado", http.StatusForbidden)
-				return
-			}
-			if !verifyRappiSignature(r.Header.Get("Rappi-Signature"), body, secret) {
-				http.Error(w, "Firma Rappi invalida", http.StatusUnauthorized)
-				return
-			}
+		r.Body = http.MaxBytesReader(w, r.Body, 4<<20)
+		body, err := io.ReadAll(r.Body)
+		if err != nil {
+			http.Error(w, "webhook invalido", http.StatusBadRequest)
+			return
+		}
+		if strings.TrimSpace(cfg.WebhookSecretRef) == "" {
+			http.Error(w, "webhook invalido", http.StatusUnauthorized)
+			return
+		}
+		secret, err := resolveDIANSecretValue(cfg.WebhookSecretRef)
+		if err != nil || strings.TrimSpace(secret) == "" || !verifyRappiSignature(r.Header.Get("Rappi-Signature"), body, secret) {
+			http.Error(w, "webhook invalido", http.StatusUnauthorized)
+			return
 		}
 		orderLog := rappiOrderLogFromPayload(empresaID, "webhook", body)
 		if _, err := dbpkg.UpsertEmpresaRappiOrderLog(dbEmp, orderLog); err != nil {
@@ -181,7 +184,7 @@ func PublicRappiWebhookHandler(dbEmp *sql.DB) http.HandlerFunc {
 			http.Error(w, "No se pudo registrar webhook", http.StatusInternalServerError)
 			return
 		}
-		writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "empresa_id": empresaID})
+		writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true})
 	}
 }
 
