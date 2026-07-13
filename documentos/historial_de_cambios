@@ -37667,3 +37667,9 @@ Archivos modificados:
   sesión predecible si falla el generador criptográfico.
 - Descargas de documentos dinámicos, snapshots VPS y portabilidad Docker usan
   `no-store`, `nosniff` y mensajes públicos sin diagnósticos internos.
+
+2026-07-13: Capturas de correo y CSP de staging sin secretos reutilizables.
+- Las capturas operativas de correo reemplazan el token entregado al usuario por
+  una referencia SHA-256 y lo redactan del cuerpo y metadatos guardados.
+- El script de Nginx para staging usa la misma CSP explícita en modo
+  `Report-Only`, sin `unsafe-eval` ni orígenes HTTPS genéricos.

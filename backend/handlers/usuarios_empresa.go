@@ -2542,6 +2542,7 @@ func captureEmpresaUsuarioMailNotification(
 	if usuarioCreador == "" {
 		usuarioCreador = "sistema"
 	}
+	tokenRef, cuerpo, metadataJSON = redactCapturedMailToken(tokenRef, cuerpo, metadataJSON)
 	_, err := dbpkg.CreateSuperCorreoNotificacionPrueba(dbSuper, dbpkg.SuperCorreoNotificacionPrueba{
 		Tipo:           tipo,
 		EmpresaID:      empresaID,
@@ -2555,6 +2556,20 @@ func captureEmpresaUsuarioMailNotification(
 		Observaciones:  "modo_pruebas_correo",
 	})
 	return err
+}
+
+// redactCapturedMailToken preserves only a one-way correlation value in mail
+// test captures. Captures are operational evidence, never a second store for
+// invitation, reset, confirmation, discount or payment secrets.
+func redactCapturedMailToken(tokenRef, cuerpo, metadataJSON string) (string, string, string) {
+	tokenRef = strings.TrimSpace(tokenRef)
+	if tokenRef == "" {
+		return "", cuerpo, metadataJSON
+	}
+	cuerpo = strings.ReplaceAll(cuerpo, tokenRef, "[redacted-token]")
+	metadataJSON = strings.ReplaceAll(metadataJSON, tokenRef, "[redacted-token]")
+	sum := sha256.Sum256([]byte(tokenRef))
+	return "sha256:" + hex.EncodeToString(sum[:]), cuerpo, metadataJSON
 }
 
 func resolveBaseURLForConfirmation(r *http.Request, dbSuper *sql.DB) string {
