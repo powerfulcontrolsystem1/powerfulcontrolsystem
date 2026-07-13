@@ -37592,3 +37592,11 @@ Archivos modificados:
 - Los actions oficiales pasan a checkout v7, setup-go/setup-node v6,
   upload-artifact v7 y CodeQL Action v4, todos fijados por SHA, eliminando las
   advertencias de runtime Node 20 y la deprecación de CodeQL v3.
+
+2026-07-13: Diagnósticos de snapshots VPS reducidos.
+- La API de snapshots ya no devuelve ni expone en su historial rutas locales,
+  manifiestos, mensajes de proveedor o errores internos de archivado. Conserva
+  el estado y mensajes públicos estables para soporte sin filtrar detalles del
+  sistema o de integraciones de respaldo.
+- El guardado de configuración responde con un error genérico, y las pruebas
+  verifican el saneamiento de la respuesta pública.
