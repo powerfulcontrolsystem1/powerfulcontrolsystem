@@ -37543,3 +37543,7 @@ Archivos modificados:
 - El SBOM identifica `herramientas/ngrok.exe` como un binario local sin uso,
   compilado con Go 1.16.2 y dependencias antiguas; se retira del repositorio y
   queda ignorado para evitar su reintroducción.
+- Los cinco instaladores RustDesk versionados se retiran porque Grype detectó
+  que el cliente fue compilado con Go 1.23.4 vulnerable. La UI ya usa el canal
+  oficial de RustDesk; el contenedor conserva `/app/descargas` como volumen
+  runtime para artefactos verificados fuera de Git.

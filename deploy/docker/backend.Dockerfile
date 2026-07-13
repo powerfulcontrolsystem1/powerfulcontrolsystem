@@ -19,7 +19,6 @@ WORKDIR /app/backend
 COPY --from=build /out/pcs-backend /app/backend/pcs-backend
 COPY web /app/web
 COPY documentos /app/documentos
-COPY descargas /app/descargas
 COPY backend /app/project_export/backend
 COPY web /app/project_export/web
 COPY deploy /app/project_export/deploy
