@@ -3224,3 +3224,8 @@
 
 ## [2026-07-13] Eliminacion integral de empresa
 - Se agregan limpieza de cuentas/archivos Mailu, carpeta OnlyOffice, temporales, uploads, privados y backups antes del cascade.
+
+## [2026-07-13] Mailu - provisionamiento por API interna
+- [Seguridad] El backend deja de depender de scripts Docker para crear, actualizar o borrar buzones; usa la API REST interna autenticada de Mailu.
+- [Operacion] El perfil Mailu genera su token solo si falta y el proxy externo bloquea `/api/`, manteniendo la API disponible unicamente para la red Docker.
+- [QA] Se agrega regresion del bearer token, payload de alta acotado y normalizacion de modo API.

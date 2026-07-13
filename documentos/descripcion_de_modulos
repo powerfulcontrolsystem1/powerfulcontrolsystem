@@ -4450,3 +4450,12 @@ de productos/SKUs, caja, impuestos, cliente y reglas de facturacion.
 - La pagina empresarial usa el permiso `gestion_documental:R` y conserva aislamiento por `empresa_id`.
 - La eliminacion total limpia primero la cuenta remota y archivos Nextcloud antes del cascade local; VPS2 permanece independiente.
 - El borrado integral cubre Mailu, OnlyOffice, uploads, privados, backups y temporales empresariales.
+
+2026-07-13: Correo corporativo por API interna Mailu
+- Modulo: `Email corporativo Mailu`.
+- Cambio funcional: el modo automatico `mailu_api` crea, actualiza y elimina
+  buzones por la API interna de Mailu. Los buzones existentes se reintentan al
+  arrancar sin exponer claves.
+- Seguridad: el backend no recibe Docker socket ni ejecuta Docker. El token se
+  genera y conserva en el entorno privado del VPS; el proxy rechaza la API desde
+  Internet.

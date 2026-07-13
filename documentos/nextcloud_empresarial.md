@@ -36,15 +36,13 @@ de VPS2. La cuenta remota se aprovisiona de forma idempotente con OCS.
 
 ## Despliegue
 
-1. Copiar `deploy/nextcloud/.env.example` a `deploy/nextcloud/.env` en el VPS.
-2. Crear tres archivos de secreto fuera del repositorio con `chmod 600`.
-3. Definir dominio, reverse proxy, ruta `NEXTCLOUD_DATA_PATH` y proxies fiables.
-4. Validar y levantar el stack empresarial administrado en el VPS con
-   `docker compose --env-file deploy/nextcloud/.env -f deploy/nextcloud/docker-compose.yml config --quiet`
-   y, despues de un backup verificado, `up -d`. El compose heredado se mantiene
-   fuera del repositorio hasta completar su migracion controlada; no se debe
-   sustituir por archivos locales ni cambiar su motor de datos durante una
-   reparacion.
+1. Mantener el stack empresarial heredado del VPS bajo inventario y backup
+   verificable; su compose no se versiona en este repositorio mientras se
+   prepara la migracion controlada.
+2. Definir dominio, reverse proxy, ruta de datos y proxies fiables en su entorno
+   privado. No copiar secretos a este repositorio.
+3. No sustituir volumenes, ni cambiar motor de datos, ni actualizar version mayor
+   durante una reparacion. Primero se prueba la restauracion en staging.
 5. Ejecutar `bash scripts/provision_nextcloud_service_account.sh /root/powerfulcontrolsystem`
    para crear o rotar la cuenta OCS exclusiva `pcs_ocs_service`. El script no
    imprime la contrasena; la registra como variable root-readable y el backend
@@ -57,15 +55,10 @@ El backend toma `NEXTCLOUD_ENABLED`, `NEXTCLOUD_BASE_URL`,
 `NEXTCLOUD_DEFAULT_QUOTA_MB` desde `deploy/.env.platform`. Nunca se debe usar
 la cuenta administrativa inicial como credencial de integracion.
 
-Las imagenes se fijan en Nextcloud 34.0.1 Apache, PostgreSQL 16.14 Alpine y Redis
-7.4.9 Alpine. La imagen Apache requiere iniciar como root para preparar volumenes
-y luego ejecuta el servicio con `www-data`; se mitiga con red interna,
-`no-new-privileges`, secretos montados, puertos internos no publicados, tmpfs,
-healthchecks y limites de CPU/RAM.
-
-La instalacion heredada del VPS debe migrarse de forma controlada antes de
-actualizar la base de datos o la version mayor de Nextcloud. No se reemplazan
-volumenes ni se fuerza un cambio de motor durante una correccion operativa.
+La instalacion heredada conserva su propio motor de datos, separado de PCS. No
+reintroduce otro motor dentro del runtime de PCS: PostgreSQL sigue siendo el
+unico motor de la aplicacion. Su migracion de infraestructura se planifica y
+prueba por separado, con backup/restauracion verificable.
 
 ## Backup y restauracion
 

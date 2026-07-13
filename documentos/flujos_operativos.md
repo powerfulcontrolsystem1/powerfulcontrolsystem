@@ -1261,8 +1261,8 @@ afecte dinero, documentos, licencias o seguridad.
 2. Si `auto_create` esta activo, cada empresa nueva recibe un correo unico basado
    en su nombre y dominio configurado.
 3. Si el modulo global esta desactivado, el correo queda generado pero pendiente.
-4. Si `mailu_direct` esta activo, se intenta crear el buzon en Mailu mediante
-   `deploy/scripts/vps-provision-mailu-mailbox.sh`.
+4. Si `mailu_api` esta activo, se crea o actualiza el buzon por la API REST
+   interna autenticada de Mailu; el backend no ejecuta Docker ni monta su socket.
 5. La creacion de empresa no debe fallar por errores del servidor de correo.
 6. En el panel empresarial se muestra la tarjeta de webmail solo si el modulo esta
    activo y la empresa tiene cuenta.
@@ -1272,7 +1272,7 @@ afecte dinero, documentos, licencias o seguridad.
    apertura automatica del buzon; por defecto queda activa.
 9. Desde la misma pagina se puede cambiar la contrasena interna del buzon. El
    backend cifra la clave, no la devuelve al navegador y actualiza Mailu si
-   `mailu_direct` esta disponible.
+   el provisionamiento automatico Mailu esta disponible.
 10. Si aparecen estados de error, usar `Probar Mailu` en super administrador para
    validar el contenedor `pcs-mailu-admin` y el comando directo antes de
    reintentar provision.

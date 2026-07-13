@@ -37813,6 +37813,20 @@ Archivos modificados:
 PushStatus: OK
 Archivos modificados:
 - deploy/docker/backend.Dockerfile
+
+2026-07-13: Cierre de provisionamiento Mailu y contexto operativo.
+- Seguridad: el modo automatico preferido pasa a `mailu_api`. El backend crea,
+  actualiza y elimina buzones por API REST interna de Mailu con bearer token;
+  no se monta Docker socket ni se ejecuta Docker desde el backend.
+- Operacion: el arranque del perfil Mailu genera un token criptografico solo si
+  falta, lo mantiene en el entorno privado y activa el API interno. El proxy
+  externo rechaza la ruta `/api/` del dominio de correo.
+- IA: se confirma el cierre funcional del orquestador asistido: registro cerrado
+  de herramientas, contexto por empresa, propuesta temporal, confirmacion,
+  hash, idempotencia y auditoria minimizada. Las escrituras siguen fail-closed
+  hasta habilitacion controlada por entorno y prueba por empresa.
+- Documentacion: se actualizan los contextos general/especifico/Codex, Nextcloud,
+  Mailu, flujos, mapa de modulos, estructura de datos y operacion VPS.
 ## 2026-07-13 - Activacion segura de Nextcloud empresarial
 
 - Se corrige el guardado de la credencial OCS: antes de persistir se cifra con

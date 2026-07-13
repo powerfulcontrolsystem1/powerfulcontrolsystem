@@ -125,6 +125,11 @@ server {
         return 302 /webmail/;
     }
 
+    # Mailu API is reachable only through the internal Docker network by the backend.
+    location ^~ /api/ {
+        return 404;
+    }
+
     location ^~ /webmail/ {
         rewrite ^/webmail/?(.*)$ /$1 break;
         proxy_http_version 1.1;

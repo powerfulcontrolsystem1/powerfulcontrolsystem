@@ -11806,6 +11806,18 @@ scripts/provision_nextcloud_service_account.sh
 - Script VPS que crea o rota la cuenta OCS exclusiva de Nextcloud y actualiza
   el entorno root-readable sin imprimir la contrasena generada.
 
+2026-07-13 - Provisionamiento Mailu por API interna
+- `backend/handlers/email_corporativo_handlers.go`: cliente REST interno para
+  crear, actualizar y eliminar buzones Mailu con bearer token, sin Docker
+  CLI/socket y sin registrar secretos o cuerpos.
+- `backend/handlers/email_corporativo_handlers_test.go`: regresion del contrato
+  bearer, payload acotado y modo `mailu_api`.
+- `deploy/scripts/vps-compose-sidecar-up.sh`: migra el modo heredado al modo API
+  y genera `MAILU_API_TOKEN` solo cuando falta en el entorno privado.
+- `deploy/docker-compose.platform.yml` y `deploy/nginx/edge.conf.template`:
+  inyectan el token solo en Mailu/backend y bloquean la API Mailu en el proxy
+  publico.
+
 web/administrar_empresa/nextcloud.html, web/js/nextcloud_empresa.js
 - Pantalla empresarial de estado, aprovisionamiento, restablecimiento y apertura
   de Nextcloud para la empresa activa.

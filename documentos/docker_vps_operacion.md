@@ -458,7 +458,8 @@ El correo empresarial se integra al stack portable mediante variables en
   `/webmail/` directo contra `pcs-mailu-webmail` en loopback.
 - Para llamadas desde el backend dentro de Docker, el compose define
   `EMAIL_CORPORATIVO_INTERNAL_SNAPPYMAIL_URL=http://mailu-webmail/` y usa el
-  comando directo `deploy/scripts/vps-provision-mailu-mailbox.sh`.
+  API REST interna de Mailu con token generado en el entorno privado. El backend
+  no requiere Docker CLI ni socket Docker para provisionar buzones.
 - Mailu usa IPs fijas dentro de `pcs_mailu_internal` para que SnappyMail y front
   entren a IMAP/SMTP por la red confiable `192.168.203.0/24`.
 - Antes de activar `--profile mail`, validar DNS A, MX, SPF, DKIM, DMARC, PTR,

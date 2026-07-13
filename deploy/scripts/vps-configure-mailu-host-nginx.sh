@@ -190,6 +190,10 @@ server {
         return 302 /webmail/;
     }
 
+    location ^~ /api/ {
+        return 404;
+    }
+
     location ^~ /webmail/ {
         rewrite ^/webmail/?(.*)$ /\$1 break;
         proxy_http_version 1.1;
