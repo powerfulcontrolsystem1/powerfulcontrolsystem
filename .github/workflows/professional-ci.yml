@@ -150,6 +150,7 @@ jobs:
     timeout-minutes: 45
     permissions:
       contents: read
+      security-events: write
 
     steps:
       - name: Checkout
@@ -171,7 +172,17 @@ jobs:
       - name: Filesystem dependency and IaC scan
         run: |
           mkdir -p security-artifacts
-          docker run --rm -v "$PWD:/repo" aquasec/trivy:0.72.0 fs --exit-code 1 --severity HIGH,CRITICAL --scanners vuln,misconfig,secret --format sarif --output /repo/security-artifacts/trivy-filesystem.sarif /repo
+          docker run --rm -v "$PWD:/repo" aquasec/trivy:0.72.0 fs --exit-code 0 --severity HIGH,CRITICAL --scanners vuln,misconfig,secret --format sarif --output /repo/security-artifacts/trivy-filesystem.sarif /repo
+
+      - name: Publish filesystem SARIF
+        if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+        uses: github/codeql-action/upload-sarif@02c5e83432fe5497fd85b873b6c9f16a8578e1d9 # v3
+        with:
+          sarif_file: security-artifacts/trivy-filesystem.sarif
+          category: trivy-filesystem
+
+      - name: Gate filesystem findings
+        run: jq -e '[.runs[].results[]?] | length == 0' security-artifacts/trivy-filesystem.sarif
 
       - name: Build modified runtime images
         run: |
@@ -183,8 +194,27 @@ jobs:
 
       - name: Container image scan
         run: |
-          docker run --rm -v /tmp/pcs-images:/images:ro -v "$PWD:/repo" aquasec/trivy:0.72.0 image --input /images/backend.tar --exit-code 1 --severity HIGH,CRITICAL --format sarif --output /repo/security-artifacts/trivy-backend.sarif
-          docker run --rm -v /tmp/pcs-images:/images:ro -v "$PWD:/repo" aquasec/trivy:0.72.0 image --input /images/frontend.tar --exit-code 1 --severity HIGH,CRITICAL --format sarif --output /repo/security-artifacts/trivy-frontend.sarif
+          docker run --rm -v /tmp/pcs-images:/images:ro -v "$PWD:/repo" aquasec/trivy:0.72.0 image --input /images/backend.tar --exit-code 0 --severity HIGH,CRITICAL --format sarif --output /repo/security-artifacts/trivy-backend.sarif
+          docker run --rm -v /tmp/pcs-images:/images:ro -v "$PWD:/repo" aquasec/trivy:0.72.0 image --input /images/frontend.tar --exit-code 0 --severity HIGH,CRITICAL --format sarif --output /repo/security-artifacts/trivy-frontend.sarif
+
+      - name: Publish backend image SARIF
+        if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+        uses: github/codeql-action/upload-sarif@02c5e83432fe5497fd85b873b6c9f16a8578e1d9 # v3
+        with:
+          sarif_file: security-artifacts/trivy-backend.sarif
+          category: trivy-backend-image
+
+      - name: Publish frontend image SARIF
+        if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+        uses: github/codeql-action/upload-sarif@02c5e83432fe5497fd85b873b6c9f16a8578e1d9 # v3
+        with:
+          sarif_file: security-artifacts/trivy-frontend.sarif
+          category: trivy-frontend-image
+
+      - name: Gate container image findings
+        run: |
+          jq -e '[.runs[].results[]?] | length == 0' security-artifacts/trivy-backend.sarif
+          jq -e '[.runs[].results[]?] | length == 0' security-artifacts/trivy-frontend.sarif
 
       - name: Generate SBOM
         run: docker run --rm -v "$PWD:/repo" anchore/syft:v1.46.0 dir:/repo -o cyclonedx-json=/repo/security-artifacts/sbom.cdx.json
