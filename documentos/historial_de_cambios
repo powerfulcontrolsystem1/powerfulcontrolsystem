@@ -37550,3 +37550,6 @@ Archivos modificados:
 - Se retira `backend/tools/install_rustdesk`: no tenía consumidores y ejecutaba
   como root un `setup.sh` descargado desde `master` sin versión ni checksum. El
   flujo RustDesk vigente usa la configuración contenerizada y documentada.
+- Los actions oficiales pasan a checkout v7, setup-go/setup-node v6,
+  upload-artifact v7 y CodeQL Action v4, todos fijados por SHA, eliminando las
+  advertencias de runtime Node 20 y la deprecación de CodeQL v3.
