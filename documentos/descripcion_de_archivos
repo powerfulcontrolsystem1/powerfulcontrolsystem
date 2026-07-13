@@ -1,3 +1,10 @@
+2026-07-13 - Preparación staging: redacción ampliada y herramienta retirada
+- `backend/handlers/log_redaction.go`: redacción de PII, credenciales y
+  cabeceras sensibles para trazas internas, incluyendo neutralización de saltos
+  de línea.
+- `backend/handlers/log_redaction_test.go`: regresiones para la redacción y el
+  retiro permanente de utilidades inseguras de diagnóstico.
+
 2026-07-13 - Minimizacion de PII en logs
 - `backend/handlers/log_redaction.go`: enmascarador interno de correos para logs
   de seguridad y operaciones, sin cambiar respuestas ni contratos de API.

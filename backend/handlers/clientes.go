@@ -107,11 +107,11 @@ func EmpresaClientesHandler(dbEmp *sql.DB) http.HandlerFunc {
 			if err != nil {
 				var dupErr *db.ClienteDuplicadoError
 				if errors.As(err, &dupErr) {
-					log.Printf("[clientes] create duplicado empresa_id=%d doc=%s-%s error: %v", payload.EmpresaID, payload.TipoDocumento, payload.NumeroDocumento, err)
+					log.Printf("[clientes] create duplicado empresa_id=%d doc_tipo=%s doc=%s error: %v", payload.EmpresaID, payload.TipoDocumento, redactPersonalDocumentForLog(payload.NumeroDocumento), err)
 					http.Error(w, dupErr.Error(), http.StatusConflict)
 					return
 				}
-				log.Printf("[clientes] create empresa_id=%d doc=%s-%s error: %v", payload.EmpresaID, payload.TipoDocumento, payload.NumeroDocumento, err)
+				log.Printf("[clientes] create empresa_id=%d doc_tipo=%s doc=%s error: %v", payload.EmpresaID, payload.TipoDocumento, redactPersonalDocumentForLog(payload.NumeroDocumento), err)
 				http.Error(w, "No se pudo crear el cliente (verifique que el documento no este duplicado)", http.StatusBadRequest)
 				return
 			}

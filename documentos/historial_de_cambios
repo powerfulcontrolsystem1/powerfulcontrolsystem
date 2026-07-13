@@ -1,3 +1,13 @@
+2026-07-13: Preparación staging - ampliación de redacción y retiro de diagnóstico inseguro.
+- Se retira `backend/tools/inspect_admin_login`, que permitía consultar datos
+  administrativos y comprobar candidatos de contraseña fuera del flujo de
+  autenticación auditado.
+- `log_redaction.go` ahora neutraliza saltos de línea y centraliza la
+  redacción de documentos, teléfonos, tokens, cookies y cabeceras de
+  autorización; `clientes.go` deja de registrar documentos completos.
+- Pruebas de regresión verifican que las utilidades retiradas no reaparezcan y
+  que los valores o cabeceras sensibles no se filtren en trazas.
+
 2026-07-13: Auditoria de preparación - minimizacion de secretos y PII en logs.
 - Se elimina `backend/tools/query_epayco_runtime.go`, que accedía directamente
   a DSN, configuraciones de pago y sesiones; los diagnósticos deben usar las

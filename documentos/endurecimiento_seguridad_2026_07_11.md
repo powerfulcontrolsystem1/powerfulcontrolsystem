@@ -13,6 +13,18 @@ Actualizacion 2026-07-13: auditoria local de preparación
 - Cobertura: `log_redaction_test.go` comprueba el enmascaramiento y evita que la
   utilidad heredada recupere patrones de acceso a secretos o sesiones.
 
+Actualizacion 2026-07-13: validación posterior a PR #6
+
+- Se retiró `backend/tools/inspect_admin_login`: consultaba datos de una cuenta
+  administrativa y permitía comprobar candidatos de contraseña fuera del flujo
+  de autenticación. No se conserva una alternativa que acepte contraseñas.
+- La redacción central cubre correo, documentos personales, teléfonos, tokens,
+  cookies y cabeceras de autorización. Los valores de log neutralizan retornos
+  de carro y saltos de línea para impedir inyección de trazas.
+- El CRUD de clientes ya no registra el documento completo cuando falla una
+  operación. La cobertura de regresión comprueba que las herramientas sensibles
+  retiradas permanezcan ausentes.
+
 ## Linea base
 
 - `go test ./...` paso antes de los cambios.
