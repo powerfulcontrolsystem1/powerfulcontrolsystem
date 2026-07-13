@@ -37872,3 +37872,15 @@ Archivos modificados:
 - Se incorpora GPT-5.6 Luna como modelo avanzado configurable junto con GPT-5.4 mini y GPT-5.5.
 - Super Administrador puede habilitar modelos y definir los predeterminados de operaciones y adjuntos.
 - El chat recuerda modelo, modo y agente por usuario, muestra uso/restante por empresa activa y acepta imagenes, PDF, TXT, CSV, DOCX y XLSX de hasta 8 MB.
+
+# 2026-07-13 - IA empresarial: adjuntos verificados y propuesta de catalogo
+- Los adjuntos empresariales ya no confian en el nombre ni el `Content-Type`:
+  se validan firmas de imagen/PDF, texto UTF-8 y estructura OpenXML de DOCX/XLSX.
+  Se rechazan formatos activos y extensiones fingidas antes de llamar al proveedor.
+- Los errores HTTP del proveedor se reducen a mensajes publicos genericos; no
+  se devuelven cuerpos con metadatos de solicitud al navegador.
+- El chat agrega una tarjeta de producto para solicitudes naturales de alta.
+  Solo crea una propuesta temporal; duplicados, empresa, permisos, bodega,
+  idempotencia y confirmacion siguen siendo verificados en el backend.
+- Validacion: `go test ./handlers ./ai ./db`, `go vet ./handlers ./ai ./db`
+  y `git diff --check` desde el arbol de trabajo.

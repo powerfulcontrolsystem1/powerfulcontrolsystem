@@ -4482,3 +4482,13 @@ empresa. El selector muestra uso/restante de la empresa activa y el chat admite
 imagenes, PDF, TXT, CSV, DOCX y XLSX con limite de 8 MB. Super Administrador
 gobierna modelos habilitados y separa el modelo de operaciones del usado para
 adjuntos y analisis avanzado.
+
+- Seguridad de adjuntos: el chat acepta exclusivamente imagenes con firma
+  reconocida, PDF, TXT, CSV, DOCX y XLSX verificables por contenido. No confia
+  en MIME de navegador, rechaza HTML/SVG/ejecutables/ZIP genericos y no expone
+  respuestas internas del proveedor de IA.
+- Operacion empresarial: las solicitudes naturales de crear producto o
+  configurar una habitacion abren una propuesta tipada y confirmable. La
+  ejecucion sigue siendo de servidor, por `empresa_id` validado, permisos,
+  idempotencia, duplicados y auditoria; no se ejecuta ningun bloque producido
+  por el modelo.

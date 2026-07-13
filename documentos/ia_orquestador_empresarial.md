@@ -77,8 +77,7 @@ actualiza configuracion de estaciones y tarifas dentro de una misma transaccion;
 si una operacion falla no se confirma ninguna parte.
 
 La herramienta no aplica cambios masivos, no elimina tarifas existentes y no
-emite documentos fiscales. El siguiente despliegue funcional debe incorporar
-la tarjeta del chat ya incorpora el formulario asistido, estado actual,
+emite documentos fiscales. La tarjeta del chat incorpora el formulario asistido, estado actual,
 cambio propuesto, fuentes y botones Confirmar/Cancelar. Aun asi los flags
 de escritura siguen apagados hasta una prueba controlada por empresa.
 
@@ -107,6 +106,13 @@ el plan, consulta duplicados por nombre/SKU dentro de la empresa y obliga a una
 confirmacion separada. Al confirmar reutiliza `CreateProducto`, que valida las
 relaciones empresariales y registra producto, inventario inicial e historial de
 precio en una transaccion.
+
+Cuando el usuario solicita crear un producto en lenguaje natural, el chat abre
+una tarjeta de propuesta con los campos extraidos como borrador. El navegador
+no decide herramientas ni ejecuta cambios: el backend valida el plan, revisa
+duplicados y solo crea el producto despues de la confirmacion independiente.
+Los campos de categoria y bodega siguen siendo opcionales, salvo que se
+registre stock inicial; en ese caso la bodega debe pertenecer a la empresa.
 
 Las escrituras se habilitan de forma granular y permanecen apagadas por
 defecto: `AI_ENTERPRISE_ORCHESTRATOR_ENABLED=true`,
@@ -147,3 +153,17 @@ contrato, con pruebas y habilitacion gradual por empresa.
    recuperacion semantica ni se enviara contenido documental al proveedor.
 5. Modo agente con presupuesto, alcance, duracion, cantidad maxima de
    operaciones, circuit breaker y confirmaciones no omitibles.
+
+## Adjuntos y privacidad del proveedor
+
+Los adjuntos del chat se validan por extension cerrada y por contenido, no por
+el `Content-Type` declarado por el navegador. Imagenes requieren firmas
+conocidas; PDF debe iniciar con `%PDF-`; TXT/CSV deben ser UTF-8 sin bytes NUL;
+DOCX/XLSX deben ser contenedores OpenXML con sus entradas esperadas. Se descartan
+HTML, SVG activo, ejecutables, ZIP genericos y archivos con extension fingida.
+El MIME que se remite al proveedor se reconstruye desde la validacion local.
+
+Los cuerpos de error de proveedores no se devuelven al navegador ni se
+propagan mediante `Error()`. La interfaz recibe un mensaje generico, mientras
+la auditoria conserva solo metadatos minimizados sin prompt, token, adjunto ni
+respuesta privada.

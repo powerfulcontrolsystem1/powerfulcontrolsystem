@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"archive/zip"
 	"bufio"
 	"bytes"
 	"database/sql"
@@ -16,6 +17,7 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
+	"unicode/utf8"
 
 	dbpkg "github.com/you/pos-backend/db"
 )
@@ -148,11 +150,9 @@ type aiProviderHTTPError struct {
 }
 
 func (e *aiProviderHTTPError) Error() string {
-	body := strings.TrimSpace(e.Body)
-	if body == "" {
-		return fmt.Sprintf("error proveedor %s (%d)", strings.TrimSpace(e.Provider), e.Status)
-	}
-	return fmt.Sprintf("error proveedor %s (%d): %s", strings.TrimSpace(e.Provider), e.Status, body)
+	// Provider response bodies may contain request metadata. Keep them available
+	// only for controlled diagnostics and never expose them through Error().
+	return fmt.Sprintf("error proveedor %s (%d)", strings.TrimSpace(e.Provider), e.Status)
 }
 
 type empresaAIModelDef struct {
@@ -860,7 +860,7 @@ func (c *EmpresaAIChatController) ConsultarConAdjuntoHandler(w http.ResponseWrit
 	// - file (opcional)
 	att, err := parseSingleAttachmentFromMultipart(r, "file", 8<<20)
 	if err != nil {
-		http.Error(w, "adjunto inválido: "+err.Error(), http.StatusBadRequest)
+		http.Error(w, "No se pudo procesar el adjunto. Verifica el archivo e intenta de nuevo.", http.StatusBadRequest)
 		return
 	}
 	if att == nil || !isSupportedAIAttachment(att) {
@@ -988,7 +988,7 @@ func (c *EmpresaAIChatController) ConsultarConAdjuntoHandler(w http.ResponseWrit
 	systemPrompt += "\n\n" + buildEmpresaAIChatAgentInstruction(agentID)
 	respuesta, promptTokens, completionTokens, err := c.generateResponseWithSystemPromptAndAttachment(model, preguntaFinal, historial, systemPrompt, att)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadGateway)
+		http.Error(w, publicAIProviderError(err), http.StatusBadGateway)
 		return
 	}
 	respuesta = strings.TrimSpace(respuesta)
@@ -1513,36 +1513,113 @@ func parseSingleAttachmentFromMultipart(r *http.Request, field string, maxBytes 
 }
 
 func isImageAIAttachment(att *aiAttachment) bool {
-	if att == nil {
-		return false
-	}
-	mt := strings.ToLower(strings.TrimSpace(att.MimeType))
-	if strings.HasPrefix(mt, "image/") {
-		return true
-	}
-	ext := strings.ToLower(strings.TrimSpace(filepath.Ext(att.Filename)))
-	switch ext {
-	case ".jpg", ".jpeg", ".png", ".webp", ".gif", ".bmp", ".heic", ".heif":
-		return true
-	default:
-		return false
-	}
+	return strings.HasPrefix(detectedAIAttachmentMIME(att), "image/")
 }
 
 func isSupportedAIAttachment(att *aiAttachment) bool {
 	if att == nil || len(att.Bytes) == 0 || strings.TrimSpace(att.Filename) == "" {
 		return false
 	}
-	if isImageAIAttachment(att) {
+	if detected := detectedAIAttachmentMIME(att); strings.HasPrefix(detected, "image/") {
+		att.MimeType = detected
 		return true
 	}
 	ext := strings.ToLower(strings.TrimSpace(filepath.Ext(att.Filename)))
 	switch ext {
-	case ".pdf", ".txt", ".csv", ".docx", ".xlsx":
-		return true
+	case ".pdf":
+		if bytes.HasPrefix(att.Bytes, []byte("%PDF-")) {
+			att.MimeType = "application/pdf"
+			return true
+		}
+	case ".txt", ".csv":
+		if isSafeUTF8TextAttachment(att.Bytes) {
+			if ext == ".csv" {
+				att.MimeType = "text/csv; charset=utf-8"
+			} else {
+				att.MimeType = "text/plain; charset=utf-8"
+			}
+			return true
+		}
+	case ".docx", ".xlsx":
+		if isExpectedOfficeOpenXML(att.Bytes, ext) {
+			if ext == ".docx" {
+				att.MimeType = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+			} else {
+				att.MimeType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+			}
+			return true
+		}
 	default:
+	}
+	return false
+}
+
+func detectedAIAttachmentMIME(att *aiAttachment) string {
+	if att == nil || len(att.Bytes) == 0 {
+		return ""
+	}
+	b := att.Bytes
+	switch {
+	case len(b) >= 8 && bytes.Equal(b[:8], []byte{0x89, 'P', 'N', 'G', 0x0d, 0x0a, 0x1a, 0x0a}):
+		return "image/png"
+	case len(b) >= 3 && bytes.Equal(b[:3], []byte{0xff, 0xd8, 0xff}):
+		return "image/jpeg"
+	case len(b) >= 6 && (bytes.Equal(b[:6], []byte("GIF87a")) || bytes.Equal(b[:6], []byte("GIF89a"))):
+		return "image/gif"
+	case len(b) >= 12 && bytes.Equal(b[:4], []byte("RIFF")) && bytes.Equal(b[8:12], []byte("WEBP")):
+		return "image/webp"
+	case len(b) >= 2 && bytes.Equal(b[:2], []byte("BM")):
+		return "image/bmp"
+	case len(b) >= 12 && bytes.Equal(b[4:8], []byte("ftyp")) && (bytes.Contains(b[8:24], []byte("heic")) || bytes.Contains(b[8:24], []byte("heif")) || bytes.Contains(b[8:24], []byte("mif1"))):
+		return "image/heic"
+	default:
+		return ""
+	}
+}
+
+func isSafeUTF8TextAttachment(b []byte) bool {
+	return len(b) > 0 && utf8.Valid(b) && !bytes.Contains(b, []byte{0})
+}
+
+func isExpectedOfficeOpenXML(b []byte, ext string) bool {
+	reader, err := zip.NewReader(bytes.NewReader(b), int64(len(b)))
+	if err != nil {
 		return false
 	}
+	contentTypes := false
+	prefix := "word/"
+	if ext == ".xlsx" {
+		prefix = "xl/"
+	}
+	for _, file := range reader.File {
+		name := strings.ReplaceAll(strings.TrimSpace(file.Name), "\\", "/")
+		if name == "[Content_Types].xml" {
+			contentTypes = true
+		}
+		if strings.HasPrefix(name, prefix) {
+			return contentTypes || hasOfficeContentTypes(reader.File)
+		}
+	}
+	return false
+}
+
+func hasOfficeContentTypes(files []*zip.File) bool {
+	for _, file := range files {
+		if strings.TrimSpace(file.Name) == "[Content_Types].xml" {
+			return true
+		}
+	}
+	return false
+}
+
+func publicAIProviderError(err error) string {
+	if isProviderLimitError(err) {
+		return "El proveedor de IA alcanzo un limite temporal. Intenta de nuevo en unos minutos."
+	}
+	if isAICredentialUnavailableError(err) {
+		return "La configuracion de IA no esta disponible en este momento."
+	}
+	return "No se pudo procesar la solicitud con IA. Intenta de nuevo."
 }
 
 func (c *EmpresaAIChatController) callOpenAIWithSystemPrompt(model empresaAIModelDef, pregunta string, historial []empresaAIChatMensaje, systemPrompt string) (string, int64, int64, error) {
