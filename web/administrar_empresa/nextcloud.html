@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Nextcloud empresarial</title>
+  <link rel="stylesheet" href="/estilos.css">
+  <style>
+    body{margin:0;background:var(--bg);color:var(--text)}
+    .nextcloud-page{width:100%;max-width:1120px;margin:0 auto;padding:18px;box-sizing:border-box}
+    .nextcloud-header{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:16px 0;border-bottom:1px solid var(--border)}
+    .nextcloud-title{display:flex;align-items:center;gap:12px;min-width:0}.nextcloud-title img{width:44px;height:44px}.nextcloud-title h1{margin:0;font-size:1.35rem}.nextcloud-title p{margin:3px 0 0;color:var(--muted);font-size:.88rem}
+    .nextcloud-status{margin:16px 0;padding:12px 14px;border:1px solid var(--border);background:var(--surface-2,var(--surface));font-weight:700}
+    .nextcloud-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));border:1px solid var(--border)}
+    .nextcloud-field{padding:14px;border-right:1px solid var(--border)}.nextcloud-field:last-child{border-right:0}.nextcloud-field span{display:block;color:var(--muted);font-size:.78rem}.nextcloud-field strong{display:block;margin-top:5px;overflow-wrap:anywhere}
+    .nextcloud-actions{display:flex;gap:10px;flex-wrap:wrap;padding:16px 0}.nextcloud-actions .btn{min-height:42px}
+    .nextcloud-credential{display:none;border:1px solid #d7a600;background:#fff8d8;color:#382c00;padding:14px}.nextcloud-credential.visible{display:block}.nextcloud-credential code{display:block;margin:8px 0;padding:10px;background:#fff;color:#111;overflow-wrap:anywhere;font-size:1rem}
+    @media(max-width:720px){.nextcloud-page{padding:12px}.nextcloud-header{align-items:flex-start}.nextcloud-grid{grid-template-columns:1fr}.nextcloud-field{border-right:0;border-bottom:1px solid var(--border)}.nextcloud-field:last-child{border-bottom:0}.nextcloud-actions .btn{flex:1 1 100%}}
+  </style>
+</head>
+<body class="empresa-subpage">
+  <main class="nextcloud-page">
+    <header class="nextcloud-header">
+      <div class="nextcloud-title">
+        <img src="/img/google-drive.svg" alt="">
+        <div><h1>Nextcloud empresarial</h1><p>Archivos privados de la empresa</p></div>
+      </div>
+    </header>
+    <div id="nextcloudStatus" class="nextcloud-status" role="status">Cargando estado...</div>
+    <section class="nextcloud-grid" aria-label="Estado de la cuenta Nextcloud">
+      <div class="nextcloud-field"><span>Usuario</span><strong id="nextcloudUser">-</strong></div>
+      <div class="nextcloud-field"><span>Cuota</span><strong id="nextcloudQuota">-</strong></div>
+      <div class="nextcloud-field"><span>Estado</span><strong id="nextcloudProvisioned">-</strong></div>
+    </section>
+    <div class="nextcloud-actions">
+      <button id="nextcloudProvision" class="btn primary" type="button">Preparar espacio</button>
+      <button id="nextcloudReset" class="btn secondary" type="button">Restablecer acceso</button>
+      <button id="nextcloudToggle" class="btn secondary" type="button">Desactivar espacio</button>
+      <button id="nextcloudOpen" class="btn secondary" type="button">Abrir Nextcloud</button>
+    </div>
+    <section id="nextcloudCredential" class="nextcloud-credential" aria-live="polite">
+      <strong>Credencial temporal de un solo vistazo</strong>
+      <code id="nextcloudTemporaryPassword"></code>
+      <button id="nextcloudCopy" class="btn secondary" type="button">Copiar credencial</button>
+    </section>
+  </main>
+  <script src="/js/nextcloud_empresa.js?v=20260713-contexto-empresa"></script>
+</body>
+</html>

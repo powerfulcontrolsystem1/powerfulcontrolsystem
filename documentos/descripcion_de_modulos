@@ -4434,3 +4434,33 @@ de productos/SKUs, caja, impuestos, cliente y reglas de facturacion.
 
 2026-07-11: Operacion de despliegue `rs`.
 - `scripts/rs.ps1` selecciona el ejecutable hijo correcto para PowerShell Core o Windows PowerShell y conserva su fallback. Esto evita que una ruta inexistente a `powershell.exe` detenga preflight, repositorio y sincronizacion antes de contactar la VPS.
+
+2026-07-13: Nextcloud empresarial restaurado.
+- El grupo `Documentos, nube y soporte` vuelve a incluir Nextcloud. Cada empresa
+  ve solo su cuenta tecnica, cuota, estado y enlace WebDAV; el backend deriva
+  la empresa desde el contexto protegido y audita aprovisionamiento y reinicios
+  de credencial sin guardar ni listar contrasenas de usuarios.
+2026-07-13 - IA empresarial asistida
+- El asistente empresarial inicia con `hotel.configure_room_station`, bajo
+  permisos de reservas hoteleras, y mantiene confirmacion humana, auditoria e
+  idempotencia. No habilita operaciones fiscales, eliminaciones, pagos ni SQL
+  libre.
+2026-07-13: Nextcloud empresarial reactivado
+- Super administrador controla la activacion global, credencial OCS y cuota; la activacion asigna espacios a todas las empresas existentes y nuevas.
+- La pagina empresarial usa el permiso `gestion_documental:R` y conserva aislamiento por `empresa_id`.
+- La eliminacion total limpia primero la cuenta remota y archivos Nextcloud antes del cascade local; VPS2 permanece independiente.
+- El borrado integral cubre Mailu, OnlyOffice, uploads, privados, backups y temporales empresariales.
+
+2026-07-13: Correo corporativo por API interna Mailu
+- Modulo: `Email corporativo Mailu`.
+- Cambio funcional: el modo automatico `mailu_api` crea, actualiza y elimina
+  buzones por la API interna de Mailu. Los buzones existentes se reintentan al
+  arrancar sin exponer claves.
+- Seguridad: el backend no recibe Docker socket ni ejecuta Docker. El token se
+  genera y conserva en el entorno privado del VPS; el proxy rechaza la API desde
+  Internet.
+
+2026-07-13: Panel empresarial, Nextcloud y descargas privadas
+- Configuracion guiada: `no_mostrar_mas` se guarda por empresa y el panel lo persiste con CSRF same-origin.
+- Nextcloud: resuelve `empresa_id` desde contexto validado, aplica cuota global y solo entrega accesos tras activacion y aprovisionamiento.
+- Descargas: documentos empresariales no se exponen por una ruta estatica generica; solo instaladores RustDesk aprobados quedan publicos.

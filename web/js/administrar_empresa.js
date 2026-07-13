@@ -262,6 +262,7 @@ try {
     document.getElementById("linkRedSocialComercial"),
     document.getElementById("linkDocumentosOnlyOffice"),
     document.getElementById("linkGestionDocumental"),
+		document.getElementById("linkNextcloud"),
     document.getElementById("linkContratosObligaciones"),
     document.getElementById("linkRadioOnline"),
     document.getElementById("linkImpuestos"),
@@ -564,6 +565,7 @@ try {
 
     linkDocumentosOnlyOffice: { module: permModuleDocumentosOnlyOffice, action: permActionRead },
     linkGestionDocumental: { module: permModuleGestionDocumental, action: permActionCreate },
+		linkNextcloud: { module: permModuleGestionDocumental, action: permActionRead },
     linkContratosObligaciones: { module: permModuleContratosObligaciones, action: permActionCreate },
     linkSoporteRemoto: { module: permModuleSeguridad, action: permActionApprove },
 

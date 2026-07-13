@@ -30,21 +30,23 @@ import (
 )
 
 const (
-	corporateEmailEnabledKey       = "email_corporativo.enabled"
-	corporateEmailAutoCreateKey    = "email_corporativo.auto_create"
-	corporateEmailDomainKey        = "email_corporativo.domain"
-	corporateEmailWebmailURLKey    = "email_corporativo.webmail_url"
-	corporateEmailLogoURLKey       = "email_corporativo.logo_url"
-	corporateEmailProvisionModeKey = "email_corporativo.provision_mode"
-	corporateEmailAPIBaseURLKey    = "email_corporativo.mailu_api_base_url"
-	corporateEmailAPIAdminKey      = "email_corporativo.mailu_admin"
-	corporateEmailAPIPasswordKey   = "email_corporativo.mailu_api_token" // #nosec G101 -- ruta de configuracion, no credencial embebida.
-	corporateEmailQuotaMBKey       = "email_corporativo.quota_mb"
-	corporateEmailDirectCommandKey = "email_corporativo.direct_provision_command"
-	corporateEmailAutologinKey     = "email_corporativo.autologin_secret"
-	corporateEmailEmpresaPrefsKey  = "email_corporativo_config"
-	corporateEmailMaxAccountsKey   = "email_corporativo.max_accounts_per_empresa"
-	corporateEmailDefaultMax       = 5
+	corporateEmailEnabledKey            = "email_corporativo.enabled"
+	corporateEmailAutoCreateKey         = "email_corporativo.auto_create"
+	corporateEmailDomainKey             = "email_corporativo.domain"
+	corporateEmailWebmailURLKey         = "email_corporativo.webmail_url"
+	corporateEmailLogoURLKey            = "email_corporativo.logo_url"
+	corporateEmailProvisionModeKey      = "email_corporativo.provision_mode"
+	corporateEmailAPIBaseURLKey         = "email_corporativo.mailu_api_base_url"
+	corporateEmailAPIAdminKey           = "email_corporativo.mailu_admin"
+	corporateEmailAPIPasswordKey        = "email_corporativo.mailu_api_token" // #nosec G101 -- ruta de configuracion, no credencial embebida.
+	corporateEmailQuotaMBKey            = "email_corporativo.quota_mb"
+	corporateEmailDirectCommandKey      = "email_corporativo.direct_provision_command"
+	corporateEmailAutologinKey          = "email_corporativo.autologin_secret"
+	corporateEmailEmpresaPrefsKey       = "email_corporativo_config"
+	corporateEmailMaxAccountsKey        = "email_corporativo.max_accounts_per_empresa"
+	corporateEmailDefaultMax            = 5
+	corporateEmailDirectProvisionScript = "/app/project_export/deploy/scripts/vps-provision-mailu-mailbox.sh"
+	corporateEmailDirectDeleteScript    = "/app/project_export/deploy/scripts/vps-delete-mailu-mailbox.sh"
 )
 
 type CorporateEmailConfig struct {
@@ -80,6 +82,16 @@ type corporateEmailEmpresaPrefs struct {
 }
 
 var errCorporateEmailAutologinRejected = errors.New("credenciales del buzon no aceptadas por Mailu")
+
+// validateCorporateEmailDirectScript keeps the deprecated direct mode pinned to
+// reviewed project scripts. The active production mode is the internal Mailu API.
+func validateCorporateEmailDirectScript(configured, expected string) error {
+	configured = strings.TrimSpace(configured)
+	if configured == "" || configured == expected {
+		return nil
+	}
+	return errors.New("el modo directo solo permite el script interno aprobado")
+}
 
 type corporateWebmailCheck struct {
 	Checked bool   `json:"checked"`
@@ -176,6 +188,10 @@ func normalizeCorporateEmailMaxAccounts(value int) int {
 		return 500
 	}
 	return value
+}
+
+func corporateEmailAutomaticProvisioningEnabled(cfg CorporateEmailConfig) bool {
+	return cfg.Enabled && (cfg.ProvisionMode == "mailu_api" || cfg.ProvisionMode == "mailu_direct")
 }
 
 func firstNonEmptyEnv(keys ...string) string {
@@ -439,7 +455,7 @@ func normalizeCorporateEmailProvisionMode(value string) string {
 	case "mailu_direct", "direct", "docker_direct", "cli", "direct_sql":
 		return "mailu_direct"
 	case "mailu_api", "api":
-		return "manual"
+		return "mailu_api"
 	default:
 		return "manual"
 	}
@@ -654,7 +670,7 @@ func EnsureEmpresaCorporateEmailAfterCreate(dbSuper *sql.DB, empresaID int64, em
 		if err != nil {
 			return nil, err
 		}
-	} else if cfg.Enabled && cfg.ProvisionMode == "mailu_direct" {
+	} else if corporateEmailAutomaticProvisioningEnabled(cfg) {
 		status = "pendiente_cifrado"
 	}
 	item, err := dbpkg.UpsertEmpresaEmailCorporativo(dbSuper, dbpkg.EmpresaEmailCorporativo{
@@ -672,7 +688,7 @@ func EnsureEmpresaCorporateEmailAfterCreate(dbSuper *sql.DB, empresaID int64, em
 	if err != nil {
 		return nil, err
 	}
-	if cfg.Enabled && cfg.ProvisionMode == "mailu_direct" && encryptedPassword != "" {
+	if corporateEmailAutomaticProvisioningEnabled(cfg) && encryptedPassword != "" {
 		result := provisionEmpresaEmailAccount(dbSuper, cfg, *item, initialPassword)
 		if !result.OK {
 			log.Printf("email corporativo empresa_id=%d provision warning", empresaID)
@@ -680,6 +696,49 @@ func EnsureEmpresaCorporateEmailAfterCreate(dbSuper *sql.DB, empresaID int64, em
 		item, _ = dbpkg.GetEmpresaEmailCorporativoByEmpresa(dbSuper, empresaID)
 	}
 	return item, nil
+}
+
+// DeleteEmpresaCorporateEmailAccounts removes provisioned Mailu mailboxes
+// before the company database cascade deletes their local records.
+func DeleteEmpresaCorporateEmailAccounts(ctx context.Context, dbSuper *sql.DB, empresaID int64) error {
+	if dbSuper == nil || empresaID <= 0 {
+		return nil
+	}
+	accounts, err := dbpkg.ListEmpresaEmailCorporativo(dbSuper)
+	if err != nil {
+		return err
+	}
+	cfg := getCorporateEmailConfig(dbSuper)
+	for _, account := range accounts {
+		if account.EmpresaID != empresaID || !strings.EqualFold(strings.TrimSpace(account.EstadoProvision), "provisionado") {
+			continue
+		}
+		if cfg.ProvisionMode == "mailu_api" {
+			if err := deleteEmpresaEmailAccountMailuAPI(ctx, dbSuper, cfg, account); err != nil {
+				return fmt.Errorf("no se pudo eliminar la cuenta de correo corporativo")
+			}
+			continue
+		}
+		if err := validateCorporateEmailDirectScript(firstNonEmptyEnv("EMAIL_CORPORATIVO_DIRECT_DELETE_COMMAND", "MAILU_DIRECT_DELETE_COMMAND"), corporateEmailDirectDeleteScript); err != nil {
+			return errors.New("el modo directo de Mailu no esta disponible")
+		}
+		callCtx, cancel := context.WithTimeout(ctx, 45*time.Second)
+		cmd := exec.CommandContext(callCtx, corporateEmailDirectDeleteScript)
+		cmd.Env = append(os.Environ(),
+			"PCS_MAILU_EMAIL="+strings.ToLower(strings.TrimSpace(account.Email)),
+			"PCS_MAILU_DOMAIN="+normalizeCorporateEmailDomain(account.Domain),
+		)
+		output, cmdErr := cmd.CombinedOutput()
+		cancel()
+		if cmdErr != nil {
+			msg := sanitizeProvisionCommandOutput(string(output))
+			if msg == "" {
+				msg = "el comando de eliminacion Mailu fallo"
+			}
+			return fmt.Errorf("no se pudo eliminar la cuenta de correo corporativo: %s", msg)
+		}
+	}
+	return nil
 }
 
 func EnsureCorporateEmailRowsForExistingCompanies(dbSuper, dbEmp *sql.DB, usuario string) (int, error) {
@@ -691,6 +750,40 @@ func EnsureCorporateEmailRowsForExistingCompanies(dbSuper, dbEmp *sql.DB, usuari
 		return 0, nil
 	}
 	return dbpkg.EnsureEmpresaEmailRowsForExistingEmpresas(dbSuper, dbEmp, cfg.Domain, cfg.WebmailURL, usuario, normalizeCorporateEmailMaxAccounts(cfg.MaxAccounts))
+}
+
+// EnsureCorporateEmailProvisioningForExistingCompanies finishes the idempotent
+// Mailu setup for rows created before the corporate-email service was enabled.
+// Passwords are generated only when absent and are persisted encrypted by the
+// existing provision helper; neither the password nor command output is logged.
+func EnsureCorporateEmailProvisioningForExistingCompanies(dbSuper *sql.DB) (int, error) {
+	if dbSuper == nil {
+		return 0, nil
+	}
+	cfg := getCorporateEmailConfig(dbSuper)
+	if !cfg.Enabled || (cfg.ProvisionMode != "mailu_direct" && cfg.ProvisionMode != "mailu_api") {
+		return 0, nil
+	}
+	accounts, err := dbpkg.ListEmpresaEmailCorporativo(dbSuper)
+	if err != nil {
+		return 0, err
+	}
+	provisioned := 0
+	for _, account := range accounts {
+		if account.EmpresaID <= 0 || strings.EqualFold(strings.TrimSpace(account.Estado), "eliminado") || strings.EqualFold(strings.TrimSpace(account.EstadoProvision), "provisionado") {
+			continue
+		}
+		password, passErr := corporateEmailInitialPasswordForProvision(dbSuper, account)
+		if passErr != nil {
+			return provisioned, fmt.Errorf("no se pudo preparar un buzon corporativo pendiente")
+		}
+		result := provisionEmpresaEmailAccount(dbSuper, cfg, account, password)
+		if !result.OK {
+			return provisioned, fmt.Errorf("no se pudo aprovisionar un buzon corporativo pendiente")
+		}
+		provisioned++
+	}
+	return provisioned, nil
 }
 
 func provisionEmpresaEmailAccount(dbSuper *sql.DB, cfg CorporateEmailConfig, account dbpkg.EmpresaEmailCorporativo, password string) corporateEmailProvisionResult {
@@ -749,6 +842,9 @@ func provisionEmpresaEmailAccountWithTheme(dbSuper *sql.DB, cfg CorporateEmailCo
 		_ = dbpkg.MarkEmpresaEmailProvisionResult(dbSuper, account.EmpresaID, "pendiente_modulo_desactivado", "El modulo global esta desactivado", false)
 		return corporateEmailProvisionResult{OK: false, Status: "pendiente_modulo_desactivado", Error: "modulo desactivado"}
 	}
+	if cfg.ProvisionMode == "mailu_api" {
+		return provisionEmpresaEmailAccountMailuAPI(dbSuper, cfg, account, password)
+	}
 	if cfg.ProvisionMode != "mailu_direct" {
 		_ = dbpkg.MarkEmpresaEmailProvisionResult(dbSuper, account.EmpresaID, "pendiente_provision_manual", "Modo manual: crear o validar la cuenta en Mailu", false)
 		return corporateEmailProvisionResult{OK: false, Status: "pendiente_provision_manual", Error: "modo manual"}
@@ -756,13 +852,113 @@ func provisionEmpresaEmailAccountWithTheme(dbSuper *sql.DB, cfg CorporateEmailCo
 	return provisionEmpresaEmailAccountDirect(dbSuper, cfg, account, password, theme)
 }
 
-func provisionEmpresaEmailAccountDirect(dbSuper *sql.DB, cfg CorporateEmailConfig, account dbpkg.EmpresaEmailCorporativo, password, theme string) corporateEmailProvisionResult {
-	commandPath := strings.TrimSpace(cfg.DirectCommand)
-	if commandPath == "" {
-		commandPath = strings.TrimSpace(firstNonEmptyEnv("EMAIL_CORPORATIVO_DIRECT_PROVISION_COMMAND", "MAILU_DIRECT_PROVISION_COMMAND"))
+type mailuAPIUserPayload struct {
+	Email          string `json:"email"`
+	RawPassword    string `json:"raw_password"`
+	QuotaBytes     int64  `json:"quota_bytes"`
+	Enabled        bool   `json:"enabled"`
+	DisplayedName  string `json:"displayed_name"`
+	ChangePassword bool   `json:"change_pw_next_login"`
+}
+
+// corporateEmailMailuAPIRequest keeps Mailu provisioning inside the private
+// Docker network. It never logs the bearer token, password, or provider body.
+func corporateEmailMailuAPIRequest(ctx context.Context, dbSuper *sql.DB, cfg CorporateEmailConfig, method, path string, payload interface{}) (int, error) {
+	token, err := corporateEmailAPIAdminPassword(dbSuper)
+	if err != nil || strings.TrimSpace(token) == "" {
+		return 0, errors.New("token api mailu no configurado")
 	}
-	if commandPath == "" {
-		msg := "Falta EMAIL_CORPORATIVO_DIRECT_PROVISION_COMMAND para crear el buzon directo en Mailu"
+	return corporateEmailMailuAPIRequestWithToken(ctx, cfg, token, method, path, payload)
+}
+
+func corporateEmailMailuAPIRequestWithToken(ctx context.Context, cfg CorporateEmailConfig, token, method, path string, payload interface{}) (int, error) {
+	baseURL := strings.TrimRight(corporateEmailEffectiveAPIBaseURL(cfg.APIBaseURL), "/")
+	if baseURL == "" {
+		return 0, errors.New("api mailu no configurada")
+	}
+	if strings.TrimSpace(token) == "" {
+		return 0, errors.New("token api mailu no configurado")
+	}
+	var body io.Reader
+	if payload != nil {
+		raw, marshalErr := json.Marshal(payload)
+		if marshalErr != nil {
+			return 0, errors.New("payload mailu invalido")
+		}
+		body = strings.NewReader(string(raw))
+	}
+	req, err := http.NewRequestWithContext(ctx, method, baseURL+path, body)
+	if err != nil {
+		return 0, errors.New("solicitud mailu invalida")
+	}
+	req.Header.Set("Authorization", "Bearer "+token)
+	req.Header.Set("Accept", "application/json")
+	if payload != nil {
+		req.Header.Set("Content-Type", "application/json")
+	}
+	resp, err := (&http.Client{Timeout: 20 * time.Second}).Do(req)
+	if err != nil {
+		return 0, errors.New("api mailu no disponible")
+	}
+	defer resp.Body.Close()
+	_, _ = io.Copy(io.Discard, io.LimitReader(resp.Body, 64<<10))
+	return resp.StatusCode, nil
+}
+
+func mailuAPIUserPayloadForAccount(account dbpkg.EmpresaEmailCorporativo, password string, quotaMB int) mailuAPIUserPayload {
+	quotaBytes := int64(quotaMB) * 1024 * 1024
+	if quotaBytes < 0 {
+		quotaBytes = 0
+	}
+	return mailuAPIUserPayload{
+		Email: strings.ToLower(strings.TrimSpace(account.Email)), RawPassword: password,
+		QuotaBytes: quotaBytes, Enabled: true, DisplayedName: strings.TrimSpace(account.EmpresaNombre),
+		ChangePassword: false,
+	}
+}
+
+func provisionEmpresaEmailAccountMailuAPI(dbSuper *sql.DB, cfg CorporateEmailConfig, account dbpkg.EmpresaEmailCorporativo, password string) corporateEmailProvisionResult {
+	if strings.TrimSpace(password) == "" {
+		_ = dbpkg.MarkEmpresaEmailProvisionResult(dbSuper, account.EmpresaID, "pendiente_clave", "La clave inicial de la cuenta no esta disponible", false)
+		return corporateEmailProvisionResult{OK: false, Status: "pendiente_clave", Error: "clave no disponible"}
+	}
+	if err := validateCorporateEmailAccountForProvision(account); err != nil {
+		_ = dbpkg.MarkEmpresaEmailProvisionResult(dbSuper, account.EmpresaID, "error_validacion", err.Error(), false)
+		return corporateEmailProvisionResult{OK: false, Status: "error_validacion", Error: "email invalido"}
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 25*time.Second)
+	defer cancel()
+	payload := mailuAPIUserPayloadForAccount(account, password, cfg.QuotaMB)
+	status, err := corporateEmailMailuAPIRequest(ctx, dbSuper, cfg, http.MethodPost, "/v1/user", payload)
+	if err == nil && status == http.StatusConflict {
+		status, err = corporateEmailMailuAPIRequest(ctx, dbSuper, cfg, http.MethodPatch, "/v1/user/"+url.PathEscape(payload.Email), payload)
+	}
+	if err != nil || (status != http.StatusOK && status != http.StatusCreated && status != http.StatusNoContent) {
+		_ = dbpkg.MarkEmpresaEmailProvisionResult(dbSuper, account.EmpresaID, "error_provision", "No fue posible crear o actualizar el buzon con Mailu", false)
+		return corporateEmailProvisionResult{OK: false, Status: "error_provision", Error: "api Mailu no pudo provisionar el buzon"}
+	}
+	_ = dbpkg.MarkEmpresaEmailProvisionResult(dbSuper, account.EmpresaID, "provisionado", "", true)
+	return corporateEmailProvisionResult{OK: true, Status: "provisionado"}
+}
+
+func deleteEmpresaEmailAccountMailuAPI(ctx context.Context, dbSuper *sql.DB, cfg CorporateEmailConfig, account dbpkg.EmpresaEmailCorporativo) error {
+	if err := validateCorporateEmailAccountForProvision(account); err != nil {
+		return err
+	}
+	status, err := corporateEmailMailuAPIRequest(ctx, dbSuper, cfg, http.MethodDelete, "/v1/user/"+url.PathEscape(strings.ToLower(strings.TrimSpace(account.Email))), nil)
+	if err != nil || (status != http.StatusOK && status != http.StatusNoContent && status != http.StatusNotFound) {
+		return errors.New("api mailu no pudo eliminar el buzon")
+	}
+	return nil
+}
+
+func provisionEmpresaEmailAccountDirect(dbSuper *sql.DB, cfg CorporateEmailConfig, account dbpkg.EmpresaEmailCorporativo, password, theme string) corporateEmailProvisionResult {
+	configuredCommand := strings.TrimSpace(cfg.DirectCommand)
+	if configuredCommand == "" {
+		configuredCommand = strings.TrimSpace(firstNonEmptyEnv("EMAIL_CORPORATIVO_DIRECT_PROVISION_COMMAND", "MAILU_DIRECT_PROVISION_COMMAND"))
+	}
+	if err := validateCorporateEmailDirectScript(configuredCommand, corporateEmailDirectProvisionScript); err != nil {
+		msg := "El modo directo de Mailu solo permite el script interno aprobado"
 		_ = dbpkg.MarkEmpresaEmailProvisionResult(dbSuper, account.EmpresaID, "pendiente_comando", msg, false)
 		return corporateEmailProvisionResult{OK: false, Status: "pendiente_comando", Error: msg}
 	}
@@ -778,8 +974,7 @@ func provisionEmpresaEmailAccountDirect(dbSuper *sql.DB, cfg CorporateEmailConfi
 
 	ctx, cancel := context.WithTimeout(context.Background(), 45*time.Second)
 	defer cancel()
-	// #nosec G204 -- commandPath is the fixed Mailu provisioning script resolved inside the project.
-	cmd := exec.CommandContext(ctx, commandPath)
+	cmd := exec.CommandContext(ctx, corporateEmailDirectProvisionScript)
 	cmd.Env = append(os.Environ(),
 		"PCS_MAILU_EMAIL="+strings.ToLower(strings.TrimSpace(account.Email)),
 		"PCS_MAILU_PASSWORD="+password,
@@ -1041,7 +1236,7 @@ func corporateEmailResponse(dbSuper *sql.DB, cfg CorporateEmailConfig, account *
 	if checkUnread {
 		resp["unread"] = corporateEmailUnreadStatusFromIMAP(dbSuper, account)
 	}
-	accountCanAttemptAutologin := account != nil && (strings.EqualFold(strings.TrimSpace(account.EstadoProvision), "provisionado") || (cfg.ProvisionMode == "mailu_direct" && account.InitialPasswordSet))
+	accountCanAttemptAutologin := account != nil && (strings.EqualFold(strings.TrimSpace(account.EstadoProvision), "provisionado") || (corporateEmailAutomaticProvisioningEnabled(cfg) && account.InitialPasswordSet))
 	if cfg.Enabled && accountCanAttemptAutologin {
 		if token, err := createCorporateEmailAutologinToken(dbSuper, *account); err == nil {
 			if autologinURL := corporateEmailAutologinPublicURL(webmailURL, token, theme); autologinURL != "" {
@@ -1085,22 +1280,26 @@ func corporateEmailDiagnosticsFor(cfg CorporateEmailConfig, accounts []dbpkg.Emp
 	recommended := "Configuracion lista para asignar correos por empresa."
 	if !cfg.Enabled {
 		recommended = "Activa el modulo para que las empresas puedan abrir su buzon corporativo."
+	} else if cfg.ProvisionMode == "mailu_api" && (strings.TrimSpace(cfg.APIBaseURL) == "" || !cfg.APIPasswordSet) {
+		recommended = "Configura la API interna y el token de Mailu antes de provisionar buzones."
+	} else if cfg.ProvisionMode == "mailu_api" {
+		recommended = "Provision segura por API interna activa: el sistema crea buzones sin acceso al socket Docker."
 	} else if cfg.ProvisionMode == "mailu_direct" && strings.TrimSpace(cfg.DirectCommand) == "" {
 		recommended = "Configura el comando directo de Mailu para crear buzones reales desde la VPS."
 	} else if cfg.ProvisionMode == "mailu_direct" {
 		recommended = "Provision directa activa: el sistema creara buzones reales en Mailu desde la VPS."
-	} else if cfg.ProvisionMode != "mailu_direct" {
-		recommended = "El modo manual asigna correos, pero el buzon real se debe crear en Mailu fuera del sistema."
 	} else if summary["error"] > 0 {
 		recommended = "Prueba Mailu y luego reintenta provisionar las cuentas con error."
 	} else if summary["pendiente"] > 0 {
 		recommended = "Provisiona las cuentas pendientes para crear los buzones reales."
+	} else {
+		recommended = "El modo manual asigna correos, pero el buzon real se debe crear en Mailu fuera del sistema."
 	}
 	return corporateEmailDiagnostics{
 		Enabled:             cfg.Enabled,
 		AutoCreate:          cfg.AutoCreate,
 		ProvisionMode:       cfg.ProvisionMode,
-		MailuDirectEnabled:  cfg.Enabled && cfg.ProvisionMode == "mailu_direct",
+		MailuDirectEnabled:  cfg.Enabled && (cfg.ProvisionMode == "mailu_direct" || cfg.ProvisionMode == "mailu_api"),
 		MailuAPIURLSet:      strings.TrimSpace(cfg.APIBaseURL) != "",
 		MailuAdminSet:       strings.TrimSpace(cfg.APIAdmin) != "",
 		MailuAPITokenSet:    cfg.APIPasswordSet,
@@ -1114,6 +1313,12 @@ func corporateEmailDiagnosticsFor(cfg CorporateEmailConfig, accounts []dbpkg.Emp
 func testCorporateEmailMailuProvision(cfg CorporateEmailConfig) corporateEmailProvisionResult {
 	if !cfg.Enabled {
 		return corporateEmailProvisionResult{OK: false, Status: "pendiente_modulo_desactivado", Error: "modulo desactivado"}
+	}
+	if cfg.ProvisionMode == "mailu_api" {
+		if strings.TrimSpace(cfg.APIBaseURL) == "" || !cfg.APIPasswordSet {
+			return corporateEmailProvisionResult{OK: false, Status: "pendiente_api", Error: "Falta configurar la API interna de Mailu"}
+		}
+		return corporateEmailProvisionResult{OK: true, Status: "api_ok"}
 	}
 	if cfg.ProvisionMode != "mailu_direct" {
 		return corporateEmailProvisionResult{OK: false, Status: "pendiente_provision_manual", Error: "modo manual"}
@@ -1174,7 +1379,7 @@ func SuperEmailCorporativoHandler(dbSuper, dbEmp *sql.DB) http.HandlerFunc {
 				"accounts":             accounts,
 				"diagnostics":          corporateEmailDiagnosticsFor(cfg, accounts),
 				"encryption_available": utils.EncryptionAvailable(),
-				"mailu_direct_enabled": cfg.Enabled && cfg.ProvisionMode == "mailu_direct",
+				"mailu_direct_enabled": corporateEmailAutomaticProvisioningEnabled(cfg),
 			})
 			return
 		case http.MethodPost, http.MethodPut:
@@ -1379,7 +1584,7 @@ func EmpresaEmailCorporativoHandler(dbSuper, dbEmp *sql.DB) http.HandlerFunc {
 				}
 				passwordChanged = true
 				provisionStatus = "clave_guardada"
-				if cfg.Enabled && cfg.ProvisionMode == "mailu_direct" {
+				if corporateEmailAutomaticProvisioningEnabled(cfg) {
 					result := provisionEmpresaEmailAccountWithTheme(dbSuper, cfg, *account, validatedPassword, theme)
 					provisionStatus = result.Status
 					if !result.OK {
@@ -1478,7 +1683,7 @@ func EmpresaEmailCorporativoAutologinHandler(dbSuper *sql.DB) http.HandlerFunc {
 			writeCorporateEmailAutologinError(w, http.StatusNotFound, "No se encontro el buzon corporativo de esta empresa.")
 			return
 		}
-		needsMailuProvision := cfg.ProvisionMode == "mailu_direct" && (corporateEmailWebmailEngine() == "snappymail" || !strings.EqualFold(strings.TrimSpace(account.EstadoProvision), "provisionado") || !strings.EqualFold(strings.TrimSpace(account.ProvisionProvider), "mailu"))
+		needsMailuProvision := corporateEmailAutomaticProvisioningEnabled(cfg) && (corporateEmailWebmailEngine() == "snappymail" || !strings.EqualFold(strings.TrimSpace(account.EstadoProvision), "provisionado") || !strings.EqualFold(strings.TrimSpace(account.ProvisionProvider), "mailu"))
 		if needsMailuProvision {
 			password, passErr := corporateEmailInitialPasswordForProvision(dbSuper, *account)
 			if passErr != nil {

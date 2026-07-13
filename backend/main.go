@@ -787,51 +787,6 @@ func injectButtonIconsScript(body []byte) []byte {
 	return []byte(text[:insertAt] + buttonIconsScriptTag + text[insertAt:])
 }
 
-func resolveDownloadsDir() string {
-	candidates := []string{
-		"descargas",
-		"../descargas",
-	}
-
-	if exePath, err := os.Executable(); err == nil {
-		exeDir := filepath.Dir(exePath)
-		candidates = append(candidates,
-			filepath.Join(exeDir, "descargas"),
-			filepath.Join(exeDir, "..", "descargas"),
-			filepath.Join(exeDir, "..", "..", "descargas"),
-			filepath.Join(exeDir, "..", "..", "..", "descargas"),
-		)
-	}
-
-	seen := map[string]bool{}
-	for _, cand := range candidates {
-		cand = strings.TrimSpace(cand)
-		if cand == "" {
-			continue
-		}
-
-		absCand, err := filepath.Abs(cand)
-		if err != nil {
-			absCand = cand
-		}
-		if seen[absCand] {
-			continue
-		}
-		seen[absCand] = true
-
-		info, statErr := os.Stat(absCand)
-		if statErr != nil || !info.IsDir() {
-			continue
-		}
-		return absCand
-	}
-
-	if absCand, err := filepath.Abs("../descargas"); err == nil {
-		return absCand
-	}
-	return "../descargas"
-}
-
 func main() {
 	backendDir := resolveBackendRuntimeDir()
 	startupTraceEnabled := strings.TrimSpace(os.Getenv("PCS_STARTUP_TRACE")) == "1"
@@ -1005,10 +960,24 @@ func main() {
 			log.Printf("INFO: emails corporativos generados para empresas existentes: %d", created)
 		}
 		startupTrace("after_empresa_email_corporativo_existing_companies")
-		if err := dbpkg.DecommissionNextcloudArtifacts(dbEmpresas, dbSuper); err != nil {
-			log.Printf("warning: no se pudieron retirar artefactos Nextcloud obsoletos: %v", err)
+		if provisioned, err := handlers.EnsureCorporateEmailProvisioningForExistingCompanies(dbSuper); err != nil {
+			log.Printf("warning: no se pudieron aprovisionar todos los emails corporativos existentes: %v", err)
+		} else if provisioned > 0 {
+			log.Printf("INFO: emails corporativos aprovisionados para empresas existentes: %d", provisioned)
 		}
-		startupTrace("after_nextcloud_decommission")
+		startupTrace("after_empresa_email_corporativo_provisioning")
+		if err := handlers.EnsureNextcloudConfigFromEnv(dbSuper); err != nil {
+			log.Printf("warning: no se pudo registrar configuracion Nextcloud desde entorno: %v", err)
+		}
+		startupTrace("after_nextcloud_env")
+		if err := dbpkg.EnsureEmpresaNextcloudSchema(dbEmpresas); err != nil {
+			log.Printf("warning: no se pudo preparar Nextcloud empresarial: %v", err)
+		} else if assigned, err := handlers.EnsureNextcloudAssignmentsForAll(dbEmpresas, dbSuper); err != nil {
+			log.Printf("warning: no se pudieron asignar espacios Nextcloud a empresas existentes: %v", err)
+		} else if assigned > 0 {
+			log.Printf("INFO: espacios Nextcloud asignados a empresas existentes: %d", assigned)
+		}
+		startupTrace("after_nextcloud_schema")
 		if err := dbpkg.DecommissionRemovedEntertainmentArtifacts(dbSuper); err != nil {
 			log.Printf("warning: no se pudieron retirar artefactos de juegos y emulador: %v", err)
 		}
@@ -1178,6 +1147,10 @@ func main() {
 		log.Fatalf("failed to ensure tarifas motel schema in empresas db: %v", err)
 	}
 	startupTrace("after_empresa_tarifas_motel_schema")
+	if err := dbpkg.EnsureEmpresaAIEnterpriseSchema(dbEmpresas); err != nil {
+		log.Fatalf("failed to ensure enterprise AI proposal schema in empresas db: %v", err)
+	}
+	startupTrace("after_empresa_ai_enterprise_schema")
 	if err := dbpkg.EnsureEmpresaSensorPuertasSchema(dbEmpresas); err != nil {
 		log.Fatalf("failed to ensure sensor puertas schema in empresas db: %v", err)
 	}
@@ -1330,7 +1303,6 @@ func main() {
 
 	// Determinar carpeta web una sola vez para rutas estaticas y handlers que listan recursos.
 	webDir := resolveWebDir()
-	downloadsDir := resolveDownloadsDir()
 	startupTrace("after_resolve_dirs")
 	vpsSecurityService, err := vpssecurity.NewService(nil, nil, nil)
 	if err != nil {
@@ -1563,6 +1535,7 @@ func main() {
 	http.HandleFunc("/api/public/certificados_tributarios", handlers.PublicCertificadosTributariosHandler(dbEmpresas))
 	http.HandleFunc("/api/empresa/backups", handlers.WithEmpresaBackupsPermissions(dbEmpresas, dbSuper, handlers.EmpresaBackupsHandler(dbEmpresas, dbSuper)))
 	http.HandleFunc("/api/empresa/documentos", handlers.WithEmpresaDocumentosOnlyOfficePermissions(dbEmpresas, dbSuper, handlers.OnlyOfficeDocumentosHandler(dbSuper)))
+	http.HandleFunc("/api/empresa/nextcloud", handlers.WithEmpresaGestionDocumentalPermissions(dbEmpresas, dbSuper, handlers.EmpresaNextcloudHandler(dbEmpresas, dbSuper)))
 	startupTrace("after_empresa_routes")
 
 	// OnlyOffice public endpoints (token temporal)
@@ -1661,6 +1634,7 @@ func main() {
 	http.HandleFunc("/super/api/config/mantenimiento", handlers.WithSuperAuditoria(dbSuper, "super_config_mantenimiento", handlers.SuperMantenimientoConfigHandler(dbSuper)))
 	http.HandleFunc("/api/empresa/mantenimiento_programado", handlers.WithEmpresaSelfServicePermissions(dbEmpresas, dbSuper, handlers.EmpresaMantenimientoProgramadoHandler(dbSuper)))
 	http.HandleFunc("/super/api/config/onlyoffice", handlers.WithSuperAuditoria(dbSuper, "super_config_onlyoffice", handlers.OnlyOfficeConfigHandler(dbSuper)))
+	http.HandleFunc("/super/api/config/nextcloud", handlers.WithSuperAuditoria(dbSuper, "super_config_nextcloud", handlers.NextcloudConfigHandler(dbSuper, dbEmpresas)))
 	http.HandleFunc("/super/api/config/empresa_storage", handlers.WithSuperAuditoria(dbSuper, "super_config_empresa_storage", handlers.SuperEmpresaStorageConfigHandler(dbSuper, dbEmpresas)))
 	// Endpoint super para administrar contrato versionado y su historial
 	http.HandleFunc("/super/api/contrato", handlers.SuperContratoHandler(dbSuper))
@@ -1749,7 +1723,6 @@ func main() {
 
 	// Servir assets centralizados (CSS, JS)
 	http.Handle("/assets/", http.StripPrefix("/assets/", http.FileServer(http.Dir(webDir))))
-	http.Handle("/descargas/", http.StripPrefix("/descargas/", http.FileServer(http.Dir(downloadsDir))))
 	startupTrace("after_static_helper_routes")
 
 	// Servir páginas estáticas desde la carpeta `web` detectada

@@ -331,11 +331,11 @@ sudo nginx -t
 
 ## Servicios definidos como perfiles
 
-OnlyOffice, edge publico, voz IA y RustDesk estan definidos en el Compose por perfiles. Nextcloud queda retirado del producto y del Compose oficial:
+OnlyOffice, edge publico, voz IA y RustDesk estan definidos en el Compose por perfiles. Nextcloud empresarial opera como stack separado del Compose nucleo en el VPS principal:
 
 - OnlyOffice ya existia como contenedor en `127.0.0.1:8088`.
 - RustDesk ya usaba puertos publicos `21115`, `21116` y `21117` en el host.
-- Si quedan contenedores Nextcloud legacy, retirar con `deploy/scripts/vps-remove-nextcloud.sh`; usar `--purge-data` solo despues de confirmar que no se requiere recuperacion.
+- El stack empresarial se administra con `deploy/scripts/vps-nextcloud-up.sh` y sus volumenes/datos no deben purgarse como legado. El Nextcloud de VPS2 sigue siendo independiente.
 
 Perfiles disponibles:
 
@@ -458,7 +458,8 @@ El correo empresarial se integra al stack portable mediante variables en
   `/webmail/` directo contra `pcs-mailu-webmail` en loopback.
 - Para llamadas desde el backend dentro de Docker, el compose define
   `EMAIL_CORPORATIVO_INTERNAL_SNAPPYMAIL_URL=http://mailu-webmail/` y usa el
-  comando directo `deploy/scripts/vps-provision-mailu-mailbox.sh`.
+  API REST interna de Mailu con token generado en el entorno privado. El backend
+  no requiere Docker CLI ni socket Docker para provisionar buzones.
 - Mailu usa IPs fijas dentro de `pcs_mailu_internal` para que SnappyMail y front
   entren a IMAP/SMTP por la red confiable `192.168.203.0/24`.
 - Antes de activar `--profile mail`, validar DNS A, MX, SPF, DKIM, DMARC, PTR,

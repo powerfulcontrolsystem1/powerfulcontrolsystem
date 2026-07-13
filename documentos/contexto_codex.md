@@ -36,6 +36,21 @@ decisiones en cada tarea.
 - No usar empresas de ejemplo como Alfaix salvo que el usuario lo pida
   explicitamente o que el caso de prueba corresponda a datos ya cargados alli.
 
+## Actualizacion 2026-07-13 - Servicios empresariales y cierre de IA
+
+- Nextcloud empresarial corresponde exclusivamente al VPS principal. Al activar
+  el modulo se asigna una cuenta por empresa con cuota inicial; la clave se
+  entrega una sola vez al administrador autorizado y no se persiste en texto.
+- OnlyOffice se usa como servidor documental y debe validarse junto con el
+  handler multiempresa, no como acceso publico a archivos privados.
+- Mailu provisiona buzones mediante su API REST interna autenticada. El backend
+  no recibe Docker socket ni ejecuta comandos Docker. La API de Mailu no se
+  publica por el proxy externo.
+- El orquestador IA empresarial usa herramientas cerradas de propiedad del
+  servidor. La herramienta hotelera prepara una propuesta de quince minutos,
+  exige confirmacion, hash de plan e idempotency key; las herramientas de
+  escritura siguen desactivadas salvo habilitacion explicita por entorno.
+
 ## Actualizacion 2026-06-11 - Carrito busqueda por nombre con teclado
 
 - El carrito permite buscar productos por nombre en un campo separado del codigo

@@ -210,6 +210,7 @@ func superDockerPortableDownload(w http.ResponseWriter, r *http.Request, root, a
 	w.Header().Set("Content-Type", "application/gzip")
 	w.Header().Set("Content-Disposition", `attachment; filename="`+archiveName+`"`)
 	w.Header().Set("Cache-Control", "no-store")
+	w.Header().Set("X-Content-Type-Options", "nosniff")
 
 	gz := gzip.NewWriter(w)
 	defer gz.Close()

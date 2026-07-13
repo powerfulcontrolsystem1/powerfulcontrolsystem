@@ -13706,6 +13706,10 @@ body.ai-gemini-inline-history-mode .ai-gemini-new-chat{width:auto;text-align:cen
 }
 
 /* Chat IA: acciones confirmables desde el chat (registro via auditoria) */
+.ai-enterprise-card{margin:12px 0;padding:12px;border:1px solid color-mix(in srgb,var(--primary,#2563eb) 50%,var(--border,#64748b));background:var(--card,#fff);color:var(--text,#172033);border-radius:6px;box-shadow:0 4px 14px rgba(15,23,42,.12)}
+.ai-enterprise-card-head{display:flex;justify-content:space-between;gap:10px;align-items:center;font-size:.9rem}.ai-enterprise-card-head span{font-size:.75rem;font-weight:700;text-transform:uppercase;color:var(--primary,#2563eb)}
+.ai-enterprise-card p{margin:9px 0;font-size:.88rem}.ai-enterprise-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}.ai-enterprise-grid label{display:grid;gap:3px;font-size:.78rem;font-weight:700}.ai-enterprise-grid .form-input{min-width:0}.ai-enterprise-check{display:block;margin-top:9px;font-size:.82rem}.ai-enterprise-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:12px}.ai-enterprise-state{display:grid;grid-template-columns:1fr 1fr;gap:8px}.ai-enterprise-state>div,.ai-enterprise-sources{padding:8px;background:color-mix(in srgb,var(--muted-bg,#edf2f7) 80%,transparent);font-size:.82rem}.ai-enterprise-state b,.ai-enterprise-sources b{display:block;margin-bottom:3px}.ai-enterprise-result{font-weight:700;color:#0f7a43}.ai-enterprise-card.is-completed{border-color:#16a34a}
+@media(max-width:760px){.ai-enterprise-grid,.ai-enterprise-state{grid-template-columns:1fr}.ai-enterprise-card-head{align-items:flex-start;flex-direction:column}}
 .ai-action-card{
   margin-top:10px;
   border:1px solid var(--border);

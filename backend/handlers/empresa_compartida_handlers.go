@@ -612,7 +612,7 @@ func EmpresaCompartidaHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 				}
 				invitaciones, err := dbpkg.ListPendingAdminEmpresaCompartidaInvitacionesByAdmin(dbSuper, requesterEmail)
 				if err != nil {
-					http.Error(w, "no se pudieron cargar invitaciones pendientes: "+err.Error(), http.StatusInternalServerError)
+					http.Error(w, "no se pudieron cargar invitaciones pendientes", http.StatusInternalServerError)
 					return
 				}
 				items := make([]map[string]interface{}, 0, len(invitaciones))
@@ -658,7 +658,7 @@ func EmpresaCompartidaHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 			}
 			principalEmail, ok, err := ensureEmpresaInRequesterScope(dbEmp, dbSuper, r, empresaID)
 			if err != nil {
-				http.Error(w, "no se pudo validar empresa: "+err.Error(), http.StatusInternalServerError)
+				http.Error(w, "no se pudo validar la empresa", http.StatusInternalServerError)
 				return
 			}
 			if !ok {
@@ -667,23 +667,23 @@ func EmpresaCompartidaHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 			}
 			_, _, owner, isSuperAdmin, _, ownerErr := ensureEmpresaShareManagerAccess(dbEmp, dbSuper, r, empresaID)
 			if ownerErr != nil {
-				http.Error(w, "no se pudo validar propietario: "+ownerErr.Error(), http.StatusInternalServerError)
+				http.Error(w, "no se pudo validar el acceso propietario", http.StatusInternalServerError)
 				return
 			}
 			canReshare, reshareErr := adminEmpresaCompartidaCanReshare(dbSuper, empresaID, requesterEmail)
 			if reshareErr != nil {
-				http.Error(w, "no se pudo validar permiso para compartir: "+reshareErr.Error(), http.StatusInternalServerError)
+				http.Error(w, "no se pudo validar el permiso para compartir", http.StatusInternalServerError)
 				return
 			}
 			canManageShares := adminEmpresaCompartidaCanManageShares(owner, isSuperAdmin, canReshare)
 			accesos, err := dbpkg.ListAdminEmpresaCompartidaAccesosByEmpresa(dbSuper, empresaID)
 			if err != nil {
-				http.Error(w, "no se pudieron cargar accesos compartidos: "+err.Error(), http.StatusInternalServerError)
+				http.Error(w, "no se pudieron cargar accesos compartidos", http.StatusInternalServerError)
 				return
 			}
 			invitaciones, err := dbpkg.ListAdminEmpresaCompartidaInvitacionesByEmpresa(dbSuper, empresaID)
 			if err != nil {
-				http.Error(w, "no se pudieron cargar invitaciones compartidas: "+err.Error(), http.StatusInternalServerError)
+				http.Error(w, "no se pudieron cargar invitaciones compartidas", http.StatusInternalServerError)
 				return
 			}
 			normalized := make([]dbpkg.AdminEmpresaCompartidaInvitacion, 0, len(invitaciones))
@@ -736,12 +736,12 @@ func EmpresaCompartidaHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 			}
 			empresa, principalEmail, owner, isSuperAdmin, actorEmail, err := ensureEmpresaShareManagerAccess(dbEmp, dbSuper, r, payload.EmpresaID)
 			if err != nil {
-				http.Error(w, "no se pudo validar empresa: "+err.Error(), http.StatusInternalServerError)
+				http.Error(w, "no se pudo validar la empresa", http.StatusInternalServerError)
 				return
 			}
 			canReshare, reshareErr := adminEmpresaCompartidaCanReshare(dbSuper, payload.EmpresaID, strings.ToLower(strings.TrimSpace(adminEmailFromRequest(r))))
 			if reshareErr != nil {
-				http.Error(w, "no se pudo validar permiso para compartir: "+reshareErr.Error(), http.StatusInternalServerError)
+				http.Error(w, "no se pudo validar el permiso para compartir", http.StatusInternalServerError)
 				return
 			}
 			if !adminEmpresaCompartidaCanManageShares(owner, isSuperAdmin, canReshare) {
@@ -762,7 +762,7 @@ func EmpresaCompartidaHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 			if err == sql.ErrNoRows || targetNeedsRegistration {
 				adminTarget, adminRegistrationToken, err = ensurePendingAdminEmpresaCompartidaRegistration(dbSuper, payload.Email, payload.Email, actorEmail)
 				if err != nil {
-					http.Error(w, "no se pudo preparar el registro del administrador invitado: "+err.Error(), http.StatusInternalServerError)
+					http.Error(w, "no se pudo preparar el registro del administrador invitado", http.StatusInternalServerError)
 					return
 				}
 				targetNeedsRegistration = adminEmpresaCompartidaNeedsRegistration(adminTarget)
@@ -830,7 +830,7 @@ func EmpresaCompartidaHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 				Estado:            "pendiente",
 			})
 			if err != nil {
-				http.Error(w, "no se pudo crear invitación compartida: "+err.Error(), http.StatusInternalServerError)
+				http.Error(w, "no se pudo crear la invitacion compartida", http.StatusInternalServerError)
 				return
 			}
 			acceptURL := ""
@@ -851,7 +851,6 @@ func EmpresaCompartidaHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 			if mailErr != nil {
 				response["email_sent"] = false
 				response["message"] = "La invitación se creó, pero el correo no pudo enviarse. Puedes reenviarla desde esta misma pantalla."
-				response["error"] = mailErr.Error()
 				writeJSON(w, http.StatusOK, response)
 				return
 			}
@@ -930,7 +929,7 @@ func EmpresaCompartidaHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 					UsuarioCreador:     requesterEmail,
 					Estado:             "activo",
 				}); err != nil {
-					http.Error(w, "no se pudo activar el acceso compartido: "+err.Error(), http.StatusInternalServerError)
+					http.Error(w, "no se pudo activar el acceso compartido", http.StatusInternalServerError)
 					return
 				}
 				invalidateEmpresaPermissionCacheForEmpresa(inv.EmpresaID)
@@ -958,12 +957,12 @@ func EmpresaCompartidaHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 			}
 			empresa, principalEmail, owner, isSuperAdmin, actorEmail, err := ensureEmpresaShareManagerAccess(dbEmp, dbSuper, r, inv.EmpresaID)
 			if err != nil {
-				http.Error(w, "no se pudo validar empresa: "+err.Error(), http.StatusInternalServerError)
+				http.Error(w, "no se pudo validar la empresa", http.StatusInternalServerError)
 				return
 			}
 			canReshare, reshareErr := adminEmpresaCompartidaCanReshare(dbSuper, inv.EmpresaID, strings.ToLower(strings.TrimSpace(adminEmailFromRequest(r))))
 			if reshareErr != nil {
-				http.Error(w, "no se pudo validar permiso para reenviar: "+reshareErr.Error(), http.StatusInternalServerError)
+				http.Error(w, "no se pudo validar el permiso para reenviar", http.StatusInternalServerError)
 				return
 			}
 			if !adminEmpresaCompartidaCanManageShares(owner, isSuperAdmin, canReshare) {
@@ -988,7 +987,6 @@ func EmpresaCompartidaHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 			if mailErr != nil {
 				response["email_sent"] = false
 				response["message"] = "La invitación se actualizó, pero el correo no pudo reenviarse."
-				response["error"] = mailErr.Error()
 				writeJSON(w, http.StatusOK, response)
 				return
 			}

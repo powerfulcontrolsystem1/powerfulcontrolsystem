@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 )
 
@@ -165,6 +166,7 @@ func cleanupEmpresaOwnedFiles(empresaID int64) empresaDeleteFileCleanupResult {
 
 	removeEmpresaOwnedDir(backupEmpresasRoot, filepath.Join(backupEmpresasRoot, fmt.Sprintf("%d", empresaID)), &result)
 	cleanupEmpresaDynamicDocuments(empresaID, &result)
+	cleanupEmpresaOnlyOfficeFiles(empresaID, &result)
 
 	logFile := fmt.Sprintf("empresa_%d.log", empresaID)
 	for _, logRoot := range []string{
@@ -175,4 +177,16 @@ func cleanupEmpresaOwnedFiles(empresaID int64) empresaDeleteFileCleanupResult {
 		removeEmpresaOwnedFile(logRoot, filepath.Join(logRoot, logFile), &result)
 	}
 	return result
+}
+
+func cleanupEmpresaOnlyOfficeFiles(empresaID int64, result *empresaDeleteFileCleanupResult) {
+	if empresaID <= 0 || result == nil {
+		return
+	}
+	root := filepath.Clean(onlyOfficeDataRoot())
+	if !strings.EqualFold(filepath.Base(root), "empresas") {
+		root = filepath.Join(root, "empresas")
+	}
+	target := filepath.Join(root, strconv.FormatInt(empresaID, 10))
+	removeEmpresaOwnedDir(root, target, result)
 }

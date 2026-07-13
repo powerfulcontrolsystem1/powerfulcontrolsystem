@@ -84,7 +84,7 @@ func SuperAdministradoresFrecuenciaFEHandler(dbSuper *sql.DB) http.HandlerFunc {
 		case http.MethodGet:
 			list, updatedAt, updatedBy, err := loadFrecuenciaFEAdminEmails(dbSuper)
 			if err != nil {
-				http.Error(w, "failed to load: "+err.Error(), http.StatusInternalServerError)
+				http.Error(w, "No se pudo cargar la configuracion.", http.StatusInternalServerError)
 				return
 			}
 			// Preferir actor real de la última operación si existe.
@@ -105,7 +105,7 @@ func SuperAdministradoresFrecuenciaFEHandler(dbSuper *sql.DB) http.HandlerFunc {
 				Emails []string `json:"emails"`
 			}
 			if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
-				http.Error(w, "invalid payload: "+err.Error(), http.StatusBadRequest)
+				http.Error(w, "Solicitud invalida.", http.StatusBadRequest)
 				return
 			}
 			uniq := make(map[string]struct{}, len(payload.Emails))
@@ -127,7 +127,7 @@ func SuperAdministradoresFrecuenciaFEHandler(dbSuper *sql.DB) http.HandlerFunc {
 			}
 
 			if err := saveFrecuenciaFEAdminEmails(dbSuper, emails, adminEmail); err != nil {
-				http.Error(w, "failed to save: "+err.Error(), http.StatusInternalServerError)
+				http.Error(w, "No se pudo guardar la configuracion.", http.StatusInternalServerError)
 				return
 			}
 			writeJSON(w, http.StatusOK, map[string]interface{}{
@@ -154,7 +154,7 @@ func EmpresaFrecuenciaFPAllowedHandler(dbSuper *sql.DB) http.HandlerFunc {
 		}
 		list, _, _, err := loadFrecuenciaFEAdminEmails(dbSuper)
 		if err != nil {
-			http.Error(w, "failed to load: "+err.Error(), http.StatusInternalServerError)
+			http.Error(w, "No se pudo cargar la configuracion.", http.StatusInternalServerError)
 			return
 		}
 		allowed := false

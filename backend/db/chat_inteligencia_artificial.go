@@ -2633,17 +2633,8 @@ func buildEmpresaAISafeIntentContext(dbConn *sql.DB, empresaID int64, pregunta s
 		}
 	}
 
-	// Acción segura (best-effort): cambiar precio de un producto cuando viene explícito.
-	// Reglas:
-	// - Debe venir el nombre del producto entre comillas: "Cocacola pequeña"
-	// - Debe venir un número en la pregunta: precio 3500 / a 3500 / $3500
-	// - No ejecuta SQL libre; hace UPDATE parametrizado por empresa_id + nombre.
-	if slicesContain(availableTables, "productos") && strings.Contains(folded, "precio") &&
-		(strings.Contains(folded, "cambia") || strings.Contains(folded, "cambiale") || strings.Contains(folded, "cambiar")) {
-		if actionLines := empresaAISafeUpdateProductoPrecio(dbConn, empresaID, pregunta, terms, usuarioCreador); len(actionLines) > 0 {
-			intents = append(intents, empresaAISafeIntent{Name: "ACCION_SEGURA_ACTUALIZAR_PRECIO_PRODUCTO", Lines: actionLines})
-		}
-	}
+	// La consulta de chat nunca ejecuta mutaciones por palabras del usuario.
+	// Las escrituras pasan por propuestas enterprise con confirmación HTTP separada.
 
 	if aiLooksLikeNoRotationQuestion(folded) {
 		lines := empresaAISafeProductosSinRotacion(dbConn, empresaID, availableTables, 30, 5)

@@ -3,6 +3,7 @@ package handlers
 import (
 	"archive/zip"
 	"bytes"
+	"net/http"
 	"net/http/httptest"
 	"path/filepath"
 	"testing"
@@ -99,6 +100,41 @@ func TestOnlyOfficeAttachConfigTokenUsesTopLevelTokenOnly(t *testing.T) {
 	}
 	if ed, ok := cfg["editorConfig"].(map[string]any); !ok || ed["token"] != nil {
 		t.Fatalf("editorConfig.token must not be sent to Document Server")
+	}
+}
+
+func TestCopyOnlyOfficeCallbackFileRejectsOversizedDocument(t *testing.T) {
+	var dst bytes.Buffer
+	tooLarge := bytes.Repeat([]byte("x"), int(onlyOfficeCallbackMaxBytes)+1)
+	if err := copyOnlyOfficeCallbackFile(&dst, bytes.NewReader(tooLarge)); err == nil {
+		t.Fatal("expected oversized callback document to be rejected")
+	}
+	if got := int64(dst.Len()); got != onlyOfficeCallbackMaxBytes+1 {
+		t.Fatalf("expected size probe to stop at max + 1, got %d", got)
+	}
+}
+
+func TestCopyOnlyOfficeCallbackFileKeepsCompleteAllowedDocument(t *testing.T) {
+	var dst bytes.Buffer
+	source := []byte("valid onlyoffice document")
+	if err := copyOnlyOfficeCallbackFile(&dst, bytes.NewReader(source)); err != nil {
+		t.Fatalf("expected allowed callback document: %v", err)
+	}
+	if !bytes.Equal(dst.Bytes(), source) {
+		t.Fatal("callback document changed during copy")
+	}
+}
+
+func TestOnlyOfficeTemporaryTokenHandlersDisableCaching(t *testing.T) {
+	for _, handler := range []http.HandlerFunc{
+		OnlyOfficeFilePublicHandler(nil),
+		OnlyOfficeCallbackPublicHandler(nil),
+	} {
+		rec := httptest.NewRecorder()
+		handler(rec, httptest.NewRequest(http.MethodGet, "/api/onlyoffice/file?token=temporary", nil))
+		if got := rec.Header().Get("Cache-Control"); got != "no-store" {
+			t.Fatalf("expected no-store for temporary OnlyOffice token, got %q", got)
+		}
 	}
 }
 

@@ -335,9 +335,9 @@ func normalizeEmpresaAIChatAgentID(raw string) string {
 func buildEmpresaAIChatAgentInstruction(agentID string) string {
 	switch normalizeEmpresaAIChatAgentID(agentID) {
 	case "ventas":
-		return "AGENTE_ACTIVO: ventas. Prioriza flujos de venta, estaciones, carritos, clientes, pedidos y caja. Para vender o agregar items usa endpoints permitidos y pide confirmacion humana antes de PCS_ACTION."
+		return "AGENTE_ACTIVO: ventas. Prioriza flujos de venta, estaciones, carritos, clientes, pedidos y caja. Para cambios, prepara un plan y espera una propuesta confirmable creada por el servidor."
 	case "inventario":
-		return "AGENTE_ACTIVO: inventario. Prioriza productos, categorias, precios, existencias, compras y reposicion. Para crear/editar productos solo propone PCS_ACTION si el rol tiene inventario y el usuario confirma."
+		return "AGENTE_ACTIVO: inventario. Prioriza productos, categorias, precios, existencias, compras y reposicion. No modifiques datos desde texto; prepara un plan para propuesta confirmable por servidor."
 	case "compras":
 		return "AGENTE_ACTIVO: compras. Prioriza proveedores, facturas de compra, gastos, soportes y contabilizacion. Para ingresar facturas de compra solicita datos faltantes, presenta borrador revisable y no confirma registro sin aprobacion humana."
 	case "nomina":
@@ -347,7 +347,7 @@ func buildEmpresaAIChatAgentInstruction(agentID string) string {
 	case "agente_internet":
 		return "AGENTE_ACTIVO: agente_internet. Antes de recomendar cambios normativos, explica fuente, fecha, dato actual vs sugerido y pide aprobacion humana. Respeta cuotas por empresa y no apliques cambios automaticamente."
 	case "agente_configuracion_de_empresa":
-		return "AGENTE_ACTIVO: agente_configuracion_de_empresa. Eres especialista en configurar PCS para la empresa activa. Primero detecta tipo de negocio, rol y modulo; despues guia al administrador para productos, categorias, estaciones/mesas/habitaciones, tarifas, impresoras, caja, correos y parametros operativos. Puedes proponer rutas OPEN hacia paginas de configuracion y, si el usuario confirma, una accion UI_CLICK limitada para resaltar o pulsar botones visibles de configuracion. Para crear datos reales usa solo endpoints PCS_ACTION permitidos, con todos los campos completos, empresa validada y confirmacion humana previa. Preferencia de costo: usa el modelo mini configurado para guia normal y GPT-5.5 solo para vision o razonamiento complejo."
+		return "AGENTE_ACTIVO: agente_configuracion_de_empresa. Eres especialista en configurar PCS para la empresa activa. Primero detecta tipo de negocio, rol y modulo; despues guia al administrador para productos, categorias, estaciones/mesas/habitaciones, tarifas, impresoras, caja, correos y parametros operativos. Puedes orientar sobre paginas visibles, pero los cambios reales solo se ejecutan con propuestas del servidor, permisos vigentes y un boton de confirmacion. Preferencia de costo: usa el modelo mini configurado para guia normal y GPT-5.5 solo para vision o razonamiento complejo."
 	default:
 		return "AGENTE_ACTIVO: general. Ayuda con tareas empresariales respetando roles, empresa activa, limites y confirmacion humana."
 	}
@@ -1567,7 +1567,7 @@ func buildAIAssistantModeInstruction(mode string) string {
 	}
 	return "Modo ayudante activo: entrega la respuesta como guia ejecutiva por pasos, usando este formato: 1) Diagnostico breve, 2) Pasos recomendados en orden, 3) Checklist de validacion, 4) Riesgos/errores comunes y como evitarlos. " +
 		"Usa lenguaje claro para personal administrativo y operativo. " +
-		"Si el usuario pide ejecutar cambios, separa claramente lo que requiere confirmacion humana antes de cualquier PCS_ACTION. "
+		"Si el usuario pide ejecutar cambios, separa claramente lo que requiere una propuesta y confirmacion mediante boton del sistema. "
 }
 
 func buildEmpresaAIDirectDocumentResponse(dbEmp *sql.DB, empresaID int64, pregunta string) (string, bool) {
@@ -1712,20 +1712,11 @@ func buildEmpresaAISystemPrompt(contexto string, modoAsistente string) string {
 		"En su lugar, usa solo el contexto de lectura que ya preparo el servidor o propone una accion estructurada para que el usuario la confirme. " +
 		"Los administradores autorizados pueden recibir lectura real de la base de datos de su propia empresa cuando el servidor la incluya en contexto; cualquier creacion, edicion, eliminacion o movimiento debe hacerse exclusivamente por funciones/endpoints de PCS, con validacion de rol, empresa activa y confirmacion humana cuando aplique. " +
 		"Si el usuario pide una lista, tabla o reporte, responde con el contenido solicitado en texto o Markdown. Solo habla de descargar/exportar si el usuario lo pide literalmente. " +
-		"Regla de seguridad: puedes proponer acciones OPEN/UI_CLICK/POST/PUT sobre endpoints permitidos, pero TODA accion debe pedir confirmacion previa; nunca propongas DELETE desde el chat. " +
-		"Endpoints permitidos para PCS_ACTION: /api/empresa/ia/importar_desde_foto para registrar productos/egresos extraidos y revisados; /api/empresa/ia_pedidos_estacion/ejecutar para pedidos de estacion, mesa, habitacion o venta asistida; /api/empresa/ia_radio/activar para encender o apagar la emisora; /api/empresa/productos para crear o editar productos solo si el rol tiene inventario; /api/empresa/nomina con action=config, empleado, calcular, conciliar_asistencia o parametros_legales_aplicar solo si el rol tiene nomina; /api/empresa/tarifas_motel, /api/empresa/tarifas_por_dia y /api/empresa/tarifas_por_minutos para tarifas de motel/hotel/tiempo solo si el rol tiene ventas. Tambien puedes usar rutas OPEN relativas dentro de /administrar_empresa/ y UI_CLICK con selector_visible para guiar al usuario en botones de configuracion permitidos. " +
-		"Para un cajero, limita las acciones operativas a pedidos de estacion/mesa/habitacion y radio online; no propongas creacion de productos, nomina ni tarifas para un cajero. El backend volvera a validar empresa, licencia, pagina y permisos antes de ejecutar. " +
+		"Regla de seguridad: nunca emitas JSON de acciones, endpoints, selectores, SQL ni instrucciones para ejecutar cambios desde el navegador. Para una modificacion, explica el plan y los datos faltantes; el servidor crea la propuesta, valida permisos y ofrece el boton de confirmacion. Nunca propongas DELETE. " +
+		"Para un cajero, limita la guia a operaciones permitidas por su rol; no propongas configuraciones administrativas. El backend volvera a validar empresa, licencia, pagina y permisos antes de ejecutar. " +
 		"No propongas endpoints genericos de base de datos; si una accion todavia no tiene herramienta permitida o no conoces el contrato exacto, explica los pasos o abre la pagina correspondiente. " +
 		"Importante (foto de carta/lista de precios y egresos): cuando el usuario adjunte una foto y pida registrar productos o egresos, primero extrae y presenta una lista estructurada para revision humana. " +
-		"Solo tras una confirmacion explicita del usuario (por ejemplo: 'si, confirma y guarda'), genera UNA sola accion PCS_ACTION que llame a POST /api/empresa/ia/importar_desde_foto con el identificador tecnico solo dentro del JSON interno y un arreglo de productos y/o egresos. " +
-		"Usa ese endpoint para importaciones desde foto; no llames directamente /api/empresa/finanzas/movimientos. Para productos manuales sin foto puedes usar /api/empresa/productos solo cuando el usuario tenga permisos y haya dado todos los campos obligatorios. " +
-		"Solo cuando tengas TODOS los datos obligatorios, incluye al FINAL de tu respuesta un bloque literal con el prefijo EXACTO `PCS_ACTION` en una linea aparte, seguido por un JSON valido. " +
-		"Formato requerido:\n" +
-		"PCS_ACTION\n" +
-		"{\"version\":1,\"actions\":[{\"id\":\"...\",\"title\":\"...\",\"endpoint\":\"/api/empresa/...\",\"method\":\"OPEN|UI_CLICK|POST|PUT\",\"selector_visible\":\"#id-opcional\",\"body\":{...},\"requires_confirmation\":true}],\"note\":\"...\"}\n" +
-		"- No incluyas Markdown dentro del JSON. - No incluyas comentarios. - El JSON debe ser parseable.\n" +
-		"Si te falta un dato (por ejemplo categoria_id, impuesto, monto, fecha, estacion_id), NO generes PCS_ACTION: pregunta lo que falta primero. " +
-		"Si la operacion es riesgosa o destructiva, pregunta confirmacion adicional.\n\n" +
+		"Para fotos de carta/lista de precios y egresos, extrae una lista estructurada para revision humana, sin guardar nada desde el texto. Si faltan datos (por ejemplo categoria, impuesto, monto, fecha o estacion), pregunta primero. La confirmacion escrita no autoriza cambios: debe usarse una accion independiente vinculada a una propuesta vigente.\n\n" +
 		assistantInstruction + "\n\n" +
 		"Si existe la seccion CONSULTAS_SEGURAS_RESUELTAS, priorizala como fuente principal para responder la pregunta actual. " +
 		"Si existe AUDITORIA_TIEMPO_REAL, AUDITORIA_BUSQUEDA_PROFUNDA o AUDITORIA_CONSULTAS_DB_SEGURAS, usalas como fuente principal para entender actividad reciente, buscar eventos auditados y cruzar datos permitidos de la base. " +

@@ -51,6 +51,8 @@ services:
       - pcs_monitoring
 
   cadvisor:
+    # cAdvisor needs host namespaces and Docker metadata to observe containers.
+    # It remains bound only to the isolated monitoring network and exposes no host port.
     image: gcr.io/cadvisor/cadvisor:v0.49.1
     container_name: pcs-cadvisor
     restart: unless-stopped

@@ -28,11 +28,12 @@ import (
 // - JWT OnlyOffice HS256: implementado con stdlib (HMAC-SHA256).
 
 const (
-	onlyOfficeDefaultDataRoot = "/data/empresas"
-	onlyOfficeConfigKeyDSURL  = "onlyoffice.document_server_url" // ej: http://onlyoffice:80
-	onlyOfficeConfigKeyJWT    = "onlyoffice.jwt_secret"          // secreto HS256
-	onlyOfficeFileTokenTTL    = 4 * time.Hour
-	onlyOfficeCallbackTTL     = 24 * time.Hour
+	onlyOfficeDefaultDataRoot        = "/data/empresas"
+	onlyOfficeConfigKeyDSURL         = "onlyoffice.document_server_url" // ej: http://onlyoffice:80
+	onlyOfficeConfigKeyJWT           = "onlyoffice.jwt_secret"          // secreto HS256
+	onlyOfficeFileTokenTTL           = 4 * time.Hour
+	onlyOfficeCallbackTTL            = 24 * time.Hour
+	onlyOfficeCallbackMaxBytes int64 = 32 << 20
 )
 
 type onlyOfficeAccessTokenClaims struct {
@@ -381,6 +382,36 @@ func onlyOfficeBrowserDocumentServerURL(r *http.Request, dbSuper *sql.DB, config
 		return configured, false
 	}
 	return publicURL, publicURL != configured
+}
+
+func onlyOfficeCallbackDownloadURLAllowed(dbSuper *sql.DB, raw string) bool {
+	target, err := url.Parse(strings.TrimSpace(raw))
+	if err != nil || target == nil || (target.Scheme != "http" && target.Scheme != "https") || target.Hostname() == "" {
+		return false
+	}
+	configured, _, err := onlyOfficeResolveDocumentServerURL(dbSuper)
+	if err != nil {
+		return false
+	}
+	server, err := url.Parse(strings.TrimSpace(configured))
+	if err != nil || server == nil {
+		return false
+	}
+	return strings.EqualFold(target.Scheme, server.Scheme) && strings.EqualFold(target.Hostname(), server.Hostname()) && target.Port() == server.Port()
+}
+
+// copyOnlyOfficeCallbackFile enforces the callback size limit without ever
+// accepting a truncated document. The caller keeps the destination temporary
+// until this function completes successfully.
+func copyOnlyOfficeCallbackFile(dst io.Writer, src io.Reader) error {
+	written, err := io.Copy(dst, io.LimitReader(src, onlyOfficeCallbackMaxBytes+1))
+	if err != nil {
+		return err
+	}
+	if written > onlyOfficeCallbackMaxBytes {
+		return fmt.Errorf("onlyoffice callback document exceeds allowed size")
+	}
+	return nil
 }
 
 func onlyOfficeZipBytes(files map[string]string) ([]byte, error) {
@@ -1131,6 +1162,8 @@ func urlQueryEscape(v string) string {
 // Endpoint público: sirve el archivo a OnlyOffice (token temporal).
 func OnlyOfficeFilePublicHandler(dbSuper *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Cache-Control", "no-store")
+		w.Header().Set("X-Content-Type-Options", "nosniff")
 		if dbSuper != nil && !isOnlyOfficeEnabled(dbSuper) {
 			writeJSON(w, http.StatusOK, map[string]any{"ok": false, "enabled": false, "error": "OnlyOffice disabled"})
 			return
@@ -1178,6 +1211,7 @@ func OnlyOfficeFilePublicHandler(dbSuper *sql.DB) http.HandlerFunc {
 // Endpoint público: callback de OnlyOffice (guardado).
 func OnlyOfficeCallbackPublicHandler(dbSuper *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Cache-Control", "no-store")
 		if dbSuper != nil && !isOnlyOfficeEnabled(dbSuper) {
 			writeJSON(w, http.StatusOK, map[string]any{"ok": false, "enabled": false, "error": "OnlyOffice disabled"})
 			return
@@ -1222,6 +1256,10 @@ func OnlyOfficeCallbackPublicHandler(dbSuper *sql.DB) http.HandlerFunc {
 			writeJSON(w, http.StatusOK, resp)
 			return
 		}
+		if !onlyOfficeCallbackDownloadURLAllowed(dbSuper, payload.URL) {
+			writeJSON(w, http.StatusOK, resp)
+			return
+		}
 
 		full, err := onlyOfficeJoinEmpresaFile(claims.EmpresaID, claims.Path)
 		if err != nil {
@@ -1259,7 +1297,7 @@ func OnlyOfficeCallbackPublicHandler(dbSuper *sql.DB) http.HandlerFunc {
 			writeJSON(w, http.StatusOK, resp)
 			return
 		}
-		_, copyErr := io.Copy(out, res.Body)
+		copyErr := copyOnlyOfficeCallbackFile(out, res.Body)
 		_ = out.Close()
 		if copyErr != nil {
 			_ = os.Remove(tmp)

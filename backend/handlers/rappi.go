@@ -163,17 +163,20 @@ func PublicRappiWebhookHandler(dbEmp *sql.DB) http.HandlerFunc {
 			http.Error(w, "Rappi no esta activo para esta empresa", http.StatusForbidden)
 			return
 		}
-		body, _ := io.ReadAll(io.LimitReader(r.Body, 4<<20))
-		if strings.TrimSpace(cfg.WebhookSecretRef) != "" {
-			secret, err := resolveDIANSecretValue(cfg.WebhookSecretRef)
-			if err != nil || strings.TrimSpace(secret) == "" {
-				http.Error(w, "Webhook secret no configurado", http.StatusForbidden)
-				return
-			}
-			if !verifyRappiSignature(r.Header.Get("Rappi-Signature"), body, secret) {
-				http.Error(w, "Firma Rappi invalida", http.StatusUnauthorized)
-				return
-			}
+		r.Body = http.MaxBytesReader(w, r.Body, 4<<20)
+		body, err := io.ReadAll(r.Body)
+		if err != nil {
+			http.Error(w, "webhook invalido", http.StatusBadRequest)
+			return
+		}
+		if strings.TrimSpace(cfg.WebhookSecretRef) == "" {
+			http.Error(w, "webhook invalido", http.StatusUnauthorized)
+			return
+		}
+		secret, err := resolveDIANSecretValue(cfg.WebhookSecretRef)
+		if err != nil || strings.TrimSpace(secret) == "" || !verifyRappiSignature(r.Header.Get("Rappi-Signature"), body, secret) {
+			http.Error(w, "webhook invalido", http.StatusUnauthorized)
+			return
 		}
 		orderLog := rappiOrderLogFromPayload(empresaID, "webhook", body)
 		if _, err := dbpkg.UpsertEmpresaRappiOrderLog(dbEmp, orderLog); err != nil {
@@ -181,7 +184,7 @@ func PublicRappiWebhookHandler(dbEmp *sql.DB) http.HandlerFunc {
 			http.Error(w, "No se pudo registrar webhook", http.StatusInternalServerError)
 			return
 		}
-		writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "empresa_id": empresaID})
+		writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true})
 	}
 }
 
@@ -215,7 +218,7 @@ func handleEmpresaRappiOrders(w http.ResponseWriter, r *http.Request, dbEmp *sql
 	}
 	respBody, status, err := empresaRappiRequest(dbEmp, empresaID, http.MethodGet, path, nil)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadGateway)
+		http.Error(w, "No se pudo comunicar con Rappi", http.StatusBadGateway)
 		return
 	}
 	if status >= 400 {
@@ -273,7 +276,7 @@ func handleEmpresaRappiOrderAction(w http.ResponseWriter, r *http.Request, dbEmp
 	}
 	respBody, status, err := empresaRappiRequest(dbEmp, empresaID, method, path, body)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadGateway)
+		http.Error(w, "No se pudo comunicar con Rappi", http.StatusBadGateway)
 		return
 	}
 	localState := map[string]string{"take": "tomada", "reject": "rechazada", "ready": "lista"}[action]
@@ -296,7 +299,7 @@ func handleEmpresaRappiOrderAction(w http.ResponseWriter, r *http.Request, dbEmp
 func handleEmpresaRappiProxy(w http.ResponseWriter, r *http.Request, dbEmp *sql.DB, empresaID int64, method, path string, body []byte, includeConfig bool) {
 	respBody, status, err := empresaRappiRequest(dbEmp, empresaID, method, path, body)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadGateway)
+		http.Error(w, "No se pudo comunicar con Rappi", http.StatusBadGateway)
 		return
 	}
 	resp := map[string]interface{}{"ok": status < 400, "status": status, "rappi_response": jsonRawOrString(respBody)}

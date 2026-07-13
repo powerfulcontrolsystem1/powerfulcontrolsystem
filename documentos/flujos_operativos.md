@@ -592,8 +592,12 @@ afecte dinero, documentos, licencias o seguridad.
 6. Ademas limpia `usuario_configuracion.selector_empresas_orden_json` de todos
    los usuarios para quitar la empresa del orden personalizado del selector,
    invalida caches de licencia, resolucion de empresa y accesos compartidos, y
-   borra carpetas empresariales asociadas.
-7. Pruebas: no permitir borrado sin validaciones, ofrecer descarga previa,
+   borra carpetas empresariales asociadas, incluidos documentos OnlyOffice,
+   temporales de callback, uploads, privados y backups.
+7. Antes del cascade se eliminan las cuentas remotas de Nextcloud y Mailu,
+   incluyendo sus archivos; luego se eliminan las filas locales de cuentas,
+   usuarios y configuraciones.
+8. Pruebas: no permitir borrado sin validaciones, ofrecer descarga previa,
    eliminar solo la empresa indicada y volver al selector sin filtrar datos de
    otra empresa; confirmar con otro administrador invitado o delegado que la
    empresa eliminada ya no aparece.
@@ -1257,8 +1261,8 @@ afecte dinero, documentos, licencias o seguridad.
 2. Si `auto_create` esta activo, cada empresa nueva recibe un correo unico basado
    en su nombre y dominio configurado.
 3. Si el modulo global esta desactivado, el correo queda generado pero pendiente.
-4. Si `mailu_direct` esta activo, se intenta crear el buzon en Mailu mediante
-   `deploy/scripts/vps-provision-mailu-mailbox.sh`.
+4. Si `mailu_api` esta activo, se crea o actualiza el buzon por la API REST
+   interna autenticada de Mailu; el backend no ejecuta Docker ni monta su socket.
 5. La creacion de empresa no debe fallar por errores del servidor de correo.
 6. En el panel empresarial se muestra la tarjeta de webmail solo si el modulo esta
    activo y la empresa tiene cuenta.
@@ -1268,10 +1272,10 @@ afecte dinero, documentos, licencias o seguridad.
    apertura automatica del buzon; por defecto queda activa.
 9. Desde la misma pagina se puede cambiar la contrasena interna del buzon. El
    backend cifra la clave, no la devuelve al navegador y actualiza Mailu si
-   `mailu_direct` esta disponible.
+   el provisionamiento automatico Mailu esta disponible.
 10. Si aparecen estados de error, usar `Probar Mailu` en super administrador para
-   validar el contenedor `pcs-mailu-admin` y el comando directo antes de
-   reintentar provision.
+   validar la API interna, el token y la salud de Mailu antes de reintentar
+   provision.
 11. Desde super administrador, `Provisionar ventas/soporte` crea o actualiza los
    buzones `ventas@powerfulcontrolsystem.com` y
    `soporte@powerfulcontrolsystem.com` como remitentes del sistema.

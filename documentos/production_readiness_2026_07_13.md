@@ -21,6 +21,7 @@ GitHub.
 | WebRTC y soporte remoto | APROBADO CON RIESGO RESIDUAL | Pruebas de Origin, tenant, credenciales y limite de peers aprobadas; falta prueba de socket real efimero. |
 | Pagos y webhooks | APROBADO CON RIESGO RESIDUAL | Pruebas de firmas ePayco/Wompi, idempotencia contractual y sanitizacion aprobadas; falta simulador HTTP de proveedor completo. |
 | Dependencias | APROBADO CON RIESGO RESIDUAL | `govulncheck` reporta cero vulnerabilidades alcanzables. `GO-2026-5932` es aviso de modulo por `openpgp`, no importado ni alcanzable y sin fix publicado. |
+| Rotación CSRF sensible | APROBADO LOCAL | Cambio de contraseña, alta de contraseña local y TOTP rotan el token tras validar la solicitud actual; pruebas de middleware aprobadas. |
 
 ## Bloqueantes antes de produccion
 
@@ -33,6 +34,15 @@ GitHub.
    e imagenes endurecidas.
 5. Ejecutar pruebas de webhook, WebRTC y carga en staging controlado sin datos
    reales ni proveedores productivos.
+
+## Validación adicional local
+
+- La suite Go y `go vet` se ejecutaron sobre los paquetes del backend; la
+  cobertura dirigida incluye CSRF, sesiones, TOTP, tokens temporales,
+  callbacks OnlyOffice, WebRTC, ePayco, Wompi y Rappi.
+- Esta estación Windows no tiene Docker disponible ni CGO habilitado. La
+  validación de Compose, escaneo de imágenes y `go test -race` permanece como
+  gate obligatorio de CI/Linux, no como resultado omitido.
 
 ## Comandos ejecutados
 

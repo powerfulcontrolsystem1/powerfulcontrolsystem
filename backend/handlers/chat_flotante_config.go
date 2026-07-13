@@ -353,6 +353,11 @@ func ChatFlotantePreferenciasHandler(dbSuper, dbEmp *sql.DB) http.HandlerFunc {
 
 		switch r.Method {
 		case http.MethodGet:
+			var ok bool
+			empresaID, ok = requireDynamicDocumentEmpresaAccess(w, r, dbEmp, dbSuper, empresaID)
+			if !ok {
+				return
+			}
 			writeJSON(w, http.StatusOK, chatFlotantePrefsResponse(dbSuper, dbEmp, empresaID))
 			return
 		case http.MethodPost, http.MethodPut:
@@ -374,6 +379,11 @@ func ChatFlotantePreferenciasHandler(dbSuper, dbEmp *sql.DB) http.HandlerFunc {
 			if empresaID <= 0 && payload.EmpresaID > 0 {
 				empresaID = payload.EmpresaID
 			}
+			var ok bool
+			empresaID, ok = requireDynamicDocumentEmpresaAccess(w, r, dbEmp, dbSuper, empresaID)
+			if !ok {
+				return
+			}
 			usuario := adminEmailFromRequest(r)
 			if payload.ChatEnabled != nil {
 				value := chatFlotanteBoolValue(*payload.ChatEnabled)
@@ -382,11 +392,11 @@ func ChatFlotantePreferenciasHandler(dbSuper, dbEmp *sql.DB) http.HandlerFunc {
 				}
 				if empresaID > 0 {
 					if err := setChatFlotanteEmpresaPref(dbEmp, empresaID, chatFlotanteChatEnabledKey, value, usuario); err != nil {
-						http.Error(w, "No se pudo guardar chat_flotante.chat_enabled por empresa: "+err.Error(), http.StatusInternalServerError)
+						http.Error(w, "No se pudo guardar la configuracion del chat", http.StatusInternalServerError)
 						return
 					}
 				} else if err := dbpkg.SetConfigValue(dbSuper, chatFlotanteChatEnabledKey, value, false); err != nil {
-					http.Error(w, "No se pudo guardar chat_flotante.chat_enabled: "+err.Error(), http.StatusInternalServerError)
+					http.Error(w, "No se pudo guardar la configuracion del chat", http.StatusInternalServerError)
 					return
 				}
 			}
@@ -394,11 +404,11 @@ func ChatFlotantePreferenciasHandler(dbSuper, dbEmp *sql.DB) http.HandlerFunc {
 				value := chatFlotanteBoolValue(false)
 				if empresaID > 0 {
 					if err := setChatFlotanteEmpresaPref(dbEmp, empresaID, chatFlotanteRobotEnabledKey, value, usuario); err != nil {
-						http.Error(w, "No se pudo guardar chat_flotante.robot_enabled por empresa: "+err.Error(), http.StatusInternalServerError)
+						http.Error(w, "No se pudo guardar la configuracion del chat", http.StatusInternalServerError)
 						return
 					}
 				} else if err := dbpkg.SetConfigValue(dbSuper, chatFlotanteRobotEnabledKey, value, false); err != nil {
-					http.Error(w, "No se pudo guardar chat_flotante.robot_enabled: "+err.Error(), http.StatusInternalServerError)
+					http.Error(w, "No se pudo guardar la configuracion del chat", http.StatusInternalServerError)
 					return
 				}
 			}
@@ -406,11 +416,11 @@ func ChatFlotantePreferenciasHandler(dbSuper, dbEmp *sql.DB) http.HandlerFunc {
 				value := chatFlotanteBoolValue(*payload.RadioOnlineEnabled)
 				if empresaID > 0 {
 					if err := setChatFlotanteEmpresaPref(dbEmp, empresaID, chatFlotanteRadioOnlineEnabledKey, value, usuario); err != nil {
-						http.Error(w, "No se pudo guardar chat_flotante.radio_online_enabled por empresa: "+err.Error(), http.StatusInternalServerError)
+						http.Error(w, "No se pudo guardar la configuracion del chat", http.StatusInternalServerError)
 						return
 					}
 				} else if err := dbpkg.SetConfigValue(dbSuper, chatFlotanteRadioOnlineEnabledKey, value, false); err != nil {
-					http.Error(w, "No se pudo guardar chat_flotante.radio_online_enabled: "+err.Error(), http.StatusInternalServerError)
+					http.Error(w, "No se pudo guardar la configuracion del chat", http.StatusInternalServerError)
 					return
 				}
 			}
@@ -418,11 +428,11 @@ func ChatFlotantePreferenciasHandler(dbSuper, dbEmp *sql.DB) http.HandlerFunc {
 				value := normalizeChatFlotanteRadioCountry(*payload.RadioCountry)
 				if empresaID > 0 {
 					if err := setChatFlotanteEmpresaPref(dbEmp, empresaID, chatFlotanteRadioCountryKey, value, usuario); err != nil {
-						http.Error(w, "No se pudo guardar chat_flotante.radio_country por empresa: "+err.Error(), http.StatusInternalServerError)
+						http.Error(w, "No se pudo guardar la configuracion del chat", http.StatusInternalServerError)
 						return
 					}
 				} else if err := dbpkg.SetConfigValue(dbSuper, chatFlotanteRadioCountryKey, value, false); err != nil {
-					http.Error(w, "No se pudo guardar chat_flotante.radio_country: "+err.Error(), http.StatusInternalServerError)
+					http.Error(w, "No se pudo guardar la configuracion del chat", http.StatusInternalServerError)
 					return
 				}
 			}
@@ -434,11 +444,11 @@ func ChatFlotantePreferenciasHandler(dbSuper, dbEmp *sql.DB) http.HandlerFunc {
 				}
 				if empresaID > 0 {
 					if err := setChatFlotanteEmpresaPref(dbEmp, empresaID, chatFlotanteRadioCustomStationsKey, value, usuario); err != nil {
-						http.Error(w, "No se pudo guardar chat_flotante.radio_custom_stations por empresa: "+err.Error(), http.StatusInternalServerError)
+						http.Error(w, "No se pudo guardar la configuracion del chat", http.StatusInternalServerError)
 						return
 					}
 				} else if err := dbpkg.SetConfigValue(dbSuper, chatFlotanteRadioCustomStationsKey, value, false); err != nil {
-					http.Error(w, "No se pudo guardar chat_flotante.radio_custom_stations: "+err.Error(), http.StatusInternalServerError)
+					http.Error(w, "No se pudo guardar la configuracion del chat", http.StatusInternalServerError)
 					return
 				}
 			}
@@ -446,11 +456,11 @@ func ChatFlotantePreferenciasHandler(dbSuper, dbEmp *sql.DB) http.HandlerFunc {
 				value := chatFlotanteBoolValue(*payload.VoiceEnabled)
 				if empresaID > 0 {
 					if err := setChatFlotanteEmpresaPref(dbEmp, empresaID, chatFlotanteVoiceEnabledKey, value, usuario); err != nil {
-						http.Error(w, "No se pudo guardar chat_flotante.voice_enabled por empresa: "+err.Error(), http.StatusInternalServerError)
+						http.Error(w, "No se pudo guardar la configuracion del chat", http.StatusInternalServerError)
 						return
 					}
 				} else if err := dbpkg.SetConfigValue(dbSuper, chatFlotanteVoiceEnabledKey, value, false); err != nil {
-					http.Error(w, "No se pudo guardar chat_flotante.voice_enabled: "+err.Error(), http.StatusInternalServerError)
+					http.Error(w, "No se pudo guardar la configuracion del chat", http.StatusInternalServerError)
 					return
 				}
 			}
@@ -458,11 +468,11 @@ func ChatFlotantePreferenciasHandler(dbSuper, dbEmp *sql.DB) http.HandlerFunc {
 				value := chatFlotantePersonalityNormal
 				if empresaID > 0 {
 					if err := setChatFlotanteEmpresaPref(dbEmp, empresaID, chatFlotantePersonalityModeKey, value, usuario); err != nil {
-						http.Error(w, "No se pudo guardar chat_flotante.personality_mode por empresa: "+err.Error(), http.StatusInternalServerError)
+						http.Error(w, "No se pudo guardar la configuracion del chat", http.StatusInternalServerError)
 						return
 					}
 				} else if err := dbpkg.SetConfigValue(dbSuper, chatFlotantePersonalityModeKey, value, false); err != nil {
-					http.Error(w, "No se pudo guardar chat_flotante.personality_mode: "+err.Error(), http.StatusInternalServerError)
+					http.Error(w, "No se pudo guardar la configuracion del chat", http.StatusInternalServerError)
 					return
 				}
 			}
@@ -470,11 +480,11 @@ func ChatFlotantePreferenciasHandler(dbSuper, dbEmp *sql.DB) http.HandlerFunc {
 				value := normalizeChatFlotanteRobotVoice(payload.RobotVoice)
 				if empresaID > 0 {
 					if err := setChatFlotanteEmpresaPref(dbEmp, empresaID, chatFlotanteRobotVoiceKey, value, usuario); err != nil {
-						http.Error(w, "No se pudo guardar chat_flotante.robot_voice por empresa: "+err.Error(), http.StatusInternalServerError)
+						http.Error(w, "No se pudo guardar la configuracion del chat", http.StatusInternalServerError)
 						return
 					}
 				} else if err := dbpkg.SetConfigValue(dbSuper, chatFlotanteRobotVoiceKey, value, false); err != nil {
-					http.Error(w, "No se pudo guardar chat_flotante.robot_voice: "+err.Error(), http.StatusInternalServerError)
+					http.Error(w, "No se pudo guardar la configuracion del chat", http.StatusInternalServerError)
 					return
 				}
 			}

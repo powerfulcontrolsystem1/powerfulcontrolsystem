@@ -2252,15 +2252,35 @@
         return "pcs_empresa_panel_weather_location_" + (empresaId || "general");
       }
 
+      function readCookieValue(name) {
+        var prefix = String(name || "") + "=";
+        var parts = String(document.cookie || "").split(";");
+        for (var index = 0; index < parts.length; index += 1) {
+          var value = parts[index].trim();
+          if (value.indexOf(prefix) === 0) {
+            return decodeURIComponent(value.slice(prefix.length));
+          }
+        }
+        return "";
+      }
+
       function fetchJSON(url, options) {
         options = options && typeof options === "object" ? Object.assign({}, options) : {};
         if (!options.credentials) {
           options.credentials = url.indexOf(window.location.origin) === 0 || url.charAt(0) === "/" ? "same-origin" : "omit";
         }
+        var method = String(options.method || "GET").toUpperCase();
+        if (["POST", "PUT", "PATCH", "DELETE"].indexOf(method) !== -1 && options.credentials === "same-origin") {
+          var token = readCookieValue("pcs_csrf");
+          if (token) {
+            options.headers = new Headers(options.headers || {});
+            if (!options.headers.has("X-CSRF-Token")) options.headers.set("X-CSRF-Token", token);
+          }
+        }
         return fetch(url, options)
           .then(function (res) {
-            if (!res.ok) throw new Error("HTTP " + res.status);
-            return res.json();
+            if (!res.ok) throw new Error("No se pudo completar la operacion.");
+            return res.status === 204 ? {} : res.json();
           });
       }
 

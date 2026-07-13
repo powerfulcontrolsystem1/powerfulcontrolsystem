@@ -1,7 +1,9 @@
 package handlers
 
 import (
+	"context"
 	"encoding/json"
+	"net/http"
 	"testing"
 )
 
@@ -53,5 +55,17 @@ func TestChatFlotanteChatEnabledAlwaysActiveForEmpresa(t *testing.T) {
 	}
 	if got := chatFlotantePrefsResponse(nil, nil, 12)["chat_enabled"]; got != true {
 		t.Fatalf("chat_enabled=%v, want true para empresa", got)
+	}
+}
+
+func TestChatFlotanteRequestUsesContextEmpresaBeforeClientValue(t *testing.T) {
+	req, err := http.NewRequest(http.MethodGet, "/api/chat_flotante/preferencias?empresa_id=99", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	req = req.WithContext(context.WithValue(req.Context(), "empresaID", int64(12)))
+	got, err := parseInt64QueryOptional(req, "empresa_id")
+	if err != nil || got != 12 {
+		t.Fatalf("empresa id = %d, err=%v; want authenticated context 12", got, err)
 	}
 }

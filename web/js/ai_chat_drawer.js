@@ -2984,28 +2984,88 @@
 
   function extractPCSActionBlock(text) {
     var raw = normalize(text);
-    if (!raw) {
-      return { clean: raw, proposal: null };
-    }
-    var marker = '\nPCS_ACTION\n';
-    var idx = raw.lastIndexOf(marker);
-    if (idx < 0) {
-      return { clean: raw, proposal: null };
-    }
-    var before = raw.slice(0, idx).trim();
-    var after = raw.slice(idx + marker.length).trim();
-    if (!after) {
-      return { clean: before, proposal: null };
-    }
-    try {
-      var proposal = JSON.parse(after);
-      if (!proposal || proposal.version !== 1 || !Array.isArray(proposal.actions)) {
-        return { clean: raw, proposal: null };
-      }
-      return { clean: before, proposal: proposal };
-    } catch (e) {
-      return { clean: raw, proposal: null };
-    }
+    // Los bloques generados por el modelo nunca pueden convertirse en escrituras
+    // del navegador. Las propuestas enterprise se crean y confirman en servidor.
+    return { clean: raw, proposal: null };
+  }
+
+  function enterpriseEndpoint(action) {
+    var empresaId = parsePositiveInt(getCurrentEmpresaId());
+    if (!empresaId) throw new Error('No se encontro una empresa activa para la propuesta IA.');
+    return '/api/empresa/ai/enterprise?empresa_id=' + encodeURIComponent(String(empresaId)) + '&action=' + encodeURIComponent(action);
+  }
+
+  function enterpriseOpaqueID(prefix) {
+    var bytes = new Uint8Array(16);
+    if (window.crypto && window.crypto.getRandomValues) window.crypto.getRandomValues(bytes);
+    else for (var i = 0; i < bytes.length; i += 1) bytes[i] = Math.floor(Math.random() * 256);
+    return prefix + '_' + Array.prototype.map.call(bytes, function (b) { return b.toString(16).padStart(2, '0'); }).join('');
+  }
+
+  function looksLikeHotelConfiguration(text) {
+    var value = normalize(text).toLowerCase();
+    return /(?:configura|configurar|convertir|convierte|ajusta).{0,100}(?:estaci[oó]n|habitaci[oó]n).{0,100}(?:hotel|tarifa)/.test(value) ||
+      /(?:habitaci[oó]n).{0,100}(?:hotel|personas|tarifa)/.test(value);
+  }
+
+  function hotelDraftFromText(text) {
+    var value = normalize(text);
+    var station = value.match(/estaci[oó]n\s*(?:n[uú]mero)?\s*(\d+)/i);
+    var room = value.match(/(?:habitaci[oó]n)\s*(\d+)?/i);
+    var prices = [];
+    var ratePattern = /(\d+)\s*personas?.{0,40}?\$?\s*([\d.]+)/gi;
+    var match;
+    while ((match = ratePattern.exec(value)) && prices.length < 6) prices.push({ people: match[1], amount: String(match[2]).replace(/\./g, '') });
+    return { station: station ? station[1] : '', room: room ? ('Habitacion ' + (room[1] || '')).trim() : '', people2: prices[0] ? prices[0].people : '2', amount2: prices[0] ? prices[0].amount : '', people4: prices[1] ? prices[1].people : '4', amount4: prices[1] ? prices[1].amount : '' };
+  }
+
+  function enterpriseField(label, name, value, type) {
+    var safe = String(value == null ? '' : value).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+    return '<label><span>' + label + '</span><input class="form-input" required name="' + name + '" type="' + (type || 'text') + '" value="' + safe + '"></label>';
+  }
+
+  function createEnterpriseHotelForm(query) {
+    var draft = hotelDraftFromText(query);
+    var section = document.createElement('section');
+    section.className = 'ai-enterprise-card';
+    section.innerHTML = '<div class="ai-enterprise-card-head"><strong>Propuesta asistida: habitacion de hotel</strong><span>Confirmacion obligatoria</span></div>' +
+      '<p>Completa o revisa los datos. La IA no modificara la estacion hasta que revises el plan y pulses Confirmar.</p><form class="ai-enterprise-hotel-form"><div class="ai-enterprise-grid">' +
+      enterpriseField('Estacion', 'station_id', draft.station, 'number') + enterpriseField('Nombre de habitacion', 'room_name', draft.room) + enterpriseField('Moneda', 'currency', 'COP') + enterpriseField('Check-in', 'check_in', '14:00', 'time') + enterpriseField('Check-out', 'check_out', '13:00', 'time') + enterpriseField('Personas tarifa 1', 'people_1', draft.people2, 'number') + enterpriseField('Valor tarifa 1', 'amount_1', draft.amount2, 'number') + enterpriseField('Personas tarifa 2', 'people_2', draft.people4, 'number') + enterpriseField('Valor tarifa 2', 'amount_2', draft.amount4, 'number') +
+      '</div><label class="ai-enterprise-check"><input type="checkbox" name="active" checked> Activar habitacion al confirmar</label><label class="ai-enterprise-check"><input type="checkbox" name="preserve" checked> Conservar las demas configuraciones de la estacion</label><div class="ai-enterprise-actions"><button class="btn primary" type="submit">Preparar plan</button><button class="btn secondary" type="button" data-enterprise-dismiss>Cancelar</button></div></form>';
+    return section;
+  }
+
+  function formNumber(form, field) { var value = Number(form.elements[field] && form.elements[field].value); return Number.isFinite(value) ? value : 0; }
+
+  function createEnterpriseProposalCard(proposal, sources) {
+    var section = document.createElement('section');
+    section.className = 'ai-enterprise-card ai-enterprise-proposal';
+    var before = {}, expected = {};
+    try { before = JSON.parse(proposal.estado_anterior_json || '{}'); } catch (e) {}
+    try { expected = JSON.parse(proposal.estado_esperado_json || '{}'); } catch (e) {}
+    function esc(value) { return String(value || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;'); }
+    section.innerHTML = '<div class="ai-enterprise-card-head"><strong>Plan listo para confirmar</strong><span>Riesgo ' + esc(normalize(proposal.risk_level || 'medium')) + '</span></div><p>' + esc(normalize(proposal.resumen)) + '</p><div class="ai-enterprise-state"><div><b>Estado actual</b><span>' + esc(normalize(before.nombre || 'Estacion seleccionada')) + ' · ' + esc(normalize(before.tipo || 'sin tipo')) + '</span></div><div><b>Cambio propuesto</b><span>' + esc(normalize(expected.nombre || '')) + ' · ' + esc(normalize(expected.tipo_estacion || 'hotel')) + '</span></div></div><div class="ai-enterprise-sources"><b>Fuentes</b><span>' + esc(Array.isArray(sources) ? sources.map(normalize).filter(Boolean).join(' · ') : 'Reglas empresariales validadas') + '</span></div><div class="ai-enterprise-actions"><button class="btn primary" type="button" data-enterprise-confirm>Confirmar configuracion</button><button class="btn secondary" type="button" data-enterprise-cancel>Cancelar</button></div>';
+    section.dataset.proposalId = normalize(proposal.proposal_id);
+    section.dataset.planHash = normalize(proposal.plan_hash);
+    return section;
+  }
+
+  function requestEnterpriseProposal(form) {
+    var conversation = enterpriseOpaqueID('conversation');
+    var plan = { estacion_id: formNumber(form, 'station_id'), nombre_habitacion: normalize(form.elements.room_name && form.elements.room_name.value), moneda: normalize(form.elements.currency && form.elements.currency.value), hora_check_in: normalize(form.elements.check_in && form.elements.check_in.value), hora_check_out: normalize(form.elements.check_out && form.elements.check_out.value), activa: !!(form.elements.active && form.elements.active.checked), conservar_configuracion: !!(form.elements.preserve && form.elements.preserve.checked), tarifas: [{ personas: formNumber(form, 'people_1'), valor: formNumber(form, 'amount_1') }, { personas: formNumber(form, 'people_2'), valor: formNumber(form, 'amount_2') }] };
+    return fetch(enterpriseEndpoint('hotel_room_proposal'), { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json', 'X-AI-Conversation-ID': conversation, 'X-AI-Mode': 'assisted', 'X-PCS-Source': 'ai_drawer_enterprise' }, body: JSON.stringify({ conversation_id: conversation, plan: plan }) }).then(function (res) { if (!res.ok) return parseErrorResponse(res); return res.json(); });
+  }
+
+  function confirmEnterpriseProposal(section) {
+    var button = section.querySelector('[data-enterprise-confirm]');
+    if (button) button.disabled = true;
+    return fetch(enterpriseEndpoint('confirm'), { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json', 'X-AI-Mode': 'assisted', 'X-PCS-Source': 'ai_drawer_enterprise' }, body: JSON.stringify({ proposal_id: section.dataset.proposalId, plan_hash: section.dataset.planHash, idempotency_key: enterpriseOpaqueID('idempotency') }) }).then(function (res) { if (!res.ok) return parseErrorResponse(res); return res.json(); }).then(function (data) { section.classList.add('is-completed'); section.querySelector('.ai-enterprise-actions').innerHTML = '<span class="ai-enterprise-result">Configuracion aplicada y verificada.</span>'; return data; }).catch(function (err) { if (button) button.disabled = false; throw err; });
+  }
+
+  function cancelEnterpriseProposal(section) {
+    var proposalId = normalize(section.dataset.proposalId);
+    if (!proposalId) { section.remove(); return Promise.resolve(); }
+    return fetch(enterpriseEndpoint('cancel'), { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json', 'X-AI-Mode': 'assisted', 'X-PCS-Source': 'ai_drawer_enterprise' }, body: JSON.stringify({ proposal_id: proposalId }) }).then(function (res) { if (!res.ok) return parseErrorResponse(res); section.remove(); });
   }
 
   function createActionProposalElement(proposal, proposalIndex) {
@@ -4494,6 +4554,13 @@
       } else {
         appendMessage('assistant', result.clean, result && result.document ? 'document' : null, result.proposal, result && result.meta ? result.meta : null);
       }
+      if (!isPublicPortalContext() && !isSuperContext() && looksLikeHotelConfiguration(query)) {
+        var enterpriseMessages = document.getElementById(MESSAGES_ID);
+        if (enterpriseMessages) {
+          enterpriseMessages.appendChild(createEnterpriseHotelForm(query));
+          scrollChatToBottom();
+        }
+      }
       if (hasActions) setRobotMood('action', 3200);
       if (!(result && result.streamed)) {
         speakAssistantText(result.clean);
@@ -4523,6 +4590,10 @@
   function executeActionProposal(msgIdx) {
     var proposal = state.proposals[msgIdx];
     if (!proposal || !Array.isArray(proposal.actions) || !proposal.actions.length) return;
+    if (proposal.serverOwned !== true) {
+      setNotice('Las acciones heredadas del modelo estan desactivadas. Usa una propuesta empresarial validada por el servidor.', true);
+      return Promise.resolve();
+    }
     if (state.loading) return;
     state.loading = true;
     updateVoiceButtons(document.getElementById(MIC_ID), document.getElementById(VOICE_ID), document.getElementById(CONV_ID));
@@ -4834,16 +4905,44 @@
     messagesEl.addEventListener('click', function (event) {
       var target = event.target;
       if (!target) return;
+      var enterpriseDismiss = target.closest('button[data-enterprise-dismiss]');
+      var enterpriseConfirm = target.closest('button[data-enterprise-confirm]');
+      var enterpriseCancel = target.closest('button[data-enterprise-cancel]');
       var confirmButton = target.closest('button[data-action-confirm]');
       var cancelButton = target.closest('button[data-action-cancel]');
       var exportButton = target.closest('button[data-document-export]');
-      if (confirmButton) {
+      if (enterpriseDismiss) {
+        var dismissCard = enterpriseDismiss.closest('.ai-enterprise-card');
+        if (dismissCard) dismissCard.remove();
+      } else if (enterpriseConfirm) {
+        confirmEnterpriseProposal(enterpriseConfirm.closest('.ai-enterprise-card')).then(function () { setNotice('Propuesta ejecutada y auditada.'); }).catch(function (err) { setNotice(err.message || 'No se pudo confirmar la propuesta.', true); });
+      } else if (enterpriseCancel) {
+        cancelEnterpriseProposal(enterpriseCancel.closest('.ai-enterprise-card')).then(function () { setNotice('Propuesta cancelada.'); }).catch(function (err) { setNotice(err.message || 'No se pudo cancelar la propuesta.', true); });
+      } else if (confirmButton) {
         executeActionProposal(parseInt(confirmButton.dataset.actionConfirm, 10));
       } else if (cancelButton) {
         cancelActionProposal(parseInt(cancelButton.dataset.actionCancel, 10));
       } else if (exportButton) {
         exportChatDocumentByIndex(exportButton.dataset.documentExport, exportButton.dataset.exportFormat, exportButton);
       }
+    });
+
+    messagesEl.addEventListener('submit', function (event) {
+      var enterpriseForm = event.target && event.target.closest ? event.target.closest('.ai-enterprise-hotel-form') : null;
+      if (!enterpriseForm) return;
+      event.preventDefault();
+      var enterpriseButton = enterpriseForm.querySelector('button[type="submit"]');
+      if (enterpriseButton) enterpriseButton.disabled = true;
+      requestEnterpriseProposal(enterpriseForm).then(function (data) {
+        if (!data || !data.proposal) throw new Error('No se recibio una propuesta valida.');
+        var proposalCard = createEnterpriseProposalCard(data.proposal, data.sources);
+        enterpriseForm.closest('.ai-enterprise-card').replaceWith(proposalCard);
+        scrollChatToBottom();
+        setNotice('Plan preparado. Revisa el estado actual y confirma con el boton.');
+      }).catch(function (err) {
+        if (enterpriseButton) enterpriseButton.disabled = false;
+        setNotice(err.message || 'No se pudo preparar el plan.', true);
+      });
     });
 
     document.addEventListener('keydown', function (event) {

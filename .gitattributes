@@ -1,0 +1,2 @@
+# Los scripts se ejecutan en Linux desde el VPS y deben conservar LF.
+*.sh text eol=lf

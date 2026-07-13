@@ -37628,3 +37628,222 @@ Archivos modificados:
   cifrado, persistencia o valores de entorno a sus respuestas de configuración.
   Se conservan las validaciones de formato de llaves y una regresión protege los
   mensajes sensibles de estas rutas administrativas.
+
+2026-07-13: Administración e invitaciones sin diagnósticos internos.
+- Las operaciones de alta, actualización, revocación e invitación de
+  administradores, y la gestión de tipos de empresa, ya no devuelven errores
+  de persistencia ni fallos de correo al navegador. Los permisos y las
+  validaciones de entrada se mantienen sin cambios.
+
+2026-07-13: Preferencias de chat flotante aisladas por empresa.
+- La sesión autenticada propaga el correo del administrador al contexto de los
+  endpoints de voz/chat. Las preferencias del chat flotante requieren ahora
+  acceso validado a la empresa y rechazan un `empresa_id` distinto al contexto
+  autenticado, tanto en consulta como en JSON.
+
+2026-07-13: CSP y monitoreo alineados para transición segura.
+- Nginx agrega la misma CSP estricta en modo `Report-Only` que usa el backend,
+  con orígenes explícitos y sin comodines de conexión, antes de endurecer la
+  política aplicada. cAdvisor queda documentado como excepción de monitoreo
+  con privilegios de host y sin puerto expuesto.
+
+2026-07-13: Callbacks de documentos y pagos autenticados.
+- El callback de OnlyOffice solo descarga desde el host configurado y rechaza
+  archivos que superen el límite sin reemplazar el documento local por una copia
+  truncada.
+- Las confirmaciones ePayco exigen firma SHA-256 verificable con las
+  credenciales configuradas antes de cambiar pagos, licencias o ventas. El
+  acuse público deja de exponer referencias, estados internos e identificadores.
+
+2026-07-13: Rotación inmediata de sesiones por cambios de identidad.
+- Cambiar contraseña, establecer la primera contraseña local o cambiar el correo
+  del administrador revoca las sesiones anteriores, invalida su caché y crea una
+  única sesión de reemplazo.
+- Un cambio de rol administrativo también revoca sus sesiones activas e invalida
+  la caché de autorización para impedir privilegios heredados.
+
+2026-07-13: Archivos sensibles y aceptación de contrato endurecidos.
+- La aceptación de contrato solo admite POST con cuerpo acotado y nunca crea una
+  sesión predecible si falla el generador criptográfico.
+- Descargas de documentos dinámicos, snapshots VPS y portabilidad Docker usan
+  `no-store`, `nosniff` y mensajes públicos sin diagnósticos internos.
+
+2026-07-13: Capturas de correo y CSP de staging sin secretos reutilizables.
+- Las capturas operativas de correo reemplazan el token entregado al usuario por
+  una referencia SHA-256 y lo redactan del cuerpo y metadatos guardados.
+- El script de Nginx para staging usa la misma CSP explícita en modo
+  `Report-Only`, sin `unsafe-eval` ni orígenes HTTPS genéricos.
+
+2026-07-13: Webhooks Wompi y Rappi con validación obligatoria.
+- Wompi requiere una llave de integridad configurada y una firma verificable;
+  Rappi requiere secreto por empresa, firma válida y cuerpo acotado.
+- Ambos callbacks devuelven únicamente un acuse genérico y no filtran contexto
+  de licencia, empresa, pedido o estado de procesamiento.
+
+2026-07-13: Tokens temporales de OnlyOffice fuera de caché.
+- Las rutas públicas que reciben el token temporal de archivo o callback de
+  OnlyOffice emiten `Cache-Control: no-store`; la descarga también añade
+  `nosniff` para impedir reutilización desde cachés compartidas.
+
+2026-07-13: CSRF compatible con aceptación pública de contrato.
+- La finalización de aceptación usa su payload cifrado y reCAPTCHA como flujo
+  público; una cookie vieja ya no la convierte erróneamente en mutación de
+  sesión ni bloquea el registro con una validación CSRF ajena al flujo.
+
+2026-07-13: Diagnósticos de Rappi saneados.
+- Las operaciones empresariales contra Rappi ya no devuelven al navegador errores
+  de red, proveedor o configuración; conservan un estado de error estable para
+  la interfaz y el diagnóstico queda limitado al servidor.
+
+2026-07-13: Rotación CSRF en cambios de credenciales y segundo factor.
+- Las mutaciones autenticadas de cambio de contraseña, creación de la primera
+  contraseña local y administración de TOTP emiten un token CSRF nuevo en su
+  respuesta, después de validar el token recibido en la misma solicitud.
+- La cobertura de regresión protege que estas rutas no rompan la petición
+  legítima ni reutilicen el token anterior para el siguiente cambio sensible.
+
+2026-07-13: Respuestas sensibles sin detalles de proveedor o persistencia.
+- El registro y la recuperación administrativa conservan una respuesta neutral
+  aunque falle el envío de correo; ya no devuelven el detalle del proveedor.
+- La gestión de administradores autorizados para frecuencia FE deja de exponer
+  errores de lectura, JSON o persistencia en la interfaz.
+
+2026-07-13: Rs publica tambien ramas limpias con commits pendientes.
+- `actualizar_repositorio.ps1` deja de terminar antes del push cuando no hay
+  archivos sin commitear: verifica/publica `HEAD` y configura el upstream. Esto
+  permite que `rs` continue con la sincronizacion normal del VPS.
+
+2026-07-13: Base segura para orquestador IA empresarial.
+- Se incorpora `backend/ai` como contrato puro de contexto de ejecucion, registro
+  cerrado de herramientas y redaccion final de campos sensibles antes de enviar
+  datos a proveedores. No acepta SQL, endpoints ni empresa desde el modelo.
+- Las propuestas IA se almacenan en `empresa_ai_propuestas` con empresa, usuario,
+  hash de plan, vencimiento, estado, idempotencia y consumo atomico. La primera
+  herramienta registrada es `hotel.configure_room_station`; queda apagada por
+  defecto con `AI_ENTERPRISE_ORCHESTRATOR_ENABLED`, `AI_WRITE_TOOLS_ENABLED` y
+  `AI_HOTEL_TOOLS_ENABLED`.
+- El chat heredado deja de ejecutar cambios de precio por la palabra CONFIRMAR y
+  deja de instruir al modelo para producir bloques `PCS_ACTION`. Las escrituras
+  nuevas requieren una propuesta de servidor y confirmacion HTTP independiente.
+
+2026-07-13: Restauracion de Nextcloud empresarial en VPS2.
+- Se restablecen la pagina empresarial, API protegida, configuracion super y el
+  enlace bajo `Documentos, nube y soporte`. La cuenta se asigna por empresa,
+  mantiene cuota, no guarda la contrasena del usuario y solo entrega una
+  credencial temporal durante aprovisionamiento o restablecimiento.
+- El arranque vuelve a asegurar el esquema de cuentas Nextcloud en lugar de
+  eliminarlo. La API conserva wrapper de gestion documental, contexto validado
+  de empresa, secretos cifrados, HTTPS obligatorio, timeout y auditoria.
+
+2026-07-13: rs: actualizar repositorio y sincronizar VPS
+PushStatus: OK
+Archivos modificados:
+- documentos/api/openapi.generated.yaml
+2026-07-13 - Orquestador IA empresarial: propuesta hotelera asistida
+- El chat empresarial incorpora una tarjeta de propuesta para configurar una
+  estacion como habitacion hotelera. La tarjeta no ejecuta acciones desde texto
+  del modelo: prepara la propuesta por API y exige confirmacion posterior con
+  identificador, hash del plan e idempotency key.
+- Se persiste estado minimo de conversacion por `empresa_id` y usuario, con
+  expiracion. La propuesta consulta la estacion y tarifas actuales en servidor;
+  los JSON de herramientas rechazan campos desconocidos y cuerpos concatenados.
+- La primera herramienta permanece bajo `reservas_hotel` y feature flags
+  desactivados por defecto. El modo agente tambien falla cerrado hasta que se
+  habilite y tenga limites de servidor.
+
+2026-07-13: rs: actualizar repositorio y sincronizar VPS
+PushStatus: OK
+Archivos modificados:
+- backend/ai/enterprise.go
+- backend/ai/enterprise_test.go
+- backend/db/ai_enterprise.go
+- backend/db/nextcloud.go
+- backend/handlers/ai_enterprise_orchestrator.go
+- backend/handlers/ai_enterprise_orchestrator_test.go
+- backend/handlers/chat_con_inteligencia_artificial_router.go
+- backend/handlers/nextcloud.go
+- documentos/descripcion_de_archivos
+- documentos/descripcion_de_modulos
+- documentos/historial_de_cambios
+- documentos/ia_orquestador_empresarial.md
+- web/estilos.css
+- web/js/ai_chat_drawer.js
+2026-07-13: Reactivacion de Nextcloud empresarial multiempresa
+- Se habilita el control global desde Super administrador y la asignacion automatica de 1024 MB a empresas existentes y nuevas.
+- Se conserva `gestion_documental:R` para la pagina empresarial y `WithSuperAuditoria` para la configuracion super.
+- La eliminacion manual y automatica de empresa elimina primero la cuenta remota OCS y sus archivos; si falla, no continua el borrado local.
+- VPS2 sigue siendo una instancia independiente y no participa en cuentas empresariales.
+
+2026-07-13: Eliminacion integral de empresa
+- La eliminacion total limpia cuentas y archivos remotos de Mailu y Nextcloud, la carpeta de documentos OnlyOffice, callbacks temporales, uploads, privados y backups antes del cascade.
+
+2026-07-13: rs: actualizar repositorio y sincronizar VPS
+PushStatus: OK
+Archivos modificados:
+- backend/ai/enterprise.go
+- backend/ai/policies.go
+- backend/ai/policies_test.go
+- backend/db/ai_enterprise.go
+- backend/db/nextcloud.go
+- backend/handlers/ai_enterprise_orchestrator.go
+- backend/handlers/email_corporativo_handlers.go
+- backend/handlers/empresa_delete_files.go
+- backend/handlers/licencias_vencimiento_alertas.go
+- backend/handlers/nextcloud.go
+- backend/handlers/system_empresas_handlers.go
+- backend/main.go
+- deploy/README-compose-platform.md
+- deploy/docker-compose.platform.yml
+- deploy/scripts/vps-delete-mailu-mailbox.sh
+- documentos/CHANGELOG.md
+- documentos/descripcion_de_archivos
+- documentos/descripcion_de_modulos
+- documentos/descripcion_del_proyecto
+- documentos/diagramas/estructura_del_codigo.md
+- documentos/docker_vps_operacion.md
+- documentos/estructura_bd.md
+- documentos/flujos_operativos.md
+- documentos/historial_de_cambios
+- documentos/matriz_roles_permisos_pos_multiempresa.md
+- documentos/nextcloud_empresarial.md
+- web/administrar_empresa/nextcloud.html
+- web/js/nextcloud_empresa.js
+
+2026-07-13: rs: actualizar repositorio y sincronizar VPS
+PushStatus: OK
+Archivos modificados:
+- deploy/docker/backend.Dockerfile
+
+2026-07-13: Cierre de provisionamiento Mailu y contexto operativo.
+- Seguridad: el modo automatico preferido pasa a `mailu_api`. El backend crea,
+  actualiza y elimina buzones por API REST interna de Mailu con bearer token;
+  no se monta Docker socket ni se ejecuta Docker desde el backend.
+- Operacion: el arranque del perfil Mailu genera un token criptografico solo si
+  falta, lo mantiene en el entorno privado y activa el API interno. El proxy
+  externo rechaza la ruta `/api/` del dominio de correo.
+- IA: se confirma el cierre funcional del orquestador asistido: registro cerrado
+  de herramientas, contexto por empresa, propuesta temporal, confirmacion,
+  hash, idempotencia y auditoria minimizada. Las escrituras siguen fail-closed
+  hasta habilitacion controlada por entorno y prueba por empresa.
+- Documentacion: se actualizan los contextos general/especifico/Codex, Nextcloud,
+  Mailu, flujos, mapa de modulos, estructura de datos y operacion VPS.
+## 2026-07-13 - Activacion segura de Nextcloud empresarial
+
+- Se corrige el guardado de la credencial OCS: antes de persistir se cifra con
+  AES-GCM y se marca como configuracion cifrada; el valor plano no queda en
+  PostgreSQL.
+- El backend puede registrar desde el entorno del VPS una cuenta tecnica OCS
+  exclusiva y asignar automaticamente la cuota empresarial al arrancar.
+- Se agrega `scripts/provision_nextcloud_service_account.sh`, que genera o rota
+  la credencial remota sin imprimirla y conserva un respaldo root-readable del
+  archivo de entorno antes de actualizarlo.
+
+2026-07-13: Correccion de configuracion guiada, Nextcloud y descargas publicas.
+- Panel empresa: `No volver a mostrar` persiste por empresa al enviar el token CSRF same-origin; no usa cookies como fuente de estado.
+- Nextcloud: la cuota global configurada se conserva, la pagina resuelve empresa desde contexto protegido y no entrega URLs a espacios inactivos/no aprovisionados.
+- Seguridad: el backend deja de servir `/descargas/`; Nginx permite solo instaladores RustDesk incluidos en una lista cerrada.
+- QA: CSRF, configuracion guiada, Nextcloud y contrato de recursos publicos se probaron localmente. Docker, race, staging, restauracion e integraciones reales permanecen gates documentados.
+
+2026-07-13: Endurecimiento del modo heredado Mailu.
+- Seguridad: el provisionamiento y borrado directo quedan fijados a scripts internos revisados. Una ruta configurada arbitrariamente se rechaza; el modo recomendado en produccion continua siendo `mailu_api` interno.
+- QA: se agrega regresion que rechaza rutas directas no aprobadas. El analisis completo `gosec` se valida por CI/Linux, ya que la ejecucion local quedo retenida por procesos temporales de Windows.

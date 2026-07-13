@@ -25,10 +25,10 @@ admin, IMAP, SMTP, antispam, webmail SnappyMail y Redis. El proxy publico lo adm
 4. Al crear una empresa desde `/super/api/empresas`, el sistema genera un correo
    unico basado en el nombre de la empresa.
 5. Si el correo ya existe, se usa un sufijo numerico: `empresa2@dominio`.
-6. En modo `mailu_direct`, el backend ejecuta
-   `deploy/scripts/vps-provision-mailu-mailbox.sh` para crear o actualizar el
-   buzon con `flask mailu user` y `flask mailu password` dentro del contenedor
-   `pcs-mailu-admin`.
+6. En modo `mailu_api`, el backend llama la API REST interna de Mailu para crear
+   o actualizar el buzon. Usa `POST /api/v1/user` y, si ya existe, `PATCH` al
+   mismo recurso con bearer token. La API no se publica a Internet y el backend
+   no necesita Docker CLI ni socket Docker.
 7. Si el modulo esta en modo manual o Mailu no esta listo, la creacion de la
    empresa no falla; el correo queda pendiente de provision.
 8. En `web/administrar_empresa/panel.html` aparece la tarjeta de bandeja
@@ -63,15 +63,15 @@ admin, IMAP, SMTP, antispam, webmail SnappyMail y Redis. El proxy publico lo adm
     defecto es `true`.
 18. La misma pagina permite cambiar la contrasena interna del buzon. El backend
     valida longitud, cifra la clave con `CONFIG_ENC_KEY`, actualiza
-    `empresa_email_corporativo.initial_password_enc` y reprovisiona Mailu cuando
-    el modo directo esta activo.
+    `empresa_email_corporativo.initial_password_enc` y reprovisiona Mailu por la
+    API interna cuando el modo automatico esta activo.
 19. Los correos automaticos del sistema salen por Mailu como dominio propio. Los
     correos comerciales y de compra/activacion de licencias usan
     `ventas@powerfulcontrolsystem.com`; alertas, recuperaciones, invitaciones,
     agente DIAN y pruebas usan `soporte@powerfulcontrolsystem.com`.
 20. La pagina super permite `Provisionar ventas/soporte` para crear o actualizar
-    esos buzones de sistema mediante el mismo comando directo Mailu, sin mostrar
-    la clave generada.
+    esos buzones de sistema por la API interna Mailu, sin mostrar la clave
+    generada.
 21. La accion `Probar envio` envia un correo real desde el motor Mailu al
     destinatario indicado para validar el camino util de salida.
 22. Los flujos legacy que antes usaban `gmail.smtp_*` para enviar directamente
@@ -103,8 +103,11 @@ admin, IMAP, SMTP, antispam, webmail SnappyMail y Redis. El proxy publico lo adm
 - La consulta empresarial usa `/api/empresa/email_corporativo`, protegida por el
   wrapper multiempresa y por `empresa_id`.
 - Las acciones super usan auditoria con accion `super_email_corporativo`.
-- El backend puede ejecutar el script directo solo en entornos controlados de la
-  VPS, donde el operador del SaaS administra Docker.
+- El backend no tiene Docker CLI ni socket Docker. El token de Mailu vive solo
+  en el entorno del VPS, se transmite mediante `Authorization: Bearer` dentro
+  de la red Docker y nunca se registra en logs o auditoria.
+- El proxy publico rechaza `/api/` del dominio de correo; solo el backend usa la
+  ruta interna `mailu-front` para la API de provisionamiento.
 - Los contenedores Mailu usan IPs fijas dentro de `pcs_mailu_internal`. SnappyMail
   y el front resuelven `mailu-front`, `mailu-imap` y demas servicios hacia
   `192.168.203.x`; asi Dovecot recibe los accesos desde la red que Mailu marca
@@ -157,14 +160,19 @@ envios reales del sistema deben usar Email corporativo Mailu.
 - `EMAIL_CORPORATIVO_INTERNAL_WEBMAIL_URL`
 - `EMAIL_CORPORATIVO_INTERNAL_SNAPPYMAIL_URL`
 - `EMAIL_CORPORATIVO_MAILU_ADMIN`
-- `EMAIL_CORPORATIVO_MAILU_API_TOKEN`
+- `MAILU_API_TOKEN` (generado con aleatoriedad criptografica por el arranque si
+  falta; no copiar ni imprimir). El backend lo recibe como
+  `EMAIL_CORPORATIVO_MAILU_API_TOKEN`.
 - `EMAIL_CORPORATIVO_QUOTA_MB`
-- `EMAIL_CORPORATIVO_DIRECT_PROVISION_COMMAND`
+- `EMAIL_CORPORATIVO_DIRECT_PROVISION_COMMAND` (compatibilidad heredada: si se
+  define, debe coincidir con el script interno revisado; produccion usa
+  `mailu_api` y no ejecuta comandos configurables).
 - `EMAIL_CORPORATIVO_AUTOLOGIN_SECRET`
 - `MAILU_ENABLED`
 - `MAILU_VERSION`
 - `MAILU_HOSTNAME`
 - `MAILU_SECRET_KEY`
+- `MAILU_API_ENABLED`
 - `MAILU_RESOLVER_IP`
 - `MAILU_REDIS_IP`
 - `MAILU_SMTP_IP`

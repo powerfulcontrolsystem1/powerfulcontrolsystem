@@ -1,6 +1,6 @@
 # Contexto especifico del sistema
 
-Estado: vigente. Ultima actualizacion: 2026-07-09.
+Estado: vigente. Ultima actualizacion: 2026-07-13.
 
 Este documento amplia el
 [`Contexto general del sistema`](contexto_general_del_sistema.md). No se debe
@@ -45,10 +45,11 @@ forzadas aunque el boton se oculte en frontend.
 - Nomina, impuestos, contabilidad y reportes:
   `descripcion_de_modulos`, `estructura_bd.md` y los documentos especificos del
   modulo en `documentos/`.
-- IA, agentes y limites por empresa: `mapa_modulos.md`, `estructura_bd.md` y
-  `diagramas/diagramas_sistema_pcs.md`.
+- IA, agentes y limites por empresa: `ia_orquestador_empresarial.md`,
+  `mapa_modulos.md`, `estructura_bd.md` y `diagramas/diagramas_sistema_pcs.md`.
 - Correo corporativo y WhatsApp: `mapa_modulos.md`, `flujos_operativos.md`,
-  `decisiones_tecnicas.md` y los runbooks de correo aplicables.
+  `decisiones_tecnicas.md`, `email_corporativo_mailu.md` y los runbooks de
+  correo aplicables.
 
 ## Infraestructura, copias y VPS
 
@@ -56,7 +57,8 @@ forzadas aunque el boton se oculte en frontend.
   `comandos_codex.md` y `deploy/`.
 - Backups y restauracion: `comandos_codex.md`,
   `gobernanza_tecnica/runbooks/` y `scripts/crear_backup_vps.ps1`.
-- VPS2 y Nextcloud: `vps2_operacion.md` y `scripts/sync_to_vps2.ps1`.
+- Nextcloud empresarial: `nextcloud_empresarial.md`; VPS2: `vps2_operacion.md`
+  y `scripts/sync_to_vps2.ps1`. No mezclar ambos servicios.
 
 No exponer host, llaves, contrasenas, DSN ni configuracion privada local en
 salidas, documentos o commits.

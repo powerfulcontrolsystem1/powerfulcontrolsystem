@@ -144,7 +144,6 @@ func DisablePowerfulSystemEmpresaInternalLicense(dbSuper *sql.DB, empresaID int6
 	res, err := execSQLCompat(dbSuper, `UPDATE licencias
 		SET activo = 0,
 			estado = 'retirada',
-			fecha_fin = CASE WHEN COALESCE(fecha_fin, '') = '' THEN `+nowExpr+` ELSE fecha_fin END,
 			fecha_actualizacion = `+nowExpr+`,
 			usuario_creador = CASE WHEN COALESCE(usuario_creador, '') = '' THEN ? ELSE usuario_creador END,
 			observaciones = TRIM(COALESCE(observaciones, '') || CASE WHEN COALESCE(observaciones, '') = '' THEN '' ELSE ' | ' END || ?)

@@ -31,6 +31,7 @@ ENV GRAFOLOGIA_TESSERACT_ENABLED=0
 
 RUN mkdir -p /app/backend/logs /app/web/uploads /app/backup /app/descargas \
     && chmod +x /app/project_export/deploy/scripts/vps-provision-mailu-mailbox.sh \
+    && chmod +x /app/project_export/deploy/scripts/vps-delete-mailu-mailbox.sh \
     && chown -R pcs:pcs /app
 
 EXPOSE 8080

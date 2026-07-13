@@ -226,3 +226,49 @@ func TestPaymentConfigurationsDoNotExposeSecretsOrPersistenceErrors(t *testing.T
 		}
 	}
 }
+
+func TestAdminManagementDoesNotExposePersistenceOrMailErrors(t *testing.T) {
+	contents, err := os.ReadFile("auth_admin_handlers.go")
+	if err != nil {
+		t.Fatalf("read admin handler: %v", err)
+	}
+	for _, forbidden := range []string{`"failed to upsert administrador: "+err.Error()`, `"failed to set invitation token: "+err.Error()`, `resp["error"] = mailErr.Error()`, `response["preconfiguracion_error"] = preconfigErr.Error()`} {
+		if strings.Contains(string(contents), forbidden) {
+			t.Fatalf("admin handler exposes internal diagnostic: %s", forbidden)
+		}
+	}
+}
+
+func TestIARadioDoesNotExposePersistenceErrors(t *testing.T) {
+	contents, err := os.ReadFile("ia_radio.go")
+	if err != nil {
+		t.Fatalf("read IA radio handler: %v", err)
+	}
+	if strings.Contains(string(contents), `"No se pudo guardar chat_flotante.radio_online_enabled por empresa: "+err.Error()`) || strings.Contains(string(contents), `"No se pudo guardar chat_flotante.radio_country por empresa: "+err.Error()`) {
+		t.Fatal("IA radio handler must not expose persistence errors")
+	}
+}
+
+func TestDiscountCodesDoNotExposePersistenceErrors(t *testing.T) {
+	contents, err := os.ReadFile("licencias_codigos_descuento.go")
+	if err != nil {
+		t.Fatalf("read discount code handler: %v", err)
+	}
+	for _, value := range []string{`"no se pudieron leer los codigos: "+err.Error()`, `"no se pudo guardar el codigo: "+err.Error()`, `"no se pudo eliminar el codigo: "+err.Error()`} {
+		if strings.Contains(string(contents), value) {
+			t.Fatalf("discount code handler exposes persistence error: %s", value)
+		}
+	}
+}
+
+func TestSharedCompanyAccessDoesNotExposePersistenceOrMailErrors(t *testing.T) {
+	contents, err := os.ReadFile("empresa_compartida_handlers.go")
+	if err != nil {
+		t.Fatalf("read shared company handler: %v", err)
+	}
+	for _, value := range []string{`"no se pudo validar empresa: "+err.Error()`, `"no se pudo crear invitación compartida: "+err.Error()`, `response["error"] = mailErr.Error()`} {
+		if strings.Contains(string(contents), value) {
+			t.Fatalf("shared company handler exposes internal error: %s", value)
+		}
+	}
+}

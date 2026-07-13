@@ -84,8 +84,8 @@ if [ "$email_enabled" = "1" ] || [ "$email_enabled" = "true" ] || [ "$mailu_enab
     upsert_env "$ENV_FILE" MAILU_WEBMAIL "snappymail"
   fi
   provision_mode="$(get_env_value "$ENV_FILE" EMAIL_CORPORATIVO_PROVISION_MODE)"
-  if [ -z "$provision_mode" ] || printf '%s' "$provision_mode" | grep -qi 'ired'; then
-    upsert_env "$ENV_FILE" EMAIL_CORPORATIVO_PROVISION_MODE "mailu_direct"
+  if [ -z "$provision_mode" ] || printf '%s' "$provision_mode" | grep -Eqi 'ired|mailu_direct|docker_direct|direct_sql'; then
+    upsert_env "$ENV_FILE" EMAIL_CORPORATIVO_PROVISION_MODE "mailu_api"
   fi
   provision_command="$(get_env_value "$ENV_FILE" EMAIL_CORPORATIVO_DIRECT_PROVISION_COMMAND)"
   if [ -z "$provision_command" ] || printf '%s' "$provision_command" | grep -qi 'ired'; then
@@ -134,6 +134,14 @@ if [ "$email_enabled" = "1" ] || [ "$email_enabled" = "true" ] || [ "$mailu_enab
       upsert_env "$ENV_FILE" MAILU_SECRET_KEY "$(openssl rand -hex 32)"
     else
       upsert_env "$ENV_FILE" MAILU_SECRET_KEY "$(date +%s%N)-mailu"
+    fi
+  fi
+  if [ -z "$(get_env_value "$ENV_FILE" MAILU_API_TOKEN)" ]; then
+    if command -v openssl >/dev/null 2>&1; then
+      upsert_env "$ENV_FILE" MAILU_API_TOKEN "$(openssl rand -hex 32)"
+    else
+      echo "ERROR: openssl es obligatorio para generar el token interno de Mailu" >&2
+      exit 1
     fi
   fi
 fi

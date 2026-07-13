@@ -1,6 +1,6 @@
 # Contexto general del sistema
 
-Estado: vigente. Ultima actualizacion: 2026-07-09.
+Estado: vigente. Ultima actualizacion: 2026-07-13.
 
 ## Regla obligatoria para agentes
 
@@ -29,8 +29,8 @@ rol reservado de super administrador.
 - Datos: PostgreSQL es el unico motor permitido.
 - Frontend: HTML, CSS y JavaScript estatico; no migrar a frameworks o bundlers
   sin autorizacion.
-- Runtime: Docker en VPS principal; VPS2 sirve operaciones auxiliares como
-  Nextcloud y monitoreo, segun sus runbooks.
+- Runtime: Docker en VPS principal. El Nextcloud empresarial es un servicio del
+  VPS principal y se separa del VPS2, que permanece auxiliar e independiente.
 - Despliegue: el flujo canonico es `scripts/rs.ps1`; consultar antes
   `documentos/comandos_codex.md`.
 
@@ -71,9 +71,13 @@ rol reservado de super administrador.
 - Pagos y licencias: Epayco y Wompi se procesan idempotentemente. Las licencias
   limitan documentos emitidos, no el numero de cajas.
 - Correo y WhatsApp: canales configurables y auditables, con secretos cifrados
-  o referencias seguras; no prometer entrega real sin credenciales/proveedor.
-- IA y agentes: se limitan por empresa, respetan roles y no ejecutan operaciones
-  sensibles sin las validaciones o confirmaciones del flujo PCS.
+  o referencias seguras. Mailu se administra mediante API interna autenticada,
+  no mediante socket Docker del backend. No prometer entrega real sin pruebas
+  del proveedor y DNS.
+- IA y agentes: se limitan por empresa, respetan roles, lista cerrada de
+  herramientas, propuestas temporales e idempotencia. Las escrituras requieren
+  confirmacion independiente; ningun modelo recibe capacidad directa de SQL,
+  HTTP arbitrario ni seleccion de empresa.
 
 ## Forma de trabajar
 

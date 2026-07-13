@@ -293,6 +293,12 @@ func voiceStreamRequireSession(w http.ResponseWriter, r *http.Request, dbSuper *
 		http.Error(w, "unauthenticated", http.StatusUnauthorized)
 		return false
 	}
+	adminEmail := strings.ToLower(strings.TrimSpace(session.AdminEmail))
+	if adminEmail == "" {
+		http.Error(w, "unauthenticated", http.StatusUnauthorized)
+		return false
+	}
+	*r = *r.WithContext(context.WithValue(r.Context(), "adminEmail", adminEmail))
 	return true
 }
 

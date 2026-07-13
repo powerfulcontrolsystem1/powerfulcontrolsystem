@@ -69,7 +69,7 @@ bash deploy/scripts/vps-docker-preflight.sh
 bash deploy/scripts/vps-compose-sidecar-up.sh
 ```
 
-Ese arranque levanta el nucleo `postgres`, `backend` y `frontend`. En la VPS actual, OnlyOffice puede operar como contenedor separado y RustDesk ya usa los puertos publicos del host; por eso esos servicios quedan definidos en perfiles para no causar colisiones durante la migracion. Nextcloud queda retirado del producto y del Compose.
+Ese arranque levanta el nucleo `postgres`, `backend` y `frontend`. En la VPS actual, OnlyOffice puede operar como contenedor separado y RustDesk ya usa los puertos publicos del host; por eso esos servicios quedan definidos en perfiles para no causar colisiones durante la migracion. Nextcloud empresarial se despliega como stack separado en el VPS principal mediante `deploy/nextcloud/docker-compose.yml`; no se mezcla con el Compose nucleo ni con el Nextcloud auxiliar de VPS2.
 
 El wrapper local `scripts/sync_to_vps.ps1` reconstruye este stack y, por defecto, limpia temporales antiguos de sincronizacion y cache Docker no usado al final del despliegue. La limpieza no ejecuta `docker volume prune` ni elimina datos persistentes. Para desactivarla temporalmente:
 
@@ -176,7 +176,7 @@ bash deploy/scripts/vps-staging-up.sh
 Para mover la plataforma despues:
 
 - Exporta o publica las imagenes `pcs-backend`, `pcs-frontend` y `pcs-voice-stream`.
-- Migra los volumenes `pcs_postgres_data`, `pcs_web_uploads`, `pcs_downloads`, `pcs_letsencrypt`, `pcs_certbot_www`, `pcs_onlyoffice_*`, `mailu_*`, `pcs_voice_*` y `pcs_rustdesk_data`. Los volumenes `pcs_nextcloud_*` son legado retirado.
+- Migra los volumenes `pcs_postgres_data`, `pcs_web_uploads`, `pcs_downloads`, `pcs_letsencrypt`, `pcs_certbot_www`, `pcs_onlyoffice_*`, `mailu_*`, `pcs_voice_*` y `pcs_rustdesk_data`. El stack empresarial separado conserva sus volumenes `pcs_nextcloud_*` y el directorio `NEXTCLOUD_DATA_PATH`.
 - Conserva `deploy/.env.platform` con los mismos secretos.
 - En el nuevo servidor, restaura volumenes, copia el proyecto o las imagenes y ejecuta `docker compose --env-file deploy/.env.platform -f deploy/docker-compose.platform.yml --profile edge up -d`.
 

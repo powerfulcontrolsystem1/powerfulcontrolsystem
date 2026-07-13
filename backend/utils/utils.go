@@ -457,7 +457,8 @@ func isCookieAuthenticatedMutation(r *http.Request) bool {
 	// stale cookie from an earlier browser session must not convert them into an
 	// authenticated mutation and block access before the handler can rotate it.
 	switch r.URL.Path {
-	case "/super/api/administradores/register",
+	case "/accept/complete",
+		"/super/api/administradores/register",
 		"/super/api/administradores/login",
 		"/super/api/administradores/solicitar_recuperacion",
 		"/super/api/administradores/restablecer_password",
@@ -517,7 +518,12 @@ func csrfShouldRotate(r *http.Request) bool {
 		return false
 	}
 	switch r.URL.Path {
-	case "/super/api/administradores/login", "/api/empresa/usuarios/login", "/api/empresa/usuarios/establecer_password":
+	case "/super/api/administradores/login",
+		"/api/empresa/usuarios/login",
+		"/api/empresa/usuarios/establecer_password",
+		"/api/account/change_password",
+		"/api/account/set_google_password",
+		"/super/api/administradores/2fa":
 		return true
 	default:
 		return false
@@ -916,7 +922,7 @@ func AuthMiddleware(dbSuper *sql.DB, next http.Handler) http.Handler {
 		if getCachedMaintenanceActive(dbSuper) {
 			// Rutas permitidas durante el mantenimiento (acceso de administradores y assets estáticos)
 			isMntAllowed := path == "/mantenimiento.html" || strings.HasPrefix(path, "/super/") || strings.HasPrefix(path, "/auth/") || path == "/login.html" || path == "/registrar_nuevo_usuario_administrador.html"
-			isStatic := strings.HasPrefix(path, "/img/") || strings.HasPrefix(path, "/css/") || strings.HasPrefix(path, "/js/") || strings.HasPrefix(path, "/descargas/") || path == "/estilos.css" || path == "/menu.js" || path == "/manifest.webmanifest" || path == "/sw.js"
+			isStatic := strings.HasPrefix(path, "/img/") || strings.HasPrefix(path, "/css/") || strings.HasPrefix(path, "/js/") || path == "/estilos.css" || path == "/menu.js" || path == "/manifest.webmanifest" || path == "/sw.js"
 			if !isMntAllowed && !isStatic {
 				http.Redirect(w, r, "/mantenimiento.html", http.StatusTemporaryRedirect)
 				return
@@ -1033,7 +1039,7 @@ func AuthMiddleware(dbSuper *sql.DB, next http.Handler) http.Handler {
 		}
 
 		// Recursos estáticos públicos
-		publicPrefixes := []string{"/assets/", "/img/", "/uploads/", "/descargas/"}
+		publicPrefixes := []string{"/assets/", "/img/", "/uploads/"}
 		publicPrefixes = append(publicPrefixes, "/js/")
 		if strings.HasPrefix(path, "/ayuda/") && path != "/ayuda/ayuda.html" {
 			next.ServeHTTP(w, r)

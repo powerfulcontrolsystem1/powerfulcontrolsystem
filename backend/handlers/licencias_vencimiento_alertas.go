@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"database/sql"
 	"encoding/json"
 	"fmt"
@@ -486,6 +487,16 @@ func ProcessLicenciaRetencionEmpresas(dbSuper, dbEmp *sql.DB, dryRun bool, actor
 		}
 		if c.DebeEliminar {
 			_ = dbpkg.UpsertLicenciaEmpresaRetencionLog(dbSuper, c, "eliminacion_en_proceso", "", "", actor)
+			if err := DeleteNextcloudCompanyAccount(context.Background(), dbEmp, dbSuper, c.EmpresaID); err != nil {
+				result.Errores++
+				_ = dbpkg.UpsertLicenciaEmpresaRetencionLog(dbSuper, c, "error", "no se pudo eliminar el espacio Nextcloud de la empresa", "", actor)
+				continue
+			}
+			if err := DeleteEmpresaCorporateEmailAccounts(context.Background(), dbSuper, c.EmpresaID); err != nil {
+				result.Errores++
+				_ = dbpkg.UpsertLicenciaEmpresaRetencionLog(dbSuper, c, "error", "no se pudieron eliminar las cuentas de correo de la empresa", "", actor)
+				continue
+			}
 			deleteResult, err := dbpkg.DeleteEmpresaCascade(dbEmp, dbSuper, c.EmpresaID)
 			if err != nil {
 				result.Errores++

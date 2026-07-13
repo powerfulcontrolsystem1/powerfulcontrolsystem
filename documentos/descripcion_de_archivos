@@ -11776,6 +11776,52 @@ backend/handlers/user_config.go - Controlador que expone /api/user/configuracion
 backend/runtime_security_config_test.go
 - Pruebas de arranque seguro y variables críticas del runtime de producción.
 
+backend/ai/enterprise.go
+- Contratos sin efectos secundarios para el orquestador IA: contexto derivado
+  del servidor, registro cerrado de herramientas, identificadores criptograficos,
+  hash de planes y redaccion de campos sensibles.
+
+backend/db/ai_enterprise.go
+- Esquema y persistencia multiempresa de propuestas IA; incluye confirmacion de
+  un solo uso, idempotencia y el servicio transaccional inicial de habitaciones
+  hoteleras con tarifas por ocupacion.
+
+backend/handlers/ai_enterprise_orchestrator.go
+- API empresarial protegida para listar herramientas y crear, confirmar o
+  cancelar propuestas IA. Permanece desactivada por feature flags de entorno.
+
+documentos/ia_orquestador_empresarial.md
+- Contrato operativo, flags seguros, flujo de propuestas y plan de activacion
+  progresiva del orquestador IA empresarial.
+
+backend/db/nextcloud.go, backend/handlers/nextcloud.go
+- Asignacion multiempresa y aprovisionamiento seguro de cuentas Nextcloud con
+  configuracion global cifrada, cuota, auditoria y credenciales temporales.
+
+backend/handlers/nextcloud_security_test.go
+- Regresion que verifica que la credencial OCS se cifra con envelope versionado
+  antes de persistirse como configuracion sensible.
+
+scripts/provision_nextcloud_service_account.sh
+- Script VPS que crea o rota la cuenta OCS exclusiva de Nextcloud y actualiza
+  el entorno root-readable sin imprimir la contrasena generada.
+
+2026-07-13 - Provisionamiento Mailu por API interna
+- `backend/handlers/email_corporativo_handlers.go`: cliente REST interno para
+  crear, actualizar y eliminar buzones Mailu con bearer token, sin Docker
+  CLI/socket y sin registrar secretos o cuerpos.
+- `backend/handlers/email_corporativo_handlers_test.go`: regresion del contrato
+  bearer, payload acotado y modo `mailu_api`.
+- `deploy/scripts/vps-compose-sidecar-up.sh`: migra el modo heredado al modo API
+  y genera `MAILU_API_TOKEN` solo cuando falta en el entorno privado.
+- `deploy/docker-compose.platform.yml` y `deploy/nginx/edge.conf.template`:
+  inyectan el token solo en Mailu/backend y bloquean la API Mailu en el proxy
+  publico.
+
+web/administrar_empresa/nextcloud.html, web/js/nextcloud_empresa.js
+- Pantalla empresarial de estado, aprovisionamiento, restablecimiento y apertura
+  de Nextcloud para la empresa activa.
+
 backend/db/soporte_remoto_security_test.go
 - Pruebas criptográficas de credenciales temporales de soporte remoto.
 
@@ -11801,3 +11847,35 @@ backend/tools/migrate_private_uploads/main.go
 - Utilidad PostgreSQL de staging para inventariar o aplicar la migración de
   adjuntos privados antiguos. Es simulación por defecto y no imprime rutas,
   credenciales ni referencias sensibles.
+2026-07-13
+- `backend/ai/enterprise.go`: contratos puros de contexto, registro cerrado y
+  limites de modo agente del orquestador empresarial.
+- `backend/db/ai_enterprise.go`: propuestas y conversaciones empresariales
+  aisladas, snapshot seguro de estacion y ejecucion transaccional hotelera.
+- `backend/handlers/ai_enterprise_orchestrator.go`: API de propuesta,
+  confirmacion y cancelacion con JSON estricto y feature flags fail-closed.
+- `web/js/ai_chat_drawer.js`: tarjeta de revision y confirmacion empresarial;
+  no ejecuta acciones heredadas generadas por el modelo.
+Actualizacion 2026-07-13: Nextcloud empresarial reactivado
+- `backend/db/nextcloud.go`: asigna automaticamente la cuenta tecnica por empresa y la cuota global.
+- `backend/handlers/nextcloud.go`: elimina la cuenta remota OCS antes de borrar una empresa y sincroniza asignaciones al activar el servicio.
+- `backend/handlers/system_empresas_handlers.go` y `backend/handlers/licencias_vencimiento_alertas.go`: integran limpieza Nextcloud en eliminacion manual y retencion automatica.
+- `documentos/nextcloud_empresarial.md`: documenta activacion global, permisos, aislamiento y eliminacion remota.
+- `backend/handlers/empresa_delete_files.go`: limpia tambien la carpeta fisica de documentos OnlyOffice por empresa.
+- `deploy/scripts/vps-delete-mailu-mailbox.sh`: desactiva/elimina el usuario Mailu y limpia maildir y datos de SnappyMail.
+
+documentos/production_readiness_final.md
+- Decision de preproduccion y separacion entre evidencia local y gates de staging/CI.
+
+documentos/staging_execution_report.md
+documentos/migration_validation_report.md
+documentos/backup_restore_report.md
+documentos/load_test_report.md
+documentos/integration_validation_report.md
+- Reportes de evidencia pendientes para staging, migraciones, restauracion, carga e integraciones.
+
+documentos/observability_runbook.md
+documentos/production_deployment_runbook.md
+documentos/production_rollback_runbook.md
+documentos/release_checklist.md
+- Runbooks y lista de control para una liberacion reversible.

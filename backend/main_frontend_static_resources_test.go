@@ -33,6 +33,45 @@ func TestFrontendStaticResourcesExist(t *testing.T) {
 	}
 }
 
+func TestPublicDownloadsAreExplicitlyAllowlisted(t *testing.T) {
+	raw, err := os.ReadFile(filepath.Join("..", "deploy", "nginx", "pcs.conf"))
+	if err != nil {
+		t.Fatalf("read frontend nginx config: %v", err)
+	}
+	config := string(raw)
+	for _, name := range []string{
+		"rustdesk-cliente-windows-x64",
+		"rustdesk-cliente-linux-amd64",
+		"rustdesk-cliente-macos-x64",
+		"rustdesk-servidor-windows-x64",
+		"rustdesk-servidor-linux-amd64",
+	} {
+		if !strings.Contains(config, name) {
+			t.Fatalf("public download %q is not explicitly allowlisted", name)
+		}
+	}
+	if !strings.Contains(config, "location /descargas/") || !strings.Contains(config, "return 404;") {
+		t.Fatal("non-allowlisted public downloads must be rejected by nginx")
+	}
+}
+
+func TestPanelGuidedSetupUsesCSRFAndNextcloudKeepsEmpresaContext(t *testing.T) {
+	panel, err := os.ReadFile(filepath.Join("..", "web", "administrar_empresa", "panel.html"))
+	if err != nil {
+		t.Fatalf("read empresa panel: %v", err)
+	}
+	if !strings.Contains(string(panel), "X-CSRF-Token") || !strings.Contains(string(panel), "readCookieValue(\"pcs_csrf\")") {
+		t.Fatal("guided setup mutations must include the browser CSRF token")
+	}
+	nextcloud, err := os.ReadFile(filepath.Join("..", "web", "js", "nextcloud_empresa.js"))
+	if err != nil {
+		t.Fatalf("read Nextcloud company script: %v", err)
+	}
+	if !strings.Contains(string(nextcloud), "__resolveEmpresaIdContext") || !strings.Contains(string(nextcloud), "__empresaModuleGuard.resolveEmpresaId") {
+		t.Fatal("Nextcloud must resolve the validated company context from its parent shell")
+	}
+}
+
 type staticResourceReference struct {
 	sourcePath   string
 	rawReference string

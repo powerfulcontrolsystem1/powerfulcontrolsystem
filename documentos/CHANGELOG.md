@@ -1,3 +1,10 @@
+## [2026-07-13] Correcciones de preproduccion: panel, Nextcloud y archivos
+- [Panel empresa] `No volver a mostrar` envia CSRF y conserva su estado por empresa en PostgreSQL.
+- [Nextcloud] La cuota configurada no se reemplaza en el arranque; las URLs se entregan solo a espacios activos y aprovisionados.
+- [Seguridad] El backend deja de servir `/descargas/`; Nginx deja una lista cerrada de instaladores RustDesk y rechaza el resto.
+- [Docs] Agrega decision de readiness, reportes de staging/migraciones/restauracion/carga/integraciones y runbooks de observabilidad, despliegue, rollback y release.
+- [Correo corporativo] El modo heredado directo queda fijado a scripts internos revisados; se rechazan comandos configurables arbitrarios y `mailu_api` permanece como modo recomendado.
+
 ## [2026-07-10] Diagramas tecnicos consolidados
 - [Super administrador] `Diagramas tecnicos` conserva los 19 diagramas detallados de la documentacion tecnica completa y retira del menu los 15 esquemas generales redundantes.
 - [Super administrador] `ERD PostgreSQL completo` ofrece navegacion por las 365 tablas, sus atributos, PK, FKs fisicas y relaciones logicas.
@@ -3217,3 +3224,15 @@
 - [Nomina] El agente internet muestra valor actual, valor oficial propuesto, vigencia y enlace de fuente; cada campo se aplica solo tras confirmacion humana.
 - [Tutoriales] Agrega `creditos_tutorial.html` al final del submenu de Credito; Nomina conserva su tutorial al final del submenu.
 - [IA documental] Se verifica el flujo existente de Compras, Ingresos y Egresos: carga imagen/PDF, extrae con GPT-5.5, precarga formulario, abre chat para reportar legibilidad y exige revision antes de guardar.
+## [2026-07-13] Reactivacion de Nextcloud empresarial
+- Activacion global desde Super administrador y asignacion automatica de cuota tecnica de 1 GB a todas las empresas.
+- Limpieza OCS obligatoria antes de eliminar una empresa, incluida la retencion automatica.
+- Roles/permisos conservan `gestion_documental:R` para Nextcloud y auditoria super para la configuracion.
+
+## [2026-07-13] Eliminacion integral de empresa
+- Se agregan limpieza de cuentas/archivos Mailu, carpeta OnlyOffice, temporales, uploads, privados y backups antes del cascade.
+
+## [2026-07-13] Mailu - provisionamiento por API interna
+- [Seguridad] El backend deja de depender de scripts Docker para crear, actualizar o borrar buzones; usa la API REST interna autenticada de Mailu.
+- [Operacion] El perfil Mailu genera su token solo si falta y el proxy externo bloquea `/api/`, manteniendo la API disponible unicamente para la red Docker.
+- [QA] Se agrega regresion del bearer token, payload de alta acotado y normalizacion de modo API.

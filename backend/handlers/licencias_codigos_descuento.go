@@ -67,7 +67,7 @@ func SuperLicenciasCodigosDescuentoHandler(dbSuper *sql.DB) http.HandlerFunc {
 		case http.MethodGet:
 			items, raw, err := readLicenciaDiscountCodeAdminItems(dbSuper)
 			if err != nil {
-				http.Error(w, "no se pudieron leer los codigos: "+err.Error(), http.StatusInternalServerError)
+				http.Error(w, "no se pudieron leer los codigos", http.StatusInternalServerError)
 				return
 			}
 			writeJSON(w, http.StatusOK, map[string]interface{}{
@@ -104,7 +104,7 @@ func SuperLicenciasCodigosDescuentoHandler(dbSuper *sql.DB) http.HandlerFunc {
 			}
 			items, _, err := readLicenciaDiscountCodeAdminItems(dbSuper)
 			if err != nil {
-				http.Error(w, "no se pudieron leer los codigos: "+err.Error(), http.StatusInternalServerError)
+				http.Error(w, "no se pudieron leer los codigos", http.StatusInternalServerError)
 				return
 			}
 			for _, existing := range items {
@@ -115,7 +115,7 @@ func SuperLicenciasCodigosDescuentoHandler(dbSuper *sql.DB) http.HandlerFunc {
 			}
 			items = append(items, item)
 			if err := saveLicenciaDiscountCodeAdminItems(dbSuper, items, admin.Email); err != nil {
-				http.Error(w, "no se pudo guardar el codigo: "+err.Error(), http.StatusInternalServerError)
+				http.Error(w, "no se pudo guardar el codigo", http.StatusInternalServerError)
 				return
 			}
 			sent := false
@@ -147,7 +147,7 @@ func SuperLicenciasCodigosDescuentoHandler(dbSuper *sql.DB) http.HandlerFunc {
 			}
 			items, _, err := readLicenciaDiscountCodeAdminItems(dbSuper)
 			if err != nil {
-				http.Error(w, "no se pudieron leer los codigos: "+err.Error(), http.StatusInternalServerError)
+				http.Error(w, "no se pudieron leer los codigos", http.StatusInternalServerError)
 				return
 			}
 			found := false
@@ -178,7 +178,7 @@ func SuperLicenciasCodigosDescuentoHandler(dbSuper *sql.DB) http.HandlerFunc {
 				return
 			}
 			if err := saveLicenciaDiscountCodeAdminItems(dbSuper, items, admin.Email); err != nil {
-				http.Error(w, "no se pudo guardar el codigo: "+err.Error(), http.StatusInternalServerError)
+				http.Error(w, "no se pudo guardar el codigo", http.StatusInternalServerError)
 				return
 			}
 			writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "item": item})
@@ -190,7 +190,7 @@ func SuperLicenciasCodigosDescuentoHandler(dbSuper *sql.DB) http.HandlerFunc {
 			}
 			items, _, err := readLicenciaDiscountCodeAdminItems(dbSuper)
 			if err != nil {
-				http.Error(w, "no se pudieron leer los codigos: "+err.Error(), http.StatusInternalServerError)
+				http.Error(w, "no se pudieron leer los codigos", http.StatusInternalServerError)
 				return
 			}
 			next := items[:0]
@@ -207,7 +207,7 @@ func SuperLicenciasCodigosDescuentoHandler(dbSuper *sql.DB) http.HandlerFunc {
 				return
 			}
 			if err := saveLicenciaDiscountCodeAdminItems(dbSuper, next, admin.Email); err != nil {
-				http.Error(w, "no se pudo eliminar el codigo: "+err.Error(), http.StatusInternalServerError)
+				http.Error(w, "no se pudo eliminar el codigo", http.StatusInternalServerError)
 				return
 			}
 			writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true})
@@ -231,7 +231,7 @@ func handleLicenciaDiscountCodeEmail(w http.ResponseWriter, r *http.Request, dbS
 	}
 	items, _, err := readLicenciaDiscountCodeAdminItems(dbSuper)
 	if err != nil {
-		http.Error(w, "no se pudieron leer los codigos: "+err.Error(), http.StatusInternalServerError)
+		http.Error(w, "no se pudieron leer los codigos", http.StatusInternalServerError)
 		return
 	}
 	itemIndex := -1

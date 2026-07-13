@@ -745,7 +745,12 @@ Actualizacion 2026-05-12 (tickets de ayuda SaaS)
 - El endpoint empresarial valida alcance por `empresa_id`; el panel super consulta la bandeja central sin escribir en bases empresariales.
 - No se agregan motores, dependencias ni almacenamiento de archivos adjuntos.
 
-Actualizacion 2026-05-12 (retiro de Nextcloud y cuota DB)
+Actualizacion 2026-07-13 (Nextcloud empresarial reactivado; sustituye la nota de retiro de 2026-05-12)
+- `empresa_nextcloud_accounts` es la asignacion tecnica por `empresa_id`, con usuario unico, cuota por defecto de 1024 MB, estado de aprovisionamiento y FK `ON DELETE CASCADE`.
+- El arranque y la activacion global asignan el espacio a empresas existentes; la creacion de empresa asigna su fila automaticamente. Las credenciales administrativas se mantienen cifradas en `pcs_superadministrador.configuraciones`.
+- La eliminacion total elimina primero la cuenta remota OCS y despues la fila local y los archivos empresariales.
+
+Actualizacion 2026-05-12 (retiro historico de Nextcloud y cuota DB)
 - Se elimina el uso runtime de la tabla legacy `empresa_nextcloud_accounts`; el arranque ejecuta `DROP TABLE IF EXISTS empresa_nextcloud_accounts` para retirar credenciales antiguas de empresas.
 - Se eliminan las claves super `nextcloud.enabled`, `nextcloud.base_url`, `nextcloud.admin_user` y `nextcloud.admin_secret`.
 - No se crea una tabla nueva para cuotas. La configuracion `pcs_superadministrador.configuraciones.config_key='empresa.limitaciones.db.max_gb'` define el tamano maximo de base de datos asignado por empresa.
@@ -2165,7 +2170,7 @@ Actualizacion 2026-04-29 (auditoria como fuente de contexto IA)
 - 2026-05-19: `empresa_cierres_caja` cambia su unicidad operativa a `empresa_id, sucursal_id, caja_codigo, fecha_operacion, turno, usuario_creador`; en PostgreSQL se eliminan constraints e indices legacy sin usuario y se agrega `ux_empresa_cierres_caja_usuario_turno`, permitiendo que varios usuarios de la misma empresa manejen cajas/turnos independientes sin mezclar pagos, abonos, ingresos, egresos ni reportes.
 - 2026-07-05: `empresa_configuracion_general.cajas_simultaneas_habilitadas` y `max_cajas_simultaneas_empresa` gobiernan las cajas simultaneas por empresa. Las licencias ya no limitan cajas; `max_cajas_simultaneas` se conserva en `licencias` solo por compatibilidad historica y se normaliza a 0.
 - 2026-05-19: `empresa_impresoras` usa `POS_80MM` como codigo operativo predeterminado por empresa activa; `empresa_impresoras_funcionalidades` lo asigna a `general`, `corte_caja`, `turno_reporte` y `cajon_monedero` manteniendo indices unicos por `empresa_id`.
-- 2026-05-29: `empresa_email_corporativo` soporta provision directa `mailu_direct`; el backend conserva en `configuraciones.email_corporativo.direct_provision_command` la ruta del script operativo y marca `estado_provision='provisionado'` solo despues de crear/validar el buzon real en Mailu.
+- 2026-07-13: `empresa_email_corporativo` usa `mailu_api` como provisionamiento automatico preferido. El backend llama la API REST interna de Mailu con token configurado fuera del repositorio y marca `estado_provision='provisionado'` solo tras respuesta exitosa. `mailu_direct` queda solo como compatibilidad heredada y no se usa en produccion.
 - 2026-06-18: el sistema de correos automaticos deja Gmail como canal operativo y usa Mailu con remitentes de dominio propio: `ventas@powerfulcontrolsystem.com` para compras/activacion de licencias y `soporte@powerfulcontrolsystem.com` para alertas, invitaciones, recuperaciones y pruebas. No se agregan tablas; se reutiliza `empresa_email_corporativo` y `configuraciones.email_corporativo.*`.
 - 2026-05-28: se agrega `empresa_email_corporativo` en `pcs_superadministrador` para mapear cada empresa a un email corporativo unico bajo el dominio configurado. Guarda `empresa_id`, nombre, correo, dominio, webmail, estado de provision Mailu, intentos, ultimo error, clave inicial cifrada y trazabilidad. Tiene indices unicos activos por `empresa_id` y por `lower(email)` para evitar duplicados.
 - 2026-05-13: el aseguramiento ligero de `carritos_compras`, `carrito_compra_items` y `empresa_ventas_estacion_metricas` valida y completa ahora todas las columnas usadas por el listado operativo antes de marcar el esquema como listo, con cache por base/esquema PostgreSQL. Esto evita 500 en `/api/empresa/carritos_compra` cuando una empresa conserva migraciones rezagadas; no crea tablas nuevas ni cambia relaciones.
