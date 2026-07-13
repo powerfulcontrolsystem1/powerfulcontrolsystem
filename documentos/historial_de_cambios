@@ -1,3 +1,8 @@
+2026-07-13: Preparación para validación controlada de staging.
+- Se añaden matriz de evidencia, checklist de staging y rollback de producción
+  sin desplegar ni tocar datos reales. El cierre declara bloqueantes concretos
+  para migraciones, restauración, Docker/Linux, WebRTC, webhooks y carga.
+
 2026-07-13: Preparación staging - ampliación de redacción y retiro de diagnóstico inseguro.
 - Se retira `backend/tools/inspect_admin_login`, que permitía consultar datos
   administrativos y comprobar candidatos de contraseña fuera del flujo de

@@ -1,3 +1,11 @@
+2026-07-13 - Evidencia de preparacion para staging
+- `documentos/production_readiness_2026_07_13.md`: matriz de evidencia local,
+  riesgos residuales y bloqueantes verificables antes de produccion.
+- `documentos/staging_validation_checklist_2026_07_13.md`: checklist de pruebas
+  controladas para migraciones, tenants, archivos, pagos, WebRTC y resiliencia.
+- `documentos/rollback_production_2026_07_13.md`: procedimiento de rollback a
+  validar en staging, sin secretos ni instrucciones de despliegue implicito.
+
 2026-07-13 - Preparación staging: redacción ampliada y herramienta retirada
 - `backend/handlers/log_redaction.go`: redacción de PII, credenciales y
   cabeceras sensibles para trazas internas, incluyendo neutralización de saltos
