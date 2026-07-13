@@ -37684,3 +37684,8 @@ Archivos modificados:
 - Las rutas públicas que reciben el token temporal de archivo o callback de
   OnlyOffice emiten `Cache-Control: no-store`; la descarga también añade
   `nosniff` para impedir reutilización desde cachés compartidas.
+
+2026-07-13: CSRF compatible con aceptación pública de contrato.
+- La finalización de aceptación usa su payload cifrado y reCAPTCHA como flujo
+  público; una cookie vieja ya no la convierte erróneamente en mutación de
+  sesión ni bloquea el registro con una validación CSRF ajena al flujo.

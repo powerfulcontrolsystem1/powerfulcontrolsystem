@@ -457,7 +457,8 @@ func isCookieAuthenticatedMutation(r *http.Request) bool {
 	// stale cookie from an earlier browser session must not convert them into an
 	// authenticated mutation and block access before the handler can rotate it.
 	switch r.URL.Path {
-	case "/super/api/administradores/register",
+	case "/accept/complete",
+		"/super/api/administradores/register",
 		"/super/api/administradores/login",
 		"/super/api/administradores/solicitar_recuperacion",
 		"/super/api/administradores/restablecer_password",
