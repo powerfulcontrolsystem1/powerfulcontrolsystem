@@ -19,6 +19,8 @@ param(
   [switch]$PreviewOnly,
   [switch]$SkipPreflight,
   [switch]$FullPreflight,
+  [int]$ProtectedMainPRWaitSeconds = 900,
+  [switch]$NoAutoMergeProtectedPR,
   [int]$RestartHealthTimeoutSeconds = 900,
   [int]$DockerHealthTimeoutSeconds = 900,
   [bool]$CleanupRemoteUnusedFiles = $true,
@@ -98,10 +100,12 @@ function Invoke-Step {
 
 $updateArgs = @{
   Message = $Message
+  ProtectedMainPRWaitSeconds = $ProtectedMainPRWaitSeconds
 }
 if ($SkipChangeLog) { $updateArgs.SkipChangeLog = $true }
 if ($SetOrigin) { $updateArgs.SetOrigin = $true }
 if ($ForcePush) { $updateArgs.ForcePush = $true }
+if ($NoAutoMergeProtectedPR) { $updateArgs.NoAutoMergeProtectedPR = $true }
 
 $syncArgs = @{}
 if ($DryRun) { $syncArgs.DryRun = $true }

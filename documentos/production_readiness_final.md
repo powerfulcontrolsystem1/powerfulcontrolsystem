@@ -35,6 +35,21 @@ firmas de responsable.
 | Pruebas de Configuracion guiada y Nextcloud | Correctas. |
 | Pruebas CSRF del middleware | Correctas. |
 | `git diff --check` | Correcta al cierre de la edicion. |
+| `go mod verify` | Correcta el 2026-07-13. |
+| `go test ./...` y `go vet ./...` | Correctas el 2026-07-13. |
+| Preflight profesional completo | Correcto el 2026-07-13. |
+| `go test -race ./...` | No ejecutable en esta estacion: CGO esta deshabilitado y no hay compilador C. Gate obligatorio de CI/Linux. |
+| `govulncheck -show verbose ./...` | Sin vulnerabilidades alcanzables; permanece un aviso informativo de `openpgp` no alcanzable y sin correccion publicada. |
+| `gosec ./...` | Inconcluso localmente: se detuvo sin resultado final tras superar el tiempo operativo y 400 MB de memoria. Gate obligatorio de CI/Linux. |
+
+## Controles operativos corregidos
+
+- Los scripts de backup, restauracion y release gate ya no contactan una VPS
+  remota por defecto. Requieren `-AllowRemoteTarget` luego de validar que el
+  destino es staging aislado o una operacion expresamente autorizada.
+- Cuando `main` esta protegida, `rs` crea una PR, solicita auto-merge y espera
+  las verificaciones y aprobacion independiente. No sincroniza la VPS antes de
+  que GitHub confirme la fusion.
 
 ## Evidencia publicada adicional
 

@@ -12,7 +12,10 @@ param(
     [string]$RepoUrl = "",
     [switch]$SkipChangeLog,
     [switch]$ForcePush,
-    [switch]$SetOrigin
+    [switch]$SetOrigin,
+    [bool]$CreateProtectedMainPR = $true,
+    [int]$ProtectedMainPRWaitSeconds = 900,
+    [switch]$NoAutoMergeProtectedPR
 )
 
 $__arDir = Split-Path -Parent $MyInvocation.MyCommand.Path
@@ -242,6 +245,110 @@ function Push-WithPolicy {
     }
 }
 
+function Test-ProtectedBranchRejection {
+    param([string]$Output)
+
+    return $Output -match 'Protected branch update failed|Changes must be made through a pull request|protected branch hook declined'
+}
+
+function Invoke-ProtectedMainPullRequest {
+    param(
+        [Parameter(Mandatory = $true)][string]$BaseBranch,
+        [Parameter(Mandatory = $true)][string]$CommitMessage,
+        [int]$WaitSeconds,
+        [switch]$DisableAutoMerge
+    )
+
+    if (-not (Get-Command gh -ErrorAction SilentlyContinue)) {
+        throw "GitHub CLI no esta disponible para crear la PR requerida por la rama protegida."
+    }
+    & gh auth status *> $null
+    if ($LASTEXITCODE -ne 0) {
+        throw "GitHub CLI no tiene una sesion valida para crear la PR requerida por la rama protegida."
+    }
+
+    $stamp = Get-Date -Format "yyyyMMdd-HHmmss"
+    $prBranch = "codex/rs-$stamp"
+    Write-Info "La rama $BaseBranch esta protegida. Creando rama de publicacion $prBranch."
+    & git switch -c $prBranch
+    if ($LASTEXITCODE -ne 0) {
+        throw "No se pudo crear la rama temporal de publicacion $prBranch."
+    }
+    & git push -u origin $prBranch
+    if ($LASTEXITCODE -ne 0) {
+        throw "No se pudo publicar la rama temporal $prBranch."
+    }
+
+    $body = @(
+        "## Publicacion automatizada por rs",
+        "",
+        "Esta PR fue creada porque GitHub protege `'$BaseBranch'`. No omite revisiones ni checks obligatorios.",
+        "",
+        "- Commit local: ``$(git rev-parse --short HEAD)``",
+        "- Auto-merge solicitado: ``$(-not $DisableAutoMerge)``",
+        "- No se sincroniza la VPS hasta que GitHub confirme la fusion."
+    ) -join "`n"
+    $prUrl = (& gh pr create --base $BaseBranch --head $prBranch --title $CommitMessage --body $body 2>&1 | Select-Object -Last 1).ToString().Trim()
+    if ($LASTEXITCODE -ne 0 -or [string]::IsNullOrWhiteSpace($prUrl)) {
+        throw "No se pudo crear la PR de publicacion para la rama protegida."
+    }
+    Write-Info "PR creada: $prUrl"
+
+    if (-not $DisableAutoMerge) {
+        & gh pr merge $prUrl --auto --squash --delete-branch 2>&1 | ForEach-Object { Write-Info $_.ToString() }
+        if ($LASTEXITCODE -ne 0) {
+            Write-WarnMsg "No fue posible activar auto-merge. GitHub puede requerir que un responsable lo habilite una vez."
+        } else {
+            Write-Ok "Auto-merge solicitado: GitHub fusionara solo despues de aprobacion independiente y checks verdes."
+        }
+    }
+
+    if ($WaitSeconds -le 0) {
+        return [pscustomobject]@{ Merged = $false; Pending = $true; Url = $prUrl }
+    }
+
+    $deadline = (Get-Date).AddSeconds($WaitSeconds)
+    while ((Get-Date) -lt $deadline) {
+        $stateJson = & gh pr view $prUrl --json state,mergedAt --jq '{state:.state,mergedAt:.mergedAt}' 2>$null
+        if ($LASTEXITCODE -eq 0 -and -not [string]::IsNullOrWhiteSpace($stateJson)) {
+            $state = $stateJson | ConvertFrom-Json
+            if ($state.state -eq 'MERGED') {
+                & git switch $BaseBranch
+                if ($LASTEXITCODE -ne 0) {
+                    throw "La PR fue fusionada, pero no se pudo volver a $BaseBranch."
+                }
+                & git pull --ff-only origin $BaseBranch
+                if ($LASTEXITCODE -ne 0) {
+                    throw "La PR fue fusionada, pero no se pudo actualizar $BaseBranch localmente."
+                }
+                Write-Ok "PR fusionada por GitHub. $BaseBranch quedo actualizado para continuar con rs."
+                return [pscustomobject]@{ Merged = $true; Pending = $false; Url = $prUrl }
+            }
+        }
+        Start-Sleep -Seconds 10
+    }
+
+    return [pscustomobject]@{ Merged = $false; Pending = $true; Url = $prUrl }
+}
+
+function Resolve-ProtectedMainPush {
+    param(
+        [string]$Branch,
+        [pscustomobject]$PushResult,
+        [string]$CommitMessage
+    )
+
+    if ($Branch -ne 'main' -or -not $CreateProtectedMainPR -or -not (Test-ProtectedBranchRejection -Output $PushResult.Result.Output)) {
+        return $null
+    }
+    $flow = Invoke-ProtectedMainPullRequest -BaseBranch 'main' -CommitMessage $CommitMessage -WaitSeconds $ProtectedMainPRWaitSeconds -DisableAutoMerge:$NoAutoMergeProtectedPR
+    if ($flow.Merged) {
+        return $flow
+    }
+    Write-WarnMsg "La PR requiere aprobacion independiente o checks pendientes: $($flow.Url)"
+    return $flow
+}
+
 Write-Step "1/8 Verificando herramientas y repositorio"
 if (-not (Get-Command git -ErrorAction SilentlyContinue)) {
     Write-ErrMsg "Git no esta disponible en PATH. Instala Git o ejecuta manualmente los comandos de git."
@@ -318,6 +425,15 @@ if ($statusLines.Count -eq 0) {
     }
     $cleanPush = Push-WithPolicy -AllowForce:$ForcePush -SetUpstream -Context "rama limpia"
     if (-not $cleanPush.Ok) {
+        $protectedFlow = Resolve-ProtectedMainPush -Branch $branch -PushResult $cleanPush -CommitMessage $Message
+        if ($null -ne $protectedFlow) {
+            if ($protectedFlow.Merged) {
+                Write-Ok "Publicacion por PR protegida completada."
+                Exit-WithCode 0
+            }
+            Write-WarnMsg "No se sincroniza la VPS hasta que GitHub fusione la PR protegida."
+            Exit-WithCode 2
+        }
         Write-ErrMsg "No se pudo verificar o publicar la rama limpia en origin."
         if ($cleanPush.Result.Output) {
             Write-Host $cleanPush.Result.Output
@@ -389,6 +505,15 @@ Write-Info "Remoto origin: $originUrl"
 
 $mainPush = Push-WithPolicy -AllowForce:$ForcePush -SetUpstream -Context "commit principal"
 if (-not $mainPush.Ok) {
+    $protectedFlow = Resolve-ProtectedMainPush -Branch $branch -PushResult $mainPush -CommitMessage $Message
+    if ($null -ne $protectedFlow) {
+        if ($protectedFlow.Merged) {
+            Write-Ok "Publicacion por PR protegida completada."
+            Exit-WithCode 0
+        }
+        Write-WarnMsg "No se sincroniza la VPS hasta que GitHub fusione la PR protegida."
+        Exit-WithCode 2
+    }
     Write-ErrMsg "No se pudo subir el commit principal al remoto."
     if ($mainPush.Result.Output) {
         Write-Host $mainPush.Result.Output

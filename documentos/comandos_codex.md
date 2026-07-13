@@ -90,6 +90,18 @@ evita que un `exit` de preflight, actualizacion o sincronizacion cierre el
 orquestador antes de los pasos restantes; el codigo de salida se conserva y
 detiene el flujo solo cuando el paso correspondiente falla.
 
+Si GitHub protege `main` y rechaza el push directo, `actualizar_repositorio.ps1`
+crea una rama `codex/rs-...`, abre la PR y solicita `auto-merge`. Nunca se
+autoaprueba ni evita checks: GitHub solo la fusiona despues de una aprobacion
+independiente y verificaciones verdes. `rs` espera hasta 900 segundos por
+defecto; mientras la PR siga pendiente termina sin sincronizar la VPS. Para
+ajustar la espera o desactivar auto-merge:
+
+```powershell
+.\scripts\rs.ps1 -ProtectedMainPRWaitSeconds 1800
+.\scripts\rs.ps1 -NoAutoMergeProtectedPR
+```
+
 El hijo se resuelve como `pwsh.exe` cuando el orquestador se ejecuta en
 PowerShell Core y como `powershell.exe` en Windows PowerShell, con fallback a
 un comando instalado. No se debe asumir que `$PSHOME` contiene ambos binarios.
@@ -118,6 +130,12 @@ en una carpeta nueva bajo:
 ```text
 D:\Backup vps PCS
 ```
+
+Los scripts operativos `vps_backup_operacion.ps1` y
+`vps_restore_validation.ps1` no contactan ningun servidor por defecto. Exigen
+`-AllowRemoteTarget` despues de confirmar que el destino es staging aislado o
+una operacion remota expresamente autorizada. La compuerta `release_gate.ps1`
+aplica la misma regla.
 
 Cada backup incluye inventario del VPS, dump logico PostgreSQL, imagenes Docker
 locales PCS, volumenes Docker, archivos del proyecto filtrados, SHA256, manifest

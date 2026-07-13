@@ -5,6 +5,7 @@
 
 param(
   [switch]$SkipRemoteBackup,
+  [switch]$AllowRemoteTarget,
   [switch]$SkipRestoreDrill,
   [switch]$SkipE2E,
   [switch]$SkipLoadSmoke,
@@ -21,13 +22,17 @@ try {
   & .\scripts\profesional_preflight.ps1 -Full
   if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
+  if (-not $SkipRemoteBackup -and -not $AllowRemoteTarget) {
+    throw "La validacion remota esta bloqueada por seguridad. Ejecuta con -AllowRemoteTarget solo para un destino aislado o autorizado; usa -SkipRemoteBackup para una compuerta local."
+  }
+
   if (-not $SkipRemoteBackup) {
-    & .\scripts\vps_backup_operacion.ps1
+    & .\scripts\vps_backup_operacion.ps1 -AllowRemoteTarget
     if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
     if ($SkipRestoreDrill) {
-      & .\scripts\vps_restore_validation.ps1
+      & .\scripts\vps_restore_validation.ps1 -AllowRemoteTarget
     } else {
-      & .\scripts\vps_restore_validation.ps1 -ExecuteDrill
+      & .\scripts\vps_restore_validation.ps1 -ExecuteDrill -AllowRemoteTarget
     }
     if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
   }
