@@ -251,6 +251,21 @@ function Test-ProtectedBranchRejection {
     return $Output -match 'Protected branch update failed|Changes must be made through a pull request|protected branch hook declined'
 }
 
+function Enable-RepositoryAutoMergeIfAllowed {
+    $repo = (& gh repo view --json nameWithOwner --jq '.nameWithOwner' 2>$null | Select-Object -Last 1).ToString().Trim()
+    if ([string]::IsNullOrWhiteSpace($repo) -or $LASTEXITCODE -ne 0) {
+        Write-WarnMsg "No fue posible identificar el repositorio para habilitar auto-merge."
+        return $false
+    }
+    & gh api --method PATCH "repos/$repo" -f allow_auto_merge=true *> $null
+    if ($LASTEXITCODE -ne 0) {
+        Write-WarnMsg "GitHub no permitio habilitar auto-merge automaticamente para este repositorio."
+        return $false
+    }
+    Write-Ok "Auto-merge habilitado en GitHub sin modificar las reglas de aprobacion ni checks."
+    return $true
+}
+
 function Invoke-ProtectedMainPullRequest {
     param(
         [Parameter(Mandatory = $true)][string]$BaseBranch,
@@ -295,9 +310,17 @@ function Invoke-ProtectedMainPullRequest {
     Write-Info "PR creada: $prUrl"
 
     if (-not $DisableAutoMerge) {
-        & gh pr merge $prUrl --auto --squash --delete-branch 2>&1 | ForEach-Object { Write-Info $_.ToString() }
+        $mergeOutput = @(& gh pr merge $prUrl --auto --squash --delete-branch 2>&1 | ForEach-Object { $_.ToString() })
         if ($LASTEXITCODE -ne 0) {
-            Write-WarnMsg "No fue posible activar auto-merge. GitHub puede requerir que un responsable lo habilite una vez."
+            if (($mergeOutput -join "`n") -match 'Auto merge is not allowed' -and (Enable-RepositoryAutoMergeIfAllowed)) {
+                $mergeOutput = @(& gh pr merge $prUrl --auto --squash --delete-branch 2>&1 | ForEach-Object { $_.ToString() })
+            }
+            if ($LASTEXITCODE -ne 0) {
+                $mergeOutput | ForEach-Object { Write-Info $_ }
+                Write-WarnMsg "No fue posible activar auto-merge. La PR conserva las protecciones de GitHub."
+            } else {
+                Write-Ok "Auto-merge solicitado: GitHub fusionara solo despues de aprobacion independiente y checks verdes."
+            }
         } else {
             Write-Ok "Auto-merge solicitado: GitHub fusionara solo despues de aprobacion independiente y checks verdes."
         }

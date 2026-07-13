@@ -93,7 +93,9 @@ detiene el flujo solo cuando el paso correspondiente falla.
 Si GitHub protege `main` y rechaza el push directo, `actualizar_repositorio.ps1`
 crea una rama `codex/rs-...`, abre la PR y solicita `auto-merge`. Nunca se
 autoaprueba ni evita checks: GitHub solo la fusiona despues de una aprobacion
-independiente y verificaciones verdes. `rs` espera hasta 900 segundos por
+independiente y verificaciones verdes. Si el repositorio permite administracion
+por GitHub CLI pero tiene Auto-merge desactivado, el script lo habilita sin
+cambiar las reglas de proteccion. `rs` espera hasta 900 segundos por
 defecto; mientras la PR siga pendiente termina sin sincronizar la VPS. Para
 ajustar la espera o desactivar auto-merge:
 
