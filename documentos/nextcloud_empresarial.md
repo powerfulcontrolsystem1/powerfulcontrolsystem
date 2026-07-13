@@ -39,7 +39,12 @@ de VPS2. La cuenta remota se aprovisiona de forma idempotente con OCS.
 1. Copiar `deploy/nextcloud/.env.example` a `deploy/nextcloud/.env` en el VPS.
 2. Crear tres archivos de secreto fuera del repositorio con `chmod 600`.
 3. Definir dominio, reverse proxy, ruta `NEXTCLOUD_DATA_PATH` y proxies fiables.
-4. Ejecutar `bash deploy/scripts/vps-nextcloud-up.sh`.
+4. Validar y levantar el stack empresarial administrado en el VPS con
+   `docker compose --env-file deploy/nextcloud/.env -f deploy/nextcloud/docker-compose.yml config --quiet`
+   y, despues de un backup verificado, `up -d`. El compose heredado se mantiene
+   fuera del repositorio hasta completar su migracion controlada; no se debe
+   sustituir por archivos locales ni cambiar su motor de datos durante una
+   reparacion.
 5. Ejecutar `bash scripts/provision_nextcloud_service_account.sh /root/powerfulcontrolsystem`
    para crear o rotar la cuenta OCS exclusiva `pcs_ocs_service`. El script no
    imprime la contrasena; la registra como variable root-readable y el backend
