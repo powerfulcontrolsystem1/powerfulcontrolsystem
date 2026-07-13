@@ -37622,3 +37622,9 @@ Archivos modificados:
 - reCAPTCHA y OnlyOffice ya no devuelven detalles de cifrado, claves de
   configuración o persistencia en respuestas 5xx. Las validaciones de formato
   se mantienen en 400 y una prueba protege ambas rutas.
+
+2026-07-13: Pasarelas de pago con errores administrativos saneados.
+- Los handlers de configuración de Wompi y ePayco ya no concatenan errores de
+  cifrado, persistencia o valores de entorno a sus respuestas de configuración.
+  Se conservan las validaciones de formato de llaves y una regresión protege los
+  mensajes sensibles de estas rutas administrativas.
