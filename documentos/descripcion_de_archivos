@@ -1,3 +1,9 @@
+2026-07-13 - Minimizacion de PII en logs
+- `backend/handlers/log_redaction.go`: enmascarador interno de correos para logs
+  de seguridad y operaciones, sin cambiar respuestas ni contratos de API.
+- `backend/handlers/log_redaction_test.go`: regresión de enmascaramiento y de
+  retiro del acceso heredado a secretos/sesiones de pagos.
+
 2026-07-11 - Endurecimiento de seguridad aislado
 - `SECURITY.md`: politica de divulgacion responsable, manejo de incidentes y regla de secretos.
 - `.github/CODEOWNERS`: propietario obligatorio para autenticacion, pagos, base de datos, Docker y CI.

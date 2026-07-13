@@ -761,7 +761,7 @@ func EmpresaPermisosContextoHandler(dbSuper *sql.DB) http.HandlerFunc {
 		modulos = applyEmpresaRestriccionesToModuleRows(modulos, empresaModuleOverrides)
 		sharedAccess, sharedAccessErr := dbpkg.GetActiveAdminEmpresaCompartidaAcceso(dbSuper, empresaID, adminEmail)
 		if sharedAccessErr != nil {
-			log.Printf("[authz] permisos_contexto acceso_compartido empresa=%d email=%s error: %v", empresaID, adminEmail, sharedAccessErr)
+			log.Printf("[authz] permisos_contexto acceso_compartido empresa=%d email=%s error: %v", empresaID, redactEmailForLog(adminEmail), sharedAccessErr)
 		}
 		if sharedAccessErr == nil {
 			modulos = applyAdminEmpresaCompartidaScopeToModuleRows(modulos, sharedAccess)
@@ -833,7 +833,7 @@ func resolveAdminPermissionRoleForContext(dbSuper *sql.DB, adminEmail, rawRole s
 		if err == nil && admin != nil {
 			role = normalizePermissionRole(utils.ManagedAdminRole(admin.Email, admin.Role))
 		} else if err != nil && !errors.Is(err, sql.ErrNoRows) {
-			log.Printf("[authz] permisos_contexto get admin email=%s error: %v", adminEmail, err)
+			log.Printf("[authz] permisos_contexto get admin email=%s error: %v", redactEmailForLog(adminEmail), err)
 		}
 	}
 	return role
@@ -1281,7 +1281,7 @@ func WithEmpresaSelfServicePermissions(dbEmp, dbSuper *sql.DB, next http.Handler
 		}
 		canAccess, err := dbpkg.CanAdminAccessEmpresaIA(dbEmp, dbSuper, adminEmail, empresaID)
 		if err != nil {
-			log.Printf("[authz] self-service empresa=%d email=%s error: %v", empresaID, adminEmail, err)
+			log.Printf("[authz] self-service empresa=%d email=%s error: %v", empresaID, redactEmailForLog(adminEmail), err)
 			http.Error(w, "No se pudo validar el alcance del usuario", http.StatusInternalServerError)
 			return
 		}
@@ -1429,14 +1429,14 @@ func withEmpresaRolePermissions(dbEmp, dbSuper *sql.DB, module string, resolveAc
 
 		snapshotStartedAt := time.Now()
 		snapshot, err := getEmpresaPermissionSnapshot(dbEmp, dbSuper, adminEmail, empresaID)
-		dbpkg.PerfLogf("[perf][authz] module=%s snapshot empresa=%d email=%s dur=%s", module, empresaID, adminEmail, time.Since(snapshotStartedAt))
+		dbpkg.PerfLogf("[perf][authz] module=%s snapshot empresa=%d email=%s dur=%s", module, empresaID, redactEmailForLog(adminEmail), time.Since(snapshotStartedAt))
 		if err != nil {
 			if errors.Is(err, sql.ErrNoRows) {
 				http.Error(w, "unauthenticated", http.StatusUnauthorized)
 				registrarAuditoriaOperacionNoBloqueante(dbEmp, r, empresaID, module, action, http.StatusUnauthorized, 0)
 				return
 			}
-			log.Printf("[authz] snapshot module=%s email=%s empresa_id=%d error: %v", module, adminEmail, empresaID, err)
+			log.Printf("[authz] snapshot module=%s email=%s empresa_id=%d error: %v", module, redactEmailForLog(adminEmail), empresaID, err)
 			http.Error(w, "No se pudo validar permisos del usuario", http.StatusInternalServerError)
 			registrarAuditoriaOperacionNoBloqueante(dbEmp, r, empresaID, module, action, http.StatusInternalServerError, 0)
 			return
@@ -3869,7 +3869,7 @@ func resolvePermissionPageKeyForRequest(r *http.Request) string {
 func getEmpresaPermissionSnapshot(dbEmp, dbSuper *sql.DB, adminEmail string, empresaID int64) (empresaPermissionSnapshot, error) {
 	startedAt := time.Now()
 	defer func() {
-		dbpkg.PerfLogf("[perf][authz] getEmpresaPermissionSnapshot empresa=%d email=%s dur=%s", empresaID, strings.ToLower(strings.TrimSpace(adminEmail)), time.Since(startedAt))
+		dbpkg.PerfLogf("[perf][authz] getEmpresaPermissionSnapshot empresa=%d email=%s dur=%s", empresaID, redactEmailForLog(adminEmail), time.Since(startedAt))
 	}()
 	cacheKey := strings.ToLower(strings.TrimSpace(adminEmail)) + "|" + strconv.FormatInt(empresaID, 10)
 	if strings.TrimSpace(adminEmail) == "" || empresaID <= 0 {
@@ -3905,7 +3905,7 @@ func getEmpresaPermissionSnapshot(dbEmp, dbSuper *sql.DB, adminEmail string, emp
 		snapshotErr = err
 		return empresaPermissionSnapshot{}, err
 	}
-	dbpkg.PerfLogf("[perf][authz] snapshot empresa=%d email=%s step=admin dur=%s", empresaID, strings.ToLower(strings.TrimSpace(adminEmail)), time.Since(stepStarted))
+	dbpkg.PerfLogf("[perf][authz] snapshot empresa=%d email=%s step=admin dur=%s", empresaID, redactEmailForLog(adminEmail), time.Since(stepStarted))
 	if utils.AdminShouldUseSuperRole(adminEmail) {
 		if err := dbpkg.PurgeReservedSuperAdminEmpresaUsuarios(dbEmp); err != nil {
 			log.Printf("[authz] no se pudo purgar usuario operativo reservado: %v", err)
@@ -3937,35 +3937,35 @@ func getEmpresaPermissionSnapshot(dbEmp, dbSuper *sql.DB, adminEmail string, emp
 		defer snapshotWG.Done()
 		step := time.Now()
 		canAccess, canAccessErr = dbpkg.CanAdminAccessEmpresaIA(dbEmp, dbSuper, adminEmail, empresaID)
-		dbpkg.PerfLogf("[perf][authz] snapshot empresa=%d email=%s step=access dur=%s", empresaID, strings.ToLower(strings.TrimSpace(adminEmail)), time.Since(step))
+		dbpkg.PerfLogf("[perf][authz] snapshot empresa=%d email=%s step=access dur=%s", empresaID, redactEmailForLog(adminEmail), time.Since(step))
 	}()
 
 	go func() {
 		defer snapshotWG.Done()
 		step := time.Now()
 		licenciaPolicy, licenciaErr = dbpkg.GetLicenciaPermisoPolicyByEmpresa(dbSuper, empresaID)
-		dbpkg.PerfLogf("[perf][authz] snapshot empresa=%d email=%s step=licencia dur=%s", empresaID, strings.ToLower(strings.TrimSpace(adminEmail)), time.Since(step))
+		dbpkg.PerfLogf("[perf][authz] snapshot empresa=%d email=%s step=licencia dur=%s", empresaID, redactEmailForLog(adminEmail), time.Since(step))
 	}()
 
 	go func() {
 		defer snapshotWG.Done()
 		step := time.Now()
 		moduleRows = buildPermissionModuleMatrixForRoleDynamic(dbSuper, role)
-		dbpkg.PerfLogf("[perf][authz] snapshot empresa=%d email=%s step=module_rows dur=%s", empresaID, strings.ToLower(strings.TrimSpace(adminEmail)), time.Since(step))
+		dbpkg.PerfLogf("[perf][authz] snapshot empresa=%d email=%s step=module_rows dur=%s", empresaID, redactEmailForLog(adminEmail), time.Since(step))
 	}()
 
 	go func() {
 		defer snapshotWG.Done()
 		step := time.Now()
 		empresaModuleOverrides, empresaPageOverrides, _ = loadEmpresaPermissionOverrides(dbSuper, empresaID)
-		dbpkg.PerfLogf("[perf][authz] snapshot empresa=%d email=%s step=empresa_overrides dur=%s", empresaID, strings.ToLower(strings.TrimSpace(adminEmail)), time.Since(step))
+		dbpkg.PerfLogf("[perf][authz] snapshot empresa=%d email=%s step=empresa_overrides dur=%s", empresaID, redactEmailForLog(adminEmail), time.Since(step))
 	}()
 
 	go func() {
 		defer snapshotWG.Done()
 		step := time.Now()
 		sharedAccess, sharedAccessErr = dbpkg.GetActiveAdminEmpresaCompartidaAcceso(dbSuper, empresaID, adminEmail)
-		dbpkg.PerfLogf("[perf][authz] snapshot empresa=%d email=%s step=shared_scope dur=%s", empresaID, strings.ToLower(strings.TrimSpace(adminEmail)), time.Since(step))
+		dbpkg.PerfLogf("[perf][authz] snapshot empresa=%d email=%s step=shared_scope dur=%s", empresaID, redactEmailForLog(adminEmail), time.Since(step))
 	}()
 
 	snapshotWG.Wait()
@@ -3991,7 +3991,7 @@ func getEmpresaPermissionSnapshot(dbEmp, dbSuper *sql.DB, adminEmail string, emp
 	if effectiveRole != role {
 		stepStarted = time.Now()
 		moduleRows = buildPermissionModuleMatrixForRoleDynamic(dbSuper, effectiveRole)
-		dbpkg.PerfLogf("[perf][authz] snapshot empresa=%d email=%s step=module_rows_effective dur=%s", empresaID, strings.ToLower(strings.TrimSpace(adminEmail)), time.Since(stepStarted))
+		dbpkg.PerfLogf("[perf][authz] snapshot empresa=%d email=%s step=module_rows_effective dur=%s", empresaID, redactEmailForLog(adminEmail), time.Since(stepStarted))
 	}
 	moduleRows = applyLicenciaRestriccionesToModuleRows(moduleRows, allowedModules)
 	moduleRows = applyEmpresaVerticalScopeToModuleRows(moduleRows, verticalScope)
@@ -4000,7 +4000,7 @@ func getEmpresaPermissionSnapshot(dbEmp, dbSuper *sql.DB, adminEmail string, emp
 	moduleRows = restrictPermissionModuleRowsForOperationalRole(effectiveRole, moduleRows)
 	stepStarted = time.Now()
 	allowedPages := buildPermissionPagesMapForRoleDynamic(dbSuper, effectiveRole, moduleRows)
-	dbpkg.PerfLogf("[perf][authz] snapshot empresa=%d email=%s step=allowed_pages dur=%s", empresaID, strings.ToLower(strings.TrimSpace(adminEmail)), time.Since(stepStarted))
+	dbpkg.PerfLogf("[perf][authz] snapshot empresa=%d email=%s step=allowed_pages dur=%s", empresaID, redactEmailForLog(adminEmail), time.Since(stepStarted))
 	allowedPages = applyEmpresaPageRestrictionsToMap(allowedPages, empresaPageOverrides)
 	allowedPages = restrictPermissionPagesForOperationalRole(effectiveRole, allowedPages)
 	allowedPages = applyEmpresaOperativaFinanzasManualPages(dbEmp, empresaID, effectiveRole, allowedPages)

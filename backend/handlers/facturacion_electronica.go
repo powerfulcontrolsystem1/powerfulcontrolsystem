@@ -1496,7 +1496,7 @@ func enviarFacturaElectronicaAlCliente(dbEmp, dbSuper *sql.DB, payload facturaci
 	resultado.Destinatario = emailCliente
 	if err := sendFacturaElectronicaEmail(dbSuper, emailCliente, nombreCliente, doc, payload); err != nil {
 		resultado.Error = err.Error()
-		log.Printf("[facturacion_electronica] envio correo fallido empresa_id=%d documento=%s destinatario=%s error=%v", payload.EmpresaID, payload.DocumentoCodigo, emailCliente, err)
+		log.Printf("[facturacion_electronica] envio correo fallido empresa_id=%d documento=%s destinatario=%s error=%v", payload.EmpresaID, payload.DocumentoCodigo, redactEmailForLog(emailCliente), err)
 		return resultado
 	}
 

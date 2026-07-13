@@ -2,6 +2,17 @@
 
 Estado: validación final en `security/full-hardening-clean-20260712`; no desplegado.
 
+Actualizacion 2026-07-13: auditoria local de preparación
+
+- Se eliminó `backend/tools/query_epayco_runtime.go`, una utilidad heredada que
+  leía DSN, configuraciones de pago y sesiones. El diagnóstico debe pasar por
+  las APIs superadministrador auditadas.
+- Los logs de autenticación, permisos, usuarios empresariales, descuentos,
+  facturación y estación de aseo enmascaran correos. Ningún registro nuevo debe
+  persistir una dirección completa de cliente, empleado o administrador.
+- Cobertura: `log_redaction_test.go` comprueba el enmascaramiento y evita que la
+  utilidad heredada recupere patrones de acceso a secretos o sesiones.
+
 ## Linea base
 
 - `go test ./...` paso antes de los cambios.
