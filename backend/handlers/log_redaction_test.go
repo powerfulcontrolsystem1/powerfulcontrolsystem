@@ -248,3 +248,15 @@ func TestIARadioDoesNotExposePersistenceErrors(t *testing.T) {
 		t.Fatal("IA radio handler must not expose persistence errors")
 	}
 }
+
+func TestDiscountCodesDoNotExposePersistenceErrors(t *testing.T) {
+	contents, err := os.ReadFile("licencias_codigos_descuento.go")
+	if err != nil {
+		t.Fatalf("read discount code handler: %v", err)
+	}
+	for _, value := range []string{`"no se pudieron leer los codigos: "+err.Error()`, `"no se pudo guardar el codigo: "+err.Error()`, `"no se pudo eliminar el codigo: "+err.Error()`} {
+		if strings.Contains(string(contents), value) {
+			t.Fatalf("discount code handler exposes persistence error: %s", value)
+		}
+	}
+}
