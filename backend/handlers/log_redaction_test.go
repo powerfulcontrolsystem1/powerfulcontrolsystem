@@ -110,3 +110,119 @@ func TestProviderMailFailuresDoNotLogProviderErrors(t *testing.T) {
 		}
 	}
 }
+
+func TestRemoteSupportConfigurationDoesNotExposePersistenceErrors(t *testing.T) {
+	contents, err := os.ReadFile("super_soporte_remoto.go")
+	if err != nil {
+		t.Fatalf("read remote support handler: %v", err)
+	}
+	if strings.Contains(string(contents), "No se pudo guardar configuracion de soporte remoto: \"+err.Error()") {
+		t.Fatal("remote support configuration must not expose persistence errors")
+	}
+}
+
+func TestCompanyConfigurationHandlersDoNotExposePersistenceErrors(t *testing.T) {
+	for path, forbidden := range map[string][]string{
+		"configuracion_guiada.go": {
+			"no se pudo cargar la configuracion guiada: \"+err.Error()",
+			"no se pudo cargar el contexto guiado: \"+err.Error()",
+			"no se pudo posponer la configuracion guiada: \"+err.Error()",
+			"no se pudo aplicar la configuracion guiada: \"+err.Error()",
+		},
+		"panel_empresa_config.go": {
+			"no se pudo guardar favoritos: \"+err.Error()",
+			"no se pudo guardar email corporativo: \"+err.Error()",
+			"no se pudo guardar noticias: \"+err.Error()",
+			"no se pudo guardar buzon: \"+err.Error()",
+			"no se pudo guardar chat: \"+err.Error()",
+		},
+	} {
+		contents, err := os.ReadFile(path)
+		if err != nil {
+			t.Fatalf("read %s: %v", path, err)
+		}
+		for _, value := range forbidden {
+			if strings.Contains(string(contents), value) {
+				t.Fatalf("company configuration handler must not expose persistence error: %s", path)
+			}
+		}
+	}
+}
+
+func TestAIConfigurationDoesNotExposeCredentialOrProviderDiagnostics(t *testing.T) {
+	contents, err := os.ReadFile("ai_config_handlers.go")
+	if err != nil {
+		t.Fatalf("read AI configuration handler: %v", err)
+	}
+	for _, forbidden := range []string{
+		`"error":          err.Error()`,
+		`publicErr = err.Error()`,
+		`publicErr = perr.Error()`,
+		`"failed to save "+superAIEnabledConfigKey+": "+err.Error()`,
+		`"encryption failed: "+err.Error()`,
+		`"failed to save provider key "+providerKey+": "+err.Error()`,
+	} {
+		if strings.Contains(string(contents), forbidden) {
+			t.Fatalf("AI configuration must not expose internal or provider diagnostic: %s", forbidden)
+		}
+	}
+}
+
+func TestCorporateEmailDoesNotExposeProvisionOrAutologinDiagnostics(t *testing.T) {
+	contents, err := os.ReadFile("email_corporativo_handlers.go")
+	if err != nil {
+		t.Fatalf("read corporate email handler: %v", err)
+	}
+	for _, forbidden := range []string{
+		`"Autologin no disponible: " + err.Error()`,
+		`"No se pudo guardar configuracion: "+err.Error()`,
+		`"El buzon corporativo todavia no pudo provisionarse en Mailu: "+result.Error`,
+		`"No se pudo iniciar sesion automaticamente en la bandeja de correo. "+redirectErr.Error()`,
+		`"No se pudo iniciar sesion automaticamente en la bandeja de correo. "+err.Error()`,
+	} {
+		if strings.Contains(string(contents), forbidden) {
+			t.Fatalf("corporate email must not expose provision or autologin diagnostic: %s", forbidden)
+		}
+	}
+}
+
+func TestPrivilegedIntegrationConfigurationsDoNotExposePersistenceErrors(t *testing.T) {
+	for path, forbidden := range map[string][]string{
+		"recaptcha.go": {
+			`"failed to save "+superRecaptchaEnabledConfigKey+": "+err.Error()`,
+			`"failed to encrypt "+superRecaptchaSecretKeyConfigKey+": "+err.Error()`,
+		},
+		"onlyoffice_super_config.go": {
+			`"No se pudo guardar onlyoffice.enabled: "+err.Error()`,
+			`"No se pudo cifrar jwt_secret: "+err.Error()`,
+			`"No se pudo guardar onlyoffice.jwt_secret: "+err.Error()`,
+		},
+	} {
+		contents, err := os.ReadFile(path)
+		if err != nil {
+			t.Fatalf("read %s: %v", path, err)
+		}
+		for _, value := range forbidden {
+			if strings.Contains(string(contents), value) {
+				t.Fatalf("privileged integration configuration must not expose persistence error: %s", path)
+			}
+		}
+	}
+}
+
+func TestPaymentConfigurationsDoNotExposeSecretsOrPersistenceErrors(t *testing.T) {
+	contents, err := os.ReadFile("payments_handlers.go")
+	if err != nil {
+		t.Fatalf("read payments handler: %v", err)
+	}
+	for _, forbidden := range []string{
+		`"failed to save wompi.public_key: "+err.Error()`,
+		`"failed to save wompi.private_key: "+err.Error()`,
+		`"failed to save epayco.private_key: "+err.Error()`,
+		`"failed to encrypt epayco.checkout_key: "+err.Error()`,
+	} {
+		if strings.Contains(string(contents), forbidden) {
+			t.Fatalf("payment configuration must not expose secret or persistence diagnostic: %s", forbidden)
+		}
+	}
+}

@@ -24,6 +24,10 @@
 - Los fallos de proveedores de correo en pagos, correo corporativo y agentes
   dejan de imprimir el error crudo, que puede contener datos de destinatarios.
 
+2026-07-13: Validación de soporte remoto.
+- La actualización de configuración de soporte remoto devuelve un mensaje
+  genérico al navegador y no concatena errores internos de persistencia.
+
 2026-07-13: Auditoria de preparación - minimizacion de secretos y PII en logs.
 - Se elimina `backend/tools/query_epayco_runtime.go`, que accedía directamente
   a DSN, configuraciones de pago y sesiones; los diagnósticos deben usar las
@@ -37588,3 +37592,39 @@ Archivos modificados:
 - Los actions oficiales pasan a checkout v7, setup-go/setup-node v6,
   upload-artifact v7 y CodeQL Action v4, todos fijados por SHA, eliminando las
   advertencias de runtime Node 20 y la deprecación de CodeQL v3.
+
+2026-07-13: Diagnósticos de snapshots VPS reducidos.
+- La API de snapshots ya no devuelve ni expone en su historial rutas locales,
+  manifiestos, mensajes de proveedor o errores internos de archivado. Conserva
+  el estado y mensajes públicos estables para soporte sin filtrar detalles del
+  sistema o de integraciones de respaldo.
+- El guardado de configuración responde con un error genérico, y las pruebas
+  verifican el saneamiento de la respuesta pública.
+
+2026-07-13: Errores internos ocultos en configuración empresarial.
+- La configuración guiada inicial y las preferencias de tarjetas del panel
+  dejan de concatenar errores de persistencia a respuestas HTTP 5xx. Los
+  errores de entrada (400) se conservan para que el usuario pueda corregir el
+  formulario sin revelar detalles de base de datos.
+
+2026-07-13: Prueba y credenciales de IA con errores públicos estables.
+- La prueba de proveedor IA conserva códigos operativos para credencial ausente,
+  rechazada, inválida o limitada, sin reenviar el diagnóstico crudo del proveedor.
+- Los errores de cifrado y persistencia de credenciales IA se reemplazan por
+  mensajes genéricos y quedan protegidos por una regresión de código fuente.
+
+2026-07-13: Correo corporativo sin diagnósticos de proveedor en la interfaz.
+- El estado de autologin y provisionamiento conserva mensajes de acción para el
+  usuario, pero deja de incluir errores de Mailu, SnappyMail, proxy o guardado
+  de configuración. Se añade una regresión contra esas concatenaciones.
+
+2026-07-13: Integraciones privilegiadas con errores de configuración saneados.
+- reCAPTCHA y OnlyOffice ya no devuelven detalles de cifrado, claves de
+  configuración o persistencia en respuestas 5xx. Las validaciones de formato
+  se mantienen en 400 y una prueba protege ambas rutas.
+
+2026-07-13: Pasarelas de pago con errores administrativos saneados.
+- Los handlers de configuración de Wompi y ePayco ya no concatenan errores de
+  cifrado, persistencia o valores de entorno a sus respuestas de configuración.
+  Se conservan las validaciones de formato de llaves y una regresión protege los
+  mensajes sensibles de estas rutas administrativas.

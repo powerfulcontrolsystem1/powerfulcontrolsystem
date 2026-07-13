@@ -53,7 +53,7 @@ func EmpresaConfiguracionGuiadaHandler(dbEmp *sql.DB) http.HandlerFunc {
 		case http.MethodGet:
 			state, err := loadEmpresaConfiguracionGuiadaState(dbEmp, empresaID)
 			if err != nil {
-				http.Error(w, "no se pudo cargar la configuracion guiada: "+err.Error(), http.StatusInternalServerError)
+				http.Error(w, "no se pudo cargar la configuracion guiada", http.StatusInternalServerError)
 				return
 			}
 			writeJSON(w, http.StatusOK, map[string]interface{}{
@@ -75,12 +75,12 @@ func EmpresaConfiguracionGuiadaHandler(dbEmp *sql.DB) http.HandlerFunc {
 			if action == "posponer" || action == "despues" || action == "no_mostrar_mas" || action == "ocultar" {
 				state, err := loadEmpresaConfiguracionGuiadaState(dbEmp, empresaID)
 				if err != nil {
-					http.Error(w, "no se pudo cargar el contexto guiado: "+err.Error(), http.StatusInternalServerError)
+					http.Error(w, "no se pudo cargar el contexto guiado", http.StatusInternalServerError)
 					return
 				}
 				result, err := postponeEmpresaConfiguracionGuiada(dbEmp, state, strings.TrimSpace(adminEmailFromRequest(r)), action == "no_mostrar_mas" || action == "ocultar")
 				if err != nil {
-					http.Error(w, "no se pudo posponer la configuracion guiada: "+err.Error(), http.StatusInternalServerError)
+					http.Error(w, "no se pudo actualizar la configuracion guiada", http.StatusInternalServerError)
 					return
 				}
 				writeJSON(w, http.StatusOK, map[string]interface{}{
@@ -103,12 +103,12 @@ func EmpresaConfiguracionGuiadaHandler(dbEmp *sql.DB) http.HandlerFunc {
 			}
 			state, err := loadEmpresaConfiguracionGuiadaState(dbEmp, empresaID)
 			if err != nil {
-				http.Error(w, "no se pudo cargar el contexto guiado: "+err.Error(), http.StatusInternalServerError)
+				http.Error(w, "no se pudo cargar el contexto guiado", http.StatusInternalServerError)
 				return
 			}
 			result, err := applyEmpresaConfiguracionGuiada(dbEmp, state, payload.Answers, strings.TrimSpace(adminEmailFromRequest(r)))
 			if err != nil {
-				http.Error(w, "no se pudo aplicar la configuracion guiada: "+err.Error(), http.StatusInternalServerError)
+				http.Error(w, "no se pudo aplicar la configuracion guiada", http.StatusInternalServerError)
 				return
 			}
 			writeJSON(w, http.StatusOK, map[string]interface{}{

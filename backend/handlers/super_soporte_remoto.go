@@ -165,7 +165,7 @@ func superSoporteRemotoConfigUpsert(w http.ResponseWriter, r *http.Request, dbEm
 	}
 	empresaSoporteRemotoApplyConfigPayload(&current, payload, adminEmailFromRequest(r))
 	if _, err := dbpkg.UpsertEmpresaSoporteRemotoConfig(dbEmp, current); err != nil {
-		http.Error(w, "No se pudo guardar configuracion de soporte remoto: "+err.Error(), http.StatusBadRequest)
+		http.Error(w, "No se pudo guardar configuracion de soporte remoto", http.StatusBadRequest)
 		return
 	}
 	cfg, err := dbpkg.GetEmpresaSoporteRemotoConfig(dbEmp, empresaID)

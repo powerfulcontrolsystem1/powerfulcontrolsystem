@@ -133,7 +133,7 @@ func SuperVPSSnapshotsHandler(dbSuper *sql.DB) http.HandlerFunc {
 				return
 			}
 			if err := saveSuperVPSSnapshotConfig(dbSuper, cfg); err != nil {
-				writeJSON(w, http.StatusInternalServerError, map[string]interface{}{"ok": false, "error": err.Error()})
+				writeJSON(w, http.StatusInternalServerError, map[string]interface{}{"ok": false, "error": "no se pudo guardar la configuracion de snapshots"})
 				return
 			}
 			writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "config": getSuperVPSSnapshotConfig(dbSuper)})
@@ -287,9 +287,9 @@ func CreateSuperVPSSnapshot(dbSuper *sql.DB, req superVPSSnapshotCreateRequest) 
 	manifest, warnings, err := buildSuperVPSSnapshotArchive(outPath, item, cfg, includeSecrets, includeImages)
 	if err != nil {
 		item.Estado = "error"
-		item.Error = err.Error()
+		item.Error = superVPSSnapshotFailureMessage()
 		_ = dbpkg.UpdateSuperVPSSnapshotLog(dbSuper, item)
-		return superVPSSnapshotCreateResult{OK: false, Config: cfg, Item: sanitizeSuperVPSSnapshotLog(item), Warnings: warnings, Error: err.Error()}
+		return superVPSSnapshotCreateResult{OK: false, Config: cfg, Item: sanitizeSuperVPSSnapshotLog(item), Warnings: sanitizeSuperVPSSnapshotWarnings(warnings), Error: superVPSSnapshotFailureMessage()}
 	}
 	item.ManifestJSON = jsonString(manifest)
 	if info, statErr := os.Stat(outPath); statErr == nil {
@@ -303,7 +303,7 @@ func CreateSuperVPSSnapshot(dbSuper *sql.DB, req superVPSSnapshotCreateRequest) 
 		item.CloudEstado = cloudEstado
 		item.CloudMensaje = cloudMsg
 		if cloudEstado == "error" {
-			warnings = append(warnings, "Subida nube no completada: "+cloudMsg)
+			warnings = append(warnings, "Subida nube no completada. Revise el estado de la integracion de respaldo.")
 		}
 		if deleteOldCloud && cloudEstado == "subido" {
 			if msg := cleanupSuperVPSSnapshotCloud(cfg, retentionDays); strings.TrimSpace(msg) != "" {
@@ -314,7 +314,7 @@ func CreateSuperVPSSnapshot(dbSuper *sql.DB, req superVPSSnapshotCreateRequest) 
 	if deleteOldLocal {
 		deleted, cleanErr := cleanupOldSuperVPSSnapshotsLocal(outDir, retentionDays)
 		if cleanErr != nil {
-			warnings = append(warnings, "No se pudieron limpiar copias locales antiguas: "+cleanErr.Error())
+			warnings = append(warnings, "No se pudieron limpiar copias locales antiguas.")
 		} else if deleted > 0 {
 			warnings = append(warnings, fmt.Sprintf("Copias locales antiguas eliminadas: %d", deleted))
 		}
@@ -324,7 +324,7 @@ func CreateSuperVPSSnapshot(dbSuper *sql.DB, req superVPSSnapshotCreateRequest) 
 	if req.Automatico {
 		_ = dbpkg.SetConfigValue(dbSuper, superVPSSnapshotConfigLastAutoRun, time.Now().Format(time.RFC3339), false)
 	}
-	return superVPSSnapshotCreateResult{OK: true, Config: getSuperVPSSnapshotConfig(dbSuper), Item: sanitizeSuperVPSSnapshotLog(item), Warnings: warnings}
+	return superVPSSnapshotCreateResult{OK: true, Config: getSuperVPSSnapshotConfig(dbSuper), Item: sanitizeSuperVPSSnapshotLog(item), Warnings: sanitizeSuperVPSSnapshotWarnings(warnings)}
 }
 
 func buildSuperVPSSnapshotArchive(outPath string, item dbpkg.SuperVPSSnapshotLog, cfg superVPSSnapshotConfig, includeSecrets, includeImages bool) (superVPSSnapshotManifest, []string, error) {
@@ -699,7 +699,26 @@ func sanitizeSuperVPSSnapshotLogs(items []dbpkg.SuperVPSSnapshotLog) []dbpkg.Sup
 
 func sanitizeSuperVPSSnapshotLog(item dbpkg.SuperVPSSnapshotLog) dbpkg.SuperVPSSnapshotLog {
 	item.FilePath = ""
+	item.ManifestJSON = ""
+	item.Error = ""
+	item.CloudMensaje = ""
 	return item
+}
+
+func superVPSSnapshotFailureMessage() string {
+	return "No se pudo crear el snapshot VPS. Revise el estado del servidor e intente nuevamente."
+}
+
+func sanitizeSuperVPSSnapshotWarnings(warnings []string) []string {
+	out := make([]string, 0, len(warnings))
+	for _, warning := range warnings {
+		warning = strings.TrimSpace(warning)
+		if warning == "" {
+			continue
+		}
+		out = append(out, warning)
+	}
+	return out
 }
 
 func superVPSSnapshotDir() string {
