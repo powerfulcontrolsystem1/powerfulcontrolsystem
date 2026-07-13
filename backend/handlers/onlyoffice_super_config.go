@@ -212,7 +212,7 @@ func OnlyOfficeConfigHandler(dbSuper *sql.DB) http.HandlerFunc {
 					v = "1"
 				}
 				if err := dbpkg.SetConfigValue(dbSuper, onlyOfficeEnabledConfigKey, v, false); err != nil {
-					http.Error(w, "No se pudo guardar onlyoffice.enabled: "+err.Error(), http.StatusInternalServerError)
+					http.Error(w, "No se pudo guardar la configuracion de OnlyOffice", http.StatusInternalServerError)
 					return
 				}
 			}
@@ -225,23 +225,23 @@ func OnlyOfficeConfigHandler(dbSuper *sql.DB) http.HandlerFunc {
 					return
 				}
 				if err := dbpkg.SetConfigValue(dbSuper, onlyOfficeConfigKeyDSURL, payload.DocumentServerURL, false); err != nil {
-					http.Error(w, "No se pudo guardar onlyoffice.document_server_url: "+err.Error(), http.StatusInternalServerError)
+					http.Error(w, "No se pudo guardar la configuracion de OnlyOffice", http.StatusInternalServerError)
 					return
 				}
 			}
 
 			if payload.JWTSecret != "" {
 				if !utils.EncryptionAvailable() {
-					http.Error(w, "Cifrado requerido: CONFIG_ENC_KEY no está disponible", http.StatusInternalServerError)
+					http.Error(w, "El cifrado no esta disponible para guardar la clave de OnlyOffice", http.StatusInternalServerError)
 					return
 				}
 				encVal, err := utils.EncryptString(payload.JWTSecret)
 				if err != nil {
-					http.Error(w, "No se pudo cifrar jwt_secret: "+err.Error(), http.StatusInternalServerError)
+					http.Error(w, "No se pudo cifrar la clave de OnlyOffice", http.StatusInternalServerError)
 					return
 				}
 				if err := dbpkg.SetConfigValue(dbSuper, onlyOfficeConfigKeyJWT, encVal, true); err != nil {
-					http.Error(w, "No se pudo guardar onlyoffice.jwt_secret: "+err.Error(), http.StatusInternalServerError)
+					http.Error(w, "No se pudo guardar la clave de OnlyOffice", http.StatusInternalServerError)
 					return
 				}
 			}

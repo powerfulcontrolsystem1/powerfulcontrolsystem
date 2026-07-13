@@ -86,7 +86,7 @@ func EmpresaEstacionesColumnasPrefHandler(dbEmp *sql.DB) http.HandlerFunc {
 			p.ColumnasJSON = string(by)
 			id, err := dbpkg.UpsertEstacionColumnPreferences(dbEmp, &p)
 			if err != nil {
-				log.Printf("[estaciones_prefs] upsert empresa_id=%d user=%s error: %v", empresaID, p.UsuarioEmail, err)
+				log.Printf("[estaciones_prefs] upsert empresa_id=%d user=%s error: %v", empresaID, redactEmailForLog(p.UsuarioEmail), err)
 				http.Error(w, "No se pudieron guardar preferencias", http.StatusInternalServerError)
 				return
 			}

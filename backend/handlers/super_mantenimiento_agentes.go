@@ -266,7 +266,7 @@ func RunSuperDIANNoticiasAgent(dbSuper *sql.DB, actor string, manual bool) map[s
 	_ = dbpkg.UpdateSuperMantenimientoAgenteRun(dbSuper, agent.Codigo, "ok", obs, time.Now())
 	if newCount > 0 && strings.TrimSpace(agent.EmailNotificacion) != "" {
 		if err := sendDIANAgentNotificationEmail(dbSuper, agent.EmailNotificacion, assessments); err != nil {
-			log.Printf("[super_mantenimiento_agentes] no se pudo enviar correo DIAN: %v", err)
+			log.Printf("[super_mantenimiento_agentes] no se pudo enviar correo DIAN")
 		}
 	}
 	return map[string]any{"ok": true, "candidates": len(candidates), "relevant": countRelevantAssessments(assessments), "new_findings": newCount}

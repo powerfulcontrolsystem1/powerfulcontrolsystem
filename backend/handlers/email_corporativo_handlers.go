@@ -675,7 +675,7 @@ func EnsureEmpresaCorporateEmailAfterCreate(dbSuper *sql.DB, empresaID int64, em
 	if cfg.Enabled && cfg.ProvisionMode == "mailu_direct" && encryptedPassword != "" {
 		result := provisionEmpresaEmailAccount(dbSuper, cfg, *item, initialPassword)
 		if !result.OK {
-			log.Printf("email corporativo empresa_id=%d provision warning: %s", empresaID, result.Error)
+			log.Printf("email corporativo empresa_id=%d provision warning", empresaID)
 		}
 		item, _ = dbpkg.GetEmpresaEmailCorporativoByEmpresa(dbSuper, empresaID)
 	}
@@ -1049,7 +1049,7 @@ func corporateEmailResponse(dbSuper *sql.DB, cfg CorporateEmailConfig, account *
 				resp["autologin_expires_seconds"] = 120
 			}
 		} else {
-			resp["autologin_error"] = "Autologin no disponible: " + err.Error()
+			resp["autologin_error"] = "Autologin no disponible temporalmente. Actualiza la bandeja e intenta de nuevo."
 		}
 	}
 	return resp
@@ -1297,7 +1297,7 @@ func SuperEmailCorporativoHandler(dbSuper, dbEmp *sql.DB) http.HandlerFunc {
 				cfg.MaxAccounts = normalizeCorporateEmailMaxAccounts(payload.MaxAccounts)
 			}
 			if err := saveCorporateEmailConfig(dbSuper, cfg, payload.APIPassword); err != nil {
-				http.Error(w, "No se pudo guardar configuracion: "+err.Error(), http.StatusInternalServerError)
+				http.Error(w, "No se pudo guardar la configuracion de correo corporativo", http.StatusInternalServerError)
 				return
 			}
 			writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "config": getCorporateEmailConfig(dbSuper)})
@@ -1486,7 +1486,7 @@ func EmpresaEmailCorporativoAutologinHandler(dbSuper *sql.DB) http.HandlerFunc {
 				return
 			}
 			if result := provisionEmpresaEmailAccountWithTheme(dbSuper, cfg, *account, password, theme); !result.OK {
-				writeCorporateEmailAutologinError(w, http.StatusConflict, "El buzon corporativo todavia no pudo provisionarse en Mailu: "+result.Error)
+				writeCorporateEmailAutologinError(w, http.StatusConflict, "El buzon corporativo todavia no pudo provisionarse. Revisa su estado desde la configuracion de correo.")
 				return
 			}
 			if refreshed, refreshErr := dbpkg.GetEmpresaEmailCorporativoByEmpresa(dbSuper, account.EmpresaID); refreshErr == nil && refreshed != nil {
@@ -1508,7 +1508,7 @@ func EmpresaEmailCorporativoAutologinHandler(dbSuper *sql.DB) http.HandlerFunc {
 			}
 			redirectURL, setCookies, redirectErr := snappyMailAutologinRedirectURL(cfg, account.Email, password, theme)
 			if redirectErr != nil {
-				writeCorporateEmailAutologinError(w, http.StatusBadGateway, "No se pudo iniciar sesion automaticamente en la bandeja de correo. "+redirectErr.Error())
+				writeCorporateEmailAutologinError(w, http.StatusBadGateway, "No se pudo iniciar sesion automaticamente en la bandeja de correo. Intenta nuevamente desde el panel.")
 				return
 			}
 			for _, cookieHeader := range setCookies {
@@ -1521,7 +1521,7 @@ func EmpresaEmailCorporativoAutologinHandler(dbSuper *sql.DB) http.HandlerFunc {
 		}
 		err = mailuProxyAutologinAndSetCookies(w, cfg, account.Email)
 		if err != nil {
-			writeCorporateEmailAutologinError(w, http.StatusBadGateway, "No se pudo iniciar sesion automaticamente en la bandeja de correo. "+err.Error())
+			writeCorporateEmailAutologinError(w, http.StatusBadGateway, "No se pudo iniciar sesion automaticamente en la bandeja de correo. Intenta nuevamente desde el panel.")
 			return
 		}
 		http.Redirect(w, r, "/webmail/?_task=mail&_mbox=INBOX", http.StatusFound)

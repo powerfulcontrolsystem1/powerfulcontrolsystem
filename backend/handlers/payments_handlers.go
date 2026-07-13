@@ -410,7 +410,7 @@ func LicenciasHandler(dbSuper *sql.DB) http.HandlerFunc {
 					if lic, lerr := dbpkg.GetLicenciaByID(dbSuper, licID); lerr == nil && lic != nil {
 						if payRec, perr := dbpkg.GetEpaycoPaymentByReference(dbSuper, ref); perr == nil && payRec != nil {
 							if mailErr := trySendLicenciaActivationEmail(r, dbSuper, empresaID, lic, payRec, "trial", ref); mailErr != nil {
-								log.Println("warning: failed to send trial licencia welcome email:", mailErr)
+								log.Println("warning: failed to send trial licencia welcome email")
 							}
 							if invoiceErr := tryIssueLicenciaFacturaElectronicaForEpayco(r, dbpkg.GetDB(), dbSuper, empresaID, lic, payRec, "trial", ref); invoiceErr != nil {
 								log.Println("warning: failed to issue trial licencia factura electronica:", invoiceErr)
@@ -4344,7 +4344,7 @@ func WompiConfigHandler(dbSuper *sql.DB) http.HandlerFunc {
 
 			enabled, err := resolveEnabledConfigValue(dbSuper, "wompi.enabled", pubSet && prvSet && intSet)
 			if err != nil {
-				http.Error(w, "failed to read wompi.enabled: "+err.Error(), http.StatusInternalServerError)
+				http.Error(w, "no se pudo leer la configuracion de Wompi", http.StatusInternalServerError)
 				return
 			}
 
@@ -4410,7 +4410,7 @@ func WompiConfigHandler(dbSuper *sql.DB) http.HandlerFunc {
 			// Requerir cifrado obligatorio para llaves sensibles.
 			if payload.PublicKey != "" {
 				if err := dbpkg.SetConfigValue(dbSuper, "wompi.public_key", payload.PublicKey, false); err != nil {
-					http.Error(w, "failed to save wompi.public_key: "+err.Error(), http.StatusInternalServerError)
+					http.Error(w, "no se pudo guardar la configuracion de Wompi", http.StatusInternalServerError)
 					return
 				}
 			}
@@ -4429,16 +4429,16 @@ func WompiConfigHandler(dbSuper *sql.DB) http.HandlerFunc {
 			}
 
 			if err := saveSensitive("wompi.private_key", payload.PrivateKey); err != nil {
-				http.Error(w, "failed to save wompi.private_key: "+err.Error(), http.StatusInternalServerError)
+				http.Error(w, "no se pudo guardar la clave privada de Wompi", http.StatusInternalServerError)
 				return
 			}
 			if err := saveSensitive("wompi.integrity_key", payload.IntegrityKey); err != nil {
-				http.Error(w, "failed to save wompi.integrity_key: "+err.Error(), http.StatusInternalServerError)
+				http.Error(w, "no se pudo guardar la clave de integridad de Wompi", http.StatusInternalServerError)
 				return
 			}
 			if normalizedMode != "" {
 				if err := dbpkg.SetConfigValue(dbSuper, "wompi.mode", normalizedMode, false); err != nil {
-					http.Error(w, "failed to save wompi.mode: "+err.Error(), http.StatusInternalServerError)
+					http.Error(w, "no se pudo guardar la configuracion de Wompi", http.StatusInternalServerError)
 					return
 				}
 			}
@@ -4448,13 +4448,13 @@ func WompiConfigHandler(dbSuper *sql.DB) http.HandlerFunc {
 					v = "1"
 				}
 				if err := dbpkg.SetConfigValue(dbSuper, "wompi.enabled", v, false); err != nil {
-					http.Error(w, "failed to save wompi.enabled: "+err.Error(), http.StatusInternalServerError)
+					http.Error(w, "no se pudo guardar la configuracion de Wompi", http.StatusInternalServerError)
 					return
 				}
 			}
 			if len(payload.CountryOverrides) > 0 {
 				if err := saveCountryProviderOverrides(dbSuper, "wompi", payload.CountryOverrides); err != nil {
-					http.Error(w, "failed to save wompi country overrides: "+err.Error(), http.StatusInternalServerError)
+					http.Error(w, "no se pudo guardar los paises habilitados de Wompi", http.StatusInternalServerError)
 					return
 				}
 			}
@@ -4679,7 +4679,7 @@ func EpaycoConfigHandler(dbSuper *sql.DB) http.HandlerFunc {
 					return
 				}
 				if err := dbpkg.SetConfigValue(dbSuper, "epayco.public_key", publicKey, false); err != nil {
-					http.Error(w, "failed to save epayco.public_key: "+err.Error(), http.StatusInternalServerError)
+					http.Error(w, "no se pudo guardar la configuracion de ePayco", http.StatusInternalServerError)
 					return
 				}
 			}
@@ -4690,11 +4690,11 @@ func EpaycoConfigHandler(dbSuper *sql.DB) http.HandlerFunc {
 					return
 				}
 				if err := dbpkg.SetConfigValue(dbSuper, "epayco.customer_id", customerID, false); err != nil {
-					http.Error(w, "failed to save epayco.customer_id: "+err.Error(), http.StatusInternalServerError)
+					http.Error(w, "no se pudo guardar la configuracion de ePayco", http.StatusInternalServerError)
 					return
 				}
 				if err := dbpkg.SetConfigValue(dbSuper, "epayco.cust_id", customerID, false); err != nil {
-					http.Error(w, "failed to save epayco.cust_id: "+err.Error(), http.StatusInternalServerError)
+					http.Error(w, "no se pudo guardar la configuracion de ePayco", http.StatusInternalServerError)
 					return
 				}
 			}
@@ -4705,16 +4705,16 @@ func EpaycoConfigHandler(dbSuper *sql.DB) http.HandlerFunc {
 					return
 				}
 				if !utils.EncryptionAvailable() {
-					http.Error(w, "encryption required: CONFIG_ENC_KEY not set", http.StatusInternalServerError)
+					http.Error(w, "el cifrado no esta disponible para guardar la clave de ePayco", http.StatusInternalServerError)
 					return
 				}
 				encVal, err := utils.EncryptString(privateKey)
 				if err != nil {
-					http.Error(w, "failed to encrypt epayco.private_key: "+err.Error(), http.StatusInternalServerError)
+					http.Error(w, "no se pudo cifrar la clave privada de ePayco", http.StatusInternalServerError)
 					return
 				}
 				if err := dbpkg.SetConfigValue(dbSuper, "epayco.private_key", encVal, true); err != nil {
-					http.Error(w, "failed to save epayco.private_key: "+err.Error(), http.StatusInternalServerError)
+					http.Error(w, "no se pudo guardar la clave privada de ePayco", http.StatusInternalServerError)
 					return
 				}
 			}
@@ -4725,20 +4725,20 @@ func EpaycoConfigHandler(dbSuper *sql.DB) http.HandlerFunc {
 					return
 				}
 				if !utils.EncryptionAvailable() {
-					http.Error(w, "encryption required: CONFIG_ENC_KEY not set", http.StatusInternalServerError)
+					http.Error(w, "el cifrado no esta disponible para guardar la clave de ePayco", http.StatusInternalServerError)
 					return
 				}
 				encVal, err := utils.EncryptString(checkoutKey)
 				if err != nil {
-					http.Error(w, "failed to encrypt epayco.checkout_key: "+err.Error(), http.StatusInternalServerError)
+					http.Error(w, "no se pudo cifrar la clave de checkout de ePayco", http.StatusInternalServerError)
 					return
 				}
 				if err := dbpkg.SetConfigValue(dbSuper, "epayco.checkout_key", encVal, true); err != nil {
-					http.Error(w, "failed to save epayco.checkout_key: "+err.Error(), http.StatusInternalServerError)
+					http.Error(w, "no se pudo guardar la clave de checkout de ePayco", http.StatusInternalServerError)
 					return
 				}
 				if err := dbpkg.SetConfigValue(dbSuper, "epayco.p_key", encVal, true); err != nil {
-					http.Error(w, "failed to save epayco.p_key: "+err.Error(), http.StatusInternalServerError)
+					http.Error(w, "no se pudo guardar la clave de checkout de ePayco", http.StatusInternalServerError)
 					return
 				}
 			}
@@ -4749,20 +4749,20 @@ func EpaycoConfigHandler(dbSuper *sql.DB) http.HandlerFunc {
 					v = "1"
 				}
 				if err := dbpkg.SetConfigValue(dbSuper, "epayco.enabled", v, false); err != nil {
-					http.Error(w, "failed to save epayco.enabled: "+err.Error(), http.StatusInternalServerError)
+					http.Error(w, "no se pudo guardar la configuracion de ePayco", http.StatusInternalServerError)
 					return
 				}
 			}
 
 			if normalizedMode != "" {
 				if err := dbpkg.SetConfigValue(dbSuper, "epayco.mode", normalizedMode, false); err != nil {
-					http.Error(w, "failed to save epayco.mode: "+err.Error(), http.StatusInternalServerError)
+					http.Error(w, "no se pudo guardar la configuracion de ePayco", http.StatusInternalServerError)
 					return
 				}
 			}
 			if len(payload.CountryOverrides) > 0 {
 				if err := saveCountryProviderOverrides(dbSuper, "epayco", payload.CountryOverrides); err != nil {
-					http.Error(w, "failed to save epayco country overrides: "+err.Error(), http.StatusInternalServerError)
+					http.Error(w, "no se pudo guardar los paises habilitados de ePayco", http.StatusInternalServerError)
 					return
 				}
 			}
@@ -5772,7 +5772,7 @@ func WompiTransactionStatusHandler(dbSuper *sql.DB) http.HandlerFunc {
 						}
 						if payRecForEmail != nil {
 							if mailErr := trySendLicenciaActivationEmailForWompi(r, dbSuper, empresaID, licForEmail, payRecForEmail, "wompi", reference); mailErr != nil {
-								log.Println("warning: failed to send licencia activation email for Wompi status:", mailErr)
+								log.Println("warning: failed to send licencia activation email for Wompi status")
 							}
 							if invoiceErr := tryIssueLicenciaFacturaElectronicaForWompi(r, dbpkg.GetDB(), dbSuper, empresaID, licForEmail, payRecForEmail, "wompi", reference); invoiceErr != nil {
 								log.Println("warning: failed to issue licencia factura electronica for Wompi status:", invoiceErr)
@@ -5798,7 +5798,7 @@ func WompiTransactionStatusHandler(dbSuper *sql.DB) http.HandlerFunc {
 					}
 					if payRec != nil {
 						if mailErr := trySendLicenciaPaymentRejectedEmailForWompi(r, dbSuper, empresaID, lic, payRec, "wompi", reference, status); mailErr != nil {
-							log.Println("warning: failed to send licencia rejected email for Wompi status:", mailErr)
+							log.Println("warning: failed to send licencia rejected email for Wompi status")
 						}
 					}
 				}
@@ -5939,7 +5939,7 @@ func WompiWebhookHandler(dbSuper *sql.DB, dbEmp ...*sql.DB) http.HandlerFunc {
 						}
 						if payRec != nil {
 							if mailErr := trySendLicenciaActivationEmailForWompi(r, dbSuper, empresaID, lic, payRec, "wompi", reference); mailErr != nil {
-								log.Println("warning: failed to send licencia activation email for Wompi webhook:", mailErr)
+								log.Println("warning: failed to send licencia activation email for Wompi webhook")
 							}
 							if invoiceErr := tryIssueLicenciaFacturaElectronicaForWompi(r, dbEmpConn, dbSuper, empresaID, lic, payRec, "wompi", reference); invoiceErr != nil {
 								log.Println("warning: failed to issue licencia factura electronica for Wompi webhook:", invoiceErr)
@@ -5969,7 +5969,7 @@ func WompiWebhookHandler(dbSuper *sql.DB, dbEmp ...*sql.DB) http.HandlerFunc {
 				}
 				if payRec != nil {
 					if mailErr := trySendLicenciaPaymentRejectedEmailForWompi(r, dbSuper, empresaID, lic, payRec, "wompi", reference, status); mailErr != nil {
-						log.Println("warning: failed to send licencia rejected email for Wompi webhook:", mailErr)
+						log.Println("warning: failed to send licencia rejected email for Wompi webhook")
 					}
 				}
 			}
@@ -6714,7 +6714,7 @@ func EpaycoTransactionStatusHandler(dbSuper *sql.DB) http.HandlerFunc {
 						} else if payRec != nil {
 							licenseRef := firstNonEmptyString(recordReference, invoiceReference, reference, originalReference)
 							if mailErr := trySendLicenciaActivationEmail(r, dbSuper, empresaID, lic, payRec, "epayco", licenseRef); mailErr != nil {
-								log.Println("warning: failed to send licencia activation email for Epayco status:", mailErr)
+								log.Println("warning: failed to send licencia activation email for Epayco status")
 							}
 							if invoiceErr := tryIssueLicenciaFacturaElectronicaForEpayco(r, dbpkg.GetDB(), dbSuper, empresaID, lic, payRec, "epayco", licenseRef); invoiceErr != nil {
 								log.Println("warning: failed to issue licencia factura electronica for Epayco status:", invoiceErr)
@@ -6736,7 +6736,7 @@ func EpaycoTransactionStatusHandler(dbSuper *sql.DB) http.HandlerFunc {
 					log.Println("warning: failed to reload Epayco payment for rejected email:", recErr)
 				} else if payRec != nil {
 					if mailErr := trySendLicenciaPaymentRejectedEmailForEpayco(r, dbSuper, empresaID, lic, payRec, "epayco", firstNonEmptyString(recordReference, invoiceReference, reference, originalReference), status); mailErr != nil {
-						log.Println("warning: failed to send licencia rejected email for Epayco status:", mailErr)
+						log.Println("warning: failed to send licencia rejected email for Epayco status")
 					}
 				}
 			}
@@ -6927,7 +6927,7 @@ func EpaycoWebhookHandler(dbSuper *sql.DB, dbEmp ...*sql.DB) http.HandlerFunc {
 						} else if payRec != nil {
 							licenseRef := firstNonEmptyString(invoiceReference, reference)
 							if mailErr := trySendLicenciaActivationEmail(r, dbSuper, empresaID, lic, payRec, "epayco", licenseRef); mailErr != nil {
-								log.Println("warning: failed to send licencia activation email for Epayco webhook:", mailErr)
+								log.Println("warning: failed to send licencia activation email for Epayco webhook")
 							}
 							if invoiceErr := tryIssueLicenciaFacturaElectronicaForEpayco(r, dbEmpConn, dbSuper, empresaID, lic, payRec, "epayco", licenseRef); invoiceErr != nil {
 								log.Println("warning: failed to issue licencia factura electronica for Epayco webhook:", invoiceErr)
@@ -6949,7 +6949,7 @@ func EpaycoWebhookHandler(dbSuper *sql.DB, dbEmp ...*sql.DB) http.HandlerFunc {
 					log.Println("warning: failed to reload Epayco payment for rejected webhook email:", payErr)
 				} else if payRec != nil {
 					if mailErr := trySendLicenciaPaymentRejectedEmailForEpayco(r, dbSuper, empresaID, lic, payRec, "epayco", firstNonEmptyString(invoiceReference, reference), status); mailErr != nil {
-						log.Println("warning: failed to send licencia rejected email for Epayco webhook:", mailErr)
+						log.Println("warning: failed to send licencia rejected email for Epayco webhook")
 					}
 				}
 			}
@@ -7206,7 +7206,7 @@ func ActivateLicenciaSinPagoHandler(dbSuper *sql.DB, dbEmpresas *sql.DB) http.Ha
 			if lerr == nil && licReload != nil {
 				if payRec, perr := dbpkg.GetEpaycoPaymentByReference(dbSuper, ref); perr == nil && payRec != nil {
 					if mailErr := trySendLicenciaActivationEmail(r, dbSuper, payload.EmpresaID, licReload, payRec, "manual", ref); mailErr != nil {
-						log.Println("warning: failed to send manual licencia welcome email:", mailErr)
+						log.Println("warning: failed to send manual licencia welcome email")
 					}
 					if invoiceErr := tryIssueLicenciaFacturaElectronicaForEpayco(r, dbEmpresas, dbSuper, payload.EmpresaID, licReload, payRec, "manual", ref); invoiceErr != nil {
 						log.Println("warning: failed to issue manual licencia factura electronica:", invoiceErr)

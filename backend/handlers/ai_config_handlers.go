@@ -79,7 +79,7 @@ func runSuperAITest(dbSuper *sql.DB) (int, map[string]interface{}) {
 		return http.StatusBadRequest, map[string]interface{}{
 			"ok":             false,
 			"code":           "ai_api_key_missing",
-			"error":          err.Error(),
+			"error":          "No hay una credencial de IA disponible para la prueba.",
 			"service_status": superAIServiceStatus(dbSuper),
 		}
 	}
@@ -95,7 +95,7 @@ func runSuperAITest(dbSuper *sql.DB) (int, map[string]interface{}) {
 	if err != nil {
 		status := http.StatusBadGateway
 		code := "ai_test_failed"
-		publicErr := err.Error()
+		publicErr := "No se pudo completar la prueba con el proveedor de IA. Intenta de nuevo o revisa la configuracion."
 		providerStatus := 0
 		if perr := (*aiProviderHTTPError)(nil); errors.As(err, &perr) && perr != nil {
 			providerStatus = perr.Status
@@ -112,13 +112,13 @@ func runSuperAITest(dbSuper *sql.DB) (int, map[string]interface{}) {
 			case http.StatusBadRequest:
 				status = perr.Status
 				code = "ai_bad_request"
-				publicErr = perr.Error()
+				publicErr = "El proveedor de IA rechazó la solicitud de prueba. Revisa la configuración del modelo."
 			default:
 				// 4xx distintos: devolverlos como 400 para no esconder el mensaje por middleware.
 				if perr.Status >= 400 && perr.Status < 500 {
 					status = http.StatusBadRequest
 					code = "ai_provider_rejected"
-					publicErr = perr.Error()
+					publicErr = "El proveedor de IA rechazó la solicitud de prueba. Revisa la configuración del modelo."
 				}
 			}
 		}
@@ -136,14 +136,14 @@ func runSuperAITest(dbSuper *sql.DB) (int, map[string]interface{}) {
 	}
 
 	return http.StatusOK, map[string]interface{}{
-		"ok":               true,
-		"provider":         model.Provider,
-		"model_id":         model.ID,
-		"upstream_model":   model.UpstreamModel,
-		"response":         strings.TrimSpace(respuesta),
-		"prompt_tokens":    promptTokens,
+		"ok":                true,
+		"provider":          model.Provider,
+		"model_id":          model.ID,
+		"upstream_model":    model.UpstreamModel,
+		"response":          strings.TrimSpace(respuesta),
+		"prompt_tokens":     promptTokens,
 		"completion_tokens": completionTokens,
-		"service_status":   superAIServiceStatus(dbSuper),
+		"service_status":    superAIServiceStatus(dbSuper),
 	}
 }
 
@@ -269,11 +269,11 @@ func AIModelsConfigHandler(dbSuper *sql.DB) http.HandlerFunc {
 					enabledValue = "1"
 				}
 				if err := dbpkg.SetConfigValue(dbSuper, superAIEnabledConfigKey, enabledValue, false); err != nil {
-					http.Error(w, "failed to save "+superAIEnabledConfigKey+": "+err.Error(), http.StatusInternalServerError)
+					http.Error(w, "no se pudo guardar la configuracion de IA", http.StatusInternalServerError)
 					return
 				}
 				if err := dbpkg.SetConfigValue(dbSuper, superAIEnabledConfigKey+".updated_by", adminEmail, false); err != nil {
-					http.Error(w, "failed to save updated_by for "+superAIEnabledConfigKey+": "+err.Error(), http.StatusInternalServerError)
+					http.Error(w, "no se pudo guardar la configuracion de IA", http.StatusInternalServerError)
 					return
 				}
 			}
@@ -303,11 +303,11 @@ func AIModelsConfigHandler(dbSuper *sql.DB) http.HandlerFunc {
 					continue
 				}
 				if err := dbpkg.SetConfigValue(dbSuper, providerEnabledKey, providerValue, false); err != nil {
-					http.Error(w, "failed to save "+providerEnabledKey+": "+err.Error(), http.StatusInternalServerError)
+					http.Error(w, "no se pudo guardar la configuracion de IA", http.StatusInternalServerError)
 					return
 				}
 				if err := dbpkg.SetConfigValue(dbSuper, providerEnabledKey+".updated_by", adminEmail, false); err != nil {
-					http.Error(w, "failed to save updated_by for "+providerEnabledKey+": "+err.Error(), http.StatusInternalServerError)
+					http.Error(w, "no se pudo guardar la configuracion de IA", http.StatusInternalServerError)
 					return
 				}
 			}
@@ -333,23 +333,23 @@ func AIModelsConfigHandler(dbSuper *sql.DB) http.HandlerFunc {
 				// Siempre cifrar el valor antes de persistir
 				encVal, err := utils.EncryptString(apiKey)
 				if err != nil {
-					http.Error(w, "encryption failed: "+err.Error(), http.StatusInternalServerError)
+					http.Error(w, "no se pudo cifrar la credencial de IA", http.StatusInternalServerError)
 					return
 				}
 
 				if err := dbpkg.SetConfigValue(dbSuper, def.ConfigKey, encVal, true); err != nil {
-					http.Error(w, "failed to save "+def.ConfigKey+": "+err.Error(), http.StatusInternalServerError)
+					http.Error(w, "no se pudo guardar la credencial de IA", http.StatusInternalServerError)
 					return
 				}
 				if err := dbpkg.SetConfigValue(dbSuper, def.ConfigKey+".updated_by", adminEmail, false); err != nil {
-					http.Error(w, "failed to save updated_by for "+def.ConfigKey+": "+err.Error(), http.StatusInternalServerError)
+					http.Error(w, "no se pudo guardar la credencial de IA", http.StatusInternalServerError)
 					return
 				}
 
 				providerKey := aiProviderConfigKey(def.Provider)
 				if providerKey != "" {
 					if err := dbpkg.SetConfigValue(dbSuper, providerKey, encVal, true); err != nil {
-						http.Error(w, "failed to save provider key "+providerKey+": "+err.Error(), http.StatusInternalServerError)
+						http.Error(w, "no se pudo guardar la credencial de IA", http.StatusInternalServerError)
 						return
 					}
 				}

@@ -1,3 +1,24 @@
+2026-07-13 - Evidencia de preparacion para staging
+- `documentos/production_readiness_2026_07_13.md`: matriz de evidencia local,
+  riesgos residuales y bloqueantes verificables antes de produccion.
+- `documentos/staging_validation_checklist_2026_07_13.md`: checklist de pruebas
+  controladas para migraciones, tenants, archivos, pagos, WebRTC y resiliencia.
+- `documentos/rollback_production_2026_07_13.md`: procedimiento de rollback a
+  validar en staging, sin secretos ni instrucciones de despliegue implicito.
+
+2026-07-13 - Preparación staging: redacción ampliada y herramienta retirada
+- `backend/handlers/log_redaction.go`: redacción de PII, credenciales y
+  cabeceras sensibles para trazas internas, incluyendo neutralización de saltos
+  de línea.
+- `backend/handlers/log_redaction_test.go`: regresiones para la redacción y el
+  retiro permanente de utilidades inseguras de diagnóstico.
+- Se retiran `backend/handlers/rustdesk.go` y `backend/db/rustdesk.go`, rutas
+  internas no registradas que mantenían un modelo heredado de contraseña sin
+  cifrado; no sustituyen el módulo activo `soporte_remoto`.
+- `backend/tools/set_ai_provider_enabled.go` y
+  `backend/tools/set_recaptcha_enabled.go`: herramientas administrativas con
+  simulación predeterminada y confirmación explícita para escritura.
+
 2026-07-13 - Minimizacion de PII en logs
 - `backend/handlers/log_redaction.go`: enmascarador interno de correos para logs
   de seguridad y operaciones, sin cambiar respuestas ni contratos de API.
