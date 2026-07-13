@@ -37497,3 +37497,25 @@ Archivos modificados:
 - El módulo declara `toolchain go1.25.12` y la imagen de compilación usa
   `golang:1.25.12-alpine`, la misma versión del CI. `govulncheck` confirma cero
   vulnerabilidades alcanzables con esa biblioteca estándar.
+
+2026-07-12: Runtime de producción, WebRTC y soporte remoto endurecidos.
+- Producción exige orígenes CSRF, proxy confiable, identificador de clave,
+  límites de cuerpo, duración de sesión y timeouts HTTP válidos antes de
+  iniciar. Las cookies usan una duración centralizada.
+- La señalización WebRTC valida sesión, empresa, permiso y Origin exacto; usa
+  token y nonce aleatorios de uso único, expiración corta, límite por rol,
+  inactividad, revocación y auditoría sin registrar credenciales.
+
+2026-07-12: Archivos privados y operaciones dinámicas auditadas.
+- Los soportes de compras procesados por IA se guardan fuera de la raíz web en
+  `PCS_PRIVATE_STORAGE_DIR`, con nombres aleatorios, permisos `0600`, separación
+  empresarial y descarga autenticada con `nosniff` y `Content-Disposition`.
+- SQL dinámico, comandos y rutas de archivo fueron revisados sitio por sitio;
+  se eliminaron dos shells locales evitables y se conservaron parámetros SQL.
+
+2026-07-12: CI de seguridad y cadena de suministro ampliado.
+- `Professional CI` separa pruebas, race detector, `govulncheck` y `gosec` y
+  añade escaneo del árbol actual, dependencias, IaC, imágenes, SBOM y licencias.
+  No contiene despliegues ni acceso a VPS.
+- Las pruebas cubren manipulación de `empresa_id` por query, cabecera y JSON,
+  además de traversal y symlinks en soportes privados.

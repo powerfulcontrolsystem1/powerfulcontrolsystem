@@ -11746,3 +11746,17 @@ backend/handlers/user_config.go - Controlador que expone /api/user/configuracion
 2026-07-11 - Validacion preproduccion y cobro de carrito
 - `documentos/validacion_preproduccion_pcs.md`: evidencia de pruebas PCS y limites verificables de pagos, Bre-B, impresion y modo offline antes de produccion.
 - `backend/handlers/carrito_frontend_contract_test.go`: evita que el boton de pago del carrito pierda su enlace directo y su bloqueo contra doble clic.
+backend/runtime_security_config_test.go
+- Pruebas de arranque seguro y variables críticas del runtime de producción.
+
+backend/db/soporte_remoto_security_test.go
+- Pruebas criptográficas de credenciales temporales de soporte remoto.
+
+backend/handlers/soporte_remoto_webrtc_test.go
+- Pruebas de aislamiento, Origin, roles y límites de señalización WebRTC.
+
+backend/handlers/empresa_permisos_tenant_test.go
+- Pruebas de rechazo de `empresa_id` manipulado por query, cabecera y JSON.
+
+backend/handlers/soportes_compras_ia_path_test.go
+- Pruebas de traversal, symlinks y raíz privada empresarial para soportes IA.

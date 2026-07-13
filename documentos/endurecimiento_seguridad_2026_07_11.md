@@ -1,6 +1,6 @@
 # Endurecimiento de seguridad 2026-07-11
 
-Estado: preparado en la rama `security/full-hardening`; no desplegado.
+Estado: validación final en `security/full-hardening-clean-20260712`; no desplegado.
 
 ## Linea base
 
@@ -75,6 +75,22 @@ Estado: preparado en la rama `security/full-hardening`; no desplegado.
   modificar filas. Debe ejecutarse primero en staging y retirarse para la
   migracion real.
 - `PCS_ENV=production` o `APP_ENV=production`: bloquea el arranque si falta una clave de cifrado valida.
+- `PCS_PRIVATE_STORAGE_DIR`: raíz no pública para documentos empresariales;
+  producción no inicia si falta y Nginx no monta este volumen.
+- `SESSION_TIMEOUT`, `MAX_REQUEST_BODY_BYTES`, `HTTP_READ_TIMEOUT`,
+  `HTTP_WRITE_TIMEOUT` y `HTTP_IDLE_TIMEOUT`: límites obligatorios de runtime.
+
+## Evidencia consolidada
+
+| Hallazgo | Severidad | Evidencia inicial | Corrección | Prueba | Resultado | Riesgo residual | Estado |
+|---|---|---|---|---|---|---|---|
+| Secretos TOTP legibles | Alta | columna heredada sin envoltura | AES-GCM versionado, finalidad `totp`, rotación y migración simulable | pruebas de cifrado, rotación, activación y recuperación | pasa | migración real solo en staging | corregido |
+| Tokens y sesiones reutilizables | Alta | valores heredados y caché por TTL | verificadores SHA-256, consumo único, revocación e invalidación inmediata | pruebas de vencimiento, reemplazo y revocación | pasa | ninguno conocido | corregido |
+| CSRF en cookies | Alta | mutaciones sin sincronizador global | token separado, Origin/Referer exactos y transición frontend | suite CSRF y login | pasa | CSP continúa en report-only durante transición | mitigado |
+| WebRTC sin credencial fuerte | Crítica | señalización por empresa/rol del cliente | token+nonce de uso único, permiso, Origin, expiración, límites y revocación | `soporte_remoto_webrtc_test.go` | pasa | validación real solo en staging | corregido |
+| Soportes IA bajo raíz web | Alta | `web/uploads/soportes_compras_ia` | volumen privado, nombre aleatorio y descarga autenticada | traversal, symlink y tenant root | pasa | migrar adjuntos históricos antes de producción | corregido para archivos nuevos |
+| Operaciones dinámicas sin evidencia | Media | `gosec` G202/G204/G304 | revisión por sitio, parámetros, raíces controladas y eliminación de shells | `gosec` local/CI | pendiente del último run | ninguno aceptado sin justificación | en validación |
+| Cadena de suministro incompleta | Alta | CI sin secretos/IaC/SBOM/imágenes | jobs separados con herramientas versionadas y artefactos | GitHub Actions | pendiente del último run | bases de vulnerabilidades cambian | en validación |
 
 ## Cambios pendientes antes de desplegar
 
