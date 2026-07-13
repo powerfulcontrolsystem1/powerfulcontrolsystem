@@ -7,6 +7,9 @@
 - Se retiran `backend/handlers/rustdesk.go` y `backend/db/rustdesk.go`, rutas
   internas no registradas que mantenían un modelo heredado de contraseña sin
   cifrado; no sustituyen el módulo activo `soporte_remoto`.
+- `backend/tools/set_ai_provider_enabled.go` y
+  `backend/tools/set_recaptcha_enabled.go`: herramientas administrativas con
+  simulación predeterminada y confirmación explícita para escritura.
 
 2026-07-13 - Minimizacion de PII en logs
 - `backend/handlers/log_redaction.go`: enmascarador interno de correos para logs

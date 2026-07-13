@@ -27,6 +27,10 @@ Actualizacion 2026-07-13: validación posterior a PR #6
 - Se eliminó el código RustDesk sin rutas activas que persistía una contraseña
   en texto plano. El flujo vigente queda centralizado en `soporte_remoto`, que
   cifra el secreto operativo y delimita los recursos por empresa.
+- Las herramientas administrativas de IA y reCAPTCHA no cargan archivos `.env`
+  de forma implícita ni escriben por defecto. Su modo normal es simulación; una
+  escritura exige `-apply` y una confirmación literal documentada por cada
+  herramienta.
 
 ## Linea base
 
