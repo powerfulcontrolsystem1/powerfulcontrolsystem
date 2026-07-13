@@ -88,9 +88,12 @@ Estado: validación final en `security/full-hardening-clean-20260712`; no desple
 | Tokens y sesiones reutilizables | Alta | valores heredados y caché por TTL | verificadores SHA-256, consumo único, revocación e invalidación inmediata | pruebas de vencimiento, reemplazo y revocación | pasa | ninguno conocido | corregido |
 | CSRF en cookies | Alta | mutaciones sin sincronizador global | token separado, Origin/Referer exactos y transición frontend | suite CSRF y login | pasa | CSP continúa en report-only durante transición | mitigado |
 | WebRTC sin credencial fuerte | Crítica | señalización por empresa/rol del cliente | token+nonce de uso único, permiso, Origin, expiración, límites y revocación | `soporte_remoto_webrtc_test.go` | pasa | validación real solo en staging | corregido |
-| Soportes IA bajo raíz web | Alta | `web/uploads/soportes_compras_ia` | volumen privado, nombre aleatorio y descarga autenticada | traversal, symlink y tenant root | pasa | migrar adjuntos históricos antes de producción | corregido para archivos nuevos |
-| Operaciones dinámicas sin evidencia | Media | `gosec` G202/G204/G304 | revisión por sitio, parámetros, raíces controladas y eliminación de shells | `gosec` local/CI | pendiente del último run | ninguno aceptado sin justificación | en validación |
-| Cadena de suministro incompleta | Alta | CI sin secretos/IaC/SBOM/imágenes | jobs separados con herramientas versionadas y artefactos | GitHub Actions | pendiente del último run | bases de vulnerabilidades cambian | en validación |
+| Adjuntos empresariales bajo raíz web | Alta | chat, buzón, finanzas, grafología, capturas y firma DIAN usaban rutas de `uploads` | almacenamiento por empresa en `PCS_PRIVATE_STORAGE_DIR`, nombres aleatorios, MIME real, descarga autenticada y bloqueo Nginx de rutas heredadas | `private_files_test.go`, pruebas DIAN y suite Go | pasa | ejecutar primero la migración simulada en staging | corregido |
+| Aislamiento multiempresa manipulable | Crítica | múltiples fuentes podían aportar `empresa_id` | middleware central valida sesión, relación, empresa, rol y permiso; el contexto conserva el único tenant autorizado | `empresa_permisos_tenant_test.go` y pruebas de archivos/soporte | pasa | ampliar casos operativos al agregar nuevos módulos | corregido |
+| Operaciones dinámicas sin evidencia | Media | `gosec` G202/G204/G304 | revisión por sitio, parámetros, raíces controladas y eliminación de shells | `gosec` local y job `Preflight, audits and Docker config` 29215120284 | pasa | ninguno aceptado sin justificación concreta | corregido |
+| Binarios compilados vulnerables en imagen | Crítica | Trivy detectó ejecutables Go antiguos dentro de `project_export` | retiro de tres binarios generados, reglas Git/Docker y reconstrucción desde fuente vigente | Trivy de imagen en GitHub Actions | pendiente del run posterior al commit | bases de vulnerabilidades cambian | en validación |
+| Base Nginx obsoleta | Alta | imagen 1.27 incluía bibliotecas Alpine vulnerables | Nginx unprivileged 1.30.3 sobre Alpine 3.23, versión fija | construcción y Trivy de imagen | pendiente del run posterior al commit | fijar digest tras validar la arquitectura de producción | en validación |
+| Cadena de suministro incompleta | Alta | CI sin secretos/IaC/SBOM/imágenes | jobs separados con herramientas versionadas, gates explícitos, SARIF y artefactos | GitHub Actions | escaneo de secretos, filesystem e IaC pasan; imágenes en revalidación | bases de vulnerabilidades cambian | en validación |
 
 ## Contenedores y excepciones técnicas
 
@@ -116,16 +119,24 @@ Estado: validación final en `security/full-hardening-clean-20260712`; no desple
   beneficio de seguridad. El cambio afecta `backend/go.mod`, `backend/go.sum`
   y los flujos existentes de importación/exportación Excel.
 
-## Cambios pendientes antes de desplegar
+## Validaciones obligatorias de staging
 
-- Validar en staging el origen CSRF para los clientes heredados y completar tokens sincronizadores solo donde una integracion no pueda enviar Origin/Referer.
-- Inventariar, firmar e idempotentizar todos los webhooks y callbacks externos.
-- Auditar cada handler multiempresa contra `RequireEmpresaAccess` y agregar pruebas cruzadas de lectura, escritura, exportacion y archivos.
-- Verificar en staging los permisos de volumen del backend no root y los flujos administrativos que antes dependian del socket Docker, ahora retirado del contenedor de negocio.
-- Configurar desde GitHub la proteccion de rama y la revision requerida; son
-  controles de plataforma que no se pueden imponer desde archivos versionados.
-- Completar la migracion de las paginas heredadas que no cargan `menu.js` antes
-  de exigir el token a formularios autentificados fuera del shell principal.
+Estas actividades no son correcciones de código pendientes y no se ejecutan en
+esta tarea porque requieren entorno aislado, copia anonimizada o controles de
+GitHub:
+
+- Ejecutar `go run ./tools/migrate_private_uploads --web-root=<RAIZ_WEB>` desde
+  `backend` para obtener el inventario sin modificar archivos ni base. Aplicar
+  solo después del respaldo de staging con `--apply
+  --confirm=MIGRATE_PRIVATE_UPLOADS`; la actualización exige coincidencia de
+  `id`, `empresa_id` y referencia anterior antes de retirar el archivo legado.
+- Ejecutar las migraciones TOTP/tokens primero en modo simulación y verificar
+  conteos antes de aplicar.
+- Validar login, CSRF, pagos sandbox, descarga privada, WebRTC y soporte remoto
+  con datos ficticios y orígenes reales de staging.
+- Verificar UID/permisos de los volúmenes para backend, frontend y voz no root.
+- Activar protección de `main` y checks obligatorios después de fusionar un PR
+  completamente verde.
 
 ## Despliegue y rollback
 

@@ -37526,3 +37526,15 @@ Archivos modificados:
 - Frontend adopta Nginx unprivileged en 8080 y el servicio de voz adopta UID
   10001. Ambos tienen filesystem de solo lectura, capacidades retiradas,
   `no-new-privileges` y healthcheck compatible.
+
+2026-07-12: Adjuntos privados, firma DIAN y migración histórica.
+- Chat/tareas, buzón, finanzas y grafología guardan archivos empresariales fuera
+  de la raíz pública, con nombre aleatorio, permisos `0600`, límite por tipo,
+  verificación MIME y descarga autenticada por empresa y permiso.
+- Las capturas y el material de firma DIAN dejan `web/uploads`; Nginx bloquea
+  las rutas sensibles heredadas y el backend conserva referencias `file:` solo
+  hacia `PCS_PRIVATE_STORAGE_DIR`.
+- `backend/tools/migrate_private_uploads` inventaría en modo simulación por
+  defecto y exige confirmación explícita para mover referencias históricas.
+- Se retiran tres ejecutables Go compilados y obsoletos que Trivy encontraba en
+  la imagen; la imagen frontend pasa a Nginx unprivileged 1.30.3-alpine3.23.

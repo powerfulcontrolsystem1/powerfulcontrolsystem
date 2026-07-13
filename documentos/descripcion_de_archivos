@@ -11760,3 +11760,17 @@ backend/handlers/empresa_permisos_tenant_test.go
 
 backend/handlers/soportes_compras_ia_path_test.go
 - Pruebas de traversal, symlinks y raíz privada empresarial para soportes IA.
+
+backend/handlers/private_files.go
+- Contrato central de almacenamiento privado empresarial, validación por
+  contenido, resolución sin traversal/symlinks, descarga segura y migración
+  controlada de referencias heredadas.
+
+backend/handlers/private_files_test.go
+- Pruebas de aislamiento por empresa, nombres aleatorios, MIME falso, contenido
+  activo, tamaño, traversal, symlink y cabeceras de descarga.
+
+backend/tools/migrate_private_uploads/main.go
+- Utilidad PostgreSQL de staging para inventariar o aplicar la migración de
+  adjuntos privados antiguos. Es simulación por defecto y no imprime rutas,
+  credenciales ni referencias sensibles.
