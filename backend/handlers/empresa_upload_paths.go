@@ -55,30 +55,25 @@ func empresaUploadsSubdir(dbEmp *sql.DB, empresaID int64, parts ...string) (stri
 }
 
 func empresaFacturacionFirmaElectronicaDir(dbEmp *sql.DB, empresaID int64) (string, string) {
-	dir, _, folder := empresaUploadsSubdir(
-		dbEmp,
-		empresaID,
-		empresaFacturacionElectronicaDirName,
-		empresaFirmaElectronicaDirName,
-	)
+	folder := empresaUploadsFolderName(dbEmp, empresaID)
+	dir, _ := empresaPrivateCategoryRoot(empresaID, "dian")
 	return dir, folder
 }
 
 func ensureEmpresaUploadFolders(dbEmp *sql.DB, empresaID int64) (string, error) {
 	baseDir, folder := empresaUploadsBaseDir(dbEmp, empresaID)
 	publicImagesDir := filepath.Join(baseDir, "imagenes")
-	facturacionDir := filepath.Join(baseDir, empresaFacturacionElectronicaDirName)
-	firmaDir := filepath.Join(facturacionDir, empresaFirmaElectronicaDirName)
-	capturasDIANDir := filepath.Join(facturacionDir, empresaCapturasDIANDirName)
+	dianPrivateDir, err := empresaPrivateCategoryRoot(empresaID, "dian")
+	if err != nil {
+		return "", err
+	}
 	for _, item := range []struct {
 		path string
 		perm os.FileMode
 	}{
 		{baseDir, 0o755},
 		{publicImagesDir, 0o755},
-		{facturacionDir, empresaFirmaElectronicaPrivateDirPerms},
-		{firmaDir, empresaFirmaElectronicaPrivateDirPerms},
-		{capturasDIANDir, empresaFirmaElectronicaPrivateDirPerms},
+		{dianPrivateDir, empresaFirmaElectronicaPrivateDirPerms},
 	} {
 		if err := os.MkdirAll(item.path, item.perm); err != nil {
 			return folder, err
@@ -222,4 +217,18 @@ func deleteFileRefIfInsideDir(fileRef string, baseDir string) bool {
 		return false
 	}
 	return os.Remove(absClean) == nil
+}
+
+func deleteEmpresaDIANFileRef(dbEmp *sql.DB, empresaID int64, fileRef string) bool {
+	privateDir, _ := empresaFacturacionFirmaElectronicaDir(dbEmp, empresaID)
+	if deleteFileRefIfInsideDir(fileRef, privateDir) {
+		return true
+	}
+	legacyDir, _, _ := empresaUploadsSubdir(
+		dbEmp,
+		empresaID,
+		empresaFacturacionElectronicaDirName,
+		empresaFirmaElectronicaDirName,
+	)
+	return deleteFileRefIfInsideDir(fileRef, legacyDir)
 }

@@ -13554,26 +13554,12 @@ func analyzeDIANScreenshotUpload(dbEmp *sql.DB, r *http.Request) (map[string]int
 		ext = ".png"
 	}
 
-	if _, err := ensureEmpresaUploadFolders(dbEmp, empresaID); err != nil {
-		return nil, http.StatusInternalServerError, fmt.Errorf("no se pudo preparar directorio empresarial")
-	}
-	dir, _, empresaFolder := empresaUploadsSubdir(
-		dbEmp,
-		empresaID,
-		empresaFacturacionElectronicaDirName,
-		empresaCapturasDIANDirName,
-	)
-	if err := os.MkdirAll(dir, empresaFirmaElectronicaPrivateDirPerms); err != nil {
-		return nil, http.StatusInternalServerError, fmt.Errorf("no se pudo preparar directorio de capturas DIAN")
-	}
-	_ = os.Chmod(dir, empresaFirmaElectronicaPrivateDirPerms)
-
 	tipoPantalla := normalizeDIANScreenshotScreenType(r.FormValue("tipo_pantalla"))
-	fileName := fmt.Sprintf("captura_dian_%s_%d%s", tipoPantalla, time.Now().UnixNano(), ext)
-	absPath := filepath.Join(dir, fileName)
-	if err := os.WriteFile(absPath, contentBytes, 0o600); err != nil {
-		return nil, http.StatusInternalServerError, fmt.Errorf("no se pudo guardar la captura DIAN")
+	fileName, absPath, _, err := saveEmpresaPrivateUpload(empresaID, "dian", ext, bytes.NewReader(contentBytes), 12<<20)
+	if err != nil {
+		return nil, http.StatusBadRequest, fmt.Errorf("no se pudo guardar la captura DIAN")
 	}
+	empresaFolder := empresaUploadsFolderName(dbEmp, empresaID)
 
 	ocrText, ocrMotor, ocrWarnings := runDIANScreenshotOCR(r.Context(), absPath)
 	analysis := parseDIANScreenshotConfig(ocrText, tipoPantalla)
@@ -14119,18 +14105,15 @@ func uploadDIANCompanySignature(dbEmp, dbSuper *sql.DB, r *http.Request) (map[st
 		return nil, http.StatusBadRequest, err
 	}
 
-	dir, empresaFolder := empresaFacturacionFirmaElectronicaDir(dbEmp, empresaID)
+	empresaFolder := empresaUploadsFolderName(dbEmp, empresaID)
 	if _, err := ensureEmpresaUploadFolders(dbEmp, empresaID); err != nil {
 		return nil, http.StatusInternalServerError, fmt.Errorf("no se pudo preparar directorio de firma")
 	}
-	_ = os.Chmod(dir, empresaFirmaElectronicaPrivateDirPerms)
 	oldKeyRef := strings.TrimSpace(genericStringValue(cfg["certificado_clave_ref"]))
 	oldCertRef := strings.TrimSpace(genericStringValue(cfg["certificado_url"]))
 
-	suffix := time.Now().UnixNano()
-	keyFileName := fmt.Sprintf("firma_privada_%d.pem", suffix)
-	keyAbsPath := filepath.Join(dir, keyFileName)
-	if err := os.WriteFile(keyAbsPath, []byte(strings.TrimSpace(material.PrivateKeyPEM)+"\n"), 0o600); err != nil {
+	keyFileName, keyAbsPath, _, err := saveEmpresaPrivateUpload(empresaID, "dian", ".pem", strings.NewReader(strings.TrimSpace(material.PrivateKeyPEM)+"\n"), 2<<20)
+	if err != nil {
 		return nil, http.StatusInternalServerError, fmt.Errorf("no se pudo guardar firma en servidor")
 	}
 
@@ -14138,9 +14121,9 @@ func uploadDIANCompanySignature(dbEmp, dbSuper *sql.DB, r *http.Request) (map[st
 	certRef := ""
 	certFileName := ""
 	if strings.TrimSpace(material.CertificatePEM) != "" {
-		certFileName = fmt.Sprintf("certificado_publico_%d.pem", suffix)
-		certAbsPath := filepath.Join(dir, certFileName)
-		if err := os.WriteFile(certAbsPath, []byte(strings.TrimSpace(material.CertificatePEM)+"\n"), 0o600); err != nil {
+		var certAbsPath string
+		certFileName, certAbsPath, _, err = saveEmpresaPrivateUpload(empresaID, "dian", ".pem", strings.NewReader(strings.TrimSpace(material.CertificatePEM)+"\n"), 2<<20)
+		if err != nil {
 			_ = os.Remove(keyAbsPath)
 			return nil, http.StatusInternalServerError, fmt.Errorf("no se pudo guardar certificado en servidor")
 		}
@@ -14183,38 +14166,38 @@ func uploadDIANCompanySignature(dbEmp, dbSuper *sql.DB, r *http.Request) (map[st
 	if err := updateDIANConfigFields(dbEmp, empresaID, cfg, updates); err != nil {
 		_ = os.Remove(keyAbsPath)
 		if strings.TrimSpace(certRef) != "" {
-			_ = deleteFileRefIfInsideDir(certRef, dir)
+			_ = deleteEmpresaDIANFileRef(dbEmp, empresaID, certRef)
 		}
 		return nil, http.StatusInternalServerError, fmt.Errorf("no se pudo actualizar certificado_clave_ref")
 	}
 	if oldKeyRef != "" && oldKeyRef != keyRef {
-		_ = deleteFileRefIfInsideDir(oldKeyRef, dir)
+		_ = deleteEmpresaDIANFileRef(dbEmp, empresaID, oldKeyRef)
 	}
 	if oldCertRef != "" && oldCertRef != certRef {
-		_ = deleteFileRefIfInsideDir(oldCertRef, dir)
+		_ = deleteEmpresaDIANFileRef(dbEmp, empresaID, oldCertRef)
 	}
 	vencimiento := checkDIANCertificateExpiry(dbEmp, dbSuper, empresaID, cfg, true)
 
 	return map[string]interface{}{
-		"ok":                          true,
-		"empresa_id":                  empresaID,
-		"archivo_original":            strings.TrimSpace(header.Filename),
-		"archivo_guardado":            keyFileName,
-		"certificado_guardado":        certFileName,
-		"carpeta_empresa":             empresaFolder,
-		"carpeta_firma":               filepath.ToSlash(filepath.Join("uploads", "empresas", empresaFolder, empresaFacturacionElectronicaDirName, empresaFirmaElectronicaDirName)),
-		"certificado_clave_ref":       keyRef,
-		"certificado_url":             certRef,
-		"formato_detectado":           material.Format,
-		"certificado_subject":         material.Subject,
-		"certificado_issuer":          material.Issuer,
-		"certificado_serial":          material.Serial,
-		"certificado_ultima_carga_en": uploadTime,
-		"certificado_clave_estado":    keyStatus,
-		"certificado_vencimiento":     genericStringValue(vencimiento["fecha_vencimiento"]),
-		"vencimiento_certificado":     vencimiento,
-		"tamano_bytes":                len(contentBytes),
-		"siguiente_paso":              "ejecutar action=validar_credenciales y luego action=pruebas_dian",
+		"ok":                            true,
+		"empresa_id":                    empresaID,
+		"archivo_original":              strings.TrimSpace(header.Filename),
+		"archivo_guardado":              keyFileName,
+		"certificado_guardado":          certFileName,
+		"carpeta_empresa":               empresaFolder,
+		"carpeta_firma":                 "private://dian/" + empresaFolder,
+		"certificado_clave_configurada": true,
+		"certificado_configurado":       certRef != "",
+		"formato_detectado":             material.Format,
+		"certificado_subject":           material.Subject,
+		"certificado_issuer":            material.Issuer,
+		"certificado_serial":            material.Serial,
+		"certificado_ultima_carga_en":   uploadTime,
+		"certificado_clave_estado":      keyStatus,
+		"certificado_vencimiento":       genericStringValue(vencimiento["fecha_vencimiento"]),
+		"vencimiento_certificado":       vencimiento,
+		"tamano_bytes":                  len(contentBytes),
+		"siguiente_paso":                "ejecutar action=validar_credenciales y luego action=pruebas_dian",
 	}, http.StatusOK, nil
 }
 
