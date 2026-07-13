@@ -1178,6 +1178,10 @@ func main() {
 		log.Fatalf("failed to ensure tarifas motel schema in empresas db: %v", err)
 	}
 	startupTrace("after_empresa_tarifas_motel_schema")
+	if err := dbpkg.EnsureEmpresaAIEnterpriseSchema(dbEmpresas); err != nil {
+		log.Fatalf("failed to ensure enterprise AI proposal schema in empresas db: %v", err)
+	}
+	startupTrace("after_empresa_ai_enterprise_schema")
 	if err := dbpkg.EnsureEmpresaSensorPuertasSchema(dbEmpresas); err != nil {
 		log.Fatalf("failed to ensure sensor puertas schema in empresas db: %v", err)
 	}

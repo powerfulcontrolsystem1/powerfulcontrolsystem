@@ -11776,6 +11776,24 @@ backend/handlers/user_config.go - Controlador que expone /api/user/configuracion
 backend/runtime_security_config_test.go
 - Pruebas de arranque seguro y variables críticas del runtime de producción.
 
+backend/ai/enterprise.go
+- Contratos sin efectos secundarios para el orquestador IA: contexto derivado
+  del servidor, registro cerrado de herramientas, identificadores criptograficos,
+  hash de planes y redaccion de campos sensibles.
+
+backend/db/ai_enterprise.go
+- Esquema y persistencia multiempresa de propuestas IA; incluye confirmacion de
+  un solo uso, idempotencia y el servicio transaccional inicial de habitaciones
+  hoteleras con tarifas por ocupacion.
+
+backend/handlers/ai_enterprise_orchestrator.go
+- API empresarial protegida para listar herramientas y crear, confirmar o
+  cancelar propuestas IA. Permanece desactivada por feature flags de entorno.
+
+documentos/ia_orquestador_empresarial.md
+- Contrato operativo, flags seguros, flujo de propuestas y plan de activacion
+  progresiva del orquestador IA empresarial.
+
 backend/db/soporte_remoto_security_test.go
 - Pruebas criptográficas de credenciales temporales de soporte remoto.
 
