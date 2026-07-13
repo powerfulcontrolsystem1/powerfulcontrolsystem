@@ -29,6 +29,7 @@ func TestEmpresaRoutesUsePermissionWrappers(t *testing.T) {
 
 	allowedWrappers := []string{
 		"WithEmpresaVentasPermissions(",
+		"WithEmpresaAIEnterprisePermissions(",
 		"WithEmpresaInventarioPermissions(",
 		"WithEmpresaFinanzasPermissions(",
 		"WithEmpresaContabilidadColombiaPermissions(",

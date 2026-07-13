@@ -1597,6 +1597,10 @@ Actualizacion 2026-04-29 (auditoria como fuente de contexto IA)
   - empresa_id, admin_email
   - provider, model_id
   - UNIQUE(empresa_id, admin_email)
+- empresa_ai_usuario_modelo_preferido:
+  - `usuario_id` unico, `model_id`, fechas, creador y estado.
+  - Solo guarda preferencia de interfaz; no contiene conversaciones ni altera
+    el aislamiento de datos, permisos o cuotas por empresa.
 
 ### Tabla de configuracion empresarial
 - empresa_configuracion_avanzada:

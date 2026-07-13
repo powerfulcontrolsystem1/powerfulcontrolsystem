@@ -11,6 +11,8 @@
   var INPUT_ID = 'aiChatInput';
   var MODE_ID = 'aiChatMode';
   var AGENT_ID = 'aiChatAgent';
+  var MODEL_ID = 'aiChatModel';
+  var MODEL_USAGE_ID = 'aiChatModelUsage';
   var ATTACHMENT_INPUT_ID = 'aiChatAttachment';
   var ATTACH_BTN_ID = 'aiChatAttachBtn';
   var CLEAR_ATTACHMENT_ID = 'aiChatClearAttachment';
@@ -49,6 +51,8 @@
     exportables: [],
     loading: false,
     selectedAttachment: null,
+    modelCatalog: [],
+    selectedModelID: '',
     chatEnabled: true,
     robotEnabled: false,
     voiceEnabled: false,
@@ -424,6 +428,11 @@
                     '<option value="agente_internet">Internet</option>' +
                   '</select>' +
                 '</label>' +
+                '<label class="ai-chat-control-field" for="' + MODEL_ID + '">' +
+                  '<span>Modelo</span>' +
+                  '<select id="' + MODEL_ID + '" class="form-input" aria-label="Modelo IA"><option value="">Cargando modelos...</option></select>' +
+                  '<small id="' + MODEL_USAGE_ID + '" class="ai-chat-model-usage">Uso: --</small>' +
+                '</label>' +
                 '<div class="ai-chat-control-field">' +
                   '<span>Adjunto</span>' +
                   '<div class="ai-chat-attachment-row">' +
@@ -485,6 +494,86 @@
       agentEl.innerHTML = buildAgentOptionsMarkup();
       agentEl.value = currentValue;
     }
+  }
+
+  function buildModelsEndpoint() {
+    return '/api/empresa/chat_con_inteligencia_artificial/modelos';
+  }
+
+  function buildModelPreferenceEndpoint() {
+    return '/api/empresa/chat_con_inteligencia_artificial/modelo_preferido';
+  }
+
+  function renderModelUsage(modelID) {
+    var usageEl = document.getElementById(MODEL_USAGE_ID);
+    if (!usageEl) return;
+    var selected = (state.modelCatalog || []).filter(function (item) { return item && item.id === modelID; })[0];
+    var usage = selected && selected.usage;
+    if (!usage || typeof usage.daily_limit === 'undefined') {
+      usageEl.textContent = 'Uso de esta empresa: --';
+      return;
+    }
+    usageEl.textContent = 'Uso de esta empresa: ' + Number(usage.daily_used || 0) + '/' + Number(usage.daily_limit || 0) + ' hoy. Quedan ' + Number(usage.daily_remaining || 0) + '.';
+  }
+
+  function applyResponseUsage(modelID, usage) {
+    if (!modelID || !usage || typeof usage !== 'object') return;
+    (state.modelCatalog || []).forEach(function (item) {
+      if (item && item.id === modelID) item.usage = usage;
+    });
+    renderModelUsage(modelID);
+  }
+
+  function loadChatModels() {
+    if (isPublicPortalContext() || isSuperContext()) return Promise.resolve();
+    var empresaID = parsePositiveInt(getCurrentEmpresaId());
+    var select = document.getElementById(MODEL_ID);
+    if (!empresaID || !select) return Promise.resolve();
+    return fetch(buildModelsEndpoint() + '?empresa_id=' + encodeURIComponent(String(empresaID)), {
+      credentials: 'same-origin', headers: { 'X-PCS-Source': 'ai_drawer' }
+    }).then(function (resp) {
+      if (!resp.ok) return parseErrorResponse(resp);
+      return resp.json();
+    }).then(function (data) {
+      var models = Array.isArray(data && data.modelos) ? data.modelos : [];
+      state.modelCatalog = models;
+      var selected = normalize(data && data.modelo_preferido) || state.selectedModelID;
+      select.innerHTML = '';
+      models.forEach(function (item) {
+        var option = document.createElement('option');
+        option.value = normalize(item.id);
+        var usage = item.usage || {};
+        option.textContent = normalize(item.display_name || item.id) + ' - quedan ' + Number(usage.daily_remaining || 0);
+        select.appendChild(option);
+      });
+      if (!models.length) {
+        select.innerHTML = '<option value="">Sin modelos disponibles</option>';
+        select.disabled = true;
+        return;
+      }
+      select.disabled = false;
+      if (!models.some(function (item) { return item && item.id === selected; })) selected = normalize(models[0].id);
+      select.value = selected;
+      state.selectedModelID = selected;
+      renderModelUsage(selected);
+    }).catch(function () {
+      select.innerHTML = '<option value="">Modelo no disponible</option>';
+      select.disabled = true;
+      renderModelUsage('');
+    });
+  }
+
+  function persistSelectedModel() {
+    if (isPublicPortalContext() || isSuperContext()) return Promise.resolve();
+    var empresaID = parsePositiveInt(getCurrentEmpresaId());
+    var select = document.getElementById(MODEL_ID);
+    if (!empresaID || !select || !normalize(select.value)) return Promise.resolve();
+    state.selectedModelID = normalize(select.value);
+    renderModelUsage(state.selectedModelID);
+    return fetch(buildModelPreferenceEndpoint(), {
+      method: 'PUT', credentials: 'same-origin', headers: { 'Content-Type': 'application/json', 'X-PCS-Source': 'ai_drawer' },
+      body: JSON.stringify({ empresa_id: empresaID, model_id: state.selectedModelID })
+    }).then(function (resp) { if (!resp.ok) return parseErrorResponse(resp); return resp.json(); });
   }
 
   function buildTextEndpoint() {
@@ -1699,6 +1788,11 @@
     return /\.(jpe?g|png|webp|gif|bmp|heic|heif)$/i.test(String(file.name || ''));
   }
 
+  function isSupportedAttachmentForAI(file) {
+    if (isImageFileForAI(file)) return true;
+    return /\.(pdf|txt|csv|docx|xlsx)$/i.test(String(file && file.name || ''));
+  }
+
   function buildReportesEndpoint() {
     return '/api/empresa/reportes_ia_chat';
   }
@@ -2907,6 +3001,8 @@
     var documentFormatSelect = document.getElementById(DOCUMENT_FORMAT_ID);
     var configBtn = document.getElementById('aiChatConfigBtn');
     var attachField = attachBtn && attachBtn.closest('.ai-chat-control-field');
+    var modelEl = document.getElementById(MODEL_ID);
+    var modelField = modelEl && modelEl.closest('.ai-chat-control-field');
     var superContext = isSuperContext();
     var publicContext = isPublicPortalContext();
 
@@ -2927,6 +3023,9 @@
     }
     if (attachField) {
       attachField.hidden = publicContext;
+    }
+    if (modelField) {
+      modelField.hidden = publicContext || superContext;
     }
 
     if (documentTools) {
@@ -3802,12 +3901,15 @@
     var endpoint = attachment ? buildAttachmentEndpoint() : buildTextEndpoint();
     var mode = getAssistantMode();
     var agentEl = document.getElementById(AGENT_ID);
+    var modelEl = document.getElementById(MODEL_ID);
     var agentID = agentEl ? normalize(agentEl.value) : 'general';
+    var modelID = modelEl ? normalize(modelEl.value) : '';
     var pageContext = String(window.location.pathname || '') + String(window.location.search || '');
     var body = {
       pregunta: query,
       modo_asistente: mode,
       agent_id: agentID || 'general',
+      model_id: modelID,
     };
 
     if (pageContext) {
@@ -3845,19 +3947,19 @@
     }
 
     if (attachment) {
-      if (!isImageFileForAI(attachment)) {
-        throw new Error('GPT-5.5 solo se usara para subir y analizar fotos o imagenes. Para documentos de texto usa el modo Documentos IA.');
+      if (!isSupportedAttachmentForAI(attachment)) {
+        throw new Error('Adjunta una imagen, PDF, documento de Office, CSV o texto de hasta 8 MB.');
       }
       var formData = new FormData();
       formData.set('pregunta', query);
       formData.set('modo_asistente', mode);
       formData.set('agent_id', agentID || 'general');
+      if (modelID) formData.set('model_id', modelID);
       if (pageContext) {
         formData.set('pagina_contexto', pageContext);
       }
       if (!isSuperContext()) {
         formData.set('empresa_id', String(body.empresa_id));
-        formData.set('use_gpt55', '1');
       }
       formData.set('file', attachment, attachment.name || 'adjunto');
       options.body = formData;
@@ -3890,6 +3992,7 @@
             var answerFallback = String(data.respuesta || data.answer || data.message || 'La IA respondio sin contenido.');
             var extractedFallback = extractPCSActionBlock(answerFallback);
             extractedFallback.meta = normalizeResponseModelMeta(data);
+            extractedFallback.usage = data.usage || null;
             return extractedFallback;
           });
       });
@@ -3910,6 +4013,7 @@
         var answer = String(data.respuesta || data.answer || data.message || 'La IA respondio sin contenido.');
         var extracted = extractPCSActionBlock(answer);
         extracted.meta = normalizeResponseModelMeta(data);
+        extracted.usage = data.usage || null;
         return extracted;
       });
   }
@@ -3976,6 +4080,7 @@
       }
     }).then(function (result) {
       setLastResponseModelMeta(result && result.meta ? result.meta : null);
+      if (result && result.meta) applyResponseUsage(result.meta.model_id, result.usage);
       var answer = result && result.clean ? result.clean : 'Respuesta lista.';
       var hasActions = !!(result && result.proposal && Array.isArray(result.proposal.actions) && result.proposal.actions.length);
       if (hasActions) {
@@ -4548,6 +4653,7 @@
     }).then(function (result) {
       if (requestSeq !== state.activeRequestSeq) return;
       setLastResponseModelMeta(result && result.meta ? result.meta : null);
+      if (result && result.meta) applyResponseUsage(result.meta.model_id, result.usage);
       var hasActions = !!(result && result.proposal && Array.isArray(result.proposal.actions) && result.proposal.actions.length);
       if (liveAssistantMessage && result && result.streamed) {
         finalizeStreamingAssistantMessage(liveAssistantMessage, result.clean, result.proposal);
@@ -4722,6 +4828,7 @@
     document.body.classList.add('ai-chat-drawer-open');
     setChatBackdropVisible(true);
     setChatBodyScrollLock(true);
+    loadChatModels();
     window.setTimeout(function () {
       var inp = document.getElementById(INPUT_ID);
       if (inp) inp.focus();
@@ -4780,11 +4887,13 @@
     var clearAttachBtn = document.getElementById(CLEAR_ATTACHMENT_ID);
     var clearBtn = document.getElementById(CLEAR_CHAT_ID);
     var modeEl = document.getElementById(MODE_ID);
+    var modelEl = document.getElementById(MODEL_ID);
     var input = document.getElementById(INPUT_ID);
 
     if (!toggle || !drawer || !closeBtn || !form || !messagesEl) return;
     var submitBtn = form.querySelector('button[type="submit"]');
     ensureDocumentModeUI();
+    loadChatModels();
 
     toggle.addEventListener('click', function () {
       if (!state.chatEnabled) return;
@@ -4836,6 +4945,13 @@
         setNotice('Modo actualizado. Puedes seguir consultando normalmente.');
       });
     }
+    if (modelEl) {
+      modelEl.addEventListener('change', function () {
+        persistSelectedModel().catch(function () {
+          setNotice('No se pudo guardar la preferencia de modelo. Intenta de nuevo.', true);
+        });
+      });
+    }
     if (hintToggle && hints) {
       hintToggle.addEventListener('click', function () {
         hints.classList.toggle('is-hidden');
@@ -4874,9 +4990,9 @@
           setNotice('El archivo supera el maximo permitido de 8 MB.', true);
           return;
         }
-        if (!isImageFileForAI(file)) {
+        if (!isSupportedAttachmentForAI(file)) {
           clearAttachmentSelection();
-          setNotice('GPT-5.5 solo se usa para subir y analizar fotos o imagenes. Para documentos usa el modo Documentos IA.', true);
+          setNotice('Adjunta una imagen, PDF, documento de Office, CSV o texto de hasta 8 MB.', true);
           return;
         }
         state.selectedAttachment = file;

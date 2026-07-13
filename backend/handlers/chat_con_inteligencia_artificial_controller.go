@@ -258,16 +258,31 @@ func empresaAIModelCatalog() []empresaAIModelDef {
 			ApiKeyEnv:      "OPENAI_API_KEY",
 			Famous:         true,
 			FreeDailyLimit: 20,
-			Description:    "Analisis de fotos e imagenes con OpenAI. Los documentos de texto se generan con GPT-5.4 mini.",
+			Description:    "Analisis de fotos, documentos e imagenes con OpenAI. Puede mantenerse como alternativa compatible desde Super Administrador.",
+		},
+		{
+			ID:             "openai:gpt-5.6-luna",
+			Provider:       "openai",
+			DisplayName:    "OpenAI GPT-5.6 Luna",
+			UpstreamModel:  "gpt-5.6-luna",
+			Endpoint:       "https://api.openai.com/v1/responses",
+			ApiKeyEnv:      "OPENAI_API_KEY",
+			Famous:         true,
+			FreeDailyLimit: 20,
+			Description:    "Modelo avanzado configurable para analisis de fotos, documentos y tareas complejas. Activelo solo despues de validarlo con la cuenta OpenAI.",
 		},
 	}
 }
 
 func availableEmpresaAIModelCatalog(dbSuper *sql.DB) []empresaAIModelDef {
 	catalog := empresaAIModelCatalog()
+	enabledModels, _ := getChatIAEmpresaModelosHabilitados(dbSuper)
 	available := make([]empresaAIModelDef, 0, len(catalog))
 	for _, item := range catalog {
 		if !isAIProviderEnabled(dbSuper, item.Provider) {
+			continue
+		}
+		if len(enabledModels) > 0 && !enabledModels[item.ID] {
 			continue
 		}
 		available = append(available, item)
@@ -296,6 +311,12 @@ func availableEmpresaAIModelMap(dbSuper *sql.DB) map[string]empresaAIModelDef {
 }
 
 func firstAvailableEmpresaAIModelID(dbSuper *sql.DB) string {
+	preferred, _, _, err := getChatIAEmpresaModeloOperacion(dbSuper)
+	if err == nil {
+		if _, ok := availableEmpresaAIModelMap(dbSuper)[preferred]; ok {
+			return preferred
+		}
+	}
 	catalog := availableEmpresaAIModelCatalog(dbSuper)
 	if len(catalog) == 0 {
 		return ""
@@ -384,10 +405,15 @@ func (c *EmpresaAIChatController) ModelosHandler(w http.ResponseWriter, r *http.
 		return
 	}
 
-	modeloPreferido, err := dbpkg.GetEmpresaAIModeloPreferido(c.dbEmp, empresaID, googleAccount)
+	modeloPreferido, err := dbpkg.GetEmpresaAIUsuarioModeloPreferido(c.dbEmp, googleAccount)
 	if err != nil {
 		http.Error(w, "No se pudo consultar el modelo preferido", http.StatusInternalServerError)
 		return
+	}
+	if modeloPreferido == "" {
+		// Compatibilidad de transicion: una preferencia heredada solo sirve como
+		// valor inicial. Toda seleccion nueva se guarda por usuario.
+		modeloPreferido, _ = dbpkg.GetEmpresaAIModeloPreferido(c.dbEmp, empresaID, googleAccount)
 	}
 
 	catalog := availableEmpresaAIModelCatalog(c.dbSuper)
@@ -405,8 +431,16 @@ func (c *EmpresaAIChatController) ModelosHandler(w http.ResponseWriter, r *http.
 		modeloPreferido = firstAvailableEmpresaAIModelID(c.dbSuper)
 	}
 
+	empresaMaxConsultas, _, _, _ := getChatIAEmpresaMaxConsultasDia(c.dbSuper)
+	fechaUso := time.Now().Format("2006-01-02")
 	items := make([]map[string]interface{}, 0, len(catalog))
 	for _, it := range catalog {
+		usage, _ := dbpkg.GetEmpresaAIUsoDiario(c.dbEmp, empresaID, it.Provider, it.ID, fechaUso)
+		limit := effectiveDailyLimitBySuperConfig(empresaMaxConsultas, it.FreeDailyLimit)
+		remaining := limit - usage.Consultas
+		if remaining < 0 {
+			remaining = 0
+		}
 		items = append(items, map[string]interface{}{
 			"id":               it.ID,
 			"provider":         it.Provider,
@@ -416,6 +450,7 @@ func (c *EmpresaAIChatController) ModelosHandler(w http.ResponseWriter, r *http.
 			"free_daily_limit": it.FreeDailyLimit,
 			"description":      it.Description,
 			"plan_url":         it.PlanURL + "?empresa_id=" + fmt.Sprintf("%d", empresaID),
+			"usage":            map[string]interface{}{"daily_used": usage.Consultas, "daily_limit": limit, "daily_remaining": remaining},
 		})
 	}
 
@@ -429,6 +464,7 @@ func (c *EmpresaAIChatController) ModelosHandler(w http.ResponseWriter, r *http.
 		"streaming_enabled": streamingEnabled,
 		"agentes":           empresaAIChatAgentCatalog(),
 		"agent_preferido":   "general",
+		"preference_scope":  "usuario",
 		"modelos":           items,
 	})
 }
@@ -461,17 +497,21 @@ func (c *EmpresaAIChatController) ModeloPreferidoHandler(w http.ResponseWriter, 
 			return
 		}
 
-		modelID, err := dbpkg.GetEmpresaAIModeloPreferido(c.dbEmp, empresaID, googleAccount)
+		modelID, err := dbpkg.GetEmpresaAIUsuarioModeloPreferido(c.dbEmp, googleAccount)
 		if err != nil {
 			http.Error(w, "No se pudo consultar el modelo preferido", http.StatusInternalServerError)
 			return
 		}
+		if modelID == "" {
+			modelID, _ = dbpkg.GetEmpresaAIModeloPreferido(c.dbEmp, empresaID, googleAccount)
+		}
 
 		writeJSON(w, http.StatusOK, map[string]interface{}{
-			"ok":             true,
-			"empresa_id":     empresaID,
-			"google_account": googleAccount,
-			"model_id":       modelID,
+			"ok":               true,
+			"empresa_id":       empresaID,
+			"google_account":   googleAccount,
+			"model_id":         modelID,
+			"preference_scope": "usuario",
 		})
 		return
 
@@ -521,17 +561,18 @@ func (c *EmpresaAIChatController) ModeloPreferidoHandler(w http.ResponseWriter, 
 			return
 		}
 
-		if err := dbpkg.UpsertEmpresaAIModeloPreferido(c.dbEmp, payload.EmpresaID, googleAccount, payload.ModelID, googleAccount); err != nil {
+		if err := dbpkg.UpsertEmpresaAIUsuarioModeloPreferido(c.dbEmp, googleAccount, payload.ModelID, googleAccount); err != nil {
 			http.Error(w, "No se pudo registrar el modelo preferido", http.StatusInternalServerError)
 			return
 		}
 
 		writeJSON(w, http.StatusOK, map[string]interface{}{
-			"ok":             true,
-			"empresa_id":     payload.EmpresaID,
-			"google_account": googleAccount,
-			"model_id":       payload.ModelID,
-			"saved":          true,
+			"ok":               true,
+			"empresa_id":       payload.EmpresaID,
+			"google_account":   googleAccount,
+			"model_id":         payload.ModelID,
+			"preference_scope": "usuario",
+			"saved":            true,
 		})
 		return
 	}
@@ -713,8 +754,8 @@ func (c *EmpresaAIChatController) ConsultarHandler(w http.ResponseWriter, r *htt
 	}
 
 	adminEmail := googleAccount
-	if err := dbpkg.UpsertEmpresaAIModeloPreferido(c.dbEmp, payload.EmpresaID, adminEmail, model.ID, adminEmail); err != nil {
-		http.Error(w, "No se pudo registrar modelo para la cuenta de Google", http.StatusInternalServerError)
+	if err := dbpkg.UpsertEmpresaAIUsuarioModeloPreferido(c.dbEmp, adminEmail, model.ID, adminEmail); err != nil {
+		http.Error(w, "No se pudo registrar la preferencia de modelo del usuario", http.StatusInternalServerError)
 		return
 	}
 	_, err = dbpkg.RegisterEmpresaAIConsulta(c.dbEmp, dbpkg.EmpresaAIConsulta{
@@ -773,8 +814,8 @@ func (c *EmpresaAIChatController) ConsultarHandler(w http.ResponseWriter, r *htt
 	})
 }
 
-// ConsultarConAdjuntoHandler permite consultas con fotos/imagenes usando GPT-5.5.
-// Este endpoint esta pensado para consultas diarias configurables por empresa usando GPT-5.5.
+// ConsultarConAdjuntoHandler procesa adjuntos con el modelo avanzado configurado
+// por Super Administrador. El cliente nunca decide un modelo deshabilitado.
 func (c *EmpresaAIChatController) ConsultarConAdjuntoHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "Metodo no permitido", http.StatusMethodNotAllowed)
@@ -794,15 +835,15 @@ func (c *EmpresaAIChatController) ConsultarConAdjuntoHandler(w http.ResponseWrit
 	// - empresa_id
 	// - pregunta
 	// - historial (json)
-	// - use_gpt55 (1/true)
+	// - model_id (opcional; debe estar habilitado)
 	// - file (opcional)
 	att, err := parseSingleAttachmentFromMultipart(r, "file", 8<<20)
 	if err != nil {
 		http.Error(w, "adjunto inválido: "+err.Error(), http.StatusBadRequest)
 		return
 	}
-	if att == nil || !isImageAIAttachment(att) {
-		http.Error(w, "GPT-5.5 solo esta habilitado para subir y analizar fotos o imagenes. Para documentos de texto usa el modo Documentos IA con GPT-5.4 mini.", http.StatusBadRequest)
+	if att == nil || !isSupportedAIAttachment(att) {
+		http.Error(w, "Adjunta una imagen, PDF, documento de Office, CSV o texto de hasta 8 MB.", http.StatusBadRequest)
 		return
 	}
 
@@ -828,16 +869,6 @@ func (c *EmpresaAIChatController) ConsultarConAdjuntoHandler(w http.ResponseWrit
 	}
 	paginaContexto := strings.TrimSpace(r.FormValue("pagina_contexto"))
 	modoAsistente := normalizeAIAssistantMode(r.FormValue("modo_asistente"))
-
-	useGPT55 := queryBool(r, "use_gpt55") || queryBool(r, "gpt55") || queryBool(r, "premium")
-	if v := strings.TrimSpace(strings.ToLower(r.FormValue("use_gpt55"))); v == "1" || v == "true" || v == "si" || v == "sí" {
-		useGPT55 = true
-	}
-	useGPT55 = true
-	if !useGPT55 {
-		http.Error(w, "Debe adjuntar un archivo o activar use_gpt55=1", http.StatusBadRequest)
-		return
-	}
 
 	googleAccount := googleAccountFromRequest(r)
 	if googleAccount == "" {
@@ -870,7 +901,7 @@ func (c *EmpresaAIChatController) ConsultarConAdjuntoHandler(w http.ResponseWrit
 		return
 	}
 
-	// Enforce GPT-5.5 daily limit (configurable)
+	// El limite avanzado es independiente del limite de chat de texto.
 	maxGPT55, _, _, err := getChatIAEmpresaMaxGPT55ConsultasDia(c.dbSuper)
 	if err != nil {
 		http.Error(w, "No se pudo consultar límite GPT-5.5", http.StatusInternalServerError)
@@ -879,19 +910,23 @@ func (c *EmpresaAIChatController) ConsultarConAdjuntoHandler(w http.ResponseWrit
 	if maxGPT55 == 0 {
 		writeJSON(w, http.StatusTooManyRequests, map[string]interface{}{
 			"ok":    false,
-			"code":  "ai_empresa_gpt55_blocked",
-			"error": "Las consultas con GPT-5.5 están bloqueadas para empresas (límite en 0).",
+			"code":  "ai_empresa_advanced_blocked",
+			"error": "Las consultas avanzadas con adjuntos están bloqueadas para empresas (límite en 0).",
 		})
 		return
 	}
 
 	catalog := availableEmpresaAIModelMap(c.dbSuper)
-	model, ok := catalog["openai:gpt-5.5"]
+	modelID := strings.TrimSpace(r.FormValue("model_id"))
+	if modelID == "" {
+		modelID, _, _, _ = getChatIAEmpresaModeloAdjuntos(c.dbSuper)
+	}
+	model, ok := catalog[modelID]
 	if !ok {
 		writeJSON(w, http.StatusServiceUnavailable, map[string]interface{}{
 			"ok":    false,
-			"code":  "ai_gpt55_unavailable",
-			"error": "GPT-5.5 no está disponible o el proveedor OpenAI está deshabilitado.",
+			"code":  "ai_advanced_model_unavailable",
+			"error": "El modelo avanzado configurado no está disponible o está deshabilitado.",
 		})
 		return
 	}
@@ -905,8 +940,8 @@ func (c *EmpresaAIChatController) ConsultarConAdjuntoHandler(w http.ResponseWrit
 	if usoActual.Consultas >= maxGPT55 {
 		writeJSON(w, http.StatusTooManyRequests, map[string]interface{}{
 			"ok":    false,
-			"code":  "ai_empresa_gpt55_limit_reached",
-			"error": "Se alcanzó el límite diario de consultas con GPT-5.5 para esta empresa. Intenta mañana o solicita ampliar el límite en Super Administrador.",
+			"code":  "ai_empresa_advanced_limit_reached",
+			"error": "Se alcanzó el límite diario de consultas avanzadas para esta empresa. Intenta mañana o solicita ampliar el límite en Super Administrador.",
 			"usage": map[string]interface{}{
 				"daily_used":      usoActual.Consultas,
 				"daily_limit":     maxGPT55,
@@ -963,7 +998,7 @@ func (c *EmpresaAIChatController) ConsultarConAdjuntoHandler(w http.ResponseWrit
 		PlanActual:       planActual,
 		UsuarioCreador:   adminEmail,
 		Estado:           "activo",
-		Observaciones:    "consulta con adjunto/gpt55 desde chat_con_inteligencia_artificial agente=" + agentID,
+		Observaciones:    "consulta con adjunto desde chat_con_inteligencia_artificial agente=" + agentID,
 	})
 	if err != nil {
 		http.Error(w, "No se pudo registrar auditoria de consulta", http.StatusInternalServerError)
@@ -1467,6 +1502,22 @@ func isImageAIAttachment(att *aiAttachment) bool {
 	ext := strings.ToLower(strings.TrimSpace(filepath.Ext(att.Filename)))
 	switch ext {
 	case ".jpg", ".jpeg", ".png", ".webp", ".gif", ".bmp", ".heic", ".heif":
+		return true
+	default:
+		return false
+	}
+}
+
+func isSupportedAIAttachment(att *aiAttachment) bool {
+	if att == nil || len(att.Bytes) == 0 || strings.TrimSpace(att.Filename) == "" {
+		return false
+	}
+	if isImageAIAttachment(att) {
+		return true
+	}
+	ext := strings.ToLower(strings.TrimSpace(filepath.Ext(att.Filename)))
+	switch ext {
+	case ".pdf", ".txt", ".csv", ".docx", ".xlsx":
 		return true
 	default:
 		return false

@@ -268,6 +268,14 @@ type EmpresaAIModeloPreferido struct {
 	Observaciones      string `json:"observaciones"`
 }
 
+// EmpresaAIUsuarioModeloPreferido conserva la eleccion personal de modelo.
+// La conversacion y los datos operativos permanecen aislados por empresa_id.
+type EmpresaAIUsuarioModeloPreferido struct {
+	UsuarioID          string `json:"usuario_id"`
+	ModelID            string `json:"model_id"`
+	FechaActualizacion string `json:"fecha_actualizacion"`
+}
+
 // SuperAIConsulta representa una consulta/respuesta de IA en alcance global super.
 type SuperAIConsulta struct {
 	ID               int64  `json:"id"`
@@ -368,10 +376,19 @@ func EnsureEmpresaAIChatSchema(dbConn *sql.DB) error {
 			observaciones TEXT,
 			UNIQUE(empresa_id, admin_email)
 		);`,
+		`CREATE TABLE IF NOT EXISTS empresa_ai_usuario_modelo_preferido (
+			usuario_id TEXT PRIMARY KEY,
+			model_id TEXT NOT NULL,
+			fecha_creacion TEXT DEFAULT (CURRENT_TIMESTAMP),
+			fecha_actualizacion TEXT DEFAULT (CURRENT_TIMESTAMP),
+			usuario_creador TEXT,
+			estado TEXT DEFAULT 'activo'
+		);`,
 		`CREATE INDEX IF NOT EXISTS ix_empresa_ai_consultas_empresa_fecha ON empresa_ai_consultas(empresa_id, fecha_consulta DESC, id DESC);`,
 		`CREATE INDEX IF NOT EXISTS ix_empresa_ai_consultas_empresa_modelo ON empresa_ai_consultas(empresa_id, provider, model_id);`,
 		`CREATE INDEX IF NOT EXISTS ix_empresa_ai_uso_diario_empresa_fecha ON empresa_ai_uso_diario(empresa_id, fecha_uso DESC);`,
 		`CREATE INDEX IF NOT EXISTS ix_empresa_ai_modelo_preferido_empresa_admin ON empresa_ai_modelo_preferido(empresa_id, admin_email, estado);`,
+		`CREATE INDEX IF NOT EXISTS ix_empresa_ai_usuario_modelo_preferido_usuario ON empresa_ai_usuario_modelo_preferido(usuario_id, estado);`,
 	}
 	for _, stmt := range stmts {
 		if _, err := dbConn.Exec(stmt); err != nil {
@@ -447,6 +464,50 @@ func EnsureEmpresaAIChatSchema(dbConn *sql.DB) error {
 	}
 
 	return nil
+}
+
+func GetEmpresaAIUsuarioModeloPreferido(dbConn *sql.DB, usuarioID string) (string, error) {
+	usuarioID = aiNormalizeAdminEmail(usuarioID)
+	if usuarioID == "" {
+		return "", fmt.Errorf("usuario_id es obligatorio")
+	}
+	read := func() (string, error) {
+		var modelID string
+		err := queryRowSQLCompat(dbConn, `SELECT COALESCE(model_id, '') FROM empresa_ai_usuario_modelo_preferido WHERE usuario_id = ? AND COALESCE(estado, 'activo') <> 'inactivo' LIMIT 1`, usuarioID).Scan(&modelID)
+		if err == sql.ErrNoRows {
+			return "", nil
+		}
+		return strings.TrimSpace(modelID), err
+	}
+	value, err := read()
+	if err != nil && shouldRepairAIChatSchema(err) {
+		if schemaErr := EnsureEmpresaAIChatSchema(dbConn); schemaErr != nil {
+			return "", schemaErr
+		}
+		return read()
+	}
+	return value, err
+}
+
+func UpsertEmpresaAIUsuarioModeloPreferido(dbConn *sql.DB, usuarioID, modelID, usuarioCreador string) error {
+	usuarioID = aiNormalizeAdminEmail(usuarioID)
+	modelID = aiNormalizeModelID(modelID)
+	if usuarioID == "" || modelID == "" {
+		return fmt.Errorf("usuario_id y model_id son obligatorios")
+	}
+	if strings.TrimSpace(usuarioCreador) == "" {
+		usuarioCreador = usuarioID
+	}
+	now := sqlNowExpr()
+	query := `INSERT INTO empresa_ai_usuario_modelo_preferido (usuario_id, model_id, fecha_creacion, fecha_actualizacion, usuario_creador, estado) VALUES (?, ?, ` + now + `, ` + now + `, ?, 'activo') ON CONFLICT(usuario_id) DO UPDATE SET model_id = excluded.model_id, fecha_actualizacion = ` + now + `, usuario_creador = excluded.usuario_creador, estado = 'activo'`
+	_, err := execSQLCompat(dbConn, query, usuarioID, modelID, strings.TrimSpace(usuarioCreador))
+	if err != nil && shouldRepairAIChatSchema(err) {
+		if schemaErr := EnsureEmpresaAIChatSchema(dbConn); schemaErr != nil {
+			return schemaErr
+		}
+		_, err = execSQLCompat(dbConn, query, usuarioID, modelID, strings.TrimSpace(usuarioCreador))
+	}
+	return err
 }
 
 // EnsureSuperAIChatSchema crea/ajusta el esquema del chat IA global para super administrador.

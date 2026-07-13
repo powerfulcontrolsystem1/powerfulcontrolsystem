@@ -228,12 +228,26 @@ func AIModelsConfigHandler(dbSuper *sql.DB) http.HandlerFunc {
 				}
 			}
 
+			modeloOperacion, _, _, _ := getChatIAEmpresaModeloOperacion(dbSuper)
+			modeloAdjuntos, _, _, _ := getChatIAEmpresaModeloAdjuntos(dbSuper)
+			modelosHabilitados, _ := getChatIAEmpresaModelosHabilitados(dbSuper)
+			if len(modelosHabilitados) == 0 {
+				modelosHabilitados = map[string]bool{}
+				for _, model := range empresaAIModelCatalog() {
+					modelosHabilitados[model.ID] = true
+				}
+			}
 			writeJSON(w, http.StatusOK, map[string]interface{}{
 				"ok":                   true,
 				"google_account":       adminEmail,
 				"encryption_available": utils.EncryptionAvailable(),
 				"service_status":       superAIServiceStatus(dbSuper),
 				"modelos":              items,
+				"chat_model_policy": map[string]interface{}{
+					"operation_model_id":  modeloOperacion,
+					"attachment_model_id": modeloAdjuntos,
+					"enabled_model_ids":   modelosHabilitados,
+				},
 			})
 			return
 
@@ -243,8 +257,11 @@ func AIModelsConfigHandler(dbSuper *sql.DB) http.HandlerFunc {
 					ModelID string `json:"model_id"`
 					APIKey  string `json:"api_key"`
 				} `json:"credentials"`
-				Enabled         *bool           `json:"enabled"`
-				ProviderEnabled map[string]bool `json:"provider_enabled"`
+				Enabled           *bool           `json:"enabled"`
+				ProviderEnabled   map[string]bool `json:"provider_enabled"`
+				OperationModelID  string          `json:"operation_model_id"`
+				AttachmentModelID string          `json:"attachment_model_id"`
+				EnabledModelIDs   []string        `json:"enabled_model_ids"`
 			}
 			if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
 				http.Error(w, "invalid payload: "+err.Error(), http.StatusBadRequest)
@@ -312,6 +329,64 @@ func AIModelsConfigHandler(dbSuper *sql.DB) http.HandlerFunc {
 				}
 			}
 
+			if payload.OperationModelID != "" || payload.AttachmentModelID != "" || payload.EnabledModelIDs != nil {
+				catalog := empresaAIModelMap()
+				enabled := make([]string, 0, len(payload.EnabledModelIDs))
+				seen := map[string]bool{}
+				for _, raw := range payload.EnabledModelIDs {
+					id := strings.TrimSpace(raw)
+					if _, ok := catalog[id]; !ok {
+						http.Error(w, "modelo no soportado", http.StatusBadRequest)
+						return
+					}
+					if !seen[id] {
+						enabled = append(enabled, id)
+						seen[id] = true
+					}
+				}
+				if payload.EnabledModelIDs != nil && len(enabled) == 0 {
+					http.Error(w, "debe permanecer al menos un modelo habilitado", http.StatusBadRequest)
+					return
+				}
+				operation := strings.TrimSpace(payload.OperationModelID)
+				attachment := strings.TrimSpace(payload.AttachmentModelID)
+				if operation == "" {
+					operation, _, _, _ = getChatIAEmpresaModeloOperacion(dbSuper)
+				}
+				if attachment == "" {
+					attachment, _, _, _ = getChatIAEmpresaModeloAdjuntos(dbSuper)
+				}
+				if _, ok := catalog[operation]; !ok {
+					http.Error(w, "modelo de operaciones no soportado", http.StatusBadRequest)
+					return
+				}
+				if _, ok := catalog[attachment]; !ok {
+					http.Error(w, "modelo de adjuntos no soportado", http.StatusBadRequest)
+					return
+				}
+				if payload.EnabledModelIDs != nil && (!seen[operation] || !seen[attachment]) {
+					http.Error(w, "los modelos elegidos deben permanecer habilitados", http.StatusBadRequest)
+					return
+				}
+				entries := map[string]string{
+					superChatIAEmpresaModeloOperacionKey: operation,
+					superChatIAEmpresaModeloAdjuntosKey:  attachment,
+				}
+				if payload.EnabledModelIDs != nil {
+					entries[superChatIAEmpresaModelosHabilitadosKey] = strings.Join(enabled, ",")
+				}
+				for key, value := range entries {
+					if err := dbpkg.SetConfigValue(dbSuper, key, value, false); err != nil {
+						http.Error(w, "no se pudo guardar la politica de modelos", http.StatusInternalServerError)
+						return
+					}
+					if err := dbpkg.SetConfigValue(dbSuper, key+superChatIALogicaUpdatedBySuffix, adminEmail, false); err != nil {
+						http.Error(w, "no se pudo guardar la politica de modelos", http.StatusInternalServerError)
+						return
+					}
+				}
+			}
+
 			defs := aiCredentialByModelID()
 			updated := make([]string, 0, len(payload.Credentials))
 			for _, item := range payload.Credentials {
@@ -357,7 +432,7 @@ func AIModelsConfigHandler(dbSuper *sql.DB) http.HandlerFunc {
 				updated = append(updated, modelID)
 			}
 
-			if len(updated) == 0 && payload.Enabled == nil && len(payload.ProviderEnabled) == 0 {
+			if len(updated) == 0 && payload.Enabled == nil && len(payload.ProviderEnabled) == 0 && payload.EnabledModelIDs == nil && payload.OperationModelID == "" && payload.AttachmentModelID == "" {
 				http.Error(w, "debe enviar al menos una credencial valida o un cambio de estado", http.StatusBadRequest)
 				return
 			}

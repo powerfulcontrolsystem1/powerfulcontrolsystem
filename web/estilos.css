@@ -2235,10 +2235,11 @@ body.has-floating-menu.admin-empresa-shell .admin-frame-toolbar{top:max(var(--fl
 .ai-chat-icon-btn svg{display:block}
 .ai-action-btn{display:inline-flex;align-items:center;justify-content:center;gap:8px}
 .ai-action-btn img{width:18px;height:18px;display:block;flex:0 0 auto}
-.ai-chat-controls{display:grid;grid-template-columns:minmax(140px,1fr) minmax(140px,1fr) auto;align-items:end;gap:8px;min-width:0;flex:1 1 auto}
+.ai-chat-controls{display:grid;grid-template-columns:repeat(3,minmax(120px,1fr)) auto;align-items:end;gap:8px;min-width:0;flex:1 1 auto}
 .ai-chat-control-field{display:flex;flex-direction:column;gap:4px;min-width:0}
 .ai-chat-control-field > span{font-size:.78rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
 .ai-chat-control-field select.form-input{width:100%;min-width:0}
+.ai-chat-model-usage{display:block;min-height:1.1em;font-size:.72rem;line-height:1.25;color:var(--muted)}
 .ai-chat-document-tools.is-hidden{display:none}
 .ai-chat-document-tool-row{display:flex;align-items:center;gap:6px;flex-wrap:nowrap}
 .ai-chat-document-tool-row select.form-input{min-width:92px}
@@ -14370,7 +14371,7 @@ html.theme-light .ai-gemini-inline-alert{
 .ai-chat-drawer .ai-chat-form{gap:8px;padding:12px}
 .ai-chat-drawer .ai-chat-toolbar-row{display:grid;grid-template-columns:1fr;gap:8px}
 .ai-chat-drawer .ai-chat-voice-toolbar{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:0}
-.ai-chat-drawer .ai-chat-controls{display:grid;grid-template-columns:minmax(140px,1fr) minmax(140px,1fr) auto;align-items:end;gap:8px;min-width:0;flex:1 1 auto}
+.ai-chat-drawer .ai-chat-controls{display:grid;grid-template-columns:repeat(3,minmax(120px,1fr)) auto;align-items:end;gap:8px;min-width:0;flex:1 1 auto}
 .ai-chat-drawer .ai-chat-control-field select.form-input{width:100%;min-width:0}
 .ai-chat-drawer .ai-chat-document-tool-row{display:flex;align-items:center;gap:6px;flex-wrap:nowrap}
 .ai-chat-drawer .ai-chat-attachment-row{display:flex;align-items:center;gap:6px;flex-wrap:nowrap}

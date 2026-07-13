@@ -37868,3 +37868,7 @@ Archivos modificados:
   transaccion de `CreateProducto`, incluido inventario inicial e historial.
 - Las escrituras permanecen desactivadas hasta habilitar flags globales y por
   herramienta. Se agregan regresiones de permisos y validacion del plan.
+# 2026-07-13 - Chat IA: catalogo administrable y preferencias por usuario
+- Se incorpora GPT-5.6 Luna como modelo avanzado configurable junto con GPT-5.4 mini y GPT-5.5.
+- Super Administrador puede habilitar modelos y definir los predeterminados de operaciones y adjuntos.
+- El chat recuerda el modelo por usuario, muestra uso/restante por empresa activa y acepta imagenes, PDF, TXT, CSV, DOCX y XLSX de hasta 8 MB.

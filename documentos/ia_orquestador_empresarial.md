@@ -18,6 +18,21 @@ sola respuesta textual de un modelo.
 
 ## Contrato de seguridad
 
+### Modelos, adjuntos y preferencias
+
+- El catalogo empresarial contempla `openai:gpt-5.4-mini`, `openai:gpt-5.5` y
+  `openai:gpt-5.6-luna`. Super Administrador habilita los modelos permitidos y
+  define uno para operaciones y otro para adjuntos o analisis avanzado.
+- La eleccion realizada en el chat se conserva por usuario autenticado. La
+  conversacion, los permisos, el contexto, el consumo y los datos siguen
+  aislados estrictamente por `empresa_id`; una preferencia nunca concede acceso
+  entre empresas.
+- El selector informa el uso y saldo diario de la empresa activa. El backend
+  vuelve a validar el modelo habilitado, incluso si el navegador manipula la
+  solicitud.
+- Se aceptan imagenes, PDF, TXT, CSV, DOCX y XLSX de hasta 8 MB. El nombre del
+  archivo no se utiliza como ruta ni se publica desde este flujo.
+
 - El contexto se deriva del wrapper de permisos: usuario autenticado, empresa,
   rol efectivo, request y conversacion. El `empresa_id` del cliente solo pasa
   si coincide con el contexto validado.
