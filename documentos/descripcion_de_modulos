@@ -4476,7 +4476,7 @@ de productos/SKUs, caja, impuestos, cliente y reglas de facturacion.
 ## Chat con inteligencia artificial - modelos y adjuntos (2026-07-13)
 
 El chat empresarial permite al usuario autenticado elegir entre los modelos
-habilitados por Super Administrador. La preferencia se guarda por usuario; el
+habilitados por Super Administrador. Modelo, modo y agente se guardan por usuario; el
 historial, la autorizacion, el contexto y el consumo siguen aislados por
 empresa. El selector muestra uso/restante de la empresa activa y el chat admite
 imagenes, PDF, TXT, CSV, DOCX y XLSX con limite de 8 MB. Super Administrador

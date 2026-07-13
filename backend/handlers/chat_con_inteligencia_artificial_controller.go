@@ -191,8 +191,10 @@ type aiAttachment struct {
 }
 
 type empresaAIModeloPreferidoPayload struct {
-	EmpresaID int64  `json:"empresa_id"`
-	ModelID   string `json:"model_id"`
+	EmpresaID     int64  `json:"empresa_id"`
+	ModelID       string `json:"model_id"`
+	ModoAsistente string `json:"modo_asistente"`
+	AgentID       string `json:"agent_id"`
 }
 
 func NewEmpresaAIChatController(dbEmp, dbSuper *sql.DB) *EmpresaAIChatController {
@@ -405,11 +407,12 @@ func (c *EmpresaAIChatController) ModelosHandler(w http.ResponseWriter, r *http.
 		return
 	}
 
-	modeloPreferido, err := dbpkg.GetEmpresaAIUsuarioModeloPreferido(c.dbEmp, googleAccount)
+	userPrefs, err := dbpkg.GetEmpresaAIUsuarioPreferencias(c.dbEmp, googleAccount)
 	if err != nil {
 		http.Error(w, "No se pudo consultar el modelo preferido", http.StatusInternalServerError)
 		return
 	}
+	modeloPreferido := userPrefs.ModelID
 	if modeloPreferido == "" {
 		// Compatibilidad de transicion: una preferencia heredada solo sirve como
 		// valor inicial. Toda seleccion nueva se guarda por usuario.
@@ -463,7 +466,8 @@ func (c *EmpresaAIChatController) ModelosHandler(w http.ResponseWriter, r *http.
 		"modelo_preferido":  modeloPreferido,
 		"streaming_enabled": streamingEnabled,
 		"agentes":           empresaAIChatAgentCatalog(),
-		"agent_preferido":   "general",
+		"agent_preferido":   normalizeEmpresaAIChatAgentID(userPrefs.AgentID),
+		"modo_preferido":    normalizeAIAssistantMode(userPrefs.ModoAsistente),
 		"preference_scope":  "usuario",
 		"modelos":           items,
 	})
@@ -497,20 +501,22 @@ func (c *EmpresaAIChatController) ModeloPreferidoHandler(w http.ResponseWriter, 
 			return
 		}
 
-		modelID, err := dbpkg.GetEmpresaAIUsuarioModeloPreferido(c.dbEmp, googleAccount)
+		userPrefs, err := dbpkg.GetEmpresaAIUsuarioPreferencias(c.dbEmp, googleAccount)
 		if err != nil {
 			http.Error(w, "No se pudo consultar el modelo preferido", http.StatusInternalServerError)
 			return
 		}
-		if modelID == "" {
-			modelID, _ = dbpkg.GetEmpresaAIModeloPreferido(c.dbEmp, empresaID, googleAccount)
+		if userPrefs.ModelID == "" {
+			userPrefs.ModelID, _ = dbpkg.GetEmpresaAIModeloPreferido(c.dbEmp, empresaID, googleAccount)
 		}
 
 		writeJSON(w, http.StatusOK, map[string]interface{}{
 			"ok":               true,
 			"empresa_id":       empresaID,
 			"google_account":   googleAccount,
-			"model_id":         modelID,
+			"model_id":         userPrefs.ModelID,
+			"modo_asistente":   userPrefs.ModoAsistente,
+			"agent_id":         userPrefs.AgentID,
 			"preference_scope": "usuario",
 		})
 		return
@@ -561,7 +567,20 @@ func (c *EmpresaAIChatController) ModeloPreferidoHandler(w http.ResponseWriter, 
 			return
 		}
 
-		if err := dbpkg.UpsertEmpresaAIUsuarioModeloPreferido(c.dbEmp, googleAccount, payload.ModelID, googleAccount); err != nil {
+		currentPrefs, err := dbpkg.GetEmpresaAIUsuarioPreferencias(c.dbEmp, googleAccount)
+		if err != nil {
+			http.Error(w, "No se pudo consultar la preferencia de usuario", http.StatusInternalServerError)
+			return
+		}
+		if strings.TrimSpace(payload.ModoAsistente) == "" {
+			payload.ModoAsistente = currentPrefs.ModoAsistente
+		}
+		if strings.TrimSpace(payload.AgentID) == "" {
+			payload.AgentID = currentPrefs.AgentID
+		}
+		payload.ModoAsistente = normalizeAIAssistantMode(payload.ModoAsistente)
+		payload.AgentID = normalizeEmpresaAIChatAgentID(payload.AgentID)
+		if err := dbpkg.UpsertEmpresaAIUsuarioPreferencias(c.dbEmp, googleAccount, payload.ModelID, payload.ModoAsistente, payload.AgentID, googleAccount); err != nil {
 			http.Error(w, "No se pudo registrar el modelo preferido", http.StatusInternalServerError)
 			return
 		}
@@ -571,6 +590,8 @@ func (c *EmpresaAIChatController) ModeloPreferidoHandler(w http.ResponseWriter, 
 			"empresa_id":       payload.EmpresaID,
 			"google_account":   googleAccount,
 			"model_id":         payload.ModelID,
+			"modo_asistente":   payload.ModoAsistente,
+			"agent_id":         payload.AgentID,
 			"preference_scope": "usuario",
 			"saved":            true,
 		})
@@ -754,7 +775,7 @@ func (c *EmpresaAIChatController) ConsultarHandler(w http.ResponseWriter, r *htt
 	}
 
 	adminEmail := googleAccount
-	if err := dbpkg.UpsertEmpresaAIUsuarioModeloPreferido(c.dbEmp, adminEmail, model.ID, adminEmail); err != nil {
+	if err := dbpkg.UpsertEmpresaAIUsuarioPreferencias(c.dbEmp, adminEmail, model.ID, payload.ModoAsistente, payload.AgentID, adminEmail); err != nil {
 		http.Error(w, "No se pudo registrar la preferencia de modelo del usuario", http.StatusInternalServerError)
 		return
 	}

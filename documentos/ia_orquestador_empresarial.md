@@ -23,7 +23,8 @@ sola respuesta textual de un modelo.
 - El catalogo empresarial contempla `openai:gpt-5.4-mini`, `openai:gpt-5.5` y
   `openai:gpt-5.6-luna`. Super Administrador habilita los modelos permitidos y
   define uno para operaciones y otro para adjuntos o analisis avanzado.
-- La eleccion realizada en el chat se conserva por usuario autenticado. La
+- La eleccion de modelo, modo y agente realizada en el chat se conserva por
+  usuario autenticado. La
   conversacion, los permisos, el contexto, el consumo y los datos siguen
   aislados estrictamente por `empresa_id`; una preferencia nunca concede acceso
   entre empresas.

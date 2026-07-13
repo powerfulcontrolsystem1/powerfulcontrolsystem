@@ -273,6 +273,8 @@ type EmpresaAIModeloPreferido struct {
 type EmpresaAIUsuarioModeloPreferido struct {
 	UsuarioID          string `json:"usuario_id"`
 	ModelID            string `json:"model_id"`
+	ModoAsistente      string `json:"modo_asistente"`
+	AgentID            string `json:"agent_id"`
 	FechaActualizacion string `json:"fecha_actualizacion"`
 }
 
@@ -379,6 +381,8 @@ func EnsureEmpresaAIChatSchema(dbConn *sql.DB) error {
 		`CREATE TABLE IF NOT EXISTS empresa_ai_usuario_modelo_preferido (
 			usuario_id TEXT PRIMARY KEY,
 			model_id TEXT NOT NULL,
+			modo_asistente TEXT DEFAULT 'operativo',
+			agent_id TEXT DEFAULT 'general',
 			fecha_creacion TEXT DEFAULT (CURRENT_TIMESTAMP),
 			fecha_actualizacion TEXT DEFAULT (CURRENT_TIMESTAMP),
 			usuario_creador TEXT,
@@ -462,27 +466,40 @@ func EnsureEmpresaAIChatSchema(dbConn *sql.DB) error {
 	if err := ensureColumnIfMissing(dbConn, "empresa_ai_modelo_preferido", "observaciones", "TEXT"); err != nil {
 		return err
 	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_ai_usuario_modelo_preferido", "modo_asistente", "TEXT DEFAULT 'operativo'"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_ai_usuario_modelo_preferido", "agent_id", "TEXT DEFAULT 'general'"); err != nil {
+		return err
+	}
 
 	return nil
 }
 
 func GetEmpresaAIUsuarioModeloPreferido(dbConn *sql.DB, usuarioID string) (string, error) {
+	prefs, err := GetEmpresaAIUsuarioPreferencias(dbConn, usuarioID)
+	return prefs.ModelID, err
+}
+
+func GetEmpresaAIUsuarioPreferencias(dbConn *sql.DB, usuarioID string) (EmpresaAIUsuarioModeloPreferido, error) {
 	usuarioID = aiNormalizeAdminEmail(usuarioID)
 	if usuarioID == "" {
-		return "", fmt.Errorf("usuario_id es obligatorio")
+		return EmpresaAIUsuarioModeloPreferido{}, fmt.Errorf("usuario_id es obligatorio")
 	}
-	read := func() (string, error) {
-		var modelID string
-		err := queryRowSQLCompat(dbConn, `SELECT COALESCE(model_id, '') FROM empresa_ai_usuario_modelo_preferido WHERE usuario_id = ? AND COALESCE(estado, 'activo') <> 'inactivo' LIMIT 1`, usuarioID).Scan(&modelID)
+	read := func() (EmpresaAIUsuarioModeloPreferido, error) {
+		var prefs EmpresaAIUsuarioModeloPreferido
+		prefs.UsuarioID = usuarioID
+		err := queryRowSQLCompat(dbConn, `SELECT COALESCE(model_id, ''), COALESCE(modo_asistente, 'operativo'), COALESCE(agent_id, 'general'), COALESCE(fecha_actualizacion, '') FROM empresa_ai_usuario_modelo_preferido WHERE usuario_id = ? AND COALESCE(estado, 'activo') <> 'inactivo' LIMIT 1`, usuarioID).Scan(&prefs.ModelID, &prefs.ModoAsistente, &prefs.AgentID, &prefs.FechaActualizacion)
 		if err == sql.ErrNoRows {
-			return "", nil
+			return prefs, nil
 		}
-		return strings.TrimSpace(modelID), err
+		prefs.ModelID = strings.TrimSpace(prefs.ModelID)
+		return prefs, err
 	}
 	value, err := read()
 	if err != nil && shouldRepairAIChatSchema(err) {
 		if schemaErr := EnsureEmpresaAIChatSchema(dbConn); schemaErr != nil {
-			return "", schemaErr
+			return EmpresaAIUsuarioModeloPreferido{}, schemaErr
 		}
 		return read()
 	}
@@ -490,6 +507,14 @@ func GetEmpresaAIUsuarioModeloPreferido(dbConn *sql.DB, usuarioID string) (strin
 }
 
 func UpsertEmpresaAIUsuarioModeloPreferido(dbConn *sql.DB, usuarioID, modelID, usuarioCreador string) error {
+	prefs, err := GetEmpresaAIUsuarioPreferencias(dbConn, usuarioID)
+	if err != nil {
+		return err
+	}
+	return UpsertEmpresaAIUsuarioPreferencias(dbConn, usuarioID, modelID, prefs.ModoAsistente, prefs.AgentID, usuarioCreador)
+}
+
+func UpsertEmpresaAIUsuarioPreferencias(dbConn *sql.DB, usuarioID, modelID, modoAsistente, agentID, usuarioCreador string) error {
 	usuarioID = aiNormalizeAdminEmail(usuarioID)
 	modelID = aiNormalizeModelID(modelID)
 	if usuarioID == "" || modelID == "" {
@@ -499,13 +524,21 @@ func UpsertEmpresaAIUsuarioModeloPreferido(dbConn *sql.DB, usuarioID, modelID, u
 		usuarioCreador = usuarioID
 	}
 	now := sqlNowExpr()
-	query := `INSERT INTO empresa_ai_usuario_modelo_preferido (usuario_id, model_id, fecha_creacion, fecha_actualizacion, usuario_creador, estado) VALUES (?, ?, ` + now + `, ` + now + `, ?, 'activo') ON CONFLICT(usuario_id) DO UPDATE SET model_id = excluded.model_id, fecha_actualizacion = ` + now + `, usuario_creador = excluded.usuario_creador, estado = 'activo'`
-	_, err := execSQLCompat(dbConn, query, usuarioID, modelID, strings.TrimSpace(usuarioCreador))
+	modoAsistente = strings.TrimSpace(modoAsistente)
+	if modoAsistente == "" {
+		modoAsistente = "operativo"
+	}
+	agentID = strings.TrimSpace(agentID)
+	if agentID == "" {
+		agentID = "general"
+	}
+	query := `INSERT INTO empresa_ai_usuario_modelo_preferido (usuario_id, model_id, modo_asistente, agent_id, fecha_creacion, fecha_actualizacion, usuario_creador, estado) VALUES (?, ?, ?, ?, ` + now + `, ` + now + `, ?, 'activo') ON CONFLICT(usuario_id) DO UPDATE SET model_id = excluded.model_id, modo_asistente = excluded.modo_asistente, agent_id = excluded.agent_id, fecha_actualizacion = ` + now + `, usuario_creador = excluded.usuario_creador, estado = 'activo'`
+	_, err := execSQLCompat(dbConn, query, usuarioID, modelID, modoAsistente, agentID, strings.TrimSpace(usuarioCreador))
 	if err != nil && shouldRepairAIChatSchema(err) {
 		if schemaErr := EnsureEmpresaAIChatSchema(dbConn); schemaErr != nil {
 			return schemaErr
 		}
-		_, err = execSQLCompat(dbConn, query, usuarioID, modelID, strings.TrimSpace(usuarioCreador))
+		_, err = execSQLCompat(dbConn, query, usuarioID, modelID, modoAsistente, agentID, strings.TrimSpace(usuarioCreador))
 	}
 	return err
 }

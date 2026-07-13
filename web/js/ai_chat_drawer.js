@@ -555,7 +555,12 @@
       if (!models.some(function (item) { return item && item.id === selected; })) selected = normalize(models[0].id);
       select.value = selected;
       state.selectedModelID = selected;
+      var modeEl = document.getElementById(MODE_ID);
+      var agentEl = document.getElementById(AGENT_ID);
+      if (modeEl && normalize(data && data.modo_preferido)) modeEl.value = normalize(data.modo_preferido);
+      if (agentEl && normalize(data && data.agent_preferido)) agentEl.value = normalize(data.agent_preferido);
       renderModelUsage(selected);
+      syncModeUI();
     }).catch(function () {
       select.innerHTML = '<option value="">Modelo no disponible</option>';
       select.disabled = true;
@@ -567,12 +572,14 @@
     if (isPublicPortalContext() || isSuperContext()) return Promise.resolve();
     var empresaID = parsePositiveInt(getCurrentEmpresaId());
     var select = document.getElementById(MODEL_ID);
+    var modeEl = document.getElementById(MODE_ID);
+    var agentEl = document.getElementById(AGENT_ID);
     if (!empresaID || !select || !normalize(select.value)) return Promise.resolve();
     state.selectedModelID = normalize(select.value);
     renderModelUsage(state.selectedModelID);
     return fetch(buildModelPreferenceEndpoint(), {
       method: 'PUT', credentials: 'same-origin', headers: { 'Content-Type': 'application/json', 'X-PCS-Source': 'ai_drawer' },
-      body: JSON.stringify({ empresa_id: empresaID, model_id: state.selectedModelID })
+      body: JSON.stringify({ empresa_id: empresaID, model_id: state.selectedModelID, modo_asistente: modeEl ? normalize(modeEl.value) : 'operativo', agent_id: agentEl ? normalize(agentEl.value) : 'general' })
     }).then(function (resp) { if (!resp.ok) return parseErrorResponse(resp); return resp.json(); });
   }
 
@@ -4942,8 +4949,13 @@
     if (modeEl) {
       modeEl.addEventListener('change', function () {
         syncModeUI();
+        persistSelectedModel().catch(function () {});
         setNotice('Modo actualizado. Puedes seguir consultando normalmente.');
       });
+    }
+    var agentEl = document.getElementById(AGENT_ID);
+    if (agentEl) {
+      agentEl.addEventListener('change', function () { persistSelectedModel().catch(function () {}); });
     }
     if (modelEl) {
       modelEl.addEventListener('change', function () {
