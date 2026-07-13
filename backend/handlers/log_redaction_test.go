@@ -167,3 +167,21 @@ func TestAIConfigurationDoesNotExposeCredentialOrProviderDiagnostics(t *testing.
 		}
 	}
 }
+
+func TestCorporateEmailDoesNotExposeProvisionOrAutologinDiagnostics(t *testing.T) {
+	contents, err := os.ReadFile("email_corporativo_handlers.go")
+	if err != nil {
+		t.Fatalf("read corporate email handler: %v", err)
+	}
+	for _, forbidden := range []string{
+		`"Autologin no disponible: " + err.Error()`,
+		`"No se pudo guardar configuracion: "+err.Error()`,
+		`"El buzon corporativo todavia no pudo provisionarse en Mailu: "+result.Error`,
+		`"No se pudo iniciar sesion automaticamente en la bandeja de correo. "+redirectErr.Error()`,
+		`"No se pudo iniciar sesion automaticamente en la bandeja de correo. "+err.Error()`,
+	} {
+		if strings.Contains(string(contents), forbidden) {
+			t.Fatalf("corporate email must not expose provision or autologin diagnostic: %s", forbidden)
+		}
+	}
+}

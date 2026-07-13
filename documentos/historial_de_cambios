@@ -37612,3 +37612,8 @@ Archivos modificados:
   rechazada, inválida o limitada, sin reenviar el diagnóstico crudo del proveedor.
 - Los errores de cifrado y persistencia de credenciales IA se reemplazan por
   mensajes genéricos y quedan protegidos por una regresión de código fuente.
+
+2026-07-13: Correo corporativo sin diagnósticos de proveedor en la interfaz.
+- El estado de autologin y provisionamiento conserva mensajes de acción para el
+  usuario, pero deja de incluir errores de Mailu, SnappyMail, proxy o guardado
+  de configuración. Se añade una regresión contra esas concatenaciones.
