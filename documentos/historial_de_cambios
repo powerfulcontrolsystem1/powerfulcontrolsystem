@@ -37689,3 +37689,8 @@ Archivos modificados:
 - La finalización de aceptación usa su payload cifrado y reCAPTCHA como flujo
   público; una cookie vieja ya no la convierte erróneamente en mutación de
   sesión ni bloquea el registro con una validación CSRF ajena al flujo.
+
+2026-07-13: Diagnósticos de Rappi saneados.
+- Las operaciones empresariales contra Rappi ya no devuelven al navegador errores
+  de red, proveedor o configuración; conservan un estado de error estable para
+  la interfaz y el diagnóstico queda limitado al servidor.

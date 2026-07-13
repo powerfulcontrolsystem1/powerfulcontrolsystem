@@ -218,7 +218,7 @@ func handleEmpresaRappiOrders(w http.ResponseWriter, r *http.Request, dbEmp *sql
 	}
 	respBody, status, err := empresaRappiRequest(dbEmp, empresaID, http.MethodGet, path, nil)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadGateway)
+		http.Error(w, "No se pudo comunicar con Rappi", http.StatusBadGateway)
 		return
 	}
 	if status >= 400 {
@@ -276,7 +276,7 @@ func handleEmpresaRappiOrderAction(w http.ResponseWriter, r *http.Request, dbEmp
 	}
 	respBody, status, err := empresaRappiRequest(dbEmp, empresaID, method, path, body)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadGateway)
+		http.Error(w, "No se pudo comunicar con Rappi", http.StatusBadGateway)
 		return
 	}
 	localState := map[string]string{"take": "tomada", "reject": "rechazada", "ready": "lista"}[action]
@@ -299,7 +299,7 @@ func handleEmpresaRappiOrderAction(w http.ResponseWriter, r *http.Request, dbEmp
 func handleEmpresaRappiProxy(w http.ResponseWriter, r *http.Request, dbEmp *sql.DB, empresaID int64, method, path string, body []byte, includeConfig bool) {
 	respBody, status, err := empresaRappiRequest(dbEmp, empresaID, method, path, body)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadGateway)
+		http.Error(w, "No se pudo comunicar con Rappi", http.StatusBadGateway)
 		return
 	}
 	resp := map[string]interface{}{"ok": status < 400, "status": status, "rappi_response": jsonRawOrString(respBody)}
