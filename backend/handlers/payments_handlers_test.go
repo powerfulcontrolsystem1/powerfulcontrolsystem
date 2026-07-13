@@ -357,6 +357,35 @@ func TestVerifyEpaycoConfirmationSignatureUsesOfficialSha256Formula(t *testing.T
 	}
 }
 
+func TestValidateEpaycoWebhookSignatureRequiresConfiguredValidSignature(t *testing.T) {
+	payload := map[string]interface{}{
+		"x_ref_payco":      "123456789",
+		"x_transaction_id": "TX-123",
+		"x_amount":         "50000.00",
+		"x_currency_code":  "COP",
+		"x_cod_response":   "1",
+		"x_response":       "Aceptada",
+	}
+	creds := epaycoCredentialSet{CustomerID: "9695", CheckoutKey: "p-key-secret-for-webhook"}
+	source := "9695^p-key-secret-for-webhook^123456789^TX-123^50000.00^COP"
+	sum := sha256.Sum256([]byte(source))
+	payload["x_signature"] = hex.EncodeToString(sum[:])
+	if !validateEpaycoWebhookSignature(creds, payload) {
+		t.Fatal("expected valid signed webhook to be accepted")
+	}
+	delete(payload, "x_signature")
+	if validateEpaycoWebhookSignature(creds, payload) {
+		t.Fatal("unsigned webhook must be rejected")
+	}
+	payload["x_signature"] = "invalid"
+	if validateEpaycoWebhookSignature(creds, payload) {
+		t.Fatal("invalid signature must be rejected")
+	}
+	if validateEpaycoWebhookSignature(epaycoCredentialSet{}, payload) {
+		t.Fatal("missing verification credentials must reject the webhook")
+	}
+}
+
 func TestParseEpaycoPaymentStatusReadsTransactionStateCode(t *testing.T) {
 	payload := map[string]interface{}{
 		"x_cod_transaction_state": "1",

@@ -28,11 +28,12 @@ import (
 // - JWT OnlyOffice HS256: implementado con stdlib (HMAC-SHA256).
 
 const (
-	onlyOfficeDefaultDataRoot = "/data/empresas"
-	onlyOfficeConfigKeyDSURL  = "onlyoffice.document_server_url" // ej: http://onlyoffice:80
-	onlyOfficeConfigKeyJWT    = "onlyoffice.jwt_secret"          // secreto HS256
-	onlyOfficeFileTokenTTL    = 4 * time.Hour
-	onlyOfficeCallbackTTL     = 24 * time.Hour
+	onlyOfficeDefaultDataRoot        = "/data/empresas"
+	onlyOfficeConfigKeyDSURL         = "onlyoffice.document_server_url" // ej: http://onlyoffice:80
+	onlyOfficeConfigKeyJWT           = "onlyoffice.jwt_secret"          // secreto HS256
+	onlyOfficeFileTokenTTL           = 4 * time.Hour
+	onlyOfficeCallbackTTL            = 24 * time.Hour
+	onlyOfficeCallbackMaxBytes int64 = 32 << 20
 )
 
 type onlyOfficeAccessTokenClaims struct {
@@ -397,6 +398,20 @@ func onlyOfficeCallbackDownloadURLAllowed(dbSuper *sql.DB, raw string) bool {
 		return false
 	}
 	return strings.EqualFold(target.Scheme, server.Scheme) && strings.EqualFold(target.Hostname(), server.Hostname()) && target.Port() == server.Port()
+}
+
+// copyOnlyOfficeCallbackFile enforces the callback size limit without ever
+// accepting a truncated document. The caller keeps the destination temporary
+// until this function completes successfully.
+func copyOnlyOfficeCallbackFile(dst io.Writer, src io.Reader) error {
+	written, err := io.Copy(dst, io.LimitReader(src, onlyOfficeCallbackMaxBytes+1))
+	if err != nil {
+		return err
+	}
+	if written > onlyOfficeCallbackMaxBytes {
+		return fmt.Errorf("onlyoffice callback document exceeds allowed size")
+	}
+	return nil
 }
 
 func onlyOfficeZipBytes(files map[string]string) ([]byte, error) {
@@ -1279,7 +1294,7 @@ func OnlyOfficeCallbackPublicHandler(dbSuper *sql.DB) http.HandlerFunc {
 			writeJSON(w, http.StatusOK, resp)
 			return
 		}
-		_, copyErr := io.Copy(out, io.LimitReader(res.Body, 32<<20))
+		copyErr := copyOnlyOfficeCallbackFile(out, res.Body)
 		_ = out.Close()
 		if copyErr != nil {
 			_ = os.Remove(tmp)

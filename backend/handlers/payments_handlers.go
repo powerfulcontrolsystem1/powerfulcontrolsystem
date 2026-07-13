@@ -4286,6 +4286,17 @@ func verifyEpaycoConfirmationSignature(customerID, checkoutKey string, payload m
 	return subtle.ConstantTimeCompare([]byte(expected), []byte(provided)) == 1, true, provided, expected
 }
 
+// validateEpaycoWebhookSignature keeps signature policy independent from the
+// transport handler so every confirmation must be authenticated before it can
+// change payment or licence state.
+func validateEpaycoWebhookSignature(creds epaycoCredentialSet, payload map[string]interface{}) bool {
+	if !epaycoClassicCheckoutReady(creds.CustomerID, creds.CheckoutKey) {
+		return false
+	}
+	valid, provided, _, _ := verifyEpaycoConfirmationSignature(creds.CustomerID, creds.CheckoutKey, payload)
+	return provided && valid
+}
+
 func extractEpaycoPaymentInfo(payload map[string]interface{}) (string, string, string) {
 	transactionID := strings.TrimSpace(pickEpaycoField(payload, "transaction_id", "x_transaction_id", "id", "tx_id"))
 	reference := strings.TrimSpace(pickEpaycoField(payload, "reference", "x_ref_payco", "invoice", "ref_payco"))
@@ -6816,22 +6827,11 @@ func EpaycoWebhookHandler(dbSuper *sql.DB, dbEmp ...*sql.DB) http.HandlerFunc {
 			}
 		}
 
-		signatureVerified := false
-		signatureProvided := false
-		if strings.TrimSpace(pickEpaycoField(payload, "x_signature", "signature")) != "" {
-			signatureProvided = true
-			creds, credErr := resolveEpaycoCredentialSet(dbSuper)
-			if credErr != nil {
-				log.Println("warning: failed to read Epayco credentials for webhook signature validation:", credErr)
-			} else if strings.TrimSpace(creds.CustomerID) == "" || strings.TrimSpace(creds.CheckoutKey) == "" {
-				log.Println("warning: Epayco webhook included x_signature but Customer ID/P_KEY are not configured; payment will be processed without local signature validation")
-			} else if valid, _, _, expected := verifyEpaycoConfirmationSignature(creds.CustomerID, creds.CheckoutKey, payload); !valid {
-				log.Printf("warning: rejected Epayco webhook due invalid x_signature; expected=%t transaction=%q reference=%q", expected != "", pickEpaycoField(payload, "x_transaction_id", "transaction_id", "id"), pickEpaycoField(payload, "x_ref_payco", "ref_payco", "reference", "invoice"))
-				http.Error(w, "invalid epayco signature", http.StatusBadRequest)
-				return
-			} else {
-				signatureVerified = true
-			}
+		creds, credErr := resolveEpaycoCredentialSet(dbSuper)
+		if credErr != nil || !validateEpaycoWebhookSignature(creds, payload) {
+			// Do not leak configuration state or signature material to callers.
+			http.Error(w, "invalid webhook", http.StatusBadRequest)
+			return
 		}
 
 		transactionID, reference, status := extractEpaycoPaymentInfo(payload)
@@ -6874,9 +6874,7 @@ func EpaycoWebhookHandler(dbSuper *sql.DB, dbEmp ...*sql.DB) http.HandlerFunc {
 			licenciaID, empresaID, hasContext = paymentContextFromEpaycoPayload(payload)
 		}
 
-		activated := false
 		discountBlocked := false
-		ventaPublicaContextFound := false
 		if isApprovedPaymentStatus(status) && hasContext {
 			paymentDiscountCode := ""
 			if rec != nil && rec.DiscountCode.Valid {
@@ -6909,11 +6907,10 @@ func EpaycoWebhookHandler(dbSuper *sql.DB, dbEmp ...*sql.DB) http.HandlerFunc {
 				if len(dbEmp) > 0 {
 					dbEmpConn = dbEmp[0]
 				}
-				act, assignedLicenciaID, actErr := activateLicenciaCheckoutContextForPayment(dbSuper, dbEmpConn, "epayco", transactionID, firstNonEmptyString(invoiceReference, reference), licenciaID, empresaID, checkoutMode, addonLicenciaIDs)
+				_, assignedLicenciaID, actErr := activateLicenciaCheckoutContextForPayment(dbSuper, dbEmpConn, "epayco", transactionID, firstNonEmptyString(invoiceReference, reference), licenciaID, empresaID, checkoutMode, addonLicenciaIDs)
 				if actErr != nil {
 					log.Println("warning: failed to activate licencia from Epayco webhook:", actErr)
 				} else {
-					activated = act
 					emailLicID := assignedLicenciaID
 					if emailLicID <= 0 {
 						emailLicID = licenciaID
@@ -6956,29 +6953,14 @@ func EpaycoWebhookHandler(dbSuper *sql.DB, dbEmp ...*sql.DB) http.HandlerFunc {
 			}
 		}
 		if len(dbEmp) > 0 && dbEmp[0] != nil {
-			foundVP, vpErr := processVentaPublicaPaymentStatusUpdate(dbEmp[0], "epayco", transactionID, firstNonEmptyString(invoiceReference, reference), status, payloadToSave)
-			ventaPublicaContextFound = foundVP
+			_, vpErr := processVentaPublicaPaymentStatusUpdate(dbEmp[0], "epayco", transactionID, firstNonEmptyString(invoiceReference, reference), status, payloadToSave)
 			if vpErr != nil {
 				log.Println("warning: failed to process venta_publica Epayco webhook update:", vpErr)
 			}
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		encodeJSONResponse(w, map[string]interface{}{
-			"ok":                          true,
-			"provider":                    "epayco",
-			"transaction_id":              transactionID,
-			"reference":                   reference,
-			"status":                      status,
-			"context_found":               hasContext,
-			"licencia_id":                 licenciaID,
-			"empresa_id":                  empresaID,
-			"activated":                   activated,
-			"discount_blocked":            discountBlocked,
-			"signature_provided":          signatureProvided,
-			"signature_verified":          signatureVerified,
-			"venta_publica_context_found": ventaPublicaContextFound,
-		})
+		encodeJSONResponse(w, map[string]interface{}{"ok": true})
 	}
 }
 

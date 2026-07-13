@@ -102,6 +102,28 @@ func TestOnlyOfficeAttachConfigTokenUsesTopLevelTokenOnly(t *testing.T) {
 	}
 }
 
+func TestCopyOnlyOfficeCallbackFileRejectsOversizedDocument(t *testing.T) {
+	var dst bytes.Buffer
+	tooLarge := bytes.Repeat([]byte("x"), int(onlyOfficeCallbackMaxBytes)+1)
+	if err := copyOnlyOfficeCallbackFile(&dst, bytes.NewReader(tooLarge)); err == nil {
+		t.Fatal("expected oversized callback document to be rejected")
+	}
+	if got := int64(dst.Len()); got != onlyOfficeCallbackMaxBytes+1 {
+		t.Fatalf("expected size probe to stop at max + 1, got %d", got)
+	}
+}
+
+func TestCopyOnlyOfficeCallbackFileKeepsCompleteAllowedDocument(t *testing.T) {
+	var dst bytes.Buffer
+	source := []byte("valid onlyoffice document")
+	if err := copyOnlyOfficeCallbackFile(&dst, bytes.NewReader(source)); err != nil {
+		t.Fatalf("expected allowed callback document: %v", err)
+	}
+	if !bytes.Equal(dst.Bytes(), source) {
+		t.Fatal("callback document changed during copy")
+	}
+}
+
 func TestOnlyOfficeBuildBlankPPTXIncludesPresentationMinimumParts(t *testing.T) {
 	raw, err := onlyOfficeBuildBlankPPTX()
 	if err != nil {

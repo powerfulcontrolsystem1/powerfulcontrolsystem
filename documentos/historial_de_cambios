@@ -37646,3 +37646,11 @@ Archivos modificados:
   con orígenes explícitos y sin comodines de conexión, antes de endurecer la
   política aplicada. cAdvisor queda documentado como excepción de monitoreo
   con privilegios de host y sin puerto expuesto.
+
+2026-07-13: Callbacks de documentos y pagos autenticados.
+- El callback de OnlyOffice solo descarga desde el host configurado y rechaza
+  archivos que superen el límite sin reemplazar el documento local por una copia
+  truncada.
+- Las confirmaciones ePayco exigen firma SHA-256 verificable con las
+  credenciales configuradas antes de cambiar pagos, licencias o ventas. El
+  acuse público deja de exponer referencias, estados internos e identificadores.
