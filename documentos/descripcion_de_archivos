@@ -11863,3 +11863,19 @@ Actualizacion 2026-07-13: Nextcloud empresarial reactivado
 - `documentos/nextcloud_empresarial.md`: documenta activacion global, permisos, aislamiento y eliminacion remota.
 - `backend/handlers/empresa_delete_files.go`: limpia tambien la carpeta fisica de documentos OnlyOffice por empresa.
 - `deploy/scripts/vps-delete-mailu-mailbox.sh`: desactiva/elimina el usuario Mailu y limpia maildir y datos de SnappyMail.
+
+documentos/production_readiness_final.md
+- Decision de preproduccion y separacion entre evidencia local y gates de staging/CI.
+
+documentos/staging_execution_report.md
+documentos/migration_validation_report.md
+documentos/backup_restore_report.md
+documentos/load_test_report.md
+documentos/integration_validation_report.md
+- Reportes de evidencia pendientes para staging, migraciones, restauracion, carga e integraciones.
+
+documentos/observability_runbook.md
+documentos/production_deployment_runbook.md
+documentos/production_rollback_runbook.md
+documentos/release_checklist.md
+- Runbooks y lista de control para una liberacion reversible.

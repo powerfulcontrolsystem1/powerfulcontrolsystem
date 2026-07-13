@@ -4459,3 +4459,8 @@ de productos/SKUs, caja, impuestos, cliente y reglas de facturacion.
 - Seguridad: el backend no recibe Docker socket ni ejecuta Docker. El token se
   genera y conserva en el entorno privado del VPS; el proxy rechaza la API desde
   Internet.
+
+2026-07-13: Panel empresarial, Nextcloud y descargas privadas
+- Configuracion guiada: `no_mostrar_mas` se guarda por empresa y el panel lo persiste con CSRF same-origin.
+- Nextcloud: resuelve `empresa_id` desde contexto validado, aplica cuota global y solo entrega accesos tras activacion y aprovisionamiento.
+- Descargas: documentos empresariales no se exponen por una ruta estatica generica; solo instaladores RustDesk aprobados quedan publicos.

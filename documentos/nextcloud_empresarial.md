@@ -13,6 +13,13 @@ cuenta tecnica con cuota por defecto de 1024 MB a todas las empresas existentes
 y a cada empresa nueva. La activacion global no depende del Nextcloud auxiliar
 de VPS2. La cuenta remota se aprovisiona de forma idempotente con OCS.
 
+La cuota se lee de la configuracion global de Nextcloud al asignar o actualizar
+empresas; el arranque no debe reemplazarla por un valor fijo. La pagina solo
+habilita Abrir y WebDAV cuando la cuenta de la empresa esta activa y fue
+aprovisionada correctamente. Si el usuario abre la pagina dentro de Administrar
+empresa, el identificador se obtiene del contexto protegido del shell y no de
+un parametro manipulable como fuente de autoridad.
+
 ## Seguridad
 
 - `/api/empresa/nextcloud` usa `WithEmpresaGestionDocumentalPermissions`.

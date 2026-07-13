@@ -37837,3 +37837,9 @@ Archivos modificados:
 - Se agrega `scripts/provision_nextcloud_service_account.sh`, que genera o rota
   la credencial remota sin imprimirla y conserva un respaldo root-readable del
   archivo de entorno antes de actualizarlo.
+
+2026-07-13: Correccion de configuracion guiada, Nextcloud y descargas publicas.
+- Panel empresa: `No volver a mostrar` persiste por empresa al enviar el token CSRF same-origin; no usa cookies como fuente de estado.
+- Nextcloud: la cuota global configurada se conserva, la pagina resuelve empresa desde contexto protegido y no entrega URLs a espacios inactivos/no aprovisionados.
+- Seguridad: el backend deja de servir `/descargas/`; Nginx permite solo instaladores RustDesk incluidos en una lista cerrada.
+- QA: CSRF, configuracion guiada, Nextcloud y contrato de recursos publicos se probaron localmente. Docker, race, staging, restauracion e integraciones reales permanecen gates documentados.
