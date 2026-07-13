@@ -317,6 +317,7 @@ func dockerServiceStatus(containers ...string) (string, string) {
 			continue
 		}
 		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+		// #nosec G204 -- Docker is fixed and container comes from the closed service inventory above.
 		out, err := exec.CommandContext(ctx, "docker", "inspect", "-f", "{{.State.Status}}|{{if .State.Health}}{{.State.Health.Status}}{{end}}", container).Output()
 		cancel()
 		status := "unavailable"

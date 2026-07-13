@@ -83,6 +83,7 @@ func resolveBackendRuntimeDir() string {
 }
 
 func loadEnvDefaultsFromFile(path string) (int, error) {
+	// #nosec G304 -- path is selected exclusively from fixed startup environment file locations.
 	data, err := os.ReadFile(path)
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
@@ -165,6 +166,7 @@ func loadRuntimeEnvDefaults(backendDir string) {
 }
 
 func loadSelectedEnvDefaultsFromFile(path string, allowedKeys []string) (int, error) {
+	// #nosec G304 -- path is selected exclusively from fixed startup environment file locations.
 	data, err := os.ReadFile(path)
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
@@ -336,6 +338,7 @@ func persistConfigEncKey(backendDir, value string) (string, error) {
 	envLocalPath := filepath.Join(backendDir, ".env.local")
 	prefix := "CONFIG_ENC_KEY="
 
+	// #nosec G304 -- envLocalPath is derived from the server-controlled backend directory.
 	data, err := os.ReadFile(envLocalPath)
 	if err != nil && !errors.Is(err, os.ErrNotExist) {
 		return "", err

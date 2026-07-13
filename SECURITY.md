@@ -14,6 +14,18 @@ canal corporativo de seguridad indicado en el portal oficial. Incluya una
 descripcion minimizada, versiones afectadas, pasos reproducibles y evidencia
 sin tokens, cookies, documentos ni informacion de clientes.
 
+El canal privado es `security@powerfulcontrolsystem.com`. No use issues,
+discusiones ni Pull Requests publicos para reportar vulnerabilidades.
+
+Informacion minima del reporte:
+
+- componente, ruta o version afectada;
+- impacto y condicion necesaria para reproducirlo;
+- pasos reproducibles con datos ficticios;
+- evidencia redactada, sin credenciales ni datos empresariales;
+- propuesta de mitigacion, si existe;
+- medio seguro para coordinar la respuesta.
+
 ## Respuesta y alcance
 
 Se acusa recibo inicial dentro de cinco dias habiles. Se priorizan fallas de
@@ -22,6 +34,21 @@ archivos privados, integraciones, infraestructura y exposicion de secretos.
 No estan permitidas pruebas sobre datos reales, denegacion de servicio,
 ingenieria social, acceso a cuentas ajenas ni exploracion fuera del alcance
 autorizado.
+
+## Clasificacion y tiempos
+
+- Critica: compromiso transversal, fuga multiempresa, ejecucion remota o fraude
+  de pagos. Triage inicial en un dia habil.
+- Alta: omision de autenticacion/autorizacion, acceso empresarial indebido o
+  exposicion de secretos explotable. Triage inicial en dos dias habiles.
+- Media: requiere privilegios, condiciones limitadas o afecta parcialmente
+  confidencialidad, integridad o disponibilidad. Triage en cinco dias habiles.
+- Baja: endurecimiento preventivo o impacto operativo reducido. Se programa en
+  el ciclo normal de mantenimiento.
+
+La severidad final considera alcance, explotabilidad, aislamiento por empresa,
+datos afectados y controles compensatorios. Los tiempos de correccion se
+acuerdan despues del triage y no sustituyen la contencion inmediata.
 
 ## Divulgacion coordinada
 
@@ -45,3 +72,8 @@ Las dependencias, imagenes y toolchains se revisan en CI. Las vulnerabilidades
 alcanzables se corrigen con una version parcheada o una mitigacion documentada;
 nunca se silencian con exclusiones genericas. Las credenciales se almacenan
 solo fuera del repositorio, en configuracion segura del entorno.
+
+Las correcciones se desarrollan en ramas dedicadas, pasan CI y revision por
+Pull Request y se validan en staging anonimizado antes de produccion. Un
+incidente puede requerir revocacion de sesiones, rotacion de claves, bloqueo de
+integraciones o desactivacion temporal del componente afectado.
