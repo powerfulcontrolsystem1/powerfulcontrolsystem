@@ -185,3 +185,27 @@ func TestCorporateEmailDoesNotExposeProvisionOrAutologinDiagnostics(t *testing.T
 		}
 	}
 }
+
+func TestPrivilegedIntegrationConfigurationsDoNotExposePersistenceErrors(t *testing.T) {
+	for path, forbidden := range map[string][]string{
+		"recaptcha.go": {
+			`"failed to save "+superRecaptchaEnabledConfigKey+": "+err.Error()`,
+			`"failed to encrypt "+superRecaptchaSecretKeyConfigKey+": "+err.Error()`,
+		},
+		"onlyoffice_super_config.go": {
+			`"No se pudo guardar onlyoffice.enabled: "+err.Error()`,
+			`"No se pudo cifrar jwt_secret: "+err.Error()`,
+			`"No se pudo guardar onlyoffice.jwt_secret: "+err.Error()`,
+		},
+	} {
+		contents, err := os.ReadFile(path)
+		if err != nil {
+			t.Fatalf("read %s: %v", path, err)
+		}
+		for _, value := range forbidden {
+			if strings.Contains(string(contents), value) {
+				t.Fatalf("privileged integration configuration must not expose persistence error: %s", path)
+			}
+		}
+	}
+}

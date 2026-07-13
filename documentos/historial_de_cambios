@@ -37617,3 +37617,8 @@ Archivos modificados:
 - El estado de autologin y provisionamiento conserva mensajes de acción para el
   usuario, pero deja de incluir errores de Mailu, SnappyMail, proxy o guardado
   de configuración. Se añade una regresión contra esas concatenaciones.
+
+2026-07-13: Integraciones privilegiadas con errores de configuración saneados.
+- reCAPTCHA y OnlyOffice ya no devuelven detalles de cifrado, claves de
+  configuración o persistencia en respuestas 5xx. Las validaciones de formato
+  se mantienen en 400 y una prueba protege ambas rutas.

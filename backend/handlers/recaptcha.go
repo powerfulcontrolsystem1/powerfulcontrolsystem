@@ -257,21 +257,21 @@ func RecaptchaConfigHandler(dbSuper *sql.DB) http.HandlerFunc {
 					value = "1"
 				}
 				if err := dbpkg.SetConfigValue(dbSuper, superRecaptchaEnabledConfigKey, value, false); err != nil {
-					http.Error(w, "failed to save "+superRecaptchaEnabledConfigKey+": "+err.Error(), http.StatusInternalServerError)
+					http.Error(w, "no se pudo guardar la configuracion de reCAPTCHA", http.StatusInternalServerError)
 					return
 				}
 			}
 			if payload.SiteKey != nil {
 				siteKey := strings.TrimSpace(*payload.SiteKey)
 				if err := dbpkg.SetConfigValue(dbSuper, superRecaptchaSiteKeyConfigKey, siteKey, false); err != nil {
-					http.Error(w, "failed to save "+superRecaptchaSiteKeyConfigKey+": "+err.Error(), http.StatusInternalServerError)
+					http.Error(w, "no se pudo guardar la configuracion de reCAPTCHA", http.StatusInternalServerError)
 					return
 				}
 			}
 			if payload.Provider != nil {
 				provider := normalizeRecaptchaProvider(strings.TrimSpace(*payload.Provider))
 				if err := dbpkg.SetConfigValue(dbSuper, superRecaptchaProviderConfigKey, provider, false); err != nil {
-					http.Error(w, "failed to save "+superRecaptchaProviderConfigKey+": "+err.Error(), http.StatusInternalServerError)
+					http.Error(w, "no se pudo guardar la configuracion de reCAPTCHA", http.StatusInternalServerError)
 					return
 				}
 			}
@@ -280,18 +280,18 @@ func RecaptchaConfigHandler(dbSuper *sql.DB) http.HandlerFunc {
 				if secretKey != "" {
 					encryptedValue, err := utils.EncryptString(secretKey)
 					if err != nil {
-						http.Error(w, "failed to encrypt "+superRecaptchaSecretKeyConfigKey+": "+err.Error(), http.StatusInternalServerError)
+						http.Error(w, "no se pudo cifrar la clave de reCAPTCHA", http.StatusInternalServerError)
 						return
 					}
 					if err := dbpkg.SetConfigValue(dbSuper, superRecaptchaSecretKeyConfigKey, encryptedValue, true); err != nil {
-						http.Error(w, "failed to save "+superRecaptchaSecretKeyConfigKey+": "+err.Error(), http.StatusInternalServerError)
+						http.Error(w, "no se pudo guardar la clave de reCAPTCHA", http.StatusInternalServerError)
 						return
 					}
 				}
 			}
 			for _, key := range []string{superRecaptchaEnabledConfigKey, superRecaptchaProviderConfigKey, superRecaptchaSiteKeyConfigKey, superRecaptchaSecretKeyConfigKey} {
 				if err := dbpkg.SetConfigValue(dbSuper, key+".updated_by", adminEmail, false); err != nil {
-					http.Error(w, "failed to save updated_by for "+key+": "+err.Error(), http.StatusInternalServerError)
+					http.Error(w, "no se pudo guardar la configuracion de reCAPTCHA", http.StatusInternalServerError)
 					return
 				}
 			}
