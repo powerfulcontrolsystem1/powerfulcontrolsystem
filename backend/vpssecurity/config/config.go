@@ -88,6 +88,13 @@ func DefaultDataDir() string {
 }
 
 func DefaultConfigPath() string {
+	// The backend runs as the unprivileged `pcs` user in production. Keep the
+	// mutable scanner configuration together with its private runtime data,
+	// rather than below the application directory, which is read-only there.
+	return filepath.Join(DefaultDataDir(), "config.json")
+}
+
+func legacyDefaultConfigPath() string {
 	return filepath.Join(ResolveBackendDir(), "secure", "vps_security_config.json")
 }
 
@@ -149,6 +156,18 @@ func (m *Manager) Load() (Settings, error) {
 	raw, err := os.ReadFile(path)
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
+			if filepath.Clean(path) == filepath.Clean(DefaultConfigPath()) {
+				if legacyRaw, legacyErr := os.ReadFile(legacyDefaultConfigPath()); legacyErr == nil {
+					if jsonErr := json.Unmarshal(legacyRaw, &settings); jsonErr != nil {
+						return settings, jsonErr
+					}
+					normalize(&settings)
+					if saveErr := writeSettings(path, settings); saveErr != nil {
+						return settings, saveErr
+					}
+					return settings, nil
+				}
+			}
 			if saveErr := writeSettings(path, settings); saveErr != nil {
 				return settings, saveErr
 			}

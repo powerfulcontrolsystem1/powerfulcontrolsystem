@@ -36,6 +36,18 @@ firmas de responsable.
 | Pruebas CSRF del middleware | Correctas. |
 | `git diff --check` | Correcta al cierre de la edicion. |
 
+## Evidencia publicada adicional
+
+- En la empresa interna PCS, el asistente IA respondio una consulta de contexto
+  empresarial con el nombre de la empresa, sin exponer su identificador ni
+  proponer acciones no solicitadas.
+- La cuenta empresarial de Nextcloud de PCS quedo aprovisionada visualmente con
+  cuota de 1024 MB y la interfaz habilito su apertura sin entregar credenciales
+  persistentes en la pagina.
+- Se corrigio la ruta de configuracion de Seguridad VPS para el usuario no root
+  del backend. La confirmacion visual publicada de esta pantalla se debe hacer
+  despues del siguiente `rs`.
+
 ## Bloqueantes de aprobacion
 
 1. Ejecutar CI/Linux con `go test -race`, Docker Compose, Trivy, SBOM y
