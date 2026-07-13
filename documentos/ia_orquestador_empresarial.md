@@ -38,8 +38,21 @@ sola respuesta textual de un modelo.
   conversacion de otro usuario o empresa.
 - Las entradas JSON de herramientas son estrictas: se rechazan campos
   desconocidos, cuerpos concatenados y tamanos superiores al contrato.
+- Las entradas procedentes de documentos, adjuntos e integraciones se tratan
+  como datos no confiables. Las senales de inyeccion no otorgan capacidades y
+  las herramientas siguen siendo exclusivamente de propiedad del servidor.
+- Solo se permite enviar al proveedor campos incluidos expresamente en una
+  lista blanca. Credenciales, datos personales, bancarios, fiscales completos
+  y secretos tecnicos se descartan antes de formar cualquier contexto.
+- Las ejecuciones guardan metadatos minimizados por empresa y usuario:
+  herramienta, riesgo, estado, duracion, categorias de datos y fuentes. No
+  conservan prompts completos ni resultados privados.
 
 ## Herramienta inicial
+
+`hotel.inspect_room_station` es una consulta de bajo riesgo que devuelve la
+configuracion actual de una estacion hotelera dentro de la empresa validada.
+Registra sus fuentes sin incluir tarifas o datos privados en la auditoria.
 
 `hotel.configure_room_station` configura una estacion existente como habitacion
 hotelera y registra tarifas diarias por ocupacion. Exige estacion, nombre,
@@ -76,6 +89,8 @@ la herramienta hotelera.
 3. Herramientas de bajo riesgo por modulo, una a una, con pruebas de permisos,
    idempotencia y aislamiento.
 4. RAG documental con PostgreSQL/pgvector solo despues de validar la extension,
-   permisos por fragmento, fuentes y reindexacion. No se agregara otro motor.
+   permisos por fragmento, fuentes y reindexacion. El catalogo de fuentes y la
+   memoria con consentimiento ya tienen esquema de aislamiento; aun no existe
+   recuperacion semantica ni se enviara contenido documental al proveedor.
 5. Modo agente con presupuesto, alcance, duracion, cantidad maxima de
    operaciones, circuit breaker y confirmaciones no omitibles.

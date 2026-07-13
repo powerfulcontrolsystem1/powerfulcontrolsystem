@@ -48,3 +48,13 @@ func TestAgentModeRequiresExplicitServerEnablementAndLimits(t *testing.T) {
 		t.Fatal("enabled agent mode with a bounded scope was rejected")
 	}
 }
+
+func TestHotelReadToolIsClosedAndLowRisk(t *testing.T) {
+	tool, ok := Registry()[ToolHotelInspectRoomStation]
+	if !ok {
+		t.Fatal("hotel read tool missing from closed registry")
+	}
+	if tool.Confirmation != "none" || tool.RiskLevel != "low" || tool.TenantScope != "current_company" || len(tool.RequiredPermissions) != 1 {
+		t.Fatalf("unexpected hotel read policy: %#v", tool)
+	}
+}
