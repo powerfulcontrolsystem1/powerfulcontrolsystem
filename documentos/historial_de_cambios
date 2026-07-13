@@ -37661,3 +37661,9 @@ Archivos modificados:
   única sesión de reemplazo.
 - Un cambio de rol administrativo también revoca sus sesiones activas e invalida
   la caché de autorización para impedir privilegios heredados.
+
+2026-07-13: Archivos sensibles y aceptación de contrato endurecidos.
+- La aceptación de contrato solo admite POST con cuerpo acotado y nunca crea una
+  sesión predecible si falla el generador criptográfico.
+- Descargas de documentos dinámicos, snapshots VPS y portabilidad Docker usan
+  `no-store`, `nosniff` y mensajes públicos sin diagnósticos internos.

@@ -16,6 +16,11 @@ import (
 // Recibe { payload: string, token: string } donde payload es un valor cifrado con utils.EncryptString
 func AcceptCompleteHandler(dbSuper *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+		r.Body = http.MaxBytesReader(w, r.Body, 64<<10)
 		var in struct {
 			Payload        string `json:"payload"`
 			Token          string `json:"token"`
@@ -82,12 +87,15 @@ func AcceptCompleteHandler(dbSuper *sql.DB) http.HandlerFunc {
 		token, err := utils.GenerateSecureToken(32)
 		if err != nil {
 			log.Printf("failed to generate session token: %v", err)
-			token = data.Email
+			http.Error(w, "session unavailable", http.StatusInternalServerError)
+			return
 		}
 		ip := r.RemoteAddr
 		ua := r.UserAgent()
 		if err := dbpkg.CreateSession(dbSuper, data.Email, ip, ua, token); err != nil {
 			log.Printf("create session error: %v", err)
+			http.Error(w, "session unavailable", http.StatusInternalServerError)
+			return
 		}
 		cookie := &http.Cookie{
 			Name:     "session_token",

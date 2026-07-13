@@ -290,10 +290,12 @@ func DynamicDocumentDownloadHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 		}
 		path, contentType, err := ensureDynamicDocumentFile(r.Context(), record, format)
 		if err != nil {
-			http.Error(w, "No se pudo generar archivo: "+err.Error(), http.StatusInternalServerError)
+			http.Error(w, "No se pudo generar el archivo solicitado", http.StatusInternalServerError)
 			return
 		}
 		filename := dynamicDocumentDownloadFilename(record, format)
+		w.Header().Set("Cache-Control", "no-store")
+		w.Header().Set("X-Content-Type-Options", "nosniff")
 		w.Header().Set("Content-Type", contentType)
 		w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=%q", filename))
 		http.ServeFile(w, r, path)

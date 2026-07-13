@@ -584,6 +584,7 @@ func serveSuperVPSSnapshotDownload(w http.ResponseWriter, r *http.Request, dbSup
 	w.Header().Set("Content-Type", "application/gzip")
 	w.Header().Set("Content-Disposition", `attachment; filename="`+filepath.Base(path)+`"`)
 	w.Header().Set("Cache-Control", "no-store")
+	w.Header().Set("X-Content-Type-Options", "nosniff")
 	http.ServeFile(w, r, path)
 }
 
