@@ -37768,6 +37768,12 @@ Archivos modificados:
 - documentos/ia_orquestador_empresarial.md
 - web/estilos.css
 - web/js/ai_chat_drawer.js
+2026-07-13: rs compatible con ramas protegidas.
+- `actualizar_repositorio.ps1` detecta el rechazo de GitHub por rama protegida, crea una PR de publicacion y solicita auto-merge sin omitir checks ni aprobacion independiente.
+- Si Auto-merge esta apagado en el repositorio y GitHub CLI tiene permiso administrativo, el script lo habilita sin relajar la proteccion de `main`.
+- `rs.ps1` reenvia el tiempo de espera y la opcion para desactivar auto-merge; si la PR sigue pendiente no sincroniza la VPS.
+- Backup, restauracion y release gate rechazan por defecto cualquier contacto remoto; requieren `-AllowRemoteTarget` para una operacion explicitamente autorizada.
+
 2026-07-13: Correccion operativa de Seguridad VPS.
 - Causa: el backend se ejecuta como usuario no root y no podia crear la configuracion del escaner debajo de la raiz de la aplicacion.
 - Correccion: la configuracion mutable se guarda en `backend/logs/vps_security/config.json`, con permisos privados y migracion automatica desde la ruta heredada cuando exista.

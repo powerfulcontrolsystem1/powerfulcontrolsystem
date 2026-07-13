@@ -9,19 +9,35 @@
 #>
 
 param(
-  [string]$RemoteUser = "root",
-  [string]$RemoteHost = "2.24.197.58",
-  [int]$Port = 22,
+  [string]$RemoteUser = "",
+  [string]$RemoteHost = "",
+  [int]$Port = 0,
   [string]$IdentityFile = "",
-  [string]$RemotePath = "/root/powerfulcontrolsystem",
+  [string]$RemotePath = "",
   [string]$BackupDir = "",
-  [switch]$ExecuteDrill
+  [switch]$ExecuteDrill,
+  [switch]$AllowRemoteTarget
 )
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 
 $repoRoot = Resolve-Path (Join-Path $PSScriptRoot "..")
+$deploymentConfig = Join-Path $PSScriptRoot "pcs_deployment.local.ps1"
+if (Test-Path -LiteralPath $deploymentConfig) {
+  . $deploymentConfig
+}
+if ([string]::IsNullOrWhiteSpace($RemoteUser) -and (Get-Variable -Name PcsVpsUser -Scope Script -ErrorAction SilentlyContinue)) { $RemoteUser = $script:PcsVpsUser }
+if ([string]::IsNullOrWhiteSpace($RemoteHost) -and (Get-Variable -Name PcsVpsHost -Scope Script -ErrorAction SilentlyContinue)) { $RemoteHost = $script:PcsVpsHost }
+if ($Port -le 0 -and (Get-Variable -Name PcsVpsPort -Scope Script -ErrorAction SilentlyContinue)) { $Port = [int]$script:PcsVpsPort }
+if ([string]::IsNullOrWhiteSpace($RemotePath) -and (Get-Variable -Name PcsVpsRemotePath -Scope Script -ErrorAction SilentlyContinue)) { $RemotePath = $script:PcsVpsRemotePath }
+if ([string]::IsNullOrWhiteSpace($IdentityFile) -and (Get-Variable -Name PcsVpsIdentityFile -Scope Script -ErrorAction SilentlyContinue)) { $IdentityFile = $script:PcsVpsIdentityFile }
+if (-not $AllowRemoteTarget) {
+  throw "Operacion remota bloqueada por seguridad. Usa -AllowRemoteTarget solo despues de verificar que el destino es aislado o esta expresamente autorizado."
+}
+if ([string]::IsNullOrWhiteSpace($RemoteUser) -or [string]::IsNullOrWhiteSpace($RemoteHost) -or $Port -le 0 -or [string]::IsNullOrWhiteSpace($RemotePath)) {
+  throw "Faltan parametros de destino remoto. Configuralos localmente o indicalos de forma explicita."
+}
 if ([string]::IsNullOrWhiteSpace($IdentityFile)) {
   $candidate = Join-Path $repoRoot "clave privada ssh.ppk"
   if (Test-Path -LiteralPath $candidate) { $IdentityFile = (Resolve-Path $candidate).Path }
