@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"crypto/rand"
+	"database/sql"
 	"encoding/hex"
 	"errors"
 	"fmt"
@@ -13,6 +14,33 @@ import (
 	"strconv"
 	"strings"
 )
+
+type PrivateFilesMigrationResult struct {
+	DryRun   bool  `json:"dry_run"`
+	Scanned  int64 `json:"scanned"`
+	Eligible int64 `json:"eligible"`
+	Migrated int64 `json:"migrated"`
+	Missing  int64 `json:"missing"`
+	Rejected int64 `json:"rejected"`
+}
+
+type privateFilesMigrationSource struct {
+	table    string
+	column   string
+	category string
+	route    string
+	fileRef  bool
+}
+
+var privateFilesMigrationSources = []privateFilesMigrationSource{
+	{table: "chat_tareas_adjuntos", column: "file_url", category: "chat_tareas", route: "/api/empresa/chat_tareas/archivo"},
+	{table: "chat_tareas", column: "nota_voz_url", category: "chat_tareas", route: "/api/empresa/chat_tareas/archivo"},
+	{table: "empresa_buzon_adjuntos", column: "file_url", category: "buzon", route: "/api/empresa/buzon/archivo"},
+	{table: "empresa_finanzas_movimientos", column: "comprobante_url", category: "finanzas", route: "/api/empresa/finanzas/archivo"},
+	{table: "empresa_grafologia_analisis", column: "imagen_url", category: "grafologia", route: "/api/empresa/grafologia/archivo"},
+	{table: "empresa_dian_configuracion", column: "certificado_clave_ref", category: "dian", fileRef: true},
+	{table: "empresa_dian_configuracion", column: "certificado_url", category: "dian", fileRef: true},
+}
 
 var blockedPrivateExtensions = map[string]bool{
 	".bat": true, ".cmd": true, ".com": true, ".dll": true, ".exe": true,
@@ -201,4 +229,108 @@ func serveEmpresaPrivateFile(w http.ResponseWriter, r *http.Request, empresaID i
 	w.Header().Set("Content-Type", "application/octet-stream")
 	w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=%q", filepath.Base(path)))
 	http.ServeContent(w, r, filepath.Base(path), info.ModTime(), file)
+}
+
+// MigrateLegacyPrivateUploads moves legacy business attachments out of the web
+// root. Dry-run is the default in the command wrapper and performs no writes.
+func MigrateLegacyPrivateUploads(dbConn *sql.DB, webRoot string, apply bool) (PrivateFilesMigrationResult, error) {
+	result := PrivateFilesMigrationResult{DryRun: !apply}
+	if dbConn == nil {
+		return result, errors.New("conexion empresarial no disponible")
+	}
+	absWebRoot, err := filepath.Abs(filepath.Clean(strings.TrimSpace(webRoot)))
+	if err != nil || strings.TrimSpace(webRoot) == "" {
+		return result, errors.New("raiz web invalida")
+	}
+	for _, source := range privateFilesMigrationSources {
+		// #nosec G201 -- table and column names come only from the fixed migration catalog above.
+		query := fmt.Sprintf("SELECT id, empresa_id, COALESCE(%s, '') FROM %s WHERE COALESCE(%s, '') <> ''", source.column, source.table, source.column)
+		rows, err := dbConn.Query(query)
+		if err != nil {
+			return result, fmt.Errorf("no se pudo consultar inventario privado: %w", err)
+		}
+		for rows.Next() {
+			var id, empresaID int64
+			var oldRef string
+			if err := rows.Scan(&id, &empresaID, &oldRef); err != nil {
+				_ = rows.Close()
+				return result, err
+			}
+			if !isLegacyPrivateReference(oldRef, source.fileRef) {
+				continue
+			}
+			result.Scanned++
+			legacyPath, err := resolveLegacyPrivatePath(absWebRoot, oldRef)
+			if err != nil {
+				result.Missing++
+				continue
+			}
+			ext := strings.ToLower(filepath.Ext(legacyPath))
+			if !privateCategoryAllowsExtension(source.category, ext) || validatePrivateFileContent(legacyPath, ext) != nil {
+				result.Rejected++
+				continue
+			}
+			result.Eligible++
+			if !apply {
+				continue
+			}
+			input, err := os.Open(legacyPath) // #nosec G304 -- resolved below the configured legacy web root without symlinks.
+			if err != nil {
+				result.Missing++
+				continue
+			}
+			name, newPath, _, saveErr := saveEmpresaPrivateUpload(empresaID, source.category, ext, input, 20<<20)
+			closeErr := input.Close()
+			if saveErr != nil || closeErr != nil {
+				result.Rejected++
+				continue
+			}
+			newRef := empresaPrivateDownloadURL(source.route, empresaID, name)
+			if source.fileRef {
+				newRef = "file:" + newPath
+			}
+			// #nosec G201 -- table and column names come only from the fixed migration catalog above.
+			update := fmt.Sprintf("UPDATE %s SET %s = $1 WHERE id = $2 AND empresa_id = $3 AND %s = $4", source.table, source.column, source.column)
+			res, err := dbConn.Exec(update, newRef, id, empresaID, oldRef)
+			if err != nil {
+				_ = os.Remove(newPath)
+				_ = rows.Close()
+				return result, fmt.Errorf("no se pudo actualizar referencia privada: %w", err)
+			}
+			affected, err := res.RowsAffected()
+			if err != nil || affected != 1 {
+				_ = os.Remove(newPath)
+				_ = rows.Close()
+				return result, errors.New("la migracion privada no actualizo exactamente una fila")
+			}
+			if err := os.Remove(legacyPath); err != nil {
+				return result, errors.New("referencia migrada pero el archivo heredado no pudo retirarse")
+			}
+			result.Migrated++
+		}
+		if err := rows.Err(); err != nil {
+			_ = rows.Close()
+			return result, err
+		}
+		if err := rows.Close(); err != nil {
+			return result, err
+		}
+	}
+	return result, nil
+}
+
+func isLegacyPrivateReference(ref string, fileRef bool) bool {
+	ref = strings.TrimSpace(ref)
+	if fileRef {
+		return strings.HasPrefix(ref, "file:") && strings.Contains(filepath.ToSlash(ref), "/uploads/")
+	}
+	return strings.HasPrefix(filepath.ToSlash(ref), "/uploads/")
+}
+
+func resolveLegacyPrivatePath(webRoot, ref string) (string, error) {
+	raw := strings.TrimSpace(strings.TrimPrefix(strings.TrimSpace(ref), "file:"))
+	if strings.HasPrefix(filepath.ToSlash(raw), "/uploads/") {
+		raw = filepath.Join(webRoot, filepath.FromSlash(strings.TrimPrefix(filepath.ToSlash(raw), "/")))
+	}
+	return resolveExistingPrivateFileUnderRoot(webRoot, raw)
 }

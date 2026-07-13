@@ -104,3 +104,25 @@ func TestServeEmpresaPrivateFileSetsDownloadHeaders(t *testing.T) {
 		t.Fatal("private file must be served as an attachment")
 	}
 }
+
+func TestResolveLegacyPrivatePathStaysInsideWebRoot(t *testing.T) {
+	webRoot := t.TempDir()
+	legacyDir := filepath.Join(webRoot, "uploads", "chat_tareas")
+	if err := os.MkdirAll(legacyDir, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	legacyFile := filepath.Join(legacyDir, "legacy.txt")
+	if err := os.WriteFile(legacyFile, []byte("legacy"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	resolved, err := resolveLegacyPrivatePath(webRoot, "/uploads/chat_tareas/legacy.txt")
+	if err != nil || resolved == "" {
+		t.Fatalf("expected valid legacy file: %v", err)
+	}
+	if !isLegacyPrivateReference("/uploads/chat_tareas/legacy.txt", false) {
+		t.Fatal("legacy public attachment was not classified")
+	}
+	if _, err := resolveLegacyPrivatePath(webRoot, filepath.Join(webRoot, "..", "outside.txt")); err == nil {
+		t.Fatal("legacy path outside web root was accepted")
+	}
+}
