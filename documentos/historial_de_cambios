@@ -37519,3 +37519,10 @@ Archivos modificados:
   No contiene despliegues ni acceso a VPS.
 - Las pruebas cubren manipulación de `empresa_id` por query, cabecera y JSON,
   además de traversal y symlinks en soportes privados.
+
+2026-07-12: Corrección Trivy de Excel y ejecución no root.
+- `excelize` pasa de 2.8.1 a 2.11.0 para corregir `CVE-2026-54063`; se actualizan
+  sus dependencias transitivas mediante `go mod tidy`.
+- Frontend adopta Nginx unprivileged en 8080 y el servicio de voz adopta UID
+  10001. Ambos tienen filesystem de solo lectura, capacidades retiradas,
+  `no-new-privileges` y healthcheck compatible.

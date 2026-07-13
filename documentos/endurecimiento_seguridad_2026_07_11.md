@@ -92,6 +92,30 @@ Estado: validación final en `security/full-hardening-clean-20260712`; no desple
 | Operaciones dinámicas sin evidencia | Media | `gosec` G202/G204/G304 | revisión por sitio, parámetros, raíces controladas y eliminación de shells | `gosec` local/CI | pendiente del último run | ninguno aceptado sin justificación | en validación |
 | Cadena de suministro incompleta | Alta | CI sin secretos/IaC/SBOM/imágenes | jobs separados con herramientas versionadas y artefactos | GitHub Actions | pendiente del último run | bases de vulnerabilidades cambian | en validación |
 
+## Contenedores y excepciones técnicas
+
+- Backend, frontend y voz ejecutan como usuarios no root, con
+  `no-new-privileges`, capacidades retiradas y filesystem de solo lectura donde
+  es compatible. Frontend usa Nginx unprivileged en el puerto interno 8080.
+- Redis de Mailu ejecuta como `redis`, con volumen de datos separado, raíz de
+  solo lectura y healthcheck.
+- PostgreSQL conserva el entrypoint oficial, que requiere privilegios iniciales
+  para preparar un volumen nuevo; queda aislado en red interna, sin puerto
+  público y con healthcheck. Forzar `USER` o `cap_drop: ALL` rompería la
+  inicialización oficial del volumen.
+- Mailu, OnlyOffice y RustDesk conservan sus usuarios/entrypoints soportados por
+  los proveedores. Se mitigan con perfiles opt-in, versiones fijas, redes,
+  volúmenes mínimos y puertos explícitos. Cambiar su usuario sin soporte del
+  proveedor se valida primero en staging.
+
+## Dependencia Excel
+
+- `github.com/xuri/excelize/v2` se actualiza de 2.8.1 a 2.11.0 por
+  `CVE-2026-54063`. La alternativa en Go puro sería reimplementar ZIP, XML,
+  estilos, fórmulas y compatibilidad XLSX, con mayor superficie de error y sin
+  beneficio de seguridad. El cambio afecta `backend/go.mod`, `backend/go.sum`
+  y los flujos existentes de importación/exportación Excel.
+
 ## Cambios pendientes antes de desplegar
 
 - Validar en staging el origen CSRF para los clientes heredados y completar tokens sincronizadores solo donde una integracion no pueda enviar Origin/Referer.
