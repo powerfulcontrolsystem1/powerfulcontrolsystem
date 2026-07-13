@@ -7,6 +7,9 @@
   autorización; `clientes.go` deja de registrar documentos completos.
 - Pruebas de regresión verifican que las utilidades retiradas no reaparezcan y
   que los valores o cabeceras sensibles no se filtren en trazas.
+- Se retira una implementación RustDesk huérfana y sin rutas registradas que
+  contenía una columna de contraseña en texto plano. El soporte remoto vigente
+  conserva su almacenamiento cifrado y sus controles empresariales.
 
 2026-07-13: Auditoria de preparación - minimizacion de secretos y PII en logs.
 - Se elimina `backend/tools/query_epayco_runtime.go`, que accedía directamente

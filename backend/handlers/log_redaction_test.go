@@ -70,3 +70,15 @@ func TestLegacyAdminLoginInspectionToolRemainsRemoved(t *testing.T) {
 		t.Fatalf("legacy admin login inspection tool must remain removed, stat err=%v", err)
 	}
 }
+
+func TestLegacyPlaintextRustDeskDeviceImplementationRemainsRemoved(t *testing.T) {
+	for _, path := range []string{
+		filepath.Join("rustdesk.go"),
+		filepath.Join("..", "db", "rustdesk.go"),
+	} {
+		_, err := os.Stat(path)
+		if !os.IsNotExist(err) {
+			t.Fatalf("legacy plaintext RustDesk implementation must remain removed: %s, stat err=%v", path, err)
+		}
+	}
+}

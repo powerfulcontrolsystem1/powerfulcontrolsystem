@@ -24,6 +24,9 @@ Actualizacion 2026-07-13: validación posterior a PR #6
 - El CRUD de clientes ya no registra el documento completo cuando falla una
   operación. La cobertura de regresión comprueba que las herramientas sensibles
   retiradas permanezcan ausentes.
+- Se eliminó el código RustDesk sin rutas activas que persistía una contraseña
+  en texto plano. El flujo vigente queda centralizado en `soporte_remoto`, que
+  cifra el secreto operativo y delimita los recursos por empresa.
 
 ## Linea base
 

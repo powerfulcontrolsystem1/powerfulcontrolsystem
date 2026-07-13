@@ -4,6 +4,9 @@
   de línea.
 - `backend/handlers/log_redaction_test.go`: regresiones para la redacción y el
   retiro permanente de utilidades inseguras de diagnóstico.
+- Se retiran `backend/handlers/rustdesk.go` y `backend/db/rustdesk.go`, rutas
+  internas no registradas que mantenían un modelo heredado de contraseña sin
+  cifrado; no sustituyen el módulo activo `soporte_remoto`.
 
 2026-07-13 - Minimizacion de PII en logs
 - `backend/handlers/log_redaction.go`: enmascarador interno de correos para logs
