@@ -164,7 +164,9 @@ envios reales del sistema deben usar Email corporativo Mailu.
   falta; no copiar ni imprimir). El backend lo recibe como
   `EMAIL_CORPORATIVO_MAILU_API_TOKEN`.
 - `EMAIL_CORPORATIVO_QUOTA_MB`
-- `EMAIL_CORPORATIVO_DIRECT_PROVISION_COMMAND`
+- `EMAIL_CORPORATIVO_DIRECT_PROVISION_COMMAND` (compatibilidad heredada: si se
+  define, debe coincidir con el script interno revisado; produccion usa
+  `mailu_api` y no ejecuta comandos configurables).
 - `EMAIL_CORPORATIVO_AUTOLOGIN_SECRET`
 - `MAILU_ENABLED`
 - `MAILU_VERSION`

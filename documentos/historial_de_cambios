@@ -37843,3 +37843,7 @@ Archivos modificados:
 - Nextcloud: la cuota global configurada se conserva, la pagina resuelve empresa desde contexto protegido y no entrega URLs a espacios inactivos/no aprovisionados.
 - Seguridad: el backend deja de servir `/descargas/`; Nginx permite solo instaladores RustDesk incluidos en una lista cerrada.
 - QA: CSRF, configuracion guiada, Nextcloud y contrato de recursos publicos se probaron localmente. Docker, race, staging, restauracion e integraciones reales permanecen gates documentados.
+
+2026-07-13: Endurecimiento del modo heredado Mailu.
+- Seguridad: el provisionamiento y borrado directo quedan fijados a scripts internos revisados. Una ruta configurada arbitrariamente se rechaza; el modo recomendado en produccion continua siendo `mailu_api` interno.
+- QA: se agrega regresion que rechaza rutas directas no aprobadas. El analisis completo `gosec` se valida por CI/Linux, ya que la ejecucion local quedo retenida por procesos temporales de Windows.

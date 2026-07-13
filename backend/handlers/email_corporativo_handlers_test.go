@@ -47,6 +47,15 @@ func TestCorporateEmailProvisionModeKeepsMailuAPI(t *testing.T) {
 	}
 }
 
+func TestCorporateEmailDirectScriptIsPinnedToReviewedPath(t *testing.T) {
+	if err := validateCorporateEmailDirectScript(corporateEmailDirectProvisionScript, corporateEmailDirectProvisionScript); err != nil {
+		t.Fatalf("approved direct script rejected: %v", err)
+	}
+	if err := validateCorporateEmailDirectScript("/tmp/untrusted-command", corporateEmailDirectProvisionScript); err == nil {
+		t.Fatal("arbitrary direct script must be rejected")
+	}
+}
+
 func TestCorporateEmailAppendThemePreservesSnappyMailSSOQuery(t *testing.T) {
 	got := corporateEmailAppendThemeToURI("/webmail/index.php?sso&hash=abc123", "dark")
 	if !strings.HasPrefix(got, "/webmail/index.php?sso&hash=abc123&") {

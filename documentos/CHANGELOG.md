@@ -3,6 +3,7 @@
 - [Nextcloud] La cuota configurada no se reemplaza en el arranque; las URLs se entregan solo a espacios activos y aprovisionados.
 - [Seguridad] El backend deja de servir `/descargas/`; Nginx deja una lista cerrada de instaladores RustDesk y rechaza el resto.
 - [Docs] Agrega decision de readiness, reportes de staging/migraciones/restauracion/carga/integraciones y runbooks de observabilidad, despliegue, rollback y release.
+- [Correo corporativo] El modo heredado directo queda fijado a scripts internos revisados; se rechazan comandos configurables arbitrarios y `mailu_api` permanece como modo recomendado.
 
 ## [2026-07-10] Diagramas tecnicos consolidados
 - [Super administrador] `Diagramas tecnicos` conserva los 19 diagramas detallados de la documentacion tecnica completa y retira del menu los 15 esquemas generales redundantes.

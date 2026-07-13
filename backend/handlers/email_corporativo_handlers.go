@@ -30,21 +30,23 @@ import (
 )
 
 const (
-	corporateEmailEnabledKey       = "email_corporativo.enabled"
-	corporateEmailAutoCreateKey    = "email_corporativo.auto_create"
-	corporateEmailDomainKey        = "email_corporativo.domain"
-	corporateEmailWebmailURLKey    = "email_corporativo.webmail_url"
-	corporateEmailLogoURLKey       = "email_corporativo.logo_url"
-	corporateEmailProvisionModeKey = "email_corporativo.provision_mode"
-	corporateEmailAPIBaseURLKey    = "email_corporativo.mailu_api_base_url"
-	corporateEmailAPIAdminKey      = "email_corporativo.mailu_admin"
-	corporateEmailAPIPasswordKey   = "email_corporativo.mailu_api_token" // #nosec G101 -- ruta de configuracion, no credencial embebida.
-	corporateEmailQuotaMBKey       = "email_corporativo.quota_mb"
-	corporateEmailDirectCommandKey = "email_corporativo.direct_provision_command"
-	corporateEmailAutologinKey     = "email_corporativo.autologin_secret"
-	corporateEmailEmpresaPrefsKey  = "email_corporativo_config"
-	corporateEmailMaxAccountsKey   = "email_corporativo.max_accounts_per_empresa"
-	corporateEmailDefaultMax       = 5
+	corporateEmailEnabledKey            = "email_corporativo.enabled"
+	corporateEmailAutoCreateKey         = "email_corporativo.auto_create"
+	corporateEmailDomainKey             = "email_corporativo.domain"
+	corporateEmailWebmailURLKey         = "email_corporativo.webmail_url"
+	corporateEmailLogoURLKey            = "email_corporativo.logo_url"
+	corporateEmailProvisionModeKey      = "email_corporativo.provision_mode"
+	corporateEmailAPIBaseURLKey         = "email_corporativo.mailu_api_base_url"
+	corporateEmailAPIAdminKey           = "email_corporativo.mailu_admin"
+	corporateEmailAPIPasswordKey        = "email_corporativo.mailu_api_token" // #nosec G101 -- ruta de configuracion, no credencial embebida.
+	corporateEmailQuotaMBKey            = "email_corporativo.quota_mb"
+	corporateEmailDirectCommandKey      = "email_corporativo.direct_provision_command"
+	corporateEmailAutologinKey          = "email_corporativo.autologin_secret"
+	corporateEmailEmpresaPrefsKey       = "email_corporativo_config"
+	corporateEmailMaxAccountsKey        = "email_corporativo.max_accounts_per_empresa"
+	corporateEmailDefaultMax            = 5
+	corporateEmailDirectProvisionScript = "/app/project_export/deploy/scripts/vps-provision-mailu-mailbox.sh"
+	corporateEmailDirectDeleteScript    = "/app/project_export/deploy/scripts/vps-delete-mailu-mailbox.sh"
 )
 
 type CorporateEmailConfig struct {
@@ -80,6 +82,16 @@ type corporateEmailEmpresaPrefs struct {
 }
 
 var errCorporateEmailAutologinRejected = errors.New("credenciales del buzon no aceptadas por Mailu")
+
+// validateCorporateEmailDirectScript keeps the deprecated direct mode pinned to
+// reviewed project scripts. The active production mode is the internal Mailu API.
+func validateCorporateEmailDirectScript(configured, expected string) error {
+	configured = strings.TrimSpace(configured)
+	if configured == "" || configured == expected {
+		return nil
+	}
+	return errors.New("el modo directo solo permite el script interno aprobado")
+}
 
 type corporateWebmailCheck struct {
 	Checked bool   `json:"checked"`
@@ -707,12 +719,11 @@ func DeleteEmpresaCorporateEmailAccounts(ctx context.Context, dbSuper *sql.DB, e
 			}
 			continue
 		}
-		commandPath := strings.TrimSpace(firstNonEmptyEnv("EMAIL_CORPORATIVO_DIRECT_DELETE_COMMAND", "MAILU_DIRECT_DELETE_COMMAND"))
-		if commandPath == "" {
-			commandPath = "/app/project_export/deploy/scripts/vps-delete-mailu-mailbox.sh"
+		if err := validateCorporateEmailDirectScript(firstNonEmptyEnv("EMAIL_CORPORATIVO_DIRECT_DELETE_COMMAND", "MAILU_DIRECT_DELETE_COMMAND"), corporateEmailDirectDeleteScript); err != nil {
+			return errors.New("el modo directo de Mailu no esta disponible")
 		}
 		callCtx, cancel := context.WithTimeout(ctx, 45*time.Second)
-		cmd := exec.CommandContext(callCtx, commandPath)
+		cmd := exec.CommandContext(callCtx, corporateEmailDirectDeleteScript)
 		cmd.Env = append(os.Environ(),
 			"PCS_MAILU_EMAIL="+strings.ToLower(strings.TrimSpace(account.Email)),
 			"PCS_MAILU_DOMAIN="+normalizeCorporateEmailDomain(account.Domain),
@@ -942,12 +953,12 @@ func deleteEmpresaEmailAccountMailuAPI(ctx context.Context, dbSuper *sql.DB, cfg
 }
 
 func provisionEmpresaEmailAccountDirect(dbSuper *sql.DB, cfg CorporateEmailConfig, account dbpkg.EmpresaEmailCorporativo, password, theme string) corporateEmailProvisionResult {
-	commandPath := strings.TrimSpace(cfg.DirectCommand)
-	if commandPath == "" {
-		commandPath = strings.TrimSpace(firstNonEmptyEnv("EMAIL_CORPORATIVO_DIRECT_PROVISION_COMMAND", "MAILU_DIRECT_PROVISION_COMMAND"))
+	configuredCommand := strings.TrimSpace(cfg.DirectCommand)
+	if configuredCommand == "" {
+		configuredCommand = strings.TrimSpace(firstNonEmptyEnv("EMAIL_CORPORATIVO_DIRECT_PROVISION_COMMAND", "MAILU_DIRECT_PROVISION_COMMAND"))
 	}
-	if commandPath == "" {
-		msg := "Falta EMAIL_CORPORATIVO_DIRECT_PROVISION_COMMAND para crear el buzon directo en Mailu"
+	if err := validateCorporateEmailDirectScript(configuredCommand, corporateEmailDirectProvisionScript); err != nil {
+		msg := "El modo directo de Mailu solo permite el script interno aprobado"
 		_ = dbpkg.MarkEmpresaEmailProvisionResult(dbSuper, account.EmpresaID, "pendiente_comando", msg, false)
 		return corporateEmailProvisionResult{OK: false, Status: "pendiente_comando", Error: msg}
 	}
@@ -963,8 +974,7 @@ func provisionEmpresaEmailAccountDirect(dbSuper *sql.DB, cfg CorporateEmailConfi
 
 	ctx, cancel := context.WithTimeout(context.Background(), 45*time.Second)
 	defer cancel()
-	// #nosec G204 -- commandPath is the fixed Mailu provisioning script resolved inside the project.
-	cmd := exec.CommandContext(ctx, commandPath)
+	cmd := exec.CommandContext(ctx, corporateEmailDirectProvisionScript)
 	cmd.Env = append(os.Environ(),
 		"PCS_MAILU_EMAIL="+strings.ToLower(strings.TrimSpace(account.Email)),
 		"PCS_MAILU_PASSWORD="+password,
