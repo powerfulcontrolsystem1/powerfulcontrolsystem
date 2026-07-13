@@ -24,6 +24,10 @@
 - Los fallos de proveedores de correo en pagos, correo corporativo y agentes
   dejan de imprimir el error crudo, que puede contener datos de destinatarios.
 
+2026-07-13: Validación de soporte remoto.
+- La actualización de configuración de soporte remoto devuelve un mensaje
+  genérico al navegador y no concatena errores internos de persistencia.
+
 2026-07-13: Auditoria de preparación - minimizacion de secretos y PII en logs.
 - Se elimina `backend/tools/query_epayco_runtime.go`, que accedía directamente
   a DSN, configuraciones de pago y sesiones; los diagnósticos deben usar las

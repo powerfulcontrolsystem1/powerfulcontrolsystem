@@ -110,3 +110,13 @@ func TestProviderMailFailuresDoNotLogProviderErrors(t *testing.T) {
 		}
 	}
 }
+
+func TestRemoteSupportConfigurationDoesNotExposePersistenceErrors(t *testing.T) {
+	contents, err := os.ReadFile("super_soporte_remoto.go")
+	if err != nil {
+		t.Fatalf("read remote support handler: %v", err)
+	}
+	if strings.Contains(string(contents), "No se pudo guardar configuracion de soporte remoto: \"+err.Error()") {
+		t.Fatal("remote support configuration must not expose persistence errors")
+	}
+}
