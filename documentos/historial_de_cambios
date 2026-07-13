@@ -37701,3 +37701,9 @@ Archivos modificados:
   respuesta, después de validar el token recibido en la misma solicitud.
 - La cobertura de regresión protege que estas rutas no rompan la petición
   legítima ni reutilicen el token anterior para el siguiente cambio sensible.
+
+2026-07-13: Respuestas sensibles sin detalles de proveedor o persistencia.
+- El registro y la recuperación administrativa conservan una respuesta neutral
+  aunque falle el envío de correo; ya no devuelven el detalle del proveedor.
+- La gestión de administradores autorizados para frecuencia FE deja de exponer
+  errores de lectura, JSON o persistencia en la interfaz.

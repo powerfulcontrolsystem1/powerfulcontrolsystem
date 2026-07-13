@@ -338,7 +338,6 @@ func AdminRegisterHandler(dbSuper *sql.DB) http.HandlerFunc {
 				"ok":         true,
 				"email_sent": false,
 				"message":    "La cuenta fue creada, pero no se pudo enviar el correo de confirmación. Revisa la configuración SMTP.",
-				"error":      err.Error(),
 			})
 			return
 		}
@@ -523,7 +522,7 @@ func AdminRequestPasswordRecoveryHandler(dbSuper *sql.DB) http.HandlerFunc {
 		}
 		if _, err := sendAdminPasswordRecoveryEmail(r, dbSuper, payload.Email, "", token); err != nil {
 			log.Println("AdminRequestPasswordRecoveryHandler send mail error:", err)
-			writeAdminAuthJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "email_sent": false, "message": "No se pudo enviar el correo de recuperación. Revisa la configuración SMTP.", "error": err.Error()})
+			writeAdminAuthJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "email_sent": false, "message": "No se pudo enviar el correo de recuperación. Revisa la configuración SMTP."})
 			return
 		}
 		writeAdminAuthJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "email_sent": true, "message": "Si la cuenta existe y ya fue confirmada, enviaremos instrucciones para restablecer la contraseña."})
