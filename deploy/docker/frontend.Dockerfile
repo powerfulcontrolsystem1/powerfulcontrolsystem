@@ -1,4 +1,4 @@
-FROM nginxinc/nginx-unprivileged:1.27-alpine
+FROM nginxinc/nginx-unprivileged:1.30.3-alpine3.23
 
 COPY web /usr/share/nginx/html
 COPY deploy/nginx/pcs.conf /etc/nginx/conf.d/default.conf
