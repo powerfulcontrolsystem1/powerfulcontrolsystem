@@ -6773,6 +6773,7 @@ func EpaycoWebhookHandler(dbSuper *sql.DB, dbEmp ...*sql.DB) http.HandlerFunc {
 
 		payload := map[string]interface{}{}
 		rawPayload := ""
+		r.Body = http.MaxBytesReader(w, r.Body, 1<<20)
 		contentType := strings.ToLower(strings.TrimSpace(r.Header.Get("Content-Type")))
 
 		if strings.Contains(contentType, "application/json") {

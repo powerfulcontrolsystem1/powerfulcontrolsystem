@@ -383,6 +383,22 @@ func onlyOfficeBrowserDocumentServerURL(r *http.Request, dbSuper *sql.DB, config
 	return publicURL, publicURL != configured
 }
 
+func onlyOfficeCallbackDownloadURLAllowed(dbSuper *sql.DB, raw string) bool {
+	target, err := url.Parse(strings.TrimSpace(raw))
+	if err != nil || target == nil || (target.Scheme != "http" && target.Scheme != "https") || target.Hostname() == "" {
+		return false
+	}
+	configured, _, err := onlyOfficeResolveDocumentServerURL(dbSuper)
+	if err != nil {
+		return false
+	}
+	server, err := url.Parse(strings.TrimSpace(configured))
+	if err != nil || server == nil {
+		return false
+	}
+	return strings.EqualFold(target.Scheme, server.Scheme) && strings.EqualFold(target.Hostname(), server.Hostname()) && target.Port() == server.Port()
+}
+
 func onlyOfficeZipBytes(files map[string]string) ([]byte, error) {
 	var buf bytes.Buffer
 	zw := zip.NewWriter(&buf)
@@ -1222,6 +1238,10 @@ func OnlyOfficeCallbackPublicHandler(dbSuper *sql.DB) http.HandlerFunc {
 			writeJSON(w, http.StatusOK, resp)
 			return
 		}
+		if !onlyOfficeCallbackDownloadURLAllowed(dbSuper, payload.URL) {
+			writeJSON(w, http.StatusOK, resp)
+			return
+		}
 
 		full, err := onlyOfficeJoinEmpresaFile(claims.EmpresaID, claims.Path)
 		if err != nil {
@@ -1259,7 +1279,7 @@ func OnlyOfficeCallbackPublicHandler(dbSuper *sql.DB) http.HandlerFunc {
 			writeJSON(w, http.StatusOK, resp)
 			return
 		}
-		_, copyErr := io.Copy(out, res.Body)
+		_, copyErr := io.Copy(out, io.LimitReader(res.Body, 32<<20))
 		_ = out.Close()
 		if copyErr != nil {
 			_ = os.Remove(tmp)
