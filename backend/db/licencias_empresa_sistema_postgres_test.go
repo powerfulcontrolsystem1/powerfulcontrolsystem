@@ -15,7 +15,7 @@ func TestDisablePowerfulSystemEmpresaInternalLicenseAvoidsTextTimestampCASE(t *t
 	if strings.Contains(src, "COALESCE(fecha_fin, '')") {
 		t.Fatal("la licencia interna no debe mezclar fecha_fin timestamp con texto vacio en PostgreSQL")
 	}
-	if !strings.Contains(src, "fecha_fin = CASE WHEN fecha_fin IS NULL THEN") {
-		t.Fatal("la licencia interna debe conservar fecha_fin con un CASE tipado por NULL")
+	if strings.Contains(src, "fecha_fin = CASE") {
+		t.Fatal("la licencia interna no debe reescribir fecha_fin: historicamente puede ser texto o timestamp")
 	}
 }
