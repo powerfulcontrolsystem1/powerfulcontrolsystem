@@ -38044,3 +38044,8 @@ PushStatus: OK
 Archivos modificados:
 - backend/utils/mobile_auth_middleware_test.go
 - backend/utils/utils.go
+2026-07-14: Correccion CSRF transversal en formularios autenticados.
+- Modulos afectados: `seguridad`, `super_administrador`, `licencias_codigos_descuento`, `frontend_estatico`.
+- Causa: paginas HTML que no cargaban `menu.js`, como Codigos de descuento para licencias, no recibian el token synchronizer para mutaciones autenticadas y el middleware respondia `csrf token validation failed`.
+- Solucion: `backend/main.go` inyecta `web/js/csrf_fetch.js` una sola vez en cada respuesta HTML; el script adjunta `X-CSRF-Token` exclusivamente a POST, PUT, PATCH y DELETE same-origin con cookies, sin alterar bearer, cross-origin ni encabezados CSRF existentes.
+- QA: pruebas de inyeccion/no duplicacion y `go test ./...`; se requiere validacion operativa de crear y redimir el codigo en el checkout real antes del cierre.

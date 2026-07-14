@@ -4548,3 +4548,5 @@ adjuntos y analisis avanzado.
 - Alcance: login nativo protegido por segundo factor, restauracion/rotacion/cierre de sesion, selector de empresas, panel por permisos y Productos como primera consulta funcional.
 - Integracion: consume exclusivamente `/api/v1/`; el backend mantiene la autoridad de empresa, rol, licencia e idempotencia. Web conserva sus rutas heredadas por compatibilidad.
 - Descarga: portal publico y enlace final de Administrar empresa leen el mismo manifiesto de releases; no hay APK, AAB o IPA disponible hasta firma y publicacion oficial.
+2026-07-14: Seguridad CSRF transversal.
+- El frontend estatico entrega `csrf_fetch.js` en toda pagina HTML para que los formularios autenticados de todos los modulos mantengan el contrato CSRF del backend sin depender de que una vista cargue el menu flotante.

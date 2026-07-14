@@ -1,3 +1,8 @@
+## [2026-07-14] CSRF global para formularios autenticados
+- [Seguridad] Todas las respuestas HTML del sistema cargan `web/js/csrf_fetch.js`, que agrega el token synchronizer solo a mutaciones same-origin autenticadas por cookie.
+- [Super] La administración de códigos de descuento vuelve a crear, editar, activar, eliminar y reenviar sin omitir `X-CSRF-Token`.
+- [Compatibilidad] Las llamadas bearer, cross-origin y las que ya declaran token no se modifican.
+
 ## [2026-07-13] Correcciones de preproduccion: panel, Nextcloud y archivos
 - [Panel empresa] `No volver a mostrar` envia CSRF y conserva su estado por empresa en PostgreSQL.
 - [Nextcloud] La cuota configurada no se reemplaza en el arranque; las URLs se entregan solo a espacios activos y aprovisionados.

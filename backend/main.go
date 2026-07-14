@@ -717,6 +717,7 @@ func contextualHelpStaticHandler(next http.Handler) http.Handler {
 	})
 }
 
+const csrfFetchScriptTag = "\n<script src=\"/js/csrf_fetch.js?v=20260714-global-csrf\" defer></script>\n"
 const buttonIconsScriptTag = "\n<script src=\"/js/button_icons.js?v=20260521-global-button-icons\" defer></script>\n"
 
 func buttonIconsStaticHandler(next http.Handler) http.Handler {
@@ -772,7 +773,7 @@ func shouldInjectButtonIcons(r *http.Request, header http.Header, status int, bo
 		return false
 	}
 	text := strings.ToLower(string(body))
-	if strings.Contains(text, "/js/button_icons.js") {
+	if strings.Contains(text, "/js/button_icons.js") && strings.Contains(text, "/js/csrf_fetch.js") {
 		return false
 	}
 	return strings.Contains(text, "<body") || strings.Contains(text, "</body>")
@@ -781,11 +782,21 @@ func shouldInjectButtonIcons(r *http.Request, header http.Header, status int, bo
 func injectButtonIconsScript(body []byte) []byte {
 	text := string(body)
 	lower := strings.ToLower(text)
+	scripts := ""
+	if !strings.Contains(lower, "/js/csrf_fetch.js") {
+		scripts += csrfFetchScriptTag
+	}
+	if !strings.Contains(lower, "/js/button_icons.js") {
+		scripts += buttonIconsScriptTag
+	}
+	if scripts == "" {
+		return body
+	}
 	insertAt := strings.LastIndex(lower, "</body>")
 	if insertAt < 0 {
-		return append(body, []byte(buttonIconsScriptTag)...)
+		return append(body, []byte(scripts)...)
 	}
-	return []byte(text[:insertAt] + buttonIconsScriptTag + text[insertAt:])
+	return []byte(text[:insertAt] + scripts + text[insertAt:])
 }
 
 func main() {

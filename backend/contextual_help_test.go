@@ -62,6 +62,9 @@ func TestButtonIconsStaticHandlerInjectsHTML(t *testing.T) {
 	if !strings.Contains(body, `/js/button_icons.js`) {
 		t.Fatalf("button icons script should be injected: %s", body)
 	}
+	if !strings.Contains(body, `/js/csrf_fetch.js`) {
+		t.Fatalf("csrf fetch script should be injected: %s", body)
+	}
 	if strings.Count(body, `/js/button_icons.js`) != 1 {
 		t.Fatalf("button icons script should appear once: %s", body)
 	}
@@ -81,6 +84,9 @@ func TestButtonIconsStaticHandlerLeavesAssetsUntouched(t *testing.T) {
 	if strings.Contains(body, `button_icons.js`) {
 		t.Fatalf("asset response was modified: %s", body)
 	}
+	if strings.Contains(body, `csrf_fetch.js`) {
+		t.Fatalf("asset response was modified: %s", body)
+	}
 	if body != "body{color:red}" {
 		t.Fatalf("asset body = %q", body)
 	}
@@ -98,5 +104,8 @@ func TestButtonIconsStaticHandlerDoesNotDuplicateScript(t *testing.T) {
 
 	if got := strings.Count(rr.Body.String(), `/js/button_icons.js`); got != 1 {
 		t.Fatalf("script count = %d, want 1; body=%s", got, rr.Body.String())
+	}
+	if got := strings.Count(rr.Body.String(), `/js/csrf_fetch.js`); got != 1 {
+		t.Fatalf("csrf script count = %d, want 1; body=%s", got, rr.Body.String())
 	}
 }

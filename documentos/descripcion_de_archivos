@@ -11936,3 +11936,5 @@ backend/handlers/selector_chat_ia_test.go
 - `.github/workflows/mobile-ci.yml` y `.github/workflows/mobile-release.yml`: validacion Flutter Android/iOS y candidatos manuales.
 - `web/assets/data/mobile-releases.json` y `web/js/mobile_releases.js`: metadatos seguros de descarga publica, sin enlaces a binarios no publicados.
 - `documentos/arquitectura_aplicacion_movil.md`, `documentos/contratos_api_movil.md`, `documentos/desarrollo_paralelo_web_movil.md` y `documentos/publicacion_android_ios.md`: arquitectura, contrato, convivencia web/movil y publicacion.
+2026-07-14 - `web/js/csrf_fetch.js`
+- Helper JavaScript global para anexar el token CSRF de sincronizacion a mutaciones same-origin autenticadas por cookie, sin intervenir APIs bearer ni solicitudes externas.
