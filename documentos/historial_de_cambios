@@ -19411,6 +19411,11 @@ Archivos modificados:
 - web/administrar_empresa/estaciones.html
 - web/estilos.css
 - web/js/ai_chat_drawer.js
+- 2026-07-14: Plan movil 1.
+  - `POST /api/v1/auth/login`, `POST /api/v1/auth/refresh`, `POST /api/v1/auth/logout` y `GET /api/v1/empresas` completan el inicio de sesion movil, rotacion y selector multiempresa sin revelar cuentas ni aceptar empresa del cliente como autoridad.
+  - Se agrega el proyecto Flutter con almacenamiento seguro, Riverpod, go_router, conectividad, restauracion de sesion y Productos como primer modulo movil.
+  - Android/iOS disponen de scripts y CI; el icono nativo se genera desde la imagen oficial PWA. No se publican binarios ni se versionan firmas.
+  - La pagina publica `Mas > Descargar aplicaciones` y el enlace final de Administrar empresa comparten un manifiesto validado de releases.
 - web/js/super_reportes_globales.js
 - web/seleccionar_empresa.html
 - web/super/integracion_ia.html

@@ -19,6 +19,13 @@ param(
   [switch]$PreviewOnly,
   [switch]$SkipPreflight,
   [switch]$FullPreflight,
+  [switch]$BuildAndroid,
+  [switch]$BuildIOS,
+  [switch]$BuildMobile,
+  [switch]$SkipMobile,
+  [switch]$MobileDebug,
+  [switch]$MobileRelease,
+  [switch]$TriggerIOSWorkflow,
   [int]$ProtectedMainPRWaitSeconds = 900,
   [switch]$NoAutoMergeProtectedPR,
   [int]$RestartHealthTimeoutSeconds = 900,
@@ -36,6 +43,8 @@ $scriptDir = $PSScriptRoot
 $updateScript = Join-Path $scriptDir "actualizar_repositorio.ps1"
 $syncScript = Join-Path $scriptDir "sync_to_vps.ps1"
 $preflightScript = Join-Path $scriptDir "profesional_preflight.ps1"
+$androidBuildScript = Join-Path $scriptDir "generar_aplicacion_android.ps1"
+$iosBuildScript = Join-Path $scriptDir "generar_aplicacion_ios.ps1"
 $childPowerShell = if ($PSVersionTable.PSEdition -eq "Core") {
   Join-Path $PSHOME "pwsh.exe"
 } else {
@@ -57,6 +66,13 @@ if (-not (Test-Path -LiteralPath $syncScript)) {
 }
 if (-not $SkipPreflight -and -not (Test-Path -LiteralPath $preflightScript)) {
   throw "No se encontro el script requerido: $preflightScript"
+}
+if ($BuildMobile) { $BuildAndroid = $true; $BuildIOS = $true }
+if ($SkipMobile -and ($BuildAndroid -or $BuildIOS)) { throw "SkipMobile no se puede combinar con BuildAndroid, BuildIOS o BuildMobile." }
+if ($MobileDebug -and $MobileRelease) { throw "Usa solo MobileDebug o MobileRelease." }
+if (($BuildAndroid -or $BuildIOS) -and -not $SkipMobile) {
+  if ($BuildAndroid -and -not (Test-Path -LiteralPath $androidBuildScript)) { throw "No se encontro el script Android: $androidBuildScript" }
+  if ($BuildIOS -and -not (Test-Path -LiteralPath $iosBuildScript)) { throw "No se encontro el script iOS: $iosBuildScript" }
 }
 
 function Invoke-Step {
@@ -147,6 +163,18 @@ if (-not $SkipPreflight) {
 }
 
 Invoke-Step -Name "Actualizar repositorio" -Path $updateScript -Arguments $updateArgs
+if ($BuildAndroid -and -not $SkipMobile) {
+  $androidArgs = @{}
+  if ($DryRun) { $androidArgs.DryRun = $true }
+  if ($MobileDebug) { $androidArgs.Debug = $true } else { $androidArgs.Release = $true }
+  Invoke-Step -Name "Generar aplicacion Android" -Path $androidBuildScript -Arguments $androidArgs
+}
+if ($BuildIOS -and -not $SkipMobile) {
+  $iosArgs = @{}
+  if ($DryRun) { $iosArgs.DryRun = $true }
+  if ($TriggerIOSWorkflow) { $iosArgs.TriggerIOSWorkflow = $true }
+  Invoke-Step -Name "Validar o generar aplicacion iPhone" -Path $iosBuildScript -Arguments $iosArgs
+}
 Invoke-Step -Name "Sincronizar VPS" -Path $syncScript -Arguments $syncArgs
 
 Write-Host ""

@@ -3249,3 +3249,13 @@
 - [Plataforma] Se separan los roles de API, migracion y worker; se incorpora
   cola PostgreSQL durable/outbox y se documentan los gates de liberacion y API
   movil sin romper las rutas web existentes.
+
+## [2026-07-14] Plan movil 1 - base Flutter y acceso nativo
+- [API movil] Se incorporan login nativo, rotacion/logout de sesion y selector
+  de empresas autorizadas en `/api/v1/`, con respuestas JSON estables y sin
+  revelar existencia de cuentas.
+- [Movil] Se crea el proyecto Flutter Android/iPhone con sesion segura,
+  segundo factor, conectividad, panel y Productos como primer modulo funcional.
+- [Entrega] Scripts y CI construyen candidatos Android/iOS; el portal y
+  Administrar empresa muestran una pagina comun de descarga sin publicar
+  artefactos hasta completar firma y tiendas oficiales.

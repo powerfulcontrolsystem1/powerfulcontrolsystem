@@ -8,6 +8,37 @@ servers:
 security:
   - bearerSession: []
 paths:
+  /api/v1/auth/login:
+    post:
+      summary: Inicia una sesión Bearer de dispositivo con contraseña y segundo factor cuando aplique.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email: {type: string, format: email}
+                password: {type: string, format: password}
+                otp_code: {type: string, maxLength: 128}
+                device_name: {type: string, maxLength: 80}
+      responses:
+        '201': {description: Sesión Bearer de dispositivo creada; token entregado una sola vez.}
+        '401': {description: Credenciales inválidas o segundo factor requerido.}
+  /api/v1/auth/refresh:
+    post:
+      summary: Rota una sesión Bearer de dispositivo activa.
+      responses:
+        '200': {description: Token de reemplazo entregado una sola vez.}
+        '401': {$ref: '#/components/responses/Error'}
+  /api/v1/auth/logout:
+    post:
+      summary: Revoca la sesión Bearer activa del dispositivo.
+      responses:
+        '200': {description: Sesión revocada.}
+        '401': {$ref: '#/components/responses/Error'}
   /api/v1/auth/mobile-session:
     post:
       summary: Crea una sesion dedicada para el dispositivo desde una sesion autenticada existente.
@@ -29,6 +60,12 @@ paths:
       summary: Identidad autenticada del cliente movil.
       responses:
         '200': {description: Identidad de la cuenta}
+        '401': {$ref: '#/components/responses/Error'}
+  /api/v1/empresas:
+    get:
+      summary: Lista las empresas activas autorizadas para la cuenta móvil.
+      responses:
+        '200': {description: Empresas propias, compartidas o globales según el rol efectivo.}
         '401': {$ref: '#/components/responses/Error'}
   /api/v1/empresa/productos:
     get:

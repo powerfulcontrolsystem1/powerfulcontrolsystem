@@ -1,0 +1,64 @@
+name: Mobile release candidates
+
+on:
+  workflow_dispatch:
+    inputs:
+      build_android:
+        description: Build Android APK and AAB candidates
+        required: true
+        default: true
+        type: boolean
+      build_ios:
+        description: Build unsigned iOS candidate when signing is not configured
+        required: true
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+
+jobs:
+  android-release-candidate:
+    if: inputs.build_android
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2
+        with:
+          channel: stable
+          cache: true
+      - working-directory: mobile/powerful_control_system_app
+        run: |
+          flutter pub get
+          dart run flutter_launcher_icons
+          flutter create --platforms=android,ios .
+          flutter analyze
+          flutter test
+          flutter build apk --release
+          flutter build appbundle --release
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.1
+        with:
+          name: android-release-candidate
+          path: |
+            mobile/powerful_control_system_app/build/app/outputs/flutter-apk/app-release.apk
+            mobile/powerful_control_system_app/build/app/outputs/bundle/release/app-release.aab
+
+  ios-unsigned-candidate:
+    if: inputs.build_ios
+    runs-on: macos-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2
+        with:
+          channel: stable
+          cache: true
+      - working-directory: mobile/powerful_control_system_app
+        run: |
+          flutter pub get
+          dart run flutter_launcher_icons
+          flutter create --platforms=android,ios .
+          flutter analyze
+          flutter test
+          flutter build ios --release --no-codesign

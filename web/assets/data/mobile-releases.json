@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "official_domain": "powerfulcontrolsystem.com",
+  "android": {
+    "available": false,
+    "version": "Próximamente",
+    "minimum_requirements": "Android 8.0 o superior",
+    "download_url": "",
+    "play_store_url": "",
+    "sha256": "",
+    "published_at": "",
+    "instructions": "La descarga oficial se habilitará desde este sitio cuando exista una versión firmada y verificada."
+  },
+  "ios": {
+    "available": false,
+    "version": "Próximamente",
+    "minimum_requirements": "iPhone con iOS 15 o superior",
+    "app_store_url": "",
+    "testflight_url": "",
+    "published_at": "",
+    "instructions": "La aplicación se publicará en App Store o TestFlight cuando la revisión de Apple esté disponible."
+  }
+}

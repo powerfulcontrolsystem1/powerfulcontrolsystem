@@ -53,7 +53,10 @@ forzadas aunque el boton se oculte en frontend.
 - Arquitectura modular, migraciones/worker y API movil:
   `plan_101_arquitectura_modular.md`,
   `preparacion_produccion_y_app_movil.md`, `api/mobile_api_v1.md` y
-  `api/openapi.mobile.v1.yaml`.
+  `api/openapi.mobile.v1.yaml`. La aplicacion Flutter, su entrega y el trabajo
+  paralelo se documentan en `arquitectura_aplicacion_movil.md`,
+  `contratos_api_movil.md`, `desarrollo_paralelo_web_movil.md` y
+  `publicacion_android_ios.md`.
 - Correo corporativo y WhatsApp: `mapa_modulos.md`, `flujos_operativos.md`,
   `decisiones_tecnicas.md`, `email_corporativo_mailu.md` y los runbooks de
   correo aplicables.

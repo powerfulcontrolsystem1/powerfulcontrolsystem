@@ -93,6 +93,13 @@ detiene el flujo solo cuando el paso correspondiente falla. Cada fase tiene
 timeout controlado (3600 segundos por defecto) y reporta las rutas de log si se
 agota o falla. Puede ajustarse con `-StepTimeoutSeconds`.
 
+La compilacion movil es opcional y no altera el comportamiento diario de `rs`.
+Solo se activa de forma expresa, despues de actualizar el repositorio y antes
+de la sincronizacion: `-BuildAndroid`, `-BuildIOS` o `-BuildMobile`. Usar
+`-MobileDebug` para candidatos debug, `-MobileRelease` para APK/AAB o IPA y
+`-TriggerIOSWorkflow` cuando el equipo local no sea macOS. `-SkipMobile` deja
+constancia explicita de que no se solicitara ningun build movil.
+
 Si GitHub protege `main` y rechaza el push directo, `actualizar_repositorio.ps1`
 crea una rama `codex/rs-...`, abre la PR y solicita `auto-merge`. Nunca se
 autoaprueba ni evita checks: GitHub solo la fusiona despues de una aprobacion

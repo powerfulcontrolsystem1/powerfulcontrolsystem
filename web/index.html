@@ -1311,6 +1311,7 @@
             <a role="menuitem" data-public-page-link href="/index.html?pagina=privacidad">Privacidad y datos</a>
             <a role="menuitem" data-public-page-link href="/index.html?pagina=quienes-somos">Qui&eacute;nes somos</a>
             <a role="menuitem" data-public-page-link href="/index.html?pagina=hotel-motel">Sistema Hotel / Motel</a>
+            <a role="menuitem" data-public-page-link href="/index.html?pagina=aplicaciones">Descargar aplicaciones</a>
           </div>
         </div>
       </nav>
@@ -1392,6 +1393,38 @@
           <article class="portal-public-card"><span>Habitaciones</span><h2>Tarifas y estados</h2><p>Control por categoria, precio, ocupacion, aseo, disponibilidad y tiempos de uso.</p></article>
           <article class="portal-public-card"><span>Domotica</span><h2>Sensores de puertas</h2><p>Eventos de apertura/cierre para apoyar control de cuentas, permanencia y trazabilidad.</p></article>
           <article class="portal-public-card"><span>Caja</span><h2>Cobro y reportes</h2><p>Integracion con POS, turnos, cortes, pagos y reportes de operacion.</p></article>
+        </div>
+      </section>
+
+      <section id="publicPageApps" class="portal-public-page" data-public-page="aplicaciones" aria-labelledby="publicAppsTitle">
+        <div class="portal-public-hero">
+          <div class="portal-public-copy">
+            <p class="portal-public-kicker">Aplicaciones oficiales</p>
+            <h1 id="publicAppsTitle">Powerful Control System en tu celular</h1>
+            <p>Consulta la disponibilidad oficial para Android y iPhone. Las aplicaciones usan la misma cuenta, empresas autorizadas, roles, permisos y reglas del sistema web.</p>
+            <p>Descarga solo desde este dominio o desde las tiendas enlazadas aquí. Nunca instales archivos recibidos por mensajes no solicitados.</p>
+          </div>
+          <figure class="portal-public-media"><img src="/img/pwa-icon-512.png" alt="Icono oficial de Powerful Control System" loading="lazy"></figure>
+        </div>
+        <div class="portal-public-grid">
+          <article class="portal-public-card" data-mobile-release-card="android">
+            <span>Android</span><h2>Powerful Control System para Android</h2>
+            <p><strong data-mobile-release-version>Próximamente</strong></p>
+            <p data-mobile-release-requirements>Android 8.0 o superior</p>
+            <p data-mobile-release-published>Sin versión pública todavía</p>
+            <p class="form-help" data-mobile-release-checksum>Checksum disponible con la versión oficial</p>
+            <p data-mobile-release-instructions></p>
+            <div class="portal-public-actions"><a class="btn dark" data-mobile-release-primary aria-disabled="true">Próximamente</a><a class="btn secondary" data-mobile-release-secondary aria-disabled="true">No disponible</a></div>
+          </article>
+          <article class="portal-public-card" data-mobile-release-card="ios">
+            <span>iPhone</span><h2>Powerful Control System para iPhone</h2>
+            <p><strong data-mobile-release-version>Próximamente</strong></p>
+            <p data-mobile-release-requirements>iPhone con iOS 15 o superior</p>
+            <p data-mobile-release-published>Sin versión pública todavía</p>
+            <p class="form-help" data-mobile-release-checksum>Verificación disponible con la publicación oficial</p>
+            <p data-mobile-release-instructions></p>
+            <div class="portal-public-actions"><a class="btn dark" data-mobile-release-primary aria-disabled="true">Próximamente</a><a class="btn secondary" data-mobile-release-secondary aria-disabled="true">No disponible</a></div>
+          </article>
         </div>
       </section>
 
@@ -1488,7 +1521,7 @@
         var home = document.getElementById('portalHomeContent');
         var pages = Array.prototype.slice.call(document.querySelectorAll('[data-public-page]'));
         var links = Array.prototype.slice.call(document.querySelectorAll('[data-public-page-link]'));
-        var allowed = { contacto: true, privacidad: true, 'quienes-somos': true, 'hotel-motel': true };
+        var allowed = { contacto: true, privacidad: true, 'quienes-somos': true, 'hotel-motel': true, aplicaciones: true };
 
         function currentPage() {
           var params = new URLSearchParams(window.location.search || '');
@@ -2582,6 +2615,7 @@
   </script>
   <script src="/js/ai_button_icons.js?v=20260615-ia-logo-theme"></script>
   <script src="/js/ai_chat_drawer.js?v=20260713-chat-resultados"></script>
+  <script src="/js/mobile_releases.js?v=20260714-mobile-downloads"></script>
 
 </body>
 

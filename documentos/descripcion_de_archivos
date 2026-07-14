@@ -11929,3 +11929,10 @@ backend/handlers/selector_chat_ia.go
 
 backend/handlers/selector_chat_ia_test.go
 - Regresión de redacción de identificadores técnicos del contexto multiempresa del selector.
+
+2026-07-14: Fundacion Flutter movil
+- `mobile/powerful_control_system_app/`: aplicacion unica Flutter para Android e iPhone, con capas de configuracion, red, sesion segura, autenticacion, empresas, panel y productos.
+- `scripts/generar_aplicacion_android.ps1` y `scripts/generar_aplicacion_ios.ps1`: validan y generan candidatos nativos sin publicar ni versionar firmas.
+- `.github/workflows/mobile-ci.yml` y `.github/workflows/mobile-release.yml`: validacion Flutter Android/iOS y candidatos manuales.
+- `web/assets/data/mobile-releases.json` y `web/js/mobile_releases.js`: metadatos seguros de descarga publica, sin enlaces a binarios no publicados.
+- `documentos/arquitectura_aplicacion_movil.md`, `documentos/contratos_api_movil.md`, `documentos/desarrollo_paralelo_web_movil.md` y `documentos/publicacion_android_ios.md`: arquitectura, contrato, convivencia web/movil y publicacion.

@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"bytes"
+	"crypto/subtle"
 	"database/sql"
 	"encoding/json"
 	"errors"
@@ -11,6 +12,7 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+	"time"
 
 	dbpkg "github.com/you/pos-backend/db"
 	"github.com/you/pos-backend/utils"
@@ -70,6 +72,8 @@ func mobileAPIErrorCode(status int) string {
 		return "rate_limited"
 	case http.StatusBadRequest:
 		return "invalid_request"
+	case http.StatusMethodNotAllowed:
+		return "method_not_allowed"
 	default:
 		return "internal_error"
 	}
@@ -194,6 +198,172 @@ func MobileSessionTokenHandler(dbSuper *sql.DB) http.HandlerFunc {
 	}
 }
 
+// MobileLoginHandler creates a device-only Bearer session. It deliberately
+// shares the same password, confirmation and TOTP rules as the web login, but
+// never creates browser cookies or exposes whether an account exists.
+func MobileLoginHandler(dbSuper *sql.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			w.Header().Set("Allow", http.MethodPost)
+			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+		var payload struct {
+			Email      string `json:"email"`
+			Password   string `json:"password"`
+			OTPCode    string `json:"otp_code"`
+			DeviceName string `json:"device_name"`
+		}
+		if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 16<<10)).Decode(&payload); err != nil {
+			http.Error(w, "invalid login payload", http.StatusBadRequest)
+			return
+		}
+		payload.Email = strings.ToLower(strings.TrimSpace(payload.Email))
+		payload.Password = strings.TrimSpace(payload.Password)
+		payload.DeviceName = strings.TrimSpace(payload.DeviceName)
+		if payload.Email == "" || payload.Password == "" || len(payload.Email) > 254 || len(payload.Password) > 512 || len(payload.DeviceName) > 80 {
+			http.Error(w, "invalid credentials", http.StatusUnauthorized)
+			return
+		}
+		admin, err := dbpkg.GetAdminByEmailFull(dbSuper, payload.Email)
+		if err != nil || admin == nil {
+			http.Error(w, "invalid credentials", http.StatusUnauthorized)
+			return
+		}
+		admin, err = enforceManagedAdminRole(dbSuper, admin)
+		if err != nil || admin == nil || admin.EmailConfirmado != 1 || admin.PasswordSet != 1 || strings.TrimSpace(admin.PasswordHash) == "" {
+			http.Error(w, "invalid credentials", http.StatusUnauthorized)
+			return
+		}
+		expected := hashEmpresaUsuarioPassword(payload.Password, admin.PasswordSalt)
+		stored := strings.TrimSpace(admin.PasswordHash)
+		if len(expected) != len(stored) || subtle.ConstantTimeCompare([]byte(expected), []byte(stored)) != 1 {
+			http.Error(w, "invalid credentials", http.StatusUnauthorized)
+			return
+		}
+		if adminTOTPLoginRequiredForAdmin(admin, isAdminTOTPLoginEnabled(dbSuper)) && !verifyAndConsumeAdminTOTP(dbSuper, admin, payload.OTPCode, time.Now(), true) {
+			writeJSON(w, http.StatusUnauthorized, mobileAPIEnvelope{OK: false, Error: &mobileError{Code: "two_factor_required", Message: "Se requiere el código de segundo factor."}, RequestID: mobileAPIRequestID()})
+			return
+		}
+		token, err := utils.GenerateSecureToken(32)
+		if err != nil || dbpkg.CreateSession(dbSuper, admin.Email, r.RemoteAddr, "mobile-api/"+payload.DeviceName, token) != nil {
+			http.Error(w, "session unavailable", http.StatusServiceUnavailable)
+			return
+		}
+		writeJSON(w, http.StatusCreated, mobileAPIEnvelope{OK: true, Data: map[string]interface{}{
+			"access_token": token,
+			"token_type":   "Bearer",
+			"expires_in":   int(utils.SessionCookieMaxAge()),
+			"account": map[string]interface{}{
+				"email": admin.Email,
+				"name":  admin.Name,
+				"role":  admin.Role,
+			},
+		}, RequestID: mobileAPIRequestID()})
+	}
+}
+
+// MobileRefreshHandler rotates a valid device session. The replacement is
+// stored only as a hash and the previous bearer token is revoked immediately.
+func MobileRefreshHandler(dbSuper *sql.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			w.Header().Set("Allow", http.MethodPost)
+			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+		current, err := mobileCurrentSession(r, dbSuper)
+		if err != nil || current == nil {
+			http.Error(w, "unauthenticated", http.StatusUnauthorized)
+			return
+		}
+		previous, err := r.Cookie("session_token")
+		if err != nil || previous == nil || strings.TrimSpace(previous.Value) == "" {
+			http.Error(w, "unauthenticated", http.StatusUnauthorized)
+			return
+		}
+		token, err := utils.GenerateSecureToken(32)
+		if err != nil || dbpkg.CreateSession(dbSuper, current.AdminEmail, r.RemoteAddr, current.UserAgent, token) != nil {
+			http.Error(w, "session unavailable", http.StatusServiceUnavailable)
+			return
+		}
+		if err := dbpkg.RevokeSessionByToken(dbSuper, previous.Value); err != nil {
+			_ = dbpkg.RevokeSessionByToken(dbSuper, token)
+			http.Error(w, "session unavailable", http.StatusServiceUnavailable)
+			return
+		}
+		utils.InvalidateAuthCacheForAdmin(current.AdminEmail)
+		writeJSON(w, http.StatusOK, mobileAPIEnvelope{OK: true, Data: map[string]interface{}{"access_token": token, "token_type": "Bearer", "expires_in": int(utils.SessionCookieMaxAge())}, RequestID: mobileAPIRequestID()})
+	}
+}
+
+func MobileLogoutHandler(dbSuper *sql.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			w.Header().Set("Allow", http.MethodPost)
+			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+		cookie, err := r.Cookie("session_token")
+		if err != nil || cookie == nil || strings.TrimSpace(cookie.Value) == "" {
+			http.Error(w, "unauthenticated", http.StatusUnauthorized)
+			return
+		}
+		if err := dbpkg.RevokeSessionByToken(dbSuper, cookie.Value); err != nil {
+			http.Error(w, "session unavailable", http.StatusServiceUnavailable)
+			return
+		}
+		writeJSON(w, http.StatusOK, mobileAPIEnvelope{OK: true, RequestID: mobileAPIRequestID()})
+	}
+}
+
+func MobileEmpresasHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			w.Header().Set("Allow", http.MethodGet)
+			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+		session, err := mobileCurrentSession(r, dbSuper)
+		if err != nil || session == nil {
+			http.Error(w, "unauthenticated", http.StatusUnauthorized)
+			return
+		}
+		admin, err := dbpkg.GetAdminByEmailFull(dbSuper, session.AdminEmail)
+		if err != nil || admin == nil {
+			http.Error(w, "unauthenticated", http.StatusUnauthorized)
+			return
+		}
+		empresas, err := dbpkg.GetEmpresas(dbEmp)
+		if err != nil {
+			http.Error(w, "companies unavailable", http.StatusServiceUnavailable)
+			return
+		}
+		if !utils.IsSuperPanelRole(admin.Role) {
+			empresas, err = decorateEmpresasByEffectiveAccess(dbSuper, session.AdminEmail, session.AdminEmail, empresas)
+			if err != nil {
+				http.Error(w, "companies unavailable", http.StatusServiceUnavailable)
+				return
+			}
+			filtered := make([]dbpkg.Empresa, 0, len(empresas))
+			for _, empresa := range empresas {
+				if strings.TrimSpace(empresa.AccessSource) != "" {
+					filtered = append(filtered, empresa)
+				}
+			}
+			empresas = filtered
+		}
+		items := make([]map[string]interface{}, 0, len(empresas))
+		for _, empresa := range empresas {
+			if strings.EqualFold(strings.TrimSpace(empresa.Estado), "inactivo") || strings.EqualFold(strings.TrimSpace(empresa.Estado), "eliminado") {
+				continue
+			}
+			items = append(items, map[string]interface{}{"id": empresa.EmpresaID, "nombre": empresa.Nombre, "tipo": empresa.TipoNombre, "estado": empresa.Estado, "access_source": empresa.AccessSource})
+		}
+		writeJSON(w, http.StatusOK, mobileAPIEnvelope{OK: true, Data: items, Meta: map[string]interface{}{"returned": len(items)}, RequestID: mobileAPIRequestID()})
+	}
+}
+
 func MobileMeHandler(dbSuper *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
@@ -205,7 +375,12 @@ func MobileMeHandler(dbSuper *sql.DB) http.HandlerFunc {
 			http.Error(w, "unauthenticated", http.StatusUnauthorized)
 			return
 		}
-		writeJSON(w, http.StatusOK, mobileAPIEnvelope{OK: true, Data: map[string]interface{}{"email": session.AdminEmail}, RequestID: mobileAPIRequestID()})
+		admin, err := dbpkg.GetAdminByEmailFull(dbSuper, session.AdminEmail)
+		if err != nil || admin == nil {
+			http.Error(w, "unauthenticated", http.StatusUnauthorized)
+			return
+		}
+		writeJSON(w, http.StatusOK, mobileAPIEnvelope{OK: true, Data: map[string]interface{}{"email": session.AdminEmail, "name": admin.Name, "role": admin.Role}, RequestID: mobileAPIRequestID()})
 	}
 }
 
@@ -690,8 +865,12 @@ func MobileDocumentosFacturacionHandler(dbEmp *sql.DB) http.HandlerFunc {
 }
 
 func RegisterMobileAPIV1Routes(dbEmp, dbSuper *sql.DB) {
+	http.HandleFunc("/api/v1/auth/login", mobileAPIJSON(MobileLoginHandler(dbSuper)))
 	http.HandleFunc("/api/v1/auth/mobile-session", mobileAPIJSON(MobileSessionTokenHandler(dbSuper)))
+	http.HandleFunc("/api/v1/auth/refresh", mobileAPIJSON(mobileBearerSessionAdapter(dbSuper, MobileRefreshHandler(dbSuper))))
+	http.HandleFunc("/api/v1/auth/logout", mobileAPIJSON(mobileBearerSessionAdapter(dbSuper, MobileLogoutHandler(dbSuper))))
 	http.HandleFunc("/api/v1/me", mobileAPIJSON(mobileBearerSessionAdapter(dbSuper, MobileMeHandler(dbSuper))))
+	http.HandleFunc("/api/v1/empresas", mobileAPIJSON(mobileBearerSessionAdapter(dbSuper, MobileEmpresasHandler(dbEmp, dbSuper))))
 	http.HandleFunc("/api/v1/empresa/productos", mobileAPIJSON(mobileBearerSessionAdapter(dbSuper, WithEmpresaInventarioPermissions(dbEmp, dbSuper, MobileProductosHandler(dbEmp)))))
 	http.HandleFunc("/api/v1/empresa/clientes", mobileAPIJSON(mobileBearerSessionAdapter(dbSuper, WithEmpresaClientesPermissions(dbEmp, dbSuper, MobileClientesHandler(dbEmp)))))
 

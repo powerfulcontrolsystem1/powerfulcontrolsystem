@@ -21,8 +21,12 @@ Contrato OpenAPI: `documentos/api/openapi.mobile.v1.yaml`.
 
 | Ruta | Estado | Notas |
 |---|---|---|
+| `POST /api/v1/auth/login` | Disponible | Inicio de sesion nativo; aplica confirmacion de correo, contrasena y TOTP sin emitir cookies ni revelar si la cuenta existe. |
+| `POST /api/v1/auth/refresh` | Disponible | Rota la sesion Bearer vigente: crea un token nuevo y revoca el anterior. |
+| `POST /api/v1/auth/logout` | Disponible | Revoca inmediatamente la sesion movil actual. |
 | `POST /api/v1/auth/mobile-session` | Disponible | Crea una sesion dedicada de dispositivo desde una sesion web autenticada. El valor se entrega una vez y PostgreSQL conserva solo su hash de sesion. |
 | `GET /api/v1/me` | Disponible | Admite cookie de sesion o `Authorization: Bearer`. |
+| `GET /api/v1/empresas` | Disponible | Lista unicamente empresas activas a las que el usuario autenticado conserva acceso efectivo. |
 | `GET /api/v1/empresa/productos` | Disponible | Aislamiento por empresa, permisos de inventario, `limit` maximo 100, `offset`, filtros y `fields` permitido. |
 | `GET /api/v1/empresa/clientes` | Disponible | Aislamiento por empresa, permisos de clientes, paginacion, filtros y `fields` permitido. |
 | `GET/POST/PUT/DELETE /api/v1/empresa/carritos` | Disponible | Consulta paginada y mutaciones POS; las mutaciones exigen `Idempotency-Key`. |
@@ -56,6 +60,11 @@ Contrato OpenAPI: `documentos/api/openapi.mobile.v1.yaml`.
 - Los adaptadores v1 fijan el `empresa_id` de JSON al tenant que ya valido el
   middleware. No se acepta que un body, cabecera o URL secundaria seleccione
   otra empresa.
+- La renovacion actual es una **rotacion de sesion de dispositivo**: el cliente
+  reemplaza el Bearer vigente mediante `/auth/refresh` y el servidor revoca el
+  valor anterior. No existe una tabla independiente de refresh tokens; este
+  contrato mantiene revocacion inmediata con el modelo de sesiones actual y
+  evita persistir dos credenciales en el dispositivo.
 
 ## Auditoria global de APIs
 

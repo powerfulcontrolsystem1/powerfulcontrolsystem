@@ -102,3 +102,19 @@ func TestMobileIdempotentWhenMutatingLeavesReadsUntouched(t *testing.T) {
 		t.Fatalf("lectura no debia exigir idempotencia: status=%d calls=%d", rec.Code, calls)
 	}
 }
+
+func TestMobileLoginRejectsNonPostWithoutDatabaseAccess(t *testing.T) {
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/auth/login", nil)
+	res := httptest.NewRecorder()
+	mobileAPIJSON(MobileLoginHandler(nil)).ServeHTTP(res, req)
+	if res.Code != http.StatusMethodNotAllowed {
+		t.Fatalf("status=%d want %d", res.Code, http.StatusMethodNotAllowed)
+	}
+	var payload mobileAPIEnvelope
+	if err := json.Unmarshal(res.Body.Bytes(), &payload); err != nil {
+		t.Fatalf("invalid JSON response: %v", err)
+	}
+	if payload.OK || payload.Error == nil || payload.Error.Code != "method_not_allowed" {
+		t.Fatalf("unexpected mobile error envelope: %+v", payload)
+	}
+}

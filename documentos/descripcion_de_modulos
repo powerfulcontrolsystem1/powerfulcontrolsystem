@@ -4542,3 +4542,9 @@ adjuntos y analisis avanzado.
   existentes. La cola durable y outbox quedan preparadas para migrar envios e
   integraciones sin crear duplicados; cada trabajo empresarial conserva
   `empresa_id` y no acepta secretos en payload.
+
+2026-07-14: Aplicacion movil Flutter
+- Modulo: `aplicacion_movil`.
+- Alcance: login nativo protegido por segundo factor, restauracion/rotacion/cierre de sesion, selector de empresas, panel por permisos y Productos como primera consulta funcional.
+- Integracion: consume exclusivamente `/api/v1/`; el backend mantiene la autoridad de empresa, rol, licencia e idempotencia. Web conserva sus rutas heredadas por compatibilidad.
+- Descarga: portal publico y enlace final de Administrar empresa leen el mismo manifiesto de releases; no hay APK, AAB o IPA disponible hasta firma y publicacion oficial.

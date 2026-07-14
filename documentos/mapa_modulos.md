@@ -13,6 +13,12 @@ Actualizacion 2026-07-13: la base movil `/api/v1/` amplía el flujo POS con
 usan wrappers actuales por modulo, `empresa_id` validado y clave de
 idempotencia hash por empresa para toda mutacion que puede duplicar efectos.
 
+Actualizacion 2026-07-14: `mobile/powerful_control_system_app` incorpora la
+base Flutter para Android/iPhone: login nativo con TOTP, rotacion de sesion,
+selector de empresas autorizadas, panel y Productos. `index.html?pagina=aplicaciones`
+y el enlace final de Administrar empresa muestran el mismo estado oficial de
+descarga sin servir binarios no firmados.
+
 Tabla de ubicacion rapida para no buscar desde cero cada modulo. Si una fila
 queda incompleta al implementar una mejora, actualizarla en el mismo cambio.
 

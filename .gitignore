@@ -66,3 +66,12 @@ deploy/.env.staging
 # Archivos compilados
 bin/
 obj/
+mobile/**/.dart_tool/
+mobile/**/.packages
+mobile/**/build/
+mobile/**/.flutter-plugins
+mobile/**/.flutter-plugins-dependencies
+mobile/**/android/.gradle/
+mobile/**/ios/Pods/
+mobile/**/ios/.symlinks/
+artifacts/mobile/
