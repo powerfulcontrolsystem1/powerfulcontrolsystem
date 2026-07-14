@@ -16838,3 +16838,8 @@ Archivos modificados:
 - web/assets/data/mobile-releases.json
 - web/index.html
 - web/js/mobile_releases.js
+
+2026-07-14 02:58:13 - Mensaje: fix: normalizar autenticacion de API movil; Commit: 3191814c; PushStatus: OK
+Archivos modificados:
+- backend/utils/mobile_auth_middleware_test.go
+- backend/utils/utils.go
