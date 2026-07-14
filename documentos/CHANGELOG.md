@@ -1,5 +1,5 @@
 ## [2026-07-14] CSRF global para formularios autenticados
-- [Seguridad] Todas las respuestas HTML del sistema cargan `web/js/csrf_fetch.js`, que agrega el token synchronizer solo a mutaciones same-origin autenticadas por cookie.
+- [Seguridad] Nginx y el backend entregan `web/js/csrf_fetch.js` en las respuestas HTML, que agrega el token synchronizer solo a mutaciones same-origin autenticadas por cookie.
 - [Super] La administración de códigos de descuento vuelve a crear, editar, activar, eliminar y reenviar sin omitir `X-CSRF-Token`.
 - [Compatibilidad] Las llamadas bearer, cross-origin y las que ya declaran token no se modifican.
 
