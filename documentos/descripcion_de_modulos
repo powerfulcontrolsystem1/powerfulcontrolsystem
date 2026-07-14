@@ -4529,3 +4529,8 @@ adjuntos y analisis avanzado.
 - Modulos afectados: `licencias`, `pagos`, `checkout_publico`, `super_administrador`.
 - Funcion: el cliente puede pagar entre 1 y el máximo global configurable (5 por defecto) de meses, años u otros períodos de una misma licencia comercial. El resumen recalcula total, descuentos y duración total antes de abrir la pasarela.
 - Seguridad y consistencia: Wompi/Epayco persisten la cantidad en el contexto interno del pago y el webhook activa exactamente los períodos cobrados de forma idempotente; no se acepta cantidad de bundles, adicionales, pruebas o licencias gratuitas.
+
+2026-07-13: Licencias: compra y comprobantes por empresa
+- La pantalla `Licencia del sistema` añade una tarjeta que reutiliza el checkout comercial existente para renovar la licencia base, agregar licencias adicionales o comprar varios períodos según el límite global.
+- El historial muestra únicamente compras Wompi/Epayco filtradas por la empresa activa y ofrece PDF de comprobante. La factura electrónica solo aparece cuando el documento fiscal de la compra fue emitido por Powerful Control System y su relación con la empresa compradora queda verificada.
+- Las descargas no exponen payloads de pasarela, se envían con `Cache-Control: no-store` y `X-Content-Type-Options: nosniff`, y dejan auditoría empresarial.

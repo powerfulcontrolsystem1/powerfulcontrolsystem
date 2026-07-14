@@ -3739,7 +3739,7 @@ func resolvePermissionPageKeyForRequest(r *http.Request) string {
 		return "linkChatTareas"
 	case strings.HasPrefix(path, "/api/empresa/chat_con_inteligencia_artificial"):
 		return "linkChatIA"
-	case path == "/api/empresa/licencia_sistema/pdf":
+	case path == "/api/empresa/licencia_sistema/pdf" || path == "/api/empresa/licencias/comprobantes":
 		return "linkLicenciaSistema"
 	case path == "/api/empresa/impuestos":
 		return "linkImpuestos"

@@ -611,6 +611,9 @@ por permisos empresariales y siempre filtrado por `empresa_id`.
   - Backend: `backend/handlers/super_recordatorios_infraestructura.go`
 - Administrar empresa / Licencia del sistema:
   - UI: `web/administrar_empresa/licencia_sistema.html`
+  - API: `GET /api/empresa/licencias/comprobantes` y descarga controlada con `action=download`
+  - Backend: `backend/handlers/licencias_comprobantes.go`, `backend/db/licencias_comprobantes.go`
+  - Alcance: compra/renovacion desde el checkout existente e historial de comprobantes y facturas limitado a la empresa validada; no expone payloads de Wompi/Epayco.
   - Preferencia: `empresa_estacion_prefs.clave='licencia_notificaciones'`
 - Administrar empresa / Rol cajero:
   - UI: `web/administrar_empresa/configuracion_rol_cajero.html`

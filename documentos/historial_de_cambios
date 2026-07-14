@@ -37936,3 +37936,8 @@ Archivos modificados:
 
 2026-07-13 - Orquestador rs con ejecución aislada y trazable
 - `scripts/rs.ps1` ejecuta preflight, actualización y sincronización como procesos aislados con captura independiente de salida/error, timeout configurable y diagnóstico directo por fase. Evita que un `exit` heredado corte silenciosamente el flujo antes de la sincronización.
+
+2026-07-13 - Licencias empresariales: compra, factura y comprobante
+- Se amplía `administrar_empresa/licencia_sistema.html` con acceso al checkout existente y un historial por empresa de compras de licencia.
+- Se incorpora `/api/empresa/licencias/comprobantes`, protegido por el permiso `linkLicenciaSistema`. El handler usa exclusivamente el `empresa_id` validado por middleware, consulta ambos proveedores con filtro por empresa y audita cada descarga.
+- Cada compra permite descargar un comprobante PDF. La factura electrónica se habilita solo al comprobar que el documento fue emitido por Powerful Control System y está relacionado con la empresa compradora.

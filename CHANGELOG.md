@@ -4856,3 +4856,6 @@
 
 - Licencias: checkout con compra de varios períodos, límite global configurable y activación idempotente alineada con el importe confirmado por Wompi o Epayco.
 - Operación: `rs` ahora aísla cada fase, conserva sus logs y reporta fallos o timeouts sin detenerse silenciosamente.
+
+- Licencias: la sección empresarial enlaza el checkout existente y muestra un historial aislado por empresa con descargas de comprobante y factura electrónica cuando ya esté emitida.
+- Seguridad: la API documental de licencias valida el contexto empresarial, no expone payloads de pasarela y registra las descargas en auditoría.

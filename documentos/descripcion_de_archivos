@@ -11907,3 +11907,8 @@ documentos/plan_101_arquitectura_modular.md
 - `tools/auditar_api_movil.mjs` y `documentos/api/inventario_api_movil.md`:
   auditoria reproducible de rutas HTTP registradas, agrupada por familia para
   priorizar la migracion sin consultar datos ni ejecutar cambios de runtime.
+
+2026-07-13: Historial empresarial de licencias
+- `backend/db/licencias_comprobantes.go`: consulta cerrada por `empresa_id` de compras Wompi/Epayco y resolucion de la empresa emisora sin mutar datos durante lecturas.
+- `backend/handlers/licencias_comprobantes.go`: API empresarial de solo lectura para historial y PDFs de comprobante/factura, con validacion de empresa, descarga `no-store`, `nosniff` y auditoria.
+- `backend/handlers/licencias_comprobantes_test.go`: regresiones de PDF, metodo HTTP y rechazo de empresa sin contexto validado.
