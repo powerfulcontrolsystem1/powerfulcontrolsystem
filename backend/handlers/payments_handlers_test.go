@@ -25,6 +25,26 @@ func TestPickEpaycoFieldReadsNestedAliases(t *testing.T) {
 	}
 }
 
+func TestReadCheckoutContextFromRawPayloadPreservesQuantity(t *testing.T) {
+	mode, addons, quantity := readCheckoutContextFromRawPayload(`{"checkout_mode":"","addon_licencia_ids":[2,"3"],"cantidad":5}`)
+	if mode != "" {
+		t.Fatalf("expected individual checkout mode, got %q", mode)
+	}
+	if quantity != 5 {
+		t.Fatalf("expected stored checkout quantity 5, got %d", quantity)
+	}
+	if len(addons) != 2 || addons[0] != 2 || addons[1] != 3 {
+		t.Fatalf("expected normalized addon ids, got %#v", addons)
+	}
+}
+
+func TestReadCheckoutContextFromRawPayloadDefaultsQuantity(t *testing.T) {
+	_, _, quantity := readCheckoutContextFromRawPayload(`{"cantidad":0}`)
+	if quantity != 1 {
+		t.Fatalf("expected a safe default quantity, got %d", quantity)
+	}
+}
+
 func TestPickEpaycoFieldIgnoresNonScalarMatches(t *testing.T) {
 	payload := map[string]interface{}{
 		"data": map[string]interface{}{

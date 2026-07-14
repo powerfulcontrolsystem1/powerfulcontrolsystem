@@ -37923,3 +37923,6 @@ Archivos modificados:
   envueltas y asigna `request_id` en el limite HTTP.
 - Carritos, items y sincronizacion offline movil pasan a exigir idempotencia
   persistente por empresa, al igual que cobro y emision fiscal.
+2026-07-13 - Checkout de licencias con cantidad configurable
+- Se añadió `licencias.max_unidades_por_compra`, con valor predeterminado 5 y rango 1..24, administrable desde Super administrador > Licencias.
+- El checkout, sus pasarelas y la activación sin pago recalculan y guardan `cantidad` en servidor. Las activaciones posteriores por webhook conservan el mismo contexto, sin confiar en parámetros de retorno.

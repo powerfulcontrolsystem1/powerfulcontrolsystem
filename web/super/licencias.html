@@ -186,6 +186,9 @@
           <label class="form-label" for="maxAdvanceSameLicense">Compras adelantadas de la misma licencia</label>
           <input id="maxAdvanceSameLicense" class="form-input" type="number" min="0" max="24" step="1" value="2">
           <p class="form-help">Valor por defecto: 2. Con licencia activa, el cliente puede comprar máximo dos renovaciones adicionales de ese mismo plan y volver a comprar cuando una se venza.</p>
+          <label class="form-label" for="maxLicenseUnitsPerCheckout">Períodos máximos en una compra</label>
+          <input id="maxLicenseUnitsPerCheckout" class="form-input" type="number" min="1" max="24" step="1" value="5">
+          <p class="form-help">Valor por defecto: 5. Define cuántos meses, años u otros períodos de una misma licencia se pueden pagar en un solo checkout.</p>
           <label class="lic-superrol-item"><input id="licenseWelcomeEmailEnabled" type="checkbox" checked> Enviar correo de bienvenida cuando se aprueba una compra de licencia.</label>
           <label class="lic-superrol-item"><input id="licenseAutoInvoiceEnabled" type="checkbox" checked> Emitir automáticamente la factura electrónica desde la empresa Powerful Control System.</label>
           <label class="lic-superrol-item"><input id="licenseAttachInvoicePdfEnabled" type="checkbox" checked> Adjuntar la factura electrónica en PDF en el correo de bienvenida.</label>
@@ -376,6 +379,7 @@
       const licStatusFilter = document.getElementById('licStatusFilter');
       const clearFiltersBtn = document.getElementById('clearFiltersBtn');
       const maxAdvanceSameLicense = document.getElementById('maxAdvanceSameLicense');
+      const maxLicenseUnitsPerCheckout = document.getElementById('maxLicenseUnitsPerCheckout');
       const saveLicenseConfigBtn = document.getElementById('saveLicenseConfigBtn');
       const licenseConfigMsg = document.getElementById('licenseConfigMsg');
       const quickBaseBtn = document.getElementById('quickBaseBtn');
@@ -829,6 +833,8 @@
           const cfg = await fetchJSONOrThrow('/super/api/licencias/configuracion');
           const value = Number(cfg && cfg.max_compras_adelantadas_misma_licencia);
           maxAdvanceSameLicense.value = Number.isFinite(value) && value >= 0 ? String(value) : '2';
+          const maxUnits = Number(cfg && cfg.max_unidades_por_compra);
+          if (maxLicenseUnitsPerCheckout) maxLicenseUnitsPerCheckout.value = Number.isFinite(maxUnits) && maxUnits >= 1 ? String(maxUnits) : '5';
           const welcomeEl = document.getElementById('licenseWelcomeEmailEnabled');
           const invoiceEl = document.getElementById('licenseAutoInvoiceEnabled');
           const attachEl = document.getElementById('licenseAttachInvoicePdfEnabled');
@@ -849,6 +855,11 @@
           if (licenseConfigMsg) licenseConfigMsg.textContent = 'El valor debe estar entre 0 y 24.';
           return;
         }
+        const maxUnits = parseInt((maxLicenseUnitsPerCheckout && maxLicenseUnitsPerCheckout.value) || '5', 10);
+        if (!Number.isFinite(maxUnits) || maxUnits < 1 || maxUnits > 24) {
+          if (licenseConfigMsg) licenseConfigMsg.textContent = 'El máximo por compra debe estar entre 1 y 24.';
+          return;
+        }
         const welcomeEl = document.getElementById('licenseWelcomeEmailEnabled');
         const invoiceEl = document.getElementById('licenseAutoInvoiceEnabled');
         const attachEl = document.getElementById('licenseAttachInvoicePdfEnabled');
@@ -859,6 +870,7 @@
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               max_compras_adelantadas_misma_licencia: value,
+              max_unidades_por_compra: maxUnits,
               email_bienvenida_compra_enabled: welcomeEl ? !!welcomeEl.checked : true,
               factura_electrónica_automatica_enabled: invoiceEl ? !!invoiceEl.checked : true,
               email_adjuntar_factura_pdf_enabled: attachEl ? !!attachEl.checked : true

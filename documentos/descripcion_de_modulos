@@ -4519,3 +4519,7 @@ adjuntos y analisis avanzado.
   offline movil son mutaciones idempotentes por empresa.
 - `plan_101_arquitectura_modular.md` define limites modulares, criterios de
   extraccion y gates de escalabilidad/preproduccion.
+2026-07-13: Checkout de licencias por cantidad de períodos
+- Modulos afectados: `licencias`, `pagos`, `checkout_publico`, `super_administrador`.
+- Funcion: el cliente puede pagar entre 1 y el máximo global configurable (5 por defecto) de meses, años u otros períodos de una misma licencia comercial. El resumen recalcula total, descuentos y duración total antes de abrir la pasarela.
+- Seguridad y consistencia: Wompi/Epayco persisten la cantidad en el contexto interno del pago y el webhook activa exactamente los períodos cobrados de forma idempotente; no se acepta cantidad de bundles, adicionales, pruebas o licencias gratuitas.

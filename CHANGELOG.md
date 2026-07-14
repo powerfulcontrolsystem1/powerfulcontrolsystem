@@ -4851,3 +4851,6 @@
 - La API movil v1 evita sobres JSON anidados y protege tambien la creacion de
   carritos, sus items y la sincronizacion offline mediante idempotencia
   persistente por empresa.
+# 2026-07-13
+
+- Licencias: checkout con compra de varios períodos, límite global configurable y activación idempotente alineada con el importe confirmado por Wompi o Epayco.
