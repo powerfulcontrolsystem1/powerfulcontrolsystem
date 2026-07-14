@@ -38050,6 +38050,10 @@ Archivos modificados:
 - Solucion: Nginx inyecta `web/js/csrf_fetch.js` en los HTML estaticos y `backend/main.go` conserva el mismo fallback para respuestas HTML del backend; el script adjunta `X-CSRF-Token` exclusivamente a POST, PUT, PATCH y DELETE same-origin con cookies, sin alterar bearer, cross-origin ni encabezados CSRF existentes.
 - QA: pruebas de inyeccion/no duplicacion y `go test ./...`; se requiere validacion operativa de crear y redimir el codigo en el checkout real antes del cierre.
 
+2026-07-14: Correccion de vistas imprimibles afectadas por inyeccion CSRF.
+- Causa: `sub_filter` de Nginx reemplazaba el primer `</body>` encontrado; las paginas de carrito y facturas electronicas usan ese texto dentro de plantillas JavaScript de impresion, por lo que el helper se insertaba en el documento impreso y no en la pagina real.
+- Solucion: Nginx y el fallback del backend insertan los helpers globales antes de `</head>`; el fallback a `</body>` solo aplica a HTML sin cabecera. Se agrega regresion para plantillas imprimibles embebidas.
+
 2026-07-14: rs: actualizar repositorio y sincronizar VPS
 PushStatus: OK
 Archivos modificados:

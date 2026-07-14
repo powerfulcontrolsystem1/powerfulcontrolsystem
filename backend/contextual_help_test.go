@@ -109,3 +109,20 @@ func TestButtonIconsStaticHandlerDoesNotDuplicateScript(t *testing.T) {
 		t.Fatalf("csrf script count = %d, want 1; body=%s", got, rr.Body.String())
 	}
 }
+
+func TestInjectButtonIconsScriptUsesDocumentHeadBeforePrintableTemplate(t *testing.T) {
+	body := []byte(`<!doctype html><html><head><title>Modulo</title></head><body><script>var printable = "</body>";</script></body></html>`)
+	got := string(injectButtonIconsScript(body))
+	csrfAt := strings.Index(got, `/js/csrf_fetch.js`)
+	headEnd := strings.Index(got, `</head>`)
+	printableAt := strings.Index(got, `var printable`)
+	if csrfAt < 0 || headEnd < 0 || printableAt < 0 {
+		t.Fatalf("missing expected content after injection: %s", got)
+	}
+	if csrfAt > headEnd || csrfAt > printableAt {
+		t.Fatalf("csrf helper was not injected into document head: %s", got)
+	}
+	if strings.Contains(got, `var printable = "<script src=`) {
+		t.Fatalf("printable template was modified: %s", got)
+	}
+}

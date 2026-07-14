@@ -55,6 +55,20 @@ func TestPublicDownloadsAreExplicitlyAllowlisted(t *testing.T) {
 	}
 }
 
+func TestNginxCSRFFetchTargetsDocumentHead(t *testing.T) {
+	raw, err := os.ReadFile(filepath.Join("..", "deploy", "nginx", "pcs.conf"))
+	if err != nil {
+		t.Fatalf("read frontend nginx config: %v", err)
+	}
+	config := string(raw)
+	if !strings.Contains(config, "sub_filter '</head>'") || !strings.Contains(config, "/js/csrf_fetch.js") {
+		t.Fatal("nginx must inject the CSRF helper into document head")
+	}
+	if strings.Contains(config, "sub_filter '</body>' '<script src=\"/js/csrf_fetch.js") {
+		t.Fatal("nginx must not inject scripts through </body>; printable templates can contain that literal text")
+	}
+}
+
 func TestPanelGuidedSetupUsesCSRFAndNextcloudKeepsEmpresaContext(t *testing.T) {
 	panel, err := os.ReadFile(filepath.Join("..", "web", "administrar_empresa", "panel.html"))
 	if err != nil {

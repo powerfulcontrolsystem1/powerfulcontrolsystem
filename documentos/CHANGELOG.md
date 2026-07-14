@@ -2,6 +2,7 @@
 - [Seguridad] Nginx y el backend entregan `web/js/csrf_fetch.js` en las respuestas HTML, que agrega el token synchronizer solo a mutaciones same-origin autenticadas por cookie.
 - [Super] La administración de códigos de descuento vuelve a crear, editar, activar, eliminar y reenviar sin omitir `X-CSRF-Token`.
 - [Compatibilidad] Las llamadas bearer, cross-origin y las que ya declaran token no se modifican.
+- [Impresión] La inyección global se realiza dentro de `<head>`, no sobre `</body>`: evita alterar plantillas de impresión de carrito y facturas electrónicas que contienen cierres HTML como texto.
 
 ## [2026-07-13] Correcciones de preproduccion: panel, Nextcloud y archivos
 - [Panel empresa] `No volver a mostrar` envia CSRF y conserva su estado por empresa en PostgreSQL.

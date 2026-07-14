@@ -792,7 +792,12 @@ func injectButtonIconsScript(body []byte) []byte {
 	if scripts == "" {
 		return body
 	}
-	insertAt := strings.LastIndex(lower, "</body>")
+	// Prefer the real document head. Printable templates embedded in a page can
+	// contain literal </body> strings, which must never be rewritten.
+	insertAt := strings.Index(lower, "</head>")
+	if insertAt < 0 {
+		insertAt = strings.LastIndex(lower, "</body>")
+	}
 	if insertAt < 0 {
 		return append(body, []byte(scripts)...)
 	}
