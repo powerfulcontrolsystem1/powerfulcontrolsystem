@@ -3245,3 +3245,7 @@
   productos/clientes sin reemplazar rutas web existentes.
 - [Registro] El pais del registro prioriza la zona horaria y Colombia queda
   seleccionado cuando no existe una senal geográfica disponible.
+## [2026-07-14] Fundacion de produccion y app movil
+- [Plataforma] Se separan los roles de API, migracion y worker; se incorpora
+  cola PostgreSQL durable/outbox y se documentan los gates de liberacion y API
+  movil sin romper las rutas web existentes.

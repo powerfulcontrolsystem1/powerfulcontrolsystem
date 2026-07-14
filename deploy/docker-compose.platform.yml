@@ -55,6 +55,31 @@ services:
     networks:
       - pcs_internal
 
+  migrate:
+    build:
+      context: ..
+      dockerfile: deploy/docker/backend.Dockerfile
+    image: ${PCS_BACKEND_IMAGE:-pcs-backend:local}
+    container_name: pcs-migrate
+    restart: "no"
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=32m
+    command: ["/app/backend/pcs-migrate"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DB_DIALECT: postgres
+      DB_EMPRESAS_DSN: postgres://${POSTGRES_USER:-pcs}:${POSTGRES_PASSWORD}@postgres:5432/pcs_empresas?sslmode=disable
+      DB_SUPERADMIN_DSN: postgres://${POSTGRES_USER:-pcs}:${POSTGRES_PASSWORD}@postgres:5432/pcs_superadministrador?sslmode=disable
+    networks:
+      - pcs_internal
+
   backend:
     build:
       context: ..
@@ -72,6 +97,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
     environment:
       PORT: "8080"
       TZ: ${TZ:-America/Bogota}
@@ -141,6 +168,31 @@ services:
       timeout: 5s
       retries: 10
       start_period: 30s
+    networks:
+      - pcs_internal
+
+  worker:
+    image: ${PCS_BACKEND_IMAGE:-pcs-backend:local}
+    container_name: pcs-worker
+    restart: unless-stopped
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=32m
+    command: ["/app/backend/pcs-worker"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    environment:
+      TZ: ${TZ:-America/Bogota}
+      DB_DIALECT: postgres
+      DB_SUPERADMIN_DSN: postgres://${POSTGRES_USER:-pcs}:${POSTGRES_PASSWORD}@postgres:5432/pcs_superadministrador?sslmode=disable
+      PCS_WORKER_ID: ${PCS_WORKER_ID:-pcs-worker-main}
     networks:
       - pcs_internal
 

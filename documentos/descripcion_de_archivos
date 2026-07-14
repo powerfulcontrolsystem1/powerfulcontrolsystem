@@ -11912,3 +11912,14 @@ documentos/plan_101_arquitectura_modular.md
 - `backend/db/licencias_comprobantes.go`: consulta cerrada por `empresa_id` de compras Wompi/Epayco y resolucion de la empresa emisora sin mutar datos durante lecturas.
 - `backend/handlers/licencias_comprobantes.go`: API empresarial de solo lectura para historial y PDFs de comprobante/factura, con validacion de empresa, descarga `no-store`, `nosniff` y auditoria.
 - `backend/handlers/licencias_comprobantes_test.go`: regresiones de PDF, metodo HTTP y rechazo de empresa sin contexto validado.
+
+2026-07-14: Plataforma de procesos y preparacion movil
+- `documentos/preparacion_produccion_y_app_movil.md`: arquitectura de roles,
+  cola/outbox y gates de liberacion.
+- `backend/internal/platform/runtimeconfig/config.go`: roles tipados y control
+  del bootstrap de esquema.
+- `backend/internal/platform/worker/worker.go`: worker durable PostgreSQL.
+- `backend/db/async_jobs.go` y `backend/db/outbox.go`: contratos persistentes
+  de tareas y eventos transaccionales.
+- `backend/cmd/pcs-migrate/main.go` y `backend/cmd/pcs-worker/main.go`:
+  procesos separados de migracion y trabajo asincrono.

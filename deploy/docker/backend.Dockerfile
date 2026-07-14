@@ -8,6 +8,8 @@ RUN go mod download
 
 COPY backend/ ./
 RUN CGO_ENABLED=0 GOOS=linux go build -trimpath -ldflags="-s -w" -o /out/pcs-backend .
+RUN CGO_ENABLED=0 GOOS=linux go build -trimpath -ldflags="-s -w" -o /out/pcs-migrate ./cmd/pcs-migrate
+RUN CGO_ENABLED=0 GOOS=linux go build -trimpath -ldflags="-s -w" -o /out/pcs-worker ./cmd/pcs-worker
 
 FROM alpine:3.20
 
@@ -17,6 +19,8 @@ RUN apk add --no-cache bash ca-certificates curl openssh-client openssl tzdata \
 WORKDIR /app/backend
 
 COPY --from=build /out/pcs-backend /app/backend/pcs-backend
+COPY --from=build /out/pcs-migrate /app/backend/pcs-migrate
+COPY --from=build /out/pcs-worker /app/backend/pcs-worker
 COPY web /app/web
 COPY documentos /app/documentos
 COPY backend /app/project_export/backend

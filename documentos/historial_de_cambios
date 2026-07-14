@@ -37946,3 +37946,13 @@ Archivos modificados:
 PushStatus: OK
 Archivos modificados:
 - documentos/api/openapi.generated.yaml
+- 2026-07-14: `Fundacion de produccion y app movil` agrega configuracion tipada
+  de roles de proceso, ejecutables separados `pcs-migrate`/`pcs-worker`, ledger
+  de migraciones, cola PostgreSQL persistente con `SKIP LOCKED`, reintentos y
+  estado muerto, mas outbox transaccional. El rol API conserva el bootstrap
+  legado por compatibilidad hasta que una instalacion lo desactive de forma
+  explicita despues de verificar su ledger; el rol de migracion lo conserva.
+  Docker incorpora servicios de migracion y worker con
+  usuario no root, filesystem de solo lectura y capacidades retiradas. La guia
+  `preparacion_produccion_y_app_movil.md` declara gates reales y limites de
+  adopcion sin afirmar validacion externa no realizada.

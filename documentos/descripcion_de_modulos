@@ -4534,3 +4534,11 @@ adjuntos y analisis avanzado.
 - La pantalla `Licencia del sistema` añade una tarjeta que reutiliza el checkout comercial existente para renovar la licencia base, agregar licencias adicionales o comprar varios períodos según el límite global.
 - El historial muestra únicamente compras Wompi/Epayco filtradas por la empresa activa y ofrece PDF de comprobante. La factura electrónica solo aparece cuando el documento fiscal de la compra fue emitido por Powerful Control System y su relación con la empresa compradora queda verificada.
 - Las descargas no exponen payloads de pasarela, se envían con `Cache-Control: no-store` y `X-Content-Type-Options: nosniff`, y dejan auditoría empresarial.
+
+2026-07-14: Plataforma de procesos y preparacion movil
+- Modulos afectados: `plataforma`, `migraciones`, `procesos_asincronos`,
+  `api_movil`, `infraestructura`.
+- Se separan los roles API, migracion y worker sin modificar los contratos web
+  existentes. La cola durable y outbox quedan preparadas para migrar envios e
+  integraciones sin crear duplicados; cada trabajo empresarial conserva
+  `empresa_id` y no acepta secretos en payload.

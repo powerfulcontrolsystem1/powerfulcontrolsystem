@@ -121,6 +121,21 @@ Durante la extraccion remota, `sync_to_vps.ps1` borra las rutas retiradas
 evita que los archivos estaticos de un modulo eliminado sobrevivan a una
 sincronizacion incremental.
 
+## Roles de plataforma
+
+El despliegue Docker ejecuta `pcs-migrate` antes de la API y mantiene
+`pcs-worker` como proceso separado. En una consola con las DSN privadas ya
+cargadas, los binarios se validan sin abrir HTTP:
+
+```powershell
+Set-Location D:\powerfulcontrolsystem\backend
+go build ./cmd/pcs-migrate
+go build ./cmd/pcs-worker
+```
+
+No establecer `PCS_RUNTIME_SCHEMA_BOOTSTRAP=0` en una instalacion existente
+hasta verificar el ledger de migraciones y los flujos de provisionamiento.
+
 ## Backup completo del VPS
 
 El backup operativo independiente del VPS se ejecuta con:
