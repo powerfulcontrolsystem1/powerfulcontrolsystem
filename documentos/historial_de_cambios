@@ -2,6 +2,7 @@
 - Causa: se agregaron `permitir_ingresos_manuales` y `permitir_egresos_manuales` al esquema, pero el `SELECT` y el `Scan` de la configuracion base, asi como el `SELECT` de roles, no quedaron alineados. PostgreSQL devolvia mas columnas que destinos y el handler respondia `500`.
 - Correccion: el modelo, lectura, persistencia, migracion defensiva y resolucion efectiva ahora incluyen ambos permisos; se agrego una regresion que impide volver a desalinear `SELECT` y `Scan`.
 - UI: la lista de carritos usa un contenedor de acciones propio para que los botones no se superpongan ni hereden `display:flex` directamente sobre una celda de tabla.
+- Migracion: `pcs-migrate` ejecuta ahora `EnsureEmpresaConfiguracionOperativaSchema`; la API productiva no debe mutar esquema y por ello el ajuste queda en el rol migrador oficial.
 
 2026-07-13: Chat IA empresarial legible y tematizable por empresa.
 - Modulos afectados: `chat IA`, `administrar empresa`, `configuracion empresarial`, `permisos multiempresa`.

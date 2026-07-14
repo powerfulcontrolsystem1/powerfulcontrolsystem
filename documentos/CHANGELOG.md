@@ -2,6 +2,7 @@
 - [Carrito] Se alinearon las columnas de permisos manuales con la lectura, el `Scan`, la resolucion y la persistencia de `empresa_configuracion_operativa`.
 - [QA] Esto elimina el `500` que podia producirse al cargar el carrito y las reglas por rol despues de la migracion de permisos manuales.
 - [Visual] Las acciones de la lista de carritos quedan en una columna propia, sin comprimirse por estilos globales de tablas.
+- [Migraciones] `pcs-migrate` aplica y registra el esquema operativo antes de iniciar la API, tambien para bases existentes.
 
 ## [2026-07-14] CSRF global para formularios autenticados
 - [Seguridad] Nginx y el backend entregan `web/js/csrf_fetch.js` en las respuestas HTML, que agrega el token synchronizer solo a mutaciones same-origin autenticadas por cookie.

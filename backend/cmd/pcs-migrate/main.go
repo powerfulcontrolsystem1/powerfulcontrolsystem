@@ -62,6 +62,12 @@ func main() {
 	if err := dbpkg.EnsureMobileAPIIdempotencySchema(empresas); err != nil {
 		log.Fatal(err)
 	}
+	if err := dbpkg.EnsureEmpresaConfiguracionOperativaSchema(empresas); err != nil {
+		log.Fatalf("empresa operational configuration schema: %v", err)
+	}
+	if err := dbpkg.RegisterSchemaMigration(empresas, "empresa_configuracion_operativa", "20260714-manual-permissions", "manual financial permissions for operational configuration"); err != nil {
+		log.Fatalf("empresa operational configuration migration ledger: %v", err)
+	}
 	if err := dbpkg.EnsureAsyncJobsSchema(super); err != nil {
 		log.Fatal(err)
 	}

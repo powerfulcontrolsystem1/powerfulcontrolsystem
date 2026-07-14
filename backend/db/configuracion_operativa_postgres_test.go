@@ -87,6 +87,20 @@ func TestConfiguracionOperativaQueriesKeepManualPermissionsAligned(t *testing.T)
 	}
 }
 
+func TestMigratorIncludesConfiguracionOperativaSchema(t *testing.T) {
+	raw, err := os.ReadFile("../cmd/pcs-migrate/main.go")
+	if err != nil {
+		t.Fatalf("read pcs-migrate main: %v", err)
+	}
+	src := string(raw)
+	if !strings.Contains(src, "EnsureEmpresaConfiguracionOperativaSchema(empresas)") {
+		t.Fatal("pcs-migrate debe aplicar el esquema de configuracion operativa en PostgreSQL")
+	}
+	if !strings.Contains(src, "20260714-manual-permissions") {
+		t.Fatal("pcs-migrate debe registrar la migracion de permisos manuales")
+	}
+}
+
 func extractConfiguracionOperativaFunctionForTest(t *testing.T, src, startMarker string) string {
 	t.Helper()
 
