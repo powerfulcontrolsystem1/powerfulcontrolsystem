@@ -962,6 +962,7 @@ func AuthMiddleware(dbSuper *sql.DB, next http.Handler) http.Handler {
 			"/auth/confirmar_correo":                                {},
 			"/auth/confirmar_admin":                                 {},
 			"/auth/logout":                                          {},
+			"/api/v1/auth/login":                                    {},
 			"/api/public/venta_publica":                             {},
 			"/api/public/taxi_system":                               {},
 			"/api/public/estacion_vip":                              {},
@@ -1060,19 +1061,19 @@ func AuthMiddleware(dbSuper *sql.DB, next http.Handler) http.Handler {
 			token = strings.TrimPrefix(auth, "Bearer ")
 		}
 		if token == "" {
-			http.Error(w, "unauthorized", http.StatusUnauthorized)
+			writeAuthFailure(w, r, http.StatusUnauthorized)
 			return
 		}
 
 		sess, err := getCachedSessionByToken(dbSuper, token)
 		if err != nil {
-			http.Error(w, "unauthorized", http.StatusUnauthorized)
+			writeAuthFailure(w, r, http.StatusUnauthorized)
 			return
 		}
 
 		admin, err := getCachedAdminByEmailFull(dbSuper, sess.AdminEmail)
 		if err != nil {
-			http.Error(w, "unauthorized", http.StatusUnauthorized)
+			writeAuthFailure(w, r, http.StatusUnauthorized)
 			return
 		}
 
@@ -1100,6 +1101,31 @@ func AuthMiddleware(dbSuper *sql.DB, next http.Handler) http.Handler {
 
 		next.ServeHTTP(w, r)
 	})
+}
+
+// writeAuthFailure preserves the stable v1 envelope when global authentication
+// stops a mobile request before its route-specific handler can run.
+func writeAuthFailure(w http.ResponseWriter, r *http.Request, status int) {
+	if strings.HasPrefix(strings.TrimSpace(r.URL.Path), "/api/v1/") {
+		requestID := requestIDFromContext(r.Context())
+		if requestID == "" {
+			requestID = makeRequestID()
+		}
+		w.Header().Set("Content-Type", "application/json; charset=utf-8")
+		w.Header().Set("Cache-Control", "no-store")
+		w.Header().Set("X-Content-Type-Options", "nosniff")
+		w.WriteHeader(status)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+			"ok": false,
+			"error": map[string]string{
+				"code":    "unauthenticated",
+				"message": "No fue posible completar la solicitud.",
+			},
+			"request_id": requestID,
+		})
+		return
+	}
+	http.Error(w, "unauthorized", status)
 }
 
 // getEncKeyFromEnv intenta obtener la clave de cifrado desde la variable `CONFIG_ENC_KEY`.
