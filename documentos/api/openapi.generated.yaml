@@ -709,6 +709,19 @@ paths:
       responses:
         "200":
           description: Respuesta exitosa o manejada por el handler real.
+  "/api/empresa/configuracion_ia_propia":
+    get:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/configuracion_ia_propia
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/configuracion_ia_propia
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
   "/api/empresa/configuracion_operativa":
     get:
       tags: [empresa]

@@ -102,12 +102,18 @@ func mobileAPIJSON(next http.HandlerFunc) http.HandlerFunc {
 			return
 		}
 		var envelope mobileAPIEnvelope
-		if json.Unmarshal(capture.body.Bytes(), &envelope) == nil && envelope.RequestID != "" {
+		// Some v1 handlers build the envelope themselves while others reuse a
+		// legacy handler. Preserve the former even when the handler intentionally
+		// leaves request_id to this boundary; otherwise clients would receive a
+		// nested {data:{ok:...}} response depending on the endpoint used.
+		if json.Unmarshal(capture.body.Bytes(), &envelope) == nil && (envelope.OK || envelope.Error != nil || envelope.Data != nil || envelope.Meta != nil) {
+			if envelope.RequestID == "" {
+				envelope.RequestID = requestID
+			}
 			for k, values := range capture.header {
 				w.Header()[k] = append([]string{}, values...)
 			}
-			w.WriteHeader(status)
-			_, _ = w.Write(capture.body.Bytes())
+			writeMobileAPIJSON(w, status, envelope)
 			return
 		}
 		var legacy interface{}
@@ -341,8 +347,9 @@ func mobileIdempotentMutation(dbEmp *sql.DB, operation string, next http.Handler
 			http.Error(w, "Idempotency-Key valido es obligatorio", http.StatusBadRequest)
 			return
 		}
-		empresaID, err := parseEmpresaIDQuery(r)
-		if err != nil || empresaID <= 0 {
+		empresaID := parseEmpresaIDFromContext(r)
+		queryEmpresaID, err := parseEmpresaIDQuery(r)
+		if err != nil || empresaID <= 0 || (queryEmpresaID > 0 && queryEmpresaID != empresaID) {
 			http.Error(w, "empresa_id es obligatorio", http.StatusBadRequest)
 			return
 		}
@@ -397,6 +404,21 @@ func mobileIdempotentMutation(dbEmp *sql.DB, operation string, next http.Handler
 		}
 		w.WriteHeader(status)
 		_, _ = w.Write(capture.body.Bytes())
+	}
+}
+
+// mobileIdempotentWhenMutating keeps reads cacheable and simple while making
+// every state change retry-safe. It is deliberately applied after the tenant
+// permission middleware so the idempotency row is always scoped to the
+// authorized empresa in the request context.
+func mobileIdempotentWhenMutating(dbEmp *sql.DB, operation string, next http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodPost, http.MethodPut, http.MethodPatch, http.MethodDelete:
+			mobileIdempotentMutation(dbEmp, operation, next).ServeHTTP(w, r)
+		default:
+			next.ServeHTTP(w, r)
+		}
 	}
 }
 
@@ -694,7 +716,7 @@ func RegisterMobileAPIV1Routes(dbEmp, dbSuper *sql.DB) {
 			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 		}
 	})
-	http.HandleFunc("/api/v1/empresa/carritos", mobileAPIJSON(mobileBearerSessionAdapter(dbSuper, mobileNormalizeEmpresaJSON(WithEmpresaVentasPermissions(dbEmp, dbSuper, carritosV1)))))
+	http.HandleFunc("/api/v1/empresa/carritos", mobileAPIJSON(mobileBearerSessionAdapter(dbSuper, mobileNormalizeEmpresaJSON(WithEmpresaVentasPermissions(dbEmp, dbSuper, mobileIdempotentWhenMutating(dbEmp, "carritos_mutar", carritosV1))))))
 
 	itemsV1 := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
@@ -711,10 +733,10 @@ func RegisterMobileAPIV1Routes(dbEmp, dbSuper *sql.DB) {
 			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 		}
 	})
-	http.HandleFunc("/api/v1/empresa/carritos/items", mobileAPIJSON(mobileBearerSessionAdapter(dbSuper, mobileNormalizeEmpresaJSON(WithEmpresaVentasPermissions(dbEmp, dbSuper, itemsV1)))))
+	http.HandleFunc("/api/v1/empresa/carritos/items", mobileAPIJSON(mobileBearerSessionAdapter(dbSuper, mobileNormalizeEmpresaJSON(WithEmpresaVentasPermissions(dbEmp, dbSuper, mobileIdempotentWhenMutating(dbEmp, "carrito_items_mutar", itemsV1))))))
 	http.HandleFunc("/api/v1/empresa/ventas", mobileAPIJSON(mobileBearerSessionAdapter(dbSuper, WithEmpresaVentasPermissions(dbEmp, dbSuper, MobileVentasHandler(dbEmp)))))
 	http.HandleFunc("/api/v1/empresa/pagos", mobileAPIJSON(mobileBearerSessionAdapter(dbSuper, mobileNormalizeEmpresaJSON(WithEmpresaVentasPermissions(dbEmp, dbSuper, mobileIdempotentMutation(dbEmp, "venta_cobrar", mobileLegacyAction(carritosLegacy, "pagar_estacion")))))))
-	http.HandleFunc("/api/v1/empresa/ventas/offline/sync", mobileAPIJSON(mobileBearerSessionAdapter(dbSuper, mobileNormalizeEmpresaJSON(WithEmpresaVentasPermissions(dbEmp, dbSuper, mobileLegacyAction(offlineLegacy, "sync"))))))
+	http.HandleFunc("/api/v1/empresa/ventas/offline/sync", mobileAPIJSON(mobileBearerSessionAdapter(dbSuper, mobileNormalizeEmpresaJSON(WithEmpresaVentasPermissions(dbEmp, dbSuper, mobileIdempotentMutation(dbEmp, "ventas_offline_sync", mobileLegacyAction(offlineLegacy, "sync")))))))
 
 	http.HandleFunc("/api/v1/empresa/facturacion/documentos", mobileAPIJSON(mobileBearerSessionAdapter(dbSuper, WithEmpresaFacturacionPermissions(dbEmp, dbSuper, MobileDocumentosFacturacionHandler(dbEmp)))))
 	http.HandleFunc("/api/v1/empresa/facturacion/emitir", mobileAPIJSON(mobileBearerSessionAdapter(dbSuper, mobileNormalizeEmpresaJSON(WithEmpresaFacturacionPermissions(dbEmp, dbSuper, mobileIdempotentMutation(dbEmp, "facturacion_emitir_desde_venta", mobileLegacyAction(facturacionLegacy, "facturar_desde_venta")))))))

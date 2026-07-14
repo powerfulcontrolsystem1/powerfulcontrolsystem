@@ -153,9 +153,10 @@ paths:
         '200': {description: Ventas POS paginadas}
   /api/v1/empresa/ventas/offline/sync:
     post:
-      summary: Sincroniza ventas offline mediante sync_key idempotente.
+      summary: Sincroniza ventas offline mediante sync_key e Idempotency-Key.
       parameters:
         - {$ref: '#/components/parameters/EmpresaID'}
+        - {$ref: '#/components/parameters/IdempotencyKey'}
       responses:
         '200': {description: Ventas sincronizadas}
         '409': {$ref: '#/components/responses/Error'}

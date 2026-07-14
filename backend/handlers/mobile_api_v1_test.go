@@ -26,6 +26,28 @@ func TestMobileAPIJSONNormalizesLegacyErrors(t *testing.T) {
 	}
 }
 
+func TestMobileAPIJSONPreservesExistingEnvelope(t *testing.T) {
+	h := mobileAPIJSON(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		writeJSON(w, http.StatusCreated, mobileAPIEnvelope{OK: true, Data: map[string]string{"estado": "creado"}})
+	}))
+	rec := httptest.NewRecorder()
+	h.ServeHTTP(rec, httptest.NewRequest(http.MethodPost, "/api/v1/empresa/carritos", nil))
+	if rec.Code != http.StatusCreated {
+		t.Fatalf("status inesperado: %d", rec.Code)
+	}
+	var out mobileAPIEnvelope
+	if err := json.Unmarshal(rec.Body.Bytes(), &out); err != nil {
+		t.Fatal(err)
+	}
+	if !out.OK || out.RequestID == "" {
+		t.Fatalf("envoltorio v1 invalido: %#v", out)
+	}
+	data, ok := out.Data.(map[string]interface{})
+	if !ok || data["estado"] != "creado" {
+		t.Fatalf("respuesta se anido o perdio: %#v", out.Data)
+	}
+}
+
 func TestMobileFieldSelectionIsClosedList(t *testing.T) {
 	items := []map[string]interface{}{{"id": 1, "nombre": "Producto", "costo_interno": 900}}
 	selected := mobileSelectFields(items, "id,costo_interno", map[string]bool{"id": true, "nombre": true})
@@ -65,5 +87,18 @@ func TestValidMobileIdempotencyKey(t *testing.T) {
 		if validMobileIdempotencyKey(key) {
 			t.Fatalf("clave insegura aceptada: %q", key)
 		}
+	}
+}
+
+func TestMobileIdempotentWhenMutatingLeavesReadsUntouched(t *testing.T) {
+	calls := 0
+	h := mobileIdempotentWhenMutating(nil, "prueba", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		calls++
+		w.WriteHeader(http.StatusNoContent)
+	}))
+	rec := httptest.NewRecorder()
+	h.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/api/v1/empresa/productos", nil))
+	if rec.Code != http.StatusNoContent || calls != 1 {
+		t.Fatalf("lectura no debia exigir idempotencia: status=%d calls=%d", rec.Code, calls)
 	}
 }

@@ -11885,6 +11885,10 @@ documentos/production_deployment_runbook.md
 documentos/production_rollback_runbook.md
 documentos/release_checklist.md
 - Runbooks y lista de control para una liberacion reversible.
+
+documentos/plan_101_arquitectura_modular.md
+- Decision de monolito modular, controles multiempresa, reglas de evolucion e
+  idempotencia, y evidencia pendiente de preproduccion.
 2026-07-13 - IA propia empresarial y API movil v1
 - `backend/db/ai_empresa_proveedor.go`: esquema y acceso cifrado por empresa
   para la clave OpenAI propia; el valor solo se descifra en memoria al enviar la

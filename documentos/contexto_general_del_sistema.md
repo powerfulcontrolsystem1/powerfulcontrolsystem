@@ -12,6 +12,13 @@ Estado: vigente. Ultima actualizacion: 2026-07-13.
   regla de caja, inventario, impuestos o DIAN. Ver
   `documentos/api/mobile_api_v1.md` y su contrato OpenAPI.
 
+## Actualizacion 2026-07-13 - Plan 101 de arquitectura
+
+- PCS mantiene un monolito modular en Go y PostgreSQL: los limites se aplican
+  por modulo, repositorio y wrapper multiempresa sin duplicar reglas de caja,
+  inventario, impuestos o DIAN. La guia y los gates de preproduccion estan en
+  `documentos/plan_101_arquitectura_modular.md`.
+
 ## Actualizacion 2026-07-13 - IA propia y base movil
 
 - El proveedor OpenAI propio es opcional por empresa, cifrado por tenant y sin

@@ -4512,3 +4512,10 @@ adjuntos y analisis avanzado.
 - `/api/v1/` inicia el contrato movil aditivo: identidad, sesion de dispositivo,
   productos y clientes con JSON uniforme, `request_id`, paginacion, filtros y
   seleccion cerrada de campos. Las rutas web heredadas no se eliminan aun.
+
+2026-07-13: Plan 101 - arquitectura y API movil
+- `api_movil` conserva una fachada versionada sin duplicar reglas de negocio de
+  ventas, inventario, caja y facturacion. Carritos, items y sincronizacion
+  offline movil son mutaciones idempotentes por empresa.
+- `plan_101_arquitectura_modular.md` define limites modulares, criterios de
+  extraccion y gates de escalabilidad/preproduccion.

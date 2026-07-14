@@ -47,6 +47,8 @@ forzadas aunque el boton se oculte en frontend.
   modulo en `documentos/`.
 - IA, agentes y limites por empresa: `ia_orquestador_empresarial.md`,
   `mapa_modulos.md`, `estructura_bd.md` y `diagramas/diagramas_sistema_pcs.md`.
+- Arquitectura modular y API movil: `plan_101_arquitectura_modular.md`,
+  `api/mobile_api_v1.md` y `api/openapi.mobile.v1.yaml`.
 - Correo corporativo y WhatsApp: `mapa_modulos.md`, `flujos_operativos.md`,
   `decisiones_tecnicas.md`, `email_corporativo_mailu.md` y los runbooks de
   correo aplicables.

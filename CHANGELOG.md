@@ -4844,3 +4844,10 @@
   documentos fiscales, emisión desde venta y notificaciones privadas.
 - Las mutaciones móviles exigen `Idempotency-Key`; PCS conserva hashes y la
   respuesta exitosa para impedir ventas, pagos, facturas o mensajes duplicados.
+
+# 2026-07-13 - Plan 101: arquitectura modular y reintentos seguros
+- Se formaliza el monolito modular de PCS y sus reglas de evolucion en
+  `documentos/plan_101_arquitectura_modular.md`.
+- La API movil v1 evita sobres JSON anidados y protege tambien la creacion de
+  carritos, sus items y la sincronizacion offline mediante idempotencia
+  persistente por empresa.

@@ -26,10 +26,10 @@ Contrato OpenAPI: `documentos/api/openapi.mobile.v1.yaml`.
 | `GET /api/v1/empresa/productos` | Disponible | Aislamiento por empresa, permisos de inventario, `limit` maximo 100, `offset`, filtros y `fields` permitido. |
 | `GET /api/v1/empresa/clientes` | Disponible | Aislamiento por empresa, permisos de clientes, paginacion, filtros y `fields` permitido. |
 | `GET/POST/PUT/DELETE /api/v1/empresa/carritos` | Disponible | Consulta paginada y mutaciones POS; las mutaciones exigen `Idempotency-Key`. |
-| `GET/POST/PUT/DELETE /api/v1/empresa/carritos/items` | Disponible | Items paginados por carrito; la empresa y el carrito se validan antes de leer o escribir. |
+| `GET/POST/PUT/DELETE /api/v1/empresa/carritos/items` | Disponible | Items paginados por carrito; la empresa y el carrito se validan antes de leer o escribir y toda mutacion exige `Idempotency-Key`. |
 | `GET /api/v1/empresa/ventas` | Disponible | Vista historica paginada de carritos POS cerrados/pagados. |
 | `POST /api/v1/empresa/pagos` | Disponible | Reutiliza el cobro POS, caja, descuentos, propinas, credito, inventario y documento existente; evita duplicados por reintento. |
-| `POST /api/v1/empresa/ventas/offline/sync` | Disponible | Reutiliza la cola offline existente, que exige `sync_key`, cajero y caja validos. |
+| `POST /api/v1/empresa/ventas/offline/sync` | Disponible | Reutiliza la cola offline existente, exige `sync_key`, cajero, caja validos e `Idempotency-Key` para reintentos de transporte. |
 | `GET /api/v1/empresa/facturacion/documentos` | Disponible | Documentos fiscales paginados, filtros por fecha, cajero, cliente, estado y campos permitidos. |
 | `POST /api/v1/empresa/facturacion/emitir` | Disponible | Emite desde venta mediante el flujo fiscal existente y exige `Idempotency-Key`. |
 | `GET/POST/PUT /api/v1/empresa/notificaciones` | Disponible | Buzon privado del actor autenticado; enviar y marcar lectura son idempotentes. |
