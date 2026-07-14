@@ -2111,12 +2111,12 @@ func handleVentaPublicaCrearPagoPublico(w http.ResponseWriter, r *http.Request, 
 	}
 	sessionPayload["billing"] = billing
 
-	apifyToken, loginRaw, err := fetchEpaycoApifyToken(epaycoPublicKey, epaycoPrivateKey)
+	apifyToken, _, err := fetchEpaycoApifyToken(epaycoPublicKey, epaycoPrivateKey)
 	if err != nil {
 		http.Error(w, "No se pudo autenticar con Epayco Smart Checkout: "+err.Error(), http.StatusBadGateway)
 		return
 	}
-	sessionID, sessionRaw, err := createEpaycoSmartCheckoutSession(apifyToken, sessionPayload)
+	sessionID, _, err := createEpaycoSmartCheckoutSession(apifyToken, sessionPayload)
 	if err != nil {
 		http.Error(w, "No se pudo crear sesion Smart Checkout de Epayco: "+err.Error(), http.StatusBadGateway)
 		return
@@ -2134,8 +2134,6 @@ func handleVentaPublicaCrearPagoPublico(w http.ResponseWriter, r *http.Request, 
 		"response":         responseURL,
 		"confirmation":     confirmationURL,
 		"integration_flow": "smart_checkout_v2",
-		"apify_login_raw":  loginRaw,
-		"session_raw":      sessionRaw,
 	}
 	rawBytes, _ := json.Marshal(rawMap)
 	if err := dbpkg.UpdateEmpresaVentaPublicaOrderPayment(dbEmp, resolvedEmpresaID, orderCode, "pendiente", reference, reference, string(rawBytes), "", "epayco_pending"); err != nil {

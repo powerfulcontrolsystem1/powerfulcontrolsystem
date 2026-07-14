@@ -18,6 +18,8 @@ const (
 	chatFlotanteRadioOnlineEnabledKey  = "chat_flotante.radio_online_enabled"
 	chatFlotanteRadioCountryKey        = "chat_flotante.radio_country"
 	chatFlotanteRadioCustomStationsKey = "chat_flotante.radio_custom_stations"
+	chatFlotanteThemeKey               = "chat_flotante.theme"
+	chatFlotanteTextSizeKey            = "chat_flotante.text_size"
 	chatFlotantePersonalityNormal      = "normal"
 	chatFlotantePersonalityRobot       = "robot"
 	chatFlotantePersonalitySecretary   = "secretary"
@@ -108,6 +110,32 @@ func getChatFlotanteRobotVoice(dbSuper *sql.DB) string {
 
 func normalizeChatFlotantePersonalityMode(raw string) string {
 	return chatFlotantePersonalityNormal
+}
+
+func normalizeChatFlotanteTheme(raw string) string {
+	switch strings.ToLower(strings.TrimSpace(raw)) {
+	case "corporativo", "corporate", "rojo_azul", "red_blue":
+		return "corporativo"
+	case "oceano", "ocean", "azul":
+		return "oceano"
+	case "esmeralda", "emerald", "verde":
+		return "esmeralda"
+	case "vino", "wine", "borgona":
+		return "vino"
+	default:
+		return "normal"
+	}
+}
+
+func normalizeChatFlotanteTextSize(raw string) string {
+	switch strings.ToLower(strings.TrimSpace(raw)) {
+	case "pequeno", "small", "s":
+		return "pequeno"
+	case "grande", "large", "l":
+		return "grande"
+	default:
+		return "mediano"
+	}
 }
 
 func normalizeChatFlotanteRadioCountry(raw string) string {
@@ -315,6 +343,8 @@ func chatFlotantePrefsResponse(dbSuper, dbEmp *sql.DB, empresaID int64) map[stri
 	robotVoice := normalizeChatFlotanteRobotVoice(getChatFlotanteStringForEmpresa(dbSuper, dbEmp, empresaID, chatFlotanteRobotVoiceKey, "es-CO"))
 	personalityMode := chatFlotantePersonalityNormal
 	radioCountry := normalizeChatFlotanteRadioCountry(getChatFlotanteStringForEmpresa(dbSuper, dbEmp, empresaID, chatFlotanteRadioCountryKey, ""))
+	theme := normalizeChatFlotanteTheme(getChatFlotanteStringForEmpresa(dbSuper, dbEmp, empresaID, chatFlotanteThemeKey, "normal"))
+	textSize := normalizeChatFlotanteTextSize(getChatFlotanteStringForEmpresa(dbSuper, dbEmp, empresaID, chatFlotanteTextSizeKey, "mediano"))
 	return map[string]any{
 		"ok":         true,
 		"empresa_id": empresaID,
@@ -332,6 +362,8 @@ func chatFlotantePrefsResponse(dbSuper, dbEmp *sql.DB, empresaID int64) map[stri
 		"voice_enabled":         getChatFlotanteBoolForEmpresa(dbSuper, dbEmp, empresaID, chatFlotanteVoiceEnabledKey, false),
 		"robot_voice":           robotVoice,
 		"personality_mode":      personalityMode,
+		"theme":                 theme,
+		"text_size":             textSize,
 	}
 }
 
@@ -371,6 +403,8 @@ func ChatFlotantePreferenciasHandler(dbSuper, dbEmp *sql.DB) http.HandlerFunc {
 				VoiceEnabled        *bool           `json:"voice_enabled"`
 				RobotVoice          string          `json:"robot_voice"`
 				PersonalityMode     string          `json:"personality_mode"`
+				Theme               string          `json:"theme"`
+				TextSize            string          `json:"text_size"`
 			}
 			if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
 				http.Error(w, "payload invalido: "+err.Error(), http.StatusBadRequest)
@@ -485,6 +519,30 @@ func ChatFlotantePreferenciasHandler(dbSuper, dbEmp *sql.DB) http.HandlerFunc {
 					}
 				} else if err := dbpkg.SetConfigValue(dbSuper, chatFlotanteRobotVoiceKey, value, false); err != nil {
 					http.Error(w, "No se pudo guardar la configuracion del chat", http.StatusInternalServerError)
+					return
+				}
+			}
+			if strings.TrimSpace(payload.Theme) != "" {
+				value := normalizeChatFlotanteTheme(payload.Theme)
+				if empresaID > 0 {
+					if err := setChatFlotanteEmpresaPref(dbEmp, empresaID, chatFlotanteThemeKey, value, usuario); err != nil {
+						http.Error(w, "No se pudo guardar la configuracion visual del chat", http.StatusInternalServerError)
+						return
+					}
+				} else if err := dbpkg.SetConfigValue(dbSuper, chatFlotanteThemeKey, value, false); err != nil {
+					http.Error(w, "No se pudo guardar la configuracion visual del chat", http.StatusInternalServerError)
+					return
+				}
+			}
+			if strings.TrimSpace(payload.TextSize) != "" {
+				value := normalizeChatFlotanteTextSize(payload.TextSize)
+				if empresaID > 0 {
+					if err := setChatFlotanteEmpresaPref(dbEmp, empresaID, chatFlotanteTextSizeKey, value, usuario); err != nil {
+						http.Error(w, "No se pudo guardar la configuracion visual del chat", http.StatusInternalServerError)
+						return
+					}
+				} else if err := dbpkg.SetConfigValue(dbSuper, chatFlotanteTextSizeKey, value, false); err != nil {
+					http.Error(w, "No se pudo guardar la configuracion visual del chat", http.StatusInternalServerError)
 					return
 				}
 			}

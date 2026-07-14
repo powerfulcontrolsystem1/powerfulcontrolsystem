@@ -5,10 +5,32 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
+	"os"
+	"path/filepath"
+	"runtime"
+	"strings"
 	"testing"
 
 	dbpkg "github.com/you/pos-backend/db"
 )
+
+func TestEpaycoDoesNotPersistRawProviderAuthenticationResponses(t *testing.T) {
+	_, thisFile, _, ok := runtime.Caller(0)
+	if !ok {
+		t.Fatal("could not resolve payments test location")
+	}
+	for _, name := range []string{"payments_handlers.go", "venta_publica.go"} {
+		body, err := os.ReadFile(filepath.Join(filepath.Dir(thisFile), name))
+		if err != nil {
+			t.Fatalf("read %s: %v", name, err)
+		}
+		for _, forbidden := range []string{"\"apify_login_raw\"", "\"session_raw\""} {
+			if strings.Contains(string(body), forbidden) {
+				t.Fatalf("%s must not persist provider raw field %s", name, forbidden)
+			}
+		}
+	}
+}
 
 func TestPickEpaycoFieldReadsNestedAliases(t *testing.T) {
 	payload := map[string]interface{}{
@@ -22,6 +44,26 @@ func TestPickEpaycoFieldReadsNestedAliases(t *testing.T) {
 	got := pickEpaycoField(payload, "token", "access_token", "bearer_token")
 	if got != "token-123" {
 		t.Fatalf("expected nested bearer token, got %q", got)
+	}
+}
+
+func TestReadCheckoutContextFromRawPayloadPreservesQuantity(t *testing.T) {
+	mode, addons, quantity := readCheckoutContextFromRawPayload(`{"checkout_mode":"","addon_licencia_ids":[2,"3"],"cantidad":5}`)
+	if mode != "" {
+		t.Fatalf("expected individual checkout mode, got %q", mode)
+	}
+	if quantity != 5 {
+		t.Fatalf("expected stored checkout quantity 5, got %d", quantity)
+	}
+	if len(addons) != 2 || addons[0] != 2 || addons[1] != 3 {
+		t.Fatalf("expected normalized addon ids, got %#v", addons)
+	}
+}
+
+func TestReadCheckoutContextFromRawPayloadDefaultsQuantity(t *testing.T) {
+	_, _, quantity := readCheckoutContextFromRawPayload(`{"cantidad":0}`)
+	if quantity != 1 {
+		t.Fatalf("expected a safe default quantity, got %d", quantity)
 	}
 }
 

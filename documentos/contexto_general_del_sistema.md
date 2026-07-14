@@ -2,6 +2,31 @@
 
 Estado: vigente. Ultima actualizacion: 2026-07-13.
 
+## Actualizacion 2026-07-13 - Flujos moviles POS v1
+
+- `/api/v1/` ya cubre carrito, items, cobro, sincronizacion offline,
+  documentos fiscales y buzon/notificaciones, ademas de identidad, productos y
+  clientes. Las escrituras moviles usan `Idempotency-Key` persistente por
+  empresa y no duplican pagos, documentos ni mensajes cuando la red reintenta.
+- La capa v1 reutiliza los handlers operativos existentes; no crea una segunda
+  regla de caja, inventario, impuestos o DIAN. Ver
+  `documentos/api/mobile_api_v1.md` y su contrato OpenAPI.
+
+## Actualizacion 2026-07-13 - Plan 101 de arquitectura
+
+- PCS mantiene un monolito modular en Go y PostgreSQL: los limites se aplican
+  por modulo, repositorio y wrapper multiempresa sin duplicar reglas de caja,
+  inventario, impuestos o DIAN. La guia y los gates de preproduccion estan en
+  `documentos/plan_101_arquitectura_modular.md`.
+
+## Actualizacion 2026-07-13 - IA propia y base movil
+
+- El proveedor OpenAI propio es opcional por empresa, cifrado por tenant y sin
+  exposicion de la clave. Solo permite superar la cuota PCS para OpenAI; la
+  seguridad, permisos, auditoria y los limites de OpenAI permanecen activos.
+- La base movil versionada se publica bajo `/api/v1/` con JSON uniforme. Su
+  contrato y plan de migracion estan en `documentos/api/mobile_api_v1.md`.
+
 ## Regla obligatoria para agentes
 
 Todo agente que reciba una consulta sobre este repositorio debe leer primero

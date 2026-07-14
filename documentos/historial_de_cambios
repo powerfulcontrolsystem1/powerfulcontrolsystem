@@ -1,3 +1,10 @@
+2026-07-13: Chat IA empresarial legible y tematizable por empresa.
+- Modulos afectados: `chat IA`, `administrar empresa`, `configuracion empresarial`, `permisos multiempresa`.
+- Frontend: `web/js/ai_chat_drawer.js` convierte de forma segura los titulos Markdown, indicadores y tablas Markdown de las respuestas IA en secciones, filas clave/valor y tablas HTML creadas por DOM; no interpreta HTML devuelto por el modelo. Los temas `normal`, `corporativo`, `oceano`, `esmeralda` y `vino`, junto con los tamaños `pequeno`, `mediano` y `grande`, respetan claro/oscuro y se aplican al recuadro abierto.
+- Configuracion: `Administrar empresa > Configuracion > Chat IA > Configurar chat y robot` permite elegir tema y tamaño con vista previa. Las preferencias se guardan por empresa en `empresa_estacion_prefs` con las claves `chat_flotante.theme` y `chat_flotante.text_size` mediante `/api/chat_flotante/preferencias`, que conserva la empresa validada por sesion.
+- Backend: el prompt empresarial solicita tablas Markdown y filas separadas para resúmenes con indicadores, ventas, productos, movimientos o alertas, sin agregar ofertas de acciones no solicitadas.
+- QA: normalizacion Go cubierta por `chat_flotante_config_test.go`; pendiente ejecutar la suite completa y validacion visual en navegador antes de publicar.
+
 2026-07-13: Preparación para validación controlada de staging.
 - Se añaden matriz de evidencia, checklist de staging y rollback de producción
   sin desplegar ni tocar datos reales. El cierre declara bloqueantes concretos
@@ -37858,3 +37865,114 @@ Archivos modificados:
 2026-07-13: Endurecimiento del modo heredado Mailu.
 - Seguridad: el provisionamiento y borrado directo quedan fijados a scripts internos revisados. Una ruta configurada arbitrariamente se rechaza; el modo recomendado en produccion continua siendo `mailu_api` interno.
 - QA: se agrega regresion que rechaza rutas directas no aprobadas. El analisis completo `gosec` se valida por CI/Linux, ya que la ejecucion local quedo retenida por procesos temporales de Windows.
+
+2026-07-13: Orquestador IA empresarial, catalogo e inventario.
+- Se amplia el registro cerrado con `catalog.search_products` y
+  `catalog.create_product`, sin aceptar SQL, endpoints, empresa, usuario ni
+  permisos desde el modelo o navegador.
+- El handler deriva permisos desde el snapshot autenticado y los revalida al
+  preparar y confirmar. La creacion de producto conserva las reglas y la
+  transaccion de `CreateProducto`, incluido inventario inicial e historial.
+- Las escrituras permanecen desactivadas hasta habilitar flags globales y por
+  herramienta. Se agregan regresiones de permisos y validacion del plan.
+# 2026-07-13 - Chat IA: catalogo administrable y preferencias por usuario
+- Se incorpora GPT-5.6 Luna como modelo avanzado configurable junto con GPT-5.4 mini y GPT-5.5.
+- Super Administrador puede habilitar modelos y definir los predeterminados de operaciones y adjuntos.
+- El chat recuerda modelo, modo y agente por usuario, muestra uso/restante por empresa activa y acepta imagenes, PDF, TXT, CSV, DOCX y XLSX de hasta 8 MB.
+
+# 2026-07-13 - IA empresarial: adjuntos verificados y propuesta de catalogo
+- Los adjuntos empresariales ya no confian en el nombre ni el `Content-Type`:
+  se validan firmas de imagen/PDF, texto UTF-8 y estructura OpenXML de DOCX/XLSX.
+  Se rechazan formatos activos y extensiones fingidas antes de llamar al proveedor.
+- Los errores HTTP del proveedor se reducen a mensajes publicos genericos; no
+  se devuelven cuerpos con metadatos de solicitud al navegador.
+- El chat agrega una tarjeta de producto para solicitudes naturales de alta.
+  Solo crea una propuesta temporal; duplicados, empresa, permisos, bodega,
+  idempotencia y confirmacion siguen siendo verificados en el backend.
+- Validacion: `go test ./handlers ./ai ./db`, `go vet ./handlers ./ai ./db`
+  y `git diff --check` desde el arbol de trabajo.
+
+# 2026-07-13 - Catalogo GPT-5.6 y esfuerzo configurable
+- Super Administrador ahora puede habilitar GPT-5.6 Luna, Terra y Sol, elegir
+  modelos separados para operaciones y adjuntos, y definir el esfuerzo por
+  modelo desde configuracion avanzada.
+- El backend valida los esfuerzos contra cada modelo y los envia solo en
+  peticiones Responses; no acepta valores arbitrarios enviados por el cliente.
+- Referencia tecnica consultada: catalogo oficial de modelos OpenAI, que
+  documenta Sol/Terra/Luna y sus niveles `none`, `low`, `medium`, `high`,
+  `xhigh`, `max`.
+2026-07-13: IA propia empresarial y base movil versionada.
+- Seguridad: se agrega `empresa_ai_openai_proveedor_configuracion`, aislada por
+  `empresa_id`, con AES-GCM de proposito `empresa-openai-provider`. La clave
+  nunca se serializa ni se escribe en auditoria o logs.
+- IA: los modelos OpenAI del chat normal, adjuntos y streaming usan la clave
+  propia cuando esta habilitada. La cuota PCS se informa como ilimitada para esa
+  llamada, conservando control de rol, tenant, agentes y limites OpenAI.
+- Registro: la deteccion de pais prioriza zona horaria y usa Colombia como
+  respaldo; la respuesta publica de geolocalizacion valida puede corregirla.
+- API: se agrega `/api/v1/` con contrato OpenAPI, sobre JSON uniforme, token
+  Bearer de sesion dedicada, controles multiempresa existentes, paginacion y
+  seleccion de campos para productos y clientes. Las APIs web quedan como
+  compatibilidad y se migraran gradualmente por dominio.
+2026-07-13 - Flujos POS y facturacion para API movil v1
+- `backend/handlers/mobile_api_v1.go`: incorpora carrito, items, pago,
+  sincronizacion offline, documentos fiscales, emision y buzon en `/api/v1`,
+  bajo el mismo aislamiento y permisos de los handlers web.
+- `backend/db/mobile_api_idempotency.go`: agrega idempotencia persistente por
+  empresa, con hashes de clave/cuerpo y replay solo de respuestas exitosas.
+- `documentos/api/openapi.mobile.v1.yaml` y `mobile_api_v1.md`: amplian el
+  contrato publico movil y la matriz de compatibilidad/deprecacion.
+
+2026-07-13 - Plan 101: arquitectura modular y consistencia movil
+- Se documenta la decision de monolito modular y los limites de evolucion en
+  `documentos/plan_101_arquitectura_modular.md`.
+- La fachada `/api/v1` conserva su contrato JSON sin anidar respuestas ya
+  envueltas y asigna `request_id` en el limite HTTP.
+- Carritos, items y sincronizacion offline movil pasan a exigir idempotencia
+  persistente por empresa, al igual que cobro y emision fiscal.
+2026-07-13 - Checkout de licencias con cantidad configurable
+- Se añadió `licencias.max_unidades_por_compra`, con valor predeterminado 5 y rango 1..24, administrable desde Super administrador > Licencias.
+- El checkout, sus pasarelas y la activación sin pago recalculan y guardan `cantidad` en servidor. Las activaciones posteriores por webhook conservan el mismo contexto, sin confiar en parámetros de retorno.
+
+2026-07-13 - Orquestador rs con ejecución aislada y trazable
+- `scripts/rs.ps1` ejecuta preflight, actualización y sincronización como procesos aislados con captura independiente de salida/error, timeout configurable y diagnóstico directo por fase. Evita que un `exit` heredado corte silenciosamente el flujo antes de la sincronización.
+
+2026-07-13 - Licencias empresariales: compra, factura y comprobante
+- Se amplía `administrar_empresa/licencia_sistema.html` con acceso al checkout existente y un historial por empresa de compras de licencia.
+- Se incorpora `/api/empresa/licencias/comprobantes`, protegido por el permiso `linkLicenciaSistema`. El handler usa exclusivamente el `empresa_id` validado por middleware, consulta ambos proveedores con filtro por empresa y audita cada descarga.
+- Cada compra permite descargar un comprobante PDF. La factura electrónica se habilita solo al comprobar que el documento fue emitido por Powerful Control System y está relacionado con la empresa compradora.
+
+2026-07-13: rs: actualizar repositorio y sincronizar VPS
+PushStatus: OK
+Archivos modificados:
+- documentos/api/openapi.generated.yaml
+- 2026-07-14: `Fundacion de produccion y app movil` agrega configuracion tipada
+  de roles de proceso, ejecutables separados `pcs-migrate`/`pcs-worker`, ledger
+  de migraciones, cola PostgreSQL persistente con `SKIP LOCKED`, reintentos y
+  estado muerto, mas outbox transaccional. El rol API conserva el bootstrap
+  legado por compatibilidad hasta que una instalacion lo desactive de forma
+  explicita despues de verificar su ledger; el rol de migracion lo conserva.
+  Docker incorpora servicios de migracion y worker con
+  usuario no root, filesystem de solo lectura y capacidades retiradas. La guia
+  `preparacion_produccion_y_app_movil.md` declara gates reales y limites de
+  adopcion sin afirmar validacion externa no realizada.
+
+2026-07-14: IA por alcance y proteccion de trazas Epayco
+- `selector_chat_ia.go` separa el chat del selector del chat global super: usa la sesión real, calcula únicamente las empresas autorizadas por servidor y entrega resúmenes sin NIT ni IDs técnicos. No acepta una empresa desde URL, JSON o cabeceras.
+- `ai_chat_drawer.js` identifica selector, super y empresa como ámbitos distintos; en selector no permite adjuntos, streaming ni agentes empresariales y conserva las preferencias del usuario.
+- Epayco: las respuestas crudas de autenticación y creación de sesión ya no quedan persistidas en `raw_payload` de pagos de licencias ni venta pública. Los errores de disponibilidad/configuración expuestos al checkout se reducen a mensajes seguros.
+
+2026-07-14: security: separar alcance IA selector y proteger trazas Epayco
+PushStatus: OK
+Archivos modificados:
+- backend/handlers/payments_handlers.go
+- backend/handlers/payments_handlers_test.go
+- backend/handlers/selector_chat_ia.go
+- backend/handlers/selector_chat_ia_test.go
+- backend/handlers/venta_publica.go
+- backend/main.go
+- documentos/api/openapi.generated.yaml
+- documentos/contexto_especifico_del_sistema.md
+- documentos/descripcion_de_archivos
+- documentos/historial_de_cambios
+- web/js/ai_chat_drawer.js

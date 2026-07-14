@@ -11,6 +11,8 @@
   var INPUT_ID = 'aiChatInput';
   var MODE_ID = 'aiChatMode';
   var AGENT_ID = 'aiChatAgent';
+  var MODEL_ID = 'aiChatModel';
+  var MODEL_USAGE_ID = 'aiChatModelUsage';
   var ATTACHMENT_INPUT_ID = 'aiChatAttachment';
   var ATTACH_BTN_ID = 'aiChatAttachBtn';
   var CLEAR_ATTACHMENT_ID = 'aiChatClearAttachment';
@@ -49,6 +51,8 @@
     exportables: [],
     loading: false,
     selectedAttachment: null,
+    modelCatalog: [],
+    selectedModelID: '',
     chatEnabled: true,
     robotEnabled: false,
     voiceEnabled: false,
@@ -71,6 +75,8 @@
     activeRequestSeq: 0,
     robotVoice: 'es-CO',
     radioEnabled: false,
+    theme: 'normal',
+    textSize: 'mediano',
     robotAssistantVisible: false,
     robotMoodTimer: null,
     lastResponseModelMeta: null,
@@ -238,7 +244,12 @@
 
   function isSuperContext() {
     var path = String(window.location.pathname || '').toLowerCase();
-    return path.indexOf('/seleccionar_empresa.html') >= 0 || path.indexOf('/super_administrador.html') >= 0 || path.indexOf('/super/') === 0;
+    return path.indexOf('/super_administrador.html') >= 0 || path.indexOf('/super/') === 0;
+  }
+
+  function isSelectorContext() {
+    var path = String(window.location.pathname || '').toLowerCase();
+    return path.indexOf('/seleccionar_empresa.html') >= 0;
   }
 
   function normalizeAIToggleButtonIcon(toggleBtn) {
@@ -424,6 +435,11 @@
                     '<option value="agente_internet">Internet</option>' +
                   '</select>' +
                 '</label>' +
+                '<label class="ai-chat-control-field" for="' + MODEL_ID + '">' +
+                  '<span>Modelo</span>' +
+                  '<select id="' + MODEL_ID + '" class="form-input" aria-label="Modelo IA"><option value="">Cargando modelos...</option></select>' +
+                  '<small id="' + MODEL_USAGE_ID + '" class="ai-chat-model-usage">Uso: --</small>' +
+                '</label>' +
                 '<div class="ai-chat-control-field">' +
                   '<span>Adjunto</span>' +
                   '<div class="ai-chat-attachment-row">' +
@@ -487,6 +503,97 @@
     }
   }
 
+  function buildModelsEndpoint() {
+    if (isSelectorContext()) return '/api/selector/chat_con_ia/modelos';
+    return '/api/empresa/chat_con_inteligencia_artificial/modelos';
+  }
+
+  function buildModelPreferenceEndpoint() {
+    if (isSelectorContext()) return '/api/selector/chat_con_ia/modelo_preferido';
+    return '/api/empresa/chat_con_inteligencia_artificial/modelo_preferido';
+  }
+
+  function renderModelUsage(modelID) {
+    var usageEl = document.getElementById(MODEL_USAGE_ID);
+    if (!usageEl) return;
+    var selected = (state.modelCatalog || []).filter(function (item) { return item && item.id === modelID; })[0];
+    var usage = selected && selected.usage;
+    if (!usage || typeof usage.daily_limit === 'undefined') {
+      usageEl.textContent = 'Uso de esta empresa: --';
+      return;
+    }
+    usageEl.textContent = 'Uso de esta empresa: ' + Number(usage.daily_used || 0) + '/' + Number(usage.daily_limit || 0) + ' hoy. Quedan ' + Number(usage.daily_remaining || 0) + '.';
+  }
+
+  function applyResponseUsage(modelID, usage) {
+    if (!modelID || !usage || typeof usage !== 'object') return;
+    (state.modelCatalog || []).forEach(function (item) {
+      if (item && item.id === modelID) item.usage = usage;
+    });
+    renderModelUsage(modelID);
+  }
+
+  function loadChatModels() {
+    if (isPublicPortalContext() || isSuperContext()) return Promise.resolve();
+    var empresaID = parsePositiveInt(getCurrentEmpresaId());
+    var select = document.getElementById(MODEL_ID);
+    if ((!empresaID && !isSelectorContext()) || !select) return Promise.resolve();
+    var modelsURL = buildModelsEndpoint();
+    if (!isSelectorContext()) modelsURL += '?empresa_id=' + encodeURIComponent(String(empresaID));
+    return fetch(modelsURL, {
+      credentials: 'same-origin', headers: { 'X-PCS-Source': 'ai_drawer' }
+    }).then(function (resp) {
+      if (!resp.ok) return parseErrorResponse(resp);
+      return resp.json();
+    }).then(function (data) {
+      var models = Array.isArray(data && data.modelos) ? data.modelos : [];
+      state.modelCatalog = models;
+      var selected = normalize(data && data.modelo_preferido) || state.selectedModelID;
+      select.innerHTML = '';
+      models.forEach(function (item) {
+        var option = document.createElement('option');
+        option.value = normalize(item.id);
+        var usage = item.usage || {};
+        option.textContent = normalize(item.display_name || item.id) + ' - quedan ' + Number(usage.daily_remaining || 0);
+        select.appendChild(option);
+      });
+      if (!models.length) {
+        select.innerHTML = '<option value="">Sin modelos disponibles</option>';
+        select.disabled = true;
+        return;
+      }
+      select.disabled = false;
+      if (!models.some(function (item) { return item && item.id === selected; })) selected = normalize(models[0].id);
+      select.value = selected;
+      state.selectedModelID = selected;
+      var modeEl = document.getElementById(MODE_ID);
+      var agentEl = document.getElementById(AGENT_ID);
+      if (modeEl && normalize(data && data.modo_preferido)) modeEl.value = normalize(data.modo_preferido);
+      if (agentEl && normalize(data && data.agent_preferido)) agentEl.value = normalize(data.agent_preferido);
+      renderModelUsage(selected);
+      syncModeUI();
+    }).catch(function () {
+      select.innerHTML = '<option value="">Modelo no disponible</option>';
+      select.disabled = true;
+      renderModelUsage('');
+    });
+  }
+
+  function persistSelectedModel() {
+    if (isPublicPortalContext() || isSuperContext()) return Promise.resolve();
+    var empresaID = parsePositiveInt(getCurrentEmpresaId());
+    var select = document.getElementById(MODEL_ID);
+    var modeEl = document.getElementById(MODE_ID);
+    var agentEl = document.getElementById(AGENT_ID);
+    if ((!empresaID && !isSelectorContext()) || !select || !normalize(select.value)) return Promise.resolve();
+    state.selectedModelID = normalize(select.value);
+    renderModelUsage(state.selectedModelID);
+    return fetch(buildModelPreferenceEndpoint(), {
+      method: 'PUT', credentials: 'same-origin', headers: { 'Content-Type': 'application/json', 'X-PCS-Source': 'ai_drawer' },
+      body: JSON.stringify(Object.assign(isSelectorContext() ? {} : { empresa_id: empresaID }, { model_id: state.selectedModelID, modo_asistente: modeEl ? normalize(modeEl.value) : 'operativo', agent_id: agentEl ? normalize(agentEl.value) : 'general' }))
+    }).then(function (resp) { if (!resp.ok) return parseErrorResponse(resp); return resp.json(); });
+  }
+
   function buildTextEndpoint() {
     if (isPublicPortalContext()) {
       return '/api/public/chat_portal';
@@ -494,6 +601,7 @@
     if (isSuperContext()) {
       return '/super/api/chat_con_ia_global/consultar';
     }
+    if (isSelectorContext()) return '/api/selector/chat_con_ia/consultar';
     return '/api/empresa/chat_con_inteligencia_artificial/consultar';
   }
 
@@ -523,6 +631,8 @@
   var RADIO_ENABLED_STORAGE_KEY = 'pcs_radio_online_enabled';
   var VOICE_COMMAND_STORAGE_KEY = 'pcs_ai_chat_voice_enabled';
   var ROBOT_VOICE_STORAGE_KEY = 'pcs_ai_chat_robot_voice';
+  var CHAT_THEME_STORAGE_KEY = 'pcs_ai_chat_theme';
+  var CHAT_TEXT_SIZE_STORAGE_KEY = 'pcs_ai_chat_text_size';
 
   function buildChatPrefsEndpoint() {
     var empresaId = parsePositiveInt(getCurrentEmpresaId());
@@ -534,6 +644,31 @@
 
   function normalizeChatPersonalityMode(value) {
     return 'normal';
+  }
+
+  function normalizeChatTheme(value) {
+    var raw = normalize(value).toLowerCase();
+    if (raw === 'corporativo' || raw === 'corporate' || raw === 'rojo_azul') return 'corporativo';
+    if (raw === 'oceano' || raw === 'ocean' || raw === 'azul') return 'oceano';
+    if (raw === 'esmeralda' || raw === 'emerald' || raw === 'verde') return 'esmeralda';
+    if (raw === 'vino' || raw === 'wine' || raw === 'borgona') return 'vino';
+    return 'normal';
+  }
+
+  function normalizeChatTextSize(value) {
+    var raw = normalize(value).toLowerCase();
+    if (raw === 'pequeno' || raw === 'small' || raw === 's') return 'pequeno';
+    if (raw === 'grande' || raw === 'large' || raw === 'l') return 'grande';
+    return 'mediano';
+  }
+
+  function applyChatAppearance(theme, textSize) {
+    state.theme = normalizeChatTheme(theme || state.theme);
+    state.textSize = normalizeChatTextSize(textSize || state.textSize);
+    var drawer = document.getElementById(DRAWER_ID);
+    if (!drawer) return;
+    drawer.dataset.aiTheme = state.theme;
+    drawer.dataset.aiTextSize = state.textSize;
   }
 
   function normalizeRobotVoice(value) {
@@ -810,6 +945,7 @@
         if (data.robot_voice) {
           setRobotVoicePreference(data.robot_voice);
         }
+        applyChatAppearance(data.theme, data.text_size);
         try {
           window.localStorage.setItem(VOICE_COMMAND_STORAGE_KEY, state.voiceEnabled ? '1' : '0');
         } catch (error) {}
@@ -856,7 +992,9 @@
     if (isPublicPortalContext()) {
       return 'chat publico del portal';
     }
-    return isSuperContext() ? 'chat global de super administrador' : 'chat empresarial';
+    if (isSuperContext()) return 'chat global de super administrador';
+    if (isSelectorContext()) return 'chat de empresas autorizadas';
+    return 'chat empresarial';
   }
 
   function getChatPersonalityMode() {
@@ -1697,6 +1835,11 @@
     var type = String(file.type || '').toLowerCase();
     if (type.indexOf('image/') === 0) return true;
     return /\.(jpe?g|png|webp|gif|bmp|heic|heif)$/i.test(String(file.name || ''));
+  }
+
+  function isSupportedAttachmentForAI(file) {
+    if (isImageFileForAI(file)) return true;
+    return /\.(pdf|txt|csv|docx|xlsx)$/i.test(String(file && file.name || ''));
   }
 
   function buildReportesEndpoint() {
@@ -2907,7 +3050,10 @@
     var documentFormatSelect = document.getElementById(DOCUMENT_FORMAT_ID);
     var configBtn = document.getElementById('aiChatConfigBtn');
     var attachField = attachBtn && attachBtn.closest('.ai-chat-control-field');
+    var modelEl = document.getElementById(MODEL_ID);
+    var modelField = modelEl && modelEl.closest('.ai-chat-control-field');
     var superContext = isSuperContext();
+    var selectorContext = isSelectorContext();
     var publicContext = isPublicPortalContext();
 
     if (modeEl && publicContext) {
@@ -2928,6 +3074,9 @@
     if (attachField) {
       attachField.hidden = publicContext;
     }
+    if (modelField) {
+      modelField.hidden = publicContext || superContext;
+    }
 
     if (documentTools) {
       documentTools.classList.add('is-hidden');
@@ -2940,8 +3089,9 @@
       setShareArtifact(null);
     }
 
-    if (attachBtn) attachBtn.disabled = publicContext;
-    if (clearBtn) clearBtn.disabled = publicContext;
+    if (attachField) attachField.hidden = publicContext || selectorContext;
+    if (attachBtn) attachBtn.disabled = publicContext || selectorContext;
+    if (clearBtn) clearBtn.disabled = publicContext || selectorContext;
     if (attachName) {
       if (publicContext) {
         attachName.textContent = isPublicStoreContext()
@@ -3008,6 +3158,11 @@
       /(?:habitaci[oó]n).{0,100}(?:hotel|personas|tarifa)/.test(value);
   }
 
+  function looksLikeProductCreation(text) {
+    var value = normalize(text).toLowerCase();
+    return /(?:crear|crea|registrar|registra|agregar|agrega).{0,80}(?:producto|art[ií]culo|servicio)/.test(value);
+  }
+
   function hotelDraftFromText(text) {
     var value = normalize(text);
     var station = value.match(/estaci[oó]n\s*(?:n[uú]mero)?\s*(\d+)/i);
@@ -3035,6 +3190,25 @@
     return section;
   }
 
+  function productDraftFromText(text) {
+    var value = normalize(text);
+    var named = value.match(/(?:producto|art[ií]culo|servicio)\s*(?:llamado|llamada|nombre)?\s*[:\-]?\s*([\p{L}\p{N}][\p{L}\p{N}\s._-]{1,100})/iu);
+    var price = value.match(/(?:precio|valor)\s*(?:de)?\s*\$?\s*([\d.]+)/i);
+    var sku = value.match(/(?:sku|c[oó]digo)\s*[:#-]?\s*([\w.-]{2,80})/i);
+    return { name: named ? normalize(named[1]).replace(/\s+(?:con|por|a)\s*$/i, '') : '', price: price ? String(price[1]).replace(/\./g, '') : '', sku: sku ? sku[1] : '' };
+  }
+
+  function createEnterpriseProductForm(query) {
+    var draft = productDraftFromText(query);
+    var section = document.createElement('section');
+    section.className = 'ai-enterprise-card';
+    section.innerHTML = '<div class="ai-enterprise-card-head"><strong>Propuesta asistida: nuevo producto</strong><span>Confirmacion obligatoria</span></div>' +
+      '<p>Revisa los datos. La IA solo preparara el plan; el producto no se crea hasta que lo confirmes.</p><form class="ai-enterprise-product-form"><div class="ai-enterprise-grid">' +
+      enterpriseField('Nombre', 'name', draft.name) + enterpriseField('SKU', 'sku', draft.sku) + enterpriseField('Precio de venta', 'price', draft.price, 'number') + enterpriseField('Costo', 'cost', '0', 'number') + enterpriseField('Impuesto %', 'tax', '0', 'number') + enterpriseField('Unidad', 'unit', 'Unidad') + enterpriseField('Categoria ID (opcional)', 'category_id', '', 'number') + enterpriseField('Bodega ID (solo si hay stock)', 'warehouse_id', '', 'number') + enterpriseField('Stock inicial', 'stock', '0', 'number') + enterpriseField('Stock minimo', 'minimum_stock', '0', 'number') + enterpriseField('Descripcion', 'description', '') +
+      '</div><div class="ai-enterprise-actions"><button class="btn primary" type="submit">Preparar plan</button><button class="btn secondary" type="button" data-enterprise-dismiss>Cancelar</button></div></form>';
+    return section;
+  }
+
   function formNumber(form, field) { var value = Number(form.elements[field] && form.elements[field].value); return Number.isFinite(value) ? value : 0; }
 
   function createEnterpriseProposalCard(proposal, sources) {
@@ -3054,6 +3228,12 @@
     var conversation = enterpriseOpaqueID('conversation');
     var plan = { estacion_id: formNumber(form, 'station_id'), nombre_habitacion: normalize(form.elements.room_name && form.elements.room_name.value), moneda: normalize(form.elements.currency && form.elements.currency.value), hora_check_in: normalize(form.elements.check_in && form.elements.check_in.value), hora_check_out: normalize(form.elements.check_out && form.elements.check_out.value), activa: !!(form.elements.active && form.elements.active.checked), conservar_configuracion: !!(form.elements.preserve && form.elements.preserve.checked), tarifas: [{ personas: formNumber(form, 'people_1'), valor: formNumber(form, 'amount_1') }, { personas: formNumber(form, 'people_2'), valor: formNumber(form, 'amount_2') }] };
     return fetch(enterpriseEndpoint('hotel_room_proposal'), { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json', 'X-AI-Conversation-ID': conversation, 'X-AI-Mode': 'assisted', 'X-PCS-Source': 'ai_drawer_enterprise' }, body: JSON.stringify({ conversation_id: conversation, plan: plan }) }).then(function (res) { if (!res.ok) return parseErrorResponse(res); return res.json(); });
+  }
+
+  function requestEnterpriseProductProposal(form) {
+    var conversation = enterpriseOpaqueID('conversation');
+    var plan = { nombre: normalize(form.elements.name && form.elements.name.value), sku: normalize(form.elements.sku && form.elements.sku.value), descripcion: normalize(form.elements.description && form.elements.description.value), categoria_id: formNumber(form, 'category_id'), bodega_id: formNumber(form, 'warehouse_id'), unidad_medida: normalize(form.elements.unit && form.elements.unit.value), costo: formNumber(form, 'cost'), precio: formNumber(form, 'price'), impuesto_porcentaje: formNumber(form, 'tax'), stock_inicial: formNumber(form, 'stock'), stock_minimo: formNumber(form, 'minimum_stock') };
+    return fetch(enterpriseEndpoint('product_create_proposal'), { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json', 'X-AI-Conversation-ID': conversation, 'X-AI-Mode': 'assisted', 'X-PCS-Source': 'ai_drawer_enterprise' }, body: JSON.stringify({ conversation_id: conversation, plan: plan }) }).then(function (res) { if (!res.ok) return parseErrorResponse(res); return res.json(); });
   }
 
   function confirmEnterpriseProposal(section) {
@@ -3268,7 +3448,9 @@
       if (path.indexOf('tareas') >= 0) return 'tareas';
       return 'chat_tareas';
     }
-    return isSuperContext() ? 'chat_ia_global' : 'chat_ia';
+    if (isSuperContext()) return 'chat_ia_global';
+    if (isSelectorContext()) return 'chat_ia_selector';
+    return 'chat_ia';
   }
 
   function inferDocumentExportTitle(text) {
@@ -3362,6 +3544,112 @@
     });
   }
 
+  function appendInlineMarkdown(container, value) {
+    var parts = String(value || '').split(/(\*\*[^*]+\*\*)/g);
+    parts.forEach(function (part) {
+      if (!part) return;
+      if (part.length > 4 && part.slice(0, 2) === '**' && part.slice(-2) === '**') {
+        var strong = document.createElement('strong');
+        strong.textContent = part.slice(2, -2);
+        container.appendChild(strong);
+        return;
+      }
+      container.appendChild(document.createTextNode(part));
+    });
+  }
+
+  function isMarkdownTableDivider(line) {
+    var cells = String(line || '').trim().replace(/^\||\|$/g, '').split('|');
+    return cells.length > 0 && cells.every(function (cell) {
+      return /^\s*:?-{3,}:?\s*$/.test(cell);
+    });
+  }
+
+  function markdownTableCells(line) {
+    return String(line || '').trim().replace(/^\||\|$/g, '').split('|').map(function (cell) {
+      return cell.trim();
+    });
+  }
+
+  function renderAssistantResponse(container, value) {
+    container.textContent = '';
+    var source = String(value || '').replace(/\r\n?/g, '\n').trim();
+    if (!source) return;
+
+    // Models sometimes omit the newline between compact list items. Restore it
+    // before parsing so each business indicator remains independently readable.
+    source = source.replace(/([^\n])\s+-\s+(?=\*\*)/g, '$1\n- ');
+    var lines = source.split('\n');
+    for (var i = 0; i < lines.length; i += 1) {
+      var line = lines[i].trim();
+      if (!line) continue;
+      if (/^\|.*\|$/.test(line) && i + 1 < lines.length && isMarkdownTableDivider(lines[i + 1])) {
+        var table = document.createElement('table');
+        table.className = 'ai-chat-data-table';
+        var headerRow = document.createElement('tr');
+        markdownTableCells(line).forEach(function (cell) {
+          var th = document.createElement('th');
+          appendInlineMarkdown(th, cell);
+          headerRow.appendChild(th);
+        });
+        var thead = document.createElement('thead');
+        thead.appendChild(headerRow);
+        table.appendChild(thead);
+        var tbody = document.createElement('tbody');
+        i += 2;
+        while (i < lines.length && /^\|.*\|$/.test(lines[i].trim())) {
+          var row = document.createElement('tr');
+          markdownTableCells(lines[i]).forEach(function (cell) {
+            var td = document.createElement('td');
+            appendInlineMarkdown(td, cell);
+            row.appendChild(td);
+          });
+          tbody.appendChild(row);
+          i += 1;
+        }
+        table.appendChild(tbody);
+        container.appendChild(table);
+        i -= 1;
+        continue;
+      }
+      var heading = line.match(/^#{1,4}\s+(.+)$/);
+      if (heading) {
+        var title = document.createElement('h3');
+        title.className = 'ai-chat-section-title';
+        appendInlineMarkdown(title, heading[1]);
+        container.appendChild(title);
+        continue;
+      }
+      var keyValue = line.match(/^-\s+\*\*([^*]+?)\*\*\s*[:—-]\s*(.+)$/);
+      if (keyValue) {
+        var kv = document.createElement('div');
+        kv.className = 'ai-chat-kv-row';
+        var key = document.createElement('span');
+        key.className = 'ai-chat-kv-key';
+        key.textContent = keyValue[1].replace(/:\s*$/, '');
+        var val = document.createElement('span');
+        val.className = 'ai-chat-kv-value';
+        appendInlineMarkdown(val, keyValue[2]);
+        kv.appendChild(key);
+        kv.appendChild(val);
+        container.appendChild(kv);
+        continue;
+      }
+      var bullet = line.match(/^-\s+(.+)$/);
+      if (bullet) {
+        var listRow = document.createElement('div');
+        listRow.className = 'ai-chat-list-row';
+        appendInlineMarkdown(listRow, bullet[1]);
+        container.appendChild(listRow);
+        continue;
+      }
+      var paragraph = document.createElement('p');
+      paragraph.className = 'ai-chat-paragraph';
+      appendInlineMarkdown(paragraph, line);
+      container.appendChild(paragraph);
+    }
+  }
+
   function appendMessage(author, text, messageType, actionProposal, meta) {
     var messagesEl = document.getElementById(MESSAGES_ID);
     if (!messagesEl || !text) return;
@@ -3378,7 +3666,12 @@
     }
 
     var textNode = document.createElement('div');
-    textNode.textContent = String(text);
+    textNode.className = 'ai-chat-response-content';
+    if (author === 'assistant' && messageType !== 'error') {
+      renderAssistantResponse(textNode, text);
+    } else {
+      textNode.textContent = String(text);
+    }
     item.appendChild(textNode);
 
     if (actionProposal && Array.isArray(actionProposal.actions) && actionProposal.actions.length) {
@@ -3466,6 +3759,7 @@
     item.classList.add('is-streaming');
     ensureMessageModelBadge(item, meta);
     var textNode = document.createElement('div');
+    textNode.className = 'ai-chat-response-content';
     textNode.textContent = String(initialText || 'Pensando...');
     item.appendChild(textNode);
     messagesEl.appendChild(item);
@@ -3493,7 +3787,7 @@
     if (!ref || !ref.item || !ref.textNode) return;
     var value = String(text || '').trim() || 'Respuesta lista.';
     ref.item.classList.remove('is-streaming');
-    ref.textNode.textContent = value;
+    renderAssistantResponse(ref.textNode, value);
     if (actionProposal && Array.isArray(actionProposal.actions) && actionProposal.actions.length) {
       var proposalIndex = state.proposals.length;
       state.proposals.push(actionProposal);
@@ -3561,7 +3855,7 @@
   }
 
   function shouldUseStreamingForTextQuery(attachment) {
-    if (attachment || isDocumentMode() || isReportMode()) return false;
+    if (attachment || isDocumentMode() || isReportMode() || isSelectorContext()) return false;
     if (!window.fetch || !window.TextDecoder) return false;
     return true;
   }
@@ -3802,12 +4096,15 @@
     var endpoint = attachment ? buildAttachmentEndpoint() : buildTextEndpoint();
     var mode = getAssistantMode();
     var agentEl = document.getElementById(AGENT_ID);
+    var modelEl = document.getElementById(MODEL_ID);
     var agentID = agentEl ? normalize(agentEl.value) : 'general';
+    var modelID = modelEl ? normalize(modelEl.value) : '';
     var pageContext = String(window.location.pathname || '') + String(window.location.search || '');
     var body = {
       pregunta: query,
       modo_asistente: mode,
       agent_id: agentID || 'general',
+      model_id: modelID,
     };
 
     if (pageContext) {
@@ -3825,7 +4122,7 @@
         }
         body.empresa_slug = publicSlug;
       }
-    } else if (!isSuperContext()) {
+    } else if (!isSuperContext() && !isSelectorContext()) {
       var empresaId = getCurrentEmpresaId();
       if (!empresaId) {
         throw new Error('No se encontro una empresa activa. Ingresa desde el contexto de una empresa para usar el chat IA empresarial.');
@@ -3845,19 +4142,19 @@
     }
 
     if (attachment) {
-      if (!isImageFileForAI(attachment)) {
-        throw new Error('GPT-5.5 solo se usara para subir y analizar fotos o imagenes. Para documentos de texto usa el modo Documentos IA.');
+      if (!isSupportedAttachmentForAI(attachment)) {
+        throw new Error('Adjunta una imagen, PDF, documento de Office, CSV o texto de hasta 8 MB.');
       }
       var formData = new FormData();
       formData.set('pregunta', query);
       formData.set('modo_asistente', mode);
       formData.set('agent_id', agentID || 'general');
+      if (modelID) formData.set('model_id', modelID);
       if (pageContext) {
         formData.set('pagina_contexto', pageContext);
       }
-      if (!isSuperContext()) {
+      if (!isSuperContext() && !isSelectorContext()) {
         formData.set('empresa_id', String(body.empresa_id));
-        formData.set('use_gpt55', '1');
       }
       formData.set('file', attachment, attachment.name || 'adjunto');
       options.body = formData;
@@ -3890,6 +4187,7 @@
             var answerFallback = String(data.respuesta || data.answer || data.message || 'La IA respondio sin contenido.');
             var extractedFallback = extractPCSActionBlock(answerFallback);
             extractedFallback.meta = normalizeResponseModelMeta(data);
+            extractedFallback.usage = data.usage || null;
             return extractedFallback;
           });
       });
@@ -3910,6 +4208,7 @@
         var answer = String(data.respuesta || data.answer || data.message || 'La IA respondio sin contenido.');
         var extracted = extractPCSActionBlock(answer);
         extracted.meta = normalizeResponseModelMeta(data);
+        extracted.usage = data.usage || null;
         return extracted;
       });
   }
@@ -3976,6 +4275,7 @@
       }
     }).then(function (result) {
       setLastResponseModelMeta(result && result.meta ? result.meta : null);
+      if (result && result.meta) applyResponseUsage(result.meta.model_id, result.usage);
       var answer = result && result.clean ? result.clean : 'Respuesta lista.';
       var hasActions = !!(result && result.proposal && Array.isArray(result.proposal.actions) && result.proposal.actions.length);
       if (hasActions) {
@@ -4548,16 +4848,17 @@
     }).then(function (result) {
       if (requestSeq !== state.activeRequestSeq) return;
       setLastResponseModelMeta(result && result.meta ? result.meta : null);
+      if (result && result.meta) applyResponseUsage(result.meta.model_id, result.usage);
       var hasActions = !!(result && result.proposal && Array.isArray(result.proposal.actions) && result.proposal.actions.length);
       if (liveAssistantMessage && result && result.streamed) {
         finalizeStreamingAssistantMessage(liveAssistantMessage, result.clean, result.proposal);
       } else {
         appendMessage('assistant', result.clean, result && result.document ? 'document' : null, result.proposal, result && result.meta ? result.meta : null);
       }
-      if (!isPublicPortalContext() && !isSuperContext() && looksLikeHotelConfiguration(query)) {
+      if (!isPublicPortalContext() && !isSuperContext() && (looksLikeHotelConfiguration(query) || looksLikeProductCreation(query))) {
         var enterpriseMessages = document.getElementById(MESSAGES_ID);
         if (enterpriseMessages) {
-          enterpriseMessages.appendChild(createEnterpriseHotelForm(query));
+          enterpriseMessages.appendChild(looksLikeHotelConfiguration(query) ? createEnterpriseHotelForm(query) : createEnterpriseProductForm(query));
           scrollChatToBottom();
         }
       }
@@ -4722,6 +5023,7 @@
     document.body.classList.add('ai-chat-drawer-open');
     setChatBackdropVisible(true);
     setChatBodyScrollLock(true);
+    loadChatModels();
     window.setTimeout(function () {
       var inp = document.getElementById(INPUT_ID);
       if (inp) inp.focus();
@@ -4780,11 +5082,13 @@
     var clearAttachBtn = document.getElementById(CLEAR_ATTACHMENT_ID);
     var clearBtn = document.getElementById(CLEAR_CHAT_ID);
     var modeEl = document.getElementById(MODE_ID);
+    var modelEl = document.getElementById(MODEL_ID);
     var input = document.getElementById(INPUT_ID);
 
     if (!toggle || !drawer || !closeBtn || !form || !messagesEl) return;
     var submitBtn = form.querySelector('button[type="submit"]');
     ensureDocumentModeUI();
+    loadChatModels();
 
     toggle.addEventListener('click', function () {
       if (!state.chatEnabled) return;
@@ -4833,7 +5137,19 @@
     if (modeEl) {
       modeEl.addEventListener('change', function () {
         syncModeUI();
+        persistSelectedModel().catch(function () {});
         setNotice('Modo actualizado. Puedes seguir consultando normalmente.');
+      });
+    }
+    var agentEl = document.getElementById(AGENT_ID);
+    if (agentEl) {
+      agentEl.addEventListener('change', function () { persistSelectedModel().catch(function () {}); });
+    }
+    if (modelEl) {
+      modelEl.addEventListener('change', function () {
+        persistSelectedModel().catch(function () {
+          setNotice('No se pudo guardar la preferencia de modelo. Intenta de nuevo.', true);
+        });
       });
     }
     if (hintToggle && hints) {
@@ -4874,9 +5190,9 @@
           setNotice('El archivo supera el maximo permitido de 8 MB.', true);
           return;
         }
-        if (!isImageFileForAI(file)) {
+        if (!isSupportedAttachmentForAI(file)) {
           clearAttachmentSelection();
-          setNotice('GPT-5.5 solo se usa para subir y analizar fotos o imagenes. Para documentos usa el modo Documentos IA.', true);
+          setNotice('Adjunta una imagen, PDF, documento de Office, CSV o texto de hasta 8 MB.', true);
           return;
         }
         state.selectedAttachment = file;
@@ -4928,12 +5244,13 @@
     });
 
     messagesEl.addEventListener('submit', function (event) {
-      var enterpriseForm = event.target && event.target.closest ? event.target.closest('.ai-enterprise-hotel-form') : null;
+      var enterpriseForm = event.target && event.target.closest ? event.target.closest('.ai-enterprise-hotel-form, .ai-enterprise-product-form') : null;
       if (!enterpriseForm) return;
       event.preventDefault();
       var enterpriseButton = enterpriseForm.querySelector('button[type="submit"]');
       if (enterpriseButton) enterpriseButton.disabled = true;
-      requestEnterpriseProposal(enterpriseForm).then(function (data) {
+      var requestProposal = enterpriseForm.classList.contains('ai-enterprise-product-form') ? requestEnterpriseProductProposal : requestEnterpriseProposal;
+      requestProposal(enterpriseForm).then(function (data) {
         if (!data || !data.proposal) throw new Error('No se recibio una propuesta valida.');
         var proposalCard = createEnterpriseProposalCard(data.proposal, data.sources);
         enterpriseForm.closest('.ai-enterprise-card').replaceWith(proposalCard);
@@ -4981,6 +5298,10 @@
       }
       if (data.type === 'pcs-ai-chat-robot-voice-updated') {
         setRobotVoicePreference(data.voice);
+        return;
+      }
+      if (data.type === 'pcs-ai-chat-appearance-updated') {
+        applyChatAppearance(data.theme, data.textSize);
         return;
       }
       if (data.type === 'pcs-ai-config-assistant-start') {

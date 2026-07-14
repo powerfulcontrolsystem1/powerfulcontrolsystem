@@ -1,4 +1,11 @@
 2026-07-10: Super administrador - diagramas tecnicos consolidados.
+
+2026-07-13: API movil POS y facturacion.
+- Modulos afectados: `api_movil`, `ventas`, `carritos`, `pagos`,
+  `facturacion_electronica`, `offline_ventas`, `buzon`.
+- La fachada `/api/v1` normaliza respuestas para Android/iPhone y delega las
+  reglas de negocio al mismo backend de la web. Las mutaciones requieren clave
+  de idempotencia por empresa para resistir reintentos moviles.
 - `Super administrador > Diagramas tecnicos` conserva solamente los 19 accesos de la documentacion tecnica completa: arquitectura, modulos, navegacion, ERD PostgreSQL, UML, procesos, estados, componentes, despliegue, paquetes y flujo de datos.
 - `ERD PostgreSQL completo` abre el catalogo navegable de las 365 tablas extraidas, con atributos, PK, FKs fisicas y relaciones logicas por tabla.
 - El paquete previo de esquemas generales se retira de la navegacion para evitar duplicidad; queda como referencia historica sin presentarse como flujo operativo.
@@ -412,6 +419,12 @@
 - Frontend: el asistente IA del panel empresarial usa solo el recuadro normal;
   los accesos historicos de robot/secretaria se redirigen al drawer para no
   romper ayuda contextual ni configuracion guiada.
+- Presentacion de respuestas: el recuadro interpreta de forma segura titulos y
+  tablas Markdown producidos por el modelo, mostrando indicadores en filas y
+  datos tabulares en columnas. Cada empresa configura tema (`normal`,
+  `corporativo`, `oceano`, `esmeralda` o `vino`) y tamaño (`pequeno`, `mediano`
+  o `grande`) desde `Configuracion > Chat IA`; la preferencia se persiste por
+  empresa mediante `chat_flotante.theme` y `chat_flotante.text_size`.
 - Configuracion: `configuracion_chat_flotante.html` permite activar/desactivar
   IA por empresa, emisora online y modo voz; ya no muestra tarjetas de avatar.
 - Backend: `/api/chat_flotante/preferencias` responde siempre
@@ -4464,3 +4477,68 @@ de productos/SKUs, caja, impuestos, cliente y reglas de facturacion.
 - Configuracion guiada: `no_mostrar_mas` se guarda por empresa y el panel lo persiste con CSRF same-origin.
 - Nextcloud: resuelve `empresa_id` desde contexto validado, aplica cuota global y solo entrega accesos tras activacion y aprovisionamiento.
 - Descargas: documentos empresariales no se exponen por una ruta estatica generica; solo instaladores RustDesk aprobados quedan publicos.
+
+2026-07-13: Orquestador IA empresarial de catalogo
+- El chat mantiene respuestas informativas, pero las mutaciones se preparan y
+  confirman por `/api/empresa/ai/enterprise`, con herramientas tipadas y
+  servidoras. Se implementan consulta de catalogo y propuesta de creacion de
+  producto; hotel conserva su propuesta de configuracion de habitacion.
+- Cada herramienta vuelve a validar empresa, rol, permiso, vencimiento, hash e
+  idempotencia en backend. Los flags por herramienta permanecen apagados hasta
+  una habilitacion controlada y no existen SQL, shell o endpoints arbitrarios.
+## Chat con inteligencia artificial - modelos y adjuntos (2026-07-13)
+
+El chat empresarial permite al usuario autenticado elegir entre los modelos
+habilitados por Super Administrador. Modelo, modo y agente se guardan por usuario; el
+historial, la autorizacion, el contexto y el consumo siguen aislados por
+empresa. El selector muestra uso/restante de la empresa activa y el chat admite
+imagenes, PDF, TXT, CSV, DOCX y XLSX con limite de 8 MB. Super Administrador
+gobierna modelos habilitados y separa el modelo de operaciones del usado para
+adjuntos y analisis avanzado.
+
+- Seguridad de adjuntos: el chat acepta exclusivamente imagenes con firma
+  reconocida, PDF, TXT, CSV, DOCX y XLSX verificables por contenido. No confia
+  en MIME de navegador, rechaza HTML/SVG/ejecutables/ZIP genericos y no expone
+  respuestas internas del proveedor de IA.
+- Operacion empresarial: las solicitudes naturales de crear producto o
+  configurar una habitacion abren una propuesta tipada y confirmable. La
+  ejecucion sigue siendo de servidor, por `empresa_id` validado, permisos,
+  idempotencia, duplicados y auditoria; no se ejecuta ningun bloque producido
+  por el modelo.
+- Super Administrador: se agregan GPT-5.6 Terra y GPT-5.6 Sol junto con Luna;
+  cada modelo expone sus esfuerzos compatibles y puede tener un esfuerzo
+  independiente. El backend valida modelo y esfuerzo antes de persistirlos.
+2026-07-13: IA empresarial propia y API movil v1.
+- Modulos afectados: `ia_empresarial`, `configuracion`, `api_movil`,
+  `autenticacion`, `productos`, `clientes`.
+- La empresa puede habilitar una clave OpenAI propia desde Configuracion > Chat
+  IA > OpenAI propio. La clave se cifra por empresa, no se devuelve por API y
+  evita solamente las cuotas comerciales de PCS para solicitudes OpenAI; se
+  mantienen permisos, aislamiento, auditoria y limites del proveedor.
+- `/api/v1/` inicia el contrato movil aditivo: identidad, sesion de dispositivo,
+  productos y clientes con JSON uniforme, `request_id`, paginacion, filtros y
+  seleccion cerrada de campos. Las rutas web heredadas no se eliminan aun.
+
+2026-07-13: Plan 101 - arquitectura y API movil
+- `api_movil` conserva una fachada versionada sin duplicar reglas de negocio de
+  ventas, inventario, caja y facturacion. Carritos, items y sincronizacion
+  offline movil son mutaciones idempotentes por empresa.
+- `plan_101_arquitectura_modular.md` define limites modulares, criterios de
+  extraccion y gates de escalabilidad/preproduccion.
+2026-07-13: Checkout de licencias por cantidad de períodos
+- Modulos afectados: `licencias`, `pagos`, `checkout_publico`, `super_administrador`.
+- Funcion: el cliente puede pagar entre 1 y el máximo global configurable (5 por defecto) de meses, años u otros períodos de una misma licencia comercial. El resumen recalcula total, descuentos y duración total antes de abrir la pasarela.
+- Seguridad y consistencia: Wompi/Epayco persisten la cantidad en el contexto interno del pago y el webhook activa exactamente los períodos cobrados de forma idempotente; no se acepta cantidad de bundles, adicionales, pruebas o licencias gratuitas.
+
+2026-07-13: Licencias: compra y comprobantes por empresa
+- La pantalla `Licencia del sistema` añade una tarjeta que reutiliza el checkout comercial existente para renovar la licencia base, agregar licencias adicionales o comprar varios períodos según el límite global.
+- El historial muestra únicamente compras Wompi/Epayco filtradas por la empresa activa y ofrece PDF de comprobante. La factura electrónica solo aparece cuando el documento fiscal de la compra fue emitido por Powerful Control System y su relación con la empresa compradora queda verificada.
+- Las descargas no exponen payloads de pasarela, se envían con `Cache-Control: no-store` y `X-Content-Type-Options: nosniff`, y dejan auditoría empresarial.
+
+2026-07-14: Plataforma de procesos y preparacion movil
+- Modulos afectados: `plataforma`, `migraciones`, `procesos_asincronos`,
+  `api_movil`, `infraestructura`.
+- Se separan los roles API, migracion y worker sin modificar los contratos web
+  existentes. La cola durable y outbox quedan preparadas para migrar envios e
+  integraciones sin crear duplicados; cada trabajo empresarial conserva
+  `empresa_id` y no acepta secretos en payload.

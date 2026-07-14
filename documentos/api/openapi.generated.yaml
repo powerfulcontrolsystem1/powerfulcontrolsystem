@@ -709,6 +709,19 @@ paths:
       responses:
         "200":
           description: Respuesta exitosa o manejada por el handler real.
+  "/api/empresa/configuracion_ia_propia":
+    get:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/configuracion_ia_propia
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/configuracion_ia_propia
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
   "/api/empresa/configuracion_operativa":
     get:
       tags: [empresa]
@@ -1564,6 +1577,19 @@ paths:
     post:
       tags: [empresa]
       summary: Ruta inventariada /api/empresa/licencia_sistema/pdf
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/api/empresa/licencias/comprobantes":
+    get:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/licencias/comprobantes
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/licencias/comprobantes
       responses:
         "200":
           description: Respuesta exitosa o manejada por el handler real.
@@ -2695,6 +2721,45 @@ paths:
     post:
       tags: [publico]
       summary: Ruta inventariada /api/public/webrtc/signaling
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/api/selector/chat_con_ia/consultar":
+    get:
+      tags: [publico]
+      summary: Ruta inventariada /api/selector/chat_con_ia/consultar
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [publico]
+      summary: Ruta inventariada /api/selector/chat_con_ia/consultar
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/api/selector/chat_con_ia/modelo_preferido":
+    get:
+      tags: [publico]
+      summary: Ruta inventariada /api/selector/chat_con_ia/modelo_preferido
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [publico]
+      summary: Ruta inventariada /api/selector/chat_con_ia/modelo_preferido
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/api/selector/chat_con_ia/modelos":
+    get:
+      tags: [publico]
+      summary: Ruta inventariada /api/selector/chat_con_ia/modelos
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [publico]
+      summary: Ruta inventariada /api/selector/chat_con_ia/modelos
       responses:
         "200":
           description: Respuesta exitosa o manejada por el handler real.

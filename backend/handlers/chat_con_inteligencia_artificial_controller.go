@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"archive/zip"
 	"bufio"
 	"bytes"
 	"database/sql"
@@ -16,6 +17,7 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
+	"unicode/utf8"
 
 	dbpkg "github.com/you/pos-backend/db"
 )
@@ -148,24 +150,25 @@ type aiProviderHTTPError struct {
 }
 
 func (e *aiProviderHTTPError) Error() string {
-	body := strings.TrimSpace(e.Body)
-	if body == "" {
-		return fmt.Sprintf("error proveedor %s (%d)", strings.TrimSpace(e.Provider), e.Status)
-	}
-	return fmt.Sprintf("error proveedor %s (%d): %s", strings.TrimSpace(e.Provider), e.Status, body)
+	// Provider response bodies may contain request metadata. Keep them available
+	// only for controlled diagnostics and never expose them through Error().
+	return fmt.Sprintf("error proveedor %s (%d)", strings.TrimSpace(e.Provider), e.Status)
 }
 
 type empresaAIModelDef struct {
-	ID             string `json:"id"`
-	Provider       string `json:"provider"`
-	DisplayName    string `json:"display_name"`
-	UpstreamModel  string `json:"upstream_model"`
-	Endpoint       string `json:"endpoint"`
-	ApiKeyEnv      string `json:"-"`
-	Famous         bool   `json:"famous"`
-	FreeDailyLimit int    `json:"free_daily_limit"`
-	Description    string `json:"description"`
-	PlanURL        string `json:"plan_url"`
+	ID                     string   `json:"id"`
+	Provider               string   `json:"provider"`
+	DisplayName            string   `json:"display_name"`
+	UpstreamModel          string   `json:"upstream_model"`
+	Endpoint               string   `json:"endpoint"`
+	ApiKeyEnv              string   `json:"-"`
+	Famous                 bool     `json:"famous"`
+	FreeDailyLimit         int      `json:"free_daily_limit"`
+	Description            string   `json:"description"`
+	PlanURL                string   `json:"plan_url"`
+	ReasoningEfforts       []string `json:"reasoning_efforts,omitempty"`
+	DefaultReasoningEffort string   `json:"default_reasoning_effort,omitempty"`
+	apiKeyOverride         string   `json:"-"`
 }
 
 type empresaAIChatMensaje struct {
@@ -191,8 +194,10 @@ type aiAttachment struct {
 }
 
 type empresaAIModeloPreferidoPayload struct {
-	EmpresaID int64  `json:"empresa_id"`
-	ModelID   string `json:"model_id"`
+	EmpresaID     int64  `json:"empresa_id"`
+	ModelID       string `json:"model_id"`
+	ModoAsistente string `json:"modo_asistente"`
+	AgentID       string `json:"agent_id"`
 }
 
 func NewEmpresaAIChatController(dbEmp, dbSuper *sql.DB) *EmpresaAIChatController {
@@ -239,40 +244,84 @@ func (c *EmpresaAIChatController) contextoPreguntaOptionsForAccount(empresaID in
 func empresaAIModelCatalog() []empresaAIModelDef {
 	return []empresaAIModelDef{
 		{
-			ID:             "openai:gpt-5.4-mini",
-			Provider:       "openai",
-			DisplayName:    "OpenAI GPT-5.4 mini",
-			UpstreamModel:  "gpt-5.4-mini",
-			Endpoint:       "https://api.openai.com/v1/chat/completions",
-			ApiKeyEnv:      "OPENAI_API_KEY",
-			Famous:         true,
-			FreeDailyLimit: 120,
-			Description:    "Chat empresarial con OpenAI, restringido por empresa_id y con API key cifrada en el panel super.",
+			ID:               "openai:gpt-5.4-mini",
+			Provider:         "openai",
+			DisplayName:      "OpenAI GPT-5.4 mini",
+			UpstreamModel:    "gpt-5.4-mini",
+			Endpoint:         "https://api.openai.com/v1/chat/completions",
+			ApiKeyEnv:        "OPENAI_API_KEY",
+			Famous:           true,
+			FreeDailyLimit:   120,
+			Description:      "Chat empresarial con OpenAI, restringido por empresa_id y con API key cifrada en el panel super.",
+			ReasoningEfforts: []string{"none"}, DefaultReasoningEffort: "none",
 		},
 		{
-			ID:             "openai:gpt-5.5",
-			Provider:       "openai",
-			DisplayName:    "OpenAI GPT-5.5 (vision/fotos)",
-			UpstreamModel:  "gpt-5.5",
-			Endpoint:       "https://api.openai.com/v1/responses",
-			ApiKeyEnv:      "OPENAI_API_KEY",
-			Famous:         true,
-			FreeDailyLimit: 20,
-			Description:    "Analisis de fotos e imagenes con OpenAI. Los documentos de texto se generan con GPT-5.4 mini.",
+			ID:               "openai:gpt-5.5",
+			Provider:         "openai",
+			DisplayName:      "OpenAI GPT-5.5 (vision/fotos)",
+			UpstreamModel:    "gpt-5.5",
+			Endpoint:         "https://api.openai.com/v1/responses",
+			ApiKeyEnv:        "OPENAI_API_KEY",
+			Famous:           true,
+			FreeDailyLimit:   20,
+			Description:      "Analisis de fotos, documentos e imagenes con OpenAI. Puede mantenerse como alternativa compatible desde Super Administrador.",
+			ReasoningEfforts: []string{"none", "low", "medium", "high", "xhigh"}, DefaultReasoningEffort: "medium",
+		},
+		{
+			ID:               "openai:gpt-5.6-luna",
+			Provider:         "openai",
+			DisplayName:      "OpenAI GPT-5.6 Luna",
+			UpstreamModel:    "gpt-5.6-luna",
+			Endpoint:         "https://api.openai.com/v1/responses",
+			ApiKeyEnv:        "OPENAI_API_KEY",
+			Famous:           true,
+			FreeDailyLimit:   20,
+			Description:      "Modelo avanzado configurable para analisis de fotos, documentos y tareas complejas. Activelo solo despues de validarlo con la cuenta OpenAI.",
+			ReasoningEfforts: []string{"none", "low", "medium", "high", "xhigh", "max"}, DefaultReasoningEffort: "low",
+		},
+		{
+			ID: "openai:gpt-5.6-terra", Provider: "openai", DisplayName: "OpenAI GPT-5.6 Terra", UpstreamModel: "gpt-5.6-terra", Endpoint: "https://api.openai.com/v1/responses", ApiKeyEnv: "OPENAI_API_KEY", Famous: true, FreeDailyLimit: 20,
+			Description: "Modelo profesional equilibrado para operaciones y analisis con IA.", ReasoningEfforts: []string{"none", "low", "medium", "high", "xhigh", "max"}, DefaultReasoningEffort: "medium",
+		},
+		{
+			ID: "openai:gpt-5.6-sol", Provider: "openai", DisplayName: "OpenAI GPT-5.6 Sol", UpstreamModel: "gpt-5.6-sol", Endpoint: "https://api.openai.com/v1/responses", ApiKeyEnv: "OPENAI_API_KEY", Famous: true, FreeDailyLimit: 10,
+			Description: "Modelo de mayor capacidad para tareas complejas y razonamiento profesional.", ReasoningEfforts: []string{"none", "low", "medium", "high", "xhigh", "max"}, DefaultReasoningEffort: "high",
 		},
 	}
 }
 
 func availableEmpresaAIModelCatalog(dbSuper *sql.DB) []empresaAIModelDef {
 	catalog := empresaAIModelCatalog()
+	enabledModels, _ := getChatIAEmpresaModelosHabilitados(dbSuper)
 	available := make([]empresaAIModelDef, 0, len(catalog))
 	for _, item := range catalog {
 		if !isAIProviderEnabled(dbSuper, item.Provider) {
 			continue
 		}
+		if len(enabledModels) > 0 && !enabledModels[item.ID] {
+			continue
+		}
 		available = append(available, item)
 	}
 	return available
+}
+
+func configuredAIReasoningEffort(dbSuper *sql.DB, model empresaAIModelDef) string {
+	efforts := defaultChatIAEmpresaModelosEsfuerzo()
+	if dbSuper != nil {
+		stored, _ := getChatIAEmpresaModelosEsfuerzo(dbSuper)
+		efforts = stored
+	}
+	candidate := strings.TrimSpace(efforts[model.ID])
+	for _, allowed := range model.ReasoningEfforts {
+		if candidate == allowed {
+			return candidate
+		}
+	}
+	if strings.TrimSpace(model.DefaultReasoningEffort) != "" {
+		return model.DefaultReasoningEffort
+	}
+	return "none"
 }
 
 func empresaAIModelMap() map[string]empresaAIModelDef {
@@ -296,6 +345,12 @@ func availableEmpresaAIModelMap(dbSuper *sql.DB) map[string]empresaAIModelDef {
 }
 
 func firstAvailableEmpresaAIModelID(dbSuper *sql.DB) string {
+	preferred, _, _, err := getChatIAEmpresaModeloOperacion(dbSuper)
+	if err == nil {
+		if _, ok := availableEmpresaAIModelMap(dbSuper)[preferred]; ok {
+			return preferred
+		}
+	}
 	catalog := availableEmpresaAIModelCatalog(dbSuper)
 	if len(catalog) == 0 {
 		return ""
@@ -384,10 +439,16 @@ func (c *EmpresaAIChatController) ModelosHandler(w http.ResponseWriter, r *http.
 		return
 	}
 
-	modeloPreferido, err := dbpkg.GetEmpresaAIModeloPreferido(c.dbEmp, empresaID, googleAccount)
+	userPrefs, err := dbpkg.GetEmpresaAIUsuarioPreferencias(c.dbEmp, googleAccount)
 	if err != nil {
 		http.Error(w, "No se pudo consultar el modelo preferido", http.StatusInternalServerError)
 		return
+	}
+	modeloPreferido := userPrefs.ModelID
+	if modeloPreferido == "" {
+		// Compatibilidad de transicion: una preferencia heredada solo sirve como
+		// valor inicial. Toda seleccion nueva se guarda por usuario.
+		modeloPreferido, _ = dbpkg.GetEmpresaAIModeloPreferido(c.dbEmp, empresaID, googleAccount)
 	}
 
 	catalog := availableEmpresaAIModelCatalog(c.dbSuper)
@@ -405,8 +466,21 @@ func (c *EmpresaAIChatController) ModelosHandler(w http.ResponseWriter, r *http.
 		modeloPreferido = firstAvailableEmpresaAIModelID(c.dbSuper)
 	}
 
+	empresaMaxConsultas, _, _, _ := getChatIAEmpresaMaxConsultasDia(c.dbSuper)
+	usaOpenAIPropio := companyOwnOpenAIEnabled(c.dbEmp, empresaID)
+	fechaUso := time.Now().Format("2006-01-02")
 	items := make([]map[string]interface{}, 0, len(catalog))
 	for _, it := range catalog {
+		usage, _ := dbpkg.GetEmpresaAIUsoDiario(c.dbEmp, empresaID, it.Provider, it.ID, fechaUso)
+		limit := effectiveDailyLimitBySuperConfig(empresaMaxConsultas, it.FreeDailyLimit)
+		remaining := limit - usage.Consultas
+		if remaining < 0 {
+			remaining = 0
+		}
+		if usaOpenAIPropio && strings.EqualFold(it.Provider, "openai") {
+			limit = -1
+			remaining = -1
+		}
 		items = append(items, map[string]interface{}{
 			"id":               it.ID,
 			"provider":         it.Provider,
@@ -416,20 +490,24 @@ func (c *EmpresaAIChatController) ModelosHandler(w http.ResponseWriter, r *http.
 			"free_daily_limit": it.FreeDailyLimit,
 			"description":      it.Description,
 			"plan_url":         it.PlanURL + "?empresa_id=" + fmt.Sprintf("%d", empresaID),
+			"usage":            map[string]interface{}{"daily_used": usage.Consultas, "daily_limit": limit, "daily_remaining": remaining, "unlimited_by_own_key": usaOpenAIPropio && strings.EqualFold(it.Provider, "openai")},
 		})
 	}
 
 	streamingEnabled, _, _, _ := getChatIAEmpresaStreamingEnabled(c.dbSuper)
 
 	writeJSON(w, http.StatusOK, map[string]interface{}{
-		"ok":                true,
-		"empresa_id":        empresaID,
-		"google_account":    googleAccount,
-		"modelo_preferido":  modeloPreferido,
-		"streaming_enabled": streamingEnabled,
-		"agentes":           empresaAIChatAgentCatalog(),
-		"agent_preferido":   "general",
-		"modelos":           items,
+		"ok":                   true,
+		"empresa_id":           empresaID,
+		"google_account":       googleAccount,
+		"modelo_preferido":     modeloPreferido,
+		"streaming_enabled":    streamingEnabled,
+		"agentes":              empresaAIChatAgentCatalog(),
+		"agent_preferido":      normalizeEmpresaAIChatAgentID(userPrefs.AgentID),
+		"modo_preferido":       normalizeAIAssistantMode(userPrefs.ModoAsistente),
+		"preference_scope":     "usuario",
+		"openai_propio_activo": usaOpenAIPropio,
+		"modelos":              items,
 	})
 }
 
@@ -461,17 +539,23 @@ func (c *EmpresaAIChatController) ModeloPreferidoHandler(w http.ResponseWriter, 
 			return
 		}
 
-		modelID, err := dbpkg.GetEmpresaAIModeloPreferido(c.dbEmp, empresaID, googleAccount)
+		userPrefs, err := dbpkg.GetEmpresaAIUsuarioPreferencias(c.dbEmp, googleAccount)
 		if err != nil {
 			http.Error(w, "No se pudo consultar el modelo preferido", http.StatusInternalServerError)
 			return
 		}
+		if userPrefs.ModelID == "" {
+			userPrefs.ModelID, _ = dbpkg.GetEmpresaAIModeloPreferido(c.dbEmp, empresaID, googleAccount)
+		}
 
 		writeJSON(w, http.StatusOK, map[string]interface{}{
-			"ok":             true,
-			"empresa_id":     empresaID,
-			"google_account": googleAccount,
-			"model_id":       modelID,
+			"ok":               true,
+			"empresa_id":       empresaID,
+			"google_account":   googleAccount,
+			"model_id":         userPrefs.ModelID,
+			"modo_asistente":   userPrefs.ModoAsistente,
+			"agent_id":         userPrefs.AgentID,
+			"preference_scope": "usuario",
 		})
 		return
 
@@ -521,17 +605,33 @@ func (c *EmpresaAIChatController) ModeloPreferidoHandler(w http.ResponseWriter, 
 			return
 		}
 
-		if err := dbpkg.UpsertEmpresaAIModeloPreferido(c.dbEmp, payload.EmpresaID, googleAccount, payload.ModelID, googleAccount); err != nil {
+		currentPrefs, err := dbpkg.GetEmpresaAIUsuarioPreferencias(c.dbEmp, googleAccount)
+		if err != nil {
+			http.Error(w, "No se pudo consultar la preferencia de usuario", http.StatusInternalServerError)
+			return
+		}
+		if strings.TrimSpace(payload.ModoAsistente) == "" {
+			payload.ModoAsistente = currentPrefs.ModoAsistente
+		}
+		if strings.TrimSpace(payload.AgentID) == "" {
+			payload.AgentID = currentPrefs.AgentID
+		}
+		payload.ModoAsistente = normalizeAIAssistantMode(payload.ModoAsistente)
+		payload.AgentID = normalizeEmpresaAIChatAgentID(payload.AgentID)
+		if err := dbpkg.UpsertEmpresaAIUsuarioPreferencias(c.dbEmp, googleAccount, payload.ModelID, payload.ModoAsistente, payload.AgentID, googleAccount); err != nil {
 			http.Error(w, "No se pudo registrar el modelo preferido", http.StatusInternalServerError)
 			return
 		}
 
 		writeJSON(w, http.StatusOK, map[string]interface{}{
-			"ok":             true,
-			"empresa_id":     payload.EmpresaID,
-			"google_account": googleAccount,
-			"model_id":       payload.ModelID,
-			"saved":          true,
+			"ok":               true,
+			"empresa_id":       payload.EmpresaID,
+			"google_account":   googleAccount,
+			"model_id":         payload.ModelID,
+			"modo_asistente":   payload.ModoAsistente,
+			"agent_id":         payload.AgentID,
+			"preference_scope": "usuario",
+			"saved":            true,
 		})
 		return
 	}
@@ -597,6 +697,11 @@ func (c *EmpresaAIChatController) ConsultarHandler(w http.ResponseWriter, r *htt
 		http.Error(w, "model_id no soportado o desactivado", http.StatusBadRequest)
 		return
 	}
+	model, usaOpenAIPropio, err := c.modelForEmpresaProvider(payload.EmpresaID, model)
+	if err != nil {
+		http.Error(w, "No se pudo preparar el proveedor IA propio de la empresa", http.StatusServiceUnavailable)
+		return
+	}
 
 	payload.Pregunta = strings.TrimSpace(payload.Pregunta)
 	if payload.Pregunta == "" {
@@ -625,6 +730,9 @@ func (c *EmpresaAIChatController) ConsultarHandler(w http.ResponseWriter, r *htt
 	if planActual == "" {
 		planActual = "free"
 	}
+	if usaOpenAIPropio {
+		planActual = "openai_propio"
+	}
 
 	empresaChatEnabled, _, _, err := getChatIAEmpresaEnabled(c.dbSuper)
 	if err != nil {
@@ -646,7 +754,7 @@ func (c *EmpresaAIChatController) ConsultarHandler(w http.ResponseWriter, r *htt
 		return
 	}
 	effectiveLimit := effectiveDailyLimitBySuperConfig(empresaMaxConsultas, model.FreeDailyLimit)
-	if effectiveLimit == 0 {
+	if !usaOpenAIPropio && effectiveLimit == 0 {
 		writeJSON(w, http.StatusTooManyRequests, map[string]interface{}{
 			"ok":    false,
 			"code":  "ai_empresa_chat_blocked",
@@ -655,7 +763,7 @@ func (c *EmpresaAIChatController) ConsultarHandler(w http.ResponseWriter, r *htt
 		return
 	}
 
-	if usoActual.Consultas >= effectiveLimit {
+	if !usaOpenAIPropio && usoActual.Consultas >= effectiveLimit {
 		c.writeLimitReached(w, payload.EmpresaID, model, usoActual.Consultas)
 		return
 	}
@@ -685,7 +793,7 @@ func (c *EmpresaAIChatController) ConsultarHandler(w http.ResponseWriter, r *htt
 		systemPrompt += "\n\n" + buildEmpresaAIChatAgentInstruction(payload.AgentID)
 		respuesta, promptTokens, completionTokens, err = c.generateResponseWithSystemPrompt(model, payload.Pregunta, payload.Historial, systemPrompt)
 		if err != nil {
-			if isProviderLimitError(err) {
+			if isProviderLimitError(err) && !usaOpenAIPropio {
 				c.writeLimitReached(w, payload.EmpresaID, model, usoActual.Consultas)
 				return
 			}
@@ -713,8 +821,8 @@ func (c *EmpresaAIChatController) ConsultarHandler(w http.ResponseWriter, r *htt
 	}
 
 	adminEmail := googleAccount
-	if err := dbpkg.UpsertEmpresaAIModeloPreferido(c.dbEmp, payload.EmpresaID, adminEmail, model.ID, adminEmail); err != nil {
-		http.Error(w, "No se pudo registrar modelo para la cuenta de Google", http.StatusInternalServerError)
+	if err := dbpkg.UpsertEmpresaAIUsuarioPreferencias(c.dbEmp, adminEmail, model.ID, payload.ModoAsistente, payload.AgentID, adminEmail); err != nil {
+		http.Error(w, "No se pudo registrar la preferencia de modelo del usuario", http.StatusInternalServerError)
 		return
 	}
 	_, err = dbpkg.RegisterEmpresaAIConsulta(c.dbEmp, dbpkg.EmpresaAIConsulta{
@@ -746,6 +854,10 @@ func (c *EmpresaAIChatController) ConsultarHandler(w http.ResponseWriter, r *htt
 	if restante < 0 {
 		restante = 0
 	}
+	if usaOpenAIPropio {
+		effectiveLimit = -1
+		restante = -1
+	}
 
 	writeJSON(w, http.StatusOK, map[string]interface{}{
 		"ok":                       true,
@@ -759,12 +871,13 @@ func (c *EmpresaAIChatController) ConsultarHandler(w http.ResponseWriter, r *htt
 		"agent_id":                 payload.AgentID,
 		"respuesta":                respuesta,
 		"usage": map[string]interface{}{
-			"plan":              planActual,
-			"daily_used":        usoActualizado.Consultas,
-			"daily_limit":       effectiveLimit,
-			"daily_remaining":   restante,
-			"prompt_tokens":     promptTokens,
-			"completion_tokens": completionTokens,
+			"plan":                 planActual,
+			"daily_used":           usoActualizado.Consultas,
+			"daily_limit":          effectiveLimit,
+			"daily_remaining":      restante,
+			"prompt_tokens":        promptTokens,
+			"completion_tokens":    completionTokens,
+			"unlimited_by_own_key": usaOpenAIPropio,
 		},
 		"scope": map[string]interface{}{
 			"restricted_by_empresa_id": true,
@@ -773,8 +886,8 @@ func (c *EmpresaAIChatController) ConsultarHandler(w http.ResponseWriter, r *htt
 	})
 }
 
-// ConsultarConAdjuntoHandler permite consultas con fotos/imagenes usando GPT-5.5.
-// Este endpoint esta pensado para consultas diarias configurables por empresa usando GPT-5.5.
+// ConsultarConAdjuntoHandler procesa adjuntos con el modelo avanzado configurado
+// por Super Administrador. El cliente nunca decide un modelo deshabilitado.
 func (c *EmpresaAIChatController) ConsultarConAdjuntoHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "Metodo no permitido", http.StatusMethodNotAllowed)
@@ -794,15 +907,15 @@ func (c *EmpresaAIChatController) ConsultarConAdjuntoHandler(w http.ResponseWrit
 	// - empresa_id
 	// - pregunta
 	// - historial (json)
-	// - use_gpt55 (1/true)
+	// - model_id (opcional; debe estar habilitado)
 	// - file (opcional)
 	att, err := parseSingleAttachmentFromMultipart(r, "file", 8<<20)
 	if err != nil {
-		http.Error(w, "adjunto inválido: "+err.Error(), http.StatusBadRequest)
+		http.Error(w, "No se pudo procesar el adjunto. Verifica el archivo e intenta de nuevo.", http.StatusBadRequest)
 		return
 	}
-	if att == nil || !isImageAIAttachment(att) {
-		http.Error(w, "GPT-5.5 solo esta habilitado para subir y analizar fotos o imagenes. Para documentos de texto usa el modo Documentos IA con GPT-5.4 mini.", http.StatusBadRequest)
+	if att == nil || !isSupportedAIAttachment(att) {
+		http.Error(w, "Adjunta una imagen, PDF, documento de Office, CSV o texto de hasta 8 MB.", http.StatusBadRequest)
 		return
 	}
 
@@ -828,16 +941,6 @@ func (c *EmpresaAIChatController) ConsultarConAdjuntoHandler(w http.ResponseWrit
 	}
 	paginaContexto := strings.TrimSpace(r.FormValue("pagina_contexto"))
 	modoAsistente := normalizeAIAssistantMode(r.FormValue("modo_asistente"))
-
-	useGPT55 := queryBool(r, "use_gpt55") || queryBool(r, "gpt55") || queryBool(r, "premium")
-	if v := strings.TrimSpace(strings.ToLower(r.FormValue("use_gpt55"))); v == "1" || v == "true" || v == "si" || v == "sí" {
-		useGPT55 = true
-	}
-	useGPT55 = true
-	if !useGPT55 {
-		http.Error(w, "Debe adjuntar un archivo o activar use_gpt55=1", http.StatusBadRequest)
-		return
-	}
 
 	googleAccount := googleAccountFromRequest(r)
 	if googleAccount == "" {
@@ -870,28 +973,36 @@ func (c *EmpresaAIChatController) ConsultarConAdjuntoHandler(w http.ResponseWrit
 		return
 	}
 
-	// Enforce GPT-5.5 daily limit (configurable)
+	// El limite avanzado es independiente del limite de chat de texto.
 	maxGPT55, _, _, err := getChatIAEmpresaMaxGPT55ConsultasDia(c.dbSuper)
 	if err != nil {
 		http.Error(w, "No se pudo consultar límite GPT-5.5", http.StatusInternalServerError)
 		return
 	}
-	if maxGPT55 == 0 {
-		writeJSON(w, http.StatusTooManyRequests, map[string]interface{}{
-			"ok":    false,
-			"code":  "ai_empresa_gpt55_blocked",
-			"error": "Las consultas con GPT-5.5 están bloqueadas para empresas (límite en 0).",
-		})
-		return
-	}
-
 	catalog := availableEmpresaAIModelMap(c.dbSuper)
-	model, ok := catalog["openai:gpt-5.5"]
+	modelID := strings.TrimSpace(r.FormValue("model_id"))
+	if modelID == "" {
+		modelID, _, _, _ = getChatIAEmpresaModeloAdjuntos(c.dbSuper)
+	}
+	model, ok := catalog[modelID]
 	if !ok {
 		writeJSON(w, http.StatusServiceUnavailable, map[string]interface{}{
 			"ok":    false,
-			"code":  "ai_gpt55_unavailable",
-			"error": "GPT-5.5 no está disponible o el proveedor OpenAI está deshabilitado.",
+			"code":  "ai_advanced_model_unavailable",
+			"error": "El modelo avanzado configurado no está disponible o está deshabilitado.",
+		})
+		return
+	}
+	model, usaOpenAIPropio, err := c.modelForEmpresaProvider(empresaID, model)
+	if err != nil {
+		http.Error(w, "No se pudo preparar el proveedor IA propio de la empresa", http.StatusServiceUnavailable)
+		return
+	}
+	if !usaOpenAIPropio && maxGPT55 == 0 {
+		writeJSON(w, http.StatusTooManyRequests, map[string]interface{}{
+			"ok":    false,
+			"code":  "ai_empresa_advanced_blocked",
+			"error": "Las consultas avanzadas con adjuntos están bloqueadas para empresas (límite en 0).",
 		})
 		return
 	}
@@ -902,11 +1013,11 @@ func (c *EmpresaAIChatController) ConsultarConAdjuntoHandler(w http.ResponseWrit
 		http.Error(w, "No se pudo consultar uso diario", http.StatusInternalServerError)
 		return
 	}
-	if usoActual.Consultas >= maxGPT55 {
+	if !usaOpenAIPropio && usoActual.Consultas >= maxGPT55 {
 		writeJSON(w, http.StatusTooManyRequests, map[string]interface{}{
 			"ok":    false,
-			"code":  "ai_empresa_gpt55_limit_reached",
-			"error": "Se alcanzó el límite diario de consultas con GPT-5.5 para esta empresa. Intenta mañana o solicita ampliar el límite en Super Administrador.",
+			"code":  "ai_empresa_advanced_limit_reached",
+			"error": "Se alcanzó el límite diario de consultas avanzadas para esta empresa. Intenta mañana o solicita ampliar el límite en Super Administrador.",
 			"usage": map[string]interface{}{
 				"daily_used":      usoActual.Consultas,
 				"daily_limit":     maxGPT55,
@@ -932,7 +1043,7 @@ func (c *EmpresaAIChatController) ConsultarConAdjuntoHandler(w http.ResponseWrit
 	systemPrompt += "\n\n" + buildEmpresaAIChatAgentInstruction(agentID)
 	respuesta, promptTokens, completionTokens, err := c.generateResponseWithSystemPromptAndAttachment(model, preguntaFinal, historial, systemPrompt, att)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadGateway)
+		http.Error(w, publicAIProviderError(err), http.StatusBadGateway)
 		return
 	}
 	respuesta = strings.TrimSpace(respuesta)
@@ -949,6 +1060,9 @@ func (c *EmpresaAIChatController) ConsultarConAdjuntoHandler(w http.ResponseWrit
 	if planActual == "" {
 		planActual = "free"
 	}
+	if usaOpenAIPropio {
+		planActual = "openai_propio"
+	}
 	adminEmail := googleAccount
 	_, err = dbpkg.RegisterEmpresaAIConsulta(c.dbEmp, dbpkg.EmpresaAIConsulta{
 		EmpresaID:        empresaID,
@@ -963,7 +1077,7 @@ func (c *EmpresaAIChatController) ConsultarConAdjuntoHandler(w http.ResponseWrit
 		PlanActual:       planActual,
 		UsuarioCreador:   adminEmail,
 		Estado:           "activo",
-		Observaciones:    "consulta con adjunto/gpt55 desde chat_con_inteligencia_artificial agente=" + agentID,
+		Observaciones:    "consulta con adjunto desde chat_con_inteligencia_artificial agente=" + agentID,
 	})
 	if err != nil {
 		http.Error(w, "No se pudo registrar auditoria de consulta", http.StatusInternalServerError)
@@ -974,6 +1088,10 @@ func (c *EmpresaAIChatController) ConsultarConAdjuntoHandler(w http.ResponseWrit
 	restante := maxGPT55 - usoActualizado.Consultas
 	if restante < 0 {
 		restante = 0
+	}
+	if usaOpenAIPropio {
+		maxGPT55 = -1
+		restante = -1
 	}
 
 	writeJSON(w, http.StatusOK, map[string]interface{}{
@@ -986,12 +1104,13 @@ func (c *EmpresaAIChatController) ConsultarConAdjuntoHandler(w http.ResponseWrit
 		"agent_id":       agentID,
 		"respuesta":      respuesta,
 		"usage": map[string]interface{}{
-			"plan":              planActual,
-			"daily_used":        usoActualizado.Consultas,
-			"daily_limit":       maxGPT55,
-			"daily_remaining":   restante,
-			"prompt_tokens":     promptTokens,
-			"completion_tokens": completionTokens,
+			"plan":                 planActual,
+			"daily_used":           usoActualizado.Consultas,
+			"daily_limit":          maxGPT55,
+			"daily_remaining":      restante,
+			"prompt_tokens":        promptTokens,
+			"completion_tokens":    completionTokens,
+			"unlimited_by_own_key": usaOpenAIPropio,
 		},
 	})
 }
@@ -1067,6 +1186,11 @@ func (c *EmpresaAIChatController) ConsultarStreamHandler(w http.ResponseWriter, 
 		http.Error(w, "model_id no soportado o desactivado", http.StatusBadRequest)
 		return
 	}
+	model, usaOpenAIPropio, err := c.modelForEmpresaProvider(payload.EmpresaID, model)
+	if err != nil {
+		http.Error(w, "No se pudo preparar el proveedor IA propio de la empresa", http.StatusServiceUnavailable)
+		return
+	}
 	// Solo streaming para chat/completions.
 	if !strings.Contains(strings.ToLower(model.Endpoint), "/v1/chat/completions") {
 		http.Error(w, "modelo no soporta streaming", http.StatusBadRequest)
@@ -1085,7 +1209,7 @@ func (c *EmpresaAIChatController) ConsultarStreamHandler(w http.ResponseWriter, 
 		return
 	}
 	effectiveLimit := effectiveDailyLimitBySuperConfig(empresaMaxConsultas, model.FreeDailyLimit)
-	if effectiveLimit == 0 || usoActual.Consultas >= effectiveLimit {
+	if !usaOpenAIPropio && (effectiveLimit == 0 || usoActual.Consultas >= effectiveLimit) {
 		w.Header().Set("Content-Type", "text/event-stream; charset=utf-8")
 		w.Header().Set("Cache-Control", "no-cache")
 		_ = sseWriteJSON(w, openAIStreamEvent{Error: "Límite de uso alcanzado."})
@@ -1171,6 +1295,9 @@ func (c *EmpresaAIChatController) ConsultarStreamHandler(w http.ResponseWriter, 
 	planActual := strings.ToLower(strings.TrimSpace(usoActual.PlanActual))
 	if planActual == "" {
 		planActual = "free"
+	}
+	if usaOpenAIPropio {
+		planActual = "openai_propio"
 	}
 	// Registrar consulta (tokens desconocidos en streaming → 0).
 	_, _ = dbpkg.RegisterEmpresaAIConsulta(c.dbEmp, dbpkg.EmpresaAIConsulta{
@@ -1281,6 +1408,30 @@ func (c *EmpresaAIChatController) writeLimitReached(w http.ResponseWriter, empre
 	})
 }
 
+// modelForEmpresaProvider resolves an optional customer-owned OpenAI key after
+// the caller has already validated the authenticated company scope. The key is
+// held only in memory for this outbound request and is never put in a response
+// or log line.
+func (c *EmpresaAIChatController) modelForEmpresaProvider(empresaID int64, model empresaAIModelDef) (empresaAIModelDef, bool, error) {
+	if !strings.EqualFold(strings.TrimSpace(model.Provider), "openai") {
+		return model, false, nil
+	}
+	key, enabled, err := dbpkg.GetEmpresaAIOpenAIProviderKey(c.dbEmp, empresaID)
+	if err != nil {
+		return model, false, err
+	}
+	if !enabled {
+		return model, false, nil
+	}
+	model.apiKeyOverride = key
+	return model, true, nil
+}
+
+func companyOwnOpenAIEnabled(dbEmp *sql.DB, empresaID int64) bool {
+	cfg, err := dbpkg.GetEmpresaAIOpenAIProviderConfig(dbEmp, empresaID)
+	return err == nil && cfg.Habilitado && cfg.ClaveCargada
+}
+
 func (c *EmpresaAIChatController) generateResponse(model empresaAIModelDef, pregunta string, historial []empresaAIChatMensaje, contexto string) (string, int64, int64, error) {
 	systemPrompt := buildEmpresaAISystemPrompt(contexto, "operativo")
 	return c.generateResponseWithSystemPrompt(model, pregunta, historial, systemPrompt)
@@ -1361,9 +1512,11 @@ func (c *EmpresaAIChatController) callOpenAIResponsesWithSystemPrompt(model empr
 	}
 	messages = append(messages, inMsg{Role: "user", Content: parts})
 
+	reasoning := map[string]string{"effort": configuredAIReasoningEffort(c.dbSuper, model)}
 	body := map[string]interface{}{
-		"model": strings.TrimSpace(model.UpstreamModel),
-		"input": messages,
+		"model":     strings.TrimSpace(model.UpstreamModel),
+		"input":     messages,
+		"reasoning": reasoning,
 	}
 	payload, _ := json.Marshal(body)
 
@@ -1457,20 +1610,113 @@ func parseSingleAttachmentFromMultipart(r *http.Request, field string, maxBytes 
 }
 
 func isImageAIAttachment(att *aiAttachment) bool {
-	if att == nil {
+	return strings.HasPrefix(detectedAIAttachmentMIME(att), "image/")
+}
+
+func isSupportedAIAttachment(att *aiAttachment) bool {
+	if att == nil || len(att.Bytes) == 0 || strings.TrimSpace(att.Filename) == "" {
 		return false
 	}
-	mt := strings.ToLower(strings.TrimSpace(att.MimeType))
-	if strings.HasPrefix(mt, "image/") {
+	if detected := detectedAIAttachmentMIME(att); strings.HasPrefix(detected, "image/") {
+		att.MimeType = detected
 		return true
 	}
 	ext := strings.ToLower(strings.TrimSpace(filepath.Ext(att.Filename)))
 	switch ext {
-	case ".jpg", ".jpeg", ".png", ".webp", ".gif", ".bmp", ".heic", ".heif":
-		return true
+	case ".pdf":
+		if bytes.HasPrefix(att.Bytes, []byte("%PDF-")) {
+			att.MimeType = "application/pdf"
+			return true
+		}
+	case ".txt", ".csv":
+		if isSafeUTF8TextAttachment(att.Bytes) {
+			if ext == ".csv" {
+				att.MimeType = "text/csv; charset=utf-8"
+			} else {
+				att.MimeType = "text/plain; charset=utf-8"
+			}
+			return true
+		}
+	case ".docx", ".xlsx":
+		if isExpectedOfficeOpenXML(att.Bytes, ext) {
+			if ext == ".docx" {
+				att.MimeType = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+			} else {
+				att.MimeType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+			}
+			return true
+		}
 	default:
+	}
+	return false
+}
+
+func detectedAIAttachmentMIME(att *aiAttachment) string {
+	if att == nil || len(att.Bytes) == 0 {
+		return ""
+	}
+	b := att.Bytes
+	switch {
+	case len(b) >= 8 && bytes.Equal(b[:8], []byte{0x89, 'P', 'N', 'G', 0x0d, 0x0a, 0x1a, 0x0a}):
+		return "image/png"
+	case len(b) >= 3 && bytes.Equal(b[:3], []byte{0xff, 0xd8, 0xff}):
+		return "image/jpeg"
+	case len(b) >= 6 && (bytes.Equal(b[:6], []byte("GIF87a")) || bytes.Equal(b[:6], []byte("GIF89a"))):
+		return "image/gif"
+	case len(b) >= 12 && bytes.Equal(b[:4], []byte("RIFF")) && bytes.Equal(b[8:12], []byte("WEBP")):
+		return "image/webp"
+	case len(b) >= 2 && bytes.Equal(b[:2], []byte("BM")):
+		return "image/bmp"
+	case len(b) >= 12 && bytes.Equal(b[4:8], []byte("ftyp")) && (bytes.Contains(b[8:24], []byte("heic")) || bytes.Contains(b[8:24], []byte("heif")) || bytes.Contains(b[8:24], []byte("mif1"))):
+		return "image/heic"
+	default:
+		return ""
+	}
+}
+
+func isSafeUTF8TextAttachment(b []byte) bool {
+	return len(b) > 0 && utf8.Valid(b) && !bytes.Contains(b, []byte{0})
+}
+
+func isExpectedOfficeOpenXML(b []byte, ext string) bool {
+	reader, err := zip.NewReader(bytes.NewReader(b), int64(len(b)))
+	if err != nil {
 		return false
 	}
+	contentTypes := false
+	prefix := "word/"
+	if ext == ".xlsx" {
+		prefix = "xl/"
+	}
+	for _, file := range reader.File {
+		name := strings.ReplaceAll(strings.TrimSpace(file.Name), "\\", "/")
+		if name == "[Content_Types].xml" {
+			contentTypes = true
+		}
+		if strings.HasPrefix(name, prefix) {
+			return contentTypes || hasOfficeContentTypes(reader.File)
+		}
+	}
+	return false
+}
+
+func hasOfficeContentTypes(files []*zip.File) bool {
+	for _, file := range files {
+		if strings.TrimSpace(file.Name) == "[Content_Types].xml" {
+			return true
+		}
+	}
+	return false
+}
+
+func publicAIProviderError(err error) string {
+	if isProviderLimitError(err) {
+		return "El proveedor de IA alcanzo un limite temporal. Intenta de nuevo en unos minutos."
+	}
+	if isAICredentialUnavailableError(err) {
+		return "La configuracion de IA no esta disponible en este momento."
+	}
+	return "No se pudo procesar la solicitud con IA. Intenta de nuevo."
 }
 
 func (c *EmpresaAIChatController) callOpenAIWithSystemPrompt(model empresaAIModelDef, pregunta string, historial []empresaAIChatMensaje, systemPrompt string) (string, int64, int64, error) {
@@ -1712,6 +1958,7 @@ func buildEmpresaAISystemPrompt(contexto string, modoAsistente string) string {
 		"En su lugar, usa solo el contexto de lectura que ya preparo el servidor o propone una accion estructurada para que el usuario la confirme. " +
 		"Los administradores autorizados pueden recibir lectura real de la base de datos de su propia empresa cuando el servidor la incluya en contexto; cualquier creacion, edicion, eliminacion o movimiento debe hacerse exclusivamente por funciones/endpoints de PCS, con validacion de rol, empresa activa y confirmacion humana cuando aplique. " +
 		"Si el usuario pide una lista, tabla o reporte, responde con el contenido solicitado en texto o Markdown. Solo habla de descargar/exportar si el usuario lo pide literalmente. " +
+		"Para resúmenes con varios indicadores, productos, ventas, movimientos o alertas, usa títulos Markdown (##) y tablas Markdown con encabezados claros. Separa cada sección con una línea en blanco. No pegues varios indicadores en una misma línea; cada dato debe ocupar una fila o una celda de tabla. Para una respuesta breve sin varios datos, usa párrafos cortos o viñetas claras. " +
 		"Regla de seguridad: nunca emitas JSON de acciones, endpoints, selectores, SQL ni instrucciones para ejecutar cambios desde el navegador. Para una modificacion, explica el plan y los datos faltantes; el servidor crea la propuesta, valida permisos y ofrece el boton de confirmacion. Nunca propongas DELETE. " +
 		"Para un cajero, limita la guia a operaciones permitidas por su rol; no propongas configuraciones administrativas. El backend volvera a validar empresa, licencia, pagina y permisos antes de ejecutar. " +
 		"No propongas endpoints genericos de base de datos; si una accion todavia no tiene herramienta permitida o no conoces el contrato exacto, explica los pasos o abre la pagina correspondiente. " +
@@ -1870,6 +2117,9 @@ func sanitizeHistorial(in []empresaAIChatMensaje, max int) []empresaAIChatMensaj
 }
 
 func (c *EmpresaAIChatController) resolveModelAPIKey(model empresaAIModelDef) (string, error) {
+	if strings.TrimSpace(model.apiKeyOverride) != "" {
+		return strings.TrimSpace(model.apiKeyOverride), nil
+	}
 	if strings.TrimSpace(model.ApiKeyEnv) == "" {
 		return "", nil
 	}

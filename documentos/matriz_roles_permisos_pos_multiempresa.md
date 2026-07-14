@@ -45,6 +45,16 @@
 
 2026-06-18: Nota de auditoria DIAN produccion PCS
 - `facturacion_electronica` conserva sus wrappers existentes (`WithEmpresaFacturacionPermissions`) y no agrega permisos nuevos.
+
+## API movil v1 (2026-07-13)
+
+- `/api/v1/empresa/carritos`, `items`, `pagos` y `ventas/offline/sync` heredan
+  `WithEmpresaVentasPermissions`; no crean un bypass movil para cajeros ni
+  administradores.
+- `/api/v1/empresa/facturacion/*` hereda `WithEmpresaFacturacionPermissions`.
+  Las reglas de emitir/anular siguen siendo las mismas del modulo fiscal.
+- `/api/v1/empresa/notificaciones` hereda `WithEmpresaSelfServicePermissions`;
+  el buzon filtra tambien por actor autenticado dentro de la empresa.
 - Para declarar DIAN produccion estable se exige evidencia de acuse oficial o portal DIAN; en PCS quedaron `1PCS2` y `1PCS3` como `Aprobado con notificacion`.
 - `Regla 90` no concede aceptacion automatica. Debe revisarse CUFE/TrackId, historial DIAN, cola de reintentos o portal antes de cerrar el documento.
 - La auditoria operativa minima de un incidente DIAN debe incluir usuario/empresa, accion ejecutada, prefijo/folio, resultado DIAN, estado de cola, contador siguiente y si hubo cambio de configuracion, firma, rango o certificado.

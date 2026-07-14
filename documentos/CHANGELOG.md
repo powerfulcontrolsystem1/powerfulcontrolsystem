@@ -3236,3 +3236,16 @@
 - [Seguridad] El backend deja de depender de scripts Docker para crear, actualizar o borrar buzones; usa la API REST interna autenticada de Mailu.
 - [Operacion] El perfil Mailu genera su token solo si falta y el proxy externo bloquea `/api/`, manteniendo la API disponible unicamente para la red Docker.
 - [QA] Se agrega regresion del bearer token, payload de alta acotado y normalizacion de modo API.
+## [2026-07-13] IA propia por empresa y base API movil v1
+- [IA] Cada empresa puede cifrar y habilitar su propia clave de OpenAI desde
+  Configuracion. La clave no vuelve al navegador y las consultas OpenAI no
+  descuentan la cuota comercial de PCS.
+- [API movil] Se incorpora `/api/v1/` con contrato OpenAPI, respuestas JSON
+  uniformes, `request_id`, sesion Bearer dedicada, paginacion y filtros de
+  productos/clientes sin reemplazar rutas web existentes.
+- [Registro] El pais del registro prioriza la zona horaria y Colombia queda
+  seleccionado cuando no existe una senal geográfica disponible.
+## [2026-07-14] Fundacion de produccion y app movil
+- [Plataforma] Se separan los roles de API, migracion y worker; se incorpora
+  cola PostgreSQL durable/outbox y se documentan los gates de liberacion y API
+  movil sin romper las rutas web existentes.

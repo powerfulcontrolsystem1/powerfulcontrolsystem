@@ -117,3 +117,11 @@ El frontend debe crear un formulario temporal y enviarlo por POST. No debe abrir
 ## Runbook relacionado
 
 - `documentos/gobernanza_tecnica/runbooks/runbook_checkout_licencias.md`
+# Cantidad de períodos
+
+Los endpoints `GET /api/public/licencias/checkout_summary`,
+`POST /wompi/create_checkout`, `POST /epayco/create_transaction` y
+`POST /licencias/activar_sin_pago` aceptan `cantidad` opcional. Si falta, su
+valor es `1`. La respuesta `summary` expone `quantity` y
+`duration_total_days`; el backend rechaza valores por encima del límite global,
+cantidades para bundles/adicionales y más de una unidad gratuita.

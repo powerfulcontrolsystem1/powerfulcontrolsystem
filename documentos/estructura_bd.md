@@ -3,6 +3,23 @@
 Version: 2026-05-15.1.0
 Ultima actualizacion: 2026-05-15
 
+Actualizacion 2026-07-13 (OpenAI propio por empresa)
+- `empresa_ai_openai_proveedor_configuracion` conserva una configuracion por
+  `empresa_id`: habilitacion, clave cifrada con AES-GCM y proposito
+  `empresa-openai-provider`, actor y fecha. Nunca conserva la clave en claro
+  ni la usa como fuente de autorizacion; los permisos siguen saliendo de sesion,
+  rol y wrappers empresariales.
+
+Actualizacion 2026-07-13 (orquestador IA de catalogo)
+- `empresa_ai_propuestas` conserva propuestas tipadas de herramientas IA por
+  empresa y usuario, con hash del plan, vencimiento, estado de consumo,
+  idempotencia y resultado saneado. No contiene secretos, SQL ni comandos.
+- `empresa_ai_ejecuciones` conserva metadatos minimizados de consulta,
+  propuesta, confirmacion y resultado. La creacion IA de productos reutiliza
+  las tablas canonicas `productos`, `inventario_existencias`,
+  `inventario_movimientos` y `producto_precio_historial`; no crea tablas
+  paralelas ni bypass de reglas de negocio.
+
 Actualizacion 2026-07-09: la tabla exclusiva del modulo retirado
 `super_juegos_records` se elimina de `pcs_superadministrador` en el arranque
 mediante `DecommissionRemovedEntertainmentArtifacts`. No afecta datos
@@ -1587,6 +1604,10 @@ Actualizacion 2026-04-29 (auditoria como fuente de contexto IA)
   - empresa_id, admin_email
   - provider, model_id
   - UNIQUE(empresa_id, admin_email)
+- empresa_ai_usuario_modelo_preferido:
+  - `usuario_id` unico, `model_id`, fechas, creador y estado.
+  - Solo guarda preferencia de interfaz; no contiene conversaciones ni altera
+    el aislamiento de datos, permisos o cuotas por empresa.
 
 ### Tabla de configuracion empresarial
 - empresa_configuracion_avanzada:
@@ -2277,3 +2298,10 @@ Actualizacion 2026-07-09 (cobranza automatizada)
 Actualizacion 2026-07-10 (integridad GPS y auditoria super)
 - `empresa_gps_recorridos` mantiene su aislamiento por `empresa_id`; al crear un punto, la transaccion verifica que `empresa_gps_dispositivos.id` pertenezca a la misma empresa y este en estado `activo` antes de actualizar la ultima lectura del equipo.
 - `super_auditoria_eventos` conserva fechas como `TEXT` por compatibilidad historica. Las escrituras convierten las fechas generadas por PostgreSQL a texto de forma explicita para no mezclar tipos en `COALESCE`.
+## API movil: idempotencia por empresa
+
+`empresa_mobile_api_idempotencia` conserva el hash de `Idempotency-Key`, el
+hash del cuerpo y la respuesta exitosa de una mutacion movil. Su PK compuesta
+es `(empresa_id, operacion, clave_hash)`. Nunca guarda el valor original de la
+clave ni credenciales; permite devolver el mismo resultado ante reintentos de
+pagos, emision fiscal, carrito o notificaciones sin repetir la operacion.

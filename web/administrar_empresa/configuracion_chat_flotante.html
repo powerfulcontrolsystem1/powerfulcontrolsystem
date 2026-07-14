@@ -63,6 +63,14 @@
       border-radius: 8px;
       background: color-mix(in srgb, var(--surface, #fff) 94%, var(--accent-2, #14b8a6) 6%);
     }
+    .chat-ia-preview { display:grid; grid-template-columns:1fr auto; gap:6px 12px; padding:12px; border:1px solid var(--border,#cbd5e1); background:var(--surface-soft,#f1f5f9); color:var(--text,#162033); }
+    .chat-ia-preview strong { grid-column:1/-1; color:#111827; }
+    .chat-ia-preview b { color:#1d4ed8; text-align:right; }
+    .chat-ia-preview[data-theme="corporativo"] strong { color:#b91c1c; }.chat-ia-preview[data-theme="corporativo"] b { color:#1d4ed8; }
+    .chat-ia-preview[data-theme="oceano"] strong { color:#075985; }.chat-ia-preview[data-theme="oceano"] b { color:#0369a1; }
+    .chat-ia-preview[data-theme="esmeralda"] strong { color:#047857; }.chat-ia-preview[data-theme="esmeralda"] b { color:#0f766e; }
+    .chat-ia-preview[data-theme="vino"] strong { color:#9f1239; }.chat-ia-preview[data-theme="vino"] b { color:#4338ca; }
+    .chat-ia-preview[data-size="pequeno"] { font-size:.86rem; }.chat-ia-preview[data-size="grande"] { font-size:1.08rem; }
   </style>
 </head>
 <body class="admin-empresa-config-page form-bg-dark">
@@ -92,7 +100,27 @@
 
         <div class="chat-ia-info">
           <span class="chat-ia-title">Apariencia del asistente</span>
-          <span class="chat-ia-copy">La IA se abre siempre como recuadro normal profesional con historial, adjuntos, modos y controles completos.</span>
+          <span class="chat-ia-copy">La IA se abre siempre como recuadro normal profesional. Los resúmenes con varios datos se muestran en filas y tablas legibles.</span>
+        </div>
+
+        <div class="chat-ia-select-card">
+          <label class="form-label" for="chatTheme">Tema de respuestas</label>
+          <select id="chatTheme" class="form-input">
+            <option value="normal">Normal en negro</option>
+            <option value="corporativo">Corporativo: títulos rojos y datos azules</option>
+            <option value="oceano">Océano: azules profesionales</option>
+            <option value="esmeralda">Esmeralda: verdes profesionales</option>
+            <option value="vino">Vino: títulos borgoña y datos índigo</option>
+          </select>
+          <label class="form-label" for="chatTextSize">Tamaño del texto</label>
+          <select id="chatTextSize" class="form-input">
+            <option value="pequeno">Pequeño</option>
+            <option value="mediano">Mediano</option>
+            <option value="grande">Grande</option>
+          </select>
+          <div class="chat-ia-preview" id="chatAppearancePreview" data-theme="normal" data-size="mediano">
+            <strong>Resumen operativo</strong><span>Ventas cerradas</span><b>15</b><span>Ventas total</span><b>COP 27.100</b>
+          </div>
         </div>
 
         <label class="chat-ia-option" for="chatVoiceEnabled">
@@ -138,6 +166,9 @@
       var radioEnabledCheckbox = document.getElementById('radioOnlineEnabled');
       var voiceCheckbox = document.getElementById('chatVoiceEnabled');
       var robotVoiceSelect = document.getElementById('chatRobotVoice');
+      var themeSelect = document.getElementById('chatTheme');
+      var textSizeSelect = document.getElementById('chatTextSize');
+      var appearancePreview = document.getElementById('chatAppearancePreview');
       var saveBtn = document.getElementById('saveChatModeBtn');
       var resetBtn = document.getElementById('resetChatModeBtn');
       var status = document.getElementById('chatModeStatus');
@@ -189,6 +220,29 @@
         if (lower === 'es-mx' || lower === 'mexico' || lower === 'mexicana') return 'es-MX';
         if (lower === 'es-es' || lower === 'espana' || lower === 'castellano') return 'es-ES';
         return 'es-CO';
+      }
+
+      function normalizeTheme(value) {
+        var lower = String(value || '').trim().toLowerCase();
+        return ['corporativo', 'oceano', 'esmeralda', 'vino'].indexOf(lower) >= 0 ? lower : 'normal';
+      }
+
+      function normalizeTextSize(value) {
+        var lower = String(value || '').trim().toLowerCase();
+        return ['pequeno', 'grande'].indexOf(lower) >= 0 ? lower : 'mediano';
+      }
+
+      function setAppearance(theme, textSize) {
+        var normalizedTheme = normalizeTheme(theme);
+        var normalizedSize = normalizeTextSize(textSize);
+        if (themeSelect) themeSelect.value = normalizedTheme;
+        if (textSizeSelect) textSizeSelect.value = normalizedSize;
+        if (appearancePreview) {
+          appearancePreview.dataset.theme = normalizedTheme;
+          appearancePreview.dataset.size = normalizedSize;
+        }
+        postToShell({ type: 'pcs-ai-chat-appearance-updated', theme: normalizedTheme, textSize: normalizedSize });
+        return { theme: normalizedTheme, textSize: normalizedSize };
       }
 
       function labelForRobotVoice(value) {
@@ -309,6 +363,7 @@
             var radioOn = typeof data.radio_online_enabled === 'boolean' ? setRadioEnabled(data.radio_online_enabled) : currentRadio;
             var voiceOn = typeof data.voice_enabled === 'boolean' ? setVoiceEnabled(data.voice_enabled) : currentVoice;
             var robotVoice = setSelectedRobotVoice(data.robot_voice || currentRobotVoice);
+            setAppearance(data.theme, data.text_size);
             storeNormalMode();
             notifyShell(chatOn, radioOn, voiceOn, robotVoice);
             renderStatus('Configuracion cargada.', chatOn, radioOn, voiceOn, robotVoice);
@@ -323,6 +378,7 @@
         var radioOn = setRadioEnabled(radioEnabledCheckbox ? radioEnabledCheckbox.checked : false);
         var voiceOn = setVoiceEnabled(voiceCheckbox && voiceCheckbox.checked);
         var robotVoice = setSelectedRobotVoice(robotVoiceSelect && robotVoiceSelect.value);
+        var appearance = setAppearance(themeSelect && themeSelect.value, textSizeSelect && textSizeSelect.value);
         storeNormalMode();
         notifyShell(chatOn, radioOn, voiceOn, robotVoice);
         updateStatus('Guardando configuracion...');
@@ -336,7 +392,9 @@
             radio_online_enabled: radioOn,
             personality_mode: 'normal',
             voice_enabled: voiceOn,
-            robot_voice: robotVoice
+            robot_voice: robotVoice,
+            theme: appearance.theme,
+            text_size: appearance.textSize
           })
         }).then(function (res) {
           if (!res.ok) throw new Error('No se pudo guardar en servidor.');
@@ -346,6 +404,7 @@
           var savedRadio = typeof (data && data.radio_online_enabled) === 'boolean' ? setRadioEnabled(data.radio_online_enabled) : radioOn;
           var savedVoice = typeof (data && data.voice_enabled) === 'boolean' ? setVoiceEnabled(data.voice_enabled) : voiceOn;
           var savedRobotVoice = setSelectedRobotVoice(data && data.robot_voice ? data.robot_voice : robotVoice);
+          setAppearance(data && data.theme ? data.theme : appearance.theme, data && data.text_size ? data.text_size : appearance.textSize);
           storeNormalMode();
           notifyShell(savedChat, savedRadio, savedVoice, savedRobotVoice);
           renderStatus('Configuracion guardada.', savedChat, savedRadio, savedVoice, savedRobotVoice);
@@ -359,6 +418,7 @@
         setRadioEnabled(false);
         setVoiceEnabled(false);
         setSelectedRobotVoice('es-CO');
+        setAppearance('normal', 'mediano');
         saveMode();
       }
 
@@ -390,6 +450,8 @@
         notifyShell(currentChatEnabled, currentRadioEnabled, voiceOn, robotVoice);
         renderStatus('Vista previa.', currentChatEnabled, currentRadioEnabled, voiceOn, robotVoice);
       });
+      if (themeSelect) themeSelect.addEventListener('change', function () { setAppearance(themeSelect.value, textSizeSelect && textSizeSelect.value); });
+      if (textSizeSelect) textSizeSelect.addEventListener('change', function () { setAppearance(themeSelect && themeSelect.value, textSizeSelect.value); });
       loadMode();
     })();
   </script>

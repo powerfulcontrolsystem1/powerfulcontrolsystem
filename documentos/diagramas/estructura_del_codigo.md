@@ -6679,3 +6679,10 @@ La ayuda funcional se actualiza en `web/ayuda/ayuda.html` y el estado compacto d
   2026 desde la configuracion real de Nomina y adjunta fuente/vigencia.
 - `web/administrar_empresa/nomina_sueldos.html` aplica un campo confirmado por
   vez; `creditos_tutorial.html` se carga al final de `creditos_menu.html`.
+# API movil v1: fachada operativa
+
+`backend/handlers/mobile_api_v1.go` es una fachada aditiva delante de los
+handlers POS existentes. Recibe sesion Bearer/cookie, aplica el wrapper de
+permiso del modulo, normaliza `empresa_id`, exige idempotencia para mutaciones
+y devuelve el sobre JSON movil. Los handlers de carrito, pago, facturacion,
+offline y buzon siguen siendo la fuente unica de reglas de negocio.

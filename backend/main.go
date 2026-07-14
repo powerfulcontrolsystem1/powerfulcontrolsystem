@@ -23,6 +23,7 @@ import (
 
 	dbpkg "github.com/you/pos-backend/db"
 	"github.com/you/pos-backend/handlers"
+	"github.com/you/pos-backend/internal/platform/runtimeconfig"
 	"github.com/you/pos-backend/metrics"
 	"github.com/you/pos-backend/utils"
 	"github.com/you/pos-backend/vpssecurity"
@@ -799,6 +800,13 @@ func main() {
 	startupTrace("main_enter")
 	loadRuntimeEnvDefaults(backendDir)
 	startupTrace("after_load_runtime_env_defaults")
+	runtimeConfig, runtimeConfigErr := runtimeconfig.Load(os.Getenv)
+	if runtimeConfigErr != nil {
+		log.Fatalf("invalid runtime role configuration: %v", runtimeConfigErr)
+	}
+	if runtimeConfig.Role == runtimeconfig.RoleWorker {
+		log.Fatal("PCS_RUNTIME_ROLE=worker must execute the dedicated pcs-worker binary")
+	}
 	refreshRuntimeGlobalsFromEnv()
 	startupTrace("after_refresh_runtime_globals")
 	if err := ensureRuntimeConfigEncKey(backendDir); err != nil {
@@ -857,382 +865,401 @@ func main() {
 			log.Fatal(err)
 		}
 		startupTrace("after_open_db_super")
-		if err := dbpkg.EnsurePostgresRuntimeCompat(dbEmpresas); err != nil {
-			log.Fatalf("failed to ensure postgres compat functions in empresas db: %v", err)
+		if runtimeConfig.LegacySchemaBootstrap {
+			if err := dbpkg.EnsurePostgresRuntimeCompat(dbEmpresas); err != nil {
+				log.Fatalf("failed to ensure postgres compat functions in empresas db: %v", err)
+			}
+			startupTrace("after_ensure_pg_compat_empresas")
+			if err := dbpkg.EnsurePostgresRuntimeCompat(dbSuper); err != nil {
+				log.Fatalf("failed to ensure postgres compat functions in superadministrador db: %v", err)
+			}
+			startupTrace("after_ensure_pg_compat_super")
+			if err := dbpkg.EnsureAdministradoresAuthSchema(dbSuper); err != nil {
+				log.Fatalf("failed to ensure administradores auth schema in superadministrador db: %v", err)
+			}
+			startupTrace("after_ensure_administradores_auth_schema")
+			if err := dbpkg.MigrateSessionTokensToHashes(dbSuper); err != nil {
+				log.Fatalf("failed to protect existing session tokens: %v", err)
+			}
+			startupTrace("after_migrate_session_tokens_to_hashes")
+			totpMigrationDryRun := strings.EqualFold(strings.TrimSpace(os.Getenv("PCS_TOTP_MIGRATION_DRY_RUN")), "1") || strings.EqualFold(strings.TrimSpace(os.Getenv("PCS_TOTP_MIGRATION_DRY_RUN")), "true")
+			migratedTOTP, err := dbpkg.MigrateAdministradorTOTPSecrets(dbSuper, totpMigrationDryRun)
+			if err != nil {
+				log.Fatalf("failed to protect existing TOTP secrets: %v", err)
+			}
+			if totpMigrationDryRun {
+				log.Printf("INFO: TOTP secret migration dry-run found %d legacy secret(s)", migratedTOTP)
+			} else if migratedTOTP > 0 {
+				log.Printf("INFO: encrypted %d legacy TOTP secret(s)", migratedTOTP)
+			}
+			startupTrace("after_migrate_totp_secrets")
+			migratedResetTokens, err := dbpkg.MigrateAdministradorPasswordResetTokens(dbSuper, totpMigrationDryRun)
+			if err != nil {
+				log.Fatalf("failed to protect existing password reset tokens: %v", err)
+			}
+			if totpMigrationDryRun {
+				log.Printf("INFO: password reset token migration dry-run found %d legacy token(s)", migratedResetTokens)
+			} else if migratedResetTokens > 0 {
+				log.Printf("INFO: protected %d legacy password reset token(s)", migratedResetTokens)
+			}
+			startupTrace("after_migrate_password_reset_tokens")
+			migratedConfirmTokens, err := dbpkg.MigrateAdministradorEmailConfirmTokens(dbSuper, totpMigrationDryRun)
+			if err != nil {
+				log.Fatalf("failed to protect existing email confirmation tokens: %v", err)
+			}
+			if totpMigrationDryRun {
+				log.Printf("INFO: email confirmation token migration dry-run found %d legacy token(s)", migratedConfirmTokens)
+			} else if migratedConfirmTokens > 0 {
+				log.Printf("INFO: protected %d legacy email confirmation token(s)", migratedConfirmTokens)
+			}
+			startupTrace("after_migrate_email_confirmation_tokens")
+			if err := dbpkg.EnsurePaymentGatewaySchema(dbSuper); err != nil {
+				log.Fatalf("failed to ensure payment gateway schema in superadministrador db: %v", err)
+			}
+			startupTrace("after_ensure_payment_gateway_schema")
+			if err := dbpkg.EnsureLicenciasSchema(dbSuper); err != nil {
+				log.Fatalf("failed to ensure licencias schema in superadministrador db: %v", err)
+			}
+			startupTrace("after_ensure_licencias_schema")
+			if ensured, err := dbpkg.EnsureLicenciasCatalogoGlobal(dbSuper, "sistema.arranque"); err != nil {
+				log.Printf("warning: no se pudo asegurar catalogo global de licencias: %v", err)
+			} else {
+				log.Printf("INFO: catalogo global de licencias verificado: planes=%d", ensured)
+			}
+			startupTrace("after_ensure_licencias_catalogo_global")
+			if empresaSistema, err := dbpkg.EnsurePowerfulSystemEmpresa(dbEmpresas, dbSuper); err != nil {
+				log.Printf("warning: no se pudo asegurar empresa interna Powerful Control System: %v", err)
+			} else if empresaSistema != nil {
+				log.Printf("INFO: empresa interna Powerful Control System verificada: empresa_id=%d", empresaSistema.EmpresaID)
+			}
+			startupTrace("after_ensure_powerful_system_empresa")
+			if err := dbpkg.EnsureSuperAuditoriaSchema(dbSuper); err != nil {
+				log.Fatalf("failed to ensure super auditoria schema in superadministrador db: %v", err)
+			}
+			startupTrace("after_ensure_super_auditoria_schema")
+			if err := dbpkg.EnsureSuperVPSSnapshotSchema(dbSuper); err != nil {
+				log.Fatalf("failed to ensure super vps snapshots schema in superadministrador db: %v", err)
+			}
+			startupTrace("after_ensure_super_vps_snapshots_schema")
+			if err := dbpkg.EnsureLicenciaVencimientoNotificacionesSchema(dbSuper); err != nil {
+				log.Fatalf("failed to ensure licencia vencimiento notificaciones schema in superadministrador db: %v", err)
+			}
+			startupTrace("after_ensure_licencia_vencimiento_notificaciones_schema")
+			if err := dbpkg.EnsureLicenciaEmpresaRetencionSchema(dbSuper); err != nil {
+				log.Fatalf("failed to ensure licencia empresa retencion schema in superadministrador db: %v", err)
+			}
+			startupTrace("after_ensure_licencia_empresa_retencion_schema")
+			if err := dbpkg.EnsureUsuarioConfiguracionSchema(dbSuper); err != nil {
+				log.Fatalf("failed to ensure usuario configuracion schema in superadministrador db: %v", err)
+			}
+			startupTrace("after_usuario_config_schema")
+			if err := dbpkg.EnsureEmpresaEmailCorporativoSchema(dbSuper); err != nil {
+				log.Fatalf("failed to ensure empresa email corporativo schema in superadministrador db: %v", err)
+			}
+			startupTrace("after_empresa_email_corporativo_schema")
+			if err := handlers.EnsureCorporateEmailConfigFromEnv(dbSuper); err != nil {
+				log.Printf("warning: no se pudo registrar configuracion Mailu desde entorno: %v", err)
+			}
+			startupTrace("after_empresa_email_corporativo_env")
+			if strings.TrimSpace(os.Getenv("PCS_SKIP_CORPORATE_EMAIL_STARTUP_SYNC")) == "1" {
+				log.Printf("INFO: sincronizacion inicial de emails corporativos omitida por PCS_SKIP_CORPORATE_EMAIL_STARTUP_SYNC=1")
+			} else if created, err := handlers.EnsureCorporateEmailRowsForExistingCompanies(dbSuper, dbEmpresas, "sistema.arranque"); err != nil {
+				log.Printf("warning: no se pudieron generar emails corporativos para empresas existentes: %v", err)
+			} else if created > 0 {
+				log.Printf("INFO: emails corporativos generados para empresas existentes: %d", created)
+			}
+			startupTrace("after_empresa_email_corporativo_existing_companies")
+			if provisioned, err := handlers.EnsureCorporateEmailProvisioningForExistingCompanies(dbSuper); err != nil {
+				log.Printf("warning: no se pudieron aprovisionar todos los emails corporativos existentes: %v", err)
+			} else if provisioned > 0 {
+				log.Printf("INFO: emails corporativos aprovisionados para empresas existentes: %d", provisioned)
+			}
+			startupTrace("after_empresa_email_corporativo_provisioning")
+			if err := handlers.EnsureNextcloudConfigFromEnv(dbSuper); err != nil {
+				log.Printf("warning: no se pudo registrar configuracion Nextcloud desde entorno: %v", err)
+			}
+			startupTrace("after_nextcloud_env")
+			if err := dbpkg.EnsureEmpresaNextcloudSchema(dbEmpresas); err != nil {
+				log.Printf("warning: no se pudo preparar Nextcloud empresarial: %v", err)
+			} else if assigned, err := handlers.EnsureNextcloudAssignmentsForAll(dbEmpresas, dbSuper); err != nil {
+				log.Printf("warning: no se pudieron asignar espacios Nextcloud a empresas existentes: %v", err)
+			} else if assigned > 0 {
+				log.Printf("INFO: espacios Nextcloud asignados a empresas existentes: %d", assigned)
+			}
+			startupTrace("after_nextcloud_schema")
+			if err := dbpkg.DecommissionRemovedEntertainmentArtifacts(dbSuper); err != nil {
+				log.Printf("warning: no se pudieron retirar artefactos de juegos y emulador: %v", err)
+			}
+			startupTrace("after_entertainment_decommission")
+			if err := dbpkg.EnsureAsesorComercialSchema(dbSuper); err != nil {
+				log.Fatalf("failed to ensure asesor comercial schema in superadministrador db: %v", err)
+			}
+			startupTrace("after_ensure_asesor_schema")
+			if seedResult, err := dbpkg.SeedDefaultTipoEmpresaPreconfiguraciones(dbSuper, "sistema.arranque", false); err != nil {
+				log.Printf("warning: no se pudieron registrar preconfiguraciones por tipo de empresa: %v", err)
+			} else {
+				log.Printf("INFO: preconfiguraciones por tipo verificadas: tipos=%d creadas=%d omitidas=%d errores=%d", seedResult.TotalTipos, seedResult.Creadas, seedResult.Omitidas, seedResult.Errores)
+			}
+			startupTrace("after_seed_default_tipo_empresa")
+			if tipoID, licencias, err := dbpkg.EnsureConstructoraTipoEmpresaYLicencias(dbSuper, "sistema.arranque"); err != nil {
+				log.Printf("warning: no se pudo asegurar constructora/licencias: %v", err)
+			} else {
+				log.Printf("INFO: tipo constructora verificado: tipo_id=%d licencias=%d", tipoID, licencias)
+			}
+			startupTrace("after_ensure_constructora_tipo_licencias")
+			if tipoID, licencias, err := dbpkg.EnsureDrogueriaFarmaciaTipoEmpresaYLicencias(dbSuper, "sistema.arranque"); err != nil {
+				log.Printf("warning: no se pudo asegurar drogueria/farmacia/licencias: %v", err)
+			} else {
+				log.Printf("INFO: tipo drogueria/farmacia verificado: tipo_id=%d licencias=%d", tipoID, licencias)
+			}
+			startupTrace("after_ensure_drogueria_farmacia_tipo_licencias")
+			if tipoID, licencias, err := dbpkg.EnsureAlquileresTipoEmpresaYLicencias(dbSuper, "sistema.arranque"); err != nil {
+				log.Printf("warning: no se pudo asegurar alquileres/licencias: %v", err)
+			} else {
+				log.Printf("INFO: tipo alquileres verificado: tipo_id=%d licencias=%d", tipoID, licencias)
+			}
+			startupTrace("after_ensure_alquileres_tipo_licencias")
+			if tipos, licencias, err := dbpkg.EnsureNuevasPlantillasTipoEmpresaYLicencias(dbSuper, "sistema.arranque"); err != nil {
+				log.Printf("warning: no se pudieron asegurar nuevas plantillas/licencias: %v", err)
+			} else {
+				log.Printf("INFO: nuevas plantillas verificados: tipos=%d licencias=%d", tipos, licencias)
+			}
+			startupTrace("after_ensure_plantillas_nuevas_tipo_licencias")
+			if err := dbpkg.DisableRobotRadioInTipoEmpresaPreconfiguraciones(dbSuper); err != nil {
+				log.Printf("warning: no se pudieron apagar robot/emisora en preconfiguraciones: %v", err)
+			}
+			startupTrace("after_preconfig_robot_radio_defaults")
+			if err := dbpkg.EnsureEnergiaSolarInTipoEmpresaPreconfiguraciones(dbSuper); err != nil {
+				log.Printf("warning: no se pudo agregar energia solar a preconfiguraciones: %v", err)
+			}
+			startupTrace("after_preconfig_energia_solar")
+			if err := dbpkg.DropTiposDeUsuarioTable(dbSuper); err != nil {
+				log.Printf("warning: no se pudo eliminar tabla legada tipos_de_usuario: %v", err)
+			}
+			log.Println("INFO: runtime DB dialect=postgres (VPS)")
 		}
-		startupTrace("after_ensure_pg_compat_empresas")
-		if err := dbpkg.EnsurePostgresRuntimeCompat(dbSuper); err != nil {
-			log.Fatalf("failed to ensure postgres compat functions in superadministrador db: %v", err)
-		}
-		startupTrace("after_ensure_pg_compat_super")
-		if err := dbpkg.EnsureAdministradoresAuthSchema(dbSuper); err != nil {
-			log.Fatalf("failed to ensure administradores auth schema in superadministrador db: %v", err)
-		}
-		startupTrace("after_ensure_administradores_auth_schema")
-		if err := dbpkg.MigrateSessionTokensToHashes(dbSuper); err != nil {
-			log.Fatalf("failed to protect existing session tokens: %v", err)
-		}
-		startupTrace("after_migrate_session_tokens_to_hashes")
-		totpMigrationDryRun := strings.EqualFold(strings.TrimSpace(os.Getenv("PCS_TOTP_MIGRATION_DRY_RUN")), "1") || strings.EqualFold(strings.TrimSpace(os.Getenv("PCS_TOTP_MIGRATION_DRY_RUN")), "true")
-		migratedTOTP, err := dbpkg.MigrateAdministradorTOTPSecrets(dbSuper, totpMigrationDryRun)
-		if err != nil {
-			log.Fatalf("failed to protect existing TOTP secrets: %v", err)
-		}
-		if totpMigrationDryRun {
-			log.Printf("INFO: TOTP secret migration dry-run found %d legacy secret(s)", migratedTOTP)
-		} else if migratedTOTP > 0 {
-			log.Printf("INFO: encrypted %d legacy TOTP secret(s)", migratedTOTP)
-		}
-		startupTrace("after_migrate_totp_secrets")
-		migratedResetTokens, err := dbpkg.MigrateAdministradorPasswordResetTokens(dbSuper, totpMigrationDryRun)
-		if err != nil {
-			log.Fatalf("failed to protect existing password reset tokens: %v", err)
-		}
-		if totpMigrationDryRun {
-			log.Printf("INFO: password reset token migration dry-run found %d legacy token(s)", migratedResetTokens)
-		} else if migratedResetTokens > 0 {
-			log.Printf("INFO: protected %d legacy password reset token(s)", migratedResetTokens)
-		}
-		startupTrace("after_migrate_password_reset_tokens")
-		migratedConfirmTokens, err := dbpkg.MigrateAdministradorEmailConfirmTokens(dbSuper, totpMigrationDryRun)
-		if err != nil {
-			log.Fatalf("failed to protect existing email confirmation tokens: %v", err)
-		}
-		if totpMigrationDryRun {
-			log.Printf("INFO: email confirmation token migration dry-run found %d legacy token(s)", migratedConfirmTokens)
-		} else if migratedConfirmTokens > 0 {
-			log.Printf("INFO: protected %d legacy email confirmation token(s)", migratedConfirmTokens)
-		}
-		startupTrace("after_migrate_email_confirmation_tokens")
-		if err := dbpkg.EnsurePaymentGatewaySchema(dbSuper); err != nil {
-			log.Fatalf("failed to ensure payment gateway schema in superadministrador db: %v", err)
-		}
-		startupTrace("after_ensure_payment_gateway_schema")
-		if err := dbpkg.EnsureLicenciasSchema(dbSuper); err != nil {
-			log.Fatalf("failed to ensure licencias schema in superadministrador db: %v", err)
-		}
-		startupTrace("after_ensure_licencias_schema")
-		if ensured, err := dbpkg.EnsureLicenciasCatalogoGlobal(dbSuper, "sistema.arranque"); err != nil {
-			log.Printf("warning: no se pudo asegurar catalogo global de licencias: %v", err)
-		} else {
-			log.Printf("INFO: catalogo global de licencias verificado: planes=%d", ensured)
-		}
-		startupTrace("after_ensure_licencias_catalogo_global")
-		if empresaSistema, err := dbpkg.EnsurePowerfulSystemEmpresa(dbEmpresas, dbSuper); err != nil {
-			log.Printf("warning: no se pudo asegurar empresa interna Powerful Control System: %v", err)
-		} else if empresaSistema != nil {
-			log.Printf("INFO: empresa interna Powerful Control System verificada: empresa_id=%d", empresaSistema.EmpresaID)
-		}
-		startupTrace("after_ensure_powerful_system_empresa")
-		if err := dbpkg.EnsureSuperAuditoriaSchema(dbSuper); err != nil {
-			log.Fatalf("failed to ensure super auditoria schema in superadministrador db: %v", err)
-		}
-		startupTrace("after_ensure_super_auditoria_schema")
-		if err := dbpkg.EnsureSuperVPSSnapshotSchema(dbSuper); err != nil {
-			log.Fatalf("failed to ensure super vps snapshots schema in superadministrador db: %v", err)
-		}
-		startupTrace("after_ensure_super_vps_snapshots_schema")
-		if err := dbpkg.EnsureLicenciaVencimientoNotificacionesSchema(dbSuper); err != nil {
-			log.Fatalf("failed to ensure licencia vencimiento notificaciones schema in superadministrador db: %v", err)
-		}
-		startupTrace("after_ensure_licencia_vencimiento_notificaciones_schema")
-		if err := dbpkg.EnsureLicenciaEmpresaRetencionSchema(dbSuper); err != nil {
-			log.Fatalf("failed to ensure licencia empresa retencion schema in superadministrador db: %v", err)
-		}
-		startupTrace("after_ensure_licencia_empresa_retencion_schema")
-		if err := dbpkg.EnsureUsuarioConfiguracionSchema(dbSuper); err != nil {
-			log.Fatalf("failed to ensure usuario configuracion schema in superadministrador db: %v", err)
-		}
-		startupTrace("after_usuario_config_schema")
-		if err := dbpkg.EnsureEmpresaEmailCorporativoSchema(dbSuper); err != nil {
-			log.Fatalf("failed to ensure empresa email corporativo schema in superadministrador db: %v", err)
-		}
-		startupTrace("after_empresa_email_corporativo_schema")
-		if err := handlers.EnsureCorporateEmailConfigFromEnv(dbSuper); err != nil {
-			log.Printf("warning: no se pudo registrar configuracion Mailu desde entorno: %v", err)
-		}
-		startupTrace("after_empresa_email_corporativo_env")
-		if strings.TrimSpace(os.Getenv("PCS_SKIP_CORPORATE_EMAIL_STARTUP_SYNC")) == "1" {
-			log.Printf("INFO: sincronizacion inicial de emails corporativos omitida por PCS_SKIP_CORPORATE_EMAIL_STARTUP_SYNC=1")
-		} else if created, err := handlers.EnsureCorporateEmailRowsForExistingCompanies(dbSuper, dbEmpresas, "sistema.arranque"); err != nil {
-			log.Printf("warning: no se pudieron generar emails corporativos para empresas existentes: %v", err)
-		} else if created > 0 {
-			log.Printf("INFO: emails corporativos generados para empresas existentes: %d", created)
-		}
-		startupTrace("after_empresa_email_corporativo_existing_companies")
-		if provisioned, err := handlers.EnsureCorporateEmailProvisioningForExistingCompanies(dbSuper); err != nil {
-			log.Printf("warning: no se pudieron aprovisionar todos los emails corporativos existentes: %v", err)
-		} else if provisioned > 0 {
-			log.Printf("INFO: emails corporativos aprovisionados para empresas existentes: %d", provisioned)
-		}
-		startupTrace("after_empresa_email_corporativo_provisioning")
-		if err := handlers.EnsureNextcloudConfigFromEnv(dbSuper); err != nil {
-			log.Printf("warning: no se pudo registrar configuracion Nextcloud desde entorno: %v", err)
-		}
-		startupTrace("after_nextcloud_env")
-		if err := dbpkg.EnsureEmpresaNextcloudSchema(dbEmpresas); err != nil {
-			log.Printf("warning: no se pudo preparar Nextcloud empresarial: %v", err)
-		} else if assigned, err := handlers.EnsureNextcloudAssignmentsForAll(dbEmpresas, dbSuper); err != nil {
-			log.Printf("warning: no se pudieron asignar espacios Nextcloud a empresas existentes: %v", err)
-		} else if assigned > 0 {
-			log.Printf("INFO: espacios Nextcloud asignados a empresas existentes: %d", assigned)
-		}
-		startupTrace("after_nextcloud_schema")
-		if err := dbpkg.DecommissionRemovedEntertainmentArtifacts(dbSuper); err != nil {
-			log.Printf("warning: no se pudieron retirar artefactos de juegos y emulador: %v", err)
-		}
-		startupTrace("after_entertainment_decommission")
-		if err := dbpkg.EnsureAsesorComercialSchema(dbSuper); err != nil {
-			log.Fatalf("failed to ensure asesor comercial schema in superadministrador db: %v", err)
-		}
-		startupTrace("after_ensure_asesor_schema")
-		if seedResult, err := dbpkg.SeedDefaultTipoEmpresaPreconfiguraciones(dbSuper, "sistema.arranque", false); err != nil {
-			log.Printf("warning: no se pudieron registrar preconfiguraciones por tipo de empresa: %v", err)
-		} else {
-			log.Printf("INFO: preconfiguraciones por tipo verificadas: tipos=%d creadas=%d omitidas=%d errores=%d", seedResult.TotalTipos, seedResult.Creadas, seedResult.Omitidas, seedResult.Errores)
-		}
-		startupTrace("after_seed_default_tipo_empresa")
-		if tipoID, licencias, err := dbpkg.EnsureConstructoraTipoEmpresaYLicencias(dbSuper, "sistema.arranque"); err != nil {
-			log.Printf("warning: no se pudo asegurar constructora/licencias: %v", err)
-		} else {
-			log.Printf("INFO: tipo constructora verificado: tipo_id=%d licencias=%d", tipoID, licencias)
-		}
-		startupTrace("after_ensure_constructora_tipo_licencias")
-		if tipoID, licencias, err := dbpkg.EnsureDrogueriaFarmaciaTipoEmpresaYLicencias(dbSuper, "sistema.arranque"); err != nil {
-			log.Printf("warning: no se pudo asegurar drogueria/farmacia/licencias: %v", err)
-		} else {
-			log.Printf("INFO: tipo drogueria/farmacia verificado: tipo_id=%d licencias=%d", tipoID, licencias)
-		}
-		startupTrace("after_ensure_drogueria_farmacia_tipo_licencias")
-		if tipoID, licencias, err := dbpkg.EnsureAlquileresTipoEmpresaYLicencias(dbSuper, "sistema.arranque"); err != nil {
-			log.Printf("warning: no se pudo asegurar alquileres/licencias: %v", err)
-		} else {
-			log.Printf("INFO: tipo alquileres verificado: tipo_id=%d licencias=%d", tipoID, licencias)
-		}
-		startupTrace("after_ensure_alquileres_tipo_licencias")
-		if tipos, licencias, err := dbpkg.EnsureNuevasPlantillasTipoEmpresaYLicencias(dbSuper, "sistema.arranque"); err != nil {
-			log.Printf("warning: no se pudieron asegurar nuevas plantillas/licencias: %v", err)
-		} else {
-			log.Printf("INFO: nuevas plantillas verificados: tipos=%d licencias=%d", tipos, licencias)
-		}
-		startupTrace("after_ensure_plantillas_nuevas_tipo_licencias")
-		if err := dbpkg.DisableRobotRadioInTipoEmpresaPreconfiguraciones(dbSuper); err != nil {
-			log.Printf("warning: no se pudieron apagar robot/emisora en preconfiguraciones: %v", err)
-		}
-		startupTrace("after_preconfig_robot_radio_defaults")
-		if err := dbpkg.EnsureEnergiaSolarInTipoEmpresaPreconfiguraciones(dbSuper); err != nil {
-			log.Printf("warning: no se pudo agregar energia solar a preconfiguraciones: %v", err)
-		}
-		startupTrace("after_preconfig_energia_solar")
-		if err := dbpkg.DropTiposDeUsuarioTable(dbSuper); err != nil {
-			log.Printf("warning: no se pudo eliminar tabla legada tipos_de_usuario: %v", err)
-		}
-		log.Println("INFO: runtime DB dialect=postgres (VPS)")
 	} else {
 		log.Fatalf("Runtime DB no soportada: configure DB_DIALECT=postgres y DSN de PostgreSQL")
 	}
 
-	if err := dbpkg.EnsureEmpresaUsuariosAuthSchema(dbEmpresas); err != nil {
-		log.Fatalf("failed to ensure users auth schema in empresas db: %v", err)
-	}
-	if _, err := dbpkg.MigrateEmpresaUsuarioTemporaryTokens(dbEmpresas, strings.EqualFold(strings.TrimSpace(os.Getenv("PCS_TOTP_MIGRATION_DRY_RUN")), "1") || strings.EqualFold(strings.TrimSpace(os.Getenv("PCS_TOTP_MIGRATION_DRY_RUN")), "true")); err != nil {
-		log.Fatalf("failed to protect enterprise user temporary tokens: %v", err)
-	}
-	if err := dbpkg.EnsureEmpresaBuzonSchema(dbEmpresas); err != nil {
-		log.Fatalf("failed to ensure empresa buzon schema in empresas db: %v", err)
-	}
-	startupTrace("after_empresa_usuarios_auth_schema")
-	if err := dbpkg.EnsureEmpresaCarritosSchema(dbEmpresas); err != nil {
-		log.Fatalf("failed to ensure carritos schema in empresas db: %v", err)
-	}
-	startupTrace("after_empresa_carritos_schema")
-	if err := dbpkg.EnsureEmpresaDatafonosSchema(dbEmpresas); err != nil {
-		log.Fatalf("failed to ensure datafonos schema in empresas db: %v", err)
-	}
-	startupTrace("after_empresa_datafonos_schema")
-	if err := dbpkg.DisableLegacyFloatingRobotAndRadioPrefs(dbEmpresas); err != nil {
-		log.Fatalf("failed to disable legacy floating robot/radio prefs: %v", err)
-	}
-	startupTrace("after_empresa_chat_robot_radio_defaults")
-	if err := dbpkg.DisableFloatingChatVoicePrefs(dbEmpresas); err != nil {
-		log.Fatalf("failed to disable floating chat voice prefs: %v", err)
-	}
-	startupTrace("after_empresa_chat_voice_defaults")
-	if err := handlers.ApplyDefaultCarritoUIToExistingEmpresaPrefs(dbEmpresas); err != nil {
-		log.Fatalf("failed to apply default cart UI to existing empresas: %v", err)
-	}
-	startupTrace("after_empresa_carrito_ui_defaults")
-	if err := dbpkg.EnsureEmpresaFinanzasSchema(dbEmpresas); err != nil {
-		log.Fatalf("failed to ensure finanzas schema in empresas db: %v", err)
-	}
-	startupTrace("after_empresa_finanzas_schema")
-	if err := dbpkg.EnsureEmpresaImpuestosSchema(dbEmpresas); err != nil {
-		log.Fatalf("failed to ensure impuestos schema in empresas db: %v", err)
-	}
-	startupTrace("after_empresa_impuestos_schema")
-	if err := dbpkg.EnsureEmpresaNominaSchema(dbEmpresas); err != nil {
-		log.Fatalf("failed to ensure nomina schema in empresas db: %v", err)
-	}
-	startupTrace("after_empresa_nomina_schema")
-	if result, err := dbpkg.ApplyColombiaDefaultsToExistingEmpresas(dbEmpresas); err != nil {
-		log.Printf("warning: no se pudo aplicar preconfiguracion Colombia a empresas existentes: %v", err)
-	} else if result != nil {
-		log.Printf("INFO: preconfiguracion Colombia %s verificada: empresas=%d aplicadas=%d errores=%d", result.Version, result.Empresas, result.Aplicadas, len(result.Errores))
-	}
-	if err := dbpkg.SeedCatalogoLegalColombiaBase(dbEmpresas, "sistema.arranque"); err != nil {
-		log.Printf("warning: no se pudo registrar catalogo legal Colombia: %v", err)
-	}
-	if result, err := dbpkg.ApplyParametrosLegalesToExistingEmpresas(dbEmpresas); err != nil {
-		log.Printf("warning: no se pudo registrar parametros legales por empresa: %v", err)
-	} else if result != nil {
-		log.Printf("INFO: parametros legales Colombia %s registrados: empresas=%d aplicadas=%d errores=%d", result.Version, result.Empresas, result.Aplicadas, len(result.Errores))
-	}
-	startupTrace("after_empresa_colombia_defaults")
-	if err := dbpkg.EnsureEmpresaCreditosSchema(dbEmpresas); err != nil {
-		log.Fatalf("failed to ensure creditos schema in empresas db: %v", err)
-	}
-	startupTrace("after_empresa_creditos_schema")
-	if err := dbpkg.EnsureEmpresaContabilidadColombiaSchema(dbEmpresas); err != nil {
-		log.Fatalf("failed to ensure contabilidad colombia schema in empresas db: %v", err)
-	}
-	startupTrace("after_empresa_contabilidad_colombia_schema")
-	if err := dbpkg.EnsureEmpresaContabilidadColombiaAvanzadaSchema(dbEmpresas); err != nil {
-		log.Fatalf("failed to ensure contabilidad colombia avanzada schema in empresas db: %v", err)
-	}
-	startupTrace("after_empresa_contabilidad_colombia_avanzada_schema")
-	if err := dbpkg.EnsureEmpresaCentrosCostoSchema(dbEmpresas); err != nil {
-		log.Fatalf("failed to ensure centros costo schema in empresas db: %v", err)
-	}
-	startupTrace("after_empresa_centros_costo_schema")
-	if err := dbpkg.EnsureEmpresaCierreFiscalSchema(dbEmpresas); err != nil {
-		log.Fatalf("failed to ensure cierre fiscal schema in empresas db: %v", err)
-	}
-	startupTrace("after_empresa_cierre_fiscal_schema")
-	if err := dbpkg.EnsureEmpresaDeclaracionesTributariasSchema(dbEmpresas); err != nil {
-		log.Fatalf("failed to ensure declaraciones tributarias schema in empresas db: %v", err)
-	}
-	startupTrace("after_empresa_declaraciones_tributarias_schema")
-	if err := dbpkg.EnsureEmpresaTesoreriaPresupuestoSchema(dbEmpresas); err != nil {
-		log.Fatalf("failed to ensure tesoreria presupuesto schema in empresas db: %v", err)
-	}
-	if err := dbpkg.EnsureEmpresaImportacionesCosteoSchema(dbEmpresas); err != nil {
-		log.Fatalf("failed to ensure importaciones costeo schema in empresas db: %v", err)
-	}
-	if err := dbpkg.EnsureEmpresaAIUConstruccionSchema(dbEmpresas); err != nil {
-		log.Fatalf("failed to ensure AIU construccion schema in empresas db: %v", err)
-	}
-	if err := dbpkg.EnsureEmpresaCobranzaSchema(dbEmpresas); err != nil {
-		log.Fatalf("failed to ensure cobranza schema in empresas db: %v", err)
-	}
-	if err := dbpkg.EnsureEmpresaPortalContadorSchema(dbEmpresas); err != nil {
-		log.Fatalf("failed to ensure portal contador schema in empresas db: %v", err)
-	}
-	if err := dbpkg.EnsureEmpresaPortalTercerosCertificadosSchema(dbEmpresas); err != nil {
-		log.Fatalf("failed to ensure portal terceros certificados schema in empresas db: %v", err)
-	}
-	if err := dbpkg.EnsureEmpresaSoportesComprasIASchema(dbEmpresas); err != nil {
-		log.Fatalf("failed to ensure soportes compras IA schema in empresas db: %v", err)
-	}
-	if err := dbpkg.EnsureEmpresaModulosColombiaSchema(dbEmpresas); err != nil {
-		log.Fatalf("failed to ensure modulos empresariales colombia schema in empresas db: %v", err)
-	}
-	if err := dbpkg.EnsureEmpresaComprasAvanzadasSchema(dbEmpresas); err != nil {
-		log.Fatalf("failed to ensure compras avanzadas schema in empresas db: %v", err)
-	}
-	if err := dbpkg.EnsureEmpresaReservasHotelSchema(dbEmpresas); err != nil {
-		log.Fatalf("failed to ensure reservas hotel schema in empresas db: %v", err)
-	}
-	startupTrace("after_empresa_reservas_schema")
-	if err := dbpkg.EnsureEmpresaTarifasMotelSchema(dbEmpresas); err != nil {
-		log.Fatalf("failed to ensure tarifas motel schema in empresas db: %v", err)
-	}
-	startupTrace("after_empresa_tarifas_motel_schema")
-	if err := dbpkg.EnsureEmpresaAIEnterpriseSchema(dbEmpresas); err != nil {
-		log.Fatalf("failed to ensure enterprise AI proposal schema in empresas db: %v", err)
-	}
-	startupTrace("after_empresa_ai_enterprise_schema")
-	if err := dbpkg.EnsureEmpresaSensorPuertasSchema(dbEmpresas); err != nil {
-		log.Fatalf("failed to ensure sensor puertas schema in empresas db: %v", err)
-	}
-	if err := dbpkg.EnsureEmpresaControlElectricoSchema(dbEmpresas); err != nil {
-		log.Fatalf("failed to ensure control electrico schema in empresas db: %v", err)
-	}
-	if err := dbpkg.EnsureEmpresaEnergiaSolarSchema(dbEmpresas); err != nil {
-		log.Fatalf("failed to ensure energia solar schema in empresas db: %v", err)
-	}
-	if err := dbpkg.EnsureEmpresaCamarasSchema(dbEmpresas); err != nil {
-		log.Fatalf("failed to ensure camaras schema in empresas db: %v", err)
-	}
-	if err := dbpkg.EnsureEmpresaGrafologiaSchema(dbEmpresas); err != nil {
-		log.Fatalf("failed to ensure grafologia schema in empresas db: %v", err)
-	}
-	if err := dbpkg.EnsureEmpresaCarnetsSchema(dbEmpresas); err != nil {
-		log.Fatalf("failed to ensure carnets empresa schema in empresas db: %v", err)
-	}
-	if err := dbpkg.EnsureEmpresaParqueaderoSchema(dbEmpresas); err != nil {
-		log.Fatalf("failed to ensure parqueadero empresa schema in empresas db: %v", err)
-	}
-	if err := dbpkg.EnsureEmpresaApartamentosTuristicosSchema(dbEmpresas); err != nil {
-		log.Fatalf("failed to ensure apartamentos turisticos empresa schema in empresas db: %v", err)
-	}
-	if err := dbpkg.EnsureEmpresaPropiedadHorizontalSchema(dbEmpresas); err != nil {
-		log.Fatalf("failed to ensure propiedad horizontal empresa schema in empresas db: %v", err)
-	}
-	if err := dbpkg.EnsureEmpresaProduccionMRPSchema(dbEmpresas); err != nil {
-		log.Fatalf("failed to ensure produccion mrp empresa schema in empresas db: %v", err)
-	}
-	if err := dbpkg.EnsureEmpresaWMSSchema(dbEmpresas); err != nil {
-		log.Fatalf("failed to ensure logistica WMS empresa schema in empresas db: %v", err)
-	}
-	if err := dbpkg.EnsureHotelTarjetasAccesoSchema(dbEmpresas); err != nil {
-		log.Fatalf("failed to ensure hotel tarjetas acceso schema in empresas db: %v", err)
-	}
-	if err := dbpkg.EnsureEmpresaProductosSchema(dbEmpresas); err != nil {
-		log.Fatalf("failed to ensure empresa productos schema in empresas db: %v", err)
-	}
-	if result, err := dbpkg.ApplyDefaultBodega1ToExistingEmpresas(dbEmpresas); err != nil {
-		log.Printf("warning: no se pudo crear Bodega 1 por defecto en empresas existentes: %v", err)
-	} else if result != nil {
-		log.Printf("INFO: Bodega 1 por defecto verificada: empresas=%d aplicadas=%d errores=%d", result.Empresas, result.Aplicadas, len(result.Errores))
-	}
-	if err := dbpkg.EnsureEmpresaInventarioAvanzadoSchema(dbEmpresas); err != nil {
-		log.Fatalf("failed to ensure inventario avanzado schema in empresas db: %v", err)
-	}
-	if err := dbpkg.EnsureEmpresaCRMVentasAvanzadasSchema(dbEmpresas); err != nil {
-		log.Fatalf("failed to ensure crm ventas avanzadas schema in empresas db: %v", err)
-	}
-	if err := dbpkg.EnsureEmpresaSoporteRemotoSchema(dbEmpresas); err != nil {
-		log.Fatalf("failed to ensure soporte remoto schema in empresas db: %v", err)
-	}
-	if created, updated, err := dbpkg.SeedEmpresaSoporteRemotoDefaults(dbEmpresas, dbSuper); err != nil {
-		log.Printf("warning: no se pudieron preparar configuraciones RustDesk por empresa: %v", err)
-	} else {
-		log.Printf("INFO: soporte remoto RustDesk preparado: configuraciones creadas=%d actualizadas=%d", created, updated)
-	}
-	startupTrace("after_empresa_sensor_puertas_schema")
-	if runtimePostgres {
-		if err := handlers.EnsureSensitiveSuperConfigEncrypted(dbSuper); err != nil {
-			log.Fatalf("failed to enforce sensitive config encryption in super db: %v", err)
+	if runtimeConfig.LegacySchemaBootstrap {
+		if err := dbpkg.EnsureEmpresaUsuariosAuthSchema(dbEmpresas); err != nil {
+			log.Fatalf("failed to ensure users auth schema in empresas db: %v", err)
 		}
-		startupTrace("after_sensitive_super_config")
-		if err := dbpkg.EnsurePostgresPrimaryKeySequences(dbEmpresas); err != nil {
-			log.Fatalf("failed to ensure postgres primary key sequences in empresas db: %v", err)
+		if _, err := dbpkg.MigrateEmpresaUsuarioTemporaryTokens(dbEmpresas, strings.EqualFold(strings.TrimSpace(os.Getenv("PCS_TOTP_MIGRATION_DRY_RUN")), "1") || strings.EqualFold(strings.TrimSpace(os.Getenv("PCS_TOTP_MIGRATION_DRY_RUN")), "true")); err != nil {
+			log.Fatalf("failed to protect enterprise user temporary tokens: %v", err)
 		}
-		startupTrace("after_empresas_pk_sequences")
-		if err := dbpkg.EnsurePostgresPrimaryKeySequences(dbSuper); err != nil {
-			log.Fatalf("failed to ensure postgres primary key sequences in super db: %v", err)
+		if err := dbpkg.EnsureEmpresaBuzonSchema(dbEmpresas); err != nil {
+			log.Fatalf("failed to ensure empresa buzon schema in empresas db: %v", err)
 		}
-		startupTrace("after_super_pk_sequences")
+		startupTrace("after_empresa_usuarios_auth_schema")
+		if err := dbpkg.EnsureEmpresaCarritosSchema(dbEmpresas); err != nil {
+			log.Fatalf("failed to ensure carritos schema in empresas db: %v", err)
+		}
+		startupTrace("after_empresa_carritos_schema")
+		if err := dbpkg.EnsureEmpresaDatafonosSchema(dbEmpresas); err != nil {
+			log.Fatalf("failed to ensure datafonos schema in empresas db: %v", err)
+		}
+		startupTrace("after_empresa_datafonos_schema")
+		if err := dbpkg.DisableLegacyFloatingRobotAndRadioPrefs(dbEmpresas); err != nil {
+			log.Fatalf("failed to disable legacy floating robot/radio prefs: %v", err)
+		}
+		startupTrace("after_empresa_chat_robot_radio_defaults")
+		if err := dbpkg.DisableFloatingChatVoicePrefs(dbEmpresas); err != nil {
+			log.Fatalf("failed to disable floating chat voice prefs: %v", err)
+		}
+		startupTrace("after_empresa_chat_voice_defaults")
+		if err := handlers.ApplyDefaultCarritoUIToExistingEmpresaPrefs(dbEmpresas); err != nil {
+			log.Fatalf("failed to apply default cart UI to existing empresas: %v", err)
+		}
+		startupTrace("after_empresa_carrito_ui_defaults")
+		if err := dbpkg.EnsureEmpresaFinanzasSchema(dbEmpresas); err != nil {
+			log.Fatalf("failed to ensure finanzas schema in empresas db: %v", err)
+		}
+		startupTrace("after_empresa_finanzas_schema")
+		if err := dbpkg.EnsureEmpresaImpuestosSchema(dbEmpresas); err != nil {
+			log.Fatalf("failed to ensure impuestos schema in empresas db: %v", err)
+		}
+		startupTrace("after_empresa_impuestos_schema")
+		if err := dbpkg.EnsureEmpresaNominaSchema(dbEmpresas); err != nil {
+			log.Fatalf("failed to ensure nomina schema in empresas db: %v", err)
+		}
+		startupTrace("after_empresa_nomina_schema")
+		if result, err := dbpkg.ApplyColombiaDefaultsToExistingEmpresas(dbEmpresas); err != nil {
+			log.Printf("warning: no se pudo aplicar preconfiguracion Colombia a empresas existentes: %v", err)
+		} else if result != nil {
+			log.Printf("INFO: preconfiguracion Colombia %s verificada: empresas=%d aplicadas=%d errores=%d", result.Version, result.Empresas, result.Aplicadas, len(result.Errores))
+		}
+		if err := dbpkg.SeedCatalogoLegalColombiaBase(dbEmpresas, "sistema.arranque"); err != nil {
+			log.Printf("warning: no se pudo registrar catalogo legal Colombia: %v", err)
+		}
+		if result, err := dbpkg.ApplyParametrosLegalesToExistingEmpresas(dbEmpresas); err != nil {
+			log.Printf("warning: no se pudo registrar parametros legales por empresa: %v", err)
+		} else if result != nil {
+			log.Printf("INFO: parametros legales Colombia %s registrados: empresas=%d aplicadas=%d errores=%d", result.Version, result.Empresas, result.Aplicadas, len(result.Errores))
+		}
+		startupTrace("after_empresa_colombia_defaults")
+		if err := dbpkg.EnsureEmpresaCreditosSchema(dbEmpresas); err != nil {
+			log.Fatalf("failed to ensure creditos schema in empresas db: %v", err)
+		}
+		startupTrace("after_empresa_creditos_schema")
+		if err := dbpkg.EnsureEmpresaContabilidadColombiaSchema(dbEmpresas); err != nil {
+			log.Fatalf("failed to ensure contabilidad colombia schema in empresas db: %v", err)
+		}
+		startupTrace("after_empresa_contabilidad_colombia_schema")
+		if err := dbpkg.EnsureEmpresaContabilidadColombiaAvanzadaSchema(dbEmpresas); err != nil {
+			log.Fatalf("failed to ensure contabilidad colombia avanzada schema in empresas db: %v", err)
+		}
+		startupTrace("after_empresa_contabilidad_colombia_avanzada_schema")
+		if err := dbpkg.EnsureEmpresaCentrosCostoSchema(dbEmpresas); err != nil {
+			log.Fatalf("failed to ensure centros costo schema in empresas db: %v", err)
+		}
+		startupTrace("after_empresa_centros_costo_schema")
+		if err := dbpkg.EnsureEmpresaCierreFiscalSchema(dbEmpresas); err != nil {
+			log.Fatalf("failed to ensure cierre fiscal schema in empresas db: %v", err)
+		}
+		startupTrace("after_empresa_cierre_fiscal_schema")
+		if err := dbpkg.EnsureEmpresaDeclaracionesTributariasSchema(dbEmpresas); err != nil {
+			log.Fatalf("failed to ensure declaraciones tributarias schema in empresas db: %v", err)
+		}
+		startupTrace("after_empresa_declaraciones_tributarias_schema")
+		if err := dbpkg.EnsureEmpresaTesoreriaPresupuestoSchema(dbEmpresas); err != nil {
+			log.Fatalf("failed to ensure tesoreria presupuesto schema in empresas db: %v", err)
+		}
+		if err := dbpkg.EnsureEmpresaImportacionesCosteoSchema(dbEmpresas); err != nil {
+			log.Fatalf("failed to ensure importaciones costeo schema in empresas db: %v", err)
+		}
+		if err := dbpkg.EnsureEmpresaAIUConstruccionSchema(dbEmpresas); err != nil {
+			log.Fatalf("failed to ensure AIU construccion schema in empresas db: %v", err)
+		}
+		if err := dbpkg.EnsureEmpresaCobranzaSchema(dbEmpresas); err != nil {
+			log.Fatalf("failed to ensure cobranza schema in empresas db: %v", err)
+		}
+		if err := dbpkg.EnsureEmpresaPortalContadorSchema(dbEmpresas); err != nil {
+			log.Fatalf("failed to ensure portal contador schema in empresas db: %v", err)
+		}
+		if err := dbpkg.EnsureEmpresaPortalTercerosCertificadosSchema(dbEmpresas); err != nil {
+			log.Fatalf("failed to ensure portal terceros certificados schema in empresas db: %v", err)
+		}
+		if err := dbpkg.EnsureEmpresaSoportesComprasIASchema(dbEmpresas); err != nil {
+			log.Fatalf("failed to ensure soportes compras IA schema in empresas db: %v", err)
+		}
+		if err := dbpkg.EnsureEmpresaModulosColombiaSchema(dbEmpresas); err != nil {
+			log.Fatalf("failed to ensure modulos empresariales colombia schema in empresas db: %v", err)
+		}
+		if err := dbpkg.EnsureEmpresaComprasAvanzadasSchema(dbEmpresas); err != nil {
+			log.Fatalf("failed to ensure compras avanzadas schema in empresas db: %v", err)
+		}
+		if err := dbpkg.EnsureEmpresaReservasHotelSchema(dbEmpresas); err != nil {
+			log.Fatalf("failed to ensure reservas hotel schema in empresas db: %v", err)
+		}
+		startupTrace("after_empresa_reservas_schema")
+		if err := dbpkg.EnsureEmpresaTarifasMotelSchema(dbEmpresas); err != nil {
+			log.Fatalf("failed to ensure tarifas motel schema in empresas db: %v", err)
+		}
+		startupTrace("after_empresa_tarifas_motel_schema")
+		if err := dbpkg.EnsureEmpresaAIEnterpriseSchema(dbEmpresas); err != nil {
+			log.Fatalf("failed to ensure enterprise AI proposal schema in empresas db: %v", err)
+		}
+		startupTrace("after_empresa_ai_enterprise_schema")
+		if err := dbpkg.EnsureEmpresaAIOpenAIProviderSchema(dbEmpresas); err != nil {
+			log.Fatalf("failed to ensure enterprise OpenAI provider schema in empresas db: %v", err)
+		}
+		startupTrace("after_empresa_ai_openai_provider_schema")
+		if err := dbpkg.EnsureEmpresaSensorPuertasSchema(dbEmpresas); err != nil {
+			log.Fatalf("failed to ensure sensor puertas schema in empresas db: %v", err)
+		}
+		if err := dbpkg.EnsureEmpresaControlElectricoSchema(dbEmpresas); err != nil {
+			log.Fatalf("failed to ensure control electrico schema in empresas db: %v", err)
+		}
+		if err := dbpkg.EnsureEmpresaEnergiaSolarSchema(dbEmpresas); err != nil {
+			log.Fatalf("failed to ensure energia solar schema in empresas db: %v", err)
+		}
+		if err := dbpkg.EnsureEmpresaCamarasSchema(dbEmpresas); err != nil {
+			log.Fatalf("failed to ensure camaras schema in empresas db: %v", err)
+		}
+		if err := dbpkg.EnsureEmpresaGrafologiaSchema(dbEmpresas); err != nil {
+			log.Fatalf("failed to ensure grafologia schema in empresas db: %v", err)
+		}
+		if err := dbpkg.EnsureEmpresaCarnetsSchema(dbEmpresas); err != nil {
+			log.Fatalf("failed to ensure carnets empresa schema in empresas db: %v", err)
+		}
+		if err := dbpkg.EnsureEmpresaParqueaderoSchema(dbEmpresas); err != nil {
+			log.Fatalf("failed to ensure parqueadero empresa schema in empresas db: %v", err)
+		}
+		if err := dbpkg.EnsureEmpresaApartamentosTuristicosSchema(dbEmpresas); err != nil {
+			log.Fatalf("failed to ensure apartamentos turisticos empresa schema in empresas db: %v", err)
+		}
+		if err := dbpkg.EnsureEmpresaPropiedadHorizontalSchema(dbEmpresas); err != nil {
+			log.Fatalf("failed to ensure propiedad horizontal empresa schema in empresas db: %v", err)
+		}
+		if err := dbpkg.EnsureEmpresaProduccionMRPSchema(dbEmpresas); err != nil {
+			log.Fatalf("failed to ensure produccion mrp empresa schema in empresas db: %v", err)
+		}
+		if err := dbpkg.EnsureEmpresaWMSSchema(dbEmpresas); err != nil {
+			log.Fatalf("failed to ensure logistica WMS empresa schema in empresas db: %v", err)
+		}
+		if err := dbpkg.EnsureHotelTarjetasAccesoSchema(dbEmpresas); err != nil {
+			log.Fatalf("failed to ensure hotel tarjetas acceso schema in empresas db: %v", err)
+		}
+		if err := dbpkg.EnsureEmpresaProductosSchema(dbEmpresas); err != nil {
+			log.Fatalf("failed to ensure empresa productos schema in empresas db: %v", err)
+		}
+		if result, err := dbpkg.ApplyDefaultBodega1ToExistingEmpresas(dbEmpresas); err != nil {
+			log.Printf("warning: no se pudo crear Bodega 1 por defecto en empresas existentes: %v", err)
+		} else if result != nil {
+			log.Printf("INFO: Bodega 1 por defecto verificada: empresas=%d aplicadas=%d errores=%d", result.Empresas, result.Aplicadas, len(result.Errores))
+		}
+		if err := dbpkg.EnsureEmpresaInventarioAvanzadoSchema(dbEmpresas); err != nil {
+			log.Fatalf("failed to ensure inventario avanzado schema in empresas db: %v", err)
+		}
+		if err := dbpkg.EnsureEmpresaCRMVentasAvanzadasSchema(dbEmpresas); err != nil {
+			log.Fatalf("failed to ensure crm ventas avanzadas schema in empresas db: %v", err)
+		}
+		if err := dbpkg.EnsureEmpresaSoporteRemotoSchema(dbEmpresas); err != nil {
+			log.Fatalf("failed to ensure soporte remoto schema in empresas db: %v", err)
+		}
+		if created, updated, err := dbpkg.SeedEmpresaSoporteRemotoDefaults(dbEmpresas, dbSuper); err != nil {
+			log.Printf("warning: no se pudieron preparar configuraciones RustDesk por empresa: %v", err)
+		} else {
+			log.Printf("INFO: soporte remoto RustDesk preparado: configuraciones creadas=%d actualizadas=%d", created, updated)
+		}
+		startupTrace("after_empresa_sensor_puertas_schema")
+		if runtimePostgres {
+			if err := handlers.EnsureSensitiveSuperConfigEncrypted(dbSuper); err != nil {
+				log.Fatalf("failed to enforce sensitive config encryption in super db: %v", err)
+			}
+			startupTrace("after_sensitive_super_config")
+			if err := dbpkg.EnsurePostgresPrimaryKeySequences(dbEmpresas); err != nil {
+				log.Fatalf("failed to ensure postgres primary key sequences in empresas db: %v", err)
+			}
+			startupTrace("after_empresas_pk_sequences")
+			if err := dbpkg.EnsurePostgresPrimaryKeySequences(dbSuper); err != nil {
+				log.Fatalf("failed to ensure postgres primary key sequences in super db: %v", err)
+			}
+			startupTrace("after_super_pk_sequences")
+			loadGoogleOAuthFromDB(dbSuper)
+			startupTrace("after_load_google_oauth_from_db")
+			if err := handlers.EnsureSuperContextoIALogicaNegocio(dbSuper); err != nil {
+				log.Printf("warning: no se pudo registrar contexto IA de logica de negocio: %v", err)
+			}
+			startupTrace("after_super_contexto_ia")
+			if clientID == "" || clientSecret == "" {
+				log.Println("Warning: GOOGLE_CLIENT_ID o GOOGLE_CLIENT_SECRET no configurados (entorno/DB)")
+			}
+			log.Println("INFO: modo PostgreSQL activo; bootstrap legacy ejecutado por rol de migracion/desarrollo.")
+		}
+	}
+	if !runtimeConfig.LegacySchemaBootstrap && runtimePostgres {
 		loadGoogleOAuthFromDB(dbSuper)
-		startupTrace("after_load_google_oauth_from_db")
-		if err := handlers.EnsureSuperContextoIALogicaNegocio(dbSuper); err != nil {
-			log.Printf("warning: no se pudo registrar contexto IA de logica de negocio: %v", err)
-		}
-		startupTrace("after_super_contexto_ia")
 		if clientID == "" || clientSecret == "" {
 			log.Println("Warning: GOOGLE_CLIENT_ID o GOOGLE_CLIENT_SECRET no configurados (entorno/DB)")
 		}
-		log.Println("INFO: modo PostgreSQL activo; bootstrap legacy desactivado.")
+		log.Println("INFO: API PostgreSQL iniciada sin mutaciones de esquema; use pcs-migrate para cambios de base de datos.")
+	}
+	if runtimeConfig.Role == runtimeconfig.RoleMigrate {
+		log.Println("INFO: bootstrap de migracion finalizado; proceso migrador termina sin abrir HTTP.")
+		return
 	}
 	utils.ConfigureErrorMonitor(dbSuper, backendDir)
 	startupTrace("after_error_monitor")
@@ -1466,8 +1493,10 @@ func main() {
 	http.HandleFunc("/api/empresa/configuracion_avanzada", handlers.WithEmpresaSeguridadPermissions(dbEmpresas, dbSuper, handlers.EmpresaConfiguracionAvanzadaHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/configuracion_avanzada/logo", handlers.WithEmpresaSeguridadPermissions(dbEmpresas, dbSuper, handlers.EmpresaConfiguracionAvanzadaLogoUploadHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/configuracion_guiada", handlers.WithEmpresaSeguridadPermissions(dbEmpresas, dbSuper, handlers.EmpresaConfiguracionGuiadaHandler(dbEmpresas)))
+	http.HandleFunc("/api/empresa/configuracion_ia_propia", handlers.WithEmpresaSeguridadPermissions(dbEmpresas, dbSuper, handlers.EmpresaAIOpenAIProveedorConfigHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/panel_configuracion", handlers.WithEmpresaSeguridadPermissions(dbEmpresas, dbSuper, handlers.EmpresaPanelConfiguracionHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/licencia_sistema/pdf", handlers.WithEmpresaSeguridadPermissions(dbEmpresas, dbSuper, handlers.EmpresaLicenciaSistemaPDFHandler(dbEmpresas, dbSuper)))
+	http.HandleFunc("/api/empresa/licencias/comprobantes", handlers.WithEmpresaSeguridadPermissions(dbEmpresas, dbSuper, handlers.EmpresaLicenciasComprobantesHandler(dbEmpresas, dbSuper)))
 	http.HandleFunc("/api/empresa/email_corporativo", handlers.WithEmpresaSeguridadPermissions(dbEmpresas, dbSuper, handlers.EmpresaEmailCorporativoHandler(dbSuper, dbEmpresas)))
 	http.HandleFunc("/api/empresa/db_admin", handlers.WithEmpresaSeguridadPermissions(dbEmpresas, dbSuper, handlers.EmpresaDBAdminHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/impresoras", handlers.WithEmpresaSeguridadPermissions(dbEmpresas, dbSuper, handlers.EmpresaImpresorasHandler(dbEmpresas)))
@@ -1548,6 +1577,9 @@ func main() {
 	// Endpoint empresa: verificar acceso a la página frecuencia_fe.html (alias legacy frecuencia_fp.html)
 	http.HandleFunc("/api/empresa/frecuencia_fp/permitido", handlers.WithEmpresaSeguridadPermissions(dbEmpresas, dbSuper, handlers.EmpresaFrecuenciaFPAllowedHandler(dbSuper)))
 	handlers.RegisterEmpresaChatIARoutes(dbEmpresas, dbSuper)
+	// API versionada y estable para clientes móviles. No reemplaza las rutas web
+	// existentes hasta que cada módulo complete su migración controlada.
+	handlers.RegisterMobileAPIV1Routes(dbEmpresas, dbSuper)
 	handlers.RegisterEmpresaModulosFaltantesRoutes(dbEmpresas, dbSuper)
 	// Rutas del módulo sensor de puertas: configuración protegida y endpoint público para heartbeats
 	http.HandleFunc("/api/empresa/sensor_puertas", handlers.WithEmpresaSeguridadPermissions(dbEmpresas, dbSuper, handlers.EmpresaSensorConfigHandler(dbEmpresas)))
@@ -1628,6 +1660,10 @@ func main() {
 	http.HandleFunc("/super/api/chat_con_ia_global/consultar_con_adjunto", superAIChatController.ConsultarConAdjuntoHandler)
 	http.HandleFunc("/super/api/chat_con_ia_global/consultar_stream", superAIChatController.ConsultarStreamHandler)
 	http.HandleFunc("/super/api/chat_con_ia_global/historial", superAIChatController.HistorialHandler)
+	selectorAIChatController := handlers.NewSelectorAIChatController(dbEmpresas, dbSuper)
+	http.HandleFunc("/api/selector/chat_con_ia/modelos", selectorAIChatController.ModelosHandler)
+	http.HandleFunc("/api/selector/chat_con_ia/modelo_preferido", selectorAIChatController.ModeloPreferidoHandler)
+	http.HandleFunc("/api/selector/chat_con_ia/consultar", selectorAIChatController.ConsultarHandler)
 	// Endpoint para respaldo/restauracion de configuracion critica del panel super
 	http.HandleFunc("/super/api/config/backup", handlers.WithSuperAuditoria(dbSuper, "super_config_respaldo", handlers.SuperConfigBackupHandler(dbSuper)))
 	// Endpoint para configuración de modo mantenimiento global

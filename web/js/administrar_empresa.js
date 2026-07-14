@@ -588,6 +588,7 @@ try {
     linkControlElectrico: { module: permModuleControlElectrico, action: permActionUpdate },
     linkRadioOnline: { module: permModuleSeguridad, action: permActionRead },
     linkConfiguracionIntegraciones: { module: permModuleSeguridad, action: permActionUpdate },
+    linkConfiguracionIAPropia: { module: permModuleSeguridad, action: permActionUpdate },
     linkChatIAGlobal: { module: permModuleSeguridad, action: permActionRead },
     linkEstaciones: { alwaysVisible: true },
     linkPanelEmpresa: { alwaysVisible: true }

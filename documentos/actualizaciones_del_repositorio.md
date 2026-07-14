@@ -16764,3 +16764,21 @@ Archivos modificados:
 2026-07-13 05:44:42 - Mensaje: rs: actualizar repositorio y sincronizar VPS; Commit: 3b09e7bd; PushStatus: OK
 Archivos modificados:
 - deploy/docker/backend.Dockerfile
+
+2026-07-13 22:10:35 - Mensaje: rs: actualizar repositorio y sincronizar VPS; Commit: f136cdc9; PushStatus: OK
+Archivos modificados:
+- documentos/api/openapi.generated.yaml
+
+2026-07-14 01:56:59 - Mensaje: security: separar alcance IA selector y proteger trazas Epayco; Commit: 29074d70; PushStatus: OK
+Archivos modificados:
+- backend/handlers/payments_handlers.go
+- backend/handlers/payments_handlers_test.go
+- backend/handlers/selector_chat_ia.go
+- backend/handlers/selector_chat_ia_test.go
+- backend/handlers/venta_publica.go
+- backend/main.go
+- documentos/api/openapi.generated.yaml
+- documentos/contexto_especifico_del_sistema.md
+- documentos/descripcion_de_archivos
+- documentos/historial_de_cambios
+- web/js/ai_chat_drawer.js

@@ -747,3 +747,10 @@ locales, ademas de baterias comunes como Tesla Powerwall, BYD Battery-Box,
 Pylontech, Enphase IQ Battery y Victron Lithium. Cada empresa configura sus
 sistemas, correos, umbrales y lecturas de forma independiente, con alertas por
 correo, eventos auditables y aislamiento por `empresa_id`.
+Revision API movil POS v1 2026-07-13: PCS incorpora una fachada aditiva
+`/api/v1` para Android/iPhone sobre los mismos handlers de carrito, pago, caja,
+facturacion, sincronizacion offline y buzon que usa el POS web. Las respuestas
+se normalizan en JSON, las consultas se paginan y las mutaciones usan una clave
+de idempotencia hash por empresa para que un reintento de red no duplique una
+venta, pago, documento fiscal o mensaje. Las rutas web heredadas permanecen
+compatibles mientras se completa su migracion versionada.

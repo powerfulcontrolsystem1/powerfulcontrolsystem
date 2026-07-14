@@ -1,3 +1,4 @@
+- 2026-07-13: `Chat IA legible por empresa` transforma las respuestas estructuradas en secciones, filas y tablas seguras, y agrega temas `normal`, `corporativo`, `oceano`, `esmeralda` y `vino` con tamaño pequeño, mediano o grande desde Configuración empresarial. La preferencia queda aislada por `empresa_id`; el prompt solicita tablas Markdown para resúmenes de operación sin ofrecer acciones no pedidas.
 - 2026-07-13: `Release seguro por defecto` hace que `actualizar_repositorio.ps1` cree una PR temporal y solicite auto-merge cuando GitHub rechaza un push a `main` por protección. Si está disponible con permisos administrativos, habilita Auto-merge sin alterar revisiones ni checks. La VPS nunca se sincroniza antes de que GitHub confirme la fusión, y la revisión independiente no se omite. Los backups, restauraciones y release gate remotos exigen ahora `-AllowRemoteTarget`; ya no pueden contactar una VPS por accidente.
 - 2026-07-13: `Seguridad VPS operativa con backend sin privilegios` guarda la configuración mutable del escáner en `backend/logs/vps_security/config.json`, una ruta privada y escribible por el usuario no root del contenedor. Si existe configuración heredada en `backend/secure/vps_security_config.json`, la migra al primer uso. Se agregan pruebas de creación y migración.
 - 2026-07-12: `Adjuntos privados y cadena de suministro` mueve chat, buzón, finanzas, grafología y material DIAN fuera de la raíz web, añade descarga autenticada y migración simulable, retira binarios e instaladores heredados sin verificación del control de versiones, y actualiza el frontend a Nginx unprivileged 1.30.3-alpine3.23 con `c-ares 1.34.8-r0`. Sin despliegue; consultar `documentos/endurecimiento_seguridad_2026_07_11.md`.
@@ -4839,3 +4840,22 @@
 - El selector de usuarios deja de ofrecer perfiles de verticales no relacionadas para nuevas altas; los perfiles existentes se preservan y los especializados se manejan por empresa.
 - La pagina publica de privacidad describe aislamiento empresarial, controles de sesion/rol y cifrado real de transporte y secretos.
 - Configuracion avanzada corrige el error JavaScript del observador de secciones. La evidencia y limites de validacion externa se documentan en `documentos/validacion_preproduccion_pcs.md`.
+# 2026-07-13 - API movil POS, pagos y facturacion
+- Se amplía `/api/v1` para carritos, items, cobros, sincronización offline,
+  documentos fiscales, emisión desde venta y notificaciones privadas.
+- Las mutaciones móviles exigen `Idempotency-Key`; PCS conserva hashes y la
+  respuesta exitosa para impedir ventas, pagos, facturas o mensajes duplicados.
+
+# 2026-07-13 - Plan 101: arquitectura modular y reintentos seguros
+- Se formaliza el monolito modular de PCS y sus reglas de evolucion en
+  `documentos/plan_101_arquitectura_modular.md`.
+- La API movil v1 evita sobres JSON anidados y protege tambien la creacion de
+  carritos, sus items y la sincronizacion offline mediante idempotencia
+  persistente por empresa.
+# 2026-07-13
+
+- Licencias: checkout con compra de varios períodos, límite global configurable y activación idempotente alineada con el importe confirmado por Wompi o Epayco.
+- Operación: `rs` ahora aísla cada fase, conserva sus logs y reporta fallos o timeouts sin detenerse silenciosamente.
+
+- Licencias: la sección empresarial enlaza el checkout existente y muestra un historial aislado por empresa con descargas de comprobante y factura electrónica cuando ya esté emitida.
+- Seguridad: la API documental de licencias valida el contexto empresarial, no expone payloads de pasarela y registra las descargas en auditoría.

@@ -170,6 +170,16 @@
   }
 
   function detectCountryCode() {
+    // La zona horaria del equipo suele representar mejor el país actual que el
+    // idioma del navegador (por ejemplo, Chrome en inglés usado desde Colombia).
+    try {
+      var timezone = Intl.DateTimeFormat().resolvedOptions().timeZone || '';
+      if (timezoneCountryMap[timezone]) {
+        return timezoneCountryMap[timezone];
+      }
+    } catch (error) {
+      // Sin soporte; continuar con idioma y respaldo colombiano.
+    }
     var languages = [];
     if (navigator.languages && navigator.languages.length) {
       languages = navigator.languages.slice(0, 5);
@@ -186,14 +196,8 @@
         }
       }
     }
-    try {
-      var timezone = Intl.DateTimeFormat().resolvedOptions().timeZone || '';
-      if (timezoneCountryMap[timezone]) {
-        return timezoneCountryMap[timezone];
-      }
-    } catch (error) {
-      // Sin soporte; usar default.
-    }
+    // Colombia es el respaldo comercial y fiscal de PCS cuando el navegador
+    // no aporta una señal geográfica verificable.
     return 'CO';
   }
 
@@ -227,7 +231,7 @@
     .then(function (response) { return response.ok ? response.json() : null; })
     .then(function (geo) {
       var country = normalize(geo && geo.pais_codigo).toUpperCase();
-      if (!countryInput || !hasCountry(country) || normalize(geo && geo.source) === 'default') {
+      if (!countryInput || !hasCountry(country)) {
         return;
       }
       countryInput.value = country;

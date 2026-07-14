@@ -18,6 +18,22 @@ sola respuesta textual de un modelo.
 
 ## Contrato de seguridad
 
+### Modelos, adjuntos y preferencias
+
+- El catalogo empresarial contempla `openai:gpt-5.4-mini`, `openai:gpt-5.5` y
+  `openai:gpt-5.6-luna`. Super Administrador habilita los modelos permitidos y
+  define uno para operaciones y otro para adjuntos o analisis avanzado.
+- La eleccion de modelo, modo y agente realizada en el chat se conserva por
+  usuario autenticado. La
+  conversacion, los permisos, el contexto, el consumo y los datos siguen
+  aislados estrictamente por `empresa_id`; una preferencia nunca concede acceso
+  entre empresas.
+- El selector informa el uso y saldo diario de la empresa activa. El backend
+  vuelve a validar el modelo habilitado, incluso si el navegador manipula la
+  solicitud.
+- Se aceptan imagenes, PDF, TXT, CSV, DOCX y XLSX de hasta 8 MB. El nombre del
+  archivo no se utiliza como ruta ni se publica desde este flujo.
+
 - El contexto se deriva del wrapper de permisos: usuario autenticado, empresa,
   rol efectivo, request y conversacion. El `empresa_id` del cliente solo pasa
   si coincide con el contexto validado.
@@ -48,7 +64,7 @@ sola respuesta textual de un modelo.
   herramienta, riesgo, estado, duracion, categorias de datos y fuentes. No
   conservan prompts completos ni resultados privados.
 
-## Herramienta inicial
+## Herramientas implementadas
 
 `hotel.inspect_room_station` es una consulta de bajo riesgo que devuelve la
 configuracion actual de una estacion hotelera dentro de la empresa validada.
@@ -61,8 +77,7 @@ actualiza configuracion de estaciones y tarifas dentro de una misma transaccion;
 si una operacion falla no se confirma ninguna parte.
 
 La herramienta no aplica cambios masivos, no elimina tarifas existentes y no
-emite documentos fiscales. El siguiente despliegue funcional debe incorporar
-la tarjeta del chat ya incorpora el formulario asistido, estado actual,
+emite documentos fiscales. La tarjeta del chat incorpora el formulario asistido, estado actual,
 cambio propuesto, fuentes y botones Confirmar/Cancelar. Aun asi los flags
 de escritura siguen apagados hasta una prueba controlada por empresa.
 
@@ -80,6 +95,50 @@ El modo agente permanece bloqueado salvo `AI_AGENT_MODE_ENABLED=true` y un
 contexto acotado por servidor. La interfaz actual solo usa modo asistido para
 la herramienta hotelera.
 
+`catalog.search_products` es una consulta de bajo riesgo que devuelve un
+catalogo acotado de productos, categorias y bodegas exclusivamente de la
+empresa validada. Sirve para desambiguar referencias antes de preparar una
+accion y no expone datos de otra empresa.
+
+`catalog.create_product` prepara la creacion de un producto con precio,
+impuesto, categoria, bodega y stock inicial. Antes de crear la propuesta valida
+el plan, consulta duplicados por nombre/SKU dentro de la empresa y obliga a una
+confirmacion separada. Al confirmar reutiliza `CreateProducto`, que valida las
+relaciones empresariales y registra producto, inventario inicial e historial de
+precio en una transaccion.
+
+Cuando el usuario solicita crear un producto en lenguaje natural, el chat abre
+una tarjeta de propuesta con los campos extraidos como borrador. El navegador
+no decide herramientas ni ejecuta cambios: el backend valida el plan, revisa
+duplicados y solo crea el producto despues de la confirmacion independiente.
+Los campos de categoria y bodega siguen siendo opcionales, salvo que se
+registre stock inicial; en ese caso la bodega debe pertenecer a la empresa.
+
+Las escrituras se habilitan de forma granular y permanecen apagadas por
+defecto: `AI_ENTERPRISE_ORCHESTRATOR_ENABLED=true`,
+`AI_WRITE_TOOLS_ENABLED=true` y el flag especifico de la herramienta
+(`AI_HOTEL_TOOLS_ENABLED=true` o `AI_CATALOG_TOOLS_ENABLED=true`). Un flag no
+omite permisos ni confirmaciones.
+
+## Como agregar una herramienta
+
+1. Definir una entrada de riesgo, permisos, modulo, limite y rollback en
+   `backend/ai/enterprise.go`; no aceptar endpoints, SQL ni nombres de tabla
+   desde el modelo.
+2. Crear un plan JSON tipado y normalizador en `backend/db/ai_enterprise.go`.
+   El plan no contiene `empresa_id`, usuario, rol ni valores de autoridad.
+3. Reutilizar un servicio de dominio existente que filtre por `empresa_id` y
+   use transaccion cuando toque mas de un registro.
+4. Registrar propuesta temporal, estado previo/esperado minimizado,
+   idempotencia, confirmacion y auditoria antes de exponer el boton.
+5. Revalidar herramienta, permisos, licencia, empresa, vencimiento y hash al
+   confirmar. Añadir pruebas de tenant, permisos, parametros, duplicado,
+   doble confirmacion y fallo parcial.
+
+No se debe registrar una herramienta como disponible solo porque exista una
+pagina de interfaz. Los modulos restantes se conectaran uno por uno bajo este
+contrato, con pruebas y habilitacion gradual por empresa.
+
 ## Plan de ampliacion
 
 1. Lectura con fuentes: servicios de dominio y consultas parametrizadas con
@@ -94,3 +153,31 @@ la herramienta hotelera.
    recuperacion semantica ni se enviara contenido documental al proveedor.
 5. Modo agente con presupuesto, alcance, duracion, cantidad maxima de
    operaciones, circuit breaker y confirmaciones no omitibles.
+
+## Adjuntos y privacidad del proveedor
+
+Los adjuntos del chat se validan por extension cerrada y por contenido, no por
+el `Content-Type` declarado por el navegador. Imagenes requieren firmas
+conocidas; PDF debe iniciar con `%PDF-`; TXT/CSV deben ser UTF-8 sin bytes NUL;
+DOCX/XLSX deben ser contenedores OpenXML con sus entradas esperadas. Se descartan
+HTML, SVG activo, ejecutables, ZIP genericos y archivos con extension fingida.
+El MIME que se remite al proveedor se reconstruye desde la validacion local.
+
+Los cuerpos de error de proveedores no se devuelven al navegador ni se
+propagan mediante `Error()`. La interfaz recibe un mensaje generico, mientras
+la auditoria conserva solo metadatos minimizados sin prompt, token, adjunto ni
+respuesta privada.
+
+## Modelos y esfuerzo de razonamiento
+
+Super Administrador puede habilitar y seleccionar GPT-5.4 mini, GPT-5.5,
+GPT-5.6 Luna, GPT-5.6 Terra y GPT-5.6 Sol. Terra equilibra capacidad y costo;
+Sol queda orientado a tareas profesionales complejas; Luna a volumen y costo.
+La disponibilidad efectiva depende de la cuenta y permisos del proveedor.
+
+La configuracion guarda un esfuerzo por modelo y el backend solo acepta los
+valores declarados por su catalogo. Para los modelos GPT-5.6 se permiten
+`none`, `low`, `medium`, `high`, `xhigh` y `max`; GPT-5.5 usa `none`, `low`,
+`medium`, `high` y `xhigh`; GPT-5.4 mini queda en `none` porque opera por
+Chat Completions en el flujo economico actual. El esfuerzo se envia unicamente
+al endpoint Responses y nunca es controlado directamente por el navegador.

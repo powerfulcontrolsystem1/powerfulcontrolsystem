@@ -85,10 +85,13 @@ No depender de un wrapper en la raiz del proyecto. Revisar el contenido del
 script antes de asumir su alcance. Puede encadenar preflight, actualizacion,
 sincronizacion y pasos operativos.
 
-`rs.ps1` ejecuta cada script interno en un proceso PowerShell hijo. Esta regla
+`rs.ps1` ejecuta cada script interno en un proceso PowerShell aislado, con
+archivos separados de salida y error bajo `scripts/logs/rs-*.log`. Esta regla
 evita que un `exit` de preflight, actualizacion o sincronizacion cierre el
 orquestador antes de los pasos restantes; el codigo de salida se conserva y
-detiene el flujo solo cuando el paso correspondiente falla.
+detiene el flujo solo cuando el paso correspondiente falla. Cada fase tiene
+timeout controlado (3600 segundos por defecto) y reporta las rutas de log si se
+agota o falla. Puede ajustarse con `-StepTimeoutSeconds`.
 
 Si GitHub protege `main` y rechaza el push directo, `actualizar_repositorio.ps1`
 crea una rama `codex/rs-...`, abre la PR y solicita `auto-merge`. Nunca se
@@ -117,6 +120,21 @@ Durante la extraccion remota, `sync_to_vps.ps1` borra las rutas retiradas
 `web/Juegos`, `juegos` y `web/img/juegos` antes de aplicar el paquete. Esto
 evita que los archivos estaticos de un modulo eliminado sobrevivan a una
 sincronizacion incremental.
+
+## Roles de plataforma
+
+El despliegue Docker ejecuta `pcs-migrate` antes de la API y mantiene
+`pcs-worker` como proceso separado. En una consola con las DSN privadas ya
+cargadas, los binarios se validan sin abrir HTTP:
+
+```powershell
+Set-Location D:\powerfulcontrolsystem\backend
+go build ./cmd/pcs-migrate
+go build ./cmd/pcs-worker
+```
+
+No establecer `PCS_RUNTIME_SCHEMA_BOOTSTRAP=0` en una instalacion existente
+hasta verificar el ledger de migraciones y los flujos de provisionamiento.
 
 ## Backup completo del VPS
 

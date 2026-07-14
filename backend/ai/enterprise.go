@@ -19,6 +19,8 @@ const (
 
 	ToolHotelConfigureRoomStation = "hotel.configure_room_station"
 	ToolHotelInspectRoomStation   = "hotel.inspect_room_station"
+	ToolCatalogSearchProducts     = "catalog.search_products"
+	ToolCatalogCreateProduct      = "catalog.create_product"
 )
 
 // ExecutionContext is server-derived and must never be populated from model output.
@@ -71,6 +73,8 @@ type ToolDefinition struct {
 	RateLimitPerMinute  int      `json:"rate_limit_per_minute"`
 	AuditCategory       string   `json:"audit_category"`
 	Rollback            string   `json:"rollback_strategy"`
+	Module              string   `json:"module"`
+	EnabledByDefault    bool     `json:"enabled_by_default"`
 }
 
 func Registry() map[string]ToolDefinition {
@@ -80,16 +84,48 @@ func Registry() map[string]ToolDefinition {
 			Description: "Consulta la configuracion y tarifas actuales de una estacion hotelera.",
 			RiskLevel:   "low", RequiredPermissions: []string{"reservas_hotel:R"},
 			TenantScope: "current_company", Confirmation: "none", Idempotency: "not_applicable",
-			TimeoutSeconds: 10, RateLimitPerMinute: 20, AuditCategory: "ai_hotel_read", Rollback: "not_applicable",
+			TimeoutSeconds: 10, RateLimitPerMinute: 20, AuditCategory: "ai_hotel_read", Rollback: "not_applicable", Module: "reservas_hotel", EnabledByDefault: true,
 		},
 		ToolHotelConfigureRoomStation: {
 			Name:        ToolHotelConfigureRoomStation,
 			Description: "Configura una estación como habitación y registra tarifas de hospedaje.",
 			RiskLevel:   "medium", RequiredPermissions: []string{"ventas:U"},
 			TenantScope: "current_company", Confirmation: "required", Idempotency: "required",
-			TimeoutSeconds: 20, RateLimitPerMinute: 6, AuditCategory: "ai_hotel_configuration", Rollback: "transactional_before_commit",
+			TimeoutSeconds: 20, RateLimitPerMinute: 6, AuditCategory: "ai_hotel_configuration", Rollback: "transactional_before_commit", Module: "reservas_hotel", EnabledByDefault: false,
+		},
+		ToolCatalogSearchProducts: {
+			Name:        ToolCatalogSearchProducts,
+			Description: "Consulta productos, categorias y bodegas de la empresa activa.",
+			RiskLevel:   "read", RequiredPermissions: []string{"inventario:R"},
+			TenantScope: "current_company", Confirmation: "none", Idempotency: "not_applicable",
+			TimeoutSeconds: 10, RateLimitPerMinute: 20, AuditCategory: "ai_catalog_read", Rollback: "not_applicable", Module: "inventario", EnabledByDefault: true,
+		},
+		ToolCatalogCreateProduct: {
+			Name:        ToolCatalogCreateProduct,
+			Description: "Crea un producto con categoria, bodega y stock inicial previamente validados.",
+			RiskLevel:   "medium", RequiredPermissions: []string{"inventario:C"},
+			TenantScope: "current_company", Confirmation: "required", Idempotency: "required",
+			TimeoutSeconds: 20, RateLimitPerMinute: 6, AuditCategory: "ai_catalog_create", Rollback: "transactional_before_commit", Module: "inventario", EnabledByDefault: false,
 		},
 	}
+}
+
+// ToolAllowed verifies the server-derived permission snapshot. The model and
+// browser never supply permissions; they only receive the resulting catalog.
+func ToolAllowed(def ToolDefinition, granted []string) bool {
+	if len(def.RequiredPermissions) == 0 {
+		return false
+	}
+	set := make(map[string]struct{}, len(granted))
+	for _, permission := range granted {
+		set[strings.TrimSpace(permission)] = struct{}{}
+	}
+	for _, required := range def.RequiredPermissions {
+		if _, ok := set[strings.TrimSpace(required)]; !ok {
+			return false
+		}
+	}
+	return true
 }
 
 func NewOpaqueID(prefix string) (string, error) {

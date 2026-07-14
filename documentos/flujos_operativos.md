@@ -4,6 +4,20 @@ Guia corta de los procesos que mas se prueban y modifican. Cada flujo debe
 mantener aislamiento por `empresa_id`, permisos por rol y trazabilidad cuando
 afecte dinero, documentos, licencias o seguridad.
 
+## Cliente movil POS v1
+
+1. La app Android/iPhone obtiene una sesion de dispositivo y usa Bearer en
+   `/api/v1/`; nunca reutiliza rutas web legacy como contrato nuevo.
+2. Consulta catalogo, clientes, carritos e items con pagina limitada, filtros y
+   campos permitidos. El `empresa_id` se valida por la sesion y rol efectivo.
+3. Para crear/editar carrito o items, cobrar, emitir desde venta o enviar una
+   notificacion, genera una `Idempotency-Key` nueva por operacion logica y la
+   conserva hasta recibir respuesta definitiva. Un reintento recibe el mismo
+   resultado exitoso sin duplicar efectos fiscales o de caja.
+4. Sin red, la app usa `ventas/offline/sync` con `sync_key`, cajero y caja
+   abierta; el backend conserva la cola y sus validaciones POS actuales.
+
+
 ## Roles personalizados por empresa
 
 1. Abrir `Administrar empresa > Administrar usuarios`.

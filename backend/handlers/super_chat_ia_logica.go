@@ -12,19 +12,23 @@ import (
 )
 
 const (
-	superChatIAEmpresaEnabledKey           = "ai.chat.empresa.enabled"
-	superChatIASuperEnabledKey             = "ai.chat.super.enabled"
-	superChatIAPortalEnabledKey            = "ai.chat.portal.enabled"
-	superChatIAEmpresaMaxConsultasKey      = "ai.chat.empresa.max_consultas_dia"
-	superChatIASuperMaxConsultasKey        = "ai.chat.super.max_consultas_dia"
-	superChatIAEmpresaMaxGPT55ConsultasKey = "ai.chat.empresa.max_gpt55_consultas_dia"
-	superChatIAEmpresaStreamingEnabledKey  = "ai.chat.empresa.streaming_enabled"
-	superChatIASuperStreamingEnabledKey    = "ai.chat.super.streaming_enabled"
-	superChatIAEmpresaDBQueryEnabledKey    = "ai.chat.empresa.db_query_enabled"
-	superChatIAEmpresaDBQueryMaxTablesKey  = "ai.chat.empresa.db_query_max_tables"
-	superChatIAEmpresaDBQueryRowsKey       = "ai.chat.empresa.db_query_rows"
-	superChatIASuperContextoAmplioKey      = "ai.chat.super.contexto_amplio"
-	superChatIAEmpresaSoloLecturaKey       = "ai.chat.super.empresa_solo_lectura"
+	superChatIAEmpresaEnabledKey            = "ai.chat.empresa.enabled"
+	superChatIASuperEnabledKey              = "ai.chat.super.enabled"
+	superChatIAPortalEnabledKey             = "ai.chat.portal.enabled"
+	superChatIAEmpresaMaxConsultasKey       = "ai.chat.empresa.max_consultas_dia"
+	superChatIASuperMaxConsultasKey         = "ai.chat.super.max_consultas_dia"
+	superChatIAEmpresaMaxGPT55ConsultasKey  = "ai.chat.empresa.max_gpt55_consultas_dia"
+	superChatIAEmpresaStreamingEnabledKey   = "ai.chat.empresa.streaming_enabled"
+	superChatIASuperStreamingEnabledKey     = "ai.chat.super.streaming_enabled"
+	superChatIAEmpresaDBQueryEnabledKey     = "ai.chat.empresa.db_query_enabled"
+	superChatIAEmpresaDBQueryMaxTablesKey   = "ai.chat.empresa.db_query_max_tables"
+	superChatIAEmpresaDBQueryRowsKey        = "ai.chat.empresa.db_query_rows"
+	superChatIASuperContextoAmplioKey       = "ai.chat.super.contexto_amplio"
+	superChatIAEmpresaSoloLecturaKey        = "ai.chat.super.empresa_solo_lectura"
+	superChatIAEmpresaModeloOperacionKey    = "ai.chat.empresa.modelo_operacion"
+	superChatIAEmpresaModeloAdjuntosKey     = "ai.chat.empresa.modelo_adjuntos"
+	superChatIAEmpresaModelosHabilitadosKey = "ai.chat.empresa.modelos_habilitados"
+	superChatIAEmpresaModelosEsfuerzoKey    = "ai.chat.empresa.modelos_esfuerzo"
 
 	superChatIALogicaUpdatedBySuffix = ".updated_by"
 
@@ -41,7 +45,19 @@ const (
 	defaultChatIAEmpresaDBQueryRows       = int64(8)
 	defaultChatIASuperContextoAmplio      = true
 	defaultChatIAEmpresaSoloLectura       = true
+	defaultChatIAEmpresaModeloOperacion   = "openai:gpt-5.4-mini"
+	defaultChatIAEmpresaModeloAdjuntos    = "openai:gpt-5.5"
 )
+
+func defaultChatIAEmpresaModelosEsfuerzo() map[string]string {
+	return map[string]string{
+		"openai:gpt-5.4-mini":  "none",
+		"openai:gpt-5.5":       "medium",
+		"openai:gpt-5.6-sol":   "high",
+		"openai:gpt-5.6-terra": "medium",
+		"openai:gpt-5.6-luna":  "low",
+	}
+}
 
 func parseConfigBoolWithDefault(raw string, fallback bool) bool {
 	v := strings.ToLower(strings.TrimSpace(raw))
@@ -213,6 +229,60 @@ func getChatIAEmpresaSoloLectura(dbSuper *sql.DB) (bool, string, string, error) 
 		return defaultChatIAEmpresaSoloLectura, "", "", err
 	}
 	return parseConfigBoolWithDefault(raw, defaultChatIAEmpresaSoloLectura), updatedAt, updatedBy, nil
+}
+
+func getChatIAEmpresaModeloOperacion(dbSuper *sql.DB) (string, string, string, error) {
+	raw, updatedAt, updatedBy, err := getSuperConfigString(dbSuper, superChatIAEmpresaModeloOperacionKey)
+	if err != nil {
+		return defaultChatIAEmpresaModeloOperacion, "", "", err
+	}
+	if strings.TrimSpace(raw) == "" {
+		return defaultChatIAEmpresaModeloOperacion, updatedAt, updatedBy, nil
+	}
+	return strings.TrimSpace(raw), updatedAt, updatedBy, nil
+}
+
+func getChatIAEmpresaModeloAdjuntos(dbSuper *sql.DB) (string, string, string, error) {
+	raw, updatedAt, updatedBy, err := getSuperConfigString(dbSuper, superChatIAEmpresaModeloAdjuntosKey)
+	if err != nil {
+		return defaultChatIAEmpresaModeloAdjuntos, "", "", err
+	}
+	if strings.TrimSpace(raw) == "" {
+		return defaultChatIAEmpresaModeloAdjuntos, updatedAt, updatedBy, nil
+	}
+	return strings.TrimSpace(raw), updatedAt, updatedBy, nil
+}
+
+func getChatIAEmpresaModelosHabilitados(dbSuper *sql.DB) (map[string]bool, error) {
+	raw, _, _, err := getSuperConfigString(dbSuper, superChatIAEmpresaModelosHabilitadosKey)
+	if err != nil || strings.TrimSpace(raw) == "" {
+		return nil, err
+	}
+	out := map[string]bool{}
+	for _, item := range strings.Split(raw, ",") {
+		if id := strings.TrimSpace(item); id != "" {
+			out[id] = true
+		}
+	}
+	return out, nil
+}
+
+func getChatIAEmpresaModelosEsfuerzo(dbSuper *sql.DB) (map[string]string, error) {
+	defaults := defaultChatIAEmpresaModelosEsfuerzo()
+	raw, _, _, err := getSuperConfigString(dbSuper, superChatIAEmpresaModelosEsfuerzoKey)
+	if err != nil || strings.TrimSpace(raw) == "" {
+		return defaults, err
+	}
+	var stored map[string]string
+	if json.Unmarshal([]byte(raw), &stored) != nil {
+		return defaults, nil
+	}
+	for id, effort := range stored {
+		if strings.TrimSpace(id) != "" && strings.TrimSpace(effort) != "" {
+			defaults[id] = strings.TrimSpace(effort)
+		}
+	}
+	return defaults, nil
 }
 
 func effectiveDailyLimitBySuperConfig(maxConfigured int64, modelFreeDailyLimit int) int64 {

@@ -100,3 +100,19 @@ Aplica al checkout publico de licencias sobre Epayco y Wompi.
 
 - `ADR-0001-frontera-multiempresa-empresa-id.md`
 - `ADR-0002-postgresql-runtime-canonico-vps.md`
+# Compra de varios períodos
+
+El checkout público permite comprar varios períodos de una licencia comercial
+en una sola transacción. El usuario elige `cantidad` entre 1 y el máximo global
+`licencias.max_unidades_por_compra` (5 por defecto). El servidor recalcula el
+importe, descuentos y vigencia; no confía en el valor enviado por el navegador.
+
+- La cantidad aplica únicamente a la licencia principal individual. Bundles y
+  adicionales conservan cantidad 1 para no mezclar reglas de renovación.
+- Las licencias gratuitas o de prueba solo aceptan una unidad, incluso con total
+  cero o descuento total.
+- Wompi y Epayco guardan `cantidad` en el contexto interno del pago. Al llegar
+  la confirmación o webhook, PCS activa exactamente los períodos cobrados de
+  forma idempotente, sin depender de los parámetros de retorno.
+- Super administrador ajusta el límite desde `Licencias > Gobierno comercial`;
+  el valor permitido está entre 1 y 24.

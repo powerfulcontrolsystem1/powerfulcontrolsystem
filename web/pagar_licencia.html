@@ -420,6 +420,7 @@
         let empresaId = params.get('empresa_id');
         const checkoutMode = String(params.get('checkout_mode') || '').trim();
         const addonLicenciaIDs = String(params.get('addon_licencia_ids') || '').trim();
+        let checkoutQuantity = Math.max(1, parseInt(params.get('cantidad') || '1', 10) || 1);
         const initialAsesorID = String(params.get('asesor_id') || params.get('codigo_asesor') || '').trim();
         const initialDiscountCode = String(params.get('discount_code') || params.get('codigo_descuento') || '').trim();
         const initialCustomerEmail = String(params.get('customer_email') || params.get('cliente_email') || '').trim();
@@ -464,6 +465,7 @@
           if (addonLicenciaIDs) summaryParams.set('addon_licencia_ids', addonLicenciaIDs);
           if (initialDiscountCode) summaryParams.set('discount_code', initialDiscountCode);
           if (initialAsesorID) summaryParams.set('asesor_id', initialAsesorID);
+          summaryParams.set('cantidad', String(checkoutQuantity));
 
           function resolveCountryFromBrowser(){
             try {
@@ -664,6 +666,11 @@
                       '<label class="form-label" for="discountCode">Código de descuento</label>'+
                       '<input id="discountCode" class="form-input" type="text" placeholder="Código promocional" value="' + escapeHtml(initialDiscountCode) + '">'+
                     '</div>'+
+                    (checkoutMode ? '' : '<div class="form-col">'+
+                      '<label class="form-label" for="checkoutQuantity">Cantidad de períodos</label>'+
+                      '<input id="checkoutQuantity" class="form-input" type="number" min="1" max="24" step="1" value="' + escapeHtml(String(checkoutQuantity)) + '">'+
+                      '<div class="form-help">El máximo se define en Super administrador. El total y la vigencia se actualizan antes del pago.</div>'+
+                    '</div>')+
                     '<div class="form-col">'+
                       '<label class="form-label" for="asesorId">Código de asesor comercial</label>'+
                       '<input id="asesorId" class="form-input" type="text" placeholder="Ej: AC-123ABC" value="' + escapeHtml(initialAsesorID) + '">'+
@@ -772,6 +779,7 @@
             discountCodeInput: document.getElementById('discountCode'),
             asesorIdInput: document.getElementById('asesorId'),
             customerEmailInput: document.getElementById('customerEmail'),
+            checkoutQuantityInput: document.getElementById('checkoutQuantity'),
             checkoutCountrySelect: document.getElementById('checkoutCountrySelect'),
             summaryOriginalValue: document.getElementById('summaryOriginalValue'),
             summaryDiscountValue: document.getElementById('summaryDiscountValue'),
@@ -795,6 +803,7 @@
             if (empresaId) query.set('empresa_id', String(empresaId));
             if (checkoutMode) query.set('checkout_mode', checkoutMode);
             if (addonLicenciaIDs) query.set('addon_licencia_ids', addonLicenciaIDs);
+            query.set('cantidad', String(checkoutQuantity));
             var code = String((ui.discountCodeInput && ui.discountCodeInput.value) || '').trim();
             if (code) query.set('discount_code', code);
             var advisor = String((ui.asesorIdInput && ui.asesorIdInput.value) || '').trim();
@@ -1117,6 +1126,14 @@
             ui.asesorIdInput.addEventListener('input', scheduleCheckoutSummaryRefresh);
             ui.asesorIdInput.addEventListener('blur', refreshCheckoutSummary);
           }
+          if (ui.checkoutQuantityInput) {
+            ui.checkoutQuantityInput.addEventListener('change', function(){
+              checkoutQuantity = Math.max(1, parseInt(ui.checkoutQuantityInput.value || '1', 10) || 1);
+              ui.checkoutQuantityInput.value = String(checkoutQuantity);
+              updateUrlState({ cantidad: checkoutQuantity });
+              refreshCheckoutSummary();
+            });
+          }
 
           if (ui.activateFreeBtn) ui.activateFreeBtn.addEventListener('click', async function(){
             var summary = checkoutSummaryState;
@@ -1133,6 +1150,7 @@
             try {
               var payload = {
                 licencia_id: Number(licenciaId),
+                cantidad: checkoutQuantity,
                 empresa_id: Number(empresaId || 0),
                 motivo: summary.discount_applied ? 'descuento_total_cero' : 'licencia_valor_cero'
               };
@@ -1207,7 +1225,8 @@
             syncStatusText(ui.wompiStatus, '');
             try {
               const payload = {
-                licencia_id: Number(licenciaId)
+                licencia_id: Number(licenciaId),
+                cantidad: checkoutQuantity
               };
               if (checkoutMode) payload.checkout_mode = checkoutMode;
               if (addonLicenciaIDs) payload.addon_licencia_ids = addonLicenciaIDs.split(',').map(function(v){ return Number(String(v).trim() || 0); }).filter(function(v){ return v > 0; });
@@ -1285,7 +1304,8 @@
             syncStatusText(ui.epaycoStatus, '');
             try {
               const payload = {
-                licencia_id: Number(licenciaId)
+                licencia_id: Number(licenciaId),
+                cantidad: checkoutQuantity
               };
               if (checkoutMode) payload.checkout_mode = checkoutMode;
               if (addonLicenciaIDs) payload.addon_licencia_ids = addonLicenciaIDs.split(',').map(function(v){ return Number(String(v).trim() || 0); }).filter(function(v){ return v > 0; });

@@ -1,4 +1,10 @@
 2026-07-13 - Evidencia de preparacion para staging
+- `backend/db/mobile_api_idempotency.go`: persistencia de idempotencia movil
+  aislada por empresa; solo conserva hashes de clave/cuerpo y respuesta exitosa.
+- `backend/handlers/mobile_api_v1.go`: fachada movil v1 para POS, pagos,
+  facturacion, offline y notificaciones, sin duplicar reglas operativas.
+- `documentos/api/openapi.mobile.v1.yaml`: contrato OpenAPI extendido para los
+  flujos moviles transaccionales.
 - `documentos/production_readiness_2026_07_13.md`: matriz de evidencia local,
   riesgos residuales y bloqueantes verificables antes de produccion.
 - `documentos/staging_validation_checklist_2026_07_13.md`: checklist de pruebas
@@ -393,8 +399,8 @@
 - `backend/handlers/chat_flotante_config.go`: en contexto empresarial fuerza `chat_enabled=true` y normaliza guardados apagados a `1`, manteniendo robot/secretaria retirados.
 - `backend/db/empresa_estacion_prefs.go`: reaplica preferencias de preproduccion con la migracion `20260610_chat_ia_activo_empresas_reaplicar`.
 - `backend/handlers/chat_flotante_config_test.go`: cubre que el chat flotante empresarial responda activo aunque el fallback global este apagado.
-- `web/js/ai_chat_drawer.js`: ignora `localStorage` apagado en empresas y mantiene visible el boton circular flotante del asistente IA.
-- `web/administrar_empresa/configuracion_chat_flotante.html`: muestra la IA flotante como activa por empresa y deshabilita el apagado en contexto empresarial.
+- `web/js/ai_chat_drawer.js`: ignora `localStorage` apagado en empresas y mantiene visible el boton circular flotante del asistente IA. Renderiza de forma segura títulos, filas y tablas Markdown de respuestas IA, con tema y tamaño recibidos de la preferencia empresarial.
+- `web/administrar_empresa/configuracion_chat_flotante.html`: muestra la IA flotante como activa por empresa y deshabilita el apagado en contexto empresarial; permite guardar tema y tamaño de texto con vista previa.
 
 2026-06-10 - E-mail Corporativo como pagina independiente
 - `web/administrar_empresa/email_corporativo.html`: nueva pagina empresarial para abrir automaticamente el webmail corporativo, mostrar cuenta, estado, no leidos y acceso a configuracion por `empresa_id`.
@@ -11879,3 +11885,47 @@ documentos/production_deployment_runbook.md
 documentos/production_rollback_runbook.md
 documentos/release_checklist.md
 - Runbooks y lista de control para una liberacion reversible.
+
+documentos/plan_101_arquitectura_modular.md
+- Decision de monolito modular, controles multiempresa, reglas de evolucion e
+  idempotencia, y evidencia pendiente de preproduccion.
+2026-07-13 - IA propia empresarial y API movil v1
+- `backend/db/ai_empresa_proveedor.go`: esquema y acceso cifrado por empresa
+  para la clave OpenAI propia; el valor solo se descifra en memoria al enviar la
+  solicitud saliente.
+- `backend/handlers/empresa_ai_proveedor_config.go`: endpoint administrativo
+  aislado para consultar/activar/desactivar la configuracion sin devolver la
+  clave.
+- `backend/handlers/mobile_api_v1.go`: fachada versionada para movil con
+  envoltura JSON, token de dispositivo, permisos y paginacion inicial.
+- `web/administrar_empresa/configuracion_ia_propia.html`: configuracion de
+  OpenAI propio por empresa.
+- `documentos/api/openapi.mobile.v1.yaml`: contrato OpenAPI manual de la
+  fachada movil estable.
+- `documentos/api/mobile_api_v1.md`: inventario, seguridad, compatibilidad y
+  plan de migracion de APIs web hacia movil.
+- `tools/auditar_api_movil.mjs` y `documentos/api/inventario_api_movil.md`:
+  auditoria reproducible de rutas HTTP registradas, agrupada por familia para
+  priorizar la migracion sin consultar datos ni ejecutar cambios de runtime.
+
+2026-07-13: Historial empresarial de licencias
+- `backend/db/licencias_comprobantes.go`: consulta cerrada por `empresa_id` de compras Wompi/Epayco y resolucion de la empresa emisora sin mutar datos durante lecturas.
+- `backend/handlers/licencias_comprobantes.go`: API empresarial de solo lectura para historial y PDFs de comprobante/factura, con validacion de empresa, descarga `no-store`, `nosniff` y auditoria.
+- `backend/handlers/licencias_comprobantes_test.go`: regresiones de PDF, metodo HTTP y rechazo de empresa sin contexto validado.
+
+2026-07-14: Plataforma de procesos y preparacion movil
+- `documentos/preparacion_produccion_y_app_movil.md`: arquitectura de roles,
+  cola/outbox y gates de liberacion.
+- `backend/internal/platform/runtimeconfig/config.go`: roles tipados y control
+  del bootstrap de esquema.
+- `backend/internal/platform/worker/worker.go`: worker durable PostgreSQL.
+- `backend/db/async_jobs.go` y `backend/db/outbox.go`: contratos persistentes
+  de tareas y eventos transaccionales.
+- `backend/cmd/pcs-migrate/main.go` y `backend/cmd/pcs-worker/main.go`:
+  procesos separados de migracion y trabajo asincrono.
+
+backend/handlers/selector_chat_ia.go
+- Chat IA de selector de empresas: resúmenes multiempresa autorizados por sesión, sin aceptar alcance empresarial desde el cliente.
+
+backend/handlers/selector_chat_ia_test.go
+- Regresión de redacción de identificadores técnicos del contexto multiempresa del selector.

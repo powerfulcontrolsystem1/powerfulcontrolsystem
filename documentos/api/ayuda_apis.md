@@ -1,5 +1,13 @@
 # Ayuda de APIs
 
+## API movil versionada
+
+Las nuevas aplicaciones Android/iPhone deben consumir `/api/v1/` y el contrato
+`documentos/api/openapi.mobile.v1.yaml`. La primera entrega incluye autenticacion
+de dispositivo, perfil, productos y clientes con sobre JSON, paginacion y
+permisos empresariales. Las rutas `/api/empresa/*` existentes siguen siendo
+compatibles con la web, pero no son el contrato recomendado para clientes nuevos.
+
 Fecha: 2026-06-01
 Estado: vigente
 

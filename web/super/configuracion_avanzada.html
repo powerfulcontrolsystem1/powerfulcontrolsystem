@@ -1056,9 +1056,12 @@
         </div>
         <div class="form-col">
           <div class="form-label">Modelos conectados</div>
-          <div class="form-help">Texto y tareas operativas: <strong>GPT-5.4 mini</strong>.</div>
-          <div class="form-help">Imagenes, adjuntos y analisis avanzado: <strong>GPT-5.5</strong> cuando el flujo lo requiera.</div>
-          <div class="form-help">Ambos usan la misma credencial OpenAI y respetan limites, roles y aislamiento por empresa.</div>
+          <label class="form-label" for="aiOperationModel">Operaciones y preguntas</label>
+          <select id="aiOperationModel" class="form-input"></select>
+          <label class="form-label" for="aiAttachmentModel">Fotos, documentos y analisis avanzado</label>
+          <select id="aiAttachmentModel" class="form-input"></select>
+          <div id="aiEnabledModels" class="form-help">Cargando modelos permitidos...</div>
+          <div class="form-help">El modelo pequeño atiende volumen operativo. El avanzado analiza adjuntos y tareas complejas. La misma credencial se mantiene cifrada; los límites y permisos se aplican por empresa.</div>
         </div>
       </div>
 
@@ -2980,6 +2983,41 @@
 
           const byModel = {};
           (data.modelos || []).forEach(function(item){ byModel[item.model_id] = item; });
+          const policy = data.chat_model_policy || {};
+          const enabledModels = policy.enabled_model_ids || {};
+          const reasoningEfforts = policy.reasoning_effort_by_model || {};
+          const operationModel = document.getElementById('aiOperationModel');
+          const attachmentModel = document.getElementById('aiAttachmentModel');
+          const enabledModelsHost = document.getElementById('aiEnabledModels');
+          [operationModel, attachmentModel].forEach(function(select){
+            if (!select) return;
+            select.innerHTML = '';
+            (data.modelos || []).forEach(function(item){
+              const option = document.createElement('option');
+              option.value = item.model_id;
+              option.textContent = item.display_name || item.model_id;
+              select.appendChild(option);
+            });
+          });
+          if (operationModel) operationModel.value = policy.operation_model_id || 'openai:gpt-5.4-mini';
+          if (attachmentModel) attachmentModel.value = policy.attachment_model_id || 'openai:gpt-5.5';
+          if (enabledModelsHost) {
+            enabledModelsHost.innerHTML = '';
+            (data.modelos || []).forEach(function(item){
+              const label = document.createElement('label');
+              label.className = 'mode-switch-row';
+              const input = document.createElement('input');
+              input.type = 'checkbox'; input.value = item.model_id; input.className = 'ai-enabled-model';
+              input.checked = enabledModels[item.model_id] !== false;
+              label.appendChild(input); label.appendChild(document.createTextNode(' ' + (item.display_name || item.model_id)));
+              const effort = document.createElement('select');
+              effort.className = 'form-input ai-reasoning-effort'; effort.dataset.modelId = item.model_id;
+              (item.reasoning_efforts || ['none']).forEach(function(value){ const option = document.createElement('option'); option.value = value; option.textContent = value; effort.appendChild(option); });
+              effort.value = reasoningEfforts[item.model_id] || item.default_reasoning_effort || (item.reasoning_efforts || ['none'])[0];
+              label.appendChild(effort);
+              enabledModelsHost.appendChild(label);
+            });
+          }
 
           const openAIItem = byModel['openai:gpt-5.4-mini'] || null;
           if (openAIEnabledEl) openAIEnabledEl.checked = !openAIItem || !!openAIItem.enabled;
@@ -3066,7 +3104,11 @@
       enabled: !!document.getElementById('aiEnabledToggle').checked,
       provider_enabled: {
 		  openai: !!document.getElementById('aiProviderOpenAIEnabled').checked
-      }
+      },
+      operation_model_id: (document.getElementById('aiOperationModel').value || '').trim(),
+      attachment_model_id: (document.getElementById('aiAttachmentModel').value || '').trim(),
+      enabled_model_ids: Array.prototype.slice.call(document.querySelectorAll('.ai-enabled-model:checked')).map(function(input){ return input.value; })
+          , reasoning_effort_by_model: Array.prototype.slice.call(document.querySelectorAll('.ai-reasoning-effort')).reduce(function(out, select){ out[select.dataset.modelId] = select.value; return out; }, {})
         };
 
         btn.disabled = true;
