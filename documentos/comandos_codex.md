@@ -85,10 +85,13 @@ No depender de un wrapper en la raiz del proyecto. Revisar el contenido del
 script antes de asumir su alcance. Puede encadenar preflight, actualizacion,
 sincronizacion y pasos operativos.
 
-`rs.ps1` ejecuta cada script interno en un proceso PowerShell hijo. Esta regla
+`rs.ps1` ejecuta cada script interno en un proceso PowerShell aislado, con
+archivos separados de salida y error bajo `scripts/logs/rs-*.log`. Esta regla
 evita que un `exit` de preflight, actualizacion o sincronizacion cierre el
 orquestador antes de los pasos restantes; el codigo de salida se conserva y
-detiene el flujo solo cuando el paso correspondiente falla.
+detiene el flujo solo cuando el paso correspondiente falla. Cada fase tiene
+timeout controlado (3600 segundos por defecto) y reporta las rutas de log si se
+agota o falla. Puede ajustarse con `-StepTimeoutSeconds`.
 
 Si GitHub protege `main` y rechaza el push directo, `actualizar_repositorio.ps1`
 crea una rama `codex/rs-...`, abre la PR y solicita `auto-merge`. Nunca se

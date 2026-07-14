@@ -4854,3 +4854,4 @@
 # 2026-07-13
 
 - Licencias: checkout con compra de varios períodos, límite global configurable y activación idempotente alineada con el importe confirmado por Wompi o Epayco.
+- Operación: `rs` ahora aísla cada fase, conserva sus logs y reporta fallos o timeouts sin detenerse silenciosamente.

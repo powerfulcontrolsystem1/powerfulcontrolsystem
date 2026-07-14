@@ -23,6 +23,7 @@ param(
   [switch]$NoAutoMergeProtectedPR,
   [int]$RestartHealthTimeoutSeconds = 900,
   [int]$DockerHealthTimeoutSeconds = 900,
+  [int]$StepTimeoutSeconds = 3600,
   [bool]$CleanupRemoteUnusedFiles = $true,
   [int]$RemoteCleanupTempMinAgeMinutes = 60,
   [int]$RemoteCleanupDockerBuilderCacheMaxAgeHours = 0
@@ -65,6 +66,9 @@ function Invoke-Step {
     [hashtable]$Arguments = @{}
   )
 
+  if ($StepTimeoutSeconds -lt 60) {
+    throw "StepTimeoutSeconds debe ser de al menos 60 segundos"
+  }
   Write-Host ""
   Write-Host "==> $Name" -ForegroundColor Cyan
   # Cada script operativo se ejecuta en un proceso hijo. Varios scripts
@@ -88,11 +92,31 @@ function Invoke-Step {
     $commandParts += ("'{0}'" -f ([string]$value).Replace("'", "''"))
   }
   $childArgs = @("-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", ($commandParts -join " "))
-  $global:LASTEXITCODE = 0
-  & $childPowerShell @childArgs
-  $exitCode = if ($null -ne $LASTEXITCODE) { [int]$LASTEXITCODE } else { 0 }
+  $safeStepName = ($Name -replace '[^A-Za-z0-9_-]', '_')
+  $stepStamp = Get-Date -Format 'yyyyMMdd-HHmmss'
+  $stepLogDir = Join-Path $scriptDir 'logs'
+  New-Item -ItemType Directory -Force -Path $stepLogDir | Out-Null
+  $stdoutPath = Join-Path $stepLogDir ("rs-{0}-{1}.out.log" -f $stepStamp, $safeStepName)
+  $stderrPath = Join-Path $stepLogDir ("rs-{0}-{1}.err.log" -f $stepStamp, $safeStepName)
+  Write-Host ("[INFO] Iniciando paso aislado; salida: {0}" -f $stdoutPath) -ForegroundColor DarkGray
+  $process = Start-Process -FilePath $childPowerShell -ArgumentList $childArgs -NoNewWindow -PassThru -RedirectStandardOutput $stdoutPath -RedirectStandardError $stderrPath
+  $deadline = (Get-Date).AddSeconds($StepTimeoutSeconds)
+  while (-not $process.HasExited -and (Get-Date) -lt $deadline) {
+    Start-Sleep -Seconds 1
+    $process.Refresh()
+  }
+  if (-not $process.HasExited) {
+    try { $process.Kill($true) } catch { }
+    throw ("{0} supero el limite de {1} segundos. Revisa {2} y {3}." -f $Name, $StepTimeoutSeconds, $stdoutPath, $stderrPath)
+  }
+  $exitCode = [int]$process.ExitCode
+  foreach ($logPath in @($stdoutPath, $stderrPath)) {
+    if (Test-Path -LiteralPath $logPath) {
+      Get-Content -LiteralPath $logPath | ForEach-Object { Write-Host $_ }
+    }
+  }
   if ($exitCode -ne 0) {
-    Write-Host "[ERROR] $Name fallo con codigo $exitCode." -ForegroundColor Red
+    Write-Host "[ERROR] $Name fallo con codigo $exitCode. Revisa $stdoutPath y $stderrPath." -ForegroundColor Red
     exit $exitCode
   }
   Write-Host "[OK] $Name completado." -ForegroundColor Green
