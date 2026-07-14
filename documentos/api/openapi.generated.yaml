@@ -1580,6 +1580,19 @@ paths:
       responses:
         "200":
           description: Respuesta exitosa o manejada por el handler real.
+  "/api/empresa/licencias/comprobantes":
+    get:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/licencias/comprobantes
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/licencias/comprobantes
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
   "/api/empresa/logistica_wms":
     get:
       tags: [empresa]
