@@ -16764,3 +16764,7 @@ Archivos modificados:
 2026-07-13 05:44:42 - Mensaje: rs: actualizar repositorio y sincronizar VPS; Commit: 3b09e7bd; PushStatus: OK
 Archivos modificados:
 - deploy/docker/backend.Dockerfile
+
+2026-07-13 22:10:35 - Mensaje: rs: actualizar repositorio y sincronizar VPS; Commit: f136cdc9; PushStatus: OK
+Archivos modificados:
+- documentos/api/openapi.generated.yaml
