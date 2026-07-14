@@ -4,8 +4,11 @@ import (
 	"bytes"
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"io"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 
@@ -252,6 +255,151 @@ func mobileSelectFields(items interface{}, raw string, allowed map[string]bool) 
 	return maps
 }
 
+func mobileLegacyAction(next http.HandlerFunc, action string) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		clone := r.Clone(r.Context())
+		query := clone.URL.Query()
+		if strings.TrimSpace(action) != "" {
+			query.Set("action", action)
+		}
+		clone.URL = cloneURLWithQuery(clone.URL, query)
+		next(w, clone)
+	}
+}
+
+func cloneURLWithQuery(source *url.URL, query url.Values) *url.URL {
+	copyURL := *source
+	copyURL.RawQuery = query.Encode()
+	return &copyURL
+}
+
+// mobileNormalizeEmpresaJSON makes the tenant selected by the validated route
+// authoritative. A mobile client may send empresa_id for convenience, but it
+// cannot select a different tenant through a JSON body.
+func mobileNormalizeEmpresaJSON(next http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodGet || r.Method == http.MethodDelete || r.Body == nil {
+			next(w, r)
+			return
+		}
+		empresaID, err := parseEmpresaIDQuery(r)
+		if err != nil || empresaID <= 0 {
+			http.Error(w, "empresa_id es obligatorio", http.StatusBadRequest)
+			return
+		}
+		body := []byte{}
+		if r.Body != nil {
+			body, err = io.ReadAll(http.MaxBytesReader(w, r.Body, 1<<20))
+			if err != nil {
+				http.Error(w, "payload invalido", http.StatusBadRequest)
+				return
+			}
+		}
+		if len(bytes.TrimSpace(body)) == 0 {
+			r.Body = io.NopCloser(bytes.NewReader(body))
+			next(w, r)
+			return
+		}
+		var payload map[string]interface{}
+		if err := json.Unmarshal(body, &payload); err != nil {
+			http.Error(w, "payload JSON invalido", http.StatusBadRequest)
+			return
+		}
+		payload["empresa_id"] = empresaID
+		normalized, err := json.Marshal(payload)
+		if err != nil {
+			http.Error(w, "payload invalido", http.StatusBadRequest)
+			return
+		}
+		clone := r.Clone(r.Context())
+		clone.Body = io.NopCloser(bytes.NewReader(normalized))
+		clone.ContentLength = int64(len(normalized))
+		next(w, clone)
+	}
+}
+
+func validMobileIdempotencyKey(key string) bool {
+	key = strings.TrimSpace(key)
+	if len(key) < 16 || len(key) > 200 {
+		return false
+	}
+	for _, char := range key {
+		if (char >= 'a' && char <= 'z') || (char >= 'A' && char <= 'Z') || (char >= '0' && char <= '9') || char == '-' || char == '_' || char == '.' {
+			continue
+		}
+		return false
+	}
+	return true
+}
+
+// mobileIdempotentMutation persists successful financial/document mutations.
+// The key is hashed, scoped to the tenant and operation, and never logged.
+func mobileIdempotentMutation(dbEmp *sql.DB, operation string, next http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		key := strings.TrimSpace(r.Header.Get("Idempotency-Key"))
+		if !validMobileIdempotencyKey(key) {
+			http.Error(w, "Idempotency-Key valido es obligatorio", http.StatusBadRequest)
+			return
+		}
+		empresaID, err := parseEmpresaIDQuery(r)
+		if err != nil || empresaID <= 0 {
+			http.Error(w, "empresa_id es obligatorio", http.StatusBadRequest)
+			return
+		}
+		body := []byte{}
+		if r.Body != nil {
+			body, err = io.ReadAll(http.MaxBytesReader(w, r.Body, 1<<20))
+			if err != nil {
+				http.Error(w, "payload invalido", http.StatusBadRequest)
+				return
+			}
+		}
+		claim, claimed, err := dbpkg.ClaimMobileAPIIdempotency(dbEmp, empresaID, operation, key, string(body))
+		if err != nil {
+			if errors.Is(err, dbpkg.ErrMobileAPIIdempotencyConflict) {
+				http.Error(w, "Idempotency-Key ya fue usado con otra solicitud", http.StatusConflict)
+				return
+			}
+			http.Error(w, "no se pudo preparar la operacion", http.StatusServiceUnavailable)
+			return
+		}
+		if !claimed {
+			if claim.Status == "completado" && claim.ResponseCode >= 200 && claim.ResponseCode < 300 {
+				w.Header().Set("Idempotency-Replayed", "true")
+				w.Header().Set("Content-Type", "application/json; charset=utf-8")
+				w.WriteHeader(claim.ResponseCode)
+				_, _ = io.WriteString(w, claim.ResponseJSON)
+				return
+			}
+			w.Header().Set("Retry-After", "2")
+			http.Error(w, "operacion en proceso; reintenta", http.StatusConflict)
+			return
+		}
+
+		capture := &mobileResponseCapture{header: make(http.Header)}
+		clone := r.Clone(r.Context())
+		clone.Body = io.NopCloser(bytes.NewReader(body))
+		mobileNormalizeEmpresaJSON(next).ServeHTTP(capture, clone)
+		status := capture.status
+		if status == 0 {
+			status = http.StatusOK
+		}
+		if status >= 200 && status < 300 {
+			if err := dbpkg.CompleteMobileAPIIdempotency(dbEmp, claim, status, capture.body.String()); err != nil {
+				http.Error(w, "no se pudo cerrar la operacion", http.StatusServiceUnavailable)
+				return
+			}
+		} else {
+			_ = dbpkg.AbandonMobileAPIIdempotency(dbEmp, claim)
+		}
+		for header, values := range capture.header {
+			w.Header()[header] = append([]string{}, values...)
+		}
+		w.WriteHeader(status)
+		_, _ = w.Write(capture.body.Bytes())
+	}
+}
+
 func MobileProductosHandler(dbEmp *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
@@ -323,9 +471,266 @@ func MobileClientesHandler(dbEmp *sql.DB) http.HandlerFunc {
 	}
 }
 
+func MobileCarritosHandler(dbEmp *sql.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+		empresaID, err := parseEmpresaIDQuery(r)
+		if err != nil {
+			http.Error(w, "empresa_id es obligatorio", http.StatusBadRequest)
+			return
+		}
+		if id, err := parseOptionalInt64CarritoQuery(r, "id"); err != nil {
+			http.Error(w, "id invalido", http.StatusBadRequest)
+			return
+		} else if id > 0 {
+			if isStationBoardOnlyCarritoRequest(r) {
+				http.Error(w, "forbidden", http.StatusForbidden)
+				return
+			}
+			item, err := dbpkg.GetCarritoCompraByID(dbEmp, empresaID, id)
+			if err != nil {
+				if errors.Is(err, sql.ErrNoRows) {
+					http.Error(w, "carrito no encontrado", http.StatusNotFound)
+					return
+				}
+				http.Error(w, "carrito no disponible", http.StatusServiceUnavailable)
+				return
+			}
+			if err := ensureCarritoStationAccessForCarrito(dbEmp, empresaID, adminEmailFromRequest(r), item); err != nil {
+				writeCarritoStationAccessError(w, err)
+				return
+			}
+			writeJSON(w, http.StatusOK, mobileAPIEnvelope{OK: true, Data: item, RequestID: mobileAPIRequestID()})
+			return
+		}
+		limit, offset, err := mobileLimitOffset(r)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		includeInactive := r.URL.Query().Get("include_inactive") == "1" || strings.EqualFold(r.URL.Query().Get("include_inactive"), "true")
+		items, err := dbpkg.GetCarritosCompraByEmpresa(dbEmp, empresaID, includeInactive, strings.TrimSpace(r.URL.Query().Get("q")))
+		if err != nil {
+			http.Error(w, "carritos no disponibles", http.StatusServiceUnavailable)
+			return
+		}
+		items, err = filterCarritosByStationAccess(dbEmp, empresaID, adminEmailFromRequest(r), items)
+		if err != nil {
+			writeCarritoStationAccessError(w, err)
+			return
+		}
+		if isStationBoardOnlyCarritoRequest(r) {
+			stationOnly := make([]dbpkg.CarritoCompra, 0, len(items))
+			for _, item := range items {
+				stationID, _, _ := dbpkg.ResolveCarritoStationIdentity(&item)
+				if stationID > 0 {
+					stationOnly = append(stationOnly, item)
+				}
+			}
+			items = stationOnly
+		}
+		statusFilter := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("estado")))
+		if statusFilter != "" && statusFilter != "todos" {
+			filtered := make([]dbpkg.CarritoCompra, 0, len(items))
+			for _, item := range items {
+				paid := strings.TrimSpace(item.PagadoEn) != "" || strings.EqualFold(item.EstadoCarrito, "cerrado") || strings.EqualFold(item.EstadoCarrito, "pagado")
+				if (statusFilter == "pagado" && paid) || (statusFilter == "abierto" && !paid) || strings.EqualFold(statusFilter, strings.TrimSpace(item.EstadoCarrito)) {
+					filtered = append(filtered, item)
+				}
+			}
+			items = filtered
+		}
+		if offset > len(items) {
+			offset = len(items)
+		}
+		end := offset + limit
+		if end > len(items) {
+			end = len(items)
+		}
+		next := -1
+		if end < len(items) {
+			next = end
+		}
+		allowed := map[string]bool{"id": true, "codigo": true, "nombre": true, "cliente_id": true, "cliente_nombre": true, "estado_carrito": true, "estado_venta": true, "moneda": true, "subtotal": true, "descuento_total": true, "impuesto_total": true, "total": true, "metodo_pago": true, "total_pagado": true, "pagado_en": true, "fecha_actualizacion": true, "item_count": true, "canal_venta": true}
+		writeJSON(w, http.StatusOK, mobileAPIEnvelope{OK: true, Data: mobileSelectFields(items[offset:end], r.URL.Query().Get("fields"), allowed), Meta: map[string]interface{}{"limit": limit, "offset": offset, "next_offset": next, "returned": end - offset}, RequestID: mobileAPIRequestID()})
+	}
+}
+
+// MobileVentasHandler is the historical POS view. A sale is a paid/closed
+// carrito, so it deliberately uses the same source of truth as the web POS.
+func MobileVentasHandler(dbEmp *sql.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+		clone := r.Clone(r.Context())
+		query := clone.URL.Query()
+		if strings.TrimSpace(query.Get("estado")) == "" {
+			query.Set("estado", "pagado")
+		}
+		clone.URL = cloneURLWithQuery(clone.URL, query)
+		MobileCarritosHandler(dbEmp).ServeHTTP(w, clone)
+	}
+}
+
+func MobileCarritoItemsHandler(dbEmp *sql.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+		if isStationBoardOnlyCarritoRequest(r) {
+			http.Error(w, "forbidden", http.StatusForbidden)
+			return
+		}
+		empresaID, err := parseEmpresaIDQuery(r)
+		if err != nil {
+			http.Error(w, "empresa_id es obligatorio", http.StatusBadRequest)
+			return
+		}
+		carritoID, err := parseInt64Query(r, "carrito_id")
+		if err != nil || carritoID <= 0 {
+			http.Error(w, "carrito_id es obligatorio", http.StatusBadRequest)
+			return
+		}
+		if err := ensureCarritoStationAccessByID(dbEmp, empresaID, carritoID, adminEmailFromRequest(r)); err != nil {
+			writeCarritoStationAccessError(w, err)
+			return
+		}
+		limit, offset, err := mobileLimitOffset(r)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		includeInactive := r.URL.Query().Get("include_inactive") == "1" || strings.EqualFold(r.URL.Query().Get("include_inactive"), "true")
+		all, err := dbpkg.GetCarritoCompraItems(dbEmp, empresaID, carritoID, includeInactive)
+		if err != nil {
+			http.Error(w, "items no disponibles", http.StatusServiceUnavailable)
+			return
+		}
+		if offset > len(all) {
+			offset = len(all)
+		}
+		end := offset + limit
+		if end > len(all) {
+			end = len(all)
+		}
+		next := -1
+		if end < len(all) {
+			next = end
+		}
+		allowed := map[string]bool{"id": true, "carrito_id": true, "tipo_item": true, "referencia_id": true, "codigo_item": true, "descripcion": true, "unidad_medida": true, "cantidad": true, "precio_unitario": true, "descuento_porcentaje": true, "impuesto_porcentaje": true, "total_linea": true, "estado": true, "fecha_actualizacion": true}
+		writeJSON(w, http.StatusOK, mobileAPIEnvelope{OK: true, Data: mobileSelectFields(all[offset:end], r.URL.Query().Get("fields"), allowed), Meta: map[string]interface{}{"limit": limit, "offset": offset, "next_offset": next, "returned": end - offset}, RequestID: mobileAPIRequestID()})
+	}
+}
+
+func MobileDocumentosFacturacionHandler(dbEmp *sql.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+		empresaID, err := parseEmpresaIDQuery(r)
+		if err != nil {
+			http.Error(w, "empresa_id es obligatorio", http.StatusBadRequest)
+			return
+		}
+		limit, offset, err := mobileLimitOffset(r)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		cajero := strings.TrimSpace(r.URL.Query().Get("cajero"))
+		if normalizePermissionRole(effectiveAdminRoleFromRequest(r)) == "cajero" {
+			cajero = strings.TrimSpace(adminEmailFromRequest(r))
+		}
+		items, err := dbpkg.ListEmpresaDocumentosFacturacionByEmpresa(dbEmp, dbpkg.EmpresaDocumentoFacturacionListFilter{
+			EmpresaID: empresaID, TipoDocumento: strings.TrimSpace(r.URL.Query().Get("tipo_documento")), EstadoDocumento: strings.TrimSpace(r.URL.Query().Get("estado_documento")),
+			IncludeInactive: r.URL.Query().Get("include_inactive") == "1" || strings.EqualFold(r.URL.Query().Get("include_inactive"), "true"),
+			ClienteQuery:    strings.TrimSpace(r.URL.Query().Get("cliente")), DocumentoQuery: strings.TrimSpace(r.URL.Query().Get("documento")), CajeroQuery: cajero,
+			FechaDesde: strings.TrimSpace(r.URL.Query().Get("fecha_desde")), FechaHasta: strings.TrimSpace(r.URL.Query().Get("fecha_hasta")), Query: strings.TrimSpace(r.URL.Query().Get("q")), Limit: limit, Offset: offset,
+		})
+		if err != nil {
+			http.Error(w, "documentos no disponibles", http.StatusServiceUnavailable)
+			return
+		}
+		next := -1
+		if len(items) == limit {
+			next = offset + len(items)
+		}
+		allowed := map[string]bool{"id": true, "tipo_documento": true, "documento_codigo": true, "numero_legal": true, "pais_codigo": true, "ambiente_fe": true, "estado_documento": true, "monto_total": true, "moneda": true, "fecha_documento": true, "fecha_creacion": true, "usuario_creador": true, "cliente_nombre": true, "cliente_documento": true}
+		writeJSON(w, http.StatusOK, mobileAPIEnvelope{OK: true, Data: mobileSelectFields(items, r.URL.Query().Get("fields"), allowed), Meta: map[string]interface{}{"limit": limit, "offset": offset, "next_offset": next, "returned": len(items)}, RequestID: mobileAPIRequestID()})
+	}
+}
+
 func RegisterMobileAPIV1Routes(dbEmp, dbSuper *sql.DB) {
 	http.HandleFunc("/api/v1/auth/mobile-session", mobileAPIJSON(MobileSessionTokenHandler(dbSuper)))
 	http.HandleFunc("/api/v1/me", mobileAPIJSON(mobileBearerSessionAdapter(dbSuper, MobileMeHandler(dbSuper))))
 	http.HandleFunc("/api/v1/empresa/productos", mobileAPIJSON(mobileBearerSessionAdapter(dbSuper, WithEmpresaInventarioPermissions(dbEmp, dbSuper, MobileProductosHandler(dbEmp)))))
 	http.HandleFunc("/api/v1/empresa/clientes", mobileAPIJSON(mobileBearerSessionAdapter(dbSuper, WithEmpresaClientesPermissions(dbEmp, dbSuper, MobileClientesHandler(dbEmp)))))
+
+	carritosLegacy := EmpresaCarritosCompraHandler(dbEmp, dbSuper)
+	itemsLegacy := EmpresaCarritoItemsHandler(dbEmp)
+	facturacionLegacy := EmpresaFacturacionElectronicaHandler(dbEmp, dbSuper)
+	offlineLegacy := EmpresaOfflineVentasHandler(dbEmp, dbSuper)
+	buzonLegacy := EmpresaBuzonHandler(dbEmp, dbSuper)
+
+	carritosV1 := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodGet:
+			MobileCarritosHandler(dbEmp).ServeHTTP(w, r)
+		case http.MethodPost:
+			mobileIdempotentMutation(dbEmp, "carrito_crear", carritosLegacy).ServeHTTP(w, r)
+		case http.MethodPut:
+			mobileIdempotentMutation(dbEmp, "carrito_actualizar", carritosLegacy).ServeHTTP(w, r)
+		case http.MethodDelete:
+			mobileIdempotentMutation(dbEmp, "carrito_eliminar", carritosLegacy).ServeHTTP(w, r)
+		default:
+			w.Header().Set("Allow", "GET, POST, PUT, DELETE")
+			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		}
+	})
+	http.HandleFunc("/api/v1/empresa/carritos", mobileAPIJSON(mobileBearerSessionAdapter(dbSuper, mobileNormalizeEmpresaJSON(WithEmpresaVentasPermissions(dbEmp, dbSuper, carritosV1)))))
+
+	itemsV1 := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodGet:
+			MobileCarritoItemsHandler(dbEmp).ServeHTTP(w, r)
+		case http.MethodPost:
+			mobileIdempotentMutation(dbEmp, "carrito_item_crear", itemsLegacy).ServeHTTP(w, r)
+		case http.MethodPut:
+			mobileIdempotentMutation(dbEmp, "carrito_item_actualizar", itemsLegacy).ServeHTTP(w, r)
+		case http.MethodDelete:
+			mobileIdempotentMutation(dbEmp, "carrito_item_eliminar", itemsLegacy).ServeHTTP(w, r)
+		default:
+			w.Header().Set("Allow", "GET, POST, PUT, DELETE")
+			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		}
+	})
+	http.HandleFunc("/api/v1/empresa/carritos/items", mobileAPIJSON(mobileBearerSessionAdapter(dbSuper, mobileNormalizeEmpresaJSON(WithEmpresaVentasPermissions(dbEmp, dbSuper, itemsV1)))))
+	http.HandleFunc("/api/v1/empresa/ventas", mobileAPIJSON(mobileBearerSessionAdapter(dbSuper, WithEmpresaVentasPermissions(dbEmp, dbSuper, MobileVentasHandler(dbEmp)))))
+	http.HandleFunc("/api/v1/empresa/pagos", mobileAPIJSON(mobileBearerSessionAdapter(dbSuper, mobileNormalizeEmpresaJSON(WithEmpresaVentasPermissions(dbEmp, dbSuper, mobileIdempotentMutation(dbEmp, "venta_cobrar", mobileLegacyAction(carritosLegacy, "pagar_estacion")))))))
+	http.HandleFunc("/api/v1/empresa/ventas/offline/sync", mobileAPIJSON(mobileBearerSessionAdapter(dbSuper, mobileNormalizeEmpresaJSON(WithEmpresaVentasPermissions(dbEmp, dbSuper, mobileLegacyAction(offlineLegacy, "sync"))))))
+
+	http.HandleFunc("/api/v1/empresa/facturacion/documentos", mobileAPIJSON(mobileBearerSessionAdapter(dbSuper, WithEmpresaFacturacionPermissions(dbEmp, dbSuper, MobileDocumentosFacturacionHandler(dbEmp)))))
+	http.HandleFunc("/api/v1/empresa/facturacion/emitir", mobileAPIJSON(mobileBearerSessionAdapter(dbSuper, mobileNormalizeEmpresaJSON(WithEmpresaFacturacionPermissions(dbEmp, dbSuper, mobileIdempotentMutation(dbEmp, "facturacion_emitir_desde_venta", mobileLegacyAction(facturacionLegacy, "facturar_desde_venta")))))))
+
+	notificacionesV1 := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodGet:
+			mobileLegacyAction(buzonLegacy, "mensajes").ServeHTTP(w, r)
+		case http.MethodPost:
+			mobileIdempotentMutation(dbEmp, "notificacion_enviar", mobileLegacyAction(buzonLegacy, "mensaje")).ServeHTTP(w, r)
+		case http.MethodPut:
+			mobileIdempotentMutation(dbEmp, "notificacion_leer", mobileLegacyAction(buzonLegacy, "leer")).ServeHTTP(w, r)
+		default:
+			w.Header().Set("Allow", "GET, POST, PUT")
+			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		}
+	})
+	http.HandleFunc("/api/v1/empresa/notificaciones", mobileAPIJSON(mobileBearerSessionAdapter(dbSuper, mobileNormalizeEmpresaJSON(WithEmpresaSelfServicePermissions(dbEmp, dbSuper, notificacionesV1)))))
 }

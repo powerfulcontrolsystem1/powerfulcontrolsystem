@@ -2,7 +2,7 @@
 
 Generado por `tools/auditar_api_movil.mjs`. Es un inventario de rutas registradas; no sustituye las pruebas de autorizacion, tenant y negocio.
 
-Total de rutas detectadas: **361**.
+Total de rutas detectadas: **368**.
 
 ## api_general
 
@@ -235,8 +235,15 @@ Total de rutas detectadas: **361**.
 | Ruta | Registro |
 |---|---|
 | `/api/v1/auth/mobile-session` | `backend/handlers/mobile_api_v1.go` |
+| `/api/v1/empresa/carritos` | `backend/handlers/mobile_api_v1.go` |
+| `/api/v1/empresa/carritos/items` | `backend/handlers/mobile_api_v1.go` |
 | `/api/v1/empresa/clientes` | `backend/handlers/mobile_api_v1.go` |
+| `/api/v1/empresa/facturacion/documentos` | `backend/handlers/mobile_api_v1.go` |
+| `/api/v1/empresa/facturacion/emitir` | `backend/handlers/mobile_api_v1.go` |
+| `/api/v1/empresa/notificaciones` | `backend/handlers/mobile_api_v1.go` |
+| `/api/v1/empresa/pagos` | `backend/handlers/mobile_api_v1.go` |
 | `/api/v1/empresa/productos` | `backend/handlers/mobile_api_v1.go` |
+| `/api/v1/empresa/ventas/offline/sync` | `backend/handlers/mobile_api_v1.go` |
 | `/api/v1/me` | `backend/handlers/mobile_api_v1.go` |
 
 ## otro

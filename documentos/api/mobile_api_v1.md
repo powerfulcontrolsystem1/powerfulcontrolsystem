@@ -25,6 +25,14 @@ Contrato OpenAPI: `documentos/api/openapi.mobile.v1.yaml`.
 | `GET /api/v1/me` | Disponible | Admite cookie de sesion o `Authorization: Bearer`. |
 | `GET /api/v1/empresa/productos` | Disponible | Aislamiento por empresa, permisos de inventario, `limit` maximo 100, `offset`, filtros y `fields` permitido. |
 | `GET /api/v1/empresa/clientes` | Disponible | Aislamiento por empresa, permisos de clientes, paginacion, filtros y `fields` permitido. |
+| `GET/POST/PUT/DELETE /api/v1/empresa/carritos` | Disponible | Consulta paginada y mutaciones POS; las mutaciones exigen `Idempotency-Key`. |
+| `GET/POST/PUT/DELETE /api/v1/empresa/carritos/items` | Disponible | Items paginados por carrito; la empresa y el carrito se validan antes de leer o escribir. |
+| `GET /api/v1/empresa/ventas` | Disponible | Vista historica paginada de carritos POS cerrados/pagados. |
+| `POST /api/v1/empresa/pagos` | Disponible | Reutiliza el cobro POS, caja, descuentos, propinas, credito, inventario y documento existente; evita duplicados por reintento. |
+| `POST /api/v1/empresa/ventas/offline/sync` | Disponible | Reutiliza la cola offline existente, que exige `sync_key`, cajero y caja validos. |
+| `GET /api/v1/empresa/facturacion/documentos` | Disponible | Documentos fiscales paginados, filtros por fecha, cajero, cliente, estado y campos permitidos. |
+| `POST /api/v1/empresa/facturacion/emitir` | Disponible | Emite desde venta mediante el flujo fiscal existente y exige `Idempotency-Key`. |
+| `GET/POST/PUT /api/v1/empresa/notificaciones` | Disponible | Buzon privado del actor autenticado; enviar y marcar lectura son idempotentes. |
 
 ## Autenticacion y permisos
 
@@ -40,6 +48,14 @@ Contrato OpenAPI: `documentos/api/openapi.mobile.v1.yaml`.
   antes de consultar datos.
 - Las mutaciones con cookie siguen cubiertas por CSRF; solicitudes Bearer no
   comparten ese vector y siguen usando TLS, autenticacion y control de permiso.
+- Toda mutacion de carrito, item, pago, emision y notificacion exige el header
+  `Idempotency-Key` (16 a 200 caracteres seguros). Solo se almacena su hash,
+  junto al hash de la solicitud y la respuesta exitosa. Un reintento con la
+  misma clave devuelve la respuesta original; reutilizarla con otro cuerpo se
+  rechaza. Esto protege dobles toques y reintentos de red movil.
+- Los adaptadores v1 fijan el `empresa_id` de JSON al tenant que ya valido el
+  middleware. No se acepta que un body, cabecera o URL secundaria seleccione
+  otra empresa.
 
 ## Auditoria global de APIs
 
@@ -69,10 +85,16 @@ Hallazgos y criterio de migracion:
    marque como consumo de UI historica. La retirada requiere telemetria de uso,
    version v1 equivalente y una ventana de deprecacion.
 
-## Siguientes lotes v1
+## Estado de migracion y siguientes lotes
 
-Ventas/facturacion, inventario de escritura, pagos y sincronizacion offline se
-migran por dominio con los mismos criterios: contrato OpenAPI, prueba de
-aislamiento negativo, idempotency key para mutaciones, paginacion y errores
-uniformes. No se debe exponer una tabla completa ni un endpoint generico SQL a
-la aplicacion movil.
+Ventas POS, carrito, cobro, facturacion desde venta, sincronizacion offline y
+notificaciones ya tienen fachada v1. Los handlers de negocio no se duplicaron:
+la fachada conserva los calculos, transacciones, auditoria, permisos, control
+de cajas y reglas fiscales vigentes de PCS.
+
+Los siguientes lotes son escritura de productos/clientes, compras, cartera,
+reportes descargables, dispositivos/impresoras, push nativo y sincronizacion de
+catalogo con cursor. No se debe exponer una tabla completa ni un endpoint
+generico SQL a la aplicacion movil. Las rutas `/api/empresa/*` se mantienen
+como **legacy web interno** hasta tener telemetria de uso, equivalente v1 y
+ventana de deprecacion.

@@ -7,6 +7,12 @@ usa `/api/empresa/configuracion_ia_propia`, protegido por seguridad con
 `documentos/api/openapi.mobile.v1.yaml`; sus primeras rutas son identidad,
 sesion de dispositivo, productos y clientes.
 
+Actualizacion 2026-07-13: la base movil `/api/v1/` amplía el flujo POS con
+`carritos`, `carritos/items`, `pagos`, `ventas/offline/sync`,
+`facturacion/documentos`, `facturacion/emitir` y `notificaciones`. Las rutas
+usan wrappers actuales por modulo, `empresa_id` validado y clave de
+idempotencia hash por empresa para toda mutacion que puede duplicar efectos.
+
 Tabla de ubicacion rapida para no buscar desde cero cada modulo. Si una fila
 queda incompleta al implementar una mejora, actualizarla en el mismo cambio.
 

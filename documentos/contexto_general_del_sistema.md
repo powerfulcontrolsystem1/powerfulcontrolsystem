@@ -2,6 +2,16 @@
 
 Estado: vigente. Ultima actualizacion: 2026-07-13.
 
+## Actualizacion 2026-07-13 - Flujos moviles POS v1
+
+- `/api/v1/` ya cubre carrito, items, cobro, sincronizacion offline,
+  documentos fiscales y buzon/notificaciones, ademas de identidad, productos y
+  clientes. Las escrituras moviles usan `Idempotency-Key` persistente por
+  empresa y no duplican pagos, documentos ni mensajes cuando la red reintenta.
+- La capa v1 reutiliza los handlers operativos existentes; no crea una segunda
+  regla de caja, inventario, impuestos o DIAN. Ver
+  `documentos/api/mobile_api_v1.md` y su contrato OpenAPI.
+
 ## Actualizacion 2026-07-13 - IA propia y base movil
 
 - El proveedor OpenAI propio es opcional por empresa, cifrado por tenant y sin

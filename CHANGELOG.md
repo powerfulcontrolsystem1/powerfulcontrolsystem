@@ -4839,3 +4839,8 @@
 - El selector de usuarios deja de ofrecer perfiles de verticales no relacionadas para nuevas altas; los perfiles existentes se preservan y los especializados se manejan por empresa.
 - La pagina publica de privacidad describe aislamiento empresarial, controles de sesion/rol y cifrado real de transporte y secretos.
 - Configuracion avanzada corrige el error JavaScript del observador de secciones. La evidencia y limites de validacion externa se documentan en `documentos/validacion_preproduccion_pcs.md`.
+# 2026-07-13 - API movil POS, pagos y facturacion
+- Se amplía `/api/v1` para carritos, items, cobros, sincronización offline,
+  documentos fiscales, emisión desde venta y notificaciones privadas.
+- Las mutaciones móviles exigen `Idempotency-Key`; PCS conserva hashes y la
+  respuesta exitosa para impedir ventas, pagos, facturas o mensajes duplicados.

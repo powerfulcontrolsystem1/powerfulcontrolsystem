@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"bytes"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -34,5 +35,35 @@ func TestMobileFieldSelectionIsClosedList(t *testing.T) {
 	}
 	if string(b) != `[{"id":1}]` {
 		t.Fatalf("seleccion de campos expuso un valor no permitido: %s", b)
+	}
+}
+
+func TestMobileNormalizeEmpresaJSONUsesQueryTenant(t *testing.T) {
+	var got map[string]interface{}
+	h := mobileNormalizeEmpresaJSON(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if err := json.NewDecoder(r.Body).Decode(&got); err != nil {
+			t.Fatal(err)
+		}
+		w.WriteHeader(http.StatusNoContent)
+	}))
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/empresa/carritos?empresa_id=19", bytes.NewBufferString(`{"empresa_id":999,"nombre":"Caja movil"}`))
+	req.Header.Set("Content-Type", "application/json")
+	rec := httptest.NewRecorder()
+	h.ServeHTTP(rec, req)
+	if rec.Code != http.StatusNoContent || got["empresa_id"] != float64(19) {
+		t.Fatalf("tenant no normalizado: status=%d payload=%#v", rec.Code, got)
+	}
+}
+
+func TestValidMobileIdempotencyKey(t *testing.T) {
+	for _, key := range []string{"mobile-20260713-0001", "aBc_1234567890-xyz"} {
+		if !validMobileIdempotencyKey(key) {
+			t.Fatalf("clave valida rechazada: %q", key)
+		}
+	}
+	for _, key := range []string{"corta", "clave con espacios 123456", "clave/con/slash-123456"} {
+		if validMobileIdempotencyKey(key) {
+			t.Fatalf("clave insegura aceptada: %q", key)
+		}
 	}
 }

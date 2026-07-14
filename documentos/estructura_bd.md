@@ -2298,3 +2298,10 @@ Actualizacion 2026-07-09 (cobranza automatizada)
 Actualizacion 2026-07-10 (integridad GPS y auditoria super)
 - `empresa_gps_recorridos` mantiene su aislamiento por `empresa_id`; al crear un punto, la transaccion verifica que `empresa_gps_dispositivos.id` pertenezca a la misma empresa y este en estado `activo` antes de actualizar la ultima lectura del equipo.
 - `super_auditoria_eventos` conserva fechas como `TEXT` por compatibilidad historica. Las escrituras convierten las fechas generadas por PostgreSQL a texto de forma explicita para no mezclar tipos en `COALESCE`.
+## API movil: idempotencia por empresa
+
+`empresa_mobile_api_idempotencia` conserva el hash de `Idempotency-Key`, el
+hash del cuerpo y la respuesta exitosa de una mutacion movil. Su PK compuesta
+es `(empresa_id, operacion, clave_hash)`. Nunca guarda el valor original de la
+clave ni credenciales; permite devolver el mismo resultado ante reintentos de
+pagos, emision fiscal, carrito o notificaciones sin repetir la operacion.

@@ -37907,3 +37907,11 @@ Archivos modificados:
   Bearer de sesion dedicada, controles multiempresa existentes, paginacion y
   seleccion de campos para productos y clientes. Las APIs web quedan como
   compatibilidad y se migraran gradualmente por dominio.
+2026-07-13 - Flujos POS y facturacion para API movil v1
+- `backend/handlers/mobile_api_v1.go`: incorpora carrito, items, pago,
+  sincronizacion offline, documentos fiscales, emision y buzon en `/api/v1`,
+  bajo el mismo aislamiento y permisos de los handlers web.
+- `backend/db/mobile_api_idempotency.go`: agrega idempotencia persistente por
+  empresa, con hashes de clave/cuerpo y replay solo de respuestas exitosas.
+- `documentos/api/openapi.mobile.v1.yaml` y `mobile_api_v1.md`: amplian el
+  contrato publico movil y la matriz de compatibilidad/deprecacion.

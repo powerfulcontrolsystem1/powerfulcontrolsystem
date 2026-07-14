@@ -1,4 +1,11 @@
 2026-07-10: Super administrador - diagramas tecnicos consolidados.
+
+2026-07-13: API movil POS y facturacion.
+- Modulos afectados: `api_movil`, `ventas`, `carritos`, `pagos`,
+  `facturacion_electronica`, `offline_ventas`, `buzon`.
+- La fachada `/api/v1` normaliza respuestas para Android/iPhone y delega las
+  reglas de negocio al mismo backend de la web. Las mutaciones requieren clave
+  de idempotencia por empresa para resistir reintentos moviles.
 - `Super administrador > Diagramas tecnicos` conserva solamente los 19 accesos de la documentacion tecnica completa: arquitectura, modulos, navegacion, ERD PostgreSQL, UML, procesos, estados, componentes, despliegue, paquetes y flujo de datos.
 - `ERD PostgreSQL completo` abre el catalogo navegable de las 365 tablas extraidas, con atributos, PK, FKs fisicas y relaciones logicas por tabla.
 - El paquete previo de esquemas generales se retira de la navegacion para evitar duplicidad; queda como referencia historica sin presentarse como flujo operativo.

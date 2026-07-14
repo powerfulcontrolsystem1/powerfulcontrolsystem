@@ -57,6 +57,154 @@ paths:
         '200': {description: Clientes paginados}
         '401': {$ref: '#/components/responses/Error'}
         '403': {$ref: '#/components/responses/Error'}
+  /api/v1/empresa/carritos:
+    get:
+      summary: Lista o consulta un carrito POS autorizado.
+      parameters:
+        - {$ref: '#/components/parameters/EmpresaID'}
+        - {$ref: '#/components/parameters/Limit'}
+        - {$ref: '#/components/parameters/Offset'}
+        - {name: id, in: query, schema: {type: integer, format: int64}}
+        - {name: estado, in: query, schema: {type: string, enum: [abierto, pagado, todos]}}
+        - {name: q, in: query, schema: {type: string, maxLength: 200}}
+        - {name: fields, in: query, schema: {type: string}}
+      responses:
+        '200': {description: Carrito o pagina de carritos}
+        '401': {$ref: '#/components/responses/Error'}
+        '403': {$ref: '#/components/responses/Error'}
+    post:
+      summary: Crea un carrito POS de forma idempotente.
+      parameters:
+        - {$ref: '#/components/parameters/EmpresaID'}
+        - {$ref: '#/components/parameters/IdempotencyKey'}
+      responses:
+        '201': {description: Carrito creado}
+        '400': {$ref: '#/components/responses/Error'}
+    put:
+      summary: Actualiza un carrito POS de forma idempotente.
+      parameters:
+        - {$ref: '#/components/parameters/EmpresaID'}
+        - {$ref: '#/components/parameters/IdempotencyKey'}
+      responses:
+        '200': {description: Carrito actualizado}
+    delete:
+      summary: Elimina un carrito POS de forma idempotente.
+      parameters:
+        - {$ref: '#/components/parameters/EmpresaID'}
+        - {name: id, in: query, required: true, schema: {type: integer, format: int64}}
+        - {$ref: '#/components/parameters/IdempotencyKey'}
+      responses:
+        '200': {description: Carrito eliminado}
+  /api/v1/empresa/carritos/items:
+    get:
+      summary: Lista paginada de items de un carrito autorizado.
+      parameters:
+        - {$ref: '#/components/parameters/EmpresaID'}
+        - {name: carrito_id, in: query, required: true, schema: {type: integer, format: int64}}
+        - {$ref: '#/components/parameters/Limit'}
+        - {$ref: '#/components/parameters/Offset'}
+        - {name: fields, in: query, schema: {type: string}}
+      responses:
+        '200': {description: Items del carrito}
+    post:
+      summary: Agrega un item al carrito de forma idempotente.
+      parameters:
+        - {$ref: '#/components/parameters/EmpresaID'}
+        - {$ref: '#/components/parameters/IdempotencyKey'}
+      responses:
+        '201': {description: Item creado}
+    put:
+      summary: Actualiza un item del carrito de forma idempotente.
+      parameters:
+        - {$ref: '#/components/parameters/EmpresaID'}
+        - {$ref: '#/components/parameters/IdempotencyKey'}
+      responses:
+        '200': {description: Item actualizado}
+    delete:
+      summary: Elimina un item del carrito de forma idempotente.
+      parameters:
+        - {$ref: '#/components/parameters/EmpresaID'}
+        - {name: carrito_id, in: query, required: true, schema: {type: integer, format: int64}}
+        - {name: id, in: query, required: true, schema: {type: integer, format: int64}}
+        - {$ref: '#/components/parameters/IdempotencyKey'}
+      responses:
+        '200': {description: Item eliminado}
+  /api/v1/empresa/pagos:
+    post:
+      summary: Cobra y cierra un carrito POS sin duplicar la venta al reintentar.
+      parameters:
+        - {$ref: '#/components/parameters/EmpresaID'}
+        - {name: id, in: query, required: true, schema: {type: integer, format: int64}, description: ID del carrito.}
+        - {$ref: '#/components/parameters/IdempotencyKey'}
+      responses:
+        '200': {description: Cobro registrado o respuesta previamente confirmada}
+        '409': {$ref: '#/components/responses/Error'}
+  /api/v1/empresa/ventas:
+    get:
+      summary: Lista ventas POS cerradas/pagadas de la empresa autorizada.
+      parameters:
+        - {$ref: '#/components/parameters/EmpresaID'}
+        - {$ref: '#/components/parameters/Limit'}
+        - {$ref: '#/components/parameters/Offset'}
+        - {name: estado, in: query, schema: {type: string, default: pagado}}
+        - {name: q, in: query, schema: {type: string, maxLength: 200}}
+        - {name: fields, in: query, schema: {type: string}}
+      responses:
+        '200': {description: Ventas POS paginadas}
+  /api/v1/empresa/ventas/offline/sync:
+    post:
+      summary: Sincroniza ventas offline mediante sync_key idempotente.
+      parameters:
+        - {$ref: '#/components/parameters/EmpresaID'}
+      responses:
+        '200': {description: Ventas sincronizadas}
+        '409': {$ref: '#/components/responses/Error'}
+  /api/v1/empresa/facturacion/documentos:
+    get:
+      summary: Lista documentos de facturacion paginados y filtrados por empresa.
+      parameters:
+        - {$ref: '#/components/parameters/EmpresaID'}
+        - {$ref: '#/components/parameters/Limit'}
+        - {$ref: '#/components/parameters/Offset'}
+        - {name: tipo_documento, in: query, schema: {type: string}}
+        - {name: estado_documento, in: query, schema: {type: string}}
+        - {name: cajero, in: query, schema: {type: string}}
+        - {name: fecha_desde, in: query, schema: {type: string, format: date}}
+        - {name: fecha_hasta, in: query, schema: {type: string, format: date}}
+        - {name: fields, in: query, schema: {type: string}}
+      responses:
+        '200': {description: Documentos fiscales autorizados}
+  /api/v1/empresa/facturacion/emitir:
+    post:
+      summary: Emite factura desde una venta de manera idempotente.
+      parameters:
+        - {$ref: '#/components/parameters/EmpresaID'}
+        - {$ref: '#/components/parameters/IdempotencyKey'}
+      responses:
+        '200': {description: Factura emitida o respuesta previamente confirmada}
+        '409': {$ref: '#/components/responses/Error'}
+  /api/v1/empresa/notificaciones:
+    get:
+      summary: Lista notificaciones privadas del buzon del usuario autenticado.
+      parameters:
+        - {$ref: '#/components/parameters/EmpresaID'}
+        - {$ref: '#/components/parameters/Limit'}
+      responses:
+        '200': {description: Buzon empresarial filtrado por actor}
+    post:
+      summary: Envia una notificacion interna de forma idempotente.
+      parameters:
+        - {$ref: '#/components/parameters/EmpresaID'}
+        - {$ref: '#/components/parameters/IdempotencyKey'}
+      responses:
+        '201': {description: Notificacion creada}
+    put:
+      summary: Marca una notificacion como leida de forma idempotente.
+      parameters:
+        - {$ref: '#/components/parameters/EmpresaID'}
+        - {$ref: '#/components/parameters/IdempotencyKey'}
+      responses:
+        '200': {description: Notificacion actualizada}
 components:
   securitySchemes:
     bearerSession:
@@ -81,6 +229,12 @@ components:
       name: offset
       in: query
       schema: {type: integer, minimum: 0, default: 0}
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: true
+      schema: {type: string, minLength: 16, maxLength: 200}
+      description: Clave aleatoria por intento logico. PCS solo guarda su hash y repite la respuesta exitosa original.
   responses:
     Error:
       description: Error JSON uniforme sin detalles internos.
