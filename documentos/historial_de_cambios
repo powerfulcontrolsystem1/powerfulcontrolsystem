@@ -38111,3 +38111,14 @@ Archivos modificados:
 - Backend: la plantilla por tipo se aplica de forma perezosa al primer ingreso de `Administrar empresa`, a traves de `/api/empresa/configuracion_guiada`, y solo si la empresa no tiene marcador de configuracion inicial, resumen guiado ni estaciones existentes.
 - Seguridad operativa: el guardado previo de `estaciones_config` se trata como configuracion empresarial autoritativa y bloquea cualquier aplicacion automatica posterior. Esto evita que una renovacion sobrescriba hoteles, moteles, mesas, lavaderos u otros recursos configurados por la empresa.
 - QA: se agrega cobertura unitaria para reconocer configuraciones de estaciones validas, vacias o malformadas.
+
+2026-07-14: rs: actualizar repositorio y sincronizar VPS
+PushStatus: OK
+Archivos modificados:
+- backend/handlers/configuracion_guiada.go
+- backend/handlers/empresa_preconfiguracion.go
+- backend/handlers/empresa_preconfiguracion_test.go
+- backend/handlers/payments_handlers.go
+- backend/handlers/system_empresas_handlers.go
+- backend/main.go
+- documentos/historial_de_cambios

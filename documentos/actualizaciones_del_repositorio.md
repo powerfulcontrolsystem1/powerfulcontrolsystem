@@ -16885,3 +16885,13 @@ Archivos modificados:
 - backend/db/configuracion_operativa_postgres_test.go
 - documentos/CHANGELOG.md
 - documentos/historial_de_cambios
+
+2026-07-14 17:05:33 - Mensaje: rs: actualizar repositorio y sincronizar VPS; Commit: fe9e7381; PushStatus: OK
+Archivos modificados:
+- backend/handlers/configuracion_guiada.go
+- backend/handlers/empresa_preconfiguracion.go
+- backend/handlers/empresa_preconfiguracion_test.go
+- backend/handlers/payments_handlers.go
+- backend/handlers/system_empresas_handlers.go
+- backend/main.go
+- documentos/historial_de_cambios
