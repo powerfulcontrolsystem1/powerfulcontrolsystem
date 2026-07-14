@@ -37956,3 +37956,8 @@ Archivos modificados:
   usuario no root, filesystem de solo lectura y capacidades retiradas. La guia
   `preparacion_produccion_y_app_movil.md` declara gates reales y limites de
   adopcion sin afirmar validacion externa no realizada.
+
+2026-07-14: IA por alcance y proteccion de trazas Epayco
+- `selector_chat_ia.go` separa el chat del selector del chat global super: usa la sesión real, calcula únicamente las empresas autorizadas por servidor y entrega resúmenes sin NIT ni IDs técnicos. No acepta una empresa desde URL, JSON o cabeceras.
+- `ai_chat_drawer.js` identifica selector, super y empresa como ámbitos distintos; en selector no permite adjuntos, streaming ni agentes empresariales y conserva las preferencias del usuario.
+- Epayco: las respuestas crudas de autenticación y creación de sesión ya no quedan persistidas en `raw_payload` de pagos de licencias ni venta pública. Los errores de disponibilidad/configuración expuestos al checkout se reducen a mensajes seguros.

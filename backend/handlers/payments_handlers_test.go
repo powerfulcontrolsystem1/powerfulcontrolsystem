@@ -5,10 +5,32 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
+	"os"
+	"path/filepath"
+	"runtime"
+	"strings"
 	"testing"
 
 	dbpkg "github.com/you/pos-backend/db"
 )
+
+func TestEpaycoDoesNotPersistRawProviderAuthenticationResponses(t *testing.T) {
+	_, thisFile, _, ok := runtime.Caller(0)
+	if !ok {
+		t.Fatal("could not resolve payments test location")
+	}
+	for _, name := range []string{"payments_handlers.go", "venta_publica.go"} {
+		body, err := os.ReadFile(filepath.Join(filepath.Dir(thisFile), name))
+		if err != nil {
+			t.Fatalf("read %s: %v", name, err)
+		}
+		for _, forbidden := range []string{"\"apify_login_raw\"", "\"session_raw\""} {
+			if strings.Contains(string(body), forbidden) {
+				t.Fatalf("%s must not persist provider raw field %s", name, forbidden)
+			}
+		}
+	}
+}
 
 func TestPickEpaycoFieldReadsNestedAliases(t *testing.T) {
 	payload := map[string]interface{}{

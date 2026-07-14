@@ -2724,6 +2724,45 @@ paths:
       responses:
         "200":
           description: Respuesta exitosa o manejada por el handler real.
+  "/api/selector/chat_con_ia/consultar":
+    get:
+      tags: [publico]
+      summary: Ruta inventariada /api/selector/chat_con_ia/consultar
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [publico]
+      summary: Ruta inventariada /api/selector/chat_con_ia/consultar
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/api/selector/chat_con_ia/modelo_preferido":
+    get:
+      tags: [publico]
+      summary: Ruta inventariada /api/selector/chat_con_ia/modelo_preferido
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [publico]
+      summary: Ruta inventariada /api/selector/chat_con_ia/modelo_preferido
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/api/selector/chat_con_ia/modelos":
+    get:
+      tags: [publico]
+      summary: Ruta inventariada /api/selector/chat_con_ia/modelos
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [publico]
+      summary: Ruta inventariada /api/selector/chat_con_ia/modelos
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
   "/api/user/configuracion":
     get:
       tags: [publico]

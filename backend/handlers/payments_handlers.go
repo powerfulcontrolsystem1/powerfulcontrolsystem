@@ -6152,7 +6152,7 @@ func EpaycoCreateTransactionHandler(dbSuper *sql.DB) http.HandlerFunc {
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusConflict)
 			encodeJSONResponse(w, map[string]interface{}{
-				"error":    "failed to read epayco.enabled: " + err.Error(),
+				"error":    "No se pudo consultar la disponibilidad de Epayco.",
 				"provider": "epayco",
 			})
 			return
@@ -6172,7 +6172,7 @@ func EpaycoCreateTransactionHandler(dbSuper *sql.DB) http.HandlerFunc {
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusConflict)
 			encodeJSONResponse(w, map[string]interface{}{
-				"error":    "failed to read Epayco credentials: " + err.Error(),
+				"error":    "No se pudo preparar la configuración de Epayco.",
 				"provider": "epayco",
 			})
 			return
@@ -6223,7 +6223,7 @@ func EpaycoCreateTransactionHandler(dbSuper *sql.DB) http.HandlerFunc {
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusConflict)
 			encodeJSONResponse(w, map[string]interface{}{
-				"error":    "failed to read Epayco availability: " + statusErr.Error(),
+				"error":    "No se pudo consultar la disponibilidad de Epayco para la empresa.",
 				"provider": "epayco",
 			})
 			return
@@ -6316,7 +6316,7 @@ func EpaycoCreateTransactionHandler(dbSuper *sql.DB) http.HandlerFunc {
 		confirmationURL := strings.TrimRight(strings.TrimSpace(paymentBaseURL), "/") + "/epayco/webhook"
 		sessionPayload := buildEpaycoSmartCheckoutSessionPayload(paymentBaseURL, reference, lic.Nombre, payload.LicenciaID, payload.EmpresaID, summary.TotalValue, email)
 		classicCheckoutPayload := buildEpaycoClassicCheckoutPayload(paymentBaseURL, publicKey, reference, lic.Nombre, payload.LicenciaID, payload.EmpresaID, summary.TotalValue, email, classicMode)
-		writeClassicCheckoutFallback := func(reason, loginRaw, sessionRaw string) {
+		writeClassicCheckoutFallback := func(reason, _ string, _ string) {
 			log.Println("warning: Epayco Smart Checkout unavailable, using checkout.js fallback:", reason)
 			if !classicCheckoutReady {
 				w.Header().Set("Content-Type", "application/json")
@@ -6362,8 +6362,6 @@ func EpaycoCreateTransactionHandler(dbSuper *sql.DB) http.HandlerFunc {
 				"created_at":           time.Now().Format(time.RFC3339),
 				"integration_flow":     "classic_checkout_js_fallback",
 				"smart_checkout_error": reason,
-				"apify_login_raw":      loginRaw,
-				"session_raw":          sessionRaw,
 			}
 			rawBytes, _ := json.Marshal(rawMap)
 			if _, err := dbpkg.CreateEpaycoPaymentRecord(dbSuper, payload.LicenciaID, payload.EmpresaID, reference, reference, "PENDING", string(rawBytes), payload.DiscountCode, payload.AsesorID); err != nil {
@@ -6441,8 +6439,6 @@ func EpaycoCreateTransactionHandler(dbSuper *sql.DB) http.HandlerFunc {
 			"bundle":             bundle,
 			"created_at":         time.Now().Format(time.RFC3339),
 			"integration_flow":   "smart_checkout_v2",
-			"apify_login_raw":    loginRaw,
-			"session_raw":        sessionRaw,
 		}
 		rawBytes, _ := json.Marshal(rawMap)
 		if _, err := dbpkg.CreateEpaycoPaymentRecord(dbSuper, payload.LicenciaID, payload.EmpresaID, reference, reference, "PENDING", string(rawBytes), payload.DiscountCode, payload.AsesorID); err != nil {

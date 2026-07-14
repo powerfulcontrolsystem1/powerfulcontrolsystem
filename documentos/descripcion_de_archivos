@@ -11923,3 +11923,9 @@ documentos/plan_101_arquitectura_modular.md
   de tareas y eventos transaccionales.
 - `backend/cmd/pcs-migrate/main.go` y `backend/cmd/pcs-worker/main.go`:
   procesos separados de migracion y trabajo asincrono.
+
+backend/handlers/selector_chat_ia.go
+- Chat IA de selector de empresas: resúmenes multiempresa autorizados por sesión, sin aceptar alcance empresarial desde el cliente.
+
+backend/handlers/selector_chat_ia_test.go
+- Regresión de redacción de identificadores técnicos del contexto multiempresa del selector.

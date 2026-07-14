@@ -244,7 +244,12 @@
 
   function isSuperContext() {
     var path = String(window.location.pathname || '').toLowerCase();
-    return path.indexOf('/seleccionar_empresa.html') >= 0 || path.indexOf('/super_administrador.html') >= 0 || path.indexOf('/super/') === 0;
+    return path.indexOf('/super_administrador.html') >= 0 || path.indexOf('/super/') === 0;
+  }
+
+  function isSelectorContext() {
+    var path = String(window.location.pathname || '').toLowerCase();
+    return path.indexOf('/seleccionar_empresa.html') >= 0;
   }
 
   function normalizeAIToggleButtonIcon(toggleBtn) {
@@ -499,10 +504,12 @@
   }
 
   function buildModelsEndpoint() {
+    if (isSelectorContext()) return '/api/selector/chat_con_ia/modelos';
     return '/api/empresa/chat_con_inteligencia_artificial/modelos';
   }
 
   function buildModelPreferenceEndpoint() {
+    if (isSelectorContext()) return '/api/selector/chat_con_ia/modelo_preferido';
     return '/api/empresa/chat_con_inteligencia_artificial/modelo_preferido';
   }
 
@@ -530,8 +537,10 @@
     if (isPublicPortalContext() || isSuperContext()) return Promise.resolve();
     var empresaID = parsePositiveInt(getCurrentEmpresaId());
     var select = document.getElementById(MODEL_ID);
-    if (!empresaID || !select) return Promise.resolve();
-    return fetch(buildModelsEndpoint() + '?empresa_id=' + encodeURIComponent(String(empresaID)), {
+    if ((!empresaID && !isSelectorContext()) || !select) return Promise.resolve();
+    var modelsURL = buildModelsEndpoint();
+    if (!isSelectorContext()) modelsURL += '?empresa_id=' + encodeURIComponent(String(empresaID));
+    return fetch(modelsURL, {
       credentials: 'same-origin', headers: { 'X-PCS-Source': 'ai_drawer' }
     }).then(function (resp) {
       if (!resp.ok) return parseErrorResponse(resp);
@@ -576,12 +585,12 @@
     var select = document.getElementById(MODEL_ID);
     var modeEl = document.getElementById(MODE_ID);
     var agentEl = document.getElementById(AGENT_ID);
-    if (!empresaID || !select || !normalize(select.value)) return Promise.resolve();
+    if ((!empresaID && !isSelectorContext()) || !select || !normalize(select.value)) return Promise.resolve();
     state.selectedModelID = normalize(select.value);
     renderModelUsage(state.selectedModelID);
     return fetch(buildModelPreferenceEndpoint(), {
       method: 'PUT', credentials: 'same-origin', headers: { 'Content-Type': 'application/json', 'X-PCS-Source': 'ai_drawer' },
-      body: JSON.stringify({ empresa_id: empresaID, model_id: state.selectedModelID, modo_asistente: modeEl ? normalize(modeEl.value) : 'operativo', agent_id: agentEl ? normalize(agentEl.value) : 'general' })
+      body: JSON.stringify(Object.assign(isSelectorContext() ? {} : { empresa_id: empresaID }, { model_id: state.selectedModelID, modo_asistente: modeEl ? normalize(modeEl.value) : 'operativo', agent_id: agentEl ? normalize(agentEl.value) : 'general' }))
     }).then(function (resp) { if (!resp.ok) return parseErrorResponse(resp); return resp.json(); });
   }
 
@@ -592,6 +601,7 @@
     if (isSuperContext()) {
       return '/super/api/chat_con_ia_global/consultar';
     }
+    if (isSelectorContext()) return '/api/selector/chat_con_ia/consultar';
     return '/api/empresa/chat_con_inteligencia_artificial/consultar';
   }
 
@@ -982,7 +992,9 @@
     if (isPublicPortalContext()) {
       return 'chat publico del portal';
     }
-    return isSuperContext() ? 'chat global de super administrador' : 'chat empresarial';
+    if (isSuperContext()) return 'chat global de super administrador';
+    if (isSelectorContext()) return 'chat de empresas autorizadas';
+    return 'chat empresarial';
   }
 
   function getChatPersonalityMode() {
@@ -3041,6 +3053,7 @@
     var modelEl = document.getElementById(MODEL_ID);
     var modelField = modelEl && modelEl.closest('.ai-chat-control-field');
     var superContext = isSuperContext();
+    var selectorContext = isSelectorContext();
     var publicContext = isPublicPortalContext();
 
     if (modeEl && publicContext) {
@@ -3076,8 +3089,9 @@
       setShareArtifact(null);
     }
 
-    if (attachBtn) attachBtn.disabled = publicContext;
-    if (clearBtn) clearBtn.disabled = publicContext;
+    if (attachField) attachField.hidden = publicContext || selectorContext;
+    if (attachBtn) attachBtn.disabled = publicContext || selectorContext;
+    if (clearBtn) clearBtn.disabled = publicContext || selectorContext;
     if (attachName) {
       if (publicContext) {
         attachName.textContent = isPublicStoreContext()
@@ -3434,7 +3448,9 @@
       if (path.indexOf('tareas') >= 0) return 'tareas';
       return 'chat_tareas';
     }
-    return isSuperContext() ? 'chat_ia_global' : 'chat_ia';
+    if (isSuperContext()) return 'chat_ia_global';
+    if (isSelectorContext()) return 'chat_ia_selector';
+    return 'chat_ia';
   }
 
   function inferDocumentExportTitle(text) {
@@ -3839,7 +3855,7 @@
   }
 
   function shouldUseStreamingForTextQuery(attachment) {
-    if (attachment || isDocumentMode() || isReportMode()) return false;
+    if (attachment || isDocumentMode() || isReportMode() || isSelectorContext()) return false;
     if (!window.fetch || !window.TextDecoder) return false;
     return true;
   }
@@ -4106,7 +4122,7 @@
         }
         body.empresa_slug = publicSlug;
       }
-    } else if (!isSuperContext()) {
+    } else if (!isSuperContext() && !isSelectorContext()) {
       var empresaId = getCurrentEmpresaId();
       if (!empresaId) {
         throw new Error('No se encontro una empresa activa. Ingresa desde el contexto de una empresa para usar el chat IA empresarial.');
@@ -4137,7 +4153,7 @@
       if (pageContext) {
         formData.set('pagina_contexto', pageContext);
       }
-      if (!isSuperContext()) {
+      if (!isSuperContext() && !isSelectorContext()) {
         formData.set('empresa_id', String(body.empresa_id));
       }
       formData.set('file', attachment, attachment.name || 'adjunto');
