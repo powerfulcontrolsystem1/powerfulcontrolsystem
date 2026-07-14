@@ -1,3 +1,8 @@
+## [2026-07-14] Correccion de configuracion operativa del carrito
+- [Carrito] Se alinearon las columnas de permisos manuales con la lectura, el `Scan`, la resolucion y la persistencia de `empresa_configuracion_operativa`.
+- [QA] Esto elimina el `500` que podia producirse al cargar el carrito y las reglas por rol despues de la migracion de permisos manuales.
+- [Visual] Las acciones de la lista de carritos quedan en una columna propia, sin comprimirse por estilos globales de tablas.
+
 ## [2026-07-14] CSRF global para formularios autenticados
 - [Seguridad] Nginx y el backend entregan `web/js/csrf_fetch.js` en las respuestas HTML, que agrega el token synchronizer solo a mutaciones same-origin autenticadas por cookie.
 - [Super] La administración de códigos de descuento vuelve a crear, editar, activar, eliminar y reenviar sin omitir `X-CSRF-Token`.

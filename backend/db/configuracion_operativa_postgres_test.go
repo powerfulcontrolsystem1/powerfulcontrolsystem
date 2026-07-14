@@ -62,6 +62,31 @@ func TestConfiguracionOperativaRolPermiteIngresosEgresosManuales(t *testing.T) {
 	}
 }
 
+func TestConfiguracionOperativaQueriesKeepManualPermissionsAligned(t *testing.T) {
+	raw, err := os.ReadFile("configuracion_operativa.go")
+	if err != nil {
+		t.Fatalf("read configuracion_operativa.go: %v", err)
+	}
+	src := string(raw)
+
+	for _, marker := range []string{
+		"func GetEmpresaConfiguracionOperativa(",
+		"func ListEmpresaConfiguracionOperativaRoles(",
+	} {
+		body := extractConfiguracionOperativaFunctionForTest(t, src, marker)
+		for _, required := range []string{
+			"COALESCE(permitir_ingresos_manuales, 0)",
+			"COALESCE(permitir_egresos_manuales, 0)",
+			"&permitirIngresosManuales",
+			"&permitirEgresosManuales",
+		} {
+			if !strings.Contains(body, required) {
+				t.Fatalf("%s debe mantener SELECT y Scan alineados para %s", marker, required)
+			}
+		}
+	}
+}
+
 func extractConfiguracionOperativaFunctionForTest(t *testing.T, src, startMarker string) string {
 	t.Helper()
 

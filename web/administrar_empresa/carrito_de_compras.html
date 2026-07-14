@@ -48,6 +48,9 @@
     .carrito-logo-card.logo-size-mediano .carrito-logo-preview{max-width:116px;max-height:64px}
     .carrito-logo-card.logo-size-grande .carrito-logo-preview{max-width:136px;max-height:82px}
     .carrito-station-side{display:grid;gap:0;align-content:start}
+    .carrito-list-table td.actions{display:table-cell!important;min-width:142px!important;white-space:normal!important;vertical-align:middle}
+    .carrito-list-actions{display:flex;flex-direction:column;align-items:stretch;gap:4px;min-width:132px}
+    .carrito-list-actions .btn{width:100%;min-height:30px;margin:0!important;padding:5px 8px!important;justify-content:flex-start!important;white-space:nowrap!important}
     .carrito-workspace-card{border-color:color-mix(in srgb,var(--accent) 34%,var(--border) 66%)!important;border-width:2px!important;padding:8px!important;background:color-mix(in srgb,var(--carrito-card-bg,var(--card)) 94%,var(--accent) 6%)!important}
     .carrito-workspace-card :is(.card,.empresa-section,.carrito-summary-card,#scannerPanel,#stationCustomerCard,#stationCartSplitRow,#stationCheckoutPanel,#stationCartActionsCard,#stationPaymentAmountsCard,#stationPaymentQrCard,#stationWorkerCommissionCard,#stationVipAccessCard,#carritoTotalsPanel,.carrito-logo-card){margin-top:0!important;border-radius:0!important}
     .carrito-workspace-card :is(.carrito-primary-layout,.carrito-primary-main,.carrito-side-column,.carrito-station-side,.carrito-station-split,.carrito-station-split-main){gap:0!important}
@@ -8997,13 +9000,13 @@
           '<td>' + Number(item.item_count || 0) + '</td>' +
           '<td>' + formatAmount(item.total, item.moneda) + '</td>' +
           '<td>' + estado + '</td>' +
-          '<td class="actions">' +
-            '<button data-id="' + item.id + '" class="open btn">Abrir</button> ' +
-            '<button data-id="' + item.id + '" data-codigo="' + escapeHtml(normalize(item.codigo)) + '" class="buscarProductos btn secondary">Buscar productos</button> ' +
-            '<button data-id="' + item.id + '" class="edit btn secondary">Editar</button> ' +
-            '<button data-id="' + item.id + '" class="del btn danger">Eliminar</button> ' +
-            '<button data-id="' + item.id + '" data-estado="' + estado + '" class="toggleEstado btn">' + toggleEstadoLabel + '</button> ' +
-            '<button data-id="' + item.id + '" data-op="' + estadoCarrito + '" class="toggleOperacion btn secondary">' + toggleOperacionLabel + '</button>' +
+          '<td class="actions"><div class="carrito-list-actions">' +
+            '<button data-id="' + item.id + '" class="open btn">Abrir</button>' +
+            '<button data-id="' + item.id + '" data-codigo="' + escapeHtml(normalize(item.codigo)) + '" class="buscarProductos btn secondary">Buscar productos</button>' +
+            '<button data-id="' + item.id + '" class="edit btn secondary">Editar</button>' +
+            '<button data-id="' + item.id + '" class="del btn danger">Eliminar</button>' +
+            '<button data-id="' + item.id + '" data-estado="' + estado + '" class="toggleEstado btn">' + toggleEstadoLabel + '</button>' +
+            '<button data-id="' + item.id + '" data-op="' + estadoCarrito + '" class="toggleOperacion btn secondary">' + toggleOperacionLabel + '</button></div>' +
           '</td>';
         tbody.appendChild(tr);
       });
@@ -10543,7 +10546,7 @@
 
       const showTotal = !(state.stationMode && !getMostrarTotalCurrent());
       const table = document.createElement('table');
-      table.className = 'table';
+      table.className = 'table carrito-list-table';
       table.innerHTML = '<thead><tr>' +
         '<th>ID</th>' +
         '<th>Descripción</th>' +

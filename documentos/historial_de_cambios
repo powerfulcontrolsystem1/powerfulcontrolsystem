@@ -1,3 +1,8 @@
+2026-07-14: Configuracion operativa: contrato SQL alineado.
+- Causa: se agregaron `permitir_ingresos_manuales` y `permitir_egresos_manuales` al esquema, pero el `SELECT` y el `Scan` de la configuracion base, asi como el `SELECT` de roles, no quedaron alineados. PostgreSQL devolvia mas columnas que destinos y el handler respondia `500`.
+- Correccion: el modelo, lectura, persistencia, migracion defensiva y resolucion efectiva ahora incluyen ambos permisos; se agrego una regresion que impide volver a desalinear `SELECT` y `Scan`.
+- UI: la lista de carritos usa un contenedor de acciones propio para que los botones no se superpongan ni hereden `display:flex` directamente sobre una celda de tabla.
+
 2026-07-13: Chat IA empresarial legible y tematizable por empresa.
 - Modulos afectados: `chat IA`, `administrar empresa`, `configuracion empresarial`, `permisos multiempresa`.
 - Frontend: `web/js/ai_chat_drawer.js` convierte de forma segura los titulos Markdown, indicadores y tablas Markdown de las respuestas IA en secciones, filas clave/valor y tablas HTML creadas por DOM; no interpreta HTML devuelto por el modelo. Los temas `normal`, `corporativo`, `oceano`, `esmeralda` y `vino`, junto con los tamaños `pequeno`, `mediano` y `grande`, respetan claro/oscuro y se aplican al recuadro abierto.
