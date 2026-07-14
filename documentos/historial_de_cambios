@@ -38106,3 +38106,8 @@ Archivos modificados:
 - backend/db/configuracion_operativa_postgres_test.go
 - documentos/CHANGELOG.md
 - documentos/historial_de_cambios
+2026-07-14: Preconfiguracion inicial aislada de licencias y estaciones existentes.
+- Backend: la activacion, renovacion, prueba y activacion sin pago de licencias dejan de invocar la preconfiguracion por tipo de empresa. Una licencia solo actualiza vigencia y permisos comerciales; nunca estaciones, tarifas, operacion ni configuracion guiada.
+- Backend: la plantilla por tipo se aplica de forma perezosa al primer ingreso de `Administrar empresa`, a traves de `/api/empresa/configuracion_guiada`, y solo si la empresa no tiene marcador de configuracion inicial, resumen guiado ni estaciones existentes.
+- Seguridad operativa: el guardado previo de `estaciones_config` se trata como configuracion empresarial autoritativa y bloquea cualquier aplicacion automatica posterior. Esto evita que una renovacion sobrescriba hoteles, moteles, mesas, lavaderos u otros recursos configurados por la empresa.
+- QA: se agrega cobertura unitaria para reconocer configuraciones de estaciones validas, vacias o malformadas.

@@ -41,7 +41,7 @@ type empresaConfiguracionGuiadaQuestion struct {
 	Options      []string `json:"options,omitempty"`
 }
 
-func EmpresaConfiguracionGuiadaHandler(dbEmp *sql.DB) http.HandlerFunc {
+func EmpresaConfiguracionGuiadaHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		empresaID, err := parseEmpresaIDQuery(r)
 		if err != nil {
@@ -51,6 +51,10 @@ func EmpresaConfiguracionGuiadaHandler(dbEmp *sql.DB) http.HandlerFunc {
 
 		switch r.Method {
 		case http.MethodGet:
+			if _, err := applyEmpresaTipoPreconfiguracionInicialPendiente(dbEmp, dbSuper, empresaID, strings.TrimSpace(adminEmailFromRequest(r))); err != nil {
+				http.Error(w, "no se pudo preparar la configuracion inicial", http.StatusInternalServerError)
+				return
+			}
 			state, err := loadEmpresaConfiguracionGuiadaState(dbEmp, empresaID)
 			if err != nil {
 				http.Error(w, "no se pudo cargar la configuracion guiada", http.StatusInternalServerError)

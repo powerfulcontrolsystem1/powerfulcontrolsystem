@@ -448,9 +448,6 @@ func LicenciasHandler(dbSuper *sql.DB) http.HandlerFunc {
 						http.Error(w, "failed to activate empresa after trial licencia: "+err.Error(), http.StatusInternalServerError)
 						return
 					}
-					if _, err := applyEmpresaTipoPreconfiguracionFromLicencia(dbEmp, dbSuper, empresaID, licID, "licencias.prueba_15_dias"); err != nil {
-						log.Printf("warning: failed to apply tipo empresa preconfig after trial licencia empresa=%d licencia=%d: %v", empresaID, licID, err)
-					}
 					invalidateEmpresaPermissionCacheForEmpresa(empresaID)
 				}
 
@@ -2121,11 +2118,6 @@ func finalizeEmpresaAfterLicenciaActivation(dbEmp, dbSuper *sql.DB, empresaID, l
 	if err := dbpkg.SetEmpresaEstado(dbEmp, empresaID, "activo"); err != nil {
 		return err
 	}
-	if licenciaID > 0 {
-		if _, err := applyEmpresaTipoPreconfiguracionFromLicencia(dbEmp, dbSuper, empresaID, licenciaID, origen); err != nil {
-			log.Printf("warning: failed to apply tipo empresa preconfig after licencia activation empresa=%d licencia=%d origen=%s: %v", empresaID, licenciaID, origen, err)
-		}
-	}
 	invalidateEmpresaPermissionCacheForEmpresa(empresaID)
 	return nil
 }
@@ -2216,9 +2208,6 @@ func activateLicenciaCheckoutContext(dbSuper, dbEmp *sql.DB, licenciaID, empresa
 		activated, assignedID, err := activateLicenciaByIDs(dbSuper, licenciaID, empresaID, quantity)
 		if err != nil || !activated {
 			return activated, assignedID, err
-		}
-		if _, preErr := applyEmpresaTipoPreconfiguracionFromLicencia(dbEmp, dbSuper, empresaID, licenciaID, "licencias.activacion"); preErr != nil {
-			return activated, assignedID, preErr
 		}
 		invalidateEmpresaPermissionCacheForEmpresa(empresaID)
 		return activated, assignedID, nil
@@ -2340,9 +2329,6 @@ func activateLicenciaCheckoutContext(dbSuper, dbEmp *sql.DB, licenciaID, empresa
 			if err := dbpkg.SetEmpresaEstado(dbEmp, empresaID, "activo"); err != nil {
 				return activatedAny, assignedID, err
 			}
-		}
-		if _, preErr := applyEmpresaTipoPreconfiguracionFromLicencia(dbEmp, dbSuper, empresaID, licenciaID, "licencias.activacion"); preErr != nil {
-			return activatedAny, assignedID, preErr
 		}
 		invalidateEmpresaPermissionCacheForEmpresa(empresaID)
 	}
@@ -7205,9 +7191,6 @@ func ActivateLicenciaSinPagoHandler(dbSuper *sql.DB, dbEmpresas *sql.DB) http.Ha
 					if err := dbpkg.SetEmpresaEstado(dbEmp, payload.EmpresaID, "activo"); err != nil {
 						http.Error(w, "failed to activate empresa: "+err.Error(), http.StatusInternalServerError)
 						return
-					}
-					if _, err := applyEmpresaTipoPreconfiguracionFromLicencia(dbEmp, dbSuper, payload.EmpresaID, payload.LicenciaID, "licencias.activacion_sin_pago"); err != nil {
-						log.Printf("warning: failed to apply tipo empresa preconfig after zero-total activation empresa=%d licencia=%d: %v", payload.EmpresaID, payload.LicenciaID, err)
 					}
 					invalidateEmpresaPermissionCacheForEmpresa(payload.EmpresaID)
 				}

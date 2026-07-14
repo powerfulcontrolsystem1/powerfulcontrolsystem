@@ -593,29 +593,20 @@ func EmpresasHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 				colombiaDefaultsErrText = colombiaDefaultsErr.Error()
 				log.Printf("POST /super/api/empresas id=%d defaults Colombia warning: %v", id, colombiaDefaultsErr)
 			}
-			preconfigResult, preconfigErr := applyEmpresaTipoPreconfiguracion(dbEmp, dbSuper, id, payload.TipoID, payload.TipoNombre, payload.UsuarioCreador)
-			if preconfigErr != nil {
-				log.Printf("POST /super/api/empresas id=%d preconfiguracion warning: %v", id, preconfigErr)
-			}
-			preconfigErrText := ""
-			if preconfigErr != nil {
-				preconfigErrText = preconfigErr.Error()
-			}
 			if created {
-				NotifySuperAdminEmpresaNueva(dbSuper, id, payload.TipoID, payload.Nombre, payload.Nit, payload.TipoNombre, payload.UsuarioCreador, preconfigResult != nil && preconfigResult.Aplicada, preconfigErrText)
+				NotifySuperAdminEmpresaNueva(dbSuper, id, payload.TipoID, payload.Nombre, payload.Nit, payload.TipoNombre, payload.UsuarioCreador, false, "")
 			}
 			w.Header().Set("Content-Type", "application/json")
 			encodeJSONResponse(w, map[string]interface{}{
-				"id":                        id,
-				"creada":                    created,
-				"idempotente":               !created,
-				"preconfiguracion_aplicada": preconfigResult != nil && preconfigResult.Aplicada,
-				"preconfiguracion":          preconfigResult,
-				"preconfiguracion_error":    preconfigErrText,
-				"preconfiguracion_colombia": colombiaDefaults,
-				"colombia_defaults_error":   colombiaDefaultsErrText,
-				"email_corporativo":         emailCorporativo,
-				"email_corporativo_error":   emailCorporativoErrText,
+				"id":                         id,
+				"creada":                     created,
+				"idempotente":                !created,
+				"preconfiguracion_aplicada":  false,
+				"preconfiguracion_pendiente": created,
+				"preconfiguracion_colombia":  colombiaDefaults,
+				"colombia_defaults_error":    colombiaDefaultsErrText,
+				"email_corporativo":          emailCorporativo,
+				"email_corporativo_error":    emailCorporativoErrText,
 			})
 			return
 		case http.MethodPut:

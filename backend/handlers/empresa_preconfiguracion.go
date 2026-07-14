@@ -291,36 +291,46 @@ func applyEmpresaTipoPreconfiguracion(dbEmp, dbSuper *sql.DB, empresaID, tipoEmp
 	return result, nil
 }
 
-func applyEmpresaTipoPreconfiguracionFromLicencia(dbEmp, dbSuper *sql.DB, empresaID, licenciaID int64, usuario string) (*empresaPreconfigApplyResult, error) {
-	if dbEmp == nil {
-		dbEmp = dbpkg.GetDB()
-	}
-	if empresaID <= 0 || dbEmp == nil || dbSuper == nil {
+// applyEmpresaTipoPreconfiguracionInicialPendiente applies the business template
+// only to a genuinely new company. License activation must never call this path:
+// a license changes commercial entitlement, not operational configuration.
+func applyEmpresaTipoPreconfiguracionInicialPendiente(dbEmp, dbSuper *sql.DB, empresaID int64, usuario string) (*empresaPreconfigApplyResult, error) {
+	if dbEmp == nil || dbSuper == nil || empresaID <= 0 {
 		return nil, nil
 	}
 
-	lic, _ := dbpkg.GetLicenciaByID(dbSuper, licenciaID)
-	empresa, _ := dbpkg.GetEmpresaByScopeID(dbEmp, empresaID)
-	tipoID := int64(0)
-	tipoNombre := ""
-	if empresa != nil {
-		tipoID = empresa.TipoID
-		tipoNombre = strings.TrimSpace(empresa.TipoNombre)
+	var tipoID int64
+	var tipoNombre string
+	if err := dbEmp.QueryRow(`SELECT COALESCE(tipo_id, 0), COALESCE(tipo_nombre, '') FROM empresas WHERE id = ? LIMIT 1`, empresaID).Scan(&tipoID, &tipoNombre); err != nil {
+		return nil, err
 	}
-	if lic != nil && lic.TipoID > 0 {
-		if tipoID > 0 && tipoID != lic.TipoID && lic.EsAdicional != 1 {
-			return nil, fmt.Errorf("la licencia pertenece a otro tipo de empresa")
+
+	for _, clave := range []string{"preconfiguracion_tipo_empresa_aplicada", "configuracion_guiada_resumen"} {
+		pref, err := dbpkg.GetEmpresaEstacionPref(dbEmp, empresaID, 0, clave)
+		if err != nil && err != sql.ErrNoRows {
+			return nil, err
 		}
-		tipoID = lic.TipoID
+		if pref != nil && strings.TrimSpace(pref.Valor) != "" {
+			return &empresaPreconfigApplyResult{TipoEmpresaID: tipoID, TipoEmpresaNombre: strings.TrimSpace(tipoNombre), Mensaje: "La empresa ya tiene configuracion inicial; se conserva sin sobrescribirla."}, nil
+		}
 	}
-	if tipoID <= 0 && tipoNombre == "" {
-		return nil, nil
+
+	stationPref, err := dbpkg.GetEmpresaEstacionPref(dbEmp, empresaID, 0, "estaciones_config")
+	if err != nil && err != sql.ErrNoRows {
+		return nil, err
 	}
-	result, err := applyEmpresaTipoPreconfiguracion(dbEmp, dbSuper, empresaID, tipoID, tipoNombre, usuario)
-	if err != nil {
-		return result, err
+	if stationPref != nil && empresaPreconfigHasStations(stationPref.Valor) {
+		return &empresaPreconfigApplyResult{TipoEmpresaID: tipoID, TipoEmpresaNombre: strings.TrimSpace(tipoNombre), Mensaje: "La empresa ya tiene estaciones configuradas; se conserva sin sobrescribirlas."}, nil
 	}
-	return result, nil
+
+	return applyEmpresaTipoPreconfiguracion(dbEmp, dbSuper, empresaID, tipoID, strings.TrimSpace(tipoNombre), usuario)
+}
+
+func empresaPreconfigHasStations(raw string) bool {
+	var payload struct {
+		Estaciones []json.RawMessage `json:"estaciones"`
+	}
+	return json.Unmarshal([]byte(strings.TrimSpace(raw)), &payload) == nil && len(payload.Estaciones) > 0
 }
 
 func applyEmpresaPreconfigOperacion(dbEmp *sql.DB, empresaID int64, operacion dbpkg.TipoEmpresaPreconfigOperacion, usuario string) error {
