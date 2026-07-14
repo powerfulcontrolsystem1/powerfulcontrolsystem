@@ -16870,3 +16870,11 @@ Archivos modificados:
 - documentos/historial_de_cambios
 - scripts/logs/qa-cart-before-rs.png
 - scripts/logs/qa-invoices-before-rs.png
+
+2026-07-14 16:34:04 - Mensaje: rs: actualizar repositorio y sincronizar VPS; Commit: a7f85870; PushStatus: OK
+Archivos modificados:
+- backend/db/configuracion_operativa.go
+- backend/db/configuracion_operativa_postgres_test.go
+- documentos/CHANGELOG.md
+- documentos/historial_de_cambios
+- web/administrar_empresa/carrito_de_compras.html
