@@ -38049,3 +38049,14 @@ Archivos modificados:
 - Causa: paginas HTML que no cargaban `menu.js`, como Codigos de descuento para licencias, no recibian el token synchronizer para mutaciones autenticadas y el middleware respondia `csrf token validation failed`.
 - Solucion: `backend/main.go` inyecta `web/js/csrf_fetch.js` una sola vez en cada respuesta HTML; el script adjunta `X-CSRF-Token` exclusivamente a POST, PUT, PATCH y DELETE same-origin con cookies, sin alterar bearer, cross-origin ni encabezados CSRF existentes.
 - QA: pruebas de inyeccion/no duplicacion y `go test ./...`; se requiere validacion operativa de crear y redimir el codigo en el checkout real antes del cierre.
+
+2026-07-14: rs: actualizar repositorio y sincronizar VPS
+PushStatus: OK
+Archivos modificados:
+- backend/contextual_help_test.go
+- backend/main.go
+- documentos/CHANGELOG.md
+- documentos/descripcion_de_archivos
+- documentos/descripcion_de_modulos
+- documentos/historial_de_cambios
+- web/js/csrf_fetch.js
