@@ -4495,3 +4495,13 @@ adjuntos y analisis avanzado.
 - Super Administrador: se agregan GPT-5.6 Terra y GPT-5.6 Sol junto con Luna;
   cada modelo expone sus esfuerzos compatibles y puede tener un esfuerzo
   independiente. El backend valida modelo y esfuerzo antes de persistirlos.
+2026-07-13: IA empresarial propia y API movil v1.
+- Modulos afectados: `ia_empresarial`, `configuracion`, `api_movil`,
+  `autenticacion`, `productos`, `clientes`.
+- La empresa puede habilitar una clave OpenAI propia desde Configuracion > Chat
+  IA > OpenAI propio. La clave se cifra por empresa, no se devuelve por API y
+  evita solamente las cuotas comerciales de PCS para solicitudes OpenAI; se
+  mantienen permisos, aislamiento, auditoria y limites del proveedor.
+- `/api/v1/` inicia el contrato movil aditivo: identidad, sesion de dispositivo,
+  productos y clientes con JSON uniforme, `request_id`, paginacion, filtros y
+  seleccion cerrada de campos. Las rutas web heredadas no se eliminan aun.

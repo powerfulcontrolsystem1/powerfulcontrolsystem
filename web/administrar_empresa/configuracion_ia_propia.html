@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>IA propia OpenAI</title>
+  <link rel="stylesheet" href="/estilos.css">
+  <style>
+    body { margin:0; padding:12px; background:var(--bg,#f8fafc); }
+    .ia-propia-wrap { max-width:920px; margin:0 auto; }
+    .ia-propia-grid { display:grid; gap:14px; }
+    .ia-propia-option { display:flex; align-items:flex-start; gap:12px; padding:16px; border:1px solid var(--border,#cbd5e1); border-radius:8px; background:var(--surface,#fff); }
+    .ia-propia-option input { width:20px; height:20px; margin-top:2px; }
+    .ia-propia-note { padding:12px 14px; border-left:4px solid var(--accent,#0ea5e9); background:var(--surface-soft,#f1f5f9); color:var(--text-muted,#475569); }
+    .ia-propia-actions { display:flex; gap:10px; flex-wrap:wrap; margin-top:16px; }
+  </style>
+</head>
+<body class="form-bg-dark">
+  <main class="ia-propia-wrap">
+    <header class="page-header"><h1>OpenAI propio de la empresa</h1><p class="form-help">Conecta una clave API pagada por esta empresa. PCS mantiene sus controles de permisos, aislamiento y auditoría, pero no consume la cuota IA de la plataforma para modelos OpenAI.</p></header>
+    <section class="card form advanced-card">
+      <div class="ia-propia-grid">
+        <label class="ia-propia-option" for="ownOpenAIEnabled"><input id="ownOpenAIEnabled" type="checkbox"><span><strong>Usar API propia de OpenAI</strong><br><span class="form-help">Al activarla, las consultas OpenAI de esta empresa se cobran y limitan por su cuenta OpenAI, no por la cuota de PCS.</span></span></label>
+        <div><label class="form-label" for="ownOpenAIKey">Clave API de OpenAI</label><input id="ownOpenAIKey" class="form-input" type="password" autocomplete="off" spellcheck="false" placeholder="Pega una clave nueva solo para reemplazar la actual"><div id="ownOpenAIKeyState" class="form-help">La clave nunca se muestra después de guardarla.</div></div>
+        <label class="ia-propia-option" for="ownOpenAIClear"><input id="ownOpenAIClear" type="checkbox"><span><strong>Eliminar clave guardada</strong><br><span class="form-help">Desactiva el proveedor propio y vuelve a usar la configuración global de PCS.</span></span></label>
+        <div class="ia-propia-note">La clave se cifra con AES-GCM y un propósito criptográfico exclusivo. No se devuelve al navegador, no se añade a registros y solo se descifra en memoria para la llamada saliente a OpenAI.</div>
+      </div>
+      <div class="ia-propia-actions"><button id="saveOwnOpenAI" class="btn" type="button">Guardar configuración</button><a class="btn secondary" href="/administrar_empresa/configuracion_menu.html" style="text-decoration:none">Volver a configuración</a></div>
+      <p id="ownOpenAIStatus" class="form-help" aria-live="polite">Cargando configuración...</p>
+    </section>
+  </main>
+  <script>
+  (function () {
+    var enabled = document.getElementById('ownOpenAIEnabled'), key = document.getElementById('ownOpenAIKey'), clear = document.getElementById('ownOpenAIClear'), state = document.getElementById('ownOpenAIKeyState'), status = document.getElementById('ownOpenAIStatus');
+    function empresaId() { var p = new URLSearchParams(location.search); var n = Number(p.get('empresa_id') || p.get('id') || ''); return Number.isInteger(n) && n > 0 ? n : 0; }
+    function endpoint() { return '/api/empresa/configuracion_ia_propia?empresa_id=' + encodeURIComponent(String(empresaId())); }
+    function message(text, error) { status.textContent = text; status.style.color = error ? '#b91c1c' : ''; }
+    function csrfToken() { var match = document.cookie.match(/(?:^|;\s*)pcs_csrf=([^;]+)/); return match ? decodeURIComponent(match[1]) : ''; }
+    function render(cfg) { cfg = cfg || {}; enabled.checked = !!cfg.habilitado; clear.checked = false; key.value = ''; state.textContent = cfg.clave_cargada ? 'Hay una clave cifrada configurada. Déjala vacía para conservarla.' : 'No hay una clave configurada todavía.'; }
+    if (!empresaId()) { message('No se pudo identificar la empresa activa.', true); return; }
+    fetch(endpoint(), {credentials:'same-origin'}).then(function(r){ if(!r.ok) throw new Error('No se pudo cargar la configuración.'); return r.json(); }).then(function(data){ render(data.openai_propio); message('Configuración cargada.'); }).catch(function(err){ message(err.message, true); });
+    document.getElementById('saveOwnOpenAI').addEventListener('click', function () {
+      var body = {empresa_id:empresaId(), habilitado:!!enabled.checked, api_key:String(key.value || '').trim(), reemplazar_clave:String(key.value || '').trim() !== '', eliminar_clave:!!clear.checked};
+      if (body.eliminar_clave) { body.habilitado = false; }
+      message('Guardando configuración...');
+      var headers = {'Content-Type':'application/json'}, csrf = csrfToken(); if (csrf) headers['X-CSRF-Token'] = csrf;
+      fetch(endpoint(), {method:'PUT', credentials:'same-origin', headers:headers, body:JSON.stringify(body)}).then(function(r){ return r.text().then(function(t){ var data={}; try { data=JSON.parse(t); } catch(e) {} if(!r.ok) throw new Error(data.error || t || 'No se pudo guardar.'); return data; }); }).then(function(data){ render(data.openai_propio); message('Configuración guardada.'); }).catch(function(err){ message(err.message || 'No se pudo guardar.', true); });
+    });
+  })();
+  </script>
+</body>
+</html>

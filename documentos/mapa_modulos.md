@@ -1,5 +1,12 @@
 # Mapa de modulos
 
+Actualizacion 2026-07-13: `Administrar empresa > Configuracion > Chat IA >
+OpenAI propio` abre `web/administrar_empresa/configuracion_ia_propia.html` y
+usa `/api/empresa/configuracion_ia_propia`, protegido por seguridad con
+`empresa_id` validado. La API movil estable inicia en `/api/v1/` con contrato
+`documentos/api/openapi.mobile.v1.yaml`; sus primeras rutas son identidad,
+sesion de dispositivo, productos y clientes.
+
 Tabla de ubicacion rapida para no buscar desde cero cada modulo. Si una fila
 queda incompleta al implementar una mejora, actualizarla en el mismo cambio.
 

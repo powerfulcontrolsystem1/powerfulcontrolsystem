@@ -51,6 +51,16 @@ decisiones en cada tarea.
   exige confirmacion, hash de plan e idempotency key; las herramientas de
   escritura siguen desactivadas salvo habilitacion explicita por entorno.
 
+## Actualizacion 2026-07-13 - OpenAI propio y API movil
+
+- Cada empresa puede configurar `OpenAI propio` en Configuracion > Chat IA. La
+  clave queda cifrada por `empresa_id`, no vuelve al navegador y solo elimina la
+  cuota comercial PCS para las llamadas OpenAI; no elimina permisos, auditoria,
+  aislamiento ni limites del proveedor.
+- Las apps Android/iPhone deben iniciar en `/api/v1/`, documentado en
+  `documentos/api/openapi.mobile.v1.yaml` y `documentos/api/mobile_api_v1.md`.
+  No usar las rutas web heredadas como contrato nuevo sin validar su migracion.
+
 ## Actualizacion 2026-06-11 - Carrito busqueda por nombre con teclado
 
 - El carrito permite buscar productos por nombre en un campo separado del codigo

@@ -1151,6 +1151,10 @@ func main() {
 		log.Fatalf("failed to ensure enterprise AI proposal schema in empresas db: %v", err)
 	}
 	startupTrace("after_empresa_ai_enterprise_schema")
+	if err := dbpkg.EnsureEmpresaAIOpenAIProviderSchema(dbEmpresas); err != nil {
+		log.Fatalf("failed to ensure enterprise OpenAI provider schema in empresas db: %v", err)
+	}
+	startupTrace("after_empresa_ai_openai_provider_schema")
 	if err := dbpkg.EnsureEmpresaSensorPuertasSchema(dbEmpresas); err != nil {
 		log.Fatalf("failed to ensure sensor puertas schema in empresas db: %v", err)
 	}
@@ -1466,6 +1470,7 @@ func main() {
 	http.HandleFunc("/api/empresa/configuracion_avanzada", handlers.WithEmpresaSeguridadPermissions(dbEmpresas, dbSuper, handlers.EmpresaConfiguracionAvanzadaHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/configuracion_avanzada/logo", handlers.WithEmpresaSeguridadPermissions(dbEmpresas, dbSuper, handlers.EmpresaConfiguracionAvanzadaLogoUploadHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/configuracion_guiada", handlers.WithEmpresaSeguridadPermissions(dbEmpresas, dbSuper, handlers.EmpresaConfiguracionGuiadaHandler(dbEmpresas)))
+	http.HandleFunc("/api/empresa/configuracion_ia_propia", handlers.WithEmpresaSeguridadPermissions(dbEmpresas, dbSuper, handlers.EmpresaAIOpenAIProveedorConfigHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/panel_configuracion", handlers.WithEmpresaSeguridadPermissions(dbEmpresas, dbSuper, handlers.EmpresaPanelConfiguracionHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/licencia_sistema/pdf", handlers.WithEmpresaSeguridadPermissions(dbEmpresas, dbSuper, handlers.EmpresaLicenciaSistemaPDFHandler(dbEmpresas, dbSuper)))
 	http.HandleFunc("/api/empresa/email_corporativo", handlers.WithEmpresaSeguridadPermissions(dbEmpresas, dbSuper, handlers.EmpresaEmailCorporativoHandler(dbSuper, dbEmpresas)))
@@ -1548,6 +1553,9 @@ func main() {
 	// Endpoint empresa: verificar acceso a la página frecuencia_fe.html (alias legacy frecuencia_fp.html)
 	http.HandleFunc("/api/empresa/frecuencia_fp/permitido", handlers.WithEmpresaSeguridadPermissions(dbEmpresas, dbSuper, handlers.EmpresaFrecuenciaFPAllowedHandler(dbSuper)))
 	handlers.RegisterEmpresaChatIARoutes(dbEmpresas, dbSuper)
+	// API versionada y estable para clientes móviles. No reemplaza las rutas web
+	// existentes hasta que cada módulo complete su migración controlada.
+	handlers.RegisterMobileAPIV1Routes(dbEmpresas, dbSuper)
 	handlers.RegisterEmpresaModulosFaltantesRoutes(dbEmpresas, dbSuper)
 	// Rutas del módulo sensor de puertas: configuración protegida y endpoint público para heartbeats
 	http.HandleFunc("/api/empresa/sensor_puertas", handlers.WithEmpresaSeguridadPermissions(dbEmpresas, dbSuper, handlers.EmpresaSensorConfigHandler(dbEmpresas)))

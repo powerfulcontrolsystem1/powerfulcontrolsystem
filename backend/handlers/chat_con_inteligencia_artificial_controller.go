@@ -168,6 +168,7 @@ type empresaAIModelDef struct {
 	PlanURL                string   `json:"plan_url"`
 	ReasoningEfforts       []string `json:"reasoning_efforts,omitempty"`
 	DefaultReasoningEffort string   `json:"default_reasoning_effort,omitempty"`
+	apiKeyOverride         string   `json:"-"`
 }
 
 type empresaAIChatMensaje struct {
@@ -466,6 +467,7 @@ func (c *EmpresaAIChatController) ModelosHandler(w http.ResponseWriter, r *http.
 	}
 
 	empresaMaxConsultas, _, _, _ := getChatIAEmpresaMaxConsultasDia(c.dbSuper)
+	usaOpenAIPropio := companyOwnOpenAIEnabled(c.dbEmp, empresaID)
 	fechaUso := time.Now().Format("2006-01-02")
 	items := make([]map[string]interface{}, 0, len(catalog))
 	for _, it := range catalog {
@@ -474,6 +476,10 @@ func (c *EmpresaAIChatController) ModelosHandler(w http.ResponseWriter, r *http.
 		remaining := limit - usage.Consultas
 		if remaining < 0 {
 			remaining = 0
+		}
+		if usaOpenAIPropio && strings.EqualFold(it.Provider, "openai") {
+			limit = -1
+			remaining = -1
 		}
 		items = append(items, map[string]interface{}{
 			"id":               it.ID,
@@ -484,23 +490,24 @@ func (c *EmpresaAIChatController) ModelosHandler(w http.ResponseWriter, r *http.
 			"free_daily_limit": it.FreeDailyLimit,
 			"description":      it.Description,
 			"plan_url":         it.PlanURL + "?empresa_id=" + fmt.Sprintf("%d", empresaID),
-			"usage":            map[string]interface{}{"daily_used": usage.Consultas, "daily_limit": limit, "daily_remaining": remaining},
+			"usage":            map[string]interface{}{"daily_used": usage.Consultas, "daily_limit": limit, "daily_remaining": remaining, "unlimited_by_own_key": usaOpenAIPropio && strings.EqualFold(it.Provider, "openai")},
 		})
 	}
 
 	streamingEnabled, _, _, _ := getChatIAEmpresaStreamingEnabled(c.dbSuper)
 
 	writeJSON(w, http.StatusOK, map[string]interface{}{
-		"ok":                true,
-		"empresa_id":        empresaID,
-		"google_account":    googleAccount,
-		"modelo_preferido":  modeloPreferido,
-		"streaming_enabled": streamingEnabled,
-		"agentes":           empresaAIChatAgentCatalog(),
-		"agent_preferido":   normalizeEmpresaAIChatAgentID(userPrefs.AgentID),
-		"modo_preferido":    normalizeAIAssistantMode(userPrefs.ModoAsistente),
-		"preference_scope":  "usuario",
-		"modelos":           items,
+		"ok":                   true,
+		"empresa_id":           empresaID,
+		"google_account":       googleAccount,
+		"modelo_preferido":     modeloPreferido,
+		"streaming_enabled":    streamingEnabled,
+		"agentes":              empresaAIChatAgentCatalog(),
+		"agent_preferido":      normalizeEmpresaAIChatAgentID(userPrefs.AgentID),
+		"modo_preferido":       normalizeAIAssistantMode(userPrefs.ModoAsistente),
+		"preference_scope":     "usuario",
+		"openai_propio_activo": usaOpenAIPropio,
+		"modelos":              items,
 	})
 }
 
@@ -690,6 +697,11 @@ func (c *EmpresaAIChatController) ConsultarHandler(w http.ResponseWriter, r *htt
 		http.Error(w, "model_id no soportado o desactivado", http.StatusBadRequest)
 		return
 	}
+	model, usaOpenAIPropio, err := c.modelForEmpresaProvider(payload.EmpresaID, model)
+	if err != nil {
+		http.Error(w, "No se pudo preparar el proveedor IA propio de la empresa", http.StatusServiceUnavailable)
+		return
+	}
 
 	payload.Pregunta = strings.TrimSpace(payload.Pregunta)
 	if payload.Pregunta == "" {
@@ -718,6 +730,9 @@ func (c *EmpresaAIChatController) ConsultarHandler(w http.ResponseWriter, r *htt
 	if planActual == "" {
 		planActual = "free"
 	}
+	if usaOpenAIPropio {
+		planActual = "openai_propio"
+	}
 
 	empresaChatEnabled, _, _, err := getChatIAEmpresaEnabled(c.dbSuper)
 	if err != nil {
@@ -739,7 +754,7 @@ func (c *EmpresaAIChatController) ConsultarHandler(w http.ResponseWriter, r *htt
 		return
 	}
 	effectiveLimit := effectiveDailyLimitBySuperConfig(empresaMaxConsultas, model.FreeDailyLimit)
-	if effectiveLimit == 0 {
+	if !usaOpenAIPropio && effectiveLimit == 0 {
 		writeJSON(w, http.StatusTooManyRequests, map[string]interface{}{
 			"ok":    false,
 			"code":  "ai_empresa_chat_blocked",
@@ -748,7 +763,7 @@ func (c *EmpresaAIChatController) ConsultarHandler(w http.ResponseWriter, r *htt
 		return
 	}
 
-	if usoActual.Consultas >= effectiveLimit {
+	if !usaOpenAIPropio && usoActual.Consultas >= effectiveLimit {
 		c.writeLimitReached(w, payload.EmpresaID, model, usoActual.Consultas)
 		return
 	}
@@ -778,7 +793,7 @@ func (c *EmpresaAIChatController) ConsultarHandler(w http.ResponseWriter, r *htt
 		systemPrompt += "\n\n" + buildEmpresaAIChatAgentInstruction(payload.AgentID)
 		respuesta, promptTokens, completionTokens, err = c.generateResponseWithSystemPrompt(model, payload.Pregunta, payload.Historial, systemPrompt)
 		if err != nil {
-			if isProviderLimitError(err) {
+			if isProviderLimitError(err) && !usaOpenAIPropio {
 				c.writeLimitReached(w, payload.EmpresaID, model, usoActual.Consultas)
 				return
 			}
@@ -839,6 +854,10 @@ func (c *EmpresaAIChatController) ConsultarHandler(w http.ResponseWriter, r *htt
 	if restante < 0 {
 		restante = 0
 	}
+	if usaOpenAIPropio {
+		effectiveLimit = -1
+		restante = -1
+	}
 
 	writeJSON(w, http.StatusOK, map[string]interface{}{
 		"ok":                       true,
@@ -852,12 +871,13 @@ func (c *EmpresaAIChatController) ConsultarHandler(w http.ResponseWriter, r *htt
 		"agent_id":                 payload.AgentID,
 		"respuesta":                respuesta,
 		"usage": map[string]interface{}{
-			"plan":              planActual,
-			"daily_used":        usoActualizado.Consultas,
-			"daily_limit":       effectiveLimit,
-			"daily_remaining":   restante,
-			"prompt_tokens":     promptTokens,
-			"completion_tokens": completionTokens,
+			"plan":                 planActual,
+			"daily_used":           usoActualizado.Consultas,
+			"daily_limit":          effectiveLimit,
+			"daily_remaining":      restante,
+			"prompt_tokens":        promptTokens,
+			"completion_tokens":    completionTokens,
+			"unlimited_by_own_key": usaOpenAIPropio,
 		},
 		"scope": map[string]interface{}{
 			"restricted_by_empresa_id": true,
@@ -959,15 +979,6 @@ func (c *EmpresaAIChatController) ConsultarConAdjuntoHandler(w http.ResponseWrit
 		http.Error(w, "No se pudo consultar límite GPT-5.5", http.StatusInternalServerError)
 		return
 	}
-	if maxGPT55 == 0 {
-		writeJSON(w, http.StatusTooManyRequests, map[string]interface{}{
-			"ok":    false,
-			"code":  "ai_empresa_advanced_blocked",
-			"error": "Las consultas avanzadas con adjuntos están bloqueadas para empresas (límite en 0).",
-		})
-		return
-	}
-
 	catalog := availableEmpresaAIModelMap(c.dbSuper)
 	modelID := strings.TrimSpace(r.FormValue("model_id"))
 	if modelID == "" {
@@ -982,6 +993,19 @@ func (c *EmpresaAIChatController) ConsultarConAdjuntoHandler(w http.ResponseWrit
 		})
 		return
 	}
+	model, usaOpenAIPropio, err := c.modelForEmpresaProvider(empresaID, model)
+	if err != nil {
+		http.Error(w, "No se pudo preparar el proveedor IA propio de la empresa", http.StatusServiceUnavailable)
+		return
+	}
+	if !usaOpenAIPropio && maxGPT55 == 0 {
+		writeJSON(w, http.StatusTooManyRequests, map[string]interface{}{
+			"ok":    false,
+			"code":  "ai_empresa_advanced_blocked",
+			"error": "Las consultas avanzadas con adjuntos están bloqueadas para empresas (límite en 0).",
+		})
+		return
+	}
 
 	fechaUso := time.Now().Format("2006-01-02")
 	usoActual, err := dbpkg.GetEmpresaAIUsoDiario(c.dbEmp, empresaID, model.Provider, model.ID, fechaUso)
@@ -989,7 +1013,7 @@ func (c *EmpresaAIChatController) ConsultarConAdjuntoHandler(w http.ResponseWrit
 		http.Error(w, "No se pudo consultar uso diario", http.StatusInternalServerError)
 		return
 	}
-	if usoActual.Consultas >= maxGPT55 {
+	if !usaOpenAIPropio && usoActual.Consultas >= maxGPT55 {
 		writeJSON(w, http.StatusTooManyRequests, map[string]interface{}{
 			"ok":    false,
 			"code":  "ai_empresa_advanced_limit_reached",
@@ -1036,6 +1060,9 @@ func (c *EmpresaAIChatController) ConsultarConAdjuntoHandler(w http.ResponseWrit
 	if planActual == "" {
 		planActual = "free"
 	}
+	if usaOpenAIPropio {
+		planActual = "openai_propio"
+	}
 	adminEmail := googleAccount
 	_, err = dbpkg.RegisterEmpresaAIConsulta(c.dbEmp, dbpkg.EmpresaAIConsulta{
 		EmpresaID:        empresaID,
@@ -1062,6 +1089,10 @@ func (c *EmpresaAIChatController) ConsultarConAdjuntoHandler(w http.ResponseWrit
 	if restante < 0 {
 		restante = 0
 	}
+	if usaOpenAIPropio {
+		maxGPT55 = -1
+		restante = -1
+	}
 
 	writeJSON(w, http.StatusOK, map[string]interface{}{
 		"ok":             true,
@@ -1073,12 +1104,13 @@ func (c *EmpresaAIChatController) ConsultarConAdjuntoHandler(w http.ResponseWrit
 		"agent_id":       agentID,
 		"respuesta":      respuesta,
 		"usage": map[string]interface{}{
-			"plan":              planActual,
-			"daily_used":        usoActualizado.Consultas,
-			"daily_limit":       maxGPT55,
-			"daily_remaining":   restante,
-			"prompt_tokens":     promptTokens,
-			"completion_tokens": completionTokens,
+			"plan":                 planActual,
+			"daily_used":           usoActualizado.Consultas,
+			"daily_limit":          maxGPT55,
+			"daily_remaining":      restante,
+			"prompt_tokens":        promptTokens,
+			"completion_tokens":    completionTokens,
+			"unlimited_by_own_key": usaOpenAIPropio,
 		},
 	})
 }
@@ -1154,6 +1186,11 @@ func (c *EmpresaAIChatController) ConsultarStreamHandler(w http.ResponseWriter, 
 		http.Error(w, "model_id no soportado o desactivado", http.StatusBadRequest)
 		return
 	}
+	model, usaOpenAIPropio, err := c.modelForEmpresaProvider(payload.EmpresaID, model)
+	if err != nil {
+		http.Error(w, "No se pudo preparar el proveedor IA propio de la empresa", http.StatusServiceUnavailable)
+		return
+	}
 	// Solo streaming para chat/completions.
 	if !strings.Contains(strings.ToLower(model.Endpoint), "/v1/chat/completions") {
 		http.Error(w, "modelo no soporta streaming", http.StatusBadRequest)
@@ -1172,7 +1209,7 @@ func (c *EmpresaAIChatController) ConsultarStreamHandler(w http.ResponseWriter, 
 		return
 	}
 	effectiveLimit := effectiveDailyLimitBySuperConfig(empresaMaxConsultas, model.FreeDailyLimit)
-	if effectiveLimit == 0 || usoActual.Consultas >= effectiveLimit {
+	if !usaOpenAIPropio && (effectiveLimit == 0 || usoActual.Consultas >= effectiveLimit) {
 		w.Header().Set("Content-Type", "text/event-stream; charset=utf-8")
 		w.Header().Set("Cache-Control", "no-cache")
 		_ = sseWriteJSON(w, openAIStreamEvent{Error: "Límite de uso alcanzado."})
@@ -1258,6 +1295,9 @@ func (c *EmpresaAIChatController) ConsultarStreamHandler(w http.ResponseWriter, 
 	planActual := strings.ToLower(strings.TrimSpace(usoActual.PlanActual))
 	if planActual == "" {
 		planActual = "free"
+	}
+	if usaOpenAIPropio {
+		planActual = "openai_propio"
 	}
 	// Registrar consulta (tokens desconocidos en streaming → 0).
 	_, _ = dbpkg.RegisterEmpresaAIConsulta(c.dbEmp, dbpkg.EmpresaAIConsulta{
@@ -1366,6 +1406,30 @@ func (c *EmpresaAIChatController) writeLimitReached(w http.ResponseWriter, empre
 		"upgrade_url":     model.PlanURL + "?empresa_id=" + fmt.Sprintf("%d", empresaID),
 		"upgrade_message": "Puedes adquirir un plan para ampliar limites y capacidad.",
 	})
+}
+
+// modelForEmpresaProvider resolves an optional customer-owned OpenAI key after
+// the caller has already validated the authenticated company scope. The key is
+// held only in memory for this outbound request and is never put in a response
+// or log line.
+func (c *EmpresaAIChatController) modelForEmpresaProvider(empresaID int64, model empresaAIModelDef) (empresaAIModelDef, bool, error) {
+	if !strings.EqualFold(strings.TrimSpace(model.Provider), "openai") {
+		return model, false, nil
+	}
+	key, enabled, err := dbpkg.GetEmpresaAIOpenAIProviderKey(c.dbEmp, empresaID)
+	if err != nil {
+		return model, false, err
+	}
+	if !enabled {
+		return model, false, nil
+	}
+	model.apiKeyOverride = key
+	return model, true, nil
+}
+
+func companyOwnOpenAIEnabled(dbEmp *sql.DB, empresaID int64) bool {
+	cfg, err := dbpkg.GetEmpresaAIOpenAIProviderConfig(dbEmp, empresaID)
+	return err == nil && cfg.Habilitado && cfg.ClaveCargada
 }
 
 func (c *EmpresaAIChatController) generateResponse(model empresaAIModelDef, pregunta string, historial []empresaAIChatMensaje, contexto string) (string, int64, int64, error) {
@@ -2052,6 +2116,9 @@ func sanitizeHistorial(in []empresaAIChatMensaje, max int) []empresaAIChatMensaj
 }
 
 func (c *EmpresaAIChatController) resolveModelAPIKey(model empresaAIModelDef) (string, error) {
+	if strings.TrimSpace(model.apiKeyOverride) != "" {
+		return strings.TrimSpace(model.apiKeyOverride), nil
+	}
 	if strings.TrimSpace(model.ApiKeyEnv) == "" {
 		return "", nil
 	}

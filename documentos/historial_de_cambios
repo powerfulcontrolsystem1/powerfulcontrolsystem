@@ -37894,3 +37894,16 @@ Archivos modificados:
 - Referencia tecnica consultada: catalogo oficial de modelos OpenAI, que
   documenta Sol/Terra/Luna y sus niveles `none`, `low`, `medium`, `high`,
   `xhigh`, `max`.
+2026-07-13: IA propia empresarial y base movil versionada.
+- Seguridad: se agrega `empresa_ai_openai_proveedor_configuracion`, aislada por
+  `empresa_id`, con AES-GCM de proposito `empresa-openai-provider`. La clave
+  nunca se serializa ni se escribe en auditoria o logs.
+- IA: los modelos OpenAI del chat normal, adjuntos y streaming usan la clave
+  propia cuando esta habilitada. La cuota PCS se informa como ilimitada para esa
+  llamada, conservando control de rol, tenant, agentes y limites OpenAI.
+- Registro: la deteccion de pais prioriza zona horaria y usa Colombia como
+  respaldo; la respuesta publica de geolocalizacion valida puede corregirla.
+- API: se agrega `/api/v1/` con contrato OpenAPI, sobre JSON uniforme, token
+  Bearer de sesion dedicada, controles multiempresa existentes, paginacion y
+  seleccion de campos para productos y clientes. Las APIs web quedan como
+  compatibilidad y se migraran gradualmente por dominio.

@@ -3,6 +3,13 @@
 Version: 2026-05-15.1.0
 Ultima actualizacion: 2026-05-15
 
+Actualizacion 2026-07-13 (OpenAI propio por empresa)
+- `empresa_ai_openai_proveedor_configuracion` conserva una configuracion por
+  `empresa_id`: habilitacion, clave cifrada con AES-GCM y proposito
+  `empresa-openai-provider`, actor y fecha. Nunca conserva la clave en claro
+  ni la usa como fuente de autorizacion; los permisos siguen saliendo de sesion,
+  rol y wrappers empresariales.
+
 Actualizacion 2026-07-13 (orquestador IA de catalogo)
 - `empresa_ai_propuestas` conserva propuestas tipadas de herramientas IA por
   empresa y usuario, con hash del plan, vencimiento, estado de consumo,

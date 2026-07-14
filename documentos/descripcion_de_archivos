@@ -11879,3 +11879,21 @@ documentos/production_deployment_runbook.md
 documentos/production_rollback_runbook.md
 documentos/release_checklist.md
 - Runbooks y lista de control para una liberacion reversible.
+2026-07-13 - IA propia empresarial y API movil v1
+- `backend/db/ai_empresa_proveedor.go`: esquema y acceso cifrado por empresa
+  para la clave OpenAI propia; el valor solo se descifra en memoria al enviar la
+  solicitud saliente.
+- `backend/handlers/empresa_ai_proveedor_config.go`: endpoint administrativo
+  aislado para consultar/activar/desactivar la configuracion sin devolver la
+  clave.
+- `backend/handlers/mobile_api_v1.go`: fachada versionada para movil con
+  envoltura JSON, token de dispositivo, permisos y paginacion inicial.
+- `web/administrar_empresa/configuracion_ia_propia.html`: configuracion de
+  OpenAI propio por empresa.
+- `documentos/api/openapi.mobile.v1.yaml`: contrato OpenAPI manual de la
+  fachada movil estable.
+- `documentos/api/mobile_api_v1.md`: inventario, seguridad, compatibilidad y
+  plan de migracion de APIs web hacia movil.
+- `tools/auditar_api_movil.mjs` y `documentos/api/inventario_api_movil.md`:
+  auditoria reproducible de rutas HTTP registradas, agrupada por familia para
+  priorizar la migracion sin consultar datos ni ejecutar cambios de runtime.
