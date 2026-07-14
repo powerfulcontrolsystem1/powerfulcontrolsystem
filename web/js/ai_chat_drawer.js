@@ -75,6 +75,8 @@
     activeRequestSeq: 0,
     robotVoice: 'es-CO',
     radioEnabled: false,
+    theme: 'normal',
+    textSize: 'mediano',
     robotAssistantVisible: false,
     robotMoodTimer: null,
     lastResponseModelMeta: null,
@@ -619,6 +621,8 @@
   var RADIO_ENABLED_STORAGE_KEY = 'pcs_radio_online_enabled';
   var VOICE_COMMAND_STORAGE_KEY = 'pcs_ai_chat_voice_enabled';
   var ROBOT_VOICE_STORAGE_KEY = 'pcs_ai_chat_robot_voice';
+  var CHAT_THEME_STORAGE_KEY = 'pcs_ai_chat_theme';
+  var CHAT_TEXT_SIZE_STORAGE_KEY = 'pcs_ai_chat_text_size';
 
   function buildChatPrefsEndpoint() {
     var empresaId = parsePositiveInt(getCurrentEmpresaId());
@@ -630,6 +634,31 @@
 
   function normalizeChatPersonalityMode(value) {
     return 'normal';
+  }
+
+  function normalizeChatTheme(value) {
+    var raw = normalize(value).toLowerCase();
+    if (raw === 'corporativo' || raw === 'corporate' || raw === 'rojo_azul') return 'corporativo';
+    if (raw === 'oceano' || raw === 'ocean' || raw === 'azul') return 'oceano';
+    if (raw === 'esmeralda' || raw === 'emerald' || raw === 'verde') return 'esmeralda';
+    if (raw === 'vino' || raw === 'wine' || raw === 'borgona') return 'vino';
+    return 'normal';
+  }
+
+  function normalizeChatTextSize(value) {
+    var raw = normalize(value).toLowerCase();
+    if (raw === 'pequeno' || raw === 'small' || raw === 's') return 'pequeno';
+    if (raw === 'grande' || raw === 'large' || raw === 'l') return 'grande';
+    return 'mediano';
+  }
+
+  function applyChatAppearance(theme, textSize) {
+    state.theme = normalizeChatTheme(theme || state.theme);
+    state.textSize = normalizeChatTextSize(textSize || state.textSize);
+    var drawer = document.getElementById(DRAWER_ID);
+    if (!drawer) return;
+    drawer.dataset.aiTheme = state.theme;
+    drawer.dataset.aiTextSize = state.textSize;
   }
 
   function normalizeRobotVoice(value) {
@@ -906,6 +935,7 @@
         if (data.robot_voice) {
           setRobotVoicePreference(data.robot_voice);
         }
+        applyChatAppearance(data.theme, data.text_size);
         try {
           window.localStorage.setItem(VOICE_COMMAND_STORAGE_KEY, state.voiceEnabled ? '1' : '0');
         } catch (error) {}
@@ -3498,6 +3528,112 @@
     });
   }
 
+  function appendInlineMarkdown(container, value) {
+    var parts = String(value || '').split(/(\*\*[^*]+\*\*)/g);
+    parts.forEach(function (part) {
+      if (!part) return;
+      if (part.length > 4 && part.slice(0, 2) === '**' && part.slice(-2) === '**') {
+        var strong = document.createElement('strong');
+        strong.textContent = part.slice(2, -2);
+        container.appendChild(strong);
+        return;
+      }
+      container.appendChild(document.createTextNode(part));
+    });
+  }
+
+  function isMarkdownTableDivider(line) {
+    var cells = String(line || '').trim().replace(/^\||\|$/g, '').split('|');
+    return cells.length > 0 && cells.every(function (cell) {
+      return /^\s*:?-{3,}:?\s*$/.test(cell);
+    });
+  }
+
+  function markdownTableCells(line) {
+    return String(line || '').trim().replace(/^\||\|$/g, '').split('|').map(function (cell) {
+      return cell.trim();
+    });
+  }
+
+  function renderAssistantResponse(container, value) {
+    container.textContent = '';
+    var source = String(value || '').replace(/\r\n?/g, '\n').trim();
+    if (!source) return;
+
+    // Models sometimes omit the newline between compact list items. Restore it
+    // before parsing so each business indicator remains independently readable.
+    source = source.replace(/([^\n])\s+-\s+(?=\*\*)/g, '$1\n- ');
+    var lines = source.split('\n');
+    for (var i = 0; i < lines.length; i += 1) {
+      var line = lines[i].trim();
+      if (!line) continue;
+      if (/^\|.*\|$/.test(line) && i + 1 < lines.length && isMarkdownTableDivider(lines[i + 1])) {
+        var table = document.createElement('table');
+        table.className = 'ai-chat-data-table';
+        var headerRow = document.createElement('tr');
+        markdownTableCells(line).forEach(function (cell) {
+          var th = document.createElement('th');
+          appendInlineMarkdown(th, cell);
+          headerRow.appendChild(th);
+        });
+        var thead = document.createElement('thead');
+        thead.appendChild(headerRow);
+        table.appendChild(thead);
+        var tbody = document.createElement('tbody');
+        i += 2;
+        while (i < lines.length && /^\|.*\|$/.test(lines[i].trim())) {
+          var row = document.createElement('tr');
+          markdownTableCells(lines[i]).forEach(function (cell) {
+            var td = document.createElement('td');
+            appendInlineMarkdown(td, cell);
+            row.appendChild(td);
+          });
+          tbody.appendChild(row);
+          i += 1;
+        }
+        table.appendChild(tbody);
+        container.appendChild(table);
+        i -= 1;
+        continue;
+      }
+      var heading = line.match(/^#{1,4}\s+(.+)$/);
+      if (heading) {
+        var title = document.createElement('h3');
+        title.className = 'ai-chat-section-title';
+        appendInlineMarkdown(title, heading[1]);
+        container.appendChild(title);
+        continue;
+      }
+      var keyValue = line.match(/^-\s+\*\*([^*]+?)\*\*\s*[:—-]\s*(.+)$/);
+      if (keyValue) {
+        var kv = document.createElement('div');
+        kv.className = 'ai-chat-kv-row';
+        var key = document.createElement('span');
+        key.className = 'ai-chat-kv-key';
+        key.textContent = keyValue[1].replace(/:\s*$/, '');
+        var val = document.createElement('span');
+        val.className = 'ai-chat-kv-value';
+        appendInlineMarkdown(val, keyValue[2]);
+        kv.appendChild(key);
+        kv.appendChild(val);
+        container.appendChild(kv);
+        continue;
+      }
+      var bullet = line.match(/^-\s+(.+)$/);
+      if (bullet) {
+        var listRow = document.createElement('div');
+        listRow.className = 'ai-chat-list-row';
+        appendInlineMarkdown(listRow, bullet[1]);
+        container.appendChild(listRow);
+        continue;
+      }
+      var paragraph = document.createElement('p');
+      paragraph.className = 'ai-chat-paragraph';
+      appendInlineMarkdown(paragraph, line);
+      container.appendChild(paragraph);
+    }
+  }
+
   function appendMessage(author, text, messageType, actionProposal, meta) {
     var messagesEl = document.getElementById(MESSAGES_ID);
     if (!messagesEl || !text) return;
@@ -3514,7 +3650,12 @@
     }
 
     var textNode = document.createElement('div');
-    textNode.textContent = String(text);
+    textNode.className = 'ai-chat-response-content';
+    if (author === 'assistant' && messageType !== 'error') {
+      renderAssistantResponse(textNode, text);
+    } else {
+      textNode.textContent = String(text);
+    }
     item.appendChild(textNode);
 
     if (actionProposal && Array.isArray(actionProposal.actions) && actionProposal.actions.length) {
@@ -3602,6 +3743,7 @@
     item.classList.add('is-streaming');
     ensureMessageModelBadge(item, meta);
     var textNode = document.createElement('div');
+    textNode.className = 'ai-chat-response-content';
     textNode.textContent = String(initialText || 'Pensando...');
     item.appendChild(textNode);
     messagesEl.appendChild(item);
@@ -3629,7 +3771,7 @@
     if (!ref || !ref.item || !ref.textNode) return;
     var value = String(text || '').trim() || 'Respuesta lista.';
     ref.item.classList.remove('is-streaming');
-    ref.textNode.textContent = value;
+    renderAssistantResponse(ref.textNode, value);
     if (actionProposal && Array.isArray(actionProposal.actions) && actionProposal.actions.length) {
       var proposalIndex = state.proposals.length;
       state.proposals.push(actionProposal);
@@ -5140,6 +5282,10 @@
       }
       if (data.type === 'pcs-ai-chat-robot-voice-updated') {
         setRobotVoicePreference(data.voice);
+        return;
+      }
+      if (data.type === 'pcs-ai-chat-appearance-updated') {
+        applyChatAppearance(data.theme, data.textSize);
         return;
       }
       if (data.type === 'pcs-ai-config-assistant-start') {

@@ -399,8 +399,8 @@
 - `backend/handlers/chat_flotante_config.go`: en contexto empresarial fuerza `chat_enabled=true` y normaliza guardados apagados a `1`, manteniendo robot/secretaria retirados.
 - `backend/db/empresa_estacion_prefs.go`: reaplica preferencias de preproduccion con la migracion `20260610_chat_ia_activo_empresas_reaplicar`.
 - `backend/handlers/chat_flotante_config_test.go`: cubre que el chat flotante empresarial responda activo aunque el fallback global este apagado.
-- `web/js/ai_chat_drawer.js`: ignora `localStorage` apagado en empresas y mantiene visible el boton circular flotante del asistente IA.
-- `web/administrar_empresa/configuracion_chat_flotante.html`: muestra la IA flotante como activa por empresa y deshabilita el apagado en contexto empresarial.
+- `web/js/ai_chat_drawer.js`: ignora `localStorage` apagado en empresas y mantiene visible el boton circular flotante del asistente IA. Renderiza de forma segura títulos, filas y tablas Markdown de respuestas IA, con tema y tamaño recibidos de la preferencia empresarial.
+- `web/administrar_empresa/configuracion_chat_flotante.html`: muestra la IA flotante como activa por empresa y deshabilita el apagado en contexto empresarial; permite guardar tema y tamaño de texto con vista previa.
 
 2026-06-10 - E-mail Corporativo como pagina independiente
 - `web/administrar_empresa/email_corporativo.html`: nueva pagina empresarial para abrir automaticamente el webmail corporativo, mostrar cuenta, estado, no leidos y acceso a configuracion por `empresa_id`.

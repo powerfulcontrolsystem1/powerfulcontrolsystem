@@ -1,3 +1,10 @@
+2026-07-13: Chat IA empresarial legible y tematizable por empresa.
+- Modulos afectados: `chat IA`, `administrar empresa`, `configuracion empresarial`, `permisos multiempresa`.
+- Frontend: `web/js/ai_chat_drawer.js` convierte de forma segura los titulos Markdown, indicadores y tablas Markdown de las respuestas IA en secciones, filas clave/valor y tablas HTML creadas por DOM; no interpreta HTML devuelto por el modelo. Los temas `normal`, `corporativo`, `oceano`, `esmeralda` y `vino`, junto con los tamaños `pequeno`, `mediano` y `grande`, respetan claro/oscuro y se aplican al recuadro abierto.
+- Configuracion: `Administrar empresa > Configuracion > Chat IA > Configurar chat y robot` permite elegir tema y tamaño con vista previa. Las preferencias se guardan por empresa en `empresa_estacion_prefs` con las claves `chat_flotante.theme` y `chat_flotante.text_size` mediante `/api/chat_flotante/preferencias`, que conserva la empresa validada por sesion.
+- Backend: el prompt empresarial solicita tablas Markdown y filas separadas para resúmenes con indicadores, ventas, productos, movimientos o alertas, sin agregar ofertas de acciones no solicitadas.
+- QA: normalizacion Go cubierta por `chat_flotante_config_test.go`; pendiente ejecutar la suite completa y validacion visual en navegador antes de publicar.
+
 2026-07-13: Preparación para validación controlada de staging.
 - Se añaden matriz de evidencia, checklist de staging y rollback de producción
   sin desplegar ni tocar datos reales. El cierre declara bloqueantes concretos

@@ -419,6 +419,12 @@
 - Frontend: el asistente IA del panel empresarial usa solo el recuadro normal;
   los accesos historicos de robot/secretaria se redirigen al drawer para no
   romper ayuda contextual ni configuracion guiada.
+- Presentacion de respuestas: el recuadro interpreta de forma segura titulos y
+  tablas Markdown producidos por el modelo, mostrando indicadores en filas y
+  datos tabulares en columnas. Cada empresa configura tema (`normal`,
+  `corporativo`, `oceano`, `esmeralda` o `vino`) y tamaño (`pequeno`, `mediano`
+  o `grande`) desde `Configuracion > Chat IA`; la preferencia se persiste por
+  empresa mediante `chat_flotante.theme` y `chat_flotante.text_size`.
 - Configuracion: `configuracion_chat_flotante.html` permite activar/desactivar
   IA por empresa, emisora online y modo voz; ya no muestra tarjetas de avatar.
 - Backend: `/api/chat_flotante/preferencias` responde siempre
