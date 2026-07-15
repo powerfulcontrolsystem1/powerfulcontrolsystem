@@ -7,9 +7,21 @@ services:
       - pcs_staging_postgres_data:/var/lib/postgresql/data
       - ./postgres/init:/docker-entrypoint-initdb.d:ro
 
+  migrate:
+    container_name: pcs-staging-migrate
+    environment:
+      PCS_ENV: staging
+
+  worker:
+    container_name: pcs-staging-worker
+    environment:
+      PCS_ENV: staging
+      PCS_WORKER_ID: pcs-worker-staging
+
   backend:
     container_name: pcs-staging-backend
     environment:
+      PCS_ENV: staging
       PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:-https://staging.powerfulcontrolsystem.com}
       GOOGLE_REDIRECT_URL: ${GOOGLE_REDIRECT_URL:-https://staging.powerfulcontrolsystem.com/auth/google/callback}
       RECAPTCHA_DEV_BYPASS: ${RECAPTCHA_DEV_BYPASS:-1}
@@ -17,6 +29,7 @@ services:
     volumes:
       - pcs_staging_backend_logs:/app/backend/logs
       - pcs_staging_web_uploads:/app/web/uploads
+      - pcs_staging_private_storage:/app/private_storage
       - pcs_staging_backups:/app/backup
 
   frontend:
@@ -31,6 +44,7 @@ volumes:
   pcs_staging_postgres_data:
   pcs_staging_backend_logs:
   pcs_staging_web_uploads:
+  pcs_staging_private_storage:
   pcs_staging_backups:
   pcs_staging_downloads:
 

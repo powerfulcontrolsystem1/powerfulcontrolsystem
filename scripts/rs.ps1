@@ -138,6 +138,29 @@ function Invoke-Step {
   Write-Host "[OK] $Name completado." -ForegroundColor Green
 }
 
+function Assert-ProductionRevision {
+  if ($DryRun -or $PreviewOnly) {
+    Write-Host "[INFO] Verificacion de rama productiva omitida por DryRun/PreviewOnly."
+    return
+  }
+
+  $branch = (& git branch --show-current 2>$null | Select-Object -Last 1).ToString().Trim()
+  if ($branch -ne "main") {
+    throw "rs no sincroniza ramas de trabajo al VPS. Integra la revision aprobada en main y usa staging para validar $branch."
+  }
+
+  & git fetch origin main --quiet
+  if ($LASTEXITCODE -ne 0) {
+    throw "No se pudo actualizar origin/main antes del despliegue."
+  }
+  $localRevision = (& git rev-parse HEAD 2>$null | Select-Object -Last 1).ToString().Trim()
+  $remoteRevision = (& git rev-parse origin/main 2>$null | Select-Object -Last 1).ToString().Trim()
+  if ([string]::IsNullOrWhiteSpace($localRevision) -or [string]::IsNullOrWhiteSpace($remoteRevision) -or $localRevision -ne $remoteRevision) {
+    throw "La copia local no coincide exactamente con origin/main. Actualiza main antes de sincronizar el VPS."
+  }
+  Write-Host "[OK] Revision productiva confirmada en origin/main." -ForegroundColor Green
+}
+
 $updateArgs = @{
   Message = $Message
   ProtectedMainPRWaitSeconds = $ProtectedMainPRWaitSeconds
@@ -163,6 +186,7 @@ if (-not $SkipPreflight) {
 }
 
 Invoke-Step -Name "Actualizar repositorio" -Path $updateScript -Arguments $updateArgs
+Assert-ProductionRevision
 if ($BuildAndroid -and -not $SkipMobile) {
   $androidArgs = @{}
   if ($DryRun) { $androidArgs.DryRun = $true }

@@ -22,21 +22,44 @@ jobs:
     if: inputs.build_android
     runs-on: ubuntu-latest
     timeout-minutes: 35
+    environment: mobile-production
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2
         with:
           channel: stable
           cache: true
+      - name: Materialize Android signing key
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        working-directory: mobile/powerful_control_system_app
+        run: |
+          test -n "$ANDROID_KEYSTORE_BASE64"
+          test -n "$ANDROID_KEYSTORE_PASSWORD"
+          test -n "$ANDROID_KEY_ALIAS"
+          test -n "$ANDROID_KEY_PASSWORD"
+          printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 --decode > android/upload-keystore.jks
+          cat > android/key.properties <<EOF
+          storePassword=$ANDROID_KEYSTORE_PASSWORD
+          keyPassword=$ANDROID_KEY_PASSWORD
+          keyAlias=$ANDROID_KEY_ALIAS
+          storeFile=upload-keystore.jks
+          EOF
       - working-directory: mobile/powerful_control_system_app
         run: |
           flutter pub get
           dart run flutter_launcher_icons
-          flutter create --platforms=android,ios .
           flutter analyze
           flutter test
           flutter build apk --release
           flutter build appbundle --release
+      - name: Remove transient signing material
+        if: always()
+        working-directory: mobile/powerful_control_system_app
+        run: rm -f android/key.properties android/upload-keystore.jks
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.1
         with:
           name: android-release-candidate
@@ -58,7 +81,6 @@ jobs:
         run: |
           flutter pub get
           dart run flutter_launcher_icons
-          flutter create --platforms=android,ios .
           flutter analyze
           flutter test
           flutter build ios --release --no-codesign

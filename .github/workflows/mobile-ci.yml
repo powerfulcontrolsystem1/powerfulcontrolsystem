@@ -38,16 +38,13 @@ jobs:
           dart run flutter_launcher_icons
           flutter analyze
           flutter test
-          flutter create --platforms=android,ios .
           flutter build apk --debug
-          flutter build appbundle --release
       - name: Upload Android candidates
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: android-mobile-candidates
           path: |
             mobile/powerful_control_system_app/build/app/outputs/flutter-apk/app-debug.apk
-            mobile/powerful_control_system_app/build/app/outputs/bundle/release/app-release.aab
           if-no-files-found: error
 
   ios:
@@ -69,5 +66,4 @@ jobs:
           dart run flutter_launcher_icons
           flutter analyze
           flutter test
-          flutter create --platforms=android,ios .
           flutter build ios --debug --no-codesign

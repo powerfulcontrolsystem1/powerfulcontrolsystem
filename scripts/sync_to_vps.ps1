@@ -36,6 +36,7 @@ param(
   [int]$RetryCount = 3,
   [bool]$AutoInstallDependencies = $true,
   [bool]$BootstrapServer = $true,
+  [switch]$AllowLegacySecretBootstrap,
   [string]$ServerPort = "8080",
   [string]$GoogleClientId = "",
   [string]$GoogleClientSecret = "",
@@ -144,12 +145,19 @@ function Redact-SyncCommandForLog {
     "OPENAI_API_KEY",
     "DB_EMPRESAS_DSN",
     "DB_SUPERADMIN_DSN",
+    "CONFIG_ENC_KEY",
+    "MAILU_API_TOKEN",
+    "ONLYOFFICE_JWT_SECRET",
     "PLINK_KEY_WIN"
   )
   $redacted = $Command
   foreach ($name in $sensitiveNames) {
-    $redacted = [regex]::Replace($redacted, "($name=)'[^']*(?:'\\''[^']*)*'", "`$1'<oculto>'")
-    $redacted = [regex]::Replace($redacted, "($name=)\S+", "`$1<oculto>")
+    $redacted = [regex]::Replace($redacted, "(?i)($name=)'[^']*(?:'\\''[^']*)*'", "`$1'<oculto>'")
+    $redacted = [regex]::Replace($redacted, "(?i)($name=)\S+", "`$1<oculto>")
+  }
+  foreach ($name in @("gsec", "openai_api_key", "dbemp", "dbsuper")) {
+    $redacted = [regex]::Replace($redacted, "(?i)($name=)'[^']*(?:'\\''[^']*)*'", "`$1'<oculto>'")
+    $redacted = [regex]::Replace($redacted, "(?i)($name=)\S+", "`$1<oculto>")
   }
   return $redacted
 }
@@ -1651,17 +1659,8 @@ function Invoke-PuttySync {
   }
 
   if ($IsPreviewOnly) {
-    Write-Host ("[PREVIEW] Fallback sin WSL (" + $transportLabel + "):")
-    Write-Host ("tar " + (($tarArgs | ForEach-Object { '"' + $_ + '"' }) -join " "))
-    Write-Host ($verifyCommandPath + " " + (($verifyArgs | ForEach-Object { '"' + $_ + '"' }) -join " "))
-    Write-Host ($uploadCommandPath + " " + (($uploadArgs | ForEach-Object { '"' + $_ + '"' }) -join " "))
-    Write-Host ($extractCommandPath + " " + (($extractArgs | ForEach-Object { '"' + $_ + '"' }) -join " "))
-    if ($RunBootstrap) {
-      Write-Host ($bootstrapCommandPath + " " + (($bootstrapArgs | ForEach-Object { '"' + $_ + '"' }) -join " "))
-    }
-    if ($RestartServer) {
-      Write-Host ($bootstrapCommandPath + " " + (($restartArgs | ForEach-Object { '"' + $_ + '"' }) -join " "))
-    }
+    Write-Host ("[PREVIEW] Fallback sin WSL (" + $transportLabel + "): transferencia, extraccion y redeploy omitidos.")
+    Write-Host "[PREVIEW] No se imprimen argumentos remotos ni variables de configuracion."
     return
   }
 
@@ -2044,7 +2043,8 @@ try {
     }
   }
 
-  if ([string]::IsNullOrWhiteSpace($DbEmpresasDsn)) {
+  $legacySecretBootstrapRequested = $DeploymentMode -ne "docker" -and $BootstrapServer -and $AllowLegacySecretBootstrap.IsPresent
+  if ($legacySecretBootstrapRequested -and [string]::IsNullOrWhiteSpace($DbEmpresasDsn)) {
     $DbEmpresasDsn = Get-DotEnvValue -EnvFilePath $localBackendEnvPath -Key "DB_EMPRESAS_DSN"
     if ([string]::IsNullOrWhiteSpace($DbEmpresasDsn)) {
       $DbEmpresasDsn = [Environment]::GetEnvironmentVariable("DB_EMPRESAS_DSN")
@@ -2054,7 +2054,7 @@ try {
     }
   }
 
-  if ([string]::IsNullOrWhiteSpace($DbSuperadminDsn)) {
+  if ($legacySecretBootstrapRequested -and [string]::IsNullOrWhiteSpace($DbSuperadminDsn)) {
     $DbSuperadminDsn = Get-DotEnvValue -EnvFilePath $localBackendEnvPath -Key "DB_SUPERADMIN_DSN"
     if ([string]::IsNullOrWhiteSpace($DbSuperadminDsn)) {
       $DbSuperadminDsn = [Environment]::GetEnvironmentVariable("DB_SUPERADMIN_DSN")
@@ -2064,7 +2064,7 @@ try {
     }
   }
 
-  $tunnelEnabled = Parse-BoolLike (Get-DotEnvValue -EnvFilePath $localBackendEnvPath -Key "DB_VPS_TUNNEL_ENABLED")
+  $tunnelEnabled = $legacySecretBootstrapRequested -and (Parse-BoolLike (Get-DotEnvValue -EnvFilePath $localBackendEnvPath -Key "DB_VPS_TUNNEL_ENABLED"))
   if ($tunnelEnabled) {
     $tunnelLocalPort = Parse-IntOrDefault -Value (Get-DotEnvValue -EnvFilePath $localBackendEnvPath -Key "DB_VPS_LOCAL_PORT") -DefaultValue 15432
     $tunnelRemotePort = Parse-IntOrDefault -Value (Get-DotEnvValue -EnvFilePath $localBackendEnvPath -Key "DB_VPS_REMOTE_PORT") -DefaultValue 5432
@@ -2114,12 +2114,15 @@ try {
   $effectiveSkipBuild = $SkipBuild.IsPresent
   $effectiveRestartRemoteServer = [bool]$RestartRemoteServer
   $effectiveRedeployDockerStack = [bool]$RedeployDockerStack
+  $effectiveBootstrapServer = [bool]$BootstrapServer
   switch ($DeploymentMode) {
     "docker" {
       $effectiveSkipBuild = $true
       $effectiveRestartRemoteServer = $false
       $effectiveRedeployDockerStack = $true
+      $effectiveBootstrapServer = $false
       Write-Host "[INFO] DeploymentMode=docker: Docker Compose construye y reinicia backend/frontend; se omite systemd."
+      Write-Host "[INFO] Los secretos Docker se conservan exclusivamente en el VPS; bootstrap remoto deshabilitado."
     }
     "legacy" {
       $effectiveRedeployDockerStack = $false
@@ -2130,7 +2133,17 @@ try {
     }
   }
 
-  if ([string]::IsNullOrWhiteSpace($OpenAIApiKey)) {
+  $legacySecretBootstrapAllowed = $effectiveBootstrapServer -and $AllowLegacySecretBootstrap.IsPresent
+  if (-not $legacySecretBootstrapAllowed) {
+    # Un paquete de codigo no debe transportar secretos ni DSN desde el equipo
+    # local. El entorno remoto existente es la autoridad para configuracion.
+    $GoogleClientSecret = ""
+    $OpenAIApiKey = ""
+    $DbEmpresasDsn = ""
+    $DbSuperadminDsn = ""
+  }
+
+  if ($legacySecretBootstrapAllowed -and [string]::IsNullOrWhiteSpace($OpenAIApiKey)) {
     $OpenAIApiKey = Get-DotEnvValue -EnvFilePath $localBackendEnvPath -Key "OPENAI_API_KEY"
     if ([string]::IsNullOrWhiteSpace($OpenAIApiKey)) {
       $OpenAIApiKey = Get-DotEnvValue -EnvFilePath $localPlatformEnvPath -Key "OPENAI_API_KEY"
@@ -2171,7 +2184,7 @@ try {
     return
   }
 
-  if ($BootstrapServer) {
+  if ($effectiveBootstrapServer) {
     $dialectDisplay = if ([string]::IsNullOrWhiteSpace($DbDialect)) { "EMPTY" } else { $DbDialect }
     $empDisplay = if ([string]::IsNullOrWhiteSpace($DbEmpresasDsn)) { "EMPTY" } else { "SET" }
     $superDisplay = if ([string]::IsNullOrWhiteSpace($DbSuperadminDsn)) { "EMPTY" } else { "SET" }
@@ -2179,7 +2192,7 @@ try {
   }
 
   if (-not (Test-WslReady)) {
-    Invoke-PuttySync -LocalResolvedPath $LocalPath -RemoteUser $RemoteUser -RemoteHost $RemoteHost -RemotePath $RemotePath -Port $Port -IdentityPath $IdentityFile -IsDryRun $DryRun.IsPresent -IsPreviewOnly $PreviewOnly.IsPresent -ExcludeFile $ExcludeFile -ExcludeEvidence $ExcludeEvidenceFromPackage -UseCompression $CompressPackage -LargeTransferWarningMB $LargeTransferWarningMB -ExecRelativePath $builtBinaryRel -Retries $RetryCount -AutoInstallDeps $AutoInstallDependencies -RunBootstrap $BootstrapServer -BootstrapServerPort $ServerPort -BootstrapGoogleClientId $GoogleClientId -BootstrapGoogleClientSecret $GoogleClientSecret -BootstrapGoogleRedirectUrl $GoogleRedirectUrl -OpenAIApiKey $OpenAIApiKey -BootstrapDbDialect $DbDialect -BootstrapDbEmpresasDsn $DbEmpresasDsn -BootstrapDbSuperadminDsn $DbSuperadminDsn -RestartServer $effectiveRestartRemoteServer -RestartBinaryRelativePath $restartBinaryRel -RestartStdoutLogRelativePath $RemoteStdoutLogPath -RestartStderrLogRelativePath $RemoteStderrLogPath -RestartHealthTimeout $RestartHealthTimeoutSeconds
+    Invoke-PuttySync -LocalResolvedPath $LocalPath -RemoteUser $RemoteUser -RemoteHost $RemoteHost -RemotePath $RemotePath -Port $Port -IdentityPath $IdentityFile -IsDryRun $DryRun.IsPresent -IsPreviewOnly $PreviewOnly.IsPresent -ExcludeFile $ExcludeFile -ExcludeEvidence $ExcludeEvidenceFromPackage -UseCompression $CompressPackage -LargeTransferWarningMB $LargeTransferWarningMB -ExecRelativePath $builtBinaryRel -Retries $RetryCount -AutoInstallDeps $AutoInstallDependencies -RunBootstrap $effectiveBootstrapServer -BootstrapServerPort $ServerPort -BootstrapGoogleClientId $GoogleClientId -BootstrapGoogleClientSecret $GoogleClientSecret -BootstrapGoogleRedirectUrl $GoogleRedirectUrl -OpenAIApiKey $OpenAIApiKey -BootstrapDbDialect $DbDialect -BootstrapDbEmpresasDsn $DbEmpresasDsn -BootstrapDbSuperadminDsn $DbSuperadminDsn -RestartServer $effectiveRestartRemoteServer -RestartBinaryRelativePath $restartBinaryRel -RestartStdoutLogRelativePath $RemoteStdoutLogPath -RestartStderrLogRelativePath $RemoteStderrLogPath -RestartHealthTimeout $RestartHealthTimeoutSeconds
 
     Invoke-RemoteDockerComposeRedeploy -RemoteUser $RemoteUser -RemoteHost $RemoteHost -Port $Port -IdentityPath $IdentityFile -RemotePath $RemotePath -Enabled $effectiveRedeployDockerStack -IsDryRun $DryRun.IsPresent -IsPreviewOnly $PreviewOnly.IsPresent -HealthTimeoutSeconds $DockerHealthTimeoutSeconds
 
@@ -2246,17 +2259,19 @@ try {
   }
 
   $escapedArgs = ($argList | ForEach-Object { Convert-ToBashLiteral $_ }) -join " "
-  $bootstrapServerValue = if ($BootstrapServer) { "1" } else { "0" }
-  $envParts = @(
-    "BOOTSTRAP_SERVER=$(Convert-ToBashLiteral $bootstrapServerValue)",
-    "GOOGLE_CLIENT_ID=$(Convert-ToBashLiteral $GoogleClientId)",
-    "GOOGLE_CLIENT_SECRET=$(Convert-ToBashLiteral $GoogleClientSecret)",
-    "GOOGLE_REDIRECT_URL=$(Convert-ToBashLiteral $GoogleRedirectUrl)",
-    "OPENAI_API_KEY=$(Convert-ToBashLiteral $OpenAIApiKey)",
-    "DB_DIALECT=$(Convert-ToBashLiteral $DbDialect)",
-    "DB_EMPRESAS_DSN=$(Convert-ToBashLiteral $DbEmpresasDsn)",
-    "DB_SUPERADMIN_DSN=$(Convert-ToBashLiteral $DbSuperadminDsn)"
-  )
+  $bootstrapServerValue = if ($effectiveBootstrapServer) { "1" } else { "0" }
+  $envParts = @("BOOTSTRAP_SERVER=$(Convert-ToBashLiteral $bootstrapServerValue)")
+  if ($effectiveBootstrapServer) {
+    $envParts += @(
+      "GOOGLE_CLIENT_ID=$(Convert-ToBashLiteral $GoogleClientId)",
+      "GOOGLE_CLIENT_SECRET=$(Convert-ToBashLiteral $GoogleClientSecret)",
+      "GOOGLE_REDIRECT_URL=$(Convert-ToBashLiteral $GoogleRedirectUrl)",
+      "OPENAI_API_KEY=$(Convert-ToBashLiteral $OpenAIApiKey)",
+      "DB_DIALECT=$(Convert-ToBashLiteral $DbDialect)",
+      "DB_EMPRESAS_DSN=$(Convert-ToBashLiteral $DbEmpresasDsn)",
+      "DB_SUPERADMIN_DSN=$(Convert-ToBashLiteral $DbSuperadminDsn)"
+    )
+  }
 
   if ($identityContext.Mode -eq "plink") {
     $envParts += @(
@@ -2277,13 +2292,13 @@ try {
   $bashCmd = "$envPrefix" + "bash $(Convert-ToBashLiteral $scriptWsl) $escapedArgs"
 
   if ($PreviewOnly) {
-    Write-Host "[PREVIEW] Comando que se ejecutaría en WSL:"
-    Write-Host (Redact-SyncCommandForLog -Command $bashCmd)
+    Write-Host "[PREVIEW] Sincronizacion WSL validada; no se ejecutaran comandos remotos."
+    Write-Host "[PREVIEW] No se imprimen argumentos remotos ni variables de configuracion."
     return
   }
 
   Write-Host "Ejecutando sincronización en WSL..."
-  Write-Host (Redact-SyncCommandForLog -Command $bashCmd)
+  Write-Host "[INFO] Comando remoto preparado con configuracion sensible redactada."
   $wslOutput = & wsl bash -lc $bashCmd 2>&1
   if ($wslOutput) {
     $wslOutput | ForEach-Object { Write-TaggedExternalOutput -Line "$_" }

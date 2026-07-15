@@ -23,12 +23,20 @@ try {
   if (-not (Get-Command docker -ErrorAction SilentlyContinue)) {
     throw "Docker no esta disponible en este equipo."
   }
+  if (-not (Get-Command node -ErrorAction SilentlyContinue)) {
+    throw "Node.js es obligatorio para validar el contrato de aislamiento de staging."
+  }
   $composeArgs = @(
     "compose",
     "--env-file", $EnvFile,
     "-f", "deploy/docker-compose.platform.yml",
     "-f", "deploy/docker-compose.staging.yml"
   )
+
+  & node tools\staging_compose_contract.mjs
+  if ($LASTEXITCODE -ne 0) {
+    throw "El contrato de aislamiento de staging fallo. Corrige el override antes de iniciar contenedores."
+  }
 
   if ($ConfigOnly) {
     & docker @composeArgs config --quiet

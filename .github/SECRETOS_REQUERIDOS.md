@@ -20,6 +20,22 @@ No se activa despliegue automatico por seguridad. Si se decide activarlo en el f
 - `PCS_PRODUCTION_SSH_KEY`
 
 Mantener produccion manual hasta que staging tenga E2E verde de forma repetida.
+El override de staging usa contenedores, worker y almacenamiento privado
+separados; `scripts/staging_up.ps1` y CI validan ese contrato antes de levantarlo.
+
+## Firma Android de distribucion
+
+El workflow `Mobile release candidates` usa el entorno protegido
+`mobile-production`. Configura alli, nunca en el repositorio, estos secretos:
+
+- `ANDROID_KEYSTORE_BASE64`: keystore de subida codificado en Base64.
+- `ANDROID_KEYSTORE_PASSWORD`
+- `ANDROID_KEY_ALIAS`
+- `ANDROID_KEY_PASSWORD`
+
+La validacion normal de la aplicacion compila solo APK de depuracion e iOS sin
+firma. El AAB firmado se genera exclusivamente en el workflow manual con los
+cuatro secretos y elimina el material transitorio al terminar.
 
 ## Backups externos
 
