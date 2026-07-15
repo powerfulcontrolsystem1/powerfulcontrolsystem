@@ -2,6 +2,13 @@
 
 Estado: implementado de forma incremental el 2026-07-13.
 
+Actualizacion de preproduccion 2026-07-14: la auditoria adicional esta en
+`auditoria_modular_preproduccion_20260714.md`. Se refuerza el worker persistente
+con recuperacion de leases vencidos, liberacion ordenada, claim atomico y errores
+operativos sin detalle sensible. No se realizo una extraccion masiva de handlers
+estables: las separaciones futuras deben obedecer a un limite de modulo probado,
+no a cantidad de lineas.
+
 ## Decision arquitectonica
 
 PCS continua como un monolito modular en Go y PostgreSQL. No se introducen

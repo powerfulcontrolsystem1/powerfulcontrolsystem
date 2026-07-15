@@ -3,7 +3,8 @@ import 'package:powerful_control_system_app/features/companies/domain/company.da
 
 void main() {
   test('company maps only the safe mobile fields', () {
-    final company = Company.fromJson({'id': 12, 'nombre': 'PCS', 'tipo': 'Tecnología', 'estado': 'activo'});
+    final company = Company.fromJson(
+        {'id': 12, 'nombre': 'PCS', 'tipo': 'Tecnología', 'estado': 'activo'});
     expect(company.id, 12);
     expect(company.name, 'PCS');
   });

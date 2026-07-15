@@ -1,5 +1,9 @@
 class Company {
-  const Company({required this.id, required this.name, required this.type, required this.status});
+  const Company(
+      {required this.id,
+      required this.name,
+      required this.type,
+      required this.status});
 
   final int id;
   final String name;

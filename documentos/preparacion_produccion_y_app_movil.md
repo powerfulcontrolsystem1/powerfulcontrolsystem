@@ -34,6 +34,11 @@ backoff, limite de intentos y estado terminal `dead`; tambien crea
 `pcs_outbox_events` para que una mutacion pueda registrar un evento dentro de la
 misma transaccion antes de solicitar un proveedor externo.
 
+El worker recupera antes de cada lote los leases vencidos de ejecuciones caidas,
+libera sus propios trabajos durante una parada ordenada y verifica que el claim
+concurrente afecte una fila. `last_error` conserva solo diagnosticos operativos
+genericos; los detalles sensibles pertenecen a logs protegidos, nunca a la cola.
+
 No se deben escribir secretos, tokens, datos completos de pago o adjuntos en
 payloads. Cada tarea empresarial incluye `empresa_id` validado y el consumidor
 debe volver a comprobar permiso/estado antes de ejecutar una accion externa.

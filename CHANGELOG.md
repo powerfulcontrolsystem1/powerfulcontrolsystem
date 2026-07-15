@@ -4859,3 +4859,4 @@
 
 - Licencias: la sección empresarial enlaza el checkout existente y muestra un historial aislado por empresa con descargas de comprobante y factura electrónica cuando ya esté emitida.
 - Seguridad: la API documental de licencias valida el contexto empresarial, no expone payloads de pasarela y registra las descargas en auditoría.
+- 2026-07-14: `Base movil nativa y worker recuperable` agrega los scaffolds Android/iOS de Flutter con identificador e icono PCS, politica de firma Android sin secretos versionados y validacion local de analisis/pruebas. El entorno de desarrollo usa Flutter/JDK/SDK Android fuera de C:. El worker PostgreSQL recupera leases vencidos, libera tareas al detenerse, verifica claims concurrentes y evita persistir errores sensibles de proveedores. La auditoria modular de preproduccion queda en `documentos/auditoria_modular_preproduccion_20260714.md`.

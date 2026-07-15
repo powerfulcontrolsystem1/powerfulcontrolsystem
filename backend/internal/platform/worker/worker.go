@@ -5,6 +5,7 @@ package worker
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"log"
 	"strings"
@@ -20,6 +21,7 @@ type Runner struct {
 	WorkerID string
 	Poll     time.Duration
 	Batch    int
+	Lease    time.Duration
 	Handlers map[string]Handler
 }
 
@@ -30,19 +32,22 @@ func (r *Runner) Run(ctx context.Context) error {
 	if strings.TrimSpace(r.WorkerID) == "" {
 		return fmt.Errorf("worker id required")
 	}
-	if r.Poll < time.Second {
-		r.Poll = 2 * time.Second
-	}
-	if r.Batch < 1 || r.Batch > 100 {
-		r.Batch = 20
-	}
+	r.normalize()
 	if err := dbpkg.EnsureAsyncJobsSchema(r.DB); err != nil {
 		return fmt.Errorf("ensure async jobs schema: %w", err)
 	}
+	defer func() {
+		if _, err := dbpkg.ReleaseAsyncJobsForWorker(r.DB, r.WorkerID); err != nil {
+			log.Printf("async worker release failed: %v", err)
+		}
+	}()
 	ticker := time.NewTicker(r.Poll)
 	defer ticker.Stop()
 	for {
 		if err := r.runBatch(ctx); err != nil {
+			if errors.Is(err, context.Canceled) {
+				return nil
+			}
 			log.Printf("async worker batch failed: %v", err)
 		}
 		select {
@@ -53,12 +58,33 @@ func (r *Runner) Run(ctx context.Context) error {
 	}
 }
 
+func (r *Runner) normalize() {
+	if r.Poll < time.Second {
+		r.Poll = 2 * time.Second
+	}
+	if r.Batch < 1 || r.Batch > 100 {
+		r.Batch = 20
+	}
+	if r.Lease < time.Minute {
+		r.Lease = 5 * time.Minute
+	}
+}
+
 func (r *Runner) runBatch(ctx context.Context) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+	if _, err := dbpkg.RecoverExpiredAsyncJobs(r.DB, r.Lease); err != nil {
+		return err
+	}
 	jobs, err := dbpkg.ClaimAsyncJobs(r.DB, r.WorkerID, r.Batch)
 	if err != nil || len(jobs) == 0 {
 		return err
 	}
 	for _, job := range jobs {
+		if err := ctx.Err(); err != nil {
+			return err
+		}
 		handler := r.Handlers[job.Kind]
 		if handler == nil {
 			_ = dbpkg.RetryAsyncJob(r.DB, job, r.WorkerID, fmt.Errorf("unsupported async job kind"), time.Minute)

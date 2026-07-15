@@ -135,10 +135,14 @@ func ClaimAsyncJobs(dbConn *sql.DB, workerID string, limit int) ([]AsyncJob, err
 	}
 	for index := range jobs {
 		job := &jobs[index]
-		if _, err := tx.Exec(rebindCompatQuery(`UPDATE pcs_async_jobs
+		result, err := tx.Exec(rebindCompatQuery(`UPDATE pcs_async_jobs
 			SET status = 'processing', attempts = attempts + 1, locked_at = CURRENT_TIMESTAMP, locked_by = ?, updated_at = CURRENT_TIMESTAMP
-			WHERE id = ? AND status = 'pending'`), strings.TrimSpace(workerID), job.ID); err != nil {
+			WHERE id = ? AND status = 'pending'`), strings.TrimSpace(workerID), job.ID)
+		if err != nil {
 			return nil, err
+		}
+		if affected, _ := result.RowsAffected(); affected != 1 {
+			return nil, fmt.Errorf("async job claim lost")
 		}
 		job.Status = AsyncJobProcessing
 		job.Attempts++
@@ -147,6 +151,63 @@ func ClaimAsyncJobs(dbConn *sql.DB, workerID string, limit int) ([]AsyncJob, err
 		return nil, err
 	}
 	return jobs, nil
+}
+
+// RecoverExpiredAsyncJobs returns jobs that were leased by a worker that did
+// not finish. The job becomes pending again unless it has exhausted its retry
+// budget, in which case it is marked dead for explicit operational review.
+func RecoverExpiredAsyncJobs(dbConn *sql.DB, staleAfter time.Duration) (int64, error) {
+	if dbConn == nil {
+		return 0, fmt.Errorf("database not available")
+	}
+	if staleAfter < time.Minute {
+		staleAfter = 5 * time.Minute
+	}
+	cutoff := time.Now().UTC().Add(-staleAfter)
+	result, err := execSQLCompat(dbConn, `UPDATE pcs_async_jobs
+		SET status = CASE WHEN attempts >= max_attempts THEN 'dead' ELSE 'pending' END,
+			available_at = CURRENT_TIMESTAMP,
+			locked_at = NULL,
+			locked_by = NULL,
+			last_error = 'processing lease expired',
+			updated_at = CURRENT_TIMESTAMP
+		WHERE status = 'processing' AND locked_at IS NOT NULL AND locked_at < ?`, cutoff)
+	if err != nil {
+		return 0, err
+	}
+	affected, err := result.RowsAffected()
+	if err != nil {
+		return 0, err
+	}
+	return affected, nil
+}
+
+// ReleaseAsyncJobsForWorker makes a graceful worker shutdown immediately
+// recoverable instead of waiting for the lease timeout.
+func ReleaseAsyncJobsForWorker(dbConn *sql.DB, workerID string) (int64, error) {
+	if dbConn == nil {
+		return 0, fmt.Errorf("database not available")
+	}
+	workerID = strings.TrimSpace(workerID)
+	if workerID == "" {
+		return 0, fmt.Errorf("worker id required")
+	}
+	result, err := execSQLCompat(dbConn, `UPDATE pcs_async_jobs
+		SET status = 'pending',
+			available_at = CURRENT_TIMESTAMP,
+			locked_at = NULL,
+			locked_by = NULL,
+			last_error = 'worker shutdown',
+			updated_at = CURRENT_TIMESTAMP
+		WHERE status = 'processing' AND locked_by = ?`, workerID)
+	if err != nil {
+		return 0, err
+	}
+	affected, err := result.RowsAffected()
+	if err != nil {
+		return 0, err
+	}
+	return affected, nil
 }
 
 func CompleteAsyncJob(dbConn *sql.DB, id int64, workerID string) error {
@@ -173,12 +234,12 @@ func RetryAsyncJob(dbConn *sql.DB, job AsyncJob, workerID string, cause error, r
 	if job.Attempts >= job.MaxAttempts {
 		status = AsyncJobDead
 	}
+	// Provider errors may include request data or credentials. The durable job
+	// ledger is operationally visible, so retain only a stable, non-sensitive
+	// state message here. The handler remains responsible for secure logging.
 	message := "worker failed"
 	if cause != nil {
-		message = cause.Error()
-	}
-	if len(message) > 1000 {
-		message = message[:1000]
+		message = "worker failed; retry scheduled"
 	}
 	availableAt := time.Now().UTC().Add(retryAfter)
 	result, err := execSQLCompat(dbConn, `UPDATE pcs_async_jobs

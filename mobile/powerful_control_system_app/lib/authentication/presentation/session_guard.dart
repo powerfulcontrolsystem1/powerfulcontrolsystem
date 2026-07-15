@@ -19,7 +19,8 @@ class SessionGuard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final account = ref.watch(currentAccountProvider);
     return account.when(
-      loading: () => const Scaffold(body: Center(child: CircularProgressIndicator())),
+      loading: () =>
+          const Scaffold(body: Center(child: CircularProgressIndicator())),
       error: (_, __) {
         _goToLogin(context);
         return const Scaffold(body: Center(child: CircularProgressIndicator()));
@@ -27,7 +28,8 @@ class SessionGuard extends ConsumerWidget {
       data: (value) {
         if (value == null) {
           _goToLogin(context);
-          return const Scaffold(body: Center(child: CircularProgressIndicator()));
+          return const Scaffold(
+              body: Center(child: CircularProgressIndicator()));
         }
         return child;
       },

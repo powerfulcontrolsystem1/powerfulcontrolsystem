@@ -9,8 +9,17 @@ class AuthRepository {
   final ApiClient _client;
   final SecureSessionStore _sessions;
 
-  Future<MobileAccount> login({required String email, required String password, String otpCode = '', String deviceName = 'PCS Mobile'}) async {
-    final response = await _client.post('/api/v1/auth/login', body: {'email': email, 'password': password, 'otp_code': otpCode, 'device_name': deviceName});
+  Future<MobileAccount> login(
+      {required String email,
+      required String password,
+      String otpCode = '',
+      String deviceName = 'PCS Mobile'}) async {
+    final response = await _client.post('/api/v1/auth/login', body: {
+      'email': email,
+      'password': password,
+      'otp_code': otpCode,
+      'device_name': deviceName
+    });
     final data = response['data'] as Map<String, dynamic>;
     await _sessions.saveToken(data['access_token'] as String);
     return MobileAccount.fromJson(data['account'] as Map<String, dynamic>);

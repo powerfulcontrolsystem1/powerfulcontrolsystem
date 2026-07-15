@@ -1,4 +1,12 @@
 2026-07-13 - Evidencia de preparacion para staging
+
+2026-07-14 - Auditoria modular y base movil nativa
+- `documentos/auditoria_modular_preproduccion_20260714.md`: alcance, decisiones
+  de modularidad, hallazgos aplicados y gates externos de liberacion.
+- `mobile/powerful_control_system_app/android/` e `ios/`: scaffolds nativos
+  Flutter; la firma real queda fuera de Git mediante `android/key.properties`.
+- `backend/db/async_jobs.go` y `backend/internal/platform/worker/worker.go`:
+  recuperacion de leases, liberacion ordenada y diagnostico seguro de jobs.
 - `backend/db/mobile_api_idempotency.go`: persistencia de idempotencia movil
   aislada por empresa; solo conserva hashes de clave/cuerpo y respuesta exitosa.
 - `backend/handlers/mobile_api_v1.go`: fachada movil v1 para POS, pagos,

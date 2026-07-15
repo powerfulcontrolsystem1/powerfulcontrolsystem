@@ -1,5 +1,14 @@
 2026-07-10: Super administrador - diagramas tecnicos consolidados.
 
+2026-07-14: Base Flutter nativa y ejecucion asincrona recuperable.
+- Modulos afectados: `api_movil`, `runtime_worker`, `integraciones`, `qa_operacion`.
+- La aplicacion Flutter ya contiene plataformas Android/iOS, identificador PCS,
+  icono corporativo y firma Android local obligatoria para distribucion. Android
+  se valida con SDK/JDK local; iOS se compila en macOS/Xcode.
+- El worker PostgreSQL recupera tareas abandonadas por lease, libera las propias
+  en apagado ordenado, verifica reclamos concurrentes y no persiste errores de
+  proveedor con datos potencialmente sensibles.
+
 2026-07-13: API movil POS y facturacion.
 - Modulos afectados: `api_movil`, `ventas`, `carritos`, `pagos`,
   `facturacion_electronica`, `offline_ventas`, `buzon`.

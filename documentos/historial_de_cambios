@@ -1,4 +1,13 @@
 2026-07-14: Configuracion operativa: contrato SQL alineado.
+
+2026-07-14: Auditoria modular de preproduccion y base Flutter nativa.
+- Se conserva el monolito modular Go/PostgreSQL y se documentan limites para
+  autenticacion, ventas, archivos, integraciones y API movil v1; no se extrae
+  codigo estable sin una responsabilidad y pruebas independientes.
+- `pcs-worker` recupera trabajos con lease vencido, libera trabajos propios al
+  apagarse, comprueba reclamacion atomica y persiste diagnosticos genericos.
+- Flutter incorpora Android/iOS, package `com.powerfulcontrolsystem.pcs`, icono
+  PCS y una politica de firma release que no permite usar credenciales ausentes.
 - Causa: se agregaron `permitir_ingresos_manuales` y `permitir_egresos_manuales` al esquema, pero el `SELECT` y el `Scan` de la configuracion base, asi como el `SELECT` de roles, no quedaron alineados. PostgreSQL devolvia mas columnas que destinos y el handler respondia `500`.
 - Correccion: el modelo, lectura, persistencia, migracion defensiva y resolucion efectiva ahora incluyen ambos permisos; se agrego una regresion que impide volver a desalinear `SELECT` y `Scan`.
 - UI: la lista de carritos usa un contenedor de acciones propio para que los botones no se superpongan ni hereden `display:flex` directamente sobre una celda de tabla.

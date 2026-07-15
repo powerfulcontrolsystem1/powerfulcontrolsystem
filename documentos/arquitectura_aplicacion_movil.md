@@ -7,6 +7,12 @@ una sola base Flutter/Dart para Android e iPhone. No accede a PostgreSQL ni a
 archivos empresariales desde el dispositivo: usa exclusivamente la API versionada
 `/api/v1/` de PCS mediante HTTPS.
 
+El repositorio incluye los scaffolds nativos `android/` e `ios/`, identificador
+`com.powerfulcontrolsystem.pcs`, icono PCS y politica de firma: una distribucion
+Android exige un `android/key.properties` local no versionado. La compilacion
+iPhone se valida y firma en macOS con Xcode; Windows prepara el codigo comun y
+Android, pero no puede generar un paquete iOS distribuible.
+
 ## Capas
 
 | Capa | Responsabilidad |

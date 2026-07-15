@@ -13,9 +13,21 @@ final appRouter = GoRouter(
   routes: [
     GoRoute(path: '/', builder: (context, state) => const StartupScreen()),
     GoRoute(path: '/login', builder: (context, state) => const LoginScreen()),
-    GoRoute(path: '/companies', builder: (context, state) => const SessionGuard(child: CompanySelectorScreen())),
-    GoRoute(path: '/dashboard', builder: (context, state) => const SessionGuard(child: DashboardScreen())),
-    GoRoute(path: '/products', builder: (context, state) => const SessionGuard(child: ProductsScreen())),
+    GoRoute(
+        path: '/companies',
+        builder: (context, state) =>
+            const SessionGuard(child: CompanySelectorScreen())),
+    GoRoute(
+        path: '/dashboard',
+        builder: (context, state) =>
+            const SessionGuard(child: DashboardScreen())),
+    GoRoute(
+        path: '/products',
+        builder: (context, state) =>
+            const SessionGuard(child: ProductsScreen())),
   ],
-  errorBuilder: (context, state) => Scaffold(body: Center(child: Text('No se encontró la pantalla solicitada: ${state.uri.path}'))),
+  errorBuilder: (context, state) => Scaffold(
+      body: Center(
+          child: Text(
+              'No se encontró la pantalla solicitada: ${state.uri.path}'))),
 );

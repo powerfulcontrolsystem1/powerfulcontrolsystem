@@ -1,5 +1,6 @@
 class MobileAccount {
-  const MobileAccount({required this.email, required this.name, required this.role});
+  const MobileAccount(
+      {required this.email, required this.name, required this.role});
 
   final String email;
   final String name;

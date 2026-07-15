@@ -1,0 +1,6 @@
+# Copy to android/key.properties only on the secure build machine.
+# Do not commit the real file or its keystore.
+storePassword=<KEYSTORE_PASSWORD>
+keyPassword=<KEY_PASSWORD>
+keyAlias=<KEY_ALIAS>
+storeFile=<ABSOLUTE_OR_RELATIVE_KEYSTORE_PATH>

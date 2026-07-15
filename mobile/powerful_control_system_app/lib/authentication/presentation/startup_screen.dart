@@ -14,18 +14,20 @@ class StartupScreen extends ConsumerStatefulWidget {
 class _StartupScreenState extends ConsumerState<StartupScreen> {
   @override
   void initState() {
-    super.init();
+    super.initState();
     Future.microtask(_restore);
   }
 
   Future<void> _restore() async {
-    final account = await ref.read(currentAccountProvider.future).catchError((_) => null);
+    final account =
+        await ref.read(currentAccountProvider.future).catchError((_) => null);
     if (!mounted) return;
     if (account == null) {
       context.go('/login');
       return;
     }
-    final company = await ref.read(selectedCompanyProvider.future).catchError((_) => null);
+    final company =
+        await ref.read(selectedCompanyProvider.future).catchError((_) => null);
     if (!mounted) return;
     context.go(company == null ? '/companies' : '/dashboard');
   }
