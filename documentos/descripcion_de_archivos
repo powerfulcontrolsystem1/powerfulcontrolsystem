@@ -11967,3 +11967,11 @@ backend/handlers/selector_chat_ia_test.go
 - `documentos/arquitectura_aplicacion_movil.md`, `documentos/contratos_api_movil.md`, `documentos/desarrollo_paralelo_web_movil.md` y `documentos/publicacion_android_ios.md`: arquitectura, contrato, convivencia web/movil y publicacion.
 2026-07-14 - `web/js/csrf_fetch.js`
 - Helper JavaScript global para anexar el token CSRF de sincronizacion a mutaciones same-origin autenticadas por cookie, sin intervenir APIs bearer ni solicitudes externas.
+
+2026-07-15: Contratos de despliegue
+- `tools/staging_compose_contract.mjs`: contrato estatico de aislamiento del
+  compose de staging: servicios, identidad de worker y almacenamiento privado
+  no pueden reutilizar recursos productivos.
+- `tools/deploy_pipeline_contract.mjs`: contrato estatico para que `rs` y
+  `sync_to_vps` propaguen fallos, exijan `main` aprobado y no transporten
+  secretos Docker durante despliegues normales.

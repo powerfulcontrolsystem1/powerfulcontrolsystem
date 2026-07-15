@@ -146,7 +146,10 @@ if [ "$email_enabled" = "1" ] || [ "$email_enabled" = "true" ] || [ "$mailu_enab
   fi
 fi
 
-docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" "${compose_profiles[@]}" up -d --build
+# Elimina contenedores huérfanos del mismo proyecto Compose después de una
+# recreación, en particular workers antiguos que podrían competir por la cola.
+# No toca servicios administrados por otros proyectos Docker.
+docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" "${compose_profiles[@]}" up -d --build --remove-orphans
 
 http_bind="$(get_env_value "$ENV_FILE" HTTP_BIND)"
 http_port="$(get_env_value "$ENV_FILE" HTTP_PORT)"

@@ -185,8 +185,12 @@ if (-not $SkipPreflight) {
   Invoke-Step -Name "Preflight profesional" -Path $preflightScript -Arguments $preflightArgs
 }
 
-Invoke-Step -Name "Actualizar repositorio" -Path $updateScript -Arguments $updateArgs
-Assert-ProductionRevision
+if ($DryRun -or $PreviewOnly) {
+  Write-Host "[INFO] Actualizar repositorio omitido por DryRun/PreviewOnly."
+} else {
+  Invoke-Step -Name "Actualizar repositorio" -Path $updateScript -Arguments $updateArgs
+  Assert-ProductionRevision
+}
 if ($BuildAndroid -and -not $SkipMobile) {
   $androidArgs = @{}
   if ($DryRun) { $androidArgs.DryRun = $true }
@@ -202,4 +206,8 @@ if ($BuildIOS -and -not $SkipMobile) {
 Invoke-Step -Name "Sincronizar VPS" -Path $syncScript -Arguments $syncArgs
 
 Write-Host ""
-Write-Host "[OK] Flujo rs completado: repositorio actualizado y VPS sincronizado." -ForegroundColor Green
+if ($DryRun -or $PreviewOnly) {
+  Write-Host "[OK] Previsualizacion rs completada sin actualizar repositorio ni VPS." -ForegroundColor Green
+} else {
+  Write-Host "[OK] Flujo rs completado: repositorio actualizado y VPS sincronizado." -ForegroundColor Green
+}

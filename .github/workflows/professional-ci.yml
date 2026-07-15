@@ -94,6 +94,9 @@ jobs:
       - name: Staging isolation contract
         run: node tools/staging_compose_contract.mjs
 
+      - name: Deployment pipeline contract
+        run: node tools/deploy_pipeline_contract.mjs
+
       - name: Docker monitoring config
         run: docker compose --env-file deploy/monitoring/.env.monitoring.example -f deploy/monitoring/docker-compose.monitoring.yml config --quiet
 

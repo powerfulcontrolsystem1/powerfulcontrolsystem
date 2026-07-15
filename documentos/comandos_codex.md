@@ -93,6 +93,13 @@ detiene el flujo solo cuando el paso correspondiente falla. Cada fase tiene
 timeout controlado (3600 segundos por defecto) y reporta las rutas de log si se
 agota o falla. Puede ajustarse con `-StepTimeoutSeconds`.
 
+Un `rs` real solo puede publicar una revision local que coincida exactamente
+con `origin/main`. La actualizacion de una rama de trabajo se valida en
+staging y se integra mediante la proteccion normal de GitHub; no se usa `rs`
+para saltar revisiones ni checks. `-DryRun` y `-PreviewOnly` no actualizan Git,
+no transfieren archivos ni ejecutan acciones remotas. Sus salidas tampoco
+imprimen argumentos remotos ni configuracion sensible.
+
 La compilacion movil es opcional y no altera el comportamiento diario de `rs`.
 Solo se activa de forma expresa, despues de actualizar el repositorio y antes
 de la sincronizacion: `-BuildAndroid`, `-BuildIOS` o `-BuildMobile`. Usar
@@ -232,6 +239,10 @@ Modos utiles segun necesidad:
 ```
 
 No mostrar credenciales, llaves ni hosts privados sensibles en respuestas.
+En modo Docker, los secretos de runtime permanecen en la configuracion privada
+del VPS. El bootstrap heredado de secretos solo existe para instalaciones no
+Docker y exige la opcion explicita `-AllowLegacySecretBootstrap`; no se usa en
+la operacion normal ni en vistas previas.
 
 ## sync_to_vps2
 

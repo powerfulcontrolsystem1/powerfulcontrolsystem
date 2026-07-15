@@ -27386,6 +27386,19 @@ Archivos modificados:
 - web/super/preconfiguracion_tipos_empresa.html
 - web/super/tipos_empresas.html
 - web/super/plantillas_produccion_masiva.html
+
+2026-07-15: Canalizacion protegida de preproduccion
+- `deploy/docker-compose.staging.yml`: separa almacenamiento privado, volumenes,
+  contenedores e identidad de worker de staging respecto de produccion.
+- `tools/staging_compose_contract.mjs` y `tools/deploy_pipeline_contract.mjs`:
+  validaciones estaticas ejecutadas por CI para impedir referencias al volumen
+  privado productivo, previews con efectos y sincronizaciones que oculten fallos.
+- `scripts/rs.ps1` y `scripts/sync_to_vps.ps1`: exigen la revision aprobada de
+  `main` antes de publicar, preservan secretos Docker en el VPS, redaccion de
+  previews y codigo de salida real ante errores.
+- `.github/workflows/mobile-ci.yml` y `.github/workflows/mobile-release.yml`:
+  CI movil no recrea el proyecto Flutter; candidatos Android firmados requieren
+  secretos del entorno protegido y eliminan el material transitorio al terminar.
 - web/super_administrador.html
 
 2026-05-11: Corregir arranque PostgreSQL parqueadero

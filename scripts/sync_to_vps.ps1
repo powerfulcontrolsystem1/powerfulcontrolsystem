@@ -17,6 +17,7 @@ param(
   [switch]$PreviewOnly,
   [switch]$SkipBuild,
   [switch]$BuildOnly,
+  [switch]$AllowNonMainDeployment,
   [string]$LocalPath = "",
   [string]$RemoteUser = "root",
   [string]$RemoteHost = "2.24.197.58",
@@ -1898,6 +1899,26 @@ docker ps --format 'table {{.Names}}\t{{.Status}}\t{{.Ports}}' | grep -E 'pcs-(b
   Invoke-RemoteCommandSimple -RemoteUser $RemoteUser -RemoteHost $RemoteHost -Port $Port -IdentityContext $identityContext -Command $command
 }
 
+function Assert-ApprovedProductionRevision {
+  if ($DryRun -or $PreviewOnly -or $BuildOnly -or $AllowNonMainDeployment) {
+    return
+  }
+
+  $branch = (& git branch --show-current 2>$null | Select-Object -Last 1).ToString().Trim()
+  if ($branch -ne "main") {
+    throw "sync_to_vps no publica una rama de trabajo. Integra la revision aprobada en main o usa -AllowNonMainDeployment solo en un destino aislado."
+  }
+  & git fetch origin main --quiet
+  if ($LASTEXITCODE -ne 0) {
+    throw "No se pudo actualizar origin/main antes de sincronizar el VPS."
+  }
+  $localRevision = (& git rev-parse HEAD 2>$null | Select-Object -Last 1).ToString().Trim()
+  $remoteRevision = (& git rev-parse origin/main 2>$null | Select-Object -Last 1).ToString().Trim()
+  if ([string]::IsNullOrWhiteSpace($localRevision) -or [string]::IsNullOrWhiteSpace($remoteRevision) -or $localRevision -ne $remoteRevision) {
+    throw "La revision local no coincide con origin/main. No se publica un commit no aprobado."
+  }
+}
+
 function Invoke-RemoteUnusedFilesCleanup {
   param(
     [Parameter(Mandatory=$true)][string]$RemoteUser,
@@ -2015,6 +2036,8 @@ try {
   } else {
     $LocalPath = (Resolve-Path $LocalPath).Path
   }
+
+  Assert-ApprovedProductionRevision
 
   $identityWasProvided = $PSBoundParameters.ContainsKey("IdentityFile") -and -not [string]::IsNullOrWhiteSpace($IdentityFile)
   if (-not $identityWasProvided) {
@@ -2345,5 +2368,7 @@ catch {
   }
 }
 
-$global:LASTEXITCODE = $script:SyncExitCode
-return
+# Este script se ejecuta tanto directamente como desde rs.ps1 en un proceso
+# hijo. `return` deja codigo 0 para PowerShell -File aunque se haya capturado
+# una excepcion; `exit` propaga el fallo real al orquestador.
+exit $script:SyncExitCode

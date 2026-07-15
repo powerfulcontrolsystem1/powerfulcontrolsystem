@@ -15,13 +15,24 @@ Actualizacion: 2026-07-15.
 
 ## Configuracion obligatoria
 
-Los secretos se inyectan fuera del repositorio. Son obligatorios en produccion:
+Los secretos se inyectan fuera del repositorio y no se transportan desde la
+estacion de desarrollo durante un despliegue Docker. Son obligatorios en produccion:
 `PCS_ENV`, origenes CSRF, proxies confiables, limites HTTP, sesion, claves de
 cifrado y ambos DSN. Los pools PostgreSQL se configuran con
 `PCS_DB_MAX_OPEN_CONNS`, `PCS_DB_MAX_IDLE_CONNS`,
 `PCS_DB_CONN_MAX_LIFETIME`, `PCS_DB_CONN_MAX_IDLE_TIME`,
 `PCS_DB_CONNECT_TIMEOUT`, `PCS_DB_QUERY_TIMEOUT` y `PCS_DB_TX_TIMEOUT`.
 Generar claves con `openssl rand -base64 32`.
+
+`rs.ps1` solo despliega el `HEAD` que coincide con `origin/main`; las ramas de
+trabajo pasan por staging y la proteccion de GitHub. `sync_to_vps.ps1` no
+imprime argumentos remotos ni configuracion en `PreviewOnly`. El bootstrap
+heredado de secretos queda desactivado para Docker y requiere opt-in explicito
+en instalaciones no Docker.
+
+El redeploy Compose usa `--remove-orphans` dentro del proyecto PCS para retirar
+workers o contenedores abandonados por recreaciones anteriores. No interviene
+servicios de otros proyectos Docker.
 
 El worker recibe ademas `PCS_WORKER_ID`, `PCS_WORKER_POLL_INTERVAL`,
 `PCS_WORKER_BATCH_SIZE` y `PCS_WORKER_JOB_LEASE`. El total de conexiones debe

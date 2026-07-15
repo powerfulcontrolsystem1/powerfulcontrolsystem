@@ -30,8 +30,11 @@ bases y la migracion de plataforma del release. Consultar
 `HTTP_READ_TIMEOUT`, `HTTP_WRITE_TIMEOUT`, `HTTP_IDLE_TIMEOUT`,
 `PCS_PRIVATE_STORAGE_DIR`, `CONFIG_ENC_KEY`, `CONFIG_ENC_KEY_ID`,
 `DB_EMPRESAS_DSN` y `DB_SUPERADMIN_DSN` deben estar definidos fuera del
-repositorio. `CONFIG_ENC_KEY_PREVIOUS` se usa solo durante rotacion. Generar
-claves con `openssl rand -base64 32`; nunca registrar el valor resultante.
+repositorio. En el Compose que usa el PostgreSQL interno, los dos DSN pueden
+derivarse dentro del archivo Compose a partir de variables privadas de la base;
+para una base externa o un runtime fuera de Compose ambos DSN son obligatorios.
+`CONFIG_ENC_KEY_PREVIOUS` se usa solo durante rotacion. Generar claves con
+`openssl rand -base64 32`; nunca registrar el valor resultante.
 
 Los limites del pool se inyectan como `PCS_DB_MAX_OPEN_CONNS`,
 `PCS_DB_MAX_IDLE_CONNS`, `PCS_DB_CONN_MAX_LIFETIME`,
@@ -47,3 +50,18 @@ staging anonimo, carga concurrente, validacion de proveedores y monitoreo.
 Ante fallo: detener nuevas replicas, conservar logs saneados, restaurar imagen
 anterior, validar `ready` y decidir reversa de datos unicamente desde backup.
 No borrar tablas ni ejecutar rollback destructivo automatico.
+
+## Compuertas vigentes
+
+La definicion de staging incluye contenedores, identidad de worker, volumenes y
+almacenamiento privado propios; `tools/staging_compose_contract.mjs` bloquea
+referencias al volumen privado productivo. `rs` solo sincroniza una revision
+aprobada de `main` y `sync_to_vps` conserva los secretos Docker en el VPS.
+
+Antes de declarar salida comercial se deben registrar evidencias reales de:
+inicio de sesion con una cuenta de prueba vigente, restauracion de backup en
+staging, venta/caja concurrente, DIAN, Wompi/Epayco/Bre-B, Mailu/WhatsApp,
+Nextcloud/OnlyOffice y web movil. Android requiere los cuatro secretos de firma
+en el entorno protegido `mobile-production`; iPhone requiere firma y perfiles
+de Apple. Ninguna de estas aceptaciones se sustituye por un mock o por una
+prueba local.
