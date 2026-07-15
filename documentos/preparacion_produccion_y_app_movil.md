@@ -19,12 +19,14 @@ Los procesos se separan en tres roles:
   fundacion versionada de esquema antes de arrancar la API.
 - `pcs-worker`: proceso sin HTTP para trabajo duradero en PostgreSQL.
 
-La API conserva por defecto el bootstrap legado mientras se extraen sus tareas
-de provisionamiento sin riesgo de regresion. Cuando el ledger y los flujos de
-una instalacion ya esten verificados, produccion puede desactivarlo de forma
-explicita con `PCS_RUNTIME_SCHEMA_BOOTSTRAP=0`; el rol de migracion siempre
-puede aplicar la compatibilidad. Esa excepcion debe quedar registrada en la
-bitacora de despliegue.
+En produccion, la API inicia con `PCS_RUNTIME_SCHEMA_BOOTSTRAP=0` y no realiza
+DDL ni correcciones de esquema al arrancar. El contenedor `pcs-migrate`
+ejecuta el binario con rol `migrate` antes de API/worker y conserva la
+compatibilidad historica necesaria. El ledger de migraciones versionadas se
+serializa con advisory lock PostgreSQL.
+La migracion es el unico proceso autorizado para crear o alterar esquema; los
+`Ensure...Schema` historicos que aun viven en algunos handlers se retiran por
+dominio y no sustituyen una migracion en instalaciones nuevas.
 
 ## Migraciones, cola y outbox
 
@@ -35,9 +37,11 @@ backoff, limite de intentos y estado terminal `dead`; tambien crea
 misma transaccion antes de solicitar un proveedor externo.
 
 El worker recupera antes de cada lote los leases vencidos de ejecuciones caidas,
-libera sus propios trabajos durante una parada ordenada y verifica que el claim
-concurrente afecte una fila. `last_error` conserva solo diagnosticos operativos
-genericos; los detalles sensibles pertenecen a logs protegidos, nunca a la cola.
+expira trabajos con fecha limite, libera sus propios trabajos durante una parada
+ordenada y verifica que el claim concurrente afecte una fila. `last_error`
+conserva solo diagnosticos operativos genericos; los detalles sensibles
+pertenecen a logs protegidos, nunca a la cola. Cada trabajo nuevo puede incluir
+actor, correlacion e idempotencia hash por empresa.
 
 No se deben escribir secretos, tokens, datos completos de pago o adjuntos en
 payloads. Cada tarea empresarial incluye `empresa_id` validado y el consumidor

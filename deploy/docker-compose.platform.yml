@@ -69,11 +69,24 @@ services:
       - ALL
     tmpfs:
       - /tmp:rw,noexec,nosuid,size=32m
-    command: ["/app/backend/pcs-migrate"]
+    command: ["/app/backend/pcs-backend"]
     depends_on:
       postgres:
         condition: service_healthy
     environment:
+      PCS_ENV: ${PCS_ENV:-production}
+      PCS_RUNTIME_ROLE: migrate
+      PCS_TRUSTED_PROXY_CIDRS: ${PCS_TRUSTED_PROXY_CIDRS:?Defina PCS_TRUSTED_PROXY_CIDRS}
+      PCS_CSRF_ALLOWED_ORIGINS: ${PCS_CSRF_ALLOWED_ORIGINS:?Defina PCS_CSRF_ALLOWED_ORIGINS}
+      SESSION_TIMEOUT: ${SESSION_TIMEOUT:?Defina SESSION_TIMEOUT}
+      MAX_REQUEST_BODY_BYTES: ${MAX_REQUEST_BODY_BYTES:?Defina MAX_REQUEST_BODY_BYTES}
+      HTTP_READ_TIMEOUT: ${HTTP_READ_TIMEOUT:?Defina HTTP_READ_TIMEOUT}
+      HTTP_WRITE_TIMEOUT: ${HTTP_WRITE_TIMEOUT:?Defina HTTP_WRITE_TIMEOUT}
+      HTTP_IDLE_TIMEOUT: ${HTTP_IDLE_TIMEOUT:?Defina HTTP_IDLE_TIMEOUT}
+      PCS_PRIVATE_STORAGE_DIR: /app/private_storage
+      CONFIG_ENC_KEY: ${CONFIG_ENC_KEY:?Defina CONFIG_ENC_KEY}
+      CONFIG_ENC_KEY_ID: ${CONFIG_ENC_KEY_ID:?Defina CONFIG_ENC_KEY_ID}
+      CONFIG_ENC_KEY_PREVIOUS: ${CONFIG_ENC_KEY_PREVIOUS:-}
       DB_DIALECT: postgres
       DB_EMPRESAS_DSN: postgres://${POSTGRES_USER:-pcs}:${POSTGRES_PASSWORD}@postgres:5432/pcs_empresas?sslmode=disable
       DB_SUPERADMIN_DSN: postgres://${POSTGRES_USER:-pcs}:${POSTGRES_PASSWORD}@postgres:5432/pcs_superadministrador?sslmode=disable
@@ -103,6 +116,7 @@ services:
       PORT: "8080"
       TZ: ${TZ:-America/Bogota}
       PCS_ENV: ${PCS_ENV:-production}
+      PCS_RUNTIME_SCHEMA_BOOTSTRAP: "0"
       PCS_TRUSTED_PROXY_CIDRS: ${PCS_TRUSTED_PROXY_CIDRS:?Defina PCS_TRUSTED_PROXY_CIDRS}
       PCS_CSRF_ALLOWED_ORIGINS: ${PCS_CSRF_ALLOWED_ORIGINS:?Defina PCS_CSRF_ALLOWED_ORIGINS}
       CSRF_ALLOWED_ORIGINS: ${PCS_CSRF_ALLOWED_ORIGINS:?Defina PCS_CSRF_ALLOWED_ORIGINS}
@@ -163,7 +177,7 @@ services:
     expose:
       - "8080"
     healthcheck:
-      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:8080/ >/dev/null || exit 1"]
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:8080/ready >/dev/null || exit 1"]
       interval: 30s
       timeout: 5s
       retries: 10

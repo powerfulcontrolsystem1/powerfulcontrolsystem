@@ -1,6 +1,12 @@
 # Contexto general del sistema
 
-Estado: vigente. Ultima actualizacion: 2026-07-13.
+Estado: vigente. Ultima actualizacion: 2026-07-15.
+
+## Actualizacion 2026-07-15 - Plan preproduccion
+
+- `documentos/plan_preproduccion.md` registra la separacion final de roles
+  API/migracion/worker, el catalogo de dominios, readiness y los gates externos
+  que requieren staging real antes de habilitar trafico productivo.
 
 ## Actualizacion 2026-07-13 - Flujos moviles POS v1
 

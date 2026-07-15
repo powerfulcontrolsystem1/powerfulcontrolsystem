@@ -1,7 +1,9 @@
 package db
 
 import (
+	"crypto/sha256"
 	"database/sql"
+	"encoding/hex"
 	"fmt"
 	"strings"
 	"time"
@@ -18,14 +20,18 @@ const (
 // integrations. Payloads must contain only the minimum data required by the
 // worker; credentials and raw user tokens are never valid payload fields.
 type AsyncJob struct {
-	ID          int64
-	EmpresaID   int64
-	Kind        string
-	PayloadJSON string
-	Status      string
-	Attempts    int
-	MaxAttempts int
-	AvailableAt time.Time
+	ID             int64
+	EmpresaID      int64
+	OriginUserID   int64
+	Kind           string
+	PayloadJSON    string
+	Status         string
+	Attempts       int
+	MaxAttempts    int
+	AvailableAt    time.Time
+	ExpiresAt      *time.Time
+	CorrelationID  string
+	IdempotencyKey string
 }
 
 func ValidateAsyncJob(job AsyncJob) error {
@@ -40,6 +46,15 @@ func ValidateAsyncJob(job AsyncJob) error {
 	}
 	if job.MaxAttempts < 1 || job.MaxAttempts > 25 {
 		return fmt.Errorf("max attempts must be between 1 and 25")
+	}
+	if job.OriginUserID < 0 {
+		return fmt.Errorf("origin user id invalid")
+	}
+	if len(strings.TrimSpace(job.CorrelationID)) > 120 {
+		return fmt.Errorf("correlation id too long")
+	}
+	if key := strings.TrimSpace(job.IdempotencyKey); key != "" && (len(key) < 16 || len(key) > 200) {
+		return fmt.Errorf("job idempotency key must be between 16 and 200 characters")
 	}
 	return nil
 }
@@ -62,6 +77,10 @@ func EnsureAsyncJobsSchema(dbConn *sql.DB) error {
 		locked_at TIMESTAMPTZ,
 		locked_by TEXT,
 		last_error TEXT,
+		origin_user_id BIGINT NOT NULL DEFAULT 0,
+		correlation_id TEXT NOT NULL DEFAULT '',
+		idempotency_key_hash TEXT,
+		expires_at TIMESTAMPTZ,
 		created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
 		updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
 		CHECK (status IN ('pending','processing','completed','dead')),
@@ -70,8 +89,24 @@ func EnsureAsyncJobsSchema(dbConn *sql.DB) error {
 	if _, err := execSQLCompat(dbConn, statement); err != nil {
 		return err
 	}
+	for _, statement := range []string{
+		`ALTER TABLE pcs_async_jobs ADD COLUMN IF NOT EXISTS origin_user_id BIGINT NOT NULL DEFAULT 0`,
+		`ALTER TABLE pcs_async_jobs ADD COLUMN IF NOT EXISTS correlation_id TEXT NOT NULL DEFAULT ''`,
+		`ALTER TABLE pcs_async_jobs ADD COLUMN IF NOT EXISTS idempotency_key_hash TEXT`,
+		`ALTER TABLE pcs_async_jobs ADD COLUMN IF NOT EXISTS expires_at TIMESTAMPTZ`,
+	} {
+		if _, err := execSQLCompat(dbConn, statement); err != nil {
+			return err
+		}
+	}
 	_, err := execSQLCompat(dbConn, `CREATE INDEX IF NOT EXISTS ix_pcs_async_jobs_ready
 		ON pcs_async_jobs (status, available_at, id)`)
+	if err != nil {
+		return err
+	}
+	_, err = execSQLCompat(dbConn, `CREATE UNIQUE INDEX IF NOT EXISTS ux_pcs_async_jobs_idempotency
+		ON pcs_async_jobs (empresa_id, kind, idempotency_key_hash)
+		WHERE idempotency_key_hash IS NOT NULL`)
 	return err
 }
 
@@ -88,11 +123,23 @@ func EnqueueAsyncJob(dbConn *sql.DB, job AsyncJob) error {
 	if job.AvailableAt.IsZero() {
 		job.AvailableAt = time.Now().UTC()
 	}
+	var idempotencyHash interface{}
+	if key := strings.TrimSpace(job.IdempotencyKey); key != "" {
+		idempotencyHash = asyncJobIdempotencyHash(key)
+	}
 	_, err := execSQLCompat(dbConn, `INSERT INTO pcs_async_jobs (
-		empresa_id, kind, payload_json, status, attempts, max_attempts, available_at, created_at, updated_at
-	) VALUES (?, ?, ?, 'pending', 0, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
-		job.EmpresaID, strings.TrimSpace(job.Kind), job.PayloadJSON, job.MaxAttempts, job.AvailableAt)
+		empresa_id, origin_user_id, kind, payload_json, status, attempts, max_attempts,
+		available_at, correlation_id, idempotency_key_hash, expires_at, created_at, updated_at
+	) VALUES (?, ?, ?, ?, 'pending', 0, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+	ON CONFLICT (empresa_id, kind, idempotency_key_hash) WHERE idempotency_key_hash IS NOT NULL DO NOTHING`,
+		job.EmpresaID, job.OriginUserID, strings.TrimSpace(job.Kind), job.PayloadJSON, job.MaxAttempts,
+		job.AvailableAt, strings.TrimSpace(job.CorrelationID), idempotencyHash, job.ExpiresAt)
 	return err
+}
+
+func asyncJobIdempotencyHash(value string) string {
+	sum := sha256.Sum256([]byte(strings.TrimSpace(value)))
+	return hex.EncodeToString(sum[:])
 }
 
 // ClaimAsyncJobs uses SKIP LOCKED so multiple worker replicas never process
@@ -112,9 +159,10 @@ func ClaimAsyncJobs(dbConn *sql.DB, workerID string, limit int) ([]AsyncJob, err
 		return nil, err
 	}
 	defer func() { _ = tx.Rollback() }()
-	rows, err := tx.Query(rebindCompatQuery(`SELECT id, empresa_id, kind, payload_json, status, attempts, max_attempts, available_at
+	rows, err := tx.Query(rebindCompatQuery(`SELECT id, empresa_id, origin_user_id, kind, payload_json, status, attempts, max_attempts, available_at, expires_at, correlation_id
 		FROM pcs_async_jobs
 		WHERE status = 'pending' AND available_at <= CURRENT_TIMESTAMP
+			AND (expires_at IS NULL OR expires_at > CURRENT_TIMESTAMP)
 		ORDER BY available_at, id
 		FOR UPDATE SKIP LOCKED
 		LIMIT ?`), limit)
@@ -125,7 +173,7 @@ func ClaimAsyncJobs(dbConn *sql.DB, workerID string, limit int) ([]AsyncJob, err
 	jobs := make([]AsyncJob, 0, limit)
 	for rows.Next() {
 		var job AsyncJob
-		if err := rows.Scan(&job.ID, &job.EmpresaID, &job.Kind, &job.PayloadJSON, &job.Status, &job.Attempts, &job.MaxAttempts, &job.AvailableAt); err != nil {
+		if err := rows.Scan(&job.ID, &job.EmpresaID, &job.OriginUserID, &job.Kind, &job.PayloadJSON, &job.Status, &job.Attempts, &job.MaxAttempts, &job.AvailableAt, &job.ExpiresAt, &job.CorrelationID); err != nil {
 			return nil, err
 		}
 		jobs = append(jobs, job)
@@ -151,6 +199,22 @@ func ClaimAsyncJobs(dbConn *sql.DB, workerID string, limit int) ([]AsyncJob, err
 		return nil, err
 	}
 	return jobs, nil
+}
+
+// ExpireAsyncJobs keeps the queue from retrying work whose business deadline
+// has passed. A dead job remains auditable and can be reviewed explicitly.
+func ExpireAsyncJobs(dbConn *sql.DB) (int64, error) {
+	if dbConn == nil {
+		return 0, fmt.Errorf("database not available")
+	}
+	result, err := execSQLCompat(dbConn, `UPDATE pcs_async_jobs
+		SET status = 'dead', locked_at = NULL, locked_by = NULL,
+			last_error = 'job expired', updated_at = CURRENT_TIMESTAMP
+		WHERE status IN ('pending', 'processing') AND expires_at IS NOT NULL AND expires_at <= CURRENT_TIMESTAMP`)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected()
 }
 
 // RecoverExpiredAsyncJobs returns jobs that were leased by a worker that did

@@ -2,6 +2,7 @@ package db
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 	"strings"
 )
@@ -321,6 +322,21 @@ func EnsureEmpresaDocumentosTransaccionalesSchema(dbConn *sql.DB) error {
 	}
 
 	return nil
+}
+
+// VerifyEmpresaDocumentosTransaccionalesSchema is safe for request paths. DDL
+// belongs to the migration role, so handlers only confirm the required table
+// exists before executing a business transition.
+func VerifyEmpresaDocumentosTransaccionalesSchema(dbConn *sql.DB) error {
+	if dbConn == nil {
+		return errors.New("db connection is nil")
+	}
+	var exists int
+	err := queryRowSQLCompat(dbConn, `SELECT 1 FROM information_schema.tables WHERE table_schema = current_schema() AND table_name = ? LIMIT 1`, "empresa_facturacion_documentos").Scan(&exists)
+	if err == sql.ErrNoRows {
+		return errors.New("esquema de documentos no migrado; ejecute pcs-migrate")
+	}
+	return err
 }
 
 func ensurePostgresDocumentTableIDSequence(dbConn *sql.DB, tableName string) error {

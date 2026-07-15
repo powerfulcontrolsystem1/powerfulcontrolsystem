@@ -2,7 +2,7 @@ package runtimeconfig
 
 import "testing"
 
-func TestLoadProductionKeepsCompatibilityBootstrapUntilExplicitlyDisabled(t *testing.T) {
+func TestLoadProductionDisablesCompatibilityBootstrapByDefault(t *testing.T) {
 	t.Parallel()
 	config, err := Load(func(key string) string {
 		if key == "PCS_ENV" {
@@ -13,27 +13,27 @@ func TestLoadProductionKeepsCompatibilityBootstrapUntilExplicitlyDisabled(t *tes
 	if err != nil {
 		t.Fatalf("Load: %v", err)
 	}
-	if config.Role != RoleAPI || !config.LegacySchemaBootstrap {
+	if config.Role != RoleAPI || config.LegacySchemaBootstrap {
 		t.Fatalf("unexpected config: %#v", config)
 	}
 }
 
-func TestLoadProductionCanDisableCompatibilityBootstrap(t *testing.T) {
+func TestLoadProductionCanExplicitlyEnableCompatibilityBootstrap(t *testing.T) {
 	t.Parallel()
 	config, err := Load(func(key string) string {
 		switch key {
 		case "PCS_ENV":
 			return "production"
 		case "PCS_RUNTIME_SCHEMA_BOOTSTRAP":
-			return "0"
+			return "1"
 		}
 		return ""
 	})
 	if err != nil {
 		t.Fatalf("Load: %v", err)
 	}
-	if config.LegacySchemaBootstrap {
-		t.Fatalf("expected disabled bootstrap: %#v", config)
+	if !config.LegacySchemaBootstrap {
+		t.Fatalf("expected explicitly enabled bootstrap: %#v", config)
 	}
 }
 

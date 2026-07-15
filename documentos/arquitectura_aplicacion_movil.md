@@ -1,6 +1,12 @@
 # Arquitectura de la aplicacion movil
 
-Actualizacion: 2026-07-14.
+Actualizacion: 2026-07-15.
+
+Actualizacion de preproduccion 2026-07-15: `/api/v1` conserva el contrato
+oficial para clientes Android/iPhone. El cliente debe tratar `request_id` como
+trazabilidad, conservar `Idempotency-Key` hasta una respuesta definitiva y no
+usar el identificador de empresa como autoridad. La base de datos y archivos
+privados nunca se exponen directamente al dispositivo.
 
 La aplicacion oficial vive en `mobile/powerful_control_system_app` y comparte
 una sola base Flutter/Dart para Android e iPhone. No accede a PostgreSQL ni a

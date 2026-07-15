@@ -30,42 +30,23 @@ import (
 	"sort"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
 
 	dbpkg "github.com/you/pos-backend/db"
 	"golang.org/x/crypto/pkcs12"
 )
 
-var empresaModulosFaltantesSchemaState = struct {
-	sync.Mutex
-	ready map[*sql.DB]bool
-}{
-	ready: make(map[*sql.DB]bool),
-}
-
 func ensureEmpresaModulosFaltantesSchemaReady(dbEmp *sql.DB) error {
 	if dbEmp == nil {
 		return errors.New("db connection is nil")
 	}
-
-	empresaModulosFaltantesSchemaState.Lock()
-	defer empresaModulosFaltantesSchemaState.Unlock()
-
-	if empresaModulosFaltantesSchemaState.ready[dbEmp] {
-		return nil
-	}
-	if err := dbpkg.EnsureEmpresaModulosFaltantesSchema(dbEmp); err != nil {
-		return err
-	}
-	empresaModulosFaltantesSchemaState.ready[dbEmp] = true
-	return nil
+	return dbpkg.VerifyEmpresaModulosFaltantesSchema(dbEmp)
 }
 
 func withEmpresaModulosFaltantesSchema(dbEmp *sql.DB, next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if err := ensureEmpresaModulosFaltantesSchemaReady(dbEmp); err != nil {
-			http.Error(w, "No se pudo preparar el esquema de modulos ERP faltantes", http.StatusInternalServerError)
+			http.Error(w, "El modulo requiere una migracion pendiente", http.StatusServiceUnavailable)
 			return
 		}
 		next(w, r)
@@ -2702,7 +2683,7 @@ func handlePlanCuentasAplicarPlantillaAction(dbEmp *sql.DB, w http.ResponseWrite
 }
 
 func applyPlanCuentasTemplate(dbEmp *sql.DB, empresaID int64, tipoEmpresa string, sobrescribir bool, actor string) (map[string]interface{}, error) {
-	if err := dbpkg.EnsureEmpresaModulosFaltantesSchema(dbEmp); err != nil {
+	if err := dbpkg.VerifyEmpresaModulosFaltantesSchema(dbEmp); err != nil {
 		return nil, err
 	}
 
@@ -4970,7 +4951,7 @@ func convertCotizacionToPedido(dbEmp *sql.DB, empresaID, cotizacionID int64, act
 	if cotizacionID <= 0 {
 		return nil, nil, false, false, newVentasConversionError(http.StatusBadRequest, "id required")
 	}
-	if err := dbpkg.EnsureEmpresaModulosFaltantesSchema(dbEmp); err != nil {
+	if err := dbpkg.VerifyEmpresaModulosFaltantesSchema(dbEmp); err != nil {
 		return nil, nil, false, false, err
 	}
 
@@ -5102,10 +5083,10 @@ func convertPedidoToDocumentoFinal(dbEmp *sql.DB, empresaID, pedidoID int64, pay
 	if pedidoID <= 0 {
 		return nil, nil, false, newVentasConversionError(http.StatusBadRequest, "id required")
 	}
-	if err := dbpkg.EnsureEmpresaModulosFaltantesSchema(dbEmp); err != nil {
+	if err := dbpkg.VerifyEmpresaModulosFaltantesSchema(dbEmp); err != nil {
 		return nil, nil, false, err
 	}
-	if err := dbpkg.EnsureEmpresaDocumentosTransaccionalesSchema(dbEmp); err != nil {
+	if err := dbpkg.VerifyEmpresaDocumentosTransaccionalesSchema(dbEmp); err != nil {
 		return nil, nil, false, err
 	}
 
@@ -5236,10 +5217,10 @@ func buildVentasEmbudoConversionSnapshot(dbEmp *sql.DB, empresaID int64, desde, 
 		slaPedidoHoras = 72
 	}
 
-	if err := dbpkg.EnsureEmpresaModulosFaltantesSchema(dbEmp); err != nil {
+	if err := dbpkg.VerifyEmpresaModulosFaltantesSchema(dbEmp); err != nil {
 		return ventasEmbudoSnapshot{}, err
 	}
-	if err := dbpkg.EnsureEmpresaDocumentosTransaccionalesSchema(dbEmp); err != nil {
+	if err := dbpkg.VerifyEmpresaDocumentosTransaccionalesSchema(dbEmp); err != nil {
 		return ventasEmbudoSnapshot{}, err
 	}
 

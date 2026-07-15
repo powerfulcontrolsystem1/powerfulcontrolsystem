@@ -38046,6 +38046,17 @@ Archivos modificados:
 - mobile/powerful_control_system_app/pubspec.yaml
 - mobile/powerful_control_system_app/test/app_environment_test.dart
 - mobile/powerful_control_system_app/test/company_test.dart
+
+2026-07-15: Preproduccion: roles, migraciones y disponibilidad
+- `deploy/docker-compose.platform.yml`: el servicio de migracion ejecuta el
+  backend con `PCS_RUNTIME_ROLE=migrate`; API depende de su finalizacion y usa
+  readiness `/ready` sin bootstrap de esquema.
+- `backend/db/migrations.go`: advisory lock PostgreSQL serializa migraciones.
+- `backend/db/async_jobs.go`: contrato durable con vencimiento, actor,
+  correlacion e idempotencia hash; worker no hace DDL.
+- `backend/handlers/runtime_health.go`: probes publicos minimizados.
+- `backend/handlers/modulos_faltantes.go` y `portal_visitas.go`: verifican
+  esquema migrado en lugar de crear tablas al atender solicitudes.
 - scripts/generar_aplicacion_android.ps1
 - scripts/generar_aplicacion_ios.ps1
 - scripts/rs.ps1

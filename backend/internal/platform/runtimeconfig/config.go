@@ -23,8 +23,9 @@ type Config struct {
 }
 
 // Load accepts an environment accessor to keep production startup logic unit
-// testable. Legacy schema bootstrap remains available only as an explicit
-// migration role in production; development keeps the historical behavior.
+// testable. A production API must never mutate schemas as a side effect of
+// serving traffic. Historical bootstrapping can be enabled explicitly only as
+// a temporary compatibility measure while a deployment is migrated.
 func Load(getenv func(string) string) (Config, error) {
 	if getenv == nil {
 		return Config{}, fmt.Errorf("environment accessor is required")
@@ -40,14 +41,12 @@ func Load(getenv func(string) string) (Config, error) {
 	default:
 		return Config{}, fmt.Errorf("PCS_RUNTIME_ROLE must be api, worker or migrate")
 	}
-	// Existing PCS installations still have a broad historical bootstrap that
-	// also provisions company integrations. Keep it enabled by default so an
-	// upgrade cannot silently stop those flows. Production can opt out only
-	// after its migration ledger has been verified, while the migrate role is
-	// always allowed to run the compatibility bootstrap.
-	legacyBootstrap := true
-	if production && role == RoleAPI && isDisabled(getenv("PCS_RUNTIME_SCHEMA_BOOTSTRAP")) {
-		legacyBootstrap = false
+	legacyBootstrap := !production
+	if role == RoleMigrate {
+		legacyBootstrap = true
+	}
+	if production && role == RoleAPI {
+		legacyBootstrap = isEnabled(getenv("PCS_RUNTIME_SCHEMA_BOOTSTRAP"))
 	}
 	return Config{Role: role, Production: production, LegacySchemaBootstrap: legacyBootstrap}, nil
 }

@@ -1,5 +1,10 @@
 # Mapa de modulos
 
+Actualizacion 2026-07-15: plataforma de preproduccion: `pcs-migrate` es el
+unico rol que aplica bootstrap de esquema; `pcs-backend` publica `/health` y
+`/ready`; `pcs-worker` consume trabajos PostgreSQL sin DDL. El catalogo de
+dominios vive en `backend/internal/platform/modules/catalog.go`.
+
 Actualizacion 2026-07-13: `Administrar empresa > Configuracion > Chat IA >
 OpenAI propio` abre `web/administrar_empresa/configuracion_ia_propia.html` y
 usa `/api/empresa/configuracion_ia_propia`, protegido por seguridad con

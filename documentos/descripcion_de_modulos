@@ -4552,6 +4552,13 @@ adjuntos y analisis avanzado.
   integraciones sin crear duplicados; cada trabajo empresarial conserva
   `empresa_id` y no acepta secretos en payload.
 
+2026-07-15: Preproduccion y dominios modulares
+- Modulos afectados: `plataforma`, `migraciones`, `procesos_asincronos`,
+  `salud_runtime`, `modulos_erp`, `portal_publico`.
+- Produccion ejecuta migraciones antes de API/worker, el API no hace bootstrap
+  de esquema y el worker no ejecuta DDL. Jobs durables agregan expiracion,
+  actor, correlacion e idempotencia hash sin modificar contratos existentes.
+
 2026-07-14: Aplicacion movil Flutter
 - Modulo: `aplicacion_movil`.
 - Alcance: login nativo protegido por segundo factor, restauracion/rotacion/cierre de sesion, selector de empresas, panel por permisos y Productos como primera consulta funcional.

@@ -14,6 +14,8 @@ func TestAuthMiddlewarePublicAndProtectedSuperRoutes(t *testing.T) {
 	}))
 
 	publicPaths := []string{
+		"/health",
+		"/ready",
 		"/super/api/administradores/register",
 		"/super/api/administradores/login",
 		"/super/api/administradores/solicitar_recuperacion",

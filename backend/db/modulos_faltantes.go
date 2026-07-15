@@ -986,6 +986,21 @@ func EnsureEmpresaModulosFaltantesSchema(dbConn *sql.DB) error {
 	return nil
 }
 
+// VerifyEmpresaModulosFaltantesSchema confirms that the migration role has
+// provisioned the ERP extension tables. HTTP handlers must verify readiness,
+// never create or alter tables while serving a tenant request.
+func VerifyEmpresaModulosFaltantesSchema(dbConn *sql.DB) error {
+	if dbConn == nil {
+		return errors.New("db connection is nil")
+	}
+	var exists int
+	err := queryRowSQLCompat(dbConn, `SELECT 1 FROM information_schema.tables WHERE table_schema = current_schema() AND table_name = ? LIMIT 1`, "empresa_cotizaciones_venta").Scan(&exists)
+	if err == sql.ErrNoRows {
+		return errors.New("esquema ERP no migrado; ejecute pcs-migrate")
+	}
+	return err
+}
+
 func isAllowedGenericTable(table string) bool {
 	table = strings.TrimSpace(table)
 	if table == "" || !isSafeSQLIdentifier(table) {

@@ -11897,6 +11897,12 @@ documentos/release_checklist.md
 documentos/plan_101_arquitectura_modular.md
 - Decision de monolito modular, controles multiempresa, reglas de evolucion e
   idempotencia, y evidencia pendiente de preproduccion.
+
+documentos/plan_preproduccion.md
+documentos/arquitectura_escalable_y_modular.md
+documentos/preparacion_final_produccion.md
+- Plan ejecutable, limites de dominios, roles de proceso y procedimiento de
+  liberacion/reversa de la preparacion de produccion 2026-07-15.
 2026-07-13 - IA propia empresarial y API movil v1
 - `backend/db/ai_empresa_proveedor.go`: esquema y acceso cifrado por empresa
   para la clave OpenAI propia; el valor solo se descifra en memoria al enviar la

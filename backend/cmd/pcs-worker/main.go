@@ -36,12 +36,6 @@ func main() {
 	if err := dbConn.Ping(); err != nil {
 		log.Fatal(err)
 	}
-	if err := dbpkg.EnsureAsyncJobsSchema(dbConn); err != nil {
-		log.Fatal(err)
-	}
-	if err := dbpkg.EnsureOutboxSchema(dbConn); err != nil {
-		log.Fatal(err)
-	}
 	workerID := strings.TrimSpace(os.Getenv("PCS_WORKER_ID"))
 	if workerID == "" {
 		host, hostErr := os.Hostname()

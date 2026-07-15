@@ -1163,6 +1163,15 @@ func main() {
 		if err := dbpkg.EnsureEmpresaModulosColombiaSchema(dbEmpresas); err != nil {
 			log.Fatalf("failed to ensure modulos empresariales colombia schema in empresas db: %v", err)
 		}
+		if err := dbpkg.EnsureEmpresaModulosFaltantesSchema(dbEmpresas); err != nil {
+			log.Fatalf("failed to ensure modulos ERP schema in empresas db: %v", err)
+		}
+		if err := dbpkg.EnsureEmpresaDocumentosTransaccionalesSchema(dbEmpresas); err != nil {
+			log.Fatalf("failed to ensure transactional documents schema in empresas db: %v", err)
+		}
+		if err := dbpkg.EnsurePortalVisitasSchema(dbSuper); err != nil {
+			log.Fatalf("failed to ensure portal visits schema in super db: %v", err)
+		}
 		if err := dbpkg.EnsureEmpresaComprasAvanzadasSchema(dbEmpresas); err != nil {
 			log.Fatalf("failed to ensure compras avanzadas schema in empresas db: %v", err)
 		}
@@ -1352,6 +1361,11 @@ func main() {
 		log.Fatalf("failed to initialize VPS security service: %v", err)
 	}
 	startupTrace("after_vps_security_service")
+
+	// Public probes are intentionally narrow: health only confirms the process,
+	// while ready verifies the two PostgreSQL connections used by the API.
+	http.HandleFunc("/health", handlers.RuntimeHealthHandler())
+	http.HandleFunc("/ready", handlers.RuntimeReadyHandler(dbEmpresas, dbSuper))
 
 	http.HandleFunc("/auth/google/login", handlers.HandleGoogleLogin(clientID, redirectURL))
 	http.HandleFunc("/auth/google/usuario/login", handlers.HandleGoogleUsuarioLogin(clientID, redirectURL))

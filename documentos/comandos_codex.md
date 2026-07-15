@@ -140,8 +140,11 @@ go build ./cmd/pcs-migrate
 go build ./cmd/pcs-worker
 ```
 
-No establecer `PCS_RUNTIME_SCHEMA_BOOTSTRAP=0` en una instalacion existente
-hasta verificar el ledger de migraciones y los flujos de provisionamiento.
+En produccion, `pcs-backend` debe conservar
+`PCS_RUNTIME_SCHEMA_BOOTSTRAP=0`. El rol `pcs-migrate` ejecuta la
+compatibilidad de esquema antes de API y worker. No se debe volver a habilitar
+bootstrap en la API como solucion a una migracion incompleta: corregir la
+migracion, validar el ledger y repetir el rol `migrate` de forma controlada.
 
 ## Backup completo del VPS
 

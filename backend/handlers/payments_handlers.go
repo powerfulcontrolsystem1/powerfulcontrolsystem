@@ -1376,7 +1376,7 @@ func issueLicenciaFacturaElectronicaWithOptions(r *http.Request, dbEmp, dbSuper 
 	if err := dbpkg.EnsureEmpresaFacturacionElectronicaSchema(dbEmp); err != nil {
 		return outcome, nil, err
 	}
-	if err := dbpkg.EnsureEmpresaDocumentosTransaccionalesSchema(dbEmp); err != nil {
+	if err := dbpkg.VerifyEmpresaDocumentosTransaccionalesSchema(dbEmp); err != nil {
 		return outcome, nil, err
 	}
 

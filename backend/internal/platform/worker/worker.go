@@ -33,9 +33,6 @@ func (r *Runner) Run(ctx context.Context) error {
 		return fmt.Errorf("worker id required")
 	}
 	r.normalize()
-	if err := dbpkg.EnsureAsyncJobsSchema(r.DB); err != nil {
-		return fmt.Errorf("ensure async jobs schema: %w", err)
-	}
 	defer func() {
 		if _, err := dbpkg.ReleaseAsyncJobsForWorker(r.DB, r.WorkerID); err != nil {
 			log.Printf("async worker release failed: %v", err)
@@ -72,6 +69,9 @@ func (r *Runner) normalize() {
 
 func (r *Runner) runBatch(ctx context.Context) error {
 	if err := ctx.Err(); err != nil {
+		return err
+	}
+	if _, err := dbpkg.ExpireAsyncJobs(r.DB); err != nil {
 		return err
 	}
 	if _, err := dbpkg.RecoverExpiredAsyncJobs(r.DB, r.Lease); err != nil {
