@@ -40,7 +40,6 @@ var nuevasPlantillasBootstrapMeta = []nuevoVerticalBootstrapMeta{
 	{"veterinaria_petshop", "Consultorio", 3, []string{"veterinario", "auxiliar_veterinaria", "caja"}},
 	{"clinica_consultorios", "Consultorio", 5, []string{"recepcion", "profesional_salud", "caja"}},
 	{"laboratorio_clinico", "Toma", 4, []string{"recepcion", "bacteriologo", "auxiliar_laboratorio", "caja"}},
-	{"colegio_academia", "Aula", 6, []string{"coordinador_academico", "docente", "caja"}},
 	{"guarderia_infantil", "Salon", 4, []string{"coordinador_guarderia", "docente", "auxiliar", "caja"}},
 	{"lavanderia_tintoreria", "Punto", 3, []string{"recepcion", "operario_lavanderia", "caja"}},
 	{"taller_mecanico", "Bahia", 5, []string{"recepcion", "tecnico", "compras", "caja"}},
@@ -69,15 +68,34 @@ var nuevasPlantillasProduccionMasiva = map[string]int{
 	"eventos_boleteria":        9,
 	"transporte_carga_tms":     10,
 	"operador_turistico":       11,
-	"colegio_academia":         12,
-	"guarderia_infantil":       13,
-	"inmobiliaria_comercial":   14,
-	"seguridad_privada":        15,
-	"club_deportivo":           16,
-	"funeraria_exequial":       17,
-	"parque_recreativo":        18,
-	"cooperativa_fondo":        19,
-	"capacitacion_empresarial": 20,
+	"guarderia_infantil":       12,
+	"inmobiliaria_comercial":   13,
+	"seguridad_privada":        14,
+	"club_deportivo":           15,
+	"funeraria_exequial":       16,
+	"parque_recreativo":        17,
+	"cooperativa_fondo":        18,
+	"capacitacion_empresarial": 19,
+}
+
+// RetireColegioAcademiaTemplate prevents new companies from selecting the
+// retired vertical. Existing companies are intentionally preserved so their
+// historical data is never removed by a catalog maintenance migration.
+func RetireColegioAcademiaTemplate(dbConn *sql.DB) error {
+	if dbConn == nil {
+		return errors.New("db connection is nil")
+	}
+	tipos, err := GetTiposEmpresas(dbConn)
+	if err != nil {
+		return err
+	}
+	for _, tipo := range tipos {
+		switch normalizeTipoEmpresaName(tipo.Nombre) {
+		case "colegio academia", "colegio o academia", "colegio academia o instituto":
+			return SetTipoEmpresaActivo(dbConn, tipo.ID, "inactivo")
+		}
+	}
+	return nil
 }
 
 func buildNuevasPlantillasTipoEmpresaCatalog() []NuevoVerticalTipoEmpresa {
@@ -205,7 +223,7 @@ func buildClassicTipoEmpresaPreconfigIntegracionVertical(modulo string) *TipoEmp
 			EstadoIntegracion:    "plantilla_integrada_nucleo",
 			Decision:             "mantener_como_plantilla",
 			ProduccionMasiva:     false,
-			MotivoDecision:       "Plantilla clasico conectado a preconfiguracion; la produccion masiva de nuevas plantillas se gobierna en el catalogo de 20 plantillas nuevas.",
+			MotivoDecision:       "Plantilla clasico conectado a preconfiguracion; la produccion masiva de nuevas plantillas se gobierna en el catalogo de 19 plantillas nuevas.",
 			TemplateActivates:    []string{modulo, "clientes", "inventario/servicios", "ventas", "pagos", "reportes", "seguridad"},
 			TablesTouched:        []string{"clientes", "servicios", "carritos_compras", "carrito_compra_items", "empresa_finanzas_movimientos"},
 			RequiredPermissions:  []string{"seguridad:R", modulo + ":R", modulo + ":C", "ventas:C", "pagos:C", "finanzas:R/C", "reportes:R"},

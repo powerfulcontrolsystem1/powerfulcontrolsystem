@@ -135,6 +135,9 @@ type EmpresaAIUDashboard struct {
 }
 
 func EnsureEmpresaAIUConstruccionSchema(dbConn *sql.DB) error {
+	if SchemaBootstrapDisabled() {
+		return nil
+	}
 	stmts := []string{
 		`CREATE TABLE IF NOT EXISTS empresa_aiu_contratos (
 			id BIGSERIAL PRIMARY KEY,

@@ -104,6 +104,9 @@ const (
 // EnsureEmpresaConfiguracionAvanzadaSchema crea/migra el esquema de configuración avanzada
 // por empresa para preparación de facturación electrónica en Colombia.
 func EnsureEmpresaConfiguracionAvanzadaSchema(dbConn *sql.DB) error {
+	if SchemaBootstrapDisabled() {
+		return nil
+	}
 	stmts := []string{
 		`CREATE TABLE IF NOT EXISTS empresa_configuracion_avanzada (
 			id BIGSERIAL PRIMARY KEY,

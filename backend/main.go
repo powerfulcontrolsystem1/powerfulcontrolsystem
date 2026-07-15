@@ -24,7 +24,6 @@ import (
 	dbpkg "github.com/you/pos-backend/db"
 	"github.com/you/pos-backend/handlers"
 	"github.com/you/pos-backend/internal/platform/runtimeconfig"
-	"github.com/you/pos-backend/metrics"
 	"github.com/you/pos-backend/utils"
 	"github.com/you/pos-backend/vpssecurity"
 )
@@ -315,16 +314,8 @@ func rewriteRuntimePostgresDSNForTunnel(raw string) string {
 	return u.String()
 }
 
-func openAndPingRuntimeDB(driverName, dsn, label string) (*sql.DB, error) {
-	dbConn, err := sql.Open(driverName, dsn)
-	if err != nil {
-		return nil, fmt.Errorf("failed to open %s db with driver %s: %w", label, driverName, err)
-	}
-	if err := dbConn.Ping(); err != nil {
-		_ = dbConn.Close()
-		return nil, fmt.Errorf("failed to ping %s db with driver %s: %w", label, driverName, err)
-	}
-	return dbConn, nil
+func openAndPingRuntimeDB(pool runtimeconfig.DatabaseConfig, driverName, dsn, label string) (*sql.DB, error) {
+	return pool.OpenAndPing(context.Background(), driverName, dsn, label)
 }
 
 func ensureRuntimeDBDir(dbPath string) error {
@@ -868,7 +859,7 @@ func main() {
 
 		postgresDriverName := dbpkg.PostgresCompatDriverName()
 		startupTrace("before_open_db_empresas")
-		dbEmpresas, err = openAndPingRuntimeDB(postgresDriverName, dbEmpresasDSN, "empresas")
+		dbEmpresas, err = openAndPingRuntimeDB(runtimeConfig.Database, postgresDriverName, dbEmpresasDSN, "empresas")
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -876,7 +867,7 @@ func main() {
 		// Registrar la conexión principal de empresas en el paquete db para wrappers
 		dbpkg.SetDefaultDB(dbEmpresas)
 		startupTrace("before_open_db_super")
-		dbSuper, err = openAndPingRuntimeDB(postgresDriverName, dbSuperDSN, "superadministrador")
+		dbSuper, err = openAndPingRuntimeDB(runtimeConfig.Database, postgresDriverName, dbSuperDSN, "superadministrador")
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -1040,6 +1031,9 @@ func main() {
 			} else {
 				log.Printf("INFO: nuevas plantillas verificados: tipos=%d licencias=%d", tipos, licencias)
 			}
+			if err := dbpkg.RetireColegioAcademiaTemplate(dbSuper); err != nil {
+				log.Printf("warning: no se pudo retirar plantilla colegio/academia: %v", err)
+			}
 			startupTrace("after_ensure_plantillas_nuevas_tipo_licencias")
 			if err := dbpkg.DisableRobotRadioInTipoEmpresaPreconfiguraciones(dbSuper); err != nil {
 				log.Printf("warning: no se pudieron apagar robot/emisora en preconfiguraciones: %v", err)
@@ -1059,6 +1053,20 @@ func main() {
 	}
 
 	if runtimeConfig.LegacySchemaBootstrap {
+		// Durable platform primitives are applied by the migration role before
+		// API/worker start. They are intentionally absent from request paths.
+		if err := dbpkg.EnsureMobileAPIIdempotencySchema(dbEmpresas); err != nil {
+			log.Fatalf("failed to ensure mobile idempotency schema: %v", err)
+		}
+		if err := dbpkg.EnsureAsyncJobsSchema(dbSuper); err != nil {
+			log.Fatalf("failed to ensure durable jobs schema: %v", err)
+		}
+		if err := dbpkg.EnsureOutboxSchema(dbSuper); err != nil {
+			log.Fatalf("failed to ensure transactional outbox schema: %v", err)
+		}
+		if err := dbpkg.InitMetricsTable(dbSuper); err != nil {
+			log.Fatalf("failed to ensure metrics schema: %v", err)
+		}
 		if err := dbpkg.EnsureEmpresaUsuariosAuthSchema(dbEmpresas); err != nil {
 			log.Fatalf("failed to ensure users auth schema in empresas db: %v", err)
 		}
@@ -1274,6 +1282,14 @@ func main() {
 			}
 			log.Println("INFO: modo PostgreSQL activo; bootstrap legacy ejecutado por rol de migracion/desarrollo.")
 		}
+		// Mark the release only after all legacy schema/data bootstrap steps
+		// completed. Readiness must never approve a partially migrated database.
+		if err := dbpkg.RegisterSchemaMigration(dbEmpresas, "platform", "20260715-worker-outbox", "durable jobs, outbox and mobile idempotency"); err != nil {
+			log.Fatalf("failed to record empresas platform migration: %v", err)
+		}
+		if err := dbpkg.RegisterSchemaMigration(dbSuper, "platform", "20260715-worker-outbox", "durable jobs, outbox and worker metrics"); err != nil {
+			log.Fatalf("failed to record super platform migration: %v", err)
+		}
 	}
 	if !runtimeConfig.LegacySchemaBootstrap && runtimePostgres {
 		loadGoogleOAuthFromDB(dbSuper)
@@ -1289,69 +1305,10 @@ func main() {
 	utils.ConfigureErrorMonitor(dbSuper, backendDir)
 	startupTrace("after_error_monitor")
 
-	// Inicializar tabla de métricas y arrancar collector periódico
-	if err := dbpkg.InitMetricsTable(dbSuper); err != nil {
-		log.Printf("warning: failed to init metrics table: %v", err)
-		utils.ReportProcessError("metrics.collector", "metrics_schema_init", "No se pudo inicializar la tabla de metricas", err, utils.ErrorLevelError, nil)
-	}
-	metricsInterval := metrics.DefaultIntervalSeconds()
-	stopMetrics := make(chan struct{})
-	go utils.RunProtectedProcess("metrics.collector", map[string]interface{}{"interval_seconds": metricsInterval}, func() {
-		metrics.StartCollector(dbSuper, metricsInterval, stopMetrics)
-	})
-
-	stopSuperAlertas := make(chan struct{})
-	go utils.RunProtectedProcess("super.alertas_worker", map[string]interface{}{"interval_minutes": 1}, func() {
-		handlers.StartSuperAlertasWorker(dbSuper, time.Minute, stopSuperAlertas)
-	})
-
-	stopAuditRetention := make(chan struct{})
-	go utils.RunProtectedProcess("auditoria.retention_worker", map[string]interface{}{"interval_hours": 12}, func() {
-		dbpkg.StartEmpresaAuditoriaRetentionWorker(dbEmpresas, 12*time.Hour, stopAuditRetention)
-	})
-
-	stopLicenciasEstado := make(chan struct{})
-	go utils.RunProtectedProcess("licencias.estado_empresas_worker", map[string]interface{}{"interval_hours": 1}, func() {
-		dbpkg.StartLicenciaEmpresaEstadoWorker(dbEmpresas, dbSuper, time.Hour, stopLicenciasEstado)
-	})
-
-	stopLicenciasVencimiento := make(chan struct{})
-	go utils.RunProtectedProcess("licencias.vencimiento_alertas_worker", map[string]interface{}{"interval_hours": 12}, func() {
-		handlers.StartLicenciaVencimientoAlertasWorker(dbSuper, dbEmpresas, 12*time.Hour, stopLicenciasVencimiento)
-	})
-
-	stopVPSSnapshotWorker := make(chan struct{})
-	go utils.RunProtectedProcess("super.vps_snapshot_worker", map[string]interface{}{"interval_hours": 1}, func() {
-		handlers.StartSuperVPSSnapshotWorker(dbSuper, time.Hour, stopVPSSnapshotWorker)
-	})
-
-	stopMantenimientoAgentesWorker := make(chan struct{})
-	go utils.RunProtectedProcess("super.mantenimiento_agentes_worker", map[string]interface{}{"interval_minutes": 1}, func() {
-		handlers.StartSuperMantenimientoAgentesWorker(dbSuper, time.Minute, stopMantenimientoAgentesWorker)
-	})
-
-	stopParametrosLegales := make(chan struct{})
-	go utils.RunProtectedProcess("parametros_legales.worker", map[string]interface{}{"interval_hours": 24}, func() {
-		dbpkg.StartEmpresaParametrosLegalesWorker(dbEmpresas, 24*time.Hour, stopParametrosLegales)
-	})
-
-	stopCobranzaRecordatorios := make(chan struct{})
-	go utils.RunProtectedProcess("cobranza.recordatorios_worker", map[string]interface{}{"interval_hours": 1}, func() {
-		handlers.StartEmpresaCobranzaRecordatoriosWorker(dbEmpresas, dbSuper, time.Hour, stopCobranzaRecordatorios)
-	})
-
-	asientosInterval, asientosBatchSize, asientosMaxRetries := resolveAsientosWorkerPolicy()
-	log.Printf("[asientos_worker] policy interval=%s batch=%d max_reintentos=%d", asientosInterval, asientosBatchSize, asientosMaxRetries)
-	stopAsientosWorker := make(chan struct{})
-	go utils.RunProtectedProcess("finanzas.asientos_worker", map[string]interface{}{"interval": asientosInterval.String(), "batch_size": asientosBatchSize, "max_retries": asientosMaxRetries}, func() {
-		dbpkg.StartEmpresaAsientosContablesWorker(dbEmpresas, asientosInterval, asientosBatchSize, asientosMaxRetries, stopAsientosWorker)
-	})
-
-	stopControlElectricoWorker := make(chan struct{})
-	go utils.RunProtectedProcess("control_electrico.programacion_worker", map[string]interface{}{"interval_minutes": 1}, func() {
-		handlers.StartControlElectricoProgramacionWorker(dbEmpresas, time.Minute, stopControlElectricoWorker)
-	})
-	startupTrace("after_workers")
+	// Los procesos periodicos y la cola durable pertenecen exclusivamente a
+	// pcs-worker. La API puede escalar horizontalmente sin duplicar alertas,
+	// renovaciones, snapshots ni tareas contables.
+	startupTrace("after_workers_delegated_to_pcs_worker")
 
 	// Determinar carpeta web una sola vez para rutas estaticas y handlers que listan recursos.
 	webDir := resolveWebDir()
@@ -1363,9 +1320,15 @@ func main() {
 	startupTrace("after_vps_security_service")
 
 	// Public probes are intentionally narrow: health only confirms the process,
-	// while ready verifies the two PostgreSQL connections used by the API.
+	// while ready verifies the two PostgreSQL connections and the platform
+	// migration required by this release. It never returns migration internals.
 	http.HandleFunc("/health", handlers.RuntimeHealthHandler())
-	http.HandleFunc("/ready", handlers.RuntimeReadyHandler(dbEmpresas, dbSuper))
+	http.HandleFunc("/ready", handlers.RuntimeReadyWithCheck(func(context.Context) error {
+		if err := dbpkg.VerifyRequiredMigrations(dbEmpresas, dbpkg.SchemaMigrationStatus{Scope: "platform", Version: "20260715-worker-outbox"}); err != nil {
+			return err
+		}
+		return dbpkg.VerifyRequiredMigrations(dbSuper, dbpkg.SchemaMigrationStatus{Scope: "platform", Version: "20260715-worker-outbox"})
+	}, dbEmpresas, dbSuper))
 
 	http.HandleFunc("/auth/google/login", handlers.HandleGoogleLogin(clientID, redirectURL))
 	http.HandleFunc("/auth/google/usuario/login", handlers.HandleGoogleUsuarioLogin(clientID, redirectURL))

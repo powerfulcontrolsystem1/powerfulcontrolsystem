@@ -95,6 +95,9 @@ func InvalidateAdminEmpresaCompartidaAccessCacheForEmpresa(empresaID int64) {
 }
 
 func EnsureAdminEmpresaCompartidaSchema(dbConn *sql.DB) error {
+	if SchemaBootstrapDisabled() {
+		return nil
+	}
 	if dbConn == nil {
 		return nil
 	}

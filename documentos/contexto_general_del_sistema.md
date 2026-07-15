@@ -2,6 +2,16 @@
 
 Estado: vigente. Ultima actualizacion: 2026-07-15.
 
+## Actualizacion 2026-07-15 - worker, outbox y despliegue reproducible
+
+- La API no ejecuta temporizadores periodicos. `pcs-worker` concentra la
+  operacion recurrente y la plataforma PostgreSQL de jobs/outbox usa lease,
+  heartbeat, recuperacion, prioridad e idempotencia.
+- Los pools PostgreSQL se configuran tipadamente desde entorno y `/ready`
+  verifica conexiones mas la migracion requerida del release. Ver
+  `arquitectura_workers_outbox.md`, `despliegue_inmutable.md` y
+  `estado_modulos_produccion.md`.
+
 ## Actualizacion 2026-07-15 - Plan preproduccion
 
 - `documentos/plan_preproduccion.md` registra la separacion final de roles

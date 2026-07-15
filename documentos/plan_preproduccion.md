@@ -19,8 +19,8 @@ para POS, caja, inventario, pagos o facturacion.
 | Roles runtime | API, migrador y worker diferenciados; el API productivo no hace bootstrap por defecto. | Completada |
 | Migraciones | Contenedor de migracion ejecuta el binario principal con rol `migrate`; aplica el bootstrap historico antes de iniciar API/worker. El ledger versionado se protege con advisory lock PostgreSQL. | Completada |
 | DDL HTTP | ERP generico, documentos transaccionales y contador publico dejaron de crear tablas durante una solicitud; ahora verifican esquema y devuelven 503 si falta una migracion. Los `Ensure...Schema` restantes de handlers legados quedan inventariados para extraccion por dominio. | En transicion controlada |
-| Procesos durables | Jobs incluyen empresa, actor, correlacion, vencimiento e idempotencia hash; worker expira trabajos vencidos y no crea esquema. | Completada |
-| Salud operativa | `/health` comprueba vida del proceso y `/ready` comprueba PostgreSQL sin revelar topologia. Docker usa readiness para el backend. | Completada |
+| Procesos durables | Jobs y outbox incluyen empresa, actor/correlacion, prioridad, lease, heartbeat, vencimiento, resultado saneado e idempotencia hash; worker recupera abandonados y no crea esquema. | Completada |
+| Salud operativa | `/health` comprueba vida y `/ready` comprueba PostgreSQL mas la migracion requerida, sin revelar topologia. Docker usa readiness para backend. | Completada |
 | Limites de modulo | Catalogo tipado en `internal/platform/modules` y arquitectura documentada para auth, empresas, usuarios, ventas, inventario, caja, pagos, facturacion, documentos, notificaciones, IA, soporte y verticales. | Completada |
 | API movil | `/api/v1` sigue siendo contrato versionado, con autorizacion empresarial, idempotencia, JSON uniforme y OpenAPI existente. | Completada |
 

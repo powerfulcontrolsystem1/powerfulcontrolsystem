@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"database/sql/driver"
 	"fmt"
+	"os"
 	"strconv"
 	"strings"
 	"sync"
@@ -431,6 +432,35 @@ func currentSQLDialect() string {
 
 func isPostgresDialect() bool {
 	return currentSQLDialect() == "postgres"
+}
+
+// SchemaBootstrapDisabled closes legacy Ensure...Schema calls during a
+// production API or worker run. Hundreds of historical modules still invoke
+// these helpers defensively; the guard lets their normal queries continue
+// against the version verified at startup without allowing an HTTP request or
+// worker cycle to acquire DDL locks. Development and the dedicated migrate role
+// retain schema bootstrap behavior for controlled migrations.
+func SchemaBootstrapDisabled() bool {
+	if !strings.EqualFold(strings.TrimSpace(os.Getenv("PCS_ENV")), "production") {
+		return false
+	}
+	role := strings.ToLower(strings.TrimSpace(os.Getenv("PCS_RUNTIME_ROLE")))
+	if role == "migrate" {
+		return false
+	}
+	if role == "api" && isRuntimeEnabled(os.Getenv("PCS_RUNTIME_SCHEMA_BOOTSTRAP")) {
+		return false
+	}
+	return true
+}
+
+func isRuntimeEnabled(value string) bool {
+	switch strings.ToLower(strings.TrimSpace(value)) {
+	case "1", "true", "yes", "on":
+		return true
+	default:
+		return false
+	}
 }
 
 func shouldUsePostgresCompat(dbConn *sql.DB) bool {

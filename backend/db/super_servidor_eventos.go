@@ -40,6 +40,9 @@ type SuperServidorEvento struct {
 
 // EnsureSuperServidorEventosSchema crea/migra la tabla de eventos de arranque/reinicio de servidor.
 func EnsureSuperServidorEventosSchema(dbConn *sql.DB) error {
+	if SchemaBootstrapDisabled() {
+		return nil
+	}
 	if dbConn == nil {
 		return fmt.Errorf("db connection is required")
 	}

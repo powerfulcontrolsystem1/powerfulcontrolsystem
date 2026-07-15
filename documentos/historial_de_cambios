@@ -1,3 +1,24 @@
+2026-07-15: Plataforma worker/outbox y despliegue reproducible.
+- `backend/main.go` delega los temporizadores operativos al binario
+  `pcs-worker`; las replicas HTTP ya no duplican tareas de licencias,
+  mantenimiento, retencion, metricas ni asientos contables.
+- `backend/db/async_jobs.go` y `backend/db/outbox.go` agregan prioridad,
+  version, lease, heartbeat, recuperacion, resultado saneado, idempotencia y
+  estados terminales. `/ready` exige la migracion de plataforma vigente.
+- `runtimeconfig` centraliza el pool PostgreSQL y el compose entrega la misma
+  politica a migracion, API y worker, con los dos DSN requeridos por el worker.
+- `SchemaBootstrapDisabled` bloquea los `Ensure...Schema` heredados durante
+  API/worker de produccion; el rol `migrate` conserva la unica ruta de DDL.
+- El healthcheck del worker verifica su heartbeat privado en tmpfs y la
+  auditoria profesional reconoce `scripts/rs.ps1` como unica ruta canonica,
+  sin exigir un wrapper retirado de la raiz.
+- Se retira `colegio_academia` de catalogos, permisos, preconfiguraciones y
+  contexto IA. El migrador desactiva el tipo historico sin borrar empresas ni
+  datos existentes; las nuevas empresas solo reciben las 19 plantillas vigentes.
+- Documentacion: `arquitectura_workers_outbox.md`,
+  `despliegue_inmutable.md`, `estado_modulos_produccion.md` y
+  `arquitectura_movil_v1.md`.
+
 2026-07-14: Configuracion operativa: contrato SQL alineado.
 
 2026-07-14: Auditoria modular de preproduccion y base Flutter nativa.

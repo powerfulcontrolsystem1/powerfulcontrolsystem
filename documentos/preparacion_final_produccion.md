@@ -2,6 +2,15 @@
 
 Actualizacion: 2026-07-15.
 
+## Cierre tecnico de plataforma
+
+La API se limita a HTTP, conexiones, middlewares, rutas, probes y apagado
+controlado. Sus temporizadores historicos se trasladaron a `pcs-worker`. La
+cola PostgreSQL y el outbox incluyen lease, heartbeat, recuperacion, prioridad,
+idempotencia hash, reintentos y estado `dead`. `/ready` exige conexion a ambas
+bases y la migracion de plataforma del release. Consultar
+`arquitectura_workers_outbox.md` y `despliegue_inmutable.md`.
+
 ## Procedimiento de actualizacion
 
 1. Ejecutar preflight y pruebas Go desde el repositorio.
@@ -23,6 +32,13 @@ Actualizacion: 2026-07-15.
 `DB_EMPRESAS_DSN` y `DB_SUPERADMIN_DSN` deben estar definidos fuera del
 repositorio. `CONFIG_ENC_KEY_PREVIOUS` se usa solo durante rotacion. Generar
 claves con `openssl rand -base64 32`; nunca registrar el valor resultante.
+
+Los limites del pool se inyectan como `PCS_DB_MAX_OPEN_CONNS`,
+`PCS_DB_MAX_IDLE_CONNS`, `PCS_DB_CONN_MAX_LIFETIME`,
+`PCS_DB_CONN_MAX_IDLE_TIME`, `PCS_DB_CONNECT_TIMEOUT`,
+`PCS_DB_QUERY_TIMEOUT` y `PCS_DB_TX_TIMEOUT`. El worker necesita los dos DSN
+internos, `PCS_WORKER_ID`, `PCS_WORKER_POLL_INTERVAL`,
+`PCS_WORKER_BATCH_SIZE` y `PCS_WORKER_JOB_LEASE`.
 
 ## Verificacion y rollback
 

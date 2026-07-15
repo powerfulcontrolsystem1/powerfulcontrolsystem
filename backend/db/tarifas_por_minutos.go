@@ -106,6 +106,9 @@ type empresaTarifaPorMinutosEstacionRef struct {
 
 // EnsureEmpresaTarifasPorMinutosSchema crea/migra tablas de tarifas por minutos por estacion.
 func EnsureEmpresaTarifasPorMinutosSchema(dbConn *sql.DB) error {
+	if SchemaBootstrapDisabled() {
+		return nil
+	}
 	stmts := []string{
 		`CREATE TABLE IF NOT EXISTS empresa_tarifas_por_minutos (
 			id BIGSERIAL PRIMARY KEY,
@@ -192,6 +195,9 @@ func EnsureEmpresaTarifasPorMinutosSchema(dbConn *sql.DB) error {
 
 // EnsureEmpresaTarifasPorMinutosConfiguracionSchema crea/migra configuracion de calculo por empresa.
 func EnsureEmpresaTarifasPorMinutosConfiguracionSchema(dbConn *sql.DB) error {
+	if SchemaBootstrapDisabled() {
+		return nil
+	}
 	stmts := []string{
 		`CREATE TABLE IF NOT EXISTS empresa_tarifas_por_minutos_configuracion (
 			id BIGSERIAL PRIMARY KEY,

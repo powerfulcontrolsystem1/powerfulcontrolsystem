@@ -26,6 +26,9 @@ type PublicacionRedSocial struct {
 }
 
 func EnsureEmpresaPublicacionesRedSocialSchema(db *sql.DB) error {
+	if SchemaBootstrapDisabled() {
+		return nil
+	}
 	query := `
 	CREATE TABLE IF NOT EXISTS empresa_publicaciones_red_social (
 		id BIGSERIAL PRIMARY KEY,
@@ -90,6 +93,9 @@ type RedSocialEmpresaSeguida struct {
 }
 
 func EnsureEmpresaRedSocialInteraccionesSchema(db *sql.DB) error {
+	if SchemaBootstrapDisabled() {
+		return nil
+	}
 	if err := EnsureEmpresaPublicacionesRedSocialSchema(db); err != nil {
 		return err
 	}

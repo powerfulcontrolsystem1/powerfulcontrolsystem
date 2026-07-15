@@ -27,6 +27,9 @@ type RolDeUsuario struct {
 
 // EnsureRolesDeUsuarioSchema crea/migra la tabla base de roles por tipo de empresa.
 func EnsureRolesDeUsuarioSchema(dbConn *sql.DB) error {
+	if SchemaBootstrapDisabled() {
+		return nil
+	}
 	if dbConn == nil {
 		return errors.New("db connection is nil")
 	}

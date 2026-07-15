@@ -29,7 +29,7 @@ Todo modulo del sistema debe nacer como un nucleo universal reutilizable. Los ti
 
 ## Plantillas empresariales 2026-05-10
 
-Se agregaron 20 plantillas nuevas sobre el motor comun de `empresa_modulos_colombia_*`: viajes, turismo, eventos, salon/spa, veterinaria, clinica, laboratorio, colegio, guarderia, lavanderia, taller, transporte TMS, servicios tecnicos, inmobiliaria, seguridad privada, club deportivo, funeraria, parque recreativo, cooperativa y capacitacion empresarial.
+Se mantienen 19 plantillas nuevas sobre el motor comun de `empresa_modulos_colombia_*`: viajes, turismo, eventos, salon/spa, veterinaria, clinica, laboratorio, guarderia, lavanderia, taller, transporte TMS, servicios tecnicos, inmobiliaria, seguridad privada, club deportivo, funeraria, parque recreativo, cooperativa y capacitacion empresarial. La plantilla de colegio/academia fue retirada y no se ofrece para nuevas empresas.
 
 Cada vertical usa una plantilla propia de tipos, categorias, estados, acciones sugeridas y metadata, pero comparte dashboard, agenda, SLA, riesgo, evidencias, aprobaciones, tareas, importacion/exportacion y auditoria. La activacion se controla por licencia y por la matriz de roles/paginas del super administrador.
 
@@ -41,15 +41,15 @@ Antes de operar o importar datos, el modulo muestra un diagnostico de preparacio
 
 El bootstrap `EnsureNuevasPlantillasTipoEmpresaYLicencias` registra los tipos de empresa, sus licencias comerciales y la preconfiguracion inicial para que una empresa nueva pueda nacer con tipo, roles guia, productos/servicios demo, tareas y modulos recomendados.
 
-El lanzador de plantillas puede consultar `/api/empresa/plantillas_nuevas/catalogo`, el super administrador puede consultar `/super/api/plantillas_nuevas/catalogo` y la portada publica puede consultar `/api/public/plantillas_nuevas/catalogo` para obtener el contrato backend completo de los 20 plantillas. La respuesta incluye page key, modulo, titulo, resumen, secciones de flujo y plantilla; el archivo visual local queda como respaldo para iconos y experiencia de portada.
+El lanzador de plantillas puede consultar `/api/empresa/plantillas_nuevas/catalogo`, el super administrador puede consultar `/super/api/plantillas_nuevas/catalogo` y la portada publica puede consultar `/api/public/plantillas_nuevas/catalogo` para obtener el contrato backend completo de las 19 plantillas. La respuesta incluye page key, modulo, titulo, resumen, secciones de flujo y plantilla; el archivo visual local queda como respaldo para iconos y experiencia de portada.
 
-Las tarjetas publicas y la pagina de descripcion usan anclas estables por modulo (`vertical-<modulo>`) para que el enlace comercial no dependa del orden de las tarjetas configuradas. Si el administrador cambia las tarjetas de portada, el catalogo publico sigue agregando los 20 plantillas y mantiene una ficha descriptiva coherente por negocio.
+Las tarjetas publicas y la pagina de descripcion usan anclas estables por modulo (`vertical-<modulo>`) para que el enlace comercial no dependa del orden de las tarjetas configuradas. Si el administrador cambia las tarjetas de portada, el catalogo publico sigue agregando las 19 plantillas y mantiene una ficha descriptiva coherente por negocio.
 
 El flujo de licencias propaga el mismo contrato comercial: las licencias plantillas guardan `modulos_habilitados`, el checkout publico expone `modulos_habilitados` y `max_documentos_mensuales`, y las pantallas de elegir/pagar licencia usan esos datos para mostrar industria, icono, tipo de empresa y cupo documental sin duplicar reglas por cada vertical.
 
 El selector de empresas reutiliza el catalogo visual de plantillas para evitar reglas aisladas por pantalla: al listar empresas, la tarjeta toma icono, tono y texto operativo del vertical; al crear empresa, el formulario muestra una vista previa con las secciones del negocio antes de guardar y aplicar la preconfiguracion inicial.
 
-Las pantallas de super administrador para tipos y preconfiguraciones tambien leen el mismo catalogo visual. Esto permite auditar los 20 plantillas con conteos, etiquetas e indicadores de flujo sin mantener una lista paralela en cada vista administrativa.
+Las pantallas de super administrador para tipos y preconfiguraciones tambien leen el mismo catalogo visual. Esto permite auditar las 19 plantillas con conteos, etiquetas e indicadores de flujo sin mantener una lista paralela en cada vista administrativa.
 
 La ayuda administrativa y el contexto de IA forman parte de la arquitectura. Cuando se agregan plantillas, la ayuda privada del super administrador debe explicar catalogo, activacion, licencias, permisos y operacion; el contexto canonico de IA debe nombrar el motor comun, endpoints de catalogo, cupos documentales y regla de no crear modulos duplicados si basta con plantilla o preconfiguracion.
 

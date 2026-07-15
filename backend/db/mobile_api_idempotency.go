@@ -32,6 +32,9 @@ func mobileAPIHash(value string) string {
 // retry to return the original successful response instead of charging or
 // emitting a fiscal document a second time.
 func EnsureMobileAPIIdempotencySchema(dbConn *sql.DB) error {
+	if SchemaBootstrapDisabled() {
+		return nil
+	}
 	if dbConn == nil {
 		return fmt.Errorf("db connection is nil")
 	}
@@ -55,13 +58,33 @@ func EnsureMobileAPIIdempotencySchema(dbConn *sql.DB) error {
 	return err
 }
 
+// VerifyMobileAPIIdempotencySchema is safe on request paths: it proves that
+// pcs-migrate prepared the tenant-scoped ledger without creating anything.
+func VerifyMobileAPIIdempotencySchema(dbConn *sql.DB) error {
+	if dbConn == nil {
+		return fmt.Errorf("db connection is nil")
+	}
+	var exists bool
+	err := queryRowSQLCompat(dbConn, `SELECT EXISTS (
+		SELECT 1 FROM information_schema.tables
+		WHERE table_schema = current_schema() AND table_name = 'empresa_mobile_api_idempotencia'
+	)`).Scan(&exists)
+	if err != nil {
+		return err
+	}
+	if !exists {
+		return fmt.Errorf("mobile idempotency schema not migrated")
+	}
+	return nil
+}
+
 // ClaimMobileAPIIdempotency atomically reserves an operation. claimed is true
 // only for the request that may execute the underlying financial mutation.
 func ClaimMobileAPIIdempotency(dbConn *sql.DB, empresaID int64, operation, key, requestBody string) (*MobileAPIIdempotencyRecord, bool, error) {
 	if empresaID <= 0 || strings.TrimSpace(operation) == "" || strings.TrimSpace(key) == "" {
 		return nil, false, fmt.Errorf("idempotency input invalido")
 	}
-	if err := EnsureMobileAPIIdempotencySchema(dbConn); err != nil {
+	if err := VerifyMobileAPIIdempotencySchema(dbConn); err != nil {
 		return nil, false, err
 	}
 	record := &MobileAPIIdempotencyRecord{

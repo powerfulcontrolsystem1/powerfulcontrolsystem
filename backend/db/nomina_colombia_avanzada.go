@@ -98,6 +98,9 @@ type EmpresaNominaProfesionalDemoResult struct {
 }
 
 func EnsureEmpresaNominaColombiaAvanzadaSchema(dbConn *sql.DB) error {
+	if SchemaBootstrapDisabled() {
+		return nil
+	}
 	stmts := []string{
 		`CREATE TABLE IF NOT EXISTS empresa_nomina_colombia_conceptos (
 			id BIGSERIAL PRIMARY KEY,

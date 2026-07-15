@@ -72,6 +72,9 @@ func GenerateEmpresaSensorDeviceID(empresaID, estacionID int64) (string, error) 
 
 // EnsureEmpresaSensorPuertasSchema crea/migra las tablas del módulo sensor de puertas por empresa
 func EnsureEmpresaSensorPuertasSchema(dbConn *sql.DB) error {
+	if SchemaBootstrapDisabled() {
+		return nil
+	}
 	if dbConn == nil {
 		return fmt.Errorf("db connection is nil")
 	}

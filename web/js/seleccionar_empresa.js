@@ -615,7 +615,7 @@
     if (/(agencia_viajes|operador_turistico)/.test(module)) return "lodging";
     if (/(eventos_boleteria|parque_recreativo)/.test(module)) return "digital";
     if (/(clinica_consultorios|laboratorio_clinico|veterinaria_petshop|salon_spa)/.test(module)) return "services";
-    if (/(colegio_academia|guarderia_infantil|capacitacion_empresarial|club_deportivo)/.test(module)) return "generic";
+    if (/(guarderia_infantil|capacitacion_empresarial|club_deportivo)/.test(module)) return "generic";
     if (/(transporte_carga_tms)/.test(module)) return "logistics";
     if (/(lavanderia_tintoreria|taller_mecanico|servicios_tecnicos|seguridad_privada|funeraria_exequial)/.test(module)) return "services";
     if (/(inmobiliaria_comercial|cooperativa_fondo)/.test(module)) return "retail";

@@ -113,6 +113,9 @@ type EmpresaCierreFiscalDashboard struct {
 }
 
 func EnsureEmpresaCierreFiscalSchema(dbConn *sql.DB) error {
+	if SchemaBootstrapDisabled() {
+		return nil
+	}
 	stmts := []string{
 		`CREATE TABLE IF NOT EXISTS empresa_cierre_fiscal_politicas (
 			id BIGSERIAL PRIMARY KEY,

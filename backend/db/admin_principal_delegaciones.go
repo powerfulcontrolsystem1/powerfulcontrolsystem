@@ -29,6 +29,9 @@ func normalizeAdminPrincipalDelegacionEmail(value string) string {
 }
 
 func EnsureAdminPrincipalDelegacionesSchema(dbConn *sql.DB) error {
+	if SchemaBootstrapDisabled() {
+		return nil
+	}
 	if dbConn == nil {
 		return nil
 	}

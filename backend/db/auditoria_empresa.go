@@ -67,6 +67,9 @@ type EmpresaAuditoriaEventoFilter struct {
 
 // EnsureEmpresaAuditoriaSchema crea/ajusta el esquema de auditoria empresarial.
 func EnsureEmpresaAuditoriaSchema(dbConn *sql.DB) error {
+	if SchemaBootstrapDisabled() {
+		return nil
+	}
 	stmts := []string{
 		`CREATE TABLE IF NOT EXISTS empresa_auditoria_eventos (
 			id BIGSERIAL PRIMARY KEY,

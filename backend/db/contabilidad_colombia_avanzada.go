@@ -301,6 +301,9 @@ type EmpresaLibroOficialLinea struct {
 }
 
 func EnsureEmpresaContabilidadColombiaAvanzadaSchema(dbConn *sql.DB) error {
+	if SchemaBootstrapDisabled() {
+		return nil
+	}
 	stmts := []string{
 		`CREATE TABLE IF NOT EXISTS empresa_contabilidad_exogena_formatos (
 			id BIGSERIAL PRIMARY KEY,

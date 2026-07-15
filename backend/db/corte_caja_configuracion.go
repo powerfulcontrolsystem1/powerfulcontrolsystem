@@ -100,6 +100,9 @@ func DefaultEmpresaCorteCajaConfiguracion(empresaID int64) EmpresaCorteCajaConfi
 }
 
 func EnsureEmpresaCorteCajaConfiguracionSchema(dbConn *sql.DB) error {
+	if SchemaBootstrapDisabled() {
+		return nil
+	}
 	if dbConn == nil {
 		return errors.New("db connection is nil")
 	}

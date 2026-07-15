@@ -22,6 +22,9 @@ type EmpresaPermisoPagina struct {
 
 // EnsureEmpresaPermisosFinosSchema crea el esquema de restricciones finas por empresa.
 func EnsureEmpresaPermisosFinosSchema(dbConn *sql.DB) error {
+	if SchemaBootstrapDisabled() {
+		return nil
+	}
 	if dbConn == nil {
 		return nil
 	}

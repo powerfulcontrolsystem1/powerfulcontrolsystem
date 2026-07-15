@@ -17,6 +17,9 @@ type EmpresaAgenteUsoDiario struct {
 }
 
 func EnsureEmpresaAgentesUsoSchema(dbConn *sql.DB) error {
+	if SchemaBootstrapDisabled() {
+		return nil
+	}
 	if dbConn == nil {
 		return nil
 	}

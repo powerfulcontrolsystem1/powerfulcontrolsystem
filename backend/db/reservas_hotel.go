@@ -85,6 +85,9 @@ type ReservaHotelEstacion struct {
 
 // EnsureEmpresaReservasHotelSchema crea/migra el esquema de reservas de hotel por empresa.
 func EnsureEmpresaReservasHotelSchema(dbConn *sql.DB) error {
+	if SchemaBootstrapDisabled() {
+		return nil
+	}
 	if dbConn == nil {
 		return fmt.Errorf("db connection is nil")
 	}

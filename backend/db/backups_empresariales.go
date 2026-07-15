@@ -579,6 +579,9 @@ func empresaBackupFetchTableSnapshot(dbConn *sql.DB, table string, empresaID int
 
 // EnsureEmpresaBackupsSchema crea y migra tablas para snapshots y restauraciones por empresa.
 func EnsureEmpresaBackupsSchema(dbConn *sql.DB) error {
+	if SchemaBootstrapDisabled() {
+		return nil
+	}
 	if dbConn == nil {
 		return errors.New("db connection is nil")
 	}

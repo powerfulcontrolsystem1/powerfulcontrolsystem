@@ -72,6 +72,9 @@ var (
 
 // EnsureEmpresaTarifasMotelSchema crea/migra la tabla especializada de planes motel.
 func EnsureEmpresaTarifasMotelSchema(dbConn *sql.DB) error {
+	if SchemaBootstrapDisabled() {
+		return nil
+	}
 	if dbConn == nil {
 		return fmt.Errorf("dbConn es obligatorio")
 	}

@@ -29,6 +29,9 @@ type EmpresaVentaOfflineSync struct {
 
 // EnsureEmpresaVentasOfflineSchema crea la bitacora idempotente de ventas offline.
 func EnsureEmpresaVentasOfflineSchema(dbConn *sql.DB) error {
+	if SchemaBootstrapDisabled() {
+		return nil
+	}
 	startedAt := time.Now()
 	defer func() {
 		PerfLogf("[perf][schema] EnsureEmpresaVentasOfflineSchema dur=%s", time.Since(startedAt))

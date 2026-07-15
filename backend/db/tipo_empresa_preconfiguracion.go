@@ -473,6 +473,9 @@ type TipoEmpresaPreconfigSeedResult struct {
 
 // EnsureTipoEmpresaPreconfiguracionSchema crea/migra la tabla de plantillas por tipo de empresa.
 func EnsureTipoEmpresaPreconfiguracionSchema(dbConn *sql.DB) error {
+	if SchemaBootstrapDisabled() {
+		return nil
+	}
 	if dbConn == nil {
 		return errors.New("db connection is nil")
 	}

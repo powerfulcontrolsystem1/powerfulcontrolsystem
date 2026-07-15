@@ -11,8 +11,8 @@ import (
 
 func TestEmpresaPlantillasIntegracionCatalogoContrato(t *testing.T) {
 	items := buildEmpresaPlantillasIntegracionCatalogo()
-	if len(items) != 30 {
-		t.Fatalf("catalogo universal debe publicar 30 plantillas canonicos exactos, obtuvo %d", len(items))
+	if len(items) != 29 {
+		t.Fatalf("catalogo universal debe publicar 29 plantillas canonicos exactos, obtuvo %d", len(items))
 	}
 	seen := map[string]bool{}
 	forbidden := map[string]string{
@@ -121,7 +121,7 @@ func TestEmpresaPlantillasIntegracionCatalogoContrato(t *testing.T) {
 		}
 	}
 	if len(items)-len(dbpkg.NuevasPlantillasTipoEmpresaCatalog()) != 10 {
-		t.Fatalf("la matriz debe conservar 10 plantillas clasicos canonicos y 20 nuevos: total=%d nuevos=%d", len(items), len(dbpkg.NuevasPlantillasTipoEmpresaCatalog()))
+		t.Fatalf("la matriz debe conservar 10 plantillas clasicos canonicos y 19 nuevos: total=%d nuevos=%d", len(items), len(dbpkg.NuevasPlantillasTipoEmpresaCatalog()))
 	}
 	if !hasAllStringValues(findVerticalForTest(items, "odontologia").FusedModules, []string{"consultorio_odontologico"}) {
 		t.Fatalf("odontologia debe declarar fusion de consultorio_odontologico")
@@ -164,7 +164,7 @@ func TestPublicPlantillasIntegracionCatalogoHandler(t *testing.T) {
 	if err := json.NewDecoder(rr.Body).Decode(&payload); err != nil {
 		t.Fatalf("decode payload: %v", err)
 	}
-	if !payload.OK || payload.Total != len(payload.Items) || payload.Total != 30 {
+	if !payload.OK || payload.Total != len(payload.Items) || payload.Total != 29 {
 		t.Fatalf("payload inesperado: %+v", payload)
 	}
 }

@@ -44,6 +44,9 @@ type EmpresaCamara struct {
 }
 
 func EnsureEmpresaCamarasSchema(dbConn *sql.DB) error {
+	if SchemaBootstrapDisabled() {
+		return nil
+	}
 	if dbConn == nil {
 		return fmt.Errorf("conexion de base de datos no disponible")
 	}

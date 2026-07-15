@@ -107,6 +107,9 @@ type EmpresaTurnoAtencionDisplay struct {
 }
 
 func EnsureEmpresaTurnosAtencionSchema(dbConn *sql.DB) error {
+	if SchemaBootstrapDisabled() {
+		return nil
+	}
 	stmts := []string{
 		`CREATE TABLE IF NOT EXISTS empresa_turnos_atencion_config (
 			empresa_id BIGINT PRIMARY KEY,

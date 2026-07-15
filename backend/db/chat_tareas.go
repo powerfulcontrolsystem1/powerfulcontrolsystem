@@ -145,6 +145,9 @@ const chatUsuariosGeneralMarker = "sistema:chat_usuarios_general"
 
 // EnsureEmpresaChatTareasSchema crea y migra las tablas del modulo chat/tareas en la base operativa por empresa.
 func EnsureEmpresaChatTareasSchema(dbConn *sql.DB) error {
+	if SchemaBootstrapDisabled() {
+		return nil
+	}
 	if dbConn == nil {
 		return fmt.Errorf("db connection is nil")
 	}

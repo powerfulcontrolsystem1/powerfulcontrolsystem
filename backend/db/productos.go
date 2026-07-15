@@ -500,6 +500,9 @@ type InventarioMovimiento struct {
 
 // EnsureEmpresaProductosSchema crea y migra las tablas del modulo de productos en PostgreSQL.
 func EnsureEmpresaProductosSchema(dbConn *sql.DB) error {
+	if SchemaBootstrapDisabled() {
+		return nil
+	}
 	stmts := []string{
 		`CREATE TABLE IF NOT EXISTS bodegas (
 			id BIGSERIAL PRIMARY KEY,

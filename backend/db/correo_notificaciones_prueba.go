@@ -42,6 +42,9 @@ type SuperCorreoNotificacionPruebaFilter struct {
 
 // EnsureSuperCorreoNotificacionesPruebaSchema crea/migra la tabla de notificaciones de correo en modo pruebas.
 func EnsureSuperCorreoNotificacionesPruebaSchema(dbConn *sql.DB) error {
+	if SchemaBootstrapDisabled() {
+		return nil
+	}
 	if dbConn == nil {
 		return fmt.Errorf("db connection is required")
 	}

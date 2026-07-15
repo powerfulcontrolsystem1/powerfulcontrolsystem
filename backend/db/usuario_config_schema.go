@@ -10,6 +10,9 @@ const DefaultUsuarioApariencia = "light"
 
 // EnsureUsuarioConfiguracionSchema crea la tabla para preferencias por usuario (asociada por email)
 func EnsureUsuarioConfiguracionSchema(dbConn *sql.DB) error {
+	if SchemaBootstrapDisabled() {
+		return nil
+	}
 	q := `CREATE TABLE IF NOT EXISTS usuario_configuracion (
 		email TEXT PRIMARY KEY,
 		apariencia TEXT DEFAULT 'light',

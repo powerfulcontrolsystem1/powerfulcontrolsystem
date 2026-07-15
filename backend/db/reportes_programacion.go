@@ -8,6 +8,9 @@ import (
 // EnsureEmpresaReportesProgramacionSchema ensures scheduling, template versioning,
 // and execution trace tables for reportes module 31.
 func EnsureEmpresaReportesProgramacionSchema(dbConn *sql.DB) error {
+	if SchemaBootstrapDisabled() {
+		return nil
+	}
 	if dbConn == nil {
 		return fmt.Errorf("db connection is nil")
 	}

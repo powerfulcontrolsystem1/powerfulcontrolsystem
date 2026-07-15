@@ -8,6 +8,9 @@ import (
 // EnsurePortalVisitasSchema belongs to the migration role. Public traffic may
 // increment a counter but must not perform DDL on the API process.
 func EnsurePortalVisitasSchema(dbConn *sql.DB) error {
+	if SchemaBootstrapDisabled() {
+		return nil
+	}
 	if dbConn == nil {
 		return errors.New("database not available")
 	}

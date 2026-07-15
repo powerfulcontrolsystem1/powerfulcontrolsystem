@@ -141,6 +141,9 @@ type cachedEmpresaByScope struct {
 // EnsureAdministradoresAuthSchema regulariza las columnas operativas y de seguridad
 // usadas por el flujo administrativo en PostgreSQL.
 func EnsureAdministradoresAuthSchema(dbConn *sql.DB) error {
+	if SchemaBootstrapDisabled() {
+		return nil
+	}
 	if dbConn == nil {
 		return nil
 	}
@@ -192,6 +195,9 @@ func EnsureAdministradoresAuthSchema(dbConn *sql.DB) error {
 
 // EnsurePaymentGatewaySchema prepara las tablas de checkout de licencias en PostgreSQL.
 func EnsurePaymentGatewaySchema(dbConn *sql.DB) error {
+	if SchemaBootstrapDisabled() {
+		return nil
+	}
 	if dbConn == nil || !isPostgresDialect() {
 		return nil
 	}
@@ -264,6 +270,9 @@ func EnsurePaymentGatewaySchema(dbConn *sql.DB) error {
 
 // EnsureLicenciasSchema regulariza la tabla licencias (PostgreSQL-only).
 func EnsureLicenciasSchema(dbConn *sql.DB) error {
+	if SchemaBootstrapDisabled() {
+		return nil
+	}
 	if dbConn == nil {
 		return nil
 	}
@@ -2353,6 +2362,25 @@ func InitMetricsTable(dbConn *sql.DB) error {
 	return ensureMetricsDiskColumns(dbConn)
 }
 
+// VerifyMetricsTable is used outside pcs-migrate to avoid DDL in HTTP or
+// worker request paths.
+func VerifyMetricsTable(dbConn *sql.DB) error {
+	if dbConn == nil {
+		return fmt.Errorf("db connection is required")
+	}
+	var exists bool
+	if err := queryRowSQLCompat(dbConn, `SELECT EXISTS (
+		SELECT 1 FROM information_schema.tables
+		WHERE table_schema = current_schema() AND table_name = 'metrics'
+	)`).Scan(&exists); err != nil {
+		return err
+	}
+	if !exists {
+		return fmt.Errorf("metrics schema not migrated")
+	}
+	return nil
+}
+
 func ensureMetricsDiskColumns(dbConn *sql.DB) error {
 	var alters []string
 	if isPostgresDialect() {
@@ -3200,7 +3228,7 @@ func ResetMetricsHistory(dbConn *sql.DB) (int64, error) {
 	if dbConn == nil {
 		return 0, fmt.Errorf("db connection is required")
 	}
-	if err := InitMetricsTable(dbConn); err != nil {
+	if err := VerifyMetricsTable(dbConn); err != nil {
 		return 0, err
 	}
 	res, err := execSQLCompat(dbConn, "DELETE FROM metrics")

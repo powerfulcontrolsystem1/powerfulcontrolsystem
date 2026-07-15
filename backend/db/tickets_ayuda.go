@@ -83,6 +83,9 @@ var (
 )
 
 func EnsureAyudaTicketsSchema(dbConn *sql.DB) error {
+	if SchemaBootstrapDisabled() {
+		return nil
+	}
 	if dbConn == nil || !isPostgresDialect() {
 		return nil
 	}

@@ -22,6 +22,9 @@ type EstacionColumnPreferences struct {
 
 // EnsureEmpresaEstacionColumnPreferencesSchema crea/migra la tabla de preferencias de columnas por estacion
 func EnsureEmpresaEstacionColumnPreferencesSchema(dbConn *sql.DB) error {
+	if SchemaBootstrapDisabled() {
+		return nil
+	}
 	stmts := []string{
 		`CREATE TABLE IF NOT EXISTS estacion_column_preferences (
             id BIGSERIAL PRIMARY KEY,

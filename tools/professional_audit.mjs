@@ -92,11 +92,15 @@ function validateInlineScripts() {
 
 function auditPlantillasCatalog() {
   const plantillas = loadPlantillasCatalog();
+  // Colegio/academia is retired from PCS and must not return through a
+  // frontend fallback catalog.
+  const expectedVisibleTemplates = 19;
   const missing = plantillas.filter((item) => {
     return !item.module || !item.title || !item.fullTitle || !item.description || wordCount(item.description) < 25 || !Array.isArray(item.sections) || item.sections.length < 5;
   }).map((item) => item.module || item.id || item.title || "sin_clave");
   const duplicateModules = [...new Set(plantillas.map((x) => x.module).filter((x, i, arr) => x && arr.indexOf(x) !== i))];
-  addCheck("plantillas_nuevas_catalogo", plantillas.length === 20 && missing.length === 0 && duplicateModules.length === 0, {
+  addCheck("plantillas_nuevas_catalogo", plantillas.length === expectedVisibleTemplates && missing.length === 0 && duplicateModules.length === 0, {
+    expected_visible_total: expectedVisibleTemplates,
     total: plantillas.length,
     missing_or_incomplete: missing,
     duplicate_modules: duplicateModules,
@@ -155,7 +159,6 @@ function auditCriticalScripts() {
   const required = [
     "scripts/sync_to_vps.ps1",
     "scripts/rs.ps1",
-    "rs.ps1",
     "deploy/docker-compose.platform.yml",
     "deploy/docker-compose.staging.yml",
     ".github/workflows/professional-ci.yml",

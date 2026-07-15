@@ -8,6 +8,9 @@ import (
 // EnsureEmpresaNextcloudSchema stores only the technical assignment. Passwords
 // stay in Nextcloud and temporary credentials are returned once to the caller.
 func EnsureEmpresaNextcloudSchema(dbEmpresas *sql.DB) error {
+	if SchemaBootstrapDisabled() {
+		return nil
+	}
 	if dbEmpresas == nil {
 		return nil
 	}

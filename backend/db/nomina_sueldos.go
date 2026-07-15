@@ -384,6 +384,9 @@ type nominaHorasMinutos struct {
 
 // EnsureEmpresaNominaSchema crea y migra las tablas del modulo de nomina por empresa.
 func EnsureEmpresaNominaSchema(dbConn *sql.DB) error {
+	if SchemaBootstrapDisabled() {
+		return nil
+	}
 	stmts := []string{
 		`CREATE TABLE IF NOT EXISTS empresa_nomina_configuracion (
 			id BIGSERIAL PRIMARY KEY,

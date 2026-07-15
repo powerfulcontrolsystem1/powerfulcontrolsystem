@@ -107,6 +107,9 @@ type EmpresaPortalContadorDashboard struct {
 }
 
 func EnsureEmpresaPortalContadorSchema(dbConn *sql.DB) error {
+	if SchemaBootstrapDisabled() {
+		return nil
+	}
 	if dbConn == nil {
 		return errors.New("db connection is nil")
 	}

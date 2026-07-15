@@ -79,6 +79,9 @@ type AsesorComercialComision struct {
 
 // EnsureAsesorComercialSchema prepara el modulo de asesores comerciales en pcs_superadministrador.
 func EnsureAsesorComercialSchema(dbConn *sql.DB) error {
+	if SchemaBootstrapDisabled() {
+		return nil
+	}
 	if dbConn == nil || !isPostgresDialect() {
 		return nil
 	}

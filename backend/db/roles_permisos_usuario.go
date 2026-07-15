@@ -23,6 +23,9 @@ type RolPermisoPagina struct {
 
 // EnsureRolesPermisosSchema crea el esquema de permisos dinamicos de roles.
 func EnsureRolesPermisosSchema(dbConn *sql.DB) error {
+	if SchemaBootstrapDisabled() {
+		return nil
+	}
 	statements := []string{
 		`CREATE TABLE IF NOT EXISTS roles_de_usuario_permisos (
 			id BIGSERIAL PRIMARY KEY,

@@ -167,6 +167,9 @@ type EmpresaTaxiDashboard struct {
 }
 
 func EnsureEmpresaTaxiSystemSchema(dbConn *sql.DB) error {
+	if SchemaBootstrapDisabled() {
+		return nil
+	}
 	stmts := []string{
 		`CREATE TABLE IF NOT EXISTS empresa_taxi_config (
 			empresa_id BIGINT PRIMARY KEY,

@@ -21,7 +21,7 @@ Este plan convierte las siete recomendaciones operativas en controles ejecutable
 
 ## 3. Permisos y licencias
 
-- `tools/professional_audit.mjs` inventaria modulos de permisos backend, wrappers `WithEmpresa*Permissions`, enlaces del menu empresarial y catalogo de 20 plantillas.
+- `tools/professional_audit.mjs` inventaria modulos de permisos backend, wrappers `WithEmpresa*Permissions`, enlaces del menu empresarial y catalogo de 19 plantillas.
 - El reporte queda en `documentos/reportes_profesionales/`.
 - La auditoria marca advertencias sin bloquear por defecto; con `-Strict` en preflight puede usarse como compuerta dura.
 
@@ -33,7 +33,7 @@ Este plan convierte las siete recomendaciones operativas en controles ejecutable
 
 ## 5. Datos y preconfiguraciones
 
-- La auditoria exige que los 20 plantillas tengan `module`, `title`, `fullTitle`, descripcion larga y al menos cinco secciones.
+- La auditoria exige que las 19 plantillas tengan `module`, `title`, `fullTitle`, descripcion larga y al menos cinco secciones.
 - Las preconfiguraciones inteligentes se validan por pruebas Go existentes en `backend/db/tipo_empresa_preconfiguracion_test.go`.
 - El modo completo del preflight ejecuta las pruebas de backend para detectar regresiones.
 

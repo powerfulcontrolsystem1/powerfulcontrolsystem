@@ -49,6 +49,9 @@ var empresaGenericAllowedTables = map[string]struct{}{
 
 // EnsureEmpresaModulosFaltantesSchema crea tablas base para los modulos ERP faltantes.
 func EnsureEmpresaModulosFaltantesSchema(dbConn *sql.DB) error {
+	if SchemaBootstrapDisabled() {
+		return nil
+	}
 	if dbConn == nil {
 		return errors.New("db connection is nil")
 	}

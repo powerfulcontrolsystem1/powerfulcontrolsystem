@@ -24,6 +24,9 @@ type EstacionVIPCodigo struct {
 }
 
 func EnsureEstacionVIPCodigosSchema(dbConn *sql.DB) error {
+	if SchemaBootstrapDisabled() {
+		return nil
+	}
 	if dbConn == nil {
 		return nil
 	}

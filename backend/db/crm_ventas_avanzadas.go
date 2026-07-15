@@ -120,6 +120,9 @@ type EmpresaCRMVentasAvanzadasDashboard struct {
 }
 
 func EnsureEmpresaCRMVentasAvanzadasSchema(dbConn *sql.DB) error {
+	if SchemaBootstrapDisabled() {
+		return nil
+	}
 	if err := EnsureEmpresaModulosFaltantesSchema(dbConn); err != nil {
 		return err
 	}

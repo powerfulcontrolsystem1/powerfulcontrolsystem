@@ -9,8 +9,8 @@ import (
 
 func TestNuevasPlantillasPermisosDerivadosDelCatalogo(t *testing.T) {
 	modules := NuevasPlantillasEmpresaModules()
-	if len(modules) != 20 {
-		t.Fatalf("NuevasPlantillasEmpresaModules() len = %d, want 20", len(modules))
+	if len(modules) != 19 {
+		t.Fatalf("NuevasPlantillasEmpresaModules() len = %d, want 19", len(modules))
 	}
 
 	seen := map[string]bool{}
@@ -40,8 +40,8 @@ func TestNuevasPlantillasPermisosDerivadosDelCatalogo(t *testing.T) {
 
 func TestEmpresaPlantillasNuevosCatalogoContrato(t *testing.T) {
 	items := buildEmpresaPlantillasNuevosCatalogo()
-	if len(items) != 20 {
-		t.Fatalf("catalogo plantillas len=%d, want 20", len(items))
+	if len(items) != 19 {
+		t.Fatalf("catalogo plantillas len=%d, want 19", len(items))
 	}
 	seen := map[string]bool{}
 	for _, item := range items {
@@ -90,9 +90,12 @@ func TestEmpresaPlantillasNuevosCatalogoProduccionMasiva(t *testing.T) {
 	items := buildEmpresaPlantillasNuevosCatalogo()
 	masivos := 0
 	for _, item := range items {
+		if item.Modulo == "colegio_academia" {
+			t.Fatal("colegio_academia no debe publicarse")
+		}
 		if item.ProduccionMasiva {
 			masivos++
-			if item.PrioridadProduccion < 1 || item.PrioridadProduccion > 20 {
+			if item.PrioridadProduccion < 1 || item.PrioridadProduccion > 19 {
 				t.Fatalf("prioridad masiva invalida para %s: %d", item.Modulo, item.PrioridadProduccion)
 			}
 			if item.DecisionPreconfig != "integrar_v1_produccion_masiva" {
@@ -102,8 +105,8 @@ func TestEmpresaPlantillasNuevosCatalogoProduccionMasiva(t *testing.T) {
 		}
 		t.Fatalf("%s debe estar marcado como produccion masiva", item.Modulo)
 	}
-	if masivos != 20 {
-		t.Fatalf("plantillas masivos=%d, want 20", masivos)
+	if masivos != 19 {
+		t.Fatalf("plantillas masivos=%d, want 19", masivos)
 	}
 }
 
@@ -122,7 +125,7 @@ func TestPublicPlantillasNuevosCatalogoHandler(t *testing.T) {
 	if err := json.NewDecoder(rr.Body).Decode(&payload); err != nil {
 		t.Fatalf("decode payload: %v", err)
 	}
-	if !payload.OK || payload.Total != 20 || len(payload.Items) != 20 {
+	if !payload.OK || payload.Total != 19 || len(payload.Items) != 19 {
 		t.Fatalf("payload inesperado: %+v", payload)
 	}
 }

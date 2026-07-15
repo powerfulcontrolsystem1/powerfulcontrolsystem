@@ -136,6 +136,9 @@ func calcUnmarshalEtiquetas(raw string) []string {
 
 // EnsureEmpresaCalculadoraSchema crea/migra tablas del modulo calculadora empresarial.
 func EnsureEmpresaCalculadoraSchema(dbConn *sql.DB) error {
+	if SchemaBootstrapDisabled() {
+		return nil
+	}
 	if dbConn == nil {
 		return errors.New("db connection is nil")
 	}

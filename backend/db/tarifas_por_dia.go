@@ -108,6 +108,9 @@ type tarifaPorDiaCalculoInterno struct {
 
 // EnsureEmpresaTarifasPorDiaSchema crea/migra tabla de tarifas diarias por estacion.
 func EnsureEmpresaTarifasPorDiaSchema(dbConn *sql.DB) error {
+	if SchemaBootstrapDisabled() {
+		return nil
+	}
 	stmts := []string{
 		`CREATE TABLE IF NOT EXISTS empresa_tarifas_por_dia (
 			id BIGSERIAL PRIMARY KEY,

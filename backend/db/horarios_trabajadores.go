@@ -136,6 +136,9 @@ func ensureHorariosTrabajadoresSchemaReady() error {
 }
 
 func EnsureHorariosTrabajadoresSchema() error {
+	if SchemaBootstrapDisabled() {
+		return nil
+	}
 	dbConn := GetDB()
 	if dbConn == nil {
 		return fmt.Errorf("base de datos de empresas no inicializada")

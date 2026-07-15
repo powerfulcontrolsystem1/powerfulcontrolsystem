@@ -234,6 +234,9 @@ func normalizeConfiguracionOperativaEvento(raw string) string {
 
 // EnsureEmpresaConfiguracionOperativaSchema crea/migra tablas de configuracion operativa de cobro.
 func EnsureEmpresaConfiguracionOperativaSchema(dbConn *sql.DB) error {
+	if SchemaBootstrapDisabled() {
+		return nil
+	}
 	stmts := []string{
 		`CREATE TABLE IF NOT EXISTS empresa_configuracion_operativa (
 			id BIGSERIAL PRIMARY KEY,

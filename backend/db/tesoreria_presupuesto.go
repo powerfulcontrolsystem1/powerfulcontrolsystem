@@ -112,6 +112,9 @@ type EmpresaTesoreriaDashboard struct {
 }
 
 func EnsureEmpresaTesoreriaPresupuestoSchema(dbConn *sql.DB) error {
+	if SchemaBootstrapDisabled() {
+		return nil
+	}
 	stmts := []string{
 		`CREATE TABLE IF NOT EXISTS empresa_tesoreria_config (
 			empresa_id BIGINT PRIMARY KEY,

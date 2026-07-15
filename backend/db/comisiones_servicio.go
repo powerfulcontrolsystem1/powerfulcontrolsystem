@@ -186,6 +186,9 @@ type comisionServicioItemSnapshot struct {
 
 // EnsureEmpresaComisionesServicioSchema crea/migra tablas de comisiones por servicio.
 func EnsureEmpresaComisionesServicioSchema(dbConn *sql.DB) error {
+	if SchemaBootstrapDisabled() {
+		return nil
+	}
 	bootstrapStmts := []string{
 		`CREATE TABLE IF NOT EXISTS empresa_comisiones_servicio_configuracion (
 			id BIGSERIAL PRIMARY KEY,

@@ -21,6 +21,9 @@ type EmpresaAIOpenAIProviderConfig struct {
 const empresaAIOpenAIEncryptionPurpose = "empresa-openai-provider"
 
 func EnsureEmpresaAIOpenAIProviderSchema(dbConn *sql.DB) error {
+	if SchemaBootstrapDisabled() {
+		return nil
+	}
 	if dbConn == nil {
 		return errors.New("db connection is nil")
 	}

@@ -19,6 +19,9 @@ var (
 // EnsureVentaPublicaSchema crea las tablas necesarias para el módulo de venta pública.
 // Debe ser idempotente y segura (usa IF NOT EXISTS cuando es soportado).
 func EnsureVentaPublicaSchema(db *sql.DB) error {
+	if SchemaBootstrapDisabled() {
+		return nil
+	}
 	stmts := []string{
 		`CREATE TABLE IF NOT EXISTS paginas_publicas (
 			id BIGSERIAL PRIMARY KEY,
@@ -590,6 +593,9 @@ func getEmpresaNombreByID(dbConn *sql.DB, empresaID int64) (string, error) {
 
 // EnsureEmpresaVentaPublicaSchema crea y migra tablas para venta publica empresarial.
 func EnsureEmpresaVentaPublicaSchema(dbConn *sql.DB) error {
+	if SchemaBootstrapDisabled() {
+		return nil
+	}
 	if dbConn == nil {
 		return errors.New("db connection is nil")
 	}

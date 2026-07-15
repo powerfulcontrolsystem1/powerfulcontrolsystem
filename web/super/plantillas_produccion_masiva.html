@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Plantillas 20</title>
+  <title>Plantillas por negocio</title>
   <link rel="stylesheet" href="/estilos.css">
   <style>
     .plantillas-v1-shell{max-width:1280px;margin:0 auto;padding:22px;display:grid;gap:16px}
@@ -59,13 +59,13 @@
 <body class="super-page form-bg-dark">
   <main class="plantillas-v1-shell">
     <header class="plantillas-v1-head">
-      <h1>Plantillas 20</h1>
-      <p>Gobierno comercial y tecnico de las 20 plantillas reales de produccion masiva, conectadas al nucleo unico de clientes, productos, ventas, pagos, facturacion, reportes, roles y licencias.</p>
+      <h1>Plantillas por negocio</h1>
+      <p>Gobierno comercial y tecnico de las 19 plantillas reales de produccion masiva, conectadas al nucleo unico de clientes, productos, ventas, pagos, facturacion, reportes, roles y licencias.</p>
       <div class="plantillas-v1-actions">
         <a class="btn secondary" href="/super/tipos_empresas.html">Tipos de empresa</a>
         <a class="btn secondary" href="/super/preconfiguracion_tipos_empresa.html">Preconfiguraciones</a>
         <a class="btn secondary" href="/super/licencias.html">Licencias</a>
-        <button class="btn secondary" id="ensureBtn" type="button">Asegurar 20</button>
+        <button class="btn secondary" id="ensureBtn" type="button">Asegurar plantillas</button>
         <button class="btn" id="exportBtn" type="button">Exportar CSV</button>
       </div>
     </header>
@@ -475,13 +475,13 @@
       }
 
       async function ensureProductionVerticals(){
-        if (!confirm('Asegurar tipos, preconfiguraciones y licencias recomendadas para los 20 plantillas reales?')) return;
+        if (!confirm('Asegurar tipos, preconfiguraciones y licencias recomendadas para las 19 plantillas reales?')) return;
         var originalText = ensureBtn.textContent;
         ensureBtn.disabled = true;
         ensureBtn.textContent = 'Asegurando...';
         setMessage('', false);
         try {
-          var res = await fetch('/super/api/plantillas_nuevas/catalogo?action=asegurar_20_licencias', {
+          var res = await fetch('/super/api/plantillas_nuevas/catalogo?action=asegurar_produccion_masiva', {
             method: 'POST',
             credentials: 'same-origin'
           });

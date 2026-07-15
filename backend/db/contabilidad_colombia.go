@@ -162,6 +162,9 @@ type EmpresaContabilidadDashboard struct {
 }
 
 func EnsureEmpresaContabilidadColombiaSchema(dbConn *sql.DB) error {
+	if SchemaBootstrapDisabled() {
+		return nil
+	}
 	stmts := []string{
 		`CREATE TABLE IF NOT EXISTS empresa_contabilidad_colombia_config (
 			empresa_id INTEGER PRIMARY KEY,

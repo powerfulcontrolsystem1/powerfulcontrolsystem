@@ -104,6 +104,9 @@ type EmpresaInventarioAvanzadoDashboard struct {
 }
 
 func EnsureEmpresaInventarioAvanzadoSchema(dbConn *sql.DB) error {
+	if SchemaBootstrapDisabled() {
+		return nil
+	}
 	stmts := []string{
 		`CREATE TABLE IF NOT EXISTS empresa_inventario_lotes_avanzados (
 			id BIGSERIAL PRIMARY KEY,

@@ -266,6 +266,9 @@ type CarritoTransferResult struct {
 
 // EnsureEmpresaCarritosSchema crea y migra tablas de carritos de compra en PostgreSQL.
 func EnsureEmpresaCarritosSchema(dbConn *sql.DB) error {
+	if SchemaBootstrapDisabled() {
+		return nil
+	}
 	startedAt := time.Now()
 	defer func() {
 		PerfLogf("[perf][schema] EnsureEmpresaCarritosSchema dur=%s", time.Since(startedAt))

@@ -42,6 +42,9 @@ type LicenciaVencimientoNotificationLog struct {
 }
 
 func EnsureLicenciaVencimientoNotificacionesSchema(dbConn *sql.DB) error {
+	if SchemaBootstrapDisabled() {
+		return nil
+	}
 	if dbConn == nil {
 		return nil
 	}

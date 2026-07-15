@@ -249,6 +249,9 @@ var empresaEventoContableContrato = map[string]map[string]struct{}{
 
 // EnsureEmpresaEventosContablesSchema crea y migra tabla de eventos contables empresariales.
 func EnsureEmpresaEventosContablesSchema(dbConn *sql.DB) error {
+	if SchemaBootstrapDisabled() {
+		return nil
+	}
 	stmts := []string{
 		`CREATE TABLE IF NOT EXISTS empresa_eventos_contables (
 			id BIGSERIAL PRIMARY KEY,

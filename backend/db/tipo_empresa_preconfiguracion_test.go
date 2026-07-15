@@ -337,10 +337,10 @@ func TestDefaultTipoEmpresaPreconfigTemplatesCoverNewVerticalCatalog(t *testing.
 	}
 }
 
-func TestNuevasPlantillasProduccionMasivaSeleccionaVeinte(t *testing.T) {
+func TestNuevasPlantillasProduccionMasivaSeleccionaDiecinueve(t *testing.T) {
 	selected := NuevasPlantillasProduccionMasivaSeleccionados()
-	if len(selected) != 20 {
-		t.Fatalf("plantillas produccion masiva len=%d, want 20: %v", len(selected), selected)
+	if len(selected) != 19 {
+		t.Fatalf("plantillas produccion masiva len=%d, want 19: %v", len(selected), selected)
 	}
 
 	seen := map[string]bool{}
@@ -386,8 +386,8 @@ func TestNuevasPlantillasProduccionMasivaSeleccionaVeinte(t *testing.T) {
 		}
 		masivos++
 	}
-	if masivos != 20 {
-		t.Fatalf("plantillas masivos=%d, want 20", masivos)
+	if masivos != 19 {
+		t.Fatalf("plantillas masivos=%d, want 19", masivos)
 	}
 }
 

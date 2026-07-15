@@ -207,6 +207,9 @@ type EmpresaDomiciliosDashboard struct {
 }
 
 func EnsureEmpresaDomiciliosSchema(dbConn *sql.DB) error {
+	if SchemaBootstrapDisabled() {
+		return nil
+	}
 	stmts := []string{
 		`CREATE TABLE IF NOT EXISTS empresa_domicilios_config (
 			empresa_id BIGINT PRIMARY KEY,

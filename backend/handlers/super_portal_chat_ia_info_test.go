@@ -9,7 +9,7 @@ func TestDefaultContextoIALogicaNegocioIncluyePlantillas2026(t *testing.T) {
 	ctx := defaultContextoIALogicaNegocioText()
 
 	required := []string{
-		"20 plantillas 2026",
+		"19 plantillas 2026",
 		"agencia de viajes",
 		"transporte de carga/TMS",
 		"cooperativa/fondo de empleados",

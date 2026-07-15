@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	"log"
@@ -10,33 +11,30 @@ import (
 	_ "github.com/jackc/pgx/v5/stdlib"
 
 	dbpkg "github.com/you/pos-backend/db"
+	"github.com/you/pos-backend/internal/platform/runtimeconfig"
 )
 
-func open(name, dsn string) (*sql.DB, error) {
+func open(config runtimeconfig.DatabaseConfig, name, dsn string) (*sql.DB, error) {
 	if strings.TrimSpace(dsn) == "" {
 		return nil, fmt.Errorf("%s is required", name)
 	}
-	dbConn, err := sql.Open(dbpkg.PostgresCompatDriverName(), dsn)
-	if err != nil {
-		return nil, err
-	}
-	if err := dbConn.Ping(); err != nil {
-		_ = dbConn.Close()
-		return nil, err
-	}
-	return dbConn, nil
+	return config.OpenAndPing(context.Background(), dbpkg.PostgresCompatDriverName(), dsn, name)
 }
 
 func main() {
 	if err := os.Setenv("DB_DIALECT", "postgres"); err != nil {
 		log.Fatal(err)
 	}
-	empresas, err := open("DB_EMPRESAS_DSN", os.Getenv("DB_EMPRESAS_DSN"))
+	config, err := runtimeconfig.Load(os.Getenv)
+	if err != nil {
+		log.Fatal(err)
+	}
+	empresas, err := open(config.Database, "DB_EMPRESAS_DSN", os.Getenv("DB_EMPRESAS_DSN"))
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer empresas.Close()
-	super, err := open("DB_SUPERADMIN_DSN", os.Getenv("DB_SUPERADMIN_DSN"))
+	super, err := open(config.Database, "DB_SUPERADMIN_DSN", os.Getenv("DB_SUPERADMIN_DSN"))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -74,5 +72,8 @@ func main() {
 	if err := dbpkg.EnsureOutboxSchema(super); err != nil {
 		log.Fatal(err)
 	}
-	log.Print("migrations completed: runtime foundation")
+	if err := dbpkg.InitMetricsTable(super); err != nil {
+		log.Fatal(err)
+	}
+	log.Print("migrations completed: runtime foundation and worker outbox primitives")
 }

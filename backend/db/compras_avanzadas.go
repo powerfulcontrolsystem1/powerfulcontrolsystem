@@ -120,6 +120,9 @@ type EmpresaComprasAvanzadasDashboard struct {
 }
 
 func EnsureEmpresaComprasAvanzadasSchema(dbConn *sql.DB) error {
+	if SchemaBootstrapDisabled() {
+		return nil
+	}
 	stmts := []string{
 		`CREATE TABLE IF NOT EXISTS empresa_compras_requisiciones (
 			id BIGSERIAL PRIMARY KEY,

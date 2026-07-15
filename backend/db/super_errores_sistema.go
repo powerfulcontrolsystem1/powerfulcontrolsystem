@@ -120,6 +120,9 @@ func normalizeSuperErrorFiltro(filter SuperErrorSistemaFiltro) SuperErrorSistema
 }
 
 func EnsureSuperErroresSistemaSchema(dbConn *sql.DB) error {
+	if SchemaBootstrapDisabled() {
+		return nil
+	}
 	if dbConn == nil {
 		return fmt.Errorf("db connection is required")
 	}

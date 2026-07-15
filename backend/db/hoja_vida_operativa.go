@@ -88,6 +88,9 @@ type EmpresaHojaVidaReporte struct {
 
 // EnsureEmpresaHojaVidaOperativaSchema crea/migra tablas del modulo universal de hoja de vida.
 func EnsureEmpresaHojaVidaOperativaSchema(dbConn *sql.DB) error {
+	if SchemaBootstrapDisabled() {
+		return nil
+	}
 	stmts := []string{
 		`CREATE TABLE IF NOT EXISTS empresa_hoja_vida_entidades (
 			id BIGSERIAL PRIMARY KEY,

@@ -317,6 +317,9 @@ func paisFacturacionByCodigo(codigo string) PaisFacturacion {
 
 // EnsureEmpresaFacturacionElectronicaSchema crea/migra tabla FE por pais en PostgreSQL.
 func EnsureEmpresaFacturacionElectronicaSchema(dbConn *sql.DB) error {
+	if SchemaBootstrapDisabled() {
+		return nil
+	}
 	stmts := []string{
 		`CREATE TABLE IF NOT EXISTS facturacion_electronica_pais (
 			id BIGSERIAL PRIMARY KEY,

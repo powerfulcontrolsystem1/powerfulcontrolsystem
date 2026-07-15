@@ -90,6 +90,9 @@ type EmpresaImportacionesCosteoDashboard struct {
 }
 
 func EnsureEmpresaImportacionesCosteoSchema(dbConn *sql.DB) error {
+	if SchemaBootstrapDisabled() {
+		return nil
+	}
 	stmts := []string{
 		`CREATE TABLE IF NOT EXISTS empresa_importaciones_costeo (
 			id BIGSERIAL PRIMARY KEY,

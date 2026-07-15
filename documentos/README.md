@@ -36,7 +36,7 @@ desarrollo, soporte y trabajo asistido por Codex.
 - 2026-07-05: las licencias ya no limitan cajas simultaneas; el cupo comercial se mide solo por documentos/ventas emitidas. Las cajas se controlan por configuracion empresarial.
 - 2026-05-13: se retira la operacion/facturacion offline para clientes; ventas, cobros, documentos y facturacion requieren servidor activo.
 - 2026-05-13: `login_usuario.html` queda como acceso global de usuarios operativos y `login.html` mantiene acceso administrativo con presentacion visual profesional.
-- 2026-05-10: implementados y documentados los 20 plantillas empresariales 2026 sobre el motor comun `empresa_modulos_colombia_*`, con catalogo backend/frontend, licencias por tipo, preconfiguracion, selector de empresas, portada publica, checkout, permisos, ayuda administrativa e IA. Ver `documentos/plan_20_modulos_plantillas_2026-05-10.md` y `documentos/arquitectura_modulos_universales.md`.
+- 2026-07-15: el catalogo comercial mantiene 19 plantillas empresariales sobre el motor comun `empresa_modulos_colombia_*`; la antigua plantilla `colegio_academia` fue retirada sin borrar datos historicos. Ver `documentos/matriz_integracion_plantillas.md` y `documentos/arquitectura_modulos_universales.md`.
 - 2026-05-10: actualizado el sistema documental de roles/permisos con modulos finos (`crm_unificado`, `reservas_hotel`, `chat_tareas`, `horarios_trabajadores`, `asistencia_empleados`, `vehiculos_registro`, `hoja_vida_operativa`, `ubicacion_gps`, `nomina_sueldos`, `reportes`, `auditoria`, `backups`, `documentos_onlyoffice`, `nextcloud`), wrappers API especificos y compatibilidad de licencias amplias. Ver `documentos/reporte_roles_ayuda_super_2026-05-10.md`.
 - 2026-05-10: la ayuda administrativa completa `/ayuda/ayuda.html` se mantiene exclusiva para `super_administrador` y se abre desde el boton `Ayuda super administrador` en `web/super_administrador.html`; el rol `control_super_administrador` no ve ese acceso.
 - 2026-05-06: implementados `bancos_pagos`, `gestion_documental`, `cumplimiento_kyc`, `contratos_obligaciones` y `calidad_procesos` sobre un nucleo compartido por `empresa_id`, con APIs privadas, pantallas administrativas, permisos/licencias, datos demo, exportacion CSV y documento `documentos/modulos_empresariales_colombia.md`.
@@ -98,7 +98,7 @@ desarrollo, soporte y trabajo asistido por Codex.
 - Arquitectura tecnica y mapa de archivos: `documentos/diagramas/estructura_del_codigo.md`
 - Evolucion funcional por modulo: `documentos/descripcion_de_modulos`
 - Matriz de roles, visibilidad y wrappers: `documentos/matriz_roles_permisos_pos_multiempresa.md`
-- Plan de 20 plantillas empresariales 2026: `documentos/plan_20_modulos_plantillas_2026-05-10.md`
+- Plan historico de plantillas empresariales 2026: `documentos/plan_20_modulos_plantillas_2026-05-10.md`; estado vigente en `documentos/matriz_integracion_plantillas.md`
 - Arquitectura de modulos universales y plantillas: `documentos/arquitectura_modulos_universales.md`
 - Roles, permisos finos y ayuda privada super: `documentos/reporte_roles_ayuda_super_2026-05-10.md`
 - Carta publica de productos y precios: `documentos/carta_publica_productos.md`

@@ -60,6 +60,9 @@ type SuperAuditoriaEventoFilter struct {
 
 // EnsureSuperAuditoriaSchema crea la bitacora global del selector y modulos super.
 func EnsureSuperAuditoriaSchema(dbConn *sql.DB) error {
+	if SchemaBootstrapDisabled() {
+		return nil
+	}
 	stmts := []string{
 		`CREATE TABLE IF NOT EXISTS super_auditoria_eventos (
 			id BIGSERIAL PRIMARY KEY,

@@ -71,6 +71,9 @@ var ErrEmpresaVehiculoDuplicadoActivo = errors.New("ya existe un vehiculo activo
 
 // EnsureEmpresaVehiculosRegistroSchema crea/migra la tabla de registro de vehiculos por empresa.
 func EnsureEmpresaVehiculosRegistroSchema(dbConn *sql.DB) error {
+	if SchemaBootstrapDisabled() {
+		return nil
+	}
 	stmts := []string{
 		`CREATE TABLE IF NOT EXISTS empresa_vehiculos_registro (
 			id BIGSERIAL PRIMARY KEY,

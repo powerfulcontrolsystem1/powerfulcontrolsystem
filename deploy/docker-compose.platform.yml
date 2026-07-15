@@ -87,6 +87,13 @@ services:
       CONFIG_ENC_KEY: ${CONFIG_ENC_KEY:?Defina CONFIG_ENC_KEY}
       CONFIG_ENC_KEY_ID: ${CONFIG_ENC_KEY_ID:?Defina CONFIG_ENC_KEY_ID}
       CONFIG_ENC_KEY_PREVIOUS: ${CONFIG_ENC_KEY_PREVIOUS:-}
+      PCS_DB_MAX_OPEN_CONNS: ${PCS_DB_MAX_OPEN_CONNS:-32}
+      PCS_DB_MAX_IDLE_CONNS: ${PCS_DB_MAX_IDLE_CONNS:-16}
+      PCS_DB_CONN_MAX_LIFETIME: ${PCS_DB_CONN_MAX_LIFETIME:-30m}
+      PCS_DB_CONN_MAX_IDLE_TIME: ${PCS_DB_CONN_MAX_IDLE_TIME:-10m}
+      PCS_DB_CONNECT_TIMEOUT: ${PCS_DB_CONNECT_TIMEOUT:-10s}
+      PCS_DB_QUERY_TIMEOUT: ${PCS_DB_QUERY_TIMEOUT:-30s}
+      PCS_DB_TX_TIMEOUT: ${PCS_DB_TX_TIMEOUT:-1m}
       DB_DIALECT: postgres
       DB_EMPRESAS_DSN: postgres://${POSTGRES_USER:-pcs}:${POSTGRES_PASSWORD}@postgres:5432/pcs_empresas?sslmode=disable
       DB_SUPERADMIN_DSN: postgres://${POSTGRES_USER:-pcs}:${POSTGRES_PASSWORD}@postgres:5432/pcs_superadministrador?sslmode=disable
@@ -116,6 +123,7 @@ services:
       PORT: "8080"
       TZ: ${TZ:-America/Bogota}
       PCS_ENV: ${PCS_ENV:-production}
+      PCS_RUNTIME_ROLE: api
       PCS_RUNTIME_SCHEMA_BOOTSTRAP: "0"
       PCS_TRUSTED_PROXY_CIDRS: ${PCS_TRUSTED_PROXY_CIDRS:?Defina PCS_TRUSTED_PROXY_CIDRS}
       PCS_CSRF_ALLOWED_ORIGINS: ${PCS_CSRF_ALLOWED_ORIGINS:?Defina PCS_CSRF_ALLOWED_ORIGINS}
@@ -133,6 +141,13 @@ services:
       CONFIG_ENC_KEY: ${CONFIG_ENC_KEY:?Defina CONFIG_ENC_KEY}
       CONFIG_ENC_KEY_ID: ${CONFIG_ENC_KEY_ID:?Defina CONFIG_ENC_KEY_ID}
       CONFIG_ENC_KEY_PREVIOUS: ${CONFIG_ENC_KEY_PREVIOUS:-}
+      PCS_DB_MAX_OPEN_CONNS: ${PCS_DB_MAX_OPEN_CONNS:-32}
+      PCS_DB_MAX_IDLE_CONNS: ${PCS_DB_MAX_IDLE_CONNS:-16}
+      PCS_DB_CONN_MAX_LIFETIME: ${PCS_DB_CONN_MAX_LIFETIME:-30m}
+      PCS_DB_CONN_MAX_IDLE_TIME: ${PCS_DB_CONN_MAX_IDLE_TIME:-10m}
+      PCS_DB_CONNECT_TIMEOUT: ${PCS_DB_CONNECT_TIMEOUT:-10s}
+      PCS_DB_QUERY_TIMEOUT: ${PCS_DB_QUERY_TIMEOUT:-30s}
+      PCS_DB_TX_TIMEOUT: ${PCS_DB_TX_TIMEOUT:-1m}
       PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:-https://powerfulcontrolsystem.com}
       GOOGLE_REDIRECT_URL: ${GOOGLE_REDIRECT_URL:-https://powerfulcontrolsystem.com/auth/google/callback}
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
@@ -204,9 +219,30 @@ services:
         condition: service_completed_successfully
     environment:
       TZ: ${TZ:-America/Bogota}
+      PCS_ENV: ${PCS_ENV:-production}
+      PCS_RUNTIME_ROLE: worker
+      PCS_RUNTIME_SCHEMA_BOOTSTRAP: "0"
       DB_DIALECT: postgres
+      DB_EMPRESAS_DSN: postgres://${POSTGRES_USER:-pcs}:${POSTGRES_PASSWORD}@postgres:5432/pcs_empresas?sslmode=disable
       DB_SUPERADMIN_DSN: postgres://${POSTGRES_USER:-pcs}:${POSTGRES_PASSWORD}@postgres:5432/pcs_superadministrador?sslmode=disable
       PCS_WORKER_ID: ${PCS_WORKER_ID:-pcs-worker-main}
+      PCS_WORKER_POLL_INTERVAL: ${PCS_WORKER_POLL_INTERVAL:-2s}
+      PCS_WORKER_BATCH_SIZE: ${PCS_WORKER_BATCH_SIZE:-20}
+      PCS_WORKER_JOB_LEASE: ${PCS_WORKER_JOB_LEASE:-5m}
+      PCS_WORKER_HEARTBEAT_FILE: /tmp/pcs-worker.heartbeat
+      PCS_DB_MAX_OPEN_CONNS: ${PCS_DB_MAX_OPEN_CONNS:-32}
+      PCS_DB_MAX_IDLE_CONNS: ${PCS_DB_MAX_IDLE_CONNS:-16}
+      PCS_DB_CONN_MAX_LIFETIME: ${PCS_DB_CONN_MAX_LIFETIME:-30m}
+      PCS_DB_CONN_MAX_IDLE_TIME: ${PCS_DB_CONN_MAX_IDLE_TIME:-10m}
+      PCS_DB_CONNECT_TIMEOUT: ${PCS_DB_CONNECT_TIMEOUT:-10s}
+      PCS_DB_QUERY_TIMEOUT: ${PCS_DB_QUERY_TIMEOUT:-30s}
+      PCS_DB_TX_TIMEOUT: ${PCS_DB_TX_TIMEOUT:-1m}
+    healthcheck:
+      test: ["CMD-SHELL", "test -f /tmp/pcs-worker.heartbeat && test $$(find /tmp/pcs-worker.heartbeat -mmin -1 | wc -l) -eq 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
     networks:
       - pcs_internal
 

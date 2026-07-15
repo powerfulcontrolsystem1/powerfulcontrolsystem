@@ -55,6 +55,9 @@ type HotelTarjetaValidacion struct {
 }
 
 func EnsureHotelTarjetasAccesoSchema(dbConn *sql.DB) error {
+	if SchemaBootstrapDisabled() {
+		return nil
+	}
 	stmts := []string{
 		`CREATE TABLE IF NOT EXISTS hotel_tarjetas_acceso (
 			id BIGSERIAL PRIMARY KEY,

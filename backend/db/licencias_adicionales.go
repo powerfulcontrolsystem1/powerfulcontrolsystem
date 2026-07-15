@@ -56,6 +56,9 @@ type EmpresaLicenciaBundleSummary struct {
 }
 
 func EnsureEmpresaLicenciasAdicionalesSchema(dbConn *sql.DB) error {
+	if SchemaBootstrapDisabled() {
+		return nil
+	}
 	if dbConn == nil {
 		return nil
 	}

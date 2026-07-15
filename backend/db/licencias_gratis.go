@@ -9,6 +9,9 @@ import (
 var ErrLicenciaGratisYaUsada = errors.New("licencia gratis ya usada para esta empresa")
 
 func EnsureLicenciasGratisActivacionesSchema(dbConn *sql.DB) error {
+	if SchemaBootstrapDisabled() {
+		return nil
+	}
 	if dbConn == nil {
 		return errors.New("dbConn is nil")
 	}

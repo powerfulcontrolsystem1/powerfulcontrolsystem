@@ -417,6 +417,9 @@ func soporteRemotoUsesRustDesk(cfg EmpresaSoporteRemotoConfig, rustDeskDeviceID 
 
 // EnsureEmpresaSoporteRemotoSchema crea/migra tablas de soporte remoto por empresa.
 func EnsureEmpresaSoporteRemotoSchema(dbConn *sql.DB) error {
+	if SchemaBootstrapDisabled() {
+		return nil
+	}
 	if dbConn == nil {
 		return errors.New("db connection is nil")
 	}

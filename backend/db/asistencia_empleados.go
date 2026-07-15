@@ -74,6 +74,9 @@ var (
 
 // EnsureEmpresaAsistenciaSchema crea y migra la tabla de asistencia de empleados por empresa.
 func EnsureEmpresaAsistenciaSchema(dbConn *sql.DB) error {
+	if SchemaBootstrapDisabled() {
+		return nil
+	}
 	stmts := []string{
 		`CREATE TABLE IF NOT EXISTS empresa_asistencia_empleados (
 			id BIGSERIAL PRIMARY KEY,

@@ -249,6 +249,9 @@ func isClientesUniqueConstraintErr(err error) bool {
 
 // EnsureEmpresaClientesSchema crea y migra la tabla clientes en PostgreSQL.
 func EnsureEmpresaClientesSchema(dbConn *sql.DB) error {
+	if SchemaBootstrapDisabled() {
+		return nil
+	}
 	stmts := []string{
 		`CREATE TABLE IF NOT EXISTS clientes (
 			id BIGSERIAL PRIMARY KEY,

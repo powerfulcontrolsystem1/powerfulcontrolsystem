@@ -71,7 +71,9 @@ func SuperPlantillasNuevosCatalogoHandler(dbSuper ...*sql.DB) http.HandlerFunc {
 		}
 		if r.Method == http.MethodPost {
 			action := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("action")))
-			if action != "asegurar_v1_licencias" && action != "asegurar_produccion_masiva" && action != "asegurar_20_licencias" {
+			// asegurar_20_licencias remains a compatibility alias for legacy
+			// super-admin bookmarks. New callers use the neutral action name.
+			if action != "asegurar_v1_licencias" && action != "asegurar_produccion_masiva" && action != "asegurar_19_licencias" && action != "asegurar_20_licencias" {
 				http.Error(w, "accion no permitida", http.StatusBadRequest)
 				return
 			}
@@ -79,7 +81,7 @@ func SuperPlantillasNuevosCatalogoHandler(dbSuper ...*sql.DB) http.HandlerFunc {
 				http.Error(w, "db super no disponible", http.StatusInternalServerError)
 				return
 			}
-			tipos, licencias, err := dbpkg.EnsureNuevasPlantillasProduccionMasivaLicencias(superDB, "super.plantillas_20")
+			tipos, licencias, err := dbpkg.EnsureNuevasPlantillasProduccionMasivaLicencias(superDB, "super.plantillas_produccion_masiva")
 			if err != nil {
 				http.Error(w, "no se pudieron asegurar plantillas de produccion: "+err.Error(), http.StatusInternalServerError)
 				return

@@ -95,6 +95,9 @@ var codigoDescuentoCharset = []rune("ABCDEFGHJKLMNPQRSTUVWXYZ23456789")
 
 // EnsureEmpresaCodigosDescuentoSchema crea/migra la tabla de codigos de descuento por empresa.
 func EnsureEmpresaCodigosDescuentoSchema(dbConn *sql.DB) error {
+	if SchemaBootstrapDisabled() {
+		return nil
+	}
 	stmts := []string{
 		`CREATE TABLE IF NOT EXISTS codigos_de_descuento (
 			id BIGSERIAL PRIMARY KEY,

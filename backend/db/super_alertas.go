@@ -80,6 +80,9 @@ func defaultSuperAlertaConfig() SuperAlertaConfig {
 }
 
 func EnsureSuperAlertasSchema(dbConn *sql.DB) error {
+	if SchemaBootstrapDisabled() {
+		return nil
+	}
 	if dbConn == nil {
 		return fmt.Errorf("db connection is required")
 	}

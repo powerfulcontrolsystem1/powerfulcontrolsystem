@@ -89,18 +89,6 @@
       sections: ["Órdenes", "Muestras", "Resultados", "Calidad", "Entrega", "SLA"]
     },
     {
-      id: "linkColegioAcademia",
-      module: "colegio_academia",
-      title: "Colegio o academia",
-      fullTitle: "Colegio, academia o instituto",
-      lead: "Estudiantes, matrículas, cursos, mensualidades, asistencia, boletines y certificados.",
-      description: "Organiza estudiantes, acudientes, matrículas, cursos, mensualidades, asistencia, boletines, certificados y cartera educativa. La institución puede controlar grupos, pagos, novedades académicas, documentos emitidos y comunicación administrativa, conectando la operación diaria con reportes para dirección y control financiero.",
-      summary: "Matrículas, cursos, asistencia, mensualidades y boletines.",
-      icon: "/img/company-briefcase-color.svg",
-      secondaryIcon: "/img/portal-systems/realistic/colegio-academia.jpg",
-      sections: ["Matriculas", "Cursos", "Asistencia", "Mensualidades", "Boletines", "Certificados"]
-    },
-    {
       id: "linkGuarderiaInfantil",
       module: "guarderia_infantil",
       title: "Guardería infantil",
@@ -245,10 +233,6 @@
       sections: ["Cursos", "Cohortes", "Instructores", "Asistencia", "Evaluaciones", "Certificados"]
     }
   ];
-
-  modules = modules.filter(function (item) {
-    return String((item && item.module) || "").trim().toLowerCase() !== "colegio_academia";
-  });
 
   var productionMassRank = {
     salon_spa: 1,

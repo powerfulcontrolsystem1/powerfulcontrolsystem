@@ -437,9 +437,10 @@
 - `web/img/portal-systems/realistic/*.jpg`: contiene 51 imagenes raster locales generadas para tarjetas base y verticales visibles del portal.
 - `scripts/generate_portal_realistic_images.ps1`: generador local en PowerShell/System.Drawing para reconstruir las imagenes realistas desde assets existentes del proyecto, con escenas especializadas por oficio para laboratorio, clinica, odontologia, drogueria, taller, servicios tecnicos y lavanderia, sin dependencias externas.
 
-2026-06-10 - Plantilla colegio fuera del index
-- `web/js/plantillas_nuevas_catalogo.js`: filtra `colegio_academia` del catalogo exportado al portal y reajusta el orden visible de plantillas publicas.
-- `web/index.html`: actualiza cache busting del catalogo y bloquea `colegio_academia` al pintar `Mas sistemas`, incluso si la API publica lo retorna.
+2026-07-15 - Retiro de plantilla colegio/academia
+- `backend/db/plantillas_nuevas_bootstrap.go`: elimina `colegio_academia` del catalogo y de la preconfiguracion de produccion masiva; al ejecutar migracion desactiva de forma no destructiva cualquier tipo historico equivalente.
+- `backend/db/modulos_plantillas_nuevas.go`: elimina su contrato operativo, de modo que no se pueda habilitar como modulo empresarial.
+- `backend/handlers/empresa_plantillas_nuevas.go`, `web/js/plantillas_nuevas_catalogo.js`, `web/index.html`, `web/super/plantillas_produccion_masiva.html`, `web/administrar_empresa/plantillas_nuevas_menu.html` y `web/ayuda/ayuda.html`: publican 19 plantillas reales y eliminan la oferta comercial, ayuda y accion visible de colegio/academia.
 
 2026-06-10 - Snapshot completo VPS desde super administrador
 - `backend/db/super_vps_snapshots.go`: esquema PostgreSQL y consultas de historial `super_vps_snapshots` para registrar snapshots VPS, estado local/nube, hash, manifiesto, errores saneados y usuario creador.
@@ -11903,6 +11904,20 @@ documentos/arquitectura_escalable_y_modular.md
 documentos/preparacion_final_produccion.md
 - Plan ejecutable, limites de dominios, roles de proceso y procedimiento de
   liberacion/reversa de la preparacion de produccion 2026-07-15.
+
+documentos/arquitectura_workers_outbox.md
+- Contrato de procesos API/migracion/worker, cola durable, outbox, leases,
+  heartbeats, recuperacion y operacion segura.
+
+documentos/despliegue_inmutable.md
+- Secuencia reproducible de despliegue, configuracion de pools, limites de
+  compose y rollback no destructivo.
+
+documentos/estado_modulos_produccion.md
+- Estado tecnico y gates externos por modulo antes de abrir trafico productivo.
+
+documentos/arquitectura_movil_v1.md
+- Contrato operativo de la fachada movil v1, idempotencia y aislamiento.
 2026-07-13 - IA propia empresarial y API movil v1
 - `backend/db/ai_empresa_proveedor.go`: esquema y acceso cifrado por empresa
   para la clave OpenAI propia; el valor solo se descifra en memoria al enviar la

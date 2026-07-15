@@ -660,6 +660,9 @@ func creditoValidateClienteLimites(dbConn *sql.DB, empresaID, clienteID, exclude
 
 // EnsureEmpresaCreditosSchema crea/migra las tablas del modulo de creditos.
 func EnsureEmpresaCreditosSchema(dbConn *sql.DB) error {
+	if SchemaBootstrapDisabled() {
+		return nil
+	}
 	if dbConn == nil {
 		return errors.New("db connection is nil")
 	}

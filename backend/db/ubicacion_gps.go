@@ -64,6 +64,9 @@ type EmpresaGPSRecorrido struct {
 
 // EnsureEmpresaUbicacionGPSSchema crea y migra las tablas del modulo de ubicacion GPS por empresa.
 func EnsureEmpresaUbicacionGPSSchema(dbConn *sql.DB) error {
+	if SchemaBootstrapDisabled() {
+		return nil
+	}
 	stmts := []string{
 		`CREATE TABLE IF NOT EXISTS empresa_gps_dispositivos (
 			id BIGSERIAL PRIMARY KEY,

@@ -92,6 +92,9 @@ type EmpresaDocumentoFacturacionListFilter struct {
 
 // EnsureEmpresaDocumentosTransaccionalesSchema crea/migra tablas de documentos de negocio para facturacion y compras.
 func EnsureEmpresaDocumentosTransaccionalesSchema(dbConn *sql.DB) error {
+	if SchemaBootstrapDisabled() {
+		return nil
+	}
 	stmts := []string{
 		`CREATE TABLE IF NOT EXISTS empresa_facturacion_documentos (
 			id BIGSERIAL PRIMARY KEY,

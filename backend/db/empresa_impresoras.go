@@ -165,6 +165,9 @@ type EmpresaImpresoraTrabajo struct {
 
 // EnsureEmpresaImpresorasSchema crea/migra tablas del módulo de impresoras por empresa.
 func EnsureEmpresaImpresorasSchema(dbConn *sql.DB) error {
+	if SchemaBootstrapDisabled() {
+		return nil
+	}
 	stmts := []string{
 		`CREATE TABLE IF NOT EXISTS empresa_impresoras (
 			id BIGSERIAL PRIMARY KEY,

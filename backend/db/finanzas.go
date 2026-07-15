@@ -168,6 +168,9 @@ type EmpresaFinanzasConfiguracion struct {
 
 // EnsureEmpresaFinanzasSchema crea y migra las tablas del modulo financiero en PostgreSQL.
 func EnsureEmpresaFinanzasSchema(dbConn *sql.DB) error {
+	if SchemaBootstrapDisabled() {
+		return nil
+	}
 	startedAt := time.Now()
 	defer func() {
 		PerfLogf("[perf][schema] EnsureEmpresaFinanzasSchema dur=%s", time.Since(startedAt))

@@ -42,6 +42,9 @@ type empresaEstacionConfigRecord struct {
 
 // EnsureEmpresaEstacionPrefsSchema crea/migra la tabla de preferencias por estacion.
 func EnsureEmpresaEstacionPrefsSchema(dbConn *sql.DB) error {
+	if SchemaBootstrapDisabled() {
+		return nil
+	}
 	if dbConn == nil {
 		return errors.New("db connection is nil")
 	}

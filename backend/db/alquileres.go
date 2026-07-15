@@ -208,6 +208,9 @@ var (
 )
 
 func EnsureEmpresaAlquileresSchema(dbConn *sql.DB) error {
+	if SchemaBootstrapDisabled() {
+		return nil
+	}
 	if dbConn == nil {
 		return fmt.Errorf("dbConn es obligatorio")
 	}

@@ -330,6 +330,9 @@ type SuperAIModeloPreferido struct {
 
 // EnsureEmpresaAIChatSchema crea/ajusta el esquema del modulo de chat con IA por empresa.
 func EnsureEmpresaAIChatSchema(dbConn *sql.DB) error {
+	if SchemaBootstrapDisabled() {
+		return nil
+	}
 	stmts := []string{
 		`CREATE TABLE IF NOT EXISTS empresa_ai_consultas (
 			id BIGSERIAL PRIMARY KEY,
@@ -545,6 +548,9 @@ func UpsertEmpresaAIUsuarioPreferencias(dbConn *sql.DB, usuarioID, modelID, modo
 
 // EnsureSuperAIChatSchema crea/ajusta el esquema del chat IA global para super administrador.
 func EnsureSuperAIChatSchema(dbConn *sql.DB) error {
+	if SchemaBootstrapDisabled() {
+		return nil
+	}
 	stmts := []string{
 		`CREATE TABLE IF NOT EXISTS super_ai_consultas (
 			id BIGSERIAL PRIMARY KEY,

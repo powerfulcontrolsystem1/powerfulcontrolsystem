@@ -97,6 +97,9 @@ type EmpresaCarnetsDashboard struct {
 }
 
 func EnsureEmpresaCarnetsSchema(dbConn *sql.DB) error {
+	if SchemaBootstrapDisabled() {
+		return nil
+	}
 	stmts := []string{
 		`CREATE TABLE IF NOT EXISTS empresa_carnets_plantillas (
 			id BIGSERIAL PRIMARY KEY,

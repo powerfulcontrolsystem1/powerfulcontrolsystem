@@ -7,6 +7,7 @@ import (
 	"encoding/binary"
 	"fmt"
 	"strings"
+	"time"
 )
 
 // EnsureSchemaMigrationsTable crea la tabla de control de migraciones versionadas.
@@ -29,8 +30,20 @@ func EnsureSchemaMigrationsTable(dbConn *sql.DB) error {
 			UNIQUE(scope, version)
 		);`
 	}
-	_, err := execSQLCompat(dbConn, createStmt)
-	return err
+	if _, err := execSQLCompat(dbConn, createStmt); err != nil {
+		return err
+	}
+	for _, statement := range []string{
+		`ALTER TABLE schema_migrations ADD COLUMN IF NOT EXISTS started_at TIMESTAMPTZ`,
+		`ALTER TABLE schema_migrations ADD COLUMN IF NOT EXISTS duration_ms BIGINT NOT NULL DEFAULT 0`,
+		`ALTER TABLE schema_migrations ADD COLUMN IF NOT EXISTS result TEXT NOT NULL DEFAULT 'applied'`,
+		`ALTER TABLE schema_migrations ADD COLUMN IF NOT EXISTS applied_by TEXT NOT NULL DEFAULT ''`,
+	} {
+		if _, err := execSQLCompat(dbConn, statement); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // RegisterSchemaMigration registra una version de esquema de forma idempotente.
@@ -41,9 +54,9 @@ func RegisterSchemaMigration(dbConn *sql.DB, scope, version, description string)
 	if err := EnsureSchemaMigrationsTable(dbConn); err != nil {
 		return err
 	}
-	insertStmt := `INSERT OR IGNORE INTO schema_migrations (scope, version, description) VALUES (?, ?, ?)`
+	insertStmt := `INSERT OR IGNORE INTO schema_migrations (scope, version, description, started_at, duration_ms, result, applied_by) VALUES (?, ?, ?, CURRENT_TIMESTAMP, 0, 'applied', '')`
 	if isPostgresDialect() {
-		insertStmt = `INSERT INTO schema_migrations (scope, version, description) VALUES (?, ?, ?) ON CONFLICT(scope, version) DO NOTHING`
+		insertStmt = `INSERT INTO schema_migrations (scope, version, description, started_at, duration_ms, result, applied_by) VALUES (?, ?, ?, CURRENT_TIMESTAMP, 0, 'applied', '') ON CONFLICT(scope, version) DO NOTHING`
 	}
 	_, err := execSQLCompat(dbConn, insertStmt, scope, version, description)
 	return err
@@ -68,15 +81,79 @@ func ApplySchemaMigration(dbConn *sql.DB, scope, version, description string, ap
 			return err
 		}
 
+		started := time.Now()
 		if applyFn != nil {
 			if err := applyFn(dbConn); err != nil {
 				return err
 			}
 		}
 
-		_, err = execSQLCompat(dbConn, `INSERT INTO schema_migrations (scope, version, description) VALUES (?, ?, ?)`, scope, version, description)
+		_, err = execSQLCompat(dbConn, `INSERT INTO schema_migrations (scope, version, description, started_at, duration_ms, result, applied_by)
+			VALUES (?, ?, ?, ?, ?, 'applied', ?)`, scope, version, description, started.UTC(), time.Since(started).Milliseconds(), "pcs-migrate")
 		return err
 	})
+}
+
+// SchemaMigrationStatus is a safe operational view used by readiness and
+// release diagnostics; it intentionally never contains SQL bodies or DSNs.
+type SchemaMigrationStatus struct {
+	Scope      string
+	Version    string
+	Result     string
+	DurationMS int64
+}
+
+// ListSchemaMigrationStatus exposes only release metadata for controlled
+// diagnostics. It intentionally omits SQL bodies, DSNs and runtime settings.
+func ListSchemaMigrationStatus(dbConn *sql.DB, limit int) ([]SchemaMigrationStatus, error) {
+	if dbConn == nil {
+		return nil, fmt.Errorf("database not available")
+	}
+	if limit < 1 || limit > 500 {
+		limit = 100
+	}
+	rows, err := querySQLCompat(dbConn, `SELECT scope, version, COALESCE(result, 'applied'), COALESCE(duration_ms, 0)
+		FROM schema_migrations ORDER BY id DESC LIMIT ?`, limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := make([]SchemaMigrationStatus, 0, limit)
+	for rows.Next() {
+		var item SchemaMigrationStatus
+		if err := rows.Scan(&item.Scope, &item.Version, &item.Result, &item.DurationMS); err != nil {
+			return nil, err
+		}
+		items = append(items, item)
+	}
+	return items, rows.Err()
+}
+
+func IsSchemaMigrationApplied(dbConn *sql.DB, scope, version string) (bool, error) {
+	if dbConn == nil || strings.TrimSpace(scope) == "" || strings.TrimSpace(version) == "" {
+		return false, fmt.Errorf("migration status input invalid")
+	}
+	var exists bool
+	err := queryRowSQLCompat(dbConn, `SELECT EXISTS (
+		SELECT 1 FROM schema_migrations WHERE scope = ? AND version = ? AND COALESCE(result, 'applied') = 'applied'
+	)`, scope, version).Scan(&exists)
+	return exists, err
+}
+
+func VerifyRequiredMigrations(dbConn *sql.DB, required ...SchemaMigrationStatus) error {
+	if dbConn == nil {
+		return fmt.Errorf("database not available")
+	}
+	for _, migration := range required {
+		applied, err := IsSchemaMigrationApplied(dbConn, migration.Scope, migration.Version)
+		if err != nil {
+			return err
+		}
+		if !applied {
+			return fmt.Errorf("required migration not applied")
+		}
+	}
+	return nil
 }
 
 // WithMigrationAdvisoryLock serializes migration work across replicas. The

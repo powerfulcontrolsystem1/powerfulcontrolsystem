@@ -85,6 +85,9 @@ type RecepcionInventario struct {
 
 // EnsureEmpresasComprasSchema crea o actualiza las tablas del módulo de Compras / Proveedores.
 func EnsureEmpresasComprasSchema(dbConn *sql.DB) error {
+	if SchemaBootstrapDisabled() {
+		return nil
+	}
 	stmts := []string{
 		`CREATE TABLE IF NOT EXISTS empresa_proveedores (
 			id BIGSERIAL PRIMARY KEY,

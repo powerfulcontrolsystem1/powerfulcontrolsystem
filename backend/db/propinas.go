@@ -150,6 +150,9 @@ type propinaActiveUser struct {
 
 // EnsureEmpresaPropinasSchema crea/migra las tablas de configuracion y movimientos de propinas.
 func EnsureEmpresaPropinasSchema(dbConn *sql.DB) error {
+	if SchemaBootstrapDisabled() {
+		return nil
+	}
 	if dbConn == nil {
 		return fmt.Errorf("db connection is nil")
 	}

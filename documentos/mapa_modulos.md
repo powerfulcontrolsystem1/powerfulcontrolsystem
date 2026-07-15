@@ -1,5 +1,11 @@
 # Mapa de modulos
 
+Actualizacion 2026-07-15: plataforma de workers/outbox: la API no inicia
+temporizadores; `pcs-worker` ejecuta los recurrentes y consume cola/outbox con
+lease, heartbeat, prioridad, recuperacion e idempotencia. `/ready` exige la
+migracion de plataforma requerida y los pools PostgreSQL se configuran por
+entorno. Ver `arquitectura_workers_outbox.md` y `despliegue_inmutable.md`.
+
 Actualizacion 2026-07-15: plataforma de preproduccion: `pcs-migrate` es el
 unico rol que aplica bootstrap de esquema; `pcs-backend` publica `/health` y
 `/ready`; `pcs-worker` consume trabajos PostgreSQL sin DDL. El catalogo de

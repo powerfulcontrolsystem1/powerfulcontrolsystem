@@ -1,3 +1,17 @@
+2026-07-15: Plataforma de workers y outbox operable.
+- Modulos afectados: `runtime_worker`, `infraestructura`, `notificaciones`,
+  `licencias`, `contabilidad`, `auditoria` y `api_movil`.
+- La API queda libre de temporizadores; el worker abre ambas bases con pool
+  tipado y ejecuta los procesos periodicos existentes. Jobs/outbox conservan
+  tenant, version, prioridad, lease, heartbeat y reintentos sin exponer
+  payloads o errores de proveedor.
+- Los `Ensure...Schema` heredados no pueden ejecutar DDL en API/worker de
+  produccion; se mantienen como compatibilidad sin mutacion mientras cada
+  dominio se convierte a migraciones versionadas.
+- Produccion requiere migracion de plataforma antes de `/ready`; los gates de
+  proveedores externos se documentan sin declararlos aprobados por pruebas
+  locales.
+
 2026-07-10: Super administrador - diagramas tecnicos consolidados.
 
 2026-07-14: Base Flutter nativa y ejecucion asincrona recuperable.
