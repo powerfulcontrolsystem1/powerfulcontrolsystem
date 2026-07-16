@@ -38012,3 +38012,21 @@ Archivos modificados:
   fast-forward; si los commits son equivalentes pero de identidad distinta,
   exige arbol limpio, hace rebase, aborta ante conflicto y verifica que `HEAD`
   coincida exactamente con `origin/main` antes de que `rs` permita sincronizar.
+
+2026-07-16 - Fase inicial: migraciones durables, worker y pools por rol
+- `backend/db/migrations.go` reemplaza el ledger minimo por migraciones
+  catalogadas con checksum, corrida auditable y advisory lock transaccional.
+  La deriva bloquea el migrador; las entradas historicas sin checksum no se
+  reejecutan.
+- `backend/db/platform_migrations.go` traslada la evolucion de cola, outbox e
+  idempotencia movil a `pcs-migrate`. API y worker verifican estas estructuras
+  en modo lectura y dejan de emitir DDL para ellas.
+- `backend/db/async_jobs.go`, `backend/db/outbox.go` y el worker incorporan
+  lease, heartbeat, recuperacion, prioridad, cancelacion, DLQ, idempotencia y
+  registro tipado. El dispatcher rechaza topicos sin handler en vez de perder
+  eventos.
+- `backend/db/postgres_pool.go` y Docker aplican limites de pool separados por
+  API, worker y migrador. Los valores deben ajustarse con evidencia de staging.
+- Se versiona `documentos/arquitectura/inventario_bootstrap_ensure.md` y el
+  preflight comprueba que siga sincronizado. Bootstrap legado y timers de API
+  permanecen activos: no se declara produccion general lista por esta fase.

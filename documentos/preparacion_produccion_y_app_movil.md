@@ -29,11 +29,15 @@ bitacora de despliegue.
 
 ## Migraciones, cola y outbox
 
-`schema_migrations` conserva las versiones aplicadas. La migracion de fundacion
-crea la cola `pcs_async_jobs`, con leasing `FOR UPDATE SKIP LOCKED`, reintentos,
-backoff, limite de intentos y estado terminal `dead`; tambien crea
-`pcs_outbox_events` para que una mutacion pueda registrar un evento dentro de la
-misma transaccion antes de solicitar un proveedor externo.
+`schema_migrations` conserva version, checksum, estado, ejecutor y corrida de
+migracion. `pcs-migrate` toma un advisory lock transaccional por aplicacion,
+detecta deriva de catalogo y registra exito o fallo sin ejecutar parcialmente
+una migracion catalogada. La migracion de plataforma crea la cola
+`pcs_async_jobs`, con leasing `FOR UPDATE SKIP LOCKED`, heartbeat, recuperacion
+de lease vencido, prioridad, cancelacion, reintentos, backoff y estado terminal
+`dead`; tambien crea `pcs_outbox_events` con lease e idempotencia para que una
+mutacion pueda registrar un evento dentro de la misma transaccion antes de
+solicitar un proveedor externo.
 
 No se deben escribir secretos, tokens, datos completos de pago o adjuntos en
 payloads. Cada tarea empresarial incluye `empresa_id` validado y el consumidor
@@ -70,11 +74,13 @@ internos como contrato movil.
 
 ## Limites actuales y siguiente adopcion
 
-La fundacion de cola/outbox ya es persistente, pero los workers legados de
-correo, DIAN, reportes e integraciones deben migrarse gradualmente a eventos
-outbox, uno por uno, con prueba de idempotencia del proveedor. La API v1 usa
-paginacion por offset por compatibilidad; catalogos grandes deben adoptar cursor
-estable antes de consumo masivo movil. El almacenamiento privado actual mantiene
-validacion y segregacion por empresa; la adopcion de S3 compatible se hace por
-adaptador y migracion de objetos, nunca exponiendo rutas de proveedor al
-frontend.
+La fundacion de cola/outbox ya es persistente y API/worker ya no emiten DDL
+para esos componentes, pero los workers legados de correo, DIAN, reportes e
+integraciones deben migrarse gradualmente a eventos outbox, uno por uno, con
+prueba de idempotencia del proveedor. El bootstrap legado de API permanece
+activo hasta completar su inventario y ensayo de staging; no se apaga con la
+fundacion sola. La API v1 usa paginacion por offset por compatibilidad;
+catalogos grandes deben adoptar cursor estable antes de consumo masivo movil.
+El almacenamiento privado actual mantiene validacion y segregacion por empresa;
+la adopcion de S3 compatible se hace por adaptador y migracion de objetos,
+nunca exponiendo rutas de proveedor al frontend.

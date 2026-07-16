@@ -16,6 +16,17 @@ decisiones en cada tarea.
   almacenamiento o API movil. La fase 1 es obligatoria antes de pretender
   replicas o declarar produccion general lista.
 
+## Actualizacion 2026-07-16 - Regla de migraciones y worker
+
+- Ejecutar `pcs-migrate` antes de API/worker. Sus migraciones verifican
+  checksum y usan advisory lock; no editar una migracion ya aplicada.
+- `pcs_async_jobs`, `pcs_outbox_events` e idempotencia movil son responsabilidad
+  del migrador. API y worker solo verifican estas tablas y fallan cerrado si
+  faltan.
+- `PCS_RUNTIME_SCHEMA_BOOTSTRAP` continua en `1` durante la extraccion del
+  legado. No apagarlo por pruebas locales ni asumir que el worker ya reemplaza
+  los timers de `main.go`.
+
 ## Actualizacion 2026-06-10 - Snapshot completo VPS
 
 - El super administrador tiene una funcion en `Docker VPS` para crear snapshots

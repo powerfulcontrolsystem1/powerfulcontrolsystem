@@ -27,14 +27,20 @@ function walk(dir) {
 const files = walk("backend/db");
 const schemaFiles = files.filter((file) => /CREATE TABLE|ALTER TABLE|CREATE INDEX|DROP TABLE/i.test(fs.readFileSync(file, "utf8")));
 const migrationSource = fs.readFileSync(path.join(repoRoot, "backend/db/migrations.go"), "utf8");
-const hasMigrationTable = /schema_migrations/.test(migrationSource) && /ApplySchemaMigration/.test(migrationSource);
+const workerSource = fs.readFileSync(path.join(repoRoot, "backend/cmd/pcs-worker/main.go"), "utf8");
+const inventoryPath = path.join(repoRoot, "documentos", "arquitectura", "inventario_bootstrap_ensure.md");
+const hasMigrationTable = /schema_migrations/.test(migrationSource) && /RunMigrations/.test(migrationSource) && /pg_advisory_xact_lock/.test(migrationSource) && /MigrationChecksum/.test(migrationSource);
+const workerCreatesSchema = /Ensure(?:AsyncJobs|Outbox)Schema\s*\(/.test(workerSource);
+const inventoryPresent = fs.existsSync(inventoryPath) && fs.readFileSync(inventoryPath, "utf8").includes("Inventario de bootstrap Ensure");
 const tests = files.filter((file) => file.endsWith("_test.go")).length;
 
 const report = {
   generated_at: new Date().toISOString(),
-  status: hasMigrationTable && tests >= 20 ? "ok" : "warning",
+  status: hasMigrationTable && !workerCreatesSchema && inventoryPresent && tests >= 20 ? "ok" : "warning",
   checks: [
-    { name: "schema_migrations_table", ok: hasMigrationTable },
+    { name: "checksummed_locked_migration_runner", ok: hasMigrationTable },
+    { name: "worker_has_no_schema_ddl_calls", ok: !workerCreatesSchema },
+    { name: "ensure_bootstrap_inventory", ok: inventoryPresent },
     { name: "schema_touching_files", ok: schemaFiles.length > 0, count: schemaFiles.length, examples: schemaFiles.slice(0, 25).map((file) => path.relative(repoRoot, file).replace(/\\/g, "/")) },
     { name: "db_tests_present", ok: tests >= 20, count: tests },
   ],

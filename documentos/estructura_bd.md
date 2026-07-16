@@ -2305,3 +2305,25 @@ hash del cuerpo y la respuesta exitosa de una mutacion movil. Su PK compuesta
 es `(empresa_id, operacion, clave_hash)`. Nunca guarda el valor original de la
 clave ni credenciales; permite devolver el mismo resultado ante reintentos de
 pagos, emision fiscal, carrito o notificaciones sin repetir la operacion.
+
+## Plataforma de migraciones y ejecucion asincrona
+
+Actualizacion 2026-07-16:
+
+- `schema_migrations` conserva `scope`, `version`, `checksum`, `state`,
+  `applied_by` y `finished_at`. Una version historica sin checksum se registra
+  como legado conocido y no se reejecuta; cualquier checksum distinto del
+  catalogo bloquea el migrador.
+- `schema_migration_runs` audita inicio, fin, estado y cantidad de migraciones
+  de cada ejecucion de `pcs-migrate`, sin guardar DSN ni secretos.
+- `pcs_async_jobs` agrega version de contrato, prioridad, hash de idempotencia,
+  lease, heartbeat, cancelacion, finalizacion y estado muerto. Sus indices
+  priorizan tareas pendientes/recuperables y la unicidad evita duplicar un job
+  empresarial de la misma clase y llave.
+- `pcs_outbox_events` agrega version, clave de idempotencia por hash, lease,
+  contador de intentos, proximo intento, publicacion y estado muerto. Se usa
+  dentro de la misma transaccion del agregado que origina un efecto externo.
+
+Estas tablas son creadas o evolucionadas por `pcs-migrate`. API y worker solo
+comprueban su disponibilidad; las tablas funcionales heredadas aun permanecen
+bajo bootstrap hasta ser migradas por lotes con staging y rollback.

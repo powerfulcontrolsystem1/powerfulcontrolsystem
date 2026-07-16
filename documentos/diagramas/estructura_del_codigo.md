@@ -6686,3 +6686,26 @@ handlers POS existentes. Recibe sesion Bearer/cookie, aplica el wrapper de
 permiso del modulo, normaliza `empresa_id`, exige idempotencia para mutaciones
 y devuelve el sobre JSON movil. Los handlers de carrito, pago, facturacion,
 offline y buzon siguen siendo la fuente unica de reglas de negocio.
+
+## Actualizacion 2026-07-16 - Limite de roles de plataforma
+
+```text
+pcs-migrate
+  -> catalogo db/platform_migrations.go
+  -> advisory lock + schema_migrations/schema_migration_runs
+  -> crea/evoluciona cola, outbox e idempotencia movil
+
+pcs-backend (API)
+  -> verifica esquema de plataforma
+  -> procesa solicitudes HTTP
+  -> bootstrap legado temporal, controlado por PCS_RUNTIME_SCHEMA_BOOTSTRAP
+
+pcs-worker
+  -> verifica esquema de plataforma
+  -> worker.Registry tipado -> leases/reintentos/DLQ
+  -> outbox.Dispatcher -> solo jobs registrados
+```
+
+Los productores funcionales de correo, DIAN, pagos, documentos y reportes aun
+no cruzan este limite; su migracion a outbox es requisito posterior y los
+timers heredados de API se conservan hasta que el worker los reemplace.

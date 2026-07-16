@@ -3266,3 +3266,12 @@
 - [Release] `actualizar_repositorio.ps1` reconcilia el `main` local después de
   un squash protegido sin usar reset y rechaza cualquier revisión no publicada
   antes de que `rs` intente sincronizar la VPS.
+
+## [2026-07-16] Base durable de migraciones y procesos
+- [Migraciones] Ledger con checksum, advisory lock, estados y corridas
+  auditables; `pcs-migrate` aplica catalogos sin DDL desde API/worker.
+- [Asincronia] Cola y outbox con lease, reintento, recuperacion, prioridad,
+  cancelacion, DLQ e idempotencia por hash. El worker exige handlers tipados.
+- [Operacion] Pools PostgreSQL por rol e inventario reproducible de bootstrap.
+  El bootstrap legado y los timers API continuan como bloqueos declarados para
+  staging, no como deuda oculta.

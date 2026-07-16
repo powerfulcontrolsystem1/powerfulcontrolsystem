@@ -1,6 +1,9 @@
+// pcs-migrate is the only deployable role allowed to execute runtime schema
+// changes. It intentionally exits after a successful, idempotent run.
 package main
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	"log"
@@ -20,6 +23,15 @@ func open(name, dsn string) (*sql.DB, error) {
 	if err != nil {
 		return nil, err
 	}
+	pool, err := dbpkg.LoadPostgresPoolConfig(os.Getenv, "migrate")
+	if err != nil {
+		_ = dbConn.Close()
+		return nil, err
+	}
+	if err := dbpkg.ConfigurePostgresPool(dbConn, pool); err != nil {
+		_ = dbConn.Close()
+		return nil, err
+	}
 	if err := dbConn.Ping(); err != nil {
 		_ = dbConn.Close()
 		return nil, err
@@ -31,6 +43,7 @@ func main() {
 	if err := os.Setenv("DB_DIALECT", "postgres"); err != nil {
 		log.Fatal(err)
 	}
+	ctx := context.Background()
 	empresas, err := open("DB_EMPRESAS_DSN", os.Getenv("DB_EMPRESAS_DSN"))
 	if err != nil {
 		log.Fatal(err)
@@ -43,30 +56,24 @@ func main() {
 	defer super.Close()
 
 	for _, target := range []struct {
-		name string
-		db   *sql.DB
+		name  string
+		scope string
+		db    *sql.DB
 	}{
-		{name: "empresas", db: empresas},
-		{name: "superadministrador", db: super},
+		{name: "empresas", scope: dbpkg.MigrationTargetEmpresas, db: empresas},
+		{name: "superadministrador", scope: dbpkg.MigrationTargetSuper, db: super},
 	} {
+		// This compatibility layer is still required by legacy PostgreSQL queries.
+		// It runs in the migration role, never in pcs-worker. Its catalog migration
+		// will be folded into the ledger when legacy bootstrap is fully extracted.
 		if err := dbpkg.EnsurePostgresRuntimeCompat(target.db); err != nil {
-			log.Fatalf("%s compatibility: %v", target.name, err)
+			log.Fatalf("%s PostgreSQL compatibility: %v", target.name, err)
 		}
-		if err := dbpkg.EnsureSchemaMigrationsTable(target.db); err != nil {
-			log.Fatalf("%s migration ledger: %v", target.name, err)
+		report, err := dbpkg.ApplyPlatformMigrations(ctx, target.db, target.scope, "pcs-migrate")
+		if err != nil {
+			log.Fatalf("%s migration failed: %v", target.name, err)
 		}
-		if err := dbpkg.RegisterSchemaMigration(target.db, "platform", "20260714-runtime-foundation", "runtime roles, durable queue and outbox"); err != nil {
-			log.Fatalf("%s migration ledger record: %v", target.name, err)
-		}
+		log.Printf("%s migrations: applied=%d existing=%d legacy_marked=%d", target.name, len(report.Applied), len(report.AlreadyKnown), len(report.LegacyMarked))
 	}
-	if err := dbpkg.EnsureMobileAPIIdempotencySchema(empresas); err != nil {
-		log.Fatal(err)
-	}
-	if err := dbpkg.EnsureAsyncJobsSchema(super); err != nil {
-		log.Fatal(err)
-	}
-	if err := dbpkg.EnsureOutboxSchema(super); err != nil {
-		log.Fatal(err)
-	}
-	log.Print("migrations completed: runtime foundation")
+	log.Print("migrations completed: checksummed platform foundation")
 }

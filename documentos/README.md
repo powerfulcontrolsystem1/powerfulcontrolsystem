@@ -96,6 +96,7 @@ desarrollo, soporte y trabajo asistido por Codex.
 - Contexto obligatorio para agentes: `documentos/contexto_general_del_sistema.md`
 - Indice de contexto por modulo: `documentos/contexto_especifico_del_sistema.md`
 - Ruta ejecutable de produccion y API movil: `documentos/plan_final_para_produccion.md`
+- Inventario reproducible del bootstrap legado: `documentos/arquitectura/inventario_bootstrap_ensure.md`
 - Vision funcional y alcance actual: `documentos/descripcion_del_proyecto`
 - Esquema fisico de base de datos: `documentos/estructura_bd.md`
 - Ayuda tecnica de APIs e integraciones: `documentos/api/ayuda_apis.md`
