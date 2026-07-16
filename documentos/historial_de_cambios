@@ -18082,13 +18082,13 @@ Archivos modificados:
 
 [2026-04-19] Agente Go: Creacion y conexion del modelo de base de datos 'Compras y Proveedores' (erp_compras) en backend/db/compras_y_proveedores.go para soportar ordenes de compra e ingreso de proveedores en cumplimiento con estandar ERP multiempresa.
 [19/04/2026] Se agregaron los handlers de EmpresaNewProveedoresHandler para la gestin de compras y adquisiciones (ERP). Archivos creados: backend/db/compras_y_proveedores.go, backend/handlers/erp_compras_proveedores.go, modificado backend/main.go
-[ 2 0 2 6 - 0 4 - 1 9 ]   F u n c i o n a l i d a d :   A g r e g a d a   b a s e   e s t   t i c a   R e d   S o c i a l   C o m e r c i a l ,   e l i m i n a d o   r a s t r o   d e   e m u l a d o r e s   y   v e n t a   d i g i t a l   e n   U I . 
- 
- [ 2 0 2 6 - 0 4 - 1 9 ]   F u n c i o n a l i d a d :   I n t e g r a d o s   e n d p o i n t s   G o   p a r a   R e d   S o c i a l   C o m e r c i a l   p u b l i c o   y   p r i v a d o   ( C R U D ) . 
- 
- [ 2 0 2 6 - 0 4 - 1 9 ]   C i e r r e   f i n a l   f u n c i o n a l i d a d   R e d   S o c i a l   C o m e r c i a l . 
- 
- - 2026-04-19: Aadido endpoint de persistencia de apariencia en base de datos PostgreSQL (super). Los 6 modos oscuros y claros ahora se guardan por usuario en backend usando la tabla usuario_configuracion y /api/user/configuracion.
+[2026-04-19] Funcionalidad: Agregada base esttica Red Social Comercial, eliminado rastro de emuladores y venta digital en UI.
+
+[2026-04-19] Funcionalidad: Integrados endpoints Go para Red Social Comercial publico y privado (CRUD).
+
+[2026-04-19] Cierre final funcionalidad Red Social Comercial.
+
+- 2026-04-19: Aadido endpoint de persistencia de apariencia en base de datos PostgreSQL (super). Los 6 modos oscuros y claros ahora se guardan por usuario en backend usando la tabla usuario_configuracion y /api/user/configuracion.
 - 2026-04-19: Actualizacin de documentos/descripcion_del_proyecto para autorizar el desarrollo de minijuegos con niveles, puntajes y poderes como parte del alcance comercial.
 2026-04-20: Ejecucin exhaustiva completa de pruebas sobre handlers para Documentos Transaccionales (facturacin electrnica, notas crdito, envos DIAN), Backups Empresariales, Impresin y Reportes. Todas las dependencias cumplen con 200/201 (go test -run TestDocumento|Facturacion|Backup|Impresion).
 
@@ -37984,3 +37984,26 @@ Archivos modificados:
 - Se agregan regresiones de metodos, cache y fallo sin bases para impedir que
   una futura capa de autenticacion deje inoperantes los healthchecks de Docker
   o del balanceador.
+2026-07-16 - Plan final de produccion y escalamiento
+- `documentos/plan_final_para_produccion.md`: inventario tecnico verificable de
+  API, migrador, worker, cola, outbox, bootstrap, timers, PostgreSQL, cache,
+  Docker, almacenamiento, multiempresa y API movil. Clasifica los bloqueos
+  reales y ordena 42 tareas `PROD-*` en 15 fases con dependencias, criterios de
+  aceptacion, riesgos, commits sugeridos y gates para piloto, produccion,
+  replicas y movil.
+- Arquitectura: confirma que PCS conserva un monolito modular. La primera fase
+  obligatoria traslada el DDL del bootstrap y de API/worker al migrador con
+  ledger bloqueado/versionado antes de habilitar replicas o declarar listo el
+  worker/outbox existente.
+- Contextos: `contexto_general_del_sistema.md`,
+  `contexto_especifico_del_sistema.md`, `contexto_codex.md` y la guia de
+  preparacion enlazan el plan como fuente vigente de la ruta de produccion.
+- Documentacion: se retiraron caracteres NUL historicos de
+  `descripcion_de_archivos` e `historial_de_cambios`; vuelven a ser texto UTF-8
+  indexable por `rg` y herramientas de auditoria sin alterar su contenido.
+- Auditoria: `tools/professional_audit.mjs` reconoce `scripts/rs.ps1` como
+  unico orquestador canonico y describe las referencias de menu cargadas por
+  fragmentos como tales, sin exigir un wrapper raiz retirado ni reportarlas
+  falsamente como enlaces rotos.
+- Catalogo: la auditoria espera las 19 plantillas vigentes y comprueba que la
+  plantilla de colegio retirada no vuelva a introducirse por accidente.

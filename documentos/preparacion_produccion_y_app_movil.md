@@ -1,8 +1,9 @@
 # Preparacion para produccion y aplicacion movil
 
-Estado: base operativa implementada el 2026-07-14. Este documento es el punto
-de control para liberar PCS en produccion y para evolucionar clientes Android e
-iPhone sin duplicar reglas de negocio.
+Estado: base operativa implementada el 2026-07-14. Este documento describe la
+fundacion inicial. El plan de ejecucion vigente, hallazgos confirmados, backlog
+ordenado y gates de liberacion estan en `plan_final_para_produccion.md`; ambos
+deben leerse antes de declarar produccion o replicas listas.
 
 ## Arquitectura acordada
 

@@ -1,7 +1,9 @@
 # Indice documental del proyecto
 
-Fecha: 2026-05-30
-Estado: vigente, actualizado con carrito unificado plano para venta directa/estaciones, pantalla completa en venta directa, fondo estructural diferenciado por apariencia, operacion conectada y offline de caja, cajas simultaneas por usuario, correo corporativo Mailu, domotica, energia solar, auditoria global/super, VPS portable Docker, seguridad multiempresa, roles y permisos finos, reportes, facturacion electronica por pais y QA transversal.
+Fecha: 2026-07-16
+Estado: vigente. El indice conserva el historial funcional y enlaza la ruta
+tecnica vigente de produccion, sin declarar lista una salida general hasta
+cumplir sus gates de staging, restauracion, multiempresa y proveedores.
 
 Actualizacion 2026-06-18: facturacion electronica DIAN Colombia queda validada en produccion para PCS. El portal DIAN muestra `1PCS2` y `1PCS3` como `Aprobado con notificacion`; el siguiente consecutivo operativo es `1PCS4`, y `Regla 90` se documenta como pendiente de acuse original, no como aceptacion automatica.
 
@@ -12,18 +14,24 @@ desarrollo, soporte y trabajo asistido por Codex.
 
 1. `documentos/contexto_general_del_sistema.md`
 2. `documentos/contexto_especifico_del_sistema.md`
-3. `documentos/descripcion_del_proyecto`
-4. `documentos/estructura_bd.md`
-5. `documentos/diagramas/diagramas_sistema_pcs.md`
-6. `documentos/diagramas/diagrama_entidad_relacion.md`
-7. `documentos/diagramas/estructura_del_codigo.md`
-8. `documentos/matriz_roles_permisos_pos_multiempresa.md`
-9. `documentos/reporte_estado_modulos_2026-05-05.md`
-10. `documentos/gobernanza_tecnica/README.md`
-11. `documentos/historial_de_cambios`
-12. `CHANGELOG.md`
+3. `documentos/plan_final_para_produccion.md` para arquitectura, datos,
+   migraciones, worker, despliegue, replicas o API movil.
+4. `documentos/descripcion_del_proyecto`
+5. `documentos/estructura_bd.md`
+6. `documentos/diagramas/diagramas_sistema_pcs.md`
+7. `documentos/diagramas/diagrama_entidad_relacion.md`
+8. `documentos/diagramas/estructura_del_codigo.md`
+9. `documentos/matriz_roles_permisos_pos_multiempresa.md`
+10. `documentos/reporte_estado_modulos_2026-05-05.md`
+11. `documentos/gobernanza_tecnica/README.md`
+12. `documentos/historial_de_cambios`
+13. `CHANGELOG.md`
 
 ## Estado documental reciente
+- 2026-07-16: `plan_final_para_produccion.md` consolida el diagnostico real de
+  API, migrador, worker, cola, outbox, PostgreSQL, Docker, almacenamiento y API
+  movil. Ordena las fases, backlog `PROD-*`, hitos y gates; la primera fase
+  retira el DDL de API/worker y no autoriza produccion general sin evidencia.
 - 2026-07-07: se agregan 15 diagramas tecnicos visibles en `Super administrador > Diagramas tecnicos` y fuentes internas Mermaid/JSON para Codex en `documentos/diagramas/diagramas_sistema_pcs.md` y `diagramas_sistema_pcs_manifest.json`.
 - 2026-06-10: Docker/VPS incorpora snapshot completo desde super administrador,
   con descarga restaurable, historial, retencion y subida opcional por `rclone`
@@ -87,6 +95,7 @@ desarrollo, soporte y trabajo asistido por Codex.
 
 - Contexto obligatorio para agentes: `documentos/contexto_general_del_sistema.md`
 - Indice de contexto por modulo: `documentos/contexto_especifico_del_sistema.md`
+- Ruta ejecutable de produccion y API movil: `documentos/plan_final_para_produccion.md`
 - Vision funcional y alcance actual: `documentos/descripcion_del_proyecto`
 - Esquema fisico de base de datos: `documentos/estructura_bd.md`
 - Ayuda tecnica de APIs e integraciones: `documentos/api/ayuda_apis.md`

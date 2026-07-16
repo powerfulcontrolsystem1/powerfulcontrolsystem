@@ -9,6 +9,13 @@ Este archivo es la primera lectura operativa antes de tocar el proyecto. Resume
 lo que Codex debe tener en memoria para evitar redescubrir rutas, flujos y
 decisiones en cada tarea.
 
+## Actualizacion 2026-07-16 - Ruta de produccion
+
+- Abrir `documentos/plan_final_para_produccion.md` cuando la tarea afecte
+  migraciones, bootstrap, workers, colas, outbox, escalamiento, releases,
+  almacenamiento o API movil. La fase 1 es obligatoria antes de pretender
+  replicas o declarar produccion general lista.
+
 ## Actualizacion 2026-06-10 - Snapshot completo VPS
 
 - El super administrador tiene una funcion en `Docker VPS` para crear snapshots

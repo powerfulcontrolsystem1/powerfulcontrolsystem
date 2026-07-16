@@ -11041,10 +11041,10 @@ backend/handlers/erp_compras_proveedores.go: Handlers REST para gestionar el cic
 
 - web/administrar_empresa/publicar_red_social.html: panel de administraciÃƒÆ’Ã‚Â³n CRUD de la red social de la empresa.
 - web/red_social_comercial.html: vista pÃƒÆ’Ã‚Âºblica del feed de publicaciones de todas las empresas.
- -   b a c k e n d / d b / r e d _ s o c i a l . g o :   A c c e s o   a   d a t o s   p a r a   p u b l i c a c i o n e s   d e   l a   r e d   s o c i a l . 
- -   b a c k e n d / h a n d l e r s / r e d _ s o c i a l . g o :   R u t a s   p u b l i c a s   y   p r o t e g i d a s   p a r a   p u b l i c a c i o n e s . 
- 
- backend/db/usuario_config_schema.go - Define el esquema de la tabla de configuraciones por administrador/usuario y metodos de GET/POST. Creado el 2026-04-19.
+- backend/db/red_social.go: Acceso a datos para publicaciones de la red social.
+- backend/handlers/red_social.go: Rutas publicas y protegidas para publicaciones.
+
+backend/db/usuario_config_schema.go - Define el esquema de la tabla de configuraciones por administrador/usuario y metodos de GET/POST. Creado el 2026-04-19.
 backend/handlers/user_config.go - Controlador que expone /api/user/configuracion para persistir en DB el modo apariencia de la UI. Creado el 2026-04-19.
 - \ackend/handlers/super_servidores_handlers.go\: Controlador de endpoints para interactuar con servicios del OS como \systemctl\, especificamente para gestionar RustDesk.
 
@@ -11889,6 +11889,11 @@ documentos/release_checklist.md
 documentos/plan_101_arquitectura_modular.md
 - Decision de monolito modular, controles multiempresa, reglas de evolucion e
   idempotencia, y evidencia pendiente de preproduccion.
+
+documentos/plan_final_para_produccion.md
+- Hoja de ruta ejecutable de produccion: diagnostico real de API, migrador,
+  worker, cola, outbox, PostgreSQL, modulos, Docker y API movil; incluye fases,
+  backlog, hitos, criterios de aceptacion, releases, rollback y primera fase.
 2026-07-13 - IA propia empresarial y API movil v1
 - `backend/db/ai_empresa_proveedor.go`: esquema y acceso cifrado por empresa
   para la clave OpenAI propia; el valor solo se descifra en memoria al enviar la

@@ -3249,3 +3249,17 @@
 - [Plataforma] Se separan los roles de API, migracion y worker; se incorpora
   cola PostgreSQL durable/outbox y se documentan los gates de liberacion y API
   movil sin romper las rutas web existentes.
+## [2026-07-16] Plan final de produccion
+- [Arquitectura] Agrega `plan_final_para_produccion.md`, con diagnostico real
+  de bootstrap, migrador, worker, cola, outbox, PostgreSQL, cache, Docker,
+  storage y API movil; no declara produccion lista sin los gates definidos.
+- [Ejecucion] Ordena 42 tareas `PROD-*` en 15 fases y fija como primer hito
+  retirar DDL de API/worker mediante migraciones versionadas con lock.
+- [Documentacion] Actualiza los contextos obligatorios y la guia de preparacion
+  para enlazar la hoja de ruta vigente.
+- [Calidad documental] Normaliza caracteres NUL historicos en los indices de
+  archivos y cambios para conservar busqueda textual reproducible.
+- [Preflight] La auditoria valida el orquestador canónico `scripts/rs.ps1` y
+  distingue referencias de menús cargados por fragmentos de enlaces estáticos.
+- [Plantillas] El preflight adopta las 19 plantillas vigentes y bloquea la
+  reaparición accidental de la plantilla de colegio retirada.
