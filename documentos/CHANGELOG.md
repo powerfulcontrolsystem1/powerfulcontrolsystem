@@ -3263,3 +3263,6 @@
   distingue referencias de menús cargados por fragmentos de enlaces estáticos.
 - [Plantillas] El preflight adopta las 19 plantillas vigentes y bloquea la
   reaparición accidental de la plantilla de colegio retirada.
+- [Release] `actualizar_repositorio.ps1` reconcilia el `main` local después de
+  un squash protegido sin usar reset y rechaza cualquier revisión no publicada
+  antes de que `rs` intente sincronizar la VPS.

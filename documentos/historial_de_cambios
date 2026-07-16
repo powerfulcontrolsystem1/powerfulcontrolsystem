@@ -38007,3 +38007,8 @@ Archivos modificados:
   falsamente como enlaces rotos.
 - Catalogo: la auditoria espera las 19 plantillas vigentes y comprueba que la
   plantilla de colegio retirada no vuelva a introducirse por accidente.
+- Release: `actualizar_repositorio.ps1` reconcilia de forma no destructiva el
+  `main` local cuando GitHub fusiona una PR protegida con squash. Primero usa
+  fast-forward; si los commits son equivalentes pero de identidad distinta,
+  exige arbol limpio, hace rebase, aborta ante conflicto y verifica que `HEAD`
+  coincida exactamente con `origin/main` antes de que `rs` permita sincronizar.
