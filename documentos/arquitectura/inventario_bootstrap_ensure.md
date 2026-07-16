@@ -8,8 +8,8 @@ Este archivo se genera con `node tools/ensure_bootstrap_inventory.mjs`. Inventar
 
 - Funciones inventariadas: 156.
 - compatibilidad PostgreSQL: 2.
-- DDL / indice / funcion: 119.
-- DDL catalogado de plataforma: 3.
+- DDL / indice / funcion: 118.
+- DDL catalogado de plataforma: 4.
 - provisionamiento de integracion: 5.
 - regla auxiliar o verificacion: 6.
 - seed o provisionamiento idempotente: 21.
@@ -112,9 +112,9 @@ Este archivo se genera con `node tools/ensure_bootstrap_inventory.mjs`. Inventar
 | `EnsureMobileAPIIdempotencySchema` | [backend/db/mobile_api_idempotency.go:36](../../backend/db/mobile_api_idempotency.go#L36) | DDL catalogado de plataforma | empresas |
 | `EnsureEmpresaModulosColombiaSchema` | [backend/db/modulos_empresariales_colombia.go:477](../../backend/db/modulos_empresariales_colombia.go#L477) | DDL / indice / funcion | empresas o por confirmar |
 | `EnsureEmpresaModulosFaltantesSchema` | [backend/db/modulos_faltantes.go:51](../../backend/db/modulos_faltantes.go#L51) | DDL / indice / funcion | empresas o por confirmar |
-| `EnsureEmpresaNextcloudSchema` | [backend/db/nextcloud.go:10](../../backend/db/nextcloud.go#L10) | DDL / indice / funcion | empresas o por confirmar |
-| `EnsureEmpresaNextcloudAssignment` | [backend/db/nextcloud.go:41](../../backend/db/nextcloud.go#L41) | seed o provisionamiento idempotente | empresas o por confirmar |
-| `EnsureEmpresaNextcloudAssignmentsForAll` | [backend/db/nextcloud.go:58](../../backend/db/nextcloud.go#L58) | seed o provisionamiento idempotente | empresas o por confirmar |
+| `EnsureEmpresaNextcloudSchema` | [backend/db/nextcloud.go:13](../../backend/db/nextcloud.go#L13) | DDL catalogado de plataforma | empresas |
+| `EnsureEmpresaNextcloudAssignment` | [backend/db/nextcloud.go:79](../../backend/db/nextcloud.go#L79) | seed o provisionamiento idempotente | empresas o por confirmar |
+| `EnsureEmpresaNextcloudAssignmentsForAll` | [backend/db/nextcloud.go:96](../../backend/db/nextcloud.go#L96) | seed o provisionamiento idempotente | empresas o por confirmar |
 | `EnsureEmpresaNominaColombiaAvanzadaSchema` | [backend/db/nomina_colombia_avanzada.go:100](../../backend/db/nomina_colombia_avanzada.go#L100) | DDL / indice / funcion | empresas o por confirmar |
 | `EnsureEmpresaNominaSchema` | [backend/db/nomina_sueldos.go:386](../../backend/db/nomina_sueldos.go#L386) | DDL / indice / funcion | empresas o por confirmar |
 | `EnsureEmpresaOdontologiaSchema` | [backend/db/odontologia.go:209](../../backend/db/odontologia.go#L209) | DDL / indice / funcion | empresas o por confirmar |

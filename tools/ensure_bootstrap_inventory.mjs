@@ -36,7 +36,7 @@ function functionBody(source, offset) {
 }
 
 function classify(name, body, relativePath) {
-  if (/^(EnsureAsyncJobsSchema|EnsureOutboxSchema|EnsureMobileAPIIdempotencySchema)$/.test(name)) return "DDL catalogado de plataforma";
+  if (/^(EnsureAsyncJobsSchema|EnsureOutboxSchema|EnsureMobileAPIIdempotencySchema|EnsureEmpresaNextcloudSchema)$/.test(name)) return "DDL catalogado de plataforma";
   if (/PostgresRuntimeCompat|PrimaryKeySequences|Compatibility|Compat/i.test(name)) return "compatibilidad PostgreSQL";
   if (/CREATE\s+(?:OR\s+REPLACE\s+)?(?:TABLE|INDEX|FUNCTION)|ALTER\s+TABLE|DROP\s+TABLE/i.test(body)) return "DDL / indice / funcion";
   if (/Seed|Default|Provision|Assignment|RowsForExisting|PowerfulSystem|TipoEmpresa|Catalogo/i.test(name) || /\bINSERT\s+INTO\b/i.test(body)) return "seed o provisionamiento idempotente";
@@ -47,7 +47,7 @@ function classify(name, body, relativePath) {
 
 function target(name, relativePath) {
   if (name === "EnsureAsyncJobsSchema" || name === "EnsureOutboxSchema") return "superadministrador";
-  if (name === "EnsureMobileAPIIdempotencySchema") return "empresas";
+  if (/^(EnsureMobileAPIIdempotencySchema|EnsureEmpresaNextcloudSchema)$/.test(name)) return "empresas";
   if (/super|administrador|licencia|paymentgateway|contrato/i.test(`${name} ${relativePath}`)) return "superadministrador o por confirmar";
   if (/main\.go$/.test(relativePath)) return "ambas bases";
   return "empresas o por confirmar";

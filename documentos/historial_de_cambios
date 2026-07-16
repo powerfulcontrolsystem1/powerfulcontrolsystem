@@ -38038,3 +38038,10 @@ Archivos modificados:
 - Docker consulta el probe internamente y marca el contenedor no saludable si
   el runner pierde disponibilidad. El cierre por `SIGTERM` apaga el servidor
   auxiliar de forma gradual junto con el worker.
+
+2026-07-16 - Migracion catalogada: asignaciones Nextcloud
+- La tabla tecnica `empresa_nextcloud_accounts` entra al catalogo de
+  `pcs-migrate` con checksum. Con bootstrap API desactivado se verifica su
+  presencia y no se vuelve a emitir DDL desde los flujos empresariales.
+- El bootstrap legado sigue activo por compatibilidad hasta completar los
+  demas dominios y una prueba documentada de staging y rollback.
