@@ -12,6 +12,9 @@
   antiguos que compitan por la cola.
 - CI ejecuta `tools/deploy_pipeline_contract.mjs` para detectar regresiones de
   estos controles.
+- `/health` y `/ready` son probes publicos de solo lectura (`GET`/`HEAD`). El
+  primero confirma el proceso HTTP; el segundo exige conectividad con ambas
+  bases PostgreSQL y responde `503` sin detalles internos cuando no esta listo.
 
 ## Evidencia local
 

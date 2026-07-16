@@ -1756,6 +1756,10 @@ func main() {
 	})
 
 	// Carpeta web determinada previamente para servir estaticos y handlers de recursos.
+	// Probes publicos para Docker y el balanceador. /ready comprueba las dos bases
+	// antes de aceptar trafico normal; no expone detalles internos de fallos.
+	http.HandleFunc("/health", handlers.RuntimeHealthHandler)
+	http.Handle("/ready", handlers.RuntimeReadyHandler(dbEmpresas, dbSuper))
 
 	// Servir assets centralizados (CSS, JS)
 	http.Handle("/assets/", http.StripPrefix("/assets/", http.FileServer(http.Dir(webDir))))
