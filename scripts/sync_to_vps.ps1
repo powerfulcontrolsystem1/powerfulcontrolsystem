@@ -17,6 +17,7 @@ param(
   [switch]$PreviewOnly,
   [switch]$SkipBuild,
   [switch]$BuildOnly,
+  [switch]$AllowNonMainDeployment,
   [string]$LocalPath = "",
   [string]$RemoteUser = "root",
   [string]$RemoteHost = "2.24.197.58",
@@ -1651,17 +1652,8 @@ function Invoke-PuttySync {
   }
 
   if ($IsPreviewOnly) {
-    Write-Host ("[PREVIEW] Fallback sin WSL (" + $transportLabel + "):")
-    Write-Host ("tar " + (($tarArgs | ForEach-Object { '"' + $_ + '"' }) -join " "))
-    Write-Host ($verifyCommandPath + " " + (($verifyArgs | ForEach-Object { '"' + $_ + '"' }) -join " "))
-    Write-Host ($uploadCommandPath + " " + (($uploadArgs | ForEach-Object { '"' + $_ + '"' }) -join " "))
-    Write-Host ($extractCommandPath + " " + (($extractArgs | ForEach-Object { '"' + $_ + '"' }) -join " "))
-    if ($RunBootstrap) {
-      Write-Host ($bootstrapCommandPath + " " + (($bootstrapArgs | ForEach-Object { '"' + $_ + '"' }) -join " "))
-    }
-    if ($RestartServer) {
-      Write-Host ($bootstrapCommandPath + " " + (($restartArgs | ForEach-Object { '"' + $_ + '"' }) -join " "))
-    }
+    Write-Host "[PREVIEW] Fallback sin WSL validado; transferencia, extraccion y redeploy omitidos."
+    Write-Host "[PREVIEW] No se imprimen argumentos remotos ni variables de configuracion."
     return
   }
 
@@ -1899,6 +1891,17 @@ docker ps --format 'table {{.Names}}\t{{.Status}}\t{{.Ports}}' | grep -E 'pcs-(b
   Invoke-RemoteCommandSimple -RemoteUser $RemoteUser -RemoteHost $RemoteHost -Port $Port -IdentityContext $identityContext -Command $command
 }
 
+function Assert-ApprovedProductionRevision {
+  if ($DryRun -or $PreviewOnly -or $BuildOnly -or $AllowNonMainDeployment) { return }
+  $branch = (& git branch --show-current 2>$null | Select-Object -Last 1).ToString().Trim()
+  if ($branch -ne "main") { throw "sync_to_vps no publica una rama de trabajo. Integra la revision aprobada en main o usa -AllowNonMainDeployment solo en un destino aislado." }
+  & git fetch origin main --quiet
+  if ($LASTEXITCODE -ne 0) { throw "No se pudo actualizar origin/main antes de sincronizar el VPS." }
+  $localRevision = (& git rev-parse HEAD 2>$null | Select-Object -Last 1).ToString().Trim()
+  $remoteRevision = (& git rev-parse origin/main 2>$null | Select-Object -Last 1).ToString().Trim()
+  if ([string]::IsNullOrWhiteSpace($localRevision) -or $localRevision -ne $remoteRevision) { throw "La revision local no coincide con origin/main. No se publica un commit no aprobado." }
+}
+
 function Invoke-RemoteUnusedFilesCleanup {
   param(
     [Parameter(Mandatory=$true)][string]$RemoteUser,
@@ -2006,6 +2009,7 @@ echo "[OK] Limpieza VPS completada sin tocar volumenes ni bases de datos."
 }
 
 try {
+  Assert-ApprovedProductionRevision
   $scriptPath = Join-Path $PSScriptRoot "sync_to_vps.sh"
   if (-not (Test-Path $scriptPath)) {
     throw "No se encuentra el script base: $scriptPath"
@@ -2114,12 +2118,15 @@ try {
   $effectiveSkipBuild = $SkipBuild.IsPresent
   $effectiveRestartRemoteServer = [bool]$RestartRemoteServer
   $effectiveRedeployDockerStack = [bool]$RedeployDockerStack
+  $effectiveBootstrapServer = [bool]$BootstrapServer
   switch ($DeploymentMode) {
     "docker" {
       $effectiveSkipBuild = $true
       $effectiveRestartRemoteServer = $false
       $effectiveRedeployDockerStack = $true
+      $effectiveBootstrapServer = $false
       Write-Host "[INFO] DeploymentMode=docker: Docker Compose construye y reinicia backend/frontend; se omite systemd."
+      Write-Host "[INFO] Los secretos Docker se conservan exclusivamente en el VPS; bootstrap remoto deshabilitado."
     }
     "legacy" {
       $effectiveRedeployDockerStack = $false
@@ -2171,7 +2178,7 @@ try {
     return
   }
 
-  if ($BootstrapServer) {
+  if ($effectiveBootstrapServer) {
     $dialectDisplay = if ([string]::IsNullOrWhiteSpace($DbDialect)) { "EMPTY" } else { $DbDialect }
     $empDisplay = if ([string]::IsNullOrWhiteSpace($DbEmpresasDsn)) { "EMPTY" } else { "SET" }
     $superDisplay = if ([string]::IsNullOrWhiteSpace($DbSuperadminDsn)) { "EMPTY" } else { "SET" }
@@ -2179,7 +2186,7 @@ try {
   }
 
   if (-not (Test-WslReady)) {
-    Invoke-PuttySync -LocalResolvedPath $LocalPath -RemoteUser $RemoteUser -RemoteHost $RemoteHost -RemotePath $RemotePath -Port $Port -IdentityPath $IdentityFile -IsDryRun $DryRun.IsPresent -IsPreviewOnly $PreviewOnly.IsPresent -ExcludeFile $ExcludeFile -ExcludeEvidence $ExcludeEvidenceFromPackage -UseCompression $CompressPackage -LargeTransferWarningMB $LargeTransferWarningMB -ExecRelativePath $builtBinaryRel -Retries $RetryCount -AutoInstallDeps $AutoInstallDependencies -RunBootstrap $BootstrapServer -BootstrapServerPort $ServerPort -BootstrapGoogleClientId $GoogleClientId -BootstrapGoogleClientSecret $GoogleClientSecret -BootstrapGoogleRedirectUrl $GoogleRedirectUrl -OpenAIApiKey $OpenAIApiKey -BootstrapDbDialect $DbDialect -BootstrapDbEmpresasDsn $DbEmpresasDsn -BootstrapDbSuperadminDsn $DbSuperadminDsn -RestartServer $effectiveRestartRemoteServer -RestartBinaryRelativePath $restartBinaryRel -RestartStdoutLogRelativePath $RemoteStdoutLogPath -RestartStderrLogRelativePath $RemoteStderrLogPath -RestartHealthTimeout $RestartHealthTimeoutSeconds
+    Invoke-PuttySync -LocalResolvedPath $LocalPath -RemoteUser $RemoteUser -RemoteHost $RemoteHost -RemotePath $RemotePath -Port $Port -IdentityPath $IdentityFile -IsDryRun $DryRun.IsPresent -IsPreviewOnly $PreviewOnly.IsPresent -ExcludeFile $ExcludeFile -ExcludeEvidence $ExcludeEvidenceFromPackage -UseCompression $CompressPackage -LargeTransferWarningMB $LargeTransferWarningMB -ExecRelativePath $builtBinaryRel -Retries $RetryCount -AutoInstallDeps $AutoInstallDependencies -RunBootstrap $effectiveBootstrapServer -BootstrapServerPort $ServerPort -BootstrapGoogleClientId $GoogleClientId -BootstrapGoogleClientSecret $GoogleClientSecret -BootstrapGoogleRedirectUrl $GoogleRedirectUrl -OpenAIApiKey $OpenAIApiKey -BootstrapDbDialect $DbDialect -BootstrapDbEmpresasDsn $DbEmpresasDsn -BootstrapDbSuperadminDsn $DbSuperadminDsn -RestartServer $effectiveRestartRemoteServer -RestartBinaryRelativePath $restartBinaryRel -RestartStdoutLogRelativePath $RemoteStdoutLogPath -RestartStderrLogRelativePath $RemoteStderrLogPath -RestartHealthTimeout $RestartHealthTimeoutSeconds
 
     Invoke-RemoteDockerComposeRedeploy -RemoteUser $RemoteUser -RemoteHost $RemoteHost -Port $Port -IdentityPath $IdentityFile -RemotePath $RemotePath -Enabled $effectiveRedeployDockerStack -IsDryRun $DryRun.IsPresent -IsPreviewOnly $PreviewOnly.IsPresent -HealthTimeoutSeconds $DockerHealthTimeoutSeconds
 
@@ -2277,8 +2284,8 @@ try {
   $bashCmd = "$envPrefix" + "bash $(Convert-ToBashLiteral $scriptWsl) $escapedArgs"
 
   if ($PreviewOnly) {
-    Write-Host "[PREVIEW] Comando que se ejecutaría en WSL:"
-    Write-Host (Redact-SyncCommandForLog -Command $bashCmd)
+    Write-Host "[PREVIEW] Sincronizacion WSL validada; no se ejecutaran comandos remotos."
+    Write-Host "[PREVIEW] No se imprimen argumentos remotos ni variables de configuracion."
     return
   }
 
@@ -2330,5 +2337,5 @@ catch {
   }
 }
 
-$global:LASTEXITCODE = $script:SyncExitCode
-return
+# El script se ejecuta aislado desde rs.ps1; debe propagar el resultado real.
+exit $script:SyncExitCode

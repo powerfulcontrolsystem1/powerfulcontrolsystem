@@ -11,7 +11,7 @@ func TestLicenciasGratisSchemaUsesPostgresGeneratedID(t *testing.T) {
 	if err != nil {
 		t.Fatalf("read licencias_gratis.go: %v", err)
 	}
-	src := string(body)
+	src := strings.ReplaceAll(string(body), "\r\n", "\n")
 	if !strings.Contains(src, "id BIGSERIAL PRIMARY KEY") {
 		t.Fatal("licencias_activaciones_gratis debe crear id con BIGSERIAL PRIMARY KEY en PostgreSQL")
 	}
@@ -25,7 +25,7 @@ func TestActivateLicenciaGratisStoresOnlyAssignedActivation(t *testing.T) {
 	if err != nil {
 		t.Fatalf("read licencias_gratis.go: %v", err)
 	}
-	src := string(body)
+	src := strings.ReplaceAll(string(body), "\r\n", "\n")
 	insertCount := strings.Count(src, "INSERT INTO licencias_activaciones_gratis (licencia_id, empresa_id")
 	if insertCount != 1 {
 		t.Fatalf("la activacion gratis debe registrar una sola fila para no abortar la transaccion en PostgreSQL; inserts=%d", insertCount)
@@ -40,7 +40,7 @@ func TestLicenciaGratisHistoryBlocksExpiredOrInactiveTrial(t *testing.T) {
 	if err != nil {
 		t.Fatalf("read licencias_gratis.go: %v", err)
 	}
-	src := string(body)
+	src := strings.ReplaceAll(string(body), "\r\n", "\n")
 
 	historyFn := extractFunctionForTest(t, src, "func HasAnyLicenciaGratisActivationForEmpresa")
 	if strings.Contains(historyFn, "COALESCE(estado, 'activo') = 'activo'") {

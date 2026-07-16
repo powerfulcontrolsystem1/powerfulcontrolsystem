@@ -1,6 +1,17 @@
 name: powerful-control-system-staging
 
 services:
+  migrate:
+    container_name: pcs-staging-migrate
+    environment:
+      PCS_ENV: staging
+
+  worker:
+    container_name: pcs-staging-worker
+    environment:
+      PCS_ENV: staging
+      PCS_WORKER_ID: pcs-worker-staging
+
   postgres:
     container_name: pcs-staging-postgres
     volumes:
@@ -14,10 +25,12 @@ services:
       GOOGLE_REDIRECT_URL: ${GOOGLE_REDIRECT_URL:-https://staging.powerfulcontrolsystem.com/auth/google/callback}
       RECAPTCHA_DEV_BYPASS: ${RECAPTCHA_DEV_BYPASS:-1}
       PCS_ENVIRONMENT: staging
+      PCS_ENV: staging
     volumes:
       - pcs_staging_backend_logs:/app/backend/logs
       - pcs_staging_web_uploads:/app/web/uploads
       - pcs_staging_backups:/app/backup
+      - pcs_staging_private_storage:/app/private_storage
 
   frontend:
     container_name: pcs-staging-frontend
@@ -33,6 +46,7 @@ volumes:
   pcs_staging_web_uploads:
   pcs_staging_backups:
   pcs_staging_downloads:
+  pcs_staging_private_storage:
 
 networks:
   pcs_internal:

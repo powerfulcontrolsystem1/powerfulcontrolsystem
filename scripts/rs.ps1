@@ -122,6 +122,17 @@ function Invoke-Step {
   Write-Host "[OK] $Name completado." -ForegroundColor Green
 }
 
+function Assert-ProductionRevision {
+  if ($DryRun -or $PreviewOnly) { return }
+  $branch = (& git branch --show-current 2>$null | Select-Object -Last 1).ToString().Trim()
+  if ($branch -ne "main") { throw "rs no sincroniza ramas de trabajo al VPS. Integra la revision aprobada en main." }
+  & git fetch origin main --quiet
+  if ($LASTEXITCODE -ne 0) { throw "No se pudo actualizar origin/main antes del despliegue." }
+  $localRevision = (& git rev-parse HEAD 2>$null | Select-Object -Last 1).ToString().Trim()
+  $remoteRevision = (& git rev-parse origin/main 2>$null | Select-Object -Last 1).ToString().Trim()
+  if ([string]::IsNullOrWhiteSpace($localRevision) -or $localRevision -ne $remoteRevision) { throw "La copia local no coincide exactamente con origin/main." }
+}
+
 $updateArgs = @{
   Message = $Message
   ProtectedMainPRWaitSeconds = $ProtectedMainPRWaitSeconds
@@ -146,8 +157,13 @@ if (-not $SkipPreflight) {
   Invoke-Step -Name "Preflight profesional" -Path $preflightScript -Arguments $preflightArgs
 }
 
-Invoke-Step -Name "Actualizar repositorio" -Path $updateScript -Arguments $updateArgs
+if ($DryRun -or $PreviewOnly) {
+  Write-Host "[INFO] Actualizar repositorio omitido por DryRun/PreviewOnly."
+} else {
+  Invoke-Step -Name "Actualizar repositorio" -Path $updateScript -Arguments $updateArgs
+  Assert-ProductionRevision
+}
 Invoke-Step -Name "Sincronizar VPS" -Path $syncScript -Arguments $syncArgs
 
 Write-Host ""
-Write-Host "[OK] Flujo rs completado: repositorio actualizado y VPS sincronizado." -ForegroundColor Green
+if ($DryRun -or $PreviewOnly) { Write-Host "[OK] Previsualizacion rs completada sin actualizar repositorio ni VPS." -ForegroundColor Green } else { Write-Host "[OK] Flujo rs completado: repositorio actualizado y VPS sincronizado." -ForegroundColor Green }

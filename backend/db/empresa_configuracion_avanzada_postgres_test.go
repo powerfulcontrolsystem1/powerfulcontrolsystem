@@ -11,7 +11,9 @@ func TestEmpresaConfiguracionAvanzadaUpsertUsesPostgresRuntimeSQL(t *testing.T) 
 	if err != nil {
 		t.Fatalf("read empresa_configuracion_avanzada.go: %v", err)
 	}
-	src := string(raw)
+	// El repositorio puede entregarse con CRLF en Windows; el contrato revisa
+	// SQL fuente, no el estilo de fin de linea del checkout.
+	src := strings.ReplaceAll(string(raw), "\r\n", "\n")
 	body := extractEmpresaConfigAvanzadaFunctionForTest(t, src, "func UpsertEmpresaConfiguracionAvanzada(", "")
 
 	if strings.Contains(body, "pcs_ts(") {
@@ -36,7 +38,7 @@ func TestEmpresaConfiguracionAvanzadaSchemaNormalizesLegacyBooleanFlags(t *testi
 	if err != nil {
 		t.Fatalf("read empresa_configuracion_avanzada.go: %v", err)
 	}
-	src := string(raw)
+	src := strings.ReplaceAll(string(raw), "\r\n", "\n")
 	schemaBody := extractEmpresaConfigAvanzadaFunctionForTest(t, src, "func EnsureEmpresaConfiguracionAvanzadaSchema(", "func ensureEmpresaConfiguracionAvanzadaFlagColumns(")
 	normalizerBody := extractEmpresaConfigAvanzadaFunctionForTest(t, src, "func ensureEmpresaConfiguracionAvanzadaFlagColumns(", "func defaultConfigAvanzada(")
 

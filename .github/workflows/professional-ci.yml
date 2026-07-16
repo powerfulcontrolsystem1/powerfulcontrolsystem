@@ -91,6 +91,9 @@ jobs:
       - name: Docker staging config
         run: docker compose --env-file deploy/.env.staging.example -f deploy/docker-compose.platform.yml -f deploy/docker-compose.staging.yml config --quiet
 
+      - name: Deployment pipeline contract
+        run: node tools/deploy_pipeline_contract.mjs
+
       - name: Docker monitoring config
         run: docker compose --env-file deploy/monitoring/.env.monitoring.example -f deploy/monitoring/docker-compose.monitoring.yml config --quiet
 
