@@ -32,6 +32,14 @@ func PlatformMigrations(target string) ([]Migration, error) {
 					return applyMobileAPIIdempotencySchemaTx(tx)
 				},
 			},
+			{
+				Version:     "20260716-002-nextcloud-accounts-v1",
+				Description: "enterprise Nextcloud account assignments",
+				Body:        empresaNextcloudSchemaFingerprint,
+				Apply: func(ctx context.Context, tx *sql.Tx) error {
+					return applyEmpresaNextcloudSchemaTx(ctx, tx)
+				},
+			},
 		}, nil
 	case MigrationTargetSuper:
 		return []Migration{

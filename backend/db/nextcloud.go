@@ -2,7 +2,10 @@ package db
 
 import (
 	"database/sql"
+	"fmt"
+	"os"
 	"strconv"
+	"strings"
 )
 
 // EnsureEmpresaNextcloudSchema stores only the technical assignment. Passwords
@@ -11,6 +14,15 @@ func EnsureEmpresaNextcloudSchema(dbEmpresas *sql.DB) error {
 	if dbEmpresas == nil {
 		return nil
 	}
+	if legacySchemaBootstrapDisabled() {
+		return verifyEmpresaNextcloudSchema(dbEmpresas)
+	}
+	return applyEmpresaNextcloudSchema(dbEmpresas)
+}
+
+// applyEmpresaNextcloudSchema is retained only for the legacy bootstrap. New
+// production installs receive this schema through pcs-migrate instead.
+func applyEmpresaNextcloudSchema(dbEmpresas *sql.DB) error {
 	_, err := execSQLCompat(dbEmpresas, `CREATE TABLE IF NOT EXISTS empresa_nextcloud_accounts (
 		id BIGSERIAL PRIMARY KEY,
 		empresa_id BIGINT NOT NULL UNIQUE REFERENCES empresas(id) ON DELETE CASCADE,
@@ -34,6 +46,32 @@ func EnsureEmpresaNextcloudSchema(dbEmpresas *sql.DB) error {
 	_, err = execSQLCompat(dbEmpresas, `CREATE INDEX IF NOT EXISTS idx_empresa_nextcloud_accounts_empresa
 		ON empresa_nextcloud_accounts(empresa_id)`)
 	return err
+}
+
+func verifyEmpresaNextcloudSchema(dbEmpresas *sql.DB) error {
+	var exists sql.NullString
+	if err := queryRowSQLCompat(dbEmpresas, `SELECT to_regclass('public.empresa_nextcloud_accounts')`).Scan(&exists); err != nil {
+		return fmt.Errorf("verify nextcloud schema: %w", err)
+	}
+	if !exists.Valid || strings.TrimSpace(exists.String) == "" {
+		return fmt.Errorf("nextcloud schema is missing; run pcs-migrate before starting the API")
+	}
+	return nil
+}
+
+func legacySchemaBootstrapDisabled() bool {
+	if !strings.EqualFold(strings.TrimSpace(os.Getenv("PCS_ENV")), "production") {
+		return false
+	}
+	if !strings.EqualFold(strings.TrimSpace(os.Getenv("PCS_RUNTIME_ROLE")), "api") {
+		return false
+	}
+	switch strings.ToLower(strings.TrimSpace(os.Getenv("PCS_RUNTIME_SCHEMA_BOOTSTRAP"))) {
+	case "0", "false", "no", "off":
+		return true
+	default:
+		return false
+	}
 }
 
 // EnsureEmpresaNextcloudAssignment creates the technical account assignment

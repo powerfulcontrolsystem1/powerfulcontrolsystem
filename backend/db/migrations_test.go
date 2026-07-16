@@ -45,3 +45,20 @@ func TestPlatformMigrationCatalogsAreOrderedAndChecksummed(t *testing.T) {
 		}
 	}
 }
+
+func TestEmpresaCatalogIncludesNextcloudSchemaMigration(t *testing.T) {
+	t.Parallel()
+	migrations, err := PlatformMigrations(MigrationTargetEmpresas)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, migration := range migrations {
+		if migration.Version == "20260716-002-nextcloud-accounts-v1" {
+			if migration.Body != empresaNextcloudSchemaFingerprint || migration.Apply == nil {
+				t.Fatal("nextcloud migration must be immutable and executable")
+			}
+			return
+		}
+	}
+	t.Fatal("nextcloud migration is missing from empresas catalog")
+}
