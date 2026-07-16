@@ -38030,3 +38030,11 @@ Archivos modificados:
 - Se versiona `documentos/arquitectura/inventario_bootstrap_ensure.md` y el
   preflight comprueba que siga sincronizado. Bootstrap legado y timers de API
   permanecen activos: no se declara produccion general lista por esta fase.
+
+2026-07-16 - Readiness interna del worker durable
+- `pcs-worker` incorpora probes `health` y `ready` solo por loopback del
+  contenedor. La readiness falla cerrada hasta completar un batch y responder
+  PostgreSQL; no expone empresas, payloads, proveedores ni control remoto.
+- Docker consulta el probe internamente y marca el contenedor no saludable si
+  el runner pierde disponibilidad. El cierre por `SIGTERM` apaga el servidor
+  auxiliar de forma gradual junto con el worker.

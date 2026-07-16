@@ -27,6 +27,9 @@ Estado: vigente. Ultima actualizacion: 2026-07-16.
 - El worker tiene leases, recuperacion de tareas vencidas y registro tipado;
   los handlers de correo, DIAN, pagos, documentos y reportes siguen como
   trabajo pendiente y no deben declararse migrados por esta base tecnica.
+- El healthcheck del worker es interno al contenedor (`127.0.0.1:8082` por
+  defecto), sin ruta publica. Docker comprueba `/ready`, que exige ultimo batch
+  correcto y PostgreSQL disponible.
 
 ## Actualizacion 2026-07-13 - Flujos moviles POS v1
 

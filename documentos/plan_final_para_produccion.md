@@ -475,13 +475,13 @@ segura, sincroniza sin duplicar venta y recibe push solo de su empresa.
 | PROD-009 | Migrar reportes, retencion y contabilidad. | Alta / 2 | 006 | Jobs largos no bloquean HTTP. | Medio | `worker: add maintenance and report handlers` | Pendiente |
 | PROD-010 | Agregar lease, heartbeat y recuperacion. | Critica / 3 | 003 | Job abandonado vuelve a pendiente con seguridad. | Medio | `queue: add leases and abandoned recovery` | Completado en la base 2026-07-16; falta validar carga en staging. |
 | PROD-011 | Agregar prioridad, cancelacion, DLQ y archivo. | Alta / 3 | 010 | DLQ trazable y reintento manual seguro. | Medio | `queue: add dead letter operations` | Parcial 2026-07-16; prioridad/cancelacion/DLQ listos, falta archivo y operacion UI. |
-| PROD-012 | Publicar metricas de cola. | Alta / 3 | 010 | Edad/estado/tasa visibles por tipo. | Bajo | `queue: add metrics and retention` | Pendiente |
+| PROD-012 | Publicar metricas de cola. | Alta / 3 | 010 | Edad/estado/tasa visibles por tipo. | Bajo | `queue: add metrics and retention` | Parcial 2026-07-16; metricas internas disponibles, falta superficie operativa y retencion. |
 | PROD-013 | Crear dispatcher outbox con lease/deduplicacion. | Critica / 4 | 006,010 | Evento confirmado produce un unico job. | Alto | `outbox: implement production dispatcher` | Parcial 2026-07-16; dispatcher seguro sin productores de negocio. |
 | PROD-014 | Emitir outbox desde venta, pago e inventario. | Critica / 4 | 013 | Commit y evento son atomicos. | Alto | `outbox: publish commerce events` | Pendiente |
 | PROD-015 | Emitir outbox desde DIAN, documentos, correo y contabilidad. | Alta / 4 | 013 | Efectos externos recuperables. | Alto | `outbox: publish integration events` | Pendiente |
 | PROD-016 | Sustituir timers de `main.go` por schedules del worker. | Bloqueador / 5 | 006-013 | Dos APIs no ejecutan cron duplicado. | Alto | `architecture: remove scheduled jobs from api` | Pendiente |
 | PROD-017 | Retirar goroutines de handlers de pago/integracion. | Critica / 5 | 014-015 | Request termina sin trabajo externo directo. | Alto | `payments: route async effects through outbox` | Pendiente |
-| PROD-018 | Agregar apagado gradual y health del worker. | Alta / 5 | 006,010 | SIGTERM no abandona trabajo sin lease. | Medio | `worker: add graceful shutdown and readiness` | Pendiente |
+| PROD-018 | Agregar apagado gradual y health del worker. | Alta / 5 | 006,010 | SIGTERM no abandona trabajo sin lease. | Medio | `worker: add graceful shutdown and readiness` | Parcial 2026-07-16; readiness loopback y cierre por SIGTERM listos, falta evidencia de carga/staging. |
 | PROD-019 | Configurar pools, timeouts y presupuesto de conexiones. | Alta / 6 | 005 | Cada rol respeta limite documentado. | Medio | `database: configure postgres pools by role` | Parcial 2026-07-16; limites por rol configurados, falta medicion de capacidad. |
 | PROD-020 | Medir/indizar rutas POS, inventario, caja y reportes. | Alta / 6 | 019 | Planes de consulta aceptados en dataset anonimo. | Medio | `database: optimize critical tenant queries` | Pendiente |
 | PROD-021 | Implementar control optimista de stock/caja/carrito. | Critica / 6,9 | 020 | Conflictos no duplican ni pierden saldo. | Alto | `commerce: add optimistic concurrency guards` | Pendiente |
@@ -549,6 +549,12 @@ No son condiciones para declarar produccion general lista: quedan 156
 la API aun deben migrarse al worker. Tampoco se han migrado los productores de
 negocio de correo, DIAN, pagos, documentos o reportes. El siguiente lote debe
 ser `PROD-004`, por grupos de esquema con ensayo de staging y rollback.
+
+Actualizacion adicional: `pcs-worker` expone solo dentro del contenedor
+`/health` y `/ready` en loopback. Docker lo sondea sin publicar puerto; la
+readiness exige un ciclo de trabajo correcto y conexion activa a PostgreSQL.
+Un fallo de batch deja el worker no listo hasta el siguiente ciclo exitoso y
+`SIGTERM` apaga el servidor de salud antes de concluir el proceso.
 
 ## Checklist de entrada a produccion
 

@@ -33,6 +33,7 @@ type Runner struct {
 	Lease       time.Duration
 	Handlers    map[string]HandlerSpec
 	BeforeBatch func(context.Context) error
+	Health      *HealthState
 }
 
 func (r *Runner) Run(ctx context.Context) error {
@@ -55,7 +56,10 @@ func (r *Runner) Run(ctx context.Context) error {
 		return err
 	}
 	if err := r.runBatch(ctx); err != nil {
+		r.markBatchFailure()
 		log.Printf("async worker initial batch failed: %v", err)
+	} else {
+		r.markBatchSuccess()
 	}
 	ticker := time.NewTicker(r.Poll)
 	defer ticker.Stop()
@@ -65,7 +69,10 @@ func (r *Runner) Run(ctx context.Context) error {
 			return nil
 		case <-ticker.C:
 			if err := r.runBatch(ctx); err != nil {
+				r.markBatchFailure()
 				log.Printf("async worker batch failed: %v", err)
+			} else {
+				r.markBatchSuccess()
 			}
 		}
 	}
@@ -168,6 +175,18 @@ func retryBackoff(attempt int) time.Duration {
 		return backoffs[len(backoffs)-1]
 	}
 	return backoffs[attempt-1]
+}
+
+func (r *Runner) markBatchSuccess() {
+	if r.Health != nil {
+		r.Health.MarkBatchSuccess(time.Now().UTC())
+	}
+}
+
+func (r *Runner) markBatchFailure() {
+	if r.Health != nil {
+		r.Health.MarkBatchFailure(time.Now().UTC())
+	}
 }
 
 func validateHandlerRegistry(registry map[string]HandlerSpec) error {
