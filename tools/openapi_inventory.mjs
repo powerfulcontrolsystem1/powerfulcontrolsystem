@@ -16,6 +16,20 @@ const routes = [...mainGo.matchAll(/http\.HandleFunc\("([^"]+)"/g)]
   .filter((route) => route.startsWith("/"))
   .sort((a, b) => a.localeCompare(b));
 
+// Some operational routes use http.Handle because their handler depends on
+// runtime state. Keep them in the inventory with the same explicit method
+// contract used by the implementation.
+const runtimeRoutes = ["/ready"];
+for (const route of runtimeRoutes) {
+  if (!routes.includes(route)) routes.push(route);
+}
+routes.sort((a, b) => a.localeCompare(b));
+
+const methodOverrides = new Map([
+  ["/health", ["get", "head"]],
+  ["/ready", ["get", "head"]],
+]);
+
 function yamlString(value) {
   return JSON.stringify(String(value));
 }
@@ -38,18 +52,14 @@ for (const route of routes) {
     : route.startsWith("/auth/") ? "autenticacion"
     : "publico";
   lines.push(`  ${yamlString(route)}:`);
-  lines.push("    get:");
-  lines.push(`      tags: [${tag}]`);
-  lines.push(`      summary: Ruta inventariada ${route}`);
-  lines.push("      responses:");
-  lines.push("        \"200\":");
-  lines.push("          description: Respuesta exitosa o manejada por el handler real.");
-  lines.push("    post:");
-  lines.push(`      tags: [${tag}]`);
-  lines.push(`      summary: Ruta inventariada ${route}`);
-  lines.push("      responses:");
-  lines.push("        \"200\":");
-  lines.push("          description: Respuesta exitosa o manejada por el handler real.");
+  for (const method of methodOverrides.get(route) ?? ["get", "post"]) {
+    lines.push(`    ${method}:`);
+    lines.push(`      tags: [${tag}]`);
+    lines.push(`      summary: Ruta inventariada ${route}`);
+    lines.push("      responses:");
+    lines.push("        \"200\":");
+    lines.push("          description: Respuesta exitosa o manejada por el handler real.");
+  }
 }
 
 const next = lines.join("\n") + "\n";

@@ -2978,7 +2978,7 @@ paths:
       responses:
         "200":
           description: Respuesta exitosa o manejada por el handler real.
-    post:
+    head:
       tags: [publico]
       summary: Ruta inventariada /health
       responses:
@@ -3020,6 +3020,19 @@ paths:
     post:
       tags: [publico]
       summary: Ruta inventariada /pantalla
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/ready":
+    get:
+      tags: [publico]
+      summary: Ruta inventariada /ready
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    head:
+      tags: [publico]
+      summary: Ruta inventariada /ready
       responses:
         "200":
           description: Respuesta exitosa o manejada por el handler real.
