@@ -151,13 +151,23 @@ func (r *Runner) maintainLease(ctx context.Context, stop <-chan struct{}, job db
 }
 
 func retryBackoff(attempt int) time.Duration {
+	backoffs := [...]time.Duration{
+		time.Minute,
+		2 * time.Minute,
+		4 * time.Minute,
+		8 * time.Minute,
+		16 * time.Minute,
+		32 * time.Minute,
+		64 * time.Minute,
+		128 * time.Minute,
+	}
 	if attempt < 1 {
-		attempt = 1
+		return backoffs[0]
 	}
-	if attempt > 8 {
-		attempt = 8
+	if attempt >= len(backoffs) {
+		return backoffs[len(backoffs)-1]
 	}
-	return time.Duration(1<<uint(attempt-1)) * time.Minute
+	return backoffs[attempt-1]
 }
 
 func validateHandlerRegistry(registry map[string]HandlerSpec) error {
