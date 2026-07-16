@@ -11929,3 +11929,9 @@ backend/handlers/selector_chat_ia.go
 
 backend/handlers/selector_chat_ia_test.go
 - Regresión de redacción de identificadores técnicos del contexto multiempresa del selector.
+backend/handlers/runtime_health.go
+- Handlers de probes operativos publicos: salud HTTP y disponibilidad de ambas
+  bases de datos, sin autenticar ni revelar errores internos.
+
+backend/handlers/runtime_health_test.go
+- Regresiones de contratos HTTP de los probes de salud y disponibilidad.

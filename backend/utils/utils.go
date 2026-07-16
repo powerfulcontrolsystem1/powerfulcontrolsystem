@@ -932,6 +932,8 @@ func AuthMiddleware(dbSuper *sql.DB, next http.Handler) http.Handler {
 		// Rutas públicas exactas (no usar prefijo "/" porque abriría todo el sistema).
 		publicExact := map[string]struct{}{
 			"/":                                                     {},
+			"/health":                                               {},
+			"/ready":                                                {},
 			"/index.html":                                           {},
 			"/mantenimiento.html":                                   {},
 			"/descripcion_de_los_sistemas.ht":                       {},

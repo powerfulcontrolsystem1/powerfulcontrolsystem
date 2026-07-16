@@ -37976,3 +37976,11 @@ Archivos modificados:
 - documentos/descripcion_de_archivos
 - documentos/historial_de_cambios
 - web/js/ai_chat_drawer.js
+2026-07-16 - Probes publicos de salud y disponibilidad
+- Se registran `/health` y `/ready` antes del handler estatico y se permiten de
+  forma explicita en la lista publica de autenticacion. Ambos aceptan solo
+  `GET`/`HEAD`, no se cachean ni exponen diagnosticos; `/ready` valida las dos
+  conexiones PostgreSQL y falla cerrado con `503`.
+- Se agregan regresiones de metodos, cache y fallo sin bases para impedir que
+  una futura capa de autenticacion deje inoperantes los healthchecks de Docker
+  o del balanceador.
