@@ -1,3 +1,5 @@
+// pcs-worker performs only durable background work. Schema ownership belongs
+// to pcs-migrate; HTTP ownership belongs to the API binary.
 package main
 
 import (
@@ -14,6 +16,7 @@ import (
 	_ "github.com/jackc/pgx/v5/stdlib"
 
 	dbpkg "github.com/you/pos-backend/db"
+	"github.com/you/pos-backend/internal/platform/outbox"
 	"github.com/you/pos-backend/internal/platform/worker"
 )
 
@@ -33,13 +36,20 @@ func main() {
 		log.Fatal(err)
 	}
 	defer dbConn.Close()
+	pool, err := dbpkg.LoadPostgresPoolConfig(os.Getenv, "worker")
+	if err != nil {
+		log.Fatal(err)
+	}
+	if err := dbpkg.ConfigurePostgresPool(dbConn, pool); err != nil {
+		log.Fatal(err)
+	}
 	if err := dbConn.Ping(); err != nil {
 		log.Fatal(err)
 	}
-	if err := dbpkg.EnsureAsyncJobsSchema(dbConn); err != nil {
+	if err := dbpkg.VerifyAsyncJobsSchema(dbConn); err != nil {
 		log.Fatal(err)
 	}
-	if err := dbpkg.EnsureOutboxSchema(dbConn); err != nil {
+	if err := dbpkg.VerifyOutboxSchema(dbConn); err != nil {
 		log.Fatal(err)
 	}
 	workerID := strings.TrimSpace(os.Getenv("PCS_WORKER_ID"))
@@ -52,8 +62,21 @@ func main() {
 	}
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
-	runner := &worker.Runner{DB: dbConn, WorkerID: workerID, Poll: 2 * time.Second, Batch: 20, Handlers: map[string]worker.Handler{}}
+	registry := worker.DefaultRegistry()
+	dispatcher := &outbox.Dispatcher{DB: dbConn, DispatcherID: workerID + "-outbox", Batch: 20, Lease: 5 * time.Minute, AllowedKinds: worker.Kinds(registry)}
+	runner := &worker.Runner{
+		DB:       dbConn,
+		WorkerID: workerID,
+		Poll:     2 * time.Second,
+		Batch:    20,
+		Lease:    5 * time.Minute,
+		Handlers: registry,
+		BeforeBatch: func(ctx context.Context) error {
+			return dispatcher.Dispatch(ctx)
+		},
+	}
 	if err := runner.Run(ctx); err != nil {
 		log.Fatal(fmt.Errorf("worker stopped: %w", err))
 	}
+	log.Print("worker stopped gracefully")
 }

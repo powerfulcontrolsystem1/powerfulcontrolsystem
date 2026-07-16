@@ -9,6 +9,8 @@ import (
 	"strings"
 )
 
+const mobileAPIIdempotencySchemaFingerprint = "empresa_mobile_api_idempotencia:v2:tenant-operation-key-hash-response-expiry"
+
 // MobileAPIIdempotencyRecord stores the completed result of a mutation issued
 // by a mobile device. The client supplied key is never persisted in plaintext.
 type MobileAPIIdempotencyRecord struct {
@@ -35,7 +37,28 @@ func EnsureMobileAPIIdempotencySchema(dbConn *sql.DB) error {
 	if dbConn == nil {
 		return fmt.Errorf("db connection is nil")
 	}
-	_, err := execSQLCompat(dbConn, `CREATE TABLE IF NOT EXISTS empresa_mobile_api_idempotencia (
+	for _, statement := range mobileAPIIdempotencySchemaStatements() {
+		if _, err := execSQLCompat(dbConn, statement); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func applyMobileAPIIdempotencySchemaTx(tx *sql.Tx) error {
+	if tx == nil {
+		return fmt.Errorf("migration transaction is required")
+	}
+	for _, statement := range mobileAPIIdempotencySchemaStatements() {
+		if _, err := execTxSQLCompat(tx, statement); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func mobileAPIIdempotencySchemaStatements() []string {
+	return []string{`CREATE TABLE IF NOT EXISTS empresa_mobile_api_idempotencia (
 		empresa_id BIGINT NOT NULL,
 		operacion TEXT NOT NULL,
 		clave_hash TEXT NOT NULL,
@@ -45,14 +68,17 @@ func EnsureMobileAPIIdempotencySchema(dbConn *sql.DB) error {
 		respuesta_json TEXT NOT NULL DEFAULT '',
 		fecha_creacion TEXT DEFAULT CAST(CURRENT_TIMESTAMP AS TEXT),
 		fecha_actualizacion TEXT DEFAULT CAST(CURRENT_TIMESTAMP AS TEXT),
+		fecha_completado TIMESTAMPTZ,
+		fecha_expiracion TIMESTAMPTZ,
 		PRIMARY KEY (empresa_id, operacion, clave_hash)
-	)`)
-	if err != nil {
-		return err
+	)`,
+		`ALTER TABLE empresa_mobile_api_idempotencia ADD COLUMN IF NOT EXISTS fecha_completado TIMESTAMPTZ`,
+		`ALTER TABLE empresa_mobile_api_idempotencia ADD COLUMN IF NOT EXISTS fecha_expiracion TIMESTAMPTZ`,
+		`CREATE INDEX IF NOT EXISTS ix_empresa_mobile_api_idempotencia_actualizacion
+			ON empresa_mobile_api_idempotencia (empresa_id, fecha_actualizacion DESC)`,
+		`CREATE INDEX IF NOT EXISTS ix_empresa_mobile_api_idempotencia_expiracion
+			ON empresa_mobile_api_idempotencia (fecha_expiracion) WHERE fecha_expiracion IS NOT NULL`,
 	}
-	_, err = execSQLCompat(dbConn, `CREATE INDEX IF NOT EXISTS ix_empresa_mobile_api_idempotencia_actualizacion
-		ON empresa_mobile_api_idempotencia (empresa_id, fecha_actualizacion DESC)`)
-	return err
 }
 
 // ClaimMobileAPIIdempotency atomically reserves an operation. claimed is true
@@ -60,9 +86,6 @@ func EnsureMobileAPIIdempotencySchema(dbConn *sql.DB) error {
 func ClaimMobileAPIIdempotency(dbConn *sql.DB, empresaID int64, operation, key, requestBody string) (*MobileAPIIdempotencyRecord, bool, error) {
 	if empresaID <= 0 || strings.TrimSpace(operation) == "" || strings.TrimSpace(key) == "" {
 		return nil, false, fmt.Errorf("idempotency input invalido")
-	}
-	if err := EnsureMobileAPIIdempotencySchema(dbConn); err != nil {
-		return nil, false, err
 	}
 	record := &MobileAPIIdempotencyRecord{
 		EmpresaID:   empresaID,
@@ -109,7 +132,8 @@ func CompleteMobileAPIIdempotency(dbConn *sql.DB, record *MobileAPIIdempotencyRe
 		return fmt.Errorf("resultado de idempotencia invalido")
 	}
 	_, err := execSQLCompat(dbConn, `UPDATE empresa_mobile_api_idempotencia
-		SET estado = 'completado', codigo_respuesta = ?, respuesta_json = ?, fecha_actualizacion = CURRENT_TIMESTAMP
+		SET estado = 'completado', codigo_respuesta = ?, respuesta_json = ?, fecha_actualizacion = CURRENT_TIMESTAMP,
+			fecha_completado = CURRENT_TIMESTAMP
 		WHERE empresa_id = ? AND operacion = ? AND clave_hash = ? AND solicitud_hash = ?`,
 		responseCode, responseJSON, record.EmpresaID, record.Operation, record.KeyHash, record.RequestHash)
 	return err

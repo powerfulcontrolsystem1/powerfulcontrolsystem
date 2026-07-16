@@ -139,6 +139,30 @@ go build ./cmd/pcs-migrate
 go build ./cmd/pcs-worker
 ```
 
+Antes de un cambio de migraciones, cola, outbox o bootstrap, verificar el
+inventario y el contrato de catalogo sin tocar datos reales:
+
+```powershell
+Set-Location D:\powerfulcontrolsystem
+$node = $env:PCS_NODE_PATH
+if ([string]::IsNullOrWhiteSpace($node)) {
+  $node = Join-Path $env:USERPROFILE ".cache\codex-runtimes\codex-primary-runtime\dependencies\node\bin\node.exe"
+}
+if (-not (Test-Path -LiteralPath $node)) { $node = (Get-Command node -ErrorAction Stop).Source }
+& $node tools\ensure_bootstrap_inventory.mjs --check
+& $node tools\migration_audit.mjs --strict
+Set-Location backend
+go test ./db ./internal/platform/worker ./internal/platform/outbox
+go vet ./db ./internal/platform/worker ./internal/platform/outbox
+go build ./cmd/pcs-migrate
+go build ./cmd/pcs-worker
+```
+
+`pcs-migrate` es el unico rol que aplica las migraciones de plataforma. La API
+y el worker solo verifican cola, outbox e idempotencia movil. Mantener
+`PCS_RUNTIME_SCHEMA_BOOTSTRAP=1` hasta que el inventario legado se haya movido
+por lotes, el staging pase con valor `0` y se documente el rollback.
+
 No establecer `PCS_RUNTIME_SCHEMA_BOOTSTRAP=0` en una instalacion existente
 hasta verificar el ledger de migraciones y los flujos de provisionamiento.
 

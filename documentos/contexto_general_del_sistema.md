@@ -14,6 +14,20 @@ Estado: vigente. Ultima actualizacion: 2026-07-16.
   handlers y dispatcher definidos en el plan. Produccion general no queda
   autorizada hasta cumplir los hitos y gates de staging del documento.
 
+## Actualizacion 2026-07-16 - Migrador y trabajo durable
+
+- `pcs-migrate` usa un ledger con checksum, corrida auditable y advisory lock
+  transaccional. Solo las migraciones catalogadas pueden modificar el esquema
+  nuevo de plataforma; una diferencia de checksum bloquea el arranque de
+  migracion.
+- La cola, outbox e idempotencia movil de plataforma son verificadas en API y
+  worker sin emitir DDL. El bootstrap heredado permanece activo mientras se
+  traslada su inventario clasificado: no establecer
+  `PCS_RUNTIME_SCHEMA_BOOTSTRAP=0` sin ensayo de staging documentado.
+- El worker tiene leases, recuperacion de tareas vencidas y registro tipado;
+  los handlers de correo, DIAN, pagos, documentos y reportes siguen como
+  trabajo pendiente y no deben declararse migrados por esta base tecnica.
+
 ## Actualizacion 2026-07-13 - Flujos moviles POS v1
 
 - `/api/v1/` ya cubre carrito, items, cobro, sincronizacion offline,

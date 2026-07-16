@@ -464,25 +464,25 @@ segura, sincroniza sin duplicar venta y recibe push solo de su empresa.
 
 | ID | Titulo y detalle tecnico | Prioridad / fase | Dependencias | Aceptacion | Riesgo | Commit sugerido | Estado inicial |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| PROD-001 | Inventariar cada `Ensure*`, su base y clase de mutacion. | Critica / 1 | Ninguna | Inventario versionado y sin DDL sin clasificar. | Bajo | `database: inventory runtime schema mutations` | Pendiente |
-| PROD-002 | Rehacer ledger con advisory lock, checksum y estados. | Critica / 1 | 001 | Dos migradores no compiten; deriva detectada. | Medio | `database: complete migration ledger and advisory lock` | Pendiente |
-| PROD-003 | Convertir cola, outbox e idempotencia en migraciones declaradas. | Critica / 1 | 002 | API/worker no ejecutan DDL de esas tablas. | Medio | `database: move platform schemas into migrations` | Parcial |
+| PROD-001 | Inventariar cada `Ensure*`, su base y clase de mutacion. | Critica / 1 | Ninguna | Inventario versionado y sin DDL sin clasificar. | Bajo | `database: inventory runtime schema mutations` | Completado 2026-07-16; quedan clases por migrar antes de apagar bootstrap. |
+| PROD-002 | Rehacer ledger con advisory lock, checksum y estados. | Critica / 1 | 001 | Dos migradores no compiten; deriva detectada. | Medio | `database: complete migration ledger and advisory lock` | Completado 2026-07-16; requiere ensayo de staging con ledger historico. |
+| PROD-003 | Convertir cola, outbox e idempotencia en migraciones declaradas. | Critica / 1 | 002 | API/worker no ejecutan DDL de esas tablas. | Medio | `database: move platform schemas into migrations` | Completado para esquemas plataforma 2026-07-16; DDL legado permanece en bootstrap. |
 | PROD-004 | Extraer DDL/seeds de API por lotes y cubrirlos con pruebas. | Critica / 1 | 001-003 | `PCS_RUNTIME_SCHEMA_BOOTSTRAP=0` pasa staging. | Alto | `database: migrate legacy bootstrap batch 01` | Pendiente |
 | PROD-005 | Desactivar bootstrap de API tras gate de staging. | Bloqueador / 1 | 004 | Arranque API no emite DDL. | Alto | `runtime: disable api schema bootstrap` | Pendiente |
-| PROD-006 | Definir registro tipado de handlers/versiones. | Critica / 2 | 003 | Worker tiene handlers declarados y timeout. | Medio | `worker: add production handler registry` | Pendiente |
+| PROD-006 | Definir registro tipado de handlers/versiones. | Critica / 2 | 003 | Worker tiene handlers declarados y timeout. | Medio | `worker: add production handler registry` | Parcial 2026-07-16; registro, timeout y validacion listos, faltan handlers de negocio. |
 | PROD-007 | Migrar correo y notificaciones a handlers. | Critica / 2 | 006 | Reintento no duplica envio. | Medio | `worker: move notifications to durable jobs` | Pendiente |
 | PROD-008 | Migrar DIAN, pagos y documentos a handlers idempotentes. | Critica / 2 | 006-007 | Repeticion no duplica efecto fiscal/financiero. | Alto | `worker: add fiscal and payment handlers` | Pendiente |
 | PROD-009 | Migrar reportes, retencion y contabilidad. | Alta / 2 | 006 | Jobs largos no bloquean HTTP. | Medio | `worker: add maintenance and report handlers` | Pendiente |
-| PROD-010 | Agregar lease, heartbeat y recuperacion. | Critica / 3 | 003 | Job abandonado vuelve a pendiente con seguridad. | Medio | `queue: add leases and abandoned recovery` | Parcial |
-| PROD-011 | Agregar prioridad, cancelacion, DLQ y archivo. | Alta / 3 | 010 | DLQ trazable y reintento manual seguro. | Medio | `queue: add dead letter operations` | Pendiente |
+| PROD-010 | Agregar lease, heartbeat y recuperacion. | Critica / 3 | 003 | Job abandonado vuelve a pendiente con seguridad. | Medio | `queue: add leases and abandoned recovery` | Completado en la base 2026-07-16; falta validar carga en staging. |
+| PROD-011 | Agregar prioridad, cancelacion, DLQ y archivo. | Alta / 3 | 010 | DLQ trazable y reintento manual seguro. | Medio | `queue: add dead letter operations` | Parcial 2026-07-16; prioridad/cancelacion/DLQ listos, falta archivo y operacion UI. |
 | PROD-012 | Publicar metricas de cola. | Alta / 3 | 010 | Edad/estado/tasa visibles por tipo. | Bajo | `queue: add metrics and retention` | Pendiente |
-| PROD-013 | Crear dispatcher outbox con lease/deduplicacion. | Critica / 4 | 006,010 | Evento confirmado produce un unico job. | Alto | `outbox: implement production dispatcher` | Pendiente |
+| PROD-013 | Crear dispatcher outbox con lease/deduplicacion. | Critica / 4 | 006,010 | Evento confirmado produce un unico job. | Alto | `outbox: implement production dispatcher` | Parcial 2026-07-16; dispatcher seguro sin productores de negocio. |
 | PROD-014 | Emitir outbox desde venta, pago e inventario. | Critica / 4 | 013 | Commit y evento son atomicos. | Alto | `outbox: publish commerce events` | Pendiente |
 | PROD-015 | Emitir outbox desde DIAN, documentos, correo y contabilidad. | Alta / 4 | 013 | Efectos externos recuperables. | Alto | `outbox: publish integration events` | Pendiente |
 | PROD-016 | Sustituir timers de `main.go` por schedules del worker. | Bloqueador / 5 | 006-013 | Dos APIs no ejecutan cron duplicado. | Alto | `architecture: remove scheduled jobs from api` | Pendiente |
 | PROD-017 | Retirar goroutines de handlers de pago/integracion. | Critica / 5 | 014-015 | Request termina sin trabajo externo directo. | Alto | `payments: route async effects through outbox` | Pendiente |
 | PROD-018 | Agregar apagado gradual y health del worker. | Alta / 5 | 006,010 | SIGTERM no abandona trabajo sin lease. | Medio | `worker: add graceful shutdown and readiness` | Pendiente |
-| PROD-019 | Configurar pools, timeouts y presupuesto de conexiones. | Alta / 6 | 005 | Cada rol respeta limite documentado. | Medio | `database: configure postgres pools by role` | Pendiente |
+| PROD-019 | Configurar pools, timeouts y presupuesto de conexiones. | Alta / 6 | 005 | Cada rol respeta limite documentado. | Medio | `database: configure postgres pools by role` | Parcial 2026-07-16; limites por rol configurados, falta medicion de capacidad. |
 | PROD-020 | Medir/indizar rutas POS, inventario, caja y reportes. | Alta / 6 | 019 | Planes de consulta aceptados en dataset anonimo. | Medio | `database: optimize critical tenant queries` | Pendiente |
 | PROD-021 | Implementar control optimista de stock/caja/carrito. | Critica / 6,9 | 020 | Conflictos no duplican ni pierden saldo. | Alto | `commerce: add optimistic concurrency guards` | Pendiente |
 | PROD-022 | Extraer `auth` y `sessions` a modulo interno. | Alta / 7 | 005 | Casos de uso sin HTTP; compatibilidad de rutas. | Medio | `architecture: modularize auth and sessions` | Pendiente |
@@ -522,6 +522,33 @@ Dependencias principales: H2 depende de H1; H3 necesita H1/H2; H4 usa el
 TenantContext de H3/H1; H5 requiere H1-H4; H6 necesita H2, H4 y ObjectStorage
 cuando habilite adjuntos. Ningun release general salta H1, H2, las pruebas de
 aislamiento de H4 ni la restauracion de H5.
+
+## Ejecucion registrada 2026-07-16 - Base de Fase 1 a 4 y 6
+
+Se implemento la primera base tecnica sin apagar el bootstrap historico:
+
+- `schema_migrations` ahora mantiene checksum, estado, ejecutor y una corrida
+  auditable. Cada migracion catalogada toma un advisory lock transaccional y se
+  aplica junto con su registro; si el catalogo deriva, el migrador falla
+  cerrado.
+- `pcs_async_jobs`, `pcs_outbox_events` y la idempotencia movil pasan al
+  catalogo de `pcs-migrate`. API y worker verifican el esquema en modo lectura,
+  pero no hacen DDL para esos componentes.
+- La cola incorpora lease, heartbeat, recuperacion de trabajo vencido,
+  prioridad, cancelacion, reintento, estado muerto e idempotencia por hash. El
+  worker valida un registro tipado con version, timeout y maximo de intentos.
+- La outbox incorpora lease, reintento e idempotencia. Su dispatcher solo
+  acepta tipos de job registrados; un evento no reconocido no se pierde ni se
+  ejecuta como accion externa.
+- Cada rol recibe limites de pool PostgreSQL independientes. Los valores de
+  produccion se deben dimensionar con metricas de staging antes de habilitar
+  replicas.
+
+No son condiciones para declarar produccion general lista: quedan 156
+`Ensure*` inventariados, el bootstrap legado continua activo y once timers de
+la API aun deben migrarse al worker. Tampoco se han migrado los productores de
+negocio de correo, DIAN, pagos, documentos o reportes. El siguiente lote debe
+ser `PROD-004`, por grupos de esquema con ensayo de staging y rollback.
 
 ## Checklist de entrada a produccion
 

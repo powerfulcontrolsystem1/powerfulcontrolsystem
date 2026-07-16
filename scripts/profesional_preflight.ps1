@@ -173,6 +173,8 @@ try {
     }
 
     Invoke-Captured -Title "Auditoria de migraciones" -Required:$Strict -Script {
+      & $nodeCmd tools\ensure_bootstrap_inventory.mjs --check
+      if ($LASTEXITCODE -ne 0) { throw "inventario Ensure desactualizado con codigo $LASTEXITCODE" }
       & $nodeCmd tools\migration_audit.mjs --out $ReportDir
       $code = if ($null -ne $LASTEXITCODE) { [int]$LASTEXITCODE } else { 0 }
       if ($Strict -and $code -ne 0) { throw "auditoria de migraciones fallo con codigo $code" }

@@ -320,6 +320,15 @@ func openAndPingRuntimeDB(driverName, dsn, label string) (*sql.DB, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to open %s db with driver %s: %w", label, driverName, err)
 	}
+	pool, err := dbpkg.LoadPostgresPoolConfig(os.Getenv, "api")
+	if err != nil {
+		_ = dbConn.Close()
+		return nil, fmt.Errorf("invalid %s database pool: %w", label, err)
+	}
+	if err := dbpkg.ConfigurePostgresPool(dbConn, pool); err != nil {
+		_ = dbConn.Close()
+		return nil, fmt.Errorf("configure %s database pool: %w", label, err)
+	}
 	if err := dbConn.Ping(); err != nil {
 		_ = dbConn.Close()
 		return nil, fmt.Errorf("failed to ping %s db with driver %s: %w", label, driverName, err)

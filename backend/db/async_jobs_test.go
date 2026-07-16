@@ -1,6 +1,10 @@
 package db
 
-import "testing"
+import (
+	"fmt"
+	"strings"
+	"testing"
+)
 
 func TestValidateAsyncJobRejectsUnsafeInput(t *testing.T) {
 	t.Parallel()
@@ -19,5 +23,16 @@ func TestValidateAsyncJobAcceptsTenantScopedWork(t *testing.T) {
 	t.Parallel()
 	if err := ValidateAsyncJob(AsyncJob{EmpresaID: 42, Kind: "email.send", PayloadJSON: `{"message_id":"safe-reference"}`, MaxAttempts: 5}); err != nil {
 		t.Fatalf("ValidateAsyncJob: %v", err)
+	}
+}
+
+func TestAsyncJobRedactionAndIdempotencyHashDoNotExposeRawInput(t *testing.T) {
+	t.Parallel()
+	if got := hashAsyncJobKey("retry-key"); got == "" || got == "retry-key" {
+		t.Fatalf("expected stable non-raw key hash, got %q", got)
+	}
+	message := redactAsyncJobError(fmt.Errorf("provider failed token=private-value"))
+	if strings.Contains(message, "private-value") {
+		t.Fatalf("job error leaked sensitive value: %q", message)
 	}
 }

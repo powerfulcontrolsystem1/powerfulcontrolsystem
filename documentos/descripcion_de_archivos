@@ -11894,6 +11894,26 @@ documentos/plan_final_para_produccion.md
 - Hoja de ruta ejecutable de produccion: diagnostico real de API, migrador,
   worker, cola, outbox, PostgreSQL, modulos, Docker y API movil; incluye fases,
   backlog, hitos, criterios de aceptacion, releases, rollback y primera fase.
+
+documentos/arquitectura/inventario_bootstrap_ensure.md
+- Inventario generado y versionado de funciones `Ensure*` en runtime. Clasifica
+  cada referencia como DDL, seed, verificacion, compatibilidad o revision antes
+  de retirar el bootstrap de API.
+
+backend/db/migrations.go
+- Ledger versionado de migraciones con checksum, advisory lock y corridas
+  auditables; el catalogo que deriva falla cerrado.
+
+backend/db/platform_migrations.go
+- Catalogo declarado de la base de plataforma para cola, outbox e idempotencia
+  movil, aplicado exclusivamente por `pcs-migrate`.
+
+backend/db/postgres_pool.go
+- Limites tipados de pool PostgreSQL por rol API, worker y migrador.
+
+backend/internal/platform/outbox/dispatcher.go
+- Dispatcher durable que reclama eventos por lease y solo transforma topicos a
+  jobs registrados e idempotentes.
 2026-07-13 - IA propia empresarial y API movil v1
 - `backend/db/ai_empresa_proveedor.go`: esquema y acceso cifrado por empresa
   para la clave OpenAI propia; el valor solo se descifra en memoria al enviar la
