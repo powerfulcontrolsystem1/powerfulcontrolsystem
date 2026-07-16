@@ -2971,6 +2971,19 @@ paths:
       responses:
         "200":
           description: Respuesta exitosa o manejada por el handler real.
+  "/health":
+    get:
+      tags: [publico]
+      summary: Ruta inventariada /health
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    head:
+      tags: [publico]
+      summary: Ruta inventariada /health
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
   "/licencias/activar_sin_pago":
     get:
       tags: [publico]
@@ -3007,6 +3020,19 @@ paths:
     post:
       tags: [publico]
       summary: Ruta inventariada /pantalla
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/ready":
+    get:
+      tags: [publico]
+      summary: Ruta inventariada /ready
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    head:
+      tags: [publico]
+      summary: Ruta inventariada /ready
       responses:
         "200":
           description: Respuesta exitosa o manejada por el handler real.
