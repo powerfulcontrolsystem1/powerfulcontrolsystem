@@ -1,6 +1,18 @@
 # Contexto general del sistema
 
-Estado: vigente. Ultima actualizacion: 2026-07-13.
+Estado: vigente. Ultima actualizacion: 2026-07-16.
+
+## Actualizacion 2026-07-16 - Plan final de produccion
+
+- `documentos/plan_final_para_produccion.md` es la hoja de ruta vigente para
+  convertir la fundacion actual de migrador, worker, cola, outbox y API movil
+  en una plataforma operable con replicas. Debe consultarse antes de proponer
+  cambios transversales de arquitectura, despliegue, PostgreSQL, jobs o API
+  movil.
+- No confundir los binarios ya creados con una separacion terminada: la API aun
+  conserva bootstrap historico y timers; el worker y la outbox requieren los
+  handlers y dispatcher definidos en el plan. Produccion general no queda
+  autorizada hasta cumplir los hitos y gates de staging del documento.
 
 ## Actualizacion 2026-07-13 - Flujos moviles POS v1
 

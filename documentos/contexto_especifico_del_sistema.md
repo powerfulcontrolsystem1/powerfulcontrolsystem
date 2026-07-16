@@ -1,6 +1,6 @@
 # Contexto especifico del sistema
 
-Estado: vigente. Ultima actualizacion: 2026-07-13.
+Estado: vigente. Ultima actualizacion: 2026-07-16.
 
 Este documento amplia el
 [`Contexto general del sistema`](contexto_general_del_sistema.md). No se debe
@@ -51,7 +51,7 @@ forzadas aunque el boton se oculte en frontend.
   `selector` (resúmenes de empresas autorizadas del usuario, sin IDs técnicos
   ni mutaciones) y `empresa` (una única empresa validada por permisos).
 - Arquitectura modular, migraciones/worker y API movil:
-  `plan_101_arquitectura_modular.md`,
+  `plan_final_para_produccion.md`, `plan_101_arquitectura_modular.md`,
   `preparacion_produccion_y_app_movil.md`, `api/mobile_api_v1.md` y
   `api/openapi.mobile.v1.yaml`.
 - Correo corporativo y WhatsApp: `mapa_modulos.md`, `flujos_operativos.md`,

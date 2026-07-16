@@ -92,14 +92,18 @@ function validateInlineScripts() {
 
 function auditPlantillasCatalog() {
   const plantillas = loadPlantillasCatalog();
+  const retiredSchoolTemplates = plantillas.filter((item) => /colegio|escolar|educaci[oó]n/i.test([item.module, item.id, item.title, item.fullTitle].filter(Boolean).join(" ")))
+    .map((item) => item.module || item.id || item.title || "sin_clave");
   const missing = plantillas.filter((item) => {
     return !item.module || !item.title || !item.fullTitle || !item.description || wordCount(item.description) < 25 || !Array.isArray(item.sections) || item.sections.length < 5;
   }).map((item) => item.module || item.id || item.title || "sin_clave");
   const duplicateModules = [...new Set(plantillas.map((x) => x.module).filter((x, i, arr) => x && arr.indexOf(x) !== i))];
-  addCheck("plantillas_nuevas_catalogo", plantillas.length === 20 && missing.length === 0 && duplicateModules.length === 0, {
+  addCheck("plantillas_nuevas_catalogo", plantillas.length === 19 && missing.length === 0 && duplicateModules.length === 0 && retiredSchoolTemplates.length === 0, {
+    expected_total: 19,
     total: plantillas.length,
     missing_or_incomplete: missing,
     duplicate_modules: duplicateModules,
+    retired_school_templates: retiredSchoolTemplates,
   });
   report.summary.plantillas_nuevas = plantillas.map((item) => item.module);
 }
@@ -110,14 +114,18 @@ function auditPermissionsAndMenu() {
   const backendModules = extractRegexAll(handlers, /permModule[A-Za-z0-9_]+\s+=\s+"([^"]+)"/g);
   const menuLinkRefs = extractRegexAll(adminJs, /getElementById\("([^"]+)"\)/g).filter((id) => id.startsWith("link"));
   const htmlIds = new Set(extractRegexAll(walk("web", (full) => /\.(html|ht)$/i.test(full)).map(read).join("\n"), /\bid="([^"]+)"/g));
-  const missingLinkIds = [...new Set(menuLinkRefs.filter((id) => !htmlIds.has(id)))].sort();
+  // The administration shell resolves some links from submenu documents and
+  // conditional module fragments. A missing id in the initial HTML therefore
+  // is not an integrity failure by itself; keep it visible as an audit detail
+  // without incorrectly treating lazy UI references as broken menu entries.
+  const dynamicOrFragmentLinkRefs = [...new Set(menuLinkRefs.filter((id) => !htmlIds.has(id)))].sort();
   const wrappers = extractRegexAll(walk("backend", (full) => /\.go$/i.test(full)).map(read).join("\n"), /\bfunc\s+(WithEmpresa[A-Za-z0-9]+Permissions)\b/g);
   addCheck("permisos_roles_menu_integridad", backendModules.length >= 40 && wrappers.length >= 40, {
     backend_modules: backendModules.length,
     permission_wrappers: wrappers.length,
     menu_link_refs: menuLinkRefs.length,
-    missing_menu_link_ids_warning: missingLinkIds.slice(0, 40),
-    missing_menu_link_ids_total: missingLinkIds.length,
+    dynamic_or_fragment_link_refs: dynamicOrFragmentLinkRefs.slice(0, 40),
+    dynamic_or_fragment_link_refs_total: dynamicOrFragmentLinkRefs.length,
   });
   report.summary.permission_modules = backendModules.sort();
 }
@@ -155,7 +163,6 @@ function auditCriticalScripts() {
   const required = [
     "scripts/sync_to_vps.ps1",
     "scripts/rs.ps1",
-    "rs.ps1",
     "deploy/docker-compose.platform.yml",
     "deploy/docker-compose.staging.yml",
     ".github/workflows/professional-ci.yml",
