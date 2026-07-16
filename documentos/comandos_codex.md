@@ -107,6 +107,12 @@ ajustar la espera o desactivar auto-merge:
 .\scripts\rs.ps1 -NoAutoMergeProtectedPR
 ```
 
+Cuando GitHub fusione esa PR mediante `squash`, el commit de `main` tendra otra
+identidad aunque contenga el mismo cambio. El actualizador primero intenta
+fast-forward y, solo si el arbol esta limpio, reconcilia mediante rebase. Si hay
+conflicto o `HEAD` no termina exactamente igual a `origin/main`, aborta y `rs`
+no sincroniza la VPS.
+
 El hijo se resuelve como `pwsh.exe` cuando el orquestador se ejecuta en
 PowerShell Core y como `powershell.exe` en Windows PowerShell, con fallback a
 un comando instalado. No se debe asumir que `$PSHOME` contiene ambos binarios.

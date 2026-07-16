@@ -266,6 +266,46 @@ function Enable-RepositoryAutoMergeIfAllowed {
     return $true
 }
 
+function Sync-LocalBaseAfterProtectedMerge {
+    param(
+        [Parameter(Mandatory = $true)][string]$BaseBranch
+    )
+
+    & git fetch origin $BaseBranch
+    if ($LASTEXITCODE -ne 0) {
+        throw "La PR fue fusionada, pero no se pudo actualizar origin/$BaseBranch."
+    }
+
+    & git pull --ff-only origin $BaseBranch
+    if ($LASTEXITCODE -eq 0) {
+        Write-Ok "$BaseBranch local actualizado por fast-forward."
+        return
+    }
+
+    # GitHub puede fusionar una PR protegida con squash. En ese caso el commit
+    # local publicado y el commit de main tienen el mismo cambio, pero distinta
+    # identidad, por lo que fast-forward falla. Solo con arbol limpio se intenta
+    # un rebase no destructivo; luego se exige igualdad exacta con origin/main
+    # para impedir que rs despliegue commits locales no publicados.
+    $status = (& git status --porcelain 2>$null | Out-String).Trim()
+    if (-not [string]::IsNullOrWhiteSpace($status)) {
+        throw "La PR fue fusionada, pero $BaseBranch local divergió y el arbol no esta limpio. Revisa los cambios antes de reconciliarlo."
+    }
+    Write-WarnMsg "Fast-forward no disponible despues de la fusion protegida; reconciliando $BaseBranch mediante rebase seguro."
+    & git rebase "origin/$BaseBranch"
+    if ($LASTEXITCODE -ne 0) {
+        & git rebase --abort *> $null
+        throw "La PR fue fusionada, pero el rebase de $BaseBranch local tuvo conflictos. Se aborto sin modificar el arbol."
+    }
+
+    $localRevision = ((& git rev-parse HEAD 2>$null) | Out-String).Trim()
+    $remoteRevision = ((& git rev-parse "origin/$BaseBranch" 2>$null) | Out-String).Trim()
+    if ([string]::IsNullOrWhiteSpace($localRevision) -or $localRevision -ne $remoteRevision) {
+        throw "$BaseBranch local se reconcilio, pero contiene commits no publicados. rs no desplegara una revision distinta de origin/$BaseBranch."
+    }
+    Write-Ok "$BaseBranch local reconciliado con origin/$BaseBranch despues de la fusion protegida."
+}
+
 function Invoke-ProtectedMainPullRequest {
     param(
         [Parameter(Mandatory = $true)][string]$BaseBranch,
@@ -340,10 +380,7 @@ function Invoke-ProtectedMainPullRequest {
                 if ($LASTEXITCODE -ne 0) {
                     throw "La PR fue fusionada, pero no se pudo volver a $BaseBranch."
                 }
-                & git pull --ff-only origin $BaseBranch
-                if ($LASTEXITCODE -ne 0) {
-                    throw "La PR fue fusionada, pero no se pudo actualizar $BaseBranch localmente."
-                }
+                Sync-LocalBaseAfterProtectedMerge -BaseBranch $BaseBranch
                 Write-Ok "PR fusionada por GitHub. $BaseBranch quedo actualizado para continuar con rs."
                 return [pscustomobject]@{ Merged = $true; Pending = $false; Url = $prUrl }
             }
