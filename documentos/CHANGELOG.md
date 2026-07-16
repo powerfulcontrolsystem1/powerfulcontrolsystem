@@ -3275,3 +3275,9 @@
 - [Operacion] Pools PostgreSQL por rol e inventario reproducible de bootstrap.
   El bootstrap legado y los timers API continuan como bloqueos declarados para
   staging, no como deuda oculta.
+
+## [2026-07-16] Worker: readiness interna
+- [Operacion] El worker mantiene `health`/`ready` solo en loopback y Docker lo
+  comprueba sin abrir puertos adicionales.
+- [Seguridad] Readiness no expone detalles operativos; exige batch correcto y
+  PostgreSQL disponible, y falla cerrada ante un error del runner.

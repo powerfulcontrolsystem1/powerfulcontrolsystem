@@ -11914,6 +11914,10 @@ backend/db/postgres_pool.go
 backend/internal/platform/outbox/dispatcher.go
 - Dispatcher durable que reclama eventos por lease y solo transforma topicos a
   jobs registrados e idempotentes.
+
+backend/internal/platform/worker/health.go
+- Healthcheck interno del worker: expone `health` y `ready` solo por loopback,
+  verifica PostgreSQL y el ultimo batch sin incluir datos empresariales.
 2026-07-13 - IA propia empresarial y API movil v1
 - `backend/db/ai_empresa_proveedor.go`: esquema y acceso cifrado por empresa
   para la clave OpenAI propia; el valor solo se descifra en memoria al enviar la

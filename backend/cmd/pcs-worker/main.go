@@ -63,6 +63,15 @@ func main() {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 	registry := worker.DefaultRegistry()
+	health := &worker.HealthState{}
+	healthAddr := strings.TrimSpace(os.Getenv("PCS_WORKER_HEALTH_ADDR"))
+	if healthAddr == "" {
+		healthAddr = "127.0.0.1:8082"
+	}
+	healthErrors, err := worker.StartHealthServer(ctx, healthAddr, dbConn, health)
+	if err != nil {
+		log.Fatal(err)
+	}
 	dispatcher := &outbox.Dispatcher{DB: dbConn, DispatcherID: workerID + "-outbox", Batch: 20, Lease: 5 * time.Minute, AllowedKinds: worker.Kinds(registry)}
 	runner := &worker.Runner{
 		DB:       dbConn,
@@ -71,12 +80,29 @@ func main() {
 		Batch:    20,
 		Lease:    5 * time.Minute,
 		Handlers: registry,
+		Health:   health,
 		BeforeBatch: func(ctx context.Context) error {
 			return dispatcher.Dispatch(ctx)
 		},
 	}
-	if err := runner.Run(ctx); err != nil {
-		log.Fatal(fmt.Errorf("worker stopped: %w", err))
+	runnerErrors := make(chan error, 1)
+	go func() { runnerErrors <- runner.Run(ctx) }()
+	select {
+	case err := <-healthErrors:
+		if ctx.Err() != nil {
+			if runErr := <-runnerErrors; runErr != nil {
+				log.Fatal(fmt.Errorf("worker stopped: %w", runErr))
+			}
+			break
+		}
+		if err != nil {
+			log.Fatal(fmt.Errorf("worker health server stopped: %w", err))
+		}
+		log.Fatal("worker health server stopped unexpectedly")
+	case err := <-runnerErrors:
+		if err != nil {
+			log.Fatal(fmt.Errorf("worker stopped: %w", err))
+		}
 	}
 	log.Print("worker stopped gracefully")
 }

@@ -44,6 +44,13 @@ payloads. Cada tarea empresarial incluye `empresa_id` validado y el consumidor
 debe volver a comprobar permiso/estado antes de ejecutar una accion externa.
 Los workers nuevos se registran por tipo de tarea y deben ser idempotentes.
 
+`pcs-worker` publica exclusivamente dentro de su contenedor los probes
+`/health` y `/ready` en una direccion loopback configurable. Docker usa
+`/ready` como healthcheck y no se publica ese puerto en Nginx ni en Compose.
+La readiness exige que el ultimo ciclo del runner haya terminado correctamente
+y que PostgreSQL responda; un fallo de ciclo deja el worker no listo hasta que
+un ciclo posterior se recupere.
+
 ## API movil
 
 La superficie estable actual es `/api/v1/`; su contrato vive en

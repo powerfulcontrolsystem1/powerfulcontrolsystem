@@ -26,6 +26,8 @@ decisiones en cada tarea.
 - `PCS_RUNTIME_SCHEMA_BOOTSTRAP` continua en `1` durante la extraccion del
   legado. No apagarlo por pruebas locales ni asumir que el worker ya reemplaza
   los timers de `main.go`.
+- El worker acepta `PCS_WORKER_HEALTH_ADDR` solo en loopback; no exponer su
+  puerto por Nginx ni convertirlo en una API operativa publica.
 
 ## Actualizacion 2026-06-10 - Snapshot completo VPS
 

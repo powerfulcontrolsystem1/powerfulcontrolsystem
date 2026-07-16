@@ -2327,3 +2327,7 @@ Actualizacion 2026-07-16:
 Estas tablas son creadas o evolucionadas por `pcs-migrate`. API y worker solo
 comprueban su disponibilidad; las tablas funcionales heredadas aun permanecen
 bajo bootstrap hasta ser migradas por lotes con staging y rollback.
+
+El healthcheck del worker no persiste payloads, empresas, claves ni errores de
+proveedor. Su estado es solo de proceso y se mantiene en memoria del worker;
+la base de datos se usa unicamente para la comprobacion de disponibilidad.
