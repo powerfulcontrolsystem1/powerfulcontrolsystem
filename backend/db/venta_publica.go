@@ -28,8 +28,8 @@ func EnsureVentaPublicaSchema(db *sql.DB) error {
 			descripcion TEXT,
 			video_url TEXT,
 			activo INTEGER NOT NULL DEFAULT 1,
-			creado_en DATETIME DEFAULT (CURRENT_TIMESTAMP),
-			actualizado_en DATETIME DEFAULT (CURRENT_TIMESTAMP)
+			creado_en TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+			actualizado_en TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 		);`,
 
 		`CREATE UNIQUE INDEX IF NOT EXISTS idx_paginas_publicas_empresa_slug ON paginas_publicas(empresa_id, slug);`,
@@ -45,8 +45,8 @@ func EnsureVentaPublicaSchema(db *sql.DB) error {
 			sku TEXT,
 			youtube_url TEXT,
 			activo INTEGER NOT NULL DEFAULT 1,
-			creado_en DATETIME DEFAULT (CURRENT_TIMESTAMP),
-			actualizado_en DATETIME DEFAULT (CURRENT_TIMESTAMP),
+			creado_en TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+			actualizado_en TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
 			FOREIGN KEY(pagina_id) REFERENCES paginas_publicas(id) ON DELETE CASCADE
 		);`,
 
@@ -68,8 +68,8 @@ func EnsureVentaPublicaSchema(db *sql.DB) error {
 			provider TEXT NOT NULL,
 			config TEXT,
 			activo INTEGER NOT NULL DEFAULT 1,
-			creado_en DATETIME DEFAULT (CURRENT_TIMESTAMP),
-			actualizado_en DATETIME DEFAULT (CURRENT_TIMESTAMP)
+			creado_en TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+			actualizado_en TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 		);`,
 
 		`CREATE UNIQUE INDEX IF NOT EXISTS idx_empresa_payment_provider ON empresa_payment_settings(empresa_id, provider);`,
@@ -84,7 +84,7 @@ func EnsureVentaPublicaSchema(db *sql.DB) error {
 	}()
 
 	for _, s := range stmts {
-		if _, err := tx.Exec(s); err != nil {
+		if _, err := execTxSQLCompat(tx, s); err != nil {
 			return fmt.Errorf("exec venta_publica schema stmt: %w; stmt=%s", err, s)
 		}
 	}

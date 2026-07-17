@@ -38063,3 +38063,9 @@ Archivos modificados:
 - [Movil] La API v1 admite cursor opaco y la idempotencia movil expira y se
   reclama de manera segura. Sesiones por dispositivo, push, conflictos y URLs
   firmadas permanecen como gates documentados, no como funcionalidades fingidas.
+
+2026-07-16 - Migrador PostgreSQL: venta publica
+- [Migraciones] Se reemplazan las columnas heredadas `DATETIME` de venta
+  publica por `TIMESTAMPTZ` explicito y se usa el helper SQL compatible dentro
+  de su transaccion. Esto permite que el baseline catalogado complete en
+  PostgreSQL sin depender de semantica SQLite.
