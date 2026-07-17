@@ -343,8 +343,16 @@ function Invoke-ProtectedMainPullRequest {
         "- Auto-merge solicitado: ``$(-not $DisableAutoMerge)``",
         "- No se sincroniza la VPS hasta que GitHub confirme la fusion."
     ) -join "`n"
-    $prUrl = (& gh pr create --base $BaseBranch --head $prBranch --title $CommitMessage --body $body 2>&1 | Select-Object -Last 1).ToString().Trim()
-    if ($LASTEXITCODE -ne 0 -or [string]::IsNullOrWhiteSpace($prUrl)) {
+    $createOutput = @(& gh pr create --base $BaseBranch --head $prBranch --title $CommitMessage --body $body 2>&1 | ForEach-Object { $_.ToString().Trim() })
+    $createExitCode = $LASTEXITCODE
+    $prUrl = @($createOutput | Where-Object { $_ -match '^https://github\.com/[^/]+/[^/]+/pull/\d+$' } | Select-Object -Last 1)[0]
+    if ([string]::IsNullOrWhiteSpace($prUrl)) {
+        # gh can write a non-URL progress line last. If the request reached
+        # GitHub, recover the open PR deterministically instead of failing rs.
+        $prUrl = (& gh pr list --base $BaseBranch --head $prBranch --state open --json url --jq '.[0].url' 2>$null | Select-Object -First 1).ToString().Trim()
+    }
+    if ($createExitCode -ne 0 -or [string]::IsNullOrWhiteSpace($prUrl)) {
+        $createOutput | ForEach-Object { Write-Info $_ }
         throw "No se pudo crear la PR de publicacion para la rama protegida."
     }
     Write-Info "PR creada: $prUrl"
