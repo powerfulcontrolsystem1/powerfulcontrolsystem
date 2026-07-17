@@ -3290,3 +3290,8 @@
 - Se incorpora `TenantContext`, readiness de storage, cursores v1 y release
   por digests para los tres roles. Staging, restore drill, Object Storage y
   proveedores externos siguen siendo gates obligatorios.
+
+## [2026-07-16] Migrador PostgreSQL de venta publica
+- Se corrige DDL heredado de `venta_publica`: las fechas usan `TIMESTAMPTZ` y
+  la transaccion respeta el helper de compatibilidad. El migrador puede aplicar
+  ese baseline en PostgreSQL sin el tipo SQLite `DATETIME`.
