@@ -491,6 +491,22 @@ if ($statusLines.Count -eq 0) {
         Write-ErrMsg "No existe remoto 'origin' para publicar la rama limpia."
         Exit-WithCode 1
     }
+    # A protected PR can be merged by squash while this checkout still points
+    # to the pre-merge commit. Reconcile first; otherwise a harmless clean
+    # branch is misreported as an unpublished direct push and rs stops.
+    if ($branch -eq 'main') {
+        & git fetch origin main
+        if ($LASTEXITCODE -ne 0) {
+            Write-ErrMsg "No se pudo actualizar origin/main antes de verificar la rama limpia."
+            Exit-WithCode 1
+        }
+        $aheadBehind = ((& git rev-list --left-right --count "main...origin/main" 2>$null) | Out-String).Trim()
+        $parts = @($aheadBehind -split '\s+' | Where-Object { $_ -match '^\d+$' })
+        if ($parts.Count -eq 2 -and [int]$parts[1] -gt 0) {
+            Write-Info "main local esta detras o divergente despues de una fusion protegida; reconciliando antes del push."
+            Sync-LocalBaseAfterProtectedMerge -BaseBranch 'main'
+        }
+    }
     $cleanPush = Push-WithPolicy -AllowForce:$ForcePush -SetUpstream -Context "rama limpia"
     if (-not $cleanPush.Ok) {
         $protectedFlow = Resolve-ProtectedMainPush -Branch $branch -PushResult $cleanPush -CommitMessage $Message
