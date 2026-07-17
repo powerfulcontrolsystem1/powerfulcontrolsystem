@@ -38077,3 +38077,23 @@ Archivos modificados:
 - Arquitectura: `maintenance.system-metrics` se ejecuta desde `pcs-worker`; la API deja de iniciar un collector periodico propio.
 - Datos: `metrics` se registra en la migracion versionada super `20260716-004-system-metrics-v1`; worker verifica el esquema y no crea DDL.
 - Validacion: pruebas enfocadas de `metrics`, `db` y `cmd/pcs-worker`; el despliegue conserva `pcs-migrate` como unica autoridad de esquema.
+
+2026-07-16: rs: actualizar repositorio y sincronizar VPS
+PushStatus: OK
+Archivos modificados:
+- backend/cmd/pcs-worker/business_registry.go
+- backend/cmd/pcs-worker/business_registry_test.go
+- backend/cmd/pcs-worker/main.go
+- backend/db/db.go
+- backend/db/legacy_schema_catalog.go
+- backend/db/migrations_test.go
+- backend/db/platform_migrations.go
+- backend/main.go
+- backend/metrics/collector.go
+- backend/metrics/collector_test.go
+- documentos/CHANGELOG.md
+- documentos/contexto_especifico_del_sistema.md
+- documentos/contexto_general_del_sistema.md
+- documentos/descripcion_de_archivos
+- documentos/historial_de_cambios
+- documentos/plan_103_cierre_produccion.md
