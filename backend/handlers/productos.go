@@ -3032,6 +3032,9 @@ func parseEmpresaIDFromContext(r *http.Request) int64 {
 	if r == nil {
 		return 0
 	}
+	if tenant, ok := TenantContextFromRequest(r); ok {
+		return tenant.EmpresaID
+	}
 	v := r.Context().Value("empresaID")
 	if v == nil {
 		return 0

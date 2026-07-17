@@ -64,8 +64,8 @@ func main() {
 		{name: "superadministrador", scope: dbpkg.MigrationTargetSuper, db: super},
 	} {
 		// This compatibility layer is still required by legacy PostgreSQL queries.
-		// It runs in the migration role, never in pcs-worker. Its catalog migration
-		// will be folded into the ledger when legacy bootstrap is fully extracted.
+		// It runs in the migration role, never in the API or pcs-worker. The legacy
+		// baseline is registered by the migration catalog before runtime roles start.
 		if err := dbpkg.EnsurePostgresRuntimeCompat(target.db); err != nil {
 			log.Fatalf("%s PostgreSQL compatibility: %v", target.name, err)
 		}

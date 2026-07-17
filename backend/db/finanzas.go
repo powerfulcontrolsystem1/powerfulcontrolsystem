@@ -2103,6 +2103,11 @@ func SetEmpresaCierreCajaEstado(dbConn *sql.DB, empresaID, id int64, estado stri
 	if usuario == "" {
 		usuario = "sistema"
 	}
+	tx, err := dbConn.Begin()
+	if err != nil {
+		return err
+	}
+	defer func() { _ = tx.Rollback() }()
 
 	var actualEstado string
 	var fechaCierreActual string
@@ -2116,7 +2121,7 @@ func SetEmpresaCierreCajaEstado(dbConn *sql.DB, empresaID, id int64, estado stri
 	var aprobadoPorActual string
 	var aprobadoEnActual string
 	var observacionesActual string
-	err := dbConn.QueryRow(`SELECT
+	err = queryRowTxSQLCompat(tx, `SELECT
 		COALESCE(estado_cierre, 'abierto'),
 		COALESCE(fecha_cierre, ''),
 		COALESCE(apertura_monto, 0),
@@ -2131,7 +2136,8 @@ func SetEmpresaCierreCajaEstado(dbConn *sql.DB, empresaID, id int64, estado stri
 		COALESCE(observaciones, '')
 	FROM empresa_cierres_caja
 	WHERE empresa_id = ? AND id = ?
-	LIMIT 1`, empresaID, id).Scan(
+	LIMIT 1
+	FOR UPDATE`, empresaID, id).Scan(
 		&actualEstado,
 		&fechaCierreActual,
 		&apertura,
@@ -2206,7 +2212,7 @@ func SetEmpresaCierreCajaEstado(dbConn *sql.DB, empresaID, id int64, estado stri
 		obs = observacionesActual
 	}
 
-	res, err := dbConn.Exec(`UPDATE empresa_cierres_caja SET
+	res, err := execTxSQLCompat(tx, `UPDATE empresa_cierres_caja SET
 		estado_cierre = ?,
 		fecha_cierre = ?,
 		cerrado_por = ?,
@@ -2239,7 +2245,7 @@ func SetEmpresaCierreCajaEstado(dbConn *sql.DB, empresaID, id int64, estado stri
 	if affected == 0 {
 		return sql.ErrNoRows
 	}
-	return nil
+	return tx.Commit()
 }
 
 func SetEmpresaCierreCajaRegistroEstado(dbConn *sql.DB, empresaID, id int64, estado string) error {

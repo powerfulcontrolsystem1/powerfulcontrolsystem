@@ -3,6 +3,8 @@ package handlers
 import (
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"path/filepath"
 	"testing"
 )
 
@@ -42,5 +44,31 @@ func TestRuntimeReadyHandlerFailsClosedWithoutDatabases(t *testing.T) {
 	}
 	if response.Body.String() != `{"status":"not_ready"}` {
 		t.Fatalf("ready without databases body=%q", response.Body.String())
+	}
+}
+
+func TestRuntimePrivateStorageReadyWritesAndCleansProbe(t *testing.T) {
+	root := t.TempDir()
+	t.Setenv("PCS_PRIVATE_STORAGE_DIR", root)
+	if err := runtimePrivateStorageReady(); err != nil {
+		t.Fatalf("storage readiness failed: %v", err)
+	}
+	entries, err := os.ReadDir(root)
+	if err != nil {
+		t.Fatalf("read storage dir: %v", err)
+	}
+	if len(entries) != 0 {
+		t.Fatalf("storage readiness left %d temporary files", len(entries))
+	}
+}
+
+func TestRuntimePrivateStorageReadyRejectsFileAsRoot(t *testing.T) {
+	root := filepath.Join(t.TempDir(), "not-a-directory")
+	if err := os.WriteFile(root, []byte("blocked"), 0o600); err != nil {
+		t.Fatalf("prepare storage file: %v", err)
+	}
+	t.Setenv("PCS_PRIVATE_STORAGE_DIR", root)
+	if err := runtimePrivateStorageReady(); err == nil {
+		t.Fatal("storage readiness accepted a regular file as storage root")
 	}
 }

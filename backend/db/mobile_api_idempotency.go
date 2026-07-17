@@ -95,9 +95,19 @@ func ClaimMobileAPIIdempotency(dbConn *sql.DB, empresaID int64, operation, key, 
 		Status:      "procesando",
 	}
 	result, err := execSQLCompat(dbConn, `INSERT INTO empresa_mobile_api_idempotencia (
-		empresa_id, operacion, clave_hash, solicitud_hash, estado, codigo_respuesta, respuesta_json, fecha_creacion, fecha_actualizacion
-	) VALUES (?, ?, ?, ?, 'procesando', 0, '', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-	ON CONFLICT (empresa_id, operacion, clave_hash) DO NOTHING`, record.EmpresaID, record.Operation, record.KeyHash, record.RequestHash)
+		empresa_id, operacion, clave_hash, solicitud_hash, estado, codigo_respuesta, respuesta_json,
+		fecha_creacion, fecha_actualizacion, fecha_expiracion
+	) VALUES (?, ?, ?, ?, 'procesando', 0, '', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP + interval '15 minutes')
+	ON CONFLICT (empresa_id, operacion, clave_hash) DO UPDATE SET
+		solicitud_hash = EXCLUDED.solicitud_hash,
+		estado = 'procesando', codigo_respuesta = 0, respuesta_json = '',
+		fecha_actualizacion = CURRENT_TIMESTAMP, fecha_completado = NULL,
+		fecha_expiracion = CURRENT_TIMESTAMP + interval '15 minutes'
+	WHERE empresa_mobile_api_idempotencia.estado = 'procesando'
+		AND empresa_mobile_api_idempotencia.solicitud_hash = EXCLUDED.solicitud_hash
+		AND empresa_mobile_api_idempotencia.fecha_expiracion IS NOT NULL
+		AND empresa_mobile_api_idempotencia.fecha_expiracion < CURRENT_TIMESTAMP`,
+		record.EmpresaID, record.Operation, record.KeyHash, record.RequestHash)
 	if err != nil {
 		return nil, false, err
 	}
@@ -131,12 +141,22 @@ func CompleteMobileAPIIdempotency(dbConn *sql.DB, record *MobileAPIIdempotencyRe
 	if record == nil || responseCode < 200 || responseCode >= 300 {
 		return fmt.Errorf("resultado de idempotencia invalido")
 	}
-	_, err := execSQLCompat(dbConn, `UPDATE empresa_mobile_api_idempotencia
+	result, err := execSQLCompat(dbConn, `UPDATE empresa_mobile_api_idempotencia
 		SET estado = 'completado', codigo_respuesta = ?, respuesta_json = ?, fecha_actualizacion = CURRENT_TIMESTAMP,
-			fecha_completado = CURRENT_TIMESTAMP
+			fecha_completado = CURRENT_TIMESTAMP, fecha_expiracion = CURRENT_TIMESTAMP + interval '24 hours'
 		WHERE empresa_id = ? AND operacion = ? AND clave_hash = ? AND solicitud_hash = ?`,
 		responseCode, responseJSON, record.EmpresaID, record.Operation, record.KeyHash, record.RequestHash)
-	return err
+	if err != nil {
+		return err
+	}
+	affected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if affected != 1 {
+		return fmt.Errorf("idempotency claim is no longer owned")
+	}
+	return nil
 }
 
 func AbandonMobileAPIIdempotency(dbConn *sql.DB, record *MobileAPIIdempotencyRecord) error {

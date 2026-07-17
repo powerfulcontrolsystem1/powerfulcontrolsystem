@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"testing"
 )
 
@@ -87,6 +88,23 @@ func TestValidMobileIdempotencyKey(t *testing.T) {
 		if validMobileIdempotencyKey(key) {
 			t.Fatalf("clave insegura aceptada: %q", key)
 		}
+	}
+}
+
+func TestMobileCursorPagination(t *testing.T) {
+	meta := mobilePageMeta(25, 0, 25, 25)
+	cursor, _ := meta["next_cursor"].(string)
+	if cursor == "" {
+		t.Fatal("next cursor was not generated")
+	}
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/empresa/productos?limit=25&cursor="+url.QueryEscape(cursor), nil)
+	limit, offset, err := mobileLimitOffset(req)
+	if err != nil || limit != 25 || offset != 25 {
+		t.Fatalf("cursor pagination failed: limit=%d offset=%d err=%v", limit, offset, err)
+	}
+	req = httptest.NewRequest(http.MethodGet, "/api/v1/empresa/productos?offset=1&cursor="+url.QueryEscape(cursor), nil)
+	if _, _, err := mobileLimitOffset(req); err == nil {
+		t.Fatal("offset and cursor were accepted together")
 	}
 }
 

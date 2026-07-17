@@ -37,7 +37,7 @@ Este archivo se genera con `node tools/ensure_bootstrap_inventory.mjs`. Inventar
 | `EnsureEmpresaCamarasSchema` | [backend/db/camaras.go:46](../../backend/db/camaras.go#L46) | DDL / indice / funcion | empresas o por confirmar |
 | `EnsureEmpresaCarnetsSchema` | [backend/db/carnets_empresa.go:99](../../backend/db/carnets_empresa.go#L99) | DDL / indice / funcion | empresas o por confirmar |
 | `EnsureEmpresaCarnetDefaultTemplate` | [backend/db/carnets_empresa.go:271](../../backend/db/carnets_empresa.go#L271) | seed o provisionamiento idempotente | empresas o por confirmar |
-| `EnsureEmpresaCarritosSchema` | [backend/db/carritos_compras.go:268](../../backend/db/carritos_compras.go#L268) | DDL / indice / funcion | empresas o por confirmar |
+| `EnsureEmpresaCarritosSchema` | [backend/db/carritos_compras.go:269](../../backend/db/carritos_compras.go#L269) | DDL / indice / funcion | empresas o por confirmar |
 | `EnsureEmpresaCentrosCostoSchema` | [backend/db/centros_costo.go:135](../../backend/db/centros_costo.go#L135) | DDL / indice / funcion | empresas o por confirmar |
 | `EnsureEmpresaAIChatSchema` | [backend/db/chat_inteligencia_artificial.go:332](../../backend/db/chat_inteligencia_artificial.go#L332) | DDL / indice / funcion | empresas o por confirmar |
 | `EnsureSuperAIChatSchema` | [backend/db/chat_inteligencia_artificial.go:547](../../backend/db/chat_inteligencia_artificial.go#L547) | DDL / indice / funcion | superadministrador o por confirmar |

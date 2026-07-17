@@ -2,6 +2,7 @@ package db
 
 import (
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"math"
 	"sort"
@@ -2995,6 +2996,27 @@ func PayCarritoStationSession(dbConn *sql.DB, empresaID, carritoID int64, metodo
 		if err := markCodigoDescuentoUsoTx(tx, empresaID, codigoDescuentoID, carritoID, descuentoValor, usuarioCreador, strings.TrimSpace(referenciaPago)); err != nil {
 			return err
 		}
+	}
+	payloadJSON, err := json.Marshal(map[string]interface{}{
+		"empresa_id":      empresaID,
+		"carrito_id":      carritoID,
+		"metodo_pago":     metodoPago,
+		"referencia_pago": strings.TrimSpace(referenciaPago),
+		"total_pagado":    round2(totalPagado),
+		"usuario":         usuarioCreador,
+	})
+	if err != nil {
+		return err
+	}
+	if err := InsertOutboxEvent(tx, OutboxEvent{
+		EmpresaID:      empresaID,
+		Topic:          "commerce.sale-paid",
+		Version:        1,
+		PayloadJSON:    string(payloadJSON),
+		MaxAttempts:    10,
+		IdempotencyKey: fmt.Sprintf("sale-paid:%d:%d", empresaID, carritoID),
+	}); err != nil {
+		return fmt.Errorf("registrar outbox de venta: %w", err)
 	}
 
 	return tx.Commit()

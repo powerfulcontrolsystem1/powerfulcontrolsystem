@@ -3281,3 +3281,12 @@
   comprueba sin abrir puertos adicionales.
 - [Seguridad] Readiness no expone detalles operativos; exige batch correcto y
   PostgreSQL disponible, y falla cerrada ante un error del runner.
+
+## [2026-07-16] Plan 102: cierre tecnico controlado
+- API/worker dejan de ejecutar DDL de runtime en produccion; el migrador aplica
+  el baseline heredado bajo ledger, checksum y lock.
+- Los schedules se ejecutan como jobs del worker; venta pagada publica evento
+  transaccional de outbox y el cierre de caja queda serializado.
+- Se incorpora `TenantContext`, readiness de storage, cursores v1 y release
+  por digests para los tres roles. Staging, restore drill, Object Storage y
+  proveedores externos siguen siendo gates obligatorios.

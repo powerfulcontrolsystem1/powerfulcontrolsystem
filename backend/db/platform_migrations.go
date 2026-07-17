@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"strings"
 )
 
 const (
@@ -12,9 +13,8 @@ const (
 	platformMigrationScope  = "platform"
 )
 
-// PlatformMigrations owns only the new runtime foundation. The historical
-// bootstrap remains opt-in until every legacy Ensure* mutation has been moved
-// into a reviewed catalog; this prevents an unsafe all-at-once schema cutover.
+// PlatformMigrations owns the runtime foundation and records the one-time
+// reviewed legacy baseline. API and worker processes only verify this ledger.
 func PlatformMigrations(target string) ([]Migration, error) {
 	switch target {
 	case MigrationTargetEmpresas:
@@ -23,6 +23,11 @@ func PlatformMigrations(target string) ([]Migration, error) {
 				Version:     "20260714-runtime-foundation",
 				Description: "runtime roles, durable queue and outbox",
 				Body:        "legacy ledger marker; no implicit replay",
+			},
+			{
+				Version:     legacySchemaBaselineVersion,
+				Description: "legacy business schema baseline executed by migration role",
+				Body:        "legacy-schema-bootstrap:v1:empresas:migration-role-only",
 			},
 			{
 				Version:     "20260716-001-mobile-idempotency-v2",
@@ -40,6 +45,14 @@ func PlatformMigrations(target string) ([]Migration, error) {
 					return applyEmpresaNextcloudSchemaTx(ctx, tx)
 				},
 			},
+			{
+				Version:     "20260716-003-durable-outbox-v2",
+				Description: "tenant transactional outbox source",
+				Body:        outboxSchemaFingerprint,
+				Apply: func(_ context.Context, tx *sql.Tx) error {
+					return applyOutboxSchemaTx(tx)
+				},
+			},
 		}, nil
 	case MigrationTargetSuper:
 		return []Migration{
@@ -47,6 +60,11 @@ func PlatformMigrations(target string) ([]Migration, error) {
 				Version:     "20260714-runtime-foundation",
 				Description: "runtime roles, durable queue and outbox",
 				Body:        "legacy ledger marker; no implicit replay",
+			},
+			{
+				Version:     legacySchemaBaselineVersion,
+				Description: "legacy administrative schema baseline executed by migration role",
+				Body:        "legacy-schema-bootstrap:v1:superadministrador:migration-role-only",
 			},
 			{
 				Version:     "20260716-001-durable-async-jobs-v2",
@@ -68,6 +86,28 @@ func PlatformMigrations(target string) ([]Migration, error) {
 	default:
 		return nil, fmt.Errorf("unknown platform migration target %q", target)
 	}
+}
+
+// VerifyPlatformMigrations is read-only and suitable for API/worker readiness.
+func VerifyPlatformMigrations(ctx context.Context, dbConn *sql.DB, target string) error {
+	if dbConn == nil {
+		return fmt.Errorf("migration database is required")
+	}
+	migrations, err := PlatformMigrations(target)
+	if err != nil {
+		return err
+	}
+	for _, migration := range migrations {
+		var checksum sql.NullString
+		err := dbConn.QueryRowContext(ctx, `SELECT checksum FROM schema_migrations WHERE scope = $1 AND version = $2 AND state = 'applied'`, platformMigrationScope, migration.Version).Scan(&checksum)
+		if err != nil {
+			return fmt.Errorf("required migration %s/%s is not applied", target, migration.Version)
+		}
+		if !checksum.Valid || strings.TrimSpace(checksum.String) != MigrationChecksum(platformMigrationScope, migration) {
+			return fmt.Errorf("required migration %s/%s has invalid checksum", target, migration.Version)
+		}
+	}
+	return nil
 }
 
 func ApplyPlatformMigrations(ctx context.Context, dbConn *sql.DB, target, appliedBy string) (MigrationReport, error) {

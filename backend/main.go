@@ -469,6 +469,16 @@ func validateProductionSecurityConfig() error {
 			return fmt.Errorf("PCS_CSRF_ALLOWED_ORIGINS contiene un origen invalido")
 		}
 	}
+	if replicasRaw := strings.TrimSpace(os.Getenv("PCS_API_REPLICAS")); replicasRaw != "" {
+		replicas, err := strconv.Atoi(replicasRaw)
+		if err != nil || replicas < 1 {
+			return fmt.Errorf("PCS_API_REPLICAS debe ser un entero positivo")
+		}
+		storageMode := strings.ToLower(strings.TrimSpace(os.Getenv("PCS_PRIVATE_STORAGE_MODE")))
+		if replicas > 1 && storageMode != "shared" && storageMode != "object" {
+			return fmt.Errorf("PCS_PRIVATE_STORAGE_MODE debe ser shared u object cuando PCS_API_REPLICAS es mayor que 1")
+		}
+	}
 	return nil
 }
 
@@ -816,6 +826,7 @@ func main() {
 	if runtimeConfig.Role == runtimeconfig.RoleWorker {
 		log.Fatal("PCS_RUNTIME_ROLE=worker must execute the dedicated pcs-worker binary")
 	}
+	migrationSkipsExternalSync := runtimeConfig.Role == runtimeconfig.RoleMigrate && strings.TrimSpace(os.Getenv("PCS_MIGRATION_SKIP_EXTERNAL_SYNC")) == "1"
 	refreshRuntimeGlobalsFromEnv()
 	startupTrace("after_refresh_runtime_globals")
 	if err := ensureRuntimeConfigEncKey(backendDir); err != nil {
@@ -837,6 +848,8 @@ func main() {
 	}
 
 	var err error
+	legacyEmpresasBootstrap := runtimeConfig.LegacySchemaBootstrap
+	legacySuperBootstrap := runtimeConfig.LegacySchemaBootstrap
 	if runtimePostgres {
 		if strings.TrimSpace(os.Getenv("DB_DIALECT")) == "" {
 			_ = os.Setenv("DB_DIALECT", "postgres")
@@ -874,11 +887,25 @@ func main() {
 			log.Fatal(err)
 		}
 		startupTrace("after_open_db_super")
-		if runtimeConfig.LegacySchemaBootstrap {
-			if err := dbpkg.EnsurePostgresRuntimeCompat(dbEmpresas); err != nil {
-				log.Fatalf("failed to ensure postgres compat functions in empresas db: %v", err)
+		if runtimeConfig.Role == runtimeconfig.RoleMigrate {
+			empresasApplied, checkErr := dbpkg.LegacySchemaBaselineApplied(context.Background(), dbEmpresas)
+			if checkErr != nil {
+				log.Fatalf("failed to inspect empresas legacy baseline: %v", checkErr)
 			}
-			startupTrace("after_ensure_pg_compat_empresas")
+			superApplied, checkErr := dbpkg.LegacySchemaBaselineApplied(context.Background(), dbSuper)
+			if checkErr != nil {
+				log.Fatalf("failed to inspect super legacy baseline: %v", checkErr)
+			}
+			legacyEmpresasBootstrap = !empresasApplied
+			legacySuperBootstrap = !superApplied
+		}
+		if legacySuperBootstrap {
+			if legacyEmpresasBootstrap {
+				if err := dbpkg.EnsurePostgresRuntimeCompat(dbEmpresas); err != nil {
+					log.Fatalf("failed to ensure postgres compat functions in empresas db: %v", err)
+				}
+				startupTrace("after_ensure_pg_compat_empresas")
+			}
 			if err := dbpkg.EnsurePostgresRuntimeCompat(dbSuper); err != nil {
 				log.Fatalf("failed to ensure postgres compat functions in superadministrador db: %v", err)
 			}
@@ -978,7 +1005,9 @@ func main() {
 				log.Printf("INFO: emails corporativos generados para empresas existentes: %d", created)
 			}
 			startupTrace("after_empresa_email_corporativo_existing_companies")
-			if provisioned, err := handlers.EnsureCorporateEmailProvisioningForExistingCompanies(dbSuper); err != nil {
+			if migrationSkipsExternalSync {
+				log.Printf("INFO: aprovisionamiento Mailu externo omitido durante migracion")
+			} else if provisioned, err := handlers.EnsureCorporateEmailProvisioningForExistingCompanies(dbSuper); err != nil {
 				log.Printf("warning: no se pudieron aprovisionar todos los emails corporativos existentes: %v", err)
 			} else if provisioned > 0 {
 				log.Printf("INFO: emails corporativos aprovisionados para empresas existentes: %d", provisioned)
@@ -990,6 +1019,8 @@ func main() {
 			startupTrace("after_nextcloud_env")
 			if err := dbpkg.EnsureEmpresaNextcloudSchema(dbEmpresas); err != nil {
 				log.Printf("warning: no se pudo preparar Nextcloud empresarial: %v", err)
+			} else if migrationSkipsExternalSync {
+				log.Printf("INFO: aprovisionamiento Nextcloud externo omitido durante migracion")
 			} else if assigned, err := handlers.EnsureNextcloudAssignmentsForAll(dbEmpresas, dbSuper); err != nil {
 				log.Printf("warning: no se pudieron asignar espacios Nextcloud a empresas existentes: %v", err)
 			} else if assigned > 0 {
@@ -1051,7 +1082,10 @@ func main() {
 		log.Fatalf("Runtime DB no soportada: configure DB_DIALECT=postgres y DSN de PostgreSQL")
 	}
 
-	if runtimeConfig.LegacySchemaBootstrap {
+	if legacyEmpresasBootstrap {
+		if err := dbpkg.EnsurePostgresRuntimeCompat(dbEmpresas); err != nil {
+			log.Fatalf("failed to ensure postgres compat functions in empresas db: %v", err)
+		}
 		if err := dbpkg.EnsureEmpresaUsuariosAuthSchema(dbEmpresas); err != nil {
 			log.Fatalf("failed to ensure users auth schema in empresas db: %v", err)
 		}
@@ -1267,6 +1301,11 @@ func main() {
 		log.Println("INFO: API PostgreSQL iniciada sin mutaciones de esquema; use pcs-migrate para cambios de base de datos.")
 	}
 	if runtimeConfig.Role == runtimeconfig.RoleMigrate {
+		if err := dbpkg.ApplyLegacySchemaCatalog(dbEmpresas, dbSuper); err != nil {
+			log.Fatalf("legacy schema catalog failed: %v", err)
+		}
+		empresasSteps, superSteps := dbpkg.LegacySchemaCatalogCounts()
+		log.Printf("INFO: catalogo de esquema heredado verificado: empresas=%d super=%d", empresasSteps, superSteps)
 		log.Println("INFO: bootstrap de migracion finalizado; proceso migrador termina sin abrir HTTP.")
 		return
 	}
@@ -1284,58 +1323,8 @@ func main() {
 		metrics.StartCollector(dbSuper, metricsInterval, stopMetrics)
 	})
 
-	stopSuperAlertas := make(chan struct{})
-	go utils.RunProtectedProcess("super.alertas_worker", map[string]interface{}{"interval_minutes": 1}, func() {
-		handlers.StartSuperAlertasWorker(dbSuper, time.Minute, stopSuperAlertas)
-	})
-
-	stopAuditRetention := make(chan struct{})
-	go utils.RunProtectedProcess("auditoria.retention_worker", map[string]interface{}{"interval_hours": 12}, func() {
-		dbpkg.StartEmpresaAuditoriaRetentionWorker(dbEmpresas, 12*time.Hour, stopAuditRetention)
-	})
-
-	stopLicenciasEstado := make(chan struct{})
-	go utils.RunProtectedProcess("licencias.estado_empresas_worker", map[string]interface{}{"interval_hours": 1}, func() {
-		dbpkg.StartLicenciaEmpresaEstadoWorker(dbEmpresas, dbSuper, time.Hour, stopLicenciasEstado)
-	})
-
-	stopLicenciasVencimiento := make(chan struct{})
-	go utils.RunProtectedProcess("licencias.vencimiento_alertas_worker", map[string]interface{}{"interval_hours": 12}, func() {
-		handlers.StartLicenciaVencimientoAlertasWorker(dbSuper, dbEmpresas, 12*time.Hour, stopLicenciasVencimiento)
-	})
-
-	stopVPSSnapshotWorker := make(chan struct{})
-	go utils.RunProtectedProcess("super.vps_snapshot_worker", map[string]interface{}{"interval_hours": 1}, func() {
-		handlers.StartSuperVPSSnapshotWorker(dbSuper, time.Hour, stopVPSSnapshotWorker)
-	})
-
-	stopMantenimientoAgentesWorker := make(chan struct{})
-	go utils.RunProtectedProcess("super.mantenimiento_agentes_worker", map[string]interface{}{"interval_minutes": 1}, func() {
-		handlers.StartSuperMantenimientoAgentesWorker(dbSuper, time.Minute, stopMantenimientoAgentesWorker)
-	})
-
-	stopParametrosLegales := make(chan struct{})
-	go utils.RunProtectedProcess("parametros_legales.worker", map[string]interface{}{"interval_hours": 24}, func() {
-		dbpkg.StartEmpresaParametrosLegalesWorker(dbEmpresas, 24*time.Hour, stopParametrosLegales)
-	})
-
-	stopCobranzaRecordatorios := make(chan struct{})
-	go utils.RunProtectedProcess("cobranza.recordatorios_worker", map[string]interface{}{"interval_hours": 1}, func() {
-		handlers.StartEmpresaCobranzaRecordatoriosWorker(dbEmpresas, dbSuper, time.Hour, stopCobranzaRecordatorios)
-	})
-
-	asientosInterval, asientosBatchSize, asientosMaxRetries := resolveAsientosWorkerPolicy()
-	log.Printf("[asientos_worker] policy interval=%s batch=%d max_reintentos=%d", asientosInterval, asientosBatchSize, asientosMaxRetries)
-	stopAsientosWorker := make(chan struct{})
-	go utils.RunProtectedProcess("finanzas.asientos_worker", map[string]interface{}{"interval": asientosInterval.String(), "batch_size": asientosBatchSize, "max_retries": asientosMaxRetries}, func() {
-		dbpkg.StartEmpresaAsientosContablesWorker(dbEmpresas, asientosInterval, asientosBatchSize, asientosMaxRetries, stopAsientosWorker)
-	})
-
-	stopControlElectricoWorker := make(chan struct{})
-	go utils.RunProtectedProcess("control_electrico.programacion_worker", map[string]interface{}{"interval_minutes": 1}, func() {
-		handlers.StartControlElectricoProgramacionWorker(dbEmpresas, time.Minute, stopControlElectricoWorker)
-	})
-	startupTrace("after_workers")
+	log.Println("INFO: procesos empresariales periodicos delegados a pcs-worker durable")
+	startupTrace("after_worker_delegation")
 
 	// Determinar carpeta web una sola vez para rutas estaticas y handlers que listan recursos.
 	webDir := resolveWebDir()

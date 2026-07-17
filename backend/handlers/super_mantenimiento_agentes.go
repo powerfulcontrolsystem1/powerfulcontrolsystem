@@ -222,6 +222,15 @@ func runScheduledSuperMaintenanceAgents(dbSuper *sql.DB) {
 	RunSuperDIANNoticiasAgent(dbSuper, "sistema", false)
 }
 
+// RunSuperMaintenanceAgentsScheduled executes one due-check from pcs-worker.
+func RunSuperMaintenanceAgentsScheduled(dbSuper *sql.DB) error {
+	if dbSuper == nil {
+		return fmt.Errorf("super database unavailable")
+	}
+	runScheduledSuperMaintenanceAgents(dbSuper)
+	return nil
+}
+
 func RunSuperDIANNoticiasAgent(dbSuper *sql.DB, actor string, manual bool) map[string]any {
 	superMantenimientoAgentesRunMu.Lock()
 	defer superMantenimientoAgentesRunMu.Unlock()

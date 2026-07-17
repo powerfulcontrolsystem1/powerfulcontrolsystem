@@ -37,6 +37,7 @@ paths:
         - {$ref: '#/components/parameters/EmpresaID'}
         - {$ref: '#/components/parameters/Limit'}
         - {$ref: '#/components/parameters/Offset'}
+        - {$ref: '#/components/parameters/Cursor'}
         - {name: q, in: query, schema: {type: string, maxLength: 200}}
         - {name: fields, in: query, schema: {type: string}, description: Lista permitida de campos separados por coma.}
       responses:
@@ -50,6 +51,7 @@ paths:
         - {$ref: '#/components/parameters/EmpresaID'}
         - {$ref: '#/components/parameters/Limit'}
         - {$ref: '#/components/parameters/Offset'}
+        - {$ref: '#/components/parameters/Cursor'}
         - {name: q, in: query, schema: {type: string, maxLength: 200}}
         - {name: include_inactive, in: query, schema: {type: boolean}}
         - {name: fields, in: query, schema: {type: string}, description: Lista permitida de campos separados por coma.}
@@ -64,6 +66,7 @@ paths:
         - {$ref: '#/components/parameters/EmpresaID'}
         - {$ref: '#/components/parameters/Limit'}
         - {$ref: '#/components/parameters/Offset'}
+        - {$ref: '#/components/parameters/Cursor'}
         - {name: id, in: query, schema: {type: integer, format: int64}}
         - {name: estado, in: query, schema: {type: string, enum: [abierto, pagado, todos]}}
         - {name: q, in: query, schema: {type: string, maxLength: 200}}
@@ -103,6 +106,7 @@ paths:
         - {name: carrito_id, in: query, required: true, schema: {type: integer, format: int64}}
         - {$ref: '#/components/parameters/Limit'}
         - {$ref: '#/components/parameters/Offset'}
+        - {$ref: '#/components/parameters/Cursor'}
         - {name: fields, in: query, schema: {type: string}}
       responses:
         '200': {description: Items del carrito}
@@ -146,6 +150,7 @@ paths:
         - {$ref: '#/components/parameters/EmpresaID'}
         - {$ref: '#/components/parameters/Limit'}
         - {$ref: '#/components/parameters/Offset'}
+        - {$ref: '#/components/parameters/Cursor'}
         - {name: estado, in: query, schema: {type: string, default: pagado}}
         - {name: q, in: query, schema: {type: string, maxLength: 200}}
         - {name: fields, in: query, schema: {type: string}}
@@ -167,6 +172,7 @@ paths:
         - {$ref: '#/components/parameters/EmpresaID'}
         - {$ref: '#/components/parameters/Limit'}
         - {$ref: '#/components/parameters/Offset'}
+        - {$ref: '#/components/parameters/Cursor'}
         - {name: tipo_documento, in: query, schema: {type: string}}
         - {name: estado_documento, in: query, schema: {type: string}}
         - {name: cajero, in: query, schema: {type: string}}
@@ -230,6 +236,11 @@ components:
       name: offset
       in: query
       schema: {type: integer, minimum: 0, default: 0}
+    Cursor:
+      name: cursor
+      in: query
+      schema: {type: string, maxLength: 64}
+      description: Cursor opaco devuelto en meta.next_cursor. No se combina con offset.
     IdempotencyKey:
       name: Idempotency-Key
       in: header

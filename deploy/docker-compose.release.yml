@@ -1,0 +1,12 @@
+services:
+  migrate:
+    build: null
+    image: ${PCS_MIGRATE_IMAGE_DIGEST:?Defina PCS_MIGRATE_IMAGE_DIGEST con referencia @sha256}
+
+  backend:
+    build: null
+    image: ${PCS_API_IMAGE_DIGEST:?Defina PCS_API_IMAGE_DIGEST con referencia @sha256}
+
+  worker:
+    build: null
+    image: ${PCS_WORKER_IMAGE_DIGEST:?Defina PCS_WORKER_IMAGE_DIGEST con referencia @sha256}

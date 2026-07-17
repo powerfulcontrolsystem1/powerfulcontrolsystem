@@ -11,9 +11,24 @@ func setValidProductionSecurityEnv(t *testing.T) {
 	t.Setenv("SESSION_TIMEOUT", "12h")
 	t.Setenv("MAX_REQUEST_BODY_BYTES", "67108864")
 	t.Setenv("PCS_PRIVATE_STORAGE_DIR", t.TempDir())
+	t.Setenv("PCS_API_REPLICAS", "1")
+	t.Setenv("PCS_PRIVATE_STORAGE_MODE", "local")
 	t.Setenv("HTTP_READ_TIMEOUT", "30s")
 	t.Setenv("HTTP_WRITE_TIMEOUT", "60s")
 	t.Setenv("HTTP_IDLE_TIMEOUT", "2m")
+}
+
+func TestValidateProductionSecurityConfigRejectsLocalStorageWithMultipleReplicas(t *testing.T) {
+	setValidProductionSecurityEnv(t)
+	t.Setenv("PCS_API_REPLICAS", "2")
+	t.Setenv("PCS_PRIVATE_STORAGE_MODE", "local")
+	if err := validateProductionSecurityConfig(); err == nil {
+		t.Fatal("expected local private storage to be rejected with multiple API replicas")
+	}
+	t.Setenv("PCS_PRIVATE_STORAGE_MODE", "shared")
+	if err := validateProductionSecurityConfig(); err != nil {
+		t.Fatalf("shared private storage rejected: %v", err)
+	}
 }
 
 func TestValidateProductionSecurityConfigAcceptsCompleteConfig(t *testing.T) {

@@ -15,12 +15,14 @@ Compose separado y controles de seguridad/documentos privados. Tambien existen
 las primeras piezas de una plataforma escalable: `pcs-migrate`, `pcs-worker`,
 ledger de migraciones, cola PostgreSQL, outbox e idempotencia movil.
 
-La separacion todavia no esta completa. La API conserva el bootstrap historico
-con DDL, seeds y provisiones; tambien arranca once procesos periodicos. El
-worker no registra handlers de produccion, vuelve a ejecutar DDL y la outbox no
-tiene dispatcher ni productores de negocio. Por tanto, iniciar replicas hoy
-puede duplicar tareas programadas y el estado de la cola no garantiza recuperar
-un trabajo que quedo bloqueado.
+La separacion ha avanzado, pero todavia no esta completa. El bootstrap heredado
+sigue disponible solo para la corrida inicial del migrador; API y worker fallan
+cerrado ante DDL de runtime en produccion. Los timers de negocio ya no arrancan
+desde la API: el worker registra handlers y schedules durables, y la outbox ya
+publica el evento de cobro de carrito. Persisten productores por migrar
+(correo, DIAN, documentos y otros dominios), la extraccion completa del legado
+y la evidencia operativa de staging. Por tanto, no se habilitan replicas ni se
+declara produccion general lista solo por estos cambios de codigo.
 
 La estrategia aprobada es **monolito modular con procesos separados**, no
 microservicios prematuros. Primero se estabiliza el esquema, la ejecucion

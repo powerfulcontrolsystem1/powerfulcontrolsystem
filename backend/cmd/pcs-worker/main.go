@@ -20,36 +20,57 @@ import (
 	"github.com/you/pos-backend/internal/platform/worker"
 )
 
-func main() {
-	dsn := strings.TrimSpace(os.Getenv("DB_SUPERADMIN_DSN"))
-	if dsn == "" {
-		dsn = strings.TrimSpace(os.Getenv("DATABASE_SUPERADMIN_URL"))
-	}
-	if dsn == "" {
-		log.Fatal("DB_SUPERADMIN_DSN is required for pcs-worker")
-	}
-	if err := os.Setenv("DB_DIALECT", "postgres"); err != nil {
-		log.Fatal(err)
+func openWorkerDB(name string, dsn string) (*sql.DB, error) {
+	if strings.TrimSpace(dsn) == "" {
+		return nil, fmt.Errorf("%s is required for pcs-worker", name)
 	}
 	dbConn, err := sql.Open(dbpkg.PostgresCompatDriverName(), dsn)
 	if err != nil {
+		return nil, err
+	}
+	pool, err := dbpkg.LoadPostgresPoolConfig(os.Getenv, "worker")
+	if err != nil {
+		_ = dbConn.Close()
+		return nil, err
+	}
+	if err := dbpkg.ConfigurePostgresPool(dbConn, pool); err != nil {
+		_ = dbConn.Close()
+		return nil, err
+	}
+	if err := dbConn.Ping(); err != nil {
+		_ = dbConn.Close()
+		return nil, err
+	}
+	return dbConn, nil
+}
+
+func main() {
+	if err := os.Setenv("DB_DIALECT", "postgres"); err != nil {
 		log.Fatal(err)
 	}
-	defer dbConn.Close()
-	pool, err := dbpkg.LoadPostgresPoolConfig(os.Getenv, "worker")
+	dbSuper, err := openWorkerDB("DB_SUPERADMIN_DSN", firstNonEmptyEnv("DB_SUPERADMIN_DSN", "DATABASE_SUPERADMIN_URL"))
 	if err != nil {
 		log.Fatal(err)
 	}
-	if err := dbpkg.ConfigurePostgresPool(dbConn, pool); err != nil {
+	defer dbSuper.Close()
+	dbEmp, err := openWorkerDB("DB_EMPRESAS_DSN", firstNonEmptyEnv("DB_EMPRESAS_DSN", "DATABASE_EMPRESAS_URL"))
+	if err != nil {
 		log.Fatal(err)
 	}
-	if err := dbConn.Ping(); err != nil {
+	defer dbEmp.Close()
+	if err := dbpkg.VerifyAsyncJobsSchema(dbSuper); err != nil {
 		log.Fatal(err)
 	}
-	if err := dbpkg.VerifyAsyncJobsSchema(dbConn); err != nil {
+	if err := dbpkg.VerifyOutboxSchema(dbSuper); err != nil {
 		log.Fatal(err)
 	}
-	if err := dbpkg.VerifyOutboxSchema(dbConn); err != nil {
+	if err := dbpkg.VerifyOutboxSchema(dbEmp); err != nil {
+		log.Fatal(err)
+	}
+	if err := dbpkg.VerifyPlatformMigrations(context.Background(), dbEmp, dbpkg.MigrationTargetEmpresas); err != nil {
+		log.Fatal(err)
+	}
+	if err := dbpkg.VerifyPlatformMigrations(context.Background(), dbSuper, dbpkg.MigrationTargetSuper); err != nil {
 		log.Fatal(err)
 	}
 	workerID := strings.TrimSpace(os.Getenv("PCS_WORKER_ID"))
@@ -62,19 +83,21 @@ func main() {
 	}
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
-	registry := worker.DefaultRegistry()
+	registry := businessRegistry(dbEmp, dbSuper)
 	health := &worker.HealthState{}
 	healthAddr := strings.TrimSpace(os.Getenv("PCS_WORKER_HEALTH_ADDR"))
 	if healthAddr == "" {
 		healthAddr = "127.0.0.1:8082"
 	}
-	healthErrors, err := worker.StartHealthServer(ctx, healthAddr, dbConn, health)
+	healthErrors, err := worker.StartHealthServer(ctx, healthAddr, dbSuper, health)
 	if err != nil {
 		log.Fatal(err)
 	}
-	dispatcher := &outbox.Dispatcher{DB: dbConn, DispatcherID: workerID + "-outbox", Batch: 20, Lease: 5 * time.Minute, AllowedKinds: worker.Kinds(registry)}
+	dispatcherSuper := &outbox.Dispatcher{SourceDB: dbSuper, QueueDB: dbSuper, DispatcherID: workerID + "-outbox-super", Batch: 20, Lease: 5 * time.Minute, AllowedKinds: worker.Kinds(registry)}
+	dispatcherEmp := &outbox.Dispatcher{SourceDB: dbEmp, QueueDB: dbSuper, DispatcherID: workerID + "-outbox-empresas", Batch: 20, Lease: 5 * time.Minute, AllowedKinds: worker.Kinds(registry)}
+	scheduler := &worker.Scheduler{DB: dbSuper, Specs: businessSchedules()}
 	runner := &worker.Runner{
-		DB:       dbConn,
+		DB:       dbSuper,
 		WorkerID: workerID,
 		Poll:     2 * time.Second,
 		Batch:    20,
@@ -82,7 +105,13 @@ func main() {
 		Handlers: registry,
 		Health:   health,
 		BeforeBatch: func(ctx context.Context) error {
-			return dispatcher.Dispatch(ctx)
+			if err := scheduler.EnqueueDue(ctx); err != nil {
+				return err
+			}
+			if err := dispatcherSuper.Dispatch(ctx); err != nil {
+				return err
+			}
+			return dispatcherEmp.Dispatch(ctx)
 		},
 	}
 	runnerErrors := make(chan error, 1)
@@ -105,4 +134,13 @@ func main() {
 		}
 	}
 	log.Print("worker stopped gracefully")
+}
+
+func firstNonEmptyEnv(keys ...string) string {
+	for _, key := range keys {
+		if value := strings.TrimSpace(os.Getenv(key)); value != "" {
+			return value
+		}
+	}
+	return ""
 }

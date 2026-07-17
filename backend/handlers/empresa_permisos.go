@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"bytes"
-	"context"
 	"database/sql"
 	"encoding/json"
 	"errors"
@@ -983,10 +982,14 @@ func WithEmpresaAIEnterprisePermissions(dbEmp, dbSuper *sql.DB, next http.Handle
 			http.Error(w, "forbidden: empresa_id fuera del alcance del usuario autenticado", http.StatusForbidden)
 			return
 		}
-		ctx := context.WithValue(r.Context(), "adminRole", snapshot.AdminRole)
-		ctx = context.WithValue(ctx, "adminRoleEfectivo", snapshot.EffectiveRole)
-		ctx = context.WithValue(ctx, "empresaID", empresaID)
-		r = r.WithContext(ctx)
+		r = requestWithTenantContext(r, TenantContext{
+			EmpresaID:     empresaID,
+			AdminEmail:    adminEmail,
+			AdminRole:     snapshot.AdminRole,
+			EffectiveRole: snapshot.EffectiveRole,
+			Module:        "ia_empresarial",
+			Action:        defaultPermissionActionFromMethod(r.Method),
+		})
 		w.Header().Set("X-Empresa-ID", strconv.FormatInt(empresaID, 10))
 		next.ServeHTTP(w, r)
 	}
@@ -1296,8 +1299,7 @@ func WithEmpresaPublicScope(next http.HandlerFunc) http.HandlerFunc {
 			return
 		}
 
-		ctx := context.WithValue(r.Context(), "empresaID", empresaID)
-		r = r.WithContext(ctx)
+		r = requestWithTenantContext(r, TenantContext{EmpresaID: empresaID, Module: "publico"})
 		w.Header().Set("X-Empresa-ID", strconv.FormatInt(empresaID, 10))
 
 		next.ServeHTTP(w, r)
@@ -1333,8 +1335,7 @@ func WithEmpresaSelfServicePermissions(dbEmp, dbSuper *sql.DB, next http.Handler
 			http.Error(w, "forbidden: empresa_id fuera del alcance del usuario autenticado", http.StatusForbidden)
 			return
 		}
-		ctx := context.WithValue(r.Context(), "empresaID", empresaID)
-		r = r.WithContext(ctx)
+		r = requestWithTenantContext(r, TenantContext{EmpresaID: empresaID, AdminEmail: adminEmail, Module: "autoservicio"})
 		w.Header().Set("X-Empresa-ID", strconv.FormatInt(empresaID, 10))
 		next.ServeHTTP(w, r)
 	}
@@ -1565,10 +1566,14 @@ func withEmpresaRolePermissions(dbEmp, dbSuper *sql.DB, module string, resolveAc
 			}
 		}
 
-		ctx := context.WithValue(r.Context(), "adminRole", role)
-		ctx = context.WithValue(ctx, "adminRoleEfectivo", effectiveRole)
-		ctx = context.WithValue(ctx, "empresaID", empresaID)
-		r = r.WithContext(ctx)
+		r = requestWithTenantContext(r, TenantContext{
+			EmpresaID:     empresaID,
+			AdminEmail:    adminEmail,
+			AdminRole:     role,
+			EffectiveRole: effectiveRole,
+			Module:        module,
+			Action:        action,
+		})
 
 		w.Header().Set("X-Empresa-ID", strconv.FormatInt(empresaID, 10))
 		r.Header.Set("X-Admin-Role", role)
