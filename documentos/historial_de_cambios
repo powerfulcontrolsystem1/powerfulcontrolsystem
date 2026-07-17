@@ -38072,3 +38072,8 @@ Archivos modificados:
 2026-07-16: Logo junto al centro operativo en panel empresarial
 - Cambio UX: `web/administrar_empresa/panel.html` integra el logo de la empresa y el texto de bienvenida en una fila compacta.
 - Alcance: solo presentacion; no cambia APIs, permisos, persistencia ni reglas multiempresa.
+
+2026-07-16: Plan 103 - metricas fuera de la API
+- Arquitectura: `maintenance.system-metrics` se ejecuta desde `pcs-worker`; la API deja de iniciar un collector periodico propio.
+- Datos: `metrics` se registra en la migracion versionada super `20260716-004-system-metrics-v1`; worker verifica el esquema y no crea DDL.
+- Validacion: pruebas enfocadas de `metrics`, `db` y `cmd/pcs-worker`; el despliegue conserva `pcs-migrate` como unica autoridad de esquema.

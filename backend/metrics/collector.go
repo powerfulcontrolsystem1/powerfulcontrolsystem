@@ -25,13 +25,18 @@ func StartCollector(dbConn *sql.DB, intervalSeconds int, stopCh <-chan struct{})
 	ticker := time.NewTicker(time.Duration(intervalSeconds) * time.Second)
 	defer ticker.Stop()
 
-	// primera recolección inmediata
-	collectAndStore(dbConn)
+	// Primera recolección inmediata. Esta función se conserva solo para
+	// herramientas locales; producción programa CollectOnce desde pcs-worker.
+	if err := CollectOnce(dbConn); err != nil {
+		log.Println("metrics: failed to store metric:", err)
+	}
 
 	for {
 		select {
 		case <-ticker.C:
-			collectAndStore(dbConn)
+			if err := CollectOnce(dbConn); err != nil {
+				log.Println("metrics: failed to store metric:", err)
+			}
 		case <-stopCh:
 			log.Println("metrics: collector stopped")
 			return
@@ -39,7 +44,9 @@ func StartCollector(dbConn *sql.DB, intervalSeconds int, stopCh <-chan struct{})
 	}
 }
 
-func collectAndStore(dbConn *sql.DB) {
+// CollectOnce gathers one operational sample and stores it. It is safe to
+// invoke from the durable worker and deliberately does not create schema.
+func CollectOnce(dbConn *sql.DB) error {
 	// CPU
 	percents, err := cpu.Percent(0, false)
 	var cpuPercent float64
@@ -88,10 +95,10 @@ func collectAndStore(dbConn *sql.DB) {
 	}
 
 	if err := dbpkg.InsertMetric(dbConn, cpuPercent, memTotal, memUsed, memPercent, diskTotal, diskUsed, diskPercent, netRecv, netSent); err != nil {
-		log.Println("metrics: failed to insert metric:", err)
-	} else {
-		log.Printf("metrics: stored cpu=%.2f mem=%.2f%% disk=%.2f%% recv=%d sent=%d", cpuPercent, memPercent, diskPercent, netRecv, netSent)
+		return err
 	}
+	log.Printf("metrics: stored cpu=%.2f mem=%.2f%% disk=%.2f%% recv=%d sent=%d", cpuPercent, memPercent, diskPercent, netRecv, netSent)
+	return nil
 }
 
 // Read configuration helper (env METRICS_INTERVAL_SECONDS)

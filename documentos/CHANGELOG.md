@@ -3297,4 +3297,5 @@
   ese baseline en PostgreSQL sin el tipo SQLite `DATETIME`.
 # 2026-07-16
 
+- [Operacion] Plan 103 desplaza la recoleccion de metricas desde la API al worker durable y versiona su esquema bajo `pcs-migrate`.
 - [UX] El panel de administrar empresa presenta el logo corporativo a la izquierda del bloque "Centro operativo" en la misma fila y compacta verticalmente la tarjeta de bienvenida/clima.

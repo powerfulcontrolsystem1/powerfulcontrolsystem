@@ -64,6 +64,9 @@ func main() {
 	if err := dbpkg.VerifyOutboxSchema(dbSuper); err != nil {
 		log.Fatal(err)
 	}
+	if err := dbpkg.VerifyMetricsSchema(dbSuper); err != nil {
+		log.Fatal(err)
+	}
 	if err := dbpkg.VerifyOutboxSchema(dbEmp); err != nil {
 		log.Fatal(err)
 	}
