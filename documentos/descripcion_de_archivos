@@ -11996,3 +11996,5 @@ backend/handlers/runtime_health.go
 
 backend/handlers/runtime_health_test.go
 - Regresiones de contratos HTTP de los probes de salud y disponibilidad.
+2026-07-16
+- `web/administrar_empresa/panel.html`: el bloque de bienvenida del panel empresarial muestra el logo a la izquierda del centro operativo y usa una composicion vertical compacta.

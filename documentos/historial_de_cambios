@@ -38069,3 +38069,6 @@ Archivos modificados:
   publica por `TIMESTAMPTZ` explicito y se usa el helper SQL compatible dentro
   de su transaccion. Esto permite que el baseline catalogado complete en
   PostgreSQL sin depender de semantica SQLite.
+2026-07-16: Logo junto al centro operativo en panel empresarial
+- Cambio UX: `web/administrar_empresa/panel.html` integra el logo de la empresa y el texto de bienvenida en una fila compacta.
+- Alcance: solo presentacion; no cambia APIs, permisos, persistencia ni reglas multiempresa.

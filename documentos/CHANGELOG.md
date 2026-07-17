@@ -3295,3 +3295,6 @@
 - Se corrige DDL heredado de `venta_publica`: las fechas usan `TIMESTAMPTZ` y
   la transaccion respeta el helper de compatibilidad. El migrador puede aplicar
   ese baseline en PostgreSQL sin el tipo SQLite `DATETIME`.
+# 2026-07-16
+
+- [UX] El panel de administrar empresa presenta el logo corporativo a la izquierda del bloque "Centro operativo" en la misma fila y compacta verticalmente la tarjeta de bienvenida/clima.
