@@ -24,7 +24,6 @@ import (
 	dbpkg "github.com/you/pos-backend/db"
 	"github.com/you/pos-backend/handlers"
 	"github.com/you/pos-backend/internal/platform/runtimeconfig"
-	"github.com/you/pos-backend/metrics"
 	"github.com/you/pos-backend/utils"
 	"github.com/you/pos-backend/vpssecurity"
 )
@@ -1311,17 +1310,6 @@ func main() {
 	}
 	utils.ConfigureErrorMonitor(dbSuper, backendDir)
 	startupTrace("after_error_monitor")
-
-	// Inicializar tabla de métricas y arrancar collector periódico
-	if err := dbpkg.InitMetricsTable(dbSuper); err != nil {
-		log.Printf("warning: failed to init metrics table: %v", err)
-		utils.ReportProcessError("metrics.collector", "metrics_schema_init", "No se pudo inicializar la tabla de metricas", err, utils.ErrorLevelError, nil)
-	}
-	metricsInterval := metrics.DefaultIntervalSeconds()
-	stopMetrics := make(chan struct{})
-	go utils.RunProtectedProcess("metrics.collector", map[string]interface{}{"interval_seconds": metricsInterval}, func() {
-		metrics.StartCollector(dbSuper, metricsInterval, stopMetrics)
-	})
 
 	log.Println("INFO: procesos empresariales periodicos delegados a pcs-worker durable")
 	startupTrace("after_worker_delegation")

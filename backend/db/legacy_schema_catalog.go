@@ -142,6 +142,7 @@ var legacySuperSchemaCatalog = []legacySchemaStep{
 	{"EnsureEnergiaSolarInTipoEmpresaPreconfiguraciones", EnsureEnergiaSolarInTipoEmpresaPreconfiguraciones},
 	{"EnsureAyudaTicketsSchema", EnsureAyudaTicketsSchema},
 	{"EnsureSuperVentaDigitalSchema", EnsureSuperVentaDigitalSchema},
+	{"InitMetricsTable", InitMetricsTable},
 }
 
 func ApplyLegacySchemaCatalog(dbEmpresas, dbSuper *sql.DB) error {

@@ -142,13 +142,21 @@
       color: var(--panel-text);
     }
 
+    .empresa-home-welcome {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      min-width: 0;
+    }
+
     .empresa-home-brand {
       display: flex;
       align-items: center;
       justify-content: center;
-      width: 104px;
-      height: 104px;
-      margin: 0 0 12px;
+      flex: 0 0 68px;
+      width: 68px;
+      height: 68px;
+      margin: 0;
       border-radius: 8px;
       border: 1px solid var(--panel-glass-border);
       background: var(--panel-glass-bg);
@@ -169,7 +177,7 @@
     }
 
     .empresa-home-kicker {
-      margin: 0 0 8px;
+      margin: 0 0 5px;
       color: var(--panel-kicker);
       font-size: .8rem;
       font-weight: 900;
@@ -179,14 +187,14 @@
     .empresa-home-title {
       margin: 0;
       color: var(--panel-text);
-      font-size: clamp(2.15rem, 4vw, 2.75rem);
+      font-size: clamp(1.8rem, 3.4vw, 2.35rem);
       line-height: 1.02;
       letter-spacing: 0;
       text-wrap: balance;
     }
 
     .empresa-home-subtitle {
-      margin: 8px 0 0;
+      margin: 5px 0 0;
       max-width: 660px;
       color: var(--panel-muted);
       font-size: .96rem;
@@ -1420,8 +1428,12 @@
         align-self: end;
       }
 
+      .empresa-home-welcome {
+        align-items: flex-start;
+      }
+
       .empresa-home-title {
-        font-size: 2.8rem;
+        font-size: 2.1rem;
       }
 
       .empresa-weather-panel {
@@ -1486,6 +1498,16 @@
         grid-template-columns: 1fr;
         gap: 6px;
         padding: 8px;
+      }
+
+      .empresa-home-welcome {
+        gap: 9px;
+      }
+
+      .empresa-home-brand {
+        flex-basis: 54px;
+        width: 54px;
+        height: 54px;
       }
 
       .empresa-home-kicker {
@@ -1919,12 +1941,16 @@
 <section id="homeHero" class="empresa-home-hero weather-clear">
       <div class="empresa-home-hero-inner">
         <div class="empresa-home-copy">
-          <div id="empresaLogoPanelWrap" class="empresa-home-brand" hidden>
-            <img id="empresaLogoPanel" alt="Logo de la empresa">
+          <div class="empresa-home-welcome">
+            <div id="empresaLogoPanelWrap" class="empresa-home-brand" hidden>
+              <img id="empresaLogoPanel" alt="Logo de la empresa">
+            </div>
+            <div class="empresa-home-welcome-copy">
+              <p id="homeKicker" class="empresa-home-kicker">Centro operativo</p>
+              <h1 id="homeTitle" class="empresa-home-title">Bienvenido</h1>
+              <p id="homeSubtitle" class="empresa-home-subtitle">Preparando el contexto de la empresa y el clima actual.</p>
+            </div>
           </div>
-          <p id="homeKicker" class="empresa-home-kicker">Centro operativo</p>
-          <h1 id="homeTitle" class="empresa-home-title">Bienvenido</h1>
-          <p id="homeSubtitle" class="empresa-home-subtitle">Preparando el contexto de la empresa y el clima actual.</p>
         </div>
 
         <aside class="empresa-weather-panel" aria-label="Estado del tiempo">
@@ -3442,7 +3468,7 @@
 
       function detectLocationByIP() {
         var providers = [
-          {
+      {
             url: "https://ipapi.co/json/",
             map: function (data) {
               if (!data || data.error) throw new Error("ipapi location unavailable");

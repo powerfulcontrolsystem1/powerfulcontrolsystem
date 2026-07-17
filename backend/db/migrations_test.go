@@ -62,3 +62,20 @@ func TestEmpresaCatalogIncludesNextcloudSchemaMigration(t *testing.T) {
 	}
 	t.Fatal("nextcloud migration is missing from empresas catalog")
 }
+
+func TestSuperCatalogIncludesSystemMetricsMigration(t *testing.T) {
+	t.Parallel()
+	migrations, err := PlatformMigrations(MigrationTargetSuper)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, migration := range migrations {
+		if migration.Version == "20260716-004-system-metrics-v1" {
+			if migration.Body != metricsSchemaFingerprint || migration.Apply == nil {
+				t.Fatal("metrics migration must be immutable and executable")
+			}
+			return
+		}
+	}
+	t.Fatal("system metrics migration is missing from super catalog")
+}

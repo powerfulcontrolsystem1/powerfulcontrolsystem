@@ -82,6 +82,14 @@ func PlatformMigrations(target string) ([]Migration, error) {
 					return applyOutboxSchemaTx(tx)
 				},
 			},
+			{
+				Version:     "20260716-004-system-metrics-v1",
+				Description: "durable system metrics schema owned by migration role",
+				Body:        metricsSchemaFingerprint,
+				Apply: func(ctx context.Context, tx *sql.Tx) error {
+					return applyMetricsSchemaTx(ctx, tx)
+				},
+			},
 		}, nil
 	default:
 		return nil, fmt.Errorf("unknown platform migration target %q", target)

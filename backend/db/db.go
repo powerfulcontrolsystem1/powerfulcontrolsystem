@@ -1,6 +1,7 @@
 package db
 
 import (
+	"context"
 	"crypto/sha256"
 	"crypto/subtle"
 	"database/sql"
@@ -2302,10 +2303,11 @@ type Metric struct {
 	FechaCreacion string  `json:"fecha_creacion"`
 }
 
-// InitMetricsTable crea la tabla metrics en la base de datos si no existe
-func InitMetricsTable(dbConn *sql.DB) error {
-	if isPostgresDialect() {
-		create := `CREATE TABLE IF NOT EXISTS metrics (
+const metricsSchemaFingerprint = "metrics:v1:cpu-memory-disk-network-samples"
+
+func metricsSchemaStatements() []string {
+	return []string{
+		`CREATE TABLE IF NOT EXISTS metrics (
 			id BIGSERIAL PRIMARY KEY,
 			timestamp TEXT DEFAULT (CAST(CURRENT_TIMESTAMP AS TEXT)),
 			cpu_percent DOUBLE PRECISION,
@@ -2322,11 +2324,34 @@ func InitMetricsTable(dbConn *sql.DB) error {
 			usuario_creador TEXT,
 			estado TEXT DEFAULT 'activo',
 			observaciones TEXT
-		);`
-		if _, err := execSQLCompat(dbConn, create); err != nil {
+		)`,
+		`ALTER TABLE metrics ADD COLUMN IF NOT EXISTS disk_total BIGINT DEFAULT 0`,
+		`ALTER TABLE metrics ADD COLUMN IF NOT EXISTS disk_used BIGINT DEFAULT 0`,
+		`ALTER TABLE metrics ADD COLUMN IF NOT EXISTS disk_percent DOUBLE PRECISION DEFAULT 0`,
+	}
+}
+
+func applyMetricsSchemaTx(ctx context.Context, tx *sql.Tx) error {
+	if tx == nil {
+		return fmt.Errorf("metrics migration transaction is required")
+	}
+	for _, statement := range metricsSchemaStatements() {
+		if _, err := tx.ExecContext(ctx, rebindCompatQuery(statement)); err != nil {
 			return err
 		}
-		return ensureMetricsDiskColumns(dbConn)
+	}
+	return nil
+}
+
+// InitMetricsTable crea la tabla metrics en la base de datos si no existe
+func InitMetricsTable(dbConn *sql.DB) error {
+	if isPostgresDialect() {
+		for _, statement := range metricsSchemaStatements() {
+			if _, err := execSQLCompat(dbConn, statement); err != nil {
+				return err
+			}
+		}
+		return nil
 	}
 
 	create := `CREATE TABLE IF NOT EXISTS metrics (
@@ -2351,6 +2376,23 @@ func InitMetricsTable(dbConn *sql.DB) error {
 		return err
 	}
 	return ensureMetricsDiskColumns(dbConn)
+}
+
+// VerifyMetricsSchema is read-only and is used by pcs-worker. Runtime
+// processes must request pcs-migrate when this table is absent instead of
+// creating it while serving business traffic.
+func VerifyMetricsSchema(dbConn *sql.DB) error {
+	if dbConn == nil {
+		return fmt.Errorf("metrics database is required")
+	}
+	var table sql.NullString
+	if err := queryRowSQLCompat(dbConn, `SELECT to_regclass('public.metrics')`).Scan(&table); err != nil {
+		return fmt.Errorf("verify metrics schema: %w", err)
+	}
+	if !table.Valid || strings.TrimSpace(table.String) == "" {
+		return fmt.Errorf("metrics schema is missing; run pcs-migrate before starting pcs-worker")
+	}
+	return nil
 }
 
 func ensureMetricsDiskColumns(dbConn *sql.DB) error {

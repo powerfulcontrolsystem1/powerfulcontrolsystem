@@ -2,6 +2,14 @@
 
 Estado: vigente. Ultima actualizacion: 2026-07-16.
 
+## Actualizacion 2026-07-16 - Plan 103: cierre operativo verificable
+
+- La recoleccion de metricas deja de vivir en la API y se agenda como trabajo
+  durable del worker; su tabla queda versionada por `pcs-migrate`.
+- `documentos/plan_103_cierre_produccion.md` concilia los hallazgos que ya
+  estaban resueltos con los gates externos que siguen siendo obligatorios.
+  Debe consultarse antes de declarar una liberacion general o replicas.
+
 ## Actualizacion 2026-07-16 - Plan 102: cierre tecnico controlado
 
 - API, worker y migrador quedan separados por rol: solo `pcs-migrate` puede

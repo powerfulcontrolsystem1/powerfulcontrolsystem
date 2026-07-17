@@ -11996,3 +11996,8 @@ backend/handlers/runtime_health.go
 
 backend/handlers/runtime_health_test.go
 - Regresiones de contratos HTTP de los probes de salud y disponibilidad.
+2026-07-16
+- `documentos/plan_103_cierre_produccion.md`: concilia el veredicto tecnico con el estado actual, registra el cierre de metricas y enumera gates externos obligatorios.
+- `backend/metrics/collector.go`: expone una recoleccion unica reutilizable por el worker, sin crear esquema.
+- `backend/cmd/pcs-worker/business_registry.go`: agenda la metrica operativa durable.
+- `web/administrar_empresa/panel.html`: el bloque de bienvenida del panel empresarial muestra el logo a la izquierda del centro operativo y usa una composicion vertical compacta.

@@ -63,10 +63,10 @@ Este archivo se genera con `node tools/ensure_bootstrap_inventory.mjs`. Inventar
 | `EnsureEmpresaCreditosSchema` | [backend/db/creditos.go:662](../../backend/db/creditos.go#L662) | DDL / indice / funcion | empresas o por confirmar |
 | `EnsureEmpresaCRMVentasAvanzadasSchema` | [backend/db/crm_ventas_avanzadas.go:122](../../backend/db/crm_ventas_avanzadas.go#L122) | DDL / indice / funcion | empresas o por confirmar |
 | `EnsureEmpresaDatafonosSchema` | [backend/db/datafonos.go:109](../../backend/db/datafonos.go#L109) | DDL / indice / funcion | empresas o por confirmar |
-| `EnsureAdministradoresAuthSchema` | [backend/db/db.go:143](../../backend/db/db.go#L143) | DDL / indice / funcion | superadministrador o por confirmar |
-| `EnsurePaymentGatewaySchema` | [backend/db/db.go:194](../../backend/db/db.go#L194) | DDL / indice / funcion | superadministrador o por confirmar |
-| `EnsureLicenciasSchema` | [backend/db/db.go:266](../../backend/db/db.go#L266) | DDL / indice / funcion | superadministrador o por confirmar |
-| `EnsureUserEmpresa` | [backend/db/db.go:373](../../backend/db/db.go#L373) | seed o provisionamiento idempotente | empresas o por confirmar |
+| `EnsureAdministradoresAuthSchema` | [backend/db/db.go:144](../../backend/db/db.go#L144) | DDL / indice / funcion | superadministrador o por confirmar |
+| `EnsurePaymentGatewaySchema` | [backend/db/db.go:195](../../backend/db/db.go#L195) | DDL / indice / funcion | superadministrador o por confirmar |
+| `EnsureLicenciasSchema` | [backend/db/db.go:267](../../backend/db/db.go#L267) | DDL / indice / funcion | superadministrador o por confirmar |
+| `EnsureUserEmpresa` | [backend/db/db.go:374](../../backend/db/db.go#L374) | seed o provisionamiento idempotente | empresas o por confirmar |
 | `EnsureEmpresaDeclaracionesTributariasSchema` | [backend/db/declaraciones_tributarias.go:104](../../backend/db/declaraciones_tributarias.go#L104) | DDL / indice / funcion | empresas o por confirmar |
 | `EnsureEmpresaDocumentosTransaccionalesSchema` | [backend/db/documentos_transaccionales.go:93](../../backend/db/documentos_transaccionales.go#L93) | DDL / indice / funcion | empresas o por confirmar |
 | `EnsureEmpresaDomiciliosSchema` | [backend/db/domicilios.go:209](../../backend/db/domicilios.go#L209) | DDL / indice / funcion | empresas o por confirmar |
