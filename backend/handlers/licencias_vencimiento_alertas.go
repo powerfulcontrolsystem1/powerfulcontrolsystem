@@ -713,3 +713,20 @@ func StartLicenciaVencimientoAlertasWorker(dbSuper, dbEmp *sql.DB, interval time
 		}
 	}
 }
+
+// RunLicenciaVencimientoScheduled executes one durable worker cycle.
+func RunLicenciaVencimientoScheduled(dbSuper, dbEmp *sql.DB) error {
+	if !atomic.CompareAndSwapInt32(&licenciaVencimientoWorkerRunning, 0, 1) {
+		return nil
+	}
+	defer atomic.StoreInt32(&licenciaVencimientoWorkerRunning, 0)
+	result := ProcessLicenciaVencimientoAlertas(dbSuper, dbEmp, false, "sistema.pcs-worker")
+	retencion := ProcessLicenciaRetencionEmpresas(dbSuper, dbEmp, false, "sistema.pcs-worker")
+	if !result.OK {
+		return fmt.Errorf("alertas de licencia: %s", result.Error)
+	}
+	if !retencion.OK {
+		return fmt.Errorf("retencion de empresas: %s", retencion.Error)
+	}
+	return nil
+}

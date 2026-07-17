@@ -3,6 +3,7 @@ package handlers
 import (
 	"bytes"
 	"database/sql"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -218,14 +219,41 @@ func mobileLimitOffset(r *http.Request) (int, int, error) {
 		}
 		limit = n
 	}
-	if raw := strings.TrimSpace(r.URL.Query().Get("offset")); raw != "" {
-		n, err := strconv.Atoi(raw)
+	rawOffset := strings.TrimSpace(r.URL.Query().Get("offset"))
+	rawCursor := strings.TrimSpace(r.URL.Query().Get("cursor"))
+	if rawOffset != "" && rawCursor != "" {
+		return 0, 0, fmt.Errorf("offset y cursor no se pueden combinar")
+	}
+	if rawOffset != "" {
+		n, err := strconv.Atoi(rawOffset)
 		if err != nil || n < 0 {
 			return 0, 0, fmt.Errorf("offset invalido")
 		}
 		offset = n
 	}
+	if rawCursor != "" {
+		decoded, err := base64.RawURLEncoding.DecodeString(rawCursor)
+		if err != nil || len(decoded) > 32 || !strings.HasPrefix(string(decoded), "v1:") {
+			return 0, 0, fmt.Errorf("cursor invalido")
+		}
+		n, err := strconv.Atoi(strings.TrimPrefix(string(decoded), "v1:"))
+		if err != nil || n < 0 {
+			return 0, 0, fmt.Errorf("cursor invalido")
+		}
+		offset = n
+	}
 	return limit, offset, nil
+}
+
+func mobilePageMeta(limit, offset, nextOffset, returned int) map[string]interface{} {
+	nextCursor := ""
+	if nextOffset >= 0 {
+		nextCursor = base64.RawURLEncoding.EncodeToString([]byte("v1:" + strconv.Itoa(nextOffset)))
+	}
+	return map[string]interface{}{
+		"limit": limit, "offset": offset, "next_offset": nextOffset,
+		"next_cursor": nextCursor, "returned": returned,
+	}
 }
 
 func mobileSelectFields(items interface{}, raw string, allowed map[string]bool) interface{} {
@@ -450,7 +478,7 @@ func MobileProductosHandler(dbEmp *sql.DB) http.HandlerFunc {
 			next = offset + len(items)
 		}
 		allowed := map[string]bool{"id": true, "nombre": true, "codigo_barras": true, "codigo_sku": true, "sku": true, "precio_venta": true, "stock_actual": true, "estado": true, "categoria_id": true, "impuesto_porcentaje": true, "tipo": true}
-		writeJSON(w, http.StatusOK, mobileAPIEnvelope{OK: true, Data: mobileSelectFields(items, r.URL.Query().Get("fields"), allowed), Meta: map[string]interface{}{"limit": limit, "offset": offset, "next_offset": next, "returned": len(items)}, RequestID: mobileAPIRequestID()})
+		writeJSON(w, http.StatusOK, mobileAPIEnvelope{OK: true, Data: mobileSelectFields(items, r.URL.Query().Get("fields"), allowed), Meta: mobilePageMeta(limit, offset, next, len(items)), RequestID: mobileAPIRequestID()})
 	}
 }
 
@@ -489,7 +517,7 @@ func MobileClientesHandler(dbEmp *sql.DB) http.HandlerFunc {
 			next = end
 		}
 		allowed := map[string]bool{"id": true, "nombre": true, "numero_documento": true, "tipo_documento": true, "telefono": true, "email": true, "estado": true, "direccion": true, "ciudad": true}
-		writeJSON(w, http.StatusOK, mobileAPIEnvelope{OK: true, Data: mobileSelectFields(items, r.URL.Query().Get("fields"), allowed), Meta: map[string]interface{}{"limit": limit, "offset": offset, "next_offset": next, "returned": len(items)}, RequestID: mobileAPIRequestID()})
+		writeJSON(w, http.StatusOK, mobileAPIEnvelope{OK: true, Data: mobileSelectFields(items, r.URL.Query().Get("fields"), allowed), Meta: mobilePageMeta(limit, offset, next, len(items)), RequestID: mobileAPIRequestID()})
 	}
 }
 
@@ -577,7 +605,7 @@ func MobileCarritosHandler(dbEmp *sql.DB) http.HandlerFunc {
 			next = end
 		}
 		allowed := map[string]bool{"id": true, "codigo": true, "nombre": true, "cliente_id": true, "cliente_nombre": true, "estado_carrito": true, "estado_venta": true, "moneda": true, "subtotal": true, "descuento_total": true, "impuesto_total": true, "total": true, "metodo_pago": true, "total_pagado": true, "pagado_en": true, "fecha_actualizacion": true, "item_count": true, "canal_venta": true}
-		writeJSON(w, http.StatusOK, mobileAPIEnvelope{OK: true, Data: mobileSelectFields(items[offset:end], r.URL.Query().Get("fields"), allowed), Meta: map[string]interface{}{"limit": limit, "offset": offset, "next_offset": next, "returned": end - offset}, RequestID: mobileAPIRequestID()})
+		writeJSON(w, http.StatusOK, mobileAPIEnvelope{OK: true, Data: mobileSelectFields(items[offset:end], r.URL.Query().Get("fields"), allowed), Meta: mobilePageMeta(limit, offset, next, end-offset), RequestID: mobileAPIRequestID()})
 	}
 }
 
@@ -646,7 +674,7 @@ func MobileCarritoItemsHandler(dbEmp *sql.DB) http.HandlerFunc {
 			next = end
 		}
 		allowed := map[string]bool{"id": true, "carrito_id": true, "tipo_item": true, "referencia_id": true, "codigo_item": true, "descripcion": true, "unidad_medida": true, "cantidad": true, "precio_unitario": true, "descuento_porcentaje": true, "impuesto_porcentaje": true, "total_linea": true, "estado": true, "fecha_actualizacion": true}
-		writeJSON(w, http.StatusOK, mobileAPIEnvelope{OK: true, Data: mobileSelectFields(all[offset:end], r.URL.Query().Get("fields"), allowed), Meta: map[string]interface{}{"limit": limit, "offset": offset, "next_offset": next, "returned": end - offset}, RequestID: mobileAPIRequestID()})
+		writeJSON(w, http.StatusOK, mobileAPIEnvelope{OK: true, Data: mobileSelectFields(all[offset:end], r.URL.Query().Get("fields"), allowed), Meta: mobilePageMeta(limit, offset, next, end-offset), RequestID: mobileAPIRequestID()})
 	}
 }
 
@@ -685,7 +713,7 @@ func MobileDocumentosFacturacionHandler(dbEmp *sql.DB) http.HandlerFunc {
 			next = offset + len(items)
 		}
 		allowed := map[string]bool{"id": true, "tipo_documento": true, "documento_codigo": true, "numero_legal": true, "pais_codigo": true, "ambiente_fe": true, "estado_documento": true, "monto_total": true, "moneda": true, "fecha_documento": true, "fecha_creacion": true, "usuario_creador": true, "cliente_nombre": true, "cliente_documento": true}
-		writeJSON(w, http.StatusOK, mobileAPIEnvelope{OK: true, Data: mobileSelectFields(items, r.URL.Query().Get("fields"), allowed), Meta: map[string]interface{}{"limit": limit, "offset": offset, "next_offset": next, "returned": len(items)}, RequestID: mobileAPIRequestID()})
+		writeJSON(w, http.StatusOK, mobileAPIEnvelope{OK: true, Data: mobileSelectFields(items, r.URL.Query().Get("fields"), allowed), Meta: mobilePageMeta(limit, offset, next, len(items)), RequestID: mobileAPIRequestID()})
 	}
 }
 

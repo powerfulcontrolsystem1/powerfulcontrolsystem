@@ -5906,12 +5906,9 @@ func WompiTransactionStatusHandler(dbSuper *sql.DB) http.HandlerFunc {
 						}
 					}
 
-					go func(txID string, licID, empID int64) {
-						if txID == "" && reference == "" {
-							return
-						}
-						recordAsesorComercialComision(dbSuper, "wompi", txID, reference, licID, empID)
-					}(transactionID, licenciaID, empresaID)
+					if transactionID != "" || reference != "" {
+						recordAsesorComercialComision(dbSuper, "wompi", transactionID, reference, licenciaID, empresaID)
+					}
 				} else if isRejectedPaymentStatus(status) {
 					payRec, payErr := dbpkg.GetWompiPaymentByTransaction(dbSuper, transactionID)
 					if payErr != nil {
@@ -6075,9 +6072,7 @@ func WompiWebhookHandler(dbSuper *sql.DB, dbEmp ...*sql.DB) http.HandlerFunc {
 			}
 
 			// Registrar comisiones para asesor comercial si aplica (webhook puede venir solo con referencia).
-			go func(txID, ref string, licID, empID int64) {
-				recordAsesorComercialComision(dbSuper, "wompi", txID, ref, licID, empID)
-			}(transactionID, reference, licenciaID, empresaID)
+			recordAsesorComercialComision(dbSuper, "wompi", transactionID, reference, licenciaID, empresaID)
 		} else if isRejectedPaymentStatus(status) && hasContext {
 			lic, licErr := dbpkg.GetLicenciaByID(dbSuper, licenciaID)
 			if licErr != nil {
@@ -6822,9 +6817,7 @@ func EpaycoTransactionStatusHandler(dbSuper *sql.DB) http.HandlerFunc {
 					}
 				}
 			}
-			go func(txID, ref string, licID, empID int64) {
-				recordAsesorComercialComisionEpayco(dbSuper, txID, ref, licID, empID)
-			}(firstNonEmptyString(recordTransactionID, transactionID), firstNonEmptyString(recordReference, invoiceReference, reference), licenciaID, empresaID)
+			recordAsesorComercialComisionEpayco(dbSuper, firstNonEmptyString(recordTransactionID, transactionID), firstNonEmptyString(recordReference, invoiceReference, reference), licenciaID, empresaID)
 		} else if isRejectedPaymentStatus(status) && hasContext {
 			lic, licErr := dbpkg.GetLicenciaByID(dbSuper, licenciaID)
 			if licErr != nil {
@@ -7023,9 +7016,7 @@ func EpaycoWebhookHandler(dbSuper *sql.DB, dbEmp ...*sql.DB) http.HandlerFunc {
 					}
 				}
 			}
-			go func(txID, ref string, licID, empID int64) {
-				recordAsesorComercialComisionEpayco(dbSuper, txID, ref, licID, empID)
-			}(transactionID, firstNonEmptyString(invoiceReference, reference), licenciaID, empresaID)
+			recordAsesorComercialComisionEpayco(dbSuper, transactionID, firstNonEmptyString(invoiceReference, reference), licenciaID, empresaID)
 		} else if isRejectedPaymentStatus(status) && hasContext {
 			lic, licErr := dbpkg.GetLicenciaByID(dbSuper, licenciaID)
 			if licErr != nil {
@@ -7289,19 +7280,14 @@ func ActivateLicenciaSinPagoHandler(dbSuper *sql.DB, dbEmpresas *sql.DB) http.Ha
 		}
 
 		// Registrar la activación en pagos_wompi para trazabilidad (provider=MANUAL)
-		go func() {
-			reference := ref
-
-			payload.AsesorID = strings.ToUpper(strings.TrimSpace(payload.AsesorID))
-			rawMap := map[string]interface{}{"motivo": payload.Motivo, "discount_code": payload.DiscountCode, "asesor_id": payload.AsesorID, "zero_total": true, "total_value": summary.TotalValue, "discount_value": summary.DiscountValue}
-			rawBytes, _ := json.Marshal(rawMap)
-			if _, err := dbpkg.CreateWompiPaymentRecord(dbSuper, payload.LicenciaID, payload.EmpresaID, "", reference, "MANUAL", string(rawBytes), payload.DiscountCode, payload.AsesorID); err != nil {
-				log.Println("warning: failed to record manual activation in pagos_wompi:", err)
-			}
-
-			// Registrar comisiones si el payload contiene codigo de asesor o asociacion vigente.
-			recordAsesorComercialComision(dbSuper, "manual", "", reference, payload.LicenciaID, payload.EmpresaID)
-		}()
+		reference := ref
+		payload.AsesorID = strings.ToUpper(strings.TrimSpace(payload.AsesorID))
+		rawMap := map[string]interface{}{"motivo": payload.Motivo, "discount_code": payload.DiscountCode, "asesor_id": payload.AsesorID, "zero_total": true, "total_value": summary.TotalValue, "discount_value": summary.DiscountValue}
+		rawBytes, _ := json.Marshal(rawMap)
+		if _, err := dbpkg.CreateWompiPaymentRecord(dbSuper, payload.LicenciaID, payload.EmpresaID, "", reference, "MANUAL", string(rawBytes), payload.DiscountCode, payload.AsesorID); err != nil {
+			log.Println("warning: failed to record manual activation in pagos_wompi:", err)
+		}
+		recordAsesorComercialComision(dbSuper, "manual", "", reference, payload.LicenciaID, payload.EmpresaID)
 		w.Header().Set("Content-Type", "application/json")
 		encodeJSONResponse(w, map[string]interface{}{
 			"activated":      true,

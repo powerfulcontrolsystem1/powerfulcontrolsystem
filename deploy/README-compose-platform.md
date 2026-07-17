@@ -181,3 +181,17 @@ Para mover la plataforma despues:
 - En el nuevo servidor, restaura volumenes, copia el proyecto o las imagenes y ejecuta `docker compose --env-file deploy/.env.platform -f deploy/docker-compose.platform.yml --profile edge up -d`.
 
 No subas `deploy/.env.platform` al repositorio: contiene secretos operativos.
+# Release inmutable
+
+El despliegue productivo debe superponer `docker-compose.release.yml` y fijar
+API, migrador y worker mediante referencias completas `@sha256`:
+
+```bash
+docker compose -f deploy/docker-compose.platform.yml \
+  -f deploy/docker-compose.release.yml config
+```
+
+Antes de promover, `scripts/immutable_release_check.ps1` valida
+`PCS_API_IMAGE_DIGEST`, `PCS_MIGRATE_IMAGE_DIGEST` y
+`PCS_WORKER_IMAGE_DIGEST`. Los tags locales del Compose base son solo para
+construccion, desarrollo y preparacion del primer artefacto.

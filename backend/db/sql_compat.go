@@ -533,10 +533,16 @@ func execSQLCompat(dbConn *sql.DB, query string, args ...interface{}) (sql.Resul
 	if dbConn == nil {
 		dbConn = GetDB()
 	}
+	if runtimeDDLBlocked(query) {
+		return noOpSQLResult{}, nil
+	}
 	return dbConn.Exec(rebindCompatQuery(query), args...)
 }
 
 func execTxSQLCompat(tx *sql.Tx, query string, args ...interface{}) (sql.Result, error) {
+	if runtimeDDLBlocked(query) {
+		return noOpSQLResult{}, nil
+	}
 	return tx.Exec(rebindCompatQuery(query), args...)
 }
 

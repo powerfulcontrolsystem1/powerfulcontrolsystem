@@ -519,6 +519,9 @@ func superVPSSnapshotAddLocalRuntimeDirs(tw *tar.Writer, root string) (int, []st
 		filepath.Join(root, "descargas"):       "runtime-local/descargas",
 		filepath.Join(root, "backend", "logs"): "runtime-local/backend_logs",
 	}
+	if privateRoot := strings.TrimSpace(os.Getenv("PCS_PRIVATE_STORAGE_DIR")); privateRoot != "" {
+		targets[privateRoot] = "runtime-local/private_storage"
+	}
 	added := 0
 	warnings := []string{}
 	for path, prefix := range targets {
@@ -688,6 +691,15 @@ func maybeRunSuperVPSSnapshotAutomatic(dbSuper *sql.DB) {
 		_ = dbpkg.SetConfigValue(dbSuper, superVPSSnapshotConfigLastResult, "error: "+result.Error, false)
 		log.Printf("[super_vps_snapshot] automatic error: %s", result.Error)
 	}
+}
+
+// RunSuperVPSSnapshotScheduled executes one due-check without owning a timer.
+func RunSuperVPSSnapshotScheduled(dbSuper *sql.DB) error {
+	if dbSuper == nil {
+		return fmt.Errorf("super database unavailable")
+	}
+	maybeRunSuperVPSSnapshotAutomatic(dbSuper)
+	return nil
 }
 
 func sanitizeSuperVPSSnapshotLogs(items []dbpkg.SuperVPSSnapshotLog) []dbpkg.SuperVPSSnapshotLog {

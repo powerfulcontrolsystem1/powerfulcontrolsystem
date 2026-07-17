@@ -11895,6 +11895,11 @@ documentos/plan_final_para_produccion.md
   worker, cola, outbox, PostgreSQL, modulos, Docker y API movil; incluye fases,
   backlog, hitos, criterios de aceptacion, releases, rollback y primera fase.
 
+documentos/plan_102_cierre_produccion.md
+- Estado verificable del cierre tecnico de Plan 102, limites que requieren
+  staging/proveedores y reglas de release inmutable para una produccion
+  controlada.
+
 documentos/arquitectura/inventario_bootstrap_ensure.md
 - Inventario generado y versionado de funciones `Ensure*` en runtime. Clasifica
   cada referencia como DDL, seed, verificacion, compatibilidad o revision antes
@@ -11918,6 +11923,33 @@ backend/internal/platform/outbox/dispatcher.go
 backend/internal/platform/worker/health.go
 - Healthcheck interno del worker: expone `health` y `ready` solo por loopback,
   verifica PostgreSQL y el ultimo batch sin incluir datos empresariales.
+
+backend/db/legacy_schema_catalog.go
+- Inventario ejecutable del baseline historico. Solo el migrador lo aplica y
+  deja un marcador versionado para impedir que vuelva a ejecutarse en runtime.
+
+backend/db/runtime_schema_guard.go
+- Bloqueo defensivo de DDL en roles API/worker de produccion; complementa el
+  ledger y evita reintroducir bootstrap accidental.
+
+backend/handlers/tenant_context.go
+- Contexto empresarial tipado creado despues de autorizar sesion, empresa y rol;
+  mantiene compatibilidad transitoria con claves antiguas de contexto.
+
+backend/internal/platform/worker/scheduler.go
+- Scheduler durable: transforma calendarios de mantenimiento en jobs
+  idempotentes, sin timers de negocio dentro de la API.
+
+backend/internal/ventas/service.go
+- Caso de uso de ventas para recuperar contabilizacion de un cobro confirmado
+  mediante evento de outbox, separado del proceso worker.
+
+deploy/docker-compose.release.yml
+- Override de Compose para releases: elimina builds locales y exige digests
+  inmutables para migrador, API y worker.
+
+scripts/immutable_release_check.ps1
+- Validador local de las referencias por digest requeridas antes de un release.
 2026-07-13 - IA propia empresarial y API movil v1
 - `backend/db/ai_empresa_proveedor.go`: esquema y acceso cifrado por empresa
   para la clave OpenAI propia; el valor solo se descifra en memoria al enviar la

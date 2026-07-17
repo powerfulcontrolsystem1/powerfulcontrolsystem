@@ -16,6 +16,18 @@ decisiones en cada tarea.
   almacenamiento o API movil. La fase 1 es obligatoria antes de pretender
   replicas o declarar produccion general lista.
 
+## Actualizacion 2026-07-16 - Cierre tecnico Plan 102
+
+- No reactivar timers de negocio en `backend/main.go`: los schedules pertenecen
+  al worker durable. Tampoco habilitar `PCS_RUNTIME_SCHEMA_BOOTSTRAP=1` en API
+  o worker de produccion; solo el migrador puede aplicar cambios de esquema.
+- Para despliegue controlado, usar `deploy/docker-compose.release.yml` con los
+  tres digests requeridos. `rs` sigue siendo el orquestador de esta instalacion,
+  pero no sustituye staging, restore drill ni las pruebas reales de proveedores.
+- En API movil v1, el cursor ya es opaco y compatible con paginacion. No dar por
+  terminadas sesiones por dispositivo, refresh, push, sync incremental ni URLs
+  firmadas hasta que sus contratos y pruebas existan.
+
 ## Actualizacion 2026-07-16 - Regla de migraciones y worker
 
 - Ejecutar `pcs-migrate` antes de API/worker. Sus migraciones verifican

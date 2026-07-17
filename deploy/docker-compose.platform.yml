@@ -59,7 +59,8 @@ services:
     build:
       context: ..
       dockerfile: deploy/docker/backend.Dockerfile
-    image: ${PCS_BACKEND_IMAGE:-pcs-backend:local}
+      target: migrate
+    image: ${PCS_MIGRATE_IMAGE:-pcs-migrate:local}
     container_name: pcs-migrate
     restart: "no"
     read_only: true
@@ -69,11 +70,12 @@ services:
       - ALL
     tmpfs:
       - /tmp:rw,noexec,nosuid,size=32m
-    command: ["/app/backend/pcs-migrate"]
+    command: ["/bin/sh", "-ec", "/app/backend/pcs-backend && /app/backend/pcs-migrate"]
     depends_on:
       postgres:
         condition: service_healthy
     environment:
+      PCS_ENV: production
       PCS_RUNTIME_ROLE: migrate
       PCS_DB_MAX_OPEN_CONNS: ${PCS_MIGRATE_DB_MAX_OPEN_CONNS:-3}
       PCS_DB_MAX_IDLE_CONNS: ${PCS_MIGRATE_DB_MAX_IDLE_CONNS:-1}
@@ -82,13 +84,30 @@ services:
       DB_DIALECT: postgres
       DB_EMPRESAS_DSN: postgres://${POSTGRES_USER:-pcs}:${POSTGRES_PASSWORD}@postgres:5432/pcs_empresas?sslmode=disable
       DB_SUPERADMIN_DSN: postgres://${POSTGRES_USER:-pcs}:${POSTGRES_PASSWORD}@postgres:5432/pcs_superadministrador?sslmode=disable
+      CONFIG_ENC_KEY: ${CONFIG_ENC_KEY:?Defina CONFIG_ENC_KEY}
+      CONFIG_ENC_KEY_ID: ${CONFIG_ENC_KEY_ID:?Defina CONFIG_ENC_KEY_ID}
+      CONFIG_ENC_KEY_PREVIOUS: ${CONFIG_ENC_KEY_PREVIOUS:-}
+      PCS_TRUSTED_PROXY_CIDRS: ${PCS_TRUSTED_PROXY_CIDRS:?Defina PCS_TRUSTED_PROXY_CIDRS}
+      PCS_CSRF_ALLOWED_ORIGINS: ${PCS_CSRF_ALLOWED_ORIGINS:?Defina PCS_CSRF_ALLOWED_ORIGINS}
+      CSRF_ALLOWED_ORIGINS: ${PCS_CSRF_ALLOWED_ORIGINS:?Defina PCS_CSRF_ALLOWED_ORIGINS}
+      SESSION_TIMEOUT: ${SESSION_TIMEOUT:?Defina SESSION_TIMEOUT}
+      MAX_REQUEST_BODY_BYTES: ${MAX_REQUEST_BODY_BYTES:?Defina MAX_REQUEST_BODY_BYTES}
+      PCS_PRIVATE_STORAGE_DIR: /app/private_storage
+      HTTP_READ_TIMEOUT: ${HTTP_READ_TIMEOUT:?Defina HTTP_READ_TIMEOUT}
+      HTTP_WRITE_TIMEOUT: ${HTTP_WRITE_TIMEOUT:?Defina HTTP_WRITE_TIMEOUT}
+      HTTP_IDLE_TIMEOUT: ${HTTP_IDLE_TIMEOUT:?Defina HTTP_IDLE_TIMEOUT}
+      PCS_SKIP_CORPORATE_EMAIL_STARTUP_SYNC: "1"
+      PCS_MIGRATION_SKIP_EXTERNAL_SYNC: "1"
     networks:
       - pcs_internal
+    volumes:
+      - pcs_private_storage:/app/private_storage
 
   backend:
     build:
       context: ..
       dockerfile: deploy/docker/backend.Dockerfile
+      target: api
     image: ${PCS_BACKEND_IMAGE:-pcs-backend:local}
     container_name: pcs-backend
     restart: unless-stopped
@@ -107,6 +126,7 @@ services:
     environment:
       PORT: "8080"
       PCS_RUNTIME_ROLE: api
+      PCS_RUNTIME_SCHEMA_BOOTSTRAP: "0"
       PCS_DB_MAX_OPEN_CONNS: ${PCS_API_DB_MAX_OPEN_CONNS:-24}
       PCS_DB_MAX_IDLE_CONNS: ${PCS_API_DB_MAX_IDLE_CONNS:-12}
       PCS_DB_CONN_MAX_LIFETIME: ${PCS_API_DB_CONN_MAX_LIFETIME:-30m}
@@ -123,6 +143,8 @@ services:
       HTTP_IDLE_TIMEOUT: ${HTTP_IDLE_TIMEOUT:?Defina HTTP_IDLE_TIMEOUT}
       PCS_WEBRTC_IDLE_TIMEOUT_SECONDS: ${PCS_WEBRTC_IDLE_TIMEOUT_SECONDS:-300}
       PCS_PRIVATE_STORAGE_DIR: /app/private_storage
+      PCS_PRIVATE_STORAGE_MODE: ${PCS_PRIVATE_STORAGE_MODE:-shared}
+      PCS_API_REPLICAS: ${PCS_API_REPLICAS:-1}
       DB_DIALECT: postgres
       DB_EMPRESAS_DSN: postgres://${POSTGRES_USER:-pcs}:${POSTGRES_PASSWORD}@postgres:5432/pcs_empresas?sslmode=disable
       DB_SUPERADMIN_DSN: postgres://${POSTGRES_USER:-pcs}:${POSTGRES_PASSWORD}@postgres:5432/pcs_superadministrador?sslmode=disable
@@ -173,7 +195,7 @@ services:
     expose:
       - "8080"
     healthcheck:
-      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:8080/ >/dev/null || exit 1"]
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:8080/ready >/dev/null || exit 1"]
       interval: 30s
       timeout: 5s
       retries: 10
@@ -182,7 +204,11 @@ services:
       - pcs_internal
 
   worker:
-    image: ${PCS_BACKEND_IMAGE:-pcs-backend:local}
+    build:
+      context: ..
+      dockerfile: deploy/docker/backend.Dockerfile
+      target: worker
+    image: ${PCS_WORKER_IMAGE:-pcs-worker:local}
     container_name: pcs-worker
     restart: unless-stopped
     read_only: true
@@ -200,21 +226,51 @@ services:
         condition: service_completed_successfully
     environment:
       TZ: ${TZ:-America/Bogota}
+      PCS_ENV: production
       PCS_RUNTIME_ROLE: worker
+      PCS_RUNTIME_SCHEMA_BOOTSTRAP: "0"
       PCS_DB_MAX_OPEN_CONNS: ${PCS_WORKER_DB_MAX_OPEN_CONNS:-8}
       PCS_DB_MAX_IDLE_CONNS: ${PCS_WORKER_DB_MAX_IDLE_CONNS:-4}
       PCS_DB_CONN_MAX_LIFETIME: ${PCS_WORKER_DB_CONN_MAX_LIFETIME:-30m}
       PCS_DB_CONN_MAX_IDLE_TIME: ${PCS_WORKER_DB_CONN_MAX_IDLE_TIME:-5m}
       DB_DIALECT: postgres
+      DB_EMPRESAS_DSN: postgres://${POSTGRES_USER:-pcs}:${POSTGRES_PASSWORD}@postgres:5432/pcs_empresas?sslmode=disable
       DB_SUPERADMIN_DSN: postgres://${POSTGRES_USER:-pcs}:${POSTGRES_PASSWORD}@postgres:5432/pcs_superadministrador?sslmode=disable
+      CONFIG_ENC_KEY: ${CONFIG_ENC_KEY:?Defina CONFIG_ENC_KEY}
+      CONFIG_ENC_KEY_ID: ${CONFIG_ENC_KEY_ID:?Defina CONFIG_ENC_KEY_ID}
+      CONFIG_ENC_KEY_PREVIOUS: ${CONFIG_ENC_KEY_PREVIOUS:-}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      NEXTCLOUD_ENABLED: ${NEXTCLOUD_ENABLED:-0}
+      NEXTCLOUD_BASE_URL: ${NEXTCLOUD_BASE_URL:-https://nextcloud.powerfulcontrolsystem.com}
+      NEXTCLOUD_ADMIN_USER: ${NEXTCLOUD_ADMIN_USER:-}
+      NEXTCLOUD_ADMIN_SECRET: ${NEXTCLOUD_ADMIN_SECRET:-}
+      EMAIL_CORPORATIVO_ENABLED: ${EMAIL_CORPORATIVO_ENABLED:-0}
+      EMAIL_CORPORATIVO_DOMAIN: ${EMAIL_CORPORATIVO_DOMAIN:-powerfulcontrolsystem.com}
+      EMAIL_CORPORATIVO_MAILU_API_TOKEN: ${MAILU_API_TOKEN:-}
+      PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:-https://powerfulcontrolsystem.com}
+      ASIENTOS_WORKER_INTERVAL_MINUTES: ${ASIENTOS_WORKER_INTERVAL_MINUTES:-15}
+      ASIENTOS_WORKER_BATCH_SIZE: ${ASIENTOS_WORKER_BATCH_SIZE:-100}
+      ASIENTOS_WORKER_MAX_RETRIES: ${ASIENTOS_WORKER_MAX_RETRIES:-5}
       PCS_WORKER_ID: ${PCS_WORKER_ID:-pcs-worker-main}
       PCS_WORKER_HEALTH_ADDR: ${PCS_WORKER_HEALTH_ADDR:-127.0.0.1:8082}
+      PCS_PRIVATE_STORAGE_DIR: /app/private_storage
+      PCS_PROJECT_EXPORT_ROOT: /app/project_export
+      PGHOST: postgres
+      PGPORT: "5432"
+      PGUSER: ${POSTGRES_USER:-pcs}
+      PGPASSWORD: ${POSTGRES_PASSWORD}
     healthcheck:
       test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:8082/ready >/dev/null || exit 1"]
       interval: 15s
       timeout: 5s
       retries: 5
       start_period: 20s
+    volumes:
+      - pcs_backend_logs:/app/backend/logs
+      - pcs_web_uploads:/app/web/uploads
+      - pcs_private_storage:/app/private_storage
+      - pcs_backups:/app/backup
     networks:
       - pcs_internal
 

@@ -11,16 +11,46 @@ RUN CGO_ENABLED=0 GOOS=linux go build -trimpath -ldflags="-s -w" -o /out/pcs-bac
 RUN CGO_ENABLED=0 GOOS=linux go build -trimpath -ldflags="-s -w" -o /out/pcs-migrate ./cmd/pcs-migrate
 RUN CGO_ENABLED=0 GOOS=linux go build -trimpath -ldflags="-s -w" -o /out/pcs-worker ./cmd/pcs-worker
 
-FROM alpine:3.20
+FROM alpine:3.20 AS runtime-base
 
 RUN apk add --no-cache bash ca-certificates curl openssh-client openssl tzdata \
     && addgroup -S -g 10001 pcs \
     && adduser -S -D -H -u 10001 -G pcs pcs
 WORKDIR /app/backend
+ENV GRAFOLOGIA_TESSERACT_ENABLED=0
+
+FROM runtime-base AS migrate
 
 COPY --from=build /out/pcs-backend /app/backend/pcs-backend
 COPY --from=build /out/pcs-migrate /app/backend/pcs-migrate
+COPY web /app/web
+RUN mkdir -p /app/backend/logs /app/private_storage \
+    && chown -R pcs:pcs /app
+USER pcs:pcs
+CMD ["/bin/sh", "-ec", "/app/backend/pcs-backend && /app/backend/pcs-migrate"]
+
+FROM runtime-base AS worker
+
+USER root
+RUN apk add --no-cache postgresql-client
 COPY --from=build /out/pcs-worker /app/backend/pcs-worker
+COPY web /app/web
+COPY documentos /app/documentos
+COPY backend /app/project_export/backend
+COPY web /app/project_export/web
+COPY deploy /app/project_export/deploy
+COPY scripts /app/project_export/scripts
+COPY documentos /app/project_export/documentos
+COPY .dockerignore AGENTS.md CHANGELOG.md /app/project_export/
+ENV PCS_PROJECT_EXPORT_ROOT=/app/project_export
+RUN mkdir -p /app/backend/logs /app/private_storage /app/backup /app/web/uploads \
+    && chown -R pcs:pcs /app
+USER pcs:pcs
+CMD ["/app/backend/pcs-worker"]
+
+FROM runtime-base AS api
+
+COPY --from=build /out/pcs-backend /app/backend/pcs-backend
 COPY web /app/web
 COPY documentos /app/documentos
 COPY backend /app/project_export/backend
@@ -31,9 +61,8 @@ COPY documentos /app/project_export/documentos
 COPY .dockerignore AGENTS.md CHANGELOG.md /app/project_export/
 
 ENV PCS_PROJECT_EXPORT_ROOT=/app/project_export
-ENV GRAFOLOGIA_TESSERACT_ENABLED=0
 
-RUN mkdir -p /app/backend/logs /app/web/uploads /app/backup /app/descargas \
+RUN mkdir -p /app/backend/logs /app/web/uploads /app/private_storage /app/backup /app/descargas \
     && chmod +x /app/project_export/deploy/scripts/vps-provision-mailu-mailbox.sh \
     && chmod +x /app/project_export/deploy/scripts/vps-delete-mailu-mailbox.sh \
     && chown -R pcs:pcs /app

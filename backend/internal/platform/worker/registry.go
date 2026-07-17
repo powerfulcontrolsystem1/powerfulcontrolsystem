@@ -9,9 +9,8 @@ import (
 
 const JobKindPlatformNoop = "platform.noop"
 
-// DefaultRegistry is deliberately small until each business family has been
-// moved from API timers to durable handlers. It makes an empty registry a
-// startup failure and offers one harmless diagnostic job for staging probes.
+// DefaultRegistry is reserved for isolated runner diagnostics. The production
+// pcs-worker builds its registry explicitly and never registers this no-op job.
 func DefaultRegistry() map[string]HandlerSpec {
 	return map[string]HandlerSpec{
 		JobKindPlatformNoop: {

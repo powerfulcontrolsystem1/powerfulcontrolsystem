@@ -9,6 +9,7 @@ param(
   [switch]$SkipRestoreDrill,
   [switch]$SkipE2E,
   [switch]$SkipLoadSmoke,
+  [switch]$SkipImmutableImages,
   [string]$E2EBaseUrl = "https://staging.powerfulcontrolsystem.com",
   [string]$EmpresaId = "7"
 )
@@ -21,6 +22,11 @@ Push-Location $repoRoot
 try {
   & .\scripts\profesional_preflight.ps1 -Full
   if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+  if (-not $SkipImmutableImages) {
+    & .\scripts\immutable_release_check.ps1
+    if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+  }
 
   if (-not $SkipRemoteBackup -and -not $AllowRemoteTarget) {
     throw "La validacion remota esta bloqueada por seguridad. Ejecuta con -AllowRemoteTarget solo para un destino aislado o autorizado; usa -SkipRemoteBackup para una compuerta local."

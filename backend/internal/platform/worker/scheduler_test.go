@@ -1,0 +1,18 @@
+package worker
+
+import (
+	"testing"
+	"time"
+)
+
+func TestValidateScheduleSpec(t *testing.T) {
+	t.Parallel()
+	valid := ScheduleSpec{Kind: "maintenance.audit-retention", Version: 1, Interval: time.Hour, MaxAttempts: 5, Priority: 100}
+	if err := validateScheduleSpec(valid); err != nil {
+		t.Fatalf("valid schedule rejected: %v", err)
+	}
+	valid.Interval = time.Second
+	if err := validateScheduleSpec(valid); err == nil {
+		t.Fatal("sub-minute schedule must be rejected")
+	}
+}

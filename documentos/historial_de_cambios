@@ -38045,3 +38045,21 @@ Archivos modificados:
   presencia y no se vuelve a emitir DDL desde los flujos empresariales.
 - El bootstrap legado sigue activo por compatibilidad hasta completar los
   demas dominios y una prueba documentada de staging y rollback.
+
+2026-07-16 - Plan 102: cierre tecnico de preproduccion
+- [Migraciones] Se registra el baseline heredado bajo el ledger y se añade un
+  guard que bloquea DDL en API/worker de produccion. `pcs-migrate` conserva la
+  unica autoridad de cambios de esquema.
+- [Asincronia] Se retiran los timers de negocio de la API; el worker programa
+  handlers tipados y el cobro de carrito publica `commerce.sale-paid` en la
+  outbox dentro de la misma transaccion.
+- [Consistencia] El cierre de caja se serializa con `FOR UPDATE`; se extrae la
+  recuperacion contable del cobro al servicio `internal/ventas`.
+- [Multiempresa] Los wrappers autorizados incorporan `TenantContext` tipado
+  para que IDs empresariales del cliente no vuelvan a ser fuente de autoridad.
+- [Operacion] `/ready` comprueba storage privado; replicas requieren modo
+  compartido u objeto. Compose separa imagenes por rol y el override de release
+  exige digests inmutables.
+- [Movil] La API v1 admite cursor opaco y la idempotencia movil expira y se
+  reclama de manera segura. Sesiones por dispositivo, push, conflictos y URLs
+  firmadas permanecen como gates documentados, no como funcionalidades fingidas.

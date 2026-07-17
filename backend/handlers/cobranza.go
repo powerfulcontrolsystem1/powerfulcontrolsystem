@@ -361,6 +361,29 @@ func StartEmpresaCobranzaRecordatoriosWorker(dbEmp, dbSuper *sql.DB, interval ti
 	}
 }
 
+// RunEmpresaCobranzaRecordatoriosScheduled executes one global due-check. It
+// is intentionally timer-free so the durable worker owns scheduling.
+func RunEmpresaCobranzaRecordatoriosScheduled(dbEmp, dbSuper *sql.DB) error {
+	if dbEmp == nil || dbSuper == nil {
+		return fmt.Errorf("bases de cobranza no disponibles")
+	}
+	cfgs, err := dbpkg.ListEmpresaCobranzaConfiguracionesActivas(dbEmp)
+	if err != nil {
+		return err
+	}
+	now := time.Now().In(time.Local)
+	for _, cfg := range cfgs {
+		if !cobranzaWorkerDue(cfg, now) {
+			continue
+		}
+		result := processEmpresaCobranzaRecordatorios(dbEmp, dbSuper, cfg, false, "sistema:pcs-worker")
+		if result.Errores > 0 {
+			return fmt.Errorf("cobranza empresa_id=%d termino con %d error(es)", cfg.EmpresaID, result.Errores)
+		}
+	}
+	return nil
+}
+
 func cobranzaWorkerDue(cfg dbpkg.EmpresaCobranzaConfiguracion, now time.Time) bool {
 	configured, err := time.Parse("15:04", strings.TrimSpace(cfg.HoraLocal))
 	if err != nil {

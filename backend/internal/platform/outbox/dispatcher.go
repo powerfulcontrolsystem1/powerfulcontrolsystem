@@ -15,7 +15,10 @@ import (
 )
 
 type Dispatcher struct {
+	// DB is retained for callers where source and queue share a database.
 	DB           *sql.DB
+	SourceDB     *sql.DB
+	QueueDB      *sql.DB
 	DispatcherID string
 	Batch        int
 	Lease        time.Duration
@@ -26,8 +29,18 @@ type Dispatcher struct {
 // then marks the event published. Unknown topics stay visible and eventually
 // enter the outbox dead-letter state instead of being dropped silently.
 func (d *Dispatcher) Dispatch(ctx context.Context) error {
-	if d == nil || d.DB == nil || strings.TrimSpace(d.DispatcherID) == "" {
+	if d == nil || strings.TrimSpace(d.DispatcherID) == "" {
 		return fmt.Errorf("outbox dispatcher is not configured")
+	}
+	sourceDB, queueDB := d.SourceDB, d.QueueDB
+	if sourceDB == nil {
+		sourceDB = d.DB
+	}
+	if queueDB == nil {
+		queueDB = d.DB
+	}
+	if sourceDB == nil || queueDB == nil {
+		return fmt.Errorf("outbox dispatcher databases are not configured")
 	}
 	if d.Batch < 1 || d.Batch > 100 {
 		d.Batch = 20
@@ -35,10 +48,10 @@ func (d *Dispatcher) Dispatch(ctx context.Context) error {
 	if d.Lease < 30*time.Second || d.Lease > 30*time.Minute {
 		d.Lease = 5 * time.Minute
 	}
-	if _, err := dbpkg.RecoverExpiredOutboxEvents(d.DB); err != nil {
+	if _, err := dbpkg.RecoverExpiredOutboxEvents(sourceDB); err != nil {
 		return err
 	}
-	events, err := dbpkg.ClaimOutboxEventsWithLease(d.DB, d.DispatcherID, d.Batch, d.Lease)
+	events, err := dbpkg.ClaimOutboxEventsWithLease(sourceDB, d.DispatcherID, d.Batch, d.Lease)
 	if err != nil || len(events) == 0 {
 		return err
 	}
@@ -47,12 +60,12 @@ func (d *Dispatcher) Dispatch(ctx context.Context) error {
 			return err
 		}
 		if _, allowed := d.AllowedKinds[event.Topic]; !allowed {
-			if retryErr := dbpkg.RetryOutboxEvent(d.DB, event, d.DispatcherID, fmt.Errorf("outbox topic has no enabled worker handler"), time.Minute); retryErr != nil {
+			if retryErr := dbpkg.RetryOutboxEvent(sourceDB, event, d.DispatcherID, fmt.Errorf("outbox topic has no enabled worker handler"), time.Minute); retryErr != nil {
 				return retryErr
 			}
 			continue
 		}
-		_, _, enqueueErr := dbpkg.EnqueueAsyncJobIdempotent(d.DB, dbpkg.AsyncJob{
+		_, _, enqueueErr := dbpkg.EnqueueAsyncJobIdempotent(queueDB, dbpkg.AsyncJob{
 			EmpresaID:      event.EmpresaID,
 			Kind:           event.Topic,
 			Version:        event.Version,
@@ -61,12 +74,12 @@ func (d *Dispatcher) Dispatch(ctx context.Context) error {
 			IdempotencyKey: "outbox-event:" + strconv.FormatInt(event.ID, 10),
 		})
 		if enqueueErr != nil {
-			if retryErr := dbpkg.RetryOutboxEvent(d.DB, event, d.DispatcherID, enqueueErr, time.Minute); retryErr != nil {
+			if retryErr := dbpkg.RetryOutboxEvent(sourceDB, event, d.DispatcherID, enqueueErr, time.Minute); retryErr != nil {
 				return retryErr
 			}
 			continue
 		}
-		if err := dbpkg.CompleteOutboxEvent(d.DB, event.ID, d.DispatcherID); err != nil {
+		if err := dbpkg.CompleteOutboxEvent(sourceDB, event.ID, d.DispatcherID); err != nil {
 			return err
 		}
 	}

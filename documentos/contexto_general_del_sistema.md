@@ -2,6 +2,24 @@
 
 Estado: vigente. Ultima actualizacion: 2026-07-16.
 
+## Actualizacion 2026-07-16 - Plan 102: cierre tecnico controlado
+
+- API, worker y migrador quedan separados por rol: solo `pcs-migrate` puede
+  aplicar DDL de plataforma y el guard de runtime bloquea mutaciones de esquema
+  en API/worker de produccion. El catalogo heredado se registra una vez en el
+  ledger, con checksum y lock, antes de desactivar el bootstrap historico.
+- Los cron de negocio salen de `main.go` y se programan como jobs durables del
+  worker; `commerce.sale-paid` se publica en la outbox dentro de la transaccion
+  de cobro. La caja usa bloqueo transaccional y las rutas empresariales nuevas
+  reciben un `TenantContext` validado, nunca un tenant confiado desde el cliente.
+- `/ready` verifica ambas bases, migraciones y almacenamiento privado. Con mas
+  de una API, produccion exige storage declarado `shared` u `object`; no se
+  permite escalar horizontalmente usando archivos locales por accidente.
+- La liberacion reproducible usa imagenes separadas API/worker/migrador y el
+  override `docker-compose.release.yml` exige digests. Aun faltan evidencia de
+  staging, restauracion ensayada, Object Storage externo y pruebas autorizadas
+  de proveedores antes de declarar produccion general lista.
+
 ## Actualizacion 2026-07-16 - Plan final de produccion
 
 - `documentos/plan_final_para_produccion.md` es la hoja de ruta vigente para
