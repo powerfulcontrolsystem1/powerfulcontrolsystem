@@ -53,3 +53,10 @@ func TestEmpresaFinanzasSchemaReadyRejectsNilDatabase(t *testing.T) {
 		t.Fatal("expected nil database to be rejected")
 	}
 }
+
+func TestSuperContractSchemaReadyRejectsNilDatabase(t *testing.T) {
+	t.Parallel()
+	if err := SuperContractSchemaReady(nil); err == nil {
+		t.Fatal("super contract readiness accepted nil database")
+	}
+}

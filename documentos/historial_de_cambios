@@ -38202,6 +38202,17 @@ Archivos modificados:
   legado, incluso los que no usan el prefijo `Ensure`, y serializa huellas
   SHA-256 sin confundirlas con credenciales durante el escaneo de secretos.
 
+2026-07-18 - Retiro de DDL HTTP: contratos superadministrador
+- Las rutas de consulta, aceptacion y administracion de contrato ya no crean
+  tablas ni siembran el contrato por defecto. Usan
+  `SuperContractSchemaReady` y fallan cerradas con `503` cuando `pcs-migrate`
+  no ha preparado el esquema.
+- Las operaciones de lectura y escritura del contrato dejaron de invocar
+  `EnsureDefaultSuperContract` o `EnsureSuperContractSchema` en runtime. El
+  sembrado inicial permanece exclusivamente en el catalogo del migrador.
+- El inventario de llamadas `Ensure*` fuera del migrador baja de 153 a 149:
+  HTTP de 80 a 76.
+
 2026-07-18 - Staging: ledger heredado, frontend y worker
 - `pcs-migrate` normaliza su ledger antes de consultar el baseline heredado;
   el cambio queda restringido al rol de migracion y cuenta con regresion.
