@@ -167,11 +167,12 @@ jobs:
       - name: Secret scan
         # El historial compartido no se reescribe en este PR. Este control
         # bloquea secretos presentes en el arbol que realmente se propone.
-        run: docker run --rm -v "$PWD:/repo" zricethezav/gitleaks:v8.30.1 detect --source=/repo --no-git --redact --no-banner --report-format json --report-path /repo/security-artifacts/gitleaks.json
+        run: |
+          mkdir -p security-artifacts
+          docker run --rm -v "$PWD:/repo" zricethezav/gitleaks:v8.30.1 detect --source=/repo --no-git --redact --no-banner --report-format json --report-path /repo/security-artifacts/gitleaks.json
 
       - name: Filesystem dependency and IaC scan
         run: |
-          mkdir -p security-artifacts
           docker run --rm -v "$PWD:/repo" aquasec/trivy:0.72.0 fs --exit-code 0 --severity HIGH,CRITICAL --scanners vuln,misconfig,secret --format sarif --output /repo/security-artifacts/trivy-filesystem.sarif /repo
 
       - name: Publish filesystem SARIF
