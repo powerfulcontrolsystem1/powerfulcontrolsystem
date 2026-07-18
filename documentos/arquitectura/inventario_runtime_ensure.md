@@ -6,21 +6,16 @@ Las llamadas listadas son deuda de extraccion. En produccion, API y worker deben
 
 ## Resumen
 
-- Llamadas inventariadas: 153.
+- Llamadas inventariadas: 137.
 - arranque; protegido por rol, requiere extraccion: 72.
 - proceso de plataforma; revisar rol: 1.
-- trafico HTTP; priorizar reemplazo por verificacion: 80.
+- trafico HTTP; priorizar reemplazo por verificacion: 64.
 
 ## Registro
 
 | Funcion Ensure | Llamador | Riesgo / prioridad |
 | --- | --- | --- |
 | `EnsurePostgresRuntimeCompat` | [backend/cmd/pcs-migrate/main.go:69](../../backend/cmd/pcs-migrate/main.go#L69) | proceso de plataforma; revisar rol |
-| `EnsureSuperContractSchema` | [backend/handlers/accept_handlers.go:62](../../backend/handlers/accept_handlers.go#L62) | trafico HTTP; priorizar reemplazo por verificacion |
-| `EnsureEmpresaAIConversation` | [backend/handlers/ai_enterprise_orchestrator.go:47](../../backend/handlers/ai_enterprise_orchestrator.go#L47) | trafico HTTP; priorizar reemplazo por verificacion |
-| `EnsureUserEmpresa` | [backend/handlers/auth_admin_handlers.go:1179](../../backend/handlers/auth_admin_handlers.go#L1179) | trafico HTTP; priorizar reemplazo por verificacion |
-| `EnsureSuperContractSchema` | [backend/handlers/auth_admin_handlers.go:1183](../../backend/handlers/auth_admin_handlers.go#L1183) | trafico HTTP; priorizar reemplazo por verificacion |
-| `EnsureEmpresaCamarasSchema` | [backend/handlers/camaras.go:34](../../backend/handlers/camaras.go#L34) | trafico HTTP; priorizar reemplazo por verificacion |
 | `EnsureEmpresaEstacionPrefsSchema` | [backend/handlers/chat_flotante_config.go:272](../../backend/handlers/chat_flotante_config.go#L272) | trafico HTTP; priorizar reemplazo por verificacion |
 | `EnsureEmpresaEstacionPrefsSchema` | [backend/handlers/chat_flotante_config.go:286](../../backend/handlers/chat_flotante_config.go#L286) | trafico HTTP; priorizar reemplazo por verificacion |
 | `EnsureChatUsuariosGeneralConversacion` | [backend/handlers/chat_tareas.go:331](../../backend/handlers/chat_tareas.go#L331) | trafico HTTP; priorizar reemplazo por verificacion |
@@ -63,17 +58,8 @@ Las llamadas listadas son deuda de extraccion. En produccion, API y worker deben
 | `EnsureEmpresaNextcloudSchema` | [backend/handlers/nextcloud.go:197](../../backend/handlers/nextcloud.go#L197) | trafico HTTP; priorizar reemplazo por verificacion |
 | `EnsureEmpresaNextcloudAssignmentsForAll` | [backend/handlers/nextcloud.go:215](../../backend/handlers/nextcloud.go#L215) | trafico HTTP; priorizar reemplazo por verificacion |
 | `EnsureNextcloudAssignmentsForAll` | [backend/handlers/nextcloud.go:571](../../backend/handlers/nextcloud.go#L571) | trafico HTTP; priorizar reemplazo por verificacion |
-| `EnsureEmpresaNominaSchema` | [backend/handlers/nomina_sueldos.go:18](../../backend/handlers/nomina_sueldos.go#L18) | trafico HTTP; priorizar reemplazo por verificacion |
-| `EnsureJWTSecret` | [backend/handlers/onlyoffice_super_config.go:94](../../backend/handlers/onlyoffice_super_config.go#L94) | trafico HTTP; priorizar reemplazo por verificacion |
-| `EnsureJWTSecret` | [backend/handlers/onlyoffice_super_config.go:133](../../backend/handlers/onlyoffice_super_config.go#L133) | trafico HTTP; priorizar reemplazo por verificacion |
-| `EnsureUniqueName` | [backend/handlers/onlyoffice.go:777](../../backend/handlers/onlyoffice.go#L777) | trafico HTTP; priorizar reemplazo por verificacion |
-| `EnsureUniqueName` | [backend/handlers/onlyoffice.go:944](../../backend/handlers/onlyoffice.go#L944) | trafico HTTP; priorizar reemplazo por verificacion |
-| `EnsureJWTSecret` | [backend/handlers/onlyoffice.go:1033](../../backend/handlers/onlyoffice.go#L1033) | trafico HTTP; priorizar reemplazo por verificacion |
-| `EnsureDefaultHighlights` | [backend/handlers/pagina_principal_handlers.go:640](../../backend/handlers/pagina_principal_handlers.go#L640) | trafico HTTP; priorizar reemplazo por verificacion |
-| `EnsureDefaultHighlights` | [backend/handlers/pagina_principal_handlers.go:697](../../backend/handlers/pagina_principal_handlers.go#L697) | trafico HTTP; priorizar reemplazo por verificacion |
 | `EnsureEmpresaEstacionPrefsSchema` | [backend/handlers/panel_empresa_config.go:79](../../backend/handlers/panel_empresa_config.go#L79) | trafico HTTP; priorizar reemplazo por verificacion |
 | `EnsureEmpresaEstacionPrefsSchema` | [backend/handlers/panel_empresa_config.go:90](../../backend/handlers/panel_empresa_config.go#L90) | trafico HTTP; priorizar reemplazo por verificacion |
-| `EnsurePowerfulSystemEmpresa` | [backend/handlers/payments_handlers.go:1401](../../backend/handlers/payments_handlers.go#L1401) | trafico HTTP; priorizar reemplazo por verificacion |
 | `EnsureEmpresaChatTareasSchema` | [backend/handlers/public_mensajes_privados.go:138](../../backend/handlers/public_mensajes_privados.go#L138) | trafico HTTP; priorizar reemplazo por verificacion |
 | `EnsureEmpresaRappiSchema` | [backend/handlers/rappi.go:53](../../backend/handlers/rappi.go#L53) | trafico HTTP; priorizar reemplazo por verificacion |
 | `EnsureEmpresaReportesProgramacionSchema` | [backend/handlers/reportes_globales.go:459](../../backend/handlers/reportes_globales.go#L459) | trafico HTTP; priorizar reemplazo por verificacion |
@@ -81,8 +67,6 @@ Las llamadas listadas son deuda de extraccion. En produccion, API y worker deben
 | `EnsureEmpresaReservasHotelSchema` | [backend/handlers/reservas_hotel.go:37](../../backend/handlers/reservas_hotel.go#L37) | trafico HTTP; priorizar reemplazo por verificacion |
 | `EnsureRolesPermisosSchema` | [backend/handlers/roles_tipos_usuario.go:134](../../backend/handlers/roles_tipos_usuario.go#L134) | trafico HTTP; priorizar reemplazo por verificacion |
 | `EnsureSuperAlertasSchema` | [backend/handlers/super_alertas.go:512](../../backend/handlers/super_alertas.go#L512) | trafico HTTP; priorizar reemplazo por verificacion |
-| `EnsureSuperContractSchema` | [backend/handlers/super_contrato_handlers.go:49](../../backend/handlers/super_contrato_handlers.go#L49) | trafico HTTP; priorizar reemplazo por verificacion |
-| `EnsureSuperContractSchema` | [backend/handlers/super_contrato_handlers.go:87](../../backend/handlers/super_contrato_handlers.go#L87) | trafico HTTP; priorizar reemplazo por verificacion |
 | `EnsureEmpresaUsuariosAuthSchema` | [backend/handlers/super_correos_masivos.go:270](../../backend/handlers/super_correos_masivos.go#L270) | trafico HTTP; priorizar reemplazo por verificacion |
 | `EnsureSuperMantenimientoAgentesSchema` | [backend/handlers/super_mantenimiento_agentes.go:56](../../backend/handlers/super_mantenimiento_agentes.go#L56) | trafico HTTP; priorizar reemplazo por verificacion |
 | `EnsureEmpresaNextcloudAssignment` | [backend/handlers/system_empresas_handlers.go:580](../../backend/handlers/system_empresas_handlers.go#L580) | trafico HTTP; priorizar reemplazo por verificacion |

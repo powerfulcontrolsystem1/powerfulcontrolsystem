@@ -370,8 +370,9 @@ func UpsertUser(dbConn *sql.DB, email, name string) error {
 	return tx.Commit()
 }
 
-// EnsureUserEmpresa crea una empresa por defecto para el usuario si no tiene una asociada
-func EnsureUserEmpresa(dbConn *sql.DB, email, empresaNombre string) error {
+// ProvisionDefaultEmpresaForUser crea una empresa por defecto para el usuario
+// si no tiene una asociada. Es aprovisionamiento de negocio, no de esquema.
+func ProvisionDefaultEmpresaForUser(dbConn *sql.DB, email, empresaNombre string) error {
 	tx, err := dbConn.Begin()
 	if err != nil {
 		return err

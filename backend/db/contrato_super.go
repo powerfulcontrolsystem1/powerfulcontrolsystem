@@ -3,6 +3,7 @@ package db
 import (
 	"database/sql"
 	"errors"
+	"fmt"
 	"strings"
 	"sync"
 	"time"
@@ -246,6 +247,23 @@ func EnsureDefaultSuperContract(dbConn *sql.DB) error {
 	return err
 }
 
+// SuperContractSchemaReady is a read-only readiness gate for API and worker
+// code. Schema creation and the default contract seed belong exclusively to
+// the migration role through EnsureDefaultSuperContract.
+func SuperContractSchemaReady(dbConn *sql.DB) error {
+	if dbConn == nil {
+		return errors.New("db connection is required")
+	}
+	var table sql.NullString
+	if err := queryRowSQLCompat(dbConn, `SELECT to_regclass('public.super_contrato_versiones')`).Scan(&table); err != nil {
+		return fmt.Errorf("verify super contract schema: %w", err)
+	}
+	if !table.Valid || strings.TrimSpace(table.String) == "" {
+		return errors.New("super contract schema is missing; run pcs-migrate before starting the API")
+	}
+	return nil
+}
+
 func scanSuperContractVersion(scanner interface {
 	Scan(dest ...interface{}) error
 }) (*SuperContractVersion, error) {
@@ -297,7 +315,7 @@ func GetCurrentSuperContract(dbConn *sql.DB) (*SuperContractVersion, error) {
 	}
 	currentSuperContractCacheMu.Unlock()
 
-	if err := EnsureDefaultSuperContract(dbConn); err != nil {
+	if err := SuperContractSchemaReady(dbConn); err != nil {
 		return nil, err
 	}
 	row := queryRowSQLCompat(dbConn, "SELECT id, version, titulo, resumen, contenido, nota_aceptacion, resumen_cambio, fecha_creacion, fecha_actualizacion, usuario_creador, estado, observaciones FROM super_contrato_versiones ORDER BY version DESC LIMIT 1")
@@ -314,7 +332,7 @@ func GetCurrentSuperContract(dbConn *sql.DB) (*SuperContractVersion, error) {
 }
 
 func GetSuperContractVersionByNumber(dbConn *sql.DB, version int) (*SuperContractVersion, error) {
-	if err := EnsureDefaultSuperContract(dbConn); err != nil {
+	if err := SuperContractSchemaReady(dbConn); err != nil {
 		return nil, err
 	}
 	row := queryRowSQLCompat(dbConn, "SELECT id, version, titulo, resumen, contenido, nota_aceptacion, resumen_cambio, fecha_creacion, fecha_actualizacion, usuario_creador, estado, observaciones FROM super_contrato_versiones WHERE version = ? LIMIT 1", version)
@@ -322,7 +340,7 @@ func GetSuperContractVersionByNumber(dbConn *sql.DB, version int) (*SuperContrac
 }
 
 func ListSuperContractVersions(dbConn *sql.DB, limit int) ([]SuperContractVersion, error) {
-	if err := EnsureDefaultSuperContract(dbConn); err != nil {
+	if err := SuperContractSchemaReady(dbConn); err != nil {
 		return nil, err
 	}
 	if limit <= 0 {
@@ -350,7 +368,7 @@ func ListSuperContractVersions(dbConn *sql.DB, limit int) ([]SuperContractVersio
 }
 
 func SaveSuperContractVersion(dbConn *sql.DB, doc SuperContractVersion) (*SuperContractVersion, bool, error) {
-	if err := EnsureSuperContractSchema(dbConn); err != nil {
+	if err := SuperContractSchemaReady(dbConn); err != nil {
 		return nil, false, err
 	}
 
@@ -390,7 +408,7 @@ func SaveSuperContractVersion(dbConn *sql.DB, doc SuperContractVersion) (*SuperC
 
 func GetAdministradorContratoAceptacion(dbConn *sql.DB, email string) (SuperContractAcceptance, error) {
 	acceptance := SuperContractAcceptance{}
-	if err := EnsureSuperContractSchema(dbConn); err != nil {
+	if err := SuperContractSchemaReady(dbConn); err != nil {
 		return acceptance, err
 	}
 
@@ -415,7 +433,7 @@ func GetAdministradorContratoAceptacion(dbConn *sql.DB, email string) (SuperCont
 }
 
 func SetAdministradorContratoAceptado(dbConn *sql.DB, email string, version int) error {
-	if err := EnsureSuperContractSchema(dbConn); err != nil {
+	if err := SuperContractSchemaReady(dbConn); err != nil {
 		return err
 	}
 	if version < 0 {

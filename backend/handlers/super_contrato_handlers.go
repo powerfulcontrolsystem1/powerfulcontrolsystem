@@ -46,8 +46,8 @@ func PublicContratoHandler(dbSuper *sql.DB) http.HandlerFunc {
 			return
 		}
 
-		if err := dbpkg.EnsureSuperContractSchema(dbSuper); err != nil {
-			http.Error(w, "failed to prepare contract schema: "+err.Error(), http.StatusInternalServerError)
+		if err := dbpkg.SuperContractSchemaReady(dbSuper); err != nil {
+			http.Error(w, "contract service unavailable", http.StatusServiceUnavailable)
 			return
 		}
 
@@ -84,8 +84,8 @@ func SuperContratoHandler(dbSuper *sql.DB) http.HandlerFunc {
 			return
 		}
 
-		if err := dbpkg.EnsureSuperContractSchema(dbSuper); err != nil {
-			http.Error(w, "failed to prepare contract schema: "+err.Error(), http.StatusInternalServerError)
+		if err := dbpkg.SuperContractSchemaReady(dbSuper); err != nil {
+			http.Error(w, "contract service unavailable", http.StatusServiceUnavailable)
 			return
 		}
 

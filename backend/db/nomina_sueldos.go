@@ -2,6 +2,7 @@ package db
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 	"sort"
 	"strconv"
@@ -626,6 +627,31 @@ func EnsureEmpresaNominaSchema(dbConn *sql.DB) error {
 	}
 	if err := EnsureEmpresaNominaColombiaAvanzadaSchema(dbConn); err != nil {
 		return err
+	}
+	return nil
+}
+
+// EmpresaNominaSchemaReady verifies the migration-owned payroll tables without
+// issuing DDL from normal HTTP or worker traffic.
+func EmpresaNominaSchemaReady(dbConn *sql.DB) error {
+	if dbConn == nil {
+		return fmt.Errorf("conexion de base de datos no disponible")
+	}
+	for _, table := range []string{
+		"empresa_nomina_configuracion",
+		"empresa_nomina_empleados",
+		"empresa_nomina_festivos",
+		"empresa_nomina_liquidaciones",
+		"empresa_nomina_pagos",
+	} {
+		var marker int
+		err := queryRowSQLCompat(dbConn, "SELECT 1 FROM "+table+" WHERE 1=0").Scan(&marker)
+		if errors.Is(err, sql.ErrNoRows) {
+			continue
+		}
+		if err != nil {
+			return fmt.Errorf("esquema de nomina no disponible (%s): %w", table, err)
+		}
 	}
 	return nil
 }

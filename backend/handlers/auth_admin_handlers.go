@@ -1176,13 +1176,13 @@ func HandleGoogleCallback(dbEmpresas *sql.DB, dbSuper *sql.DB, clientID, clientS
 			log.Println("db upsert users error:", err)
 		}
 
-		if err := dbpkg.EnsureUserEmpresa(dbEmpresas, userinfo.Email, "Empresa de "+userinfo.Name); err != nil {
-			log.Println("db ensure empresa error:", err)
+		if err := dbpkg.ProvisionDefaultEmpresaForUser(dbEmpresas, userinfo.Email, "Empresa de "+userinfo.Name); err != nil {
+			log.Println("db provision empresa error:", err)
 		}
 
-		if err := dbpkg.EnsureSuperContractSchema(dbSuper); err != nil {
-			log.Println("contract schema error:", err)
-			http.Error(w, "failed to prepare contract metadata", http.StatusInternalServerError)
+		if err := dbpkg.SuperContractSchemaReady(dbSuper); err != nil {
+			log.Println("contract schema unavailable:", err)
+			http.Error(w, "contract metadata unavailable", http.StatusServiceUnavailable)
 			return
 		}
 		currentContract, err := dbpkg.GetCurrentSuperContract(dbSuper)

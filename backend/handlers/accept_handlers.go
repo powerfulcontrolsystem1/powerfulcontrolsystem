@@ -59,9 +59,9 @@ func AcceptCompleteHandler(dbSuper *sql.DB) http.HandlerFunc {
 			return
 		}
 
-		if err := dbpkg.EnsureSuperContractSchema(dbSuper); err != nil {
-			log.Printf("accept: ensure contract schema failed: %v", err)
-			http.Error(w, "contract unavailable", http.StatusInternalServerError)
+		if err := dbpkg.SuperContractSchemaReady(dbSuper); err != nil {
+			log.Printf("accept: contract schema unavailable: %v", err)
+			http.Error(w, "contract unavailable", http.StatusServiceUnavailable)
 			return
 		}
 		currentContract, err := dbpkg.GetCurrentSuperContract(dbSuper)

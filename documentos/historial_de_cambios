@@ -1,3 +1,23 @@
+2026-07-18: Pagos de licencia sin aprovisionamiento estructural en trafico HTTP.
+- `issueLicenciaFacturaElectronicaWithOptions` consulta el emisor interno ya
+  provisionado mediante `GetPowerfulSystemEmpresa`; una confirmacion de pago no
+  puede crear el emisor ni ejecutar DDL por efecto lateral.
+- Se anade una regresion de fuente y se regenera el inventario: 137 llamadas
+  `Ensure` fuera del migrador, de las cuales 64 siguen en trafico HTTP. Dos
+  llamadas adicionales eran una composicion de contenido sin DDL y otra era
+  aprovisionamiento inicial de empresa; las dos restantes validaban nombres
+  unicos de archivos OnlyOffice. Se renombraron para que no distorsionen el
+  inventario. Adicionalmente, OnlyOffice deja de generar o persistir secretos
+  JWT y URL de servicio durante lecturas HTTP; esas credenciales se configuran
+  explicitamente por el superadministrador. El orquestador IA tambien verifica
+  el esquema migrado antes de escribir conversaciones, propuestas o auditoria,
+  sin ejecutar DDL durante trafico HTTP. El modulo de camaras adopta el mismo
+  verificador de esquema, manteniendo intacto su alcance por empresa. Nomina
+  valida sus cinco tablas de operacion antes de atender solicitudes, sin DDL.
+  La
+  extraccion restante continua siendo un bloque de preparacion, no se declara
+  completada.
+
 2026-07-13: Chat IA empresarial legible y tematizable por empresa.
 - Modulos afectados: `chat IA`, `administrar empresa`, `configuracion empresarial`, `permisos multiempresa`.
 - Frontend: `web/js/ai_chat_drawer.js` convierte de forma segura los titulos Markdown, indicadores y tablas Markdown de las respuestas IA en secciones, filas clave/valor y tablas HTML creadas por DOM; no interpreta HTML devuelto por el modelo. Los temas `normal`, `corporativo`, `oceano`, `esmeralda` y `vino`, junto con los tamaños `pequeno`, `mediano` y `grande`, respetan claro/oscuro y se aplican al recuadro abierto.
@@ -38201,6 +38221,17 @@ Archivos modificados:
 - `tools/ensure_bootstrap_inventory.mjs` incluye los pasos reales del catalogo
   legado, incluso los que no usan el prefijo `Ensure`, y serializa huellas
   SHA-256 sin confundirlas con credenciales durante el escaneo de secretos.
+
+2026-07-18 - Retiro de DDL HTTP: contratos superadministrador
+- Las rutas de consulta, aceptacion y administracion de contrato ya no crean
+  tablas ni siembran el contrato por defecto. Usan
+  `SuperContractSchemaReady` y fallan cerradas con `503` cuando `pcs-migrate`
+  no ha preparado el esquema.
+- Las operaciones de lectura y escritura del contrato dejaron de invocar
+  `EnsureDefaultSuperContract` o `EnsureSuperContractSchema` en runtime. El
+  sembrado inicial permanece exclusivamente en el catalogo del migrador.
+- El inventario de llamadas `Ensure*` fuera del migrador baja de 153 a 149:
+  HTTP de 80 a 76.
 
 2026-07-18 - Staging: ledger heredado, frontend y worker
 - `pcs-migrate` normaliza su ledger antes de consultar el baseline heredado;

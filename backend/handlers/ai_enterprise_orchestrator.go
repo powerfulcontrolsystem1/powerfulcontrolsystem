@@ -44,7 +44,7 @@ func EmpresaAIEnterpriseHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 			writeJSON(w, http.StatusForbidden, map[string]interface{}{"ok": false, "code": "ai_agent_mode_disabled", "error": "El modo agente no esta habilitado para esta empresa."})
 			return
 		}
-		if _, err := dbpkg.EnsureEmpresaAIConversation(dbEmp, dbpkg.EmpresaAIConversation{ConversationID: ctx.ConversationID, EmpresaID: ctx.EmpresaID, UsuarioID: ctx.UserID, Modo: ctx.Mode}, 2*time.Hour); err != nil {
+		if _, err := dbpkg.CreateOrRefreshEmpresaAIConversation(dbEmp, dbpkg.EmpresaAIConversation{ConversationID: ctx.ConversationID, EmpresaID: ctx.EmpresaID, UsuarioID: ctx.UserID, Modo: ctx.Mode}, 2*time.Hour); err != nil {
 			http.Error(w, "No se pudo preparar la conversacion IA", http.StatusServiceUnavailable)
 			return
 		}

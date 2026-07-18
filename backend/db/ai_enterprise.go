@@ -176,8 +176,33 @@ func EnsureEmpresaAIEnterpriseSchema(dbConn *sql.DB) error {
 	return nil
 }
 
+// EmpresaAIEnterpriseSchemaReady verifies the migration-owned tables without
+// issuing DDL. HTTP and worker traffic must never create their own schema.
+func EmpresaAIEnterpriseSchemaReady(dbConn *sql.DB) error {
+	if dbConn == nil {
+		return errors.New("db connection is nil")
+	}
+	for _, table := range []string{
+		"empresa_ai_conversaciones",
+		"empresa_ai_propuestas",
+		"empresa_ai_ejecuciones",
+		"empresa_ai_memoria",
+		"empresa_ai_fuentes_conocimiento",
+	} {
+		var marker int
+		err := queryRowSQLCompat(dbConn, "SELECT 1 FROM "+table+" WHERE 1=0").Scan(&marker)
+		if errors.Is(err, sql.ErrNoRows) {
+			continue
+		}
+		if err != nil {
+			return fmt.Errorf("esquema IA empresarial no disponible (%s): %w", table, err)
+		}
+	}
+	return nil
+}
+
 func RecordEmpresaAIExecution(dbConn *sql.DB, in EmpresaAIExecution) error {
-	if err := EnsureEmpresaAIEnterpriseSchema(dbConn); err != nil {
+	if err := EmpresaAIEnterpriseSchemaReady(dbConn); err != nil {
 		return err
 	}
 	if in.EmpresaID <= 0 || strings.TrimSpace(in.UsuarioID) == "" || strings.TrimSpace(in.ConversationID) == "" || strings.TrimSpace(in.ToolName) == "" || !json.Valid([]byte(defaultAIJSON(in.FuentesJSON, "[]"))) || !json.Valid([]byte(defaultAIJSON(in.CategoriasJSON, "[]"))) {
@@ -187,10 +212,10 @@ func RecordEmpresaAIExecution(dbConn *sql.DB, in EmpresaAIExecution) error {
 	return err
 }
 
-// EnsureEmpresaAIConversation creates or resumes only a conversation belonging
-// to the authenticated user in the current company.
-func EnsureEmpresaAIConversation(dbConn *sql.DB, in EmpresaAIConversation, ttl time.Duration) (*EmpresaAIConversation, error) {
-	if err := EnsureEmpresaAIEnterpriseSchema(dbConn); err != nil {
+// CreateOrRefreshEmpresaAIConversation creates or resumes only a conversation
+// belonging to the authenticated user in the current company.
+func CreateOrRefreshEmpresaAIConversation(dbConn *sql.DB, in EmpresaAIConversation, ttl time.Duration) (*EmpresaAIConversation, error) {
+	if err := EmpresaAIEnterpriseSchemaReady(dbConn); err != nil {
 		return nil, err
 	}
 	if in.EmpresaID <= 0 || strings.TrimSpace(in.ConversationID) == "" || strings.TrimSpace(in.UsuarioID) == "" {
@@ -290,7 +315,7 @@ func normalizeAIProposalState(raw string) string {
 }
 
 func CreateEmpresaAIProposal(dbConn *sql.DB, in EmpresaAIProposal, ttl time.Duration) (*EmpresaAIProposal, error) {
-	if err := EnsureEmpresaAIEnterpriseSchema(dbConn); err != nil {
+	if err := EmpresaAIEnterpriseSchemaReady(dbConn); err != nil {
 		return nil, err
 	}
 	if in.EmpresaID <= 0 || strings.TrimSpace(in.ProposalID) == "" || strings.TrimSpace(in.ConversationID) == "" || strings.TrimSpace(in.UsuarioCreador) == "" || strings.TrimSpace(in.ToolName) == "" {
@@ -323,7 +348,7 @@ func CreateEmpresaAIProposal(dbConn *sql.DB, in EmpresaAIProposal, ttl time.Dura
 }
 
 func GetEmpresaAIProposal(dbConn *sql.DB, empresaID int64, proposalID string) (*EmpresaAIProposal, error) {
-	if err := EnsureEmpresaAIEnterpriseSchema(dbConn); err != nil {
+	if err := EmpresaAIEnterpriseSchemaReady(dbConn); err != nil {
 		return nil, err
 	}
 	if empresaID <= 0 || strings.TrimSpace(proposalID) == "" {
@@ -339,7 +364,7 @@ func GetEmpresaAIProposal(dbConn *sql.DB, empresaID int64, proposalID string) (*
 
 // BeginEmpresaAIProposalExecution atomically consumes a proposal after all caller-side permission checks.
 func BeginEmpresaAIProposalExecution(dbConn *sql.DB, empresaID int64, proposalID, usuario, planHash, idempotencyKey string) (*EmpresaAIProposal, error) {
-	if err := EnsureEmpresaAIEnterpriseSchema(dbConn); err != nil {
+	if err := EmpresaAIEnterpriseSchemaReady(dbConn); err != nil {
 		return nil, err
 	}
 	if empresaID <= 0 || strings.TrimSpace(proposalID) == "" || strings.TrimSpace(usuario) == "" || strings.TrimSpace(planHash) == "" || strings.TrimSpace(idempotencyKey) == "" {
