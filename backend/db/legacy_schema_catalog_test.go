@@ -27,6 +27,16 @@ func TestLegacySchemaCatalogIsExplicitAndUnique(t *testing.T) {
 	}
 }
 
+func TestLegacySchemaCatalogManifestCoversEveryCatalogStep(t *testing.T) {
+	t.Parallel()
+	if err := ValidateLegacySchemaCatalogManifest(); err != nil {
+		t.Fatalf("legacy schema catalog manifest: %v", err)
+	}
+	if legacySchemaCatalogSourceFingerprint == "" {
+		t.Fatal("legacy schema catalog fingerprint must be generated")
+	}
+}
+
 func TestLegacySchemaCatalogCoversEveryDatabaseEnsureSchemaFunction(t *testing.T) {
 	registered := make(map[string]bool, len(legacyEmpresaSchemaCatalog)+len(legacySuperSchemaCatalog))
 	for _, step := range append(append([]legacySchemaStep{}, legacyEmpresaSchemaCatalog...), legacySuperSchemaCatalog...) {

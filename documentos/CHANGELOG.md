@@ -3299,3 +3299,15 @@
 
 - [Operacion] Plan 103 desplaza la recoleccion de metricas desde la API al worker durable y versiona su esquema bajo `pcs-migrate`.
 - [UX] El panel de administrar empresa presenta el logo corporativo a la izquierda del bloque "Centro operativo" en la misma fila y compacta verticalmente la tarjeta de bienvenida/clima.
+- [Seguridad] Plan 104 separa aun mas bootstrap y trafico HTTP: el migrador puede ensayar catalogos sin bootstrap legado, mientras API/worker no pueden reactivarlo en produccion.
+- [Datos] Los modulos ERP, conversiones de ventas y pagos verifican sus tablas antes de operar y ya no intentan crear esquema desde handlers.
+- [Seguridad] CSP elimina origenes globales para conexiones e imagenes; los origenes adicionales se declaran de forma exacta por variables de entorno. El middleware JSON redacciona errores tecnicos 4xx.
+- [Operacion] El perfil `voice` queda desactivado por defecto en la plantilla de plataforma hasta completar su validacion y la decision de implementacion Go.
+- [Migraciones] El inventario de bootstrap genera una huella SHA-256 por cada paso del catalogo legado y una migracion inmutable registra el manifiesto sin modificar checksums ya aplicados.
+- [Multiempresa] El preflight genera y verifica una matriz de 203 rutas `/api/empresa/` con evidencia del wrapper autoritativo aplicado a cada una.
+- [Multiempresa] La validacion de `empresa_id` rechaza valores repetidos o ambiguos en query, cabeceras y formularios, evitando que una fuente secundaria altere el tenant autorizado.
+- [Migraciones] El preflight verifica un inventario de llamadas `Ensure*` fuera del migrador para impedir que aumente la deuda de DDL en HTTP o arranque.
+
+## [2026-07-17] Pagos, carrito y facturacion sin DDL HTTP
+- [Migraciones] Cobro de licencias, sincronizacion DIAN, carrito y corte de caja dejan de invocar `Ensure*` en trafico HTTP; verifican las tablas ya aplicadas por `pcs-migrate` y fallan cerrados ante una migracion faltante.
+- [Operacion] El inventario de DDL heredado fuera del migrador baja a 153 llamadas (80 en handlers) y queda validado por preflight.

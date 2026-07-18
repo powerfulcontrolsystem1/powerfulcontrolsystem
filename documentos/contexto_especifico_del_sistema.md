@@ -52,8 +52,12 @@ forzadas aunque el boton se oculte en frontend.
   ni mutaciones) y `empresa` (una única empresa validada por permisos).
 - Arquitectura modular, migraciones/worker y API movil:
   `plan_final_para_produccion.md`, `plan_101_arquitectura_modular.md`,
-  `plan_103_cierre_produccion.md`, `preparacion_produccion_y_app_movil.md`, `api/mobile_api_v1.md` y
+  `plan_103_cierre_produccion.md`, `plan_104.md`,
+  `preparacion_produccion_y_app_movil.md`, `api/mobile_api_v1.md` y
   `api/openapi.mobile.v1.yaml`.
+- Para pagos, licencias y facturacion que toquen esquema: consultar tambien
+  `arquitectura/inventario_runtime_ensure.md`. Los handlers deben usar
+  verificadores `*SchemaReady`; la autoridad de DDL es `pcs-migrate`.
 - Correo corporativo y WhatsApp: `mapa_modulos.md`, `flujos_operativos.md`,
   `decisiones_tecnicas.md`, `email_corporativo_mailu.md` y los runbooks de
   correo aplicables.

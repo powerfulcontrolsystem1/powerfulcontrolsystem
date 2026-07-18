@@ -64,3 +64,35 @@ func TestJSONErrorMiddlewareUnmarkedServerErrorStaysFriendly(t *testing.T) {
 		t.Fatalf("unmarked internal detail leaked: %s", res.Body.String())
 	}
 }
+
+func TestJSONErrorMiddlewareRedactsSensitiveClientError(t *testing.T) {
+	t.Parallel()
+
+	handler := JSONErrorMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+			"ok":      false,
+			"error":   "pq: relation empresa_ventas does not exist",
+			"detalle": "dial tcp postgres:5432: connection refused",
+		})
+	}))
+
+	req := httptest.NewRequest(http.MethodPost, "/api/empresa/ventas", strings.NewReader(`{"empresa_id":12}`))
+	req.Header.Set("Content-Type", "application/json")
+	res := httptest.NewRecorder()
+	handler.ServeHTTP(res, req)
+
+	if res.Code != http.StatusBadRequest {
+		t.Fatalf("status = %d, want %d", res.Code, http.StatusBadRequest)
+	}
+	body := res.Body.String()
+	for _, leaked := range []string{"pq:", "empresa_ventas", "postgres", "dial tcp"} {
+		if strings.Contains(strings.ToLower(body), leaked) {
+			t.Fatalf("sensitive client error leaked %q in %s", leaked, body)
+		}
+	}
+	if !strings.Contains(body, "La solicitud contiene datos no validos") {
+		t.Fatalf("friendly validation message missing: %s", body)
+	}
+}

@@ -565,6 +565,89 @@ func sensitiveNoStorePath(path string) bool {
 	return path == "/login.html" || strings.HasPrefix(path, "/auth/") || strings.Contains(path, "recuperacion") || strings.Contains(path, "password") || strings.Contains(path, "totp")
 }
 
+func cspOrigin(raw string) string {
+	parsed, err := url.Parse(strings.TrimSpace(raw))
+	if err != nil || parsed == nil || parsed.User != nil || parsed.Host == "" || strings.Contains(parsed.Host, "*") {
+		return ""
+	}
+	scheme := strings.ToLower(strings.TrimSpace(parsed.Scheme))
+	if scheme != "https" && scheme != "http" && scheme != "wss" && scheme != "ws" {
+		return ""
+	}
+	if parsed.RawQuery != "" || parsed.Fragment != "" || (parsed.Path != "" && parsed.Path != "/") {
+		return ""
+	}
+	return scheme + "://" + strings.ToLower(parsed.Host)
+}
+
+func cspOriginsFromEnv(keys ...string) []string {
+	seen := make(map[string]struct{})
+	result := make([]string, 0)
+	for _, key := range keys {
+		for _, value := range strings.FieldsFunc(os.Getenv(key), func(r rune) bool { return r == ',' || r == ';' || r == '\n' || r == '\r' || r == ' ' || r == '\t' }) {
+			origin := cspOrigin(value)
+			if origin == "" {
+				continue
+			}
+			if _, exists := seen[origin]; exists {
+				continue
+			}
+			seen[origin] = struct{}{}
+			result = append(result, origin)
+		}
+	}
+	return result
+}
+
+func cspJoinSources(base []string, extra ...string) string {
+	seen := make(map[string]struct{}, len(base)+len(extra))
+	parts := make([]string, 0, len(base)+len(extra))
+	for _, source := range append(base, extra...) {
+		source = strings.TrimSpace(source)
+		if source == "" {
+			continue
+		}
+		if _, exists := seen[source]; exists {
+			continue
+		}
+		seen[source] = struct{}{}
+		parts = append(parts, source)
+	}
+	return strings.Join(parts, " ")
+}
+
+// securityContentSecurityPolicy keeps one strict, reviewable source for both
+// enforced and report-only CSP. Extra origins must be exact origin URLs in the
+// environment; wildcards and scheme-wide entries are intentionally ignored.
+func securityContentSecurityPolicy() string {
+	providerScripts := []string{"'self'", "'unsafe-inline'", "https://accounts.google.com", "https://checkout.epayco.co", "https://checkout.wompi.co"}
+	providerConnect := []string{"'self'", "https://api.openai.com", "https://accounts.google.com", "https://checkout.epayco.co", "https://secure.epayco.co", "https://checkout.wompi.co"}
+	providerFrames := []string{"'self'", "https://accounts.google.com", "https://checkout.epayco.co", "https://checkout.wompi.co"}
+
+	documentOrigins := cspOriginsFromEnv("ONLYOFFICE_DOCUMENT_SERVER_URL", "NEXTCLOUD_BASE_URL")
+	customImages := cspOriginsFromEnv("PCS_CSP_IMG_ORIGINS")
+	customConnect := cspOriginsFromEnv("PCS_CSP_CONNECT_ORIGINS")
+	customFrames := cspOriginsFromEnv("PCS_CSP_FRAME_ORIGINS")
+	customScripts := cspOriginsFromEnv("PCS_CSP_SCRIPT_ORIGINS")
+
+	directives := []string{
+		"default-src 'self'",
+		"base-uri 'self'",
+		"object-src 'none'",
+		"frame-ancestors 'self'",
+		"form-action 'self'",
+		"img-src " + cspJoinSources([]string{"'self'", "data:", "blob:"}, append(documentOrigins, customImages...)...),
+		"style-src 'self' 'unsafe-inline'",
+		"script-src " + cspJoinSources(providerScripts, customScripts...),
+		"connect-src " + cspJoinSources(providerConnect, append(documentOrigins, customConnect...)...),
+		"frame-src " + cspJoinSources(providerFrames, append(documentOrigins, customFrames...)...),
+	}
+	if strings.EqualFold(strings.TrimSpace(os.Getenv("PCS_ENV")), "production") || strings.EqualFold(strings.TrimSpace(os.Getenv("APP_ENV")), "production") {
+		directives = append(directives, "upgrade-insecure-requests")
+	}
+	return strings.Join(directives, "; ")
+}
+
 // SecurityHeadersMiddleware provides conservative browser protections while
 // retaining the currently integrated payment, Google and OnlyOffice origins.
 func SecurityHeadersMiddleware(next http.Handler) http.Handler {
@@ -572,11 +655,9 @@ func SecurityHeadersMiddleware(next http.Handler) http.Handler {
 		w.Header().Set("X-Content-Type-Options", "nosniff")
 		w.Header().Set("Referrer-Policy", "strict-origin-when-cross-origin")
 		w.Header().Set("Permissions-Policy", "camera=(), microphone=(self), geolocation=(self), payment=(self)")
-		w.Header().Set("Content-Security-Policy", "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'self'; img-src 'self' data: https:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline' https://accounts.google.com https://checkout.epayco.co https://checkout.wompi.co; connect-src 'self' https: wss:; frame-src 'self' https://accounts.google.com https://checkout.epayco.co https://checkout.wompi.co https://*.google.com")
-		// Report-only starts the controlled CSP transition without breaking the
-		// legacy static frontend. Once reports show no unexpected dependencies,
-		// this policy can replace the compatibility policy above.
-		w.Header().Set("Content-Security-Policy-Report-Only", "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'self'; form-action 'self'; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline' https://accounts.google.com https://checkout.epayco.co https://checkout.wompi.co; connect-src 'self' wss://powerfulcontrolsystem.com https://api.openai.com https://checkout.wompi.co https://secure.epayco.co; frame-src 'self' https://accounts.google.com https://checkout.epayco.co https://checkout.wompi.co")
+		csp := securityContentSecurityPolicy()
+		w.Header().Set("Content-Security-Policy", csp)
+		w.Header().Set("Content-Security-Policy-Report-Only", csp)
 		if r.TLS != nil || strings.EqualFold(strings.TrimSpace(r.Header.Get("X-Forwarded-Proto")), "https") && RequestFromTrustedProxy(r) {
 			w.Header().Set("Strict-Transport-Security", "max-age=31536000; includeSubDomains")
 		}
@@ -738,6 +819,10 @@ func JSONErrorMiddleware(next http.Handler) http.Handler {
 					return
 				}
 				writeFriendlyAPIErrorResponse(w, capture.status, reqID, empresaID, errorID)
+				return
+			}
+			if clientErrorMayExposeInternalDetail(msg) || clientErrorMayExposeInternalDetail(detail) {
+				writeFriendlyClientAPIErrorResponse(w, capture.status, reqID, empresaID, errorID)
 				return
 			}
 

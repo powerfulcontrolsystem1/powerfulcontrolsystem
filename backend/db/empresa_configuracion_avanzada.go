@@ -101,6 +101,22 @@ const (
 	defaultLogoSistemaURL               = "/img/logo.png"
 )
 
+// EmpresaConfiguracionAvanzadaSchemaReady verifica la configuracion fiscal
+// empresarial ya aplicada por pcs-migrate. Los handlers no crean esquema.
+func EmpresaConfiguracionAvanzadaSchemaReady(dbConn *sql.DB) error {
+	if dbConn == nil {
+		return fmt.Errorf("db connection is nil")
+	}
+	var registered sql.NullString
+	if err := queryRowSQLCompat(dbConn, `SELECT to_regclass(?)`, "empresa_configuracion_avanzada").Scan(&registered); err != nil {
+		return fmt.Errorf("verify advanced configuration table: %w", err)
+	}
+	if !registered.Valid || strings.TrimSpace(registered.String) == "" {
+		return fmt.Errorf("advanced configuration table is missing; run pcs-migrate before starting the API")
+	}
+	return nil
+}
+
 // EnsureEmpresaConfiguracionAvanzadaSchema crea/migra el esquema de configuración avanzada
 // por empresa para preparación de facturación electrónica en Colombia.
 func EnsureEmpresaConfiguracionAvanzadaSchema(dbConn *sql.DB) error {

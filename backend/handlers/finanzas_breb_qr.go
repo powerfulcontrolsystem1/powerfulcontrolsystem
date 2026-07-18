@@ -203,10 +203,10 @@ func ensureEmpresaBrebQRSchemas(dbEmp *sql.DB) error {
 	if err := dbpkg.EnsureEmpresaEstacionPrefsSchema(dbEmp); err != nil {
 		return err
 	}
-	if err := dbpkg.EnsureEmpresaCarritosSchema(dbEmp); err != nil {
+	if err := dbpkg.EmpresaCarritosSchemaReady(dbEmp); err != nil {
 		return err
 	}
-	if err := dbpkg.EnsureEmpresaFinanzasSchema(dbEmp); err != nil {
+	if err := dbpkg.EmpresaFinanzasSchemaReady(dbEmp); err != nil {
 		return err
 	}
 	return nil

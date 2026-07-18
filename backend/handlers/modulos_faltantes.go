@@ -55,7 +55,7 @@ func ensureEmpresaModulosFaltantesSchemaReady(dbEmp *sql.DB) error {
 	if empresaModulosFaltantesSchemaState.ready[dbEmp] {
 		return nil
 	}
-	if err := dbpkg.EnsureEmpresaModulosFaltantesSchema(dbEmp); err != nil {
+	if err := dbpkg.EmpresaModulosFaltantesSchemaReady(dbEmp); err != nil {
 		return err
 	}
 	empresaModulosFaltantesSchemaState.ready[dbEmp] = true
@@ -65,7 +65,7 @@ func ensureEmpresaModulosFaltantesSchemaReady(dbEmp *sql.DB) error {
 func withEmpresaModulosFaltantesSchema(dbEmp *sql.DB, next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if err := ensureEmpresaModulosFaltantesSchemaReady(dbEmp); err != nil {
-			http.Error(w, "No se pudo preparar el esquema de modulos ERP faltantes", http.StatusInternalServerError)
+			http.Error(w, "El modulo aun no esta listo. Contacta al administrador para completar la migracion.", http.StatusServiceUnavailable)
 			return
 		}
 		next(w, r)
@@ -2702,7 +2702,7 @@ func handlePlanCuentasAplicarPlantillaAction(dbEmp *sql.DB, w http.ResponseWrite
 }
 
 func applyPlanCuentasTemplate(dbEmp *sql.DB, empresaID int64, tipoEmpresa string, sobrescribir bool, actor string) (map[string]interface{}, error) {
-	if err := dbpkg.EnsureEmpresaModulosFaltantesSchema(dbEmp); err != nil {
+	if err := dbpkg.EmpresaModulosFaltantesSchemaReady(dbEmp); err != nil {
 		return nil, err
 	}
 
@@ -4970,7 +4970,7 @@ func convertCotizacionToPedido(dbEmp *sql.DB, empresaID, cotizacionID int64, act
 	if cotizacionID <= 0 {
 		return nil, nil, false, false, newVentasConversionError(http.StatusBadRequest, "id required")
 	}
-	if err := dbpkg.EnsureEmpresaModulosFaltantesSchema(dbEmp); err != nil {
+	if err := dbpkg.EmpresaModulosFaltantesSchemaReady(dbEmp); err != nil {
 		return nil, nil, false, false, err
 	}
 
@@ -5102,10 +5102,10 @@ func convertPedidoToDocumentoFinal(dbEmp *sql.DB, empresaID, pedidoID int64, pay
 	if pedidoID <= 0 {
 		return nil, nil, false, newVentasConversionError(http.StatusBadRequest, "id required")
 	}
-	if err := dbpkg.EnsureEmpresaModulosFaltantesSchema(dbEmp); err != nil {
+	if err := dbpkg.EmpresaModulosFaltantesSchemaReady(dbEmp); err != nil {
 		return nil, nil, false, err
 	}
-	if err := dbpkg.EnsureEmpresaDocumentosTransaccionalesSchema(dbEmp); err != nil {
+	if err := dbpkg.EmpresaDocumentosTransaccionalesSchemaReady(dbEmp); err != nil {
 		return nil, nil, false, err
 	}
 
@@ -5236,10 +5236,10 @@ func buildVentasEmbudoConversionSnapshot(dbEmp *sql.DB, empresaID int64, desde, 
 		slaPedidoHoras = 72
 	}
 
-	if err := dbpkg.EnsureEmpresaModulosFaltantesSchema(dbEmp); err != nil {
+	if err := dbpkg.EmpresaModulosFaltantesSchemaReady(dbEmp); err != nil {
 		return ventasEmbudoSnapshot{}, err
 	}
-	if err := dbpkg.EnsureEmpresaDocumentosTransaccionalesSchema(dbEmp); err != nil {
+	if err := dbpkg.EmpresaDocumentosTransaccionalesSchemaReady(dbEmp); err != nil {
 		return ventasEmbudoSnapshot{}, err
 	}
 
@@ -7565,7 +7565,7 @@ func syncDIANConfigToFacturacionPais(dbEmp *sql.DB, empresaID int64, cfg map[str
 	if dbEmp == nil || empresaID <= 0 || len(cfg) == 0 {
 		return nil
 	}
-	if err := dbpkg.EnsureEmpresaFacturacionElectronicaSchema(dbEmp); err != nil {
+	if err := dbpkg.EmpresaFacturacionElectronicaSchemaReady(dbEmp); err != nil {
 		return err
 	}
 	ambiente := "sandbox"
@@ -7610,7 +7610,7 @@ func syncDIANConfigToAdvanced(dbEmp *sql.DB, empresaID int64, cfg map[string]int
 	if dbEmp == nil || empresaID <= 0 || len(cfg) == 0 {
 		return nil
 	}
-	if err := dbpkg.EnsureEmpresaConfiguracionAvanzadaSchema(dbEmp); err != nil {
+	if err := dbpkg.EmpresaConfiguracionAvanzadaSchemaReady(dbEmp); err != nil {
 		return err
 	}
 	prefijo := strings.ToUpper(strings.TrimSpace(genericStringValue(cfg["prefijo"])))

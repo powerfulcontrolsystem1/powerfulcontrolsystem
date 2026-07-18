@@ -11997,7 +11997,38 @@ backend/handlers/runtime_health.go
 backend/handlers/runtime_health_test.go
 - Regresiones de contratos HTTP de los probes de salud y disponibilidad.
 2026-07-16
+- `documentos/plan_104.md`: matriz de gates verificables para produccion
+  general; registra el endurecimiento interno aplicado y las pruebas externas
+  pendientes sin declarar una liberacion anticipada.
+- `backend/db/modulos_faltantes.go` y `backend/db/documentos_transaccionales.go`:
+  verificadores de esquema para trafico HTTP, separados de los `Ensure*` que
+  pertenecen al migrador.
+- `backend/db/schema_readiness_test.go`: regresiones de catalogos de tablas y
+  rechazo de conexiones nulas en verificadores de readiness.
+- `backend/db/legacy_schema_catalog_manifest_generated.go`: manifiesto generado
+  de huellas de fuente para los pasos `Ensure*` del bootstrap legado; no se
+  edita manualmente.
+- `tools/tenant_route_inventory.mjs` y
+  `documentos/arquitectura/matriz_rutas_multiempresa.md`: inventario generado
+  de endpoints empresariales, wrapper de autorizacion y gate de sincronizacion
+  para preflight.
+- `backend/handlers/empresa_permisos_tenant_test.go`: regresiones contra
+  manipulacion del tenant por valores repetidos en query, cabecera y cuerpos
+  de formulario.
+- `tools/runtime_ensure_inventory.mjs` y
+  `documentos/arquitectura/inventario_runtime_ensure.md`: registro generado de
+  llamadas `Ensure*` fuera del migrador, usado como gate de no crecimiento.
 - `documentos/plan_103_cierre_produccion.md`: concilia el veredicto tecnico con el estado actual, registra el cierre de metricas y enumera gates externos obligatorios.
 - `backend/metrics/collector.go`: expone una recoleccion unica reutilizable por el worker, sin crear esquema.
 - `backend/cmd/pcs-worker/business_registry.go`: agenda la metrica operativa durable.
 - `web/administrar_empresa/panel.html`: el bloque de bienvenida del panel empresarial muestra el logo a la izquierda del centro operativo y usa una composicion vertical compacta.
+
+2026-07-17 - Verificadores de esquema para pagos, carrito y facturacion
+- `backend/db/facturacion_electronica.go` y
+  `backend/db/empresa_configuracion_avanzada.go`: exponen verificadores de
+  tablas ya migradas para trafico HTTP, separados de los `Ensure*` legado.
+- `backend/handlers/payments_handlers.go`,
+  `backend/handlers/modulos_faltantes.go`, `backend/handlers/carritos_compras.go`
+  y `backend/handlers/corte_caja.go`: usan esos verificadores en cobro de
+  licencia, sincronizacion DIAN, carrito y corte de caja, sin crear ni alterar
+  esquema desde handlers.

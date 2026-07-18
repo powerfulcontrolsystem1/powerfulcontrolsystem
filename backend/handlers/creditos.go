@@ -1065,7 +1065,7 @@ func handleEmpresaCreditosAbono(w http.ResponseWriter, r *http.Request, dbEmp *s
 				integracionContable["evento_contable_id"] = eventoID
 
 				if policy.ProcesarAsientos {
-					if err := dbpkg.EnsureEmpresaFinanzasSchema(dbEmp); err != nil {
+					if err := dbpkg.EmpresaFinanzasSchemaReady(dbEmp); err != nil {
 						integracionContable["error_asientos"] = "no se pudo preparar esquema financiero"
 					} else {
 						resultadoAsientos, procErr := dbpkg.ProcessEmpresaEventosContablesPendientesConPolitica(dbEmp, empresaID, usuario, policy.AsientosLimit, policy.MaxReintentos)

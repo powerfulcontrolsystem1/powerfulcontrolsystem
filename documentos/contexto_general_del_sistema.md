@@ -2,6 +2,33 @@
 
 Estado: vigente. Ultima actualizacion: 2026-07-16.
 
+## Actualizacion 2026-07-16 - Plan 104: endurecimiento previo verificable
+
+- `documentos/plan_104.md` es la matriz vigente de gates para produccion
+  general. Su avance interno no sustituye staging, restauracion comprobada ni
+  pruebas autorizadas con proveedores.
+- La API y worker no pueden reactivar bootstrap heredado en produccion; el
+  migrador puede ensayar su omision de forma explicita. Varios flujos ERP y de
+  documentos ahora verifican el esquema antes de atender solicitudes, sin DDL
+  desde HTTP.
+- El catalogo compatibilidad `Ensure*` queda congelado por manifiesto generado
+  con huella por paso; cualquier ajuste futuro debe llegar como migracion nueva
+  y no como cambio silencioso del bootstrap.
+- `documentos/arquitectura/matriz_rutas_multiempresa.md` se genera desde los
+  registros HTTP y debe mantenerse vigente; sus wrappers no sustituyen las
+  pruebas negativas de tenant sobre datos, archivos, cache y jobs.
+- `documentos/arquitectura/inventario_runtime_ensure.md` lista el DDL heredado
+  invocado fuera de `pcs-migrate`. Se usa para priorizar su extraccion y no
+  debe confundirse con una autorizacion para habilitar bootstrap en produccion.
+- Los flujos de licencia, DIAN, carrito y corte de caja verifican sus tablas
+  de facturacion, configuracion avanzada, ventas y finanzas sin ejecutar
+  `Ensure*` desde HTTP. El inventario vigente conserva 153 llamadas legacy
+  fuera del migrador y no debe aumentar sin una migracion de extraccion
+  revisada.
+- CSP usa origenes cerrados configurables y los errores 4xx tecnicos se
+  redaccionan. Aun se mantiene `unsafe-inline` como compatibilidad transitoria
+  hasta completar inventario y pruebas visuales de scripts.
+
 ## Actualizacion 2026-07-16 - Plan 103: cierre operativo verificable
 
 - La recoleccion de metricas deja de vivir en la API y se agenda como trabajo

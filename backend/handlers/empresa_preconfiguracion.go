@@ -489,7 +489,7 @@ func applyEmpresaPreconfigAdaptacionNucleo(dbEmp *sql.DB, empresaID int64, adapt
 }
 
 func ensureEmpresaPreconfigVentaDirectaCarrito(dbEmp *sql.DB, empresaID int64, usuario string) error {
-	if err := dbpkg.EnsureEmpresaCarritosSchema(dbEmp); err != nil {
+	if err := dbpkg.EmpresaCarritosSchemaReady(dbEmp); err != nil {
 		return err
 	}
 	code := fmt.Sprintf("VENTA-DIRECTA-%d", empresaID)

@@ -166,6 +166,22 @@ type EmpresaFinanzasConfiguracion struct {
 	Observaciones              string `json:"observaciones"`
 }
 
+// EmpresaFinanzasSchemaReady verifica el esquema financiero ya aplicado por
+// pcs-migrate. La creacion y migracion pertenecen al proceso de migraciones.
+func EmpresaFinanzasSchemaReady(dbConn *sql.DB) error {
+	if dbConn == nil {
+		return fmt.Errorf("db connection is nil")
+	}
+	ready, err := empresaFinanzasSchemaLooksReady(dbConn)
+	if err != nil {
+		return fmt.Errorf("verify finance schema: %w", err)
+	}
+	if !ready {
+		return fmt.Errorf("finance schema is missing; run pcs-migrate before starting the API")
+	}
+	return nil
+}
+
 // EnsureEmpresaFinanzasSchema crea y migra las tablas del modulo financiero en PostgreSQL.
 func EnsureEmpresaFinanzasSchema(dbConn *sql.DB) error {
 	startedAt := time.Now()

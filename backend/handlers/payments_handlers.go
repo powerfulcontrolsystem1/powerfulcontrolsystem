@@ -1373,13 +1373,13 @@ func issueLicenciaFacturaElectronicaWithOptions(r *http.Request, dbEmp, dbSuper 
 	if dbEmp == nil || dbSuper == nil || empresaID <= 0 || lic == nil {
 		return outcome, nil, nil
 	}
-	if err := dbpkg.EnsureEmpresaConfiguracionAvanzadaSchema(dbEmp); err != nil {
+	if err := dbpkg.EmpresaConfiguracionAvanzadaSchemaReady(dbEmp); err != nil {
 		return outcome, nil, err
 	}
-	if err := dbpkg.EnsureEmpresaFacturacionElectronicaSchema(dbEmp); err != nil {
+	if err := dbpkg.EmpresaFacturacionElectronicaSchemaReady(dbEmp); err != nil {
 		return outcome, nil, err
 	}
-	if err := dbpkg.EnsureEmpresaDocumentosTransaccionalesSchema(dbEmp); err != nil {
+	if err := dbpkg.EmpresaDocumentosTransaccionalesSchemaReady(dbEmp); err != nil {
 		return outcome, nil, err
 	}
 

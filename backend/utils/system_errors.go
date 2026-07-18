@@ -191,6 +191,46 @@ func friendlyAPIErrorMessage(status int) string {
 	}
 }
 
+// friendlyClientAPIErrorMessage keeps validation failures useful without
+// allowing database, provider, filesystem or credential details to escape in
+// a client-controlled 4xx response.
+func friendlyClientAPIErrorMessage(status int) string {
+	switch status {
+	case http.StatusUnauthorized:
+		return "No fue posible validar tu sesion. Inicia sesion nuevamente."
+	case http.StatusForbidden:
+		return "No tienes permiso para realizar esta accion."
+	case http.StatusNotFound:
+		return "El recurso solicitado no esta disponible."
+	case http.StatusConflict:
+		return "La operacion no pudo completarse por un cambio reciente. Actualiza e intenta de nuevo."
+	case http.StatusUnprocessableEntity:
+		return "Hay datos pendientes o no validos para completar la operacion."
+	case http.StatusTooManyRequests:
+		return "Se alcanzo el limite temporal de solicitudes. Intenta de nuevo en unos segundos."
+	default:
+		return "La solicitud contiene datos no validos. Revisa la informacion e intenta de nuevo."
+	}
+}
+
+func clientErrorMayExposeInternalDetail(value string) bool {
+	value = strings.ToLower(strings.TrimSpace(value))
+	if value == "" {
+		return false
+	}
+	for _, marker := range []string{
+		"sql:", "pq:", "postgres", "database", "dsn", "password", "token", "secret",
+		"certificate", "x509", "dial tcp", "connection refused", "no such file",
+		"permission denied", "stack trace", "traceback", "panic", "smtp", "mailu",
+		"nextcloud", "onlyoffice", "openai", "epayco", "wompi",
+	} {
+		if strings.Contains(value, marker) {
+			return true
+		}
+	}
+	return strings.Contains(value, "/app/") || strings.Contains(value, "c:\\") || strings.Contains(value, "file:")
+}
+
 func friendlyHTMLServerError(requestID string, errorID int64) string {
 	requestID = strings.TrimSpace(requestID)
 	ref := requestID
@@ -564,6 +604,30 @@ func writeFriendlyAPIErrorResponse(w http.ResponseWriter, status int, requestID 
 		"ok":         false,
 		"status":     status,
 		"error":      friendlyAPIErrorMessage(status),
+		"request_id": requestID,
+	}
+	if empresaID > 0 {
+		payload["empresa_id"] = empresaID
+	}
+	if errorID > 0 {
+		payload["error_id"] = errorID
+	}
+	_ = json.NewEncoder(w).Encode(payload)
+}
+
+func writeFriendlyClientAPIErrorResponse(w http.ResponseWriter, status int, requestID string, empresaID int64, errorID int64) {
+	w.Header().Set("Content-Type", "application/json")
+	if requestID != "" {
+		w.Header().Set("X-Request-ID", requestID)
+	}
+	if empresaID > 0 {
+		w.Header().Set("X-Empresa-ID", strconv.FormatInt(empresaID, 10))
+	}
+	w.WriteHeader(status)
+	payload := map[string]interface{}{
+		"ok":         false,
+		"status":     status,
+		"error":      friendlyClientAPIErrorMessage(status),
 		"request_id": requestID,
 	}
 	if empresaID > 0 {

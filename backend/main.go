@@ -886,7 +886,7 @@ func main() {
 			log.Fatal(err)
 		}
 		startupTrace("after_open_db_super")
-		if runtimeConfig.Role == runtimeconfig.RoleMigrate {
+		if runtimeConfig.Role == runtimeconfig.RoleMigrate && runtimeConfig.LegacySchemaBootstrap {
 			empresasApplied, checkErr := dbpkg.LegacySchemaBaselineApplied(context.Background(), dbEmpresas)
 			if checkErr != nil {
 				log.Fatalf("failed to inspect empresas legacy baseline: %v", checkErr)
@@ -897,6 +897,8 @@ func main() {
 			}
 			legacyEmpresasBootstrap = !empresasApplied
 			legacySuperBootstrap = !superApplied
+		} else if runtimeConfig.Role == runtimeconfig.RoleMigrate {
+			log.Printf("INFO: bootstrap legado omitido por PCS_RUNTIME_SCHEMA_BOOTSTRAP=0; pcs-migrate aplicara solo el catalogo inmutable")
 		}
 		if legacySuperBootstrap {
 			if legacyEmpresasBootstrap {

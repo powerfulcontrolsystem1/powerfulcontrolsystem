@@ -40,11 +40,16 @@ func Load(getenv func(string) string) (Config, error) {
 	default:
 		return Config{}, fmt.Errorf("PCS_RUNTIME_ROLE must be api, worker or migrate")
 	}
-	// Production schema ownership is exclusive to pcs-migrate. Development
-	// preserves the historical bootstrap for compatibility with local installs.
-	legacyBootstrap := !production || role == RoleMigrate
+	// Production schema ownership is exclusive to pcs-migrate. The legacy
+	// bootstrap remains the migration role's default while the historical
+	// catalog is being extracted, but it can be explicitly disabled in a
+	// rehearsed staging environment. API and worker processes never own DDL in
+	// production.
+	legacyBootstrap := !production
 	if role == RoleMigrate {
-		legacyBootstrap = true
+		legacyBootstrap = !isDisabled(getenv("PCS_RUNTIME_SCHEMA_BOOTSTRAP"))
+	} else if !production && isDisabled(getenv("PCS_RUNTIME_SCHEMA_BOOTSTRAP")) {
+		legacyBootstrap = false
 	}
 	if production && role != RoleMigrate && isEnabled(getenv("PCS_RUNTIME_SCHEMA_BOOTSTRAP")) {
 		return Config{}, fmt.Errorf("PCS_RUNTIME_SCHEMA_BOOTSTRAP cannot enable DDL in the production %s process", role)
