@@ -77,8 +77,8 @@ func empresaDatafonosHandlerWithClient(dbEmp, dbSuper *sql.DB, client datafonoPr
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
-		if err := dbpkg.EnsureEmpresaDatafonosSchema(dbEmp); err != nil {
-			log.Printf("[datafonos] ensure schema empresa_id=%d error: %v", empresaID, err)
+		if err := dbpkg.EmpresaDatafonosSchemaReady(dbEmp); err != nil {
+			log.Printf("[datafonos] schema unavailable empresa_id=%d error: %v", empresaID, err)
 			http.Error(w, "No se pudo preparar el modulo de datafonos", http.StatusInternalServerError)
 			return
 		}

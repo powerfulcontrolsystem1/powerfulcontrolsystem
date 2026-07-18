@@ -3,6 +3,7 @@ package db
 import (
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"math"
 	"strings"
@@ -177,6 +178,25 @@ func EnsureEmpresaDatafonosSchema(dbConn *sql.DB) error {
 	} {
 		if _, err := execSQLCompat(dbConn, stmt); err != nil {
 			return err
+		}
+	}
+	return nil
+}
+
+// EmpresaDatafonosSchemaReady verifies the migration-owned tables without
+// executing DDL when a company manages or processes card-terminal payments.
+func EmpresaDatafonosSchemaReady(dbConn *sql.DB) error {
+	if dbConn == nil {
+		return fmt.Errorf("conexion de base de datos no disponible")
+	}
+	for _, table := range []string{"empresa_datafonos_config", "empresa_datafonos_transacciones"} {
+		var marker int
+		err := queryRowSQLCompat(dbConn, "SELECT 1 FROM "+table+" WHERE 1=0").Scan(&marker)
+		if errors.Is(err, sql.ErrNoRows) {
+			continue
+		}
+		if err != nil {
+			return fmt.Errorf("esquema de datafonos no disponible (%s): %w", table, err)
 		}
 	}
 	return nil

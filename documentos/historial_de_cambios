@@ -1,3 +1,8 @@
+2026-07-18: Datafonos sin DDL durante operaciones empresariales.
+- El handler verifica sus tablas migradas antes de consultar configuraciones o
+  procesar transacciones; no ejecuta `CREATE TABLE` ni indices en solicitudes.
+- Inventario runtime `Ensure`: 132 llamadas, 59 en trafico HTTP.
+
 2026-07-18: Impresoras sin DDL en solicitudes operativas.
 - Los handlers de configuracion, resolucion y agente local verifican las siete
   tablas de impresoras ya migradas; la configuracion guiada conserva su
