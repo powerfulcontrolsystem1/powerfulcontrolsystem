@@ -163,6 +163,11 @@ y el worker solo verifican cola, outbox e idempotencia movil. Mantener
 `PCS_RUNTIME_SCHEMA_BOOTSTRAP=1` hasta que el inventario legado se haya movido
 por lotes, el staging pase con valor `0` y se documente el rollback.
 
+En `production`, el rol `migrate` debe recibir esa variable de forma explicita;
+si falta, el proceso termina sin ejecutar el bootstrap historico. El Compose
+oficial usa el requisito `${PCS_RUNTIME_SCHEMA_BOOTSTRAP:?Defina PCS_RUNTIME_SCHEMA_BOOTSTRAP}`
+para evitar despliegues ambiguos.
+
 No establecer `PCS_RUNTIME_SCHEMA_BOOTSTRAP=0` en una instalacion existente
 hasta verificar el ledger de migraciones y los flujos de provisionamiento.
 

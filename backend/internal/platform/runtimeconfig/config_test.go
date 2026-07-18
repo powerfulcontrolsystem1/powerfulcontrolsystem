@@ -60,6 +60,8 @@ func TestLoadMigrationRoleEnablesSchemaBootstrap(t *testing.T) {
 			return "production"
 		case "PCS_RUNTIME_ROLE":
 			return "migrate"
+		case "PCS_RUNTIME_SCHEMA_BOOTSTRAP":
+			return "1"
 		}
 		return ""
 	})
@@ -68,6 +70,22 @@ func TestLoadMigrationRoleEnablesSchemaBootstrap(t *testing.T) {
 	}
 	if !config.LegacySchemaBootstrap || config.Role != RoleMigrate {
 		t.Fatalf("unexpected config: %#v", config)
+	}
+}
+
+func TestLoadProductionMigrationRequiresExplicitBootstrapSetting(t *testing.T) {
+	t.Parallel()
+	config, err := Load(func(key string) string {
+		switch key {
+		case "PCS_ENV":
+			return "production"
+		case "PCS_RUNTIME_ROLE":
+			return "migrate"
+		}
+		return ""
+	})
+	if err == nil {
+		t.Fatalf("expected explicit production migration bootstrap setting, got %#v", config)
 	}
 }
 

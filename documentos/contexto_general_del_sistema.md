@@ -2,6 +2,17 @@
 
 Estado: vigente. Ultima actualizacion: 2026-07-16.
 
+## Actualizacion 2026-07-18 - contrato explicito del migrador
+
+- El proceso `migrate` en produccion exige declarar
+  `PCS_RUNTIME_SCHEMA_BOOTSTRAP`; si falta, el arranque falla cerrado en vez
+  de activar por defecto el bootstrap legado.
+- El servicio `migrate` de Compose propaga esa variable de forma obligatoria.
+  `api` y `worker` mantienen `PCS_RUNTIME_SCHEMA_BOOTSTRAP=0` fijo.
+- Esto reduce el riesgo de una configuracion incompleta, pero no sustituye la
+  extraccion de los 154 `Ensure*` ni el ensayo de staging requerido antes de
+  retirar definitivamente el puente legado.
+
 ## Actualizacion 2026-07-16 - Plan 104: endurecimiento previo verificable
 
 - `documentos/plan_104.md` es la matriz vigente de gates para produccion

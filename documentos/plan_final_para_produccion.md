@@ -640,6 +640,24 @@ nada y que API/worker no emitan DDL. Esto desbloquea H2, permite un rollback
 razonado y elimina el principal obstaculo para ejecutar replicas sin introducir
 parches nuevos.
 
+## Actualizacion de corte 2026-07-18 - main y contrato de arranque
+
+- La revision publicada de `main` es `ef5816a1` (`rs: actualizar repositorio y
+  sincronizar VPS (#37)`), con arbol local limpio y alineado con `origin/main`.
+- El inventario vigente registra 154 definiciones `Ensure*`, 132 llamadas fuera
+  del migrador, 72 durante arranque protegido y 59 en trafico HTTP. El catalogo
+  de compatibilidad contiene 122 pasos con huella de origen.
+- `runtimeconfig` ahora exige `PCS_RUNTIME_SCHEMA_BOOTSTRAP` cuando el proceso
+  `migrate` corre en `production`; la ausencia ya no habilita DDL legado por
+  defecto. API y worker siguen bloqueados en `0`.
+- `go test ./...`, `go vet ./...`, `git diff --check`, el inventario de
+  bootstrap, la auditoria estricta de migraciones y el contrato de pipeline
+  pasaron en esta estacion. Docker no esta instalado localmente, por lo que la
+  validacion Compose continua siendo responsabilidad de CI/Linux y staging.
+- Este avance no cambia el veredicto: staging aislado, restauracion con RPO/RTO,
+  suite A/B multiempresa, carga y pruebas autorizadas de proveedores siguen
+  siendo gates externos antes de produccion general.
+
 ## Evidencia y documentos relacionados
 
 - `documentos/preparacion_produccion_y_app_movil.md`: fundacion ya incorporada
