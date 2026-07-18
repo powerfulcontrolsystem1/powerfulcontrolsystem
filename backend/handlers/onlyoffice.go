@@ -774,7 +774,7 @@ func onlyOfficeDefaultNameByExt(ext string) string {
 	}
 }
 
-func onlyOfficeEnsureUniqueName(empresaID int64, name string) (string, error) {
+func onlyOfficeAvailableUniqueName(empresaID int64, name string) (string, error) {
 	base, err := onlyOfficeSafeBaseName(name)
 	if err != nil {
 		return "", err
@@ -941,7 +941,7 @@ func OnlyOfficeDocumentosHandler(dbSuper *sql.DB) http.HandlerFunc {
 				return
 			}
 			localSession := action == "create_edit_local" || req.LocalSession
-			name, err = onlyOfficeEnsureUniqueName(empresaID, name)
+			name, err = onlyOfficeAvailableUniqueName(empresaID, name)
 			if err != nil {
 				http.Error(w, "nombre de archivo invalido", http.StatusBadRequest)
 				return

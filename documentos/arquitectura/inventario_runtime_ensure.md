@@ -6,10 +6,10 @@ Las llamadas listadas son deuda de extraccion. En produccion, API y worker deben
 
 ## Resumen
 
-- Llamadas inventariadas: 145.
+- Llamadas inventariadas: 143.
 - arranque; protegido por rol, requiere extraccion: 72.
 - proceso de plataforma; revisar rol: 1.
-- trafico HTTP; priorizar reemplazo por verificacion: 72.
+- trafico HTTP; priorizar reemplazo por verificacion: 70.
 
 ## Registro
 
@@ -63,8 +63,6 @@ Las llamadas listadas son deuda de extraccion. En produccion, API y worker deben
 | `EnsureEmpresaNominaSchema` | [backend/handlers/nomina_sueldos.go:18](../../backend/handlers/nomina_sueldos.go#L18) | trafico HTTP; priorizar reemplazo por verificacion |
 | `EnsureJWTSecret` | [backend/handlers/onlyoffice_super_config.go:94](../../backend/handlers/onlyoffice_super_config.go#L94) | trafico HTTP; priorizar reemplazo por verificacion |
 | `EnsureJWTSecret` | [backend/handlers/onlyoffice_super_config.go:133](../../backend/handlers/onlyoffice_super_config.go#L133) | trafico HTTP; priorizar reemplazo por verificacion |
-| `EnsureUniqueName` | [backend/handlers/onlyoffice.go:777](../../backend/handlers/onlyoffice.go#L777) | trafico HTTP; priorizar reemplazo por verificacion |
-| `EnsureUniqueName` | [backend/handlers/onlyoffice.go:944](../../backend/handlers/onlyoffice.go#L944) | trafico HTTP; priorizar reemplazo por verificacion |
 | `EnsureJWTSecret` | [backend/handlers/onlyoffice.go:1033](../../backend/handlers/onlyoffice.go#L1033) | trafico HTTP; priorizar reemplazo por verificacion |
 | `EnsureEmpresaEstacionPrefsSchema` | [backend/handlers/panel_empresa_config.go:79](../../backend/handlers/panel_empresa_config.go#L79) | trafico HTTP; priorizar reemplazo por verificacion |
 | `EnsureEmpresaEstacionPrefsSchema` | [backend/handlers/panel_empresa_config.go:90](../../backend/handlers/panel_empresa_config.go#L90) | trafico HTTP; priorizar reemplazo por verificacion |
