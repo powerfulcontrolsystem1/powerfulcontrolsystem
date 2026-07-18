@@ -71,6 +71,27 @@ func TestLoadMigrationRoleEnablesSchemaBootstrap(t *testing.T) {
 	}
 }
 
+func TestLoadMigrationRoleAllowsExplicitLegacyBootstrapDisable(t *testing.T) {
+	t.Parallel()
+	config, err := Load(func(key string) string {
+		switch key {
+		case "PCS_ENV":
+			return "production"
+		case "PCS_RUNTIME_ROLE":
+			return "migrate"
+		case "PCS_RUNTIME_SCHEMA_BOOTSTRAP":
+			return "0"
+		}
+		return ""
+	})
+	if err != nil {
+		t.Fatalf("Load: %v", err)
+	}
+	if config.LegacySchemaBootstrap {
+		t.Fatalf("explicit migration bootstrap disable was ignored: %#v", config)
+	}
+}
+
 func TestLoadRejectsUnknownRole(t *testing.T) {
 	t.Parallel()
 	if _, err := Load(func(key string) string {

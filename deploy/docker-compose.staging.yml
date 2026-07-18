@@ -5,12 +5,14 @@ services:
     container_name: pcs-staging-migrate
     environment:
       PCS_ENV: staging
+      PCS_RUNTIME_SCHEMA_BOOTSTRAP: "0"
 
   worker:
     container_name: pcs-staging-worker
     environment:
       PCS_ENV: staging
       PCS_WORKER_ID: pcs-worker-staging
+      PCS_RUNTIME_SCHEMA_BOOTSTRAP: "0"
 
   postgres:
     container_name: pcs-staging-postgres
@@ -26,6 +28,7 @@ services:
       RECAPTCHA_DEV_BYPASS: ${RECAPTCHA_DEV_BYPASS:-1}
       PCS_ENVIRONMENT: staging
       PCS_ENV: staging
+      PCS_RUNTIME_SCHEMA_BOOTSTRAP: "0"
     volumes:
       - pcs_staging_backend_logs:/app/backend/logs
       - pcs_staging_web_uploads:/app/web/uploads

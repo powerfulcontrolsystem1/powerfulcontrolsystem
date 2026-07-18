@@ -22,6 +22,9 @@ func TestForwardedHeadersIgnoredOutsideTrustedProxy(t *testing.T) {
 }
 
 func TestSecurityHeadersAndNoStoreOnLogin(t *testing.T) {
+	t.Setenv("ONLYOFFICE_DOCUMENT_SERVER_URL", "https://onlyoffice.example.test")
+	t.Setenv("PCS_CSP_CONNECT_ORIGINS", "https://api.example.test")
+	t.Setenv("PCS_CSP_IMG_ORIGINS", "https://images.example.test")
 	h := SecurityHeadersMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(http.StatusNoContent) }))
 	rec := httptest.NewRecorder()
 	h.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/login.html", nil))
@@ -37,8 +40,39 @@ func TestSecurityHeadersAndNoStoreOnLogin(t *testing.T) {
 	if rec.Header().Get("Content-Security-Policy") == "" {
 		t.Fatal("CSP header missing")
 	}
+	policy := rec.Header().Get("Content-Security-Policy")
+	for _, forbidden := range []string{"img-src 'self' data: https:", "connect-src 'self' https: ", "connect-src 'self' wss: ", "https://*.google.com"} {
+		if strings.Contains(policy, forbidden) {
+			t.Fatalf("CSP keeps broad source %q: %q", forbidden, policy)
+		}
+	}
+	for _, expected := range []string{"form-action 'self'", "https://onlyoffice.example.test", "https://api.example.test", "https://images.example.test"} {
+		if !strings.Contains(policy, expected) {
+			t.Fatalf("CSP missing explicit source %q: %q", expected, policy)
+		}
+	}
 	reportOnly := rec.Header().Get("Content-Security-Policy-Report-Only")
-	if reportOnly == "" || strings.Contains(reportOnly, "connect-src 'self' https:") || !strings.Contains(reportOnly, "form-action 'self'") {
-		t.Fatalf("tightened CSP report-only policy missing or overly broad: %q", reportOnly)
+	if reportOnly != policy {
+		t.Fatalf("CSP report-only must be generated from the same policy: %q != %q", reportOnly, policy)
+	}
+}
+
+func TestCSPOriginRejectsWildcardPathAndCredentials(t *testing.T) {
+	t.Parallel()
+	for _, raw := range []string{"https://*.example.test", "https://example.test/path", "https://user:pass@example.test", "javascript:alert(1)"} {
+		if got := cspOrigin(raw); got != "" {
+			t.Fatalf("unsafe CSP source accepted %q as %q", raw, got)
+		}
+	}
+}
+
+func TestSecurityContentSecurityPolicyUpgradesRequestsOnlyInProduction(t *testing.T) {
+	t.Setenv("PCS_ENV", "production")
+	if policy := securityContentSecurityPolicy(); !strings.Contains(policy, "upgrade-insecure-requests") {
+		t.Fatalf("production CSP must upgrade insecure requests: %q", policy)
+	}
+	t.Setenv("PCS_ENV", "development")
+	if policy := securityContentSecurityPolicy(); strings.Contains(policy, "upgrade-insecure-requests") {
+		t.Fatalf("development CSP must not force upgrade-insecure-requests: %q", policy)
 	}
 }

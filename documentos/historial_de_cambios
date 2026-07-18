@@ -38102,3 +38102,102 @@ Archivos modificados:
 PushStatus: OK
 Archivos modificados:
 - documentos/arquitectura/inventario_bootstrap_ensure.md
+
+2026-07-16 - Plan 104: endurecimiento interno previo a staging
+- [Migraciones] `PCS_RUNTIME_SCHEMA_BOOTSTRAP=0` permite al rol `migrate`
+  ensayar el catalogo versionado sin bootstrap heredado; API y worker lo
+  rechazan en produccion. Los cambios futuros deben entrar por `pcs-migrate`.
+- [HTTP/DDL] Modulos ERP, conversion de cotizaciones/pedidos y pagos verifican
+  tablas transaccionales y devuelven indisponibilidad generica si falta una
+  migracion, en lugar de ejecutar `Ensure*` desde una solicitud web.
+- [Seguridad] La CSP usa una fuente unica para modo activo y Report-Only con
+  origenes exactos. El middleware JSON evita filtrar SQL, rutas, proveedores y
+  detalles de conexion en respuestas 4xx tecnicas.
+- [Deriva] `tools/ensure_bootstrap_inventory.mjs` genera
+  `legacy_schema_catalog_manifest_generated.go` con huella SHA-256 de cada
+  paso legado. `pcs-migrate` registra esa huella por una migracion nueva e
+  inmutable, sin cambiar las migraciones historicas.
+- [Multiempresa] `tools/tenant_route_inventory.mjs` genera la matriz de rutas
+  empresariales y el preflight exige que permanezca sincronizada. La matriz
+  registra wrapper, archivo y linea; la cobertura negativa A/B sigue como gate
+  separado antes de produccion.
+- [Multiempresa] `validateEmpresaIDConsistency` valida todos los valores de
+  `empresa_id` recibidos por query, cabecera, formulario o multipart y rechaza
+  duplicados que no coincidan con el contexto autorizado.
+- [Migraciones] `tools/runtime_ensure_inventory.mjs` documenta 171 llamadas
+  `Ensure*` fuera del migrador (98 en handlers). El inventario no considera
+  esa deuda resuelta: solo fija una base verificable para eliminarla por
+  dominios sin introducir nuevas rutas de DDL.
+- [Operacion] `voice-stream` permanece desactivado en la plantilla de
+  plataforma. Los gates de staging, restore, multiempresa exhaustivo,
+  proveedores, Object Storage, Docker integral, observabilidad y carga siguen
+  abiertos conforme a `documentos/plan_104.md`.
+
+2026-07-17 - Plan 104: pagos, carrito y facturacion sin DDL de handler
+- `EmpresaFacturacionElectronicaSchemaReady` y
+  `EmpresaConfiguracionAvanzadaSchemaReady` verifican tablas versionadas sin
+  ejecutar DDL. El cobro de licencia, la sincronizacion DIAN, el carrito y el
+  corte de caja los usan antes de operar.
+- El inventario generado baja a 153 llamadas `Ensure*` fuera del migrador: 80
+  en HTTP, 72 en arranque y una en proceso de plataforma. No se declara la
+  deuda cerrada: el preflight evita que vuelva a crecer.
+
+2026-07-17: rs: Plan 104 hardening interno y controles de preproduccion
+PushStatus: OK
+Archivos modificados:
+- backend/db/carritos_compras.go
+- backend/db/documentos_transaccionales.go
+- backend/db/empresa_configuracion_avanzada.go
+- backend/db/facturacion_electronica.go
+- backend/db/finanzas.go
+- backend/db/legacy_schema_catalog.go
+- backend/db/legacy_schema_catalog_manifest_generated.go
+- backend/db/legacy_schema_catalog_test.go
+- backend/db/migrations_test.go
+- backend/db/modulos_faltantes.go
+- backend/db/platform_migrations.go
+- backend/db/schema_readiness_test.go
+- backend/handlers/carritos_compras.go
+- backend/handlers/corte_caja.go
+- backend/handlers/creditos.go
+- backend/handlers/empresa_permisos.go
+- backend/handlers/empresa_permisos_tenant_test.go
+- backend/handlers/empresa_preconfiguracion.go
+- backend/handlers/finanzas_breb_qr.go
+- backend/handlers/modulos_faltantes.go
+- backend/handlers/payments_handlers.go
+- backend/handlers/reservas_hotel.go
+- backend/internal/platform/runtimeconfig/config.go
+- backend/internal/platform/runtimeconfig/config_test.go
+- backend/main.go
+- backend/utils/json_error_middleware_test.go
+- backend/utils/security_headers_test.go
+- backend/utils/system_errors.go
+- backend/utils/utils.go
+- deploy/.env.platform.example
+- deploy/.env.staging.example
+- deploy/docker-compose.platform.yml
+- documentos/CHANGELOG.md
+- documentos/arquitectura/inventario_bootstrap_ensure.md
+- documentos/arquitectura/inventario_runtime_ensure.md
+- documentos/arquitectura/matriz_rutas_multiempresa.md
+- documentos/contexto_especifico_del_sistema.md
+- documentos/contexto_general_del_sistema.md
+- documentos/descripcion_de_archivos
+- documentos/historial_de_cambios
+- documentos/plan_104.md
+- scripts/profesional_preflight.ps1
+- tools/ensure_bootstrap_inventory.mjs
+- tools/runtime_ensure_inventory.mjs
+- tools/tenant_route_inventory.mjs
+
+2026-07-18 - Recuperacion verificable y manifiesto de migracion
+- `scripts/vps_backup_operacion.ps1` y `scripts/vps_restore_validation.ps1`
+  aceptan la identidad OpenSSH local, preservan LF al ejecutar Bash remoto y
+  verifican restauracion temporal PostgreSQL sin registrar datos ni secretos.
+  PostgreSQL activo se protege mediante dump logico, no un tarball fisico.
+- La validacion informa RPO/RTO medidos. Certificados y almacenamiento
+  persistente se consideran artefactos obligatorios del respaldo.
+- `tools/ensure_bootstrap_inventory.mjs` incluye los pasos reales del catalogo
+  legado, incluso los que no usan el prefijo `Ensure`, y serializa huellas
+  SHA-256 sin confundirlas con credenciales durante el escaneo de secretos.

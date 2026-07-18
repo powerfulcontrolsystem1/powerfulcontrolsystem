@@ -47,6 +47,56 @@ var empresaGenericAllowedTables = map[string]struct{}{
 	"empresa_dian_configuracion":          {},
 }
 
+var empresaModulosFaltantesRequiredTables = []string{
+	"empresa_cotizaciones_venta",
+	"empresa_pedidos_venta",
+	"empresa_devoluciones_venta",
+	"empresa_compras_documentos",
+	"empresa_facturacion_documentos",
+	"empresa_plan_cuentas",
+	"empresa_cuentas_por_cobrar",
+	"empresa_cuentas_por_pagar",
+	"inventario_lotes_series",
+	"inventario_lotes_series_movimientos",
+	"empresa_devoluciones_proveedor",
+	"empresa_rrhh_vacaciones_licencias",
+	"crm_leads",
+	"crm_interacciones",
+	"crm_campanas",
+	"produccion_bom",
+	"produccion_bom_detalle",
+	"produccion_ordenes",
+	"logistica_transportistas",
+	"logistica_rutas",
+	"logistica_envios",
+	"empresa_documentos_gestion",
+	"empresa_documentos_firmas",
+	"empresa_integraciones_apis",
+	"empresa_integraciones_bancos",
+	"empresa_dian_configuracion",
+}
+
+// EmpresaModulosFaltantesSchemaReady verifica que el catalogo de migraciones ya
+// preparo las tablas requeridas por los modulos ERP. Los procesos HTTP no deben
+// crear ni alterar esquema: esa responsabilidad pertenece exclusivamente al rol
+// migrate antes de arrancar API y worker.
+func EmpresaModulosFaltantesSchemaReady(dbConn *sql.DB) error {
+	if dbConn == nil {
+		return errors.New("db connection is nil")
+	}
+
+	for _, table := range empresaModulosFaltantesRequiredTables {
+		var registered sql.NullString
+		if err := queryRowSQLCompat(dbConn, `SELECT to_regclass(?)`, table).Scan(&registered); err != nil {
+			return fmt.Errorf("verify ERP schema table %s: %w", table, err)
+		}
+		if !registered.Valid || strings.TrimSpace(registered.String) == "" {
+			return fmt.Errorf("ERP schema table %s is missing; run pcs-migrate before starting the API", table)
+		}
+	}
+	return nil
+}
+
 // EnsureEmpresaModulosFaltantesSchema crea tablas base para los modulos ERP faltantes.
 func EnsureEmpresaModulosFaltantesSchema(dbConn *sql.DB) error {
 	if dbConn == nil {

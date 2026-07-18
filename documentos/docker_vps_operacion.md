@@ -225,7 +225,7 @@ El respaldo queda en:
 /root/powerfulcontrolsystem/backups/vps-snapshots/<fecha>
 ```
 
-Incluye `pg_dumpall` comprimido y tarballs de volumenes de uploads, descargas, logs, backups y datos PostgreSQL. Por defecto no copia `deploy/.env.platform`; si se necesita respaldar secretos en la VPS, usar `-IncludeEnvSecrets` y conservar permisos privados.
+Incluye `pg_dumpall` comprimido y tarballs de volumenes de uploads, descargas, logs, backups, almacenamiento privado, certificados de Mailu y datos persistentes de OnlyOffice. PostgreSQL no se archiva fisicamente mientras esta activo: el dump logico es la fuente consistente de restauracion. Por defecto no copia `deploy/.env.platform`; si se necesita respaldar secretos en la VPS, usar `-IncludeEnvSecrets` y conservar permisos privados.
 
 Para validar que el backup se puede restaurar:
 
@@ -238,6 +238,10 @@ Para ejecutar una restauracion real en un contenedor temporal de PostgreSQL:
 ```powershell
 .\scripts\vps_restore_validation.ps1 -ExecuteDrill
 ```
+
+La salida informa RPO y RTO medidos en segundos. Un snapshot solo se considera
+apto para la recuperacion cuando el dump y todos sus tarballs requeridos pasan
+la validacion; no sustituye la prueba funcional posterior en un entorno aislado.
 
 ## Staging Docker
 

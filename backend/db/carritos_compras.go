@@ -265,6 +265,22 @@ type CarritoTransferResult struct {
 	Total                 float64 `json:"total"`
 }
 
+// EmpresaCarritosSchemaReady verifica el esquema de ventas ya aplicado por
+// pcs-migrate. Los handlers no crean ni alteran tablas durante una solicitud.
+func EmpresaCarritosSchemaReady(dbConn *sql.DB) error {
+	if dbConn == nil {
+		return fmt.Errorf("db connection is nil")
+	}
+	ready, err := empresaCarritosSchemaLooksReady(dbConn)
+	if err != nil {
+		return fmt.Errorf("verify cart schema: %w", err)
+	}
+	if !ready {
+		return fmt.Errorf("cart schema is missing; run pcs-migrate before starting the API")
+	}
+	return nil
+}
+
 // EnsureEmpresaCarritosSchema crea y migra tablas de carritos de compra en PostgreSQL.
 func EnsureEmpresaCarritosSchema(dbConn *sql.DB) error {
 	startedAt := time.Now()

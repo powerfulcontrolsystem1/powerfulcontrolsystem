@@ -483,7 +483,7 @@ func emptyCorteCajaUsuarioCajaActualResponse(empresaID int64, desde, hasta, usua
 }
 
 func getCorteCajaAbiertaUsuarioActual(dbEmp *sql.DB, empresaID int64, usuario, cajaCodigo, turno string, sucursalID, cierreCajaID int64) (*dbpkg.EmpresaCierreCaja, error) {
-	if err := dbpkg.EnsureEmpresaFinanzasSchema(dbEmp); err != nil {
+	if err := dbpkg.EmpresaFinanzasSchemaReady(dbEmp); err != nil {
 		return nil, err
 	}
 	usuario = strings.TrimSpace(usuario)
@@ -851,7 +851,7 @@ func cerrarCorteCaja(dbEmp *sql.DB, empresaID int64, desde, hasta, usuario strin
 	if dbEmp == nil {
 		return nil, 0, sql.ErrConnDone
 	}
-	if err := dbpkg.EnsureEmpresaFinanzasSchema(dbEmp); err != nil {
+	if err := dbpkg.EmpresaFinanzasSchemaReady(dbEmp); err != nil {
 		return nil, 0, err
 	}
 	reportes = normalizeCorteCajaReportes(reportes)
@@ -1019,7 +1019,7 @@ func corteCajaCierresSelectSQL() string {
 }
 
 func listCorteCajaTurnosHistoricos(dbEmp *sql.DB, empresaID int64, r *http.Request) ([]dbpkg.EmpresaCierreCaja, error) {
-	if err := dbpkg.EnsureEmpresaFinanzasSchema(dbEmp); err != nil {
+	if err := dbpkg.EmpresaFinanzasSchemaReady(dbEmp); err != nil {
 		return nil, err
 	}
 	query := corteCajaCierresSelectSQL() + `
@@ -1088,7 +1088,7 @@ func getCorteCajaTurnoHistorico(dbEmp *sql.DB, empresaID, cierreID int64) (*dbpk
 	if cierreID <= 0 {
 		return nil, sql.ErrNoRows
 	}
-	if err := dbpkg.EnsureEmpresaFinanzasSchema(dbEmp); err != nil {
+	if err := dbpkg.EmpresaFinanzasSchemaReady(dbEmp); err != nil {
 		return nil, err
 	}
 	rows, err := dbpkg.ExecQueryCompat(dbEmp, corteCajaCierresSelectSQL()+`
@@ -1235,11 +1235,11 @@ func buildCorteCajaReport(dbEmp *sql.DB, empresaID int64, desde, hasta, usuario 
 	defer func() {
 		dbpkg.PerfLogf("[perf][corte] buildCorteCajaReport empresa=%d usuario=%q dur=%s", empresaID, usuario, time.Since(startedAt))
 	}()
-	if err := dbpkg.EnsureEmpresaCarritosSchema(dbEmp); err != nil {
+	if err := dbpkg.EmpresaCarritosSchemaReady(dbEmp); err != nil {
 		return nil, err
 	}
 	dbpkg.PerfLogf("[perf][corte] step ensure_carritos empresa=%d dur=%s", empresaID, time.Since(startedAt))
-	if err := dbpkg.EnsureEmpresaFinanzasSchema(dbEmp); err != nil {
+	if err := dbpkg.EmpresaFinanzasSchemaReady(dbEmp); err != nil {
 		return nil, err
 	}
 	dbpkg.PerfLogf("[perf][corte] step ensure_finanzas empresa=%d dur=%s", empresaID, time.Since(startedAt))

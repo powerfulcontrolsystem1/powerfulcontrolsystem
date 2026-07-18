@@ -315,6 +315,24 @@ func paisFacturacionByCodigo(codigo string) PaisFacturacion {
 	return defaultPaisFacturacion()
 }
 
+// EmpresaFacturacionElectronicaSchemaReady verifica las tablas de facturacion
+// por pais antes de atender trafico. Su creacion pertenece a pcs-migrate.
+func EmpresaFacturacionElectronicaSchemaReady(dbConn *sql.DB) error {
+	if dbConn == nil {
+		return fmt.Errorf("db connection is nil")
+	}
+	for _, table := range []string{"facturacion_electronica_pais", "facturacion_electronica_reintentos"} {
+		var registered sql.NullString
+		if err := queryRowSQLCompat(dbConn, `SELECT to_regclass(?)`, table).Scan(&registered); err != nil {
+			return fmt.Errorf("verify electronic invoicing table %s: %w", table, err)
+		}
+		if !registered.Valid || strings.TrimSpace(registered.String) == "" {
+			return fmt.Errorf("electronic invoicing table %s is missing; run pcs-migrate before starting the API", table)
+		}
+	}
+	return nil
+}
+
 // EnsureEmpresaFacturacionElectronicaSchema crea/migra tabla FE por pais en PostgreSQL.
 func EnsureEmpresaFacturacionElectronicaSchema(dbConn *sql.DB) error {
 	stmts := []string{

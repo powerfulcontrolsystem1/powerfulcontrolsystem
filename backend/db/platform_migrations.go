@@ -16,6 +16,9 @@ const (
 // PlatformMigrations owns the runtime foundation and records the one-time
 // reviewed legacy baseline. API and worker processes only verify this ledger.
 func PlatformMigrations(target string) ([]Migration, error) {
+	if err := ValidateLegacySchemaCatalogManifest(); err != nil {
+		return nil, err
+	}
 	switch target {
 	case MigrationTargetEmpresas:
 		return []Migration{
@@ -53,6 +56,11 @@ func PlatformMigrations(target string) ([]Migration, error) {
 					return applyOutboxSchemaTx(tx)
 				},
 			},
+			{
+				Version:     "20260717-001-legacy-schema-manifest-v1",
+				Description: "frozen source fingerprint for legacy enterprise schema catalog",
+				Body:        legacySchemaCatalogSourceFingerprint + ":empresas",
+			},
 		}, nil
 	case MigrationTargetSuper:
 		return []Migration{
@@ -89,6 +97,11 @@ func PlatformMigrations(target string) ([]Migration, error) {
 				Apply: func(ctx context.Context, tx *sql.Tx) error {
 					return applyMetricsSchemaTx(ctx, tx)
 				},
+			},
+			{
+				Version:     "20260717-001-legacy-schema-manifest-v1",
+				Description: "frozen source fingerprint for legacy administrative schema catalog",
+				Body:        legacySchemaCatalogSourceFingerprint + ":superadministrador",
 			},
 		}, nil
 	default:

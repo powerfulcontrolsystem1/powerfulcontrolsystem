@@ -89,6 +89,25 @@ type EmpresaDocumentoFacturacionListFilter struct {
 	Offset          int
 }
 
+// EmpresaDocumentosTransaccionalesSchemaReady verifica las tablas de compras y
+// facturacion transaccional que deben existir antes de atender trafico. El DDL
+// se ejecuta unicamente desde pcs-migrate.
+func EmpresaDocumentosTransaccionalesSchemaReady(dbConn *sql.DB) error {
+	if dbConn == nil {
+		return fmt.Errorf("db connection is nil")
+	}
+	for _, table := range []string{"empresa_facturacion_documentos", "empresa_compras_documentos"} {
+		var registered sql.NullString
+		if err := queryRowSQLCompat(dbConn, `SELECT to_regclass(?)`, table).Scan(&registered); err != nil {
+			return fmt.Errorf("verify transactional documents table %s: %w", table, err)
+		}
+		if !registered.Valid || strings.TrimSpace(registered.String) == "" {
+			return fmt.Errorf("transactional documents table %s is missing; run pcs-migrate before starting the API", table)
+		}
+	}
+	return nil
+}
+
 // EnsureEmpresaDocumentosTransaccionalesSchema crea/migra tablas de documentos de negocio para facturacion y compras.
 func EnsureEmpresaDocumentosTransaccionalesSchema(dbConn *sql.DB) error {
 	stmts := []string{

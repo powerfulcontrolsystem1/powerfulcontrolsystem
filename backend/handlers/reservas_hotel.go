@@ -30,8 +30,8 @@ const reservasHotelReadCacheTTL = 10 * time.Second
 // EmpresaReservasHotelHandler gestiona el modulo de reservas por empresa.
 func EmpresaReservasHotelHandler(dbEmp *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if err := dbpkg.EnsureEmpresaCarritosSchema(dbEmp); err != nil {
-			http.Error(w, "No se pudo preparar los carritos para reservas", http.StatusInternalServerError)
+		if err := dbpkg.EmpresaCarritosSchemaReady(dbEmp); err != nil {
+			http.Error(w, "El modulo de reservas aun no esta listo. Contacta al administrador para completar la migracion.", http.StatusServiceUnavailable)
 			return
 		}
 		if err := dbpkg.EnsureEmpresaReservasHotelSchema(dbEmp); err != nil {

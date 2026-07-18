@@ -340,9 +340,9 @@ func EmpresaCarritosCompraHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 				http.Error(w, err.Error(), http.StatusBadRequest)
 				return
 			}
-			if err := dbpkg.EnsureEmpresaCarritosSchema(dbEmp); err != nil {
-				log.Printf("[carritos] ensure schema empresa_id=%d error: %v", empresaID, err)
-				http.Error(w, "No se pudo preparar la estructura de carritos", http.StatusInternalServerError)
+			if err := dbpkg.EmpresaCarritosSchemaReady(dbEmp); err != nil {
+				log.Printf("[carritos] schema readiness empresa_id=%d error: %v", empresaID, err)
+				http.Error(w, "El modulo de carritos aun no esta listo. Contacta al administrador para completar la migracion.", http.StatusServiceUnavailable)
 				return
 			}
 			if err := dbpkg.RefreshCarritosActivosConTarifasTiempo(dbEmp, empresaID, time.Now()); err != nil {
@@ -2161,9 +2161,9 @@ func EmpresaCarritoItemsHandler(dbEmp *sql.DB) http.HandlerFunc {
 			http.Error(w, "forbidden: este rol no puede consultar ni modificar items del carrito", http.StatusForbidden)
 			return
 		}
-		if err := dbpkg.EnsureEmpresaCarritosSchema(dbEmp); err != nil {
-			log.Printf("[carritos_items] ensure schema error: %v", err)
-			http.Error(w, "No se pudo preparar el modulo de carritos", http.StatusInternalServerError)
+		if err := dbpkg.EmpresaCarritosSchemaReady(dbEmp); err != nil {
+			log.Printf("[carritos_items] schema readiness error: %v", err)
+			http.Error(w, "El modulo de carritos aun no esta listo. Contacta al administrador para completar la migracion.", http.StatusServiceUnavailable)
 			return
 		}
 		switch r.Method {
@@ -2361,9 +2361,9 @@ func EmpresaCarritoProductoHistorialHandler(dbEmp *sql.DB) http.HandlerFunc {
 			http.Error(w, "Metodo no permitido", http.StatusMethodNotAllowed)
 			return
 		}
-		if err := dbpkg.EnsureEmpresaCarritosSchema(dbEmp); err != nil {
-			log.Printf("[carritos_historial] ensure schema error: %v", err)
-			http.Error(w, "No se pudo preparar el modulo de carritos", http.StatusInternalServerError)
+		if err := dbpkg.EmpresaCarritosSchemaReady(dbEmp); err != nil {
+			log.Printf("[carritos_historial] schema readiness error: %v", err)
+			http.Error(w, "El modulo de carritos aun no esta listo. Contacta al administrador para completar la migracion.", http.StatusServiceUnavailable)
 			return
 		}
 		empresaID, err := parseEmpresaIDQuery(r)

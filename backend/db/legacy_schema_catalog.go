@@ -149,6 +149,9 @@ func ApplyLegacySchemaCatalog(dbEmpresas, dbSuper *sql.DB) error {
 	if dbEmpresas == nil || dbSuper == nil {
 		return fmt.Errorf("legacy schema catalog requires both databases")
 	}
+	if err := ValidateLegacySchemaCatalogManifest(); err != nil {
+		return err
+	}
 	for _, target := range []struct {
 		name  string
 		db    *sql.DB
@@ -169,6 +172,39 @@ func ApplyLegacySchemaCatalog(dbEmpresas, dbSuper *sql.DB) error {
 				return fmt.Errorf("%s migration step %s: %w", target.name, step.Name, err)
 			}
 		}
+	}
+	return nil
+}
+
+// ValidateLegacySchemaCatalogManifest ensures every compatibility step belongs
+// to the generated, source-fingerprinted manifest. It is intentionally a
+// fail-closed guard: legacy Ensure* functions are frozen once their manifest
+// migration is released; later schema changes belong in new migrations.
+func ValidateLegacySchemaCatalogManifest() error {
+	if strings.TrimSpace(legacySchemaCatalogSourceFingerprint) == "" {
+		return fmt.Errorf("legacy schema catalog fingerprint is empty")
+	}
+	seen := make(map[string]struct{}, len(legacyEmpresaSchemaCatalog)+len(legacySuperSchemaCatalog))
+	for target, steps := range map[string][]legacySchemaStep{
+		MigrationTargetEmpresas: legacyEmpresaSchemaCatalog,
+		MigrationTargetSuper:    legacySuperSchemaCatalog,
+	} {
+		for _, step := range steps {
+			name := strings.TrimSpace(step.Name)
+			if name == "" || step.Apply == nil {
+				return fmt.Errorf("legacy %s catalog contains an invalid step", target)
+			}
+			if _, duplicate := seen[name]; duplicate {
+				return fmt.Errorf("legacy schema catalog repeats step %s", name)
+			}
+			if strings.TrimSpace(legacySchemaCatalogStepSourceFingerprints[name]) == "" {
+				return fmt.Errorf("legacy %s step %s is missing its source fingerprint", target, name)
+			}
+			seen[name] = struct{}{}
+		}
+	}
+	if len(seen) != len(legacySchemaCatalogStepSourceFingerprints) {
+		return fmt.Errorf("legacy schema catalog fingerprint manifest is out of sync: catalog=%d manifest=%d", len(seen), len(legacySchemaCatalogStepSourceFingerprints))
 	}
 	return nil
 }

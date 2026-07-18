@@ -79,3 +79,26 @@ func TestSuperCatalogIncludesSystemMetricsMigration(t *testing.T) {
 	}
 	t.Fatal("system metrics migration is missing from super catalog")
 }
+
+func TestPlatformCatalogsFreezeLegacySchemaManifest(t *testing.T) {
+	t.Parallel()
+	for _, target := range []string{MigrationTargetEmpresas, MigrationTargetSuper} {
+		migrations, err := PlatformMigrations(target)
+		if err != nil {
+			t.Fatal(err)
+		}
+		found := false
+		for _, migration := range migrations {
+			if migration.Version != "20260717-001-legacy-schema-manifest-v1" {
+				continue
+			}
+			if migration.Apply != nil || migration.Body == "" {
+				t.Fatalf("legacy manifest migration for %s must be immutable metadata only", target)
+			}
+			found = true
+		}
+		if !found {
+			t.Fatalf("legacy manifest migration is missing for %s", target)
+		}
+	}
+}

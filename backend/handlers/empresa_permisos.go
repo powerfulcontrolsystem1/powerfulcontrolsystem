@@ -1665,13 +1665,13 @@ func validateEmpresaIDConsistency(r *http.Request, empresaID int64) error {
 	if r == nil || empresaID <= 0 {
 		return nil
 	}
-	if id, err := parseEmpresaIDQueryValue(r); err != nil {
-		return fmt.Errorf("empresa_id invalido en query")
-	} else if id > 0 && id != empresaID {
-		return fmt.Errorf("empresa_id no coincide con el contexto de empresa")
+	if r.URL != nil {
+		if err := validateEmpresaIDValues(r.URL.Query()["empresa_id"], empresaID, "query"); err != nil {
+			return err
+		}
 	}
-	if id := parsePositiveInt64(strings.TrimSpace(r.Header.Get("X-Empresa-ID"))); id > 0 && id != empresaID {
-		return fmt.Errorf("empresa_id no coincide con el contexto de empresa")
+	if err := validateEmpresaIDValues(r.Header.Values("X-Empresa-ID"), empresaID, "cabecera"); err != nil {
+		return err
 	}
 
 	method := strings.ToUpper(strings.TrimSpace(r.Method))
@@ -1692,31 +1692,35 @@ func validateEmpresaIDConsistency(r *http.Request, empresaID int64) error {
 		if err := r.ParseForm(); err != nil {
 			return fmt.Errorf("empresa_id invalido en formulario")
 		}
-		if id := parsePositiveInt64(strings.TrimSpace(r.FormValue("empresa_id"))); id > 0 && id != empresaID {
-			return fmt.Errorf("empresa_id no coincide con el contexto de empresa")
-		}
-		return nil
+		return validateEmpresaIDValues(r.PostForm["empresa_id"], empresaID, "formulario")
 	}
 	if strings.Contains(contentType, "multipart/form-data") {
 		if err := r.ParseMultipartForm(12 << 20); err != nil {
 			return fmt.Errorf("empresa_id invalido en multipart")
 		}
-		if id := parsePositiveInt64(strings.TrimSpace(r.FormValue("empresa_id"))); id > 0 && id != empresaID {
-			return fmt.Errorf("empresa_id no coincide con el contexto de empresa")
+		if r.MultipartForm == nil {
+			return nil
 		}
+		return validateEmpresaIDValues(r.MultipartForm.Value["empresa_id"], empresaID, "multipart")
 	}
 	return nil
 }
 
-func parseEmpresaIDQueryValue(r *http.Request) (int64, error) {
-	if r == nil || r.URL == nil {
-		return 0, nil
+func validateEmpresaIDValues(values []string, empresaID int64, source string) error {
+	for _, raw := range values {
+		value := strings.TrimSpace(raw)
+		if value == "" {
+			return fmt.Errorf("empresa_id invalido en %s", source)
+		}
+		id, err := strconv.ParseInt(value, 10, 64)
+		if err != nil || id <= 0 {
+			return fmt.Errorf("empresa_id invalido en %s", source)
+		}
+		if id != empresaID {
+			return fmt.Errorf("empresa_id no coincide con el contexto de empresa")
+		}
 	}
-	raw := strings.TrimSpace(r.URL.Query().Get("empresa_id"))
-	if raw == "" {
-		return 0, nil
-	}
-	return strconv.ParseInt(raw, 10, 64)
+	return nil
 }
 
 func extractEmpresaIDFromJSONBodyStrict(r *http.Request) (int64, error) {
