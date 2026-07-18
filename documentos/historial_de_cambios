@@ -1,3 +1,10 @@
+2026-07-18: El migrador exige configuracion explicita en production.
+- `PCS_RUNTIME_SCHEMA_BOOTSTRAP` ya no tiene un valor implicito para el rol
+  `migrate` cuando `PCS_ENV=production`; una variable ausente detiene el
+  arranque antes de ejecutar el bootstrap legado.
+- Compose propaga la variable como requisito y API/worker conservan el valor
+  fijo `0`. Se agrego regresion de runtimeconfig y se alinearon los runbooks.
+
 2026-07-18: Preflight estable entre Windows y Linux.
 - Los verificadores de inventario de bootstrap, rutas multiempresa y `Ensure`
   normalizan solo los finales de linea durante la comparacion `--check`.
