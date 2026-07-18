@@ -1,3 +1,12 @@
+2026-07-18: Manifiesto de migraciones heredadas completo.
+- El generador del inventario ahora recorre solamente los dos catalogos de
+  compatibilidad y registra cualquier funcion real referenciada, incluidos
+  pasos historicos `Init*`. Esto evita omitir `InitMetricsTable` sin volver a
+  capturar literales fuera de los catalogos.
+- Se regenero el manifiesto con 122 pasos y se cubrio la regresion con
+  `go test ./db`; el preflight puede verificar de nuevo que todo paso heredado
+  tenga una huella de origen.
+
 2026-07-18: Datafonos sin DDL durante operaciones empresariales.
 - El handler verifica sus tablas migradas antes de consultar configuraciones o
   procesar transacciones; no ejecuta `CREATE TABLE` ni indices en solicitudes.
@@ -38257,3 +38266,15 @@ Archivos modificados:
   frontend privado y rollback de aplicacion. El smoke publicado sigue pendiente
   por una reserva fantasma del daemon Docker del host, sin reiniciar servicios
   compartidos de produccion.
+
+2026-07-18 - CSRF compartido en subpaginas empresariales
+- `web/js/empresa_submenu_context.js` instala el token sincronizador para
+  mutaciones same-origin antes de que carguen los flujos operativos. Esto evita
+  que paginas como el carrito dependan del menu flotante para enviar
+  `X-CSRF-Token`.
+- Se agrego una regresion estatica que exige el interceptor y confirma que el
+  carrito usa el contexto compartido. Las solicitudes externas y las que usan
+  `credentials: omit` no se modifican.
+- Durante la prueba real controlada de PCS se detecto el rechazo `403` al crear
+  el receptor fiscal desde el carrito; no se emitio ningun documento mientras
+  el flujo estaba bloqueado.

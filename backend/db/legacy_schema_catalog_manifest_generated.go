@@ -5,12 +5,12 @@ package db
 // legacySchemaCatalogSourceFingerprint freezes the reviewed source bodies of
 // every Ensure* step executed by the compatibility catalog. Changing a legacy
 // step changes this value and must be accompanied by a new immutable migration.
-const legacySchemaCatalogSourceFingerprint = "2a:db:98:91:89:0f:14:d5:ce:6b:94:3c:ac:56:b3:d6:25:35:bd:57:3a:0b:6e:60:5a:cc:4e:db:b3:7e:11:d3"
+const legacySchemaCatalogSourceFingerprint = "db:c8:fa:8d:b5:d6:a8:ff:f7:eb:50:1e:00:ed:c3:8b:6c:ec:be:dd:41:5d:40:93:47:26:58:f5:53:33:67:3a"
 
 var legacySchemaCatalogStepSourceFingerprints = map[string]string{
 	"EnsureAdminEmpresaCompartidaSchema": "12:ab:87:09:fc:21:af:15:ce:9e:57:de:df:79:12:1c:37:26:71:53:57:36:84:d5:fb:07:ff:57:93:61:09:8f",
 	"EnsureAdminPrincipalDelegacionesSchema": "7f:76:d3:5c:8e:05:ad:a8:b9:55:11:2a:82:2b:e0:bb:53:f1:60:e4:43:66:ca:92:c9:96:cb:35:f3:4d:cb:8d",
-	"EnsureAdministradoresAuthSchema": "be:20:03:e9:08:81:04:ea:61:d5:2f:57:9d:7c:bf:1d:8b:ab:9f:a8:85:3c:dd:fd:db:8c:cc:cd:a9:ca:6e:b7",
+	"EnsureAdministradoresAuthSchema": "9a:39:09:8a:75:85:34:82:a7:27:00:ef:63:b6:d4:ee:66:d3:f5:27:53:a7:c4:10:d5:81:8a:fe:65:40:89:14",
 	"EnsureAsesorComercialSchema": "ba:cd:c8:26:ba:7f:43:95:6b:c2:5e:1b:f6:4d:74:a8:1b:d5:af:f4:fa:e1:fa:6a:21:54:e2:14:74:d4:53:38",
 	"EnsureAyudaTicketsSchema": "8e:cb:c5:0e:ff:34:6e:a8:07:e4:0e:83:e3:d3:68:65:d7:4a:7b:f3:e9:06:9c:c3:a0:c5:9c:bc:e0:e2:a1:46",
 	"EnsureCanonicalTiposEmpresaPreconfigurables": "1a:29:fb:af:1c:96:04:1b:d7:52:d0:ac:af:9d:fb:bb:63:2a:72:65:1b:17:0c:cc:23:52:b4:f7:23:f9:70:1e",
@@ -111,8 +111,8 @@ var legacySchemaCatalogStepSourceFingerprints = map[string]string{
 	"EnsureLicenciaEmpresaRetencionSchema": "59:ac:ea:4e:4b:96:90:d1:36:32:50:28:84:ba:aa:ea:77:7a:bd:20:8c:e0:e0:97:15:67:0d:77:b8:0c:2b:9b",
 	"EnsureLicenciaVencimientoNotificacionesSchema": "5c:95:38:5e:54:27:66:16:62:7c:0d:c5:6b:87:74:f8:fa:2f:c6:8b:dc:5c:20:ef:5a:be:ca:d3:7d:f5:f1:07",
 	"EnsureLicenciasGratisActivacionesSchema": "5b:d5:0b:ea:d9:79:65:62:7d:78:51:6a:1e:6b:21:f7:bd:1a:ec:6c:63:44:47:2b:4f:1e:1d:01:0d:cc:02:d7",
-	"EnsureLicenciasSchema": "4f:54:e2:4c:2c:3e:5c:23:ee:53:c7:a1:f5:f7:1b:bc:35:04:2d:3d:5c:3a:19:dd:87:6d:aa:0f:09:27:88:7b",
-	"EnsurePaymentGatewaySchema": "10:31:c0:29:1e:b6:16:d8:c6:d4:95:f7:c3:24:72:bd:a1:23:e4:0f:35:68:46:21:a5:52:84:38:17:bc:0c:88",
+	"EnsureLicenciasSchema": "c9:36:7f:c7:1b:7b:78:75:e3:07:c9:c2:e8:7a:7c:b0:0c:f8:cc:07:7f:a2:80:74:5f:4d:d6:7a:33:65:72:cf",
+	"EnsurePaymentGatewaySchema": "5b:c5:a5:4a:6a:68:8d:47:c5:d1:cb:2b:3d:51:4f:f6:cf:ad:e0:57:3c:18:05:1c:14:44:aa:13:79:bf:4e:4e",
 	"EnsureRolesDeUsuarioSchema": "c6:88:4b:07:df:76:c1:f9:08:a8:12:78:be:ae:ef:9e:bb:31:ec:50:f1:95:44:89:f5:5b:9c:ad:5e:22:7f:5e",
 	"EnsureRolesPermisosSchema": "61:df:d9:60:32:73:25:52:71:2b:18:8a:01:c1:45:b6:87:33:6f:96:08:11:2e:16:59:ff:e7:35:52:1d:0c:c2",
 	"EnsureSuperAIChatSchema": "3a:54:8a:41:74:de:9d:9f:d3:f5:89:dd:94:fe:9c:b1:50:a8:38:97:c3:50:1d:1e:42:c2:08:28:38:02:46:89",
@@ -129,5 +129,5 @@ var legacySchemaCatalogStepSourceFingerprints = map[string]string{
 	"EnsureTipoEmpresaPreconfiguracionSchema": "d4:a5:41:2c:1e:19:79:d9:9c:fb:67:75:d7:ee:19:c2:63:a4:18:25:ca:e0:68:28:b0:8e:6e:f5:07:7d:45:6b",
 	"EnsureUsuarioConfiguracionSchema": "fe:b0:50:0b:98:28:c3:cb:b3:0a:ff:56:e0:e5:9a:29:31:bd:9a:d5:44:8e:ca:d9:24:b8:f0:74:4c:d7:ff:56",
 	"EnsureVentaPublicaSchema": "8b:a5:02:c9:bf:7e:21:c9:8e:de:a4:93:53:48:ee:98:9c:20:d4:40:a6:ca:72:0a:c5:65:5a:26:1f:df:b4:e2",
-	"InitMetricsTable": "8c:05:d4:54:cb:34:c1:60:ee:bf:e2:67:e2:b0:dc:3c:e9:6e:82:13:f4:45:45:55:27:bc:81:1b:f9:e9:63:0b",
+	"InitMetricsTable": "97:c2:40:3a:3f:a4:a2:56:f1:77:65:42:56:7c:76:39:39:8f:29:d5:48:33:f4:74:e4:ac:60:a3:3e:2b:0c:4f",
 }

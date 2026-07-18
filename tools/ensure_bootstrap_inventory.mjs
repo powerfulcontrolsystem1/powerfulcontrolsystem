@@ -96,9 +96,18 @@ for (const entry of entries) counts.set(entry.classification, (counts.get(entry.
 
 const legacyCatalogPath = path.join(repoRoot, "backend", "db", "legacy_schema_catalog.go");
 const legacyCatalogSource = fs.readFileSync(legacyCatalogPath, "utf8");
-const legacyCatalogNames = [...legacyCatalogSource.matchAll(/\{\s*"([A-Za-z0-9_]+)"\s*,\s*([A-Za-z0-9_]+)\s*\}/g)]
+function legacyCatalogBody(name) {
+  const marker = `var ${name} =`;
+  const offset = legacyCatalogSource.indexOf(marker);
+  if (offset < 0) throw new Error(`legacy schema catalog ${name} was not found`);
+  return functionBody(legacyCatalogSource, offset);
+}
+
+const legacyCatalogNames = ["legacyEmpresaSchemaCatalog", "legacySuperSchemaCatalog"]
+  .flatMap((catalogName) => [...legacyCatalogBody(catalogName).matchAll(/\{\s*"([A-Za-z][A-Za-z0-9_]*)"\s*,\s*([A-Za-z][A-Za-z0-9_]*)\s*\}/g)])
   .map((match) => {
     if (match[1] !== match[2]) throw new Error(`legacy schema catalog entry ${match[1]} does not call the matching function`);
+    if (!sourceFunctionsByName.has(match[1])) throw new Error(`legacy schema catalog step ${match[1]} has no source function`);
     return match[1];
   })
   .sort();

@@ -1,6 +1,41 @@
 (function() {
   'use strict';
 
+  // Las subpaginas empresariales se abren tanto dentro del panel como de forma
+  // directa. Instalar aqui el token sincronizador evita que un POST valido del
+  // carrito, clientes o configuracion dependa de que el menu flotante exista.
+  function readCSRFCookie() {
+    var match = String(document.cookie || '').match(/(?:^|;\s*)pcs_csrf=([^;]+)/);
+    if (!match) return '';
+    try { return decodeURIComponent(match[1] || ''); } catch (_) { return match[1] || ''; }
+  }
+
+  function installCSRFFetch() {
+    if (!window.fetch || window.__pcsCSRFFetchInstalled) return;
+    window.__pcsCSRFFetchInstalled = true;
+    var originalFetch = window.fetch.bind(window);
+    window.fetch = function(input, init) {
+      var options = init ? Object.assign({}, init) : {};
+      var method = String(options.method || (input && input.method) || 'GET').toUpperCase();
+      if (method === 'GET' || method === 'HEAD' || method === 'OPTIONS' || options.credentials === 'omit') {
+        return originalFetch(input, options);
+      }
+      var requestURL = typeof input === 'string' ? input : (input && input.url) || window.location.href;
+      var target;
+      try { target = new URL(requestURL, window.location.href); } catch (_) { return originalFetch(input, options); }
+      if (target.origin !== window.location.origin) return originalFetch(input, options);
+      var token = readCSRFCookie();
+      if (token) {
+        var headers = new Headers(options.headers || (input && input.headers) || undefined);
+        if (!headers.has('X-CSRF-Token')) headers.set('X-CSRF-Token', token);
+        options.headers = headers;
+      }
+      return originalFetch(input, options);
+    };
+  }
+
+  installCSRFFetch();
+
   function normalizeTheme(value) {
     const allowed = {
       light: true,
