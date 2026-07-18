@@ -38257,3 +38257,15 @@ Archivos modificados:
   frontend privado y rollback de aplicacion. El smoke publicado sigue pendiente
   por una reserva fantasma del daemon Docker del host, sin reiniciar servicios
   compartidos de produccion.
+
+2026-07-18 - CSRF compartido en subpaginas empresariales
+- `web/js/empresa_submenu_context.js` instala el token sincronizador para
+  mutaciones same-origin antes de que carguen los flujos operativos. Esto evita
+  que paginas como el carrito dependan del menu flotante para enviar
+  `X-CSRF-Token`.
+- Se agrego una regresion estatica que exige el interceptor y confirma que el
+  carrito usa el contexto compartido. Las solicitudes externas y las que usan
+  `credentials: omit` no se modifican.
+- Durante la prueba real controlada de PCS se detecto el rechazo `403` al crear
+  el receptor fiscal desde el carrito; no se emitio ningun documento mientras
+  el flujo estaba bloqueado.

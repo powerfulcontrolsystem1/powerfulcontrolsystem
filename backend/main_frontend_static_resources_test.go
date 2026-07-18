@@ -72,6 +72,27 @@ func TestPanelGuidedSetupUsesCSRFAndNextcloudKeepsEmpresaContext(t *testing.T) {
 	}
 }
 
+func TestEmpresaSubmenuContextInstallsCSRFForDirectOperationalPages(t *testing.T) {
+	contextScript, err := os.ReadFile(filepath.Join("..", "web", "js", "empresa_submenu_context.js"))
+	if err != nil {
+		t.Fatalf("read empresa submenu context: %v", err)
+	}
+	content := string(contextScript)
+	for _, required := range []string{"installCSRFFetch", "pcs_csrf", "X-CSRF-Token", "__pcsCSRFFetchInstalled"} {
+		if !strings.Contains(content, required) {
+			t.Fatalf("empresa submenu context must install CSRF fetch support; missing %q", required)
+		}
+	}
+
+	carrito, err := os.ReadFile(filepath.Join("..", "web", "administrar_empresa", "carrito_de_compras.html"))
+	if err != nil {
+		t.Fatalf("read carrito page: %v", err)
+	}
+	if !strings.Contains(string(carrito), "/js/empresa_submenu_context.js") {
+		t.Fatal("carrito must load the shared empresa context before operational mutations")
+	}
+}
+
 type staticResourceReference struct {
 	sourcePath   string
 	rawReference string
