@@ -5,6 +5,10 @@
 - Compose propaga la variable como requisito y API/worker conservan el valor
   fijo `0`. Se agrego regresion de runtimeconfig y se alinearon los runbooks.
 
+2026-07-18: Staging declara el modo de bootstrap del migrador.
+- `.env.staging.example` fija `PCS_RUNTIME_SCHEMA_BOOTSTRAP=0` para que la
+  interpolacion obligatoria de Compose no dependa de un override posterior.
+
 2026-07-18: Preflight estable entre Windows y Linux.
 - Los verificadores de inventario de bootstrap, rutas multiempresa y `Ensure`
   normalizan solo los finales de linea durante la comparacion `--check`.
