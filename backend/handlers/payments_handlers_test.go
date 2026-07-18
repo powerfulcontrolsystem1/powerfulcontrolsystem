@@ -32,6 +32,29 @@ func TestEpaycoDoesNotPersistRawProviderAuthenticationResponses(t *testing.T) {
 	}
 }
 
+func TestLicenciaFacturaHandlerDoesNotProvisionSystemEmpresa(t *testing.T) {
+	_, thisFile, _, ok := runtime.Caller(0)
+	if !ok {
+		t.Fatal("could not resolve payments test location")
+	}
+	body, err := os.ReadFile(filepath.Join(filepath.Dir(thisFile), "payments_handlers.go"))
+	if err != nil {
+		t.Fatalf("read payments handler: %v", err)
+	}
+	source := string(body)
+	start := strings.Index(source, "func issueLicenciaFacturaElectronicaWithOptions")
+	if start < 0 {
+		t.Fatal("license invoice handler not found")
+	}
+	section := source[start:]
+	if strings.Contains(section, "EnsurePowerfulSystemEmpresa(") {
+		t.Fatal("license payment handler must not provision the system issuer")
+	}
+	if !strings.Contains(section, "GetPowerfulSystemEmpresa(") {
+		t.Fatal("license payment handler must read the pre-provisioned system issuer")
+	}
+}
+
 func TestPickEpaycoFieldReadsNestedAliases(t *testing.T) {
 	payload := map[string]interface{}{
 		"data": map[string]interface{}{

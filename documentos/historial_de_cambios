@@ -1,3 +1,12 @@
+2026-07-18: Pagos de licencia sin aprovisionamiento estructural en trafico HTTP.
+- `issueLicenciaFacturaElectronicaWithOptions` consulta el emisor interno ya
+  provisionado mediante `GetPowerfulSystemEmpresa`; una confirmacion de pago no
+  puede crear el emisor ni ejecutar DDL por efecto lateral.
+- Se anade una regresion de fuente y se regenera el inventario: 148 llamadas
+  `Ensure` fuera del migrador, de las cuales 75 siguen en trafico HTTP. La
+  extraccion restante continua siendo un bloque de preparacion, no se declara
+  completada.
+
 2026-07-13: Chat IA empresarial legible y tematizable por empresa.
 - Modulos afectados: `chat IA`, `administrar empresa`, `configuracion empresarial`, `permisos multiempresa`.
 - Frontend: `web/js/ai_chat_drawer.js` convierte de forma segura los titulos Markdown, indicadores y tablas Markdown de las respuestas IA en secciones, filas clave/valor y tablas HTML creadas por DOM; no interpreta HTML devuelto por el modelo. Los temas `normal`, `corporativo`, `oceano`, `esmeralda` y `vino`, junto con los tamaños `pequeno`, `mediano` y `grande`, respetan claro/oscuro y se aplican al recuadro abierto.

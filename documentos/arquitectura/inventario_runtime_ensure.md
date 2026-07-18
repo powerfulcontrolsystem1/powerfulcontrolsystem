@@ -6,10 +6,10 @@ Las llamadas listadas son deuda de extraccion. En produccion, API y worker deben
 
 ## Resumen
 
-- Llamadas inventariadas: 149.
+- Llamadas inventariadas: 148.
 - arranque; protegido por rol, requiere extraccion: 72.
 - proceso de plataforma; revisar rol: 1.
-- trafico HTTP; priorizar reemplazo por verificacion: 76.
+- trafico HTTP; priorizar reemplazo por verificacion: 75.
 
 ## Registro
 
@@ -71,7 +71,6 @@ Las llamadas listadas son deuda de extraccion. En produccion, API y worker deben
 | `EnsureDefaultHighlights` | [backend/handlers/pagina_principal_handlers.go:697](../../backend/handlers/pagina_principal_handlers.go#L697) | trafico HTTP; priorizar reemplazo por verificacion |
 | `EnsureEmpresaEstacionPrefsSchema` | [backend/handlers/panel_empresa_config.go:79](../../backend/handlers/panel_empresa_config.go#L79) | trafico HTTP; priorizar reemplazo por verificacion |
 | `EnsureEmpresaEstacionPrefsSchema` | [backend/handlers/panel_empresa_config.go:90](../../backend/handlers/panel_empresa_config.go#L90) | trafico HTTP; priorizar reemplazo por verificacion |
-| `EnsurePowerfulSystemEmpresa` | [backend/handlers/payments_handlers.go:1401](../../backend/handlers/payments_handlers.go#L1401) | trafico HTTP; priorizar reemplazo por verificacion |
 | `EnsureEmpresaChatTareasSchema` | [backend/handlers/public_mensajes_privados.go:138](../../backend/handlers/public_mensajes_privados.go#L138) | trafico HTTP; priorizar reemplazo por verificacion |
 | `EnsureEmpresaRappiSchema` | [backend/handlers/rappi.go:53](../../backend/handlers/rappi.go#L53) | trafico HTTP; priorizar reemplazo por verificacion |
 | `EnsureEmpresaReportesProgramacionSchema` | [backend/handlers/reportes_globales.go:459](../../backend/handlers/reportes_globales.go#L459) | trafico HTTP; priorizar reemplazo por verificacion |

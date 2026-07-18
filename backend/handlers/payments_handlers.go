@@ -1398,7 +1398,9 @@ func issueLicenciaFacturaElectronicaWithOptions(r *http.Request, dbEmp, dbSuper 
 		}
 	}
 
-	systemEmpresa, err := dbpkg.EnsurePowerfulSystemEmpresa(dbEmp, dbSuper)
+	// A confirmed payment must never provision the system issuer as a side
+	// effect. Provisioning belongs to pcs-migrate; checkout only reads it.
+	systemEmpresa, err := dbpkg.GetPowerfulSystemEmpresa(dbEmp, dbSuper)
 	if err != nil {
 		return outcome, nil, err
 	}
