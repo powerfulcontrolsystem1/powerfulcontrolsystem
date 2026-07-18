@@ -36,7 +36,7 @@ func (s *Scheduler) EnqueueDue(ctx context.Context) error {
 		now = s.Now().UTC()
 	}
 	for _, spec := range s.Specs {
-		if err := validateScheduleSpec(spec); err != nil {
+		if err := ValidateScheduleSpec(spec); err != nil {
 			return err
 		}
 		if err := ctx.Err(); err != nil {
@@ -59,8 +59,11 @@ func (s *Scheduler) EnqueueDue(ctx context.Context) error {
 	return nil
 }
 
-func validateScheduleSpec(spec ScheduleSpec) error {
-	if strings.TrimSpace(spec.Kind) == "" || spec.Version < 1 || spec.Interval < time.Minute ||
+// ValidateScheduleSpec accepts a bounded sub-minute interval for lightweight,
+// idempotent platform maintenance such as metrics collection. Business jobs
+// remain scheduled at minute-or-longer intervals by their registry.
+func ValidateScheduleSpec(spec ScheduleSpec) error {
+	if strings.TrimSpace(spec.Kind) == "" || spec.Version < 1 || spec.Interval < 5*time.Second ||
 		spec.Interval > 31*24*time.Hour || spec.MaxAttempts < 1 || spec.MaxAttempts > 25 ||
 		spec.Priority < 0 || spec.Priority > 1000 {
 		return fmt.Errorf("invalid worker schedule for %q", spec.Kind)

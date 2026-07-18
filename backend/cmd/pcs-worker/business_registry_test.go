@@ -23,3 +23,11 @@ func TestProductionRegistryContainsOnlyBusinessHandlers(t *testing.T) {
 		}
 	}
 }
+
+func TestBusinessSchedulesAreAcceptedByWorkerScheduler(t *testing.T) {
+	for _, schedule := range businessSchedules() {
+		if err := platformworker.ValidateScheduleSpec(schedule); err != nil {
+			t.Fatalf("business schedule %s is invalid: %v", schedule.Kind, err)
+		}
+	}
+}
