@@ -12,6 +12,9 @@ Estado: vigente. Ultima actualizacion: 2026-07-16.
 - Esto reduce el riesgo de una configuracion incompleta, pero no sustituye la
   extraccion de los 154 `Ensure*` ni el ensayo de staging requerido antes de
   retirar definitivamente el puente legado.
+- `sync_to_vps` completa automaticamente esa variable operativa en el archivo
+  privado de Compose del VPS cuando falta, conserva valores explicitos validos
+  y rechaza valores desconocidos antes de reconstruir servicios.
 
 ## Actualizacion 2026-07-16 - Plan 104: endurecimiento previo verificable
 

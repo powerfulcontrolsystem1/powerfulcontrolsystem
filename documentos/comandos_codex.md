@@ -166,7 +166,9 @@ por lotes, el staging pase con valor `0` y se documente el rollback.
 En `production`, el rol `migrate` debe recibir esa variable de forma explicita;
 si falta, el proceso termina sin ejecutar el bootstrap historico. El Compose
 oficial usa el requisito `${PCS_RUNTIME_SCHEMA_BOOTSTRAP:?Defina PCS_RUNTIME_SCHEMA_BOOTSTRAP}`
-para evitar despliegues ambiguos.
+para evitar despliegues ambiguos. `sync_to_vps` asegura el valor operativo
+`1` en el archivo privado remoto solo cuando la clave no existe; no imprime ni
+sobrescribe secretos del archivo.
 
 No establecer `PCS_RUNTIME_SCHEMA_BOOTSTRAP=0` en una instalacion existente
 hasta verificar el ledger de migraciones y los flujos de provisionamiento.

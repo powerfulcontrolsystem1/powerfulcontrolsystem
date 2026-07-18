@@ -9,6 +9,12 @@
 - `.env.staging.example` fija `PCS_RUNTIME_SCHEMA_BOOTSTRAP=0` para que la
   interpolacion obligatoria de Compose no dependa de un override posterior.
 
+2026-07-18: `sync_to_vps` completa el contrato operativo del migrador.
+- El bootstrap remoto asegura `PCS_RUNTIME_SCHEMA_BOOTSTRAP=1` en
+  `deploy/.env.platform` cuando falta, conserva valores booleanos validos y
+  rechaza valores desconocidos antes de ejecutar Compose.
+- La operacion no muestra ni reescribe secretos del archivo privado.
+
 2026-07-18: Preflight estable entre Windows y Linux.
 - Los verificadores de inventario de bootstrap, rutas multiempresa y `Ensure`
   normalizan solo los finales de linea durante la comparacion `--check`.
