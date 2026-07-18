@@ -6,17 +6,16 @@ Las llamadas listadas son deuda de extraccion. En produccion, API y worker deben
 
 ## Resumen
 
-- Llamadas inventariadas: 140.
+- Llamadas inventariadas: 139.
 - arranque; protegido por rol, requiere extraccion: 72.
 - proceso de plataforma; revisar rol: 1.
-- trafico HTTP; priorizar reemplazo por verificacion: 67.
+- trafico HTTP; priorizar reemplazo por verificacion: 66.
 
 ## Registro
 
 | Funcion Ensure | Llamador | Riesgo / prioridad |
 | --- | --- | --- |
 | `EnsurePostgresRuntimeCompat` | [backend/cmd/pcs-migrate/main.go:69](../../backend/cmd/pcs-migrate/main.go#L69) | proceso de plataforma; revisar rol |
-| `EnsureEmpresaAIConversation` | [backend/handlers/ai_enterprise_orchestrator.go:47](../../backend/handlers/ai_enterprise_orchestrator.go#L47) | trafico HTTP; priorizar reemplazo por verificacion |
 | `EnsureEmpresaCamarasSchema` | [backend/handlers/camaras.go:34](../../backend/handlers/camaras.go#L34) | trafico HTTP; priorizar reemplazo por verificacion |
 | `EnsureEmpresaEstacionPrefsSchema` | [backend/handlers/chat_flotante_config.go:272](../../backend/handlers/chat_flotante_config.go#L272) | trafico HTTP; priorizar reemplazo por verificacion |
 | `EnsureEmpresaEstacionPrefsSchema` | [backend/handlers/chat_flotante_config.go:286](../../backend/handlers/chat_flotante_config.go#L286) | trafico HTTP; priorizar reemplazo por verificacion |

@@ -2,14 +2,16 @@
 - `issueLicenciaFacturaElectronicaWithOptions` consulta el emisor interno ya
   provisionado mediante `GetPowerfulSystemEmpresa`; una confirmacion de pago no
   puede crear el emisor ni ejecutar DDL por efecto lateral.
-- Se anade una regresion de fuente y se regenera el inventario: 140 llamadas
-  `Ensure` fuera del migrador, de las cuales 67 siguen en trafico HTTP. Dos
+- Se anade una regresion de fuente y se regenera el inventario: 139 llamadas
+  `Ensure` fuera del migrador, de las cuales 66 siguen en trafico HTTP. Dos
   llamadas adicionales eran una composicion de contenido sin DDL y otra era
   aprovisionamiento inicial de empresa; las dos restantes validaban nombres
   unicos de archivos OnlyOffice. Se renombraron para que no distorsionen el
   inventario. Adicionalmente, OnlyOffice deja de generar o persistir secretos
   JWT y URL de servicio durante lecturas HTTP; esas credenciales se configuran
-  explicitamente por el superadministrador. La
+  explicitamente por el superadministrador. El orquestador IA tambien verifica
+  el esquema migrado antes de escribir conversaciones, propuestas o auditoria,
+  sin ejecutar DDL durante trafico HTTP. La
   extraccion restante continua siendo un bloque de preparacion, no se declara
   completada.
 
