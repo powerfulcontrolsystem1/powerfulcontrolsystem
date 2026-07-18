@@ -2,6 +2,7 @@ package db
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 	"strings"
 )
@@ -100,6 +101,23 @@ func EnsureEmpresaCamarasSchema(dbConn *sql.DB) error {
 		if err := ensureColumnIfMissing(dbConn, col.table, col.name, col.def); err != nil {
 			return err
 		}
+	}
+	return nil
+}
+
+// EmpresaCamarasSchemaReady verifies the migration-owned camera table without
+// issuing DDL from a request path.
+func EmpresaCamarasSchemaReady(dbConn *sql.DB) error {
+	if dbConn == nil {
+		return fmt.Errorf("conexion de base de datos no disponible")
+	}
+	var marker int
+	err := queryRowSQLCompat(dbConn, "SELECT 1 FROM empresa_camaras WHERE 1=0").Scan(&marker)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil
+	}
+	if err != nil {
+		return fmt.Errorf("esquema de camaras no disponible: %w", err)
 	}
 	return nil
 }

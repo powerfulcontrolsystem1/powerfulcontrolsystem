@@ -31,8 +31,8 @@ func EmpresaCamarasHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
-		if err := dbpkg.EnsureEmpresaCamarasSchema(dbEmp); err != nil {
-			log.Printf("[camaras] ensure schema empresa_id=%d error: %v", empresaID, err)
+		if err := dbpkg.EmpresaCamarasSchemaReady(dbEmp); err != nil {
+			log.Printf("[camaras] schema unavailable empresa_id=%d error: %v", empresaID, err)
 			http.Error(w, "No se pudo preparar el modulo de camaras", http.StatusInternalServerError)
 			return
 		}
