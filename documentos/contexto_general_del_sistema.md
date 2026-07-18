@@ -15,6 +15,9 @@ Estado: vigente. Ultima actualizacion: 2026-07-16.
 - `sync_to_vps` completa automaticamente esa variable operativa en el archivo
   privado de Compose del VPS cuando falta, conserva valores explicitos validos
   y rechaza valores desconocidos antes de reconstruir servicios.
+- En modo Docker, ese bootstrap conserva los secretos exclusivamente en el VPS
+  y se limita a variables operativas necesarias para Compose; no imprime ni
+  reemplaza credenciales privadas.
 
 ## Actualizacion 2026-07-16 - Plan 104: endurecimiento previo verificable
 

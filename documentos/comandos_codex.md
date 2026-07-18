@@ -170,6 +170,10 @@ para evitar despliegues ambiguos. `sync_to_vps` asegura el valor operativo
 `1` en el archivo privado remoto solo cuando la clave no existe; no imprime ni
 sobrescribe secretos del archivo.
 
+En `DeploymentMode=docker`, el bootstrap remoto se ejecuta de forma limitada
+para asegurar variables operativas necesarias para Compose. Conserva los
+secretos privados existentes en el VPS y no los imprime ni los reemplaza.
+
 No establecer `PCS_RUNTIME_SCHEMA_BOOTSTRAP=0` en una instalacion existente
 hasta verificar el ledger de migraciones y los flujos de provisionamiento.
 

@@ -2154,9 +2154,11 @@ try {
       $effectiveSkipBuild = $true
       $effectiveRestartRemoteServer = $false
       $effectiveRedeployDockerStack = $true
-      $effectiveBootstrapServer = $false
+      # El bootstrap remoto no reemplaza secretos; conserva los valores existentes
+      # y solo asegura variables operativas necesarias para Compose.
+      $effectiveBootstrapServer = $true
       Write-Host "[INFO] DeploymentMode=docker: Docker Compose construye y reinicia backend/frontend; se omite systemd."
-      Write-Host "[INFO] Los secretos Docker se conservan exclusivamente en el VPS; bootstrap remoto deshabilitado."
+      Write-Host "[INFO] Secretos Docker conservados exclusivamente en el VPS; bootstrap remoto limitado a configuración operativa."
     }
     "legacy" {
       $effectiveRedeployDockerStack = $false

@@ -38318,3 +38318,7 @@ Archivos modificados:
 - La auditoria empresarial y superadministradora normaliza sus expresiones de
   fecha para PostgreSQL, evitando que un registro o una consulta de trazabilidad
   mezcle columnas timestamp con valores de texto.
+2026-07-18: `sync_to_vps` habilita el bootstrap remoto operativo para Docker.
+- Se conserva la separacion de secretos: el VPS mantiene sus valores privados.
+- El bootstrap solo asegura variables operativas requeridas por Compose y no
+  imprime ni reemplaza credenciales.
