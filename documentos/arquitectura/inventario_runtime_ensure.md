@@ -6,10 +6,10 @@ Las llamadas listadas son deuda de extraccion. En produccion, API y worker deben
 
 ## Resumen
 
-- Llamadas inventariadas: 138.
+- Llamadas inventariadas: 137.
 - arranque; protegido por rol, requiere extraccion: 72.
 - proceso de plataforma; revisar rol: 1.
-- trafico HTTP; priorizar reemplazo por verificacion: 65.
+- trafico HTTP; priorizar reemplazo por verificacion: 64.
 
 ## Registro
 
@@ -58,7 +58,6 @@ Las llamadas listadas son deuda de extraccion. En produccion, API y worker deben
 | `EnsureEmpresaNextcloudSchema` | [backend/handlers/nextcloud.go:197](../../backend/handlers/nextcloud.go#L197) | trafico HTTP; priorizar reemplazo por verificacion |
 | `EnsureEmpresaNextcloudAssignmentsForAll` | [backend/handlers/nextcloud.go:215](../../backend/handlers/nextcloud.go#L215) | trafico HTTP; priorizar reemplazo por verificacion |
 | `EnsureNextcloudAssignmentsForAll` | [backend/handlers/nextcloud.go:571](../../backend/handlers/nextcloud.go#L571) | trafico HTTP; priorizar reemplazo por verificacion |
-| `EnsureEmpresaNominaSchema` | [backend/handlers/nomina_sueldos.go:18](../../backend/handlers/nomina_sueldos.go#L18) | trafico HTTP; priorizar reemplazo por verificacion |
 | `EnsureEmpresaEstacionPrefsSchema` | [backend/handlers/panel_empresa_config.go:79](../../backend/handlers/panel_empresa_config.go#L79) | trafico HTTP; priorizar reemplazo por verificacion |
 | `EnsureEmpresaEstacionPrefsSchema` | [backend/handlers/panel_empresa_config.go:90](../../backend/handlers/panel_empresa_config.go#L90) | trafico HTTP; priorizar reemplazo por verificacion |
 | `EnsureEmpresaChatTareasSchema` | [backend/handlers/public_mensajes_privados.go:138](../../backend/handlers/public_mensajes_privados.go#L138) | trafico HTTP; priorizar reemplazo por verificacion |
