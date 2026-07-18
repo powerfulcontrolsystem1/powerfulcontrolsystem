@@ -12032,3 +12032,11 @@ backend/handlers/runtime_health_test.go
   y `backend/handlers/corte_caja.go`: usan esos verificadores en cobro de
   licencia, sincronizacion DIAN, carrito y corte de caja, sin crear ni alterar
   esquema desde handlers.
+
+scripts/vps_backup_operacion.ps1
+- Snapshot remoto de PostgreSQL y volumenes persistentes. Usa dump logico para
+  PostgreSQL activo y admite OpenSSH o PuTTY sin imprimir credenciales.
+
+scripts/vps_restore_validation.ps1
+- Verifica tarballs y dump del snapshot; el modo `-ExecuteDrill` restaura
+  temporalmente PostgreSQL y reporta RPO/RTO sin modificar datos productivos.

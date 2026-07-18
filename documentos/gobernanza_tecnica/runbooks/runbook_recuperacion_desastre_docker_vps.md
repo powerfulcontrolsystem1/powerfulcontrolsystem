@@ -25,8 +25,12 @@ systemctl enable --now docker
 
 1. Copiar el proyecto a `/root/powerfulcontrolsystem` desde repositorio o desde el paquete portable Docker descargado en el panel super.
 2. Copiar `deploy/.env.platform` con permisos `600`.
-3. Restaurar volumenes Docker desde los tarballs del snapshot.
-4. Levantar PostgreSQL y restaurar `postgres_all.sql.gz`.
+3. Restaurar volumenes Docker desde los tarballs del snapshot, incluyendo
+   almacenamiento privado, certificados de Mailu y datos persistentes de
+   OnlyOffice cuando correspondan.
+4. Levantar PostgreSQL y restaurar `postgres_all.sql.gz`. No restaurar un
+   tarball fisico de PostgreSQL tomado en caliente: el dump logico es la fuente
+   consistente.
 5. Ejecutar:
 
 ```bash
@@ -63,7 +67,7 @@ Desde Windows/local:
 .\scripts\vps_restore_validation.ps1 -ExecuteDrill
 ```
 
-La primera validacion no escribe datos. La segunda restaura en un contenedor PostgreSQL temporal y lo elimina al finalizar.
+La primera validacion no escribe datos. La segunda restaura en un contenedor PostgreSQL temporal y lo elimina al finalizar; ambas registran RPO y RTO en segundos. Conservar esa evidencia junto con SHA y fecha del snapshot.
 
 ## Rollback
 

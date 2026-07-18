@@ -38190,3 +38190,14 @@ Archivos modificados:
 - tools/ensure_bootstrap_inventory.mjs
 - tools/runtime_ensure_inventory.mjs
 - tools/tenant_route_inventory.mjs
+
+2026-07-18 - Recuperacion verificable y manifiesto de migracion
+- `scripts/vps_backup_operacion.ps1` y `scripts/vps_restore_validation.ps1`
+  aceptan la identidad OpenSSH local, preservan LF al ejecutar Bash remoto y
+  verifican restauracion temporal PostgreSQL sin registrar datos ni secretos.
+  PostgreSQL activo se protege mediante dump logico, no un tarball fisico.
+- La validacion informa RPO/RTO medidos. Certificados y almacenamiento
+  persistente se consideran artefactos obligatorios del respaldo.
+- `tools/ensure_bootstrap_inventory.mjs` incluye los pasos reales del catalogo
+  legado, incluso los que no usan el prefijo `Ensure`, y serializa huellas
+  SHA-256 sin confundirlas con credenciales durante el escaneo de secretos.
