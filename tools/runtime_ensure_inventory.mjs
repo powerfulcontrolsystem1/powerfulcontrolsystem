@@ -6,6 +6,10 @@ const repoRoot = process.cwd();
 const outputPath = path.join(repoRoot, "documentos", "arquitectura", "inventario_runtime_ensure.md");
 const checkOnly = process.argv.includes("--check");
 
+function normalizeLineEndings(value) {
+  return String(value).replace(/\r\n/g, "\n").replace(/\r/g, "\n");
+}
+
 function walk(relativeDir) {
   const root = path.join(repoRoot, relativeDir);
   const files = [];
@@ -77,7 +81,7 @@ const rendered = `${lines.join("\n")}\n`;
 
 if (checkOnly) {
   const current = fs.existsSync(outputPath) ? fs.readFileSync(outputPath, "utf8") : "";
-  if (current !== rendered) {
+  if (normalizeLineEndings(current) !== rendered) {
     console.error("inventario runtime Ensure desactualizado; ejecuta node tools/runtime_ensure_inventory.mjs");
     process.exitCode = 2;
   } else {
