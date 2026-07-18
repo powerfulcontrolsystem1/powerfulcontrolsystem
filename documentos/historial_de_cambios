@@ -38322,3 +38322,9 @@ Archivos modificados:
 - Se conserva la separacion de secretos: el VPS mantiene sus valores privados.
 - El bootstrap solo asegura variables operativas requeridas por Compose y no
   imprime ni reemplaza credenciales.
+
+2026-07-18: rs: corregir contrato CI del bootstrap operativo
+PushStatus: OK
+Archivos modificados:
+- documentos/produccion_hardening_20260715.md
+- tools/deploy_pipeline_contract.mjs
