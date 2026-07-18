@@ -652,6 +652,19 @@ upsert_env(){
   mv "$env_file.tmp" "$env_file" 2>/dev/null || true;
   printf '%s=%s\n' "$key" "$value" >> "$env_file";
 };
+upsert_compose_env(){
+  key="$1";
+  value="$2";
+  if [ -z "$compose_env_file" ]; then
+    warn "COMPOSE_ENV_PATH vacio; no se puede asegurar $key";
+    return 1;
+  fi;
+  touch "$compose_env_file";
+  grep -v "^$key=" "$compose_env_file" > "$compose_env_file.tmp" 2>/dev/null || true;
+  mv "$compose_env_file.tmp" "$compose_env_file" 2>/dev/null || true;
+  printf '%s=%s\n' "$key" "$value" >> "$compose_env_file";
+  chmod 600 "$compose_env_file" 2>/dev/null || true;
+};
 current_dbdialect="$(get_env_value DB_DIALECT)";
 current_dbemp="$(get_env_value DB_EMPRESAS_DSN)";
 current_dbsuper="$(get_env_value DB_SUPERADMIN_DSN)";
@@ -684,6 +697,23 @@ fi;
 log "sincronizando backend/.env.local remoto";
 upsert_env SERVER_PORT "$server_port";
 ok "SERVER_PORT actualizado a $server_port";
+if [ -f "$compose_env_file" ]; then
+  current_schema_bootstrap="$(grep -E '^PCS_RUNTIME_SCHEMA_BOOTSTRAP=' "$compose_env_file" | tail -n1 | cut -d= -f2- || true)";
+  case "$current_schema_bootstrap" in
+    '' )
+      upsert_compose_env PCS_RUNTIME_SCHEMA_BOOTSTRAP 1;
+      ok "PCS_RUNTIME_SCHEMA_BOOTSTRAP configurado en deploy/.env.platform";
+      ;;
+    0|1|true|false|yes|no|on|off|TRUE|FALSE|YES|NO|ON|OFF)
+      ok "PCS_RUNTIME_SCHEMA_BOOTSTRAP existente conservado en deploy/.env.platform";
+      ;;
+    *)
+      fail "INVALID_RUNTIME_SCHEMA_BOOTSTRAP valor no permitido en deploy/.env.platform";
+      ;;
+  esac;
+else
+  warn "COMPOSE_ENV_MISSING no existe deploy/.env.platform; no se puede asegurar PCS_RUNTIME_SCHEMA_BOOTSTRAP";
+fi;
 if [ -n "$effective_dbdialect" ]; then
   upsert_env DB_DIALECT "$effective_dbdialect";
 fi;
