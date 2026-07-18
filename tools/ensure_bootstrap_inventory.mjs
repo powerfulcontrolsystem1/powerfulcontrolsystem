@@ -96,7 +96,7 @@ for (const entry of entries) counts.set(entry.classification, (counts.get(entry.
 
 const legacyCatalogPath = path.join(repoRoot, "backend", "db", "legacy_schema_catalog.go");
 const legacyCatalogSource = fs.readFileSync(legacyCatalogPath, "utf8");
-const legacyCatalogNames = [...legacyCatalogSource.matchAll(/\{\s*"([A-Za-z0-9_]+)"\s*,\s*([A-Za-z0-9_]+)\s*\}/g)]
+const legacyCatalogNames = [...legacyCatalogSource.matchAll(/\{\s*"(Ensure[A-Za-z0-9_]+)"\s*,\s*(Ensure[A-Za-z0-9_]+)\s*\}/g)]
   .map((match) => {
     if (match[1] !== match[2]) throw new Error(`legacy schema catalog entry ${match[1]} does not call the matching function`);
     return match[1];
