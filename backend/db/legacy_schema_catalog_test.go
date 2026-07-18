@@ -37,6 +37,51 @@ func TestLegacySchemaCatalogManifestCoversEveryCatalogStep(t *testing.T) {
 	}
 }
 
+func TestLegacySchemaCatalogPreparesMigrationLedgerBeforeBaselineRead(t *testing.T) {
+	t.Parallel()
+	fset := token.NewFileSet()
+	file, err := parser.ParseFile(fset, "legacy_schema_catalog.go", nil, 0)
+	if err != nil {
+		t.Fatalf("parse legacy catalog: %v", err)
+	}
+	var apply *ast.FuncDecl
+	for _, declaration := range file.Decls {
+		fn, ok := declaration.(*ast.FuncDecl)
+		if ok && fn.Name.Name == "ApplyLegacySchemaCatalog" {
+			apply = fn
+			break
+		}
+	}
+	if apply == nil {
+		t.Fatal("ApplyLegacySchemaCatalog is missing")
+	}
+	ledgerPrepared := false
+	baselineRead := false
+	ast.Inspect(apply.Body, func(node ast.Node) bool {
+		call, ok := node.(*ast.CallExpr)
+		if !ok {
+			return true
+		}
+		name, ok := call.Fun.(*ast.Ident)
+		if !ok {
+			return true
+		}
+		switch name.Name {
+		case "EnsureSchemaMigrationsTable":
+			ledgerPrepared = true
+		case "LegacySchemaBaselineApplied":
+			baselineRead = true
+			if !ledgerPrepared {
+				t.Error("baseline must not be read before the migration ledger is prepared")
+			}
+		}
+		return true
+	})
+	if !ledgerPrepared || !baselineRead {
+		t.Fatalf("expected ledger preparation and baseline read, got prepared=%t baseline=%t", ledgerPrepared, baselineRead)
+	}
+}
+
 func TestLegacySchemaCatalogCoversEveryDatabaseEnsureSchemaFunction(t *testing.T) {
 	registered := make(map[string]bool, len(legacyEmpresaSchemaCatalog)+len(legacySuperSchemaCatalog))
 	for _, step := range append(append([]legacySchemaStep{}, legacyEmpresaSchemaCatalog...), legacySuperSchemaCatalog...) {

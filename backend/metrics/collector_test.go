@@ -15,3 +15,10 @@ func TestDefaultIntervalSecondsFallsBackForInvalidValue(t *testing.T) {
 		t.Fatalf("DefaultIntervalSeconds() = %d, want 10", got)
 	}
 }
+
+func TestDefaultIntervalSecondsRejectsUnsafeShortInterval(t *testing.T) {
+	t.Setenv("METRICS_INTERVAL_SECONDS", "1")
+	if got := DefaultIntervalSeconds(); got != 10 {
+		t.Fatalf("DefaultIntervalSeconds() = %d, want safe fallback 10", got)
+	}
+}

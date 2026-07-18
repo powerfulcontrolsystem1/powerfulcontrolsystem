@@ -38201,3 +38201,16 @@ Archivos modificados:
 - `tools/ensure_bootstrap_inventory.mjs` incluye los pasos reales del catalogo
   legado, incluso los que no usan el prefijo `Ensure`, y serializa huellas
   SHA-256 sin confundirlas con credenciales durante el escaneo de secretos.
+
+2026-07-18 - Staging: ledger heredado, frontend y worker
+- `pcs-migrate` normaliza su ledger antes de consultar el baseline heredado;
+  el cambio queda restringido al rol de migracion y cuenta con regresion.
+- `deploy/docker-compose.staging.yml` publica el frontend contra el puerto
+  interno no privilegiado `8080` de Nginx.
+- El planificador permite intervalos de mantenimiento acotados desde cinco
+  segundos; `METRICS_INTERVAL_SECONDS` rechaza valores menores y evita que un
+  worker quede en bucle no saludable.
+- En staging aislado se verificaron migraciones repetidas, API, worker,
+  frontend privado y rollback de aplicacion. El smoke publicado sigue pendiente
+  por una reserva fantasma del daemon Docker del host, sin reiniciar servicios
+  compartidos de produccion.

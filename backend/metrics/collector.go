@@ -104,7 +104,7 @@ func CollectOnce(dbConn *sql.DB) error {
 // Read configuration helper (env METRICS_INTERVAL_SECONDS)
 func DefaultIntervalSeconds() int {
 	if s := os.Getenv("METRICS_INTERVAL_SECONDS"); s != "" {
-		if v, err := strconv.Atoi(s); err == nil && v > 0 {
+		if v, err := strconv.Atoi(s); err == nil && v >= 5 {
 			return v
 		}
 	}
