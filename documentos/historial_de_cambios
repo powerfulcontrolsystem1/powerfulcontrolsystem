@@ -38141,3 +38141,52 @@ Archivos modificados:
 - El inventario generado baja a 153 llamadas `Ensure*` fuera del migrador: 80
   en HTTP, 72 en arranque y una en proceso de plataforma. No se declara la
   deuda cerrada: el preflight evita que vuelva a crecer.
+
+2026-07-17: rs: Plan 104 hardening interno y controles de preproduccion
+PushStatus: OK
+Archivos modificados:
+- backend/db/carritos_compras.go
+- backend/db/documentos_transaccionales.go
+- backend/db/empresa_configuracion_avanzada.go
+- backend/db/facturacion_electronica.go
+- backend/db/finanzas.go
+- backend/db/legacy_schema_catalog.go
+- backend/db/legacy_schema_catalog_manifest_generated.go
+- backend/db/legacy_schema_catalog_test.go
+- backend/db/migrations_test.go
+- backend/db/modulos_faltantes.go
+- backend/db/platform_migrations.go
+- backend/db/schema_readiness_test.go
+- backend/handlers/carritos_compras.go
+- backend/handlers/corte_caja.go
+- backend/handlers/creditos.go
+- backend/handlers/empresa_permisos.go
+- backend/handlers/empresa_permisos_tenant_test.go
+- backend/handlers/empresa_preconfiguracion.go
+- backend/handlers/finanzas_breb_qr.go
+- backend/handlers/modulos_faltantes.go
+- backend/handlers/payments_handlers.go
+- backend/handlers/reservas_hotel.go
+- backend/internal/platform/runtimeconfig/config.go
+- backend/internal/platform/runtimeconfig/config_test.go
+- backend/main.go
+- backend/utils/json_error_middleware_test.go
+- backend/utils/security_headers_test.go
+- backend/utils/system_errors.go
+- backend/utils/utils.go
+- deploy/.env.platform.example
+- deploy/.env.staging.example
+- deploy/docker-compose.platform.yml
+- documentos/CHANGELOG.md
+- documentos/arquitectura/inventario_bootstrap_ensure.md
+- documentos/arquitectura/inventario_runtime_ensure.md
+- documentos/arquitectura/matriz_rutas_multiempresa.md
+- documentos/contexto_especifico_del_sistema.md
+- documentos/contexto_general_del_sistema.md
+- documentos/descripcion_de_archivos
+- documentos/historial_de_cambios
+- documentos/plan_104.md
+- scripts/profesional_preflight.ps1
+- tools/ensure_bootstrap_inventory.mjs
+- tools/runtime_ensure_inventory.mjs
+- tools/tenant_route_inventory.mjs
