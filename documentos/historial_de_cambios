@@ -38294,3 +38294,7 @@ Archivos modificados:
   `text` en PostgreSQL, sin romper el almacenamiento legado compatible.
 - Se agregaron regresiones enfocadas para preservar ambos contratos antes de
   reintentar una emision fiscal controlada.
+- Los documentos creados desde carrito incorporan ahora el ID inmutable del
+  carrito en su codigo. Esto impide que dos cierres de venta directa reutilicen
+  un comprobante o una factura; la anulacion conserva una busqueda de respaldo
+  para documentos historicos con el formato anterior.

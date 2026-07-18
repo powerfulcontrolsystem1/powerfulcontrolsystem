@@ -3382,15 +3382,23 @@ func buildVentaDocumentoCodigoFromBase(base, modo string) string {
 	return "CP-" + base
 }
 
-func buildVentaDocumentoCodigo(carrito *dbpkg.CarritoCompra, modo string) string {
-	base := ""
-	if carrito != nil {
-		base = strings.TrimSpace(carrito.Codigo)
-		if base == "" && carrito.ID > 0 {
-			base = fmt.Sprintf("CRT-%d", carrito.ID)
-		}
+func ventaDocumentoBaseDesdeCarrito(carrito *dbpkg.CarritoCompra) string {
+	if carrito == nil {
+		return "VENTA"
 	}
-	return buildVentaDocumentoCodigoFromBase(base, modo)
+	base := extractVentaDocumentoBase(strings.TrimSpace(carrito.Codigo))
+	if carrito.ID <= 0 {
+		return base
+	}
+	sufijo := fmt.Sprintf("-CRT-%d", carrito.ID)
+	if strings.HasSuffix(base, sufijo) {
+		return base
+	}
+	return base + sufijo
+}
+
+func buildVentaDocumentoCodigo(carrito *dbpkg.CarritoCompra, modo string) string {
+	return buildVentaDocumentoCodigoFromBase(ventaDocumentoBaseDesdeCarrito(carrito), modo)
 }
 
 func carritoAutoFacturaElectronicaActiva(cfg *dbpkg.EmpresaConfiguracionAvanzada) bool {
@@ -3740,21 +3748,30 @@ func anularDocumentosVentaDesdeCarrito(dbEmp *sql.DB, carrito *dbpkg.CarritoComp
 	if dbEmp == nil || carrito == nil || carrito.EmpresaID <= 0 {
 		return out
 	}
-	base := extractVentaDocumentoBase(strings.TrimSpace(carrito.Codigo))
-	if base == "" && carrito.ID > 0 {
-		base = fmt.Sprintf("CRT-%d", carrito.ID)
-	}
-	if base == "" {
-		return out
+	bases := []string{ventaDocumentoBaseDesdeCarrito(carrito)}
+	if carrito.ID > 0 {
+		baseHistorica := extractVentaDocumentoBase(strings.TrimSpace(carrito.Codigo))
+		if baseHistorica != "" && baseHistorica != bases[0] {
+			bases = append(bases, baseHistorica)
+		}
 	}
 	for _, tipo := range []string{"comprobante_pago", "factura_electronica"} {
-		codigo := buildVentaDocumentoCodigoFromBase(base, tipo)
-		doc, err := dbpkg.GetEmpresaDocumentoFacturacionByCodigo(dbEmp, carrito.EmpresaID, tipo, codigo)
-		if err != nil {
-			if !errors.Is(err, sql.ErrNoRows) {
-				log.Printf("[carritos] anular documento venta empresa_id=%d carrito_id=%d tipo=%s codigo=%s error=%v", carrito.EmpresaID, carrito.ID, tipo, codigo, err)
+		var doc *dbpkg.EmpresaDocumentoFacturacion
+		codigo := ""
+		for _, base := range bases {
+			candidate := buildVentaDocumentoCodigoFromBase(base, tipo)
+			found, err := dbpkg.GetEmpresaDocumentoFacturacionByCodigo(dbEmp, carrito.EmpresaID, tipo, candidate)
+			if err != nil {
+				if !errors.Is(err, sql.ErrNoRows) {
+					log.Printf("[carritos] anular documento venta empresa_id=%d carrito_id=%d tipo=%s codigo=%s error=%v", carrito.EmpresaID, carrito.ID, tipo, candidate, err)
+				}
+				continue
 			}
-			continue
+			if found != nil {
+				doc = found
+				codigo = candidate
+				break
+			}
 		}
 		if doc == nil {
 			continue

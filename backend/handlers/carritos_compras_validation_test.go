@@ -59,3 +59,20 @@ func TestCarritoDocumentoYCobroKeepsTipOutsideDocumentTotal(t *testing.T) {
 		t.Fatalf("negative tip must be ignored, got document=%v collection=%v", documento, cobro)
 	}
 }
+
+func TestBuildVentaDocumentoCodigoUsesImmutableCarritoID(t *testing.T) {
+	carritoA := &dbpkg.CarritoCompra{ID: 101, Codigo: "VENTA-DIRECTA-12"}
+	carritoB := &dbpkg.CarritoCompra{ID: 102, Codigo: "VENTA-DIRECTA-12"}
+
+	codigoA := buildVentaDocumentoCodigo(carritoA, "comprobante_pago")
+	codigoB := buildVentaDocumentoCodigo(carritoB, "comprobante_pago")
+	if codigoA == codigoB {
+		t.Fatalf("dos carritos distintos no pueden reutilizar codigo de documento: %q", codigoA)
+	}
+	if codigoA != "CP-VENTA-DIRECTA-12-CRT-101" || codigoB != "CP-VENTA-DIRECTA-12-CRT-102" {
+		t.Fatalf("codigos inesperados: %q y %q", codigoA, codigoB)
+	}
+	if got := buildVentaDocumentoCodigo(carritoA, "factura_electronica"); got != "FV-VENTA-DIRECTA-12-CRT-101" {
+		t.Fatalf("codigo de factura electronica=%q", got)
+	}
+}
