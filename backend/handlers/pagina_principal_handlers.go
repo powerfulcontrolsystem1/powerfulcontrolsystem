@@ -637,7 +637,7 @@ func informacionModulosNormalizeConfig(cfg informacionModulosConfig) informacion
 	if len(source) == 0 {
 		source = defaults.Modulos
 	}
-	source = informacionModulosEnsureDefaultHighlights(source, defaults.Modulos)
+	source = informacionModulosMergeDefaultHighlights(source, defaults.Modulos)
 	documentosBase := informacionModulosDocumentosElectronicosDefault(defaults.Modulos)
 
 	modules := make([]informacionModuloItem, 0, len(source))
@@ -694,7 +694,7 @@ func informacionModulosHasDocumentosDianColombia(features []string) bool {
 	return false
 }
 
-func informacionModulosEnsureDefaultHighlights(source, defaults []informacionModuloItem) []informacionModuloItem {
+func informacionModulosMergeDefaultHighlights(source, defaults []informacionModuloItem) []informacionModuloItem {
 	if len(source) == 0 {
 		return source
 	}
