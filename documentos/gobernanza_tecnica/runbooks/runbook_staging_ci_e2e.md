@@ -15,6 +15,11 @@ Abre `http://127.0.0.1:8082`.
 bash deploy/scripts/vps-staging-up.sh
 ```
 
+El override de staging fija `PCS_RUNTIME_SCHEMA_BOOTSTRAP=0` para migrador,
+API y worker. Antes de iniciar el smoke, ejecutar el migrador dos veces contra
+la misma copia anonimizada y conservar ambos resultados; una segunda corrida no
+debe aplicar DDL adicional ni alterar datos.
+
 Configurar Nginx para `staging.powerfulcontrolsystem.com` apuntando a `127.0.0.1:8082` solo despues de validar secretos de `deploy/.env.staging`.
 
 ## CI profesional
