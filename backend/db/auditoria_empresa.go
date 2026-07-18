@@ -309,10 +309,10 @@ func CreateEmpresaAuditoriaEvento(dbConn *sql.DB, in EmpresaAuditoriaEvento) (in
 		observaciones
 	) VALUES (
 		?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
-		COALESCE(NULLIF(?, ''), CURRENT_TIMESTAMP),
-		pcs_ts(COALESCE(NULLIF(?, ''), 'now'), ?),
-		CURRENT_TIMESTAMP,
-		CURRENT_TIMESTAMP,
+		COALESCE(NULLIF(?, ''), CAST(CURRENT_TIMESTAMP AS TEXT)),
+		CAST(pcs_ts(COALESCE(NULLIF(?, ''), 'now'), ?) AS TEXT),
+		CAST(CURRENT_TIMESTAMP AS TEXT),
+		CAST(CURRENT_TIMESTAMP AS TEXT),
 		?, ?, ?
 	)`,
 		in.EmpresaID,
@@ -370,15 +370,15 @@ func ListEmpresaAuditoriaEventos(dbConn *sql.DB, empresaID int64, f EmpresaAudit
 		COALESCE(user_agent, ''),
 		COALESCE(metadata_json, '{}'),
 		COALESCE(retencion_dias, 180),
-		COALESCE(fecha_evento, ''),
-		COALESCE(fecha_expiracion, ''),
-		COALESCE(fecha_creacion, ''),
-		COALESCE(fecha_actualizacion, ''),
+		COALESCE(CAST(fecha_evento AS TEXT), ''),
+		COALESCE(CAST(fecha_expiracion AS TEXT), ''),
+		COALESCE(CAST(fecha_creacion AS TEXT), ''),
+		COALESCE(CAST(fecha_actualizacion AS TEXT), ''),
 		COALESCE(usuario_creador, ''),
 		COALESCE(estado, 'activo'),
 		COALESCE(observaciones, '')
 	FROM empresa_auditoria_eventos` + where + `
-	ORDER BY COALESCE(fecha_evento, '') DESC, id DESC
+	ORDER BY COALESCE(CAST(fecha_evento AS TEXT), '') DESC, id DESC
 	LIMIT ? OFFSET ?`
 	args = append(args, normalizeAuditoriaLimit(f.Limit), normalizeAuditoriaOffset(f.Offset))
 
@@ -489,11 +489,11 @@ func buildEmpresaAuditoriaWhereClause(dbConn *sql.DB, empresaID int64, f Empresa
 		args = append(args, reqID)
 	}
 	if desde := strings.TrimSpace(f.Desde); desde != "" {
-		where += ` AND pcs_ts(COALESCE(fecha_evento, fecha_creacion, '')) >= pcs_ts(?)`
+		where += ` AND pcs_ts(COALESCE(CAST(fecha_evento AS TEXT), CAST(fecha_creacion AS TEXT), '')) >= pcs_ts(?)`
 		args = append(args, desde)
 	}
 	if hasta := strings.TrimSpace(f.Hasta); hasta != "" {
-		where += ` AND pcs_ts(COALESCE(fecha_evento, fecha_creacion, '')) <= pcs_ts(?)`
+		where += ` AND pcs_ts(COALESCE(CAST(fecha_evento AS TEXT), CAST(fecha_creacion AS TEXT), '')) <= pcs_ts(?)`
 		args = append(args, hasta)
 	}
 	if searchClause, searchArgs := buildAuditoriaSearchClause(dbConn, empresaID, f.Search); searchClause != "" {

@@ -38298,3 +38298,6 @@ Archivos modificados:
   carrito en su codigo. Esto impide que dos cierres de venta directa reutilicen
   un comprobante o una factura; la anulacion conserva una busqueda de respaldo
   para documentos historicos con el formato anterior.
+- La auditoria empresarial y superadministradora normaliza sus expresiones de
+  fecha para PostgreSQL, evitando que un registro o una consulta de trazabilidad
+  mezcle columnas timestamp con valores de texto.

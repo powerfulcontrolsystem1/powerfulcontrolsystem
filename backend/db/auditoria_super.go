@@ -213,11 +213,11 @@ func ListSuperAuditoriaEventos(dbConn *sql.DB, f SuperAuditoriaEventoFilter) ([]
 		COALESCE(endpoint, ''), COALESCE(resultado, 'ok'), COALESCE(codigo_http, 0),
 		COALESCE(request_id, ''), COALESCE(ip_origen, ''), COALESCE(user_agent, ''),
 		COALESCE(metadata_json, '{}'), COALESCE(retencion_dias, 365),
-		COALESCE(fecha_evento, ''), COALESCE(fecha_expiracion, ''),
-		COALESCE(fecha_creacion, ''), COALESCE(fecha_actualizacion, ''),
+		COALESCE(CAST(fecha_evento AS TEXT), ''), COALESCE(CAST(fecha_expiracion AS TEXT), ''),
+		COALESCE(CAST(fecha_creacion AS TEXT), ''), COALESCE(CAST(fecha_actualizacion AS TEXT), ''),
 		COALESCE(usuario_creador, ''), COALESCE(estado, 'activo'), COALESCE(observaciones, '')
 	FROM super_auditoria_eventos` + where + `
-	ORDER BY COALESCE(fecha_evento, '') DESC, id DESC
+	ORDER BY COALESCE(CAST(fecha_evento AS TEXT), '') DESC, id DESC
 	LIMIT ? OFFSET ?`
 	args = append(args, normalizeAuditoriaLimit(f.Limit), normalizeAuditoriaOffset(f.Offset))
 	rows, err := dbConn.Query(query, args...)
@@ -313,11 +313,11 @@ func buildSuperAuditoriaWhereClause(f SuperAuditoriaEventoFilter) (string, []int
 		args = append(args, reqID)
 	}
 	if desde := strings.TrimSpace(f.Desde); desde != "" {
-		where += ` AND pcs_ts(COALESCE(fecha_evento, fecha_creacion, '')) >= pcs_ts(?)`
+		where += ` AND pcs_ts(COALESCE(CAST(fecha_evento AS TEXT), CAST(fecha_creacion AS TEXT), '')) >= pcs_ts(?)`
 		args = append(args, desde)
 	}
 	if hasta := strings.TrimSpace(f.Hasta); hasta != "" {
-		where += ` AND pcs_ts(COALESCE(fecha_evento, fecha_creacion, '')) <= pcs_ts(?)`
+		where += ` AND pcs_ts(COALESCE(CAST(fecha_evento AS TEXT), CAST(fecha_creacion AS TEXT), '')) <= pcs_ts(?)`
 		args = append(args, hasta)
 	}
 	if searchLike := normalizeAuditoriaContains(f.Search, 180); searchLike != "" {

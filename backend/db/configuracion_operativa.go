@@ -490,8 +490,8 @@ func GetEmpresaConfiguracionOperativa(dbConn *sql.DB, empresaID int64) (*Empresa
 		COALESCE(metodo_pago_codigo_descuento, 1),
 		COALESCE(habilitar_propinas, 1),
 		COALESCE(habilitar_comisiones, 1),
-		COALESCE(fecha_creacion, ''),
-		COALESCE(fecha_actualizacion, ''),
+		COALESCE(CAST(fecha_creacion AS TEXT), ''),
+		COALESCE(CAST(fecha_actualizacion AS TEXT), ''),
 		COALESCE(usuario_creador, ''),
 		COALESCE(estado, 'activo'),
 		COALESCE(observaciones, '')
