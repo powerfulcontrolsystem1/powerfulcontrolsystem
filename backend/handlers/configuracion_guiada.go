@@ -552,7 +552,7 @@ func applyEmpresaConfiguracionGuiada(dbEmp *sql.DB, state *empresaConfiguracionG
 
 	pendientes := make([]string, 0)
 	if usaImpresionCocina {
-		if err := dbpkg.EnsureEmpresaImpresorasSchema(dbEmp); err == nil {
+		if err := dbpkg.EmpresaImpresorasSchemaReady(dbEmp); err == nil {
 			impresoras, listErr := dbpkg.ListEmpresaImpresorasByEmpresa(dbEmp, state.EmpresaID, false)
 			if listErr == nil {
 				var cocinaPrinterID int64

@@ -6,10 +6,10 @@ Las llamadas listadas son deuda de extraccion. En produccion, API y worker deben
 
 ## Resumen
 
-- Llamadas inventariadas: 137.
+- Llamadas inventariadas: 133.
 - arranque; protegido por rol, requiere extraccion: 72.
 - proceso de plataforma; revisar rol: 1.
-- trafico HTTP; priorizar reemplazo por verificacion: 64.
+- trafico HTTP; priorizar reemplazo por verificacion: 60.
 
 ## Registro
 
@@ -19,7 +19,6 @@ Las llamadas listadas son deuda de extraccion. En produccion, API y worker deben
 | `EnsureEmpresaEstacionPrefsSchema` | [backend/handlers/chat_flotante_config.go:272](../../backend/handlers/chat_flotante_config.go#L272) | trafico HTTP; priorizar reemplazo por verificacion |
 | `EnsureEmpresaEstacionPrefsSchema` | [backend/handlers/chat_flotante_config.go:286](../../backend/handlers/chat_flotante_config.go#L286) | trafico HTTP; priorizar reemplazo por verificacion |
 | `EnsureChatUsuariosGeneralConversacion` | [backend/handlers/chat_tareas.go:331](../../backend/handlers/chat_tareas.go#L331) | trafico HTTP; priorizar reemplazo por verificacion |
-| `EnsureEmpresaImpresorasSchema` | [backend/handlers/configuracion_guiada.go:555](../../backend/handlers/configuracion_guiada.go#L555) | trafico HTTP; priorizar reemplazo por verificacion |
 | `EnsureEmpresaControlElectricoSchema` | [backend/handlers/control_electrico.go:202](../../backend/handlers/control_electrico.go#L202) | trafico HTTP; priorizar reemplazo por verificacion |
 | `EnsureEmpresaControlElectricoPrimaryRaspberry` | [backend/handlers/control_electrico.go:224](../../backend/handlers/control_electrico.go#L224) | trafico HTTP; priorizar reemplazo por verificacion |
 | `EnsureEmpresaControlElectricoPrimaryRaspberry` | [backend/handlers/control_electrico.go:384](../../backend/handlers/control_electrico.go#L384) | trafico HTTP; priorizar reemplazo por verificacion |
@@ -31,9 +30,6 @@ Las llamadas listadas son deuda de extraccion. En produccion, API y worker deben
 | `EnsureEmpresaEmailRowsForExistingEmpresas` | [backend/handlers/email_corporativo_handlers.go:752](../../backend/handlers/email_corporativo_handlers.go#L752) | trafico HTTP; priorizar reemplazo por verificacion |
 | `EnsureEmpresaEmailRowsForExistingEmpresas` | [backend/handlers/email_corporativo_handlers.go:1389](../../backend/handlers/email_corporativo_handlers.go#L1389) | trafico HTTP; priorizar reemplazo por verificacion |
 | `EnsureEmpresaCorporateEmailAfterCreate` | [backend/handlers/email_corporativo_handlers.go:1634](../../backend/handlers/email_corporativo_handlers.go#L1634) | trafico HTTP; priorizar reemplazo por verificacion |
-| `EnsureEmpresaImpresorasSchema` | [backend/handlers/empresa_impresoras.go:32](../../backend/handlers/empresa_impresoras.go#L32) | trafico HTTP; priorizar reemplazo por verificacion |
-| `EnsureEmpresaImpresorasSchema` | [backend/handlers/empresa_impresoras.go:761](../../backend/handlers/empresa_impresoras.go#L761) | trafico HTTP; priorizar reemplazo por verificacion |
-| `EnsureEmpresaImpresorasSchema` | [backend/handlers/empresa_impresoras.go:829](../../backend/handlers/empresa_impresoras.go#L829) | trafico HTTP; priorizar reemplazo por verificacion |
 | `EnsureEmpresaPermisosFinosSchema` | [backend/handlers/empresa_permisos.go:845](../../backend/handlers/empresa_permisos.go#L845) | trafico HTTP; priorizar reemplazo por verificacion |
 | `EnsureNuevasPlantillasProduccionMasivaLicencias` | [backend/handlers/empresa_plantillas_nuevas.go:82](../../backend/handlers/empresa_plantillas_nuevas.go#L82) | trafico HTTP; priorizar reemplazo por verificacion |
 | `EnsureEmpresaEstacionPrefsSchema` | [backend/handlers/empresa_preconfiguracion.go:61](../../backend/handlers/empresa_preconfiguracion.go#L61) | trafico HTTP; priorizar reemplazo por verificacion |

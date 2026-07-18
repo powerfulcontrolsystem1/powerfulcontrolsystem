@@ -2,6 +2,7 @@ package db
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 	"strings"
 )
@@ -566,6 +567,33 @@ func EnsureEmpresaImpresorasSchema(dbConn *sql.DB) error {
 		return err
 	}
 
+	return nil
+}
+
+// EmpresaImpresorasSchemaReady verifies migration-owned printer tables without
+// executing DDL during requests or local-agent polling.
+func EmpresaImpresorasSchemaReady(dbConn *sql.DB) error {
+	if dbConn == nil {
+		return fmt.Errorf("conexion de base de datos no disponible")
+	}
+	for _, table := range []string{
+		"empresa_impresoras",
+		"empresa_impresoras_funcionalidades",
+		"empresa_impresoras_productos",
+		"empresa_impresoras_productos_reglas",
+		"empresa_impresoras_recetas",
+		"empresa_impresoras_dispositivos",
+		"empresa_impresoras_cola",
+	} {
+		var marker int
+		err := queryRowSQLCompat(dbConn, "SELECT 1 FROM "+table+" WHERE 1=0").Scan(&marker)
+		if errors.Is(err, sql.ErrNoRows) {
+			continue
+		}
+		if err != nil {
+			return fmt.Errorf("esquema de impresoras no disponible (%s): %w", table, err)
+		}
+	}
 	return nil
 }
 
