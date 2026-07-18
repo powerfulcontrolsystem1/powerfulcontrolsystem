@@ -7,7 +7,8 @@
   `origin/main`; una rama de trabajo debe integrarse mediante la proteccion de
   GitHub.
 - Las vistas previas no actualizan Git ni contactan el VPS. En Docker, el
-  bootstrap remoto queda desactivado para conservar secretos en el VPS.
+  bootstrap remoto solo asegura variables operativas y conserva los secretos
+  privados en el VPS.
 - Compose ejecuta `--remove-orphans` dentro del proyecto PCS, evitando workers
   antiguos que compitan por la cola.
 - CI ejecuta `tools/deploy_pipeline_contract.mjs` para detectar regresiones de
