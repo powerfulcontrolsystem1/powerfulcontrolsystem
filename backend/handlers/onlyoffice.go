@@ -1028,9 +1028,6 @@ func OnlyOfficeDocumentosHandler(dbSuper *sql.DB) http.HandlerFunc {
 				http.Error(w, "db_super no disponible", http.StatusInternalServerError)
 				return
 			}
-			// Asegurar que exista un JWT secret persistido (si hay cifrado disponible).
-			// Esto evita que el editor falle con "token de seguridad no está configurado" cuando el super aún no lo ha guardado.
-			_, _ = onlyOfficeEnsureJWTSecret(dbSuper)
 			fileName := strings.TrimSpace(r.URL.Query().Get("file"))
 			base, err := onlyOfficeSafeBaseName(fileName)
 			if err != nil {

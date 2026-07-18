@@ -1,11 +1,8 @@
 package handlers
 
 import (
-	"crypto/rand"
 	"database/sql"
-	"encoding/base64"
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"os"
 	"strings"
@@ -41,17 +38,10 @@ func onlyOfficeResolveJWTSecret(dbSuper *sql.DB) (string, bool, error) {
 	// Prioridad:
 	// 1) ENV ONLYOFFICE_JWT_SECRET (para automatizar despliegue VPS)
 	// 2) DB (cifrado)
-	// Si viene de ENV y encryption está disponible, se persiste/actualiza en DB para evitar desalineación (DS vs backend).
+	// La lectura debe ser libre de efectos laterales: la configuracion se guarda
+	// exclusivamente mediante el endpoint administrativo autenticado.
 	env := strings.TrimSpace(os.Getenv("ONLYOFFICE_JWT_SECRET"))
 	if env != "" {
-		if dbSuper != nil && utils.EncryptionAvailable() {
-			dbVal, err := getDecryptedConfigValue(dbSuper, onlyOfficeConfigKeyJWT)
-			if err != nil || strings.TrimSpace(dbVal) == "" || strings.TrimSpace(dbVal) != env {
-				if encVal, encErr := utils.EncryptString(env); encErr == nil {
-					_ = dbpkg.SetConfigValue(dbSuper, onlyOfficeConfigKeyJWT, encVal, true)
-				}
-			}
-		}
 		return env, false, nil
 	}
 
@@ -77,49 +67,7 @@ func onlyOfficeResolveDocumentServerURL(dbSuper *sql.DB) (string, bool, error) {
 		return "", false, nil
 	}
 	env = strings.TrimRight(env, "/")
-	if dbSuper != nil {
-		_ = dbpkg.SetConfigValue(dbSuper, onlyOfficeConfigKeyDSURL, env, false)
-	}
 	return env, false, nil
-}
-
-func onlyOfficeGenerateJWTSecret() (string, error) {
-	b := make([]byte, 32)
-	if _, err := rand.Read(b); err != nil {
-		return "", err
-	}
-	return base64.StdEncoding.EncodeToString(b), nil
-}
-
-func onlyOfficeEnsureJWTSecret(dbSuper *sql.DB) (bool, error) {
-	secret, _, err := onlyOfficeResolveJWTSecret(dbSuper)
-	if err != nil {
-		return false, err
-	}
-	if strings.TrimSpace(secret) != "" {
-		return false, nil
-	}
-	// Si no existe ni en DB ni en ENV, generamos uno nuevo y lo guardamos cifrado en DB.
-	if dbSuper == nil {
-		return false, nil
-	}
-	if !utils.EncryptionAvailable() {
-		return false, fmt.Errorf("cifrado requerido: CONFIG_ENC_KEY no está disponible")
-	}
-	gen, err := onlyOfficeGenerateJWTSecret()
-	if err != nil {
-		return false, err
-	}
-	encVal, err := utils.EncryptString(gen)
-	if err != nil {
-		return false, err
-	}
-	if err := dbpkg.SetConfigValue(dbSuper, onlyOfficeConfigKeyJWT, encVal, true); err != nil {
-		return false, err
-	}
-	// También dejamos el ENV en memoria del proceso (no persistente) para que el resto del runtime lo use.
-	_ = os.Setenv("ONLYOFFICE_JWT_SECRET", gen)
-	return true, nil
 }
 
 // OnlyOfficeConfigHandler gestiona el switch y credenciales globales de OnlyOffice (GET/PUT).
@@ -130,8 +78,6 @@ func OnlyOfficeConfigHandler(dbSuper *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case http.MethodGet:
-			_, _ = onlyOfficeEnsureJWTSecret(dbSuper)
-			_, _, _ = onlyOfficeResolveDocumentServerURL(dbSuper)
 			enabledRaw, _, _, enabledUpdated, _ := dbpkg.GetConfigEntry(dbSuper, onlyOfficeEnabledConfigKey)
 			dsURL, _, _, dsUpdated, _ := dbpkg.GetConfigEntry(dbSuper, onlyOfficeConfigKeyDSURL)
 			secretRaw, secretEncrypted, _, secretUpdated, _ := dbpkg.GetConfigEntry(dbSuper, onlyOfficeConfigKeyJWT)
@@ -171,7 +117,7 @@ func OnlyOfficeConfigHandler(dbSuper *sql.DB) http.HandlerFunc {
 				req, _ := http.NewRequest(http.MethodGet, dsURL+"/healthcheck", nil)
 				res, err := client.Do(req)
 				if err != nil || res == nil {
-					http.Error(w, "No se pudo conectar a OnlyOffice: "+fmt.Sprint(err), http.StatusBadGateway)
+					http.Error(w, "No se pudo conectar a OnlyOffice", http.StatusBadGateway)
 					return
 				}
 				defer res.Body.Close()

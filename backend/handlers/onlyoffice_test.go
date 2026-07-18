@@ -5,9 +5,35 @@ import (
 	"bytes"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
+
+func TestOnlyOfficeRuntimeResolversDoNotPersistDefaults(t *testing.T) {
+	body, err := os.ReadFile("onlyoffice_super_config.go")
+	if err != nil {
+		t.Fatalf("read onlyoffice config source: %v", err)
+	}
+	source := string(body)
+	if strings.Contains(source, "onlyOfficeEnsureJWTSecret") {
+		t.Fatal("OnlyOffice must not generate or persist JWT secrets during HTTP requests")
+	}
+	for _, function := range []string{"onlyOfficeResolveJWTSecret", "onlyOfficeResolveDocumentServerURL"} {
+		start := strings.Index(source, "func "+function)
+		if start < 0 {
+			t.Fatalf("%s not found", function)
+		}
+		section := source[start:]
+		if next := strings.Index(section[1:], "\nfunc "); next >= 0 {
+			section = section[:next+1]
+		}
+		if strings.Contains(section, "SetConfigValue(") {
+			t.Fatalf("%s must be read-only at runtime", function)
+		}
+	}
+}
 
 func TestOnlyOfficeEmpresaDocsDirUsesConfiguredEmpresaRoot(t *testing.T) {
 	root := t.TempDir()
