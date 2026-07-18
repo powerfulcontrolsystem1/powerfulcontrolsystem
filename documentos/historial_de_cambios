@@ -2,10 +2,11 @@
 - `issueLicenciaFacturaElectronicaWithOptions` consulta el emisor interno ya
   provisionado mediante `GetPowerfulSystemEmpresa`; una confirmacion de pago no
   puede crear el emisor ni ejecutar DDL por efecto lateral.
-- Se anade una regresion de fuente y se regenera el inventario: 146 llamadas
-  `Ensure` fuera del migrador, de las cuales 73 siguen en trafico HTTP. Dos
-  llamadas adicionales eran una composicion de contenido sin DDL y se
-  renombraron para que no distorsionen el inventario. La
+- Se anade una regresion de fuente y se regenera el inventario: 145 llamadas
+  `Ensure` fuera del migrador, de las cuales 72 siguen en trafico HTTP. Dos
+  llamadas adicionales eran una composicion de contenido sin DDL y otra era
+  aprovisionamiento inicial de empresa; se renombraron para que no distorsionen
+  el inventario. La
   extraccion restante continua siendo un bloque de preparacion, no se declara
   completada.
 

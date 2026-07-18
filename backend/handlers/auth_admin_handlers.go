@@ -1176,8 +1176,8 @@ func HandleGoogleCallback(dbEmpresas *sql.DB, dbSuper *sql.DB, clientID, clientS
 			log.Println("db upsert users error:", err)
 		}
 
-		if err := dbpkg.EnsureUserEmpresa(dbEmpresas, userinfo.Email, "Empresa de "+userinfo.Name); err != nil {
-			log.Println("db ensure empresa error:", err)
+		if err := dbpkg.ProvisionDefaultEmpresaForUser(dbEmpresas, userinfo.Email, "Empresa de "+userinfo.Name); err != nil {
+			log.Println("db provision empresa error:", err)
 		}
 
 		if err := dbpkg.SuperContractSchemaReady(dbSuper); err != nil {
