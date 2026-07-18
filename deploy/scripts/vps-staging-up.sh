@@ -18,10 +18,22 @@ secret_base64_32() {
   openssl rand 32 2>/dev/null | base64 | tr -d '\n'
 }
 
+valid_config_enc_key() {
+  value="$1"
+  [ -n "$value" ] || return 1
+  decoded_size=$(printf '%s' "$value" | base64 -d 2>/dev/null | wc -c | tr -d ' ')
+  [ "$decoded_size" = "32" ] || return 1
+  canonical=$(printf '%s' "$value" | base64 -d 2>/dev/null | base64 | tr -d '\n')
+  [ "$canonical" = "$value" ]
+}
+
 replace_if_placeholder() {
   key="$1"
   value="$2"
-  if grep -q "^${key}=CAMBIAR" "$ENV_FILE" 2>/dev/null || grep -q "^${key}=$" "$ENV_FILE" 2>/dev/null; then
+  if grep -q "^${key}=CAMBIAR" "$ENV_FILE" 2>/dev/null \
+    || grep -q "^${key}=$" "$ENV_FILE" 2>/dev/null \
+    || grep -Eq "^${key}=<[^>]+>$" "$ENV_FILE" 2>/dev/null \
+    || { [ "$key" = "CONFIG_ENC_KEY" ] && ! valid_config_enc_key "$(sed -n "s/^${key}=//p" "$ENV_FILE" | head -n 1)"; }; then
     sed -i "s|^${key}=.*|${key}=${value}|" "$ENV_FILE"
   fi
 }

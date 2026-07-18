@@ -149,6 +149,18 @@ func ApplyLegacySchemaCatalog(dbEmpresas, dbSuper *sql.DB) error {
 	if dbEmpresas == nil || dbSuper == nil {
 		return fmt.Errorf("legacy schema catalog requires both databases")
 	}
+	// A legacy installation can have the migration ledger without the fields
+	// introduced by the immutable migrator. Normalize that ledger before the
+	// read-only baseline check below; this function is called only by
+	// PCS_RUNTIME_ROLE=migrate, never by API or worker processes.
+	for _, target := range []struct {
+		name string
+		db   *sql.DB
+	}{{"empresas", dbEmpresas}, {"superadministrador", dbSuper}} {
+		if err := EnsureSchemaMigrationsTable(target.db); err != nil {
+			return fmt.Errorf("prepare %s migration ledger: %w", target.name, err)
+		}
+	}
 	if err := ValidateLegacySchemaCatalogManifest(); err != nil {
 		return err
 	}
