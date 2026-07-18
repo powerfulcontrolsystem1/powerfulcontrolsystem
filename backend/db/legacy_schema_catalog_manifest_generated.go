@@ -5,7 +5,7 @@ package db
 // legacySchemaCatalogSourceFingerprint freezes the reviewed source bodies of
 // every Ensure* step executed by the compatibility catalog. Changing a legacy
 // step changes this value and must be accompanied by a new immutable migration.
-const legacySchemaCatalogSourceFingerprint = "1f:9b:07:6c:52:f6:c4:ec:e1:5b:d5:1b:22:d9:e4:92:cd:16:2e:f1:d3:48:59:bd:a1:cc:e4:9a:2d:f1:89:a5"
+const legacySchemaCatalogSourceFingerprint = "db:c8:fa:8d:b5:d6:a8:ff:f7:eb:50:1e:00:ed:c3:8b:6c:ec:be:dd:41:5d:40:93:47:26:58:f5:53:33:67:3a"
 
 var legacySchemaCatalogStepSourceFingerprints = map[string]string{
 	"EnsureAdminEmpresaCompartidaSchema": "12:ab:87:09:fc:21:af:15:ce:9e:57:de:df:79:12:1c:37:26:71:53:57:36:84:d5:fb:07:ff:57:93:61:09:8f",
@@ -129,4 +129,5 @@ var legacySchemaCatalogStepSourceFingerprints = map[string]string{
 	"EnsureTipoEmpresaPreconfiguracionSchema": "d4:a5:41:2c:1e:19:79:d9:9c:fb:67:75:d7:ee:19:c2:63:a4:18:25:ca:e0:68:28:b0:8e:6e:f5:07:7d:45:6b",
 	"EnsureUsuarioConfiguracionSchema": "fe:b0:50:0b:98:28:c3:cb:b3:0a:ff:56:e0:e5:9a:29:31:bd:9a:d5:44:8e:ca:d9:24:b8:f0:74:4c:d7:ff:56",
 	"EnsureVentaPublicaSchema": "8b:a5:02:c9:bf:7e:21:c9:8e:de:a4:93:53:48:ee:98:9c:20:d4:40:a6:ca:72:0a:c5:65:5a:26:1f:df:b4:e2",
+	"InitMetricsTable": "97:c2:40:3a:3f:a4:a2:56:f1:77:65:42:56:7c:76:39:39:8f:29:d5:48:33:f4:74:e4:ac:60:a3:3e:2b:0c:4f",
 }
