@@ -29,8 +29,8 @@ func parsePrinterIDQuery(r *http.Request) (int64, error) {
 // EmpresaImpresorasHandler administra impresoras de empresa, asignación por funcionalidad y por producto.
 func EmpresaImpresorasHandler(dbEmp *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if err := dbpkg.EnsureEmpresaImpresorasSchema(dbEmp); err != nil {
-			log.Printf("[empresa_impresoras] ensure schema error: %v", err)
+		if err := dbpkg.EmpresaImpresorasSchemaReady(dbEmp); err != nil {
+			log.Printf("[empresa_impresoras] schema unavailable error: %v", err)
 			http.Error(w, "No se pudo preparar configuracion de impresoras", http.StatusInternalServerError)
 			return
 		}
@@ -758,8 +758,8 @@ func EmpresaImpresorasResolverHandler(dbEmp *sql.DB) http.HandlerFunc {
 			http.Error(w, "Metodo no permitido", http.StatusMethodNotAllowed)
 			return
 		}
-		if err := dbpkg.EnsureEmpresaImpresorasSchema(dbEmp); err != nil {
-			log.Printf("[empresa_impresoras] ensure resolver schema error: %v", err)
+		if err := dbpkg.EmpresaImpresorasSchemaReady(dbEmp); err != nil {
+			log.Printf("[empresa_impresoras] resolver schema unavailable error: %v", err)
 			http.Error(w, "No se pudo preparar configuracion de impresoras", http.StatusInternalServerError)
 			return
 		}
@@ -826,8 +826,8 @@ func EmpresaImpresorasAgenteHandler(dbEmp *sql.DB) http.HandlerFunc {
 			http.Error(w, "Metodo no permitido", http.StatusMethodNotAllowed)
 			return
 		}
-		if err := dbpkg.EnsureEmpresaImpresorasSchema(dbEmp); err != nil {
-			log.Printf("[empresa_impresoras_agente] ensure schema error: %v", err)
+		if err := dbpkg.EmpresaImpresorasSchemaReady(dbEmp); err != nil {
+			log.Printf("[empresa_impresoras_agente] schema unavailable error: %v", err)
 			http.Error(w, "No se pudo preparar cola de impresion", http.StatusInternalServerError)
 			return
 		}
