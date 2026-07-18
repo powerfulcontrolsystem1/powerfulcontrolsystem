@@ -2,8 +2,9 @@
 
 Fecha de auditoria: 2026-07-16
 
-Estado del plan: implementacion interna iniciada; gates de staging, restauracion
-y proveedores externos siguen abiertos.
+Estado del plan: endurecimiento interno, restauracion tecnica y staging privado
+parcialmente comprobados; proveedores externos y validacion funcional aislada
+siguen abiertos.
 
 Rama auditada: `codex/rs-20260716-225734`
 
@@ -60,6 +61,28 @@ avanzar.
 
 Estos cambios reducen riesgo, pero **no cierran** P104-002, P104-004 a
 P104-007, P104-009, P104-011 a P104-014 ni autorizan ejecutar `rs`.
+
+## 1.2 Evidencia adicional 2026-07-18
+
+- La candidata de staging corrigió el orden del migrador: prepara el ledger
+  `schema_migrations` antes de consultar el baseline heredado. En staging se
+  ejecutó `pcs-migrate` repetidamente con `PCS_RUNTIME_SCHEMA_BOOTSTRAP=0` sin
+  re-aplicar cambios.
+- El frontend de staging se corrigió para publicar el puerto interno `8080` de
+  Nginx, coherente con la imagen no privilegiada. El host mantiene una reserva
+  de puertos Docker que impidió el smoke publicado; se validó el mismo frontend
+  dentro de la red aislada sin reiniciar el daemon compartido con produccion.
+- Se detectó y corrigió un worker degradado: `METRICS_INTERVAL_SECONDS` ya no
+  acepta valores menores de cinco segundos. El worker candidato terminó en
+  estado `healthy` y la prueba cubre la programacion registrada.
+- El rollback de aplicacion al SHA previo y el retorno posterior a la
+  candidata respondieron `200` en `/health` y `/ready` desde la red privada de
+  staging. La evidencia detallada vive en
+  `documentos/staging_execution_report.md`.
+
+Esto deja P104-002 parcialmente cerrado solo en su componente tecnico. No
+demuestra datos anonimizados, smoke por navegador publicado, ni operaciones
+funcionales A/B completas; por tanto no autoriza produccion ni `rs`.
 
 ## 2. Veredicto actual
 
