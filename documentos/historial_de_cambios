@@ -38284,3 +38284,13 @@ Archivos modificados:
 - Durante la prueba real controlada de PCS se detecto el rechazo `403` al crear
   el receptor fiscal desde el carrito; no se emitio ningun documento mientras
   el flujo estaba bloqueado.
+
+2026-07-18 - Compatibilidad PostgreSQL en cierre de carrito
+- La lectura de configuracion operativa vuelve a mantener el mismo numero de
+  columnas y destinos `Scan`; los permisos manuales siguen siendo una regla de
+  rol, no un campo global no modelado.
+- Las fechas de carrito y metricas se convierten a texto antes de combinarlas
+  con valores de respaldo. Asi se evita mezclar `timestamp with time zone` y
+  `text` en PostgreSQL, sin romper el almacenamiento legado compatible.
+- Se agregaron regresiones enfocadas para preservar ambos contratos antes de
+  reintentar una emision fiscal controlada.

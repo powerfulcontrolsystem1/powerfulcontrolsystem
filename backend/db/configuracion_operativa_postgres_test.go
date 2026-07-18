@@ -62,6 +62,25 @@ func TestConfiguracionOperativaRolPermiteIngresosEgresosManuales(t *testing.T) {
 	}
 }
 
+func TestGetEmpresaConfiguracionOperativaKeepsSelectAndScanCompatible(t *testing.T) {
+	raw, err := os.ReadFile("configuracion_operativa.go")
+	if err != nil {
+		t.Fatalf("read configuracion_operativa.go: %v", err)
+	}
+	body := extractConfiguracionOperativaFunctionForTest(t, string(raw), "func GetEmpresaConfiguracionOperativa(")
+	for _, unexpected := range []string{
+		"COALESCE(permitir_ingresos_manuales, 0)",
+		"COALESCE(permitir_egresos_manuales, 0)",
+	} {
+		if strings.Contains(body, unexpected) {
+			t.Fatalf("GetEmpresaConfiguracionOperativa no expone %q sin un destino en EmpresaConfiguracionOperativa", unexpected)
+		}
+	}
+	if got := strings.Count(body, "COALESCE("); got != 15 {
+		t.Fatalf("GetEmpresaConfiguracionOperativa selecciona %d columnas COALESCE, want 15 compatibles con Scan", got)
+	}
+}
+
 func extractConfiguracionOperativaFunctionForTest(t *testing.T, src, startMarker string) string {
 	t.Helper()
 

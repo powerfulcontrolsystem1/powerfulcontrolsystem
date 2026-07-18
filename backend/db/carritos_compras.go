@@ -1586,8 +1586,8 @@ func GetCarritoCompraByID(dbConn *sql.DB, empresaID, carritoID int64) (*CarritoC
 		COALESCE(descuento_total, 0),
 		COALESCE(impuesto_total, 0),
 		COALESCE(total, 0),
-		COALESCE(activado_en, ''),
-		COALESCE(pagado_en, ''),
+		COALESCE(CAST(activado_en AS TEXT), ''),
+		COALESCE(CAST(pagado_en AS TEXT), ''),
 		COALESCE(descuento_tipo, ''),
 		COALESCE(descuento_codigo, ''),
 		COALESCE(descuento_valor, 0),
@@ -1601,8 +1601,8 @@ func GetCarritoCompraByID(dbConn *sql.DB, empresaID, carritoID int64) (*CarritoC
 		COALESCE(caja_sucursal_id, 0),
 		COALESCE(tarifa_tiempo_tipo, 'auto'),
 		COALESCE(tarifa_tiempo_id, 0),
-		COALESCE(fecha_creacion, ''),
-		COALESCE(fecha_actualizacion, ''),
+		COALESCE(CAST(fecha_creacion AS TEXT), ''),
+		COALESCE(CAST(fecha_actualizacion AS TEXT), ''),
 		COALESCE(usuario_creador, ''),
 		COALESCE(estado, 'activo'),
 		COALESCE(observaciones, '')
@@ -1673,8 +1673,8 @@ func GetCarritoCompraByCodigo(dbConn *sql.DB, empresaID int64, codigo string) (*
 		COALESCE(descuento_total, 0),
 		COALESCE(impuesto_total, 0),
 		COALESCE(total, 0),
-		COALESCE(activado_en, ''),
-		COALESCE(pagado_en, ''),
+		COALESCE(CAST(activado_en AS TEXT), ''),
+		COALESCE(CAST(pagado_en AS TEXT), ''),
 		COALESCE(descuento_tipo, ''),
 		COALESCE(descuento_codigo, ''),
 		COALESCE(descuento_valor, 0),
@@ -1688,8 +1688,8 @@ func GetCarritoCompraByCodigo(dbConn *sql.DB, empresaID int64, codigo string) (*
 		COALESCE(caja_sucursal_id, 0),
 		COALESCE(tarifa_tiempo_tipo, 'auto'),
 		COALESCE(tarifa_tiempo_id, 0),
-		COALESCE(fecha_creacion, ''),
-		COALESCE(fecha_actualizacion, ''),
+		COALESCE(CAST(fecha_creacion AS TEXT), ''),
+		COALESCE(CAST(fecha_actualizacion AS TEXT), ''),
 		COALESCE(usuario_creador, ''),
 		COALESCE(estado, 'activo'),
 		COALESCE(observaciones, '')
@@ -3109,7 +3109,7 @@ func RecordCarritoStationMetric(dbConn *sql.DB, input CarritoStationMetricInput)
 		usuario_creador,
 		estado,
 		observaciones
-	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, COALESCE(NULLIF(?, ''), CURRENT_TIMESTAMP), CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, ?, 'activo', ?)`,
+	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, COALESCE(NULLIF(?, ''), CAST(CURRENT_TIMESTAMP AS TEXT)), CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, ?, 'activo', ?)`,
 		input.EmpresaID,
 		input.CarritoID,
 		input.EstacionID,
@@ -3171,11 +3171,11 @@ func ListCarritoStationMetricSummary(dbConn *sql.DB, empresaID, estacionID int64
 		COALESCE(AVG(CASE WHEN evento_operacion = 'venta_pagada' AND COALESCE(duracion_segundos, 0) > 0 THEN duracion_segundos END), 0) AS tiempo_promedio_segundos,
 		COALESCE(MIN(CASE WHEN evento_operacion = 'venta_pagada' AND COALESCE(duracion_segundos, 0) > 0 THEN duracion_segundos END), 0) AS tiempo_min_segundos,
 		COALESCE(MAX(CASE WHEN evento_operacion = 'venta_pagada' AND COALESCE(duracion_segundos, 0) > 0 THEN duracion_segundos END), 0) AS tiempo_max_segundos,
-		COALESCE(MAX(COALESCE(fecha_evento, fecha_creacion, '')), '') AS ultima_operacion
+		COALESCE(MAX(COALESCE(CAST(fecha_evento AS TEXT), CAST(fecha_creacion AS TEXT), '')), '') AS ultima_operacion
 	FROM empresa_ventas_estacion_metricas
 	WHERE empresa_id = ?
 		AND COALESCE(estado, 'activo') = 'activo'
-		AND pcs_ts(COALESCE(fecha_evento, fecha_creacion, CURRENT_TIMESTAMP)) >= pcs_ts('now','localtime', ?)`
+		AND pcs_ts(COALESCE(CAST(fecha_evento AS TEXT), CAST(fecha_creacion AS TEXT), CAST(CURRENT_TIMESTAMP AS TEXT))) >= pcs_ts('now','localtime', ?)`
 	args := []interface{}{empresaID, fmt.Sprintf("-%d day", days)}
 
 	if estacionID > 0 {

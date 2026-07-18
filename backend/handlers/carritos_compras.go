@@ -146,7 +146,7 @@ func EmpresaCarritosCompraHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 					WHERE empresa_id = ?
 						AND COALESCE(estado,'activo') = 'activo'
 						AND evento_operacion = 'venta_pagada'
-						AND pcs_ts(COALESCE(fecha_evento, fecha_creacion, CURRENT_TIMESTAMP)) >= pcs_ts('now','localtime', ?)`
+						AND pcs_ts(COALESCE(CAST(fecha_evento AS TEXT), CAST(fecha_creacion AS TEXT), CAST(CURRENT_TIMESTAMP AS TEXT))) >= pcs_ts('now','localtime', ?)`
 				args := []interface{}{empresaID, fmt.Sprintf("-%d day", days)}
 				if usuarioActual != "" {
 					query += " AND LOWER(COALESCE(usuario_creador,'')) = LOWER(?)"

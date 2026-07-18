@@ -2,6 +2,7 @@ package db
 
 import (
 	"errors"
+	"os"
 	"strings"
 	"testing"
 )
@@ -60,6 +61,24 @@ func TestValidateCarritoCompraItemCantidadAllowsWeightDecimalsOnlyForWeightUnits
 	}
 	if err := validateCarritoCompraItemCantidad(2, "unidad"); err != nil {
 		t.Fatalf("integer unit quantity must be valid: %v", err)
+	}
+}
+
+func TestCarritosPostgresFechaExpressionsCastToTextBeforeCoalesce(t *testing.T) {
+	raw, err := os.ReadFile("carritos_compras.go")
+	if err != nil {
+		t.Fatalf("read carritos_compras.go: %v", err)
+	}
+	src := string(raw)
+	for _, want := range []string{
+		"COALESCE(CAST(activado_en AS TEXT), '')",
+		"COALESCE(CAST(pagado_en AS TEXT), '')",
+		"COALESCE(NULLIF(?, ''), CAST(CURRENT_TIMESTAMP AS TEXT))",
+		"COALESCE(CAST(fecha_evento AS TEXT), CAST(fecha_creacion AS TEXT), CAST(CURRENT_TIMESTAMP AS TEXT))",
+	} {
+		if !strings.Contains(src, want) {
+			t.Fatalf("falta conversion compatible con PostgreSQL: %s", want)
+		}
 	}
 }
 
