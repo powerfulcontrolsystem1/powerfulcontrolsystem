@@ -1,3 +1,9 @@
+2026-07-18: Preflight estable entre Windows y Linux.
+- Los verificadores de inventario de bootstrap, rutas multiempresa y `Ensure`
+  normalizan solo los finales de linea durante la comparacion `--check`.
+  Conservan la deteccion de cambios reales y evitan falsos bloqueos de `rs`
+  cuando Git entrega archivos Markdown o Go con CRLF en Windows.
+
 2026-07-18: Manifiesto de migraciones heredadas completo.
 - El generador del inventario ahora recorre solamente los dos catalogos de
   compatibilidad y registra cualquier funcion real referenciada, incluidos

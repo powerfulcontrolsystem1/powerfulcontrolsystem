@@ -6,6 +6,10 @@ const repoRoot = process.cwd();
 const outputPath = path.join(repoRoot, "documentos", "arquitectura", "matriz_rutas_multiempresa.md");
 const checkOnly = process.argv.includes("--check");
 
+function normalizeLineEndings(value) {
+  return String(value).replace(/\r\n/g, "\n").replace(/\r/g, "\n");
+}
+
 function walk(relativeDir) {
   const root = path.join(repoRoot, relativeDir);
   const files = [];
@@ -117,7 +121,7 @@ const rendered = `${lines.join("\n")}\n`;
 
 if (checkOnly) {
   const current = fs.existsSync(outputPath) ? fs.readFileSync(outputPath, "utf8") : "";
-  if (current !== rendered) {
+  if (normalizeLineEndings(current) !== rendered) {
     console.error("matriz de rutas multiempresa desactualizada; ejecuta node tools/tenant_route_inventory.mjs");
     process.exitCode = 2;
   } else {
