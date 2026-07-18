@@ -76,8 +76,10 @@ func TestGetEmpresaConfiguracionOperativaKeepsSelectAndScanCompatible(t *testing
 			t.Fatalf("GetEmpresaConfiguracionOperativa no expone %q sin un destino en EmpresaConfiguracionOperativa", unexpected)
 		}
 	}
-	if got := strings.Count(body, "COALESCE("); got != 15 {
-		t.Fatalf("GetEmpresaConfiguracionOperativa selecciona %d columnas COALESCE, want 15 compatibles con Scan", got)
+	// El Scan recibe 15 destinos: id y empresa_id se leen directamente y las
+	// trece columnas restantes se normalizan con COALESCE.
+	if got := strings.Count(body, "COALESCE("); got != 13 {
+		t.Fatalf("GetEmpresaConfiguracionOperativa selecciona %d columnas COALESCE, want 13 mas id y empresa_id compatibles con Scan", got)
 	}
 }
 
