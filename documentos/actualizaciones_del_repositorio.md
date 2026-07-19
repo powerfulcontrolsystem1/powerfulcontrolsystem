@@ -16853,3 +16853,8 @@ Archivos modificados:
 - tools/ensure_bootstrap_inventory.mjs
 - tools/runtime_ensure_inventory.mjs
 - tools/tenant_route_inventory.mjs
+
+2026-07-18 14:48:59 - Mensaje: rs: corregir contrato CI del bootstrap operativo; Commit: e9c58602; PushStatus: OK
+Archivos modificados:
+- documentos/produccion_hardening_20260715.md
+- tools/deploy_pipeline_contract.mjs
