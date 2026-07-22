@@ -8,7 +8,8 @@ const requirements = [
   ["scripts/rs.ps1", "function Assert-ProductionRevision"],
   ["scripts/rs.ps1", "Actualizar repositorio omitido por DryRun/PreviewOnly"],
   ["scripts/sync_to_vps.ps1", "function Assert-ApprovedProductionRevision"],
-  ["scripts/sync_to_vps.ps1", "$effectiveBootstrapServer = $false"],
+  ["scripts/sync_to_vps.ps1", "$effectiveBootstrapServer = $true"],
+  ["scripts/sync_to_vps.ps1", "bootstrap remoto limitado a configuración operativa"],
   ["scripts/sync_to_vps.ps1", "exit $script:SyncExitCode"],
   ["deploy/scripts/vps-compose-sidecar-up.sh", "up -d --build --remove-orphans"],
 ];
