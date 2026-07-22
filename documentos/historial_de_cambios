@@ -2,9 +2,11 @@
 - `backend/go.mod` y `backend/go.sum` actualizan `golang.org/x/text` a v0.39.0
   para eliminar GO-2026-5970; la suite completa y `go vet ./...` finalizaron
   correctamente.
-- `deploy/docker/backend.Dockerfile` actualiza Trivy a v0.70.0 por digest e
-  instala `nmap-scripts`. El runner conserva la cache y temporales de Trivy en
-  rutas configurables de logs para no agotar `/tmp` durante una auditoria.
+- `deploy/docker/backend.Dockerfile` instala `nmap-scripts`; Lynis, Nmap y
+  Trivy se instalaron y verificaron directamente en el VPS, que es la superficie
+  auditada. Trivy no se incrusta en la imagen del POS porque sus dependencias
+  propias activaban el gate HIGH/CRITICAL. El runner conserva una cache y
+  temporales configurables para cuando se ejecute con el binario del host.
 
 2026-07-22: Correccion CSRF del panel de seguridad VPS P105-013.
 - La comprobacion visual autenticada de staging confirma que el panel no tiene

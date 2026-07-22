@@ -19,16 +19,12 @@ RUN apk add --no-cache git \
     && git fetch --depth 1 origin 06153321ea50d53a27446084e646d9f43fe46e0e \
     && git checkout --detach 06153321ea50d53a27446084e646d9f43fe46e0e
 
-# Trivy v0.70.0, pinned by the multi-platform image index digest.
-FROM aquasec/trivy@sha256:be1190afcb28352bfddc4ddeb71470835d16462af68d310f9f4bca710961a41e AS trivy-source
-
 FROM alpine:3.20 AS runtime-base
 
 RUN apk add --no-cache bash ca-certificates curl nmap nmap-scripts openssh-client openssl tzdata \
     && addgroup -S -g 10001 pcs \
     && adduser -S -D -H -u 10001 -G pcs pcs
 COPY --from=lynis-source /src/lynis /opt/lynis
-COPY --from=trivy-source /usr/local/bin/trivy /usr/local/bin/trivy
 RUN printf '%s\n' '#!/bin/sh' 'cd /opt/lynis' 'exec /opt/lynis/lynis "$@"' > /usr/local/bin/lynis \
     && chmod 0755 /usr/local/bin/lynis
 WORKDIR /app/backend
