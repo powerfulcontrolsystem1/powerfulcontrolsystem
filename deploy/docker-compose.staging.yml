@@ -34,6 +34,7 @@ services:
       - pcs_staging_web_uploads:/app/web/uploads
       - pcs_staging_backups:/app/backup
       - pcs_staging_private_storage:/app/private_storage
+      - /usr/bin/trivy:/usr/local/bin/trivy:ro
 
   frontend:
     container_name: pcs-staging-frontend
