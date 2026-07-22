@@ -15,14 +15,21 @@ PCS no conserva contrasenas de empresas ni fabrica cookies de sesion. Para
 inicio de sesion unico real entre PCS y Nextcloud se requiere configurar un
 proveedor SSO compatible (OIDC o SAML) en ambos servicios.
 
-Cuando la cuenta ya esta aprovisionada, volver a abrir `Administrar empresa >
-Nextcloud` navega directamente a la pagina principal de Nextcloud fuera del
-iframe de PCS. Para una cuenta nueva, PCS muestra primero la contrasena temporal
-una unica vez; en la siguiente apertura navega directamente. El usuario puede
-cerrar sesion y cambiar contrasena desde el menu de perfil y Seguridad de
-Nextcloud. La expiracion forzada de una contrasena temporal se configura en el
-servidor Nextcloud mediante su politica de contrasenas, no en PCS, para que sea
-aplicada por el mismo proveedor de identidad.
+Cuando la cuenta ya esta aprovisionada, `Administrar empresa > Nextcloud`
+permanece dentro del panel derecho del shell y carga la vista de Nextcloud en
+el mismo modulo integrado. Ya no se reemplaza la pagina principal ni se abre
+una pestaña nueva. Para una cuenta nueva, PCS muestra primero la contrasena
+temporal una unica vez y no incrusta el proveedor hasta que exista una cuenta
+lista. El usuario puede cerrar sesion y cambiar contrasena desde el menu de
+perfil y Seguridad de Nextcloud. La expiracion forzada de una contrasena
+temporal se configura en el servidor Nextcloud mediante su politica de
+contrasenas, no en PCS, para que sea aplicada por el mismo proveedor de
+identidad.
+
+La incrustacion depende de que el reverse proxy de Nextcloud permita como
+origen de marco `https://powerfulcontrolsystem.com`; si conserva
+`X-Frame-Options: SAMEORIGIN`, el shell sigue visible y muestra la indicacion
+de ajuste pendiente, sin forzar una navegacion externa.
 
 ## Alcance
 

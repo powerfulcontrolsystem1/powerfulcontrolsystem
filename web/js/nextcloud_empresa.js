@@ -1,7 +1,7 @@
 (function () {
   "use strict";
 
-  var state = { empresaID: 0, data: null, redirected: false };
+  var state = { empresaID: 0, data: null };
 
   function byID(id) { return document.getElementById(id); }
   function cookie(name) {
@@ -59,13 +59,20 @@
       byID("nextcloudCredential").classList.add("visible");
     }
   }
+  function embedNextcloud(url) {
+    if (!url) return;
+    var frame = byID("nextcloudFrame");
+    var container = byID("nextcloudEmbed");
+    if (!frame || !container) return;
+    container.classList.add("visible");
+    byID("nextcloudEmbedStatus").textContent = "Cargando vista integrada...";
+    if (frame.getAttribute("src") !== url) frame.setAttribute("src", url);
+  }
   function openCompanyNextcloudWhenReady(data) {
-    if (state.redirected || !data || !data.provisioned || !data.active || !data.web_url || data.temporary_password) return;
-    state.redirected = true;
-    // La pagina se carga dentro del iframe de Administrar empresa. Salir al nivel
-    // superior evita que las politicas anti-iframe de Nextcloud bloqueen el acceso.
-    if (window.top && window.top !== window) window.top.location.assign(data.web_url);
-    else window.location.assign(data.web_url);
+    if (!data || !data.provisioned || !data.active || !data.web_url || data.temporary_password) return;
+    // Mantener la experiencia dentro del iframe contentFrame de Administrar
+    // empresa; nunca abrir una pestaña ni reemplazar el shell principal.
+    embedNextcloud(data.web_url);
   }
   async function run(action) {
     setBusy(true);
@@ -98,7 +105,10 @@
     run(action);
   });
   byID("nextcloudOpen").addEventListener("click", function () {
-    if (state.data && state.data.web_url) window.open(state.data.web_url, "_blank", "noopener,noreferrer");
+    if (state.data && state.data.web_url) embedNextcloud(state.data.web_url);
+  });
+  byID("nextcloudFrame").addEventListener("load", function () {
+    byID("nextcloudEmbedStatus").textContent = "Vista integrada cargada";
   });
   byID("nextcloudCopy").addEventListener("click", function () {
     var value = byID("nextcloudTemporaryPassword").textContent;

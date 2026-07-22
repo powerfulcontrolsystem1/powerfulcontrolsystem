@@ -38956,3 +38956,8 @@ Archivos modificados:
   la imagen de la aplicacion. Debe repetirse el escaneo despues de `rs`.
 - Validacion local: `go test ./... -count=1`, `go vet ./...`, preflight completo
   sin Docker y `migration_audit.mjs --strict` terminaron correctamente.
+- Nextcloud dentro del shell de Administrar empresa: `web/administrar_empresa/nextcloud.html`
+  agrega una vista integrada en el iframe derecho y `web/js/nextcloud_empresa.js`
+  deja de usar `window.top` o `window.open`; la navegacion conserva el menu
+  principal y documenta el requisito de `frame-ancestors`/X-Frame-Options del
+  reverse proxy externo.
