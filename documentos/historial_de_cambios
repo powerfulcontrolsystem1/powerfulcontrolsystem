@@ -38941,3 +38941,18 @@ Archivos modificados:
 - web/super/email_corporativo.html
 - web/super/explorador_archivos.html
 - web/super/seguridad.html
+2026-07-22: Validacion real de empresa y disponibilidad de Trivy para P105-013.
+
+- Produccion: login real con la cuenta autorizada redirigio a
+  `/super_administrador.html`; la vista de Empresas mostro tres registros y
+  `Powerful Control System` (empresa 12) activa con licencia vigente. Se tomo
+  captura visual sin ejecutar pagos, facturas, borrados ni cierres de caja.
+- Seguridad VPS: el escaneo `scan-20260722T091043Z-c230a531` confirmo Lynis y
+  Nmap disponibles. El reporte registro 2 criticos, 2 altos, 23 medios y 1
+  bajo; Trivy estaba instalado en el host pero no visible dentro del contenedor.
+- Despliegue: `deploy/docker-compose.platform.yml` y
+  `deploy/docker-compose.staging.yml` montan el binario estatico del host en
+  `/usr/local/bin/trivy:ro`, sin agregar una dependencia al `go.mod` ni inflar
+  la imagen de la aplicacion. Debe repetirse el escaneo despues de `rs`.
+- Validacion local: `go test ./... -count=1`, `go vet ./...`, preflight completo
+  sin Docker y `migration_audit.mjs --strict` terminaron correctamente.

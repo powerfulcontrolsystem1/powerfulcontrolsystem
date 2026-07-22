@@ -193,6 +193,10 @@ services:
       - pcs_web_uploads:/app/web/uploads
       - pcs_private_storage:/app/private_storage
       - pcs_backups:/app/backup
+      # Trivy se mantiene instalado y actualizado en el host VPS; montarlo
+      # como binario estatico evita inflar la imagen de la aplicacion y permite
+      # que el escaneo real del panel use la herramienta aprobada.
+      - /usr/bin/trivy:/usr/local/bin/trivy:ro
     expose:
       - "8080"
     healthcheck:
