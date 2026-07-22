@@ -3,6 +3,7 @@ package db
 import (
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"strings"
 )
@@ -224,6 +225,30 @@ func EnsureEmpresaEnergiaSolarSchema(dbConn *sql.DB) error {
 	for _, col := range columns {
 		if err := ensureColumnIfMissing(dbConn, col.table, col.name, col.def); err != nil {
 			return err
+		}
+	}
+	return nil
+}
+
+// EmpresaEnergiaSolarSchemaReady verifies migration-owned solar tables without
+// executing DDL during an enterprise request.
+func EmpresaEnergiaSolarSchemaReady(dbConn *sql.DB) error {
+	if dbConn == nil {
+		return fmt.Errorf("conexion de base de datos no disponible")
+	}
+	for _, table := range []string{
+		"empresa_energia_solar_sistemas",
+		"empresa_energia_solar_alertas",
+		"empresa_energia_solar_lecturas",
+		"empresa_energia_solar_eventos",
+	} {
+		var marker int
+		err := queryRowSQLCompat(dbConn, "SELECT 1 FROM "+table+" WHERE 1=0").Scan(&marker)
+		if errors.Is(err, sql.ErrNoRows) {
+			continue
+		}
+		if err != nil {
+			return fmt.Errorf("esquema de energia solar no disponible (%s): %w", table, err)
 		}
 	}
 	return nil

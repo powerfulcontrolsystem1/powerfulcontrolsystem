@@ -38,8 +38,8 @@ func EmpresaEnergiaSolarHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
-		if err := dbpkg.EnsureEmpresaEnergiaSolarSchema(dbEmp); err != nil {
-			log.Printf("[energia_solar] ensure schema empresa_id=%d error: %v", empresaID, err)
+		if err := dbpkg.EmpresaEnergiaSolarSchemaReady(dbEmp); err != nil {
+			log.Printf("[energia_solar] schema readiness empresa_id=%d error: %v", empresaID, err)
 			http.Error(w, "No se pudo preparar el modulo de energia solar", http.StatusInternalServerError)
 			return
 		}

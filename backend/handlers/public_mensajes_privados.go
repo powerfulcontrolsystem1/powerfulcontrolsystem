@@ -80,9 +80,9 @@ func PublicMensajesPrivadosHandler(dbEmp *sql.DB) http.HandlerFunc {
 		if ok, retry := privMsgLimiter.allow(key, 4, 5*time.Minute); !ok {
 			w.Header().Set("Retry-After", fmt.Sprintf("%d", retry))
 			writeJSON(w, http.StatusTooManyRequests, map[string]interface{}{
-				"ok":                 false,
-				"code":               "rate_limited",
-				"error":              "Has enviado demasiados mensajes. Espera unos minutos e inténtalo de nuevo.",
+				"ok":                  false,
+				"code":                "rate_limited",
+				"error":               "Has enviado demasiados mensajes. Espera unos minutos e inténtalo de nuevo.",
 				"retry_after_seconds": retry,
 			})
 			return
@@ -135,7 +135,10 @@ func PublicMensajesPrivadosHandler(dbEmp *sql.DB) http.HandlerFunc {
 			nombre = nombre[:140]
 		}
 
-		_ = dbpkg.EnsureEmpresaChatTareasSchema(dbEmp)
+		if err := dbpkg.EmpresaChatTareasSchemaReady(dbEmp); err != nil {
+			http.Error(w, "No se pudo verificar el esquema de chat", http.StatusInternalServerError)
+			return
+		}
 
 		ref := strings.TrimSpace(body.OrigenRef)
 		if len(ref) > 220 {
@@ -202,11 +205,10 @@ func PublicMensajesPrivadosHandler(dbEmp *sql.DB) http.HandlerFunc {
 		}
 
 		writeJSON(w, http.StatusOK, map[string]interface{}{
-			"ok":             true,
+			"ok":              true,
 			"empresa_id":      empresaID,
 			"conversacion_id": convID,
 			"message":         "Mensaje enviado. La empresa te responderá por el mismo canal si dejaste tu contacto.",
 		})
 	}
 }
-

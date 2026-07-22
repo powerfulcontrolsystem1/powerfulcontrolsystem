@@ -11,6 +11,12 @@ const (
 	MigrationTargetEmpresas = "empresas"
 	MigrationTargetSuper    = "superadministrador"
 	platformMigrationScope  = "platform"
+
+	// legacySchemaCatalogManifestV1SourceFingerprint is the source fingerprint
+	// recorded when version 20260717-001 was first released. Migration bodies
+	// are immutable: using the current generated catalog fingerprint here would
+	// make a later catalog change invalidate an already-applied migration.
+	legacySchemaCatalogManifestV1SourceFingerprint = "2a:db:98:91:89:0f:14:d5:ce:6b:94:3c:ac:56:b3:d6:25:35:bd:57:3a:0b:6e:60:5a:cc:4e:db:b3:7e:11:d3"
 )
 
 // PlatformMigrations owns the runtime foundation and records the one-time
@@ -59,7 +65,7 @@ func PlatformMigrations(target string) ([]Migration, error) {
 			{
 				Version:     "20260717-001-legacy-schema-manifest-v1",
 				Description: "frozen source fingerprint for legacy enterprise schema catalog",
-				Body:        legacySchemaCatalogSourceFingerprint + ":empresas",
+				Body:        legacySchemaCatalogManifestV1SourceFingerprint + ":empresas",
 			},
 		}, nil
 	case MigrationTargetSuper:
@@ -101,7 +107,15 @@ func PlatformMigrations(target string) ([]Migration, error) {
 			{
 				Version:     "20260717-001-legacy-schema-manifest-v1",
 				Description: "frozen source fingerprint for legacy administrative schema catalog",
-				Body:        legacySchemaCatalogSourceFingerprint + ":superadministrador",
+				Body:        legacySchemaCatalogManifestV1SourceFingerprint + ":superadministrador",
+			},
+			{
+				Version:     "20260722-001-session-token-hashes-v1",
+				Description: "hashed administrator session tokens owned by migration role",
+				Body:        "ALTER TABLE sesiones ADD COLUMN token_hash; migrate legacy tokens transactionally; migration-role-only",
+				Apply: func(_ context.Context, tx *sql.Tx) error {
+					return migrateSessionTokensToHashesTx(tx)
+				},
 			},
 		}, nil
 	default:

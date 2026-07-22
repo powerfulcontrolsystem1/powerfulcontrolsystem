@@ -54,7 +54,7 @@ func SuperMantenimientoAgentesHandler(dbSuper *sql.DB) http.HandlerFunc {
 			return
 		}
 		if err := dbpkg.EnsureSuperMantenimientoAgentesSchema(dbSuper); err != nil {
-			writeJSON(w, http.StatusInternalServerError, map[string]any{"ok": false, "error": err.Error()})
+			writeSuperMantenimientoPublicError(w, r, http.StatusInternalServerError, "verificar esquema", err)
 			return
 		}
 		action := strings.TrimSpace(r.URL.Query().Get("action"))
@@ -62,12 +62,12 @@ func SuperMantenimientoAgentesHandler(dbSuper *sql.DB) http.HandlerFunc {
 		case http.MethodGet:
 			agents, err := dbpkg.ListSuperMantenimientoAgentes(dbSuper)
 			if err != nil {
-				writeJSON(w, http.StatusInternalServerError, map[string]any{"ok": false, "error": err.Error()})
+				writeSuperMantenimientoPublicError(w, r, http.StatusInternalServerError, "listar agentes", err)
 				return
 			}
 			findings, err := dbpkg.ListSuperMantenimientoHallazgos(dbSuper, dbpkg.SuperAgenteDIANNoticiasCodigo, 80)
 			if err != nil {
-				writeJSON(w, http.StatusInternalServerError, map[string]any{"ok": false, "error": err.Error()})
+				writeSuperMantenimientoPublicError(w, r, http.StatusInternalServerError, "listar hallazgos", err)
 				return
 			}
 			writeJSON(w, http.StatusOK, map[string]any{"ok": true, "agents": agents, "findings": findings, "limits": getAgentCompanyLimits(dbSuper)})
@@ -78,6 +78,8 @@ func SuperMantenimientoAgentesHandler(dbSuper *sql.DB) http.HandlerFunc {
 				status := http.StatusOK
 				if !result["ok"].(bool) {
 					status = http.StatusBadGateway
+					writeSuperMantenimientoAgentPublicError(w, r, status, result)
+					return
 				}
 				writeJSON(w, status, result)
 				return
@@ -93,7 +95,7 @@ func SuperMantenimientoAgentesHandler(dbSuper *sql.DB) http.HandlerFunc {
 					return
 				}
 				if err := saveAgentCompanyLimits(dbSuper, payload.SegundosDiarios, payload.ConsultasAvanzadasDiarias, payload.ConsultasLigerasDiarias); err != nil {
-					writeJSON(w, http.StatusInternalServerError, map[string]any{"ok": false, "error": err.Error()})
+					writeSuperMantenimientoPublicError(w, r, http.StatusInternalServerError, "guardar limites", err)
 					return
 				}
 				writeJSON(w, http.StatusOK, map[string]any{"ok": true, "limits": getAgentCompanyLimits(dbSuper)})
@@ -131,7 +133,7 @@ func SuperMantenimientoAgentesHandler(dbSuper *sql.DB) http.HandlerFunc {
 				Estado:            "activo",
 			})
 			if err != nil {
-				writeJSON(w, http.StatusInternalServerError, map[string]any{"ok": false, "error": err.Error()})
+				writeSuperMantenimientoPublicError(w, r, http.StatusInternalServerError, "guardar agente", err)
 				return
 			}
 			writeJSON(w, http.StatusOK, map[string]any{"ok": true})
@@ -140,6 +142,36 @@ func SuperMantenimientoAgentesHandler(dbSuper *sql.DB) http.HandlerFunc {
 			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 		}
 	}
+}
+
+func writeSuperMantenimientoPublicError(w http.ResponseWriter, r *http.Request, status int, operation string, err error) {
+	requestID := resolveAuditoriaRequestID(r)
+	log.Printf("[super_mantenimiento_agentes] operation=%s request_id=%s error_type=%T", operation, requestID, err)
+	payload := map[string]any{
+		"ok":    false,
+		"code":  "super_mantenimiento_error",
+		"error": "No se pudo completar la operacion de mantenimiento.",
+	}
+	if requestID != "" {
+		payload["request_id"] = requestID
+	}
+	writeJSON(w, status, payload)
+}
+
+func writeSuperMantenimientoAgentPublicError(w http.ResponseWriter, r *http.Request, status int, result map[string]any) {
+	requestID := resolveAuditoriaRequestID(r)
+	if internal, _ := result["error"].(string); internal != "" {
+		log.Printf("[super_mantenimiento_agentes] operation=ejecutar_agente request_id=%s error_present=true", requestID)
+	}
+	payload := map[string]any{
+		"ok":    false,
+		"code":  "super_mantenimiento_agent_failed",
+		"error": "No se pudo ejecutar el agente de mantenimiento.",
+	}
+	if requestID != "" {
+		payload["request_id"] = requestID
+	}
+	writeJSON(w, status, payload)
 }
 
 func getAgentCompanyLimits(dbSuper *sql.DB) map[string]int64 {

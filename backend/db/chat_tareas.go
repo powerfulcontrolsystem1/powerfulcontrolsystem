@@ -537,6 +537,22 @@ func EnsureEmpresaChatTareasSchema(dbConn *sql.DB) error {
 	return nil
 }
 
+// EmpresaChatTareasSchemaReady verifies the complete chat/tareas schema without
+// creating tables, indexes or columns during an HTTP request.
+func EmpresaChatTareasSchemaReady(dbConn *sql.DB) error {
+	if dbConn == nil {
+		return fmt.Errorf("db connection is nil")
+	}
+	ready, err := empresaChatTareasSchemaLooksReady(dbConn)
+	if err != nil {
+		return fmt.Errorf("verify chat/tareas schema: %w", err)
+	}
+	if !ready {
+		return fmt.Errorf("chat/tareas schema is not ready")
+	}
+	return nil
+}
+
 func empresaChatTareasSchemaLooksReady(dbConn *sql.DB) (bool, error) {
 	requiredTables := []string{
 		"chat_tareas_conversaciones",
@@ -742,16 +758,16 @@ func CreateChatConversacion(dbConn *sql.DB, payload ChatConversacion) (int64, er
 	return id, nil
 }
 
-// EnsureChatUsuariosGeneralConversacion garantiza la existencia del canal general
-// empresarial usado por la subpagina chat_usuarios.
-func EnsureChatUsuariosGeneralConversacion(dbConn *sql.DB, empresaID int64, usuarioCreador string) (*ChatConversacion, bool, error) {
+// GetOrCreateChatUsuariosGeneralConversacion returns the company general chat
+// channel and creates its data row when missing. The schema must already exist.
+func GetOrCreateChatUsuariosGeneralConversacion(dbConn *sql.DB, empresaID int64, usuarioCreador string) (*ChatConversacion, bool, error) {
 	if dbConn == nil {
 		return nil, false, fmt.Errorf("db connection is nil")
 	}
 	if empresaID <= 0 {
 		return nil, false, fmt.Errorf("empresa_id es obligatorio")
 	}
-	if err := EnsureEmpresaChatTareasSchema(dbConn); err != nil {
+	if err := EmpresaChatTareasSchemaReady(dbConn); err != nil {
 		return nil, false, err
 	}
 

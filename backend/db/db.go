@@ -414,6 +414,12 @@ func ProvisionDefaultEmpresaForUser(dbConn *sql.DB, email, empresaNombre string)
 	return tx.Commit()
 }
 
+// EnsureUserEmpresa conserva el nombre de contrato usado por el flujo OAuth
+// mientras delega en el aprovisionamiento transaccional vigente.
+func EnsureUserEmpresa(dbConn *sql.DB, email, empresaNombre string) error {
+	return ProvisionDefaultEmpresaForUser(dbConn, email, empresaNombre)
+}
+
 // UpsertAdministrador inserta o actualiza un registro en la tabla administradores de la base superadministrador
 // Si se inserta por primera vez, asigna el rol provisto (usualmente 'administrador').
 // Ahora acepta un campo `photo` con la URL de la foto del perfil.
@@ -481,36 +487,57 @@ func MigrateSessionTokensToHashes(dbConn *sql.DB) error {
 	if dbConn == nil {
 		return fmt.Errorf("database not available")
 	}
-	if _, err := execSQLCompat(dbConn, "ALTER TABLE sesiones ADD COLUMN IF NOT EXISTS token_hash VARCHAR(64)"); err != nil {
-		return err
-	}
-	if _, err := execSQLCompat(dbConn, "CREATE UNIQUE INDEX IF NOT EXISTS ux_sesiones_token_hash ON sesiones(token_hash) WHERE token_hash IS NOT NULL"); err != nil {
-		return err
-	}
-	rows, err := querySQLCompat(dbConn, "SELECT id, token FROM sesiones WHERE COALESCE(token_hash,'') = '' AND COALESCE(token,'') <> ''")
-	if err != nil {
-		return err
-	}
-	defer rows.Close()
 	tx, err := dbConn.Begin()
 	if err != nil {
 		return err
 	}
 	defer func() { _ = tx.Rollback() }()
-	for rows.Next() {
-		var id int64
-		var token string
-		if err := rows.Scan(&id, &token); err != nil {
-			return err
-		}
-		if _, err := tx.Exec(rebindCompatQuery("UPDATE sesiones SET token_hash = ?, token = '' WHERE id = ?"), hashSessionToken(token), id); err != nil {
-			return err
-		}
-	}
-	if err := rows.Err(); err != nil {
+	if err := migrateSessionTokensToHashesTx(tx); err != nil {
 		return err
 	}
 	return tx.Commit()
+}
+
+func migrateSessionTokensToHashesTx(tx *sql.Tx) error {
+	if tx == nil {
+		return fmt.Errorf("transaction not available")
+	}
+	if _, err := execTxSQLCompat(tx, "ALTER TABLE sesiones ADD COLUMN IF NOT EXISTS token_hash VARCHAR(64)"); err != nil {
+		return err
+	}
+	if _, err := execTxSQLCompat(tx, "CREATE UNIQUE INDEX IF NOT EXISTS ux_sesiones_token_hash ON sesiones(token_hash) WHERE token_hash IS NOT NULL"); err != nil {
+		return err
+	}
+	rows, err := queryTxSQLCompat(tx, "SELECT id, token FROM sesiones WHERE COALESCE(token_hash,'') = '' AND COALESCE(token,'') <> ''")
+	if err != nil {
+		return err
+	}
+	type sessionTokenRow struct {
+		id    int64
+		token string
+	}
+	var pending []sessionTokenRow
+	for rows.Next() {
+		var row sessionTokenRow
+		if err := rows.Scan(&row.id, &row.token); err != nil {
+			_ = rows.Close()
+			return err
+		}
+		pending = append(pending, row)
+	}
+	if err := rows.Err(); err != nil {
+		_ = rows.Close()
+		return err
+	}
+	if err := rows.Close(); err != nil {
+		return err
+	}
+	for _, row := range pending {
+		if _, err := execTxSQLCompat(tx, "UPDATE sesiones SET token_hash = ?, token = '' WHERE id = ?", hashSessionToken(row.token), row.id); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // CreateSession registers only a SHA-256 token verifier. The original token

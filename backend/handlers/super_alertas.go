@@ -60,13 +60,14 @@ func SuperAlertasSistemaHandler(dbSuper *sql.DB) http.HandlerFunc {
 		case http.MethodGet:
 			cfg, err := dbpkg.GetSuperAlertasConfig(dbSuper)
 			if err != nil {
-				writeJSON(w, http.StatusInternalServerError, map[string]interface{}{"ok": false, "error": err.Error()})
+				writeSuperAlertasPublicError(w, r, http.StatusInternalServerError, "cargar configuracion", err, nil)
 				return
 			}
 			eval := EvaluateSuperAlertasSistema(dbSuper, false)
+			redactSuperAlertasEvaluationError(&eval, r)
 			events, err := dbpkg.ListSuperAlertaEventos(dbSuper, 100)
 			if err != nil {
-				writeJSON(w, http.StatusInternalServerError, map[string]interface{}{"ok": false, "error": err.Error()})
+				writeSuperAlertasPublicError(w, r, http.StatusInternalServerError, "listar eventos", err, nil)
 				return
 			}
 			writeJSON(w, http.StatusOK, map[string]interface{}{
@@ -105,7 +106,7 @@ func SuperAlertasSistemaHandler(dbSuper *sql.DB) http.HandlerFunc {
 				return
 			}
 			if err := dbpkg.SaveSuperAlertasConfig(dbSuper, payload); err != nil {
-				writeJSON(w, http.StatusInternalServerError, map[string]interface{}{"ok": false, "error": err.Error()})
+				writeSuperAlertasPublicError(w, r, http.StatusInternalServerError, "guardar configuracion", err, nil)
 				return
 			}
 			cfg, _ := dbpkg.GetSuperAlertasConfig(dbSuper)
@@ -118,7 +119,7 @@ func SuperAlertasSistemaHandler(dbSuper *sql.DB) http.HandlerFunc {
 			case "test", "probar":
 				cfg, err := dbpkg.GetSuperAlertasConfig(dbSuper)
 				if err != nil {
-					writeJSON(w, http.StatusInternalServerError, map[string]interface{}{"ok": false, "error": err.Error()})
+					writeSuperAlertasPublicError(w, r, http.StatusInternalServerError, "cargar configuracion de prueba", err, nil)
 					return
 				}
 				subject := "[PCS] Prueba de alertas del sistema"
@@ -145,7 +146,7 @@ func SuperAlertasSistemaHandler(dbSuper *sql.DB) http.HandlerFunc {
 				}
 				_, _ = dbpkg.CreateSuperAlertaEvento(dbSuper, event)
 				if sendErr != nil {
-					writeJSON(w, http.StatusInternalServerError, map[string]interface{}{"ok": false, "sent": false, "error": sendErr.Error()})
+					writeSuperAlertasPublicError(w, r, http.StatusInternalServerError, "enviar alerta de prueba", sendErr, map[string]interface{}{"sent": false})
 					return
 				}
 				writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "sent": true, "recipient": cfg.RecipientEmail})
@@ -156,6 +157,7 @@ func SuperAlertasSistemaHandler(dbSuper *sql.DB) http.HandlerFunc {
 				if eval.Error != "" {
 					status = http.StatusInternalServerError
 				}
+				redactSuperAlertasEvaluationError(&eval, r)
 				writeJSON(w, status, eval)
 				return
 			default:
@@ -168,6 +170,31 @@ func SuperAlertasSistemaHandler(dbSuper *sql.DB) http.HandlerFunc {
 			return
 		}
 	}
+}
+
+func writeSuperAlertasPublicError(w http.ResponseWriter, r *http.Request, status int, operation string, err error, extra map[string]interface{}) {
+	requestID := resolveAuditoriaRequestID(r)
+	log.Printf("[super_alertas] operation=%s request_id=%s error_type=%T", operation, requestID, err)
+	payload := map[string]interface{}{
+		"ok":    false,
+		"code":  "super_alertas_error",
+		"error": "No se pudo completar la operacion de alertas.",
+	}
+	for key, value := range extra {
+		payload[key] = value
+	}
+	if requestID != "" {
+		payload["request_id"] = requestID
+	}
+	writeJSON(w, status, payload)
+}
+
+func redactSuperAlertasEvaluationError(eval *superAlertEvaluation, r *http.Request) {
+	if eval == nil || strings.TrimSpace(eval.Error) == "" {
+		return
+	}
+	log.Printf("[super_alertas] operation=evaluar request_id=%s error_present=true", resolveAuditoriaRequestID(r))
+	eval.Error = "No se pudo evaluar el sistema de alertas."
 }
 
 func EvaluateSuperAlertasSistema(dbSuper *sql.DB, forceSend bool) superAlertEvaluation {

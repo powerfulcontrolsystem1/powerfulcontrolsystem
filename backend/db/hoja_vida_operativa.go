@@ -2,6 +2,8 @@ package db
 
 import (
 	"database/sql"
+	"errors"
+	"fmt"
 	"strings"
 )
 
@@ -160,6 +162,29 @@ func EnsureEmpresaHojaVidaOperativaSchema(dbConn *sql.DB) error {
 	for _, stmt := range stmts {
 		if _, err := dbConn.Exec(stmt); err != nil {
 			return err
+		}
+	}
+	return nil
+}
+
+// EmpresaHojaVidaOperativaSchemaReady verifies the migration-owned tables
+// without altering schema while a company operates its records.
+func EmpresaHojaVidaOperativaSchemaReady(dbConn *sql.DB) error {
+	if dbConn == nil {
+		return fmt.Errorf("conexion de base de datos no disponible")
+	}
+	for _, table := range []string{
+		"empresa_hoja_vida_entidades",
+		"empresa_hoja_vida_eventos",
+		"empresa_hoja_vida_alertas",
+	} {
+		var marker int
+		err := dbConn.QueryRow("SELECT 1 FROM " + table + " WHERE 1=0").Scan(&marker)
+		if errors.Is(err, sql.ErrNoRows) {
+			continue
+		}
+		if err != nil {
+			return fmt.Errorf("esquema de hoja de vida no disponible (%s): %w", table, err)
 		}
 	}
 	return nil

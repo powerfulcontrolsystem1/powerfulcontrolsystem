@@ -75,7 +75,7 @@ func businessSchedules() []platformworker.ScheduleSpec {
 		{Kind: jobAuditRetention, Version: 1, Interval: 12 * time.Hour, MaxAttempts: 5, Priority: 150},
 		{Kind: jobLicenseState, Version: 1, Interval: time.Hour, MaxAttempts: 8, Priority: 60},
 		{Kind: jobLicenseAlerts, Version: 1, Interval: 12 * time.Hour, MaxAttempts: 8, Priority: 70},
-		{Kind: jobVPSSnapshot, Version: 1, Interval: time.Hour, MaxAttempts: 3, Priority: 200},
+		{Kind: jobVPSSnapshot, Version: 1, Interval: time.Minute, MaxAttempts: 3, Priority: 200},
 		{Kind: jobDIANNewsAgent, Version: 1, Interval: time.Minute, MaxAttempts: 5, Priority: 120},
 		{Kind: jobLegalParameters, Version: 1, Interval: 24 * time.Hour, MaxAttempts: 5, Priority: 140},
 		{Kind: jobCollections, Version: 1, Interval: time.Hour, MaxAttempts: 8, Priority: 90},

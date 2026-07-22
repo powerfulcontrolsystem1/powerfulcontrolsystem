@@ -48,6 +48,78 @@ func TestEmpresaCarritosSchemaReadyRejectsNilDatabase(t *testing.T) {
 	}
 }
 
+func TestEmpresaEstacionPrefsSchemaReadyRejectsNilDatabase(t *testing.T) {
+	if err := EmpresaEstacionPrefsSchemaReady(nil); err == nil {
+		t.Fatal("expected nil database to be rejected")
+	}
+}
+
+func TestEmpresaUbicacionGPSSchemaReadyRejectsNilDatabase(t *testing.T) {
+	if err := EmpresaUbicacionGPSSchemaReady(nil); err == nil {
+		t.Fatal("expected nil database to be rejected")
+	}
+}
+
+func TestEmpresaGrafologiaSchemaReadyRejectsNilDatabase(t *testing.T) {
+	if err := EmpresaGrafologiaSchemaReady(nil); err == nil {
+		t.Fatal("expected nil database to be rejected")
+	}
+}
+
+func TestEmpresaEnergiaSolarSchemaReadyRejectsNilDatabase(t *testing.T) {
+	if err := EmpresaEnergiaSolarSchemaReady(nil); err == nil {
+		t.Fatal("expected nil database to be rejected")
+	}
+}
+
+func TestEmpresaHojaVidaOperativaSchemaReadyRejectsNilDatabase(t *testing.T) {
+	if err := EmpresaHojaVidaOperativaSchemaReady(nil); err == nil {
+		t.Fatal("expected nil database to be rejected")
+	}
+}
+
+func TestEmpresaReservasHotelSchemaReadyRejectsNilDatabase(t *testing.T) {
+	if err := EmpresaReservasHotelSchemaReady(nil); err == nil {
+		t.Fatal("expected nil database to be rejected")
+	}
+}
+
+func TestEmpresaReportesProgramacionSchemaReadyRejectsNilDatabase(t *testing.T) {
+	if err := EmpresaReportesProgramacionSchemaReady(nil); err == nil {
+		t.Fatal("expected nil database to be rejected")
+	}
+}
+
+func TestEmpresaChatTareasSchemaReadyRejectsNilDatabase(t *testing.T) {
+	if err := EmpresaChatTareasSchemaReady(nil); err == nil {
+		t.Fatal("expected nil database to be rejected")
+	}
+}
+
+func TestEmpresaControlElectricoSchemaReadyRejectsNilDatabase(t *testing.T) {
+	if err := EmpresaControlElectricoSchemaReady(nil); err == nil {
+		t.Fatal("expected nil database to be rejected")
+	}
+}
+
+func TestEmpresaTarifasMotelSchemaReadyRejectsNilDatabase(t *testing.T) {
+	if err := EmpresaTarifasMotelSchemaReady(nil); err == nil {
+		t.Fatal("expected nil database to be rejected")
+	}
+}
+
+func TestEmpresaTarifasPorMinutosSchemaReadyRejectsNilDatabase(t *testing.T) {
+	if err := EmpresaTarifasPorMinutosSchemaReady(nil); err == nil {
+		t.Fatal("expected nil database to be rejected")
+	}
+}
+
+func TestEmpresaSensorPuertasSchemaReadyRejectsNilDatabase(t *testing.T) {
+	if err := EmpresaSensorPuertasSchemaReady(nil); err == nil {
+		t.Fatal("expected nil database to be rejected")
+	}
+}
+
 func TestEmpresaFinanzasSchemaReadyRejectsNilDatabase(t *testing.T) {
 	if err := EmpresaFinanzasSchemaReady(nil); err == nil {
 		t.Fatal("expected nil database to be rejected")

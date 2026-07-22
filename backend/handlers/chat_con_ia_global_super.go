@@ -3,6 +3,7 @@ package handlers
 import (
 	"database/sql"
 	"encoding/json"
+	"log"
 	"net/http"
 	"strings"
 	"time"
@@ -303,7 +304,8 @@ func (c *SuperAIChatController) ConsultarHandler(w http.ResponseWriter, r *http.
 			c.writeLimitReached(w, model, usoActual.Consultas)
 			return
 		}
-		http.Error(w, err.Error(), http.StatusBadGateway)
+		log.Printf("super IA provider error: %v", err)
+		http.Error(w, "No se pudo consultar el proveedor de IA", http.StatusBadGateway)
 		return
 	}
 
@@ -474,7 +476,8 @@ func (c *SuperAIChatController) ConsultarConAdjuntoHandler(w http.ResponseWriter
 	superMeta := c.base.dbSuper != nil
 	respuesta, promptTokens, completionTokens, err := c.base.generateResponseWithSystemPromptAndAttachment(model, preguntaFinal, historial, buildSuperAISystemPrompt(contexto, superMeta, empresaRO, modoAsistente), att)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadGateway)
+		log.Printf("super IA attachment provider error: %v", err)
+		http.Error(w, "No se pudo consultar el proveedor de IA", http.StatusBadGateway)
 		return
 	}
 
@@ -637,7 +640,8 @@ func (c *SuperAIChatController) ConsultarStreamHandler(w http.ResponseWriter, r 
 		_ = sseWriteJSON(w, openAIStreamEvent{Delta: delta})
 	})
 	if err != nil {
-		_ = sseWriteJSON(w, openAIStreamEvent{Error: err.Error()})
+		log.Printf("super IA stream provider error: %v", err)
+		_ = sseWriteJSON(w, openAIStreamEvent{Error: "No se pudo completar la consulta de IA"})
 		_ = sseWriteJSON(w, openAIStreamEvent{Done: true})
 		return
 	}

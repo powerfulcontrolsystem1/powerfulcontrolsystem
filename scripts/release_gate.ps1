@@ -62,7 +62,7 @@ try {
     if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
   }
 
-  & node tools\release_manifest.mjs
+  & node tools\release_manifest.mjs --strict
   if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
   Write-Host "[OK] Release gate completado." -ForegroundColor Green

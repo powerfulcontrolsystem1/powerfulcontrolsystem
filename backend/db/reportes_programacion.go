@@ -2,8 +2,36 @@ package db
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 )
+
+// EmpresaReportesProgramacionSchemaReady verifies that the versioned reports
+// scheduling schema is available without creating or altering database objects.
+func EmpresaReportesProgramacionSchemaReady(dbConn *sql.DB) error {
+	if dbConn == nil {
+		return fmt.Errorf("db connection is nil")
+	}
+	queries := []struct {
+		name string
+		sql  string
+	}{
+		{"programaciones", `SELECT empresa_id, dataset_key, frecuencia, activa FROM empresa_reportes_programaciones WHERE 1=0`},
+		{"plantillas", `SELECT empresa_id, codigo, version, contenido_json FROM empresa_reportes_plantillas WHERE 1=0`},
+		{"ejecuciones", `SELECT empresa_id, programacion_id, dataset_key, ejecutado_en FROM empresa_reportes_ejecuciones WHERE 1=0`},
+	}
+	for _, check := range queries {
+		var marker int
+		err := queryRowSQLCompat(dbConn, check.sql).Scan(&marker)
+		if errors.Is(err, sql.ErrNoRows) {
+			continue
+		}
+		if err != nil {
+			return fmt.Errorf("esquema de reportes programados no disponible (%s): %w", check.name, err)
+		}
+	}
+	return nil
+}
 
 // EnsureEmpresaReportesProgramacionSchema ensures scheduling, template versioning,
 // and execution trace tables for reportes module 31.

@@ -1,7 +1,7 @@
 (function () {
   "use strict";
 
-  var state = { empresaID: 0, data: null };
+  var state = { empresaID: 0, data: null, redirected: false };
 
   function byID(id) { return document.getElementById(id); }
   function cookie(name) {
@@ -59,17 +59,33 @@
       byID("nextcloudCredential").classList.add("visible");
     }
   }
+  function openCompanyNextcloudWhenReady(data) {
+    if (state.redirected || !data || !data.provisioned || !data.active || !data.web_url || data.temporary_password) return;
+    state.redirected = true;
+    // La pagina se carga dentro del iframe de Administrar empresa. Salir al nivel
+    // superior evita que las politicas anti-iframe de Nextcloud bloqueen el acceso.
+    if (window.top && window.top !== window) window.top.location.assign(data.web_url);
+    else window.location.assign(data.web_url);
+  }
   async function run(action) {
     setBusy(true);
     byID("nextcloudStatus").textContent = "Procesando...";
-    try { render(await request(action, "POST")); }
+    try {
+      var data = await request(action, "POST");
+      render(data);
+    }
     catch (error) { byID("nextcloudStatus").textContent = error.message; }
     finally { if (state.data) render(state.data); }
   }
   async function load() {
     state.empresaID = resolveEmpresaID();
     if (!state.empresaID) { byID("nextcloudStatus").textContent = "No se pudo resolver la empresa activa. Vuelve a abrir esta opcion desde Administrar empresa."; setBusy(true); return; }
-    try { render(await request("", "GET")); }
+    try {
+      var data = await request("", "GET");
+      render(data);
+      if (data.configured && data.active && !data.provisioned) run("provision");
+      else openCompanyNextcloudWhenReady(data);
+    }
     catch (error) { byID("nextcloudStatus").textContent = error.message; setBusy(true); }
   }
 

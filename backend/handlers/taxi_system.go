@@ -85,7 +85,7 @@ func EmpresaTaxiSystemHandler(dbEmp *sql.DB, dbSuper ...*sql.DB) http.HandlerFun
 				writeJSON(w, http.StatusOK, rows)
 				return
 			case "gps_devices":
-				if err := dbpkg.EnsureEmpresaUbicacionGPSSchema(dbEmp); err != nil {
+				if err := dbpkg.EmpresaUbicacionGPSSchemaReady(dbEmp); err != nil {
 					http.Error(w, "No se pudo preparar el modulo GPS", http.StatusInternalServerError)
 					return
 				}
@@ -173,7 +173,7 @@ func EmpresaTaxiSystemHandler(dbEmp *sql.DB, dbSuper ...*sql.DB) http.HandlerFun
 				writeJSON(w, http.StatusOK, row)
 				return
 			case "gps_devices":
-				if err := dbpkg.EnsureEmpresaUbicacionGPSSchema(dbEmp); err != nil {
+				if err := dbpkg.EmpresaUbicacionGPSSchemaReady(dbEmp); err != nil {
 					http.Error(w, "No se pudo preparar el modulo GPS", http.StatusInternalServerError)
 					return
 				}
@@ -230,7 +230,7 @@ func EmpresaTaxiSystemHandler(dbEmp *sql.DB, dbSuper ...*sql.DB) http.HandlerFun
 				writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true})
 				return
 			case "gps_devices":
-				if err := dbpkg.EnsureEmpresaUbicacionGPSSchema(dbEmp); err != nil {
+				if err := dbpkg.EmpresaUbicacionGPSSchemaReady(dbEmp); err != nil {
 					http.Error(w, "No se pudo preparar el modulo GPS", http.StatusInternalServerError)
 					return
 				}

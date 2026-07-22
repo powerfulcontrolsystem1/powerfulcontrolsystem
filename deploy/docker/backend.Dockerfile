@@ -11,11 +11,25 @@ RUN CGO_ENABLED=0 GOOS=linux go build -trimpath -ldflags="-s -w" -o /out/pcs-bac
 RUN CGO_ENABLED=0 GOOS=linux go build -trimpath -ldflags="-s -w" -o /out/pcs-migrate ./cmd/pcs-migrate
 RUN CGO_ENABLED=0 GOOS=linux go build -trimpath -ldflags="-s -w" -o /out/pcs-worker ./cmd/pcs-worker
 
+FROM alpine:3.20 AS lynis-source
+
+RUN apk add --no-cache git \
+    && git clone --depth 1 https://github.com/CISOfy/lynis.git /src/lynis \
+    && cd /src/lynis \
+    && git fetch --depth 1 origin 06153321ea50d53a27446084e646d9f43fe46e0e \
+    && git checkout --detach 06153321ea50d53a27446084e646d9f43fe46e0e
+
+FROM aquasec/trivy@sha256:cffe3f5161a47a6823fbd23d985795b3ed72a4c806da4c4df16266c02accdd6f AS trivy-source
+
 FROM alpine:3.20 AS runtime-base
 
-RUN apk add --no-cache bash ca-certificates curl openssh-client openssl tzdata \
+RUN apk add --no-cache bash ca-certificates curl nmap openssh-client openssl tzdata \
     && addgroup -S -g 10001 pcs \
     && adduser -S -D -H -u 10001 -G pcs pcs
+COPY --from=lynis-source /src/lynis /opt/lynis
+COPY --from=trivy-source /usr/local/bin/trivy /usr/local/bin/trivy
+RUN printf '%s\n' '#!/bin/sh' 'cd /opt/lynis' 'exec /opt/lynis/lynis "$@"' > /usr/local/bin/lynis \
+    && chmod 0755 /usr/local/bin/lynis
 WORKDIR /app/backend
 ENV GRAFOLOGIA_TESSERACT_ENABLED=0
 

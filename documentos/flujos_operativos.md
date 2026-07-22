@@ -163,8 +163,9 @@ afecte dinero, documentos, licencias o seguridad.
 ## Snapshot completo VPS desde super administrador
 
 1. Abrir `Super Administrador > Plataforma > Docker VPS`.
-2. En `Snapshot completo VPS`, activar snapshots y definir retencion local,
-   intervalo automatico y si se incluyen imagenes Docker.
+2. En `Snapshot completo VPS`, activar snapshots y definir retención local,
+   intervalo automático o una hora diaria, el alcance (completo o solo bases
+   PostgreSQL) y si se incluyen imágenes Docker.
 3. Para nube, configurar previamente `rclone` en la VPS y guardar solo la ruta
    remota en PCS, por ejemplo `gdrive:PCS/backups` o `mega:PCS/backups`.
 4. Usar `Crear y descargar snapshot` para generar un `.tar.gz` restaurable en

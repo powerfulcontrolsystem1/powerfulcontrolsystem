@@ -102,3 +102,47 @@ func TestPlatformCatalogsFreezeLegacySchemaManifest(t *testing.T) {
 		}
 	}
 }
+
+func TestSuperCatalogIncludesSessionTokenMigration(t *testing.T) {
+	t.Parallel()
+	migrations, err := PlatformMigrations(MigrationTargetSuper)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, migration := range migrations {
+		if migration.Version == "20260722-001-session-token-hashes-v1" {
+			if migration.Apply == nil || migration.Body == "" {
+				t.Fatal("session token migration must be executable and checksummed")
+			}
+			return
+		}
+	}
+	t.Fatal("session token migration is missing from super catalog")
+}
+
+func TestLegacySchemaManifestV1KeepsReleasedChecksums(t *testing.T) {
+	t.Parallel()
+	expected := map[string]string{
+		MigrationTargetEmpresas: "0ca48d62a466acdcf0484dbc41c788a6fd3767056c1d96759b0d47ba4ad52603",
+		MigrationTargetSuper:    "39556fb4724b5f82a4eb5aa2450b101d87a4137b31b2b92df70feb372f11ae14",
+	}
+	for target, want := range expected {
+		migrations, err := PlatformMigrations(target)
+		if err != nil {
+			t.Fatalf("PlatformMigrations(%s): %v", target, err)
+		}
+		found := false
+		for _, migration := range migrations {
+			if migration.Version == "20260717-001-legacy-schema-manifest-v1" {
+				found = true
+				if got := MigrationChecksum(platformMigrationScope, migration); got != want {
+					t.Fatalf("legacy manifest checksum for %s = %s, want %s", target, got, want)
+				}
+				break
+			}
+		}
+		if !found {
+			t.Fatalf("legacy manifest migration is missing for %s", target)
+		}
+	}
+}

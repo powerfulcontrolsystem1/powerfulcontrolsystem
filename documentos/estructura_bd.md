@@ -128,7 +128,8 @@ Actualizacion 2026-06-10 (snapshots completos VPS)
   ejecucion automatica, secretos e imagenes Docker, `manifest_json`, error
   saneado, usuario creador y fechas de inicio/fin/creacion/actualizacion.
 - La configuracion global vive en `configuraciones` con claves
-  `super.vps_snapshot.*`: activacion, ejecucion automatica, intervalo,
+  `super.vps_snapshot.*`: activacion, ejecucion automatica, intervalo u hora
+  diaria (`daily_time`),
   retencion, limpieza local/remota, proveedor, ruta `rclone`, inclusion de
   proyecto/PostgreSQL/volumenes/imagenes y ultimo resultado.
 - No hay `empresa_id` porque es un respaldo de infraestructura completo,

@@ -8,8 +8,28 @@ function qs(id) {
   return document.getElementById(id);
 }
 
+function readCSRFCookie() {
+  const match = String(document.cookie || '').match(/(?:^|;\s*)pcs_csrf=([^;]+)/);
+  if (!match) return '';
+  try {
+    return decodeURIComponent(match[1]);
+  } catch (error) {
+    return '';
+  }
+}
+
 async function fetchJSON(url, options) {
-  const response = await fetch(url, options);
+  const requestOptions = Object.assign({}, options || {});
+  const method = String(requestOptions.method || 'GET').toUpperCase();
+  if (method !== 'GET' && method !== 'HEAD') {
+    const token = readCSRFCookie();
+    if (token) {
+      const headers = new Headers(requestOptions.headers || {});
+      if (!headers.has('X-CSRF-Token')) headers.set('X-CSRF-Token', token);
+      requestOptions.headers = headers;
+    }
+  }
+  const response = await fetch(url, requestOptions);
   let payload = null;
   try {
     payload = await response.json();

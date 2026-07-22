@@ -154,7 +154,7 @@ func SuperLicenciasConfiguracionHandler(dbSuper *sql.DB) http.HandlerFunc {
 		case http.MethodGet:
 			maxAdvance, err := readLicenciaMaxAdvanceSamePlanBuys(dbSuper)
 			if err != nil {
-				http.Error(w, "No se pudo consultar configuracion de licencias: "+err.Error(), http.StatusInternalServerError)
+				http.Error(w, "No se pudo consultar la configuracion de licencias", http.StatusInternalServerError)
 				return
 			}
 			maxUnits, err := readLicenciaMaxUnitsPerCheckout(dbSuper)
@@ -194,7 +194,7 @@ func SuperLicenciasConfiguracionHandler(dbSuper *sql.DB) http.HandlerFunc {
 				return
 			}
 			if err := dbpkg.SetConfigValue(dbSuper, licenciaMaxAdvanceSamePlanConfigKey, strconv.Itoa(value), false); err != nil {
-				http.Error(w, "No se pudo guardar configuracion de licencias: "+err.Error(), http.StatusInternalServerError)
+				http.Error(w, "No se pudo guardar la configuracion de licencias", http.StatusInternalServerError)
 				return
 			}
 			units := payload.MaxUnidadesPorCompra
@@ -226,7 +226,7 @@ func SuperLicenciasConfiguracionHandler(dbSuper *sql.DB) http.HandlerFunc {
 					raw = "1"
 				}
 				if err := dbpkg.SetConfigValue(dbSuper, item.key, raw, false); err != nil {
-					http.Error(w, "No se pudo guardar configuracion de licencias: "+err.Error(), http.StatusInternalServerError)
+					http.Error(w, "No se pudo guardar la configuracion de licencias", http.StatusInternalServerError)
 					return
 				}
 			}
@@ -289,17 +289,17 @@ func LicenciasHandler(dbSuper *sql.DB) http.HandlerFunc {
 					requesterEmail := strings.ToLower(strings.TrimSpace(s.AdminEmail))
 					_, principalEmail, err := resolveRequesterAdminScope(dbSuper, r)
 					if err != nil {
-						http.Error(w, "failed to resolve admin scope: "+err.Error(), http.StatusInternalServerError)
+						http.Error(w, "No se pudo resolver el alcance administrativo", http.StatusInternalServerError)
 						return
 					}
 					empresas, err := dbpkg.GetEmpresas(dbEmp)
 					if err != nil {
-						http.Error(w, "failed to query empresas scope: "+err.Error(), http.StatusInternalServerError)
+						http.Error(w, "No se pudo consultar el alcance de empresas", http.StatusInternalServerError)
 						return
 					}
 					empresas, err = decorateEmpresasByEffectiveAccess(dbSuper, requesterEmail, principalEmail, empresas)
 					if err != nil {
-						http.Error(w, "failed to resolve empresa access: "+err.Error(), http.StatusInternalServerError)
+						http.Error(w, "No se pudo resolver el acceso de la empresa", http.StatusInternalServerError)
 						return
 					}
 					allowedEmpresaIDs = make(map[int64]bool, len(empresas))
@@ -318,7 +318,7 @@ func LicenciasHandler(dbSuper *sql.DB) http.HandlerFunc {
 			licencias, err := dbpkg.GetLicenciasFilteredByPais(dbSuper, soloActivas, usuarioCreador, conEmpresa, paisCodigo)
 			if err != nil {
 				log.Println("GET /super/api/licencias error:", err)
-				http.Error(w, "failed to query licencias: "+err.Error(), http.StatusInternalServerError)
+				http.Error(w, "No se pudieron consultar las licencias", http.StatusInternalServerError)
 				return
 			}
 			if !conEmpresa {
@@ -346,7 +346,7 @@ func LicenciasHandler(dbSuper *sql.DB) http.HandlerFunc {
 				yaUsoPrueba, err := dbpkg.HasAnyLicenciaGratisActivationForEmpresa(dbSuper, empresaIDFiltro)
 				if err != nil {
 					log.Println("GET /super/api/licencias trial history error:", err)
-					http.Error(w, "failed to validate trial licencia history: "+err.Error(), http.StatusInternalServerError)
+					http.Error(w, "No se pudo validar el historial de la licencia de prueba", http.StatusInternalServerError)
 					return
 				}
 				if yaUsoPrueba {
@@ -411,7 +411,7 @@ func LicenciasHandler(dbSuper *sql.DB) http.HandlerFunc {
 
 				yaUsoPrueba, err := dbpkg.HasAnyLicenciaGratisActivationForEmpresa(dbSuper, empresaID)
 				if err != nil {
-					http.Error(w, "failed to validate trial licencia history: "+err.Error(), http.StatusInternalServerError)
+					http.Error(w, "No se pudo validar el historial de la licencia de prueba", http.StatusInternalServerError)
 					return
 				}
 				if yaUsoPrueba {
@@ -428,7 +428,7 @@ func LicenciasHandler(dbSuper *sql.DB) http.HandlerFunc {
 
 				licID, err := dbpkg.CreateLicenciaAdvancedWithLimits(dbSuper, tipoID, pais, nombre, descripcion, valor, duracion, modulos, 0, "", superRol, 250)
 				if err != nil {
-					http.Error(w, "failed to create licencia: "+err.Error(), http.StatusInternalServerError)
+					http.Error(w, "No se pudo crear la licencia", http.StatusInternalServerError)
 					return
 				}
 
@@ -440,12 +440,12 @@ func LicenciasHandler(dbSuper *sql.DB) http.HandlerFunc {
 						http.Error(w, "esta empresa ya uso una licencia de prueba o gratuita", http.StatusConflict)
 						return
 					}
-					http.Error(w, "failed to activate trial licencia: "+err.Error(), http.StatusInternalServerError)
+					http.Error(w, "No se pudo activar la licencia de prueba", http.StatusInternalServerError)
 					return
 				}
 				if dbEmp := dbpkg.GetDB(); dbEmp != nil {
 					if err := dbpkg.SetEmpresaEstado(dbEmp, empresaID, "activo"); err != nil {
-						http.Error(w, "failed to activate empresa after trial licencia: "+err.Error(), http.StatusInternalServerError)
+						http.Error(w, "No se pudo activar la empresa después de la licencia de prueba", http.StatusInternalServerError)
 						return
 					}
 					if _, err := applyEmpresaTipoPreconfiguracionFromLicencia(dbEmp, dbSuper, empresaID, licID, "licencias.prueba_15_dias"); err != nil {

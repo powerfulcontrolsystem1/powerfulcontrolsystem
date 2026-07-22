@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"io"
+	"log"
 	"net/http"
 	"os"
 	"strings"
@@ -241,7 +242,7 @@ func enterpriseAIProductProposal(w http.ResponseWriter, r *http.Request, dbEmp *
 		return
 	}
 	if err := dbpkg.NormalizeEmpresaAIProductCreatePlan(&req.Plan); err != nil {
-		writeJSON(w, http.StatusUnprocessableEntity, map[string]interface{}{"ok": false, "state": dbpkg.AIProposalAwaitingInformation, "missing_or_invalid": err.Error()})
+		writeJSON(w, http.StatusUnprocessableEntity, map[string]interface{}{"ok": false, "state": dbpkg.AIProposalAwaitingInformation, "missing_or_invalid": enterpriseAIProposalValidationMessage(r, err)})
 		return
 	}
 	duplicates, err := dbpkg.FindEmpresaAIProductDuplicates(dbEmp, ctx.EmpresaID, req.Plan.Nombre, req.Plan.SKU)
@@ -290,7 +291,7 @@ func enterpriseAIHotelProposal(w http.ResponseWriter, r *http.Request, dbEmp *sq
 		return
 	}
 	if err := dbpkg.NormalizeEmpresaAIHotelRoomPlan(&req.Plan); err != nil {
-		writeJSON(w, http.StatusUnprocessableEntity, map[string]interface{}{"ok": false, "state": dbpkg.AIProposalAwaitingInformation, "missing_or_invalid": err.Error(), "questions": []string{"Indica si la tarifa es por noche, los horarios de check-in/check-out, moneda, activacion y las tarifas por ocupacion."}})
+		writeJSON(w, http.StatusUnprocessableEntity, map[string]interface{}{"ok": false, "state": dbpkg.AIProposalAwaitingInformation, "missing_or_invalid": enterpriseAIProposalValidationMessage(r, err), "questions": []string{"Indica si la tarifa es por noche, los horarios de check-in/check-out, moneda, activacion y las tarifas por ocupacion."}})
 		return
 	}
 	// Current state is read on the server and is never selected by the model or frontend.
@@ -315,6 +316,19 @@ func enterpriseAIHotelProposal(w http.ResponseWriter, r *http.Request, dbEmp *sq
 	_ = dbpkg.RecordEmpresaAIExecution(dbEmp, dbpkg.EmpresaAIExecution{EmpresaID: ctx.EmpresaID, UsuarioID: ctx.UserID, ConversationID: ctx.ConversationID, ProposalID: p.ProposalID, ToolName: p.ToolName, Modo: ctx.Mode, RiskLevel: p.RiskLevel, Resultado: "awaiting_confirmation", FuentesJSON: `["Configuracion actual de estaciones","Reglas de tarifas por dia"]`, CategoriasJSON: `["internal"]`})
 	registrarAuditoriaModuloEmpresaNoBloqueante(dbEmp, r, ctx.EmpresaID, "centro_ia_empresarial", "propuesta_hotel_creada", "empresa_ai_propuestas", 0, http.StatusCreated, map[string]interface{}{"proposal_id": p.ProposalID, "tool": p.ToolName, "risk": p.RiskLevel}, "propuesta IA creada sin ejecutar cambios")
 	writeJSON(w, http.StatusCreated, map[string]interface{}{"ok": true, "proposal": p, "sources": []string{"Configuracion actual de estaciones", "Reglas de tarifas por dia"}})
+}
+
+func enterpriseAIProposalValidationMessage(r *http.Request, err error) string {
+	if err == nil {
+		return "Los datos de la propuesta no son validos."
+	}
+	switch err.Error() {
+	case "plan de producto invalido", "nombre de producto invalido", "texto de producto excede el limite permitido", "valores de producto invalidos", "bodega_id es obligatorio cuando se registra stock inicial", "estacion_id es obligatorio", "nombre de habitacion invalido", "moneda invalida", "hora invalida", "debe indicar entre una y doce tarifas", "tarifa por ocupacion invalida":
+		return err.Error()
+	default:
+		log.Printf("[ai_enterprise] operation=proposal_validation request_id=%s error_type=%T", resolveAuditoriaRequestID(r), err)
+		return "Los datos de la propuesta no son validos."
+	}
 }
 
 func enterpriseAIConfirmProposal(w http.ResponseWriter, r *http.Request, dbEmp *sql.DB, ctx aipkg.ExecutionContext) {

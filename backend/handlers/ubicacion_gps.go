@@ -15,7 +15,7 @@ import (
 // EmpresaUbicacionGPSDispositivosHandler gestiona CRUD de dispositivos GPS por empresa.
 func EmpresaUbicacionGPSDispositivosHandler(dbEmp *sql.DB, dbSuper *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if err := dbpkg.EnsureEmpresaUbicacionGPSSchema(dbEmp); err != nil {
+		if err := dbpkg.EmpresaUbicacionGPSSchemaReady(dbEmp); err != nil {
 			http.Error(w, "No se pudo preparar el modulo GPS", http.StatusInternalServerError)
 			return
 		}
@@ -169,7 +169,7 @@ func EmpresaUbicacionGPSDispositivosHandler(dbEmp *sql.DB, dbSuper *sql.DB) http
 // EmpresaUbicacionGPSRecorridosHandler gestiona registro y consulta de recorridos GPS.
 func EmpresaUbicacionGPSRecorridosHandler(dbEmp *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if err := dbpkg.EnsureEmpresaUbicacionGPSSchema(dbEmp); err != nil {
+		if err := dbpkg.EmpresaUbicacionGPSSchemaReady(dbEmp); err != nil {
 			http.Error(w, "No se pudo preparar el modulo GPS", http.StatusInternalServerError)
 			return
 		}

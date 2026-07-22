@@ -46,7 +46,7 @@ func TestSecurityHeadersAndNoStoreOnLogin(t *testing.T) {
 			t.Fatalf("CSP keeps broad source %q: %q", forbidden, policy)
 		}
 	}
-	for _, expected := range []string{"form-action 'self'", "https://onlyoffice.example.test", "https://api.example.test", "https://images.example.test"} {
+	for _, expected := range []string{"form-action 'self'", "https://onlyoffice.example.test", "https://api.example.test", "https://images.example.test", "https://lh3.googleusercontent.com"} {
 		if !strings.Contains(policy, expected) {
 			t.Fatalf("CSP missing explicit source %q: %q", expected, policy)
 		}
