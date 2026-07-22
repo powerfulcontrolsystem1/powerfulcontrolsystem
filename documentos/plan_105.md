@@ -6,7 +6,7 @@ la prueba automatica**.
 
 Veredicto actual: **NO-GO para produccion general**.
 
-Avance comprobado del plan: **94%** (avance de trabajo y evidencia; no
+Avance comprobado del plan: **96%** (avance de trabajo y evidencia; no
 equivale a autorizacion GO para produccion general).
 
 Fecha de corte: 2026-07-22.
@@ -15,13 +15,13 @@ Repositorio auditado: `D:\powerfulcontrolsystem`.
 
 Rama auditada: `main`.
 
-Commit auditado: `9105e2ba` (base de esta corrida; el cambio Trivy se publicara
-en la siguiente sincronizacion controlada).
+Commit auditado: `f8f388b7` (merge publicado mediante `rs`; contiene el cierre
+Trivy y la integracion visual de Nextcloud).
 
 Referencias locales al corte:
 
-- `main`: `9105e2ba`.
-- `origin/main`: `9105e2ba`.
+- `main`: `f8f388b7`.
+- `origin/main`: `f8f388b7`.
 
 Modelo previsto para ejecutar este plan: **Codex Terra, esfuerzo medio**.
 
@@ -902,9 +902,9 @@ Actualizar esta tabla al terminar cada bloque, sin marcar evidencia futura:
 
 | ID | Estado | SHA | Entorno | Pruebas/evidencia | Riesgo residual | Aprobador |
 |---|---|---|---|---|---|---|
-| P105-001 | En curso | `9105e2ba` | main/CI/VPS | PR #42 fusionada, CI verde y `rs` previo con salud/readiness OK; este cambio de montaje Trivy queda pendiente de nueva SHA y verificacion post-rs | artefacto no inmutable | - |
+| P105-001 | En curso | `f8f388b7` | main/CI/VPS | PR #44/#45 fusionadas, CI verde; `rs` final termino con codigo 0, `/health` y `/ready` 200, backend healthy y frontend/worker recreados | artefacto no inmutable | - |
 | P105-002 | En curso | - | decision | borrador `matriz_alcance_piloto_plan_105.md` | alcance abierto | usuario |
-| P105-003 | En curso | `9105e2ba` | local/staging/VPS | `migration_audit.mjs --strict`, inventario bootstrap, suite Go y vet OK; migracion `20260722-001-session-token-hashes-v1` aplicada y servicios healthy; queda demostrar auditoria post-rs en el mismo SHA | DDL heredado/trazabilidad | - |
+| P105-003 | En curso | `f8f388b7` | local/staging/VPS | `migration_audit.mjs --strict` local OK; migracion `20260722-001-session-token-hashes-v1` aplicada y contenedor `pcs-migrate` salio 0; el wrapper preflight aun registra un aviso de auditoria con codigo 1 que debe reconciliarse | DDL heredado/trazabilidad | - |
 | P105-004 | En curso | - | diseno/test/staging | wrapper 203/203; matriz A/B P0 definida; fixtures y ejecucion faltantes | fuga tenant | - |
 | P105-005 | En curso | - | analisis/test/staging | inventario de 23 goroutines; contratos estaticos de pasarelas/webhooks idempotentes OK; outbox parcial | duplicados | - |
 | P105-006 | En curso | - | analisis/test | 320 5xx y 49 JSON directos en la ultima linea base; lotes IA super y licencias/pagos con canarios estaticos OK; `go test ./...` pasa; falta regenerar inventario y cubrir pagos restantes/productos/voz/identidad/multiempresa | fuga tecnica | - |
@@ -913,8 +913,8 @@ Actualizar esta tabla al terminar cada bloque, sin marcar evidencia futura:
 | P105-009 | En curso | - | CI/staging | suite Go completa, `go vet ./...` y builds de migrador/worker pasan nuevamente tras redacciones P105-006; smoke de carga staging: 80 requests, error rate 0%, P95 821 ms; el host local confirma `CGO_ENABLED=0`, por lo que `go test -race` no puede ejecutarse aquí; falta resultado race Linux sobre SHA candidato y carga sostenida real | carreras/capacidad | - |
 | P105-010 | En curso | - | local/VPS/staging | `/health` y `/ready` core/staging 200; volumen de logs staging corregido a usuario `pcs` y el backend ya arranca sin `permission denied`; dashboard visual staging muestra continuidad 0/100, 295 eventos críticos y 161 sesiones frente a umbral 50; consulta read-only de producción registra 2034 sesiones activas (1874 con fecha_fin no vacía), lo que exige reconciliar métrica/limpieza gobernada. No se ejecutaron botones mutantes | ceguera operativa/sesiones | - |
 | P105-011 | En curso | - | proveedor/TLS | TLS valido y respuestas minimas 200 de OnlyOffice/Nextcloud confirmadas; faltan E2E de proveedor y reconciliacion autorizada. Runbook: `documentos/gobernanza_tecnica/runbooks/runbook_tls_staging_y_servicios_plan_105.md` | externos/reconciliacion | usuario |
-| P105-012 | En curso | `9105e2ba` | producción/navegador real | login real redirige a `/super_administrador.html`; vista Empresas muestra 3 registros y Powerful Control System ID 12 activa con licencia vigente; captura visual realizada. Faltan acciones POS mutantes y cobertura movil completa | validación post-deploy | - |
-| P105-013 | En curso | `9105e2ba` + cambio Trivy | VPS/panel real | escaneo `scan-20260722T091043Z-c230a531`: Lynis OK, Nmap OK, 28 hallazgos (2 críticos, 2 altos, 23 medios, 1 bajo), Trivy ausente dentro del contenedor aunque instalado en host; se agrega montaje estatico `/usr/bin/trivy` para backend y staging y debe repetirse tras `rs` | hardening/telemetría | - |
+| P105-012 | En curso | `f8f388b7` | producción/navegador real | login real autorizado en empresa 12; menu `Documentos, nube y soporte` y enlace Nextcloud abrieron el contenido dentro del shell, con un solo tab y el iframe derecho mostrando `Nextcloud empresarial`/`Vista integrada cargada`; no se ejecutaron pagos, facturas, borrados ni cierres de caja | validación post-deploy | - |
+| P105-013 | En curso | `f8f388b7` | VPS/panel real | escaneo `scan-20260722T102234Z-eb1f52be`: Lynis OK, Nmap OK, 27 hallazgos (2 críticos, 2 altos, 22 medios, 1 bajo), hardening 60 y puerto 8080 abierto. Trivy ya se ejecuta y descarga su DB, pero el escaneo rootfs termina por permiso en `/etc/shadow-`; requiere corregir alcance/permisos antes de GO | hardening/telemetría | - |
 | P105-014 | En curso | - | local/produccion/staging | dos directivas CSP pendientes; `curl -I` externo confirma que produccion y staging exponen actualmente la misma CSP. El origen exacto de avatar Google esta corregido localmente, pero aun no se publica: requiere SHA/release validado y comprobacion posterior | CSP/deriva | - |
 | P105-015 | Pendiente | - | staging | storage externo no demostrado | archivos/replicas | - |
 | P105-016 | En curso | - | local/CI/staging | auditoria estatica de hardening OK; VPS ya expone digests de imagenes desplegadas para inventario, pero referencias por tag, SBOM y escaneo firmado siguen pendientes | supply chain | - |

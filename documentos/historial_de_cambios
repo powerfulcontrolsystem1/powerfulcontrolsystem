@@ -38961,3 +38961,18 @@ Archivos modificados:
   deja de usar `window.top` o `window.open`; la navegacion conserva el menu
   principal y documenta el requisito de `frame-ancestors`/X-Frame-Options del
   reverse proxy externo.
+
+2026-07-22: Cierre de evidencia post-rs para Plan 105 y prueba visual de Nextcloud.
+
+- El commit desplegado `f8f388b7` quedo alineado en `main`/`origin/main`; `rs`
+  termino con codigo 0. `/health` devolvio `status=ok`, `/ready` devolvio
+  `status=ready`, `pcs-backend` quedo `running healthy` y `pcs-migrate` termino
+  correctamente.
+- La prueba real autenticada de Powerful Control System (empresa 12) abrio el
+  enlace Nextcloud desde el menu lateral sin crear una pestana nueva. El shell
+  siguio visible y el contenido derecho mostro `Nextcloud empresarial` y
+  `Vista integrada cargada`.
+- El escaneo `scan-20260722T102234Z-eb1f52be` confirmo Lynis/Nmap operativos y
+  Trivy ejecutable dentro del contenedor. Trivy aun falla al leer
+  `/etc/shadow-` por permisos; el hallazgo queda abierto junto con los 27
+  hallazgos de hardening y el puerto 8080 expuesto.
