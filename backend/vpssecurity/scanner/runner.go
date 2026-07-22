@@ -28,6 +28,16 @@ func (SystemExecutor) Run(ctx context.Context, command string, args []string, wo
 	if strings.TrimSpace(workDir) != "" {
 		cmd.Dir = workDir
 	}
+	if filepath.Base(command) == "trivy" {
+		cacheDir := strings.TrimSpace(os.Getenv("PCS_VPS_SECURITY_TRIVY_CACHE_DIR"))
+		if cacheDir == "" {
+			cacheDir = filepath.Join(workDir, "trivy-cache")
+		}
+		if err := os.MkdirAll(cacheDir, 0o700); err != nil {
+			return nil, fmt.Errorf("preparar cache de Trivy: %w", err)
+		}
+		cmd.Env = append(os.Environ(), "TRIVY_CACHE_DIR="+cacheDir, "TMPDIR="+workDir)
+	}
 	return cmd.CombinedOutput()
 }
 
@@ -386,7 +396,13 @@ func missingToolFinding(tool, command string) reports.Finding {
 }
 
 func makeTempDir(prefix string) (string, func()) {
-	workDir, err := os.MkdirTemp("", prefix)
+	baseDir := strings.TrimSpace(os.Getenv("PCS_VPS_SECURITY_TMP_DIR"))
+	if baseDir != "" {
+		if err := os.MkdirAll(baseDir, 0o700); err != nil {
+			return "", func() {}
+		}
+	}
+	workDir, err := os.MkdirTemp(baseDir, prefix)
 	if err != nil {
 		return "", func() {}
 	}

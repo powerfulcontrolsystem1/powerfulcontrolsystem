@@ -19,11 +19,12 @@ RUN apk add --no-cache git \
     && git fetch --depth 1 origin 06153321ea50d53a27446084e646d9f43fe46e0e \
     && git checkout --detach 06153321ea50d53a27446084e646d9f43fe46e0e
 
-FROM aquasec/trivy@sha256:cffe3f5161a47a6823fbd23d985795b3ed72a4c806da4c4df16266c02accdd6f AS trivy-source
+# Trivy v0.70.0, pinned by the multi-platform image index digest.
+FROM aquasec/trivy@sha256:be1190afcb28352bfddc4ddeb71470835d16462af68d310f9f4bca710961a41e AS trivy-source
 
 FROM alpine:3.20 AS runtime-base
 
-RUN apk add --no-cache bash ca-certificates curl nmap openssh-client openssl tzdata \
+RUN apk add --no-cache bash ca-certificates curl nmap nmap-scripts openssh-client openssl tzdata \
     && addgroup -S -g 10001 pcs \
     && adduser -S -D -H -u 10001 -G pcs pcs
 COPY --from=lynis-source /src/lynis /opt/lynis
@@ -38,7 +39,7 @@ FROM runtime-base AS migrate
 COPY --from=build /out/pcs-backend /app/backend/pcs-backend
 COPY --from=build /out/pcs-migrate /app/backend/pcs-migrate
 COPY web /app/web
-RUN mkdir -p /app/backend/logs /app/private_storage \
+RUN mkdir -p /app/backend/logs/vps_security/tmp /app/backend/logs/vps_security/trivy-cache /app/private_storage \
     && chown -R pcs:pcs /app
 USER pcs:pcs
 CMD ["/bin/sh", "-ec", "/app/backend/pcs-backend && /app/backend/pcs-migrate"]
@@ -57,7 +58,7 @@ COPY scripts /app/project_export/scripts
 COPY documentos /app/project_export/documentos
 COPY .dockerignore AGENTS.md CHANGELOG.md /app/project_export/
 ENV PCS_PROJECT_EXPORT_ROOT=/app/project_export
-RUN mkdir -p /app/backend/logs /app/private_storage /app/backup /app/web/uploads \
+RUN mkdir -p /app/backend/logs/vps_security/tmp /app/backend/logs/vps_security/trivy-cache /app/private_storage /app/backup /app/web/uploads \
     && chown -R pcs:pcs /app
 USER pcs:pcs
 CMD ["/app/backend/pcs-worker"]
@@ -76,7 +77,7 @@ COPY .dockerignore AGENTS.md CHANGELOG.md /app/project_export/
 
 ENV PCS_PROJECT_EXPORT_ROOT=/app/project_export
 
-RUN mkdir -p /app/backend/logs /app/web/uploads /app/private_storage /app/backup /app/descargas \
+RUN mkdir -p /app/backend/logs/vps_security/tmp /app/backend/logs/vps_security/trivy-cache /app/web/uploads /app/private_storage /app/backup /app/descargas \
     && chmod +x /app/project_export/deploy/scripts/vps-provision-mailu-mailbox.sh \
     && chmod +x /app/project_export/deploy/scripts/vps-delete-mailu-mailbox.sh \
     && chown -R pcs:pcs /app
