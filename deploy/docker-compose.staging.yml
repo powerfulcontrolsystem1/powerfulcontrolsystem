@@ -6,6 +6,7 @@ services:
     environment:
       PCS_ENV: staging
       PCS_RUNTIME_SCHEMA_BOOTSTRAP: "0"
+      PCS_VPS_SECURITY_TMP_DIR: ${PCS_VPS_SECURITY_TMP_DIR:-/app/backend/logs/vps_security/tmp}
 
   worker:
     container_name: pcs-staging-worker

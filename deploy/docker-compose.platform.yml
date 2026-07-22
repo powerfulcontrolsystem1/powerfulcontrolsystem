@@ -188,6 +188,9 @@ services:
       GRAFOLOGIA_TESSERACT_ENABLED: ${GRAFOLOGIA_TESSERACT_ENABLED:-1}
       GRAFOLOGIA_TESSERACT_BIN: ${GRAFOLOGIA_TESSERACT_BIN:-tesseract}
       GRAFOLOGIA_TESSERACT_LANG: ${GRAFOLOGIA_TESSERACT_LANG:-spa+eng}
+      # El cache/DB de Trivy supera el tmpfs de 64 MiB; usar el volumen de logs
+      # evita falsos errores de "no space left on device" durante auditorias.
+      PCS_VPS_SECURITY_TMP_DIR: ${PCS_VPS_SECURITY_TMP_DIR:-/app/backend/logs/vps_security/tmp}
     volumes:
       - pcs_backend_logs:/app/backend/logs
       - pcs_web_uploads:/app/web/uploads
