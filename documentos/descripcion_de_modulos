@@ -4542,3 +4542,14 @@ adjuntos y analisis avanzado.
   existentes. La cola durable y outbox quedan preparadas para migrar envios e
   integraciones sin crear duplicados; cada trabajo empresarial conserva
   `empresa_id` y no acepta secretos en payload.
+Actualizacion 2026-07-21 (Nextcloud empresarial):
+- Super administrador puede crear cuentas personales de Nextcloud con cuota individual mediante OCS, separadas de la cuota predeterminada de cada empresa.
+- La pagina empresarial aprovisiona automaticamente la cuenta tecnica por `empresa_id` al abrirse cuando la configuracion global esta lista; la autenticacion de archivos permanece en Nextcloud y no se guardan contrasenas en PCS.
+
+Actualizacion 2026-07-21 (gobierno de empresas):
+- El rol `super_administrador` conserva autoridad global para eliminar una empresa creada por otro administrador, bajo la confirmacion reforzada y la limpieza externa integral ya existente.
+2026-07-21: Respaldo VPS profesional programable desde Super Administrador
+- Módulos afectados: `super_administrador`, `operacion_vps`, `postgresql`, `worker`.
+- Cambio funcional: `Super Administrador > Plataforma > Docker VPS` permite seleccionar copia completa o solo PostgreSQL, y ejecutar una copia diaria a una hora definida; mantiene el intervalo como compatibilidad.
+- Seguridad: la configuración global conserva solo la ruta de rclone, nunca credenciales de nube; el paquete sigue excluyendo `.env.platform` y secretos por defecto.
+- Operación: el worker durable verifica cada minuto la programación y evita duplicar la ejecución dentro del mismo día local.

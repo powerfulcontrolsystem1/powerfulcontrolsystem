@@ -239,7 +239,10 @@ Para ejecutar una restauracion real en un contenedor temporal de PostgreSQL:
 .\scripts\vps_restore_validation.ps1 -ExecuteDrill
 ```
 
-La salida informa RPO y RTO medidos en segundos. Un snapshot solo se considera
+Por defecto el drill usa `postgres:16.14-alpine`, alineado con el Compose
+vigente. Para validar otra version o digest candidato debe indicarse de forma
+explicita, por ejemplo `-RestoreImage 'postgres@sha256:...'`; registrar la
+referencia usada junto con RPO/RTO. Un snapshot solo se considera
 apto para la recuperacion cuando el dump y todos sus tarballs requeridos pasan
 la validacion; no sustituye la prueba funcional posterior en un entorno aislado.
 

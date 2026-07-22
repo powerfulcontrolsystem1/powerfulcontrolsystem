@@ -220,6 +220,22 @@ func EnsureEmpresaReservasHotelSchema(dbConn *sql.DB) error {
 	return nil
 }
 
+// EmpresaReservasHotelSchemaReady verifies the table and indexes owned by the
+// migrator without provisioning them while serving HTTP traffic.
+func EmpresaReservasHotelSchemaReady(dbConn *sql.DB) error {
+	if dbConn == nil {
+		return fmt.Errorf("db connection is nil")
+	}
+	ready, err := reservasHotelSchemaLooksReady(dbConn)
+	if err != nil {
+		return fmt.Errorf("esquema de reservas no disponible: %w", err)
+	}
+	if !ready {
+		return fmt.Errorf("esquema de reservas no disponible")
+	}
+	return nil
+}
+
 func reservasHotelSchemaLooksReady(dbConn *sql.DB) (bool, error) {
 	ok, err := tableExists(dbConn, "reservas_hotel")
 	if err != nil || !ok {

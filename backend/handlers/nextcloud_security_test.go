@@ -42,3 +42,15 @@ func TestNextcloudAccessURLsRequireActiveProvisionedAccount(t *testing.T) {
 		t.Fatal("deactivated company account must not receive Nextcloud access URLs")
 	}
 }
+
+func TestValidateNextcloudAccountUser(t *testing.T) {
+	user, err := validateNextcloudAccountUser(" Cuenta.Super_01 ")
+	if err != nil || user != "cuenta.super_01" {
+		t.Fatalf("expected normalized personal account user, got %q (%v)", user, err)
+	}
+	for _, invalid := range []string{"ab", "cuenta con espacios", "cuenta/otra", "cuenta@correo"} {
+		if _, err := validateNextcloudAccountUser(invalid); err == nil {
+			t.Fatalf("expected invalid Nextcloud user to be rejected: %q", invalid)
+		}
+	}
+}

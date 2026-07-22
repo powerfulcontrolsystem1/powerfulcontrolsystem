@@ -623,6 +623,7 @@ func securityContentSecurityPolicy() string {
 	providerScripts := []string{"'self'", "'unsafe-inline'", "https://accounts.google.com", "https://checkout.epayco.co", "https://checkout.wompi.co"}
 	providerConnect := []string{"'self'", "https://api.openai.com", "https://accounts.google.com", "https://checkout.epayco.co", "https://secure.epayco.co", "https://checkout.wompi.co"}
 	providerFrames := []string{"'self'", "https://accounts.google.com", "https://checkout.epayco.co", "https://checkout.wompi.co"}
+	providerImages := []string{"'self'", "data:", "blob:", "https://lh3.googleusercontent.com"}
 
 	documentOrigins := cspOriginsFromEnv("ONLYOFFICE_DOCUMENT_SERVER_URL", "NEXTCLOUD_BASE_URL")
 	customImages := cspOriginsFromEnv("PCS_CSP_IMG_ORIGINS")
@@ -636,7 +637,7 @@ func securityContentSecurityPolicy() string {
 		"object-src 'none'",
 		"frame-ancestors 'self'",
 		"form-action 'self'",
-		"img-src " + cspJoinSources([]string{"'self'", "data:", "blob:"}, append(documentOrigins, customImages...)...),
+		"img-src " + cspJoinSources(providerImages, append(documentOrigins, customImages...)...),
 		"style-src 'self' 'unsafe-inline'",
 		"script-src " + cspJoinSources(providerScripts, customScripts...),
 		"connect-src " + cspJoinSources(providerConnect, append(documentOrigins, customConnect...)...),

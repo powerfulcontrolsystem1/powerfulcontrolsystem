@@ -3,6 +3,7 @@ package db
 import (
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"math"
 	"sort"
@@ -191,6 +192,25 @@ func EnsureEmpresaTarifasPorMinutosSchema(dbConn *sql.DB) error {
 }
 
 // EnsureEmpresaTarifasPorMinutosConfiguracionSchema crea/migra configuracion de calculo por empresa.
+// EmpresaTarifasPorMinutosSchemaReady verifica las tablas migradas sin DDL
+// durante la operacion de tarifas.
+func EmpresaTarifasPorMinutosSchemaReady(dbConn *sql.DB) error {
+	if dbConn == nil {
+		return fmt.Errorf("conexion de base de datos no disponible")
+	}
+	for _, table := range []string{"empresa_tarifas_por_minutos", "empresa_tarifas_por_minutos_configuracion"} {
+		var marker int
+		err := queryRowSQLCompat(dbConn, "SELECT 1 FROM "+table+" WHERE 1=0").Scan(&marker)
+		if errors.Is(err, sql.ErrNoRows) {
+			continue
+		}
+		if err != nil {
+			return fmt.Errorf("esquema de tarifas por minutos no disponible (%s): %w", table, err)
+		}
+	}
+	return nil
+}
+
 func EnsureEmpresaTarifasPorMinutosConfiguracionSchema(dbConn *sql.DB) error {
 	stmts := []string{
 		`CREATE TABLE IF NOT EXISTS empresa_tarifas_por_minutos_configuracion (

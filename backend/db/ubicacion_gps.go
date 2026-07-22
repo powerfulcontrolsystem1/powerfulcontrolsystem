@@ -252,6 +252,25 @@ func EnsureEmpresaUbicacionGPSSchema(dbConn *sql.DB) error {
 	return nil
 }
 
+// EmpresaUbicacionGPSSchemaReady verifies the GPS tables owned by migrations
+// without creating or altering schema during API traffic.
+func EmpresaUbicacionGPSSchemaReady(dbConn *sql.DB) error {
+	if dbConn == nil {
+		return errors.New("conexion de base de datos no disponible")
+	}
+	for _, table := range []string{"empresa_gps_dispositivos", "empresa_gps_recorridos"} {
+		var marker int
+		err := queryRowSQLCompat(dbConn, "SELECT 1 FROM "+table+" WHERE 1=0").Scan(&marker)
+		if errors.Is(err, sql.ErrNoRows) {
+			continue
+		}
+		if err != nil {
+			return fmt.Errorf("esquema GPS no disponible (%s): %w", table, err)
+		}
+	}
+	return nil
+}
+
 // CreateEmpresaGPSDispositivo crea un dispositivo GPS para una empresa.
 func CreateEmpresaGPSDispositivo(dbConn *sql.DB, d EmpresaGPSDispositivo) (int64, error) {
 	d = normalizeEmpresaGPSDispositivo(d)

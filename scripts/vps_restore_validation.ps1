@@ -15,6 +15,7 @@ param(
   [string]$IdentityFile = "",
   [string]$RemotePath = "",
   [string]$BackupDir = "",
+  [string]$RestoreImage = "postgres:16.14-alpine",
   [switch]$ExecuteDrill,
   [switch]$AllowRemoteTarget
 )
@@ -58,6 +59,9 @@ if ([string]::IsNullOrWhiteSpace($IdentityFile)) {
 if ([string]::IsNullOrWhiteSpace($IdentityFile) -or -not (Test-Path -LiteralPath $IdentityFile)) {
   throw "No se encontro IdentityFile. Indicalo con -IdentityFile."
 }
+if ([string]::IsNullOrWhiteSpace($RestoreImage) -or $RestoreImage -match '[\r\n]') {
+  throw "RestoreImage debe ser una referencia Docker no vacia en una sola linea."
+}
 
 function Resolve-Plink {
   $cmd = Get-Command plink.exe -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Source -ErrorAction SilentlyContinue
@@ -85,6 +89,7 @@ function Convert-ToBashLiteral {
 
 $remotePathLit = Convert-ToBashLiteral $RemotePath
 $backupDirLit = Convert-ToBashLiteral $BackupDir
+$restoreImageLit = Convert-ToBashLiteral $RestoreImage
 $execute = if ($ExecuteDrill) { "1" } else { "0" }
 
 $remoteScript = @"
@@ -93,6 +98,7 @@ validation_started_at=`$(date +%s)
 remote_path=$remotePathLit
 backup_dir=$backupDirLit
 execute_drill=$execute
+restore_image=$restoreImageLit
 backup_root="`$remote_path/backups/vps-snapshots"
 
 if [ -z "`$backup_dir" ]; then
@@ -140,15 +146,15 @@ done
 
 if [ "`$execute_drill" = "1" ]; then
   drill="pcs-restore-drill-`$(date +%s)"
-  echo "[INFO] Ejecutando restauracion temporal en contenedor `$drill"
-  docker run --name "`$drill" -e POSTGRES_PASSWORD=restore_drill -d postgres:16-alpine >/dev/null
+  echo "[INFO] Ejecutando restauracion temporal en contenedor `$drill con imagen `$restore_image"
+  docker run --name "`$drill" -e POSTGRES_PASSWORD=restore_drill -d "`$restore_image" >/dev/null
   cleanup() { docker rm -f "`$drill" >/dev/null 2>&1 || true; }
   trap cleanup EXIT
   sleep 8
   gunzip -c "`$backup_dir/postgres_all.sql.gz" | docker exec -i "`$drill" psql -U postgres >/tmp/pcs_restore_drill.log
   docker exec "`$drill" psql -U postgres -tAc "select 1" >/dev/null
   validation_finished_at="`$(date +%s)"
-  echo "[OK] Restauracion temporal PostgreSQL completada. RTO=`$((validation_finished_at-validation_started_at))s RPO=`$((validation_finished_at-snapshot_epoch))s"
+  echo "[OK] Restauracion temporal PostgreSQL completada. imagen=`$restore_image RTO=`$((validation_finished_at-validation_started_at))s RPO=`$((validation_finished_at-snapshot_epoch))s"
 else
   validation_finished_at="`$(date +%s)"
   echo "[OK] Validacion no destructiva completada. RTO=`$((validation_finished_at-validation_started_at))s RPO=`$((validation_finished_at-snapshot_epoch))s. Use -ExecuteDrill para restaurar en contenedor temporal."

@@ -2,6 +2,7 @@ package db
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 	"math"
 	"strings"
@@ -154,6 +155,23 @@ func EnsureEmpresaTarifasMotelSchema(dbConn *sql.DB) error {
 		}
 	}
 	empresaTarifasMotelSchemaEnsured.Store(cacheKey, true)
+	return nil
+}
+
+// EmpresaTarifasMotelSchemaReady verifica la tabla migrada sin ejecutar DDL
+// desde solicitudes HTTP.
+func EmpresaTarifasMotelSchemaReady(dbConn *sql.DB) error {
+	if dbConn == nil {
+		return fmt.Errorf("conexion de base de datos no disponible")
+	}
+	var marker int
+	err := queryRowSQLCompat(dbConn, "SELECT 1 FROM empresa_tarifas_motel WHERE 1=0").Scan(&marker)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil
+	}
+	if err != nil {
+		return fmt.Errorf("esquema de tarifas motel no disponible: %w", err)
+	}
 	return nil
 }
 

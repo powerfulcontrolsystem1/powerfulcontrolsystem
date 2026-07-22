@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"os"
 	"os/exec"
@@ -46,6 +47,18 @@ type voiceStreamConfig struct {
 	AuthUpdated         string `json:"auth_updated,omitempty"`
 	EncryptionAvailable bool   `json:"encryption_available"`
 	SystemdUnit         string `json:"systemd_unit"`
+}
+
+func writeVoiceStreamPublicError(w http.ResponseWriter, r *http.Request, status int, operation, code string, err error) {
+	requestID := resolveAuditoriaRequestID(r)
+	if err != nil {
+		log.Printf("[voice_stream] operation=%s request_id=%s error_type=%T", operation, requestID, err)
+	}
+	writeJSON(w, status, map[string]any{
+		"ok":         false,
+		"error":      code,
+		"request_id": requestID,
+	})
 }
 
 func normalizeVoiceStreamMode(raw string) string {
@@ -321,7 +334,7 @@ func SuperVoiceStreamConfigHandler(dbSuper *sql.DB) http.HandlerFunc {
 			if action == "activate" || action == "activar" || action == "activate_test" || action == "activar_probar" {
 				_ = dbpkg.SetConfigValue(dbSuper, voiceStreamModeKey, "natural", false)
 				if err := dbpkg.SetConfigValue(dbSuper, voiceStreamEnabledKey, "1", false); err != nil {
-					http.Error(w, "No se pudo activar voice_stream.enabled: "+err.Error(), http.StatusInternalServerError)
+					writeVoiceStreamPublicError(w, r, http.StatusInternalServerError, "activate_enabled", "voice_stream_config_error", err)
 					return
 				}
 				serviceControl := controlVoiceStreamSystemd("start")
@@ -329,12 +342,12 @@ func SuperVoiceStreamConfigHandler(dbSuper *sql.DB) http.HandlerFunc {
 				if strings.TrimSpace(cfg.BaseURL) == "" {
 					cfg.BaseURL = defaultVoiceStreamConfig().BaseURL
 					if err := dbpkg.SetConfigValue(dbSuper, voiceStreamBaseURLKey, cfg.BaseURL, false); err != nil {
-						http.Error(w, "No se pudo guardar voice_stream.base_url: "+err.Error(), http.StatusInternalServerError)
+						writeVoiceStreamPublicError(w, r, http.StatusInternalServerError, "activate_base_url", "voice_stream_config_error", err)
 						return
 					}
 				}
 				if _, err := voiceStreamEnsureAuthToken(dbSuper); err != nil {
-					http.Error(w, "No se pudo registrar credencial de voz: "+err.Error(), http.StatusInternalServerError)
+					writeVoiceStreamPublicError(w, r, http.StatusInternalServerError, "activate_auth_token", "voice_stream_config_error", err)
 					return
 				}
 				cfg = resolveVoiceStreamConfig(dbSuper)
@@ -383,12 +396,12 @@ func SuperVoiceStreamConfigHandler(dbSuper *sql.DB) http.HandlerFunc {
 			if strings.TrimSpace(payload.Mode) != "" {
 				mode := normalizeVoiceStreamMode(payload.Mode)
 				if err := dbpkg.SetConfigValue(dbSuper, voiceStreamModeKey, mode, false); err != nil {
-					http.Error(w, "No se pudo guardar voice_stream.mode: "+err.Error(), http.StatusInternalServerError)
+					writeVoiceStreamPublicError(w, r, http.StatusInternalServerError, "save_mode", "voice_stream_config_error", err)
 					return
 				}
 				if mode == "computer" {
 					if err := dbpkg.SetConfigValue(dbSuper, voiceStreamEnabledKey, "0", false); err != nil {
-						http.Error(w, "No se pudo desactivar voice_stream.enabled: "+err.Error(), http.StatusInternalServerError)
+						writeVoiceStreamPublicError(w, r, http.StatusInternalServerError, "disable_enabled", "voice_stream_config_error", err)
 						return
 					}
 					serviceControl = controlVoiceStreamSystemd("stop")
@@ -398,7 +411,7 @@ func SuperVoiceStreamConfigHandler(dbSuper *sql.DB) http.HandlerFunc {
 			}
 			if strings.TrimSpace(payload.ComputerGender) != "" {
 				if err := dbpkg.SetConfigValue(dbSuper, voiceComputerGenderKey, normalizeComputerVoiceGender(payload.ComputerGender), false); err != nil {
-					http.Error(w, "No se pudo guardar voice_stream.computer_gender: "+err.Error(), http.StatusInternalServerError)
+					writeVoiceStreamPublicError(w, r, http.StatusInternalServerError, "save_computer_gender", "voice_stream_config_error", err)
 					return
 				}
 			}
@@ -415,7 +428,7 @@ func SuperVoiceStreamConfigHandler(dbSuper *sql.DB) http.HandlerFunc {
 					value = "0"
 				}
 				if err := dbpkg.SetConfigValue(dbSuper, voiceStreamEnabledKey, value, false); err != nil {
-					http.Error(w, "No se pudo guardar voice_stream.enabled: "+err.Error(), http.StatusInternalServerError)
+					writeVoiceStreamPublicError(w, r, http.StatusInternalServerError, "save_enabled", "voice_stream_config_error", err)
 					return
 				}
 				if currentMode == "natural" {
@@ -433,19 +446,19 @@ func SuperVoiceStreamConfigHandler(dbSuper *sql.DB) http.HandlerFunc {
 					return
 				}
 				if err := dbpkg.SetConfigValue(dbSuper, voiceStreamBaseURLKey, baseURL, false); err != nil {
-					http.Error(w, "No se pudo guardar voice_stream.base_url: "+err.Error(), http.StatusInternalServerError)
+					writeVoiceStreamPublicError(w, r, http.StatusInternalServerError, "save_base_url", "voice_stream_config_error", err)
 					return
 				}
 			}
 			if strings.TrimSpace(payload.Provider) != "" {
 				if err := dbpkg.SetConfigValue(dbSuper, voiceStreamProviderKey, strings.TrimSpace(payload.Provider), false); err != nil {
-					http.Error(w, "No se pudo guardar voice_stream.provider: "+err.Error(), http.StatusInternalServerError)
+					writeVoiceStreamPublicError(w, r, http.StatusInternalServerError, "save_provider", "voice_stream_config_error", err)
 					return
 				}
 			}
 			if strings.TrimSpace(payload.Voice) != "" {
 				if err := dbpkg.SetConfigValue(dbSuper, voiceStreamVoiceKey, strings.TrimSpace(payload.Voice), false); err != nil {
-					http.Error(w, "No se pudo guardar voice_stream.voice: "+err.Error(), http.StatusInternalServerError)
+					writeVoiceStreamPublicError(w, r, http.StatusInternalServerError, "save_voice", "voice_stream_config_error", err)
 					return
 				}
 			}
@@ -455,7 +468,7 @@ func SuperVoiceStreamConfigHandler(dbSuper *sql.DB) http.HandlerFunc {
 					return
 				}
 				if err := dbpkg.SetConfigValue(dbSuper, voiceStreamTimeoutMSKey, fmt.Sprintf("%d", payload.TimeoutMS), false); err != nil {
-					http.Error(w, "No se pudo guardar voice_stream.timeout_ms: "+err.Error(), http.StatusInternalServerError)
+					writeVoiceStreamPublicError(w, r, http.StatusInternalServerError, "save_timeout", "voice_stream_config_error", err)
 					return
 				}
 			}
@@ -466,7 +479,7 @@ func SuperVoiceStreamConfigHandler(dbSuper *sql.DB) http.HandlerFunc {
 					return
 				}
 				if err := dbpkg.SetConfigValue(dbSuper, voiceStreamAuthHeaderKey, authHeader, false); err != nil {
-					http.Error(w, "No se pudo guardar voice_stream.auth_header: "+err.Error(), http.StatusInternalServerError)
+					writeVoiceStreamPublicError(w, r, http.StatusInternalServerError, "save_auth_header", "voice_stream_config_error", err)
 					return
 				}
 			}
@@ -480,17 +493,17 @@ func SuperVoiceStreamConfigHandler(dbSuper *sql.DB) http.HandlerFunc {
 					var err error
 					authToken, err = voiceStreamGenerateAuthToken()
 					if err != nil {
-						http.Error(w, "No se pudo generar auth_token: "+err.Error(), http.StatusInternalServerError)
+						writeVoiceStreamPublicError(w, r, http.StatusInternalServerError, "generate_auth_token", "voice_stream_config_error", err)
 						return
 					}
 				}
 				encVal, err := utils.EncryptString(authToken)
 				if err != nil {
-					http.Error(w, "No se pudo cifrar auth_token: "+err.Error(), http.StatusInternalServerError)
+					writeVoiceStreamPublicError(w, r, http.StatusInternalServerError, "encrypt_auth_token", "voice_stream_config_error", err)
 					return
 				}
 				if err := dbpkg.SetConfigValue(dbSuper, voiceStreamAuthTokenKey, encVal, true); err != nil {
-					http.Error(w, "No se pudo guardar voice_stream.auth_token: "+err.Error(), http.StatusInternalServerError)
+					writeVoiceStreamPublicError(w, r, http.StatusInternalServerError, "save_auth_token", "voice_stream_config_error", err)
 					return
 				}
 				_ = os.Setenv("VOICE_STREAM_AUTH_TOKEN", authToken)
@@ -597,7 +610,7 @@ func VoiceStreamTTSProxyHandler(dbSuper *sql.DB) http.HandlerFunc {
 
 		req, err := http.NewRequestWithContext(ctx, http.MethodPost, cfg.BaseURL+"/api/voice/tts", bytes.NewReader(body))
 		if err != nil {
-			writeJSON(w, http.StatusBadGateway, map[string]any{"ok": false, "error": err.Error()})
+			writeVoiceStreamPublicError(w, r, http.StatusBadGateway, "tts_request", "voice_stream_unavailable", err)
 			return
 		}
 		req.Header.Set("Content-Type", "application/json")
@@ -605,18 +618,14 @@ func VoiceStreamTTSProxyHandler(dbSuper *sql.DB) http.HandlerFunc {
 		attachVoiceStreamAuthHeader(req, dbSuper, cfg)
 		res, err := (&http.Client{Timeout: timeout}).Do(req)
 		if err != nil || res == nil {
-			writeJSON(w, http.StatusBadGateway, map[string]any{"ok": false, "error": fmt.Sprint(err)})
+			writeVoiceStreamPublicError(w, r, http.StatusBadGateway, "tts_upstream", "voice_stream_unavailable", err)
 			return
 		}
 		defer res.Body.Close()
 
 		if res.StatusCode < 200 || res.StatusCode > 299 {
-			raw, _ := io.ReadAll(io.LimitReader(res.Body, 2048))
-			writeJSON(w, http.StatusBadGateway, map[string]any{
-				"ok":              false,
-				"upstream_status": res.StatusCode,
-				"error":           strings.TrimSpace(string(raw)),
-			})
+			_, _ = io.Copy(io.Discard, io.LimitReader(res.Body, 2048))
+			writeVoiceStreamPublicError(w, r, http.StatusBadGateway, "tts_upstream_status", "voice_stream_unavailable", fmt.Errorf("upstream status %d", res.StatusCode))
 			return
 		}
 

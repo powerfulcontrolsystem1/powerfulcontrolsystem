@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
 	"net/http"
 	"strconv"
 	"strings"
@@ -35,7 +36,7 @@ func SecurityVPSConfigHandler(dbSuper *sql.DB, service securityVPSService) http.
 		case http.MethodGet:
 			settings, err := service.Config()
 			if err != nil {
-				writeJSON(w, http.StatusInternalServerError, map[string]interface{}{"ok": false, "error": err.Error()})
+				writeSecurityVPSPublicError(w, r, http.StatusInternalServerError, "cargar configuracion", err, nil)
 				return
 			}
 			status, _ := service.Status("")
@@ -53,7 +54,7 @@ func SecurityVPSConfigHandler(dbSuper *sql.DB, service securityVPSService) http.
 			}
 			settings, err := service.SaveConfig(payload)
 			if err != nil {
-				writeJSON(w, http.StatusInternalServerError, map[string]interface{}{"ok": false, "error": err.Error()})
+				writeSecurityVPSPublicError(w, r, http.StatusInternalServerError, "guardar configuracion", err, nil)
 				return
 			}
 			writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "config": settings, "admin_email": adminEmail})
@@ -83,7 +84,7 @@ func SecurityVPSRunHandler(dbSuper *sql.DB, service securityVPSService) http.Han
 			if errors.Is(err, vpssecurity.ErrScanRunning) {
 				code = http.StatusConflict
 			}
-			writeJSON(w, code, map[string]interface{}{"ok": false, "error": err.Error(), "status": status})
+			writeSecurityVPSPublicError(w, r, code, "iniciar escaneo", err, map[string]interface{}{"status": status})
 			return
 		}
 		writeJSON(w, http.StatusAccepted, map[string]interface{}{"ok": true, "status": status})
@@ -101,7 +102,7 @@ func SecurityVPSStatusHandler(dbSuper *sql.DB, service securityVPSService) http.
 		}
 		status, err := service.Status(strings.TrimSpace(r.URL.Query().Get("scan_id")))
 		if err != nil {
-			writeJSON(w, http.StatusNotFound, map[string]interface{}{"ok": false, "error": err.Error()})
+			writeSecurityVPSPublicError(w, r, http.StatusNotFound, "consultar estado", err, nil)
 			return
 		}
 		writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "status": status})
@@ -125,7 +126,7 @@ func SecurityVPSHistoryHandler(dbSuper *sql.DB, service securityVPSService) http
 		}
 		history, err := service.History(limit)
 		if err != nil {
-			writeJSON(w, http.StatusInternalServerError, map[string]interface{}{"ok": false, "error": err.Error()})
+			writeSecurityVPSPublicError(w, r, http.StatusInternalServerError, "consultar historial", err, nil)
 			return
 		}
 		writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "items": history})
@@ -152,7 +153,7 @@ func SecurityVPSReportHandler(dbSuper *sql.DB, service securityVPSService) http.
 		}
 		content, fileName, contentType, err := service.ReportArtifact(scanID, format)
 		if err != nil {
-			writeJSON(w, http.StatusNotFound, map[string]interface{}{"ok": false, "error": err.Error()})
+			writeSecurityVPSPublicError(w, r, http.StatusNotFound, "descargar reporte", err, nil)
 			return
 		}
 		w.Header().Set("Content-Type", contentType)
@@ -177,9 +178,26 @@ func SecurityVPSCompareHandler(dbSuper *sql.DB, service securityVPSService) http
 		}
 		comparison, err := service.Compare(scanID, strings.TrimSpace(r.URL.Query().Get("other_scan_id")))
 		if err != nil {
-			writeJSON(w, http.StatusNotFound, map[string]interface{}{"ok": false, "error": err.Error()})
+			writeSecurityVPSPublicError(w, r, http.StatusNotFound, "comparar escaneos", err, nil)
 			return
 		}
 		writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "comparison": comparison})
 	}
+}
+
+func writeSecurityVPSPublicError(w http.ResponseWriter, r *http.Request, status int, operation string, err error, extra map[string]interface{}) {
+	requestID := resolveAuditoriaRequestID(r)
+	log.Printf("[security_vps] operation=%s request_id=%s error_type=%T", operation, requestID, err)
+	payload := map[string]interface{}{
+		"ok":    false,
+		"code":  "security_vps_error",
+		"error": "No se pudo completar la operacion de seguridad VPS.",
+	}
+	for key, value := range extra {
+		payload[key] = value
+	}
+	if requestID != "" {
+		payload["request_id"] = requestID
+	}
+	writeJSON(w, status, payload)
 }

@@ -483,8 +483,8 @@ func EmpresaReportesHandler(dbEmp *sql.DB) http.HandlerFunc {
 			itemsCache:       make(map[int64][]dbpkg.CarritoCompraItem),
 		}
 
-		if err := dbpkg.EnsureEmpresaReportesProgramacionSchema(dbEmp); err != nil {
-			http.Error(w, "No se pudo inicializar la programacion de reportes", http.StatusInternalServerError)
+		if err := dbpkg.EmpresaReportesProgramacionSchemaReady(dbEmp); err != nil {
+			http.Error(w, "No se pudo verificar la programacion de reportes", http.StatusInternalServerError)
 			return
 		}
 		if reportesActionNeedsRuntimeSchemas(action) {

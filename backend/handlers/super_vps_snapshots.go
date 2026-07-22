@@ -29,6 +29,7 @@ const (
 	superVPSSnapshotConfigEnabled            = "super.vps_snapshot.enabled"
 	superVPSSnapshotConfigAutoEnabled        = "super.vps_snapshot.auto_enabled"
 	superVPSSnapshotConfigIntervalHours      = "super.vps_snapshot.interval_hours"
+	superVPSSnapshotConfigDailyTime          = "super.vps_snapshot.daily_time"
 	superVPSSnapshotConfigRetentionDays      = "super.vps_snapshot.retention_days"
 	superVPSSnapshotConfigDeleteOldLocal     = "super.vps_snapshot.delete_old_local"
 	superVPSSnapshotConfigCloudEnabled       = "super.vps_snapshot.cloud_enabled"
@@ -49,6 +50,7 @@ type superVPSSnapshotConfig struct {
 	Enabled             bool   `json:"enabled"`
 	AutoEnabled         bool   `json:"auto_enabled"`
 	IntervalHours       int    `json:"interval_hours"`
+	DailyTime           string `json:"daily_time,omitempty"`
 	RetentionDays       int    `json:"retention_days"`
 	DeleteOldLocal      bool   `json:"delete_old_local"`
 	CloudEnabled        bool   `json:"cloud_enabled"`
@@ -176,6 +178,7 @@ func getSuperVPSSnapshotConfig(dbSuper *sql.DB) superVPSSnapshotConfig {
 		Enabled:             parseEmpresaUsuarioBool(read(superVPSSnapshotConfigEnabled), true),
 		AutoEnabled:         parseEmpresaUsuarioBool(read(superVPSSnapshotConfigAutoEnabled), false),
 		IntervalHours:       intervalHours,
+		DailyTime:           normalizeSuperVPSSnapshotDailyTime(read(superVPSSnapshotConfigDailyTime)),
 		RetentionDays:       retentionDays,
 		DeleteOldLocal:      parseEmpresaUsuarioBool(read(superVPSSnapshotConfigDeleteOldLocal), false),
 		CloudEnabled:        parseEmpresaUsuarioBool(read(superVPSSnapshotConfigCloudEnabled), false),
@@ -202,11 +205,19 @@ func saveSuperVPSSnapshotConfig(dbSuper *sql.DB, cfg superVPSSnapshotConfig) err
 	cfg.CloudProvider = normalizeSuperVPSSnapshotCloudProvider(cfg.CloudProvider)
 	cfg.RcloneRemotePath = sanitizeSuperVPSSnapshotRemotePath(cfg.RcloneRemotePath)
 	cfg.IntervalHours = clampInt(cfg.IntervalHours, 1, 24*30, 24)
+	if strings.TrimSpace(cfg.DailyTime) != "" && normalizeSuperVPSSnapshotDailyTime(cfg.DailyTime) == "" {
+		return fmt.Errorf("hora diaria invalida; use formato HH:MM")
+	}
+	cfg.DailyTime = normalizeSuperVPSSnapshotDailyTime(cfg.DailyTime)
 	cfg.RetentionDays = clampInt(cfg.RetentionDays, 1, 3650, 14)
+	if !cfg.IncludePostgres && !cfg.IncludeProject && !cfg.IncludeVolumes {
+		return fmt.Errorf("seleccione al menos PostgreSQL, proyecto o volumenes para el snapshot")
+	}
 	pairs := map[string]string{
 		superVPSSnapshotConfigEnabled:            strconv.FormatBool(cfg.Enabled),
 		superVPSSnapshotConfigAutoEnabled:        strconv.FormatBool(cfg.AutoEnabled),
 		superVPSSnapshotConfigIntervalHours:      strconv.Itoa(cfg.IntervalHours),
+		superVPSSnapshotConfigDailyTime:          cfg.DailyTime,
 		superVPSSnapshotConfigRetentionDays:      strconv.Itoa(cfg.RetentionDays),
 		superVPSSnapshotConfigDeleteOldLocal:     strconv.FormatBool(cfg.DeleteOldLocal),
 		superVPSSnapshotConfigCloudEnabled:       strconv.FormatBool(cfg.CloudEnabled),
@@ -683,7 +694,7 @@ func maybeRunSuperVPSSnapshotAutomatic(dbSuper *sql.DB) {
 		_ = dbpkg.SetConfigValue(dbSuper, superVPSSnapshotConfigLastResult, "omitido: nube activa sin ruta rclone", false)
 		return
 	}
-	if t, err := time.Parse(time.RFC3339, strings.TrimSpace(cfg.LastAutoRun)); err == nil && time.Since(t) < time.Duration(cfg.IntervalHours)*time.Hour {
+	if due := superVPSSnapshotAutomaticDue(cfg, time.Now()); !due {
 		return
 	}
 	result := CreateSuperVPSSnapshot(dbSuper, superVPSSnapshotCreateRequest{Automatico: true, UploadCloud: &cfg.CloudEnabled, UsuarioCreador: "sistema.vps_snapshot_worker"})
@@ -691,6 +702,33 @@ func maybeRunSuperVPSSnapshotAutomatic(dbSuper *sql.DB) {
 		_ = dbpkg.SetConfigValue(dbSuper, superVPSSnapshotConfigLastResult, "error: "+result.Error, false)
 		log.Printf("[super_vps_snapshot] automatic error: %s", result.Error)
 	}
+}
+
+func normalizeSuperVPSSnapshotDailyTime(raw string) string {
+	value := strings.TrimSpace(raw)
+	if value == "" {
+		return ""
+	}
+	if _, err := time.Parse("15:04", value); err != nil {
+		return ""
+	}
+	return value
+}
+
+// superVPSSnapshotAutomaticDue supports a fixed daily hour when configured;
+// otherwise it retains the existing interval schedule for compatibility.
+func superVPSSnapshotAutomaticDue(cfg superVPSSnapshotConfig, now time.Time) bool {
+	last, lastErr := time.Parse(time.RFC3339, strings.TrimSpace(cfg.LastAutoRun))
+	hasLast := lastErr == nil
+	if cfg.DailyTime != "" {
+		clock, _ := time.Parse("15:04", cfg.DailyTime)
+		dueAt := time.Date(now.Year(), now.Month(), now.Day(), clock.Hour(), clock.Minute(), 0, 0, now.Location())
+		if now.Before(dueAt) {
+			return false
+		}
+		return !hasLast || last.In(now.Location()).Format("2006-01-02") != now.Format("2006-01-02")
+	}
+	return !hasLast || now.Sub(last) >= time.Duration(cfg.IntervalHours)*time.Hour
 }
 
 // RunSuperVPSSnapshotScheduled executes one due-check without owning a timer.

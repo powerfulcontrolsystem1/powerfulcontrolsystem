@@ -2,6 +2,19 @@
 
 Estado: vigente. Ultima actualizacion: 2026-07-16.
 
+## Actualizacion 2026-07-21 - Plan 105 pendiente de aprobacion
+
+- `documentos/plan_105.md` consolida la auditoria general y es la hoja de ruta
+  vigente para cerrar produccion. Su veredicto inicial es `NO-GO`.
+- El plan no esta autorizado para ejecucion hasta aprobacion expresa del usuario.
+  Debe comenzar por fijar el candidato y el alcance, sin usar `rs` ni tocar
+  proveedores o datos reales durante la planificacion.
+- Los validadores locales aprobados no sustituyen migraciones efimeras,
+  aislamiento A/B, restore, race/carga, staging ni pruebas reales de proveedor.
+- `documentos/matriz_alcance_piloto_plan_105.md` es el borrador de alcance que
+  debe aprobarse antes de habilitar trafico comercial; no representa una
+  activacion automatica de modulos.
+
 ## Actualizacion 2026-07-18 - contrato explicito del migrador
 
 - El proceso `migrate` en produccion exige declarar
@@ -39,9 +52,9 @@ Estado: vigente. Ultima actualizacion: 2026-07-16.
   debe confundirse con una autorizacion para habilitar bootstrap en produccion.
 - Los flujos de licencia, DIAN, carrito y corte de caja verifican sus tablas
   de facturacion, configuracion avanzada, ventas y finanzas sin ejecutar
-  `Ensure*` desde HTTP. El inventario vigente conserva 153 llamadas legacy
-  fuera del migrador y no debe aumentar sin una migracion de extraccion
-  revisada.
+  `Ensure*` desde HTTP. Despues del primer lote del Plan 105, el inventario
+  vigente conserva 110 llamadas legacy fuera del migrador, 37 de ellas en
+  trafico HTTP; no debe aumentar sin una migracion de extraccion revisada.
 - CSP usa origenes cerrados configurables y los errores 4xx tecnicos se
   redaccionan. Aun se mantiene `unsafe-inline` como compatibilidad transitoria
   hasta completar inventario y pruebas visuales de scripts.

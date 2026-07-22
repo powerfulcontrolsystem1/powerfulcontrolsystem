@@ -14,6 +14,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"unicode"
 
 	dbpkg "github.com/you/pos-backend/db"
 	"github.com/you/pos-backend/utils"
@@ -170,6 +171,19 @@ func nextcloudOCSSuccess(meta nextcloudOCSMeta) bool {
 
 func newNextcloudTemporaryPassword() (string, error) {
 	return utils.GenerateSecureToken(32)
+}
+
+func validateNextcloudAccountUser(raw string) (string, error) {
+	user := strings.ToLower(strings.TrimSpace(raw))
+	if len(user) < 3 || len(user) > 64 {
+		return "", fmt.Errorf("el usuario debe tener entre 3 y 64 caracteres")
+	}
+	for _, char := range user {
+		if !(unicode.IsLower(char) || unicode.IsDigit(char) || char == '-' || char == '_' || char == '.') {
+			return "", fmt.Errorf("el usuario solo admite letras minusculas, numeros, punto, guion y guion bajo")
+		}
+	}
+	return user, nil
 }
 
 func nextcloudUserExists(ctx context.Context, client *http.Client, baseURL, user, adminUser, adminCredential string) (bool, error) {
@@ -544,6 +558,54 @@ func NextcloudConfigHandler(dbSuper, dbEmp *sql.DB) http.HandlerFunc {
 				return
 			}
 			writeJSON(w, http.StatusOK, map[string]bool{"ok": true})
+			return
+		}
+		if strings.EqualFold(strings.TrimSpace(r.URL.Query().Get("action")), "create_account") {
+			if r.Method != http.MethodPost {
+				http.Error(w, "Metodo no permitido", http.StatusMethodNotAllowed)
+				return
+			}
+			baseURL, adminUser, credential, configured := nextcloudConfiguration(dbSuper)
+			if !configured {
+				http.Error(w, "Nextcloud no esta configurado", http.StatusConflict)
+				return
+			}
+			var payload struct {
+				User        string `json:"user"`
+				DisplayName string `json:"display_name"`
+				QuotaMB     int64  `json:"quota_mb"`
+			}
+			decoder := json.NewDecoder(http.MaxBytesReader(w, r.Body, 1<<20))
+			decoder.DisallowUnknownFields()
+			if err := decoder.Decode(&payload); err != nil {
+				http.Error(w, "payload invalido", http.StatusBadRequest)
+				return
+			}
+			user, err := validateNextcloudAccountUser(payload.User)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusBadRequest)
+				return
+			}
+			if payload.QuotaMB <= 0 || payload.QuotaMB > nextcloudMaxQuotaMB {
+				http.Error(w, "cuota invalida", http.StatusBadRequest)
+				return
+			}
+			password, err := newNextcloudTemporaryPassword()
+			if err != nil {
+				http.Error(w, "No se pudo generar la credencial temporal", http.StatusInternalServerError)
+				return
+			}
+			meta, createErr := nextcloudOCS(r.Context(), newNextcloudHTTPClient(), http.MethodPost, baseURL, "/ocs/v1.php/cloud/users", adminUser, credential, url.Values{
+				"userid": {user}, "password": {password}, "quota": {fmt.Sprintf("%d MB", payload.QuotaMB)}, "displayName": {strings.TrimSpace(payload.DisplayName)},
+			})
+			if createErr != nil || !nextcloudOCSSuccess(meta) {
+				http.Error(w, "Nextcloud no pudo crear la cuenta personal", http.StatusBadGateway)
+				return
+			}
+			writeJSON(w, http.StatusOK, map[string]interface{}{
+				"ok": true, "user": user, "quota_mb": payload.QuotaMB, "web_url": baseURL,
+				"temporary_password": password, "temporary_password_once": true,
+			})
 			return
 		}
 

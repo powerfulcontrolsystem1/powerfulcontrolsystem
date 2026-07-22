@@ -163,6 +163,25 @@ func EnsureEmpresaSensorPuertasSchema(dbConn *sql.DB) error {
 	return nil
 }
 
+// EmpresaSensorPuertasSchemaReady verifica las tablas ya migradas sin ejecutar
+// DDL desde cortes de caja ni otros flujos operativos.
+func EmpresaSensorPuertasSchemaReady(dbConn *sql.DB) error {
+	if dbConn == nil {
+		return fmt.Errorf("conexion de base de datos no disponible")
+	}
+	for _, table := range []string{"empresa_sensor_puertas_devices", "empresa_sensor_puertas_messages"} {
+		var marker int
+		err := queryRowSQLCompat(dbConn, "SELECT 1 FROM "+table+" WHERE 1=0").Scan(&marker)
+		if err == sql.ErrNoRows {
+			continue
+		}
+		if err != nil {
+			return fmt.Errorf("esquema de sensores de puertas no disponible (%s): %w", table, err)
+		}
+	}
+	return nil
+}
+
 // GetEmpresaSensorByDeviceID busca un dispositivo por su identificador (case-insensitive)
 func GetEmpresaSensorByDeviceID(dbConn *sql.DB, deviceID string) (*EmpresaSensorDevice, error) {
 	idv := NormalizeEmpresaSensorDeviceID(deviceID)

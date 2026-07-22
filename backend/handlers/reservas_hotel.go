@@ -34,7 +34,7 @@ func EmpresaReservasHotelHandler(dbEmp *sql.DB) http.HandlerFunc {
 			http.Error(w, "El modulo de reservas aun no esta listo. Contacta al administrador para completar la migracion.", http.StatusServiceUnavailable)
 			return
 		}
-		if err := dbpkg.EnsureEmpresaReservasHotelSchema(dbEmp); err != nil {
+		if err := dbpkg.EmpresaReservasHotelSchemaReady(dbEmp); err != nil {
 			http.Error(w, "No se pudo preparar el modulo de reservas", http.StatusInternalServerError)
 			return
 		}

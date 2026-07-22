@@ -58,7 +58,7 @@ func applyEmpresaTipoPreconfiguracion(dbEmp, dbSuper *sql.DB, empresaID, tipoEmp
 		return result, nil
 	}
 
-	if err := dbpkg.EnsureEmpresaEstacionPrefsSchema(dbEmp); err != nil {
+	if err := dbpkg.EmpresaEstacionPrefsSchemaReady(dbEmp); err != nil {
 		return result, err
 	}
 	if pref, prefErr := dbpkg.GetEmpresaEstacionPref(dbEmp, empresaID, 0, "preconfiguracion_tipo_empresa_aplicada"); prefErr == nil && pref != nil && strings.TrimSpace(pref.Valor) != "" {
@@ -715,7 +715,7 @@ func ApplyDefaultCarritoUIToExistingEmpresaPrefs(dbEmp *sql.DB) error {
 	if dbEmp == nil {
 		return nil
 	}
-	if err := dbpkg.EnsureEmpresaEstacionPrefsSchema(dbEmp); err != nil {
+	if err := dbpkg.EmpresaEstacionPrefsSchemaReady(dbEmp); err != nil {
 		return err
 	}
 
@@ -1382,7 +1382,7 @@ func applyEmpresaPreconfigControlElectrico(dbEmp *sql.DB, empresaID int64, estac
 func applyEmpresaPreconfigHojaVida(dbEmp *sql.DB, empresaID int64, hojas []dbpkg.TipoEmpresaPreconfigHojaVida, usuario string) (int, []string) {
 	created := 0
 	var errs []string
-	if err := dbpkg.EnsureEmpresaHojaVidaOperativaSchema(dbEmp); err != nil {
+	if err := dbpkg.EmpresaHojaVidaOperativaSchemaReady(dbEmp); err != nil {
 		return 0, []string{"hoja de vida: " + err.Error()}
 	}
 	for _, item := range hojas {
@@ -1419,7 +1419,7 @@ func clearEmpresaTipoPreconfiguracion(dbEmp *sql.DB, empresaID int64) (map[strin
 	if empresaID <= 0 {
 		return nil, fmt.Errorf("empresa_id invalido")
 	}
-	if err := dbpkg.EnsureEmpresaEstacionPrefsSchema(dbEmp); err != nil {
+	if err := dbpkg.EmpresaEstacionPrefsSchemaReady(dbEmp); err != nil {
 		return nil, err
 	}
 	productosEliminados, err := dbpkg.DeleteProductosPreconfiguracion(dbEmp, empresaID)

@@ -12040,3 +12040,64 @@ scripts/vps_backup_operacion.ps1
 scripts/vps_restore_validation.ps1
 - Verifica tarballs y dump del snapshot; el modo `-ExecuteDrill` restaura
   temporalmente PostgreSQL y reporta RPO/RTO sin modificar datos productivos.
+
+2026-07-21 - Plan 105 de cierre para produccion
+- `documentos/plan_105.md`: plan autocontenido en ejecucion local autorizada,
+  con compuertas de produccion por fases, linea base comprobada, prioridades
+  P0/P1/P2, pruebas, aceptacion, rollback y condiciones explicitas de parada.
+  No autoriza despliegue, proveedores externos ni mutaciones productivas.
+- `documentos/matriz_alcance_piloto_plan_105.md`: borrador de habilitacion
+  controlada por dominio para el piloto del Plan 105. Distingue modulos P0 de
+  integraciones y verticales que permanecen fuera hasta contar con evidencia y
+  aprobacion expresa.
+2026-07-21 - `documentos/arquitectura/inventario_goroutines_plan_105.md`: matriz
+  estatica de los 23 lanzamientos `go func` para P105-005, con propietario,
+  durabilidad, prioridad y pasos ejecutables para Terra; no sustituye pruebas
+  de reinicio ni activa cambios de runtime.
+2026-07-22 - `documentos/arquitectura/clasificacion_arbol_plan_105.md`:
+  separa el arbol local del Plan 105 en cambios confirmados, concurrentes y de
+  atribucion pendiente para consolidar un SHA sin descartar trabajo ajeno.
+2026-07-22 - `documentos/arquitectura/normalizacion_documental_plan_105.md`:
+  linea base UTF-8 y secuencia por lotes para corregir documentos sin alterar
+  comandos, trazabilidad ni historial de forma masiva.
+2026-07-22 - `documentos/arquitectura/modularizacion_archivos_gigantes_plan_105.md`:
+  inventario de archivos Go de mayor tamaño y cortes de extracción seguros para
+  P105-018, sin ejecutar refactors en los flujos críticos.
+2026-07-21 - `documentos/arquitectura/inventario_errores_publicos_plan_105.md`:
+  linea base estatica de `err.Error()` alcanzable por HTTP/JSON, familias P0 y
+  patron de correccion con canarios; no declara corregidas las fugas.
+2026-07-21 - `documentos/arquitectura/matriz_pruebas_tenant_ab_plan_105.md`:
+  cobertura existente y matriz de ejecucion A/B de P105-004 para Terra; no crea
+  fixtures ni afirma aislamiento de datos sin PostgreSQL/staging.
+2026-07-21 - `backend/handlers/super_mantenimiento_agentes_test.go`: pruebas de
+  regresion que confirman que respuestas del mantenimiento superadmin no
+  exponen canarios de DSN/token y conservan codigo publico/request_id.
+2026-07-21 - `backend/handlers/super_alertas_public_error_test.go`: pruebas de
+  regresion de la superficie publica de alertas superadmin, con canarios de
+  DSN/token y evaluacion interna redactada.
+2026-07-21 - `backend/handlers/super_correos_masivos_public_error_test.go`:
+  prueba de regresion de errores publicos para correos masivos superadmin, con
+  canario SMTP y correlacion segura sin alterar el resultado de campaña.
+2026-07-21 - `backend/handlers/public_chat_portal_public_error_test.go`:
+  prueba de regresion del evento SSE de error del chat publico; confirma que
+  una causa de proveedor no expone URL ni token y conserva correlacion segura.
+2026-07-21 - `backend/handlers/ai_enterprise_orchestrator_public_error_test.go`:
+  prueba de lista blanca para validaciones de propuestas IA; conserva mensajes
+  conocidos y evita que una causa inesperada exponga DSN o secreto.
+2026-07-21 - `backend/handlers/security_vps_public_error_test.go`: prueba de
+  regresion de errores publicos del panel de seguridad VPS, con canarios de
+  ruta privada/token y preservacion del estado seguro del escaneo.
+2026-07-21 - `backend/handlers/agente_internet_fiscal_public_error_test.go`:
+  prueba de regresion del cupo del agente fiscal, con canario de DSN y limites
+  operativos conservados sin exponer la causa interna.
+2026-07-21 - `documentos/arquitectura/inventario_storage_plan_105.md`: inventario estatico de familias de archivos, protecciones actuales y secuencia de migracion a almacenamiento compartido para P105-015.
+2026-07-21 - `documentos/arquitectura/inventario_cliente_movil_plan_105.md`: evidencia local de la ausencia de fuente movil reproducible y decision requerida para P105-020.
+2026-07-21 - `documentos/arquitectura/inventario_supply_chain_plan_105.md`: inventario estatico de digests, minimo privilegio y pasos de SBOM/rollback para P105-016.
+2026-07-21 - `documentos/gobernanza_tecnica/runbooks/runbook_tls_staging_y_servicios_plan_105.md`: procedimiento reproducible para diagnosticar, renovar y validar TLS en staging, OnlyOffice y Nextcloud sin omitir verificacion de certificado ni alterar el edge sin autorizacion.
+2026-07-21 - `backend/handlers/empresa_buzon_public_error_test.go`: regresion estatica para evitar que el handler de buzon vuelva a exponer causas internas de almacenamiento.
+2026-07-22 - `backend/handlers/chat_con_ia_global_super_public_error_test.go`: regresion estatica para confirmar que errores de proveedor IA en respuestas HTTP/SSE usan mensajes publicos redactados.
+2026-07-22 - `web/js/super_seguridad.js`: agrega el token CSRF de la cookie
+`pcs_csrf` a mutaciones HTTP del panel VPS, preservando los encabezados ya
+definidos por cada llamada.
+2026-07-22 - `web/super/seguridad.html`: versiona el recurso JavaScript del
+panel de seguridad para que el navegador reciba la correccion CSRF de staging.

@@ -7,7 +7,7 @@
   <link rel="stylesheet" href="/estilos.css">
   <style>
     body{margin:0;background:var(--bg);color:var(--text)}.nextcloud-config{max-width:1100px;margin:0 auto;padding:18px;box-sizing:border-box}.nextcloud-config h1{margin:0 0 4px;font-size:1.35rem}.nextcloud-config>p{margin:0 0 16px;color:var(--muted)}
-    .nextcloud-form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));border:1px solid var(--border)}.nextcloud-form label{display:grid;gap:6px;padding:13px;border-right:1px solid var(--border);border-bottom:1px solid var(--border)}.nextcloud-form label:nth-child(2n){border-right:0}.nextcloud-form .wide{grid-column:1/-1;border-right:0}.nextcloud-form input{min-width:0}.nextcloud-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}.nextcloud-message{min-height:24px;margin-top:12px;font-weight:700}
+    .nextcloud-form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));border:1px solid var(--border)}.nextcloud-form label{display:grid;gap:6px;padding:13px;border-right:1px solid var(--border);border-bottom:1px solid var(--border)}.nextcloud-form label:nth-child(2n){border-right:0}.nextcloud-form .wide{grid-column:1/-1;border-right:0}.nextcloud-form input{min-width:0}.nextcloud-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}.nextcloud-message{min-height:24px;margin-top:12px;font-weight:700}.nextcloud-account{margin-top:28px;border-top:1px solid var(--border);padding-top:18px}.nextcloud-credential{display:none;margin-top:12px;padding:14px;border:1px solid #d7a600;background:#fff8d8;color:#382c00}.nextcloud-credential.visible{display:block}.nextcloud-credential code{display:block;margin:8px 0;padding:10px;background:#fff;color:#111;overflow-wrap:anywhere}
     @media(max-width:720px){.nextcloud-config{padding:12px}.nextcloud-form{grid-template-columns:1fr}.nextcloud-form label{border-right:0}.nextcloud-form .wide{grid-column:auto}.nextcloud-actions .btn{flex:1 1 100%}}
   </style>
 </head>
@@ -27,8 +27,19 @@
       <button id="nextcloudTest" class="btn secondary" type="button">Probar conexion</button>
     </div>
     <div id="nextcloudMessage" class="nextcloud-message" role="status"></div>
+    <section class="nextcloud-account" aria-labelledby="nextcloudAccountTitle">
+      <h2 id="nextcloudAccountTitle">Cuenta personal del super administrador</h2>
+      <p>Créala aquí para acceder a la nube desde el celular o computador. Su cuota es independiente de la cuota fija de las empresas.</p>
+      <form class="nextcloud-form">
+        <label>Usuario<input id="nextcloudAccountUser" class="form-input" type="text" autocomplete="username" placeholder="mi_usuario"></label>
+        <label>Nombre visible<input id="nextcloudAccountName" class="form-input" type="text" autocomplete="name" placeholder="Nombre del usuario"></label>
+        <label>Cuota de esta cuenta (MB)<input id="nextcloudAccountQuota" class="form-input" type="number" min="1" max="1048576" value="5120"></label>
+      </form>
+      <div class="nextcloud-actions"><button id="nextcloudCreateAccount" class="btn primary" type="button">Crear cuenta personal</button><a id="nextcloudOpenService" class="btn secondary" href="#" target="_blank" rel="noopener noreferrer">Abrir Nextcloud</a></div>
+      <section id="nextcloudAccountCredential" class="nextcloud-credential" aria-live="polite"><strong>Guarda esta contraseña: solo se muestra ahora.</strong><code id="nextcloudAccountPassword"></code><button id="nextcloudCopyAccountPassword" class="btn secondary" type="button">Copiar contraseña</button></section>
+    </section>
   </main>
-  <script src="/js/nextcloud_super.js?v=20260712"></script>
+  <script src="/js/nextcloud_super.js?v=20260721-personal-account"></script>
   <script src="/js/super_page_tools.js?v=20260707"></script>
 </body>
 </html>

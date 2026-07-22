@@ -328,7 +328,7 @@ func EmpresaChatTareasConversacionesHandler(dbEmp *sql.DB) http.HandlerFunc {
 			action := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("action")))
 			if action == "chat_usuarios" || action == "canal_general" {
 				actor := resolveChatActor(dbEmp, r, empresaID)
-				item, created, err := dbpkg.EnsureChatUsuariosGeneralConversacion(dbEmp, empresaID, actor.UsuarioCreador)
+				item, created, err := dbpkg.GetOrCreateChatUsuariosGeneralConversacion(dbEmp, empresaID, actor.UsuarioCreador)
 				if err != nil {
 					http.Error(w, "No se pudo preparar el canal general", http.StatusInternalServerError)
 					return

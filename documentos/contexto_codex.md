@@ -9,6 +9,14 @@ Este archivo es la primera lectura operativa antes de tocar el proyecto. Resume
 lo que Codex debe tener en memoria para evitar redescubrir rutas, flujos y
 decisiones en cada tarea.
 
+## Actualizacion 2026-07-21 - Plan 105
+
+- `documentos/plan_105.md` es el plan vigente de cierre para produccion general.
+  Esta pendiente de aprobacion y no debe ejecutarse, desplegarse ni convertirse
+  en `rs` hasta que el usuario lo autorice expresamente.
+- Al aprobarse, Codex Terra medio debe leerlo completo y empezar por P105-001 y
+  P105-002, manteniendo evidencia por SHA y una sola fase acotada por vez.
+
 ## Actualizacion 2026-07-16 - Ruta de produccion
 
 - Abrir `documentos/plan_final_para_produccion.md` cuando la tarea afecte

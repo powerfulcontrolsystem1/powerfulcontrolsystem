@@ -52,8 +52,8 @@ func EmpresaGrafologiaHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
-		if err := dbpkg.EnsureEmpresaGrafologiaSchema(dbEmp); err != nil {
-			log.Printf("[grafologia] ensure schema empresa_id=%d error: %v", empresaID, err)
+		if err := dbpkg.EmpresaGrafologiaSchemaReady(dbEmp); err != nil {
+			log.Printf("[grafologia] schema readiness empresa_id=%d error: %v", empresaID, err)
 			http.Error(w, "No se pudo preparar el modulo de grafologia", http.StatusInternalServerError)
 			return
 		}

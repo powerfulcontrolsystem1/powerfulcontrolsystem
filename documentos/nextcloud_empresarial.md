@@ -1,5 +1,29 @@
 # Nextcloud empresarial
 
+## Actualizacion 2026-07-21 - cuentas personales y acceso empresarial
+
+La configuracion de Super administrador permite crear cuentas personales de
+Nextcloud, con usuario y cuota elegidos por el super administrador. Esas cuotas
+no modifican la cuota fija asignada a las empresas. La pagina muestra el enlace
+HTTPS publico del VPS y una contrasena temporal una sola vez; no se registra ni
+imprime esa contrasena en PCS.
+
+Al abrir la pagina empresarial, PCS aprovisiona automaticamente la cuenta
+tecnica si el servicio esta configurado y el espacio esta activo. La
+autenticacion sigue siendo propia de Nextcloud:
+PCS no conserva contrasenas de empresas ni fabrica cookies de sesion. Para
+inicio de sesion unico real entre PCS y Nextcloud se requiere configurar un
+proveedor SSO compatible (OIDC o SAML) en ambos servicios.
+
+Cuando la cuenta ya esta aprovisionada, volver a abrir `Administrar empresa >
+Nextcloud` navega directamente a la pagina principal de Nextcloud fuera del
+iframe de PCS. Para una cuenta nueva, PCS muestra primero la contrasena temporal
+una unica vez; en la siguiente apertura navega directamente. El usuario puede
+cerrar sesion y cambiar contrasena desde el menu de perfil y Seguridad de
+Nextcloud. La expiracion forzada de una contrasena temporal se configura en el
+servidor Nextcloud mediante su politica de contrasenas, no en PCS, para que sea
+aplicada por el mismo proveedor de identidad.
+
 ## Alcance
 
 El servicio Nextcloud empresarial se ejecuta en el VPS principal y es distinto

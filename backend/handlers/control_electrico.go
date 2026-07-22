@@ -199,8 +199,8 @@ func EmpresaControlElectricoHandler(dbEmp *sql.DB, dbSuper ...*sql.DB) http.Hand
 		dbSuperConn = dbSuper[0]
 	}
 	return func(w http.ResponseWriter, r *http.Request) {
-		if err := dbpkg.EnsureEmpresaControlElectricoSchema(dbEmp); err != nil {
-			log.Printf("[control_electrico] ensure schema error: %v", err)
+		if err := dbpkg.EmpresaControlElectricoSchemaReady(dbEmp); err != nil {
+			log.Printf("[control_electrico] schema readiness error: %v", err)
 			http.Error(w, "No se pudo preparar domotica", http.StatusInternalServerError)
 			return
 		}
@@ -749,7 +749,7 @@ func ejecutarControlElectricoProgramacionPendiente(dbEmp *sql.DB, now time.Time,
 	if dbEmp == nil {
 		return 0, fmt.Errorf("dbEmp nil")
 	}
-	if err := dbpkg.EnsureEmpresaControlElectricoSchema(dbEmp); err != nil {
+	if err := dbpkg.EmpresaControlElectricoSchemaReady(dbEmp); err != nil {
 		return 0, err
 	}
 	reles, err := dbpkg.ListEmpresaControlElectricoRelesProgramados(dbEmp)
@@ -844,7 +844,7 @@ func DispatchEmpresaControlElectricoEstacion(dbEmp *sql.DB, empresaID, estacionI
 	if dbEmp == nil || empresaID <= 0 || estacionID <= 0 {
 		return controlElectricoDispatchResult{Skipped: true, Message: "estacion no valida"}
 	}
-	if err := dbpkg.EnsureEmpresaControlElectricoSchema(dbEmp); err != nil {
+	if err := dbpkg.EmpresaControlElectricoSchemaReady(dbEmp); err != nil {
 		return controlElectricoDispatchResult{OK: false, Error: err.Error()}
 	}
 	cfg, err := dbpkg.GetEmpresaControlElectricoConfig(dbEmp, empresaID, true)

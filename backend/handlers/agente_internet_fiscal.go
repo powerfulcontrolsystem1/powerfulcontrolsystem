@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"strings"
 	"time"
@@ -45,7 +46,7 @@ func empresaAgenteInternetFiscalHandler(dbEmp, dbSuper *sql.DB, modulo string) h
 		}
 		usage, limits, err := reserveAgenteInternetLightUsage(dbEmp, dbSuper, empresaID, adminEmailFromRequest(r))
 		if err != nil {
-			writeJSON(w, http.StatusTooManyRequests, map[string]any{"ok": false, "error": err.Error(), "usage": usage, "limits": limits})
+			writeAgenteInternetFiscalPublicError(w, r, http.StatusTooManyRequests, err, usage, limits)
 			return
 		}
 		country := strings.ToUpper(strings.TrimSpace(r.URL.Query().Get("pais")))
@@ -74,6 +75,22 @@ func empresaAgenteInternetFiscalHandler(dbEmp, dbSuper *sql.DB, modulo string) h
 			"message":     "Propuesta generada para revision humana. No se aplicaron cambios.",
 		})
 	}
+}
+
+func writeAgenteInternetFiscalPublicError(w http.ResponseWriter, r *http.Request, status int, err error, usage dbpkg.EmpresaAgenteUsoDiario, limits map[string]int64) {
+	requestID := resolveAuditoriaRequestID(r)
+	log.Printf("[agente_internet_fiscal] operation=reservar_cupo request_id=%s error_type=%T", requestID, err)
+	payload := map[string]any{
+		"ok":     false,
+		"code":   "agente_internet_usage_unavailable",
+		"error":  "No se pudo reservar el cupo del agente.",
+		"usage":  usage,
+		"limits": limits,
+	}
+	if requestID != "" {
+		payload["request_id"] = requestID
+	}
+	writeJSON(w, status, payload)
 }
 
 func reserveAgenteInternetLightUsage(dbEmp, dbSuper *sql.DB, empresaID int64, user string) (dbpkg.EmpresaAgenteUsoDiario, map[string]int64, error) {

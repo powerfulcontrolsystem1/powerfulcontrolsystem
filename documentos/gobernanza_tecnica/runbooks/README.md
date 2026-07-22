@@ -30,6 +30,8 @@ Los runbooks convierten fallas repetibles o diagnosticos delicados en procedimie
 - `runbook_reconciliacion_documental_fiscal_y_contable_externa.md`: creado.
 - `runbook_versionado_documental_y_firmas_externas.md`: creado.
 - `checklist_evidencia_documental_para_qa_y_soporte.md`: creada.
+- `runbook_tls_staging_y_servicios_plan_105.md`: recuperacion segura de TLS
+  vencido en staging, OnlyOffice y Nextcloud, con validacion externa obligatoria.
 
 ## Runbooks prioritarios siguientes
 
