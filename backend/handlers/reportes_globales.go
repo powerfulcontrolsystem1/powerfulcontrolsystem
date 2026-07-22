@@ -456,8 +456,8 @@ func superReportesBuildDatasetResponse(dbEmp *sql.DB, adminEmail string, empresa
 		Individuales: make([]superReportesDatasetEmpresaItem, 0, len(empresas)),
 	}
 
-	if err := dbpkg.EnsureEmpresaReportesProgramacionSchema(dbEmp); err != nil {
-		return superReportesDatasetResponse{}, fmt.Errorf("no se pudo inicializar la programacion de reportes")
+	if err := dbpkg.EmpresaReportesProgramacionSchemaReady(dbEmp); err != nil {
+		return superReportesDatasetResponse{}, fmt.Errorf("no se pudo verificar la programacion de reportes")
 	}
 
 	for _, empresa := range empresas {

@@ -457,6 +457,33 @@ func EnsureEmpresaControlElectricoSchema(dbConn *sql.DB) error {
 	return nil
 }
 
+// EmpresaControlElectricoSchemaReady verifica el esquema ya aplicado sin
+// ejecutar DDL. API y worker deben fallar cerrados cuando el migrador no haya
+// preparado las tablas de control electrico.
+func EmpresaControlElectricoSchemaReady(dbConn *sql.DB) error {
+	if dbConn == nil {
+		return errors.New("conexion de base de datos no disponible")
+	}
+	for _, table := range []string{
+		"empresa_control_electrico_config",
+		"empresa_control_electrico_raspberry_pis",
+		"empresa_control_electrico_reles",
+		"empresa_control_electrico_eventos",
+		"empresa_control_electrico_lecturas",
+		"empresa_control_electrico_reglas",
+	} {
+		var marker int
+		err := queryRowSQLCompat(dbConn, "SELECT 1 FROM "+table+" WHERE 1=0").Scan(&marker)
+		if errors.Is(err, sql.ErrNoRows) {
+			continue
+		}
+		if err != nil {
+			return fmt.Errorf("esquema de control electrico no disponible (%s): %w", table, err)
+		}
+	}
+	return nil
+}
+
 // GetEmpresaControlElectricoConfig obtiene configuracion o entrega defaults no persistidos.
 func GetEmpresaControlElectricoConfig(dbConn *sql.DB, empresaID int64, includeToken bool) (*EmpresaControlElectricoConfig, error) {
 	if empresaID <= 0 {

@@ -6,75 +6,47 @@ Las llamadas listadas son deuda de extraccion. En produccion, API y worker deben
 
 ## Resumen
 
-- Llamadas inventariadas: 132.
+- Llamadas inventariadas: 104.
 - arranque; protegido por rol, requiere extraccion: 72.
 - proceso de plataforma; revisar rol: 1.
-- trafico HTTP; priorizar reemplazo por verificacion: 59.
+- trafico HTTP; priorizar reemplazo por verificacion: 31.
 
 ## Registro
 
 | Funcion Ensure | Llamador | Riesgo / prioridad |
 | --- | --- | --- |
 | `EnsurePostgresRuntimeCompat` | [backend/cmd/pcs-migrate/main.go:69](../../backend/cmd/pcs-migrate/main.go#L69) | proceso de plataforma; revisar rol |
-| `EnsureEmpresaEstacionPrefsSchema` | [backend/handlers/chat_flotante_config.go:272](../../backend/handlers/chat_flotante_config.go#L272) | trafico HTTP; priorizar reemplazo por verificacion |
-| `EnsureEmpresaEstacionPrefsSchema` | [backend/handlers/chat_flotante_config.go:286](../../backend/handlers/chat_flotante_config.go#L286) | trafico HTTP; priorizar reemplazo por verificacion |
-| `EnsureChatUsuariosGeneralConversacion` | [backend/handlers/chat_tareas.go:331](../../backend/handlers/chat_tareas.go#L331) | trafico HTTP; priorizar reemplazo por verificacion |
-| `EnsureEmpresaControlElectricoSchema` | [backend/handlers/control_electrico.go:202](../../backend/handlers/control_electrico.go#L202) | trafico HTTP; priorizar reemplazo por verificacion |
 | `EnsureEmpresaControlElectricoPrimaryRaspberry` | [backend/handlers/control_electrico.go:224](../../backend/handlers/control_electrico.go#L224) | trafico HTTP; priorizar reemplazo por verificacion |
 | `EnsureEmpresaControlElectricoPrimaryRaspberry` | [backend/handlers/control_electrico.go:384](../../backend/handlers/control_electrico.go#L384) | trafico HTTP; priorizar reemplazo por verificacion |
-| `EnsureEmpresaControlElectricoSchema` | [backend/handlers/control_electrico.go:752](../../backend/handlers/control_electrico.go#L752) | trafico HTTP; priorizar reemplazo por verificacion |
-| `EnsureEmpresaControlElectricoSchema` | [backend/handlers/control_electrico.go:847](../../backend/handlers/control_electrico.go#L847) | trafico HTTP; priorizar reemplazo por verificacion |
-| `EnsureEmpresaSensorPuertasSchema` | [backend/handlers/corte_caja.go:1666](../../backend/handlers/corte_caja.go#L1666) | trafico HTTP; priorizar reemplazo por verificacion |
 | `EnsureEmpresaEventosContablesSchema` | [backend/handlers/creditos.go:981](../../backend/handlers/creditos.go#L981) | trafico HTTP; priorizar reemplazo por verificacion |
 | `EnsureEmpresaEmailRowsForExistingEmpresas` | [backend/handlers/email_corporativo_handlers.go:752](../../backend/handlers/email_corporativo_handlers.go#L752) | trafico HTTP; priorizar reemplazo por verificacion |
 | `EnsureEmpresaEmailRowsForExistingEmpresas` | [backend/handlers/email_corporativo_handlers.go:1389](../../backend/handlers/email_corporativo_handlers.go#L1389) | trafico HTTP; priorizar reemplazo por verificacion |
 | `EnsureEmpresaCorporateEmailAfterCreate` | [backend/handlers/email_corporativo_handlers.go:1634](../../backend/handlers/email_corporativo_handlers.go#L1634) | trafico HTTP; priorizar reemplazo por verificacion |
 | `EnsureEmpresaPermisosFinosSchema` | [backend/handlers/empresa_permisos.go:845](../../backend/handlers/empresa_permisos.go#L845) | trafico HTTP; priorizar reemplazo por verificacion |
 | `EnsureNuevasPlantillasProduccionMasivaLicencias` | [backend/handlers/empresa_plantillas_nuevas.go:82](../../backend/handlers/empresa_plantillas_nuevas.go#L82) | trafico HTTP; priorizar reemplazo por verificacion |
-| `EnsureEmpresaEstacionPrefsSchema` | [backend/handlers/empresa_preconfiguracion.go:61](../../backend/handlers/empresa_preconfiguracion.go#L61) | trafico HTTP; priorizar reemplazo por verificacion |
 | `EnsureEmpresaProductosSchema` | [backend/handlers/empresa_preconfiguracion.go:77](../../backend/handlers/empresa_preconfiguracion.go#L77) | trafico HTTP; priorizar reemplazo por verificacion |
 | `EnsureEmpresaUsuariosAuthSchema` | [backend/handlers/empresa_preconfiguracion.go:81](../../backend/handlers/empresa_preconfiguracion.go#L81) | trafico HTTP; priorizar reemplazo por verificacion |
 | `EnsureEmpresaConfiguracionOperativaSchema` | [backend/handlers/empresa_preconfiguracion.go:386](../../backend/handlers/empresa_preconfiguracion.go#L386) | trafico HTTP; priorizar reemplazo por verificacion |
 | `EnsureEmpresaComisionesServicioSchema` | [backend/handlers/empresa_preconfiguracion.go:430](../../backend/handlers/empresa_preconfiguracion.go#L430) | trafico HTTP; priorizar reemplazo por verificacion |
-| `EnsureEmpresaEstacionPrefsSchema` | [backend/handlers/empresa_preconfiguracion.go:718](../../backend/handlers/empresa_preconfiguracion.go#L718) | trafico HTTP; priorizar reemplazo por verificacion |
 | `EnsureEmpresaTarifasPorMinutosSchema` | [backend/handlers/empresa_preconfiguracion.go:989](../../backend/handlers/empresa_preconfiguracion.go#L989) | trafico HTTP; priorizar reemplazo por verificacion |
 | `EnsureEmpresaTarifasPorDiaSchema` | [backend/handlers/empresa_preconfiguracion.go:1021](../../backend/handlers/empresa_preconfiguracion.go#L1021) | trafico HTTP; priorizar reemplazo por verificacion |
 | `EnsureEmpresaTarifasMotelSchema` | [backend/handlers/empresa_preconfiguracion.go:1054](../../backend/handlers/empresa_preconfiguracion.go#L1054) | trafico HTTP; priorizar reemplazo por verificacion |
 | `EnsureEmpresaControlElectricoSchema` | [backend/handlers/empresa_preconfiguracion.go:1304](../../backend/handlers/empresa_preconfiguracion.go#L1304) | trafico HTTP; priorizar reemplazo por verificacion |
-| `EnsureEmpresaHojaVidaOperativaSchema` | [backend/handlers/empresa_preconfiguracion.go:1385](../../backend/handlers/empresa_preconfiguracion.go#L1385) | trafico HTTP; priorizar reemplazo por verificacion |
-| `EnsureEmpresaEstacionPrefsSchema` | [backend/handlers/empresa_preconfiguracion.go:1422](../../backend/handlers/empresa_preconfiguracion.go#L1422) | trafico HTTP; priorizar reemplazo por verificacion |
 | `EnsureEmpresaConfiguracionOperativaSchema` | [backend/handlers/empresa_preconfiguracion.go:1456](../../backend/handlers/empresa_preconfiguracion.go#L1456) | trafico HTTP; priorizar reemplazo por verificacion |
 | `EnsureEmpresaComisionesServicioSchema` | [backend/handlers/empresa_preconfiguracion.go:1472](../../backend/handlers/empresa_preconfiguracion.go#L1472) | trafico HTTP; priorizar reemplazo por verificacion |
-| `EnsureEmpresaEnergiaSolarSchema` | [backend/handlers/energia_solar.go:41](../../backend/handlers/energia_solar.go#L41) | trafico HTTP; priorizar reemplazo por verificacion |
-| `EnsureEmpresaEstacionPrefsSchema` | [backend/handlers/finanzas_breb_qr.go:203](../../backend/handlers/finanzas_breb_qr.go#L203) | trafico HTTP; priorizar reemplazo por verificacion |
-| `EnsureEmpresaGrafologiaSchema` | [backend/handlers/grafologia.go:55](../../backend/handlers/grafologia.go#L55) | trafico HTTP; priorizar reemplazo por verificacion |
-| `EnsureEmpresaHojaVidaOperativaSchema` | [backend/handlers/hoja_vida_operativa.go:17](../../backend/handlers/hoja_vida_operativa.go#L17) | trafico HTTP; priorizar reemplazo por verificacion |
 | `EnsureEmpresaEventosContablesSchema` | [backend/handlers/modulos_faltantes.go:2323](../../backend/handlers/modulos_faltantes.go#L2323) | trafico HTTP; priorizar reemplazo por verificacion |
-| `EnsureEmpresaNextcloudSchema` | [backend/handlers/nextcloud.go:197](../../backend/handlers/nextcloud.go#L197) | trafico HTTP; priorizar reemplazo por verificacion |
-| `EnsureEmpresaNextcloudAssignmentsForAll` | [backend/handlers/nextcloud.go:215](../../backend/handlers/nextcloud.go#L215) | trafico HTTP; priorizar reemplazo por verificacion |
-| `EnsureNextcloudAssignmentsForAll` | [backend/handlers/nextcloud.go:571](../../backend/handlers/nextcloud.go#L571) | trafico HTTP; priorizar reemplazo por verificacion |
-| `EnsureEmpresaEstacionPrefsSchema` | [backend/handlers/panel_empresa_config.go:79](../../backend/handlers/panel_empresa_config.go#L79) | trafico HTTP; priorizar reemplazo por verificacion |
-| `EnsureEmpresaEstacionPrefsSchema` | [backend/handlers/panel_empresa_config.go:90](../../backend/handlers/panel_empresa_config.go#L90) | trafico HTTP; priorizar reemplazo por verificacion |
-| `EnsureEmpresaChatTareasSchema` | [backend/handlers/public_mensajes_privados.go:138](../../backend/handlers/public_mensajes_privados.go#L138) | trafico HTTP; priorizar reemplazo por verificacion |
+| `EnsureEmpresaNextcloudSchema` | [backend/handlers/nextcloud.go:211](../../backend/handlers/nextcloud.go#L211) | trafico HTTP; priorizar reemplazo por verificacion |
+| `EnsureEmpresaNextcloudAssignmentsForAll` | [backend/handlers/nextcloud.go:229](../../backend/handlers/nextcloud.go#L229) | trafico HTTP; priorizar reemplazo por verificacion |
+| `EnsureNextcloudAssignmentsForAll` | [backend/handlers/nextcloud.go:633](../../backend/handlers/nextcloud.go#L633) | trafico HTTP; priorizar reemplazo por verificacion |
 | `EnsureEmpresaRappiSchema` | [backend/handlers/rappi.go:53](../../backend/handlers/rappi.go#L53) | trafico HTTP; priorizar reemplazo por verificacion |
-| `EnsureEmpresaReportesProgramacionSchema` | [backend/handlers/reportes_globales.go:459](../../backend/handlers/reportes_globales.go#L459) | trafico HTTP; priorizar reemplazo por verificacion |
-| `EnsureEmpresaReportesProgramacionSchema` | [backend/handlers/reportes.go:486](../../backend/handlers/reportes.go#L486) | trafico HTTP; priorizar reemplazo por verificacion |
-| `EnsureEmpresaReservasHotelSchema` | [backend/handlers/reservas_hotel.go:37](../../backend/handlers/reservas_hotel.go#L37) | trafico HTTP; priorizar reemplazo por verificacion |
 | `EnsureRolesPermisosSchema` | [backend/handlers/roles_tipos_usuario.go:134](../../backend/handlers/roles_tipos_usuario.go#L134) | trafico HTTP; priorizar reemplazo por verificacion |
-| `EnsureSuperAlertasSchema` | [backend/handlers/super_alertas.go:512](../../backend/handlers/super_alertas.go#L512) | trafico HTTP; priorizar reemplazo por verificacion |
-| `EnsureEmpresaUsuariosAuthSchema` | [backend/handlers/super_correos_masivos.go:270](../../backend/handlers/super_correos_masivos.go#L270) | trafico HTTP; priorizar reemplazo por verificacion |
+| `EnsureSuperAlertasSchema` | [backend/handlers/super_alertas.go:539](../../backend/handlers/super_alertas.go#L539) | trafico HTTP; priorizar reemplazo por verificacion |
+| `EnsureEmpresaUsuariosAuthSchema` | [backend/handlers/super_correos_masivos.go:302](../../backend/handlers/super_correos_masivos.go#L302) | trafico HTTP; priorizar reemplazo por verificacion |
 | `EnsureSuperMantenimientoAgentesSchema` | [backend/handlers/super_mantenimiento_agentes.go:56](../../backend/handlers/super_mantenimiento_agentes.go#L56) | trafico HTTP; priorizar reemplazo por verificacion |
 | `EnsureEmpresaNextcloudAssignment` | [backend/handlers/system_empresas_handlers.go:580](../../backend/handlers/system_empresas_handlers.go#L580) | trafico HTTP; priorizar reemplazo por verificacion |
 | `EnsureEmpresaCorporateEmailAfterCreate` | [backend/handlers/system_empresas_handlers.go:584](../../backend/handlers/system_empresas_handlers.go#L584) | trafico HTTP; priorizar reemplazo por verificacion |
-| `EnsureEmpresaTarifasMotelSchema` | [backend/handlers/tarifas_motel.go:17](../../backend/handlers/tarifas_motel.go#L17) | trafico HTTP; priorizar reemplazo por verificacion |
-| `EnsureEmpresaTarifasPorMinutosSchema` | [backend/handlers/tarifas_por_minutos.go:19](../../backend/handlers/tarifas_por_minutos.go#L19) | trafico HTTP; priorizar reemplazo por verificacion |
-| `EnsureEmpresaUbicacionGPSSchema` | [backend/handlers/taxi_system.go:88](../../backend/handlers/taxi_system.go#L88) | trafico HTTP; priorizar reemplazo por verificacion |
-| `EnsureEmpresaUbicacionGPSSchema` | [backend/handlers/taxi_system.go:176](../../backend/handlers/taxi_system.go#L176) | trafico HTTP; priorizar reemplazo por verificacion |
-| `EnsureEmpresaUbicacionGPSSchema` | [backend/handlers/taxi_system.go:233](../../backend/handlers/taxi_system.go#L233) | trafico HTTP; priorizar reemplazo por verificacion |
-| `EnsureEmpresaUbicacionGPSSchema` | [backend/handlers/ubicacion_gps.go:18](../../backend/handlers/ubicacion_gps.go#L18) | trafico HTTP; priorizar reemplazo por verificacion |
-| `EnsureEmpresaUbicacionGPSSchema` | [backend/handlers/ubicacion_gps.go:172](../../backend/handlers/ubicacion_gps.go#L172) | trafico HTTP; priorizar reemplazo por verificacion |
-| `EnsureAuthToken` | [backend/handlers/voice_stream_config.go:226](../../backend/handlers/voice_stream_config.go#L226) | trafico HTTP; priorizar reemplazo por verificacion |
-| `EnsureAuthToken` | [backend/handlers/voice_stream_config.go:336](../../backend/handlers/voice_stream_config.go#L336) | trafico HTTP; priorizar reemplazo por verificacion |
+| `EnsureAuthToken` | [backend/handlers/voice_stream_config.go:239](../../backend/handlers/voice_stream_config.go#L239) | trafico HTTP; priorizar reemplazo por verificacion |
+| `EnsureAuthToken` | [backend/handlers/voice_stream_config.go:349](../../backend/handlers/voice_stream_config.go#L349) | trafico HTTP; priorizar reemplazo por verificacion |
 | `EnsurePostgresRuntimeCompat` | [backend/main.go:905](../../backend/main.go#L905) | arranque; protegido por rol, requiere extraccion |
 | `EnsurePostgresRuntimeCompat` | [backend/main.go:910](../../backend/main.go#L910) | arranque; protegido por rol, requiere extraccion |
 | `EnsureAdministradoresAuthSchema` | [backend/main.go:914](../../backend/main.go#L914) | arranque; protegido por rol, requiere extraccion |

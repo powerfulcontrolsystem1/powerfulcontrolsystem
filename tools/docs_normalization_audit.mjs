@@ -27,7 +27,7 @@ const refinedBadPatterns = [
   /\u00c3[\u0080-\u00bf]/g,
   /\u00c2[\u0080-\u00bf]/g,
   /\u00e2\u20ac./g,
-  /[A-Za-zÁÉÍÓÚáéíóúÑñ]\?(?:a|e|i|o|u|n|A|E|I|O|U|N)/g,
+  /[A-Za-zÁÉÍÓÚáéíóúÑñ]\?(?:a|e|i|o|u|n|A|E|I|O|U|N)(?![A-Za-z0-9_])/g,
   /\uFFFD/g,
 ];
 

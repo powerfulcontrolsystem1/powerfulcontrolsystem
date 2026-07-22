@@ -1663,7 +1663,7 @@ func listCorteCajaSensoresSinFactura(dbEmp *sql.DB, empresaID int64, soldStation
 	defer func() {
 		dbpkg.PerfLogf("[perf][corte] listCorteCajaSensoresSinFactura empresa=%d dur=%s", empresaID, time.Since(startedAt))
 	}()
-	if err := dbpkg.EnsureEmpresaSensorPuertasSchema(dbEmp); err != nil {
+	if err := dbpkg.EmpresaSensorPuertasSchemaReady(dbEmp); err != nil {
 		return nil, err
 	}
 	query := `SELECT COALESCE(estacion_id, 0), COALESCE(device_id, ''), COALESCE(last_state, ''), COALESCE(last_seen, '')

@@ -319,52 +319,52 @@ func SuperChatIALogicaConfigHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 		case http.MethodGet:
 			empresaEnabled, empresaEnabledAt, empresaEnabledBy, err := getChatIAEmpresaEnabled(dbSuper)
 			if err != nil {
-				http.Error(w, "error leyendo configuración: "+err.Error(), http.StatusInternalServerError)
+				http.Error(w, "No se pudo leer la configuracion del chat IA", http.StatusInternalServerError)
 				return
 			}
 			superEnabled, superEnabledAt, superEnabledBy, err := getChatIASuperEnabled(dbSuper)
 			if err != nil {
-				http.Error(w, "error leyendo configuración: "+err.Error(), http.StatusInternalServerError)
+				http.Error(w, "No se pudo leer la configuracion del chat IA", http.StatusInternalServerError)
 				return
 			}
 			portalEnabled, portalEnabledAt, portalEnabledBy, err := getChatIAPortalEnabled(dbSuper)
 			if err != nil {
-				http.Error(w, "error leyendo configuración: "+err.Error(), http.StatusInternalServerError)
+				http.Error(w, "No se pudo leer la configuracion del chat IA", http.StatusInternalServerError)
 				return
 			}
 			empresaMax, empresaMaxAt, empresaMaxBy, err := getChatIAEmpresaMaxConsultasDia(dbSuper)
 			if err != nil {
-				http.Error(w, "error leyendo configuración: "+err.Error(), http.StatusInternalServerError)
+				http.Error(w, "No se pudo leer la configuracion del chat IA", http.StatusInternalServerError)
 				return
 			}
 			empresaMaxGPT55, empresaMaxGPT55At, empresaMaxGPT55By, err := getChatIAEmpresaMaxGPT55ConsultasDia(dbSuper)
 			if err != nil {
-				http.Error(w, "error leyendo configuración: "+err.Error(), http.StatusInternalServerError)
+				http.Error(w, "No se pudo leer la configuracion del chat IA", http.StatusInternalServerError)
 				return
 			}
 			superMax, superMaxAt, superMaxBy, err := getChatIASuperMaxConsultasDia(dbSuper)
 			if err != nil {
-				http.Error(w, "error leyendo configuración: "+err.Error(), http.StatusInternalServerError)
+				http.Error(w, "No se pudo leer la configuracion del chat IA", http.StatusInternalServerError)
 				return
 			}
 			empresaStreaming, empresaStreamingAt, empresaStreamingBy, err := getChatIAEmpresaStreamingEnabled(dbSuper)
 			if err != nil {
-				http.Error(w, "error leyendo configuración: "+err.Error(), http.StatusInternalServerError)
+				http.Error(w, "No se pudo leer la configuracion del chat IA", http.StatusInternalServerError)
 				return
 			}
 			empresaDBQueryEnabled, empresaDBQueryEnabledAt, empresaDBQueryEnabledBy, err := getChatIAEmpresaDBQueryEnabled(dbSuper)
 			if err != nil {
-				http.Error(w, "error leyendo configuracion: "+err.Error(), http.StatusInternalServerError)
+				http.Error(w, "No se pudo leer la configuracion del chat IA", http.StatusInternalServerError)
 				return
 			}
 			empresaDBQueryMaxTables, empresaDBQueryMaxTablesAt, empresaDBQueryMaxTablesBy, err := getChatIAEmpresaDBQueryMaxTables(dbSuper)
 			if err != nil {
-				http.Error(w, "error leyendo configuracion: "+err.Error(), http.StatusInternalServerError)
+				http.Error(w, "No se pudo leer la configuracion del chat IA", http.StatusInternalServerError)
 				return
 			}
 			empresaDBQueryRows, empresaDBQueryRowsAt, empresaDBQueryRowsBy, err := getChatIAEmpresaDBQueryRows(dbSuper)
 			if err != nil {
-				http.Error(w, "error leyendo configuracion: "+err.Error(), http.StatusInternalServerError)
+				http.Error(w, "No se pudo leer la configuracion del chat IA", http.StatusInternalServerError)
 				return
 			}
 			superStreaming, superStreamingAt, superStreamingBy, err := getChatIASuperStreamingEnabled(dbSuper)
@@ -387,17 +387,17 @@ func SuperChatIALogicaConfigHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 			adminEmail := strings.TrimSpace(adminEmailFromRequest(r))
 			superConsultasHoy, superTokensHoy, err := dbpkg.GetSuperAIUsoDiarioOpenAITokensGlobal(dbSuper, adminEmail, "openai", fechaUso)
 			if err != nil {
-				http.Error(w, "error leyendo consumo openai super: "+err.Error(), http.StatusInternalServerError)
+				http.Error(w, "No se pudo leer el consumo de IA", http.StatusInternalServerError)
 				return
 			}
 			superAllConsultasHoy, superAllTokensHoy, err := dbpkg.GetSuperAIUsoDiarioOpenAITokensGlobal(dbSuper, "", "openai", fechaUso)
 			if err != nil {
-				http.Error(w, "error leyendo consumo openai super global: "+err.Error(), http.StatusInternalServerError)
+				http.Error(w, "No se pudo leer el consumo de IA", http.StatusInternalServerError)
 				return
 			}
 			empConsultasHoy, empTokensHoy, err := dbpkg.GetEmpresaAIUsoDiarioOpenAITokensGlobal(dbEmp, "openai", fechaUso)
 			if err != nil {
-				http.Error(w, "error leyendo consumo openai empresas: "+err.Error(), http.StatusInternalServerError)
+				http.Error(w, "No se pudo leer el consumo de IA", http.StatusInternalServerError)
 				return
 			}
 

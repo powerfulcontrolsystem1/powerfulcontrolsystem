@@ -14,8 +14,8 @@ import (
 // EmpresaHojaVidaOperativaHandler gestiona hojas de vida universales por empresa.
 func EmpresaHojaVidaOperativaHandler(dbEmp *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if err := dbpkg.EnsureEmpresaHojaVidaOperativaSchema(dbEmp); err != nil {
-			log.Printf("[hoja_vida] ensure schema error: %v", err)
+		if err := dbpkg.EmpresaHojaVidaOperativaSchemaReady(dbEmp); err != nil {
+			log.Printf("[hoja_vida] schema readiness error: %v", err)
 			http.Error(w, "No se pudo preparar hoja de vida operativa", http.StatusInternalServerError)
 			return
 		}

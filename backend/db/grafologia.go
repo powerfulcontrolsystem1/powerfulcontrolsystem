@@ -2,6 +2,7 @@ package db
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 	"strings"
 )
@@ -96,6 +97,23 @@ func EnsureEmpresaGrafologiaSchema(dbConn *sql.DB) error {
 	}
 	if _, err := execSQLCompat(dbConn, `CREATE INDEX IF NOT EXISTS ix_grafologia_analisis_cliente ON empresa_grafologia_analisis(empresa_id, cliente_id)`); err != nil {
 		return err
+	}
+	return nil
+}
+
+// EmpresaGrafologiaSchemaReady verifies the migration-owned analysis table
+// without executing DDL while handling sensitive company content.
+func EmpresaGrafologiaSchemaReady(dbConn *sql.DB) error {
+	if dbConn == nil {
+		return fmt.Errorf("conexion de base de datos no disponible")
+	}
+	var marker int
+	err := queryRowSQLCompat(dbConn, "SELECT 1 FROM empresa_grafologia_analisis WHERE 1=0").Scan(&marker)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil
+	}
+	if err != nil {
+		return fmt.Errorf("esquema de grafologia no disponible: %w", err)
 	}
 	return nil
 }

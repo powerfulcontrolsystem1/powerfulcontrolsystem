@@ -200,7 +200,7 @@ func EmpresaFinanzasBrebQRHandler(dbEmp *sql.DB) http.HandlerFunc {
 }
 
 func ensureEmpresaBrebQRSchemas(dbEmp *sql.DB) error {
-	if err := dbpkg.EnsureEmpresaEstacionPrefsSchema(dbEmp); err != nil {
+	if err := dbpkg.EmpresaEstacionPrefsSchemaReady(dbEmp); err != nil {
 		return err
 	}
 	if err := dbpkg.EmpresaCarritosSchemaReady(dbEmp); err != nil {

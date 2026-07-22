@@ -385,7 +385,7 @@ func decorateEmpresasByEffectiveAccess(dbSuper *sql.DB, requesterEmail, principa
 
 func ensureEmpresaOwnerAccess(dbEmp, dbSuper *sql.DB, r *http.Request, empresaID int64) (*dbpkg.Empresa, string, bool, error) {
 	requesterEmail := strings.ToLower(strings.TrimSpace(adminEmailFromRequest(r)))
-	_, principalEmail, err := resolveRequesterAdminScope(dbSuper, r)
+	admin, principalEmail, err := resolveRequesterAdminScope(dbSuper, r)
 	if err != nil {
 		return nil, "", false, err
 	}
@@ -396,7 +396,10 @@ func ensureEmpresaOwnerAccess(dbEmp, dbSuper *sql.DB, r *http.Request, empresaID
 	if err != nil {
 		return nil, principalEmail, false, err
 	}
-	owner := adminOwnsEmpresaByCreatorEmail(requesterEmail, empresa.UsuarioCreador)
+	// El super administrador es la autoridad global del SaaS. Debe poder ejecutar
+	// la eliminacion integral de una empresa ajena, que sigue exigiendo la doble
+	// confirmacion de nombre y riesgo del handler llamador.
+	owner := adminOwnsEmpresaByCreatorEmail(requesterEmail, empresa.UsuarioCreador) || (admin != nil && utils.IsSuperPanelRole(admin.Role))
 	return empresa, principalEmail, owner, nil
 }
 

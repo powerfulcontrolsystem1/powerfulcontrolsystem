@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"html"
+	"log"
 	"net/http"
 	"net/mail"
 	"sort"
@@ -68,7 +69,7 @@ func SuperCorreosMasivosHandler(dbEmpresas, dbSuper *sql.DB) http.HandlerFunc {
 			alcance := normalizeSuperCorreoMasivoAlcance(r.URL.Query().Get("alcance"))
 			preview, err := buildSuperCorreoMasivoPreview(dbEmpresas, dbSuper, alcance)
 			if err != nil {
-				writeJSON(w, http.StatusInternalServerError, map[string]interface{}{"ok": false, "error": err.Error()})
+				writeSuperCorreosMasivosPublicError(w, r, http.StatusInternalServerError, "generar vista previa", err, nil)
 				return
 			}
 			if action == "preview" || action == "previsualizar" {
@@ -77,7 +78,7 @@ func SuperCorreosMasivosHandler(dbEmpresas, dbSuper *sql.DB) http.HandlerFunc {
 			}
 			historial, err := dbpkg.ListSuperCorreosMasivos(dbSuper, 30)
 			if err != nil {
-				writeJSON(w, http.StatusInternalServerError, map[string]interface{}{"ok": false, "error": err.Error()})
+				writeSuperCorreosMasivosPublicError(w, r, http.StatusInternalServerError, "listar historial", err, nil)
 				return
 			}
 			writeJSON(w, http.StatusOK, map[string]interface{}{
@@ -93,18 +94,18 @@ func SuperCorreosMasivosHandler(dbEmpresas, dbSuper *sql.DB) http.HandlerFunc {
 		case http.MethodPost:
 			var payload superCorreoMasivoPayload
 			if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
-				writeJSON(w, http.StatusBadRequest, map[string]interface{}{"ok": false, "error": "payload invalido: " + err.Error()})
+				writeJSON(w, http.StatusBadRequest, map[string]interface{}{"ok": false, "error": "payload invalido"})
 				return
 			}
 			payload = normalizeSuperCorreoMasivoPayload(payload)
 			if err := validateSuperCorreoMasivoPayload(payload); err != nil {
-				writeJSON(w, http.StatusBadRequest, map[string]interface{}{"ok": false, "error": err.Error()})
+				writeJSON(w, http.StatusBadRequest, map[string]interface{}{"ok": false, "error": superCorreoMasivoValidationMessage(err)})
 				return
 			}
 
 			recipients, preview, err := collectSuperCorreoMasivoRecipients(dbEmpresas, dbSuper, payload.Alcance)
 			if err != nil {
-				writeJSON(w, http.StatusInternalServerError, map[string]interface{}{"ok": false, "error": err.Error()})
+				writeSuperCorreosMasivosPublicError(w, r, http.StatusInternalServerError, "resolver destinatarios", err, nil)
 				return
 			}
 			if payload.SoloPreview || !payload.Confirmar {
@@ -122,7 +123,7 @@ func SuperCorreosMasivosHandler(dbEmpresas, dbSuper *sql.DB) http.HandlerFunc {
 
 			result, err := sendSuperCorreoMasivoCampaign(r, dbSuper, adminEmail, payload, recipients, preview)
 			if err != nil {
-				writeJSON(w, http.StatusInternalServerError, map[string]interface{}{"ok": false, "error": err.Error(), "result": result})
+				writeSuperCorreosMasivosPublicError(w, r, http.StatusInternalServerError, "ejecutar campana", err, map[string]interface{}{"result": result})
 				return
 			}
 			writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "result": result})
@@ -134,6 +135,23 @@ func SuperCorreosMasivosHandler(dbEmpresas, dbSuper *sql.DB) http.HandlerFunc {
 			return
 		}
 	}
+}
+
+func writeSuperCorreosMasivosPublicError(w http.ResponseWriter, r *http.Request, status int, operation string, err error, extra map[string]interface{}) {
+	requestID := resolveAuditoriaRequestID(r)
+	log.Printf("[super_correos_masivos] operation=%s request_id=%s error_type=%T", operation, requestID, err)
+	payload := map[string]interface{}{
+		"ok":    false,
+		"code":  "super_correos_masivos_error",
+		"error": "No se pudo completar la operacion de correos masivos.",
+	}
+	for key, value := range extra {
+		payload[key] = value
+	}
+	if requestID != "" {
+		payload["request_id"] = requestID
+	}
+	writeJSON(w, status, payload)
 }
 
 func normalizeSuperCorreoMasivoPayload(payload superCorreoMasivoPayload) superCorreoMasivoPayload {
@@ -185,6 +203,20 @@ func validateSuperCorreoMasivoPayload(payload superCorreoMasivoPayload) error {
 		return fmt.Errorf("el HTML del mensaje no puede superar 40000 caracteres")
 	}
 	return nil
+}
+
+func superCorreoMasivoValidationMessage(err error) string {
+	switch err.Error() {
+	case "el asunto debe tener entre 6 y 180 caracteres":
+		return "el asunto debe tener entre 6 y 180 caracteres"
+	case "el mensaje debe tener entre 20 y 20000 caracteres":
+		return "el mensaje debe tener entre 20 y 20000 caracteres"
+	case "el HTML del mensaje no puede superar 40000 caracteres":
+		return "el HTML del mensaje no puede superar 40000 caracteres"
+	default:
+		log.Printf("[super_correos_masivos] validation_error_type=%T", err)
+		return "los datos del correo masivo no son validos"
+	}
 }
 
 func buildSuperCorreoMasivoPreview(dbEmpresas, dbSuper *sql.DB, alcance string) (superCorreoMasivoPreview, error) {

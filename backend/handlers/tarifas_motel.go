@@ -14,7 +14,7 @@ import (
 func EmpresaTarifasMotelHandler(dbEmp *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodGet || r.Method == http.MethodPost || r.Method == http.MethodPut || r.Method == http.MethodDelete {
-			if err := dbpkg.EnsureEmpresaTarifasMotelSchema(dbEmp); err != nil {
+			if err := dbpkg.EmpresaTarifasMotelSchemaReady(dbEmp); err != nil {
 				writeTarifasMotelError(w, err)
 				return
 			}

@@ -497,6 +497,10 @@
             <input id="snapshotIntervalHours" class="docker-input" type="number" min="1" max="720" step="1" placeholder="24">
           </div>
           <div class="docker-field">
+            <label for="snapshotDailyTime">Hora diaria (opcional)</label>
+            <input id="snapshotDailyTime" class="docker-input" type="time" step="60">
+          </div>
+          <div class="docker-field">
             <label for="snapshotRetentionDays">Retencion dias</label>
             <input id="snapshotRetentionDays" class="docker-input" type="number" min="1" max="3650" step="1" placeholder="14">
           </div>
@@ -520,7 +524,14 @@
             <input id="snapshotRcloneRemotePath" class="docker-input" type="text" placeholder="gdrive:PCS/backups">
           </div>
           <label class="docker-check"><input id="snapshotDeleteOldCloud" type="checkbox"> Eliminar copias viejas en nube</label>
-          <label class="docker-check"><input id="snapshotIncludePostgres" type="checkbox"> Incluir PostgreSQL</label>
+          <div class="docker-field">
+            <label for="snapshotScope">Tipo de copia</label>
+            <select id="snapshotScope" class="docker-select">
+              <option value="full">Completa: proyecto, bases y volúmenes</option>
+              <option value="database_only">Solo bases PostgreSQL</option>
+            </select>
+          </div>
+          <label class="docker-check"><input id="snapshotIncludePostgres" type="checkbox"> Incluir bases PostgreSQL</label>
           <label class="docker-check"><input id="snapshotIncludeVolumes" type="checkbox"> Incluir volumenes/archivos</label>
         </div>
 
@@ -635,31 +646,35 @@
         if (el) el.textContent = textValue || "";
       }
       function snapshotPayloadFromForm() {
+        var scope = ($("snapshotScope") && $("snapshotScope").value) || "full";
+        var databaseOnly = scope === "database_only";
         return {
           enabled: !!($("snapshotEnabled") && $("snapshotEnabled").checked),
           auto_enabled: !!($("snapshotAutoEnabled") && $("snapshotAutoEnabled").checked),
           interval_hours: Number(($("snapshotIntervalHours") && $("snapshotIntervalHours").value) || 24),
+          daily_time: (($("snapshotDailyTime") && $("snapshotDailyTime").value) || "").trim(),
           retention_days: Number(($("snapshotRetentionDays") && $("snapshotRetentionDays").value) || 14),
           delete_old_local: !!($("snapshotDeleteOldLocal") && $("snapshotDeleteOldLocal").checked),
           cloud_enabled: !!($("snapshotCloudEnabled") && $("snapshotCloudEnabled").checked),
           cloud_provider: ($("snapshotCloudProvider") && $("snapshotCloudProvider").value) || "rclone",
           rclone_remote_path: (($("snapshotRcloneRemotePath") && $("snapshotRcloneRemotePath").value) || "").trim(),
           delete_old_cloud: !!($("snapshotDeleteOldCloud") && $("snapshotDeleteOldCloud").checked),
-          include_project: true,
-          include_postgres: !!($("snapshotIncludePostgres") && $("snapshotIncludePostgres").checked),
-          include_volumes: !!($("snapshotIncludeVolumes") && $("snapshotIncludeVolumes").checked),
+          include_project: !databaseOnly,
+          include_postgres: databaseOnly || !!($("snapshotIncludePostgres") && $("snapshotIncludePostgres").checked),
+          include_volumes: !databaseOnly && !!($("snapshotIncludeVolumes") && $("snapshotIncludeVolumes").checked),
           include_docker_images: !!($("snapshotIncludeImages") && $("snapshotIncludeImages").checked)
         };
       }
       function renderSnapshotStatus(config) {
         config = config || {};
         text("snapshotEnabledLabel", config.enabled ? "Activo" : "Apagado");
-        text("snapshotAutoLabel", config.auto_enabled ? ("Cada " + (config.interval_hours || 24) + " h") : "Manual");
+        text("snapshotAutoLabel", config.auto_enabled ? (config.daily_time ? ("Diario " + config.daily_time) : ("Cada " + (config.interval_hours || 24) + " h")) : "Manual");
         text("snapshotCloudLabel", config.cloud_enabled ? (config.cloud_provider + " / " + (config.rclone_remote_path || "sin ruta")) : "Sin nube");
         text("snapshotToolsLabel", "Docker " + (config.docker_available ? "ok" : "no") + " / rclone " + (config.rclone_available ? "ok" : "no"));
         if ($("snapshotEnabled")) $("snapshotEnabled").checked = !!config.enabled;
         if ($("snapshotAutoEnabled")) $("snapshotAutoEnabled").checked = !!config.auto_enabled;
         if ($("snapshotIntervalHours")) $("snapshotIntervalHours").value = config.interval_hours || 24;
+        if ($("snapshotDailyTime")) $("snapshotDailyTime").value = config.daily_time || "";
         if ($("snapshotRetentionDays")) $("snapshotRetentionDays").value = config.retention_days || 14;
         if ($("snapshotDeleteOldLocal")) $("snapshotDeleteOldLocal").checked = !!config.delete_old_local;
         if ($("snapshotCloudEnabled")) $("snapshotCloudEnabled").checked = !!config.cloud_enabled;
@@ -669,6 +684,7 @@
         if ($("snapshotIncludePostgres")) $("snapshotIncludePostgres").checked = config.include_postgres !== false;
         if ($("snapshotIncludeVolumes")) $("snapshotIncludeVolumes").checked = config.include_volumes !== false;
         if ($("snapshotIncludeImages")) $("snapshotIncludeImages").checked = !!config.include_docker_images;
+        if ($("snapshotScope")) $("snapshotScope").value = config.include_postgres && !config.include_project && !config.include_volumes ? "database_only" : "full";
       }
       function renderSnapshotHistory(items) {
         var body = $("snapshotHistoryBody");
@@ -794,6 +810,12 @@
       if (createUploadSnapshotBtn) createUploadSnapshotBtn.addEventListener("click", function () { createSnapshot(true, false); });
       var refreshSnapshot = $("refreshSnapshotBtn");
       if (refreshSnapshot) refreshSnapshot.addEventListener("click", loadSnapshotStatus);
+      var snapshotScope = $("snapshotScope");
+      if (snapshotScope) snapshotScope.addEventListener("change", function () {
+        var databaseOnly = snapshotScope.value === "database_only";
+        if ($("snapshotIncludePostgres")) $("snapshotIncludePostgres").checked = true;
+        if ($("snapshotIncludeVolumes")) $("snapshotIncludeVolumes").checked = !databaseOnly;
+      });
       loadStatus();
       loadSnapshotStatus();
     })();

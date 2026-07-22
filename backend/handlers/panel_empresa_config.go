@@ -76,7 +76,7 @@ func getEmpresaPanelPref(dbEmp *sql.DB, empresaID int64, key string, fallback bo
 	if dbEmp == nil || empresaID <= 0 {
 		return fallback
 	}
-	if err := dbpkg.EnsureEmpresaEstacionPrefsSchema(dbEmp); err != nil {
+	if err := dbpkg.EmpresaEstacionPrefsSchemaReady(dbEmp); err != nil {
 		return fallback
 	}
 	pref, err := dbpkg.GetEmpresaEstacionPref(dbEmp, empresaID, 0, key)
@@ -87,7 +87,7 @@ func getEmpresaPanelPref(dbEmp *sql.DB, empresaID int64, key string, fallback bo
 }
 
 func setEmpresaPanelPref(dbEmp *sql.DB, empresaID int64, key string, enabled bool, usuario string) error {
-	if err := dbpkg.EnsureEmpresaEstacionPrefsSchema(dbEmp); err != nil {
+	if err := dbpkg.EmpresaEstacionPrefsSchemaReady(dbEmp); err != nil {
 		return err
 	}
 	_, err := dbpkg.UpsertEmpresaEstacionPref(dbEmp, dbpkg.EmpresaEstacionPref{

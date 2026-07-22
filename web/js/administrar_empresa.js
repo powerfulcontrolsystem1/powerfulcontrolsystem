@@ -404,6 +404,7 @@ try {
   var permModuleOdontologia = "odontologia";
   var permModuleTurnos = "turnos_atencion";
   var permModuleControlElectrico = "control_electrico";
+  var permModuleCamaras = "camaras";
   var permModuleCarnets = "carnets";
   var permModuleProduccionMRP = "produccion_mrp";
   var permModuleHorariosTrab = "horarios_trabajadores";
@@ -586,6 +587,7 @@ try {
     linkConfiguracionGuiada: { module: permModuleSeguridad, action: permActionUpdate },
     linkConfiguracionSensoresRaspberry: { module: permModuleControlElectrico, action: permActionUpdate },
     linkControlElectrico: { module: permModuleControlElectrico, action: permActionUpdate },
+    linkCamaras: { module: permModuleCamaras, action: permActionCreate },
     linkRadioOnline: { module: permModuleSeguridad, action: permActionRead },
     linkConfiguracionIntegraciones: { module: permModuleSeguridad, action: permActionUpdate },
     linkConfiguracionIAPropia: { module: permModuleSeguridad, action: permActionUpdate },
@@ -1441,6 +1443,16 @@ try {
           return roleIn(normalizedRole, ["admin_empresa", "supervisor_sucursal"]);
         }
         if (normalizedAction === "D" || normalizedAction === permActionApprove) {
+          return roleIn(normalizedRole, ["admin_empresa"]);
+        }
+        break;
+
+      case permModuleCamaras:
+        if (normalizedAction === permActionRead) return roleIn(normalizedRole, allReadRoles);
+        if (normalizedAction === permActionCreate || normalizedAction === permActionUpdate || normalizedAction === permActionApprove) {
+          return roleIn(normalizedRole, ["admin_empresa", "supervisor_sucursal", "contabilidad", "auditor"]);
+        }
+        if (normalizedAction === "D") {
           return roleIn(normalizedRole, ["admin_empresa"]);
         }
         break;

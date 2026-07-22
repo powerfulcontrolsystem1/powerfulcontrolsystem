@@ -269,7 +269,7 @@ func getChatFlotanteEmpresaPref(dbEmp *sql.DB, empresaID int64, key string) (str
 	if dbEmp == nil || empresaID <= 0 {
 		return "", false
 	}
-	if err := dbpkg.EnsureEmpresaEstacionPrefsSchema(dbEmp); err != nil {
+	if err := dbpkg.EmpresaEstacionPrefsSchemaReady(dbEmp); err != nil {
 		return "", false
 	}
 	pref, err := dbpkg.GetEmpresaEstacionPref(dbEmp, empresaID, 0, key)
@@ -283,7 +283,7 @@ func setChatFlotanteEmpresaPref(dbEmp *sql.DB, empresaID int64, key, value, usua
 	if dbEmp == nil || empresaID <= 0 {
 		return nil
 	}
-	if err := dbpkg.EnsureEmpresaEstacionPrefsSchema(dbEmp); err != nil {
+	if err := dbpkg.EmpresaEstacionPrefsSchemaReady(dbEmp); err != nil {
 		return err
 	}
 	_, err := dbpkg.UpsertEmpresaEstacionPref(dbEmp, dbpkg.EmpresaEstacionPref{

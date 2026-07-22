@@ -86,6 +86,43 @@ func EnsureEmpresaEstacionPrefsSchema(dbConn *sql.DB) error {
 	return nil
 }
 
+// EmpresaEstacionPrefsSchemaReady verifies the migration-owned preference
+// schema without executing DDL. API and worker paths must fail closed when the
+// required schema is absent instead of provisioning it while serving traffic.
+func EmpresaEstacionPrefsSchemaReady(dbConn *sql.DB) error {
+	if dbConn == nil {
+		return errors.New("conexion de base de datos no disponible")
+	}
+
+	row := queryRowSQLCompat(dbConn, `SELECT empresa_id, estacion_id, clave, valor,
+		fecha_creacion, fecha_actualizacion, usuario_creador, estado, observaciones
+		FROM empresa_estacion_prefs WHERE 1=0`)
+	var (
+		empresaID          int64
+		estacionID         int64
+		clave, valor       string
+		fechaCreacion      string
+		fechaActualizacion string
+		usuarioCreador     string
+		estado             string
+		observaciones      string
+	)
+	if err := row.Scan(
+		&empresaID,
+		&estacionID,
+		&clave,
+		&valor,
+		&fechaCreacion,
+		&fechaActualizacion,
+		&usuarioCreador,
+		&estado,
+		&observaciones,
+	); err != nil && !errors.Is(err, sql.ErrNoRows) {
+		return fmt.Errorf("esquema de preferencias por estacion no disponible: %w", err)
+	}
+	return nil
+}
+
 // DisableLegacyFloatingRobotAndRadioPrefs mantiene el chat IA activo por empresa,
 // pero retira los avatares legados y deja la emisora como opcion explicita.
 func DisableLegacyFloatingRobotAndRadioPrefs(dbConn *sql.DB) error {

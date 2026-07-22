@@ -1,3 +1,379 @@
+2026-07-22: Correccion CSRF del panel de seguridad VPS P105-013.
+- La comprobacion visual autenticada de staging confirma que el panel no tiene
+  hallazgos ni historial cargado. Un intento de escaneo controlado devolvio
+  403 porque `web/js/super_seguridad.js` enviaba POST/PUT sin `X-CSRF-Token`.
+- El frontend ahora lee la cookie `pcs_csrf` y conserva encabezados existentes
+  al adjuntar el token solo en mutaciones. La sintaxis Node, pruebas dirigidas
+  de handlers de seguridad y `git diff --check` pasan.
+- El frontend se reconstruyó solo en staging, con respaldo remoto de los dos
+  archivos modificados. El escaneo `scan-20260722T072752Z-c24b5e97` terminó
+  con 0 críticos, 0 altos y 4 medios: Lynis, Nmap y Trivy no existen en el
+  entorno del escáner; el cuarto es telemetría de firewall no disponible.
+  Los chequeos propios del servidor finalizaron OK.
+
+2026-07-22: Redaccion adicional de errores de proveedor IA P105-006.
+- `backend/handlers/chat_con_ia_global_super.go` deja de enviar causas crudas
+  del proveedor en respuestas HTTP 502 y eventos SSE; conserva el diagnostico
+  tecnico en log y devuelve mensajes publicos genericos.
+- `backend/handlers/chat_con_ia_global_super_public_error_test.go` agrega un
+  canario estatico para impedir la regresion. `gofmt`, `go test ./handlers`
+  y `go vet ./handlers` pasan. El inventario global de 49 JSON directos queda
+  pendiente de regeneracion antes del cierre.
+
+2026-07-22: Redaccion de configuracion y consumo IA P105-006.
+- `backend/handlers/super_chat_ia_logica.go` deja de concatenar causas internas
+  en 13 respuestas 500 de lectura de configuracion y consumo IA.
+- `gofmt`, `go test ./handlers -count=1` y `go vet ./handlers` pasan. Falta
+  regenerar el inventario numerico y completar correlacion estructurada.
+
+2026-07-22: Redaccion inicial de licencias/pagos P105-006.
+- `backend/handlers/payments_handlers.go` deja de concatenar causas internas
+  en 12 respuestas 500 de configuracion, alcance, consulta y activacion de
+  licencias.
+- `gofmt`, `go test ./handlers -count=1`, `go vet ./handlers` y
+  `git diff --check` pasan. Persisten otros flujos de pagos y falta regenerar
+  el inventario global.
+
+2026-07-22: Regresion completa posterior a redacciones P105-006/P105-009.
+- `go test ./... -count=1` pasa en todos los paquetes del backend.
+- `go vet ./...`, builds de `pcs-migrate` y `pcs-worker`, y `git diff --check`
+  pasan. Las advertencias restantes son conversiones de fin de linea de Git,
+  no fallos de compilacion ni de formato.
+
+2026-07-22: Evidencia race y CSP P105-009/P105-014.
+- El host local confirma `CGO_ENABLED=0`; `go test -race ./handlers -count=1`
+  no puede correr sin habilitar CGO y un compilador C. La compuerta race queda
+  correctamente asignada a CI Linux sobre el SHA candidato.
+- La consulta externa de cabeceras confirma que produccion y staging publican
+  la misma CSP actual. No se eliminan aun los dos `unsafe-inline` ni se marca
+  el cambio local de avatar como desplegado.
+
+2026-07-22: Revalidacion documental y de release P105-001/P105-019.
+- La auditoria documental conserva un unico `warning`: 218 secuencias
+  sospechosas en `CHANGELOG.md`; no se aplico una conversion masiva sin lote
+  revisable.
+- El manifiesto estricto vuelve a confirmar NO-GO por arbol sin consolidar y
+  ausencia de los tres digests inmutables requeridos para API, migrador y worker.
+
+2026-07-22: Preflight y QA visual de staging P105-012.
+- `scripts/profesional_preflight.ps1 -Full` termina en estado `OK`: parseo de
+  scripts, sintaxis JavaScript, auditorias profesionales, seguridad, permisos,
+  migraciones, QA contractual, Docker Compose, pruebas Go y diff.
+- En staging, el login autorizado llega a `super_administrador.html`; el
+  dashboard se verifico visible en escritorio y en viewport móvil 390x844,
+  incluido el menú. No se pulsaron controles de negocio mutantes.
+
+2026-07-22: Regresion y auditorias del bloque P105-006/P105-009/P105-016.
+- `go test ./... -count=1`, `go vet ./...`, `go build ./cmd/pcs-migrate` y
+  `go build ./cmd/pcs-worker` pasan sobre el arbol actual.
+- Inventarios runtime/bootstrap, auditoria de migraciones, seguridad y
+  permisos/licencias pasan: 104 llamadas Ensure, 154 funciones/122 pasos de
+  bootstrap y estado `ok` en los tres auditores.
+- `release_manifest.mjs --strict --check` sigue en NO-GO por arbol sucio y por
+  ausencia de `PCS_API_IMAGE_DIGEST`, `PCS_MIGRATE_IMAGE_DIGEST` y
+  `PCS_WORKER_IMAGE_DIGEST`; no se crea tag ni se despliega.
+
+2026-07-21: Plan 105 de cierre verificable para produccion general.
+- Se documenta la auditoria general del candidato sin desplegar ni ejecutar las
+  correcciones propuestas.
+- `documentos/plan_105.md` conserva el veredicto `NO-GO`, la evidencia local y
+  visual, 22 frentes priorizados, criterios de aceptacion, rollback y compuerta
+  final para una ejecucion posterior con Codex Terra medio.
+- El plan queda pendiente de aprobacion expresa del usuario; no autoriza `rs`,
+  proveedores externos ni mutaciones de datos productivos.
+
+2026-07-21: Inicio de ejecucion local autorizada del Plan 105.
+- El usuario autorizo continuar los trabajos locales. `plan_105.md` deja de
+  figurar como pendiente de aprobacion, pero mantiene el NO-GO y la parada
+  obligatoria antes de despliegues, proveedores externos o datos productivos.
+
+2026-07-21: Runbook de incidente TLS P105-007/P105-011.
+- Se agrega el procedimiento ejecutable para recuperar certificados vencidos de
+  staging, OnlyOffice y Nextcloud. Distingue el edge Docker, Nginx de staging y
+  proxies propietarios de servicios; prohíbe omitir validación TLS y no ejecuta
+  renovación, recarga ni cambio de infraestructura.
+
+2026-07-22: Recuperacion TLS y bloqueo de migracion de staging P105-007/P105-011.
+- Con autorizacion del usuario se emitio y activo un certificado SAN nuevo para
+  staging, OnlyOffice y Nextcloud. La validacion externa sin omitir TLS confirma
+  200 en OnlyOffice y Nextcloud; el certificado anterior wildcard vencido queda
+  fuera de los tres vhosts afectados.
+- Al reactivar el frontend de staging, `pcs-staging-migrate` se detuvo por
+  deriva de checksum en `platform/20260717-001-legacy-schema-manifest-v1`.
+  No se altero el checksum almacenado ni se forzo la migracion: resolver la
+  inmutabilidad de ese catalogo es requisito previo a reanudar staging.
+
+2026-07-22: Correccion de inmutabilidad de migracion P105-007.
+- `backend/db/platform_migrations.go` deja de usar la huella generada actual
+  como cuerpo de la migracion ya liberada `20260717-001`. Conserva la huella
+  que produjo los checksums historicos de empresas y superadministrador.
+- `backend/db/migrations_test.go` fija ambos checksums de lanzamiento como
+  regresion. `go test ./db -count=1`, `go vet ./db` y `git diff --check`
+  pasan; el cambio aun no se publica porque el arbol necesita consolidarse en
+  un SHA candidato y recorrer CI antes de reintentar staging.
+
+2026-07-22: Recuperacion del upstream de staging y evidencia supply-chain.
+- El frontend staging se inicio sin dependencias para completar el smoke sin
+  ejecutar la migracion fallida. El contenedor publica `127.0.0.1:18082`, pero
+  el vhost apuntaba a `8082`; se respaldo el vhost, se corrigio el upstream y
+  Nginx valido/reloaded. Las sondas externas de `/health` y `/ready` devolvieron
+  200; OnlyOffice y Nextcloud tambien devolvieron 200.
+- Se registro evidencia de digests locales de imagenes desplegadas en el VPS.
+  Esto no equivale a un manifiesto de release firmado ni a SBOM/escaneo, que
+  siguen siendo requisitos P105-016.
+
+2026-07-22: Migracion versionada de sesiones y smoke visual staging P105-003/P105-007.
+- Se agrega `20260722-001-session-token-hashes-v1` al catalogo del migrador,
+  con ejecucion transaccional que cierra el cursor antes de actualizar y evita
+  el `driver: bad connection` observado en el primer intento. La migracion se
+  aplico en `pcs_superadministrador`; `sesiones.token_hash` existe y el registro
+  queda en estado `applied`.
+- Se reconstruyeron migrador, backend y worker del candidato staging. Las
+  sondas externas `/health` y `/ready` devolvieron 200 y los cuatro contenedores
+  staging quedaron healthy. La prueba visual autenticada redirigio a
+  `/super_administrador.html`; el dashboard carga. No se pulsaron controles de
+  reinicio, evaluacion, borrado ni mutacion de negocio.
+- El alias `EnsureUserEmpresa` fue agregado para resolver una referencia del
+  candidato staging que impedía compilar al invalidar la cache de Docker. Debe
+  quedar consolidado en el SHA formal antes de cualquier release general.
+
+2026-07-21: Sexto lote de errores publicos P105-006.
+- Correos masivos deja de devolver errores crudos del decodificador JSON y usa
+  una lista blanca para los mensajes de validacion conocidos; las causas no
+  reconocidas se registran sin exponerse al cliente.
+- La prueba con canario confirma la redaccion y el inventario JSON directo baja
+  de 54 a 52. No se envio correo ni se contacto proveedor externo.
+
+2026-07-21: Septimo lote de errores publicos P105-006.
+- El chat publico por SSE deja de enviar al navegador la causa del proveedor de
+  IA. Devuelve un codigo estable y `request_id`, y registra solo el tipo de
+  error para correlacion operativa.
+- La prueba canario evita fuga de URL/token y el inventario JSON directo baja de
+  52 a 51. No se invoco ningun proveedor externo.
+
+2026-07-21: Octavo lote de errores publicos P105-006.
+- Las propuestas IA de producto y hotel usan una lista blanca para mensajes de
+  validacion: se conservan los errores de entrada conocidos y se redacta toda
+  causa inesperada con correlacion exclusiva en log.
+- Las pruebas canario y de mensaje conocido pasan; el inventario JSON directo
+  baja de 51 a 49. El cambio no ejecuta propuestas ni invoca IA externa.
+
+2026-07-21: Evidencia estricta de candidato P105-001.
+- `release_manifest.mjs --strict --check` confirma que `origin/main` es
+  ancestro del SHA candidato y que la rama tiene upstream configurado.
+- El gate permanece bloqueado por el arbol de trabajo pendiente de consolidar y
+  por ausencia de digests inmutables API, migrador y worker; no se genero tag,
+  manifiesto persistente ni despliegue.
+
+2026-07-21: Linea base CSP P105-014.
+- La inspeccion de la politica central y `TestSecurityHeaders` confirman dos
+  usos activos de `unsafe-inline`: `script-src` y `style-src`, no tres.
+- Se conserva la politica actual hasta inventariar y migrar los consumidores
+  visuales en staging; no se relajo ni se aplico CSP en produccion.
+
+2026-07-21: Evidencia de hardening y race P105-009/P105-016.
+- La auditoria estatica de hardening confirma contratos locales para SSH,
+  firewall, fail2ban y runtime Docker; no sustituye inspeccion viva del VPS ni
+  escaneo de imagenes.
+- El intento local `go test -race` confirma `CGO_ENABLED=0` y ausencia de
+  compilador `gcc`; el gate race debe continuar en CI Linux sobre el SHA final.
+
+2026-07-21: Contrato de anonimización P105-007.
+- La auditoria local confirma que el refresh de staging invoca anonimización por
+  defecto, cubre datos administrativos sensibles y dispone de verificación
+  post-refresh.
+- Esta evidencia no prueba una restauración ni anonimización real: ambas siguen
+  pendientes en un entorno aislado y autorizado.
+
+2026-07-21: Contratos locales de observabilidad P105-010.
+- Auditorías locales verifican definición de dashboard VPS, health backend,
+  alertas de capacidad/correo y SLO, RPO/RTO, severidades y referencia al gate.
+- No se verificaron datos, alertas ni escalamiento vivos; la compuerta de
+  observabilidad permanece abierta hasta staging/VPS autorizado.
+
+2026-07-22: Auditoria estatica de pagos P105-005.
+- Las matrices locales confirman contratos de creacion, consulta, retorno y
+  webhook idempotente para Wompi/Epayco, junto con contrato de comprobantes.
+- No se creo transaccion, no se recibio webhook ni se contacto proveedor; la
+  validacion real P105-011 y las pruebas de caida siguen pendientes.
+
+2026-07-22: Clasificacion inicial del bloqueo de arbol P105-001.
+- El `git status` local contiene 69 entradas: 57 modificadas y 12 nuevas. El
+  conjunto mezcla cambios del Plan 105 con trabajo ajeno preexistente.
+- No se hizo reset, limpieza ni commit parcial: la consolidación requiere
+  separar propiedad, revisar diffs y definir un SHA candidato coherente.
+
+2026-07-22: Guia de consolidacion segura P105-001.
+- Se agrega la clasificacion de Grupos A/B/C del arbol para que la consolidacion
+  del Plan 105 no mezcle cambios concurrentes de Nextcloud, snapshots, finanzas
+  u otros frentes sin review independiente.
+- La guia prohíbe reset/limpieza para obtener un arbol verde y define la
+  secuencia de SHA, CI y digests previa a staging.
+
+2026-07-22: Regeneracion de inventario runtime P105-003.
+- La verificacion detecto el inventario `Ensure*` runtime desactualizado; se
+  regenero de forma determinista y ahora valida 110 llamadas.
+- El catalogo bootstrap continua consistente con 153 funciones y 122 pasos.
+  No se ejecuto DDL, migracion ni cambio de datos.
+
+2026-07-22: Cobertura UX y permisos P105-004/P105-012.
+- Se agregan etiquetas accesibles a siete botones de correo corporativo,
+  explorador de archivos y facturación electrónica; la auditoría UX queda sin
+  muestras pendientes entre 1.925 botones.
+- El menú empresarial incorpora la regla `camaras` con las mismas acciones y
+  roles del backend. La auditoría de permisos/licencias queda con 59 módulos,
+  61 wrappers y cero módulos frontend faltantes.
+
+2026-07-22: Linea base de normalizacion P105-019.
+- La auditoria UTF-8 registra 344 secuencias sospechosas en cinco documentos y
+  se agrega una guia de correccion por lotes pequenos y revisables.
+- No se recodifico ningun documento historico en bloque; la deuda P2 queda
+  separada de los gates de produccion.
+
+2026-07-22: Inventario de modularizacion P105-018.
+- Se mide el tamaño actual de los archivos Go y se registran cortes seguros
+  para módulos P0/P1, comenzando por `modulos_faltantes.go` (13.444 líneas).
+- No se movió código: cada extracción queda obligada a caracterización,
+  aislamiento por `empresa_id`, pruebas y review transaccional.
+
+2026-07-22: Refinamiento de auditoria UTF-8 P105-019.
+- El detector deja de confundir parámetros URL como `?action` con corrupción de
+  caracteres. La línea base comprobada baja de 344 a 218 secuencias y queda
+  concentrada en `CHANGELOG.md`.
+- La auditoría permanece en advertencia hasta corregir el histórico por lotes;
+  no se realizó recodificación masiva.
+
+2026-07-22: Validacion visual autenticada P105-012.
+- Una sesión de QA de solo lectura accedió al panel super y verificó carga de
+  controles sin enviar formularios ni mutar datos.
+- La consola reproduce `MutationObserver.observe` con un parámetro que no es
+  nodo. El análisis CDP confirma que proviene de un bundle React/Electron
+  inyectado sin URL, no de un recurso PCS; no se aplicó una guarda especulativa.
+
+2026-07-22: CSP exacto para avatar Google P105-014.
+- La observación visual report-only detectó avatar de Google bloqueado por
+  `img-src`. Se agrega únicamente `https://lh3.googleusercontent.com`, sin
+  wildcard, y la prueba de cabeceras pasa.
+- La validación real del header actualizado queda pendiente del próximo
+  despliegue controlado; no se modificó CSP en producción desde esta sesión.
+
+2026-07-21: Inventario de concurrencia P105-005.
+- Se agrega `documentos/arquitectura/inventario_goroutines_plan_105.md` con la
+  clasificacion estatica de las 23 goroutines: cuatro supervisadas de plataforma,
+  nueve de permisos que requieren timeout/fallo cerrado y los efectos externos
+  que deben pasar a outbox si su perdida no es tolerable.
+- No se cambiaron flujos de pagos, facturacion, permisos, correo ni hardware;
+  el documento define la secuencia de pruebas y evidencia necesaria antes de
+  considerarlos aptos para produccion.
+
+2026-07-21: Restore drill con imagen PostgreSQL explicita para P105-008.
+- `scripts/vps_restore_validation.ps1` recibe `-RestoreImage`, por defecto
+  `postgres:16.14-alpine` del Compose vigente, valida que la referencia sea de
+  una sola linea y registra la imagen usada en el resultado del drill.
+- No se contactó un destino remoto ni se ejecuto una restauracion; la opcion
+  permite que staging use una referencia por digest candidata y deje evidencia
+  de compatibilidad de version antes de validar produccion.
+
+2026-07-21: Correccion de linea base P105-009.
+- Se confirma que `professional-ci.yml` ya contiene un job Linux para
+  `go test -race ./...` con Go 1.25.12. El pendiente de produccion es su
+  ejecucion verde sobre el SHA inmutable candidato y la carga en staging, no
+  duplicar el job de CI.
+
+2026-07-21: Linea base de errores publicos P105-006.
+- Se registra `documentos/arquitectura/inventario_errores_publicos_plan_105.md`:
+  320 respuestas 5xx y 75 campos JSON con `err.Error()` directo fueron
+  identificados estaticamente y priorizados por familias de pagos, productos,
+  voz, identidad, multiempresa e IA.
+- No se aplico reemplazo masivo: cada error necesita clasificacion de origen,
+  codigo publico estable, log redactado y prueba con canarios antes de cambiar
+  contratos de API.
+
+2026-07-21: Primer lote de redaccion de errores P105-006.
+- `super_mantenimiento_agentes.go` deja de serializar causas internas en
+  respuestas de esquema, lectura, guardado y ejecucion manual. Responde codigos
+  estables y `request_id` cuando existe; los logs conservan operacion y tipo o
+  presencia de error sin copiar posibles secretos.
+- `super_mantenimiento_agentes_test.go` inyecta canarios de DSN y token para
+  confirmar que no aparecen en JSON. El inventario JSON directo baja de 75 a
+  70; las 320 respuestas 5xx directas permanecen pendientes por familia.
+
+2026-07-21: Segundo lote de redaccion de errores P105-006.
+- `super_alertas.go` deja de exponer causas internas al consultar, guardar o
+  probar alertas. Tambien redacta `evaluation.error` antes de serializar la
+  evaluacion y conserva solo correlacion segura en log.
+- `super_alertas_public_error_test.go` prueba canarios de DSN/token y la
+  redaccion de evaluacion. El inventario JSON directo baja de 70 a 66; no se
+  cambio el envio SMTP ni la persistencia de eventos.
+
+2026-07-21: Tercer lote de redaccion de errores P105-006.
+- `super_correos_masivos.go` ya no expone causas internas al crear vista previa,
+  listar historial, resolver destinatarios o registrar el resultado de una
+  campaña. Conserva el resumen seguro de campaña cuando existe.
+- La prueba con canario SMTP confirma ausencia de la causa en JSON. El
+  inventario JSON directo baja de 66 a 62; no se modifica el envio, la lista de
+  destinatarios ni los registros operativos de correos.
+
+2026-07-21: Cuarto lote de redaccion de errores P105-006.
+- `security_vps_handlers.go` reemplaza causas internas de configuracion,
+  escaneo, historial, reporte y comparacion por codigo publico, correlacion y
+  estado seguro cuando aplique; no modifica la ejecucion del escaneo VPS.
+- La prueba con canario de ruta privada/token confirma que no se serializa el
+  detalle interno. El inventario JSON directo baja de 62 a 55.
+
+2026-07-21: Quinto lote de redaccion de errores P105-006.
+- `agente_internet_fiscal.go` redacta el fallo al reservar cupo ligero y
+  conserva los contadores y limites seguros para que el usuario pueda entender
+  el estado sin recibir la causa interna.
+- La prueba con canario DSN confirma que la respuesta no expone el detalle. El
+  inventario JSON directo baja de 55 a 54.
+
+2026-07-21: Matriz A/B verificable para P105-004.
+- Se agrega `documentos/arquitectura/matriz_pruebas_tenant_ab_plan_105.md` con
+  los controles actuales de wrapper, query/cabecera/JSON y API movil, y con la
+  matriz P0 que falta ejecutar sobre base real y staging.
+- No se crearon empresas fixture ni se consultaron datos productivos; el
+  inventario de rutas sigue siendo cobertura estatica, no evidencia de
+  aislamiento SQL, archivos, cache o jobs.
+
+2026-07-21: Primer lote de extraccion de DDL desde trafico HTTP del Plan 105.
+- `EmpresaEstacionPrefsSchemaReady`, `EmpresaUbicacionGPSSchemaReady` y
+  `EmpresaGrafologiaSchemaReady`, `EmpresaEnergiaSolarSchemaReady`,
+  `EmpresaHojaVidaOperativaSchemaReady` y `EmpresaReservasHotelSchemaReady`
+  verifican tablas ya migradas sin ejecutar DDL. Los handlers de preferencias
+  por estacion, panel, chat, Bre-B, GPS, taxi, grafologia, energia solar, hoja
+  de vida y reservas dejan de invocar `Ensure*` en solicitudes. El tercer lote
+  agrega `EmpresaReportesProgramacionSchemaReady` y retira DDL de los handlers
+  de reportes por empresa y globales.
+- El inventario runtime se regenera: 132 -> 110 llamadas fuera del migrador y
+  59 -> 37 alcanzables por HTTP. El bootstrap legado no se declara retirado;
+  migraciones efimeras y el resto de los lotes siguen pendientes.
+- Se agrega `documentos/matriz_alcance_piloto_plan_105.md` como borrador sin
+  activacion automatica de modulos ni despliegue.
+
+2026-07-21: Cuarto lote de extraccion DDL HTTP del Plan 105.
+- `EmpresaChatTareasSchemaReady` verifica tablas e indices de Chat/Tareas sin
+  DDL. El canal general pasa a `GetOrCreateChatUsuariosGeneralConversacion`: su
+  unica mutacion permitida es crear la fila empresarial del canal cuando falta,
+  nunca crear esquema.
+- `chat_tareas.go` y `public_mensajes_privados.go` fallan cerrados si falta el
+  esquema. El inventario runtime baja de 112 a 110 y el trafico HTTP de 39 a 37;
+  bootstrap/upgrade real siguen pendientes de PostgreSQL efimero o staging.
+
+2026-07-21: Compuerta de candidato inmutable del Plan 105.
+- `tools/release_manifest.mjs` ahora registra SHA completo, base, upstream,
+  relacion de ancestro y estado/formato de los tres digests PCS. `--check` no
+  escribe artefactos y `--strict` bloquea un candidato sucio o no trazable.
+- `scripts/release_gate.ps1` usa el modo estricto antes de declarar la
+  compuerta completada. No se genero tag, imagen, PR ni despliegue en este
+  cambio local.
+
+2026-07-21: Evidencia de migracion efimera Plan 105.
+- `documentos/migration_validation_report.md` registra que Docker no esta
+  disponible en este equipo; no se levanto contenedor ni se simulo una prueba
+  PostgreSQL. El gate de migracion permanece pendiente de CI, Docker o staging
+  aislado con base real.
+
 2026-07-18: El migrador exige configuracion explicita en production.
 - `PCS_RUNTIME_SCHEMA_BOOTSTRAP` ya no tiene un valor implicito para el rol
   `migrate` cuando `PCS_ENV=production`; una variable ausente detiene el
@@ -38327,3 +38703,231 @@ PushStatus: OK
 Archivos modificados:
 - documentos/produccion_hardening_20260715.md
 - tools/deploy_pipeline_contract.mjs
+Actualizacion 2026-07-21 (Nextcloud: cuentas personales super y aprovisionamiento empresarial automatico):
+- `web/super/configuracion/nextcloud.html` permite crear una cuenta personal de Nextcloud con cuota elegida por el super administrador y muestra el enlace HTTPS publico del servicio.
+- `POST /super/api/config/nextcloud?action=create_account` genera una contrasena temporal, crea la cuenta mediante OCS y la devuelve una sola vez; no persiste contrasenas de usuario en PCS.
+- `web/administrar_empresa/nextcloud.html` aprovisiona automaticamente la cuenta tecnica de la empresa cuando el servicio esta activo y configurado; conserva la cuota fija empresarial independiente de las cuentas personales.
+- El acceso automatico no suplanta sesiones de Nextcloud: un auto-login seguro requiere SSO OIDC/SAML configurado en Nextcloud y PCS.
+
+Actualizacion 2026-07-21 (Nextcloud empresarial: apertura directa):
+- Una cuenta ya aprovisionada abre directamente la pagina principal de Nextcloud desde Administrar empresa, fuera del iframe de PCS; las cuentas nuevas conservan la visualizacion unica de su contrasena temporal antes de esa navegacion.
+- El cambio de contrasena y cierre de sesion se realizan en las opciones nativas de Seguridad de Nextcloud. La expiracion de contrasenas temporales se gobierna con la politica del servidor Nextcloud.
+
+Actualizacion 2026-07-21 (eliminacion integral de empresas por super administrador):
+- El super administrador puede ejecutar la eliminacion total de cualquier empresa dentro del flujo con confirmacion exacta, incluso si fue creada por otro administrador. Se conserva la limpieza bloqueante de Nextcloud, correo, OnlyOffice y archivos antes del cascade local.
+## 2026-07-21 - Respaldo VPS con hora diaria y alcance PostgreSQL
+
+- Super Administrador > Plataforma > Docker VPS permite elegir copia completa o
+  solo las bases PostgreSQL, además de una hora diaria exacta.
+- El worker durable revisa la programación por minuto y el backend impide una
+  segunda ejecución automática en el mismo día local.
+- La configuración sigue guardando únicamente la ruta de rclone; no incorpora
+  credenciales de nube ni secretos en los snapshots por defecto.
+## 2026-07-21 - Plan 105: inventario de almacenamiento compartido
+
+- Se documento P105-015 sin modificar archivos ni configuraciones: no hay una interfaz de Object Storage en el backend y las familias revisadas dependen de filesystem local.
+- La matriz separa adjuntos privados, uploads publicos, backups, snapshots y documentos temporales; conserva las protecciones existentes por `empresa_id` y define migracion, A/B, restore, cuotas y readiness como requisitos pendientes.
+## 2026-07-21 - Plan 105: cliente movil reproducible y compuerta local
+
+- La revision local encontro que `mobile/powerful_control_system_app` solo conserva artefactos `build` y `.dart_tool`; no hay fuente Flutter, manifiesto, plataformas, pruebas ni configuracion de firma reproducible. Se documento P105-020 como decision de incluir fuente completa o excluir movil del release.
+- La compuerta de release en modo local completo supero preflight, auditorias y pruebas, y se detuvo antes de cualquier operacion remota porque falta `PCS_API_IMAGE_DIGEST`; permanecen pendientes los tres digests inmutables del release.
+## 2026-07-21 - Plan 105: supply chain y flujos asincronos P0
+
+- Se documento la compuerta de digests de PCS y las imagenes auxiliares pendientes de inmutabilidad, SBOM, escaneo y rollback; no se cambiaron imagenes ni Compose operativo.
+- Se preciso la caracterizacion de P105-005: el snapshot de autorizacion empresarial lanza cinco lecturas concurrentes sin cancelacion propagada y el control electrico despacha de forma no durable. Ambos requieren pruebas PostgreSQL/staging y correccion antes de cerrar su prioridad P0.
+## 2026-07-21 - Plan 105: redaccion de errores del servicio de voz
+
+- El proxy TTS y la configuracion superadministradora de voz ya no devuelven causas internas, URL, cuerpo del proveedor o tokens en respuestas 5xx/502; responden con codigo estable y `request_id`, mientras el tipo de error queda solo en log interno.
+- Se agrego prueba con canarios de DSN, host interno y token para impedir regresiones de esa superficie publica.
+## 2026-07-21 - Plan 105: redaccion de errores del buzon empresarial
+
+- El handler de almacenamiento/buzon dejo de devolver causas internas en configuracion, limpieza y guardado de adjuntos; conserva correlacion tecnica en log y mensajes publicos genericos.
+- Se agrego regresion estatica para evitar que esas superficies vuelvan a concatenar `err.Error()`.
+## 2026-07-21 - Plan 105: control electrico sin DDL en runtime
+
+- Las rutas de handler, programacion y despacho de control electrico ahora verifican el esquema de solo lectura y fallan cerradas si falta. La creacion/alteracion de tablas permanece en el bootstrap/migrador.
+- Se agrego prueba de regresion para que la verificacion rechace una conexion nula.
+## 2026-07-21 - Plan 105: tarifas sin DDL por solicitud
+
+- Los handlers de tarifas motel y por minutos ahora usan verificadores de esquema de solo lectura. El migrador/bootstrap conserva los `Ensure` responsables de DDL.
+- Se agregaron regresiones de conexion nula para ambos verificadores; no se alteraron reglas de cobro ni registros empresariales.
+## 2026-07-22 - Plan 105: validacion externa de salud y bloqueo TLS de staging
+
+- La sesion autorizada comprobo visualmente el panel superadministrador y las probes publicas de produccion (`/health` y `/ready`), ambas correctas. No se ejecutaron botones de reinicio, evaluacion, correo, guardado o cambios de configuracion.
+- El intento de lectura HTTPS en staging se detuvo por certificado con fecha invalida. Se registro como NO-GO de P105-007; no se acepto ni se eludio el certificado.
+- La pagina de alertas reporta valores normales de disco, conexiones y sesiones, mientras el tablero agregado marca PostgreSQL/continuidad como criticos; queda pendiente correlacion de fuente para P105-010.
+## 2026-07-22 - Plan 105: sensor de puertas sin DDL durante corte de caja
+
+- El analisis de sensores desde corte de caja ahora usa verificacion de esquema de solo lectura. La creacion/alteracion de tablas sigue bajo bootstrap/migrador.
+- Se agrego regresion que rechaza conexion nula; no se modificaron lecturas, estaciones ni cierres de caja.
+## 2026-07-22 - Plan 105: verificacion externa TLS/CSP y reduccion de DDL
+
+- La consulta TLS sin omitir validacion confirmo que el certificado de staging esta expirado. Produccion mantiene `/health` y `/ready` HTTP 200.
+- Las cabeceras CSP publicadas no contienen aun el origen de avatar incorporado en el codigo local, por lo que la correccion P105-014 no esta desplegada y debe verificarse despues del release candidato.
+- Corte de caja deja de ejecutar DDL al consultar sensores de puertas; el inventario runtime baja a 104 llamadas, 31 alcanzables desde HTTP.
+## 2026-07-22 - Plan 105: incidente de certificados en continuidad
+
+- Las probes externas sin omitir TLS confirmaron que staging, OnlyOffice y Nextcloud presentan certificados expirados. El nucleo PCS conserva `/health` y `/ready` en HTTP 200.
+- El panel autorizado no expone renovacion de certificados; solo documenta el flujo edge/Certbot del VPS. Tampoco hay snapshots VPS registrados ni destino de nube configurado. No se modificaron snapshots, retencion, nube, servidores ni proveedores.
+2026-07-22: Correccion de permisos del volumen de logs staging P105-010.
+- El volumen `powerful-control-system-staging_pcs_staging_backend_logs` estaba
+  propiedad de root y generaba `permission denied` en el backend. Se ajusto
+  exclusivamente ese volumen a UID/GID 10001 (`pcs`), se reinicio el backend y
+  se verifico que `/health` y `/ready` siguen en 200 sin nuevos avisos de
+  permisos en el arranque. No se borraron logs ni se modificaron datos.
+
+2026-07-22: Backup operativo VPS P105-008.
+- Con autorizacion del usuario se ejecuto `deploy/scripts/vps-backup-operacion.sh`
+  en el VPS principal sin incluir archivos `.env`. Se genero el snapshot
+  `20260722_041759` con `pg_dumpall` y cinco volumenes persistentes.
+- La evidencia externa calcula SHA-256 para cada artefacto y valida `gzip -t` y
+  el listado de todos los tarballs (`backup_integrity=ok`). Falta restaurar en
+  un entorno aislado y medir RPO/RTO; el backup no se considera todavía un GO.
+
+2026-07-22: Correlacion de sesiones P105-010.
+- La lectura solo consulta de PostgreSQL producción muestra 2034 sesiones
+  activas, 1874 con `fecha_fin` no vacía y fechas desde marzo; el dashboard
+  staging visual reporta 161 frente a umbral 50. No se revocaron sesiones ni se
+  ejecutaron controles del panel. La diferencia y la política de expiración
+  requieren investigación antes de cualquier limpieza gobernada.
+
+2026-07-22: Regresion completa P105-003/P105-009.
+- `go test ./... -count=1` pasa en todos los paquetes del backend; tambien pasan
+  `go vet ./...`, `go build ./cmd/pcs-migrate` y `go build ./cmd/pcs-worker`.
+- La evidencia cierra la regresion local del cambio de migracion, pero no
+  sustituye race Linux, carga, CI sobre SHA candidato ni el gate de release.
+
+2026-07-22: Regeneracion y validacion de inventario bootstrap P105-003.
+- `tools/ensure_bootstrap_inventory.mjs` regenero el inventario desactualizado y
+  ahora valida `154` funciones y `122` pasos. Los audits estrictos de migracion,
+  seguridad y permisos/licencias pasan.
+- Tras la regeneracion, `go test ./... -count=1`, `go vet ./...` y los builds de
+  migrador/worker vuelven a pasar. La auditoria documental mantiene el warning
+  conocido de normalizacion de `CHANGELOG.md`, sin alterar su contenido.
+
+2026-07-22: Smoke de carga staging P105-009/P105-012.
+- `tools/load_smoke_test.mjs --strict` contra staging completó 80 solicitudes
+  publicas, error rate 0% y P95 de 821 ms; el reporte queda en
+  `documentos/reportes_profesionales/load_smoke_20260722_064121.*`.
+- `tools/qa_e2e_buttons.cjs` no pudo iniciar porque el runtime local no tiene
+  `playwright-core`; no se instalaron dependencias nuevas. La validacion visual
+  manual/autenticada de staging sigue comprobada por navegador interno.
+
+2026-07-22: Restore drill aislado P105-008.
+- El dump del snapshot `20260722_041759` se restauró en un contenedor temporal
+  PostgreSQL 16.14 sin tocar bases productivas. La restauración abrió dos bases
+  PCS y finalizó con `rto_seconds=15`; la diferencia temporal del snapshot fue
+  `rpo_seconds=232`. El contenedor temporal se eliminó al terminar. Continúan
+  pendientes réplica externa, nube y alerta de expiración.
+
+2026-07-22: rs: actualizar repositorio y sincronizar VPS
+PushStatus: OK
+Archivos modificados:
+- backend/cmd/pcs-worker/business_registry.go
+- backend/db/chat_tareas.go
+- backend/db/control_electrico.go
+- backend/db/db.go
+- backend/db/empresa_estacion_prefs.go
+- backend/db/energia_solar.go
+- backend/db/grafologia.go
+- backend/db/hoja_vida_operativa.go
+- backend/db/legacy_schema_catalog_manifest_generated.go
+- backend/db/migrations_test.go
+- backend/db/platform_migrations.go
+- backend/db/reportes_programacion.go
+- backend/db/reservas_hotel.go
+- backend/db/schema_readiness_test.go
+- backend/db/sensor_puertas.go
+- backend/db/tarifas_motel.go
+- backend/db/tarifas_por_minutos.go
+- backend/db/ubicacion_gps.go
+- backend/handlers/agente_internet_fiscal.go
+- backend/handlers/agente_internet_fiscal_public_error_test.go
+- backend/handlers/ai_enterprise_orchestrator.go
+- backend/handlers/ai_enterprise_orchestrator_public_error_test.go
+- backend/handlers/chat_con_ia_global_super.go
+- backend/handlers/chat_con_ia_global_super_public_error_test.go
+- backend/handlers/chat_flotante_config.go
+- backend/handlers/chat_tareas.go
+- backend/handlers/control_electrico.go
+- backend/handlers/corte_caja.go
+- backend/handlers/empresa_buzon.go
+- backend/handlers/empresa_buzon_public_error_test.go
+- backend/handlers/empresa_compartida_handlers.go
+- backend/handlers/empresa_preconfiguracion.go
+- backend/handlers/energia_solar.go
+- backend/handlers/finanzas_breb_qr.go
+- backend/handlers/grafologia.go
+- backend/handlers/hoja_vida_operativa.go
+- backend/handlers/nextcloud.go
+- backend/handlers/nextcloud_security_test.go
+- backend/handlers/panel_empresa_config.go
+- backend/handlers/payments_handlers.go
+- backend/handlers/public_chat_portal.go
+- backend/handlers/public_chat_portal_public_error_test.go
+- backend/handlers/public_mensajes_privados.go
+- backend/handlers/reportes.go
+- backend/handlers/reportes_globales.go
+- backend/handlers/reservas_hotel.go
+- backend/handlers/security_vps_handlers.go
+- backend/handlers/security_vps_public_error_test.go
+- backend/handlers/super_alertas.go
+- backend/handlers/super_alertas_public_error_test.go
+- backend/handlers/super_chat_ia_logica.go
+- backend/handlers/super_correos_masivos.go
+- backend/handlers/super_correos_masivos_public_error_test.go
+- backend/handlers/super_mantenimiento_agentes.go
+- backend/handlers/super_mantenimiento_agentes_test.go
+- backend/handlers/super_vps_snapshots.go
+- backend/handlers/super_vps_snapshots_test.go
+- backend/handlers/tarifas_motel.go
+- backend/handlers/tarifas_por_minutos.go
+- backend/handlers/taxi_system.go
+- backend/handlers/ubicacion_gps.go
+- backend/handlers/voice_stream_config.go
+- backend/handlers/voice_stream_config_public_error_test.go
+- backend/utils/security_headers_test.go
+- backend/utils/utils.go
+- deploy/docker/backend.Dockerfile
+- documentos/arquitectura/clasificacion_arbol_plan_105.md
+- documentos/arquitectura/inventario_bootstrap_ensure.md
+- documentos/arquitectura/inventario_cliente_movil_plan_105.md
+- documentos/arquitectura/inventario_errores_publicos_plan_105.md
+- documentos/arquitectura/inventario_goroutines_plan_105.md
+- documentos/arquitectura/inventario_runtime_ensure.md
+- documentos/arquitectura/inventario_storage_plan_105.md
+- documentos/arquitectura/inventario_supply_chain_plan_105.md
+- documentos/arquitectura/matriz_pruebas_tenant_ab_plan_105.md
+- documentos/arquitectura/modularizacion_archivos_gigantes_plan_105.md
+- documentos/arquitectura/normalizacion_documental_plan_105.md
+- documentos/contexto_codex.md
+- documentos/contexto_general_del_sistema.md
+- documentos/descripcion_de_archivos
+- documentos/descripcion_de_modulos
+- documentos/docker_vps_operacion.md
+- documentos/estructura_bd.md
+- documentos/flujos_operativos.md
+- documentos/gobernanza_tecnica/runbooks/README.md
+- documentos/gobernanza_tecnica/runbooks/runbook_tls_staging_y_servicios_plan_105.md
+- documentos/historial_de_cambios
+- documentos/matriz_alcance_piloto_plan_105.md
+- documentos/migration_validation_report.md
+- documentos/nextcloud_empresarial.md
+- documentos/plan_105.md
+- documentos/releases/README.md
+- documentos/releases/release_2026.07.22.json
+- documentos/releases/release_2026.07.22.md
+- scripts/release_gate.ps1
+- scripts/vps_restore_validation.ps1
+- tools/docs_normalization_audit.mjs
+- tools/release_manifest.mjs
+- web/administrar_empresa/facturacion_electronica.html
+- web/js/administrar_empresa.js
+- web/js/nextcloud_empresa.js
+- web/js/nextcloud_super.js
+- web/js/super_seguridad.js
+- web/super/configuracion/nextcloud.html
+- web/super/docker_portabilidad.html
+- web/super/email_corporativo.html
+- web/super/explorador_archivos.html
+- web/super/seguridad.html

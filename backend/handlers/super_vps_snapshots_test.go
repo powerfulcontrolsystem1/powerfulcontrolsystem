@@ -4,6 +4,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	dbpkg "github.com/you/pos-backend/db"
 )
@@ -15,6 +16,19 @@ func TestSanitizeSuperVPSSnapshotRemotePath(t *testing.T) {
 	}
 	if !strings.Contains(got, "gdrive:PCS/backups") {
 		t.Fatalf("remote path lost expected prefix: %q", got)
+	}
+}
+
+func TestSuperVPSSnapshotDailyScheduleDueOnce(t *testing.T) {
+	loc := time.FixedZone("America/Bogota", -5*60*60)
+	now := time.Date(2026, 7, 21, 3, 5, 0, 0, loc)
+	cfg := superVPSSnapshotConfig{DailyTime: "03:00", IntervalHours: 24}
+	if !superVPSSnapshotAutomaticDue(cfg, now) {
+		t.Fatal("daily backup should be due after configured time")
+	}
+	cfg.LastAutoRun = time.Date(2026, 7, 21, 3, 1, 0, 0, loc).Format(time.RFC3339)
+	if superVPSSnapshotAutomaticDue(cfg, now) {
+		t.Fatal("daily backup must not run twice on the same local day")
 	}
 }
 

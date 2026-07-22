@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"log"
 	"net"
 	"net/http"
 	"strconv"
@@ -1035,8 +1036,7 @@ func PublicPortalCompanyChatStreamHandler(dbEmp, dbSuper *sql.DB) http.HandlerFu
 			}
 		})
 		if err != nil {
-			errJSON, _ := json.Marshal(map[string]interface{}{"error": "No se pudo generar respuesta: " + err.Error()})
-			fmt.Fprintf(w, "data: %s\n\n", errJSON)
+			writePortalPublicChatStreamError(w, r, err)
 		} else {
 			answer = strings.TrimSpace(answer)
 			if scope != "venta_publica" {
@@ -1052,4 +1052,18 @@ func PublicPortalCompanyChatStreamHandler(dbEmp, dbSuper *sql.DB) http.HandlerFu
 			flusher.Flush()
 		}
 	}
+}
+
+func writePortalPublicChatStreamError(w http.ResponseWriter, r *http.Request, err error) {
+	requestID := resolveAuditoriaRequestID(r)
+	log.Printf("[public_chat_portal] operation=stream_response request_id=%s error_type=%T", requestID, err)
+	payload := map[string]interface{}{
+		"code":  "public_chat_unavailable",
+		"error": "No se pudo generar la respuesta. Intenta nuevamente en unos minutos.",
+	}
+	if requestID != "" {
+		payload["request_id"] = requestID
+	}
+	errJSON, _ := json.Marshal(payload)
+	fmt.Fprintf(w, "data: %s\n\n", errJSON)
 }

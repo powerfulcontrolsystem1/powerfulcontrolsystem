@@ -257,7 +257,8 @@ func SuperEmpresaStorageConfigHandler(dbSuper, dbEmp *sql.DB) http.HandlerFunc {
 			}
 			cfg := normalizeEmpresaStorageConfig(payload)
 			if err := saveEmpresaStorageConfig(dbSuper, cfg, strings.TrimSpace(adminEmailFromRequest(r))); err != nil {
-				http.Error(w, "No se pudo guardar configuracion: "+err.Error(), http.StatusInternalServerError)
+				log.Printf("[empresa_buzon] guardar configuracion de storage error: %v", err)
+				http.Error(w, "No se pudo guardar la configuracion de almacenamiento", http.StatusInternalServerError)
 				return
 			}
 			writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "config": cfg})
@@ -268,7 +269,8 @@ func SuperEmpresaStorageConfigHandler(dbSuper, dbEmp *sql.DB) http.HandlerFunc {
 				return
 			}
 			if err := cleanupEmpresaBuzonOldFiles(dbEmp, empresaID, parsePositiveIntDefault(r.URL.Query().Get("days"), 180)); err != nil {
-				http.Error(w, "No se pudo limpiar archivos: "+err.Error(), http.StatusInternalServerError)
+				log.Printf("[empresa_buzon] limpiar archivos antiguos empresa_id=%d error: %v", empresaID, err)
+				http.Error(w, "No se pudo limpiar los archivos antiguos", http.StatusInternalServerError)
 				return
 			}
 			writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "storage": buildEmpresaStorageUsage(dbEmp, dbSuper, empresaID)})
@@ -449,7 +451,8 @@ func handleEmpresaBuzonAttachmentUpload(w http.ResponseWriter, r *http.Request, 
 
 	fileName, absPath, size, err := saveEmpresaPrivateUpload(empresaID, "buzon", ext, file, 20<<20)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		log.Printf("[empresa_buzon] guardar adjunto empresa_id=%d error: %v", empresaID, err)
+		http.Error(w, "No se pudo guardar el archivo adjunto", http.StatusBadRequest)
 		return
 	}
 	fileURL := empresaPrivateDownloadURL("/api/empresa/buzon/archivo", empresaID, fileName)
