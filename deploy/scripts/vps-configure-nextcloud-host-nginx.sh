@@ -30,7 +30,7 @@ grep -Fq "proxy_pass http://$NEXTCLOUD_UPSTREAM;" "$SITE_AVAILABLE" \
 # solo frame-ancestors sin ocultar esa CSP (lo que rompería sus nonces). Si el
 # upstream ya declara la directiva, agregar otro encabezado la intersecta y no
 # habilita el iframe. Fallar antes de escribir conserva la configuracion segura.
-if curl -kfsSI --max-time 15 "https://$NEXTCLOUD_DOMAIN/" | tr -d '\r' | grep -qi '^content-security-policy:.*frame-ancestors'; then
+if curl -kfsSL --max-time 15 -D - -o /dev/null "https://$NEXTCLOUD_DOMAIN/" | tr -d '\r' | grep -qi '^content-security-policy:.*frame-ancestors'; then
   fail "Nextcloud ya emite frame-ancestors; no se puede ampliar de forma segura con Nginx estandar. Configure una politica soportada por Nextcloud o un filtro de encabezados que preserve nonces antes de reintentar"
 fi
 
