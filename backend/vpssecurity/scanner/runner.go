@@ -367,6 +367,7 @@ func trivyRootfsArgs(outputFile, targetPath string) []string {
 		"--skip-files", "/etc/shadow-",
 		"--skip-files", "/etc/gshadow",
 		"--skip-files", "/etc/gshadow-",
+		"--skip-files", "/lib/apk/db/lock",
 		"--output", outputFile,
 		targetPath,
 	}

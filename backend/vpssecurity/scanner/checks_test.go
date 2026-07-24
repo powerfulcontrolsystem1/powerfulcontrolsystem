@@ -23,7 +23,7 @@ func TestShadowPermissionPolicyAllowsUbuntuDefault(t *testing.T) {
 
 func TestTrivyRootfsArgsSkipProtectedCredentialFiles(t *testing.T) {
 	args := trivyRootfsArgs("/tmp/report.json", "/")
-	for _, path := range []string{"/etc/shadow", "/etc/shadow-", "/etc/gshadow", "/etc/gshadow-"} {
+	for _, path := range []string{"/etc/shadow", "/etc/shadow-", "/etc/gshadow", "/etc/gshadow-", "/lib/apk/db/lock"} {
 		found := false
 		for index := 0; index+1 < len(args); index++ {
 			if args[index] == "--skip-files" && args[index+1] == path {
