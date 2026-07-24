@@ -64,19 +64,23 @@ type SystemInfo struct {
 }
 
 type Summary struct {
-	Critical        int    `json:"critical"`
-	High            int    `json:"high"`
-	Medium          int    `json:"medium"`
-	Low             int    `json:"low"`
-	Info            int    `json:"info"`
-	TotalFindings   int    `json:"total_findings"`
-	HighestSeverity string `json:"highest_severity"`
-	OpenPorts       []int  `json:"open_ports,omitempty"`
-	HardeningIndex  int    `json:"hardening_index,omitempty"`
-	Health          string `json:"health,omitempty"`
+	Critical         int      `json:"critical"`
+	High             int      `json:"high"`
+	Medium           int      `json:"medium"`
+	Low              int      `json:"low"`
+	Info             int      `json:"info"`
+	TotalFindings    int      `json:"total_findings"`
+	HighestSeverity  string   `json:"highest_severity"`
+	OpenPorts        []int    `json:"open_ports,omitempty"`
+	HardeningIndex   int      `json:"hardening_index,omitempty"`
+	Health           string   `json:"health,omitempty"`
+	CoverageComplete bool     `json:"coverage_complete"`
+	CoverageStatus   string   `json:"coverage_status"`
+	IncompleteTools  []string `json:"incomplete_tools,omitempty"`
 }
 
 type ConfigSnapshot struct {
+	Scope                string   `json:"scope"`
 	TargetHost           string   `json:"target_host"`
 	PortList             string   `json:"port_list"`
 	Profile              string   `json:"profile"`
@@ -99,6 +103,7 @@ type Comparison struct {
 type ScanReport struct {
 	ScanID      string            `json:"scan_id"`
 	Status      string            `json:"status"`
+	Scope       string            `json:"scope"`
 	GeneratedAt string            `json:"generated_at"`
 	StartedAt   string            `json:"started_at,omitempty"`
 	CompletedAt string            `json:"completed_at,omitempty"`
@@ -121,9 +126,12 @@ type ScanReport struct {
 type HistoryEntry struct {
 	ScanID           string            `json:"scan_id"`
 	GeneratedAt      string            `json:"generated_at"`
+	Scope            string            `json:"scope"`
 	TargetHost       string            `json:"target_host"`
 	Profile          string            `json:"profile"`
 	Status           string            `json:"status"`
+	CoverageStatus   string            `json:"coverage_status"`
+	CoverageComplete bool              `json:"coverage_complete"`
 	TotalFindings    int               `json:"total_findings"`
 	HighestSeverity  string            `json:"highest_severity"`
 	NewFindings      int               `json:"new_findings,omitempty"`
@@ -258,8 +266,66 @@ func ApplySummary(report *ScanReport) {
 		summary.Health = "estable"
 	}
 	report.Summary = summary
+	ApplyCoverage(report)
 	if strings.TrimSpace(report.GeneratedAt) == "" {
 		report.GeneratedAt = time.Now().UTC().Format(time.RFC3339)
+	}
+}
+
+func ApplyCoverage(report *ScanReport) {
+	if report == nil {
+		return
+	}
+	required := make([]string, 0, len(report.Config.EnabledTools))
+	seenRequired := make(map[string]struct{}, len(report.Config.EnabledTools))
+	for _, name := range report.Config.EnabledTools {
+		name = canonicalToolName(name)
+		if name == "" {
+			continue
+		}
+		if _, exists := seenRequired[name]; exists {
+			continue
+		}
+		seenRequired[name] = struct{}{}
+		required = append(required, name)
+	}
+	if len(required) == 0 {
+		report.Summary.CoverageComplete = false
+		report.Summary.CoverageStatus = "desconocida"
+		report.Summary.IncompleteTools = nil
+		return
+	}
+	results := make(map[string]ToolResult, len(report.Tools))
+	for _, tool := range report.Tools {
+		results[canonicalToolName(tool.Name)] = tool
+	}
+	incomplete := make([]string, 0)
+	for _, name := range required {
+		tool, exists := results[name]
+		if !exists || !tool.Available || !tool.Executed || strings.ToLower(strings.TrimSpace(tool.Status)) != "ok" {
+			incomplete = append(incomplete, name)
+		}
+	}
+	sort.Strings(incomplete)
+	report.Summary.IncompleteTools = incomplete
+	report.Summary.CoverageComplete = len(incomplete) == 0
+	if report.Summary.CoverageComplete {
+		report.Summary.CoverageStatus = "completa"
+	} else {
+		report.Summary.CoverageStatus = "incompleta"
+	}
+}
+
+func canonicalToolName(name string) string {
+	switch strings.ToLower(strings.TrimSpace(name)) {
+	case "trivy", "vulnerability_scan":
+		return "vulnerability_scan"
+	case "lynis":
+		return "lynis"
+	case "nmap":
+		return "nmap"
+	default:
+		return strings.ToLower(strings.TrimSpace(name))
 	}
 }
 
@@ -333,9 +399,12 @@ func HistoryFromReport(report *ScanReport) HistoryEntry {
 	return HistoryEntry{
 		ScanID:           report.ScanID,
 		GeneratedAt:      report.GeneratedAt,
+		Scope:            report.Scope,
 		TargetHost:       report.TargetHost,
 		Profile:          report.Profile,
 		Status:           report.Status,
+		CoverageStatus:   report.Summary.CoverageStatus,
+		CoverageComplete: report.Summary.CoverageComplete,
 		TotalFindings:    report.Summary.TotalFindings,
 		HighestSeverity:  report.Summary.HighestSeverity,
 		NewFindings:      report.Comparison.NewFindings,
@@ -376,10 +445,15 @@ func textLines(report ScanReport) []string {
 		"REPORTE DE SEGURIDAD VPS",
 		"Scan ID: " + safeText(report.ScanID),
 		"Generado: " + safeText(report.GeneratedAt),
+		"Alcance: " + safeText(report.Scope),
 		"Objetivo: " + safeText(report.TargetHost),
 		"Perfil: " + safeText(report.Profile),
 		"Estado: " + safeText(report.Status),
+		"Cobertura: " + safeText(report.Summary.CoverageStatus),
 		fmt.Sprintf("Resumen: critico=%d alto=%d medio=%d bajo=%d info=%d total=%d", report.Summary.Critical, report.Summary.High, report.Summary.Medium, report.Summary.Low, report.Summary.Info, report.Summary.TotalFindings),
+	}
+	if len(report.Summary.IncompleteTools) > 0 {
+		lines = append(lines, "Herramientas incompletas: "+strings.Join(report.Summary.IncompleteTools, ", "))
 	}
 	if report.Summary.HardeningIndex > 0 {
 		lines = append(lines, fmt.Sprintf("Hardening index: %d", report.Summary.HardeningIndex))
@@ -452,13 +526,28 @@ func BuildCSV(report ScanReport) []byte {
 	ApplySummary(&report)
 	buffer := &bytes.Buffer{}
 	writer := csv.NewWriter(buffer)
-	_ = writer.Write([]string{"scan_id", "generated_at", "target_host", "profile", "severity", "tool", "category", "title", "target", "port", "service", "reference", "recommendation", "evidence"})
+	_ = writer.Write([]string{"scan_id", "generated_at", "scope", "target_host", "profile", "coverage_status", "coverage_complete", "severity", "tool", "category", "title", "target", "port", "service", "reference", "recommendation", "evidence"})
+	if len(report.Findings) == 0 {
+		_ = writer.Write([]string{
+			report.ScanID,
+			report.GeneratedAt,
+			report.Scope,
+			report.TargetHost,
+			report.Profile,
+			report.Summary.CoverageStatus,
+			strconv.FormatBool(report.Summary.CoverageComplete),
+			"", "", "", "", "", "", "", "", "", "",
+		})
+	}
 	for _, finding := range report.Findings {
 		_ = writer.Write([]string{
 			report.ScanID,
 			report.GeneratedAt,
+			report.Scope,
 			report.TargetHost,
 			report.Profile,
+			report.Summary.CoverageStatus,
+			strconv.FormatBool(report.Summary.CoverageComplete),
 			string(finding.Severity),
 			finding.Tool,
 			finding.Category,
@@ -483,6 +572,7 @@ func BuildHTML(report ScanReport) []byte {
 	buffer.WriteString("<section><h1>Reporte de seguridad VPS</h1>")
 	buffer.WriteString("<p><strong>Scan ID:</strong> " + htmlEscape(report.ScanID) + "<br>")
 	buffer.WriteString("<strong>Generado:</strong> " + htmlEscape(report.GeneratedAt) + "<br>")
+	buffer.WriteString("<strong>Alcance:</strong> " + htmlEscape(report.Scope) + "<br>")
 	buffer.WriteString("<strong>Objetivo:</strong> " + htmlEscape(report.TargetHost) + "<br>")
 	buffer.WriteString("<strong>Perfil:</strong> " + htmlEscape(report.Profile) + "</p></section>")
 	buffer.WriteString("<section><h2>Resumen</h2><div class=\"summary\">")
@@ -492,6 +582,7 @@ func BuildHTML(report ScanReport) []byte {
 	buffer.WriteString(summaryMetric("Bajo", strconv.Itoa(report.Summary.Low), "bajo"))
 	buffer.WriteString(summaryMetric("Info", strconv.Itoa(report.Summary.Info), "info"))
 	buffer.WriteString(summaryMetric("Total", strconv.Itoa(report.Summary.TotalFindings), "info"))
+	buffer.WriteString(summaryMetric("Cobertura", htmlEscape(report.Summary.CoverageStatus), "info"))
 	if report.Summary.HardeningIndex > 0 {
 		buffer.WriteString(summaryMetric("Hardening", strconv.Itoa(report.Summary.HardeningIndex), "info"))
 	}
@@ -548,9 +639,13 @@ func BuildExcel(report ScanReport) []byte {
 	writeXMLRow(buffer, []string{"Campo", "Valor"})
 	writeXMLRow(buffer, []string{"Scan ID", report.ScanID})
 	writeXMLRow(buffer, []string{"Generado", report.GeneratedAt})
+	writeXMLRow(buffer, []string{"Alcance", report.Scope})
 	writeXMLRow(buffer, []string{"Objetivo", report.TargetHost})
 	writeXMLRow(buffer, []string{"Perfil", report.Profile})
 	writeXMLRow(buffer, []string{"Estado", report.Status})
+	writeXMLRow(buffer, []string{"Cobertura", report.Summary.CoverageStatus})
+	writeXMLRow(buffer, []string{"Cobertura completa", strconv.FormatBool(report.Summary.CoverageComplete)})
+	writeXMLRow(buffer, []string{"Herramientas incompletas", strings.Join(report.Summary.IncompleteTools, ", ")})
 	writeXMLRow(buffer, []string{"Critico", strconv.Itoa(report.Summary.Critical)})
 	writeXMLRow(buffer, []string{"Alto", strconv.Itoa(report.Summary.High)})
 	writeXMLRow(buffer, []string{"Medio", strconv.Itoa(report.Summary.Medium)})

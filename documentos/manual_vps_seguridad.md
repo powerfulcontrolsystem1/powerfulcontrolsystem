@@ -4,7 +4,11 @@ Fecha de actualizacion: 2026-04-16
 
 ## Objetivo
 
-Este modulo permite auditar un VPS Linux Ubuntu desde el panel super y tambien desde consola, con historial de ejecuciones, comparacion contra el escaneo anterior y exportes en JSON, TXT, HTML, CSV, PDF y XLS.
+Este modulo guarda auditorias del runtime que ejecuta las herramientas y, desde
+consola del host, puede auditar un VPS Linux. Cada reporte declara `scope`:
+`container` cuando parte del backend Docker y `host-local` cuando la CLI corre
+directamente en el host. No confundir un escaneo de contenedor con hardening
+completo de Ubuntu.
 
 ## Componentes principales
 
@@ -24,6 +28,19 @@ Este modulo permite auditar un VPS Linux Ubuntu desde el panel super y tambien d
 - Nmap: deteccion de puertos y servicios expuestos.
 - Trivy: alternativa ligera a OpenVAS para vulnerabilidades y misconfiguracion.
 - Chequeos propios: firewall, SSH, Nginx, permisos criticos, servicios y actualizaciones pendientes.
+
+## Cobertura y limites
+
+- El panel no eleva privilegios, no monta la raiz del host y no usa el socket
+  Docker. Por tanto, Lynis y los chequeos propios desde `container` no prueban
+  SSH, firewall, systemd ni Nginx del VPS.
+- Si una herramienta habilitada termina `error`, `parcial` o no disponible, el
+  reporte queda con `coverage_status=incompleta`; la severidad visible no se
+  reduce ni se interpreta como aprobacion.
+- Trivy excluye solo archivos de credenciales no legibles del usuario `pcs`.
+  No ejecutar el backend como root para evitar esa exclusion.
+- Un puerto en `127.0.0.1` es evidencia interna. La exposicion publica se
+  confirma desde una red externa controlada y con los bindings del host.
 
 ## Instalacion en Ubuntu
 

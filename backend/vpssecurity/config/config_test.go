@@ -58,3 +58,40 @@ func TestDefaultManagerMigratesLegacyConfig(t *testing.T) {
 		t.Fatalf("migrated config was not created: %v", err)
 	}
 }
+
+func TestScopeIsDetectedAndCannotBeOverriddenByStoredConfig(t *testing.T) {
+	tempDir := t.TempDir()
+	markerPath := filepath.Join(tempDir, "dockerenv")
+	cgroupPath := filepath.Join(tempDir, "cgroup")
+
+	if got := detectScope(markerPath, cgroupPath); got != ScopeHostLocal {
+		t.Fatalf("scope without container evidence = %q, want %q", got, ScopeHostLocal)
+	}
+	if err := os.WriteFile(markerPath, []byte{}, 0o600); err != nil {
+		t.Fatalf("write container marker: %v", err)
+	}
+	if got := detectScope(markerPath, cgroupPath); got != ScopeContainer {
+		t.Fatalf("scope with container marker = %q, want %q", got, ScopeContainer)
+	}
+	if err := os.Remove(markerPath); err != nil {
+		t.Fatalf("remove container marker: %v", err)
+	}
+	if err := os.WriteFile(cgroupPath, []byte("0::/docker/abc123\n"), 0o600); err != nil {
+		t.Fatalf("write cgroup marker: %v", err)
+	}
+	if got := detectScope(markerPath, cgroupPath); got != ScopeContainer {
+		t.Fatalf("scope with docker cgroup = %q, want %q", got, ScopeContainer)
+	}
+
+	settings := DefaultSettings()
+	expected := DetectScope()
+	if expected == ScopeContainer {
+		settings.Scope = ScopeHostLocal
+	} else {
+		settings.Scope = ScopeContainer
+	}
+	normalize(&settings)
+	if settings.Scope != expected {
+		t.Fatalf("normalized scope = %q, want detected scope %q", settings.Scope, expected)
+	}
+}

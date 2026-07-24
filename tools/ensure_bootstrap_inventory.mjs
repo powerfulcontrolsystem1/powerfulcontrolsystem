@@ -9,11 +9,20 @@ const legacyManifestOutputPath = path.join(repoRoot, "backend", "db", "legacy_sc
 const checkOnly = process.argv.includes("--check");
 
 function sha256(value) {
-  return crypto.createHash("sha256").update(value, "utf8").digest("hex");
+  const canonical = normalizeLineEndings(value).replace(/\n/g, "\r\n");
+  return crypto.createHash("sha256").update(canonical, "utf8").digest("hex");
 }
 
 function normalizeLineEndings(value) {
   return String(value).replace(/\r\n/g, "\n").replace(/\r/g, "\n");
+}
+
+function validateFingerprintCanonicalization() {
+  const lf = "func EnsureExample() {\n\treturn\n}\n";
+  const crlf = lf.replace(/\n/g, "\r\n");
+  if (sha256(lf) !== sha256(crlf)) {
+    throw new Error("source fingerprints must be stable across LF and CRLF");
+  }
 }
 
 function goHashLiteral(hash) {
@@ -69,6 +78,8 @@ function target(name, relativePath) {
   if (/main\.go$/.test(relativePath)) return "ambas bases";
   return "empresas o por confirmar";
 }
+
+validateFingerprintCanonicalization();
 
 const files = [...walk("backend/db"), ...walk("backend/handlers"), path.join(repoRoot, "backend", "main.go")];
 const entries = [];

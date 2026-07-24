@@ -342,7 +342,11 @@ OnlyOffice, edge publico, voz IA y RustDesk estan definidos en el Compose por pe
 
 - OnlyOffice ya existia como contenedor en `127.0.0.1:8088`.
 - RustDesk ya usaba puertos publicos `21115`, `21116` y `21117` en el host.
-- El stack empresarial se administra con `deploy/scripts/vps-nextcloud-up.sh` y sus volumenes/datos no deben purgarse como legado. El Nextcloud de VPS2 sigue siendo independiente.
+- El stack empresarial heredado se administra fuera del Compose nucleo; sus
+  volumenes/datos no deben purgarse como legado. El ajuste de iframe se limita
+  a `deploy/scripts/vps-configure-nextcloud-host-nginx.sh`, que valida y
+  recarga Nginx sin recrear contenedores. El Nextcloud de VPS2 sigue siendo
+  independiente.
 
 Perfiles disponibles:
 

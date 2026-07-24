@@ -315,7 +315,7 @@ func runVulnerabilityScanner(ctx context.Context, settings config.Settings, exec
 	if targetPath == "" {
 		targetPath = "/"
 	}
-	args := []string{"rootfs", "--format", "json", "--quiet", "--scanners", "vuln,misconfig", "--severity", "CRITICAL,HIGH,MEDIUM,LOW", "--skip-dirs", "/proc", "--skip-dirs", "/sys", "--skip-dirs", "/dev", "--skip-dirs", "/run", "--skip-dirs", "/var/lib/docker", "--output", outputFile, targetPath}
+	args := trivyRootfsArgs(outputFile, targetPath)
 	tool.Command = settings.VulnerabilityScan.Command + " " + strings.Join(args, " ")
 	runCtx, cancel := context.WithTimeout(ctx, time.Duration(settings.VulnerabilityScan.TimeoutSeconds)*time.Second)
 	defer cancel()
@@ -349,6 +349,27 @@ func runVulnerabilityScanner(ctx context.Context, settings config.Settings, exec
 	tool.Error = strings.TrimSpace(string(output))
 	artifacts = append(artifacts, Artifact{Name: "raw/trivy-output.txt", Content: output})
 	return tool, nil, artifacts
+}
+
+func trivyRootfsArgs(outputFile, targetPath string) []string {
+	return []string{
+		"rootfs",
+		"--format", "json",
+		"--quiet",
+		"--scanners", "vuln,misconfig",
+		"--severity", "CRITICAL,HIGH,MEDIUM,LOW",
+		"--skip-dirs", "/proc",
+		"--skip-dirs", "/sys",
+		"--skip-dirs", "/dev",
+		"--skip-dirs", "/run",
+		"--skip-dirs", "/var/lib/docker",
+		"--skip-files", "/etc/shadow",
+		"--skip-files", "/etc/shadow-",
+		"--skip-files", "/etc/gshadow",
+		"--skip-files", "/etc/gshadow-",
+		"--output", outputFile,
+		targetPath,
+	}
 }
 
 func limitFindings(findings []reports.Finding, limit int, notes *[]string, label string) []reports.Finding {

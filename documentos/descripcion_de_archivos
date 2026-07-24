@@ -12101,3 +12101,16 @@ scripts/vps_restore_validation.ps1
 definidos por cada llamada.
 2026-07-22 - `web/super/seguridad.html`: versiona el recurso JavaScript del
 panel de seguridad para que el navegador reciba la correccion CSRF de staging.
+2026-07-24 - Correcciones verificables de seguridad y Nextcloud P105
+- `backend/vpssecurity/config/config.go`, `reports/report.go` y `service.go`:
+  declaran el alcance real del escaneo (`container` u `host-local`) y marcan
+  cobertura incompleta cuando una herramienta habilitada no termina en `ok`.
+- `backend/vpssecurity/scanner/runner.go` y `parser/nmap.go`: Trivy excluye
+  solo archivos de credenciales no legibles del contenedor; Nmap clasifica
+  loopback como evidencia interna, no como exposicion publica.
+- `deploy/scripts/vps-configure-nextcloud-host-nginx.sh`: aplica de manera
+  idempotente una politica `frame-ancestors` restringida al dominio PCS, con
+  backup, validacion y rollback de Nginx, sin recrear Nextcloud ni ocultar su
+  CSP propia.
+- `web/nextcloud_empresa.css`: estilos externos del modulo empresarial de
+  Nextcloud para reducir CSP inline; `nextcloud.html` lo referencia.

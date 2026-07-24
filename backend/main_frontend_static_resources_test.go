@@ -55,6 +55,39 @@ func TestPublicDownloadsAreExplicitlyAllowlisted(t *testing.T) {
 	}
 }
 
+func TestNextcloudFramePolicyUsesExactOrigins(t *testing.T) {
+	raw, err := os.ReadFile(filepath.Join("..", "deploy", "nginx", "pcs.conf"))
+	if err != nil {
+		t.Fatalf("read frontend nginx config: %v", err)
+	}
+	config := string(raw)
+	origin := "https://nextcloud.powerfulcontrolsystem.com"
+	if count := strings.Count(config, origin); count != 2 {
+		t.Fatalf("Nextcloud origin must appear once in enforced CSP and once in report-only CSP; got %d", count)
+	}
+	if strings.Contains(config, "*.powerfulcontrolsystem.com") {
+		t.Fatal("Nextcloud framing must not rely on a wildcard company origin")
+	}
+
+	scriptRaw, err := os.ReadFile(filepath.Join("..", "deploy", "scripts", "vps-configure-nextcloud-host-nginx.sh"))
+	if err != nil {
+		t.Fatalf("read Nextcloud host Nginx script: %v", err)
+	}
+	script := string(scriptRaw)
+	for _, required := range []string{
+		"frame-ancestors 'self' $EMBED_ORIGIN",
+		"nginx -t",
+		"cp -a \"$backup\" \"$SITE_AVAILABLE\"",
+	} {
+		if !strings.Contains(script, required) {
+			t.Fatalf("Nextcloud host policy script is missing %q", required)
+		}
+	}
+	if strings.Contains(script, "proxy_hide_header Content-Security-Policy") || strings.Contains(script, "docker compose") {
+		t.Fatal("frame policy script must preserve vendor CSP and must not recreate Nextcloud")
+	}
+}
+
 func TestPanelGuidedSetupUsesCSRFAndNextcloudKeepsEmpresaContext(t *testing.T) {
 	panel, err := os.ReadFile(filepath.Join("..", "web", "administrar_empresa", "panel.html"))
 	if err != nil {

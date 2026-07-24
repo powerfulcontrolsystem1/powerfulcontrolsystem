@@ -7,7 +7,7 @@ Este archivo se genera con `node tools/ensure_bootstrap_inventory.mjs`. Inventar
 ## Resumen
 
 - Funciones inventariadas: 154.
-- Huella del catalogo legado: `b8e2c6f0f9cadcb58e39b77ff5132a7caba2d57ba5078fc6b5c4445b345bc912` (122 pasos).
+- Huella del catalogo legado: `506ce140616ca462c76d9ecc3823d60c2ef89999e61c898ea4e7161397252889` (122 pasos).
 - compatibilidad PostgreSQL: 2.
 - DDL / indice / funcion: 118.
 - DDL catalogado de plataforma: 4.

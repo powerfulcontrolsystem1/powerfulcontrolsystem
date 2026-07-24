@@ -29,7 +29,13 @@ type ScheduleSettings struct {
 	Cron    string `json:"cron"`
 }
 
+const (
+	ScopeContainer = "container"
+	ScopeHostLocal = "host-local"
+)
+
 type Settings struct {
+	Scope              string                    `json:"scope"`
 	TargetHost         string                    `json:"target_host"`
 	PortList           string                    `json:"port_list"`
 	Profile            string                    `json:"profile"`
@@ -101,6 +107,7 @@ func legacyDefaultConfigPath() string {
 func DefaultSettings() Settings {
 	dataDir := DefaultDataDir()
 	settings := Settings{
+		Scope:              DetectScope(),
 		TargetHost:         "127.0.0.1",
 		PortList:           "49222,80,443,5432,8080,8443",
 		Profile:            "full",
@@ -131,6 +138,25 @@ func DefaultSettings() Settings {
 		},
 	}
 	return settings
+}
+
+func DetectScope() string {
+	return detectScope("/.dockerenv", "/proc/1/cgroup")
+}
+
+func detectScope(containerMarkerPath, cgroupPath string) string {
+	if _, err := os.Stat(containerMarkerPath); err == nil {
+		return ScopeContainer
+	}
+	if raw, err := os.ReadFile(cgroupPath); err == nil {
+		lower := strings.ToLower(string(raw))
+		for _, marker := range []string{"docker", "containerd", "kubepods", "podman", "lxc"} {
+			if strings.Contains(lower, marker) {
+				return ScopeContainer
+			}
+		}
+	}
+	return ScopeHostLocal
 }
 
 func NewManager(path string) *Manager {
@@ -206,6 +232,9 @@ func writeSettings(path string, settings Settings) error {
 
 func normalize(settings *Settings) {
 	defaults := DefaultSettings()
+	// El alcance describe el runtime que ejecuta las herramientas. Se deriva en
+	// el servidor y nunca se acepta como una seleccion libre enviada por el panel.
+	settings.Scope = DetectScope()
 	settings.TargetHost = fallback(settings.TargetHost, defaults.TargetHost)
 	settings.PortList = fallback(settings.PortList, defaults.PortList)
 	settings.Profile = strings.ToLower(strings.TrimSpace(fallback(settings.Profile, defaults.Profile)))

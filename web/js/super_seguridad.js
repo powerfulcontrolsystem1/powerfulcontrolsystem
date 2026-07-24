@@ -93,6 +93,7 @@ function formatDate(value) {
 }
 
 function fillConfigForm(config) {
+  qs('scopeInput').value = config.scope || 'no detectado';
   qs('targetHostInput').value = config.target_host || '127.0.0.1';
   qs('portListInput').value = config.port_list || '22,80,443';
   qs('profileSelect').value = config.profile || 'full';
@@ -189,6 +190,8 @@ function renderSummary(report) {
   }
   const summary = report.summary || {};
   const metrics = [
+    { label: 'Alcance', value: report.scope || (report.config && report.config.scope) || 'no detectado' },
+    { label: 'Cobertura', value: summary.coverage_status || 'desconocida' },
     { label: 'Crítico', value: summary.critical || 0 },
     { label: 'Alto', value: summary.high || 0 },
     { label: 'Medio', value: summary.medium || 0 },
@@ -402,7 +405,7 @@ async function loadHistory() {
         '<tr>',
         '<td>' + escapeHTML(formatDate(item.generated_at)) + '</td>',
         '<td class="mono">' + escapeHTML(item.scan_id) + '</td>',
-        '<td>' + escapeHTML(item.target_host || 'N/D') + '<br><small>' + escapeHTML(item.profile || '') + '</small></td>',
+        '<td>' + escapeHTML(item.target_host || 'N/D') + '<br><small>' + escapeHTML((item.scope || 'sin alcance') + ' · ' + (item.profile || '') + ' · cobertura ' + (item.coverage_status || 'desconocida')) + '</small></td>',
         '<td><span class="severity-pill ' + severity + '">' + escapeHTML(item.highest_severity || 'INFO') + '</span></td>',
         '<td>' + escapeHTML(item.total_findings || 0) + '</td>',
         '<td>' + escapeHTML((item.new_findings || 0) + ' / ' + (item.resolved_findings || 0)) + '</td>',
