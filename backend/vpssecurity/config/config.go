@@ -148,6 +148,7 @@ func detectScope(containerMarkerPath, cgroupPath string) string {
 	if _, err := os.Stat(containerMarkerPath); err == nil {
 		return ScopeContainer
 	}
+	// #nosec G304 -- cgroupPath is the fixed runtime probe /proc/1/cgroup in production; tests pass a temp fixture.
 	if raw, err := os.ReadFile(cgroupPath); err == nil {
 		lower := strings.ToLower(string(raw))
 		for _, marker := range []string{"docker", "containerd", "kubepods", "podman", "lxc"} {
