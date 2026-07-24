@@ -76,6 +76,7 @@ func TestNextcloudFramePolicyUsesExactOrigins(t *testing.T) {
 	script := string(scriptRaw)
 	for _, required := range []string{
 		"frame-ancestors 'self' $EMBED_ORIGIN",
+		"Nextcloud ya emite frame-ancestors",
 		"nginx -t",
 		"cp -a \"$backup\" \"$SITE_AVAILABLE\"",
 	} {

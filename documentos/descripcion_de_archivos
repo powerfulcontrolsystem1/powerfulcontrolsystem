@@ -12050,6 +12050,11 @@ scripts/vps_restore_validation.ps1
   controlada por dominio para el piloto del Plan 105. Distingue modulos P0 de
   integraciones y verticales que permanecen fuera hasta contar con evidencia y
   aprobacion expresa.
+2026-07-24 - Plan 105, ampliacion CxP de proveedores
+- `documentos/plan_105.md`: incorpora P105-023, el diseno ejecutable de credito
+  y cuentas por pagar a proveedores por empresa. Exige una ADR de fuente de
+  verdad antes de crear tablas, movimientos idempotentes, conciliacion,
+  permisos separados, pruebas A/B y aprobacion previa a pagos reales.
 2026-07-21 - `documentos/arquitectura/inventario_goroutines_plan_105.md`: matriz
   estatica de los 23 lanzamientos `go func` para P105-005, con propietario,
   durabilidad, prioridad y pasos ejecutables para Terra; no sustituye pruebas
