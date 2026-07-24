@@ -23,6 +23,7 @@ func TestForwardedHeadersIgnoredOutsideTrustedProxy(t *testing.T) {
 
 func TestSecurityHeadersAndNoStoreOnLogin(t *testing.T) {
 	t.Setenv("ONLYOFFICE_DOCUMENT_SERVER_URL", "https://onlyoffice.example.test")
+	t.Setenv("NEXTCLOUD_BASE_URL", "https://nextcloud.example.test")
 	t.Setenv("PCS_CSP_CONNECT_ORIGINS", "https://api.example.test")
 	t.Setenv("PCS_CSP_IMG_ORIGINS", "https://images.example.test")
 	h := SecurityHeadersMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(http.StatusNoContent) }))
@@ -46,7 +47,7 @@ func TestSecurityHeadersAndNoStoreOnLogin(t *testing.T) {
 			t.Fatalf("CSP keeps broad source %q: %q", forbidden, policy)
 		}
 	}
-	for _, expected := range []string{"form-action 'self'", "https://onlyoffice.example.test", "https://api.example.test", "https://images.example.test", "https://lh3.googleusercontent.com"} {
+	for _, expected := range []string{"form-action 'self'", "https://onlyoffice.example.test", "https://nextcloud.example.test", "https://api.example.test", "https://images.example.test", "https://lh3.googleusercontent.com"} {
 		if !strings.Contains(policy, expected) {
 			t.Fatalf("CSP missing explicit source %q: %q", expected, policy)
 		}

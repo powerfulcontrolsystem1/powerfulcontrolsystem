@@ -157,6 +157,7 @@ func RunOnce(ctx context.Context, settings config.Settings, store *storepkg.Stor
 	report := &reports.ScanReport{
 		ScanID:      scanID,
 		Status:      "completed",
+		Scope:       settings.Scope,
 		GeneratedAt: time.Now().UTC().Format(time.RFC3339),
 		StartedAt:   startedAt.Format(time.RFC3339),
 		CompletedAt: time.Now().UTC().Format(time.RFC3339),
@@ -166,6 +167,7 @@ func RunOnce(ctx context.Context, settings config.Settings, store *storepkg.Stor
 		TargetHost:  settings.TargetHost,
 		Profile:     settings.Profile,
 		Config: reports.ConfigSnapshot{
+			Scope:                settings.Scope,
 			TargetHost:           settings.TargetHost,
 			PortList:             settings.PortList,
 			Profile:              settings.Profile,
@@ -208,7 +210,7 @@ func enabledTools(settings config.Settings) []string {
 		enabled = append(enabled, "nmap")
 	}
 	if settings.VulnerabilityScan.Enabled {
-		enabled = append(enabled, settings.VulnerabilityScan.Provider)
+		enabled = append(enabled, "vulnerability_scan")
 	}
 	return enabled
 }

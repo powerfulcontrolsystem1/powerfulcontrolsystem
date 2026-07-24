@@ -3,6 +3,7 @@ package parser
 import (
 	"encoding/xml"
 	"fmt"
+	"net"
 	"strings"
 
 	"github.com/you/pos-backend/vpssecurity/reports"
@@ -22,9 +23,9 @@ type nmapAddress struct {
 }
 
 type nmapPort struct {
-	PortID  int          `xml:"portid,attr"`
-	State   nmapState    `xml:"state"`
-	Service nmapService  `xml:"service"`
+	PortID  int         `xml:"portid,attr"`
+	State   nmapState   `xml:"state"`
+	Service nmapService `xml:"service"`
 }
 
 type nmapState struct {
@@ -32,9 +33,9 @@ type nmapState struct {
 }
 
 type nmapService struct {
-	Name     string `xml:"name,attr"`
-	Product  string `xml:"product,attr"`
-	Version  string `xml:"version,attr"`
+	Name      string `xml:"name,attr"`
+	Product   string `xml:"product,attr"`
+	Version   string `xml:"version,attr"`
 	ExtraInfo string `xml:"extrainfo,attr"`
 }
 
@@ -61,12 +62,20 @@ func ParseNmapXML(data []byte, fallbackTarget string) ([]reports.Finding, []int,
 			if serviceLabel == "" {
 				serviceLabel = strings.TrimSpace(port.Service.Name)
 			}
+			title := fmt.Sprintf("Puerto %d expuesto por %s", port.PortID, defaultString(serviceLabel, "servicio no identificado"))
+			description := "Nmap detecto el puerto como abierto y accesible en el host auditado."
+			if isLoopbackTarget(target) {
+				severity = reports.SeverityInfo
+				title = fmt.Sprintf("Puerto %d interno en loopback por %s", port.PortID, defaultString(serviceLabel, "servicio no identificado"))
+				description = "Nmap detecto el puerto dentro del loopback del runtime auditado; este resultado no demuestra exposicion publica."
+				recommendation = "Confirme que el servicio sea esperado y que Docker o el host no publiquen este puerto en una interfaz externa."
+			}
 			findings = append(findings, reports.Finding{
 				Tool:           "nmap",
 				Category:       "puertos",
 				Severity:       severity,
-				Title:          fmt.Sprintf("Puerto %d expuesto por %s", port.PortID, defaultString(serviceLabel, "servicio no identificado")),
-				Description:    "Nmap detecto el puerto como abierto y accesible en el host auditado.",
+				Title:          title,
+				Description:    description,
 				Recommendation: recommendation,
 				Target:         target,
 				Port:           port.PortID,
@@ -77,6 +86,15 @@ func ParseNmapXML(data []byte, fallbackTarget string) ([]reports.Finding, []int,
 	}
 	summary := fmt.Sprintf("%d puertos abiertos detectados", len(openPorts))
 	return findings, openPorts, summary, nil
+}
+
+func isLoopbackTarget(target string) bool {
+	target = strings.TrimSpace(strings.ToLower(target))
+	if target == "localhost" {
+		return true
+	}
+	ip := net.ParseIP(target)
+	return ip != nil && ip.IsLoopback()
 }
 
 func nmapSeverityForPort(port int, service string) (reports.Severity, string) {

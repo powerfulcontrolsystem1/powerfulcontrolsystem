@@ -38976,3 +38976,16 @@ Archivos modificados:
   Trivy ejecutable dentro del contenedor. Trivy aun falla al leer
   `/etc/shadow-` por permisos; el hallazgo queda abierto junto con los 27
   hallazgos de hardening y el puerto 8080 expuesto.
+2026-07-24: Correccion de evidencia de seguridad y marco Nextcloud P105-003/P105-013/P105-014.
+- El inventario de bootstrap canonicaliza finales de linea a CRLF al calcular
+  sus huellas. Se regeneraron 21 huellas heredadas afectadas solo por EOL; no
+  se modifico DDL ni el checksum inmutable de migraciones ya aplicadas.
+- Los reportes de seguridad identifican el runtime que ejecuta Lynis, Nmap y
+  Trivy. Un fallo, parcialidad o ausencia de una herramienta habilitada deja
+  `coverage_status=incompleta`; no se interpreta como un escaneo completo.
+- Trivy omite exclusivamente `/etc/shadow`, `/etc/shadow-`, `/etc/gshadow` y
+  `/etc/gshadow-`, manteniendo el backend sin privilegios, de solo lectura y
+  sin capacidades. Los puertos loopback se muestran como internos.
+- La CSP de PCS permite solo el origen exacto de Nextcloud en `frame-src`.
+  El script de host agrega `frame-ancestors` para PCS, conserva CSP/XFO del
+  proveedor y nunca ejecuta Docker Compose. Falta validarlo tras despliegue.

@@ -134,7 +134,13 @@ En este modo, el host conserva solo Docker, firewall/SSH, cron de renovacion si 
 - `edge`: Nginx publico Docker para `80/443`, proxy HTTPS y ACME webroot.
 - `certbot`: emision/renovacion de certificados Let's Encrypt usando volumen Docker.
 - `onlyoffice-documentserver`: OnlyOffice con JWT.
-- Nextcloud ya no forma parte del Compose oficial. Si quedan contenedores o volumenes antiguos, ejecutar `deploy/scripts/vps-remove-nextcloud.sh` en la VPS y usar `--purge-data` solo despues de confirmar que no se requiere recuperacion.
+- Nextcloud no forma parte del Compose nucleo. La instancia empresarial activa se
+  mantiene como stack externo heredado en el VPS principal; no ejecutar
+  `vps-remove-nextcloud.sh`, `docker compose up` ni purgas sobre ella mientras
+  existan empresas aprovisionadas. Su reconciliacion, backup/restauracion y
+  actualizacion mayor se hacen como cambio de infraestructura separado. Para
+  habilitar el iframe sin recrear el stack, usar
+  `deploy/scripts/vps-configure-nextcloud-host-nginx.sh`.
 - `voice-stream`: servicio FastAPI/Piper para voz IA.
 - `rustdesk-hbbs`, `rustdesk-hbbr`: relay/ID server RustDesk.
 - `mailu-*`: perfil opcional `mail` para correo empresarial portable con Mailu

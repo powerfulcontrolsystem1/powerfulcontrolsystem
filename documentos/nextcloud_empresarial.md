@@ -1,5 +1,27 @@
 # Nextcloud empresarial
 
+## Actualizacion 2026-07-24 - iframe restringido y version heredada
+
+El shell PCS debe declarar de forma explicita
+`https://nextcloud.powerfulcontrolsystem.com` en el `frame-src` de las dos CSP
+que sirve `deploy/nginx/pcs.conf`. El proxy externo de Nextcloud se ajusta con
+`deploy/scripts/vps-configure-nextcloud-host-nginx.sh`: agrega una CSP enforced
+con `frame-ancestors 'self' https://powerfulcontrolsystem.com`, crea respaldo,
+ejecuta `nginx -t` y recarga solo Nginx. Conserva tanto la CSP del proveedor
+como `X-Frame-Options: SAMEORIGIN`; los navegadores actuales aplican
+`frame-ancestors` y los clientes antiguos siguen fallando cerrados.
+
+El script valida que el sitio corresponde al dominio y al upstream
+`127.0.0.1:8090`; no crea, recrea, actualiza ni elimina contenedores. Antes de
+aplicarlo se debe tener backup verificable y despues comprobar visualmente el
+contenido real dentro del iframe, las cabeceras, WebDAV y OCS.
+
+La instancia observada sigue en Nextcloud 29 con MariaDB, mientras que un
+compose heredado no versionado difiere. Nextcloud 29 no es soporte vigente:
+queda NO-GO para produccion general hasta reconciliar el compose real, probar
+restauracion y actualizar de a una version mayor en staging. Esta restriccion
+no autoriza migrar el motor de datos ni ejecutar `docker compose up`.
+
 ## Actualizacion 2026-07-21 - cuentas personales y acceso empresarial
 
 La configuracion de Super administrador permite crear cuentas personales de
