@@ -39002,3 +39002,8 @@ Archivos modificados:
   configuracion Nginx desde el backup del intento; el script de host ahora falla
   de forma segura si detecta `frame-ancestors` upstream, sin ocultar la CSP que
   contiene nonces dinamicos.
+2026-07-24: Correccion de sonda CSP Nextcloud.
+- La respuesta inicial de Nextcloud es una redireccion 302 sin
+  `frame-ancestors`; la sonda del script ahora sigue redirecciones y analiza las
+  cabeceras de la respuesta final. El intento que encontro esta limitacion se
+  restauro desde su backup antes de aplicar este cambio.
