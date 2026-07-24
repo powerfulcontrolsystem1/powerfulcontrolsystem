@@ -6,7 +6,7 @@ la prueba automatica**.
 
 Veredicto actual: **NO-GO para produccion general**.
 
-Avance comprobado del plan: **97%** (avance de trabajo y evidencia; no
+Avance comprobado del plan: **94%** (avance de trabajo y evidencia; no
 equivale a autorizacion GO para produccion general).
 
 Fecha de corte: 2026-07-24.
@@ -15,13 +15,13 @@ Repositorio auditado: `D:\powerfulcontrolsystem`.
 
 Rama auditada: `main`.
 
-Commit auditado: `f8f388b7` (merge publicado mediante `rs`; contiene el cierre
+Commit auditado: `5bbd4e62` (merge publicado mediante `rs`; contiene el cierre
 Trivy y la integracion visual de Nextcloud).
 
 Referencias locales al corte:
 
-- `main`: `f8f388b7`.
-- `origin/main`: `f8f388b7`.
+- `main`: `5bbd4e62`.
+- `origin/main`: `5bbd4e62`.
 
 Modelo previsto para ejecutar este plan: **Codex Terra, esfuerzo medio**.
 
@@ -688,10 +688,16 @@ aceptacion explicita, y el indice se deriva de evidencia viva.
 
 ### P105-014 - Politica CSP sin `unsafe-inline` [P1]
 
-Actualizacion 2026-07-24: Nextcloud ya tiene una excepcion minimamente acotada
-por origen exacto en `frame-src` y su pagina empresarial movio estilos a un
-archivo externo. No cierra la retirada global de `unsafe-inline`: el inventario
-de scripts, estilos y handlers inline sigue siendo amplio.
+Actualizacion 2026-07-24: PCS permite el origen exacto de Nextcloud en
+`frame-src` y su pagina empresarial movio estilos a un archivo externo. La
+prueba autenticada posterior a `rs` confirma que Nextcloud 29 conserva
+`frame-ancestors 'self'` y `X-Frame-Options: SAMEORIGIN`; un segundo encabezado
+Nginx no lo amplía, lo intersecta y el navegador rechaza el iframe. Se restauro
+el sitio Nginx desde su backup. El script de host ahora falla antes de escribir
+si detecta esa directiva; queda pendiente una solucion soportada por Nextcloud
+o un filtro de encabezados que preserve sus nonces. No cierra la retirada global
+de `unsafe-inline`: el inventario de scripts, estilos y handlers inline sigue
+siendo amplio.
 
 Acciones:
 
@@ -836,6 +842,81 @@ servicio externo o implementacion compatible con la politica del proyecto.
 Aceptacion: no queda impacto de la prueba o queda expresamente aceptado y
 trazado; ninguna venta, devolucion o factura fue creada por limpieza accidental.
 
+### P105-023 - Credito y cuentas por pagar a proveedores multiempresa [P0 antes del piloto financiero]
+
+Objetivo: consolidar un modulo de obligaciones con proveedores que permita
+registrar compras a credito, facturas por pagar, anticipos, abonos, ajustes,
+vencimientos, conciliaciones y reportes de cartera, sin duplicar los flujos o
+tablas ya existentes de CxP. Cada lectura, escritura, exportacion, archivo,
+trabajo en segundo plano y auditoria debe estar aislado por `empresa_id`.
+
+Referencia funcional investigada: el enfoque documentado publicamente por Siigo
+presenta deuda, saldo a favor, vencido y por vencer por proveedor; discrimina
+documentos/cuotas/vencimientos, permite ajustes y cruces, y carga saldos
+iniciales por documento, proveedor, fecha de vencimiento y moneda. Es una
+referencia de comportamiento, no una copia de su implementacion ni de su UX.
+
+1. **Descubrimiento y decision de reutilizacion.** Inventariar y probar
+   `empresa_contabilidad_cartera_cxp`, `empresa_cuentas_por_pagar`,
+   `empresa_proveedores`, `empresa_compras_documentos`, los soportes de compra,
+   los reportes de edades y sus handlers/UI. Redactar una ADR que decida una
+   sola fuente de verdad para saldo y movimientos; prohibido crear una segunda
+   cartera paralela. Mapear importacion de saldos, compras existentes y puente
+   contable antes de toda migracion.
+2. **Modelo y reglas inmutables.** Para cada documento conservar empresa,
+   proveedor validado dentro de esa empresa, origen, consecutivo externo,
+   moneda/tasa, fecha de emision/vencimiento, cuotas, impuestos/retenciones,
+   importe original, saldo, terminos de credito y estado. Estados minimos:
+   borrador, aprobado, parcialmente_pagado, pagado, vencido, en_disputa y
+   anulado. Un documento aprobado conserva historial; una anulacion o nota de
+   credito revierte por movimiento trazable, nunca borra una deuda pagada.
+3. **Movimientos y concurrencia.** Modelar abonos, anticipos, descuentos,
+   notas credito/debito y cruces como asignaciones con identificador de
+   idempotencia, actor, fecha y evidencia. En una transaccion PostgreSQL con
+   bloqueo acotado, impedir que la suma asignada exceda el saldo salvo ajuste
+   autorizado; actualizar saldo y auditoria atomicos. No enviar pagos bancarios
+   ni integrar una pasarela en este bloque: registrar/proponer pago no equivale
+   a ordenar dinero.
+4. **Contabilidad, importacion y conciliacion.** Disenar saldos iniciales por
+   proveedor-documento-cuota-vencimiento, incluyendo anticipos/saldos a favor y
+   fecha de corte; validar totales antes de confirmar y conservar referencia al
+   comprobante/puente contable sin duplicar asientos. Implementar conciliacion
+   de proveedor que muestre documentos y creditos aplicables, con reverso
+   auditable y sin edicion destructiva de un cruce cerrado.
+5. **Permisos y seguridad.** Separar permisos por empresa: compras registra y
+   recibe; contabilidad aprueba/ajusta/concili­a; tesoreria propone o registra
+   pago; administrador financiero aprueba excepciones. Todos los endpoints
+   derivan `empresa_id` de sesion/contexto, validan proveedor y documento en la
+   misma empresa, usan CSRF/autorizacion/auditoria y no aceptan el tenant del
+   cliente como autoridad. Aplicar el checklist de seguridad multiempresa y
+   pruebas de enumeracion IDOR, cache, exportacion y jobs.
+6. **UX y reportes.** Integrar en Administrar empresa, no como pagina global:
+   tablero de deuda, credito a favor, vencido/por vencer y proximos pagos;
+   estado de cuenta por proveedor; detalle por documento/cuota; edad de cartera
+   (corriente, 1-30, 31-60, 61-90 y >90); propuesta de pagos; ajustes y
+   conciliacion. Filtrar por fecha de corte, proveedor, estado, centro de costo
+   y moneda. Mostrar origen, saldo y validaciones visibles; nunca mostrar una
+   accion bancaria como completada solo por registrar un abono.
+7. **Migracion y compatibilidad.** Crear migraciones versionadas e idempotentes
+   solo si la ADR demuestra que hacen falta. Preparar migrador con conteos,
+   sumas por empresa y rollback probado; no ejecutar DDL en handlers/worker.
+   Los datos historicos deben poder relacionarse con el nuevo detalle sin
+   cambiar saldos ni generar doble contabilizacion.
+8. **Pruebas obligatorias.** Unitarias e integracion PostgreSQL para saldos,
+   vencimientos, cuotas, monedas, redondeo, creditos, anulaciones, idempotencia,
+   sobreasignacion y rollback. Ejecutar A/B real con dos empresas para proveedor
+   compartido en nombre/NIT, documentos, reportes, archivos y exportaciones;
+   incluir carrera de dos abonos concurrentes. Validar visualmente con rol de
+   compras, contabilidad y tesoreria, escritorio/movil y estados de error. En
+   staging, reconciliar conteos/saldos antes y despues de migrar una copia
+   anonimizada y restaurarla.
+9. **Criterio de aceptacion.** Por cada empresa, la suma de movimientos y
+   asignaciones coincide con saldo/reportes y contabilidad; no existe acceso A/B
+   ni saldo negativo no autorizado; cada cambio tiene actor/evidencia y los
+   reversos conservan historia. Se requiere aprobacion explicita antes de
+   habilitar pagos reales, importar datos productivos o ejecutar una orden
+   bancaria.
+
 ## 12. Matriz minima de regresion antes del GO
 
 | Capa | Casos obligatorios |
@@ -844,6 +925,7 @@ trazado; ninguna venta, devolucion o factura fue creada por limpieza accidental.
 | Multiempresa | A/B por query/path/header/body/ID, roles, licencia, archivos, cache, jobs, exports y auditoria |
 | POS | busqueda, scanner, cantidades, stock, descuentos, impuestos, pagos mixtos, caja, cancelacion autorizada y concurrencia |
 | Finanzas | duplicado, replay, timeout, conciliacion, comision, redondeo, moneda y cierre |
+| CxP proveedores | A/B, documento/cuota/vencimiento, saldo inicial, anticipo, abono concurrente, sobreasignacion, ajuste/reverso, conciliacion, moneda, reporte de edades, exportacion y roles |
 | DIAN | preflight, firma, envio, consulta final, rechazo, reintento idempotente y persistencia por empresa |
 | Documentos | upload, MIME/tamano, edicion, descarga, URL firmada, borrado, cuota, A/B y restore |
 | Worker | lease, retry, reinicio, vencimiento, dead letter, concurrencia y metrica |
@@ -925,7 +1007,7 @@ Actualizar esta tabla al terminar cada bloque, sin marcar evidencia futura:
 | P105-009 | En curso | - | CI/staging | suite Go completa, `go vet ./...` y builds de migrador/worker pasan nuevamente tras redacciones P105-006; smoke de carga staging: 80 requests, error rate 0%, P95 821 ms; el host local confirma `CGO_ENABLED=0`, por lo que `go test -race` no puede ejecutarse aquí; falta resultado race Linux sobre SHA candidato y carga sostenida real | carreras/capacidad | - |
 | P105-010 | En curso | - | local/VPS/staging | `/health` y `/ready` core/staging 200; volumen de logs staging corregido a usuario `pcs` y el backend ya arranca sin `permission denied`; dashboard visual staging muestra continuidad 0/100, 295 eventos críticos y 161 sesiones frente a umbral 50; consulta read-only de producción registra 2034 sesiones activas (1874 con fecha_fin no vacía), lo que exige reconciliar métrica/limpieza gobernada. No se ejecutaron botones mutantes | ceguera operativa/sesiones | - |
 | P105-011 | En curso | - | proveedor/TLS | TLS valido y respuestas minimas 200 de OnlyOffice/Nextcloud confirmadas; faltan E2E de proveedor y reconciliacion autorizada. Runbook: `documentos/gobernanza_tecnica/runbooks/runbook_tls_staging_y_servicios_plan_105.md` | externos/reconciliacion | usuario |
-| P105-012 | En curso | pendiente de SHA | producción/navegador real | el iframe y sus politicas fueron corregidos localmente; falta comprobacion visual real post-despliegue de contenido Nextcloud, sin acciones mutantes | validación post-deploy | - |
+| P105-012 | Bloqueado | `5bbd4e62` | producción/navegador real | login real empresa 12: shell y cuenta/quota cargan, pero iframe muestra "rechazó la conexión". Nextcloud 29 emite `frame-ancestors 'self'`/`SAMEORIGIN`; prueba de header Nginx fue revertida desde backup tras validar config | requiere politica soportada que preserve CSP nonce; no usar cabeceras duplicadas | usuario |
 | P105-013 | En curso | pendiente de SHA | local/VPS | pruebas de alcance, cobertura, Trivy y loopback pasan; falta escaneo vivo que termine con Trivy `ok` y auditoria real del host Ubuntu separada | hardening/telemetría | - |
 | P105-014 | En curso | pendiente de SHA | local/produccion/staging | origen Nextcloud exacto y estilos del modulo externos; retirada total de `unsafe-inline` aun pendiente | CSP/deriva | - |
 | P105-015 | Pendiente | - | staging | storage externo no demostrado | archivos/replicas | - |
@@ -936,6 +1018,7 @@ Actualizar esta tabla al terminar cada bloque, sin marcar evidencia futura:
 | P105-020 | Pendiente | - | decision | sin fuente movil | no reproducible | usuario |
 | P105-021 | Pendiente | - | decision | perfil Python apagado | excepcion tecnica | usuario |
 | P105-022 | Pendiente | - | produccion controlada | carrito QA abierto | reserva/stock | usuario |
+| P105-023 | Pendiente | - | diseno/staging | alcance agregado: ADR de fuente de verdad CxP, inventario de tablas/flujos existentes y matriz A/B aun pendientes | fuga tenant, doble cartera o doble contabilizacion | usuario |
 
 Estados permitidos: `Pendiente`, `En curso`, `Bloqueado`, `Aprobado`,
 `No aplica con aprobacion`. Nunca usar "Aprobado" si falta evidencia externa.

@@ -38989,3 +38989,16 @@ Archivos modificados:
 - La CSP de PCS permite solo el origen exacto de Nextcloud en `frame-src`.
   El script de host agrega `frame-ancestors` para PCS, conserva CSP/XFO del
   proveedor y nunca ejecuta Docker Compose. Falta validarlo tras despliegue.
+2026-07-24: Plan 105 - alcance de credito a proveedores P105-023.
+- Se agrega al plan el modulo de cuentas por pagar, credito, anticipos, abonos,
+  ajustes, vencimientos y conciliaciones de proveedores. La ejecucion debe
+  reutilizar o consolidar la CxP existente tras una ADR, conservar aislamiento
+  estricto por `empresa_id`, no duplicar contabilidad y no habilitar pagos
+  reales sin autorizacion posterior.
+2026-07-24: Validacion real de iframe Nextcloud tras `rs`.
+- La prueba autenticada de Powerful Control System conserva el shell de
+  Administrar Empresa y muestra la cuenta aprovisionada, pero el iframe es
+  rechazado por la CSP/X-Frame-Options nativa de Nextcloud. Se restauro la
+  configuracion Nginx desde el backup del intento; el script de host ahora falla
+  de forma segura si detecta `frame-ancestors` upstream, sin ocultar la CSP que
+  contiene nonces dinamicos.
