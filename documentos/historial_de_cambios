@@ -1,6 +1,9 @@
 2026-07-26: Plan 108 / DIAN - volumen heredado con contenedor restringido.
 - `deploy/scripts/vps-migrate-private-dian.sh` dejó de intentar `chown` dentro del backend endurecido con `cap_drop: ALL`. El script resuelve el origen real de `/app/web/uploads`, valida rutas canónicas y ajusta solo los PEM de la empresa solicitada antes de migrarlos al almacenamiento privado.
 - `backend/main_dian_private_migration_contract_test.go` impide regresar al enfoque incompatible con el contenedor y conserva los controles de alcance por empresa, categoría y ausencia de operaciones recursivas.
+- El diagnóstico real confirmó que el directorio padre `facturacion_electronica`
+  permanecía en `root:root 0700`; el runbook ahora valida su ruta canónica y
+  asigna `10001:10001 0700` únicamente a ese padre de la empresa solicitada.
 
 2026-07-22: Herramientas de seguridad y cierre de vulnerabilidad P105-013.
 - `backend/go.mod` y `backend/go.sum` actualizan `golang.org/x/text` a v0.39.0
