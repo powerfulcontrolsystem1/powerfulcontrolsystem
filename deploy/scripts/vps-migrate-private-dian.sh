@@ -60,6 +60,21 @@ else
         exit 8
         ;;
     esac
+    facturacion_dir="$(dirname "$signature_dir")"
+    [ ! -L "$facturacion_dir" ] || {
+      echo "[dian-private] ERROR: se rechazo una carpeta de facturacion simbolica." >&2
+      exit 9
+    }
+    facturacion_real="$(readlink -f "$facturacion_dir")"
+    case "$facturacion_real" in
+      "$uploads_root_real"/empresa_"$EMPRESA_ID"_*/facturacion_electronica) ;;
+      *)
+        echo "[dian-private] ERROR: carpeta de facturacion fuera del alcance permitido." >&2
+        exit 10
+        ;;
+    esac
+    chown 10001:10001 "$facturacion_dir"
+    chmod 0700 "$facturacion_dir"
     chown 10001:10001 "$signature_dir"
     chmod 0700 "$signature_dir"
     find "$signature_dir" -mindepth 1 -maxdepth 1 -type f -name '*.pem' \

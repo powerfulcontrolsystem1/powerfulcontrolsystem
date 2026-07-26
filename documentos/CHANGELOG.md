@@ -5,7 +5,7 @@
 - [Docker] Las imágenes asignan propietario durante `COPY` y dejan de ejecutar `chown -R /app`; una construcción fría real había quedado más de 25 minutos recorriendo el árbol duplicado del proyecto.
 
 ## [2026-07-26] Firma DIAN heredada en volumen restringido
-- [DIAN] El runbook de migración privada resuelve y valida el volumen exacto de uploads en el host, rechaza escapes por enlaces simbólicos y ajusta solo la carpeta de firma de `empresa_id` solicitado.
+- [DIAN] El runbook de migración privada resuelve y valida el volumen exacto de uploads en el host, rechaza escapes por enlaces simbólicos y ajusta solo la carpeta de facturación y firma de `empresa_id` solicitado para permitir el recorrido completo hasta los PEM.
 - [Seguridad] La migración y la verificación siguen ejecutándose como usuario no privilegiado dentro del backend; se elimina la dependencia incompatible de `chown` dentro del contenedor con todas las capacidades Linux retiradas.
 
 ## [2026-07-13] Correcciones de preproduccion: panel, Nextcloud y archivos
