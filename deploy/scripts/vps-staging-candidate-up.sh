@@ -21,6 +21,18 @@ require_command() {
   command -v "$1" >/dev/null 2>&1 || fail "Falta el comando requerido: $1"
 }
 
+wait_for_staging_endpoint() {
+  local endpoint="$1"
+  local attempt
+  for attempt in {1..9}; do
+    if curl -fsS --max-time 10 "http://127.0.0.1:${HTTP_PORT}${endpoint}" >/dev/null; then
+      return 0
+    fi
+    sleep 5
+  done
+  fail "Staging no respondió ${endpoint} después de construir el candidato."
+}
+
 [ -n "$CANDIDATE_REF" ] || fail "Defina CANDIDATE_REF con la rama o referencia candidata."
 [ -n "$CANDIDATE_SHA" ] || fail "Defina CANDIDATE_SHA con el commit inmutable aprobado."
 [ "${RESET_STAGING:-0}" = "0" ] || fail "RESET_STAGING no está permitido para un candidato P108."
@@ -74,11 +86,7 @@ compose=(docker compose --env-file "$STAGING_ENV"
 "${compose[@]}" config --quiet
 "${compose[@]}" up -d --build
 
-if ! curl -fsS --max-time 45 "http://127.0.0.1:${HTTP_PORT}/health" >/dev/null; then
-  fail "Staging no respondió health después de construir el candidato."
-fi
-if ! curl -fsS --max-time 45 "http://127.0.0.1:${HTTP_PORT}/ready" >/dev/null; then
-  fail "Staging no respondió ready después de construir el candidato."
-fi
+wait_for_staging_endpoint "/health"
+wait_for_staging_endpoint "/ready"
 
 echo "[OK] Candidato staging activo. SHA=${CANDIDATE_SHA} worktree=${WORKTREE_DIR} puerto=${HTTP_PORT}"
