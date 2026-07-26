@@ -2847,7 +2847,7 @@ func facturacionBuildOperacionPayloadFromDocumento(doc dbpkg.EmpresaDocumentoFac
 	}
 }
 
-const facturacionNotaCreditoFacturaOrigenMarker = "FACTURA_ORIGEN="
+const facturacionNotaCreditoFacturaOrigenMarker = "FACTURA_ORIGEN=" // #nosec G101 -- prefijo documental publico, no es una credencial.
 
 func facturacionIntegracionAceptada(resultado facturacionIntegracionResultado) bool {
 	return strings.EqualFold(strings.TrimSpace(resultado.EstadoEnvio), "aceptado")
