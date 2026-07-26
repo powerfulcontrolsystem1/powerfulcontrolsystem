@@ -39636,9 +39636,8 @@ Archivos modificados:
   - Entregabilidad: dos correos reales enviados a la cuenta PCS fueron aceptados
     por Gmail. El encabezado original mostro `SPF PASS`, `DKIM PASS` y
     `DMARC PASS`; la entrega tomo entre uno y cuatro segundos.
-  - PTR: se solicito en Hostinger cambiar el reverso IPv4 del hostname generico
-    del VPS a `mail.powerfulcontrolsystem.com`; queda sujeto a propagacion del
-    proveedor.
+  - PTR: Hostinger aplico el reverso IPv4 a `mail.powerfulcontrolsystem.com`;
+    la comprobacion FCrDNS confirma que el hostname vuelve a `2.24.197.58`.
   - Imagen: los correos HTML usan el logo del computador
     `web/img/Logo pcs 1.png`, confirmado visualmente en Gmail. El avatar del
     remitente depende de BIMI, cache, politica del cliente y, en Gmail, de un

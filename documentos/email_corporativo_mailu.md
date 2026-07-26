@@ -236,8 +236,9 @@ Antes de activar correo real:
 - BIMI esta publicado en `default._bimi.powerfulcontrolsystem.com` y apunta a
   `https://powerfulcontrolsystem.com/img/bimi-pcs.svg`.
 - El MX prioridad 10 apunta a `mail.powerfulcontrolsystem.com`.
-- Se solicito al proveedor cambiar el PTR/rDNS IPv4 de `2.24.197.58` a
-  `mail.powerfulcontrolsystem.com`; la propagacion puede tardar varias horas.
+- PTR/rDNS IPv4 confirmado: `2.24.197.58` resuelve en reverso a
+  `mail.powerfulcontrolsystem.com` y ese hostname vuelve a `2.24.197.58`
+  (FCrDNS valido).
 - Prueba real hacia Gmail: entrega aceptada en uno a cuatro segundos, con
   `SPF PASS`, `DKIM PASS` para `powerfulcontrolsystem.com` y `DMARC PASS`.
   Gmail mostro correctamente el PNG del computador embebido por CID en el
