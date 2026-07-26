@@ -9,6 +9,7 @@ CANDIDATE_REF="${CANDIDATE_REF:-}"
 CANDIDATE_SHA="${CANDIDATE_SHA:-}"
 WORKTREE_DIR="${WORKTREE_DIR:-/root/powerfulcontrolsystem-staging-candidate}"
 STAGING_ENV="${STAGING_ENV:-$PROJECT_DIR/deploy/.env.staging}"
+SOURCE_REPOSITORY="${SOURCE_REPOSITORY:-https://github.com/powerfulcontrolsystem1/powerfulcontrolsystem.git}"
 HTTP_PORT="${HTTP_PORT:-8082}"
 
 fail() {
@@ -34,23 +35,36 @@ if [ "$WORKTREE_DIR" = "$PROJECT_DIR" ]; then
 fi
 
 [ -f "$STAGING_ENV" ] || fail "No existe el archivo de entorno staging indicado."
-[ -d "$PROJECT_DIR/.git" ] || fail "PROJECT_DIR no es un checkout Git válido."
 
-cd "$PROJECT_DIR"
-git fetch --quiet origin "$CANDIDATE_REF"
-resolved_sha="$(git rev-parse FETCH_HEAD)"
-if [ "$resolved_sha" != "$CANDIDATE_SHA" ]; then
-  fail "La referencia candidata no coincide con el SHA aprobado."
-fi
-
-if [ -e "$WORKTREE_DIR" ]; then
-  [ -d "$WORKTREE_DIR" ] || fail "WORKTREE_DIR existe y no es un directorio."
-  existing_sha="$(git -C "$WORKTREE_DIR" rev-parse HEAD 2>/dev/null || true)"
-  if [ "$existing_sha" != "$CANDIDATE_SHA" ]; then
-    fail "WORKTREE_DIR ya contiene otro commit; revíselo o elimínelo manualmente."
+if [ -d "$PROJECT_DIR/.git" ]; then
+  cd "$PROJECT_DIR"
+  git fetch --quiet origin "$CANDIDATE_REF"
+  resolved_sha="$(git rev-parse FETCH_HEAD)"
+  if [ "$resolved_sha" != "$CANDIDATE_SHA" ]; then
+    fail "La referencia candidata no coincide con el SHA aprobado."
+  fi
+  if [ -e "$WORKTREE_DIR" ]; then
+    [ -d "$WORKTREE_DIR" ] || fail "WORKTREE_DIR existe y no es un directorio."
+    existing_sha="$(git -C "$WORKTREE_DIR" rev-parse HEAD 2>/dev/null || true)"
+    [ "$existing_sha" = "$CANDIDATE_SHA" ] || fail "WORKTREE_DIR ya contiene otro commit; revíselo o elimínelo manualmente."
+  else
+    git worktree add --detach "$WORKTREE_DIR" "$CANDIDATE_SHA"
   fi
 else
-  git worktree add --detach "$WORKTREE_DIR" "$CANDIDATE_SHA"
+  # VPS deployments commonly receive a source package without .git. Clone only
+  # the reviewed candidate into the isolated staging directory; never convert
+  # or modify the production package.
+  if [ -e "$WORKTREE_DIR" ]; then
+    [ -d "$WORKTREE_DIR" ] || fail "WORKTREE_DIR existe y no es un directorio."
+    existing_sha="$(git -C "$WORKTREE_DIR" rev-parse HEAD 2>/dev/null || true)"
+    [ "$existing_sha" = "$CANDIDATE_SHA" ] || fail "WORKTREE_DIR ya contiene otro commit; revíselo o elimínelo manualmente."
+  else
+    git clone --no-checkout "$SOURCE_REPOSITORY" "$WORKTREE_DIR"
+    git -C "$WORKTREE_DIR" fetch --quiet origin "$CANDIDATE_REF"
+    resolved_sha="$(git -C "$WORKTREE_DIR" rev-parse FETCH_HEAD)"
+    [ "$resolved_sha" = "$CANDIDATE_SHA" ] || fail "La referencia candidata clonada no coincide con el SHA aprobado."
+    git -C "$WORKTREE_DIR" checkout --detach "$CANDIDATE_SHA"
+  fi
 fi
 
 compose=(docker compose --env-file "$STAGING_ENV"

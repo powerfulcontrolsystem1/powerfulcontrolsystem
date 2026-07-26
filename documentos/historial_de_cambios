@@ -39518,3 +39518,6 @@ Archivos modificados:
 - El lanzador rechaza SHA ambiguo, worktree con otro commit, falta de entorno,
   `RESET_STAGING` y health/ready fallidos. No copia ni imprime secretos y no
   modifica el checkout productivo.
+- Se amplía para VPS que reciben un paquete sin `.git`: clona exclusivamente el
+  SHA candidato dentro del directorio aislado y reutiliza el entorno staging ya
+  existente, sin convertir ni modificar el paquete de producción.
