@@ -1,3 +1,7 @@
+## [2026-07-26] Firma DIAN heredada en volumen restringido
+- [DIAN] El runbook de migración privada resuelve y valida el volumen exacto de uploads en el host, rechaza escapes por enlaces simbólicos y ajusta solo la carpeta de firma de `empresa_id` solicitado.
+- [Seguridad] La migración y la verificación siguen ejecutándose como usuario no privilegiado dentro del backend; se elimina la dependencia incompatible de `chown` dentro del contenedor con todas las capacidades Linux retiradas.
+
 ## [2026-07-13] Correcciones de preproduccion: panel, Nextcloud y archivos
 - [Panel empresa] `No volver a mostrar` envia CSRF y conserva su estado por empresa en PostgreSQL.
 - [Nextcloud] La cuota configurada no se reemplaza en el arranque; las URLs se entregan solo a espacios activos y aprovisionados.

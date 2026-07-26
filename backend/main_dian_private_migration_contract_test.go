@@ -22,6 +22,8 @@ func TestDIANPrivateMigrationDeploymentContract(t *testing.T) {
 		`--confirm=MIGRATE_PRIVATE_UPLOADS`,
 		`find "$signature_dir" -mindepth 1 -maxdepth 1 -type f -name '*.pem'`,
 		`chmod 0600`,
+		`docker inspect "$BACKEND_CONTAINER"`,
+		`readlink -f "$signature_dir"`,
 	}
 	for _, marker := range required {
 		if !strings.Contains(script, marker) {
@@ -30,6 +32,9 @@ func TestDIANPrivateMigrationDeploymentContract(t *testing.T) {
 	}
 	if strings.Contains(script, "chown -R") || strings.Contains(script, "chmod -R") {
 		t.Fatal("DIAN repair must not recursively change the full uploads tree")
+	}
+	if strings.Contains(script, `docker exec -i -u 0`) {
+		t.Fatal("DIAN repair must not rely on root inside the cap-drop-all backend container")
 	}
 
 	dockerfileRaw, err := os.ReadFile(filepath.Join(root, "deploy", "docker", "backend.Dockerfile"))
