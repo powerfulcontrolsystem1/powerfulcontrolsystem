@@ -39653,3 +39653,13 @@ Archivos modificados:
 - Esto evita presentar 100% a una empresa con configuracion de transporte en
   produccion pero acuse o estado fiscal rechazado. Se agrego una prueba de
   contrato frontend para conservar el criterio.
+
+2026-07-26 - P108-017: reenvio fiscal DIAN seguro desde facturas electronicas.
+- La lista de facturas expone `Reenviar DIAN` solo a usuarios con permiso de
+  actualizacion de facturacion y solo para facturas electronicas pendientes,
+  fallidas o rechazadas. No se muestra para facturas aceptadas, anuladas o
+  inactivas.
+- La accion usa el endpoint empresarial existente, conserva `empresa_id`, tipo
+  y codigo del documento, y pide confirmacion visible antes de cualquier
+  reintento. Al finalizar refresca la lista y exige consultar el acuse antes de
+  reintentar o anular nuevamente.

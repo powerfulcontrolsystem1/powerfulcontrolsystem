@@ -44,3 +44,23 @@ func TestFacturacionDIANProgressDoesNotTreatTransportEnvironmentAsActivation(t *
 		t.Fatal("DIAN progress still treats a production transport environment as activation")
 	}
 }
+
+func TestFacturasElectronicasFrontendOffersSafeDIANRetry(t *testing.T) {
+	path := filepath.Join("..", "..", "web", "administrar_empresa", "facturas_electronicas.html")
+	raw, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("read invoices page: %v", err)
+	}
+	page := string(raw)
+	for _, marker := range []string{
+		`data-action="reenviar_dian"`,
+		`function retryInvoiceDIAN(item)`,
+		`action=reenviar_dian&empresa_id=`,
+		`estadoDoc === "pendiente_emision" || estadoDoc === "fallida" || estadoDoc === "rechazada"`,
+		`estadoDoc === "anulada"`,
+	} {
+		if !strings.Contains(page, marker) {
+			t.Fatalf("DIAN retry UI missing marker %q", marker)
+		}
+	}
+}
