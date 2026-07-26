@@ -1429,8 +1429,9 @@
         }).then(function(out) {
           var fiscal = out && out.integracion_fiscal ? out.integracion_fiscal : {};
           var estado = normalize(fiscal.estado_envio || fiscal.estado || "pendiente");
-          showMessage("Reenvio DIAN procesado. Estado: " + estado + ". Consulta el acuse antes de anular o reenviar de nuevo.", out && out.ok ? "ok" : "error");
-          loadDocumentos();
+          var detalle = normalize(fiscal.error || fiscal.mensaje || fiscal.mensaje_recepcion);
+          showMessage("Reenvio DIAN procesado. Estado: " + estado + (detalle ? ". Detalle: " + detalle : "") + ". Consulta el acuse antes de anular o reenviar de nuevo.", out && out.ok ? "ok" : "error");
+          return runSearch();
         }).catch(function(err) {
           showMessage(err.message || "No se pudo reenviar la factura a DIAN", "error");
         });
