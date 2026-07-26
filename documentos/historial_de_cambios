@@ -39641,7 +39641,15 @@ Archivos modificados:
     `DMARC PASS`; la entrega tomo entre uno y cuatro segundos.
   - PTR: Hostinger aplico el reverso IPv4 a `mail.powerfulcontrolsystem.com`;
     la comprobacion FCrDNS confirma que el hostname vuelve a `2.24.197.58`.
-  - Imagen: los correos HTML usan el logo del computador
-    `web/img/Logo pcs 1.png`, confirmado visualmente en Gmail. El avatar del
-    remitente depende de BIMI, cache, politica del cliente y, en Gmail, de un
-    certificado VMC o CMC.
+- Imagen: los correos HTML usan el logo del computador
+  `web/img/Logo pcs 1.png`, confirmado visualmente en Gmail. El avatar del
+  remitente depende de BIMI, cache, politica del cliente y, en Gmail, de un
+  certificado VMC o CMC.
+
+2026-07-26 - P108-016: avance DIAN con criterio de estado fiscal real.
+- El tablero de pruebas DIAN ya no toma `tipo_ambiente=produccion` como prueba
+  de activacion. El hito de produccion local solo se completa cuando el estado
+  empresarial persistido es `produccion_local_activa`.
+- Esto evita presentar 100% a una empresa con configuracion de transporte en
+  produccion pero acuse o estado fiscal rechazado. Se agrego una prueba de
+  contrato frontend para conservar el criterio.
