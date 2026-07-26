@@ -714,7 +714,11 @@
 
     function hasDianProduccionLocal(cfg) {
       cfg = cfg || state.dianConfig || {};
-      return lowerValue(cfg.tipo_ambiente) === "produccion" || lowerValue(cfg.estado_dian || cfg.estado) === "produccion_local_activa";
+      // El ambiente de transporte no certifica que PCS este listo para facturar.
+      // Solo el estado persistido despues del flujo de activacion puede cerrar
+      // este hito; de otro modo una configuracion rechazada en produccion se
+      // mostraba incorrectamente como 100% completada.
+      return lowerValue(cfg.estado_dian || cfg.estado) === "produccion_local_activa";
     }
 
     function updateDianProgress() {

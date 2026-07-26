@@ -29,3 +29,18 @@ func TestFacturacionDIANFrontendUsesCreditNoteCancellation(t *testing.T) {
 		t.Fatal("invoice cancellation still calls the generic local transition")
 	}
 }
+
+func TestFacturacionDIANProgressDoesNotTreatTransportEnvironmentAsActivation(t *testing.T) {
+	path := filepath.Join("..", "..", "web", "administrar_empresa", "facturacion_electronica_pruebas_dian.html")
+	raw, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("read DIAN page: %v", err)
+	}
+	page := string(raw)
+	if !strings.Contains(page, `return lowerValue(cfg.estado_dian || cfg.estado) === "produccion_local_activa";`) {
+		t.Fatal("DIAN progress must require the explicit local-production activation state")
+	}
+	if strings.Contains(page, `return lowerValue(cfg.tipo_ambiente) === "produccion" || lowerValue(cfg.estado_dian || cfg.estado) === "produccion_local_activa";`) {
+		t.Fatal("DIAN progress still treats a production transport environment as activation")
+	}
+}
