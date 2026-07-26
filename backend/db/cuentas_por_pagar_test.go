@@ -94,6 +94,13 @@ func TestRegistrarEmpresaCxPAbonoKeepsTenantScopedAtomicInvariants(t *testing.T)
 			t.Fatalf("CxP atomic flow must preserve %q", required)
 		}
 	}
+	accountLock := strings.Index(body, "FROM empresa_cuentas_por_pagar WHERE empresa_id = ? AND id = ? FOR UPDATE")
+	if accountLock < 0 {
+		t.Fatal("CxP flow must lock the canonical account")
+	}
+	if strings.Count(body[accountLock:], "FROM empresa_cxp_pagos WHERE empresa_id = ? AND idempotency_key_hash = ?") == 0 {
+		t.Fatal("CxP flow must recheck idempotency after the account lock for concurrent retries")
+	}
 }
 
 func TestEmpresaSoportesComprasIACriticalTablesCoverConversionDependencies(t *testing.T) {

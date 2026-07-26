@@ -39537,3 +39537,12 @@ Archivos modificados:
 - La batería de impresión local aprobó 18 formatos sintéticos carta/POS con PDF
   y capturas. Se registran como evidencia parcial: aún faltan documentos
   operativos, roles, impresora física, responsive completo y caja concurrente.
+
+2026-07-26 - P108/P106 CxP: reintento concurrente idempotente.
+- El abono CxP canónico vuelve a consultar la clave de idempotencia después de
+  adquirir `FOR UPDATE` sobre la obligación. Dos solicitudes simultáneas con la
+  misma clave ya no dependen de una violación de unicidad para resolver el
+  reintento; la segunda devuelve la asignación comprometida sin crear un
+  movimiento financiero adicional.
+- Se agregó una regresión de contrato. La validación PostgreSQL concurrente real
+  en staging sigue pendiente y no se marca como aprobada por esta prueba local.

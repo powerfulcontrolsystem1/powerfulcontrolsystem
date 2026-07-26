@@ -29,6 +29,8 @@ transaccion comun.
 - cada pago nuevo requiere `Idempotency-Key`; solo se persiste su hash;
 - el pago se bloquea por cuenta y empresa, rechaza un monto mayor al saldo y
   no lo reduce silenciosamente;
+- un reintento concurrente con la misma clave vuelve a comprobar la asignación
+  después de adquirir el bloqueo de la cuenta y devuelve el resultado original;
 - el registro de asignacion, el egreso financiero, el saldo CxP y el evento
   outbox se confirman o revierten juntos;
 - la tabla de asignaciones usa dinero `NUMERIC(18,2)` y una unicidad por

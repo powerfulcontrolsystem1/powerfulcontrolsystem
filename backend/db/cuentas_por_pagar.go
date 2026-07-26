@@ -158,6 +158,30 @@ func RegistrarEmpresaCxPAbono(dbConn *sql.DB, input EmpresaCxPAbonoInput) (Empre
 	if err != nil {
 		return result, err
 	}
+	// A concurrent request with the same idempotency key can have passed the
+	// optimistic lookup above while waiting for this account lock. Recheck after
+	// FOR UPDATE so it returns the committed application instead of reaching the
+	// unique constraint after creating a duplicate financial movement attempt.
+	var concurrentReplay EmpresaCxPAbonoResult
+	err = queryRowTxSQLCompat(tx, `SELECT cuenta_por_pagar_id, id, movimiento_finanzas_id, monto
+		FROM empresa_cxp_pagos WHERE empresa_id = ? AND idempotency_key_hash = ?`, input.EmpresaID, keyHash).
+		Scan(&concurrentReplay.CuentaPorPagarID, &concurrentReplay.PagoID, &concurrentReplay.MovimientoFinanzasID, &concurrentReplay.MontoAplicado)
+	if err == nil {
+		if concurrentReplay.CuentaPorPagarID != input.CuentaPorPagarID {
+			return result, fmt.Errorf("la clave de idempotencia ya fue usada para otra cuenta por pagar")
+		}
+		concurrentReplay.EmpresaID = input.EmpresaID
+		concurrentReplay.SaldoNuevo = roundReportesMoney(saldoAnterior)
+		concurrentReplay.EstadoCartera = empresaCxPEstado(saldoAnterior, fechaVencimiento)
+		concurrentReplay.IdempotentReplay = true
+		if err := tx.Commit(); err != nil {
+			return result, err
+		}
+		return concurrentReplay, nil
+	}
+	if !errors.Is(err, sql.ErrNoRows) {
+		return result, err
+	}
 	saldoAnterior = roundReportesMoney(saldoAnterior)
 	if saldoAnterior <= 0 {
 		return result, fmt.Errorf("la cuenta por pagar no tiene saldo pendiente")
