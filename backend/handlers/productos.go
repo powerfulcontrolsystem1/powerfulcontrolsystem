@@ -2437,14 +2437,15 @@ func EmpresaProveedoresHandler(dbEmp *sql.DB) http.HandlerFunc {
 				http.Error(w, "invalid payload", http.StatusBadRequest)
 				return
 			}
-			if payload.EmpresaID <= 0 {
-				empresaID, err := parseEmpresaIDQuery(r)
-				if err != nil {
-					http.Error(w, err.Error(), http.StatusBadRequest)
-					return
-				}
-				payload.EmpresaID = empresaID
+			empresaID, err := parseEmpresaIDQuery(r)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusBadRequest)
+				return
 			}
+			// The tenant comes exclusively from the permission-validated request
+			// context/query. A JSON empresa_id is never authority to create a
+			// supplier in another company.
+			payload.EmpresaID = empresaID
 			if strings.TrimSpace(payload.Nombre) == "" {
 				payload.Nombre = strings.TrimSpace(payload.NombreComercial)
 			}
@@ -2662,8 +2663,16 @@ func EmpresaProveedoresHandler(dbEmp *sql.DB) http.HandlerFunc {
 				http.Error(w, "invalid payload", http.StatusBadRequest)
 				return
 			}
-			if payload.EmpresaID <= 0 || payload.ID <= 0 || strings.TrimSpace(payload.Nombre) == "" {
-				http.Error(w, "empresa_id, id y nombre son obligatorios", http.StatusBadRequest)
+			empresaID, err := parseEmpresaIDQuery(r)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusBadRequest)
+				return
+			}
+			// Keep UPDATE scoped to the permission-validated tenant even when a
+			// caller tampers with empresa_id in its JSON body.
+			payload.EmpresaID = empresaID
+			if payload.ID <= 0 || strings.TrimSpace(payload.Nombre) == "" {
+				http.Error(w, "id y nombre son obligatorios", http.StatusBadRequest)
 				return
 			}
 			if err := validateProveedorComercialPayload(payload); err != nil {

@@ -16,9 +16,12 @@ func EmpresaReportesProgramacionSchemaReady(dbConn *sql.DB) error {
 		name string
 		sql  string
 	}{
-		{"programaciones", `SELECT empresa_id, dataset_key, frecuencia, activa FROM empresa_reportes_programaciones WHERE 1=0`},
-		{"plantillas", `SELECT empresa_id, codigo, version, contenido_json FROM empresa_reportes_plantillas WHERE 1=0`},
-		{"ejecuciones", `SELECT empresa_id, programacion_id, dataset_key, ejecutado_en FROM empresa_reportes_ejecuciones WHERE 1=0`},
+		// Read a single marker rather than the table columns: Scan receives one
+		// destination below, so selecting multiple columns made every report
+		// request fail before reaching its action handler.
+		{"programaciones", `SELECT 1 FROM empresa_reportes_programaciones WHERE 1=0`},
+		{"plantillas", `SELECT 1 FROM empresa_reportes_plantillas WHERE 1=0`},
+		{"ejecuciones", `SELECT 1 FROM empresa_reportes_ejecuciones WHERE 1=0`},
 	}
 	for _, check := range queries {
 		var marker int

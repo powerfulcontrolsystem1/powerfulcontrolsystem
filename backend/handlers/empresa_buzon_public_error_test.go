@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"github.com/you/pos-backend/db"
 	"os"
 	"strings"
 	"testing"
@@ -19,5 +20,16 @@ func TestEmpresaBuzonNoExponeErroresInternosEnCodigoPublico(t *testing.T) {
 		if strings.Contains(source, fragment) {
 			t.Fatalf("el handler volvio a exponer causa interna: %s", fragment)
 		}
+	}
+}
+
+func TestEmpresaBuzonSanitizaAlertasDIANHistoricasConRutaPrivada(t *testing.T) {
+	t.Parallel()
+	items := sanitizeEmpresaBuzonMessagesForResponse([]db.EmpresaBuzonMensaje{{
+		Modulo:  "facturacion_electronica",
+		Mensaje: "firmar XML: open ../web/uploads/empresas/firma_privada.pem: permission denied",
+	}})
+	if len(items) != 1 || strings.Contains(items[0].Mensaje, "../web/uploads") || !strings.Contains(items[0].Mensaje, "detalle técnico fue ocultado") {
+		t.Fatalf("historical DIAN alert must be sanitized: %#v", items)
 	}
 }

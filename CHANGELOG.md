@@ -4864,3 +4864,14 @@
 - Se restauran `/health` y `/ready` como probes publicos de solo lectura. El
   endpoint de disponibilidad valida ambas bases PostgreSQL y devuelve `503`
   generico si la aplicacion aun no puede recibir trafico.
+
+# 2026-07-26 - Reparacion de firma y anulacion DIAN
+
+- Los certificados DIAN heredados pueden migrarse por empresa desde uploads al
+  volumen privado con permisos minimos y sin recorrer otros adjuntos.
+- La anulacion de una factura electronica colombiana exige nota credito; el
+  estado de la factura solo cambia a anulada cuando DIAN acepta esa nota.
+- Una factura de venta colombiana en produccion solo queda confirmada con acuse
+  `aceptado`, no con el estado intermedio `enviado`.
+- Configuracion, documentos, colas, acuses y migracion permanecen aislados por
+  `empresa_id`.

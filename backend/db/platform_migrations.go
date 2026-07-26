@@ -67,6 +67,22 @@ func PlatformMigrations(target string) ([]Migration, error) {
 				Description: "frozen source fingerprint for legacy enterprise schema catalog",
 				Body:        legacySchemaCatalogManifestV1SourceFingerprint + ":empresas",
 			},
+			{
+				Version:     "20260724-001-cxp-atomic-payments-v1",
+				Description: "atomic supplier payable payment allocations",
+				Body:        empresaCxPAtomicSchemaFingerprint,
+				Apply: func(_ context.Context, tx *sql.Tx) error {
+					return applyEmpresaCxPAtomicSchemaTx(tx)
+				},
+			},
+			{
+				Version:     "20260725-001-ai-user-isolation-v1",
+				Description: "tenant and user isolation for enterprise AI preferences and history",
+				Body:        empresaAIUserIsolationSchemaFingerprint,
+				Apply: func(_ context.Context, tx *sql.Tx) error {
+					return applyEmpresaAIUserIsolationSchemaTx(tx)
+				},
+			},
 		}, nil
 	case MigrationTargetSuper:
 		return []Migration{

@@ -49,7 +49,10 @@ func requireSuperAdmin(r *http.Request, dbSuper *sql.DB) (*dbpkg.Admin, bool, in
 	if err != nil {
 		return nil, false, http.StatusUnauthorized, "unauthenticated"
 	}
-	if !strings.EqualFold(strings.TrimSpace(admin.Role), "super_administrador") {
+	// Mantiene la misma semántica de Super Administrador que protege el shell
+	// y los endpoints con auditoría. De otro modo un alias histórico válido
+	// podía abrir el panel y leer un recurso, pero era rechazado al guardarlo.
+	if !paginaPrincipalRoleIsSuper(admin.Role) {
 		return nil, false, http.StatusForbidden, "solo super administrador"
 	}
 	return admin, true, http.StatusOK, ""

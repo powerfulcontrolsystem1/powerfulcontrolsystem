@@ -361,7 +361,7 @@ func extraerSoporteComprasIAGPT55(r *http.Request, dbEmp, dbSuper *sql.DB, empre
 	ctrl := NewEmpresaAIChatController(dbEmp, dbSuper)
 	systemPrompt := soporteComprasIASystemPrompt()
 	pregunta := "Extrae y normaliza este soporte de compra o gasto de Colombia. Responde solo JSON valido, sin explicaciones."
-	respuesta, promptTokens, completionTokens, err := ctrl.callOpenAIResponsesWithSystemPrompt(model, pregunta, nil, systemPrompt, att)
+	respuesta, promptTokens, completionTokens, err := ctrl.callOpenAIResponsesWithSystemPrompt(model, pregunta, nil, systemPrompt, att, nil, nil)
 	if err != nil {
 		return dbpkg.EmpresaSoporteComprasIA{}, err
 	}

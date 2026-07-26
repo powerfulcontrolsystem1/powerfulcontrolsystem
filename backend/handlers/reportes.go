@@ -69,10 +69,53 @@ type reportesBuilder struct {
 	itemsCache   map[int64][]dbpkg.CarritoCompraItem
 }
 
+// empresaReportePersonalizadoSpec es una definicion declarativa y de solo
+// lectura. La IA nunca entrega SQL: solo puede seleccionar campos, filtros y
+// agregaciones que el servidor valida sobre un dataset canonico existente.
+type empresaReportePersonalizadoSpec struct {
+	Title         string                               `json:"title"`
+	Description   string                               `json:"description,omitempty"`
+	SourceDataset string                               `json:"source_dataset"`
+	Columns       []string                             `json:"columns,omitempty"`
+	Filters       []empresaReportePersonalizadoFilter  `json:"filters,omitempty"`
+	GroupBy       []string                             `json:"group_by,omitempty"`
+	Metrics       []empresaReportePersonalizadoMetric  `json:"metrics,omitempty"`
+	Formulas      []empresaReportePersonalizadoFormula `json:"formulas,omitempty"`
+	OrderBy       []empresaReportePersonalizadoOrder   `json:"order_by,omitempty"`
+	Limit         int                                  `json:"limit,omitempty"`
+}
+
+type empresaReportePersonalizadoFilter struct {
+	Field    string      `json:"field"`
+	Operator string      `json:"operator"`
+	Value    interface{} `json:"value"`
+}
+
+type empresaReportePersonalizadoMetric struct {
+	Alias     string `json:"alias"`
+	Operation string `json:"operation"`
+	Field     string `json:"field,omitempty"`
+}
+
+type empresaReportePersonalizadoFormula struct {
+	Alias     string `json:"alias"`
+	Operation string `json:"operation"`
+	Left      string `json:"left"`
+	Right     string `json:"right"`
+}
+
+type empresaReportePersonalizadoOrder struct {
+	Field     string `json:"field"`
+	Direction string `json:"direction,omitempty"`
+}
+
 const (
 	reporteDatasetEmpresarialTablero          = "empresarial_tablero"
 	reporteDatasetContableEstadoResultados    = "contable_estado_resultados"
 	reporteDatasetContableBalanceGeneral      = "contable_balance_general"
+	reporteDatasetContableResultadoDetallado  = "contable_estado_resultados_detallado"
+	reporteDatasetContableSituacionDetallada  = "contable_situacion_financiera_detallado"
+	reporteDatasetContablePatrimonioDetallado = "contable_cambios_patrimonio_detallado"
 	reporteDatasetContableFlujoCaja           = "contable_flujo_caja"
 	reporteDatasetOperativoModulos            = "operativo_modulos_resumen"
 	reporteDatasetOperativoReservas           = "operativo_reservas_ocupacion"
@@ -135,6 +178,27 @@ var reportesCatalogo = []empresaReporteCatalogoItem{
 		Title:       "Balance General",
 		Level:       "contable",
 		Description: "Activos, pasivos, patrimonio y cuadre contable.",
+		Formats:     []string{"json", "csv", "txt", "xls", "pdf"},
+	},
+	{
+		Key:         reporteDatasetContableResultadoDetallado,
+		Title:       "Estado de resultados - auxiliar por rubro",
+		Level:       "contable",
+		Description: "Detalle de ingresos, costos y gastos por cuenta desde asientos canónicos. No sustituye notas ni comparativos NIIF.",
+		Formats:     []string{"json", "csv", "txt", "xls", "pdf"},
+	},
+	{
+		Key:         reporteDatasetContableSituacionDetallada,
+		Title:       "Situación financiera - auxiliar por rubro",
+		Level:       "contable",
+		Description: "Detalle de activos, pasivos y patrimonio por cuenta desde asientos canónicos. No sustituye notas ni comparativos NIIF.",
+		Formats:     []string{"json", "csv", "txt", "xls", "pdf"},
+	},
+	{
+		Key:         reporteDatasetContablePatrimonioDetallado,
+		Title:       "Cambios en patrimonio - auxiliar por cuenta",
+		Level:       "contable",
+		Description: "Movimientos del patrimonio por cuenta desde asientos canónicos. Debe complementarse con comparativos, notas y aprobaciones.",
 		Formats:     []string{"json", "csv", "txt", "xls", "pdf"},
 	},
 	{
@@ -542,6 +606,34 @@ func EmpresaReportesHandler(dbEmp *sql.DB) http.HandlerFunc {
 			writeJSON(w, http.StatusOK, ds)
 			return
 
+		case "custom", "custom_dataset", "vista_personalizada":
+			if r.Method != http.MethodPost {
+				http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+				return
+			}
+			var payload struct {
+				Spec   empresaReportePersonalizadoSpec `json:"spec"`
+				Format string                          `json:"format,omitempty"`
+			}
+			if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+				http.Error(w, "json invalido", http.StatusBadRequest)
+				return
+			}
+			ds, err := builder.buildPersonalizedDataset(payload.Spec)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusBadRequest)
+				return
+			}
+			format := strings.ToLower(strings.TrimSpace(payload.Format))
+			if format == "" || format == "json" {
+				writeJSON(w, http.StatusOK, ds)
+				return
+			}
+			if err := writeReportesDatasetExport(w, ds, format); err != nil {
+				http.Error(w, err.Error(), http.StatusBadRequest)
+			}
+			return
+
 		case "export", "exportar":
 			if r.Method != http.MethodGet {
 				http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
@@ -694,7 +786,7 @@ func EmpresaReportesHandler(dbEmp *sql.DB) http.HandlerFunc {
 			return
 
 		default:
-			http.Error(w, "action invalida (use catalogo, suite, dataset, tablero, export, plantillas, programacion, ejecutar_programacion, ejecuciones o validar_consistencia)", http.StatusBadRequest)
+			http.Error(w, "action invalida (use catalogo, suite, dataset, custom, tablero, export, plantillas, programacion, ejecutar_programacion, ejecuciones o validar_consistencia)", http.StatusBadRequest)
 			return
 		}
 	}
@@ -771,6 +863,12 @@ func (b *reportesBuilder) buildDataset(key string) (empresaReporteDataset, error
 		return b.buildContableEstadoResultadosDataset()
 	case reporteDatasetContableBalanceGeneral:
 		return b.buildContableBalanceGeneralDataset()
+	case reporteDatasetContableResultadoDetallado:
+		return b.buildContableEstadoFinancieroDetalleDataset(reporteDatasetContableResultadoDetallado)
+	case reporteDatasetContableSituacionDetallada:
+		return b.buildContableEstadoFinancieroDetalleDataset(reporteDatasetContableSituacionDetallada)
+	case reporteDatasetContablePatrimonioDetallado:
+		return b.buildContableEstadoFinancieroDetalleDataset(reporteDatasetContablePatrimonioDetallado)
 	case reporteDatasetContableFlujoCaja:
 		return b.buildContableFlujoCajaDataset()
 	case reporteDatasetOperativoModulos:
@@ -854,6 +952,444 @@ func (b *reportesBuilder) buildDataset(key string) (empresaReporteDataset, error
 	default:
 		return empresaReporteDataset{}, fmt.Errorf("dataset no soportado")
 	}
+}
+
+// reportesPersonalizadosSources es el contrato semantico inicial para la IA.
+// Se limita deliberadamente a datasets contables y operativos con columnas
+// estables; ampliar este mapa requiere una prueba que confirme cada columna.
+var reportesPersonalizadosSources = map[string][]string{
+	reporteDatasetContableBalancePrueba:      {"cuenta", "descripcion", "movimientos", "debito", "credito", "saldo_debito", "saldo_credito", "naturaleza"},
+	reporteDatasetContableLibroAuxiliar:      {"fecha_asiento", "periodo_contable", "cuenta", "descripcion", "documento_tipo", "documento_codigo", "modulo", "evento", "debito", "credito", "saldo_movimiento"},
+	reporteDatasetContableLibroMayor:         {"periodo_contable", "cuenta", "descripcion", "movimientos", "debito", "credito", "saldo", "naturaleza"},
+	reporteDatasetFiscalImpuestosRetenciones: {"fuente", "concepto", "documentos_lineas", "base_gravable", "impuesto_generado", "debito", "credito", "saldo_fiscal"},
+	reporteDatasetFiscalInformacionExogena:   {"fuente", "tercero", "documento_tipo", "documento_codigo", "concepto", "fecha", "valor", "base_o_saldo", "impuesto"},
+	reporteDatasetContableCxC:                {"codigo", "tercero", "documento_codigo", "fecha_emision", "fecha_vencimiento", "valor_original", "saldo", "estado_cartera", "dias_mora"},
+	reporteDatasetContableCxP:                {"codigo", "tercero", "documento_codigo", "fecha_emision", "fecha_vencimiento", "valor_original", "saldo", "estado_cartera", "dias_mora"},
+	reporteDatasetCarteraEdadesCobrar:        {"tercero", "documentos", "saldo_corriente", "saldo_1_30", "saldo_31_60", "saldo_61_90", "saldo_mayor_90", "saldo_total", "documentos_vencidos", "dias_mora_max", "prioridad"},
+	reporteDatasetCarteraEdadesPagar:         {"tercero", "documentos", "saldo_corriente", "saldo_1_30", "saldo_31_60", "saldo_61_90", "saldo_mayor_90", "saldo_total", "documentos_vencidos", "dias_mora_max", "prioridad"},
+	reporteDatasetVentasDiariasMetodoPago:    {"fecha", "metodo_pago", "ventas", "base_gravable", "impuesto_total", "total_recaudado", "ticket_promedio"},
+	reporteDatasetOperativoVentasDetalle:     {"fecha", "codigo", "cliente", "canal", "total", "impuesto_total", "estado"},
+	reporteDatasetInventarioKardexValorizado: {"fecha_movimiento", "producto", "codigo_producto", "tipo", "cantidad_entrada", "cantidad_salida", "costo_unitario", "valor_movimiento", "saldo_cantidad", "saldo_valorizado"},
+}
+
+func (b *reportesBuilder) buildPersonalizedDataset(spec empresaReportePersonalizadoSpec) (empresaReporteDataset, error) {
+	if err := validateEmpresaReportePersonalizadoSpec(&spec); err != nil {
+		return empresaReporteDataset{}, err
+	}
+	baseBuilder := *b
+	if baseBuilder.maxRows < 1000 {
+		baseBuilder.maxRows = 1000
+	}
+	base, err := baseBuilder.buildDataset(spec.SourceDataset)
+	if err != nil {
+		return empresaReporteDataset{}, err
+	}
+	filtered := make([]map[string]interface{}, 0, len(base.Rows))
+	for _, row := range base.Rows {
+		if reportesPersonalizadoRowMatches(row, spec.Filters) {
+			filtered = append(filtered, row)
+		}
+	}
+
+	ds := base
+	ds.Key = "custom_" + spec.SourceDataset
+	ds.Title = strings.TrimSpace(spec.Title)
+	if ds.Title == "" {
+		ds.Title = "Reporte personalizado: " + base.Title
+	}
+	ds.Description = strings.TrimSpace(spec.Description)
+	if ds.Description == "" {
+		ds.Description = "Vista personalizada de " + base.Title + " generada con una especificacion validada por servidor."
+	}
+	ds.Summary = map[string]interface{}{
+		"source_dataset": spec.SourceDataset,
+		"source_rows":    len(base.Rows),
+		"matched_rows":   len(filtered),
+		"filters":        len(spec.Filters),
+		"group_by":       append([]string(nil), spec.GroupBy...),
+	}
+
+	if len(spec.Metrics) == 0 {
+		columns := spec.Columns
+		if len(columns) == 0 {
+			columns = append([]string(nil), base.Columns...)
+		}
+		ds.Columns = append([]string(nil), columns...)
+		ds.Rows = make([]map[string]interface{}, 0, minReportesInt(len(filtered), spec.Limit))
+		for _, row := range filtered {
+			out := make(map[string]interface{}, len(columns))
+			for _, col := range columns {
+				out[col] = row[col]
+			}
+			ds.Rows = append(ds.Rows, out)
+			if len(ds.Rows) >= spec.Limit {
+				break
+			}
+		}
+	} else {
+		ds.Columns, ds.Rows = reportesPersonalizadoAggregate(filtered, spec)
+		if len(ds.Rows) > spec.Limit {
+			ds.Rows = ds.Rows[:spec.Limit]
+		}
+	}
+	reportesPersonalizadoSortRows(ds.Rows, spec.OrderBy)
+	ds.RowCount = len(ds.Rows)
+	ds.Summary["rows"] = ds.RowCount
+	ds.Summary["truncated"] = len(base.Rows) >= baseBuilder.maxRows
+	return ds, nil
+}
+
+func validateEmpresaReportePersonalizadoSpec(spec *empresaReportePersonalizadoSpec) error {
+	if spec == nil {
+		return errors.New("spec es obligatorio")
+	}
+	spec.SourceDataset = strings.ToLower(strings.TrimSpace(spec.SourceDataset))
+	allowedColumns, ok := reportesPersonalizadosSources[spec.SourceDataset]
+	if !ok {
+		return errors.New("source_dataset no esta habilitado para reportes personalizados")
+	}
+	if len([]rune(strings.TrimSpace(spec.Title))) > 160 || len([]rune(strings.TrimSpace(spec.Description))) > 500 {
+		return errors.New("titulo o descripcion demasiado largos")
+	}
+	if spec.Limit <= 0 {
+		spec.Limit = 200
+	}
+	if spec.Limit > 1000 {
+		return errors.New("limit no puede superar 1000")
+	}
+	if len(spec.Columns) > 24 || len(spec.Filters) > 12 || len(spec.GroupBy) > 4 || len(spec.Metrics) > 12 || len(spec.Formulas) > 6 || len(spec.OrderBy) > 4 {
+		return errors.New("spec excede los limites de columnas, filtros, agrupaciones, metricas, formulas u orden")
+	}
+	for _, field := range append(append([]string{}, spec.Columns...), spec.GroupBy...) {
+		if !reportesPersonalizadoHasColumn(allowedColumns, field) {
+			return fmt.Errorf("campo no permitido: %s", strings.TrimSpace(field))
+		}
+	}
+	for idx := range spec.Filters {
+		filter := &spec.Filters[idx]
+		filter.Field = strings.TrimSpace(filter.Field)
+		filter.Operator = strings.ToLower(strings.TrimSpace(filter.Operator))
+		if !reportesPersonalizadoHasColumn(allowedColumns, filter.Field) {
+			return fmt.Errorf("filtro no permitido: %s", filter.Field)
+		}
+		switch filter.Operator {
+		case "eq", "ne", "contains", "gt", "gte", "lt", "lte":
+		default:
+			return fmt.Errorf("operador de filtro invalido: %s", filter.Operator)
+		}
+	}
+	seenAliases := make(map[string]struct{})
+	for idx := range spec.Metrics {
+		metric := &spec.Metrics[idx]
+		metric.Alias = strings.ToLower(strings.TrimSpace(metric.Alias))
+		metric.Operation = strings.ToLower(strings.TrimSpace(metric.Operation))
+		metric.Field = strings.TrimSpace(metric.Field)
+		if !reportesPersonalizadoSafeAlias(metric.Alias) {
+			return fmt.Errorf("alias de metrica invalido: %s", metric.Alias)
+		}
+		if _, exists := seenAliases[metric.Alias]; exists {
+			return fmt.Errorf("alias de metrica duplicado: %s", metric.Alias)
+		}
+		seenAliases[metric.Alias] = struct{}{}
+		switch metric.Operation {
+		case "count":
+			metric.Field = ""
+		case "sum", "average", "min", "max":
+			if !reportesPersonalizadoHasColumn(allowedColumns, metric.Field) {
+				return fmt.Errorf("campo de metrica no permitido: %s", metric.Field)
+			}
+		default:
+			return fmt.Errorf("operacion de metrica invalida: %s", metric.Operation)
+		}
+	}
+	for idx := range spec.Formulas {
+		formula := &spec.Formulas[idx]
+		formula.Alias = strings.ToLower(strings.TrimSpace(formula.Alias))
+		formula.Operation = strings.ToLower(strings.TrimSpace(formula.Operation))
+		formula.Left = strings.ToLower(strings.TrimSpace(formula.Left))
+		formula.Right = strings.ToLower(strings.TrimSpace(formula.Right))
+		if !reportesPersonalizadoSafeAlias(formula.Alias) || formula.Left == "" || formula.Right == "" {
+			return errors.New("formula invalida")
+		}
+		if _, exists := seenAliases[formula.Alias]; exists {
+			return fmt.Errorf("alias de formula duplicado: %s", formula.Alias)
+		}
+		if _, ok := seenAliases[formula.Left]; !ok {
+			return fmt.Errorf("formula referencia una metrica inexistente: %s", formula.Left)
+		}
+		if _, ok := seenAliases[formula.Right]; !ok {
+			return fmt.Errorf("formula referencia una metrica inexistente: %s", formula.Right)
+		}
+		switch formula.Operation {
+		case "add", "subtract", "divide", "percentage":
+		default:
+			return fmt.Errorf("operacion de formula invalida: %s", formula.Operation)
+		}
+		seenAliases[formula.Alias] = struct{}{}
+	}
+	for idx := range spec.OrderBy {
+		order := &spec.OrderBy[idx]
+		order.Field = strings.TrimSpace(order.Field)
+		order.Direction = strings.ToLower(strings.TrimSpace(order.Direction))
+		if order.Direction == "" {
+			order.Direction = "asc"
+		}
+		if order.Direction != "asc" && order.Direction != "desc" {
+			return fmt.Errorf("direccion de orden invalida: %s", order.Direction)
+		}
+		if !reportesPersonalizadoHasColumn(allowedColumns, order.Field) {
+			if _, ok := seenAliases[strings.ToLower(order.Field)]; !ok {
+				return fmt.Errorf("campo de orden no permitido: %s", order.Field)
+			}
+		}
+	}
+	return nil
+}
+
+func reportesPersonalizadoHasColumn(columns []string, field string) bool {
+	field = strings.TrimSpace(field)
+	for _, column := range columns {
+		if column == field {
+			return true
+		}
+	}
+	return false
+}
+
+func reportesPersonalizadoSafeAlias(value string) bool {
+	if value == "" || len(value) > 48 {
+		return false
+	}
+	for idx, r := range value {
+		if (r < 'a' || r > 'z') && (r < '0' || r > '9') && r != '_' {
+			return false
+		}
+		if idx == 0 && r >= '0' && r <= '9' {
+			return false
+		}
+	}
+	return true
+}
+
+func reportesPersonalizadoRowMatches(row map[string]interface{}, filters []empresaReportePersonalizadoFilter) bool {
+	for _, filter := range filters {
+		actual := row[filter.Field]
+		if !reportesPersonalizadoMatches(actual, filter.Operator, filter.Value) {
+			return false
+		}
+	}
+	return true
+}
+
+func reportesPersonalizadoMatches(actual interface{}, operator string, expected interface{}) bool {
+	actualText := strings.TrimSpace(fmt.Sprint(actual))
+	expectedText := strings.TrimSpace(fmt.Sprint(expected))
+	if operator == "contains" {
+		return strings.Contains(strings.ToLower(actualText), strings.ToLower(expectedText))
+	}
+	if actualNumber, actualOK := reportesPersonalizadoNumber(actual); actualOK {
+		if expectedNumber, expectedOK := reportesPersonalizadoNumber(expected); expectedOK {
+			switch operator {
+			case "eq":
+				return actualNumber == expectedNumber
+			case "ne":
+				return actualNumber != expectedNumber
+			case "gt":
+				return actualNumber > expectedNumber
+			case "gte":
+				return actualNumber >= expectedNumber
+			case "lt":
+				return actualNumber < expectedNumber
+			case "lte":
+				return actualNumber <= expectedNumber
+			}
+		}
+	}
+	switch operator {
+	case "eq":
+		return strings.EqualFold(actualText, expectedText)
+	case "ne":
+		return !strings.EqualFold(actualText, expectedText)
+	case "gt":
+		return actualText > expectedText
+	case "gte":
+		return actualText >= expectedText
+	case "lt":
+		return actualText < expectedText
+	case "lte":
+		return actualText <= expectedText
+	}
+	return false
+}
+
+func reportesPersonalizadoNumber(value interface{}) (float64, bool) {
+	switch typed := value.(type) {
+	case float64:
+		return typed, true
+	case float32:
+		return float64(typed), true
+	case int:
+		return float64(typed), true
+	case int64:
+		return float64(typed), true
+	case int32:
+		return float64(typed), true
+	case json.Number:
+		n, err := typed.Float64()
+		return n, err == nil
+	case string:
+		n, err := strconv.ParseFloat(strings.TrimSpace(typed), 64)
+		return n, err == nil
+	default:
+		return 0, false
+	}
+}
+
+func reportesPersonalizadoAggregate(rows []map[string]interface{}, spec empresaReportePersonalizadoSpec) ([]string, []map[string]interface{}) {
+	type aggregate struct {
+		group map[string]interface{}
+		count int
+		sums  map[string]float64
+		mins  map[string]float64
+		maxs  map[string]float64
+		nums  map[string]int
+	}
+	byGroup := make(map[string]*aggregate)
+	for _, row := range rows {
+		keyParts := make([]string, 0, len(spec.GroupBy))
+		group := make(map[string]interface{}, len(spec.GroupBy))
+		for _, field := range spec.GroupBy {
+			group[field] = row[field]
+			keyParts = append(keyParts, fmt.Sprintf("%s=%v", field, row[field]))
+		}
+		key := strings.Join(keyParts, "\x1f")
+		current := byGroup[key]
+		if current == nil {
+			current = &aggregate{group: group, sums: make(map[string]float64), mins: make(map[string]float64), maxs: make(map[string]float64), nums: make(map[string]int)}
+			byGroup[key] = current
+		}
+		current.count++
+		for _, metric := range spec.Metrics {
+			if metric.Operation == "count" {
+				continue
+			}
+			if number, ok := reportesPersonalizadoNumber(row[metric.Field]); ok {
+				current.sums[metric.Alias] += number
+				current.nums[metric.Alias]++
+				if current.nums[metric.Alias] == 1 || number < current.mins[metric.Alias] {
+					current.mins[metric.Alias] = number
+				}
+				if current.nums[metric.Alias] == 1 || number > current.maxs[metric.Alias] {
+					current.maxs[metric.Alias] = number
+				}
+			}
+		}
+	}
+	columns := append([]string(nil), spec.GroupBy...)
+	for _, metric := range spec.Metrics {
+		columns = append(columns, metric.Alias)
+	}
+	for _, formula := range spec.Formulas {
+		columns = append(columns, formula.Alias)
+	}
+	keys := make([]string, 0, len(byGroup))
+	for key := range byGroup {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+	out := make([]map[string]interface{}, 0, len(keys))
+	for _, key := range keys {
+		current := byGroup[key]
+		row := make(map[string]interface{}, len(columns))
+		for field, value := range current.group {
+			row[field] = value
+		}
+		for _, metric := range spec.Metrics {
+			switch metric.Operation {
+			case "count":
+				row[metric.Alias] = current.count
+			case "sum":
+				row[metric.Alias] = reportesRound(current.sums[metric.Alias])
+			case "average":
+				if current.nums[metric.Alias] > 0 {
+					row[metric.Alias] = reportesRound(current.sums[metric.Alias] / float64(current.nums[metric.Alias]))
+				} else {
+					row[metric.Alias] = 0.0
+				}
+			case "min":
+				row[metric.Alias] = reportesRound(current.mins[metric.Alias])
+			case "max":
+				row[metric.Alias] = reportesRound(current.maxs[metric.Alias])
+			}
+		}
+		for _, formula := range spec.Formulas {
+			left, _ := reportesPersonalizadoNumber(row[formula.Left])
+			right, _ := reportesPersonalizadoNumber(row[formula.Right])
+			switch formula.Operation {
+			case "add":
+				row[formula.Alias] = reportesRound(left + right)
+			case "subtract":
+				row[formula.Alias] = reportesRound(left - right)
+			case "divide":
+				if right != 0 {
+					row[formula.Alias] = reportesRound(left / right)
+				} else {
+					row[formula.Alias] = nil
+				}
+			case "percentage":
+				if right != 0 {
+					row[formula.Alias] = reportesRound((left / right) * 100)
+				} else {
+					row[formula.Alias] = nil
+				}
+			}
+		}
+		out = append(out, row)
+	}
+	return columns, out
+}
+
+func reportesPersonalizadoSortRows(rows []map[string]interface{}, orderBy []empresaReportePersonalizadoOrder) {
+	if len(orderBy) == 0 {
+		return
+	}
+	sort.SliceStable(rows, func(i, j int) bool {
+		for _, order := range orderBy {
+			left := rows[i][order.Field]
+			right := rows[j][order.Field]
+			comparison := reportesPersonalizadoCompare(left, right)
+			if comparison == 0 {
+				continue
+			}
+			if order.Direction == "desc" {
+				return comparison > 0
+			}
+			return comparison < 0
+		}
+		return false
+	})
+}
+
+func reportesPersonalizadoCompare(left, right interface{}) int {
+	if leftNumber, leftOK := reportesPersonalizadoNumber(left); leftOK {
+		if rightNumber, rightOK := reportesPersonalizadoNumber(right); rightOK {
+			if leftNumber < rightNumber {
+				return -1
+			}
+			if leftNumber > rightNumber {
+				return 1
+			}
+			return 0
+		}
+	}
+	return strings.Compare(strings.ToLower(fmt.Sprint(left)), strings.ToLower(fmt.Sprint(right)))
+}
+
+func minReportesInt(left, right int) int {
+	if left < right {
+		return left
+	}
+	return right
 }
 
 func (b *reportesBuilder) buildOperativoImpuestosDeudaDataset() (empresaReporteDataset, error) {
@@ -1023,6 +1559,7 @@ func (b *reportesBuilder) buildContableEstadoResultadosDataset() (empresaReporte
 	})
 	ds.RowCount = 1
 	ds.Summary["resultado"] = tablero.EstadoResultados.UtilidadOperacional
+	reportesMarkFinancialStatementStatus(&ds, tablero.Contable.AsientosGenerados)
 	return ds, nil
 }
 
@@ -1053,7 +1590,139 @@ func (b *reportesBuilder) buildContableBalanceGeneralDataset() (empresaReporteDa
 	})
 	ds.RowCount = 1
 	ds.Summary["cuadre"] = tablero.BalanceGeneral.Cuadre
+	reportesMarkFinancialStatementStatus(&ds, tablero.Contable.AsientosGenerados)
 	return ds, nil
+}
+
+// reportesMarkFinancialStatementStatus distingue la base contable disponible de
+// un estado financiero oficial. Aun con asientos canonicos, un resumen o
+// auxiliar no sustituye notas, comparativos, politicas y firmas requeridas.
+func reportesMarkFinancialStatementStatus(ds *empresaReporteDataset, asientosGenerados int64) {
+	if ds == nil {
+		return
+	}
+	if ds.Summary == nil {
+		ds.Summary = make(map[string]interface{})
+	}
+	ds.Summary["asientos_contables_generados"] = asientosGenerados
+	if asientosGenerados > 0 {
+		ds.Summary["estado_contable"] = "basado_en_asientos_contables"
+		ds.Summary["apto_para_revision_contable"] = true
+		ds.Summary["apto_para_presentacion_oficial"] = false
+		ds.Summary["advertencia"] = "Resumen basado en asientos contables canonicos. Requiere notas, comparativos, politicas y firmas antes de presentarse como estado financiero oficial."
+		return
+	}
+	ds.Summary["estado_contable"] = "preliminar_no_oficial"
+	ds.Summary["apto_para_revision_contable"] = false
+	ds.Summary["apto_para_presentacion_oficial"] = false
+	ds.Summary["advertencia"] = "No hay asientos contables canonicos en el periodo; este resumen no es un estado financiero oficial."
+	ds.Description = "PRELIMINAR NO OFICIAL: no hay asientos contables canónicos en el periodo. Genere y revise los asientos antes de usar este resumen como estado financiero."
+}
+
+// buildContableEstadoFinancieroDetalleDataset entrega auxiliares trazables por
+// rubro y cuenta. No se anuncia como un juego completo de estados NIIF: las
+// notas, comparativos, políticas y firmas requieren una fase posterior.
+func (b *reportesBuilder) buildContableEstadoFinancieroDetalleDataset(key string) (empresaReporteDataset, error) {
+	lineas, err := b.reportesAsientoLineas()
+	if err != nil {
+		return empresaReporteDataset{}, err
+	}
+	ds := b.newDataset(key, []string{"rubro", "cuenta", "descripcion", "debito", "credito", "saldo"})
+	type acumulado struct {
+		rubro       string
+		cuenta      string
+		descripcion string
+		debito      float64
+		credito     float64
+	}
+	byCuenta := make(map[string]*acumulado)
+	for _, linea := range lineas {
+		rubro, include := reportesRubroEstadoFinanciero(key, linea.Cuenta)
+		if !include {
+			continue
+		}
+		cuenta := strings.TrimSpace(linea.Cuenta)
+		descripcion := strings.TrimSpace(linea.Descripcion)
+		groupKey := rubro + "\x1f" + cuenta + "\x1f" + descripcion
+		item := byCuenta[groupKey]
+		if item == nil {
+			item = &acumulado{rubro: rubro, cuenta: cuenta, descripcion: descripcion}
+			byCuenta[groupKey] = item
+		}
+		item.debito += linea.Debito
+		item.credito += linea.Credito
+	}
+	keys := make([]string, 0, len(byCuenta))
+	for groupKey := range byCuenta {
+		keys = append(keys, groupKey)
+	}
+	sort.Strings(keys)
+	totales := make(map[string]float64)
+	for _, groupKey := range keys {
+		item := byCuenta[groupKey]
+		saldo := reportesSaldoRubroEstadoFinanciero(key, item.cuenta, item.debito, item.credito)
+		ds.Rows = append(ds.Rows, map[string]interface{}{
+			"rubro":       item.rubro,
+			"cuenta":      item.cuenta,
+			"descripcion": item.descripcion,
+			"debito":      reportesRound(item.debito),
+			"credito":     reportesRound(item.credito),
+			"saldo":       reportesRound(saldo),
+		})
+		totales[item.rubro] += saldo
+	}
+	ds.RowCount = len(ds.Rows)
+	for rubro, total := range totales {
+		ds.Summary["total_"+strings.ToLower(strings.ReplaceAll(rubro, " ", "_"))] = reportesRound(total)
+	}
+	tablero, err := b.getTableroResumen()
+	if err != nil {
+		return empresaReporteDataset{}, err
+	}
+	reportesMarkFinancialStatementStatus(&ds, tablero.Contable.AsientosGenerados)
+	if tablero.Contable.AsientosGenerados > 0 {
+		ds.Summary["alcance"] = "auxiliar_por_cuenta_desde_asientos_canonicos"
+		ds.Summary["requiere_notas_comparativos_y_firmas"] = true
+		ds.Description = strings.TrimSpace(ds.Description) + " Este auxiliar requiere notas, comparativos y firmas antes de integrar estados financieros completos."
+	}
+	return ds, nil
+}
+
+func reportesRubroEstadoFinanciero(dataset, cuenta string) (string, bool) {
+	cuenta = strings.TrimSpace(cuenta)
+	if cuenta == "" {
+		return "", false
+	}
+	switch dataset {
+	case reporteDatasetContableResultadoDetallado:
+		switch cuenta[0] {
+		case '4':
+			return "Ingresos", true
+		case '5', '6', '7':
+			return "Costos y gastos", true
+		}
+	case reporteDatasetContableSituacionDetallada:
+		switch cuenta[0] {
+		case '1':
+			return "Activos", true
+		case '2':
+			return "Pasivos", true
+		case '3':
+			return "Patrimonio", true
+		}
+	case reporteDatasetContablePatrimonioDetallado:
+		if cuenta[0] == '3' {
+			return "Patrimonio", true
+		}
+	}
+	return "", false
+}
+
+func reportesSaldoRubroEstadoFinanciero(dataset, cuenta string, debito, credito float64) float64 {
+	if dataset == reporteDatasetContableSituacionDetallada && strings.HasPrefix(strings.TrimSpace(cuenta), "1") {
+		return debito - credito
+	}
+	return credito - debito
 }
 
 type reporteModuloResumenDef struct {

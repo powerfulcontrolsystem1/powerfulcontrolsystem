@@ -37,3 +37,14 @@ func TestEnterpriseAgentModeFailsClosed(t *testing.T) {
 		t.Fatal("agent mode unexpectedly enabled")
 	}
 }
+
+func TestEnterpriseAIConversationIDIsOpaqueAndBounded(t *testing.T) {
+	if !enterpriseAIConversationIDPattern.MatchString("conversation_ABC-123") {
+		t.Fatal("identificador opaco valido rechazado")
+	}
+	for _, invalid := range []string{"conversation with spaces", "conversation/other", string(bytes.Repeat([]byte("a"), 129))} {
+		if enterpriseAIConversationIDPattern.MatchString(invalid) {
+			t.Fatalf("identificador invalido aceptado: %q", invalid)
+		}
+	}
+}

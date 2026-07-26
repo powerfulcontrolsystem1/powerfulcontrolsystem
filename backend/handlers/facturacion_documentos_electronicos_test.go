@@ -71,13 +71,29 @@ func TestFacturaElectronicaVentaRequiereAcuseFiscalSoloColombiaProduccion(t *tes
 	}
 
 	resultado.EstadoEnvio = "enviado"
+	if facturaElectronicaVentaIntegracionConfirmada(resultado) {
+		t.Fatalf("sent without final acceptance must not be treated as confirmed")
+	}
+	resultado.EstadoEnvio = "aceptado"
 	if !facturaElectronicaVentaIntegracionConfirmada(resultado) {
-		t.Fatalf("sent fiscal integration must be treated as confirmed")
+		t.Fatalf("accepted fiscal integration must be treated as confirmed")
 	}
 
 	doc.AmbienteFE = "habilitacion"
 	if facturaElectronicaVentaRequiereAcuseFiscal(doc, resultado) {
 		t.Fatalf("sandbox/habilitacion invoice must not require production fiscal acknowledgment")
+	}
+}
+
+func TestDIANUserVisibleErrorRedactsPrivateSignaturePath(t *testing.T) {
+	t.Parallel()
+	raw := "firmar XML DIAN: open ../web/uploads/empresas/empresa_12/firma_privada.pem: permission denied"
+	got := dianUserVisibleError(raw)
+	if got != "No se pudo acceder a la clave privada de firma del certificado DIAN." {
+		t.Fatalf("visible error = %q", got)
+	}
+	if dianErrorUserHelp(raw) == "" {
+		t.Fatal("permission failure must include a remediation path")
 	}
 }
 
@@ -106,5 +122,28 @@ func TestFacturacionColombiaProduccionBloqueaProveedorManual(t *testing.T) {
 	}, "emitir")
 	if result.Success {
 		t.Fatalf("manual provider must not dispatch as success for Colombia production")
+	}
+}
+
+func TestAnulacionElectronicaSoloConfirmaConNotaCreditoAceptada(t *testing.T) {
+	if facturacionIntegracionAceptada(facturacionIntegracionResultado{EstadoEnvio: "enviado"}) {
+		t.Fatal("una nota credito solamente enviada no debe anular la factura original")
+	}
+	if facturacionIntegracionAceptada(facturacionIntegracionResultado{EstadoEnvio: "fallido"}) {
+		t.Fatal("una nota credito fallida no debe anular la factura original")
+	}
+	if !facturacionIntegracionAceptada(facturacionIntegracionResultado{EstadoEnvio: "aceptado"}) {
+		t.Fatal("la aceptacion DIAN debe permitir finalizar la anulacion")
+	}
+
+	observaciones := facturacionNotaCreditoFacturaOrigenMarker + "FV-PCS-1\nAnulacion total autorizada"
+	if got := facturacionNotaCreditoFacturaOrigen(observaciones); got != "FV-PCS-1" {
+		t.Fatalf("factura origen = %q", got)
+	}
+	if got := facturacionNotaCreditoFacturaOrigen("texto sin marcador"); got != "" {
+		t.Fatalf("no debe inferirse una factura origen sin marcador, obtuvo %q", got)
+	}
+	if _, err := resolveFacturacionTransitionForDocument("anular", "emitida", "factura_electronica"); err == nil {
+		t.Fatal("la transicion local generica no debe anular una factura electronica")
 	}
 }

@@ -3420,7 +3420,7 @@ func facturaElectronicaVentaRequiereAcuseFiscal(doc *dbpkg.EmpresaDocumentoFactu
 }
 
 func facturaElectronicaVentaIntegracionConfirmada(resultado facturacionIntegracionResultado) bool {
-	return normalizeFacturacionEstadoEnvio(resultado.EstadoEnvio) == "enviado"
+	return normalizeFacturacionEstadoEnvio(resultado.EstadoEnvio) == "aceptado"
 }
 
 func registrarFacturaElectronicaDesdeDocumentoVenta(dbEmp, dbSuper *sql.DB, ventaDoc *dbpkg.EmpresaDocumentoFacturacion, usuario, observaciones string) (map[string]interface{}, error) {

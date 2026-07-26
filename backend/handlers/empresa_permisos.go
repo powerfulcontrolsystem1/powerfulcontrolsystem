@@ -1990,9 +1990,15 @@ func resolveInventarioPermissionAction(r *http.Request) string {
 }
 
 func resolveFinanzasPermissionAction(r *http.Request) string {
+	// El chat de reportes y la construccion de vistas previas no mutan datos de
+	// negocio. Usan POST solo para transportar una consulta estructurada, por lo
+	// que deben conservar el permiso de lectura del modulo reportes.
+	if r.URL.Path == "/api/empresa/reportes_ia_chat" || r.URL.Path == "/api/empresa/ia_empresarial" {
+		return permActionRead
+	}
 	action := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("action")))
 	switch action {
-	case "renta_ia", "renta_ai", "calcular_renta":
+	case "renta_ia", "renta_ai", "calcular_renta", "custom", "custom_dataset", "vista_personalizada", "plantillas", "plantilla":
 		return permActionRead
 	case "cerrar", "reabrir", "aprobar", "procesar_asientos", "procesar", "conciliar_bancaria_auto", "conciliar_bancos", "conciliar_bancaria_automatica", "aprobar_workflow", "aprobar_reverso", "aprobar_refinanciacion", "rechazar_workflow", "rechazar_reverso", "rechazar_refinanciacion":
 		return permActionApprove
@@ -2541,7 +2547,7 @@ func roleAllowsModuleAction(role, module, action string) bool {
 	case permModuleReportes:
 		switch action {
 		case permActionRead:
-			return roleIn(role, append(allReadRoles, "empresario")...)
+			return roleIn(role, append(allReadRoles, "contador", "empresario")...)
 		case permActionCreate, permActionUpdate, permActionApprove:
 			return roleIn(role, "admin_empresa", "supervisor_sucursal", "contabilidad", "auditor")
 		case permActionDelete:
@@ -2992,7 +2998,7 @@ func restrictPermissionModuleRowsForOperationalRole(role string, rows []permissi
 			if normalizedRole == "portero" && row.Modulo == permModuleVentas {
 				allowed = action == permActionRead || action == permActionApprove
 			}
-			if normalizedRole == "contador" && (row.Modulo == permModuleFinanzas || row.Modulo == permModuleFacturacion) {
+			if normalizedRole == "contador" && (row.Modulo == permModuleFinanzas || row.Modulo == permModuleFacturacion || row.Modulo == permModuleReportes) {
 				allowed = action == permActionRead
 			}
 			if normalizedRole == "empresario" && row.Modulo == permModuleReportes {

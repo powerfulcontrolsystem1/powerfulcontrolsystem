@@ -24,6 +24,12 @@ type PrivateFilesMigrationResult struct {
 	Rejected int64 `json:"rejected"`
 }
 
+type PrivateFilesMigrationOptions struct {
+	Apply     bool
+	EmpresaID int64
+	Category  string
+}
+
 type privateFilesMigrationSource struct {
 	table    string
 	column   string
@@ -234,18 +240,36 @@ func serveEmpresaPrivateFile(w http.ResponseWriter, r *http.Request, empresaID i
 // MigrateLegacyPrivateUploads moves legacy business attachments out of the web
 // root. Dry-run is the default in the command wrapper and performs no writes.
 func MigrateLegacyPrivateUploads(dbConn *sql.DB, webRoot string, apply bool) (PrivateFilesMigrationResult, error) {
-	result := PrivateFilesMigrationResult{DryRun: !apply}
+	return MigrateLegacyPrivateUploadsWithOptions(dbConn, webRoot, PrivateFilesMigrationOptions{Apply: apply})
+}
+
+// MigrateLegacyPrivateUploadsWithOptions permits an operational migration to
+// be restricted to one tenant and/or one fixed private-file category.
+func MigrateLegacyPrivateUploadsWithOptions(dbConn *sql.DB, webRoot string, options PrivateFilesMigrationOptions) (PrivateFilesMigrationResult, error) {
+	result := PrivateFilesMigrationResult{DryRun: !options.Apply}
 	if dbConn == nil {
 		return result, errors.New("conexion empresarial no disponible")
+	}
+	if options.EmpresaID < 0 {
+		return result, errors.New("empresa invalida")
+	}
+	category := strings.ToLower(strings.TrimSpace(options.Category))
+	if category != "" && !privateMigrationCategoryExists(category) {
+		return result, errors.New("categoria privada no permitida")
 	}
 	absWebRoot, err := filepath.Abs(filepath.Clean(strings.TrimSpace(webRoot)))
 	if err != nil || strings.TrimSpace(webRoot) == "" {
 		return result, errors.New("raiz web invalida")
 	}
 	for _, source := range privateFilesMigrationSources {
-		// #nosec G201 -- table and column names come only from the fixed migration catalog above.
-		query := fmt.Sprintf("SELECT id, empresa_id, COALESCE(%s, '') FROM %s WHERE COALESCE(%s, '') <> ''", source.column, source.table, source.column)
-		rows, err := dbConn.Query(query)
+		if category != "" && source.category != category {
+			continue
+		}
+		query, args, err := privateMigrationInventoryQuery(source, options.EmpresaID)
+		if err != nil {
+			return result, err
+		}
+		rows, err := dbConn.Query(query, args...)
 		if err != nil {
 			return result, fmt.Errorf("no se pudo consultar inventario privado: %w", err)
 		}
@@ -271,7 +295,7 @@ func MigrateLegacyPrivateUploads(dbConn *sql.DB, webRoot string, apply bool) (Pr
 				continue
 			}
 			result.Eligible++
-			if !apply {
+			if !options.Apply {
 				continue
 			}
 			input, err := os.Open(legacyPath) // #nosec G304 -- resolved below the configured legacy web root without symlinks.
@@ -317,6 +341,29 @@ func MigrateLegacyPrivateUploads(dbConn *sql.DB, webRoot string, apply bool) (Pr
 		}
 	}
 	return result, nil
+}
+
+func privateMigrationCategoryExists(category string) bool {
+	for _, source := range privateFilesMigrationSources {
+		if source.category == category {
+			return true
+		}
+	}
+	return false
+}
+
+func privateMigrationInventoryQuery(source privateFilesMigrationSource, empresaID int64) (string, []interface{}, error) {
+	if empresaID < 0 {
+		return "", nil, errors.New("empresa invalida")
+	}
+	// #nosec G201 -- table and column names come only from the fixed migration catalog above.
+	query := fmt.Sprintf("SELECT id, empresa_id, COALESCE(%s, '') FROM %s WHERE COALESCE(%s, '') <> ''", source.column, source.table, source.column)
+	args := make([]interface{}, 0, 1)
+	if empresaID > 0 {
+		query += " AND empresa_id = $1"
+		args = append(args, empresaID)
+	}
+	return query, args, nil
 }
 
 func isLegacyPrivateReference(ref string, fileRef bool) bool {

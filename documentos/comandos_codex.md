@@ -139,6 +139,20 @@ go build ./cmd/pcs-migrate
 go build ./cmd/pcs-worker
 ```
 
+Los certificados DIAN heredados bajo `web/uploads` deben migrarse al volumen
+privado por empresa. Después de desplegar una imagen que incluya
+`pcs-migrate-private-uploads`, ejecutar en el VPS:
+
+```bash
+cd /root/powerfulcontrolsystem
+EMPRESA_ID=12 bash deploy/scripts/vps-migrate-private-dian.sh
+```
+
+El script restringe la reparación temporal a la carpeta de firma de esa
+empresa, ejecuta primero una simulación y luego la migración confirmada de las
+dos referencias DIAN. No debe reemplazarse por un `chown -R` general sobre los
+uploads.
+
 Antes de un cambio de migraciones, cola, outbox o bootstrap, verificar el
 inventario y el contrato de catalogo sin tocar datos reales:
 
@@ -157,6 +171,22 @@ go vet ./db ./internal/platform/worker ./internal/platform/outbox
 go build ./cmd/pcs-migrate
 go build ./cmd/pcs-worker
 ```
+
+Antes del barrido visual o E2E del Plan 106, generar el inventario estático de
+interfaz. No autentica ni hace clics; su salida enumera los controles que luego
+deben recibir evidencia funcional, visual y de permisos:
+
+```powershell
+Set-Location D:\powerfulcontrolsystem
+$node = 'C:\Users\ivanm\.cache\codex-runtimes\codex-primary-runtime\dependencies\node\bin\node.exe'
+& $node tools\plan106_ui_inventory.mjs
+```
+
+El barrido autenticado `tools\qa_e2e_buttons.cjs` no tiene URL ni empresa por
+defecto. Antes de ejecutarlo se deben declarar explícitamente el entorno aislado
+y la empresa autorizada mediante `PCS_QA_BASE_URL` y `PCS_QA_EMPRESA_ID`; cargar
+las credenciales solo mediante variables de sesión, nunca en scripts, comandos
+guardados, documentos o reportes.
 
 `pcs-migrate` es el unico rol que aplica las migraciones de plataforma. La API
 y el worker solo verifican cola, outbox e idempotencia movil. Mantener
@@ -416,6 +446,22 @@ C:\Users\ivanm\.cache\codex-runtimes\codex-primary-runtime\dependencies\node\nod
 Para frontend, hacer prueba visual cuando el cambio afecte pantallas, botones,
 formularios, impresion o responsive. En impresiones POS/carta, revisar captura o
 HTML imprimible en blanco y negro.
+
+Para ejecutar la batería sintética de impresiones con el navegador ya instalado,
+definir `PCS_QA_CHROME_EXECUTABLE` con la ruta de Chrome for Testing antes de
+llamar `tools/qa_print_formats.cjs` o `tools/qa_e2e_buttons.cjs`. La variable
+evita descargar navegadores; el resultado no sustituye la prueba de impresora
+física ni documentos reales.
+
+El runner de botones localiza automáticamente el Playwright incluido por Codex.
+Antes de una sesión real se puede validar solo el runtime, sin autenticarse ni
+navegar:
+
+```powershell
+$env:PCS_QA_VALIDATE_RUNTIME = '1'
+& $node tools\qa_e2e_buttons.cjs
+Remove-Item Env:PCS_QA_VALIDATE_RUNTIME
+```
 
 ### Navegador interno de Codex
 

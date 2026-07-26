@@ -4548,8 +4548,45 @@ Actualizacion 2026-07-21 (Nextcloud empresarial):
 
 Actualizacion 2026-07-21 (gobierno de empresas):
 - El rol `super_administrador` conserva autoridad global para eliminar una empresa creada por otro administrador, bajo la confirmacion reforzada y la limpieza externa integral ya existente.
+Actualizacion 2026-07-24 (Plan 106, cartera de proveedores):
+- Finanzas > Cartera CxP ofrece `Cargar factura o recibo con IA`. El archivo se
+  radica por empresa, la IA propone proveedor, documento, fechas y total, y la
+  persona usuaria puede editar el borrador de CxP antes de guardarlo. La carga
+  no crea un pago, no contabiliza automaticamente y conserva revisión humana.
+- La conversión aprobada de un soporte IA a CxP valida que el proveedor activo
+  pertenezca a la misma empresa; registra soporte, CxP, evento y outbox en una
+  sola transacción. Las pruebas visuales, PostgreSQL y staging siguen abiertas.
+- El alta manual de CxP exige seleccionar un proveedor activo de
+  `empresa_proveedores`; el backend reemplaza el nombre enviado por el nombre
+  operativo canónico. El selector se alimenta por `empresa_id` y no reutiliza
+  el catálogo genérico de proveedores de otra tabla.
 2026-07-21: Respaldo VPS profesional programable desde Super Administrador
 - Módulos afectados: `super_administrador`, `operacion_vps`, `postgresql`, `worker`.
 - Cambio funcional: `Super Administrador > Plataforma > Docker VPS` permite seleccionar copia completa o solo PostgreSQL, y ejecutar una copia diaria a una hora definida; mantiene el intervalo como compatibilidad.
 - Seguridad: la configuración global conserva solo la ruta de rclone, nunca credenciales de nube; el paquete sigue excluyendo `.env.platform` y secretos por defecto.
 - Operación: el worker durable verifica cada minuto la programación y evita duplicar la ejecución dentro del mismo día local.
+
+Actualización 2026-07-25 (Reportes contables profesionales P107):
+- El módulo `reportes` incorpora auxiliares de resultados, situación financiera
+  y patrimonio por rubro/cuenta, siempre construidos desde asientos canónicos
+  de la empresa activa.
+- Estos auxiliares exponen su estado contable y no se declaran como estados
+  NIIF completos: comparativos, notas, políticas y firmas siguen siendo
+  requisitos separados de P107-009.
+
+Actualización 2026-07-25 (Fixtures contables P107):
+- El módulo de validación contable dispone de un contrato de fixtures
+  determinista para staging. El manifiesto no crea datos; enumera escenarios,
+  evidencia, idempotencia y reverso antes de delegar la ejecución a un flujo
+  autorizado.
+
+Actualización 2026-07-25 (Plantillas de reportes IA P107):
+- El módulo `reportes` guarda configuraciones IA como versiones de plantilla
+  aisladas por empresa. Antes de persistir, la especificación se revalida
+  contra el catálogo semántico y conserva la misma fuente autorizada.
+
+Actualización 2026-07-25 (Disponibilidad P107 de reportes):
+- El centro de reportes valida la disponibilidad de programación, plantillas
+  y ejecuciones con una consulta de marcador de una sola columna. Esto permite
+  que catálogo, vista previa y exportación continúen hacia el dataset elegido
+  sin relajar permisos ni el filtro de empresa.

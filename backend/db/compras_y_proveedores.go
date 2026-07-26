@@ -231,3 +231,51 @@ func GetEmpresaProveedores(dbConn *sql.DB, empresaID int64, paramEstado string) 
 	}
 	return lista, nil
 }
+
+// ListEmpresaProveedoresCxP returns the active operational supplier catalogue
+// used by Compras. CxP must use this same catalogue: the similarly named
+// empresa_proveedores table belongs to an unfinished ERP variant and is not
+// the catalogue exposed by /api/empresa/proveedores.
+//
+// The returned EmpresaProveedor shape preserves the CxP handler contract while
+// the query remains tenant-filtered and does not accept a supplier from another
+// empresa.
+func ListEmpresaProveedoresCxP(dbConn *sql.DB, empresaID int64) ([]EmpresaProveedor, error) {
+	if dbConn == nil || empresaID <= 0 {
+		return nil, fmt.Errorf("empresa_id invalido")
+	}
+	rows, err := ExecQueryCompat(dbConn, `SELECT id, empresa_id, COALESCE(documento,''), nombre, nombre,
+		COALESCE(direccion,''), COALESCE(telefono,''), COALESCE(email,''), '', COALESCE(plazo_pago_dias,0),
+		COALESCE(fecha_creacion,''), COALESCE(fecha_actualizacion,''), COALESCE(usuario_creador,''), COALESCE(estado,'activo'), COALESCE(observaciones,'')
+		FROM proveedores WHERE empresa_id=? AND COALESCE(estado,'activo')='activo' ORDER BY nombre ASC`, empresaID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := make([]EmpresaProveedor, 0)
+	for rows.Next() {
+		var proveedor EmpresaProveedor
+		if err := rows.Scan(&proveedor.ID, &proveedor.EmpresaID, &proveedor.NIT, &proveedor.NombreComercial, &proveedor.RazonSocial,
+			&proveedor.Direccion, &proveedor.Telefono, &proveedor.Email, &proveedor.CuentaBancaria, &proveedor.PlazoDiasPago,
+			&proveedor.FechaCreacion, &proveedor.FechaActualizacion, &proveedor.UsuarioCreador, &proveedor.Estado, &proveedor.Observaciones); err != nil {
+			return nil, err
+		}
+		items = append(items, proveedor)
+	}
+	return items, rows.Err()
+}
+
+func GetEmpresaProveedorCxP(dbConn *sql.DB, empresaID, proveedorID int64) (EmpresaProveedor, error) {
+	if dbConn == nil || empresaID <= 0 || proveedorID <= 0 {
+		return EmpresaProveedor{}, fmt.Errorf("empresa_id y proveedor_id son obligatorios")
+	}
+	var proveedor EmpresaProveedor
+	err := queryRowSQLCompat(dbConn, `SELECT id, empresa_id, COALESCE(documento,''), nombre, nombre,
+		COALESCE(direccion,''), COALESCE(telefono,''), COALESCE(email,''), '', COALESCE(plazo_pago_dias,0),
+		COALESCE(fecha_creacion,''), COALESCE(fecha_actualizacion,''), COALESCE(usuario_creador,''), COALESCE(estado,'activo'), COALESCE(observaciones,'')
+		FROM proveedores WHERE empresa_id=? AND id=?`, empresaID, proveedorID).
+		Scan(&proveedor.ID, &proveedor.EmpresaID, &proveedor.NIT, &proveedor.NombreComercial, &proveedor.RazonSocial,
+			&proveedor.Direccion, &proveedor.Telefono, &proveedor.Email, &proveedor.CuentaBancaria, &proveedor.PlazoDiasPago,
+			&proveedor.FechaCreacion, &proveedor.FechaActualizacion, &proveedor.UsuarioCreador, &proveedor.Estado, &proveedor.Observaciones)
+	return proveedor, err
+}

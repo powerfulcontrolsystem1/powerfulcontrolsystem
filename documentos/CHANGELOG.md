@@ -3311,3 +3311,14 @@
 ## [2026-07-17] Pagos, carrito y facturacion sin DDL HTTP
 - [Migraciones] Cobro de licencias, sincronizacion DIAN, carrito y corte de caja dejan de invocar `Ensure*` en trafico HTTP; verifican las tablas ya aplicadas por `pcs-migrate` y fallan cerrados ante una migracion faltante.
 - [Operacion] El inventario de DDL heredado fuera del migrador baja a 153 llamadas (80 en handlers) y queda validado por preflight.
+
+# 2026-07-26
+
+- [DIAN] La firma heredada se migra por empresa al almacenamiento privado con
+  alcance de archivos cerrado y permisos minimos.
+- [Facturacion] La factura original solo queda anulada despues de que DIAN
+  acepte la nota credito; la interfaz ya no usa la transicion local generica.
+- [Facturacion] La venta colombiana en produccion conserva la factura pendiente
+  mientras DIAN solo reporte `enviado`; el cierre fiscal exige `aceptado`.
+- [Multiempresa] La reparacion y las operaciones fiscales conservan filtros y
+  autorizacion efectiva por `empresa_id`.

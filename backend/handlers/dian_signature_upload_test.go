@@ -523,6 +523,15 @@ func TestRunDIANPruebasHabilitacionRejectsSimulation(t *testing.T) {
 	}
 }
 
+func TestDIANXMLHasDemoMarkersIgnoresSignatureBase64(t *testing.T) {
+	if dianXMLHasDemoMarkers(`<Invoice><cbc:ID>SETP1</cbc:ID><ds:Signature><ds:SignatureValue>QUJDREVNT0ZHSQ==</ds:SignatureValue><ds:X509Certificate>UEVORElFTlRF</ds:X509Certificate></ds:Signature></Invoice>`) {
+		t.Fatal("signature Base64 must not be interpreted as a DEMO/PENDIENTE document marker")
+	}
+	if !dianXMLHasDemoMarkers(`<Invoice><cbc:ID>SETP-DEMO-1</cbc:ID><ds:Signature><ds:SignatureValue>QUJD</ds:SignatureValue></ds:Signature></Invoice>`) {
+		t.Fatal("document-level DEMO marker must remain blocked")
+	}
+}
+
 func TestRunDIANPruebasHabilitacionTwoEachRealSOAPWithStatusZip(t *testing.T) {
 	server, stats := newTestDIANSOAPServer(t)
 	defer server.Close()

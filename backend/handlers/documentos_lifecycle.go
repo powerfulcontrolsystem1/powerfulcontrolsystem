@@ -30,6 +30,9 @@ func resolveFacturacionTransitionForDocument(actionRaw, estadoActualRaw, tipoDoc
 	if tipoDocumento == "" {
 		tipoDocumento = "factura_electronica"
 	}
+	if tipoDocumento == "factura_electronica" && normalizeDocumentoState(actionRaw) == "anular" {
+		return documentoTransition{}, fmt.Errorf("una factura electronica se anula fiscalmente mediante nota credito")
+	}
 	rules := map[string]documentoTransitionRule{
 		"emitir": {
 			AccionCanonica: "emitir",

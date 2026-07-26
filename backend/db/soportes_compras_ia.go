@@ -13,6 +13,35 @@ import (
 
 const EmpresaSoporteComprasIAModeloDefault = "openai:gpt-5.5"
 
+func empresaSoportesComprasIATablasCriticas() []string {
+	return []string{
+		"empresa_soportes_compras_ia",
+		"empresa_soportes_compras_ia_eventos",
+		"empresa_cuentas_por_pagar",
+		"empresa_proveedores",
+		"pcs_outbox_events",
+	}
+}
+
+// EmpresaSoportesComprasIASchemaReady is deliberately read-only. Runtime
+// handlers must fail closed when the migration/legacy catalog was not applied
+// instead of issuing DDL while a financial conversion is in progress.
+func EmpresaSoportesComprasIASchemaReady(dbConn *sql.DB) error {
+	if dbConn == nil {
+		return errors.New("db connection is nil")
+	}
+	for _, table := range empresaSoportesComprasIATablasCriticas() {
+		var registered sql.NullString
+		if err := queryRowSQLCompat(dbConn, `SELECT to_regclass(?)`, table).Scan(&registered); err != nil {
+			return fmt.Errorf("verify soportes compras IA table %s: %w", table, err)
+		}
+		if !registered.Valid || strings.TrimSpace(registered.String) == "" {
+			return fmt.Errorf("soportes compras IA table %s is missing; run pcs-migrate before starting the API", table)
+		}
+	}
+	return nil
+}
+
 type EmpresaSoporteComprasIA struct {
 	ID                     int64   `json:"id"`
 	EmpresaID              int64   `json:"empresa_id"`
@@ -372,31 +401,105 @@ func UpdateEmpresaSoporteComprasIAEstado(dbConn *sql.DB, empresaID, soporteID in
 }
 
 func ContabilizarEmpresaSoporteComprasIA(dbConn *sql.DB, empresaID, soporteID int64, usuario string) (EmpresaSoporteComprasIA, error) {
-	if err := EnsureEmpresaSoportesComprasIASchema(dbConn); err != nil {
+	if empresaID <= 0 || soporteID <= 0 {
+		return EmpresaSoporteComprasIA{}, errors.New("empresa_id y soporte_id son obligatorios")
+	}
+	if err := EmpresaSoportesComprasIASchemaReady(dbConn); err != nil {
 		return EmpresaSoporteComprasIA{}, err
 	}
-	row, err := GetEmpresaSoporteComprasIA(dbConn, empresaID, soporteID)
+	usuario = strings.TrimSpace(usuario)
+	if usuario == "" {
+		usuario = "sistema"
+	}
+	tx, err := dbConn.Begin()
 	if err != nil {
 		return EmpresaSoporteComprasIA{}, err
 	}
-	if row.EstadoSoporte != "aprobado" {
+	defer func() { _ = tx.Rollback() }()
+
+	var codigo, estadoSoporte, documentoTipo, documentoNumero, fechaDocumento, fechaVencimiento, moneda string
+	var proveedorID int64
+	var total float64
+	var convertidoID int64
+	err = queryRowTxSQLCompat(tx, `SELECT COALESCE(codigo,''), COALESCE(estado_soporte,'radicado'), COALESCE(proveedor_id,0),
+		COALESCE(documento_tipo,'factura_compra'), COALESCE(documento_numero,''),
+		COALESCE(fecha_documento,''), COALESCE(fecha_vencimiento,''), COALESCE(total,0), COALESCE(moneda,'COP'), COALESCE(convertido_id,0)
+		FROM empresa_soportes_compras_ia WHERE empresa_id=? AND id=? FOR UPDATE`, empresaID, soporteID).
+		Scan(&codigo, &estadoSoporte, &proveedorID, &documentoTipo, &documentoNumero, &fechaDocumento, &fechaVencimiento, &total, &moneda, &convertidoID)
+	if err != nil {
+		return EmpresaSoporteComprasIA{}, err
+	}
+	if estadoSoporte == "contabilizado" && convertidoID > 0 {
+		if err := tx.Commit(); err != nil {
+			return EmpresaSoporteComprasIA{}, err
+		}
+		return GetEmpresaSoporteComprasIA(dbConn, empresaID, soporteID)
+	}
+	if estadoSoporte != "aprobado" {
 		return EmpresaSoporteComprasIA{}, errors.New("el soporte debe estar aprobado antes de contabilizar")
 	}
-	codigo := "CXP-" + strings.TrimSpace(row.Codigo)
-	if codigo == "CXP-" {
-		codigo = nextSoporteComprasIACode(dbConn, empresaID)
+	if proveedorID <= 0 {
+		return EmpresaSoporteComprasIA{}, errors.New("el soporte aprobado debe seleccionar un proveedor registrado de la empresa")
 	}
-	cxpID, err := insertSQLCompat(dbConn, `INSERT INTO empresa_cuentas_por_pagar (empresa_id,codigo,proveedor_id,proveedor_nombre,documento_tipo,documento_codigo,fecha_emision,fecha_vencimiento,dias_mora,valor_original,valor_pagado,saldo,estado_cartera,moneda,periodo_contable,usuario_creador,estado,observaciones) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
-		empresaID, codigo, row.ProveedorID, row.ProveedorNombre, row.DocumentoTipo, row.DocumentoNumero, row.FechaDocumento, row.FechaVencimiento, 0, row.Total, 0, row.Total, "pendiente", row.Moneda, periodoFromFechaSoporteIA(row.FechaDocumento), usuario, "activo", "Creado desde captura inteligente de soporte "+row.Codigo)
+	var proveedorEstado, proveedorRazonSocial, proveedorNombreComercial string
+	if err := queryRowTxSQLCompat(tx, `SELECT COALESCE(estado,'activo'), COALESCE(razon_social,''), COALESCE(nombre_comercial,'')
+		FROM empresa_proveedores WHERE empresa_id=? AND id=?`, empresaID, proveedorID).Scan(&proveedorEstado, &proveedorRazonSocial, &proveedorNombreComercial); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return EmpresaSoporteComprasIA{}, errors.New("el proveedor no pertenece a la empresa activa")
+		}
+		return EmpresaSoporteComprasIA{}, err
+	}
+	if !strings.EqualFold(strings.TrimSpace(proveedorEstado), "activo") {
+		return EmpresaSoporteComprasIA{}, errors.New("el proveedor seleccionado no esta activo")
+	}
+	proveedorNombreCanonico := nombreProveedorCxPCanonico(proveedorRazonSocial, proveedorNombreComercial)
+	if proveedorNombreCanonico == "" {
+		return EmpresaSoporteComprasIA{}, errors.New("el proveedor seleccionado no tiene nombre operativo")
+	}
+	total = soporteIARound(total)
+	if total <= 0 || strings.TrimSpace(documentoNumero) == "" {
+		return EmpresaSoporteComprasIA{}, errors.New("el soporte aprobado requiere documento y total mayor que cero")
+	}
+	codigoCxP := "CXP-" + strings.TrimSpace(codigo)
+	if codigoCxP == "CXP-" {
+		return EmpresaSoporteComprasIA{}, errors.New("el soporte aprobado no tiene codigo operativo")
+	}
+	cxpID, err := insertTxSQLCompat(tx, `INSERT INTO empresa_cuentas_por_pagar
+		(empresa_id,codigo,proveedor_id,proveedor_nombre,documento_tipo,documento_codigo,fecha_emision,fecha_vencimiento,dias_mora,valor_original,valor_pagado,saldo,estado_cartera,moneda,periodo_contable,usuario_creador,estado,observaciones)
+		VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`, empresaID, codigoCxP, proveedorID, proveedorNombreCanonico, documentoTipo, documentoNumero,
+		fechaDocumento, fechaVencimiento, 0, total, 0, total, "pendiente", strings.ToUpper(strings.TrimSpace(moneda)),
+		periodoFromFechaSoporteIA(fechaDocumento), usuario, "activo", "Creado desde captura inteligente de soporte "+codigo)
 	if err != nil {
 		return EmpresaSoporteComprasIA{}, err
 	}
-	_, err = ExecCompat(dbConn, `UPDATE empresa_soportes_compras_ia SET estado_soporte='contabilizado', convertido_tipo='cuenta_por_pagar', convertido_id=?, requiere_revision_humana=0, fecha_actualizacion=CURRENT_TIMESTAMP, usuario_creador=? WHERE empresa_id=? AND id=?`, cxpID, usuario, empresaID, soporteID)
+	updated, err := execTxSQLCompat(tx, `UPDATE empresa_soportes_compras_ia SET estado_soporte='contabilizado', convertido_tipo='cuenta_por_pagar', convertido_id=?, requiere_revision_humana=0, fecha_actualizacion=CURRENT_TIMESTAMP, usuario_creador=? WHERE empresa_id=? AND id=? AND estado_soporte='aprobado'`, cxpID, usuario, empresaID, soporteID)
 	if err != nil {
 		return EmpresaSoporteComprasIA{}, err
 	}
-	_ = InsertEmpresaSoporteComprasIAEvento(dbConn, empresaID, soporteID, "contabilizar", row.EstadoSoporte, "contabilizado", usuario, map[string]interface{}{"cuenta_por_pagar_id": cxpID})
+	if affected, _ := updated.RowsAffected(); affected != 1 {
+		return EmpresaSoporteComprasIA{}, errors.New("el soporte cambio de estado antes de contabilizar")
+	}
+	detalle, _ := json.Marshal(map[string]interface{}{"cuenta_por_pagar_id": cxpID, "proveedor_id": proveedorID, "documento": documentoNumero, "total": total})
+	if _, err := insertTxSQLCompat(tx, `INSERT INTO empresa_soportes_compras_ia_eventos
+		(empresa_id,soporte_id,evento,estado_anterior,estado_nuevo,detalle_json,usuario_creador)
+		VALUES (?,?,?,?,?,?,?)`, empresaID, soporteID, "contabilizar", estadoSoporte, "contabilizado", string(detalle), usuario); err != nil {
+		return EmpresaSoporteComprasIA{}, err
+	}
+	outboxPayload, _ := json.Marshal(map[string]interface{}{"soporte_id": soporteID, "cuenta_por_pagar_id": cxpID, "proveedor_id": proveedorID, "total": total})
+	if err := InsertOutboxEvent(tx, OutboxEvent{EmpresaID: empresaID, Topic: "cuentas_por_pagar.soporte_ia_contabilizado", PayloadJSON: string(outboxPayload), IdempotencyKey: fmt.Sprintf("soporte-ia-cxp:%d:%d", empresaID, soporteID)}); err != nil {
+		return EmpresaSoporteComprasIA{}, err
+	}
+	if err := tx.Commit(); err != nil {
+		return EmpresaSoporteComprasIA{}, err
+	}
 	return GetEmpresaSoporteComprasIA(dbConn, empresaID, soporteID)
+}
+
+func nombreProveedorCxPCanonico(razonSocial, nombreComercial string) string {
+	if razonSocial = strings.TrimSpace(razonSocial); razonSocial != "" {
+		return razonSocial
+	}
+	return strings.TrimSpace(nombreComercial)
 }
 
 func GetEmpresaSoporteComprasIA(dbConn *sql.DB, empresaID, id int64) (EmpresaSoporteComprasIA, error) {

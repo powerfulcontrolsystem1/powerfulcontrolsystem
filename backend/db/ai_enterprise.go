@@ -80,6 +80,20 @@ type EmpresaAIExecution struct {
 	DuracionMS     int64  `json:"duracion_ms"`
 }
 
+// EmpresaAIMemoria is an explicitly consented, tenant-and-user-scoped memory
+// item. It is not a transcript and must never contain credentials or secrets.
+type EmpresaAIMemoria struct {
+	EmpresaID          int64      `json:"empresa_id"`
+	UsuarioID          string     `json:"usuario_id"`
+	Tipo               string     `json:"tipo"`
+	Clave              string     `json:"clave"`
+	ValorJSON          string     `json:"valor_json"`
+	Consentida         bool       `json:"consentida"`
+	FechaExpiracion    *time.Time `json:"fecha_expiracion,omitempty"`
+	FechaCreacion      string     `json:"fecha_creacion,omitempty"`
+	FechaActualizacion string     `json:"fecha_actualizacion,omitempty"`
+}
+
 func EnsureEmpresaAIEnterpriseSchema(dbConn *sql.DB) error {
 	if dbConn == nil {
 		return errors.New("db connection is nil")
@@ -199,6 +213,87 @@ func EmpresaAIEnterpriseSchemaReady(dbConn *sql.DB) error {
 		}
 	}
 	return nil
+}
+
+// UpsertEmpresaAIMemoria stores only a consented JSON value for its owner.
+// Callers must use the authenticated user, never a client supplied user id.
+func UpsertEmpresaAIMemoria(dbConn *sql.DB, item EmpresaAIMemoria) error {
+	if err := EmpresaAIEnterpriseSchemaReady(dbConn); err != nil {
+		return err
+	}
+	item.UsuarioID = strings.ToLower(strings.TrimSpace(item.UsuarioID))
+	item.Tipo = strings.ToLower(strings.TrimSpace(item.Tipo))
+	item.Clave = strings.TrimSpace(item.Clave)
+	item.ValorJSON = strings.TrimSpace(item.ValorJSON)
+	if item.EmpresaID <= 0 || item.UsuarioID == "" || item.Tipo == "" || item.Clave == "" || !item.Consentida {
+		return fmt.Errorf("memoria IA incompleta o sin consentimiento")
+	}
+	if len(item.Tipo) > 80 || len(item.Clave) > 160 || len(item.ValorJSON) > 8192 || !json.Valid([]byte(item.ValorJSON)) {
+		return fmt.Errorf("memoria IA invalida")
+	}
+	if empresaAIMemoryContainsSecret(item.Tipo, item.Clave, item.ValorJSON) {
+		return fmt.Errorf("la memoria IA no admite secretos ni credenciales")
+	}
+	if item.FechaExpiracion != nil && !item.FechaExpiracion.After(time.Now()) {
+		return fmt.Errorf("fecha de expiracion de memoria invalida")
+	}
+	_, err := execSQLCompat(dbConn, `INSERT INTO empresa_ai_memoria (empresa_id, usuario_id, tipo, clave, valor_json, consentida, fecha_expiracion, fecha_creacion, fecha_actualizacion) VALUES (?, ?, ?, ?, ?, TRUE, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP) ON CONFLICT(empresa_id, usuario_id, tipo, clave) DO UPDATE SET valor_json = excluded.valor_json, consentida = TRUE, fecha_expiracion = excluded.fecha_expiracion, fecha_actualizacion = CURRENT_TIMESTAMP`, item.EmpresaID, item.UsuarioID, item.Tipo, item.Clave, item.ValorJSON, item.FechaExpiracion)
+	return err
+}
+
+func empresaAIMemoryContainsSecret(parts ...string) bool {
+	for _, part := range parts {
+		value := strings.ToLower(part)
+		for _, marker := range []string{"password", "contraseña", "contrasena", "api_key", "access_token", "secret_key", "private_key", "bearer "} {
+			if strings.Contains(value, marker) {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+// ListEmpresaAIMemoria returns only the owner’s active, consented memories.
+func ListEmpresaAIMemoria(dbConn *sql.DB, empresaID int64, usuarioID string, limit int) ([]EmpresaAIMemoria, error) {
+	if err := EmpresaAIEnterpriseSchemaReady(dbConn); err != nil {
+		return nil, err
+	}
+	usuarioID = strings.ToLower(strings.TrimSpace(usuarioID))
+	if empresaID <= 0 || usuarioID == "" {
+		return nil, fmt.Errorf("empresa_id y usuario_id son obligatorios")
+	}
+	if limit <= 0 || limit > 100 {
+		limit = 50
+	}
+	rows, err := querySQLCompat(dbConn, `SELECT empresa_id, usuario_id, tipo, clave, valor_json, consentida, fecha_expiracion, COALESCE(fecha_creacion::text, ''), COALESCE(fecha_actualizacion::text, '') FROM empresa_ai_memoria WHERE empresa_id = ? AND usuario_id = ? AND consentida = TRUE AND (fecha_expiracion IS NULL OR fecha_expiracion > CURRENT_TIMESTAMP) ORDER BY fecha_actualizacion DESC LIMIT ?`, empresaID, usuarioID, limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := make([]EmpresaAIMemoria, 0)
+	for rows.Next() {
+		var item EmpresaAIMemoria
+		if err := rows.Scan(&item.EmpresaID, &item.UsuarioID, &item.Tipo, &item.Clave, &item.ValorJSON, &item.Consentida, &item.FechaExpiracion, &item.FechaCreacion, &item.FechaActualizacion); err != nil {
+			return nil, err
+		}
+		items = append(items, item)
+	}
+	return items, rows.Err()
+}
+
+// DeleteEmpresaAIMemoria forgets only a memory owned by the authenticated user.
+func DeleteEmpresaAIMemoria(dbConn *sql.DB, empresaID int64, usuarioID, tipo, clave string) error {
+	if err := EmpresaAIEnterpriseSchemaReady(dbConn); err != nil {
+		return err
+	}
+	usuarioID = strings.ToLower(strings.TrimSpace(usuarioID))
+	tipo = strings.ToLower(strings.TrimSpace(tipo))
+	clave = strings.TrimSpace(clave)
+	if empresaID <= 0 || usuarioID == "" || tipo == "" || clave == "" {
+		return fmt.Errorf("identificador de memoria IA incompleto")
+	}
+	_, err := execSQLCompat(dbConn, `DELETE FROM empresa_ai_memoria WHERE empresa_id = ? AND usuario_id = ? AND tipo = ? AND clave = ?`, empresaID, usuarioID, tipo, clave)
+	return err
 }
 
 func RecordEmpresaAIExecution(dbConn *sql.DB, in EmpresaAIExecution) error {

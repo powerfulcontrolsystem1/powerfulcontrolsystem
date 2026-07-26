@@ -6,6 +6,17 @@ import (
 	"time"
 )
 
+func TestPaginaPrincipalRoleIsSuperAceptaAliasesDelPanel(t *testing.T) {
+	for _, role := range []string{"super_administrador", "superadministrador", "superadmin", "super"} {
+		if !paginaPrincipalRoleIsSuper(role) {
+			t.Fatalf("el alias %q debe conservar acceso Super Administrador", role)
+		}
+	}
+	if paginaPrincipalRoleIsSuper("administrador") {
+		t.Fatal("un administrador regular no debe recibir acceso Super Administrador")
+	}
+}
+
 func TestParseLicenciaDiscountCodeAdminLines(t *testing.T) {
 	items := parseLicenciaDiscountCodeAdminLines(" LANZA20 = 20%\n# CORTESIA=gratis\nMOTO50=50000\nINVALIDO\n")
 	if len(items) != 3 {

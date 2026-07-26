@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -476,6 +477,9 @@ func handleEmpresaReportesPlantillasAction(w http.ResponseWriter, r *http.Reques
 		if config == nil {
 			config = map[string]interface{}{}
 		}
+		if err := reportesValidateCustomSpecTemplate(datasetKey, config); err != nil {
+			return newReportesHTTPError(http.StatusBadRequest, err.Error())
+		}
 		columnasJSON := reportesMarshalJSON(columnas, "[]")
 		configJSON := reportesMarshalJSON(config, "{}")
 		hashContenido := reportesHashString(strings.Join([]string{
@@ -601,6 +605,33 @@ func handleEmpresaReportesPlantillasAction(w http.ResponseWriter, r *http.Reques
 	default:
 		return newReportesHTTPError(http.StatusMethodNotAllowed, "method not allowed")
 	}
+}
+
+// reportesValidateCustomSpecTemplate allows the existing versioned-template
+// store to retain a custom IA ReportSpec only when its source is the same
+// approved dataset of the template. This keeps template persistence from
+// becoming a route around the server-side semantic catalog.
+func reportesValidateCustomSpecTemplate(datasetKey string, config map[string]interface{}) error {
+	rawSpec, exists := config["report_spec"]
+	if !exists || rawSpec == nil {
+		return nil
+	}
+	encoded, err := json.Marshal(rawSpec)
+	if err != nil {
+		return errors.New("report_spec de plantilla invalido")
+	}
+	var spec empresaReportePersonalizadoSpec
+	if err := json.Unmarshal(encoded, &spec); err != nil {
+		return errors.New("report_spec de plantilla invalido")
+	}
+	if err := validateEmpresaReportePersonalizadoSpec(&spec); err != nil {
+		return fmt.Errorf("report_spec de plantilla invalido: %w", err)
+	}
+	if spec.SourceDataset != strings.ToLower(strings.TrimSpace(datasetKey)) {
+		return errors.New("report_spec debe usar el mismo dataset_key de la plantilla")
+	}
+	config["report_spec"] = spec
+	return nil
 }
 
 func getReportePlantillaByID(dbEmp *sql.DB, empresaID, id int64) (map[string]interface{}, error) {
@@ -1079,15 +1110,15 @@ func handleEmpresaReportesProgramacionAction(w http.ResponseWriter, r *http.Requ
 
 func getReporteProgramacionByID(dbEmp *sql.DB, empresaID, id int64) (map[string]interface{}, error) {
 	var (
-		rowID, empID, templateVersion                       int64
-		nombre, datasetKey, nivel                           string
-		formatosJSON, parametrosJSON                        string
-		templateCodigo, frecuencia, horaEnvio, timezone     sql.NullString
-		destinatarios, ultimoEjecutado, proximoEjecutado    sql.NullString
-		activa, validarConsistencia                         int
-		hashUltimaEjecucion                                 sql.NullString
-		fechaCreacion, fechaActualizacion                   string
-		usuarioCreador, estado, observaciones              sql.NullString
+		rowID, empID, templateVersion                    int64
+		nombre, datasetKey, nivel                        string
+		formatosJSON, parametrosJSON                     string
+		templateCodigo, frecuencia, horaEnvio, timezone  sql.NullString
+		destinatarios, ultimoEjecutado, proximoEjecutado sql.NullString
+		activa, validarConsistencia                      int
+		hashUltimaEjecucion                              sql.NullString
+		fechaCreacion, fechaActualizacion                string
+		usuarioCreador, estado, observaciones            sql.NullString
 	)
 	err := dbEmp.QueryRow(`
 		SELECT
@@ -1184,15 +1215,15 @@ func handleEmpresaReportesEjecucionesAction(w http.ResponseWriter, r *http.Reque
 	items := make([]map[string]interface{}, 0)
 	for rows.Next() {
 		var (
-			id, empID                                         int64
-			rowProgramacionID                                 sql.NullInt64
-			datasetKey                                        string
-			referencia, formatoPrincipal, formatosJSON        sql.NullString
-			estadoEjecucion, ejecutadoEn                      sql.NullString
-			consistenciaEstado, consistenciaDetalleJSON       sql.NullString
-			salidaResumenJSON, errorDetalle                   sql.NullString
-			fechaCreacion, fechaActualizacion                 sql.NullString
-			usuarioCreador, estado, observaciones            sql.NullString
+			id, empID                                   int64
+			rowProgramacionID                           sql.NullInt64
+			datasetKey                                  string
+			referencia, formatoPrincipal, formatosJSON  sql.NullString
+			estadoEjecucion, ejecutadoEn                sql.NullString
+			consistenciaEstado, consistenciaDetalleJSON sql.NullString
+			salidaResumenJSON, errorDetalle             sql.NullString
+			fechaCreacion, fechaActualizacion           sql.NullString
+			usuarioCreador, estado, observaciones       sql.NullString
 		)
 		if err := rows.Scan(
 			&id, &empID, &rowProgramacionID, &datasetKey, &referencia,

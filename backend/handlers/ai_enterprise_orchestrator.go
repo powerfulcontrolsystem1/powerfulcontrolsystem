@@ -3,16 +3,20 @@ package handlers
 import (
 	"database/sql"
 	"encoding/json"
+	"fmt"
 	"io"
 	"log"
 	"net/http"
 	"os"
+	"regexp"
 	"strings"
 	"time"
 
 	aipkg "github.com/you/pos-backend/ai"
 	dbpkg "github.com/you/pos-backend/db"
 )
+
+var enterpriseAIConversationIDPattern = regexp.MustCompile(`^[A-Za-z0-9_-]{1,128}$`)
 
 // EmpresaAIEnterpriseHandler exposes a closed, server-owned approval flow.
 // It is feature-flagged off until a company validates the new UX.
@@ -138,6 +142,8 @@ func enterpriseAIExecutionContext(r *http.Request, dbEmp, dbSuper *sql.DB, empre
 	conversationID := strings.TrimSpace(r.Header.Get("X-AI-Conversation-ID"))
 	if conversationID == "" {
 		conversationID = "conversation-" + requestID
+	} else if !enterpriseAIConversationIDPattern.MatchString(conversationID) {
+		return aipkg.ExecutionContext{}, fmt.Errorf("identificador de conversacion IA invalido")
 	}
 	mode := strings.ToLower(strings.TrimSpace(r.Header.Get("X-AI-Mode")))
 	if mode == "" {
@@ -195,6 +201,79 @@ type enterpriseAIProductProposalRequest struct {
 	Plan           dbpkg.EmpresaAIProductCreatePlan `json:"plan"`
 }
 
+// decodeEmpresaAIProductToolArguments is the only bridge accepted from a
+// model function_call into the product proposal flow. It accepts no tenant,
+// role, user or confirmation field and reuses the domain plan validation.
+func decodeEmpresaAIProductToolArguments(raw string) (dbpkg.EmpresaAIProductCreatePlan, error) {
+	var plan dbpkg.EmpresaAIProductCreatePlan
+	var fields map[string]json.RawMessage
+	if err := json.Unmarshal([]byte(raw), &fields); err != nil {
+		return plan, fmt.Errorf("argumentos de herramienta invalidos")
+	}
+	for _, required := range []string{"nombre", "sku", "descripcion", "categoria_id", "bodega_id", "unidad_medida", "costo", "precio", "impuesto_porcentaje", "stock_inicial", "stock_minimo"} {
+		if _, ok := fields[required]; !ok {
+			return plan, fmt.Errorf("campo requerido de herramienta ausente: %s", required)
+		}
+	}
+	decoder := json.NewDecoder(strings.NewReader(raw))
+	decoder.DisallowUnknownFields()
+	if err := decoder.Decode(&plan); err != nil {
+		return plan, fmt.Errorf("argumentos de herramienta invalidos")
+	}
+	if err := dbpkg.NormalizeEmpresaAIProductCreatePlan(&plan); err != nil {
+		return plan, err
+	}
+	return plan, nil
+}
+
+func dispatchEnterpriseAIProductProposal(dbEmp *sql.DB, r *http.Request, ctx aipkg.ExecutionContext, plan dbpkg.EmpresaAIProductCreatePlan) (*dbpkg.EmpresaAIProposal, error) {
+	if !enterpriseAIWriteToolEnabled(aipkg.ToolCatalogCreateProduct) || !enterpriseAIRequireTool(ctx, aipkg.ToolCatalogCreateProduct) {
+		return nil, fmt.Errorf("herramienta de producto no autorizada")
+	}
+	if err := dbpkg.NormalizeEmpresaAIProductCreatePlan(&plan); err != nil {
+		return nil, err
+	}
+	duplicates, err := dbpkg.FindEmpresaAIProductDuplicates(dbEmp, ctx.EmpresaID, plan.Nombre, plan.SKU)
+	if err != nil {
+		return nil, err
+	}
+	if len(duplicates) > 0 {
+		return nil, fmt.Errorf("possible_duplicate")
+	}
+	planJSON, _ := json.Marshal(plan)
+	expectedJSON, _ := json.Marshal(map[string]interface{}{"nombre": plan.Nombre, "precio": plan.Precio, "impuesto_porcentaje": plan.ImpuestoPorcentaje, "stock_inicial": plan.StockInicial, "categoria_id": plan.CategoriaID, "bodega_id": plan.BodegaID})
+	proposalID, err := aipkg.NewOpaqueID("proposal")
+	if err != nil {
+		return nil, err
+	}
+	p, err := dbpkg.CreateEmpresaAIProposal(dbEmp, dbpkg.EmpresaAIProposal{ProposalID: proposalID, ConversationID: ctx.ConversationID, EmpresaID: ctx.EmpresaID, UsuarioCreador: ctx.UserID, ToolName: aipkg.ToolCatalogCreateProduct, RiskLevel: "medium", PlanJSON: string(planJSON), EstadoAnterior: `{"duplicates":0}`, EstadoEsperado: string(expectedJSON), Resumen: "Crear producto " + plan.Nombre + " en el catalogo de la empresa actual.", RollbackPolicy: "transactional_before_commit", Estado: dbpkg.AIProposalAwaitingConfirmation}, 15*time.Minute)
+	if err != nil {
+		return nil, err
+	}
+	_ = dbpkg.RecordEmpresaAIExecution(dbEmp, dbpkg.EmpresaAIExecution{EmpresaID: ctx.EmpresaID, UsuarioID: ctx.UserID, ConversationID: ctx.ConversationID, ProposalID: p.ProposalID, ToolName: p.ToolName, Modo: ctx.Mode, RiskLevel: p.RiskLevel, Resultado: "awaiting_confirmation", FuentesJSON: `["Catalogo de productos","Categorias","Bodegas"]`, CategoriasJSON: `["internal"]`})
+	registrarAuditoriaModuloEmpresaNoBloqueante(dbEmp, r, ctx.EmpresaID, "centro_ia_empresarial", "propuesta_producto_creada", "empresa_ai_propuestas", 0, http.StatusCreated, map[string]interface{}{"proposal_id": p.ProposalID, "tool": p.ToolName, "risk": p.RiskLevel}, "propuesta IA de producto creada sin ejecutar cambios")
+	return p, nil
+}
+
+// dispatchEnterpriseAIResponsesFunctionCall is the closed bridge used by a
+// Responses function_call. It never executes a product write; it returns a
+// server-owned proposal that still requires separate confirmation.
+func dispatchEnterpriseAIResponsesFunctionCall(dbEmp *sql.DB, r *http.Request, ctx aipkg.ExecutionContext, call openAIResponsesFunctionCall) (string, error) {
+	if call.Name != aipkg.ToolCatalogCreateProduct {
+		return "", fmt.Errorf("herramienta IA no registrada")
+	}
+	plan, err := decodeEmpresaAIProductToolArguments(call.Arguments)
+	if err != nil {
+		return "", err
+	}
+	p, err := dispatchEnterpriseAIProductProposal(dbEmp, r, ctx, plan)
+	if err != nil {
+		return "", err
+	}
+	result, _ := json.Marshal(map[string]interface{}{"status": dbpkg.AIProposalAwaitingConfirmation, "proposal_id": p.ProposalID, "summary": p.Resumen, "confirmation_required": true})
+	return string(result), nil
+}
+
 // enterpriseAICatalogSearch is a bounded, read-only catalog lookup for the
 // agent. It intentionally returns identifiers only from the current company,
 // so a later write proposal cannot be assembled with foreign IDs.
@@ -241,35 +320,16 @@ func enterpriseAIProductProposal(w http.ResponseWriter, r *http.Request, dbEmp *
 		http.Error(w, "conversacion IA no coincide con el contexto autenticado", http.StatusForbidden)
 		return
 	}
-	if err := dbpkg.NormalizeEmpresaAIProductCreatePlan(&req.Plan); err != nil {
-		writeJSON(w, http.StatusUnprocessableEntity, map[string]interface{}{"ok": false, "state": dbpkg.AIProposalAwaitingInformation, "missing_or_invalid": enterpriseAIProposalValidationMessage(r, err)})
+	p, err := dispatchEnterpriseAIProductProposal(dbEmp, r, ctx, req.Plan)
+	if err == nil {
+		writeJSON(w, http.StatusCreated, map[string]interface{}{"ok": true, "proposal": p, "sources": []string{"Catalogo de productos", "Categorias", "Bodegas"}})
 		return
 	}
-	duplicates, err := dbpkg.FindEmpresaAIProductDuplicates(dbEmp, ctx.EmpresaID, req.Plan.Nombre, req.Plan.SKU)
-	if err != nil {
-		http.Error(w, "No se pudo validar duplicados del catalogo", http.StatusServiceUnavailable)
+	if strings.Contains(err.Error(), "possible_duplicate") {
+		writeJSON(w, http.StatusConflict, map[string]interface{}{"ok": false, "state": dbpkg.AIProposalAwaitingInformation, "code": "possible_duplicate", "error": "Existe un producto con el mismo nombre o SKU. Revisa el catalogo antes de continuar."})
 		return
 	}
-	if len(duplicates) > 0 {
-		writeJSON(w, http.StatusConflict, map[string]interface{}{"ok": false, "state": dbpkg.AIProposalAwaitingInformation, "code": "possible_duplicate", "matches": duplicates, "error": "Existe un producto con el mismo nombre o SKU. Revisa el catalogo antes de continuar."})
-		return
-	}
-	planJSON, _ := json.Marshal(req.Plan)
-	beforeJSON := `{"duplicates":0}`
-	expectedJSON, _ := json.Marshal(map[string]interface{}{"nombre": req.Plan.Nombre, "precio": req.Plan.Precio, "impuesto_porcentaje": req.Plan.ImpuestoPorcentaje, "stock_inicial": req.Plan.StockInicial, "categoria_id": req.Plan.CategoriaID, "bodega_id": req.Plan.BodegaID})
-	proposalID, err := aipkg.NewOpaqueID("proposal")
-	if err != nil {
-		http.Error(w, "No se pudo crear propuesta", http.StatusInternalServerError)
-		return
-	}
-	p, err := dbpkg.CreateEmpresaAIProposal(dbEmp, dbpkg.EmpresaAIProposal{ProposalID: proposalID, ConversationID: ctx.ConversationID, EmpresaID: ctx.EmpresaID, UsuarioCreador: ctx.UserID, ToolName: aipkg.ToolCatalogCreateProduct, RiskLevel: "medium", PlanJSON: string(planJSON), EstadoAnterior: beforeJSON, EstadoEsperado: string(expectedJSON), Resumen: "Crear producto " + req.Plan.Nombre + " en el catalogo de la empresa actual.", RollbackPolicy: "transactional_before_commit", Estado: dbpkg.AIProposalAwaitingConfirmation}, 15*time.Minute)
-	if err != nil {
-		http.Error(w, "No se pudo guardar propuesta", http.StatusInternalServerError)
-		return
-	}
-	_ = dbpkg.RecordEmpresaAIExecution(dbEmp, dbpkg.EmpresaAIExecution{EmpresaID: ctx.EmpresaID, UsuarioID: ctx.UserID, ConversationID: ctx.ConversationID, ProposalID: p.ProposalID, ToolName: p.ToolName, Modo: ctx.Mode, RiskLevel: p.RiskLevel, Resultado: "awaiting_confirmation", FuentesJSON: `["Catalogo de productos","Categorias","Bodegas"]`, CategoriasJSON: `["internal"]`})
-	registrarAuditoriaModuloEmpresaNoBloqueante(dbEmp, r, ctx.EmpresaID, "centro_ia_empresarial", "propuesta_producto_creada", "empresa_ai_propuestas", 0, http.StatusCreated, map[string]interface{}{"proposal_id": p.ProposalID, "tool": p.ToolName, "risk": p.RiskLevel}, "propuesta IA de producto creada sin ejecutar cambios")
-	writeJSON(w, http.StatusCreated, map[string]interface{}{"ok": true, "proposal": p, "sources": []string{"Catalogo de productos", "Categorias", "Bodegas"}})
+	writeJSON(w, http.StatusUnprocessableEntity, map[string]interface{}{"ok": false, "state": dbpkg.AIProposalAwaitingInformation, "error": enterpriseAIProposalValidationMessage(r, err)})
 }
 
 func enterpriseAIHotelProposal(w http.ResponseWriter, r *http.Request, dbEmp *sql.DB, ctx aipkg.ExecutionContext) {

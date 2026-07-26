@@ -8,6 +8,20 @@
   propias activaban el gate HIGH/CRITICAL. El runner conserva una cache y
   temporales configurables para cuando se ejecute con el binario del host.
 
+2026-07-24: Plan 107 del contador profesional y reportes IA.
+- Se crea `documentos/plan_107_contador_profesional.md` como complemento
+  contable del Plan 106, sin ejecutar codigo, ventas, pagos, documentos
+  fiscales, migraciones ni despliegue.
+- La linea base identifica 43 datasets, una IA que hoy solo selecciona reportes
+  fijos, una diferencia de permisos del rol `contador`, estados financieros
+  resumidos, impuestos centrados en ventas, exogena base y la doble fuente CxP.
+- El plan exige el ciclo real controlado de menta COP 100, clientes, credito,
+  proveedores, cartera, bancos, nomina, activos e impuestos, mas estados
+  financieros completos, validacion Colombia y UAT independiente.
+- `contador` y `admin_empresa` deben poder consultar la IA dentro de sus
+  permisos. Los reportes nuevos se expresan como `ReportSpec` validado por
+  servidor; el modelo no recibe SQL libre ni autoridad sobre `empresa_id`.
+
 2026-07-22: Correccion CSRF del panel de seguridad VPS P105-013.
 - La comprobacion visual autenticada de staging confirma que el panel no tiene
   hallazgos ni historial cargado. Un intento de escaneo controlado devolvio
@@ -39007,3 +39021,579 @@ Archivos modificados:
   `frame-ancestors`; la sonda del script ahora sigue redirecciones y analiza las
   cabeceras de la respuesta final. El intento que encontro esta limitacion se
   restauro desde su backup antes de aplicar este cambio.
+2026-07-24: Plan 106 de certificacion integral para produccion.
+- Se crea `documentos/plan_106.md` con veredicto inicial `NO-GO` y ejecucion
+  pendiente de aprobacion. El plan registra como P0 la doble fuente de verdad
+  de cartera de proveedores y sus riesgos de concurrencia e idempotencia.
+- La nueva hoja de ruta exige inventario y prueba explicita de todos los
+  modulos, funciones y botones, pruebas visuales, cobertura completa de IA,
+  cuatro cajas simultaneas y pruebas reales controladas en `Powerful Control
+  System` antes de solicitar `rs` o produccion.
+- La cuenta de prueba se identifica por usuario, pero la clave suministrada no
+  se copia ni versiona por las reglas de seguridad del proyecto.
+
+2026-07-24: P106 P0 - cartera de proveedores canonica y abonos atomicos.
+- Se selecciona `empresa_cuentas_por_pagar` como fuente futura de CxP mediante
+  ADR documentada. La tabla de contabilidad avanzada conserva solo lectura de
+  CxP historica: bloquea nuevas CxP y sus abonos hasta conciliacion aprobada.
+- Se agrega la migracion empresarial inmutable
+  `20260724-001-cxp-atomic-payments-v1`, aun sin ejecutar, para el ledger
+  `empresa_cxp_pagos` con importe `NUMERIC(18,2)` e idempotencia por hash.
+- El pago CxP de Finanzas exige `Idempotency-Key` y confirma en una transaccion
+  la asignacion, el movimiento financiero, el saldo y el evento outbox; los
+  sobrepagos se rechazan. No se ejecutaron pruebas con dinero, proveedores,
+  usuarios reales, migraciones ni despliegue.
+- Validacion local posterior: `go test ./... -count=1`, `go vet ./...` y
+  `profesional_preflight.ps1 -Full` aprobaron; las pruebas visuales y
+  PostgreSQL/staging de concurrencia siguen pendientes.
+
+2026-07-24: P106 - carga IA editable en cartera de proveedores.
+- Finanzas incorpora el botón para cargar factura o recibo (imagen, PDF o XML)
+  y pedir extracción IA. Los datos propuestos llenan el borrador CxP para que
+  el usuario los corrija antes de guardar; no se crea pago ni se contabiliza
+  automáticamente por la lectura.
+- La conversión explícita de soporte aprobado a CxP ya usa transacción,
+  bloqueo de soporte, validación de proveedor activo dentro de `empresa_id`,
+  nombre canónico del proveedor registrado (no la lectura libre de IA), evento
+  y outbox. No se aplicó la migración ni se invocó IA, empresa o dato real
+  durante esta implementación.
+
+2026-07-24: P106-013A - impresiones y vistas previas universales.
+- El Plan 106 incorpora una subfase P0 que obliga a inventariar y comprobar
+  visualmente todas las salidas documentales: facturas, recibos, comprobantes,
+  pedidos, reportes, documentos fiscales, PDFs y plantillas de módulos o
+  verticales.
+- La evidencia debe verificar organización de filas/columnas, totales,
+  paginación, datos largos, formatos A4/Carta/térmico, vista previa, PDF e
+  impresión física, además de aislamiento por empresa y ausencia de efectos
+  secundarios. No se declara aprobada sin matriz y evidencia visual saneada.
+- Se crea `documentos/arquitectura/inventario_impresiones_plan_106.md` como
+  línea base estática de las superficies de impresión conocidas y de las
+  familias dinámicas que todavía requieren descubrimiento en navegador.
+
+2026-07-24: DIAN - diagnóstico de firma privada y aviso seguro en buzón.
+- El incidente de empresa 12 se clasifica como acceso denegado a la clave
+  privada antes de transmitir a DIAN, no como rechazo fiscal ni clave P12
+  inválida. La corrección operativa queda bloqueada hasta verificar permisos y
+  propietario con autorización, sin manipular ni exponer el certificado.
+- Las nuevas alertas del buzón sustituyen rutas internas y causas sensibles por
+  un mensaje seguro y una guía específica para restaurar acceso de servicio o
+  recargar la firma por el flujo autorizado. Se agrega regresión para impedir
+  que una ruta privada vuelva a mostrarse.
+
+2026-07-24: P106 - avance parcial de inventario y aislamiento CxP.
+- P106-002 registra la línea base inicial de superficies de impresión y deja
+  explícito que falta descubrir controles dinámicos y completar el manifiesto
+  total de botones/funciones.
+- P106-007 verifica estáticamente que la ruta CxP conserva el wrapper de
+  Finanzas y que los accesos de cuenta/pago se filtran por `empresa_id`; las
+  pruebas A/B reales, roles y licencias siguen obligatorias en staging.
+
+2026-07-24: P106-009 - contratos locales de pago CxP.
+- La clave de idempotencia del abono se normaliza en un helper y conserva solo
+  su hash. Pruebas de regresión verifican que el flujo retenga el bloqueo de
+  cuenta por `empresa_id`, el ledger, el outbox y el rechazo de sobrepago.
+- Esta evidencia es local/estática: no sustituye las pruebas PostgreSQL de
+  concurrencia, caída, replay ni A/B programadas en staging.
+
+2026-07-24: P106-006 - conversión de soporte IA con esquema completo.
+- Antes de convertir un soporte aprobado a CxP, el flujo verifica en lectura
+  las tablas de soporte, eventos, CxP, proveedores y outbox. Si falta alguna,
+  falla cerrada y remite a `pcs-migrate`, sin ejecutar DDL desde HTTP.
+
+2026-07-24: P106-005 - validación anticipada de abonos CxP.
+- El servicio rechaza `NaN`, infinitos y montos no positivos antes de iniciar
+  la transacción. Normaliza el método de pago y rechaza caracteres de control
+  para impedir registros ambiguos o inyección de saltos de línea.
+
+2026-07-24: P106-007/P106-008 - proveedor registrado obligatorio en CxP.
+- El formulario de cartera muestra un selector de proveedores activos de la
+  empresa. El contrato inicial marcaba erróneamente `empresa_proveedores` como
+  catálogo de CxP; P108 corrige esa decisión al catálogo operativo
+  `proveedores` que administra Compras.
+- El alta CxP valida `proveedor_id` dentro del mismo `empresa_id` y persiste el
+  nombre canónico del proveedor; la lectura IA continúa como propuesta editable
+  y no puede guardar una obligación sin selección humana.
+- Las pruebas locales cubren el contrato de proveedor, catálogo filtrado y
+  activo. Quedan pendientes prueba visual, A/B de aislamiento, roles y staging.
+
+2026-07-26: P108 - catálogo operativo único para proveedores de CxP.
+- Se corrige la divergencia encontrada durante la prueba controlada en staging:
+  `/api/empresa/proveedores` crea y mantiene el catálogo `proveedores`, pero
+  CxP consultaba la tabla no publicada `empresa_proveedores` y no mostraba el
+  proveedor recién creado.
+- `ListEmpresaProveedoresCxP` y `GetEmpresaProveedorCxP` ahora consultan
+  exclusivamente `proveedores`, filtrando por `empresa_id`, identificador y
+  estado activo. La forma interna para Finanzas conserva el nombre y plazo de
+  pago; no se migraron, borraron ni duplicaron proveedores.
+- El CRUD operativo de proveedores deja de confiar en `empresa_id` del JSON:
+  tanto alta como edición lo sustituyen por la empresa validada por sesión y
+  wrapper de Compras antes de persistir o auditar.
+- Se actualizan ADR, mapa de módulos y regresión de contrato. Pendiente:
+  desplegar el candidato aislado, comprobar que el selector muestra el alta
+  de Compras y ejecutar la carrera de abonos con una CxP de prueba.
+
+2026-07-26: P108-005 - validación controlada de CxP en staging.
+- El candidato aislado `397e42a7` mostró en Finanzas el proveedor recién creado
+  desde Compras, registró una CxP interna de prueba y un único abono visible
+  parcial sin transferencia externa, DIAN ni archivo real.
+- La automatización visual no permite fijar el encabezado de idempotencia para
+  dos solicitudes concurrentes iguales; la carrera HTTP autenticada queda como
+  evidencia pendiente y no se sustituye por el abono único aprobado.
+
+2026-07-26: P108-015 - preflight DIAN autorizado de Powerful Control System.
+- El Centro de habilitación DIAN de producción fue revisado visualmente con una
+  sesión administrativa autorizada. `Validar credenciales` bloqueó la emisión
+  por referencias inválidas de certificado y clave privada.
+- No se emitió factura, no se consumió consecutivo, no se reintentó cola ni se
+  alteró la firma. La prueba de factura real y sus representaciones impresas
+  queda pendiente de una corrección y despliegue controlado de firma.
+
+2026-07-25: P106-008 - validación visual real de Powerful Control System.
+- Con una sesión autorizada de administrador, Finanzas abrió para la empresa
+  PCS y CxP mostró su tabla ordenada, sin registros para el filtro actual.
+- La versión publicada no contiene el botón de carga de factura/recibo con IA,
+  el selector de proveedor registrado ni el aviso de revisión editable que sí
+  existen en el árbol local. Se bloquea la certificación visual de ese flujo
+  hasta un despliegue autorizado; no se crearon CxP, pagos ni archivos reales.
+
+2026-07-25: P106-013A - preflight de renderización de impresiones.
+- La batería local intentó renderizar comprobantes sintéticos Carta/POS de CxP
+  con filas largas y PDF; el runtime dispone de la librería Playwright pero no
+  del navegador headless requerido. No se instaló ningún binario sin
+  autorización.
+- P106-013 queda bloqueado por entorno y no se declara evidencia visual, PDF
+  ni impresión física. La alternativa aprobable es ejecutar el mismo conjunto
+  en staging o habilitar el navegador de pruebas en este equipo.
+
+2026-07-25: P106-013A - render local Carta/POS recuperado.
+- Se utilizó el Chrome for Testing ya instalado, sin descargar binarios, para
+  generar PDF de un comprobante CxP sintético con 42 filas y 4 columnas. Carta
+  y POS no presentaron desborde horizontal y ambos PDFs superaron la validación
+  mínima de contenido.
+- El estado pasa a parcial: esta evidencia no cubre documentos reales,
+  previsualizaciones de cada módulo, impresora física ni todos los botones.
+
+2026-07-25: P106-013A - runner de impresión configurable.
+- `qa_print_formats.cjs` puede recibir la ruta de un Chrome for Testing ya
+  instalado mediante `PCS_QA_CHROME_EXECUTABLE`; evita una descarga implícita
+  y permite repetir la batería de formatos en equipos de QA.
+
+2026-07-25: P106-015 - prueba real controlada de cuatro cajas.
+- En Powerful Control System se abrieron cuatro cajas aisladas con identificador
+  `P106-QA`, turno de prueba y todos los importes en cero. Una segunda sesión
+  consultó los registros y confirmó su coexistencia sin operaciones monetarias.
+- Los cuatro registros QA se eliminaron al terminar; la consulta final quedó en
+  cero cajas abiertas. La evidencia es parcial: aún faltan ventas simultáneas,
+  cierre, arqueo, conciliación, inventario y recuperación ante reintentos.
+
+2026-07-25: P106-015 - límite de automatización en cierre de caja.
+- Un ciclo adicional de apertura/limpieza de caja QA confirmó que el flujo de
+  cierre solicita la caja física por `window.prompt`. El navegador de
+  automatización usado no expone ese prompt y no se simuló ni se marcó como
+  cierre aprobado.
+- La caja de prueba se eliminó y la consulta final permaneció en cero abiertas.
+  El cierre requiere una prueba manual compatible antes de avanzar a arqueo y
+  conciliación de varias cajas.
+
+2026-07-25: P106-014 - prueba real segura del asistente IA.
+- En PCS se abrió el diálogo del asistente y se verificó el cambio visible a
+  modo `Ayudante por pasos` y agente `Compras`, sin enviar mensajes, adjuntos
+  ni acciones del modelo.
+- El navegador interno no pudo accionar el botón de minimizar por su posición
+  visible; no se marca esa interacción como aprobada. Quedan pendientes las
+  pruebas de cada botón IA, proveedor, cuotas, streaming, errores y A/B.
+
+2026-07-25: P106-002/P106-013 - runner de botones portable.
+- `qa_e2e_buttons.cjs` acepta `PCS_QA_CHROME_EXECUTABLE`, igual que la batería
+  de impresión. El runner puede usar Chrome for Testing preinstalado sin
+  descargar binarios, conservando la clasificación de acciones seguras y
+  excluyendo mutaciones, pagos, envíos e impresiones de los clics automáticos.
+
+2026-07-25: P106-012 - smoke real y corrección de carga IA.
+- Con sesión autorizada en PCS, Panel, Venta directa, Corte de caja, Finanzas
+  y Facturación electrónica abrieron sin redirigir al login. La consola de
+  Facturación registró un error de `MutationObserver` durante carga temprana.
+- `help_ai_bridge.js` ahora comprueba que el objetivo exista y sea elemento
+  antes de observarlo. La corrección es local y debe validarse en el sitio
+  publicado después de un despliegue autorizado.
+
+2026-07-25: P106-016 - saneamiento de alertas DIAN históricas.
+- El buzón ahora reemplaza al leer una alerta histórica de Facturación/DIAN que
+  contenga detalles internos por una guía segura para revisar Pruebas DIAN. No
+  modifica registros ni oculta la necesidad de corregir la firma.
+- La regresión de mensaje histórico con ruta privada pasó localmente. La
+  reparación del acceso de la firma, el despliegue y el reintento fiscal siguen
+  bloqueados y requieren operación autorizada en el servidor.
+
+2026-07-25: P106-012 - entrega no cacheada del puente IA.
+- `administrar_empresa.html`, `help_ai_bridge.js` y el inyector de iframes
+  versionan el recurso con `20260725-observer-guard`, asegurando que el guard
+  de `MutationObserver` no quede oculto detrás de una copia antigua en caché.
+
+2026-07-25: P106-013 - responsive real de Finanzas/CxP.
+- En Powerful Control System, Finanzas/CxP se midió en escritorio y móvil. En
+  móvil, las diez columnas de cartera quedan dentro de `table-wrap` con
+  `overflow-x:auto`; el ancho del documento no supera el viewport.
+- Es evidencia limitada de layout: no aprueba todos los botones, filas con
+  datos reales, impresiones, zoom, lector de pantalla ni otros módulos.
+
+2026-07-24: P107 - primer tramo local de reportes profesionales e IA segura.
+- `contador` obtiene lectura efectiva de Reportes y del chat de reportes IA,
+  incluida la consulta POST que solo transporta una especificación de lectura;
+  no obtiene creación, aprobación ni mutación contable.
+- Reportes incorpora `ReportSpec` validado por servidor para que la IA cree
+  vistas nuevas desde datasets canónicos autorizados, con filtros, agrupación,
+  métricas, fórmulas y orden. El modelo no ejecuta ni entrega SQL.
+- El Centro de reportes permite generar, previsualizar y exportar la misma
+  vista IA en Excel, PDF y CSV. La fase no crea ventas, cartera, pagos,
+  impuestos, asientos, DIAN ni datos reales.
+- `go test ./handlers -count=1` pasó localmente. Staging, validación visual,
+  pruebas de roles, A/B, IA real y conciliación profesional siguen pendientes.
+
+2026-07-25: P107 - señalización de estados financieros no oficiales.
+- Estado de resultados y balance general incorporan el número de asientos
+  canónicos del período, `estado_contable`, `apto_para_revision_contable` y
+  `apto_para_presentacion_oficial=false`. Si no existen asientos, la salida se
+  marca como `preliminar_no_oficial`; con asientos queda apta para revisión
+  contable, pero sigue sin ser un estado financiero oficial porque faltan
+  notas, comparativos, políticas y firmas.
+- La regresión local del caso sin asientos pasó. Windows bloqueó el borrado del
+  ejecutable temporal de Go después de terminar la prueba; no hubo fallo de la
+  prueba ni proceso `handlers.test` activo.
+
+2026-07-25: P107 - acceso IA empresarial del contador.
+- La ruta `/api/empresa/ia_empresarial` usa permiso de lectura al transportar
+  preguntas por POST. Así `contador` puede usar el Centro IA sin convertirse
+  en creador de reportes ni adquirir permisos de mutación; las capacidades y
+  datos consultables siguen limitados por el registro IA y la empresa activa.
+
+2026-07-25: P107 - regresión local de CxP canónica.
+- Pasaron las pruebas enfocadas de esquema, aislamiento por empresa,
+  proveedor canónico, idempotencia, abono atómico y validaciones del handler.
+  La validación integral de saldo por documento, submayor, mayor y banco queda
+  pendiente de staging porque Docker no está disponible en este entorno local.
+
+2026-07-25: P107 - contrato del catálogo para contador.
+- Se añadió regresión que exige los datasets contables/fiscales mínimos y los
+  formatos JSON, CSV, XLS y PDF para cada uno. Previene retirar reportes o
+  exportaciones necesarias para la certificación sin evidencia explícita.
+
+2026-07-25: P107 - batería local de pruebas contables.
+- Pasaron los casos enfocados de cartera, reglas profesionales PUC/terceros e
+  impuestos, asiento de venta, CxP canónica, permisos de contador, catálogo,
+  reportes, ReportSpec y auxiliares. El resultado es local y no certifica
+  staging ni habilita movimientos de datos de prueba.
+
+2026-07-25: P107 - regresión completa local de backend.
+- Pasaron `go test -vet=off ./handlers -count=1` y
+  `go test -vet=off ./db -count=1`. El resultado no incorpora PostgreSQL,
+  navegador ni operaciones de caja y no sustituye la ejecución P107-QA en
+  staging.
+
+2026-07-25: P107 - regresión transversal del backend.
+- Pasó `go test -vet=off ./... -count=1` para todos los paquetes Go. Se
+  conserva NO-GO: esta comprobación no crea fixtures, no ejecuta ventas ni
+  demuestra conciliación contable en staging.
+
+2026-07-25: P107 - preflight de staging.
+- Se añadió `tools/plan107_preflight`, una utilidad de solo lectura que
+  comprueba Docker, health del endpoint y la compuerta exclusiva de staging
+  antes de permitir datos `P107-QA`. La ejecución local bloqueó correctamente
+  la prueba: Docker no está disponible y `127.0.0.1:8082` no responde.
+
+2026-07-25: P107 - huella de especificación para auditoría IA.
+- Cada reporte nuevo creado por IA deja en la auditoría la fuente semántica y
+  el SHA-256 del `ReportSpec` validado y ejecutado. Esto facilita comprobar qué
+  definición produjo una exportación sin guardar SQL ni duplicar datos del
+  reporte en el evento de uso.
+
+2026-07-25: P107 - auxiliares contables por rubro desde asientos canónicos.
+- El Centro de reportes incorpora auxiliares de resultados, situación
+  financiera y cambios en patrimonio por rubro/cuenta, con débitos, créditos y
+  saldo. La fuente es exclusivamente `empresa_asientos_contables`.
+- Cada salida conserva la señal de preliminar cuando no existen asientos y,
+  aun con asientos, declara que requiere comparativos, notas y firmas antes de
+  presentarse como estados financieros completos. La regresión de naturaleza
+  PUC y cálculo de saldo pasó con `go test -vet=off ./handlers -run
+  '^TestRubrosAuxiliaresDeEstadosFinancierosUsanNaturalezaPUC$' -count=1`.
+
+2026-07-25: P107 - transparencia visible de reportes IA.
+- La vista de reportes ahora expone el `ReportSpec` que el servidor validó y
+  ejecutó antes de permitir la exportación de la vista IA. El detalle usa texto
+  seguro, sin inyectar HTML del modelo en la pantalla.
+
+2026-07-25: P107-004 - contrato seguro de fixtures contables.
+- `BuildPlan107FixtureManifest` genera el manifiesto determinista y aislado
+  por empresa para apertura, menta, cartera, proveedores, impuestos y reverso.
+  El contrato requiere prefijo `P107-QA`, tiene claves idempotentes y SHA-256.
+- La herramienta `plan107_fixture_manifest` solo escribe JSON: no abre una
+  base de datos ni puede crear registros. `go test -vet=off ./db -run
+  '^TestBuildPlan107FixtureManifest' -count=1` pasó.
+
+2026-07-25: P107-011 - plantillas versionadas de reportes IA.
+- El Centro de reportes permite guardar una plantilla desde una vista IA. Usa
+  `empresa_reportes_plantillas`, genera una versión nueva y no abre una ruta de
+  SQL ni de cambio de fuente.
+- El servidor deserializa, valida y normaliza `report_spec`; exige que su
+  `source_dataset` sea igual al `dataset_key` de plantilla. `contador` puede
+  guardar esta configuración como lectura analítica, sin permisos de mutación
+  de ventas, pagos o asientos.
+- `go test -vet=off ./handlers -run
+  '^(TestPlantillaReporteIAValidaEspecificacionYFuente|TestContadorPuedeConsultarReportesEIAPeroNoAdministrarlos)$'
+  -count=1` pasó.
+
+2026-07-25 - Plan IA, primer tramo de aislamiento y UX profesional.
+- `empresa_ai_usuario_preferencias` incorpora la clave compuesta
+  `empresa_id + usuario_id`; el chat empresarial no reutiliza la preferencia
+  global heredada del selector. La migración
+  `20260725-001-ai-user-isolation-v1` agrega además `conversation_id` e índice
+  por empresa/usuario al historial.
+- El endpoint de historial entrega exclusivamente consultas del usuario
+  autenticado dentro de la empresa activa. Las rutas del chat validan el
+  alcance empresarial en vez de depender del permiso genérico de ventas.
+- El chat flotante y Centro IA retiran el selector de agentes y el selector de
+  modo visible. Solo queda el interruptor `Modo agente`; el servidor ignora
+  `agent_id` del cliente y no concede permisos adicionales.
+- Se añadieron pruebas locales de contrato para la migración y la selección de
+  agente cerrada. No se ejecutó migración, despliegue ni consulta a proveedor.
+- `empresa_ai_memoria` ya cuenta con operaciones de guardar, listar y olvidar
+  exclusivamente por `empresa_id + usuario_id`, consentimiento y vencimiento;
+  la conexión de memorias al prompt queda pendiente de la fase de consumo
+  controlado para no enviar datos sin autorización explícita.
+
+2026-07-25 - P106-002: manifiesto estático reproducible de interfaz.
+- Se incorporó `tools/plan106_ui_inventory.mjs`, sin dependencias externas, que
+  inventaría controles HTML sin iniciar sesión ni disparar acciones.
+- La ejecución local produjo `inventario_ui_plan_106.md`: 309 páginas, 6.189
+ controles, 2.975 acciones y 881 marcadores dinámicos. La evidencia confirma
+ el alcance de cobertura pendiente, pero no sustituye las pruebas E2E,
+ visuales, por permisos, de IA ni de operaciones sensibles.
+
+2026-07-25 - P106-002: runner E2E portable en runtime Codex.
+- `tools/qa_e2e_buttons.cjs` resuelve de forma controlada el Playwright ya
+ incluido por Codex y dispone de `PCS_QA_VALIDATE_RUNTIME=1` para validar la
+ compuerta local sin iniciar sesión, navegar ni ejecutar un botón.
+
+2026-07-25 - P106-013: batería portable de impresiones.
+- `tools/qa_print_formats.cjs` ahora resuelve el Playwright incluido por Codex
+  sin instalación ni `NODE_PATH` manual. La ejecución local generó 18 casos
+  Carta/POS correctos y verificó tres invocaciones de autoimpresión.
+- La evidencia es sintética y local; no certifica impresora física, salida de
+  documentos reales ni el flujo publicado hasta que exista despliegue y prueba
+  controlada en la empresa.
+- Se inspeccionaron visualmente las muestras de comprobante de egreso Carta y
+  POS generadas por la batería: columnas, importes, zona de firmas y ancho del
+  ticket permanecen legibles, sin recortes visibles.
+
+2026-07-25 - P106-016: reconfirmación segura del incidente publicado.
+- Una revisión autenticada de solo lectura en Powerful Control System confirmó
+  que el aviso histórico de DIAN aún presenta detalle técnico en producción.
+  No se reintentó facturación ni se modificaron datos; el saneamiento de la
+  respuesta permanece como corrección local pendiente de despliegue controlado.
+
+2026-07-25 - P106-017: compuerta local integral y suite backend.
+- El preflight completo aprobó sus auditorías de scripts, JavaScript,
+  seguridad, permisos, migraciones, módulos, roles, pagos, UX y Compose; dejó
+  un fallo inicial de la suite Go que no se reprodujo.
+- La repetición independiente `go test ./... -count=1` aprobó todos los
+  paquetes. Permanecen obligatorias las pruebas de carrera, carga, restore y
+  staging/VPS antes de una liberación.
+
+2026-07-25 - P106-017: intento de detector de carreras.
+- `go test -race ./db ./handlers -count=1` no pudo iniciar en este host:
+ `CGO_ENABLED=0` y no hay compilador C disponible. No se instaló software ni
+ se alteró la configuración del proyecto; la prueba queda requerida en el
+ builder Linux o staging con CGO habilitado.
+
+2026-07-25 - P106-008: validación autenticada de la versión publicada.
+- Se inició sesión con la cuenta autorizada y se revisó Finanzas de Powerful
+ Control System en modo solo lectura. La versión publicada no expone todavía
+ Cartera de Proveedores ni la carga de factura/recibo con IA; no se guardaron
+ configuraciones ni se crearon movimientos.
+
+2026-07-25 - P106-017: preflight y restore de VPS.
+- El preflight remoto en modo simulación confirmó disponibilidad de Docker,
+  PostgreSQL y volúmenes operativos. La validación no destructiva del último
+  snapshot falló porque falta el tarball obligatorio de almacenamiento privado.
+  No se modificaron datos ni se ejecutó restauración.
+
+2026-07-25 - P106-017: backup VPS completo validado.
+- Se generó el snapshot `20260725_073020` y la validación no destructiva aprobó
+  PostgreSQL y todos los tarballs obligatorios, incluido almacenamiento privado.
+  No se restauraron datos de producción; queda pendiente el drill aislado.
+
+2026-07-25 - P106-017: drill aislado de restauración aprobado.
+- El snapshot se restauró correctamente en un contenedor PostgreSQL temporal
+  aislado del servicio operativo. RTO observado: 22 s; RPO: 116 s.
+
+2026-07-25 - P106-017: smoke de carga staging aprobado.
+- Contra staging se ejecutaron 30 solicitudes públicas con concurrencia 5:
+  P95 de 427 ms y cero errores. Es una señal inicial de capacidad, no reemplaza
+  carga sostenida ni los flujos autenticados del plan.
+
+2026-07-25 - P106 integrado: compuerta P107 de fixtures.
+- `plan107_preflight` bloqueó correctamente la creación de datos P107-QA: no
+  hay Docker local y el chequeo de salud de staging no respondió. No se crearon
+  fixtures, movimientos contables ni efectos externos.
+- Se verificó el endpoint explícito de staging: respondió `200 OK`. El falso
+ negativo provenía del valor predeterminado local `127.0.0.1:8082`; permanece
+ el bloqueo legítimo por ausencia de Docker para aplicar fixtures reversibles.
+
+2026-07-25 - P106 integrado: pruebas IA locales.
+- Las pruebas dirigidas de aislamiento IA, memoria e interacción de modo agente
+  aprobaron en `db` y `handlers`. La evidencia es local; quedan pendientes
+  pruebas de interfaz y seguridad por rol en staging.
+
+2026-07-25 - P107: verificación autenticada de staging.
+- Los endpoints públicos `/health` y `/ready` respondieron `200`; el preflight
+  P107 de solo lectura aprobó el alcance staging. La cuenta autorizada inició
+  sesión como Super Administrador, pero Powerful Control System figura sin
+  licencia activa. No se seleccionó licencia, no se generó IA ni se crearon
+ datos contables; la UAT empresarial queda bloqueada hasta habilitar ese
+ alcance y autorizar puntualmente los fixtures `P107-QA`.
+
+2026-07-25 - Licencias: consistencia de autorización Super Administrador.
+- `requireSuperAdmin` ahora comparte la misma normalización de alias que el
+  shell y la auditoría Super (`super_administrador`, `superadministrador`,
+  `superadmin` y `super`). Corrige el caso en que una sesión podía abrir el
+  panel de códigos de descuento pero recibía 403 al crear uno. La prueba
+ enfocada de aliases y validación de código aprobó localmente; staging aún
+ requiere despliegue autorizado para repetir la activación anual.
+
+2026-07-25 - P107: staging, descuento y licencia anual de pruebas.
+- Se corrigieron los formularios de códigos de descuento y de activación de
+  licencias para enviar `X-CSRF-Token` en mutaciones autenticadas. Las pruebas
+  de contrato visual pasaron en `handlers`.
+- En staging se corrigieron las compuertas de arranque (`CONFIG_ENC_KEY`
+  canónico y `PCS_RUNTIME_SCHEMA_BOOTSTRAP=1`) y el proxy exclusivo de staging
+  para el puerto publicado. `/health` y `/ready` volvieron a responder `200`.
+- Se creó el código de un uso `P107-QA` por COP 600.000 y se activó para
+  Powerful Control System el plan anual de 365 días con total COP 0. No se
+  abrió pasarela, no se emitió DIAN y no se crearon ventas, cartera ni otros
+  datos contables P107-QA.
+
+2026-07-25 - Plan IA: cierre de funciones controladas y validación local.
+- Responses API usa funciones estrictas y un puente cerrado que solo crea
+  propuestas de producto pendientes de confirmación. Empresa, usuario, rol,
+  permisos y auditoría son siempre derivados en servidor.
+- La herramienta se omite si alguna compuerta de modo agente o escritura está
+  desactivada. `go test ./ai ./db ./handlers -count=1` aprobó localmente.
+- La prueba visual autenticada queda pendiente: el runtime local de PCS no
+  estaba iniciado. No se crearon productos ni se confirmaron propuestas.
+
+2026-07-25 - Plan IA: verificación autenticada de versión publicada.
+- La sesión autorizada de solo lectura confirmó que la versión publicada aún
+  muestra los selects `Modo` y `Agente`; por tanto, los cambios locales del
+  interruptor único, memoria y Responses API no están desplegados todavía.
+- No se enviaron consultas IA, no se guardó memoria y no se crearon ni
+  confirmaron propuestas o productos.
+
+2026-07-25 - P107: disponibilidad del centro de reportes.
+- Se corrigió la comprobación de esquema de reportes programados: cada
+  consulta de presencia devuelve un único marcador, compatible con su único
+  destino `Scan`. Antes de esto, el catálogo y la vista previa fallaban con
+  HTTP 500 antes de ejecutar el reporte.
+- El hallazgo provino de la validación autenticada en staging. No crea ni
+  altera tablas y conserva el aislamiento por `empresa_id`.
+
+2026-07-25 - P107: ejecución autenticada en staging.
+- Se creó la bodega `P107-STG` y el artículo de prueba `Menta P107 QA`, con
+  precio COP 100 y existencia inicial de 10, exclusivamente para la empresa
+  de pruebas. La venta de una unidad dejó existencia 9 y generó un balance de
+  prueba cuadrado: débito COP 100 en caja y crédito COP 100 en ingresos.
+- El catálogo dinámico de 46 reportes y la vista previa del balance fueron
+  verificados después de publicar la corrección. La solicitud de reporte
+  nuevo por IA aún falla en staging por un contrato antiguo del handler que
+  responde que el modo `nuevo` es inválido; queda como P0 abierto, sin
+  plantilla ni exportación persistida.
+
+2026-07-25 - Plan 108: consolidación del cierre para producción.
+- Se auditó el estado del repositorio y se consolidaron en
+  `documentos/plan_108.md` los pendientes de los planes 106, 107, IA, 104, 105
+  y del plan final histórico.
+- El Plan 108 conserva el veredicto NO-GO, diferencia pruebas locales de
+  certificación del candidato y organiza 26 fases con evidencias y compuertas
+  explícitas para GPT-5.6 Terra con razonamiento medio.
+- Esta entrega es exclusivamente documental: no despliega, no migra datos, no
+  emite documentos fiscales, no ejecuta cobros ni altera información operativa.
+
+2026-07-25 - P108-000: candidato inicial validado localmente.
+- Se creó la rama `codex/plan-108-candidate` desde el commit base auditado y se
+  clasificó el árbol de trabajo de CxP, IA, contador, migraciones, UX y QA en
+  `documentos/evidencia_plan_108/P108-000/manifest.md`.
+- La suite Go completa, `go vet`, compilación de `pcs-migrate` y `pcs-worker`,
+  auditoría estricta de migraciones, inventario `Ensure*`, sintaxis JavaScript
+  y preflight profesional aprobaron localmente.
+- Este corte no despliega ni aplica migraciones y conserva el estado NO-GO hasta
+  fijar el commit/digest e iniciar las compuertas de staging.
+
+2026-07-25 - P108-011: destino explícito para QA autenticado.
+- El barrido `qa_e2e_buttons.cjs` ya no usa URL pública ni empresa por defecto.
+  Exige declarar en cada ejecución el ambiente y la empresa autorizada, antes
+  de leer credenciales desde variables de sesión.
+- Esta protección no ejecuta login ni modifica datos; reduce el riesgo de que
+  una prueba visual se dirija al tenant o entorno equivocado.
+
+2026-07-25 - P108: evidencia local y línea base de staging.
+- Se consolidó el candidato local en el commit `f6f9546a` después de preflight,
+  suite Go, vet, builds y auditorías de migración aprobadas.
+- `-race` quedó bloqueado por CGO/compilador ausente y la creación de imagen por
+  Docker ausente; ambos quedan pendientes de CI Linux y no se marcan como
+  aprobados.
+- El staging respondió `200` en health y ready. El barrido autenticado pasivo
+  de Finanzas, Centro IA y Reportes no realizó mutaciones y confirmó que staging
+  aún no tiene CxP/IA del candidato, además de un 403 en Centro IA.
+
+2026-07-25 - P108-023: despliegue staging aislado por candidato.
+- Se añade un lanzador VPS que obtiene una referencia Git, comprueba su SHA y
+  construye staging desde un worktree distinto al checkout de producción.
+- El lanzador rechaza SHA ambiguo, worktree con otro commit, falta de entorno,
+  `RESET_STAGING` y health/ready fallidos. No copia ni imprime secretos y no
+  modifica el checkout productivo.
+- Se amplía para VPS que reciben un paquete sin `.git`: clona exclusivamente el
+  SHA candidato dentro del directorio aislado y reutiliza el entorno staging ya
+  existente, sin convertir ni modificar el paquete de producción.
+
+2026-07-26 - P108-001: corrección de validación DIAN reproducible.
+- La detección preventiva de marcadores `DEMO/PENDIENTE` excluye ahora el bloque
+  `ds:Signature` del XML firmado. Los bytes criptográficos codificados en Base64
+  podían contener esa secuencia de forma aleatoria y bloquear un documento válido.
+- Se conserva el bloqueo de los marcadores que estén en el contenido fiscal y se
+  agregó una prueba de regresión junto con veinte ejecuciones del flujo SOAP
+  simulado de habilitación (sin comunicación con DIAN).
+
+2026-07-26 - P108-011/012/013: staging e impresiones verificadas parcialmente.
+- El candidato `74f91956` quedó activo en staging aislado con migrador y
+  servicios saludables. La sesión autorizada de PCS verificó el flujo visual de
+  Finanzas/CxP y que la IA mantiene un interruptor de agente sin selector manual.
+- La batería de impresión local aprobó 18 formatos sintéticos carta/POS con PDF
+  y capturas. Se registran como evidencia parcial: aún faltan documentos
+  operativos, roles, impresora física, responsive completo y caja concurrente.
+
+2026-07-26 - P108/P106 CxP: reintento concurrente idempotente.
+- El abono CxP canónico vuelve a consultar la clave de idempotencia después de
+  adquirir `FOR UPDATE` sobre la obligación. Dos solicitudes simultáneas con la
+  misma clave ya no dependen de una violación de unicidad para resolver el
+  reintento; la segunda devuelve la asignación comprometida sin crear un
+  movimiento financiero adicional.
+- Se agregó una regresión de contrato. La validación PostgreSQL concurrente real
+  en staging sigue pendiente y no se marca como aprobada por esta prueba local.
+
+2026-07-26 - P108-015: reparación DIAN, aislamiento y anulación fiscal segura.
+- Se confirmó en el VPS que la firma heredada era `root:root` y no podía ser
+  leída por la API `pcs` sin privilegios. El candidato empaqueta un migrador
+  privado y un script operativo restringido por empresa/categoría para retirar
+  clave y certificado del árbol público.
+- La herramienta de migración admite `--empresa-id` y `--category`; cada
+  consulta filtrada mantiene `empresa_id = $1` y conserva el modo simulación
+  antes de una aplicación confirmada.
+- La anulación colombiana de factura se dirige a una nota crédito con motivo y
+  confirmación. La factura original solo cambia a anulada cuando la integración
+  fiscal reporta `aceptado`; reintentos y conciliación aplican la misma regla.
+- Una venta colombiana en producción ya no considera el estado intermedio
+  `enviado` como acuse fiscal final; la factura queda pendiente hasta observar
+  `aceptado`.
+- Las rutas DIAN continúan protegidas por el middleware empresarial y las
+  pruebas enfocadas de handlers, DB, contrato frontend y despliegue aprobaron
+  localmente. Emisión real y `GetStatusZip` siguen pendientes del despliegue.

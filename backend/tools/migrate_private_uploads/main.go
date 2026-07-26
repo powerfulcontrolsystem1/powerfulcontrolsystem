@@ -20,10 +20,15 @@ func main() {
 	apply := flag.Bool("apply", false, "aplica la migracion; sin este indicador solo simula")
 	confirm := flag.String("confirm", "", "confirmacion requerida para aplicar")
 	webRoot := flag.String("web-root", strings.TrimSpace(os.Getenv("PCS_WEB_ROOT")), "raiz web heredada")
+	empresaID := flag.Int64("empresa-id", 0, "restringe la migracion a una empresa")
+	category := flag.String("category", "", "restringe la migracion a una categoria privada")
 	flag.Parse()
 
 	if *apply && *confirm != "MIGRATE_PRIVATE_UPLOADS" {
 		exitError(errors.New("para aplicar use --confirm=MIGRATE_PRIVATE_UPLOADS"))
+	}
+	if *empresaID < 0 {
+		exitError(errors.New("empresa-id invalido"))
 	}
 	if strings.TrimSpace(*webRoot) == "" {
 		resolved, err := filepath.Abs(filepath.Join("..", "web"))
@@ -46,7 +51,11 @@ func main() {
 	if err := dbConn.PingContext(ctx); err != nil {
 		exitError(errors.New("no se pudo validar la base empresarial"))
 	}
-	result, err := handlers.MigrateLegacyPrivateUploads(dbConn, *webRoot, *apply)
+	result, err := handlers.MigrateLegacyPrivateUploadsWithOptions(dbConn, *webRoot, handlers.PrivateFilesMigrationOptions{
+		Apply:     *apply,
+		EmpresaID: *empresaID,
+		Category:  strings.TrimSpace(*category),
+	})
 	if err != nil {
 		exitError(err)
 	}

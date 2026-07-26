@@ -69,6 +69,31 @@ func TestPermissionChangeRequiresApprovalForSecurityEndpoints(t *testing.T) {
 	}
 }
 
+func TestContadorPuedeConsultarReportesEIAPeroNoAdministrarlos(t *testing.T) {
+	if !roleAllowsModuleAction("contador", permModuleReportes, permActionRead) {
+		t.Fatal("contador debe poder leer el modulo de reportes")
+	}
+	if roleAllowsModuleAction("contador", permModuleReportes, permActionCreate) {
+		t.Fatal("contador no debe obtener permisos de administracion de reportes")
+	}
+
+	chatRequest := httptest.NewRequest(http.MethodPost, "/api/empresa/reportes_ia_chat", nil)
+	if got := resolveFinanzasPermissionAction(chatRequest); got != permActionRead {
+		t.Fatalf("chat de reportes IA = %q, se esperaba permiso de lectura", got)
+	}
+	enterpriseAIRequest := httptest.NewRequest(http.MethodPost, "/api/empresa/ia_empresarial", nil)
+	if got := resolveFinanzasPermissionAction(enterpriseAIRequest); got != permActionRead {
+		t.Fatalf("chat IA empresarial = %q, se esperaba permiso de lectura", got)
+	}
+	customRequest := httptest.NewRequest(http.MethodPost, "/api/empresa/reportes?action=custom", nil)
+	if got := resolveFinanzasPermissionAction(customRequest); got != permActionRead {
+		t.Fatalf("reporte personalizado = %q, se esperaba permiso de lectura", got)
+	}
+	if !roleAllowsModuleAction("admin_empresa", permModuleReportes, permActionRead) {
+		t.Fatal("admin_empresa debe poder realizar consultas IA dentro del modulo de reportes")
+	}
+}
+
 func TestDefaultHiddenEnterpriseIAPagesRequireExplicitCompanyEnable(t *testing.T) {
 	pages := map[string]bool{
 		"linkReportes":              true,

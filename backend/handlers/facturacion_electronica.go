@@ -833,7 +833,7 @@ func EmpresaFacturacionElectronicaHandler(dbEmp, dbSuper *sql.DB) http.HandlerFu
 				nowCode := time.Now().In(colombiaLoc).Format("20060102150405")
 				notaCodigo := "NC-" + strings.TrimSpace(factura.DocumentoCodigo) + "-" + nowCode
 				usuario := strings.TrimSpace(adminEmailFromRequest(r))
-				observaciones := fmt.Sprintf("Anulacion total de factura %s. Numero legal original: %s. CUFE/CUDE original: %s. Motivo: %s", factura.DocumentoCodigo, factura.NumeroLegal, factura.CodigoValidacion, motivo)
+				observaciones := fmt.Sprintf("%s%s\nAnulacion total de factura %s. Numero legal original: %s. CUFE/CUDE original: %s. Motivo: %s", facturacionNotaCreditoFacturaOrigenMarker, factura.DocumentoCodigo, factura.DocumentoCodigo, factura.NumeroLegal, factura.CodigoValidacion, motivo)
 				notaPayload := dbpkg.EmpresaDocumentoFacturacion{
 					EmpresaID:            factura.EmpresaID,
 					TipoDocumento:        "nota_credito",
@@ -861,61 +861,54 @@ func EmpresaFacturacionElectronicaHandler(dbEmp, dbSuper *sql.DB) http.HandlerFu
 				if integErr != nil {
 					log.Printf("[facturacion_electronica] error nota credito anulacion empresa_id=%d factura=%s nota=%s err=%v", factura.EmpresaID, factura.DocumentoCodigo, nota.DocumentoCodigo, integErr)
 				}
-				facturaAnulada, err := dbpkg.UpsertEmpresaDocumentoFacturacion(dbEmp, dbpkg.EmpresaDocumentoFacturacion{
-					EmpresaID:            factura.EmpresaID,
-					TipoDocumento:        factura.TipoDocumento,
-					DocumentoCodigo:      factura.DocumentoCodigo,
-					EstadoDocumento:      "anulada",
-					EstadoAnterior:       factura.EstadoDocumento,
-					EventoUltimo:         "factura_anulada_por_nota_credito",
-					PeriodoContable:      factura.PeriodoContable,
-					MontoTotal:           factura.MontoTotal,
-					Moneda:               factura.Moneda,
-					NumeroLegal:          factura.NumeroLegal,
-					CodigoValidacion:     factura.CodigoValidacion,
-					PaisCodigo:           factura.PaisCodigo,
-					AmbienteFE:           factura.AmbienteFE,
-					FechaDocumento:       factura.FechaDocumento,
-					EntidadRelacionadaID: factura.EntidadRelacionadaID,
-					UsuarioCreador:       usuario,
-					Observaciones:        strings.TrimSpace(factura.Observaciones + "\nAnulada por nota credito " + nota.DocumentoCodigo + ". Motivo: " + motivo),
-				})
-				if err != nil {
-					http.Error(w, "La nota credito fue creada, pero no se pudo marcar la factura como anulada", http.StatusInternalServerError)
-					return
+				facturaResultado := factura
+				anulacionConfirmada := facturacionIntegracionAceptada(integracionFiscal)
+				if anulacionConfirmada {
+					facturaResultado, err = finalizarFacturaAnuladaPorNotaCredito(dbEmp, *nota, usuario)
+					if err != nil {
+						http.Error(w, "La nota credito fue aceptada, pero no se pudo finalizar la anulacion local", http.StatusInternalServerError)
+						return
+					}
+					registrarEventoContableNoBloqueante(dbEmp, r, "facturacion", dbpkg.EmpresaEventoContable{
+						EmpresaID:       factura.EmpresaID,
+						Modulo:          "facturacion",
+						Evento:          "factura_anulada_por_nota_credito",
+						Entidad:         "factura_electronica",
+						EntidadID:       facturaResultado.ID,
+						DocumentoTipo:   factura.TipoDocumento,
+						DocumentoCodigo: factura.DocumentoCodigo,
+						PeriodoContable: factura.PeriodoContable,
+						MontoTotal:      factura.MontoTotal,
+						Moneda:          factura.Moneda,
+						Origen:          "api_facturacion_electronica",
+						Observaciones:   motivo,
+					}, map[string]interface{}{
+						"nota_credito_codigo": nota.DocumentoCodigo,
+						"factura_codigo":      factura.DocumentoCodigo,
+						"numero_legal":        factura.NumeroLegal,
+						"codigo_validacion":   factura.CodigoValidacion,
+						"empresa_id":          factura.EmpresaID,
+					})
 				}
-				registrarEventoContableNoBloqueante(dbEmp, r, "facturacion", dbpkg.EmpresaEventoContable{
-					EmpresaID:       factura.EmpresaID,
-					Modulo:          "facturacion",
-					Evento:          "factura_anulada_por_nota_credito",
-					Entidad:         "factura_electronica",
-					EntidadID:       facturaAnulada.ID,
-					DocumentoTipo:   factura.TipoDocumento,
-					DocumentoCodigo: factura.DocumentoCodigo,
-					PeriodoContable: factura.PeriodoContable,
-					MontoTotal:      factura.MontoTotal,
-					Moneda:          factura.Moneda,
-					Origen:          "api_facturacion_electronica",
-					Observaciones:   motivo,
-				}, map[string]interface{}{
-					"nota_credito_codigo": nota.DocumentoCodigo,
-					"factura_codigo":      factura.DocumentoCodigo,
-					"numero_legal":        factura.NumeroLegal,
-					"codigo_validacion":   factura.CodigoValidacion,
-					"empresa_id":          factura.EmpresaID,
-				})
 				resp := map[string]interface{}{
-					"ok":                 true,
-					"accion":             "anular_factura_nota_credito",
-					"empresa_id":         factura.EmpresaID,
-					"factura_original":   facturaAnulada,
-					"nota_credito":       nota,
-					"integracion_fiscal": integracionFiscal,
+					"ok":                          true,
+					"accion":                      "anular_factura_nota_credito",
+					"empresa_id":                  factura.EmpresaID,
+					"factura_original":            facturaResultado,
+					"nota_credito":                nota,
+					"integracion_fiscal":          integracionFiscal,
+					"anulacion_confirmada_dian":   anulacionConfirmada,
+					"anulacion_pendiente_dian":    !anulacionConfirmada,
+					"regla_anulacion_electronica": "la factura solo cambia a anulada cuando la nota credito queda aceptada por DIAN",
 				}
 				if retryRegistro != nil {
 					resp["cola_reintentos"] = retryRegistro
 				}
-				writeJSON(w, http.StatusOK, resp)
+				status := http.StatusOK
+				if !anulacionConfirmada {
+					status = http.StatusAccepted
+				}
+				writeJSON(w, status, resp)
 				return
 			}
 			if !facturacionActionIsPaisConfig(action) && facturacionActionRequiresFiscalIntegration(action) {
@@ -960,6 +953,10 @@ func EmpresaFacturacionElectronicaHandler(dbEmp, dbSuper *sql.DB) http.HandlerFu
 				}
 				if !facturacionDocumentoElectronicoPermitido(documentoTipo) {
 					http.Error(w, "tipo_documento electronico no soportado", http.StatusBadRequest)
+					return
+				}
+				if actionNormalized == "anular" && documentoTipo == "factura_electronica" {
+					http.Error(w, "una factura electronica se anula fiscalmente mediante action=anular_factura_nota_credito", http.StatusConflict)
 					return
 				}
 
@@ -2750,12 +2747,13 @@ func notificarFalloFacturacionElectronica(dbEmp, dbSuper *sql.DB, retry *dbpkg.F
 		actor = dbpkg.EmpresaBuzonActor{Tipo: "admin", Ref: ownerEmail, Email: ownerEmail, Nombre: ownerEmail, Rol: "administrador"}
 	}
 	errorText := strings.TrimSpace(firstNonEmptyString(resultado.Error, retry.UltimoError, "DIAN/proveedor rechazo o no confirmo el documento electronico"))
+	errorVisible := dianUserVisibleError(errorText)
 	causa := dianErrorUserHelp(errorText)
 	mensaje := "La facturacion electronica requiere revision.\n\n" +
 		"Documento: " + strings.TrimSpace(retry.TipoDocumento) + " " + strings.TrimSpace(retry.DocumentoCodigo) + "\n" +
 		"Numero legal: " + strings.TrimSpace(firstNonEmptyString(retry.NumeroLegal, doc.NumeroLegal)) + "\n" +
 		"Estado: " + strings.TrimSpace(retry.EstadoEnvio) + "\n" +
-		"Error DIAN: " + errorText + "\n\n" +
+		"Error DIAN: " + errorVisible + "\n\n" +
 		"Que hacer: " + causa + "\n\n" +
 		"Abra Facturacion electronica > Pruebas DIAN para ver la consola, corregir configuracion y reenviar."
 	_, _ = dbpkg.CreateEmpresaBuzonMensaje(dbEmp, dbpkg.EmpresaBuzonMensaje{
@@ -2782,6 +2780,8 @@ func notificarFalloFacturacionElectronica(dbEmp, dbSuper *sql.DB, retry *dbpkg.F
 func dianErrorUserHelp(raw string) string {
 	lower := strings.ToLower(strings.TrimSpace(raw))
 	switch {
+	case strings.Contains(lower, "permission denied") || strings.Contains(lower, "acceso denegado") || strings.Contains(lower, "operation not permitted"):
+		return "La clave privada de firma no puede ser leida por el servicio. Un administrador debe restaurar acceso solo para el usuario del backend o cargar nuevamente la firma desde PCS; no cambie ni comparta la clave en el buzon."
 	case strings.Contains(lower, "fab05c") || (strings.Contains(lower, "identificador del software") && strings.Contains(lower, "rango")):
 		return "Asocie en el portal DIAN el prefijo/rango de numeracion al software correcto y verifique Software ID, prefijo, resolucion y rango en PCS."
 	case strings.Contains(lower, "fad06") || strings.Contains(lower, "cufe"):
@@ -2803,6 +2803,34 @@ func dianErrorUserHelp(raw string) string {
 	}
 }
 
+// dianUserVisibleError keeps operational notifications useful without exposing
+// filesystem paths, certificate material, tokens, or provider internals.
+func dianUserVisibleError(raw string) string {
+	clean := strings.TrimSpace(raw)
+	lower := strings.ToLower(clean)
+	if strings.Contains(lower, "permission denied") || strings.Contains(lower, "acceso denegado") || strings.Contains(lower, "operation not permitted") {
+		return "No se pudo acceder a la clave privada de firma del certificado DIAN."
+	}
+	if dianErrorMayExposeInternalDetail(clean) {
+		return "No se pudo preparar la firma o comunicacion DIAN. Revise la consola de Pruebas DIAN con un administrador autorizado."
+	}
+	return dianTruncate(clean, 240)
+}
+
+func dianErrorMayExposeInternalDetail(value string) bool {
+	lower := strings.ToLower(strings.TrimSpace(value))
+	for _, marker := range []string{
+		"sql:", "pq:", "postgres", "database", "dsn", "password", "token", "secret",
+		"certificate", "x509", "dial tcp", "connection refused", "no such file",
+		"permission denied", "stack trace", "traceback", "panic", "file:",
+	} {
+		if strings.Contains(lower, marker) {
+			return true
+		}
+	}
+	return strings.Contains(lower, "/app/") || strings.Contains(lower, "../") || strings.Contains(lower, "c:\\")
+}
+
 func facturacionBuildOperacionPayloadFromDocumento(doc dbpkg.EmpresaDocumentoFacturacion) facturacionOperacionPayload {
 	return facturacionOperacionPayload{
 		EmpresaID:       doc.EmpresaID,
@@ -2817,6 +2845,65 @@ func facturacionBuildOperacionPayloadFromDocumento(doc dbpkg.EmpresaDocumentoFac
 		PeriodoContable: strings.TrimSpace(doc.PeriodoContable),
 		Observaciones:   strings.TrimSpace(doc.Observaciones),
 	}
+}
+
+const facturacionNotaCreditoFacturaOrigenMarker = "FACTURA_ORIGEN=" // #nosec G101 -- prefijo documental publico, no es una credencial.
+
+func facturacionIntegracionAceptada(resultado facturacionIntegracionResultado) bool {
+	return strings.EqualFold(strings.TrimSpace(resultado.EstadoEnvio), "aceptado")
+}
+
+func facturacionNotaCreditoFacturaOrigen(observaciones string) string {
+	for _, line := range strings.Split(observaciones, "\n") {
+		line = strings.TrimSpace(line)
+		if !strings.HasPrefix(line, facturacionNotaCreditoFacturaOrigenMarker) {
+			continue
+		}
+		codigo := strings.TrimSpace(strings.TrimPrefix(line, facturacionNotaCreditoFacturaOrigenMarker))
+		if codigo != "" && len(codigo) <= 180 {
+			return codigo
+		}
+	}
+	return ""
+}
+
+func finalizarFacturaAnuladaPorNotaCredito(dbEmp *sql.DB, nota dbpkg.EmpresaDocumentoFacturacion, usuario string) (*dbpkg.EmpresaDocumentoFacturacion, error) {
+	if dbEmp == nil || nota.EmpresaID <= 0 {
+		return nil, fmt.Errorf("empresa y conexion son obligatorias")
+	}
+	facturaCodigo := facturacionNotaCreditoFacturaOrigen(nota.Observaciones)
+	if facturaCodigo == "" {
+		return nil, nil
+	}
+	factura, err := dbpkg.GetEmpresaDocumentoFacturacionByCodigo(dbEmp, nota.EmpresaID, "factura_electronica", facturaCodigo)
+	if err != nil {
+		return nil, err
+	}
+	if strings.EqualFold(strings.TrimSpace(factura.EstadoDocumento), "anulada") {
+		return factura, nil
+	}
+	if !strings.EqualFold(strings.TrimSpace(factura.EstadoDocumento), "emitida") {
+		return nil, fmt.Errorf("la factura relacionada no esta emitida")
+	}
+	return dbpkg.UpsertEmpresaDocumentoFacturacion(dbEmp, dbpkg.EmpresaDocumentoFacturacion{
+		EmpresaID:            factura.EmpresaID,
+		TipoDocumento:        factura.TipoDocumento,
+		DocumentoCodigo:      factura.DocumentoCodigo,
+		EstadoDocumento:      "anulada",
+		EstadoAnterior:       factura.EstadoDocumento,
+		EventoUltimo:         "factura_anulada_por_nota_credito_aceptada",
+		PeriodoContable:      factura.PeriodoContable,
+		MontoTotal:           factura.MontoTotal,
+		Moneda:               factura.Moneda,
+		NumeroLegal:          factura.NumeroLegal,
+		CodigoValidacion:     factura.CodigoValidacion,
+		PaisCodigo:           factura.PaisCodigo,
+		AmbienteFE:           factura.AmbienteFE,
+		FechaDocumento:       factura.FechaDocumento,
+		EntidadRelacionadaID: factura.EntidadRelacionadaID,
+		UsuarioCreador:       strings.TrimSpace(usuario),
+		Observaciones:        strings.TrimSpace(factura.Observaciones + "\nAnulada por nota credito DIAN aceptada " + nota.DocumentoCodigo + "."),
+	})
 }
 
 func facturacionDeriveAccionByDocumento(doc dbpkg.EmpresaDocumentoFacturacion) string {
@@ -2947,8 +3034,16 @@ func processFacturacionRetryQueue(dbEmp *sql.DB, empresaID int64, limit int, usu
 				detail["cola_reintentos"] = persistido
 			}
 
+			if facturacionIntegracionAceptada(resultado) && strings.EqualFold(strings.TrimSpace(doc.TipoDocumento), "nota_credito") {
+				if facturaAnulada, finalizeErr := finalizarFacturaAnuladaPorNotaCredito(dbEmp, *doc, usuario); finalizeErr != nil {
+					erroresInternos += 1
+					detail["error_finalizacion_anulacion"] = "no se pudo finalizar factura relacionada"
+				} else if facturaAnulada != nil {
+					detail["factura_anulada_codigo"] = facturaAnulada.DocumentoCodigo
+				}
+			}
 			switch resultado.EstadoEnvio {
-			case "enviado", "reconciliado":
+			case "aceptado", "enviado", "reconciliado":
 				enviados += 1
 			case "contingencia":
 				contingencia += 1
@@ -3117,7 +3212,12 @@ func reconcileFacturacionEstados(dbEmp *sql.DB, empresaID int64, aplicar bool, u
 			estadoRetry = normalizeFacturacionEstadoEnvio(retryItem.EstadoEnvio)
 		}
 
-		if estadoRetry == "enviado" || estadoRetry == "reconciliado" {
+		if estadoRetry == "aceptado" || estadoRetry == "enviado" || estadoRetry == "reconciliado" {
+			if aplicar && estadoRetry == "aceptado" && strings.EqualFold(strings.TrimSpace(doc.TipoDocumento), "nota_credito") {
+				if _, finalizeErr := finalizarFacturaAnuladaPorNotaCredito(dbEmp, doc.EmpresaDocumentoFacturacion, usuario); finalizeErr != nil {
+					erroresInternos += 1
+				}
+			}
 			conciliados += 1
 			continue
 		}
@@ -3160,8 +3260,16 @@ func reconcileFacturacionEstados(dbEmp *sql.DB, empresaID int64, aplicar bool, u
 					item["cola_reintentos"] = persistido
 				}
 
+				if facturacionIntegracionAceptada(resultado) && strings.EqualFold(strings.TrimSpace(doc.TipoDocumento), "nota_credito") {
+					if facturaAnulada, finalizeErr := finalizarFacturaAnuladaPorNotaCredito(dbEmp, doc.EmpresaDocumentoFacturacion, usuario); finalizeErr != nil {
+						erroresInternos += 1
+						item["error_finalizacion_anulacion"] = "no se pudo finalizar factura relacionada"
+					} else if facturaAnulada != nil {
+						item["factura_anulada_codigo"] = facturaAnulada.DocumentoCodigo
+					}
+				}
 				switch resultado.EstadoEnvio {
-				case "enviado", "reconciliado":
+				case "aceptado", "enviado", "reconciliado":
 					enviados += 1
 				case "contingencia":
 					contingencia += 1

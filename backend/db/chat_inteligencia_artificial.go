@@ -221,6 +221,7 @@ func GetEmpresaAIUsoDiarioOpenAITokensPorRango(dbConn *sql.DB, provider, desde, 
 type EmpresaAIConsulta struct {
 	ID               int64  `json:"id"`
 	EmpresaID        int64  `json:"empresa_id"`
+	ConversationID   string `json:"conversation_id"`
 	Provider         string `json:"provider"`
 	ModelID          string `json:"model_id"`
 	Pregunta         string `json:"pregunta"`
@@ -271,6 +272,7 @@ type EmpresaAIModeloPreferido struct {
 // EmpresaAIUsuarioModeloPreferido conserva la eleccion personal de modelo.
 // La conversacion y los datos operativos permanecen aislados por empresa_id.
 type EmpresaAIUsuarioModeloPreferido struct {
+	EmpresaID          int64  `json:"empresa_id,omitempty"`
 	UsuarioID          string `json:"usuario_id"`
 	ModelID            string `json:"model_id"`
 	ModoAsistente      string `json:"modo_asistente"`
@@ -334,6 +336,7 @@ func EnsureEmpresaAIChatSchema(dbConn *sql.DB) error {
 		`CREATE TABLE IF NOT EXISTS empresa_ai_consultas (
 			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL,
+			conversation_id TEXT NOT NULL DEFAULT '',
 			provider TEXT NOT NULL,
 			model_id TEXT NOT NULL,
 			pregunta TEXT NOT NULL,
@@ -388,11 +391,25 @@ func EnsureEmpresaAIChatSchema(dbConn *sql.DB) error {
 			usuario_creador TEXT,
 			estado TEXT DEFAULT 'activo'
 		);`,
+		`CREATE TABLE IF NOT EXISTS empresa_ai_usuario_preferencias (
+			empresa_id BIGINT NOT NULL,
+			usuario_id TEXT NOT NULL,
+			model_id TEXT NOT NULL,
+			modo_asistente TEXT NOT NULL DEFAULT 'operativo',
+			agent_id TEXT NOT NULL DEFAULT 'general',
+			fecha_creacion TEXT DEFAULT (CURRENT_TIMESTAMP),
+			fecha_actualizacion TEXT DEFAULT (CURRENT_TIMESTAMP),
+			usuario_creador TEXT,
+			estado TEXT DEFAULT 'activo',
+			PRIMARY KEY (empresa_id, usuario_id)
+		);`,
 		`CREATE INDEX IF NOT EXISTS ix_empresa_ai_consultas_empresa_fecha ON empresa_ai_consultas(empresa_id, fecha_consulta DESC, id DESC);`,
+		`CREATE INDEX IF NOT EXISTS ix_empresa_ai_consultas_empresa_usuario_fecha ON empresa_ai_consultas(empresa_id, usuario_creador, fecha_consulta DESC, id DESC);`,
 		`CREATE INDEX IF NOT EXISTS ix_empresa_ai_consultas_empresa_modelo ON empresa_ai_consultas(empresa_id, provider, model_id);`,
 		`CREATE INDEX IF NOT EXISTS ix_empresa_ai_uso_diario_empresa_fecha ON empresa_ai_uso_diario(empresa_id, fecha_uso DESC);`,
 		`CREATE INDEX IF NOT EXISTS ix_empresa_ai_modelo_preferido_empresa_admin ON empresa_ai_modelo_preferido(empresa_id, admin_email, estado);`,
 		`CREATE INDEX IF NOT EXISTS ix_empresa_ai_usuario_modelo_preferido_usuario ON empresa_ai_usuario_modelo_preferido(usuario_id, estado);`,
+		`CREATE INDEX IF NOT EXISTS ix_empresa_ai_usuario_preferencias_empresa_usuario ON empresa_ai_usuario_preferencias(empresa_id, usuario_id, estado);`,
 	}
 	for _, stmt := range stmts {
 		if _, err := dbConn.Exec(stmt); err != nil {
@@ -419,6 +436,9 @@ func EnsureEmpresaAIChatSchema(dbConn *sql.DB) error {
 		return err
 	}
 	if err := ensureColumnIfMissing(dbConn, "empresa_ai_consultas", "usuario_creador", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_ai_consultas", "conversation_id", "TEXT NOT NULL DEFAULT ''"); err != nil {
 		return err
 	}
 	if err := ensureColumnIfMissing(dbConn, "empresa_ai_consultas", "estado", "TEXT DEFAULT 'activo'"); err != nil {
@@ -481,6 +501,33 @@ func GetEmpresaAIUsuarioModeloPreferido(dbConn *sql.DB, usuarioID string) (strin
 	return prefs.ModelID, err
 }
 
+// GetEmpresaAIUsuarioPreferenciasPorEmpresa returns preferences exclusively for
+// one tenant and user. It intentionally never falls back to the legacy global
+// selector table because that would reintroduce cross-company preference reuse.
+func GetEmpresaAIUsuarioPreferenciasPorEmpresa(dbConn *sql.DB, empresaID int64, usuarioID string) (EmpresaAIUsuarioModeloPreferido, error) {
+	usuarioID = aiNormalizeAdminEmail(usuarioID)
+	if empresaID <= 0 || usuarioID == "" {
+		return EmpresaAIUsuarioModeloPreferido{}, fmt.Errorf("empresa_id y usuario_id son obligatorios")
+	}
+	read := func() (EmpresaAIUsuarioModeloPreferido, error) {
+		prefs := EmpresaAIUsuarioModeloPreferido{EmpresaID: empresaID, UsuarioID: usuarioID}
+		err := queryRowSQLCompat(dbConn, `SELECT COALESCE(model_id, ''), COALESCE(modo_asistente, 'operativo'), COALESCE(agent_id, 'general'), COALESCE(fecha_actualizacion, '') FROM empresa_ai_usuario_preferencias WHERE empresa_id = ? AND usuario_id = ? AND COALESCE(estado, 'activo') <> 'inactivo' LIMIT 1`, empresaID, usuarioID).Scan(&prefs.ModelID, &prefs.ModoAsistente, &prefs.AgentID, &prefs.FechaActualizacion)
+		if err == sql.ErrNoRows {
+			return prefs, nil
+		}
+		prefs.ModelID = strings.TrimSpace(prefs.ModelID)
+		return prefs, err
+	}
+	value, err := read()
+	if err != nil && shouldRepairAIChatSchema(err) {
+		if schemaErr := EnsureEmpresaAIChatSchema(dbConn); schemaErr != nil {
+			return EmpresaAIUsuarioModeloPreferido{}, schemaErr
+		}
+		return read()
+	}
+	return value, err
+}
+
 func GetEmpresaAIUsuarioPreferencias(dbConn *sql.DB, usuarioID string) (EmpresaAIUsuarioModeloPreferido, error) {
 	usuarioID = aiNormalizeAdminEmail(usuarioID)
 	if usuarioID == "" {
@@ -539,6 +586,37 @@ func UpsertEmpresaAIUsuarioPreferencias(dbConn *sql.DB, usuarioID, modelID, modo
 			return schemaErr
 		}
 		_, err = execSQLCompat(dbConn, query, usuarioID, modelID, modoAsistente, agentID, strings.TrimSpace(usuarioCreador))
+	}
+	return err
+}
+
+// UpsertEmpresaAIUsuarioPreferenciasPorEmpresa persists a tenant-scoped chat
+// preference. empresaID is never inferred from the authenticated user.
+func UpsertEmpresaAIUsuarioPreferenciasPorEmpresa(dbConn *sql.DB, empresaID int64, usuarioID, modelID, modoAsistente, agentID, usuarioCreador string) error {
+	usuarioID = aiNormalizeAdminEmail(usuarioID)
+	modelID = aiNormalizeModelID(modelID)
+	if empresaID <= 0 || usuarioID == "" || modelID == "" {
+		return fmt.Errorf("empresa_id, usuario_id y model_id son obligatorios")
+	}
+	if strings.TrimSpace(usuarioCreador) == "" {
+		usuarioCreador = usuarioID
+	}
+	modoAsistente = strings.TrimSpace(modoAsistente)
+	if modoAsistente == "" {
+		modoAsistente = "operativo"
+	}
+	agentID = strings.TrimSpace(agentID)
+	if agentID == "" {
+		agentID = "general"
+	}
+	now := sqlNowExpr()
+	query := `INSERT INTO empresa_ai_usuario_preferencias (empresa_id, usuario_id, model_id, modo_asistente, agent_id, fecha_creacion, fecha_actualizacion, usuario_creador, estado) VALUES (?, ?, ?, ?, ?, ` + now + `, ` + now + `, ?, 'activo') ON CONFLICT(empresa_id, usuario_id) DO UPDATE SET model_id = excluded.model_id, modo_asistente = excluded.modo_asistente, agent_id = excluded.agent_id, fecha_actualizacion = ` + now + `, usuario_creador = excluded.usuario_creador, estado = 'activo'`
+	_, err := execSQLCompat(dbConn, query, empresaID, usuarioID, modelID, modoAsistente, agentID, strings.TrimSpace(usuarioCreador))
+	if err != nil && shouldRepairAIChatSchema(err) {
+		if schemaErr := EnsureEmpresaAIChatSchema(dbConn); schemaErr != nil {
+			return schemaErr
+		}
+		_, err = execSQLCompat(dbConn, query, empresaID, usuarioID, modelID, modoAsistente, agentID, strings.TrimSpace(usuarioCreador))
 	}
 	return err
 }
@@ -1173,6 +1251,7 @@ func RegisterEmpresaAIConsulta(dbConn *sql.DB, in EmpresaAIConsulta) (int64, err
 
 		consultaID, err := insertTxSQLCompat(tx, `INSERT INTO empresa_ai_consultas (
 		empresa_id,
+		conversation_id,
 		provider,
 		model_id,
 		pregunta,
@@ -1189,6 +1268,7 @@ func RegisterEmpresaAIConsulta(dbConn *sql.DB, in EmpresaAIConsulta) (int64, err
 		fecha_actualizacion
 	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, `+nowExpr+`, `+nowExpr+`)`,
 			in.EmpresaID,
+			strings.TrimSpace(in.ConversationID),
 			in.Provider,
 			in.ModelID,
 			in.Pregunta,
@@ -1471,6 +1551,36 @@ func ListEmpresaAIConsultasRecientes(dbConn *sql.DB, empresaID int64, limit int)
 		return queryRecentes()
 	}
 	return items, nil
+}
+
+// ListEmpresaAIConsultasRecientesPorUsuario returns only the authenticated
+// user's records inside one tenant. It must be used by user-facing history APIs.
+func ListEmpresaAIConsultasRecientesPorUsuario(dbConn *sql.DB, empresaID int64, usuarioID string, limit int) ([]EmpresaAIConsulta, error) {
+	usuarioID = aiNormalizeAdminEmail(usuarioID)
+	if empresaID <= 0 || usuarioID == "" {
+		return nil, fmt.Errorf("empresa_id y usuario_id son obligatorios")
+	}
+	if limit <= 0 {
+		limit = 20
+	}
+	if limit > 200 {
+		limit = 200
+	}
+	query := `SELECT id, empresa_id, COALESCE(conversation_id, ''), COALESCE(provider, ''), COALESCE(model_id, ''), COALESCE(pregunta, ''), COALESCE(respuesta, ''), COALESCE(prompt_tokens, 0), COALESCE(completion_tokens, 0), COALESCE(total_tokens, 0), COALESCE(fecha_consulta, ''), COALESCE(plan_actual, 'free'), COALESCE(fecha_creacion, ''), COALESCE(fecha_actualizacion, ''), COALESCE(usuario_creador, ''), COALESCE(estado, 'activo'), COALESCE(observaciones, '') FROM empresa_ai_consultas WHERE empresa_id = ? AND LOWER(TRIM(COALESCE(usuario_creador, ''))) = ? ORDER BY pcs_ts(fecha_consulta) DESC, id DESC LIMIT ?`
+	rows, err := querySQLCompat(dbConn, query, empresaID, usuarioID, limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := make([]EmpresaAIConsulta, 0)
+	for rows.Next() {
+		var item EmpresaAIConsulta
+		if err := rows.Scan(&item.ID, &item.EmpresaID, &item.ConversationID, &item.Provider, &item.ModelID, &item.Pregunta, &item.Respuesta, &item.PromptTokens, &item.CompletionTokens, &item.TotalTokens, &item.FechaConsulta, &item.PlanActual, &item.FechaCreacion, &item.FechaActualiz, &item.UsuarioCreador, &item.Estado, &item.Observaciones); err != nil {
+			return nil, err
+		}
+		items = append(items, item)
+	}
+	return items, rows.Err()
 }
 
 // ListSuperAIConsultasRecientes devuelve historial reciente por administrador super.

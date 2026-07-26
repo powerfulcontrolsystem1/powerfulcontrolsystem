@@ -586,14 +586,17 @@
       <div class="empresa-section-header">
         <h2 class="empresa-section-title">Cartera CxC / CxP</h2>
         <div class="empresa-inline-actions">
+          <input id="carteraSoporteIAArchivo" type="file" accept=".png,.jpg,.jpeg,.webp,.pdf,.xml" hidden>
+          <button id="btnCargarCxPIA" class="btn secondary" type="button">Cargar factura o recibo con IA</button>
           <button id="btnBuscarCartera" class="btn secondary" type="button">Buscar cartera</button>
           <button id="btnConciliarCartera" class="btn secondary" type="button">Conciliar pagos</button>
         </div>
       </div>
-      <p class="form-help">Gestiona cuentas por cobrar y pagar con saldos, mora, abonos y trazabilidad contra movimientos financieros.</p>
+      <p class="form-help">Gestiona cuentas por cobrar y pagar con saldos, mora, abonos y trazabilidad contra movimientos financieros. La carga IA solo propone datos: revisa y edita el formulario antes de guardar una CxP.</p>
 
       <form id="carteraForm" class="form">
         <input id="carteraId" type="hidden">
+        <input id="carteraSoporteIAId" type="hidden">
         <div class="form-row">
           <div class="form-col">
             <label class="form-label" for="carteraTipo">Tipo cartera</label>
@@ -605,6 +608,12 @@
           <div class="form-col">
             <label class="form-label" for="carteraTercero">Cliente / proveedor</label>
             <input id="carteraTercero" class="form-input" placeholder="Tercero" required>
+          </div>
+          <div id="carteraProveedorField" class="form-col" hidden>
+            <label class="form-label" for="carteraProveedorId">Proveedor registrado (CxP)</label>
+            <select id="carteraProveedorId" class="form-input">
+              <option value="">Selecciona un proveedor registrado</option>
+            </select>
           </div>
           <div class="form-col">
             <label class="form-label" for="carteraDocumento">Documento origen</label>
@@ -933,6 +942,7 @@
       cierresCaja: [],
       planCuentas: [],
       cartera: [],
+	  carteraProveedores: [],
       extractos: [],
       periodos: [],
       conciliacion: null,
@@ -1907,11 +1917,59 @@
         observaciones: normalize(document.getElementById('carteraObs').value)
       };
       payload[carteraTerceroField(tipo)] = normalize(document.getElementById('carteraTercero').value);
+	  if (tipo === 'cxp') {
+		const option = document.getElementById('carteraProveedorId').selectedOptions[0];
+		const proveedorID = Number(option && option.value ? option.value : 0);
+		if (proveedorID <= 0 || !option || !normalize(option.dataset.nombre)) {
+		  throw new Error('Selecciona un proveedor registrado de esta empresa antes de guardar la CxP.');
+		}
+		payload.proveedor_id = proveedorID;
+		payload.proveedor_nombre = normalize(option.dataset.nombre);
+	  }
       return { tipo: tipo, payload: payload };
     }
 
+	function renderCarteraProveedores() {
+	  const select = document.getElementById('carteraProveedorId');
+	  const selected = select.value || select.dataset.pendingId || '';
+	  select.innerHTML = '<option value="">Selecciona un proveedor registrado</option>';
+	  (state.carteraProveedores || []).forEach(function(proveedor) {
+		const option = document.createElement('option');
+		option.value = String(proveedor.id || '');
+		option.dataset.nombre = normalize(proveedor.razon_social || proveedor.nombre_comercial);
+		option.textContent = option.dataset.nombre + (normalize(proveedor.nit) ? ' · ' + normalize(proveedor.nit) : '');
+		select.appendChild(option);
+	  });
+	  select.value = selected;
+	  delete select.dataset.pendingId;
+	}
+
+	async function loadCarteraProveedores() {
+	  if (!state.empresaID) return;
+	  const res = await fetch(carteraEndpoint('cxp') + '?action=proveedores&empresa_id=' + encodeURIComponent(String(state.empresaID)));
+	  await ensureOk(res);
+	  state.carteraProveedores = await res.json();
+	  renderCarteraProveedores();
+	}
+
+	function syncCarteraProveedorUI() {
+	  const isCxP = normalize(document.getElementById('carteraTipo').value) === 'cxp';
+	  const field = document.getElementById('carteraProveedorField');
+	  const select = document.getElementById('carteraProveedorId');
+	  field.hidden = !isCxP;
+	  select.required = isCxP;
+	  if (isCxP && !(state.carteraProveedores || []).length) {
+		loadCarteraProveedores().catch(function(err) {
+		  setMsg('carteraMsg', err.message || 'No se pudieron cargar proveedores registrados.', true);
+		});
+	  }
+	}
+
     function resetCarteraForm() {
       document.getElementById('carteraId').value = '';
+	  document.getElementById('carteraSoporteIAId').value = '';
+	  document.getElementById('carteraProveedorId').value = '';
+	  delete document.getElementById('carteraProveedorId').dataset.pendingId;
       document.getElementById('carteraTercero').value = '';
       document.getElementById('carteraDocumento').value = '';
       document.getElementById('carteraValor').value = '';
@@ -1919,12 +1977,16 @@
       document.getElementById('carteraFechaVencimiento').value = '';
       document.getElementById('carteraObs').value = '';
       document.getElementById('btnGuardarCartera').textContent = 'Guardar cartera';
+      syncCarteraProveedorUI();
     }
 
     function setCarteraForm(item, tipo) {
       tipo = tipo || normalize(document.getElementById('filtroCarteraTipo').value) || 'cxc';
       document.getElementById('carteraTipo').value = tipo;
       document.getElementById('carteraId').value = String(item.id || '');
+	  document.getElementById('carteraSoporteIAId').value = '';
+	  document.getElementById('carteraProveedorId').value = String(item.proveedor_id || '');
+	  document.getElementById('carteraProveedorId').dataset.pendingId = String(item.proveedor_id || '');
       document.getElementById('carteraTercero').value = normalize(item[carteraTerceroField(tipo)]);
       document.getElementById('carteraDocumento').value = normalize(item.documento_codigo);
       document.getElementById('carteraValor').value = String(toNumber(item.valor_original, 0));
@@ -1932,6 +1994,66 @@
       document.getElementById('carteraFechaVencimiento').value = dateOnlyFromInput(item.fecha_vencimiento);
       document.getElementById('carteraObs').value = normalize(item.observaciones);
       document.getElementById('btnGuardarCartera').textContent = 'Actualizar cartera';
+      syncCarteraProveedorUI();
+    }
+
+    function carteraIAFileName(file) {
+      return (file && file.name) ? String(file.name) : 'factura o recibo';
+    }
+
+    async function cargarFacturaCxPIA(file) {
+      if (!file) return;
+      if (!state.empresaID) {
+        setMsg('carteraMsg', 'Selecciona una empresa antes de cargar el soporte.', true);
+        return;
+      }
+      const button = document.getElementById('btnCargarCxPIA');
+      const originalText = button.textContent;
+      button.disabled = true;
+      button.textContent = 'Leyendo con IA...';
+      try {
+        const formData = new FormData();
+        formData.append('empresa_id', String(state.empresaID));
+        formData.append('archivo', file, carteraIAFileName(file));
+        const radicadoResponse = await fetch('/api/empresa/soportes_compras_ia?empresa_id=' + encodeURIComponent(String(state.empresaID)) + '&action=radicar', {
+          method: 'POST',
+          body: formData
+        });
+        await ensureOk(radicadoResponse);
+        const radicado = await radicadoResponse.json();
+        const soporteID = Number(radicado && radicado.soporte && radicado.soporte.id || 0);
+        if (!soporteID) throw new Error('No se pudo radicar el archivo para lectura IA.');
+        const extractionResponse = await fetch('/api/empresa/soportes_compras_ia?empresa_id=' + encodeURIComponent(String(state.empresaID)) + '&action=extraer_ia', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ soporte_id: soporteID })
+        });
+        await ensureOk(extractionResponse);
+        const extracted = await extractionResponse.json();
+        const soporte = extracted && extracted.soporte ? extracted.soporte : {};
+        document.getElementById('carteraTipo').value = 'cxp';
+        document.getElementById('filtroCarteraTipo').value = 'cxp';
+        document.getElementById('carteraSoporteIAId').value = String(soporteID);
+		await loadCarteraProveedores();
+		document.getElementById('carteraProveedorId').value = String(soporte.proveedor_id || '');
+        document.getElementById('carteraTercero').value = normalize(soporte.proveedor_nombre);
+        document.getElementById('carteraDocumento').value = normalize(soporte.documento_numero);
+        document.getElementById('carteraValor').value = String(toNumber(soporte.total || soporte.subtotal, 0));
+        document.getElementById('carteraFechaEmision').value = dateOnlyFromInput(soporte.fecha_documento);
+        document.getElementById('carteraFechaVencimiento').value = dateOnlyFromInput(soporte.fecha_vencimiento);
+        const reading = ['Lectura IA pendiente de revisión humana.', 'Soporte IA #' + soporteID + (soporte.codigo ? ' (' + normalize(soporte.codigo) + ')' : '')];
+        if (normalize(soporte.proveedor_nit)) reading.push('NIT sugerido: ' + normalize(soporte.proveedor_nit));
+        if (normalize(soporte.observaciones)) reading.push(normalize(soporte.observaciones));
+        document.getElementById('carteraObs').value = reading.join(' ');
+        document.getElementById('btnGuardarCartera').textContent = 'Guardar CxP revisada';
+		setMsg('carteraMsg', Number(soporte.proveedor_id || 0) > 0 ? 'La IA cargó un borrador. Revisa proveedor, documento, fechas y valor antes de guardar; esta acción no registra un pago.' : 'La IA cargó un borrador. Asocia un proveedor registrado, revisa los demás datos y luego guarda; esta acción no registra un pago.', false);
+      } catch (err) {
+        setMsg('carteraMsg', err.message || 'No se pudo leer el archivo con IA.', true);
+      } finally {
+        button.disabled = false;
+        button.textContent = originalText;
+        document.getElementById('carteraSoporteIAArchivo').value = '';
+      }
     }
 
     async function loadCartera() {
@@ -2032,9 +2154,14 @@
         return;
       }
       try {
+		const idempotencyKey = (window.crypto && window.crypto.randomUUID)
+		  ? window.crypto.randomUUID()
+		  : ('cxp-' + String(Date.now()) + '-' + Math.random().toString(16).slice(2));
         const res = await fetch(carteraEndpoint(tipo) + '?action=registrar_pago', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+		  headers: tipo === 'cxp'
+			? { 'Content-Type': 'application/json', 'Idempotency-Key': idempotencyKey }
+			: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             empresa_id: Number(state.empresaID),
             id: id,
@@ -3454,7 +3581,16 @@
       });
       document.getElementById('btnAplicarPlanMotel').addEventListener('click', aplicarPlanMotel);
 
-      document.getElementById('carteraForm').addEventListener('submit', saveCartera);
+	  document.getElementById('carteraTipo').addEventListener('change', syncCarteraProveedorUI);
+    document.getElementById('carteraForm').addEventListener('submit', saveCartera);
+	  document.getElementById('btnCargarCxPIA').addEventListener('click', function() {
+		const tipo = normalize(document.getElementById('carteraTipo').value);
+		if (tipo !== 'cxp' && !window.confirm('La lectura IA crea un borrador de cuenta por pagar. ¿Continuar?')) return;
+		document.getElementById('carteraSoporteIAArchivo').click();
+	  });
+	  document.getElementById('carteraSoporteIAArchivo').addEventListener('change', function() {
+		cargarFacturaCxPIA(this.files && this.files[0] ? this.files[0] : null);
+	  });
       document.getElementById('btnBuscarCartera').addEventListener('click', async function() {
         try {
           await loadCartera();
