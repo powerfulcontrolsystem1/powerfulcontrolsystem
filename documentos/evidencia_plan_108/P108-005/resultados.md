@@ -49,3 +49,11 @@ confirma el alta, selección y un abono controlado por el flujo oficial.
 - Alta CxP y abono visible controlado: aprobados en staging.
 - Replay HTTP exactamente simultáneo con igual clave: pendiente.
 - Producción: permanece `NO-GO`.
+
+## Seguimiento visual adicional
+
+La misma pantalla de staging expone el botón `Cargar factura o recibo con IA` y
+habilita su selector de archivo. Se verificó solo la interacción inicial, sin
+adjuntar archivo ni invocar un proveedor IA. Una navegación negativa con otro
+`empresa_id` no mostró proveedores ni cartera, pero no constituye por sí sola
+una aprobación A/B porque no demostró un rechazo explícito por permisos.

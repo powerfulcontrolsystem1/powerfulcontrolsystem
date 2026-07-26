@@ -12299,6 +12299,9 @@ panel de seguridad para que el navegador reciba la correccion CSRF de staging.
 - `documentos/evidencia_plan_108/P108-005/resultados.md`: evidencia autenticada
   de staging para el catálogo único de proveedores de CxP, alta y abono interno
   controlado; separa explícitamente la carrera HTTP de igual clave aún pendiente.
+- `documentos/evidencia_plan_108/P108-006/resultados.md`: comprobación visual
+  inicial del control de carga de factura o recibo con IA, sin archivo ni efecto
+  financiero.
 - `deploy/scripts/vps-staging-candidate-up.sh`: publica un SHA aprobado en el
   Compose de staging desde un worktree Git aislado, sin cambiar el checkout de
   producción ni permitir el reinicio destructivo de volúmenes staging.
