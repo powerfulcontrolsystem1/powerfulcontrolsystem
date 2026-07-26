@@ -12292,3 +12292,6 @@ panel de seguridad para que el navegador reciba la correccion CSRF de staging.
 - `documentos/evidencia_plan_108/P108-011/staging_solo_lectura.md`: conserva la
   línea base autenticada y pasiva de staging, con sus hallazgos de IA y las
   exclusiones de efectos operativos.
+- `deploy/scripts/vps-staging-candidate-up.sh`: publica un SHA aprobado en el
+  Compose de staging desde un worktree Git aislado, sin cambiar el checkout de
+  producción ni permitir el reinicio destructivo de volúmenes staging.

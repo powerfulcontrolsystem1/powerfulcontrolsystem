@@ -39511,3 +39511,10 @@ Archivos modificados:
 - El staging respondió `200` en health y ready. El barrido autenticado pasivo
   de Finanzas, Centro IA y Reportes no realizó mutaciones y confirmó que staging
   aún no tiene CxP/IA del candidato, además de un 403 en Centro IA.
+
+2026-07-25 - P108-023: despliegue staging aislado por candidato.
+- Se añade un lanzador VPS que obtiene una referencia Git, comprueba su SHA y
+  construye staging desde un worktree distinto al checkout de producción.
+- El lanzador rechaza SHA ambiguo, worktree con otro commit, falta de entorno,
+  `RESET_STAGING` y health/ready fallidos. No copia ni imprime secretos y no
+  modifica el checkout productivo.

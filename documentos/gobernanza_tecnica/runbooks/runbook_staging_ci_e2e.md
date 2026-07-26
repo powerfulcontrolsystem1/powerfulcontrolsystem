@@ -22,6 +22,13 @@ debe aplicar DDL adicional ni alterar datos.
 
 Configurar Nginx para `staging.powerfulcontrolsystem.com` apuntando a `127.0.0.1:8082` solo despues de validar secretos de `deploy/.env.staging`.
 
+Para desplegar un candidato P108 sin cambiar el checkout que sirve producción,
+usar `deploy/scripts/vps-staging-candidate-up.sh`. Requiere explícitamente
+`CANDIDATE_REF`, `CANDIDATE_SHA`, un `WORKTREE_DIR` distinto al proyecto
+productivo y el archivo staging existente. El script rechaza `RESET_STAGING` y
+no crea ni imprime secretos. Ejecutar solo después de CI verde y conservar SHA,
+salida de migración, health, ready y resultados E2E.
+
 ## CI profesional
 
 Workflow: `.github/workflows/professional-ci.yml`.
