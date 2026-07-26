@@ -18,6 +18,10 @@
   CID dentro del correo. `web/img/bimi-pcs.svg` declara SVG 1.2 Tiny PS para el
   avatar de dominio; la publicación visible en Gmail sigue condicionada a
   DMARC en enforcement, DNS BIMI y certificado VMC/CMC del dominio.
+- `deploy/docker/backend.Dockerfile` sustituye `chown -R pcs:pcs /app` por
+  `COPY --chown=pcs:pcs` y ajustes puntuales de directorios runtime. El cambio
+  elimina el bloqueo observado durante más de 25 minutos en una construcción
+  fría sin relajar el usuario no root ni las capacidades del contenedor.
 
 2026-07-26: Plan 108 / DIAN - volumen heredado con contenedor restringido.
 - `deploy/scripts/vps-migrate-private-dian.sh` dejó de intentar `chown` dentro del backend endurecido con `cap_drop: ALL`. El script resuelve el origen real de `/app/web/uploads`, valida rutas canónicas y ajusta solo los PEM de la empresa solicitada antes de migrarlos al almacenamiento privado.

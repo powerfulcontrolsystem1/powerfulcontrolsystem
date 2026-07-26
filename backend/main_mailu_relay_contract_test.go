@@ -57,3 +57,17 @@ func TestBIMILogoDeclaresTinyPSProfile(t *testing.T) {
 		}
 	}
 }
+
+func TestBackendImageAvoidsRecursiveAppChown(t *testing.T) {
+	raw, err := os.ReadFile(filepath.Join("..", "deploy", "docker", "backend.Dockerfile"))
+	if err != nil {
+		t.Fatalf("read backend Dockerfile: %v", err)
+	}
+	dockerfile := string(raw)
+	if strings.Contains(dockerfile, "chown -R pcs:pcs /app") {
+		t.Fatal("cold production builds must not recursively chown the full /app tree")
+	}
+	if count := strings.Count(dockerfile, "COPY --chown=pcs:pcs"); count < 10 {
+		t.Fatalf("runtime copies must set ownership while copying; found %d markers", count)
+	}
+}

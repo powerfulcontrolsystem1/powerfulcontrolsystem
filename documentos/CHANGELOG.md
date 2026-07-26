@@ -2,6 +2,7 @@
 - [Autenticación] Las confirmaciones de administradores, invitaciones de usuarios y recuperaciones usan la dirección SMTP interna configurada.
 - [Registro] Una cuenta administrativa autogenerada pendiente no se confunde con una invitación delegada; puede repetir el registro para rotar el enlace y reenviar la confirmación. Si falla el correo, la pantalla conserva el formulario y el mensaje para reintentar.
 - [Infraestructura] Solo backend y worker se incorporan a `pcs_mailu_internal`; Mailu continúa sin relay público. La corrección responde a evidencia real `554 5.7.1 Relay access denied` desde `pcs_internal`.
+- [Docker] Las imágenes asignan propietario durante `COPY` y dejan de ejecutar `chown -R /app`; una construcción fría real había quedado más de 25 minutos recorriendo el árbol duplicado del proyecto.
 
 ## [2026-07-26] Firma DIAN heredada en volumen restringido
 - [DIAN] El runbook de migración privada resuelve y valida el volumen exacto de uploads en el host, rechaza escapes por enlaces simbólicos y ajusta solo la carpeta de firma de `empresa_id` solicitado.

@@ -45,7 +45,7 @@ func TestDIANPrivateMigrationDeploymentContract(t *testing.T) {
 	if !strings.Contains(dockerfile, "go build -trimpath -ldflags=\"-s -w\" -o /out/pcs-migrate-private-uploads ./tools/migrate_private_uploads") {
 		t.Fatal("private upload migration binary is not built into the backend image")
 	}
-	if !strings.Contains(dockerfile, "COPY --from=build /out/pcs-migrate-private-uploads /app/backend/pcs-migrate-private-uploads") {
+	if !strings.Contains(dockerfile, "COPY --chown=pcs:pcs --from=build /out/pcs-migrate-private-uploads /app/backend/pcs-migrate-private-uploads") {
 		t.Fatal("private upload migration binary is not available to the backend runtime")
 	}
 }
