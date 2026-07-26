@@ -372,6 +372,7 @@
         viewMode: "carta",
         fontSizeOverride: 0,
         canCancelInvoices: false,
+        canRetryDIAN: false,
         currentUserEmail: "",
         currentRole: "",
         cajeroFilterLocked: false,
@@ -832,6 +833,25 @@
         return { enabled: false, visible: true, reason: "Este tipo de documento no se anula desde esta accion." };
       }
 
+      function retryDIANAvailability(item) {
+        var tipo = normalize(item && item.tipo_documento).toLowerCase();
+        var estadoDoc = normalize(item && item.estado_documento).toLowerCase();
+        var estado = normalize(item && item.estado).toLowerCase();
+        if (tipo !== "factura_electronica") {
+          return { enabled: false, visible: false, reason: "Solo aplica a factura electronica." };
+        }
+        if (!state.canRetryDIAN) {
+          return { enabled: false, visible: false, reason: "Tu rol no tiene permiso para reenviar facturas a DIAN." };
+        }
+        if (estado === "inactivo" || estadoDoc === "anulada") {
+          return { enabled: false, visible: false, reason: "La factura anulada o inactiva no se reenvia a DIAN." };
+        }
+        if (estadoDoc === "pendiente_emision" || estadoDoc === "fallida" || estadoDoc === "rechazada") {
+          return { enabled: true, visible: true, reason: "Reintentar el envio fiscal de este documento pendiente." };
+        }
+        return { enabled: false, visible: false, reason: "El documento no esta pendiente de envio fiscal." };
+      }
+
       function getPrintableDocumentMeta(item) {
         var tipo = normalize(item && item.tipo_documento).toLowerCase();
         if (tipo === "comprobante_pago") {
@@ -1059,6 +1079,7 @@
         return apiRequest('/api/empresa/permisos_contexto?empresa_id=' + encodeURIComponent(String(empresaID)))
           .then(function(ctx) {
             state.canCancelInvoices = false;
+            state.canRetryDIAN = false;
             state.currentUserEmail = normalize(ctx && (ctx.admin_email || ctx.usuario_email || ctx.email)).toLowerCase();
             state.currentRole = normalize(ctx && (ctx.rol_efectivo || ctx.rol || ctx.role)).toLowerCase();
             var mods = Array.isArray(ctx && ctx.modulos) ? ctx.modulos : [];
@@ -1066,12 +1087,13 @@
               var row = mods[i] || {};
               if (normalize(row.modulo).toLowerCase() === "facturacion") {
                 state.canCancelInvoices = row.delete === true || (row.acciones && row.acciones.D === true);
+                state.canRetryDIAN = row.update === true || (row.acciones && row.acciones.U === true);
                 break;
               }
             }
             applyCajeroAutoFilter();
           })
-          .catch(function() { state.canCancelInvoices = false; });
+          .catch(function() { state.canCancelInvoices = false; state.canRetryDIAN = false; });
       }
 
       function loadEmpresaUsuarios() {
@@ -1122,6 +1144,9 @@
           var cancelInfo = cancelAvailability(item);
           var cancelActionHTML = cancelInfo.visible === false ? '' :
             '<button type="button" class="btn danger fe-only-action" data-action="anular" data-key="' + escapeHtml(key) + '"' + (cancelInfo.enabled ? '' : ' disabled') + ' title="' + escapeHtml(cancelInfo.reason) + '"><img class="icon" src="/img/shield-security-color.svg" alt="">Anular</button>';
+          var retryInfo = retryDIANAvailability(item);
+          var retryActionHTML = retryInfo.visible === false ? '' :
+            '<button type="button" class="btn fe-only-action" data-action="reenviar_dian" data-key="' + escapeHtml(key) + '"' + (retryInfo.enabled ? '' : ' disabled') + ' title="' + escapeHtml(retryInfo.reason) + '"><img class="icon" src="/img/invoice.svg" alt="">Reenviar DIAN</button>';
           return '<tr data-key="' + escapeHtml(key) + '">' +
             '<td>' + escapeHtml(formatDate(item.fecha_documento || item.fecha_creacion)) + '</td>' +
             '<td>' + escapeHtml(visibleTypeLabel(item)) + '</td>' +
@@ -1134,6 +1159,7 @@
             '<td>' + escapeHtml(item.estado || "activo") + '</td>' +
             '<td class="fe-actions-cell">' +
               '<button type="button" class="btn secondary fe-only-action" data-action="imprimir" data-key="' + escapeHtml(key) + '"><img class="icon" src="/img/print-color.svg" alt="">Visualizar</button>' +
+              retryActionHTML +
               cancelActionHTML +
               ' <details class="fe-share-dropdown">' +
                 '<summary class="btn secondary" title="Compartir"><img class="icon" src="/img/network-color.svg" alt=""><span class="sr-only">Compartir</span></summary>' +
@@ -1381,6 +1407,35 @@
         });
       }
 
+      function retryInvoiceDIAN(item) {
+        var availability = retryDIANAvailability(item);
+        if (!availability.enabled) {
+          showMessage(availability.reason, "error");
+          return;
+        }
+        var code = normalize(item.documento_codigo) || normalize(item.numero_legal);
+        if (!window.confirm("Se reenviara la factura " + code + " a DIAN. Solo continua si corresponde al mismo documento pendiente y no tiene acuse aceptado. ¿Deseas continuar?")) {
+          return;
+        }
+        var payload = {
+          empresa_id: empresaID,
+          tipo_documento: item.tipo_documento,
+          documento_codigo: item.documento_codigo
+        };
+        apiRequest("/api/empresa/facturacion_electronica?action=reenviar_dian&empresa_id=" + encodeURIComponent(String(empresaID)), {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        }).then(function(out) {
+          var fiscal = out && out.integracion_fiscal ? out.integracion_fiscal : {};
+          var estado = normalize(fiscal.estado_envio || fiscal.estado || "pendiente");
+          showMessage("Reenvio DIAN procesado. Estado: " + estado + ". Consulta el acuse antes de anular o reenviar de nuevo.", out && out.ok ? "ok" : "error");
+          loadDocumentos();
+        }).catch(function(err) {
+          showMessage(err.message || "No se pudo reenviar la factura a DIAN", "error");
+        });
+      }
+
       function shareInvoice(item, channel) {
         if (!item) return;
         var docUrl = new URL("/administrar_empresa/facturas_electronicas.html", window.location.origin);
@@ -1544,6 +1599,10 @@
         }
         if (action === "enviar") {
           resendInvoiceEmail(item);
+          return;
+        }
+        if (action === "reenviar_dian") {
+          retryInvoiceDIAN(item);
           return;
         }
         if (action === "compartir_whatsapp") {
