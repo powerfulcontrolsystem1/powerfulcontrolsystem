@@ -24,6 +24,8 @@ func TestDIANPrivateMigrationDeploymentContract(t *testing.T) {
 		`chmod 0600`,
 		`docker inspect "$BACKEND_CONTAINER"`,
 		`readlink -f "$signature_dir"`,
+		`readlink -f "$facturacion_dir"`,
+		`chown 10001:10001 "$facturacion_dir"`,
 	}
 	for _, marker := range required {
 		if !strings.Contains(script, marker) {
