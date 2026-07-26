@@ -39529,3 +39529,11 @@ Archivos modificados:
 - Se conserva el bloqueo de los marcadores que estén en el contenido fiscal y se
   agregó una prueba de regresión junto con veinte ejecuciones del flujo SOAP
   simulado de habilitación (sin comunicación con DIAN).
+
+2026-07-26 - P108-011/012/013: staging e impresiones verificadas parcialmente.
+- El candidato `74f91956` quedó activo en staging aislado con migrador y
+  servicios saludables. La sesión autorizada de PCS verificó el flujo visual de
+  Finanzas/CxP y que la IA mantiene un interruptor de agente sin selector manual.
+- La batería de impresión local aprobó 18 formatos sintéticos carta/POS con PDF
+  y capturas. Se registran como evidencia parcial: aún faltan documentos
+  operativos, roles, impresora física, responsive completo y caja concurrente.

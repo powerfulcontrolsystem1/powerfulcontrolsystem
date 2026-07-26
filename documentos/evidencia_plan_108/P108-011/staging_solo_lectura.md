@@ -6,6 +6,23 @@ Empresa autorizada: `12`
 Modo: solo lectura; cero clics, formularios, pagos, envíos, IA o impresiones.
 Estado: **línea base, no certifica el candidato local**
 
+## Seguimiento 2026-07-26 - candidato `74f91956`
+
+- El candidato inmutable fue desplegado en Compose de staging aislado. El
+  migrador terminó y `backend`, `frontend`, `worker` y PostgreSQL quedaron
+  saludables; `/health` y `/ready` respondieron correctamente.
+- Con la sesión autorizada de la empresa 12 se comprobó visualmente el acceso a
+  `Finanzas empresariales`, la tabla de cartera y el botón **Cargar factura o
+  recibo con IA**. El formulario permite revisar y editar tercero, documento,
+  importes, fechas y notas antes de guardar.
+- El chat publicado conserva un selector de modo operativo/ayudante, pero no
+  muestra selector manual de agente; el control de agente publicado es el
+  interruptor único y parte apagado. No se envió ninguna consulta IA ni se
+  adjuntó archivo.
+- Esta comprobación navegó y cambió el alcance visual a la empresa autorizada;
+  no creó CxP, pagos, ventas, documentos, impresiones ni cambios de
+  configuración.
+
 ## Cobertura
 
 - Finanzas empresariales, escritorio y móvil: aprobado en el barrido pasivo.
