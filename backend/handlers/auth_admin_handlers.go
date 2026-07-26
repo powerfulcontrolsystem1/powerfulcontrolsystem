@@ -255,9 +255,7 @@ func AdminRegisterHandler(dbSuper *sql.DB) http.HandlerFunc {
 			return
 		}
 
-		isPendingAdminInvitation := existing != nil &&
-			existing.EmailConfirmado != 1 &&
-			(strings.TrimSpace(existing.EmailConfirmToken) != "" || strings.TrimSpace(existing.UsuarioCreador) != "")
+		isPendingAdminInvitation := isPendingAdminScopedInvitation(existing)
 		if isPendingAdminInvitation {
 			if status, msg := validatePendingAdminInvitationToken(existing, payload.InvitationToken, time.Now()); status != http.StatusOK {
 				writeAdminAuthError(w, status, msg)
@@ -348,6 +346,12 @@ func AdminRegisterHandler(dbSuper *sql.DB) http.HandlerFunc {
 			"message":    "Registro exitoso. Revisa tu correo para confirmar la cuenta antes de iniciar sesión.",
 		})
 	}
+}
+
+func isPendingAdminScopedInvitation(admin *dbpkg.Admin) bool {
+	return admin != nil &&
+		admin.EmailConfirmado != 1 &&
+		strings.TrimSpace(admin.UsuarioCreador) != ""
 }
 
 // ConfirmarAdminHandler confirma el correo vía token y muestra una página simple.

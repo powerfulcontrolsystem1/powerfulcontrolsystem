@@ -80,6 +80,14 @@ admin, IMAP, SMTP, antispam, webmail SnappyMail y Redis. El proxy publico lo adm
     codigos de descuento, venta digital, pagos rechazados, vencimiento de
     licencias, reportes con adjunto, correos masivos y notificaciones de
     facturacion electronica.
+23. Backend y worker se conectan además a `pcs_mailu_internal` y envían por
+    `PCS_MAILU_SMTP_ADDR`, que apunta a la IP privada de `mailu-smtp`. Esta red
+    acotada permite el relay de correos transaccionales sin confiar toda
+    `pcs_internal` ni publicar un relay hacia Internet.
+24. El cuerpo HTML usa como predeterminado `web/img/Logo pcs 1.png`, el logo del
+    computador, embebido mediante `cid:`. El avatar externo del remitente se
+    publica por separado con `web/img/bimi-pcs.svg`; requiere DMARC en
+    enforcement, el registro DNS BIMI y, para Gmail, VMC o CMC.
 
 ## Seguridad
 
@@ -176,6 +184,8 @@ envios reales del sistema deben usar Email corporativo Mailu.
 - `MAILU_RESOLVER_IP`
 - `MAILU_REDIS_IP`
 - `MAILU_SMTP_IP`
+- `PCS_MAILU_SMTP_ADDR` (inyectada por Compose desde `MAILU_SMTP_IP`; no debe
+  apuntar al puerto SMTP público).
 - `MAILU_ANTISPAM_IP`
 - `MAILU_WEBMAIL_IP`
 - `MAILU_IMAP_IP`
@@ -213,14 +223,26 @@ Antes de activar correo real:
   `Probar Mailu`.
 - Probar `Provisionar ventas/soporte` y luego `Probar envio`.
 
-## Diagnostico 2026-06-18
+## Diagnostico 2026-07-26
 
-- `mail.powerfulcontrolsystem.com` resuelve a `2.24.197.58`.
-- SPF publicado: `v=spf1 a mx ~all`.
-- DMARC publicado: `v=DMARC1; p=none; rua=mailto:postmaster@powerfulcontrolsystem.com`.
-- Riesgo pendiente: el MX consultado responde `powerfulcontrolsystem.com` con
-  prioridad 10. Para Mailu es preferible apuntar el MX del dominio a
-  `mail.powerfulcontrolsystem.com` y confirmar que el PTR/rDNS de `2.24.197.58`
-  tambien identifica al host de correo.
-- Pendiente operativo en VPS: revisar DKIM generado por Mailu/Rspamd y publicar
-  el TXT correspondiente antes de subir volumen de correo.
+- `powerfulcontrolsystem.com` y `mail.powerfulcontrolsystem.com` resuelven a
+  `2.24.197.58`.
+- SPF publicado: `v=spf1 mx a:mail.powerfulcontrolsystem.com ~all`.
+- Mailu genero la clave DKIM RSA del dominio con selector `dkim`; su parte
+  publica esta en `dkim._domainkey.powerfulcontrolsystem.com`. La clave privada
+  permanece exclusivamente dentro de Mailu.
+- DMARC esta en enforcement gradual con `p=quarantine`, `pct=100`, alineacion
+  estricta SPF/DKIM y reportes a `postmaster@powerfulcontrolsystem.com`.
+- BIMI esta publicado en `default._bimi.powerfulcontrolsystem.com` y apunta a
+  `https://powerfulcontrolsystem.com/img/bimi-pcs.svg`.
+- El MX prioridad 10 apunta a `mail.powerfulcontrolsystem.com`.
+- PTR/rDNS IPv4 confirmado: `2.24.197.58` resuelve en reverso a
+  `mail.powerfulcontrolsystem.com` y ese hostname vuelve a `2.24.197.58`
+  (FCrDNS valido).
+- Prueba real hacia Gmail: entrega aceptada en uno a cuatro segundos, con
+  `SPF PASS`, `DKIM PASS` para `powerfulcontrolsystem.com` y `DMARC PASS`.
+  Gmail mostro correctamente el PNG del computador embebido por CID en el
+  cuerpo del mensaje.
+- El avatar circular del remitente depende ademas de la cache y politica del
+  cliente receptor. Gmail requiere un certificado VMC o CMC para mostrar el
+  logo BIMI verificado; el TXT BIMI sin certificado no garantiza ese avatar.

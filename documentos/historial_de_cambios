@@ -1,3 +1,28 @@
+2026-07-26: Plan 108 / registro de administradores y correo Mailu.
+- El diagnóstico del VPS confirmó rechazos SMTP `554 5.7.1 Relay access denied`
+  para backend y worker: ambos enviaban desde `pcs_internal`, fuera de la red
+  privada autorizada por Mailu.
+- `deploy/docker-compose.platform.yml` incorpora únicamente backend y worker a
+  `pcs_mailu_internal` y les entrega `PCS_MAILU_SMTP_ADDR` con la IP privada del
+  contenedor SMTP. No se amplía el relay hacia Internet ni hacia toda la red de
+  aplicación.
+- `backend/handlers/usuarios_empresa.go` resuelve el destino SMTP desde entorno
+  con fallback compatible; se agregan pruebas unitarias y de contrato Docker.
+- `backend/handlers/auth_admin_handlers.go` distingue invitaciones delegadas por
+  `usuario_creador`; un autoregistro pendiente con token de confirmación puede
+  repetirse de forma segura para rotar y reenviar el enlace.
+- `web/js/registrar_nuevo_usuario_administrador.js` no redirige al login cuando
+  el backend informa `email_sent=false`, salvo que se esté aceptando una
+  invitación ya activada. Se añadieron pruebas de regresión backend/frontend.
+- El logo exacto del computador `web/img/Logo pcs 1.png` ya queda embebido por
+  CID dentro del correo. `web/img/bimi-pcs.svg` declara SVG 1.2 Tiny PS para el
+  avatar de dominio; la publicación visible en Gmail sigue condicionada a
+  DMARC en enforcement, DNS BIMI y certificado VMC/CMC del dominio.
+- `deploy/docker/backend.Dockerfile` sustituye `chown -R pcs:pcs /app` por
+  `COPY --chown=pcs:pcs` y ajustes puntuales de directorios runtime. El cambio
+  elimina el bloqueo observado durante más de 25 minutos en una construcción
+  fría sin relajar el usuario no root ni las capacidades del contenedor.
+
 2026-07-26: Plan 108 / DIAN - volumen heredado con contenedor restringido.
 - `deploy/scripts/vps-migrate-private-dian.sh` dejó de intentar `chown` dentro del backend endurecido con `cap_drop: ALL`. El script resuelve el origen real de `/app/web/uploads`, valida rutas canónicas y ajusta solo los PEM de la empresa solicitada antes de migrarlos al almacenamiento privado.
 - `backend/main_dian_private_migration_contract_test.go` impide regresar al enfoque incompatible con el contenedor y conserva los controles de alcance por empresa, categoría y ausencia de operaciones recursivas.
@@ -39604,3 +39629,19 @@ Archivos modificados:
 - Las rutas DIAN continúan protegidas por el middleware empresarial y las
   pruebas enfocadas de handlers, DB, contrato frontend y despliegue aprobaron
   localmente. Emisión real y `GetStatusZip` siguen pendientes del despliegue.
+- 2026-07-26: Identidad de correo Mailu, DKIM y preparacion BIMI
+  - Operacion VPS: se verificaron saludables los contenedores Mailu y se genero
+    en Mailu la primera clave DKIM RSA de `powerfulcontrolsystem.com` con selector
+    `dkim`; la clave privada no se exporta ni se registra en el repositorio.
+  - DNS Hostinger: se publicaron DKIM y BIMI, se alinearon SPF y MX con
+    `mail.powerfulcontrolsystem.com`, y DMARC paso a `p=quarantine`, `pct=100`
+    con alineacion estricta despues de comprobar el primer mensaje.
+  - Entregabilidad: dos correos reales enviados a la cuenta PCS fueron aceptados
+    por Gmail. El encabezado original mostro `SPF PASS`, `DKIM PASS` y
+    `DMARC PASS`; la entrega tomo entre uno y cuatro segundos.
+  - PTR: Hostinger aplico el reverso IPv4 a `mail.powerfulcontrolsystem.com`;
+    la comprobacion FCrDNS confirma que el hostname vuelve a `2.24.197.58`.
+  - Imagen: los correos HTML usan el logo del computador
+    `web/img/Logo pcs 1.png`, confirmado visualmente en Gmail. El avatar del
+    remitente depende de BIMI, cache, politica del cliente y, en Gmail, de un
+    certificado VMC o CMC.

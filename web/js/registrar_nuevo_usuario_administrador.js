@@ -373,6 +373,10 @@
         return;
       }
       showMessage(getResponseMessage(response, 'Registro exitoso. Revisa tu correo para confirmar la cuenta.'), false);
+      var emailWasSent = !(response.json && response.json.email_sent === false);
+      if (!emailWasSent && !invitationToken) {
+        return;
+      }
       window.setTimeout(function () {
         window.location.href = '/login.html?email=' + encodeURIComponent(email);
       }, 1800);
