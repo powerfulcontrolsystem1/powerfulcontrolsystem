@@ -39108,13 +39108,30 @@ Archivos modificados:
 
 2026-07-24: P106-007/P106-008 - proveedor registrado obligatorio en CxP.
 - El formulario de cartera muestra un selector de proveedores activos de la
-  empresa y el endpoint de catálogo usa `empresa_proveedores`, no el catálogo
-  genérico de otra tabla.
+  empresa. El contrato inicial marcaba erróneamente `empresa_proveedores` como
+  catálogo de CxP; P108 corrige esa decisión al catálogo operativo
+  `proveedores` que administra Compras.
 - El alta CxP valida `proveedor_id` dentro del mismo `empresa_id` y persiste el
   nombre canónico del proveedor; la lectura IA continúa como propuesta editable
   y no puede guardar una obligación sin selección humana.
 - Las pruebas locales cubren el contrato de proveedor, catálogo filtrado y
   activo. Quedan pendientes prueba visual, A/B de aislamiento, roles y staging.
+
+2026-07-26: P108 - catálogo operativo único para proveedores de CxP.
+- Se corrige la divergencia encontrada durante la prueba controlada en staging:
+  `/api/empresa/proveedores` crea y mantiene el catálogo `proveedores`, pero
+  CxP consultaba la tabla no publicada `empresa_proveedores` y no mostraba el
+  proveedor recién creado.
+- `ListEmpresaProveedoresCxP` y `GetEmpresaProveedorCxP` ahora consultan
+  exclusivamente `proveedores`, filtrando por `empresa_id`, identificador y
+  estado activo. La forma interna para Finanzas conserva el nombre y plazo de
+  pago; no se migraron, borraron ni duplicaron proveedores.
+- El CRUD operativo de proveedores deja de confiar en `empresa_id` del JSON:
+  tanto alta como edición lo sustituyen por la empresa validada por sesión y
+  wrapper de Compras antes de persistir o auditar.
+- Se actualizan ADR, mapa de módulos y regresión de contrato. Pendiente:
+  desplegar el candidato aislado, comprobar que el selector muestra el alta
+  de Compras y ejecutar la carrera de abonos con una CxP de prueba.
 
 2026-07-25: P106-008 - validación visual real de Powerful Control System.
 - Con una sesión autorizada de administrador, Finanzas abrió para la empresa

@@ -16,6 +16,12 @@ una transaccion, con idempotencia por hash de clave y aislamiento por
 para sus registros previos. Desde P106 no acepta nuevas CxP ni abonos CxP: no
 se migra, fusiona ni borra automaticamente ningun registro historico.
 
+El catálogo operativo de proveedores para nuevas CxP es `proveedores`, que es
+el mismo que administra Compras mediante `/api/empresa/proveedores`. La tabla
+`empresa_proveedores` no se usa para CxP: pertenece a una variante ERP no
+publicada por esa ruta y consultarla habría dejado fuera los proveedores
+creados en la interfaz operativa.
+
 ## Motivo
 
 Los reportes y la captura de soportes IA ya consultan o escriben

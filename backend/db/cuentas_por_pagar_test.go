@@ -128,9 +128,9 @@ func TestCxPSupplierCatalogIsTenantFilteredAndActiveOnly(t *testing.T) {
 	body := string(raw)
 	for _, required := range []string{
 		"func ListEmpresaProveedoresCxP",
-		"FROM empresa_proveedores WHERE empresa_id=? AND COALESCE(estado,'activo')='activo'",
+		"FROM proveedores WHERE empresa_id=? AND COALESCE(estado,'activo')='activo'",
 		"func GetEmpresaProveedorCxP",
-		"FROM empresa_proveedores WHERE empresa_id=? AND id=?",
+		"FROM proveedores WHERE empresa_id=? AND id=?",
 	} {
 		if !strings.Contains(body, required) {
 			t.Fatalf("CxP supplier catalog must preserve %q", required)
