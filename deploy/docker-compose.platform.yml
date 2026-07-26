@@ -178,6 +178,7 @@ services:
       EMAIL_CORPORATIVO_MAILU_API_TOKEN: ${MAILU_API_TOKEN:-}
       EMAIL_CORPORATIVO_AUTOLOGIN_SECRET: ${EMAIL_CORPORATIVO_AUTOLOGIN_SECRET:-}
       EMAIL_CORPORATIVO_QUOTA_MB: ${EMAIL_CORPORATIVO_QUOTA_MB:-1024}
+      PCS_MAILU_SMTP_ADDR: ${MAILU_SMTP_IP:-192.168.203.3}:25
       EMAIL_CORPORATIVO_DIRECT_PROVISION_COMMAND: ${EMAIL_CORPORATIVO_DIRECT_PROVISION_COMMAND:-/app/project_export/deploy/scripts/vps-provision-mailu-mailbox.sh}
       EMAIL_CORPORATIVO_DIRECT_DELETE_COMMAND: ${EMAIL_CORPORATIVO_DIRECT_DELETE_COMMAND:-/app/project_export/deploy/scripts/vps-delete-mailu-mailbox.sh}
       VOICE_STREAM_BASE_URL: ${VOICE_STREAM_BASE_URL:-http://voice-stream:8000}
@@ -209,7 +210,8 @@ services:
       retries: 10
       start_period: 30s
     networks:
-      - pcs_internal
+      pcs_internal:
+      mailu_internal:
 
   worker:
     build:
@@ -256,6 +258,7 @@ services:
       EMAIL_CORPORATIVO_ENABLED: ${EMAIL_CORPORATIVO_ENABLED:-0}
       EMAIL_CORPORATIVO_DOMAIN: ${EMAIL_CORPORATIVO_DOMAIN:-powerfulcontrolsystem.com}
       EMAIL_CORPORATIVO_MAILU_API_TOKEN: ${MAILU_API_TOKEN:-}
+      PCS_MAILU_SMTP_ADDR: ${MAILU_SMTP_IP:-192.168.203.3}:25
       PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:-https://powerfulcontrolsystem.com}
       ASIENTOS_WORKER_INTERVAL_MINUTES: ${ASIENTOS_WORKER_INTERVAL_MINUTES:-15}
       ASIENTOS_WORKER_BATCH_SIZE: ${ASIENTOS_WORKER_BATCH_SIZE:-100}
@@ -280,7 +283,8 @@ services:
       - pcs_private_storage:/app/private_storage
       - pcs_backups:/app/backup
     networks:
-      - pcs_internal
+      pcs_internal:
+      mailu_internal:
 
   mailu-redis:
     profiles: ["mail"]

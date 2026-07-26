@@ -80,6 +80,14 @@ admin, IMAP, SMTP, antispam, webmail SnappyMail y Redis. El proxy publico lo adm
     codigos de descuento, venta digital, pagos rechazados, vencimiento de
     licencias, reportes con adjunto, correos masivos y notificaciones de
     facturacion electronica.
+23. Backend y worker se conectan además a `pcs_mailu_internal` y envían por
+    `PCS_MAILU_SMTP_ADDR`, que apunta a la IP privada de `mailu-smtp`. Esta red
+    acotada permite el relay de correos transaccionales sin confiar toda
+    `pcs_internal` ni publicar un relay hacia Internet.
+24. El cuerpo HTML usa como predeterminado `web/img/Logo pcs 1.png`, el logo del
+    computador, embebido mediante `cid:`. El avatar externo del remitente se
+    publica por separado con `web/img/bimi-pcs.svg`; requiere DMARC en
+    enforcement, el registro DNS BIMI y, para Gmail, VMC o CMC.
 
 ## Seguridad
 
@@ -176,6 +184,8 @@ envios reales del sistema deben usar Email corporativo Mailu.
 - `MAILU_RESOLVER_IP`
 - `MAILU_REDIS_IP`
 - `MAILU_SMTP_IP`
+- `PCS_MAILU_SMTP_ADDR` (inyectada por Compose desde `MAILU_SMTP_IP`; no debe
+  apuntar al puerto SMTP público).
 - `MAILU_ANTISPAM_IP`
 - `MAILU_WEBMAIL_IP`
 - `MAILU_IMAP_IP`

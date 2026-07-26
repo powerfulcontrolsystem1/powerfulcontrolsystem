@@ -2471,12 +2471,19 @@ func sanitizeEmpresaUsuarioMailerError(err error, output []byte) string {
 	return msg
 }
 
+func empresaUsuarioMailuSMTPAddress() string {
+	if configured := strings.TrimSpace(os.Getenv("PCS_MAILU_SMTP_ADDR")); configured != "" {
+		return configured
+	}
+	return "mailu-smtp:25"
+}
+
 func sendEmpresaUsuarioMailuMessage(dbSuper *sql.DB, fromEmail, toEmail string, msg []byte) error {
 	if !empresaUsuarioMailuFallbackEnabled(dbSuper) {
 		return fmt.Errorf("correo corporativo Mailu no habilitado")
 	}
 
-	if err := smtp.SendMail("mailu-smtp:25", nil, fromEmail, []string{toEmail}, msg); err == nil {
+	if err := smtp.SendMail(empresaUsuarioMailuSMTPAddress(), nil, fromEmail, []string{toEmail}, msg); err == nil {
 		return nil
 	}
 
