@@ -12296,7 +12296,7 @@ panel de seguridad para que el navegador reciba la correccion CSRF de staging.
   visual/responsive autenticada del candidato staging y sus huecos pendientes.
 - `documentos/evidencia_plan_108/P108-013/resultados.md`: resultado de la
   batería local de PDF/capturas de impresiones y sus límites operativos.
-- `documentos/evidencia_plan_108/P108-014/resultados.md`: evidencia autenticada
+- `documentos/evidencia_plan_108/P108-005/resultados.md`: evidencia autenticada
   de staging para el catálogo único de proveedores de CxP, alta y abono interno
   controlado; separa explícitamente la carrera HTTP de igual clave aún pendiente.
 - `deploy/scripts/vps-staging-candidate-up.sh`: publica un SHA aprobado en el

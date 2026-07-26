@@ -1,4 +1,4 @@
-# P108-014 - CxP: catálogo operativo y abono controlado en staging
+# P108-005 - CxP: catálogo operativo y abono controlado en staging
 
 Fecha: 2026-07-26  
 Entorno: candidato aislado de staging, SHA `397e42a7fe246ed3e99c1c7fa729f0c6b360bb6e`  

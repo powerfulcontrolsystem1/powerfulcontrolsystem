@@ -39133,7 +39133,7 @@ Archivos modificados:
   desplegar el candidato aislado, comprobar que el selector muestra el alta
   de Compras y ejecutar la carrera de abonos con una CxP de prueba.
 
-2026-07-26: P108-014 - validación controlada de CxP en staging.
+2026-07-26: P108-005 - validación controlada de CxP en staging.
 - El candidato aislado `397e42a7` mostró en Finanzas el proveedor recién creado
   desde Compras, registró una CxP interna de prueba y un único abono visible
   parcial sin transferencia externa, DIAN ni archivo real.
