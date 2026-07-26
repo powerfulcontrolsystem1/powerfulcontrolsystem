@@ -139,6 +139,20 @@ go build ./cmd/pcs-migrate
 go build ./cmd/pcs-worker
 ```
 
+Los certificados DIAN heredados bajo `web/uploads` deben migrarse al volumen
+privado por empresa. Después de desplegar una imagen que incluya
+`pcs-migrate-private-uploads`, ejecutar en el VPS:
+
+```bash
+cd /root/powerfulcontrolsystem
+EMPRESA_ID=12 bash deploy/scripts/vps-migrate-private-dian.sh
+```
+
+El script restringe la reparación temporal a la carpeta de firma de esa
+empresa, ejecuta primero una simulación y luego la migración confirmada de las
+dos referencias DIAN. No debe reemplazarse por un `chown -R` general sobre los
+uploads.
+
 Antes de un cambio de migraciones, cola, outbox o bootstrap, verificar el
 inventario y el contrato de catalogo sin tocar datos reales:
 

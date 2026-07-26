@@ -126,3 +126,28 @@ func TestResolveLegacyPrivatePathStaysInsideWebRoot(t *testing.T) {
 		t.Fatal("legacy path outside web root was accepted")
 	}
 }
+
+func TestPrivateMigrationInventoryQueryScopesTenant(t *testing.T) {
+	source := privateFilesMigrationSource{
+		table:    "empresa_dian_configuracion",
+		column:   "certificado_clave_ref",
+		category: "dian",
+		fileRef:  true,
+	}
+	query, args, err := privateMigrationInventoryQuery(source, 12)
+	if err != nil {
+		t.Fatalf("build tenant query: %v", err)
+	}
+	if !strings.Contains(query, "AND empresa_id = $1") {
+		t.Fatalf("tenant predicate missing from query: %s", query)
+	}
+	if len(args) != 1 || args[0] != int64(12) {
+		t.Fatalf("unexpected tenant arguments: %#v", args)
+	}
+	if !privateMigrationCategoryExists("dian") {
+		t.Fatal("DIAN must remain in the fixed private migration catalog")
+	}
+	if privateMigrationCategoryExists("categoria_inyectada") {
+		t.Fatal("unknown category must be rejected")
+	}
+}

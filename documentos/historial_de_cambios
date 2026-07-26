@@ -39579,3 +39579,21 @@ Archivos modificados:
   movimiento financiero adicional.
 - Se agregó una regresión de contrato. La validación PostgreSQL concurrente real
   en staging sigue pendiente y no se marca como aprobada por esta prueba local.
+
+2026-07-26 - P108-015: reparación DIAN, aislamiento y anulación fiscal segura.
+- Se confirmó en el VPS que la firma heredada era `root:root` y no podía ser
+  leída por la API `pcs` sin privilegios. El candidato empaqueta un migrador
+  privado y un script operativo restringido por empresa/categoría para retirar
+  clave y certificado del árbol público.
+- La herramienta de migración admite `--empresa-id` y `--category`; cada
+  consulta filtrada mantiene `empresa_id = $1` y conserva el modo simulación
+  antes de una aplicación confirmada.
+- La anulación colombiana de factura se dirige a una nota crédito con motivo y
+  confirmación. La factura original solo cambia a anulada cuando la integración
+  fiscal reporta `aceptado`; reintentos y conciliación aplican la misma regla.
+- Una venta colombiana en producción ya no considera el estado intermedio
+  `enviado` como acuse fiscal final; la factura queda pendiente hasta observar
+  `aceptado`.
+- Las rutas DIAN continúan protegidas por el middleware empresarial y las
+  pruebas enfocadas de handlers, DB, contrato frontend y despliegue aprobaron
+  localmente. Emisión real y `GetStatusZip` siguen pendientes del despliegue.

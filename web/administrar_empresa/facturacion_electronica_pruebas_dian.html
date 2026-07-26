@@ -366,6 +366,12 @@
       </div>
       <div class="form-row">
         <div class="form-col">
+          <label class="form-label" for="op_observaciones">Observaciones / motivo de anulacion</label>
+          <textarea id="op_observaciones" class="form-input" rows="3" placeholder="Para anular una factura, describe el motivo con minimo 10 caracteres."></textarea>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-col">
           <label class="form-label">Cliente ID</label>
           <input id="op_cliente_id" type="number" class="form-input" placeholder="ID interno del cliente">
         </div>
@@ -380,7 +386,7 @@
       </div>
       <div class="form-actions">
         <button type="button" id="btnEmitirDocumento" class="btn">Emitir documento</button>
-        <button type="button" id="btnAnularDocumento" class="btn secondary">Anular documento</button>
+        <button type="button" id="btnAnularDocumento" class="btn secondary">Anular factura con nota credito</button>
         <button type="button" id="btnEmitirFactura" class="btn secondary">Emitir factura</button>
         <button type="button" id="btnEmitirNC" class="btn secondary">Emitir nota credito</button>
         <button type="button" id="btnEmitirND" class="btn secondary">Emitir nota debito</button>
@@ -1145,7 +1151,7 @@
         monto_total: Number.isFinite(rawMonto) && rawMonto > 0 ? rawMonto : 0,
         moneda: txt(document.getElementById("op_moneda").value).toUpperCase() || "COP",
         periodo_contable: txt(document.getElementById("op_periodo_contable").value),
-        observaciones: "operacion " + action + " desde pruebas DIAN"
+        observaciones: txt(document.getElementById("op_observaciones").value) || ("operacion " + action + " desde pruebas DIAN")
       };
     }
 
@@ -1554,7 +1560,7 @@
 
     async function preflightDianForOperation(action, payload) {
       const accionesElectronicas = [
-        "emitir", "anular", "nota_credito", "emitir_nota_credito", "nota_debito", "emitir_nota_debito",
+        "emitir", "anular", "anular_factura_nota_credito", "nota_credito", "emitir_nota_credito", "nota_debito", "emitir_nota_debito",
         "documento_soporte", "emitir_documento_soporte", "nomina_electronica", "emitir_nomina_electronica",
         "documento_equivalente_pos", "emitir_documento_equivalente_pos",
         "eventos_radian_recepcion", "emitir_eventos_radian_recepcion", "evento_radian", "emitir_evento_radian"
@@ -1591,6 +1597,25 @@
         setJSON("op_resultado", err && err.data ? err.data : null);
         setText("op_msg", err && err.message ? err.message : "No se pudo ejecutar la operacion", true);
       }
+    }
+
+    async function ejecutarAnulacionFacturacion() {
+      const tipoDocumento = txt(document.getElementById("op_tipo_documento").value) || "factura_electronica";
+      const motivo = txt(document.getElementById("op_observaciones").value);
+      if (motivo.length < 10) {
+        setText("op_msg", "Escribe un motivo de anulacion de minimo 10 caracteres.", true);
+        document.getElementById("op_observaciones").focus();
+        return;
+      }
+      const action = tipoDocumento === "factura_electronica" ? "anular_factura_nota_credito" : "anular";
+      const confirmado = await confirmarDianAccion(
+        tipoDocumento === "factura_electronica"
+          ? "Se emitira una nota credito electronica por el valor total. La factura solo quedara anulada cuando DIAN acepte la nota."
+          : "Se solicitara la anulacion del documento seleccionado.",
+        "Confirma que revisaste el documento y el motivo."
+      );
+      if (!confirmado) return;
+      ejecutarOperacionFacturacion(action);
     }
 
     function setTipoDocumentoOperacion(tipo) {
@@ -1654,7 +1679,7 @@
       });
     });
     document.getElementById("btnEmitirDocumento").addEventListener("click", function() { ejecutarOperacionFacturacion("emitir"); });
-    document.getElementById("btnAnularDocumento").addEventListener("click", function() { ejecutarOperacionFacturacion("anular"); });
+    document.getElementById("btnAnularDocumento").addEventListener("click", ejecutarAnulacionFacturacion);
     document.getElementById("btnEmitirFactura").addEventListener("click", function() {
       setTipoDocumentoOperacion("factura_electronica");
       ejecutarOperacionFacturacion("emitir");

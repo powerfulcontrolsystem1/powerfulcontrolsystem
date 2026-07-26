@@ -10,6 +10,7 @@ COPY backend/ ./
 RUN CGO_ENABLED=0 GOOS=linux go build -trimpath -ldflags="-s -w" -o /out/pcs-backend .
 RUN CGO_ENABLED=0 GOOS=linux go build -trimpath -ldflags="-s -w" -o /out/pcs-migrate ./cmd/pcs-migrate
 RUN CGO_ENABLED=0 GOOS=linux go build -trimpath -ldflags="-s -w" -o /out/pcs-worker ./cmd/pcs-worker
+RUN CGO_ENABLED=0 GOOS=linux go build -trimpath -ldflags="-s -w" -o /out/pcs-migrate-private-uploads ./tools/migrate_private_uploads
 
 FROM alpine:3.20 AS lynis-source
 
@@ -62,6 +63,7 @@ CMD ["/app/backend/pcs-worker"]
 FROM runtime-base AS api
 
 COPY --from=build /out/pcs-backend /app/backend/pcs-backend
+COPY --from=build /out/pcs-migrate-private-uploads /app/backend/pcs-migrate-private-uploads
 COPY web /app/web
 COPY documentos /app/documentos
 COPY backend /app/project_export/backend

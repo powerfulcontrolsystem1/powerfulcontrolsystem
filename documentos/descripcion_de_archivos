@@ -12308,3 +12308,13 @@ panel de seguridad para que el navegador reciba la correccion CSRF de staging.
 - `deploy/scripts/vps-staging-candidate-up.sh`: publica un SHA aprobado en el
   Compose de staging desde un worktree Git aislado, sin cambiar el checkout de
   producción ni permitir el reinicio destructivo de volúmenes staging.
+
+2026-07-26 - P108-015, reparación privada y anulación DIAN.
+- `deploy/scripts/vps-migrate-private-dian.sh`: migra para una empresa
+  explícita la llave y el certificado DIAN heredados desde uploads al volumen
+  privado, con simulación, confirmación, alcance de ruta cerrado y permisos
+  mínimos.
+- `backend/main_dian_private_migration_contract_test.go`: fija el contrato de
+  empaquetado y seguridad del migrador operativo DIAN.
+- `backend/handlers/facturacion_anulacion_frontend_contract_test.go`: impide que
+  el botón de anulación vuelva a usar una transición local genérica.
