@@ -39626,3 +39626,20 @@ Archivos modificados:
 - Las rutas DIAN continúan protegidas por el middleware empresarial y las
   pruebas enfocadas de handlers, DB, contrato frontend y despliegue aprobaron
   localmente. Emisión real y `GetStatusZip` siguen pendientes del despliegue.
+- 2026-07-26: Identidad de correo Mailu, DKIM y preparacion BIMI
+  - Operacion VPS: se verificaron saludables los contenedores Mailu y se genero
+    en Mailu la primera clave DKIM RSA de `powerfulcontrolsystem.com` con selector
+    `dkim`; la clave privada no se exporta ni se registra en el repositorio.
+  - DNS Hostinger: se publicaron DKIM y BIMI, se alinearon SPF y MX con
+    `mail.powerfulcontrolsystem.com`, y DMARC paso a `p=quarantine`, `pct=100`
+    con alineacion estricta despues de comprobar el primer mensaje.
+  - Entregabilidad: dos correos reales enviados a la cuenta PCS fueron aceptados
+    por Gmail. El encabezado original mostro `SPF PASS`, `DKIM PASS` y
+    `DMARC PASS`; la entrega tomo entre uno y cuatro segundos.
+  - PTR: se solicito en Hostinger cambiar el reverso IPv4 del hostname generico
+    del VPS a `mail.powerfulcontrolsystem.com`; queda sujeto a propagacion del
+    proveedor.
+  - Imagen: los correos HTML usan el logo del computador
+    `web/img/Logo pcs 1.png`, confirmado visualmente en Gmail. El avatar del
+    remitente depende de BIMI, cache, politica del cliente y, en Gmail, de un
+    certificado VMC o CMC.

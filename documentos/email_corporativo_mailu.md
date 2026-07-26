@@ -223,14 +223,25 @@ Antes de activar correo real:
   `Probar Mailu`.
 - Probar `Provisionar ventas/soporte` y luego `Probar envio`.
 
-## Diagnostico 2026-06-18
+## Diagnostico 2026-07-26
 
-- `mail.powerfulcontrolsystem.com` resuelve a `2.24.197.58`.
-- SPF publicado: `v=spf1 a mx ~all`.
-- DMARC publicado: `v=DMARC1; p=none; rua=mailto:postmaster@powerfulcontrolsystem.com`.
-- Riesgo pendiente: el MX consultado responde `powerfulcontrolsystem.com` con
-  prioridad 10. Para Mailu es preferible apuntar el MX del dominio a
-  `mail.powerfulcontrolsystem.com` y confirmar que el PTR/rDNS de `2.24.197.58`
-  tambien identifica al host de correo.
-- Pendiente operativo en VPS: revisar DKIM generado por Mailu/Rspamd y publicar
-  el TXT correspondiente antes de subir volumen de correo.
+- `powerfulcontrolsystem.com` y `mail.powerfulcontrolsystem.com` resuelven a
+  `2.24.197.58`.
+- SPF publicado: `v=spf1 mx a:mail.powerfulcontrolsystem.com ~all`.
+- Mailu genero la clave DKIM RSA del dominio con selector `dkim`; su parte
+  publica esta en `dkim._domainkey.powerfulcontrolsystem.com`. La clave privada
+  permanece exclusivamente dentro de Mailu.
+- DMARC esta en enforcement gradual con `p=quarantine`, `pct=100`, alineacion
+  estricta SPF/DKIM y reportes a `postmaster@powerfulcontrolsystem.com`.
+- BIMI esta publicado en `default._bimi.powerfulcontrolsystem.com` y apunta a
+  `https://powerfulcontrolsystem.com/img/bimi-pcs.svg`.
+- El MX prioridad 10 apunta a `mail.powerfulcontrolsystem.com`.
+- Se solicito al proveedor cambiar el PTR/rDNS IPv4 de `2.24.197.58` a
+  `mail.powerfulcontrolsystem.com`; la propagacion puede tardar varias horas.
+- Prueba real hacia Gmail: entrega aceptada en uno a cuatro segundos, con
+  `SPF PASS`, `DKIM PASS` para `powerfulcontrolsystem.com` y `DMARC PASS`.
+  Gmail mostro correctamente el PNG del computador embebido por CID en el
+  cuerpo del mensaje.
+- El avatar circular del remitente depende ademas de la cache y politica del
+  cliente receptor. Gmail requiere un certificado VMC o CMC para mostrar el
+  logo BIMI verificado; el TXT BIMI sin certificado no garantiza ese avatar.
