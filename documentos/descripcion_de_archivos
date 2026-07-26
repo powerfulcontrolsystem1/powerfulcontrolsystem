@@ -12302,6 +12302,9 @@ panel de seguridad para que el navegador reciba la correccion CSRF de staging.
 - `documentos/evidencia_plan_108/P108-006/resultados.md`: comprobación visual
   inicial del control de carga de factura o recibo con IA, sin archivo ni efecto
   financiero.
+- `documentos/evidencia_plan_108/P108-015/dian_preflight_produccion_20260726.md`:
+  evidencia del preflight DIAN autorizado en PCS; documenta el bloqueo seguro
+  de firma antes de emisión y prohíbe interpretarlo como aceptación.
 - `deploy/scripts/vps-staging-candidate-up.sh`: publica un SHA aprobado en el
   Compose de staging desde un worktree Git aislado, sin cambiar el checkout de
   producción ni permitir el reinicio destructivo de volúmenes staging.

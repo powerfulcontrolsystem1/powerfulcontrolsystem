@@ -39141,6 +39141,14 @@ Archivos modificados:
   dos solicitudes concurrentes iguales; la carrera HTTP autenticada queda como
   evidencia pendiente y no se sustituye por el abono único aprobado.
 
+2026-07-26: P108-015 - preflight DIAN autorizado de Powerful Control System.
+- El Centro de habilitación DIAN de producción fue revisado visualmente con una
+  sesión administrativa autorizada. `Validar credenciales` bloqueó la emisión
+  por referencias inválidas de certificado y clave privada.
+- No se emitió factura, no se consumió consecutivo, no se reintentó cola ni se
+  alteró la firma. La prueba de factura real y sus representaciones impresas
+  queda pendiente de una corrección y despliegue controlado de firma.
+
 2026-07-25: P106-008 - validación visual real de Powerful Control System.
 - Con una sesión autorizada de administrador, Finanzas abrió para la empresa
   PCS y CxP mostró su tabla ordenada, sin registros para el filtro actual.
