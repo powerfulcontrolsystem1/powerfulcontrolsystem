@@ -39133,6 +39133,14 @@ Archivos modificados:
   desplegar el candidato aislado, comprobar que el selector muestra el alta
   de Compras y ejecutar la carrera de abonos con una CxP de prueba.
 
+2026-07-26: P108-014 - validación controlada de CxP en staging.
+- El candidato aislado `397e42a7` mostró en Finanzas el proveedor recién creado
+  desde Compras, registró una CxP interna de prueba y un único abono visible
+  parcial sin transferencia externa, DIAN ni archivo real.
+- La automatización visual no permite fijar el encabezado de idempotencia para
+  dos solicitudes concurrentes iguales; la carrera HTTP autenticada queda como
+  evidencia pendiente y no se sustituye por el abono único aprobado.
+
 2026-07-25: P106-008 - validación visual real de Powerful Control System.
 - Con una sesión autorizada de administrador, Finanzas abrió para la empresa
   PCS y CxP mostró su tabla ordenada, sin registros para el filtro actual.
