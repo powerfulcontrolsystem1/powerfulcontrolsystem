@@ -12284,3 +12284,11 @@ panel de seguridad para que el navegador reciba la correccion CSRF de staging.
 - `documentos/evidencia_plan_108/P108-000/manifest.md`: clasifica el candidato
   inicial por CxP, IA, contador, migraciones, UX y documentación; conserva sus
   validaciones locales y límites antes de cualquier despliegue.
+- `tools/qa_e2e_buttons.cjs`: exige URL y empresa explícitas para el barrido
+  autenticado, evitando que credenciales de prueba activen por accidente una
+  auditoría sobre el sitio público o una empresa distinta.
+- `documentos/evidencia_plan_108/P108-001/resultados.md`: separa las pruebas
+  locales aprobadas de los bloqueos de CI Linux, Docker, imagen, digest y race.
+- `documentos/evidencia_plan_108/P108-011/staging_solo_lectura.md`: conserva la
+  línea base autenticada y pasiva de staging, con sus hallazgos de IA y las
+  exclusiones de efectos operativos.

@@ -168,6 +168,12 @@ $node = 'C:\Users\ivanm\.cache\codex-runtimes\codex-primary-runtime\dependencies
 & $node tools\plan106_ui_inventory.mjs
 ```
 
+El barrido autenticado `tools\qa_e2e_buttons.cjs` no tiene URL ni empresa por
+defecto. Antes de ejecutarlo se deben declarar explícitamente el entorno aislado
+y la empresa autorizada mediante `PCS_QA_BASE_URL` y `PCS_QA_EMPRESA_ID`; cargar
+las credenciales solo mediante variables de sesión, nunca en scripts, comandos
+guardados, documentos o reportes.
+
 `pcs-migrate` es el unico rol que aplica las migraciones de plataforma. La API
 y el worker solo verifican cola, outbox e idempotencia movil. Mantener
 `PCS_RUNTIME_SCHEMA_BOOTSTRAP=1` hasta que el inventario legado se haya movido

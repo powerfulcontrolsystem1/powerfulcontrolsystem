@@ -39494,3 +39494,20 @@ Archivos modificados:
   y preflight profesional aprobaron localmente.
 - Este corte no despliega ni aplica migraciones y conserva el estado NO-GO hasta
   fijar el commit/digest e iniciar las compuertas de staging.
+
+2026-07-25 - P108-011: destino explícito para QA autenticado.
+- El barrido `qa_e2e_buttons.cjs` ya no usa URL pública ni empresa por defecto.
+  Exige declarar en cada ejecución el ambiente y la empresa autorizada, antes
+  de leer credenciales desde variables de sesión.
+- Esta protección no ejecuta login ni modifica datos; reduce el riesgo de que
+  una prueba visual se dirija al tenant o entorno equivocado.
+
+2026-07-25 - P108: evidencia local y línea base de staging.
+- Se consolidó el candidato local en el commit `f6f9546a` después de preflight,
+  suite Go, vet, builds y auditorías de migración aprobadas.
+- `-race` quedó bloqueado por CGO/compilador ausente y la creación de imagen por
+  Docker ausente; ambos quedan pendientes de CI Linux y no se marcan como
+  aprobados.
+- El staging respondió `200` en health y ready. El barrido autenticado pasivo
+  de Finanzas, Centro IA y Reportes no realizó mutaciones y confirmó que staging
+  aún no tiene CxP/IA del candidato, además de un 403 en Centro IA.

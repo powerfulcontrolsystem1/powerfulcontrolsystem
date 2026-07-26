@@ -3,7 +3,9 @@
 Fecha local: 2026-07-25
 Rama candidata: `codex/plan-108-candidate`
 Base: `3dd48d243527bf51581d66c9b396029a0dbd43bb`
-Estado: **en curso; validación local aprobada, commit candidato pendiente**
+Estado: **parcial; commit candidato creado, digest de imagen pendiente**
+
+Commit candidato: `f6f9546aeb926d01f76d67e250f2c78962aa0ced`
 
 ## Alcance clasificado
 
@@ -41,6 +43,6 @@ Estado: **en curso; validación local aprobada, commit candidato pendiente**
 
 ## Siguiente paso
 
-Revisar el índice completo, crear el commit de candidato y construir una imagen
-por digest. Después se ejecuta `P108-001` y no se promociona a staging hasta que
-las compuertas de candidato y migración estén completas.
+Construir la imagen por digest en un runner con Docker, ejecutar la matriz CI
+Linux incluida `-race` y promover exclusivamente ese digest a staging. No se
+promociona a producción hasta superar las compuertas de staging.

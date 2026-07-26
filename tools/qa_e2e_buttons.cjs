@@ -32,10 +32,13 @@ try {
 const ROOT = path.resolve(__dirname, "..");
 const WEB_ROOT = path.join(ROOT, "web");
 const OUT_DIR = process.env.PCS_QA_OUT_DIR || path.join(ROOT, "test_runs", "qa_e2e_buttons_" + new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19));
-const BASE_URL = (process.env.PCS_QA_BASE_URL || "https://powerfulcontrolsystem.com").replace(/\/+$/, "");
+// A real authenticated audit must always choose its target explicitly. Keeping
+// a public production URL as a fallback made it too easy to run the checker
+// against the wrong environment when credentials were present.
+const BASE_URL = (process.env.PCS_QA_BASE_URL || "").replace(/\/+$/, "");
 const EMAIL = process.env.PCS_QA_EMAIL || "";
 const PASSWORD = process.env.PCS_QA_PASSWORD || "";
-const EMPRESA_ID = process.env.PCS_QA_EMPRESA_ID || "7";
+const EMPRESA_ID = process.env.PCS_QA_EMPRESA_ID || "";
 const MAX_PAGES = Number(process.env.PCS_QA_MAX_PAGES || "0");
 const MAX_SAFE_CLICKS_PER_PAGE = Number(process.env.PCS_QA_MAX_SAFE_CLICKS_PER_PAGE || "8");
 const SETTLE_MS = Number(process.env.PCS_QA_SETTLE_MS || "450");
@@ -100,6 +103,24 @@ function discoverRoutes() {
 
 function ensureDir(dir) {
   fs.mkdirSync(dir, { recursive: true });
+}
+
+function validateExplicitTarget() {
+  if (!BASE_URL) {
+    throw new Error("Defina PCS_QA_BASE_URL explícitamente; la auditoría no tiene destino predeterminado.");
+  }
+  let parsed;
+  try {
+    parsed = new URL(BASE_URL);
+  } catch (error) {
+    throw new Error("PCS_QA_BASE_URL debe ser una URL http(s) válida.");
+  }
+  if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
+    throw new Error("PCS_QA_BASE_URL debe usar http o https.");
+  }
+  if (!/^\d+$/.test(EMPRESA_ID) || Number(EMPRESA_ID) <= 0) {
+    throw new Error("Defina PCS_QA_EMPRESA_ID con una empresa positiva autorizada.");
+  }
 }
 
 function slug(route) {
@@ -338,6 +359,7 @@ async function main() {
     process.stdout.write(JSON.stringify({ playwright: "ready", chromeExecutable: CHROME_EXECUTABLE || "bundled/default", runtimeOnly: true }) + "\n");
     return;
   }
+  validateExplicitTarget();
   ensureDir(OUT_DIR);
   ensureDir(path.join(OUT_DIR, "screenshots"));
   const jsonlPath = path.join(OUT_DIR, "results.jsonl");
