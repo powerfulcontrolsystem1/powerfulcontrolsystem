@@ -3,7 +3,31 @@
 
 const fs = require("fs");
 const path = require("path");
-const { chromium } = require("playwright");
+const Module = require("module");
+
+function bundledPlaywrightPath() {
+  const candidates = [];
+  if (process.env.NODE_PATH) candidates.push(process.env.NODE_PATH);
+  if (process.env.USERPROFILE) {
+    candidates.push(path.join(process.env.USERPROFILE, ".cache", "codex-runtimes", "codex-primary-runtime", "dependencies", "node", "node_modules"));
+  }
+  for (const candidate of candidates) {
+    if (!candidate || !fs.existsSync(path.join(candidate, "playwright"))) continue;
+    if (!process.env.NODE_PATH) process.env.NODE_PATH = candidate;
+    else if (!process.env.NODE_PATH.split(path.delimiter).includes(candidate)) process.env.NODE_PATH += path.delimiter + candidate;
+    Module._initPaths();
+    return candidate;
+  }
+  return "";
+}
+
+bundledPlaywrightPath();
+let chromium;
+try {
+  ({ chromium } = require("playwright"));
+} catch (error) {
+  throw new Error("No se encontro Playwright. Use el runtime Codex o defina NODE_PATH a su node_modules; no instale dependencias para ejecutar esta auditoria. Causa: " + String(error.message || error));
+}
 
 const ROOT = path.resolve(__dirname, "..");
 const WEB_ROOT = path.join(ROOT, "web");
@@ -32,6 +56,8 @@ const VIEWPORTS = (process.env.PCS_QA_VIEWPORTS || "desktop,mobile")
   .filter(Boolean)
   .map((name) => ALL_VIEWPORTS.find((viewport) => viewport.name === name))
   .filter(Boolean);
+const CHROME_EXECUTABLE = process.env.PCS_QA_CHROME_EXECUTABLE || "";
+const VALIDATE_RUNTIME_ONLY = process.env.PCS_QA_VALIDATE_RUNTIME === "1";
 
 const SAFE_TEXT = /^(abrir|cerrar|volver|cancelar|limpiar|buscar|filtrar|ver|mostrar|ocultar|editar|gestionar|detalle|detalles|actualizar vista|refrescar vista|nuevo|nueva|agregar|seleccionar|escuchar|sonando|copiar|expandir|minimizar|siguiente|anterior)$/i;
 const UNSAFE_TEXT = /(eliminar|borrar|desactivar|activar|guardar|crear|registrar|enviar|pagar|comprar|checkout|confirmar|aprobar|rechazar|anular|cancelar pedido|cancelar servicio|cerrar caja|cobrar|emitir|facturar|despachar|publicar|subir|descargar|exportar|imprimir|reset|restablecer|reenviar|aceptar|generar|sincronizar|escanear|iniciar|completar|atender|llamar|re-llamar|listo|vencido|devolver|entregar)/i;
@@ -308,12 +334,19 @@ function writeMarkdown(results, summary) {
 }
 
 async function main() {
+  if (VALIDATE_RUNTIME_ONLY) {
+    process.stdout.write(JSON.stringify({ playwright: "ready", chromeExecutable: CHROME_EXECUTABLE || "bundled/default", runtimeOnly: true }) + "\n");
+    return;
+  }
   ensureDir(OUT_DIR);
   ensureDir(path.join(OUT_DIR, "screenshots"));
   const jsonlPath = path.join(OUT_DIR, "results.jsonl");
   fs.writeFileSync(jsonlPath, "", "utf8");
   const routes = discoverRoutes();
-  const browser = await chromium.launch({ headless: HEADLESS });
+  const browser = await chromium.launch({
+    headless: HEADLESS,
+    ...(CHROME_EXECUTABLE ? { executablePath: CHROME_EXECUTABLE } : {})
+  });
   const allResults = [];
   try {
     for (const viewport of VIEWPORTS) {

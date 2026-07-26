@@ -12055,6 +12055,58 @@ scripts/vps_restore_validation.ps1
   y cuentas por pagar a proveedores por empresa. Exige una ADR de fuente de
   verdad antes de crear tablas, movimientos idempotentes, conciliacion,
   permisos separados, pruebas A/B y aprobacion previa a pagos reales.
+2026-07-24 - Plan 106 de certificacion integral para produccion
+- `documentos/plan_106.md`: hoja de ruta principal en estado `NO-GO` para
+  consolidar la cartera de proveedores, probar todos los modulos, funciones y
+  botones, validar todos los controles IA, ejecutar cuatro cajas simultaneas y
+  cerrar las compuertas tecnicas, visuales, reales y operativas antes de
+  solicitar produccion. P106-013A exige ademas la revision universal de vistas
+  previas e impresiones (filas/columnas, totales, paginacion, formatos y papel
+  real) de todas las salidas documentales. No contiene ni versiona la clave de
+  pruebas.
+- `documentos/arquitectura/inventario_impresiones_plan_106.md`: línea base
+  estática P106-013A de puntos de impresión/vista previa, casos visuales y
+  evidencia requerida; no sustituye las pruebas en PDF, papel o navegador.
+2026-07-24 - Plan 107 del contador profesional y reportes IA
+- `documentos/plan_107_contador_profesional.md`: plan `NO-GO` que complementa
+  el Plan 106 con un ciclo contable integral en la empresa 12, venta minima de
+  menta, credito, clientes, proveedores, CxC/CxP, bancos, impuestos, estados
+  financieros, exogena y UAT. Define que `contador` y `admin_empresa` consulten
+  la IA y que los reportes nuevos se construyan mediante una especificacion
+  segura validada por servidor, sin SQL libre ni acceso entre empresas. El
+  documento no autoriza mutaciones, despliegue ni operaciones externas.
+2026-07-24 - P106 CxP atomica y fuente canonica
+- `backend/db/cuentas_por_pagar.go`: servicio transaccional para abonos CxP,
+  ledger de asignaciones idempotente y definicion de migracion exclusiva de
+  `pcs-migrate`; no ejecuta DDL desde HTTP y rechaza importes no finitos o
+  métodos de pago con caracteres de control antes de abrir la transacción.
+- `backend/db/cuentas_por_pagar_test.go`: contratos de esquema, estado de
+  saldo, hash de idempotencia y guardas estáticas de bloqueo/transacción
+  aislada por empresa en el flujo CxP.
+- `backend/handlers/modulos_faltantes_cxp_test.go`: confirma que el endpoint
+  CxP exige clave de idempotencia y contexto `empresa_id` antes de intentar
+  acceso a base de datos.
+- `documentos/arquitectura/adr_106_cxp_fuente_canonica.md`: decision de fuente
+  de verdad, invariantes P0 y bloqueadores de conciliacion antes de produccion.
+- `backend/db/soportes_compras_ia.go`: convierte soporte aprobado a CxP con
+  bloqueo, proveedor canónico de la empresa, asignación transaccional, evento
+  y outbox; falla cerrada si falta una tabla crítica y no usa como proveedor
+  final el nombre libre extraído por IA.
+- `backend/handlers/facturacion_electronica.go`: sanea los avisos de fallo DIAN
+  dirigidos al buzón; clasifica acceso denegado a firma como problema operativo
+  sin exponer rutas privadas ni material de certificado.
+- `backend/handlers/facturacion_documentos_electronicos_test.go`: regresión de
+  redacción para errores de lectura de la firma DIAN.
+- `web/administrar_empresa/finanzas.html`: botón de carga de factura/recibo
+  con IA que precarga un borrador de CxP editable y no registra pagos.
+2026-07-24 - Plan IA profesional
+- `documentos/plan_ia.md`: plan `NO-GO` para unificar y profesionalizar la IA
+  empresarial con GPT-5.6, Responses API, herramientas cerradas que reutilizan
+  servicios de dominio, permisos efectivos por rol, memoria privada por empresa
+  y usuario, auditoria correlacionada y una UX sin selector de agentes. Define
+  GPT-5.6 Terra en esfuerzo medio como ejecutor, exige trabajar una fase
+  `PIA-*` por vez y no autoriza implementacion, activacion, despliegue ni efectos
+  externos durante esta planificacion.
 2026-07-21 - `documentos/arquitectura/inventario_goroutines_plan_105.md`: matriz
   estatica de los 23 lanzamientos `go func` para P105-005, con propietario,
   durabilidad, prioridad y pasos ejecutables para Terra; no sustituye pruebas
@@ -12119,3 +12171,116 @@ panel de seguridad para que el navegador reciba la correccion CSRF de staging.
   CSP propia.
 - `web/nextcloud_empresa.css`: estilos externos del modulo empresarial de
   Nextcloud para reducir CSP inline; `nextcloud.html` lo referencia.
+
+2026-07-24 - Plan 106, proveedor canónico en cartera CxP
+- `backend/db/compras_y_proveedores.go`: expone un catálogo de proveedores
+  activos y una consulta individual, ambos filtrados por `empresa_id`, para el
+  flujo de cuentas por pagar.
+- `backend/handlers/modulos_faltantes.go`: exige proveedor registrado y activo
+  al crear CxP, sustituye el nombre libre por el nombre canónico y publica el
+  catálogo restringido mediante `cuentas_pagar?action=proveedores`.
+- `web/administrar_empresa/finanzas.html`: muestra el selector de proveedor
+  registrado al operar CxP; la extracción IA sigue siendo un borrador editable
+  y requiere selección humana antes de guardar.
+- `backend/handlers/modulos_faltantes_cxp_test.go` y
+  `backend/db/cuentas_por_pagar_test.go`: cubren el contrato de proveedor
+  obligatorio, catálogo activo y filtro empresarial en regresiones locales.
+
+2026-07-25 - P106-013A, ejecución portable de QA de impresión
+- `tools/qa_print_formats.cjs`: acepta `PCS_QA_CHROME_EXECUTABLE` para usar un
+  Chrome for Testing ya instalado al renderizar sus pruebas Carta/POS, sin
+  descargar navegadores ni depender de la ruta automática de Playwright.
+- `tools/qa_e2e_buttons.cjs`: usa la misma variable para ejecutar auditorías
+  visuales de botones con un navegador de pruebas explícito.
+
+2026-07-25 - P106-012, carga temprana del puente de ayuda IA
+- `web/js/help_ai_bridge.js`: valida que el objetivo de `MutationObserver`
+  exista y sea un nodo elemento antes de observarlo, evitando el error de carga
+  temprana detectado en el smoke real de Facturación electrónica.
+
+2026-07-25 - P106-016, saneamiento histórico de alertas DIAN
+- `backend/handlers/empresa_buzon.go`: sanea al responder alertas históricas
+  de Facturación/DIAN que contengan rutas o detalles internos, sin modificar el
+  registro original ni ocultar la guía operativa segura.
+- `backend/handlers/empresa_buzon_public_error_test.go`: cubre la regresión de
+  una alerta histórica con ruta privada para evitar que el buzón la reexponga.
+
+2026-07-24 - P107, reportes IA seguros para contador
+- `backend/handlers/reportes.go`: incorpora el contrato `ReportSpec` y su
+  ejecución sobre datasets canónicos permitidos, sin SQL libre.
+- `backend/handlers/reportes_ia_chat.go`: agrega el modo `nuevo` para que la
+  IA proponga una vista reportable, validada por el servidor y auditada.
+- `backend/handlers/empresa_permisos.go` y su prueba: permiten a `contador`
+  consultar reportes e IA en modo lectura sin elevar permisos de mutación.
+- `backend/handlers/reportes_personalizados_test.go`: cubre fuente/campo no
+  autorizado, agregación, fórmula, orden local, señalización de estados y el
+  catálogo mínimo del contador con formatos de exportación obligatorios, junto
+  con intentos de inyección y referencias inválidas de `ReportSpec`.
+- `backend/tools/plan107_preflight/main.go`: verifica sin mutar datos que el
+  runtime y endpoint de staging estén listos antes de permitir fixtures P107.
+- `documentos/operacion/plan_107_preflight.md`: uso y límites operativos del
+  preflight de staging para el Plan 107.
+- `web/administrar_empresa/reportes_ejecutivos.html`: permite crear, revisar y
+  exportar un reporte IA en Excel, PDF o CSV.
+- `backend/handlers/reportes.go`: marca estados de resultados y balances sin
+  asientos canónicos como preliminares no oficiales, visible en descripción y
+  resumen del dataset.
+- `backend/handlers/empresa_permisos.go`: habilita el POST de consulta del
+  Centro IA empresarial para el rol `contador` como lectura, sin elevar sus
+  permisos de negocio.
+- `backend/handlers/reportes_ia_chat.go`: registra una huella SHA-256 del
+  `ReportSpec` personalizado para trazabilidad de la generación IA.
+- `backend/handlers/reportes.go`: añade auxiliares de estado de resultados,
+  situación financiera y patrimonio por rubro/cuenta, derivados solo de
+  asientos canónicos y con advertencias de completitud NIIF pendientes.
+- `web/administrar_empresa/reportes_ejecutivos.html`: muestra el `ReportSpec`
+  validado antes de exportar un reporte solicitado a la IA.
+- `backend/db/plan107_fixtures.go`: contrato determinista del fixture P107,
+  limitado a staging y protegido por prefijo, empresa, idempotencia y hash.
+- `backend/tools/plan107_fixture_manifest/main.go`: CLI que imprime el
+  manifiesto sin conectarse a una base de datos.
+- `documentos/operacion/plan_107_fixtures.md`: uso y compuertas del contrato
+  de fixtures antes de cualquier prueba con datos.
+- `backend/handlers/reportes_programacion.go`: valida y normaliza el
+  `ReportSpec` al guardar una plantilla de reporte IA versionada.
+- `web/administrar_empresa/reportes_ejecutivos.html`: permite al contador
+  guardar una plantilla desde la vista previa del reporte IA.
+
+2026-07-25 - Plan IA, aislamiento por usuario y experiencia de modo agente
+- `backend/db/ai_user_isolation_migration.go`: migración versionada para
+  preferencias IA por empresa/usuario e historial con conversación.
+- `backend/db/chat_inteligencia_artificial.go`: consultas, preferencias e
+  historial de chat aislados por `empresa_id` y usuario autenticado.
+- `backend/db/ai_enterprise.go`: memoria IA JSON consentida, vencible y
+  eliminable solo por su dueño dentro de la empresa.
+- `backend/handlers/chat_con_inteligencia_artificial_controller.go` y router:
+  rechazan la selección de agente aportada por cliente y validan el tenant IA.
+- `web/js/ai_chat_drawer.js` y `web/administrar_empresa/centro_ia_empresarial.html`:
+  reemplazan los selects de modo/agente por el único interruptor `Modo agente`.
+- `backend/ai/enterprise.go`: catálogo de funciones Responses API estricto,
+  sin campos de tenant, rol, usuario ni confirmación controlables por el modelo.
+- `backend/handlers/ai_enterprise_orchestrator.go`: puente cerrado de llamadas
+  de función a propuestas de producto auditadas y pendientes de confirmación.
+
+2026-07-25 - Plan 106, inventario verificable de interfaz.
+- `tools/plan106_ui_inventory.mjs`: recorre HTML del frontend sin navegar ni
+  ejecutar acciones y genera el manifiesto estático previo a la ejecución E2E.
+- `documentos/arquitectura/inventario_ui_plan_106.md`: salida generada con cada
+  control, etiqueta, ID, tipo y marcador dinámico para evitar omisiones de
+  botones, formularios y acciones del Plan 106.
+
+2026-07-25 - P107, mutaciones de licencia protegidas por CSRF.
+- `backend/handlers/licencias_codigos_descuento_ui_test.go`: verifica que los
+  formularios de códigos de descuento y activación de licencia sin pago envíen
+  el token CSRF de la sesión autenticada.
+
+2026-07-25 - Plan 108, cierre integral para producción.
+- `documentos/plan_108.md`: consolida los pendientes verificables de los planes
+  106, 107, IA, 104, 105 y del plan final histórico en una sola hoja de ruta
+  ejecutable por GPT-5.6 Terra medio. Define 26 fases con criterios de
+  aceptación y evidencia para candidato inmutable, migraciones, tenant, CxP,
+  contabilidad, IA, interfaz, impresiones, cajas concurrentes, proveedores,
+  seguridad, continuidad, staging, prueba real y piloto.
+- `documentos/evidencia_plan_108/P108-000/manifest.md`: clasifica el candidato
+  inicial por CxP, IA, contador, migraciones, UX y documentación; conserva sus
+  validaciones locales y límites antes de cualquier despliegue.

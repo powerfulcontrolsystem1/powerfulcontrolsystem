@@ -37,6 +37,15 @@
       const pendingPaymentKey = 'pcs_licencia_payment_pending_v1';
 
       function escapeHtml(s){ return String(s||'').replace(/[&<>"']/g, function(m){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":"&#39;"}[m] }) }
+      function readCookieValue(name) {
+        var prefix = name + '=';
+        var parts = String(document.cookie || '').split(';');
+        for (var i = 0; i < parts.length; i++) {
+          var part = parts[i].trim();
+          if (part.indexOf(prefix) === 0) return decodeURIComponent(part.slice(prefix.length));
+        }
+        return '';
+      }
       function normalizeImage(raw) {
         const value = String(raw || '').trim();
         if (!value || value.indexOf('/img/') !== 0 || value.indexOf('..') >= 0) return '/img/shield-license-color.svg';
@@ -1162,9 +1171,12 @@
               if (freeCode) payload.discount_code = freeCode;
               var freeAsesor = String((ui.asesorIdInput && ui.asesorIdInput.value) || '').trim();
               if (freeAsesor) { payload.asesor_id = freeAsesor; }
+              var freeHeaders = {'Content-Type':'application/json'};
+              var csrfToken = readCookieValue('pcs_csrf');
+              if (csrfToken) freeHeaders['X-CSRF-Token'] = csrfToken;
               var freeRes = await fetch('/licencias/activar_sin_pago', {
                 method: 'POST',
-                headers: {'Content-Type':'application/json'},
+                headers: freeHeaders,
                 body: JSON.stringify(payload)
               });
               var freeRaw = await freeRes.text();

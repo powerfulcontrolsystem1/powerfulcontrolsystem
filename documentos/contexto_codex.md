@@ -9,11 +9,29 @@ Este archivo es la primera lectura operativa antes de tocar el proyecto. Resume
 lo que Codex debe tener en memoria para evitar redescubrir rutas, flujos y
 decisiones en cada tarea.
 
-## Actualizacion 2026-07-21 - Plan 105
+## Actualizacion 2026-07-24 - Plan 106 P0 en ejecucion controlada
 
-- `documentos/plan_105.md` es el plan vigente de cierre para produccion general.
-  Esta pendiente de aprobacion y no debe ejecutarse, desplegarse ni convertirse
-  en `rs` hasta que el usuario lo autorice expresamente.
+- `documentos/plan_106.md` es el plan vigente para certificar produccion
+  general. Permanece en `NO-GO` para produccion; el usuario autorizo ejecutar
+  fases acotadas, sin `rs` ni efectos externos.
+- El ejecutor recomendado es GPT-5.6 Terra alto, una fase P106 por vez; las
+  decisiones P0 y el GO final deben revisarse con GPT-5.6 Sol alto.
+- El plan prioriza la unificacion de las dos fuentes CxP, la cobertura total de
+  modulos/funciones/1.925 botones, todos los controles IA, cuatro cajas
+  simultaneas, las pruebas reales controladas en empresa 12 y P106-013A:
+  revisión visual y física de todas las impresiones/vistas previas del sistema.
+- No ejecutar el plan ni `rs` solo porque el documento existe. Las credenciales
+  se suministran de forma segura y no se versionan.
+- P106 inicio la ADR `documentos/arquitectura/adr_106_cxp_fuente_canonica.md`:
+  Finanzas CxP es la fuente futura, la tabla contable avanzada queda historica
+  temporal y los abonos canonicos requieren transaccion e idempotencia. La
+  migracion, conciliacion y pruebas PostgreSQL/staging siguen pendientes.
+
+## Actualizacion 2026-07-21 - Plan 105, referencia heredada
+
+- `documentos/plan_105.md` es la base anterior del cierre para produccion
+  general. El Plan 106 hereda sus bloqueadores; la ejecucion debe seguir
+  `documentos/plan_106.md`.
 - Al aprobarse, Codex Terra medio debe leerlo completo y empezar por P105-001 y
   P105-002, manteniendo evidencia por SHA y una sola fase acotada por vez.
 
@@ -1156,3 +1174,16 @@ Antes de ejecutar scripts operativos revisar `documentos/comandos_codex.md`.
 - Las paginas tecnicas antiguas de IA pueden existir como soporte interno, pero
   no deben repetirse como cinco entradas del submenu. La pagina unica concentra
   proveedor, credencial, reglas, contexto, chat global y voz.
+
+## Plan 108 de entrada en producción 2026-07-25
+
+- `documentos/plan_108.md` reemplaza como hoja de ruta activa la ejecución
+  separada de los planes 106, 107 e IA y absorbe también los pendientes
+  vigentes de los planes 104, 105 y del plan final histórico.
+- El estado es `NO-GO`: existe preflight local satisfactorio, pero todavía falta
+  candidato inmutable, staging integral, migraciones fuera del runtime,
+  aislamiento A/B, consistencia financiera, cierre contable e IA, pruebas
+  visuales/impresas, concurrencia de cajas, proveedores, recuperación y piloto.
+- GPT-5.6 Terra medio debe comenzar por `P108-000`, conservar secretos fuera de
+  la documentación y no sumar certificación productiva antes de fijar SHA y
+  digest.

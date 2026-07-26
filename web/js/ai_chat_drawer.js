@@ -11,6 +11,7 @@
   var INPUT_ID = 'aiChatInput';
   var MODE_ID = 'aiChatMode';
   var AGENT_ID = 'aiChatAgent';
+  var AGENT_MODE_ID = 'aiChatAgentMode';
   var MODEL_ID = 'aiChatModel';
   var MODEL_USAGE_ID = 'aiChatModelUsage';
   var ATTACHMENT_INPUT_ID = 'aiChatAttachment';
@@ -38,6 +39,12 @@
   var CONFIG_RADIO_ENABLED_ID = 'aiChatCompactConfigRadioEnabled';
   var CONFIG_VOICE_ID = 'aiChatCompactConfigVoice';
   var CONFIG_ROBOT_VOICE_ID = 'aiChatCompactConfigRobotVoice';
+  var MEMORY_TYPE_ID = 'aiChatMemoryType';
+  var MEMORY_KEY_ID = 'aiChatMemoryKey';
+  var MEMORY_VALUE_ID = 'aiChatMemoryValue';
+  var MEMORY_CONSENT_ID = 'aiChatMemoryConsent';
+  var MEMORY_SAVE_ID = 'aiChatMemorySave';
+  var MEMORY_LIST_ID = 'aiChatMemoryList';
   var DOCUMENT_TOOLS_ID = 'aiChatDocumentTools';
   var DOCUMENT_FORMAT_ID = 'aiChatDocumentFormat';
   var DOCUMENT_DOWNLOAD_ID = 'aiChatDocumentDownload';
@@ -415,25 +422,11 @@
                 '<button type="button" id="' + STOP_ID + '" class="ai-chat-icon-btn ai-chat-stop-btn" aria-label="Detener audio y respuesta" title="Detener audio y respuesta"></button>' +
               '</div>' +
               '<div class="ai-chat-controls">' +
-                '<label class="ai-chat-control-field" for="' + MODE_ID + '">' +
-                  '<span>Modo</span>' +
-                  '<select id="' + MODE_ID + '" class="form-input" aria-label="Modo del asistente IA">' +
-                    '<option value="operativo">Operativo</option>' +
-                    '<option value="ayudante">Ayudante por pasos</option>' +
-                  '</select>' +
-                '</label>' +
-                '<label class="ai-chat-control-field" for="' + AGENT_ID + '">' +
-                  '<span>Agente</span>' +
-                  '<select id="' + AGENT_ID + '" class="form-input" aria-label="Agente IA">' +
-                    '<option value="general">General</option>' +
-                    '<option value="agente_configuracion_de_empresa">Configuracion</option>' +
-                    '<option value="ventas">Ventas</option>' +
-                    '<option value="inventario">Inventario</option>' +
-                    '<option value="compras">Compras</option>' +
-                    '<option value="nomina">Nomina</option>' +
-                    '<option value="impuestos">Impuestos</option>' +
-                    '<option value="agente_internet">Internet</option>' +
-                  '</select>' +
+                '<input id="' + MODE_ID + '" type="hidden" value="operativo">' +
+                '<label class="ai-chat-control-field ai-chat-agent-toggle" for="' + AGENT_MODE_ID + '">' +
+                  '<span>Modo agente</span>' +
+                  '<input id="' + AGENT_MODE_ID + '" type="checkbox" role="switch" aria-label="Activar modo agente">' +
+                  '<small>Solicita propuestas; nunca amplía tus permisos.</small>' +
                 '</label>' +
                 '<label class="ai-chat-control-field" for="' + MODEL_ID + '">' +
                   '<span>Modelo</span>' +
@@ -462,44 +455,18 @@
     return true;
   }
 
-  function buildAgentOptionsMarkup() {
-    return '<option value="general">General</option>' +
-      '<option value="agente_configuracion_de_empresa">Configuracion</option>' +
-      '<option value="ventas">Ventas</option>' +
-      '<option value="inventario">Inventario</option>' +
-      '<option value="compras">Compras</option>' +
-      '<option value="nomina">Nomina</option>' +
-      '<option value="impuestos">Impuestos</option>' +
-      '<option value="agente_internet">Internet</option>';
-  }
-
   function ensureAgentControl() {
     var form = document.getElementById(FORM_ID);
     var controls = form && form.querySelector('.ai-chat-controls');
     if (!form || !controls) return;
-
     var agentEl = document.getElementById(AGENT_ID);
-    if (!agentEl) {
-      var label = document.createElement('label');
-      label.className = 'ai-chat-control-field';
-      label.setAttribute('for', AGENT_ID);
-      label.innerHTML = '<span>Agente</span>' +
-        '<select id="' + AGENT_ID + '" class="form-input" aria-label="Agente IA">' +
-        buildAgentOptionsMarkup() +
-        '</select>';
-      var attachmentField = document.getElementById(ATTACHMENT_INPUT_ID);
-      var attachmentHost = attachmentField && attachmentField.closest('.ai-chat-control-field');
-      controls.insertBefore(label, attachmentHost || null);
-      return;
-    }
-
-    var hasConfigAgent = Array.prototype.some.call(agentEl.options || [], function (option) {
-      return option && option.value === 'agente_configuracion_de_empresa';
-    });
-    if (!hasConfigAgent) {
-      var currentValue = agentEl.value || 'general';
-      agentEl.innerHTML = buildAgentOptionsMarkup();
-      agentEl.value = currentValue;
+    if (agentEl && agentEl.closest('.ai-chat-control-field')) agentEl.closest('.ai-chat-control-field').remove();
+    if (!document.getElementById(AGENT_MODE_ID)) {
+      var toggle = document.createElement('label');
+      toggle.className = 'ai-chat-control-field ai-chat-agent-toggle';
+      toggle.setAttribute('for', AGENT_MODE_ID);
+      toggle.innerHTML = '<span>Modo agente</span><input id="' + AGENT_MODE_ID + '" type="checkbox" role="switch" aria-label="Activar modo agente"><small>Solicita propuestas; nunca amplía tus permisos.</small>';
+      controls.insertBefore(toggle, controls.firstChild || null);
     }
   }
 
@@ -567,9 +534,7 @@
       select.value = selected;
       state.selectedModelID = selected;
       var modeEl = document.getElementById(MODE_ID);
-      var agentEl = document.getElementById(AGENT_ID);
       if (modeEl && normalize(data && data.modo_preferido)) modeEl.value = normalize(data.modo_preferido);
-      if (agentEl && normalize(data && data.agent_preferido)) agentEl.value = normalize(data.agent_preferido);
       renderModelUsage(selected);
       syncModeUI();
     }).catch(function () {
@@ -584,13 +549,13 @@
     var empresaID = parsePositiveInt(getCurrentEmpresaId());
     var select = document.getElementById(MODEL_ID);
     var modeEl = document.getElementById(MODE_ID);
-    var agentEl = document.getElementById(AGENT_ID);
+    var agentModeEl = document.getElementById(AGENT_MODE_ID);
     if ((!empresaID && !isSelectorContext()) || !select || !normalize(select.value)) return Promise.resolve();
     state.selectedModelID = normalize(select.value);
     renderModelUsage(state.selectedModelID);
     return fetch(buildModelPreferenceEndpoint(), {
       method: 'PUT', credentials: 'same-origin', headers: { 'Content-Type': 'application/json', 'X-PCS-Source': 'ai_drawer' },
-      body: JSON.stringify(Object.assign(isSelectorContext() ? {} : { empresa_id: empresaID }, { model_id: state.selectedModelID, modo_asistente: modeEl ? normalize(modeEl.value) : 'operativo', agent_id: agentEl ? normalize(agentEl.value) : 'general' }))
+      body: JSON.stringify(Object.assign(isSelectorContext() ? {} : { empresa_id: empresaID }, { model_id: state.selectedModelID, modo_asistente: modeEl ? normalize(modeEl.value) : 'operativo', agent_id: 'general', modo_agente: !!(agentModeEl && agentModeEl.checked) }))
     }).then(function (resp) { if (!resp.ok) return parseErrorResponse(resp); return resp.json(); });
   }
 
@@ -1664,6 +1629,7 @@
       '<label class="ai-chat-compact-option" hidden><input type="radio" name="aiChatCompactMode" value="secretary"><span><b>Secretaria retirada</b><small>Modo no disponible.</small></span></label>' +
       '<label class="ai-chat-compact-option ai-chat-compact-option-voice"><input id="' + CONFIG_VOICE_ID + '" type="checkbox"><span><b>Activar modo voz</b><small>Lee las respuestas con el servicio de voz o la voz del navegador.</small></span></label>' +
       '<label class="ai-chat-compact-option"><span><b>Voz del asistente</b><small>Selecciona la voz usada cuando el modo voz esta activo.</small><select id="' + CONFIG_ROBOT_VOICE_ID + '" class="form-input"><option value="es-CO">Colombiana natural</option><option value="es-CO-female">Colombiana femenina</option><option value="es-CO-male">Colombiana masculina</option><option value="es-MX">Español latino</option><option value="es-ES">Español castellano</option></select></span></label>' +
+      '<div class="ai-chat-compact-option"><span><b>Memoria personal</b><small>Opcional. No guardes contraseñas, tokens ni datos sensibles. Puedes eliminarla cuando quieras.</small><input id="' + MEMORY_TYPE_ID + '" class="form-input" maxlength="80" value="preferencia" aria-label="Tipo de memoria"><input id="' + MEMORY_KEY_ID + '" class="form-input" maxlength="160" placeholder="Ej: idioma_respuesta" aria-label="Clave de memoria"><textarea id="' + MEMORY_VALUE_ID + '" class="form-input" maxlength="4000" placeholder="Valor JSON, ej: &quot;español colombiano&quot;" aria-label="Valor de memoria"></textarea><label><input id="' + MEMORY_CONSENT_ID + '" type="checkbox"> Consiento guardar esta memoria para mi chat en esta empresa.</label><button id="' + MEMORY_SAVE_ID + '" type="button" class="btn secondary small">Guardar memoria</button><div id="' + MEMORY_LIST_ID + '" class="ai-chat-compact-config-status"></div></span></div>' +
       '</div>' +
       '<div class="ai-chat-compact-config-actions">' +
       '<button id="' + CONFIG_SAVE_ID + '" type="button" class="btn primary small">Guardar</button>' +
@@ -1675,6 +1641,36 @@
     var closeBtn = document.getElementById(CONFIG_CLOSE_ID);
     var saveBtn = document.getElementById(CONFIG_SAVE_ID);
     var statusEl = panel.querySelector('.ai-chat-compact-config-status');
+
+    function memoryEndpoint() {
+      var empresaID = parsePositiveInt(getCurrentEmpresaId());
+      return empresaID ? '/api/empresa/chat_con_inteligencia_artificial/memoria?empresa_id=' + encodeURIComponent(String(empresaID)) : '';
+    }
+    function renderMemories(items) {
+      var list = document.getElementById(MEMORY_LIST_ID);
+      if (!list) return;
+      list.innerHTML = '';
+      (Array.isArray(items) ? items : []).forEach(function (item) {
+        var row = document.createElement('div');
+        row.textContent = String(item.tipo || '') + ': ' + String(item.clave || '');
+        var remove = document.createElement('button');
+        remove.type = 'button'; remove.className = 'btn secondary small'; remove.textContent = 'Olvidar';
+        remove.addEventListener('click', function () {
+          var endpoint = memoryEndpoint(); if (!endpoint) return;
+          fetch(endpoint + '&tipo=' + encodeURIComponent(String(item.tipo || '')) + '&clave=' + encodeURIComponent(String(item.clave || '')), { method: 'DELETE', credentials: 'same-origin' })
+            .then(function (res) { if (!res.ok) throw new Error('No se pudo olvidar memoria.'); return loadMemories(); })
+            .catch(function (err) { setConfigStatus(String(err.message || err), true); });
+        });
+        row.appendChild(remove); list.appendChild(row);
+      });
+      if (!list.childNodes.length) list.textContent = 'No hay memoria personal guardada.';
+    }
+    function loadMemories() {
+      var endpoint = memoryEndpoint(); if (!endpoint) return Promise.resolve();
+      return fetch(endpoint, { credentials: 'same-origin' }).then(function (res) { if (!res.ok) throw new Error('No se pudo cargar memoria.'); return res.json(); }).then(function (data) { renderMemories(data && data.items); });
+    }
+
+    panel._pcsLoadMemories = loadMemories;
 
     function setConfigStatus(message, isError) {
       if (!statusEl) return;
@@ -1762,6 +1758,19 @@
         });
       });
     }
+    var memorySave = document.getElementById(MEMORY_SAVE_ID);
+    if (memorySave) {
+      memorySave.addEventListener('click', function () {
+        var endpoint = memoryEndpoint();
+        var consent = document.getElementById(MEMORY_CONSENT_ID);
+        var rawValue = normalize(document.getElementById(MEMORY_VALUE_ID).value);
+        if (!endpoint || !consent.checked) { setConfigStatus('Debes confirmar el consentimiento para guardar memoria.', true); return; }
+        try { JSON.parse(rawValue); } catch (err) { setConfigStatus('El valor debe ser JSON válido, por ejemplo "español".', true); return; }
+        fetch(endpoint, { method: 'PUT', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ empresa_id: parsePositiveInt(getCurrentEmpresaId()), tipo: normalize(document.getElementById(MEMORY_TYPE_ID).value), clave: normalize(document.getElementById(MEMORY_KEY_ID).value), valor: JSON.parse(rawValue), consentida: true }) })
+          .then(function (res) { if (!res.ok) throw new Error('No se pudo guardar memoria.'); document.getElementById(MEMORY_KEY_ID).value = ''; document.getElementById(MEMORY_VALUE_ID).value = ''; consent.checked = false; return loadMemories(); })
+          .catch(function (err) { setConfigStatus(String(err.message || err), true); });
+      });
+    }
     return panel;
   }
 
@@ -1775,6 +1784,7 @@
     var panel = ensureCompactConfigPanel();
     setCompactConfigState(getChatPersonalityMode(), state.voiceEnabled, state.robotVoice, state.chatEnabled, state.robotEnabled, state.radioEnabled);
     panel.hidden = false;
+    if (typeof panel._pcsLoadMemories === 'function') panel._pcsLoadMemories().catch(function () {});
     fetch(buildChatPrefsEndpoint(), { credentials: 'same-origin' })
       .then(function (res) {
         if (!res.ok) return null;
@@ -4095,15 +4105,16 @@
 
     var endpoint = attachment ? buildAttachmentEndpoint() : buildTextEndpoint();
     var mode = getAssistantMode();
-    var agentEl = document.getElementById(AGENT_ID);
+    var agentModeEl = document.getElementById(AGENT_MODE_ID);
     var modelEl = document.getElementById(MODEL_ID);
-    var agentID = agentEl ? normalize(agentEl.value) : 'general';
+    var agentID = 'general';
     var modelID = modelEl ? normalize(modelEl.value) : '';
     var pageContext = String(window.location.pathname || '') + String(window.location.search || '');
     var body = {
       pregunta: query,
       modo_asistente: mode,
       agent_id: agentID || 'general',
+      modo_agente: !!(agentModeEl && agentModeEl.checked),
       model_id: modelID,
     };
 
@@ -4149,6 +4160,7 @@
       formData.set('pregunta', query);
       formData.set('modo_asistente', mode);
       formData.set('agent_id', agentID || 'general');
+      formData.set('modo_agente', String(!!(agentModeEl && agentModeEl.checked)));
       if (modelID) formData.set('model_id', modelID);
       if (pageContext) {
         formData.set('pagina_contexto', pageContext);
@@ -5141,9 +5153,12 @@
         setNotice('Modo actualizado. Puedes seguir consultando normalmente.');
       });
     }
-    var agentEl = document.getElementById(AGENT_ID);
-    if (agentEl) {
-      agentEl.addEventListener('change', function () { persistSelectedModel().catch(function () {}); });
+    var agentModeEl = document.getElementById(AGENT_MODE_ID);
+    if (agentModeEl) {
+      agentModeEl.addEventListener('change', function () {
+        persistSelectedModel().catch(function () {});
+        setNotice(agentModeEl.checked ? 'Modo agente activado. Las acciones requieren permisos y confirmación.' : 'Modo agente desactivado.');
+      });
     }
     if (modelEl) {
       modelEl.addEventListener('change', function () {
@@ -5336,10 +5351,8 @@
         modeEl.value = normalize(data.mode);
         syncModeUI();
       }
-      var agentEl = document.getElementById(AGENT_ID);
-      if (agentEl && normalize(data.agent_id)) {
-        agentEl.value = normalize(data.agent_id);
-      }
+      var agentModeEl = document.getElementById(AGENT_MODE_ID);
+      if (agentModeEl && data.modo_agente === true) agentModeEl.checked = true;
       if (input && normalize(data.prompt)) {
         input.value = normalize(data.prompt);
       }

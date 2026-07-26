@@ -231,3 +231,46 @@ func GetEmpresaProveedores(dbConn *sql.DB, empresaID int64, paramEstado string) 
 	}
 	return lista, nil
 }
+
+// ListEmpresaProveedoresCxP returns active suppliers using the PostgreSQL
+// compatible query helpers. It is the restricted catalog used when a CxP is
+// created or corrected from Finanzas.
+func ListEmpresaProveedoresCxP(dbConn *sql.DB, empresaID int64) ([]EmpresaProveedor, error) {
+	if dbConn == nil || empresaID <= 0 {
+		return nil, fmt.Errorf("empresa_id invalido")
+	}
+	rows, err := ExecQueryCompat(dbConn, `SELECT id, empresa_id, COALESCE(nit,''), nombre_comercial, COALESCE(razon_social,''),
+		COALESCE(direccion,''), COALESCE(telefono,''), COALESCE(email,''), COALESCE(cuenta_bancaria,''), plazo_dias_pago,
+		fecha_creacion, COALESCE(fecha_actualizacion,''), COALESCE(usuario_creador,''), COALESCE(estado,'activo'), COALESCE(observaciones,'')
+		FROM empresa_proveedores WHERE empresa_id=? AND COALESCE(estado,'activo')='activo' ORDER BY nombre_comercial ASC`, empresaID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := make([]EmpresaProveedor, 0)
+	for rows.Next() {
+		var proveedor EmpresaProveedor
+		if err := rows.Scan(&proveedor.ID, &proveedor.EmpresaID, &proveedor.NIT, &proveedor.NombreComercial, &proveedor.RazonSocial,
+			&proveedor.Direccion, &proveedor.Telefono, &proveedor.Email, &proveedor.CuentaBancaria, &proveedor.PlazoDiasPago,
+			&proveedor.FechaCreacion, &proveedor.FechaActualizacion, &proveedor.UsuarioCreador, &proveedor.Estado, &proveedor.Observaciones); err != nil {
+			return nil, err
+		}
+		items = append(items, proveedor)
+	}
+	return items, rows.Err()
+}
+
+func GetEmpresaProveedorCxP(dbConn *sql.DB, empresaID, proveedorID int64) (EmpresaProveedor, error) {
+	if dbConn == nil || empresaID <= 0 || proveedorID <= 0 {
+		return EmpresaProveedor{}, fmt.Errorf("empresa_id y proveedor_id son obligatorios")
+	}
+	var proveedor EmpresaProveedor
+	err := queryRowSQLCompat(dbConn, `SELECT id, empresa_id, COALESCE(nit,''), nombre_comercial, COALESCE(razon_social,''),
+		COALESCE(direccion,''), COALESCE(telefono,''), COALESCE(email,''), COALESCE(cuenta_bancaria,''), plazo_dias_pago,
+		fecha_creacion, COALESCE(fecha_actualizacion,''), COALESCE(usuario_creador,''), COALESCE(estado,'activo'), COALESCE(observaciones,'')
+		FROM empresa_proveedores WHERE empresa_id=? AND id=?`, empresaID, proveedorID).
+		Scan(&proveedor.ID, &proveedor.EmpresaID, &proveedor.NIT, &proveedor.NombreComercial, &proveedor.RazonSocial,
+			&proveedor.Direccion, &proveedor.Telefono, &proveedor.Email, &proveedor.CuentaBancaria, &proveedor.PlazoDiasPago,
+			&proveedor.FechaCreacion, &proveedor.FechaActualizacion, &proveedor.UsuarioCreador, &proveedor.Estado, &proveedor.Observaciones)
+	return proveedor, err
+}

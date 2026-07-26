@@ -2750,12 +2750,13 @@ func notificarFalloFacturacionElectronica(dbEmp, dbSuper *sql.DB, retry *dbpkg.F
 		actor = dbpkg.EmpresaBuzonActor{Tipo: "admin", Ref: ownerEmail, Email: ownerEmail, Nombre: ownerEmail, Rol: "administrador"}
 	}
 	errorText := strings.TrimSpace(firstNonEmptyString(resultado.Error, retry.UltimoError, "DIAN/proveedor rechazo o no confirmo el documento electronico"))
+	errorVisible := dianUserVisibleError(errorText)
 	causa := dianErrorUserHelp(errorText)
 	mensaje := "La facturacion electronica requiere revision.\n\n" +
 		"Documento: " + strings.TrimSpace(retry.TipoDocumento) + " " + strings.TrimSpace(retry.DocumentoCodigo) + "\n" +
 		"Numero legal: " + strings.TrimSpace(firstNonEmptyString(retry.NumeroLegal, doc.NumeroLegal)) + "\n" +
 		"Estado: " + strings.TrimSpace(retry.EstadoEnvio) + "\n" +
-		"Error DIAN: " + errorText + "\n\n" +
+		"Error DIAN: " + errorVisible + "\n\n" +
 		"Que hacer: " + causa + "\n\n" +
 		"Abra Facturacion electronica > Pruebas DIAN para ver la consola, corregir configuracion y reenviar."
 	_, _ = dbpkg.CreateEmpresaBuzonMensaje(dbEmp, dbpkg.EmpresaBuzonMensaje{
@@ -2782,6 +2783,8 @@ func notificarFalloFacturacionElectronica(dbEmp, dbSuper *sql.DB, retry *dbpkg.F
 func dianErrorUserHelp(raw string) string {
 	lower := strings.ToLower(strings.TrimSpace(raw))
 	switch {
+	case strings.Contains(lower, "permission denied") || strings.Contains(lower, "acceso denegado") || strings.Contains(lower, "operation not permitted"):
+		return "La clave privada de firma no puede ser leida por el servicio. Un administrador debe restaurar acceso solo para el usuario del backend o cargar nuevamente la firma desde PCS; no cambie ni comparta la clave en el buzon."
 	case strings.Contains(lower, "fab05c") || (strings.Contains(lower, "identificador del software") && strings.Contains(lower, "rango")):
 		return "Asocie en el portal DIAN el prefijo/rango de numeracion al software correcto y verifique Software ID, prefijo, resolucion y rango en PCS."
 	case strings.Contains(lower, "fad06") || strings.Contains(lower, "cufe"):
@@ -2801,6 +2804,34 @@ func dianErrorUserHelp(raw string) string {
 	default:
 		return "Lea el mensaje exacto de DIAN en la consola, valide configuracion, certificado, resolucion, rango, cliente y reintente el envio."
 	}
+}
+
+// dianUserVisibleError keeps operational notifications useful without exposing
+// filesystem paths, certificate material, tokens, or provider internals.
+func dianUserVisibleError(raw string) string {
+	clean := strings.TrimSpace(raw)
+	lower := strings.ToLower(clean)
+	if strings.Contains(lower, "permission denied") || strings.Contains(lower, "acceso denegado") || strings.Contains(lower, "operation not permitted") {
+		return "No se pudo acceder a la clave privada de firma del certificado DIAN."
+	}
+	if dianErrorMayExposeInternalDetail(clean) {
+		return "No se pudo preparar la firma o comunicacion DIAN. Revise la consola de Pruebas DIAN con un administrador autorizado."
+	}
+	return dianTruncate(clean, 240)
+}
+
+func dianErrorMayExposeInternalDetail(value string) bool {
+	lower := strings.ToLower(strings.TrimSpace(value))
+	for _, marker := range []string{
+		"sql:", "pq:", "postgres", "database", "dsn", "password", "token", "secret",
+		"certificate", "x509", "dial tcp", "connection refused", "no such file",
+		"permission denied", "stack trace", "traceback", "panic", "file:",
+	} {
+		if strings.Contains(lower, marker) {
+			return true
+		}
+	}
+	return strings.Contains(lower, "/app/") || strings.Contains(lower, "../") || strings.Contains(lower, "c:\\")
 }
 
 func facturacionBuildOperacionPayloadFromDocumento(doc dbpkg.EmpresaDocumentoFacturacion) facturacionOperacionPayload {

@@ -158,6 +158,16 @@ go build ./cmd/pcs-migrate
 go build ./cmd/pcs-worker
 ```
 
+Antes del barrido visual o E2E del Plan 106, generar el inventario estático de
+interfaz. No autentica ni hace clics; su salida enumera los controles que luego
+deben recibir evidencia funcional, visual y de permisos:
+
+```powershell
+Set-Location D:\powerfulcontrolsystem
+$node = 'C:\Users\ivanm\.cache\codex-runtimes\codex-primary-runtime\dependencies\node\bin\node.exe'
+& $node tools\plan106_ui_inventory.mjs
+```
+
 `pcs-migrate` es el unico rol que aplica las migraciones de plataforma. La API
 y el worker solo verifican cola, outbox e idempotencia movil. Mantener
 `PCS_RUNTIME_SCHEMA_BOOTSTRAP=1` hasta que el inventario legado se haya movido
@@ -416,6 +426,22 @@ C:\Users\ivanm\.cache\codex-runtimes\codex-primary-runtime\dependencies\node\nod
 Para frontend, hacer prueba visual cuando el cambio afecte pantallas, botones,
 formularios, impresion o responsive. En impresiones POS/carta, revisar captura o
 HTML imprimible en blanco y negro.
+
+Para ejecutar la batería sintética de impresiones con el navegador ya instalado,
+definir `PCS_QA_CHROME_EXECUTABLE` con la ruta de Chrome for Testing antes de
+llamar `tools/qa_print_formats.cjs` o `tools/qa_e2e_buttons.cjs`. La variable
+evita descargar navegadores; el resultado no sustituye la prueba de impresora
+física ni documentos reales.
+
+El runner de botones localiza automáticamente el Playwright incluido por Codex.
+Antes de una sesión real se puede validar solo el runtime, sin autenticarse ni
+navegar:
+
+```powershell
+$env:PCS_QA_VALIDATE_RUNTIME = '1'
+& $node tools\qa_e2e_buttons.cjs
+Remove-Item Env:PCS_QA_VALIDATE_RUNTIME
+```
 
 ### Navegador interno de Codex
 

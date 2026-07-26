@@ -77,6 +77,7 @@ type empresaModuloGenericConfig struct {
 	SearchColumns    []string
 	AllowedColumns   []string
 	RequiredOnCreate []string
+	ValidatePayload  func(*sql.DB, int64, map[string]interface{}, bool) error
 	CodeColumn       string
 	CodePrefix       string
 	DefaultValues    map[string]interface{}
@@ -211,7 +212,8 @@ var (
 			"moneda", "periodo_contable", "referencia_pagos_json", "fecha_ultimo_pago", "conciliado_en", "conciliado_por",
 			"usuario_creador", "estado", "observaciones",
 		},
-		RequiredOnCreate: []string{"proveedor_nombre", "documento_codigo"},
+		RequiredOnCreate: []string{"proveedor_id", "proveedor_nombre", "documento_codigo"},
+		ValidatePayload:  validateEmpresaCxPProveedorPayload,
 		CodeColumn:       "codigo",
 		CodePrefix:       "CXP",
 		DefaultValues: map[string]interface{}{
@@ -2583,6 +2585,24 @@ func empresaFinanzasCarteraHandler(dbEmp *sql.DB, cfg empresaModuloGenericConfig
 	return func(w http.ResponseWriter, r *http.Request) {
 		action := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("action")))
 		switch action {
+		case "proveedores":
+			if cfg.Table != "empresa_cuentas_por_pagar" || r.Method != http.MethodGet {
+				http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+				return
+			}
+			empresaID, err := parseEmpresaIDQuery(r)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusBadRequest)
+				return
+			}
+			proveedores, err := dbpkg.ListEmpresaProveedoresCxP(dbEmp, empresaID)
+			if err != nil {
+				http.Error(w, "No se pudieron consultar proveedores de cartera", http.StatusInternalServerError)
+				return
+			}
+			writeJSON(w, http.StatusOK, proveedores)
+			return
+
 		case "conciliar_pagos", "conciliar":
 			if r.Method != http.MethodPost && r.Method != http.MethodPut {
 				http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
@@ -3085,6 +3105,58 @@ func handleRegistrarPagoCarteraAction(dbEmp *sql.DB, cfg empresaModuloGenericCon
 	id := resolveIDFromPayloadOrQuery(payload, r)
 	if id <= 0 {
 		http.Error(w, "id es obligatorio", http.StatusBadRequest)
+		return
+	}
+	// CxP is the P106 canonical payment path. Unlike the legacy generic
+	// cartera flow, it records the allocation, financial movement and durable
+	// outbox event in one tenant-scoped transaction.
+	if cfg.Table == "empresa_cuentas_por_pagar" {
+		idempotencyKey := strings.TrimSpace(r.Header.Get("Idempotency-Key"))
+		if idempotencyKey == "" {
+			http.Error(w, "Idempotency-Key es obligatorio para registrar un pago a proveedor", http.StatusBadRequest)
+			return
+		}
+		monto := ventasAnyToFloat64(payload["monto"])
+		if monto <= 0 {
+			monto = ventasAnyToFloat64(payload["valor_pagado"])
+		}
+		actor := strings.TrimSpace(adminEmailFromRequest(r))
+		if actor == "" {
+			actor = "sistema"
+		}
+		result, err := dbpkg.RegistrarEmpresaCxPAbono(dbEmp, dbpkg.EmpresaCxPAbonoInput{
+			EmpresaID:         empresaID,
+			CuentaPorPagarID:  id,
+			Monto:             monto,
+			PeriodoContable:   finanzasFirstNonBlank(genericStringValue(payload["periodo_contable"]), strings.TrimSpace(r.URL.Query().Get("periodo"))),
+			MetodoPago:        finanzasFirstNonBlank(genericStringValue(payload["metodo_pago"]), strings.TrimSpace(r.URL.Query().Get("metodo_pago")), "efectivo"),
+			ReferenciaExterna: genericStringValue(payload["referencia_externa"]),
+			Concepto:          genericStringValue(payload["concepto"]),
+			Observaciones:     genericStringValue(payload["observaciones"]),
+			Usuario:           actor,
+			IdempotencyKey:    idempotencyKey,
+		})
+		if err != nil {
+			if errors.Is(err, dbpkg.ErrEmpresaCxPAmountExceedsBalance) || errors.Is(err, dbpkg.ErrPeriodoFinancieroCerrado) {
+				http.Error(w, err.Error(), http.StatusConflict)
+				return
+			}
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		itemActualizado, _ := dbpkg.GetEmpresaGenericRowByID(dbEmp, cfg.Table, empresaID, id)
+		writeJSON(w, http.StatusOK, map[string]interface{}{
+			"ok":                     true,
+			"empresa_id":             empresaID,
+			"modulo":                 modulo,
+			"cartera_id":             id,
+			"pago":                   result,
+			"movimiento_finanzas_id": result.MovimientoFinanzasID,
+			"monto_aplicado":         result.MontoAplicado,
+			"saldo":                  result.SaldoNuevo,
+			"estado_cartera":         result.EstadoCartera,
+			"item":                   itemActualizado,
+		})
 		return
 	}
 
@@ -5706,6 +5778,39 @@ func ventasFirstNonBlank(values ...string) string {
 	return ""
 }
 
+func validateEmpresaCxPProveedorPayload(dbEmp *sql.DB, empresaID int64, payload map[string]interface{}, isCreate bool) error {
+	proveedorID := anyToInt64(payload["proveedor_id"])
+	if proveedorID <= 0 {
+		if !isCreate && isEmptyGenericValue(payload["proveedor_nombre"]) {
+			return nil
+		}
+		return fmt.Errorf("seleccione un proveedor registrado de esta empresa")
+	}
+	if dbEmp == nil || empresaID <= 0 {
+		return fmt.Errorf("no se pudo validar el proveedor de la cuenta por pagar")
+	}
+	proveedor, err := dbpkg.GetEmpresaProveedorCxP(dbEmp, empresaID, proveedorID)
+	if errors.Is(err, sql.ErrNoRows) {
+		return fmt.Errorf("el proveedor seleccionado no pertenece a la empresa activa")
+	}
+	if err != nil {
+		return fmt.Errorf("no se pudo validar el proveedor de la cuenta por pagar")
+	}
+	if !strings.EqualFold(strings.TrimSpace(proveedor.Estado), "activo") {
+		return fmt.Errorf("el proveedor seleccionado no esta activo")
+	}
+	nombre := strings.TrimSpace(proveedor.RazonSocial)
+	if nombre == "" {
+		nombre = strings.TrimSpace(proveedor.NombreComercial)
+	}
+	if nombre == "" {
+		return fmt.Errorf("el proveedor seleccionado no tiene nombre operativo")
+	}
+	payload["proveedor_id"] = proveedorID
+	payload["proveedor_nombre"] = nombre
+	return nil
+}
+
 func empresaModuloGenericCRUDHandler(dbEmp *sql.DB, cfg empresaModuloGenericConfig) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
@@ -5790,6 +5895,12 @@ func empresaModuloGenericCRUDHandler(dbEmp *sql.DB, cfg empresaModuloGenericConf
 				http.Error(w, err.Error(), http.StatusBadRequest)
 				return
 			}
+			if cfg.ValidatePayload != nil {
+				if err := cfg.ValidatePayload(dbEmp, empresaID, payload, true); err != nil {
+					http.Error(w, err.Error(), http.StatusBadRequest)
+					return
+				}
+			}
 
 			id, err := dbpkg.CreateEmpresaGenericRow(dbEmp, cfg.Table, empresaID, payload, cfg.AllowedColumns)
 			if err != nil {
@@ -5847,6 +5958,12 @@ func empresaModuloGenericCRUDHandler(dbEmp *sql.DB, cfg empresaModuloGenericConf
 			if id <= 0 {
 				http.Error(w, "id required", http.StatusBadRequest)
 				return
+			}
+			if cfg.ValidatePayload != nil {
+				if err := cfg.ValidatePayload(dbEmp, empresaID, payload, false); err != nil {
+					http.Error(w, err.Error(), http.StatusBadRequest)
+					return
+				}
 			}
 			if err := dbpkg.UpdateEmpresaGenericRow(dbEmp, cfg.Table, empresaID, id, payload, cfg.AllowedColumns); err != nil {
 				if errors.Is(err, dbpkg.ErrPeriodoFinancieroCerrado) {
@@ -13035,7 +13152,7 @@ func importDIANNumeracionPDFIA(dbEmp, dbSuper *sql.DB, r *http.Request) (map[str
 	att := &aiAttachment{Filename: upload.FileName, MimeType: "application/pdf", Bytes: upload.Bytes}
 	systemPrompt := dianNumeracion1876IASystemPrompt()
 	pregunta := "Extrae los campos del Formulario 1876 de autorizacion de numeracion DIAN adjunto. Responde solo JSON valido."
-	respuesta, promptTokens, completionTokens, err := ctrl.callOpenAIResponsesWithSystemPrompt(model, pregunta, nil, systemPrompt, att)
+	respuesta, promptTokens, completionTokens, err := ctrl.callOpenAIResponsesWithSystemPrompt(model, pregunta, nil, systemPrompt, att, nil, nil)
 	if err != nil {
 		return nil, http.StatusBadGateway, err
 	}

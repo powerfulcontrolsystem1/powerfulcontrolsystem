@@ -3,7 +3,7 @@
 
   var HELP_MESSAGE_TYPE = 'pcs-help-ai-open';
   var INSTALLED_FLAG = '__pcsHelpAIBridgeInstalled';
-  var BRIDGE_SRC = '/js/help_ai_bridge.js?v=20260607-help-ai4';
+  var BRIDGE_SRC = '/js/help_ai_bridge.js?v=20260725-observer-guard';
 
   if (window[INSTALLED_FLAG]) return;
   window[INSTALLED_FLAG] = true;
@@ -284,10 +284,13 @@
       var observer = new MutationObserver(function () {
         scanFramesForBridge();
       });
-      observer.observe(document.documentElement || document.body, { childList: true, subtree: true });
-      window.setTimeout(function () {
-        try { observer.disconnect(); } catch (error) {}
-      }, 15000);
+      var observerTarget = document.documentElement || document.body;
+      if (observerTarget && observerTarget.nodeType === 1) {
+        observer.observe(observerTarget, { childList: true, subtree: true });
+        window.setTimeout(function () {
+          try { observer.disconnect(); } catch (error) {}
+        }, 15000);
+      }
     } catch (error) {}
   }
 

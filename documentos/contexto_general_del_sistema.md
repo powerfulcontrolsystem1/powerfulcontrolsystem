@@ -1,11 +1,36 @@
 # Contexto general del sistema
 
-Estado: vigente. Ultima actualizacion: 2026-07-16.
+Estado: vigente. Ultima actualizacion: 2026-07-24.
 
-## Actualizacion 2026-07-21 - Plan 105 pendiente de aprobacion
+## Actualizacion 2026-07-24 - Plan 106 P0 en ejecucion controlada
 
-- `documentos/plan_105.md` consolida la auditoria general y es la hoja de ruta
-  vigente para cerrar produccion. Su veredicto inicial es `NO-GO`.
+- `documentos/plan_106.md` sustituye al Plan 105 como hoja de ruta principal
+  para certificar la entrada en produccion. Su veredicto inicial es `NO-GO`.
+- El plan exige consolidar la cartera de proveedores porque hoy existen dos
+  fuentes de verdad, probar todos los modulos/funciones/botones, cubrir todos
+  los controles IA y ejecutar varias cajas simultaneas en una prueba real
+  controlada de la empresa `Powerful Control System`.
+- P106-013A obliga a inventariar y verificar toda impresión y vista previa:
+  facturas, recibos, comprobantes, pedidos, reportes y cualquier salida
+  documental, con filas/columnas, totales, paginación, papel real y aislamiento
+  empresarial comprobados.
+- El usuario autorizo implementar fases P106 acotadas. Esto no autoriza `rs`,
+  proveedores, documentos fiscales, mover dinero ni modificar datos reales.
+- Las credenciales de prueba nunca se copian a documentos ni logs; se usan
+  mediante entrada segura o sesion ya autenticada.
+- P106 fija `empresa_cuentas_por_pagar` como fuente futura de CxP y bloquea
+  nuevas escrituras CxP en la tabla contable avanzada mientras se concilian
+  historicos. La migracion `20260724-001-cxp-atomic-payments-v1` no ha sido
+  ejecutada en ningun entorno por esta tarea.
+- P106-016 esta bloqueado por una firma DIAN de empresa 12 inaccesible para el
+  proceso backend. No se debe reenviar ni sustituir la firma hasta verificar
+  de forma autorizada propietario/permisos y completar una prueba DIAN segura.
+
+## Actualizacion 2026-07-21 - Plan 105, base anterior del Plan 106
+
+- `documentos/plan_105.md` consolida la auditoria general que el Plan 106
+  hereda. Ya no es la hoja de ruta principal; conserva evidencia y tareas
+  abiertas que deben cerrarse desde `documentos/plan_106.md`.
 - El plan no esta autorizado para ejecucion hasta aprobacion expresa del usuario.
   Debe comenzar por fijar el candidato y el alcance, sin usar `rs` ni tocar
   proveedores o datos reales durante la planificacion.
@@ -232,3 +257,14 @@ rol reservado de super administrador.
 Abrir `documentos/contexto_especifico_del_sistema.md`. Ese documento enlaza los
 mapas de modulos, flujos, datos, seguridad, comandos, decisiones, integraciones
 y runbooks vigentes.
+
+## Plan vigente de entrada en producción
+
+- `documentos/plan_108.md` es la hoja de ruta consolidada vigente para el cierre
+  de producción. Integra los pendientes de los planes 106, 107, IA, 104, 105 y
+  del plan final histórico sin convertir evidencia local en certificación.
+- Su estado inicial es `NO-GO`. La primera fase ejecutable es `P108-000`, que
+  exige un candidato limpio, inmutable y reproducible antes de staging o
+  pruebas reales.
+- Los planes anteriores se conservan como antecedentes y requisitos de detalle;
+  el avance nuevo se registra contra identificadores `P108-*`.

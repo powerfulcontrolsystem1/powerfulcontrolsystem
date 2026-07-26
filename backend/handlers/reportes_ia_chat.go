@@ -1,10 +1,12 @@
 package handlers
 
 import (
+	"crypto/sha256"
 	"database/sql"
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"sort"
 	"strings"
 	"time"
 
@@ -82,8 +84,10 @@ func EmpresaReportesIAChatHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 			handleEmpresaReportesIATexto(w, r, dbEmp, dbSuper, payload.EmpresaID, pregunta, payload.Historial, payload.Desde, payload.Hasta)
 		case "reporte", "export", "exportar":
 			handleEmpresaReportesIAReporte(w, r, dbEmp, dbSuper, payload.EmpresaID, pregunta, payload.Historial, payload.Dataset, payload.Format, payload.Desde, payload.Hasta)
+		case "nuevo", "personalizado", "custom", "reporte_nuevo":
+			handleEmpresaReportesIANuevo(w, r, dbEmp, dbSuper, payload.EmpresaID, pregunta, payload.Historial, payload.Desde, payload.Hasta)
 		default:
-			http.Error(w, "modo invalido (use texto o reporte)", http.StatusBadRequest)
+			http.Error(w, "modo invalido (use texto, reporte o nuevo)", http.StatusBadRequest)
 		}
 	}
 }
@@ -207,11 +211,85 @@ func handleEmpresaReportesIAReporte(w http.ResponseWriter, r *http.Request, dbEm
 	})
 }
 
+// handleEmpresaReportesIANuevo crea una vista nueva a partir de un contrato
+// declarativo. La IA solo propone un ReportSpec; el servidor lo valida y lo
+// ejecuta sobre datasets canonicos aislados por empresa.
+func handleEmpresaReportesIANuevo(w http.ResponseWriter, r *http.Request, dbEmp, dbSuper *sql.DB, empresaID int64, pregunta string, historial []empresaAIChatMensaje, desde, hasta string) {
+	model, ok := availableEmpresaAIModelMap(dbSuper)["openai:gpt-5.4-mini"]
+	if !ok {
+		writeJSON(w, http.StatusServiceUnavailable, map[string]interface{}{"ok": false, "code": "ai_model_missing", "error": "GPT-5.4 mini no esta disponible."})
+		return
+	}
+	fechaUso := time.Now().Format("2006-01-02")
+	uso, err := dbpkg.GetEmpresaAIUsoDiario(dbEmp, empresaID, model.Provider, reportesIAModelReportUsageID, fechaUso)
+	if err != nil {
+		http.Error(w, "No se pudo consultar uso diario de reportes IA", http.StatusInternalServerError)
+		return
+	}
+	if uso.Consultas >= reportesIAReportDailyLimit {
+		writeJSON(w, http.StatusTooManyRequests, map[string]interface{}{
+			"ok": false, "code": "reportes_ia_report_limit_reached",
+			"error": "Se alcanzo el limite diario de 2 reportes IA para esta empresa.",
+			"usage": reportesIAUsagePayload(uso.Consultas, reportesIAReportDailyLimit, 0, 0),
+		})
+		return
+	}
+
+	builder := newReportesAIBuilder(dbEmp, empresaID, desde, hasta)
+	ctrl := &EmpresaAIChatController{dbEmp: dbEmp, dbSuper: dbSuper, client: &http.Client{Timeout: 60 * time.Second}}
+	system := "Eres un asistente contable de PCS. Genera un reporte nuevo SOLO como JSON valido con keys title, message, report_spec. report_spec debe incluir source_dataset, columns opcional, filters opcional, group_by opcional, metrics opcional, formulas opcional, order_by opcional y limit. No escribas SQL, no propongas otra empresa, no inventes campos y usa solo el catalogo semantico entregado. Si falta informacion, devuelve report_spec vacio y explica que aclaracion necesitas.\n\n" + buildReportesIANuevoContext()
+	raw, pt, ct, err := ctrl.generateResponseWithSystemPrompt(model, pregunta, sanitizeHistorial(historial, 4), system)
+	if err != nil {
+		http.Error(w, "No se pudo interpretar reporte IA: "+err.Error(), http.StatusBadGateway)
+		return
+	}
+	choice := parseReportesIANuevoChoice(raw)
+	if strings.TrimSpace(choice.ReportSpec.SourceDataset) == "" {
+		writeJSON(w, http.StatusUnprocessableEntity, map[string]interface{}{
+			"ok": false, "modo": "nuevo", "respuesta": reportesIAFirstNonBlank(choice.Message, "Necesito que indiques el periodo, la fuente o el criterio del reporte."),
+			"needs_clarification": true,
+		})
+		return
+	}
+	if strings.TrimSpace(choice.ReportSpec.Title) == "" {
+		choice.ReportSpec.Title = strings.TrimSpace(choice.Title)
+	}
+	ds, err := builder.buildPersonalizedDataset(choice.ReportSpec)
+	if err != nil {
+		writeJSON(w, http.StatusUnprocessableEntity, map[string]interface{}{
+			"ok": false, "modo": "nuevo", "respuesta": "No puedo generar ese reporte con los datos autorizados: " + err.Error(),
+			"needs_clarification": true,
+		})
+		return
+	}
+	if _, err := dbpkg.RegisterEmpresaAIConsulta(dbEmp, dbpkg.EmpresaAIConsulta{
+		EmpresaID: empresaID, Provider: model.Provider, ModelID: reportesIAModelReportUsageID,
+		Pregunta: pregunta, Respuesta: strings.TrimSpace(raw), PromptTokens: pt, CompletionTokens: ct, TotalTokens: pt + ct,
+		FechaConsulta: time.Now().Format("2006-01-02 15:04:05"), PlanActual: strings.TrimSpace(uso.PlanActual),
+		UsuarioCreador: adminEmailFromRequest(r), Estado: "activo", Observaciones: reportesIACustomAuditObservations(choice.ReportSpec),
+	}); err != nil {
+		http.Error(w, "No se pudo registrar uso IA", http.StatusInternalServerError)
+		return
+	}
+	usoNuevo, _ := dbpkg.GetEmpresaAIUsoDiario(dbEmp, empresaID, model.Provider, reportesIAModelReportUsageID, fechaUso)
+	writeJSON(w, http.StatusOK, map[string]interface{}{
+		"ok": true, "modo": "nuevo", "respuesta": reportesIAFirstNonBlank(choice.Message, "Vista previa generada. Revisa filtros, columnas y totales antes de exportar."),
+		"title": ds.Title, "report_spec": choice.ReportSpec, "preview": ds,
+		"usage": reportesIAUsagePayload(usoNuevo.Consultas, reportesIAReportDailyLimit, pt, ct),
+	})
+}
+
 type reportesIAChoice struct {
 	Dataset string `json:"dataset"`
 	Format  string `json:"format"`
 	Title   string `json:"title"`
 	Message string `json:"message"`
+}
+
+type reportesIANuevoChoice struct {
+	Title      string                          `json:"title"`
+	Message    string                          `json:"message"`
+	ReportSpec empresaReportePersonalizadoSpec `json:"report_spec"`
 }
 
 func parseReportesIAChoice(raw string) reportesIAChoice {
@@ -224,6 +302,18 @@ func parseReportesIAChoice(raw string) reportesIAChoice {
 	}
 	_ = json.Unmarshal([]byte(text), &c)
 	return c
+}
+
+func parseReportesIANuevoChoice(raw string) reportesIANuevoChoice {
+	var choice reportesIANuevoChoice
+	text := strings.TrimSpace(raw)
+	start := strings.Index(text, "{")
+	end := strings.LastIndex(text, "}")
+	if start >= 0 && end > start {
+		text = text[start : end+1]
+	}
+	_ = json.Unmarshal([]byte(text), &choice)
+	return choice
 }
 
 func newReportesAIBuilder(dbEmp *sql.DB, empresaID int64, desde, hasta string) *reportesBuilder {
@@ -257,6 +347,42 @@ func buildReportesIAReportContext(dataset, format string) string {
 		b.WriteString("- " + it.Key + " | " + it.Title + " | " + it.Description + " | formatos: " + strings.Join(it.Formats, ",") + "\n")
 	}
 	return b.String()
+}
+
+func buildReportesIANuevoContext() string {
+	var b strings.Builder
+	b.WriteString("Fuentes y campos autorizados para reportes nuevos:\n")
+	keys := make([]string, 0, len(reportesPersonalizadosSources))
+	for key := range reportesPersonalizadosSources {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+	for _, key := range keys {
+		b.WriteString("- " + key + ": " + strings.Join(reportesPersonalizadosSources[key], ", ") + "\n")
+	}
+	b.WriteString("Operaciones metricas: count, sum, average, min, max. Operaciones formula: add, subtract, divide, percentage. Filtros: eq, ne, contains, gt, gte, lt, lte. Maximo 1000 filas.\n")
+	return b.String()
+}
+
+func reportesIAFirstNonBlank(values ...string) string {
+	for _, value := range values {
+		if value = strings.TrimSpace(value); value != "" {
+			return value
+		}
+	}
+	return ""
+}
+
+// reportesIACustomAuditObservations conserva una huella verificable de la
+// especificacion ejecutada sin ampliar el esquema ni guardar datos de negocio
+// duplicados en la auditoria.
+func reportesIACustomAuditObservations(spec empresaReportePersonalizadoSpec) string {
+	payload, err := json.Marshal(spec)
+	if err != nil {
+		return "reportes_ia_custom:" + strings.TrimSpace(spec.SourceDataset) + ":spec_sha256_error"
+	}
+	hash := sha256.Sum256(payload)
+	return fmt.Sprintf("reportes_ia_custom:%s:spec_sha256:%x", strings.TrimSpace(spec.SourceDataset), hash)
 }
 
 func normalizeReportesIAFormat(format string) string {

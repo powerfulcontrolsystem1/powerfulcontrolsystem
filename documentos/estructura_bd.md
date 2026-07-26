@@ -1592,7 +1592,7 @@ Actualizacion 2026-04-29 (auditoria como fuente de contexto IA)
 
 ### Tablas de IA empresarial
 - empresa_ai_consultas:
-  - empresa_id, provider, model_id
+  - empresa_id, usuario_creador, conversation_id, provider, model_id
   - pregunta, respuesta
   - prompt_tokens, completion_tokens, total_tokens
   - fecha_consulta, plan_actual
@@ -1607,8 +1607,16 @@ Actualizacion 2026-04-29 (auditoria como fuente de contexto IA)
   - UNIQUE(empresa_id, admin_email)
 - empresa_ai_usuario_modelo_preferido:
   - `usuario_id` unico, `model_id`, fechas, creador y estado.
-  - Solo guarda preferencia de interfaz; no contiene conversaciones ni altera
-    el aislamiento de datos, permisos o cuotas por empresa.
+  - Compatibilidad exclusiva del selector global; no se usa en el chat de una
+    empresa.
+- empresa_ai_usuario_preferencias:
+  - PRIMARY KEY (`empresa_id`, `usuario_id`), `model_id`, modo, estado y
+    fechas. Es la preferencia del chat empresarial; no existe fallback a una
+    preferencia de otra empresa.
+- empresa_ai_memoria:
+  - PRIMARY KEY logica (`empresa_id`, `usuario_id`, tipo, clave), valor JSON,
+    consentimiento y vencimiento. La memoria se mantiene por usuario y empresa,
+    nunca se comparte con otro usuario del mismo tenant.
 
 ### Tabla de configuracion empresarial
 - empresa_configuracion_avanzada:
@@ -2308,6 +2316,16 @@ clave ni credenciales; permite devolver el mismo resultado ante reintentos de
 pagos, emision fiscal, carrito o notificaciones sin repetir la operacion.
 
 ## Plataforma de migraciones y ejecucion asincrona
+
+Actualizacion 2026-07-24 (P106, pendiente de ejecutar por migrador):
+
+- `empresa_cxp_pagos` sera el ledger de asignaciones de la CxP canonica por
+  `empresa_id`. Relaciona la cuenta por pagar y el movimiento financiero,
+  guarda `monto NUMERIC(18,2)`, referencia, actor y hash de idempotencia; la
+  clave unica `(empresa_id, idempotency_key_hash)` impide repetir un abono.
+- La tabla se crea exclusivamente con
+  `20260724-001-cxp-atomic-payments-v1` desde `pcs-migrate`; esta nota no
+  confirma que exista en desarrollo, staging o produccion.
 
 Actualizacion 2026-07-16:
 

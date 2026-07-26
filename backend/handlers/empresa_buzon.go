@@ -105,6 +105,7 @@ func EmpresaBuzonHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 					writeJSON(w, http.StatusInternalServerError, map[string]interface{}{"ok": false, "error": "No se pudieron cargar los mensajes"})
 					return
 				}
+				messages = sanitizeEmpresaBuzonMessagesForResponse(messages)
 				unread, _ := dbpkg.CountEmpresaBuzonUnread(dbEmp, empresaID, actor)
 				writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "unread": unread, "mensajes": messages})
 			case "chat":
@@ -290,7 +291,25 @@ func empresaBuzonResumen(dbEmp *sql.DB, empresaID int64, actor dbpkg.EmpresaBuzo
 	if err != nil {
 		return nil, 0, err
 	}
-	return messages, unread, nil
+	return sanitizeEmpresaBuzonMessagesForResponse(messages), unread, nil
+}
+
+// sanitizeEmpresaBuzonMessagesForResponse protects historical DIAN alerts
+// written before message-level error sanitization was introduced.
+func sanitizeEmpresaBuzonMessagesForResponse(messages []dbpkg.EmpresaBuzonMensaje) []dbpkg.EmpresaBuzonMensaje {
+	for index := range messages {
+		message := &messages[index]
+		module := strings.ToLower(strings.TrimSpace(message.Modulo))
+		body := strings.TrimSpace(message.Mensaje)
+		if !strings.Contains(module, "facturacion") && !strings.Contains(strings.ToLower(body), "dian") {
+			continue
+		}
+		if !dianErrorMayExposeInternalDetail(body) {
+			continue
+		}
+		message.Mensaje = "La facturación electrónica requiere revisión. El detalle técnico fue ocultado porque contenía información interna. Abra Facturación electrónica > Pruebas DIAN con un administrador autorizado para revisar la firma y reenviar."
+	}
+	return messages
 }
 
 func resolveEmpresaBuzonRequestActor(w http.ResponseWriter, r *http.Request, dbEmp, dbSuper *sql.DB, empresaID int64) (dbpkg.EmpresaBuzonActor, bool) {

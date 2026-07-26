@@ -4,7 +4,31 @@
 const fs = require("fs");
 const path = require("path");
 const vm = require("vm");
-const { chromium } = require("playwright");
+const Module = require("module");
+
+function bundledPlaywrightPath() {
+  const candidates = [];
+  if (process.env.NODE_PATH) candidates.push(process.env.NODE_PATH);
+  if (process.env.USERPROFILE) {
+    candidates.push(path.join(process.env.USERPROFILE, ".cache", "codex-runtimes", "codex-primary-runtime", "dependencies", "node", "node_modules"));
+  }
+  for (const candidate of candidates) {
+    if (!candidate || !fs.existsSync(path.join(candidate, "playwright"))) continue;
+    if (!process.env.NODE_PATH) process.env.NODE_PATH = candidate;
+    else if (!process.env.NODE_PATH.split(path.delimiter).includes(candidate)) process.env.NODE_PATH += path.delimiter + candidate;
+    Module._initPaths();
+    return candidate;
+  }
+  return "";
+}
+
+bundledPlaywrightPath();
+let chromium;
+try {
+  ({ chromium } = require("playwright"));
+} catch (error) {
+  throw new Error("No se encontro Playwright. Use el runtime Codex o defina NODE_PATH a su node_modules; no instale dependencias para ejecutar esta auditoria. Causa: " + String(error.message || error));
+}
 
 const ROOT = path.resolve(__dirname, "..");
 const OUT_DIR = process.env.PCS_QA_PRINT_OUT_DIR || path.join(
@@ -13,6 +37,7 @@ const OUT_DIR = process.env.PCS_QA_PRINT_OUT_DIR || path.join(
   "qa_print_formats_" + new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19)
 );
 const PRINT_JS = path.join(ROOT, "web", "js", "print_documents.js");
+const CHROME_EXECUTABLE = process.env.PCS_QA_CHROME_EXECUTABLE || "";
 
 function ensureDir(dir) {
   fs.mkdirSync(dir, { recursive: true });
@@ -357,7 +382,10 @@ async function main() {
   cases.push({ name: "Ticket real turnos atencion - pos", kind: "turno_atencion_real", format: "pos", html: turnoTicketHTML() });
   cases.push({ name: "Recibo real parqueadero - pos", kind: "parqueadero_real", format: "pos", html: parqueaderoTicketHTML() });
 
-  const browser = await chromium.launch({ headless: true });
+  const browser = await chromium.launch({
+    headless: true,
+    ...(CHROME_EXECUTABLE ? { executablePath: CHROME_EXECUTABLE } : {})
+  });
   const results = [];
   for (const item of cases) {
     results.push(await renderCase(browser, item, screenshotsDir, pdfDir, htmlDir));

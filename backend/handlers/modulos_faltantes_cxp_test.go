@@ -1,0 +1,62 @@
+package handlers
+
+import (
+	"net/http"
+	"net/http/httptest"
+	"strings"
+	"testing"
+)
+
+func TestRegistrarPagoCxPRequiresIdempotencyKeyBeforeDatabaseAccess(t *testing.T) {
+	t.Parallel()
+	req := httptest.NewRequest(http.MethodPost, "/api/empresa/finanzas/cuentas_pagar?action=registrar_pago&empresa_id=12", strings.NewReader(`{"empresa_id":12,"id":7,"monto":100}`))
+	recorder := httptest.NewRecorder()
+	handleRegistrarPagoCarteraAction(nil, cfgCxP, "egreso", "proveedor_nombre", "cuentas_pagar", recorder, req)
+	if recorder.Code != http.StatusBadRequest {
+		t.Fatalf("status = %d, want %d; body=%s", recorder.Code, http.StatusBadRequest, recorder.Body.String())
+	}
+	if !strings.Contains(recorder.Body.String(), "Idempotency-Key") {
+		t.Fatalf("response must explain the idempotency requirement: %s", recorder.Body.String())
+	}
+}
+
+func TestRegistrarPagoCxPRequiresEmpresaIDBeforeDatabaseAccess(t *testing.T) {
+	t.Parallel()
+	req := httptest.NewRequest(http.MethodPost, "/api/empresa/finanzas/cuentas_pagar?action=registrar_pago", strings.NewReader(`{"id":7,"monto":100}`))
+	req.Header.Set("Idempotency-Key", "p106-tenant-check")
+	recorder := httptest.NewRecorder()
+	handleRegistrarPagoCarteraAction(nil, cfgCxP, "egreso", "proveedor_nombre", "cuentas_pagar", recorder, req)
+	if recorder.Code != http.StatusBadRequest {
+		t.Fatalf("status = %d, want %d; body=%s", recorder.Code, http.StatusBadRequest, recorder.Body.String())
+	}
+	if !strings.Contains(strings.ToLower(recorder.Body.String()), "empresa") {
+		t.Fatalf("response must explain the missing tenant context: %s", recorder.Body.String())
+	}
+}
+
+func TestValidateEmpresaCxPProveedorPayloadRejectsMissingSupplierBeforeDatabase(t *testing.T) {
+	t.Parallel()
+	err := validateEmpresaCxPProveedorPayload(nil, 12, map[string]interface{}{}, true)
+	if err == nil || !strings.Contains(err.Error(), "proveedor") {
+		t.Fatalf("missing CxP supplier must be rejected before database access, err=%v", err)
+	}
+}
+
+func TestCxPConfigurationRequiresCanonicalRegisteredSupplier(t *testing.T) {
+	t.Parallel()
+	if cfgCxP.ValidatePayload == nil {
+		t.Fatal("CxP must validate its supplier payload")
+	}
+	for _, required := range []string{"proveedor_id", "proveedor_nombre", "documento_codigo"} {
+		found := false
+		for _, column := range cfgCxP.RequiredOnCreate {
+			if column == required {
+				found = true
+				break
+			}
+		}
+		if !found {
+			t.Fatalf("CxP creation must require %q", required)
+		}
+	}
+}

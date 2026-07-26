@@ -126,8 +126,24 @@
       function field(id){var el=document.getElementById(id); return el ? String(el.value || "").trim() : "";}
       function setMsg(text, error){var el=document.getElementById("msg"); if(!el)return; el.textContent=text||""; el.style.color=error?"var(--danger)":"var(--success)";}
       function defaultExpirationDate(){var d=new Date();d.setDate(d.getDate()+30);return d.toISOString().slice(0,10);}
+      function readCookieValue(name){
+        var prefix = name + "=";
+        var parts = String(document.cookie || "").split(";");
+        for (var i = 0; i < parts.length; i++) {
+          var part = parts[i].trim();
+          if (part.indexOf(prefix) === 0) return decodeURIComponent(part.slice(prefix.length));
+        }
+        return "";
+      }
       async function requestJSON(url, options){
-        var res = await fetch(url, Object.assign({credentials:"same-origin"}, options || {}));
+        var requestOptions = Object.assign({credentials:"same-origin"}, options || {});
+        var method = String(requestOptions.method || "GET").toUpperCase();
+        if (["POST", "PUT", "PATCH", "DELETE"].indexOf(method) >= 0) {
+          requestOptions.headers = Object.assign({}, requestOptions.headers || {});
+          var csrf = readCookieValue("pcs_csrf");
+          if (csrf && !requestOptions.headers["X-CSRF-Token"]) requestOptions.headers["X-CSRF-Token"] = csrf;
+        }
+        var res = await fetch(url, requestOptions);
         var raw = await res.text();
         var data = null;
         try{data = raw ? JSON.parse(raw) : null;}catch(e){}

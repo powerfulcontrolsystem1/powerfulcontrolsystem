@@ -5,7 +5,7 @@ package db
 // legacySchemaCatalogSourceFingerprint freezes the reviewed source bodies of
 // every Ensure* step executed by the compatibility catalog. Changing a legacy
 // step changes this value and must be accompanied by a new immutable migration.
-const legacySchemaCatalogSourceFingerprint = "50:6c:e1:40:61:6c:a4:62:c7:6d:9e:cc:38:23:d6:0c:2e:f8:99:99:e6:1c:89:8e:a4:e7:16:13:97:25:28:89"
+const legacySchemaCatalogSourceFingerprint = "1f:fc:a7:eb:9a:e8:da:85:33:e5:ee:62:23:de:68:26:84:b9:4b:66:af:75:c0:d9:94:6d:4a:76:79:81:2c:1f"
 
 var legacySchemaCatalogStepSourceFingerprints = map[string]string{
 	"EnsureAdminEmpresaCompartidaSchema": "12:ab:87:09:fc:21:af:15:ce:9e:57:de:df:79:12:1c:37:26:71:53:57:36:84:d5:fb:07:ff:57:93:61:09:8f",
@@ -16,7 +16,7 @@ var legacySchemaCatalogStepSourceFingerprints = map[string]string{
 	"EnsureCanonicalTiposEmpresaPreconfigurables": "1a:29:fb:af:1c:96:04:1b:d7:52:d0:ac:af:9d:fb:bb:63:2a:72:65:1b:17:0c:cc:23:52:b4:f7:23:f9:70:1e",
 	"EnsureCatalogoLegalPaisSchema": "ea:12:8b:42:ee:11:e6:39:0d:e4:d3:1b:3a:ee:09:3b:65:44:21:ab:d5:67:83:aa:a1:35:b8:bc:23:d6:18:f8",
 	"EnsureDefaultSuperContract": "7f:c1:b3:11:8f:b9:25:83:86:4f:85:0d:20:a9:c9:ba:b8:8b:f6:1c:4a:cc:11:1b:dc:d6:0c:97:0b:1c:41:17",
-	"EnsureEmpresaAIChatSchema": "a0:be:01:38:af:d1:52:45:47:91:fb:b1:65:11:d7:6d:87:a7:55:e3:dd:cd:46:a6:3b:e9:94:cf:2e:18:7c:9b",
+	"EnsureEmpresaAIChatSchema": "51:fc:ca:63:55:8d:20:60:22:8f:97:5a:47:01:43:8d:b5:86:e6:79:30:02:82:67:80:b9:49:f2:c3:df:42:70",
 	"EnsureEmpresaAIEnterpriseSchema": "80:69:6b:9e:82:fd:1d:cc:15:e0:73:bc:fb:32:c9:4f:11:f0:3d:64:6a:29:f6:d0:8d:7f:c2:e6:91:09:a6:22",
 	"EnsureEmpresaAIOpenAIProviderSchema": "8a:0e:ad:11:8a:9a:2e:0e:5d:b9:e8:27:32:a0:85:27:12:bd:14:a8:04:2a:7f:b9:20:4c:34:3a:27:85:aa:47",
 	"EnsureEmpresaAIUConstruccionSchema": "44:de:68:5e:04:d9:fa:40:99:3b:0b:51:0f:f4:99:01:25:a5:51:5e:50:4d:ee:66:c6:97:c2:e5:bf:44:3e:19",

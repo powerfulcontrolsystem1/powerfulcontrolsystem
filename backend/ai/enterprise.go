@@ -128,6 +128,23 @@ func ToolAllowed(def ToolDefinition, granted []string) bool {
 	return true
 }
 
+// ResponsesToolDefinitions exposes a minimal OpenAI Responses function catalog.
+// Tenant, user, role, permissions and confirmation are deliberately absent:
+// they are derived by PCS before dispatching any result.
+func ResponsesToolDefinitions(ctx ExecutionContext) []map[string]interface{} {
+	registry := Registry()
+	tools := make([]map[string]interface{}, 0, 2)
+	if def, ok := registry[ToolCatalogSearchProducts]; ok && ToolAllowed(def, ctx.Permissions) {
+		tools = append(tools, map[string]interface{}{"type": "function", "name": ToolCatalogSearchProducts, "description": def.Description, "strict": true, "parameters": map[string]interface{}{"type": "object", "additionalProperties": false, "properties": map[string]interface{}{"q": map[string]interface{}{"type": "string", "maxLength": 160}}, "required": []string{"q"}}})
+	}
+	if def, ok := registry[ToolCatalogCreateProduct]; ok && ToolAllowed(def, ctx.Permissions) {
+		tools = append(tools, map[string]interface{}{"type": "function", "name": ToolCatalogCreateProduct, "description": "Prepara una propuesta para crear producto; nunca crea ni confirma el producto.", "strict": true, "parameters": map[string]interface{}{"type": "object", "additionalProperties": false, "properties": map[string]interface{}{
+			"nombre": map[string]interface{}{"type": "string", "maxLength": 160}, "sku": map[string]interface{}{"type": []string{"string", "null"}, "maxLength": 80}, "descripcion": map[string]interface{}{"type": []string{"string", "null"}, "maxLength": 1000}, "categoria_id": map[string]interface{}{"type": []string{"integer", "null"}}, "bodega_id": map[string]interface{}{"type": []string{"integer", "null"}}, "unidad_medida": map[string]interface{}{"type": []string{"string", "null"}, "maxLength": 40}, "costo": map[string]interface{}{"type": []string{"number", "null"}, "minimum": 0}, "precio": map[string]interface{}{"type": "number", "minimum": 0}, "impuesto_porcentaje": map[string]interface{}{"type": []string{"number", "null"}, "minimum": 0, "maximum": 100}, "stock_inicial": map[string]interface{}{"type": []string{"number", "null"}, "minimum": 0}, "stock_minimo": map[string]interface{}{"type": []string{"number", "null"}, "minimum": 0},
+		}, "required": []string{"nombre", "sku", "descripcion", "categoria_id", "bodega_id", "unidad_medida", "costo", "precio", "impuesto_porcentaje", "stock_inicial", "stock_minimo"}}})
+	}
+	return tools
+}
+
 func NewOpaqueID(prefix string) (string, error) {
 	buf := make([]byte, 32)
 	if _, err := rand.Read(buf); err != nil {

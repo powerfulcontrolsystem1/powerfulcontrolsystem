@@ -273,6 +273,14 @@ func EmpresaContabilidadColombiaAvanzadaHandler(dbEmp *sql.DB) http.HandlerFunc 
 					http.Error(w, "JSON invalido", http.StatusBadRequest)
 					return
 				}
+				// P106: the advanced accounting table remains a legacy read surface
+				// for historical CxP while it is reconciled. New supplier obligations
+				// must use the canonical Finanzas CxP module; accepting new writes here
+				// would recreate the two-source-of-truth defect.
+				if strings.EqualFold(strings.TrimSpace(payload.Tipo), "cxp") {
+					http.Error(w, "Las nuevas cuentas por pagar se registran en Finanzas > Cartera de proveedores; la cartera contable historica esta en conciliacion P106", http.StatusConflict)
+					return
+				}
 				payload.EmpresaID = empresaID
 				payload.UsuarioCreador = usuario
 				id, err := dbpkg.CreateEmpresaCarteraCXP(dbEmp, payload)
@@ -334,6 +342,15 @@ func EmpresaContabilidadColombiaAvanzadaHandler(dbEmp *sql.DB) http.HandlerFunc 
 				}
 				if payload.Monto <= 0 {
 					payload.Monto = floatQuery(r, "monto")
+				}
+				carteraActual, err := dbpkg.GetEmpresaCarteraCXPByID(dbEmp, empresaID, payload.ID)
+				if err != nil {
+					http.Error(w, "Cuenta de cartera no encontrada", http.StatusNotFound)
+					return
+				}
+				if strings.EqualFold(carteraActual.Tipo, "cxp") {
+					http.Error(w, "Los abonos a CxP historica estan bloqueados hasta completar la conciliacion P106; use la cuenta canonica en Finanzas", http.StatusConflict)
+					return
 				}
 				result, err := dbpkg.AplicarEmpresaCarteraCXPAbono(dbEmp, empresaID, payload.ID, payload.Monto, payload.FechaAplicacion, payload.ReferenciaPago, usuario)
 				if err != nil {

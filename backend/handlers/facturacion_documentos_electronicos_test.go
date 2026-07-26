@@ -81,6 +81,18 @@ func TestFacturaElectronicaVentaRequiereAcuseFiscalSoloColombiaProduccion(t *tes
 	}
 }
 
+func TestDIANUserVisibleErrorRedactsPrivateSignaturePath(t *testing.T) {
+	t.Parallel()
+	raw := "firmar XML DIAN: open ../web/uploads/empresas/empresa_12/firma_privada.pem: permission denied"
+	got := dianUserVisibleError(raw)
+	if got != "No se pudo acceder a la clave privada de firma del certificado DIAN." {
+		t.Fatalf("visible error = %q", got)
+	}
+	if dianErrorUserHelp(raw) == "" {
+		t.Fatal("permission failure must include a remediation path")
+	}
+}
+
 func TestFacturacionColombiaProduccionBloqueaProveedorManual(t *testing.T) {
 	cfg := &dbpkg.FacturacionElectronicaPaisConfig{
 		EmpresaID:  1,

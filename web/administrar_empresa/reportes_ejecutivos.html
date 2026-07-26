@@ -24,6 +24,9 @@
     .reports-format-buttons{display:flex;flex-wrap:wrap;gap:8px}
     .reports-catalog-badge{display:inline-flex;align-items:center;border:1px solid var(--border);border-radius:999px;padding:5px 9px;font-size:.74rem;color:var(--muted);background:var(--surface);white-space:nowrap}
     .reports-preview-tools{display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-end}
+    .reports-ai-spec{margin-top:10px;border:1px solid var(--border);border-radius:8px;padding:9px 11px;background:var(--surface-soft);color:var(--muted)}
+    .reports-ai-spec summary{cursor:pointer;font-weight:700;color:var(--text)}
+    .reports-ai-spec pre{white-space:pre-wrap;overflow-wrap:anywhere;max-height:250px;overflow:auto;margin:9px 0 0;font-size:.82rem}
     .reports-print-page{background:#fff;color:#111827;border:1px solid #111827;border-radius:0;box-shadow:none;color-scheme:light;margin:14px auto 0;padding:18px;max-width:8.5in;min-height:11in}
     .reports-print-page *{color:#111827;box-shadow:none;text-shadow:none}
     .reports-print-page header{border-bottom:2px solid #111827;padding-bottom:12px;margin-bottom:12px}
@@ -127,6 +130,29 @@
       <p id="reportsMsg" class="form-help"></p>
     </section>
 
+    <section class="card empresa-section no-print" aria-label="Reportes nuevos con inteligencia artificial">
+      <div class="reports-header">
+        <div>
+          <span class="reports-kicker">IA contable</span>
+          <h2 class="reports-title">Crear reporte nuevo</h2>
+          <p class="reports-lead">Describe el informe que necesitas. La IA solo puede proponer campos y fuentes autorizadas de esta empresa; revisa la vista previa antes de exportar.</p>
+        </div>
+      </div>
+      <div class="reports-actions">
+        <input id="reportsAIQuestion" class="form-input" type="text" maxlength="1000" placeholder="Ej.: cartera vencida por tercero y saldo, ordenada de mayor a menor" aria-label="Instruccion para nuevo reporte IA" style="min-width:min(100%,520px);flex:1">
+        <button id="btnGenerateAIReport" class="btn" type="button">Generar con IA</button>
+        <button id="btnSaveAIReportTemplate" class="btn secondary" type="button" disabled>Guardar plantilla</button>
+        <button id="btnExportAIReport" class="btn secondary" type="button" data-ai-export-format="xls" disabled>Exportar Excel</button>
+        <button class="btn secondary" type="button" data-ai-export-format="pdf" disabled>PDF</button>
+        <button class="btn secondary" type="button" data-ai-export-format="csv" disabled>CSV</button>
+      </div>
+      <p id="reportsAIMessage" class="form-help">El reporte se genera como una vista declarativa; no modifica ventas, cartera, impuestos ni asientos.</p>
+      <details id="reportsAISpec" class="reports-ai-spec" hidden>
+        <summary>Cómo se construyó este reporte</summary>
+        <pre id="reportsAISpecContent"></pre>
+      </details>
+    </section>
+
     <section class="card empresa-section no-print" aria-label="Lista de reportes">
       <div class="reports-header">
         <div>
@@ -189,6 +215,9 @@
         { key:'cartera_edades_cuentas_por_cobrar', area:'finanzas', badge:'CxC', title:'Edades de cuentas por cobrar', description:'Cartera vigente y vencida por rangos de edad.', formats:['pdf','xls','csv','json','txt'] },
         { key:'cartera_edades_cuentas_por_pagar', area:'finanzas', badge:'CxP', title:'Edades de cuentas por pagar', description:'Obligaciones a proveedores por rangos de vencimiento.', formats:['pdf','xls','csv','json','txt'] },
         { key:'contable_balance_prueba', area:'contabilidad', badge:'Contable', title:'Balance de prueba', description:'Saldos debito, credito y neto por cuenta contable.', formats:['pdf','xls','csv','json','txt'] },
+        { key:'contable_estado_resultados_detallado', area:'contabilidad', badge:'Contable', title:'Estado de resultados - auxiliar por rubro', description:'Detalle de ingresos, costos y gastos por cuenta desde asientos canónicos.', formats:['pdf','xls','csv','json','txt'] },
+        { key:'contable_situacion_financiera_detallado', area:'contabilidad', badge:'Contable', title:'Situación financiera - auxiliar por rubro', description:'Detalle de activos, pasivos y patrimonio por cuenta desde asientos canónicos.', formats:['pdf','xls','csv','json','txt'] },
+        { key:'contable_cambios_patrimonio_detallado', area:'contabilidad', badge:'Contable', title:'Cambios en patrimonio - auxiliar por cuenta', description:'Movimientos del patrimonio por cuenta desde asientos canónicos.', formats:['pdf','xls','csv','json','txt'] },
         { key:'contable_libro_auxiliar', area:'contabilidad', badge:'Libro', title:'Libro auxiliar', description:'Movimiento auxiliar por cuenta, tercero y documento.', formats:['pdf','xls','csv','json','txt'] },
         { key:'contable_libro_mayor', area:'contabilidad', badge:'Libro', title:'Libro mayor', description:'Resumen mayor por cuenta para revision contable.', formats:['pdf','xls','csv','json','txt'] },
         { key:'fiscal_impuestos_retenciones', area:'contabilidad', badge:'Fiscal', title:'Impuestos y retenciones', description:'Base, impuesto, retenciones y conceptos fiscales.', formats:['pdf','xls','csv','json','txt'] },
@@ -200,6 +229,7 @@
       var reportsCatalog = fallbackReports.slice();
       var selectedDatasetKey = '';
       var lastDataset = null;
+      var currentCustomReportSpec = null;
 
       function empresaId() {
         if (window.__empresaModuleGuard && typeof window.__empresaModuleGuard.resolveEmpresaId === 'function') {
@@ -235,6 +265,37 @@
         if (!el) return;
         el.textContent = text || '';
         el.className = isError ? 'error reports-lead' : 'reports-lead';
+      }
+
+      function setAIReportMsg(text, isError) {
+        var el = document.getElementById('reportsAIMessage');
+        if (!el) return;
+        el.textContent = text || '';
+        el.className = isError ? 'error' : 'form-help';
+      }
+
+      function setAIExportEnabled(enabled) {
+        Array.prototype.forEach.call(document.querySelectorAll('[data-ai-export-format]'), function(btn) {
+          btn.disabled = !enabled;
+        });
+      }
+
+      function setAITemplateEnabled(enabled) {
+        var button = document.getElementById('btnSaveAIReportTemplate');
+        if (button) button.disabled = !enabled;
+      }
+
+      function showAIReportSpec(spec) {
+        var wrapper = document.getElementById('reportsAISpec');
+        var content = document.getElementById('reportsAISpecContent');
+        if (!wrapper || !content) return;
+        if (!spec || typeof spec !== 'object') {
+          wrapper.hidden = true;
+          content.textContent = '';
+          return;
+        }
+        content.textContent = JSON.stringify(spec, null, 2);
+        wrapper.hidden = false;
       }
 
       function areaForDataset(key, level) {
@@ -549,6 +610,111 @@
         setMsg('Exportacion solicitada en formato ' + String(format || 'pdf').toUpperCase() + '.', false);
       }
 
+      async function generateAIReport() {
+        var question = String((document.getElementById('reportsAIQuestion') || {}).value || '').trim();
+        if (!empresaId()) {
+          setAIReportMsg('Abre el centro desde una empresa activa para consultar sus datos.', true);
+          return;
+        }
+        if (!question) {
+          setAIReportMsg('Describe el reporte que necesitas.', true);
+          return;
+        }
+        setAIExportEnabled(false);
+        setAITemplateEnabled(false);
+        setAIReportMsg('La IA esta preparando una especificacion segura del reporte...', false);
+        try {
+          var res = await fetch('/api/empresa/reportes_ia_chat', {
+            method:'POST', credentials:'same-origin', headers:{'Content-Type':'application/json'},
+            body:JSON.stringify({
+              empresa_id:empresaId(), modo:'nuevo', pregunta:question,
+              desde:String(document.getElementById('reportsDesde').value || ''),
+              hasta:String(document.getElementById('reportsHasta').value || '')
+            })
+          });
+          var data = await res.json().catch(function(){ return {}; });
+          if (!res.ok || !data.ok) throw new Error(data.error || data.respuesta || ('HTTP ' + res.status));
+          currentCustomReportSpec = data.report_spec || null;
+          showAIReportSpec(currentCustomReportSpec);
+          renderPrintableDataset(data.preview || {});
+          setAIExportEnabled(!!currentCustomReportSpec);
+          setAITemplateEnabled(!!currentCustomReportSpec);
+          setAIReportMsg(data.respuesta || 'Vista previa generada. Revisa totales y filtros antes de exportar.', false);
+          setPreviewMsg('Vista previa de reporte IA lista. Verifica el periodo y los totales antes de usarla como soporte.', false);
+        } catch (error) {
+          currentCustomReportSpec = null;
+          showAIReportSpec(null);
+          setAIExportEnabled(false);
+          setAITemplateEnabled(false);
+          setAIReportMsg('No se pudo generar el reporte: ' + (error.message || error), true);
+        }
+      }
+
+      async function exportAIReport(format) {
+        if (!currentCustomReportSpec) {
+          setAIReportMsg('Genera y revisa primero una vista previa de IA.', true);
+          return;
+        }
+        setAIReportMsg('Preparando exportacion ' + String(format || 'xls').toUpperCase() + '...', false);
+        try {
+          var params = new URLSearchParams();
+          params.set('action', 'custom');
+          appendCommonParams(params);
+          var res = await fetch('/api/empresa/reportes?' + params.toString(), {
+            method:'POST', credentials:'same-origin', headers:{'Content-Type':'application/json'},
+            body:JSON.stringify({spec:currentCustomReportSpec, format:format || 'xls'})
+          });
+          if (!res.ok) throw new Error(await res.text() || ('HTTP ' + res.status));
+          var blob = await res.blob();
+          var link = document.createElement('a');
+          link.href = URL.createObjectURL(blob);
+          link.download = 'reporte_ia_' + String(format || 'xls').toLowerCase();
+          document.body.appendChild(link); link.click(); link.remove();
+          URL.revokeObjectURL(link.href);
+          setAIReportMsg('Exportacion lista. Conserva la especificacion y valida cifras antes de presentarla como informe oficial.', false);
+        } catch (error) {
+          setAIReportMsg('No se pudo exportar el reporte IA: ' + (error.message || error), true);
+        }
+      }
+
+      async function saveAIReportTemplate() {
+        if (!currentCustomReportSpec || !empresaId()) {
+          setAIReportMsg('Genera primero un reporte IA para guardar su plantilla.', true);
+          return;
+        }
+        var code = window.prompt('Código corto para la plantilla (ej.: cartera-vencida):', 'reporte-ia');
+        if (code == null) return;
+        code = String(code || '').trim();
+        if (!code) {
+          setAIReportMsg('El código de plantilla es obligatorio.', true);
+          return;
+        }
+        var name = window.prompt('Nombre de la plantilla:', String(currentCustomReportSpec.title || 'Reporte IA'));
+        if (name == null) return;
+        setAIReportMsg('Guardando nueva versión de la plantilla...', false);
+        try {
+          var params = new URLSearchParams();
+          params.set('action', 'plantillas');
+          appendCommonParams(params);
+          var res = await fetch('/api/empresa/reportes?' + params.toString(), {
+            method:'POST', credentials:'same-origin', headers:{'Content-Type':'application/json'},
+            body:JSON.stringify({
+              empresa_id:empresaId(), codigo:code, nombre:String(name || '').trim(),
+              dataset_key:currentCustomReportSpec.source_dataset, formato:'json',
+              columnas:Array.isArray(currentCustomReportSpec.columns) ? currentCustomReportSpec.columns : [],
+              config:{report_spec:currentCustomReportSpec, origen:'reportes_ia'},
+              observaciones:'Plantilla creada desde reporte IA validado.'
+            })
+          });
+          var data = await res.json().catch(function(){ return {}; });
+          if (!res.ok || !data.ok) throw new Error(data.error || ('HTTP ' + res.status));
+          var template = data.plantilla || {};
+          setAIReportMsg('Plantilla guardada: ' + (template.codigo || code) + ' v' + (template.version || '?') + '.', false);
+        } catch (error) {
+          setAIReportMsg('No se pudo guardar la plantilla: ' + (error.message || error), true);
+        }
+      }
+
       async function loadCatalog() {
         renderCatalogControls();
         if (!empresaId()) {
@@ -586,6 +752,11 @@
         var exportBtn = event.target && event.target.closest && event.target.closest('[data-export-format]');
         if (exportBtn) {
           exportDataset(exportBtn.getAttribute('data-export-format') || 'pdf');
+          return;
+        }
+        var aiExportBtn = event.target && event.target.closest && event.target.closest('[data-ai-export-format]');
+        if (aiExportBtn) {
+          exportAIReport(aiExportBtn.getAttribute('data-ai-export-format') || 'xls');
         }
       });
 
@@ -608,10 +779,15 @@
       document.getElementById('btnReloadPreview').addEventListener('click', function() { loadDatasetPreview(selectedDatasetKey); });
       document.getElementById('btnPrintReport').addEventListener('click', function() { if (lastDataset) window.print(); });
       document.getElementById('btnClearFilters').addEventListener('click', clearFilters);
+      document.getElementById('btnGenerateAIReport').addEventListener('click', generateAIReport);
+      document.getElementById('btnSaveAIReportTemplate').addEventListener('click', saveAIReportTemplate);
 
       defaultDates();
       applyPaperMode();
       updateSelectedInfo();
+      setAIExportEnabled(false);
+      setAITemplateEnabled(false);
+      showAIReportSpec(null);
       loadPaperPreference();
       loadCatalog();
     })();
