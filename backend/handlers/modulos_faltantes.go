@@ -9054,6 +9054,17 @@ func dianValidationIssue(code, severity, field, message, source string) map[stri
 	}
 }
 
+var dianXMLSignatureElementRE = regexp.MustCompile(`(?is)<(?:[A-Za-z0-9_.-]+:)?Signature\b[^>]*>.*?</(?:[A-Za-z0-9_.-]+:)?Signature\s*>`)
+
+// dianXMLHasDemoMarkers evaluates business XML only. A signed XML contains
+// cryptographic Base64 material, where an arbitrary DEMO/PENDIENTE sequence
+// must not be treated as a document placeholder.
+func dianXMLHasDemoMarkers(xmlPayload string) bool {
+	unsignedXML := dianXMLSignatureElementRE.ReplaceAllString(xmlPayload, "")
+	upper := strings.ToUpper(unsignedXML)
+	return strings.Contains(upper, "PENDIENTE") || strings.Contains(upper, "DEMO")
+}
+
 func dianAppendValidationIssue(issues *[]map[string]interface{}, warnings *[]map[string]interface{}, code, severity, field, message, source string) {
 	item := dianValidationIssue(code, severity, field, message, source)
 	if severity == "error" {
@@ -9409,7 +9420,7 @@ func validateDIANDocumentPreflight(cfg map[string]interface{}, empresaID int64, 
 			if !strings.Contains(xmlPayload, "SoftwareSecurityCode") {
 				dianAppendValidationIssue(&issues, &warnings, "DIAN-UBL-SOFTWARE-CODE", "error", "SoftwareSecurityCode", "XML debe incluir SoftwareSecurityCode calculado con software, PIN y numero de documento", "anexo_tecnico_dian")
 			}
-			if strings.Contains(strings.ToUpper(xmlPayload), "PENDIENTE") || strings.Contains(strings.ToUpper(xmlPayload), "DEMO") {
+			if dianXMLHasDemoMarkers(xmlPayload) {
 				severity := "warning"
 				if stage == "envio_real" || stage == "set_habilitacion" || stage == "pre_envio" {
 					severity = "error"

@@ -39521,3 +39521,11 @@ Archivos modificados:
 - Se amplía para VPS que reciben un paquete sin `.git`: clona exclusivamente el
   SHA candidato dentro del directorio aislado y reutiliza el entorno staging ya
   existente, sin convertir ni modificar el paquete de producción.
+
+2026-07-26 - P108-001: corrección de validación DIAN reproducible.
+- La detección preventiva de marcadores `DEMO/PENDIENTE` excluye ahora el bloque
+  `ds:Signature` del XML firmado. Los bytes criptográficos codificados en Base64
+  podían contener esa secuencia de forma aleatoria y bloquear un documento válido.
+- Se conserva el bloqueo de los marcadores que estén en el contenido fiscal y se
+  agregó una prueba de regresión junto con veinte ejecuciones del flujo SOAP
+  simulado de habilitación (sin comunicación con DIAN).

@@ -30,3 +30,14 @@ Estado: **parcial; NO-GO para promoción**
 Ejecutar en CI Linux con compilador C y Docker: `go test -race` sobre al menos
 `./db`, `./handlers`, `./ai`, worker y outbox; construir la imagen por digest,
 analizarla con Trivy, generar SBOM y adjuntar los resultados al mismo SHA.
+
+## Seguimiento 2026-07-26 - corrección previa a nueva ejecución CI
+
+- La ejecución CI del candidato detectó una intermitencia en la prueba SOAP de
+  habilitación: una secuencia Base64 de `ds:Signature` podía coincidir por azar
+  con el detector textual de marcadores de ejemplo.
+- Se corrigió el detector para evaluar el XML fiscal excluyendo `ds:Signature`,
+  sin relajar el bloqueo de marcadores en los campos del documento.
+- Validación local posterior: `go test ./handlers` y el caso de regresión junto
+  al flujo SOAP se ejecutaron veinte veces correctamente. Falta publicar el SHA
+  corregido y obtener una CI profesional verde antes del despliegue aislado.
