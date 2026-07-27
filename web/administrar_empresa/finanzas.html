@@ -590,6 +590,7 @@
           <button id="btnCargarCxPIA" class="btn secondary" type="button">Cargar factura o recibo con IA</button>
           <button id="btnBuscarCartera" class="btn secondary" type="button">Buscar cartera</button>
           <button id="btnConciliarCartera" class="btn secondary" type="button">Conciliar pagos</button>
+          <button id="btnRevisarFuentesCxP" class="btn secondary" type="button">Comparar fuente histórica CxP</button>
         </div>
       </div>
       <p class="form-help">Gestiona cuentas por cobrar y pagar con saldos, mora, abonos y trazabilidad contra movimientos financieros. La carga IA solo propone datos: revisa y edita el formulario antes de guardar una CxP.</p>
@@ -699,6 +700,7 @@
           <tbody></tbody>
         </table>
       </div>
+      <div id="carteraReconciliacion" class="form-help" aria-live="polite"></div>
     </section>
 
     <section class="card empresa-section" >
@@ -2198,6 +2200,37 @@
       }
     }
 
+    function renderReconciliacionFuentesCxP(report) {
+      const target = document.getElementById('carteraReconciliacion');
+      if (!target) return;
+      const items = Array.isArray(report && report.items) ? report.items : [];
+      const headline = 'Comparación solo lectura: canónica ' + toNumber(report && report.registros_canonicos, 0) +
+        ', histórica ' + toNumber(report && report.registros_historicos, 0) +
+        ', solo canónica ' + toNumber(report && report.solo_canonica, 0) +
+        ', solo histórica ' + toNumber(report && report.solo_historica, 0) +
+        ', diferencias ' + toNumber(report && report.con_diferencias, 0) + '.';
+      if (!items.length) {
+        target.innerHTML = '<strong>' + sanitize(headline) + '</strong><br>Sin diferencias detectadas. La comparación no modificó datos.';
+        return;
+      }
+      const rows = items.slice(0, 50).map(function(item) {
+        return '<tr><td>' + sanitize(item.estado || '') + '</td><td>' + sanitize(item.proveedor || '') + '</td><td>' + sanitize(item.documento || '') + '</td><td>' + sanitize(fmtMoney(item.canonico_saldo)) + '</td><td>' + sanitize(fmtMoney(item.historico_saldo)) + '</td></tr>';
+      }).join('');
+      target.innerHTML = '<strong>' + sanitize(headline) + '</strong><p>Revisión humana requerida antes de cualquier migración o corrección.</p><div class="table-wrap"><table class="table"><thead><tr><th>Resultado</th><th>Proveedor</th><th>Documento</th><th>Saldo canónico</th><th>Saldo histórico</th></tr></thead><tbody>' + rows + '</tbody></table></div>';
+    }
+
+    async function revisarFuentesCxP() {
+      try {
+        const res = await fetch(carteraEndpoint('cxp') + '?action=reconciliacion_fuentes&empresa_id=' + encodeURIComponent(String(state.empresaID)));
+        await ensureOk(res);
+        const out = await res.json();
+        renderReconciliacionFuentesCxP(out && out.reconciliacion ? out.reconciliacion : {});
+        setMsg('carteraMsg', 'Comparación de fuentes CxP completada sin modificar datos.', false);
+      } catch (err) {
+        setMsg('carteraMsg', err.message || 'No se pudo comparar la fuente histórica de CxP.', true);
+      }
+    }
+
     function parseExtractoCSV() {
       const raw = normalize(document.getElementById('extractoCSV').value);
       if (!raw) return [];
@@ -3599,6 +3632,7 @@
         }
       });
       document.getElementById('btnConciliarCartera').addEventListener('click', conciliarCartera);
+      document.getElementById('btnRevisarFuentesCxP').addEventListener('click', revisarFuentesCxP);
       document.getElementById('filtroCarteraTipo').addEventListener('change', async function() {
         try {
           await loadCartera();

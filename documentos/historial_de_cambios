@@ -39711,3 +39711,10 @@ Archivos modificados:
 - No ejecuta DDL ni cambia saldos, pagos, movimientos o estados. El resultado
   queda marcado como solo lectura y requiere revisión humana; las correcciones
   y migraciones continúan bloqueadas hasta el ensayo PostgreSQL de staging.
+
+2026-07-27 - P108-005: revisión visual de fuentes CxP.
+- Finanzas muestra la comparación de fuente canónica e histórica mediante un
+  botón explícito. El resultado se presenta en filas y columnas con proveedor,
+  documento y saldos, y advierte que requiere revisión humana.
+- La interacción usa exclusivamente `GET action=reconciliacion_fuentes`; no
+  dispara la acción separada de conciliación de pagos ni modifica datos.
