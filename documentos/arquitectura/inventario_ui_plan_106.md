@@ -5,10 +5,10 @@ Generado por `node tools/plan106_ui_inventory.mjs`. No editar manualmente.
 ## Alcance
 
 - Páginas HTML: **309**
-- Controles detectados: **6189**
-- Acciones a cubrir en E2E: **2975**
-- Entradas y selectores: **3214**
-- Controles con marcador dinámico: **881**
+- Controles detectados: **6212**
+- Acciones a cubrir en E2E: **2978**
+- Entradas y selectores: **3234**
+- Controles con marcador dinámico: **882**
 - Estado: inventario estático previo; la cobertura funcional, visual, por permisos y de IA se registra en el runner E2E y la matriz P106.
 
 ## Controles por página
@@ -67,7 +67,7 @@ Generado por `node tools/plan106_ui_inventory.mjs`. No editar manualmente.
 | 40 | button/button | accion | aiChatMicBtn | Dictar mensaje | no |
 | 41 | button/button | accion | aiChatVoiceBtn | Voz del asistente | no |
 | 42 | button/button | accion | aiChatStopBtn | Detener audio y respuesta | no |
-| 43 | select/- | entrada | aiChatMode | Operativo Ayudante por pasos | no |
+| 43 | input/hidden | entrada | aiChatMode | operativo | no |
 | 44 | input/file | accion | aiChatAttachment | Adjuntar archivo para IA | no |
 | 45 | button/button | accion | aiChatAttachBtn | Adjuntar archivo | no |
 | 46 | button/button | accion | aiChatClearAttachment | &times; | no |
@@ -3453,7 +3453,7 @@ Generado por `node tools/plan106_ui_inventory.mjs`. No editar manualmente.
 | 26 | button/button | accion | validarBtn | Validar checklist | no |
 | 27 | button/button | accion | recargarBtn | Recargar | no |
 
-### `web/administrar_empresa/facturacion_electronica_pruebas_dian.html` (53)
+### `web/administrar_empresa/facturacion_electronica_pruebas_dian.html` (54)
 
 | # | Tipo | Clase | ID | Etiqueta | Dinámico |
 | ---: | --- | --- | --- | --- | --- |
@@ -3494,22 +3494,23 @@ Generado por `node tools/plan106_ui_inventory.mjs`. No editar manualmente.
 | 35 | input/- | entrada | op_periodo_contable | op_periodo_contable | no |
 | 36 | input/number | entrada | op_monto_total | op_monto_total | no |
 | 37 | input/- | entrada | op_moneda | COP | no |
-| 38 | input/number | entrada | op_cliente_id | op_cliente_id | no |
-| 39 | input/email | entrada | op_cliente_email | op_cliente_email | no |
-| 40 | input/- | entrada | op_cliente_nombre | op_cliente_nombre | no |
-| 41 | button/button | accion | btnEmitirDocumento | Emitir documento | no |
-| 42 | button/button | accion | btnAnularDocumento | Anular documento | no |
-| 43 | button/button | accion | btnEmitirFactura | Emitir factura | no |
-| 44 | button/button | accion | btnEmitirNC | Emitir nota credito | no |
-| 45 | button/button | accion | btnEmitirND | Emitir nota debito | no |
-| 46 | button/button | accion | btnEmitirSoporte | Emitir soporte | no |
-| 47 | button/button | accion | btnEmitirNominaElectronica | Emitir nomina | no |
-| 48 | button/button | accion | btnEmitirPOSElectronico | Emitir POS electronico | no |
-| 49 | button/button | accion | btnEmitirRadian | Registrar evento RADIAN | no |
-| 50 | button/button | accion | feDianConfirmCancel | Cancelar | no |
-| 51 | button/button | accion | feDianConfirmAccept | Enviar a DIAN | no |
-| 52 | input/checkbox | accion | feDianPortalMostrarSensibles | feDianPortalMostrarSensibles | no |
-| 53 | button/button | accion | - | Reconsultar | sí |
+| 38 | textarea/- | entrada | op_observaciones | op_observaciones | no |
+| 39 | input/number | entrada | op_cliente_id | op_cliente_id | no |
+| 40 | input/email | entrada | op_cliente_email | op_cliente_email | no |
+| 41 | input/- | entrada | op_cliente_nombre | op_cliente_nombre | no |
+| 42 | button/button | accion | btnEmitirDocumento | Emitir documento | no |
+| 43 | button/button | accion | btnAnularDocumento | Anular factura con nota credito | no |
+| 44 | button/button | accion | btnEmitirFactura | Emitir factura | no |
+| 45 | button/button | accion | btnEmitirNC | Emitir nota credito | no |
+| 46 | button/button | accion | btnEmitirND | Emitir nota debito | no |
+| 47 | button/button | accion | btnEmitirSoporte | Emitir soporte | no |
+| 48 | button/button | accion | btnEmitirNominaElectronica | Emitir nomina | no |
+| 49 | button/button | accion | btnEmitirPOSElectronico | Emitir POS electronico | no |
+| 50 | button/button | accion | btnEmitirRadian | Registrar evento RADIAN | no |
+| 51 | button/button | accion | feDianConfirmCancel | Cancelar | no |
+| 52 | button/button | accion | feDianConfirmAccept | Enviar a DIAN | no |
+| 53 | input/checkbox | accion | feDianPortalMostrarSensibles | feDianPortalMostrarSensibles | no |
+| 54 | button/button | accion | - | Reconsultar | sí |
 
 ### `web/administrar_empresa/facturacion_electronica_tutorial_dian.html` (22)
 
@@ -3538,7 +3539,7 @@ Generado por `node tools/plan106_ui_inventory.mjs`. No editar manualmente.
 | 21 | a/- | accion | - | PDF habilitación | no |
 | 22 | a/- | accion | - | Ruta oficial DIAN | no |
 
-### `web/administrar_empresa/facturas_electronicas.html` (20)
+### `web/administrar_empresa/facturas_electronicas.html` (21)
 
 | # | Tipo | Clase | ID | Etiqueta | Dinámico |
 | ---: | --- | --- | --- | --- | --- |
@@ -3559,9 +3560,10 @@ Generado por `node tools/plan106_ui_inventory.mjs`. No editar manualmente.
 | 15 | button/button | accion | - | Imprimir ahora | sí |
 | 16 | button/button | accion | - | Cerrar | sí |
 | 17 | button/button | accion | - | Anular | sí |
-| 18 | button/button | accion | - | Visualizar | sí |
-| 19 | button/button | accion | - | Correo | sí |
-| 20 | button/button | accion | - | WhatsApp | sí |
+| 18 | button/button | accion | - | Reenviar DIAN | sí |
+| 19 | button/button | accion | - | Visualizar | sí |
+| 20 | button/button | accion | - | Correo | sí |
+| 21 | button/button | accion | - | WhatsApp | sí |
 
 ### `web/administrar_empresa/finanzas.html` (167)
 
@@ -5104,7 +5106,7 @@ Generado por `node tools/plan106_ui_inventory.mjs`. No editar manualmente.
 | 4 | a/- | accion | - | Guía oficial | no |
 | 5 | a/- | accion | - | Guía oficial | no |
 
-### `web/administrar_empresa/soportes_compras_ia.html` (34)
+### `web/administrar_empresa/soportes_compras_ia.html` (55)
 
 | # | Tipo | Clase | ID | Etiqueta | Dinámico |
 | ---: | --- | --- | --- | --- | --- |
@@ -5142,6 +5144,27 @@ Generado por `node tools/plan106_ui_inventory.mjs`. No editar manualmente.
 | 32 | button/button | accion | btnAprobar | Aprobar | no |
 | 33 | button/button | accion | btnRechazar | Rechazar | no |
 | 34 | button/button | accion | btnContabilizar | Contabilizar | no |
+| 35 | input/hidden | entrada | editSoporteId | editSoporteId | no |
+| 36 | select/- | entrada | editProveedor | Selecciona antes de contabilizar | no |
+| 37 | input/- | entrada | editProveedorNombre | editProveedorNombre | no |
+| 38 | input/- | entrada | editProveedorNit | editProveedorNit | no |
+| 39 | select/- | entrada | editTipoSoporte | Gasto Compra Documento soporte Servicio Recibo | no |
+| 40 | select/- | entrada | editDocumentoTipo | Factura de compra Documento soporte Cuenta de cobro Recibo de caja Gasto Otro | no |
+| 41 | input/- | entrada | editDocumentoNumero | editDocumentoNumero | no |
+| 42 | input/date | entrada | editFechaDocumento | editFechaDocumento | no |
+| 43 | input/date | entrada | editFechaVencimiento | editFechaVencimiento | no |
+| 44 | input/- | entrada | editMoneda | COP | no |
+| 45 | input/number | entrada | editSubtotal | editSubtotal | no |
+| 46 | input/number | entrada | editIVA | editIVA | no |
+| 47 | input/number | entrada | editTotal | editTotal | no |
+| 48 | input/number | entrada | editReteFuente | editReteFuente | no |
+| 49 | input/number | entrada | editReteICA | editReteICA | no |
+| 50 | input/number | entrada | editReteIVA | editReteIVA | no |
+| 51 | input/- | entrada | editCategoria | editCategoria | no |
+| 52 | input/- | entrada | editCentroCosto | editCentroCosto | no |
+| 53 | input/checkbox | accion | editImpactaInventario | editImpactaInventario | no |
+| 54 | textarea/- | entrada | editObservaciones | editObservaciones | no |
+| 55 | button/submit | accion | btnGuardarRevision | Guardar revision | no |
 
 ### `web/administrar_empresa/suite_contador.html` (5)
 
@@ -6140,7 +6163,7 @@ Generado por `node tools/plan106_ui_inventory.mjs`. No editar manualmente.
 | 19 | button/button | accion | aiChatMicBtn | Dictar mensaje | no |
 | 20 | button/button | accion | aiChatVoiceBtn | Voz del asistente | no |
 | 21 | button/button | accion | aiChatStopBtn | Detener audio y respuesta | no |
-| 22 | select/- | entrada | aiChatMode | Operativo Ayudante por pasos | no |
+| 22 | input/hidden | entrada | aiChatMode | operativo | no |
 | 23 | input/file | accion | aiChatAttachment | Adjuntar archivo para IA | no |
 | 24 | button/button | accion | aiChatAttachBtn | Adjuntar archivo | no |
 | 25 | button/button | accion | aiChatClearAttachment | × | no |
@@ -7289,7 +7312,7 @@ Generado por `node tools/plan106_ui_inventory.mjs`. No editar manualmente.
 | 11 | button/button | accion | aiChatMicBtn | Dictar mensaje | no |
 | 12 | button/button | accion | aiChatVoiceBtn | Voz del asistente | no |
 | 13 | button/button | accion | aiChatStopBtn | Detener audio y respuesta | no |
-| 14 | select/- | entrada | aiChatMode | Operativo Ayudante por pasos | no |
+| 14 | input/hidden | entrada | aiChatMode | operativo | no |
 | 15 | input/file | accion | aiChatAttachment | Adjuntar archivo para IA | no |
 | 16 | button/button | accion | aiChatAttachBtn | Adjuntar archivo | no |
 | 17 | button/button | accion | aiChatClearAttachment | × | no |
@@ -7372,7 +7395,7 @@ Generado por `node tools/plan106_ui_inventory.mjs`. No editar manualmente.
 | 25 | button/button | accion | aiChatMicBtn | Dictar mensaje | no |
 | 26 | button/button | accion | aiChatVoiceBtn | Voz del asistente | no |
 | 27 | button/button | accion | aiChatStopBtn | Detener audio y respuesta | no |
-| 28 | select/- | entrada | aiChatMode | Operativo Ayudante por pasos | no |
+| 28 | input/hidden | entrada | aiChatMode | operativo | no |
 | 29 | input/file | accion | aiChatAttachment | Adjuntar archivo para IA | no |
 | 30 | button/button | accion | aiChatAttachBtn | Adjuntar archivo | no |
 | 31 | button/button | accion | aiChatClearAttachment | &times; | no |

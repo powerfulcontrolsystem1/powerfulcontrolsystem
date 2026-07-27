@@ -39695,3 +39695,10 @@ Archivos modificados:
   sensibles y bloquea duplicados por hash o número documental dentro de la
   misma empresa. La CxP generada consulta `proveedores`, no la tabla histórica
   `empresa_proveedores`.
+
+2026-07-27 - P108-012: inventario visual actualizado para la certificación.
+- Se regeneró el inventario estático de interfaz con el candidato integrado:
+  309 páginas, 6.212 controles, 2.978 acciones y 3.234 entradas. Registra los
+  controles nuevos de revisión humana de soportes IA y mantiene el selector de
+  modo IA como campo interno oculto. Este inventario no sustituye las pruebas
+  visuales, funcionales, de permisos ni de IA pendientes en staging.
