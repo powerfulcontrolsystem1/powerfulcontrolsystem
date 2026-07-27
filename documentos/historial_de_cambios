@@ -39678,3 +39678,9 @@ Archivos modificados:
 - Los controles de exportación CSV y Excel de facturas electrónicas ahora
   declaran etiqueta y título accesibles. La corrección cubre la auditoría
   autenticada de escritorio y móvil sin modificar datos ni exportar archivos.
+
+2026-07-27 - P108-020: un único interruptor de modo agente IA.
+- Las entradas del chat eliminan el selector visible de modo y conservan el
+  modo operativo interno oculto. El usuario solo dispone del interruptor
+  `Modo agente`; la selección de agente y los permisos siguen siendo del
+  servidor.
