@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -353,8 +354,8 @@ func UpdateEmpresaSoporteComprasIAExtraccion(dbConn *sql.DB, empresaID, soporteI
 		extracted.ModeloIA = current.ModeloIA
 	}
 	extracted = NormalizeEmpresaSoporteComprasIA(extracted)
-	dupID := findEmpresaSoporteComprasIADuplicado(dbConn, empresaID, extracted.ArchivoHash, extracted.DocumentoNumero)
-	if dupID > 0 && dupID != soporteID {
+	dupID := findEmpresaSoporteComprasIADuplicadoExcept(dbConn, empresaID, extracted.ArchivoHash, extracted.DocumentoNumero, soporteID)
+	if dupID > 0 {
 		extracted.DuplicadoSoporteID = dupID
 		extracted.EstadoSoporte = "duplicado"
 		extracted.RequiereRevisionHumana = true
@@ -400,6 +401,64 @@ func UpdateEmpresaSoporteComprasIAEstado(dbConn *sql.DB, empresaID, soporteID in
 	return GetEmpresaSoporteComprasIA(dbConn, empresaID, soporteID)
 }
 
+// UpdateEmpresaSoporteComprasIARevision persists the human-reviewed values
+// before approval. It never replaces the original file or the raw AI response.
+// Editing an already approved support invalidates that approval and returns it
+// to review, so the edited values cannot become a CxP without a new explicit
+// approval.
+func UpdateEmpresaSoporteComprasIARevision(dbConn *sql.DB, empresaID, soporteID int64, revision EmpresaSoporteComprasIA, usuario string) (EmpresaSoporteComprasIA, error) {
+	if empresaID <= 0 || soporteID <= 0 {
+		return EmpresaSoporteComprasIA{}, errors.New("empresa_id y soporte_id son obligatorios")
+	}
+	if err := EmpresaSoportesComprasIASchemaReady(dbConn); err != nil {
+		return EmpresaSoporteComprasIA{}, err
+	}
+	current, err := GetEmpresaSoporteComprasIA(dbConn, empresaID, soporteID)
+	if err != nil {
+		return EmpresaSoporteComprasIA{}, err
+	}
+	if !soporteIAEstadoAbierto(current.EstadoSoporte) {
+		return EmpresaSoporteComprasIA{}, errors.New("solo se pueden editar soportes pendientes de contabilizar")
+	}
+	revision = NormalizeEmpresaSoporteComprasIA(revision)
+	if revision.ProveedorID > 0 {
+		proveedor, err := GetEmpresaProveedorCxP(dbConn, empresaID, revision.ProveedorID)
+		if err != nil {
+			if errors.Is(err, sql.ErrNoRows) {
+				return EmpresaSoporteComprasIA{}, errors.New("el proveedor seleccionado no pertenece a la empresa activa")
+			}
+			return EmpresaSoporteComprasIA{}, err
+		}
+		if !strings.EqualFold(strings.TrimSpace(proveedor.Estado), "activo") {
+			return EmpresaSoporteComprasIA{}, errors.New("el proveedor seleccionado no esta activo")
+		}
+		revision.ProveedorNombre = nombreProveedorCxPCanonico(proveedor.RazonSocial, proveedor.NombreComercial)
+		revision.ProveedorNIT = strings.TrimSpace(proveedor.NIT)
+	}
+	duplicateID := findEmpresaSoporteComprasIADuplicadoExcept(dbConn, empresaID, current.ArchivoHash, revision.DocumentoNumero, soporteID)
+	if duplicateID > 0 {
+		return EmpresaSoporteComprasIA{}, errors.New("el documento o archivo ya fue radicado como soporte #" + strconv.FormatInt(duplicateID, 10))
+	}
+	nextState := current.EstadoSoporte
+	if nextState == "aprobado" {
+		nextState = "en_revision"
+	}
+	_, err = ExecCompat(dbConn, `UPDATE empresa_soportes_compras_ia SET
+		tipo_soporte=?, estado_soporte=?, proveedor_id=?, proveedor_nombre=?, proveedor_nit=?, documento_tipo=?, documento_numero=?,
+		fecha_documento=?, fecha_vencimiento=?, subtotal=?, impuesto_iva=?, retencion_fuente=?, retencion_ica=?, retencion_iva=?,
+		total=?, moneda=?, categoria_contable=?, centro_costo=?, impacta_inventario=?, requiere_revision_humana=1,
+		aprobado_por='', fecha_aprobacion='', fecha_actualizacion=CURRENT_TIMESTAMP, usuario_creador=?, observaciones=?
+		WHERE empresa_id=? AND id=?`,
+		revision.TipoSoporte, nextState, revision.ProveedorID, revision.ProveedorNombre, revision.ProveedorNIT, revision.DocumentoTipo, revision.DocumentoNumero,
+		revision.FechaDocumento, revision.FechaVencimiento, revision.Subtotal, revision.ImpuestoIVA, revision.RetencionFuente, revision.RetencionICA, revision.RetencionIVA,
+		revision.Total, revision.Moneda, revision.CategoriaContable, revision.CentroCosto, boolToIntSoporteIA(revision.ImpactaInventario), strings.TrimSpace(usuario), revision.Observaciones, empresaID, soporteID)
+	if err != nil {
+		return EmpresaSoporteComprasIA{}, err
+	}
+	_ = InsertEmpresaSoporteComprasIAEvento(dbConn, empresaID, soporteID, "editar_revision", current.EstadoSoporte, nextState, usuario, map[string]interface{}{"campos": []string{"proveedor", "documento", "fechas", "impuestos", "total", "clasificacion"}})
+	return GetEmpresaSoporteComprasIA(dbConn, empresaID, soporteID)
+}
+
 func ContabilizarEmpresaSoporteComprasIA(dbConn *sql.DB, empresaID, soporteID int64, usuario string) (EmpresaSoporteComprasIA, error) {
 	if empresaID <= 0 || soporteID <= 0 {
 		return EmpresaSoporteComprasIA{}, errors.New("empresa_id y soporte_id son obligatorios")
@@ -441,9 +500,9 @@ func ContabilizarEmpresaSoporteComprasIA(dbConn *sql.DB, empresaID, soporteID in
 	if proveedorID <= 0 {
 		return EmpresaSoporteComprasIA{}, errors.New("el soporte aprobado debe seleccionar un proveedor registrado de la empresa")
 	}
-	var proveedorEstado, proveedorRazonSocial, proveedorNombreComercial string
-	if err := queryRowTxSQLCompat(tx, `SELECT COALESCE(estado,'activo'), COALESCE(razon_social,''), COALESCE(nombre_comercial,'')
-		FROM empresa_proveedores WHERE empresa_id=? AND id=?`, empresaID, proveedorID).Scan(&proveedorEstado, &proveedorRazonSocial, &proveedorNombreComercial); err != nil {
+	var proveedorEstado, proveedorNombre string
+	if err := queryRowTxSQLCompat(tx, `SELECT COALESCE(estado,'activo'), COALESCE(nombre,'')
+		FROM proveedores WHERE empresa_id=? AND id=?`, empresaID, proveedorID).Scan(&proveedorEstado, &proveedorNombre); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return EmpresaSoporteComprasIA{}, errors.New("el proveedor no pertenece a la empresa activa")
 		}
@@ -452,7 +511,7 @@ func ContabilizarEmpresaSoporteComprasIA(dbConn *sql.DB, empresaID, soporteID in
 	if !strings.EqualFold(strings.TrimSpace(proveedorEstado), "activo") {
 		return EmpresaSoporteComprasIA{}, errors.New("el proveedor seleccionado no esta activo")
 	}
-	proveedorNombreCanonico := nombreProveedorCxPCanonico(proveedorRazonSocial, proveedorNombreComercial)
+	proveedorNombreCanonico := strings.TrimSpace(proveedorNombre)
 	if proveedorNombreCanonico == "" {
 		return EmpresaSoporteComprasIA{}, errors.New("el proveedor seleccionado no tiene nombre operativo")
 	}
@@ -645,6 +704,10 @@ func scanEmpresaSoporteComprasIA(rows *sql.Rows) (EmpresaSoporteComprasIA, error
 }
 
 func findEmpresaSoporteComprasIADuplicado(dbConn *sql.DB, empresaID int64, hash, documento string) int64 {
+	return findEmpresaSoporteComprasIADuplicadoExcept(dbConn, empresaID, hash, documento, 0)
+}
+
+func findEmpresaSoporteComprasIADuplicadoExcept(dbConn *sql.DB, empresaID int64, hash, documento string, excludeID int64) int64 {
 	hash = strings.TrimSpace(hash)
 	documento = strings.TrimSpace(documento)
 	if hash == "" && documento == "" {
@@ -652,7 +715,14 @@ func findEmpresaSoporteComprasIADuplicado(dbConn *sql.DB, empresaID int64, hash,
 	}
 	where := "empresa_id=? AND COALESCE(estado,'activo')='activo'"
 	args := []interface{}{empresaID}
-	if hash != "" {
+	if excludeID > 0 {
+		where += " AND id<>?"
+		args = append(args, excludeID)
+	}
+	if hash != "" && documento != "" {
+		where += " AND (archivo_hash=? OR documento_numero=?)"
+		args = append(args, hash, documento)
+	} else if hash != "" {
 		where += " AND archivo_hash=?"
 		args = append(args, hash)
 	} else {

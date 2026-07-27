@@ -39684,3 +39684,14 @@ Archivos modificados:
   modo operativo interno oculto. El usuario solo dispone del interruptor
   `Modo agente`; la selección de agente y los permisos siguen siendo del
   servidor.
+
+2026-07-27 - P108-006: revisión humana editable de soportes de proveedores.
+- La captura de compras permite editar los campos leídos por IA y seleccionar
+  un proveedor del catálogo canónico antes de aprobar. Guardar una edición
+  invalida una aprobación previa y la devuelve a revisión; contabilizar sigue
+  siendo una acción separada y transaccional.
+- La edición valida `empresa_id` y proveedor en servidor, conserva el archivo
+  privado y la respuesta original de IA, registra el evento sin valores
+  sensibles y bloquea duplicados por hash o número documental dentro de la
+  misma empresa. La CxP generada consulta `proveedores`, no la tabla histórica
+  `empresa_proveedores`.

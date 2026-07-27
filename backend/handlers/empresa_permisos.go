@@ -2096,7 +2096,7 @@ func resolveSoportesComprasIAPermissionAction(r *http.Request) string {
 		return permActionRead
 	case "aprobar", "rechazar", "contabilizar":
 		return permActionApprove
-	case "extraer_ia":
+	case "extraer_ia", "editar_revision":
 		return permActionUpdate
 	case "radicar", "seed_demo":
 		return permActionCreate

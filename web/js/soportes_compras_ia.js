@@ -5,6 +5,7 @@
     empresaId: resolveEmpresaId(),
     dashboard: {},
     soportes: [],
+    proveedores: [],
     selected: null,
     filters: { estado: "", tipo: "", search: "" },
     loading: false
@@ -190,6 +191,59 @@
     el("captureDetail").innerHTML = fields.map(function (f) {
       return '<div class="capture-detail-item"><span>' + esc(f[0]) + '</span><strong>' + esc(f[1] || "-") + '</strong></div>';
     }).join("");
+    fillRevisionForm(s);
+  }
+
+  function setValue(id, value) { if (el(id)) el(id).value = value == null ? "" : value; }
+  function numberValue(id) { return Number(val(id)) || 0; }
+
+  function fillRevisionForm(s) {
+    if (!s) return;
+    setValue("editSoporteId", s.id);
+    setValue("editProveedorNombre", s.proveedor_nombre);
+    setValue("editProveedorNit", s.proveedor_nit);
+    setValue("editTipoSoporte", s.tipo_soporte || "gasto");
+    setValue("editDocumentoTipo", s.documento_tipo || "factura_compra");
+    setValue("editDocumentoNumero", s.documento_numero);
+    setValue("editFechaDocumento", s.fecha_documento);
+    setValue("editFechaVencimiento", s.fecha_vencimiento);
+    setValue("editMoneda", s.moneda || "COP");
+    setValue("editSubtotal", s.subtotal || 0);
+    setValue("editIVA", s.impuesto_iva || 0);
+    setValue("editTotal", s.total || 0);
+    setValue("editReteFuente", s.retencion_fuente || 0);
+    setValue("editReteICA", s.retencion_ica || 0);
+    setValue("editReteIVA", s.retencion_iva || 0);
+    setValue("editCategoria", s.categoria_contable);
+    setValue("editCentroCosto", s.centro_costo);
+    setValue("editObservaciones", s.observaciones);
+    if (el("editImpactaInventario")) el("editImpactaInventario").checked = !!s.impacta_inventario;
+    if (el("editProveedor")) el("editProveedor").value = s.proveedor_id ? String(s.proveedor_id) : "";
+  }
+
+  function renderProveedorOptions() {
+    var select = el("editProveedor");
+    if (!select) return;
+    var selected = state.selected && state.selected.proveedor_id ? String(state.selected.proveedor_id) : select.value;
+    select.innerHTML = '<option value="">Selecciona antes de contabilizar</option>' + state.proveedores.map(function (p) {
+      var name = p.nombre || p.nombre_comercial || p.razon_social || "Proveedor";
+      return '<option value="' + esc(p.id) + '">' + esc(name + (p.documento || p.nit ? " · " + (p.documento || p.nit) : "")) + '</option>';
+    }).join("");
+    select.value = selected || "";
+  }
+
+  function loadProveedores() {
+    if (!state.empresaId) return Promise.resolve();
+    return fetch("/api/empresa/proveedores?empresa_id=" + encodeURIComponent(state.empresaId), { credentials: "same-origin" }).then(function (res) {
+      if (!res.ok) throw new Error("No se pudo cargar el catalogo de proveedores.");
+      return res.json();
+    }).then(function (rows) {
+      state.proveedores = Array.isArray(rows) ? rows.filter(function (p) { return String(p.estado || "activo").toLowerCase() === "activo"; }) : [];
+      renderProveedorOptions();
+    }).catch(function () {
+      state.proveedores = [];
+      renderProveedorOptions();
+    });
   }
 
   function renderEvents(events) {
@@ -241,7 +295,8 @@
     setBusy(true, "Cargando captura inteligente...");
     return Promise.all([
       api("dashboard"),
-      api("soportes", null, state.filters.estado ? "&estado=" + encodeURIComponent(state.filters.estado) : "")
+      api("soportes", null, state.filters.estado ? "&estado=" + encodeURIComponent(state.filters.estado) : ""),
+      loadProveedores()
     ]).then(function (res) {
       state.dashboard = res[0].dashboard || {};
       state.soportes = res[1].soportes || [];
@@ -293,6 +348,32 @@
     }).finally(function () {
       setBusy(false);
     });
+  }
+
+  function saveRevision(ev) {
+    ev.preventDefault();
+    if (!state.selected) {
+      msg("Selecciona un soporte primero.", true);
+      return;
+    }
+    var proveedorId = Number(val("editProveedor")) || 0;
+    setBusy(true, "Guardando revision humana...");
+    api("editar_revision", { method: "POST", body: JSON.stringify({
+      soporte_id: Number(val("editSoporteId")) || state.selected.id,
+      proveedor_id: proveedorId,
+      proveedor_nombre: val("editProveedorNombre"), proveedor_nit: val("editProveedorNit"),
+      tipo_soporte: val("editTipoSoporte"), documento_tipo: val("editDocumentoTipo"), documento_numero: val("editDocumentoNumero"),
+      fecha_documento: val("editFechaDocumento"), fecha_vencimiento: val("editFechaVencimiento"), moneda: val("editMoneda"),
+      subtotal: numberValue("editSubtotal"), impuesto_iva: numberValue("editIVA"), total: numberValue("editTotal"),
+      retencion_fuente: numberValue("editReteFuente"), retencion_ica: numberValue("editReteICA"), retencion_iva: numberValue("editReteIVA"),
+      categoria_contable: val("editCategoria"), centro_costo: val("editCentroCosto"),
+      impacta_inventario: !!(el("editImpactaInventario") && el("editImpactaInventario").checked), observaciones: val("editObservaciones")
+    }) }).then(function () {
+      msg("Revision guardada. Aprueba nuevamente antes de contabilizar.");
+      return load();
+    }).catch(function (e) {
+      msg(e.message, true);
+    }).finally(function () { setBusy(false); });
   }
 
   function seedDemo() {
@@ -351,6 +432,13 @@
   });
 
   el("formSoporte").addEventListener("submit", submitForm);
+  el("formEditarSoporte").addEventListener("submit", saveRevision);
+  el("editProveedor").addEventListener("change", function () {
+    var p = state.proveedores.find(function (item) { return String(item.id) === String(this.value); }, this);
+    if (!p) return;
+    setValue("editProveedorNombre", p.nombre || p.nombre_comercial || p.razon_social || "");
+    setValue("editProveedorNit", p.documento || p.nit || "");
+  });
   el("btnLimpiar").addEventListener("click", function () { el("formSoporte").reset(); });
   el("captureRefresh").addEventListener("click", load);
   el("captureSeed").addEventListener("click", seedDemo);
