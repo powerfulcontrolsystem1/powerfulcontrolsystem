@@ -56,6 +56,7 @@ func TestFacturasElectronicasFrontendOffersSafeDIANRetry(t *testing.T) {
 		`data-action="reenviar_dian"`,
 		`function retryInvoiceDIAN(item)`,
 		`action=reenviar_dian&empresa_id=`,
+		`return runSearch();`,
 		`estadoDoc === "pendiente_emision" || estadoDoc === "fallida" || estadoDoc === "rechazada"`,
 		`estadoDoc === "anulada"`,
 	} {

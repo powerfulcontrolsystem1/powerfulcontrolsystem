@@ -39663,3 +39663,6 @@ Archivos modificados:
   y codigo del documento, y pide confirmacion visible antes de cualquier
   reintento. Al finalizar refresca la lista y exige consultar el acuse antes de
   reintentar o anular nuevamente.
+- El refresco posterior usa la búsqueda propia de la bandeja y muestra el
+  detalle devuelto por la integración, evitando ocultar un estado fallido por
+  una función de interfaz inexistente.
