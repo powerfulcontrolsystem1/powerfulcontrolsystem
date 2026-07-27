@@ -459,6 +459,19 @@
     var form = document.getElementById(FORM_ID);
     var controls = form && form.querySelector('.ai-chat-controls');
     if (!form || !controls) return;
+    var modeEl = document.getElementById(MODE_ID);
+    if (modeEl && String(modeEl.tagName || '').toLowerCase() === 'select') {
+      var modeField = modeEl.closest('.ai-chat-control-field');
+      if (modeField) modeField.remove();
+      modeEl = null;
+    }
+    if (!modeEl) {
+      var hiddenMode = document.createElement('input');
+      hiddenMode.id = MODE_ID;
+      hiddenMode.type = 'hidden';
+      hiddenMode.value = 'operativo';
+      controls.insertBefore(hiddenMode, controls.firstChild || null);
+    }
     var agentEl = document.getElementById(AGENT_ID);
     if (agentEl && agentEl.closest('.ai-chat-control-field')) agentEl.closest('.ai-chat-control-field').remove();
     if (!document.getElementById(AGENT_MODE_ID)) {
