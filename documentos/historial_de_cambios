@@ -39718,3 +39718,7 @@ Archivos modificados:
   documento y saldos, y advierte que requiere revisión humana.
 - La interacción usa exclusivamente `GET action=reconciliacion_fuentes`; no
   dispara la acción separada de conciliación de pagos ni modifica datos.
+2026-07-27 - P108-012: corrección visual de codificación en portada pública.
+- Se corrigieron los textos visibles de energía solar y baterías que se
+  mostraban con doble codificación UTF-8. La corrección se detectó en la
+  validación visual del candidato de staging y no cambia datos ni permisos.
