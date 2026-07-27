@@ -170,6 +170,39 @@
           <div id="captureEvents" class="capture-detail-list"></div>
         </aside>
       </div>
+      <form id="formEditarSoporte" class="capture-box capture-form" novalidate>
+        <div class="capture-toolbar"><h2>Revision humana editable</h2><span class="capture-muted">La lectura IA no se contabiliza: guarda, revisa y aprueba por separado.</span></div>
+        <input id="editSoporteId" type="hidden">
+        <div class="capture-row">
+          <div class="capture-field"><label for="editProveedor">Proveedor registrado</label><select id="editProveedor"><option value="">Selecciona antes de contabilizar</option></select></div>
+          <div class="capture-field"><label for="editProveedorNombre">Proveedor leido / manual</label><input id="editProveedorNombre" autocomplete="off"></div>
+          <div class="capture-field"><label for="editProveedorNit">NIT</label><input id="editProveedorNit" autocomplete="off"></div>
+        </div>
+        <div class="capture-row three">
+          <div class="capture-field"><label for="editTipoSoporte">Tipo</label><select id="editTipoSoporte"><option value="gasto">Gasto</option><option value="compra">Compra</option><option value="documento_soporte">Documento soporte</option><option value="servicio">Servicio</option><option value="recibo">Recibo</option></select></div>
+          <div class="capture-field"><label for="editDocumentoTipo">Documento</label><select id="editDocumentoTipo"><option value="factura_compra">Factura de compra</option><option value="documento_soporte">Documento soporte</option><option value="cuenta_cobro">Cuenta de cobro</option><option value="recibo_caja">Recibo de caja</option><option value="gasto">Gasto</option><option value="otro">Otro</option></select></div>
+          <div class="capture-field"><label for="editDocumentoNumero">Numero</label><input id="editDocumentoNumero" autocomplete="off"></div>
+        </div>
+        <div class="capture-row three">
+          <div class="capture-field"><label for="editFechaDocumento">Fecha documento</label><input id="editFechaDocumento" type="date"></div>
+          <div class="capture-field"><label for="editFechaVencimiento">Fecha vencimiento</label><input id="editFechaVencimiento" type="date"></div>
+          <div class="capture-field"><label for="editMoneda">Moneda</label><input id="editMoneda" value="COP" maxlength="3"></div>
+        </div>
+        <div class="capture-row three">
+          <div class="capture-field"><label for="editSubtotal">Subtotal</label><input id="editSubtotal" type="number" min="0" step="0.01"></div>
+          <div class="capture-field"><label for="editIVA">IVA</label><input id="editIVA" type="number" min="0" step="0.01"></div>
+          <div class="capture-field"><label for="editTotal">Total</label><input id="editTotal" type="number" min="0" step="0.01"></div>
+        </div>
+        <div class="capture-row three">
+          <div class="capture-field"><label for="editReteFuente">Rete fuente</label><input id="editReteFuente" type="number" min="0" step="0.01"></div>
+          <div class="capture-field"><label for="editReteICA">Rete ICA</label><input id="editReteICA" type="number" min="0" step="0.01"></div>
+          <div class="capture-field"><label for="editReteIVA">Rete IVA</label><input id="editReteIVA" type="number" min="0" step="0.01"></div>
+        </div>
+        <div class="capture-row"><div class="capture-field"><label for="editCategoria">Categoria contable</label><input id="editCategoria"></div><div class="capture-field"><label for="editCentroCosto">Centro de costo</label><input id="editCentroCosto"></div></div>
+        <label class="capture-check"><input id="editImpactaInventario" type="checkbox"><span>Impacta inventario</span></label>
+        <div class="capture-field"><label for="editObservaciones">Observaciones de revision</label><textarea id="editObservaciones"></textarea></div>
+        <div class="capture-row-actions"><button class="capture-btn primary" id="btnGuardarRevision" type="submit">Guardar revision</button></div>
+      </form>
     </section>
   </main>
   <script src="/js/soportes_compras_ia.js"></script>

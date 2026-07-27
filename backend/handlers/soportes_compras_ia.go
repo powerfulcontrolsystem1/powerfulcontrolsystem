@@ -111,6 +111,19 @@ func handleSoportesComprasIAMutate(w http.ResponseWriter, r *http.Request, dbEmp
 		}
 		exposeSoporteComprasIAURL(&row)
 		writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "soporte": row})
+	case "editar_revision":
+		payload, err := decodeSoporteComprasIARevisionPayload(r)
+		if err != nil {
+			http.Error(w, "datos de revision invalidos", http.StatusBadRequest)
+			return
+		}
+		row, err := dbpkg.UpdateEmpresaSoporteComprasIARevision(dbEmp, empresaID, payload.SoporteID, payload.EmpresaSoporteComprasIA, usuario)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		exposeSoporteComprasIAURL(&row)
+		writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "soporte": row})
 	case "aprobar":
 		payload, _ := decodeSoporteComprasIAActionPayload(r)
 		row, err := dbpkg.UpdateEmpresaSoporteComprasIAEstado(dbEmp, empresaID, payload.SoporteID, "aprobado", usuario, payload.Observaciones)
@@ -155,6 +168,11 @@ type soporteComprasIAActionPayload struct {
 	Observaciones string `json:"observaciones"`
 }
 
+type soporteComprasIARevisionPayload struct {
+	SoporteID int64 `json:"soporte_id"`
+	dbpkg.EmpresaSoporteComprasIA
+}
+
 func decodeSoporteComprasIAActionPayload(r *http.Request) (soporteComprasIAActionPayload, error) {
 	var p soporteComprasIAActionPayload
 	if strings.HasPrefix(strings.ToLower(r.Header.Get("Content-Type")), "application/json") {
@@ -163,6 +181,20 @@ func decodeSoporteComprasIAActionPayload(r *http.Request) (soporteComprasIAActio
 	}
 	p.SoporteID, _ = strconv.ParseInt(strings.TrimSpace(r.FormValue("soporte_id")), 10, 64)
 	p.Observaciones = strings.TrimSpace(r.FormValue("observaciones"))
+	return p, nil
+}
+
+func decodeSoporteComprasIARevisionPayload(r *http.Request) (soporteComprasIARevisionPayload, error) {
+	var p soporteComprasIARevisionPayload
+	if !strings.HasPrefix(strings.ToLower(r.Header.Get("Content-Type")), "application/json") {
+		return p, errors.New("se requiere JSON")
+	}
+	if err := json.NewDecoder(io.LimitReader(r.Body, 1<<20)).Decode(&p); err != nil {
+		return p, err
+	}
+	if p.SoporteID <= 0 {
+		return p, errors.New("soporte_id es obligatorio")
+	}
 	return p, nil
 }
 
