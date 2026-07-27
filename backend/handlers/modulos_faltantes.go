@@ -2585,6 +2585,23 @@ func empresaFinanzasCarteraHandler(dbEmp *sql.DB, cfg empresaModuloGenericConfig
 	return func(w http.ResponseWriter, r *http.Request) {
 		action := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("action")))
 		switch action {
+		case "reconciliacion_fuentes":
+			if cfg.Table != "empresa_cuentas_por_pagar" || r.Method != http.MethodGet {
+				http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+				return
+			}
+			empresaID, err := parseEmpresaIDQuery(r)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusBadRequest)
+				return
+			}
+			report, err := dbpkg.BuildEmpresaCxPReconciliacion(dbEmp, empresaID)
+			if err != nil {
+				http.Error(w, "No se pudo comparar la cartera historica", http.StatusInternalServerError)
+				return
+			}
+			writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "reconciliacion": report})
+			return
 		case "proveedores":
 			if cfg.Table != "empresa_cuentas_por_pagar" || r.Method != http.MethodGet {
 				http.Error(w, "method not allowed", http.StatusMethodNotAllowed)

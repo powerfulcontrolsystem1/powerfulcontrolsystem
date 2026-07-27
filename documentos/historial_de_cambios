@@ -39702,3 +39702,12 @@ Archivos modificados:
   controles nuevos de revisión humana de soportes IA y mantiene el selector de
   modo IA como campo interno oculto. Este inventario no sustituye las pruebas
   visuales, funcionales, de permisos ni de IA pendientes en staging.
+
+2026-07-27 - P108-005: conciliación CxP de solo lectura.
+- Finanzas incorpora `action=reconciliacion_fuentes` para comparar, por
+  `empresa_id`, la fuente canónica `empresa_cuentas_por_pagar` con la cartera
+  histórica `empresa_contabilidad_cartera_cxp`. El reporte separa registros
+  solo canónicos, solo históricos y diferencias de valor, saldo o moneda.
+- No ejecuta DDL ni cambia saldos, pagos, movimientos o estados. El resultado
+  queda marcado como solo lectura y requiere revisión humana; las correcciones
+  y migraciones continúan bloqueadas hasta el ensayo PostgreSQL de staging.
