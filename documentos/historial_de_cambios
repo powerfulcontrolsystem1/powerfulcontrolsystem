@@ -39673,3 +39673,8 @@ Archivos modificados:
   DIAN `FAD09e` cuando una factura pendiente se reintenta en un día posterior.
 - La cola fiscal conserva la fecha legal efectiva del intento para auditoría;
   el cambio mantiene `empresa_id`, consecutivo y documento de origen.
+
+2026-07-27 - P108-019: accesibilidad de exportaciones en facturas.
+- Los controles de exportación CSV y Excel de facturas electrónicas ahora
+  declaran etiqueta y título accesibles. La corrección cubre la auditoría
+  autenticada de escritorio y móvil sin modificar datos ni exportar archivos.

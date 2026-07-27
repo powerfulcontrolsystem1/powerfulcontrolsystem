@@ -65,3 +65,20 @@ func TestFacturasElectronicasFrontendOffersSafeDIANRetry(t *testing.T) {
 		}
 	}
 }
+
+func TestFacturasElectronicasExportButtonsHaveAccessibleLabels(t *testing.T) {
+	path := filepath.Join("..", "..", "web", "administrar_empresa", "facturas_electronicas.html")
+	raw, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("read invoices page: %v", err)
+	}
+	page := string(raw)
+	for _, marker := range []string{
+		`id="btnExportCsv" type="button" class="btn secondary" aria-label="Exportar resultados en CSV"`,
+		`id="btnExportExcel" type="button" class="btn secondary" aria-label="Exportar resultados en Excel"`,
+	} {
+		if !strings.Contains(page, marker) {
+			t.Fatalf("invoice export control missing accessible label %q", marker)
+		}
+	}
+}
