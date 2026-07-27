@@ -2118,10 +2118,12 @@ func dispatchFacturacionDIANOficial(dbEmp *sql.DB, payload facturacionOperacionP
 	}
 	total := firstPositiveFloat64(doc.MontoTotal, payload.MontoTotal, payload.TotalNeto)
 	impuesto := firstPositiveFloat64(payload.Impuestos, payload.IVA)
-	fechaEmision := strings.TrimSpace(doc.FechaDocumento)
-	if fechaEmision == "" {
-		fechaEmision = time.Now().In(dianColombiaLocation()).Format("2006-01-02T15:04:05-07:00")
-	}
+	// DIAN valida que la fecha de generacion del UBL coincida con la fecha de la
+	// firma XAdES. Una venta pendiente puede reenviarse en un dia posterior a su
+	// registro comercial; usar esa fecha historica aqui provoca FAD09e. La fecha
+	// comercial permanece en el documento, mientras que la emision fiscal se
+	// genera en el instante de la firma.
+	fechaEmision := facturacionDIANFechaEmisionFirmada(time.Now())
 	moneda := strings.ToUpper(strings.TrimSpace(facturacionFirstNonBlank(doc.Moneda, payload.Moneda, "COP")))
 	docPayload := map[string]interface{}{
 		"empresa_id":             doc.EmpresaID,
@@ -2209,6 +2211,10 @@ func dispatchFacturacionDIANOficial(dbEmp *sql.DB, payload facturacionOperacionP
 		ref = strings.TrimSpace(genericStringValue(envioResp["referencia_externa"]))
 	}
 	return facturacionProveedorDispatchResult{Success: true, ReferenciaExterna: ref, RespuestaJSON: string(raw), HTTPStatus: int(anyToInt64(envioResp["http_status"]))}
+}
+
+func facturacionDIANFechaEmisionFirmada(now time.Time) string {
+	return now.In(dianColombiaLocation()).Format("2006-01-02T15:04:05-07:00")
 }
 
 func dispatchFacturacionProveedor(dbEmp *sql.DB, cfg *dbpkg.FacturacionElectronicaPaisConfig, payload facturacionOperacionPayload, doc dbpkg.EmpresaDocumentoFacturacion, accion string) facturacionProveedorDispatchResult {
@@ -2638,6 +2644,11 @@ func processFacturacionIntegracionForDocumento(dbEmp *sql.DB, payload facturacio
 	}
 
 	resultado.Aplica = true
+	if paisCodigo == "CO" {
+		// Mantiene trazabilidad de la fecha fiscal efectiva sin reescribir la
+		// fecha comercial almacenada en empresa_facturacion_documentos.
+		retryPayload.FechaEmisionLegal = facturacionNowLocal()
+	}
 	dispatch := dispatchFacturacionProveedor(dbEmp, cfg, payload, doc, accion)
 	now := facturacionNowLocal()
 	retryPayload.Intentos = retryPayload.Intentos + 1

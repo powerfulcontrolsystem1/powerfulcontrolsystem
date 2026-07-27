@@ -39666,3 +39666,10 @@ Archivos modificados:
 - El refresco posterior usa la búsqueda propia de la bandeja y muestra el
   detalle devuelto por la integración, evitando ocultar un estado fallido por
   una función de interfaz inexistente.
+
+2026-07-26 - P108-018: consistencia temporal de emisión DIAN al reenviar.
+- El XML UBL Colombia toma la fecha fiscal vigente en el instante de la firma
+  XAdES, sin alterar la fecha comercial de la venta. Esto evita el rechazo
+  DIAN `FAD09e` cuando una factura pendiente se reintenta en un día posterior.
+- La cola fiscal conserva la fecha legal efectiva del intento para auditoría;
+  el cambio mantiene `empresa_id`, consecutivo y documento de origen.
