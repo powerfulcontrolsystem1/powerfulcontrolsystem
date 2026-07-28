@@ -1,3 +1,12 @@
+2026-07-28: Plan 108 / candidato inmutable promovido a staging.
+- El commit integrado `fce1655c` superó CI Linux, race, secretos, dependencias,
+  contenedores, Trivy y SBOM.
+- La ejecución `30335994327` publicó API, migrador, worker y frontend por digest.
+- Staging consumió las cuatro imágenes con `--no-build`; `/health` y `/ready`
+  quedaron verdes y el migrador terminó con código 0 sin bootstrap runtime.
+- Se repitieron autenticados el carrito y el control responsive de correo sobre
+  el digest exacto, sin 4xx/5xx ni superposición móvil.
+
 2026-07-28: Plan 108 / regresión crítica y configuración operativa.
 - El barrido autenticado de staging recorrió ocho rutas en escritorio y móvil,
   inventarió 534 controles y pulsó 30 acciones seguras. Las 101 mutaciones

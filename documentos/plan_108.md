@@ -908,6 +908,24 @@ Siempre se deben informar dos cifras:
 2. **certificación del candidato para producción**, que solo incluye evidencia
    del artefacto inmutable.
 
+### Corte verificable 2026-07-28
+
+- Candidato inmutable:
+  `fce1655cedff6d3e9235424bfaf0029e80b2ff0c`.
+- P108-000 y P108-001: aprobadas.
+- P108-002, P108-005, P108-006, P108-008 a P108-013, P108-015,
+  P108-017, P108-018, P108-020 y P108-022: parciales.
+- Las demás fases: pendientes.
+- Avance de implementación por compuertas:
+  `(2 aprobadas + 14 parciales x 0,5) / 26 = 34,6 %`.
+- Certificación sobre el digest actual:
+  P108-000 y P108-001 aprobadas; P108-002, P108-011 y P108-012 parciales.
+  `(2 + 3 x 0,5) / 26 = 13,5 %`.
+
+Este porcentaje no equivale a cantidad de código construido. Mide evidencia de
+aceptación para producción; no se eleva por pruebas históricas, locales o de un
+SHA diferente.
+
 ## 11. Compuerta final GO/NO-GO
 
 La decisión solo puede ser GO cuando todo lo siguiente está comprobado:

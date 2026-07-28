@@ -1,3 +1,8 @@
+## [2026-07-28] Candidato P108 promovido por digest
+- [CI] El commit `fce1655c` superó preflight, race, seguridad, secretos, dependencias, Trivy y SBOM.
+- [Release] API, migrador, worker y frontend se publicaron y conservaron por digest exacto.
+- [Staging] El Compose consumió las cuatro imágenes con `--no-build`; salud/listo, migración, carrito y responsive de correo quedaron comprobados sobre el mismo artefacto.
+
 ## [2026-07-28] Configuración operativa del carrito en PostgreSQL
 - [Carrito] El endpoint deja de fallar al cargar reglas operativas por rol: el SELECT vuelve a incluir permisos de ingresos y egresos manuales antes de escanearlos.
 - [QA] La regresión autenticada cubrió 16 combinaciones de ruta/viewport, 534 controles inventariados y 30 clics seguros sin ejecutar mutaciones.

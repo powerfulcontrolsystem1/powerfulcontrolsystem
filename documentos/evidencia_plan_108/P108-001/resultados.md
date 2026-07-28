@@ -2,7 +2,7 @@
 
 Fecha local: 2026-07-25
 Commit evaluado: `f6f9546aeb926d01f76d67e250f2c78962aa0ced`
-Estado: **parcial; NO-GO para promoción**
+Estado inicial: **parcial; NO-GO para promoción**
 
 ## Aprobado localmente
 
@@ -55,3 +55,21 @@ Estado actualizado: **parcial**. CI y race están aprobados, pero las imágenes
 que staging usa todavía fueron reconstruidas en el VPS. La nueva canalización
 `release-candidate.yml` debe publicar y promover las cuatro imágenes exactas
 por digest antes de aprobar P108-001.
+
+## Cierre 2026-07-28
+
+Estado final: **aprobado**
+
+- `Professional CI` del PR 72 terminó verde: preflight, suite Go, `go vet`,
+  `go test -race`, vulnerabilidades, seguridad estática, secretos, Trivy,
+  licencias, contratos Docker y SBOM.
+- `Release candidate by immutable digest` (`30335994327`) construyó, escaneó,
+  generó SBOM y publicó API, migrador, worker y frontend del commit
+  `fce1655cedff6d3e9235424bfaf0029e80b2ff0c`.
+- El Compose de release validó las cuatro referencias
+  `repositorio@sha256:<64 hex>`.
+- Staging consumió esas mismas referencias sin reconstrucción y quedó
+  saludable.
+
+P108-001 queda aprobado para este candidato. Una vulnerabilidad nueva o un
+cambio de SHA obliga a repetir la compuerta.

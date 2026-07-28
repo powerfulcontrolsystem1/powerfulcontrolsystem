@@ -3,7 +3,8 @@
 Fecha: 2026-07-28  
 Ambiente: staging aislado  
 Empresa autorizada: Powerful Control System (`empresa_id=12`)  
-SHA desplegado final: `16c8fbd58b5da109d29b1d5e84a6bdb372378e8d`
+SHA desplegado final por digest:
+`fce1655cedff6d3e9235424bfaf0029e80b2ff0c`
 
 ## Alcance
 
@@ -62,3 +63,6 @@ backend, worker y PostgreSQL quedaron saludables.
 **Parcial**. El P0 reproducido quedó corregido y verificado sobre el SHA final,
 pero el barrido no sustituye las 101 acciones mutables ni el inventario completo
 exigido por P108-011.
+
+La página de carrito se volvió a abrir autenticada después de promover el
+digest exacto; no produjo respuestas HTTP 4xx/5xx.
