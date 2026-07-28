@@ -39899,3 +39899,10 @@ Archivos modificados:
   configuración criptográfica y la falta de credencial IA en staging. La
   evidencia conserva el HTTP 502 y la condición de reanudación sin registrar
   claves, tokens ni valores privados.
+
+2026-07-28 - Plan 108: cabeceras dinámicas y acceso no autenticado
+
+- Se comprobó en staging que una API empresarial sin sesión deniega un
+  `empresa_id` manipulado sin filtrar datos y que un origen externo no recibe
+  autorización CORS. La evidencia también registra CSP y cabeceras duplicadas
+  con `unsafe-inline`, que permanecen como hallazgo de hardening pendiente.

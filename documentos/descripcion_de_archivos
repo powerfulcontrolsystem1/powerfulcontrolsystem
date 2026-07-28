@@ -12377,3 +12377,5 @@ panel de seguridad para que el navegador reciba la correccion CSRF de staging.
 - `documentos/evidencia_plan_108/P108-009/resultados_staging_20260728.md`:
   prueba autenticada de ReportSpec IA, bloqueo seguro de credencial y pasos de
   reanudación para completar la validación de staging.
+- `documentos/evidencia_plan_108/P108-017/cabeceras_y_acceso_no_autenticado_20260728.md`:
+  comprobación dinámica de cabeceras, CORS y denegación sin sesión en staging.
