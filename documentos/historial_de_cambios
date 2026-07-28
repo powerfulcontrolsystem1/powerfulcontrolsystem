@@ -7,6 +7,8 @@
   exclusivamente durante bootstrap explícito del rol migrador.
 - `vps-p108-empty-migration-drill.sh` ejecuta base vacía y segunda pasada sobre
   un digest, rechaza recursos preexistentes y elimina su entorno efímero.
+- El digest `bcc26035...` completó el ensayo: 8/7 migraciones en primera
+  pasada, 0/0 en segunda, 336/48 tablas y cero recursos residuales.
 
 2026-07-28: Plan 108 / candidato inmutable promovido a staging.
 - El commit integrado `fce1655c` superó CI Linux, race, secretos, dependencias,

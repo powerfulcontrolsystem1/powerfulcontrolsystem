@@ -54,5 +54,23 @@ contenedor, red y volumen al terminar.
 La rama candidata agrega raíces mínimas, idempotentes y exclusivas del rol
 migrador para `empresas`, `administradores`, `sesiones`, `configuraciones` y
 `tipos_de_empresas`, junto con
-`deploy/scripts/vps-p108-empty-migration-drill.sh`. Falta construir el nuevo
-digest y repetir el ensayo antes de aprobar este subcriterio.
+`deploy/scripts/vps-p108-empty-migration-drill.sh`.
+
+## Resultado final del ensayo vacío
+
+Commit: `64d89b6f02ffb0d63d600e44ba320bcaffd09d22`  
+Migrador:
+`ghcr.io/powerfulcontrolsystem1/pcs-migrate@sha256:bcc26035d207c6112e2e543f46fe638b2141cf3ff4660a59aea6b3daea93cb37`
+
+- Workflow `30338397992`: construcción, Trivy, SBOM y publicación aprobadas.
+- Primera pasada: empresas `applied=8`, superadministrador `applied=7`.
+- Segunda pasada: empresas `applied=0 existing=8`,
+  superadministrador `applied=0 existing=7`.
+- Catálogo heredado: 91 pasos empresariales y 31 administrativos.
+- Resultado: 336 tablas empresariales y 48 administrativas.
+- Limpieza: no quedaron contenedores, redes ni volúmenes con el ID del ensayo.
+
+Subcriterios base vacía y segunda pasada: **PASS**.
+
+P108-002 continúa parcial solamente por upgrade desde snapshot representativo,
+restricción DDL mediante roles PostgreSQL y simulación de fallo/rollback.
