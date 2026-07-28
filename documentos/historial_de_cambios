@@ -39750,3 +39750,13 @@ Archivos modificados:
   impresión física ni duplicar movimientos.
 - `backend/handlers/finanzas_error_contract_test.go` fija el orden obligatorio:
   `window.open` debe ocurrir antes de esperar la resolución de impresora.
+
+## 2026-07-28 - Plan 108: evidencia real de carga IA de proveedor en staging
+
+- En la empresa 12, el botón `Cargar factura o recibo con IA` aceptó un XML
+  sintético, radicó el soporte privado `SCI-0001` y mantuvo la revisión humana.
+- La extracción se detuvo con un mensaje seguro porque la credencial IA de
+  staging no puede descifrarse con la llave vigente. No se creó CxP, no cambió
+  el saldo canónico y no se registró pago ni asiento.
+- Se registró el resultado y la repetición requerida en
+  `documentos/evidencia_plan_108/P108-006/staging_carga_ia_20260728.md`.

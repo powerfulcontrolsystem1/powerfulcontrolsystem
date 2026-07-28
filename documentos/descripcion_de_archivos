@@ -12318,3 +12318,7 @@ panel de seguridad para que el navegador reciba la correccion CSRF de staging.
   empaquetado y seguridad del migrador operativo DIAN.
 - `backend/handlers/facturacion_anulacion_frontend_contract_test.go`: impide que
   el botón de anulación vuelva a usar una transición local genérica.
+- `documentos/evidencia_plan_108/P108-006/staging_carga_ia_20260728.md`:
+  evidencia autenticada de la carga de una factura XML sintética en la empresa
+  12, la radicación privada sin contabilización y el bloqueo de extracción por
+  credencial IA de staging incompatible con la llave vigente.
