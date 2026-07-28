@@ -127,3 +127,23 @@ func TestCorporateEmailSuperPageIncludesMaxAccountsField(t *testing.T) {
 		}
 	}
 }
+
+func TestCorporateEmailSuperPageIncludesBrandAvatarAndCSRF(t *testing.T) {
+	raw, err := os.ReadFile(filepath.Join("..", "..", "web", "super", "email_corporativo.html"))
+	if err != nil {
+		t.Fatalf("read email_corporativo.html: %v", err)
+	}
+	page := string(raw)
+	required := []string{
+		`src="/img/bimi-pcs.svg"`,
+		`src="/img/Logo pcs 1.png"`,
+		`function readCSRFCookie()`,
+		`pcs_csrf`,
+		`headers.set("X-CSRF-Token", token)`,
+	}
+	for _, expected := range required {
+		if !strings.Contains(page, expected) {
+			t.Fatalf("email_corporativo.html debe mostrar la marca y autorizar mutaciones CSRF; falta %q", expected)
+		}
+	}
+}

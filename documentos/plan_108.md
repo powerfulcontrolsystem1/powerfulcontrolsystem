@@ -568,7 +568,23 @@ indefinidos, saldos negativos indebidos ni pérdida de eventos.
    oficial del documento de prueba; `GetStatusZip` debe informar aceptación.
 2. Wompi y Epayco: sandbox o monto controlado, firma/webhook, duplicado,
    conciliación y reverso.
-3. Correo y WhatsApp: entrega real autorizada, error y trazabilidad.
+3. Correo y WhatsApp: entrega real autorizada, error y trazabilidad. Para todos
+   los correos enviados por el dominio propio, verificar por separado:
+   - el logo oficial del computador PCS embebido mediante `cid:` dentro del
+     cuerpo HTML, usando el constructor corporativo común;
+   - SPF y DKIM alineados con el dominio visible `From`;
+   - DMARC en enforcement (`p=quarantine` o `p=reject`, `pct=100`);
+   - SVG Tiny-PS cuadrado, público por HTTPS como `image/svg+xml`, y registro
+     `default._bimi.powerfulcontrolsystem.com`;
+   - preferencia BIMI de marca y certificado VMC o CMC vigente cuando el
+     receptor lo exija. Gmail no sustituye de forma garantizada la inicial del
+     remitente con un BIMI autoafirmado sin ese certificado;
+   - prueba visual real en Gmail y al menos otro cliente compatible, guardando
+     captura del avatar, cuerpo, remitente y resultados SPF/DKIM/DMARC sin
+     exponer cabeceras sensibles.
+   La aceptación no puede prometer el mismo avatar en clientes que no soportan
+   BIMI; sí debe demostrar que PCS publica y envía correctamente la identidad
+   oficial en todos los mensajes del VPS.
 4. Nextcloud/OnlyOffice: autenticación, CSP final después de redirecciones,
    archivo privado, edición y permisos.
 5. OpenAI: modelo/configuración, herramientas, límites, timeout, costo y
@@ -913,6 +929,8 @@ La decisión solo puede ser GO cuando todo lo siguiente está comprobado:
 - [ ] impresiones y vistas previas de todo el alcance aprobadas;
 - [ ] cuatro cajas simultáneas conciliadas;
 - [ ] proveedores incluidos con evidencia real autorizada;
+- [ ] correos del VPS con logo oficial inline y avatar BIMI certificado,
+      autenticación alineada y evidencia visual en clientes compatibles;
 - [ ] DIAN aceptada oficialmente para la prueba autorizada;
 - [ ] almacenamiento privado compartido y recuperable;
 - [ ] DAST y hardening sin P0/P1;

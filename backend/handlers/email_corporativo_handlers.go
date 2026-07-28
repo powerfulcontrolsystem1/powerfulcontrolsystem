@@ -830,10 +830,10 @@ func sendCorporateEmailTest(dbSuper *sql.DB, toEmail string) error {
 	if _, err := mail.ParseAddress(toEmail); err != nil {
 		return fmt.Errorf("correo destino invalido: %w", err)
 	}
-	subject := "Prueba de correo corporativo PCS"
-	body := "Esta es una prueba enviada desde el motor Mailu de Powerful Control System.\r\n\r\nRemitente esperado: soporte@powerfulcontrolsystem.com\r\nCanal: email corporativo propio."
+	subject := "Prueba visual de correo corporativo PCS"
+	body := "Esta es una prueba enviada desde el motor Mailu de Powerful Control System.\r\n\r\nRemitente esperado: soporte@powerfulcontrolsystem.com\r\nCanal: email corporativo propio.\r\nLogo esperado: computador oficial PCS visible dentro del mensaje."
 	bodyHTML := "<p>Esta es una prueba enviada desde el motor Mailu de Powerful Control System.</p>" +
-		"<p><strong>Remitente esperado:</strong> soporte@powerfulcontrolsystem.com<br><strong>Canal:</strong> email corporativo propio.</p>"
+		"<p><strong>Remitente esperado:</strong> soporte@powerfulcontrolsystem.com<br><strong>Canal:</strong> email corporativo propio.<br><strong>Logo esperado:</strong> computador oficial PCS visible en la cabecera.</p>"
 	return sendEmpresaUsuarioMailuMultipart(dbSuper, "https://powerfulcontrolsystem.com", toEmail, subject, body, bodyHTML)
 }
 

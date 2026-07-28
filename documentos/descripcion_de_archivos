@@ -12325,3 +12325,9 @@ panel de seguridad para que el navegador reciba la correccion CSRF de staging.
 - `documentos/evidencia_plan_108/P108-012/finanzas_cxp_responsive_20260728.md`:
   comprobación visual autenticada de Finanzas, CxP, movimientos y soportes IA
   en escritorio y viewport móvil de 390 por 844.
+2026-07-28 - Evidencia P108-015 de identidad visual del correo
+
+- `documentos/evidencia_plan_108/P108-015/manifest.md`,
+  `resultados.md`, `comandos.txt` y `riesgos.md`:
+  - registran DNS, recursos visuales, prueba autenticada, fallo CSRF, límites
+    BIMI y pendientes VMC/CMC sin guardar secretos.

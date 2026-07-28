@@ -39781,3 +39781,16 @@ Archivos modificados:
   errores nuevos y no duplicó el movimiento.
 - La ventana emergente separada no es capturable por el navegador interno; la
   captura directa y la impresión física siguen pendientes en P108-013.
+2026-07-28 - Plan 108: identidad visual de correo y reparación CSRF
+
+- Se incorporó a `P108-015` la aceptación explícita de identidad de correo:
+  logo oficial inline, SPF/DKIM/DMARC, SVG Tiny-PS, BIMI, VMC/CMC y pruebas
+  visuales reales en clientes compatibles.
+- `web/super/email_corporativo.html` vuelve a enviar `X-CSRF-Token` en
+  mutaciones. La prueba autenticada había demostrado que el GET cargaba el
+  módulo, pero `Probar envio` terminaba en HTTP 403 por omitir el token.
+- La página muestra por separado el logo interno y el avatar BIMI, explicando
+  que Gmail requiere VMC o CMC para sustituir la inicial del remitente.
+- `sendCorporateEmailTest` identifica la prueba como visual y declara el logo
+  esperado; los contratos verifican CSRF, ambos recursos de marca y límites
+  básicos SVG Tiny-PS.
