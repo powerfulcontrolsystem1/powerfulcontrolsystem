@@ -39770,3 +39770,14 @@ Archivos modificados:
   alteró la cartera canónica QA.
 - La cobertura y los pendientes de formatos impresos quedaron registrados en
   `documentos/evidencia_plan_108/P108-012/finanzas_cxp_responsive_20260728.md`.
+
+## 2026-07-28 - Plan 108: comprobante financiero corregido en staging
+
+- El SHA `0a9c4fd4894c2f3f39888fc197a1da5cf37f15e2` se desplegó exclusivamente en
+  staging mediante worktree aislado. Los cuatro contenedores quedaron
+  saludables y `/health`/`/ready` respondieron correctamente.
+- El código servido abre la vista previa antes de la consulta asíncrona de
+  impresora. El clic autenticado no fue reportado como bloqueado, no generó
+  errores nuevos y no duplicó el movimiento.
+- La ventana emergente separada no es capturable por el navegador interno; la
+  captura directa y la impresión física siguen pendientes en P108-013.
