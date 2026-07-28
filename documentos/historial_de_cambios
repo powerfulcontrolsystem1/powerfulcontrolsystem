@@ -39902,3 +39902,13 @@ Archivos modificados:
 - La resolución visual ahora solo acepta un tenant de guard/contexto si es
   positivo; cuando devuelve cero recupera el `empresa_id` de la URL. Esto evita
   enviar GET y POST autenticados como empresa cero al abrir la página directa.
+
+2026-07-28 - Plan 108: aislamiento de permisos de Centro IA
+
+- La ruta `/api/empresa/ia_empresarial` usa el middleware dedicado
+  `WithEmpresaAIEnterprisePermissions`. El wrapper valida sesión y pertenencia
+  de `empresa_id`, conserva límite por empresa y deja que el registro cerrado
+  de capacidades IA aplique sus autorizaciones; ya no queda bloqueado por la
+  página opcional de Reportes, la cual puede permanecer oculta por defecto.
+- Se añadió un contrato de rutas que impide regresar esta API al wrapper
+  genérico de Reportes.

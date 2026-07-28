@@ -1516,7 +1516,11 @@ func main() {
 	http.HandleFunc("/api/empresa/grafologia", handlers.WithEmpresaGrafologiaPermissions(dbEmpresas, dbSuper, handlers.EmpresaGrafologiaHandler(dbEmpresas, dbSuper)))
 	http.HandleFunc("/api/empresa/grafologia/archivo", handlers.WithEmpresaGrafologiaPermissions(dbEmpresas, dbSuper, handlers.EmpresaGrafologiaArchivoHandler()))
 	http.HandleFunc("/api/empresa/bolsa", handlers.WithEmpresaBolsaPermissions(dbEmpresas, dbSuper, handlers.EmpresaBolsaHandler(dbEmpresas, dbSuper)))
-	http.HandleFunc("/api/empresa/ia_empresarial", handlers.WithEmpresaReportesPermissions(dbEmpresas, dbSuper, handlers.EmpresaIAEmpresarialHandler(dbEmpresas, dbSuper)))
+	// Centro IA has its own closed capability registry and tenant-aware wrapper.
+	// Do not route it through the generic Reportes gate: that gate also enforces
+	// the optional menu page, which intentionally remains hidden until explicitly
+	// enabled and would block the IA capability before its own checks run.
+	http.HandleFunc("/api/empresa/ia_empresarial", handlers.WithEmpresaAIEnterprisePermissions(dbEmpresas, dbSuper, handlers.EmpresaIAEmpresarialHandler(dbEmpresas, dbSuper)))
 	http.HandleFunc("/api/empresa/chat_tareas/conversaciones", handlers.WithEmpresaChatTareasPermissions(dbEmpresas, dbSuper, handlers.EmpresaChatTareasConversacionesHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/chat_tareas/archivo", handlers.WithEmpresaChatTareasPermissions(dbEmpresas, dbSuper, handlers.EmpresaChatTareasArchivoHandler()))
 	http.HandleFunc("/api/empresa/chat_tareas/participantes", handlers.WithEmpresaChatTareasPermissions(dbEmpresas, dbSuper, handlers.EmpresaChatTareasParticipantesHandler(dbEmpresas)))
