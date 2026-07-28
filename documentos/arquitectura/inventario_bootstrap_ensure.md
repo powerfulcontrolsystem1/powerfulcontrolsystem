@@ -138,7 +138,7 @@ Este archivo se genera con `node tools/ensure_bootstrap_inventory.mjs`. Inventar
 | `EnsureRolesDeUsuarioSchema` | [backend/db/roles_tipos_usuario.go:29](../../backend/db/roles_tipos_usuario.go#L29) | DDL / indice / funcion | empresas o por confirmar |
 | `EnsureEmpresaSensorPuertasSchema` | [backend/db/sensor_puertas.go:74](../../backend/db/sensor_puertas.go#L74) | DDL / indice / funcion | empresas o por confirmar |
 | `EnsureEmpresaSoporteRemotoSchema` | [backend/db/soporte_remoto.go:419](../../backend/db/soporte_remoto.go#L419) | DDL / indice / funcion | empresas o por confirmar |
-| `EnsureEmpresaSoportesComprasIASchema` | [backend/db/soportes_compras_ia.go:123](../../backend/db/soportes_compras_ia.go#L123) | DDL / indice / funcion | empresas o por confirmar |
+| `EnsureEmpresaSoportesComprasIASchema` | [backend/db/soportes_compras_ia.go:124](../../backend/db/soportes_compras_ia.go#L124) | DDL / indice / funcion | empresas o por confirmar |
 | `EnsurePostgresRuntimeCompat` | [backend/db/sql_compat.go:31](../../backend/db/sql_compat.go#L31) | compatibilidad PostgreSQL | empresas o por confirmar |
 | `EnsurePostgresPrimaryKeySequences` | [backend/db/sql_compat.go:162](../../backend/db/sql_compat.go#L162) | compatibilidad PostgreSQL | empresas o por confirmar |
 | `EnsureSuperAlertasSchema` | [backend/db/super_alertas.go:82](../../backend/db/super_alertas.go#L82) | DDL / indice / funcion | superadministrador o por confirmar |

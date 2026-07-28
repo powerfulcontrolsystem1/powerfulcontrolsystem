@@ -39722,3 +39722,12 @@ Archivos modificados:
 - Se corrigieron los textos visibles de energía solar y baterías que se
   mostraban con doble codificación UTF-8. La corrección se detectó en la
   validación visual del candidato de staging y no cambia datos ni permisos.
+
+2026-07-27 - P108-002: inventario de bootstrap y auditoría de migraciones.
+- Se regeneró el catálogo legado de bootstrap y el inventario de `Ensure*`
+  (154 funciones, 122 pasos) después de los cambios de CxP. La auditoría
+  estricta confirmó runner de migraciones con checksum y ausencia de DDL en el
+  worker.
+- Persisten 127 archivos con capacidad histórica de tocar esquema; el resultado
+  no certifica todavía API/runtime sin DDL en staging con
+  `PCS_RUNTIME_SCHEMA_BOOTSTRAP=0`.
