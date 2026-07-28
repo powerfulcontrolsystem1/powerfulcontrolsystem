@@ -821,8 +821,8 @@ canónica, conciliación financiera y pruebas reales sobre los mismos datos.
 | P108-000 | Candidato inmutable | SHA, digest, árbol limpio, manifiesto | Pendiente |
 | P108-001 | CI y supply chain | tests, race, scans, SBOM | Parcial local |
 | P108-002 | Esquema determinista | vacía, upgrade, segunda pasada, no DDL | Pendiente |
-| P108-003 | Worker/outbox | reinicio, duplicado, dead-letter | Pendiente |
-| P108-004 | Tenant/roles | matriz A/B negativa | Pendiente |
+| P108-003 | Worker/outbox | reinicio, duplicado, dead-letter | Parcial aislado |
+| P108-004 | Tenant/roles | matriz A/B negativa | Parcial estático |
 | P108-005 | CxP canónica | ADR, migración, conciliación, concurrencia | Parcial local |
 | P108-006 | Documentos proveedor IA | carga, edición, confirmación, duplicado | Parcial local |
 | P108-007 | Consistencia financiera | conciliación por evento | Pendiente |
@@ -911,13 +911,13 @@ Siempre se deben informar dos cifras:
 ### Corte verificable 2026-07-28
 
 - Candidato inmutable:
-  `fce1655cedff6d3e9235424bfaf0029e80b2ff0c`.
+  `7ca5fb1be10d1f02fe3e0a7c5009f559c9d6f853`.
 - P108-000 y P108-001: aprobadas.
-- P108-002, P108-005, P108-006, P108-008 a P108-013, P108-015,
-  P108-017, P108-018, P108-020 y P108-022: parciales.
+- P108-002 a P108-013, P108-015, P108-017, P108-018, P108-020 y
+  P108-022: parciales.
 - Las demás fases: pendientes.
 - Avance de implementación por compuertas:
-  `(2 aprobadas + 14 parciales x 0,5) / 26 = 34,6 %`.
+  `(2 aprobadas + 16 parciales x 0,5) / 26 = 38,5 %`.
 - Certificación sobre el digest actual:
   P108-000 y P108-001 aprobadas; P108-002, P108-011 y P108-012 parciales.
   `(2 + 3 x 0,5) / 26 = 13,5 %`.
