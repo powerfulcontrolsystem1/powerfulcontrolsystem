@@ -1037,8 +1037,22 @@
 
     async function ensureOk(res) {
       if (res.ok) return;
-      const txt = await res.text();
-      throw new Error(txt || ('HTTP ' + res.status));
+      if (res.status === 401) {
+        throw new Error('Tu sesión venció. Inicia sesión nuevamente para continuar.');
+      }
+      if (res.status === 403) {
+        throw new Error('No tienes permiso para realizar esta acción.');
+      }
+      let message = '';
+      try {
+        const data = await res.json();
+        const candidate = data && (data.message || data.error);
+        if (typeof candidate === 'string') message = candidate.trim();
+      } catch (_) {}
+      if (message && !/^(unauthorized|forbidden)$/i.test(message) && message.length <= 240) {
+        throw new Error(message);
+      }
+      throw new Error(res.status >= 500 ? 'No fue posible completar la operación. Intenta nuevamente.' : 'No se pudo completar la solicitud. Revisa los datos e inténtalo otra vez.');
     }
 
     function dbDateFromInput(v) {

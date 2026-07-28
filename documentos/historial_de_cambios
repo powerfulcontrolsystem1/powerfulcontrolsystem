@@ -39723,6 +39723,12 @@ Archivos modificados:
   mostraban con doble codificación UTF-8. La corrección se detectó en la
   validación visual del candidato de staging y no cambia datos ni permisos.
 
+2026-07-28 - P108-004: errores seguros de sesión en Finanzas.
+- Finanzas ya no muestra el JSON técnico completo de una respuesta fallida en
+  la interfaz. Las respuestas 401 y 403 se traducen a mensajes seguros y los
+  demás errores se limitan a mensajes funcionales sin ruta, request ID ni
+  detalles internos del endpoint.
+
 2026-07-27 - P108-002: inventario de bootstrap y auditoría de migraciones.
 - Se regeneró el catálogo legado de bootstrap y el inventario de `Ensure*`
   (154 funciones, 122 pasos) después de los cambios de CxP. La auditoría
