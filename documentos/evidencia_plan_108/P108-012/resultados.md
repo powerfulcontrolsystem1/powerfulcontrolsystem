@@ -37,8 +37,10 @@ Estado: **parcial; no certifica P108-012**.
   `clientWidth=375`; su tabla ancha queda contenida por scroll interno.
 - Se detectó que las acciones globales `Favorito` y `Panel super` permanecían
   fijas sobre botones operativos en móvil. La rama
-  `codex/p108-staging-qa` las devuelve al flujo del documento mediante
-  `position: sticky` y agrega un contrato de regresión.
+  `codex/p108-staging-qa` las devuelve al flujo normal del documento mediante
+  `position: static` y agrega un contrato de regresión. La primera variante
+  `sticky` todavía podía superponerse al botón de prueba y fue descartada en la
+  comprobación CDP real.
 
 La captura final del ajuste de tabla vive en
 `../P108-015/capturas/email_mailu_mobile_viewport_390x844_20260728.png`.

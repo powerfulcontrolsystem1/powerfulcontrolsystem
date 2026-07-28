@@ -136,7 +136,7 @@ func TestSuperPageToolsDoNotCoverMobileControls(t *testing.T) {
 	content := string(raw)
 	for _, required := range []string{
 		"@media(max-width:560px)",
-		".super-page-tools{position:sticky",
+		".super-page-tools{position:static",
 		"width:max-content",
 		"justify-content:flex-end",
 	} {

@@ -23,7 +23,7 @@
   con `--no-build` y verifica salud/listo.
 - La validación autenticada de 390 x 844 encontró que
   `web/js/super_page_tools.js` cubría controles operativos; en móvil las
-  acciones pasan a `position: sticky` y el contrato Go impide regresar al
+  acciones pasan a `position: static` y el contrato Go impide regresar al
   posicionamiento fijo.
 
 2026-07-26: Plan 108 / registro de administradores y correo Mailu.
