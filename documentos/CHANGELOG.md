@@ -1,3 +1,8 @@
+## [2026-07-28] Configuración operativa del carrito en PostgreSQL
+- [Carrito] El endpoint deja de fallar al cargar reglas operativas por rol: el SELECT vuelve a incluir permisos de ingresos y egresos manuales antes de escanearlos.
+- [QA] La regresión autenticada cubrió 16 combinaciones de ruta/viewport, 534 controles inventariados y 30 clics seguros sin ejecutar mutaciones.
+- [Multiempresa] La consulta conserva `WHERE empresa_id = ?`.
+
 ## [2026-07-28] Candidato inmutable P108 y acciones móviles super
 - [Release] API, migrador, worker y frontend quedan obligatoriamente fijados por digest; el workflow manual construye, escanea, genera SBOM y publica las cuatro imágenes de un SHA exacto.
 - [Staging] El nuevo promotor consume los mismos digests con `--no-build`.

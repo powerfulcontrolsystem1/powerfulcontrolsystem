@@ -12340,3 +12340,6 @@ panel de seguridad para que el navegador reciba la correccion CSRF de staging.
   imágenes exactas sin recompilar ni modificar el checkout productivo.
 - `documentos/evidencia_plan_108/P108-002/resultados.md`: registra la segunda
   pasada del migrador y el runtime de staging con bootstrap histórico apagado.
+- `documentos/evidencia_plan_108/P108-011/regresion_critica_20260728.md`:
+  resume la regresión autenticada de módulos críticos, clasifica los hallazgos
+  reales y conserva las capturas móviles seleccionadas.

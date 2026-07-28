@@ -83,6 +83,29 @@ func TestGetEmpresaConfiguracionOperativaKeepsSelectAndScanCompatible(t *testing
 	}
 }
 
+func TestListEmpresaConfiguracionOperativaRolesSelectsManualMovementFlags(t *testing.T) {
+	raw, err := os.ReadFile("configuracion_operativa.go")
+	if err != nil {
+		t.Fatalf("read configuracion_operativa.go: %v", err)
+	}
+	body := extractConfiguracionOperativaFunctionForTest(t, string(raw), "func ListEmpresaConfiguracionOperativaRoles(")
+	for _, required := range []string{
+		"COALESCE(permitir_ingresos_manuales, 0)",
+		"COALESCE(permitir_egresos_manuales, 0)",
+		"&permitirIngresosManuales",
+		"&permitirEgresosManuales",
+	} {
+		if !strings.Contains(body, required) {
+			t.Fatalf("ListEmpresaConfiguracionOperativaRoles debe mantener SELECT y Scan alineados; falta %q", required)
+		}
+	}
+	// Son 16 columnas normalizadas en SELECT y una expresion adicional en el
+	// filtro opcional de estado.
+	if got := strings.Count(body, "COALESCE("); got != 17 {
+		t.Fatalf("ListEmpresaConfiguracionOperativaRoles contiene %d expresiones COALESCE, want 17", got)
+	}
+}
+
 func extractConfiguracionOperativaFunctionForTest(t *testing.T, src, startMarker string) string {
 	t.Helper()
 

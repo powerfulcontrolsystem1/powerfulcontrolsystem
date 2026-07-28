@@ -1,3 +1,15 @@
+2026-07-28: Plan 108 / regresión crítica y configuración operativa.
+- El barrido autenticado de staging recorrió ocho rutas en escritorio y móvil,
+  inventarió 534 controles y pulsó 30 acciones seguras. Las 101 mutaciones
+  posibles quedaron excluidas.
+- Se reprodujo HTTP 500 al abrir el carrito de PCS. El log demostró que
+  `ListEmpresaConfiguracionOperativaRoles` entregaba 16 columnas a un `Scan`
+  de 18 destinos.
+- `backend/db/configuracion_operativa.go` vuelve a seleccionar
+  `permitir_ingresos_manuales` y `permitir_egresos_manuales`; el contrato
+  PostgreSQL asegura la alineación y la consulta conserva el filtro
+  empresarial.
+
 2026-07-28: Plan 108 / artefacto inmutable y QA móvil super.
 - `deploy/docker-compose.release.yml` y
   `scripts/immutable_release_check.ps1` incorporan la imagen frontend al

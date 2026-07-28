@@ -4606,3 +4606,10 @@ Actualización 2026-07-25 (Disponibilidad P107 de reportes):
 - Staging puede promover esas mismas referencias por digest sin reconstruir.
 - En páginas super, las acciones auxiliares móviles permanecen dentro del flujo
   del documento para no cubrir formularios, tablas ni botones operativos.
+
+2026-07-28 - Carrito / configuración operativa por rol
+
+- La lectura PostgreSQL de reglas de cobro por rol incluye los permisos de
+  movimientos manuales que el mismo `Scan` y la respuesta ya esperaban.
+- La consulta continúa aislada por `empresa_id`; no cambia configuraciones ni
+  defaults empresariales.
