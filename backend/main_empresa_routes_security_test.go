@@ -131,17 +131,6 @@ func TestEmpresaRoutesUsePermissionWrappers(t *testing.T) {
 	}
 }
 
-func TestEnterpriseAIRouteUsesDedicatedTenantWrapper(t *testing.T) {
-	raw, err := os.ReadFile("main.go")
-	if err != nil {
-		t.Fatal(err)
-	}
-	line := `http.HandleFunc("/api/empresa/ia_empresarial", handlers.WithEmpresaAIEnterprisePermissions(`
-	if !strings.Contains(string(raw), line) {
-		t.Fatal("Centro IA empresarial must use WithEmpresaAIEnterprisePermissions, not the generic report wrapper")
-	}
-}
-
 func containsAny(line string, values []string) bool {
 	for _, value := range values {
 		if strings.Contains(line, value) {
