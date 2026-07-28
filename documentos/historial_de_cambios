@@ -39884,3 +39884,10 @@ Archivos modificados:
   `p108_`; demuestra en PostgreSQL desechable que el evento se deduplica, el
   despacho repetido no duplica jobs, dos workers no adquieren el mismo job, un
   lease vencido se recupera y un fallo se conserva en dead-letter.
+
+2026-07-28 - Plan 108: evidencia de permiso efectivo para Centro IA
+
+- Se registró la validación visual autenticada de Centro IA para empresa 12.
+  La interfaz conserva el patrón de un único interruptor `Modo agente`, y el
+  servidor rechaza el acceso directo mientras la empresa no habilite la
+  capacidad. No se cambiaron permisos para eludir esa compuerta.
