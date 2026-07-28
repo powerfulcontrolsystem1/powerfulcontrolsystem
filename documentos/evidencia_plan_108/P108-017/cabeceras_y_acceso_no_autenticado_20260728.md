@@ -18,11 +18,13 @@ Alcance: comprobaciones HTTP de solo lectura, sin sesion y sin datos de negocio.
 
 ## Hallazgos pendientes
 
-1. El candidato `bc794c89` dejó una única CSP, política de referencia y política
-   de permisos en la respuesta final; en la API permanecieron dos valores de
-   `X-Content-Type-Options` incluso al consultar directamente el contenedor
-   backend. Se preparó una normalización en el proxy interno, pendiente de su
-   candidato inmutable y comprobación final en staging.
+1. El candidato inmutable `e927c7bc` fue promovido a staging por digest. La
+   portada (HTTP 200) y una API empresarial sin sesión (HTTP 401) entregan una
+   sola vez CSP, CSP Report-Only, `X-Content-Type-Options`, política de
+   referencia, política de permisos, `X-Frame-Options` y HSTS. PostgreSQL,
+   backend, worker y frontend quedaron saludables; `/health` y `/ready`
+   respondieron correctamente. La duplicación previa de `nosniff` queda
+   resuelta en la capa final observada.
 2. La CSP final conserva `unsafe-inline` para `script-src` y `style-src`. No se
    considera aprobada la eliminacion o excepcion acotada hasta inventariar los
    scripts y estilos embebidos, migrarlos a nonces/hashes o documentar cada
