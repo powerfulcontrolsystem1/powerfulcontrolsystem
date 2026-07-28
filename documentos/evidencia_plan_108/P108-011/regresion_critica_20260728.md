@@ -3,7 +3,7 @@
 Fecha: 2026-07-28  
 Ambiente: staging aislado  
 Empresa autorizada: Powerful Control System (`empresa_id=12`)  
-SHA desplegado: `e65f6dcddca0733f85d95cc0ae07ef33ef35e7c3`
+SHA desplegado final: `16c8fbd58b5da109d29b1d5e84a6bdb372378e8d`
 
 ## Alcance
 
@@ -53,6 +53,12 @@ alineados.
 
 ## Estado
 
-**Parcial**. El hallazgo tiene corrección y prueba local, pero debe integrarse,
-desplegarse y repetir la regresión. El barrido no sustituye las 101 acciones
-mutables ni el inventario completo exigido por P108-011.
+La corrección se desplegó en staging. La repetición autenticada de
+`carrito_de_compras.html` y de la ruta canónica
+`corte_de_caja.html` terminó **4/4 PASS** en 390 x 844 y 1366 x 900, sin
+respuestas HTTP 4xx/5xx. `/health` informó `ok`, `/ready` informó `ready` y
+backend, worker y PostgreSQL quedaron saludables.
+
+**Parcial**. El P0 reproducido quedó corregido y verificado sobre el SHA final,
+pero el barrido no sustituye las 101 acciones mutables ni el inventario completo
+exigido por P108-011.
