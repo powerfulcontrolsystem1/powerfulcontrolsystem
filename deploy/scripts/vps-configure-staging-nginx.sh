@@ -9,12 +9,8 @@ SNIPPET="/etc/nginx/snippets/pcs-security-headers.conf"
 
 mkdir -p /etc/nginx/snippets
 cat > "$SNIPPET" <<'EOF'
-add_header X-Content-Type-Options "nosniff" always;
 add_header X-Frame-Options "SAMEORIGIN" always;
-add_header Referrer-Policy "strict-origin-when-cross-origin" always;
-add_header Permissions-Policy "camera=(), microphone=(), geolocation=()" always;
 add_header Strict-Transport-Security "max-age=15552000; includeSubDomains" always;
-add_header Content-Security-Policy-Report-Only "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'self'; form-action 'self'; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline' https://accounts.google.com https://checkout.epayco.co https://checkout.wompi.co; connect-src 'self' wss://powerfulcontrolsystem.com https://api.openai.com https://checkout.wompi.co https://secure.epayco.co; frame-src 'self' https://accounts.google.com https://checkout.epayco.co https://checkout.wompi.co" always;
 EOF
 
 if [ -f "$SITE" ]; then

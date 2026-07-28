@@ -12379,3 +12379,6 @@ panel de seguridad para que el navegador reciba la correccion CSRF de staging.
   reanudación para completar la validación de staging.
 - `documentos/evidencia_plan_108/P108-017/cabeceras_y_acceso_no_autenticado_20260728.md`:
   comprobación dinámica de cabeceras, CORS y denegación sin sesión en staging.
+- `deploy/scripts/vps-configure-staging-nginx.sh`: configura el borde de
+  staging con solo las cabeceras TLS que le corresponden, sin duplicar la CSP
+  ni las cabeceras emitidas por la aplicación.

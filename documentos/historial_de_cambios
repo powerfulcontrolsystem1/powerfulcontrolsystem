@@ -39906,3 +39906,12 @@ Archivos modificados:
   `empresa_id` manipulado sin filtrar datos y que un origen externo no recibe
   autorización CORS. La evidencia también registra CSP y cabeceras duplicadas
   con `unsafe-inline`, que permanecen como hallazgo de hardening pendiente.
+
+2026-07-28 - Plan 108: deduplicación de cabeceras en borde staging
+
+- El configurador del Nginx externo de staging conserva únicamente HSTS y
+  `X-Frame-Options`. CSP, `nosniff`, referencia y permisos quedan emitidos por
+  la aplicación o frontend que conoce el contexto final, evitando políticas
+  duplicadas y contradictorias entre capas.
+- Un contrato de configuración rechaza que el borde vuelva a inyectar esas
+  cabeceras de aplicación.
