@@ -130,3 +130,32 @@ volvió a `/health=ok` y `/ready=ready`.
 La corrección tipa explícitamente `$1::text` y `$2::text`; un contrato impide
 retirar esos casts. Este ejercicio aporta evidencia real de rollback técnico,
 pero falta repetir el digest corregido.
+
+## Repetición con runtime restringido y corrección de solicitudes
+
+SHA candidato: `7ca5fb1be10d1f02fe3e0a7c5009f559c9d6f853`.
+
+- Workflow inmutable `30378926932`: build, Trivy, SBOM, publicación de los
+  cuatro digests y validación de Compose: **PASS**.
+- Staging aislado se actualizó exclusivamente por digest. API y worker quedaron
+  saludables; `/health` respondió `ok` y `/ready` respondió `ready`.
+- El migrador aplicó una migración administrativa adicional y terminó con
+  `empresas applied=0 existing=8`, `superadministrador applied=1 existing=7` y
+  la verificación explícita de que `pcs_staging_runtime` no posee privilegios
+  DDL.
+- La tabla `portal_visitas_paises` existe bajo el propietario migrador. El
+  handler ya no intenta crearla durante una solicitud HTTP.
+- En una sesión autenticada de la empresa de prueba se validó visualmente
+  `configuracion.html?empresa_id=12` y
+  `carrito_de_compras.html?empresa_id=12`: la configuración cargó sin errores
+  de consola y la tabla de carritos mostró tres filas con acciones operativas.
+- Los logs posteriores no contienen `permission denied` ni `SQLSTATE 42501`.
+
+La ruta pública de visitas devolvió `401` al probarla directamente en staging;
+esa respuesta ocurre antes del handler por la barrera de autenticación del
+entorno y queda pendiente de una prueba de portal público separada. No afecta la
+migración ni se usa como evidencia de aprobación del endpoint público.
+
+Estado: **P108-002 parcial**. Se aprobaron la base vacía, upgrade,
+idempotencia, runtime sin DDL y rollback técnico; falta completar la matriz de
+rollback de datos y las demás puertas del Plan 108.
