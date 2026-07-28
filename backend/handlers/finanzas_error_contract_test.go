@@ -27,3 +27,31 @@ func TestFinanzasDoesNotExposeRawAPIErrorBodies(t *testing.T) {
 		}
 	}
 }
+
+func TestFinanzasOpensPrintPreviewBeforeAsyncPrinterResolution(t *testing.T) {
+	raw, err := os.ReadFile(filepath.Join("..", "..", "web", "administrar_empresa", "finanzas.html"))
+	if err != nil {
+		t.Fatalf("read finanzas UI: %v", err)
+	}
+	page := string(raw)
+	start := strings.Index(page, "async function openPrint(item)")
+	if start < 0 {
+		t.Fatal("missing finance print preview function")
+	}
+	endOffset := strings.Index(page[start:], "\n    function renderMovimientos()")
+	if endOffset < 0 {
+		t.Fatal("could not isolate finance print preview function")
+	}
+	openPrint := page[start : start+endOffset]
+	windowOpen := strings.Index(openPrint, "window.open('', '_blank'")
+	printerResolution := strings.Index(openPrint, "await resolvePrinterForFinanzas()")
+	if windowOpen < 0 || printerResolution < 0 {
+		t.Fatal("print preview must open a window and resolve its printer")
+	}
+	if windowOpen > printerResolution {
+		t.Fatal("print preview window must open synchronously before awaiting printer resolution")
+	}
+	if !strings.Contains(openPrint, "Preparando comprobante...") {
+		t.Fatal("print preview must render a visible loading state while resolving its printer")
+	}
+}

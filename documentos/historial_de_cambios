@@ -39737,3 +39737,16 @@ Archivos modificados:
 - Persisten 127 archivos con capacidad histórica de tocar esquema; el resultado
   no certifica todavía API/runtime sin DDL en staging con
   `PCS_RUNTIME_SCHEMA_BOOTSTRAP=0`.
+
+## 2026-07-28 - Plan 108: vista previa financiera sin bloqueo por espera asíncrona
+
+- `web/administrar_empresa/finanzas.html` abre la ventana del comprobante en el
+  mismo gesto del botón `Imprimir`, muestra un estado breve de preparación y
+  solo después resuelve la impresora empresarial. Esto evita que navegadores
+  bloqueen la vista previa por haberse perdido el gesto del usuario durante la
+  consulta asíncrona.
+- La representación continúa en papel blanco y negro, conserva la empresa
+  efectiva, filas, columnas, importes y destino de impresión, sin ejecutar una
+  impresión física ni duplicar movimientos.
+- `backend/handlers/finanzas_error_contract_test.go` fija el orden obligatorio:
+  `window.open` debe ocurrir antes de esperar la resolución de impresora.
