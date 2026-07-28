@@ -12331,6 +12331,9 @@ panel de seguridad para que el navegador reciba la correccion CSRF de staging.
   contra una base PostgreSQL efímera marcada como `p108_`, la deduplicación de
   eventos, doble despacho, claim concurrente, recuperación por lease y
   dead-letter durable. No usa empresas, datos ni DSN operativos.
+- `documentos/evidencia_plan_108/P108-003/resultados.md`: conserva el resultado
+  del ensayo PostgreSQL aislado, su SHA, cobertura, límites y comprobación de
+  limpieza de recursos temporales.
 
 2026-07-26 - P108-015, reparación privada y anulación DIAN.
 - `deploy/scripts/vps-migrate-private-dian.sh`: migra para una empresa
