@@ -36,7 +36,7 @@ func TestP108OutboxWorkerDurabilityIntegration(t *testing.T) {
 
 	topic := "p108.outbox.integration"
 	key := fmt.Sprintf("p108-outbox-%d", tenantID)
-	first, created := insertP108OutboxEvent(t, dbConn, dbpkg.OutboxEvent{
+	_, created := insertP108OutboxEvent(t, dbConn, dbpkg.OutboxEvent{
 		EmpresaID: tenantID, Topic: topic, PayloadJSON: `{"reference":"isolated"}`,
 		IdempotencyKey: key,
 	})
@@ -47,8 +47,11 @@ func TestP108OutboxWorkerDurabilityIntegration(t *testing.T) {
 		EmpresaID: tenantID, Topic: topic, PayloadJSON: `{"reference":"isolated"}`,
 		IdempotencyKey: key,
 	})
-	if created || second.ID != first.ID {
-		t.Fatalf("duplicate event must return the original row: created=%v first=%d second=%d", created, first.ID, second.ID)
+	if created || second.ID <= 0 {
+		t.Fatalf("duplicate event must resolve the persisted row: created=%v replay_id=%d", created, second.ID)
+	}
+	if got := countP108Rows(t, dbConn, `SELECT COUNT(*) FROM pcs_outbox_events WHERE empresa_id = $1 AND topic = $2`, tenantID, topic); got != 1 {
+		t.Fatalf("expected one outbox event after duplicate insertion, got %d", got)
 	}
 
 	dispatcher := &outbox.Dispatcher{
