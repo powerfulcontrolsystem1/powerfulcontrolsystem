@@ -140,6 +140,7 @@ func TestCorporateEmailSuperPageIncludesBrandAvatarAndCSRF(t *testing.T) {
 		`function readCSRFCookie()`,
 		`pcs_csrf`,
 		`headers.set("X-CSRF-Token", token)`,
+		`id="quotaMB" type="number" min="0" step="1"`,
 	}
 	for _, expected := range required {
 		if !strings.Contains(page, expected) {

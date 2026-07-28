@@ -4882,3 +4882,4 @@
 
 - Se reparó el token CSRF de las acciones de Email corporativo Mailu y se
   añadió la vista del avatar BIMI junto al logo oficial embebido de PCS.
+- La cuota predeterminada de 1024 MB vuelve a ser válida en el formulario.

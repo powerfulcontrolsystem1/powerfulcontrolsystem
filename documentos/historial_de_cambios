@@ -39794,3 +39794,6 @@ Archivos modificados:
 - `sendCorporateEmailTest` identifica la prueba como visual y declara el logo
   esperado; los contratos verifican CSRF, ambos recursos de marca y límites
   básicos SVG Tiny-PS.
+- La prueba del candidato en staging detectó que `quotaMB=1024` era inválido
+  con `step=50`; el control usa ahora `step=1` para que el submit no quede
+  bloqueado por validación nativa.

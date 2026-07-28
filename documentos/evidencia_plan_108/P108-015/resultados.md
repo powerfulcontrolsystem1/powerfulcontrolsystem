@@ -23,6 +23,11 @@ La prueba visual autenticada reprodujo HTTP 403 al pulsar `Probar envio`. La
 página cargaba por GET, pero sus mutaciones no enviaban `X-CSRF-Token`. La rama
 candidata agrega el token a POST/PUT/PATCH/DELETE y cubre el contrato con test.
 
+Al desplegar el primer candidato en staging se detectó además que la cuota
+predeterminada `1024 MB` no era válida para el `step=50` del formulario. El
+navegador bloqueaba silenciosamente el submit y por eso el módulo no quedaba
+activo. La cuota ahora acepta pasos de 1 MB y conserva 1024 como valor válido.
+
 ## Pendiente para aprobar
 
 - integrar y desplegar la rama candidata;
@@ -35,4 +40,3 @@ candidata agrega el token a POST/PUT/PATCH/DELETE y cubre el contrato con test.
 
 El logo dentro del correo está implementado. La sustitución garantizada de la
 inicial en Gmail permanece bloqueada por el certificado externo.
-
