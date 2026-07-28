@@ -75,3 +75,23 @@ Subcriterios base vacía y segunda pasada: **PASS**.
 
 P108-002 continúa parcial solamente por upgrade desde snapshot representativo,
 restricción DDL mediante roles PostgreSQL y simulación de fallo/rollback.
+
+## Upgrade desde snapshot representativo
+
+`deploy/scripts/vps-p108-upgrade-migration-drill.sh` tomó dos copias lógicas
+consistentes del PostgreSQL de staging y las restauró en un PostgreSQL 16
+efímero. El origen se validó mediante el prefijo `pcs-staging-` y nunca recibió
+escrituras.
+
+- Digest migrador: `bcc26035d207...`.
+- Primera pasada: empresas `applied=0 existing=8`; superadministrador
+  `applied=0 existing=7`.
+- Segunda pasada: los mismos resultados idempotentes.
+- Tablas empresariales: `349` antes y `349` después.
+- Tablas administrativas: `59` antes y `59` después.
+- Limpieza: cero recursos efímeros residuales.
+
+Subcriterio upgrade representativo: **PASS**.
+
+P108-002 continúa parcial solamente por restricción DDL mediante roles
+PostgreSQL y simulación de fallo/rollback.

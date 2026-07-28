@@ -2,6 +2,7 @@
 - [Migraciones] El bootstrap explícito del rol `migrate` crea primero las cinco raíces mínimas exigidas por el catálogo heredado.
 - [Seguridad] API y worker mantienen bloqueado el DDL y no pueden activar el bootstrap en producción.
 - [QA] Un script aislado crea PostgreSQL vacío, ejecuta dos pasadas del digest y elimina contenedor, red y volumen.
+- [QA] Un segundo ensayo restaura una copia lógica de staging y verifica upgrade sin pérdida de tablas ni escrituras en el origen.
 
 ## [2026-07-28] Candidato P108 promovido por digest
 - [CI] El commit `fce1655c` superó preflight, race, seguridad, secretos, dependencias, Trivy y SBOM.

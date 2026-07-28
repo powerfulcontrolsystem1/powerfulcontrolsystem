@@ -9,6 +9,9 @@
   un digest, rechaza recursos preexistentes y elimina su entorno efímero.
 - El digest `bcc26035...` completó el ensayo: 8/7 migraciones en primera
   pasada, 0/0 en segunda, 336/48 tablas y cero recursos residuales.
+- Una copia lógica del PostgreSQL staging completó upgrade y segunda pasada:
+  349 tablas empresariales y 59 administrativas antes y después, sin escribir
+  en el origen ni dejar recursos efímeros.
 
 2026-07-28: Plan 108 / candidato inmutable promovido a staging.
 - El commit integrado `fce1655c` superó CI Linux, race, secretos, dependencias,

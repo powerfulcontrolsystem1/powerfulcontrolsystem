@@ -6,6 +6,8 @@
   alternativa para ejecutar DDL.
 - El ensayo Docker usa red, volumen y contenedores efímeros con nombre validado
   y limpieza automática.
+- El ensayo de upgrade solo acepta un origen `pcs-staging-*`, usa `pg_dump`
+  lógico y comprueba que el migrador no pierda tablas.
 
 2026-07-10: Super administrador - diagramas tecnicos consolidados.
 
