@@ -12374,3 +12374,6 @@ panel de seguridad para que el navegador reciba la correccion CSRF de staging.
 - `documentos/evidencia_plan_108/P108-010/resultados.md`: evidencia visual
   autenticada del gate de permiso de Centro IA empresarial y sus pendientes de
   validación funcional segura.
+- `documentos/evidencia_plan_108/P108-009/resultados_staging_20260728.md`:
+  prueba autenticada de ReportSpec IA, bloqueo seguro de credencial y pasos de
+  reanudación para completar la validación de staging.

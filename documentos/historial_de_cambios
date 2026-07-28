@@ -39891,3 +39891,11 @@ Archivos modificados:
   La interfaz conserva el patrón de un único interruptor `Modo agente`, y el
   servidor rechaza el acceso directo mientras la empresa no habilite la
   capacidad. No se cambiaron permisos para eludir esa compuerta.
+
+2026-07-28 - Plan 108: bloqueo reproducido de ReportSpec IA en staging
+
+- La prueba autenticada del modo `nuevo` confirmó que el catálogo de 46
+  reportes se carga, pero la generación de vista previa queda bloqueada por la
+  configuración criptográfica y la falta de credencial IA en staging. La
+  evidencia conserva el HTTP 502 y la condición de reanudación sin registrar
+  claves, tokens ni valores privados.
