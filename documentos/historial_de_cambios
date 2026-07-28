@@ -39884,3 +39884,25 @@ Archivos modificados:
   `p108_`; demuestra en PostgreSQL desechable que el evento se deduplica, el
   despacho repetido no duplica jobs, dos workers no adquieren el mismo job, un
   lease vencido se recupera y un fallo se conserva en dead-letter.
+
+2026-07-28 - Plan 108: evidencia de permiso efectivo para Centro IA
+
+- Se registró la validación visual autenticada de Centro IA para empresa 12.
+  La interfaz conserva el patrón de un único interruptor `Modo agente`, y el
+  servidor rechaza el acceso directo mientras la empresa no habilite la
+  capacidad. No se cambiaron permisos para eludir esa compuerta.
+
+2026-07-28 - Plan 108: bloqueo reproducido de ReportSpec IA en staging
+
+- La prueba autenticada del modo `nuevo` confirmó que el catálogo de 46
+  reportes se carga, pero la generación de vista previa queda bloqueada por la
+  configuración criptográfica y la falta de credencial IA en staging. La
+  evidencia conserva el HTTP 502 y la condición de reanudación sin registrar
+  claves, tokens ni valores privados.
+
+2026-07-28 - Plan 108: cabeceras dinámicas y acceso no autenticado
+
+- Se comprobó en staging que una API empresarial sin sesión deniega un
+  `empresa_id` manipulado sin filtrar datos y que un origen externo no recibe
+  autorización CORS. La evidencia también registra CSP y cabeceras duplicadas
+  con `unsafe-inline`, que permanecen como hallazgo de hardening pendiente.
