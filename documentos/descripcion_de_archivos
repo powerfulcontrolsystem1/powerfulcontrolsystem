@@ -1,8 +1,8 @@
 2026-07-28
 - `backend/db/legacy_core_schema.go`: raíces PostgreSQL mínimas e idempotentes
   que solo el rol migrador usa al inicializar una instalación vacía.
-- `backend/db/legacy_core_schema_test.go`: contrato que exige las raíces
-  `empresas`, `administradores` y `sesiones` antes de extensiones heredadas.
+- `backend/db/legacy_core_schema_test.go`: contrato que exige las cinco raíces
+  mínimas antes de extensiones heredadas.
 - `deploy/scripts/vps-p108-empty-migration-drill.sh`: ensayo aislado de base
   vacía y segunda pasada usando una imagen exacta por digest.
 

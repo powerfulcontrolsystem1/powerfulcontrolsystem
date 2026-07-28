@@ -1,5 +1,5 @@
 ## [2026-07-28] Migración reproducible desde PostgreSQL vacío
-- [Migraciones] El bootstrap explícito del rol `migrate` crea primero las raíces `empresas`, `administradores` y `sesiones`.
+- [Migraciones] El bootstrap explícito del rol `migrate` crea primero las cinco raíces mínimas exigidas por el catálogo heredado.
 - [Seguridad] API y worker mantienen bloqueado el DDL y no pueden activar el bootstrap en producción.
 - [QA] Un script aislado crea PostgreSQL vacío, ejecuta dos pasadas del digest y elimina contenedor, red y volumen.
 

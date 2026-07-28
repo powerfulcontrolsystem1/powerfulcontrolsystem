@@ -18,6 +18,8 @@ func TestLegacyCoreSchemaDefinesMigrationRoots(t *testing.T) {
 		"func BootstrapLegacyCoreSuperSchema(",
 		"CREATE TABLE IF NOT EXISTS administradores",
 		"CREATE TABLE IF NOT EXISTS sesiones",
+		"CREATE TABLE IF NOT EXISTS configuraciones",
+		"CREATE TABLE IF NOT EXISTS tipos_de_empresas",
 	} {
 		if !strings.Contains(source, required) {
 			t.Fatalf("legacy empty-database bootstrap is missing %q", required)

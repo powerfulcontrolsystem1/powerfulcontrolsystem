@@ -60,6 +60,23 @@ func BootstrapLegacyCoreSuperSchema(dbConn *sql.DB) error {
 			activo INTEGER DEFAULT 1,
 			fecha_creacion TEXT DEFAULT CAST(CURRENT_TIMESTAMP AS TEXT)
 		)`,
+		`CREATE TABLE IF NOT EXISTS configuraciones (
+			id BIGSERIAL PRIMARY KEY,
+			config_key TEXT NOT NULL UNIQUE,
+			value TEXT,
+			encrypted INTEGER DEFAULT 0,
+			fecha_creacion TEXT DEFAULT CAST(CURRENT_TIMESTAMP AS TEXT),
+			fecha_actualizacion TEXT DEFAULT CAST(CURRENT_TIMESTAMP AS TEXT)
+		)`,
+		`CREATE TABLE IF NOT EXISTS tipos_de_empresas (
+			id BIGSERIAL PRIMARY KEY,
+			nombre TEXT NOT NULL UNIQUE,
+			observaciones TEXT,
+			fecha_creacion TEXT DEFAULT CAST(CURRENT_TIMESTAMP AS TEXT),
+			fecha_actualizacion TEXT DEFAULT CAST(CURRENT_TIMESTAMP AS TEXT),
+			usuario_creador TEXT,
+			estado TEXT DEFAULT 'activo'
+		)`,
 	}
 	for _, statement := range statements {
 		if _, err := execSQLCompat(dbConn, statement); err != nil {

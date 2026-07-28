@@ -48,8 +48,11 @@ contenedor, red y volumen al terminar.
    existía la raíz `empresas`.
 2. Con `PCS_RUNTIME_SCHEMA_BOOTSTRAP=1` y rol `migrate`, el bootstrap encontró
    que `administradores` todavía no existía antes de extender su esquema.
+3. El primer digest corregido avanzó hasta el cifrado de configuración y
+   detectó que faltaban las raíces `configuraciones` y `tipos_de_empresas`.
 
 La rama candidata agrega raíces mínimas, idempotentes y exclusivas del rol
-migrador para `empresas`, `administradores` y `sesiones`, junto con
+migrador para `empresas`, `administradores`, `sesiones`, `configuraciones` y
+`tipos_de_empresas`, junto con
 `deploy/scripts/vps-p108-empty-migration-drill.sh`. Falta construir el nuevo
 digest y repetir el ensayo antes de aprobar este subcriterio.
