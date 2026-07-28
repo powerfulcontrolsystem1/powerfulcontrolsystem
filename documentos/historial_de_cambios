@@ -39797,3 +39797,5 @@ Archivos modificados:
 - La prueba del candidato en staging detectó que `quotaMB=1024` era inválido
   con `step=50`; el control usa ahora `step=1` para que el submit no quede
   bloqueado por validación nativa.
+- La validación visual a 390 x 844 corrigió el ancho mínimo de las tarjetas para
+  que la tabla desborde solo dentro de su contenedor y no en toda la página.

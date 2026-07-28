@@ -3337,3 +3337,4 @@
 - Plan 108: se reparó CSRF en Email corporativo Mailu, se añadió la identidad
   BIMI visible y se documentó VMC/CMC como compuerta del avatar en Gmail.
 - Se corrigió la validación nativa de la cuota de 1024 MB.
+- Se corrigió el desbordamiento horizontal del panel Mailu en móvil.

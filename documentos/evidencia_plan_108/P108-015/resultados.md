@@ -28,6 +28,11 @@ predeterminada `1024 MB` no era válida para el `step=50` del formulario. El
 navegador bloqueaba silenciosamente el submit y por eso el módulo no quedaba
 activo. La cuota ahora acepta pasos de 1 MB y conserva 1024 como valor válido.
 
+La captura inicial a 390 x 844 detectó que la tabla con ancho mínimo ampliaba
+el item del grid y generaba scroll horizontal de toda la página. Las tarjetas
+ahora declaran `min-width:0`, el contenedor de tabla limita su ancho y la página
+reserva espacio inferior para las acciones flotantes.
+
 ## Pendiente para aprobar
 
 - integrar y desplegar la rama candidata;
