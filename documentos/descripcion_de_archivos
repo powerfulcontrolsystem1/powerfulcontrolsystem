@@ -12336,6 +12336,9 @@ panel de seguridad para que el navegador reciba la correccion CSRF de staging.
   limpieza de recursos temporales.
 - `documentos/evidencia_plan_108/P108-004/resultados.md`: separa los contratos
   de aislamiento aprobados localmente de la matriz A/B autenticada pendiente.
+- `documentos/evidencia_plan_108/P108-008/resultados.md`: registra el
+  preflight de staging y el manifiesto P107-QA de solo lectura, sin confundirlo
+  con la ejecución posterior de fixtures contables.
 
 2026-07-26 - P108-015, reparación privada y anulación DIAN.
 - `deploy/scripts/vps-migrate-private-dian.sh`: migra para una empresa

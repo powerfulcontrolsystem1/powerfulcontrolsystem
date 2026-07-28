@@ -39884,3 +39884,11 @@ Archivos modificados:
   `p108_`; demuestra en PostgreSQL desechable que el evento se deduplica, el
   despacho repetido no duplica jobs, dos workers no adquieren el mismo job, un
   lease vencido se recupera y un fallo se conserva en dead-letter.
+
+2026-07-28 - Plan 108: preflight contable P107 en staging
+
+- Se ejecutó el preflight de solo lectura y se generó el manifiesto
+  `P107-QA-CONTADOR` para la empresa 12; el contrato conserva nueve escenarios
+  idempotentes y no autoriza por sí mismo ventas, compras, DIAN, bancos ni
+  correos. La evidencia queda en `P108-008` como parcial hasta disponer de un
+  ejecutor transaccional y conciliaciones completas.
