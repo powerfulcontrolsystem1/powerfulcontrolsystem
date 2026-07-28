@@ -1,6 +1,9 @@
 package db
 
 import (
+	"go/ast"
+	"go/parser"
+	"go/token"
 	"os"
 	"path/filepath"
 	"strings"
@@ -41,6 +44,44 @@ func TestSchemaStatementLoopsUseRuntimeDDLGuard(t *testing.T) {
 		}
 		if strings.Contains(string(raw), "dbConn.Exec(stmt)") {
 			t.Fatalf("%s bypasses runtime DDL guard for a schema statement loop", entry.Name())
+		}
+	}
+}
+
+func TestEnsureFunctionsDoNotBypassRuntimeDDLGuard(t *testing.T) {
+	entries, err := os.ReadDir(".")
+	if err != nil {
+		t.Fatal(err)
+	}
+	files := token.NewFileSet()
+	for _, entry := range entries {
+		if entry.IsDir() || filepath.Ext(entry.Name()) != ".go" || strings.HasSuffix(entry.Name(), "_test.go") {
+			continue
+		}
+		parsed, err := parser.ParseFile(files, entry.Name(), nil, 0)
+		if err != nil {
+			t.Fatal(err)
+		}
+		for _, declaration := range parsed.Decls {
+			function, ok := declaration.(*ast.FuncDecl)
+			if !ok || function.Body == nil || !strings.HasPrefix(function.Name.Name, "Ensure") {
+				continue
+			}
+			ast.Inspect(function.Body, func(node ast.Node) bool {
+				call, ok := node.(*ast.CallExpr)
+				if !ok {
+					return true
+				}
+				selector, ok := call.Fun.(*ast.SelectorExpr)
+				if !ok || selector.Sel.Name != "Exec" {
+					return true
+				}
+				receiver, ok := selector.X.(*ast.Ident)
+				if ok && receiver.Name == "dbConn" {
+					t.Errorf("%s:%d %s bypasses runtime DDL guard", entry.Name(), files.Position(call.Pos()).Line, function.Name.Name)
+				}
+				return true
+			})
 		}
 	}
 }

@@ -139,7 +139,7 @@ func EnsureEmpresaTarifasPorDiaSchema(dbConn *sql.DB) error {
 			return err
 		}
 	}
-	if _, err := dbConn.Exec(`DROP INDEX IF EXISTS ux_empresa_tarifas_por_dia_estacion`); err != nil {
+	if _, err := execSQLCompat(dbConn, `DROP INDEX IF EXISTS ux_empresa_tarifas_por_dia_estacion`); err != nil {
 		return err
 	}
 	if err := dropLegacyEmpresaTarifasPorDiaUniqueIndexes(dbConn); err != nil {
@@ -194,7 +194,7 @@ func EnsureEmpresaTarifasPorDiaSchema(dbConn *sql.DB) error {
 	if err := ensureColumnIfMissing(dbConn, "empresa_tarifas_por_dia", "observaciones", "TEXT"); err != nil {
 		return err
 	}
-	if _, err := dbConn.Exec(`CREATE INDEX IF NOT EXISTS ix_empresa_tarifas_por_dia_personas ON empresa_tarifas_por_dia(empresa_id, estacion_id, personas_desde, personas_hasta, estado);`); err != nil {
+	if _, err := execSQLCompat(dbConn, `CREATE INDEX IF NOT EXISTS ix_empresa_tarifas_por_dia_personas ON empresa_tarifas_por_dia(empresa_id, estacion_id, personas_desde, personas_hasta, estado);`); err != nil {
 		return err
 	}
 

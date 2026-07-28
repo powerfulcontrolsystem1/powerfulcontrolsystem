@@ -1013,25 +1013,25 @@ func EnsureEmpresaModulosFaltantesSchema(dbConn *sql.DB) error {
 		return err
 	}
 
-	if _, err := dbConn.Exec(`CREATE INDEX IF NOT EXISTS ix_cxc_empresa_periodo ON empresa_cuentas_por_cobrar(empresa_id, periodo_contable, estado_cartera);`); err != nil {
+	if _, err := execSQLCompat(dbConn, `CREATE INDEX IF NOT EXISTS ix_cxc_empresa_periodo ON empresa_cuentas_por_cobrar(empresa_id, periodo_contable, estado_cartera);`); err != nil {
 		return err
 	}
-	if _, err := dbConn.Exec(`CREATE INDEX IF NOT EXISTS ix_cxp_empresa_periodo ON empresa_cuentas_por_pagar(empresa_id, periodo_contable, estado_cartera);`); err != nil {
+	if _, err := execSQLCompat(dbConn, `CREATE INDEX IF NOT EXISTS ix_cxp_empresa_periodo ON empresa_cuentas_por_pagar(empresa_id, periodo_contable, estado_cartera);`); err != nil {
 		return err
 	}
-	if _, err := dbConn.Exec(`CREATE INDEX IF NOT EXISTS ix_lotes_empresa_estado_bloqueo ON inventario_lotes_series(empresa_id, estado_lote, bloqueado_venta);`); err != nil {
+	if _, err := execSQLCompat(dbConn, `CREATE INDEX IF NOT EXISTS ix_lotes_empresa_estado_bloqueo ON inventario_lotes_series(empresa_id, estado_lote, bloqueado_venta);`); err != nil {
 		return err
 	}
-	if _, err := dbConn.Exec(`CREATE INDEX IF NOT EXISTS ix_dev_prov_empresa_estado_contable ON empresa_devoluciones_proveedor(empresa_id, estado_devolucion, periodo_contable);`); err != nil {
+	if _, err := execSQLCompat(dbConn, `CREATE INDEX IF NOT EXISTS ix_dev_prov_empresa_estado_contable ON empresa_devoluciones_proveedor(empresa_id, estado_devolucion, periodo_contable);`); err != nil {
 		return err
 	}
-	if _, err := dbConn.Exec(`CREATE INDEX IF NOT EXISTS ix_rrhh_vac_lic_empresa_estado_nivel ON empresa_rrhh_vacaciones_licencias(empresa_id, estado_novedad, nivel_aprobacion_actual, nivel_aprobacion_requerido, id DESC);`); err != nil {
+	if _, err := execSQLCompat(dbConn, `CREATE INDEX IF NOT EXISTS ix_rrhh_vac_lic_empresa_estado_nivel ON empresa_rrhh_vacaciones_licencias(empresa_id, estado_novedad, nivel_aprobacion_actual, nivel_aprobacion_requerido, id DESC);`); err != nil {
 		return err
 	}
-	if _, err := dbConn.Exec(`CREATE INDEX IF NOT EXISTS ix_rrhh_vac_lic_empresa_nomina_periodo ON empresa_rrhh_vacaciones_licencias(empresa_id, empleado_nomina_id, nomina_liquidacion_id, nomina_periodo_desde, nomina_periodo_hasta);`); err != nil {
+	if _, err := execSQLCompat(dbConn, `CREATE INDEX IF NOT EXISTS ix_rrhh_vac_lic_empresa_nomina_periodo ON empresa_rrhh_vacaciones_licencias(empresa_id, empleado_nomina_id, nomina_liquidacion_id, nomina_periodo_desde, nomina_periodo_hasta);`); err != nil {
 		return err
 	}
-	if _, err := dbConn.Exec(`CREATE INDEX IF NOT EXISTS ix_dian_empresa_shared_mode ON empresa_dian_configuracion(empresa_id, usar_software_compartido);`); err != nil {
+	if _, err := execSQLCompat(dbConn, `CREATE INDEX IF NOT EXISTS ix_dian_empresa_shared_mode ON empresa_dian_configuracion(empresa_id, usar_software_compartido);`); err != nil {
 		return err
 	}
 

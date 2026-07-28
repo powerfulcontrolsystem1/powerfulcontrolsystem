@@ -301,7 +301,7 @@ func EnsureSuperVentaDigitalSchema(dbConn *sql.DB) error {
 		return err
 	}
 
-	_, _ = dbConn.Exec(`INSERT INTO super_venta_digital_configuracion (scope_key, nombre_tienda, descripcion_tienda, moneda, wompi_activo, usuario_creador, estado)
+	_, _ = execSQLCompat(dbConn, `INSERT INTO super_venta_digital_configuracion (scope_key, nombre_tienda, descripcion_tienda, moneda, wompi_activo, usuario_creador, estado)
 		SELECT 'global', 'Venta Digital Powerful Control System', 'Catalogo digital global administrado por super administrador', 'COP', 1, 'sistema', 'activo'
 		WHERE NOT EXISTS (SELECT 1 FROM super_venta_digital_configuracion WHERE scope_key='global')`)
 

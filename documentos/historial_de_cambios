@@ -39863,3 +39863,13 @@ Archivos modificados:
   bloqueado por validación nativa.
 - La validación visual a 390 x 844 corrigió el ancho mínimo de las tarjetas para
   que la tabla desborde solo dentro de su contenedor y no en toda la página.
+
+2026-07-28 - Plan 108: guard de DDL para runtime PostgreSQL
+
+- Las funciones `Ensure*Schema` usan la capa `execSQLCompat`; API y worker
+  omiten DDL cuando `PCS_RUNTIME_SCHEMA_BOOTSTRAP=0`, mientras el migrador
+  mantiene la responsabilidad exclusiva de crear o alterar el esquema.
+- Se añadió un contrato AST que rechaza en pruebas cualquier `dbConn.Exec`
+  directo dentro de una función `Ensure*`, evitando que módulos como carritos,
+  facturación electrónica, reportes, productos, licencias o CxP recuperen
+  permisos de DDL por accidente.
