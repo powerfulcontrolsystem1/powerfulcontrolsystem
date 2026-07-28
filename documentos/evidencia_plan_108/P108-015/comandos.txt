@@ -1,0 +1,13 @@
+2026-07-28
+
+Resolve-DnsName powerfulcontrolsystem.com -Type TXT
+Resolve-DnsName _dmarc.powerfulcontrolsystem.com -Type TXT
+Resolve-DnsName default._bimi.powerfulcontrolsystem.com -Type TXT
+Resolve-DnsName dkim._domainkey.powerfulcontrolsystem.com -Type TXT
+curl -fsSIL https://powerfulcontrolsystem.com/img/bimi-pcs.svg
+curl -fsSIL https://powerfulcontrolsystem.com/img/Logo%20pcs%201.png
+go test ./handlers -run TestCorporateEmail -count=1
+go test . -run TestBIMILogoDeclaresTinyPSProfile -count=1
+go test ./... -count=1
+pwsh.exe -NoProfile -File .\scripts\profesional_preflight.ps1 -Full
+

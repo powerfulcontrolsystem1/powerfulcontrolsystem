@@ -56,6 +56,34 @@ func TestBIMILogoDeclaresTinyPSProfile(t *testing.T) {
 			t.Fatalf("BIMI logo missing %q", marker)
 		}
 	}
+	for _, forbidden := range []string{
+		"<script",
+		"<animate",
+		"<image",
+	} {
+		if strings.Contains(strings.ToLower(svg), forbidden) {
+			t.Fatalf("BIMI logo contains forbidden Tiny-PS marker %q", forbidden)
+		}
+	}
+	rootStart := strings.Index(strings.ToLower(svg), "<svg")
+	rootEnd := -1
+	if rootStart >= 0 {
+		if relativeEnd := strings.Index(svg[rootStart:], ">"); relativeEnd >= 0 {
+			rootEnd = rootStart + relativeEnd
+		}
+	}
+	if rootStart < 0 || rootEnd < 0 {
+		t.Fatal("BIMI logo is missing the root svg element")
+	}
+	rootTag := strings.ToLower(svg[rootStart : rootEnd+1])
+	for _, forbidden := range []string{` x="`, ` y="`} {
+		if strings.Contains(rootTag, forbidden) {
+			t.Fatalf("BIMI root svg contains forbidden Tiny-PS marker %q", forbidden)
+		}
+	}
+	if len(raw) > 32*1024 {
+		t.Fatalf("BIMI logo size=%d, must stay under 32 KiB", len(raw))
+	}
 }
 
 func TestBackendImageAvoidsRecursiveAppChown(t *testing.T) {

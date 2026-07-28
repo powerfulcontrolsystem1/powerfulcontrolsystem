@@ -4590,3 +4590,11 @@ Actualización 2026-07-25 (Disponibilidad P107 de reportes):
   y ejecuciones con una consulta de marcador de una sola columna. Esto permite
   que catálogo, vista previa y exportación continúen hacia el dataset elegido
   sin relajar permisos ni el filtro de empresa.
+2026-07-28 - Email corporativo Mailu / P108-015
+
+- El panel super presenta por separado el logo oficial embebido y el avatar
+  BIMI de dominio.
+- Todas sus mutaciones agregan el token sincronizador CSRF requerido por el
+  middleware. El alcance continúa reservado al super administrador.
+- Gmail requiere VMC o CMC para sustituir de forma garantizada la inicial del
+  remitente; el BIMI autoafirmado no cierra esa compuerta.

@@ -33,7 +33,7 @@
     .hero h1 { margin: 0 0 6px; font-size: clamp(1.45rem, 2.2vw, 2rem); }
     .hero p { margin: 0; max-width: 760px; color: var(--mail-muted); line-height: 1.45; }
     .grid { display: grid; grid-template-columns: minmax(340px, .85fr) minmax(0, 1.45fr); gap: 14px; align-items: start; }
-    .card { background: var(--mail-card); border: 1px solid var(--mail-border); border-radius: 8px; padding: 16px; box-shadow: none; }
+    .card { min-width: 0; background: var(--mail-card); border: 1px solid var(--mail-border); border-radius: 8px; padding: 16px; box-shadow: none; }
     .card h2 { margin: 0 0 12px; font-size: 1.06rem; }
     .form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
     label { display: grid; gap: 6px; font-size: .84rem; font-weight: 700; color: var(--mail-text); }
@@ -57,10 +57,14 @@
     .status { margin: 0 0 12px; min-height: 20px; font-weight: 700; color: #0f766e; }
     .status.error { color: #b42318; }
     .test-send-row { display: grid; grid-template-columns: minmax(220px, 1fr) auto; gap: 10px; align-items: end; margin-top: 12px; max-width: 620px; }
+    .sender-brand { display: grid; grid-template-columns: 84px minmax(0, 1fr); gap: 14px; align-items: center; margin-top: 14px; padding: 12px; border: 1px solid var(--mail-border); border-radius: 8px; background: color-mix(in srgb, var(--mail-card) 92%, var(--mail-primary) 8%); }
+    .sender-brand img { width: 72px; height: 72px; object-fit: contain; border-radius: 50%; background: #fff; border: 1px solid var(--mail-border); }
+    .sender-brand strong { display: block; margin-bottom: 4px; color: var(--mail-text); }
+    .sender-brand p { margin: 0; color: var(--mail-muted); font-size: .84rem; line-height: 1.45; }
     .logo-preview-row { display: grid; grid-template-columns: minmax(0, 1fr) 96px; gap: 10px; align-items: end; }
     .logo-preview { width: 96px; height: 76px; border: 1px solid var(--mail-border); border-radius: 8px; background: var(--mail-input); display: grid; place-items: center; overflow: hidden; }
     .logo-preview img { max-width: 84px; max-height: 64px; display: block; }
-    .table-wrap { overflow-x: auto; border: 1px solid var(--mail-border); border-radius: 8px; }
+    .table-wrap { max-width: 100%; overflow-x: auto; border: 1px solid var(--mail-border); border-radius: 8px; }
     table { width: 100%; border-collapse: collapse; min-width: 640px; }
     th, td { padding: 9px; border-bottom: 1px solid var(--mail-border); text-align: left; font-size: .86rem; vertical-align: top; overflow-wrap: anywhere; }
     th { background: rgba(31, 111, 235, .08); font-size: .78rem; text-transform: uppercase; letter-spacing: .04em; }
@@ -77,6 +81,7 @@
       .diagnostics { grid-template-columns: 1fr 1fr; }
     }
     @media (max-width: 520px) {
+      .page { padding-bottom: 88px; }
       .diagnostics { grid-template-columns: 1fr; }
       .test-send-row { grid-template-columns: 1fr; }
     }
@@ -114,6 +119,13 @@
         <button id="testSendBtn" type="button" aria-label="Enviar correo de prueba">Probar envio</button>
       </div>
       <p class="hint">Estas pruebas validan Mailu, crean o actualizan los buzones del sistema y envian un correo real desde el dominio propio. No muestra ni imprime claves.</p>
+      <div class="sender-brand" aria-label="Identidad visual del remitente">
+        <img src="/img/bimi-pcs.svg" alt="Icono oficial del computador PCS para BIMI">
+        <div>
+          <strong>Avatar del remitente: icono oficial PCS</strong>
+          <p>El correo incluye el logo oficial dentro del mensaje. El avatar circular usa BIMI para todo el dominio; Gmail solo reemplaza la inicial por este icono cuando el dominio dispone además de un certificado VMC o CMC vigente.</p>
+        </div>
+      </div>
     </section>
 
     <div class="grid">
@@ -150,7 +162,7 @@
               </select>
             </label>
             <label>Cuota por buzon (MB)
-              <input id="quotaMB" type="number" min="0" step="50">
+              <input id="quotaMB" type="number" min="0" step="1">
             </label>
             <label>Maximo cuentas por empresa
               <input id="maxAccountsPerEmpresa" type="number" min="1" step="1">
@@ -229,8 +241,22 @@
         statusEl.className = "status" + (error ? " error" : "");
       }
 
+      function readCSRFCookie() {
+        var match = String(document.cookie || "").match(/(?:^|;\s*)pcs_csrf=([^;]+)/);
+        if (!match) return "";
+        try { return decodeURIComponent(match[1] || ""); } catch (_) { return match[1] || ""; }
+      }
+
       function requestJSON(url, options) {
-        return fetch(url, Object.assign({ credentials: "same-origin" }, options || {})).then(function (res) {
+        var requestOptions = Object.assign({ credentials: "same-origin" }, options || {});
+        var method = String(requestOptions.method || "GET").toUpperCase();
+        if (method !== "GET" && method !== "HEAD" && method !== "OPTIONS") {
+          var token = readCSRFCookie();
+          var headers = new Headers(requestOptions.headers || {});
+          if (token && !headers.has("X-CSRF-Token")) headers.set("X-CSRF-Token", token);
+          requestOptions.headers = headers;
+        }
+        return fetch(url, requestOptions).then(function (res) {
           return res.text().then(function (text) {
             var data = {};
             try { data = text ? JSON.parse(text) : {}; } catch (e) {}

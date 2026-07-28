@@ -3332,3 +3332,9 @@
   mientras DIAN solo reporte `enviado`; el cierre fiscal exige `aceptado`.
 - [Multiempresa] La reparacion y las operaciones fiscales conservan filtros y
   autorizacion efectiva por `empresa_id`.
+## 2026-07-28
+
+- Plan 108: se reparó CSRF en Email corporativo Mailu, se añadió la identidad
+  BIMI visible y se documentó VMC/CMC como compuerta del avatar en Gmail.
+- Se corrigió la validación nativa de la cuota de 1024 MB.
+- Se corrigió el desbordamiento horizontal del panel Mailu en móvil.

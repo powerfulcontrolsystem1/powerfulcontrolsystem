@@ -88,6 +88,10 @@ admin, IMAP, SMTP, antispam, webmail SnappyMail y Redis. El proxy publico lo adm
     computador, embebido mediante `cid:`. El avatar externo del remitente se
     publica por separado con `web/img/bimi-pcs.svg`; requiere DMARC en
     enforcement, el registro DNS BIMI y, para Gmail, VMC o CMC.
+25. Las acciones mutables de `web/super/email_corporativo.html` envían el token
+    sincronizador `pcs_csrf` como `X-CSRF-Token`. Sin este encabezado el
+    middleware debe rechazar guardar, probar, sincronizar o provisionar con
+    HTTP 403.
 
 ## Seguridad
 
@@ -246,3 +250,7 @@ Antes de activar correo real:
 - El avatar circular del remitente depende ademas de la cache y politica del
   cliente receptor. Gmail requiere un certificado VMC o CMC para mostrar el
   logo BIMI verificado; el TXT BIMI sin certificado no garantiza ese avatar.
+- La ausencia de VMC/CMC es un bloqueo externo abierto del Plan 108: el logo
+  inline ya usa el archivo oficial, pero la inicial generada por Gmail no se
+  puede eliminar de forma garantizada hasta publicar el PEM del certificado en
+  el campo `a=` del registro BIMI y repetir la prueba visual.

@@ -4878,3 +4878,9 @@
   `aceptado`, no con el estado intermedio `enviado`.
 - Configuracion, documentos, colas, acuses y migracion permanecen aislados por
   `empresa_id`.
+## 2026-07-28
+
+- Se reparó el token CSRF de las acciones de Email corporativo Mailu y se
+  añadió la vista del avatar BIMI junto al logo oficial embebido de PCS.
+- La cuota predeterminada de 1024 MB vuelve a ser válida en el formulario.
+- El panel Mailu deja de desbordar horizontalmente en pantallas móviles.
