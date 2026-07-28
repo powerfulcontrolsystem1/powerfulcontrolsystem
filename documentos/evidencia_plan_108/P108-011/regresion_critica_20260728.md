@@ -34,7 +34,8 @@ pagos, envíos, guardados, anulaciones, impresiones ni cierres.
   reconciliarse con la ruta canónica del menú antes de repetir y no se registra
   como fallo del módulo;
 - el panel generó advertencias no bloqueantes por atributos redundantes
-  `allow`/`allowfullscreen`;
+  `allow`/`allowfullscreen`; la rama candidata retira el atributo duplicado y
+  conserva `fullscreen` en la política `allow`;
 - el carrito reprodujo cuatro veces HTTP 500 en
   `/api/empresa/configuracion_operativa`.
 

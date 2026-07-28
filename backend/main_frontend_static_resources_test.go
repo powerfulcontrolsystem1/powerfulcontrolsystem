@@ -149,6 +149,20 @@ func TestSuperPageToolsDoNotCoverMobileControls(t *testing.T) {
 	}
 }
 
+func TestEmpresaShellFullscreenPermissionHasNoDuplicateAttribute(t *testing.T) {
+	raw, err := os.ReadFile(filepath.Join("..", "web", "administrar_empresa.html"))
+	if err != nil {
+		t.Fatalf("read empresa shell: %v", err)
+	}
+	content := string(raw)
+	if !strings.Contains(content, `allow="geolocation; fullscreen"`) {
+		t.Fatal("empresa content iframe must keep the fullscreen permission policy")
+	}
+	if strings.Contains(content, `allow="geolocation; fullscreen" allowfullscreen`) {
+		t.Fatal("empresa content iframe must not emit duplicate fullscreen attributes")
+	}
+}
+
 type staticResourceReference struct {
 	sourcePath   string
 	rawReference string

@@ -9,6 +9,8 @@
   `permitir_ingresos_manuales` y `permitir_egresos_manuales`; el contrato
   PostgreSQL asegura la alineación y la consulta conserva el filtro
   empresarial.
+- `web/administrar_empresa.html` conserva fullscreen mediante `allow` y retira
+  el atributo redundante que Chrome reportaba dos veces en consola.
 
 2026-07-28: Plan 108 / artefacto inmutable y QA móvil super.
 - `deploy/docker-compose.release.yml` y
