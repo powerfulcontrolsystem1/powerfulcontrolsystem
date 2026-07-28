@@ -478,7 +478,7 @@ func EnsureEmpresaGimnasioSchema(dbConn *sql.DB) error {
 		`CREATE INDEX IF NOT EXISTS ix_empresa_gimnasio_eventos_empresa_fecha ON empresa_gimnasio_eventos_acceso(empresa_id, fecha_evento DESC, id DESC);`,
 	}
 	for _, stmt := range stmts {
-		if _, err := dbConn.Exec(stmt); err != nil {
+		if _, err := execSQLCompat(dbConn, stmt); err != nil {
 			return err
 		}
 	}
@@ -739,7 +739,7 @@ func EnsureEmpresaGimnasioSchema(dbConn *sql.DB) error {
 		`CREATE INDEX IF NOT EXISTS ix_empresa_gimnasio_pagos_carrito ON empresa_gimnasio_pagos(empresa_id, carrito_id);`,
 	}
 	for _, stmt := range postColumnIndexes {
-		if _, err := dbConn.Exec(stmt); err != nil {
+		if _, err := execSQLCompat(dbConn, stmt); err != nil {
 			return err
 		}
 	}

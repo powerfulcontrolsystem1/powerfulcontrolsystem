@@ -95,7 +95,7 @@ func EnsureHotelTarjetasAccesoSchema(dbConn *sql.DB) error {
 		`CREATE INDEX IF NOT EXISTS ix_hotel_tarjetas_eventos_empresa ON hotel_tarjetas_acceso_eventos(empresa_id, fecha_evento);`,
 	}
 	for _, stmt := range stmts {
-		if _, err := dbConn.Exec(stmt); err != nil {
+		if _, err := execSQLCompat(dbConn, stmt); err != nil {
 			return err
 		}
 	}

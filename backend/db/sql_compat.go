@@ -149,7 +149,7 @@ $$;`,
 	}
 
 	for i, stmt := range stmts {
-		if _, err := dbConn.Exec(stmt); err != nil {
+		if _, err := execSQLCompat(dbConn, stmt); err != nil {
 			return fmt.Errorf("postgres compat step %d failed: %w", i+1, err)
 		}
 	}

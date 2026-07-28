@@ -101,7 +101,7 @@ func EnsureEmpresaAuditoriaSchema(dbConn *sql.DB) error {
 		`CREATE INDEX IF NOT EXISTS ix_empresa_auditoria_eventos_fecha_expiracion ON empresa_auditoria_eventos(fecha_expiracion);`,
 	}
 	for _, stmt := range stmts {
-		if _, err := dbConn.Exec(stmt); err != nil {
+		if _, err := execSQLCompat(dbConn, stmt); err != nil {
 			return err
 		}
 	}
@@ -200,7 +200,7 @@ func ensureEmpresaAuditoriaIAConsultaSchema(dbConn *sql.DB) error {
 		`CREATE INDEX IF NOT EXISTS ix_empresa_auditoria_ia_consultas_hash ON empresa_auditoria_ia_consultas(pregunta_hash);`,
 	}
 	for _, stmt := range stmts {
-		if _, err := dbConn.Exec(stmt); err != nil {
+		if _, err := execSQLCompat(dbConn, stmt); err != nil {
 			return err
 		}
 	}

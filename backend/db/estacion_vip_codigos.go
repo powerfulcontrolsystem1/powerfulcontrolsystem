@@ -45,7 +45,7 @@ func EnsureEstacionVIPCodigosSchema(dbConn *sql.DB) error {
 		`CREATE INDEX IF NOT EXISTS ix_estacion_vip_empresa_carrito ON estacion_vip_codigos(empresa_id, carrito_id, estado);`,
 	}
 	for _, stmt := range stmts {
-		if _, err := dbConn.Exec(stmt); err != nil {
+		if _, err := execSQLCompat(dbConn, stmt); err != nil {
 			return err
 		}
 	}

@@ -149,7 +149,7 @@ func EnsureEmpresaCodigosDescuentoSchema(dbConn *sql.DB) error {
 		`CREATE UNIQUE INDEX IF NOT EXISTS ux_codigos_descuento_redenciones_aplicada ON codigos_descuento_redenciones(empresa_id, codigo_descuento_id, carrito_id, estado_redencion);`,
 	}
 	for _, stmt := range stmts {
-		if _, err := dbConn.Exec(stmt); err != nil {
+		if _, err := execSQLCompat(dbConn, stmt); err != nil {
 			return err
 		}
 	}

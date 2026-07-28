@@ -174,7 +174,7 @@ func EnsureEmpresaDocumentosTransaccionalesSchema(dbConn *sql.DB) error {
 		`CREATE INDEX IF NOT EXISTS ix_empresa_compras_documentos_estado ON empresa_compras_documentos(empresa_id, estado_documento, estado);`,
 	}
 	for _, stmt := range stmts {
-		if _, err := dbConn.Exec(stmt); err != nil {
+		if _, err := execSQLCompat(dbConn, stmt); err != nil {
 			return err
 		}
 	}
@@ -327,7 +327,7 @@ func EnsureEmpresaDocumentosTransaccionalesSchema(dbConn *sql.DB) error {
 		`CREATE INDEX IF NOT EXISTS ix_empresa_compras_documentos_validacion ON empresa_compras_documentos(empresa_id, validacion_documental_estado, estado);`,
 	}
 	for _, stmt := range indexStmts {
-		if _, err := dbConn.Exec(stmt); err != nil {
+		if _, err := execSQLCompat(dbConn, stmt); err != nil {
 			return err
 		}
 	}

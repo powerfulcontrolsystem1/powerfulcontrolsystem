@@ -139,7 +139,7 @@ func EnsureEmpresaReservasHotelSchema(dbConn *sql.DB) error {
 		`CREATE INDEX IF NOT EXISTS ix_reservas_hotel_empresa_confirmadas_entrada ON reservas_hotel(empresa_id, estado, estado_reserva, estado_pago, fecha_entrada);`,
 	}
 	for _, stmt := range stmts {
-		if _, err := dbConn.Exec(stmt); err != nil {
+		if _, err := execSQLCompat(dbConn, stmt); err != nil {
 			return err
 		}
 	}

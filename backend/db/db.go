@@ -168,7 +168,7 @@ func EnsureAdministradoresAuthSchema(dbConn *sql.DB) error {
 		`ALTER TABLE administradores ADD COLUMN IF NOT EXISTS totp_last_counter BIGINT DEFAULT -1`,
 	}
 	for _, stmt := range statements {
-		if _, err := dbConn.Exec(stmt); err != nil {
+		if _, err := execSQLCompat(dbConn, stmt); err != nil {
 			return err
 		}
 	}
@@ -255,7 +255,7 @@ func EnsurePaymentGatewaySchema(dbConn *sql.DB) error {
 	}
 
 	for _, stmt := range statements {
-		if _, err := dbConn.Exec(stmt); err != nil {
+		if _, err := execSQLCompat(dbConn, stmt); err != nil {
 			return err
 		}
 	}
@@ -317,7 +317,7 @@ func EnsureLicenciasSchema(dbConn *sql.DB) error {
 		`ALTER TABLE licencias ADD COLUMN IF NOT EXISTS observaciones TEXT`,
 	}
 	for _, stmt := range statements {
-		if _, err := dbConn.Exec(stmt); err != nil {
+		if _, err := execSQLCompat(dbConn, stmt); err != nil {
 			return err
 		}
 	}

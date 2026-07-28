@@ -77,7 +77,7 @@ func EnsureLicenciaVencimientoNotificacionesSchema(dbConn *sql.DB) error {
 		`CREATE INDEX IF NOT EXISTS ix_licencia_vencimiento_notificaciones_empresa ON licencia_vencimiento_notificaciones(empresa_id, estado, fecha_actualizacion DESC)`,
 	}
 	for _, stmt := range statements {
-		if _, err := dbConn.Exec(stmt); err != nil {
+		if _, err := execSQLCompat(dbConn, stmt); err != nil {
 			return err
 		}
 	}

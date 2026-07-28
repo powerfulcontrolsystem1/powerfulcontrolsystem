@@ -135,7 +135,7 @@ func EnsureEmpresaTarifasPorDiaSchema(dbConn *sql.DB) error {
 		`CREATE INDEX IF NOT EXISTS ix_empresa_tarifas_por_dia_empresa_estacion ON empresa_tarifas_por_dia(empresa_id, estacion_id);`,
 	}
 	for _, stmt := range stmts {
-		if _, err := dbConn.Exec(stmt); err != nil {
+		if _, err := execSQLCompat(dbConn, stmt); err != nil {
 			return err
 		}
 	}

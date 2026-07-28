@@ -135,7 +135,7 @@ func EnsureEmpresaAsistenciaSchema(dbConn *sql.DB) error {
 		`CREATE INDEX IF NOT EXISTS ix_empresa_asistencia_cierres_empresa_periodo ON empresa_asistencia_periodos_cerrados(empresa_id, periodo_desde DESC, periodo_hasta DESC);`,
 	}
 	for _, stmt := range stmts {
-		if _, err := dbConn.Exec(stmt); err != nil {
+		if _, err := execSQLCompat(dbConn, stmt); err != nil {
 			return err
 		}
 	}

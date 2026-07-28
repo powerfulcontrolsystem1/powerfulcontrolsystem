@@ -59,7 +59,7 @@ func EnsureEmpresaPermisosFinosSchema(dbConn *sql.DB) error {
 		ON empresa_permisos_paginas(empresa_id, estado);`,
 	}
 	for _, stmt := range statements {
-		if _, err := dbConn.Exec(stmt); err != nil {
+		if _, err := execSQLCompat(dbConn, stmt); err != nil {
 			return err
 		}
 	}

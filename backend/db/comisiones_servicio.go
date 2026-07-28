@@ -256,7 +256,7 @@ func EnsureEmpresaComisionesServicioSchema(dbConn *sql.DB) error {
 		);`,
 	}
 	for _, stmt := range bootstrapStmts {
-		if _, err := dbConn.Exec(stmt); err != nil {
+		if _, err := execSQLCompat(dbConn, stmt); err != nil {
 			return err
 		}
 	}
@@ -438,7 +438,7 @@ func EnsureEmpresaComisionesServicioSchema(dbConn *sql.DB) error {
 			WHERE COALESCE(origen_movimiento, 'venta') = 'venta' AND COALESCE(carrito_item_id, 0) > 0;`,
 	}
 	for _, stmt := range indexStmts {
-		if _, err := dbConn.Exec(stmt); err != nil {
+		if _, err := execSQLCompat(dbConn, stmt); err != nil {
 			return err
 		}
 	}

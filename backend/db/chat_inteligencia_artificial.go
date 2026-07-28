@@ -412,7 +412,7 @@ func EnsureEmpresaAIChatSchema(dbConn *sql.DB) error {
 		`CREATE INDEX IF NOT EXISTS ix_empresa_ai_usuario_preferencias_empresa_usuario ON empresa_ai_usuario_preferencias(empresa_id, usuario_id, estado);`,
 	}
 	for _, stmt := range stmts {
-		if _, err := dbConn.Exec(stmt); err != nil {
+		if _, err := execSQLCompat(dbConn, stmt); err != nil {
 			return err
 		}
 	}
@@ -676,7 +676,7 @@ func EnsureSuperAIChatSchema(dbConn *sql.DB) error {
 		`CREATE INDEX IF NOT EXISTS ix_super_ai_modelo_preferido_admin ON super_ai_modelo_preferido(admin_email, estado);`,
 	}
 	for _, stmt := range stmts {
-		if _, err := dbConn.Exec(stmt); err != nil {
+		if _, err := execSQLCompat(dbConn, stmt); err != nil {
 			return err
 		}
 	}
