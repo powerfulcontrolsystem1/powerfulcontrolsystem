@@ -12322,3 +12322,6 @@ panel de seguridad para que el navegador reciba la correccion CSRF de staging.
   evidencia autenticada de la carga de una factura XML sintética en la empresa
   12, la radicación privada sin contabilización y el bloqueo de extracción por
   credencial IA de staging incompatible con la llave vigente.
+- `documentos/evidencia_plan_108/P108-012/finanzas_cxp_responsive_20260728.md`:
+  comprobación visual autenticada de Finanzas, CxP, movimientos y soportes IA
+  en escritorio y viewport móvil de 390 por 844.

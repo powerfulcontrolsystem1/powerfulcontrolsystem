@@ -39760,3 +39760,13 @@ Archivos modificados:
   el saldo canónico y no se registró pago ni asiento.
 - Se registró el resultado y la repetición requerida en
   `documentos/evidencia_plan_108/P108-006/staging_carga_ia_20260728.md`.
+
+## 2026-07-28 - Plan 108: Finanzas y CxP responsive en staging
+
+- Se comprobó la pantalla autenticada de Finanzas en escritorio y en viewport
+  móvil de 390 por 844. Formularios y botones se apilan correctamente; las
+  tablas conservan sus columnas mediante desplazamiento horizontal.
+- La apertura de la vista previa no duplicó el único movimiento financiero ni
+  alteró la cartera canónica QA.
+- La cobertura y los pendientes de formatos impresos quedaron registrados en
+  `documentos/evidencia_plan_108/P108-012/finanzas_cxp_responsive_20260728.md`.
