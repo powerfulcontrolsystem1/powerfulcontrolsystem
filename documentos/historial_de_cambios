@@ -1,3 +1,12 @@
+2026-07-28: Plan 108 / instalación PostgreSQL vacía reproducible.
+- El ensayo real aislado detectó que el migrador no podía iniciar desde cero:
+  faltaban las raíces `empresas` y `administradores` antes del catálogo legacy.
+- `BootstrapLegacyCoreEmpresasSchema` y `BootstrapLegacyCoreSuperSchema` crean solo
+  `empresas`, `administradores` y `sesiones`, exclusivamente durante bootstrap
+  explícito del rol migrador.
+- `vps-p108-empty-migration-drill.sh` ejecuta base vacía y segunda pasada sobre
+  un digest, rechaza recursos preexistentes y elimina su entorno efímero.
+
 2026-07-28: Plan 108 / candidato inmutable promovido a staging.
 - El commit integrado `fce1655c` superó CI Linux, race, secretos, dependencias,
   contenedores, Trivy y SBOM.

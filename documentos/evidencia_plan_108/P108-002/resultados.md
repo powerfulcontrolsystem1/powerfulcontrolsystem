@@ -38,3 +38,18 @@ Estado: **parcial; no certifica P108-002**.
 
 La repetición por digest queda aprobada. P108-002 continúa parcial por las
 pruebas desde base vacía, upgrade representativo, restricción DDL y rollback.
+
+## Hallazgo de base vacía y corrección candidata
+
+El ensayo aislado creó PostgreSQL 16 sin datos y eliminó automáticamente su
+contenedor, red y volumen al terminar.
+
+1. Con `PCS_RUNTIME_SCHEMA_BOOTSTRAP=0`, el migrador falló cerrado porque no
+   existía la raíz `empresas`.
+2. Con `PCS_RUNTIME_SCHEMA_BOOTSTRAP=1` y rol `migrate`, el bootstrap encontró
+   que `administradores` todavía no existía antes de extender su esquema.
+
+La rama candidata agrega raíces mínimas, idempotentes y exclusivas del rol
+migrador para `empresas`, `administradores` y `sesiones`, junto con
+`deploy/scripts/vps-p108-empty-migration-drill.sh`. Falta construir el nuevo
+digest y repetir el ensayo antes de aprobar este subcriterio.

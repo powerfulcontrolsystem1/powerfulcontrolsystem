@@ -1,3 +1,12 @@
+2026-07-28 - Migraciones P108 desde base vacía
+- El rol `migrate` puede crear las tres raíces históricas mínimas antes de
+  aplicar el catálogo heredado, solamente cuando el bootstrap se habilita de
+  forma explícita.
+- API y worker conservan `PCS_RUNTIME_SCHEMA_BOOTSTRAP=0`; no reciben una ruta
+  alternativa para ejecutar DDL.
+- El ensayo Docker usa red, volumen y contenedores efímeros con nombre validado
+  y limpieza automática.
+
 2026-07-10: Super administrador - diagramas tecnicos consolidados.
 
 2026-07-13: API movil POS y facturacion.
