@@ -39892,3 +39892,10 @@ Archivos modificados:
   idempotentes y no autoriza por sí mismo ventas, compras, DIAN, bancos ni
   correos. La evidencia queda en `P108-008` como parcial hasta disponer de un
   ejecutor transaccional y conciliaciones completas.
+
+2026-07-28 - Plan 108: tenant de Centro IA empresarial
+
+- El POST visible de Centro IA ahora conserva `empresa_id` en la URL, además
+  del cuerpo JSON, porque el middleware de permisos valida el tenant antes de
+  decodificar el cuerpo. El contrato frontend evita que una futura edición
+  vuelva a provocar un `403` con `empresa_id=0`.

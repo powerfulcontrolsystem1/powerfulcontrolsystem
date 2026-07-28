@@ -12339,6 +12339,8 @@ panel de seguridad para que el navegador reciba la correccion CSRF de staging.
 - `documentos/evidencia_plan_108/P108-008/resultados.md`: registra el
   preflight de staging y el manifiesto P107-QA de solo lectura, sin confundirlo
   con la ejecución posterior de fixtures contables.
+- `backend/handlers/empresa_ia_empresarial_frontend_contract_test.go`: fija que
+  los botones de Centro IA envíen el tenant en la URL validada por permisos.
 
 2026-07-26 - P108-015, reparación privada y anulación DIAN.
 - `deploy/scripts/vps-migrate-private-dian.sh`: migra para una empresa

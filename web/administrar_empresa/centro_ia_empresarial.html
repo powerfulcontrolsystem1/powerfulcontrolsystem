@@ -158,7 +158,9 @@
         $("resultado").textContent = "Consultando IA empresarial...";
         setEstado("Ejecutando funcion IA...", false);
         var body = { empresa_id: state.empresaId, accion: state.accion, agent_id: "general", modo_agente: !!$("agentMode").checked, consulta: $("consulta").value.trim(), desde: $("desde").value, hasta: $("hasta").value };
-        var res = await fetch("/api/empresa/ia_empresarial", { method: "POST", credentials: "same-origin", headers: {"Content-Type":"application/json"}, body: JSON.stringify(body) });
+        // The permission wrapper resolves empresa_id before it reads JSON, so
+        // the authenticated tenant must also be present in the request URL.
+        var res = await fetch(apiUrl(), { method: "POST", credentials: "same-origin", headers: {"Content-Type":"application/json"}, body: JSON.stringify(body) });
         var data = await res.json().catch(function(){ return null; });
         if(!res.ok || !data){ throw new Error((data && data.error) || "No se pudo ejecutar IA empresarial."); }
         state.snapshot = data.snapshot || state.snapshot;
