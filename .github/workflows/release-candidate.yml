@@ -1,0 +1,157 @@
+name: Immutable release candidate
+
+on:
+  workflow_dispatch:
+    inputs:
+      commit_sha:
+        description: Commit completo de 40 caracteres que se construira una sola vez
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  build-scan-publish:
+    name: Build, scan, SBOM and publish immutable images
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    steps:
+      - name: Validate immutable revision
+        shell: bash
+        run: |
+          set -euo pipefail
+          sha='${{ inputs.commit_sha }}'
+          [[ "$sha" =~ ^[0-9a-f]{40}$ ]] || {
+            echo "commit_sha debe ser un SHA completo de 40 caracteres." >&2
+            exit 1
+          }
+
+      - name: Checkout exact revision
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          ref: ${{ inputs.commit_sha }}
+
+      - name: Verify checkout
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = '${{ inputs.commit_sha }}'
+          test -z "$(git status --porcelain)"
+
+      - name: Define image names
+        shell: bash
+        run: |
+          set -euo pipefail
+          owner="$(printf '%s' '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')"
+          sha='${{ inputs.commit_sha }}'
+          {
+            echo "PCS_API_TAG=ghcr.io/${owner}/pcs-api:${sha}"
+            echo "PCS_MIGRATE_TAG=ghcr.io/${owner}/pcs-migrate:${sha}"
+            echo "PCS_WORKER_TAG=ghcr.io/${owner}/pcs-worker:${sha}"
+            echo "PCS_FRONTEND_TAG=ghcr.io/${owner}/pcs-frontend:${sha}"
+          } >> "$GITHUB_ENV"
+
+      - name: Build all runtime images once
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker build --target api -f deploy/docker/backend.Dockerfile -t "$PCS_API_TAG" .
+          docker build --target migrate -f deploy/docker/backend.Dockerfile -t "$PCS_MIGRATE_TAG" .
+          docker build --target worker -f deploy/docker/backend.Dockerfile -t "$PCS_WORKER_TAG" .
+          docker build -f deploy/docker/frontend.Dockerfile -t "$PCS_FRONTEND_TAG" .
+          mkdir -p security-artifacts/images security-artifacts/sbom
+          docker save "$PCS_API_TAG" -o security-artifacts/images/api.tar
+          docker save "$PCS_MIGRATE_TAG" -o security-artifacts/images/migrate.tar
+          docker save "$PCS_WORKER_TAG" -o security-artifacts/images/worker.tar
+          docker save "$PCS_FRONTEND_TAG" -o security-artifacts/images/frontend.tar
+
+      - name: Scan exact image archives
+        shell: bash
+        run: |
+          set -euo pipefail
+          for component in api migrate worker frontend; do
+            docker run --rm \
+              -v "$PWD/security-artifacts:/artifacts" \
+              aquasec/trivy:0.72.0 image \
+              --input "/artifacts/images/${component}.tar" \
+              --exit-code 1 \
+              --severity HIGH,CRITICAL \
+              --ignore-unfixed \
+              --format json \
+              --output "/artifacts/trivy-${component}.json"
+          done
+
+      - name: Generate SBOM for exact image archives
+        shell: bash
+        run: |
+          set -euo pipefail
+          for component in api migrate worker frontend; do
+            docker run --rm \
+              -v "$PWD/security-artifacts:/artifacts" \
+              anchore/syft:v1.46.0 \
+              "docker-archive:/artifacts/images/${component}.tar" \
+              -o "cyclonedx-json=/artifacts/sbom/${component}.cdx.json"
+          done
+
+      - name: Publish immutable images
+        shell: bash
+        env:
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          printf '%s' "$GHCR_TOKEN" | docker login ghcr.io -u '${{ github.actor }}' --password-stdin
+          docker push "$PCS_API_TAG"
+          docker push "$PCS_MIGRATE_TAG"
+          docker push "$PCS_WORKER_TAG"
+          docker push "$PCS_FRONTEND_TAG"
+
+      - name: Record published digests
+        shell: bash
+        run: |
+          set -euo pipefail
+          digest_ref() {
+            local tag="$1"
+            local ref
+            ref="$(docker inspect --format '{{index .RepoDigests 0}}' "$tag")"
+            [[ "$ref" =~ ^[^[:space:]@]+@sha256:[a-f0-9]{64}$ ]] || {
+              echo "No se obtuvo digest inmutable para $tag" >&2
+              exit 1
+            }
+            printf '%s' "$ref"
+          }
+          {
+            echo "PCS_API_IMAGE_DIGEST=$(digest_ref "$PCS_API_TAG")"
+            echo "PCS_MIGRATE_IMAGE_DIGEST=$(digest_ref "$PCS_MIGRATE_TAG")"
+            echo "PCS_WORKER_IMAGE_DIGEST=$(digest_ref "$PCS_WORKER_TAG")"
+            echo "PCS_FRONTEND_IMAGE_DIGEST=$(digest_ref "$PCS_FRONTEND_TAG")"
+            echo "PCS_RELEASE_COMMIT=${{ inputs.commit_sha }}"
+          } > security-artifacts/release-images.env
+
+      - name: Validate release compose with exact digests
+        shell: bash
+        run: |
+          set -euo pipefail
+          set -a
+          . security-artifacts/release-images.env
+          set +a
+          pwsh -File scripts/immutable_release_check.ps1
+          docker compose \
+            --env-file deploy/.env.staging.example \
+            -f deploy/docker-compose.platform.yml \
+            -f deploy/docker-compose.staging.yml \
+            -f deploy/docker-compose.release.yml \
+            config --quiet
+
+      - name: Upload candidate evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: immutable-release-candidate-${{ inputs.commit_sha }}
+          path: |
+            security-artifacts/release-images.env
+            security-artifacts/trivy-*.json
+            security-artifacts/sbom/*.cdx.json
+          if-no-files-found: error

@@ -29,3 +29,17 @@ SHA candidato: `74f91956d35e829178050be9127a1fc14fee065c`
 - Ejecutar accesibilidad asistida, teclado y lector de pantalla.
 
 Estado: **parcial; no certifica P108-012**.
+
+## Seguimiento 2026-07-28
+
+- El SHA integrado `e65f6dcd` se comprobó autenticado en 390 x 844.
+- La página de correo corporativo terminó con `scrollWidth=375` y
+  `clientWidth=375`; su tabla ancha queda contenida por scroll interno.
+- Se detectó que las acciones globales `Favorito` y `Panel super` permanecían
+  fijas sobre botones operativos en móvil. La rama
+  `codex/p108-staging-qa` las devuelve al flujo del documento mediante
+  `position: sticky` y agrega un contrato de regresión.
+
+La captura final del ajuste de tabla vive en
+`../P108-015/capturas/email_mailu_mobile_viewport_390x844_20260728.png`.
+La corrección global de acciones aún debe desplegarse y recapturarse.

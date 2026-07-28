@@ -1,3 +1,17 @@
+2026-07-28: Plan 108 / artefacto inmutable y QA móvil super.
+- `deploy/docker-compose.release.yml` y
+  `scripts/immutable_release_check.ps1` incorporan la imagen frontend al
+  contrato por digest.
+- `.github/workflows/release-candidate.yml` construye una vez las cuatro
+  imágenes del SHA solicitado, escanea esos archivos con Trivy, genera SBOM
+  CycloneDX, publica GHCR y conserva las referencias inmutables como artefacto.
+- `deploy/scripts/vps-staging-digest-up.sh` promueve esas referencias a staging
+  con `--no-build` y verifica salud/listo.
+- La validación autenticada de 390 x 844 encontró que
+  `web/js/super_page_tools.js` cubría controles operativos; en móvil las
+  acciones pasan a `position: sticky` y el contrato Go impide regresar al
+  posicionamiento fijo.
+
 2026-07-26: Plan 108 / registro de administradores y correo Mailu.
 - El diagnóstico del VPS confirmó rechazos SMTP `554 5.7.1 Relay access denied`
   para backend y worker: ambos enviaban desde `pcs_internal`, fuera de la red

@@ -10,3 +10,7 @@ services:
   worker:
     build: null
     image: ${PCS_WORKER_IMAGE_DIGEST:?Defina PCS_WORKER_IMAGE_DIGEST con referencia @sha256}
+
+  frontend:
+    build: null
+    image: ${PCS_FRONTEND_IMAGE_DIGEST:?Defina PCS_FRONTEND_IMAGE_DIGEST con referencia @sha256}

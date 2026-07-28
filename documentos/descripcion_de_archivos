@@ -12331,3 +12331,12 @@ panel de seguridad para que el navegador reciba la correccion CSRF de staging.
   `resultados.md`, `comandos.txt` y `riesgos.md`:
   - registran DNS, recursos visuales, prueba autenticada, fallo CSRF, límites
     BIMI y pendientes VMC/CMC sin guardar secretos.
+
+2026-07-28 - Candidato inmutable P108 por digest.
+- `.github/workflows/release-candidate.yml`: construye una sola vez las
+  imágenes API, migrador, worker y frontend de un SHA completo; escanea sus
+  archivos, genera SBOM, publica GHCR y registra referencias por digest.
+- `deploy/scripts/vps-staging-digest-up.sh`: promueve a staging las cuatro
+  imágenes exactas sin recompilar ni modificar el checkout productivo.
+- `documentos/evidencia_plan_108/P108-002/resultados.md`: registra la segunda
+  pasada del migrador y el runtime de staging con bootstrap histórico apagado.

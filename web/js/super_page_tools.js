@@ -115,7 +115,7 @@
       ".super-page-tools button{min-height:36px;border:1px solid var(--border,#cbd5e1);border-radius:8px;background:var(--surface,#fff);color:var(--text,#111827);box-shadow:0 10px 24px rgba(15,23,42,.16);font:inherit;font-size:.82rem;font-weight:850;padding:8px 10px;cursor:pointer}",
       ".super-page-tools button:hover{background:var(--focus,#e0f2fe)}",
       ".super-page-tools button[aria-pressed='true']{background:color-mix(in srgb,var(--accent,#0f6fcb) 14%,var(--surface,#fff));color:var(--accent,#0f6fcb);border-color:color-mix(in srgb,var(--accent,#0f6fcb) 42%,var(--border,#cbd5e1))}",
-      "@media(max-width:560px){.super-page-tools{right:8px;bottom:8px}.super-page-tools button{font-size:.76rem;padding:7px 8px}}"
+      "@media(max-width:560px){.super-page-tools{position:sticky;right:auto;left:auto;bottom:8px;margin:12px 8px 8px auto;width:max-content;justify-content:flex-end}.super-page-tools button{font-size:.76rem;padding:7px 8px}}"
     ].join("\n");
     document.head.appendChild(style);
   }

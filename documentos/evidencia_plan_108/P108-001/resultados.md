@@ -41,3 +41,17 @@ analizarla con Trivy, generar SBOM y adjuntar los resultados al mismo SHA.
 - Validación local posterior: `go test ./handlers` y el caso de regresión junto
   al flujo SOAP se ejecutaron veinte veces correctamente. Falta publicar el SHA
   corregido y obtener una CI profesional verde antes del despliegue aislado.
+
+## Seguimiento 2026-07-28 - CI Linux verde
+
+- El SHA integrado `e65f6dcddca0733f85d95cc0ae07ef33ef35e7c3`
+  completó el workflow `Professional CI` en verde.
+- La ejecución incluyó suite Go, `go vet`, `go test -race ./...`, auditoría de
+  vulnerabilidades, Gosec, Gitleaks, Trivy de filesystem y contenedores, SBOM,
+  licencias y contratos Docker.
+- El mismo SHA fue desplegado en staging y respondió `/health` y `/ready`.
+
+Estado actualizado: **parcial**. CI y race están aprobados, pero las imágenes
+que staging usa todavía fueron reconstruidas en el VPS. La nueva canalización
+`release-candidate.yml` debe publicar y promover las cuatro imágenes exactas
+por digest antes de aprobar P108-001.

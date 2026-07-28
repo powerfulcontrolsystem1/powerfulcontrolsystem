@@ -6,7 +6,8 @@ $ErrorActionPreference = "Stop"
 $required = @(
   "PCS_API_IMAGE_DIGEST",
   "PCS_MIGRATE_IMAGE_DIGEST",
-  "PCS_WORKER_IMAGE_DIGEST"
+  "PCS_WORKER_IMAGE_DIGEST",
+  "PCS_FRONTEND_IMAGE_DIGEST"
 )
 $pattern = '^[^@\s]+@sha256:[a-fA-F0-9]{64}$'
 
@@ -20,4 +21,4 @@ foreach ($key in $required) {
   }
 }
 
-Write-Host "[OK] Imagenes API, migrador y worker fijadas por digest." -ForegroundColor Green
+Write-Host "[OK] Imagenes API, migrador, worker y frontend fijadas por digest." -ForegroundColor Green

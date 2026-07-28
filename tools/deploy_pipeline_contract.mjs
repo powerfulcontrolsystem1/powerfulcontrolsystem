@@ -12,6 +12,11 @@ const requirements = [
   ["scripts/sync_to_vps.ps1", "bootstrap remoto limitado a configuración operativa"],
   ["scripts/sync_to_vps.ps1", "exit $script:SyncExitCode"],
   ["deploy/scripts/vps-compose-sidecar-up.sh", "up -d --build --remove-orphans"],
+  ["deploy/docker-compose.release.yml", "PCS_FRONTEND_IMAGE_DIGEST"],
+  [".github/workflows/release-candidate.yml", "packages: write"],
+  [".github/workflows/release-candidate.yml", "docker build --target api"],
+  [".github/workflows/release-candidate.yml", "security-artifacts/release-images.env"],
+  ["deploy/scripts/vps-staging-digest-up.sh", "--no-build"],
 ];
 const failed = requirements.filter(([file, text]) => !fs.readFileSync(path.join(root, file), "utf8").includes(text));
 if (failed.length) { console.error(JSON.stringify({ status: "failed", failed }, null, 2)); process.exit(1); }

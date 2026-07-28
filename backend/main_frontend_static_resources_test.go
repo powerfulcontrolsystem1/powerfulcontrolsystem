@@ -128,6 +128,27 @@ func TestEmpresaSubmenuContextInstallsCSRFForDirectOperationalPages(t *testing.T
 	}
 }
 
+func TestSuperPageToolsDoNotCoverMobileControls(t *testing.T) {
+	raw, err := os.ReadFile(filepath.Join("..", "web", "js", "super_page_tools.js"))
+	if err != nil {
+		t.Fatalf("read super page tools: %v", err)
+	}
+	content := string(raw)
+	for _, required := range []string{
+		"@media(max-width:560px)",
+		".super-page-tools{position:sticky",
+		"width:max-content",
+		"justify-content:flex-end",
+	} {
+		if !strings.Contains(content, required) {
+			t.Fatalf("mobile super page tools must stay in document flow; missing %q", required)
+		}
+	}
+	if strings.Contains(content, "@media(max-width:560px){.super-page-tools{right:8px;bottom:8px}") {
+		t.Fatal("mobile super page tools must not remain fixed over page controls")
+	}
+}
+
 type staticResourceReference struct {
 	sourcePath   string
 	rawReference string
