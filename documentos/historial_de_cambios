@@ -39915,3 +39915,12 @@ Archivos modificados:
   duplicadas y contradictorias entre capas.
 - Un contrato de configuración rechaza que el borde vuelva a inyectar esas
   cabeceras de aplicación.
+
+2026-07-28 - Plan 108: CSP única en rutas proxied
+
+- El Nginx interno separa sus cabeceras estáticas en una inclusión dedicada.
+  Las rutas hacia backend ya no reciben una segunda CSP, `nosniff`, referencia
+  o política de permisos; conservan exclusivamente la política calculada por
+  la aplicación con sus orígenes explícitos.
+- Las páginas y respuestas estáticas continúan usando la misma política de
+  frontend y un contrato verifica que no regrese una CSP global duplicada.
