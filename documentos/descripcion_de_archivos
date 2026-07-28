@@ -12334,6 +12334,8 @@ panel de seguridad para que el navegador reciba la correccion CSRF de staging.
 - `documentos/evidencia_plan_108/P108-003/resultados.md`: conserva el resultado
   del ensayo PostgreSQL aislado, su SHA, cobertura, límites y comprobación de
   limpieza de recursos temporales.
+- `documentos/evidencia_plan_108/P108-004/resultados.md`: separa los contratos
+  de aislamiento aprobados localmente de la matriz A/B autenticada pendiente.
 
 2026-07-26 - P108-015, reparación privada y anulación DIAN.
 - `deploy/scripts/vps-migrate-private-dian.sh`: migra para una empresa

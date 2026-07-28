@@ -57,3 +57,22 @@ habilita su selector de archivo. Se verificó solo la interacción inicial, sin
 adjuntar archivo ni invocar un proveedor IA. Una navegación negativa con otro
 `empresa_id` no mostró proveedores ni cartera, pero no constituye por sí sola
 una aprobación A/B porque no demostró un rechazo explícito por permisos.
+
+## Conciliación de fuentes sin escritura - candidato actual
+
+Fecha: 2026-07-28. Empresa de prueba: Powerful Control System (`empresa_id=12`).
+
+Se ejecutó visualmente el botón **Comparar fuente histórica CxP** en staging.
+La interfaz confirmó que la acción es solo lectura y mostró:
+
+- canónica: `1`;
+- histórica: `0`;
+- solo canónica: `1`;
+- solo histórica: `0`;
+- diferencias de saldo: `0`.
+
+La única fila canónica corresponde a la obligación de prueba previamente
+registrada; no se creó, migró, eliminó ni corrigió ningún dato durante esta
+verificación. La consola visual no reportó errores. Este resultado valida el
+reconciliador para esa muestra, pero no sustituye la conciliación y aprobación
+contable de todas las empresas antes de producción.
