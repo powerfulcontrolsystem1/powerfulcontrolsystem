@@ -39873,3 +39873,6 @@ Archivos modificados:
   directo dentro de una función `Ensure*`, evitando que módulos como carritos,
   facturación electrónica, reportes, productos, licencias o CxP recuperen
   permisos de DDL por accidente.
+- El contador público de visitas deja de crear tablas durante una solicitud; su
+  tabla pertenece a la migración inmutable administrativa
+  `20260728-001-portal-visitas-v1`.

@@ -133,6 +133,14 @@ func PlatformMigrations(target string) ([]Migration, error) {
 					return migrateSessionTokensToHashesTx(tx)
 				},
 			},
+			{
+				Version:     "20260728-001-portal-visitas-v1",
+				Description: "public portal visit counter owned by migration role",
+				Body:        portalVisitasSchemaFingerprint,
+				Apply: func(ctx context.Context, tx *sql.Tx) error {
+					return applyPortalVisitasSchemaTx(ctx, tx)
+				},
+			},
 		}, nil
 	default:
 		return nil, fmt.Errorf("unknown platform migration target %q", target)
