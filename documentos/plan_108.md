@@ -837,7 +837,7 @@ canónica, conciliación financiera y pruebas reales sobre los mismos datos.
 | P108-016 | Archivos privados | réplica, tenant, backup/restore | Pendiente |
 | P108-017 | Seguridad dinámica | DAST y hardening | Parcial estático |
 | P108-018 | Observabilidad | alertas y simulacros | Parcial local |
-| P108-019 | Capacidad | carga autenticada sostenida | Pendiente |
+| P108-019 | Capacidad | carga autenticada sostenida | Parcial pública |
 | P108-020 | Continuidad | restore y rollback completos | Parcial |
 | P108-021 | Móvil | certificación o exclusión formal | Pendiente |
 | P108-022 | Documentación | gate limpio y runbooks | Parcial |
@@ -913,11 +913,12 @@ Siempre se deben informar dos cifras:
 - Candidato inmutable:
   `7ca5fb1be10d1f02fe3e0a7c5009f559c9d6f853`.
 - P108-000 y P108-001: aprobadas.
-- P108-002 a P108-013, P108-015, P108-017, P108-018, P108-020 y
-  P108-022: parciales.
+- P108-002 a P108-013, P108-015, P108-017 a P108-020 y P108-022:
+  parciales. P108-019 solo tiene smoke público; no cuenta como carga
+  autenticada ni certificación operativa.
 - Las demás fases: pendientes.
 - Avance de implementación por compuertas:
-  `(2 aprobadas + 16 parciales x 0,5) / 26 = 38,5 %`.
+  `(2 aprobadas + 17 parciales x 0,5) / 26 = 40,4 %`.
 - Certificación sobre el digest actual:
   P108-000 y P108-001 aprobadas; P108-002, P108-011 y P108-012 parciales.
   `(2 + 3 x 0,5) / 26 = 13,5 %`.
