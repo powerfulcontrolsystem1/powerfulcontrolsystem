@@ -15,6 +15,11 @@ Estado: **parcial / NO-GO**
   el logo local.
 - La página super carga autenticada y muestra el logo configurado
   `/img/Logo pcs 1.png`.
+- El candidato `9586f80f` fue desplegado en staging y la prueba real
+  `Probar envio` terminó con confirmación visible de entrega al buzón
+  autorizado.
+- El usuario confirmó la recepción en Gmail y que el logo oficial del
+  computador PCS se muestra correctamente dentro del cuerpo del mensaje.
 - Suite Go completa y preflight profesional local en verde.
 
 ## Hallazgo corregido localmente
@@ -36,12 +41,15 @@ reserva espacio inferior para las acciones flotantes.
 ## Pendiente para aprobar
 
 - integrar y desplegar la rama candidata;
-- repetir `Probar envio` al buzón autorizado;
-- comprobar en el correo recibido el logo inline, remitente y autenticación;
-- capturar el resultado en Gmail y en otro cliente compatible;
+- desplegar y repetir la comprobación responsive del ajuste final
+  `c06de9b1`;
+- capturar el resultado recibido en Gmail y en otro cliente compatible;
 - adquirir y publicar un certificado VMC o CMC. El registro BIMI actual tiene
-  `a=` vacío, por lo que Gmail puede conservar la inicial `P`;
+  `a=` vacío y la prueba real conservó la inicial `P`;
 - verificar el SHA/digest exacto servido por el VPS.
 
 El logo dentro del correo está implementado. La sustitución garantizada de la
-inicial en Gmail permanece bloqueada por el certificado externo.
+inicial en Gmail permanece bloqueada por el certificado externo. El
+2026-07-28 se preparó, sin efectuar pago, un CMC de DigiCert para logo sin marca
+registrada: suscripción de 12 meses por USD 1.416 antes de impuestos. La compra,
+validación legal y emisión requieren intervención del titular de la empresa.
