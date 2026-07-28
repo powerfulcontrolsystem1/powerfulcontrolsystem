@@ -58,7 +58,8 @@ migrador para `empresas`, `administradores`, `sesiones`, `configuraciones` y
 
 ## Resultado final del ensayo vacío
 
-Commit: `64d89b6f02ffb0d63d600e44ba320bcaffd09d22`  
+Commit: `64d89b6f02ffb0d63d600e44ba320bcaffd09d22`
+
 Migrador:
 `ghcr.io/powerfulcontrolsystem1/pcs-migrate@sha256:bcc26035d207c6112e2e543f46fe638b2141cf3ff4660a59aea6b3daea93cb37`
 
