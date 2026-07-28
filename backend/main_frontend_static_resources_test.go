@@ -79,6 +79,14 @@ func TestNextcloudFramePolicyUsesExactOrigins(t *testing.T) {
 	if strings.Contains(config, "add_header Content-Security-Policy") {
 		t.Fatal("server-level frontend CSP would duplicate backend API CSP")
 	}
+	for _, required := range []string{
+		`proxy_hide_header X-Content-Type-Options;`,
+		`add_header X-Content-Type-Options "nosniff" always;`,
+	} {
+		if !strings.Contains(config, required) {
+			t.Fatalf("frontend proxy must normalize dynamic X-Content-Type-Options with %q", required)
+		}
+	}
 
 	scriptRaw, err := os.ReadFile(filepath.Join("..", "deploy", "scripts", "vps-configure-nextcloud-host-nginx.sh"))
 	if err != nil {
