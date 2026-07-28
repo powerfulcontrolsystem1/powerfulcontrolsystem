@@ -90,6 +90,32 @@ func TestNextcloudFramePolicyUsesExactOrigins(t *testing.T) {
 	}
 }
 
+func TestStagingEdgeKeepsOnlyTransportHeaders(t *testing.T) {
+	raw, err := os.ReadFile(filepath.Join("..", "deploy", "scripts", "vps-configure-staging-nginx.sh"))
+	if err != nil {
+		t.Fatalf("read staging nginx script: %v", err)
+	}
+	script := string(raw)
+	for _, required := range []string{
+		`add_header X-Frame-Options "SAMEORIGIN" always;`,
+		`add_header Strict-Transport-Security "max-age=15552000; includeSubDomains" always;`,
+	} {
+		if !strings.Contains(script, required) {
+			t.Fatalf("staging edge header missing %q", required)
+		}
+	}
+	for _, forbidden := range []string{
+		`add_header Content-Security-Policy`,
+		`add_header X-Content-Type-Options`,
+		`add_header Referrer-Policy`,
+		`add_header Permissions-Policy`,
+	} {
+		if strings.Contains(script, forbidden) {
+			t.Fatalf("staging edge must not duplicate application header %q", forbidden)
+		}
+	}
+}
+
 func TestPanelGuidedSetupUsesCSRFAndNextcloudKeepsEmpresaContext(t *testing.T) {
 	panel, err := os.ReadFile(filepath.Join("..", "web", "administrar_empresa", "panel.html"))
 	if err != nil {
