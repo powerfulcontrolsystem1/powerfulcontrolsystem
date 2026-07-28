@@ -18,9 +18,11 @@ Alcance: comprobaciones HTTP de solo lectura, sin sesion y sin datos de negocio.
 
 ## Hallazgos pendientes
 
-1. La respuesta final presenta cabeceras repetidas de CSP, `nosniff`, política
-   de referencia y política de permisos, provenientes de mas de una capa. Debe
-   definirse una sola politica final verificable en Nginx/API.
+1. El candidato `bc794c89` dejó una única CSP, política de referencia y política
+   de permisos en la respuesta final; en la API permanecieron dos valores de
+   `X-Content-Type-Options` incluso al consultar directamente el contenedor
+   backend. Se preparó una normalización en el proxy interno, pendiente de su
+   candidato inmutable y comprobación final en staging.
 2. La CSP final conserva `unsafe-inline` para `script-src` y `style-src`. No se
    considera aprobada la eliminacion o excepcion acotada hasta inventariar los
    scripts y estilos embebidos, migrarlos a nonces/hashes o documentar cada

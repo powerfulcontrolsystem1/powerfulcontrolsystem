@@ -39924,3 +39924,15 @@ Archivos modificados:
   la aplicación con sus orígenes explícitos.
 - Las páginas y respuestas estáticas continúan usando la misma política de
   frontend y un contrato verifica que no regrese una CSP global duplicada.
+
+2026-07-28 - Plan 108: normalización de nosniff en respuestas dinámicas
+
+- La verificación del candidato inmutable en staging confirmó que la API aún
+  podía emitir dos cabeceras `X-Content-Type-Options` desde el backend. Nginx
+  interno oculta las duplicadas de respuestas proxied y publica una única
+  cabecera `nosniff`; las ubicaciones estáticas conservan su inclusión de
+  cabeceras propia y `config.js` la declara de forma explícita por su política
+  de caché.
+- Se añadió una prueba de contrato para impedir que una futura configuración
+  elimine esta normalización. La promoción de esta corrección requiere su
+  propio candidato inmutable y comprobación final en staging.
