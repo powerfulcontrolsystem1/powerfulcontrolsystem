@@ -1,4 +1,6 @@
 2026-07-28 - Migraciones P108 desde base vacía
+- El migrador es propietario del esquema; API y worker usan un login runtime
+  separado con DML y sin DDL.
 - El rol `migrate` puede crear las cinco raíces históricas mínimas antes de
   aplicar el catálogo heredado, solamente cuando el bootstrap se habilita de
   forma explícita.

@@ -1,4 +1,10 @@
 2026-07-28
+- `backend/db/runtime_db_role.go`: provisionamiento y verificación cerrada del
+  login PostgreSQL sin DDL usado por API/worker.
+- `backend/db/runtime_db_role_test.go`: validación de nombres y contraseñas
+  URL-safe del rol runtime.
+- `backend/main_runtime_database_role_contract_test.go`: contrato que impide
+  devolver las DSN propietarias a API o worker.
 - `backend/db/legacy_core_schema.go`: raíces PostgreSQL mínimas e idempotentes
   que solo el rol migrador usa al inicializar una instalación vacía.
 - `backend/db/legacy_core_schema_test.go`: contrato que exige las cinco raíces

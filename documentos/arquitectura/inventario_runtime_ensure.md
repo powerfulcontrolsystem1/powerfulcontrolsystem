@@ -6,9 +6,9 @@ Las llamadas listadas son deuda de extraccion. En produccion, API y worker deben
 
 ## Resumen
 
-- Llamadas inventariadas: 104.
+- Llamadas inventariadas: 106.
 - arranque; protegido por rol, requiere extraccion: 72.
-- proceso de plataforma; revisar rol: 1.
+- proceso de plataforma; revisar rol: 3.
 - trafico HTTP; priorizar reemplazo por verificacion: 31.
 
 ## Registro
@@ -16,6 +16,8 @@ Las llamadas listadas son deuda de extraccion. En produccion, API y worker deben
 | Funcion Ensure | Llamador | Riesgo / prioridad |
 | --- | --- | --- |
 | `EnsurePostgresRuntimeCompat` | [backend/cmd/pcs-migrate/main.go:69](../../backend/cmd/pcs-migrate/main.go#L69) | proceso de plataforma; revisar rol |
+| `EnsureRuntimeDatabaseRole` | [backend/cmd/pcs-migrate/main.go:83](../../backend/cmd/pcs-migrate/main.go#L83) | proceso de plataforma; revisar rol |
+| `EnsureRuntimeDatabaseRole` | [backend/cmd/pcs-migrate/main.go:86](../../backend/cmd/pcs-migrate/main.go#L86) | proceso de plataforma; revisar rol |
 | `EnsureEmpresaControlElectricoPrimaryRaspberry` | [backend/handlers/control_electrico.go:224](../../backend/handlers/control_electrico.go#L224) | trafico HTTP; priorizar reemplazo por verificacion |
 | `EnsureEmpresaControlElectricoPrimaryRaspberry` | [backend/handlers/control_electrico.go:384](../../backend/handlers/control_electrico.go#L384) | trafico HTTP; priorizar reemplazo por verificacion |
 | `EnsureEmpresaEventosContablesSchema` | [backend/handlers/creditos.go:981](../../backend/handlers/creditos.go#L981) | trafico HTTP; priorizar reemplazo por verificacion |

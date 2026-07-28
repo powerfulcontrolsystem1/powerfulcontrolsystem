@@ -1,3 +1,12 @@
+2026-07-28: Plan 108 / separación de privilegios PostgreSQL runtime.
+- Staging demostró que API/worker heredaban el usuario propietario con
+  superusuario, CREATEDB, CREATEROLE y CREATE sobre public.
+- El migrador provisiona un login runtime distinto, URL-safe, otorga DML,
+  secuencias y funciones, revoca DDL y falla si queda un privilegio
+  administrativo.
+- Compose exige las nuevas credenciales privadas para backend y worker,
+  mientras migrate conserva las DSN propietarias.
+
 2026-07-28: Plan 108 / instalación PostgreSQL vacía reproducible.
 - El ensayo real aislado detectó que el migrador no podía iniciar desde cero:
   faltaban las raíces `empresas` y `administradores` antes del catálogo legacy.

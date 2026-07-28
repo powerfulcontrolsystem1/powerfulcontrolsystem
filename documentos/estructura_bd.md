@@ -2350,3 +2350,10 @@ bajo bootstrap hasta ser migradas por lotes con staging y rollback.
 El healthcheck del worker no persiste payloads, empresas, claves ni errores de
 proveedor. Su estado es solo de proceso y se mantiene en memoria del worker;
 la base de datos se usa unicamente para la comprobacion de disponibilidad.
+# Roles PostgreSQL de despliegue
+
+- Propietario/migrador: crea y altera esquema; solo lo usa `pcs-migrate`.
+- Runtime: login exclusivo de API y worker con DML, secuencias y funciones, sin
+  DDL ni privilegios administrativos.
+- Los dos roles se aplican de forma independiente dentro de
+  `pcs_empresas` y `pcs_superadministrador`.

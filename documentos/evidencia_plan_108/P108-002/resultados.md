@@ -95,3 +95,27 @@ Subcriterio upgrade representativo: **PASS**.
 
 P108-002 continúa parcial solamente por restricción DDL mediante roles
 PostgreSQL y simulación de fallo/rollback.
+
+## Hallazgo de privilegios runtime
+
+La consulta de solo lectura ejecutada desde `pcs-staging-worker` mostró el mismo
+resultado en ambas bases:
+
+```text
+current_user=pcs_staging
+rolsuper=true
+rolcreatedb=true
+rolcreaterole=true
+public.CREATE=true
+```
+
+Estado: **P0 reproducido**. API y worker no deben usar al propietario migrador.
+
+La corrección candidata incorpora `PCS_RUNTIME_DB_USER` y
+`PCS_RUNTIME_DB_PASSWORD`, provisiona/rota ese login desde `pcs-migrate`, le
+concede únicamente DML, secuencias y ejecución de funciones, revoca `CREATE`
+en `public` y verifica que no conserve superusuario, creación de bases/roles o
+`BYPASSRLS`. Backend y worker forman sus DSN exclusivamente con ese usuario.
+
+Falta publicar el digest, configurar el secreto privado de staging y demostrar
+los privilegios negativos antes de aprobar este subcriterio.

@@ -6,13 +6,13 @@ Este archivo se genera con `node tools/ensure_bootstrap_inventory.mjs`. Inventar
 
 ## Resumen
 
-- Funciones inventariadas: 154.
+- Funciones inventariadas: 155.
 - Huella del catalogo legado: `1ffca7eb9ae8da8533e5ee6223de682684b94b66af75c0d9946d4a7679812c1f` (122 pasos).
 - compatibilidad PostgreSQL: 2.
 - DDL / indice / funcion: 118.
 - DDL catalogado de plataforma: 4.
 - provisionamiento de integracion: 5.
-- regla auxiliar o verificacion: 6.
+- regla auxiliar o verificacion: 7.
 - seed o provisionamiento idempotente: 19.
 - Fuente: `backend/db`, `backend/handlers` y `backend/main.go`; excluye pruebas.
 
@@ -136,6 +136,7 @@ Este archivo se genera con `node tools/ensure_bootstrap_inventory.mjs`. Inventar
 | `EnsureEmpresaReservasHotelSchema` | [backend/db/reservas_hotel.go:87](../../backend/db/reservas_hotel.go#L87) | DDL / indice / funcion | empresas o por confirmar |
 | `EnsureRolesPermisosSchema` | [backend/db/roles_permisos_usuario.go:25](../../backend/db/roles_permisos_usuario.go#L25) | DDL / indice / funcion | empresas o por confirmar |
 | `EnsureRolesDeUsuarioSchema` | [backend/db/roles_tipos_usuario.go:29](../../backend/db/roles_tipos_usuario.go#L29) | DDL / indice / funcion | empresas o por confirmar |
+| `EnsureRuntimeDatabaseRole` | [backend/db/runtime_db_role.go:17](../../backend/db/runtime_db_role.go#L17) | regla auxiliar o verificacion | empresas o por confirmar |
 | `EnsureEmpresaSensorPuertasSchema` | [backend/db/sensor_puertas.go:74](../../backend/db/sensor_puertas.go#L74) | DDL / indice / funcion | empresas o por confirmar |
 | `EnsureEmpresaSoporteRemotoSchema` | [backend/db/soporte_remoto.go:419](../../backend/db/soporte_remoto.go#L419) | DDL / indice / funcion | empresas o por confirmar |
 | `EnsureEmpresaSoportesComprasIASchema` | [backend/db/soportes_compras_ia.go:124](../../backend/db/soportes_compras_ia.go#L124) | DDL / indice / funcion | empresas o por confirmar |

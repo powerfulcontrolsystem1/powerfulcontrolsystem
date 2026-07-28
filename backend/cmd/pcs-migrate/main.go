@@ -75,5 +75,17 @@ func main() {
 		}
 		log.Printf("%s migrations: applied=%d existing=%d legacy_marked=%d", target.name, len(report.Applied), len(report.AlreadyKnown), len(report.LegacyMarked))
 	}
+	runtimeDBUser := strings.TrimSpace(os.Getenv("PCS_RUNTIME_DB_USER"))
+	runtimeDBPassword := os.Getenv("PCS_RUNTIME_DB_PASSWORD")
+	if runtimeDBUser == "" || runtimeDBPassword == "" {
+		log.Fatal("PCS_RUNTIME_DB_USER and PCS_RUNTIME_DB_PASSWORD are required")
+	}
+	if err := dbpkg.EnsureRuntimeDatabaseRole(ctx, empresas, runtimeDBUser, runtimeDBPassword); err != nil {
+		log.Fatalf("empresas runtime role: %v", err)
+	}
+	if err := dbpkg.EnsureRuntimeDatabaseRole(ctx, super, runtimeDBUser, runtimeDBPassword); err != nil {
+		log.Fatalf("superadministrador runtime role: %v", err)
+	}
+	log.Printf("runtime database role verified without DDL privileges: %s", runtimeDBUser)
 	log.Print("migrations completed: checksummed platform foundation")
 }

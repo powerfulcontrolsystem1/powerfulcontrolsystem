@@ -85,6 +85,8 @@ services:
       DB_DIALECT: postgres
       DB_EMPRESAS_DSN: postgres://${POSTGRES_USER:-pcs}:${POSTGRES_PASSWORD}@postgres:5432/pcs_empresas?sslmode=disable
       DB_SUPERADMIN_DSN: postgres://${POSTGRES_USER:-pcs}:${POSTGRES_PASSWORD}@postgres:5432/pcs_superadministrador?sslmode=disable
+      PCS_RUNTIME_DB_USER: ${PCS_RUNTIME_DB_USER:?Defina PCS_RUNTIME_DB_USER}
+      PCS_RUNTIME_DB_PASSWORD: ${PCS_RUNTIME_DB_PASSWORD:?Defina PCS_RUNTIME_DB_PASSWORD}
       CONFIG_ENC_KEY: ${CONFIG_ENC_KEY:?Defina CONFIG_ENC_KEY}
       CONFIG_ENC_KEY_ID: ${CONFIG_ENC_KEY_ID:?Defina CONFIG_ENC_KEY_ID}
       CONFIG_ENC_KEY_PREVIOUS: ${CONFIG_ENC_KEY_PREVIOUS:-}
@@ -147,8 +149,8 @@ services:
       PCS_PRIVATE_STORAGE_MODE: ${PCS_PRIVATE_STORAGE_MODE:-shared}
       PCS_API_REPLICAS: ${PCS_API_REPLICAS:-1}
       DB_DIALECT: postgres
-      DB_EMPRESAS_DSN: postgres://${POSTGRES_USER:-pcs}:${POSTGRES_PASSWORD}@postgres:5432/pcs_empresas?sslmode=disable
-      DB_SUPERADMIN_DSN: postgres://${POSTGRES_USER:-pcs}:${POSTGRES_PASSWORD}@postgres:5432/pcs_superadministrador?sslmode=disable
+      DB_EMPRESAS_DSN: postgres://${PCS_RUNTIME_DB_USER:?Defina PCS_RUNTIME_DB_USER}:${PCS_RUNTIME_DB_PASSWORD:?Defina PCS_RUNTIME_DB_PASSWORD}@postgres:5432/pcs_empresas?sslmode=disable
+      DB_SUPERADMIN_DSN: postgres://${PCS_RUNTIME_DB_USER:?Defina PCS_RUNTIME_DB_USER}:${PCS_RUNTIME_DB_PASSWORD:?Defina PCS_RUNTIME_DB_PASSWORD}@postgres:5432/pcs_superadministrador?sslmode=disable
       CONFIG_ENC_KEY: ${CONFIG_ENC_KEY:?Defina CONFIG_ENC_KEY}
       CONFIG_ENC_KEY_ID: ${CONFIG_ENC_KEY_ID:?Defina CONFIG_ENC_KEY_ID}
       CONFIG_ENC_KEY_PREVIOUS: ${CONFIG_ENC_KEY_PREVIOUS:-}
@@ -244,8 +246,8 @@ services:
       PCS_DB_CONN_MAX_LIFETIME: ${PCS_WORKER_DB_CONN_MAX_LIFETIME:-30m}
       PCS_DB_CONN_MAX_IDLE_TIME: ${PCS_WORKER_DB_CONN_MAX_IDLE_TIME:-5m}
       DB_DIALECT: postgres
-      DB_EMPRESAS_DSN: postgres://${POSTGRES_USER:-pcs}:${POSTGRES_PASSWORD}@postgres:5432/pcs_empresas?sslmode=disable
-      DB_SUPERADMIN_DSN: postgres://${POSTGRES_USER:-pcs}:${POSTGRES_PASSWORD}@postgres:5432/pcs_superadministrador?sslmode=disable
+      DB_EMPRESAS_DSN: postgres://${PCS_RUNTIME_DB_USER:?Defina PCS_RUNTIME_DB_USER}:${PCS_RUNTIME_DB_PASSWORD:?Defina PCS_RUNTIME_DB_PASSWORD}@postgres:5432/pcs_empresas?sslmode=disable
+      DB_SUPERADMIN_DSN: postgres://${PCS_RUNTIME_DB_USER:?Defina PCS_RUNTIME_DB_USER}:${PCS_RUNTIME_DB_PASSWORD:?Defina PCS_RUNTIME_DB_PASSWORD}@postgres:5432/pcs_superadministrador?sslmode=disable
       CONFIG_ENC_KEY: ${CONFIG_ENC_KEY:?Defina CONFIG_ENC_KEY}
       CONFIG_ENC_KEY_ID: ${CONFIG_ENC_KEY_ID:?Defina CONFIG_ENC_KEY_ID}
       CONFIG_ENC_KEY_PREVIOUS: ${CONFIG_ENC_KEY_PREVIOUS:-}

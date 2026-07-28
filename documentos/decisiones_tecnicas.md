@@ -152,3 +152,12 @@ trazabilidad en `documentos/historial_de_cambios`.
 - El proyecto aun no esta en produccion. No es obligatorio conservar rutas
   antiguas o paginas duplicadas si el usuario pide unificar o limpiar, salvo que
   exista una razon tecnica concreta para mantenerlas.
+# 2026-07-28 - Separación del propietario PostgreSQL y roles runtime
+
+- `pcs-migrate` conserva la conexión propietaria para DDL y catálogo.
+- API y worker usan `PCS_RUNTIME_DB_USER`, un login distinto sin superusuario,
+  `CREATEDB`, `CREATEROLE`, `BYPASSRLS` ni `CREATE` sobre `public`.
+- El migrador otorga DML sobre tablas, uso de secuencias y ejecución de
+  funciones existentes, además de privilegios por defecto para objetos futuros.
+- La contraseña runtime debe tener al menos 32 caracteres URL-safe y nunca se
+  versiona.

@@ -1,3 +1,8 @@
+## [2026-07-28] Rol PostgreSQL runtime sin DDL
+- [Base de datos] `pcs-migrate` conserva propiedad del esquema y provisiona un login separado para API/worker.
+- [Seguridad] El login runtime recibe DML, secuencias y funciones, pero no superusuario, creación de bases/roles, BYPASSRLS ni CREATE en `public`.
+- [Docker] Backend y worker exigen credenciales runtime privadas distintas de `POSTGRES_USER`.
+
 ## [2026-07-28] Migración reproducible desde PostgreSQL vacío
 - [Migraciones] El bootstrap explícito del rol `migrate` crea primero las cinco raíces mínimas exigidas por el catálogo heredado.
 - [Seguridad] API y worker mantienen bloqueado el DDL y no pueden activar el bootstrap en producción.
