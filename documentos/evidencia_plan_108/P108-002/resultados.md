@@ -119,3 +119,14 @@ en `public` y verifica que no conserve superusuario, creación de bases/roles o
 
 Falta publicar el digest, configurar el secreto privado de staging y demostrar
 los privilegios negativos antes de aprobar este subcriterio.
+
+### Primer despliegue y rollback
+
+El primer digest del rol separado falló cerrado en `pcs-migrate` antes de
+arrancar API/worker porque PostgreSQL no podía inferir el tipo de `$2` dentro
+de `format()`. Se restauró el digest anterior sin reconstrucción y staging
+volvió a `/health=ok` y `/ready=ready`.
+
+La corrección tipa explícitamente `$1::text` y `$2::text`; un contrato impide
+retirar esos casts. Este ejercicio aporta evidencia real de rollback técnico,
+pero falta repetir el digest corregido.

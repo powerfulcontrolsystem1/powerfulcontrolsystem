@@ -40,9 +40,9 @@ func EnsureRuntimeDatabaseRole(ctx context.Context, dbConn *sql.DB, roleName, pa
 	var roleDDL string
 	if err := dbConn.QueryRowContext(ctx, `
 		SELECT CASE
-			WHEN EXISTS (SELECT 1 FROM pg_roles WHERE rolname = $1)
-			THEN format('ALTER ROLE %I LOGIN PASSWORD %L NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION NOBYPASSRLS', $1, $2)
-			ELSE format('CREATE ROLE %I LOGIN PASSWORD %L NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION NOBYPASSRLS', $1, $2)
+			WHEN EXISTS (SELECT 1 FROM pg_roles WHERE rolname = $1::text)
+			THEN format('ALTER ROLE %I LOGIN PASSWORD %L NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION NOBYPASSRLS', $1::text, $2::text)
+			ELSE format('CREATE ROLE %I LOGIN PASSWORD %L NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION NOBYPASSRLS', $1::text, $2::text)
 		END
 	`, roleName, password).Scan(&roleDDL); err != nil {
 		return fmt.Errorf("prepare runtime role: %w", err)

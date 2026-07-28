@@ -1,6 +1,10 @@
 package db
 
-import "testing"
+import (
+	"os"
+	"strings"
+	"testing"
+)
 
 func TestRuntimeDatabaseRoleCredentialsAreURLSafe(t *testing.T) {
 	for _, valid := range []string{"pcs_runtime", "runtime_api_2026"} {
@@ -23,6 +27,19 @@ func TestRuntimeDatabaseRoleCredentialsAreURLSafe(t *testing.T) {
 	} {
 		if runtimeDatabasePasswordPattern.MatchString(invalid) {
 			t.Fatalf("expected invalid runtime database password %q", invalid)
+		}
+	}
+}
+
+func TestRuntimeDatabaseRoleDDLTypesFormatParameters(t *testing.T) {
+	raw, err := os.ReadFile("runtime_db_role.go")
+	if err != nil {
+		t.Fatal(err)
+	}
+	source := string(raw)
+	for _, required := range []string{"$1::text", "$2::text"} {
+		if !strings.Contains(source, required) {
+			t.Fatalf("runtime role DDL must type PostgreSQL format parameter %s", required)
 		}
 	}
 }
