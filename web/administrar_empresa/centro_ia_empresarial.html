@@ -100,8 +100,14 @@
       function esc(v){ return String(v == null ? "" : v).replace(/[&<>"']/g,function(ch){return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[ch];}); }
       function money(v){ return new Intl.NumberFormat("es-CO",{style:"currency",currency:"COP",maximumFractionDigits:0}).format(Number(v||0)); }
       function empresaId(){
-        if(window.__empresaModuleGuard && typeof window.__empresaModuleGuard.resolveEmpresaId === "function") return Number(window.__empresaModuleGuard.resolveEmpresaId()||0);
-        if(window.__resolveEmpresaIdContext) return Number(window.__resolveEmpresaIdContext()||0);
+        if(window.__empresaModuleGuard && typeof window.__empresaModuleGuard.resolveEmpresaId === "function"){
+          var guarded = Number(window.__empresaModuleGuard.resolveEmpresaId()||0);
+          if(guarded > 0) return guarded;
+        }
+        if(window.__resolveEmpresaIdContext){
+          var contextual = Number(window.__resolveEmpresaIdContext()||0);
+          if(contextual > 0) return contextual;
+        }
         var p = new URLSearchParams(location.search || "");
         return Number(p.get("empresa_id") || p.get("id") || 0);
       }

@@ -20,4 +20,13 @@ func TestEmpresaIAEmpresarialPOSTKeepsTenantInPermissionURL(t *testing.T) {
 	if strings.Contains(page, `fetch("/api/empresa/ia_empresarial", { method: "POST"`) {
 		t.Fatal("Centro IA POST must not rely on empresa_id only inside JSON")
 	}
+	for _, required := range []string{
+		`if(guarded > 0) return guarded;`,
+		`if(contextual > 0) return contextual;`,
+		`return Number(p.get("empresa_id") || p.get("id") || 0);`,
+	} {
+		if !strings.Contains(page, required) {
+			t.Fatalf("Centro IA must fall back to URL tenant when a visual guard resolves zero: %s", required)
+		}
+	}
 }
