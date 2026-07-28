@@ -61,12 +61,23 @@ func TestNextcloudFramePolicyUsesExactOrigins(t *testing.T) {
 		t.Fatalf("read frontend nginx config: %v", err)
 	}
 	config := string(raw)
+	staticHeadersRaw, err := os.ReadFile(filepath.Join("..", "deploy", "nginx", "pcs-static-security-headers.inc"))
+	if err != nil {
+		t.Fatalf("read static nginx security headers: %v", err)
+	}
+	staticHeaders := string(staticHeadersRaw)
+	if !strings.Contains(config, "include /etc/nginx/conf.d/pcs-static-security-headers.inc;") {
+		t.Fatal("static frontend locations must include the static security header policy")
+	}
 	origin := "https://nextcloud.powerfulcontrolsystem.com"
-	if count := strings.Count(config, origin); count != 2 {
+	if count := strings.Count(staticHeaders, origin); count != 2 {
 		t.Fatalf("Nextcloud origin must appear once in enforced CSP and once in report-only CSP; got %d", count)
 	}
-	if strings.Contains(config, "*.powerfulcontrolsystem.com") {
+	if strings.Contains(staticHeaders, "*.powerfulcontrolsystem.com") {
 		t.Fatal("Nextcloud framing must not rely on a wildcard company origin")
+	}
+	if strings.Contains(config, "add_header Content-Security-Policy") {
+		t.Fatal("server-level frontend CSP would duplicate backend API CSP")
 	}
 
 	scriptRaw, err := os.ReadFile(filepath.Join("..", "deploy", "scripts", "vps-configure-nextcloud-host-nginx.sh"))

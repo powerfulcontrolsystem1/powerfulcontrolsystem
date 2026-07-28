@@ -12382,3 +12382,5 @@ panel de seguridad para que el navegador reciba la correccion CSRF de staging.
 - `deploy/scripts/vps-configure-staging-nginx.sh`: configura el borde de
   staging con solo las cabeceras TLS que le corresponden, sin duplicar la CSP
   ni las cabeceras emitidas por la aplicación.
+- `deploy/nginx/pcs-static-security-headers.inc`: política de cabeceras para
+  respuestas estáticas del frontend; evita duplicar la CSP dinámica de API.

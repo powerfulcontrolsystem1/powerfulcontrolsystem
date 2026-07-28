@@ -8,6 +8,7 @@ RUN apk add --no-cache --upgrade c-ares=1.34.8-r0 curl libcurl
 
 COPY web /usr/share/nginx/html
 COPY deploy/nginx/pcs.conf /etc/nginx/conf.d/default.conf
+COPY deploy/nginx/pcs-static-security-headers.inc /etc/nginx/conf.d/pcs-static-security-headers.inc
 
 EXPOSE 8080
 USER 101:101
