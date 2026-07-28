@@ -2,7 +2,9 @@
 
 Fecha: 2026-07-28  
 Ambiente: staging aislado  
-SHA: `e65f6dcddca0733f85d95cc0ae07ef33ef35e7c3`
+SHA inicial: `e65f6dcddca0733f85d95cc0ae07ef33ef35e7c3`
+
+SHA candidato por digest: `fce1655cedff6d3e9235424bfaf0029e80b2ff0c`
 
 ## Evidencia aprobada parcial
 
@@ -21,6 +23,18 @@ SHA: `e65f6dcddca0733f85d95cc0ae07ef33ef35e7c3`
 - actualizar desde un snapshot representativo y comparar el esquema;
 - demostrar mediante roles PostgreSQL que API y worker carecen de DDL;
 - ensayar migración fallida y rollback compatible;
-- repetir sobre las imágenes exactas promovidas por digest.
 
 Estado: **parcial; no certifica P108-002**.
+
+## Repetición sobre el candidato por digest
+
+- `pcs-migrate` usó
+  `ghcr.io/powerfulcontrolsystem1/pcs-migrate@sha256:67cb7efbd883eafc6ab5a00e9bcabcf59d7aab680e52cbea0910c34ea825d08d`.
+- Terminó con código `0`, `PCS_RUNTIME_SCHEMA_BOOTSTRAP=0`,
+  `empresas applied=0 existing=8` y
+  `superadministrador applied=0 existing=7`.
+- API, worker y frontend arrancaron desde sus digests exactos y
+  `/health`/`/ready` quedaron verdes.
+
+La repetición por digest queda aprobada. P108-002 continúa parcial por las
+pruebas desde base vacía, upgrade representativo, restricción DDL y rollback.

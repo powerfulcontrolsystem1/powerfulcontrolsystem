@@ -3,7 +3,8 @@
 Fecha: 2026-07-26  
 Ambiente: `https://staging.powerfulcontrolsystem.com`  
 Empresa autorizada: `12`  
-SHA candidato validado: `16c8fbd58b5da109d29b1d5e84a6bdb372378e8d`
+SHA candidato validado por digest:
+`fce1655cedff6d3e9235424bfaf0029e80b2ff0c`
 
 ## Evidencia aprobada parcial
 
@@ -54,3 +55,7 @@ La captura de la corrección global vive en
 
 Estado de este hallazgo: **PASS**. P108-012 permanece parcial hasta completar
 la matriz responsive, accesibilidad, teclado y roles de todo el inventario.
+
+Después de promover el digest exacto se repitió la medición autenticada en
+390 x 844: `clientWidth=390`, `scrollWidth=390`, `position=static`,
+`overlap=false` y cero respuestas HTTP 4xx/5xx.
