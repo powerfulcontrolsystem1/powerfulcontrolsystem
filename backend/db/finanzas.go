@@ -690,7 +690,7 @@ func ensureEmpresaCierresCajaUsuarioIndependiente(dbConn *sql.DB) error {
 	if dbConn == nil {
 		return nil
 	}
-	if _, err := dbConn.Exec(`UPDATE empresa_cierres_caja SET usuario_creador = 'sistema' WHERE usuario_creador IS NULL OR TRIM(usuario_creador) = ''`); err != nil {
+	if _, err := execSQLCompat(dbConn, `UPDATE empresa_cierres_caja SET usuario_creador = 'sistema' WHERE usuario_creador IS NULL OR TRIM(usuario_creador) = ''`); err != nil {
 		return err
 	}
 	if shouldUsePostgresCompat(dbConn) {

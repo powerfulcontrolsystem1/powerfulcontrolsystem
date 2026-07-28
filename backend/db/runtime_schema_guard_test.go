@@ -64,7 +64,7 @@ func TestEnsureFunctionsDoNotBypassRuntimeDDLGuard(t *testing.T) {
 		}
 		for _, declaration := range parsed.Decls {
 			function, ok := declaration.(*ast.FuncDecl)
-			if !ok || function.Body == nil || !strings.HasPrefix(function.Name.Name, "Ensure") {
+			if !ok || function.Body == nil || !strings.HasPrefix(strings.ToLower(function.Name.Name), "ensure") {
 				continue
 			}
 			ast.Inspect(function.Body, func(node ast.Node) bool {
