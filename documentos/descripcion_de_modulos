@@ -4598,3 +4598,18 @@ Actualización 2026-07-25 (Disponibilidad P107 de reportes):
   middleware. El alcance continúa reservado al super administrador.
 - Gmail requiere VMC o CMC para sustituir de forma garantizada la inicial del
   remitente; el BIMI autoafirmado no cierra esa compuerta.
+
+2026-07-28 - Plataforma de release y navegación super móvil / P108
+
+- El release candidato incluye API, migrador, worker y frontend como imágenes
+  inmutables construidas y escaneadas una sola vez.
+- Staging puede promover esas mismas referencias por digest sin reconstruir.
+- En páginas super, las acciones auxiliares móviles permanecen dentro del flujo
+  del documento para no cubrir formularios, tablas ni botones operativos.
+
+2026-07-28 - Carrito / configuración operativa por rol
+
+- La lectura PostgreSQL de reglas de cobro por rol incluye los permisos de
+  movimientos manuales que el mismo `Scan` y la respuesta ya esperaban.
+- La consulta continúa aislada por `empresa_id`; no cambia configuraciones ni
+  defaults empresariales.

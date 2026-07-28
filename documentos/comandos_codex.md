@@ -207,6 +207,42 @@ secretos privados existentes en el VPS y no los imprime ni los reemplaza.
 No establecer `PCS_RUNTIME_SCHEMA_BOOTSTRAP=0` en una instalacion existente
 hasta verificar el ledger de migraciones y los flujos de provisionamiento.
 
+## Candidato inmutable por digest
+
+El candidato de release se construye una sola vez mediante el workflow manual
+`Immutable release candidate`. Debe recibir un SHA completo ya aprobado:
+
+```powershell
+gh workflow run release-candidate.yml -f commit_sha="$(git rev-parse HEAD)"
+```
+
+El workflow construye las cuatro imágenes PCS (`api`, `migrate`, `worker` y
+`frontend`), escanea exactamente sus archivos con Trivy, genera SBOM CycloneDX,
+publica en GHCR y entrega `release-images.env` con referencias
+`repositorio@sha256`. Ese archivo no contiene secretos, pero debe asociarse al
+SHA que lo produjo y no editarse manualmente.
+
+Antes de promover, cargar las cuatro variables `PCS_*_IMAGE_DIGEST` desde el
+artefacto y ejecutar:
+
+```powershell
+.\scripts\immutable_release_check.ps1
+```
+
+Staging promueve esas mismas imágenes sin reconstruir:
+
+```bash
+env \
+  PCS_API_IMAGE_DIGEST='repositorio@sha256:...' \
+  PCS_MIGRATE_IMAGE_DIGEST='repositorio@sha256:...' \
+  PCS_WORKER_IMAGE_DIGEST='repositorio@sha256:...' \
+  PCS_FRONTEND_IMAGE_DIGEST='repositorio@sha256:...' \
+  /bin/bash deploy/scripts/vps-staging-digest-up.sh
+```
+
+No guardar tokens de GHCR en Git. Si el paquete es privado, autenticar Docker
+en el VPS mediante un token de lectura obtenido del canal seguro.
+
 ## Backup completo del VPS
 
 El backup operativo independiente del VPS se ejecuta con:

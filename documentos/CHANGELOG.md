@@ -1,3 +1,13 @@
+## [2026-07-28] Configuración operativa del carrito en PostgreSQL
+- [Carrito] El endpoint deja de fallar al cargar reglas operativas por rol: el SELECT vuelve a incluir permisos de ingresos y egresos manuales antes de escanearlos.
+- [QA] La regresión autenticada cubrió 16 combinaciones de ruta/viewport, 534 controles inventariados y 30 clics seguros sin ejecutar mutaciones.
+- [Multiempresa] La consulta conserva `WHERE empresa_id = ?`.
+
+## [2026-07-28] Candidato inmutable P108 y acciones móviles super
+- [Release] API, migrador, worker y frontend quedan obligatoriamente fijados por digest; el workflow manual construye, escanea, genera SBOM y publica las cuatro imágenes de un SHA exacto.
+- [Staging] El nuevo promotor consume los mismos digests con `--no-build`.
+- [Responsive] `Favorito` y `Panel super` dejan de permanecer fijos sobre formularios y botones en móvil.
+
 ## [2026-07-26] Correos de registro por red privada Mailu
 - [Autenticación] Las confirmaciones de administradores, invitaciones de usuarios y recuperaciones usan la dirección SMTP interna configurada.
 - [Registro] Una cuenta administrativa autogenerada pendiente no se confunde con una invitación delegada; puede repetir el registro para rotar el enlace y reenviar la confirmación. Si falla el correo, la pantalla conserva el formulario y el mensaje para reintentar.
