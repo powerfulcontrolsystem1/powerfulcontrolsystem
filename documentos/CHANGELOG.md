@@ -1,3 +1,14 @@
+## [2026-07-28] Rol PostgreSQL runtime sin DDL
+- [Base de datos] `pcs-migrate` conserva propiedad del esquema y provisiona un login separado para API/worker.
+- [Seguridad] El login runtime recibe DML, secuencias y funciones, pero no superusuario, creación de bases/roles, BYPASSRLS ni CREATE en `public`.
+- [Docker] Backend y worker exigen credenciales runtime privadas distintas de `POSTGRES_USER`.
+
+## [2026-07-28] Migración reproducible desde PostgreSQL vacío
+- [Migraciones] El bootstrap explícito del rol `migrate` crea primero las cinco raíces mínimas exigidas por el catálogo heredado.
+- [Seguridad] API y worker mantienen bloqueado el DDL y no pueden activar el bootstrap en producción.
+- [QA] Un script aislado crea PostgreSQL vacío, ejecuta dos pasadas del digest y elimina contenedor, red y volumen.
+- [QA] Un segundo ensayo restaura una copia lógica de staging y verifica upgrade sin pérdida de tablas ni escrituras en el origen.
+
 ## [2026-07-28] Candidato P108 promovido por digest
 - [CI] El commit `fce1655c` superó preflight, race, seguridad, secretos, dependencias, Trivy y SBOM.
 - [Release] API, migrador, worker y frontend se publicaron y conservaron por digest exacto.

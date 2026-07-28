@@ -397,7 +397,7 @@ func EnsureEmpresaFacturacionElectronicaSchema(dbConn *sql.DB) error {
 		`CREATE INDEX IF NOT EXISTS ix_fe_reintentos_documento ON facturacion_electronica_reintentos(empresa_id, tipo_documento, documento_codigo);`,
 	}
 	for _, stmt := range stmts {
-		if _, err := dbConn.Exec(stmt); err != nil {
+		if _, err := execSQLCompat(dbConn, stmt); err != nil {
 			return err
 		}
 	}
@@ -535,13 +535,13 @@ func EnsureEmpresaFacturacionElectronicaSchema(dbConn *sql.DB) error {
 	if err := ensureColumnIfMissing(dbConn, "facturacion_electronica_reintentos", "observaciones", "TEXT"); err != nil {
 		return err
 	}
-	if _, err := dbConn.Exec(`CREATE INDEX IF NOT EXISTS ix_fe_reintentos_empresa_estado ON facturacion_electronica_reintentos(empresa_id, estado_envio, estado);`); err != nil {
+	if _, err := execSQLCompat(dbConn, `CREATE INDEX IF NOT EXISTS ix_fe_reintentos_empresa_estado ON facturacion_electronica_reintentos(empresa_id, estado_envio, estado);`); err != nil {
 		return err
 	}
-	if _, err := dbConn.Exec(`CREATE INDEX IF NOT EXISTS ix_fe_reintentos_proximo_intento ON facturacion_electronica_reintentos(empresa_id, proximo_intento, estado_envio);`); err != nil {
+	if _, err := execSQLCompat(dbConn, `CREATE INDEX IF NOT EXISTS ix_fe_reintentos_proximo_intento ON facturacion_electronica_reintentos(empresa_id, proximo_intento, estado_envio);`); err != nil {
 		return err
 	}
-	if _, err := dbConn.Exec(`CREATE INDEX IF NOT EXISTS ix_fe_reintentos_documento ON facturacion_electronica_reintentos(empresa_id, tipo_documento, documento_codigo);`); err != nil {
+	if _, err := execSQLCompat(dbConn, `CREATE INDEX IF NOT EXISTS ix_fe_reintentos_documento ON facturacion_electronica_reintentos(empresa_id, tipo_documento, documento_codigo);`); err != nil {
 		return err
 	}
 

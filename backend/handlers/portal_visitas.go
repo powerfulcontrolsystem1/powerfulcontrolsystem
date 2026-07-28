@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"net/http"
 	"strings"
-	"sync"
 )
 
 type portalVisitasCountryRow struct {
@@ -21,11 +20,6 @@ type portalVisitasResponse struct {
 	PaisRegistrado string                    `json:"pais_registrado,omitempty"`
 }
 
-var portalVisitasSchema = struct {
-	sync.Mutex
-	ready bool
-}{}
-
 func PublicPortalVisitasHandler(db *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
@@ -33,11 +27,6 @@ func PublicPortalVisitasHandler(db *sql.DB) http.HandlerFunc {
 			http.Error(w, `{"ok":false,"error":"base de datos no disponible"}`, http.StatusServiceUnavailable)
 			return
 		}
-		if err := ensurePortalVisitasSchema(db); err != nil {
-			http.Error(w, `{"ok":false,"error":"no se pudo preparar contador de visitas"}`, http.StatusInternalServerError)
-			return
-		}
-
 		switch r.Method {
 		case http.MethodGet:
 			writePortalVisitasResponse(w, db, "")
@@ -55,27 +44,6 @@ func PublicPortalVisitasHandler(db *sql.DB) http.HandlerFunc {
 			http.Error(w, `{"ok":false,"error":"method not allowed"}`, http.StatusMethodNotAllowed)
 		}
 	}
-}
-
-func ensurePortalVisitasSchema(db *sql.DB) error {
-	portalVisitasSchema.Lock()
-	defer portalVisitasSchema.Unlock()
-	if portalVisitasSchema.ready {
-		return nil
-	}
-	_, err := db.Exec(`
-CREATE TABLE IF NOT EXISTS portal_visitas_paises (
-	pais_codigo TEXT NOT NULL,
-	fecha DATE NOT NULL DEFAULT CURRENT_DATE,
-	visitas BIGINT NOT NULL DEFAULT 0,
-	actualizado_en TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-	PRIMARY KEY (pais_codigo, fecha)
-)`)
-	if err != nil {
-		return err
-	}
-	portalVisitasSchema.ready = true
-	return nil
 }
 
 func detectPortalVisitCountry(r *http.Request) string {

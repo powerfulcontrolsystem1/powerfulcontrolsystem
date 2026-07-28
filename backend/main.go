@@ -900,6 +900,18 @@ func main() {
 		} else if runtimeConfig.Role == runtimeconfig.RoleMigrate {
 			log.Printf("INFO: bootstrap legado omitido por PCS_RUNTIME_SCHEMA_BOOTSTRAP=0; pcs-migrate aplicara solo el catalogo inmutable")
 		}
+		if legacyEmpresasBootstrap {
+			if err := dbpkg.BootstrapLegacyCoreEmpresasSchema(dbEmpresas); err != nil {
+				log.Fatalf("failed to ensure empresas core migration schema: %v", err)
+			}
+			startupTrace("after_ensure_empresas_core_migration_schema")
+		}
+		if legacySuperBootstrap {
+			if err := dbpkg.BootstrapLegacyCoreSuperSchema(dbSuper); err != nil {
+				log.Fatalf("failed to ensure super core migration schema: %v", err)
+			}
+			startupTrace("after_ensure_super_core_migration_schema")
+		}
 		if legacySuperBootstrap {
 			if legacyEmpresasBootstrap {
 				if err := dbpkg.EnsurePostgresRuntimeCompat(dbEmpresas); err != nil {

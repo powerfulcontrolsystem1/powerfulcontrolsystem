@@ -249,7 +249,7 @@ func dropLegacyEmpresaUsuariosEmailUniqueConstraints(dbConn *sql.DB) error {
 			continue
 		}
 		stmt := fmt.Sprintf(`ALTER TABLE users DROP CONSTRAINT IF EXISTS %s`, quotePostgresIdentifier(name))
-		if _, err := dbConn.Exec(stmt); err != nil {
+		if _, err := execSQLCompat(dbConn, stmt); err != nil {
 			return err
 		}
 	}
@@ -287,7 +287,7 @@ func dropLegacyEmpresaUsuariosEmailUniqueIndexes(dbConn *sql.DB) error {
 			continue
 		}
 		stmt := fmt.Sprintf(`DROP INDEX IF EXISTS %s`, quotePostgresIdentifier(name))
-		if _, err := dbConn.Exec(stmt); err != nil {
+		if _, err := execSQLCompat(dbConn, stmt); err != nil {
 			return err
 		}
 	}

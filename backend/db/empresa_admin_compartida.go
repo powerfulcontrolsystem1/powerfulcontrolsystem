@@ -144,7 +144,7 @@ func EnsureAdminEmpresaCompartidaSchema(dbConn *sql.DB) error {
 			`CREATE INDEX IF NOT EXISTS ix_admin_empresa_compartida_invitaciones_token ON admin_empresa_compartida_invitaciones (token_hash)`,
 		}
 		for _, stmt := range statements {
-			if _, err := dbConn.Exec(stmt); err != nil {
+			if _, err := execSQLCompat(dbConn, stmt); err != nil {
 				return fmt.Errorf("ensure admin empresa compartida postgres schema: %w; stmt=%s", err, stmt)
 			}
 		}
@@ -211,7 +211,7 @@ func EnsureAdminEmpresaCompartidaSchema(dbConn *sql.DB) error {
 		`CREATE INDEX IF NOT EXISTS ix_admin_empresa_compartida_invitaciones_token ON admin_empresa_compartida_invitaciones (token_hash)`,
 	}
 	for _, stmt := range statements {
-		if _, err := dbConn.Exec(stmt); err != nil {
+		if _, err := execSQLCompat(dbConn, stmt); err != nil {
 			return fmt.Errorf("ensure admin empresa compartida schema: %w; stmt=%s", err, stmt)
 		}
 	}

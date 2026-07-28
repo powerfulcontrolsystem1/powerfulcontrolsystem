@@ -97,7 +97,7 @@ func EnsureEmpresaReportesProgramacionSchema(dbConn *sql.DB) error {
 		observaciones TEXT
 	);`
 	}
-	if _, err := dbConn.Exec(createProgramaciones); err != nil {
+	if _, err := execSQLCompat(dbConn, createProgramaciones); err != nil {
 		return fmt.Errorf("create empresa_reportes_programaciones: %w", err)
 	}
 
@@ -139,7 +139,7 @@ func EnsureEmpresaReportesProgramacionSchema(dbConn *sql.DB) error {
 		observaciones TEXT
 	);`
 	}
-	if _, err := dbConn.Exec(createPlantillas); err != nil {
+	if _, err := execSQLCompat(dbConn, createPlantillas); err != nil {
 		return fmt.Errorf("create empresa_reportes_plantillas: %w", err)
 	}
 
@@ -185,7 +185,7 @@ func EnsureEmpresaReportesProgramacionSchema(dbConn *sql.DB) error {
 		observaciones TEXT
 	);`
 	}
-	if _, err := dbConn.Exec(createEjecuciones); err != nil {
+	if _, err := execSQLCompat(dbConn, createEjecuciones); err != nil {
 		return fmt.Errorf("create empresa_reportes_ejecuciones: %w", err)
 	}
 
@@ -333,27 +333,27 @@ func EnsureEmpresaReportesProgramacionSchema(dbConn *sql.DB) error {
 		return fmt.Errorf("ensure empresa_reportes_ejecuciones.observaciones: %w", err)
 	}
 
-	if _, err := dbConn.Exec(`CREATE INDEX IF NOT EXISTS idx_reportes_programaciones_empresa_proximo
+	if _, err := execSQLCompat(dbConn, `CREATE INDEX IF NOT EXISTS idx_reportes_programaciones_empresa_proximo
 		ON empresa_reportes_programaciones(empresa_id, activa, proximo_ejecutado_en)`); err != nil {
 		return fmt.Errorf("create idx_reportes_programaciones_empresa_proximo: %w", err)
 	}
-	if _, err := dbConn.Exec(`CREATE INDEX IF NOT EXISTS idx_reportes_programaciones_empresa_dataset
+	if _, err := execSQLCompat(dbConn, `CREATE INDEX IF NOT EXISTS idx_reportes_programaciones_empresa_dataset
 		ON empresa_reportes_programaciones(empresa_id, dataset_key)`); err != nil {
 		return fmt.Errorf("create idx_reportes_programaciones_empresa_dataset: %w", err)
 	}
-	if _, err := dbConn.Exec(`CREATE INDEX IF NOT EXISTS idx_reportes_plantillas_empresa_codigo
+	if _, err := execSQLCompat(dbConn, `CREATE INDEX IF NOT EXISTS idx_reportes_plantillas_empresa_codigo
 		ON empresa_reportes_plantillas(empresa_id, codigo, version DESC)`); err != nil {
 		return fmt.Errorf("create idx_reportes_plantillas_empresa_codigo: %w", err)
 	}
-	if _, err := dbConn.Exec(`CREATE UNIQUE INDEX IF NOT EXISTS ux_reportes_plantillas_empresa_codigo_version
+	if _, err := execSQLCompat(dbConn, `CREATE UNIQUE INDEX IF NOT EXISTS ux_reportes_plantillas_empresa_codigo_version
 		ON empresa_reportes_plantillas(empresa_id, codigo, version)`); err != nil {
 		return fmt.Errorf("create ux_reportes_plantillas_empresa_codigo_version: %w", err)
 	}
-	if _, err := dbConn.Exec(`CREATE INDEX IF NOT EXISTS idx_reportes_ejecuciones_empresa_programacion
+	if _, err := execSQLCompat(dbConn, `CREATE INDEX IF NOT EXISTS idx_reportes_ejecuciones_empresa_programacion
 		ON empresa_reportes_ejecuciones(empresa_id, programacion_id, ejecutado_en DESC)`); err != nil {
 		return fmt.Errorf("create idx_reportes_ejecuciones_empresa_programacion: %w", err)
 	}
-	if _, err := dbConn.Exec(`CREATE INDEX IF NOT EXISTS idx_reportes_ejecuciones_empresa_dataset
+	if _, err := execSQLCompat(dbConn, `CREATE INDEX IF NOT EXISTS idx_reportes_ejecuciones_empresa_dataset
 		ON empresa_reportes_ejecuciones(empresa_id, dataset_key, ejecutado_en DESC)`); err != nil {
 		return fmt.Errorf("create idx_reportes_ejecuciones_empresa_dataset: %w", err)
 	}

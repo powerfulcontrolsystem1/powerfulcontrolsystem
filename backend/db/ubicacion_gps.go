@@ -122,7 +122,7 @@ func EnsureEmpresaUbicacionGPSSchema(dbConn *sql.DB) error {
 		`CREATE INDEX IF NOT EXISTS ix_empresa_gps_recorridos_empresa_fecha ON empresa_gps_recorridos(empresa_id, capturado_en);`,
 	}
 	for _, stmt := range stmts {
-		if _, err := dbConn.Exec(stmt); err != nil {
+		if _, err := execSQLCompat(dbConn, stmt); err != nil {
 			return err
 		}
 	}
@@ -244,7 +244,7 @@ func EnsureEmpresaUbicacionGPSSchema(dbConn *sql.DB) error {
 		`CREATE INDEX IF NOT EXISTS ix_empresa_gps_dispositivos_empresa_marca ON empresa_gps_dispositivos(empresa_id, marca, modelo);`,
 		`CREATE INDEX IF NOT EXISTS ix_empresa_gps_dispositivos_empresa_hardware ON empresa_gps_dispositivos(empresa_id, identificador_hardware);`,
 	} {
-		if _, err := dbConn.Exec(stmt); err != nil {
+		if _, err := execSQLCompat(dbConn, stmt); err != nil {
 			return err
 		}
 	}

@@ -174,7 +174,7 @@ func EnsureEmpresaDocumentosTransaccionalesSchema(dbConn *sql.DB) error {
 		`CREATE INDEX IF NOT EXISTS ix_empresa_compras_documentos_estado ON empresa_compras_documentos(empresa_id, estado_documento, estado);`,
 	}
 	for _, stmt := range stmts {
-		if _, err := dbConn.Exec(stmt); err != nil {
+		if _, err := execSQLCompat(dbConn, stmt); err != nil {
 			return err
 		}
 	}
@@ -327,7 +327,7 @@ func EnsureEmpresaDocumentosTransaccionalesSchema(dbConn *sql.DB) error {
 		`CREATE INDEX IF NOT EXISTS ix_empresa_compras_documentos_validacion ON empresa_compras_documentos(empresa_id, validacion_documental_estado, estado);`,
 	}
 	for _, stmt := range indexStmts {
-		if _, err := dbConn.Exec(stmt); err != nil {
+		if _, err := execSQLCompat(dbConn, stmt); err != nil {
 			return err
 		}
 	}
@@ -368,13 +368,13 @@ func ensurePostgresDocumentTableIDSequence(dbConn *sql.DB, tableName string) err
 	}
 
 	seqName := tableName + "_id_seq"
-	if _, err := dbConn.Exec(fmt.Sprintf(`CREATE SEQUENCE IF NOT EXISTS %s`, seqName)); err != nil {
+	if _, err := execSQLCompat(dbConn, fmt.Sprintf(`CREATE SEQUENCE IF NOT EXISTS %s`, seqName)); err != nil {
 		return err
 	}
-	if _, err := dbConn.Exec(fmt.Sprintf(`ALTER SEQUENCE %s OWNED BY %s.id`, seqName, tableName)); err != nil {
+	if _, err := execSQLCompat(dbConn, fmt.Sprintf(`ALTER SEQUENCE %s OWNED BY %s.id`, seqName, tableName)); err != nil {
 		return err
 	}
-	if _, err := dbConn.Exec(fmt.Sprintf(`ALTER TABLE %s ALTER COLUMN id SET DEFAULT nextval('%s')`, tableName, seqName)); err != nil {
+	if _, err := execSQLCompat(dbConn, fmt.Sprintf(`ALTER TABLE %s ALTER COLUMN id SET DEFAULT nextval('%s')`, tableName, seqName)); err != nil {
 		return err
 	}
 
@@ -383,12 +383,12 @@ func ensurePostgresDocumentTableIDSequence(dbConn *sql.DB, tableName string) err
 		return err
 	}
 	if maxID > 0 {
-		if _, err := dbConn.Exec(`SELECT setval($1, $2, true)`, seqName, maxID); err != nil {
+		if _, err := execSQLCompat(dbConn, `SELECT setval($1, $2, true)`, seqName, maxID); err != nil {
 			return err
 		}
 		return nil
 	}
-	if _, err := dbConn.Exec(`SELECT setval($1, 1, false)`, seqName); err != nil {
+	if _, err := execSQLCompat(dbConn, `SELECT setval($1, 1, false)`, seqName); err != nil {
 		return err
 	}
 	return nil

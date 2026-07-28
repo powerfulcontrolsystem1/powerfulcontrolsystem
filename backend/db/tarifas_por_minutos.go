@@ -134,7 +134,7 @@ func EnsureEmpresaTarifasPorMinutosSchema(dbConn *sql.DB) error {
 		`CREATE INDEX IF NOT EXISTS ix_empresa_tarifas_por_minutos_empresa_dias ON empresa_tarifas_por_minutos(empresa_id, dia_semana_desde, dia_semana_hasta);`,
 	}
 	for _, stmt := range stmts {
-		if _, err := dbConn.Exec(stmt); err != nil {
+		if _, err := execSQLCompat(dbConn, stmt); err != nil {
 			return err
 		}
 	}
@@ -234,7 +234,7 @@ func EnsureEmpresaTarifasPorMinutosConfiguracionSchema(dbConn *sql.DB) error {
 		`CREATE INDEX IF NOT EXISTS ix_empresa_tarifas_por_minutos_cfg_empresa_estado ON empresa_tarifas_por_minutos_configuracion(empresa_id, estado);`,
 	}
 	for _, stmt := range stmts {
-		if _, err := dbConn.Exec(stmt); err != nil {
+		if _, err := execSQLCompat(dbConn, stmt); err != nil {
 			return err
 		}
 	}

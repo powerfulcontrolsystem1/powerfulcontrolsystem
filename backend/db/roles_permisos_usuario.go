@@ -57,7 +57,7 @@ func EnsureRolesPermisosSchema(dbConn *sql.DB) error {
 		ON roles_de_usuario_paginas_permisos(rol_id, estado);`,
 	}
 	for _, stmt := range statements {
-		if _, err := dbConn.Exec(stmt); err != nil {
+		if _, err := execSQLCompat(dbConn, stmt); err != nil {
 			return err
 		}
 	}

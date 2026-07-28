@@ -311,7 +311,7 @@ func EnsureEmpresaConfiguracionOperativaSchema(dbConn *sql.DB) error {
 		`CREATE INDEX IF NOT EXISTS ix_empresa_configuracion_operativa_historial_empresa_fecha ON empresa_configuracion_operativa_historial(empresa_id, fecha_creacion DESC, id DESC);`,
 	}
 	for _, stmt := range stmts {
-		if _, err := dbConn.Exec(stmt); err != nil {
+		if _, err := execSQLCompat(dbConn, stmt); err != nil {
 			return err
 		}
 	}

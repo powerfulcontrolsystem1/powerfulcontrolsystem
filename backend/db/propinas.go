@@ -217,7 +217,7 @@ func EnsureEmpresaPropinasSchema(dbConn *sql.DB) error {
 		);`,
 	}
 	for _, stmt := range bootstrapStmts {
-		if _, err := dbConn.Exec(stmt); err != nil {
+		if _, err := execSQLCompat(dbConn, stmt); err != nil {
 			return err
 		}
 	}
@@ -352,7 +352,7 @@ func EnsureEmpresaPropinasSchema(dbConn *sql.DB) error {
 		`CREATE INDEX IF NOT EXISTS ix_empresa_propinas_movimientos_empresa_origen ON empresa_propinas_movimientos(empresa_id, origen_movimiento, ajuste_manual);`,
 	}
 	for _, stmt := range indexStmts {
-		if _, err := dbConn.Exec(stmt); err != nil {
+		if _, err := execSQLCompat(dbConn, stmt); err != nil {
 			return err
 		}
 	}

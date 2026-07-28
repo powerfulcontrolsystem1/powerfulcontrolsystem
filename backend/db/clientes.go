@@ -279,7 +279,7 @@ func EnsureEmpresaClientesSchema(dbConn *sql.DB) error {
 		`CREATE INDEX IF NOT EXISTS ix_clientes_empresa_documento ON clientes(empresa_id, tipo_documento, numero_documento);`,
 	}
 	for _, stmt := range stmts {
-		if _, err := dbConn.Exec(stmt); err != nil {
+		if _, err := execSQLCompat(dbConn, stmt); err != nil {
 			return err
 		}
 	}

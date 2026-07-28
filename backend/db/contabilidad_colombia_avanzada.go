@@ -429,7 +429,7 @@ func EnsureEmpresaContabilidadColombiaAvanzadaSchema(dbConn *sql.DB) error {
 		)`,
 	}
 	for _, stmt := range stmts {
-		if _, err := dbConn.Exec(stmt); err != nil {
+		if _, err := execSQLCompat(dbConn, stmt); err != nil {
 			return err
 		}
 	}

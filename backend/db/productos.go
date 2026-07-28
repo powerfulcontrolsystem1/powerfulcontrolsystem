@@ -768,7 +768,7 @@ func EnsureEmpresaProductosSchema(dbConn *sql.DB) error {
 	}
 
 	for _, stmt := range stmts {
-		if _, err := dbConn.Exec(stmt); err != nil {
+		if _, err := execSQLCompat(dbConn, stmt); err != nil {
 			return err
 		}
 	}
@@ -887,10 +887,10 @@ func EnsureEmpresaProductosSchema(dbConn *sql.DB) error {
 	if err := ensureColumnIfMissing(dbConn, "productos", "observaciones", "TEXT"); err != nil {
 		return err
 	}
-	if _, err := dbConn.Exec(`CREATE INDEX IF NOT EXISTS ix_productos_empresa_categoria_id ON productos(empresa_id, categoria_id);`); err != nil {
+	if _, err := execSQLCompat(dbConn, `CREATE INDEX IF NOT EXISTS ix_productos_empresa_categoria_id ON productos(empresa_id, categoria_id);`); err != nil {
 		return err
 	}
-	if _, err := dbConn.Exec(`CREATE INDEX IF NOT EXISTS ix_productos_empresa_vencimiento ON productos(empresa_id, maneja_vencimiento, fecha_vencimiento);`); err != nil {
+	if _, err := execSQLCompat(dbConn, `CREATE INDEX IF NOT EXISTS ix_productos_empresa_vencimiento ON productos(empresa_id, maneja_vencimiento, fecha_vencimiento);`); err != nil {
 		return err
 	}
 
@@ -1099,10 +1099,10 @@ func EnsureEmpresaProductosSchema(dbConn *sql.DB) error {
 	if err := ensureColumnIfMissing(dbConn, "recetas_productos_versiones", "motivo", "TEXT"); err != nil {
 		return err
 	}
-	if _, err := dbConn.Exec(`CREATE UNIQUE INDEX IF NOT EXISTS ux_recetas_versiones_empresa_receta_version ON recetas_productos_versiones(empresa_id, receta_id, receta_version);`); err != nil {
+	if _, err := execSQLCompat(dbConn, `CREATE UNIQUE INDEX IF NOT EXISTS ux_recetas_versiones_empresa_receta_version ON recetas_productos_versiones(empresa_id, receta_id, receta_version);`); err != nil {
 		return err
 	}
-	if _, err := dbConn.Exec(`CREATE INDEX IF NOT EXISTS ix_recetas_versiones_empresa_receta_fecha ON recetas_productos_versiones(empresa_id, receta_id, fecha_creacion);`); err != nil {
+	if _, err := execSQLCompat(dbConn, `CREATE INDEX IF NOT EXISTS ix_recetas_versiones_empresa_receta_fecha ON recetas_productos_versiones(empresa_id, receta_id, fecha_creacion);`); err != nil {
 		return err
 	}
 

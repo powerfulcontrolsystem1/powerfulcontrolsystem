@@ -6,9 +6,9 @@ Las llamadas listadas son deuda de extraccion. En produccion, API y worker deben
 
 ## Resumen
 
-- Llamadas inventariadas: 104.
+- Llamadas inventariadas: 106.
 - arranque; protegido por rol, requiere extraccion: 72.
-- proceso de plataforma; revisar rol: 1.
+- proceso de plataforma; revisar rol: 3.
 - trafico HTTP; priorizar reemplazo por verificacion: 31.
 
 ## Registro
@@ -16,6 +16,8 @@ Las llamadas listadas son deuda de extraccion. En produccion, API y worker deben
 | Funcion Ensure | Llamador | Riesgo / prioridad |
 | --- | --- | --- |
 | `EnsurePostgresRuntimeCompat` | [backend/cmd/pcs-migrate/main.go:69](../../backend/cmd/pcs-migrate/main.go#L69) | proceso de plataforma; revisar rol |
+| `EnsureRuntimeDatabaseRole` | [backend/cmd/pcs-migrate/main.go:83](../../backend/cmd/pcs-migrate/main.go#L83) | proceso de plataforma; revisar rol |
+| `EnsureRuntimeDatabaseRole` | [backend/cmd/pcs-migrate/main.go:86](../../backend/cmd/pcs-migrate/main.go#L86) | proceso de plataforma; revisar rol |
 | `EnsureEmpresaControlElectricoPrimaryRaspberry` | [backend/handlers/control_electrico.go:224](../../backend/handlers/control_electrico.go#L224) | trafico HTTP; priorizar reemplazo por verificacion |
 | `EnsureEmpresaControlElectricoPrimaryRaspberry` | [backend/handlers/control_electrico.go:384](../../backend/handlers/control_electrico.go#L384) | trafico HTTP; priorizar reemplazo por verificacion |
 | `EnsureEmpresaEventosContablesSchema` | [backend/handlers/creditos.go:981](../../backend/handlers/creditos.go#L981) | trafico HTTP; priorizar reemplazo por verificacion |
@@ -47,78 +49,78 @@ Las llamadas listadas son deuda de extraccion. En produccion, API y worker deben
 | `EnsureEmpresaCorporateEmailAfterCreate` | [backend/handlers/system_empresas_handlers.go:584](../../backend/handlers/system_empresas_handlers.go#L584) | trafico HTTP; priorizar reemplazo por verificacion |
 | `EnsureAuthToken` | [backend/handlers/voice_stream_config.go:239](../../backend/handlers/voice_stream_config.go#L239) | trafico HTTP; priorizar reemplazo por verificacion |
 | `EnsureAuthToken` | [backend/handlers/voice_stream_config.go:349](../../backend/handlers/voice_stream_config.go#L349) | trafico HTTP; priorizar reemplazo por verificacion |
-| `EnsurePostgresRuntimeCompat` | [backend/main.go:905](../../backend/main.go#L905) | arranque; protegido por rol, requiere extraccion |
-| `EnsurePostgresRuntimeCompat` | [backend/main.go:910](../../backend/main.go#L910) | arranque; protegido por rol, requiere extraccion |
-| `EnsureAdministradoresAuthSchema` | [backend/main.go:914](../../backend/main.go#L914) | arranque; protegido por rol, requiere extraccion |
-| `EnsurePaymentGatewaySchema` | [backend/main.go:953](../../backend/main.go#L953) | arranque; protegido por rol, requiere extraccion |
-| `EnsureLicenciasSchema` | [backend/main.go:957](../../backend/main.go#L957) | arranque; protegido por rol, requiere extraccion |
-| `EnsureLicenciasCatalogoGlobal` | [backend/main.go:961](../../backend/main.go#L961) | arranque; protegido por rol, requiere extraccion |
-| `EnsurePowerfulSystemEmpresa` | [backend/main.go:967](../../backend/main.go#L967) | arranque; protegido por rol, requiere extraccion |
-| `EnsureSuperAuditoriaSchema` | [backend/main.go:973](../../backend/main.go#L973) | arranque; protegido por rol, requiere extraccion |
-| `EnsureSuperVPSSnapshotSchema` | [backend/main.go:977](../../backend/main.go#L977) | arranque; protegido por rol, requiere extraccion |
-| `EnsureLicenciaVencimientoNotificacionesSchema` | [backend/main.go:981](../../backend/main.go#L981) | arranque; protegido por rol, requiere extraccion |
-| `EnsureLicenciaEmpresaRetencionSchema` | [backend/main.go:985](../../backend/main.go#L985) | arranque; protegido por rol, requiere extraccion |
-| `EnsureUsuarioConfiguracionSchema` | [backend/main.go:989](../../backend/main.go#L989) | arranque; protegido por rol, requiere extraccion |
-| `EnsureEmpresaEmailCorporativoSchema` | [backend/main.go:993](../../backend/main.go#L993) | arranque; protegido por rol, requiere extraccion |
-| `EnsureCorporateEmailConfigFromEnv` | [backend/main.go:997](../../backend/main.go#L997) | arranque; protegido por rol, requiere extraccion |
-| `EnsureCorporateEmailRowsForExistingCompanies` | [backend/main.go:1003](../../backend/main.go#L1003) | arranque; protegido por rol, requiere extraccion |
-| `EnsureCorporateEmailProvisioningForExistingCompanies` | [backend/main.go:1011](../../backend/main.go#L1011) | arranque; protegido por rol, requiere extraccion |
-| `EnsureNextcloudConfigFromEnv` | [backend/main.go:1017](../../backend/main.go#L1017) | arranque; protegido por rol, requiere extraccion |
-| `EnsureEmpresaNextcloudSchema` | [backend/main.go:1021](../../backend/main.go#L1021) | arranque; protegido por rol, requiere extraccion |
-| `EnsureNextcloudAssignmentsForAll` | [backend/main.go:1025](../../backend/main.go#L1025) | arranque; protegido por rol, requiere extraccion |
-| `EnsureAsesorComercialSchema` | [backend/main.go:1035](../../backend/main.go#L1035) | arranque; protegido por rol, requiere extraccion |
-| `EnsureConstructoraTipoEmpresaYLicencias` | [backend/main.go:1045](../../backend/main.go#L1045) | arranque; protegido por rol, requiere extraccion |
-| `EnsureDrogueriaFarmaciaTipoEmpresaYLicencias` | [backend/main.go:1051](../../backend/main.go#L1051) | arranque; protegido por rol, requiere extraccion |
-| `EnsureAlquileresTipoEmpresaYLicencias` | [backend/main.go:1057](../../backend/main.go#L1057) | arranque; protegido por rol, requiere extraccion |
-| `EnsureNuevasPlantillasTipoEmpresaYLicencias` | [backend/main.go:1063](../../backend/main.go#L1063) | arranque; protegido por rol, requiere extraccion |
-| `EnsureEnergiaSolarInTipoEmpresaPreconfiguraciones` | [backend/main.go:1073](../../backend/main.go#L1073) | arranque; protegido por rol, requiere extraccion |
-| `EnsurePostgresRuntimeCompat` | [backend/main.go:1087](../../backend/main.go#L1087) | arranque; protegido por rol, requiere extraccion |
-| `EnsureEmpresaUsuariosAuthSchema` | [backend/main.go:1090](../../backend/main.go#L1090) | arranque; protegido por rol, requiere extraccion |
-| `EnsureEmpresaBuzonSchema` | [backend/main.go:1096](../../backend/main.go#L1096) | arranque; protegido por rol, requiere extraccion |
-| `EnsureEmpresaCarritosSchema` | [backend/main.go:1100](../../backend/main.go#L1100) | arranque; protegido por rol, requiere extraccion |
-| `EnsureEmpresaDatafonosSchema` | [backend/main.go:1104](../../backend/main.go#L1104) | arranque; protegido por rol, requiere extraccion |
-| `EnsureEmpresaFinanzasSchema` | [backend/main.go:1120](../../backend/main.go#L1120) | arranque; protegido por rol, requiere extraccion |
-| `EnsureEmpresaImpuestosSchema` | [backend/main.go:1124](../../backend/main.go#L1124) | arranque; protegido por rol, requiere extraccion |
-| `EnsureEmpresaNominaSchema` | [backend/main.go:1128](../../backend/main.go#L1128) | arranque; protegido por rol, requiere extraccion |
-| `EnsureEmpresaCreditosSchema` | [backend/main.go:1146](../../backend/main.go#L1146) | arranque; protegido por rol, requiere extraccion |
-| `EnsureEmpresaContabilidadColombiaSchema` | [backend/main.go:1150](../../backend/main.go#L1150) | arranque; protegido por rol, requiere extraccion |
-| `EnsureEmpresaContabilidadColombiaAvanzadaSchema` | [backend/main.go:1154](../../backend/main.go#L1154) | arranque; protegido por rol, requiere extraccion |
-| `EnsureEmpresaCentrosCostoSchema` | [backend/main.go:1158](../../backend/main.go#L1158) | arranque; protegido por rol, requiere extraccion |
-| `EnsureEmpresaCierreFiscalSchema` | [backend/main.go:1162](../../backend/main.go#L1162) | arranque; protegido por rol, requiere extraccion |
-| `EnsureEmpresaDeclaracionesTributariasSchema` | [backend/main.go:1166](../../backend/main.go#L1166) | arranque; protegido por rol, requiere extraccion |
-| `EnsureEmpresaTesoreriaPresupuestoSchema` | [backend/main.go:1170](../../backend/main.go#L1170) | arranque; protegido por rol, requiere extraccion |
-| `EnsureEmpresaImportacionesCosteoSchema` | [backend/main.go:1173](../../backend/main.go#L1173) | arranque; protegido por rol, requiere extraccion |
-| `EnsureEmpresaAIUConstruccionSchema` | [backend/main.go:1176](../../backend/main.go#L1176) | arranque; protegido por rol, requiere extraccion |
-| `EnsureEmpresaCobranzaSchema` | [backend/main.go:1179](../../backend/main.go#L1179) | arranque; protegido por rol, requiere extraccion |
-| `EnsureEmpresaPortalContadorSchema` | [backend/main.go:1182](../../backend/main.go#L1182) | arranque; protegido por rol, requiere extraccion |
-| `EnsureEmpresaPortalTercerosCertificadosSchema` | [backend/main.go:1185](../../backend/main.go#L1185) | arranque; protegido por rol, requiere extraccion |
-| `EnsureEmpresaSoportesComprasIASchema` | [backend/main.go:1188](../../backend/main.go#L1188) | arranque; protegido por rol, requiere extraccion |
-| `EnsureEmpresaModulosColombiaSchema` | [backend/main.go:1191](../../backend/main.go#L1191) | arranque; protegido por rol, requiere extraccion |
-| `EnsureEmpresaComprasAvanzadasSchema` | [backend/main.go:1194](../../backend/main.go#L1194) | arranque; protegido por rol, requiere extraccion |
-| `EnsureEmpresaReservasHotelSchema` | [backend/main.go:1197](../../backend/main.go#L1197) | arranque; protegido por rol, requiere extraccion |
-| `EnsureEmpresaTarifasMotelSchema` | [backend/main.go:1201](../../backend/main.go#L1201) | arranque; protegido por rol, requiere extraccion |
-| `EnsureEmpresaAIEnterpriseSchema` | [backend/main.go:1205](../../backend/main.go#L1205) | arranque; protegido por rol, requiere extraccion |
-| `EnsureEmpresaAIOpenAIProviderSchema` | [backend/main.go:1209](../../backend/main.go#L1209) | arranque; protegido por rol, requiere extraccion |
-| `EnsureEmpresaSensorPuertasSchema` | [backend/main.go:1213](../../backend/main.go#L1213) | arranque; protegido por rol, requiere extraccion |
-| `EnsureEmpresaControlElectricoSchema` | [backend/main.go:1216](../../backend/main.go#L1216) | arranque; protegido por rol, requiere extraccion |
-| `EnsureEmpresaEnergiaSolarSchema` | [backend/main.go:1219](../../backend/main.go#L1219) | arranque; protegido por rol, requiere extraccion |
-| `EnsureEmpresaCamarasSchema` | [backend/main.go:1222](../../backend/main.go#L1222) | arranque; protegido por rol, requiere extraccion |
-| `EnsureEmpresaGrafologiaSchema` | [backend/main.go:1225](../../backend/main.go#L1225) | arranque; protegido por rol, requiere extraccion |
-| `EnsureEmpresaCarnetsSchema` | [backend/main.go:1228](../../backend/main.go#L1228) | arranque; protegido por rol, requiere extraccion |
-| `EnsureEmpresaParqueaderoSchema` | [backend/main.go:1231](../../backend/main.go#L1231) | arranque; protegido por rol, requiere extraccion |
-| `EnsureEmpresaApartamentosTuristicosSchema` | [backend/main.go:1234](../../backend/main.go#L1234) | arranque; protegido por rol, requiere extraccion |
-| `EnsureEmpresaPropiedadHorizontalSchema` | [backend/main.go:1237](../../backend/main.go#L1237) | arranque; protegido por rol, requiere extraccion |
-| `EnsureEmpresaProduccionMRPSchema` | [backend/main.go:1240](../../backend/main.go#L1240) | arranque; protegido por rol, requiere extraccion |
-| `EnsureEmpresaWMSSchema` | [backend/main.go:1243](../../backend/main.go#L1243) | arranque; protegido por rol, requiere extraccion |
-| `EnsureHotelTarjetasAccesoSchema` | [backend/main.go:1246](../../backend/main.go#L1246) | arranque; protegido por rol, requiere extraccion |
-| `EnsureEmpresaProductosSchema` | [backend/main.go:1249](../../backend/main.go#L1249) | arranque; protegido por rol, requiere extraccion |
-| `EnsureEmpresaInventarioAvanzadoSchema` | [backend/main.go:1257](../../backend/main.go#L1257) | arranque; protegido por rol, requiere extraccion |
-| `EnsureEmpresaCRMVentasAvanzadasSchema` | [backend/main.go:1260](../../backend/main.go#L1260) | arranque; protegido por rol, requiere extraccion |
-| `EnsureEmpresaSoporteRemotoSchema` | [backend/main.go:1263](../../backend/main.go#L1263) | arranque; protegido por rol, requiere extraccion |
-| `EnsureSensitiveSuperConfigEncrypted` | [backend/main.go:1273](../../backend/main.go#L1273) | arranque; protegido por rol, requiere extraccion |
-| `EnsurePostgresPrimaryKeySequences` | [backend/main.go:1277](../../backend/main.go#L1277) | arranque; protegido por rol, requiere extraccion |
-| `EnsurePostgresPrimaryKeySequences` | [backend/main.go:1281](../../backend/main.go#L1281) | arranque; protegido por rol, requiere extraccion |
-| `EnsureSuperContextoIALogicaNegocio` | [backend/main.go:1287](../../backend/main.go#L1287) | arranque; protegido por rol, requiere extraccion |
+| `EnsurePostgresRuntimeCompat` | [backend/main.go:917](../../backend/main.go#L917) | arranque; protegido por rol, requiere extraccion |
+| `EnsurePostgresRuntimeCompat` | [backend/main.go:922](../../backend/main.go#L922) | arranque; protegido por rol, requiere extraccion |
+| `EnsureAdministradoresAuthSchema` | [backend/main.go:926](../../backend/main.go#L926) | arranque; protegido por rol, requiere extraccion |
+| `EnsurePaymentGatewaySchema` | [backend/main.go:965](../../backend/main.go#L965) | arranque; protegido por rol, requiere extraccion |
+| `EnsureLicenciasSchema` | [backend/main.go:969](../../backend/main.go#L969) | arranque; protegido por rol, requiere extraccion |
+| `EnsureLicenciasCatalogoGlobal` | [backend/main.go:973](../../backend/main.go#L973) | arranque; protegido por rol, requiere extraccion |
+| `EnsurePowerfulSystemEmpresa` | [backend/main.go:979](../../backend/main.go#L979) | arranque; protegido por rol, requiere extraccion |
+| `EnsureSuperAuditoriaSchema` | [backend/main.go:985](../../backend/main.go#L985) | arranque; protegido por rol, requiere extraccion |
+| `EnsureSuperVPSSnapshotSchema` | [backend/main.go:989](../../backend/main.go#L989) | arranque; protegido por rol, requiere extraccion |
+| `EnsureLicenciaVencimientoNotificacionesSchema` | [backend/main.go:993](../../backend/main.go#L993) | arranque; protegido por rol, requiere extraccion |
+| `EnsureLicenciaEmpresaRetencionSchema` | [backend/main.go:997](../../backend/main.go#L997) | arranque; protegido por rol, requiere extraccion |
+| `EnsureUsuarioConfiguracionSchema` | [backend/main.go:1001](../../backend/main.go#L1001) | arranque; protegido por rol, requiere extraccion |
+| `EnsureEmpresaEmailCorporativoSchema` | [backend/main.go:1005](../../backend/main.go#L1005) | arranque; protegido por rol, requiere extraccion |
+| `EnsureCorporateEmailConfigFromEnv` | [backend/main.go:1009](../../backend/main.go#L1009) | arranque; protegido por rol, requiere extraccion |
+| `EnsureCorporateEmailRowsForExistingCompanies` | [backend/main.go:1015](../../backend/main.go#L1015) | arranque; protegido por rol, requiere extraccion |
+| `EnsureCorporateEmailProvisioningForExistingCompanies` | [backend/main.go:1023](../../backend/main.go#L1023) | arranque; protegido por rol, requiere extraccion |
+| `EnsureNextcloudConfigFromEnv` | [backend/main.go:1029](../../backend/main.go#L1029) | arranque; protegido por rol, requiere extraccion |
+| `EnsureEmpresaNextcloudSchema` | [backend/main.go:1033](../../backend/main.go#L1033) | arranque; protegido por rol, requiere extraccion |
+| `EnsureNextcloudAssignmentsForAll` | [backend/main.go:1037](../../backend/main.go#L1037) | arranque; protegido por rol, requiere extraccion |
+| `EnsureAsesorComercialSchema` | [backend/main.go:1047](../../backend/main.go#L1047) | arranque; protegido por rol, requiere extraccion |
+| `EnsureConstructoraTipoEmpresaYLicencias` | [backend/main.go:1057](../../backend/main.go#L1057) | arranque; protegido por rol, requiere extraccion |
+| `EnsureDrogueriaFarmaciaTipoEmpresaYLicencias` | [backend/main.go:1063](../../backend/main.go#L1063) | arranque; protegido por rol, requiere extraccion |
+| `EnsureAlquileresTipoEmpresaYLicencias` | [backend/main.go:1069](../../backend/main.go#L1069) | arranque; protegido por rol, requiere extraccion |
+| `EnsureNuevasPlantillasTipoEmpresaYLicencias` | [backend/main.go:1075](../../backend/main.go#L1075) | arranque; protegido por rol, requiere extraccion |
+| `EnsureEnergiaSolarInTipoEmpresaPreconfiguraciones` | [backend/main.go:1085](../../backend/main.go#L1085) | arranque; protegido por rol, requiere extraccion |
+| `EnsurePostgresRuntimeCompat` | [backend/main.go:1099](../../backend/main.go#L1099) | arranque; protegido por rol, requiere extraccion |
+| `EnsureEmpresaUsuariosAuthSchema` | [backend/main.go:1102](../../backend/main.go#L1102) | arranque; protegido por rol, requiere extraccion |
+| `EnsureEmpresaBuzonSchema` | [backend/main.go:1108](../../backend/main.go#L1108) | arranque; protegido por rol, requiere extraccion |
+| `EnsureEmpresaCarritosSchema` | [backend/main.go:1112](../../backend/main.go#L1112) | arranque; protegido por rol, requiere extraccion |
+| `EnsureEmpresaDatafonosSchema` | [backend/main.go:1116](../../backend/main.go#L1116) | arranque; protegido por rol, requiere extraccion |
+| `EnsureEmpresaFinanzasSchema` | [backend/main.go:1132](../../backend/main.go#L1132) | arranque; protegido por rol, requiere extraccion |
+| `EnsureEmpresaImpuestosSchema` | [backend/main.go:1136](../../backend/main.go#L1136) | arranque; protegido por rol, requiere extraccion |
+| `EnsureEmpresaNominaSchema` | [backend/main.go:1140](../../backend/main.go#L1140) | arranque; protegido por rol, requiere extraccion |
+| `EnsureEmpresaCreditosSchema` | [backend/main.go:1158](../../backend/main.go#L1158) | arranque; protegido por rol, requiere extraccion |
+| `EnsureEmpresaContabilidadColombiaSchema` | [backend/main.go:1162](../../backend/main.go#L1162) | arranque; protegido por rol, requiere extraccion |
+| `EnsureEmpresaContabilidadColombiaAvanzadaSchema` | [backend/main.go:1166](../../backend/main.go#L1166) | arranque; protegido por rol, requiere extraccion |
+| `EnsureEmpresaCentrosCostoSchema` | [backend/main.go:1170](../../backend/main.go#L1170) | arranque; protegido por rol, requiere extraccion |
+| `EnsureEmpresaCierreFiscalSchema` | [backend/main.go:1174](../../backend/main.go#L1174) | arranque; protegido por rol, requiere extraccion |
+| `EnsureEmpresaDeclaracionesTributariasSchema` | [backend/main.go:1178](../../backend/main.go#L1178) | arranque; protegido por rol, requiere extraccion |
+| `EnsureEmpresaTesoreriaPresupuestoSchema` | [backend/main.go:1182](../../backend/main.go#L1182) | arranque; protegido por rol, requiere extraccion |
+| `EnsureEmpresaImportacionesCosteoSchema` | [backend/main.go:1185](../../backend/main.go#L1185) | arranque; protegido por rol, requiere extraccion |
+| `EnsureEmpresaAIUConstruccionSchema` | [backend/main.go:1188](../../backend/main.go#L1188) | arranque; protegido por rol, requiere extraccion |
+| `EnsureEmpresaCobranzaSchema` | [backend/main.go:1191](../../backend/main.go#L1191) | arranque; protegido por rol, requiere extraccion |
+| `EnsureEmpresaPortalContadorSchema` | [backend/main.go:1194](../../backend/main.go#L1194) | arranque; protegido por rol, requiere extraccion |
+| `EnsureEmpresaPortalTercerosCertificadosSchema` | [backend/main.go:1197](../../backend/main.go#L1197) | arranque; protegido por rol, requiere extraccion |
+| `EnsureEmpresaSoportesComprasIASchema` | [backend/main.go:1200](../../backend/main.go#L1200) | arranque; protegido por rol, requiere extraccion |
+| `EnsureEmpresaModulosColombiaSchema` | [backend/main.go:1203](../../backend/main.go#L1203) | arranque; protegido por rol, requiere extraccion |
+| `EnsureEmpresaComprasAvanzadasSchema` | [backend/main.go:1206](../../backend/main.go#L1206) | arranque; protegido por rol, requiere extraccion |
+| `EnsureEmpresaReservasHotelSchema` | [backend/main.go:1209](../../backend/main.go#L1209) | arranque; protegido por rol, requiere extraccion |
+| `EnsureEmpresaTarifasMotelSchema` | [backend/main.go:1213](../../backend/main.go#L1213) | arranque; protegido por rol, requiere extraccion |
+| `EnsureEmpresaAIEnterpriseSchema` | [backend/main.go:1217](../../backend/main.go#L1217) | arranque; protegido por rol, requiere extraccion |
+| `EnsureEmpresaAIOpenAIProviderSchema` | [backend/main.go:1221](../../backend/main.go#L1221) | arranque; protegido por rol, requiere extraccion |
+| `EnsureEmpresaSensorPuertasSchema` | [backend/main.go:1225](../../backend/main.go#L1225) | arranque; protegido por rol, requiere extraccion |
+| `EnsureEmpresaControlElectricoSchema` | [backend/main.go:1228](../../backend/main.go#L1228) | arranque; protegido por rol, requiere extraccion |
+| `EnsureEmpresaEnergiaSolarSchema` | [backend/main.go:1231](../../backend/main.go#L1231) | arranque; protegido por rol, requiere extraccion |
+| `EnsureEmpresaCamarasSchema` | [backend/main.go:1234](../../backend/main.go#L1234) | arranque; protegido por rol, requiere extraccion |
+| `EnsureEmpresaGrafologiaSchema` | [backend/main.go:1237](../../backend/main.go#L1237) | arranque; protegido por rol, requiere extraccion |
+| `EnsureEmpresaCarnetsSchema` | [backend/main.go:1240](../../backend/main.go#L1240) | arranque; protegido por rol, requiere extraccion |
+| `EnsureEmpresaParqueaderoSchema` | [backend/main.go:1243](../../backend/main.go#L1243) | arranque; protegido por rol, requiere extraccion |
+| `EnsureEmpresaApartamentosTuristicosSchema` | [backend/main.go:1246](../../backend/main.go#L1246) | arranque; protegido por rol, requiere extraccion |
+| `EnsureEmpresaPropiedadHorizontalSchema` | [backend/main.go:1249](../../backend/main.go#L1249) | arranque; protegido por rol, requiere extraccion |
+| `EnsureEmpresaProduccionMRPSchema` | [backend/main.go:1252](../../backend/main.go#L1252) | arranque; protegido por rol, requiere extraccion |
+| `EnsureEmpresaWMSSchema` | [backend/main.go:1255](../../backend/main.go#L1255) | arranque; protegido por rol, requiere extraccion |
+| `EnsureHotelTarjetasAccesoSchema` | [backend/main.go:1258](../../backend/main.go#L1258) | arranque; protegido por rol, requiere extraccion |
+| `EnsureEmpresaProductosSchema` | [backend/main.go:1261](../../backend/main.go#L1261) | arranque; protegido por rol, requiere extraccion |
+| `EnsureEmpresaInventarioAvanzadoSchema` | [backend/main.go:1269](../../backend/main.go#L1269) | arranque; protegido por rol, requiere extraccion |
+| `EnsureEmpresaCRMVentasAvanzadasSchema` | [backend/main.go:1272](../../backend/main.go#L1272) | arranque; protegido por rol, requiere extraccion |
+| `EnsureEmpresaSoporteRemotoSchema` | [backend/main.go:1275](../../backend/main.go#L1275) | arranque; protegido por rol, requiere extraccion |
+| `EnsureSensitiveSuperConfigEncrypted` | [backend/main.go:1285](../../backend/main.go#L1285) | arranque; protegido por rol, requiere extraccion |
+| `EnsurePostgresPrimaryKeySequences` | [backend/main.go:1289](../../backend/main.go#L1289) | arranque; protegido por rol, requiere extraccion |
+| `EnsurePostgresPrimaryKeySequences` | [backend/main.go:1293](../../backend/main.go#L1293) | arranque; protegido por rol, requiere extraccion |
+| `EnsureSuperContextoIALogicaNegocio` | [backend/main.go:1299](../../backend/main.go#L1299) | arranque; protegido por rol, requiere extraccion |
 
 ## Gate de retiro
 

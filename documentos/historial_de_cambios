@@ -1,3 +1,30 @@
+2026-07-28: Plan 108 / separación de privilegios PostgreSQL runtime.
+- Staging demostró que API/worker heredaban el usuario propietario con
+  superusuario, CREATEDB, CREATEROLE y CREATE sobre public.
+- El migrador provisiona un login runtime distinto, URL-safe, otorga DML,
+  secuencias y funciones, revoca DDL y falla si queda un privilegio
+  administrativo.
+- Compose exige las nuevas credenciales privadas para backend y worker,
+  mientras migrate conserva las DSN propietarias.
+- El primer despliegue falló cerrado por parámetros sin tipo en `format()`; se
+  restauró el digest anterior con salud/listo verdes y se agregaron casts
+  explícitos más contrato de regresión.
+
+2026-07-28: Plan 108 / instalación PostgreSQL vacía reproducible.
+- El ensayo real aislado detectó que el migrador no podía iniciar desde cero:
+  faltaban las raíces `empresas` y `administradores` antes del catálogo legacy.
+- `BootstrapLegacyCoreEmpresasSchema` y `BootstrapLegacyCoreSuperSchema` crean
+  las cinco raíces de las que dependen las extensiones heredadas: `empresas`,
+  `administradores`, `sesiones`, `configuraciones` y `tipos_de_empresas`,
+  exclusivamente durante bootstrap explícito del rol migrador.
+- `vps-p108-empty-migration-drill.sh` ejecuta base vacía y segunda pasada sobre
+  un digest, rechaza recursos preexistentes y elimina su entorno efímero.
+- El digest `bcc26035...` completó el ensayo: 8/7 migraciones en primera
+  pasada, 0/0 en segunda, 336/48 tablas y cero recursos residuales.
+- Una copia lógica del PostgreSQL staging completó upgrade y segunda pasada:
+  349 tablas empresariales y 59 administrativas antes y después, sin escribir
+  en el origen ni dejar recursos efímeros.
+
 2026-07-28: Plan 108 / candidato inmutable promovido a staging.
 - El commit integrado `fce1655c` superó CI Linux, race, secretos, dependencias,
   contenedores, Trivy y SBOM.
@@ -39836,3 +39863,16 @@ Archivos modificados:
   bloqueado por validación nativa.
 - La validación visual a 390 x 844 corrigió el ancho mínimo de las tarjetas para
   que la tabla desborde solo dentro de su contenedor y no en toda la página.
+
+2026-07-28 - Plan 108: guard de DDL para runtime PostgreSQL
+
+- Las funciones `Ensure*Schema` usan la capa `execSQLCompat`; API y worker
+  omiten DDL cuando `PCS_RUNTIME_SCHEMA_BOOTSTRAP=0`, mientras el migrador
+  mantiene la responsabilidad exclusiva de crear o alterar el esquema.
+- Se añadió un contrato AST que rechaza en pruebas cualquier `dbConn.Exec`
+  directo dentro de una función `Ensure*`, evitando que módulos como carritos,
+  facturación electrónica, reportes, productos, licencias o CxP recuperen
+  permisos de DDL por accidente.
+- El contador público de visitas deja de crear tablas durante una solicitud; su
+  tabla pertenece a la migración inmutable administrativa
+  `20260728-001-portal-visitas-v1`.

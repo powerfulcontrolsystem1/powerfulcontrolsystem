@@ -160,7 +160,7 @@ func EnsureEmpresaHojaVidaOperativaSchema(dbConn *sql.DB) error {
 		`CREATE INDEX IF NOT EXISTS ix_empresa_hoja_vida_alertas_entidad ON empresa_hoja_vida_alertas(empresa_id, entidad_id, estado_alerta, fecha_programada);`,
 	}
 	for _, stmt := range stmts {
-		if _, err := dbConn.Exec(stmt); err != nil {
+		if _, err := execSQLCompat(dbConn, stmt); err != nil {
 			return err
 		}
 	}

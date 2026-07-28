@@ -168,14 +168,14 @@ func EnsureAdministradoresAuthSchema(dbConn *sql.DB) error {
 		`ALTER TABLE administradores ADD COLUMN IF NOT EXISTS totp_last_counter BIGINT DEFAULT -1`,
 	}
 	for _, stmt := range statements {
-		if _, err := dbConn.Exec(stmt); err != nil {
+		if _, err := execSQLCompat(dbConn, stmt); err != nil {
 			return err
 		}
 	}
 	if err := EnsureAdminPrincipalDelegacionesSchema(dbConn); err != nil {
 		return err
 	}
-	if _, err := dbConn.Exec(`CREATE TABLE IF NOT EXISTS administrador_totp_recovery_codes (
+	if _, err := execSQLCompat(dbConn, `CREATE TABLE IF NOT EXISTS administrador_totp_recovery_codes (
 		id BIGSERIAL PRIMARY KEY,
 		administrador_email TEXT NOT NULL,
 		code_hash VARCHAR(64) NOT NULL,
@@ -185,7 +185,7 @@ func EnsureAdministradoresAuthSchema(dbConn *sql.DB) error {
 	)`); err != nil {
 		return err
 	}
-	if _, err := dbConn.Exec(`CREATE UNIQUE INDEX IF NOT EXISTS ux_admin_totp_recovery_code_hash ON administrador_totp_recovery_codes(administrador_email, code_hash)`); err != nil {
+	if _, err := execSQLCompat(dbConn, `CREATE UNIQUE INDEX IF NOT EXISTS ux_admin_totp_recovery_code_hash ON administrador_totp_recovery_codes(administrador_email, code_hash)`); err != nil {
 		return err
 	}
 	return nil
@@ -255,7 +255,7 @@ func EnsurePaymentGatewaySchema(dbConn *sql.DB) error {
 	}
 
 	for _, stmt := range statements {
-		if _, err := dbConn.Exec(stmt); err != nil {
+		if _, err := execSQLCompat(dbConn, stmt); err != nil {
 			return err
 		}
 	}
@@ -317,16 +317,16 @@ func EnsureLicenciasSchema(dbConn *sql.DB) error {
 		`ALTER TABLE licencias ADD COLUMN IF NOT EXISTS observaciones TEXT`,
 	}
 	for _, stmt := range statements {
-		if _, err := dbConn.Exec(stmt); err != nil {
+		if _, err := execSQLCompat(dbConn, stmt); err != nil {
 			return err
 		}
 	}
 
 	// Backfill: licencias ya creadas deben quedar en Colombia por defecto.
 	// Es idempotente y no afecta registros ya definidos.
-	_, _ = dbConn.Exec(`UPDATE licencias SET pais_codigo = 'CO' WHERE COALESCE(TRIM(pais_codigo),'') = ''`)
+	_, _ = execSQLCompat(dbConn, `UPDATE licencias SET pais_codigo = 'CO' WHERE COALESCE(TRIM(pais_codigo),'') = ''`)
 	// Migracion idempotente: los planes heredados de 5000 documentos quedan en 4000.
-	_, _ = dbConn.Exec(`UPDATE licencias
+	_, _ = execSQLCompat(dbConn, `UPDATE licencias
 		SET nombre = REPLACE(COALESCE(nombre, ''), '5000 documentos', '4000 documentos'),
 			descripcion = REPLACE(COALESCE(descripcion, ''), '5000 documentos', '4000 documentos'),
 			max_documentos_mensuales = 4000
@@ -336,7 +336,7 @@ func EnsureLicenciasSchema(dbConn *sql.DB) error {
 			OR LOWER(COALESCE(descripcion, '')) LIKE '%5000 documentos%'
 		  )`)
 	// Las licencias de prueba existentes quedan limitadas a 250 documentos/ventas mensuales.
-	_, _ = dbConn.Exec(`UPDATE licencias
+	_, _ = execSQLCompat(dbConn, `UPDATE licencias
 		SET max_documentos_mensuales = 250
 		WHERE COALESCE(max_documentos_mensuales, 0) <> 250
 		  AND COALESCE(valor, 0) = 0
@@ -348,7 +348,7 @@ func EnsureLicenciasSchema(dbConn *sql.DB) error {
 			OR LOWER(COALESCE(descripcion, '')) LIKE '%trial%'
 		  )`)
 	// Las licencias no limitan cajas. El cupo comercial se gobierna solo por documentos/ventas.
-	_, _ = dbConn.Exec(`UPDATE licencias SET max_cajas_simultaneas = 0 WHERE COALESCE(max_cajas_simultaneas, 0) <> 0`)
+	_, _ = execSQLCompat(dbConn, `UPDATE licencias SET max_cajas_simultaneas = 0 WHERE COALESCE(max_cajas_simultaneas, 0) <> 0`)
 	if _, err := ensureLicenciasCatalogoGlobalNoSchema(dbConn, "sistema.licencias_globales"); err != nil {
 		return err
 	}

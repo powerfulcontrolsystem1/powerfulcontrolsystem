@@ -115,7 +115,7 @@ func EnsureEmpresaVehiculosRegistroSchema(dbConn *sql.DB) error {
 		`CREATE UNIQUE INDEX IF NOT EXISTS ux_empresa_vehiculos_configuracion_empresa ON empresa_vehiculos_configuracion(empresa_id);`,
 	}
 	for _, stmt := range stmts {
-		if _, err := dbConn.Exec(stmt); err != nil {
+		if _, err := execSQLCompat(dbConn, stmt); err != nil {
 			return err
 		}
 	}

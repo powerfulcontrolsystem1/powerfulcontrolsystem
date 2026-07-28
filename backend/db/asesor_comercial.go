@@ -219,7 +219,7 @@ func EnsureAsesorComercialSchema(dbConn *sql.DB) error {
 		`CREATE UNIQUE INDEX IF NOT EXISTS ux_asesor_comisiones_ref ON asesor_comercial_comisiones (pago_provider, referencia) WHERE COALESCE(referencia, '') <> ''`,
 	}
 	for _, stmt := range statements {
-		if _, err := dbConn.Exec(stmt); err != nil {
+		if _, err := execSQLCompat(dbConn, stmt); err != nil {
 			return err
 		}
 	}

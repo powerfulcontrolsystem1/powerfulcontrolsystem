@@ -364,7 +364,7 @@ func EnsureEmpresaFinanzasSchema(dbConn *sql.DB) error {
 		`CREATE INDEX IF NOT EXISTS ix_empresa_finanzas_bancos_movimientos_empresa_periodo_estado ON empresa_finanzas_bancos_movimientos(empresa_id, periodo_contable, estado_conciliacion, estado);`,
 	}
 	for _, stmt := range stmts {
-		if _, err := dbConn.Exec(stmt); err != nil {
+		if _, err := execSQLCompat(dbConn, stmt); err != nil {
 			return err
 		}
 	}
@@ -677,7 +677,7 @@ func EnsureEmpresaFinanzasSchema(dbConn *sql.DB) error {
 		`CREATE INDEX IF NOT EXISTS ix_empresa_finanzas_bancos_movimientos_empresa_movimiento ON empresa_finanzas_bancos_movimientos(empresa_id, movimiento_finanzas_id, estado_conciliacion);`,
 	}
 	for _, stmt := range postMigrationIndexes {
-		if _, err := dbConn.Exec(stmt); err != nil {
+		if _, err := execSQLCompat(dbConn, stmt); err != nil {
 			return err
 		}
 	}
@@ -690,7 +690,7 @@ func ensureEmpresaCierresCajaUsuarioIndependiente(dbConn *sql.DB) error {
 	if dbConn == nil {
 		return nil
 	}
-	if _, err := dbConn.Exec(`UPDATE empresa_cierres_caja SET usuario_creador = 'sistema' WHERE usuario_creador IS NULL OR TRIM(usuario_creador) = ''`); err != nil {
+	if _, err := execSQLCompat(dbConn, `UPDATE empresa_cierres_caja SET usuario_creador = 'sistema' WHERE usuario_creador IS NULL OR TRIM(usuario_creador) = ''`); err != nil {
 		return err
 	}
 	if shouldUsePostgresCompat(dbConn) {
@@ -737,7 +737,7 @@ func dropLegacyEmpresaCierresCajaUniqueConstraint(dbConn *sql.DB) error {
 			continue
 		}
 		stmt := fmt.Sprintf(`ALTER TABLE empresa_cierres_caja DROP CONSTRAINT IF EXISTS %s`, quotePostgresIdentifier(name))
-		if _, err := dbConn.Exec(stmt); err != nil {
+		if _, err := execSQLCompat(dbConn, stmt); err != nil {
 			return err
 		}
 	}
@@ -772,7 +772,7 @@ func dropLegacyEmpresaCierresCajaUniqueIndexes(dbConn *sql.DB) error {
 			continue
 		}
 		stmt := fmt.Sprintf(`DROP INDEX IF EXISTS %s`, quotePostgresIdentifier(name))
-		if _, err := dbConn.Exec(stmt); err != nil {
+		if _, err := execSQLCompat(dbConn, stmt); err != nil {
 			return err
 		}
 	}
