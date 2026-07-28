@@ -12326,6 +12326,17 @@ panel de seguridad para que el navegador reciba la correccion CSRF de staging.
   Compose de staging desde un worktree Git aislado, sin cambiar el checkout de
   producción ni permitir el reinicio destructivo de volúmenes staging.
 
+2026-07-28 - Plan 108: integración aislada de outbox y worker.
+- `backend/db/outbox_worker_integration_test.go`: prueba, exclusivamente
+  contra una base PostgreSQL efímera marcada como `p108_`, la deduplicación de
+  eventos, doble despacho, claim concurrente, recuperación por lease y
+  dead-letter durable. No usa empresas, datos ni DSN operativos.
+- `documentos/evidencia_plan_108/P108-003/resultados.md`: conserva el resultado
+  del ensayo PostgreSQL aislado, su SHA, cobertura, límites y comprobación de
+  limpieza de recursos temporales.
+- `documentos/evidencia_plan_108/P108-004/resultados.md`: separa los contratos
+  de aislamiento aprobados localmente de la matriz A/B autenticada pendiente.
+
 2026-07-26 - P108-015, reparación privada y anulación DIAN.
 - `deploy/scripts/vps-migrate-private-dian.sh`: migra para una empresa
   explícita la llave y el certificado DIAN heredados desde uploads al volumen

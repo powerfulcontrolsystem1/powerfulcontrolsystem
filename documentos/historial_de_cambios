@@ -39876,3 +39876,11 @@ Archivos modificados:
 - El contador público de visitas deja de crear tablas durante una solicitud; su
   tabla pertenece a la migración inmutable administrativa
   `20260728-001-portal-visitas-v1`.
+
+2026-07-28 - Plan 108: pruebas aisladas de outbox y worker
+
+- Se añadió `backend/db/outbox_worker_integration_test.go`. Solo se habilita
+  con `P108_OUTBOX_TEST_DATABASE=isolated` y un DSN cuyo nombre contiene
+  `p108_`; demuestra en PostgreSQL desechable que el evento se deduplica, el
+  despacho repetido no duplica jobs, dos workers no adquieren el mismo job, un
+  lease vencido se recupera y un fallo se conserva en dead-letter.
