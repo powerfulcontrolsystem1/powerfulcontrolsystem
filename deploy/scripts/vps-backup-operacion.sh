@@ -27,6 +27,7 @@ powerful-control-system_pcs_downloads
 powerful-control-system_pcs_backend_logs
 powerful-control-system_pcs_backups
 powerful-control-system_pcs_postgres_data
+powerful-control-system_pcs_private_storage
 powerful-control-system_pcs_letsencrypt
 powerful-control-system_pcs_certbot_www
 "
@@ -37,6 +38,21 @@ for volume in $volumes; do
     docker run --rm -v "$volume:/volume:ro" -v "$BACKUP_DIR:/backup" alpine:3.20 sh -lc "cd /volume && tar -czf /backup/$volume.tar.gz ."
   else
     echo "[INFO] Backup VPS: volumen no encontrado, omitido: $volume"
+  fi
+done
+
+# Un snapshot sin almacenamiento privado no permite restaurar adjuntos,
+# soportes IA ni credenciales privadas de empresa. El respaldo debe fallar de
+# forma visible en lugar de presentarse como recuperable de manera incompleta.
+for required in \
+  postgres_all.sql.gz \
+  powerful-control-system_pcs_web_uploads.tar.gz \
+  powerful-control-system_pcs_downloads.tar.gz \
+  powerful-control-system_pcs_backups.tar.gz \
+  powerful-control-system_pcs_private_storage.tar.gz; do
+  if [ ! -s "$BACKUP_DIR/$required" ]; then
+    echo "[ERROR] Backup VPS incompleto: falta $required"
+    exit 1
   fi
 done
 

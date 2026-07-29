@@ -39987,3 +39987,12 @@ Archivos modificados:
   operativas requeridas. La verificación no genera ventas ni movimientos.
 - Se documentó que esta señal no sustituye cuatro sesiones independientes,
   cajas separadas, pagos concurrentes, devolución, cierre y conciliación.
+
+2026-07-29 - Plan 108: respaldo obligatorio de almacenamiento privado
+
+- La inspección del snapshot diario detectó que faltaba el tarball de
+  `pcs_private_storage`, impidiendo una restauración completa de adjuntos y
+  documentos privados.
+- El script operativo ahora incluye ese volumen y falla explícitamente si el
+  artefacto obligatorio no se genera; un contrato de configuración evita que
+  vuelva a omitirse.
