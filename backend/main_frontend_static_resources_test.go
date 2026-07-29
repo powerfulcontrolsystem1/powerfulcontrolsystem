@@ -135,6 +135,23 @@ func TestStagingEdgeKeepsOnlyTransportHeaders(t *testing.T) {
 	}
 }
 
+func TestOperationalVPSBackupRequiresPrivateStorage(t *testing.T) {
+	raw, err := os.ReadFile(filepath.Join("..", "deploy", "scripts", "vps-backup-operacion.sh"))
+	if err != nil {
+		t.Fatalf("read operational VPS backup script: %v", err)
+	}
+	script := string(raw)
+	for _, required := range []string{
+		"powerful-control-system_pcs_private_storage",
+		"powerful-control-system_pcs_private_storage.tar.gz",
+		"[ERROR] Backup VPS incompleto",
+	} {
+		if !strings.Contains(script, required) {
+			t.Fatalf("operational VPS backup must require private storage artifact %q", required)
+		}
+	}
+}
+
 func TestPanelGuidedSetupUsesCSRFAndNextcloudKeepsEmpresaContext(t *testing.T) {
 	panel, err := os.ReadFile(filepath.Join("..", "web", "administrar_empresa", "panel.html"))
 	if err != nil {
