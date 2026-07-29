@@ -40084,3 +40084,11 @@ Archivos modificados:
   ni se invocó IA.
 - P108-006 continúa parcial hasta probar carga, lectura editable, confirmación,
   duplicados, tenant y conversión CxP con configuración IA segura.
+
+2026-07-29: Plan 108 / evidencia visual responsive de Finanzas.
+- En staging del candidato `41be623a`, la pantalla real de Finanzas pasó en
+  escritorio y móvil: 94 controles detectados, 8 interacciones no mutantes,
+  sin errores de consola/red ni desbordamiento horizontal. Las capturas fueron
+  revisadas visualmente.
+- La evidencia no certifica guardados, impresión, roles restrictivos o efectos
+  financieros; P108-012 conserva estado parcial.
