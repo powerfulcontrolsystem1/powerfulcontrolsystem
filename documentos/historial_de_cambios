@@ -39996,3 +39996,11 @@ Archivos modificados:
 - El script operativo ahora incluye ese volumen y falla explícitamente si el
   artefacto obligatorio no se genera; un contrato de configuración evita que
   vuelva a omitirse.
+
+2026-07-29 - Plan 108: snapshot completo y línea base de observabilidad
+
+- El snapshot operativo nuevo incorporó y validó el almacenamiento privado,
+  además de dump PostgreSQL, uploads, descargas y backups.
+- Se confirmó salud de staging y worker, pero el VPS no tiene servicios activos
+  de Prometheus/Grafana/Alertmanager; P108-018 queda bloqueado hasta desplegar
+  y ensayar la plataforma de monitoreo.
