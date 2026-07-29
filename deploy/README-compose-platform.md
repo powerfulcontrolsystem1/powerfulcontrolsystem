@@ -18,8 +18,11 @@ Monitoreo:
 bash deploy/scripts/vps-monitoring-up.sh
 ```
 
-Prometheus y Grafana quedan ligados a `127.0.0.1` por defecto.
+Prometheus, Grafana y Alertmanager quedan ligados a `127.0.0.1` por defecto.
 El script crea las redes internas faltantes, genera una clave fuerte de Grafana si solo existe el placeholder y carga el dashboard `pcs-operacion`.
+El receptor inicial de Alertmanager conserva las alertas dentro del servicio:
+no envía correo ni webhooks hasta que se apruebe un canal de escalamiento y su
+runbook.
 
 Verificacion de anonimizacion staging:
 

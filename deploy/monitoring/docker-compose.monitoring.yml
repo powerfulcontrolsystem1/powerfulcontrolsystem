@@ -9,6 +9,7 @@ services:
       - --config.file=/etc/prometheus/prometheus.yml
       - --storage.tsdb.path=/prometheus
       - --storage.tsdb.retention.time=30d
+      - --web.enable-lifecycle
     volumes:
       - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
       - ./alert_rules.yml:/etc/prometheus/alert_rules.yml:ro
@@ -19,6 +20,21 @@ services:
       - pcs_monitoring
       - pcs_internal
       - pcs_staging_internal
+
+  alertmanager:
+    image: prom/alertmanager:v0.27.0
+    container_name: pcs-alertmanager
+    restart: unless-stopped
+    command:
+      - --config.file=/etc/alertmanager/alertmanager.yml
+      - --storage.path=/alertmanager
+    volumes:
+      - ./alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
+      - pcs_alertmanager_data:/alertmanager
+    ports:
+      - "${ALERTMANAGER_BIND:-127.0.0.1}:${ALERTMANAGER_PORT:-9093}:9093"
+    networks:
+      - pcs_monitoring
 
   grafana:
     image: grafana/grafana:11.4.0
@@ -79,3 +95,4 @@ networks:
 volumes:
   pcs_prometheus_data:
   pcs_grafana_data:
+  pcs_alertmanager_data:

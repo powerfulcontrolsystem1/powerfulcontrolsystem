@@ -20,6 +20,8 @@ PROMETHEUS_BIND=127.0.0.1
 PROMETHEUS_PORT=9090
 GRAFANA_BIND=127.0.0.1
 GRAFANA_PORT=3001
+ALERTMANAGER_BIND=127.0.0.1
+ALERTMANAGER_PORT=9093
 GRAFANA_ADMIN_USER=admin
 EOF
   printf 'GRAFANA_ADMIN_PASSWORD=%s\n' "$GRAFANA_PASSWORD" >> "$MONITORING_ENV"
@@ -38,4 +40,9 @@ fi
 docker compose --env-file "$MONITORING_ENV" -f deploy/monitoring/docker-compose.monitoring.yml up -d
 docker compose --env-file "$MONITORING_ENV" -f deploy/monitoring/docker-compose.monitoring.yml ps
 
-echo "[OK] Monitoreo levantado. Prometheus y Grafana quedan ligados a 127.0.0.1 por defecto."
+if ! curl -fsS --max-time 10 "http://127.0.0.1:${ALERTMANAGER_PORT:-9093}/-/ready" >/dev/null; then
+  echo "[ERROR] Alertmanager no respondio en loopback." >&2
+  exit 1
+fi
+
+echo "[OK] Monitoreo levantado. Prometheus, Grafana y Alertmanager quedan ligados a 127.0.0.1 por defecto."
