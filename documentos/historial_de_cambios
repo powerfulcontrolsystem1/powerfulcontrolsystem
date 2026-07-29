@@ -39953,3 +39953,12 @@ Archivos modificados:
   con p95 de 33 ms. Una pasada desde el PC tuvo fallos de DNS locales y se
   clasificó como inconclusa, no como degradación del servicio. P108-019 queda
   parcial hasta ejecutar carga autenticada y métricas operativas completas.
+
+2026-07-29 - Plan 108: navegación autenticada de Panel y Finanzas
+
+- Se recorrieron panel empresarial y Finanzas en staging con la empresa de
+  prueba autorizada, escritorio y móvil. Las cuatro combinaciones terminaron
+  sin errores visuales, de consola, de red ni autorización.
+- El barrido omitió explícitamente acciones mutables y de salida. Una
+  confirmación de caja se descartó antes de cualquier envío; no se alteraron
+  ventas, pagos, facturas, movimientos, documentos ni configuraciones.
