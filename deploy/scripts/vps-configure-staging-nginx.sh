@@ -3,9 +3,29 @@ set -euo pipefail
 
 DOMAIN="${DOMAIN:-staging.powerfulcontrolsystem.com}"
 UPSTREAM="${UPSTREAM:-http://127.0.0.1:8082}"
+CERT_NAME="${CERT_NAME:-pcs-staging}"
 SITE="/etc/nginx/sites-available/pcs-staging"
 ENABLED="/etc/nginx/sites-enabled/pcs-staging"
 SNIPPET="/etc/nginx/snippets/pcs-security-headers.conf"
+CERT_DIR="/etc/letsencrypt/live/$CERT_NAME"
+CERT_FILE="$CERT_DIR/fullchain.pem"
+CERT_KEY="$CERT_DIR/privkey.pem"
+
+case "$CERT_NAME" in
+  *[!A-Za-z0-9._-]*|"")
+    echo "[ERROR] CERT_NAME invalido." >&2
+    exit 1
+    ;;
+esac
+
+if [ ! -s "$CERT_FILE" ] || [ ! -s "$CERT_KEY" ]; then
+  echo "[ERROR] No existe certificado o llave de staging para CERT_NAME=$CERT_NAME." >&2
+  exit 1
+fi
+if ! command -v openssl >/dev/null 2>&1 || ! openssl x509 -in "$CERT_FILE" -noout -checkend 0 >/dev/null; then
+  echo "[ERROR] El certificado de staging esta vencido o no puede validarse." >&2
+  exit 1
+fi
 
 mkdir -p /etc/nginx/snippets
 cat > "$SNIPPET" <<'EOF'
@@ -37,8 +57,8 @@ server {
     listen [::]:443 ssl;
     server_name $DOMAIN;
 
-    ssl_certificate /etc/letsencrypt/live/powerfulcontrolsystem.com-0001/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/powerfulcontrolsystem.com-0001/privkey.pem;
+    ssl_certificate $CERT_FILE;
+    ssl_certificate_key $CERT_KEY;
     include /etc/letsencrypt/options-ssl-nginx.conf;
     ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
     include $SNIPPET;
@@ -61,4 +81,4 @@ EOF
 ln -sfn "$SITE" "$ENABLED"
 nginx -t
 systemctl reload nginx
-echo "[OK] Nginx staging activo para $DOMAIN -> $UPSTREAM"
+echo "[OK] Nginx staging activo para $DOMAIN -> $UPSTREAM usando CERT_NAME=$CERT_NAME"

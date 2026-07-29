@@ -133,6 +133,19 @@ func TestStagingEdgeKeepsOnlyTransportHeaders(t *testing.T) {
 			t.Fatalf("staging edge must not duplicate application header %q", forbidden)
 		}
 	}
+	for _, required := range []string{
+		`CERT_NAME="${CERT_NAME:-pcs-staging}"`,
+		`openssl x509 -in "$CERT_FILE" -noout -checkend 0`,
+		`ssl_certificate $CERT_FILE;`,
+		`ssl_certificate_key $CERT_KEY;`,
+	} {
+		if !strings.Contains(script, required) {
+			t.Fatalf("staging certificate contract missing %q", required)
+		}
+	}
+	if strings.Contains(script, "powerfulcontrolsystem.com-0001") {
+		t.Fatal("staging edge must not restore the expired wildcard certificate")
+	}
 }
 
 func TestOperationalVPSBackupRequiresPrivateStorage(t *testing.T) {
