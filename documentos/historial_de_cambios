@@ -40084,3 +40084,11 @@ Archivos modificados:
   ni se invocó IA.
 - P108-006 continúa parcial hasta probar carga, lectura editable, confirmación,
   duplicados, tenant y conversión CxP con configuración IA segura.
+
+2026-07-29: Plan 108 / carga autenticada ampliada en staging.
+- El candidato `41be623a` atendió 500 GET autenticados de solo lectura, con
+  concurrencia 10, cero fallos, p95 de 118 ms y p99 de 293 ms para la empresa
+  autorizada. La evidencia no contiene credenciales, cookies ni datos de
+  negocio.
+- P108-019 conserva estado parcial: esta pasada no sustituye carga sostenida,
+  transacciones, cajas simultáneas ni métricas de infraestructura.
