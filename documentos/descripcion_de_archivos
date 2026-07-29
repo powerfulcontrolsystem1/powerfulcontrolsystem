@@ -12384,3 +12384,6 @@ panel de seguridad para que el navegador reciba la correccion CSRF de staging.
   ni las cabeceras emitidas por la aplicación.
 - `deploy/nginx/pcs-static-security-headers.inc`: política de cabeceras para
   respuestas estáticas del frontend; evita duplicar la CSP dinámica de API.
+- `documentos/evidencia_plan_108/P108-019/smoke_publico_staging_20260728.md`:
+  resultado de disponibilidad pública desde el VPS y separación de un fallo DNS
+  local que no representa una caída de staging.

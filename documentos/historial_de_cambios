@@ -39946,3 +39946,10 @@ Archivos modificados:
   vacía observada inmediatamente tras recrear los contenedores no se trató
   como fallo: los reintentos posteriores confirmaron `/health`, `/ready` y los
   cuatro servicios saludables.
+
+2026-07-28 - Plan 108: smoke público de capacidad en staging
+
+- Treinta solicitudes públicas ejecutadas desde el VPS terminaron en HTTP 200
+  con p95 de 33 ms. Una pasada desde el PC tuvo fallos de DNS locales y se
+  clasificó como inconclusa, no como degradación del servicio. P108-019 queda
+  parcial hasta ejecutar carga autenticada y métricas operativas completas.
