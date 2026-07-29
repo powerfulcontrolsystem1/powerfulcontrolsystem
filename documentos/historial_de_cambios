@@ -40084,3 +40084,10 @@ Archivos modificados:
   ni se invocó IA.
 - P108-006 continúa parcial hasta probar carga, lectura editable, confirmación,
   duplicados, tenant y conversión CxP con configuración IA segura.
+
+2026-07-29: Plan 108 / seguridad dinámica sin sesión en staging con TLS válido.
+- Ruta empresarial con empresa manipulada y preflight CORS de origen externo
+  devolvieron 401 sin datos ni cabeceras de autorización. `/metrics` respondió
+  solo disponibilidad con `no-store`; no se usaron sesiones ni datos reales.
+- P108-017 sigue parcial hasta completar DAST autenticado, pruebas A/B y el
+  endurecimiento restante de CSP.
