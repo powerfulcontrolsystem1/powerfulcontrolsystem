@@ -39936,3 +39936,13 @@ Archivos modificados:
 - Se añadió una prueba de contrato para impedir que una futura configuración
   elimine esta normalización. La promoción de esta corrección requiere su
   propio candidato inmutable y comprobación final en staging.
+
+2026-07-28 - Plan 108: comprobación final de cabeceras en staging
+
+- El candidato inmutable `e927c7bc` pasó compilación, escaneo, SBOM y
+  validación del compose antes de su promoción por digest a staging.
+- Después de estabilizar los servicios, la portada HTTP 200 y una API sin
+  sesión HTTP 401 entregaron una sola vez cada cabecera crítica. La respuesta
+  vacía observada inmediatamente tras recrear los contenedores no se trató
+  como fallo: los reintentos posteriores confirmaron `/health`, `/ready` y los
+  cuatro servicios saludables.
