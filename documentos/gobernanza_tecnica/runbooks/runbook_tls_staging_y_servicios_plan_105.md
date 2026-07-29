@@ -91,23 +91,31 @@ y una autorizacion que cubra expresamente la conmutacion 80/443.
 
 ### 4.2 Staging con Nginx del host
 
-`deploy/scripts/vps-configure-staging-nginx.sh` referencia actualmente un
-certificado de Let's Encrypt concreto y tiene `UPSTREAM` configurable. Antes de
-recargar Nginx, comprobar que esa ruta existe, no esta vencida y contiene el
-dominio staging. Confirmar tambien el puerto publicado por el compose; en el
-VPS verificado el contenedor expone `127.0.0.1:18082`, por lo que el vhost debe
-usar `UPSTREAM=http://127.0.0.1:18082`. Renovar con el mecanismo que administra
-ese certificado (normalmente `certbot renew`) y luego:
+`deploy/scripts/vps-configure-staging-nginx.sh` usa por defecto el certificado
+independiente `pcs-staging` (`CERT_NAME=pcs-staging`) y valida que exista y no
+esté vencido antes de recargar Nginx. No volver a apuntarlo al wildcard heredado
+con autenticación DNS manual: ese lineage no puede renovarse automáticamente.
+Para staging, emitir o renovar con HTTP-01 sobre el webroot que atiende
+`/.well-known/acme-challenge/`:
 
 ```sh
-sudo nginx -t
-sudo systemctl reload nginx
+sudo certbot certonly --webroot -w /var/www/html \
+  -d staging.powerfulcontrolsystem.com --cert-name pcs-staging
+```
+
+Confirmar también el puerto publicado por el compose; en el VPS verificado el
+contenedor expone `127.0.0.1:8082`, por lo que el vhost debe usar
+`UPSTREAM=http://127.0.0.1:8082`. Después:
+
+```sh
+sudo CERT_NAME=pcs-staging UPSTREAM=http://127.0.0.1:8082 \
+  bash deploy/scripts/vps-configure-staging-nginx.sh
 curl -fsSI https://staging.powerfulcontrolsystem.com/health
 curl -fsS https://staging.powerfulcontrolsystem.com/ready
 ```
 
 No sobrescribir el vhost para "arreglar" una ruta de certificado sin respaldar
-la configuracion existente y sin confirmar el nombre de certificado correcto.
+la configuración existente y sin confirmar el nombre de certificado correcto.
 
 ### 4.3 OnlyOffice y Nextcloud
 

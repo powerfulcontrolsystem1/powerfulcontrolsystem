@@ -40050,3 +40050,11 @@ Archivos modificados:
 - La evidencia no aprueba todavía la recuperación funcional completa de
   aplicación, archivos, CxP, contabilidad, IA ni rollback; P108-020 sigue
   parcial.
+2026-07-29: Plan 108 / recuperación TLS durable de staging.
+- Se emitió un certificado HTTP-01 independiente para staging y se verificó
+  externamente sin omitir TLS: hostname coincidente, fecha futura, `/health` y
+  `/ready` correctos. Producción no se modificó.
+- El configurador versionado de Nginx usa `CERT_NAME=pcs-staging` por defecto,
+  valida existencia y vigencia antes de recargar y no puede volver a reinstalar
+  el wildcard heredado vencido con DNS manual. El runbook documenta renovación
+  HTTP-01 y rollback del vhost.
