@@ -144,6 +144,10 @@ func TestOperationalVPSBackupRequiresPrivateStorage(t *testing.T) {
 	for _, required := range []string{
 		"powerful-control-system_pcs_private_storage",
 		"powerful-control-system_pcs_private_storage.tar.gz",
+		"powerful-control-system_mailu_certs.tar.gz",
+		"powerful-control-system_pcs_onlyoffice_data.tar.gz",
+		"powerful-control-system_pcs_onlyoffice_lib.tar.gz",
+		"powerful-control-system_pcs_onlyoffice_logs.tar.gz",
 		"[ERROR] Backup VPS incompleto",
 	} {
 		if !strings.Contains(script, required) {

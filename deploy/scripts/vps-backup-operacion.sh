@@ -28,6 +28,10 @@ powerful-control-system_pcs_backend_logs
 powerful-control-system_pcs_backups
 powerful-control-system_pcs_postgres_data
 powerful-control-system_pcs_private_storage
+powerful-control-system_mailu_certs
+powerful-control-system_pcs_onlyoffice_data
+powerful-control-system_pcs_onlyoffice_lib
+powerful-control-system_pcs_onlyoffice_logs
 powerful-control-system_pcs_letsencrypt
 powerful-control-system_pcs_certbot_www
 "
@@ -49,7 +53,11 @@ for required in \
   powerful-control-system_pcs_web_uploads.tar.gz \
   powerful-control-system_pcs_downloads.tar.gz \
   powerful-control-system_pcs_backups.tar.gz \
-  powerful-control-system_pcs_private_storage.tar.gz; do
+  powerful-control-system_pcs_private_storage.tar.gz \
+  powerful-control-system_mailu_certs.tar.gz \
+  powerful-control-system_pcs_onlyoffice_data.tar.gz \
+  powerful-control-system_pcs_onlyoffice_lib.tar.gz \
+  powerful-control-system_pcs_onlyoffice_logs.tar.gz; do
   if [ ! -s "$BACKUP_DIR/$required" ]; then
     echo "[ERROR] Backup VPS incompleto: falta $required"
     exit 1
