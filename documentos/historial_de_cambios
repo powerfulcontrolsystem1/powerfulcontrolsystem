@@ -40043,3 +40043,10 @@ Archivos modificados:
 - Una prueba de contrato evita que una modificación futura vuelva a reportar
   un snapshot recuperable si le falta alguno de esos tarballs. El snapshot
   previo sigue incompleto y no se usa como evidencia de restauración total.
+2026-07-29: Plan 108 / snapshot completo y restore drill aislado.
+- El snapshot `20260729_082234` validó los nueve tarballs obligatorios y
+  restauró PostgreSQL en un contenedor temporal `postgres:16.14-alpine`.
+  Resultado: RTO 23 s, RPO 79 s, sin contenedor residual.
+- La evidencia no aprueba todavía la recuperación funcional completa de
+  aplicación, archivos, CxP, contabilidad, IA ni rollback; P108-020 sigue
+  parcial.
