@@ -12390,3 +12390,9 @@ panel de seguridad para que el navegador reciba la correccion CSRF de staging.
 - `documentos/evidencia_plan_108/P108-019/smoke_publico_staging_20260728.md`:
   resultado de disponibilidad pública desde el VPS y separación de un fallo DNS
   local que no representa una caída de staging.
+- `tools/authenticated_load_smoke.cjs`: smoke de capacidad autenticado que solo
+  ejecuta GET sobre rutas explícitas, mide percentiles y evita persistir
+  credenciales en sus resultados.
+- `documentos/evidencia_plan_108/P108-019/carga_autenticada_20260729.md`:
+  resultado reproducible de carga autenticada GET en staging, con percentiles,
+  cero mutaciones y límites explícitos de certificación.

@@ -39962,3 +39962,13 @@ Archivos modificados:
 - El barrido omitió explícitamente acciones mutables y de salida. Una
   confirmación de caja se descartó antes de cualquier envío; no se alteraron
   ventas, pagos, facturas, movimientos, documentos ni configuraciones.
+
+2026-07-29 - Plan 108: smoke autenticado de capacidad de solo lectura
+
+- Se agregó un ejecutable de QA que exige URL, empresa, credenciales y rutas
+  explícitas; solo emite GET tras validar la sesión. Reporta p50, p95, p99 y
+  error rate sin incluir secretos ni cuerpos de respuesta.
+- La pasada inicial contra staging completó 30 de 30 solicitudes autenticadas
+  de solo lectura con concurrencia 5, p95 de 517 ms y cero fallos. Permanece
+  parcial: faltan carga sostenida, métricas de infraestructura y concurrencia
+  transaccional de cajas.
