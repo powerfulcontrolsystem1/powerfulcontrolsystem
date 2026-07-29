@@ -12403,3 +12403,5 @@ panel de seguridad para que el navegador reciba la correccion CSRF de staging.
   integridad del snapshot VPS que ya incorpora almacenamiento privado.
 - `documentos/evidencia_plan_108/P108-018/linea_base_observabilidad_20260729.md`:
   línea base de salud y bloqueo por falta de stack de monitoreo activo.
+- `backend/main_metrics_test.go`: contrato del endpoint Prometheus mínimo,
+  disponible solo en GET y sin datos empresariales.
