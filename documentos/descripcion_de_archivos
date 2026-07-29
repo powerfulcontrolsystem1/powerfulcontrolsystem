@@ -12371,6 +12371,9 @@ panel de seguridad para que el navegador reciba la correccion CSRF de staging.
 - `documentos/evidencia_plan_108/P108-011/regresion_critica_20260728.md`:
   resume la regresión autenticada de módulos críticos, clasifica los hallazgos
   reales y conserva las capturas móviles seleccionadas.
+- `documentos/evidencia_plan_108/P108-011/finanzas_panel_autenticado_20260729.md`:
+  pasada autenticada no mutante de panel y Finanzas en escritorio y móvil,
+  con inventario de controles, evidencia responsive y límites pendientes.
 - `documentos/evidencia_plan_108/P108-010/resultados.md`: evidencia visual
   autenticada del gate de permiso de Centro IA empresarial y sus pendientes de
   validación funcional segura.
@@ -12387,3 +12390,9 @@ panel de seguridad para que el navegador reciba la correccion CSRF de staging.
 - `documentos/evidencia_plan_108/P108-019/smoke_publico_staging_20260728.md`:
   resultado de disponibilidad pública desde el VPS y separación de un fallo DNS
   local que no representa una caída de staging.
+- `tools/authenticated_load_smoke.cjs`: smoke de capacidad autenticado que solo
+  ejecuta GET sobre rutas explícitas, mide percentiles y evita persistir
+  credenciales en sus resultados.
+- `documentos/evidencia_plan_108/P108-019/carga_autenticada_20260729.md`:
+  resultado reproducible de carga autenticada GET en staging, con percentiles,
+  cero mutaciones y límites explícitos de certificación.

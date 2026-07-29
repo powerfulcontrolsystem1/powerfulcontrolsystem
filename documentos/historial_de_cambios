@@ -39953,3 +39953,30 @@ Archivos modificados:
   con p95 de 33 ms. Una pasada desde el PC tuvo fallos de DNS locales y se
   clasificó como inconclusa, no como degradación del servicio. P108-019 queda
   parcial hasta ejecutar carga autenticada y métricas operativas completas.
+
+2026-07-29 - Plan 108: navegación autenticada de Panel y Finanzas
+
+- Se recorrieron panel empresarial y Finanzas en staging con la empresa de
+  prueba autorizada, escritorio y móvil. Las cuatro combinaciones terminaron
+  sin errores visuales, de consola, de red ni autorización.
+- El barrido omitió explícitamente acciones mutables y de salida. Una
+  confirmación de caja se descartó antes de cualquier envío; no se alteraron
+  ventas, pagos, facturas, movimientos, documentos ni configuraciones.
+
+2026-07-29 - Plan 108: smoke autenticado de capacidad de solo lectura
+
+- Se agregó un ejecutable de QA que exige URL, empresa, credenciales y rutas
+  explícitas; solo emite GET tras validar la sesión. Reporta p50, p95, p99 y
+  error rate sin incluir secretos ni cuerpos de respuesta.
+- La pasada inicial contra staging completó 30 de 30 solicitudes autenticadas
+  de solo lectura con concurrencia 5, p95 de 517 ms y cero fallos. Permanece
+  parcial: faltan carga sostenida, métricas de infraestructura y concurrencia
+  transaccional de cajas.
+
+2026-07-29 - Plan 108: repetición visual de formatos de impresión
+
+- La batería sintética local aprobó nuevamente los 18 formatos carta/POS y las
+  tres rutas de autoimpresión mantuvieron una única llamada a `window.print()`.
+- Se revisó visualmente una factura carta sin cortes ni solapamientos. La
+  evidencia no se eleva a aprobación operativa hasta probar vistas previas y
+  dispositivos físicos con documentos autorizados de staging.
