@@ -40035,3 +40035,11 @@ Archivos modificados:
 - Staging ya está `up` contra `/metrics`; el target productivo conserva alerta
   porque su artefacto aún no expone esa ruta. P108-018 queda parcial hasta
   completar recuperación, más simulacros y escalamiento aprobado.
+
+2026-07-29: Plan 108 / contrato único de backup y restore.
+- El backup operativo ahora empaqueta y exige los mismos artefactos que el
+  restore drill declara obligatorios: certificados Mailu y datos, librerías y
+  logs de OnlyOffice, además de PostgreSQL, archivos y almacenamiento privado.
+- Una prueba de contrato evita que una modificación futura vuelva a reportar
+  un snapshot recuperable si le falta alguno de esos tarballs. El snapshot
+  previo sigue incompleto y no se usa como evidencia de restauración total.
