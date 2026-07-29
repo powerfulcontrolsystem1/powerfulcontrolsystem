@@ -12399,3 +12399,7 @@ panel de seguridad para que el navegador reciba la correccion CSRF de staging.
 - `documentos/evidencia_plan_108/P108-014/preflight_roles_20260729.md`:
   preflight de permisos para cuatro cajas, con alcance y evidencia que aún debe
   cubrir la corrida transaccional concurrente.
+- `documentos/evidencia_plan_108/P108-020/snapshot_integridad_20260729.md`:
+  integridad del snapshot VPS que ya incorpora almacenamiento privado.
+- `documentos/evidencia_plan_108/P108-018/linea_base_observabilidad_20260729.md`:
+  línea base de salud y bloqueo por falta de stack de monitoreo activo.
