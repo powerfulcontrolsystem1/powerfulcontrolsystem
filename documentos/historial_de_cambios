@@ -39972,3 +39972,11 @@ Archivos modificados:
   de solo lectura con concurrencia 5, p95 de 517 ms y cero fallos. Permanece
   parcial: faltan carga sostenida, métricas de infraestructura y concurrencia
   transaccional de cajas.
+
+2026-07-29 - Plan 108: repetición visual de formatos de impresión
+
+- La batería sintética local aprobó nuevamente los 18 formatos carta/POS y las
+  tres rutas de autoimpresión mantuvieron una única llamada a `window.print()`.
+- Se revisó visualmente una factura carta sin cortes ni solapamientos. La
+  evidencia no se eleva a aprobación operativa hasta probar vistas previas y
+  dispositivos físicos con documentos autorizados de staging.

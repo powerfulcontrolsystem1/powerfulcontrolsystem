@@ -41,3 +41,17 @@ Estado: **parcial; no certifica P108-013**.
 El navegador interno no expone la ventana emergente como una pestaña
 controlable. Sigue pendiente capturar directamente esa ventana en carta/POS y
 probar impresión física; por ello el estado de P108-013 continúa parcial.
+
+## Repetición local visual - 2026-07-29
+
+- La batería `qa_print_formats.cjs` volvió a renderizar 18 de 18 casos, con
+  cero pendientes de revisión y cero fallos de llamada a impresión.
+- Factura electrónica, recibo de venta, comprobantes de ingreso/egreso, orden,
+  corte de caja, parqueadero y turnos se generaron en carta/POS; los tres flujos
+  automáticos llamaron exactamente una vez a `window.print()`.
+- La inspección visual de la factura carta mostró encabezado, datos legales,
+  líneas, totales, CUFE/CUDE y firmas dentro del área imprimible, sin cortes ni
+  solapamientos observables.
+
+La evidencia permanece sintética y local: no sustituye vista previa real por
+rol, impresión operativa, paginación de documentos reales ni impresora física.
