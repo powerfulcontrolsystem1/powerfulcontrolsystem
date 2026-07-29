@@ -1078,6 +1078,7 @@ func AuthMiddleware(dbSuper *sql.DB, next http.Handler) http.Handler {
 			"/api/onlyoffice/file":                                  {},
 			"/api/onlyoffice/callback":                              {},
 			"/config.js":                                            {},
+			"/metrics":                                              {},
 			"/accept.html":                                          {},
 			"/accept/complete":                                      {},
 			"/pantalla_publica.html":                                {},

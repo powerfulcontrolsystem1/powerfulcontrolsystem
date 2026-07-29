@@ -38,6 +38,20 @@ var (
 	dbSuper       *sql.DB
 )
 
+// prometheusMetricsHandler exposes only process availability. It deliberately
+// avoids tenant, request, credential and database data so the endpoint can be
+// scraped from the isolated monitoring network without an authenticated user.
+func prometheusMetricsHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		w.Header().Set("Allow", http.MethodGet)
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+	w.Header().Set("Content-Type", "text/plain; version=0.0.4; charset=utf-8")
+	w.Header().Set("Cache-Control", "no-store")
+	_, _ = w.Write([]byte("# HELP pcs_backend_up Backend process is accepting HTTP requests.\n# TYPE pcs_backend_up gauge\npcs_backend_up 1\n"))
+}
+
 func resolveBackendRuntimeDir() string {
 	candidates := []string{".", "backend"}
 
@@ -1703,6 +1717,7 @@ func main() {
 	http.HandleFunc("/auth/confirmar_correo", handlers.ConfirmarCorreoUsuarioHandler(dbEmpresas))
 
 	// Endpoints de métricas (actual y histórico)
+	http.HandleFunc("/metrics", prometheusMetricsHandler)
 	http.HandleFunc("/super/api/metrics/current", handlers.MetricsCurrentHandler(dbSuper))
 	http.HandleFunc("/super/api/metrics/history", handlers.MetricsHistoryHandler(dbSuper))
 	http.HandleFunc("/super/api/reportes_globales", handlers.WithSuperAuditoria(dbSuper, "reportes_globales", handlers.SuperReportesGlobalesHandler(dbEmpresas, dbSuper)))

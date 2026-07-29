@@ -40004,3 +40004,11 @@ Archivos modificados:
 - Se confirmó salud de staging y worker, pero el VPS no tiene servicios activos
   de Prometheus/Grafana/Alertmanager; P108-018 queda bloqueado hasta desplegar
   y ensayar la plataforma de monitoreo.
+
+2026-07-29 - Plan 108: endpoint mínimo de disponibilidad Prometheus
+
+- El backend publica `/metrics` con una sola métrica de disponibilidad del
+  proceso. No expone empresa, usuarios, tokens, datos de negocio ni consultas.
+- El endpoint es de solo lectura, no cacheable y rechaza métodos mutantes. Esto
+  permite que Prometheus compruebe disponibilidad sin interpretar el HTML de
+  la portada como métrica inválida.
