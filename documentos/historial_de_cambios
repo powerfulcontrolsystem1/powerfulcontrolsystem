@@ -40019,5 +40019,12 @@ Archivos modificados:
   página HTML de inicio como métricas y no introduce datos empresariales,
   credenciales ni cambios de autorización multiempresa.
 - La configuración sigue enlazada de solo lectura al contenedor de Prometheus;
-  queda pendiente aplicar el archivo desde un commit aprobado y comprobar ambos
-  targets contra el digest inmutable de staging.
+  queda pendiente comprobar ambos targets contra el digest inmutable de staging.
+
+2026-07-29: Plan 108 / circuito local de alertas de observabilidad.
+- El stack de monitoreo incorpora Alertmanager, enlazado desde Prometheus y
+  ligado exclusivamente a loopback en el host. Su estado y silencios se
+  conservan en un volumen nombrado.
+- El receptor inicial es interno y no emite correo ni webhooks: sirve para
+  comprobar de forma segura el circuito Prometheus -> Alertmanager y los
+  simulacros antes de configurar escalamiento con responsables y runbook.
