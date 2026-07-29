@@ -19,7 +19,7 @@ scrape_configs:
       - targets: ["cadvisor:8080"]
 
   - job_name: pcs-backend
-    metrics_path: /
+    metrics_path: /metrics
     static_configs:
       - targets: ["pcs-backend:8080"]
     relabel_configs:
@@ -27,7 +27,7 @@ scrape_configs:
         replacement: production-backend
 
   - job_name: pcs-staging-backend
-    metrics_path: /
+    metrics_path: /metrics
     static_configs:
       - targets: ["pcs-staging-backend:8080"]
     relabel_configs:

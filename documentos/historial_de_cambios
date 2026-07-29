@@ -40012,3 +40012,12 @@ Archivos modificados:
 - El endpoint es de solo lectura, no cacheable y rechaza métodos mutantes. Esto
   permite que Prometheus compruebe disponibilidad sin interpretar el HTML de
   la portada como métrica inválida.
+2026-07-29: Plan 108 / ruta de scrape Prometheus para backend.
+- Los jobs `pcs-backend` y `pcs-staging-backend` pasan de solicitar `/` a
+  solicitar `/metrics`, el endpoint público mínimo que expone exclusivamente
+  disponibilidad del proceso. Esto evita que Prometheus intente interpretar la
+  página HTML de inicio como métricas y no introduce datos empresariales,
+  credenciales ni cambios de autorización multiempresa.
+- La configuración sigue enlazada de solo lectura al contenedor de Prometheus;
+  queda pendiente aplicar el archivo desde un commit aprobado y comprobar ambos
+  targets contra el digest inmutable de staging.
