@@ -40084,3 +40084,10 @@ Archivos modificados:
   ni se invocó IA.
 - P108-006 continúa parcial hasta probar carga, lectura editable, confirmación,
   duplicados, tenant y conversión CxP con configuración IA segura.
+
+2026-07-29: Plan 108 / evidencia de backpressure autenticado en staging.
+- Cinco rondas de lectura autenticada alcanzaron el límite seguro por empresa:
+  2.390 respuestas 200, 110 respuestas 429 controladas y cero 5xx. El peor p95
+  fue 138 ms y el backend registró `rate_limit` sin degradarse.
+- La prueba no contiene operaciones de negocio ni certifica capacidad total;
+  P108-019 permanece parcial.
