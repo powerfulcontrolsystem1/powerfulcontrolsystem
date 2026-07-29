@@ -40058,7 +40058,6 @@ Archivos modificados:
   valida existencia y vigencia antes de recargar y no puede volver a reinstalar
   el wildcard heredado vencido con DNS manual. El runbook documenta renovación
   HTTP-01 y rollback del vhost.
-
 2026-07-29: Plan 108 / bloqueo de autenticación para prueba IA real en staging.
 - La pantalla de configuración IA empresarial respondió, pero la sesión de
   prueba autorizada no pudo autenticarse en staging: el formulario rechazó las
@@ -40077,3 +40076,11 @@ Archivos modificados:
 - Esta evidencia usa datos sintéticos y sólo valida el motor común; P108-013A
   continúa parcial hasta comprobar todos los módulos y salidas documentales
   autenticadas, sus permisos, datos reales controlados y la impresión física.
+
+2026-07-29: Plan 108 / evidencia visual CxP e IA de compras.
+- La captura inteligente de compras y gastos cargó autenticada en staging para
+  escritorio y móvil: 28 controles detectados, cero errores de consola/red,
+  tabla legible y tarjetas móviles sin desbordamiento. No se subieron archivos
+  ni se invocó IA.
+- P108-006 continúa parcial hasta probar carga, lectura editable, confirmación,
+  duplicados, tenant y conversión CxP con configuración IA segura.
