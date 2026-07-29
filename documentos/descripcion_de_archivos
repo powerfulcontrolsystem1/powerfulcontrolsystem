@@ -12396,3 +12396,6 @@ panel de seguridad para que el navegador reciba la correccion CSRF de staging.
 - `documentos/evidencia_plan_108/P108-019/carga_autenticada_20260729.md`:
   resultado reproducible de carga autenticada GET en staging, con percentiles,
   cero mutaciones y límites explícitos de certificación.
+- `documentos/evidencia_plan_108/P108-014/preflight_roles_20260729.md`:
+  preflight de permisos para cuatro cajas, con alcance y evidencia que aún debe
+  cubrir la corrida transaccional concurrente.
