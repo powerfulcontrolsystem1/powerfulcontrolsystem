@@ -40058,3 +40058,13 @@ Archivos modificados:
   valida existencia y vigencia antes de recargar y no puede volver a reinstalar
   el wildcard heredado vencido con DNS manual. El runbook documenta renovación
   HTTP-01 y rollback del vhost.
+
+2026-07-29: Plan 108 / bloqueo de autenticación para prueba IA real en staging.
+- La pantalla de configuración IA empresarial respondió, pero la sesión de
+  prueba autorizada no pudo autenticarse en staging: el formulario rechazó las
+  credenciales y devolvió una referencia de solicitud saneada. No se expusieron
+  ni registraron valores de autenticación.
+- No se cambió contraseña, proveedor IA, datos empresariales ni archivos para
+  eludir el fallo. P108-006 permanece parcial; requiere una cuenta de staging
+  válida con permiso de compras/IA o una sincronización aprobada de identidad
+  antes de cargar un soporte de prueba y ejecutar extracción editable.
