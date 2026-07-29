@@ -40058,3 +40058,22 @@ Archivos modificados:
   valida existencia y vigencia antes de recargar y no puede volver a reinstalar
   el wildcard heredado vencido con DNS manual. El runbook documenta renovación
   HTTP-01 y rollback del vhost.
+
+2026-07-29: Plan 108 / bloqueo de autenticación para prueba IA real en staging.
+- La pantalla de configuración IA empresarial respondió, pero la sesión de
+  prueba autorizada no pudo autenticarse en staging: el formulario rechazó las
+  credenciales y devolvió una referencia de solicitud saneada. No se expusieron
+  ni registraron valores de autenticación.
+- No se cambió contraseña, proveedor IA, datos empresariales ni archivos para
+  eludir el fallo. P108-006 permanece parcial; requiere una cuenta de staging
+  válida con permiso de compras/IA o una sincronización aprobada de identidad
+  antes de cargar un soporte de prueba y ejecutar extracción editable.
+
+2026-07-29: Plan 108 / validación estática de formatos de impresión.
+- El motor común `web/js/print_documents.js` renderizó 18 casos de factura,
+  recibos, comprobantes, órdenes, cortes y tickets, en formatos carta y POS:
+  18 correctos, 0 a revisar. Los flujos de autoimpresión de factura POS, ticket
+  de turnos y recibo de parqueadero invocaron `window.print()` una vez cada uno.
+- Esta evidencia usa datos sintéticos y sólo valida el motor común; P108-013A
+  continúa parcial hasta comprobar todos los módulos y salidas documentales
+  autenticadas, sus permisos, datos reales controlados y la impresión física.
