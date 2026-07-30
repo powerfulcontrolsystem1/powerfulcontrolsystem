@@ -40155,6 +40155,17 @@ Archivos modificados:
 - La carga autenticada del mismo digest terminó 500/500, p95 149 ms, cero 5xx,
   cero locks y cero leases vencidos.
 
+2026-07-30: Plan 108 / reglas permanentes y simulacro de worker.
+- Se instalaron ocho reglas de Prometheus y el tablero operativo v2, conservando
+  respaldo recuperable de ambos archivos. Prometheus se recreó con su volumen
+  histórico y volvió con target staging arriba y sin falsos positivos.
+- La detención reversible de `pcs-staging-worker` recorrió sin disparo temprano,
+  `pending`, `firing`, recepción única en Alertmanager y resolución después del
+  reinicio automático.
+- Worker, colas, leases, `/health` y `/ready` quedaron saludables. P108-018
+  continúa parcial por PostgreSQL, almacenamiento, leases y escalamiento
+  externo.
+
 2026-07-29: Plan 108 / corrección visual de acciones del carrito.
 - La revisión autenticada de staging detectó que la clase global `actions`
   comprimía los seis controles de cada fila del carrito hasta superponer sus

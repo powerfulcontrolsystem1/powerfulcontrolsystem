@@ -139,7 +139,39 @@ los rechazó por faltar el digest exacto del frontend antes de ejecutar `pull` o
 | expresiones sanas de las cinco alertas | conjunto vacío, sin falsos positivos |
 
 La autenticación autorizada, selección de Powerful Control System y panel de la
-empresa cargaron visualmente con este digest. P108-018 queda parcial sobre el
-candidato actual: falta simular worker, PostgreSQL y leases, cargar la
-configuración permanente de reglas/paneles y aprobar responsables y canal de
+empresa cargaron visualmente con este digest. En ese corte P108-018 seguía
+parcial por worker, PostgreSQL, leases, configuración permanente y
+escalamiento; la sección siguiente registra el cierre posterior de worker y
+configuración.
+
+## Configuración permanente y simulacro del worker 2026-07-30
+
+Las ocho reglas y la versión 2 del tablero se instalaron en el stack compartido
+de monitoreo. Antes de reemplazar los archivos se conservaron copias con sufijo
+`bak.p108.20260730_203424`. Prometheus se recreó sin borrar su volumen histórico
+para remontar el archivo actualizado; Grafana observó el tablero con SHA-256
+`0b6ea8689d299020bb4b6cdfece07e52a8eff838edc9dc9a580000547f77e0bb`.
+
+Se detuvo exclusivamente `pcs-staging-worker` durante 270 segundos mediante un
+proceso con reinicio automático. No se detuvo API, frontend, PostgreSQL ni
+producción.
+
+| Verificación | Resultado |
+| --- | --- |
+| Estado inicial | worker saludable, colas listas 0, leases vencidos 0 |
+| Edad sin latido antes del umbral | 69,406 s, sin alerta |
+| Estado al superar 120 s | `pending`, una instancia |
+| Edad antes de disparar | 204,407 s, aún `pending` |
+| Estado tras ventana de dos minutos | `firing`, una instancia |
+| Recepción en Alertmanager | 1 `PCSWorkerSinLatido` de staging |
+| Reinicio automático | Correcto |
+| Edad posterior del latido | 9,683 s |
+| Estado posterior de la regla | `inactive`, cero instancias |
+| Alerta activa posterior en Alertmanager | 0 |
+| Colas y leases posteriores | todos en 0 |
+| Aplicación posterior | `/health=ok`, `/ready=ready` |
+
+El subcriterio de caída, detección, recepción y resolución del worker queda
+**PASS**. P108-018 permanece **parcial** hasta simular PostgreSQL y leases,
+agregar señal de almacenamiento privado y aprobar responsables/canal externo de
 escalamiento.
