@@ -242,6 +242,45 @@ func TestEmpresaSubmenuContextInstallsCSRFForDirectOperationalPages(t *testing.T
 	}
 }
 
+func TestEmpresaPagesWithMutatingFetchInstallCSRFSynchronizer(t *testing.T) {
+	root := filepath.Join("..", "web", "administrar_empresa")
+	mutatingFetch := regexp.MustCompile(`(?s)fetch\s*\(.{0,800}?method\s*:\s*["'](?:POST|PUT|PATCH|DELETE)["']`)
+	missing := make([]string, 0)
+	err := filepath.Walk(root, func(path string, info os.FileInfo, walkErr error) error {
+		if walkErr != nil {
+			return walkErr
+		}
+		if info.IsDir() || !strings.EqualFold(filepath.Ext(path), ".html") {
+			return nil
+		}
+		raw, readErr := os.ReadFile(path)
+		if readErr != nil {
+			return readErr
+		}
+		content := string(raw)
+		if !mutatingFetch.MatchString(content) {
+			return nil
+		}
+		usesSharedSynchronizer := strings.Contains(content, "/js/empresa_submenu_context.js")
+		usesExplicitToken := strings.Contains(content, "X-CSRF-Token") && strings.Contains(content, "pcs_csrf")
+		if !usesSharedSynchronizer && !usesExplicitToken {
+			relative, relErr := filepath.Rel(root, path)
+			if relErr != nil {
+				relative = path
+			}
+			missing = append(missing, filepath.ToSlash(relative))
+		}
+		return nil
+	})
+	if err != nil {
+		t.Fatalf("scan empresa HTML pages for CSRF coverage: %v", err)
+	}
+	sort.Strings(missing)
+	if len(missing) > 0 {
+		t.Fatalf("empresa pages with mutating fetch must install CSRF support:\n%s", strings.Join(missing, "\n"))
+	}
+}
+
 func TestSuperPageToolsDoNotCoverMobileControls(t *testing.T) {
 	raw, err := os.ReadFile(filepath.Join("..", "web", "js", "super_page_tools.js"))
 	if err != nil {

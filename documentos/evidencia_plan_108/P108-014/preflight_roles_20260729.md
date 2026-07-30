@@ -32,3 +32,17 @@ Se repitieron los contratos Go de permisos operativos, APIs auxiliares, cobro y
 código inmutable del documento: **PASS**. No se crearon usuarios por SQL ni se
 simularon credenciales. P108-014 permanece pendiente hasta aprovisionar cuatro
 cuentas temporales mediante el flujo oficial y ejecutar la corrida concurrente.
+
+## Prueba del flujo oficial 2026-07-30
+
+La pantalla autenticada de Usuarios confirmó tres identidades inactivas y
+pendientes; solo una tiene rol de caja. Al pulsar `Reenviar confirmación` sobre
+esa cuenta, el servidor respondió 403 antes del handler porque la página no
+enviaba `X-CSRF-Token`. No se envió correo ni se modificó la cuenta.
+
+La cobertura CSRF quedó corregida localmente en Usuarios y en las otras 18
+páginas empresariales afectadas, con un contrato recursivo de regresión. Debe
+desplegarse el nuevo candidato, completar la invitación oficial y crear tres
+cajeros temporales adicionales por el mismo flujo antes de iniciar cuatro cajas.
+P108-014 continúa pendiente; no se sustituyó el escenario con SQL ni sesiones
+simuladas.

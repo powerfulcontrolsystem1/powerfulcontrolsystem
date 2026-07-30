@@ -89,7 +89,15 @@ function routeForFile(file) {
 
 function discoverRoutes() {
   if (ROUTES_FILTER.length) {
-    return MAX_PAGES > 0 ? ROUTES_FILTER.slice(0, MAX_PAGES) : ROUTES_FILTER;
+    const normalized = ROUTES_FILTER.map((route) => {
+      const parsed = new URL(route, BASE_URL);
+      if (parsed.pathname.startsWith("/administrar_empresa/") || parsed.pathname === "/administrar_empresa.html") {
+        if (!parsed.searchParams.has("empresa_id")) parsed.searchParams.set("empresa_id", EMPRESA_ID);
+        if (!parsed.searchParams.has("id")) parsed.searchParams.set("id", EMPRESA_ID);
+      }
+      return parsed.pathname + parsed.search + parsed.hash;
+    });
+    return MAX_PAGES > 0 ? normalized.slice(0, MAX_PAGES) : normalized;
   }
   const files = walk(WEB_ROOT)
     .map(routeForFile)

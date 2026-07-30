@@ -944,6 +944,19 @@ SHA diferente.
   usuarios cajeros activos creados por el flujo oficial.
 - P108-006 continúa bloqueada por una credencial IA cifrada con una llave
   incompatible en staging.
+- El barrido ampliado cubrió 48 rutas en escritorio y móvil: 96 combinaciones,
+  2.148 botones, 104 clics seguros y 253 mutaciones preservadas. Tras corregir
+  el contexto de empresa del runner, la repetición dirigida pasó 14/16; solo
+  Crédito conserva un 500 en el digest anterior.
+- La rama candidata corrige el agregado vacío de Créditos, hace idempotente la
+  siembra concurrente de Contabilidad Colombia, instala CSRF en 19 páginas
+  empresariales mutantes y corrige el desborde móvil de Cobranza. `go test
+  ./...`, `go vet` enfocado y los contratos de módulos, roles y despliegue
+  aprobaron. Estas correcciones aún no suman certificación hasta promover y
+  verificar un nuevo digest.
+- La batería imprimible volvió a aprobar 18/18 y la revisión visual de factura
+  carta/POS y corte de caja confirmó filas, columnas y totales ordenados. La
+  fase sigue parcial por documentos reales extensos e impresión física.
 - Avance de implementación: **42,3 %**, aplicando la regla de dos fases
   aprobadas y dieciocho parciales; no se suman bloqueos ni pruebas incompletas.
 - Certificación del candidato para producción: **17,3 %** y **NO-GO**:

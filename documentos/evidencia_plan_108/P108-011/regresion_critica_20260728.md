@@ -74,3 +74,34 @@ en estado `ok`. Los archivos críticos, contratos de impresión y perfiles Super
 administrador, Administrador de empresa, Cajero, Vendedor, Asesor comercial y
 Soporte están presentes en el candidato local. Esta comprobación no sustituye
 las acciones mutables ni sesiones reales por rol.
+
+## Barrido ampliado autenticado 2026-07-30
+
+Se recorrieron 48 rutas empresariales críticas en escritorio y móvil: 96
+combinaciones, 2.148 botones inventariados, 104 clics de lectura clasificados
+como seguros y 253 acciones mutables omitidas. El resultado inicial fue 82
+combinaciones `ok` y 14 en revisión.
+
+La auditoría trataba las rutas explícitas literalmente y no agregaba
+`empresa_id`/`id`; esto generó falsos 400 en Compras, Clientes y Configuración.
+El runner normaliza ahora todas las rutas empresariales explícitas. La
+repetición dirigida sobre ocho rutas y dos viewports terminó 14/16 `ok`:
+Compras, Clientes, Configuración, Contabilidad Colombia, Facturación
+electrónica, Cobranza y Usuarios pasaron en ambos tamaños.
+
+El único 5xx reproducible restante fue
+`GET /api/empresa/creditos?action=resumen_cartera`: PostgreSQL entregaba `NULL`
+en cuatro `SUM(CASE ...)` cuando PCS no tenía créditos y Go intentaba leerlos
+como enteros. Los cuatro agregados usan ahora `COALESCE(..., 0)`, manteniendo el
+filtro obligatorio por `empresa_id`.
+
+La prueba oficial de `Reenviar confirmación` descubrió además que 19 páginas
+empresariales con mutaciones directas no instalaban el sincronizador CSRF. Todas
+incorporan ahora `empresa_submenu_context.js` y existe un contrato recursivo que
+impide agregar otra página mutante sin token. El intento rechazado no envió
+correo ni cambió usuarios.
+
+Las correcciones aprobaron `go test ./...`, `go vet` enfocado, contratos de
+módulos, matriz de roles, pipeline de despliegue y chequeo sintáctico del
+runner. Continúa pendiente promover el nuevo digest y repetir el 500 de
+Créditos y la mutación CSRF en staging.

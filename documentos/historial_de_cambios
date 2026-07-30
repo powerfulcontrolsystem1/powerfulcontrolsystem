@@ -40175,6 +40175,23 @@ Archivos modificados:
 - Los pools volvieron a 1, las migraciones aplicadas siguieron en 41/13, worker
   recuperó latido y no quedaron trabajos listos ni leases vencidos.
 
+2026-07-30: Plan 108 / regresión empresarial ampliada y correcciones de staging.
+- El auditor autenticado recorrió 48 rutas en escritorio y móvil, y su
+  repetición dirigida eliminó falsos 400 al propagar `empresa_id`/`id` en rutas
+  explícitas.
+- Créditos convierte a cero sus agregados de conteo cuando la cartera está
+  vacía; Contabilidad Colombia tolera solicitudes simultáneas durante la
+  siembra inicial mediante conflictos idempotentes por empresa y código.
+- Diecinueve páginas empresariales con `POST`/`PUT`/`PATCH`/`DELETE` instalan
+  ahora el sincronizador CSRF compartido. Un contrato recursivo evita nuevas
+  páginas mutantes sin protección.
+- Cobranza apila en móvil la configuración automática y sus botones para
+  eliminar el desborde detectado. La batería imprimible volvió a aprobar 18/18
+  y la inspección visual confirmó factura carta/POS y corte de caja ordenados.
+- `go test ./...`, `go vet` enfocado, contratos de módulos/roles/despliegue y
+  sintaxis del runner terminaron correctamente. Falta promover el digest y
+  repetir las pruebas mutables oficiales.
+
 2026-07-29: Plan 108 / corrección visual de acciones del carrito.
 - La revisión autenticada de staging detectó que la clase global `actions`
   comprimía los seis controles de cada fila del carrito hasta superponer sus

@@ -59,3 +59,20 @@ la matriz responsive, accesibilidad, teclado y roles de todo el inventario.
 Después de promover el digest exacto se repitió la medición autenticada en
 390 x 844: `clientWidth=390`, `scrollWidth=390`, `position=static`,
 `overlap=false` y cero respuestas HTTP 4xx/5xx.
+
+## Barrido responsive ampliado 2026-07-30
+
+El barrido autenticado de 48 rutas en escritorio y móvil inspeccionó 96
+combinaciones. La repetición dirigida confirmó sin desborde bloqueante Compras,
+Clientes, Configuración, Contabilidad Colombia, Facturación electrónica y
+Usuarios. En Cobranza móvil detectó un desborde horizontal interno de 6 px en
+`Guardar configuración`.
+
+La causa era una grilla de tres columnas a 390 px. En el breakpoint móvil,
+Recordatorios automáticos usa ahora una sola columna, los campos `wide` vuelven
+al flujo normal y sus tres botones ocupan el ancho disponible. La captura
+publicada antes de la corrección conserva el hallazgo; falta validar visualmente
+el CSS corregido sobre el nuevo digest.
+
+P108-012 permanece parcial por accesibilidad, teclado, lector de pantalla,
+tableta y la matriz completa por rol.
