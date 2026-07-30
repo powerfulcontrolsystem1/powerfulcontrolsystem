@@ -40240,6 +40240,9 @@ Archivos modificados:
   P108-022 sigue parcial por entrenamiento y ensayo de runbooks.
 - El auditor de botones recupera los índices temporales cuando una acción segura
   reconstruye el DOM sin navegar, evitando falsos fallos en controles posteriores.
+- El workflow visual acepta rutas, viewports y límite de clics dirigidos, y
+  amplía a 90 minutos el barrido total de 618 combinaciones para evitar que el
+  timeout oculte la evidencia final.
 
 2026-07-29: Plan 108 / corrección visual de acciones del carrito.
 - La revisión autenticada de staging detectó que la clase global `actions`

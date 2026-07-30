@@ -1,6 +1,7 @@
 # P108-022 - normalización documental
 
-Fecha: 2026-07-30  
+Fecha: 2026-07-30
+
 Estado de la fase: **parcial / NO-GO**
 
 ## Resultado

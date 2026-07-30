@@ -3373,3 +3373,5 @@
   estricto queda sin hallazgos.
 - El auditor visual recupera controles cuando una acción segura reconstruye la
   pantalla sin cambiar de URL.
+- El workflow visual admite repeticiones dirigidas por rutas/viewports y reserva
+  90 minutos para el inventario integral.

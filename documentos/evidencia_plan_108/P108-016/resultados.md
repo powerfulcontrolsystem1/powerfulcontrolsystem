@@ -1,7 +1,9 @@
 # P108-016 - almacenamiento privado y ciclo de archivos
 
-Fecha: 2026-07-30  
-Candidato desplegado: `f9396da5e41562968996b05136fffca9991b56f9`  
+Fecha: 2026-07-30
+
+Candidato desplegado: `f9396da5e41562968996b05136fffca9991b56f9`
+
 Estado: **parcial / NO-GO**
 
 ## Evidencia aprobada en este corte
