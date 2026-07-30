@@ -57,3 +57,18 @@ inactiva y pendiente porque el enlace debe abrirse desde el buzón receptor.
 Continúan faltando tres identidades de caja adicionales, la confirmación de las
 cuatro invitaciones y sus aperturas independientes. P108-014 permanece
 **pendiente** y no se eleva el porcentaje por este preflight.
+
+## Aprovisionamiento oficial de cuatro cajeros
+
+Se crearon por el formulario `Administrar usuarios` cuatro cuentas temporales
+con rol Cajero, documentos de prueba `P108-C1` a `P108-C4` e IDs 648 a 651.
+Todas quedaron inactivas y pendientes, como exige el flujo hasta confirmar el
+correo. No se insertaron filas ni contraseñas mediante SQL.
+
+Los alias `+p108` apuntan al mismo buzón autorizado. Mailu registró cuatro
+entregas independientes hacia Gmail con `dsn=2.0.0`, `status=sent` y respuesta
+remota `250 2.0.0 OK`; la evidencia no conserva direcciones ni enlaces.
+
+La disponibilidad de identidades deja de ser el bloqueo. Para ejecutar el
+escenario faltan la confirmación y contraseña de cada invitación, activar las
+cuentas por el flujo normal y abrir cuatro sesiones/cajas separadas.

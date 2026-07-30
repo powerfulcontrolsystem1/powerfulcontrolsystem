@@ -40207,6 +40207,27 @@ Archivos modificados:
   PostgreSQL, worker, outbox, trabajos durables, `/health` y `/ready` quedaron
   saludables.
 
+2026-07-30: Plan 108 / alcance móvil del primer lanzamiento.
+- La web responsive y la PWA permanecen incluidas. El cliente nativo Flutter
+  queda formalmente fuera del lanzamiento inicial porque no existe fuente
+  completa versionada ni build reproducible; no se eliminó ningún componente.
+- La API móvil v1 y sus contratos se conservan para una fase posterior. Tres
+  rutas representativas del candidato respondieron 401 sin autenticación y no
+  existe enlace público de descarga APK/IPA.
+- P108-021 queda aprobada por exclusión formal y deja de bloquear el lanzamiento
+  web; su reingreso exige fuente, firma, distribución, tokens seguros, offline,
+  push y pruebas multiempresa.
+
+2026-07-30: Plan 108 / cuatro cajeros temporales por invitación oficial.
+- Administrar usuarios creó los IDs 648 a 651 con rol Cajero y documentos QA,
+  todos inactivos y pendientes hasta completar el primer ingreso.
+- Mailu entregó las cuatro invitaciones al mismo buzón autorizado mediante
+  alias `+p108`; Postfix registró cuatro `dsn=2.0.0`, `status=sent` y aceptación
+  Gmail `250 2.0.0 OK`.
+- No se usó SQL ni se simularon contraseñas. P108-014 sigue pendiente hasta que
+  el destinatario abra los cuatro enlaces y se puedan iniciar/cerrar cuatro
+  cajas reales en paralelo.
+
 2026-07-29: Plan 108 / corrección visual de acciones del carrito.
 - La revisión autenticada de staging detectó que la clase global `actions`
   comprimía los seis controles de cada fila del carrito hasta superponer sus

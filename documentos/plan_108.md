@@ -839,7 +839,7 @@ canónica, conciliación financiera y pruebas reales sobre los mismos datos.
 | P108-018 | Observabilidad | alertas y simulacros | Parcial local |
 | P108-019 | Capacidad | carga autenticada sostenida | Parcial pública |
 | P108-020 | Continuidad | restore y rollback completos | Parcial |
-| P108-021 | Móvil | certificación o exclusión formal | Pendiente |
+| P108-021 | Móvil | certificación o exclusión formal | Aprobada: nativa fuera del primer lanzamiento; PWA incluida |
 | P108-022 | Documentación | gate limpio y runbooks | Parcial |
 | P108-023 | Ensayo general | un digest, matriz verde | Pendiente |
 | P108-024 | Empresa autorizada | acta y conciliación | Pendiente |
@@ -937,12 +937,14 @@ SHA diferente.
   durables. El scrape real del digest aprueba y la exposición pública devuelve
   404; faltan los simulacros específicos y la configuración permanente.
 - P108-019 atendió 500 lecturas autenticadas con concurrencia 10, cero fallos y
-  p95 de 149 ms sobre este mismo digest; aún falta carga sostenida y
+  p95 de 134 ms sobre este mismo digest; aún falta carga sostenida y
   transaccional.
 - P108-020 ya tiene snapshot completo y restore PostgreSQL aislado, pero aún
   falta recuperación funcional integral y rollback del mismo candidato.
 - P108-014 continúa bloqueada: la empresa autorizada no dispone de cuatro
-  usuarios cajeros activos creados por el flujo oficial.
+  usuarios cajeros activos. Ya existen cuatro invitaciones temporales creadas
+  por el flujo oficial y entregadas por Mailu; falta confirmarlas y abrir sus
+  cajas.
 - P108-006 continúa bloqueada por una credencial IA cifrada con una llave
   incompatible en staging.
 - El barrido ampliado cubrió 48 rutas en escritorio y móvil: 96 combinaciones,
@@ -960,11 +962,14 @@ SHA diferente.
 - La batería imprimible volvió a aprobar 18/18 y la revisión visual de factura
   carta/POS y corte de caja confirmó filas, columnas y totales ordenados. La
   fase sigue parcial por documentos reales extensos e impresión física.
-- Avance de implementación: **42,3 %**, aplicando la regla de dos fases
-  aprobadas y dieciocho parciales; no se suman bloqueos ni pruebas incompletas.
-- Certificación del candidato para producción: **17,3 %** y **NO-GO**:
-  P108-000/P108-001 aprobadas y P108-002, P108-011, P108-012, P108-018 y
-  P108-019 parciales sobre el mismo artefacto.
+- P108-021 queda aprobada por exclusión formal: la web responsive/PWA entra al
+  lanzamiento, el cliente nativo queda para una fase posterior y la API v1 se
+  conserva autenticada sin enlaces de descarga nativa.
+- Avance de implementación: **46,2 %**, aplicando tres fases aprobadas y
+  dieciocho parciales; no se suman bloqueos ni pruebas incompletas.
+- Certificación del candidato para producción: **21,2 %** y **NO-GO**:
+  P108-000/P108-001/P108-021 aprobadas y P108-002, P108-011, P108-012,
+  P108-018 y P108-019 parciales sobre el mismo artefacto.
 
 ## 11. Compuerta final GO/NO-GO
 

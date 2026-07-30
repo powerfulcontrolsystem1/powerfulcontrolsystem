@@ -12314,6 +12314,10 @@ panel de seguridad para que el navegador reciba la correccion CSRF de staging.
 - `documentos/evidencia_plan_108/P108-012/capturas/cobranza_mobile_f9396da5_390x844.png`:
   captura autenticada del panel de recordatorios de Cobranza apilado en móvil,
   sin el desborde horizontal detectado en el digest anterior.
+- `documentos/evidencia_plan_108/P108-021/resultados.md`: formaliza que la web
+  responsive/PWA entra al primer lanzamiento y que el cliente nativo Flutter
+  se conserva fuera de alcance hasta contar con fuente, build y pruebas
+  reproducibles; verifica que la API v1 rechaza acceso anónimo.
 - `documentos/evidencia_plan_108/P108-013/resultados.md`: resultado de la
   batería local de PDF/capturas de impresiones y sus límites operativos.
 - `documentos/evidencia_plan_108/P108-005/resultados.md`: evidencia autenticada
