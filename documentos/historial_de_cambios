@@ -40094,6 +40094,14 @@ Archivos modificados:
   porque el canal SSH del VPS agotó tiempo; se registra como inconcluso, sin
   modificar el origen ni contar como aprobación de P108-002 o P108-005.
 
+2026-07-29: Plan 108 / carga autenticada ampliada en staging.
+- El candidato `41be623a` atendió 500 GET autenticados de solo lectura, con
+  concurrencia 10, cero fallos, p95 de 118 ms y p99 de 293 ms para la empresa
+  autorizada. La evidencia no contiene credenciales, cookies ni datos de
+  negocio.
+- P108-019 conserva estado parcial: esta pasada no sustituye carga sostenida,
+  transacciones, cajas simultáneas ni métricas de infraestructura.
+
 2026-07-29: Plan 108 / corrección visual de acciones del carrito.
 - La revisión autenticada de staging detectó que la clase global `actions`
   comprimía los seis controles de cada fila del carrito hasta superponer sus
