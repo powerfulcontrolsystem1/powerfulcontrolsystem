@@ -172,6 +172,37 @@ producción.
 | Aplicación posterior | `/health=ok`, `/ready=ready` |
 
 El subcriterio de caída, detección, recepción y resolución del worker queda
-**PASS**. P108-018 permanece **parcial** hasta simular PostgreSQL y leases,
-agregar señal de almacenamiento privado y aprobar responsables/canal externo de
-escalamiento.
+**PASS**. En ese corte P108-018 seguía parcial por PostgreSQL, leases,
+almacenamiento y escalamiento; la sección siguiente registra el simulacro
+posterior de PostgreSQL.
+
+## Simulacro de PostgreSQL staging 2026-07-30
+
+Antes del ensayo se comprobó PostgreSQL y worker saludables, cero sesiones
+esperando lock y el snapshot restaurable
+`/root/powerfulcontrolsystem/backups/vps-snapshots/20260730_194951`.
+
+Se ejecutó `docker stop` limpio únicamente sobre
+`pcs-staging-postgres`, con reinicio automático después de 165 segundos. La
+aplicación de producción y su base no participaron.
+
+| Verificación | Resultado |
+| --- | --- |
+| PostgreSQL staging durante el ensayo | detenido |
+| `/health` durante la caída | 200 |
+| `/ready` durante la caída | 503 |
+| Estado inicial de la regla | `pending`, dos pools |
+| Estado tras ventana | `firing`, dos pools |
+| Alertas recibidas por Alertmanager | 2, negocio y super |
+| Reinicio automático | correcto, contenedor saludable |
+| Estado posterior de la regla | `inactive`, cero instancias |
+| Alertas activas posteriores | 0 |
+| PostgreSQL negocio/super posterior | `1 / 1` |
+| Migraciones aplicadas negocio/super | `41 / 13` |
+| Worker posterior | latido 4,767 s |
+| Colas listas y leases vencidos | todos en 0 |
+| Aplicación posterior | `/health=ok`, `/ready=ready` |
+
+El subcriterio de caída, readiness, alerta, recepción y recuperación de
+PostgreSQL queda **PASS**. P108-018 permanece **parcial** por simulacro de lease,
+señal de almacenamiento privado y canal externo/responsables de escalamiento.

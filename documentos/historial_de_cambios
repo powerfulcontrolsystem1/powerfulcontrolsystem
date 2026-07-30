@@ -40166,6 +40166,15 @@ Archivos modificados:
   continúa parcial por PostgreSQL, almacenamiento, leases y escalamiento
   externo.
 
+2026-07-30: Plan 108 / simulacro PostgreSQL en staging.
+- Un `docker stop` limpio de 165 segundos afectó solo PostgreSQL de staging y
+  contó con reinicio automático. Health permaneció 200 y readiness pasó a 503.
+- La regla recorrió `pending` y `firing`; Alertmanager recibió las dos series
+  esperadas para negocio y super. Tras recuperar la base, la regla quedó
+  `inactive` y sin alertas activas.
+- Los pools volvieron a 1, las migraciones aplicadas siguieron en 41/13, worker
+  recuperó latido y no quedaron trabajos listos ni leases vencidos.
+
 2026-07-29: Plan 108 / corrección visual de acciones del carrito.
 - La revisión autenticada de staging detectó que la clase global `actions`
   comprimía los seis controles de cada fila del carrito hasta superponer sus
