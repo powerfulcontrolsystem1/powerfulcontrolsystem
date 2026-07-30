@@ -66,3 +66,11 @@ exigido por P108-011.
 
 La página de carrito se volvió a abrir autenticada después de promover el
 digest exacto; no produjo respuestas HTTP 4xx/5xx.
+
+## Contratos agrupados 2026-07-30
+
+`qa_module_contracts.mjs --strict` y `qa_roles_matrix.mjs --strict` terminaron
+en estado `ok`. Los archivos críticos, contratos de impresión y perfiles Super
+administrador, Administrador de empresa, Cajero, Vendedor, Asesor comercial y
+Soporte están presentes en el candidato local. Esta comprobación no sustituye
+las acciones mutables ni sesiones reales por rol.

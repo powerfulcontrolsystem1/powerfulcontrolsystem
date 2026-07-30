@@ -927,6 +927,28 @@ Este porcentaje no equivale a cantidad de código construido. Mide evidencia de
 aceptación para producción; no se eleva por pruebas históricas, locales o de un
 SHA diferente.
 
+### Corte verificable 2026-07-30
+
+- El candidato inmutable activo en staging antes de esta revisión es
+  `d262874efd5301684e66a5647bf4b52c0fec4a2b`.
+- P108-018 ganó métricas, alertas y paneles para PostgreSQL, worker, outbox y
+  trabajos durables. Las consultas reales de lectura y la configuración
+  aprobaron, pero el cambio todavía no está en un digest de staging y la fase
+  permanece parcial.
+- P108-019 atendió 500 lecturas autenticadas con concurrencia 10 y cero fallos;
+  aún falta carga sostenida y transaccional.
+- P108-020 ya tiene snapshot completo y restore PostgreSQL aislado, pero aún
+  falta recuperación funcional integral y rollback del mismo candidato.
+- P108-014 continúa bloqueada: la empresa autorizada no dispone de cuatro
+  usuarios cajeros activos creados por el flujo oficial.
+- P108-006 continúa bloqueada por una credencial IA cifrada con una llave
+  incompatible en staging.
+- Avance de implementación: **42,3 %**, aplicando la regla de dos fases
+  aprobadas y dieciocho parciales; no se suman bloqueos ni pruebas incompletas.
+- Certificación del candidato para producción: **13,5 %** y **NO-GO**. El
+  trabajo local de esta revisión no incrementa certificación hasta construirse,
+  escanearse y probarse como digest inmutable.
+
 ## 11. Compuerta final GO/NO-GO
 
 La decisión solo puede ser GO cuando todo lo siguiente está comprobado:

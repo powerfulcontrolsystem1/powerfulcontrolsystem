@@ -34,3 +34,14 @@ P108-003 permanece **parcial**: el mecanismo central y sus fallos de entrega
 están cubiertos, pero faltan inventario completo de jobs históricos, pruebas de
 proveedores reales (DIAN, pagos, correo), métricas operativas de cola y ensayo
 con réplicas worker del candidato desplegado.
+
+## Estado de cola del candidato 2026-07-30
+
+Después de 500 lecturas autenticadas y un reinicio controlado del backend, el
+PostgreSQL de staging mostró un evento `published`, un `dead` histórico, cero
+eventos `pending/processing` listos y cero leases vencidos. Los logs del worker
+de los últimos 15 minutos no registraron errores, pánicos ni dead-letter nuevos.
+
+El subcriterio de ausencia de acumulación inmediata queda **PASS**. P108-003
+continúa parcial por proveedores reales, métricas/alertas de cola y réplicas
+concurrentes del worker desplegado.

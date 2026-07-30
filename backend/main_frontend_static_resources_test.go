@@ -55,6 +55,18 @@ func TestPublicDownloadsAreExplicitlyAllowlisted(t *testing.T) {
 	}
 }
 
+func TestPrometheusMetricsAreNotExposedByPublicFrontend(t *testing.T) {
+	raw, err := os.ReadFile(filepath.Join("..", "deploy", "nginx", "pcs.conf"))
+	if err != nil {
+		t.Fatalf("read frontend nginx config: %v", err)
+	}
+	config := string(raw)
+	block := regexp.MustCompile(`(?s)location\s*=\s*/metrics\s*\{[^}]*return\s+404;[^}]*\}`)
+	if !block.MatchString(config) {
+		t.Fatal("public frontend must reject /metrics; Prometheus scrapes the backend over the private Docker network")
+	}
+}
+
 func TestNextcloudFramePolicyUsesExactOrigins(t *testing.T) {
 	raw, err := os.ReadFile(filepath.Join("..", "deploy", "nginx", "pcs.conf"))
 	if err != nil {

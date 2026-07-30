@@ -40093,6 +40093,52 @@ Archivos modificados:
 - P108-019 conserva estado parcial: esta pasada no sustituye carga sostenida,
   transacciones, cajas simultáneas ni métricas de infraestructura.
 
+2026-07-30: Plan 108 / bloque ampliado de capacidad y observabilidad staging.
+- Una carga autenticada de 500 lecturas con concurrencia 10 terminó sin fallos
+  ni 5xx, con p95 de 152 ms y servicios saludables. Las conexiones quedaron
+  dentro de los pools acotados del runtime.
+- El simulacro reversible de caída del backend de staging recorrió
+  `pending`, `firing` y resolución; el servicio reinició automáticamente y
+  recuperó `/health`, `/ready` y `up=1`, sin entrega externa.
+- La empresa de prueba no tiene cuatro cajeros utilizables: solo hay tres
+  registros inactivos, sin contraseña ni confirmación. La corrida concurrente
+  continúa pendiente y no se sustituyó con usuarios creados por SQL.
+
+2026-07-30: Plan 108 / regresión agrupada de IA, outbox, módulos e impresión.
+- La cola de staging quedó sin pendientes listos ni leases vencidos; no hubo
+  errores recientes del worker. Se conservaron un evento publicado y un
+  dead-letter histórico.
+- El botón `Extraer IA` del soporte QA respondió de forma segura, pero la API
+  key sigue cifrada con una llave incompatible. No se creó ni contabilizó CxP.
+- Los formatos imprimibles terminaron 18/18, y los contratos de módulos y roles
+  quedaron `ok`; siguen pendientes impresiones reales, paginación y sesiones
+  efectivas por rol.
+
+2026-07-30: Plan 108 / reparación del runner diario y restore aislado.
+- El snapshot diario más reciente resultó incompleto porque
+  `/usr/local/bin/pcs_vps_backup_daily.sh` era una copia antigua. Se reinstaló
+  desde el script versionado y se verificó su SHA-256.
+- El nuevo snapshot `20260730_194951` incluyó los nueve artefactos obligatorios
+  y restauró PostgreSQL en un contenedor temporal: RTO 24 s, RPO 107 s, cero
+  residuos. Staging quedó saludable y el disco VPS en 54% de uso.
+- El snapshot incompleto se conserva para trazabilidad, pero queda rechazado
+  como fuente de recuperación.
+
+2026-07-30: Plan 108 / observabilidad operativa de PostgreSQL, worker y colas.
+- `/metrics` conserva acceso de solo lectura y ahora publica únicamente
+  agregados acotados de disponibilidad PostgreSQL, edad del latido del worker,
+  outbox y trabajos durables; no expone empresa, payload, error de proveedor,
+  credenciales ni datos personales. El agregado se reutiliza diez segundos.
+- El frontend público rechaza exactamente `/metrics` con 404; Prometheus
+  mantiene el scrape directo por las redes Docker privadas.
+- Prometheus incorpora alertas de base no disponible, worker sin latido,
+  acumulación, leases vencidos y consultas fallidas; Grafana muestra las mismas
+  señales para producción y staging.
+- Las pruebas Go y la auditoría estática aprobaron. `promtool` validó las ocho
+  reglas en Linux y las consultas de lectura del VPS observaron worker reciente,
+  sin trabajo listo ni leases vencidos. Falta promover el nuevo digest y
+  ejecutar simulacros específicos antes de aprobar P108-018.
+
 2026-07-29: Plan 108 / corrección visual de acciones del carrito.
 - La revisión autenticada de staging detectó que la clase global `actions`
   comprimía los seis controles de cada fila del carrito hasta superponer sus

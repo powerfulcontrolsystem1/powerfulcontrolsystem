@@ -12403,5 +12403,14 @@ panel de seguridad para que el navegador reciba la correccion CSRF de staging.
   integridad del snapshot VPS que ya incorpora almacenamiento privado.
 - `documentos/evidencia_plan_108/P108-018/linea_base_observabilidad_20260729.md`:
   línea base de salud y bloqueo por falta de stack de monitoreo activo.
-- `backend/main_metrics_test.go`: contrato del endpoint Prometheus mínimo,
-  disponible solo en GET y sin datos empresariales.
+- `backend/main.go` y `backend/main_metrics_test.go`: endpoint Prometheus
+  operativo, disponible solo en GET, con disponibilidad PostgreSQL, latido del
+  worker y agregados de colas/outbox, sin datos empresariales ni payloads.
+- `deploy/monitoring/alert_rules.yml`: reglas para caída de backend/PostgreSQL,
+  worker sin latido, acumulación durable, leases vencidos y consultas fallidas.
+- `deploy/monitoring/grafana/dashboards/pcs-operacion.json`: paneles de
+  PostgreSQL, worker, colas, dead-letter y leases para producción y staging.
+- `deploy/nginx/pcs.conf`: niega `/metrics` en el frontend público; Prometheus
+  conserva acceso directo al backend únicamente por la red Docker privada.
+- `tools/business_observability_audit.mjs`: gate estático de señales y alertas
+  de base de datos, worker y procesamiento durable.

@@ -20,3 +20,15 @@ cuatro credenciales temporales de cajero, apertura de cajas separadas,
 transacciones concurrentes y conciliación/limpieza posterior sobre staging.
 
 Estado de fase: **pendiente de corrida operativa concurrente**.
+
+## Disponibilidad de identidades 2026-07-30
+
+Una consulta agregada y sin correos ni datos personales confirmó que la empresa
+12 no tiene cuatro cajeros utilizables en staging. Existen tres registros
+inactivos (administrador, caja y vendedor), todos sin contraseña configurada y
+sin correo confirmado.
+
+Se repitieron los contratos Go de permisos operativos, APIs auxiliares, cobro y
+código inmutable del documento: **PASS**. No se crearon usuarios por SQL ni se
+simularon credenciales. P108-014 permanece pendiente hasta aprovisionar cuatro
+cuentas temporales mediante el flujo oficial y ejecutar la corrida concurrente.
