@@ -3384,5 +3384,7 @@
   cuota y readiness valida todas las columnas que usa el handler.
 - Nextcloud incorpora una v4 inmutable que elimina la columna heredada
   `password_encrypted`; el contrato actual no conserva credenciales locales.
+- Domicilios representa el menú vacío como `[]` y su frontend tolera respuestas
+  vacías sin intentar ejecutar `.map` sobre `null`.
 - Hoja de vida normaliza su fecha programada de texto antes de compararla y el
   CSP estático de Nginx permite los mismos recursos visuales fijados por versión.

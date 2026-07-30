@@ -77,3 +77,8 @@ las seis columnas de operación. La primera inserción oficial reveló una últi
 restricción heredada: `password_encrypted NOT NULL`. El código vigente no usa
 ni debe almacenar esa credencial localmente, por lo que una v4 inmutable retira
 solo esa columna obsoleta antes de repetir el flujo.
+
+La misma verificación visual confirmó que Leaflet ya carga sin el bloqueo CSP.
+Domicilios mostró luego un estado vacío serializado como `null`; backend y
+frontend se endurecen para representar colecciones vacías como `[]` y evitar
+que `renderMenu` invoque `.map` sobre un valor nulo.

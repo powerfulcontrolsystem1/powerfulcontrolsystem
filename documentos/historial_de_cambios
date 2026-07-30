@@ -40276,6 +40276,9 @@ acumulativa.
   detectó que la tabla histórica aún imponía `password_encrypted NOT NULL`.
   Una migración v4 nueva e inmutable elimina exclusivamente esa columna
   obsoleta; el diseño actual no almacena contraseñas Nextcloud en PCS.
+- Domicilios devuelve `[]` cuando el menú está vacío y el frontend normaliza
+  también dashboard/menú con `Array.isArray`, evitando el error visible
+  `Cannot read properties of null (reading 'map')`.
 
 2026-07-29: Plan 108 / corrección visual de acciones del carrito.
 - La revisión autenticada de staging detectó que la clase global `actions`

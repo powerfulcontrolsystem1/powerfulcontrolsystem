@@ -347,6 +347,14 @@ func TestPlan108FullSweepFrontendRegressions(t *testing.T) {
 	if !strings.Contains(string(staticHeaders), "font-src 'self' data:") {
 		t.Fatal("frontend CSP must declare an explicit font-src")
 	}
+
+	domicilios, err := os.ReadFile(filepath.Join(root, "web", "js", "domicilios.js"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(domicilios), "function asArray(v)") || !strings.Contains(string(domicilios), "state.menu=asArray(menuData)") {
+		t.Fatal("Domicilios must render an empty menu response as an empty list")
+	}
 }
 
 func TestSuperPageToolsDoNotCoverMobileControls(t *testing.T) {
