@@ -159,3 +159,21 @@ migración ni se usa como evidencia de aprobación del endpoint público.
 Estado: **P108-002 parcial**. Se aprobaron la base vacía, upgrade,
 idempotencia, runtime sin DDL y rollback técnico; falta completar la matriz de
 rollback de datos y las demás puertas del Plan 108.
+
+## Repetición del candidato de staging 2026-07-29
+
+El candidato publicado por digest repitió ambos ensayos sin escribir en el
+PostgreSQL de staging:
+
+- Migración en base vacía: dos pasadas correctas; `empresas_migrations=13`,
+  `empresas_tables=336`, `super_migrations=10` y `super_tables=49`.
+- Upgrade desde copia lógica temporal de staging: dos pasadas idempotentes;
+  tablas empresariales `349 -> 349` y administrativas `59 -> 59`.
+- El migrador usó el digest inmutable
+  `ghcr.io/powerfulcontrolsystem1/pcs-migrate@sha256:3a407b6dac4e60a3695dbcdf65e5f5d6e46509ab6ff38e40667213bf6ed1dd7c`.
+- Los recursos temporales usaron el prefijo controlado `p108-empty-` o
+  `p108-upgrade-` y los scripts los eliminaron al finalizar.
+
+Estos subcriterios continúan aprobados, pero P108-002 se mantiene **parcial**:
+la certificación aún requiere la matriz completa de rollback de datos y las
+demás compuertas P0 del mismo candidato.
