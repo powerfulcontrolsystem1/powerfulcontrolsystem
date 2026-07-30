@@ -40093,6 +40093,14 @@ Archivos modificados:
 - P108-019 conserva estado parcial: esta pasada no sustituye carga sostenida,
   transacciones, cajas simultáneas ni métricas de infraestructura.
 
+2026-07-30: Plan 108 / revalidación HTTP segura por digest en staging.
+- El candidato `d262874e` respondió portada 200, rechazó una ruta empresarial
+  con empresa manipulada sin sesión (401) y rechazó el preflight de origen
+  externo sin publicar CORS permisivo. HSTS, CSP y `nosniff` quedaron una vez
+  en la respuesta final observada.
+- P108-017 continúa parcial: CSP aún requiere eliminar o acotar
+  `unsafe-inline`, y faltan DAST autenticado, pruebas de sesión y matriz A/B.
+
 2026-07-29: Plan 108 / corrección visual de acciones del carrito.
 - La revisión autenticada de staging detectó que la clase global `actions`
   comprimía los seis controles de cada fila del carrito hasta superponer sus
