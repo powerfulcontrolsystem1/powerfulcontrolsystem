@@ -124,6 +124,30 @@ El preflight corregido se ejecutó contra los Compose desactualizados del VPS y
 los rechazó por faltar el digest exacto del frontend antes de ejecutar `pull` o
 `up`; staging permaneció con salud y readiness 200.
 
+## Repetición de señales sobre `f9396da5`
+
+La promoción del nuevo candidato volvió a detectar esa deriva antes de
+`pull/up`. Se conservaron los tres Compose remotos en
+`/root/pcs-staging-compose-backups/f9396da5` y se instalaron las copias exactas
+versionadas; producción no se reinició. El migrador salió con código cero y
+staging quedó saludable.
+
+Después de la regresión y 500 lecturas autenticadas:
+
+| Señal | Resultado |
+| --- | ---: |
+| PostgreSQL negocio / super | `1 / 1` |
+| Consulta de latido worker | `1` |
+| Edad del latido worker | `4,193 s` |
+| Outbox listo / leases vencidos | `0 / 0` en ambas bases |
+| Trabajos listos / leases vencidos | `0 / 0` |
+| Sesiones esperando lock | `0` |
+| `/health` / `/ready` | `ok / ready` |
+
+P108-018 conserva estado parcial por almacenamiento, leases forzados y
+escalamiento externo, pero sus señales base vuelven a estar comprobadas sobre
+el candidato activo.
+
 ### Resultado del candidato activo
 
 | Señal | Resultado |

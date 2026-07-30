@@ -76,3 +76,14 @@ el CSS corregido sobre el nuevo digest.
 
 P108-012 permanece parcial por accesibilidad, teclado, lector de pantalla,
 tableta y la matriz completa por rol.
+
+## Verificación visual del digest `f9396da5`
+
+La repetición autenticada en 390 x 844 informó cero problemas visuales para
+Cobranza. La inspección de la captura confirmó checks, campos, texto extenso y
+botones apilados dentro del panel, sin el desborde horizontal previo:
+
+`capturas/cobranza_mobile_f9396da5_390x844.png`
+
+El hallazgo de Cobranza queda **PASS** sobre el candidato activo; la fase
+completa conserva los límites de accesibilidad y roles indicados arriba.

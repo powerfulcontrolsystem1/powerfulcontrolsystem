@@ -79,3 +79,26 @@ worker tenía 2,231 segundos y no había trabajo listo ni leases vencidos.
 P108-019 conserva estado **parcial**: la lectura autenticada del digest actual
 aprueba, pero no sustituye cuatro cajas, transacciones sostenidas, proveedores
 externos ni backpressure.
+
+## Repetición sobre `f9396da5`
+
+Se ejecutaron 500 solicitudes GET autenticadas con concurrencia 10, alternando
+las dos rutas canónicas de lectura `/me` y configuración operativa de la empresa
+12. Una tentativa previa con una ruta obsoleta de carritos se descartó porque
+respondía el 404 esperado y no representaba el contrato vigente.
+
+| Métrica | Resultado |
+| --- | ---: |
+| HTTP exitoso | 500 / 500 |
+| Fallos / 5xx | 0 / 0 |
+| Error rate | 0 % |
+| p50 | 100 ms |
+| p95 | 134 ms |
+| p99 | 419 ms |
+| Concurrencia | 10 |
+| Sesiones PostgreSQL observadas | 9 |
+| Sesiones esperando lock | 0 |
+
+Backend, worker, frontend y PostgreSQL permanecieron saludables; colas y leases
+quedaron en cero. P108-019 continúa parcial por carga transaccional sostenida,
+cuatro cajas, proveedores y backpressure.

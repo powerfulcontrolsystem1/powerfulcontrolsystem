@@ -930,8 +930,9 @@ SHA diferente.
 ### Corte verificable 2026-07-30
 
 - El candidato inmutable activo en staging es
-  `cf49fc7cefb083e1ac8df1711f05a0f8a22c8afb`; GitHub Actions aprobó build,
-  escaneo, SBOM, publicación por digest y Compose.
+  `f9396da5e41562968996b05136fffca9991b56f9`; GitHub Actions aprobó build,
+  `go test -race`, seguridad, secretos, escaneo, SBOM, publicación por digest
+  y Compose.
 - P108-018 ganó métricas privadas para PostgreSQL, worker, outbox y trabajos
   durables. El scrape real del digest aprueba y la exposición pública devuelve
   404; faltan los simulacros específicos y la configuración permanente.
@@ -948,12 +949,14 @@ SHA diferente.
   2.148 botones, 104 clics seguros y 253 mutaciones preservadas. Tras corregir
   el contexto de empresa del runner, la repetición dirigida pasó 14/16; solo
   Crédito conserva un 500 en el digest anterior.
-- La rama candidata corrige el agregado vacío de Créditos, hace idempotente la
+- El candidato corrige el agregado vacío de Créditos, hace idempotente la
   siembra concurrente de Contabilidad Colombia, instala CSRF en 19 páginas
-  empresariales mutantes y corrige el desborde móvil de Cobranza. `go test
-  ./...`, `go vet` enfocado y los contratos de módulos, roles y despliegue
-  aprobaron. Estas correcciones aún no suman certificación hasta promover y
-  verificar un nuevo digest.
+  empresariales mutantes y corrige el desborde móvil de Cobranza. La repetición
+  desplegada terminó 16/16 `ok`; el botón real de reenvío de confirmación
+  respondió correctamente y la captura móvil no presenta desborde.
+- La carga del mismo digest terminó 500/500, p95 134 ms, cero fallos, cero
+  sesiones esperando lock y señales saludables de PostgreSQL, worker, outbox y
+  trabajos durables.
 - La batería imprimible volvió a aprobar 18/18 y la revisión visual de factura
   carta/POS y corte de caja confirmó filas, columnas y totales ordenados. La
   fase sigue parcial por documentos reales extensos e impresión física.

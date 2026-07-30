@@ -105,3 +105,24 @@ Las correcciones aprobaron `go test ./...`, `go vet` enfocado, contratos de
 módulos, matriz de roles, pipeline de despliegue y chequeo sintáctico del
 runner. Continúa pendiente promover el nuevo digest y repetir el 500 de
 Créditos y la mutación CSRF en staging.
+
+## Verificación del candidato `f9396da5` en staging
+
+GitHub Actions aprobó pruebas, `go test -race`, análisis estático, secretos,
+dependencias, contenedores, Trivy, SBOM y publicación inmutable. Las imágenes
+del commit `f9396da5e41562968996b05136fffca9991b56f9` se promovieron por digest
+sin reconstruir. El migrador terminó con código cero; backend, worker, frontend
+y PostgreSQL quedaron saludables.
+
+La matriz dirigida sobre las ocho rutas anteriores terminó **16/16 `ok`** en
+escritorio y móvil, 308 botones inventariados, cero 4xx/5xx y cero desbordes.
+Créditos respondió correctamente con cartera vacía y Contabilidad Colombia no
+reprodujo la carrera inicial.
+
+En el navegador interno se pulsó el botón real `Reenviar confirmación` del
+usuario de caja pendiente. El servidor aceptó la mutación con CSRF y la pantalla
+mostró `Correo de confirmación reenviado`; ya no aparece el 403 anterior. El
+usuario permanece pendiente hasta completar el enlace recibido.
+
+P108-011 sigue parcial porque esta pasada conserva 46 acciones riesgosas sin
+ejecutar y no sustituye el inventario mutable completo por rol.

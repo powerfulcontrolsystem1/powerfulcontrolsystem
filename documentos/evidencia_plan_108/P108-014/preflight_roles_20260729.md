@@ -46,3 +46,14 @@ desplegarse el nuevo candidato, completar la invitación oficial y crear tres
 cajeros temporales adicionales por el mismo flujo antes de iniciar cuatro cajas.
 P108-014 continúa pendiente; no se sustituyó el escenario con SQL ni sesiones
 simuladas.
+
+## Repetición sobre `f9396da5`
+
+Después de promover el candidato, `Reenviar confirmación` respondió
+correctamente y la interfaz mostró `Correo de confirmación reenviado`. Esto
+aprueba la protección CSRF y el envío desde el flujo oficial. La cuenta sigue
+inactiva y pendiente porque el enlace debe abrirse desde el buzón receptor.
+
+Continúan faltando tres identidades de caja adicionales, la confirmación de las
+cuatro invitaciones y sus aperturas independientes. P108-014 permanece
+**pendiente** y no se eleva el porcentaje por este preflight.

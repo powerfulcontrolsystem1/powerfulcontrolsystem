@@ -40192,6 +40192,21 @@ Archivos modificados:
   sintaxis del runner terminaron correctamente. Falta promover el digest y
   repetir las pruebas mutables oficiales.
 
+2026-07-30: Plan 108 / candidato `f9396da5` promovido y verificado.
+- GitHub Actions aprobó race, seguridad, secretos, dependencias, Trivy, SBOM y
+  las cuatro imágenes inmutables. Los Compose remotos desfasados se respaldaron
+  antes de instalar las copias versionadas; producción no se reinició.
+- Staging ejecutó el migrador con código cero y quedó saludable sobre los
+  digest exactos de API, migrador, worker y frontend.
+- La regresión dirigida terminó 16/16 en escritorio/móvil: desapareció el 500
+  de Créditos, Contabilidad permaneció estable y Cobranza no presentó desborde.
+- El botón real `Reenviar confirmación` mostró éxito después de corregir CSRF.
+  La cuenta sigue pendiente del enlace recibido y aún no existen cuatro cajeros
+  confirmados.
+- La carga autenticada terminó 500/500, p95 134 ms, cero fallos y cero locks;
+  PostgreSQL, worker, outbox, trabajos durables, `/health` y `/ready` quedaron
+  saludables.
+
 2026-07-29: Plan 108 / corrección visual de acciones del carrito.
 - La revisión autenticada de staging detectó que la clase global `actions`
   comprimía los seis controles de cada fila del carrito hasta superponer sus
