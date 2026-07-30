@@ -92,7 +92,7 @@ const empresaHojaVidaReporteQuery = `SELECT
 	(SELECT COUNT(1) FROM empresa_hoja_vida_entidades WHERE empresa_id = ? AND estado = 'activo'),
 	(SELECT COUNT(1) FROM empresa_hoja_vida_eventos WHERE empresa_id = ? AND estado = 'activo'),
 	(SELECT COUNT(1) FROM empresa_hoja_vida_alertas WHERE empresa_id = ? AND estado = 'activo' AND estado_alerta = 'pendiente'),
-	(SELECT COUNT(1) FROM empresa_hoja_vida_alertas WHERE empresa_id = ? AND estado = 'activo' AND estado_alerta = 'pendiente' AND fecha_programada IS NOT NULL AND fecha_programada < CURRENT_TIMESTAMP),
+	(SELECT COUNT(1) FROM empresa_hoja_vida_alertas WHERE empresa_id = ? AND estado = 'activo' AND estado_alerta = 'pendiente' AND fecha_programada IS NOT NULL AND pcs_ts(fecha_programada) < CURRENT_TIMESTAMP),
 	(SELECT COUNT(1) FROM empresa_hoja_vida_eventos WHERE empresa_id = ? AND estado = 'activo' AND COALESCE(recurrente, 0) <> 0)`
 
 // EnsureEmpresaHojaVidaOperativaSchema crea/migra tablas del modulo universal de hoja de vida.

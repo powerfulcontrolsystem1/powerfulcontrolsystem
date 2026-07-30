@@ -40258,6 +40258,21 @@ Archivos modificados:
 - El runner distingue controles ocultos después de un cambio de estado y la
   repetición dirigida aprobó Estaciones en escritorio y móvil sin falsos fallos.
 
+2026-07-30: Plan 108 / repetición del candidato `7819f775` y reparación
+acumulativa.
+- CI profesional, Trivy, SBOM y publicación inmutable aprobaron; staging
+  ejecutó el migrador con código cero y producción conservó la misma huella.
+- La repetición autenticada cubrió 22 vistas, 400 controles y 42 clics seguros.
+  Bre-B QR, Colombia genérico y Productos/Bodegas quedaron sin errores HTTP.
+- Nextcloud reveló que la tabla histórica también carecía de `quota_mb`. Se
+  añade una migración v3 nueva e inmutable que completa todas las columnas
+  requeridas y readiness valida el contrato completo.
+- Hoja de vida normaliza con `pcs_ts` la fecha programada heredada como texto
+  antes de compararla con `CURRENT_TIMESTAMP`.
+- El CSP estático de Nginx se alinea con el CSP del backend para los orígenes
+  exactos ya usados por Leaflet, Chart.js y las fuentes; no se añade una
+  dependencia nueva.
+
 2026-07-29: Plan 108 / corrección visual de acciones del carrito.
 - La revisión autenticada de staging detectó que la clase global `actions`
   comprimía los seis controles de cada fila del carrito hasta superponer sus

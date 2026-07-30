@@ -329,6 +329,24 @@ func TestPlan108FullSweepFrontendRegressions(t *testing.T) {
 	if !strings.Contains(string(chartPage), "chart.js@4.5.1/dist/chart.umd.min.js") || !strings.Contains(string(chartPage), "integrity=\"sha384-") {
 		t.Fatal("PostgreSQL dashboard must pin Chart.js with SRI")
 	}
+
+	staticHeaders, err := os.ReadFile(filepath.Join(root, "deploy", "nginx", "pcs-static-security-headers.inc"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, origin := range []string{
+		"https://unpkg.com",
+		"https://cdn.jsdelivr.net",
+		"https://fonts.googleapis.com",
+		"https://fonts.gstatic.com",
+	} {
+		if !strings.Contains(string(staticHeaders), origin) {
+			t.Fatalf("frontend CSP must allow the pinned visual resource origin %s", origin)
+		}
+	}
+	if !strings.Contains(string(staticHeaders), "font-src 'self' data:") {
+		t.Fatal("frontend CSP must declare an explicit font-src")
+	}
 }
 
 func TestSuperPageToolsDoNotCoverMobileControls(t *testing.T) {

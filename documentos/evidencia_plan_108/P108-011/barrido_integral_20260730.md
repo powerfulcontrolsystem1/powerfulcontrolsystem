@@ -49,3 +49,25 @@ reconstrucción del DOM.
 
 P108-011 sigue parcial hasta desplegar el nuevo digest, repetir las rutas
 afectadas y probar las acciones riesgosas mediante sus flujos oficiales.
+
+## Primer candidato de reparación `7819f775`
+
+El CI profesional, el escaneo de imágenes, Trivy, SBOM y los cuatro artefactos
+inmutables terminaron correctamente. Staging promovió los digests exactos,
+ejecutó el migrador con código `0` y conservó intacta la huella de los
+contenedores de producción.
+
+La repetición posterior cubrió 22 vistas, 400 controles y 42 clics seguros:
+
+- Bre-B QR, la entrada Colombia y Productos/Bodegas quedaron sin respuestas
+  HTTP erróneas en escritorio y móvil.
+- La tabla histórica Nextcloud tenía además ausente `quota_mb`; se prepara una
+  migración v3 acumulativa porque la v2 publicada no se puede modificar.
+- Hoja de vida conservaba otra comparación directa entre la fecha heredada
+  `TEXT` y `CURRENT_TIMESTAMP`; debe normalizarla con `pcs_ts`.
+- El CSP dinámico del backend quedó configurado, pero las páginas estáticas
+  reciben el CSP propio de Nginx. Ese archivo también debe autorizar los
+  orígenes exactos y versionados de Leaflet, Chart.js y fuentes.
+
+El candidato `7819f775` no se declara aprobado para esas tres rutas. Las
+correcciones complementarias requieren un nuevo digest y repetición autenticada.

@@ -976,6 +976,11 @@ SHA diferente.
   896 clics seguros y 1.947 mutaciones preservadas. Detectó tres APIs 500,
   rutas mal formadas y recursos cartográficos/gráficos bloqueados por CSP; las
   correcciones están implementadas y pendientes de un nuevo digest y repetición.
+- El primer candidato de reparación `7819f775` aprobó CI/Trivy/SBOM y se
+  promovió solo a staging. La repetición de 22 vistas aprobó Bre-B, Colombia y
+  Productos, y descubrió pendientes adicionales de esquema Nextcloud, fecha
+  textual de Hoja de vida y CSP estático; ya tienen corrección complementaria
+  pero no se contabilizan hasta probar el siguiente digest.
 - Avance de implementación: **48,1 %**, aplicando tres fases aprobadas y
   diecinueve parciales; no se suman bloqueos ni pruebas incompletas.
 - Certificación del candidato para producción: **23,1 %** y **NO-GO**:

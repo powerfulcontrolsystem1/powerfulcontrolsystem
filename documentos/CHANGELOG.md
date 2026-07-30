@@ -3380,3 +3380,7 @@
   Colombia sin módulo.
 - CSP incorpora orígenes exactos para los recursos cartográficos/gráficos ya
   usados; Leaflet y Chart.js quedan versionados con SRI.
+- Nextcloud incorpora una migración v3 acumulativa para tablas históricas sin
+  cuota y readiness valida todas las columnas que usa el handler.
+- Hoja de vida normaliza su fecha programada de texto antes de compararla y el
+  CSP estático de Nginx permite los mismos recursos visuales fijados por versión.

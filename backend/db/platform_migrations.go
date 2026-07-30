@@ -91,6 +91,14 @@ func PlatformMigrations(target string) ([]Migration, error) {
 					return applyEmpresaNextcloudSchemaRepairTx(ctx, tx)
 				},
 			},
+			{
+				Version:     "20260730-002-nextcloud-accounts-v3",
+				Description: "complete required columns on legacy Nextcloud assignments",
+				Body:        empresaNextcloudSchemaCompleteRepairFingerprint,
+				Apply: func(ctx context.Context, tx *sql.Tx) error {
+					return applyEmpresaNextcloudSchemaCompleteRepairTx(ctx, tx)
+				},
+			},
 		}, nil
 	case MigrationTargetSuper:
 		return []Migration{

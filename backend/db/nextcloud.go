@@ -6,6 +6,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"time"
 )
 
 // EnsureEmpresaNextcloudSchema stores only the technical assignment. Passwords
@@ -46,6 +47,15 @@ func applyEmpresaNextcloudSchema(dbEmpresas *sql.DB) error {
 	if err := ensureColumnIfMissing(dbEmpresas, "empresa_nextcloud_accounts", "provisioned", "BOOLEAN NOT NULL DEFAULT FALSE"); err != nil {
 		return err
 	}
+	if err := ensureColumnIfMissing(dbEmpresas, "empresa_nextcloud_accounts", "quota_mb", "BIGINT NOT NULL DEFAULT 1024"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbEmpresas, "empresa_nextcloud_accounts", "created_at", "TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbEmpresas, "empresa_nextcloud_accounts", "updated_at", "TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP"); err != nil {
+		return err
+	}
 	_, err = execSQLCompat(dbEmpresas, `CREATE INDEX IF NOT EXISTS idx_empresa_nextcloud_accounts_empresa
 		ON empresa_nextcloud_accounts(empresa_id)`)
 	return err
@@ -59,8 +69,17 @@ func verifyEmpresaNextcloudSchema(dbEmpresas *sql.DB) error {
 	if !exists.Valid || strings.TrimSpace(exists.String) == "" {
 		return fmt.Errorf("nextcloud schema is missing; run pcs-migrate before starting the API")
 	}
-	var marker bool
-	if err := queryRowSQLCompat(dbEmpresas, `SELECT provisioned FROM empresa_nextcloud_accounts WHERE 1=0`).Scan(&marker); err != nil && err != sql.ErrNoRows {
+	var (
+		quotaMB       int64
+		active        bool
+		provisioned   bool
+		provisionedAt sql.NullTime
+		createdAt     time.Time
+		updatedAt     time.Time
+	)
+	if err := queryRowSQLCompat(dbEmpresas, `SELECT quota_mb, activo, provisioned, provisioned_at, created_at, updated_at
+		FROM empresa_nextcloud_accounts WHERE 1=0`).
+		Scan(&quotaMB, &active, &provisioned, &provisionedAt, &createdAt, &updatedAt); err != nil && err != sql.ErrNoRows {
 		return fmt.Errorf("nextcloud schema is incomplete; run pcs-migrate before starting the API: %w", err)
 	}
 	return nil
