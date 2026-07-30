@@ -99,6 +99,14 @@ func PlatformMigrations(target string) ([]Migration, error) {
 					return applyEmpresaNextcloudSchemaCompleteRepairTx(ctx, tx)
 				},
 			},
+			{
+				Version:     "20260730-003-nextcloud-accounts-v4",
+				Description: "remove obsolete locally stored Nextcloud credential column",
+				Body:        empresaNextcloudSchemaCredentialCleanupFingerprint,
+				Apply: func(ctx context.Context, tx *sql.Tx) error {
+					return applyEmpresaNextcloudSchemaCredentialCleanupTx(ctx, tx)
+				},
+			},
 		}, nil
 	case MigrationTargetSuper:
 		return []Migration{

@@ -97,6 +97,23 @@ func TestEmpresaCatalogIncludesNextcloudCompleteLegacyRepairMigration(t *testing
 	t.Fatal("nextcloud complete legacy repair migration is missing from empresas catalog")
 }
 
+func TestEmpresaCatalogIncludesNextcloudCredentialCleanupMigration(t *testing.T) {
+	t.Parallel()
+	migrations, err := PlatformMigrations(MigrationTargetEmpresas)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, migration := range migrations {
+		if migration.Version == "20260730-003-nextcloud-accounts-v4" {
+			if migration.Body != empresaNextcloudSchemaCredentialCleanupFingerprint || migration.Apply == nil {
+				t.Fatal("nextcloud credential cleanup migration must be immutable and executable")
+			}
+			return
+		}
+	}
+	t.Fatal("nextcloud credential cleanup migration is missing from empresas catalog")
+}
+
 func TestSuperCatalogIncludesSystemMetricsMigration(t *testing.T) {
 	t.Parallel()
 	migrations, err := PlatformMigrations(MigrationTargetSuper)

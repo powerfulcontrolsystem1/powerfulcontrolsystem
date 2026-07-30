@@ -8,6 +8,7 @@ import (
 const empresaNextcloudSchemaFingerprint = "empresa_nextcloud_accounts:v1"
 const empresaNextcloudSchemaRepairFingerprint = "empresa_nextcloud_accounts:v2:add-provisioned"
 const empresaNextcloudSchemaCompleteRepairFingerprint = "empresa_nextcloud_accounts:v3:complete-legacy-columns"
+const empresaNextcloudSchemaCredentialCleanupFingerprint = "empresa_nextcloud_accounts:v4:drop-obsolete-password-column"
 
 // applyEmpresaNextcloudSchemaTx is the checksummed migration counterpart of
 // the legacy bootstrap. It is intentionally DDL-only: provisioning accounts
@@ -56,4 +57,10 @@ func applyEmpresaNextcloudSchemaCompleteRepairTx(_ context.Context, tx *sql.Tx) 
 		}
 	}
 	return nil
+}
+
+func applyEmpresaNextcloudSchemaCredentialCleanupTx(_ context.Context, tx *sql.Tx) error {
+	_, err := execTxSQLCompat(tx, `ALTER TABLE empresa_nextcloud_accounts
+		DROP COLUMN IF EXISTS password_encrypted`)
+	return err
 }

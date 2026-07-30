@@ -40272,6 +40272,10 @@ acumulativa.
 - El CSP estático de Nginx se alinea con el CSP del backend para los orígenes
   exactos ya usados por Leaflet, Chart.js y las fuentes; no se añade una
   dependencia nueva.
+- El ensayo del candidato `424b1896` completó las seis columnas Nextcloud y
+  detectó que la tabla histórica aún imponía `password_encrypted NOT NULL`.
+  Una migración v4 nueva e inmutable elimina exclusivamente esa columna
+  obsoleta; el diseño actual no almacena contraseñas Nextcloud en PCS.
 
 2026-07-29: Plan 108 / corrección visual de acciones del carrito.
 - La revisión autenticada de staging detectó que la clase global `actions`

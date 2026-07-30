@@ -3382,5 +3382,7 @@
   usados; Leaflet y Chart.js quedan versionados con SRI.
 - Nextcloud incorpora una migración v3 acumulativa para tablas históricas sin
   cuota y readiness valida todas las columnas que usa el handler.
+- Nextcloud incorpora una v4 inmutable que elimina la columna heredada
+  `password_encrypted`; el contrato actual no conserva credenciales locales.
 - Hoja de vida normaliza su fecha programada de texto antes de compararla y el
   CSP estático de Nginx permite los mismos recursos visuales fijados por versión.

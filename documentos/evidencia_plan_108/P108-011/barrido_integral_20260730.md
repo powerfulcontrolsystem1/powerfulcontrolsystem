@@ -71,3 +71,9 @@ La repetición posterior cubrió 22 vistas, 400 controles y 42 clics seguros:
 
 El candidato `7819f775` no se declara aprobado para esas tres rutas. Las
 correcciones complementarias requieren un nuevo digest y repetición autenticada.
+
+El candidato complementario `424b1896` ejecutó correctamente la v3 y verificó
+las seis columnas de operación. La primera inserción oficial reveló una última
+restricción heredada: `password_encrypted NOT NULL`. El código vigente no usa
+ni debe almacenar esa credencial localmente, por lo que una v4 inmutable retira
+solo esa columna obsoleta antes de repetir el flujo.
