@@ -3375,3 +3375,8 @@
   pantalla sin cambiar de URL.
 - El workflow visual admite repeticiones dirigidas por rutas/viewports y reserva
   90 minutos para el inventario integral.
+- El barrido integral de 618 vistas corrige regresiones PostgreSQL en Bre-B QR,
+  Hoja de vida y Nextcloud, dos URLs dañadas de Inventario y la entrada genérica
+  Colombia sin módulo.
+- CSP incorpora orígenes exactos para los recursos cartográficos/gráficos ya
+  usados; Leaflet y Chart.js quedan versionados con SRI.

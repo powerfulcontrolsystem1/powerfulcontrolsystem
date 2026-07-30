@@ -972,6 +972,10 @@ SHA diferente.
 - P108-022 eliminó las 218 secuencias dañadas de `CHANGELOG.md`; el auditor
   estricto terminó con cero hallazgos. La fase sigue parcial por entrenamiento
   y ensayo de runbooks.
+- El barrido integral P108-011 terminó 618/618 combinaciones: 10.979 controles,
+  896 clics seguros y 1.947 mutaciones preservadas. Detectó tres APIs 500,
+  rutas mal formadas y recursos cartográficos/gráficos bloqueados por CSP; las
+  correcciones están implementadas y pendientes de un nuevo digest y repetición.
 - Avance de implementación: **48,1 %**, aplicando tres fases aprobadas y
   diecinueve parciales; no se suman bloqueos ni pruebas incompletas.
 - Certificación del candidato para producción: **23,1 %** y **NO-GO**:

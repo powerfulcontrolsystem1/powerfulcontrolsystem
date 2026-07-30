@@ -83,6 +83,14 @@ func PlatformMigrations(target string) ([]Migration, error) {
 					return applyEmpresaAIUserIsolationSchemaTx(tx)
 				},
 			},
+			{
+				Version:     "20260730-001-nextcloud-accounts-v2",
+				Description: "repair provisioned flag on legacy Nextcloud assignments",
+				Body:        empresaNextcloudSchemaRepairFingerprint,
+				Apply: func(ctx context.Context, tx *sql.Tx) error {
+					return applyEmpresaNextcloudSchemaRepairTx(ctx, tx)
+				},
+			},
 		}, nil
 	case MigrationTargetSuper:
 		return []Migration{

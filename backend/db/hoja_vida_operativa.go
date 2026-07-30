@@ -88,6 +88,13 @@ type EmpresaHojaVidaReporte struct {
 	ServiciosRecurrentes int64 `json:"servicios_recurrentes"`
 }
 
+const empresaHojaVidaReporteQuery = `SELECT
+	(SELECT COUNT(1) FROM empresa_hoja_vida_entidades WHERE empresa_id = ? AND estado = 'activo'),
+	(SELECT COUNT(1) FROM empresa_hoja_vida_eventos WHERE empresa_id = ? AND estado = 'activo'),
+	(SELECT COUNT(1) FROM empresa_hoja_vida_alertas WHERE empresa_id = ? AND estado = 'activo' AND estado_alerta = 'pendiente'),
+	(SELECT COUNT(1) FROM empresa_hoja_vida_alertas WHERE empresa_id = ? AND estado = 'activo' AND estado_alerta = 'pendiente' AND fecha_programada IS NOT NULL AND fecha_programada < CURRENT_TIMESTAMP),
+	(SELECT COUNT(1) FROM empresa_hoja_vida_eventos WHERE empresa_id = ? AND estado = 'activo' AND COALESCE(recurrente, 0) <> 0)`
+
 // EnsureEmpresaHojaVidaOperativaSchema crea/migra tablas del modulo universal de hoja de vida.
 func EnsureEmpresaHojaVidaOperativaSchema(dbConn *sql.DB) error {
 	stmts := []string{
@@ -477,12 +484,7 @@ func DeleteEmpresaHojaVidaAlerta(dbConn *sql.DB, empresaID, id int64) error {
 // GetEmpresaHojaVidaReporte devuelve conteos de control.
 func GetEmpresaHojaVidaReporte(dbConn *sql.DB, empresaID int64) (EmpresaHojaVidaReporte, error) {
 	out := EmpresaHojaVidaReporte{EmpresaID: empresaID}
-	err := dbConn.QueryRow(`SELECT
-		(SELECT COUNT(1) FROM empresa_hoja_vida_entidades WHERE empresa_id = ? AND estado = 'activo'),
-		(SELECT COUNT(1) FROM empresa_hoja_vida_eventos WHERE empresa_id = ? AND estado = 'activo'),
-		(SELECT COUNT(1) FROM empresa_hoja_vida_alertas WHERE empresa_id = ? AND estado = 'activo' AND estado_alerta = 'pendiente'),
-		(SELECT COUNT(1) FROM empresa_hoja_vida_alertas WHERE empresa_id = ? AND estado = 'activo' AND estado_alerta = 'pendiente' AND fecha_programada IS NOT NULL AND fecha_programada < CURRENT_TIMESTAMP),
-		(SELECT COUNT(1) FROM empresa_hoja_vida_eventos WHERE empresa_id = ? AND estado = 'activo' AND recurrente = 1)`,
+	err := dbConn.QueryRow(empresaHojaVidaReporteQuery,
 		empresaID, empresaID, empresaID, empresaID, empresaID,
 	).Scan(&out.EntidadesActivas, &out.EventosActivos, &out.AlertasPendientes, &out.AlertasVencidas, &out.ServiciosRecurrentes)
 	return out, err

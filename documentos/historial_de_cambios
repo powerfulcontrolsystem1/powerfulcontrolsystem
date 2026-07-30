@@ -40244,6 +40244,20 @@ Archivos modificados:
   amplía a 90 minutos el barrido total de 618 combinaciones para evitar que el
   timeout oculte la evidencia final.
 
+2026-07-30: Plan 108 / barrido integral y reparación de regresiones de staging.
+- El workflow `30583852262` completó 618 vistas, inventarió 10.979 controles,
+  ejecutó 896 clics seguros y preservó 1.947 acciones riesgosas.
+- Bre-B QR deja de mezclar fechas de texto con `CURRENT_TIMESTAMP`; Hoja de vida
+  conserva su flag entero recurrente y Nextcloud añade una migración v2 para
+  reparar la columna `provisioned` en tablas heredadas.
+- Productos repara dos separadores de consulta dañados y la entrada Colombia
+  deja de llamar una API vacía cuando se abre sin módulo.
+- CSP admite orígenes exactos configurables para scripts, estilos, fuentes,
+  mapas y geocodificación. Leaflet 1.9.4 y Chart.js 4.5.1, ya usados por el
+  proyecto, quedan fijados con SRI; no se añadió una dependencia nueva.
+- El runner distingue controles ocultos después de un cambio de estado y la
+  repetición dirigida aprobó Estaciones en escritorio y móvil sin falsos fallos.
+
 2026-07-29: Plan 108 / corrección visual de acciones del carrito.
 - La revisión autenticada de staging detectó que la clase global `actions`
   comprimía los seis controles de cada fila del carrito hasta superponer sus

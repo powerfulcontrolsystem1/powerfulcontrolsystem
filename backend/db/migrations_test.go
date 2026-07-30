@@ -63,6 +63,23 @@ func TestEmpresaCatalogIncludesNextcloudSchemaMigration(t *testing.T) {
 	t.Fatal("nextcloud migration is missing from empresas catalog")
 }
 
+func TestEmpresaCatalogIncludesNextcloudLegacyRepairMigration(t *testing.T) {
+	t.Parallel()
+	migrations, err := PlatformMigrations(MigrationTargetEmpresas)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, migration := range migrations {
+		if migration.Version == "20260730-001-nextcloud-accounts-v2" {
+			if migration.Body != empresaNextcloudSchemaRepairFingerprint || migration.Apply == nil {
+				t.Fatal("nextcloud repair migration must be immutable and executable")
+			}
+			return
+		}
+	}
+	t.Fatal("nextcloud legacy repair migration is missing from empresas catalog")
+}
+
 func TestSuperCatalogIncludesSystemMetricsMigration(t *testing.T) {
 	t.Parallel()
 	migrations, err := PlatformMigrations(MigrationTargetSuper)

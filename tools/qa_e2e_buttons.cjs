@@ -287,17 +287,28 @@ async function auditRoute(context, route, viewport) {
       for (const button of safeButtons) {
         try {
           const selector = '[data-qa-button-index="' + button.index + '"]';
+          let target = page.locator(selector);
           // Some safe UI actions rebuild their section without navigating. That
           // removes the temporary audit indexes from the remaining controls, so
           // restore the pristine route before treating the next control as a
           // failure.
-          if ((await page.locator(selector).count()) === 0) {
+          if ((await target.count()) === 0 || !(await target.isVisible().catch(() => false))) {
             await page.goto(url, { waitUntil: "domcontentloaded", timeout: 18000 });
             await page.waitForTimeout(SETTLE_MS);
             await collectButtons(page);
+            target = page.locator(selector);
+          }
+          if ((await target.count()) === 0 || !(await target.isVisible().catch(() => false))) {
+            result.skipped.push({
+              index: button.index,
+              text: button.text,
+              id: button.id,
+              reason: "safe-control-not-visible-after-state-change"
+            });
+            continue;
           }
           const beforeUrl = page.url();
-          await page.locator(selector).click({ timeout: 1800, force: false });
+          await target.click({ timeout: 1800, force: false });
           await page.waitForTimeout(180);
           result.clicked.push({ index: button.index, text: button.text || button.ariaLabel || button.title || button.id || button.className });
           const afterUrl = page.url();
@@ -316,7 +327,7 @@ async function auditRoute(context, route, viewport) {
         }
       }
     }
-    result.skipped = result.buttons.filter((button) => button.classification === "unsafe").map((button) => ({ index: button.index, text: button.text, id: button.id, className: button.className, dataset: button.dataset })).slice(0, 80);
+    result.skipped = result.skipped.concat(result.buttons.filter((button) => button.classification === "unsafe").map((button) => ({ index: button.index, text: button.text, id: button.id, className: button.className, dataset: button.dataset }))).slice(0, 80);
     if (result.pageErrors.length || result.consoleErrors.length || result.responseErrors.some((x) => ![401, 403, 404].includes(x.status)) || result.securityBlock) {
       result.status = "review";
     }

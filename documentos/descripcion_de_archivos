@@ -12413,6 +12413,13 @@ panel de seguridad para que el navegador reciba la correccion CSRF de staging.
   readiness del candidato y pendientes de réplica/A-B/restore.
 - `documentos/evidencia_plan_108/P108-022/higiene_documental_20260730.md`:
   cierre del gate de secuencias dañadas y pendientes operativos de documentación.
+- `documentos/evidencia_plan_108/P108-011/barrido_integral_20260730.md`:
+  inventario autenticado de 618 vistas, clasificación de hallazgos y
+  reparaciones que deben repetirse sobre el siguiente digest.
+- `backend/db/hoja_vida_operativa_postgres_test.go`: contrato de compatibilidad
+  PostgreSQL para el flag entero de recurrencia del reporte operativo.
+- `backend/handlers/finanzas_breb_qr_postgres_test.go`: contrato que evita
+  mezclar timestamps PostgreSQL con fechas heredadas de texto en Bre-B QR.
 - `documentos/evidencia_plan_108/P108-018/linea_base_observabilidad_20260729.md`:
   línea base de salud y bloqueo por falta de stack de monitoreo activo.
 - `backend/main.go` y `backend/main_metrics_test.go`: endpoint Prometheus

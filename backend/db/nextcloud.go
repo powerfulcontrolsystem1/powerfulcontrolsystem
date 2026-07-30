@@ -43,6 +43,9 @@ func applyEmpresaNextcloudSchema(dbEmpresas *sql.DB) error {
 	if err := ensureColumnIfMissing(dbEmpresas, "empresa_nextcloud_accounts", "activo", "BOOLEAN NOT NULL DEFAULT TRUE"); err != nil {
 		return err
 	}
+	if err := ensureColumnIfMissing(dbEmpresas, "empresa_nextcloud_accounts", "provisioned", "BOOLEAN NOT NULL DEFAULT FALSE"); err != nil {
+		return err
+	}
 	_, err = execSQLCompat(dbEmpresas, `CREATE INDEX IF NOT EXISTS idx_empresa_nextcloud_accounts_empresa
 		ON empresa_nextcloud_accounts(empresa_id)`)
 	return err
@@ -55,6 +58,10 @@ func verifyEmpresaNextcloudSchema(dbEmpresas *sql.DB) error {
 	}
 	if !exists.Valid || strings.TrimSpace(exists.String) == "" {
 		return fmt.Errorf("nextcloud schema is missing; run pcs-migrate before starting the API")
+	}
+	var marker bool
+	if err := queryRowSQLCompat(dbEmpresas, `SELECT provisioned FROM empresa_nextcloud_accounts WHERE 1=0`).Scan(&marker); err != nil && err != sql.ErrNoRows {
+		return fmt.Errorf("nextcloud schema is incomplete; run pcs-migrate before starting the API: %w", err)
 	}
 	return nil
 }

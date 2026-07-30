@@ -281,6 +281,56 @@ func TestEmpresaPagesWithMutatingFetchInstallCSRFSynchronizer(t *testing.T) {
 	}
 }
 
+func TestPlan108FullSweepFrontendRegressions(t *testing.T) {
+	root := filepath.Clean("..")
+	products, err := os.ReadFile(filepath.Join(root, "web", "administrar_empresa", "administrar_productos.html"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, corrupted := range []string{
+		"/api/empresa/inventario/resumenú",
+		"/api/empresa/inventario/plan_reposicion_resumenú",
+	} {
+		if strings.Contains(string(products), corrupted) {
+			t.Fatalf("products keeps corrupted query separator %q", corrupted)
+		}
+	}
+
+	moduleScript, err := os.ReadFile(filepath.Join(root, "web", "js", "modulo_colombia_admin.js"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(moduleScript), "if (!state.modulo)") || !strings.Contains(string(moduleScript), "Selecciona un módulo") {
+		t.Fatal("generic Colombia module entry must stop before calling an empty /api/empresa/ route")
+	}
+
+	for _, rel := range []string{
+		"venta_publica.html",
+		filepath.Join("administrar_empresa", "alquileres.html"),
+		filepath.Join("administrar_empresa", "domicilios.html"),
+		filepath.Join("administrar_empresa", "taxi_system.html"),
+		filepath.Join("administrar_empresa", "ubicacion_gps.html"),
+		"taxi_system.html",
+		"taxi_system_conductor.html",
+	} {
+		content, readErr := os.ReadFile(filepath.Join(root, "web", rel))
+		if readErr != nil {
+			t.Fatal(readErr)
+		}
+		if strings.Contains(string(content), "unpkg.com/leaflet@1.9.4") && (!strings.Contains(string(content), "sha256-p4NxAoJBhIIN+") || !strings.Contains(string(content), "sha256-20nQCchB9co0qIjJZRGuk2/")) {
+			t.Fatalf("%s must pin Leaflet CSS and JavaScript with SRI", rel)
+		}
+	}
+
+	chartPage, err := os.ReadFile(filepath.Join(root, "web", "super", "administrar_base_de_datos.html"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(chartPage), "chart.js@4.5.1/dist/chart.umd.min.js") || !strings.Contains(string(chartPage), "integrity=\"sha384-") {
+		t.Fatal("PostgreSQL dashboard must pin Chart.js with SRI")
+	}
+}
+
 func TestSuperPageToolsDoNotCoverMobileControls(t *testing.T) {
 	raw, err := os.ReadFile(filepath.Join("..", "web", "js", "super_page_tools.js"))
 	if err != nil {

@@ -6,6 +6,7 @@ import (
 )
 
 const empresaNextcloudSchemaFingerprint = "empresa_nextcloud_accounts:v1"
+const empresaNextcloudSchemaRepairFingerprint = "empresa_nextcloud_accounts:v2:add-provisioned"
 
 // applyEmpresaNextcloudSchemaTx is the checksummed migration counterpart of
 // the legacy bootstrap. It is intentionally DDL-only: provisioning accounts
@@ -32,4 +33,10 @@ func applyEmpresaNextcloudSchemaTx(_ context.Context, tx *sql.Tx) error {
 		}
 	}
 	return nil
+}
+
+func applyEmpresaNextcloudSchemaRepairTx(_ context.Context, tx *sql.Tx) error {
+	_, err := execTxSQLCompat(tx, `ALTER TABLE empresa_nextcloud_accounts
+		ADD COLUMN IF NOT EXISTS provisioned BOOLEAN NOT NULL DEFAULT FALSE`)
+	return err
 }
