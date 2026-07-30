@@ -834,7 +834,7 @@ canónica, conciliación financiera y pruebas reales sobre los mismos datos.
 | P108-013 | Impresiones | PDFs/capturas conciliados | Pendiente |
 | P108-014 | Cuatro cajas | sesiones y conciliación concurrente | Pendiente |
 | P108-015 | Proveedores | evidencia real autorizada | Parcial histórica |
-| P108-016 | Archivos privados | réplica, tenant, backup/restore | Pendiente |
+| P108-016 | Archivos privados | réplica, tenant, backup/restore | Parcial: volumen compartido, aislamiento de rutas y readiness; falta A/B, réplica y restore |
 | P108-017 | Seguridad dinámica | DAST y hardening | Parcial estático |
 | P108-018 | Observabilidad | alertas y simulacros | Parcial local |
 | P108-019 | Capacidad | carga autenticada sostenida | Parcial pública |
@@ -965,11 +965,18 @@ SHA diferente.
 - P108-021 queda aprobada por exclusión formal: la web responsive/PWA entra al
   lanzamiento, el cliente nativo queda para una fase posterior y la API v1 se
   conserva autenticada sin enlaces de descarga nativa.
-- Avance de implementación: **46,2 %**, aplicando tres fases aprobadas y
-  dieciocho parciales; no se suman bloqueos ni pruebas incompletas.
-- Certificación del candidato para producción: **21,2 %** y **NO-GO**:
+- P108-016 pasa a parcial: API y worker comparten almacenamiento privado,
+  staging aprobó su probe real de escritura/borrado y los contratos enfocados
+  rechazaron traversal, symlink, contenido activo y cruces de ruta. Faltan la
+  matriz A/B, dos réplicas y restore integral.
+- P108-022 eliminó las 218 secuencias dañadas de `CHANGELOG.md`; el auditor
+  estricto terminó con cero hallazgos. La fase sigue parcial por entrenamiento
+  y ensayo de runbooks.
+- Avance de implementación: **48,1 %**, aplicando tres fases aprobadas y
+  diecinueve parciales; no se suman bloqueos ni pruebas incompletas.
+- Certificación del candidato para producción: **23,1 %** y **NO-GO**:
   P108-000/P108-001/P108-021 aprobadas y P108-002, P108-011, P108-012,
-  P108-018 y P108-019 parciales sobre el mismo artefacto.
+  P108-016, P108-018 y P108-019 parciales sobre el mismo artefacto.
 
 ## 11. Compuerta final GO/NO-GO
 

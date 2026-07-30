@@ -3364,3 +3364,12 @@
   BIMI visible y se documentó VMC/CMC como compuerta del avatar en Gmail.
 - Se corrigió la validación nativa de la cuota de 1024 MB.
 - Se corrigió el desbordamiento horizontal del panel Mailu en móvil.
+
+## 2026-07-30
+
+- Plan 108 valida parcialmente el almacenamiento privado por empresa, su
+  volumen persistente compartido y el readiness de staging.
+- Se normalizan 218 secuencias dañadas de `CHANGELOG.md`; el gate documental
+  estricto queda sin hallazgos.
+- El auditor visual recupera controles cuando una acción segura reconstruye la
+  pantalla sin cambiar de URL.

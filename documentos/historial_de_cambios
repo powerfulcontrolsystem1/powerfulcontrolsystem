@@ -40228,6 +40228,19 @@ Archivos modificados:
   el destinatario abra los cuatro enlaces y se puedan iniciar/cerrar cuatro
   cajas reales en paralelo.
 
+2026-07-30: Plan 108 / almacenamiento privado e higiene documental.
+- Los contratos enfocados aprobaron separación por empresa, nombres opacos,
+  permisos privados, límites, validación de contenido, rechazo de traversal y
+  symlink, descarga endurecida, migración filtrada y firma DIAN privada.
+- El candidato desplegado respondió `ready`; ese probe comprueba escritura y
+  limpieza en el volumen privado compartido por API/worker. P108-016 queda
+  parcial hasta probar dos réplicas, tenant A/B y restore completo.
+- Se normalizaron 218 secuencias dañadas de `CHANGELOG.md` sin alterar parámetros
+  URL. `docs_normalization_audit.mjs --strict` terminó con cero hallazgos;
+  P108-022 sigue parcial por entrenamiento y ensayo de runbooks.
+- El auditor de botones recupera los índices temporales cuando una acción segura
+  reconstruye el DOM sin navegar, evitando falsos fallos en controles posteriores.
+
 2026-07-29: Plan 108 / corrección visual de acciones del carrito.
 - La revisión autenticada de staging detectó que la clase global `actions`
   comprimía los seis controles de cada fila del carrito hasta superponer sus

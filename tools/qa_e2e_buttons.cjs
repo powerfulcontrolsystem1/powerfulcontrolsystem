@@ -286,8 +286,18 @@ async function auditRoute(context, route, viewport) {
       const safeButtons = result.buttons.filter((button) => button.classification === "safe").slice(0, MAX_SAFE_CLICKS_PER_PAGE);
       for (const button of safeButtons) {
         try {
+          const selector = '[data-qa-button-index="' + button.index + '"]';
+          // Some safe UI actions rebuild their section without navigating. That
+          // removes the temporary audit indexes from the remaining controls, so
+          // restore the pristine route before treating the next control as a
+          // failure.
+          if ((await page.locator(selector).count()) === 0) {
+            await page.goto(url, { waitUntil: "domcontentloaded", timeout: 18000 });
+            await page.waitForTimeout(SETTLE_MS);
+            await collectButtons(page);
+          }
           const beforeUrl = page.url();
-          await page.locator('[data-qa-button-index="' + button.index + '"]').click({ timeout: 1800, force: false });
+          await page.locator(selector).click({ timeout: 1800, force: false });
           await page.waitForTimeout(180);
           result.clicked.push({ index: button.index, text: button.text || button.ariaLabel || button.title || button.id || button.className });
           const afterUrl = page.url();
@@ -295,6 +305,7 @@ async function auditRoute(context, route, viewport) {
             if (afterUrl.startsWith(BASE_URL)) {
               await page.goto(url, { waitUntil: "domcontentloaded", timeout: 18000 }).catch(() => null);
               await page.waitForTimeout(180);
+              await collectButtons(page);
             } else {
               result.issues.push({ type: "external-navigation", from: beforeUrl, to: afterUrl });
               break;
