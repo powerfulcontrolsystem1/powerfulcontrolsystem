@@ -40092,3 +40092,26 @@ Archivos modificados:
   revisadas visualmente.
 - La evidencia no certifica guardados, impresión, roles restrictivos o efectos
   financieros; P108-012 conserva estado parcial.
+
+2026-07-29: Plan 108 / corrección visual de acciones del carrito.
+- La revisión autenticada de staging detectó que la clase global `actions`
+  comprimía los seis controles de cada fila del carrito hasta superponer sus
+  iconos y textos. La tabla usa ahora una clase local con distribución flexible,
+  separación y ancho mínimo propios.
+- El cambio no modifica precios, inventario, pagos, permisos ni rutas; queda
+  pendiente su validación visual sobre el candidato que incluya esta corrección.
+
+2026-07-29: Plan 108 / repetición aislada de migraciones del candidato.
+- El migrador por digest aprobó dos pasadas desde base vacía y dos pasadas
+  sobre una copia lógica efímera de staging; los conteos de tablas se
+  conservaron en el upgrade y no se escribieron datos en el origen.
+- La evidencia fortalece P108-002, que permanece parcial hasta completar el
+  rollback de datos y las demás compuertas P0 de certificación.
+
+2026-07-29: Plan 108 / contrato CxP y límite A/B explícito.
+- Los contratos backend rechazaron pagos CxP sin empresa o clave de
+  idempotencia antes de consultar la base de datos. Una navegación administrativa
+  con empresa inexistente no se contó como prueba A/B, porque esa identidad no
+  representa un rol operativo limitado de otra empresa.
+- P108-005 continúa parcial hasta validar rechazo entre dos empresas y la
+  concurrencia HTTP real de abonos idempotentes.
