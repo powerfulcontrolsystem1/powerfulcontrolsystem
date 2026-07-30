@@ -76,3 +76,16 @@ registrada; no se creó, migró, eliminó ni corrigió ningún dato durante esta
 verificación. La consola visual no reportó errores. Este resultado valida el
 reconciliador para esa muestra, pero no sustituye la conciliación y aprobación
 contable de todas las empresas antes de producción.
+
+## Contratos y límite de prueba A/B 2026-07-29
+
+La prueba dirigida `TestRegistrarPagoCxP*` aprobó los rechazos previos al
+acceso a base de datos cuando falta `empresa_id` o la clave de idempotencia.
+También se ejecutó una navegación autenticada con un `empresa_id` inexistente
+en Finanzas y Soportes IA, sin mutaciones. Ese resultado no cuenta como prueba
+A/B: el usuario usado tiene privilegios administrativos y el shell de Finanzas
+consulta el catálogo global para mostrar el estado de la empresa inexistente.
+
+P108-005 permanece **parcial** hasta contar con una segunda identidad
+operativa limitada de otra empresa para probar rechazo explícito, además de dos
+abonos HTTP simultáneos con la misma y con distintas claves de idempotencia.
