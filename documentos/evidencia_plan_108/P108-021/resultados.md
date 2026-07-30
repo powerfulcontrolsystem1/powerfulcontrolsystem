@@ -1,7 +1,9 @@
 # P108-021 - Decisión formal de alcance móvil
 
-Fecha: 2026-07-30  
-Candidato: `f9396da5e41562968996b05136fffca9991b56f9`  
+Fecha: 2026-07-30
+
+Candidato: `f9396da5e41562968996b05136fffca9991b56f9`
+
 Ambiente: staging
 
 ## Decisión
