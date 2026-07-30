@@ -40084,3 +40084,11 @@ Archivos modificados:
   ni se invocó IA.
 - P108-006 continúa parcial hasta probar carga, lectura editable, confirmación,
   duplicados, tenant y conversión CxP con configuración IA segura.
+
+2026-07-29: Plan 108 / corrección visual de acciones del carrito.
+- La revisión autenticada de staging detectó que la clase global `actions`
+  comprimía los seis controles de cada fila del carrito hasta superponer sus
+  iconos y textos. La tabla usa ahora una clase local con distribución flexible,
+  separación y ancho mínimo propios.
+- El cambio no modifica precios, inventario, pagos, permisos ni rutas; queda
+  pendiente su validación visual sobre el candidato que incluya esta corrección.

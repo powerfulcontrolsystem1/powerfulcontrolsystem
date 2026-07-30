@@ -62,6 +62,9 @@
     .carrito-flat-page button.btn:disabled{opacity:.58!important;filter:saturate(.7)}
     .carrito-action-select{font-size:16px!important;font-weight:900!important;min-height:48px!important}
     .carrito-action-select option{font-size:16px!important;font-weight:850}
+    #carritosList .table td.carrito-list-actions{min-width:360px;white-space:normal}
+    #carritosList .carrito-list-actions{display:flex;flex-wrap:wrap;align-items:center;gap:6px}
+    #carritosList .carrito-list-actions .btn{width:auto;margin:0;white-space:nowrap}
     #btnPagarCarrito{height:64px!important;min-height:64px!important;padding:14px 16px!important;font-size:18px!important;letter-spacing:0;text-transform:uppercase}
     .cart-item-detail-strong{font-weight:800;color:var(--text)}
     .carrito-flat-page{--cart-title-shade:color-mix(in srgb,var(--surface-soft) 78%,var(--accent) 8%);--cart-title-border:color-mix(in srgb,var(--border) 82%,var(--accent) 18%)}
@@ -8997,7 +9000,7 @@
           '<td>' + Number(item.item_count || 0) + '</td>' +
           '<td>' + formatAmount(item.total, item.moneda) + '</td>' +
           '<td>' + estado + '</td>' +
-          '<td class="actions">' +
+          '<td class="carrito-list-actions">' +
             '<button data-id="' + item.id + '" class="open btn">Abrir</button> ' +
             '<button data-id="' + item.id + '" data-codigo="' + escapeHtml(normalize(item.codigo)) + '" class="buscarProductos btn secondary">Buscar productos</button> ' +
             '<button data-id="' + item.id + '" class="edit btn secondary">Editar</button> ' +
