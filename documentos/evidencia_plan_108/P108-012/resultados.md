@@ -59,3 +59,19 @@ la matriz responsive, accesibilidad, teclado y roles de todo el inventario.
 Después de promover el digest exacto se repitió la medición autenticada en
 390 x 844: `clientWidth=390`, `scrollWidth=390`, `position=static`,
 `overlap=false` y cero respuestas HTTP 4xx/5xx.
+
+## Revalidación del carrito por digest 2026-07-30
+
+- El candidato inmutable `d262874e` fue promovido exclusivamente a staging con
+  los cuatro servicios fijados por digest. API, worker y base respondieron
+  saludables antes de abrir la pantalla autenticada de la empresa de prueba.
+- En escritorio, cada una de las tres filas observadas mostró sus seis acciones
+  en controles separados de 38 px de alto, sin superposición; el contenedor de
+  acciones conservó `clientWidth=scrollWidth=358`.
+- En móvil 390 x 844 el documento no tuvo desbordamiento horizontal
+  (`scrollWidth=390`), y las mismas acciones conservaron controles separados,
+  con contenedor interno estable de 358 px. No hubo errores de consola.
+- No se pulsaron controles que cambian carritos, inventario, pagos o estados.
+
+Resultado de este hallazgo: **PASS**. P108-012 sigue parcial porque la matriz
+visual de todos los módulos, roles y documentos imprimibles aún no está cerrada.
