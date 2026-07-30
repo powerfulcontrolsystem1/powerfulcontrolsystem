@@ -40139,6 +40139,22 @@ Archivos modificados:
   sin trabajo listo ni leases vencidos. Falta promover el nuevo digest y
   ejecutar simulacros específicos antes de aprobar P108-018.
 
+2026-07-30: Plan 108 / promoción y carga del candidato `cf49fc7c`.
+- GitHub Actions aprobó build, escaneo HIGH/CRITICAL, SBOM, publicación por
+  digest y validación Compose de las cuatro imágenes.
+- Se detectó deriva en los archivos Compose existentes del VPS antes de dejar
+  staging operativo. Producción no se tocó; staging se recuperó con los Compose
+  exactos del candidato y quedó saludable.
+- El promotor por digest valida ahora las cuatro imágenes renderizadas antes de
+  recrear servicios y no ejecuta `up` sobre toda la plataforma. El ensayo
+  negativo rechazó la deriva existente antes de `pull/up` y staging siguió
+  saludable.
+- El frontend público responde 404 para `/metrics`; Prometheus privado observa
+  PostgreSQL, worker y colas. La comprobación visual autenticada del panel PCS
+  aprobó.
+- La carga autenticada del mismo digest terminó 500/500, p95 149 ms, cero 5xx,
+  cero locks y cero leases vencidos.
+
 2026-07-29: Plan 108 / corrección visual de acciones del carrito.
 - La revisión autenticada de staging detectó que la clase global `actions`
   comprimía los seis controles de cada fila del carrito hasta superponer sus

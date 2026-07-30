@@ -12414,3 +12414,6 @@ panel de seguridad para que el navegador reciba la correccion CSRF de staging.
   conserva acceso directo al backend únicamente por la red Docker privada.
 - `tools/business_observability_audit.mjs`: gate estático de señales y alertas
   de base de datos, worker y procesamiento durable.
+- `deploy/scripts/vps-staging-digest-up.sh`: acepta rutas Compose explícitas,
+  exige que los cuatro servicios resuelvan exactamente a los digests solicitados
+  y limita la recreación al runtime de staging.

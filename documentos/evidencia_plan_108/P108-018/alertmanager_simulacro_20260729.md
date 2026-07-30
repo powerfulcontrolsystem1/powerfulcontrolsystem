@@ -102,3 +102,44 @@ para demostrar que la sintaxis y las tablas existen. El endpoint ampliado y las
 reglas nuevas todavía deben publicarse en un digest inmutable de staging para
 simular PostgreSQL, worker, acumulación y lease vencido. P108-018 permanece
 **parcial** y no se considera certificada por esta evidencia local.
+
+## Digest inmutable y scrape real 2026-07-30
+
+GitHub Actions construyó, escaneó, generó SBOM y publicó el commit
+`cf49fc7cefb083e1ac8df1711f05a0f8a22c8afb` en cuatro imágenes inmutables:
+
+- API: `sha256:db738706efeaa50aaa3b53646458cb70a540ddac0a10f00f38d01c156743cc0e`;
+- migrador: `sha256:443b573e51d68d713102b6fcf2a851b112eca48cd586ef43bad5d8b45f6bf3ee`;
+- worker: `sha256:111879c2307fcc6122e36d10bba733356b0e1883025cea656d942229ee61f00d`;
+- frontend: `sha256:10841ec48035b8550cea690b4a378d0246098069b29c9304e639266dad6b4ad0`.
+
+La promoción inicial detectó que el VPS conservaba archivos Compose anteriores
+que no incluían el frontend por digest ni las credenciales del rol runtime para
+el migrador. La operación se detuvo; producción no se tocó. Staging se recuperó
+usando los tres archivos Compose exactos del candidato, el migrador terminó con
+código cero y los cinco servicios quedaron saludables. El script versionado
+ahora valida los cuatro digests renderizados antes de recrear servicios y limita
+el `up` a PostgreSQL, migrador, API, worker y frontend.
+El preflight corregido se ejecutó contra los Compose desactualizados del VPS y
+los rechazó por faltar el digest exacto del frontend antes de ejecutar `pull` o
+`up`; staging permaneció con salud y readiness 200.
+
+### Resultado del candidato activo
+
+| Señal | Resultado |
+| --- | --- |
+| `/health` y `/ready` externos | 200 / 200 |
+| `/metrics` por frontend público | 404 |
+| target privado de Prometheus | `up=1` |
+| PostgreSQL negocio/super | `1 / 1` |
+| edad observada del worker | 7,228 segundos |
+| outbox listo / leases vencidos | `0 / 0` |
+| trabajos listos / leases vencidos | `0 / 0` |
+| consultas operativas | `1` en las tres fuentes |
+| expresiones sanas de las cinco alertas | conjunto vacío, sin falsos positivos |
+
+La autenticación autorizada, selección de Powerful Control System y panel de la
+empresa cargaron visualmente con este digest. P108-018 queda parcial sobre el
+candidato actual: falta simular worker, PostgreSQL y leases, cargar la
+configuración permanente de reglas/paneles y aprobar responsables y canal de
+escalamiento.

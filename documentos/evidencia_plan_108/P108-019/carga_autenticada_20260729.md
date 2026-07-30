@@ -54,3 +54,28 @@ a 27 conexiones; 21 quedaron `idle`, dentro de los pools acotados del runtime,
 sin sesiones bloqueadas ni errores 5xx observados. Esta evidencia aprueba la
 carga autenticada ampliada de lectura, pero P108-019 sigue parcial hasta cubrir
 transacciones sostenidas, cuatro cajas, locks, colas y proveedores externos.
+
+## Repetición sobre el digest `cf49fc7c` 2026-07-30
+
+La misma batería se repitió después de promover las cuatro imágenes exactas del
+commit `cf49fc7cefb083e1ac8df1711f05a0f8a22c8afb`.
+
+| Métrica | Resultado |
+| --- | ---: |
+| HTTP exitoso | 500 / 500 |
+| Fallos / 5xx | 0 / 0 |
+| Error rate | 0 % |
+| p50 | 100 ms |
+| p95 | 149 ms |
+| p99 | 316 ms |
+| Conexiones PostgreSQL antes/después | 24 / 26 |
+| Sesiones esperando lock | 0 |
+
+La memoria pasó de 14,61 a 17,41 MiB en API y de 136,7 a 162,8 MiB en
+PostgreSQL; worker y frontend permanecieron estables. Al terminar,
+`/health=ok`, `/ready=ready`, PostgreSQL negocio/super valía 1, el latido del
+worker tenía 2,231 segundos y no había trabajo listo ni leases vencidos.
+
+P108-019 conserva estado **parcial**: la lectura autenticada del digest actual
+aprueba, pero no sustituye cuatro cajas, transacciones sostenidas, proveedores
+externos ni backpressure.
