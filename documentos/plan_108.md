@@ -981,6 +981,10 @@ SHA diferente.
   Productos, y descubrió pendientes adicionales de esquema Nextcloud, fecha
   textual de Hoja de vida y CSP estático; ya tienen corrección complementaria
   pero no se contabilizan hasta probar el siguiente digest.
+- El candidato consolidado `efc416b3` migró con código cero y su repetición
+  autenticada aprobó 22/22 vistas, 420 controles y 42 clics seguros, sin
+  respuestas HTTP erróneas. P108-011 continúa parcial porque faltan repetir el
+  barrido integral y las acciones mutantes oficiales sobre el mismo digest.
 - Avance de implementación: **48,1 %**, aplicando tres fases aprobadas y
   diecinueve parciales; no se suman bloqueos ni pruebas incompletas.
 - Certificación del candidato para producción: **23,1 %** y **NO-GO**:

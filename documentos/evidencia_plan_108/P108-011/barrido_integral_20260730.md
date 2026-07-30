@@ -82,3 +82,21 @@ La misma verificación visual confirmó que Leaflet ya carga sin el bloqueo CSP.
 Domicilios mostró luego un estado vacío serializado como `null`; backend y
 frontend se endurecen para representar colecciones vacías como `[]` y evitar
 que `renderMenu` invoque `.map` sobre un valor nulo.
+
+## Candidato consolidado `efc416b3`
+
+- Migrador: código `0`.
+- Salud/readiness: `ok` / `ready`.
+- Producción: misma huella de contenedores antes y después.
+- Nextcloud: respuesta `ok:true`, asignación local `pcs_empresa_12`, cuota
+  1024, sin provisionamiento externo y sin columna local obsoleta de contraseña.
+- Workflow visual `30588981805`: 22/22 vistas `ok`, 420 controles, 42 clics
+  seguros, 56 acciones riesgosas preservadas y cero respuestas HTTP erróneas.
+- Bre-B, Hoja de vida, Nextcloud, Colombia, Productos/Bodegas, Domicilios,
+  Taxi, GPS y mapas públicos aprobaron en escritorio y móvil.
+
+Venta pública conserva ocho advertencias del runner al intentar controles de
+paneles fijos cerrados fuera del viewport; no produjo HTTP, error de página ni
+bloqueo de seguridad. P108-011 permanece parcial porque el barrido completo no
+se repitió sobre este digest y las acciones mutantes siguen reservadas para sus
+flujos oficiales.

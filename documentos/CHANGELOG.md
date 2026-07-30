@@ -3386,5 +3386,7 @@
   `password_encrypted`; el contrato actual no conserva credenciales locales.
 - Domicilios representa el menú vacío como `[]` y su frontend tolera respuestas
   vacías sin intentar ejecutar `.map` sobre `null`.
+- La repetición autenticada del candidato consolidado aprobó 22/22 vistas en
+  escritorio/móvil sin respuestas HTTP erróneas en los módulos reparados.
 - Hoja de vida normaliza su fecha programada de texto antes de compararla y el
   CSP estático de Nginx permite los mismos recursos visuales fijados por versión.

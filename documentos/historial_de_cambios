@@ -40279,6 +40279,12 @@ acumulativa.
 - Domicilios devuelve `[]` cuando el menú está vacío y el frontend normaliza
   también dashboard/menú con `Array.isArray`, evitando el error visible
   `Cannot read properties of null (reading 'map')`.
+- El candidato consolidado `efc416b3` ejecutó migraciones con código cero y la
+  repetición `30588981805` terminó 22/22 vistas `ok`, 420 controles, 42 clics
+  seguros y cero respuestas HTTP erróneas en escritorio/móvil.
+- `gosec` interpretó el nombre del fingerprint v4 como credencial embebida; se
+  añadió una supresión G101 puntual y explicada. El valor es un identificador
+  de migración, no contiene una clave.
 
 2026-07-29: Plan 108 / corrección visual de acciones del carrito.
 - La revisión autenticada de staging detectó que la clase global `actions`
