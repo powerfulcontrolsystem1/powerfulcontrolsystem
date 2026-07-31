@@ -515,6 +515,10 @@
         return String(value);
       }
 
+      function formatPreviewLabel(value) {
+        return String(value == null ? '' : value).replace(/_/g, ' ').replace(/\s+/g, ' ').trim();
+      }
+
       function summaryEntries(summary) {
         if (!summary || typeof summary !== 'object') return [];
         return Object.keys(summary).slice(0, 12).map(function(key) {
@@ -551,7 +555,7 @@
           recordsHtml = '<p>Sin datos para el rango seleccionado.</p>';
         } else {
           tableHtml = '<table class="reports-print-table"><thead><tr>' + columns.map(function(col) {
-            return '<th>' + escapeHtml(col) + '</th>';
+            return '<th>' + escapeHtml(formatPreviewLabel(col)) + '</th>';
           }).join('') + '</tr></thead><tbody>' + rows.slice(0, 100).map(function(row) {
             row = row || {};
             return '<tr>' + columns.map(function(col) {
@@ -561,16 +565,16 @@
           recordsHtml = '<div class="reports-print-records">' + rows.slice(0, 60).map(function(row) {
             row = row || {};
             return '<article class="reports-print-record">' + columns.map(function(col) {
-              return '<div class="reports-print-row"><span>' + escapeHtml(col) + '</span><strong>' + escapeHtml(formatPreviewValue(row[col])) + '</strong></div>';
+              return '<div class="reports-print-row"><span>' + escapeHtml(formatPreviewLabel(col)) + '</span><strong>' + escapeHtml(formatPreviewValue(row[col])) + '</strong></div>';
             }).join('') + '</article>';
           }).join('') + '</div>';
         }
         sheet.innerHTML = '<header><h2>' + escapeHtml(title) + '</h2><p>' + escapeHtml(description) + '</p></header>' +
           '<section class="reports-print-meta">' + meta.map(function(pair) {
-            return '<div><span>' + escapeHtml(pair[0]) + '</span><strong>' + escapeHtml(formatPreviewValue(pair[1])) + '</strong></div>';
+            return '<div><span>' + escapeHtml(formatPreviewLabel(pair[0])) + '</span><strong>' + escapeHtml(formatPreviewValue(pair[1])) + '</strong></div>';
           }).join('') + '</section>' +
           (summary.length ? '<section class="reports-print-summary">' + summary.map(function(pair) {
-            return '<div><span>' + escapeHtml(pair[0]) + '</span><strong>' + escapeHtml(formatPreviewValue(pair[1])) + '</strong></div>';
+            return '<div><span>' + escapeHtml(formatPreviewLabel(pair[0])) + '</span><strong>' + escapeHtml(formatPreviewValue(pair[1])) + '</strong></div>';
           }).join('') + '</section>' : '') +
           tableHtml + recordsHtml;
         updateSelectedInfo();

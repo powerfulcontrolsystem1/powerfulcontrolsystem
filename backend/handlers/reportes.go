@@ -38,6 +38,7 @@ type empresaReporteDataset struct {
 	Rows        []map[string]interface{} `json:"rows"`
 	RowCount    int                      `json:"row_count"`
 	Summary     map[string]interface{}   `json:"summary,omitempty"`
+	Paper       string                   `json:"-"`
 }
 
 type empresaReportesSuiteResponse struct {
@@ -614,6 +615,7 @@ func EmpresaReportesHandler(dbEmp *sql.DB) http.HandlerFunc {
 			var payload struct {
 				Spec   empresaReportePersonalizadoSpec `json:"spec"`
 				Format string                          `json:"format,omitempty"`
+				Paper  string                          `json:"paper,omitempty"`
 			}
 			if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
 				http.Error(w, "json invalido", http.StatusBadRequest)
@@ -629,6 +631,7 @@ func EmpresaReportesHandler(dbEmp *sql.DB) http.HandlerFunc {
 				writeJSON(w, http.StatusOK, ds)
 				return
 			}
+			ds.Paper = reportesNormalizePaper(payload.Paper)
 			if err := writeReportesDatasetExport(w, ds, format); err != nil {
 				http.Error(w, err.Error(), http.StatusBadRequest)
 			}
@@ -671,6 +674,7 @@ func EmpresaReportesHandler(dbEmp *sql.DB) http.HandlerFunc {
 				writeReportesHTTPError(w, err)
 				return
 			}
+			ds.Paper = reportesNormalizePaper(r.URL.Query().Get("paper"))
 
 			if err := writeReportesDatasetExport(w, ds, format); err != nil {
 				http.Error(w, err.Error(), http.StatusBadRequest)
@@ -7130,13 +7134,51 @@ func reportesDatasetTXTContent(ds empresaReporteDataset) string {
 	return builder.String()
 }
 
+type reportesPDFLayout struct {
+	pageWidth    int
+	pageHeight   int
+	fontSize     int
+	footerFont   int
+	leading      int
+	startX       int
+	startY       int
+	footerX      int
+	footerY      int
+	linesPerPage int
+	maxLineRunes int
+}
+
+func reportesNormalizePaper(raw string) string {
+	if strings.EqualFold(strings.TrimSpace(raw), "pos") {
+		return "pos"
+	}
+	return "carta"
+}
+
+func reportesDatasetPDFLayout(paper string) reportesPDFLayout {
+	if reportesNormalizePaper(paper) == "pos" {
+		// 80 mm = 226.77 puntos PDF. Se redondea a 227 para conservar el
+		// ancho físico y se usa una página larga apta para rollo térmico.
+		return reportesPDFLayout{
+			pageWidth: 227, pageHeight: 792, fontSize: 8, footerFont: 7,
+			leading: 11, startX: 14, startY: 770, footerX: 78, footerY: 14,
+			linesPerPage: 65, maxLineRunes: 42,
+		}
+	}
+	return reportesPDFLayout{
+		pageWidth: 612, pageHeight: 792, fontSize: 9, footerFont: 8,
+		leading: 13, startX: 50, startY: 760, footerX: 270, footerY: 24,
+		linesPerPage: 46, maxLineRunes: 84,
+	}
+}
+
 func reportesDatasetPDFContent(ds empresaReporteDataset) []byte {
+	layout := reportesDatasetPDFLayout(ds.Paper)
 	lines := reportesDatasetPDFLines(ds)
 	if len(lines) == 0 {
 		lines = []string{"Sin datos para exportar."}
 	}
-	const linesPerPage = 46
-	pageCount := (len(lines) + linesPerPage - 1) / linesPerPage
+	pageCount := (len(lines) + layout.linesPerPage - 1) / layout.linesPerPage
 	fontObjectID := 3 + (pageCount * 2)
 	lastObjectID := fontObjectID
 	offsets := make([]int, lastObjectID+1)
@@ -7155,15 +7197,28 @@ func reportesDatasetPDFContent(ds empresaReporteDataset) []byte {
 	for pageIndex := 0; pageIndex < pageCount; pageIndex++ {
 		pageObjectID := 3 + (pageIndex * 2)
 		contentObjectID := pageObjectID + 1
-		start := pageIndex * linesPerPage
-		end := start + linesPerPage
+		start := pageIndex * layout.linesPerPage
+		end := start + layout.linesPerPage
 		if end > len(lines) {
 			end = len(lines)
 		}
+		pageLines := lines[start:end]
+		pageHeight := layout.pageHeight
+		startY := layout.startY
+		if reportesNormalizePaper(ds.Paper) == "pos" {
+			pageHeight = len(pageLines)*layout.leading + 48
+			if pageHeight < 144 {
+				pageHeight = 144
+			}
+			if pageHeight > layout.pageHeight {
+				pageHeight = layout.pageHeight
+			}
+			startY = pageHeight - 22
+		}
 
 		var streamBuilder strings.Builder
-		streamBuilder.WriteString("BT\n/F1 9 Tf\n13 TL\n50 760 Td\n")
-		for idx, line := range lines[start:end] {
+		fmt.Fprintf(&streamBuilder, "BT\n/F1 %d Tf\n%d TL\n%d %d Td\n", layout.fontSize, layout.leading, layout.startX, startY)
+		for idx, line := range pageLines {
 			if idx > 0 {
 				streamBuilder.WriteString("T*\n")
 			}
@@ -7171,13 +7226,13 @@ func reportesDatasetPDFContent(ds empresaReporteDataset) []byte {
 			streamBuilder.WriteString(reportesEscapePDFText(line))
 			streamBuilder.WriteString(") Tj\n")
 		}
-		streamBuilder.WriteString("ET\nBT\n/F1 8 Tf\n270 24 Td\n(")
+		fmt.Fprintf(&streamBuilder, "ET\nBT\n/F1 %d Tf\n%d %d Td\n(", layout.footerFont, layout.footerX, layout.footerY)
 		streamBuilder.WriteString(reportesEscapePDFText(fmt.Sprintf("Pagina %d de %d", pageIndex+1, pageCount)))
 		streamBuilder.WriteString(") Tj\nET\n")
 		stream := streamBuilder.String()
 
 		offsets[pageObjectID] = pdf.Len()
-		fmt.Fprintf(&pdf, "%d 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 %d 0 R >> >> /Contents %d 0 R >>\nendobj\n", pageObjectID, fontObjectID, contentObjectID)
+		fmt.Fprintf(&pdf, "%d 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 %d %d] /Resources << /Font << /F1 %d 0 R >> >> /Contents %d 0 R >>\nendobj\n", pageObjectID, layout.pageWidth, pageHeight, fontObjectID, contentObjectID)
 		offsets[contentObjectID] = pdf.Len()
 		fmt.Fprintf(&pdf, "%d 0 obj\n<< /Length %d >>\nstream\n%sendstream\nendobj\n", contentObjectID, len(stream), stream)
 	}
@@ -7215,12 +7270,12 @@ func reportesDatasetPDFLines(ds empresaReporteDataset) []string {
 		sort.Strings(keys)
 		lines = append(lines, "Resumen:")
 		for _, key := range keys {
-			lines = append(lines, "- "+key+": "+reportesStringValue(ds.Summary[key]))
+			lines = append(lines, "- "+reportesPDFLabel(key)+": "+reportesStringValue(ds.Summary[key]))
 		}
 		lines = append(lines, "")
 	}
 
-	const maxLineRunes = 84
+	maxLineRunes := reportesDatasetPDFLayout(ds.Paper).maxLineRunes
 	appendWrapped := func(raw string) {
 		lines = append(lines, reportesWrapPDFLine(raw, maxLineRunes)...)
 	}
@@ -7229,7 +7284,7 @@ func reportesDatasetPDFLines(ds empresaReporteDataset) []string {
 		for rowIndex, row := range ds.Rows {
 			appendWrapped(fmt.Sprintf("Registro %d", rowIndex+1))
 			for _, col := range ds.Columns {
-				appendWrapped(col + ": " + reportesStringValue(row[col]))
+				appendWrapped(reportesPDFLabel(col) + ": " + reportesStringValue(row[col]))
 			}
 			lines = append(lines, "")
 		}
@@ -7288,6 +7343,10 @@ func reportesWrapPDFLine(raw string, maxRunes int) []string {
 		wrapped = append(wrapped, string(remaining))
 	}
 	return wrapped
+}
+
+func reportesPDFLabel(raw string) string {
+	return strings.Join(strings.Fields(strings.ReplaceAll(raw, "_", " ")), " ")
 }
 
 func reportesEscapePDFText(raw string) string {

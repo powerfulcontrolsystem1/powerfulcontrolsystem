@@ -40497,3 +40497,14 @@ acumulativa.
   una sola línea recortada. Usa registros etiquetados, envuelve cada dato al
   ancho de carta, conserva todas las filas en páginas sucesivas e imprime el
   número de página; CSV, Excel, JSON y TXT mantienen su salida tabular.
+
+2026-07-31: Plan 109 / PDF real de reportes en papel POS.
+- La prueba autenticada de PCS confirmó que `paper=pos` todavía devolvía una
+  página carta. El exportador aplica ahora un ancho PDF real de 80 mm, márgenes,
+  fuente, envoltura, altura ajustada al contenido y capacidad de página
+  específicos para rollo térmico; los consumidores que no indican papel
+  conservan carta como valor seguro.
+- Las vistas HTML y PDF sustituyen guiones bajos solo en las etiquetas visibles
+  de columnas y resúmenes. Las claves internas, consultas y valores permanecen
+  intactos, pero `documento_codigo` se presenta como `DOCUMENTO CODIGO` y puede
+  envolver por palabras en papel estrecho.
