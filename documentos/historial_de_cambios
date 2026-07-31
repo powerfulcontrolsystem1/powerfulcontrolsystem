@@ -1,3 +1,15 @@
+2026-07-30: Plan 109 / cierre ejecutivo de producción.
+- Se auditaron las 26 fases del Plan 108 y se corrigió su base conservadora:
+  P108-014 continúa pendiente, por lo que la implementación verificable heredada
+  es 46,2 %, no 48,1 %.
+- El nuevo plan inicia en 0 % de certificación para el siguiente candidato y
+  concentra los pendientes en 15 compuertas: release, CxP/A-B, IA, contador,
+  funciones/botones, visual/impresión, cuatro cajas, proveedores, continuidad,
+  seguridad, observabilidad, migraciones, soporte, ensayo y piloto.
+- El documento está estructurado para GPT-5.6 Terra con razonamiento alto,
+  límites de autorización, criterios de aceptación, rollback y evidencia del
+  mismo SHA/digest. No declara GO ni autoriza producción.
+
 2026-07-30: Plan 108 / recuperación controlada de eventos históricos CxP.
 - Se añade una vista previa exclusiva del super administrador, limitada por
   `empresa_id`, topic CxP e IDs concretos. El navegador no recibe el payload

@@ -1,5 +1,9 @@
 # Plan 108 - cierre integral y certificación para producción
 
+> Continuación vigente: `documentos/plan_109.md`. El Plan 108 conserva la
+> evidencia histórica; el Plan 109 corrige su corte porcentual y gobierna el
+> trabajo nuevo de cierre.
+
 Fecha de corte local: 2026-07-25
 Estado inicial: **NO-GO**
 Modelo ejecutor previsto: **GPT-5.6 Terra con razonamiento medio**

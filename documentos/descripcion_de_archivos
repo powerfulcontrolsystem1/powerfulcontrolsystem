@@ -1,4 +1,7 @@
 2026-07-28
+- `documentos/plan_109.md`: continuación depurada del Plan 108 para GPT-5.6
+  Terra alto; corrige la base porcentual, consolida los bloqueantes restantes
+  en 15 compuertas y define evidencia, rollback y GO/NO-GO de producción.
 - `backend/db/outbox_recovery.go`: vista previa y reactivación transaccional de
   eventos outbox `dead`, limitada por `empresa_id`, topic e IDs explícitos;
   registra cada intento en `pcs_outbox_recovery_audit`.
