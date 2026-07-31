@@ -7290,7 +7290,11 @@ func reportesDatasetPDFLines(ds empresaReporteDataset) []string {
 		}
 	} else {
 		if len(ds.Columns) > 0 {
-			appendWrapped(strings.Join(ds.Columns, " | "))
+			labels := make([]string, len(ds.Columns))
+			for index, column := range ds.Columns {
+				labels[index] = reportesPDFLabel(column)
+			}
+			appendWrapped(strings.Join(labels, " | "))
 		}
 		for _, row := range ds.Rows {
 			values := make([]string, len(ds.Columns))
