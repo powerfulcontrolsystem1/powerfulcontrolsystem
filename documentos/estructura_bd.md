@@ -2357,3 +2357,12 @@ la base de datos se usa unicamente para la comprobacion de disponibilidad.
   DDL ni privilegios administrativos.
 - Los dos roles se aplican de forma independiente dentro de
   `pcs_empresas` y `pcs_superadministrador`.
+
+## Reparación de uso diario IA (Plan 109, 2026-07-31)
+
+`empresa_ai_uso_diario` conserva una sola fila por
+`(empresa_id, provider, model_id, fecha_uso)`. La migración inmutable
+`20260731-001-ai-usage-unique-v1` materializa esa regla como índice único en
+instalaciones antiguas donde la tabla ya existía sin la restricción declarada.
+La migración no elimina ni fusiona auditoría: ante duplicados falla cerrada para
+reconciliación operativa explícita.
