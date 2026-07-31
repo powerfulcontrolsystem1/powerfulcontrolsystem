@@ -1,3 +1,11 @@
+2026-07-30: Plan 108 / precisión monetaria visible en Finanzas.
+- La prueba real mínima de CxP mostró que el backend conservaba `0,01`, pero la
+  interfaz redondeaba el pago y el movimiento a `$ 0`.
+- `finanzas.html` muestra dos decimales cuando el importe contiene unidad menor
+  y conserva el formato entero para valores sin fracción.
+- No cambia cálculos, moneda, persistencia, permisos ni aislamiento empresarial;
+  la corrección requiere repetición visual sobre el digest inmutable nuevo.
+
 2026-07-30: Plan 108 / concurrencia real CxP y selección de proveedor.
 - En staging PCS se creó una CxP QA de 2 mediante la interfaz oficial.
 - Dos abonos simultáneos con la misma clave devolvieron el mismo movimiento y
