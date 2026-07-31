@@ -175,6 +175,8 @@ func TestReportesImprimiblesAmpliosUsanRegistrosEnLugarDeTablaRecortada(t *testi
 		"sheet.classList.toggle('reports-print-wide', useRecordLayout);",
 		".reports-print-meta{grid-template-columns:1fr}",
 		".reports-print-page h2,.reports-print-page strong{color:#111827 !important}",
+		".reports-paper-pos .reports-print-meta{grid-template-columns:1fr;gap:0}",
+		".reports-paper-pos .reports-print-page strong{min-width:0;overflow-wrap:anywhere;word-break:break-word}",
 		"function formatPreviewLabel(value)",
 		"escapeHtml(formatPreviewLabel(col))",
 		".reports-format-buttons{width:100%;min-width:0}",

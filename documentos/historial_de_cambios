@@ -40524,3 +40524,11 @@ acumulativa.
   dos archivos privados. El snapshot no contiene filas de soportes IA privados,
   por lo que no se atribuye falsamente una conciliación de hashes; el control
   queda activo para el primer soporte real y la limpieza terminó sin residuos.
+
+2026-07-31: Plan 109 / desbordamiento visual del encabezado POS.
+- La validación visual del digest fusionado detectó que el identificador largo
+  del dataset conservaba 406 px de ancho interno dentro de una hoja POS de 301
+  px cuando el viewport de escritorio no activaba la regla móvil.
+- Los metadatos POS usan ahora una sola columna y sus valores fuertes envuelven
+  palabras largas en cualquier viewport. Carta y las claves internas del
+  dataset no cambian; el contrato de regresión fija ambas reglas.
