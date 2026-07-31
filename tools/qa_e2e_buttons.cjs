@@ -62,7 +62,12 @@ const VIEWPORTS = (process.env.PCS_QA_VIEWPORTS || "desktop,mobile")
 const CHROME_EXECUTABLE = process.env.PCS_QA_CHROME_EXECUTABLE || "";
 const VALIDATE_RUNTIME_ONLY = process.env.PCS_QA_VALIDATE_RUNTIME === "1";
 
-const SAFE_TEXT = /^(abrir|cerrar|volver|cancelar|limpiar|buscar|filtrar|ver|mostrar|ocultar|editar|gestionar|detalle|detalles|actualizar vista|refrescar vista|nuevo|nueva|agregar|seleccionar|escuchar|sonando|copiar|expandir|minimizar|siguiente|anterior)$/i;
+// "Cerrar" y "Cancelar" no son universalmente inocuos: pueden cerrar caja,
+// anular un flujo operativo o descartar un formulario. El auditor solo pulsa
+// acciones cuyo texto sea inequívocamente de consulta o navegación.
+const SAFE_TEXT = /^(abrir|volver|limpiar|buscar|filtrar|ver|mostrar|ocultar|editar|gestionar|detalle|detalles|actualizar vista|refrescar vista|seleccionar|escuchar|sonando|copiar|expandir|minimizar|siguiente|anterior)$/i;
+const AMBIGUOUS_OPERATION_TEXT = /(^|\s)(cerrar|cancelar)(\s|$)/i;
+const AI_ACTION_TEXT = /(^|[^\p{L}\p{N}_])(ia|ai|gpt|openai|asistente)([^\p{L}\p{N}_]|$)/iu;
 const UNSAFE_TEXT = /(eliminar|borrar|desactivar|activar|guardar|crear|registrar|enviar|pagar|comprar|checkout|confirmar|aprobar|rechazar|anular|cancelar pedido|cancelar servicio|cerrar caja|cobrar|emitir|facturar|despachar|publicar|subir|descargar|exportar|imprimir|reset|restablecer|reenviar|aceptar|generar|sincronizar|escanear|iniciar|completar|atender|llamar|re-llamar|listo|vencido|devolver|entregar)/i;
 const UNSAFE_ATTR = /(delete|del|remove|destroy|save|submit|pay|checkout|purchase|send|confirm|approve|reject|cancel|close-sale|cobrar|emitir|facturar|dispatch|state|print|download|export|upload|scan|sync|publish|accept|resend|generate|crear|guardar|eliminar|pagar)/i;
 
@@ -147,6 +152,8 @@ function classifyButton(button) {
   ].join(" ");
   if (button.disabled || !button.visible) return "skip";
   if (UNSAFE_TEXT.test(haystack) || UNSAFE_ATTR.test(haystack)) return "unsafe";
+  if (AMBIGUOUS_OPERATION_TEXT.test(haystack)) return "review";
+  if (AI_ACTION_TEXT.test(haystack)) return "review";
   if (button.type === "submit") return "unsafe";
   if (button.href && !button.href.startsWith(BASE_URL) && !button.href.startsWith("/")) return "unsafe";
   if (button.dataset && Object.keys(button.dataset).some((key) => /tab|toggle|go|section|filter|view|modal|close/i.test(key))) return "safe";

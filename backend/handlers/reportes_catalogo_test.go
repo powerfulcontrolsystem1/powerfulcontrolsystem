@@ -1,6 +1,11 @@
 package handlers
 
-import "testing"
+import (
+	"os"
+	"path/filepath"
+	"strings"
+	"testing"
+)
 
 func TestReportesCatalogoIncluyeReportesColombianosAvanzados(t *testing.T) {
 	required := []string{
@@ -55,5 +60,23 @@ func TestReportesHelpersFiscalesYEdades(t *testing.T) {
 	}
 	if !reportesInventarioTipoEsSalida("salida_venta") {
 		t.Fatalf("salida_venta debe clasificarse como salida de inventario")
+	}
+}
+
+func TestReportesImprimiblesAmpliosUsanRegistrosEnLugarDeTablaRecortada(t *testing.T) {
+	raw, err := os.ReadFile(filepath.Join("..", "..", "web", "administrar_empresa", "reportes_ejecutivos.html"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	source := string(raw)
+	for _, want := range []string{
+		".reports-print-page.reports-print-wide .reports-print-table{display:none}",
+		".reports-print-page.reports-print-wide .reports-print-records{display:block}",
+		"var useRecordLayout = columns.length > 8;",
+		"sheet.classList.toggle('reports-print-wide', useRecordLayout);",
+	} {
+		if !strings.Contains(source, want) {
+			t.Fatalf("contrato de impresion ancha ausente: %q", want)
+		}
 	}
 }

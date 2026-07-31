@@ -571,10 +571,15 @@ Se informan dos cifras:
 1. **Implementación:** suma fases aprobadas y parciales.
 2. **Certificación del candidato:** solo fases aprobadas sobre el mismo digest.
 
-Estado inicial al crear este plan:
+Estado actualizado al 2026-07-31:
 
-- Implementación Plan 109: **0 %**.
-- Certificación del candidato Plan 109: **0 %**.
+- P109-000 está aprobada en staging; P109-001, P109-003, P109-004, P109-005,
+  P109-009, P109-010, P109-011 y P109-012 tienen evidencia parcial del mismo
+  bloque. Las demás fases continúan pendientes o bloqueadas.
+- Implementación Plan 109: **33,3 %** (`1 aprobada + 8 parciales`, de 15 fases).
+- Certificación del candidato desplegado: **6,7 %** (solo P109-000 aprobada en
+  el mismo digest); el arnés de QA endurecido aún está en rama local hasta su
+  promoción controlada.
 - Veredicto: **NO-GO**.
 
 La evidencia histórica P108 sirve como línea base y evita repetir pruebas

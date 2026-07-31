@@ -32,6 +32,13 @@
   PostgreSQL staging, restauración efímera, upgrade y segunda pasada sin
   modificar el origen.
 
+2026-07-31
+- `web/administrar_empresa/reportes_ejecutivos.html`: centro de reportes y
+  documento imprimible; los datasets anchos pasan a registros etiquetados para
+  conservar el ancho de papel carta y POS.
+- `backend/handlers/reportes_catalogo_test.go`: contrato de presentación que
+  impide volver a recortar impresiones de reportes anchos.
+
 2026-07-13 - Evidencia de preparacion para staging
 - `backend/db/mobile_api_idempotency.go`: persistencia de idempotencia movil
   aislada por empresa; solo conserva hashes de clave/cuerpo y respuesta exitosa.
@@ -12225,7 +12232,51 @@ panel de seguridad para que el navegador reciba la correccion CSRF de staging.
   Chrome for Testing ya instalado al renderizar sus pruebas Carta/POS, sin
   descargar navegadores ni depender de la ruta automática de Playwright.
 - `tools/qa_e2e_buttons.cjs`: usa la misma variable para ejecutar auditorías
-  visuales de botones con un navegador de pruebas explícito.
+  visuales de botones con un navegador de pruebas explícito; excluye acciones
+  genéricas de cerrar o cancelar de los clics automáticos para no alterar flujos
+  operativos durante una auditoría autenticada y deja los controles IA para una
+  revisión específica manual, sin adjuntar ni ejecutar modelos por accidente;
+  también reserva altas nuevas para los flujos manuales auditados.
+- `documentos/evidencia_plan_109/P109-004/2026-07-31_auditoria_finanzas_staging.md`:
+  conserva el alcance, límites y resultado reproducible del barrido autenticado
+  de Finanzas PCS en escritorio y móvil, sin incluir credenciales ni datos
+  sensibles.
+- `documentos/evidencia_plan_109/P109-005/2026-07-31_formatos_impresos_sinteticos.md`:
+  registra el render reproducible y la inspección visual puntual de los
+  formatos Carta/POS, diferenciándolo de la impresión física y fiscal pendiente.
+- `documentos/evidencia_plan_109/P109-003/2026-07-31_contratos_reportes_contables.md`:
+  registra la prueba focalizada de contratos de ReportSpec, permisos y esquema,
+  sin declarar conciliación contable ni UAT como completados.
+- `documentos/evidencia_plan_109/P109-009/2026-07-31_cabeceras_y_aislamiento_staging.md`:
+  conserva la verificación no autenticada de cabeceras, CORS y rechazo de ruta
+  empresarial, junto con el riesgo CSP que todavía impide cierre de seguridad.
+- `documentos/evidencia_plan_109/P109-001/2026-07-31_recuperacion_cxp_staging.md`:
+  resume la recuperación CxP limitada de staging, su conciliación y pruebas de
+  contrato, separando los rechazos y aislamiento A/B que siguen pendientes.
+- `documentos/evidencia_plan_109/P109-011/2026-07-31_migraciones_y_guardias.md`:
+  documenta el ensayo de migración y las guardias de runtime, sin sustituir el
+  rollback de datos y compatibilidad que siguen requeridos para producción.
+- `documentos/evidencia_plan_109/P109-010/2026-07-31_salud_y_metricas_staging.md`:
+  conserva los probes de staging y los contratos de métricas privadas, sin
+  confundirlos con las alertas y simulacros operativos aún pendientes.
+- `documentos/evidencia_plan_109/P109-012/2026-07-31_documentacion_y_auditoria_local.md`:
+  registra el escaneo local y la alineación de runbooks, sin declarar soporte o
+  capacitación humana como terminados.
+- `documentos/evidencia_plan_109/P109-009/2026-07-31_inventario_csp_inline.md`:
+  fija el inventario reproducible de dependencias inline y la prioridad de
+  migración necesaria antes de retirar `unsafe-inline`.
+- `documentos/evidencia_plan_109/P109-004/2026-07-31_inventario_estatico_controles.md`:
+  registra la línea base estática de controles y referencias IA, sin confundirla
+  con la cobertura dinámica o la aprobación de efectos operativos.
+- `documentos/evidencia_plan_109/P109-003/2026-07-31_reportes_staging_visual.md`:
+  conserva la validación visual autenticada del centro de reportes y excluye la
+  URL histórica eliminada, sin declarar UAT contable ni IA como completados.
+- `documentos/evidencia_plan_109/P109-007/2026-07-31_dian_configuracion_pendiente.md`:
+  registra el diagnóstico DIAN de PCS sin secretos y el criterio de bloqueo
+  previo a cualquier emisión, anulación o prueba oficial.
+- `documentos/evidencia_plan_109/P109-002/2026-07-31_contratos_ia_y_bloqueo_proveedor.md`:
+  conserva contratos IA/CxP y explica por qué las pruebas reales siguen
+  bloqueadas sin una credencial configurada de forma cifrada.
 
 2026-07-25 - P106-012, carga temprana del puente de ayuda IA
 - `web/js/help_ai_bridge.js`: valida que el objetivo de `MutationObserver`
