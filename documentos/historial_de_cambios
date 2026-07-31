@@ -40543,3 +40543,7 @@ acumulativa.
   solo lectura sin grupos duplicados antes de publicar el cambio.
 - La migración falla cerrada si otra instalación contiene duplicados; no borra
   ni consolida auditoría automáticamente.
+- La segunda pasada real confirmó que el `INSERT` de `empresa_ai_consultas`
+  declaraba 16 columnas pero solo enviaba 15 expresiones. El contrato ahora
+  fija 14 parámetros de negocio y dos marcas de tiempo; una prueba impide que
+  esa aridad vuelva a divergir.

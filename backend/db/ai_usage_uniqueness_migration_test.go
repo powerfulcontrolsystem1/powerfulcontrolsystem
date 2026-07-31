@@ -1,6 +1,9 @@
 package db
 
-import "testing"
+import (
+	"strings"
+	"testing"
+)
 
 func TestEmpresaAIUsoDiarioUniqueMigrationIsRegistered(t *testing.T) {
 	migrations, err := PlatformMigrations(MigrationTargetEmpresas)
@@ -17,4 +20,14 @@ func TestEmpresaAIUsoDiarioUniqueMigrationIsRegistered(t *testing.T) {
 		return
 	}
 	t.Fatal("AI daily usage uniqueness migration is missing from enterprise catalog")
+}
+
+func TestEmpresaAIConsultaInsertMatchesBusinessColumns(t *testing.T) {
+	query := empresaAIConsultaInsertStatement("CURRENT_TIMESTAMP")
+	if got := strings.Count(query, "?"); got != 14 {
+		t.Fatalf("empresa_ai_consultas placeholders = %d, want 14", got)
+	}
+	if got := strings.Count(query, "CURRENT_TIMESTAMP"); got != 2 {
+		t.Fatalf("empresa_ai_consultas timestamp expressions = %d, want 2", got)
+	}
 }
