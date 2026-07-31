@@ -147,6 +147,27 @@ func TestReportesDatasetPDFRespetaPapelPOS80mm(t *testing.T) {
 	}
 }
 
+func TestReportesDatasetPDFHumanizaEncabezadoTabular(t *testing.T) {
+	ds := empresaReporteDataset{
+		Title:       "Reporte IA",
+		Level:       "contable",
+		EmpresaID:   12,
+		GeneratedAt: "2026-07-31 16:08:11",
+		Columns:     []string{"tercero", "documento_codigo", "fecha_vencimiento", "estado_cartera"},
+		Rows: []map[string]interface{}{{
+			"tercero": "Proveedor", "documento_codigo": "CXP-001",
+			"fecha_vencimiento": "2026-08-31", "estado_cartera": "parcial",
+		}},
+	}
+	joined := strings.Join(reportesDatasetPDFLines(ds), "\n")
+	if !strings.Contains(joined, "tercero | documento codigo | fecha vencimiento | estado cartera") {
+		t.Fatalf("encabezado PDF no humanizado: %q", joined)
+	}
+	if strings.Contains(joined, "documento_codigo") || strings.Contains(joined, "fecha_vencimiento") || strings.Contains(joined, "estado_cartera") {
+		t.Fatalf("el encabezado PDF expone nombres tecnicos: %q", joined)
+	}
+}
+
 func TestReportesHelpersFiscalesYEdades(t *testing.T) {
 	if !reportesCuentaEsFiscal("240805") {
 		t.Fatalf("cuenta IVA 240805 debe clasificarse como fiscal")
