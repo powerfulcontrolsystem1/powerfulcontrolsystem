@@ -72,3 +72,22 @@ volúmenes y consulta multiempresa de cinco dominios críticos. Todavía faltan:
 4. ensayar pérdida de réplica y rollback coordinado de aplicación/base;
 5. aprobar formalmente objetivos RPO/RTO del piloto.
 
+El procedimiento quedó incorporado al runbook mediante
+`-ExecuteDrill -VerifyCriticalData`: además del restore exige las dos bases,
+las cinco tablas, sus filtros empresariales y la correspondencia entre cada
+soporte IA privado persistido, su empresa, el miembro del tarball y su SHA-256.
+Si cualquiera de esas invariantes falla, el ensayo termina de forma cerrada.
+
+La ejecución reproducible del runbook nuevo aprobó con:
+
+```text
+[OK] Restore critico: bases=2 tablas=5 filtros_empresa=5 archivos_privados=2 checksums_soportes_ia=0
+[OK] Restauracion temporal PostgreSQL completada. imagen=postgres:16.14-alpine RTO=24s RPO=57722s
+```
+
+El snapshot contiene dos archivos privados, pero ninguna fila vigente de
+soportes IA con referencia `private://soportes_compras_ia/`; por ello el valor
+`checksums_soportes_ia=0` es correcto y no se presenta como una conciliación de
+soportes inexistentes. La compuerta queda preparada para exigir automáticamente
+el hash cuando el flujo real cree esos soportes. La limpieza posterior volvió a
+confirmar cero contenedores temporales.

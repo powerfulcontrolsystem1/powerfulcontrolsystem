@@ -204,6 +204,29 @@ func TestOperationalVPSBackupRequiresPrivateStorage(t *testing.T) {
 	}
 }
 
+func TestOperationalVPSRestoreCanVerifyCriticalTenantDataAndPrivateChecksums(t *testing.T) {
+	raw, err := os.ReadFile(filepath.Join("..", "scripts", "vps_restore_validation.ps1"))
+	if err != nil {
+		t.Fatalf("read operational VPS restore script: %v", err)
+	}
+	script := string(raw)
+	for _, required := range []string{
+		"VerifyCriticalData",
+		"VerifyCriticalData requiere ExecuteDrill",
+		"pcs_empresas','pcs_superadministrador",
+		"empresa_cuentas_por_pagar empresa_asientos_contables empresa_ai_memoria empresa_dian_configuracion empresa_documentos_gestion",
+		"WHERE empresa_id=12",
+		"empresa_soportes_compras_ia",
+		"private://soportes_compras_ia/empresa_",
+		"sha256sum",
+		"trap cleanup EXIT",
+	} {
+		if !strings.Contains(script, required) {
+			t.Fatalf("operational VPS restore critical audit must enforce %q", required)
+		}
+	}
+}
+
 func TestPanelGuidedSetupUsesCSRFAndNextcloudKeepsEmpresaContext(t *testing.T) {
 	panel, err := os.ReadFile(filepath.Join("..", "web", "administrar_empresa", "panel.html"))
 	if err != nil {

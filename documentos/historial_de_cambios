@@ -40516,3 +40516,11 @@ acumulativa.
 - Los contenedores efímeros se eliminaron al terminar. P109-008 queda parcial
   hasta probar la aplicación contra el conjunto restaurado, checksums de
   archivos, réplica A/B y rollback coordinado dentro del RPO/RTO aprobado.
+- `vps_restore_validation.ps1` incorpora la compuerta reproducible
+  `VerifyCriticalData`: valida bases, tablas y filtros críticos, y contrasta los
+  soportes IA privados persistidos con su empresa, miembro del tarball y hash
+  SHA-256. La opción exige un restore temporal real y falla de forma cerrada.
+- El nuevo modo aprobó en la VPS con dos bases, cinco tablas, cinco filtros y
+  dos archivos privados. El snapshot no contiene filas de soportes IA privados,
+  por lo que no se atribuye falsamente una conciliación de hashes; el control
+  queda activo para el primer soporte real y la limpieza terminó sin residuos.
