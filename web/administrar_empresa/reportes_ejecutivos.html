@@ -42,6 +42,12 @@
     .reports-print-record{break-inside:avoid;border-top:1px solid #d1d5db;padding:6px 0}
     .reports-print-record:first-child{border-top:0}
     .reports-print-row{display:grid;grid-template-columns:minmax(80px,.42fr) minmax(0,1fr);gap:6px;line-height:1.28;padding:2px 0}
+    /* A ledger can contain more columns than a letter sheet can represent
+       legibly. Keep the document inside its paper width by using one
+       labelled record per row instead of forcing a clipped micro-table. */
+    .reports-print-page.reports-print-wide .reports-print-table{display:none}
+    .reports-print-page.reports-print-wide .reports-print-records{display:block}
+    .reports-print-page.reports-print-wide .reports-print-row{overflow-wrap:anywhere}
     .reports-paper-pos .reports-print-page{width:80mm;max-width:80mm;min-height:auto;padding:4mm;font-size:10px}
     .reports-paper-pos .reports-print-page h2{font-size:15px}
     .reports-paper-pos .reports-print-meta{grid-template-columns:repeat(2,minmax(0,1fr));gap:0 5px}
@@ -512,6 +518,8 @@
         var sheet = document.getElementById('reportsPrintableSheet');
         var rows = Array.isArray(dataset.rows) ? dataset.rows : [];
         var columns = Array.isArray(dataset.columns) && dataset.columns.length ? dataset.columns : Object.keys(rows[0] || {});
+        var useRecordLayout = columns.length > 8;
+        sheet.classList.toggle('reports-print-wide', useRecordLayout);
         var title = dataset.title || (findReport(dataset.key || selectedDatasetKey) || {}).title || dataset.key || 'Reporte';
         var description = dataset.description || (findReport(dataset.key || selectedDatasetKey) || {}).description || 'Vista previa del reporte seleccionado.';
         var meta = [

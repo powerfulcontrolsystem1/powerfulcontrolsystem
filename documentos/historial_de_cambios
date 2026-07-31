@@ -40474,3 +40474,9 @@ acumulativa.
   soportes IA/CxP aprobaron localmente. Staging carece de proveedor OpenAI
   configurado para PCS, por lo que no se ejecutan pruebas reales ni se inventan
   credenciales; P109-002 permanece bloqueada.
+
+2026-07-31: Plan 109 / impresión de cartera por pagar.
+- La vista previa de CxP en formato carta ya no intenta comprimir tablas con
+  más de ocho columnas fuera del ancho imprimible. Ahora las representa como
+  registros etiquetados por fila, conservando lectura y evitando recortes;
+  POS continúa usando ese formato compacto.
