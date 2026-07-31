@@ -102,3 +102,25 @@ respondía el 404 esperado y no representaba el contrato vigente.
 Backend, worker, frontend y PostgreSQL permanecieron saludables; colas y leases
 quedaron en cero. P108-019 continúa parcial por carga transaccional sostenida,
 cuatro cajas, proveedores y backpressure.
+
+## Repetición sobre `5566a213`
+
+El mismo artefacto promovido a staging atendió 500 GET autenticados, alternando
+`/me` y configuración operativa de PCS, sin mutaciones:
+
+| Métrica | Resultado |
+| --- | ---: |
+| HTTP exitoso | 500 / 500 |
+| Fallos / 5xx | 0 / 0 |
+| Error rate | 0 % |
+| p50 | 99 ms |
+| p95 | 116 ms |
+| p99 | 338 ms |
+| Concurrencia | 10 |
+| Sesiones PostgreSQL observadas | 25 |
+| Esperas `Lock` | 0 |
+
+Después de la carga, API, worker, PostgreSQL y frontend permanecieron
+saludables; `/metrics` continuó privado con HTTP 404 desde el frontend. Esta
+evidencia conserva P108-019 **parcial** por las pruebas transaccionales
+sostenidas, cuatro cajas y backpressure.

@@ -3,6 +3,7 @@ package db_test
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"os"
 	"strings"
@@ -148,6 +149,82 @@ func TestP108OutboxWorkerDurabilityIntegration(t *testing.T) {
 	}
 	if got := countP108Rows(t, dbConn, `SELECT COUNT(*) FROM pcs_async_jobs WHERE empresa_id = $1 AND status = 'dead'`, tenantID); got != 1 {
 		t.Fatalf("expected one durable dead-letter job, got %d", got)
+	}
+}
+
+func TestP108CxPPaymentAccountingIntegration(t *testing.T) {
+	dbConn := openP108DisposablePostgres(t)
+	for _, statement := range []string{
+		`CREATE TABLE IF NOT EXISTS empresa_cuentas_por_pagar (
+			id BIGSERIAL PRIMARY KEY, empresa_id BIGINT NOT NULL, codigo TEXT,
+			documento_codigo TEXT, moneda TEXT, valor_original REAL,
+			valor_pagado REAL, saldo REAL, estado_cartera TEXT
+		)`,
+		`CREATE TABLE IF NOT EXISTS empresa_finanzas_movimientos (
+			id BIGSERIAL PRIMARY KEY, empresa_id BIGINT NOT NULL, periodo_contable TEXT,
+			moneda TEXT, fecha_movimiento TEXT, monto REAL, total REAL,
+			total_neto REAL, estado TEXT
+		)`,
+		`CREATE TABLE IF NOT EXISTS empresa_cxp_pagos (
+			id BIGSERIAL PRIMARY KEY, empresa_id BIGINT NOT NULL,
+			cuenta_por_pagar_id BIGINT NOT NULL, movimiento_finanzas_id BIGINT NOT NULL,
+			monto NUMERIC(18,2) NOT NULL, metodo_pago TEXT, referencia_externa TEXT
+		)`,
+		`CREATE TABLE IF NOT EXISTS empresa_eventos_contables (
+			id BIGSERIAL PRIMARY KEY, empresa_id BIGINT NOT NULL, modulo TEXT NOT NULL,
+			evento TEXT NOT NULL, entidad TEXT NOT NULL, entidad_id BIGINT,
+			documento_tipo TEXT, documento_codigo TEXT, periodo_contable TEXT,
+			monto_total REAL, moneda TEXT, payload_json TEXT, origen TEXT,
+			fecha_evento TEXT, procesado INTEGER, fecha_procesado TEXT,
+			fecha_creacion TEXT, fecha_actualizacion TEXT, usuario_creador TEXT,
+			estado TEXT, observaciones TEXT
+		)`,
+	} {
+		if _, err := dbConn.Exec(statement); err != nil {
+			t.Fatalf("prepare CxP accounting fixture: %v", err)
+		}
+	}
+
+	tenantID := int64(1_800_000_000 + time.Now().UnixNano()%100_000_000)
+	var accountID, movementID, paymentID int64
+	if err := dbConn.QueryRow(`INSERT INTO empresa_cuentas_por_pagar
+		(empresa_id,codigo,documento_codigo,moneda,valor_original,valor_pagado,saldo,estado_cartera)
+		VALUES ($1,'P108-CXP','P108-DOC','COP',2,1,1,'parcial') RETURNING id`, tenantID).Scan(&accountID); err != nil {
+		t.Fatal(err)
+	}
+	if err := dbConn.QueryRow(`INSERT INTO empresa_finanzas_movimientos
+		(empresa_id,periodo_contable,moneda,fecha_movimiento,monto,total,total_neto,estado)
+		VALUES ($1,'2026-07','COP','2026-07-30 19:00:00',1,1,1,'activo') RETURNING id`, tenantID).Scan(&movementID); err != nil {
+		t.Fatal(err)
+	}
+	if err := dbConn.QueryRow(`INSERT INTO empresa_cxp_pagos
+		(empresa_id,cuenta_por_pagar_id,movimiento_finanzas_id,monto,metodo_pago,referencia_externa)
+		VALUES ($1,$2,$3,1,'transferencia','P108-PAGO') RETURNING id`, tenantID, accountID, movementID).Scan(&paymentID); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() {
+		_, _ = dbConn.Exec(`DELETE FROM empresa_eventos_contables WHERE empresa_id = $1`, tenantID)
+		_, _ = dbConn.Exec(`DELETE FROM empresa_cxp_pagos WHERE empresa_id = $1`, tenantID)
+		_, _ = dbConn.Exec(`DELETE FROM empresa_finanzas_movimientos WHERE empresa_id = $1`, tenantID)
+		_, _ = dbConn.Exec(`DELETE FROM empresa_cuentas_por_pagar WHERE empresa_id = $1`, tenantID)
+	})
+
+	payload := fmt.Sprintf(`{"cuenta_por_pagar_id":%d,"pago_id":%d,"movimiento_finanzas_id":%d,"monto":1}`, accountID, paymentID, movementID)
+	first, err := dbpkg.ProcessEmpresaCxPPaymentAccounting(context.Background(), dbConn, tenantID, payload)
+	if err != nil || first.EventoContableID <= 0 || first.IdempotentReplay {
+		t.Fatalf("first CxP accounting event: result=%+v err=%v", first, err)
+	}
+	replay, err := dbpkg.ProcessEmpresaCxPPaymentAccounting(context.Background(), dbConn, tenantID, payload)
+	if err != nil || replay.EventoContableID != first.EventoContableID || !replay.IdempotentReplay {
+		t.Fatalf("replayed CxP accounting event: result=%+v err=%v", replay, err)
+	}
+	if got := countP108Rows(t, dbConn, `SELECT COUNT(*) FROM empresa_eventos_contables
+		WHERE empresa_id=$1 AND modulo='finanzas' AND evento='abono_proveedor_registrado'
+		  AND entidad='empresa_cxp_pagos' AND entidad_id=$2`, tenantID, paymentID); got != 1 {
+		t.Fatalf("expected one idempotent accounting event, got %d", got)
+	}
+	if _, err := dbpkg.ProcessEmpresaCxPPaymentAccounting(context.Background(), dbConn, tenantID+1, payload); !errors.Is(err, sql.ErrNoRows) {
+		t.Fatalf("cross-tenant payment must not resolve, err=%v", err)
 	}
 }
 

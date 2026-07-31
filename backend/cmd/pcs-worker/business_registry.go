@@ -29,6 +29,7 @@ const (
 	jobElectricalSchedule = "integrations.electrical-schedule"
 	jobCommerceSalePaid   = "commerce.sale-paid"
 	jobSystemMetrics      = "maintenance.system-metrics"
+	jobCxPPayment         = dbpkg.EmpresaCxPPaymentOutboxTopic
 )
 
 func businessRegistry(dbEmp, dbSuper *sql.DB) map[string]platformworker.HandlerSpec {
@@ -65,6 +66,13 @@ func businessRegistry(dbEmp, dbSuper *sql.DB) map[string]platformworker.HandlerS
 	registry[jobCommerceSalePaid] = platformworker.HandlerSpec{
 		Kind: jobCommerceSalePaid, Version: 1, Timeout: 5 * time.Minute, MaxAttempts: 10, Enabled: true,
 		Handle: ventasService.RecoverPaidSaleAccounting,
+	}
+	registry[jobCxPPayment] = platformworker.HandlerSpec{
+		Kind: jobCxPPayment, Version: 1, Timeout: 2 * time.Minute, MaxAttempts: 10, Enabled: true,
+		Handle: func(ctx context.Context, job dbpkg.AsyncJob) error {
+			_, err := dbpkg.ProcessEmpresaCxPPaymentAccounting(ctx, dbEmp, job.EmpresaID, job.PayloadJSON)
+			return err
+		},
 	}
 	return registry
 }

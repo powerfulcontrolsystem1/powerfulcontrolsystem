@@ -1,4 +1,7 @@
 2026-07-28
+- `documentos/evidencia_plan_108/P108-007/resultados.md`: conciliación financiera
+  real de pagos CxP, hallazgo del topic outbox sin handler y criterios de cierre
+  del evento/asiento idempotente por empresa.
 - `backend/db/runtime_db_role.go`: provisionamiento y verificación cerrada del
   login PostgreSQL sin DDL usado por API/worker.
 - `backend/db/runtime_db_role_test.go`: validación de nombres y contraseñas

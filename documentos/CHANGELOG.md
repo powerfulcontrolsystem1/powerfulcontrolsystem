@@ -5,6 +5,8 @@
 - [Catálogo público] El host técnico de staging ya no se usa como slug de empresa y los errores se presentan sin JSON crudo ni desborde móvil.
 - [QA integral] El candidato `5ec1c48f` recorrió 618 vistas, inventarió 10.998 controles y ejecutó 1.062 clics seguros sin errores de página ni HTTP 500; conserva 14 vistas y 1.975 acciones para revisión oficial.
 - [Impresión] Los 18 formatos carta/POS aprobaron render y las facturas carta/POS se comprobaron visualmente con filas, columnas, totales, legales y firmas organizados.
+- [Worker CxP] El topic `cuentas_por_pagar.pago_registrado` deja de morir sin handler y genera un evento contable idempotente, conciliado y aislado por empresa.
+- [Contabilidad] El retry bloquea el pago, valida cuenta/movimiento/monto y reutiliza la identidad natural `empresa_cxp_pagos/pago_id` para impedir asientos duplicados.
 
 ## [2026-07-30] Repetición final de migraciones P108
 - [QA] El digest migrador exacto del candidato `5ec1c48f` aprobó instalación desde PostgreSQL vacío y upgrade desde copia lógica temporal de staging.

@@ -1000,6 +1000,14 @@ SHA diferente.
   distintas agotaron exactamente el saldo y la carrera restante fue rechazada,
   sin sobrepago. La UX del proveedor, el `409 Conflict` de saldo agotado y el
   catálogo público están corregidos localmente y requieren nuevo digest.
+- El candidato `5566a213` aprobó CI/release, migró con código cero y se promovió
+  solo a staging sin cambiar la huella de producción. Finanzas y catálogo
+  terminaron 4/4 vistas `ok` en escritorio/móvil; la carga autenticada fue
+  500/500, p95 116 ms, cero fallos y cero esperas `Lock`.
+- La conciliación real de la CxP confirmó cuenta, asignaciones y movimientos por
+  `2`, pero descubrió dos outbox `dead` por topic sin handler. El worker
+  idempotente y multiempresa está implementado y requiere un nuevo digest,
+  pago controlado y asiento balanceado antes de contar P108-003/P108-007.
 - Avance de implementación: **48,1 %**, aplicando tres fases aprobadas y
   diecinueve parciales; no se suman bloqueos ni pruebas incompletas.
 - Certificación del candidato para producción: **23,1 %** y **NO-GO**:

@@ -122,3 +122,19 @@ Resultado: concurrencia con clave igual y distinta **PASS** sobre staging. La
 corrección UX/semántica requiere publicar y repetir el siguiente digest.
 P108-005 continúa parcial únicamente por conciliación integral y la prueba A/B
 con una segunda identidad empresarial limitada.
+
+## Repetición del candidato `5566a213`
+
+- CI profesional `30593775441` y release inmutable `30593768061`: `success`.
+- Staging promovió los cuatro digests; migrador `exit 0`, salud/listo verdes y
+  la huella de producción permaneció idéntica.
+- Seleccionar `P108-QA Proveedor Staging` completó visualmente el nombre
+  obligatorio sin entrada duplicada.
+- Un nuevo intento de abono por `1` contra la CxP ya pagada devolvió HTTP `409`
+  en el log del backend y conservó original `2`, pagado `2`, saldo `0`.
+- El barrido dirigido `30594370649` aprobó Finanzas y catálogo público en
+  escritorio/móvil: 4/4 vistas, cero hallazgos.
+
+La semántica concurrente y la UX corregida quedan **PASS** sobre este digest.
+La fase continúa parcial por prueba A/B limitada y porque el evento outbox CxP
+reveló un handler ausente, corregido en el siguiente candidato.

@@ -15,6 +15,13 @@
   1.975 mutaciones preservadas, cero errores de página y cero HTTP 500.
 - La batería de impresión aprobó 18/18 formatos y se revisaron visualmente las
   facturas carta/POS, con filas, columnas, totales, legales y firmas ordenados.
+- La conciliación posterior confirmó original/pagado/saldo `2/2/0`, dos
+  asignaciones y dos movimientos por total `2`, pero detectó dos eventos
+  outbox `dead` porque el worker no tenía habilitado el topic CxP.
+- El worker registra ahora `cuentas_por_pagar.pago_registrado`, bloquea el pago,
+  valida tenant e importes y crea una sola vez el evento contable
+  `finanzas/abono_proveedor_registrado`; un retry reutiliza la identidad
+  `empresa_cxp_pagos/pago_id`.
 
 2026-07-30: Plan 108 / migraciones finales aisladas del candidato.
 - El candidato `5ec1c48f` repitió por digest inmutable la instalación desde

@@ -45,3 +45,26 @@ de los últimos 15 minutos no registraron errores, pánicos ni dead-letter nuevo
 El subcriterio de ausencia de acumulación inmediata queda **PASS**. P108-003
 continúa parcial por proveedores reales, métricas/alertas de cola y réplicas
 concurrentes del worker desplegado.
+
+## Hallazgo CxP del candidato `5566a213` - 2026-07-30
+
+La conciliación SQL de la CxP QA `P108-CONC-5EC1-941964` confirmó que los dos
+pagos suman `2`, apuntan a dos movimientos distintos que también suman `2`, y
+la cuenta terminó pagada con saldo `0`. Sin embargo, sus dos eventos
+`cuentas_por_pagar.pago_registrado` terminaron `dead` después de 5 intentos con
+el error `outbox topic has no enabled worker handler`.
+
+La corrección registra el topic en el worker y lo convierte en un evento
+contable `finanzas/abono_proveedor_registrado`. El procesador:
+
+- resuelve pago, CxP y movimiento con `empresa_id` en cada `JOIN`;
+- bloquea la fila del pago antes de revisar el evento natural;
+- rechaza diferencias de monto entre payload, pago y movimiento;
+- usa `empresa_cxp_pagos/pago_id` como identidad natural para que un retry no
+  duplique el evento ni el asiento posterior.
+
+Se añadieron contratos unitarios y una integración PostgreSQL descartable para
+primera ejecución, replay y rechazo entre tenants. Falta publicar el nuevo
+digest, probar un pago PCS controlado y definir la recuperación explícita de
+los dos eventos históricos `dead`; no se reactivan masivamente de forma
+automática.
