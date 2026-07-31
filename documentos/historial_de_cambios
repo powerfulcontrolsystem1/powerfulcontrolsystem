@@ -40387,3 +40387,90 @@ acumulativa.
   representa un rol operativo limitado de otra empresa.
 - P108-005 continúa parcial hasta validar rechazo entre dos empresas y la
   concurrencia HTTP real de abonos idempotentes.
+
+2026-07-31: Plan 109 / guardia de no mutación del auditor visual.
+- `tools/qa_e2e_buttons.cjs` deja de clasificar los textos genéricos `Cerrar`
+  y `Cancelar` como clics seguros. En pantallas operativas esos controles pueden
+  iniciar cierre de caja, anulación o descarte; el auditor los deja en revisión
+  manual incluso cuando provienen de `aria-label` o `title`, y conserva
+  únicamente navegación y consulta inequívocas para su ejecución autenticada en
+  staging.
+
+2026-07-31: Plan 109 / evidencia inicial de documentos imprimibles.
+- La batería reproducible de plantillas Carta/POS aprobó 18 de 18 formatos sin
+  desbordes medidos y sus tres flujos de impresión automática invocaron una sola
+  vez el navegador. La revisión visual puntual de factura Carta/POS confirmó
+  filas, columnas, totales, datos legales y pie; permanece pendiente la
+  impresión física y fiscal de los documentos reales del piloto.
+
+2026-07-31: Plan 109 / contratos base de reportes contables.
+- Las pruebas focalizadas de ReportSpec, permisos y readiness de programación
+  aprobaron localmente. Esta evidencia solo abre P109-003 como parcial: no
+  sustituye conciliación, impuestos, cierre ni UAT del contador.
+
+2026-07-31: Plan 109 / revalidación básica de seguridad de staging.
+- Staging conserva HSTS, CSP y `nosniff`; una solicitud empresarial sin sesión
+  y un preflight de origen no autorizado fueron rechazados sin publicar CORS
+  permisivo. `unsafe-inline` sigue presente en CSP, por lo que P109-009 queda
+  parcial y no se declara cierre de DAST ni de seguridad dinámica.
+
+2026-07-31: Plan 109 / evidencia de recuperación CxP.
+- Dos eventos CxP autorizados de PCS se recuperaron en staging y conciliaron
+  con pago, movimiento, evento, asiento y auditoría únicos. La suite confirmó
+  validaciones negativas y ocultamiento de payload; quedan pendientes los
+  rechazos runtime y la matriz A/B con una segunda identidad.
+
+2026-07-31: Plan 109 / guardias de migración y runtime.
+- El ensayo por digest de staging y la suite local confirmaron migraciones
+  idempotentes, checksum inmutable y DDL exclusivo del migrador. Falta ensayar
+  rollback de datos y compatibilidad hacia atrás; P109-011 queda parcial.
+
+2026-07-31: Plan 109 / salud y métricas privadas.
+- Staging respondió health/ready y rechazó métricas públicas; los contratos
+  locales validaron señales agregadas y solo lectura. P109-010 permanece
+  parcial hasta completar alertas, SLO y simulacro operativo.
+
+2026-07-31: Plan 109 / runbooks seguros y auditoría local.
+- El manual de instalación exige ahora compuerta remota y staging aislado para
+  backup/restore. La auditoría local de secretos y contratos aprobó; P109-012
+  sigue parcial hasta capacitación, soporte y ensayo humano verificables.
+
+2026-07-31: Plan 109 / inventario de CSP inline.
+- Se contabilizaron 225 scripts inline, 186 estilos inline y 23 manejadores
+  HTML. El retiro inmediato de `unsafe-inline` rompería módulos operativos; se
+  priorizan Carrito, Productos, Facturación, Ventas, Chat y Finanzas para una
+  migración comprobable antes del modo enforce estricto.
+
+2026-07-31: Plan 109 / inventario estático de controles.
+- Se registraron 2.160 marcadores de control en 242 pantallas y 657 referencias
+  IA. La cifra no se presenta como prueba funcional: define lotes prioritarios
+  para el recorrido autenticado, por rol y por efecto de P109-004.
+
+2026-07-31: Plan 109 / Centro de reportes en staging.
+- El catálogo unificado cargó 46 reportes y se revisó visualmente en escritorio
+  y móvil sin 5xx ni errores de página. La ruta histórica
+  `reportes_finanzas.html` se excluye del QA vigente porque fue retirada al
+  consolidar la vista ejecutiva; siguen pendientes UAT y flujos IA.
+
+2026-07-31: Plan 109 / guardia manual para acciones IA.
+- El auditor autenticado detectó que una acción de carga IA podía clasificarse
+  como segura por su etiqueta accesible. Todas las referencias IA/GPT/OpenAI o
+  asistente pasan ahora a revisión manual; no se adjuntan archivos, ejecutan
+  modelos ni generan efectos sin la prueba específica autorizada.
+
+2026-07-31: Plan 109 / estado inicial DIAN sin configuración.
+- Facturación electrónica ya no consulta vencimientos cuando la empresa aún no
+  tiene un registro DIAN persistido; muestra una guía de configuración en vez
+  de provocar 400 visibles. La emisión y prueba oficial siguen bloqueadas hasta
+  cargar legalmente los datos, resolución, certificado y credenciales de PCS.
+
+2026-07-31: Plan 109 / creación fuera del clic automático.
+- `Nuevo`, `Nueva` y `Agregar` dejan de ser clics seguros genéricos del auditor
+  autenticado. Pueden iniciar altas según el módulo; su validación requiere un
+  flujo manual con fixture, permiso, auditoría y verificación de rollback.
+
+2026-07-31: Plan 109 / contratos IA y proveedor ausente.
+- Los contratos de aislamiento, redacción, modo agente y revisión humana de
+  soportes IA/CxP aprobaron localmente. Staging carece de proveedor OpenAI
+  configurado para PCS, por lo que no se ejecutan pruebas reales ni se inventan
+  credenciales; P109-002 permanece bloqueada.

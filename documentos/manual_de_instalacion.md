@@ -59,13 +59,18 @@ Desde el 2026-05-11, `sync_to_vps.ps1` tambien ejecuta una limpieza segura al te
 
 El servicio anterior `powerfulcontrolsystem.service` puede quedar activo temporalmente como rollback mientras se estabiliza el despliegue Docker. No lo elimines sin confirmar respaldos y ventana de mantenimiento.
 
-Respaldo operativo manual de la VPS:
+Respaldo y restauración remotos seguros:
 
 ```powershell
-.\scripts\vps_backup_operacion.ps1
+.\scripts\vps_backup_operacion.ps1 -AllowRemoteTarget
 ```
 
-Este comando genera dump PostgreSQL y empaqueta volumenes persistentes en la propia VPS bajo `backups/vps-snapshots`, con retencion automatica.
+Los scripts de backup y restore rechazan cualquier conexión remota por defecto.
+Usa `-AllowRemoteTarget` únicamente después de verificar que el destino es un
+staging aislado o una operación remota expresamente autorizada; no lo ejecutes
+contra la VPS productiva durante una validación de preproducción. El backup
+genera dump PostgreSQL y empaqueta volúmenes persistentes en la VPS autorizada
+bajo `backups/vps-snapshots`, con retención automática.
 
 Ambiente staging:
 
@@ -79,11 +84,14 @@ El staging usa `deploy/docker-compose.staging.yml`, `deploy/.env.staging.example
 Validacion de restauracion de backups:
 
 ```powershell
-.\scripts\vps_restore_validation.ps1
-.\scripts\vps_restore_validation.ps1 -ExecuteDrill
+.\scripts\vps_restore_validation.ps1 -AllowRemoteTarget
+.\scripts\vps_restore_validation.ps1 -ExecuteDrill -AllowRemoteTarget
 ```
 
-La primera valida el ultimo snapshot sin modificar datos; la segunda restaura el dump en un contenedor PostgreSQL temporal.
+La primera valida el último snapshot sin modificar datos; la segunda restaura
+el dump en un contenedor PostgreSQL temporal. Ambas requieren un destino
+aislado confirmado. Documenta RPO/RTO, limpia el contenedor temporal y no
+restaures sobre una base o volumen existente.
 
 ## 1) Credenciales en Google Cloud Console
 
