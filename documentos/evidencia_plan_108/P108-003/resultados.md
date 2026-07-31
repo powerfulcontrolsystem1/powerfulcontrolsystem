@@ -96,3 +96,28 @@ duplicado.
 El flujo nuevo queda **PASS**. P108-003 permanece **parcial / NO-GO** porque
 los dos eventos CxP históricos `dead` requieren inventario, previsualización y
 recuperación explícita por empresa; no se reactivaron automáticamente.
+
+## Recuperación histórica controlada - implementación candidata
+
+Se implementó una consola operacional dentro de `Administrar base de datos
+PostgreSQL`, reservada al super administrador. La vista previa exige
+`empresa_id` y limita el tema a `cuentas_por_pagar.pago_registrado`; no expone
+el JSON crudo, sino únicamente los identificadores CxP y el error operativo
+acotado.
+
+La escritura exige entre 1 y 20 IDs únicos, razón de 10 a 500 caracteres y la
+frase exacta `REACTIVAR EVENTOS CXP`. La transacción bloquea los eventos y
+falla completa si uno no está `dead` dentro de la empresa/topic solicitados.
+Antes de devolverlos a `pending`, registra evento, tenant, intentos anteriores,
+razón y actor en `pcs_outbox_recovery_audit`. API y worker no crean la tabla:
+una migración inmutable nueva pertenece al rol `pcs-migrate`.
+
+Pruebas locales enfocadas:
+
+- `go test ./db -count=1`: PASS.
+- `go test ./handlers -run 'Outbox|SuperConfigHandlersRequireSuperAdmin' -count=1`: PASS.
+- contrato de ruta frontend/backend y sintaxis del script embebido: PASS.
+- `ensure_bootstrap_inventory --check` y `migration_audit --strict`: PASS.
+
+Estado: **implementado, pendiente de candidato inmutable y staging**. No se
+reactivó ningún evento histórico y producción no fue modificada en este corte.

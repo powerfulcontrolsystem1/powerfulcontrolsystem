@@ -3829,6 +3829,19 @@ paths:
       responses:
         "200":
           description: Respuesta exitosa o manejada por el handler real.
+  "/super/api/outbox/recovery":
+    get:
+      tags: [super-administrador]
+      summary: Ruta inventariada /super/api/outbox/recovery
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [super-administrador]
+      summary: Ruta inventariada /super/api/outbox/recovery
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
   "/super/api/pagina_principal":
     get:
       tags: [super-administrador]

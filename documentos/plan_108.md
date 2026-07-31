@@ -1018,6 +1018,11 @@ SHA diferente.
   `review`, 11.040 controles, 1.088 clics seguros, 1.980 acciones riesgosas
   preservadas y 18/18 impresiones. La amplitud mejora, pero no sustituye las
   mutaciones oficiales ni todos los botones IA.
+- La recuperación de eventos CxP históricos quedó implementada con vista
+  previa por empresa, topic permitido, IDs explícitos, razón, confirmación,
+  bloqueo transaccional y auditoría durable. Todavía no suma certificación:
+  falta construir el digest, migrarlo y reactivar los dos eventos PCS en
+  staging con conciliación contable posterior.
 - Avance de implementación: **48,1 %**, aplicando tres fases aprobadas y
   diecinueve parciales; la evidencia nueva fortalece P108-003/P108-005/P108-007
   ya parciales, sin cerrar sus compuertas restantes.

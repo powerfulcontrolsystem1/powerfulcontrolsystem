@@ -1,4 +1,14 @@
 2026-07-28
+- `backend/db/outbox_recovery.go`: vista previa y reactivación transaccional de
+  eventos outbox `dead`, limitada por `empresa_id`, topic e IDs explícitos;
+  registra cada intento en `pcs_outbox_recovery_audit`.
+- `backend/db/outbox_recovery_test.go`: contratos de alcance obligatorio,
+  lote acotado, IDs únicos y parámetros SQL para recuperación.
+- `backend/handlers/super_outbox_recovery.go`: API exclusiva del super
+  administrador para previsualizar y reactivar eventos históricos CxP sin
+  devolver el payload crudo.
+- `backend/handlers/super_outbox_recovery_test.go`: valida resumen seguro,
+  IDs, razón y límites del endpoint operacional.
 - `documentos/evidencia_plan_108/P108-007/resultados.md`: conciliación financiera
   real de pagos CxP, hallazgo del topic outbox sin handler y criterios de cierre
   del evento/asiento idempotente por empresa.

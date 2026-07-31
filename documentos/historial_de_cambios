@@ -1,3 +1,16 @@
+2026-07-30: Plan 108 / recuperación controlada de eventos históricos CxP.
+- Se añade una vista previa exclusiva del super administrador, limitada por
+  `empresa_id`, topic CxP e IDs concretos. El navegador no recibe el payload
+  crudo y ninguna consulta sin empresa es aceptada.
+- Reactivar exige selección explícita, razón operativa y frase de confirmación.
+  La transacción bloquea todas las filas, rechaza coincidencias parciales,
+  reinicia solo eventos `dead` y registra una auditoría durable por evento.
+- La nueva tabla `pcs_outbox_recovery_audit` se instala mediante migración
+  inmutable del rol `pcs-migrate`; API y worker continúan sin DDL.
+- Pruebas enfocadas de DB, handler, autorización, rutas, inventario y auditoría
+  de migraciones pasan. La recuperación real queda pendiente del digest de
+  staging; producción no fue modificada.
+
 2026-07-30: Plan 108 / precisión monetaria visible en Finanzas.
 - La prueba real mínima de CxP mostró que el backend conservaba `0,01`, pero la
   interfaz redondeaba el pago y el movimiento a `$ 0`.

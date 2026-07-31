@@ -107,6 +107,14 @@ func PlatformMigrations(target string) ([]Migration, error) {
 					return applyEmpresaNextcloudSchemaCredentialCleanupTx(ctx, tx)
 				},
 			},
+			{
+				Version:     "20260730-004-outbox-recovery-audit-v1",
+				Description: "audited tenant-scoped recovery for dead outbox events",
+				Body:        outboxRecoveryAuditSchemaFingerprint,
+				Apply: func(_ context.Context, tx *sql.Tx) error {
+					return applyOutboxRecoveryAuditSchemaTx(tx)
+				},
+			},
 		}, nil
 	case MigrationTargetSuper:
 		return []Migration{

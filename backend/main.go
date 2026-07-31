@@ -1889,6 +1889,7 @@ func main() {
 	http.HandleFunc("/super/api/metrics/history", handlers.MetricsHistoryHandler(dbSuper))
 	http.HandleFunc("/super/api/reportes_globales", handlers.WithSuperAuditoria(dbSuper, "reportes_globales", handlers.SuperReportesGlobalesHandler(dbEmpresas, dbSuper)))
 	http.HandleFunc("/super/api/postgres/performance", handlers.WithSuperAuditoria(dbSuper, "super_postgresql", handlers.PostgresPerformanceHandler(dbEmpresas, dbSuper)))
+	http.HandleFunc("/super/api/outbox/recovery", handlers.WithSuperAuditoria(dbSuper, "super_outbox_recovery", handlers.SuperOutboxRecoveryHandler(dbEmpresas, dbSuper)))
 	http.HandleFunc("/super/api/explorador_archivos", handlers.WithSuperAuditoria(dbSuper, "super_explorador_archivos", handlers.SuperFileExplorerHandler(dbSuper)))
 	http.HandleFunc("/super/api/docker_portabilidad", handlers.WithSuperAuditoria(dbSuper, "super_docker_portabilidad", handlers.SuperDockerPortabilidadHandler(dbSuper)))
 	http.HandleFunc("/super/api/vps_snapshots", handlers.WithSuperAuditoria(dbSuper, "super_vps_snapshots", handlers.SuperVPSSnapshotsHandler(dbSuper)))
