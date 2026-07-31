@@ -15,6 +15,7 @@ const empresaCxPAtomicSchemaFingerprint = "empresa_cxp_pagos:v1:tenant-lock-idem
 var (
 	ErrEmpresaCxPIdempotencyKeyRequired = errors.New("la clave de idempotencia es obligatoria")
 	ErrEmpresaCxPAmountExceedsBalance   = errors.New("el monto supera el saldo pendiente de la cuenta por pagar")
+	ErrEmpresaCxPNoPendingBalance       = errors.New("la cuenta por pagar no tiene saldo pendiente")
 )
 
 // EmpresaCxPAbonoInput is the explicit, tenant-scoped application of one
@@ -184,7 +185,7 @@ func RegistrarEmpresaCxPAbono(dbConn *sql.DB, input EmpresaCxPAbonoInput) (Empre
 	}
 	saldoAnterior = roundReportesMoney(saldoAnterior)
 	if saldoAnterior <= 0 {
-		return result, fmt.Errorf("la cuenta por pagar no tiene saldo pendiente")
+		return result, ErrEmpresaCxPNoPendingBalance
 	}
 	if input.Monto > saldoAnterior {
 		return result, ErrEmpresaCxPAmountExceedsBalance

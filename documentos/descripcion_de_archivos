@@ -10,7 +10,8 @@
 - `backend/db/legacy_core_schema_test.go`: contrato que exige las cinco raíces
   mínimas antes de extensiones heredadas.
 - `deploy/scripts/vps-p108-empty-migration-drill.sh`: ensayo aislado de base
-  vacía y segunda pasada usando una imagen exacta por digest.
+  vacía y segunda pasada usando una imagen exacta por digest; además provoca
+  drift de checksum, exige fallo auditado sin cambios y verifica recuperación.
 - `deploy/scripts/vps-p108-upgrade-migration-drill.sh`: copia lógica de
   PostgreSQL staging, restauración efímera, upgrade y segunda pasada sin
   modificar el origen.

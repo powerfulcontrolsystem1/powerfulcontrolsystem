@@ -87,3 +87,23 @@ botones apilados dentro del panel, sin el desborde horizontal previo:
 
 El hallazgo de Cobranza queda **PASS** sobre el candidato activo; la fase
 completa conserva los límites de accesibilidad y roles indicados arriba.
+
+## Impresiones del candidato `5ec1c48f` - 2026-07-30
+
+El workflow inmutable `30591586319` renderizó 18/18 formatos sin casos para
+revisión, desbordes, nodos inválidos ni errores de consola:
+
+- factura electrónica, recibo de venta, comprobantes de ingreso y egreso,
+  orden de servicio, corte de caja, parqueadero y turno de atención;
+- formatos carta y POS donde aplican;
+- tres sondas reales de `window.print()` aprobadas: factura POS, ticket de
+  turno y recibo de parqueadero.
+
+La inspección visual humana de las capturas de factura electrónica carta y POS
+confirmó datos ordenados en filas y columnas, totales legibles, información
+legal contenida y firmas alineadas. La evidencia automatizada conserva además
+capturas y PDF de los 18 casos.
+
+Estado: **parcial**. La batería de formatos es `PASS`, pero P108-012 todavía
+requiere documentos reales extensos, impresión física, teclado, lector de
+pantalla, tableta y matriz visual completa por rol.

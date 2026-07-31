@@ -1960,6 +1960,15 @@
 	  delete select.dataset.pendingId;
 	}
 
+	function syncCarteraProveedorName() {
+	  const select = document.getElementById('carteraProveedorId');
+	  const option = select && select.selectedOptions ? select.selectedOptions[0] : null;
+	  const name = option ? normalize(option.dataset.nombre) : '';
+	  if (name) {
+		document.getElementById('carteraTercero').value = name;
+	  }
+	}
+
 	async function loadCarteraProveedores() {
 	  if (!state.empresaID) return;
 	  const res = await fetch(carteraEndpoint('cxp') + '?action=proveedores&empresa_id=' + encodeURIComponent(String(state.empresaID)));
@@ -3633,6 +3642,7 @@
       document.getElementById('btnAplicarPlanMotel').addEventListener('click', aplicarPlanMotel);
 
 	  document.getElementById('carteraTipo').addEventListener('change', syncCarteraProveedorUI);
+	  document.getElementById('carteraProveedorId').addEventListener('change', syncCarteraProveedorName);
     document.getElementById('carteraForm').addEventListener('submit', saveCartera);
 	  document.getElementById('btnCargarCxPIA').addEventListener('click', function() {
 		const tipo = normalize(document.getElementById('carteraTipo').value);

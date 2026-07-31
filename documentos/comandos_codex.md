@@ -6,8 +6,10 @@ No imprimir secretos ni variables privadas completas.
 ## Plan 108: ensayo destructivo aislado de migración vacía
 
 Este ensayo crea recursos Docker efímeros con prefijo `p108-empty-`, ejecuta el
-migrador exacto dos veces y los elimina mediante `trap`. Nunca se debe apuntar
-al volumen de staging o producción.
+migrador exacto dos veces, altera un checksum solo en el ledger temporal,
+comprueba fallo cerrado sin cambio de esquema, restaura el checksum controlado
+y verifica recuperación. Finalmente elimina todos los recursos mediante
+`trap`. Nunca se debe apuntar al volumen de staging o producción.
 
 ```bash
 PROJECT_DIR=/ruta/checkout-candidato \
@@ -17,8 +19,9 @@ P108_DRILL_ID=p108-empty-<sha-corto> \
 bash deploy/scripts/vps-p108-empty-migration-drill.sh
 ```
 
-El script rechaza recursos preexistentes, un ID fuera del prefijo autorizado o
-una imagen sin digest.
+El script rechaza recursos preexistentes, un ID fuera del prefijo autorizado,
+una imagen sin digest o un fallo de migración que no quede auditado y sin
+cambios de esquema/ledger.
 
 Para ensayar un upgrade desde una copia lógica de staging sin escribir en el
 origen:

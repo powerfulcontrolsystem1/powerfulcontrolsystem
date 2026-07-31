@@ -1,3 +1,33 @@
+2026-07-30: Plan 108 / concurrencia real CxP y selección de proveedor.
+- En staging PCS se creó una CxP QA de 2 mediante la interfaz oficial.
+- Dos abonos simultáneos con la misma clave devolvieron el mismo movimiento y
+  aplicaron solo 1; dos claves distintas consumieron solo el saldo restante,
+  sin sobrepago ni duplicidad.
+- El selector CxP ahora completa automáticamente el nombre obligatorio del
+  proveedor, evitando que la validación HTML bloquee silenciosamente el envío.
+- La carrera que encuentra saldo cero usa un error de dominio estable y
+  responde `409 Conflict`; las pruebas enfocadas de `db` y `handlers` pasan.
+- El catálogo público deja de interpretar el host técnico `staging` como slug
+  empresarial y limita los mensajes HTTP visibles, con corte de palabras para
+  impedir desborde móvil.
+- El workflow inmutable `30591586319` completó 618 vistas del candidato
+  `5ec1c48f`: 604 `ok`, 14 `review`, 10.998 controles, 1.062 clics seguros,
+  1.975 mutaciones preservadas, cero errores de página y cero HTTP 500.
+- La batería de impresión aprobó 18/18 formatos y se revisaron visualmente las
+  facturas carta/POS, con filas, columnas, totales, legales y firmas ordenados.
+
+2026-07-30: Plan 108 / migraciones finales aisladas del candidato.
+- El candidato `5ec1c48f` repitió por digest inmutable la instalación desde
+  PostgreSQL vacío y el upgrade desde una copia lógica temporal de staging.
+- La base vacía terminó con 336/49 tablas y 16/10 registros de migración; el
+  upgrade conservó 349/59 tablas antes y después.
+- Ambas rutas aprobaron una segunda pasada idempotente, el runtime sin DDL,
+  salud/listo de staging y limpieza sin recursos efímeros residuales.
+- `vps-p108-empty-migration-drill.sh` ahora altera un checksum únicamente en la
+  base efímera, exige fallo cerrado y registro de auditoría, comprueba esquema y
+  ledger sin cambios y valida recuperación tras restaurar el valor controlado.
+- No se ejecutó DDL contra staging real ni se reinició o modificó producción.
+
 2026-07-28: Plan 108 / separación de privilegios PostgreSQL runtime.
 - Staging demostró que API/worker heredaban el usuario propietario con
   superusuario, CREATEDB, CREATEROLE y CREATE sobre public.

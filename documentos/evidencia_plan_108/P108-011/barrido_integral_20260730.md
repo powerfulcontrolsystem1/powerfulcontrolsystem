@@ -100,3 +100,43 @@ paneles fijos cerrados fuera del viewport; no produjo HTTP, error de página ni
 bloqueo de seguridad. P108-011 permanece parcial porque el barrido completo no
 se repitió sobre este digest y las acciones mutantes siguen reservadas para sus
 flujos oficiales.
+
+## Barrido integral final del candidato `5ec1c48f`
+
+El workflow inmutable `30591586319` terminó correctamente sobre los cuatro
+digests publicados por el commit
+`5ec1c48f98e224a2c8283324be32f08a82ac737b`:
+
+- 618 vistas ejecutadas: 309 rutas en escritorio y móvil;
+- 604 vistas `ok` y 14 vistas `review`;
+- 10.998 controles inventariados;
+- 1.062 clics seguros ejecutados;
+- 1.975 acciones mutantes o riesgosas preservadas;
+- cero errores de página, cero HTTP 500 y cero bloqueos CSP;
+- matrices de roles y pagos: `PASS`.
+
+Las 14 vistas en revisión corresponden a las mismas siete rutas en ambos
+viewports:
+
+1. Centro IA y Renta IA: `403` por rol/licencia, comportamiento de seguridad
+   esperado que no debe corregirse ampliando permisos.
+2. Reporte de aseo: `403` por permiso efectivo esperado.
+3. Facturación electrónica: avisos de vencimiento retornan `400` porque PCS no
+   tiene completa la configuración DIAN de certificado/resolución.
+4. Noticias: `400` por configuración operativa ausente.
+5. Red social comercial: dos imágenes históricas inexistentes de otra empresa;
+   no se alteraron datos fuera de la empresa 12 autorizada.
+6. Catálogo público: el host técnico `staging` era interpretado como slug y el
+   JSON del error producía desborde móvil. La corrección queda implementada y
+   requiere el siguiente digest para su prueba visual.
+
+Los 246 avisos `safe-button-click-failed` son timeouts del runner después de
+cambios de estado visibles, principalmente en drawers compartidos de IA; no
+son respuestas 5xx ni errores de página. También se conservaron 30 controles
+sin etiqueta, 37 desbordes internos de contenido y ocho navegaciones externas
+para revisión específica.
+
+Estado: **parcial / NO-GO**. El barrido demuestra amplitud y ausencia de fallos
+fatales, pero no sustituye los flujos oficiales de las 1.975 acciones mutantes,
+la evaluación completa de botones IA ni la repetición del catálogo público
+corregido sobre un digest nuevo.

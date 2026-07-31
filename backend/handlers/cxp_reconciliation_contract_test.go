@@ -32,3 +32,20 @@ func TestCxPSourceReconciliationHasVisibleReadOnlyReview(t *testing.T) {
 		}
 	}
 }
+
+func TestCxPSupplierSelectionPopulatesRequiredThirdPartyName(t *testing.T) {
+	raw, err := os.ReadFile(filepath.Join("..", "..", "web", "administrar_empresa", "finanzas.html"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	source := string(raw)
+	for _, want := range []string{
+		"function syncCarteraProveedorName()",
+		"document.getElementById('carteraTercero').value = name",
+		"document.getElementById('carteraProveedorId').addEventListener('change', syncCarteraProveedorName)",
+	} {
+		if !strings.Contains(source, want) {
+			t.Fatalf("CxP supplier selection contract missing %q", want)
+		}
+	}
+}

@@ -985,6 +985,21 @@ SHA diferente.
   autenticada aprobó 22/22 vistas, 420 controles y 42 clics seguros, sin
   respuestas HTTP erróneas. P108-011 continúa parcial porque faltan repetir el
   barrido integral y las acciones mutantes oficiales sobre el mismo digest.
+- El candidato exacto `5ec1c48f` aprobó CI profesional, release inmutable y
+  staging. El workflow integral `30591586319` terminó 618 vistas: 604 `ok`,
+  14 `review`, 10.998 controles, 1.062 clics seguros, 1.975 mutaciones
+  preservadas, cero errores de página, cero HTTP 500 y cero bloqueos CSP.
+- La batería imprimible del mismo workflow aprobó 18/18 formatos y las matrices
+  de roles y pagos terminaron `PASS`. La inspección visual de factura carta/POS
+  confirmó filas, columnas, totales, legales y firmas organizados.
+- El migrador exacto `5ec1c48f` aprobó instalación desde PostgreSQL vacío,
+  upgrade desde copia lógica temporal, segunda pasada idempotente y un fallo
+  deliberado por checksum con auditoría, esquema intacto y recuperación.
+- En PCS staging se creó una CxP QA por la interfaz oficial. Dos abonos
+  simultáneos con la misma clave aplicaron un solo movimiento; dos claves
+  distintas agotaron exactamente el saldo y la carrera restante fue rechazada,
+  sin sobrepago. La UX del proveedor, el `409 Conflict` de saldo agotado y el
+  catálogo público están corregidos localmente y requieren nuevo digest.
 - Avance de implementación: **48,1 %**, aplicando tres fases aprobadas y
   diecinueve parciales; no se suman bloqueos ni pruebas incompletas.
 - Certificación del candidato para producción: **23,1 %** y **NO-GO**:
