@@ -84,13 +84,16 @@ func TestReportesDatasetPDFAmplioNoRecortaColumnasNiFilas(t *testing.T) {
 		}
 	}
 	joined := strings.Join(lines, "\n")
-	for _, want := range []string{"Registro 1", "codigo: CXP-001", "estado_cartera: pendiente", "Registro 60", "codigo: CXP-060"} {
+	for _, want := range []string{"Registro 1", "codigo: CXP-001", "estado cartera: pendiente", "Registro 60", "codigo: CXP-060"} {
 		if !strings.Contains(joined, want) {
 			t.Fatalf("PDF amplio no conserva %q", want)
 		}
 	}
 	if strings.Contains(joined, "Salida truncada") {
 		t.Fatal("el PDF no debe truncar filas")
+	}
+	if strings.Contains(joined, "estado_cartera:") || strings.Contains(joined, "documento_codigo:") {
+		t.Fatal("las etiquetas PDF no deben exponer nombres técnicos con guion bajo")
 	}
 
 	pdf := reportesDatasetPDFContent(ds)
@@ -99,6 +102,48 @@ func TestReportesDatasetPDFAmplioNoRecortaColumnasNiFilas(t *testing.T) {
 	}
 	if !bytes.Contains(pdf, []byte("Pagina 2 de")) || !bytes.Contains(pdf, []byte("Registro 60")) {
 		t.Fatal("el PDF debe paginar y conservar el ultimo registro")
+	}
+	if !bytes.Contains(pdf, []byte("/MediaBox [0 0 612 792]")) {
+		t.Fatal("el PDF carta debe conservar dimensiones letter")
+	}
+}
+
+func TestReportesDatasetPDFRespetaPapelPOS80mm(t *testing.T) {
+	ds := empresaReporteDataset{
+		Key: "contable_cuentas_por_pagar", Title: "Cuentas por Pagar", Level: "contable",
+		EmpresaID: 12, Desde: "2026-07-01", Hasta: "2026-07-31", GeneratedAt: "2026-07-31 06:27:29",
+		Paper: "pos",
+		Columns: []string{
+			"codigo", "tercero", "documento_tipo", "documento_codigo", "fecha_emision",
+			"fecha_vencimiento", "valor_original", "saldo", "estado_cartera",
+		},
+		Rows: []map[string]interface{}{{
+			"codigo": "CXP-001", "tercero": "Proveedor con nombre suficientemente extenso para papel termico",
+			"documento_tipo": "cuenta_por_pagar", "documento_codigo": "DOCUMENTO-POS-001",
+			"fecha_emision": "2026-07-31", "fecha_vencimiento": "2026-08-31",
+			"valor_original": 102.00, "saldo": 74.99, "estado_cartera": "pendiente",
+		}},
+	}
+
+	for _, line := range reportesDatasetPDFLines(ds) {
+		if got := len([]rune(line)); got > 42 {
+			t.Fatalf("linea POS de %d caracteres excede el ancho de 80 mm: %q", got, line)
+		}
+	}
+	lines := reportesDatasetPDFLines(ds)
+	expectedHeight := len(lines)*11 + 48
+	if expectedHeight < 144 {
+		expectedHeight = 144
+	}
+	if expectedHeight > 792 {
+		expectedHeight = 792
+	}
+	pdf := reportesDatasetPDFContent(ds)
+	if !bytes.Contains(pdf, []byte(fmt.Sprintf("/MediaBox [0 0 227 %d]", expectedHeight))) {
+		t.Fatal("paper=pos debe generar un PDF de 80 mm de ancho")
+	}
+	if bytes.Contains(pdf, []byte("/MediaBox [0 0 612 792]")) {
+		t.Fatal("paper=pos no debe conservar dimensiones carta")
 	}
 }
 
@@ -130,6 +175,8 @@ func TestReportesImprimiblesAmpliosUsanRegistrosEnLugarDeTablaRecortada(t *testi
 		"sheet.classList.toggle('reports-print-wide', useRecordLayout);",
 		".reports-print-meta{grid-template-columns:1fr}",
 		".reports-print-page h2,.reports-print-page strong{color:#111827 !important}",
+		"function formatPreviewLabel(value)",
+		"escapeHtml(formatPreviewLabel(col))",
 		".reports-format-buttons{width:100%;min-width:0}",
 		".reports-print-page.reports-print-wide .reports-print-row{grid-template-columns:minmax(112px,.45fr) minmax(0,1fr);gap:8px;align-items:start}",
 		".reports-print-page strong{min-width:0;overflow-wrap:anywhere;word-break:break-word}",

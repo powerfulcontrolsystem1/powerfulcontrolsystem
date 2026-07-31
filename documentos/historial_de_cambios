@@ -40497,3 +40497,30 @@ acumulativa.
   una sola línea recortada. Usa registros etiquetados, envuelve cada dato al
   ancho de carta, conserva todas las filas en páginas sucesivas e imprime el
   número de página; CSV, Excel, JSON y TXT mantienen su salida tabular.
+
+2026-07-31: Plan 109 / PDF real de reportes en papel POS.
+- La prueba autenticada de PCS confirmó que `paper=pos` todavía devolvía una
+  página carta. El exportador aplica ahora un ancho PDF real de 80 mm, márgenes,
+  fuente, envoltura, altura ajustada al contenido y capacidad de página
+  específicos para rollo térmico; los consumidores que no indican papel
+  conservan carta como valor seguro.
+- Las vistas HTML y PDF sustituyen guiones bajos solo en las etiquetas visibles
+  de columnas y resúmenes. Las claves internas, consultas y valores permanecen
+  intactos, pero `documento_codigo` se presenta como `DOCUMENTO CODIGO` y puede
+  envolver por palabras en papel estrecho.
+
+2026-07-31: Plan 109 / restore aislado y auditoría de dominios críticos.
+- El snapshot más reciente de la VPS restauró dos veces en PostgreSQL 16.14
+  temporal. El dump, nueve tarballs obligatorios, las dos bases, cinco tablas
+  críticas y sus filtros por `empresa_id=12` aprobaron sin exponer datos.
+- Los contenedores efímeros se eliminaron al terminar. P109-008 queda parcial
+  hasta probar la aplicación contra el conjunto restaurado, checksums de
+  archivos, réplica A/B y rollback coordinado dentro del RPO/RTO aprobado.
+- `vps_restore_validation.ps1` incorpora la compuerta reproducible
+  `VerifyCriticalData`: valida bases, tablas y filtros críticos, y contrasta los
+  soportes IA privados persistidos con su empresa, miembro del tarball y hash
+  SHA-256. La opción exige un restore temporal real y falla de forma cerrada.
+- El nuevo modo aprobó en la VPS con dos bases, cinco tablas, cinco filtros y
+  dos archivos privados. El snapshot no contiene filas de soportes IA privados,
+  por lo que no se atribuye falsamente una conciliación de hashes; el control
+  queda activo para el primer soporte real y la limpieza terminó sin residuos.
