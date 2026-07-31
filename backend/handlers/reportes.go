@@ -7132,45 +7132,66 @@ func reportesDatasetTXTContent(ds empresaReporteDataset) string {
 
 func reportesDatasetPDFContent(ds empresaReporteDataset) []byte {
 	lines := reportesDatasetPDFLines(ds)
-	if len(lines) > 46 {
-		lines = append(lines[:45], "Salida truncada. Use CSV o JSON para detalle completo.")
+	if len(lines) == 0 {
+		lines = []string{"Sin datos para exportar."}
 	}
-
-	var streamBuilder strings.Builder
-	streamBuilder.WriteString("BT\n/F1 9 Tf\n13 TL\n50 760 Td\n")
-	for idx, line := range lines {
-		if idx > 0 {
-			streamBuilder.WriteString("T*\n")
-		}
-		streamBuilder.WriteString("(")
-		streamBuilder.WriteString(reportesEscapePDFText(line))
-		streamBuilder.WriteString(") Tj\n")
-	}
-	streamBuilder.WriteString("ET\n")
-	stream := streamBuilder.String()
+	const linesPerPage = 46
+	pageCount := (len(lines) + linesPerPage - 1) / linesPerPage
+	fontObjectID := 3 + (pageCount * 2)
+	lastObjectID := fontObjectID
+	offsets := make([]int, lastObjectID+1)
 
 	var pdf bytes.Buffer
-	offsets := make([]int, 6)
-
 	pdf.WriteString("%PDF-1.4\n")
 	offsets[1] = pdf.Len()
 	pdf.WriteString("1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n")
 	offsets[2] = pdf.Len()
-	pdf.WriteString("2 0 obj\n<< /Type /Pages /Kids [3 0 R] /Count 1 >>\nendobj\n")
-	offsets[3] = pdf.Len()
-	pdf.WriteString("3 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 5 0 R >> >> /Contents 4 0 R >>\nendobj\n")
-	offsets[4] = pdf.Len()
-	pdf.WriteString(fmt.Sprintf("4 0 obj\n<< /Length %d >>\nstream\n%sendstream\nendobj\n", len(stream), stream))
-	offsets[5] = pdf.Len()
-	pdf.WriteString("5 0 obj\n<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>\nendobj\n")
+	pdf.WriteString("2 0 obj\n<< /Type /Pages /Kids [")
+	for pageIndex := 0; pageIndex < pageCount; pageIndex++ {
+		fmt.Fprintf(&pdf, "%d 0 R ", 3+(pageIndex*2))
+	}
+	fmt.Fprintf(&pdf, "] /Count %d >>\nendobj\n", pageCount)
+
+	for pageIndex := 0; pageIndex < pageCount; pageIndex++ {
+		pageObjectID := 3 + (pageIndex * 2)
+		contentObjectID := pageObjectID + 1
+		start := pageIndex * linesPerPage
+		end := start + linesPerPage
+		if end > len(lines) {
+			end = len(lines)
+		}
+
+		var streamBuilder strings.Builder
+		streamBuilder.WriteString("BT\n/F1 9 Tf\n13 TL\n50 760 Td\n")
+		for idx, line := range lines[start:end] {
+			if idx > 0 {
+				streamBuilder.WriteString("T*\n")
+			}
+			streamBuilder.WriteString("(")
+			streamBuilder.WriteString(reportesEscapePDFText(line))
+			streamBuilder.WriteString(") Tj\n")
+		}
+		streamBuilder.WriteString("ET\nBT\n/F1 8 Tf\n270 24 Td\n(")
+		streamBuilder.WriteString(reportesEscapePDFText(fmt.Sprintf("Pagina %d de %d", pageIndex+1, pageCount)))
+		streamBuilder.WriteString(") Tj\nET\n")
+		stream := streamBuilder.String()
+
+		offsets[pageObjectID] = pdf.Len()
+		fmt.Fprintf(&pdf, "%d 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 %d 0 R >> >> /Contents %d 0 R >>\nendobj\n", pageObjectID, fontObjectID, contentObjectID)
+		offsets[contentObjectID] = pdf.Len()
+		fmt.Fprintf(&pdf, "%d 0 obj\n<< /Length %d >>\nstream\n%sendstream\nendobj\n", contentObjectID, len(stream), stream)
+	}
+
+	offsets[fontObjectID] = pdf.Len()
+	fmt.Fprintf(&pdf, "%d 0 obj\n<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>\nendobj\n", fontObjectID)
 
 	startXRef := pdf.Len()
-	pdf.WriteString("xref\n0 6\n")
+	fmt.Fprintf(&pdf, "xref\n0 %d\n", lastObjectID+1)
 	pdf.WriteString("0000000000 65535 f \n")
-	for i := 1; i <= 5; i++ {
+	for i := 1; i <= lastObjectID; i++ {
 		pdf.WriteString(fmt.Sprintf("%010d 00000 n \n", offsets[i]))
 	}
-	pdf.WriteString("trailer\n<< /Size 6 /Root 1 0 R >>\n")
+	fmt.Fprintf(&pdf, "trailer\n<< /Size %d /Root 1 0 R >>\n", lastObjectID+1)
 	pdf.WriteString(fmt.Sprintf("startxref\n%d\n%%%%EOF", startXRef))
 
 	return pdf.Bytes()
@@ -7199,23 +7220,74 @@ func reportesDatasetPDFLines(ds empresaReporteDataset) []string {
 		lines = append(lines, "")
 	}
 
-	if len(ds.Columns) > 0 {
-		lines = append(lines, strings.Join(ds.Columns, " | "))
+	const maxLineRunes = 84
+	appendWrapped := func(raw string) {
+		lines = append(lines, reportesWrapPDFLine(raw, maxLineRunes)...)
 	}
 
-	for _, row := range ds.Rows {
-		values := make([]string, len(ds.Columns))
-		for i, col := range ds.Columns {
-			values[i] = reportesStringValue(row[col])
+	if len(ds.Columns) > 8 {
+		for rowIndex, row := range ds.Rows {
+			appendWrapped(fmt.Sprintf("Registro %d", rowIndex+1))
+			for _, col := range ds.Columns {
+				appendWrapped(col + ": " + reportesStringValue(row[col]))
+			}
+			lines = append(lines, "")
 		}
-		lines = append(lines, strings.Join(values, " | "))
+	} else {
+		if len(ds.Columns) > 0 {
+			appendWrapped(strings.Join(ds.Columns, " | "))
+		}
+		for _, row := range ds.Rows {
+			values := make([]string, len(ds.Columns))
+			for i, col := range ds.Columns {
+				values[i] = reportesStringValue(row[col])
+			}
+			appendWrapped(strings.Join(values, " | "))
+		}
 	}
 
 	if len(ds.Rows) == 0 {
 		lines = append(lines, "Sin filas para el rango consultado.")
 	}
 
-	return lines
+	wrapped := make([]string, 0, len(lines))
+	for _, line := range lines {
+		wrapped = append(wrapped, reportesWrapPDFLine(line, maxLineRunes)...)
+	}
+	return wrapped
+}
+
+func reportesWrapPDFLine(raw string, maxRunes int) []string {
+	if maxRunes < 1 {
+		maxRunes = 84
+	}
+	raw = strings.Join(strings.Fields(raw), " ")
+	if raw == "" {
+		return []string{""}
+	}
+
+	remaining := []rune(raw)
+	wrapped := make([]string, 0, 2)
+	for len(remaining) > maxRunes {
+		cut := maxRunes
+		for i := maxRunes; i > 0; i-- {
+			if remaining[i-1] == ' ' || remaining[i-1] == '|' {
+				cut = i
+				break
+			}
+		}
+		line := strings.TrimSpace(string(remaining[:cut]))
+		if line == "" {
+			line = string(remaining[:maxRunes])
+			cut = maxRunes
+		}
+		wrapped = append(wrapped, line)
+		remaining = []rune(strings.TrimSpace(string(remaining[cut:])))
+	}
+	if len(remaining) > 0 {
+		wrapped = append(wrapped, string(remaining))
+	}
+	return wrapped
 }
 
 func reportesEscapePDFText(raw string) string {

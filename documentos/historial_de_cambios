@@ -40485,3 +40485,15 @@ acumulativa.
 - En pantallas de hasta 600 px, la hoja imprimible usa una sola columna de
   metadatos y corta valores largos dentro de su celda. Así el formato carta no
   conserva desbordamiento interno aunque el reporte tenga claves extensas.
+
+2026-07-31: Plan 109 / contraste de vistas imprimibles.
+- La validación visual real de CxP en staging detectó que el tema oscuro podía
+  prevalecer sobre títulos y valores de la hoja blanca. La vista imprimible
+  fija contraste oscuro para encabezados y datos, y reserva más ancho a las
+  etiquetas de registros extensos en móvil para reducir cortes innecesarios.
+  Los botones de exportación también ocupan el ancho disponible y envuelven
+  dentro de su contenedor, sin dejar el último formato recortado.
+- La exportación PDF de datasets anchos dejó de escribir todas las columnas en
+  una sola línea recortada. Usa registros etiquetados, envuelve cada dato al
+  ancho de carta, conserva todas las filas en páginas sucesivas e imprime el
+  número de página; CSV, Excel, JSON y TXT mantienen su salida tabular.
