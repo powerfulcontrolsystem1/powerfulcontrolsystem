@@ -68,3 +68,31 @@ primera ejecución, replay y rechazo entre tenants. Falta publicar el nuevo
 digest, probar un pago PCS controlado y definir la recuperación explícita de
 los dos eventos históricos `dead`; no se reactivan masivamente de forma
 automática.
+
+## Cierre del handler CxP en staging - candidato `f7214329`
+
+El código del handler quedó incluido en el candidato final
+`f7214329ed70b15085f300d823244617b9cb998f`. CI profesional
+`30595918626` y release inmutable `30595920016` terminaron `success`. Los
+cuatro digests exactos se promovieron solo a staging; migrador `exit 0`,
+salud/readiness verdes y huella de producción sin cambios.
+
+Se registró desde la interfaz oficial de Finanzas un abono interno de `0,01`
+sobre `P108-CXP-397E42A7`. La trazabilidad de solo lectura por
+`empresa_id=12` confirmó:
+
+| Etapa | Identidad | Resultado |
+| --- | ---: | --- |
+| Pago CxP | `pago_id=4` | monto `0,01`, movimiento `35` |
+| Outbox | `id=5` | `published`, un intento, sin error |
+| Job durable | `id=6065388` | `completed`, un intento, sin error |
+| Evento contable | `id=97` | único, monto `0,01`, procesado |
+| Asiento | `id=86` | débito `0,01`, crédito `0,01`, diferencia `0` |
+
+Las líneas del asiento debitan `220505` y acreditan `110505`. Los conteos
+naturales son un evento y un asiento para el pago, por lo que no hubo replay
+duplicado.
+
+El flujo nuevo queda **PASS**. P108-003 permanece **parcial / NO-GO** porque
+los dos eventos CxP históricos `dead` requieren inventario, previsualización y
+recuperación explícita por empresa; no se reactivaron automáticamente.

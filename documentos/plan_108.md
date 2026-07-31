@@ -825,7 +825,7 @@ canónica, conciliación financiera y pruebas reales sobre los mismos datos.
 | P108-004 | Tenant/roles | matriz A/B negativa | Parcial estático |
 | P108-005 | CxP canónica | ADR, migración, conciliación, concurrencia | Parcial local |
 | P108-006 | Documentos proveedor IA | carga, edición, confirmación, duplicado | Parcial local |
-| P108-007 | Consistencia financiera | conciliación por evento | Pendiente |
+| P108-007 | Consistencia financiera | conciliación por evento | Parcial: CxP trazada y balanceada; falta matriz financiera completa |
 | P108-008 | Contador profesional | ciclo, reportes, impuestos, UAT | Parcial local |
 | P108-009 | ReportSpec IA | staging, rechazo seguro, exportación | Parcial local |
 | P108-010 | IA profesional | roles, memoria, tools, evals, costos | Parcial local |
@@ -1008,11 +1008,24 @@ SHA diferente.
   `2`, pero descubrió dos outbox `dead` por topic sin handler. El worker
   idempotente y multiempresa está implementado y requiere un nuevo digest,
   pago controlado y asiento balanceado antes de contar P108-003/P108-007.
+- El candidato final `f7214329` aprobó CI profesional `30595918626`, release
+  inmutable `30595920016`, migración y promoción aislada a staging. Producción
+  conservó su huella. Un abono oficial PCS de `0,01` produjo outbox
+  `published`, job `completed`, evento único y asiento débito/crédito
+  balanceado; la vista final muestra `25,01`, `74,99` y `0,01` sin redondear a
+  cero.
+- El barrido integral `30594588317` terminó 618 vistas: 606 `ok`, 12
+  `review`, 11.040 controles, 1.088 clics seguros, 1.980 acciones riesgosas
+  preservadas y 18/18 impresiones. La amplitud mejora, pero no sustituye las
+  mutaciones oficiales ni todos los botones IA.
 - Avance de implementación: **48,1 %**, aplicando tres fases aprobadas y
-  diecinueve parciales; no se suman bloqueos ni pruebas incompletas.
+  diecinueve parciales; la evidencia nueva fortalece P108-003/P108-005/P108-007
+  ya parciales, sin cerrar sus compuertas restantes.
 - Certificación del candidato para producción: **23,1 %** y **NO-GO**:
   P108-000/P108-001/P108-021 aprobadas y P108-002, P108-011, P108-012,
-  P108-016, P108-018 y P108-019 parciales sobre el mismo artefacto.
+  P108-016, P108-018 y P108-019 parciales. La prueba CxP es evidencia positiva
+  del candidato, pero no se eleva el porcentaje hasta cerrar recuperación
+  histórica, A/B y la matriz financiera completa.
 
 ## 11. Compuerta final GO/NO-GO
 

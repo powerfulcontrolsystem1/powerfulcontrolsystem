@@ -138,3 +138,19 @@ con una segunda identidad empresarial limitada.
 La semántica concurrente y la UX corregida quedan **PASS** sobre este digest.
 La fase continúa parcial por prueba A/B limitada y porque el evento outbox CxP
 reveló un handler ausente, corregido en el siguiente candidato.
+
+## Trazabilidad contable y precisión visible - candidato `f7214329`
+
+El candidato final procesó correctamente un abono real interno de `0,01` sobre
+la CxP `P108-CXP-397E42A7`: valor pagado `25,01`, saldo `74,99`, outbox
+`published`, job `completed`, evento contable único y asiento balanceado.
+
+La revisión visual detectó que la primera versión ocultaba los centavos como
+`$ 0`. El frontend final muestra `25,01`, `74,99` y el movimiento `0,01` en
+filas y columnas alineadas, conservando importes enteros sin decimales
+innecesarios. La prueba visual se repitió después de promover el digest
+inmutable y quedó **PASS**.
+
+P108-005 continúa **parcial / NO-GO** exclusivamente por la prueba A/B con una
+segunda identidad empresarial limitada y por la conciliación/recovery
+aprobada de eventos históricos.

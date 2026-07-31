@@ -4,7 +4,9 @@
 - `finanzas.html` muestra dos decimales cuando el importe contiene unidad menor
   y conserva el formato entero para valores sin fracción.
 - No cambia cálculos, moneda, persistencia, permisos ni aislamiento empresarial;
-  la corrección requiere repetición visual sobre el digest inmutable nuevo.
+  el candidato `f7214329` mostró visualmente `25,01`, `74,99` y `0,01` en PCS.
+- El mismo pago produjo outbox publicado, job completado, evento contable único
+  y asiento débito/crédito balanceado; producción conservó su huella.
 
 2026-07-30: Plan 108 / concurrencia real CxP y selección de proveedor.
 - En staging PCS se creó una CxP QA de 2 mediante la interfaz oficial.

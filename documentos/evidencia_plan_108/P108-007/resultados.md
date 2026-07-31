@@ -3,7 +3,7 @@
 Fecha: 2026-07-30  
 Ambiente: staging aislado  
 Empresa autorizada: Powerful Control System (`empresa_id=12`)  
-Candidato observado: `5566a213c919a8ed1c1c0d2b6a823600c760afb2`
+Candidato observado: `f7214329ed70b15085f300d823244617b9cb998f`
 
 ## Conciliación real CxP
 
@@ -41,8 +41,14 @@ crédito a caja/bancos. La función valida que:
 
 ## Estado
 
-P108-007 permanece **parcial / NO-GO** hasta publicar el nuevo worker,
-demostrar en PCS un outbox `published`, job `completed`, evento procesado y
-asiento balanceado, y aprobar la recuperación controlada de los dos eventos
+El candidato final demostró en PCS un pago CxP controlado de `0,01`, outbox
+`published`, job `completed`, evento procesado y asiento con débito/crédito
+`0,01` y diferencia `0`. Pago, evento y asiento conservan una sola fila por su
+identidad natural. La interfaz final muestra también la unidad menor sin
+redondearla visualmente a cero.
+
+P108-007 permanece **parcial / NO-GO**: el caso CxP queda aprobado, pero aún
+faltan la matriz completa de ventas, devoluciones, impuestos, retenciones,
+anulaciones y monedas, además de la recuperación controlada de los dos eventos
 históricos `dead`. No se hará una reactivación global sin inventario y
 previsualización por empresa.

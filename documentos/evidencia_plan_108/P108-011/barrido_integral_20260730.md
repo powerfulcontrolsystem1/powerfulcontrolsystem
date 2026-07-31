@@ -140,3 +140,27 @@ Estado: **parcial / NO-GO**. El barrido demuestra amplitud y ausencia de fallos
 fatales, pero no sustituye los flujos oficiales de las 1.975 acciones mutantes,
 la evaluación completa de botones IA ni la repetición del catálogo público
 corregido sobre un digest nuevo.
+
+## Repetición integral del candidato `5566a213`
+
+El workflow `30594588317` terminó `success`:
+
+- 618 vistas: 606 `ok` y 12 `review`;
+- 11.040 controles inventariados;
+- 1.088 clics seguros ejecutados;
+- 1.980 acciones mutantes o riesgosas preservadas;
+- impresión: 18/18 formatos `ok`.
+
+Los avisos del runner se concentran en 242 timeouts de clic seguro después de
+cambios visibles de estado, 37 desbordes internos de contenido, 30 controles
+sin etiqueta, ocho navegaciones externas y cuatro desbordes horizontales. Las
+12 vistas en revisión son Centro IA, Facturación electrónica, Noticias, Renta
+IA, Reporte de aseo y Red social comercial en escritorio/móvil.
+
+El candidato final `f7214329` solo cambia la presentación monetaria de
+Finanzas respecto de ese barrido. Se repitió manualmente el flujo autenticado
+en PCS y se confirmó que la tabla de CxP y la tabla de movimientos muestran
+`25,01`, `74,99` y `0,01` en columnas organizadas, sin ocultar centavos.
+
+P108-011 permanece **parcial / NO-GO** porque las 1.980 acciones riesgosas,
+incluidos todos los botones IA, deben probarse mediante sus flujos oficiales.
