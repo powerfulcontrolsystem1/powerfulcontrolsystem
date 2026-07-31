@@ -40480,3 +40480,8 @@ acumulativa.
   más de ocho columnas fuera del ancho imprimible. Ahora las representa como
   registros etiquetados por fila, conservando lectura y evitando recortes;
   POS continúa usando ese formato compacto.
+
+2026-07-31: Plan 109 / impresión CxP móvil.
+- En pantallas de hasta 600 px, la hoja imprimible usa una sola columna de
+  metadatos y corta valores largos dentro de su celda. Así el formato carta no
+  conserva desbordamiento interno aunque el reporte tenga claves extensas.

@@ -35,7 +35,7 @@
 2026-07-31
 - `web/administrar_empresa/reportes_ejecutivos.html`: centro de reportes y
   documento imprimible; los datasets anchos pasan a registros etiquetados para
-  conservar el ancho de papel carta y POS.
+  conservar el ancho de papel carta y POS, incluidos metadatos móviles.
 - `backend/handlers/reportes_catalogo_test.go`: contrato de presentación que
   impide volver a recortar impresiones de reportes anchos.
 

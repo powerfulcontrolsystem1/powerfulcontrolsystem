@@ -74,6 +74,8 @@ func TestReportesImprimiblesAmpliosUsanRegistrosEnLugarDeTablaRecortada(t *testi
 		".reports-print-page.reports-print-wide .reports-print-records{display:block}",
 		"var useRecordLayout = columns.length > 8;",
 		"sheet.classList.toggle('reports-print-wide', useRecordLayout);",
+		".reports-print-meta{grid-template-columns:1fr}",
+		".reports-print-page strong{min-width:0;overflow-wrap:anywhere;word-break:break-word}",
 	} {
 		if !strings.Contains(source, want) {
 			t.Fatalf("contrato de impresion ancha ausente: %q", want)

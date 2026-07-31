@@ -61,6 +61,12 @@
       .reports-header,.reports-controls,.reports-filters,.reports-selected-info{grid-template-columns:1fr}
       .reports-preview-tools{justify-content:flex-start}
     }
+    @media (max-width: 600px){
+      .reports-print-page{box-sizing:border-box;width:100%;max-width:100%;padding:12px}
+      .reports-print-meta{grid-template-columns:1fr}
+      .reports-print-meta div,.reports-print-summary div{grid-template-columns:minmax(88px,.45fr) minmax(0,1fr);min-width:0}
+      .reports-print-page strong{min-width:0;overflow-wrap:anywhere;word-break:break-word}
+    }
     @media print{
       @page{size:letter;margin:12mm}
       body.reports-paper-pos{width:80mm}
