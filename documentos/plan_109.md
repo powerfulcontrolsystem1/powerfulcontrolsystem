@@ -574,9 +574,9 @@ Se informan dos cifras:
 Estado actualizado al 2026-07-31:
 
 - P109-000 está aprobada en staging; P109-001, P109-003, P109-004, P109-005,
-  P109-009, P109-010, P109-011 y P109-012 tienen evidencia parcial del mismo
-  bloque. Las demás fases continúan pendientes o bloqueadas.
-- Implementación Plan 109: **33,3 %** (`1 aprobada + 8 parciales`, de 15 fases).
+  P109-008, P109-009, P109-010, P109-011 y P109-012 tienen evidencia parcial
+  del mismo bloque. Las demás fases continúan pendientes o bloqueadas.
+- Implementación Plan 109: **36,7 %** (`1 aprobada + 9 parciales`, de 15 fases).
 - Certificación del candidato desplegado: **6,7 %** (solo P109-000 aprobada en
   el mismo digest); el arnés de QA endurecido aún está en rama local hasta su
   promoción controlada.

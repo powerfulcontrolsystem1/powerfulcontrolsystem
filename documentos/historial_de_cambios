@@ -40508,3 +40508,11 @@ acumulativa.
   de columnas y resúmenes. Las claves internas, consultas y valores permanecen
   intactos, pero `documento_codigo` se presenta como `DOCUMENTO CODIGO` y puede
   envolver por palabras en papel estrecho.
+
+2026-07-31: Plan 109 / restore aislado y auditoría de dominios críticos.
+- El snapshot más reciente de la VPS restauró dos veces en PostgreSQL 16.14
+  temporal. El dump, nueve tarballs obligatorios, las dos bases, cinco tablas
+  críticas y sus filtros por `empresa_id=12` aprobaron sin exponer datos.
+- Los contenedores efímeros se eliminaron al terminar. P109-008 queda parcial
+  hasta probar la aplicación contra el conjunto restaurado, checksums de
+  archivos, réplica A/B y rollback coordinado dentro del RPO/RTO aprobado.

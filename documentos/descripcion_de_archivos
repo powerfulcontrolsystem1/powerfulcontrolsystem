@@ -12504,3 +12504,7 @@ panel de seguridad para que el navegador reciba la correccion CSRF de staging.
 - `deploy/scripts/vps-staging-digest-up.sh`: acepta rutas Compose explícitas,
   exige que los cuatro servicios resuelvan exactamente a los digests solicitados
   y limita la recreación al runtime de staging.
+- `documentos/evidencia_plan_109/P109-008/2026-07-31_restore_aislado_y_auditoria_critica.md`:
+  documenta dos restores PostgreSQL efímeros del snapshot VPS, la apertura de
+  volúmenes, la consulta de dominios críticos por `empresa_id` y los límites
+  pendientes para certificar réplica, archivos y rollback integral.
