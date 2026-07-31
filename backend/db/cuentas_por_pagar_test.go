@@ -1,6 +1,7 @@
 package db
 
 import (
+	"context"
 	"database/sql"
 	"math"
 	"os"
@@ -89,6 +90,7 @@ func TestRegistrarEmpresaCxPAbonoKeepsTenantScopedAtomicInvariants(t *testing.T)
 		"INSERT INTO empresa_cxp_pagos",
 		"InsertOutboxEvent(tx",
 		"ErrEmpresaCxPAmountExceedsBalance",
+		"EmpresaCxPPaymentOutboxTopic",
 	} {
 		if !strings.Contains(body, required) {
 			t.Fatalf("CxP atomic flow must preserve %q", required)
@@ -100,6 +102,44 @@ func TestRegistrarEmpresaCxPAbonoKeepsTenantScopedAtomicInvariants(t *testing.T)
 	}
 	if strings.Count(body[accountLock:], "FROM empresa_cxp_pagos WHERE empresa_id = ? AND idempotency_key_hash = ?") == 0 {
 		t.Fatal("CxP flow must recheck idempotency after the account lock for concurrent retries")
+	}
+}
+
+func TestProcessEmpresaCxPPaymentAccountingRejectsInvalidPayloadBeforeDatabase(t *testing.T) {
+	t.Parallel()
+	for _, test := range []struct {
+		empresaID int64
+		payload   string
+	}{
+		{0, `{"cuenta_por_pagar_id":1,"pago_id":1,"movimiento_finanzas_id":1,"monto":1}`},
+		{12, `{}`},
+		{12, `{"cuenta_por_pagar_id":1,"pago_id":1,"movimiento_finanzas_id":1,"monto":-1}`},
+		{12, `no-json`},
+	} {
+		if _, err := ProcessEmpresaCxPPaymentAccounting(context.Background(), &sql.DB{}, test.empresaID, test.payload); err == nil {
+			t.Fatalf("empresa=%d payload=%q must fail before database access", test.empresaID, test.payload)
+		}
+	}
+}
+
+func TestProcessEmpresaCxPPaymentAccountingPreservesTenantAndRetryIdempotency(t *testing.T) {
+	t.Parallel()
+	raw, err := os.ReadFile("cuentas_por_pagar.go")
+	if err != nil {
+		t.Fatal(err)
+	}
+	source := string(raw)
+	for _, required := range []string{
+		"c.empresa_id = p.empresa_id AND c.id = p.cuenta_por_pagar_id",
+		"m.empresa_id = p.empresa_id AND m.id = p.movimiento_finanzas_id",
+		"WHERE p.empresa_id = ? AND p.id = ? AND p.cuenta_por_pagar_id = ?",
+		"FOR UPDATE OF p",
+		"entidad = 'empresa_cxp_pagos' AND entidad_id = ?",
+		"'abono_proveedor_registrado'",
+	} {
+		if !strings.Contains(source, required) {
+			t.Fatalf("CxP accounting worker contract missing %q", required)
+		}
 	}
 }
 

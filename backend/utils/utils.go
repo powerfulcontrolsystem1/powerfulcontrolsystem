@@ -630,6 +630,8 @@ func securityContentSecurityPolicy() string {
 	customConnect := cspOriginsFromEnv("PCS_CSP_CONNECT_ORIGINS")
 	customFrames := cspOriginsFromEnv("PCS_CSP_FRAME_ORIGINS")
 	customScripts := cspOriginsFromEnv("PCS_CSP_SCRIPT_ORIGINS")
+	customStyles := cspOriginsFromEnv("PCS_CSP_STYLE_ORIGINS")
+	customFonts := cspOriginsFromEnv("PCS_CSP_FONT_ORIGINS")
 
 	directives := []string{
 		"default-src 'self'",
@@ -638,7 +640,8 @@ func securityContentSecurityPolicy() string {
 		"frame-ancestors 'self'",
 		"form-action 'self'",
 		"img-src " + cspJoinSources(providerImages, append(documentOrigins, customImages...)...),
-		"style-src 'self' 'unsafe-inline'",
+		"style-src " + cspJoinSources([]string{"'self'", "'unsafe-inline'"}, customStyles...),
+		"font-src " + cspJoinSources([]string{"'self'", "data:"}, customFonts...),
 		"script-src " + cspJoinSources(providerScripts, customScripts...),
 		"connect-src " + cspJoinSources(providerConnect, append(documentOrigins, customConnect...)...),
 		"frame-src " + cspJoinSources(providerFrames, append(documentOrigins, customFrames...)...),
@@ -1017,18 +1020,18 @@ func AuthMiddleware(dbSuper *sql.DB, next http.Handler) http.Handler {
 
 		// Rutas públicas exactas (no usar prefijo "/" porque abriría todo el sistema).
 		publicExact := map[string]struct{}{
-			"/":                                                     {},
-			"/health":                                               {},
-			"/ready":                                                {},
-			"/index.html":                                           {},
-			"/mantenimiento.html":                                   {},
-			"/descripcion_de_los_sistemas.ht":                       {},
-			"/descripcion_de_los_sistemas.html":                     {},
-			"/Informacion_de_contacto.html":                         {},
-			"/soporte_remoto_acceso.html":                           {},
-			"/red_social_comercial.html":                            {},
-			"/perfil_red_social.html":                               {},
-			"/venta_publica.html":                                   {},
+			"/":                                 {},
+			"/health":                           {},
+			"/ready":                            {},
+			"/index.html":                       {},
+			"/mantenimiento.html":               {},
+			"/descripcion_de_los_sistemas.ht":   {},
+			"/descripcion_de_los_sistemas.html": {},
+			"/Informacion_de_contacto.html":     {},
+			"/soporte_remoto_acceso.html":       {},
+			"/red_social_comercial.html":        {},
+			"/perfil_red_social.html":           {},
+			"/venta_publica.html":               {},
 			"/visualizar_productos_y_precios_publico.html":          {},
 			"/pagar_productos_de_venta_publica.html":                {},
 			"/pagar_licencia.html":                                  {},

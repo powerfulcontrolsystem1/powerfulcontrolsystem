@@ -2495,8 +2495,8 @@ func GetEmpresaCreditosCarteraResumen(dbConn *sql.DB, empresaID int64, includeIn
 	today := time.Now().In(time.Local).Format("2006-01-02")
 	query := `SELECT
 		COUNT(1),
-		SUM(CASE WHEN LOWER(COALESCE(estado_credito, 'activo')) = 'activo' THEN 1 ELSE 0 END),
-		SUM(CASE WHEN COALESCE(saldo_actual, 0) > 0 AND (
+		COALESCE(SUM(CASE WHEN LOWER(COALESCE(estado_credito, 'activo')) = 'activo' THEN 1 ELSE 0 END), 0),
+		COALESCE(SUM(CASE WHEN COALESCE(saldo_actual, 0) > 0 AND (
 			COALESCE(NULLIF(SUBSTR(TRIM(COALESCE(fecha_vencimiento, '')), 1, 10), ''), ?) < ?
 			OR EXISTS (
 				SELECT 1 FROM empresa_creditos_cuotas cc
@@ -2507,8 +2507,8 @@ func GetEmpresaCreditosCarteraResumen(dbConn *sql.DB, empresaID int64, includeIn
 				  AND COALESCE(cc.saldo_cuota, 0) > 0
 				  AND COALESCE(NULLIF(SUBSTR(TRIM(COALESCE(cc.fecha_vencimiento, '')), 1, 10), ''), ?) < ?
 			)
-		) THEN 1 ELSE 0 END),
-		SUM(CASE WHEN COALESCE(dias_mora, 0) > 0 OR EXISTS (
+		) THEN 1 ELSE 0 END), 0),
+		COALESCE(SUM(CASE WHEN COALESCE(dias_mora, 0) > 0 OR EXISTS (
 			SELECT 1 FROM empresa_creditos_cuotas cc
 			WHERE cc.empresa_id = empresa_creditos.empresa_id
 			  AND cc.credito_id = empresa_creditos.id
@@ -2516,8 +2516,8 @@ func GetEmpresaCreditosCarteraResumen(dbConn *sql.DB, empresaID int64, includeIn
 			  AND LOWER(COALESCE(cc.estado_cuota, 'pendiente')) IN ('pendiente','parcial','vencida')
 			  AND COALESCE(cc.saldo_cuota, 0) > 0
 			  AND COALESCE(NULLIF(SUBSTR(TRIM(COALESCE(cc.fecha_vencimiento, '')), 1, 10), ''), ?) < ?
-		) THEN 1 ELSE 0 END),
-		SUM(CASE WHEN LOWER(COALESCE(estado_credito, 'activo')) = 'cerrado' THEN 1 ELSE 0 END),
+		) THEN 1 ELSE 0 END), 0),
+		COALESCE(SUM(CASE WHEN LOWER(COALESCE(estado_credito, 'activo')) = 'cerrado' THEN 1 ELSE 0 END), 0),
 		COALESCE(SUM(COALESCE(monto_aprobado, 0)), 0),
 		COALESCE(SUM(COALESCE(saldo_actual, 0)), 0),
 		COALESCE(SUM(COALESCE(saldo_disponible, 0)), 0)

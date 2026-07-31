@@ -1,6 +1,7 @@
 package db
 
 import (
+	"context"
 	"database/sql"
 	"encoding/json"
 	"errors"
@@ -10,11 +11,15 @@ import (
 	"time"
 )
 
-const empresaCxPAtomicSchemaFingerprint = "empresa_cxp_pagos:v1:tenant-lock-idempotency-finance-outbox"
+const (
+	empresaCxPAtomicSchemaFingerprint = "empresa_cxp_pagos:v1:tenant-lock-idempotency-finance-outbox"
+	EmpresaCxPPaymentOutboxTopic      = "cuentas_por_pagar.pago_registrado"
+)
 
 var (
 	ErrEmpresaCxPIdempotencyKeyRequired = errors.New("la clave de idempotencia es obligatoria")
 	ErrEmpresaCxPAmountExceedsBalance   = errors.New("el monto supera el saldo pendiente de la cuenta por pagar")
+	ErrEmpresaCxPNoPendingBalance       = errors.New("la cuenta por pagar no tiene saldo pendiente")
 )
 
 // EmpresaCxPAbonoInput is the explicit, tenant-scoped application of one
@@ -44,6 +49,13 @@ type EmpresaCxPAbonoResult struct {
 	SaldoNuevo           float64 `json:"saldo"`
 	EstadoCartera        string  `json:"estado_cartera"`
 	IdempotentReplay     bool    `json:"idempotent_replay"`
+}
+
+type EmpresaCxPPaymentAccountingResult struct {
+	EmpresaID        int64 `json:"empresa_id"`
+	PagoID           int64 `json:"pago_id"`
+	EventoContableID int64 `json:"evento_contable_id"`
+	IdempotentReplay bool  `json:"idempotent_replay"`
 }
 
 func applyEmpresaCxPAtomicSchemaTx(tx *sql.Tx) error {
@@ -184,7 +196,7 @@ func RegistrarEmpresaCxPAbono(dbConn *sql.DB, input EmpresaCxPAbonoInput) (Empre
 	}
 	saldoAnterior = roundReportesMoney(saldoAnterior)
 	if saldoAnterior <= 0 {
-		return result, fmt.Errorf("la cuenta por pagar no tiene saldo pendiente")
+		return result, ErrEmpresaCxPNoPendingBalance
 	}
 	if input.Monto > saldoAnterior {
 		return result, ErrEmpresaCxPAmountExceedsBalance
@@ -256,13 +268,143 @@ func RegistrarEmpresaCxPAbono(dbConn *sql.DB, input EmpresaCxPAbonoInput) (Empre
 		return result, err
 	}
 	payload, _ := json.Marshal(map[string]interface{}{"cuenta_por_pagar_id": input.CuentaPorPagarID, "pago_id": pagoID, "movimiento_finanzas_id": movementID, "monto": input.Monto})
-	if err := InsertOutboxEvent(tx, OutboxEvent{EmpresaID: input.EmpresaID, Topic: "cuentas_por_pagar.pago_registrado", PayloadJSON: string(payload), IdempotencyKey: "cxp-outbox:" + keyHash}); err != nil {
+	if err := InsertOutboxEvent(tx, OutboxEvent{EmpresaID: input.EmpresaID, Topic: EmpresaCxPPaymentOutboxTopic, PayloadJSON: string(payload), IdempotencyKey: "cxp-outbox:" + keyHash}); err != nil {
 		return result, err
 	}
 	if err := tx.Commit(); err != nil {
 		return result, err
 	}
 	return EmpresaCxPAbonoResult{EmpresaID: input.EmpresaID, CuentaPorPagarID: input.CuentaPorPagarID, PagoID: pagoID, MovimientoFinanzasID: movementID, MontoAplicado: input.Monto, SaldoAnterior: saldoAnterior, SaldoNuevo: saldoNuevo, EstadoCartera: estadoNuevo}, nil
+}
+
+// ProcessEmpresaCxPPaymentAccounting converts the committed CxP outbox event
+// into one accounting event. The payment row is locked before checking the
+// natural event key so a worker retry cannot create a duplicate journal entry.
+func ProcessEmpresaCxPPaymentAccounting(ctx context.Context, dbConn *sql.DB, empresaID int64, payloadJSON string) (EmpresaCxPPaymentAccountingResult, error) {
+	var result EmpresaCxPPaymentAccountingResult
+	if dbConn == nil {
+		return result, fmt.Errorf("database not available")
+	}
+	if empresaID <= 0 {
+		return result, fmt.Errorf("empresa_id es obligatorio")
+	}
+	var payload struct {
+		CuentaPorPagarID     int64   `json:"cuenta_por_pagar_id"`
+		PagoID               int64   `json:"pago_id"`
+		MovimientoFinanzasID int64   `json:"movimiento_finanzas_id"`
+		Monto                float64 `json:"monto"`
+	}
+	if err := json.Unmarshal([]byte(strings.TrimSpace(payloadJSON)), &payload); err != nil {
+		return result, fmt.Errorf("payload CxP invalido")
+	}
+	if payload.CuentaPorPagarID <= 0 || payload.PagoID <= 0 || payload.MovimientoFinanzasID <= 0 ||
+		payload.Monto <= 0 || math.IsNaN(payload.Monto) || math.IsInf(payload.Monto, 0) {
+		return result, fmt.Errorf("payload CxP incompleto")
+	}
+
+	tx, err := dbConn.BeginTx(ctx, nil)
+	if err != nil {
+		return result, err
+	}
+	defer func() { _ = tx.Rollback() }()
+
+	var (
+		paymentAmount, movementTotal float64
+		metodoPago, referencia       string
+		codigoCxP, documentoCodigo   string
+		periodoContable, moneda      string
+		fechaMovimiento              string
+	)
+	err = queryRowTxSQLCompat(tx, `SELECT
+		COALESCE(p.monto, 0), COALESCE(p.metodo_pago, ''), COALESCE(p.referencia_externa, ''),
+		COALESCE(c.codigo, ''), COALESCE(c.documento_codigo, ''),
+		COALESCE(m.periodo_contable, ''), COALESCE(m.moneda, 'COP'),
+		COALESCE(m.fecha_movimiento, ''), COALESCE(NULLIF(m.total_neto, 0), NULLIF(m.total, 0), m.monto, 0)
+		FROM empresa_cxp_pagos p
+		JOIN empresa_cuentas_por_pagar c
+		  ON c.empresa_id = p.empresa_id AND c.id = p.cuenta_por_pagar_id
+		JOIN empresa_finanzas_movimientos m
+		  ON m.empresa_id = p.empresa_id AND m.id = p.movimiento_finanzas_id
+		WHERE p.empresa_id = ? AND p.id = ? AND p.cuenta_por_pagar_id = ?
+		  AND p.movimiento_finanzas_id = ? AND COALESCE(m.estado, 'activo') = 'activo'
+		FOR UPDATE OF p`,
+		empresaID, payload.PagoID, payload.CuentaPorPagarID, payload.MovimientoFinanzasID).
+		Scan(&paymentAmount, &metodoPago, &referencia, &codigoCxP, &documentoCodigo,
+			&periodoContable, &moneda, &fechaMovimiento, &movementTotal)
+	if err != nil {
+		return result, err
+	}
+	if roundReportesMoney(paymentAmount) != roundReportesMoney(payload.Monto) ||
+		roundReportesMoney(movementTotal) != roundReportesMoney(payload.Monto) {
+		return result, fmt.Errorf("pago CxP y movimiento financiero no concilian")
+	}
+	periodoContable = normalizePeriodoEventoContable(periodoContable)
+	if periodoContable == "" {
+		periodoContable = normalizePeriodoEventoContable(fechaMovimiento)
+	}
+	if periodoContable == "" {
+		periodoContable = time.Now().In(time.Local).Format("2006-01")
+	}
+	moneda = strings.ToUpper(strings.TrimSpace(moneda))
+	if moneda == "" {
+		moneda = "COP"
+	}
+	if strings.TrimSpace(fechaMovimiento) == "" {
+		fechaMovimiento = time.Now().In(time.Local).Format("2006-01-02 15:04:05")
+	}
+
+	result = EmpresaCxPPaymentAccountingResult{EmpresaID: empresaID, PagoID: payload.PagoID}
+	err = queryRowTxSQLCompat(tx, `SELECT id
+		FROM empresa_eventos_contables
+		WHERE empresa_id = ? AND modulo = 'finanzas' AND evento = 'abono_proveedor_registrado'
+		  AND entidad = 'empresa_cxp_pagos' AND entidad_id = ?
+		  AND COALESCE(estado, 'activo') <> 'anulado'
+		ORDER BY id ASC LIMIT 1`, empresaID, payload.PagoID).Scan(&result.EventoContableID)
+	if err == nil {
+		result.IdempotentReplay = true
+		if err := tx.Commit(); err != nil {
+			return EmpresaCxPPaymentAccountingResult{}, err
+		}
+		return result, nil
+	}
+	if !errors.Is(err, sql.ErrNoRows) {
+		return EmpresaCxPPaymentAccountingResult{}, err
+	}
+
+	accountingPayload, err := json.Marshal(map[string]interface{}{
+		"cuenta_por_pagar_id":    payload.CuentaPorPagarID,
+		"pago_id":                payload.PagoID,
+		"movimiento_finanzas_id": payload.MovimientoFinanzasID,
+		"monto":                  roundReportesMoney(paymentAmount),
+		"total_neto":             roundReportesMoney(paymentAmount),
+		"tipo_movimiento":        "egreso",
+		"metodo_pago":            metodoPago,
+		"referencia_externa":     referencia,
+		"cuenta_cxp":             "220505",
+		"cuenta_caja":            "110505",
+	})
+	if err != nil {
+		return EmpresaCxPPaymentAccountingResult{}, err
+	}
+	result.EventoContableID, err = insertTxSQLCompat(tx, `INSERT INTO empresa_eventos_contables (
+		empresa_id, modulo, evento, entidad, entidad_id, documento_tipo, documento_codigo,
+		periodo_contable, monto_total, moneda, payload_json, origen, fecha_evento,
+		procesado, fecha_procesado, fecha_creacion, fecha_actualizacion,
+		usuario_creador, estado, observaciones
+	) VALUES (?, 'finanzas', 'abono_proveedor_registrado', 'empresa_cxp_pagos', ?, 'pago_cxp', ?,
+		?, ?, ?, ?, 'pcs-worker.cuentas_por_pagar.pago_registrado', ?,
+		0, NULL, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP,
+		'pcs-worker', 'activo', ?)`,
+		empresaID, payload.PagoID, firstNonEmpty(documentoCodigo, codigoCxP),
+		periodoContable, roundReportesMoney(paymentAmount), moneda, string(accountingPayload),
+		fechaMovimiento, "Evento contable idempotente del pago CxP "+codigoCxP)
+	if err != nil {
+		return EmpresaCxPPaymentAccountingResult{}, err
+	}
+	if err := tx.Commit(); err != nil {
+		return EmpresaCxPPaymentAccountingResult{}, err
+	}
+	return result, nil
 }
 
 func empresaCxPIdempotencyHash(key string) string {

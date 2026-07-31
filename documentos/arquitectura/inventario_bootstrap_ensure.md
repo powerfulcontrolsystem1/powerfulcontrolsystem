@@ -7,7 +7,7 @@ Este archivo se genera con `node tools/ensure_bootstrap_inventory.mjs`. Inventar
 ## Resumen
 
 - Funciones inventariadas: 155.
-- Huella del catalogo legado: `1ffca7eb9ae8da8533e5ee6223de682684b94b66af75c0d9946d4a7679812c1f` (122 pasos).
+- Huella del catalogo legado: `01cfd1fb60dcf1986e6b02ffee09ba2462fcec066d9feb584e3f09d9576a0a52` (122 pasos).
 - compatibilidad PostgreSQL: 2.
 - DDL / indice / funcion: 118.
 - DDL catalogado de plataforma: 4.
@@ -93,7 +93,7 @@ Este archivo se genera con `node tools/ensure_bootstrap_inventory.mjs`. Inventar
 | `EnsureEmpresaFinanzasSchema` | [backend/db/finanzas.go:186](../../backend/db/finanzas.go#L186) | DDL / indice / funcion | empresas o por confirmar |
 | `EnsureEmpresaGimnasioSchema` | [backend/db/gimnasio.go:271](../../backend/db/gimnasio.go#L271) | DDL / indice / funcion | empresas o por confirmar |
 | `EnsureEmpresaGrafologiaSchema` | [backend/db/grafologia.go:39](../../backend/db/grafologia.go#L39) | DDL / indice / funcion | empresas o por confirmar |
-| `EnsureEmpresaHojaVidaOperativaSchema` | [backend/db/hoja_vida_operativa.go:92](../../backend/db/hoja_vida_operativa.go#L92) | DDL / indice / funcion | empresas o por confirmar |
+| `EnsureEmpresaHojaVidaOperativaSchema` | [backend/db/hoja_vida_operativa.go:99](../../backend/db/hoja_vida_operativa.go#L99) | DDL / indice / funcion | empresas o por confirmar |
 | `EnsureHorariosTrabajadoresSchema` | [backend/db/horarios_trabajadores.go:138](../../backend/db/horarios_trabajadores.go#L138) | DDL / indice / funcion | empresas o por confirmar |
 | `EnsureHotelTarjetasAccesoSchema` | [backend/db/hotel_tarjetas.go:57](../../backend/db/hotel_tarjetas.go#L57) | DDL / indice / funcion | empresas o por confirmar |
 | `EnsureEmpresaImportacionesCosteoSchema` | [backend/db/importaciones_costeo.go:92](../../backend/db/importaciones_costeo.go#L92) | DDL / indice / funcion | empresas o por confirmar |
@@ -111,9 +111,9 @@ Este archivo se genera con `node tools/ensure_bootstrap_inventory.mjs`. Inventar
 | `EnsureMobileAPIIdempotencySchema` | [backend/db/mobile_api_idempotency.go:36](../../backend/db/mobile_api_idempotency.go#L36) | DDL catalogado de plataforma | empresas |
 | `EnsureEmpresaModulosColombiaSchema` | [backend/db/modulos_empresariales_colombia.go:477](../../backend/db/modulos_empresariales_colombia.go#L477) | DDL / indice / funcion | empresas o por confirmar |
 | `EnsureEmpresaModulosFaltantesSchema` | [backend/db/modulos_faltantes.go:103](../../backend/db/modulos_faltantes.go#L103) | DDL / indice / funcion | empresas o por confirmar |
-| `EnsureEmpresaNextcloudSchema` | [backend/db/nextcloud.go:13](../../backend/db/nextcloud.go#L13) | DDL catalogado de plataforma | empresas |
-| `EnsureEmpresaNextcloudAssignment` | [backend/db/nextcloud.go:79](../../backend/db/nextcloud.go#L79) | seed o provisionamiento idempotente | empresas o por confirmar |
-| `EnsureEmpresaNextcloudAssignmentsForAll` | [backend/db/nextcloud.go:96](../../backend/db/nextcloud.go#L96) | seed o provisionamiento idempotente | empresas o por confirmar |
+| `EnsureEmpresaNextcloudSchema` | [backend/db/nextcloud.go:14](../../backend/db/nextcloud.go#L14) | DDL catalogado de plataforma | empresas |
+| `EnsureEmpresaNextcloudAssignment` | [backend/db/nextcloud.go:105](../../backend/db/nextcloud.go#L105) | seed o provisionamiento idempotente | empresas o por confirmar |
+| `EnsureEmpresaNextcloudAssignmentsForAll` | [backend/db/nextcloud.go:122](../../backend/db/nextcloud.go#L122) | seed o provisionamiento idempotente | empresas o por confirmar |
 | `EnsureEmpresaNominaColombiaAvanzadaSchema` | [backend/db/nomina_colombia_avanzada.go:100](../../backend/db/nomina_colombia_avanzada.go#L100) | DDL / indice / funcion | empresas o por confirmar |
 | `EnsureEmpresaNominaSchema` | [backend/db/nomina_sueldos.go:387](../../backend/db/nomina_sueldos.go#L387) | DDL / indice / funcion | empresas o por confirmar |
 | `EnsureEmpresaOdontologiaSchema` | [backend/db/odontologia.go:209](../../backend/db/odontologia.go#L209) | DDL / indice / funcion | empresas o por confirmar |

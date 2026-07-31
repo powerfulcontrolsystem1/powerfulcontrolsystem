@@ -17,6 +17,18 @@ on:
         description: "Limite de paginas, 0 para todas"
         required: true
         default: "40"
+      routes:
+        description: "Rutas separadas por coma para una repeticion dirigida (opcional)"
+        required: false
+        default: ""
+      viewports:
+        description: "Viewports separados por coma"
+        required: true
+        default: "desktop,mobile"
+      max_safe_clicks:
+        description: "Maximo de acciones seguras por pagina"
+        required: true
+        default: "8"
 
 permissions:
   contents: read
@@ -25,7 +37,7 @@ jobs:
   visual:
     name: Buttons, layout and print evidence
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 90
 
     steps:
       - name: Checkout
@@ -48,7 +60,9 @@ jobs:
           PCS_QA_EMAIL: ${{ secrets.PCS_QA_EMAIL }}
           PCS_QA_PASSWORD: ${{ secrets.PCS_QA_PASSWORD }}
           PCS_QA_MAX_PAGES: ${{ inputs.max_pages || '40' }}
-          PCS_QA_VIEWPORTS: desktop,mobile
+          PCS_QA_ROUTES: ${{ inputs.routes || '' }}
+          PCS_QA_VIEWPORTS: ${{ inputs.viewports || 'desktop,mobile' }}
+          PCS_QA_MAX_SAFE_CLICKS_PER_PAGE: ${{ inputs.max_safe_clicks || '8' }}
         run: node tools/qa_e2e_buttons.cjs
 
       - name: Run role matrix audit

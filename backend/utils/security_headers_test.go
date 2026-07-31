@@ -26,6 +26,9 @@ func TestSecurityHeadersAndNoStoreOnLogin(t *testing.T) {
 	t.Setenv("NEXTCLOUD_BASE_URL", "https://nextcloud.example.test")
 	t.Setenv("PCS_CSP_CONNECT_ORIGINS", "https://api.example.test")
 	t.Setenv("PCS_CSP_IMG_ORIGINS", "https://images.example.test")
+	t.Setenv("PCS_CSP_SCRIPT_ORIGINS", "https://scripts.example.test")
+	t.Setenv("PCS_CSP_STYLE_ORIGINS", "https://styles.example.test")
+	t.Setenv("PCS_CSP_FONT_ORIGINS", "https://fonts.example.test")
 	h := SecurityHeadersMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(http.StatusNoContent) }))
 	rec := httptest.NewRecorder()
 	h.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/login.html", nil))
@@ -47,7 +50,7 @@ func TestSecurityHeadersAndNoStoreOnLogin(t *testing.T) {
 			t.Fatalf("CSP keeps broad source %q: %q", forbidden, policy)
 		}
 	}
-	for _, expected := range []string{"form-action 'self'", "https://onlyoffice.example.test", "https://nextcloud.example.test", "https://api.example.test", "https://images.example.test", "https://lh3.googleusercontent.com"} {
+	for _, expected := range []string{"form-action 'self'", "font-src 'self' data:", "https://onlyoffice.example.test", "https://nextcloud.example.test", "https://api.example.test", "https://images.example.test", "https://scripts.example.test", "https://styles.example.test", "https://fonts.example.test", "https://lh3.googleusercontent.com"} {
 		if !strings.Contains(policy, expected) {
 			t.Fatalf("CSP missing explicit source %q: %q", expected, policy)
 		}

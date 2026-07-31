@@ -1,3 +1,75 @@
+2026-07-30: Plan 109 / cierre ejecutivo de producción.
+- Se auditaron las 26 fases del Plan 108 y se corrigió su base conservadora:
+  P108-014 continúa pendiente, por lo que la implementación verificable heredada
+  es 46,2 %, no 48,1 %.
+- El nuevo plan inicia en 0 % de certificación para el siguiente candidato y
+  concentra los pendientes en 15 compuertas: release, CxP/A-B, IA, contador,
+  funciones/botones, visual/impresión, cuatro cajas, proveedores, continuidad,
+  seguridad, observabilidad, migraciones, soporte, ensayo y piloto.
+- El documento está estructurado para GPT-5.6 Terra con razonamiento alto,
+  límites de autorización, criterios de aceptación, rollback y evidencia del
+  mismo SHA/digest. No declara GO ni autoriza producción.
+
+2026-07-30: Plan 108 / recuperación controlada de eventos históricos CxP.
+- Se añade una vista previa exclusiva del super administrador, limitada por
+  `empresa_id`, topic CxP e IDs concretos. El navegador no recibe el payload
+  crudo y ninguna consulta sin empresa es aceptada.
+- Reactivar exige selección explícita, razón operativa y frase de confirmación.
+  La transacción bloquea todas las filas, rechaza coincidencias parciales,
+  reinicia solo eventos `dead` y registra una auditoría durable por evento.
+- La nueva tabla `pcs_outbox_recovery_audit` se instala mediante migración
+  inmutable del rol `pcs-migrate`; API y worker continúan sin DDL.
+- Pruebas enfocadas de DB, handler, autorización, rutas, inventario y auditoría
+  de migraciones pasan. La recuperación real queda pendiente del digest de
+  staging; producción no fue modificada.
+
+2026-07-30: Plan 108 / precisión monetaria visible en Finanzas.
+- La prueba real mínima de CxP mostró que el backend conservaba `0,01`, pero la
+  interfaz redondeaba el pago y el movimiento a `$ 0`.
+- `finanzas.html` muestra dos decimales cuando el importe contiene unidad menor
+  y conserva el formato entero para valores sin fracción.
+- No cambia cálculos, moneda, persistencia, permisos ni aislamiento empresarial;
+  el candidato `f7214329` mostró visualmente `25,01`, `74,99` y `0,01` en PCS.
+- El mismo pago produjo outbox publicado, job completado, evento contable único
+  y asiento débito/crédito balanceado; producción conservó su huella.
+
+2026-07-30: Plan 108 / concurrencia real CxP y selección de proveedor.
+- En staging PCS se creó una CxP QA de 2 mediante la interfaz oficial.
+- Dos abonos simultáneos con la misma clave devolvieron el mismo movimiento y
+  aplicaron solo 1; dos claves distintas consumieron solo el saldo restante,
+  sin sobrepago ni duplicidad.
+- El selector CxP ahora completa automáticamente el nombre obligatorio del
+  proveedor, evitando que la validación HTML bloquee silenciosamente el envío.
+- La carrera que encuentra saldo cero usa un error de dominio estable y
+  responde `409 Conflict`; las pruebas enfocadas de `db` y `handlers` pasan.
+- El catálogo público deja de interpretar el host técnico `staging` como slug
+  empresarial y limita los mensajes HTTP visibles, con corte de palabras para
+  impedir desborde móvil.
+- El workflow inmutable `30591586319` completó 618 vistas del candidato
+  `5ec1c48f`: 604 `ok`, 14 `review`, 10.998 controles, 1.062 clics seguros,
+  1.975 mutaciones preservadas, cero errores de página y cero HTTP 500.
+- La batería de impresión aprobó 18/18 formatos y se revisaron visualmente las
+  facturas carta/POS, con filas, columnas, totales, legales y firmas ordenados.
+- La conciliación posterior confirmó original/pagado/saldo `2/2/0`, dos
+  asignaciones y dos movimientos por total `2`, pero detectó dos eventos
+  outbox `dead` porque el worker no tenía habilitado el topic CxP.
+- El worker registra ahora `cuentas_por_pagar.pago_registrado`, bloquea el pago,
+  valida tenant e importes y crea una sola vez el evento contable
+  `finanzas/abono_proveedor_registrado`; un retry reutiliza la identidad
+  `empresa_cxp_pagos/pago_id`.
+
+2026-07-30: Plan 108 / migraciones finales aisladas del candidato.
+- El candidato `5ec1c48f` repitió por digest inmutable la instalación desde
+  PostgreSQL vacío y el upgrade desde una copia lógica temporal de staging.
+- La base vacía terminó con 336/49 tablas y 16/10 registros de migración; el
+  upgrade conservó 349/59 tablas antes y después.
+- Ambas rutas aprobaron una segunda pasada idempotente, el runtime sin DDL,
+  salud/listo de staging y limpieza sin recursos efímeros residuales.
+- `vps-p108-empty-migration-drill.sh` ahora altera un checksum únicamente en la
+  base efímera, exige fallo cerrado y registro de auditoría, comprueba esquema y
+  ledger sin cambios y valida recuperación tras restaurar el valor controlado.
+- No se ejecutó DDL contra staging real ni se reinició o modificó producción.
+
 2026-07-28: Plan 108 / separación de privilegios PostgreSQL runtime.
 - Staging demostró que API/worker heredaban el usuario propietario con
   superusuario, CREATEDB, CREATEROLE y CREATE sobre public.
@@ -40093,6 +40165,198 @@ Archivos modificados:
 - P108-019 conserva estado parcial: esta pasada no sustituye carga sostenida,
   transacciones, cajas simultáneas ni métricas de infraestructura.
 
+2026-07-30: Plan 108 / bloque ampliado de capacidad y observabilidad staging.
+- Una carga autenticada de 500 lecturas con concurrencia 10 terminó sin fallos
+  ni 5xx, con p95 de 152 ms y servicios saludables. Las conexiones quedaron
+  dentro de los pools acotados del runtime.
+- El simulacro reversible de caída del backend de staging recorrió
+  `pending`, `firing` y resolución; el servicio reinició automáticamente y
+  recuperó `/health`, `/ready` y `up=1`, sin entrega externa.
+- La empresa de prueba no tiene cuatro cajeros utilizables: solo hay tres
+  registros inactivos, sin contraseña ni confirmación. La corrida concurrente
+  continúa pendiente y no se sustituyó con usuarios creados por SQL.
+
+2026-07-30: Plan 108 / regresión agrupada de IA, outbox, módulos e impresión.
+- La cola de staging quedó sin pendientes listos ni leases vencidos; no hubo
+  errores recientes del worker. Se conservaron un evento publicado y un
+  dead-letter histórico.
+- El botón `Extraer IA` del soporte QA respondió de forma segura, pero la API
+  key sigue cifrada con una llave incompatible. No se creó ni contabilizó CxP.
+- Los formatos imprimibles terminaron 18/18, y los contratos de módulos y roles
+  quedaron `ok`; siguen pendientes impresiones reales, paginación y sesiones
+  efectivas por rol.
+
+2026-07-30: Plan 108 / reparación del runner diario y restore aislado.
+- El snapshot diario más reciente resultó incompleto porque
+  `/usr/local/bin/pcs_vps_backup_daily.sh` era una copia antigua. Se reinstaló
+  desde el script versionado y se verificó su SHA-256.
+- El nuevo snapshot `20260730_194951` incluyó los nueve artefactos obligatorios
+  y restauró PostgreSQL en un contenedor temporal: RTO 24 s, RPO 107 s, cero
+  residuos. Staging quedó saludable y el disco VPS en 54% de uso.
+- El snapshot incompleto se conserva para trazabilidad, pero queda rechazado
+  como fuente de recuperación.
+
+2026-07-30: Plan 108 / observabilidad operativa de PostgreSQL, worker y colas.
+- `/metrics` conserva acceso de solo lectura y ahora publica únicamente
+  agregados acotados de disponibilidad PostgreSQL, edad del latido del worker,
+  outbox y trabajos durables; no expone empresa, payload, error de proveedor,
+  credenciales ni datos personales. El agregado se reutiliza diez segundos.
+- El frontend público rechaza exactamente `/metrics` con 404; Prometheus
+  mantiene el scrape directo por las redes Docker privadas.
+- Prometheus incorpora alertas de base no disponible, worker sin latido,
+  acumulación, leases vencidos y consultas fallidas; Grafana muestra las mismas
+  señales para producción y staging.
+- Las pruebas Go y la auditoría estática aprobaron. `promtool` validó las ocho
+  reglas en Linux y las consultas de lectura del VPS observaron worker reciente,
+  sin trabajo listo ni leases vencidos. Falta promover el nuevo digest y
+  ejecutar simulacros específicos antes de aprobar P108-018.
+
+2026-07-30: Plan 108 / promoción y carga del candidato `cf49fc7c`.
+- GitHub Actions aprobó build, escaneo HIGH/CRITICAL, SBOM, publicación por
+  digest y validación Compose de las cuatro imágenes.
+- Se detectó deriva en los archivos Compose existentes del VPS antes de dejar
+  staging operativo. Producción no se tocó; staging se recuperó con los Compose
+  exactos del candidato y quedó saludable.
+- El promotor por digest valida ahora las cuatro imágenes renderizadas antes de
+  recrear servicios y no ejecuta `up` sobre toda la plataforma. El ensayo
+  negativo rechazó la deriva existente antes de `pull/up` y staging siguió
+  saludable.
+- El frontend público responde 404 para `/metrics`; Prometheus privado observa
+  PostgreSQL, worker y colas. La comprobación visual autenticada del panel PCS
+  aprobó.
+- La carga autenticada del mismo digest terminó 500/500, p95 149 ms, cero 5xx,
+  cero locks y cero leases vencidos.
+
+2026-07-30: Plan 108 / reglas permanentes y simulacro de worker.
+- Se instalaron ocho reglas de Prometheus y el tablero operativo v2, conservando
+  respaldo recuperable de ambos archivos. Prometheus se recreó con su volumen
+  histórico y volvió con target staging arriba y sin falsos positivos.
+- La detención reversible de `pcs-staging-worker` recorrió sin disparo temprano,
+  `pending`, `firing`, recepción única en Alertmanager y resolución después del
+  reinicio automático.
+- Worker, colas, leases, `/health` y `/ready` quedaron saludables. P108-018
+  continúa parcial por PostgreSQL, almacenamiento, leases y escalamiento
+  externo.
+
+2026-07-30: Plan 108 / simulacro PostgreSQL en staging.
+- Un `docker stop` limpio de 165 segundos afectó solo PostgreSQL de staging y
+  contó con reinicio automático. Health permaneció 200 y readiness pasó a 503.
+- La regla recorrió `pending` y `firing`; Alertmanager recibió las dos series
+  esperadas para negocio y super. Tras recuperar la base, la regla quedó
+  `inactive` y sin alertas activas.
+- Los pools volvieron a 1, las migraciones aplicadas siguieron en 41/13, worker
+  recuperó latido y no quedaron trabajos listos ni leases vencidos.
+
+2026-07-30: Plan 108 / regresión empresarial ampliada y correcciones de staging.
+- El auditor autenticado recorrió 48 rutas en escritorio y móvil, y su
+  repetición dirigida eliminó falsos 400 al propagar `empresa_id`/`id` en rutas
+  explícitas.
+- Créditos convierte a cero sus agregados de conteo cuando la cartera está
+  vacía; Contabilidad Colombia tolera solicitudes simultáneas durante la
+  siembra inicial mediante conflictos idempotentes por empresa y código.
+- Diecinueve páginas empresariales con `POST`/`PUT`/`PATCH`/`DELETE` instalan
+  ahora el sincronizador CSRF compartido. Un contrato recursivo evita nuevas
+  páginas mutantes sin protección.
+- Cobranza apila en móvil la configuración automática y sus botones para
+  eliminar el desborde detectado. La batería imprimible volvió a aprobar 18/18
+  y la inspección visual confirmó factura carta/POS y corte de caja ordenados.
+- `go test ./...`, `go vet` enfocado, contratos de módulos/roles/despliegue y
+  sintaxis del runner terminaron correctamente. Falta promover el digest y
+  repetir las pruebas mutables oficiales.
+
+2026-07-30: Plan 108 / candidato `f9396da5` promovido y verificado.
+- GitHub Actions aprobó race, seguridad, secretos, dependencias, Trivy, SBOM y
+  las cuatro imágenes inmutables. Los Compose remotos desfasados se respaldaron
+  antes de instalar las copias versionadas; producción no se reinició.
+- Staging ejecutó el migrador con código cero y quedó saludable sobre los
+  digest exactos de API, migrador, worker y frontend.
+- La regresión dirigida terminó 16/16 en escritorio/móvil: desapareció el 500
+  de Créditos, Contabilidad permaneció estable y Cobranza no presentó desborde.
+- El botón real `Reenviar confirmación` mostró éxito después de corregir CSRF.
+  La cuenta sigue pendiente del enlace recibido y aún no existen cuatro cajeros
+  confirmados.
+- La carga autenticada terminó 500/500, p95 134 ms, cero fallos y cero locks;
+  PostgreSQL, worker, outbox, trabajos durables, `/health` y `/ready` quedaron
+  saludables.
+
+2026-07-30: Plan 108 / alcance móvil del primer lanzamiento.
+- La web responsive y la PWA permanecen incluidas. El cliente nativo Flutter
+  queda formalmente fuera del lanzamiento inicial porque no existe fuente
+  completa versionada ni build reproducible; no se eliminó ningún componente.
+- La API móvil v1 y sus contratos se conservan para una fase posterior. Tres
+  rutas representativas del candidato respondieron 401 sin autenticación y no
+  existe enlace público de descarga APK/IPA.
+- P108-021 queda aprobada por exclusión formal y deja de bloquear el lanzamiento
+  web; su reingreso exige fuente, firma, distribución, tokens seguros, offline,
+  push y pruebas multiempresa.
+
+2026-07-30: Plan 108 / cuatro cajeros temporales por invitación oficial.
+- Administrar usuarios creó los IDs 648 a 651 con rol Cajero y documentos QA,
+  todos inactivos y pendientes hasta completar el primer ingreso.
+- Mailu entregó las cuatro invitaciones al mismo buzón autorizado mediante
+  alias `+p108`; Postfix registró cuatro `dsn=2.0.0`, `status=sent` y aceptación
+  Gmail `250 2.0.0 OK`.
+- No se usó SQL ni se simularon contraseñas. P108-014 sigue pendiente hasta que
+  el destinatario abra los cuatro enlaces y se puedan iniciar/cerrar cuatro
+  cajas reales en paralelo.
+
+2026-07-30: Plan 108 / almacenamiento privado e higiene documental.
+- Los contratos enfocados aprobaron separación por empresa, nombres opacos,
+  permisos privados, límites, validación de contenido, rechazo de traversal y
+  symlink, descarga endurecida, migración filtrada y firma DIAN privada.
+- El candidato desplegado respondió `ready`; ese probe comprueba escritura y
+  limpieza en el volumen privado compartido por API/worker. P108-016 queda
+  parcial hasta probar dos réplicas, tenant A/B y restore completo.
+- Se normalizaron 218 secuencias dañadas de `CHANGELOG.md` sin alterar parámetros
+  URL. `docs_normalization_audit.mjs --strict` terminó con cero hallazgos;
+  P108-022 sigue parcial por entrenamiento y ensayo de runbooks.
+- El auditor de botones recupera los índices temporales cuando una acción segura
+  reconstruye el DOM sin navegar, evitando falsos fallos en controles posteriores.
+- El workflow visual acepta rutas, viewports y límite de clics dirigidos, y
+  amplía a 90 minutos el barrido total de 618 combinaciones para evitar que el
+  timeout oculte la evidencia final.
+
+2026-07-30: Plan 108 / barrido integral y reparación de regresiones de staging.
+- El workflow `30583852262` completó 618 vistas, inventarió 10.979 controles,
+  ejecutó 896 clics seguros y preservó 1.947 acciones riesgosas.
+- Bre-B QR deja de mezclar fechas de texto con `CURRENT_TIMESTAMP`; Hoja de vida
+  conserva su flag entero recurrente y Nextcloud añade una migración v2 para
+  reparar la columna `provisioned` en tablas heredadas.
+- Productos repara dos separadores de consulta dañados y la entrada Colombia
+  deja de llamar una API vacía cuando se abre sin módulo.
+- CSP admite orígenes exactos configurables para scripts, estilos, fuentes,
+  mapas y geocodificación. Leaflet 1.9.4 y Chart.js 4.5.1, ya usados por el
+  proyecto, quedan fijados con SRI; no se añadió una dependencia nueva.
+- El runner distingue controles ocultos después de un cambio de estado y la
+  repetición dirigida aprobó Estaciones en escritorio y móvil sin falsos fallos.
+
+2026-07-30: Plan 108 / repetición del candidato `7819f775` y reparación
+acumulativa.
+- CI profesional, Trivy, SBOM y publicación inmutable aprobaron; staging
+  ejecutó el migrador con código cero y producción conservó la misma huella.
+- La repetición autenticada cubrió 22 vistas, 400 controles y 42 clics seguros.
+  Bre-B QR, Colombia genérico y Productos/Bodegas quedaron sin errores HTTP.
+- Nextcloud reveló que la tabla histórica también carecía de `quota_mb`. Se
+  añade una migración v3 nueva e inmutable que completa todas las columnas
+  requeridas y readiness valida el contrato completo.
+- Hoja de vida normaliza con `pcs_ts` la fecha programada heredada como texto
+  antes de compararla con `CURRENT_TIMESTAMP`.
+- El CSP estático de Nginx se alinea con el CSP del backend para los orígenes
+  exactos ya usados por Leaflet, Chart.js y las fuentes; no se añade una
+  dependencia nueva.
+- El ensayo del candidato `424b1896` completó las seis columnas Nextcloud y
+  detectó que la tabla histórica aún imponía `password_encrypted NOT NULL`.
+  Una migración v4 nueva e inmutable elimina exclusivamente esa columna
+  obsoleta; el diseño actual no almacena contraseñas Nextcloud en PCS.
+- Domicilios devuelve `[]` cuando el menú está vacío y el frontend normaliza
+  también dashboard/menú con `Array.isArray`, evitando el error visible
+  `Cannot read properties of null (reading 'map')`.
+- El candidato consolidado `efc416b3` ejecutó migraciones con código cero y la
+  repetición `30588981805` terminó 22/22 vistas `ok`, 420 controles, 42 clics
+  seguros y cero respuestas HTTP erróneas en escritorio/móvil.
+- `gosec` interpretó el nombre del fingerprint v4 como credencial embebida; se
+  añadió una supresión G101 puntual y explicada. El valor es un identificador
+  de migración, no contiene una clave.
 2026-07-30: Plan 108 / revalidación HTTP segura por digest en staging.
 - El candidato `d262874e` respondió portada 200, rechazó una ruta empresarial
   con empresa manipulada sin sesión (401) y rechazó el preflight de origen

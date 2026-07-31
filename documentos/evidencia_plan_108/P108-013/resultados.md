@@ -55,3 +55,26 @@ probar impresión física; por ello el estado de P108-013 continúa parcial.
 
 La evidencia permanece sintética y local: no sustituye vista previa real por
 rol, impresión operativa, paginación de documentos reales ni impresora física.
+
+## Regresión agrupada 2026-07-30
+
+La batería volvió a producir 18/18 formatos correctos, cero revisiones y cero
+fallos. Factura POS, ticket de turnos y recibo de parqueadero llamaron una vez a
+`window.print()`. Los contratos críticos de módulos y los seis perfiles de la
+matriz de roles también terminaron `ok`.
+
+P108-013 permanece parcial por las salidas reales autenticadas, paginación,
+permisos efectivos e impresión física.
+
+## Inspección visual adicional 2026-07-30
+
+Una nueva ejecución produjo 18/18 formatos `ok`, cero revisiones y cero fallos
+de impresión. Los tres casos automáticos llamaron una sola vez a
+`window.print()`. Se inspeccionaron visualmente factura electrónica carta,
+factura electrónica POS y corte de caja carta: encabezados, filas, columnas,
+impuestos, totales y pies permanecieron ordenados y dentro del área imprimible,
+sin superposición ni desborde observable.
+
+Esta evidencia fortalece el motor común, pero no cambia el estado parcial:
+siguen pendientes documentos reales extensos, paginación, impresora física y
+permisos efectivos por rol.

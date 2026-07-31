@@ -1,4 +1,20 @@
 2026-07-28
+- `documentos/plan_109.md`: continuación depurada del Plan 108 para GPT-5.6
+  Terra alto; corrige la base porcentual, consolida los bloqueantes restantes
+  en 15 compuertas y define evidencia, rollback y GO/NO-GO de producción.
+- `backend/db/outbox_recovery.go`: vista previa y reactivación transaccional de
+  eventos outbox `dead`, limitada por `empresa_id`, topic e IDs explícitos;
+  registra cada intento en `pcs_outbox_recovery_audit`.
+- `backend/db/outbox_recovery_test.go`: contratos de alcance obligatorio,
+  lote acotado, IDs únicos y parámetros SQL para recuperación.
+- `backend/handlers/super_outbox_recovery.go`: API exclusiva del super
+  administrador para previsualizar y reactivar eventos históricos CxP sin
+  devolver el payload crudo.
+- `backend/handlers/super_outbox_recovery_test.go`: valida resumen seguro,
+  IDs, razón y límites del endpoint operacional.
+- `documentos/evidencia_plan_108/P108-007/resultados.md`: conciliación financiera
+  real de pagos CxP, hallazgo del topic outbox sin handler y criterios de cierre
+  del evento/asiento idempotente por empresa.
 - `backend/db/runtime_db_role.go`: provisionamiento y verificación cerrada del
   login PostgreSQL sin DDL usado por API/worker.
 - `backend/db/runtime_db_role_test.go`: validación de nombres y contraseñas
@@ -10,7 +26,8 @@
 - `backend/db/legacy_core_schema_test.go`: contrato que exige las cinco raíces
   mínimas antes de extensiones heredadas.
 - `deploy/scripts/vps-p108-empty-migration-drill.sh`: ensayo aislado de base
-  vacía y segunda pasada usando una imagen exacta por digest.
+  vacía y segunda pasada usando una imagen exacta por digest; además provoca
+  drift de checksum, exige fallo auditado sin cambios y verifica recuperación.
 - `deploy/scripts/vps-p108-upgrade-migration-drill.sh`: copia lógica de
   PostgreSQL staging, restauración efímera, upgrade y segunda pasada sin
   modificar el origen.
@@ -12311,6 +12328,13 @@ panel de seguridad para que el navegador reciba la correccion CSRF de staging.
   exclusiones de efectos operativos.
 - `documentos/evidencia_plan_108/P108-012/resultados.md`: evidencia parcial
   visual/responsive autenticada del candidato staging y sus huecos pendientes.
+- `documentos/evidencia_plan_108/P108-012/capturas/cobranza_mobile_f9396da5_390x844.png`:
+  captura autenticada del panel de recordatorios de Cobranza apilado en móvil,
+  sin el desborde horizontal detectado en el digest anterior.
+- `documentos/evidencia_plan_108/P108-021/resultados.md`: formaliza que la web
+  responsive/PWA entra al primer lanzamiento y que el cliente nativo Flutter
+  se conserva fuera de alcance hasta contar con fuente, build y pruebas
+  reproducibles; verifica que la API v1 rechaza acceso anónimo.
 - `documentos/evidencia_plan_108/P108-013/resultados.md`: resultado de la
   batería local de PDF/capturas de impresiones y sus límites operativos.
 - `documentos/evidencia_plan_108/P108-005/resultados.md`: evidencia autenticada
@@ -12401,7 +12425,31 @@ panel de seguridad para que el navegador reciba la correccion CSRF de staging.
   cubrir la corrida transaccional concurrente.
 - `documentos/evidencia_plan_108/P108-020/snapshot_integridad_20260729.md`:
   integridad del snapshot VPS que ya incorpora almacenamiento privado.
+- `documentos/evidencia_plan_108/P108-016/resultados.md`: evidencia del volumen
+  privado compartido, separación por empresa, validaciones de archivo,
+  readiness del candidato y pendientes de réplica/A-B/restore.
+- `documentos/evidencia_plan_108/P108-022/higiene_documental_20260730.md`:
+  cierre del gate de secuencias dañadas y pendientes operativos de documentación.
+- `documentos/evidencia_plan_108/P108-011/barrido_integral_20260730.md`:
+  inventario autenticado de 618 vistas, clasificación de hallazgos y
+  reparaciones que deben repetirse sobre el siguiente digest.
+- `backend/db/hoja_vida_operativa_postgres_test.go`: contrato de compatibilidad
+  PostgreSQL para el flag entero de recurrencia del reporte operativo.
+- `backend/handlers/finanzas_breb_qr_postgres_test.go`: contrato que evita
+  mezclar timestamps PostgreSQL con fechas heredadas de texto en Bre-B QR.
 - `documentos/evidencia_plan_108/P108-018/linea_base_observabilidad_20260729.md`:
   línea base de salud y bloqueo por falta de stack de monitoreo activo.
-- `backend/main_metrics_test.go`: contrato del endpoint Prometheus mínimo,
-  disponible solo en GET y sin datos empresariales.
+- `backend/main.go` y `backend/main_metrics_test.go`: endpoint Prometheus
+  operativo, disponible solo en GET, con disponibilidad PostgreSQL, latido del
+  worker y agregados de colas/outbox, sin datos empresariales ni payloads.
+- `deploy/monitoring/alert_rules.yml`: reglas para caída de backend/PostgreSQL,
+  worker sin latido, acumulación durable, leases vencidos y consultas fallidas.
+- `deploy/monitoring/grafana/dashboards/pcs-operacion.json`: paneles de
+  PostgreSQL, worker, colas, dead-letter y leases para producción y staging.
+- `deploy/nginx/pcs.conf`: niega `/metrics` en el frontend público; Prometheus
+  conserva acceso directo al backend únicamente por la red Docker privada.
+- `tools/business_observability_audit.mjs`: gate estático de señales y alertas
+  de base de datos, worker y procesamiento durable.
+- `deploy/scripts/vps-staging-digest-up.sh`: acepta rutas Compose explícitas,
+  exige que los cuatro servicios resuelvan exactamente a los digests solicitados
+  y limita la recreación al runtime de staging.

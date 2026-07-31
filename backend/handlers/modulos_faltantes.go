@@ -3107,6 +3107,15 @@ func handleConciliarCarteraPagosAction(dbEmp *sql.DB, cfg empresaModuloGenericCo
 	})
 }
 
+func registrarPagoCxPErrorStatus(err error) int {
+	if errors.Is(err, dbpkg.ErrEmpresaCxPAmountExceedsBalance) ||
+		errors.Is(err, dbpkg.ErrEmpresaCxPNoPendingBalance) ||
+		errors.Is(err, dbpkg.ErrPeriodoFinancieroCerrado) {
+		return http.StatusConflict
+	}
+	return http.StatusBadRequest
+}
+
 func handleRegistrarPagoCarteraAction(dbEmp *sql.DB, cfg empresaModuloGenericConfig, tipoMovimiento, terceroField, modulo string, w http.ResponseWriter, r *http.Request) {
 	payload, err := decodeGenericBodyMapOptional(r)
 	if err != nil {
@@ -3154,11 +3163,7 @@ func handleRegistrarPagoCarteraAction(dbEmp *sql.DB, cfg empresaModuloGenericCon
 			IdempotencyKey:    idempotencyKey,
 		})
 		if err != nil {
-			if errors.Is(err, dbpkg.ErrEmpresaCxPAmountExceedsBalance) || errors.Is(err, dbpkg.ErrPeriodoFinancieroCerrado) {
-				http.Error(w, err.Error(), http.StatusConflict)
-				return
-			}
-			http.Error(w, err.Error(), http.StatusBadRequest)
+			http.Error(w, err.Error(), registrarPagoCxPErrorStatus(err))
 			return
 		}
 		itemActualizado, _ := dbpkg.GetEmpresaGenericRowByID(dbEmp, cfg.Table, empresaID, id)

@@ -44,3 +44,16 @@ de staging usando la llave de cifrado vigente. Después se debe repetir
 - aislamiento negativo frente a otra empresa.
 
 Esta evidencia no certifica P108-006 ni producción.
+
+## Reintento autenticado 2026-07-30
+
+Sobre el candidato `d262874e`, la bandeja mostró `SCI-0001` radicado y la
+revisión humana editable con proveedor, identificación, documento, fechas,
+moneda, subtotal, impuestos, total, categoría y centro de costo. Se seleccionó
+el soporte y se pulsó `Extraer IA`.
+
+El sistema volvió a rechazar la operación con el mensaje controlado de que la
+credencial guardada no puede descifrarse con la llave actual. El soporte quedó
+radicado, con total 0 y confianza 0%; no se creó ni contabilizó CxP y no hubo
+errores de consola. P108-006 sigue bloqueada hasta re-registrar la API key de
+staging mediante el flujo oficial.

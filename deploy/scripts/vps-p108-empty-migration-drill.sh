@@ -34,8 +34,10 @@ volume="${P108_DRILL_ID}-pgdata"
 postgres="${P108_DRILL_ID}-postgres"
 migrate_first="${P108_DRILL_ID}-migrate-1"
 migrate_second="${P108_DRILL_ID}-migrate-2"
+migrate_drift="${P108_DRILL_ID}-migrate-drift"
+migrate_recovered="${P108_DRILL_ID}-migrate-recovered"
 
-for resource in "$postgres" "$migrate_first" "$migrate_second"; do
+for resource in "$postgres" "$migrate_first" "$migrate_second" "$migrate_drift" "$migrate_recovered"; do
   if docker container inspect "$resource" >/dev/null 2>&1; then
     fail "El contenedor aislado ya existe y no será sobrescrito: $resource"
   fi
@@ -46,7 +48,7 @@ docker network inspect "$network" >/dev/null 2>&1 &&
   fail "La red aislada ya existe y no será sobrescrita: $network"
 
 cleanup() {
-  docker rm -f "$migrate_first" "$migrate_second" "$postgres" >/dev/null 2>&1 || true
+  docker rm -f "$migrate_first" "$migrate_second" "$migrate_drift" "$migrate_recovered" "$postgres" >/dev/null 2>&1 || true
   docker volume rm "$volume" >/dev/null 2>&1 || true
   docker network rm "$network" >/dev/null 2>&1 || true
 }
@@ -96,6 +98,60 @@ echo "[RUN] Migración sobre base vacía."
 run_migrate "$migrate_first"
 echo "[RUN] Segunda pasada idempotente."
 run_migrate "$migrate_second"
+
+echo "[RUN] Fallo cerrado por drift de checksum y recuperación controlada."
+migration_row="$(docker exec "$postgres" psql -U pcs -d pcs_empresas -AtF '|' -c \
+  "SELECT version, checksum
+     FROM schema_migrations
+    WHERE scope = 'platform' AND btrim(COALESCE(checksum, '')) <> ''
+    ORDER BY version DESC
+    LIMIT 1;")"
+IFS='|' read -r drift_version original_checksum <<< "$migration_row"
+[[ "$drift_version" =~ ^[0-9a-z-]+$ ]] || fail "No se pudo seleccionar una migración controlada para el ensayo de drift."
+[[ "$original_checksum" =~ ^[a-f0-9]{64}$ ]] || fail "El checksum original no tiene el formato esperado."
+
+tables_before_drift="$(docker exec "$postgres" psql -U pcs -d pcs_empresas -Atc \
+  "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = 'public';")"
+migrations_before_drift="$(docker exec "$postgres" psql -U pcs -d pcs_empresas -Atc \
+  "SELECT COUNT(*) FROM schema_migrations;")"
+
+docker exec "$postgres" psql -v ON_ERROR_STOP=1 -U pcs -d pcs_empresas -c \
+  "UPDATE schema_migrations
+      SET checksum = repeat('0', 64)
+    WHERE scope = 'platform' AND version = '$drift_version';" >/dev/null
+
+if run_migrate "$migrate_drift"; then
+  fail "El migrador aceptó un checksum alterado."
+fi
+
+tables_after_drift="$(docker exec "$postgres" psql -U pcs -d pcs_empresas -Atc \
+  "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = 'public';")"
+migrations_after_drift="$(docker exec "$postgres" psql -U pcs -d pcs_empresas -Atc \
+  "SELECT COUNT(*) FROM schema_migrations;")"
+[ "$tables_before_drift" = "$tables_after_drift" ] ||
+  fail "El fallo por drift modificó la cantidad de tablas."
+[ "$migrations_before_drift" = "$migrations_after_drift" ] ||
+  fail "El fallo por drift modificó el ledger aplicado."
+
+failed_runs="$(docker exec "$postgres" psql -U pcs -d pcs_empresas -Atc \
+  "SELECT COUNT(*)
+     FROM schema_migration_runs
+    WHERE scope = 'platform'
+      AND version = '$drift_version'
+      AND state = 'failed'
+      AND error_code = 'migration_failed';")"
+[ "$failed_runs" -ge 1 ] || fail "El fallo de migración no quedó auditado."
+
+docker exec "$postgres" psql -v ON_ERROR_STOP=1 -U pcs -d pcs_empresas -c \
+  "UPDATE schema_migrations
+      SET checksum = '$original_checksum'
+    WHERE scope = 'platform' AND version = '$drift_version';" >/dev/null
+run_migrate "$migrate_recovered"
+
+echo "drift_failure=closed"
+echo "drift_schema_unchanged=${tables_before_drift}"
+echo "drift_ledger_unchanged=${migrations_before_drift}"
+echo "drift_recovery=pass"
 
 echo "[CHECK] Catálogo y tablas resultantes."
 docker exec "$postgres" psql -U pcs -d pcs_empresas -Atc \
