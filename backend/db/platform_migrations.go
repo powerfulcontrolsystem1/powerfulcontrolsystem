@@ -115,6 +115,14 @@ func PlatformMigrations(target string) ([]Migration, error) {
 					return applyOutboxRecoveryAuditSchemaTx(tx)
 				},
 			},
+			{
+				Version:     "20260731-001-ai-usage-unique-v1",
+				Description: "unique daily enterprise AI usage per tenant, provider and model",
+				Body:        empresaAIUsoDiarioUniqueSchemaFingerprint,
+				Apply: func(_ context.Context, tx *sql.Tx) error {
+					return applyEmpresaAIUsoDiarioUniqueSchemaTx(tx)
+				},
+			},
 		}, nil
 	case MigrationTargetSuper:
 		return []Migration{

@@ -40532,3 +40532,14 @@ acumulativa.
 - Los metadatos POS usan ahora una sola columna y sus valores fuertes envuelven
   palabras largas en cualquier viewport. Carta y las claves internas del
   dataset no cambian; el contrato de regresión fija ambas reglas.
+
+2026-07-31: Plan 109 / registro transaccional de uso IA.
+- La prueba real en staging produjo una especificación declarativa válida, pero
+  el registro de consumo falló porque una instalación heredada tenía
+  `empresa_ai_uso_diario` sin la unicidad requerida por `ON CONFLICT`.
+- Se añadió la migración inmutable
+  `20260731-001-ai-usage-unique-v1`, aislada por `empresa_id`, con índice único
+  por empresa, proveedor, modelo y fecha. Staging y producción se auditaron en
+  solo lectura sin grupos duplicados antes de publicar el cambio.
+- La migración falla cerrada si otra instalación contiene duplicados; no borra
+  ni consolida auditoría automáticamente.
