@@ -61,11 +61,12 @@ const VIEWPORTS = (process.env.PCS_QA_VIEWPORTS || "desktop,mobile")
   .filter(Boolean);
 const CHROME_EXECUTABLE = process.env.PCS_QA_CHROME_EXECUTABLE || "";
 const VALIDATE_RUNTIME_ONLY = process.env.PCS_QA_VALIDATE_RUNTIME === "1";
+const MUTATING_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
 
 // "Cerrar" y "Cancelar" no son universalmente inocuos: pueden cerrar caja,
 // anular un flujo operativo o descartar un formulario. El auditor solo pulsa
 // acciones cuyo texto sea inequívocamente de consulta o navegación.
-const SAFE_TEXT = /^(abrir|volver|limpiar|buscar|filtrar|ver|mostrar|ocultar|editar|gestionar|detalle|detalles|actualizar vista|refrescar vista|seleccionar|escuchar|sonando|copiar|expandir|minimizar|siguiente|anterior)$/i;
+const SAFE_TEXT = /^(abrir|volver|limpiar|buscar|filtrar|ver|mostrar|ocultar|detalle|detalles|actualizar vista|refrescar vista|seleccionar|escuchar|sonando|copiar|expandir|minimizar|siguiente|anterior)$/i;
 const AMBIGUOUS_OPERATION_TEXT = /(^|\s)(cerrar|cancelar)(\s|$)/i;
 const AI_ACTION_TEXT = /(^|[^\p{L}\p{N}_])(ia|ai|gpt|openai|asistente)([^\p{L}\p{N}_]|$)/iu;
 const UNSAFE_TEXT = /(eliminar|borrar|desactivar|activar|guardar|crear|registrar|enviar|pagar|comprar|checkout|confirmar|aprobar|rechazar|anular|cancelar pedido|cancelar servicio|cerrar caja|cobrar|emitir|facturar|despachar|publicar|subir|descargar|exportar|imprimir|reset|restablecer|reenviar|aceptar|generar|sincronizar|escanear|iniciar|completar|atender|llamar|re-llamar|listo|vencido|devolver|entregar)/i;
@@ -156,10 +157,23 @@ function classifyButton(button) {
   if (AI_ACTION_TEXT.test(haystack)) return "review";
   if (button.type === "submit") return "unsafe";
   if (button.href && !button.href.startsWith(BASE_URL) && !button.href.startsWith("/")) return "unsafe";
-  if (button.dataset && Object.keys(button.dataset).some((key) => /tab|toggle|go|section|filter|view|modal|close/i.test(key))) return "safe";
+  if (button.dataset && Object.keys(button.dataset).some((key) => /^(tab|toggle|go|section|filter|view|modal|close|target)$/i.test(key))) return "safe";
   if (SAFE_TEXT.test(String(button.text || "").trim())) return "safe";
-  if (button.ariaLabel || button.title) return "safe";
   return "review";
+}
+
+function cssAttributeValue(value) {
+  return String(value || "").replace(/\\/g, "\\\\").replace(/"/g, '\\"');
+}
+
+// Los indices DOM solo sirven para inventario. Varias paginas insertan roles,
+// menús o controles al iniciar y el mismo indice puede apuntar a otro boton
+// despues de una recarga. Solo se ejecutan controles con identidad estable.
+function stableButtonSelector(button) {
+  if (button.id) return '[id="' + cssAttributeValue(button.id) + '"]';
+  if (button.dataset && button.dataset.target) return '[data-target="' + cssAttributeValue(button.dataset.target) + '"]';
+  if (button.href) return button.tag + '[href="' + cssAttributeValue(button.href) + '"]';
+  return "";
 }
 
 async function login(page) {
@@ -261,11 +275,34 @@ async function auditRoute(context, route, viewport) {
   const requestFailures = [];
   const responseErrors = [];
   const dialogs = [];
+  const blockedMutations = [];
+  let navigatingForAudit = false;
+  // Esta auditoria solo valida navegacion y presentacion. Incluso si una
+  // etiqueta, un dataset o un indice dinamico se clasifican mal, la red es la
+  // ultima frontera: ninguna accion autenticada puede modificar staging.
+  await page.route("**/*", async (routeHandler) => {
+    const request = routeHandler.request();
+    const method = request.method().toUpperCase();
+    if (MUTATING_METHODS.has(method)) {
+      blockedMutations.push({ method, url: request.url(), resourceType: request.resourceType() });
+      await routeHandler.abort("blockedbyclient");
+      return;
+    }
+    await routeHandler.continue();
+  });
   page.on("console", (msg) => {
-    if (["error", "warning"].includes(msg.type())) consoleErrors.push({ type: msg.type(), text: msg.text().slice(0, 600) });
+    const message = msg.text();
+    if (/Service Worker registration blocked by Playwright/i.test(message)) return;
+    if (/ERR_BLOCKED_BY_CLIENT\.Inspector/i.test(message)) return;
+    if (["error", "warning"].includes(msg.type())) consoleErrors.push({ type: msg.type(), text: message.slice(0, 600) });
   });
   page.on("pageerror", (err) => pageErrors.push(String(err && err.message ? err.message : err).slice(0, 600)));
-  page.on("requestfailed", (req) => requestFailures.push({ url: req.url(), failure: req.failure() ? req.failure().errorText : "request failed" }));
+  page.on("requestfailed", (req) => {
+    if (MUTATING_METHODS.has(req.method().toUpperCase())) return;
+    const failure = req.failure() ? req.failure().errorText : "request failed";
+    if (navigatingForAudit && failure === "net::ERR_ABORTED") return;
+    requestFailures.push({ url: req.url(), failure });
+  });
   page.on("response", (res) => {
     const status = res.status();
     const url = res.url();
@@ -277,7 +314,16 @@ async function auditRoute(context, route, viewport) {
   });
 
   const url = BASE_URL + route;
-  const result = { route, viewport: viewport.name, url, status: "ok", buttons: [], clicked: [], skipped: [], issues: [], consoleErrors, pageErrors, requestFailures, responseErrors, dialogs, screenshot: "" };
+  const result = { route, viewport: viewport.name, url, status: "ok", buttons: [], clicked: [], skipped: [], blockedMutations, issues: [], consoleErrors, pageErrors, requestFailures, responseErrors, dialogs, screenshot: "" };
+  const resetAuditPage = async () => {
+    navigatingForAudit = true;
+    try {
+      await page.goto(url, { waitUntil: "domcontentloaded", timeout: 18000 }).catch(() => null);
+      await page.waitForTimeout(180);
+    } finally {
+      navigatingForAudit = false;
+    }
+  };
   try {
     await page.goto(url, { waitUntil: "domcontentloaded", timeout: 45000 });
     await page.waitForLoadState("networkidle", { timeout: NETWORK_IDLE_TIMEOUT_MS }).catch(() => null);
@@ -297,54 +343,67 @@ async function auditRoute(context, route, viewport) {
       const safeButtons = result.buttons.filter((button) => button.classification === "safe").slice(0, MAX_SAFE_CLICKS_PER_PAGE);
       for (const button of safeButtons) {
         try {
-          const selector = '[data-qa-button-index="' + button.index + '"]';
-          let target = page.locator(selector);
-          // Some safe UI actions rebuild their section without navigating. That
-          // removes the temporary audit indexes from the remaining controls, so
-          // restore the pristine route before treating the next control as a
-          // failure.
-          if ((await target.count()) === 0 || !(await target.isVisible().catch(() => false))) {
-            await page.goto(url, { waitUntil: "domcontentloaded", timeout: 18000 });
-            await page.waitForTimeout(SETTLE_MS);
-            await collectButtons(page);
-            target = page.locator(selector);
-          }
-          if ((await target.count()) === 0 || !(await target.isVisible().catch(() => false))) {
+          const selector = stableButtonSelector(button);
+          if (!selector) {
             result.skipped.push({
               index: button.index,
               text: button.text,
               id: button.id,
-              reason: "safe-control-not-visible-after-state-change"
+              reason: "safe-control-without-stable-selector"
+            });
+            continue;
+          }
+          const target = page.locator(selector);
+          const targetCount = await target.count();
+          if (targetCount !== 1 || !(await target.isVisible().catch(() => false))) {
+            result.skipped.push({
+              index: button.index,
+              text: button.text,
+              id: button.id,
+              selector,
+              reason: targetCount !== 1 ? "safe-selector-not-unique" : "safe-control-not-visible-after-state-change"
             });
             continue;
           }
           const beforeUrl = page.url();
+          const blockedBefore = blockedMutations.length;
           await target.click({ timeout: 1800, force: false });
-          await page.waitForTimeout(180);
-          result.clicked.push({ index: button.index, text: button.text || button.ariaLabel || button.title || button.id || button.className });
+          await page.waitForTimeout(350);
+          const blockedByClick = blockedMutations.slice(blockedBefore);
+          result.clicked.push({
+            index: button.index,
+            text: button.text || button.ariaLabel || button.title || button.id || button.className,
+            mutationBlocked: blockedByClick.length > 0
+          });
+          if (blockedByClick.length) {
+            result.issues.push({
+              type: "safe-button-attempted-mutation",
+              button: { index: button.index, text: button.text, id: button.id },
+              requests: blockedByClick.slice(0, 8)
+            });
+          }
           const afterUrl = page.url();
           if (afterUrl !== beforeUrl) {
             if (afterUrl.startsWith(BASE_URL)) {
-              await page.goto(url, { waitUntil: "domcontentloaded", timeout: 18000 }).catch(() => null);
-              await page.waitForTimeout(180);
-              await collectButtons(page);
+              await resetAuditPage();
             } else {
               result.issues.push({ type: "external-navigation", from: beforeUrl, to: afterUrl });
               break;
             }
           }
           if (afterUrl === beforeUrl) {
-            await page.goto(url, { waitUntil: "domcontentloaded", timeout: 18000 }).catch(() => null);
-            await page.waitForTimeout(180);
-            await collectButtons(page);
+            await resetAuditPage();
           }
         } catch (err) {
           result.issues.push({ type: "safe-button-click-failed", button, message: String(err.message || err).slice(0, 500) });
         }
       }
     }
+    if (blockedMutations.length && !result.issues.some((issue) => issue.type === "safe-button-attempted-mutation")) {
+      result.issues.push({ type: "page-attempted-mutation", requests: blockedMutations.slice(0, 8) });
+    }
     result.skipped = result.skipped.concat(result.buttons.filter((button) => button.classification === "unsafe").map((button) => ({ index: button.index, text: button.text, id: button.id, className: button.className, dataset: button.dataset }))).slice(0, 80);
-    if (result.pageErrors.length || result.consoleErrors.length || result.responseErrors.some((x) => ![401, 403, 404].includes(x.status)) || result.securityBlock) {
+    if (result.pageErrors.length || result.consoleErrors.length || result.responseErrors.some((x) => ![401, 403, 404].includes(x.status)) || result.securityBlock || result.blockedMutations.length) {
       result.status = "review";
     }
   } catch (err) {
@@ -364,8 +423,9 @@ function summarize(results) {
   const totalButtons = results.reduce((n, item) => n + item.buttons.length, 0);
   const clicked = results.reduce((n, item) => n + item.clicked.length, 0);
   const unsafe = results.reduce((n, item) => n + item.skipped.length, 0);
+  const blockedMutations = results.reduce((n, item) => n + item.blockedMutations.length, 0);
   const pagesWithErrors = results.filter((item) => item.status !== "ok" || item.pageErrors.length || item.consoleErrors.length || item.requestFailures.length || item.responseErrors.length || item.issues.length);
-  return { totalPages: results.length, byStatus, totalButtons, clicked, unsafe, pagesWithErrors: pagesWithErrors.length };
+  return { totalPages: results.length, byStatus, totalButtons, clicked, unsafe, blockedMutations, pagesWithErrors: pagesWithErrors.length };
 }
 
 function writeMarkdown(results, summary) {
@@ -378,6 +438,7 @@ function writeMarkdown(results, summary) {
   lines.push("- Botones detectados: `" + summary.totalButtons + "`");
   lines.push("- Clicks seguros ejecutados: `" + summary.clicked + "`");
   lines.push("- Acciones riesgosas omitidas: `" + summary.unsafe + "`");
+  lines.push("- Mutaciones bloqueadas por la guardia: `" + summary.blockedMutations + "`");
   lines.push("- Paginas con hallazgos: `" + summary.pagesWithErrors + "`");
   lines.push("");
   lines.push("## Hallazgos");
@@ -394,6 +455,7 @@ function writeMarkdown(results, summary) {
     if (item.consoleErrors.length) lines.push("- Consola: `" + item.consoleErrors.slice(0, 3).map((x) => x.text).join(" | ").replace(/`/g, "'") + "`");
     if (item.responseErrors.length) lines.push("- HTTP >=400: `" + item.responseErrors.slice(0, 4).map((x) => x.status + " " + x.url.replace(BASE_URL, "")).join(" | ").replace(/`/g, "'") + "`");
     if (item.requestFailures.length) lines.push("- Requests fallidos: `" + item.requestFailures.slice(0, 3).map((x) => x.failure + " " + x.url.replace(BASE_URL, "")).join(" | ").replace(/`/g, "'") + "`");
+    if (item.blockedMutations.length) lines.push("- Mutaciones bloqueadas: `" + item.blockedMutations.slice(0, 4).map((x) => x.method + " " + x.url.replace(BASE_URL, "")).join(" | ").replace(/`/g, "'") + "`");
     if (item.issues.length) lines.push("- Visual/interaccion: `" + item.issues.slice(0, 4).map((x) => x.type).join(", ") + "`");
     if (item.screenshot) lines.push("- Captura: `" + path.relative(ROOT, item.screenshot).replace(/\\/g, "/") + "`");
   }
@@ -422,7 +484,8 @@ async function main() {
         viewport: { width: viewport.width, height: viewport.height },
         isMobile: Boolean(viewport.isMobile),
         deviceScaleFactor: viewport.isMobile ? 2 : 1,
-        ignoreHTTPSErrors: true
+        ignoreHTTPSErrors: true,
+        serviceWorkers: "block"
       });
       const loginPage = await context.newPage();
       await login(loginPage);

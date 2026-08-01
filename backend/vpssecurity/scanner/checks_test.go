@@ -2,6 +2,7 @@ package scanner
 
 import (
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -18,6 +19,27 @@ func TestShadowPermissionPolicyAllowsUbuntuDefault(t *testing.T) {
 		if mode&0o037 == 0 {
 			t.Fatalf("mode %04o must be rejected for /etc/shadow", mode)
 		}
+	}
+}
+
+func TestNginxConfigPathsIncludesExtensionlessEnabledSites(t *testing.T) {
+	root := t.TempDir()
+	for _, rel := range []string{"nginx.conf", "conf.d/security.conf", "sites-enabled/powerfulcontrolsystem", "sites-available/not-enabled"} {
+		path := filepath.Join(root, filepath.FromSlash(rel))
+		if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+			t.Fatalf("mkdir %s: %v", rel, err)
+		}
+		if err := os.WriteFile(path, []byte("# fixture\n"), 0o600); err != nil {
+			t.Fatalf("write %s: %v", rel, err)
+		}
+	}
+	got := nginxConfigPaths(root)
+	joined := strings.Join(got, "\n")
+	if !strings.Contains(joined, filepath.Join("sites-enabled", "powerfulcontrolsystem")) {
+		t.Fatalf("extensionless enabled site missing: %v", got)
+	}
+	if strings.Contains(joined, filepath.Join("sites-available", "not-enabled")) {
+		t.Fatalf("disabled extensionless site must be ignored: %v", got)
 	}
 }
 
