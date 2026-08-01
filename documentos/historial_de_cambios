@@ -17,6 +17,10 @@
   cero altos; queda una actualizacion/reinicio en ventana de mantenimiento.
 - La limpieza exacta de 104 imagenes PCS antiguas recupero 41,5 GB y bajo el
   disco de 81 % a 40 %, conservando produccion, candidato y rollback.
+- Prometheus mantiene staging/node/cAdvisor sanos, pero revelo una alerta
+  critica real para el backend productivo anterior: su `/metrics` interno
+  responde 401. La alerta no se oculto y el receptor interno aun carece de canal
+  externo, por lo que P109-010 sigue parcial hasta promoción y simulacro.
 
 2026-08-01: Plan 109 / candidato 6da6c134, rollback, IA y capacidad operativa.
 - `backend/handlers/postgres_performance.go` deja de convertir cancelaciones de

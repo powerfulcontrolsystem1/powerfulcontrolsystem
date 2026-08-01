@@ -28,3 +28,16 @@ El uso bajó a 79 % y producción/staging mantuvieron salud y readiness.
 
 Estado: **P109-010 parcial**. Faltan inyecciones de señales, alertas recibidas y
 deduplicadas, SLO/error budget y simulacro con responsables.
+
+## Observabilidad correlacionada del host
+
+Prometheus tiene sanos sus targets de staging, node exporter y cAdvisor. Las
+reglas PostgreSQL y lease durable estan cargadas, saludables e inactivas. Se
+encontro una alerta critica `PCSBackendCaido` activa para el backend productivo:
+el contenedor responde, pero su version anterior devuelve 401 al scrape privado
+de `/metrics`; staging con el candidato responde correctamente. El receptor
+`observabilidad-interna` no tiene un canal externo configurado.
+
+No se silenció ni ocultó la alerta. Debe resolverse al promover el mismo
+candidato que expone métricas solo en la red interna y, antes del GO, configurar
+y ensayar un receptor autorizado con deduplicacion y resolución observada.
