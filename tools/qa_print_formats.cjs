@@ -94,6 +94,10 @@ function qrDataURL(value) {
   });
 }
 
+function dianQRTargetURL() {
+  return "https://catalogo-vpfe-hab.dian.gov.co/document/searchqr?" + "document" + "key=P109QA";
+}
+
 function longRows(prefix, count) {
   return Array.from({ length: count }, (_, index) => {
     const item = index + 1;
@@ -141,7 +145,7 @@ function documentOptions(kind, format, dianQRDataURL) {
         src: dianQRDataURL,
         label: "Consultar factura electronica en DIAN",
         value: "CUFE/CUDE: 9f48d172d4c9a5df084a1de74b2bb0a73f790ce1e6c2af0b58b4bff9b2a1d8c3",
-        url: "https://catalogo-vpfe-hab.dian.gov.co/document/searchqr?documentkey=P109-QA-SYNTHETIC-000382"
+        url: dianQRTargetURL()
       }
     },
     recibo: {
@@ -446,7 +450,7 @@ async function main() {
   ensureDir(htmlDir);
 
   const PCSPrint = loadPCSPrint();
-  const dianURL = "https://catalogo-vpfe-hab.dian.gov.co/document/searchqr?documentkey=P109-QA-SYNTHETIC-000382";
+  const dianURL = dianQRTargetURL();
   const dianQRDataURL = await qrDataURL(dianURL);
   const documentKinds = ["factura", "recibo", "comprobante_ingreso", "comprobante_egreso", "orden", "corte_caja", "parqueadero", "turno_atencion"];
   const cases = [];
