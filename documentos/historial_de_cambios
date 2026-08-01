@@ -1,3 +1,30 @@
+2026-08-01: Plan 109 / candidato 6da6c134, rollback, IA y capacidad operativa.
+- `backend/handlers/postgres_performance.go` deja de convertir cancelaciones de
+  navegación en incidentes HTTP 500, clasifica un timeout real como 503 y no
+  expone errores SQL/driver en la respuesta pública. La regresión cubre
+  cancelación, deadline y fallo inesperado.
+- La PR 115 quedó aprobada y fusionada; el release 30687430898 publicó cuatro
+  digests con SBOM y Trivy en cero, promovidos solo al staging aislado.
+- El migrador exacto aprobó base vacía, repetición, drift cerrado/recuperado y
+  upgrade 350/59 sin residuos. Los digests anteriores arrancaron sobre el
+  esquema actualizado y luego se restauró el candidato actual, demostrando
+  rollback de aplicación sin tocar producción.
+- Los negativos runtime del recuperador CxP devolvieron 400/409 sin reactivar
+  el evento histórico fuera de alcance; la segunda empresa controlada continúa
+  ausente para la matriz A/B.
+- IA y CxP/IA respondieron 200 en catálogo, preferencia, historial,
+  configuración segura y dashboard. Una extensión no permitida devolvió 400 y
+  no creó archivo ni fila; no se llamó al proveedor externo.
+- Una carga de 500 GET autenticados, concurrencia 10, terminó con p95 de 119 ms,
+  cero fallos, locks o leases vencidos. El preflight completo y el backend Go
+  quedaron verdes.
+- Se eliminaron 19 volúmenes Docker anónimos, sin contenedor y verificados como
+  `dangling`; el disco bajó de 87 % a 79 %. Bases, archivos, backups, volúmenes
+  con nombre e imágenes de rollback se conservaron y los servicios siguieron
+  saludables.
+- SPF, DKIM, DMARC y PTR continúan publicados. BIMI responde con el SVG oficial,
+  pero `a=` sigue vacío hasta adquirir el certificado externo pausado.
+
 2026-08-01: Plan 109 / release inmutable, migraciones y cierre de hallazgos E2E.
 - El candidato `eb8537883f88ba654f23b0b87b675da7191eef2a` superó release,
   cuatro SBOM y cuatro escaneos Trivy sin vulnerabilidades; sus cuatro digests
