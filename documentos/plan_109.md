@@ -616,6 +616,18 @@ Estado actualizado al 2026-08-01:
 - P109-011 aprobó base vacía, upgrade, drift y rollback de aplicación sobre el
   esquema actualizado. Continúa parcial por escenarios antes/durante/después y
   rollback de datos dentro del RPO.
+- P109-008 arrancó la API y el migrador exactos de `89d6e042...` contra el
+  snapshot restaurado: salud/readiness 200, 5 tablas y 28 filas críticas de PCS,
+  4 endpoints anónimos bloqueados y 5 dominios recorridos mediante login oficial.
+  El rol temporal no tuvo privilegios de plataforma y la limpieza terminó con
+  cero recursos. Los mismos cinco módulos aprobaron revisión visual en
+  escritorio/móvil sin desbordamiento de página ni errores de consola; una
+  interrupción `TERM` también dejó cero recursos. Dos réplicas de aplicación
+  aprobaron carga por A, descarga por B, SHA-256 y continuidad de B tras retirar
+  A. Cinco negativos dinámicos bloquearon empresa cruzada, HTML activo, exceso
+  de 15 MiB y symlink sin crear filas. Continúa parcial por cuotas/retención,
+  antivirus, segunda identidad A/B no global, inventario de heredados, pérdida
+  del almacenamiento, rollback coordinado y aprobación formal RPO/RTO.
 - Implementación Plan 109: **40,0 %** (`1 aprobada + 10 parciales`, de 15 fases).
 - Certificación del candidato desplegado: **6,7 %** (solo P109-000 aprobada en
   el mismo digest). Las fases funcionales, fiscales, A/B, cuatro cajas, restore,

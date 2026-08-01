@@ -1,3 +1,29 @@
+2026-08-01: Plan 109 / aplicación exacta sobre restore autenticado.
+- Se incorpora `deploy/scripts/vps-p109-restored-app-drill.sh` con digests
+  obligatorios, PostgreSQL/red/puerto efímeros, rol runtime sin privilegios de
+  plataforma, migración del snapshot y limpieza fail-closed.
+- `tools/deploy_pipeline_contract.mjs` exige las guardias de digest, prefijo,
+  privilegios y limpieza del nuevo ensayo.
+- La ventana visual atiende `HUP`, `INT` y `TERM`; se verificó y retiró de forma
+  exacta el primer conjunto efímero interrumpido, conservando el snapshot fuente.
+- La ejecución autorizada del candidato `89d6e042...` aprobó health/readiness,
+  cinco tablas críticas y 28 filas de PCS, cuatro negativos anónimos y cinco
+  dominios por login oficial: CxP, contabilidad, CxP/IA, DIAN y documentos.
+- La prueba dejó cero contenedores, redes o temporales y no cambió staging ni
+  producción. La revisión visual desktop/móvil de cinco módulos no mostró
+  desbordamiento de página ni errores de consola; las tablas anchas conservaron
+  desplazamiento propio. P109-008 continúa parcial por matriz hostil de
+  archivos, inventario heredado, pérdida del almacenamiento, rollback
+  coordinado y objetivos RPO/RTO firmados.
+- Dos réplicas exactas del candidato aprobaron carga con CSRF por A, descarga
+  por B y SHA-256; al retirar A, B conservó readiness y volvió a entregar el
+  mismo archivo. La prueba usa un volumen restaurado compartido y no sustituye
+  un fallo real de la capa de almacenamiento.
+- La matriz hostil dinámica rechazó empresa cruzada, HTML activo, archivo de 16
+  MiB y escape por symlink; los uploads inválidos no aumentaron las filas de
+  PCS. Cuotas, retención, antivirus y segunda identidad no global siguen fuera
+  de esta evidencia.
+
 2026-08-01: Plan 109 / certificacion del SHA fusionado y flujo real CxP/IA.
 - La prueba real descubrió que el listado de soportes interpretaba un filtro de
   estado vacío como `radicado`; después de extraer con IA el soporte quedaba en
