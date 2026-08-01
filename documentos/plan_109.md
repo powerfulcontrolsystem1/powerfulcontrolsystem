@@ -573,8 +573,8 @@ Se informan dos cifras:
 
 Estado actualizado al 2026-08-01:
 
-- P109-000 está aprobada en staging para el SHA fusionado `8847288b...`: PR 118,
-  CI y release `30697250256` verdes,
+- P109-000 está aprobada en staging para el SHA fusionado `89d6e042...`: PR 119,
+  CI y release `30700866694` verdes,
   cuatro digests/SBOM, Trivy sin vulnerabilidades, base vacía, upgrade,
   idempotencia, rechazo de checksum, rollback de aplicación, salud y producción
   intacta. P109-001, P109-002, P109-003, P109-004,
@@ -584,25 +584,32 @@ Estado actualizado al 2026-08-01:
   inexistente y publicado sin modificar el evento histórico excluido. Falta una
   segunda empresa controlada para la matriz A/B.
 - P109-002 ya demostró configuración cifrada, catálogo/preferencia por usuario,
-  historial y dashboard CxP/IA. Sobre el candidato final radicó una factura de
-  prueba, ejecutó extracción externa 200 y permitió editar documento/valor sin
-  guardar CxP ni pago. Sigue parcial por confirmación/cancelación, degradación,
-  Centro IA, A/B y evals.
-- P109-004 repitió 618 vistas/309 rutas y 11.062 controles sobre `8847288b...`.
-  La guardia bloqueó 12 POST automáticos sin aumentar DELETE/POST/PUT; Bodegas y
-  Compras aprobaron 4/4 vistas después de integrar la corrección Kardex. Faltan
-  acciones riesgosas por flujo oficial y rol.
+  historial y dashboard CxP/IA. Sobre el candidato final confirmó que el filtro
+  vacío lista estados activos, persistió la edición humana y rechazó por el
+  botón oficial el soporte no fiscal. El documento quedó sin CxP, pago, asiento
+  ni contaminación de producción. Sigue parcial por aprobación controlada,
+  doble clic, degradación, Centro IA, A/B y evals.
+- P109-004 completo sobre `89d6e042...` 618 vistas/309 rutas y 11.062 controles:
+  600 `ok`, 18 revisiones conocidas, 97 clics seguros y 12 POST automáticos
+  bloqueados por la guardia. Finanzas y CxP/IA aprobaron además 4/4 vistas
+  dirigidas y 114 controles en escritorio/móvil. Faltan acciones riesgosas por
+  flujo oficial, rol, empresa A/B y firma del alcance.
 - P109-005 amplió su regresión sintética a 20/20 formatos: factura y recibo de
   96 renglones produjeron cinco páginas de detalle más una de resumen, con QR
   cargado y revisión visual mediante Poppler sin recortes. Continúa parcial por
   faltar documentos reales, roles, tableta e impresión física del piloto.
+- P109-007 continúa bloqueada: el centro DIAN de PCS muestra ambiente, estado,
+  TestSetId y rango como no configurados, avance visible de 10 % y cero
+  TrackId/ZipKey. Sin esos datos no es válido emitir, anular ni afirmar un
+  `GetStatusZip StatusCode=00` oficial.
 - P109-009 redujo el escaneo rápido del host de dos hallazgos altos a cero altos
   mediante SSH por llave, UFW activo, VNC restringido y retiro de Avahi/CUPS.
   Quedan 30 paquetes y reinicio para una ventana de mantenimiento, además del
   DAST/CSP/A-B que esta prueba no sustituye.
-- P109-010 aprobó 500/500 GET autenticados con concurrencia 10 y p95 de 119 ms;
-  después mantuvo cero locks y 5xx. Alertmanager recibió y resolvió una alerta
-  sintética interna; falta receptor externo y deduplicación. La limpieza de 19
+- P109-010 aprobó sobre `89d6e042...` 500/500 GET autenticados con concurrencia
+  10, p95 de 217 ms, cero locks, cero 5xx estructurados y servicios saludables.
+  Alertmanager recibió y resolvió una alerta sintética interna; falta receptor
+  externo y deduplicación. La limpieza de 19
   volúmenes anónimos bajó el disco de 87 % a 79 %; una segunda limpieza exacta
   de imagenes candidatas antiguas recuperó 41,5 GB y lo dejó en 40 %, sin
   afectar servicios ni borrar datos.
@@ -620,7 +627,7 @@ independientes del artefacto, pero no aumenta automáticamente estas cifras.
 
 ## 9. Siguiente orden para Terra alto
 
-P109-000 ya está aprobada para `8847288b...`; Terra no debe reconstruirla ni
+P109-000 ya está aprobada para `89d6e042...`; Terra no debe reconstruirla ni
 repetirla sin un cambio de código. Debe continuar así:
 
 1. confirmar que staging conserva los cuatro digests registrados y producción
