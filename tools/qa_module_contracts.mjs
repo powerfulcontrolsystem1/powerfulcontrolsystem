@@ -36,6 +36,7 @@ const e2eNonMutating = [
   'routeHandler.abort("blockedbyclient")',
   'serviceWorkers: "block"',
   'safe-button-attempted-mutation',
+  'stableButtonSelector(button)',
 ].every((contract) => e2eSource.includes(contract))
   && !e2eSource.includes('if (button.ariaLabel || button.title) return "safe";');
 

@@ -66,7 +66,7 @@ const MUTATING_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
 // "Cerrar" y "Cancelar" no son universalmente inocuos: pueden cerrar caja,
 // anular un flujo operativo o descartar un formulario. El auditor solo pulsa
 // acciones cuyo texto sea inequívocamente de consulta o navegación.
-const SAFE_TEXT = /^(abrir|volver|limpiar|buscar|filtrar|ver|mostrar|ocultar|editar|gestionar|detalle|detalles|actualizar vista|refrescar vista|seleccionar|escuchar|sonando|copiar|expandir|minimizar|siguiente|anterior)$/i;
+const SAFE_TEXT = /^(abrir|volver|limpiar|buscar|filtrar|ver|mostrar|ocultar|detalle|detalles|actualizar vista|refrescar vista|seleccionar|escuchar|sonando|copiar|expandir|minimizar|siguiente|anterior)$/i;
 const AMBIGUOUS_OPERATION_TEXT = /(^|\s)(cerrar|cancelar)(\s|$)/i;
 const AI_ACTION_TEXT = /(^|[^\p{L}\p{N}_])(ia|ai|gpt|openai|asistente)([^\p{L}\p{N}_]|$)/iu;
 const UNSAFE_TEXT = /(eliminar|borrar|desactivar|activar|guardar|crear|registrar|enviar|pagar|comprar|checkout|confirmar|aprobar|rechazar|anular|cancelar pedido|cancelar servicio|cerrar caja|cobrar|emitir|facturar|despachar|publicar|subir|descargar|exportar|imprimir|reset|restablecer|reenviar|aceptar|generar|sincronizar|escanear|iniciar|completar|atender|llamar|re-llamar|listo|vencido|devolver|entregar)/i;
@@ -160,6 +160,20 @@ function classifyButton(button) {
   if (button.dataset && Object.keys(button.dataset).some((key) => /^(tab|toggle|go|section|filter|view|modal|close|target)$/i.test(key))) return "safe";
   if (SAFE_TEXT.test(String(button.text || "").trim())) return "safe";
   return "review";
+}
+
+function cssAttributeValue(value) {
+  return String(value || "").replace(/\\/g, "\\\\").replace(/"/g, '\\"');
+}
+
+// Los indices DOM solo sirven para inventario. Varias paginas insertan roles,
+// menús o controles al iniciar y el mismo indice puede apuntar a otro boton
+// despues de una recarga. Solo se ejecutan controles con identidad estable.
+function stableButtonSelector(button) {
+  if (button.id) return '[id="' + cssAttributeValue(button.id) + '"]';
+  if (button.dataset && button.dataset.target) return '[data-target="' + cssAttributeValue(button.dataset.target) + '"]';
+  if (button.href) return button.tag + '[href="' + cssAttributeValue(button.href) + '"]';
+  return "";
 }
 
 async function login(page) {
@@ -314,24 +328,25 @@ async function auditRoute(context, route, viewport) {
       const safeButtons = result.buttons.filter((button) => button.classification === "safe").slice(0, MAX_SAFE_CLICKS_PER_PAGE);
       for (const button of safeButtons) {
         try {
-          const selector = '[data-qa-button-index="' + button.index + '"]';
-          let target = page.locator(selector);
-          // Some safe UI actions rebuild their section without navigating. That
-          // removes the temporary audit indexes from the remaining controls, so
-          // restore the pristine route before treating the next control as a
-          // failure.
-          if ((await target.count()) === 0 || !(await target.isVisible().catch(() => false))) {
-            await page.goto(url, { waitUntil: "domcontentloaded", timeout: 18000 });
-            await page.waitForTimeout(SETTLE_MS);
-            await collectButtons(page);
-            target = page.locator(selector);
-          }
-          if ((await target.count()) === 0 || !(await target.isVisible().catch(() => false))) {
+          const selector = stableButtonSelector(button);
+          if (!selector) {
             result.skipped.push({
               index: button.index,
               text: button.text,
               id: button.id,
-              reason: "safe-control-not-visible-after-state-change"
+              reason: "safe-control-without-stable-selector"
+            });
+            continue;
+          }
+          const target = page.locator(selector);
+          const targetCount = await target.count();
+          if (targetCount !== 1 || !(await target.isVisible().catch(() => false))) {
+            result.skipped.push({
+              index: button.index,
+              text: button.text,
+              id: button.id,
+              selector,
+              reason: targetCount !== 1 ? "safe-selector-not-unique" : "safe-control-not-visible-after-state-change"
             });
             continue;
           }
@@ -357,7 +372,6 @@ async function auditRoute(context, route, viewport) {
             if (afterUrl.startsWith(BASE_URL)) {
               await page.goto(url, { waitUntil: "domcontentloaded", timeout: 18000 }).catch(() => null);
               await page.waitForTimeout(180);
-              await collectButtons(page);
             } else {
               result.issues.push({ type: "external-navigation", from: beforeUrl, to: afterUrl });
               break;
@@ -366,7 +380,6 @@ async function auditRoute(context, route, viewport) {
           if (afterUrl === beforeUrl) {
             await page.goto(url, { waitUntil: "domcontentloaded", timeout: 18000 }).catch(() => null);
             await page.waitForTimeout(180);
-            await collectButtons(page);
           }
         } catch (err) {
           result.issues.push({ type: "safe-button-click-failed", button, message: String(err.message || err).slice(0, 500) });
