@@ -1,4 +1,11 @@
 2026-08-01: Plan 109 / auditor E2E no mutante y hardening operativo del VPS.
+- El barrido final detecto que los seis controles Kardex de Bodegas conservaban
+  anchos minimos de 260 px y extendian el documento a 1.929 px en escritorio;
+  el grupo ahora envuelve controles con ancho flexible y mantiene la tabla
+  dentro de su contenedor desplazable.
+- El candidato `d4e613e2...` aprobo release inmutable, cuatro SBOM/Trivy,
+  migraciones vacia/copia/drift, carrera Linux, 618 vistas protegidas, 20/20
+  impresiones y 500/500 GET autenticados; produccion permanecio intacta.
 - `tools/qa_e2e_buttons.cjs` deja de confiar en `aria-label`/indices DOM,
   ejecuta solo selectores estables y bloquea toda mutacion HTTP durante el
   barrido visual, incluidos service workers. La repeticion dirigida termino
@@ -17,6 +24,10 @@
   cero altos; queda una actualizacion/reinicio en ventana de mantenimiento.
 - La limpieza exacta de 104 imagenes PCS antiguas recupero 41,5 GB y bajo el
   disco de 81 % a 40 %, conservando produccion, candidato y rollback.
+- Prometheus mantiene staging/node/cAdvisor sanos, pero revelo una alerta
+  critica real para el backend productivo anterior: su `/metrics` interno
+  responde 401. La alerta no se oculto y el receptor interno aun carece de canal
+  externo, por lo que P109-010 sigue parcial hasta promoción y simulacro.
 
 2026-08-01: Plan 109 / candidato 6da6c134, rollback, IA y capacidad operativa.
 - `backend/handlers/postgres_performance.go` deja de convertir cancelaciones de

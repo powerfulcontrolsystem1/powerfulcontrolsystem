@@ -39,14 +39,23 @@ const e2eNonMutating = [
   'stableButtonSelector(button)',
 ].every((contract) => e2eSource.includes(contract))
   && !e2eSource.includes('if (button.ariaLabel || button.title) return "safe";');
+const inventorySourcePath = path.join(repoRoot, "web", "administrar_empresa", "administrar_productos.html");
+const inventorySource = fs.existsSync(inventorySourcePath) ? fs.readFileSync(inventorySourcePath, "utf8") : "";
+const inventoryKardexResponsive = [
+  ".producto-kardex-filters",
+  "flex-wrap:wrap",
+  "max-width:100%",
+  "empresa-inline-actions producto-kardex-filters",
+].every((contract) => inventorySource.includes(contract));
 
 const report = {
   generated_at: new Date().toISOString(),
-  status: missing.length === 0 && printKinds.length >= 3 && e2eNonMutating ? "ok" : "warning",
+  status: missing.length === 0 && printKinds.length >= 3 && e2eNonMutating && inventoryKardexResponsive ? "ok" : "warning",
   checks: [
     { name: "critical_files", ok: missing.length === 0, missing },
     { name: "print_contracts", ok: printKinds.length >= 3, detected: printKinds },
     { name: "e2e_non_mutating_guard", ok: e2eNonMutating },
+    { name: "inventory_kardex_responsive", ok: inventoryKardexResponsive },
   ],
 };
 
