@@ -12508,6 +12508,9 @@ panel de seguridad para que el navegador reciba la correccion CSRF de staging.
   documenta dos restores PostgreSQL efímeros del snapshot VPS, la apertura de
   volúmenes, la consulta de dominios críticos por `empresa_id` y los límites
   pendientes para certificar réplica, archivos y rollback integral.
+- `documentos/evidencia_plan_109/P109-002/2026-07-31_dialogo_plantilla_reporte_ia.md`:
+  registra la validación funcional, accesible y responsive del diálogo que
+  reemplaza `prompt()` al guardar plantillas de reportes IA.
 
 2026-07-31 - Plan 109 / reparación de uso diario IA
 - `backend/db/ai_usage_uniqueness_migration.go`: migración inmutable que

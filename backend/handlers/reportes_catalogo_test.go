@@ -209,3 +209,46 @@ func TestReportesImprimiblesAmpliosUsanRegistrosEnLugarDeTablaRecortada(t *testi
 		}
 	}
 }
+
+func TestReportesIAGuardaPlantillaConDialogoAccesible(t *testing.T) {
+	raw, err := os.ReadFile(filepath.Join("..", "..", "web", "administrar_empresa", "reportes_ejecutivos.html"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	source := string(raw)
+	for _, want := range []string{
+		`<dialog id="reportsAITemplateDialog"`,
+		`aria-labelledby="reportsAITemplateTitle"`,
+		`aria-describedby="reportsAITemplateHelp"`,
+		`<form id="reportsAITemplateForm"`,
+		`<label for="reportsAITemplateCode">`,
+		`<label for="reportsAITemplateName">`,
+		`required maxlength="80" pattern="[A-Za-z0-9][A-Za-z0-9._-]{1,79}"`,
+		`document.getElementById('reportsAITemplateForm').addEventListener('submit', saveAIReportTemplate);`,
+		`document.getElementById('btnCancelAIReportTemplate').addEventListener('click', closeAITemplateDialog);`,
+		`document.getElementById('reportsAITemplateDialog').addEventListener('keydown', function(event) {`,
+		`if (event.key !== 'Escape') return;`,
+		`body:JSON.stringify({`,
+		`empresa_id:empresaId(), codigo:code, nombre:name,`,
+	} {
+		if !strings.Contains(source, want) {
+			t.Fatalf("contrato de plantilla IA accesible ausente: %q", want)
+		}
+	}
+	if strings.Contains(source, "window.prompt") {
+		t.Fatal("guardar plantilla IA no debe depender de window.prompt")
+	}
+}
+
+func TestReportePlantillaCodigoValido(t *testing.T) {
+	for _, code := range []string{"reporte-ia", "CxP_2026.01", "A1"} {
+		if !reportePlantillaCodigoValido(code) {
+			t.Fatalf("codigo valido rechazado: %q", code)
+		}
+	}
+	for _, code := range []string{"", "a", "á", "reporte ia", "-inicia-mal", strings.Repeat("a", 81)} {
+		if reportePlantillaCodigoValido(code) {
+			t.Fatalf("codigo invalido aceptado: %q", code)
+		}
+	}
+}
