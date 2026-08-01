@@ -45,3 +45,35 @@ Después de retirar las altas y acciones IA del clic automático, se repitió el
 recorrido sobre los mismos 118 controles. Solo se pulsaron `Editar` y `Buscar`
 en cada viewport; no hubo creación, ejecución IA, diálogo, error de página,
 consola ni HTTP 4xx/5xx.
+
+## Barrido empresarial ampliado del candidato
+
+El workflow autenticado `30684126476` recorrió el candidato exacto
+`2df580b7a0de03d03091e3631061e8073f0c2746` en staging, con 40 rutas
+empresariales en escritorio y las mismas 40 en móvil.
+
+| Medida | Resultado |
+| --- | ---: |
+| Vistas recorridas | 80 |
+| Controles detectados | 1.664 |
+| Clics seguros ejecutados | 106 |
+| Acciones riesgosas omitidas | 213 |
+| Vistas correctas | 78 |
+| Vistas a revisar | 2 |
+| Errores de página | 0 |
+| Respuestas HTTP 5xx | 0 |
+| Pérdidas de sesión | 0 |
+
+Las dos vistas a revisar corresponden a Centro IA empresarial, en escritorio y
+móvil. La interfaz quedó ordenada y responsive, pero el endpoint devolvió 403 y
+mostró `rol sin acceso a la funcionalidad solicitada`. La revisión del código
+confirmó que `linkCentroIAEmpresarial` está oculto por defecto y requiere una
+habilitación explícita por empresa; el wrapper conservó el aislamiento y no se
+relajó el permiso para convertir la prueba en PASS.
+
+Las otras seis vistas con hallazgos conservaron estado `ok`: fueron abortos de
+requests al navegar entre páginas durante los clics seguros, más un timeout del
+botón de notificaciones del panel. No hubo excepción JavaScript, 5xx ni
+mutación automática. Este barrido amplía P109-004, pero no sustituye los roles
+permitido/denegado, botones IA, exportaciones y acciones reales auditadas que
+siguen pendientes.

@@ -1,3 +1,27 @@
+2026-07-31: Plan 109 / paginación estable y QR en impresiones extensas.
+- `web/js/print_documents.js` fija la distribución de columnas Carta/POS y
+  pagina tablas Carta de más de 40 filas en secciones con encabezado repetido.
+- Totales, notas, resumen, QR y firmas pasan a una página final independiente
+  en documentos extensos, evitando el desplazamiento y recorte observado en
+  las últimas páginas del PDF.
+- `tools/qa_print_formats.cjs` amplía la batería a 20 casos, genera un QR SVG
+  real desde una URL DIAN de habilitación, detecta imágenes rotas y audita
+  páginas PDF, secciones de tabla, página de resumen y 96 filas.
+- QA: 20/20 casos correctos; factura y recibo extensos produjeron cinco páginas
+  de detalle más una de resumen, sin desborde ni errores de consola. Las páginas
+  fueron renderizadas con Poppler e inspeccionadas visualmente. No se declara
+  aceptación DIAN ni impresión física; P109-005 permanece parcial.
+
+2026-07-31: Plan 109 / barrido autenticado empresarial ampliado en staging.
+- El workflow `30684126476` recorrió 40 rutas en escritorio y móvil del
+  candidato exacto `2df580b7a0de03d03091e3631061e8073f0c2746`: 80 vistas,
+  1.664 controles, 106 clics seguros, 78 vistas correctas y dos a revisar.
+- No hubo errores de página, respuestas 5xx ni pérdida de sesión. Se omitieron
+  213 controles con efecto o riesgo para no crear ni modificar datos.
+- Centro IA devolvió 403 en ambos viewports porque su página está deshabilitada
+  por defecto y no tiene override empresarial explícito en PCS. Se conservó el
+  permiso cerrado; la habilitación y prueba IA por rol continúan pendientes.
+
 2026-07-30: Plan 109 / cierre ejecutivo de producción.
 - Se auditaron las 26 fases del Plan 108 y se corrigió su base conservadora:
   P108-014 continúa pendiente, por lo que la implementación verificable heredada
