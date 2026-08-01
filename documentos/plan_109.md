@@ -573,8 +573,8 @@ Se informan dos cifras:
 
 Estado actualizado al 2026-08-01:
 
-- P109-000 está aprobada en staging para el SHA `6da6c134...`: PR 115 y release
-  `30687430898` verdes,
+- P109-000 está aprobada en staging para el SHA `5f1b0692...`: PR 116, CI y
+  release `30688999560` verdes,
   cuatro digests/SBOM, Trivy sin vulnerabilidades, base vacía, upgrade,
   idempotencia, rechazo de checksum, rollback de aplicación, salud y producción
   intacta. P109-001, P109-002, P109-003, P109-004,
@@ -588,23 +588,32 @@ Estado actualizado al 2026-08-01:
   además de ReportSpec, vista previa y exportaciones. Sigue parcial hasta cerrar
   extracción externa autorizada, edición/confirmación, Centro IA, A/B y evals.
 - P109-004 amplió el recorrido a 618 vistas/309 rutas, 11.043 controles y 1.032
-  clics seguros. Sus correcciones visuales se fusionaron en la PR 115, pero la
-  repetición encontró 500 falsos al cancelar consultas del panel PostgreSQL. La
-  corrección y sus pruebas están en la rama consolidada de cierre; debe pasar CI,
-  promover un digest nuevo y repetir el barrido completo.
+  clics seguros. El candidato `5f1b0692...` corrigió los 500 falsos del panel
+  PostgreSQL y la repetición dirigida quedó limpia. Un barrido posterior reveló
+  que el auditor antiguo podía mutar por indices DOM inestables; la nueva
+  guardia bloquea métodos mutantes y la prueba `30689926040` terminó con cero
+  escrituras. Falta completar la repetición global protegida y los flujos
+  oficiales de acciones riesgosas.
 - P109-005 amplió su regresión sintética a 20/20 formatos: factura y recibo de
   96 renglones produjeron cinco páginas de detalle más una de resumen, con QR
   cargado y revisión visual mediante Poppler sin recortes. Continúa parcial por
   faltar documentos reales, roles, tableta e impresión física del piloto.
+- P109-009 redujo el escaneo rápido del host de dos hallazgos altos a cero altos
+  mediante SSH por llave, UFW activo, VNC restringido y retiro de Avahi/CUPS.
+  Quedan 30 paquetes y reinicio para una ventana de mantenimiento, además del
+  DAST/CSP/A-B que esta prueba no sustituye.
 - P109-010 aprobó 500/500 GET autenticados con concurrencia 10 y p95 de 119 ms;
   después mantuvo cero locks/leases vencidos. La limpieza verificada de 19
-  volúmenes anónimos bajó el disco de 87 % a 79 % sin afectar servicios.
+  volúmenes anónimos bajó el disco de 87 % a 79 %; una segunda limpieza exacta
+  de imagenes candidatas antiguas recuperó 41,5 GB y lo dejó en 40 %, sin
+  afectar servicios ni borrar datos.
 - P109-011 aprobó base vacía, upgrade, drift y rollback de aplicación sobre el
   esquema actualizado. Continúa parcial por escenarios antes/durante/después y
   rollback de datos dentro del RPO.
 - Implementación Plan 109: **40,0 %** (`1 aprobada + 10 parciales`, de 15 fases).
 - Certificación del candidato desplegado: **6,7 %** (solo P109-000 aprobada en
-  el mismo digest). El hallazgo PostgreSQL impide promoverlo a piloto.
+  el mismo digest). Las fases funcionales, fiscales, A/B, cuatro cajas, restore,
+  mantenimiento y ensayo general aún impiden promoverlo a piloto.
 - Veredicto: **NO-GO**.
 
 La evidencia histórica P108 sirve como línea base y evita repetir pruebas

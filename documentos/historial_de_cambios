@@ -1,3 +1,23 @@
+2026-08-01: Plan 109 / auditor E2E no mutante y hardening operativo del VPS.
+- `tools/qa_e2e_buttons.cjs` deja de confiar en `aria-label`/indices DOM,
+  ejecuta solo selectores estables y bloquea toda mutacion HTTP durante el
+  barrido visual, incluidos service workers. La repeticion dirigida termino
+  2/2 vistas correctas, cero mutaciones y cero errores.
+- `tools/qa_module_contracts.mjs` exige la guardia de red y selectores estables
+  como contrato del preflight profesional.
+- El barrido global protegido `30689993317` cubrio 618 vistas y 11.062
+  controles sin aumentar el conteo de mutaciones de HeadlessChrome; los POST
+  automaticos de renta IA/visitas quedaron bloqueados y visibles en evidencia.
+- `backend/handlers/super_vps2.go` representa VPS2/snapshot no disponible como
+  estado degradado HTTP 200 con `ok=false`, evitando un 502 del API principal.
+- El scanner de host usa `ufw status verbose` y lee sitios Nginx habilitados sin
+  extension; sus pruebas cubren la regresion.
+- En la VPS se endurecio SSH a llave, se activo UFW con reglas explicitas, se
+  restringio VNC y se deshabilitaron Avahi/CUPS. El escaneo bajo de dos altos a
+  cero altos; queda una actualizacion/reinicio en ventana de mantenimiento.
+- La limpieza exacta de 104 imagenes PCS antiguas recupero 41,5 GB y bajo el
+  disco de 81 % a 40 %, conservando produccion, candidato y rollback.
+
 2026-08-01: Plan 109 / candidato 6da6c134, rollback, IA y capacidad operativa.
 - `backend/handlers/postgres_performance.go` deja de convertir cancelaciones de
   navegación en incidentes HTTP 500, clasifica un timeout real como 503 y no

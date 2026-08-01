@@ -1,4 +1,22 @@
 2026-08-01
+- `tools/qa_e2e_buttons.cjs`: auditor visual autenticado con selectores estables,
+  service workers bloqueados y guardia que impide y reporta cualquier mutacion
+  HTTP durante los clics automaticos.
+- `tools/qa_module_contracts.mjs`: contrato CI para impedir que el auditor E2E
+  pierda su frontera no mutante.
+- `backend/handlers/super_vps2.go`: estado degradado, visible y no 5xx cuando el
+  VPS2 o su snapshot de archivos no estan disponibles.
+- `backend/handlers/super_vps2_test.go`: regresion del estado degradado VPS2.
+- `backend/vpssecurity/scanner/checks.go`: lectura verbose de UFW e inventario de
+  sitios Nginx habilitados aunque no terminen en `.conf`.
+- `backend/vpssecurity/scanner/checks_test.go`: cobertura del inventario Nginx
+  sin extension.
+- `documentos/evidencia_plan_109/P109-004/2026-08-01_guardia_no_mutacion_e2e.md`:
+  causa, contencion y prueba dirigida sin escrituras del auditor autenticado.
+- `documentos/evidencia_plan_109/P109-009/2026-08-01_hardening_host.md`:
+  escaneo, SSH/UFW, servicios removidos y riesgo de mantenimiento restante.
+- `documentos/evidencia_plan_109/P109-010/2026-08-01_limpieza_imagenes.md`:
+  inventario, alcance y capacidad recuperada sin tocar datos ni produccion.
 - `backend/handlers/postgres_performance_error_test.go`: regresión para que el
   panel PostgreSQL ignore cancelaciones del cliente, use 503 ante timeout y no
   filtre detalles internos en errores inesperados.

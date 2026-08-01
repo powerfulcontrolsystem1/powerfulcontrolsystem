@@ -276,6 +276,7 @@ async function auditRoute(context, route, viewport) {
   const responseErrors = [];
   const dialogs = [];
   const blockedMutations = [];
+  let navigatingForAudit = false;
   // Esta auditoria solo valida navegacion y presentacion. Incluso si una
   // etiqueta, un dataset o un indice dinamico se clasifican mal, la red es la
   // ultima frontera: ninguna accion autenticada puede modificar staging.
@@ -290,12 +291,17 @@ async function auditRoute(context, route, viewport) {
     await routeHandler.continue();
   });
   page.on("console", (msg) => {
-    if (["error", "warning"].includes(msg.type())) consoleErrors.push({ type: msg.type(), text: msg.text().slice(0, 600) });
+    const message = msg.text();
+    if (/Service Worker registration blocked by Playwright/i.test(message)) return;
+    if (/ERR_BLOCKED_BY_CLIENT\.Inspector/i.test(message)) return;
+    if (["error", "warning"].includes(msg.type())) consoleErrors.push({ type: msg.type(), text: message.slice(0, 600) });
   });
   page.on("pageerror", (err) => pageErrors.push(String(err && err.message ? err.message : err).slice(0, 600)));
   page.on("requestfailed", (req) => {
     if (MUTATING_METHODS.has(req.method().toUpperCase())) return;
-    requestFailures.push({ url: req.url(), failure: req.failure() ? req.failure().errorText : "request failed" });
+    const failure = req.failure() ? req.failure().errorText : "request failed";
+    if (navigatingForAudit && failure === "net::ERR_ABORTED") return;
+    requestFailures.push({ url: req.url(), failure });
   });
   page.on("response", (res) => {
     const status = res.status();
@@ -309,6 +315,15 @@ async function auditRoute(context, route, viewport) {
 
   const url = BASE_URL + route;
   const result = { route, viewport: viewport.name, url, status: "ok", buttons: [], clicked: [], skipped: [], blockedMutations, issues: [], consoleErrors, pageErrors, requestFailures, responseErrors, dialogs, screenshot: "" };
+  const resetAuditPage = async () => {
+    navigatingForAudit = true;
+    try {
+      await page.goto(url, { waitUntil: "domcontentloaded", timeout: 18000 }).catch(() => null);
+      await page.waitForTimeout(180);
+    } finally {
+      navigatingForAudit = false;
+    }
+  };
   try {
     await page.goto(url, { waitUntil: "domcontentloaded", timeout: 45000 });
     await page.waitForLoadState("networkidle", { timeout: NETWORK_IDLE_TIMEOUT_MS }).catch(() => null);
@@ -370,16 +385,14 @@ async function auditRoute(context, route, viewport) {
           const afterUrl = page.url();
           if (afterUrl !== beforeUrl) {
             if (afterUrl.startsWith(BASE_URL)) {
-              await page.goto(url, { waitUntil: "domcontentloaded", timeout: 18000 }).catch(() => null);
-              await page.waitForTimeout(180);
+              await resetAuditPage();
             } else {
               result.issues.push({ type: "external-navigation", from: beforeUrl, to: afterUrl });
               break;
             }
           }
           if (afterUrl === beforeUrl) {
-            await page.goto(url, { waitUntil: "domcontentloaded", timeout: 18000 }).catch(() => null);
-            await page.waitForTimeout(180);
+            await resetAuditPage();
           }
         } catch (err) {
           result.issues.push({ type: "safe-button-click-failed", button, message: String(err.message || err).slice(0, 500) });
