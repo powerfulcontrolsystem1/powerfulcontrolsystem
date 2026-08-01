@@ -1,4 +1,12 @@
 2026-08-01
+- `web/administrar_empresa/administrar_productos.html`: filtros Kardex de
+  Bodegas y Compras flexibles para no extender el documento fuera del viewport.
+- `documentos/evidencia_plan_109/P109-004/2026-08-01_barrido_final_d4e613e2.md`:
+  repeticion dirigida/global, guardia sin escrituras, hallazgos HTTP, impresion
+  y correccion responsive Kardex del candidato promovido.
+- `documentos/evidencia_plan_109/P109-000/2026-08-01_release_d4e613e2_staging.md`:
+  release inmutable final, digests, SBOM/Trivy, migraciones aisladas, carrera
+  Linux, promocion exclusiva a staging y huella productiva intacta.
 - `tools/qa_e2e_buttons.cjs`: auditor visual autenticado con selectores estables,
   service workers bloqueados y guardia que impide y reporta cualquier mutacion
   HTTP durante los clics automaticos.

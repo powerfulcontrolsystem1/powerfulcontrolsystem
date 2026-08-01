@@ -203,6 +203,15 @@
       display:inline-block;
       max-width:none;
     }
+    .producto-kardex-filters{
+      flex-wrap:wrap;
+      min-width:0;
+      max-width:100%;
+    }
+    .producto-kardex-filters .form-input{
+      flex:1 1 150px;
+      min-width:140px;
+    }
     @media (max-width:720px){
       .producto-inline-form-header{align-items:stretch;flex-direction:column}
       .producto-inline-form-header .btn{width:100%}
@@ -1046,7 +1055,7 @@
       <section class="card empresa-section" data-view-section="bodegas">
         <div class="empresa-section-header">
           <h2>Movimientos recientes</h2>
-          <div class="empresa-inline-actions">
+          <div class="empresa-inline-actions producto-kardex-filters">
             <select id="kardexBodegaFiltro" class="form-input">
               <option value="">Todas las bodegas</option>
             </select>
@@ -1152,7 +1161,7 @@
     <section class="card empresa-section" data-view-section="compras">
       <div class="empresa-section-header">
         <h2>Compras a proveedores y reposición</h2>
-        <div class="empresa-inline-actions">
+        <div class="empresa-inline-actions producto-kardex-filters">
           <select id="comprasKardexBodegaFiltro" class="form-input">
             <option value="">Todas las bodegas</option>
           </select>

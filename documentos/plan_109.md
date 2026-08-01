@@ -573,8 +573,8 @@ Se informan dos cifras:
 
 Estado actualizado al 2026-08-01:
 
-- P109-000 está aprobada en staging para el SHA `5f1b0692...`: PR 116, CI y
-  release `30688999560` verdes,
+- P109-000 está aprobada en staging para el SHA `d4e613e2...`: PR 117, CI y
+  release `30690869278` verdes,
   cuatro digests/SBOM, Trivy sin vulnerabilidades, base vacía, upgrade,
   idempotencia, rechazo de checksum, rollback de aplicación, salud y producción
   intacta. P109-001, P109-002, P109-003, P109-004,
@@ -587,13 +587,12 @@ Estado actualizado al 2026-08-01:
   usuario, historial, dashboard CxP/IA y rechazo de upload inválido sin escritura,
   además de ReportSpec, vista previa y exportaciones. Sigue parcial hasta cerrar
   extracción externa autorizada, edición/confirmación, Centro IA, A/B y evals.
-- P109-004 amplió el recorrido a 618 vistas/309 rutas, 11.043 controles y 1.032
-  clics seguros. El candidato `5f1b0692...` corrigió los 500 falsos del panel
-  PostgreSQL y la repetición dirigida quedó limpia. Un barrido posterior reveló
-  que el auditor antiguo podía mutar por indices DOM inestables; la nueva
-  guardia bloquea métodos mutantes y la prueba `30689926040` terminó con cero
-  escrituras. Falta completar la repetición global protegida y los flujos
-  oficiales de acciones riesgosas.
+- P109-004 repitió 618 vistas/309 rutas, 11.062 controles y 103 clics seguros
+  sobre `d4e613e2...`. La guardia bloqueó 12 POST automáticos, el contador de
+  mutaciones permaneció `101/15519` y no hubo 5xx. El único desbordamiento
+  restante, filtros Kardex de Bodegas a 1.929 px, tiene corrección local y
+  contrato; faltan integrarla/repetirla y ejecutar acciones riesgosas por flujo
+  oficial.
 - P109-005 amplió su regresión sintética a 20/20 formatos: factura y recibo de
   96 renglones produjeron cinco páginas de detalle más una de resumen, con QR
   cargado y revisión visual mediante Poppler sin recortes. Continúa parcial por
@@ -602,7 +601,7 @@ Estado actualizado al 2026-08-01:
   mediante SSH por llave, UFW activo, VNC restringido y retiro de Avahi/CUPS.
   Quedan 30 paquetes y reinicio para una ventana de mantenimiento, además del
   DAST/CSP/A-B que esta prueba no sustituye.
-- P109-010 aprobó 500/500 GET autenticados con concurrencia 10 y p95 de 119 ms;
+- P109-010 aprobó 500/500 GET autenticados con concurrencia 10 y p95 de 121 ms;
   después mantuvo cero locks/leases vencidos. La limpieza verificada de 19
   volúmenes anónimos bajó el disco de 87 % a 79 %; una segunda limpieza exacta
   de imagenes candidatas antiguas recuperó 41,5 GB y lo dejó en 40 %, sin
