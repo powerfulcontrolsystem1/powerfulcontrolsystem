@@ -40553,3 +40553,13 @@ acumulativa.
   encabezado tabular cuando tenía ocho columnas o menos. El PDF ahora humaniza
   también ese encabezado, igual que los reportes anchos y las etiquetas de
   resumen, sin cambiar las claves internas de datos.
+
+2026-07-31: Plan 109 / guardado accesible de plantillas de reportes IA.
+- `Guardar plantilla` reemplaza los dos `prompt()` por un diálogo accesible,
+  responsive y operable con teclado. Permite revisar y editar código/nombre,
+  cancelar sin efectos y confirmar una nueva versión por el endpoint oficial.
+- El frontend bloquea doble envío mientras la solicitud está activa y el
+  backend valida formato y longitud del código y nombre. El handler conserva
+  sesión, permiso, catálogo semántico y todos los filtros por `empresa_id`.
+- La prueba visual aislada aprobó escritorio y 390 px sin desbordes, foco inicial,
+  cierre por Escape, retorno de foco, rechazo inválido y guardado válido.

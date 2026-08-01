@@ -4636,3 +4636,13 @@ Actualización 2026-07-30 (Recuperación operacional de outbox CxP):
   movimientos manuales que el mismo `Scan` y la respuesta ya esperaban.
 - La consulta continúa aislada por `empresa_id`; no cambia configuraciones ni
   defaults empresariales.
+
+2026-07-31 - Reportes IA / plantillas accesibles
+
+- El centro de reportes permite guardar la especificación IA revisada mediante
+  un diálogo accesible y responsive, sin depender de ventanas `prompt`.
+- Código y nombre pueden editarse antes de confirmar; cancelar no persiste. La
+  API vuelve a validar la entrada y crea la versión solo en la empresa derivada
+  del contexto autenticado.
+- No cambian permisos, licencia, tablas ni dependencias. La plantilla conserva
+  la revalidación del `ReportSpec` contra el catálogo semántico autorizado.
