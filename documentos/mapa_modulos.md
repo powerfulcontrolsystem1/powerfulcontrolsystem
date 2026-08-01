@@ -214,6 +214,12 @@ clasificada como pagina IA oculta por defecto en permisos. El endpoint
 rol y accion con `WithEmpresaSoportesComprasIAPermissions`, pero permite abrir
 la pantalla cuando el rol tiene acceso al modulo operativo `soportes_compras_ia`.
 
+Actualizacion 2026-08-01: el flujo CxP/IA confirma aprobar, rechazar y
+contabilizar; sus transiciones son serializadas e idempotentes por soporte. La
+extraccion usa un advisory lock PostgreSQL con namespace propio para impedir
+llamadas/cuotas duplicadas entre replicas, fuerza revision ante datos
+incompletos o totales inconsistentes y oculta detalles internos del proveedor.
+
 Actualizacion 2026-06-19: `Super administrador` mantiene `Seleccionar empresa`
 en `web/super_administrador.html` como boton integrado del toolbar, con estilo
 azul claro en `web/estilos.css` y navegacion directa a `/seleccionar_empresa.html`.

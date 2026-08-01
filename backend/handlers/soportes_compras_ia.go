@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"crypto/rand"
 	"database/sql"
 	"encoding/hex"
@@ -8,6 +9,8 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log"
+	"math"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -18,7 +21,10 @@ import (
 	dbpkg "github.com/you/pos-backend/db"
 )
 
-const maxSoporteComprasIAUploadBytes = 15 << 20
+const (
+	maxSoporteComprasIAUploadBytes    = 15 << 20
+	soporteComprasIAAdvisoryNamespace = int64(0x534349)
+)
 
 var soporteComprasIAAllowedExt = map[string]bool{
 	".png":  true,
@@ -102,11 +108,32 @@ func handleSoportesComprasIAMutate(w http.ResponseWriter, r *http.Request, dbEmp
 	case "extraer_ia":
 		row, err := extraerSoporteComprasIAGPT55(r, dbEmp, dbSuper, empresaID, usuario)
 		if err != nil {
-			status := http.StatusBadRequest
+			status := http.StatusInternalServerError
+			message := "No se pudo completar la extraccion IA. Intenta nuevamente."
 			if errors.Is(err, errSoporteComprasIAIADesactivada) || errors.Is(err, errSoporteComprasIAModeloNoDisponible) {
 				status = http.StatusServiceUnavailable
+				message = err.Error()
+			} else if errors.Is(err, errSoporteComprasIAProcesamientoEnCurso) {
+				status = http.StatusConflict
+				message = "El soporte ya se esta procesando con IA. Espera el resultado antes de reintentar."
+			} else if errors.Is(err, errSoporteComprasIASolicitudInvalida) {
+				status = http.StatusBadRequest
+				message = "Selecciona un soporte valido antes de ejecutar la extraccion IA."
+			} else if errors.Is(err, errSoporteComprasIAEstadoNoExtraible) {
+				status = http.StatusConflict
+				message = "El estado actual del soporte no permite ejecutar nuevamente la extraccion IA."
+			} else if errors.Is(err, errSoporteComprasIASinAdjunto) {
+				status = http.StatusUnprocessableEntity
+				message = "El soporte no tiene un archivo privado disponible para analizar."
+			} else if errors.Is(err, errSoporteComprasIAProveedor) {
+				status = http.StatusBadGateway
+				message = publicAIProviderError(err)
+			} else if isProviderLimitError(err) {
+				status = http.StatusTooManyRequests
+				message = publicAIProviderError(err)
 			}
-			http.Error(w, err.Error(), status)
+			log.Printf("[soportes_compras_ia] extraccion empresa_id=%d status=%d: %v", empresaID, status, err)
+			http.Error(w, message, status)
 			return
 		}
 		exposeSoporteComprasIAURL(&row)
@@ -125,7 +152,11 @@ func handleSoportesComprasIAMutate(w http.ResponseWriter, r *http.Request, dbEmp
 		exposeSoporteComprasIAURL(&row)
 		writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "soporte": row})
 	case "aprobar":
-		payload, _ := decodeSoporteComprasIAActionPayload(r)
+		payload, err := decodeSoporteComprasIAActionPayload(r)
+		if err != nil || payload.SoporteID <= 0 {
+			http.Error(w, "soporte_id es obligatorio", http.StatusBadRequest)
+			return
+		}
 		row, err := dbpkg.UpdateEmpresaSoporteComprasIAEstado(dbEmp, empresaID, payload.SoporteID, "aprobado", usuario, payload.Observaciones)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
@@ -134,7 +165,11 @@ func handleSoportesComprasIAMutate(w http.ResponseWriter, r *http.Request, dbEmp
 		exposeSoporteComprasIAURL(&row)
 		writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "soporte": row})
 	case "rechazar":
-		payload, _ := decodeSoporteComprasIAActionPayload(r)
+		payload, err := decodeSoporteComprasIAActionPayload(r)
+		if err != nil || payload.SoporteID <= 0 {
+			http.Error(w, "soporte_id es obligatorio", http.StatusBadRequest)
+			return
+		}
 		row, err := dbpkg.UpdateEmpresaSoporteComprasIAEstado(dbEmp, empresaID, payload.SoporteID, "rechazado", usuario, payload.Observaciones)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
@@ -143,7 +178,11 @@ func handleSoportesComprasIAMutate(w http.ResponseWriter, r *http.Request, dbEmp
 		exposeSoporteComprasIAURL(&row)
 		writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "soporte": row})
 	case "contabilizar":
-		payload, _ := decodeSoporteComprasIAActionPayload(r)
+		payload, err := decodeSoporteComprasIAActionPayload(r)
+		if err != nil || payload.SoporteID <= 0 {
+			http.Error(w, "soporte_id es obligatorio", http.StatusBadRequest)
+			return
+		}
 		row, err := dbpkg.ContabilizarEmpresaSoporteComprasIA(dbEmp, empresaID, payload.SoporteID, usuario)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
@@ -359,8 +398,13 @@ func downloadSoporteComprasIA(w http.ResponseWriter, r *http.Request, dbEmp *sql
 }
 
 var (
-	errSoporteComprasIAIADesactivada      = errors.New("la IA esta desactivada desde configuracion avanzada")
-	errSoporteComprasIAModeloNoDisponible = errors.New("el modelo openai:gpt-5.5 no esta disponible en el catalogo de IA")
+	errSoporteComprasIAIADesactivada        = errors.New("la IA esta desactivada desde configuracion avanzada")
+	errSoporteComprasIAModeloNoDisponible   = errors.New("el modelo openai:gpt-5.5 no esta disponible en el catalogo de IA")
+	errSoporteComprasIAProcesamientoEnCurso = errors.New("el soporte ya se esta procesando con IA")
+	errSoporteComprasIAProveedor            = errors.New("fallo del proveedor IA para soportes de compras")
+	errSoporteComprasIASolicitudInvalida    = errors.New("solicitud de extraccion IA invalida")
+	errSoporteComprasIAEstadoNoExtraible    = errors.New("estado de soporte no extraible")
+	errSoporteComprasIASinAdjunto           = errors.New("soporte sin adjunto privado disponible")
 )
 
 func extraerSoporteComprasIAGPT55(r *http.Request, dbEmp, dbSuper *sql.DB, empresaID int64, usuario string) (dbpkg.EmpresaSoporteComprasIA, error) {
@@ -371,22 +415,35 @@ func extraerSoporteComprasIAGPT55(r *http.Request, dbEmp, dbSuper *sql.DB, empre
 	if !ok {
 		return dbpkg.EmpresaSoporteComprasIA{}, errSoporteComprasIAModeloNoDisponible
 	}
-	if _, _, err := reserveEmpresaAgentAdvancedUsage(dbEmp, dbSuper, empresaID, usuario); err != nil {
-		return dbpkg.EmpresaSoporteComprasIA{}, err
+	payload, err := decodeSoporteComprasIAActionPayload(r)
+	if err != nil && !errors.Is(err, io.EOF) {
+		return dbpkg.EmpresaSoporteComprasIA{}, errSoporteComprasIASolicitudInvalida
 	}
-	payload, _ := decodeSoporteComprasIAActionPayload(r)
 	if payload.SoporteID <= 0 {
 		payload.SoporteID, _ = strconv.ParseInt(strings.TrimSpace(r.URL.Query().Get("soporte_id")), 10, 64)
 	}
 	if payload.SoporteID <= 0 {
-		return dbpkg.EmpresaSoporteComprasIA{}, errors.New("soporte_id es obligatorio")
+		return dbpkg.EmpresaSoporteComprasIA{}, errSoporteComprasIASolicitudInvalida
 	}
 	current, err := dbpkg.GetEmpresaSoporteComprasIA(dbEmp, empresaID, payload.SoporteID)
 	if err != nil {
 		return dbpkg.EmpresaSoporteComprasIA{}, err
 	}
+	switch strings.ToLower(strings.TrimSpace(current.EstadoSoporte)) {
+	case "radicado", "extraido", "en_revision":
+	default:
+		return dbpkg.EmpresaSoporteComprasIA{}, errSoporteComprasIAEstadoNoExtraible
+	}
 	att, err := loadSoporteComprasIAAttachment(current)
 	if err != nil {
+		return dbpkg.EmpresaSoporteComprasIA{}, fmt.Errorf("%w: %v", errSoporteComprasIASinAdjunto, err)
+	}
+	release, err := acquireSoporteComprasIAExtractionLock(r, dbEmp, empresaID, payload.SoporteID)
+	if err != nil {
+		return dbpkg.EmpresaSoporteComprasIA{}, err
+	}
+	defer release()
+	if _, _, err := reserveEmpresaAgentAdvancedUsage(dbEmp, dbSuper, empresaID, usuario); err != nil {
 		return dbpkg.EmpresaSoporteComprasIA{}, err
 	}
 
@@ -395,12 +452,13 @@ func extraerSoporteComprasIAGPT55(r *http.Request, dbEmp, dbSuper *sql.DB, empre
 	pregunta := "Extrae y normaliza este soporte de compra o gasto de Colombia. Responde solo JSON valido, sin explicaciones."
 	respuesta, promptTokens, completionTokens, err := ctrl.callOpenAIResponsesWithSystemPrompt(model, pregunta, nil, systemPrompt, att, nil, nil)
 	if err != nil {
-		return dbpkg.EmpresaSoporteComprasIA{}, err
+		return dbpkg.EmpresaSoporteComprasIA{}, fmt.Errorf("%w: %w", errSoporteComprasIAProveedor, err)
 	}
 	extracted, compactJSON, err := parseSoporteComprasIAExtraction(respuesta)
 	if err != nil {
-		return dbpkg.EmpresaSoporteComprasIA{}, err
+		return dbpkg.EmpresaSoporteComprasIA{}, fmt.Errorf("%w: respuesta invalida", errSoporteComprasIAProveedor)
 	}
+	extracted = evaluateSoporteComprasIAExtraction(extracted)
 	extracted.ExtraccionJSON = compactJSON
 	extracted.RespuestaIA = respuesta
 	extracted.ModeloIA = model.ID
@@ -423,6 +481,43 @@ func extraerSoporteComprasIAGPT55(r *http.Request, dbEmp, dbSuper *sql.DB, empre
 		Observaciones:    "Extraccion IA GPT-5.5 de soporte de compra o gasto",
 	})
 	return updated, nil
+}
+
+func acquireSoporteComprasIAExtractionLock(r *http.Request, dbEmp *sql.DB, empresaID, soporteID int64) (func(), error) {
+	if dbEmp == nil || empresaID <= 0 || soporteID <= 0 || empresaID > math.MaxInt32 || soporteID > math.MaxInt32 {
+		return nil, errors.New("identificador de soporte no valido")
+	}
+	conn, err := dbEmp.Conn(r.Context())
+	if err != nil {
+		return nil, err
+	}
+	var locked bool
+	if err := conn.QueryRowContext(r.Context(), `SELECT pg_try_advisory_lock($1::integer,$2::integer)`, soporteComprasIAAdvisoryNamespace, soporteID).Scan(&locked); err != nil {
+		_ = conn.Close()
+		return nil, err
+	}
+	if !locked {
+		_ = conn.Close()
+		return nil, errSoporteComprasIAProcesamientoEnCurso
+	}
+	return func() {
+		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+		defer cancel()
+		var unlocked bool
+		if err := conn.QueryRowContext(ctx, `SELECT pg_advisory_unlock($1::integer,$2::integer)`, soporteComprasIAAdvisoryNamespace, soporteID).Scan(&unlocked); err != nil || !unlocked {
+			log.Printf("[soportes_compras_ia] no se pudo liberar lock empresa_id=%d soporte_id=%d: %v", empresaID, soporteID, err)
+		}
+		_ = conn.Close()
+	}, nil
+}
+
+func evaluateSoporteComprasIAExtraction(row dbpkg.EmpresaSoporteComprasIA) dbpkg.EmpresaSoporteComprasIA {
+	expected := row.Subtotal + row.ImpuestoIVA - row.RetencionFuente - row.RetencionICA - row.RetencionIVA
+	tolerance := math.Max(1, math.Abs(expected)*0.01)
+	if strings.TrimSpace(row.ProveedorNombre) == "" || strings.TrimSpace(row.DocumentoNumero) == "" || row.Total <= 0 || row.ConfianzaIA < 0.85 || math.Abs(row.Total-expected) > tolerance {
+		row.RequiereRevisionHumana = true
+	}
+	return row
 }
 
 func soporteComprasIASystemPrompt() string {

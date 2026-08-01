@@ -94,3 +94,41 @@ func TestSoporteComprasIAEstadoFiltroVacioListaTodos(t *testing.T) {
 		t.Fatalf("filtro invalido = %q, want radicado cerrado", got)
 	}
 }
+
+func TestSoporteComprasIAEstadoExtraibleExcludesConfirmedStates(t *testing.T) {
+	for _, estado := range []string{"radicado", "extraido", "en_revision"} {
+		if !soporteIAEstadoExtraible(estado) {
+			t.Fatalf("estado %q debe permitir extraccion", estado)
+		}
+	}
+	for _, estado := range []string{"aprobado", "rechazado", "contabilizado", "duplicado"} {
+		if soporteIAEstadoExtraible(estado) {
+			t.Fatalf("estado confirmado %q no debe permitir extraccion", estado)
+		}
+	}
+}
+
+func TestSoporteComprasIAStateTransitionsAreIdempotentAndClosed(t *testing.T) {
+	tests := []struct {
+		current, next string
+		idempotent    bool
+		allowed       bool
+	}{
+		{"radicado", "aprobado", false, true},
+		{"extraido", "aprobado", false, true},
+		{"en_revision", "aprobado", false, true},
+		{"aprobado", "aprobado", true, true},
+		{"aprobado", "rechazado", false, true},
+		{"rechazado", "rechazado", true, true},
+		{"rechazado", "aprobado", false, false},
+		{"duplicado", "aprobado", false, false},
+		{"contabilizado", "rechazado", false, false},
+		{"radicado", "contabilizado", false, false},
+	}
+	for _, tt := range tests {
+		gotIdempotent, err := validateSoporteIAStateTransition(tt.current, tt.next)
+		if (err == nil) != tt.allowed || gotIdempotent != tt.idempotent {
+			t.Fatalf("transition %s -> %s: idempotent=%v err=%v", tt.current, tt.next, gotIdempotent, err)
+		}
+	}
+}

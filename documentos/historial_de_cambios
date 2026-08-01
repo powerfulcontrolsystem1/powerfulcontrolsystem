@@ -1,3 +1,18 @@
+2026-08-01: Plan 109 / confirmación, doble clic y degradación CxP/IA.
+- La extracción bloquea por soporte mediante advisory lock PostgreSQL con
+  namespace propio; el segundo intento concurrente responde conflicto antes de
+  reservar cuota o llamar al proveedor.
+- Aprobar/rechazar usan fila bloqueada y evento en la misma transacción, son
+  idempotentes ante repetición y bloquean transiciones desde estados finales.
+- La aprobación exige proveedor activo del mismo `empresa_id`, documento y
+  total positivo; rechazo limpia la aprobación y contabilizar conserva su
+  creación única de CxP sin pago.
+- El frontend pide confirmación explícita y bloquea doble acción; las evals
+  fuerzan revisión por faltantes, confianza baja o descuadre de totales. Errores
+  del proveedor quedan redactados en la respuesta pública.
+- `go test ./...`, pruebas focalizadas y sintaxis JavaScript: PASS. La evidencia
+  runtime sobre el nuevo digest continúa pendiente antes de aprobar P109-002.
+
 2026-08-01: Plan 109 / fallos transaccionales de migración y compatibilidad.
 - `vps-p108-empty-migration-drill.sh` añade un modo cerrado que rechaza el rol
   sin DDL, falla después del DDL y antes del ledger, comprueba rollback/auditoría
