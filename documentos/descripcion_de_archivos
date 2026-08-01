@@ -1,3 +1,8 @@
+2026-08-01
+- `documentos/evidencia_plan_109/P109-000/2026-08-01_release_eb853788_staging.md`:
+  evidencia de integración, SBOM/Trivy, digests, promoción exclusiva a staging,
+  salud, producción intacta y ensayos aislados de migración del candidato.
+
 2026-07-28
 - `documentos/plan_109.md`: continuación depurada del Plan 108 para GPT-5.6
   Terra alto; corrige la base porcentual, consolida los bloqueantes restantes

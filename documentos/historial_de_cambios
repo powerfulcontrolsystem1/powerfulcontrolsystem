@@ -1,3 +1,20 @@
+2026-08-01: Plan 109 / release inmutable, migraciones y cierre de hallazgos E2E.
+- El candidato `eb8537883f88ba654f23b0b87b675da7191eef2a` superó release,
+  cuatro SBOM y cuatro escaneos Trivy sin vulnerabilidades; sus cuatro digests
+  exactos quedaron activos y saludables únicamente en staging.
+- El mismo migrador aprobó PostgreSQL vacío, segunda pasada, fallo cerrado por
+  checksum alterado y upgrade de una copia lógica de staging, sin residuos.
+- Producción conservó sus imágenes y respondió 200 en salud y readiness; no se
+  ejecutó despliegue ni migración de producción.
+- El barrido 618/309 rutas permitió corregir `empresa_id` en Noticias,
+  desbordes de Bodegas, Ayuda, descuentos, logos, ERD e icono IA y falsos
+  positivos del auditor sobre controles ocultos o estado acumulado.
+- Los permisos empresariales 403 permanecen cerrados y los archivos antiguos
+  de Red Social no se eliminaron por fuera del flujo oficial.
+- El mismo digest atendió 500/500 GET autenticados con concurrencia 10, p95 de
+  117 ms, cero fallos y cero esperas de lock; los cuatro servicios de staging
+  permanecieron saludables y no hubo leases vencidos.
+
 2026-07-31: Plan 109 / paginación estable y QR en impresiones extensas.
 - `web/js/print_documents.js` fija la distribución de columnas Carta/POS y
   pagina tablas Carta de más de 40 filas en secciones con encabezado repetido.

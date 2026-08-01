@@ -9133,9 +9133,13 @@ html[data-theme^="light"] .estaciones-page .empresa-section{
 
 .empresa-grid-2{
   display:grid;
-  grid-template-columns:1fr 1fr;
+  grid-template-columns:minmax(0,1fr) minmax(0,1fr);
   gap:10px;
   margin-top:10px;
+}
+
+.empresa-grid-2>*{
+  min-width:0;
 }
 
 /* Modulo nomina de sueldos */
@@ -20702,6 +20706,16 @@ body.carrito-flat-page .scanner-qty-control .cart-item-qty-input{
   max-height:62px !important;
   display:block !important;
   object-fit:contain !important;
+}
+
+@media (max-width:860px){
+  .ai-chat-toggle-button:not(.is-robot-avatar) img.ai-openai-mark,
+  .ai-chat-toggle-button:not(.is-robot-avatar) img[data-ai-logo="true"]{
+    width:100% !important;
+    height:100% !important;
+    max-width:100% !important;
+    max-height:100% !important;
+  }
 }
 
 .ai-action-button::after{
