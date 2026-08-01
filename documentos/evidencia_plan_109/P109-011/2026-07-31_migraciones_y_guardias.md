@@ -24,3 +24,17 @@ solo al rol de migración explícito.
 P109-011 permanece parcial. Aún debe ensayarse rollback coordinado de datos y
 compatibilidad hacia atrás bajo una falla controlada, dentro de RPO/RTO y con
 evidencia de que no quedan residuos.
+
+## Rollback de datos posterior a migración - 2026-08-01
+
+El candidato exacto se aplicó al snapshot efímero y, después de crear un soporte
+por el flujo oficial, se congelaron las dos bases y el volumen privado. Con las
+APIs detenidas se perdieron las copias temporales, se recrearon ambas bases y se
+restauraron junto con los archivos. El runtime volvió a readiness, autenticó,
+recuperó la fila y el SHA-256, y conservó las cinco tablas críticas. El rollback
+coordinado tardó 23 segundos y dejó cero recursos efímeros.
+
+P109-011 continúa **parcial**: queda pendiente simular fallos antes y durante la
+migración y completar la matriz de compatibilidad hacia atrás. El ensayo nuevo
+cierra únicamente el escenario posterior a migración y no fija por sí solo el
+RPO/RTO contractual.

@@ -1,3 +1,18 @@
+2026-08-01: Plan 109 / rollback coordinado de datos y archivos restaurados.
+- `vps-p109-restored-app-drill.sh` puede congelar ambas bases y el volumen
+  privado después del flujo autenticado, perder únicamente las copias efímeras,
+  restaurarlas juntas y revalidar login, readiness, cinco dominios, fila e
+  inventario SHA-256.
+- El ensayo real aislado aprobó 7 controles de rollback, 5 dominios recuperados,
+  5 negativos de archivos
+  y recuperación en 23 segundos; terminó sin contenedores, redes ni temporales.
+  Staging y producción conservaron sus imágenes activas sin reinicio ni cambio.
+- El inventario reproducible cruzó 2 archivos con 2 referencias privadas de su
+  catálogo empresarial: cero faltantes, huérfanos, referencias heredadas,
+  symlinks o rutas fuera del tenant. No eliminó ni migró datos automáticamente.
+- P109-008 y P109-011 siguen parciales por los gates explícitos restantes; esta
+  evidencia no autoriza promoción ni fija por sí sola el RPO/RTO contractual.
+
 2026-08-01: Plan 109 / aplicación exacta sobre restore autenticado.
 - Se incorpora `deploy/scripts/vps-p109-restored-app-drill.sh` con digests
   obligatorios, PostgreSQL/red/puerto efímeros, rol runtime sin privilegios de

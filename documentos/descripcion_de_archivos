@@ -12580,8 +12580,11 @@ panel de seguridad para que el navegador reciba la correccion CSRF de staging.
 - `deploy/scripts/vps-p109-restored-app-drill.sh`: restaura un snapshot en una
   red PostgreSQL efímera, aplica el migrador inmutable, arranca la API exacta,
   comprueba permisos y dominios críticos con login oficial opcional, permite
-  probar carga/descarga y pérdida de una réplica de aplicación, y elimina todos
-  los recursos sin tocar los contenedores activos.
+  probar carga/descarga y pérdida de una réplica de aplicación; opcionalmente
+  pierde y recupera de forma coordinada ambas bases y el volumen privado con
+  inventario SHA-256, cruza referencias de seis categorías empresariales para
+  detectar faltantes, heredados o huérfanos, y elimina todos los recursos sin
+  tocar los contenedores activos.
 - `documentos/evidencia_plan_109/P109-002/2026-07-31_dialogo_plantilla_reporte_ia.md`:
   registra la validación funcional, accesible y responsive del diálogo que
   reemplaza `prompt()` al guardar plantillas de reportes IA.

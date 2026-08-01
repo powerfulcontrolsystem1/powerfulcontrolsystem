@@ -332,6 +332,18 @@ credenciales QA por variables de sesión. El ensayo carga por A con CSRF,
 descarga por B, compara SHA-256, retira A y repite readiness/descarga en B.
 En ese modo también exige negativos de empresa cruzada, contenido HTML, tamaño
 superior a 15 MiB y symlink, y comprueba que los rechazos no creen filas.
+Para ensayar pérdida y recuperación conjunta de datos/archivos, añadir
+`P109_VERIFY_COORDINATED_ROLLBACK=1`. Este modo exige réplicas y credenciales
+QA: detiene ambas APIs efímeras, crea un checkpoint de las dos bases y del
+volumen privado, elimina exclusivamente esas copias temporales, las restaura,
+reinicia una réplica y vuelve a comprobar login, cinco dominios, fila y SHA-256.
+Nunca se debe apuntar este modo a las bases o volúmenes activos.
+Para auditar el snapshot antes del arranque, definir
+`P109_VERIFY_PRIVATE_INVENTORY=1`. La prueba cruza el catálogo cerrado de chat,
+buzón, DIAN, finanzas, grafología y soportes CxP/IA contra los archivos del
+volumen; bloquea referencias faltantes, symlinks y rutas fuera de
+`<categoria>/empresa_<id>/<archivo>`, y reporta sin borrar huérfanos o
+referencias heredadas que deban migrarse.
 
 Para subir una copia a un VPS nuevo y dejar preparada la restauracion:
 
