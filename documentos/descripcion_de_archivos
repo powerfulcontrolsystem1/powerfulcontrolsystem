@@ -12581,6 +12581,23 @@ panel de seguridad para que el navegador reciba la correccion CSRF de staging.
   registra la validación funcional, accesible y responsive del diálogo que
   reemplaza `prompt()` al guardar plantillas de reportes IA.
 
+2026-08-01 - Cierre del candidato final P109.
+- `documentos/evidencia_plan_109/P109-000/2026-08-01_release_89d6e042_staging.md`:
+  registra release inmutable, digests, SBOM, Trivy, promocion exclusiva a
+  staging, migraciones y huella intacta de produccion.
+- `documentos/evidencia_plan_109/P109-002/2026-08-01_cierre_soporte_89d6e042.md`:
+  documenta la lista corregida de estados, edicion humana y rechazo oficial
+  del soporte no fiscal sin crear CxP, pago ni asiento.
+- `documentos/evidencia_plan_109/P109-004/2026-08-01_barrido_dirigido_89d6e042.md`:
+  resume las cuatro vistas responsive de Finanzas/CxP-IA y los 20 formatos de
+  impresion aprobados.
+- `documentos/evidencia_plan_109/P109-004/2026-08-01_barrido_completo_89d6e042.md`:
+  conserva el reintento concluyente de 618 vistas, sus revisiones conocidas,
+  guardia de mutaciones y repeticion de impresiones.
+- `documentos/evidencia_plan_109/P109-010/2026-08-01_carga_89d6e042.md`:
+  conserva percentiles de carga autenticada, salud, locks, 5xx, alerta
+  sintetica reversible y capacidad de disco del candidato.
+
 2026-07-31 - Plan 109 / reparación de uso diario IA
 - `backend/db/ai_usage_uniqueness_migration.go`: migración inmutable que
   restablece la unicidad por empresa, proveedor, modelo y día requerida por el

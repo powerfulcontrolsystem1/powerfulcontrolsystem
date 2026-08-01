@@ -40681,3 +40681,28 @@ acumulativa.
   sesión, permiso, catálogo semántico y todos los filtros por `empresa_id`.
 - La prueba visual aislada aprobó escritorio y 390 px sin desbordes, foco inicial,
   cierre por Escape, retorno de foco, rechazo inválido y guardado válido.
+
+2026-08-01: Plan 109 / candidato final `89d6e042` y cierre CxP/IA en staging.
+- La PR 119 fusionada se construyo una sola vez en el workflow `30700866694`.
+  Los cuatro runtime tienen SBOM CycloneDX y cero vulnerabilidades
+  HIGH/CRITICAL; se promovieron por digest solo a staging.
+- Base vacia, drift cerrado y copia logica aprobaron idempotencia con el
+  migrador exacto. Produccion mantuvo sus imagenes y datos sin cambios.
+- El rollback de staging regreso al digest `8847288b...` y recupero despues el
+  candidato `89d6e042...`; salud/readiness, datos CxP/IA y produccion quedaron
+  invariantes.
+- La bandeja CxP/IA mostro todos los estados activos, persistio la edicion
+  humana del soporte de prueba y lo rechazo por el boton oficial. El resultado
+  conserva `convertido_id=0` y no creo CxP, pago ni asiento.
+- Finanzas/CxP-IA aprobaron cuatro vistas responsive, 114 controles y cero
+  hallazgos. La suite de impresion aprobo 20/20 formatos Carta/POS, incluidos
+  factura y recibo extensos de seis paginas.
+- El barrido completo concluyente recorrio 618 vistas/309 rutas: 600 `ok`, 18
+  revisiones conocidas, 11.062 controles, 97 clics seguros y 12 POST
+  bloqueados. El timeout inicial del login se reintento sin atribuirlo como
+  fallo funcional.
+- La carga autenticada aprobo 500/500 GET con concurrencia 10, p95 de 217 ms,
+  cero locks, cero 5xx estructurados y servicios saludables. Alertmanager
+  recibio y resolvio la alerta sintetica reversible.
+- El centro DIAN de PCS sigue sin ambiente, TestSetId, rango ni TrackId; por
+  ello el veredicto general permanece NO-GO.
