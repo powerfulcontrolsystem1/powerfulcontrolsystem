@@ -579,6 +579,10 @@ Estado actualizado al 2026-07-31:
 - P109-002 ya demostró ReportSpec CxP, vista previa, exportaciones y el diálogo
   accesible para guardar plantillas. Sigue parcial hasta promover este cambio y
   cerrar CxP IA, Centro IA, aislamiento A/B, errores/reintentos y evals.
+- P109-004 recorrió 80 vistas autenticadas del candidato en staging, detectó
+  1.664 controles y ejecutó 106 clics seguros: 78 vistas quedaron correctas y
+  dos Centro IA quedaron en revisión por la habilitación empresarial explícita
+  pendiente. No hubo errores de página, HTTP 5xx ni pérdida de sesión.
 - P109-005 amplió su regresión sintética a 20/20 formatos: factura y recibo de
   96 renglones produjeron cinco páginas de detalle más una de resumen, con QR
   cargado y revisión visual mediante Poppler sin recortes. Continúa parcial por

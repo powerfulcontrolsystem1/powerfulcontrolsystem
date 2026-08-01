@@ -12,6 +12,16 @@
   fueron renderizadas con Poppler e inspeccionadas visualmente. No se declara
   aceptación DIAN ni impresión física; P109-005 permanece parcial.
 
+2026-07-31: Plan 109 / barrido autenticado empresarial ampliado en staging.
+- El workflow `30684126476` recorrió 40 rutas en escritorio y móvil del
+  candidato exacto `2df580b7a0de03d03091e3631061e8073f0c2746`: 80 vistas,
+  1.664 controles, 106 clics seguros, 78 vistas correctas y dos a revisar.
+- No hubo errores de página, respuestas 5xx ni pérdida de sesión. Se omitieron
+  213 controles con efecto o riesgo para no crear ni modificar datos.
+- Centro IA devolvió 403 en ambos viewports porque su página está deshabilitada
+  por defecto y no tiene override empresarial explícito en PCS. Se conservó el
+  permiso cerrado; la habilitación y prueba IA por rol continúan pendientes.
+
 2026-07-30: Plan 109 / cierre ejecutivo de producción.
 - Se auditaron las 26 fases del Plan 108 y se corrigió su base conservadora:
   P108-014 continúa pendiente, por lo que la implementación verificable heredada
