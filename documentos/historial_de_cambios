@@ -40775,3 +40775,16 @@ acumulativa.
   recibio y resolvio la alerta sintetica reversible.
 - El centro DIAN de PCS sigue sin ambiente, TestSetId, rango ni TrackId; por
   ello el veredicto general permanece NO-GO.
+
+2026-08-01: Plan 109 / aplicación inmediata de permisos finos por empresa.
+- La prueba visual autenticada de Centro IA en PCS detectó que el guardado
+  oficial confirmaba el cambio, pero el API podía conservar el techo anterior
+  durante la vigencia de dos cachés de autorización.
+- Tras una escritura exitosa se invalidan snapshots de todos los usuarios de
+  esa empresa y sus overrides, sin tocar el caché de otras empresas. Se mantiene
+  la habilitación explícita por `empresa_id`; no se abre Centro IA globalmente.
+- La prueba enfocada y `go test ./...` aprobaron. Falta validar la corrección
+  contra el digest desplegado en staging.
+- Se regeneró el inventario runtime de `Ensure*` porque el cambio desplazó la
+  ubicación documentada del bootstrap de permisos; permanecen 106 llamadas y
+  no se añadió DDL nuevo.

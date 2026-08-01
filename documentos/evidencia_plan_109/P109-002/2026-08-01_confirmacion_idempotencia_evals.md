@@ -40,3 +40,18 @@ P109-002 permanece **parcial**. El siguiente candidato debe demostrar en
 staging doble solicitud concurrente, una sola cuota/consulta, aprobación y
 cancelación visibles, contabilización única, proveedor degradado y Centro IA.
 El aislamiento A/B requiere una segunda identidad no global autorizada.
+
+## Hallazgo visual autenticado y corrección de permisos
+
+La sesión autorizada de PCS (`empresa_id=12`) abrió Centro IA y recibió
+`forbidden: rol sin acceso a la funcionalidad solicitada`. La revisión confirmó
+que la página estaba correctamente oculta por defecto y debía habilitarse de
+forma explícita por empresa. El flujo oficial guardó la habilitación con
+evidencia de aprobación, pero el wrapper conservó durante hasta 60 segundos el
+snapshot y los overrides anteriores.
+
+El handler ahora invalida ambas cachés después de confirmar la transacción de
+permisos finos. Una prueba de contrato confirma que elimina todos los snapshots
+de la empresa modificada, conserva los de otras empresas y elimina únicamente
+sus overrides. La comprobación final de Centro IA sobre el nuevo digest sigue
+pendiente; no se otorga crédito de certificación por este resultado local.
