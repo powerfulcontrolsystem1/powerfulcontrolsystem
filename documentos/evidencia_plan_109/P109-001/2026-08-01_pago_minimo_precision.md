@@ -29,9 +29,19 @@ falla cerrada si encuentra negativos, sobrepagos o diferencias superiores a
 en ambas tablas.
 
 Una prueba PostgreSQL aislada con tablas temporales confirmó `214199,99` y el
-rechazo de drift material. No se aplicó la migración al staging activo porque el
-bloque se ejecuta sin PR ni candidato inmutable.
+rechazo de drift material. El candidato inmutable `4ab318c` se construyó sin PR
+en el workflow `30720230306`, pasó escaneo HIGH/CRITICAL, SBOM y validación del
+compose, y se promovió por sus cuatro digests únicamente a staging.
 
-Estado: **P109-001 parcial**. Pago, outbox, evento y asiento quedan conciliados
-1:1; faltan publicación, migración por digest y concurrencia con identidades
-distintas.
+Antes de promover se respaldaron por separado las bases empresariales y de
+superadministración. El migrador aplicó
+`20260801-001-cartera-money-precision-v1`; las seis columnas monetarias quedaron
+`NUMERIC(18,2)`, ambas restricciones están activas y la CxP ID 16 quedó
+exactamente `214200,00 - 0,01 = 214199,99`. La interfaz autenticada mostró el
+mismo saldo organizado en la tabla CxP. Salud y readiness de staging y
+producción siguieron en HTTP 200; producción conservó `pcs-backend:local`.
+
+Estado: **P109-001 parcial**. Pago, outbox, evento, asiento, publicación,
+migración exacta y verificación visual quedan aprobados; faltan recuperación de
+los eventos históricos inventariados y concurrencia/aislamiento con identidades
+empresariales distintas.

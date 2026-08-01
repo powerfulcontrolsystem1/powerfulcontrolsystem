@@ -40826,3 +40826,18 @@ acumulativa.
 - El preflight de staging/producción no encontró filas incompatibles. La prueba
   PostgreSQL temporal confirmó el saldo exacto y el fallo cerrado. El cambio no
   fue aplicado al runtime activo ni a producción por faltar candidato publicado.
+
+2026-08-01: Plan 109 / candidato monetario y compatibilidad XML de IA.
+- El candidato inmutable `4ab318c` se publicó sin PR mediante el workflow
+  `30720230306`: compilación, Trivy HIGH/CRITICAL, SBOM, digests y compose
+  aprobaron. Se promovieron los cuatro digests únicamente a staging después de
+  respaldar ambas bases; producción conservó su imagen local.
+- El migrador convirtió las seis columnas de CxC/CxP a `NUMERIC(18,2)`, aplicó
+  las restricciones exactas y corrigió visual y persistentemente el saldo de
+  la CxP ID 16 a 214199,99. Salud y readiness permanecieron en HTTP 200.
+- `SCI-0005` demostró que la solicitud ya alcanza OpenAI y separó un segundo
+  contrato: XML no debe enviarse como `input_file`. Los adjuntos textuales UTF-8
+  de lista cerrada se envían ahora como `input_text` delimitado y no confiable;
+  imágenes, PDF y Office conservan sus contratos específicos.
+- La cuota avanzada de staging se elevó temporalmente de 5 a 10 por el endpoint
+  oficial para el diagnóstico y se restauró a 5. No se cambió producción.

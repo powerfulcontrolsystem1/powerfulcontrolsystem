@@ -87,3 +87,28 @@ clic, conversión idempotente y duplicado por documento dentro de PCS.
 Estado: **P109-002 parcial**. Quedan publicación inmutable del arreglo de
 `file_data`, recibo real y aislamiento A/B con una identidad empresarial no
 global; esos huecos impiden aprobar la fase completa.
+
+## Cuarta pasada sobre el candidato inmutable `4ab318c`
+
+El workflow `30720230306` construyó y escaneó las cuatro imágenes exactas sin
+PR. El candidato se promovió solo a staging y conservó producción intacta. La
+corrección de `file_data` ya forma parte del digest desplegado.
+
+Se radicó el soporte controlado `SCI-0005` por el endpoint público oficial y se
+reintentó la extracción desde el botón visible. El primer intento agotó el
+límite diario avanzado. El límite global de staging se amplió temporalmente de
+5 a 10 mediante el endpoint administrativo oficial y se restauró inmediatamente
+a 5 después del diagnóstico.
+
+El segundo intento alcanzó OpenAI, descartando configuración, cifrado y cuota,
+pero devolvió HTTP 400. La causa fue distinta a la ya corregida: el soporte era
+XML y el API de Responses no acepta ese contenido como `input_file`. El contrato
+local sí admite XML. La corrección pendiente de publicación convierte MIME
+textuales cerrados (`text/plain`, CSV, XML y JSON UTF-8) en `input_text`
+delimitado como contenido no confiable; imágenes conservan `input_image` y PDF/
+Office conservan `input_file`. La prueba enfocada y `go vet ./handlers`
+aprobaron.
+
+Estado: **P109-002 parcial**. El digest desplegado corrige el formato Base64,
+pero falta publicar y comprobar la degradación XML a texto, completar recibo y
+aislamiento A/B.
