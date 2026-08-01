@@ -77,3 +77,42 @@ botón de notificaciones del panel. No hubo excepción JavaScript, 5xx ni
 mutación automática. Este barrido amplía P109-004, pero no sustituye los roles
 permitido/denegado, botones IA, exportaciones y acciones reales auditadas que
 siguen pendientes.
+
+## Barrido completo de 309 rutas
+
+El workflow autenticado `30685190369` recorrió las 309 rutas HTML en escritorio
+y móvil sobre staging PCS. El resultado fue:
+
+| Medida | Resultado |
+| --- | ---: |
+| Vistas recorridas | 618 |
+| Vistas correctas / a revisar | 608 / 10 |
+| Controles detectados | 11.043 |
+| Clics seguros | 1.032 |
+| Acciones con efecto omitidas | 1.967 |
+| Errores de página | 0 |
+| Formatos de impresión | 20/20 |
+
+El análisis de los 111 hallazgos separó defectos reales de artefactos del arnés:
+
+- `Noticias` omitía `empresa_id` y generaba 400; se corrigió conservando el
+  wrapper empresarial y resolviendo solo un identificador positivo del contexto.
+- Bodegas/Productos expandía una columna de `empresa-grid-2` hasta 2.241 px;
+  se corrigió con pistas `minmax(0,1fr)` y descendientes con `min-width:0`.
+- Ayuda de APIs, códigos de descuento y el preview de logos tenían ancho móvil
+  intrínseco; se acotaron grids, tarjetas, tablas y texto largo al viewport.
+- Los nombres extensos del ERD desbordaban sus botones y el icono flotante IA
+  móvil podía exceder su contenedor; ambos estilos quedaron acotados.
+- Los 26 controles “sin etiqueta” eran enlaces dentro de `details` cerrados:
+  el auditor ahora usa visibilidad efectiva y restaura la ruta después de cada
+  clic seguro para impedir falsos fallos por modales o estado acumulado.
+  Una repetición autenticada enfocada recorrió ambos tutoriales en escritorio y
+  móvil: 4/4 vistas correctas, 62 controles y cero hallazgos.
+- Los 403 de Centro IA, Renta IA y páginas restringidas conservaron el cierre
+  por permiso; no se relajó autorización para maquillar la prueba.
+- Dos imágenes 404 de Red Social pertenecen a datos/archivos antiguos de
+  staging y no se borraron sin un flujo empresarial de limpieza autorizado.
+
+Las correcciones de esta sección están en la rama consolidada
+`codex/p109-e2e-findings` y P109-004 permanece **parcial** hasta fusionarlas,
+publicar un nuevo digest y repetir funciones, roles, IA y mutaciones oficiales.

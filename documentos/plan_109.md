@@ -571,26 +571,30 @@ Se informan dos cifras:
 1. **Implementación:** suma fases aprobadas y parciales.
 2. **Certificación del candidato:** solo fases aprobadas sobre el mismo digest.
 
-Estado actualizado al 2026-07-31:
+Estado actualizado al 2026-08-01:
 
-- P109-000 está aprobada en staging; P109-001, P109-002, P109-003, P109-004,
+- P109-000 está aprobada en staging para el SHA `eb853788...`: release verde,
+  cuatro digests/SBOM, Trivy sin vulnerabilidades, base vacía, upgrade,
+  idempotencia, rechazo de checksum, salud y producción intacta. P109-001,
+  P109-002, P109-003, P109-004,
   P109-005, P109-008, P109-009, P109-010, P109-011 y P109-012 tienen evidencia
   parcial. Las demás fases continúan pendientes o bloqueadas.
 - P109-002 ya demostró ReportSpec CxP, vista previa, exportaciones y el diálogo
   accesible para guardar plantillas. Sigue parcial hasta promover este cambio y
   cerrar CxP IA, Centro IA, aislamiento A/B, errores/reintentos y evals.
-- P109-004 recorrió 80 vistas autenticadas del candidato en staging, detectó
-  1.664 controles y ejecutó 106 clics seguros: 78 vistas quedaron correctas y
-  dos Centro IA quedaron en revisión por la habilitación empresarial explícita
-  pendiente. No hubo errores de página, HTTP 5xx ni pérdida de sesión.
+- P109-004 amplió el recorrido a 618 vistas/309 rutas, 11.043 controles y 1.032
+  clics seguros: 608 vistas quedaron correctas, 10 en revisión y no hubo errores
+  de página. El análisis produjo un bloque consolidado de correcciones de
+  contexto empresarial, responsive, accesibilidad y precisión del arnés que
+  aún debe fusionarse, publicarse por digest y repetirse en staging.
 - P109-005 amplió su regresión sintética a 20/20 formatos: factura y recibo de
   96 renglones produjeron cinco páginas de detalle más una de resumen, con QR
   cargado y revisión visual mediante Poppler sin recortes. Continúa parcial por
   faltar documentos reales, roles, tableta e impresión física del piloto.
 - Implementación Plan 109: **40,0 %** (`1 aprobada + 10 parciales`, de 15 fases).
 - Certificación del candidato desplegado: **6,7 %** (solo P109-000 aprobada en
-  el mismo digest); el arnés de QA endurecido aún está en rama local hasta su
-  promoción controlada.
+  el mismo digest); las correcciones derivadas del barrido siguen en una rama
+  consolidada hasta su promoción controlada.
 - Veredicto: **NO-GO**.
 
 La evidencia histórica P108 sirve como línea base y evita repetir pruebas

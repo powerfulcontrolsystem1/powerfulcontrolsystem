@@ -201,7 +201,9 @@ async function collectButtons(page) {
     return nodes.map((el, index) => {
       const rect = el.getBoundingClientRect();
       const style = getComputedStyle(el);
-      const visible = rect.width > 0 && rect.height > 0 && style.visibility !== "hidden" && style.display !== "none";
+      const closedDetails = el.closest("details:not([open])");
+      const hiddenByDetails = Boolean(closedDetails && !el.closest("summary"));
+      const visible = !hiddenByDetails && rect.width > 0 && rect.height > 0 && style.visibility !== "hidden" && style.display !== "none" && (!el.checkVisibility || el.checkVisibility({ checkOpacity: true, checkVisibilityCSS: true }));
       const dataset = {};
       for (const key of Object.keys(el.dataset || {})) dataset[key] = el.dataset[key];
       el.setAttribute("data-qa-button-index", String(index));
@@ -236,7 +238,9 @@ async function collectVisualIssues(page) {
     for (const el of Array.from(document.querySelectorAll("button, [role='button'], input[type='button'], input[type='submit'], a.btn, a.button"))) {
       const rect = el.getBoundingClientRect();
       const style = getComputedStyle(el);
-      const visible = rect.width > 0 && rect.height > 0 && style.visibility !== "hidden" && style.display !== "none";
+      const closedDetails = el.closest("details:not([open])");
+      const hiddenByDetails = Boolean(closedDetails && !el.closest("summary"));
+      const visible = !hiddenByDetails && rect.width > 0 && rect.height > 0 && style.visibility !== "hidden" && style.display !== "none" && (!el.checkVisibility || el.checkVisibility({ checkOpacity: true, checkVisibilityCSS: true }));
       if (!visible) continue;
       const label = (el.innerText || el.value || el.getAttribute("aria-label") || el.getAttribute("title") || "").trim();
       if (!label) {
@@ -328,6 +332,11 @@ async function auditRoute(context, route, viewport) {
               result.issues.push({ type: "external-navigation", from: beforeUrl, to: afterUrl });
               break;
             }
+          }
+          if (afterUrl === beforeUrl) {
+            await page.goto(url, { waitUntil: "domcontentloaded", timeout: 18000 }).catch(() => null);
+            await page.waitForTimeout(180);
+            await collectButtons(page);
           }
         } catch (err) {
           result.issues.push({ type: "safe-button-click-failed", button, message: String(err.message || err).slice(0, 500) });
