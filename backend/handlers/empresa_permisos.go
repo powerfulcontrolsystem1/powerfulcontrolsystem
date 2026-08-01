@@ -158,6 +158,7 @@ func invalidateEmpresaPermissionCacheForEmpresa(empresaID int64) {
 	}
 	suffix := fmt.Sprintf("|%d", empresaID)
 	empresaPermissionCacheMu.Lock()
+	delete(empresaPermissionOverrideCache, empresaID)
 	for key := range empresaPermissionCache {
 		if strings.HasSuffix(key, suffix) {
 			delete(empresaPermissionCache, key)
@@ -932,6 +933,10 @@ func EmpresaPermisosFinosHandler(dbSuper *sql.DB) http.HandlerFunc {
 				http.Error(w, "failed to save empresa permisos finos: "+err.Error(), http.StatusInternalServerError)
 				return
 			}
+			// La respuesta de guardado debe reflejarse en la siguiente solicitud.
+			// Se invalidan tanto el snapshot por usuario como los overrides por
+			// empresa; de otro modo ambos conservan el techo anterior hasta 60 s.
+			invalidateEmpresaPermissionCacheForEmpresa(empresaID)
 
 			w.WriteHeader(http.StatusNoContent)
 			return

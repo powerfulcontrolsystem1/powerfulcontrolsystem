@@ -3,6 +3,7 @@
 - [CxP] Aprobar y rechazar son transacciones idempotentes; no se puede revivir un soporte rechazado, duplicado o contabilizado.
 - [Control humano] Aprobar exige proveedor activo de la empresa, documento y total positivo; contabilizar confirma que crea CxP pero no pago.
 - [Degradación] Fallos del proveedor devuelven mensajes seguros y los datos incompletos, baja confianza o totales inconsistentes fuerzan revisión.
+- [Permisos] Guardar el techo fino invalida inmediatamente snapshots y overrides de la empresa modificada, sin afectar otras empresas.
 
 ## [2026-07-30] Concurrencia e interacción CxP
 - [CxP] Dos abonos simultáneos con la misma clave reutilizan el mismo movimiento; claves distintas no pueden sobrepagar el saldo.
