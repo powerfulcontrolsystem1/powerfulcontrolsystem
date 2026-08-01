@@ -37,7 +37,10 @@ const OUT_DIR = process.env.PCS_QA_PRINT_OUT_DIR || path.join(
   "qa_print_formats_" + new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19)
 );
 const PRINT_JS = path.join(ROOT, "web", "js", "print_documents.js");
+const QR_JS = path.join(ROOT, "web", "vendor", "qrcode.min.js");
 const CHROME_EXECUTABLE = process.env.PCS_QA_CHROME_EXECUTABLE || "";
+
+const QRCode = require(QR_JS);
 
 function ensureDir(dir) {
   fs.mkdirSync(dir, { recursive: true });
@@ -79,7 +82,33 @@ function baseRows() {
   ];
 }
 
-function documentOptions(kind, format) {
+function qrDataURL(value) {
+  return new Promise((resolve, reject) => {
+    QRCode.toString(String(value || ""), { type: "svg", errorCorrectionLevel: "M", margin: 1 }, (error, svg) => {
+      if (error) {
+        reject(error);
+        return;
+      }
+      resolve("data:image/svg+xml;base64," + Buffer.from(svg, "utf8").toString("base64"));
+    });
+  });
+}
+
+function longRows(prefix, count) {
+  return Array.from({ length: count }, (_, index) => {
+    const item = index + 1;
+    const quantity = (item % 4) + 1;
+    const unit = 1250 + ((item % 9) * 375);
+    return [
+      prefix + " " + String(item).padStart(3, "0") + " con descripcion extensa para validar saltos de pagina",
+      String(quantity),
+      money(unit),
+      money(quantity * unit)
+    ];
+  });
+}
+
+function documentOptions(kind, format, dianQRDataURL) {
   const today = "2026-05-10 15:30";
   const common = {
     format,
@@ -107,7 +136,13 @@ function documentOptions(kind, format) {
       ],
       totalLabel: "Total documento",
       totalValue: money(150000),
-      note: "CUFE/CUDE: 9f48d172d4c9a5df084a1de74b2bb0a73f790ce1e6c2af0b58b4bff9b2a1d8c3. Resolucion y condiciones legales visibles en la impresion."
+      note: "CUFE/CUDE: 9f48d172d4c9a5df084a1de74b2bb0a73f790ce1e6c2af0b58b4bff9b2a1d8c3. Resolucion y condiciones legales visibles en la impresion.",
+      qr: {
+        src: dianQRDataURL,
+        label: "Consultar factura electronica en DIAN",
+        value: "CUFE/CUDE: 9f48d172d4c9a5df084a1de74b2bb0a73f790ce1e6c2af0b58b4bff9b2a1d8c3",
+        url: "https://catalogo-vpfe-hab.dian.gov.co/document/searchqr?documentkey=9f48d172d4c9a5df084a1de74b2bb0a73f790ce1e6c2af0b58b4bff9b2a1d8c3"
+      }
     },
     recibo: {
       title: "Recibo de venta",
@@ -224,6 +259,20 @@ function documentOptions(kind, format) {
   return Object.assign({}, common, byKind[kind]);
 }
 
+function longDocumentOptions(kind, dianQRDataURL) {
+  const options = documentOptions(kind, "carta", dianQRDataURL);
+  const isInvoice = kind === "factura";
+  options.title = isInvoice ? "Factura electronica extensa multipagina" : "Recibo de venta extenso multipagina";
+  options.rows = longRows(isInvoice ? "Producto facturado" : "Producto vendido", 96);
+  options.totalLabel = isInvoice ? "Total documento" : "Pagado";
+  options.totalValue = money(9876543);
+  options.note = (isInvoice
+    ? "CUFE/CUDE y resolucion DIAN conservados al final de un documento extenso. "
+    : "Recibo extenso con observaciones operativas al final. ") +
+    "Esta nota valida continuidad, filas, columnas, totales y pie despues de varios saltos de pagina.";
+  return options;
+}
+
 function turnoTicketHTML() {
   return "<!doctype html><html><head><meta charset=\"utf-8\"><title>Turno T-000</title><style>" +
     "@page{size:80mm auto;margin:6mm}body{font-family:Arial,sans-serif;margin:0;color:#111}.ticket{width:72mm;margin:0 auto;text-align:center}.brand{font-size:12px;text-transform:uppercase;font-weight:800;letter-spacing:.08em}.code{font-size:42px;font-weight:900;margin:10px 0}.row{border-top:1px dashed #999;padding:8px 0;font-size:13px}.muted{color:#555;font-size:11px}.screen{margin-top:10px;font-weight:700}@media print{.no-print{display:none}}button{margin-top:14px;padding:10px 14px;border:1px solid #222;background:#fff;border-radius:8px;cursor:pointer}" +
@@ -310,8 +359,32 @@ async function renderCase(browser, item, screenshotsDir, pdfDir, htmlDir) {
     await page.pdf({ path: pdfPath, format: "Letter", printBackground: true, margin: { top: "12mm", right: "12mm", bottom: "12mm", left: "12mm" } });
   }
   const metrics = await measure(page);
+  const imageAudit = await page.evaluate(() => {
+    const images = Array.from(document.images);
+    const qrImages = images.filter((img) => Boolean(img.closest(".pcs-print-qr")));
+    return {
+      total: images.length,
+      broken: images.filter((img) => !img.complete || img.naturalWidth < 1 || img.naturalHeight < 1).length,
+      qr: qrImages.length,
+      brokenQr: qrImages.filter((img) => !img.complete || img.naturalWidth < 1 || img.naturalHeight < 1).length
+    };
+  });
+  const paginationAudit = await page.evaluate(() => ({
+    tablePages: document.querySelectorAll(".pcs-print-table-page").length,
+    summaryPages: document.querySelectorAll(".pcs-print-summary-page").length,
+    tableRows: Array.from(document.querySelectorAll(".pcs-print-table tbody")).reduce((total, tbody) => total + tbody.rows.length, 0)
+  }));
+  const pdfBytes = fs.readFileSync(pdfPath);
+  const pdfPages = (pdfBytes.toString("latin1").match(/\/Type\s*\/Page\b/g) || []).length;
   const stats = fs.statSync(screenshotPath);
   await page.close();
+
+  const qrOK = !item.expectQR || (imageAudit.qr >= 1 && imageAudit.brokenQr === 0);
+  const pagesOK = !item.expectedMinPdfPages || pdfPages >= item.expectedMinPdfPages;
+  const paginationOK = (!item.expectedTablePages || paginationAudit.tablePages === item.expectedTablePages) &&
+    (!item.expectedSummaryPages || paginationAudit.summaryPages === item.expectedSummaryPages);
+  const statusOK = !metrics.horizontalOverflow && metrics.textLength > 30 && stats.size > 5000 &&
+    metrics.badNodes.length === 0 && consoleErrors.length === 0 && imageAudit.broken === 0 && qrOK && pagesOK && paginationOK;
 
   return {
     name: item.name,
@@ -321,9 +394,16 @@ async function renderCase(browser, item, screenshotsDir, pdfDir, htmlDir) {
     screenshot: path.relative(ROOT, screenshotPath).replace(/\\/g, "/"),
     pdf: path.relative(ROOT, pdfPath).replace(/\\/g, "/"),
     screenshotBytes: stats.size,
+    pdfPages,
+    imageAudit,
+    paginationAudit,
+    expectQR: Boolean(item.expectQR),
+    expectedMinPdfPages: Number(item.expectedMinPdfPages || 1),
+    expectedTablePages: Number(item.expectedTablePages || 0),
+    expectedSummaryPages: Number(item.expectedSummaryPages || 0),
     consoleErrors,
     metrics,
-    status: (!metrics.horizontalOverflow && metrics.textLength > 30 && stats.size > 5000 && metrics.badNodes.length === 0 && consoleErrors.length === 0) ? "ok" : "review"
+    status: statusOK ? "ok" : "review"
   };
 }
 
@@ -345,9 +425,9 @@ function markdownReport(results, printCalls) {
   lines.push("");
   lines.push("## Evidencia");
   for (const r of results) {
-    lines.push("- " + (r.status === "ok" ? "OK" : "REVISAR") + " | " + r.name + " | " + r.kind + " | " + r.format + " | captura: `" + r.screenshot + "` | PDF: `" + r.pdf + "`");
-    if (r.metrics.horizontalOverflow || r.metrics.badNodes.length || r.consoleErrors.length) {
-      lines.push("  - bodyWidth=" + r.metrics.bodyWidth + " viewportWidth=" + r.metrics.viewportWidth + " erroresConsola=" + r.consoleErrors.length);
+    lines.push("- " + (r.status === "ok" ? "OK" : "REVISAR") + " | " + r.name + " | " + r.kind + " | " + r.format + " | paginas PDF: " + r.pdfPages + " | captura: `" + r.screenshot + "` | PDF: `" + r.pdf + "`");
+    if (r.metrics.horizontalOverflow || r.metrics.badNodes.length || r.consoleErrors.length || r.imageAudit.broken || (r.expectQR && r.imageAudit.qr < 1) || r.pdfPages < r.expectedMinPdfPages || (r.expectedTablePages && r.paginationAudit.tablePages !== r.expectedTablePages) || (r.expectedSummaryPages && r.paginationAudit.summaryPages !== r.expectedSummaryPages)) {
+      lines.push("  - bodyWidth=" + r.metrics.bodyWidth + " viewportWidth=" + r.metrics.viewportWidth + " erroresConsola=" + r.consoleErrors.length + " imagenesRotas=" + r.imageAudit.broken + " qr=" + r.imageAudit.qr + " paginas=" + r.pdfPages + "/" + r.expectedMinPdfPages + " paginasTabla=" + r.paginationAudit.tablePages + "/" + r.expectedTablePages + " paginasResumen=" + r.paginationAudit.summaryPages + "/" + r.expectedSummaryPages);
       for (const n of r.metrics.badNodes) {
         lines.push("  - Nodo con posible desborde: " + n.tag + "." + n.className + " | " + n.text);
       }
@@ -366,18 +446,34 @@ async function main() {
   ensureDir(htmlDir);
 
   const PCSPrint = loadPCSPrint();
+  const dianURL = "https://catalogo-vpfe-hab.dian.gov.co/document/searchqr?documentkey=9f48d172d4c9a5df084a1de74b2bb0a73f790ce1e6c2af0b58b4bff9b2a1d8c3";
+  const dianQRDataURL = await qrDataURL(dianURL);
   const documentKinds = ["factura", "recibo", "comprobante_ingreso", "comprobante_egreso", "orden", "corte_caja", "parqueadero", "turno_atencion"];
   const cases = [];
   for (const kind of documentKinds) {
     for (const format of ["carta", "pos"]) {
-      const options = documentOptions(kind, format);
+      const options = documentOptions(kind, format, dianQRDataURL);
       cases.push({
         name: options.title + " - " + format,
         kind,
         format,
+        expectQR: kind === "factura",
         html: PCSPrint.buildDocument(options)
       });
     }
+  }
+  for (const kind of ["factura", "recibo"]) {
+    const options = longDocumentOptions(kind, dianQRDataURL);
+    cases.push({
+      name: options.title + " - carta",
+      kind: kind + "_extenso",
+      format: "carta",
+      expectQR: kind === "factura",
+      expectedMinPdfPages: 6,
+      expectedTablePages: 5,
+      expectedSummaryPages: 1,
+      html: PCSPrint.buildDocument(options)
+    });
   }
   cases.push({ name: "Ticket real turnos atencion - pos", kind: "turno_atencion_real", format: "pos", html: turnoTicketHTML() });
   cases.push({ name: "Recibo real parqueadero - pos", kind: "parqueadero_real", format: "pos", html: parqueaderoTicketHTML() });
@@ -391,7 +487,7 @@ async function main() {
     results.push(await renderCase(browser, item, screenshotsDir, pdfDir, htmlDir));
   }
   const printCalls = [
-    { name: "PCSPrint autoPrint factura POS", calls: await verifyAutoPrint(browser, PCSPrint.buildDocument(Object.assign({}, documentOptions("factura", "pos"), { autoPrint: true }))) },
+    { name: "PCSPrint autoPrint factura POS", calls: await verifyAutoPrint(browser, PCSPrint.buildDocument(Object.assign({}, documentOptions("factura", "pos", dianQRDataURL), { autoPrint: true }))) },
     { name: "Ticket turnos autoPrint", calls: await verifyAutoPrint(browser, turnoTicketHTML()) },
     { name: "Recibo parqueadero autoPrint", calls: await verifyAutoPrint(browser, parqueaderoTicketHTML()) }
   ];
