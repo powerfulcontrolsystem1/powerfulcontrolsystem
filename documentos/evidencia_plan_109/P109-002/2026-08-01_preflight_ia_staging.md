@@ -112,3 +112,25 @@ aprobaron.
 Estado: **P109-002 parcial**. El digest desplegado corrige el formato Base64,
 pero falta publicar y comprobar la degradación XML a texto, completar recibo y
 aislamiento A/B.
+
+## Quinta pasada sobre el candidato inmutable `3ed34774`
+
+El workflow `30721237619` aprobó compilación, escaneo HIGH/CRITICAL, SBOM,
+publicación y compose. Los cuatro digests se promovieron únicamente a staging,
+sin reconstruir y sin modificar producción.
+
+Se radicó `SCI-0007` con MIME real `text/xml` y se ejecutó `Extraer IA` desde la
+bandeja autenticada. La llamada alcanzó OpenAI, leyó proveedor, NIT, documento,
+fechas, subtotal 100, IVA 19, total 119 y confianza 98 %. El control detectó el
+documento ya existente y dejó el soporte en `duplicado`, referenciando
+exclusivamente a `SCI-0001`, con `convertido_id=0`. El formulario de revisión
+humana mostró todos los valores extraídos editables.
+
+Los soportes auxiliares `SCI-0005` y `SCI-0006`, que se usaron para diagnosticar
+MIME `application/octet-stream`, se rechazaron por el endpoint oficial; no
+crearon CxP, pagos ni asientos. La cuota avanzada se restauró a 5. Staging y
+producción conservaron health/ready HTTP 200 y producción mantuvo su imagen.
+
+Estado: **P109-002 parcial**. XML, `file_data`, revisión visible, duplicado e
+idempotencia de conversión quedan comprobados en un digest inmutable. Aún
+faltan recibo real, ReportSpec/Centro IA completos, evals y aislamiento A/B.

@@ -661,6 +661,17 @@ Estado actualizado al 2026-08-01:
   mantenimiento y ensayo general aún impiden promoverlo a piloto.
 - Veredicto: **NO-GO**.
 
+Actualización 2026-08-01, candidato `3ed34774`:
+
+- P109-001 conserva estado parcial, pero ya aprobó migración inmutable
+  `NUMERIC(18,2)`, saldo exacto 214199,99, respaldo previo, UI y producción
+  intacta.
+- P109-002 conserva estado parcial, pero ya aprobó en el digest desplegado
+  archivos Base64, XML como texto no confiable, extracción real, revisión
+  editable y control de duplicado sin crear CxP.
+- Los porcentajes no aumentan porque ninguna fase parcial cumplió todavía todos
+  sus criterios de aceptación A/B, concurrencia, evals y cierre integral.
+
 La evidencia histórica P108 sirve como línea base y evita repetir pruebas
 independientes del artefacto, pero no aumenta automáticamente estas cifras.
 

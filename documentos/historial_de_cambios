@@ -40841,3 +40841,10 @@ acumulativa.
   imágenes, PDF y Office conservan sus contratos específicos.
 - La cuota avanzada de staging se elevó temporalmente de 5 a 10 por el endpoint
   oficial para el diagnóstico y se restauró a 5. No se cambió producción.
+- La corrección XML se publicó en el candidato inmutable `3ed34774` mediante el
+  workflow `30721237619` y se promovió por los cuatro digests solo a staging.
+  `SCI-0007` leyó el XML real con 98 % de confianza y quedó `duplicado` contra
+  `SCI-0001`, con `convertido_id=0`; la revisión humana mostró todos los campos
+  editables. Los soportes auxiliares 5 y 6 se rechazaron por el endpoint oficial
+  y la cuota se restauró a 5. Health/ready permanecieron en 200 y producción no
+  cambió.
