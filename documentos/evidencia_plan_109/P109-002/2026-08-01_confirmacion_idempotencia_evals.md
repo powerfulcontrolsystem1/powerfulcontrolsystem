@@ -55,3 +55,12 @@ permisos finos. Una prueba de contrato confirma que elimina todos los snapshots
 de la empresa modificada, conserva los de otras empresas y elimina únicamente
 sus overrides. La comprobación final de Centro IA sobre el nuevo digest sigue
 pendiente; no se otorga crédito de certificación por este resultado local.
+
+La habilitación se repitió y se comprobó persistida como `checked` en el control
+fino de PCS. En el digest anterior de staging, después de vencer la caché, Centro
+IA cargó datos reales de `empresa_id=12`, mostró seis KPI, dos alertas y siete
+funciones sin desbordamiento visible en escritorio. El botón oficial
+`Diagnostico ERP` completó una consulta (`Uso 1/12`) y devolvió una recomendación
+revisable sin crear ventas, clientes, pagos ni documentos. Este recorrido prueba
+configuración y flujo base, pero la inmediatez de la invalidación y el guard de
+`MutationObserver` todavía deben comprobarse sobre el nuevo digest.
