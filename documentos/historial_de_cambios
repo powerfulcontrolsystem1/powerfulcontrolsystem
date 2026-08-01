@@ -1,3 +1,16 @@
+2026-08-01: Plan 109 / fallos transaccionales de migración y compatibilidad.
+- `vps-p108-empty-migration-drill.sh` añade un modo cerrado que rechaza el rol
+  sin DDL, falla después del DDL y antes del ledger, comprueba rollback/auditoría
+  y recupera índice más ledger de forma atómica.
+- La API del candidato anterior aprobó health/readiness sobre el esquema nuevo
+  con rol sin DDL y sin cambiar la cantidad de tablas. El ensayo terminó con 3
+  controles previos, 5 transaccionales, 4 de compatibilidad y cero recursos
+  residuales.
+- Una interrupción controlada con `TERM` durante el arranque de PostgreSQL
+  también dejó cero contenedores, volúmenes, redes y temporales aislados.
+- Staging y producción conservaron sus contenedores e imágenes; P109-011 sigue
+  parcial únicamente por aprobación formal RPO/RTO y digest final del piloto.
+
 2026-08-01: Plan 109 / rollback coordinado de datos y archivos restaurados.
 - `vps-p109-restored-app-drill.sh` puede congelar ambas bases y el volumen
   privado después del flujo autenticado, perder únicamente las copias efímeras,
