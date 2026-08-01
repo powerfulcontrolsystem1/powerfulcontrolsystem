@@ -17,6 +17,18 @@ const requirements = [
   [".github/workflows/release-candidate.yml", "docker build --target api"],
   [".github/workflows/release-candidate.yml", "security-artifacts/release-images.env"],
   ["deploy/scripts/vps-staging-digest-up.sh", "--no-build"],
+  ["deploy/scripts/vps-p109-restored-app-drill.sh", "P109_DRILL_ID debe iniciar con p109-restore-app-."],
+  ["deploy/scripts/vps-p109-restored-app-drill.sh", "PCS_API_IMAGE_DIGEST debe usar repositorio@sha256:<64 hex>."],
+  ["deploy/scripts/vps-p109-restored-app-drill.sh", "PCS_MIGRATE_IMAGE_DIGEST debe usar repositorio@sha256:<64 hex>."],
+  ["deploy/scripts/vps-p109-restored-app-drill.sh", "runtime_privilegios=0"],
+  ["deploy/scripts/vps-p109-restored-app-drill.sh", "docker network rm"],
+  ["deploy/scripts/vps-p109-restored-app-drill.sh", "P109_HOLD_SECONDS no puede superar 900."],
+  ["deploy/scripts/vps-p109-restored-app-drill.sh", "trap 'exit 143' TERM"],
+  ["deploy/scripts/vps-p109-restored-app-drill.sh", "P109_VERIFY_REPLICA debe ser 0 o 1."],
+  ["deploy/scripts/vps-p109-restored-app-drill.sh", "X-CSRF-Token"],
+  ["deploy/scripts/vps-p109-restored-app-drill.sh", "replica_checks="],
+  ["deploy/scripts/vps-p109-restored-app-drill.sh", "archivos_hostiles="],
+  ["deploy/scripts/vps-p109-restored-app-drill.sh", "Una carga hostil creo una fila empresarial."],
 ];
 const failed = requirements.filter(([file, text]) => !fs.readFileSync(path.join(root, file), "utf8").includes(text));
 if (failed.length) { console.error(JSON.stringify({ status: "failed", failed }, null, 2)); process.exit(1); }

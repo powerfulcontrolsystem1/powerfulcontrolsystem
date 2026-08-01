@@ -63,14 +63,13 @@ Después de ambos ensayos se verificó que no quedaran contenedores
 credenciales ni secretos.
 
 P109-008 queda **parcial**. Se demostró restaurabilidad del dump, apertura de
-volúmenes y consulta multiempresa de cinco dominios críticos. Todavía faltan:
+volúmenes, arranque de la aplicación y consulta multiempresa de cinco dominios
+críticos. Todavía faltan:
 
-1. levantar la aplicación contra el conjunto restaurado y recorrer CxP,
-   contabilidad, IA, DIAN y documentos por API/UI;
-2. comprobar archivos y checksums cruzados entre metadatos y volumen privado;
-3. ejecutar subida en réplica A y descarga en réplica B;
-4. ensayar pérdida de réplica y rollback coordinado de aplicación/base;
-5. aprobar formalmente objetivos RPO/RTO del piloto.
+1. completar el recorrido visual UI posterior al restore;
+2. ejecutar subida en réplica A y descarga en réplica B;
+3. ensayar pérdida de réplica y rollback coordinado de aplicación/base;
+4. aprobar formalmente objetivos RPO/RTO del piloto.
 
 El procedimiento quedó incorporado al runbook mediante
 `-ExecuteDrill -VerifyCriticalData`: además del restore exige las dos bases,
@@ -91,3 +90,117 @@ soportes IA con referencia `private://soportes_compras_ia/`; por ello el valor
 soportes inexistentes. La compuerta queda preparada para exigir automáticamente
 el hash cuando el flujo real cree esos soportes. La limpieza posterior volvió a
 confirmar cero contenedores temporales.
+
+## Arranque real del candidato sobre el restore - 2026-08-01
+
+Se agregó `deploy/scripts/vps-p109-restored-app-drill.sh` y se ejecutó en la VPS
+autorizada con las imágenes inmutables API y migrador del candidato
+`89d6e042...`. El procedimiento:
+
+- restauró el snapshot más reciente en PostgreSQL 16.14 efímero;
+- creó un rol runtime temporal sin superusuario, `CREATEDB`, `CREATEROLE` ni
+  `BYPASSRLS`;
+- aplicó el migrador exacto con bootstrap legado desactivado: cinco migraciones
+  empresariales y una administrativa;
+- montó una copia temporal del almacenamiento privado y arrancó la API exacta;
+- comprobó `/health` y `/ready` con HTTP 200;
+- consultó las cinco tablas críticas con `empresa_id=12`, sumando 28 filas;
+- rechazó sin sesión cuatro rutas empresariales con HTTP 401/403;
+- autenticó por el login oficial la cuenta autorizada, sin guardar ni imprimir
+  la clave, y recibió HTTP 200 en CxP, contabilidad, CxP/IA, diagnóstico DIAN y
+  gestión documental;
+- eliminó sesión, base, API, red y archivos temporales junto con el contenedor.
+
+Resultado concluyente:
+
+```text
+[OK] app_restore_smoke health=200 ready=200 bases=2 tablas=5 filas_empresa_12=28 endpoints_protegidos=4 dominios_autenticados=5 runtime_privilegios=0 RTO=21s RPO=45418s
+[OK] residual_containers=0 residual_networks=0 residual_tmp=0
+```
+
+Los intentos de desarrollo previos también fallaron de forma cerrada y limpiaron
+sus recursos: detectaron stdin ausente al crear el rol, almacenamiento privado
+de solo lectura y dos rutas HTTP obsoletas en la matriz. No se modificaron los
+contenedores activos ni los datos de staging o producción.
+
+### Inspección visual del restore
+
+La API restaurada se expuso únicamente mediante un túnel SSH local y se abrió
+con el navegador interno. El login oficial llevó al panel administrativo y se
+recorrieron CxP/IA, suite contable, Finanzas, centro DIAN y gestión documental.
+
+- Escritorio: cinco páginas sin desbordamiento horizontal de documento, cero
+  errores de consola y datos/tablas visibles en filas y columnas.
+- Móvil: cinco páginas sin desbordamiento horizontal de documento ni botones
+  principales recortados. Las tablas anchas conservaron regiones desplazables.
+- En DIAN, los botones `Reconsultar` quedan dentro de la tabla desplazable de
+  403 px y no ensanchan la página. El snapshot restaurado mostró ambiente
+  producción, estado rechazado y avance 50 %; no se llamó a DIAN ni se presenta
+  ese estado histórico como aceptación fiscal.
+- CxP/IA mostró un soporte extraído, proveedor, documento, fechas, total y
+  confianza organizados en columnas, sin pérdida visual de los controles.
+
+Al interrumpir la primera ventana SSH se comprobó que un `SIGHUP` abrupto podía
+dejar recursos efímeros. Se eliminaron exactamente los dos contenedores, la red
+y `/tmp/p109-restore-app-visual-89d6e042`, manteniendo el snapshot fuente. El
+script se corrigió para atender `HUP`, `INT` y `TERM`; un ensayo deliberado con
+`timeout -s TERM 40s` confirmó:
+
+```text
+signal_exit=124 residual_containers=0 residual_networks=0 residual_tmp=0
+```
+
+Esta evidencia completa el arranque y los recorridos API/UI del punto 5. La
+siguiente sección añade el ensayo A/B sin presentarlo aún como cierre total.
+
+### Réplicas A/B y pérdida de una réplica de aplicación
+
+El mismo runbook arrancó dos contenedores API desde el digest exacto, conectados
+a la base y copia de almacenamiento privado restauradas. Con dos sesiones
+creadas por el login oficial:
+
+1. la réplica A radicó por el endpoint oficial un PNG controlado para
+   `empresa_id=12`, incluyendo token CSRF y origen same-origin;
+2. la réplica B descargó el soporte y su SHA-256 coincidió con el archivo fuente;
+3. se retiró por completo la réplica A;
+4. la réplica B conservó `/ready=200` y volvió a descargar el mismo soporte con
+   SHA-256 idéntico;
+5. la base, archivo, sesiones y contenedores se destruyeron con el entorno
+   efímero, sin crear datos en staging o producción.
+
+La primera llamada de desarrollo omitió CSRF y fue rechazada con HTTP 403 sin
+crear archivo ni fila; la repetición usó el contrato real y aprobó:
+
+```text
+[OK] app_restore_smoke health=200 ready=200 bases=2 tablas=5 filas_empresa_12=28 endpoints_protegidos=4 dominios_autenticados=5 replica_checks=2 runtime_privilegios=0 RTO=24s RPO=46310s
+[OK] residual_containers=0 residual_networks=0 residual_tmp=0
+```
+
+Queda demostrada la conmutación entre réplicas de aplicación con volumen
+compartido, no la pérdida de la capa de almacenamiento subyacente. P109-008
+continúa parcial por cuotas/retención, inventario de heredados/huérfanos, fallo
+del almacenamiento, rollback coordinado de datos y aprobación formal de RPO/RTO.
+
+### Matriz hostil dinámica de archivos
+
+Sobre el mismo entorno efímero se añadieron cinco negativos dinámicos:
+
+- descargar el soporte de PCS usando `empresa_id=7` devolvió 403/404;
+- un archivo `.html` con contenido activo devolvió HTTP 400;
+- un archivo PNG declarado de 16 MiB, por encima del límite de 15 MiB, devolvió
+  HTTP 400/413;
+- el conteo de soportes de `empresa_id=12` permaneció idéntico después de los
+  dos uploads rechazados;
+- al sustituir únicamente el archivo efímero controlado por un symlink fuera de
+  la carpeta empresarial, la descarga devolvió HTTP 404.
+
+La repetición concluyó:
+
+```text
+[OK] app_restore_smoke health=200 ready=200 bases=2 tablas=5 filas_empresa_12=28 endpoints_protegidos=4 dominios_autenticados=5 replica_checks=2 archivos_hostiles=5 runtime_privilegios=0 RTO=25s RPO=46501s
+[OK] residual_containers=0 residual_networks=0 residual_tmp=0
+```
+
+La matriz cubre identidad empresarial, contenido activo, tamaño y symlink. No
+cubre todavía cuotas por empresa, retención/borrado/recuperación, antivirus ni
+una segunda identidad A/B no global; esos puntos conservan el estado parcial.

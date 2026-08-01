@@ -306,6 +306,33 @@ local y un restaurador `restore_to_new_vps.sh` dentro del paquete. No imprimir
 secretos, `.env`, claves privadas, certificados ni DSN durante la ejecucion o al
 reportar resultados.
 
+Para arrancar la API y el migrador exactos contra un snapshot restaurado sin
+tocar los servicios activos, ejecutar en la VPS:
+
+```bash
+PROJECT_DIR=/ruta/checkout \
+SOURCE_ENV=/ruta/privada/.env.platform \
+PCS_API_IMAGE_DIGEST=ghcr.io/organizacion/pcs-api@sha256:<64-hex> \
+PCS_MIGRATE_IMAGE_DIGEST=ghcr.io/organizacion/pcs-migrate@sha256:<64-hex> \
+P109_DRILL_ID=p109-restore-app-<sha-corto> \
+bash deploy/scripts/vps-p109-restored-app-drill.sh
+```
+
+Las credenciales QA son opcionales y se pasan solo mediante variables de
+sesión `P109_QA_EMAIL` y `P109_QA_PASSWORD`; nunca se escriben en el script ni
+en la evidencia. Si se definen, el ensayo usa el login oficial y recorre CxP,
+contabilidad, CxP/IA, DIAN y documentos. El script exige digests, usa red y
+puerto loopback efímeros, bloquea acceso anónimo y limpia todos los recursos.
+Para una inspección visual por túnel local puede definirse
+`P109_HOLD_SECONDS`, con máximo de 900 segundos; al expirar se conserva la
+limpieza automática.
+Para comprobar dos réplicas de aplicación sobre la copia restaurada, definir
+`P109_VERIFY_REPLICA=1`, un `P109_REPLICA_HOST_PORT` loopback distinto y las
+credenciales QA por variables de sesión. El ensayo carga por A con CSRF,
+descarga por B, compara SHA-256, retira A y repite readiness/descarga en B.
+En ese modo también exige negativos de empresa cruzada, contenido HTML, tamaño
+superior a 15 MiB y symlink, y comprueba que los rechazos no creen filas.
+
 Para subir una copia a un VPS nuevo y dejar preparada la restauracion:
 
 ```powershell
