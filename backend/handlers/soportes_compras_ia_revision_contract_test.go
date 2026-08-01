@@ -22,7 +22,14 @@ func TestSoportesComprasIARevisionExposesEditableHumanReview(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, want := range []string{"editar_revision", "saveRevision", "/api/empresa/proveedores", "Aprueba nuevamente antes de contabilizar", "if (state.loading) return", "window.confirm(confirmations[action])"} {
+	for _, want := range []string{
+		"editar_revision", "saveRevision", "/api/empresa/proveedores",
+		"Aprueba nuevamente antes de contabilizar", "if (state.loading) return",
+		"window.confirm(confirmations[action])",
+		"Confirma que revisaste proveedor, documento, impuestos y total",
+		"¿Rechazar este soporte?", "¿Crear la cuenta por pagar con los datos aprobados?",
+		`document.querySelectorAll(".capture-btn")`, "btn.disabled = !!on",
+	} {
 		if !strings.Contains(string(script), want) {
 			t.Fatalf("review client contract missing %q", want)
 		}

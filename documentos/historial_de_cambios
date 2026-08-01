@@ -40788,3 +40788,41 @@ acumulativa.
 - Se regeneró el inventario runtime de `Ensure*` porque el cambio desplazó la
   ubicación documentada del bootstrap de permisos; permanecen 106 llamadas y
   no se añadió DDL nuevo.
+
+2026-08-01: Plan 109 / contrato de archivos para extracción IA CxP.
+- La extracción real de `SCI-0001` en staging devolvió degradación segura y no
+  alteró su estado, pero el proveedor respondió HTTP 400.
+- Se confirmó desde el mismo runtime que el modelo acepta texto y archivos
+  cuando `file_data` usa `data:<mime>;base64,<contenido>`. El cliente enviaba
+  solo Base64; ahora construye la URL de datos requerida, normaliza el MIME y
+  neutraliza valores inválidos antes de serializar el adjunto.
+- Las pruebas enfocadas y completas de handlers, `db`, `secure` y
+  `go vet ./handlers` aprobaron. Un overlay temporal escaneado sustituyó solo el
+  binario del API en staging y demostró la extracción real de `SCI-0001` con
+  proveedor, NIT, documento, fechas, impuestos, total y 99 % de confianza.
+- La revisión humana editable guardó y restauró una marca QA. El soporte quedó
+  `extraido`, con `convertido_id=0`, sin CxP, pago ni asiento automático. Las dos
+  credenciales OpenAI heredadas se recifraron desde el entorno sin exponer su
+  valor. Al cierre se restauró el digest inmutable y se eliminaron los artefactos
+  temporales; producción no cambió.
+- En una pasada posterior, cancelar `Aprobar`, `Rechazar` y `Contabilizar` no
+  alteró el soporte; el doble clic real de extracción generó una sola petición.
+  La aprobación y rechazo reales de `SCI-0001` conservaron `convertido_id=0`.
+- `SCI-0003` recorrió proveedor canónico, aprobación y contabilización por la
+  UI oficial. Produjo exactamente una CxP pendiente en
+  `empresa_cuentas_por_pagar`; repetir la acción no duplicó fila ni evento.
+  `SCI-0004`, con el mismo documento, quedó marcado como duplicado y no creó
+  cartera adicional.
+
+2026-08-01: Plan 109 / precisión exacta de saldos CxC y CxP.
+- Un abono real de 0,01 a `CXP-SCI-0003` produjo correctamente un pago,
+  movimiento, outbox publicado, evento procesado y asiento balanceado 1:1.
+  También reveló que PostgreSQL `REAL` almacenaba 214199,98 donde correspondía
+  214199,99, aunque `valor_pagado` sí mostraba 0,01.
+- Las tablas canónicas nuevas usan `NUMERIC(18,2)`. La migración inmutable
+  `20260801-001-cartera-money-precision-v1` convierte CxC/CxP, recompone el
+  saldo y agrega su invariante; se detiene ante drift material, negativos o
+  sobrepagos.
+- El preflight de staging/producción no encontró filas incompatibles. La prueba
+  PostgreSQL temporal confirmó el saldo exacto y el fallo cerrado. El cambio no
+  fue aplicado al runtime activo ni a producción por faltar candidato publicado.

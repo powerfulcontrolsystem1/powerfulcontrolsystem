@@ -573,16 +573,20 @@ Se informan dos cifras:
 
 Estado actualizado al 2026-08-01:
 
-- P109-000 está aprobada en staging para el SHA fusionado `89d6e042...`: PR 119,
-  CI y release `30700866694` verdes,
+- P109-000 está aprobada en staging para el SHA fusionado `ea9642dd...`: CI
+  `30714951274` y release inmutable `30715195384` verdes,
   cuatro digests/SBOM, Trivy sin vulnerabilidades, base vacía, upgrade,
   idempotencia, rechazo de checksum, rollback de aplicación, salud y producción
   intacta. P109-001, P109-002, P109-003, P109-004,
   P109-005, P109-008, P109-009, P109-010, P109-011 y P109-012 tienen evidencia
   parcial. Las demás fases continúan pendientes o bloqueadas.
 - P109-001 añadió rechazos runtime para empresa/topic ausentes, duplicados, ID
-  inexistente y publicado sin modificar el evento histórico excluido. Falta una
-  segunda empresa controlada para la matriz A/B.
+  inexistente y publicado sin modificar el evento histórico excluido. El pago
+  mínimo de `CXP-SCI-0003` quedó conciliado 1:1 entre pago, movimiento, outbox,
+  evento y asiento balanceado. La prueba detectó pérdida de un centavo por
+  columnas `REAL`; la migración local a `NUMERIC(18,2)` aprobó PostgreSQL
+  aislado y preflight, pero aún no está publicada ni aplicada. Falta una segunda
+  empresa controlada para la matriz A/B.
 - P109-002 ya demostró configuración cifrada, catálogo/preferencia por usuario,
   historial y dashboard CxP/IA. Sobre el candidato final confirmó que el filtro
   vacío lista estados activos, persistió la edición humana y rechazó por el
@@ -595,10 +599,14 @@ Estado actualizado al 2026-08-01:
   IA y completar aislamiento A/B con una identidad no global. La primera
   apertura autenticada de Centro IA confirmó su ocultamiento por empresa; al
   habilitarlo por el flujo oficial se detectó y corrigió la falta de invalidación
-  inmediata de las cachés de permisos. Tras vencer la caché del digest anterior,
-  el snapshot real y `Diagnostico ERP` aprobaron visualmente en PCS con uso 1/12
-  y sin mutaciones. Falta repetir la aplicación inmediata y la consola sobre el
-  nuevo digest.
+  inmediata de las cachés de permisos. Sobre `ea9642dd...`, la revocación y
+  restauración inmediata, la consola y `Diagnostico ERP` aprobaron. Un overlay
+  temporal escaneado corrigió el contrato `file_data` y demostró extracción real
+  y edición restaurable de `SCI-0001`, sin CxP ni pago automático. Cancelaciones
+  y doble clic aprobaron; la aprobación/rechazo real no convirtió el soporte.
+  `SCI-0003` creó una sola CxP canónica y su reproceso fue idempotente;
+  `SCI-0004` quedó duplicado sin cartera adicional. La corrección aún debe
+  publicarse como candidato inmutable; faltan recibo real y aislamiento A/B.
 - P109-004 completo sobre `89d6e042...` 618 vistas/309 rutas y 11.062 controles:
   600 `ok`, 18 revisiones conocidas, 97 clics seguros y 12 POST automáticos
   bloqueados por la guardia. Finanzas y CxP/IA aprobaron además 4/4 vistas
@@ -658,7 +666,7 @@ independientes del artefacto, pero no aumenta automáticamente estas cifras.
 
 ## 9. Siguiente orden para Terra alto
 
-P109-000 ya está aprobada para `89d6e042...`; Terra no debe reconstruirla ni
+P109-000 ya está aprobada para `ea9642dd...`; Terra no debe reconstruirla ni
 repetirla sin un cambio de código. Debe continuar así:
 
 1. confirmar que staging conserva los cuatro digests registrados y producción

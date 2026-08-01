@@ -12618,3 +12618,14 @@ panel de seguridad para que el navegador reciba la correccion CSRF de staging.
 - `backend/db/ai_usage_uniqueness_migration_test.go`: contrato que exige la
   presencia, huella y función ejecutable de la migración en el catálogo de
   empresas.
+
+2026-08-01 - Plan 109 / precisión monetaria de cartera
+- `backend/db/cartera_money_precision.go`: migración transaccional fail-closed
+  que convierte los importes canónicos CxC/CxP a `NUMERIC(18,2)`, recompone el
+  saldo exacto y agrega invariantes de no negatividad y cuadre.
+- `backend/db/cartera_money_precision_integration_test.go`: prueba PostgreSQL
+  aislada con tablas temporales que reproduce el artefacto de `REAL`, exige el
+  saldo 214199,99 y comprueba rechazo de drift material.
+- `documentos/evidencia_plan_109/P109-001/2026-08-01_pago_minimo_precision.md`:
+  concilia pago, movimiento, outbox, evento y asiento 1:1 y registra la causa,
+  corrección y límites de despliegue.

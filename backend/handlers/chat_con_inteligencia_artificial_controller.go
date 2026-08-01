@@ -228,6 +228,22 @@ type aiAttachment struct {
 	Bytes    []byte
 }
 
+func aiAttachmentDataURL(att *aiAttachment) string {
+	if att == nil || len(att.Bytes) == 0 {
+		return ""
+	}
+	mediaType := strings.TrimSpace(att.MimeType)
+	if parsed, _, err := mime.ParseMediaType(mediaType); err == nil {
+		mediaType = strings.ToLower(strings.TrimSpace(parsed))
+	} else {
+		mediaType = "application/octet-stream"
+	}
+	if mediaType == "" {
+		mediaType = "application/octet-stream"
+	}
+	return "data:" + mediaType + ";base64," + base64.StdEncoding.EncodeToString(att.Bytes)
+}
+
 type empresaAIModeloPreferidoPayload struct {
 	EmpresaID     int64  `json:"empresa_id"`
 	ModelID       string `json:"model_id"`
@@ -1666,13 +1682,13 @@ func (c *EmpresaAIChatController) callOpenAIResponsesWithSystemPrompt(model empr
 		if strings.HasPrefix(mt, "image/") {
 			parts = append(parts, inPart{
 				Type:     "input_image",
-				ImageURL: "data:" + mt + ";base64," + base64.StdEncoding.EncodeToString(att.Bytes),
+				ImageURL: aiAttachmentDataURL(att),
 			})
 		} else {
 			parts = append(parts, inPart{
 				Type:     "input_file",
 				Filename: strings.TrimSpace(att.Filename),
-				FileData: base64.StdEncoding.EncodeToString(att.Bytes),
+				FileData: aiAttachmentDataURL(att),
 			})
 		}
 	}
