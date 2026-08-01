@@ -1,4 +1,29 @@
 2026-08-01
+- `backend/handlers/postgres_performance_error_test.go`: regresión para que el
+  panel PostgreSQL ignore cancelaciones del cliente, use 503 ante timeout y no
+  filtre detalles internos en errores inesperados.
+- `backend/handlers/postgres_performance.go`: clasificación segura de errores
+  del panel PostgreSQL para evitar 500 falsos al navegar durante una consulta.
+- `documentos/evidencia_plan_109/P109-000/2026-08-01_release_6da6c134_staging.md`:
+  release inmutable de la PR 115, digests, migraciones, promoción aislada y
+  rollback de aplicación del candidato actual.
+- `documentos/evidencia_plan_109/P109-001/2026-08-01_negativos_runtime_cxp.md`:
+  rechazos autenticados del recuperador CxP sin reactivar el evento excluido.
+- `documentos/evidencia_plan_109/P109-002/2026-08-01_preflight_ia_staging.md`:
+  disponibilidad segura de IA/CxP IA y rechazo de upload inválido sin escritura.
+- `documentos/evidencia_plan_109/P109-009/2026-08-01_cadena_y_cabeceras_staging.md`:
+  Trivy/SBOM, cabeceras, CORS y límite del escaneo dinámico inconcluso.
+- `documentos/evidencia_plan_109/P109-010/2026-08-01_carga_salud_y_disco.md`:
+  carga autenticada, métricas de PostgreSQL, limpieza acotada de volúmenes
+  anónimos y salud posterior.
+- `documentos/evidencia_plan_109/P109-006/2026-08-01_identidades_cajero_staging.md`:
+  estado agregado de las cuatro identidades temporales y bloqueo del flujo de
+  confirmación normal antes de abrir cajas.
+- `documentos/evidencia_plan_109/P109-007/2026-08-01_dns_mail_y_bimi.md`:
+  verificación de SPF, DKIM, DMARC, PTR, SVG BIMI y ausencia del VMC/CMC.
+- `documentos/evidencia_plan_109/P109-004/2026-08-01_repeticion_y_hallazgo_postgres.md`:
+  repetición E2E del candidato, 500 por cancelación de contexto, corrección
+  segura y requisito de un digest nuevo.
 - `documentos/evidencia_plan_109/P109-000/2026-08-01_release_eb853788_staging.md`:
   evidencia de integración, SBOM/Trivy, digests, promoción exclusiva a staging,
   salud, producción intacta y ensayos aislados de migración del candidato.
