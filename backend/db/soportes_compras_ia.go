@@ -586,7 +586,7 @@ func listEmpresaSoportesComprasIA(dbConn *sql.DB, empresaID int64, estado string
 	}
 	where := "empresa_id=? AND COALESCE(estado,'activo')='activo'"
 	args := []interface{}{empresaID}
-	if e := normalizeSoporteIAEstado(estado); e != "" && e != "todos" {
+	if e := normalizeSoporteIAEstadoFiltro(estado); e != "" && e != "todos" {
 		where += " AND estado_soporte=?"
 		args = append(args, e)
 	}
@@ -766,6 +766,13 @@ func normalizeSoporteIAEstado(v string) string {
 	default:
 		return "radicado"
 	}
+}
+
+func normalizeSoporteIAEstadoFiltro(v string) string {
+	if strings.TrimSpace(v) == "" {
+		return ""
+	}
+	return normalizeSoporteIAEstado(v)
 }
 
 func normalizeSoporteIAOrigen(v string) string {
