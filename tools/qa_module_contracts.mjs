@@ -28,13 +28,24 @@ const printSource = fs.existsSync(path.join(repoRoot, "web/js/print_documents.js
   ? fs.readFileSync(path.join(repoRoot, "web/js/print_documents.js"), "utf8")
   : "";
 const printKinds = ["factura", "recibo", "comprobante"].filter((kind) => printSource.includes(kind));
+const e2eSourcePath = path.join(repoRoot, "tools", "qa_e2e_buttons.cjs");
+const e2eSource = fs.existsSync(e2eSourcePath) ? fs.readFileSync(e2eSourcePath, "utf8") : "";
+const e2eNonMutating = [
+  'const MUTATING_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"])',
+  'await page.route("**/*"',
+  'routeHandler.abort("blockedbyclient")',
+  'serviceWorkers: "block"',
+  'safe-button-attempted-mutation',
+].every((contract) => e2eSource.includes(contract))
+  && !e2eSource.includes('if (button.ariaLabel || button.title) return "safe";');
 
 const report = {
   generated_at: new Date().toISOString(),
-  status: missing.length === 0 && printKinds.length >= 3 ? "ok" : "warning",
+  status: missing.length === 0 && printKinds.length >= 3 && e2eNonMutating ? "ok" : "warning",
   checks: [
     { name: "critical_files", ok: missing.length === 0, missing },
     { name: "print_contracts", ok: printKinds.length >= 3, detected: printKinds },
+    { name: "e2e_non_mutating_guard", ok: e2eNonMutating },
   ],
 };
 
