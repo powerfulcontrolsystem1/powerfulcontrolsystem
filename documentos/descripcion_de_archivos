@@ -1,4 +1,13 @@
 2026-08-01
+- `documentos/evidencia_plan_109/P109-000/2026-08-01_release_8847288b_staging.md`:
+  release, digests, SBOM/Trivy, migraciones y aislamiento productivo del SHA
+  fusionado final.
+- `documentos/evidencia_plan_109/P109-002/2026-08-01_extraccion_real_cxp_ia.md`:
+  radicación/extracción real y edición visual del borrador CxP sin guardarlo.
+- `documentos/evidencia_plan_109/P109-004/2026-08-01_barrido_8847288b.md`:
+  repetición Kardex y barrido protegido de 618 vistas sobre el candidato final.
+- `documentos/evidencia_plan_109/P109-010/2026-08-01_carga_alerta_8847288b.md`:
+  carga autenticada, salud y simulación reversible de Alertmanager.
 - `web/administrar_empresa/administrar_productos.html`: filtros Kardex de
   Bodegas y Compras flexibles para no extender el documento fuera del viewport.
 - `documentos/evidencia_plan_109/P109-004/2026-08-01_barrido_final_d4e613e2.md`:

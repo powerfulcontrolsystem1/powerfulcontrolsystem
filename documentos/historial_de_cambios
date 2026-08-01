@@ -1,3 +1,18 @@
+2026-08-01: Plan 109 / certificacion del SHA fusionado y flujo real CxP/IA.
+- La PR 118 se fusionó como `8847288b...`; el release inmutable 30697250256
+  publicó cuatro digests con cuatro SBOM y Trivy en cero HIGH/CRITICAL.
+- El candidato se promovió solo a staging, aprobó salud/readiness, migración
+  vacía, segunda pasada, drift cerrado/recuperado y copia lógica 350/59;
+  producción conservó sus tres imágenes anteriores.
+- Bodegas/Compras aprobaron 4/4 vistas sobre la corrección Kardex. El barrido
+  global 30697674501 cubrió 618 vistas, 309 rutas y 11.062 controles; bloqueó
+  12 POST automáticos sin aumentar la auditoría mutante y aprobó 20/20 impresos.
+- La carga final atendió 500/500 GET autenticados, concurrencia 10, p95 119 ms,
+  cero fallos, locks o 5xx. Alertmanager mostró y resolvió una alerta sintética.
+- El botón de CxP/IA radicó y extrajo una factura de prueba con HTTP 200, leyó
+  documento, valor y fechas, y permitió editarlos visualmente. No se guardó una
+  obligación, pago ni asiento.
+
 2026-08-01: Plan 109 / auditor E2E no mutante y hardening operativo del VPS.
 - El barrido final detecto que los seis controles Kardex de Bodegas conservaban
   anchos minimos de 260 px y extendian el documento a 1.929 px en escritorio;

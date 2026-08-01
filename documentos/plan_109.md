@@ -573,8 +573,8 @@ Se informan dos cifras:
 
 Estado actualizado al 2026-08-01:
 
-- P109-000 está aprobada en staging para el SHA `d4e613e2...`: PR 117, CI y
-  release `30690869278` verdes,
+- P109-000 está aprobada en staging para el SHA fusionado `8847288b...`: PR 118,
+  CI y release `30697250256` verdes,
   cuatro digests/SBOM, Trivy sin vulnerabilidades, base vacía, upgrade,
   idempotencia, rechazo de checksum, rollback de aplicación, salud y producción
   intacta. P109-001, P109-002, P109-003, P109-004,
@@ -583,16 +583,15 @@ Estado actualizado al 2026-08-01:
 - P109-001 añadió rechazos runtime para empresa/topic ausentes, duplicados, ID
   inexistente y publicado sin modificar el evento histórico excluido. Falta una
   segunda empresa controlada para la matriz A/B.
-- P109-002 ya demostró configuración cifrada presente, catálogo/preferencia por
-  usuario, historial, dashboard CxP/IA y rechazo de upload inválido sin escritura,
-  además de ReportSpec, vista previa y exportaciones. Sigue parcial hasta cerrar
-  extracción externa autorizada, edición/confirmación, Centro IA, A/B y evals.
-- P109-004 repitió 618 vistas/309 rutas, 11.062 controles y 103 clics seguros
-  sobre `d4e613e2...`. La guardia bloqueó 12 POST automáticos, el contador de
-  mutaciones permaneció `101/15519` y no hubo 5xx. El único desbordamiento
-  restante, filtros Kardex de Bodegas a 1.929 px, tiene corrección local y
-  contrato; faltan integrarla/repetirla y ejecutar acciones riesgosas por flujo
-  oficial.
+- P109-002 ya demostró configuración cifrada, catálogo/preferencia por usuario,
+  historial y dashboard CxP/IA. Sobre el candidato final radicó una factura de
+  prueba, ejecutó extracción externa 200 y permitió editar documento/valor sin
+  guardar CxP ni pago. Sigue parcial por confirmación/cancelación, degradación,
+  Centro IA, A/B y evals.
+- P109-004 repitió 618 vistas/309 rutas y 11.062 controles sobre `8847288b...`.
+  La guardia bloqueó 12 POST automáticos sin aumentar DELETE/POST/PUT; Bodegas y
+  Compras aprobaron 4/4 vistas después de integrar la corrección Kardex. Faltan
+  acciones riesgosas por flujo oficial y rol.
 - P109-005 amplió su regresión sintética a 20/20 formatos: factura y recibo de
   96 renglones produjeron cinco páginas de detalle más una de resumen, con QR
   cargado y revisión visual mediante Poppler sin recortes. Continúa parcial por
@@ -601,8 +600,9 @@ Estado actualizado al 2026-08-01:
   mediante SSH por llave, UFW activo, VNC restringido y retiro de Avahi/CUPS.
   Quedan 30 paquetes y reinicio para una ventana de mantenimiento, además del
   DAST/CSP/A-B que esta prueba no sustituye.
-- P109-010 aprobó 500/500 GET autenticados con concurrencia 10 y p95 de 121 ms;
-  después mantuvo cero locks/leases vencidos. La limpieza verificada de 19
+- P109-010 aprobó 500/500 GET autenticados con concurrencia 10 y p95 de 119 ms;
+  después mantuvo cero locks y 5xx. Alertmanager recibió y resolvió una alerta
+  sintética interna; falta receptor externo y deduplicación. La limpieza de 19
   volúmenes anónimos bajó el disco de 87 % a 79 %; una segunda limpieza exacta
   de imagenes candidatas antiguas recuperó 41,5 GB y lo dejó en 40 %, sin
   afectar servicios ni borrar datos.
@@ -618,18 +618,22 @@ Estado actualizado al 2026-08-01:
 La evidencia histórica P108 sirve como línea base y evita repetir pruebas
 independientes del artefacto, pero no aumenta automáticamente estas cifras.
 
-## 9. Primera orden para Terra alto
+## 9. Siguiente orden para Terra alto
 
-Terra debe comenzar únicamente con P109-000:
+P109-000 ya está aprobada para `8847288b...`; Terra no debe reconstruirla ni
+repetirla sin un cambio de código. Debe continuar así:
 
-1. comprobar que la PR consolidada está aprobada, fusionable y verde;
-2. resolver conflictos conservando toda la trazabilidad;
-3. fusionar y confirmar `main` limpio;
-4. construir una vez el SHA completo;
-5. guardar los cuatro digests y escaneos;
-6. desplegar solo staging;
-7. probar migración, salud, readiness, worker y huella de producción;
-8. registrar evidencia y porcentaje;
-9. continuar con P109-001 si P109-000 queda aprobado.
+1. confirmar que staging conserva los cuatro digests registrados y producción
+   conserva sus imágenes anteriores;
+2. cerrar P109-001 únicamente cuando exista una segunda identidad/empresa A/B
+   autorizada, sin usar la sesión global como prueba de aislamiento;
+3. completar en P109-002 confirmación/cancelación, doble clic, degradación del
+   proveedor y evals, sin convertir automáticamente el borrador en pago;
+4. ejecutar UAT contable/fiscal de P109-003 con contador autorizado;
+5. completar acciones mutantes de P109-004 por rol y flujo oficial;
+6. continuar cuatro cajas, DIAN, receptor externo, restore y piloto solo cuando
+   sus credenciales, identidades, hardware o ventanas estén disponibles;
+7. registrar evidencia y recalcular las dos cifras sin dar crédito completo a
+   una fase parcial.
 
 No debe saltar a producción ni llamar 100 % a un bloque con pendientes.
