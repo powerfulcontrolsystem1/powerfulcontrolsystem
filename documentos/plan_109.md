@@ -616,8 +616,11 @@ Estado actualizado al 2026-08-01:
 - P109-011 aprobó base vacía, upgrade, drift y rollback de aplicación sobre el
   esquema actualizado. El ensayo posterior a migración perdió y restauró las
   dos bases junto con el volumen privado en 23 segundos, recuperando fila,
-  cinco dominios y SHA-256. Continúa parcial por fallos antes/durante,
-  compatibilidad hacia atrás y aprobación contractual del RPO/RTO.
+  cinco dominios y SHA-256. El ensayo ampliado bloqueó un rol sin DDL antes de
+  migrar, revirtió DDL y ledger ante un fallo durante la transacción, recuperó
+  ambos atómicamente y arrancó la API `8847288b...` sobre el esquema nuevo sin
+  mutarlo. Continúa parcial solo por aprobación contractual del RPO/RTO y la
+  vinculación al digest final del piloto.
 - P109-008 arrancó la API y el migrador exactos de `89d6e042...` contra el
   snapshot restaurado: salud/readiness 200, 5 tablas y 28 filas críticas de PCS,
   4 endpoints anónimos bloqueados y 5 dominios recorridos mediante login oficial.

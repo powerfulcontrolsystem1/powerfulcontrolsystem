@@ -23,6 +23,22 @@ El script rechaza recursos preexistentes, un ID fuera del prefijo autorizado,
 una imagen sin digest o un fallo de migración que no quede auditado y sin
 cambios de esquema/ledger.
 
+Para ampliar el ensayo a los fallos P109 antes/durante migración y a la
+compatibilidad hacia atrás, añadir:
+
+```bash
+PCS_PREVIOUS_API_IMAGE_DIGEST=ghcr.io/organizacion/pcs-api@sha256:<digest-anterior> \
+P109_VERIFY_MIGRATION_FAILURES=1 \
+P109_BACKWARD_HOST_PORT=<puerto-loopback-libre>
+```
+
+El modo ampliado primero niega DDL a un rol migrador restringido y exige que el
+esquema quede intacto. Después provoca un fallo real entre el DDL de una
+migración y su inserción en el ledger, verifica rollback y auditoría, recupera
+índice/ledger atómicamente y arranca la API anterior contra el esquema nuevo.
+Todo ocurre en base, volumen, red y puerto efímeros; no usar imágenes sin digest
+ni apuntar las DSN a staging o producción.
+
 Para ensayar un upgrade desde una copia lógica de staging sin escribir en el
 origen:
 

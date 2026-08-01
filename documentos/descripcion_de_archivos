@@ -97,6 +97,8 @@
 - `deploy/scripts/vps-p108-empty-migration-drill.sh`: ensayo aislado de base
   vacía y segunda pasada usando una imagen exacta por digest; además provoca
   drift de checksum, exige fallo auditado sin cambios y verifica recuperación.
+  Su modo P109 adicional prueba rol sin DDL, rollback después del DDL y antes
+  del ledger, y readiness de la API anterior sobre el esquema nuevo.
 - `deploy/scripts/vps-p108-upgrade-migration-drill.sh`: copia lógica de
   PostgreSQL staging, restauración efímera, upgrade y segunda pasada sin
   modificar el origen.

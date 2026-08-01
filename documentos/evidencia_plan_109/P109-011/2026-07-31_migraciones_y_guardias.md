@@ -38,3 +38,43 @@ P109-011 continúa **parcial**: queda pendiente simular fallos antes y durante l
 migración y completar la matriz de compatibilidad hacia atrás. El ensayo nuevo
 cierra únicamente el escenario posterior a migración y no fija por sí solo el
 RPO/RTO contractual.
+
+## Fallos antes/durante y compatibilidad hacia atrás - 2026-08-01
+
+El modo `P109_VERIFY_MIGRATION_FAILURES=1` se ejecutó en la VPS únicamente
+sobre PostgreSQL, volumen, red y puerto efímeros. Usó el migrador exacto del
+candidato `89d6e042...` y la API anterior `8847288b...`, ambos por digest.
+
+- Antes: un rol con `CONNECT/USAGE` pero sin DDL intentó ejecutar el migrador y
+  falló cerrado; el número de tablas permaneció idéntico.
+- Durante: en la copia efímera se retiraron el índice y ledger de
+  `20260731-001-ai-usage-unique-v1`; un trigger temporal provocó error al
+  insertar el ledger después de ejecutar el `CREATE UNIQUE INDEX` real.
+- El fallo dejó índice ausente y ledger ausente, demostrando rollback de la
+  transacción completa, y agregó una corrida `failed` a la auditoría.
+- Tras retirar el trigger, el migrador reaplicó índice y ledger una sola vez.
+- La API del candidato anterior alcanzó `/health` y `/ready` sobre el esquema
+  nuevo, conservó el número de tablas y utilizó un rol sin privilegios DDL.
+
+Resultado:
+
+```text
+empresas_migrations=18
+empresas_tables=337
+super_migrations=10
+super_tables=49
+[OK] Base vacía y segunda pasada completadas; fallos_previos=3 rollback_transaccional=5 compatibilidad_anterior=4
+```
+
+La limpieza confirmó cero contenedores, volúmenes, redes y temporales. Staging
+y producción conservaron sus APIs activas y sus imágenes originales. Con esto
+quedan demostrados técnicamente los escenarios antes, durante y después, la
+segunda pasada, drift, rollback transaccional, rollback coordinado de datos y
+compatibilidad con el candidato anterior. P109-011 conserva estado **parcial**
+hasta aprobar formalmente el RPO/RTO y vincular la aceptación al digest final
+que se elija para el piloto.
+
+También se interrumpió una ejecución aislada con `TERM` mientras PostgreSQL
+iniciaba. `timeout` devolvió `124`, como corresponde a la interrupción externa,
+y la trampa de salida dejó `0` contenedores, `0` volúmenes, `0` redes y ningún
+directorio temporal. La prueba no reinició ni modificó los servicios activos.
