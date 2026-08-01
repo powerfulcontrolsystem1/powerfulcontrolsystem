@@ -4646,3 +4646,7 @@ Actualización 2026-07-30 (Recuperación operacional de outbox CxP):
   del contexto autenticado.
 - No cambian permisos, licencia, tablas ni dependencias. La plantilla conserva
   la revalidación del `ReportSpec` contra el catálogo semántico autorizado.
+2026-08-01
+- Captura IA de compras/CxP: el listado sin filtro incluye soportes `radicado`,
+  `extraido`, `en_revision`, `aprobado`, `rechazado`, `contabilizado` y
+  `duplicado` activos. Los filtros explícitos conservan validación por estado.

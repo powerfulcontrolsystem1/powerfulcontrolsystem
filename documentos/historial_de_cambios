@@ -1,4 +1,8 @@
 2026-08-01: Plan 109 / certificacion del SHA fusionado y flujo real CxP/IA.
+- La prueba real descubrió que el listado de soportes interpretaba un filtro de
+  estado vacío como `radicado`; después de extraer con IA el soporte quedaba en
+  `extraido` y desaparecía de la revisión. El filtro vacío ahora lista todos los
+  estados activos, mientras un filtro explícito conserva validación cerrada.
 - La PR 118 se fusionó como `8847288b...`; el release inmutable 30697250256
   publicó cuatro digests con cuatro SBOM y Trivy en cero HIGH/CRITICAL.
 - El candidato se promovió solo a staging, aprobó salud/readiness, migración

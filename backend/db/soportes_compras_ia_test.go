@@ -82,3 +82,15 @@ func TestSoporteComprasIANormalizaciones(t *testing.T) {
 		t.Fatalf("origen default = %q", got)
 	}
 }
+
+func TestSoporteComprasIAEstadoFiltroVacioListaTodos(t *testing.T) {
+	if got := normalizeSoporteIAEstadoFiltro(""); got != "" {
+		t.Fatalf("filtro vacio = %q, want sin filtro", got)
+	}
+	if got := normalizeSoporteIAEstadoFiltro(" extraido "); got != "extraido" {
+		t.Fatalf("filtro extraido = %q", got)
+	}
+	if got := normalizeSoporteIAEstadoFiltro("desconocido"); got != "radicado" {
+		t.Fatalf("filtro invalido = %q, want radicado cerrado", got)
+	}
+}

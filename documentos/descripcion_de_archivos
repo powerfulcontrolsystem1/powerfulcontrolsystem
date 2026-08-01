@@ -1,4 +1,8 @@
 2026-08-01
+- `backend/db/soportes_compras_ia.go`: el filtro vacío de soportes CxP/IA lista
+  todos los estados activos y no oculta documentos recién extraídos.
+- `backend/db/soportes_compras_ia_test.go`: regresión de filtro vacío, estado
+  explícito y valor inválido cerrado para Captura IA.
 - `documentos/evidencia_plan_109/P109-000/2026-08-01_release_8847288b_staging.md`:
   release, digests, SBOM/Trivy, migraciones y aislamiento productivo del SHA
   fusionado final.

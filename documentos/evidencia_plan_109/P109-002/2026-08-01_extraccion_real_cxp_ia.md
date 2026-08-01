@@ -22,6 +22,13 @@ valor a `1191`; ambos valores permanecieron editables y visibles. No se envió
 el formulario: no se creó CxP, pago ni asiento contable. El soporte de prueba
 quedó radicado con ID 2 para trazabilidad.
 
+La revisión posterior encontró que `action=soportes` sin parámetro `estado`
+normalizaba el vacío como `radicado`; por eso el soporte `extraido` no aparecía
+en la lista aunque sí existía en la misma base de staging. Se corrigió la
+semántica para que vacío signifique todos los estados activos y se añadió una
+regresión focalizada. Esta corrección requiere promoción y repetición antes de
+darla por certificada.
+
 Estado: **P109-002 parcial**. Se cerró la extracción externa y la edición del
 borrador. Faltan confirmación/cancelación oficial completa, doble clic,
 degradación del proveedor, evals, Centro IA y aislamiento con una identidad A/B
