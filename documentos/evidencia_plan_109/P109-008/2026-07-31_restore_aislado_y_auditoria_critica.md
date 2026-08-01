@@ -204,3 +204,39 @@ La repetición concluyó:
 La matriz cubre identidad empresarial, contenido activo, tamaño y symlink. No
 cubre todavía cuotas por empresa, retención/borrado/recuperación, antivirus ni
 una segunda identidad A/B no global; esos puntos conservan el estado parcial.
+
+### Pérdida y rollback coordinado - 2026-08-01
+
+El runbook incorporó `P109_VERIFY_COORDINATED_ROLLBACK=1`, condicionado a dos
+réplicas y al login QA oficial. Sobre el mismo candidato inmutable de staging:
+
+1. radicó y descargó el soporte controlado, con SHA-256 coincidente;
+2. retiró ambas APIs efímeras para congelar una frontera coherente;
+3. creó dumps lógicos independientes de las dos bases, un tarball del volumen
+   privado y un inventario SHA-256 de todos sus archivos;
+4. eliminó deliberadamente solo las dos bases y el almacenamiento ubicados en
+   el entorno temporal validado;
+5. recreó/restauró ambas bases y el volumen, y comparó el inventario completo;
+6. reinició una réplica, autenticó nuevamente por el login oficial y verificó
+   la fila del soporte, su descarga, cinco tablas críticas y el hash original.
+
+Resultado observado:
+
+```text
+[OK] app_restore_smoke health=200 ready=200 bases=2 tablas=5 filas_empresa_12=28 endpoints_protegidos=4 dominios_autenticados=5 replica_checks=2 archivos_hostiles=5 archivos_privados=2 referencias_privadas=2 huerfanos_privados=0 referencias_heredadas=0 rollback_checks=7 rollback_dominios=5 rollback_RTO=23s runtime_privilegios=0 RTO=47s RPO=51894s
+```
+
+Antes del arranque, el modo `P109_VERIFY_PRIVATE_INVENTORY=1` cruzó las
+referencias persistidas de chat, buzón, DIAN, finanzas, grafología y soportes
+CxP/IA contra el volumen. Encontró dos archivos y dos referencias exactas, sin
+faltantes, huérfanos, referencias heredadas, symlinks ni rutas fuera del patrón
+`<categoria>/empresa_<id>/<archivo>`. No hubo nada que migrar o eliminar en el
+snapshot actual; el control queda reproducible para snapshots posteriores.
+
+La limpieza posterior confirmó cero contenedores, redes y directorios
+temporales del ensayo. Staging conservó su API por digest y producción mantuvo
+su imagen previa, ambas en ejecución; no se promovió ni reinició ningún servicio
+activo. Esto demuestra el rollback coordinado posterior a migración y la
+recuperación del almacenamiento, pero P109-008 continúa **parcial** por cuota,
+retención/borrado, antivirus, segunda identidad A/B no global y aprobación
+formal del objetivo RPO/RTO.

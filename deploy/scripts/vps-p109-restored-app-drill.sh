@@ -15,6 +15,8 @@ P109_QA_EMAIL="${P109_QA_EMAIL:-}"
 P109_QA_PASSWORD="${P109_QA_PASSWORD:-}"
 P109_HOLD_SECONDS="${P109_HOLD_SECONDS:-0}"
 P109_VERIFY_REPLICA="${P109_VERIFY_REPLICA:-0}"
+P109_VERIFY_COORDINATED_ROLLBACK="${P109_VERIFY_COORDINATED_ROLLBACK:-0}"
+P109_VERIFY_PRIVATE_INVENTORY="${P109_VERIFY_PRIVATE_INVENTORY:-0}"
 P109_REPLICA_HOST_PORT="${P109_REPLICA_HOST_PORT:-$((P109_HOST_PORT + 1))}"
 started_epoch="$(date +%s)"
 
@@ -44,6 +46,10 @@ json_escape() {
 [[ "$P109_HOLD_SECONDS" =~ ^[0-9]+$ ]] || fail "P109_HOLD_SECONDS debe ser numerico."
 ((P109_HOLD_SECONDS <= 900)) || fail "P109_HOLD_SECONDS no puede superar 900."
 [[ "$P109_VERIFY_REPLICA" =~ ^[01]$ ]] || fail "P109_VERIFY_REPLICA debe ser 0 o 1."
+[[ "$P109_VERIFY_COORDINATED_ROLLBACK" =~ ^[01]$ ]] ||
+  fail "P109_VERIFY_COORDINATED_ROLLBACK debe ser 0 o 1."
+[[ "$P109_VERIFY_PRIVATE_INVENTORY" =~ ^[01]$ ]] ||
+  fail "P109_VERIFY_PRIVATE_INVENTORY debe ser 0 o 1."
 [[ "$P109_REPLICA_HOST_PORT" =~ ^[0-9]+$ ]] || fail "P109_REPLICA_HOST_PORT debe ser numerico."
 ((P109_REPLICA_HOST_PORT >= 1024 && P109_REPLICA_HOST_PORT <= 65535)) ||
   fail "P109_REPLICA_HOST_PORT debe estar entre 1024 y 65535."
@@ -52,6 +58,10 @@ if [ "$P109_VERIFY_REPLICA" = "1" ]; then
     fail "La prueba de replicas requiere las credenciales QA por variables de sesion."
   [ "$P109_REPLICA_HOST_PORT" != "$P109_HOST_PORT" ] ||
     fail "Los puertos de las replicas deben ser distintos."
+fi
+if [ "$P109_VERIFY_COORDINATED_ROLLBACK" = "1" ]; then
+  [ "$P109_VERIFY_REPLICA" = "1" ] ||
+    fail "El rollback coordinado requiere P109_VERIFY_REPLICA=1."
 fi
 [ -f "$SOURCE_ENV" ] || fail "No existe SOURCE_ENV."
 docker image inspect "$PCS_API_IMAGE_DIGEST" >/dev/null 2>&1 ||
@@ -202,6 +212,74 @@ for table in $critical_tables; do
   checked_tables=$((checked_tables + 1))
 done
 
+private_files=0
+private_references=0
+private_orphans=0
+legacy_references=0
+if [ "$P109_VERIFY_PRIVATE_INVENTORY" = "1" ]; then
+  echo "[RUN] Inventariando referencias y archivos privados del restore."
+  private_actual="$workdir/private-actual.txt"
+  private_expected="$workdir/private-expected.txt"
+  find "$private_root" -type f -printf '%P\n' | LC_ALL=C sort -u >"$private_actual"
+  private_files="$(wc -l <"$private_actual" | tr -d ' ')"
+  private_symlinks="$(find "$private_root" -type l | wc -l | tr -d ' ')"
+  [ "$private_symlinks" = "0" ] || fail "El snapshot privado contiene symlinks."
+  invalid_private_layout="$(awk '
+    !/^(buzon|chat_tareas|dian|finanzas|grafologia|soportes_compras_ia)\/empresa_[0-9]+\/[^/]+$/ {count++}
+    END {print count+0}
+  ' "$private_actual")"
+  [ "$invalid_private_layout" = "0" ] ||
+    fail "El snapshot privado contiene rutas fuera del catalogo empresarial."
+
+  docker exec -i "$postgres" psql -v ON_ERROR_STOP=1 -U postgres -d pcs_empresas -At <<'SQL' |
+WITH refs(path) AS (
+  SELECT 'chat_tareas/empresa_' || empresa_id || '/' || substring(file_url FROM '[?&]ref=([^&]+)')
+  FROM chat_tareas_adjuntos WHERE file_url ~ '[?&]ref='
+  UNION ALL
+  SELECT 'chat_tareas/empresa_' || empresa_id || '/' || substring(nota_voz_url FROM '[?&]ref=([^&]+)')
+  FROM chat_tareas WHERE nota_voz_url ~ '[?&]ref='
+  UNION ALL
+  SELECT 'buzon/empresa_' || empresa_id || '/' || substring(file_url FROM '[?&]ref=([^&]+)')
+  FROM empresa_buzon_adjuntos WHERE file_url ~ '[?&]ref='
+  UNION ALL
+  SELECT 'finanzas/empresa_' || empresa_id || '/' || substring(comprobante_url FROM '[?&]ref=([^&]+)')
+  FROM empresa_finanzas_movimientos WHERE comprobante_url ~ '[?&]ref='
+  UNION ALL
+  SELECT 'grafologia/empresa_' || empresa_id || '/' || substring(imagen_url FROM '[?&]ref=([^&]+)')
+  FROM empresa_grafologia_analisis WHERE imagen_url ~ '[?&]ref='
+  UNION ALL
+  SELECT substring(certificado_clave_ref FROM '^file:.*/private_storage/(.+)$')
+  FROM empresa_dian_configuracion WHERE certificado_clave_ref ~ '^file:.*/private_storage/'
+  UNION ALL
+  SELECT substring(certificado_url FROM '^file:.*/private_storage/(.+)$')
+  FROM empresa_dian_configuracion WHERE certificado_url ~ '^file:.*/private_storage/'
+  UNION ALL
+  SELECT substring(archivo_url FROM '^private://(.+)$')
+  FROM empresa_soportes_compras_ia WHERE archivo_url ~ '^private://'
+)
+SELECT path FROM refs WHERE COALESCE(path, '') <> '' ORDER BY path;
+SQL
+    LC_ALL=C sort -u >"$private_expected"
+  private_references="$(wc -l <"$private_expected" | tr -d ' ')"
+  missing_private="$(comm -23 "$private_expected" "$private_actual" | wc -l | tr -d ' ')"
+  private_orphans="$(comm -13 "$private_expected" "$private_actual" | wc -l | tr -d ' ')"
+  [ "$missing_private" = "0" ] ||
+    fail "El restore privado tiene referencias sin archivo."
+
+  legacy_references="$(docker exec "$postgres" psql -v ON_ERROR_STOP=1 -U postgres -d pcs_empresas -Atc "
+    WITH legacy(ref) AS (
+      SELECT file_url FROM chat_tareas_adjuntos UNION ALL
+      SELECT nota_voz_url FROM chat_tareas UNION ALL
+      SELECT file_url FROM empresa_buzon_adjuntos UNION ALL
+      SELECT comprobante_url FROM empresa_finanzas_movimientos UNION ALL
+      SELECT imagen_url FROM empresa_grafologia_analisis UNION ALL
+      SELECT certificado_clave_ref FROM empresa_dian_configuracion UNION ALL
+      SELECT certificado_url FROM empresa_dian_configuracion
+    )
+    SELECT count(*) FROM legacy
+    WHERE ref LIKE '/uploads/%' OR (ref LIKE 'file:%' AND replace(ref, chr(92), '/') LIKE '%/uploads/%')")"
+fi
+
 start_api() {
   local container_name="$1"
   local host_port="$2"
@@ -299,6 +377,9 @@ done
 authenticated_checks=0
 replica_checks=0
 hostile_file_checks=0
+rollback_checks=0
+rollback_seconds=0
+rollback_domain_checks=0
 if [ -n "$P109_QA_EMAIL" ] || [ -n "$P109_QA_PASSWORD" ]; then
   [ -n "$P109_QA_EMAIL" ] && [ -n "$P109_QA_PASSWORD" ] ||
     fail "La prueba autenticada requiere correo y clave juntos."
@@ -434,6 +515,104 @@ if [ -n "$P109_QA_EMAIL" ] || [ -n "$P109_QA_PASSWORD" ]; then
       fail "La descarga tras retirar A no conservo el checksum."
     replica_checks=$((replica_checks + 1))
 
+    if [ "$P109_VERIFY_COORDINATED_ROLLBACK" = "1" ]; then
+      echo "[RUN] Congelando checkpoint coherente de bases y almacenamiento privado."
+      docker rm -f "$api_replica" >/dev/null
+      rollback_started_epoch="$(date +%s)"
+      empresas_dump="$workdir/rollback-pcs_empresas.dump"
+      super_dump="$workdir/rollback-pcs_superadministrador.dump"
+      private_checkpoint="$workdir/rollback-private-storage.tar.gz"
+      private_manifest_before="$workdir/rollback-private-before.sha256"
+      private_manifest_after="$workdir/rollback-private-after.sha256"
+
+      docker exec "$postgres" pg_dump -U postgres -Fc pcs_empresas >"$empresas_dump"
+      docker exec "$postgres" pg_dump -U postgres -Fc pcs_superadministrador >"$super_dump"
+      [ -s "$empresas_dump" ] && [ -s "$super_dump" ] ||
+        fail "El checkpoint coordinado no genero ambos dumps."
+      find "$private_root" -type f -print0 | sort -z |
+        xargs -0 -r sha256sum >"$private_manifest_before"
+      tar -czf "$private_checkpoint" -C "$private_root" .
+      [ -s "$private_checkpoint" ] || fail "El checkpoint privado quedo vacio."
+
+      [[ "$private_root" == "$workdir/private_storage" ||
+        "$private_root" == "$workdir/private_storage/"* ]] ||
+        fail "La raiz privada efimera no pertenece al directorio controlado."
+      echo "[RUN] Simulando perdida total de las copias efimeras de datos y archivos."
+      find "$private_root" -mindepth 1 -maxdepth 1 -exec rm -rf -- {} +
+      for database in pcs_empresas pcs_superadministrador; do
+        docker exec "$postgres" dropdb --force -U postgres "$database"
+        docker exec "$postgres" createdb -U postgres -T template0 "$database"
+      done
+
+      echo "[RUN] Restaurando de forma coordinada las dos bases y el volumen privado."
+      docker exec -i "$postgres" pg_restore -U postgres -d pcs_empresas \
+        --exit-on-error --no-owner <"$empresas_dump"
+      rollback_checks=$((rollback_checks + 1))
+      docker exec -i "$postgres" pg_restore -U postgres -d pcs_superadministrador \
+        --exit-on-error --no-owner <"$super_dump"
+      rollback_checks=$((rollback_checks + 1))
+      tar -xzf "$private_checkpoint" -C "$private_root"
+      chown -R 10001:10001 "$private_root"
+      find "$private_root" -type f -print0 | sort -z |
+        xargs -0 -r sha256sum >"$private_manifest_after"
+      cmp -s "$private_manifest_before" "$private_manifest_after" ||
+        fail "El inventario privado cambio despues del rollback."
+      rollback_checks=$((rollback_checks + 1))
+
+      start_api "$api_replica" "$P109_REPLICA_HOST_PORT"
+      wait_api "$api_replica" "$P109_REPLICA_HOST_PORT"
+      cookie_rollback="$workdir/session-rollback.cookies"
+      login_rollback_response="$workdir/login-rollback.response"
+      login_rollback_status="$(curl -sS -o "$login_rollback_response" -w '%{http_code}' \
+        -c "$cookie_rollback" \
+        -H 'Content-Type: application/json' \
+        --data-binary "$login_payload" \
+        "http://127.0.0.1:${P109_REPLICA_HOST_PORT}/super/api/administradores/login")"
+      [ "$login_rollback_status" = "200" ] ||
+        fail "El login posterior al rollback devolvio HTTP $login_rollback_status."
+      grep -Eq '"ok"[[:space:]]*:[[:space:]]*true' "$login_rollback_response" ||
+        fail "El rollback no recupero una sesion oficial valida."
+      for check in "${authenticated_paths[@]}"; do
+        name="${check%%|*}"
+        path="${check#*|}"
+        status="$(curl -sS -o /dev/null -w '%{http_code}' \
+          -b "$cookie_rollback" \
+          "http://127.0.0.1:${P109_REPLICA_HOST_PORT}${path}")"
+        [ "$status" = "200" ] ||
+          fail "El dominio $name no se recupero tras el rollback (HTTP $status)."
+        rollback_domain_checks=$((rollback_domain_checks + 1))
+      done
+      [ "$rollback_domain_checks" = "5" ] ||
+        fail "El rollback no recupero los cinco dominios autenticados."
+      rollback_checks=$((rollback_checks + 1))
+
+      restored_soporte_rows="$(docker exec "$postgres" psql -U postgres -d pcs_empresas -Atc \
+        "SELECT count(*) FROM empresa_soportes_compras_ia WHERE empresa_id=12 AND id=${soporte_id}")"
+      [ "$restored_soporte_rows" = "1" ] || fail "El rollback no recupero la fila del soporte."
+      rollback_checks=$((rollback_checks + 1))
+      restored_tenant_rows=0
+      for table in $critical_tables; do
+        rows="$(docker exec "$postgres" psql -U postgres -d pcs_empresas -Atc \
+          "SELECT count(*) FROM $table WHERE empresa_id=12")"
+        restored_tenant_rows=$((restored_tenant_rows + rows))
+      done
+      [ "$restored_tenant_rows" = "$tenant_rows" ] ||
+        fail "Los dominios criticos cambiaron tras el rollback."
+      rollback_checks=$((rollback_checks + 1))
+
+      rollback_download="$workdir/rollback-download.png"
+      rollback_download_status="$(curl -sS -o "$rollback_download" -w '%{http_code}' \
+        -b "$cookie_rollback" \
+        "http://127.0.0.1:${P109_REPLICA_HOST_PORT}/api/empresa/soportes_compras_ia?empresa_id=12&action=descargar&soporte_id=${soporte_id}")"
+      [ "$rollback_download_status" = "200" ] ||
+        fail "La descarga posterior al rollback devolvio HTTP $rollback_download_status."
+      [ "$(sha256sum "$rollback_download" | awk '{print $1}')" = "$source_hash" ] ||
+        fail "El archivo recuperado no conservo su SHA-256."
+      rollback_checks=$((rollback_checks + 1))
+      rollback_seconds=$(($(date +%s) - rollback_started_epoch))
+      cookie_replica="$cookie_rollback"
+    fi
+
     uploaded_path="$private_root/soportes_compras_ia/empresa_12/$uploaded_name"
     resolved_upload="$(realpath "$uploaded_path")"
     [[ "$resolved_upload" == "$private_root/soportes_compras_ia/empresa_12/"* ]] ||
@@ -447,7 +626,8 @@ if [ -n "$P109_QA_EMAIL" ] || [ -n "$P109_QA_PASSWORD" ]; then
     hostile_file_checks=$((hostile_file_checks + 1))
   fi
   unset login_payload
-  rm -f -- "$cookie_jar" "$login_response" "${cookie_replica:-}" "${login_replica_response:-}"
+  rm -f -- "$cookie_jar" "$login_response" "${cookie_replica:-}" "${login_replica_response:-}" \
+    "${cookie_rollback:-}" "${login_rollback_response:-}"
 fi
 
 runtime_flags="$(docker exec "$postgres" psql -U postgres -d postgres -Atc \
@@ -456,7 +636,7 @@ runtime_flags="$(docker exec "$postgres" psql -U postgres -d postgres -Atc \
 
 snapshot_epoch="$(stat -c %Y "$BACKUP_DIR/postgres_all.sql.gz")"
 finished_epoch="$(date +%s)"
-echo "[OK] app_restore_smoke health=200 ready=200 bases=2 tablas=${checked_tables} filas_empresa_12=${tenant_rows} endpoints_protegidos=${protected_checks} dominios_autenticados=${authenticated_checks} replica_checks=${replica_checks} archivos_hostiles=${hostile_file_checks} runtime_privilegios=0 RTO=$((finished_epoch-started_epoch))s RPO=$((finished_epoch-snapshot_epoch))s"
+echo "[OK] app_restore_smoke health=200 ready=200 bases=2 tablas=${checked_tables} filas_empresa_12=${tenant_rows} endpoints_protegidos=${protected_checks} dominios_autenticados=${authenticated_checks} replica_checks=${replica_checks} archivos_hostiles=${hostile_file_checks} archivos_privados=${private_files} referencias_privadas=${private_references} huerfanos_privados=${private_orphans} referencias_heredadas=${legacy_references} rollback_checks=${rollback_checks} rollback_dominios=${rollback_domain_checks} rollback_RTO=${rollback_seconds}s runtime_privilegios=0 RTO=$((finished_epoch-started_epoch))s RPO=$((finished_epoch-snapshot_epoch))s"
 if ((P109_HOLD_SECONDS > 0)); then
   echo "[INFO] Ventana visual local activa durante ${P109_HOLD_SECONDS}s."
   sleep "$P109_HOLD_SECONDS"

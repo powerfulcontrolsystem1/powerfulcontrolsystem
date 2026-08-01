@@ -614,8 +614,10 @@ Estado actualizado al 2026-08-01:
   de imagenes candidatas antiguas recuperó 41,5 GB y lo dejó en 40 %, sin
   afectar servicios ni borrar datos.
 - P109-011 aprobó base vacía, upgrade, drift y rollback de aplicación sobre el
-  esquema actualizado. Continúa parcial por escenarios antes/durante/después y
-  rollback de datos dentro del RPO.
+  esquema actualizado. El ensayo posterior a migración perdió y restauró las
+  dos bases junto con el volumen privado en 23 segundos, recuperando fila,
+  cinco dominios y SHA-256. Continúa parcial por fallos antes/durante,
+  compatibilidad hacia atrás y aprobación contractual del RPO/RTO.
 - P109-008 arrancó la API y el migrador exactos de `89d6e042...` contra el
   snapshot restaurado: salud/readiness 200, 5 tablas y 28 filas críticas de PCS,
   4 endpoints anónimos bloqueados y 5 dominios recorridos mediante login oficial.
@@ -625,9 +627,13 @@ Estado actualizado al 2026-08-01:
   interrupción `TERM` también dejó cero recursos. Dos réplicas de aplicación
   aprobaron carga por A, descarga por B, SHA-256 y continuidad de B tras retirar
   A. Cinco negativos dinámicos bloquearon empresa cruzada, HTML activo, exceso
-  de 15 MiB y symlink sin crear filas. Continúa parcial por cuotas/retención,
-  antivirus, segunda identidad A/B no global, inventario de heredados, pérdida
-  del almacenamiento, rollback coordinado y aprobación formal RPO/RTO.
+  de 15 MiB y symlink sin crear filas. Un nuevo ensayo perdió las dos bases y
+  todo el volumen privado efímero, y recuperó coherentemente fila, archivo,
+  SHA-256, cinco dominios y readiness en 23 segundos, con cero residuos y sin
+  tocar servicios activos. El inventario cruzó 2/2 archivos/referencias del
+  catálogo privado sin huérfanos, faltantes ni referencias heredadas. Continúa
+  parcial por cuotas/retención, antivirus, segunda identidad A/B no global y
+  aprobación formal RPO/RTO.
 - Implementación Plan 109: **40,0 %** (`1 aprobada + 10 parciales`, de 15 fases).
 - Certificación del candidato desplegado: **6,7 %** (solo P109-000 aprobada en
   el mismo digest). Las fases funcionales, fiscales, A/B, cuatro cajas, restore,
