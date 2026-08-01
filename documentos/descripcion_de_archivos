@@ -1,4 +1,7 @@
 2026-08-01
+- `documentos/evidencia_plan_109/P109-002/2026-08-01_confirmacion_idempotencia_evals.md`:
+  contratos locales de confirmación humana, doble clic, lock distribuido,
+  transiciones idempotentes, degradación segura y evals de extracción CxP/IA.
 - `backend/db/soportes_compras_ia.go`: el filtro vacío de soportes CxP/IA lista
   todos los estados activos y no oculta documentos recién extraídos.
 - `backend/db/soportes_compras_ia_test.go`: regresión de filtro vacío, estado

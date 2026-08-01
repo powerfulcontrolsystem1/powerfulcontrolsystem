@@ -587,8 +587,12 @@ Estado actualizado al 2026-08-01:
   historial y dashboard CxP/IA. Sobre el candidato final confirmó que el filtro
   vacío lista estados activos, persistió la edición humana y rechazó por el
   botón oficial el soporte no fiscal. El documento quedó sin CxP, pago, asiento
-  ni contaminación de producción. Sigue parcial por aprobación controlada,
-  doble clic, degradación, Centro IA, A/B y evals.
+  ni contaminación de producción. El código nuevo serializa e idempotentiza la
+  aprobación/rechazo, bloquea doble extracción entre réplicas, exige
+  confirmación humana y degrada de forma segura al proveedor; las evals locales
+  de faltantes, JSON inválido, confianza y descuadre pasan. Sigue parcial hasta
+  comprobar estos contratos sobre el nuevo digest en staging, recorrer Centro
+  IA y completar aislamiento A/B con una identidad no global.
 - P109-004 completo sobre `89d6e042...` 618 vistas/309 rutas y 11.062 controles:
   600 `ok`, 18 revisiones conocidas, 97 clics seguros y 12 POST automáticos
   bloqueados por la guardia. Finanzas y CxP/IA aprobaron además 4/4 vistas

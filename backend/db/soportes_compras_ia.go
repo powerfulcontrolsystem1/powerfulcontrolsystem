@@ -336,6 +336,9 @@ func UpdateEmpresaSoporteComprasIAExtraccion(dbConn *sql.DB, empresaID, soporteI
 	if err != nil {
 		return EmpresaSoporteComprasIA{}, err
 	}
+	if !soporteIAEstadoExtraible(current.EstadoSoporte) {
+		return EmpresaSoporteComprasIA{}, errors.New("el estado actual no permite ejecutar nuevamente la extraccion IA")
+	}
 	extracted.EmpresaID = empresaID
 	extracted.ID = soporteID
 	extracted.Codigo = current.Codigo
@@ -346,7 +349,7 @@ func UpdateEmpresaSoporteComprasIAExtraccion(dbConn *sql.DB, empresaID, soporteI
 	extracted.Usuario = usuario
 	extracted.Estado = current.Estado
 	extracted.EstadoSoporte = "extraido"
-	if extracted.ConfianzaIA < 0.85 {
+	if extracted.ConfianzaIA < 0.85 || extracted.RequiereRevisionHumana {
 		extracted.EstadoSoporte = "en_revision"
 		extracted.RequiereRevisionHumana = true
 	}
@@ -360,45 +363,124 @@ func UpdateEmpresaSoporteComprasIAExtraccion(dbConn *sql.DB, empresaID, soporteI
 		extracted.EstadoSoporte = "duplicado"
 		extracted.RequiereRevisionHumana = true
 	}
-	_, err = ExecCompat(dbConn, `UPDATE empresa_soportes_compras_ia SET
+	result, err := ExecCompat(dbConn, `UPDATE empresa_soportes_compras_ia SET
 		tipo_soporte=?,estado_soporte=?,proveedor_id=?,proveedor_nombre=?,proveedor_nit=?,documento_tipo=?,documento_numero=?,
 		fecha_documento=?,fecha_vencimiento=?,subtotal=?,impuesto_iva=?,retencion_fuente=?,retencion_ica=?,retencion_iva=?,
 		total=?,moneda=?,categoria_contable=?,centro_costo=?,impacta_inventario=?,confianza_ia=?,modelo_ia=?,extraccion_json=?,
 		respuesta_ia=?,duplicado_soporte_id=?,requiere_revision_humana=?,fecha_actualizacion=CURRENT_TIMESTAMP,
-		usuario_creador=?,observaciones=? WHERE empresa_id=? AND id=?`,
+		usuario_creador=?,observaciones=? WHERE empresa_id=? AND id=? AND estado_soporte=?`,
 		extracted.TipoSoporte, extracted.EstadoSoporte, extracted.ProveedorID, extracted.ProveedorNombre, extracted.ProveedorNIT, extracted.DocumentoTipo, extracted.DocumentoNumero,
 		extracted.FechaDocumento, extracted.FechaVencimiento, extracted.Subtotal, extracted.ImpuestoIVA, extracted.RetencionFuente, extracted.RetencionICA, extracted.RetencionIVA,
 		extracted.Total, extracted.Moneda, extracted.CategoriaContable, extracted.CentroCosto, boolToIntSoporteIA(extracted.ImpactaInventario), extracted.ConfianzaIA, extracted.ModeloIA, extracted.ExtraccionJSON,
-		extracted.RespuestaIA, extracted.DuplicadoSoporteID, boolToIntSoporteIA(extracted.RequiereRevisionHumana), usuario, extracted.Observaciones, empresaID, soporteID)
+		extracted.RespuestaIA, extracted.DuplicadoSoporteID, boolToIntSoporteIA(extracted.RequiereRevisionHumana), usuario, extracted.Observaciones, empresaID, soporteID, current.EstadoSoporte)
 	if err != nil {
 		return EmpresaSoporteComprasIA{}, err
+	}
+	if affected, _ := result.RowsAffected(); affected != 1 {
+		return EmpresaSoporteComprasIA{}, errors.New("el soporte cambio de estado durante la extraccion IA")
 	}
 	_ = InsertEmpresaSoporteComprasIAEvento(dbConn, empresaID, soporteID, "extraer_ia", current.EstadoSoporte, extracted.EstadoSoporte, usuario, map[string]interface{}{"modelo": extracted.ModeloIA, "confianza": extracted.ConfianzaIA})
 	return GetEmpresaSoporteComprasIA(dbConn, empresaID, soporteID)
 }
 
 func UpdateEmpresaSoporteComprasIAEstado(dbConn *sql.DB, empresaID, soporteID int64, estado, usuario, observaciones string) (EmpresaSoporteComprasIA, error) {
-	current, err := GetEmpresaSoporteComprasIA(dbConn, empresaID, soporteID)
-	if err != nil {
-		return EmpresaSoporteComprasIA{}, err
+	if empresaID <= 0 || soporteID <= 0 {
+		return EmpresaSoporteComprasIA{}, errors.New("empresa_id y soporte_id son obligatorios")
 	}
 	next := normalizeSoporteIAEstado(estado)
-	if next == "contabilizado" {
-		return EmpresaSoporteComprasIA{}, errors.New("usa la accion contabilizar para convertir el soporte")
+	if next != "aprobado" && next != "rechazado" {
+		return EmpresaSoporteComprasIA{}, errors.New("transicion de soporte no permitida")
 	}
-	aprobadoPor := current.AprobadoPor
-	fechaAprobacion := current.FechaAprobacion
-	if next == "aprobado" {
-		aprobadoPor = strings.TrimSpace(usuario)
-		fechaAprobacion = time.Now().Format("2006-01-02 15:04:05")
+	usuario = strings.TrimSpace(usuario)
+	if usuario == "" {
+		usuario = "sistema"
 	}
-	_, err = ExecCompat(dbConn, `UPDATE empresa_soportes_compras_ia SET estado_soporte=?, aprobado_por=?, fecha_aprobacion=?, requiere_revision_humana=?, fecha_actualizacion=CURRENT_TIMESTAMP, usuario_creador=?, observaciones=? WHERE empresa_id=? AND id=?`,
-		next, aprobadoPor, fechaAprobacion, boolToIntSoporteIA(next != "aprobado"), usuario, observaciones, empresaID, soporteID)
+	tx, err := dbConn.Begin()
 	if err != nil {
 		return EmpresaSoporteComprasIA{}, err
 	}
-	_ = InsertEmpresaSoporteComprasIAEvento(dbConn, empresaID, soporteID, "estado", current.EstadoSoporte, next, usuario, map[string]interface{}{"observaciones": observaciones})
+	defer func() { _ = tx.Rollback() }()
+
+	var currentState, documentoNumero string
+	var proveedorID int64
+	var total float64
+	err = queryRowTxSQLCompat(tx, `SELECT COALESCE(estado_soporte,'radicado'), COALESCE(proveedor_id,0),
+		COALESCE(documento_numero,''), COALESCE(total,0)
+		FROM empresa_soportes_compras_ia WHERE empresa_id=? AND id=? FOR UPDATE`, empresaID, soporteID).
+		Scan(&currentState, &proveedorID, &documentoNumero, &total)
+	if err != nil {
+		return EmpresaSoporteComprasIA{}, err
+	}
+	idempotent, err := validateSoporteIAStateTransition(currentState, next)
+	if err != nil {
+		return EmpresaSoporteComprasIA{}, err
+	}
+	if idempotent {
+		if err := tx.Commit(); err != nil {
+			return EmpresaSoporteComprasIA{}, err
+		}
+		return GetEmpresaSoporteComprasIA(dbConn, empresaID, soporteID)
+	}
+	if next == "aprobado" {
+		if proveedorID <= 0 || strings.TrimSpace(documentoNumero) == "" || soporteIARound(total) <= 0 {
+			return EmpresaSoporteComprasIA{}, errors.New("para aprobar selecciona un proveedor registrado, documento y total mayor que cero")
+		}
+		var proveedorEstado string
+		if err := queryRowTxSQLCompat(tx, `SELECT COALESCE(estado,'activo') FROM proveedores WHERE empresa_id=? AND id=?`, empresaID, proveedorID).Scan(&proveedorEstado); err != nil {
+			if errors.Is(err, sql.ErrNoRows) {
+				return EmpresaSoporteComprasIA{}, errors.New("el proveedor no pertenece a la empresa activa")
+			}
+			return EmpresaSoporteComprasIA{}, err
+		}
+		if !strings.EqualFold(strings.TrimSpace(proveedorEstado), "activo") {
+			return EmpresaSoporteComprasIA{}, errors.New("el proveedor seleccionado no esta activo")
+		}
+	}
+	aprobadoPor := ""
+	fechaAprobacion := ""
+	if next == "aprobado" {
+		aprobadoPor = usuario
+		fechaAprobacion = time.Now().Format("2006-01-02 15:04:05")
+	}
+	result, err := execTxSQLCompat(tx, `UPDATE empresa_soportes_compras_ia SET estado_soporte=?, aprobado_por=?, fecha_aprobacion=?, requiere_revision_humana=?, fecha_actualizacion=CURRENT_TIMESTAMP, usuario_creador=?, observaciones=? WHERE empresa_id=? AND id=? AND estado_soporte=?`,
+		next, aprobadoPor, fechaAprobacion, boolToIntSoporteIA(next != "aprobado"), usuario, strings.TrimSpace(observaciones), empresaID, soporteID, currentState)
+	if err != nil {
+		return EmpresaSoporteComprasIA{}, err
+	}
+	if affected, _ := result.RowsAffected(); affected != 1 {
+		return EmpresaSoporteComprasIA{}, errors.New("el soporte cambio de estado antes de confirmar la accion")
+	}
+	detail, _ := json.Marshal(map[string]interface{}{"observaciones": strings.TrimSpace(observaciones)})
+	if _, err := insertTxSQLCompat(tx, `INSERT INTO empresa_soportes_compras_ia_eventos
+		(empresa_id,soporte_id,evento,estado_anterior,estado_nuevo,detalle_json,usuario_creador)
+		VALUES (?,?,?,?,?,?,?)`, empresaID, soporteID, "estado", currentState, next, string(detail), usuario); err != nil {
+		return EmpresaSoporteComprasIA{}, err
+	}
+	if err := tx.Commit(); err != nil {
+		return EmpresaSoporteComprasIA{}, err
+	}
 	return GetEmpresaSoporteComprasIA(dbConn, empresaID, soporteID)
+}
+
+func validateSoporteIAStateTransition(current, next string) (bool, error) {
+	current = normalizeSoporteIAEstado(current)
+	next = normalizeSoporteIAEstado(next)
+	if current == next && (next == "aprobado" || next == "rechazado") {
+		return true, nil
+	}
+	switch next {
+	case "aprobado":
+		switch current {
+		case "radicado", "extraido", "en_revision":
+			return false, nil
+		}
+	case "rechazado":
+		switch current {
+		case "radicado", "extraido", "en_revision", "aprobado":
+			return false, nil
+		}
+	}
+	return false, errors.New("el estado actual no permite esta accion")
 }
 
 // UpdateEmpresaSoporteComprasIARevision persists the human-reviewed values
@@ -813,6 +895,15 @@ func boolToIntSoporteIA(v bool) int {
 func soporteIAEstadoAbierto(v string) bool {
 	switch normalizeSoporteIAEstado(v) {
 	case "radicado", "extraido", "en_revision", "aprobado":
+		return true
+	default:
+		return false
+	}
+}
+
+func soporteIAEstadoExtraible(v string) bool {
+	switch normalizeSoporteIAEstado(v) {
+	case "radicado", "extraido", "en_revision":
 		return true
 	default:
 		return false

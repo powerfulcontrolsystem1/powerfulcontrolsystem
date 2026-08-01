@@ -1,3 +1,9 @@
+## [2026-08-01] Confirmación e idempotencia CxP/IA
+- [IA] La extracción documental usa un lock PostgreSQL por soporte para impedir llamadas y cuotas duplicadas entre réplicas.
+- [CxP] Aprobar y rechazar son transacciones idempotentes; no se puede revivir un soporte rechazado, duplicado o contabilizado.
+- [Control humano] Aprobar exige proveedor activo de la empresa, documento y total positivo; contabilizar confirma que crea CxP pero no pago.
+- [Degradación] Fallos del proveedor devuelven mensajes seguros y los datos incompletos, baja confianza o totales inconsistentes fuerzan revisión.
+
 ## [2026-07-30] Concurrencia e interacción CxP
 - [CxP] Dos abonos simultáneos con la misma clave reutilizan el mismo movimiento; claves distintas no pueden sobrepagar el saldo.
 - [UX] Elegir un proveedor registrado completa el nombre obligatorio y permite guardar la CxP sin duplicar la entrada manual.

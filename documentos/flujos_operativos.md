@@ -994,11 +994,21 @@ afecte dinero, documentos, licencias o seguridad.
 1. Ingresos, Egresos y Compras tienen boton de analisis IA junto al adjunto.
 2. El archivo se radica en `/api/empresa/soportes_compras_ia` con `empresa_id`;
    luego `extraer_ia` usa GPT-5.5 y descuenta una consulta avanzada diaria del
-   limite de agentes de la empresa.
+   limite de agentes de la empresa. Un advisory lock PostgreSQL por soporte
+   impide que doble clic, reintento paralelo u otra réplica llamen dos veces al
+   proveedor o descuenten dos veces la cuota.
 3. La IA precarga campos del formulario (tercero/proveedor, numero, fecha,
    subtotal, IVA, retenciones, total, moneda y observaciones), pero el usuario
-   revisa y guarda manualmente.
-4. Productos agrega acceso "Cargar carta/precios con IA", que abre el chat con
+   revisa y guarda manualmente. Datos incompletos, baja confianza o totales
+   inconsistentes fuerzan revisión humana.
+4. Aprobar, rechazar y contabilizar muestran confirmación explícita. El backend
+   serializa la transición, trata la repetición idéntica como idempotente,
+   bloquea revivir rechazados/duplicados y exige proveedor activo de la misma
+   empresa, documento y total positivo antes de aprobar.
+5. Contabilizar crea una sola CxP y nunca un pago. Los errores del proveedor IA
+   se degradan con respuesta pública segura; los detalles quedan únicamente en
+   el log interno.
+6. Productos agrega acceso "Cargar carta/precios con IA", que abre el chat con
    `agente_configuracion_de_empresa` para adjuntar carta/lista, extraer tabla y
    confirmar antes de registrar productos.
    sin afectar la otra.
