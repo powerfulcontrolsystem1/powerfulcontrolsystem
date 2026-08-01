@@ -17,3 +17,11 @@ La cabecera CSP aún contiene `unsafe-inline` en `style-src` y `script-src`.
 Esta prueba no es DAST autenticado ni cubre XSS, CSRF, SSRF, IDOR, cargas,
 sesiones, rate limits o la matriz A/B completa. P109-009 continúa parcial y el
 riesgo CSP no está cerrado para el GO.
+
+## Repetición sobre `eb853788` (2026-08-01)
+
+Después de la promoción inmutable se repitió la prueba externa: portada 200,
+HSTS `max-age=15552000; includeSubDomains`, CSP presente, `nosniff`, endpoint
+empresarial sin sesión 401 y preflight de origen ajeno 401 sin publicar
+`Access-Control-Allow-Origin` ni credenciales. El resultado conserva el cierre
+básico, pero no sustituye el DAST autenticado ni elimina el riesgo CSP descrito.

@@ -11,6 +11,9 @@
   positivos del auditor sobre controles ocultos o estado acumulado.
 - Los permisos empresariales 403 permanecen cerrados y los archivos antiguos
   de Red Social no se eliminaron por fuera del flujo oficial.
+- El mismo digest atendió 500/500 GET autenticados con concurrencia 10, p95 de
+  117 ms, cero fallos y cero esperas de lock; los cuatro servicios de staging
+  permanecieron saludables y no hubo leases vencidos.
 
 2026-07-31: Plan 109 / paginación estable y QR en impresiones extensas.
 - `web/js/print_documents.js` fija la distribución de columnas Carta/POS y
