@@ -40907,3 +40907,15 @@ acumulativa.
 - Veinticinco logins reales consecutivos redujeron staging de 249 a 25 sesiones
   vigentes, con máximo 20 por identidad y cero excesos. Producción permaneció en
   160 sesiones y no recibió la poda.
+2026-08-01 - Plan 109: cierre del reporte de aseo y medios sociales ausentes
+- El middleware de autoservicio propaga el rol administrativo resuelto desde la
+  cuenta del servidor, manteniendo el alcance empresarial validado y sin confiar
+  en una cabecera de rol del cliente.
+- El feed de red social omite referencias locales cuyo archivo ya no existe,
+  conserva URLs externas y bloquea rutas fuera del directorio web.
+- El candidato `edd2bdac` aprobo release inmutable, pruebas Go, vet y 4/4 vistas
+  autenticadas responsive. El boton Consultar respondio 200, no hubo errores de
+  consola/HTTP ni imagenes rotas y produccion no fue modificada.
+- Se eliminaron 40 imagenes antiguas de candidatos no usadas, conservando el
+  candidato activo y su rollback inmediato; la ocupacion del VPS bajo de 73 %
+  a 58 %.

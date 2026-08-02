@@ -722,6 +722,29 @@ Actualización 2026-08-01, candidato `99348ff4`:
   mantiene en **40,0 % de implementación**, **6,7 % de certificación** y
   **NO-GO**.
 
+Actualización 2026-08-01, candidato `edd2bdac`:
+
+- El barrido global protegido del candidato anterior recorrio 618 vistas,
+  11.102 controles y 97 clics seguros: cero excepciones y HTTP 5xx. Aislo como
+  defectos reales el 403 del reporte de aseo y dos fotos locales antiguas
+  ausentes en la red social.
+- El middleware de autoservicio ahora propaga el rol resuelto en servidor sin
+  confiar en cabeceras del cliente. La red social deja de entregar referencias
+  locales inexistentes sin modificar los datos historicos y rechaza traversal.
+- `go test ./...`, pruebas enfocadas y `go vet` aprobaron. El workflow inmutable
+  `30732433840` completo build, Trivy, SBOM, publicacion y Compose, y los cuatro
+  digests se promovieron solo a staging tras respaldar ambas bases.
+- La repeticion autenticada y visual aprobo 4/4 vistas responsive, 168
+  controles, cero errores HTTP/consola/excepciones e imagenes rotas. El boton
+  `Consultar` respondio 200 y mostro `Reporte actualizado.`; una discrepancia
+  query/cabecera de empresa fue rechazada con 400.
+- Produccion conservo sus imagenes y salud. Se retiraron 40 imagenes GHCR no
+  usadas manteniendo candidato y rollback inmediato; el disco paso de 73 % a
+  58 %. Staging conserva maximo 20 sesiones por identidad.
+- P109-004 sigue parcial por acciones mutantes, roles, segunda identidad no
+  global A/B y firma del alcance. Los porcentajes permanecen en **40,0 % de
+  implementacion**, **6,7 % de certificacion** y **NO-GO**.
+
 La evidencia histórica P108 sirve como línea base y evita repetir pruebas
 independientes del artefacto, pero no aumenta automáticamente estas cifras.
 
