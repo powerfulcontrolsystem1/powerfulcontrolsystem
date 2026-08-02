@@ -40901,3 +40901,9 @@ acumulativa.
   identidades independientes y queda por debajo del umbral global de 50.
 - La corrección permanece solo en código candidato hasta publicar y validar un
   digest nuevo en staging. No se limpiaron ni alteraron sesiones de producción.
+- El workflow `30731146474` publicó el candidato `99348ff4` con Trivy, SBOM y
+  compose aprobados. Después del respaldo de ambas bases se promovieron los
+  cuatro digests únicamente a staging; producción conservó imágenes y datos.
+- Veinticinco logins reales consecutivos redujeron staging de 249 a 25 sesiones
+  vigentes, con máximo 20 por identidad y cero excesos. Producción permaneció en
+  160 sesiones y no recibió la poda.

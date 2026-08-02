@@ -702,6 +702,26 @@ Actualización 2026-08-01, candidato `f9694e10`:
   porcentajes permanecen en **40,0 % de implementación** y **6,7 % de
   certificación**, con veredicto **NO-GO**.
 
+Actualización 2026-08-01, candidato `99348ff4`:
+
+- La recepción externa de alertas detectó acumulación real de sesiones de 24
+  horas: máximo 244 para una identidad en staging y 155 en producción. El nuevo
+  contrato conserva como máximo las 20 sesiones recientes por identidad, poda
+  expiradas dentro de la misma transacción y serializa entre réplicas PostgreSQL.
+- El workflow inmutable `30731146474` aprobó build, Trivy, SBOM, publicación y
+  compose. Tras respaldar las dos bases, los cuatro digests se promovieron solo
+  a staging; producción conservó sus imágenes locales y sus datos.
+- Veinticinco logins reales consecutivos aprobaron: staging pasó de 249 a 25
+  sesiones vigentes, con máximo 20 por identidad y cero identidades fuera del
+  límite. La recepción Gmail confirma un canal externo de alertas funcional.
+- Las cuatro invitaciones de cajero existen en el buzón. La primera abre el
+  formulario válido de staging, pero completar contraseña y contrato requiere
+  intervención personal; el usuario PCS tampoco posee actualmente el permiso
+  efectivo para reenviarlas. P109-006 sigue pendiente.
+- Ninguna fase adicional cumple todos sus criterios, así que el estado se
+  mantiene en **40,0 % de implementación**, **6,7 % de certificación** y
+  **NO-GO**.
+
 La evidencia histórica P108 sirve como línea base y evita repetir pruebas
 independientes del artefacto, pero no aumenta automáticamente estas cifras.
 
