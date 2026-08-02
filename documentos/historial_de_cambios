@@ -40890,3 +40890,14 @@ acumulativa.
   SQL ni se elevó el acceso del usuario de pruebas.
 - P109-003 continúa parcial por escenarios contables/fiscales ausentes, cierre
   y reapertura, recuperación operativa y UAT de contador independiente.
+2026-08-01 - Plan 109: límite transaccional de sesiones por identidad
+- La recepción externa de alertas confirmó 249 sesiones vigentes en staging y
+  160 en producción; una sola identidad acumulaba 244 y 155 respectivamente.
+  El origen es la creación repetida de sesiones de 24 horas sin poda por
+  identidad, especialmente visible durante las cargas autenticadas.
+- `CreateSession` ahora serializa por identidad en PostgreSQL, inserta y poda en
+  una sola transacción, marca expiradas como inactivas y conserva como máximo
+  las 20 sesiones más recientes. El límite admite las cuatro cajas con
+  identidades independientes y queda por debajo del umbral global de 50.
+- La corrección permanece solo en código candidato hasta publicar y validar un
+  digest nuevo en staging. No se limpiaron ni alteraron sesiones de producción.
