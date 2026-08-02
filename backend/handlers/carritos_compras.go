@@ -2339,6 +2339,10 @@ Si necesita ayuda, consulte la sección de Inventario o contacte al administrado
 			}
 			if err := dbpkg.DeleteCarritoCompraItem(dbEmp, empresaID, carritoID, id); err != nil {
 				log.Printf("[carritos_items] delete empresa_id=%d carrito_id=%d id=%d error: %v", empresaID, carritoID, id, err)
+				if errors.Is(err, dbpkg.ErrCarritoYaPagado) {
+					http.Error(w, "La venta cerrada o pagada no permite devolver items", http.StatusConflict)
+					return
+				}
 				http.Error(w, "No se pudo eliminar el item del carrito", http.StatusInternalServerError)
 				return
 			}

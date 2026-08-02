@@ -1985,6 +1985,12 @@ func normalizePermissionAction(candidate, fallback string) string {
 }
 
 func resolveVentasPermissionAction(r *http.Request) string {
+	// Quitar un renglon de una venta todavia abierta es una correccion del
+	// carrito (U), no el borrado de la venta (D). El cierre se protege ademas
+	// dentro de la transaccion para que ningun rol altere ventas pagadas.
+	if r.Method == http.MethodDelete && r.URL.Path == "/api/empresa/carritos_compra/items" {
+		return permActionUpdate
+	}
 	action := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("action")))
 	switch action {
 	case "pagar_estacion", "pagar":
