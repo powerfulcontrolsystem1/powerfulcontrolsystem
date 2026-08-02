@@ -78,3 +78,46 @@ También se interrumpió una ejecución aislada con `TERM` mientras PostgreSQL
 iniciaba. `timeout` devolvió `124`, como corresponde a la interrupción externa,
 y la trampa de salida dejó `0` contenedores, `0` volúmenes, `0` redes y ningún
 directorio temporal. La prueba no reinició ni modificó los servicios activos.
+
+## Aprobacion sobre el candidato edd2bdac - 2026-08-01
+
+El API y migrador exactos de
+`edd2bdac64f760d18289249d6c2f4720aba6f925` repitieron ambos ensayos en
+recursos efimeros del VPS.
+
+Base vacia y guardias:
+
+```text
+empresas_migrations=19
+empresas_tables=337
+super_migrations=10
+super_tables=49
+fallos_previos=3
+rollback_transaccional=5
+compatibilidad_anterior=4
+```
+
+La segunda pasada fue idempotente, el drift de checksum fallo cerrado, el DDL
+y ledger se revirtieron juntos ante el fallo inyectado y la API anterior
+alcanzo health/readiness sobre el esquema nuevo con cero privilegios DDL.
+
+Restore y rollback coordinado:
+
+```text
+bases=2 tablas_criticas=5 filas_empresa_12=28
+endpoints_anonimos_bloqueados=4 dominios_autenticados=5
+replicas=2 archivos_hostiles=5
+archivos_privados=2 referencias_privadas=2 huerfanos=0 heredadas=0
+rollback_checks=7 rollback_dominios=5
+rollback_RTO=24s RTO_total=48s RPO=5466s runtime_privilegios=0
+```
+
+El SLO vigente fija RTO de produccion en 2 horas y RPO diario en 24 horas. Los
+48 segundos y 5.466 segundos observados quedan dentro de ambos objetivos. La
+limpieza final verifico cero contenedores, redes, volumenes y temporales; staging
+y produccion conservaron readiness.
+
+Estado: **P109-011 aprobada** para el candidato `edd2bdac...`. Quedan cubiertos
+base vacia, upgrade, idempotencia, fallos antes/durante/despues, compatibilidad
+hacia atras, checksum, auditoria, rollback de aplicacion/datos y ausencia de
+residuos dentro del RPO/RTO publicado.

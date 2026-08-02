@@ -742,8 +742,17 @@ Actualización 2026-08-01, candidato `edd2bdac`:
   usadas manteniendo candidato y rollback inmediato; el disco paso de 73 % a
   58 %. Staging conserva maximo 20 sesiones por identidad.
 - P109-004 sigue parcial por acciones mutantes, roles, segunda identidad no
-  global A/B y firma del alcance. Los porcentajes permanecen en **40,0 % de
-  implementacion**, **6,7 % de certificacion** y **NO-GO**.
+  global A/B y firma del alcance.
+- P109-011 queda aprobada sobre el mismo candidato: base vacia con 337/49
+  tablas, segunda pasada idempotente, drift fail-closed, fallo transaccional,
+  API anterior compatible, restore de dos bases/cinco dominios/dos replicas y
+  rollback coordinado de datos y archivos. El RTO total fue 48 s, el rollback
+  24 s y el RPO 5.466 s, dentro de los objetivos publicados de 2 h/24 h; la
+  limpieza termino con cero recursos efimeros.
+- El estado pasa a **43,3 % de implementacion** (`2 aprobadas + 9 parciales`),
+  **6,7 % de certificacion del candidato** y **NO-GO**. La certificacion no
+  suma P109-000 para `edd2bdac` porque el usuario pidio no crear PR y esa fase
+  exige integracion revisada/fusionada; el 6,7 % actual corresponde a P109-011.
 
 La evidencia histórica P108 sirve como línea base y evita repetir pruebas
 independientes del artefacto, pero no aumenta automáticamente estas cifras.
@@ -761,7 +770,7 @@ repetirla sin un cambio de código. Debe continuar así:
    proveedor y evals, sin convertir automáticamente el borrador en pago;
 4. ejecutar UAT contable/fiscal de P109-003 con contador autorizado;
 5. completar acciones mutantes de P109-004 por rol y flujo oficial;
-6. continuar cuatro cajas, DIAN, receptor externo, restore y piloto solo cuando
+6. continuar cuatro cajas, DIAN, receptor externo y piloto solo cuando
    sus credenciales, identidades, hardware o ventanas estén disponibles;
 7. registrar evidencia y recalcular las dos cifras sin dar crédito completo a
    una fase parcial.

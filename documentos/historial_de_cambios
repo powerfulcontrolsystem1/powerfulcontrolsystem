@@ -40919,3 +40919,13 @@ acumulativa.
 - Se eliminaron 40 imagenes antiguas de candidatos no usadas, conservando el
   candidato activo y su rollback inmediato; la ocupacion del VPS bajo de 73 %
   a 58 %.
+2026-08-01 - Plan 109: aprobacion de migraciones y rollback P109-011
+- El migrador exacto de `edd2bdac` aprobo base vacia, 337/49 tablas, segunda
+  pasada, drift de checksum, fallo antes/durante, rollback transaccional y
+  compatibilidad con el API anterior sin privilegios DDL.
+- El restore exacto recupero dos bases, cinco dominios y dos replicas; rechazo
+  cinco cargas hostiles, inventario 2/2 archivos privados sin huerfanos y
+  completo siete verificaciones de rollback coordinado.
+- RTO total 48 segundos, rollback 24 segundos y RPO 5.466 segundos, dentro del
+  SLO publicado de 2 horas/24 horas. La limpieza dejo cero recursos y no
+  modifico staging ni produccion.
