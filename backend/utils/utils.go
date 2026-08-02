@@ -1075,6 +1075,7 @@ func AuthMiddleware(dbSuper *sql.DB, next http.Handler) http.Handler {
 			"/licencias/activar_sin_pago":                           {},
 			"/api/empresa/usuarios/login":                           {},
 			"/api/empresa/usuarios/establecer_password":             {},
+			"/api/empresa/usuarios/recuperar_invitacion":            {},
 			"/api/empresa/usuarios/solicitar_recuperacion_password": {},
 			"/api/empresa/usuarios/restablecer_password":            {},
 			"/api/empresa/usuarios/cambiar_password":                {},
