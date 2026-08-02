@@ -25,6 +25,7 @@ func TestApplyCorteCajaPersistedCashSummaryIncludesMixedCash(t *testing.T) {
 		EfectivoVentas:       0,
 		IngresosEfectivo:     0,
 		EgresosEfectivo:      0,
+		OtrosMediosVentas:    100,
 		EfectivoEsperadoCaja: 0,
 	}
 	cierre := dbpkg.EmpresaCierreCaja{
@@ -41,5 +42,8 @@ func TestApplyCorteCajaPersistedCashSummaryIncludesMixedCash(t *testing.T) {
 	}
 	if resumen.EfectivoEsperadoCaja != 50 {
 		t.Fatalf("expected cash drawer 50, got %.2f", resumen.EfectivoEsperadoCaja)
+	}
+	if resumen.OtrosMediosVentas != 50 {
+		t.Fatalf("expected remaining non-cash mixed portion 50, got %.2f", resumen.OtrosMediosVentas)
 	}
 }

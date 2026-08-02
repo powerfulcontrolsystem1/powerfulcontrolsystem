@@ -1416,7 +1416,16 @@ func applyCorteCajaPersistedCashSummary(resumen *corteCajaResumen, cierre *dbpkg
 	}
 	cashSales := cierre.IngresosEfectivo - resumen.IngresosEfectivo
 	if cashSales > resumen.EfectivoVentas {
+		cashDelta := cashSales - resumen.EfectivoVentas
 		resumen.EfectivoVentas = cashSales
+		// Las ventas con metodo "mixto" entran inicialmente completas en Otros.
+		// Reclasificar solo el tramo efectivo evita que las categorias visibles
+		// sumen mas que el total real de la venta.
+		if cashDelta >= resumen.OtrosMediosVentas {
+			resumen.OtrosMediosVentas = 0
+		} else {
+			resumen.OtrosMediosVentas -= cashDelta
+		}
 	}
 	resumen.EfectivoEsperadoCaja = cierre.AperturaMonto + cierre.IngresosEfectivo - cierre.EgresosEfectivo - cierre.RetirosEfectivo
 }
