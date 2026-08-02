@@ -668,9 +668,12 @@ Actualización 2026-08-01, candidato `3ed34774`:
   intacta.
 - P109-002 conserva estado parcial, pero ya aprobó en el digest desplegado
   archivos Base64, XML como texto no confiable, extracción real, revisión
-  editable y control de duplicado sin crear CxP.
+  editable y control de duplicado sin crear CxP. También aprobó un recibo real
+  `SCI-0008`: doble clic con una sola extracción, lectura exacta de subtotal
+  500, IVA 95 y total 595, dos ediciones auditadas y rechazo final sin CxP,
+  pago, evento o asiento. La cuota temporal quedó restaurada a 5.
 - Los porcentajes no aumentan porque ninguna fase parcial cumplió todavía todos
-  sus criterios de aceptación A/B, concurrencia, evals y cierre integral.
+  sus criterios de aceptación A/B y cierre integral de ReportSpec/Centro IA.
 
 La evidencia histórica P108 sirve como línea base y evita repetir pruebas
 independientes del artefacto, pero no aumenta automáticamente estas cifras.

@@ -40848,3 +40848,11 @@ acumulativa.
   editables. Los soportes auxiliares 5 y 6 se rechazaron por el endpoint oficial
   y la cuota se restauró a 5. Health/ready permanecieron en 200 y producción no
   cambió.
+2026-08-01 - Plan 109: recibo real CxP/IA validado en staging
+- Se radicó `SCI-0008` como recibo XML en PCS y el botón visible `Extraer IA`
+  leyó subtotal 500, IVA 95 y total 595 con confianza de 98 %.
+- El doble clic produjo una sola extracción; la revisión humana registró dos
+  ediciones y el soporte se rechazó al finalizar sin crear CxP, pago, evento
+  contable ni asiento.
+- Se restauró la cuota avanzada temporal a 5 y se comprobaron health/readiness
+  de staging y producción en HTTP 200. Producción no fue modificada.

@@ -134,3 +134,28 @@ producción conservaron health/ready HTTP 200 y producción mantuvo su imagen.
 Estado: **P109-002 parcial**. XML, `file_data`, revisión visible, duplicado e
 idempotencia de conversión quedan comprobados en un digest inmutable. Aún
 faltan recibo real, ReportSpec/Centro IA completos, evals y aislamiento A/B.
+
+## Sexta pasada: recibo real, doble clic y limpieza controlada
+
+Sobre el mismo candidato inmutable `3ed34774` se radicó por el endpoint oficial
+el recibo controlado `SCI-0008`, con archivo `text/xml`, tipo `recibo` y
+documento `recibo_caja`. La extracción se ejecutó desde el botón visible
+`Extraer IA` mediante doble clic real. La interfaz leyó proveedor y NIT, número
+y fechas, subtotal 500, IVA 95, total 595, categoría e impacto de inventario,
+con confianza de 98 %.
+
+La auditoría y la base confirmaron una sola extracción, aun con el doble clic.
+El formulario visible mantuvo todos los campos editables y registró dos
+ediciones humanas. El soporte nunca fue aprobado ni contabilizado: se rechazó
+por el endpoint oficial al terminar y quedó con `convertido_id=0`. La
+conciliación de solo lectura confirmó cero CxP, pagos, eventos contables y
+asientos para `SCI-0008` y su documento. La cuota avanzada, ampliada
+temporalmente de 5 a 10, se restauró a 5.
+
+Las verificaciones enfocadas de `db` y `handlers`, la sintaxis JavaScript y la
+auditoría estática de seguridad aprobaron. Staging y producción conservaron
+`/health` y `/ready` en HTTP 200; producción no se modificó.
+
+Estado: **P109-002 parcial**. El recibo real ya no es pendiente. Permanecen el
+aislamiento A/B con una segunda identidad empresarial no global y el cierre
+integral de ReportSpec/Centro IA sobre el candidato final.
