@@ -34,6 +34,7 @@ func TestVehiculosPermanenciaNormalizaTimestampParaPostgreSQL(t *testing.T) {
 		"COALESCE(CAST(fecha_salida AS TEXT), '')",
 		"NULLIF(CAST(fecha_salida AS TEXT), '')",
 		"CAST(CURRENT_TIMESTAMP AS TEXT)",
+		"24.0 * 60.0 AS NUMERIC), 0)",
 		"COALESCE(CAST(fecha_ingreso AS TEXT), CAST(fecha_creacion AS TEXT), '')",
 	} {
 		if !strings.Contains(source, want) {

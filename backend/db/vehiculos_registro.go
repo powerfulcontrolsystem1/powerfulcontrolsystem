@@ -605,7 +605,7 @@ func ListEmpresaVehiculosPermanenciaReporte(dbConn *sql.DB, empresaID int64, inc
 		COALESCE(CAST(fecha_salida AS TEXT), ''),
 		COALESCE(estado_registro, 'en_empresa'),
 		COALESCE(estado, 'activo'),
-		CAST(ROUND((pcs_julian_day(COALESCE(NULLIF(CAST(fecha_salida AS TEXT), ''), CAST(CURRENT_TIMESTAMP AS TEXT))) - pcs_julian_day(COALESCE(NULLIF(CAST(fecha_ingreso AS TEXT), ''), CAST(CURRENT_TIMESTAMP AS TEXT)))) * 24.0 * 60.0, 0) AS INTEGER) AS minutos_estadia
+		CAST(ROUND(CAST((pcs_julian_day(COALESCE(NULLIF(CAST(fecha_salida AS TEXT), ''), CAST(CURRENT_TIMESTAMP AS TEXT))) - pcs_julian_day(COALESCE(NULLIF(CAST(fecha_ingreso AS TEXT), ''), CAST(CURRENT_TIMESTAMP AS TEXT)))) * 24.0 * 60.0 AS NUMERIC), 0) AS INTEGER) AS minutos_estadia
 	FROM empresa_vehiculos_registro
 	WHERE empresa_id = ?`
 	args := []interface{}{empresaID}

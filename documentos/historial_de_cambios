@@ -40871,3 +40871,6 @@ acumulativa.
 - Se añadieron regresiones para ambos contratos. El barrido previo encontró
   44/46 reportes consistentes; los dos fallos corregidos deberán repetirse en
   un candidato inmutable de staging antes de cerrar la evidencia.
+- El primer reintento inmutable confirmó la normalización timestamp y detectó
+  que PostgreSQL exige convertir a `NUMERIC` antes de usar `ROUND(valor, 0)` en
+  el cálculo de permanencia. El cálculo quedó normalizado y cubierto por prueba.
