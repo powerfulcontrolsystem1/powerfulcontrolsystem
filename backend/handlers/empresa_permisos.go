@@ -1340,7 +1340,18 @@ func WithEmpresaSelfServicePermissions(dbEmp, dbSuper *sql.DB, next http.Handler
 			http.Error(w, "forbidden: empresa_id fuera del alcance del usuario autenticado", http.StatusForbidden)
 			return
 		}
-		r = requestWithTenantContext(r, TenantContext{EmpresaID: empresaID, AdminEmail: adminEmail, Module: "autoservicio"})
+		// Los handlers de autoservicio tambien necesitan conocer el rol validado
+		// para decidir que informacion o acciones puede usar cada persona. No se
+		// debe confiar en X-Admin-Role enviado por el cliente: se resuelve desde la
+		// cuenta administrativa y, para usuarios operativos, el handler conserva
+		// la resolucion empresarial acotada por empresa_id.
+		adminRole := resolveAdminPermissionRoleForContext(dbSuper, adminEmail, "")
+		r = requestWithTenantContext(r, TenantContext{
+			EmpresaID:  empresaID,
+			AdminEmail: adminEmail,
+			AdminRole:  adminRole,
+			Module:     "autoservicio",
+		})
 		w.Header().Set("X-Empresa-ID", strconv.FormatInt(empresaID, 10))
 		next.ServeHTTP(w, r)
 	}

@@ -53,6 +53,7 @@ func PublicacionesRedSocialHandler(dbEmpresas *sql.DB) http.HandlerFunc {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
 			}
+			filterUnavailableRedSocialPhotos(resolveWebRootDir(), pubs)
 			actorKey := redSocialActorKeyFromRequest(r)
 			if actorKey != "" {
 				for i := range pubs {
@@ -69,6 +70,40 @@ func PublicacionesRedSocialHandler(dbEmpresas *sql.DB) http.HandlerFunc {
 		}
 		http.Error(w, "Metodo no permitido", http.StatusMethodNotAllowed)
 	}
+}
+
+// filterUnavailableRedSocialPhotos evita entregar referencias locales que ya
+// no existen (por ejemplo, publicaciones antiguas restauradas sin su volumen de
+// uploads). Las URLs externas se conservan; no se modifica el dato persistido.
+func filterUnavailableRedSocialPhotos(webRoot string, pubs []db.PublicacionRedSocial) {
+	for i := range pubs {
+		pubs[i].FotoURL = availableRedSocialPhotoURL(webRoot, pubs[i].FotoURL)
+	}
+}
+
+func availableRedSocialPhotoURL(webRoot, raw string) string {
+	value := strings.TrimSpace(raw)
+	if value == "" || !strings.HasPrefix(value, "/uploads/red_social/") {
+		return value
+	}
+	pathOnly := value
+	if idx := strings.IndexAny(pathOnly, "?#"); idx >= 0 {
+		pathOnly = pathOnly[:idx]
+	}
+	root := filepath.Clean(strings.TrimSpace(webRoot))
+	if root == "." || root == "" {
+		return ""
+	}
+	candidate := filepath.Clean(filepath.Join(root, filepath.FromSlash(strings.TrimPrefix(pathOnly, "/"))))
+	rel, err := filepath.Rel(root, candidate)
+	if err != nil || rel == "." || rel == ".." || strings.HasPrefix(rel, ".."+string(filepath.Separator)) {
+		return ""
+	}
+	info, err := os.Stat(candidate)
+	if err != nil || info.IsDir() {
+		return ""
+	}
+	return value
 }
 
 // PublicRedSocialInteraccionesHandler maneja comentarios y reacciones de publicaciones (estilo Facebook) en modo público.
@@ -295,6 +330,7 @@ func EmpresaPublicacionesRedSocialHandler(dbEmpresas *sql.DB) http.HandlerFunc {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
 			}
+			filterUnavailableRedSocialPhotos(resolveWebRootDir(), pubs)
 			encodeJSONResponse(w, pubs)
 			return
 		}
