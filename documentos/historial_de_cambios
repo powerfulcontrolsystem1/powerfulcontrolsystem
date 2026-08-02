@@ -40856,3 +40856,10 @@ acumulativa.
   contable ni asiento.
 - Se restauró la cuota avanzada temporal a 5 y se comprobaron health/readiness
   de staging y producción en HTTP 200. Producción no fue modificada.
+2026-08-01 - Plan 109: ReportSpec y Centro IA validados en staging
+- ReportSpec generó una vista de CxP de tres filas sobre el contrato semántico,
+  exportó XLS/PDF y rechazó campo y fuente manipulados con HTTP 400.
+- Centro IA cargó siete funciones y ejecutó `Diagnostico ERP`; los conteos de
+  ventas, CxP, pagos, soportes, eventos contables y asientos no cambiaron.
+- Las pruebas enfocadas y la sintaxis JavaScript pasaron. Staging y producción
+  permanecieron saludables; producción no fue modificada.

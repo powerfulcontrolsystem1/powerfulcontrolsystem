@@ -672,8 +672,13 @@ Actualización 2026-08-01, candidato `3ed34774`:
   `SCI-0008`: doble clic con una sola extracción, lectura exacta de subtotal
   500, IVA 95 y total 595, dos ediciones auditadas y rechazo final sin CxP,
   pago, evento o asiento. La cuota temporal quedó restaurada a 5.
+- ReportSpec generó una vista CxP de tres filas, exportó XLS/PDF y rechazó dos
+  intentos de campo/fuente fuera del contrato con HTTP 400. Centro IA cargó sus
+  siete funciones y completó `Diagnostico ERP` sin alterar ventas, CxP, pagos,
+  soportes, eventos o asientos. Ambos resultados pertenecen a `3ed34774`.
 - Los porcentajes no aumentan porque ninguna fase parcial cumplió todavía todos
-  sus criterios de aceptación A/B y cierre integral de ReportSpec/Centro IA.
+  sus criterios de aceptación A/B y por roles con una segunda identidad no
+  global.
 
 La evidencia histórica P108 sirve como línea base y evita repetir pruebas
 independientes del artefacto, pero no aumenta automáticamente estas cifras.

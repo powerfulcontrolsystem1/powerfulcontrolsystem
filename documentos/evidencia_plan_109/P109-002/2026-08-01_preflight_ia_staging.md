@@ -159,3 +159,40 @@ auditoría estática de seguridad aprobaron. Staging y producción conservaron
 Estado: **P109-002 parcial**. El recibo real ya no es pendiente. Permanecen el
 aislamiento A/B con una segunda identidad empresarial no global y el cierre
 integral de ReportSpec/Centro IA sobre el candidato final.
+
+## Séptima pasada: ReportSpec y Centro IA sobre el candidato final
+
+El endpoint autenticado de ReportSpec generó sobre `3ed34774` una vista previa
+válida de cuentas por pagar. El contrato usó exclusivamente
+`contable_cuentas_por_pagar`, ocho columnas autorizadas, límite de 50 y devolvió
+tres filas sin truncamiento. La llamada respondió HTTP 200 en 2,285 segundos y
+consumió una de las dos consultas diarias del cupo específico.
+
+La misma especificación validada se exportó por el endpoint oficial:
+
+| Formato | HTTP | Tipo | Tamaño | Firma |
+| --- | ---: | --- | ---: | --- |
+| XLS | 200 | `application/vnd.ms-excel` | 381 bytes | UTF-8 seguido de encabezado tabular |
+| PDF | 200 | `application/pdf` | 1.518 bytes | `%PDF-1.4` |
+
+Dos negativos no consumieron otra consulta IA: una columna con texto de
+inyección y un `source_dataset` alterado fueron rechazados con HTTP 400. La
+auditoría persistió una sola huella SHA-256 del ReportSpec autorizado, sin SQL
+ni copia de datos empresariales en las observaciones.
+
+Centro IA cargó para PCS siete funciones, ocho agentes del catálogo, diez
+métricas y dos alertas. `Diagnostico ERP` respondió correctamente en 2,756
+segundos, dejó el uso en 3/12 y entregó una recomendación de 1.251 caracteres.
+El conteo antes/después conservó exactamente tres ventas, tres CxP, cinco pagos
+CxP, ocho soportes IA, siete eventos contables y cinco asientos; solo aumentó en
+uno la auditoría propia de Centro IA. El contrato frontend conserva un único
+interruptor de modo agente, apagado por defecto y agente general fijo, sin
+selector visible.
+
+Las pruebas enfocadas de ReportSpec, plantillas, permisos y esquema IA pasaron
+en `handlers` y `db`; la sintaxis del drawer también pasó. Staging y producción
+continuaron saludables y producción conservó sus imágenes locales anteriores.
+
+Estado: **P109-002 parcial**. ReportSpec y Centro IA ya funcionan sobre el
+candidato final sin efectos de negocio. Falta la matriz A/B y por roles con una
+segunda identidad empresarial no global para cumplir toda la aceptación.
