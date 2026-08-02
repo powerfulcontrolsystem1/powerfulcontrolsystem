@@ -40863,3 +40863,11 @@ acumulativa.
   ventas, CxP, pagos, soportes, eventos contables y asientos no cambiaron.
 - Las pruebas enfocadas y la sintaxis JavaScript pasaron. Staging y producción
   permanecieron saludables; producción no fue modificada.
+2026-08-01 - Plan 109: compatibilidad PostgreSQL en reportes operativos
+- `Resumen de módulos` convierte fechas dinámicas a texto antes de usar
+  `COALESCE` y `substr`, evitando mezclar timestamp con cadenas vacías.
+- `Permanencia de vehículos` normaliza ingreso, salida, fecha actual y orden a
+  texto antes de calcular permanencia con la función compatible.
+- Se añadieron regresiones para ambos contratos. El barrido previo encontró
+  44/46 reportes consistentes; los dos fallos corregidos deberán repetirse en
+  un candidato inmutable de staging antes de cerrar la evidencia.

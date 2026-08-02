@@ -2073,7 +2073,7 @@ func (b *reportesBuilder) reportesMaxDateByEmpresa(table string, dateColumn stri
 	if !reportesSafeSQLIdentifier(table) || !reportesSafeSQLIdentifier(dateColumn) {
 		return "", fmt.Errorf("identificador invalido")
 	}
-	query := "SELECT COALESCE(MAX(substr(COALESCE(" + dateColumn + ", ''), 1, 19)), '') FROM " + table + " WHERE empresa_id = ?"
+	query := "SELECT COALESCE(MAX(substr(" + reportesSQLTextExpression(dateColumn) + ", 1, 19)), '') FROM " + table + " WHERE empresa_id = ?"
 	var value string
 	if err := b.db.QueryRow(query, b.empresaID).Scan(&value); err != nil {
 		return "", err
@@ -2092,7 +2092,7 @@ func reportesBuildDateFilterClause(dateColumn string, desde string, hasta string
 		return "", nil
 	}
 
-	dateExpr := "substr(COALESCE(" + dateColumn + ", ''), 1, 10)"
+	dateExpr := "substr(" + reportesSQLTextExpression(dateColumn) + ", 1, 10)"
 	parts := make([]string, 0, 2)
 	args := make([]interface{}, 0, 2)
 	if desde != "" {
@@ -2108,6 +2108,14 @@ func reportesBuildDateFilterClause(dateColumn string, desde string, hasta string
 		return "", nil
 	}
 	return "AND " + strings.Join(parts, " AND "), args
+}
+
+// reportesSQLTextExpression normaliza columnas fecha TEXT, TIMESTAMP o
+// TIMESTAMPTZ antes de aplicar substr/COALESCE. PostgreSQL no permite mezclar
+// directamente un timestamp con la cadena vacía, mientras que el CAST
+// explícito conserva el contrato también en los ensayos ligeros.
+func reportesSQLTextExpression(column string) string {
+	return "COALESCE(CAST(" + column + " AS TEXT), '')"
 }
 
 func reportesBuildStateFilterClause(stateColumn string, states []string) (string, []interface{}) {
