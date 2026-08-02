@@ -680,6 +680,27 @@ Actualización 2026-08-01, candidato `3ed34774`:
   sus criterios de aceptación A/B y por roles con una segunda identidad no
   global.
 
+Actualización 2026-08-01, candidato `f9694e10`:
+
+- P109-003 recorrió autenticadamente los 46 datasets del catálogo y sus cinco
+  formatos. La primera pasada 44/46 reveló dos incompatibilidades PostgreSQL en
+  fechas dinámicas y permanencia de vehículos; ambas quedaron corregidas,
+  cubiertas por regresión y publicadas mediante el workflow `30730395189`.
+- La pasada final obtuvo 46/46 datasets consistentes, 46/46 exportaciones en
+  JSON/CSV/TXT/XLS/PDF, 225 filas, cero alertas y 21/21 reportes contables,
+  fiscales y de cartera. Descargas autenticadas representativas confirmaron
+  MIME y firma de PDF, XLS y CSV.
+- La conciliación PCS confirmó cinco asientos balanceados (102,02=102,02), tres
+  CxP sin invariantes rotas y cinco pagos enlazados 1:1 con sus movimientos. Los
+  cuatro outbox posteriores a habilitar el handler están publicados; se
+  conserva un `dead` histórico anterior, recuperable únicamente por el flujo
+  administrativo auditado.
+- Producción mantuvo sus imágenes locales y salud/readiness 200. P109-003 sigue
+  parcial por casos contables/fiscales no representados, recuperación del
+  evento histórico, cierre/reapertura y UAT firmada por contador. Por ello los
+  porcentajes permanecen en **40,0 % de implementación** y **6,7 % de
+  certificación**, con veredicto **NO-GO**.
+
 La evidencia histórica P108 sirve como línea base y evita repetir pruebas
 independientes del artefacto, pero no aumenta automáticamente estas cifras.
 

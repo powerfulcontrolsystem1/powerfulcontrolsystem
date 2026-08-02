@@ -40874,3 +40874,17 @@ acumulativa.
 - El primer reintento inmutable confirmó la normalización timestamp y detectó
   que PostgreSQL exige convertir a `NUMERIC` antes de usar `ROUND(valor, 0)` en
   el cálculo de permanencia. El cálculo quedó normalizado y cubierto por prueba.
+2026-08-01 - Plan 109: catálogo y conciliación contable PCS en staging
+- El candidato inmutable `f9694e10` se publicó por el workflow `30730395189` y
+  se promovió por digest exclusivamente a staging; producción conservó sus
+  imágenes locales y todos los health/readiness respondieron 200.
+- El barrido autenticado final aprobó 46/46 datasets en JSON, CSV, TXT, XLS y
+  PDF, con 225 filas, cero alertas y 21/21 reportes contables, fiscales y de
+  cartera. Descargas representativas confirmaron las firmas reales de PDF, XLS
+  y CSV.
+- La conciliación de solo lectura obtuvo cinco asientos balanceados por 102,02,
+  tres CxP sin drift monetario y cinco pagos enlazados con CxP y finanzas. Cuatro
+  eventos outbox recientes están publicados; queda documentado un `dead`
+  histórico anterior a habilitar el handler para recuperación auditada.
+- P109-003 continúa parcial por escenarios contables/fiscales ausentes, cierre
+  y reapertura, recuperación operativa y UAT de contador independiente.
