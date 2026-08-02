@@ -40929,3 +40929,23 @@ acumulativa.
 - RTO total 48 segundos, rollback 24 segundos y RPO 5.466 segundos, dentro del
   SLO publicado de 2 horas/24 horas. La limpieza dejo cero recursos y no
   modifico staging ni produccion.
+2026-08-01 - Plan 109: preflight profesional completo para P109-012
+- El arbol limpio aprobo las 20 compuertas de parseo, JavaScript, seguridad,
+  permisos, OpenAPI, observabilidad, migraciones, QA critico/roles/pagos,
+  soporte, anonimizacion, SLO, hardening, UX, documentacion, Go y diff-check.
+- Compose fue validado por el workflow Linux inmutable `30732433840`; Docker
+  local no estaba disponible. El pendiente de P109-012 queda limitado a
+  capacitacion, ensayo y firma humana del piloto.
+2026-08-02 - Plan 109: cuatro cajas reales, devolucion y revocacion de sesiones
+- Cuatro cajeros completaron invitacion, login y operacion independiente en PCS
+  staging. El candidato final aprobo cuatro cajas, cinco ventas, stock compartido,
+  cuatro medios, pago mixto, descuento, devolucion, idempotencia y cierres sin
+  diferencia ni incidencia.
+- `DELETE` de un item abierto ahora exige permiso de actualizacion; ventas
+  cerradas rechazan la mutacion con HTTP 409 desde la transaccion.
+- Desactivar un usuario revoca sus sesiones existentes antes de persistir el
+  estado. Las cuatro sesiones QA pasaron de acceso HTTP 200 a HTTP 401 y la
+  limpieza termino sin cuentas QA activas, sesiones activas ni cajas abiertas.
+- Carga con concurrencia 10: 100/100, p95 289 ms, cero errores y cero locks. El
+  workflow inmutable `30735137007` y la suite Go completa aprobaron. Solo staging
+  recibio los digests; produccion no fue desplegada.

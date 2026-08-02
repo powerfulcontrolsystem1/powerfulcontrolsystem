@@ -753,6 +753,36 @@ Actualización 2026-08-01, candidato `edd2bdac`:
   **6,7 % de certificacion del candidato** y **NO-GO**. La certificacion no
   suma P109-000 para `edd2bdac` porque el usuario pidio no crear PR y esa fase
   exige integracion revisada/fusionada; el 6,7 % actual corresponde a P109-011.
+- P109-012 agoto el cierre automatizable: el preflight profesional completo
+  aprobo 20/20 compuertas, incluido Go, seguridad, permisos, roles, pagos,
+  migraciones, UX, documentacion, observabilidad, hardening y `diff-check`.
+  Permanece parcial solo por ensayo/capacitacion/firma de otra persona y por
+  definir contactos y horario del piloto; por ello no altera el porcentaje.
+
+Actualizacion 2026-08-02, candidato `7c47d4df`:
+
+- P109-006 queda aprobada. Cuatro identidades completaron invitacion, contrasena,
+  contrato y login normal; el candidato final ejecuto cuatro cajas, cinco ventas,
+  efectivo, debito, Nequi, pago mixto, stock compartido, doble pago, devolucion,
+  descuento y cierres conciliados. Las cuatro cajas terminaron con diferencia e
+  incidencia cero y PostgreSQL con cero esperas por lock.
+- La vista historica mostro el cierre mixto con 150 en efectivo, 50 en otros y
+  150 esperados, sin error visible ni desbordamiento de pagina.
+- La carga operativa de concurrencia 10 termino 100/100, p50 139 ms, p95 289 ms,
+  p99 326 ms y maximo 333 ms. Una rafaga fuera del perfil, de 100 solicitudes a
+  la vez, termino sin errores pero elevo p95 a 3.667 ms; el servicio recupero el
+  SLO sin reinicio y permanecio saludable.
+- Se corrigieron tres defectos descubiertos por el flujo: permiso de devolucion
+  del cajero, mutacion de items cerrados y sesiones residuales tras desactivar.
+  La prueba final obtuvo HTTP 200 al devolver antes del pago, HTTP 409 despues
+  del pago y HTTP 401 en las cuatro sesiones tras la desactivacion. Cero cuentas
+  QA activas, sesiones QA activas o cajas QA abiertas quedaron al terminar.
+- El workflow `30735137007` aprobo el SHA exacto y los cuatro digests se
+  promovieron solo a staging. Produccion conservo su API local anterior y salud.
+- El estado pasa a **50,0 % de implementacion** (`3 aprobadas + 9 parciales`, de
+  15 fases). La **certificacion del candidato exacto es 6,7 %**, correspondiente
+  a P109-006; las aprobaciones historicas de otros digests no se suman al exacto.
+  El veredicto general permanece **NO-GO** por las demas compuertas P0/P1.
 
 La evidencia histórica P108 sirve como línea base y evita repetir pruebas
 independientes del artefacto, pero no aumenta automáticamente estas cifras.
