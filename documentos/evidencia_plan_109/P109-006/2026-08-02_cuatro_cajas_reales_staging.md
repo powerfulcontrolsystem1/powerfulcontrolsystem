@@ -1,9 +1,13 @@
 # P109-006 - Cuatro cajas reales y carga transaccional
 
-Fecha: 2026-08-02  
-Empresa: Powerful Control System (`empresa_id=12`)  
-Entorno modificado: staging aislado  
-Candidato final: `7c47d4df6ae9bdc1808c1413bc11edd3ef5e3e2e`  
+Fecha: 2026-08-02
+
+Empresa: Powerful Control System (`empresa_id=12`)
+
+Entorno modificado: staging aislado
+
+Candidato final: `7c47d4df6ae9bdc1808c1413bc11edd3ef5e3e2e`
+
 Workflow inmutable: `30735137007`
 
 No se documentan correos completos, contrasenas, cookies, tokens de invitacion
@@ -94,4 +98,3 @@ frontend 3,61 MiB; los servicios siguieron saludables.
 P109-006: **aprobada** para `7c47d4df...`. La aprobacion no autoriza produccion:
 DIAN, aislamiento A/B, impresoras/dispositivos fisicos, UAT humano y piloto
 siguen siendo compuertas independientes del Plan 109.
-
