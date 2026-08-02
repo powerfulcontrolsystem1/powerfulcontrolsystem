@@ -40885,6 +40885,8 @@ acumulativa.
 - La conciliación de solo lectura obtuvo cinco asientos balanceados por 102,02,
   tres CxP sin drift monetario y cinco pagos enlazados con CxP y finanzas. Cuatro
   eventos outbox recientes están publicados; queda documentado un `dead`
-  histórico anterior a habilitar el handler para recuperación auditada.
+  histórico anterior a habilitar el handler. La vista previa oficial lo ubicó,
+  pero la ejecución fue denegada con 403 por permiso efectivo; no se alteró por
+  SQL ni se elevó el acceso del usuario de pruebas.
 - P109-003 continúa parcial por escenarios contables/fiscales ausentes, cierre
   y reapertura, recuperación operativa y UAT de contador independiente.

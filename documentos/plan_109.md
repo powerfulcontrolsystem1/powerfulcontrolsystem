@@ -693,8 +693,9 @@ Actualización 2026-08-01, candidato `f9694e10`:
 - La conciliación PCS confirmó cinco asientos balanceados (102,02=102,02), tres
   CxP sin invariantes rotas y cinco pagos enlazados 1:1 con sus movimientos. Los
   cuatro outbox posteriores a habilitar el handler están publicados; se
-  conserva un `dead` histórico anterior, recuperable únicamente por el flujo
-  administrativo auditado.
+  conserva un `dead` histórico anterior. La vista previa oficial lo encontró,
+  pero el usuario PCS recibió 403 al intentar la recuperación auditada; no se
+  forzó por SQL ni se amplió su permiso.
 - Producción mantuvo sus imágenes locales y salud/readiness 200. P109-003 sigue
   parcial por casos contables/fiscales no representados, recuperación del
   evento histórico, cierre/reapertura y UAT firmada por contador. Por ello los

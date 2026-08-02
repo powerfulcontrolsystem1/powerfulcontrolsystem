@@ -71,7 +71,10 @@ La verificación SQL de soporte, sin modificar asientos ni saldos, obtuvo:
   desde el 30 de julio están publicados. Permanece un `dead` histórico del 26
   de julio, generado antes de habilitar el handler del topic; su pago,
   movimiento y asiento sí existen. Debe recuperarse por el flujo administrativo
-  auditado, no mediante edición SQL.
+  auditado, no mediante edición SQL. La vista previa oficial autenticada
+  identificó exactamente ese evento, pero la ejecución respondió HTTP 403 por
+  falta del permiso efectivo de recuperación en el usuario PCS; no hubo
+  mutación ni intento de eludir el control.
 
 Staging y producción conservaron `health` y `ready` en HTTP 200. Producción
 continuó con sus imágenes locales y no recibió este candidato.
