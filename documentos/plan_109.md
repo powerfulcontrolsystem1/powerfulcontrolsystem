@@ -860,6 +860,11 @@ Actualizacion 2026-08-08, candidato CSP `a408bb62` en staging:
   recurso servido contiene la guardia. P109-009 continua parcial y el porcentaje
   no cambia hasta atribuirlo y completar DAST hostil, A/B no global y la
   migracion de 191 scripts/173 estilos embebidos.
+- La implementacion consolidada se mantiene en **50,0 %** (`3 aprobadas + 9
+  parciales`, de 15). La certificacion del candidato exacto `a408bb62` es
+  **0,0 %**: ninguna fase completa fue reejecutada sobre esos digests; el
+  **6,7 %** historico corresponde al candidato `7c47d4df` y no se transfiere.
+  El veredicto sigue siendo **NO-GO**.
 
 La evidencia histórica P108 sirve como línea base y evita repetir pruebas
 independientes del artefacto, pero no aumenta automáticamente estas cifras.
