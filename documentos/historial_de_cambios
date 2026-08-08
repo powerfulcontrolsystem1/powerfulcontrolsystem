@@ -40615,6 +40615,14 @@ acumulativa.
 - P108-005 continúa parcial hasta validar rechazo entre dos empresas y la
   concurrencia HTTP real de abonos idempotentes.
 
+2026-07-30: Plan 108 / evidencia visual autenticada del carrito por digest.
+- Se promovió solo a staging el candidato inmutable `d262874e` y se verificó
+  con una sesión autorizada de la empresa de prueba. Las acciones de las filas
+  del carrito quedaron separadas, sin solapamiento ni desbordamiento horizontal
+  en escritorio y 390 x 844; no se ejecutaron acciones que alteren negocio.
+- P108-012 conserva estado parcial: esta corrección no reemplaza la validación
+  visual, de permisos e impresión de la matriz completa del sistema.
+
 2026-07-31: Plan 109 / guardia de no mutación del auditor visual.
 - `tools/qa_e2e_buttons.cjs` deja de clasificar los textos genéricos `Cerrar`
   y `Cancelar` como clics seguros. En pantallas operativas esos controles pueden
