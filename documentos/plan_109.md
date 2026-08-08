@@ -619,7 +619,10 @@ Estado actualizado al 2026-08-01:
 - P109-007 continúa bloqueada: el centro DIAN de PCS muestra ambiente, estado,
   TestSetId y rango como no configurados, avance visible de 10 % y cero
   TrackId/ZipKey. Sin esos datos no es válido emitir, anular ni afirmar un
-  `GetStatusZip StatusCode=00` oficial.
+  `GetStatusZip StatusCode=00` oficial. La repeticion autenticada del
+  diagnostico en staging sobre `44610128` confirma HTTP 200, operaciones SOAP
+  objetivo visibles y preparacion `sin_configuracion`; tampoco habilita emitir
+  la menta de 100 COP que el catalogo identifica, pues su stock visible es 0.
 - P109-009 redujo el escaneo rápido del host de dos hallazgos altos a cero altos
   mediante SSH por llave, UFW activo, VNC restringido y retiro de Avahi/CUPS.
   Quedan 30 paquetes y reinicio para una ventana de mantenimiento, además del
@@ -971,9 +974,13 @@ Actualizacion 2026-08-08, cuota privada de soportes CxP/IA:
 - Una restauracion efimera del candidato, con cuota de 1 MiB solo en esa copia,
   rechazo por HTTP 507 un soporte de 2 MiB y dejo cero filas de prueba; al
   cierre se verifico la limpieza de sus recursos Docker y temporales.
-- P109-008 sigue parcial: falta carrera entre replicas, retencion,
-  borrado/recuperacion, antivirus y A/B no global. El porcentaje y **NO-GO**
-  no cambian.
+- El candidato posterior `44610128` serializa esa seccion critica con candado
+  asesor PostgreSQL por empresa. Dos replicas restauradas enviaron en paralelo
+  soportes de 700 KiB con cuota aislada de 1 MiB: una inserto una fila y la otra
+  fue rechazada con HTTP 507, sin sobregiro ni segunda fila. Sus recursos se
+  limpiaron y staging se mantuvo saludable con los digests exactos.
+- P109-008 sigue parcial por retencion, borrado/recuperacion, antivirus y A/B
+  no global. El porcentaje y **NO-GO** no cambian.
 
 La evidencia histórica P108 sirve como línea base y evita repetir pruebas
 independientes del artefacto, pero no aumenta automáticamente estas cifras.

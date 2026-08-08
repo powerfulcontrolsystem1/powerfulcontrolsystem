@@ -4672,5 +4672,14 @@ Actualización 2026-07-30 (Recuperación operacional de outbox CxP):
   archivo o crear el soporte. El control conserva el wrapper de permisos y el
   aislamiento por `empresa_id`.
 - La prueba restaurada del candidato evidencia el rechazo y cero persistencia;
-  siguen pendientes la carrera entre réplicas y los controles operativos de
-  retención, recuperación, antivirus y A/B no global.
+  dos réplicas en paralelo validan que no hay sobregiro. Siguen pendientes los
+  controles operativos de retención, recuperación, antivirus y A/B no global.
+
+2026-08-08 - Facturación electrónica Colombia / compuerta DIAN
+
+- El Centro de habilitación muestra por empresa el ambiente, la preparación,
+  TestSetId, rango e historial de acuses antes de exponer emisión o anulación.
+- En PCS staging el diagnóstico devuelve operaciones objetivo sin configuración
+  fiscal empresarial; el flujo debe permanecer bloqueado hasta contar con firma
+  accesible, rango/resolución y TestSetId o producción habilitada, sin reutilizar
+  secretos de otra empresa o ambiente.

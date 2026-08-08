@@ -12706,4 +12706,7 @@ panel de seguridad para que el navegador reciba la correccion CSRF de staging.
 - `documentos/evidencia_plan_109/P109-008/2026-08-08_cuota_soportes_ia_local.md`:
   registra implementación, candidate build, staging por digest y prueba HTTP
   507 en restore efímero de la cuota de adjuntos privados CxP/IA, incluida la
-  verificación de no persistencia y limpieza de recursos.
+  concurrencia de dos réplicas, no persistencia y limpieza de recursos.
+- `documentos/evidencia_plan_109/P109-007/2026-08-08_diagnostico_autenticado_dian_staging.md`:
+  conserva el diagnostico oficial, revisión visual y prerrequisitos ausentes
+  que bloquean una emisión o anulación fiscal real de PCS en staging.

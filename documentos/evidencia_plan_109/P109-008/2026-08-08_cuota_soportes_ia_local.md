@@ -53,6 +53,29 @@ tablas, rutas, permisos, dependencias ni archivos existentes.
 ## Limite
 
 La subcompuerta de rechazo HTTP de cuota queda demostrada en el candidato
-inmutable restaurado. Falta probar carrera simultanea entre replicas y completar
-retencion, borrado/recuperacion, antivirus y A/B no global antes de considerar
-cerrada P109-008 o emitir un GO.
+inmutable restaurado. La siguiente seccion registra la prueba de carrera que
+cerro ese hueco; aun faltan retencion, borrado/recuperacion, antivirus y A/B no
+global antes de considerar cerrada P109-008 o emitir un GO.
+
+## Carrera entre replicas del candidato corregido
+
+- El candidato posterior `44610128` incorpora un candado asesor de PostgreSQL
+  por empresa alrededor de la verificacion de cuota, la escritura privada y el
+  registro. El candado es de sesion y se libera en `defer`, por lo que dos APIs
+  comparten la misma exclusion mutua sin depender de memoria local.
+- El workflow inmutable `31245956681` aprobo build, escaneo, SBOM y Compose.
+  Tras un respaldo, sus digests exactos se promovieron exclusivamente a staging;
+  `/health` y `/ready` siguieron en HTTP 200.
+- Sobre una nueva restauracion efimera se arrancaron dos replicas API exactas
+  con el mismo PostgreSQL y volumen privado. Con cuota de 1 MiB solo en la
+  copia, dos sesiones oficiales enviaron en paralelo soportes de 700 KiB.
+  Una respuesta fue HTTP 200 con una fila y la otra HTTP 507 con cero filas.
+- La segunda replica, ambas sesiones, PostgreSQL, red, volumen temporal, script
+  y log fueron eliminados al terminar. Ninguna cuota de staging, empresa PCS
+  activa ni produccion fue modificada.
+
+## Pendientes que impiden cierre
+
+P109-008 conserva estado parcial por retencion, borrado/recuperacion,
+antivirus y una prueba A/B no global. La cuota ya cuenta con evidencia HTTP y
+de concurrencia entre replicas, pero eso no equivale a certificacion productiva.

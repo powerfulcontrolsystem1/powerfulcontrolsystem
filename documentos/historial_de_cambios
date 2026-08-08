@@ -41093,3 +41093,21 @@ acumulativa.
 - Se comprobó la limpieza de contenedor, red, workdir, script y log del ensayo.
 - La evidencia deja pendientes carrera multi-réplica, retención, recuperación,
   antivirus y A/B no global; no autoriza producción.
+
+2026-08-08 - Plan 109: serialización multi-réplica de cuota CxP/IA
+- La radicación con adjunto adquiere un candado asesor PostgreSQL por empresa
+  antes de recalcular cuota, guardar archivo privado y crear el soporte. Su
+  liberación diferida evita dejar un candado de sesión tras error o retorno.
+- Dos réplicas del candidato `44610128` contra un restore aislado verificaron
+  una aceptación y un HTTP 507 para dos cargas paralelas de 700 KiB sobre 1 MiB,
+  con una sola fila creada. Staging y producción no recibieron la cuota de test.
+- Permanecen pendientes retención, borrado/recuperación, antivirus y A/B no
+  global; el resultado no autoriza producción.
+
+2026-08-08 - Plan 109: diagnóstico DIAN autenticado de PCS en staging
+- El Centro de habilitación de `empresa_id=12` respondió el diagnóstico oficial
+  y expuso operaciones objetivo, pero la configuración, firma, TestSetId,
+  rango, TrackId/ZipKey y preparación DIAN permanecen ausentes.
+- La validación visual confirmó tabla ordenada de facturas/ventas y catálogo de
+  menta; no se emitió, anuló ni envió documento fiscal porque el entorno no
+  cumple los prerrequisitos por empresa. Producción no fue consultada ni tocada.
