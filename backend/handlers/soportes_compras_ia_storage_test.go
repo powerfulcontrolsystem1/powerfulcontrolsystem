@@ -4,6 +4,7 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -62,5 +63,22 @@ func TestEmpresaSoportesComprasIAStorageBytesAreTenantScoped(t *testing.T) {
 	}
 	if got := empresaSoportesComprasIAStorageBytes(12); got != 5 {
 		t.Fatalf("company 12 private usage = %d, want 5", got)
+	}
+}
+
+func TestSoporteComprasIAStorageLockIsPostgresBackedAndTenantScoped(t *testing.T) {
+	raw, err := os.ReadFile("soportes_compras_ia.go")
+	if err != nil {
+		t.Fatal(err)
+	}
+	source := string(raw)
+	for _, want := range []string{
+		"func acquireSoporteComprasIAStorageLock", "pg_try_advisory_lock",
+		"pg_advisory_unlock", "soporteComprasIAStorageNamespace, empresaID",
+		"errSoporteComprasIAStorageBusy", "defer release()",
+	} {
+		if !strings.Contains(source, want) {
+			t.Fatalf("storage concurrency contract missing %q", want)
+		}
 	}
 }
