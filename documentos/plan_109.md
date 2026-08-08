@@ -888,6 +888,18 @@ Actualizacion 2026-08-08, candidato `c8094f5b` visualmente limpio:
   **50,0 %**, la certificacion exacta no recibe una fase completa y el estado
   sigue **NO-GO**.
 
+Actualizacion 2026-08-08, carga segura y preflight de `c8094f5b`:
+
+- La carga autenticada de solo lectura completo 30/30 recargas con concurrencia
+  5, p50 840 ms y p95 1.245 ms, sin mutaciones de negocio. El navegador interno
+  emitio eventos de observador sin traza durante recargas repetidas, por lo que
+  no se atribuyen a PCS ni se considera una consola limpia bajo carga.
+- El preflight profesional `-Full` aprobo 22/22 compuertas del arbol actual,
+  incluidas sintaxis JavaScript, seguridad, permisos, Compose y Go completo.
+- P109-010 y P109-012 siguen parciales: faltan carga HTTP autenticada concluyente,
+  alertas/receptor externo, capacitación, responsables y firma humana. No cambia
+  el porcentaje ni el veredicto **NO-GO**.
+
 La evidencia histórica P108 sirve como línea base y evita repetir pruebas
 independientes del artefacto, pero no aumenta automáticamente estas cifras.
 

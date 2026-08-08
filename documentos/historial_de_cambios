@@ -41021,3 +41021,11 @@ acumulativa.
 - Login PCS y panel Super Administrador aprobaron con 0 errores/advertencias de
   consola; las cabeceras CSP conservaron compatibilidad aplicada y Report-Only
   estricta. Se cerraron las sesiones de prueba y produccion no fue modificada.
+
+2026-08-08 - Plan 109: carga segura y preflight del candidato c8094f5b
+- 30 recargas autenticadas de solo lectura con concurrencia 5 llegaron al panel
+  esperado, p95 1.245 ms y cero fallos funcionales. Se registraron eventos de
+  observador sin traza durante recargas repetidas, por lo que no se declaran
+  como consola limpia bajo carga ni se ocultan como aprobados.
+- El preflight profesional completo aprobo 22 compuertas. P109-010 y P109-012
+  mantienen sus pendientes operativos/humanos; produccion no fue modificada.
