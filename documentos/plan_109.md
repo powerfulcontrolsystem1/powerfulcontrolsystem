@@ -958,6 +958,18 @@ Actualizacion 2026-08-08, restore con replicas y rollback de `c8094f5b`:
 - P109-008 sigue parcial por cuota, retencion, borrado/recuperacion, antivirus
   y A/B no global. No cambia el **53,3 %** ni el veredicto **NO-GO**.
 
+Actualizacion 2026-08-08, cuota privada de soportes CxP/IA:
+
+- El candidato local incorpora la cuota empresarial a los adjuntos privados de
+  `soportes_compras_ia`: suma almacenamiento publico y privado por `empresa_id`,
+  aplica limite/maximo/bloqueo corporativos y responde HTTP 507 saneado ante
+  exceso. La ruta, permisos y persistencia existente no cambian.
+- Pruebas unitarias cubren limite, switches, maximo por archivo y aislamiento
+  de bytes; `go test ./...`, `go vet ./...` y `diff --check` aprobaron.
+- P109-008 sigue parcial: falta prueba HTTP y carrera entre replicas sobre un
+  nuevo candidato, junto con retencion, borrado/recuperacion, antivirus y A/B
+  no global. El porcentaje y **NO-GO** no cambian.
+
 La evidencia histórica P108 sirve como línea base y evita repetir pruebas
 independientes del artefacto, pero no aumenta automáticamente estas cifras.
 

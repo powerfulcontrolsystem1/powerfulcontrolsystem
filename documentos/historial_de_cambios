@@ -1,3 +1,12 @@
+2026-08-08: Plan 109 / cuota empresarial para soportes CxP/IA.
+- La carga privada de `soportes_compras_ia` suma ahora archivos publicos y
+  privados del mismo `empresa_id`, aplica la configuracion corporativa de
+  cuota/maximo/bloqueo y devuelve HTTP 507 con mensaje saneado al excederla.
+- Se cubrieron limite, switches, maximo de archivo y aislamiento de bytes; Go
+  completo, vet y diff-check aprobaron. Sin tablas, permisos, dependencias,
+  datos existentes ni despliegue. P109-008 sigue parcial hasta staging,
+  concurrencia de replicas, retencion, recuperacion, antivirus y A/B no global.
+
 2026-08-08: Plan 109 / restore exacto con replicas y rollback coordinado.
 - El candidato `c8094f5b` aprobo en Docker efimero restore de bases/volumen,
   dos replicas, cinco ataques de archivos, inventario privado y rollback

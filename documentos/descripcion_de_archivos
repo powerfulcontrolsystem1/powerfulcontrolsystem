@@ -1,4 +1,12 @@
 2026-08-08
+- `backend/handlers/soportes_compras_ia.go`: aplica cuota empresarial y maximo
+  configurado antes de persistir adjuntos privados CxP/IA.
+- `backend/handlers/empresa_buzon.go`: incluye los soportes privados por empresa
+  en el uso total de almacenamiento corporativo.
+- `backend/handlers/soportes_compras_ia_storage_test.go`: cubre cuota, switches,
+  maximo y aislamiento de bytes privados de soportes.
+- `documentos/evidencia_plan_109/P109-008/2026-08-08_cuota_soportes_ia_local.md`:
+  evidencia local y limites de la subcompuerta de cuota CxP/IA.
 - `documentos/evidencia_plan_109/P109-008/2026-08-08_restore_replicas_rollback_c8094f5b.md`:
   restore exacto aislado con replicas, controles hostiles y rollback coordinado
   de datos/archivos, con limites pendientes explicitados.

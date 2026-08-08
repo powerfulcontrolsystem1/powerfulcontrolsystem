@@ -98,8 +98,15 @@ func handleSoportesComprasIAMutate(w http.ResponseWriter, r *http.Request, dbEmp
 	usuario := strings.TrimSpace(adminEmailFromRequest(r))
 	switch action {
 	case "radicar":
-		row, err := radicarSoporteComprasIA(r, dbEmp, empresaID, usuario)
+		row, err := radicarSoporteComprasIA(r, dbEmp, dbSuper, empresaID, usuario)
 		if err != nil {
+			if errors.Is(err, errSoporteComprasIAStorageQuota) {
+				writeJSON(w, http.StatusInsufficientStorage, map[string]interface{}{
+					"ok":    false,
+					"error": "La empresa alcanzo el limite de almacenamiento configurado",
+				})
+				return
+			}
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
@@ -237,7 +244,7 @@ func decodeSoporteComprasIARevisionPayload(r *http.Request) (soporteComprasIARev
 	return p, nil
 }
 
-func radicarSoporteComprasIA(r *http.Request, dbEmp *sql.DB, empresaID int64, usuario string) (dbpkg.EmpresaSoporteComprasIA, error) {
+func radicarSoporteComprasIA(r *http.Request, dbEmp, dbSuper *sql.DB, empresaID int64, usuario string) (dbpkg.EmpresaSoporteComprasIA, error) {
 	contentType := strings.ToLower(r.Header.Get("Content-Type"))
 	var row dbpkg.EmpresaSoporteComprasIA
 	row.EmpresaID = empresaID
@@ -265,6 +272,9 @@ func radicarSoporteComprasIA(r *http.Request, dbEmp *sql.DB, empresaID int64, us
 		}
 		row = soporteComprasIAFromForm(r, row)
 		if att != nil {
+			if err := validateSoporteComprasIAStorageUpload(dbEmp, dbSuper, empresaID, int64(len(att.Bytes))); err != nil {
+				return row, err
+			}
 			url, name, mimeType, hash, origen, err := saveSoporteComprasIAAttachment(att, empresaID)
 			if err != nil {
 				return row, err
@@ -288,6 +298,31 @@ func radicarSoporteComprasIA(r *http.Request, dbEmp *sql.DB, empresaID int64, us
 		row.EstadoSoporte = "radicado"
 	}
 	return dbpkg.CreateEmpresaSoporteComprasIA(dbEmp, row)
+}
+
+func validateSoporteComprasIAStorageUpload(dbEmp, dbSuper *sql.DB, empresaID, attachmentBytes int64) error {
+	return validateSoporteComprasIAStorageUploadWithUsage(
+		getEmpresaStorageConfig(dbSuper),
+		buildEmpresaStorageUsage(dbEmp, dbSuper, empresaID),
+		attachmentBytes,
+	)
+}
+
+func validateSoporteComprasIAStorageUploadWithUsage(cfg empresaStorageConfig, usage empresaStorageUsage, attachmentBytes int64) error {
+	if attachmentBytes <= 0 {
+		return nil
+	}
+	maxBytes := int64(maxSoporteComprasIAUploadBytes)
+	if configuredMax := cfg.MaxUploadMB * 1024 * 1024; configuredMax > 0 && configuredMax < maxBytes {
+		maxBytes = configuredMax
+	}
+	if attachmentBytes > maxBytes {
+		return fmt.Errorf("el soporte supera el maximo de almacenamiento permitido")
+	}
+	if cfg.QuotaEnabled && cfg.BlockUploads && usage.LimitBytes > 0 && usage.UsedBytes+attachmentBytes > usage.LimitBytes {
+		return errSoporteComprasIAStorageQuota
+	}
+	return nil
 }
 
 func soporteComprasIAFromForm(r *http.Request, row dbpkg.EmpresaSoporteComprasIA) dbpkg.EmpresaSoporteComprasIA {
@@ -405,6 +440,7 @@ var (
 	errSoporteComprasIASolicitudInvalida    = errors.New("solicitud de extraccion IA invalida")
 	errSoporteComprasIAEstadoNoExtraible    = errors.New("estado de soporte no extraible")
 	errSoporteComprasIASinAdjunto           = errors.New("soporte sin adjunto privado disponible")
+	errSoporteComprasIAStorageQuota         = errors.New("limite de almacenamiento empresarial alcanzado")
 )
 
 func extraerSoporteComprasIAGPT55(r *http.Request, dbEmp, dbSuper *sql.DB, empresaID int64, usuario string) (dbpkg.EmpresaSoporteComprasIA, error) {
