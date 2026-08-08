@@ -872,8 +872,9 @@
         var tipo = normalize(item && item.tipo_documento).toLowerCase();
         var estadoDoc = normalize(item && item.estado_documento).toLowerCase();
         var estado = normalize(item && item.estado).toLowerCase();
-        if (tipo !== "factura_electronica") {
-          return { enabled: false, visible: false, reason: "Solo aplica a factura electronica." };
+        var notaPendiente = tipo === "nota_credito" && !normalize(item && item.codigo_validacion);
+        if (tipo !== "factura_electronica" && tipo !== "nota_credito") {
+          return { enabled: false, visible: false, reason: "Solo aplica a facturas o notas crédito electrónicas." };
         }
         if (!state.canRetryDIAN) {
           return { enabled: false, visible: false, reason: "Tu rol no tiene permiso para reenviar facturas a DIAN." };
@@ -884,6 +885,9 @@
         if (estadoDoc === "pendiente_emision" || estadoDoc === "fallida" || estadoDoc === "rechazada") {
           return { enabled: true, visible: true, reason: "Reintentar el envio fiscal de este documento pendiente." };
         }
+		if (notaPendiente && estadoDoc === "emitida") {
+			return { enabled: true, visible: true, reason: "Reintentar esta nota crédito sin aceptación DIAN." };
+		}
         return { enabled: false, visible: false, reason: "El documento no esta pendiente de envio fiscal." };
       }
 
@@ -1449,7 +1453,7 @@
           return;
         }
         var code = normalize(item.documento_codigo) || normalize(item.numero_legal);
-        if (!window.confirm("Se reenviara la factura " + code + " a DIAN. Solo continua si corresponde al mismo documento pendiente y no tiene acuse aceptado. ¿Deseas continuar?")) {
+        if (!window.confirm("Se reenviará el documento " + code + " a DIAN. Solo continúa si corresponde al mismo documento pendiente y no tiene acuse aceptado. ¿Deseas continuar?")) {
           return;
         }
         var payload = {

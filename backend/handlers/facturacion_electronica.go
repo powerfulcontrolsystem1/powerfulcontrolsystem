@@ -660,6 +660,17 @@ func EmpresaFacturacionElectronicaHandler(dbEmp, dbSuper *sql.DB) http.HandlerFu
 					http.Error(w, "No se pudo reintentar envio DIAN", http.StatusInternalServerError)
 					return
 				}
+				var facturaAnulada *dbpkg.EmpresaDocumentoFacturacion
+				if facturacionIntegracionAceptada(resultado) && strings.EqualFold(strings.TrimSpace(doc.TipoDocumento), "nota_credito") {
+					facturaAnulada, err = finalizarFacturaAnuladaPorNotaCredito(dbEmp, *doc, strings.TrimSpace(adminEmailFromRequest(r)))
+					if err != nil {
+						http.Error(w, "La nota credito fue aceptada, pero no se pudo finalizar la anulacion local", http.StatusInternalServerError)
+						return
+					}
+				}
+				if refreshed, refreshErr := dbpkg.GetEmpresaDocumentoFacturacionByCodigo(dbEmp, payload.EmpresaID, documentoTipo, payload.DocumentoCodigo); refreshErr == nil && refreshed != nil {
+					doc = refreshed
+				}
 				resp := map[string]interface{}{
 					"ok":                 resultado.EstadoEnvio == "enviado" || resultado.EstadoEnvio == "aceptado" || strings.TrimSpace(resultado.ReferenciaExterna) != "",
 					"accion":             action,
@@ -669,6 +680,10 @@ func EmpresaFacturacionElectronicaHandler(dbEmp, dbSuper *sql.DB) http.HandlerFu
 					"numero_legal":       doc.NumeroLegal,
 					"codigo_validacion":  doc.CodigoValidacion,
 					"integracion_fiscal": resultado,
+				}
+				if facturaAnulada != nil {
+					resp["factura_anulada"] = facturaAnulada
+					resp["anulacion_confirmada_dian"] = true
 				}
 				if retryItem != nil {
 					resp["cola_reintentos"] = retryItem
@@ -2622,6 +2637,16 @@ func processFacturacionIntegracionForDocumento(dbEmp *sql.DB, payload facturacio
 		resultado.Error = "no se pudo consultar cola de reintentos FE"
 		return resultado, nil, retryErr
 	}
+	if retryActual != nil && normalizeFacturacionEstadoEnvio(retryActual.EstadoEnvio) == "aceptado" {
+		resultado.Aplica = true
+		resultado.EstadoEnvio = "aceptado"
+		resultado.Intentos = retryActual.Intentos
+		resultado.MaxIntentos = retryActual.MaxIntentos
+		resultado.ReferenciaExterna = strings.TrimSpace(retryActual.ReferenciaExterna)
+		resultado.ConexionEstado = "online"
+		resultado.ConexionMensaje = "documento ya aceptado; no se reenvio"
+		return resultado, retryActual, nil
+	}
 
 	retryPayload := dbpkg.FacturacionElectronicaRetryItem{
 		EmpresaID:         doc.EmpresaID,
@@ -2703,6 +2728,20 @@ func processFacturacionIntegracionForDocumento(dbEmp *sql.DB, payload facturacio
 			acuseDIAN := strings.ToLower(strings.TrimSpace(genericStringValue(dispatchMap["acuse_estado"])))
 			if estadoDIAN == "aceptado" || acuseDIAN == "aceptado" {
 				estadoExito = "aceptado"
+			}
+			if estadoExito == "aceptado" {
+				codigoValidacion := strings.TrimSpace(facturacionFirstNonBlank(
+					genericStringValue(dispatchMap["cude"]),
+					genericStringValue(dispatchMap["cufe"]),
+					genericStringValue(dispatchMap["codigo_validacion"]),
+				))
+				if codigoValidacion != "" && !strings.EqualFold(strings.TrimSpace(doc.CodigoValidacion), codigoValidacion) {
+					doc.CodigoValidacion = codigoValidacion
+					if _, updateErr := dbpkg.UpsertEmpresaDocumentoFacturacion(dbEmp, doc); updateErr != nil {
+						resultado.Error = "DIAN acepto el documento, pero no se pudo persistir su codigo de validacion"
+						return resultado, nil, updateErr
+					}
+				}
 			}
 		}
 		retryPayload.EstadoEnvio = estadoExito
