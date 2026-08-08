@@ -60,7 +60,8 @@
 - Modulos afectados: `facturacion_electronica`, `DIAN Colombia` e
   `integraciones empresariales`.
 - Backend: probes, envio, acuse, `GetStatusZip`, `GetNumberingRange` y reconexion
-  bloquean SSRF por protocolo, DNS/IP, redes privadas y redirecciones cruzadas.
+  bloquean SSRF por protocolo, DNS/IP, redes privadas y redirecciones cruzadas;
+  la regla tambien cubre despacho y health de proveedores por `api_base_url`.
 - Multiempresa: un endpoint recibido en payload debe conservar el origen de
   `url_dian` guardado para la misma empresa; no cambia wrappers ni permisos.
 - Alcance fiscal: no modifica XML, firma, CUFE, consecutivos, tablas ni estados

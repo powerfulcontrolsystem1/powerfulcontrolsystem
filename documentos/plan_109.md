@@ -1026,8 +1026,9 @@ Actualización 2026-08-08, descarga privada CxP/IA y SSRF por redirección:
 Actualización 2026-08-08, salidas HTTP DIAN e integraciones:
 
 - Se cerró localmente SSRF en probes, envio/acuse/reconexion DIAN y operaciones
-  SOAP: solo HTTP(S) público, resolución DNS validada, cero redes privadas o
-  especiales y redirecciones limitadas al mismo origen.
+  SOAP, además de despacho/health de proveedor fiscal: solo HTTP(S) público,
+  resolución DNS validada, cero redes privadas o especiales y redirecciones
+  limitadas al mismo origen.
 - Los overrides DIAN deben conservar el origen configurado para la empresa y la
   clasificación oficial exige HTTPS sobre `dian.gov.co` o subdominio exacto.
   Dominios parecidos, loopback y metadata cloud quedan rechazados.

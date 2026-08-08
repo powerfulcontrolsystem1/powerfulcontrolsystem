@@ -11,7 +11,9 @@ La auditoría posterior al cierre de redirecciones OnlyOffice encontró dos
 clientes HTTP adicionales con entradas configurables:
 
 - monitor y prueba de salud de integraciones empresariales;
-- envío, acuse, `GetStatusZip`, `GetNumberingRange` y reconexión DIAN.
+- envío, acuse, `GetStatusZip`, `GetNumberingRange` y reconexión DIAN;
+- despacho y comprobación de conectividad de proveedores fiscales configurados
+  mediante `api_base_url`.
 
 La normalización anterior aceptaba cualquier esquema parseable, destinos
 loopback/privados y redirecciones por defecto. Además, la identificación de un
@@ -48,6 +50,8 @@ transporte protegido.
 - dominio `dian.gov.co.evil.example` rechazado como no oficial;
 - redirecciones del mismo origen aceptadas y redirecciones cruzadas rechazadas;
 - un servidor loopback sintético recibió cero solicitudes del probe bloqueado;
+- despacho y health de proveedor fiscal contra loopback: bloqueados, cero
+  solicitudes recibidas;
 - set DIAN 2+2+2 y set configurado: PASS con transporte de test explícito;
 - inventario multiempresa regenerado: 204 rutas protegidas y cero revisiones;
 - inventario runtime `Ensure` regenerado: 106 llamadas catalogadas;

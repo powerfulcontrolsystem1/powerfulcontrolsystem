@@ -8,6 +8,8 @@ import (
 	"net/url"
 	"testing"
 	"time"
+
+	dbpkg "github.com/you/pos-backend/db"
 )
 
 func TestIsPublicOutboundIPRejectsNonPublicRanges(t *testing.T) {
@@ -170,6 +172,39 @@ func TestRunIntegracionProbeDoesNotReachLoopback(t *testing.T) {
 			_ = conn.Close()
 		}
 		t.Fatal("direct loopback dial was accepted")
+	}
+}
+
+func TestFacturacionProveedorHTTPDoesNotReachLoopback(t *testing.T) {
+	hit := make(chan struct{}, 2)
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		select {
+		case hit <- struct{}{}:
+		default:
+		}
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer server.Close()
+
+	dispatch := dispatchFacturacionProveedorHTTP(server.URL, map[string]interface{}{"documento": "prueba"})
+	if dispatch.Success || !dispatch.ConnectivityFailure {
+		t.Fatalf("loopback fiscal dispatch was not blocked: %#v", dispatch)
+	}
+	status := facturacionProveedorConnectionStatus(&dbpkg.FacturacionElectronicaPaisConfig{
+		EmpresaID:  12,
+		PaisCodigo: "CO",
+		Ambiente:   "produccion",
+		Proveedor:  "proveedor_externo",
+		APIBaseURL: server.URL,
+		Estado:     "activo",
+	})
+	if status["estado_conexion"] != "sin_endpoint" {
+		t.Fatalf("loopback fiscal health endpoint was not blocked: %#v", status)
+	}
+	select {
+	case <-hit:
+		t.Fatal("blocked fiscal provider received an outbound request")
+	default:
 	}
 }
 

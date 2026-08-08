@@ -5,6 +5,8 @@
 - `url_dian`, `endpoint` y `url_acuse` ya no pueden cambiar de origen respecto
   de la configuracion DIAN de la empresa. Solo HTTPS sobre `dian.gov.co` o sus
   subdominios exactos se clasifica como servicio oficial.
+- El despacho HTTP y el health check de proveedores fiscales por `api_base_url`
+  usan la misma politica y bloquean un endpoint privado antes de conectar.
 - Las pruebas negativas, los sets DIAN simulados por servidor de test, Go
   completo, vet y preflight estricto aprobaron; los inventarios regenerados
   conservan 204 rutas protegidas, cero revisiones y 106 llamadas runtime

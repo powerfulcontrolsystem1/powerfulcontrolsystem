@@ -6717,5 +6717,8 @@ timers heredados de API se conservan hasta que el worker los reemplace.
 - El flujo DIAN queda: permiso/empresa -> configuracion `url_dian` de la empresa
   -> override del mismo origen -> transporte publico protegido -> DIAN/proveedor
   -> respuesta saneada y trazabilidad existente.
+- El flujo de proveedor fiscal queda: configuracion empresarial `api_base_url`
+  -> validacion de destino publico -> POST/HEAD protegido -> resultado de envio
+  o conectividad sin acceder a redes internas.
 - Los servidores HTTP locales de QA se inyectan solo desde `_test.go`; el
   runtime no dispone de un switch para permitir destinos privados.
