@@ -919,13 +919,31 @@ Actualizacion 2026-08-08, contratos IA y soportes:
   parcial hasta flujo autenticado reversible, proveedor disponible y A/B no
   global. No cambia el porcentaje ni el estado **NO-GO**.
 
+Actualizacion 2026-08-08, migracion y restore exactos de `c8094f5b`:
+
+- El restore aislado del snapshot `20260808_031501` aprobo API/migrador del
+  candidato, health/readiness 200, dos bases, cinco tablas, 28 filas criticas
+  PCS, cuatro endpoints protegidos, inventario privado consistente y rol runtime
+  sin DDL. RTO 23 s y RPO observado 12.287 s permanecen dentro de los objetivos
+  publicados de 2 h/24 h.
+- La base vacia aprobo tres rechazos sin DDL, doble pasada, drift fail-closed
+  con recuperacion, cinco controles de rollback transaccional y cuatro de
+  compatibilidad hacia atras. Esquema final: 337/49 tablas y 19/10 migraciones;
+  la limpieza termino sin recursos efimeros.
+- P109-011 queda **aprobada para este candidato**. El avance verificable pasa a
+  **53,3 % de implementacion** (`4 aprobadas + 8 parciales`, de 15) y a
+  **6,7 % de certificacion del candidato exacto**, por una sola fase completa.
+  El veredicto permanece **NO-GO**: ninguna otra compuerta P0/P1 recibe credito
+  por esta evidencia.
+
 La evidencia histórica P108 sirve como línea base y evita repetir pruebas
 independientes del artefacto, pero no aumenta automáticamente estas cifras.
 
 ## 9. Siguiente orden para Terra alto
 
-P109-000 ya está aprobada para `ea9642dd...`; Terra no debe reconstruirla ni
-repetirla sin un cambio de código. Debe continuar así:
+P109-000 ya está aprobada para `ea9642dd...` y P109-011 para `c8094f5b`;
+Terra no debe reconstruirlas ni repetirlas sin un cambio de código. Debe
+continuar así:
 
 1. confirmar que staging conserva los cuatro digests registrados y producción
    conserva sus imágenes anteriores;

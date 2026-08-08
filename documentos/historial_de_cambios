@@ -1,3 +1,17 @@
+2026-08-08: Plan 109 / P109-011 aprobada en el candidato exacto de staging.
+- El candidato `c8094f5b` restaura el snapshot `20260808_031501` en recursos
+  aislados: API/migrador health y readiness 200, dos bases, cinco tablas, 28
+  filas PCS, cuatro endpoints protegidos, archivos privados consistentes y rol
+  runtime sin DDL. RTO 23 s y RPO observado 12.287 s cumplen los objetivos
+  publicados de 2 h/24 h.
+- La base vacia aprobo tres rechazos sin DDL, dos pasadas idempotentes, drift
+  fail-closed con recuperacion, cinco controles de rollback transaccional y
+  cuatro de compatibilidad de API anterior. Los recursos efimeros se eliminaron
+  y staging/produccion no cambiaron.
+- P109-011 pasa a aprobada; Plan 109 queda en 53,3 % de implementacion y 6,7 %
+  de certificacion del candidato exacto, con veredicto NO-GO por las restantes
+  compuertas P0/P1.
+
 2026-08-01: Plan 109 / confirmación, doble clic y degradación CxP/IA.
 - La extracción bloquea por soporte mediante advisory lock PostgreSQL con
   namespace propio; el segundo intento concurrente responde conflicto antes de

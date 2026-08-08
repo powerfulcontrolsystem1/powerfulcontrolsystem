@@ -1,4 +1,7 @@
 2026-08-08
+- `documentos/evidencia_plan_109/P109-011/2026-08-08_migracion_restore_c8094f5b.md`:
+  evidencia reproducible de migracion, rollback, compatibilidad y restore
+  aislados del candidato exacto de staging, incluyendo sus limites de NO-GO.
 - `documentos/evidencia_plan_109/P109-009/2026-08-08_csp_report_only_estricto_preparado.md`:
   evidencia del modo CSP estricto solo Report-Only, sus pruebas y activacion
   controlada pendiente en staging.
