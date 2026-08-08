@@ -41150,3 +41150,26 @@ acumulativa.
 - El cambio responde a la prueba real de `1PCS5`: DIAN devolvió StatusCode 00,
   `Procesado Correctamente` e IsValid true, pero el botón Anular falló en el
   navegador interno porque `prompt()` no estaba soportado.
+2026-08-08: Plan 109 / nota credito DIAN con operacion y referencia fiscal correctas.
+
+- Incidente real PCS: la anulacion autorizada de `1PCS5` creo una nota credito,
+  pero DIAN la rechazo con reglas `CAD02`, `CBA06` y `CAJ50`; la factura
+  original permanecio emitida, como exige el cierre seguro cuando no existe
+  aceptacion fiscal.
+- Backend: las notas credito que referencian factura usan `CustomizationID=20`,
+  las notas debito referenciadas usan `30`, la anulacion usa `ResponseCode=2`,
+  y el XML conserva numero, CUFE y fecha reales de la factura origen.
+- Numeracion: cada nota credito obtiene un consecutivo interno estable con
+  prefijo `NC` aislado por empresa; el `CorporateRegistrationScheme` usa el
+  prefijo de la nota y no el prefijo autorizado de las facturas de venta.
+- Reintentos: una nota fallida sin numero legal se completa de forma
+  idempotente antes del nuevo envio y recupera su referencia desde el marcador
+  empresarial persistido, sin crear una segunda nota.
+- Frontend: la bandeja ya no anuncia una factura como anulada si DIAN devuelve
+  estado pendiente o fallido; muestra el estado real, orienta al buzon/consola
+  y presenta consumidor final en facturas y notas sin cliente enlazado.
+- Fuente tecnica: Anexo Tecnico DIAN de Factura Electronica de Venta v1.9,
+  reglas CAD02/CAJ50 y tipos de operacion 20/30; la aceptacion real sigue
+  condicionada al acuse oficial de DIAN.
+- QA local: pruebas enfocadas de UBL/anulacion PASS, `go test ./handlers ./db`
+  PASS, `go vet ./...` PASS y preflight profesional rapido completo PASS.

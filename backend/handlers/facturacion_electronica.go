@@ -81,38 +81,43 @@ func completarClientePayloadFacturacion(dbEmp *sql.DB, empresaID int64, payload 
 }
 
 type facturacionOperacionPayload struct {
-	EmpresaID               int64   `json:"empresa_id"`
-	EntidadID               int64   `json:"entidad_id"`
-	ClienteID               int64   `json:"cliente_id"`
-	TipoDocumento           string  `json:"tipo_documento"`
-	ClienteEmail            string  `json:"cliente_email"`
-	ClienteNombre           string  `json:"cliente_nombre"`
-	ClienteTipoDocumento    string  `json:"cliente_tipo_documento"`
-	ClienteNumeroDocumento  string  `json:"cliente_numero_documento"`
-	ClienteTelefono         string  `json:"cliente_telefono"`
-	ClienteDireccion        string  `json:"cliente_direccion"`
-	PaisCodigo              string  `json:"pais_codigo"`
-	DocumentoCodigo         string  `json:"documento_codigo"`
-	EstadoActual            string  `json:"estado_actual"`
-	FormaPago               string  `json:"forma_pago"`
-	MetodoPago              string  `json:"metodo_pago"`
-	Subtotal                float64 `json:"subtotal"`
-	BaseGravable            float64 `json:"base_gravable"`
-	IVA                     float64 `json:"iva"`
-	Impuestos               float64 `json:"impuestos"`
-	RetencionFuente         float64 `json:"retencion_fuente"`
-	RetencionICA            float64 `json:"retencion_ica"`
-	RetencionIVA            float64 `json:"retencion_iva"`
-	TotalRetenciones        float64 `json:"total_retenciones"`
-	TotalNeto               float64 `json:"total_neto"`
-	MontoTotal              float64 `json:"monto_total"`
-	Moneda                  string  `json:"moneda"`
-	PeriodoContable         string  `json:"periodo_contable"`
-	Observaciones           string  `json:"observaciones"`
-	PermitirModoOffline     bool    `json:"permitir_modo_offline"`
-	ConfirmarModoOffline    bool    `json:"confirmar_modo_offline"`
-	OrigenModoOffline       string  `json:"origen_modo_offline"`
-	MensajeConfirmacionDIAN string  `json:"mensaje_confirmacion_dian"`
+	EmpresaID                 int64   `json:"empresa_id"`
+	EntidadID                 int64   `json:"entidad_id"`
+	ClienteID                 int64   `json:"cliente_id"`
+	TipoDocumento             string  `json:"tipo_documento"`
+	ClienteEmail              string  `json:"cliente_email"`
+	ClienteNombre             string  `json:"cliente_nombre"`
+	ClienteTipoDocumento      string  `json:"cliente_tipo_documento"`
+	ClienteNumeroDocumento    string  `json:"cliente_numero_documento"`
+	ClienteTelefono           string  `json:"cliente_telefono"`
+	ClienteDireccion          string  `json:"cliente_direccion"`
+	PaisCodigo                string  `json:"pais_codigo"`
+	DocumentoCodigo           string  `json:"documento_codigo"`
+	EstadoActual              string  `json:"estado_actual"`
+	FormaPago                 string  `json:"forma_pago"`
+	MetodoPago                string  `json:"metodo_pago"`
+	Subtotal                  float64 `json:"subtotal"`
+	BaseGravable              float64 `json:"base_gravable"`
+	IVA                       float64 `json:"iva"`
+	Impuestos                 float64 `json:"impuestos"`
+	RetencionFuente           float64 `json:"retencion_fuente"`
+	RetencionICA              float64 `json:"retencion_ica"`
+	RetencionIVA              float64 `json:"retencion_iva"`
+	TotalRetenciones          float64 `json:"total_retenciones"`
+	TotalNeto                 float64 `json:"total_neto"`
+	MontoTotal                float64 `json:"monto_total"`
+	Moneda                    string  `json:"moneda"`
+	PeriodoContable           string  `json:"periodo_contable"`
+	Observaciones             string  `json:"observaciones"`
+	PermitirModoOffline       bool    `json:"permitir_modo_offline"`
+	ConfirmarModoOffline      bool    `json:"confirmar_modo_offline"`
+	OrigenModoOffline         string  `json:"origen_modo_offline"`
+	MensajeConfirmacionDIAN   string  `json:"mensaje_confirmacion_dian"`
+	ReferenciaDocumentoCodigo string  `json:"referencia_documento_codigo"`
+	ReferenciaCUFE            string  `json:"referencia_cufe"`
+	ReferenciaFechaEmision    string  `json:"referencia_fecha_emision"`
+	CodigoCorreccion          string  `json:"codigo_correccion"`
+	DescripcionCorreccion     string  `json:"descripcion_correccion"`
 }
 
 type facturaEmailResultado struct {
@@ -655,6 +660,17 @@ func EmpresaFacturacionElectronicaHandler(dbEmp, dbSuper *sql.DB) http.HandlerFu
 					http.Error(w, "No se pudo reintentar envio DIAN", http.StatusInternalServerError)
 					return
 				}
+				var facturaAnulada *dbpkg.EmpresaDocumentoFacturacion
+				if facturacionIntegracionAceptada(resultado) && strings.EqualFold(strings.TrimSpace(doc.TipoDocumento), "nota_credito") {
+					facturaAnulada, err = finalizarFacturaAnuladaPorNotaCredito(dbEmp, *doc, strings.TrimSpace(adminEmailFromRequest(r)))
+					if err != nil {
+						http.Error(w, "La nota credito fue aceptada, pero no se pudo finalizar la anulacion local", http.StatusInternalServerError)
+						return
+					}
+				}
+				if refreshed, refreshErr := dbpkg.GetEmpresaDocumentoFacturacionByCodigo(dbEmp, payload.EmpresaID, documentoTipo, payload.DocumentoCodigo); refreshErr == nil && refreshed != nil {
+					doc = refreshed
+				}
 				resp := map[string]interface{}{
 					"ok":                 resultado.EstadoEnvio == "enviado" || resultado.EstadoEnvio == "aceptado" || strings.TrimSpace(resultado.ReferenciaExterna) != "",
 					"accion":             action,
@@ -664,6 +680,10 @@ func EmpresaFacturacionElectronicaHandler(dbEmp, dbSuper *sql.DB) http.HandlerFu
 					"numero_legal":       doc.NumeroLegal,
 					"codigo_validacion":  doc.CodigoValidacion,
 					"integracion_fiscal": resultado,
+				}
+				if facturaAnulada != nil {
+					resp["factura_anulada"] = facturaAnulada
+					resp["anulacion_confirmada_dian"] = true
 				}
 				if retryItem != nil {
 					resp["cola_reintentos"] = retryItem
@@ -855,7 +875,20 @@ func EmpresaFacturacionElectronicaHandler(dbEmp, dbSuper *sql.DB) http.HandlerFu
 					http.Error(w, "No se pudo crear la nota credito de anulacion", http.StatusInternalServerError)
 					return
 				}
+				nota, err = asegurarNumeroLegalNotaCredito(dbEmp, *nota)
+				if err != nil {
+					http.Error(w, "No se pudo asignar el consecutivo interno de la nota credito", http.StatusInternalServerError)
+					return
+				}
 				notaOperacion := facturacionBuildOperacionPayloadFromDocumento(*nota)
+				notaOperacion.ReferenciaDocumentoCodigo = strings.TrimSpace(factura.NumeroLegal)
+				if notaOperacion.ReferenciaDocumentoCodigo == "" {
+					notaOperacion.ReferenciaDocumentoCodigo = strings.TrimSpace(factura.DocumentoCodigo)
+				}
+				notaOperacion.ReferenciaCUFE = strings.TrimSpace(factura.CodigoValidacion)
+				notaOperacion.ReferenciaFechaEmision = strings.TrimSpace(factura.FechaDocumento)
+				notaOperacion.CodigoCorreccion = "2"
+				notaOperacion.DescripcionCorreccion = "Anulacion de factura electronica"
 				completarClientePayloadFacturacion(dbEmp, factura.EmpresaID, &notaOperacion, *factura)
 				integracionFiscal, retryRegistro, integErr := processFacturacionIntegracionForDocumento(dbEmp, notaOperacion, *nota, "nota_credito", usuario, dbSuper)
 				if integErr != nil {
@@ -2126,25 +2159,30 @@ func dispatchFacturacionDIANOficial(dbEmp *sql.DB, payload facturacionOperacionP
 	fechaEmision := facturacionDIANFechaEmisionFirmada(time.Now())
 	moneda := strings.ToUpper(strings.TrimSpace(facturacionFirstNonBlank(doc.Moneda, payload.Moneda, "COP")))
 	docPayload := map[string]interface{}{
-		"empresa_id":             doc.EmpresaID,
-		"documento_codigo":       strings.TrimSpace(doc.DocumentoCodigo),
-		"documento_tipo":         documentoTipo,
-		"fecha_emision":          fechaEmision,
-		"total":                  fmt.Sprintf("%.2f", total),
-		"impuesto_total":         fmt.Sprintf("%.2f", impuesto),
-		"moneda":                 moneda,
-		"cliente_nombre":         strings.TrimSpace(payload.ClienteNombre),
-		"cliente_nit":            strings.TrimSpace(payload.ClienteNumeroDocumento),
-		"cliente_tipo_documento": strings.TrimSpace(payload.ClienteTipoDocumento),
-		"cliente_email":          strings.TrimSpace(payload.ClienteEmail),
-		"cliente_telefono":       strings.TrimSpace(payload.ClienteTelefono),
-		"cliente_direccion":      strings.TrimSpace(payload.ClienteDireccion),
-		"numero_legal":           strings.TrimSpace(doc.NumeroLegal),
-		"codigo_validacion":      strings.TrimSpace(doc.CodigoValidacion),
-		"resolucion_numero":      strings.TrimSpace(genericStringValue(dianCfg["resolucion_numero"])),
-		"prefijo":                strings.TrimSpace(genericStringValue(dianCfg["prefijo"])),
-		"usar_soap_dian":         true,
-		"accion_facturacion":     strings.ToLower(strings.TrimSpace(accion)),
+		"empresa_id":                  doc.EmpresaID,
+		"documento_codigo":            strings.TrimSpace(doc.DocumentoCodigo),
+		"documento_tipo":              documentoTipo,
+		"fecha_emision":               fechaEmision,
+		"total":                       fmt.Sprintf("%.2f", total),
+		"impuesto_total":              fmt.Sprintf("%.2f", impuesto),
+		"moneda":                      moneda,
+		"cliente_nombre":              strings.TrimSpace(payload.ClienteNombre),
+		"cliente_nit":                 strings.TrimSpace(payload.ClienteNumeroDocumento),
+		"cliente_tipo_documento":      strings.TrimSpace(payload.ClienteTipoDocumento),
+		"cliente_email":               strings.TrimSpace(payload.ClienteEmail),
+		"cliente_telefono":            strings.TrimSpace(payload.ClienteTelefono),
+		"cliente_direccion":           strings.TrimSpace(payload.ClienteDireccion),
+		"numero_legal":                strings.TrimSpace(doc.NumeroLegal),
+		"codigo_validacion":           strings.TrimSpace(doc.CodigoValidacion),
+		"referencia_documento_codigo": strings.TrimSpace(payload.ReferenciaDocumentoCodigo),
+		"referencia_cufe":             strings.TrimSpace(payload.ReferenciaCUFE),
+		"referencia_fecha_emision":    strings.TrimSpace(payload.ReferenciaFechaEmision),
+		"codigo_correccion":           strings.TrimSpace(payload.CodigoCorreccion),
+		"descripcion_correccion":      strings.TrimSpace(payload.DescripcionCorreccion),
+		"resolucion_numero":           strings.TrimSpace(genericStringValue(dianCfg["resolucion_numero"])),
+		"prefijo":                     strings.TrimSpace(genericStringValue(dianCfg["prefijo"])),
+		"usar_soap_dian":              true,
+		"accion_facturacion":          strings.ToLower(strings.TrimSpace(accion)),
 	}
 	if endpoint := strings.TrimSpace(apiBaseURL); endpoint != "" {
 		docPayload["url_dian"] = endpoint
@@ -2532,6 +2570,19 @@ func processFacturacionIntegracionForDocumento(dbEmp *sql.DB, payload facturacio
 	if strings.TrimSpace(doc.TipoDocumento) == "" {
 		doc.TipoDocumento = strings.TrimSpace(payload.TipoDocumento)
 	}
+	if strings.EqualFold(strings.TrimSpace(doc.TipoDocumento), "nota_credito") {
+		var ensureErr error
+		if ensured, err := asegurarNumeroLegalNotaCredito(dbEmp, doc); err != nil {
+			ensureErr = err
+		} else if ensured != nil {
+			doc = *ensured
+		}
+		if ensureErr != nil {
+			resultado.Error = "no se pudo asegurar el consecutivo interno de la nota credito"
+			return resultado, nil, ensureErr
+		}
+		hidratarReferenciaNotaCredito(dbEmp, doc, &payload)
+	}
 	if strings.TrimSpace(doc.TipoDocumento) == "" {
 		doc.TipoDocumento = "factura_electronica"
 	}
@@ -2585,6 +2636,16 @@ func processFacturacionIntegracionForDocumento(dbEmp *sql.DB, payload facturacio
 	if retryErr != nil && !errors.Is(retryErr, sql.ErrNoRows) {
 		resultado.Error = "no se pudo consultar cola de reintentos FE"
 		return resultado, nil, retryErr
+	}
+	if retryActual != nil && normalizeFacturacionEstadoEnvio(retryActual.EstadoEnvio) == "aceptado" {
+		resultado.Aplica = true
+		resultado.EstadoEnvio = "aceptado"
+		resultado.Intentos = retryActual.Intentos
+		resultado.MaxIntentos = retryActual.MaxIntentos
+		resultado.ReferenciaExterna = strings.TrimSpace(retryActual.ReferenciaExterna)
+		resultado.ConexionEstado = "online"
+		resultado.ConexionMensaje = "documento ya aceptado; no se reenvio"
+		return resultado, retryActual, nil
 	}
 
 	retryPayload := dbpkg.FacturacionElectronicaRetryItem{
@@ -2668,6 +2729,20 @@ func processFacturacionIntegracionForDocumento(dbEmp *sql.DB, payload facturacio
 			if estadoDIAN == "aceptado" || acuseDIAN == "aceptado" {
 				estadoExito = "aceptado"
 			}
+			if estadoExito == "aceptado" {
+				codigoValidacion := strings.TrimSpace(facturacionFirstNonBlank(
+					genericStringValue(dispatchMap["cude"]),
+					genericStringValue(dispatchMap["cufe"]),
+					genericStringValue(dispatchMap["codigo_validacion"]),
+				))
+				if codigoValidacion != "" && !strings.EqualFold(strings.TrimSpace(doc.CodigoValidacion), codigoValidacion) {
+					doc.CodigoValidacion = codigoValidacion
+					if _, updateErr := dbpkg.UpsertEmpresaDocumentoFacturacion(dbEmp, doc); updateErr != nil {
+						resultado.Error = "DIAN acepto el documento, pero no se pudo persistir su codigo de validacion"
+						return resultado, nil, updateErr
+					}
+				}
+			}
 		}
 		retryPayload.EstadoEnvio = estadoExito
 		retryPayload.ProximoIntento = ""
@@ -2740,6 +2815,52 @@ func processFacturacionIntegracionForDocumento(dbEmp *sql.DB, payload facturacio
 	}
 
 	return resultado, persistido, nil
+}
+
+func asegurarNumeroLegalNotaCredito(dbEmp *sql.DB, nota dbpkg.EmpresaDocumentoFacturacion) (*dbpkg.EmpresaDocumentoFacturacion, error) {
+	if dbEmp == nil || nota.EmpresaID <= 0 || nota.ID <= 0 {
+		return nil, fmt.Errorf("nota credito persistida y empresa son obligatorias")
+	}
+	if strings.TrimSpace(nota.NumeroLegal) != "" {
+		return &nota, nil
+	}
+	// Las notas usan un consecutivo interno independiente de la resolucion de
+	// facturas. El prefijo NC seguido solo de digitos permite que CAJ50 compare
+	// de forma inequivoca el prefijo con cbc:ID y conserva aislamiento empresarial.
+	nota.NumeroLegal = fmt.Sprintf("NC%d%09d", nota.EmpresaID, nota.ID)
+	return dbpkg.UpsertEmpresaDocumentoFacturacion(dbEmp, nota)
+}
+
+func hidratarReferenciaNotaCredito(dbEmp *sql.DB, nota dbpkg.EmpresaDocumentoFacturacion, payload *facturacionOperacionPayload) {
+	if dbEmp == nil || payload == nil || nota.EmpresaID <= 0 {
+		return
+	}
+	facturaCodigo := facturacionNotaCreditoFacturaOrigen(nota.Observaciones)
+	if facturaCodigo == "" {
+		return
+	}
+	factura, err := dbpkg.GetEmpresaDocumentoFacturacionByCodigo(dbEmp, nota.EmpresaID, "factura_electronica", facturaCodigo)
+	if err != nil || factura == nil {
+		return
+	}
+	if strings.TrimSpace(payload.ReferenciaDocumentoCodigo) == "" {
+		payload.ReferenciaDocumentoCodigo = strings.TrimSpace(factura.NumeroLegal)
+		if payload.ReferenciaDocumentoCodigo == "" {
+			payload.ReferenciaDocumentoCodigo = strings.TrimSpace(factura.DocumentoCodigo)
+		}
+	}
+	if strings.TrimSpace(payload.ReferenciaCUFE) == "" {
+		payload.ReferenciaCUFE = strings.TrimSpace(factura.CodigoValidacion)
+	}
+	if strings.TrimSpace(payload.ReferenciaFechaEmision) == "" {
+		payload.ReferenciaFechaEmision = strings.TrimSpace(factura.FechaDocumento)
+	}
+	if strings.TrimSpace(payload.CodigoCorreccion) == "" {
+		payload.CodigoCorreccion = "2"
+	}
+	if strings.TrimSpace(payload.DescripcionCorreccion) == "" {
+		payload.DescripcionCorreccion = "Anulacion de factura electronica"
+	}
 }
 
 func notificarFalloFacturacionElectronica(dbEmp, dbSuper *sql.DB, retry *dbpkg.FacturacionElectronicaRetryItem, resultado facturacionIntegracionResultado, doc dbpkg.EmpresaDocumentoFacturacion, usuario string) {
