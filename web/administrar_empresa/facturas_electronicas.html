@@ -100,6 +100,12 @@
     .factura-print-pos-preview .factura-print-strip,.factura-print-pos-preview .factura-print-grid{display:block;border:0}
     .factura-print-pos-preview .factura-print-strip div,.factura-print-pos-preview .factura-print-panel{border:0;border-top:1px dashed #111;padding:7px 0}
     .factura-print-pos-preview .factura-print-panel dl>div{font-size:1em}
+    .fe-cancel-dialog{width:min(560px,calc(100vw - 28px));padding:0;border:1px solid var(--border);border-radius:12px;background:var(--surface);color:var(--text);box-shadow:var(--shadow)}
+    .fe-cancel-dialog::backdrop{background:rgba(15,23,42,.64)}
+    .fe-cancel-dialog form{display:grid;gap:14px;padding:20px}
+    .fe-cancel-dialog h3,.fe-cancel-dialog p{margin:0}
+    .fe-cancel-dialog textarea{min-height:96px;resize:vertical}
+    .fe-cancel-dialog .form-actions{margin:0;justify-content:flex-end}
     @media (max-width:1100px){.fe-filter-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
     @media (max-width:760px){.fe-filter-grid{grid-template-columns:1fr}.factura-print-head,.factura-print-grid{display:block}.factura-print-company{text-align:left;max-width:none;margin-top:10px}.factura-print-strip{grid-template-columns:repeat(2,minmax(0,1fr))}}
   </style>
@@ -246,6 +252,27 @@
 
   </div>
 
+  <dialog id="feCancelDialog" class="fe-cancel-dialog" aria-labelledby="feCancelDialogTitle">
+    <form id="feCancelForm" novalidate>
+      <h3 id="feCancelDialogTitle">Anular documento</h3>
+      <p id="feCancelDialogDescription"></p>
+      <div class="form-col">
+        <label class="form-label" for="feCancelConfirmation">Confirmación</label>
+        <input id="feCancelConfirmation" class="form-input" autocomplete="off" placeholder="Escribe ANULAR" required>
+        <div class="form-help">Escribe exactamente ANULAR para habilitar la operación.</div>
+      </div>
+      <div class="form-col">
+        <label class="form-label" for="feCancelReason">Motivo de anulación</label>
+        <textarea id="feCancelReason" class="form-input" minlength="10" placeholder="Describe el motivo (mínimo 10 caracteres)" required></textarea>
+      </div>
+      <div id="feCancelMessage" class="form-help" role="status" aria-live="polite"></div>
+      <div class="form-actions">
+        <button id="feCancelDismiss" type="button" class="btn secondary">Cancelar</button>
+        <button id="feCancelSubmit" type="submit" class="btn danger">Confirmar anulación</button>
+      </div>
+    </form>
+  </dialog>
+
   <script>
     (function () {
       function getQueryParam(name) {
@@ -255,6 +282,13 @@
 
       function normalize(value) {
         return String(value || "").trim();
+      }
+
+      function documentCustomerLabel(item) {
+        item = item || {};
+        var explicit = normalize(item.cliente_nombre) || normalize(item.cliente_email);
+        if (explicit) return explicit;
+        return normalize(item.tipo_documento).toLowerCase() === "factura_electronica" ? "Consumidor final" : "Sin cliente";
       }
 
       function escapeHtml(raw) {
@@ -629,7 +663,7 @@
             tipo: exportValue(item.tipo_documento),
             codigo: exportValue(item.documento_codigo),
             numero_legal: exportValue(item.numero_legal),
-            cliente: exportValue(item.cliente_nombre || item.cliente_email || "Sin cliente"),
+            cliente: exportValue(documentCustomerLabel(item)),
             documento_cliente: exportValue(item.cliente_documento),
             total: Number(item.monto_total || 0).toFixed(2),
             moneda: exportValue(item.moneda || "COP"),
@@ -751,7 +785,7 @@
           return;
         }
 
-        var cliente = normalize(item.cliente_nombre) || "Sin cliente asociado";
+        var cliente = documentCustomerLabel(item);
         var clienteEmail = normalize(item.cliente_email) || "Sin correo";
         var clienteDocumento = normalize(item.cliente_documento) || "Sin documento";
 
@@ -1138,7 +1172,7 @@
         var rows = state.items.map(function (item) {
           var key = makeKey(item);
 
-          var clienteLabel = normalize(item.cliente_nombre) || normalize(item.cliente_email) || "Sin cliente";
+          var clienteLabel = documentCustomerLabel(item);
           var cajeroLabel = normalize(item.usuario_creador) || "-";
 
           var cancelInfo = cancelAvailability(item);
@@ -1467,6 +1501,23 @@
         window.open(href, "_blank", "noopener,noreferrer");
       }
 
+      var cancelDialogItem = null;
+      var cancelDialogBusy = false;
+
+      function setCancelDialogMessage(text, isError) {
+        var box = document.getElementById("feCancelMessage");
+        if (!box) return;
+        box.textContent = text || "";
+        box.style.color = isError ? "#ef5350" : "";
+      }
+
+      function closeCancelDialog() {
+        if (cancelDialogBusy) return;
+        var dialog = document.getElementById("feCancelDialog");
+        cancelDialogItem = null;
+        if (dialog && dialog.open) dialog.close();
+      }
+
       function cancelInvoice(item) {
         var cancelInfo = cancelAvailability(item);
         if (!item || !cancelInfo.enabled) {
@@ -1476,19 +1527,44 @@
         var tipo = normalize(item.tipo_documento).toLowerCase();
         var code = normalize(item.numero_legal) || normalize(item.documento_codigo);
         var facturaElectronica = tipo === "factura_electronica";
-        var first = window.prompt((facturaElectronica
-          ? "Esta accion genera una NOTA CREDITO electronica total y marca la factura como anulada."
-          : "Esta accion anula la venta simple y registra la trazabilidad contable interna.") + " Escribe ANULAR para continuar con " + code + ":");
-        if (first !== "ANULAR") return;
-        var motivo = window.prompt("Motivo de anulacion (obligatorio, minimo 10 caracteres):", "");
-        if (motivo === null) return;
-        motivo = normalize(motivo);
-        if (motivo.length < 10) {
-          showMessage("El motivo debe tener minimo 10 caracteres.", "error");
+        var dialog = document.getElementById("feCancelDialog");
+        cancelDialogItem = item;
+        document.getElementById("feCancelDialogTitle").textContent = facturaElectronica ? "Anular factura mediante nota crédito" : "Anular venta";
+        document.getElementById("feCancelDialogDescription").textContent = facturaElectronica
+          ? ("Se generará una nota crédito electrónica total para " + code + ".")
+          : ("Se anulará la venta " + code + " y se registrará su trazabilidad contable interna.");
+        document.getElementById("feCancelConfirmation").value = "";
+        document.getElementById("feCancelReason").value = "";
+        setCancelDialogMessage("", false);
+        if (dialog && typeof dialog.showModal === "function") {
+          dialog.showModal();
+          document.getElementById("feCancelConfirmation").focus();
           return;
         }
-        var second = window.confirm(facturaElectronica ? ("Confirmas la anulacion fiscal de " + code + " mediante nota credito total?") : ("Confirmas la anulacion de la venta " + code + "?"));
-        if (!second) return;
+        showMessage("El navegador no permite abrir el diálogo seguro de anulación.", "error");
+      }
+
+      function submitCancelInvoice(event) {
+        event.preventDefault();
+        if (cancelDialogBusy || !cancelDialogItem) return;
+        var confirmation = normalize(document.getElementById("feCancelConfirmation").value);
+        var motivo = normalize(document.getElementById("feCancelReason").value);
+        if (confirmation !== "ANULAR") {
+          setCancelDialogMessage("Escribe exactamente ANULAR para continuar.", true);
+          return;
+        }
+        if (motivo.length < 10) {
+          setCancelDialogMessage("El motivo debe tener mínimo 10 caracteres.", true);
+          return;
+        }
+        var item = cancelDialogItem;
+        var tipo = normalize(item.tipo_documento).toLowerCase();
+        var code = normalize(item.numero_legal) || normalize(item.documento_codigo);
+        var facturaElectronica = tipo === "factura_electronica";
+        var submitButton = document.getElementById("feCancelSubmit");
+        cancelDialogBusy = true;
+        submitButton.disabled = true;
+        setCancelDialogMessage(facturaElectronica ? "Generando nota crédito de anulación..." : "Anulando venta...", false);
         showMessage(facturaElectronica ? "Generando nota credito de anulacion..." : "Anulando venta...");
         var action = facturaElectronica ? "anular_factura_nota_credito" : "anular_venta";
         apiRequest("/api/empresa/facturacion_electronica?action=" + action + "&empresa_id=" + encodeURIComponent(String(empresaID)), {
@@ -1502,10 +1578,17 @@
           })
         }).then(function(out) {
           var nota = out && out.nota_credito ? out.nota_credito : null;
+          cancelDialogBusy = false;
+          submitButton.disabled = false;
+          closeCancelDialog();
           showMessage(facturaElectronica ? ("Factura anulada por nota credito " + (nota && nota.documento_codigo ? nota.documento_codigo : "")) : "Venta anulada correctamente.", "ok");
           return runSearch();
         }).catch(function(err) {
-          showMessage(err.message || "No se pudo anular el documento.", "error");
+          cancelDialogBusy = false;
+          submitButton.disabled = false;
+          var message = err.message || "No se pudo anular el documento.";
+          setCancelDialogMessage(message, true);
+          showMessage(message, "error");
         });
       }
 
@@ -1675,6 +1758,19 @@
           }
         });
       }
+
+      document.getElementById("feCancelForm").addEventListener("submit", submitCancelInvoice);
+      document.getElementById("feCancelDismiss").addEventListener("click", closeCancelDialog);
+      document.getElementById("feCancelDialog").addEventListener("cancel", function (event) {
+        if (cancelDialogBusy) {
+          event.preventDefault();
+          return;
+        }
+        cancelDialogItem = null;
+      });
+      document.getElementById("feCancelDialog").addEventListener("close", function () {
+        if (!cancelDialogBusy) cancelDialogItem = null;
+      });
 
       function init() {
         if (!empresaID) {

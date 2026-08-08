@@ -704,7 +704,7 @@
         }
         var rows = state.items.map(function(it){
           var key=makeKey(it); state.index[key]=it;
-          var clienteLabel = norm(it.cliente_nombre) || norm(it.cliente_email) || "Sin cliente";
+          var clienteLabel = norm(it.cliente_nombre) || norm(it.cliente_email) || (norm(it.tipo_documento) === "factura_electronica" ? "Consumidor final" : "Sin cliente");
           var tipo = norm(it.tipo_documento).toLowerCase();
           var facturaRelacionada = relatedFacturaFor(it);
           var accionesFactura = "";
