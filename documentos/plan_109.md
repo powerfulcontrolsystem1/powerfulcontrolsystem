@@ -982,6 +982,30 @@ Actualizacion 2026-08-08, cuota privada de soportes CxP/IA:
 - P109-008 sigue parcial por retencion, borrado/recuperacion, antivirus y A/B
   no global. El porcentaje y **NO-GO** no cambian.
 
+Actualizacion 2026-08-08, prueba real PCS y colision de ventas reutilizables:
+
+- El despliegue fusionado `bad1e80d` quedo saludable en produccion; la factura
+  historica `1PCS4` recupero por flujo oficial el cliente de su venta sin crear
+  otro consecutivo ni reenviar correo.
+- El reenvio unico autorizado de `1PCS4` recibio HTTP 200 con `Regla 90:
+  Documento procesado anteriormente`. El CUFE calculado por el reintento no
+  aparece en la consulta publica DIAN y la segunda consulta quedo limitada por
+  CAPTCHA; por seguridad fiscal el documento no se volvio a reenviar ni se
+  marco localmente como aceptado.
+- Una segunda venta real autorizada de una menta por COP 100 demostro un P0: la
+  caja QA-FE reutiliza el carrito 117 y la clave del comprobante seguia basada
+  solo en el ID del carrito, por lo que el upsert idempotente absorbio el nuevo
+  cierre en la venta anterior.
+- El candidato local `22359cf9` agrega una identidad estable por `pagado_en` a
+  cada cierre, conserva idempotencia del mismo pago y hereda esa identidad al
+  convertir la venta en factura. Pruebas enfocadas, paquetes `handlers`/`db`,
+  `go vet` y el preflight profesional completo aprobaron. La carrera local no
+  pudo ejecutarse porque Windows no tiene compilador C; no se oculto como PASS.
+- P109-006 y P109-007 no se aprueban: el candidato requiere promocion controlada
+  y repeticion real antes de consumir otro consecutivo DIAN. El avance permanece
+  en **53,3 % de implementacion**, la certificacion del nuevo candidato es
+  **0 %** y el veredicto continua **NO-GO**.
+
 La evidencia histórica P108 sirve como línea base y evita repetir pruebas
 independientes del artefacto, pero no aumenta automáticamente estas cifras.
 

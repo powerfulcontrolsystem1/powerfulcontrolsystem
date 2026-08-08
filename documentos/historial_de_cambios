@@ -41126,3 +41126,16 @@ acumulativa.
 - Las facturas emitidas y las que ya tienen cliente quedan inmutables. La regla
   conserva el aislamiento por empresa y evita reenviar a DIAN un documento
   pendiente sin adquirente fiscal.
+
+2026-08-08 - Plan 109: identidad única por cierre de carrito reutilizable
+- Cada pago de un carrito de estación reutilizable incorpora a la clave interna
+  del comprobante un sufijo estable derivado de `pagado_en`; el mismo cierre
+  conserva idempotencia y cierres posteriores del mismo carrito ya no se
+  absorben en el documento de una venta anterior.
+- La factura electrónica derivada conserva exactamente la identidad de la venta
+  origen. Se añadieron pruebas para dos cierres sucesivos del mismo carrito,
+  repetición idempotente y conversión comprobante a factura.
+- El hallazgo surgió en una prueba real controlada de PCS: una segunda venta de
+  COP 100 sobre la caja QA-FE reutilizó el carrito 117 y no creó un documento
+  nuevo. No se intentaron más consecutivos DIAN hasta corregir y desplegar esta
+  condición.
