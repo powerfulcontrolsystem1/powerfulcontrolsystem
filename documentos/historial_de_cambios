@@ -40969,3 +40969,11 @@ acumulativa.
 - La ejecucion conserva 204 rutas empresariales protegidas por wrapper y cero
   revisiones manuales. Es evidencia local automatizada: no despliega ni cierra
   A/B, DIAN, UAT, hardware, piloto o firmas humanas.
+
+2026-08-08 - Plan 109: CSP estricta de observacion preparada
+- Se separo la CSP aplicada de la CSP Report-Only opcional. La variable
+  `PCS_CSP_REPORT_ONLY_STRICT=1` elimina `unsafe-inline` solo de la cabecera de
+  observacion; el valor por defecto `0` mantiene la operacion sin cambios.
+- Compose y los ejemplos de entorno exponen el switch. Las pruebas unitarias,
+  vet y la suite Go completa aprobaron. Falta activarlo en staging y migrar los
+  191 scripts/173 estilos embebidos antes de enforcement o produccion.

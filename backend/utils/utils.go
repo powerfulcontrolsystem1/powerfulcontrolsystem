@@ -616,11 +616,18 @@ func cspJoinSources(base []string, extra ...string) string {
 	return strings.Join(parts, " ")
 }
 
-// securityContentSecurityPolicy keeps one strict, reviewable source for both
-// enforced and report-only CSP. Extra origins must be exact origin URLs in the
-// environment; wildcards and scheme-wide entries are intentionally ignored.
-func securityContentSecurityPolicy() string {
-	providerScripts := []string{"'self'", "'unsafe-inline'", "https://accounts.google.com", "https://checkout.epayco.co", "https://checkout.wompi.co"}
+// securityContentSecurityPolicyWithInline keeps one strict, reviewable CSP
+// source. Extra origins must be exact origin URLs in the environment; wildcards
+// and scheme-wide entries are intentionally ignored. Inline compatibility is
+// controlled separately so staging can observe a strict report-only policy
+// before enforcement changes.
+func securityContentSecurityPolicyWithInline(allowInline bool) string {
+	providerScripts := []string{"'self'", "https://accounts.google.com", "https://checkout.epayco.co", "https://checkout.wompi.co"}
+	providerStyles := []string{"'self'"}
+	if allowInline {
+		providerScripts = append(providerScripts, "'unsafe-inline'")
+		providerStyles = append(providerStyles, "'unsafe-inline'")
+	}
 	providerConnect := []string{"'self'", "https://api.openai.com", "https://accounts.google.com", "https://checkout.epayco.co", "https://secure.epayco.co", "https://checkout.wompi.co"}
 	providerFrames := []string{"'self'", "https://accounts.google.com", "https://checkout.epayco.co", "https://checkout.wompi.co"}
 	providerImages := []string{"'self'", "data:", "blob:", "https://lh3.googleusercontent.com"}
@@ -640,7 +647,7 @@ func securityContentSecurityPolicy() string {
 		"frame-ancestors 'self'",
 		"form-action 'self'",
 		"img-src " + cspJoinSources(providerImages, append(documentOrigins, customImages...)...),
-		"style-src " + cspJoinSources([]string{"'self'", "'unsafe-inline'"}, customStyles...),
+		"style-src " + cspJoinSources(providerStyles, customStyles...),
 		"font-src " + cspJoinSources([]string{"'self'", "data:"}, customFonts...),
 		"script-src " + cspJoinSources(providerScripts, customScripts...),
 		"connect-src " + cspJoinSources(providerConnect, append(documentOrigins, customConnect...)...),
@@ -652,6 +659,19 @@ func securityContentSecurityPolicy() string {
 	return strings.Join(directives, "; ")
 }
 
+func securityContentSecurityPolicy() string {
+	return securityContentSecurityPolicyWithInline(true)
+}
+
+func securityStrictReportOnlyEnabled() bool {
+	switch strings.ToLower(strings.TrimSpace(os.Getenv("PCS_CSP_REPORT_ONLY_STRICT"))) {
+	case "1", "true", "yes", "on":
+		return true
+	default:
+		return false
+	}
+}
+
 // SecurityHeadersMiddleware provides conservative browser protections while
 // retaining the currently integrated payment, Google and OnlyOffice origins.
 func SecurityHeadersMiddleware(next http.Handler) http.Handler {
@@ -661,7 +681,11 @@ func SecurityHeadersMiddleware(next http.Handler) http.Handler {
 		w.Header().Set("Permissions-Policy", "camera=(), microphone=(self), geolocation=(self), payment=(self)")
 		csp := securityContentSecurityPolicy()
 		w.Header().Set("Content-Security-Policy", csp)
-		w.Header().Set("Content-Security-Policy-Report-Only", csp)
+		reportOnlyCSP := csp
+		if securityStrictReportOnlyEnabled() {
+			reportOnlyCSP = securityContentSecurityPolicyWithInline(false)
+		}
+		w.Header().Set("Content-Security-Policy-Report-Only", reportOnlyCSP)
 		if r.TLS != nil || strings.EqualFold(strings.TrimSpace(r.Header.Get("X-Forwarded-Proto")), "https") && RequestFromTrustedProxy(r) {
 			w.Header().Set("Strict-Transport-Security", "max-age=31536000; includeSubDomains")
 		}

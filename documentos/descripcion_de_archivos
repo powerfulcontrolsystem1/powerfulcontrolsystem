@@ -1,4 +1,14 @@
 2026-08-08
+- `documentos/evidencia_plan_109/P109-009/2026-08-08_csp_report_only_estricto_preparado.md`:
+  evidencia del modo CSP estricto solo Report-Only, sus pruebas y activacion
+  controlada pendiente en staging.
+- `backend/utils/utils.go`: separa CSP aplicada y CSP Report-Only estricta
+  opcional sin cambiar el comportamiento predeterminado.
+- `backend/utils/security_headers_test.go`: cubre que la observacion estricta
+  omite `unsafe-inline` sin alterar la politica aplicada.
+- `deploy/.env.staging.example`, `deploy/.env.platform.example` y
+  `deploy/docker-compose.platform.yml`: documentan y propagan el switch
+  `PCS_CSP_REPORT_ONLY_STRICT` con valor seguro por defecto.
 - `documentos/evidencia_plan_109/P109-012/2026-08-08_preflight_full_candidato_local.md`:
   documenta las 22 compuertas automatizadas del preflight completo y sus limites
   frente a la certificacion operativa y humana.

@@ -813,6 +813,19 @@ Actualizacion 2026-08-08, preflight completo del candidato local:
   conserva sus requisitos humanos de capacitacion, ensayo, contactos, horario y
   firma del piloto; no se incrementa el porcentaje ni se modifica produccion.
 
+Actualizacion 2026-08-08, CSP estricta preparada para observacion:
+
+- Se agrego `PCS_CSP_REPORT_ONLY_STRICT`. Con valor `1`, solo la cabecera
+  `Content-Security-Policy-Report-Only` omite `unsafe-inline` de scripts y
+  estilos; la CSP aplicada mantiene compatibilidad. El valor por defecto es
+  `0` en Compose y ejemplos, por lo que no altera staging ni produccion.
+- Pruebas de cabeceras, `go vet ./utils` y `go test ./... -count=1` aprobaron.
+  El siguiente paso es publicar un candidato, activarlo exclusivamente en
+  staging y revisar el lote visual/funcional de violaciones antes de enforcement.
+- P109-009 sigue parcial y el porcentaje no cambia: el inventario actual sigue
+  encontrando 191 paginas con scripts embebidos y 173 con estilos embebidos,
+  ademas de la matriz A/B y DAST hostil pendientes.
+
 La evidencia histórica P108 sirve como línea base y evita repetir pruebas
 independientes del artefacto, pero no aumenta automáticamente estas cifras.
 
