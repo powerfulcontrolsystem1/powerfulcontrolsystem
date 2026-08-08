@@ -1,4 +1,7 @@
 2026-08-08
+- `documentos/evidencia_plan_109/P109-012/2026-08-08_preflight_full_candidato_local.md`:
+  documenta las 22 compuertas automatizadas del preflight completo y sus limites
+  frente a la certificacion operativa y humana.
 - `documentos/evidencia_plan_109/P109-009/2026-08-08_dast_autenticado_staging.md`:
   conserva DAST seguro autenticado/no autenticado, CSRF, CORS, logout,
   cabeceras, auditoria estatica, inventario de wrappers y riesgos pendientes.
