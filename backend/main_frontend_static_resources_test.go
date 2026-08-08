@@ -88,6 +88,36 @@ func TestNextcloudFramePolicyUsesExactOrigins(t *testing.T) {
 	if strings.Contains(staticHeaders, "*.powerfulcontrolsystem.com") {
 		t.Fatal("Nextcloud framing must not rely on a wildcard company origin")
 	}
+	reportOnlyHeader := ""
+	for _, line := range strings.Split(staticHeaders, "\n") {
+		if strings.HasPrefix(line, "add_header Content-Security-Policy-Report-Only ") {
+			reportOnlyHeader = line
+			break
+		}
+	}
+	if reportOnlyHeader == "" {
+		t.Fatal("static frontend must define a report-only CSP header")
+	}
+	for _, forbidden := range []string{
+		`img-src 'self' data: blob: https:;`,
+		`style-src 'self' 'unsafe-inline'`,
+		`script-src 'self' 'unsafe-inline'`,
+	} {
+		if strings.Contains(reportOnlyHeader, forbidden) {
+			t.Fatalf("static report-only CSP must keep explicit origins and omit inline compatibility: %q", forbidden)
+		}
+	}
+	for _, required := range []string{
+		`Content-Security-Policy-Report-Only`,
+		`img-src 'self' data: blob: https://lh3.googleusercontent.com`,
+		`style-src 'self' https://unpkg.com https://fonts.googleapis.com`,
+		`script-src 'self' https://accounts.google.com`,
+		`connect-src 'self' https://api.openai.com`,
+	} {
+		if !strings.Contains(reportOnlyHeader, required) {
+			t.Fatalf("static strict report-only CSP is missing %q", required)
+		}
+	}
 	if strings.Contains(config, "add_header Content-Security-Policy") {
 		t.Fatal("server-level frontend CSP would duplicate backend API CSP")
 	}

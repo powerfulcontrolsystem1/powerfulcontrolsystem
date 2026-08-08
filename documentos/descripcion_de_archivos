@@ -12657,3 +12657,8 @@ panel de seguridad para que el navegador reciba la correccion CSRF de staging.
   documenta invitaciones y sesiones independientes, ventas y stock concurrentes,
   cuatro medios de pago, devolucion, descuento, cierres, carga, recursos,
   revision visual, revocacion de sesiones y limpieza final del ensayo PCS.
+
+2026-08-08 - Plan 109 / CSP estatica Report-Only.
+- `documentos/evidencia_plan_109/P109-009/2026-08-08_csp_static_report_only_fix.md`:
+  registra el hallazgo entre middleware y Nginx, la correccion sin enforcement,
+  sus pruebas enfocadas y la compuerta pendiente de staging.

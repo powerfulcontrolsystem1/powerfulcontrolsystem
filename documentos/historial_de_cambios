@@ -40977,3 +40977,14 @@ acumulativa.
 - Compose y los ejemplos de entorno exponen el switch. Las pruebas unitarias,
   vet y la suite Go completa aprobaron. Falta activarlo en staging y migrar los
   191 scripts/173 estilos embebidos antes de enforcement o produccion.
+
+2026-08-08 - Plan 109: correccion de CSP Report-Only en frontend estatico
+- La activacion controlada en staging encontro que el middleware Go ya estaba
+  en modo estricto, mientras el include estatico de Nginx aun entregaba
+  `unsafe-inline` en la cabecera Report-Only de las paginas HTML.
+- Se mantuvo sin cambio la CSP aplicada y se retiro `unsafe-inline` solo de la
+  observacion estatica, usando origenes explicitos. La prueba de recursos
+  estaticos impide que se reintroduzcan compatibilidad inline o destinos amplios
+  en dicha cabecera.
+- Pruebas enfocadas, vet y diff-check aprobaron. Falta construir y validar el
+  nuevo candidato exclusivamente en staging; produccion no fue modificada.

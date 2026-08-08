@@ -826,6 +826,18 @@ Actualizacion 2026-08-08, CSP estricta preparada para observacion:
   encontrando 191 paginas con scripts embebidos y 173 con estilos embebidos,
   ademas de la matriz A/B y DAST hostil pendientes.
 
+Actualizacion 2026-08-08, correccion transversal de CSP estatica:
+
+- La primera promocion de observacion confirmo que el backend de staging tomo
+  `PCS_CSP_REPORT_ONLY_STRICT=1`, pero revelo que las paginas estaticas seguian
+  entregando una cabecera Report-Only heredada con `unsafe-inline` desde Nginx.
+- Se corrigio el include estatico para conservar la CSP aplicada compatible y
+  retirar compatibilidad inline solo de Report-Only, con origenes explicitos.
+  Una prueba evita que el include vuelva a usar destinos amplios o inline.
+- La correccion local aprobo prueba de recursos estaticos, pruebas de cabeceras,
+  vet y diff-check. Falta su candidato inmutable y su comprobacion visual en
+  staging; P109-009 continua parcial y el porcentaje no cambia.
+
 La evidencia histórica P108 sirve como línea base y evita repetir pruebas
 independientes del artefacto, pero no aumenta automáticamente estas cifras.
 
