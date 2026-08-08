@@ -41083,3 +41083,13 @@ acumulativa.
   humana, rechazo de JSON inválido, doble clic, degradación y proveedor canónico.
 - No se llamó proveedor IA ni se creó CxP/pago. La evidencia es local y P109-002
   conserva flujo autenticado reversible y A/B como pendientes.
+
+2026-08-08 - Plan 109: validación restaurada de cuota CxP/IA
+- El candidato inmutable `516de42e` añadió la cuota corporativa a soportes
+  privados de compras sin cambiar permisos ni el aislamiento por `empresa_id`.
+- En una restauración efímera se verificó que una sesión oficial recibe HTTP 507
+  para 2 MiB sobre una cuota de 1 MiB y que no persiste la fila; staging y
+  producción no recibieron esa configuración de prueba.
+- Se comprobó la limpieza de contenedor, red, workdir, script y log del ensayo.
+- La evidencia deja pendientes carrera multi-réplica, retención, recuperación,
+  antivirus y A/B no global; no autoriza producción.

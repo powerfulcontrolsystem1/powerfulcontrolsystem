@@ -1,8 +1,8 @@
 # P109-008 - Cuota empresarial para soportes CxP/IA
 
-Fecha: 2026-08-08 02:00 America/Bogota  
-Alcance: candidato local `00230e41` como base; sin despliegue ni mutacion de
-PCS, staging o produccion.
+Fecha: 2026-08-08 America/Bogota
+Alcance: candidato inmutable `516de42e` promovido solo a staging y una
+restauracion efimera separada. No hubo mutacion de PCS activa ni de produccion.
 
 ## Cambio implementado
 
@@ -31,8 +31,28 @@ tablas, rutas, permisos, dependencias ni archivos existentes.
 - los bytes privados de empresa 12 no incluyen los de empresa 7;
 - `go test ./... -count=1`, `go vet ./...` y `git diff --check`: PASS.
 
+## Validacion HTTP aislada del candidato
+
+- El workflow inmutable `31245235398` construyo, escaneo, genero SBOM y
+  publico los cuatro digests de `516de42e`; staging recibio esos digests sin
+  reconstruccion y mantuvo `/health` y `/ready` en HTTP 200.
+- Para no alterar la configuracion global de staging, se restauro el snapshot
+  vigente en PostgreSQL/contenedores efimeros y se inicio la API exacta del
+  candidato en un puerto loopback aislado. La restauracion, migrador y API
+  aprobaron antes del ensayo y el entorno se autolimpio al finalizar.
+- Solo en esa copia se fijo una cuota de 1 MiB para la empresa 12. Una sesion
+  oficial autorizada intento radicar un soporte PNG de 2 MiB en
+  `soportes_compras_ia`. La respuesta fue HTTP 507 con mensaje saneado y la
+  consulta posterior confirmo `0` filas con el numero de documento de prueba.
+- La configuracion activa de staging no fue escrita: el endpoint administrativo
+  protegido devolvio 403 antes de cualquier mutacion, por lo que se uso la
+  copia restaurada para una prueba equivalente y reversible.
+- Tras el hold controlado no quedaron contenedor, red, directorio temporal,
+  script ni log del ensayo en el VPS.
+
 ## Limite
 
-La evidencia es local. Falta construir/promover un nuevo candidato aislado y
-probar HTTP 507, uso agregado y carreras entre replicas antes de considerar
-resuelta la subcompuerta de cuota de P109-008.
+La subcompuerta de rechazo HTTP de cuota queda demostrada en el candidato
+inmutable restaurado. Falta probar carrera simultanea entre replicas y completar
+retencion, borrado/recuperacion, antivirus y A/B no global antes de considerar
+cerrada P109-008 o emitir un GO.

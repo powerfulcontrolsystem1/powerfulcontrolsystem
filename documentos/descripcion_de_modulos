@@ -4662,3 +4662,15 @@ Actualización 2026-07-30 (Recuperación operacional de outbox CxP):
 - Captura IA de compras/CxP: el listado sin filtro incluye soportes `radicado`,
   `extraido`, `en_revision`, `aprobado`, `rechazado`, `contabilizado` y
   `duplicado` activos. Los filtros explícitos conservan validación por estado.
+
+2026-08-08 - Captura IA de compras/CxP / cuota de adjuntos
+
+- La radicación con archivo aplica la cuota global corporativa a la suma de
+  adjuntos públicos y soportes privados de la misma empresa; el backend obtiene
+  empresa, límites y rutas y no los acepta desde el navegador.
+- Ante exceso responde HTTP 507 con texto público saneado antes de escribir el
+  archivo o crear el soporte. El control conserva el wrapper de permisos y el
+  aislamiento por `empresa_id`.
+- La prueba restaurada del candidato evidencia el rechazo y cero persistencia;
+  siguen pendientes la carrera entre réplicas y los controles operativos de
+  retención, recuperación, antivirus y A/B no global.

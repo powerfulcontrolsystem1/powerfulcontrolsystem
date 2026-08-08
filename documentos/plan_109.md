@@ -960,15 +960,20 @@ Actualizacion 2026-08-08, restore con replicas y rollback de `c8094f5b`:
 
 Actualizacion 2026-08-08, cuota privada de soportes CxP/IA:
 
-- El candidato local incorpora la cuota empresarial a los adjuntos privados de
+- El candidato `516de42e` incorpora la cuota empresarial a los adjuntos privados de
   `soportes_compras_ia`: suma almacenamiento publico y privado por `empresa_id`,
   aplica limite/maximo/bloqueo corporativos y responde HTTP 507 saneado ante
   exceso. La ruta, permisos y persistencia existente no cambian.
 - Pruebas unitarias cubren limite, switches, maximo por archivo y aislamiento
-  de bytes; `go test ./...`, `go vet ./...` y `diff --check` aprobaron.
-- P109-008 sigue parcial: falta prueba HTTP y carrera entre replicas sobre un
-  nuevo candidato, junto con retencion, borrado/recuperacion, antivirus y A/B
-  no global. El porcentaje y **NO-GO** no cambian.
+  de bytes; `go test ./...`, `go vet ./...`, `diff --check` y el preflight de
+  22 compuertas aprobaron. El workflow `31245235398` publico el candidato y
+  staging recibio los digests exactos tras respaldo, sin tocar produccion.
+- Una restauracion efimera del candidato, con cuota de 1 MiB solo en esa copia,
+  rechazo por HTTP 507 un soporte de 2 MiB y dejo cero filas de prueba; al
+  cierre se verifico la limpieza de sus recursos Docker y temporales.
+- P109-008 sigue parcial: falta carrera entre replicas, retencion,
+  borrado/recuperacion, antivirus y A/B no global. El porcentaje y **NO-GO**
+  no cambian.
 
 La evidencia histórica P108 sirve como línea base y evita repetir pruebas
 independientes del artefacto, pero no aumenta automáticamente estas cifras.

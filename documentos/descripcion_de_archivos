@@ -12703,3 +12703,7 @@ panel de seguridad para que el navegador reciba la correccion CSRF de staging.
 - `documentos/evidencia_plan_109/P109-002/2026-08-08_ia_soportes_contratos_humanos.md`:
   conserva pruebas de seguridad y revisión humana IA sin ejecutar proveedor ni
   crear efectos financieros.
+- `documentos/evidencia_plan_109/P109-008/2026-08-08_cuota_soportes_ia_local.md`:
+  registra implementación, candidate build, staging por digest y prueba HTTP
+  507 en restore efímero de la cuota de adjuntos privados CxP/IA, incluida la
+  verificación de no persistencia y limpieza de recursos.
