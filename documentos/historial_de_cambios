@@ -41139,3 +41139,14 @@ acumulativa.
   COP 100 sobre la caja QA-FE reutilizó el carrito 117 y no creó un documento
   nuevo. No se intentaron más consecutivos DIAN hasta corregir y desplegar esta
   condición.
+
+2026-08-08 - Plan 109: diálogo seguro de anulación fiscal
+- La bandeja de facturas reemplaza los `prompt()`/`confirm()` de anulación por
+  un diálogo HTML accesible con confirmación `ANULAR`, motivo mínimo de diez
+  caracteres, estado de proceso y protección contra doble envío.
+- Las facturas electrónicas sin cliente asociado se muestran como `Consumidor
+  final`, coherente con el adquirente DIAN 2222222222 generado por el XML, tanto
+  en bandeja, exportación, representación impresa como historial de ventas.
+- El cambio responde a la prueba real de `1PCS5`: DIAN devolvió StatusCode 00,
+  `Procesado Correctamente` e IsValid true, pero el botón Anular falló en el
+  navegador interno porque `prompt()` no estaba soportado.
