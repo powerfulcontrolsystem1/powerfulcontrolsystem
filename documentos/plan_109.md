@@ -910,6 +910,15 @@ Actualizacion 2026-08-08, invariantes CxP en staging:
 - P109-001 continúa parcial por A/B, carrera real reversible y conciliación con
   contador. Los porcentajes y el estado **NO-GO** no cambian.
 
+Actualizacion 2026-08-08, contratos IA y soportes:
+
+- Pruebas enfocadas aprobaron IA cerrada por defecto, redacción, revisión y
+  confirmación humana, JSON inválido, degradación de proveedor y doble clic,
+  además del proveedor canónico para CxP.
+- No se invocó proveedor ni se creó cartera/pago desde interfaz. P109-002 sigue
+  parcial hasta flujo autenticado reversible, proveedor disponible y A/B no
+  global. No cambia el porcentaje ni el estado **NO-GO**.
+
 La evidencia histórica P108 sirve como línea base y evita repetir pruebas
 independientes del artefacto, pero no aumenta automáticamente estas cifras.
 

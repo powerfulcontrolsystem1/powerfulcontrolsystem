@@ -12683,3 +12683,6 @@ panel de seguridad para que el navegador reciba la correccion CSRF de staging.
 - `documentos/evidencia_plan_109/P109-001/2026-08-08_cxp_staging_invariantes_c8094f5b.md`:
   registra esquema, cuentas/pagos agregados, invariantes de CxP y limites de
   integración/A-B antes de certificación.
+- `documentos/evidencia_plan_109/P109-002/2026-08-08_ia_soportes_contratos_humanos.md`:
+  conserva pruebas de seguridad y revisión humana IA sin ejecutar proveedor ni
+  crear efectos financieros.

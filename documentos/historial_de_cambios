@@ -41037,3 +41037,9 @@ acumulativa.
 - Las pruebas enfocadas de código aprobaron. La integración PostgreSQL local se
   omitió por falta de DSN aislado y P109-001 conserva A/B, carrera y
   conciliación contable como pendientes.
+
+2026-08-08 - Plan 109: contratos IA y soportes de compras
+- Las pruebas enfocadas verificaron cierre por defecto, revisión y confirmación
+  humana, rechazo de JSON inválido, doble clic, degradación y proveedor canónico.
+- No se llamó proveedor IA ni se creó CxP/pago. La evidencia es local y P109-002
+  conserva flujo autenticado reversible y A/B como pendientes.
