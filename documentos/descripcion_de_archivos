@@ -12668,3 +12668,6 @@ panel de seguridad para que el navegador reciba la correccion CSRF de staging.
 - `documentos/evidencia_plan_109/P109-009/2026-08-08_csp_strict_staging_a408bb62.md`:
   conserva el workflow, digests abreviados, respaldo, cabeceras reales,
   revision visual autenticada, cierre de sesiones y el pendiente de consola.
+- `documentos/evidencia_plan_109/P109-009/2026-08-08_menu_observer_defense_in_depth.md`:
+  registra la segunda revision de los observadores del menu, sus guardias y
+  pruebas antes de la repeticion de staging.

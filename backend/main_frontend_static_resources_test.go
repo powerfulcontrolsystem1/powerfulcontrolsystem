@@ -161,6 +161,11 @@ func TestMenuThemeObserverGuardsItsTarget(t *testing.T) {
 		"var observationTarget = document.documentElement || document.body;",
 		"observationTarget && observationTarget.nodeType === 1",
 		"observer.observe(observationTarget, { childList: true, subtree: true });",
+		"observedAdminBadge && observedAdminBadge.nodeType === 1",
+		"observedAdminBell && observedAdminBell.nodeType === 1",
+		"var iconObservationTarget = document.body || document.documentElement;",
+		"iconObservationTarget && iconObservationTarget.nodeType === 1",
+		"observer.observe(iconObservationTarget, { childList: true, subtree: true });",
 	} {
 		if !strings.Contains(script, required) {
 			t.Fatalf("menu theme observer must guard its target with %q", required)

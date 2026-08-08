@@ -41007,3 +41007,10 @@ acumulativa.
 - Persiste un diagnostico aislado de `MutationObserver.observe` sin traza en el
   navegador interno. Se registra como pendiente, sin declarar P109-009 ni la
   certificacion productiva como completos.
+
+2026-08-08 - Plan 109: defensa de observadores del menu
+- Se blindaron los tres observadores del panel administrativo para que solo
+  reciban nodos DOM validos; la prueba estatica cubre tema, notificaciones e
+  iconos. Las pruebas Go enfocadas y vet aprobaron.
+- Falta la validacion del candidato inmutable en staging. No se modificaron
+  datos empresariales ni produccion.

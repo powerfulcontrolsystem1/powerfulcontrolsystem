@@ -866,6 +866,15 @@ Actualizacion 2026-08-08, candidato CSP `a408bb62` en staging:
   **6,7 %** historico corresponde al candidato `7c47d4df` y no se transfiere.
   El veredicto sigue siendo **NO-GO**.
 
+Actualizacion 2026-08-08, defensa completa de observadores del menu:
+
+- Se revisaron los tres observadores activos en el panel administrativo y se
+  agregaron guardias de nodo para tema, notificaciones e iconos. Una prueba
+  estatica exige las tres condiciones antes de `observe`.
+- Las pruebas Go y vet enfocadas aprobaron. Falta el release inmutable y la
+  repeticion visual en staging para decidir si el diagnostico restante procede
+  de PCS o del navegador interno; P109-009 y los porcentajes no cambian.
+
 La evidencia histórica P108 sirve como línea base y evita repetir pruebas
 independientes del artefacto, pero no aumenta automáticamente estas cifras.
 
