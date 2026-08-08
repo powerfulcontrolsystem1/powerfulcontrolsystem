@@ -288,7 +288,8 @@
         item = item || {};
         var explicit = normalize(item.cliente_nombre) || normalize(item.cliente_email);
         if (explicit) return explicit;
-        return normalize(item.tipo_documento).toLowerCase() === "factura_electronica" ? "Consumidor final" : "Sin cliente";
+        var tipo = normalize(item.tipo_documento).toLowerCase();
+        return (tipo === "factura_electronica" || tipo === "nota_credito" || tipo === "nota_debito") ? "Consumidor final" : "Sin cliente";
       }
 
       function escapeHtml(raw) {
@@ -1581,7 +1582,13 @@
           cancelDialogBusy = false;
           submitButton.disabled = false;
           closeCancelDialog();
-          showMessage(facturaElectronica ? ("Factura anulada por nota credito " + (nota && nota.documento_codigo ? nota.documento_codigo : "")) : "Venta anulada correctamente.", "ok");
+          if (facturaElectronica && !(out && out.anulacion_confirmada_dian === true)) {
+            var estadoDIAN = normalize(out && out.integracion_fiscal && out.integracion_fiscal.estado_envio) || "pendiente";
+            return runSearch().then(function () {
+              showMessage("Nota crédito creada, pero DIAN no confirmó la anulación (estado: " + estadoDIAN + "). Revise el buzón y la consola DIAN antes de reintentar.", "error");
+            });
+          }
+          showMessage(facturaElectronica ? ("Factura anulada por nota crédito aceptada " + (nota && nota.numero_legal ? nota.numero_legal : "")) : "Venta anulada correctamente.", "ok");
           return runSearch();
         }).catch(function(err) {
           cancelDialogBusy = false;

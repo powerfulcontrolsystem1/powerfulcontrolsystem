@@ -864,6 +864,64 @@ func TestGenerateDIANUBLBaseUsesCorrectNoteLines(t *testing.T) {
 	}
 }
 
+func TestGenerateDIANCreditNoteUsesReferencedInvoiceOperationAndOwnPrefix(t *testing.T) {
+	cfg := map[string]interface{}{
+		"nit":                    "84456779",
+		"digito_verificacion":    "1",
+		"razon_social":           "CAYON GUARNIZO IVAN FRANCISCO",
+		"tipo_ambiente":          "produccion",
+		"prefijo":                "1PCS",
+		"resolucion_numero":      "18764111318575",
+		"resolucion_fecha_desde": "2026-06-17",
+		"resolucion_fecha_hasta": "2028-06-17",
+		"rango_desde":            1,
+		"rango_hasta":            100000,
+		"llave_tecnica":          "technical-key-test",
+		"software_id":            "b266de9c-425a-4aaf-b465-6d6957aa21dd",
+		"software_pin":           "software-pin-test",
+	}
+	result, status, err := generateDIANUBLBase(cfg, 12, map[string]interface{}{
+		"numero_legal":                "NC12000000098",
+		"documento_tipo":              "nota_credito",
+		"fecha_emision":               "2026-08-08T10:20:00-05:00",
+		"cliente_nombre":              "CONSUMIDOR FINAL",
+		"cliente_nit":                 "2222222222",
+		"total":                       "100.00",
+		"impuesto_total":              "0.00",
+		"moneda":                      "COP",
+		"referencia_documento_codigo": "1PCS5",
+		"referencia_cufe":             "589135236ea7a1cde3f02409ba77ce0d5fd68cc3b1dab858c061c668ad8db2eb53f4046bf682ecbf437daf22356db799",
+		"referencia_fecha_emision":    "2026-08-08T09:40:14-05:00",
+		"codigo_correccion":           "2",
+		"descripcion_correccion":      "Anulacion de factura electronica",
+	})
+	if err != nil || status != http.StatusOK {
+		t.Fatalf("generate status=%d err=%v result=%#v", status, err, result)
+	}
+	xmlPayload := genericStringValue(result["xml_ubl_base"])
+	for _, expected := range []string{
+		"<cbc:CustomizationID>20</cbc:CustomizationID>",
+		"<cbc:ID>NC12000000098</cbc:ID>",
+		"<cac:CorporateRegistrationScheme><cbc:ID>NC</cbc:ID>",
+		`<cbc:CompanyID schemeAgencyID="195"`,
+		"<cbc:ReferenceID>1PCS5</cbc:ReferenceID>",
+		"<cbc:ResponseCode>2</cbc:ResponseCode>",
+		"<cbc:Description>Anulacion de factura electronica</cbc:Description>",
+		"<cbc:ID>1PCS5</cbc:ID><cbc:UUID schemeName=\"CUFE-SHA384\">589135236ea7a1cde3f02409ba77ce0d5fd68cc3b1dab858c061c668ad8db2eb53f4046bf682ecbf437daf22356db799</cbc:UUID><cbc:IssueDate>2026-08-08</cbc:IssueDate>",
+	} {
+		if !strings.Contains(xmlPayload, expected) {
+			t.Fatalf("expected %q in credit note XML: %s", expected, xmlPayload)
+		}
+	}
+	if strings.Contains(xmlPayload, "<cbc:CustomizationID>11</cbc:CustomizationID>") || strings.Contains(xmlPayload, "<cbc:ID>1PCS</cbc:ID></cac:CorporateRegistrationScheme>") {
+		t.Fatalf("credit note must not use mandate operation or invoice prefix: %s", xmlPayload)
+	}
+	_, _, debitCustomization, _, _, _, _, _ := dianDocumentKind("nota_debito")
+	if debitCustomization != "30" {
+		t.Fatalf("debit note customization = %q, want 30", debitCustomization)
+	}
+}
+
 func TestGenerateDIANUBLBaseUsesNaturalPersonCustomerAndFormattedCUFE(t *testing.T) {
 	cfg := map[string]interface{}{
 		"nit":                    "84456779",
