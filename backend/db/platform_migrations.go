@@ -83,6 +83,54 @@ func PlatformMigrations(target string) ([]Migration, error) {
 					return applyEmpresaAIUserIsolationSchemaTx(tx)
 				},
 			},
+			{
+				Version:     "20260730-001-nextcloud-accounts-v2",
+				Description: "repair provisioned flag on legacy Nextcloud assignments",
+				Body:        empresaNextcloudSchemaRepairFingerprint,
+				Apply: func(ctx context.Context, tx *sql.Tx) error {
+					return applyEmpresaNextcloudSchemaRepairTx(ctx, tx)
+				},
+			},
+			{
+				Version:     "20260730-002-nextcloud-accounts-v3",
+				Description: "complete required columns on legacy Nextcloud assignments",
+				Body:        empresaNextcloudSchemaCompleteRepairFingerprint,
+				Apply: func(ctx context.Context, tx *sql.Tx) error {
+					return applyEmpresaNextcloudSchemaCompleteRepairTx(ctx, tx)
+				},
+			},
+			{
+				Version:     "20260730-003-nextcloud-accounts-v4",
+				Description: "remove obsolete locally stored Nextcloud credential column",
+				Body:        empresaNextcloudSchemaCredentialCleanupFingerprint,
+				Apply: func(ctx context.Context, tx *sql.Tx) error {
+					return applyEmpresaNextcloudSchemaCredentialCleanupTx(ctx, tx)
+				},
+			},
+			{
+				Version:     "20260730-004-outbox-recovery-audit-v1",
+				Description: "audited tenant-scoped recovery for dead outbox events",
+				Body:        outboxRecoveryAuditSchemaFingerprint,
+				Apply: func(_ context.Context, tx *sql.Tx) error {
+					return applyOutboxRecoveryAuditSchemaTx(tx)
+				},
+			},
+			{
+				Version:     "20260731-001-ai-usage-unique-v1",
+				Description: "unique daily enterprise AI usage per tenant, provider and model",
+				Body:        empresaAIUsoDiarioUniqueSchemaFingerprint,
+				Apply: func(_ context.Context, tx *sql.Tx) error {
+					return applyEmpresaAIUsoDiarioUniqueSchemaTx(tx)
+				},
+			},
+			{
+				Version:     "20260801-001-cartera-money-precision-v1",
+				Description: "exact two-decimal balances for accounts receivable and payable",
+				Body:        empresaCarteraMoneyPrecisionFingerprint,
+				Apply: func(ctx context.Context, tx *sql.Tx) error {
+					return applyEmpresaCarteraMoneyPrecisionTx(ctx, tx)
+				},
+			},
 		}, nil
 	case MigrationTargetSuper:
 		return []Migration{

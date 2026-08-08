@@ -16,6 +16,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"sync"
 	"syscall"
 	"time"
 
@@ -38,9 +39,173 @@ var (
 	dbSuper       *sql.DB
 )
 
-// prometheusMetricsHandler exposes only process availability. It deliberately
-// avoids tenant, request, credential and database data so the endpoint can be
-// scraped from the isolated monitoring network without an authenticated user.
+const (
+	prometheusOperationalTimeout  = 2 * time.Second
+	prometheusOperationalCacheTTL = 10 * time.Second
+)
+
+type prometheusQueueMetrics struct {
+	ready         int64
+	processing    int64
+	dead          int64
+	expiredLeases int64
+	queryOK       float64
+}
+
+type prometheusOperationalMetrics struct {
+	businessDBReady float64
+	superDBReady    float64
+	workerAge       float64
+	workerQueryOK   float64
+	businessOutbox  prometheusQueueMetrics
+	superOutbox     prometheusQueueMetrics
+	asyncJobs       prometheusQueueMetrics
+}
+
+type prometheusOperationalCache struct {
+	mu          sync.Mutex
+	values      prometheusOperationalMetrics
+	expiresAt   time.Time
+	initialized bool
+}
+
+var operationalMetricsCache prometheusOperationalCache
+
+func defaultPrometheusOperationalMetrics() prometheusOperationalMetrics {
+	return prometheusOperationalMetrics{workerAge: -1}
+}
+
+func databaseReady(ctx context.Context, dbConn *sql.DB) float64 {
+	if dbConn == nil {
+		return 0
+	}
+	if err := dbConn.PingContext(ctx); err != nil {
+		return 0
+	}
+	return 1
+}
+
+func collectOutboxMetrics(ctx context.Context, dbConn *sql.DB) prometheusQueueMetrics {
+	var result prometheusQueueMetrics
+	if dbConn == nil {
+		return result
+	}
+	err := dbConn.QueryRowContext(ctx, `SELECT
+		COUNT(*) FILTER (WHERE status = 'pending' AND available_at <= CURRENT_TIMESTAMP),
+		COUNT(*) FILTER (WHERE status = 'processing'),
+		COUNT(*) FILTER (WHERE status = 'dead'),
+		COUNT(*) FILTER (WHERE status = 'processing' AND lease_until IS NOT NULL AND lease_until < CURRENT_TIMESTAMP)
+		FROM pcs_outbox_events`).Scan(&result.ready, &result.processing, &result.dead, &result.expiredLeases)
+	if err == nil {
+		result.queryOK = 1
+	}
+	return result
+}
+
+func collectAsyncJobMetrics(ctx context.Context, dbConn *sql.DB) prometheusQueueMetrics {
+	var result prometheusQueueMetrics
+	if dbConn == nil {
+		return result
+	}
+	err := dbConn.QueryRowContext(ctx, `SELECT
+		COUNT(*) FILTER (WHERE status = 'pending' AND cancelled_at IS NULL AND available_at <= CURRENT_TIMESTAMP),
+		COUNT(*) FILTER (WHERE status = 'processing' AND cancelled_at IS NULL),
+		COUNT(*) FILTER (WHERE status = 'dead'),
+		COUNT(*) FILTER (WHERE status = 'processing' AND cancelled_at IS NULL AND lease_until IS NOT NULL AND lease_until < CURRENT_TIMESTAMP)
+		FROM pcs_async_jobs`).Scan(&result.ready, &result.processing, &result.dead, &result.expiredLeases)
+	if err == nil {
+		result.queryOK = 1
+	}
+	return result
+}
+
+func collectPrometheusOperationalMetrics(ctx context.Context, businessDB, superDB *sql.DB) prometheusOperationalMetrics {
+	result := defaultPrometheusOperationalMetrics()
+	result.businessDBReady = databaseReady(ctx, businessDB)
+	result.superDBReady = databaseReady(ctx, superDB)
+	if result.businessDBReady == 1 {
+		result.businessOutbox = collectOutboxMetrics(ctx, businessDB)
+	}
+	if result.superDBReady == 1 {
+		result.superOutbox = collectOutboxMetrics(ctx, superDB)
+		result.asyncJobs = collectAsyncJobMetrics(ctx, superDB)
+		var age float64
+		err := superDB.QueryRowContext(ctx, `SELECT COALESCE(
+			EXTRACT(EPOCH FROM (CURRENT_TIMESTAMP - MAX(completed_at))),
+			-1
+		)
+		FROM pcs_async_jobs
+		WHERE kind = 'maintenance.system-metrics' AND status = 'completed'`).Scan(&age)
+		if err == nil {
+			result.workerAge = age
+			result.workerQueryOK = 1
+		}
+	}
+	return result
+}
+
+func (cache *prometheusOperationalCache) get(ctx context.Context, businessDB, superDB *sql.DB) prometheusOperationalMetrics {
+	cache.mu.Lock()
+	defer cache.mu.Unlock()
+	now := time.Now()
+	if cache.initialized && now.Before(cache.expiresAt) {
+		return cache.values
+	}
+	cache.values = collectPrometheusOperationalMetrics(ctx, businessDB, superDB)
+	cache.expiresAt = now.Add(prometheusOperationalCacheTTL)
+	cache.initialized = true
+	return cache.values
+}
+
+func writePrometheusQueueMetrics(builder *strings.Builder, metricPrefix, source string, values prometheusQueueMetrics) {
+	fmt.Fprintf(builder, "%s_ready_total{source=%q} %d\n", metricPrefix, source, values.ready)
+	fmt.Fprintf(builder, "%s_processing_total{source=%q} %d\n", metricPrefix, source, values.processing)
+	fmt.Fprintf(builder, "%s_dead_total{source=%q} %d\n", metricPrefix, source, values.dead)
+	fmt.Fprintf(builder, "%s_expired_leases_total{source=%q} %d\n", metricPrefix, source, values.expiredLeases)
+	fmt.Fprintf(builder, "pcs_observability_query_success{source=%q} %.0f\n", source, values.queryOK)
+}
+
+func renderPrometheusMetrics(values prometheusOperationalMetrics) string {
+	var builder strings.Builder
+	builder.WriteString("# HELP pcs_backend_up Backend process is accepting HTTP requests.\n")
+	builder.WriteString("# TYPE pcs_backend_up gauge\npcs_backend_up 1\n")
+	builder.WriteString("# HELP pcs_postgres_ready PostgreSQL pool accepted a bounded readiness ping.\n")
+	builder.WriteString("# TYPE pcs_postgres_ready gauge\n")
+	fmt.Fprintf(&builder, "pcs_postgres_ready{database=\"business\"} %.0f\n", values.businessDBReady)
+	fmt.Fprintf(&builder, "pcs_postgres_ready{database=\"super\"} %.0f\n", values.superDBReady)
+	builder.WriteString("# HELP pcs_worker_heartbeat_age_seconds Seconds since the durable worker completed its system metrics job; -1 means no heartbeat.\n")
+	builder.WriteString("# TYPE pcs_worker_heartbeat_age_seconds gauge\n")
+	fmt.Fprintf(&builder, "pcs_worker_heartbeat_age_seconds %.3f\n", values.workerAge)
+	builder.WriteString("# HELP pcs_worker_heartbeat_query_success Whether the worker heartbeat query completed.\n")
+	builder.WriteString("# TYPE pcs_worker_heartbeat_query_success gauge\n")
+	fmt.Fprintf(&builder, "pcs_worker_heartbeat_query_success %.0f\n", values.workerQueryOK)
+	builder.WriteString("# HELP pcs_observability_query_success Whether an aggregate operational query completed.\n")
+	builder.WriteString("# TYPE pcs_observability_query_success gauge\n")
+	builder.WriteString("# HELP pcs_outbox_ready_total Durable outbox events ready for dispatch.\n")
+	builder.WriteString("# TYPE pcs_outbox_ready_total gauge\n")
+	builder.WriteString("# HELP pcs_outbox_processing_total Durable outbox events currently leased.\n")
+	builder.WriteString("# TYPE pcs_outbox_processing_total gauge\n")
+	builder.WriteString("# HELP pcs_outbox_dead_total Durable outbox events in dead-letter state.\n")
+	builder.WriteString("# TYPE pcs_outbox_dead_total gauge\n")
+	builder.WriteString("# HELP pcs_outbox_expired_leases_total Durable outbox events with expired leases.\n")
+	builder.WriteString("# TYPE pcs_outbox_expired_leases_total gauge\n")
+	writePrometheusQueueMetrics(&builder, "pcs_outbox", "business_outbox", values.businessOutbox)
+	writePrometheusQueueMetrics(&builder, "pcs_outbox", "super_outbox", values.superOutbox)
+	builder.WriteString("# HELP pcs_async_jobs_ready_total Durable jobs ready for execution.\n")
+	builder.WriteString("# TYPE pcs_async_jobs_ready_total gauge\n")
+	builder.WriteString("# HELP pcs_async_jobs_processing_total Durable jobs currently leased.\n")
+	builder.WriteString("# TYPE pcs_async_jobs_processing_total gauge\n")
+	builder.WriteString("# HELP pcs_async_jobs_dead_total Durable jobs in dead-letter state.\n")
+	builder.WriteString("# TYPE pcs_async_jobs_dead_total gauge\n")
+	builder.WriteString("# HELP pcs_async_jobs_expired_leases_total Durable jobs with expired leases.\n")
+	builder.WriteString("# TYPE pcs_async_jobs_expired_leases_total gauge\n")
+	writePrometheusQueueMetrics(&builder, "pcs_async_jobs", "super_jobs", values.asyncJobs)
+	return builder.String()
+}
+
+// prometheusMetricsHandler exposes bounded aggregate operational signals. It
+// deliberately avoids tenant identifiers, payloads, credentials and provider
+// errors so the isolated monitoring network can scrape it without a user.
 func prometheusMetricsHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		w.Header().Set("Allow", http.MethodGet)
@@ -49,7 +214,9 @@ func prometheusMetricsHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	w.Header().Set("Content-Type", "text/plain; version=0.0.4; charset=utf-8")
 	w.Header().Set("Cache-Control", "no-store")
-	_, _ = w.Write([]byte("# HELP pcs_backend_up Backend process is accepting HTTP requests.\n# TYPE pcs_backend_up gauge\npcs_backend_up 1\n"))
+	ctx, cancel := context.WithTimeout(r.Context(), prometheusOperationalTimeout)
+	defer cancel()
+	_, _ = w.Write([]byte(renderPrometheusMetrics(operationalMetricsCache.get(ctx, dbEmpresas, dbSuper))))
 }
 
 func resolveBackendRuntimeDir() string {
@@ -1722,6 +1889,7 @@ func main() {
 	http.HandleFunc("/super/api/metrics/history", handlers.MetricsHistoryHandler(dbSuper))
 	http.HandleFunc("/super/api/reportes_globales", handlers.WithSuperAuditoria(dbSuper, "reportes_globales", handlers.SuperReportesGlobalesHandler(dbEmpresas, dbSuper)))
 	http.HandleFunc("/super/api/postgres/performance", handlers.WithSuperAuditoria(dbSuper, "super_postgresql", handlers.PostgresPerformanceHandler(dbEmpresas, dbSuper)))
+	http.HandleFunc("/super/api/outbox/recovery", handlers.WithSuperAuditoria(dbSuper, "super_outbox_recovery", handlers.SuperOutboxRecoveryHandler(dbEmpresas, dbSuper)))
 	http.HandleFunc("/super/api/explorador_archivos", handlers.WithSuperAuditoria(dbSuper, "super_explorador_archivos", handlers.SuperFileExplorerHandler(dbSuper)))
 	http.HandleFunc("/super/api/docker_portabilidad", handlers.WithSuperAuditoria(dbSuper, "super_docker_portabilidad", handlers.SuperDockerPortabilidadHandler(dbSuper)))
 	http.HandleFunc("/super/api/vps_snapshots", handlers.WithSuperAuditoria(dbSuper, "super_vps_snapshots", handlers.SuperVPSSnapshotsHandler(dbSuper)))

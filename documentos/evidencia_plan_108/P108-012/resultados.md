@@ -75,3 +75,51 @@ Después de promover el digest exacto se repitió la medición autenticada en
 
 Resultado de este hallazgo: **PASS**. P108-012 sigue parcial porque la matriz
 visual de todos los módulos, roles y documentos imprimibles aún no está cerrada.
+
+## Barrido responsive ampliado 2026-07-30
+
+El barrido autenticado de 48 rutas en escritorio y móvil inspeccionó 96
+combinaciones. La repetición dirigida confirmó sin desborde bloqueante Compras,
+Clientes, Configuración, Contabilidad Colombia, Facturación electrónica y
+Usuarios. En Cobranza móvil detectó un desborde horizontal interno de 6 px en
+`Guardar configuración`.
+
+La causa era una grilla de tres columnas a 390 px. En el breakpoint móvil,
+Recordatorios automáticos usa ahora una sola columna, los campos `wide` vuelven
+al flujo normal y sus tres botones ocupan el ancho disponible. La captura
+publicada antes de la corrección conserva el hallazgo; falta validar visualmente
+el CSS corregido sobre el nuevo digest.
+
+P108-012 permanece parcial por accesibilidad, teclado, lector de pantalla,
+tableta y la matriz completa por rol.
+
+## Verificación visual del digest `f9396da5`
+
+La repetición autenticada en 390 x 844 informó cero problemas visuales para
+Cobranza. La inspección de la captura confirmó checks, campos, texto extenso y
+botones apilados dentro del panel, sin el desborde horizontal previo:
+
+`capturas/cobranza_mobile_f9396da5_390x844.png`
+
+El hallazgo de Cobranza queda **PASS** sobre el candidato activo; la fase
+completa conserva los límites de accesibilidad y roles indicados arriba.
+
+## Impresiones del candidato `5ec1c48f` - 2026-07-30
+
+El workflow inmutable `30591586319` renderizó 18/18 formatos sin casos para
+revisión, desbordes, nodos inválidos ni errores de consola:
+
+- factura electrónica, recibo de venta, comprobantes de ingreso y egreso,
+  orden de servicio, corte de caja, parqueadero y turno de atención;
+- formatos carta y POS donde aplican;
+- tres sondas reales de `window.print()` aprobadas: factura POS, ticket de
+  turno y recibo de parqueadero.
+
+La inspección visual humana de las capturas de factura electrónica carta y POS
+confirmó datos ordenados en filas y columnas, totales legibles, información
+legal contenida y firmas alineadas. La evidencia automatizada conserva además
+capturas y PDF de los 18 casos.
+
+Estado: **parcial**. La batería de formatos es `PASS`, pero P108-012 todavía
+requiere documentos reales extensos, impresión física, teclado, lector de
+pantalla, tableta y matriz visual completa por rol.

@@ -1,3 +1,26 @@
+## [2026-08-01] Confirmación e idempotencia CxP/IA
+- [IA] La extracción documental usa un lock PostgreSQL por soporte para impedir llamadas y cuotas duplicadas entre réplicas.
+- [CxP] Aprobar y rechazar son transacciones idempotentes; no se puede revivir un soporte rechazado, duplicado o contabilizado.
+- [Control humano] Aprobar exige proveedor activo de la empresa, documento y total positivo; contabilizar confirma que crea CxP pero no pago.
+- [Degradación] Fallos del proveedor devuelven mensajes seguros y los datos incompletos, baja confianza o totales inconsistentes fuerzan revisión.
+- [Permisos] Guardar el techo fino invalida inmediatamente snapshots y overrides de la empresa modificada, sin afectar otras empresas.
+
+## [2026-07-30] Concurrencia e interacción CxP
+- [CxP] Dos abonos simultáneos con la misma clave reutilizan el mismo movimiento; claves distintas no pueden sobrepagar el saldo.
+- [UX] Elegir un proveedor registrado completa el nombre obligatorio y permite guardar la CxP sin duplicar la entrada manual.
+- [API] La carrera que encuentra una cuenta ya pagada responde `409 Conflict` mediante un error de dominio estable.
+- [Catálogo público] El host técnico de staging ya no se usa como slug de empresa y los errores se presentan sin JSON crudo ni desborde móvil.
+- [QA integral] El candidato `5ec1c48f` recorrió 618 vistas, inventarió 10.998 controles y ejecutó 1.062 clics seguros sin errores de página ni HTTP 500; conserva 14 vistas y 1.975 acciones para revisión oficial.
+- [Impresión] Los 18 formatos carta/POS aprobaron render y las facturas carta/POS se comprobaron visualmente con filas, columnas, totales, legales y firmas organizados.
+- [Worker CxP] El topic `cuentas_por_pagar.pago_registrado` deja de morir sin handler y genera un evento contable idempotente, conciliado y aislado por empresa.
+- [Contabilidad] El retry bloquea el pago, valida cuenta/movimiento/monto y reutiliza la identidad natural `empresa_cxp_pagos/pago_id` para impedir asientos duplicados.
+
+## [2026-07-30] Repetición final de migraciones P108
+- [QA] El digest migrador exacto del candidato `5ec1c48f` aprobó instalación desde PostgreSQL vacío y upgrade desde copia lógica temporal de staging.
+- [Migraciones] Las dos rutas aprobaron una segunda pasada idempotente; el upgrade conservó 349 tablas empresariales y 59 administrativas.
+- [Recuperación] El ensayo efímero altera un checksum, exige rechazo auditado sin cambios de esquema o ledger y valida la recuperación controlada.
+- [Seguridad] El login runtime volvió a verificarse sin DDL y los ensayos eliminaron todos sus recursos efímeros sin tocar producción.
+
 ## [2026-07-28] Rol PostgreSQL runtime sin DDL
 - [Base de datos] `pcs-migrate` conserva propiedad del esquema y provisiona un login separado para API/worker.
 - [Seguridad] El login runtime recibe DML, secuencias y funciones, pero no superusuario, creación de bases/roles, BYPASSRLS ni CREATE en `public`.
@@ -3364,3 +3387,29 @@
   BIMI visible y se documentó VMC/CMC como compuerta del avatar en Gmail.
 - Se corrigió la validación nativa de la cuota de 1024 MB.
 - Se corrigió el desbordamiento horizontal del panel Mailu en móvil.
+
+## 2026-07-30
+
+- Plan 108 valida parcialmente el almacenamiento privado por empresa, su
+  volumen persistente compartido y el readiness de staging.
+- Se normalizan 218 secuencias dañadas de `CHANGELOG.md`; el gate documental
+  estricto queda sin hallazgos.
+- El auditor visual recupera controles cuando una acción segura reconstruye la
+  pantalla sin cambiar de URL.
+- El workflow visual admite repeticiones dirigidas por rutas/viewports y reserva
+  90 minutos para el inventario integral.
+- El barrido integral de 618 vistas corrige regresiones PostgreSQL en Bre-B QR,
+  Hoja de vida y Nextcloud, dos URLs dañadas de Inventario y la entrada genérica
+  Colombia sin módulo.
+- CSP incorpora orígenes exactos para los recursos cartográficos/gráficos ya
+  usados; Leaflet y Chart.js quedan versionados con SRI.
+- Nextcloud incorpora una migración v3 acumulativa para tablas históricas sin
+  cuota y readiness valida todas las columnas que usa el handler.
+- Nextcloud incorpora una v4 inmutable que elimina la columna heredada
+  `password_encrypted`; el contrato actual no conserva credenciales locales.
+- Domicilios representa el menú vacío como `[]` y su frontend tolera respuestas
+  vacías sin intentar ejecutar `.map` sobre `null`.
+- La repetición autenticada del candidato consolidado aprobó 22/22 vistas en
+  escritorio/móvil sin respuestas HTTP erróneas en los módulos reparados.
+- Hoja de vida normaliza su fecha programada de texto antes de compararla y el
+  CSP estático de Nginx permite los mismos recursos visuales fijados por versión.

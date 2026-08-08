@@ -972,7 +972,15 @@
 
     function fmtMoney(v) {
       const moneda = normalize(document.getElementById('moneda').value || (state.config && state.config.moneda) || 'COP').toUpperCase() || 'COP';
-      return new Intl.NumberFormat('es-CO', { style: 'currency', currency: moneda, maximumFractionDigits: 0 }).format(toNumber(v, 0));
+      const amount = toNumber(v, 0);
+      const hasMinorUnits = Math.round(Math.abs(amount) * 100) % 100 !== 0;
+      const fractionDigits = hasMinorUnits ? 2 : 0;
+      return new Intl.NumberFormat('es-CO', {
+        style: 'currency',
+        currency: moneda,
+        minimumFractionDigits: fractionDigits,
+        maximumFractionDigits: fractionDigits
+      }).format(amount);
     }
 
     function sanitize(v) {
@@ -1958,6 +1966,15 @@
 	  });
 	  select.value = selected;
 	  delete select.dataset.pendingId;
+	}
+
+	function syncCarteraProveedorName() {
+	  const select = document.getElementById('carteraProveedorId');
+	  const option = select && select.selectedOptions ? select.selectedOptions[0] : null;
+	  const name = option ? normalize(option.dataset.nombre) : '';
+	  if (name) {
+		document.getElementById('carteraTercero').value = name;
+	  }
 	}
 
 	async function loadCarteraProveedores() {
@@ -3633,6 +3650,7 @@
       document.getElementById('btnAplicarPlanMotel').addEventListener('click', aplicarPlanMotel);
 
 	  document.getElementById('carteraTipo').addEventListener('change', syncCarteraProveedorUI);
+	  document.getElementById('carteraProveedorId').addEventListener('change', syncCarteraProveedorName);
     document.getElementById('carteraForm').addEventListener('submit', saveCartera);
 	  document.getElementById('btnCargarCxPIA').addEventListener('click', function() {
 		const tipo = normalize(document.getElementById('carteraTipo').value);

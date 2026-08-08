@@ -27,8 +27,18 @@
     .reports-ai-spec{margin-top:10px;border:1px solid var(--border);border-radius:8px;padding:9px 11px;background:var(--surface-soft);color:var(--muted)}
     .reports-ai-spec summary{cursor:pointer;font-weight:700;color:var(--text)}
     .reports-ai-spec pre{white-space:pre-wrap;overflow-wrap:anywhere;max-height:250px;overflow:auto;margin:9px 0 0;font-size:.82rem}
+    .reports-template-dialog{width:min(520px,calc(100% - 32px));padding:0;border:1px solid var(--border);border-radius:12px;background:var(--surface);color:var(--text);box-shadow:0 18px 50px rgba(15,23,42,.28)}
+    .reports-template-dialog::backdrop{background:rgba(15,23,42,.62)}
+    .reports-template-form{display:grid;gap:14px;padding:20px}
+    .reports-template-form h3{margin:0;font-size:1.25rem}
+    .reports-template-form p{margin:0;color:var(--muted);line-height:1.45}
+    .reports-template-field{display:grid;gap:6px}
+    .reports-template-field label{font-weight:700}
+    .reports-template-field small{color:var(--muted);line-height:1.35}
+    .reports-template-actions{display:flex;justify-content:flex-end;flex-wrap:wrap;gap:8px;margin-top:2px}
     .reports-print-page{background:#fff;color:#111827;border:1px solid #111827;border-radius:0;box-shadow:none;color-scheme:light;margin:14px auto 0;padding:18px;max-width:8.5in;min-height:11in}
     .reports-print-page *{color:#111827;box-shadow:none;text-shadow:none}
+    .reports-print-page h2,.reports-print-page strong{color:#111827 !important}
     .reports-print-page header{border-bottom:2px solid #111827;padding-bottom:12px;margin-bottom:12px}
     .reports-print-page h2{margin:0 0 6px;font-size:1.35rem;color:#111827}
     .reports-print-page p{margin:4px 0;color:#374151}
@@ -42,10 +52,17 @@
     .reports-print-record{break-inside:avoid;border-top:1px solid #d1d5db;padding:6px 0}
     .reports-print-record:first-child{border-top:0}
     .reports-print-row{display:grid;grid-template-columns:minmax(80px,.42fr) minmax(0,1fr);gap:6px;line-height:1.28;padding:2px 0}
+    /* A ledger can contain more columns than a letter sheet can represent
+       legibly. Keep the document inside its paper width by using one
+       labelled record per row instead of forcing a clipped micro-table. */
+    .reports-print-page.reports-print-wide .reports-print-table{display:none}
+    .reports-print-page.reports-print-wide .reports-print-records{display:block}
+    .reports-print-page.reports-print-wide .reports-print-row{overflow-wrap:anywhere}
     .reports-paper-pos .reports-print-page{width:80mm;max-width:80mm;min-height:auto;padding:4mm;font-size:10px}
     .reports-paper-pos .reports-print-page h2{font-size:15px}
-    .reports-paper-pos .reports-print-meta{grid-template-columns:repeat(2,minmax(0,1fr));gap:0 5px}
+    .reports-paper-pos .reports-print-meta{grid-template-columns:1fr;gap:0}
     .reports-paper-pos .reports-print-meta div,.reports-paper-pos .reports-print-summary div{display:grid;grid-template-columns:minmax(22mm,.45fr) minmax(0,1fr);gap:2mm;min-width:0;padding:4px 0;align-items:start}
+    .reports-paper-pos .reports-print-page strong{min-width:0;overflow-wrap:anywhere;word-break:break-word}
     .reports-paper-pos .reports-print-meta span::after,.reports-paper-pos .reports-print-summary span::after,.reports-paper-pos .reports-print-row span::after{content:":"}
     .reports-paper-pos .reports-print-table{display:none}
     .reports-paper-pos .reports-print-records{display:block}
@@ -54,6 +71,15 @@
     @media (max-width: 900px){
       .reports-header,.reports-controls,.reports-filters,.reports-selected-info{grid-template-columns:1fr}
       .reports-preview-tools{justify-content:flex-start}
+    }
+    @media (max-width: 600px){
+      .reports-format-buttons{width:100%;min-width:0}
+      .reports-print-page{box-sizing:border-box;width:100%;max-width:100%;padding:12px}
+      .reports-print-meta{grid-template-columns:1fr}
+      .reports-print-meta div,.reports-print-summary div{grid-template-columns:minmax(112px,.45fr) minmax(0,1fr);min-width:0}
+      .reports-print-page.reports-print-wide .reports-print-row{grid-template-columns:minmax(112px,.45fr) minmax(0,1fr);gap:8px;align-items:start}
+      .reports-print-page.reports-print-wide .reports-print-row span{font-size:.68rem;line-height:1.2}
+      .reports-print-page strong{min-width:0;overflow-wrap:anywhere;word-break:break-word}
     }
     @media print{
       @page{size:letter;margin:12mm}
@@ -146,7 +172,7 @@
         <button class="btn secondary" type="button" data-ai-export-format="pdf" disabled>PDF</button>
         <button class="btn secondary" type="button" data-ai-export-format="csv" disabled>CSV</button>
       </div>
-      <p id="reportsAIMessage" class="form-help">El reporte se genera como una vista declarativa; no modifica ventas, cartera, impuestos ni asientos.</p>
+      <p id="reportsAIMessage" class="form-help" aria-live="polite">El reporte se genera como una vista declarativa; no modifica ventas, cartera, impuestos ni asientos.</p>
       <details id="reportsAISpec" class="reports-ai-spec" hidden>
         <summary>Cómo se construyó este reporte</summary>
         <pre id="reportsAISpecContent"></pre>
@@ -200,6 +226,26 @@
     </section>
   </div>
 
+  <dialog id="reportsAITemplateDialog" class="reports-template-dialog" aria-labelledby="reportsAITemplateTitle" aria-describedby="reportsAITemplateHelp">
+    <form id="reportsAITemplateForm" class="reports-template-form">
+      <h3 id="reportsAITemplateTitle">Guardar plantilla de reporte IA</h3>
+      <p id="reportsAITemplateHelp">Asigna un código estable y un nombre claro. El sistema guardará una nueva versión aislada para esta empresa.</p>
+      <div class="reports-template-field">
+        <label for="reportsAITemplateCode">Código de plantilla</label>
+        <input id="reportsAITemplateCode" class="form-input" type="text" required maxlength="80" pattern="[A-Za-z0-9][A-Za-z0-9._-]{1,79}" autocomplete="off" aria-describedby="reportsAITemplateCodeHelp">
+        <small id="reportsAITemplateCodeHelp">Usa entre 2 y 80 caracteres: letras sin tilde, números, punto, guion o guion bajo.</small>
+      </div>
+      <div class="reports-template-field">
+        <label for="reportsAITemplateName">Nombre visible</label>
+        <input id="reportsAITemplateName" class="form-input" type="text" required maxlength="160" autocomplete="off">
+      </div>
+      <div class="reports-template-actions">
+        <button id="btnCancelAIReportTemplate" class="btn secondary" type="button">Cancelar</button>
+        <button id="btnConfirmAIReportTemplate" class="btn" type="submit">Guardar nueva versión</button>
+      </div>
+    </form>
+  </dialog>
+
   <script>
     (function(){
       var fallbackReports = [
@@ -230,6 +276,7 @@
       var selectedDatasetKey = '';
       var lastDataset = null;
       var currentCustomReportSpec = null;
+      var aiTemplateDialogTrigger = null;
 
       function empresaId() {
         if (window.__empresaModuleGuard && typeof window.__empresaModuleGuard.resolveEmpresaId === 'function') {
@@ -499,6 +546,10 @@
         return String(value);
       }
 
+      function formatPreviewLabel(value) {
+        return String(value == null ? '' : value).replace(/_/g, ' ').replace(/\s+/g, ' ').trim();
+      }
+
       function summaryEntries(summary) {
         if (!summary || typeof summary !== 'object') return [];
         return Object.keys(summary).slice(0, 12).map(function(key) {
@@ -512,6 +563,8 @@
         var sheet = document.getElementById('reportsPrintableSheet');
         var rows = Array.isArray(dataset.rows) ? dataset.rows : [];
         var columns = Array.isArray(dataset.columns) && dataset.columns.length ? dataset.columns : Object.keys(rows[0] || {});
+        var useRecordLayout = columns.length > 8;
+        sheet.classList.toggle('reports-print-wide', useRecordLayout);
         var title = dataset.title || (findReport(dataset.key || selectedDatasetKey) || {}).title || dataset.key || 'Reporte';
         var description = dataset.description || (findReport(dataset.key || selectedDatasetKey) || {}).description || 'Vista previa del reporte seleccionado.';
         var meta = [
@@ -533,7 +586,7 @@
           recordsHtml = '<p>Sin datos para el rango seleccionado.</p>';
         } else {
           tableHtml = '<table class="reports-print-table"><thead><tr>' + columns.map(function(col) {
-            return '<th>' + escapeHtml(col) + '</th>';
+            return '<th>' + escapeHtml(formatPreviewLabel(col)) + '</th>';
           }).join('') + '</tr></thead><tbody>' + rows.slice(0, 100).map(function(row) {
             row = row || {};
             return '<tr>' + columns.map(function(col) {
@@ -543,16 +596,16 @@
           recordsHtml = '<div class="reports-print-records">' + rows.slice(0, 60).map(function(row) {
             row = row || {};
             return '<article class="reports-print-record">' + columns.map(function(col) {
-              return '<div class="reports-print-row"><span>' + escapeHtml(col) + '</span><strong>' + escapeHtml(formatPreviewValue(row[col])) + '</strong></div>';
+              return '<div class="reports-print-row"><span>' + escapeHtml(formatPreviewLabel(col)) + '</span><strong>' + escapeHtml(formatPreviewValue(row[col])) + '</strong></div>';
             }).join('') + '</article>';
           }).join('') + '</div>';
         }
         sheet.innerHTML = '<header><h2>' + escapeHtml(title) + '</h2><p>' + escapeHtml(description) + '</p></header>' +
           '<section class="reports-print-meta">' + meta.map(function(pair) {
-            return '<div><span>' + escapeHtml(pair[0]) + '</span><strong>' + escapeHtml(formatPreviewValue(pair[1])) + '</strong></div>';
+            return '<div><span>' + escapeHtml(formatPreviewLabel(pair[0])) + '</span><strong>' + escapeHtml(formatPreviewValue(pair[1])) + '</strong></div>';
           }).join('') + '</section>' +
           (summary.length ? '<section class="reports-print-summary">' + summary.map(function(pair) {
-            return '<div><span>' + escapeHtml(pair[0]) + '</span><strong>' + escapeHtml(formatPreviewValue(pair[1])) + '</strong></div>';
+            return '<div><span>' + escapeHtml(formatPreviewLabel(pair[0])) + '</span><strong>' + escapeHtml(formatPreviewValue(pair[1])) + '</strong></div>';
           }).join('') + '</section>' : '') +
           tableHtml + recordsHtml;
         updateSelectedInfo();
@@ -677,21 +730,60 @@
         }
       }
 
-      async function saveAIReportTemplate() {
+      function closeAITemplateDialog() {
+        var dialog = document.getElementById('reportsAITemplateDialog');
+        if (!dialog) return;
+        if (typeof dialog.close === 'function' && dialog.open) dialog.close();
+        else dialog.removeAttribute('open');
+        if (aiTemplateDialogTrigger && typeof aiTemplateDialogTrigger.focus === 'function') {
+          window.setTimeout(function(){ aiTemplateDialogTrigger.focus(); }, 0);
+        }
+      }
+
+      function openAITemplateDialog() {
         if (!currentCustomReportSpec || !empresaId()) {
           setAIReportMsg('Genera primero un reporte IA para guardar su plantilla.', true);
           return;
         }
-        var code = window.prompt('Código corto para la plantilla (ej.: cartera-vencida):', 'reporte-ia');
-        if (code == null) return;
-        code = String(code || '').trim();
-        if (!code) {
-          setAIReportMsg('El código de plantilla es obligatorio.', true);
+        var dialog = document.getElementById('reportsAITemplateDialog');
+        var codeInput = document.getElementById('reportsAITemplateCode');
+        var nameInput = document.getElementById('reportsAITemplateName');
+        if (!dialog || !codeInput || !nameInput) return;
+        aiTemplateDialogTrigger = document.activeElement;
+        codeInput.value = 'reporte-ia';
+        nameInput.value = String(currentCustomReportSpec.title || 'Reporte IA').trim();
+        if (typeof dialog.showModal === 'function') dialog.showModal();
+        else dialog.setAttribute('open', '');
+        window.setTimeout(function(){ codeInput.focus(); codeInput.select(); }, 0);
+      }
+
+      async function saveAIReportTemplate(event) {
+        if (event) event.preventDefault();
+        if (!currentCustomReportSpec || !empresaId()) {
+          closeAITemplateDialog();
+          setAIReportMsg('Genera primero un reporte IA para guardar su plantilla.', true);
           return;
         }
-        var name = window.prompt('Nombre de la plantilla:', String(currentCustomReportSpec.title || 'Reporte IA'));
-        if (name == null) return;
+        var form = document.getElementById('reportsAITemplateForm');
+        var codeInput = document.getElementById('reportsAITemplateCode');
+        var nameInput = document.getElementById('reportsAITemplateName');
+        var confirmButton = document.getElementById('btnConfirmAIReportTemplate');
+        var cancelButton = document.getElementById('btnCancelAIReportTemplate');
+        if (!form || !codeInput || !nameInput || !confirmButton || !cancelButton || confirmButton.disabled) return;
+        codeInput.setCustomValidity('');
+        if (!form.reportValidity()) return;
+        var code = String(codeInput.value || '').trim();
+        var name = String(nameInput.value || '').trim();
+        if (!/^[A-Za-z0-9][A-Za-z0-9._-]{1,79}$/.test(code)) {
+          codeInput.setCustomValidity('Usa entre 2 y 80 caracteres: letras sin tilde, números, punto, guion o guion bajo.');
+          codeInput.reportValidity();
+          setAIReportMsg('Revisa el código de la plantilla.', true);
+          return;
+        }
+        codeInput.setCustomValidity('');
         setAIReportMsg('Guardando nueva versión de la plantilla...', false);
+        confirmButton.disabled = true;
+        cancelButton.disabled = true;
         try {
           var params = new URLSearchParams();
           params.set('action', 'plantillas');
@@ -699,7 +791,7 @@
           var res = await fetch('/api/empresa/reportes?' + params.toString(), {
             method:'POST', credentials:'same-origin', headers:{'Content-Type':'application/json'},
             body:JSON.stringify({
-              empresa_id:empresaId(), codigo:code, nombre:String(name || '').trim(),
+              empresa_id:empresaId(), codigo:code, nombre:name,
               dataset_key:currentCustomReportSpec.source_dataset, formato:'json',
               columnas:Array.isArray(currentCustomReportSpec.columns) ? currentCustomReportSpec.columns : [],
               config:{report_spec:currentCustomReportSpec, origen:'reportes_ia'},
@@ -709,9 +801,13 @@
           var data = await res.json().catch(function(){ return {}; });
           if (!res.ok || !data.ok) throw new Error(data.error || ('HTTP ' + res.status));
           var template = data.plantilla || {};
+          closeAITemplateDialog();
           setAIReportMsg('Plantilla guardada: ' + (template.codigo || code) + ' v' + (template.version || '?') + '.', false);
         } catch (error) {
           setAIReportMsg('No se pudo guardar la plantilla: ' + (error.message || error), true);
+        } finally {
+          confirmButton.disabled = false;
+          cancelButton.disabled = false;
         }
       }
 
@@ -780,7 +876,14 @@
       document.getElementById('btnPrintReport').addEventListener('click', function() { if (lastDataset) window.print(); });
       document.getElementById('btnClearFilters').addEventListener('click', clearFilters);
       document.getElementById('btnGenerateAIReport').addEventListener('click', generateAIReport);
-      document.getElementById('btnSaveAIReportTemplate').addEventListener('click', saveAIReportTemplate);
+      document.getElementById('btnSaveAIReportTemplate').addEventListener('click', openAITemplateDialog);
+      document.getElementById('reportsAITemplateForm').addEventListener('submit', saveAIReportTemplate);
+      document.getElementById('btnCancelAIReportTemplate').addEventListener('click', closeAITemplateDialog);
+      document.getElementById('reportsAITemplateDialog').addEventListener('keydown', function(event) {
+        if (event.key !== 'Escape') return;
+        event.preventDefault();
+        closeAITemplateDialog();
+      });
 
       defaultDates();
       applyPaperMode();

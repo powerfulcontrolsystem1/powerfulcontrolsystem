@@ -127,6 +127,46 @@ func TestDefaultHiddenEnterpriseIAPagesRequireExplicitCompanyEnable(t *testing.T
 	}
 }
 
+func TestInvalidateEmpresaPermissionCacheAlsoClearsCompanyOverrides(t *testing.T) {
+	empresaPermissionCacheMu.Lock()
+	empresaPermissionCache = map[string]empresaPermissionSnapshot{
+		"admin-a@example.invalid|12": {},
+		"admin-b@example.invalid|12": {},
+		"admin-c@example.invalid|99": {},
+	}
+	empresaPermissionOverrideCache = map[int64]empresaPermissionOverrideCacheEntry{
+		12: {PageOverrides: map[string]bool{"linkCentroIAEmpresarial": false}},
+		99: {PageOverrides: map[string]bool{"linkCentroIAEmpresarial": true}},
+	}
+	empresaPermissionCacheMu.Unlock()
+	t.Cleanup(func() {
+		empresaPermissionCacheMu.Lock()
+		empresaPermissionCache = map[string]empresaPermissionSnapshot{}
+		empresaPermissionOverrideCache = map[int64]empresaPermissionOverrideCacheEntry{}
+		empresaPermissionCacheMu.Unlock()
+	})
+
+	invalidateEmpresaPermissionCacheForEmpresa(12)
+
+	empresaPermissionCacheMu.Lock()
+	defer empresaPermissionCacheMu.Unlock()
+	if _, ok := empresaPermissionCache["admin-a@example.invalid|12"]; ok {
+		t.Fatal("el snapshot de la empresa modificada debe invalidarse")
+	}
+	if _, ok := empresaPermissionCache["admin-b@example.invalid|12"]; ok {
+		t.Fatal("todos los usuarios de la empresa modificada deben invalidarse")
+	}
+	if _, ok := empresaPermissionOverrideCache[12]; ok {
+		t.Fatal("los overrides de la empresa modificada deben invalidarse")
+	}
+	if _, ok := empresaPermissionCache["admin-c@example.invalid|99"]; !ok {
+		t.Fatal("no se debe invalidar el snapshot de otra empresa")
+	}
+	if _, ok := empresaPermissionOverrideCache[99]; !ok {
+		t.Fatal("no se deben invalidar overrides de otra empresa")
+	}
+}
+
 func TestCajeroFinanzasManualAPIRequestSoloMovimientosPermitidos(t *testing.T) {
 	if !isCajeroFinanzasManualAPIRequest("cajero", "/api/empresa/finanzas/movimientos", http.MethodPost, "") {
 		t.Fatal("cajero debe poder llegar al handler de movimientos manuales para validar configuracion operativa")

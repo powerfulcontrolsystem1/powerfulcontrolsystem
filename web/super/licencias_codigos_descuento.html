@@ -7,7 +7,7 @@
   <link rel="stylesheet" href="/estilos.css">
   <style>
     body{margin:0;padding:14px;background:var(--bg);color:var(--text);font-family:"Segoe UI",Arial,sans-serif}
-    .discount-shell{max-width:1180px;margin:0 auto;display:grid;gap:10px}
+    .discount-shell{width:100%;max-width:1180px;margin:0 auto;display:grid;gap:10px;min-width:0}
     .discount-hero,.discount-card{border:1px solid var(--border);border-radius:10px;background:var(--surface);box-shadow:0 8px 22px rgba(15,23,42,.08);padding:12px}
     .discount-hero{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:center}
     .discount-hero h1{margin:0;font-size:1.18rem;line-height:1.12}
@@ -15,12 +15,13 @@
     .discount-rules{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
     .discount-rule{display:inline-flex;gap:5px;align-items:center;border:1px solid var(--border);border-radius:999px;background:var(--surface-soft);padding:5px 8px;font-size:.72rem;color:var(--muted)}
     .discount-rule strong{color:var(--text)}
-    .discount-grid{display:grid;grid-template-columns:minmax(300px,.78fr) minmax(0,1fr);gap:10px;align-items:start}
+    .discount-grid{display:grid;grid-template-columns:minmax(300px,.78fr) minmax(0,1fr);gap:10px;align-items:start;min-width:0}
+    .discount-grid>*{min-width:0}
     .discount-form{display:grid;gap:8px}
     .discount-row{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
     .discount-toolbar{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:8px}
     .discount-toolbar h2{margin:0;font-size:1rem}
-    .discount-table-wrap{overflow:auto;border:1px solid var(--border);border-radius:10px;background:var(--surface)}
+    .discount-table-wrap{width:100%;max-width:100%;min-width:0;overflow:auto;border:1px solid var(--border);border-radius:10px;background:var(--surface)}
     .discount-table{width:100%;min-width:880px;border-collapse:collapse}
     .discount-table th,.discount-table td{padding:8px 9px;border-bottom:1px solid var(--border);text-align:left;vertical-align:top;font-size:.82rem}
     .discount-table th{color:var(--muted);font-size:.68rem;text-transform:uppercase;letter-spacing:.04em}
@@ -30,7 +31,7 @@
     .discount-badge.off{background:rgba(239,68,68,.11);border-color:rgba(239,68,68,.35);color:#b91c1c}
     .discount-actions{display:flex;gap:5px;flex-wrap:wrap}
     .discount-empty{padding:18px;text-align:center;color:var(--muted)}
-    .discount-raw{white-space:pre-wrap;font-family:Consolas,monospace;font-size:.76rem;line-height:1.32;border:1px solid var(--border);border-radius:10px;background:var(--surface-soft);padding:8px;color:var(--muted)}
+    .discount-raw{max-width:100%;min-width:0;white-space:pre-wrap;overflow-wrap:anywhere;font-family:Consolas,monospace;font-size:.76rem;line-height:1.32;border:1px solid var(--border);border-radius:10px;background:var(--surface-soft);padding:8px;color:var(--muted)}
     .discount-shell [hidden]{display:none!important}
     @media(max-width:860px){body{padding:10px}.discount-grid,.discount-row,.discount-hero{grid-template-columns:1fr}}
   </style>

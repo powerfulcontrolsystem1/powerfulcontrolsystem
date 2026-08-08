@@ -38,6 +38,7 @@ type empresaReporteDataset struct {
 	Rows        []map[string]interface{} `json:"rows"`
 	RowCount    int                      `json:"row_count"`
 	Summary     map[string]interface{}   `json:"summary,omitempty"`
+	Paper       string                   `json:"-"`
 }
 
 type empresaReportesSuiteResponse struct {
@@ -614,6 +615,7 @@ func EmpresaReportesHandler(dbEmp *sql.DB) http.HandlerFunc {
 			var payload struct {
 				Spec   empresaReportePersonalizadoSpec `json:"spec"`
 				Format string                          `json:"format,omitempty"`
+				Paper  string                          `json:"paper,omitempty"`
 			}
 			if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
 				http.Error(w, "json invalido", http.StatusBadRequest)
@@ -629,6 +631,7 @@ func EmpresaReportesHandler(dbEmp *sql.DB) http.HandlerFunc {
 				writeJSON(w, http.StatusOK, ds)
 				return
 			}
+			ds.Paper = reportesNormalizePaper(payload.Paper)
 			if err := writeReportesDatasetExport(w, ds, format); err != nil {
 				http.Error(w, err.Error(), http.StatusBadRequest)
 			}
@@ -671,6 +674,7 @@ func EmpresaReportesHandler(dbEmp *sql.DB) http.HandlerFunc {
 				writeReportesHTTPError(w, err)
 				return
 			}
+			ds.Paper = reportesNormalizePaper(r.URL.Query().Get("paper"))
 
 			if err := writeReportesDatasetExport(w, ds, format); err != nil {
 				http.Error(w, err.Error(), http.StatusBadRequest)
@@ -2069,7 +2073,7 @@ func (b *reportesBuilder) reportesMaxDateByEmpresa(table string, dateColumn stri
 	if !reportesSafeSQLIdentifier(table) || !reportesSafeSQLIdentifier(dateColumn) {
 		return "", fmt.Errorf("identificador invalido")
 	}
-	query := "SELECT COALESCE(MAX(substr(COALESCE(" + dateColumn + ", ''), 1, 19)), '') FROM " + table + " WHERE empresa_id = ?"
+	query := "SELECT COALESCE(MAX(substr(" + reportesSQLTextExpression(dateColumn) + ", 1, 19)), '') FROM " + table + " WHERE empresa_id = ?"
 	var value string
 	if err := b.db.QueryRow(query, b.empresaID).Scan(&value); err != nil {
 		return "", err
@@ -2088,7 +2092,7 @@ func reportesBuildDateFilterClause(dateColumn string, desde string, hasta string
 		return "", nil
 	}
 
-	dateExpr := "substr(COALESCE(" + dateColumn + ", ''), 1, 10)"
+	dateExpr := "substr(" + reportesSQLTextExpression(dateColumn) + ", 1, 10)"
 	parts := make([]string, 0, 2)
 	args := make([]interface{}, 0, 2)
 	if desde != "" {
@@ -2104,6 +2108,14 @@ func reportesBuildDateFilterClause(dateColumn string, desde string, hasta string
 		return "", nil
 	}
 	return "AND " + strings.Join(parts, " AND "), args
+}
+
+// reportesSQLTextExpression normaliza columnas fecha TEXT, TIMESTAMP o
+// TIMESTAMPTZ antes de aplicar substr/COALESCE. PostgreSQL no permite mezclar
+// directamente un timestamp con la cadena vacía, mientras que el CAST
+// explícito conserva el contrato también en los ensayos ligeros.
+func reportesSQLTextExpression(column string) string {
+	return "COALESCE(CAST(" + column + " AS TEXT), '')"
 }
 
 func reportesBuildStateFilterClause(stateColumn string, states []string) (string, []interface{}) {
@@ -7130,47 +7142,119 @@ func reportesDatasetTXTContent(ds empresaReporteDataset) string {
 	return builder.String()
 }
 
-func reportesDatasetPDFContent(ds empresaReporteDataset) []byte {
-	lines := reportesDatasetPDFLines(ds)
-	if len(lines) > 46 {
-		lines = append(lines[:45], "Salida truncada. Use CSV o JSON para detalle completo.")
-	}
+type reportesPDFLayout struct {
+	pageWidth    int
+	pageHeight   int
+	fontSize     int
+	footerFont   int
+	leading      int
+	startX       int
+	startY       int
+	footerX      int
+	footerY      int
+	linesPerPage int
+	maxLineRunes int
+}
 
-	var streamBuilder strings.Builder
-	streamBuilder.WriteString("BT\n/F1 9 Tf\n13 TL\n50 760 Td\n")
-	for idx, line := range lines {
-		if idx > 0 {
-			streamBuilder.WriteString("T*\n")
-		}
-		streamBuilder.WriteString("(")
-		streamBuilder.WriteString(reportesEscapePDFText(line))
-		streamBuilder.WriteString(") Tj\n")
+func reportesNormalizePaper(raw string) string {
+	if strings.EqualFold(strings.TrimSpace(raw), "pos") {
+		return "pos"
 	}
-	streamBuilder.WriteString("ET\n")
-	stream := streamBuilder.String()
+	return "carta"
+}
+
+func reportesDatasetPDFLayout(paper string) reportesPDFLayout {
+	if reportesNormalizePaper(paper) == "pos" {
+		// 80 mm = 226.77 puntos PDF. Se redondea a 227 para conservar el
+		// ancho físico y se usa una página larga apta para rollo térmico.
+		return reportesPDFLayout{
+			pageWidth: 227, pageHeight: 792, fontSize: 8, footerFont: 7,
+			leading: 11, startX: 14, startY: 770, footerX: 78, footerY: 14,
+			linesPerPage: 65, maxLineRunes: 42,
+		}
+	}
+	return reportesPDFLayout{
+		pageWidth: 612, pageHeight: 792, fontSize: 9, footerFont: 8,
+		leading: 13, startX: 50, startY: 760, footerX: 270, footerY: 24,
+		linesPerPage: 46, maxLineRunes: 84,
+	}
+}
+
+func reportesDatasetPDFContent(ds empresaReporteDataset) []byte {
+	layout := reportesDatasetPDFLayout(ds.Paper)
+	lines := reportesDatasetPDFLines(ds)
+	if len(lines) == 0 {
+		lines = []string{"Sin datos para exportar."}
+	}
+	pageCount := (len(lines) + layout.linesPerPage - 1) / layout.linesPerPage
+	fontObjectID := 3 + (pageCount * 2)
+	lastObjectID := fontObjectID
+	offsets := make([]int, lastObjectID+1)
 
 	var pdf bytes.Buffer
-	offsets := make([]int, 6)
-
 	pdf.WriteString("%PDF-1.4\n")
 	offsets[1] = pdf.Len()
 	pdf.WriteString("1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n")
 	offsets[2] = pdf.Len()
-	pdf.WriteString("2 0 obj\n<< /Type /Pages /Kids [3 0 R] /Count 1 >>\nendobj\n")
-	offsets[3] = pdf.Len()
-	pdf.WriteString("3 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 5 0 R >> >> /Contents 4 0 R >>\nendobj\n")
-	offsets[4] = pdf.Len()
-	pdf.WriteString(fmt.Sprintf("4 0 obj\n<< /Length %d >>\nstream\n%sendstream\nendobj\n", len(stream), stream))
-	offsets[5] = pdf.Len()
-	pdf.WriteString("5 0 obj\n<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>\nendobj\n")
+	pdf.WriteString("2 0 obj\n<< /Type /Pages /Kids [")
+	for pageIndex := 0; pageIndex < pageCount; pageIndex++ {
+		fmt.Fprintf(&pdf, "%d 0 R ", 3+(pageIndex*2))
+	}
+	fmt.Fprintf(&pdf, "] /Count %d >>\nendobj\n", pageCount)
+
+	for pageIndex := 0; pageIndex < pageCount; pageIndex++ {
+		pageObjectID := 3 + (pageIndex * 2)
+		contentObjectID := pageObjectID + 1
+		start := pageIndex * layout.linesPerPage
+		end := start + layout.linesPerPage
+		if end > len(lines) {
+			end = len(lines)
+		}
+		pageLines := lines[start:end]
+		pageHeight := layout.pageHeight
+		startY := layout.startY
+		if reportesNormalizePaper(ds.Paper) == "pos" {
+			pageHeight = len(pageLines)*layout.leading + 48
+			if pageHeight < 144 {
+				pageHeight = 144
+			}
+			if pageHeight > layout.pageHeight {
+				pageHeight = layout.pageHeight
+			}
+			startY = pageHeight - 22
+		}
+
+		var streamBuilder strings.Builder
+		fmt.Fprintf(&streamBuilder, "BT\n/F1 %d Tf\n%d TL\n%d %d Td\n", layout.fontSize, layout.leading, layout.startX, startY)
+		for idx, line := range pageLines {
+			if idx > 0 {
+				streamBuilder.WriteString("T*\n")
+			}
+			streamBuilder.WriteString("(")
+			streamBuilder.WriteString(reportesEscapePDFText(line))
+			streamBuilder.WriteString(") Tj\n")
+		}
+		fmt.Fprintf(&streamBuilder, "ET\nBT\n/F1 %d Tf\n%d %d Td\n(", layout.footerFont, layout.footerX, layout.footerY)
+		streamBuilder.WriteString(reportesEscapePDFText(fmt.Sprintf("Pagina %d de %d", pageIndex+1, pageCount)))
+		streamBuilder.WriteString(") Tj\nET\n")
+		stream := streamBuilder.String()
+
+		offsets[pageObjectID] = pdf.Len()
+		fmt.Fprintf(&pdf, "%d 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 %d %d] /Resources << /Font << /F1 %d 0 R >> >> /Contents %d 0 R >>\nendobj\n", pageObjectID, layout.pageWidth, pageHeight, fontObjectID, contentObjectID)
+		offsets[contentObjectID] = pdf.Len()
+		fmt.Fprintf(&pdf, "%d 0 obj\n<< /Length %d >>\nstream\n%sendstream\nendobj\n", contentObjectID, len(stream), stream)
+	}
+
+	offsets[fontObjectID] = pdf.Len()
+	fmt.Fprintf(&pdf, "%d 0 obj\n<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>\nendobj\n", fontObjectID)
 
 	startXRef := pdf.Len()
-	pdf.WriteString("xref\n0 6\n")
+	fmt.Fprintf(&pdf, "xref\n0 %d\n", lastObjectID+1)
 	pdf.WriteString("0000000000 65535 f \n")
-	for i := 1; i <= 5; i++ {
+	for i := 1; i <= lastObjectID; i++ {
 		pdf.WriteString(fmt.Sprintf("%010d 00000 n \n", offsets[i]))
 	}
-	pdf.WriteString("trailer\n<< /Size 6 /Root 1 0 R >>\n")
+	fmt.Fprintf(&pdf, "trailer\n<< /Size %d /Root 1 0 R >>\n", lastObjectID+1)
 	pdf.WriteString(fmt.Sprintf("startxref\n%d\n%%%%EOF", startXRef))
 
 	return pdf.Bytes()
@@ -7194,28 +7278,87 @@ func reportesDatasetPDFLines(ds empresaReporteDataset) []string {
 		sort.Strings(keys)
 		lines = append(lines, "Resumen:")
 		for _, key := range keys {
-			lines = append(lines, "- "+key+": "+reportesStringValue(ds.Summary[key]))
+			lines = append(lines, "- "+reportesPDFLabel(key)+": "+reportesStringValue(ds.Summary[key]))
 		}
 		lines = append(lines, "")
 	}
 
-	if len(ds.Columns) > 0 {
-		lines = append(lines, strings.Join(ds.Columns, " | "))
+	maxLineRunes := reportesDatasetPDFLayout(ds.Paper).maxLineRunes
+	appendWrapped := func(raw string) {
+		lines = append(lines, reportesWrapPDFLine(raw, maxLineRunes)...)
 	}
 
-	for _, row := range ds.Rows {
-		values := make([]string, len(ds.Columns))
-		for i, col := range ds.Columns {
-			values[i] = reportesStringValue(row[col])
+	if len(ds.Columns) > 8 {
+		for rowIndex, row := range ds.Rows {
+			appendWrapped(fmt.Sprintf("Registro %d", rowIndex+1))
+			for _, col := range ds.Columns {
+				appendWrapped(reportesPDFLabel(col) + ": " + reportesStringValue(row[col]))
+			}
+			lines = append(lines, "")
 		}
-		lines = append(lines, strings.Join(values, " | "))
+	} else {
+		if len(ds.Columns) > 0 {
+			labels := make([]string, len(ds.Columns))
+			for index, column := range ds.Columns {
+				labels[index] = reportesPDFLabel(column)
+			}
+			appendWrapped(strings.Join(labels, " | "))
+		}
+		for _, row := range ds.Rows {
+			values := make([]string, len(ds.Columns))
+			for i, col := range ds.Columns {
+				values[i] = reportesStringValue(row[col])
+			}
+			appendWrapped(strings.Join(values, " | "))
+		}
 	}
 
 	if len(ds.Rows) == 0 {
 		lines = append(lines, "Sin filas para el rango consultado.")
 	}
 
-	return lines
+	wrapped := make([]string, 0, len(lines))
+	for _, line := range lines {
+		wrapped = append(wrapped, reportesWrapPDFLine(line, maxLineRunes)...)
+	}
+	return wrapped
+}
+
+func reportesWrapPDFLine(raw string, maxRunes int) []string {
+	if maxRunes < 1 {
+		maxRunes = 84
+	}
+	raw = strings.Join(strings.Fields(raw), " ")
+	if raw == "" {
+		return []string{""}
+	}
+
+	remaining := []rune(raw)
+	wrapped := make([]string, 0, 2)
+	for len(remaining) > maxRunes {
+		cut := maxRunes
+		for i := maxRunes; i > 0; i-- {
+			if remaining[i-1] == ' ' || remaining[i-1] == '|' {
+				cut = i
+				break
+			}
+		}
+		line := strings.TrimSpace(string(remaining[:cut]))
+		if line == "" {
+			line = string(remaining[:maxRunes])
+			cut = maxRunes
+		}
+		wrapped = append(wrapped, line)
+		remaining = []rune(strings.TrimSpace(string(remaining[cut:])))
+	}
+	if len(remaining) > 0 {
+		wrapped = append(wrapped, string(remaining))
+	}
+	return wrapped
+}
+
+func reportesPDFLabel(raw string) string {
+	return strings.Join(strings.Fields(strings.ReplaceAll(raw, "_", " ")), " ")
 }
 
 func reportesEscapePDFText(raw string) string {

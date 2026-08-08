@@ -937,6 +937,11 @@
     if (!root) return;
     state.empresaId = resolveEmpresaId();
     state.modulo = document.body.getAttribute("data-module") || queryParam("module") || queryParam("modulo") || "";
+    if (!state.modulo) {
+      document.title = "Módulo empresarial";
+      root.innerHTML = '<main class="mc-shell"><section class="mc-card"><h1>Módulo empresarial</h1><p class="mc-muted">Selecciona un módulo desde el menú de soluciones para abrir su operación.</p></section></main>';
+      return;
+    }
     state.catalogItem = findCatalogItem(state.modulo);
     state.titulo = document.body.getAttribute("data-title") || queryParam("title") || queryParam("titulo") || (state.catalogItem && (state.catalogItem.fullTitle || state.catalogItem.title)) || "Modulo empresarial";
     state.lead = document.body.getAttribute("data-lead") || queryParam("lead") || (state.catalogItem && (state.catalogItem.lead || state.catalogItem.summary)) || "";

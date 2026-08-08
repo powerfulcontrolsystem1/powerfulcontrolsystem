@@ -335,10 +335,17 @@
   }
 
   function actionSelected(action, text) {
+    if (state.loading) return;
     if (!state.selected) {
       msg("Selecciona un soporte primero.", true);
       return;
     }
+    var confirmations = {
+      aprobar: "Confirma que revisaste proveedor, documento, impuestos y total. ¿Aprobar este soporte?",
+      rechazar: "¿Rechazar este soporte? La acción quedará registrada y no generará una cuenta por pagar.",
+      contabilizar: "¿Crear la cuenta por pagar con los datos aprobados? Esta acción no registra ningún pago."
+    };
+    if (confirmations[action] && !window.confirm(confirmations[action])) return;
     setBusy(true, text);
     api(action, { method: "POST", body: JSON.stringify({ soporte_id: state.selected.id }) }).then(function () {
       msg("Accion completada.");
