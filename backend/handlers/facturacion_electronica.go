@@ -825,8 +825,9 @@ func EmpresaFacturacionElectronicaHandler(dbEmp, dbSuper *sql.DB) http.HandlerFu
 					http.Error(w, "solo se puede anular una factura electronica emitida", http.StatusConflict)
 					return
 				}
-				if strings.TrimSpace(factura.CodigoValidacion) == "" {
-					http.Error(w, "la factura no tiene CUFE/CUDE/codigo de validacion para relacionar la nota credito", http.StatusConflict)
+				hidratarCUFEOficialFactura(dbEmp, factura)
+				if !facturacionCodigoSHA384Valido(factura.CodigoValidacion) {
+					http.Error(w, "la factura no tiene un CUFE oficial DIAN valido para relacionar la nota credito", http.StatusConflict)
 					return
 				}
 				existentes, err := dbpkg.ListEmpresaDocumentosFacturacionByEmpresa(dbEmp, dbpkg.EmpresaDocumentoFacturacionListFilter{
@@ -888,7 +889,7 @@ func EmpresaFacturacionElectronicaHandler(dbEmp, dbSuper *sql.DB) http.HandlerFu
 				notaOperacion.ReferenciaCUFE = strings.TrimSpace(factura.CodigoValidacion)
 				notaOperacion.ReferenciaFechaEmision = strings.TrimSpace(factura.FechaDocumento)
 				notaOperacion.CodigoCorreccion = "2"
-				notaOperacion.DescripcionCorreccion = "Anulacion de factura electronica"
+				notaOperacion.DescripcionCorreccion = "Anulación de factura electrónica"
 				completarClientePayloadFacturacion(dbEmp, factura.EmpresaID, &notaOperacion, *factura)
 				integracionFiscal, retryRegistro, integErr := processFacturacionIntegracionForDocumento(dbEmp, notaOperacion, *nota, "nota_credito", usuario, dbSuper)
 				if integErr != nil {
@@ -2843,6 +2844,7 @@ func hidratarReferenciaNotaCredito(dbEmp *sql.DB, nota dbpkg.EmpresaDocumentoFac
 	if err != nil || factura == nil {
 		return
 	}
+	hidratarCUFEOficialFactura(dbEmp, factura)
 	if strings.TrimSpace(payload.ReferenciaDocumentoCodigo) == "" {
 		payload.ReferenciaDocumentoCodigo = strings.TrimSpace(factura.NumeroLegal)
 		if payload.ReferenciaDocumentoCodigo == "" {
@@ -2859,7 +2861,7 @@ func hidratarReferenciaNotaCredito(dbEmp *sql.DB, nota dbpkg.EmpresaDocumentoFac
 		payload.CodigoCorreccion = "2"
 	}
 	if strings.TrimSpace(payload.DescripcionCorreccion) == "" {
-		payload.DescripcionCorreccion = "Anulacion de factura electronica"
+		payload.DescripcionCorreccion = "Anulación de factura electrónica"
 	}
 }
 
@@ -2983,6 +2985,54 @@ const facturacionNotaCreditoFacturaOrigenMarker = "FACTURA_ORIGEN=" // #nosec G1
 
 func facturacionIntegracionAceptada(resultado facturacionIntegracionResultado) bool {
 	return strings.EqualFold(strings.TrimSpace(resultado.EstadoEnvio), "aceptado")
+}
+
+func facturacionCodigoSHA384Valido(value string) bool {
+	value = strings.TrimSpace(value)
+	if len(value) != 96 {
+		return false
+	}
+	for _, char := range value {
+		if (char < '0' || char > '9') && (char < 'a' || char > 'f') && (char < 'A' || char > 'F') {
+			return false
+		}
+	}
+	return true
+}
+
+func facturacionCUFEOficialDesdeRespuesta(raw string) string {
+	var respuesta map[string]interface{}
+	if json.Unmarshal([]byte(strings.TrimSpace(raw)), &respuesta) != nil {
+		return ""
+	}
+	candidatos := []string{genericStringValue(respuesta["cufe"])}
+	if respuestaDIAN, ok := respuesta["respuesta_dian"].(map[string]interface{}); ok {
+		candidatos = append(candidatos, genericStringValue(respuestaDIAN["xml_document_key"]))
+	}
+	for _, candidato := range candidatos {
+		if facturacionCodigoSHA384Valido(candidato) {
+			return strings.ToLower(strings.TrimSpace(candidato))
+		}
+	}
+	return ""
+}
+
+func hidratarCUFEOficialFactura(dbEmp *sql.DB, factura *dbpkg.EmpresaDocumentoFacturacion) {
+	if dbEmp == nil || factura == nil || factura.EmpresaID <= 0 || facturacionCodigoSHA384Valido(factura.CodigoValidacion) {
+		return
+	}
+	retry, err := dbpkg.GetFacturacionElectronicaRetryByDocumento(dbEmp, factura.EmpresaID, "factura_electronica", factura.DocumentoCodigo)
+	if err != nil || retry == nil || !strings.EqualFold(strings.TrimSpace(retry.EstadoEnvio), "aceptado") {
+		return
+	}
+	cufe := facturacionCUFEOficialDesdeRespuesta(retry.RespuestaProveedor)
+	if cufe == "" {
+		return
+	}
+	factura.CodigoValidacion = cufe
+	if actualizado, updateErr := dbpkg.UpsertEmpresaDocumentoFacturacion(dbEmp, *factura); updateErr == nil && actualizado != nil {
+		*factura = *actualizado
+	}
 }
 
 func facturacionNotaCreditoFacturaOrigen(observaciones string) string {

@@ -41173,3 +41173,19 @@ acumulativa.
   condicionada al acuse oficial de DIAN.
 - QA local: pruebas enfocadas de UBL/anulacion PASS, `go test ./handlers ./db`
   PASS, `go vet ./...` PASS y preflight profesional rapido completo PASS.
+
+2026-08-08: Plan 109 / recuperación del CUFE oficial para notas crédito DIAN.
+
+- La segunda prueba real aislada de la nota `NC12000000098` superó las reglas
+  CAD02, CBA06 y CAJ50, pero DIAN devolvió CBG04 porque el documento histórico
+  de la factura conservaba un código interno SHA-256 de 64 caracteres en vez
+  del CUFE SHA-384 de 96 caracteres incluido en su acuse DIAN aceptado.
+- Antes de crear o reenviar una nota crédito, el backend valida la forma del
+  CUFE y, si el dato histórico no es válido, lo recupera exclusivamente de la
+  respuesta aceptada del mismo documento y `empresa_id` en la cola fiscal.
+- La recuperación actualiza el documento mediante el repositorio empresarial,
+  evita SQL operativo manual y no toma códigos de facturas de otra empresa.
+- Las pruebas cubren CUFE raíz, `XmlDocumentKey` del acuse, normalización a
+  minúsculas, rechazo de códigos SHA-256 internos y JSON inválido.
+- La descripción del código de corrección 2 usa el literal DIAN `Anulación de
+  factura electrónica`, evitando además la notificación CBF04 observada.
