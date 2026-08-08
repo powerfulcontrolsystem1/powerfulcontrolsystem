@@ -40988,3 +40988,11 @@ acumulativa.
   en dicha cabecera.
 - Pruebas enfocadas, vet y diff-check aprobaron. Falta construir y validar el
   nuevo candidato exclusivamente en staging; produccion no fue modificada.
+
+2026-08-08 - Plan 109: guardia de MutationObserver en menu autenticado
+- La comprobacion visual autenticada de PCS encontro un error de consola aunque
+  el panel seguia disponible. El observador de temas ahora exige un nodo
+  elemento antes de llamar `observe`, evitando el fallo de carga temprana.
+- La prueba de recursos estaticos y diff-check aprobaron. El binario Node no
+  esta disponible localmente; el workflow Linux inmutable validara la sintaxis
+  antes de repetir staging. Produccion no fue modificada.

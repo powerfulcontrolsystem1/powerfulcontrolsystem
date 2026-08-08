@@ -159,7 +159,10 @@
           }
         }
       });
-      observer.observe(document.documentElement || document.body, { childList: true, subtree: true });
+      var observationTarget = document.documentElement || document.body;
+      if (observationTarget && observationTarget.nodeType === 1) {
+        observer.observe(observationTarget, { childList: true, subtree: true });
+      }
     } catch (error) {}
   }
 

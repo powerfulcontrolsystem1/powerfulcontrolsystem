@@ -151,6 +151,23 @@ func TestNextcloudFramePolicyUsesExactOrigins(t *testing.T) {
 	}
 }
 
+func TestMenuThemeObserverGuardsItsTarget(t *testing.T) {
+	raw, err := os.ReadFile(filepath.Join("..", "web", "menu.js"))
+	if err != nil {
+		t.Fatalf("read menu script: %v", err)
+	}
+	script := string(raw)
+	for _, required := range []string{
+		"var observationTarget = document.documentElement || document.body;",
+		"observationTarget && observationTarget.nodeType === 1",
+		"observer.observe(observationTarget, { childList: true, subtree: true });",
+	} {
+		if !strings.Contains(script, required) {
+			t.Fatalf("menu theme observer must guard its target with %q", required)
+		}
+	}
+}
+
 func TestStagingEdgeKeepsOnlyTransportHeaders(t *testing.T) {
 	raw, err := os.ReadFile(filepath.Join("..", "deploy", "scripts", "vps-configure-staging-nginx.sh"))
 	if err != nil {

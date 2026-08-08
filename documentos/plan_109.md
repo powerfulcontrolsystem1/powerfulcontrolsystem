@@ -838,6 +838,14 @@ Actualizacion 2026-08-08, correccion transversal de CSP estatica:
   vet y diff-check. Falta su candidato inmutable y su comprobacion visual en
   staging; P109-009 continua parcial y el porcentaje no cambia.
 
+Actualizacion 2026-08-08, hallazgo de consola en panel autenticado:
+
+- La revision visual de PCS en staging mostro el panel estable y organizado,
+  pero la consola reporto un `MutationObserver.observe` con destino no nodo.
+- Se agrego una guardia de tipo antes de observar el documento. Falta validar
+  esta correccion en el siguiente candidato inmutable de staging; P109-009
+  sigue parcial y no se incrementa el porcentaje.
+
 La evidencia histórica P108 sirve como línea base y evita repetir pruebas
 independientes del artefacto, pero no aumenta automáticamente estas cifras.
 
