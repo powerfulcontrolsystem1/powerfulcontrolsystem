@@ -6709,3 +6709,13 @@ pcs-worker
 Los productores funcionales de correo, DIAN, pagos, documentos y reportes aun
 no cruzan este limite; su migracion a outbox es requisito posterior y los
 timers heredados de API se conservan hasta que el worker los reemplace.
+## Actualizacion 2026-08-08 (salidas HTTP DIAN e integraciones)
+
+- `backend/handlers/modulos_faltantes.go` centraliza el transporte saliente
+  publico: normalizacion HTTP(S), resolucion DNS, rechazo de IP privada/especial,
+  conexion al destino validado y redirecciones del mismo origen.
+- El flujo DIAN queda: permiso/empresa -> configuracion `url_dian` de la empresa
+  -> override del mismo origen -> transporte publico protegido -> DIAN/proveedor
+  -> respuesta saneada y trazabilidad existente.
+- Los servidores HTTP locales de QA se inyectan solo desde `_test.go`; el
+  runtime no dispone de un switch para permitir destinos privados.

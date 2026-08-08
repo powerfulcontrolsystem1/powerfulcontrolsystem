@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"io"
 	"math"
+	"net"
 	"net/http"
 	"net/mail"
 	"net/url"
@@ -6997,13 +6998,151 @@ func normalizeIntegracionEndpoint(raw string) string {
 	return parsed.String()
 }
 
+func normalizePublicIntegracionEndpoint(raw string) string {
+	normalized := normalizeHTTPIntegracionEndpoint(raw)
+	if normalized == "" {
+		return ""
+	}
+	parsed, err := url.Parse(normalized)
+	if err != nil || parsed == nil {
+		return ""
+	}
+	host := strings.ToLower(strings.TrimSuffix(strings.TrimSpace(parsed.Hostname()), "."))
+	if host == "" || host == "localhost" || strings.HasSuffix(host, ".localhost") || strings.HasSuffix(host, ".local") {
+		return ""
+	}
+	if ip := net.ParseIP(host); ip != nil && !isPublicOutboundIP(ip) {
+		return ""
+	}
+	parsed.Fragment = ""
+	return parsed.String()
+}
+
+func normalizeHTTPIntegracionEndpoint(raw string) string {
+	normalized := normalizeIntegracionEndpoint(raw)
+	if normalized == "" {
+		return ""
+	}
+	parsed, err := url.Parse(normalized)
+	if err != nil || parsed == nil || parsed.User != nil {
+		return ""
+	}
+	scheme := strings.ToLower(strings.TrimSpace(parsed.Scheme))
+	if scheme != "http" && scheme != "https" {
+		return ""
+	}
+	parsed.Fragment = ""
+	return parsed.String()
+}
+
+func isPublicOutboundIP(ip net.IP) bool {
+	if ip == nil || !ip.IsGlobalUnicast() || ip.IsLoopback() || ip.IsPrivate() || ip.IsLinkLocalUnicast() || ip.IsLinkLocalMulticast() || ip.IsUnspecified() || ip.IsMulticast() {
+		return false
+	}
+	if ip4 := ip.To4(); ip4 != nil {
+		switch {
+		case ip4[0] == 100 && ip4[1] >= 64 && ip4[1] <= 127:
+			return false
+		case ip4[0] == 192 && ip4[1] == 0 && (ip4[2] == 0 || ip4[2] == 2):
+			return false
+		case ip4[0] == 198 && (ip4[1] == 18 || ip4[1] == 19 || (ip4[1] == 51 && ip4[2] == 100)):
+			return false
+		case ip4[0] == 203 && ip4[1] == 0 && ip4[2] == 113:
+			return false
+		case ip4[0] >= 240:
+			return false
+		}
+		return true
+	}
+	return !ip.IsUnspecified() && !strings.HasPrefix(strings.ToLower(ip.String()), "2001:db8:")
+}
+
+func sameOutboundOrigin(left, right *url.URL) bool {
+	if left == nil || right == nil {
+		return false
+	}
+	return strings.EqualFold(left.Scheme, right.Scheme) &&
+		strings.EqualFold(strings.TrimSuffix(left.Hostname(), "."), strings.TrimSuffix(right.Hostname(), ".")) &&
+		left.Port() == right.Port()
+}
+
+func dialPublicOutbound(ctx context.Context, network, address string) (net.Conn, error) {
+	host, port, err := net.SplitHostPort(address)
+	if err != nil || strings.TrimSpace(host) == "" || strings.TrimSpace(port) == "" {
+		return nil, errors.New("destino externo invalido")
+	}
+	addresses, err := net.DefaultResolver.LookupIPAddr(ctx, host)
+	if err != nil || len(addresses) == 0 {
+		return nil, errors.New("no se pudo resolver el destino externo")
+	}
+	for _, address := range addresses {
+		if !isPublicOutboundIP(address.IP) {
+			return nil, errors.New("destino externo bloqueado por politica de red")
+		}
+	}
+	dialer := &net.Dialer{Timeout: 8 * time.Second, KeepAlive: 30 * time.Second}
+	var lastErr error
+	for _, address := range addresses {
+		conn, dialErr := dialer.DialContext(ctx, network, net.JoinHostPort(address.IP.String(), port))
+		if dialErr == nil {
+			return conn, nil
+		}
+		lastErr = dialErr
+	}
+	if lastErr != nil {
+		return nil, lastErr
+	}
+	return nil, errors.New("no se pudo conectar con el destino externo")
+}
+
+func publicOutboundHTTPClient(timeout time.Duration, origin *url.URL) *http.Client {
+	transport := http.DefaultTransport.(*http.Transport).Clone()
+	transport.Proxy = nil
+	transport.DialContext = dialPublicOutbound
+	return &http.Client{
+		Timeout:   timeout,
+		Transport: transport,
+		CheckRedirect: func(req *http.Request, via []*http.Request) error {
+			if len(via) >= 10 {
+				return errors.New("demasiadas redirecciones externas")
+			}
+			if req == nil || req.URL == nil || normalizePublicIntegracionEndpoint(req.URL.String()) == "" || !sameOutboundOrigin(origin, req.URL) {
+				return errors.New("redireccion externa fuera del origen permitido")
+			}
+			return nil
+		},
+	}
+}
+
+func publicOutboundHTTPClientForEndpoint(timeout time.Duration, endpoint string) *http.Client {
+	origin, _ := url.Parse(endpoint)
+	return publicOutboundHTTPClient(timeout, origin)
+}
+
+var dianOutboundHTTPClientForEndpoint = publicOutboundHTTPClientForEndpoint
+
+func dianAcuseEndpointAllowed(configured, candidate string) (string, bool) {
+	configured = normalizePublicIntegracionEndpoint(configured)
+	candidate = normalizePublicIntegracionEndpoint(candidate)
+	if configured == "" || candidate == "" {
+		return "", false
+	}
+	configuredURL, configuredErr := url.Parse(configured)
+	candidateURL, candidateErr := url.Parse(candidate)
+	if configuredErr != nil || candidateErr != nil || !sameOutboundOrigin(configuredURL, candidateURL) {
+		return "", false
+	}
+	return candidateURL.String(), true
+}
+
 func runIntegracionProbe(endpoint string) (int, bool, int64, string) {
-	endpoint = normalizeIntegracionEndpoint(endpoint)
+	endpoint = normalizePublicIntegracionEndpoint(endpoint)
 	if endpoint == "" {
 		return 0, false, 0, "endpoint no configurado o invalido"
 	}
 
-	client := &http.Client{Timeout: 8 * time.Second}
+	origin, _ := url.Parse(endpoint)
+	client := publicOutboundHTTPClient(8*time.Second, origin)
 	methods := []string{http.MethodHead, http.MethodGet}
 	startedAt := time.Now()
 	lastErr := ""
@@ -10191,23 +10330,33 @@ func signDIANXMLXAdESBase(cfg map[string]interface{}, empresaID int64, payload m
 }
 
 func isDIANOfficialEndpoint(endpoint string) bool {
-	parsed, err := url.Parse(strings.TrimSpace(endpoint))
-	if err != nil {
+	endpoint = normalizePublicIntegracionEndpoint(endpoint)
+	parsed, err := url.Parse(endpoint)
+	if err != nil || parsed == nil || !strings.EqualFold(parsed.Scheme, "https") {
 		return false
 	}
-	host := strings.ToLower(parsed.Host)
-	return strings.Contains(host, "dian.gov.co")
+	host := strings.ToLower(strings.TrimSuffix(parsed.Hostname(), "."))
+	return host == "dian.gov.co" || strings.HasSuffix(host, ".dian.gov.co")
 }
 
 func dianConfiguredEndpoint(cfg map[string]interface{}, payload map[string]interface{}) string {
 	if payload == nil {
 		payload = map[string]interface{}{}
 	}
-	return normalizeIntegracionEndpoint(dianFirstNonBlank(
+	configured := genericStringValue(cfg["url_dian"])
+	requested := dianFirstNonBlank(
 		genericStringValue(payload["url_dian"]),
 		genericStringValue(payload["endpoint"]),
-		genericStringValue(cfg["url_dian"]),
-	))
+		configured,
+	)
+	configured = normalizeHTTPIntegracionEndpoint(configured)
+	requested = normalizeHTTPIntegracionEndpoint(requested)
+	configuredURL, configuredErr := url.Parse(configured)
+	requestedURL, requestedErr := url.Parse(requested)
+	if configuredErr != nil || requestedErr != nil || configured == "" || requested == "" || !sameOutboundOrigin(configuredURL, requestedURL) {
+		return ""
+	}
+	return requestedURL.String()
 }
 
 func dianTokenRequiredForEndpoint(cfg map[string]interface{}, payload map[string]interface{}) bool {
@@ -10219,7 +10368,7 @@ func dianTokenRequiredForEndpoint(cfg map[string]interface{}, payload map[string
 }
 
 func normalizeDIANSOAPEndpoint(endpoint string) string {
-	endpoint = normalizeIntegracionEndpoint(endpoint)
+	endpoint = normalizeHTTPIntegracionEndpoint(endpoint)
 	if endpoint == "" {
 		return ""
 	}
@@ -11104,7 +11253,7 @@ func sendDIANDocumentoRealSOAP(dbEmp *sql.DB, cfg map[string]interface{}, empres
 		req.Header.Set("Authorization", "Bearer "+token)
 	}
 
-	client := &http.Client{Timeout: 30 * time.Second}
+	client := dianOutboundHTTPClientForEndpoint(30*time.Second, soapEndpoint)
 	startedAt := time.Now()
 	resp, err := client.Do(req)
 	if err != nil {
@@ -11288,7 +11437,7 @@ func consultarDIANStatusZipSOAP(dbEmp *sql.DB, cfg map[string]interface{}, empre
 	}
 
 	startedAt := time.Now()
-	resp, err := (&http.Client{Timeout: 20 * time.Second}).Do(req)
+	resp, err := dianOutboundHTTPClientForEndpoint(20*time.Second, soapEndpoint).Do(req)
 	if err != nil {
 		return map[string]interface{}{
 			"ok":                  false,
@@ -11430,7 +11579,7 @@ func consultarDIANNumberingRange(dbEmp *sql.DB, cfg map[string]interface{}, empr
 	req.Header.Set("User-Agent", "powerfulcontrolsystem-dian-soap/1.0")
 
 	startedAt := time.Now()
-	resp, err := (&http.Client{Timeout: 30 * time.Second}).Do(req)
+	resp, err := dianOutboundHTTPClientForEndpoint(30*time.Second, endpoint).Do(req)
 	if err != nil {
 		return map[string]interface{}{
 			"ok":             false,
@@ -11700,7 +11849,7 @@ func sendDIANDocumentoReal(dbEmp *sql.DB, cfg map[string]interface{}, empresaID 
 		req.Header.Set("Authorization", "Bearer "+token)
 	}
 
-	client := &http.Client{Timeout: 12 * time.Second}
+	client := dianOutboundHTTPClientForEndpoint(12*time.Second, endpoint)
 	startedAt := time.Now()
 	resp, err := client.Do(req)
 	if err != nil {
@@ -11818,14 +11967,16 @@ func consultarDIANAcuseReal(dbEmp *sql.DB, cfg map[string]interface{}, empresaID
 		return nil, http.StatusBadRequest, fmt.Errorf("documento_codigo, cufe o track_id es obligatorio para consultar acuse")
 	}
 
-	endpoint := normalizeIntegracionEndpoint(dianFirstNonBlank(
+	configuredEndpoint := genericStringValue(cfg["url_dian"])
+	requestedEndpoint := dianFirstNonBlank(
 		genericStringValue(payload["url_acuse"]),
 		strings.TrimSpace(r.URL.Query().Get("url_acuse")),
 		genericStringValue(payload["url_dian"]),
-		genericStringValue(cfg["url_dian"]),
-	))
-	if endpoint == "" {
-		return nil, http.StatusBadRequest, fmt.Errorf("url_dian/url_acuse no configurada o invalida")
+		configuredEndpoint,
+	)
+	endpoint, allowed := dianAcuseEndpointAllowed(configuredEndpoint, requestedEndpoint)
+	if !allowed {
+		return nil, http.StatusBadRequest, fmt.Errorf("url_dian/url_acuse no configurada o fuera del origen permitido")
 	}
 
 	token := strings.TrimSpace(genericStringValue(payload["token"]))
@@ -11864,7 +12015,8 @@ func consultarDIANAcuseReal(dbEmp *sql.DB, cfg map[string]interface{}, empresaID
 		req.Header.Set("Authorization", "Bearer "+token)
 	}
 
-	client := &http.Client{Timeout: 10 * time.Second}
+	requestOrigin, _ := url.Parse(endpoint)
+	client := publicOutboundHTTPClient(10*time.Second, requestOrigin)
 	startedAt := time.Now()
 	resp, err := client.Do(req)
 	if err != nil {
@@ -11938,7 +12090,7 @@ func runDIANReconexion(dbEmp *sql.DB, cfg map[string]interface{}, empresaID int6
 		return nil, http.StatusBadRequest, fmt.Errorf("no existe configuracion DIAN para la empresa")
 	}
 
-	endpoint := normalizeIntegracionEndpoint(dianFirstNonBlank(genericStringValue(payload["url_dian"]), genericStringValue(cfg["url_dian"])))
+	endpoint := dianConfiguredEndpoint(cfg, payload)
 	if endpoint == "" {
 		return nil, http.StatusBadRequest, fmt.Errorf("url_dian no configurada o invalida")
 	}

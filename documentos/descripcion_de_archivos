@@ -1,4 +1,10 @@
 2026-08-08
+- `backend/handlers/outbound_http_security_test.go`: cubre rangos no publicos,
+  normalizacion HTTP(S), origen DIAN, dominios oficiales, redirecciones y probes
+  SSRF sin conexiones privadas.
+- `documentos/evidencia_plan_109/P109-009/2026-08-08_salidas_http_dian_ssrf.md`:
+  documenta el cierre local de salidas HTTP DIAN/integraciones y sus limites de
+  certificacion.
 - `documentos/evidencia_plan_109/P109-009/2026-08-08_descarga_privada_y_redirect_ssrf.md`:
   evidencia dinámica de descarga privada CxP/IA y cierre local de redirecciones
   SSRF del callback OnlyOffice, con límites de certificación explícitos.

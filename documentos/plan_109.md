@@ -1023,6 +1023,19 @@ Actualización 2026-08-08, descarga privada CxP/IA y SSRF por redirección:
   avance permanece en **53,3 % de implementación**, **0 % de certificación del
   arreglo local** y **NO-GO**.
 
+Actualización 2026-08-08, salidas HTTP DIAN e integraciones:
+
+- Se cerró localmente SSRF en probes, envio/acuse/reconexion DIAN y operaciones
+  SOAP: solo HTTP(S) público, resolución DNS validada, cero redes privadas o
+  especiales y redirecciones limitadas al mismo origen.
+- Los overrides DIAN deben conservar el origen configurado para la empresa y la
+  clasificación oficial exige HTTPS sobre `dian.gov.co` o subdominio exacto.
+  Dominios parecidos, loopback y metadata cloud quedan rechazados.
+- Las pruebas negativas, los sets DIAN de contrato, Go completo, vet y preflight
+  estricto aprobaron sin emitir documentos ni modificar datos. El cambio sigue
+  local sin PR ni despliegue; P109-009 permanece parcial y el Plan conserva
+  **53,3 %**, **0 % de certificación del arreglo local** y **NO-GO**.
+
 ## 9. Siguiente orden para Terra alto
 
 P109-000 ya está aprobada para `ea9642dd...` y P109-011 para `c8094f5b`;

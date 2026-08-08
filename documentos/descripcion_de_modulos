@@ -56,6 +56,16 @@
 - No se afecta el catalogo fiscal DIAN de documentos equivalentes para juegos de suerte y azar, porque corresponde a una categoria legal ajena al modulo recreativo.
 - La nueva lectura obligatoria de agentes inicia en `contexto_general_del_sistema.md` y se amplia por `contexto_especifico_del_sistema.md`.
 
+2026-08-08: Salidas HTTP seguras para DIAN e integraciones.
+- Modulos afectados: `facturacion_electronica`, `DIAN Colombia` e
+  `integraciones empresariales`.
+- Backend: probes, envio, acuse, `GetStatusZip`, `GetNumberingRange` y reconexion
+  bloquean SSRF por protocolo, DNS/IP, redes privadas y redirecciones cruzadas.
+- Multiempresa: un endpoint recibido en payload debe conservar el origen de
+  `url_dian` guardado para la misma empresa; no cambia wrappers ni permisos.
+- Alcance fiscal: no modifica XML, firma, CUFE, consecutivos, tablas ni estados
+  DIAN y no ejecuta emisiones durante la validacion local.
+
 2026-07-09: Facturas electronicas compactas y tutorial DIAN.
 - Modulos afectados: `facturacion_electronica`, `ventas`, `super_administrador`, `documentacion_ayuda`.
 - Bandeja: `web/administrar_empresa/facturas_electronicas.html` conserva una sola pagina documental, compacta `Filtros de busqueda`, mejora `Visualizar` con tablas organizadas y marca ventas con factura asociada como `Factura electronica` en la columna Tipo.
