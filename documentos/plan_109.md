@@ -900,6 +900,16 @@ Actualizacion 2026-08-08, carga segura y preflight de `c8094f5b`:
   alertas/receptor externo, capacitación, responsables y firma humana. No cambia
   el porcentaje ni el veredicto **NO-GO**.
 
+Actualizacion 2026-08-08, invariantes CxP en staging:
+
+- El candidato de staging confirma aplicada la migración atómica CxP y columnas
+  monetarias `NUMERIC(18,2)`. PCS tiene 3 obligaciones canónicas, 0 históricas
+  y 5 pagos sin relaciones huérfanas, montos no positivos ni saldos negativos.
+- Las pruebas enfocadas de CxP aprobaron; la integración PostgreSQL local quedó
+  explícitamente omitida por no disponer de `PCS_TEST_POSTGRES_DSN` aislado.
+- P109-001 continúa parcial por A/B, carrera real reversible y conciliación con
+  contador. Los porcentajes y el estado **NO-GO** no cambian.
+
 La evidencia histórica P108 sirve como línea base y evita repetir pruebas
 independientes del artefacto, pero no aumenta automáticamente estas cifras.
 

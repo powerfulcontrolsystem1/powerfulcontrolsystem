@@ -41029,3 +41029,11 @@ acumulativa.
   como consola limpia bajo carga ni se ocultan como aprobados.
 - El preflight profesional completo aprobo 22 compuertas. P109-010 y P109-012
   mantienen sus pendientes operativos/humanos; produccion no fue modificada.
+
+2026-08-08 - Plan 109: invariantes CxP canónica en staging
+- Se verificó la migración CxP, dinero `NUMERIC(18,2)` y cinco pagos PCS sin
+  obligación/movimiento faltante, monto inválido ni saldo negativo. La lectura
+  no modificó cartera, pagos ni producción.
+- Las pruebas enfocadas de código aprobaron. La integración PostgreSQL local se
+  omitió por falta de DSN aislado y P109-001 conserva A/B, carrera y
+  conciliación contable como pendientes.
