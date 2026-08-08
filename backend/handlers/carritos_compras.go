@@ -3427,6 +3427,14 @@ func facturaElectronicaVentaIntegracionConfirmada(resultado facturacionIntegraci
 	return normalizeFacturacionEstadoEnvio(resultado.EstadoEnvio) == "aceptado"
 }
 
+func facturaElectronicaPendienteDebeSincronizarCliente(existingDoc, ventaDoc *dbpkg.EmpresaDocumentoFacturacion) bool {
+	if existingDoc == nil || ventaDoc == nil || existingDoc.EntidadRelacionadaID > 0 || ventaDoc.EntidadRelacionadaID <= 0 {
+		return false
+	}
+	estado := strings.ToLower(strings.TrimSpace(existingDoc.EstadoDocumento))
+	return estado == "pendiente_emision" || estado == "borrador"
+}
+
 func registrarFacturaElectronicaDesdeDocumentoVenta(dbEmp, dbSuper *sql.DB, ventaDoc *dbpkg.EmpresaDocumentoFacturacion, usuario, observaciones string) (map[string]interface{}, error) {
 	if dbEmp == nil || ventaDoc == nil || ventaDoc.EmpresaID <= 0 || strings.TrimSpace(ventaDoc.DocumentoCodigo) == "" {
 		return nil, nil
@@ -3446,6 +3454,21 @@ func registrarFacturaElectronicaDesdeDocumentoVenta(dbEmp, dbSuper *sql.DB, vent
 		return nil, existingErr
 	}
 	if existingDoc != nil {
+		if facturaElectronicaPendienteDebeSincronizarCliente(existingDoc, ventaDoc) {
+			updatedDoc, updateErr := dbpkg.UpdateEmpresaDocumentoFacturacionCliente(
+				dbEmp,
+				ventaDoc.EmpresaID,
+				existingDoc.TipoDocumento,
+				existingDoc.DocumentoCodigo,
+				ventaDoc.EntidadRelacionadaID,
+			)
+			if updateErr != nil {
+				return nil, fmt.Errorf("sincronizar cliente de factura electronica pendiente: %w", updateErr)
+			}
+			if updatedDoc != nil {
+				existingDoc = updatedDoc
+			}
+		}
 		return map[string]interface{}{
 			"ok":                true,
 			"ya_existia":        true,

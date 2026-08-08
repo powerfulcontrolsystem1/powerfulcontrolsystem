@@ -41118,3 +41118,11 @@ acumulativa.
   literales de un catálogo cerrado.
 - Se elimina el hallazgo G201 de gosec sin suprimir reglas ni aceptar nombres de
   tabla externos. No cambia datos, contratos ni aislamiento por empresa.
+
+2026-08-08 - Plan 109: cliente fiscal en factura DIAN pendiente idempotente
+- Al volver a generar una factura electrónica ya existente, el backend
+  sincroniza el cliente de la venta únicamente si la factura está en borrador o
+  pendiente de emisión y todavía no tiene cliente.
+- Las facturas emitidas y las que ya tienen cliente quedan inmutables. La regla
+  conserva el aislamiento por empresa y evita reenviar a DIAN un documento
+  pendiente sin adquirente fiscal.
