@@ -41014,3 +41014,10 @@ acumulativa.
   iconos. Las pruebas Go enfocadas y vet aprobaron.
 - Falta la validacion del candidato inmutable en staging. No se modificaron
   datos empresariales ni produccion.
+
+2026-08-08 - Plan 109: cierre visual de observadores en staging
+- El candidato inmutable `c8094f5b` aprobo CI, escaneo, SBOM, Compose y
+  promocion por digest exclusiva a staging tras respaldo de PostgreSQL.
+- Login PCS y panel Super Administrador aprobaron con 0 errores/advertencias de
+  consola; las cabeceras CSP conservaron compatibilidad aplicada y Report-Only
+  estricta. Se cerraron las sesiones de prueba y produccion no fue modificada.

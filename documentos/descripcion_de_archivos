@@ -12671,3 +12671,6 @@ panel de seguridad para que el navegador reciba la correccion CSRF de staging.
 - `documentos/evidencia_plan_109/P109-009/2026-08-08_menu_observer_defense_in_depth.md`:
   registra la segunda revision de los observadores del menu, sus guardias y
   pruebas antes de la repeticion de staging.
+- `documentos/evidencia_plan_109/P109-009/2026-08-08_menu_observer_staging_c8094f5b.md`:
+  conserva el candidato inmutable, respaldo, cabeceras, revision visual limpia
+  y cierre de sesion del hallazgo de observadores.

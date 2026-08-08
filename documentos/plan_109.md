@@ -875,6 +875,19 @@ Actualizacion 2026-08-08, defensa completa de observadores del menu:
   repeticion visual en staging para decidir si el diagnostico restante procede
   de PCS o del navegador interno; P109-009 y los porcentajes no cambian.
 
+Actualizacion 2026-08-08, candidato `c8094f5b` visualmente limpio:
+
+- El workflow `31243743197` aprobo y el candidato se promovio por digest solo
+  a staging despues de respaldo verificable. Salud, CSP aplicada/Report-Only y
+  las cuatro imagenes activas aprobaron.
+- Login PCS y panel Super Administrador mostraron menu, metricas y controles
+  sin recortes; la consola termino con 0 errores y 0 advertencias. El hallazgo
+  de `MutationObserver` queda resuelto para este candidato.
+- P109-009 sigue parcial exclusivamente por DAST hostil, A/B no global y
+  migracion de scripts/estilos embebidos. La implementacion permanece en
+  **50,0 %**, la certificacion exacta no recibe una fase completa y el estado
+  sigue **NO-GO**.
+
 La evidencia histórica P108 sirve como línea base y evita repetir pruebas
 independientes del artefacto, pero no aumenta automáticamente estas cifras.
 
