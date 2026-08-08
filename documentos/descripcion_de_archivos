@@ -12710,3 +12710,7 @@ panel de seguridad para que el navegador reciba la correccion CSRF de staging.
 - `documentos/evidencia_plan_109/P109-007/2026-08-08_diagnostico_autenticado_dian_staging.md`:
   conserva el diagnostico oficial, revisión visual y prerrequisitos ausentes
   que bloquean una emisión o anulación fiscal real de PCS en staging.
+- `documentos/evidencia_plan_109/P109-002/2026-08-08_extraccion_edicion_duplicado_pcs.md`:
+  registra la extracción IA real de un XML sintético en PCS, edición humana,
+  auditoría, rechazo, control de duplicado, conciliación sin CxP/outbox y la
+  corrección local de botones según el estado del soporte.

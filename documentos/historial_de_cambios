@@ -41197,3 +41197,16 @@ acumulativa.
   minúsculas, rechazo de códigos SHA-256 internos y JSON inválido.
 - La descripción del código de corrección 2 usa el literal DIAN `Anulación de
   factura electrónica`, evitando además la notificación CBF04 observada.
+
+2026-08-08: Plan 109 / prueba real de captura CxP con IA y controles por estado.
+
+- PCS radicó un XML sintético, extrajo automáticamente proveedor, NIT,
+  documento, fecha, subtotal, IVA y total, permitió editar la revisión humana
+  y conservó la auditoría antes del rechazo oficial.
+- La repetición del mismo archivo quedó en estado `duplicado` y no creó cuenta
+  por pagar, pago, asiento ni evento outbox de contabilización.
+- La bandeja deshabilita localmente Extraer IA, Aprobar, Rechazar y
+  Contabilizar cuando el estado seleccionado no admite la acción, manteniendo
+  además la validación del backend como cierre de seguridad.
+- La corrección queda en una rama local sin PR ni despliegue. Las pruebas de
+  sintaxis, soportes, Go completo, vet y diff-check aprobaron.

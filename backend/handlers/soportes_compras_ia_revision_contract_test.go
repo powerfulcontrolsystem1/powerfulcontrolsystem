@@ -25,6 +25,11 @@ func TestSoportesComprasIARevisionExposesEditableHumanReview(t *testing.T) {
 	for _, want := range []string{
 		"editar_revision", "saveRevision", "/api/empresa/proveedores",
 		"Aprueba nuevamente antes de contabilizar", "if (state.loading) return",
+		"syncActionControls", "actionAllowed", "selectedState",
+		`extraer_ia: ["radicado", "extraido", "en_revision"]`,
+		`rechazar: ["radicado", "extraido", "en_revision", "aprobado"]`,
+		`contabilizar: ["aprobado"]`,
+		`if (!actionAllowed(action))`,
 		"window.confirm(confirmations[action])",
 		"Confirma que revisaste proveedor, documento, impuestos y total",
 		"¿Rechazar este soporte?", "¿Crear la cuenta por pagar con los datos aprobados?",

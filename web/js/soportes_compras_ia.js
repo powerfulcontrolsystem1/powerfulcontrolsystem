@@ -59,9 +59,42 @@
     target.classList.toggle("is-error", !!isError);
   }
 
+  var actionStates = {
+    extraer_ia: ["radicado", "extraido", "en_revision"],
+    aprobar: ["radicado", "extraido", "en_revision"],
+    rechazar: ["radicado", "extraido", "en_revision", "aprobado"],
+    contabilizar: ["aprobado"]
+  };
+
+  function selectedState() {
+    return String(state.selected && state.selected.estado_soporte || "").toLowerCase();
+  }
+
+  function actionAllowed(action) {
+    return !!state.selected && (actionStates[action] || []).indexOf(selectedState()) >= 0;
+  }
+
+  function syncActionControls() {
+    var actions = {
+      btnExtraer: "extraer_ia",
+      btnAprobar: "aprobar",
+      btnRechazar: "rechazar",
+      btnContabilizar: "contabilizar"
+    };
+    Object.keys(actions).forEach(function (id) {
+      var button = el(id);
+      if (!button) return;
+      var allowed = actionAllowed(actions[id]);
+      button.disabled = state.loading || !allowed;
+      button.setAttribute("aria-disabled", button.disabled ? "true" : "false");
+      button.title = !state.selected ? "Selecciona un soporte primero." : (!allowed ? "Accion no disponible para el estado " + label(selectedState()) + "." : "");
+    });
+  }
+
   function setBusy(on, text) {
     state.loading = !!on;
     document.querySelectorAll(".capture-btn").forEach(function (btn) { btn.disabled = !!on; });
+    syncActionControls();
     if (text) msg(text);
   }
 
@@ -165,6 +198,7 @@
     if (!s) {
       el("captureDetail").innerHTML = '<div class="capture-empty">Selecciona un soporte en la bandeja para revisar datos extraidos, totales y controles.</div>';
       el("captureEvents").innerHTML = '<div class="capture-empty">Sin soporte seleccionado.</div>';
+      syncActionControls();
       return;
     }
     var fields = [
@@ -192,6 +226,7 @@
       return '<div class="capture-detail-item"><span>' + esc(f[0]) + '</span><strong>' + esc(f[1] || "-") + '</strong></div>';
     }).join("");
     fillRevisionForm(s);
+    syncActionControls();
   }
 
   function setValue(id, value) { if (el(id)) el(id).value = value == null ? "" : value; }
@@ -338,6 +373,11 @@
     if (state.loading) return;
     if (!state.selected) {
       msg("Selecciona un soporte primero.", true);
+      return;
+    }
+    if (!actionAllowed(action)) {
+      msg("Accion no disponible para el estado " + label(selectedState()) + ".", true);
+      syncActionControls();
       return;
     }
     var confirmations = {
