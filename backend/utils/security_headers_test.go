@@ -57,7 +57,28 @@ func TestSecurityHeadersAndNoStoreOnLogin(t *testing.T) {
 	}
 	reportOnly := rec.Header().Get("Content-Security-Policy-Report-Only")
 	if reportOnly != policy {
-		t.Fatalf("CSP report-only must be generated from the same policy: %q != %q", reportOnly, policy)
+		t.Fatalf("CSP report-only must match the enforced compatibility policy unless strict reporting is enabled: %q != %q", reportOnly, policy)
+	}
+}
+
+func TestSecurityHeadersCanEnableStrictReportOnlyCSPWithoutBlockingCompatibility(t *testing.T) {
+	t.Setenv("PCS_CSP_REPORT_ONLY_STRICT", "true")
+	h := SecurityHeadersMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(http.StatusNoContent) }))
+	rec := httptest.NewRecorder()
+	h.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/administrar_empresa/administrar_productos.html", nil))
+
+	enforced := rec.Header().Get("Content-Security-Policy")
+	reportOnly := rec.Header().Get("Content-Security-Policy-Report-Only")
+	if !strings.Contains(enforced, "'unsafe-inline'") {
+		t.Fatalf("compatibility CSP unexpectedly removed inline support: %q", enforced)
+	}
+	if strings.Contains(reportOnly, "'unsafe-inline'") {
+		t.Fatalf("strict report-only CSP must omit unsafe-inline: %q", reportOnly)
+	}
+	for _, expected := range []string{"default-src 'self'", "form-action 'self'", "script-src 'self'", "style-src 'self'"} {
+		if !strings.Contains(reportOnly, expected) {
+			t.Fatalf("strict report-only CSP missing %q: %q", expected, reportOnly)
+		}
 	}
 }
 

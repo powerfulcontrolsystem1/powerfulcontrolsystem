@@ -573,16 +573,20 @@ Se informan dos cifras:
 
 Estado actualizado al 2026-08-01:
 
-- P109-000 está aprobada en staging para el SHA fusionado `89d6e042...`: PR 119,
-  CI y release `30700866694` verdes,
+- P109-000 está aprobada en staging para el SHA fusionado `ea9642dd...`: CI
+  `30714951274` y release inmutable `30715195384` verdes,
   cuatro digests/SBOM, Trivy sin vulnerabilidades, base vacía, upgrade,
   idempotencia, rechazo de checksum, rollback de aplicación, salud y producción
   intacta. P109-001, P109-002, P109-003, P109-004,
   P109-005, P109-008, P109-009, P109-010, P109-011 y P109-012 tienen evidencia
   parcial. Las demás fases continúan pendientes o bloqueadas.
 - P109-001 añadió rechazos runtime para empresa/topic ausentes, duplicados, ID
-  inexistente y publicado sin modificar el evento histórico excluido. Falta una
-  segunda empresa controlada para la matriz A/B.
+  inexistente y publicado sin modificar el evento histórico excluido. El pago
+  mínimo de `CXP-SCI-0003` quedó conciliado 1:1 entre pago, movimiento, outbox,
+  evento y asiento balanceado. La prueba detectó pérdida de un centavo por
+  columnas `REAL`; la migración local a `NUMERIC(18,2)` aprobó PostgreSQL
+  aislado y preflight, pero aún no está publicada ni aplicada. Falta una segunda
+  empresa controlada para la matriz A/B.
 - P109-002 ya demostró configuración cifrada, catálogo/preferencia por usuario,
   historial y dashboard CxP/IA. Sobre el candidato final confirmó que el filtro
   vacío lista estados activos, persistió la edición humana y rechazó por el
@@ -595,10 +599,14 @@ Estado actualizado al 2026-08-01:
   IA y completar aislamiento A/B con una identidad no global. La primera
   apertura autenticada de Centro IA confirmó su ocultamiento por empresa; al
   habilitarlo por el flujo oficial se detectó y corrigió la falta de invalidación
-  inmediata de las cachés de permisos. Tras vencer la caché del digest anterior,
-  el snapshot real y `Diagnostico ERP` aprobaron visualmente en PCS con uso 1/12
-  y sin mutaciones. Falta repetir la aplicación inmediata y la consola sobre el
-  nuevo digest.
+  inmediata de las cachés de permisos. Sobre `ea9642dd...`, la revocación y
+  restauración inmediata, la consola y `Diagnostico ERP` aprobaron. Un overlay
+  temporal escaneado corrigió el contrato `file_data` y demostró extracción real
+  y edición restaurable de `SCI-0001`, sin CxP ni pago automático. Cancelaciones
+  y doble clic aprobaron; la aprobación/rechazo real no convirtió el soporte.
+  `SCI-0003` creó una sola CxP canónica y su reproceso fue idempotente;
+  `SCI-0004` quedó duplicado sin cartera adicional. La corrección aún debe
+  publicarse como candidato inmutable; faltan recibo real y aislamiento A/B.
 - P109-004 completo sobre `89d6e042...` 618 vistas/309 rutas y 11.062 controles:
   600 `ok`, 18 revisiones conocidas, 97 clics seguros y 12 POST automáticos
   bloqueados por la guardia. Finanzas y CxP/IA aprobaron además 4/4 vistas
@@ -611,7 +619,10 @@ Estado actualizado al 2026-08-01:
 - P109-007 continúa bloqueada: el centro DIAN de PCS muestra ambiente, estado,
   TestSetId y rango como no configurados, avance visible de 10 % y cero
   TrackId/ZipKey. Sin esos datos no es válido emitir, anular ni afirmar un
-  `GetStatusZip StatusCode=00` oficial.
+  `GetStatusZip StatusCode=00` oficial. La repeticion autenticada del
+  diagnostico en staging sobre `44610128` confirma HTTP 200, operaciones SOAP
+  objetivo visibles y preparacion `sin_configuracion`; tampoco habilita emitir
+  la menta de 100 COP que el catalogo identifica, pues su stock visible es 0.
 - P109-009 redujo el escaneo rápido del host de dos hallazgos altos a cero altos
   mediante SSH por llave, UFW activo, VNC restringido y retiro de Avahi/CUPS.
   Quedan 30 paquetes y reinicio para una ventana de mantenimiento, además del
@@ -653,13 +664,332 @@ Estado actualizado al 2026-08-01:
   mantenimiento y ensayo general aún impiden promoverlo a piloto.
 - Veredicto: **NO-GO**.
 
+Actualización 2026-08-01, candidato `3ed34774`:
+
+- P109-001 conserva estado parcial, pero ya aprobó migración inmutable
+  `NUMERIC(18,2)`, saldo exacto 214199,99, respaldo previo, UI y producción
+  intacta.
+- P109-002 conserva estado parcial, pero ya aprobó en el digest desplegado
+  archivos Base64, XML como texto no confiable, extracción real, revisión
+  editable y control de duplicado sin crear CxP. También aprobó un recibo real
+  `SCI-0008`: doble clic con una sola extracción, lectura exacta de subtotal
+  500, IVA 95 y total 595, dos ediciones auditadas y rechazo final sin CxP,
+  pago, evento o asiento. La cuota temporal quedó restaurada a 5.
+- ReportSpec generó una vista CxP de tres filas, exportó XLS/PDF y rechazó dos
+  intentos de campo/fuente fuera del contrato con HTTP 400. Centro IA cargó sus
+  siete funciones y completó `Diagnostico ERP` sin alterar ventas, CxP, pagos,
+  soportes, eventos o asientos. Ambos resultados pertenecen a `3ed34774`.
+- Los porcentajes no aumentan porque ninguna fase parcial cumplió todavía todos
+  sus criterios de aceptación A/B y por roles con una segunda identidad no
+  global.
+
+Actualización 2026-08-01, candidato `f9694e10`:
+
+- P109-003 recorrió autenticadamente los 46 datasets del catálogo y sus cinco
+  formatos. La primera pasada 44/46 reveló dos incompatibilidades PostgreSQL en
+  fechas dinámicas y permanencia de vehículos; ambas quedaron corregidas,
+  cubiertas por regresión y publicadas mediante el workflow `30730395189`.
+- La pasada final obtuvo 46/46 datasets consistentes, 46/46 exportaciones en
+  JSON/CSV/TXT/XLS/PDF, 225 filas, cero alertas y 21/21 reportes contables,
+  fiscales y de cartera. Descargas autenticadas representativas confirmaron
+  MIME y firma de PDF, XLS y CSV.
+- La conciliación PCS confirmó cinco asientos balanceados (102,02=102,02), tres
+  CxP sin invariantes rotas y cinco pagos enlazados 1:1 con sus movimientos. Los
+  cuatro outbox posteriores a habilitar el handler están publicados; se
+  conserva un `dead` histórico anterior. La vista previa oficial lo encontró,
+  pero el usuario PCS recibió 403 al intentar la recuperación auditada; no se
+  forzó por SQL ni se amplió su permiso.
+- Producción mantuvo sus imágenes locales y salud/readiness 200. P109-003 sigue
+  parcial por casos contables/fiscales no representados, recuperación del
+  evento histórico, cierre/reapertura y UAT firmada por contador. Por ello los
+  porcentajes permanecen en **40,0 % de implementación** y **6,7 % de
+  certificación**, con veredicto **NO-GO**.
+
+Actualización 2026-08-01, candidato `99348ff4`:
+
+- La recepción externa de alertas detectó acumulación real de sesiones de 24
+  horas: máximo 244 para una identidad en staging y 155 en producción. El nuevo
+  contrato conserva como máximo las 20 sesiones recientes por identidad, poda
+  expiradas dentro de la misma transacción y serializa entre réplicas PostgreSQL.
+- El workflow inmutable `30731146474` aprobó build, Trivy, SBOM, publicación y
+  compose. Tras respaldar las dos bases, los cuatro digests se promovieron solo
+  a staging; producción conservó sus imágenes locales y sus datos.
+- Veinticinco logins reales consecutivos aprobaron: staging pasó de 249 a 25
+  sesiones vigentes, con máximo 20 por identidad y cero identidades fuera del
+  límite. La recepción Gmail confirma un canal externo de alertas funcional.
+- Las cuatro invitaciones de cajero existen en el buzón. La primera abre el
+  formulario válido de staging, pero completar contraseña y contrato requiere
+  intervención personal; el usuario PCS tampoco posee actualmente el permiso
+  efectivo para reenviarlas. P109-006 sigue pendiente.
+- Ninguna fase adicional cumple todos sus criterios, así que el estado se
+  mantiene en **40,0 % de implementación**, **6,7 % de certificación** y
+  **NO-GO**.
+
+Actualización 2026-08-01, candidato `edd2bdac`:
+
+- El barrido global protegido del candidato anterior recorrio 618 vistas,
+  11.102 controles y 97 clics seguros: cero excepciones y HTTP 5xx. Aislo como
+  defectos reales el 403 del reporte de aseo y dos fotos locales antiguas
+  ausentes en la red social.
+- El middleware de autoservicio ahora propaga el rol resuelto en servidor sin
+  confiar en cabeceras del cliente. La red social deja de entregar referencias
+  locales inexistentes sin modificar los datos historicos y rechaza traversal.
+- `go test ./...`, pruebas enfocadas y `go vet` aprobaron. El workflow inmutable
+  `30732433840` completo build, Trivy, SBOM, publicacion y Compose, y los cuatro
+  digests se promovieron solo a staging tras respaldar ambas bases.
+- La repeticion autenticada y visual aprobo 4/4 vistas responsive, 168
+  controles, cero errores HTTP/consola/excepciones e imagenes rotas. El boton
+  `Consultar` respondio 200 y mostro `Reporte actualizado.`; una discrepancia
+  query/cabecera de empresa fue rechazada con 400.
+- Produccion conservo sus imagenes y salud. Se retiraron 40 imagenes GHCR no
+  usadas manteniendo candidato y rollback inmediato; el disco paso de 73 % a
+  58 %. Staging conserva maximo 20 sesiones por identidad.
+- P109-004 sigue parcial por acciones mutantes, roles, segunda identidad no
+  global A/B y firma del alcance.
+- P109-011 queda aprobada sobre el mismo candidato: base vacia con 337/49
+  tablas, segunda pasada idempotente, drift fail-closed, fallo transaccional,
+  API anterior compatible, restore de dos bases/cinco dominios/dos replicas y
+  rollback coordinado de datos y archivos. El RTO total fue 48 s, el rollback
+  24 s y el RPO 5.466 s, dentro de los objetivos publicados de 2 h/24 h; la
+  limpieza termino con cero recursos efimeros.
+- El estado pasa a **43,3 % de implementacion** (`2 aprobadas + 9 parciales`),
+  **6,7 % de certificacion del candidato** y **NO-GO**. La certificacion no
+  suma P109-000 para `edd2bdac` porque el usuario pidio no crear PR y esa fase
+  exige integracion revisada/fusionada; el 6,7 % actual corresponde a P109-011.
+- P109-012 agoto el cierre automatizable: el preflight profesional completo
+  aprobo 20/20 compuertas, incluido Go, seguridad, permisos, roles, pagos,
+  migraciones, UX, documentacion, observabilidad, hardening y `diff-check`.
+  Permanece parcial solo por ensayo/capacitacion/firma de otra persona y por
+  definir contactos y horario del piloto; por ello no altera el porcentaje.
+
+Actualizacion 2026-08-02, candidato `7c47d4df`:
+
+- P109-006 queda aprobada. Cuatro identidades completaron invitacion, contrasena,
+  contrato y login normal; el candidato final ejecuto cuatro cajas, cinco ventas,
+  efectivo, debito, Nequi, pago mixto, stock compartido, doble pago, devolucion,
+  descuento y cierres conciliados. Las cuatro cajas terminaron con diferencia e
+  incidencia cero y PostgreSQL con cero esperas por lock.
+- La vista historica mostro el cierre mixto con 150 en efectivo, 50 en otros y
+  150 esperados, sin error visible ni desbordamiento de pagina.
+- La carga operativa de concurrencia 10 termino 100/100, p50 139 ms, p95 289 ms,
+  p99 326 ms y maximo 333 ms. Una rafaga fuera del perfil, de 100 solicitudes a
+  la vez, termino sin errores pero elevo p95 a 3.667 ms; el servicio recupero el
+  SLO sin reinicio y permanecio saludable.
+- Se corrigieron tres defectos descubiertos por el flujo: permiso de devolucion
+  del cajero, mutacion de items cerrados y sesiones residuales tras desactivar.
+  La prueba final obtuvo HTTP 200 al devolver antes del pago, HTTP 409 despues
+  del pago y HTTP 401 en las cuatro sesiones tras la desactivacion. Cero cuentas
+  QA activas, sesiones QA activas o cajas QA abiertas quedaron al terminar.
+- El workflow `30735137007` aprobo el SHA exacto y los cuatro digests se
+  promovieron solo a staging. Produccion conservo su API local anterior y salud.
+- El estado pasa a **50,0 % de implementacion** (`3 aprobadas + 9 parciales`, de
+  15 fases). La **certificacion del candidato exacto es 6,7 %**, correspondiente
+  a P109-006; las aprobaciones historicas de otros digests no se suman al exacto.
+  El veredicto general permanece **NO-GO** por las demas compuertas P0/P1.
+
+Actualizacion 2026-08-08, seguridad dinamica del candidato `7c47d4df`:
+
+- P109-009 repitio DAST seguro autenticado y no autenticado en staging para PCS:
+  lectura empresarial sin sesion 401, mutacion autenticada sin CSRF 403, origen
+  externo con token CSRF 403, payload same-origin vacio 400 sin escritura,
+  lectura autenticada 200 y logout seguido de 401. El preflight desde origen
+  externo no expuso `Access-Control-Allow-Origin`; las cabeceras HSTS, CSP,
+  nosniff, frame, referrer, permissions y no-store estuvieron presentes.
+- La vista autenticada del panel no presento errores de consola; las dos sesiones
+  de prueba se cerraron por el flujo oficial. `security_audit.mjs` aprobo y el
+  inventario detecto 204/204 wrappers empresariales sin revision manual.
+- P109-009 sigue parcial: CSP aun usa `unsafe-inline` y falta el aislamiento A/B
+  de dos identidades no globales, ademas de DAST completo para XSS, SSRF, subidas,
+  archivos, cache, jobs, IA, exportaciones y descargas. No se modifico produccion.
+- No se aprueba una fase adicional: el estado se conserva en **50,0 % de
+  implementacion**, **6,7 % de certificacion del candidato exacto** y **NO-GO**.
+
+Actualizacion 2026-08-08, preflight completo del candidato local:
+
+- `scripts/profesional_preflight.ps1 -Full` aprobo las 22 compuertas locales:
+  parseo PowerShell, 72 JS, modulos, seguridad, permisos/licencias, OpenAPI,
+  observabilidad, migraciones, QA de modulos/roles/pagos, soporte,
+  anonimizacion, SLO/SLA, hardening, UX, documentacion, Compose, Go completo y
+  `git diff --check`. El inventario mantuvo 204/204 wrappers empresariales sin
+  revision manual.
+- Es evidencia automatizada local, no un despliegue ni una promocion. P109-012
+  conserva sus requisitos humanos de capacitacion, ensayo, contactos, horario y
+  firma del piloto; no se incrementa el porcentaje ni se modifica produccion.
+
+Actualizacion 2026-08-08, CSP estricta preparada para observacion:
+
+- Se agrego `PCS_CSP_REPORT_ONLY_STRICT`. Con valor `1`, solo la cabecera
+  `Content-Security-Policy-Report-Only` omite `unsafe-inline` de scripts y
+  estilos; la CSP aplicada mantiene compatibilidad. El valor por defecto es
+  `0` en Compose y ejemplos, por lo que no altera staging ni produccion.
+- Pruebas de cabeceras, `go vet ./utils` y `go test ./... -count=1` aprobaron.
+  El siguiente paso es publicar un candidato, activarlo exclusivamente en
+  staging y revisar el lote visual/funcional de violaciones antes de enforcement.
+- P109-009 sigue parcial y el porcentaje no cambia: el inventario actual sigue
+  encontrando 191 paginas con scripts embebidos y 173 con estilos embebidos,
+  ademas de la matriz A/B y DAST hostil pendientes.
+
+Actualizacion 2026-08-08, correccion transversal de CSP estatica:
+
+- La primera promocion de observacion confirmo que el backend de staging tomo
+  `PCS_CSP_REPORT_ONLY_STRICT=1`, pero revelo que las paginas estaticas seguian
+  entregando una cabecera Report-Only heredada con `unsafe-inline` desde Nginx.
+- Se corrigio el include estatico para conservar la CSP aplicada compatible y
+  retirar compatibilidad inline solo de Report-Only, con origenes explicitos.
+  Una prueba evita que el include vuelva a usar destinos amplios o inline.
+- La correccion local aprobo prueba de recursos estaticos, pruebas de cabeceras,
+  vet y diff-check. Falta su candidato inmutable y su comprobacion visual en
+  staging; P109-009 continua parcial y el porcentaje no cambia.
+
+Actualizacion 2026-08-08, hallazgo de consola en panel autenticado:
+
+- La revision visual de PCS en staging mostro el panel estable y organizado,
+  pero la consola reporto un `MutationObserver.observe` con destino no nodo.
+- Se agrego una guardia de tipo antes de observar el documento. Falta validar
+  esta correccion en el siguiente candidato inmutable de staging; P109-009
+  sigue parcial y no se incrementa el porcentaje.
+
+Actualizacion 2026-08-08, candidato CSP `a408bb62` en staging:
+
+- El workflow inmutable `31243348139` aprobo build, escaneo, SBOM, digests y
+  Compose. La promocion exclusiva de staging quedo sana y uso respaldo previo
+  verificable de PostgreSQL; produccion no fue editada ni reiniciada.
+- Las cabeceras reales ya separan compatibilidad y observacion: la aplicada
+  conserva `unsafe-inline`; `Content-Security-Policy-Report-Only` no contiene
+  ni `unsafe-inline` ni el esquema amplio `https:`. La compuerta de cabeceras
+  CSP queda aprobada.
+- El login y panel PCS se vieron correctamente, pero el navegador interno
+  repitio un `MutationObserver.observe` sin traza atribuible pese a que el
+  recurso servido contiene la guardia. P109-009 continua parcial y el porcentaje
+  no cambia hasta atribuirlo y completar DAST hostil, A/B no global y la
+  migracion de 191 scripts/173 estilos embebidos.
+- La implementacion consolidada se mantiene en **50,0 %** (`3 aprobadas + 9
+  parciales`, de 15). La certificacion del candidato exacto `a408bb62` es
+  **0,0 %**: ninguna fase completa fue reejecutada sobre esos digests; el
+  **6,7 %** historico corresponde al candidato `7c47d4df` y no se transfiere.
+  El veredicto sigue siendo **NO-GO**.
+
+Actualizacion 2026-08-08, defensa completa de observadores del menu:
+
+- Se revisaron los tres observadores activos en el panel administrativo y se
+  agregaron guardias de nodo para tema, notificaciones e iconos. Una prueba
+  estatica exige las tres condiciones antes de `observe`.
+- Las pruebas Go y vet enfocadas aprobaron. Falta el release inmutable y la
+  repeticion visual en staging para decidir si el diagnostico restante procede
+  de PCS o del navegador interno; P109-009 y los porcentajes no cambian.
+
+Actualizacion 2026-08-08, candidato `c8094f5b` visualmente limpio:
+
+- El workflow `31243743197` aprobo y el candidato se promovio por digest solo
+  a staging despues de respaldo verificable. Salud, CSP aplicada/Report-Only y
+  las cuatro imagenes activas aprobaron.
+- Login PCS y panel Super Administrador mostraron menu, metricas y controles
+  sin recortes; la consola termino con 0 errores y 0 advertencias. El hallazgo
+  de `MutationObserver` queda resuelto para este candidato.
+- P109-009 sigue parcial exclusivamente por DAST hostil, A/B no global y
+  migracion de scripts/estilos embebidos. La implementacion permanece en
+  **50,0 %**, la certificacion exacta no recibe una fase completa y el estado
+  sigue **NO-GO**.
+
+Actualizacion 2026-08-08, carga segura y preflight de `c8094f5b`:
+
+- La carga autenticada de solo lectura completo 30/30 recargas con concurrencia
+  5, p50 840 ms y p95 1.245 ms, sin mutaciones de negocio. El navegador interno
+  emitio eventos de observador sin traza durante recargas repetidas, por lo que
+  no se atribuyen a PCS ni se considera una consola limpia bajo carga.
+- El preflight profesional `-Full` aprobo 22/22 compuertas del arbol actual,
+  incluidas sintaxis JavaScript, seguridad, permisos, Compose y Go completo.
+- P109-010 y P109-012 siguen parciales: faltan carga HTTP autenticada concluyente,
+  alertas/receptor externo, capacitación, responsables y firma humana. No cambia
+  el porcentaje ni el veredicto **NO-GO**.
+
+Actualizacion 2026-08-08, invariantes CxP en staging:
+
+- El candidato de staging confirma aplicada la migración atómica CxP y columnas
+  monetarias `NUMERIC(18,2)`. PCS tiene 3 obligaciones canónicas, 0 históricas
+  y 5 pagos sin relaciones huérfanas, montos no positivos ni saldos negativos.
+- Las pruebas enfocadas de CxP aprobaron; la integración PostgreSQL local quedó
+  explícitamente omitida por no disponer de `PCS_TEST_POSTGRES_DSN` aislado.
+- P109-001 continúa parcial por A/B, carrera real reversible y conciliación con
+  contador. Los porcentajes y el estado **NO-GO** no cambian.
+
+Actualizacion 2026-08-08, contratos IA y soportes:
+
+- Pruebas enfocadas aprobaron IA cerrada por defecto, redacción, revisión y
+  confirmación humana, JSON inválido, degradación de proveedor y doble clic,
+  además del proveedor canónico para CxP.
+- No se invocó proveedor ni se creó cartera/pago desde interfaz. P109-002 sigue
+  parcial hasta flujo autenticado reversible, proveedor disponible y A/B no
+  global. No cambia el porcentaje ni el estado **NO-GO**.
+
+Actualizacion 2026-08-08, migracion y restore exactos de `c8094f5b`:
+
+- El restore aislado del snapshot `20260808_031501` aprobo API/migrador del
+  candidato, health/readiness 200, dos bases, cinco tablas, 28 filas criticas
+  PCS, cuatro endpoints protegidos, inventario privado consistente y rol runtime
+  sin DDL. RTO 23 s y RPO observado 12.287 s permanecen dentro de los objetivos
+  publicados de 2 h/24 h.
+- La base vacia aprobo tres rechazos sin DDL, doble pasada, drift fail-closed
+  con recuperacion, cinco controles de rollback transaccional y cuatro de
+  compatibilidad hacia atras. Esquema final: 337/49 tablas y 19/10 migraciones;
+  la limpieza termino sin recursos efimeros.
+- P109-011 queda **aprobada para este candidato**. El avance verificable pasa a
+  **53,3 % de implementacion** (`4 aprobadas + 8 parciales`, de 15) y a
+  **6,7 % de certificacion del candidato exacto**, por una sola fase completa.
+  El veredicto permanece **NO-GO**: ninguna otra compuerta P0/P1 recibe credito
+  por esta evidencia.
+
+Actualizacion 2026-08-08, revision visual autenticada de documentos:
+
+- En PCS staging, Facturas electronicas mostro filtros, KPIs y 11 ventas en
+  filas/columnas ordenadas. La accion Visualizar confirmo apertura de la vista;
+  no se emitio, anulo, descargo ni imprimio un documento.
+- En movil 390 x 844 no hubo overflow horizontal de pagina; la tabla de 1.257 px
+  conservo scroll propio dentro de 326 px. Escritorio y movil no mostraron
+  errores ni advertencias de consola durante el recorrido.
+- P109-005 sigue parcial por los formatos reales restantes, tableta, accesibilidad
+  asistida, ventana de previsualizacion completa e impresion fisica. No cambia
+  el porcentaje ni el veredicto **NO-GO**.
+
+Actualizacion 2026-08-08, restore con replicas y rollback de `c8094f5b`:
+
+- El snapshot `20260808_031501` aprobo restore de bases/volumen privado, dos
+  replicas, cinco negativos de archivos, inventario sin huerfanos y rollback
+  coordinado de datos, archivo y sesiones. RTO total 52 s, rollback 26 s y RPO
+  observado 12.980 s quedaron dentro de los objetivos publicados de 2 h/24 h;
+  no quedaron recursos efimeros.
+- P109-008 sigue parcial por cuota, retencion, borrado/recuperacion, antivirus
+  y A/B no global. No cambia el **53,3 %** ni el veredicto **NO-GO**.
+
+Actualizacion 2026-08-08, cuota privada de soportes CxP/IA:
+
+- El candidato `516de42e` incorpora la cuota empresarial a los adjuntos privados de
+  `soportes_compras_ia`: suma almacenamiento publico y privado por `empresa_id`,
+  aplica limite/maximo/bloqueo corporativos y responde HTTP 507 saneado ante
+  exceso. La ruta, permisos y persistencia existente no cambian.
+- Pruebas unitarias cubren limite, switches, maximo por archivo y aislamiento
+  de bytes; `go test ./...`, `go vet ./...`, `diff --check` y el preflight de
+  22 compuertas aprobaron. El workflow `31245235398` publico el candidato y
+  staging recibio los digests exactos tras respaldo, sin tocar produccion.
+- Una restauracion efimera del candidato, con cuota de 1 MiB solo en esa copia,
+  rechazo por HTTP 507 un soporte de 2 MiB y dejo cero filas de prueba; al
+  cierre se verifico la limpieza de sus recursos Docker y temporales.
+- El candidato posterior `44610128` serializa esa seccion critica con candado
+  asesor PostgreSQL por empresa. Dos replicas restauradas enviaron en paralelo
+  soportes de 700 KiB con cuota aislada de 1 MiB: una inserto una fila y la otra
+  fue rechazada con HTTP 507, sin sobregiro ni segunda fila. Sus recursos se
+  limpiaron y staging se mantuvo saludable con los digests exactos.
+- P109-008 sigue parcial por retencion, borrado/recuperacion, antivirus y A/B
+  no global. El porcentaje y **NO-GO** no cambian.
+
 La evidencia histórica P108 sirve como línea base y evita repetir pruebas
 independientes del artefacto, pero no aumenta automáticamente estas cifras.
 
 ## 9. Siguiente orden para Terra alto
 
-P109-000 ya está aprobada para `89d6e042...`; Terra no debe reconstruirla ni
-repetirla sin un cambio de código. Debe continuar así:
+P109-000 ya está aprobada para `ea9642dd...` y P109-011 para `c8094f5b`;
+Terra no debe reconstruirlas ni repetirlas sin un cambio de código. Debe
+continuar así:
 
 1. confirmar que staging conserva los cuatro digests registrados y producción
    conserva sus imágenes anteriores;
@@ -669,7 +999,7 @@ repetirla sin un cambio de código. Debe continuar así:
    proveedor y evals, sin convertir automáticamente el borrador en pago;
 4. ejecutar UAT contable/fiscal de P109-003 con contador autorizado;
 5. completar acciones mutantes de P109-004 por rol y flujo oficial;
-6. continuar cuatro cajas, DIAN, receptor externo, restore y piloto solo cuando
+6. continuar cuatro cajas, DIAN, receptor externo y piloto solo cuando
    sus credenciales, identidades, hardware o ventanas estén disponibles;
 7. registrar evidencia y recalcular las dos cifras sin dar crédito completo a
    una fase parcial.

@@ -155,6 +155,7 @@ services:
       CONFIG_ENC_KEY_ID: ${CONFIG_ENC_KEY_ID:?Defina CONFIG_ENC_KEY_ID}
       CONFIG_ENC_KEY_PREVIOUS: ${CONFIG_ENC_KEY_PREVIOUS:-}
       PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:-https://powerfulcontrolsystem.com}
+      PCS_CSP_REPORT_ONLY_STRICT: ${PCS_CSP_REPORT_ONLY_STRICT:-0}
       PCS_CSP_SCRIPT_ORIGINS: ${PCS_CSP_SCRIPT_ORIGINS:-https://unpkg.com https://cdn.jsdelivr.net}
       PCS_CSP_STYLE_ORIGINS: ${PCS_CSP_STYLE_ORIGINS:-https://unpkg.com https://fonts.googleapis.com}
       PCS_CSP_FONT_ORIGINS: ${PCS_CSP_FONT_ORIGINS:-https://fonts.gstatic.com}

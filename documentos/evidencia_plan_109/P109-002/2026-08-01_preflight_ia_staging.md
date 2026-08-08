@@ -22,4 +22,177 @@ No se llamó al proveedor externo ni se generó costo en este ciclo. Continúan
 pendientes la extracción real autorizada, edición/confirmación/cancelación,
 doble clic, degradación del proveedor, evals y aislamiento A/B.
 
-Estado: **P109-002 parcial**.
+## Segunda pasada sobre el candidato `ea9642dd`
+
+El candidato inmutable fue promovido por digest solo a staging. Centro IA
+aprobó carga autenticada, diagnóstico real, consola sin errores y revocación y
+restauración inmediata del permiso explícito de PCS. Producción permaneció sin
+cambios.
+
+La extracción real del soporte `SCI-0001` mantuvo el documento en `Radicado` y
+respondió con degradación pública segura, pero el proveedor devolvió HTTP 400.
+La prueba aislada desde el mismo contenedor confirmó HTTP 200 tanto para texto
+como para un `input_file` construido como URL de datos. La causa quedó acotada
+al contrato local: el cliente enviaba únicamente los bytes Base64, sin el
+prefijo `data:<mime>;base64,` requerido para `file_data`.
+
+Se corrigió localmente la construcción de adjuntos, normalizando el tipo MIME y
+neutralizando valores inválidos. Las pruebas enfocadas, el paquete completo de
+handlers, `db`, `secure` y `go vet ./handlers` aprobaron.
+
+Para validar sin crear PR ni alterar producción se construyó un overlay temporal
+que sustituyó únicamente el binario del API sobre el digest inmutable. Trivy
+reportó cero HIGH/CRITICAL. Con ese overlay, el botón oficial `Extraer IA`
+procesó `SCI-0001`: pasó a `Extraido`, leyó proveedor, NIT, documento, fechas,
+subtotal 100, IVA 19, total 119 y confianza 99 %. `convertido_id` permaneció en
+cero; no se creó cuenta por pagar, pago ni contabilización automática.
+
+La revisión humana mostró todos los valores editables. Se guardó y comprobó una
+marca QA en observaciones y después se restauró el texto original; auditoría
+registró dos ediciones y una sola transición `Radicado -> Extraido`.
+
+Las dos credenciales heredadas se volvieron a cifrar desde el secreto de entorno
+del propio contenedor con la llave activa, sin imprimir ni transportar su valor.
+Al terminar se restauró staging al digest `ea9642dd` y se eliminaron las imágenes
+y binarios temporales. Salud y readiness de staging y producción permanecieron
+en HTTP 200; producción no se modificó.
+
+Estado: **P109-002 parcial**. Extracción y edición E2E quedan demostradas sobre
+el overlay controlado; faltan publicar la corrección en un candidato inmutable y
+cerrar confirmación/cancelación, doble clic, duplicados y aislamiento A/B.
+
+## Tercera pasada funcional sobre el digest restaurado
+
+Se recorrieron las confirmaciones de `Aprobar`, `Rechazar` y `Contabilizar`:
+cancelarlas conservó `SCI-0001` en `Extraido`. Un doble clic real sobre
+`Extraer IA` generó una sola petición mientras todos los botones permanecieron
+deshabilitados; la degradación conocida del digest fue segura y no cambió datos.
+
+Después se vinculó el proveedor canónico por el formulario editable. La
+aprobación real dejó `SCI-0001` en `aprobado`, con `convertido_id=0`; el rechazo
+posterior lo dejó en `rechazado`, también sin CxP, pago o asiento. La auditoría
+registró exactamente una transición de aprobación y una de rechazo.
+
+Para probar la conversión se creó el soporte controlado `SCI-0003`, se vinculó
+el proveedor, se aprobó y se contabilizó mediante los botones oficiales. Se
+creó exactamente una fila activa en la fuente canónica
+`empresa_cuentas_por_pagar`, ID 16, código `CXP-SCI-0003`, saldo 214200 y estado
+pendiente. Repetir `Contabilizar` conservó una sola fila y un solo evento.
+
+Una segunda carga demo con el mismo documento `FE-1024` produjo `SCI-0004` en
+estado `duplicado`, referenció al soporte 3, mantuvo `convertido_id=0` y no creó
+otra CxP. Esto demuestra revisión humana, confirmaciones, cancelación, doble
+clic, conversión idempotente y duplicado por documento dentro de PCS.
+
+Estado: **P109-002 parcial**. Quedan publicación inmutable del arreglo de
+`file_data`, recibo real y aislamiento A/B con una identidad empresarial no
+global; esos huecos impiden aprobar la fase completa.
+
+## Cuarta pasada sobre el candidato inmutable `4ab318c`
+
+El workflow `30720230306` construyó y escaneó las cuatro imágenes exactas sin
+PR. El candidato se promovió solo a staging y conservó producción intacta. La
+corrección de `file_data` ya forma parte del digest desplegado.
+
+Se radicó el soporte controlado `SCI-0005` por el endpoint público oficial y se
+reintentó la extracción desde el botón visible. El primer intento agotó el
+límite diario avanzado. El límite global de staging se amplió temporalmente de
+5 a 10 mediante el endpoint administrativo oficial y se restauró inmediatamente
+a 5 después del diagnóstico.
+
+El segundo intento alcanzó OpenAI, descartando configuración, cifrado y cuota,
+pero devolvió HTTP 400. La causa fue distinta a la ya corregida: el soporte era
+XML y el API de Responses no acepta ese contenido como `input_file`. El contrato
+local sí admite XML. La corrección pendiente de publicación convierte MIME
+textuales cerrados (`text/plain`, CSV, XML y JSON UTF-8) en `input_text`
+delimitado como contenido no confiable; imágenes conservan `input_image` y PDF/
+Office conservan `input_file`. La prueba enfocada y `go vet ./handlers`
+aprobaron.
+
+Estado: **P109-002 parcial**. El digest desplegado corrige el formato Base64,
+pero falta publicar y comprobar la degradación XML a texto, completar recibo y
+aislamiento A/B.
+
+## Quinta pasada sobre el candidato inmutable `3ed34774`
+
+El workflow `30721237619` aprobó compilación, escaneo HIGH/CRITICAL, SBOM,
+publicación y compose. Los cuatro digests se promovieron únicamente a staging,
+sin reconstruir y sin modificar producción.
+
+Se radicó `SCI-0007` con MIME real `text/xml` y se ejecutó `Extraer IA` desde la
+bandeja autenticada. La llamada alcanzó OpenAI, leyó proveedor, NIT, documento,
+fechas, subtotal 100, IVA 19, total 119 y confianza 98 %. El control detectó el
+documento ya existente y dejó el soporte en `duplicado`, referenciando
+exclusivamente a `SCI-0001`, con `convertido_id=0`. El formulario de revisión
+humana mostró todos los valores extraídos editables.
+
+Los soportes auxiliares `SCI-0005` y `SCI-0006`, que se usaron para diagnosticar
+MIME `application/octet-stream`, se rechazaron por el endpoint oficial; no
+crearon CxP, pagos ni asientos. La cuota avanzada se restauró a 5. Staging y
+producción conservaron health/ready HTTP 200 y producción mantuvo su imagen.
+
+Estado: **P109-002 parcial**. XML, `file_data`, revisión visible, duplicado e
+idempotencia de conversión quedan comprobados en un digest inmutable. Aún
+faltan recibo real, ReportSpec/Centro IA completos, evals y aislamiento A/B.
+
+## Sexta pasada: recibo real, doble clic y limpieza controlada
+
+Sobre el mismo candidato inmutable `3ed34774` se radicó por el endpoint oficial
+el recibo controlado `SCI-0008`, con archivo `text/xml`, tipo `recibo` y
+documento `recibo_caja`. La extracción se ejecutó desde el botón visible
+`Extraer IA` mediante doble clic real. La interfaz leyó proveedor y NIT, número
+y fechas, subtotal 500, IVA 95, total 595, categoría e impacto de inventario,
+con confianza de 98 %.
+
+La auditoría y la base confirmaron una sola extracción, aun con el doble clic.
+El formulario visible mantuvo todos los campos editables y registró dos
+ediciones humanas. El soporte nunca fue aprobado ni contabilizado: se rechazó
+por el endpoint oficial al terminar y quedó con `convertido_id=0`. La
+conciliación de solo lectura confirmó cero CxP, pagos, eventos contables y
+asientos para `SCI-0008` y su documento. La cuota avanzada, ampliada
+temporalmente de 5 a 10, se restauró a 5.
+
+Las verificaciones enfocadas de `db` y `handlers`, la sintaxis JavaScript y la
+auditoría estática de seguridad aprobaron. Staging y producción conservaron
+`/health` y `/ready` en HTTP 200; producción no se modificó.
+
+Estado: **P109-002 parcial**. El recibo real ya no es pendiente. Permanecen el
+aislamiento A/B con una segunda identidad empresarial no global y el cierre
+integral de ReportSpec/Centro IA sobre el candidato final.
+
+## Séptima pasada: ReportSpec y Centro IA sobre el candidato final
+
+El endpoint autenticado de ReportSpec generó sobre `3ed34774` una vista previa
+válida de cuentas por pagar. El contrato usó exclusivamente
+`contable_cuentas_por_pagar`, ocho columnas autorizadas, límite de 50 y devolvió
+tres filas sin truncamiento. La llamada respondió HTTP 200 en 2,285 segundos y
+consumió una de las dos consultas diarias del cupo específico.
+
+La misma especificación validada se exportó por el endpoint oficial:
+
+| Formato | HTTP | Tipo | Tamaño | Firma |
+| --- | ---: | --- | ---: | --- |
+| XLS | 200 | `application/vnd.ms-excel` | 381 bytes | UTF-8 seguido de encabezado tabular |
+| PDF | 200 | `application/pdf` | 1.518 bytes | `%PDF-1.4` |
+
+Dos negativos no consumieron otra consulta IA: una columna con texto de
+inyección y un `source_dataset` alterado fueron rechazados con HTTP 400. La
+auditoría persistió una sola huella SHA-256 del ReportSpec autorizado, sin SQL
+ni copia de datos empresariales en las observaciones.
+
+Centro IA cargó para PCS siete funciones, ocho agentes del catálogo, diez
+métricas y dos alertas. `Diagnostico ERP` respondió correctamente en 2,756
+segundos, dejó el uso en 3/12 y entregó una recomendación de 1.251 caracteres.
+El conteo antes/después conservó exactamente tres ventas, tres CxP, cinco pagos
+CxP, ocho soportes IA, siete eventos contables y cinco asientos; solo aumentó en
+uno la auditoría propia de Centro IA. El contrato frontend conserva un único
+interruptor de modo agente, apagado por defecto y agente general fijo, sin
+selector visible.
+
+Las pruebas enfocadas de ReportSpec, plantillas, permisos y esquema IA pasaron
+en `handlers` y `db`; la sintaxis del drawer también pasó. Staging y producción
+continuaron saludables y producción conservó sus imágenes locales anteriores.
+
+Estado: **P109-002 parcial**. ReportSpec y Centro IA ya funcionan sobre el
+candidato final sin efectos de negocio. Falta la matriz A/B y por roles con una
+segunda identidad empresarial no global para cumplir toda la aceptación.

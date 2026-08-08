@@ -1799,13 +1799,15 @@ Actualizacion 2026-04-29 (auditoria como fuente de contexto IA)
 - empresa_cuentas_por_cobrar:
   - empresa_id, codigo, cliente_id, cliente_nombre
   - documento_tipo, documento_codigo, fecha_emision, fecha_vencimiento
-  - valor_original, valor_pagado, saldo, estado_cartera, moneda
+  - valor_original, valor_pagado y saldo `NUMERIC(18,2)`; restricción exacta
+    `saldo = valor_original - valor_pagado`; estado_cartera, moneda
   - periodo_contable, referencia_pagos_json, fecha_ultimo_pago
   - conciliado_en, conciliado_por
 - empresa_cuentas_por_pagar:
   - empresa_id, codigo, proveedor_id, proveedor_nombre
   - documento_tipo, documento_codigo, fecha_emision, fecha_vencimiento
-  - valor_original, valor_pagado, saldo, estado_cartera, moneda
+  - valor_original, valor_pagado y saldo `NUMERIC(18,2)`; restricción exacta
+    `saldo = valor_original - valor_pagado`; estado_cartera, moneda
   - periodo_contable, referencia_pagos_json, fecha_ultimo_pago
   - conciliado_en, conciliado_por
 - empresa_creditos:
@@ -2326,6 +2328,12 @@ Actualizacion 2026-07-24 (P106, pendiente de ejecutar por migrador):
 - La tabla se crea exclusivamente con
   `20260724-001-cxp-atomic-payments-v1` desde `pcs-migrate`; esta nota no
   confirma que exista en desarrollo, staging o produccion.
+
+Actualizacion 2026-08-01 (P109, pendiente de publicar):
+
+- `20260801-001-cartera-money-precision-v1` migra los tres importes de CxC y
+  CxP desde `REAL` a `NUMERIC(18,2)`, recompone el saldo exacto y agrega el
+  invariante monetario. Falla cerrada si detecta drift mayor de 0,02.
 
 Actualizacion 2026-07-16:
 

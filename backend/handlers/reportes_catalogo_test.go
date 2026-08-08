@@ -252,3 +252,17 @@ func TestReportePlantillaCodigoValido(t *testing.T) {
 		}
 	}
 }
+
+func TestReportesFechasDinamicasConviertenTimestampATexto(t *testing.T) {
+	expr := reportesSQLTextExpression("fecha_actualizacion")
+	if expr != "COALESCE(CAST(fecha_actualizacion AS TEXT), '')" {
+		t.Fatalf("expresion fecha inesperada: %s", expr)
+	}
+	clause, args := reportesBuildDateFilterClause("fecha_actualizacion", "2026-01-01", "2026-12-31")
+	if !strings.Contains(clause, "substr(COALESCE(CAST(fecha_actualizacion AS TEXT), ''), 1, 10)") {
+		t.Fatalf("filtro no normaliza timestamp: %s", clause)
+	}
+	if len(args) != 2 || args[0] != "2026-01-01" || args[1] != "2026-12-31" {
+		t.Fatalf("argumentos fecha inesperados: %#v", args)
+	}
+}

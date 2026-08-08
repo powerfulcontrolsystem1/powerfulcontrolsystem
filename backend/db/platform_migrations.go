@@ -123,6 +123,14 @@ func PlatformMigrations(target string) ([]Migration, error) {
 					return applyEmpresaAIUsoDiarioUniqueSchemaTx(tx)
 				},
 			},
+			{
+				Version:     "20260801-001-cartera-money-precision-v1",
+				Description: "exact two-decimal balances for accounts receivable and payable",
+				Body:        empresaCarteraMoneyPrecisionFingerprint,
+				Apply: func(ctx context.Context, tx *sql.Tx) error {
+					return applyEmpresaCarteraMoneyPrecisionTx(ctx, tx)
+				},
+			},
 		}, nil
 	case MigrationTargetSuper:
 		return []Migration{

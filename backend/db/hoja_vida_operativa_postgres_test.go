@@ -1,6 +1,8 @@
 package db
 
 import (
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 )
@@ -18,5 +20,25 @@ func TestEmpresaHojaVidaReporteUsesIntegerCompatibleRecurrentePredicate(t *testi
 	}
 	if !strings.Contains(empresaHojaVidaReporteQuery, "pcs_ts(fecha_programada) < CURRENT_TIMESTAMP") {
 		t.Fatal("report must normalize the legacy text date before comparing it")
+	}
+}
+
+func TestVehiculosPermanenciaNormalizaTimestampParaPostgreSQL(t *testing.T) {
+	raw, err := os.ReadFile(filepath.Join("vehiculos_registro.go"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	source := string(raw)
+	for _, want := range []string{
+		"COALESCE(CAST(fecha_ingreso AS TEXT), '')",
+		"COALESCE(CAST(fecha_salida AS TEXT), '')",
+		"NULLIF(CAST(fecha_salida AS TEXT), '')",
+		"CAST(CURRENT_TIMESTAMP AS TEXT)",
+		"24.0 * 60.0 AS NUMERIC), 0)",
+		"COALESCE(CAST(fecha_ingreso AS TEXT), CAST(fecha_creacion AS TEXT), '')",
+	} {
+		if !strings.Contains(source, want) {
+			t.Fatalf("contrato PostgreSQL de permanencia ausente: %q", want)
+		}
 	}
 }

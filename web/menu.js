@@ -159,7 +159,10 @@
           }
         }
       });
-      observer.observe(document.documentElement || document.body, { childList: true, subtree: true });
+      var observationTarget = document.documentElement || document.body;
+      if (observationTarget && observationTarget.nodeType === 1) {
+        observer.observe(observationTarget, { childList: true, subtree: true });
+      }
     } catch (error) {}
   }
 
@@ -1368,10 +1371,10 @@
         var notificationObserver = new MutationObserver(function(){
           syncFloatingNotificationFromAdminBell();
         });
-        if (observedAdminBadge) {
+        if (observedAdminBadge && observedAdminBadge.nodeType === 1) {
           notificationObserver.observe(observedAdminBadge, { childList: true, characterData: true, subtree: true });
         }
-        if (observedAdminBell) {
+        if (observedAdminBell && observedAdminBell.nodeType === 1) {
           notificationObserver.observe(observedAdminBell, { attributes: true, attributeFilter: ['class'] });
         }
       }
@@ -1501,7 +1504,10 @@
             });
           });
         });
-        observer.observe(document.body, { childList: true, subtree: true });
+        var iconObservationTarget = document.body || document.documentElement;
+        if (iconObservationTarget && iconObservationTarget.nodeType === 1) {
+          observer.observe(iconObservationTarget, { childList: true, subtree: true });
+        }
       } catch (error) {}
     })();
   }

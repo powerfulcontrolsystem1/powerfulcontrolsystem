@@ -1383,6 +1383,16 @@ func buildCorteCajaReport(dbEmp *sql.DB, empresaID int64, desde, hasta, usuario 
 		}
 	}
 	resp.Resumen.EfectivoEsperadoCaja = resp.Resumen.AperturaEfectivo + resp.Resumen.EfectivoVentas + resp.Resumen.IngresosEfectivo - resp.Resumen.EgresosEfectivo
+	if cierreCajaID > 0 {
+		// Los pagos mixtos persisten su tramo en efectivo directamente sobre el
+		// cierre. El carrito conserva metodo_pago=mixto, por lo que el resumen
+		// reconstruido solo desde ventas no puede inferir ese desglose. Usamos el
+		// acumulado transaccional de la caja para que el reporte y el arqueo
+		// muestren el mismo efectivo sin duplicar movimientos manuales.
+		if cierre, cierreErr := getCorteCajaTurnoHistorico(dbEmp, empresaID, cierreCajaID); cierreErr == nil {
+			applyCorteCajaPersistedCashSummary(&resp.Resumen, cierre)
+		}
+	}
 
 	if strings.Contains(strings.ToLower(resp.Resumen.EmpresaTipo), "motel") {
 		stationNames, _ := getCorteCajaStationNames(dbEmp, empresaID)
@@ -1398,6 +1408,26 @@ func buildCorteCajaReport(dbEmp *sql.DB, empresaID int64, desde, hasta, usuario 
 	}
 
 	return resp, nil
+}
+
+func applyCorteCajaPersistedCashSummary(resumen *corteCajaResumen, cierre *dbpkg.EmpresaCierreCaja) {
+	if resumen == nil || cierre == nil {
+		return
+	}
+	cashSales := cierre.IngresosEfectivo - resumen.IngresosEfectivo
+	if cashSales > resumen.EfectivoVentas {
+		cashDelta := cashSales - resumen.EfectivoVentas
+		resumen.EfectivoVentas = cashSales
+		// Las ventas con metodo "mixto" entran inicialmente completas en Otros.
+		// Reclasificar solo el tramo efectivo evita que las categorias visibles
+		// sumen mas que el total real de la venta.
+		if cashDelta >= resumen.OtrosMediosVentas {
+			resumen.OtrosMediosVentas = 0
+		} else {
+			resumen.OtrosMediosVentas -= cashDelta
+		}
+	}
+	resumen.EfectivoEsperadoCaja = cierre.AperturaMonto + cierre.IngresosEfectivo - cierre.EgresosEfectivo - cierre.RetirosEfectivo
 }
 
 func listCorteCajaVentas(dbEmp *sql.DB, empresaID int64, desde, hasta, usuario, cajaCodigo string, cierreCajaID int64) ([]corteCajaVenta, error) {

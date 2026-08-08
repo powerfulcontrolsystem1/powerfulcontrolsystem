@@ -139,6 +139,15 @@ trazabilidad en `documentos/historial_de_cambios`.
   precios, abonos, pagos, devoluciones, QR y totales se normalizan a pesos
   enteros; monedas de otros paises pueden conservar precision decimal.
 
+## Precisión monetaria de cartera
+
+- `empresa_cuentas_por_cobrar` y `empresa_cuentas_por_pagar` deben persistir
+  `valor_original`, `valor_pagado` y `saldo` como `NUMERIC(18,2)`, nunca `REAL`.
+- El saldo canónico es exactamente `valor_original - valor_pagado`; no se
+  compensa una diferencia material durante una migración automática.
+- La migración de tipos solo corrige artefactos de redondeo de hasta 0,02 y
+  falla cerrada ante negativos, sobrepagos o drift que exige conciliación.
+
 ## Despliegue y portabilidad
 
 - Docker/VPS es el camino operativo principal de despliegue.

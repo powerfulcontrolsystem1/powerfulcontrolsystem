@@ -1,3 +1,38 @@
+2026-08-08
+- `backend/handlers/soportes_compras_ia.go`: aplica cuota empresarial y maximo
+  configurado antes de persistir adjuntos privados CxP/IA.
+- `backend/handlers/empresa_buzon.go`: incluye los soportes privados por empresa
+  en el uso total de almacenamiento corporativo.
+- `backend/handlers/soportes_compras_ia_storage_test.go`: cubre cuota, switches,
+  maximo y aislamiento de bytes privados de soportes.
+- `documentos/evidencia_plan_109/P109-008/2026-08-08_cuota_soportes_ia_local.md`:
+  evidencia local y limites de la subcompuerta de cuota CxP/IA.
+- `documentos/evidencia_plan_109/P109-008/2026-08-08_restore_replicas_rollback_c8094f5b.md`:
+  restore exacto aislado con replicas, controles hostiles y rollback coordinado
+  de datos/archivos, con limites pendientes explicitados.
+- `documentos/evidencia_plan_109/P109-005/2026-08-08_revision_visual_facturas_staging_c8094f5b.md`:
+  recorrido visual autenticado de Facturas electronicas en PCS, responsive y
+  sus limites explicitos frente a la impresion real.
+- `documentos/evidencia_plan_109/P109-011/2026-08-08_migracion_restore_c8094f5b.md`:
+  evidencia reproducible de migracion, rollback, compatibilidad y restore
+  aislados del candidato exacto de staging, incluyendo sus limites de NO-GO.
+- `documentos/evidencia_plan_109/P109-009/2026-08-08_csp_report_only_estricto_preparado.md`:
+  evidencia del modo CSP estricto solo Report-Only, sus pruebas y activacion
+  controlada pendiente en staging.
+- `backend/utils/utils.go`: separa CSP aplicada y CSP Report-Only estricta
+  opcional sin cambiar el comportamiento predeterminado.
+- `backend/utils/security_headers_test.go`: cubre que la observacion estricta
+  omite `unsafe-inline` sin alterar la politica aplicada.
+- `deploy/.env.staging.example`, `deploy/.env.platform.example` y
+  `deploy/docker-compose.platform.yml`: documentan y propagan el switch
+  `PCS_CSP_REPORT_ONLY_STRICT` con valor seguro por defecto.
+- `documentos/evidencia_plan_109/P109-012/2026-08-08_preflight_full_candidato_local.md`:
+  documenta las 22 compuertas automatizadas del preflight completo y sus limites
+  frente a la certificacion operativa y humana.
+- `documentos/evidencia_plan_109/P109-009/2026-08-08_dast_autenticado_staging.md`:
+  conserva DAST seguro autenticado/no autenticado, CSRF, CORS, logout,
+  cabeceras, auditoria estatica, inventario de wrappers y riesgos pendientes.
+
 2026-08-01
 - `documentos/evidencia_plan_109/P109-002/2026-08-01_confirmacion_idempotencia_evals.md`:
   contratos locales de confirmación humana, doble clic, lock distribuido,
@@ -12618,3 +12653,60 @@ panel de seguridad para que el navegador reciba la correccion CSRF de staging.
 - `backend/db/ai_usage_uniqueness_migration_test.go`: contrato que exige la
   presencia, huella y función ejecutable de la migración en el catálogo de
   empresas.
+
+2026-08-01 - Plan 109 / precisión monetaria de cartera
+- `backend/db/cartera_money_precision.go`: migración transaccional fail-closed
+  que convierte los importes canónicos CxC/CxP a `NUMERIC(18,2)`, recompone el
+  saldo exacto y agrega invariantes de no negatividad y cuadre.
+- `backend/db/cartera_money_precision_integration_test.go`: prueba PostgreSQL
+  aislada con tablas temporales que reproduce el artefacto de `REAL`, exige el
+  saldo 214199,99 y comprueba rechazo de drift material.
+- `documentos/evidencia_plan_109/P109-001/2026-08-01_pago_minimo_precision.md`:
+  concilia pago, movimiento, outbox, evento y asiento 1:1 y registra la causa,
+  corrección y límites de despliegue.
+- `documentos/evidencia_plan_109/P109-004/2026-08-01_barrido_99348ff4_y_cierre_edd2bdac.md`:
+  registra el barrido autenticado de 618 vistas, la correccion del reporte de
+  aseo y fotos ausentes, el release inmutable, la repeticion visual responsive,
+  el aislamiento de staging y la limpieza segura de imagenes del VPS.
+
+2026-08-02 - Plan 109 / cuatro cajas reales.
+- `documentos/evidencia_plan_109/P109-006/2026-08-02_cuatro_cajas_reales_staging.md`:
+  documenta invitaciones y sesiones independientes, ventas y stock concurrentes,
+  cuatro medios de pago, devolucion, descuento, cierres, carga, recursos,
+  revision visual, revocacion de sesiones y limpieza final del ensayo PCS.
+
+2026-08-08 - Plan 109 / CSP estatica Report-Only.
+- `documentos/evidencia_plan_109/P109-009/2026-08-08_csp_static_report_only_fix.md`:
+  registra el hallazgo entre middleware y Nginx, la correccion sin enforcement,
+  sus pruebas enfocadas y la compuerta pendiente de staging.
+- `documentos/evidencia_plan_109/P109-009/2026-08-08_menu_mutation_observer_guard.md`:
+  documenta el error de consola autenticado, la guardia de observacion y la
+  repeticion de staging requerida antes de cerrar la evidencia visual.
+- `documentos/evidencia_plan_109/P109-009/2026-08-08_csp_strict_staging_a408bb62.md`:
+  conserva el workflow, digests abreviados, respaldo, cabeceras reales,
+  revision visual autenticada, cierre de sesiones y el pendiente de consola.
+- `documentos/evidencia_plan_109/P109-009/2026-08-08_menu_observer_defense_in_depth.md`:
+  registra la segunda revision de los observadores del menu, sus guardias y
+  pruebas antes de la repeticion de staging.
+- `documentos/evidencia_plan_109/P109-009/2026-08-08_menu_observer_staging_c8094f5b.md`:
+  conserva el candidato inmutable, respaldo, cabeceras, revision visual limpia
+  y cierre de sesion del hallazgo de observadores.
+- `documentos/evidencia_plan_109/P109-010/2026-08-08_carga_lectura_autenticada_c8094f5b.md`:
+  registra carga autenticada sin mutaciones, sus percentiles y la limitacion de
+  consola sin traza bajo recargas repetidas.
+- `documentos/evidencia_plan_109/P109-012/2026-08-08_preflight_c8094f5b.md`:
+  conserva el resultado del preflight profesional completo y sus pendientes
+  humanos de piloto.
+- `documentos/evidencia_plan_109/P109-001/2026-08-08_cxp_staging_invariantes_c8094f5b.md`:
+  registra esquema, cuentas/pagos agregados, invariantes de CxP y limites de
+  integración/A-B antes de certificación.
+- `documentos/evidencia_plan_109/P109-002/2026-08-08_ia_soportes_contratos_humanos.md`:
+  conserva pruebas de seguridad y revisión humana IA sin ejecutar proveedor ni
+  crear efectos financieros.
+- `documentos/evidencia_plan_109/P109-008/2026-08-08_cuota_soportes_ia_local.md`:
+  registra implementación, candidate build, staging por digest y prueba HTTP
+  507 en restore efímero de la cuota de adjuntos privados CxP/IA, incluida la
+  concurrencia de dos réplicas, no persistencia y limpieza de recursos.
+- `documentos/evidencia_plan_109/P109-007/2026-08-08_diagnostico_autenticado_dian_staging.md`:
+  conserva el diagnostico oficial, revisión visual y prerrequisitos ausentes
+  que bloquean una emisión o anulación fiscal real de PCS en staging.
