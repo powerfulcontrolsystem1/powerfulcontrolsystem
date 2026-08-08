@@ -893,7 +893,7 @@ func TestGenerateDIANCreditNoteUsesReferencedInvoiceOperationAndOwnPrefix(t *tes
 		"referencia_cufe":             "589135236ea7a1cde3f02409ba77ce0d5fd68cc3b1dab858c061c668ad8db2eb53f4046bf682ecbf437daf22356db799",
 		"referencia_fecha_emision":    "2026-08-08T09:40:14-05:00",
 		"codigo_correccion":           "2",
-		"descripcion_correccion":      "Anulacion de factura electronica",
+		"descripcion_correccion":      "Anulación de factura electrónica",
 	})
 	if err != nil || status != http.StatusOK {
 		t.Fatalf("generate status=%d err=%v result=%#v", status, err, result)
@@ -906,7 +906,7 @@ func TestGenerateDIANCreditNoteUsesReferencedInvoiceOperationAndOwnPrefix(t *tes
 		`<cbc:CompanyID schemeAgencyID="195"`,
 		"<cbc:ReferenceID>1PCS5</cbc:ReferenceID>",
 		"<cbc:ResponseCode>2</cbc:ResponseCode>",
-		"<cbc:Description>Anulacion de factura electronica</cbc:Description>",
+		"<cbc:Description>Anulación de factura electrónica</cbc:Description>",
 		"<cbc:ID>1PCS5</cbc:ID><cbc:UUID schemeName=\"CUFE-SHA384\">589135236ea7a1cde3f02409ba77ce0d5fd68cc3b1dab858c061c668ad8db2eb53f4046bf682ecbf437daf22356db799</cbc:UUID><cbc:IssueDate>2026-08-08</cbc:IssueDate>",
 	} {
 		if !strings.Contains(xmlPayload, expected) {

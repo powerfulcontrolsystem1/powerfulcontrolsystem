@@ -889,7 +889,7 @@ func EmpresaFacturacionElectronicaHandler(dbEmp, dbSuper *sql.DB) http.HandlerFu
 				notaOperacion.ReferenciaCUFE = strings.TrimSpace(factura.CodigoValidacion)
 				notaOperacion.ReferenciaFechaEmision = strings.TrimSpace(factura.FechaDocumento)
 				notaOperacion.CodigoCorreccion = "2"
-				notaOperacion.DescripcionCorreccion = "Anulacion de factura electronica"
+				notaOperacion.DescripcionCorreccion = "Anulación de factura electrónica"
 				completarClientePayloadFacturacion(dbEmp, factura.EmpresaID, &notaOperacion, *factura)
 				integracionFiscal, retryRegistro, integErr := processFacturacionIntegracionForDocumento(dbEmp, notaOperacion, *nota, "nota_credito", usuario, dbSuper)
 				if integErr != nil {
@@ -2861,7 +2861,7 @@ func hidratarReferenciaNotaCredito(dbEmp *sql.DB, nota dbpkg.EmpresaDocumentoFac
 		payload.CodigoCorreccion = "2"
 	}
 	if strings.TrimSpace(payload.DescripcionCorreccion) == "" {
-		payload.DescripcionCorreccion = "Anulacion de factura electronica"
+		payload.DescripcionCorreccion = "Anulación de factura electrónica"
 	}
 }
 
