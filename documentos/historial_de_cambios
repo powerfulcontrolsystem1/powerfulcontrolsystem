@@ -41111,3 +41111,10 @@ acumulativa.
 - La validación visual confirmó tabla ordenada de facturas/ventas y catálogo de
   menta; no se emitió, anuló ni envió documento fiscal porque el entorno no
   cumple los prerrequisitos por empresa. Producción no fue consultada ni tocada.
+
+2026-08-08 - Plan 109: cierre de análisis estático en migración monetaria
+- La migración de precisión CxC/CxP conserva exactamente sus consultas y DDL,
+  pero sustituye la interpolación de identificadores por sentencias PostgreSQL
+  literales de un catálogo cerrado.
+- Se elimina el hallazgo G201 de gosec sin suprimir reglas ni aceptar nombres de
+  tabla externos. No cambia datos, contratos ni aislamiento por empresa.

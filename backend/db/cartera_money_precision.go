@@ -9,13 +9,67 @@ import (
 const empresaCarteraMoneyPrecisionFingerprint = "empresa-cartera:v1:numeric-18-2:exact-balance-invariant"
 
 type carteraMoneyTable struct {
-	name       string
-	constraint string
+	name          string
+	inspectQuery  string
+	alterTypeSQL  string
+	recomputeSQL  string
+	notNullSQL    string
+	constraintSQL string
 }
 
 var empresaCarteraMoneyTables = []carteraMoneyTable{
-	{name: "empresa_cuentas_por_cobrar", constraint: "ck_empresa_cxc_money_invariants"},
-	{name: "empresa_cuentas_por_pagar", constraint: "ck_empresa_cxp_money_invariants"},
+	{
+		name: "empresa_cuentas_por_cobrar",
+		inspectQuery: `SELECT COUNT(*) FROM empresa_cuentas_por_cobrar WHERE
+			ROUND(COALESCE(valor_original, 0)::numeric, 2) < 0 OR
+			ROUND(COALESCE(valor_pagado, 0)::numeric, 2) < 0 OR
+			ROUND(COALESCE(valor_pagado, 0)::numeric, 2) > ROUND(COALESCE(valor_original, 0)::numeric, 2) OR
+			ABS(ROUND(COALESCE(saldo, 0)::numeric, 2) - GREATEST(
+				ROUND(COALESCE(valor_original, 0)::numeric, 2) - ROUND(COALESCE(valor_pagado, 0)::numeric, 2), 0
+			)) > 0.02`,
+		alterTypeSQL: `ALTER TABLE empresa_cuentas_por_cobrar
+			ALTER COLUMN valor_original TYPE NUMERIC(18,2) USING ROUND(COALESCE(valor_original, 0)::numeric, 2),
+			ALTER COLUMN valor_pagado TYPE NUMERIC(18,2) USING ROUND(COALESCE(valor_pagado, 0)::numeric, 2),
+			ALTER COLUMN saldo TYPE NUMERIC(18,2) USING ROUND(COALESCE(saldo, 0)::numeric, 2)`,
+		recomputeSQL: `UPDATE empresa_cuentas_por_cobrar SET saldo = GREATEST(valor_original - valor_pagado, 0)`,
+		notNullSQL: `ALTER TABLE empresa_cuentas_por_cobrar
+			ALTER COLUMN valor_original SET DEFAULT 0,
+			ALTER COLUMN valor_original SET NOT NULL,
+			ALTER COLUMN valor_pagado SET DEFAULT 0,
+			ALTER COLUMN valor_pagado SET NOT NULL,
+			ALTER COLUMN saldo SET DEFAULT 0,
+			ALTER COLUMN saldo SET NOT NULL`,
+		constraintSQL: `ALTER TABLE empresa_cuentas_por_cobrar ADD CONSTRAINT ck_empresa_cxc_money_invariants CHECK (
+			valor_original >= 0 AND valor_pagado >= 0 AND valor_pagado <= valor_original AND
+			saldo = valor_original - valor_pagado
+		)`,
+	},
+	{
+		name: "empresa_cuentas_por_pagar",
+		inspectQuery: `SELECT COUNT(*) FROM empresa_cuentas_por_pagar WHERE
+			ROUND(COALESCE(valor_original, 0)::numeric, 2) < 0 OR
+			ROUND(COALESCE(valor_pagado, 0)::numeric, 2) < 0 OR
+			ROUND(COALESCE(valor_pagado, 0)::numeric, 2) > ROUND(COALESCE(valor_original, 0)::numeric, 2) OR
+			ABS(ROUND(COALESCE(saldo, 0)::numeric, 2) - GREATEST(
+				ROUND(COALESCE(valor_original, 0)::numeric, 2) - ROUND(COALESCE(valor_pagado, 0)::numeric, 2), 0
+			)) > 0.02`,
+		alterTypeSQL: `ALTER TABLE empresa_cuentas_por_pagar
+			ALTER COLUMN valor_original TYPE NUMERIC(18,2) USING ROUND(COALESCE(valor_original, 0)::numeric, 2),
+			ALTER COLUMN valor_pagado TYPE NUMERIC(18,2) USING ROUND(COALESCE(valor_pagado, 0)::numeric, 2),
+			ALTER COLUMN saldo TYPE NUMERIC(18,2) USING ROUND(COALESCE(saldo, 0)::numeric, 2)`,
+		recomputeSQL: `UPDATE empresa_cuentas_por_pagar SET saldo = GREATEST(valor_original - valor_pagado, 0)`,
+		notNullSQL: `ALTER TABLE empresa_cuentas_por_pagar
+			ALTER COLUMN valor_original SET DEFAULT 0,
+			ALTER COLUMN valor_original SET NOT NULL,
+			ALTER COLUMN valor_pagado SET DEFAULT 0,
+			ALTER COLUMN valor_pagado SET NOT NULL,
+			ALTER COLUMN saldo SET DEFAULT 0,
+			ALTER COLUMN saldo SET NOT NULL`,
+		constraintSQL: `ALTER TABLE empresa_cuentas_por_pagar ADD CONSTRAINT ck_empresa_cxp_money_invariants CHECK (
+			valor_original >= 0 AND valor_pagado >= 0 AND valor_pagado <= valor_original AND
+			saldo = valor_original - valor_pagado
+		)`,
+	},
 }
 
 // applyEmpresaCarteraMoneyPrecisionTx replaces PostgreSQL REAL money columns
@@ -27,14 +81,7 @@ func applyEmpresaCarteraMoneyPrecisionTx(ctx context.Context, tx *sql.Tx) error 
 	}
 	for _, table := range empresaCarteraMoneyTables {
 		var incompatible int64
-		query := fmt.Sprintf(`SELECT COUNT(*) FROM %s WHERE
-			ROUND(COALESCE(valor_original, 0)::numeric, 2) < 0 OR
-			ROUND(COALESCE(valor_pagado, 0)::numeric, 2) < 0 OR
-			ROUND(COALESCE(valor_pagado, 0)::numeric, 2) > ROUND(COALESCE(valor_original, 0)::numeric, 2) OR
-			ABS(ROUND(COALESCE(saldo, 0)::numeric, 2) - GREATEST(
-				ROUND(COALESCE(valor_original, 0)::numeric, 2) - ROUND(COALESCE(valor_pagado, 0)::numeric, 2), 0
-			)) > 0.02`, table.name)
-		if err := tx.QueryRowContext(ctx, query).Scan(&incompatible); err != nil {
+		if err := tx.QueryRowContext(ctx, table.inspectQuery).Scan(&incompatible); err != nil {
 			return fmt.Errorf("inspect %s money precision: %w", table.name, err)
 		}
 		if incompatible > 0 {
@@ -44,22 +91,10 @@ func applyEmpresaCarteraMoneyPrecisionTx(ctx context.Context, tx *sql.Tx) error 
 
 	for _, table := range empresaCarteraMoneyTables {
 		statements := []string{
-			fmt.Sprintf(`ALTER TABLE %s
-				ALTER COLUMN valor_original TYPE NUMERIC(18,2) USING ROUND(COALESCE(valor_original, 0)::numeric, 2),
-				ALTER COLUMN valor_pagado TYPE NUMERIC(18,2) USING ROUND(COALESCE(valor_pagado, 0)::numeric, 2),
-				ALTER COLUMN saldo TYPE NUMERIC(18,2) USING ROUND(COALESCE(saldo, 0)::numeric, 2)`, table.name),
-			fmt.Sprintf(`UPDATE %s SET saldo = GREATEST(valor_original - valor_pagado, 0)`, table.name),
-			fmt.Sprintf(`ALTER TABLE %s
-				ALTER COLUMN valor_original SET DEFAULT 0,
-				ALTER COLUMN valor_original SET NOT NULL,
-				ALTER COLUMN valor_pagado SET DEFAULT 0,
-				ALTER COLUMN valor_pagado SET NOT NULL,
-				ALTER COLUMN saldo SET DEFAULT 0,
-				ALTER COLUMN saldo SET NOT NULL`, table.name),
-			fmt.Sprintf(`ALTER TABLE %s ADD CONSTRAINT %s CHECK (
-				valor_original >= 0 AND valor_pagado >= 0 AND valor_pagado <= valor_original AND
-				saldo = valor_original - valor_pagado
-			)`, table.name, table.constraint),
+			table.alterTypeSQL,
+			table.recomputeSQL,
+			table.notNullSQL,
+			table.constraintSQL,
 		}
 		for _, statement := range statements {
 			if _, err := tx.ExecContext(ctx, statement); err != nil {
