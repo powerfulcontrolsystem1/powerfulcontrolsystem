@@ -1,4 +1,7 @@
 2026-08-08
+- `documentos/evidencia_plan_109/P109-008/2026-08-08_restore_replicas_rollback_c8094f5b.md`:
+  restore exacto aislado con replicas, controles hostiles y rollback coordinado
+  de datos/archivos, con limites pendientes explicitados.
 - `documentos/evidencia_plan_109/P109-005/2026-08-08_revision_visual_facturas_staging_c8094f5b.md`:
   recorrido visual autenticado de Facturas electronicas en PCS, responsive y
   sus limites explicitos frente a la impresion real.

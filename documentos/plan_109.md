@@ -948,6 +948,16 @@ Actualizacion 2026-08-08, revision visual autenticada de documentos:
   asistida, ventana de previsualizacion completa e impresion fisica. No cambia
   el porcentaje ni el veredicto **NO-GO**.
 
+Actualizacion 2026-08-08, restore con replicas y rollback de `c8094f5b`:
+
+- El snapshot `20260808_031501` aprobo restore de bases/volumen privado, dos
+  replicas, cinco negativos de archivos, inventario sin huerfanos y rollback
+  coordinado de datos, archivo y sesiones. RTO total 52 s, rollback 26 s y RPO
+  observado 12.980 s quedaron dentro de los objetivos publicados de 2 h/24 h;
+  no quedaron recursos efimeros.
+- P109-008 sigue parcial por cuota, retencion, borrado/recuperacion, antivirus
+  y A/B no global. No cambia el **53,3 %** ni el veredicto **NO-GO**.
+
 La evidencia histórica P108 sirve como línea base y evita repetir pruebas
 independientes del artefacto, pero no aumenta automáticamente estas cifras.
 
