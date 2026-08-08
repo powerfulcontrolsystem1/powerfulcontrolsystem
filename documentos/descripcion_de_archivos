@@ -1,3 +1,8 @@
+2026-08-08
+- `documentos/evidencia_plan_109/P109-009/2026-08-08_dast_autenticado_staging.md`:
+  conserva DAST seguro autenticado/no autenticado, CSRF, CORS, logout,
+  cabeceras, auditoria estatica, inventario de wrappers y riesgos pendientes.
+
 2026-08-01
 - `documentos/evidencia_plan_109/P109-002/2026-08-01_confirmacion_idempotencia_evals.md`:
   contratos locales de confirmación humana, doble clic, lock distribuido,

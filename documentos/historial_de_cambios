@@ -40949,3 +40949,15 @@ acumulativa.
 - Carga con concurrencia 10: 100/100, p95 289 ms, cero errores y cero locks. El
   workflow inmutable `30735137007` y la suite Go completa aprobaron. Solo staging
   recibio los digests; produccion no fue desplegada.
+
+2026-08-08 - Plan 109: DAST autenticado seguro y controles de sesion en staging
+- Se validaron en PCS staging los rechazos de lectura empresarial sin sesion,
+  CSRF ausente, origen CORS externo y logout con revocacion efectiva. El payload
+  same-origin fue vacio y devolvio validacion 400 antes de persistir datos.
+- El panel Super Administrador fue visible sin errores de consola. HSTS, CSP,
+  no-store y cabeceras de aislamiento estuvieron presentes; CORS externo no
+  recibio `Access-Control-Allow-Origin`. La auditoria estatica y el inventario
+  multiempresa confirmaron 204 wrappers autoritativos sin revision manual.
+- Se cerraron ambas sesiones de prueba y no se modificaron ventas, cajas,
+  usuarios, CxP, documentos ni produccion. La fase P109-009 conserva riesgo
+  abierto por `unsafe-inline` y por faltar aislamiento A/B no global.

@@ -784,6 +784,23 @@ Actualizacion 2026-08-02, candidato `7c47d4df`:
   a P109-006; las aprobaciones historicas de otros digests no se suman al exacto.
   El veredicto general permanece **NO-GO** por las demas compuertas P0/P1.
 
+Actualizacion 2026-08-08, seguridad dinamica del candidato `7c47d4df`:
+
+- P109-009 repitio DAST seguro autenticado y no autenticado en staging para PCS:
+  lectura empresarial sin sesion 401, mutacion autenticada sin CSRF 403, origen
+  externo con token CSRF 403, payload same-origin vacio 400 sin escritura,
+  lectura autenticada 200 y logout seguido de 401. El preflight desde origen
+  externo no expuso `Access-Control-Allow-Origin`; las cabeceras HSTS, CSP,
+  nosniff, frame, referrer, permissions y no-store estuvieron presentes.
+- La vista autenticada del panel no presento errores de consola; las dos sesiones
+  de prueba se cerraron por el flujo oficial. `security_audit.mjs` aprobo y el
+  inventario detecto 204/204 wrappers empresariales sin revision manual.
+- P109-009 sigue parcial: CSP aun usa `unsafe-inline` y falta el aislamiento A/B
+  de dos identidades no globales, ademas de DAST completo para XSS, SSRF, subidas,
+  archivos, cache, jobs, IA, exportaciones y descargas. No se modifico produccion.
+- No se aprueba una fase adicional: el estado se conserva en **50,0 % de
+  implementacion**, **6,7 % de certificacion del candidato exacto** y **NO-GO**.
+
 La evidencia histórica P108 sirve como línea base y evita repetir pruebas
 independientes del artefacto, pero no aumenta automáticamente estas cifras.
 
