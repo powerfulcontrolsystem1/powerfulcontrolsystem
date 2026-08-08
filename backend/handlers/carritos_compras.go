@@ -3396,9 +3396,31 @@ func ventaDocumentoBaseDesdeCarrito(carrito *dbpkg.CarritoCompra) string {
 	}
 	sufijo := fmt.Sprintf("-CRT-%d", carrito.ID)
 	if strings.HasSuffix(base, sufijo) {
-		return base
+		return base + ventaDocumentoPagoSufijo(carrito.PagadoEn)
 	}
-	return base + sufijo
+	return base + sufijo + ventaDocumentoPagoSufijo(carrito.PagadoEn)
+}
+
+// ventaDocumentoPagoSufijo diferencia cada cierre de un carrito reutilizable de
+// estación. El carrito conserva su ID entre ventas, pero PagadoEn identifica de
+// forma estable una operación ya cerrada; sin este sufijo dos ventas sucesivas
+// terminaban compartiendo el mismo comprobante y la segunda quedaba absorbida
+// por el upsert idempotente.
+func ventaDocumentoPagoSufijo(pagadoEn string) string {
+	pagadoEn = strings.TrimSpace(pagadoEn)
+	if pagadoEn == "" {
+		return ""
+	}
+	var token strings.Builder
+	for _, r := range pagadoEn {
+		if r >= '0' && r <= '9' {
+			token.WriteRune(r)
+		}
+	}
+	if token.Len() == 0 {
+		return ""
+	}
+	return "-PG-" + token.String()
 }
 
 func buildVentaDocumentoCodigo(carrito *dbpkg.CarritoCompra, modo string) string {
