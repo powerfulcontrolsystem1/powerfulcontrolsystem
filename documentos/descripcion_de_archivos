@@ -12665,3 +12665,6 @@ panel de seguridad para que el navegador reciba la correccion CSRF de staging.
 - `documentos/evidencia_plan_109/P109-009/2026-08-08_menu_mutation_observer_guard.md`:
   documenta el error de consola autenticado, la guardia de observacion y la
   repeticion de staging requerida antes de cerrar la evidencia visual.
+- `documentos/evidencia_plan_109/P109-009/2026-08-08_csp_strict_staging_a408bb62.md`:
+  conserva el workflow, digests abreviados, respaldo, cabeceras reales,
+  revision visual autenticada, cierre de sesiones y el pendiente de consola.

@@ -846,6 +846,21 @@ Actualizacion 2026-08-08, hallazgo de consola en panel autenticado:
   esta correccion en el siguiente candidato inmutable de staging; P109-009
   sigue parcial y no se incrementa el porcentaje.
 
+Actualizacion 2026-08-08, candidato CSP `a408bb62` en staging:
+
+- El workflow inmutable `31243348139` aprobo build, escaneo, SBOM, digests y
+  Compose. La promocion exclusiva de staging quedo sana y uso respaldo previo
+  verificable de PostgreSQL; produccion no fue editada ni reiniciada.
+- Las cabeceras reales ya separan compatibilidad y observacion: la aplicada
+  conserva `unsafe-inline`; `Content-Security-Policy-Report-Only` no contiene
+  ni `unsafe-inline` ni el esquema amplio `https:`. La compuerta de cabeceras
+  CSP queda aprobada.
+- El login y panel PCS se vieron correctamente, pero el navegador interno
+  repitio un `MutationObserver.observe` sin traza atribuible pese a que el
+  recurso servido contiene la guardia. P109-009 continua parcial y el porcentaje
+  no cambia hasta atribuirlo y completar DAST hostil, A/B no global y la
+  migracion de 191 scripts/173 estilos embebidos.
+
 La evidencia histórica P108 sirve como línea base y evita repetir pruebas
 independientes del artefacto, pero no aumenta automáticamente estas cifras.
 
