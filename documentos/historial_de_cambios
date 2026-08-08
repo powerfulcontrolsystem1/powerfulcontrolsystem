@@ -41210,3 +41210,14 @@ acumulativa.
   además la validación del backend como cierre de seguridad.
 - La corrección queda en una rama local sin PR ni despliegue. Las pruebas de
   sintaxis, soportes, Go completo, vet y diff-check aprobaron.
+
+2026-08-08: Plan 109 / DAST de adjuntos y salida IA no confiable en PCS.
+
+- Un archivo HTML con script fue bloqueado antes de persistir; un XML con una
+  instrucción hostil y texto tipo `img/onerror` fue tratado como documento, no
+  como orden ejecutable.
+- La extracción dejó revisión humana, escapó el contenido en la tabla y no
+  creó imagen, script, CxP, pago, asiento ni outbox. El soporte se rechazó por
+  el endpoint oficial autenticado.
+- Se agregaron pruebas para mantener HTML/SVG/JavaScript fuera de las
+  extensiones admitidas y exigir escape de los valores extraídos en la UI.

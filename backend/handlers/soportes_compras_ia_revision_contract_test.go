@@ -110,3 +110,22 @@ func TestSoportesComprasIARevisionKeepsApprovalHumanAndCanonicalSupplier(t *test
 		}
 	}
 }
+
+func TestSoportesComprasIARendersExtractedValuesAsEscapedText(t *testing.T) {
+	raw, err := os.ReadFile(filepath.Join("..", "..", "web", "js", "soportes_compras_ia.js"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	source := string(raw)
+	for _, want := range []string{
+		`esc(s.proveedor_nombre || "Sin proveedor")`,
+		`esc(s.proveedor_nit || "-")`,
+		`esc(s.documento_numero || "-")`,
+		`safeHref(s.archivo_url)`,
+		`esc(archivo)`,
+	} {
+		if !strings.Contains(source, want) {
+			t.Fatalf("untrusted extracted value is not escaped in the table: %q", want)
+		}
+	}
+}

@@ -82,3 +82,16 @@ func TestSoporteComprasIAStorageLockIsPostgresBackedAndTenantScoped(t *testing.T
 		}
 	}
 }
+
+func TestSoporteComprasIAAllowedExtensionsRejectActiveContent(t *testing.T) {
+	for _, ext := range []string{".html", ".htm", ".svg", ".js"} {
+		if soporteComprasIAAllowedExt[ext] {
+			t.Fatalf("active content extension must stay blocked: %s", ext)
+		}
+	}
+	for _, ext := range []string{".png", ".jpg", ".jpeg", ".webp", ".pdf", ".xml"} {
+		if !soporteComprasIAAllowedExt[ext] {
+			t.Fatalf("business attachment extension missing: %s", ext)
+		}
+	}
+}

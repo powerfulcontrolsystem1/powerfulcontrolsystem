@@ -12714,3 +12714,7 @@ panel de seguridad para que el navegador reciba la correccion CSRF de staging.
   registra la extracción IA real de un XML sintético en PCS, edición humana,
   auditoría, rechazo, control de duplicado, conciliación sin CxP/outbox y la
   corrección local de botones según el estado del soporte.
+- `documentos/evidencia_plan_109/P109-009/2026-08-08_subida_hostil_xss_ia_pcs.md`:
+  registra el bloqueo de HTML activo, tratamiento seguro de instrucciones y
+  texto XSS dentro de XML, escape visible, rechazo oficial y conciliación sin
+  efectos contables en PCS.
