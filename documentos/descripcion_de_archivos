@@ -1,4 +1,7 @@
 2026-08-08
+- `documentos/evidencia_plan_109/P109-009/2026-08-08_descarga_privada_y_redirect_ssrf.md`:
+  evidencia dinámica de descarga privada CxP/IA y cierre local de redirecciones
+  SSRF del callback OnlyOffice, con límites de certificación explícitos.
 - `backend/handlers/soportes_compras_ia.go`: aplica cuota empresarial y maximo
   configurado antes de persistir adjuntos privados CxP/IA.
 - `backend/handlers/empresa_buzon.go`: incluye los soportes privados por empresa

@@ -400,6 +400,21 @@ func onlyOfficeCallbackDownloadURLAllowed(dbSuper *sql.DB, raw string) bool {
 	return strings.EqualFold(target.Scheme, server.Scheme) && strings.EqualFold(target.Hostname(), server.Hostname()) && target.Port() == server.Port()
 }
 
+func onlyOfficeCallbackHTTPClient(dbSuper *sql.DB) *http.Client {
+	return &http.Client{
+		Timeout: 45 * time.Second,
+		CheckRedirect: func(req *http.Request, via []*http.Request) error {
+			if len(via) >= 10 {
+				return errors.New("demasiadas redirecciones de OnlyOffice")
+			}
+			if req == nil || req.URL == nil || !onlyOfficeCallbackDownloadURLAllowed(dbSuper, req.URL.String()) {
+				return errors.New("redireccion de OnlyOffice fuera del servidor configurado")
+			}
+			return nil
+		},
+	}
+}
+
 // copyOnlyOfficeCallbackFile enforces the callback size limit without ever
 // accepting a truncated document. The caller keeps the destination temporary
 // until this function completes successfully.
@@ -1265,7 +1280,7 @@ func OnlyOfficeCallbackPublicHandler(dbSuper *sql.DB) http.HandlerFunc {
 		}
 
 		// Descargar el archivo desde OnlyOffice y reemplazar el local (atomic).
-		client := &http.Client{Timeout: 45 * time.Second}
+		client := onlyOfficeCallbackHTTPClient(dbSuper)
 		req, _ := http.NewRequest(http.MethodGet, strings.TrimSpace(payload.URL), nil)
 		// Algunos deployments requieren JWT en header para descargas desde Document Server.
 		if jwtSecret != "" {

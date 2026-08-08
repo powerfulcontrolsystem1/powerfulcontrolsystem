@@ -1,3 +1,13 @@
+2026-08-08: Plan 109 / descarga privada CxP-IA y redirecciones SSRF.
+- El soporte privado de PCS aprobó descarga autenticada como adjunto sin caché,
+  `nosniff` ni fuga de ruta; el mismo objeto quedó bloqueado sin sesión, con
+  empresa cruzada y con identificadores ausentes o manipulados.
+- El callback OnlyOffice vuelve a validar esquema, host y puerto en cada salto
+  HTTP, rechaza redirecciones fuera del Document Server configurado y conserva
+  redirecciones relativas legítimas. Las pruebas enfocadas y vet aprobaron.
+- El cambio permanece local, sin PR, push ni despliegue. P109-009 sigue parcial
+  y no aumenta el 53,3 % formal hasta cerrar todos sus criterios.
+
 2026-08-08: Plan 109 / cuota empresarial para soportes CxP/IA.
 - La carga privada de `soportes_compras_ia` suma ahora archivos publicos y
   privados del mismo `empresa_id`, aplica la configuracion corporativa de

@@ -1009,6 +1009,20 @@ Actualizacion 2026-08-08, prueba real PCS y colision de ventas reutilizables:
 La evidencia histórica P108 sirve como línea base y evita repetir pruebas
 independientes del artefacto, pero no aumenta automáticamente estas cifras.
 
+Actualización 2026-08-08, descarga privada CxP/IA y SSRF por redirección:
+
+- La descarga real del soporte privado `SCI-0004` aprobó autenticación,
+  pertenencia a `empresa_id=12`, adjunto forzado, `no-store`, `nosniff` y cero
+  fuga de ruta; sin sesión respondió 401, el cruce a empresa 53 respondió 404 y
+  los identificadores ausente/manipulado respondieron 400.
+- La auditoría local cerró una brecha de defensa en profundidad del callback
+  OnlyOffice: cada redirección vuelve a validar esquema, host y puerto contra el
+  Document Server configurado. Las pruebas demuestran que el mismo origen
+  continúa funcionando y que un segundo origen no recibe la solicitud.
+- El arreglo permanece local sin PR ni despliegue. P109-009 sigue parcial y el
+  avance permanece en **53,3 % de implementación**, **0 % de certificación del
+  arreglo local** y **NO-GO**.
+
 ## 9. Siguiente orden para Terra alto
 
 P109-000 ya está aprobada para `ea9642dd...` y P109-011 para `c8094f5b`;

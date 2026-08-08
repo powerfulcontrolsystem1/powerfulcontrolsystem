@@ -151,6 +151,59 @@ func TestCopyOnlyOfficeCallbackFileKeepsCompleteAllowedDocument(t *testing.T) {
 	}
 }
 
+func TestOnlyOfficeCallbackHTTPClientAllowsSameOriginRedirect(t *testing.T) {
+	var server *httptest.Server
+	server = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/start" {
+			http.Redirect(w, r, "/document.docx", http.StatusFound)
+			return
+		}
+		_, _ = w.Write([]byte("document"))
+	}))
+	defer server.Close()
+	t.Setenv("ONLYOFFICE_DOCUMENT_SERVER_URL", server.URL)
+
+	res, err := onlyOfficeCallbackHTTPClient(nil).Get(server.URL + "/start")
+	if err != nil {
+		t.Fatalf("same-origin redirect rejected: %v", err)
+	}
+	defer res.Body.Close()
+	if res.StatusCode != http.StatusOK {
+		t.Fatalf("unexpected final status: %d", res.StatusCode)
+	}
+}
+
+func TestOnlyOfficeCallbackHTTPClientRejectsCrossOriginRedirect(t *testing.T) {
+	targetHit := make(chan struct{}, 1)
+	target := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		select {
+		case targetHit <- struct{}{}:
+		default:
+		}
+		_, _ = w.Write([]byte("private target"))
+	}))
+	defer target.Close()
+
+	source := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		http.Redirect(w, r, target.URL+"/metadata", http.StatusFound)
+	}))
+	defer source.Close()
+	t.Setenv("ONLYOFFICE_DOCUMENT_SERVER_URL", source.URL)
+
+	res, err := onlyOfficeCallbackHTTPClient(nil).Get(source.URL + "/start")
+	if res != nil {
+		_ = res.Body.Close()
+	}
+	if err == nil {
+		t.Fatal("cross-origin redirect was accepted")
+	}
+	select {
+	case <-targetHit:
+		t.Fatal("cross-origin redirect reached the blocked target")
+	default:
+	}
+}
+
 func TestOnlyOfficeTemporaryTokenHandlersDisableCaching(t *testing.T) {
 	for _, handler := range []http.HandlerFunc{
 		OnlyOfficeFilePublicHandler(nil),
