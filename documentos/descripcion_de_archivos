@@ -1,4 +1,7 @@
 2026-08-08
+- `documentos/evidencia_plan_109/P109-005/2026-08-08_revision_visual_facturas_staging_c8094f5b.md`:
+  recorrido visual autenticado de Facturas electronicas en PCS, responsive y
+  sus limites explicitos frente a la impresion real.
 - `documentos/evidencia_plan_109/P109-011/2026-08-08_migracion_restore_c8094f5b.md`:
   evidencia reproducible de migracion, rollback, compatibilidad y restore
   aislados del candidato exacto de staging, incluyendo sus limites de NO-GO.

@@ -1,3 +1,12 @@
+2026-08-08: Plan 109 / avance visual autenticado de impresiones.
+- Facturas electronicas de PCS en staging mostro 11 ventas con filtros, KPIs y
+  tabla organizada; Visualizar confirmo la apertura de la vista sin crear,
+  anular, descargar ni imprimir documentos.
+- A 390 x 844 no hubo overflow de pagina y la tabla conservo desplazamiento
+  horizontal local; escritorio/movil cerraron sin errores ni advertencias de
+  consola. P109-005 sigue parcial por formatos reales, accesibilidad, tableta y
+  prueba fisica, por lo que no cambia el porcentaje ni el NO-GO.
+
 2026-08-08: Plan 109 / P109-011 aprobada en el candidato exacto de staging.
 - El candidato `c8094f5b` restaura el snapshot `20260808_031501` en recursos
   aislados: API/migrador health y readiness 200, dos bases, cinco tablas, 28

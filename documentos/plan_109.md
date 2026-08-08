@@ -936,6 +936,18 @@ Actualizacion 2026-08-08, migracion y restore exactos de `c8094f5b`:
   El veredicto permanece **NO-GO**: ninguna otra compuerta P0/P1 recibe credito
   por esta evidencia.
 
+Actualizacion 2026-08-08, revision visual autenticada de documentos:
+
+- En PCS staging, Facturas electronicas mostro filtros, KPIs y 11 ventas en
+  filas/columnas ordenadas. La accion Visualizar confirmo apertura de la vista;
+  no se emitio, anulo, descargo ni imprimio un documento.
+- En movil 390 x 844 no hubo overflow horizontal de pagina; la tabla de 1.257 px
+  conservo scroll propio dentro de 326 px. Escritorio y movil no mostraron
+  errores ni advertencias de consola durante el recorrido.
+- P109-005 sigue parcial por los formatos reales restantes, tableta, accesibilidad
+  asistida, ventana de previsualizacion completa e impresion fisica. No cambia
+  el porcentaje ni el veredicto **NO-GO**.
+
 La evidencia histórica P108 sirve como línea base y evita repetir pruebas
 independientes del artefacto, pero no aumenta automáticamente estas cifras.
 
