@@ -41408,6 +41408,18 @@ acumulativa.
 - Go enfocado/raíz, sintaxis JavaScript, contrato de blob, preflight profesional
   completo y diff-check aprobaron. El candidato no fue desplegado ni certificado.
 
+2026-08-09: Plan 109 / ejecución E2E autenticada por lotes.
+
+- `tools/qa_e2e_buttons.cjs` incorpora `PCS_QA_ROUTE_OFFSET` y
+  `PCS_QA_ROUTE_BATCH_SIZE`: ambos validan enteros no negativos y recortan el
+  inventario ordenado antes de multiplicarlo por escritorio/móvil.
+- El reporte registra desplazamiento y tamaño del lote. Esto permite continuar
+  una corrida interrumpida sin presentar un timeout parcial como cobertura
+  completa; la guardia contra mutaciones, la clasificación de riesgo y la
+  matriz manual de roles/IA se conservan intactas.
+- `documentos/comandos_codex.md` documenta el uso seguro: destino,
+  credenciales y evidencia se mantienen fuera del repositorio.
+
 2026-08-09: Plan 109 / extracción inmutable del indicador DIAN.
 
 - El primer ensayo del candidato por digest en staging confirmó que CSP, salud

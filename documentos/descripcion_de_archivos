@@ -170,9 +170,13 @@
 - `documentos/evidencia_plan_109/P109-000/2026-08-01_release_d4e613e2_staging.md`:
   release inmutable final, digests, SBOM/Trivy, migraciones aisladas, carrera
   Linux, promocion exclusiva a staging y huella productiva intacta.
+- `documentos/evidencia_plan_109/P109-000/2026-08-09_release_inmutable_31915619_staging.md`:
+  evidencia del workflow inmutable, sus cuatro digests y la promocion exacta
+  solo a staging del SHA `31915619`, con migrador, salud y produccion intacta.
 - `tools/qa_e2e_buttons.cjs`: auditor visual autenticado con selectores estables,
   service workers bloqueados y guardia que impide y reporta cualquier mutacion
-  HTTP durante los clics automaticos.
+  HTTP durante los clics automaticos; acepta desplazamiento y tamaño de lote
+  deterministas para completar inventarios extensos sin ocultar rutas.
 - `tools/qa_module_contracts.mjs`: contrato CI para impedir que el auditor E2E
   pierda su frontera no mutante.
 - `backend/handlers/super_vps2.go`: estado degradado, visible y no 5xx cuando el

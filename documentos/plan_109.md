@@ -1345,3 +1345,25 @@ Actualización 2026-08-09, candidato `bb285968` en staging:
   no se aprueban: faltan cuatro imágenes inmutables, fusión/revisión y el
   inventario E2E completo. El avance permanece **53,3 %**, certificación **0 %**
   y **NO-GO**.
+
+Actualización 2026-08-09, candidato inmutable `31915619` promovido solo a staging:
+
+- El workflow `31308770525` construyó una sola vez API, migrador, worker y
+  frontend desde el SHA completo `31915619a74227216b9590b5268e036b3e6a51b4`.
+  Trivy, los cuatro SBOM, publicación en GHCR y la validación de Compose por
+  digest aprobaron en la misma ejecución.
+- Los cuatro digests publicados se promovieron con
+  `vps-staging-digest-up.sh`; el script no reconstruyó código. Staging quedó
+  `health=ok`, `ready=ready`, API/worker/frontend saludables y migrador con
+  exit code `0`. El ledger registra
+  `platform:20260809-001-dian-local-production-flag-v1:applied` y la columna
+  DIAN existe. Las imágenes y salud de producción fueron verificadas sin cambio.
+- `qa_e2e_buttons.cjs` ya puede reanudar el inventario por lotes ordenados con
+  offset/tamaño explícitos, y sus reportes guardan ambos datos. Esta mejora
+  aún no es una ejecución total: P109-004 conserva pendiente la matriz de
+  acciones mutantes, roles e IA y no recibe crédito adicional hasta completar
+  todos los lotes autenticados.
+- P109-000 conserva estado **parcial** por la política vigente de no crear PR:
+  el SHA no está revisado ni fusionado a `main`. El avance de implementación
+  permanece **53,3 %**, la certificación formal **0 %** y el veredicto
+  **NO-GO**.

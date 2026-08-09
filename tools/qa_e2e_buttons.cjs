@@ -40,6 +40,8 @@ const EMAIL = process.env.PCS_QA_EMAIL || "";
 const PASSWORD = process.env.PCS_QA_PASSWORD || "";
 const EMPRESA_ID = process.env.PCS_QA_EMPRESA_ID || "";
 const MAX_PAGES = Number(process.env.PCS_QA_MAX_PAGES || "0");
+const ROUTE_OFFSET = Number(process.env.PCS_QA_ROUTE_OFFSET || "0");
+const ROUTE_BATCH_SIZE = Number(process.env.PCS_QA_ROUTE_BATCH_SIZE || "0");
 const MAX_SAFE_CLICKS_PER_PAGE = Number(process.env.PCS_QA_MAX_SAFE_CLICKS_PER_PAGE || "8");
 const SETTLE_MS = Number(process.env.PCS_QA_SETTLE_MS || "450");
 const NETWORK_IDLE_TIMEOUT_MS = Number(process.env.PCS_QA_NETWORK_IDLE_TIMEOUT_MS || "3500");
@@ -103,7 +105,7 @@ function discoverRoutes() {
       }
       return parsed.pathname + parsed.search + parsed.hash;
     });
-    return MAX_PAGES > 0 ? normalized.slice(0, MAX_PAGES) : normalized;
+    return sliceRouteBatch(normalized);
   }
   const files = walk(WEB_ROOT)
     .map(routeForFile)
@@ -112,7 +114,21 @@ function discoverRoutes() {
       const score = (r) => (r.startsWith("/administrar_empresa") ? 0 : r.startsWith("/super") ? 1 : 2);
       return score(a) - score(b) || a.localeCompare(b);
     });
-  return MAX_PAGES > 0 ? files.slice(0, MAX_PAGES) : files;
+  return sliceRouteBatch(files);
+}
+
+// El inventario completo puede superar el límite de un ejecutor remoto. El
+// desplazamiento y el tamaño de lote permiten recorrerlo de forma determinista
+// sin ocultar rutas ni mezclar resultados de distintas corridas.
+function sliceRouteBatch(routes) {
+  if (!Number.isInteger(ROUTE_OFFSET) || ROUTE_OFFSET < 0) {
+    throw new Error("PCS_QA_ROUTE_OFFSET debe ser un entero mayor o igual a cero.");
+  }
+  if (!Number.isInteger(ROUTE_BATCH_SIZE) || ROUTE_BATCH_SIZE < 0) {
+    throw new Error("PCS_QA_ROUTE_BATCH_SIZE debe ser un entero mayor o igual a cero.");
+  }
+  const effectiveSize = ROUTE_BATCH_SIZE > 0 ? ROUTE_BATCH_SIZE : MAX_PAGES;
+  return effectiveSize > 0 ? routes.slice(ROUTE_OFFSET, ROUTE_OFFSET + effectiveSize) : routes.slice(ROUTE_OFFSET);
 }
 
 function ensureDir(dir) {
@@ -435,6 +451,8 @@ function writeMarkdown(results, summary) {
   lines.push("- Base URL: `" + BASE_URL + "`");
   lines.push("- Empresa: `" + EMPRESA_ID + "`");
   lines.push("- Paginas recorridas: `" + summary.totalPages + "`");
+  lines.push("- Desplazamiento de rutas: `" + ROUTE_OFFSET + "`");
+  lines.push("- Tamano de lote: `" + (ROUTE_BATCH_SIZE || MAX_PAGES || "completo") + "`");
   lines.push("- Botones detectados: `" + summary.totalButtons + "`");
   lines.push("- Clicks seguros ejecutados: `" + summary.clicked + "`");
   lines.push("- Acciones riesgosas omitidas: `" + summary.unsafe + "`");
@@ -504,7 +522,7 @@ async function main() {
   const summary = summarize(allResults);
   fs.writeFileSync(path.join(OUT_DIR, "results.json"), JSON.stringify({ summary, results: allResults }, null, 2), "utf8");
   writeMarkdown(allResults, summary);
-  process.stdout.write(JSON.stringify({ outDir: OUT_DIR, summary }, null, 2) + "\n");
+  process.stdout.write(JSON.stringify({ outDir: OUT_DIR, routeOffset: ROUTE_OFFSET, routeBatchSize: ROUTE_BATCH_SIZE || MAX_PAGES || 0, summary }, null, 2) + "\n");
 }
 
 main().catch((err) => {

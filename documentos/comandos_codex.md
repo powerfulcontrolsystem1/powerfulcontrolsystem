@@ -99,6 +99,25 @@ C:\Users\ivanm\.cache\codex-runtimes\codex-primary-runtime\dependencies\node\bin
 Para paginas HTML con scripts embebidos, preferir helpers existentes si los hay
 o usar Node para extraer scripts y validarlos sin ejecutar llamadas reales.
 
+### Barrido E2E autenticado por lotes
+
+El auditor `tools\qa_e2e_buttons.cjs` permite dividir un inventario grande sin
+perder el orden determinista. Definir el destino, empresa y credenciales solo
+en el canal seguro; no copiarlas en comandos, evidencia ni commits. Cada lote
+debe usar un directorio de salida distinto y conservar `results.json` y
+`reporte.md`.
+
+```powershell
+$env:PCS_QA_ROUTE_OFFSET = "0"       # 0, 50, 100, ...
+$env:PCS_QA_ROUTE_BATCH_SIZE = "50"  # rutas, antes de aplicar escritorio/movil
+$env:PCS_QA_OUT_DIR = "test_runs\qa_e2e_lote_000"
+& $node tools\qa_e2e_buttons.cjs
+```
+
+`PCS_QA_ROUTE_OFFSET` y `PCS_QA_ROUTE_BATCH_SIZE` se aplican al inventario
+ordenado antes de duplicarlo por viewport. No sustituyen la matriz manual de
+acciones mutantes, roles ni botones IA: la guardia de red bloquea mutaciones.
+
 ## Validacion de textos y codificacion
 
 Antes de cerrar cambios que toquen textos visibles, ayudas, plantillas de correo,
