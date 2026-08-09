@@ -65,3 +65,11 @@ groups:
         annotations:
           summary: "Consulta operativa PCS fallida"
           description: "La fuente {{ $labels.source }} del job {{ $labels.job }} no puede consultar sus agregados operativos."
+      - alert: PCSSoporteIAPurgaVencida
+        expr: pcs_support_purge_stale_total{job=~"pcs-backend|pcs-staging-backend"} > 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Depuracion de soporte IA detenida"
+          description: "El job {{ $labels.job }} mantiene {{ $value | printf \"%.0f\" }} saga(s) de depuracion pendientes por al menos 15 minutos. Aplicar el runbook sin borrar archivos ni filas manualmente."

@@ -1,3 +1,14 @@
+2026-08-09: Plan 109 / observabilidad de depuracion CxP-IA.
+- `/metrics` incorpora conteos agregados de sagas pendientes, vencidas a 15
+  minutos y finalizadas, mas señal explícita de éxito de consulta. No publica
+  empresa, soporte, usuario, nombre ni ruta privada como etiqueta.
+- Prometheus alerta `PCSSoporteIAPurgaVencida` tras dos minutos; Grafana agrega
+  paneles de pendientes/vencidas y el runbook de observabilidad enlaza la
+  recuperación oficial sin SQL ni borrado manual.
+- Pruebas enfocadas y vet aprobaron; faltan despliegue del candidato, inyección
+  real y receptor externo. P109-010 sigue parcial, Plan 109 permanece 53,3 % y
+  NO-GO.
+
 2026-08-09: Plan 109 / depuracion segura y tumbas auditables CxP-IA.
 - Se agrega `purgar` con permiso Delete, retencion 1..3650 dias, motivo y
   confirmacion exacta del codigo. Solo acepta registros eliminados no

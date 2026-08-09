@@ -1098,6 +1098,17 @@ Actualización 2026-08-09, depuración segura de soportes CxP/IA:
   incluso después de finalizar y alerta de pendientes envejecidos. El runbook
   oficial prohíbe SQL/borrado manual y exige backup antes de una recuperación.
 
+Actualización 2026-08-09, observabilidad de la depuración CxP/IA:
+
+- `/metrics` publica únicamente agregados globales de sagas pendientes,
+  pendientes por al menos 15 minutos y finalizadas, con estado de consulta y
+  sin etiquetas de empresa, usuario, soporte, nombre o ruta privada.
+- Prometheus incorpora la alerta crítica `PCSSoporteIAPurgaVencida`, Grafana
+  presenta pendientes/vencidas y el runbook dirige al flujo oficial reanudable.
+- Pruebas locales de render, contrato y vet aprobaron. Falta desplegar, provocar
+  y resolver una saga vencida en staging y comprobar entrega externa; P109-010
+  sigue parcial, el avance permanece **53,3 %** y el veredicto **NO-GO**.
+
 ## 9. Siguiente orden para Terra alto
 
 P109-000 ya está aprobada para `ea9642dd...` y P109-011 para `c8094f5b`;

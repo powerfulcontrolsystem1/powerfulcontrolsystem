@@ -3,7 +3,7 @@
   "title": "Powerful Control System - Operacion VPS",
   "timezone": "browser",
   "schemaVersion": 39,
-  "version": 2,
+  "version": 3,
   "refresh": "30s",
   "tags": ["pcs", "vps", "docker"],
   "panels": [
@@ -159,6 +159,30 @@
         }
       ],
       "fieldConfig": {"defaults": {"min": 0, "max": 1}}
+    },
+    {
+      "type": "stat",
+      "title": "Depuraciones IA pendientes",
+      "gridPos": {"x": 0, "y": 31, "w": 12, "h": 5},
+      "targets": [
+        {
+          "expr": "pcs_support_purge_pending_total{job=~\"pcs-backend|pcs-staging-backend\"}",
+          "legendFormat": "{{job}}"
+        }
+      ],
+      "fieldConfig": {"defaults": {"min": 0}}
+    },
+    {
+      "type": "stat",
+      "title": "Depuraciones IA vencidas",
+      "gridPos": {"x": 12, "y": 31, "w": 12, "h": 5},
+      "targets": [
+        {
+          "expr": "pcs_support_purge_stale_total{job=~\"pcs-backend|pcs-staging-backend\"}",
+          "legendFormat": "{{job}}"
+        }
+      ],
+      "fieldConfig": {"defaults": {"min": 0}}
     }
   ]
 }

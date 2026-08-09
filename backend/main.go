@@ -52,6 +52,13 @@ type prometheusQueueMetrics struct {
 	queryOK       float64
 }
 
+type prometheusSupportPurgeMetrics struct {
+	pending int64
+	stale   int64
+	purged  int64
+	queryOK float64
+}
+
 type prometheusOperationalMetrics struct {
 	businessDBReady float64
 	superDBReady    float64
@@ -60,6 +67,7 @@ type prometheusOperationalMetrics struct {
 	businessOutbox  prometheusQueueMetrics
 	superOutbox     prometheusQueueMetrics
 	asyncJobs       prometheusQueueMetrics
+	supportPurge    prometheusSupportPurgeMetrics
 }
 
 type prometheusOperationalCache struct {
@@ -119,12 +127,31 @@ func collectAsyncJobMetrics(ctx context.Context, dbConn *sql.DB) prometheusQueue
 	return result
 }
 
+func collectSupportPurgeMetrics(ctx context.Context, dbConn *sql.DB) prometheusSupportPurgeMetrics {
+	var result prometheusSupportPurgeMetrics
+	if dbConn == nil {
+		return result
+	}
+	err := dbConn.QueryRowContext(ctx, `SELECT
+		COUNT(*) FILTER (WHERE estado = 'purga_pendiente'),
+		COUNT(*) FILTER (WHERE estado = 'purga_pendiente'
+			AND COALESCE(NULLIF(fecha_actualizacion, ''), fecha_creacion) ~ '^\d{4}-\d{2}-\d{2}'
+			AND CAST(COALESCE(NULLIF(fecha_actualizacion, ''), fecha_creacion) AS TIMESTAMP) <= CURRENT_TIMESTAMP - INTERVAL '15 minutes'),
+		COUNT(*) FILTER (WHERE estado = 'purgado')
+		FROM empresa_soportes_compras_ia`).Scan(&result.pending, &result.stale, &result.purged)
+	if err == nil {
+		result.queryOK = 1
+	}
+	return result
+}
+
 func collectPrometheusOperationalMetrics(ctx context.Context, businessDB, superDB *sql.DB) prometheusOperationalMetrics {
 	result := defaultPrometheusOperationalMetrics()
 	result.businessDBReady = databaseReady(ctx, businessDB)
 	result.superDBReady = databaseReady(ctx, superDB)
 	if result.businessDBReady == 1 {
 		result.businessOutbox = collectOutboxMetrics(ctx, businessDB)
+		result.supportPurge = collectSupportPurgeMetrics(ctx, businessDB)
 	}
 	if result.superDBReady == 1 {
 		result.superOutbox = collectOutboxMetrics(ctx, superDB)
@@ -200,6 +227,16 @@ func renderPrometheusMetrics(values prometheusOperationalMetrics) string {
 	builder.WriteString("# HELP pcs_async_jobs_expired_leases_total Durable jobs with expired leases.\n")
 	builder.WriteString("# TYPE pcs_async_jobs_expired_leases_total gauge\n")
 	writePrometheusQueueMetrics(&builder, "pcs_async_jobs", "super_jobs", values.asyncJobs)
+	builder.WriteString("# HELP pcs_support_purge_pending_total Purchase-support purge sagas awaiting completion.\n")
+	builder.WriteString("# TYPE pcs_support_purge_pending_total gauge\n")
+	fmt.Fprintf(&builder, "pcs_support_purge_pending_total %d\n", values.supportPurge.pending)
+	builder.WriteString("# HELP pcs_support_purge_stale_total Purchase-support purge sagas pending for at least fifteen minutes.\n")
+	builder.WriteString("# TYPE pcs_support_purge_stale_total gauge\n")
+	fmt.Fprintf(&builder, "pcs_support_purge_stale_total %d\n", values.supportPurge.stale)
+	builder.WriteString("# HELP pcs_support_purged_total Purchase supports whose private file purge completed.\n")
+	builder.WriteString("# TYPE pcs_support_purged_total gauge\n")
+	fmt.Fprintf(&builder, "pcs_support_purged_total %d\n", values.supportPurge.purged)
+	fmt.Fprintf(&builder, "pcs_observability_query_success{source=\"support_purge\"} %.0f\n", values.supportPurge.queryOK)
 	return builder.String()
 }
 

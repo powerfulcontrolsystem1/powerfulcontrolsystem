@@ -1,3 +1,10 @@
+2026-08-09: Observabilidad de depuracion CxP/IA.
+- Modulos afectados: `observabilidad`, `soportes_compras_ia`, `Prometheus`,
+  `Grafana`, `Alertmanager` y `operacion_vps`.
+- Las metricas agregan pendientes, vencidos y finalizados sin etiquetas de
+  empresa/soporte/usuario; una alerta y panel operativos conducen al runbook
+  seguro de reanudacion.
+
 2026-08-09: Depuracion segura de soportes de compras IA.
 - Modulos afectados: `soportes_compras_ia`, `CxP`, `almacenamiento_privado`,
   `auditoria`, `seguridad_multiempresa` y `frontend_ux`.
