@@ -4,6 +4,8 @@
 - Descarga y extracción verifican SHA-256, tamaño y archivo regular antes de
   consumir contenido. MIME/cabeceras fuerzan una respuesta adjunta y aislada.
 - Los fallos se observan agregados, sin tenant, hash, nombre ni ruta privada.
+- El incidente bloquea por empresa, invalida una aprobación abierta y registra
+  evento mínimo en la misma transacción; terminales contables se conservan.
 
 2026-08-09: Evals y telemetria de extracción IA de soportes.
 - Modulos afectados: `soportes_compras_ia`, `IA empresarial`, `evaluaciones`,

@@ -88,6 +88,9 @@ mismo hash o numero de documento.
   attachment y cabeceras sandbox/nosniff/same-origin/no-referrer/DENY/no-store.
   Un legado sin hash se descarga como binario y revalida firma antes de IA. Los
   fallos incrementan únicamente una métrica agregada de integridad.
+- Cada incidente se bloquea con `FOR UPDATE` por empresa. Una aprobación abierta
+  vuelve a `en_revision`, se limpian actor/fecha de aprobación y el evento mínimo
+  se confirma en la misma transacción. Un estado contable terminal se preserva.
 - Si la fila no puede persistirse despues de escribir el archivo privado, el
   adjunto recien creado se elimina dentro de la raiz segura para evitar huerfanos.
 - `Cancelar IA` aborta la solicitud HTTP y propaga el contexto al proveedor; el

@@ -1138,9 +1138,11 @@ Actualización 2026-08-09, integridad de archivos privados de soportes:
 - La respuesta fuerza attachment, MIME canónico/binario y cabeceras sandbox,
   nosniff, same-origin, no-referrer, DENY y no-store. Métrica, alerta y panel no
   contienen empresa, soporte, hash, nombre ni ruta.
+- El incidente usa `FOR UPDATE` por empresa, invalida una aprobación abierta y
+  registra evento minimizado en la misma transacción; terminales se preservan.
 - Las pruebas locales de bytes, stream, MIME y contrato aprobaron. Falta fixture
-  reversible desplegado y A/B; P109-009 sigue parcial, permanece **53,3 %** y
-  **NO-GO**.
+  PostgreSQL reversible desplegado y A/B; el ensayo quedó preparado pero hizo
+  SKIP sin DSN. P109-009 sigue parcial, permanece **53,3 %** y **NO-GO**.
 
 ## 9. Siguiente orden para Terra alto
 

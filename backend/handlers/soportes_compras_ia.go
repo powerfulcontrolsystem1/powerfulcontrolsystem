@@ -1082,10 +1082,12 @@ func downloadSoporteComprasIA(w http.ResponseWriter, r *http.Request, dbEmp *sql
 	}
 	if info.Size() < 1 || info.Size() > maxSoporteComprasIAUploadBytes {
 		_ = supportFileIntegrityFailure()
+		recordSoporteComprasIAIntegrityIncident(dbEmp, row, adminEmailFromRequest(r), "descarga")
 		http.Error(w, "integridad del archivo no valida", http.StatusConflict)
 		return
 	}
 	if err := verifySoporteComprasIAReaderIntegrity(file, row.ArchivoHash); err != nil {
+		recordSoporteComprasIAIntegrityIncident(dbEmp, row, adminEmailFromRequest(r), "descarga")
 		http.Error(w, "integridad del archivo no valida", http.StatusConflict)
 		return
 	}
@@ -1148,6 +1150,9 @@ func extraerSoporteComprasIAGPT55(r *http.Request, dbEmp, dbSuper *sql.DB, empre
 	}
 	att, err := loadSoporteComprasIAAttachment(current)
 	if err != nil {
+		if errors.Is(err, errSoporteComprasIAIntegrity) {
+			recordSoporteComprasIAIntegrityIncident(dbEmp, current, usuario, "extraccion_ia")
+		}
 		return dbpkg.EmpresaSoporteComprasIA{}, fmt.Errorf("%w: %v", errSoporteComprasIASinAdjunto, err)
 	}
 	release, err := acquireSoporteComprasIAExtractionLock(r, dbEmp, empresaID, payload.SoporteID)
@@ -1475,6 +1480,16 @@ func verifySoporteComprasIADigest(actual []byte, expectedHash string) error {
 func supportFileIntegrityFailure() error {
 	soporteComprasIAFileIntegrityFailures.Add(1)
 	return errSoporteComprasIAIntegrity
+}
+
+func recordSoporteComprasIAIntegrityIncident(dbEmp *sql.DB, row dbpkg.EmpresaSoporteComprasIA, actor, channel string) {
+	if dbEmp == nil || row.EmpresaID <= 0 || row.ID <= 0 {
+		return
+	}
+	if err := dbpkg.MarkEmpresaSoporteComprasIAIntegrityIncident(dbEmp, row.EmpresaID, row.ID,
+		strings.TrimSpace(actor), strings.TrimSpace(channel)); err != nil {
+		log.Printf("[soportes_compras_ia] auditoria integridad no disponible empresa_id=%d soporte_id=%d", row.EmpresaID, row.ID)
+	}
 }
 
 func safeSoporteComprasIADownloadMIME(storedMIME, path string) string {

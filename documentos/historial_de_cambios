@@ -7,6 +7,11 @@
   sirve binario y revalida firma antes de IA.
 - Métrica, alerta crítica y panel registran solo el total agregado de fallos.
   Pruebas de contenido, stream, MIME y cabeceras aprobaron localmente.
+- El incidente usa `FOR UPDATE` por empresa: limpia una aprobación vigente,
+  fuerza revisión humana y escribe evento minimizado en la misma transacción;
+  contabilizados/rechazados/duplicados conservan su estado terminal.
+- La prueba PostgreSQL A/B, aprobación y terminal quedó preparada pero hizo
+  SKIP local por DSN ausente; no recibe crédito dinámico.
 - Sin staging ni archivos PCS: P109-009 sigue parcial; permanece 53,3 % y NO-GO.
 
 2026-08-09: Plan 109 / evals adversariales y telemetria de extracción CxP-IA.

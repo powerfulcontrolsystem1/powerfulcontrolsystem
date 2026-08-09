@@ -210,6 +210,33 @@ func TestSoportesComprasIADownloadIsAttachmentSandboxedAndIntegrityChecked(t *te
 	}
 }
 
+func TestSoportesComprasIAIntegrityIncidentIsTenantScopedAndMinimized(t *testing.T) {
+	raw, err := os.ReadFile(filepath.Join("..", "db", "soportes_compras_ia.go"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	source := string(raw)
+	start := strings.Index(source, "func MarkEmpresaSoporteComprasIAIntegrityIncident")
+	if start < 0 {
+		t.Fatal("funcion de auditoria de integridad no encontrada")
+	}
+	end := strings.Index(source[start:], "\nfunc ")
+	if end < 0 {
+		t.Fatal("fin de funcion de auditoria de integridad no encontrado")
+	}
+	body := source[start : start+end]
+	for _, want := range []string{"empresaID", "soporteID", "FOR UPDATE", "requiere_revision_humana=1", "integridad_archivo_bloqueada", `"resultado": "bloqueado"`, `"requiere_revision": true`, `nextState = "en_revision"`} {
+		if !strings.Contains(body, want) {
+			t.Fatalf("auditoria de integridad incompleta: %q", want)
+		}
+	}
+	for _, forbidden := range []string{"archivo_hash", "archivo_url", "archivo_nombre", "private://"} {
+		if strings.Contains(body, forbidden) {
+			t.Fatalf("auditoria de integridad expone %q", forbidden)
+		}
+	}
+}
+
 func TestSoportesComprasIAPapeleraIsRecoverableAuditedAndTenantScoped(t *testing.T) {
 	page, err := os.ReadFile(filepath.Join("..", "..", "web", "administrar_empresa", "soportes_compras_ia.html"))
 	if err != nil {

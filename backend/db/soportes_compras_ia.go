@@ -1088,6 +1088,64 @@ func InsertEmpresaSoporteComprasIAEvento(dbConn *sql.DB, empresaID, soporteID in
 	return err
 }
 
+// MarkEmpresaSoporteComprasIAIntegrityIncident invalidates a still-open human
+// approval and records the security incident in the same tenant transaction.
+// Terminal accounting states are preserved; their audit trail is never
+// rewritten by a file read failure.
+func MarkEmpresaSoporteComprasIAIntegrityIncident(dbConn *sql.DB, empresaID, soporteID int64, usuario, channel string) error {
+	if dbConn == nil || empresaID <= 0 || soporteID <= 0 {
+		return errors.New("empresa_id y soporte_id son obligatorios")
+	}
+	if err := EmpresaSoportesComprasIASchemaReady(dbConn); err != nil {
+		return err
+	}
+	usuario = strings.TrimSpace(usuario)
+	if usuario == "" {
+		usuario = "sistema"
+	}
+	tx, err := dbConn.Begin()
+	if err != nil {
+		return err
+	}
+	defer func() { _ = tx.Rollback() }()
+
+	var currentState, recordState string
+	if err := queryRowTxSQLCompat(tx, `SELECT COALESCE(estado_soporte,'radicado'),COALESCE(estado,'activo')
+		FROM empresa_soportes_compras_ia WHERE empresa_id=? AND id=? FOR UPDATE`, empresaID, soporteID).
+		Scan(&currentState, &recordState); err != nil {
+		return err
+	}
+	if !soporteIARegistroActivo(recordState) {
+		return errors.New("el soporte no esta activo")
+	}
+	nextState := currentState
+	if normalizeSoporteIAEstado(currentState) == "aprobado" {
+		nextState = "en_revision"
+	}
+	result, err := execTxSQLCompat(tx, `UPDATE empresa_soportes_compras_ia SET
+		estado_soporte=?,requiere_revision_humana=1,
+		aprobado_por=CASE WHEN estado_soporte='aprobado' THEN '' ELSE aprobado_por END,
+		fecha_aprobacion=CASE WHEN estado_soporte='aprobado' THEN '' ELSE fecha_aprobacion END,
+		fecha_actualizacion=CURRENT_TIMESTAMP,usuario_creador=?
+		WHERE empresa_id=? AND id=? AND COALESCE(estado,'activo')='activo'`,
+		nextState, usuario, empresaID, soporteID)
+	if err != nil {
+		return err
+	}
+	if affected, _ := result.RowsAffected(); affected != 1 {
+		return errors.New("el soporte cambio durante la validacion de integridad")
+	}
+	detail, _ := json.Marshal(map[string]interface{}{
+		"canal": strings.TrimSpace(channel), "resultado": "bloqueado", "requiere_revision": true,
+	})
+	if _, err := insertTxSQLCompat(tx, `INSERT INTO empresa_soportes_compras_ia_eventos
+		(empresa_id,soporte_id,evento,estado_anterior,estado_nuevo,detalle_json,usuario_creador)
+		VALUES (?,?,?,?,?,?,?)`, empresaID, soporteID, "integridad_archivo_bloqueada", currentState, nextState, string(detail), usuario); err != nil {
+		return err
+	}
+	return tx.Commit()
+}
+
 func NormalizeEmpresaSoporteComprasIA(row EmpresaSoporteComprasIA) EmpresaSoporteComprasIA {
 	row.Codigo = strings.ToUpper(strings.TrimSpace(row.Codigo))
 	row.ArchivoNombre = strings.TrimSpace(row.ArchivoNombre)

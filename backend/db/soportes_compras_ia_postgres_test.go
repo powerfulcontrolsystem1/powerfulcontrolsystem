@@ -88,6 +88,45 @@ func TestSoporteComprasIAPapeleraPostgres(t *testing.T) {
 		t.Fatalf("audited transitions = %d, want 4", eventCount)
 	}
 
+	integrityID := insert(12, "SCI-PG-INTEGRITY", "aprobado", "activo", "hash-integrity", "FV-INTEGRITY", 0)
+	if _, err := dbConn.Exec(`UPDATE empresa_soportes_compras_ia SET aprobado_por='qa@local',fecha_aprobacion=CURRENT_TIMESTAMP::text,requiere_revision_humana=0 WHERE empresa_id=12 AND id=$1`, integrityID); err != nil {
+		t.Fatal(err)
+	}
+	if err := MarkEmpresaSoporteComprasIAIntegrityIncident(dbConn, 53, integrityID, "qa@local", "cross-tenant"); !errors.Is(err, sql.ErrNoRows) {
+		t.Fatalf("cross-tenant integrity incident = %v", err)
+	}
+	if err := MarkEmpresaSoporteComprasIAIntegrityIncident(dbConn, 12, integrityID, "qa@local", "extraccion_ia"); err != nil {
+		t.Fatal(err)
+	}
+	var integrityState, approvedBy, approvedAt, integrityDetail string
+	var humanReview int
+	if err := dbConn.QueryRow(`SELECT estado_soporte,COALESCE(aprobado_por,''),COALESCE(fecha_aprobacion,''),requiere_revision_humana FROM empresa_soportes_compras_ia WHERE empresa_id=12 AND id=$1`, integrityID).
+		Scan(&integrityState, &approvedBy, &approvedAt, &humanReview); err != nil {
+		t.Fatal(err)
+	}
+	if integrityState != "en_revision" || approvedBy != "" || approvedAt != "" || humanReview != 1 {
+		t.Fatalf("integrity invalidation = state:%s approved:%q at:%q review:%d", integrityState, approvedBy, approvedAt, humanReview)
+	}
+	if err := dbConn.QueryRow(`SELECT detalle_json FROM empresa_soportes_compras_ia_eventos WHERE empresa_id=12 AND soporte_id=$1 AND evento='integridad_archivo_bloqueada' ORDER BY id DESC LIMIT 1`, integrityID).Scan(&integrityDetail); err != nil {
+		t.Fatal(err)
+	}
+	for _, forbidden := range []string{"hash-integrity", "private://", "archivo_url", "archivo_nombre"} {
+		if strings.Contains(integrityDetail, forbidden) {
+			t.Fatalf("integrity event leaked %q: %s", forbidden, integrityDetail)
+		}
+	}
+	if err := MarkEmpresaSoporteComprasIAIntegrityIncident(dbConn, 12, accountedID, "qa@local", "descarga"); err != nil {
+		t.Fatal(err)
+	}
+	var accountedState string
+	var accountedConvertedID int64
+	if err := dbConn.QueryRow(`SELECT estado_soporte,convertido_id FROM empresa_soportes_compras_ia WHERE empresa_id=12 AND id=$1`, accountedID).Scan(&accountedState, &accountedConvertedID); err != nil {
+		t.Fatal(err)
+	}
+	if accountedState != "contabilizado" || accountedConvertedID != 99 {
+		t.Fatalf("terminal integrity incident rewrote accounting: state=%s converted=%d", accountedState, accountedConvertedID)
+	}
+
 	purgeID := insert(12, "SCI-PG-PURGE", "en_revision", "eliminado", "hash-purge", "FV-PURGE", 0)
 	if _, err := dbConn.Exec(`UPDATE empresa_soportes_compras_ia SET archivo_url='private://soportes_compras_ia/empresa_12/purge.pdf', fecha_actualizacion=(CURRENT_TIMESTAMP-INTERVAL '120 days')::text WHERE empresa_id=12 AND id=$1`, purgeID); err != nil {
 		t.Fatal(err)

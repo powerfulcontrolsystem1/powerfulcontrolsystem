@@ -31,7 +31,8 @@
 9. Ante `PCSSoporteArchivoIntegridadFallida`, bloquear el flujo del soporte,
    conservar fila/eventos y revisar backup, volumen privado y auditoria. No
    recalcular/reemplazar el hash ni sobrescribir el archivo para silenciar la
-   alerta; recuperar únicamente mediante el procedimiento autorizado.
+   alerta; recuperar únicamente mediante el procedimiento autorizado. Una
+   aprobación abierta queda invalidada y requiere nueva revisión explícita.
 
 Los paneles y alertas deben validarse en staging antes de usarse como evidencia
 de produccion.

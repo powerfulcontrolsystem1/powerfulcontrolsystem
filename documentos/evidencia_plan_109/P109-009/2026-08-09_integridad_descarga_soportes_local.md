@@ -18,6 +18,9 @@ Rama: `codex/p109-batch-no-pr`
   `DENY` y `no-store`.
 - Un contador agregado registra fallos sin empresa, soporte, hash, nombre o ruta.
   Prometheus alerta y Grafana muestra el total por job.
+- El incidente se registra transaccionalmente por `empresa_id` y soporte con
+  canal/resultado mínimos. Si existía aprobación, se limpia y vuelve a
+  `en_revision`; estados terminales contables no se reescriben.
 
 ## Pruebas
 
@@ -27,10 +30,13 @@ Rama: `codex/p109-batch-no-pr`
   entrega un archivo vacío.
 - Matriz MIME PDF/XML/HTML/extensión desconocida: PASS.
 - Contrato de cabeceras y descarga adjunta: PASS.
+- Contrato de `FOR UPDATE`, invalidación de aprobación y evento minimizado: PASS.
+- Ensayo PostgreSQL A/B/aprobado/terminal: preparado; SKIP local por falta de
+  `PCS_TEST_POSTGRES_DSN` y sin crédito dinámico.
 - Go completo, vet y preflight Full/Strict: PASS.
 
 ## Límites
 
 No se descargó ni alteró un archivo real de PCS. Falta desplegar el candidato y
-probar un fixture reversible en staging con A/B. P109-009 continúa parcial; el
+probar un fixture reversible PostgreSQL en staging con A/B. P109-009 continúa parcial; el
 Plan 109 permanece 53,3 % y NO-GO.
