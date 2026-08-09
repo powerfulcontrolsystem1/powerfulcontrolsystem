@@ -41612,3 +41612,12 @@ acumulativa.
   incluidos factura y recibo extensos de seis páginas.
 - La evidencia no sustituye impresión física, dispositivos del piloto ni
   accesibilidad asistida; P109-005 mantiene esos límites explícitos.
+
+2026-08-09: Plan 109 / prueba fiscal controlada DIAN en PCS.
+
+- La venta oficial de una menta por COP 100 generó una factura electrónica de
+  producción y la anulación oficial generó su nota crédito total; la tabla
+  visible confirmó la factura anulada y la nota crédito emitida.
+- Credenciales, firma y conexión DIAN por empresa respondieron correctamente.
+  El historial no dejó TrackId/ZipKey nuevo, por lo que falta demostrar
+  `GetStatusZip StatusCode=00` de ambos documentos antes de aprobar P109-007.
