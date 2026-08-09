@@ -11131,6 +11131,10 @@ func upsertDIANTrackHistory(dbEmp *sql.DB, empresaID int64, data map[string]inte
 	)
 }
 
+func dianIsSyntheticSyncHistoryID(trackID string) bool {
+	return strings.HasPrefix(strings.ToLower(strings.TrimSpace(trackID)), "sync:")
+}
+
 func listDIANTrackHistory(dbEmp *sql.DB, empresaID int64, limit int) ([]map[string]interface{}, error) {
 	if limit <= 0 {
 		limit = 80
@@ -11185,6 +11189,7 @@ func listDIANTrackHistory(dbEmp *sql.DB, empresaID int64, limit int) ([]map[stri
 			"fecha_ultimo_acuse":  fechaUltimoAcuse,
 			"fecha_creacion":      fechaCreacion,
 			"fecha_actualizacion": fechaActualizacion,
+			"reconsultable":       trackID != "" && !dianIsSyntheticSyncHistoryID(trackID),
 		})
 	}
 	return items, rows.Err()
@@ -11351,10 +11356,17 @@ func sendDIANDocumentoRealSOAP(dbEmp *sql.DB, cfg map[string]interface{}, empres
 		updates["consecutivo_actual"] = anyToInt64(cfg["consecutivo_actual"]) + 1
 	}
 	_ = updateDIANConfigFields(dbEmp, empresaID, cfg, updates)
+	historyTrackID := genericStringValue(responseMap["track_id"])
+	if historyTrackID == "" && operation == "SendBillSync" && acuseEstado == "aceptado" && documentoCodigo != "" {
+		// SendBillSync returns the official final response inline instead of a
+		// TrackId. Persist a clearly synthetic key for audit continuity, but never
+		// send it to GetStatusZip or represent it as a DIAN identifier.
+		historyTrackID = "sync:" + documentoCodigo
+	}
 	upsertDIANTrackHistory(dbEmp, empresaID, map[string]interface{}{
 		"documento_codigo":     documentoCodigo,
 		"tipo_documento":       documentoTipo,
-		"track_id":             genericStringValue(responseMap["track_id"]),
+		"track_id":             historyTrackID,
 		"zip_key":              genericStringValue(responseMap["track_id"]),
 		"test_set_id":          testSetID,
 		"ambiente":             ambiente,
@@ -11404,6 +11416,9 @@ func consultarDIANStatusZipSOAP(dbEmp *sql.DB, cfg map[string]interface{}, empre
 	trackID = strings.TrimSpace(trackID)
 	if trackID == "" {
 		return nil, http.StatusBadRequest, fmt.Errorf("track_id es obligatorio para GetStatusZip")
+	}
+	if dianIsSyntheticSyncHistoryID(trackID) {
+		return nil, http.StatusBadRequest, fmt.Errorf("el acuse sincronico no tiene TrackId DIAN para GetStatusZip")
 	}
 	soapEndpoint := normalizeDIANSOAPEndpoint(endpoint)
 	envelope := buildDIANGetStatusZipEnvelope(soapEndpoint, trackID)
