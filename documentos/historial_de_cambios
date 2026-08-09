@@ -41422,6 +41422,10 @@ acumulativa.
 - El workflow `31319557537` construyó, escaneó, generó SBOM y publicó el SHA
   `3676cc02` una sola vez. Sus cuatro digests se promovieron sin build a
   staging, que quedó saludable con migrador `0`; producción permaneció intacta.
+- El workflow manual `E2E Visual QA` recibe ahora offset y tamaño de lote y
+  transmite ambos al auditor; los lotes autenticados pueden cubrir el
+  inventario completo con los secretos CI, sin exponer credenciales ni ejecutar
+  solicitudes mutantes.
 
 2026-08-09: Plan 109 / capacidad Docker y QA visual financiero.
 

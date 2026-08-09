@@ -183,6 +183,9 @@
   service workers bloqueados y guardia que impide y reporta cualquier mutacion
   HTTP durante los clics automaticos; acepta desplazamiento y tamaño de lote
   deterministas para completar inventarios extensos sin ocultar rutas.
+- `.github/workflows/e2e-visual.yml`: ejecución autenticada manual/programada
+  de botones, layout e impresión; admite offset y tamaño para recorrer el
+  inventario por lotes seguros.
 - `tools/qa_module_contracts.mjs`: contrato CI para impedir que el auditor E2E
   pierda su frontera no mutante.
 - `backend/handlers/super_vps2.go`: estado degradado, visible y no 5xx cuando el
