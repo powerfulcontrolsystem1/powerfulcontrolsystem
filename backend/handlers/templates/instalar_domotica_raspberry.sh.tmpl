@@ -234,11 +234,60 @@ def monitor_inputs(config):
         stop_event.wait(0.2)
 
 
+def read_vedirect(path="/dev/ttyUSB0"):
+    import termios
+    if not os.path.exists(path):
+        return None
+    fd = os.open(path, os.O_RDWR | os.O_NOCTTY | os.O_NONBLOCK)
+    try:
+        attrs = termios.tcgetattr(fd)
+        attrs[0] = attrs[1] = attrs[3] = 0
+        attrs[2] = termios.CS8 | termios.CREAD | termios.CLOCAL
+        attrs[4] = attrs[5] = termios.B19200
+        attrs[6][termios.VMIN] = 0
+        attrs[6][termios.VTIME] = 0
+        termios.tcsetattr(fd, termios.TCSANOW, attrs)
+        end = time.monotonic() + 1.5
+        data = b""
+        while time.monotonic() < end:
+            try: data += os.read(fd, 4096)
+            except BlockingIOError: pass
+            time.sleep(0.05)
+    finally:
+        os.close(fd)
+    values = {}
+    for line in data.decode("ascii", "ignore").splitlines():
+        if "\t" in line:
+            key, value = line.split("\t", 1)
+            values[key.strip()] = value.strip()
+    if "V" not in values or "VPV" not in values:
+        return None
+    def number(key, scale=1.0):
+        try: return float(values.get(key, 0)) * scale
+        except (TypeError, ValueError): return 0.0
+    current = number("I", 0.001)
+    voltage = number("V", 0.001)
+    solar_w = number("PPV")
+    return {
+        "modelo": "Victron BlueSolar MPPT 75/15 VE.Direct",
+        "lectura": {
+            "potencia_solar_w": solar_w, "produccion_dia_kwh": number("H20", 0.01),
+            "bateria_voltaje_v": voltage, "bateria_corriente_a": current,
+            "bateria_carga_w": max(0.0, voltage * current), "bateria_descarga_w": max(0.0, -voltage * current),
+            "estado_paneles": "produciendo" if solar_w > 0 else "sin_produccion",
+            "estado_bateria": "cargando" if current > 0 else ("descargando" if current < 0 else "reposo"),
+            "estado_inversor": "no_reportado",
+            "raw": {"protocolo":"VE.Direct", "vpv_v":number("VPV", 0.001), "cs":values.get("CS", ""), "err":values.get("ERR", ""), "h19_kwh":number("H19", 0.01), "h21_w":number("H21")}
+        }
+    }
+
+
 def main():
     config = ensure_enrolled(load_config())
     watcher = threading.Thread(target=monitor_inputs, args=(config,), daemon=True)
     watcher.start()
     backoff = 1
+    next_solar = 0
     while not stop_event.is_set():
         try:
             response = request_json(config, "poll", {
@@ -264,6 +313,11 @@ def main():
                     "result": result,
                     "error": error,
                 }, timeout=20)
+            if time.monotonic() >= next_solar:
+                sample = read_vedirect()
+                if sample:
+                    request_json(config, "solar_telemetry", sample, timeout=20)
+                next_solar = time.monotonic() + 60
             backoff = 1
         except urllib.error.HTTPError as exc:
             log("VPS respondio HTTP {}".format(exc.code))

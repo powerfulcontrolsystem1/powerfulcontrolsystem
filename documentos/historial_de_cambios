@@ -41631,3 +41631,6 @@ acumulativa.
 - Modulo afectado: domotica/control_electrico.
 - Seguridad: `/api/public/domotica/tunnel` se permite sin cookie de sesion web porque el handler valida el token criptografico de enrolamiento o de dispositivo; no se amplia acceso a rutas empresariales.
 - Operacion: una Raspberry Pi nueva puede completar su conexion HTTPS saliente y reconectarse automaticamente mediante el servicio instalado.
+2026-08-09: Telemetria solar Victron VE.Direct por tunel Raspberry.
+- El agente PCS detecta `/dev/ttyUSB0` a 19200 baudios, interpreta tramas VE.Direct y remite tension, corriente, potencia solar, rendimiento y estados por el tunel HTTPS autenticado.
+- El VPS crea o reutiliza de forma aislada por empresa el sistema Victron asociado a la Raspberry y persiste solo lecturas verificadas por la identidad del dispositivo.
