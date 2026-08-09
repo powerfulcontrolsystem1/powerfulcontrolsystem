@@ -213,7 +213,8 @@
     var raw = text(value).trim();
     var lower = raw.toLowerCase();
     if (!raw) return '';
-    if (raw.charAt(0) === '/' || lower.indexOf('https://') === 0 || lower.indexOf('http://') === 0) return raw;
+    if (raw.charAt(0) === '/') return absoluteSameOriginAssetURL(raw);
+    if (lower.indexOf('https://') === 0 || lower.indexOf('http://') === 0) return raw;
     return '';
   }
 
@@ -221,8 +222,19 @@
     var raw = text(value).trim();
     var lower = raw.toLowerCase();
     if (!raw) return '';
-    if (lower.indexOf('data:image/') === 0 || raw.charAt(0) === '/' || lower.indexOf('https://') === 0 || lower.indexOf('http://') === 0) return raw;
+    if (lower.indexOf('data:image/') === 0) return raw;
+    if (raw.charAt(0) === '/') return absoluteSameOriginAssetURL(raw);
+    if (lower.indexOf('https://') === 0 || lower.indexOf('http://') === 0) return raw;
     return '';
+  }
+
+  function absoluteSameOriginAssetURL(raw) {
+    var origin = '';
+    try {
+      origin = text(window.location && window.location.origin).trim();
+    } catch (_) {}
+    if (/^https?:\/\//i.test(origin)) return origin.replace(/\/$/, '') + raw;
+    return raw;
   }
 
   function resolveDocumentLogos(config, kind) {

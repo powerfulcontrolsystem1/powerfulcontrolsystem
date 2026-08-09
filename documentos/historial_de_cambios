@@ -41368,3 +41368,26 @@ acumulativa.
   el endpoint oficial autenticado.
 - Se agregaron pruebas para mantener HTML/SVG/JavaScript fuera de las
   extensiones admitidas y exigir escape de los valores extraídos en la UI.
+
+2026-08-09: Plan 109 / pruebas reales PCS, impresiones y correo Mailu.
+
+- Un barrido autenticado recorrió 24 rutas críticas en escritorio y móvil. Se
+  corrigió el desbordamiento de la configuración DIAN sin convertir la tabla
+  extensa en desbordamiento de toda la página.
+- Las impresiones reales de `1PCS5` revelaron que las ventanas blob no resolvían
+  hoja global, logo ni QR relativos. Los recursos de raíz ahora se convierten a
+  URL absoluta del mismo origen antes de crear la representación imprimible.
+- El CSP estático y dinámico admite únicamente el origen exacto del webmail
+  corporativo, sin comodines de empresa.
+- El cifrado legado del buzón PCS se renovó por el flujo oficial y quedó bajo el
+  identificador activo. La integración Mailu ahora actualiza primero el usuario
+  existente con PATCH y solo crea con POST ante 404, evitando falsos éxitos de
+  renovación que terminaban en rechazo IMAP.
+- La captura CxP/IA controlada terminó rechazada y conciliada sin cartera, pago
+  ni asiento. Una inconsistencia P0 del indicador DIAN impidió correctamente
+  emitir otro documento fiscal. El candidato separa ahora
+  `produccion_local_activa` del estado del último envío, migra únicamente
+  activaciones con evidencia histórica, bloquea autoactivación desde el CRUD y
+  limpia el indicador al volver a habilitación.
+- Go enfocado/raíz, sintaxis JavaScript, contrato de blob, preflight profesional
+  completo y diff-check aprobaron. El candidato no fue desplegado ni certificado.

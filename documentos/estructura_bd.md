@@ -1933,6 +1933,9 @@ Actualizacion 2026-04-29 (auditoria como fuente de contexto IA)
 - empresa_dian_configuracion:
   - empresa_id (UNIQUE), codigo
   - nit, digito_verificacion, razon_social, tipo_ambiente
+  - produccion_local_activa: indicador persistente separado del estado del
+    ultimo envio; solo lo activa el flujo validado de produccion y volver a
+    habilitacion lo limpia
   - software_id, software_pin
   - usar_software_compartido, software_id_compartido_ref, software_pin_compartido_ref
   - test_set_id

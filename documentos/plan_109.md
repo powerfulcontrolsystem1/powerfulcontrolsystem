@@ -1165,3 +1165,24 @@ continuar así:
    una fase parcial.
 
 No debe saltar a producción ni llamar 100 % a un bloque con pendientes.
+
+Actualización 2026-08-09, pruebas reales PCS y correcciones del candidato local:
+
+- El barrido autenticado cubrió 48 variantes de 24 rutas críticas y aisló
+  desbordamiento móvil DIAN, CSP de Mailu y permiso/licencia de Centro IA.
+- Las impresiones reales de `1PCS5` en Carta, compacta y POS demostraron QR y
+  datos fiscales, pero descubrieron recursos relativos rotos dentro de blobs;
+  el candidato ya resuelve hoja, logos y QR contra el origen seguro.
+- La captura CxP/IA controlada permitió extracción y edición y terminó rechazada
+  sin cuenta por pagar, pago o asiento.
+- El cifrado legado del buzón PCS se renovó por el flujo oficial. El candidato
+  corrige la renovación Mailu para actualizar por PATCH antes de crear por POST.
+- DIAN presenta ambiente/rango reales, pero el indicador de producción local se
+  perdía cuando `estado_dian` era sobrescrito por un envío. El candidato ya lo
+  separa en un indicador persistente, migra evidencia histórica y bloquea la
+  autoactivación desde el CRUD; la compuerta continúa hasta desplegar, reconciliar
+  PCS y repetir un envío/acuse controlado.
+- Preflight profesional completo y pruebas enfocadas pasan. P109-005/P109-007
+  siguen parciales porque falta desplegar el candidato, repetir visual/IMAP,
+  comprobar empresa A/B y cerrar el estado DIAN. El avance permanece **53,3 %
+  de implementación**, **0 % de certificación del arreglo local** y **NO-GO**.

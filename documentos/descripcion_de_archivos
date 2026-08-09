@@ -12809,3 +12809,7 @@ panel de seguridad para que el navegador reciba la correccion CSRF de staging.
   registra el bloqueo de HTML activo, tratamiento seguro de instrucciones y
   texto XSS dentro de XML, escape visible, rechazo oficial y conciliación sin
   efectos contables en PCS.
+- `documentos/evidencia_plan_109/P109-005/2026-08-09_pruebas_reales_pcs.md`:
+  consolida el barrido autenticado responsive, impresiones del documento real,
+  captura CxP/IA reversible, diagnóstico DIAN y reparación segura del cifrado
+  del buzón, con resultados y compuertas pendientes del candidato local.

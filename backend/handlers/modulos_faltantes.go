@@ -484,7 +484,7 @@ var (
 		Table:         "empresa_dian_configuracion",
 		SearchColumns: []string{"nit", "razon_social", "tipo_ambiente", "estado_dian", "prefijo", "resolucion_numero"},
 		AllowedColumns: []string{
-			"codigo", "nit", "digito_verificacion", "razon_social", "tipo_ambiente", "software_id", "software_pin",
+			"codigo", "nit", "digito_verificacion", "razon_social", "tipo_ambiente", "produccion_local_activa", "software_id", "software_pin",
 			"usar_software_compartido", "software_id_compartido_ref", "software_pin_compartido_ref",
 			"modo_operacion_descripcion", "modo_operacion_fecha_inicio", "modo_operacion_fecha_termino",
 			"test_set_id", "certificado_url", "certificado_clave_ref", "prefijo", "resolucion_numero",
@@ -7763,6 +7763,10 @@ func EmpresaDIANColombiaHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 			writeJSON(w, status, response)
 			return
 		}
+		if r.Method == http.MethodPost || r.Method == http.MethodPut || r.Method == http.MethodPatch {
+			http.Error(w, "accion DIAN no soportada", http.StatusBadRequest)
+			return
+		}
 
 		base.ServeHTTP(w, r)
 	}
@@ -7779,6 +7783,7 @@ func handleDIANConfigSave(dbEmp, dbSuper *sql.DB, w http.ResponseWriter, r *http
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
+	prepareDIANConfigSaveActivation(payload)
 	applyGenericDefaultValues(payload, cfgDIAN.DefaultValues)
 	ensureGenericCode(payload, cfgDIAN.CodeColumn, cfgDIAN.CodePrefix)
 	if hasAllowedColumn(cfgDIAN.AllowedColumns, "usuario_creador") && isEmptyGenericValue(payload["usuario_creador"]) {
@@ -7837,6 +7842,20 @@ func handleDIANConfigSave(dbEmp, dbSuper *sql.DB, w http.ResponseWriter, r *http
 		resp["configuracion_pais_warning"] = "La configuracion DIAN se guardo, pero no se pudo sincronizar la configuracion fiscal por pais."
 	}
 	writeJSON(w, status, resp)
+}
+
+func prepareDIANConfigSaveActivation(payload map[string]interface{}) {
+	if payload == nil {
+		return
+	}
+	// La activacion productiva solo puede cambiar a true mediante el flujo
+	// validado action=activar_produccion_local. Un guardado ordinario puede
+	// desactivarla al volver explicitamente a habilitacion, pero nunca elevarla.
+	delete(payload, "produccion_local_activa")
+	delete(payload, "estado_dian")
+	if strings.EqualFold(strings.TrimSpace(genericStringValue(payload["tipo_ambiente"])), "habilitacion") {
+		payload["produccion_local_activa"] = 0
+	}
 }
 
 func syncDIANConfigToFacturacionPais(dbEmp *sql.DB, empresaID int64, cfg map[string]interface{}, actorEmail string) error {
@@ -9648,6 +9667,9 @@ func updateDIANConfigFields(dbEmp *sql.DB, empresaID int64, cfg map[string]inter
 	id := anyToInt64(cfg["id"])
 	if id <= 0 {
 		return nil
+	}
+	if ambiente, ok := updates["tipo_ambiente"]; ok && strings.EqualFold(strings.TrimSpace(genericStringValue(ambiente)), "habilitacion") {
+		updates["produccion_local_activa"] = 0
 	}
 	if err := dbpkg.UpdateEmpresaGenericRow(dbEmp, cfgDIAN.Table, empresaID, id, updates, cfgDIAN.AllowedColumns); err != nil {
 		return err
@@ -12859,6 +12881,16 @@ func activateDIANProductionLocal(dbEmp *sql.DB, cfg map[string]interface{}, empr
 	if payload == nil {
 		payload = map[string]interface{}{}
 	}
+	if parseTruthy(genericStringValue(cfg["produccion_local_activa"])) {
+		return map[string]interface{}{
+			"ok":                       true,
+			"empresa_id":               empresaID,
+			"estado_dian":              genericStringDefault(cfg["estado_dian"], "produccion_local_activa"),
+			"tipo_ambiente":            genericStringDefault(cfg["tipo_ambiente"], "produccion"),
+			"produccion_local_activa":  true,
+			"activacion_ya_confirmada": true,
+		}, http.StatusOK, nil
+	}
 
 	estadoActual := strings.ToLower(strings.TrimSpace(genericStringValue(cfg["estado_dian"])))
 	confirmadoDIAN := parseTruthy(dianPayloadString(payload, "confirmado_dian", "confirmar_habilitacion_dian", "habilitado_en_dian"))
@@ -12912,8 +12944,9 @@ func activateDIANProductionLocal(dbEmp *sql.DB, cfg map[string]interface{}, empr
 	}
 
 	updates := map[string]interface{}{
-		"tipo_ambiente": "produccion",
-		"estado_dian":   "produccion_local_activa",
+		"tipo_ambiente":           "produccion",
+		"produccion_local_activa": 1,
+		"estado_dian":             "produccion_local_activa",
 		"observaciones": appendStateMachineObservation(
 			genericStringValue(cfg["observaciones"]),
 			genericStringValue(cfg["estado_dian"]),
@@ -12930,14 +12963,15 @@ func activateDIANProductionLocal(dbEmp *sql.DB, cfg map[string]interface{}, empr
 	}
 
 	return map[string]interface{}{
-		"ok":              true,
-		"empresa_id":      empresaID,
-		"estado_dian":     "produccion_local_activa",
-		"tipo_ambiente":   "produccion",
-		"url_dian":        urlProduccion,
-		"advertencia":     "Este boton cambia la configuracion local del sistema. La habilitacion oficial y el paso a produccion se verifican en la plataforma DIAN.",
-		"siguiente_paso":  "Emitir documentos reales solo con resolucion/rangos de produccion asociados y monitorear acuses DIAN.",
-		"confirmado_dian": confirmadoDIAN || estadoActual == "habilitacion_aprobada",
+		"ok":                      true,
+		"empresa_id":              empresaID,
+		"estado_dian":             "produccion_local_activa",
+		"tipo_ambiente":           "produccion",
+		"produccion_local_activa": true,
+		"url_dian":                urlProduccion,
+		"advertencia":             "Este boton cambia la configuracion local del sistema. La habilitacion oficial y el paso a produccion se verifican en la plataforma DIAN.",
+		"siguiente_paso":          "Emitir documentos reales solo con resolucion/rangos de produccion asociados y monitorear acuses DIAN.",
+		"confirmado_dian":         confirmadoDIAN || estadoActual == "habilitacion_aprobada",
 	}, http.StatusOK, nil
 }
 

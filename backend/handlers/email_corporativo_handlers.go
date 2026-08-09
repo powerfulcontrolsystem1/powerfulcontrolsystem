@@ -917,6 +917,15 @@ func mailuAPIUserPayloadForAccount(account dbpkg.EmpresaEmailCorporativo, passwo
 	}
 }
 
+func upsertCorporateEmailMailuAPIUser(request func(method, path string, payload interface{}) (int, error), email string, payload mailuAPIUserPayload) (int, error) {
+	userPath := "/v1/user/" + url.PathEscape(strings.ToLower(strings.TrimSpace(email)))
+	status, err := request(http.MethodPatch, userPath, payload)
+	if err == nil && status == http.StatusNotFound {
+		return request(http.MethodPost, "/v1/user", payload)
+	}
+	return status, err
+}
+
 func provisionEmpresaEmailAccountMailuAPI(dbSuper *sql.DB, cfg CorporateEmailConfig, account dbpkg.EmpresaEmailCorporativo, password string) corporateEmailProvisionResult {
 	if strings.TrimSpace(password) == "" {
 		_ = dbpkg.MarkEmpresaEmailProvisionResult(dbSuper, account.EmpresaID, "pendiente_clave", "La clave inicial de la cuenta no esta disponible", false)
@@ -929,10 +938,9 @@ func provisionEmpresaEmailAccountMailuAPI(dbSuper *sql.DB, cfg CorporateEmailCon
 	ctx, cancel := context.WithTimeout(context.Background(), 25*time.Second)
 	defer cancel()
 	payload := mailuAPIUserPayloadForAccount(account, password, cfg.QuotaMB)
-	status, err := corporateEmailMailuAPIRequest(ctx, dbSuper, cfg, http.MethodPost, "/v1/user", payload)
-	if err == nil && status == http.StatusConflict {
-		status, err = corporateEmailMailuAPIRequest(ctx, dbSuper, cfg, http.MethodPatch, "/v1/user/"+url.PathEscape(payload.Email), payload)
-	}
+	status, err := upsertCorporateEmailMailuAPIUser(func(method, path string, requestPayload interface{}) (int, error) {
+		return corporateEmailMailuAPIRequest(ctx, dbSuper, cfg, method, path, requestPayload)
+	}, payload.Email, payload)
 	if err != nil || (status != http.StatusOK && status != http.StatusCreated && status != http.StatusNoContent) {
 		_ = dbpkg.MarkEmpresaEmailProvisionResult(dbSuper, account.EmpresaID, "error_provision", "No fue posible crear o actualizar el buzon con Mailu", false)
 		return corporateEmailProvisionResult{OK: false, Status: "error_provision", Error: "api Mailu no pudo provisionar el buzon"}
