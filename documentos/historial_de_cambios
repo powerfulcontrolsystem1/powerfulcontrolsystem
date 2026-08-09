@@ -41658,6 +41658,17 @@ acumulativa.
   no inventa identificadores DIAN ni modifica configuración o documentos de
   producción.
 
+2026-08-09: Plan 109 / aislamiento A/B y concurrencia CxP en staging.
+
+- La consulta entre PCS y una segunda empresa activa rechazó el detalle cruzado
+  de una CxP con HTTP 404; proveedores, reconciliación y outbox permanecieron
+  separados y no expusieron payloads crudos.
+- Una obligación controlada de COP 2 en PCS comprobó reintento idempotente
+  concurrente y rechazo HTTP 409 de sobrepago con claves distintas. La cuenta
+  terminó pagada y conserva su auditoría oficial de staging.
+- P109-001 continúa parcial por recuperación elegible del candidato y
+  conciliación/aceptación contable humana; producción no fue modificada.
+
 2026-08-09: Plan 109 / réplica autenticada y rollback aislados.
 
 - Dos réplicas del digest de staging aprobaron login oficial y cinco dominios

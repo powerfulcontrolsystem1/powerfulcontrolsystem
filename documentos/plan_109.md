@@ -1517,3 +1517,17 @@ Actualización 2026-08-09, repetición de cuatro cajas sobre el digest `349712fb
   **56,7 %** porque no cerró una fase nueva del plan; la certificación formal del
   candidato sube a **6,7 %**. P109-005, Mailu corporativo, UAT humano, piloto y
   las demás compuertas P0/P1 mantienen **NO-GO**.
+
+Actualización 2026-08-09, aislamiento y carrera CxP del digest `349712fb`:
+
+- P109-001 ejecutó una matriz A/B de lectura entre PCS y una segunda empresa
+  activa: CxP, proveedores, reconciliación y recuperación outbox permanecieron
+  separados; una CxP de PCS consultada desde la segunda empresa devolvió 404.
+- En PCS se creó una obligación de ensayo de COP 2 por el flujo oficial. Dos
+  pagos simultáneos con la misma clave devolvieron un solo pago/movimiento y un
+  replay idempotente; dos claves distintas por el último COP resultaron en un
+  pago HTTP 200 y un rechazo HTTP 409, con saldo final COP 0 y estado pagada.
+- P109-001 conserva estado **parcial** por la conciliación/aceptación humana y
+  la recuperación operativa de un evento elegible del mismo candidato. No se
+  cierra una fase adicional: la implementación sigue en **56,7 %**, la
+  certificación exacta en **6,7 %** y el veredicto en **NO-GO**.
