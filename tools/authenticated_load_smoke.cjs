@@ -30,6 +30,7 @@ const concurrency = Number(process.env.PCS_AUTH_LOAD_CONCURRENCY || "5");
 const requests = Number(process.env.PCS_AUTH_LOAD_REQUESTS || "30");
 const thresholdMS = Number(process.env.PCS_AUTH_LOAD_P95_THRESHOLD_MS || "2500");
 const maxErrorRate = Number(process.env.PCS_AUTH_LOAD_MAX_ERROR_RATE || "0.05");
+const chromePath = process.env.PCS_AUTH_LOAD_CHROME_PATH || "";
 const outDir = process.env.PCS_AUTH_LOAD_OUT_DIR || path.join(process.cwd(), "test_runs", "authenticated_load_" + new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19));
 
 function ensureConfiguration() {
@@ -56,7 +57,7 @@ function percentile(values, ratio) {
 
 async function main() {
   ensureConfiguration();
-  const browser = await chromium.launch({ headless: true });
+  const browser = await chromium.launch({ headless: true, ...(chromePath ? { executablePath: chromePath } : {}) });
   try {
     const context = await browser.newContext({ ignoreHTTPSErrors: true });
     const page = await context.newPage();
