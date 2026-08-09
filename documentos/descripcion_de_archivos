@@ -188,6 +188,9 @@
   inventario por lotes seguros.
 - `web/administrar_empresa/renta_ia.html`: estimación de renta empresarial;
   no realiza cálculo ni llamada IA al cargar, solo mediante acción visible.
+- `documentos/evidencia_plan_109/P109-004/2026-08-09_barrido_e2e_lotes_618.md`:
+  cobertura autenticada de las 309 rutas en dos viewports, hallazgos y
+  repetición dirigida de Renta IA sobre el digest corregido.
 - `tools/qa_module_contracts.mjs`: contrato CI para impedir que el auditor E2E
   pierda su frontera no mutante.
 - `backend/handlers/super_vps2.go`: estado degradado, visible y no 5xx cuando el

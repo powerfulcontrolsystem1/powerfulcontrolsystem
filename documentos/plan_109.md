@@ -1400,3 +1400,15 @@ Actualización 2026-08-09, hallazgo del barrido E2E de Renta IA:
   local elimina ese POST: la consulta financiera y cualquier uso de IA requieren
   el clic explícito del usuario. Debe construirse y repetirse el lote antes de
   acreditar la corrección.
+
+Actualización 2026-08-09, barrido autenticado completo por lotes:
+
+- Cuatro ejecuciones CI recorrieron las 309 rutas en escritorio y móvil: 618
+  vistas, 11.258 botones inventariados y 75 clics seguros. La carga GET de 500
+  solicitudes aprobó con p95 135 ms y 0 % de errores.
+- Renta IA se repitió sobre el digest corregido `e51228dd`: 2/2 vistas `ok`,
+  cero mutaciones bloqueadas y cero errores.
+- Persisten seis escrituras automáticas de páginas públicas y dos respuestas
+  502 de ayuda móvil. P109-004 sigue **parcial** hasta resolverlos o excluirlos
+  con evidencia, además de acciones mutantes, roles y botones IA. El avance
+  formal continúa **53,3 %**, **NO-GO**.

@@ -117,6 +117,8 @@ $env:PCS_QA_OUT_DIR = "test_runs\qa_e2e_lote_000"
 `PCS_QA_ROUTE_OFFSET` y `PCS_QA_ROUTE_BATCH_SIZE` se aplican al inventario
 ordenado antes de duplicarlo por viewport. No sustituyen la matriz manual de
 acciones mutantes, roles ni botones IA: la guardia de red bloquea mutaciones.
+El contador público de visitas se bloquea y queda registrado por separado como
+telemetría no operativa; no se permite ninguna otra excepción de escritura.
 
 El workflow manual `E2E Visual QA` recibe los mismos dos valores. Para una
 secuencia completa, usar lotes consecutivos con el mismo SHA y evidencia

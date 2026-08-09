@@ -64,6 +64,7 @@ const VIEWPORTS = (process.env.PCS_QA_VIEWPORTS || "desktop,mobile")
 const CHROME_EXECUTABLE = process.env.PCS_QA_CHROME_EXECUTABLE || "";
 const VALIDATE_RUNTIME_ONLY = process.env.PCS_QA_VALIDATE_RUNTIME === "1";
 const MUTATING_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
+const NON_OPERATIONAL_MUTATION_PATHS = new Set(["/api/public/portal_visitas"]);
 
 // "Cerrar" y "Cancelar" no son universalmente inocuos: pueden cerrar caja,
 // anular un flujo operativo o descartar un formulario. El auditor solo pulsa
@@ -292,6 +293,7 @@ async function auditRoute(context, route, viewport) {
   const responseErrors = [];
   const dialogs = [];
   const blockedMutations = [];
+  const telemetryMutations = [];
   let navigatingForAudit = false;
   // Esta auditoria solo valida navegacion y presentacion. Incluso si una
   // etiqueta, un dataset o un indice dinamico se clasifican mal, la red es la
@@ -300,6 +302,12 @@ async function auditRoute(context, route, viewport) {
     const request = routeHandler.request();
     const method = request.method().toUpperCase();
     if (MUTATING_METHODS.has(method)) {
+      const requestPath = new URL(request.url()).pathname;
+      if (NON_OPERATIONAL_MUTATION_PATHS.has(requestPath)) {
+        telemetryMutations.push({ method, url: request.url(), resourceType: request.resourceType() });
+        await routeHandler.abort("blockedbyclient");
+        return;
+      }
       blockedMutations.push({ method, url: request.url(), resourceType: request.resourceType() });
       await routeHandler.abort("blockedbyclient");
       return;
@@ -330,7 +338,7 @@ async function auditRoute(context, route, viewport) {
   });
 
   const url = BASE_URL + route;
-  const result = { route, viewport: viewport.name, url, status: "ok", buttons: [], clicked: [], skipped: [], blockedMutations, issues: [], consoleErrors, pageErrors, requestFailures, responseErrors, dialogs, screenshot: "" };
+  const result = { route, viewport: viewport.name, url, status: "ok", buttons: [], clicked: [], skipped: [], blockedMutations, telemetryMutations, issues: [], consoleErrors, pageErrors, requestFailures, responseErrors, dialogs, screenshot: "" };
   const resetAuditPage = async () => {
     navigatingForAudit = true;
     try {
@@ -440,8 +448,9 @@ function summarize(results) {
   const clicked = results.reduce((n, item) => n + item.clicked.length, 0);
   const unsafe = results.reduce((n, item) => n + item.skipped.length, 0);
   const blockedMutations = results.reduce((n, item) => n + item.blockedMutations.length, 0);
+  const telemetryMutations = results.reduce((n, item) => n + (item.telemetryMutations || []).length, 0);
   const pagesWithErrors = results.filter((item) => item.status !== "ok" || item.pageErrors.length || item.consoleErrors.length || item.requestFailures.length || item.responseErrors.length || item.issues.length);
-  return { totalPages: results.length, byStatus, totalButtons, clicked, unsafe, blockedMutations, pagesWithErrors: pagesWithErrors.length };
+  return { totalPages: results.length, byStatus, totalButtons, clicked, unsafe, blockedMutations, telemetryMutations, pagesWithErrors: pagesWithErrors.length };
 }
 
 function writeMarkdown(results, summary) {
@@ -457,6 +466,7 @@ function writeMarkdown(results, summary) {
   lines.push("- Clicks seguros ejecutados: `" + summary.clicked + "`");
   lines.push("- Acciones riesgosas omitidas: `" + summary.unsafe + "`");
   lines.push("- Mutaciones bloqueadas por la guardia: `" + summary.blockedMutations + "`");
+  lines.push("- Telemetria no operativa bloqueada: `" + summary.telemetryMutations + "`");
   lines.push("- Paginas con hallazgos: `" + summary.pagesWithErrors + "`");
   lines.push("");
   lines.push("## Hallazgos");
