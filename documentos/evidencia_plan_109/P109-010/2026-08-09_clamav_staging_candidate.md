@@ -10,9 +10,10 @@ Se añadió `deploy/docker-compose.staging-antivirus.yml`, incluido por los
 arranques de staging y por las promociones por digest. Declara un servicio
 interno `clamav`, sin `ports` publicados, con volumen exclusivo de firmas,
 `no-new-privileges`, `tmpfs` restringidos y healthcheck de `clamdscan --ping
-1`. Parte de `cap_drop: ALL` y añade solamente `CHOWN`, `FOWNER`, `SETGID` y
-`SETUID`, necesarias para que el inicializador oficial prepare `/run/clamav` y
-cambie al usuario de servicio.
+1`. Parte de `cap_drop: ALL` y añade solamente `CHOWN`, `DAC_OVERRIDE`,
+`FOWNER`, `SETGID` y `SETUID`, necesarias para que el inicializador oficial
+prepare `/run/clamav`, acceda al volumen de firmas y cambie al usuario de
+servicio.
 
 El backend de staging queda dependiente de la salud del servicio y recibe
 `PCS_SUPPORTS_CLAMAV_ADDR=clamav:3310` y
