@@ -41630,3 +41630,11 @@ acumulativa.
 - Los TrackId reales continúan siendo la única entrada reconsultable. El cambio
   no inventa identificadores DIAN ni modifica configuración o documentos de
   producción.
+
+2026-08-09: Plan 109 / réplica autenticada y rollback aislados.
+
+- Dos réplicas del digest de staging aprobaron login oficial y cinco dominios
+  autenticados. El rollback coordinado de ambas bases y del almacenamiento
+  privado recuperó la copia efímera en 26 s.
+- Las credenciales QA se transportaron únicamente como variables de sesión y
+  no se guardaron ni imprimieron.

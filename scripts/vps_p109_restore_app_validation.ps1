@@ -15,6 +15,8 @@ param(
   [string]$IdentityFile = "",
   [string]$RemotePath = "",
   [switch]$PullMissingImages,
+  [switch]$VerifyReplica,
+  [switch]$VerifyCoordinatedRollback,
   [switch]$AllowRemoteTarget
 )
 
@@ -71,6 +73,14 @@ $drillID = "p109-restore-app-" + (Get-Date -Format "yyyyMMddhhmmss")
 $remotePathLit = Convert-ToBashLiteral $RemotePath
 $drillIDLit = Convert-ToBashLiteral $drillID
 $pullMissingValue = if ($PullMissingImages) { "1" } else { "0" }
+$verifyReplicaValue = if ($VerifyReplica) { "1" } else { "0" }
+$verifyRollbackValue = if ($VerifyCoordinatedRollback) { "1" } else { "0" }
+$qaEmail = [string]$env:P109_QA_EMAIL
+$qaPassword = [string]$env:P109_QA_PASSWORD
+if ($VerifyCoordinatedRollback -and -not $VerifyReplica) { throw "El rollback coordinado requiere -VerifyReplica." }
+if ($VerifyReplica -and ([string]::IsNullOrWhiteSpace($qaEmail) -or [string]::IsNullOrWhiteSpace($qaPassword))) { throw "La replica autenticada requiere P109_QA_EMAIL y P109_QA_PASSWORD solo en la sesion actual." }
+$qaEmailLit = Convert-ToBashLiteral $qaEmail
+$qaPasswordLit = Convert-ToBashLiteral $qaPassword
 
 $remoteScript = @"
 set -euo pipefail
@@ -118,7 +128,9 @@ if ! docker image inspect "`$migrate_image" >/dev/null 2>&1; then
 fi
 PROJECT_DIR="`$remote_path" SOURCE_ENV="`$source_env" P109_DRILL_ID="`$drill_id" \
   PCS_API_IMAGE_DIGEST="`$api_image" PCS_MIGRATE_IMAGE_DIGEST="`$migrate_image" \
-  P109_VERIFY_PRIVATE_INVENTORY=1 bash "`$tmp_script"
+  P109_VERIFY_PRIVATE_INVENTORY=1 P109_VERIFY_REPLICA=$verifyReplicaValue \
+  P109_VERIFY_COORDINATED_ROLLBACK=$verifyRollbackValue \
+  P109_QA_EMAIL=$qaEmailLit P109_QA_PASSWORD=$qaPasswordLit bash "`$tmp_script"
 "@
 
 $tmp = Join-Path $env:TEMP ("pcs_p109_restore_app_" + [guid]::NewGuid().ToString("N") + ".sh")
