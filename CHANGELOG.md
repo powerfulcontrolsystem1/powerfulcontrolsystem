@@ -4893,3 +4893,4 @@
   añadió la vista del avatar BIMI junto al logo oficial embebido de PCS.
 - La cuota predeterminada de 1024 MB vuelve a ser válida en el formulario.
 - El panel Mailu deja de desbordar horizontalmente en pantallas móviles.
+- 2026-08-09: `Domotica Raspberry por tunel saliente` permite abrir PCS desde la Raspberry, descargar un instalador seguro y mantener un agente HTTPS hacia el VPS sin puertos entrantes. Agrega identidad unica, tokens hasheados, cola/ACK de GPIO, entradas con debounce, multiples aparatos por estacion, historial y transferencia diaria/acumulada por empresa y dispositivo en super administrador.

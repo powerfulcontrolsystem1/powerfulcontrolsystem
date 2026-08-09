@@ -2291,7 +2291,7 @@ func resolveControlElectricoPermissionAction(r *http.Request) string {
 	switch action {
 	case "config", "raspberry_pi", "rele", "rele_foto":
 		return defaultPermissionActionFromMethod(r.Method)
-	case "probar_rele", "sincronizar", "ejecutar_programacion":
+	case "probar_rele", "sincronizar", "ejecutar_programacion", "provisionar_tunel":
 		return permActionApprove
 	case "activar", "desactivar":
 		return permActionUpdate

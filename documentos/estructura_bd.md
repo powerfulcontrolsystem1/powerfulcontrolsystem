@@ -3,6 +3,20 @@
 Version: 2026-05-15.1.0
 Ultima actualizacion: 2026-05-15
 
+Actualizacion 2026-08-09 (tunel saliente de Domotica)
+- `empresa_control_electrico_raspberry_pis` agrega identidad unica, huellas de
+  enrolamiento/dispositivo, estado/ultima actividad del tunel, version del
+  agente y contadores acumulados RX/TX. Nunca persiste tokens en claro.
+- `empresa_control_electrico_comandos` es la cola durable de salidas GPIO por
+  `empresa_id` y `raspberry_id`, con entrega, reintentos, vencimiento y ACK.
+- `empresa_control_electrico_trafico_diario` agrega bytes RX/TX y solicitudes
+  por dispositivo y fecha.
+- `empresa_control_electrico_reglas` agrega `raspberry_id`, GPIO BCM de entrada,
+  pull y debounce. Toda regla valida que controlador, estacion y aparato
+  objetivo pertenezcan a la misma empresa.
+- La migracion versionada es
+  `20260809-002-domotica-raspberry-tunnel-v1`; API y worker no ejecutan DDL.
+
 Actualizacion 2026-07-13 (OpenAI propio por empresa)
 - `empresa_ai_openai_proveedor_configuracion` conserva una configuracion por
   `empresa_id`: habilitacion, clave cifrada con AES-GCM y proposito

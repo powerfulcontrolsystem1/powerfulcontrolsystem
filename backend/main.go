@@ -1838,6 +1838,7 @@ func main() {
 	// Rutas del módulo sensor de puertas: configuración protegida y endpoint público para heartbeats
 	http.HandleFunc("/api/empresa/sensor_puertas", handlers.WithEmpresaSeguridadPermissions(dbEmpresas, dbSuper, handlers.EmpresaSensorConfigHandler(dbEmpresas)))
 	http.HandleFunc("/api/public/sensor_puertas", handlers.PublicSensorPuertasHandler(dbEmpresas))
+	http.HandleFunc("/api/public/domotica/tunnel", handlers.PublicDomoticaRaspberryTunnelHandler(dbEmpresas))
 	http.HandleFunc("/api/public/webrtc/signaling", handlers.WithEmpresaSeguridadPermissions(dbEmpresas, dbSuper, handlers.SoporteRemotoSignalingHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/sensor_puertas/messages", handlers.WithEmpresaSeguridadPermissions(dbEmpresas, dbSuper, handlers.EmpresaSensorMessagesHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/control_electrico", handlers.WithEmpresaControlElectricoPermissions(dbEmpresas, dbSuper, handlers.EmpresaControlElectricoHandler(dbEmpresas, dbSuper)))
@@ -1967,6 +1968,7 @@ func main() {
 	http.HandleFunc("/super/api/docker_portabilidad", handlers.WithSuperAuditoria(dbSuper, "super_docker_portabilidad", handlers.SuperDockerPortabilidadHandler(dbSuper)))
 	http.HandleFunc("/super/api/vps_snapshots", handlers.WithSuperAuditoria(dbSuper, "super_vps_snapshots", handlers.SuperVPSSnapshotsHandler(dbSuper)))
 	http.HandleFunc("/super/api/domotica_storage", handlers.WithSuperAuditoria(dbSuper, "super_domotica_storage", handlers.SuperDomoticaStorageHandler(dbSuper, dbEmpresas)))
+	http.HandleFunc("/super/api/domotica_raspberry_trafico", handlers.WithSuperAuditoria(dbSuper, "super_domotica_raspberry_trafico", handlers.SuperDomoticaRaspberryTrafficHandler(dbSuper, dbEmpresas)))
 	// Endpoint de seguridad: escaneo de puertos
 	http.HandleFunc("/super/api/security/ports", handlers.WithSuperAuditoria(dbSuper, "super_seguridad_vps", handlers.SecurityPortsHandler(dbSuper)))
 	// Endpoint de seguridad: listado de procesos en memoria RAM
