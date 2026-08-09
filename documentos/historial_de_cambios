@@ -1,3 +1,18 @@
+2026-08-08: Plan 109 / adjuntos hostiles, cancelacion IA y retencion segura.
+- Soportes CxP/IA valida firmas PNG/JPEG/WebP/PDF/XML, fija MIME canónico y
+  rechaza suplantación, XML mal formado, DTD, entidades, instrucciones y
+  elementos activos antes de cuota o escritura.
+- Si la fila falla después de guardar, se limpia solo el adjunto nuevo dentro
+  de la raíz privada validada para evitar archivos huérfanos.
+- `Cancelar IA` aborta el fetch, propaga `r.Context()` hasta Responses API y
+  conserva el cierre diferido del lock distribuido. Una prueba con proveedor
+  lento local demuestra la cancelación del transporte; la reserva avanzada se
+  devuelve con `GREATEST(0,...)` para no penalizar ni crear saldos negativos.
+- La vista previa de retención lista por `empresa_id` únicamente eliminados
+  antiguos no contabilizados y calcula bytes seguros sin borrar archivos.
+- Falta antivirus externo, purga física certificada, PostgreSQL dinámico y UAT
+  PCS/staging. P109-002/P109-008/P109-009 siguen parciales; 53,3 % y NO-GO.
+
 2026-08-08: Plan 109 / papelera recuperable para soportes CxP-IA.
 - Se agrega eliminacion logica y recuperacion con motivo obligatorio, actor,
   transaccion bloqueada y evento auditable por `empresa_id`; archivos y eventos

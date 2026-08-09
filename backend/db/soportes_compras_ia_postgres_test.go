@@ -57,6 +57,13 @@ func TestSoporteComprasIAPapeleraPostgres(t *testing.T) {
 	if _, err := UpdateEmpresaSoporteComprasIARegistroEstado(dbConn, 12, company12ID, "eliminado", "qa@local", "preparar duplicado"); err != nil {
 		t.Fatal(err)
 	}
+	if _, err := dbConn.Exec(`UPDATE empresa_soportes_compras_ia SET fecha_actualizacion=(CURRENT_TIMESTAMP-INTERVAL '120 days')::text WHERE empresa_id=12 AND id=$1`, company12ID); err != nil {
+		t.Fatal(err)
+	}
+	retentionRows, err := ListEmpresaSoportesComprasIARetencion(dbConn, 12, 90, 20)
+	if err != nil || len(retentionRows) != 1 || retentionRows[0].ID != company12ID {
+		t.Fatalf("tenant retention preview: rows=%#v err=%v", retentionRows, err)
+	}
 	duplicateID := insert(12, "SCI-PG-DUP", "radicado", "activo", "hash-a", "FV-A", 0)
 	if _, err := UpdateEmpresaSoporteComprasIARegistroEstado(dbConn, 12, company12ID, "activo", "qa@local", "debe bloquear duplicado"); err == nil || !strings.Contains(err.Error(), "soporte activo") {
 		t.Fatalf("restore with active duplicate must fail: %v", err)

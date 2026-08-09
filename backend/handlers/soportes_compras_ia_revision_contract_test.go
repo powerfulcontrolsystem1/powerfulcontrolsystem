@@ -34,6 +34,7 @@ func TestSoportesComprasIARevisionExposesEditableHumanReview(t *testing.T) {
 		"Confirma que revisaste proveedor, documento, impuestos y total",
 		"¿Rechazar este soporte?", "¿Crear la cuenta por pagar con los datos aprobados?",
 		`document.querySelectorAll(".capture-btn")`, "btn.disabled = !!on",
+		"btnCancelarIA", "AbortController", ".abort()", "Extraccion IA cancelada",
 	} {
 		if !strings.Contains(string(script), want) {
 			t.Fatalf("review client contract missing %q", want)
@@ -81,6 +82,7 @@ func TestSoportesComprasIAProviderAndDoubleClickContracts(t *testing.T) {
 	for _, want := range []string{
 		"pg_try_advisory_lock", "pg_advisory_unlock", "errSoporteComprasIAProcesamientoEnCurso",
 		"publicAIProviderError(err)", "http.StatusBadGateway", "http.StatusConflict",
+		"callOpenAIResponsesWithSystemPromptContext(r.Context()", "RefundEmpresaAgenteUsoDiario",
 	} {
 		if !strings.Contains(source, want) {
 			t.Fatalf("contrato de concurrencia/degradacion ausente: %q", want)
@@ -135,7 +137,7 @@ func TestSoportesComprasIAPapeleraIsRecoverableAuditedAndTenantScoped(t *testing
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, want := range []string{"registroFilter", "btnEliminar", "btnRestaurar", "Papelera", "soportes contabilizados no pueden eliminarse"} {
+	for _, want := range []string{"registroFilter", "btnEliminar", "btnRestaurar", "Papelera", "soportes contabilizados no pueden eliminarse", "btnRetencionPreview", "retencionDias"} {
 		if !strings.Contains(string(page), want) {
 			t.Fatalf("papelera UI missing %q", want)
 		}
@@ -148,6 +150,7 @@ func TestSoportesComprasIAPapeleraIsRecoverableAuditedAndTenantScoped(t *testing
 		`action === "restaurar"`, `action === "eliminar"`, `estado || "activo"`,
 		`"&registro="`, `window.prompt`, `observaciones: motivo`,
 		`url.origin === window.location.origin`, `Recupera el soporte antes de editar sus datos`,
+		`retencion_preview`, `Vista previa sin borrado`,
 	} {
 		if !strings.Contains(string(script), want) {
 			t.Fatalf("papelera client contract missing %q", want)
@@ -161,6 +164,7 @@ func TestSoportesComprasIAPapeleraIsRecoverableAuditedAndTenantScoped(t *testing
 		"func UpdateEmpresaSoporteComprasIARegistroEstado", "WHERE empresa_id=? AND id=? FOR UPDATE",
 		"un soporte contabilizado no puede eliminarse", "COALESCE(estado,'activo')='activo'",
 		"estado_registro_anterior", "estado_registro_nuevo", "func GetEmpresaSoporteComprasIAActivo",
+		"func ListEmpresaSoportesComprasIARetencion", "COALESCE(convertido_id,0)=0",
 	} {
 		if !strings.Contains(string(source), want) {
 			t.Fatalf("papelera persistence contract missing %q", want)

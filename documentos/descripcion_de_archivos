@@ -1,4 +1,17 @@
 2026-08-08
+- `documentos/evidencia_plan_109/P109-002/2026-08-08_cancelacion_y_validacion_adjuntos_local.md`:
+  evidencia cancelacion real del transporte IA, admision hostil, limpieza de
+  huerfanos y vista previa no destructiva de retencion.
+- `backend/handlers/chat_con_inteligencia_artificial_controller.go`: agrega una
+  variante Responses API con contexto para cancelar solicitudes proveedoras.
+- `backend/db/empresa_agentes_uso.go`: devuelve la reserva avanzada cancelada
+  con resta acotada a cero por empresa y fecha.
+- `backend/handlers/chat_con_inteligencia_artificial_responses_test.go`: usa un
+  proveedor lento local y exige que `context.Canceled` se propague.
+- `backend/db/empresa_agentes_uso_test.go`: exige que una devolucion inválida de
+  cuota IA falle antes de tocar la base de datos.
+- `backend/handlers/soportes_compras_ia_storage_test.go`: cubre firmas, MIME,
+  XML hostil, limpieza confinada y bytes/dias de retencion.
 - `documentos/evidencia_plan_109/P109-008/2026-08-08_papelera_soportes_ia_local.md`:
   evidencia el ciclo local de eliminacion/recuperacion, aislamiento, auditoria,
   cierres operativos y limites de certificacion de soportes CxP/IA.

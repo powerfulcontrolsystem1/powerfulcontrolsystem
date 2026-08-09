@@ -1051,6 +1051,19 @@ Actualización 2026-08-08, papelera recuperable de soportes CxP/IA:
 - P109-002 y P109-008 continúan parciales. El avance permanece en **53,3 % de
   implementación**, **0 % de certificación del arreglo local** y **NO-GO**.
 
+Actualización 2026-08-08, adjuntos hostiles, cancelación IA y retención:
+
+- La admisión local ahora contrasta firma/extensión, fija MIME y rechaza XML
+  activo, DTD, entidades, instrucciones y documentos mal formados antes de
+  escribir. Un fallo posterior de base limpia el archivo nuevo confinado.
+- `Cancelar IA` aborta navegador y transporte Responses mediante el contexto de
+  la petición; una prueba con proveedor lento local confirmó `context.Canceled`.
+- La vista previa de retención filtra por empresa solo eliminados antiguos no
+  contabilizados y calcula bytes sin ejecutar purga.
+- Esto no sustituye antivirus, carrera Linux, proveedor real, purga certificada
+  ni UAT PCS/A-B. P109-002, P109-008 y P109-009 continúan parciales; el avance
+  permanece **53,3 %**, la certificación del cambio local **0 %** y **NO-GO**.
+
 ## 9. Siguiente orden para Terra alto
 
 P109-000 ya está aprobada para `ea9642dd...` y P109-011 para `c8094f5b`;

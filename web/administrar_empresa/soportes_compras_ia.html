@@ -152,6 +152,7 @@
         </div>
         <div class="capture-row-actions" style="margin-bottom:10px">
           <button class="capture-btn primary" id="btnExtraer" type="button">Extraer IA</button>
+          <button class="capture-btn" id="btnCancelarIA" type="button">Cancelar IA</button>
           <button class="capture-btn" id="btnAprobar" type="button">Aprobar</button>
           <button class="capture-btn danger" id="btnRechazar" type="button">Rechazar</button>
           <button class="capture-btn warn" id="btnContabilizar" type="button">Contabilizar</button>
@@ -159,6 +160,11 @@
           <button class="capture-btn" id="btnRestaurar" type="button">Recuperar</button>
         </div>
         <p class="capture-muted">La papelera conserva el archivo y la auditoria. Los soportes contabilizados no pueden eliminarse y los adjuntos eliminados no se descargan hasta recuperarlos.</p>
+        <div class="capture-row-actions" style="margin:10px 0">
+          <div class="capture-field"><label for="retencionDias">Retencion de papelera (dias)</label><input id="retencionDias" type="number" min="1" max="3650" value="90"></div>
+          <button class="capture-btn" id="btnRetencionPreview" type="button">Vista previa de retencion</button>
+          <span class="capture-muted" id="retencionPreviewMsg">No elimina archivos: calcula candidatos y espacio.</span>
+        </div>
         <div id="captureTable" class="capture-table-wrap"></div>
       </div>
     </section>

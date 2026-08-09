@@ -8,7 +8,9 @@
     proveedores: [],
     selected: null,
     filters: { estado: "", registro: "activo", tipo: "", search: "" },
-    loading: false
+    loading: false,
+    activeAction: "",
+    activeController: null
   };
 
   var labels = {
@@ -103,6 +105,13 @@
       saveButton.disabled = state.loading || !editable;
       saveButton.setAttribute("aria-disabled", saveButton.disabled ? "true" : "false");
       saveButton.title = editable ? "" : "Solo puedes editar un soporte activo pendiente de contabilizar.";
+    }
+    var cancelButton = el("btnCancelarIA");
+    if (cancelButton) {
+      var cancellable = state.loading && state.activeAction === "extraer_ia" && !!state.activeController;
+      cancelButton.disabled = !cancellable;
+      cancelButton.setAttribute("aria-disabled", cancelButton.disabled ? "true" : "false");
+      cancelButton.title = cancellable ? "Cancelar la solicitud IA en curso." : "No hay una extraccion IA en curso.";
     }
   }
 
@@ -411,13 +420,27 @@
         return;
       }
     }
+    var controller = action === "extraer_ia" && typeof AbortController !== "undefined" ? new AbortController() : null;
+    state.activeAction = action;
+    state.activeController = controller;
     setBusy(true, text);
-    api(action, { method: "POST", body: JSON.stringify({ soporte_id: state.selected.id, observaciones: motivo }) }).then(function () {
+    var options = { method: "POST", body: JSON.stringify({ soporte_id: state.selected.id, observaciones: motivo }) };
+    if (controller) options.signal = controller.signal;
+    api(action, options).then(function () {
+      if (state.activeController === controller) {
+        state.activeController = null;
+        state.activeAction = "";
+      }
       msg("Accion completada.");
       return load();
     }).catch(function (e) {
-      msg(e.message, true);
+      if (e && e.name === "AbortError") msg("Extraccion IA cancelada. El soporte conserva su estado anterior.");
+      else msg(e.message, true);
     }).finally(function () {
+      if (state.activeController === controller) {
+        state.activeController = null;
+        state.activeAction = "";
+      }
       setBusy(false);
     });
   }
@@ -462,6 +485,21 @@
     }).finally(function () {
       setBusy(false);
     });
+  }
+
+  function retentionPreview() {
+    var days = Math.max(1, Math.min(3650, Math.trunc(Number(val("retencionDias")) || 90)));
+    setValue("retencionDias", days);
+    setBusy(true, "Calculando retencion de papelera...");
+    api("retencion_preview", null, "&retencion_dias=" + encodeURIComponent(days)).then(function (data) {
+      var bytes = Number(data.bytes || 0);
+      var size = bytes >= 1048576 ? (bytes / 1048576).toFixed(2) + " MB" : (bytes / 1024).toFixed(2) + " KB";
+      el("retencionPreviewMsg").textContent = (data.candidatos || 0) + " soporte(s) superan " + days + " dias; espacio privado: " + size + ". Vista previa sin borrado.";
+      msg("Vista previa de retencion actualizada.");
+    }).catch(function (e) {
+      el("retencionPreviewMsg").textContent = "No se pudo calcular la retencion.";
+      msg(e.message, true);
+    }).finally(function () { setBusy(false); });
   }
 
   function exportCSV() {
@@ -519,7 +557,11 @@
   el("captureRefresh").addEventListener("click", load);
   el("captureSeed").addEventListener("click", seedDemo);
   el("captureExport").addEventListener("click", exportCSV);
+  el("btnRetencionPreview").addEventListener("click", retentionPreview);
   el("btnExtraer").addEventListener("click", function () { actionSelected("extraer_ia", "Extrayendo datos con IA..."); });
+  el("btnCancelarIA").addEventListener("click", function () {
+    if (state.activeController && state.activeAction === "extraer_ia") state.activeController.abort();
+  });
   el("btnAprobar").addEventListener("click", function () { actionSelected("aprobar", "Aprobando soporte..."); });
   el("btnRechazar").addEventListener("click", function () { actionSelected("rechazar", "Rechazando soporte..."); });
   el("btnContabilizar").addEventListener("click", function () { actionSelected("contabilizar", "Generando cuenta por pagar..."); });

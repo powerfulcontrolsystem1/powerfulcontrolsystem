@@ -4,6 +4,7 @@ import (
 	"archive/zip"
 	"bufio"
 	"bytes"
+	"context"
 	"database/sql"
 	"encoding/base64"
 	"encoding/json"
@@ -1676,6 +1677,13 @@ func (c *EmpresaAIChatController) generateResponseWithSystemPromptAndAttachment(
 }
 
 func (c *EmpresaAIChatController) callOpenAIResponsesWithSystemPrompt(model empresaAIModelDef, pregunta string, historial []empresaAIChatMensaje, systemPrompt string, att *aiAttachment, tools []map[string]interface{}, dispatch func(openAIResponsesFunctionCall) (string, error)) (string, int64, int64, error) {
+	return c.callOpenAIResponsesWithSystemPromptContext(context.Background(), model, pregunta, historial, systemPrompt, att, tools, dispatch)
+}
+
+func (c *EmpresaAIChatController) callOpenAIResponsesWithSystemPromptContext(ctx context.Context, model empresaAIModelDef, pregunta string, historial []empresaAIChatMensaje, systemPrompt string, att *aiAttachment, tools []map[string]interface{}, dispatch func(openAIResponsesFunctionCall) (string, error)) (string, int64, int64, error) {
+	if ctx == nil {
+		ctx = context.Background()
+	}
 	apiKey, err := c.resolveModelAPIKey(model)
 	if err != nil {
 		return "", 0, 0, err
@@ -1751,7 +1759,7 @@ func (c *EmpresaAIChatController) callOpenAIResponsesWithSystemPrompt(model empr
 	}
 	payload, _ := json.Marshal(body)
 
-	req, err := http.NewRequest(http.MethodPost, strings.TrimSpace(model.Endpoint), bytes.NewReader(payload))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, strings.TrimSpace(model.Endpoint), bytes.NewReader(payload))
 	if err != nil {
 		return "", 0, 0, fmt.Errorf("no se pudo crear solicitud al proveedor")
 	}
@@ -1760,7 +1768,7 @@ func (c *EmpresaAIChatController) callOpenAIResponsesWithSystemPrompt(model empr
 
 	resp, err := c.client.Do(req)
 	if err != nil {
-		return "", 0, 0, fmt.Errorf("no se pudo contactar proveedor: %v", err)
+		return "", 0, 0, fmt.Errorf("no se pudo contactar proveedor: %w", err)
 	}
 	defer resp.Body.Close()
 
@@ -1798,9 +1806,9 @@ func (c *EmpresaAIChatController) callOpenAIResponsesWithSystemPrompt(model empr
 		input = append(input, map[string]interface{}{"type": "function_call_output", "call_id": calls[0].CallID, "output": result})
 		body["input"] = input
 		payload, _ = json.Marshal(body)
-		req, err = http.NewRequest(http.MethodPost, strings.TrimSpace(model.Endpoint), bytes.NewReader(payload))
+		req, err = http.NewRequestWithContext(ctx, http.MethodPost, strings.TrimSpace(model.Endpoint), bytes.NewReader(payload))
 		if err != nil {
-			return "", 0, 0, err
+			return "", 0, 0, fmt.Errorf("no se pudo contactar proveedor: %w", err)
 		}
 		req.Header.Set("Content-Type", "application/json")
 		req.Header.Set("Authorization", "Bearer "+strings.TrimSpace(apiKey))

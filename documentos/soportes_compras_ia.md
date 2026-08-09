@@ -25,6 +25,8 @@ Modulo empresarial para radicar soportes de compras y gastos por `empresa_id` de
 8. Contabilizar soporte aprobado como cuenta por pagar en `empresa_cuentas_por_pagar`.
 9. Enviar a papelera un soporte no contabilizado con motivo obligatorio o
    recuperarlo conservando archivo, estado del flujo y auditoria.
+10. Consultar una vista previa de retencion por dias, cantidad y bytes antes de
+    cualquier politica irreversible.
 
 ## Estados
 
@@ -53,11 +55,21 @@ mismo hash o numero de documento.
 
 - Requiere IA activada en configuracion avanzada super y modelo `openai:gpt-5.5` disponible.
 - Las credenciales del proveedor IA deben venir de configuracion segura o entorno.
+- La carga valida firma real contra extension, normaliza el MIME y rechaza XML
+  con DTD, entidades, instrucciones o elementos activos; esto endurece la
+  admision, pero no sustituye un antivirus externo.
+- Si la fila no puede persistirse despues de escribir el archivo privado, el
+  adjunto recien creado se elimina dentro de la raiz segura para evitar huerfanos.
+- `Cancelar IA` aborta la solicitud HTTP y propaga el contexto al proveedor; el
+  soporte conserva su estado anterior si no alcanzó a guardar una extracción y
+  devuelve la reserva diaria avanzada con contadores acotados a cero.
 - Los soportes con baja confianza, valores inconsistentes o datos tributarios incompletos deben revisarse antes de aprobar.
 - Para documentos oficiales DIAN, la extraccion IA no reemplaza validacion tributaria ni aceptacion/rechazo legal del documento.
 - La pantalla valida el enlace de archivo antes de renderizarlo y solo permite direcciones navegables seguras, evitando protocolos no esperados en soportes cargados.
 - Un soporte convertido a CxP no puede enviarse a papelera, porque su origen
   documental debe permanecer visible para conciliacion y auditoria contable.
+- La vista previa de retencion es solo lectura. La purga física sigue prohibida
+  hasta definir política, backup/restore y ejecución certificada en staging.
 
 ## Pruebas
 

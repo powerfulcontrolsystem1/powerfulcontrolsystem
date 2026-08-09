@@ -1,12 +1,107 @@
 package handlers
 
 import (
+	"bytes"
 	"errors"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
+
+	dbpkg "github.com/you/pos-backend/db"
 )
+
+func TestSoporteComprasIAAttachmentValidatesSignatureAndCanonicalMIME(t *testing.T) {
+	tests := []struct {
+		name, filename, wantMIME string
+		content                  []byte
+	}{
+		{"png", "factura.png", "image/png", append([]byte("\x89PNG\r\n\x1a\n"), bytes.Repeat([]byte{0}, 24)...)},
+		{"jpeg", "factura.jpg", "image/jpeg", []byte("\xff\xd8\xff\xe0\x00\x10JFIF\x00\x01\xff\xd9")},
+		{"webp", "factura.webp", "image/webp", []byte("RIFF\x04\x00\x00\x00WEBPVP8 ")},
+		{"pdf", "factura.pdf", "application/pdf", []byte("%PDF-1.7\n1 0 obj\n<<>>\nendobj\n%%EOF")},
+		{"xml", "factura.xml", "application/xml", []byte(`<?xml version="1.0"?><Invoice xmlns="urn:oasis:names:specification:ubl:schema:xsd:Invoice-2"><ID>FV-1</ID></Invoice>`)},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			att := &aiAttachment{Filename: tt.filename, MimeType: "application/octet-stream", Bytes: tt.content}
+			if err := validateSoporteComprasIAAttachment(att); err != nil {
+				t.Fatalf("valid attachment rejected: %v", err)
+			}
+			if att.MimeType != tt.wantMIME {
+				t.Fatalf("canonical MIME = %q, want %q", att.MimeType, tt.wantMIME)
+			}
+		})
+	}
+}
+
+func TestSoporteComprasIAAttachmentRejectsSpoofedAndActiveContent(t *testing.T) {
+	tests := []aiAttachment{
+		{Filename: "falso.pdf", MimeType: "application/pdf", Bytes: []byte("<html>not pdf</html>")},
+		{Filename: "falso.png", MimeType: "image/png", Bytes: []byte("not an image")},
+		{Filename: "factura.exe", MimeType: "application/pdf", Bytes: []byte("%PDF-1.7")},
+		{Filename: "xxe.xml", MimeType: "application/xml", Bytes: []byte(`<!DOCTYPE foo [<!ENTITY xxe SYSTEM "file:///etc/passwd">]><Invoice>&xxe;</Invoice>`)},
+		{Filename: "activo.xml", MimeType: "application/xml", Bytes: []byte(`<Invoice><script>alert(1)</script></Invoice>`)},
+		{Filename: "pi.xml", MimeType: "application/xml", Bytes: []byte(`<?run command?><Invoice/>`)},
+		{Filename: "roto.xml", MimeType: "application/xml", Bytes: []byte(`<Invoice><ID></Invoice>`)},
+	}
+	for i := range tests {
+		if err := validateSoporteComprasIAAttachment(&tests[i]); err == nil {
+			t.Fatalf("hostile attachment %d was accepted", i)
+		}
+	}
+}
+
+func TestCleanupUnpersistedSoporteComprasIAAttachmentRemovesOnlyPrivateFile(t *testing.T) {
+	storage := t.TempDir()
+	t.Setenv("PCS_PRIVATE_STORAGE_DIR", storage)
+	att := &aiAttachment{Filename: "factura.pdf", MimeType: "application/pdf", Bytes: []byte("%PDF-1.7\n%%EOF")}
+	if err := validateSoporteComprasIAAttachment(att); err != nil {
+		t.Fatal(err)
+	}
+	privateURL, _, _, _, _, err := saveSoporteComprasIAAttachment(att, 12)
+	if err != nil {
+		t.Fatal(err)
+	}
+	path, err := safeSoporteComprasIAPathFromURL(privateURL)
+	if err != nil {
+		t.Fatal(err)
+	}
+	cleanupUnpersistedSoporteComprasIAAttachment(privateURL)
+	if _, err := os.Stat(path); !errors.Is(err, os.ErrNotExist) {
+		t.Fatalf("unpersisted private file still exists: %v", err)
+	}
+	outside := filepath.Join(storage, "outside.pdf")
+	if err := os.WriteFile(outside, []byte("keep"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	cleanupUnpersistedSoporteComprasIAAttachment(outside)
+	if _, err := os.Stat(outside); err != nil {
+		t.Fatalf("cleanup touched an out-of-scope path: %v", err)
+	}
+}
+
+func TestSoporteComprasIARetentionPreviewCountsOnlySafePrivateFiles(t *testing.T) {
+	storage := t.TempDir()
+	t.Setenv("PCS_PRIVATE_STORAGE_DIR", storage)
+	att := &aiAttachment{Filename: "factura.pdf", MimeType: "application/pdf", Bytes: []byte("%PDF-1.7\n%%EOF")}
+	if err := validateSoporteComprasIAAttachment(att); err != nil {
+		t.Fatal(err)
+	}
+	privateURL, _, _, _, _, err := saveSoporteComprasIAAttachment(att, 12)
+	if err != nil {
+		t.Fatal(err)
+	}
+	rows := []dbpkg.EmpresaSoporteComprasIA{{EmpresaID: 12, ArchivoURL: privateURL}, {EmpresaID: 12, ArchivoURL: "private://soportes_compras_ia/empresa_53/ajeno.pdf"}, {EmpresaID: 12, ArchivoURL: "https://example.com/file.pdf"}}
+	if got, want := soporteComprasIARetentionBytes(rows), int64(len(att.Bytes)); got != want {
+		t.Fatalf("retention bytes = %d, want %d", got, want)
+	}
+	for input, want := range map[string]int{"": 90, "0": 90, "3651": 90, "abc": 90, "1": 1, "3650": 3650, "120": 120} {
+		if got := parseSoporteComprasIARetentionDays(input); got != want {
+			t.Fatalf("retention days %q = %d, want %d", input, got, want)
+		}
+	}
+}
 
 func TestSoporteComprasIAStorageAdmissionRespectsCompanyQuota(t *testing.T) {
 	cfg := empresaStorageConfig{QuotaEnabled: true, BlockUploads: true, DefaultLimitMB: 1, MaxUploadMB: 10}

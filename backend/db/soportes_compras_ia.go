@@ -703,6 +703,45 @@ func ListEmpresaSoportesComprasIARegistro(dbConn *sql.DB, empresaID int64, estad
 	return listEmpresaSoportesComprasIARegistro(dbConn, empresaID, estado, registro, limit)
 }
 
+func ListEmpresaSoportesComprasIARetencion(dbConn *sql.DB, empresaID int64, retentionDays, limit int) ([]EmpresaSoporteComprasIA, error) {
+	if empresaID <= 0 {
+		return nil, errors.New("empresa_id es obligatorio")
+	}
+	if retentionDays < 1 || retentionDays > 3650 {
+		return nil, errors.New("retencion_dias debe estar entre 1 y 3650")
+	}
+	if limit <= 0 || limit > 500 {
+		limit = 200
+	}
+	if err := EnsureEmpresaSoportesComprasIASchema(dbConn); err != nil {
+		return nil, err
+	}
+	cutoff := time.Now().AddDate(0, 0, -retentionDays).Format("2006-01-02 15:04:05")
+	rows, err := ExecQueryCompat(dbConn, soporteComprasIASelectSQL()+` WHERE empresa_id=?
+		AND COALESCE(estado,'activo')='eliminado'
+		AND COALESCE(estado_soporte,'radicado')<>'contabilizado'
+		AND COALESCE(convertido_id,0)=0
+		AND CASE
+			WHEN COALESCE(NULLIF(fecha_actualizacion,''),fecha_creacion) ~ '^\d{4}-\d{2}-\d{2}'
+			THEN CAST(COALESCE(NULLIF(fecha_actualizacion,''),fecha_creacion) AS TIMESTAMP)<=CAST(? AS TIMESTAMP)
+			ELSE FALSE
+		END
+		ORDER BY fecha_actualizacion ASC,id ASC LIMIT ?`, empresaID, cutoff, limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := []EmpresaSoporteComprasIA{}
+	for rows.Next() {
+		row, err := scanEmpresaSoporteComprasIA(rows)
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, row)
+	}
+	return out, rows.Err()
+}
+
 func listEmpresaSoportesComprasIARegistro(dbConn *sql.DB, empresaID int64, estado, registro string, limit int) ([]EmpresaSoporteComprasIA, error) {
 	if limit <= 0 || limit > 500 {
 		limit = 200
