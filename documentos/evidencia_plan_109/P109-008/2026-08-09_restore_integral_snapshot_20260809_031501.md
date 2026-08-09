@@ -1,8 +1,8 @@
 # P109-008 - Restore integral aislado del snapshot vigente
 
-Fecha: 2026-08-09  
-Ambiente: VPS de staging, contenedor PostgreSQL temporal  
-Snapshot: `20260809_031501`  
+Fecha: 2026-08-09
+Ambiente: VPS de staging, contenedor PostgreSQL temporal
+Snapshot: `20260809_031501`
 Alcance: validación aislada; no se modificaron bases, volúmenes ni servicios
 activos de staging o producción.
 
