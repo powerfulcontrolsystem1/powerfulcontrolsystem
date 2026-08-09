@@ -3413,3 +3413,13 @@
   escritorio/móvil sin respuestas HTTP erróneas en los módulos reparados.
 - Hoja de vida normaliza su fecha programada de texto antes de compararla y el
   CSP estático de Nginx permite los mismos recursos visuales fijados por versión.
+## [2026-08-09] Domotica Raspberry Pi por tunel saliente
+- [Provisionamiento] Desde el navegador de la Raspberry se descarga un
+  instalador de un solo uso que configura agente Python y servicio systemd.
+- [Seguridad] El dispositivo inicia HTTPS hacia el VPS; los tokens se conservan
+  como SHA-256 y `empresa_id` se deriva de la identidad autenticada.
+- [Operacion] Multiples Raspberry/aparatos por estacion soportan foto,
+  descripcion, watts, horarios, entradas GPIO, debounce, cola y ACK durable.
+- [Super] Nueva pagina de transferencia diaria/acumulada RX/TX por dispositivo.
+- [QA local] Pruebas Go enfocadas, sintaxis Python/JavaScript y acceso TCP SSH
+  a la Raspberry de laboratorio aprobados; la prueba fisica se registra aparte.

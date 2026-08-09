@@ -41197,3 +41197,20 @@ acumulativa.
   minúsculas, rechazo de códigos SHA-256 internos y JSON inválido.
 - La descripción del código de corrección 2 usa el literal DIAN `Anulación de
   factura electrónica`, evitando además la notificación CBF04 observada.
+2026-08-09: Domotica Raspberry Pi por tunel HTTPS saliente.
+- Modulos afectados: `control_electrico`, `domotica`, `estaciones`,
+  `super_administrador`, `seguridad_multiempresa`, `backend_db`, `frontend_ux`.
+- Flujo: desde la propia Raspberry se abre PCS, se registra el controlador y se
+  descarga un instalador de un solo uso. El usuario ejecuta una vez `sudo sh` y
+  systemd mantiene el agente conectado hacia el VPS sin exponer puertos LAN.
+- Aparatos: multiples por estacion/Raspberry con descripcion, imagen, watts,
+  GPIO, polaridad, horario, estado, lecturas y bitacora por empresa.
+- Automatizacion: una entrada GPIO con pull/debounce puede activar o desactivar
+  otro aparato de la misma empresa; la Raspberry y pin forman parte del filtro.
+- Seguridad: `device_uid` opaco, huellas SHA-256, enrolamiento de 24 horas,
+  rotacion al regenerar, body limitado y tenant derivado en servidor.
+- Super: pagina auditada de transferencia RX/TX diaria y acumulada por empresa y
+  Raspberry, sin secretos.
+- QA local: paquetes `db` y `handlers` enfocados pasan; el agente Python y los
+  scripts inline pasan parseo; `192.168.1.16:22` responde. La validacion fisica,
+  PCS autenticada y despliegue se completan despues del candidato.

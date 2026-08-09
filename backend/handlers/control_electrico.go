@@ -41,6 +41,7 @@ type controlElectricoCommandPayload struct {
 type controlElectricoDispatchResult struct {
 	OK           bool   `json:"ok"`
 	Skipped      bool   `json:"skipped,omitempty"`
+	Pending      bool   `json:"pending,omitempty"`
 	Message      string `json:"message,omitempty"`
 	HTTPStatus   int    `json:"http_status,omitempty"`
 	ResponseBody string `json:"response_body,omitempty"`
@@ -128,8 +129,12 @@ func buildControlElectricoReporte(empresaID int64, reles []dbpkg.EmpresaControlE
 }
 
 func evaluarControlElectricoReglas(dbEmp *sql.DB, empresaID int64, sensorCodigo, valor, actor, metadata string) ([]map[string]interface{}, error) {
+	return evaluarControlElectricoReglasOrigen(dbEmp, empresaID, sensorCodigo, valor, actor, metadata, 0, -1)
+}
+
+func evaluarControlElectricoReglasOrigen(dbEmp *sql.DB, empresaID int64, sensorCodigo, valor, actor, metadata string, raspberryID int64, gpioPin int) ([]map[string]interface{}, error) {
 	sensorCodigo = strings.TrimSpace(sensorCodigo)
-	if empresaID <= 0 || sensorCodigo == "" {
+	if empresaID <= 0 || (sensorCodigo == "" && gpioPin < 0) {
 		return nil, fmt.Errorf("sensor_codigo es obligatorio")
 	}
 	reglas, err := dbpkg.ListEmpresaControlElectricoReglas(dbEmp, empresaID, false)
@@ -137,8 +142,16 @@ func evaluarControlElectricoReglas(dbEmp *sql.DB, empresaID int64, sensorCodigo,
 		return nil, err
 	}
 	results := []map[string]interface{}{}
+	eventGPIOPin := gpioPin
+	if eventGPIOPin < 0 {
+		eventGPIOPin = 0
+	}
 	for _, regla := range reglas {
-		if !strings.EqualFold(strings.TrimSpace(regla.SensorCodigo), sensorCodigo) || !controlElectricoReglaCumple(regla, valor) {
+		matches := strings.EqualFold(strings.TrimSpace(regla.SensorCodigo), sensorCodigo)
+		if regla.RaspberryID > 0 && regla.EntradaGPIOPin >= 0 {
+			matches = raspberryID == regla.RaspberryID && gpioPin == regla.EntradaGPIOPin
+		}
+		if !matches || !controlElectricoReglaCumple(regla, valor) {
 			continue
 		}
 		item := map[string]interface{}{"regla_id": regla.ID, "nombre": regla.Nombre, "accion": regla.Accion, "alarma": regla.AlarmaHabilitada}
@@ -152,6 +165,8 @@ func evaluarControlElectricoReglas(dbEmp *sql.DB, empresaID int64, sensorCodigo,
 				EmpresaID:      empresaID,
 				EstacionID:     regla.EstacionID,
 				ReleID:         regla.ReleID,
+				RaspberryID:    raspberryID,
+				GPIOPin:        eventGPIOPin,
 				Comando:        "alarma_sensor",
 				EstadoObjetivo: regla.Accion,
 				Resultado:      "alarma",
@@ -365,6 +380,16 @@ func EmpresaControlElectricoHandler(dbEmp *sql.DB, dbSuper ...*sql.DB) http.Hand
 
 		case http.MethodPost, http.MethodPut:
 			switch action {
+			case "provisionar_tunel":
+				if r.Method != http.MethodPost {
+					http.Error(w, "Metodo no permitido", http.StatusMethodNotAllowed)
+					return
+				}
+				if err := handleDomoticaRaspberryInstallerDownload(w, r, dbEmp, empresaID, strings.TrimSpace(adminEmailFromRequest(r))); err != nil {
+					log.Printf("[control_electrico] provision tunnel empresa_id=%d error: %v", empresaID, err)
+					http.Error(w, "No se pudo generar el instalador seguro", http.StatusBadRequest)
+				}
+				return
 			case "config":
 				var payload dbpkg.EmpresaControlElectricoConfig
 				if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
@@ -945,7 +970,16 @@ func dispatchControlElectricoRele(dbEmp *sql.DB, cfg *dbpkg.EmpresaControlElectr
 		})
 		return result
 	}
-	result := sendControlElectricoRelayCommand(dispatchCfg, rele, targetState, strings.TrimSpace(actor), strings.TrimSpace(origen))
+	result := controlElectricoDispatchResult{}
+	if raspberryID > 0 {
+		if pi, piErr := dbpkg.GetEmpresaControlElectricoRaspberryByID(dbEmp, dispatchCfg.EmpresaID, raspberryID, false); piErr == nil && pi.TunnelEnabled {
+			result = dispatchControlElectricoTunnelCommand(dbEmp, dispatchCfg, rele, pi, targetState, strings.TrimSpace(actor), strings.TrimSpace(origen))
+		} else {
+			result = sendControlElectricoRelayCommand(dispatchCfg, rele, targetState, strings.TrimSpace(actor), strings.TrimSpace(origen))
+		}
+	} else {
+		result = sendControlElectricoRelayCommand(dispatchCfg, rele, targetState, strings.TrimSpace(actor), strings.TrimSpace(origen))
+	}
 	evento := dbpkg.EmpresaControlElectricoEvento{
 		EmpresaID:      dispatchCfg.EmpresaID,
 		EstacionID:     rele.EstacionID,
@@ -962,7 +996,9 @@ func dispatchControlElectricoRele(dbEmp *sql.DB, cfg *dbpkg.EmpresaControlElectr
 		Actor:          actor,
 		Origen:         origen,
 	}
-	if result.OK {
+	if result.Pending {
+		evento.Resultado = "pendiente"
+	} else if result.OK {
 		evento.Resultado = "ok"
 		_ = dbpkg.UpdateEmpresaControlElectricoReleRuntime(dbEmp, dispatchCfg.EmpresaID, rele.ID, targetState, "set_relay", "")
 	} else {
@@ -972,6 +1008,49 @@ func dispatchControlElectricoRele(dbEmp *sql.DB, cfg *dbpkg.EmpresaControlElectr
 		log.Printf("[control_electrico] insert evento empresa_id=%d estacion_id=%d error: %v", dispatchCfg.EmpresaID, rele.EstacionID, err)
 	}
 	return result
+}
+
+func dispatchControlElectricoTunnelCommand(dbEmp *sql.DB, cfg *dbpkg.EmpresaControlElectricoConfig, rele *dbpkg.EmpresaControlElectricoRele, pi *dbpkg.EmpresaControlElectricoRaspberry, estado, actor, origen string) controlElectricoDispatchResult {
+	if pi == nil || !pi.TunnelEnabled || strings.TrimSpace(pi.DeviceUID) == "" {
+		return controlElectricoDispatchResult{OK: false, Error: "Raspberry Pi sin tunel aprovisionado"}
+	}
+	payload := controlElectricoCommandPayload{
+		EmpresaID:      cfg.EmpresaID,
+		EstacionID:     rele.EstacionID,
+		RaspberryID:    pi.ID,
+		EstacionCodigo: rele.EstacionCodigo,
+		EstacionNombre: rele.EstacionNombre,
+		RelayID:        rele.ID,
+		SalidaCodigo:   rele.SalidaCodigo,
+		TipoCarga:      rele.TipoCarga,
+		RelayName:      rele.RelayName,
+		GPIOPin:        rele.GPIOPin,
+		Estado:         estado,
+		ActiveHigh:     rele.ActiveHigh,
+		PulsoMS:        rele.PulsoMS,
+		Origen:         origen,
+		Actor:          actor,
+	}
+	command, err := dbpkg.QueueEmpresaControlElectricoTunnelCommand(dbEmp, cfg.EmpresaID, pi.ID, rele.ID, rele.EstacionID, rele.GPIOPin, estado, payload, actor, origen)
+	if err != nil {
+		return controlElectricoDispatchResult{OK: false, Error: err.Error()}
+	}
+	timeout := time.Duration(cfg.TimeoutMS) * time.Millisecond
+	if timeout < 500*time.Millisecond {
+		timeout = 2500 * time.Millisecond
+	}
+	completed, err := dbpkg.WaitEmpresaControlElectricoTunnelCommand(dbEmp, cfg.EmpresaID, pi.ID, command.CommandUID, timeout)
+	if err != nil {
+		return controlElectricoDispatchResult{OK: false, Error: err.Error()}
+	}
+	switch completed.Estado {
+	case "completado":
+		return controlElectricoDispatchResult{OK: true, Message: "Comando confirmado por Raspberry Pi", ResponseBody: completed.Resultado, URL: "tunnel://" + pi.DeviceUID}
+	case "error", "expirado":
+		return controlElectricoDispatchResult{OK: false, Error: firstNonEmpty(completed.Error, "La Raspberry Pi no pudo ejecutar el comando"), ResponseBody: completed.Resultado, URL: "tunnel://" + pi.DeviceUID}
+	default:
+		return controlElectricoDispatchResult{OK: true, Pending: true, Message: "Comando en cola del tunel seguro", URL: "tunnel://" + pi.DeviceUID}
+	}
 }
 
 func resolveControlElectricoDispatchConfig(dbEmp *sql.DB, cfg *dbpkg.EmpresaControlElectricoConfig, rele *dbpkg.EmpresaControlElectricoRele) (*dbpkg.EmpresaControlElectricoConfig, int64, error) {

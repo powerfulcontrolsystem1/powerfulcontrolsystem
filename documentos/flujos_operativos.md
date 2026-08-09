@@ -1479,3 +1479,17 @@ afecte dinero, documentos, licencias o seguridad.
    correccion posterior.
 8. Firma o resolucion vencida: renovar, cargar en PCS, asociar en DIAN y volver a
    probar.
+## Domotica: provisionar Raspberry desde su navegador
+
+1. El administrador abre PCS en la Raspberry, entra a Domotica y registra el
+   controlador dentro de su empresa.
+2. `Generar instalador` exige permiso efectivo de administracion, rota un token
+   de un solo uso y descarga un shell con `no-store`.
+3. El usuario ejecuta `sudo sh` una vez. El servicio systemd enrola el ID unico
+   y realiza long polling HTTPS saliente al VPS.
+4. Encender/apagar desde una estacion crea un comando durable; la Raspberry
+   opera el GPIO y confirma. Solo el ACK actualiza estado, lectura y bitacora.
+5. Un cambio estable en GPIO de entrada publica Raspberry/pin autenticados; el
+   servidor evalua exclusivamente reglas de la misma empresa/controlador.
+6. El super administrador consulta transferencia por empresa y Raspberry sin
+   acceder a tokens. Regenerar instalador revoca el acceso operativo anterior.

@@ -76,7 +76,7 @@ Este inventario detecta registros HTTP bajo `/api/empresa/` y exige que cada uno
 | `/api/empresa/contabilidad_colombia` | [backend/main.go:1724](../../backend/main.go#L1724) | `WithEmpresaContabilidadColombiaPermissions` | protegida |
 | `/api/empresa/contabilidad_colombia_avanzada` | [backend/main.go:1725](../../backend/main.go#L1725) | `WithEmpresaContabilidadColombiaAvanzadaPermissions` | protegida |
 | `/api/empresa/contratos_obligaciones` | [backend/main.go:1594](../../backend/main.go#L1594) | `WithEmpresaContratosObligacionesPermissions` | protegida |
-| `/api/empresa/control_electrico` | [backend/main.go:1770](../../backend/main.go#L1770) | `WithEmpresaControlElectricoPermissions` | protegida |
+| `/api/empresa/control_electrico` | [backend/main.go:1771](../../backend/main.go#L1771) | `WithEmpresaControlElectricoPermissions` | protegida |
 | `/api/empresa/corte_caja` | [backend/main.go:1716](../../backend/main.go#L1716) | `WithEmpresaFinanzasPermissions` | protegida |
 | `/api/empresa/corte_caja/configuracion` | [backend/main.go:1717](../../backend/main.go#L1717) | `WithEmpresaFinanzasPermissions` | protegida |
 | `/api/empresa/creditos` | [backend/main.go:1741](../../backend/main.go#L1741) | `WithEmpresaFinanzasPermissions` | protegida |
@@ -158,7 +158,7 @@ Este inventario detecta registros HTTP bajo `/api/empresa/` y exige que cada uno
 | `/api/empresa/logistica/envios` | [backend/handlers/modulos_faltantes.go:647](../../backend/handlers/modulos_faltantes.go#L647) | `WithEmpresaInventarioPermissions` | protegida |
 | `/api/empresa/logistica/rutas` | [backend/handlers/modulos_faltantes.go:646](../../backend/handlers/modulos_faltantes.go#L646) | `WithEmpresaInventarioPermissions` | protegida |
 | `/api/empresa/logistica/transportistas` | [backend/handlers/modulos_faltantes.go:645](../../backend/handlers/modulos_faltantes.go#L645) | `WithEmpresaInventarioPermissions` | protegida |
-| `/api/empresa/mantenimiento_programado` | [backend/main.go:1852](../../backend/main.go#L1852) | `WithEmpresaSelfServicePermissions` | protegida |
+| `/api/empresa/mantenimiento_programado` | [backend/main.go:1853](../../backend/main.go#L1853) | `WithEmpresaSelfServicePermissions` | protegida |
 | `/api/empresa/mi_horario` | [backend/main.go:1614](../../backend/main.go#L1614) | `WithEmpresaSelfServicePermissions` | protegida |
 | `/api/empresa/nextcloud` | [backend/main.go:1748](../../backend/main.go#L1748) | `WithEmpresaGestionDocumentalPermissions` | protegida |
 | `/api/empresa/nomina` | [backend/main.go:1616](../../backend/main.go#L1616) | `WithEmpresaNominaSueldosPermissions` | protegida |
@@ -168,8 +168,8 @@ Este inventario detecta registros HTTP bajo `/api/empresa/` y exige que cada uno
 | `/api/empresa/offline_ventas` | [backend/main.go:1639](../../backend/main.go#L1639) | `WithEmpresaVentasPermissions` | protegida |
 | `/api/empresa/panel_configuracion` | [backend/main.go:1678](../../backend/main.go#L1678) | `WithEmpresaSeguridadPermissions` | protegida |
 | `/api/empresa/parqueadero` | [backend/main.go:1623](../../backend/main.go#L1623) | `WithEmpresaParqueaderoPermissions` | protegida |
-| `/api/empresa/permisos_contexto` | [backend/main.go:1772](../../backend/main.go#L1772) | `WithEmpresaSeguridadPermissions` | protegida |
-| `/api/empresa/permisos_empresa` | [backend/main.go:1773](../../backend/main.go#L1773) | `WithEmpresaSeguridadPermissions` | protegida |
+| `/api/empresa/permisos_contexto` | [backend/main.go:1773](../../backend/main.go#L1773) | `WithEmpresaSeguridadPermissions` | protegida |
+| `/api/empresa/permisos_empresa` | [backend/main.go:1774](../../backend/main.go#L1774) | `WithEmpresaSeguridadPermissions` | protegida |
 | `/api/empresa/plantillas_integracion/catalogo` | [backend/main.go:1732](../../backend/main.go#L1732) | `WithEmpresaSeguridadPermissions` | protegida |
 | `/api/empresa/plantillas_nuevas/catalogo` | [backend/main.go:1731](../../backend/main.go#L1731) | `WithEmpresaSeguridadPermissions` | protegida |
 | `/api/empresa/portal_contador` | [backend/main.go:1743](../../backend/main.go#L1743) | `WithEmpresaPortalContadorPermissions` | protegida |
@@ -191,10 +191,10 @@ Este inventario detecta registros HTTP bajo `/api/empresa/` y exige que cada uno
 | `/api/empresa/reportes` | [backend/main.go:1755](../../backend/main.go#L1755) | `WithEmpresaReportesPermissions` | protegida |
 | `/api/empresa/reportes_ia_chat` | [backend/main.go:1756](../../backend/main.go#L1756) | `WithEmpresaReportesPermissions` | protegida |
 | `/api/empresa/reservas_hotel` | [backend/main.go:1663](../../backend/main.go#L1663) | `WithEmpresaReservasHotelPermissions` | protegida |
-| `/api/empresa/roles_de_usuario` | [backend/main.go:1771](../../backend/main.go#L1771) | `WithEmpresaSeguridadPermissions` | protegida |
+| `/api/empresa/roles_de_usuario` | [backend/main.go:1772](../../backend/main.go#L1772) | `WithEmpresaSeguridadPermissions` | protegida |
 | `/api/empresa/rrhh/vacaciones_licencias` | [backend/handlers/modulos_faltantes.go:635](../../backend/handlers/modulos_faltantes.go#L635) | `WithEmpresaSeguridadPermissions` | protegida |
 | `/api/empresa/sensor_puertas` | [backend/main.go:1766](../../backend/main.go#L1766) | `WithEmpresaSeguridadPermissions` | protegida |
-| `/api/empresa/sensor_puertas/messages` | [backend/main.go:1769](../../backend/main.go#L1769) | `WithEmpresaSeguridadPermissions` | protegida |
+| `/api/empresa/sensor_puertas/messages` | [backend/main.go:1770](../../backend/main.go#L1770) | `WithEmpresaSeguridadPermissions` | protegida |
 | `/api/empresa/servicios` | [backend/main.go:1605](../../backend/main.go#L1605) | `WithEmpresaInventarioPermissions` | protegida |
 | `/api/empresa/soporte_remoto` | [backend/main.go:1754](../../backend/main.go#L1754) | `WithEmpresaSeguridadPermissions` | protegida |
 | `/api/empresa/soportes_compras_ia` | [backend/main.go:1592](../../backend/main.go#L1592) | `WithEmpresaSoportesComprasIAPermissions` | protegida |
