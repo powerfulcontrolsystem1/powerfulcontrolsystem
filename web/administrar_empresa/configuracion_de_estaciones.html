@@ -312,6 +312,15 @@
             <p class="form-help">Con esta opción activa, el primer clic cambia la estación a ocupada; el segundo clic entra al carrito.</p>
           </div>
         </div>
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-label">Acceso a Domótica</label>
+            <label class="form-help" style="display:flex;align-items:center;gap:8px;">
+              <input type="checkbox" id="stShowDomoticaButton" checked> Mostrar el botón ⚡ Domótica en cada estación o habitación
+            </label>
+            <p class="form-help">El botón abre únicamente los equipos y sensores asociados a esa estación, sin activar ni abrir su carrito.</p>
+          </div>
+        </div>
         <div class="form-actions">
           <button id="btnGuardarStationCardFlags" class="btn secondary" type="button">Guardar opciones de visualización</button>
         </div>
@@ -1680,7 +1689,8 @@
           alerta_10_min: !!document.getElementById('stAlert10Min').checked,
           marcar_sucia_al_pagar: !!document.getElementById('stMarkDirtyOnPay').checked,
           solo_activar_primer_clic: !!document.getElementById('stOnlyActivateFirstClick').checked,
-          abrir_carrito_al_activar: !document.getElementById('stOnlyActivateFirstClick').checked
+          abrir_carrito_al_activar: !document.getElementById('stOnlyActivateFirstClick').checked,
+          mostrar_boton_domotica: !!document.getElementById('stShowDomoticaButton').checked
         });
         await saveConfigToServer(cfg);
         if (msg) msg.textContent = 'Opciones guardadas.';
@@ -2868,6 +2878,7 @@
         document.getElementById('stShowHoraExtra').checked = ui.mostrar_hora_extra === undefined ? true : !!ui.mostrar_hora_extra;
         document.getElementById('stAlert10Min').checked = ui.alerta_10_min === undefined ? true : !!ui.alerta_10_min;
         document.getElementById('stMarkDirtyOnPay').checked = ui.marcar_sucia_al_pagar === undefined ? true : !!ui.marcar_sucia_al_pagar;
+        document.getElementById('stShowDomoticaButton').checked = ui.mostrar_boton_domotica === undefined ? true : !!ui.mostrar_boton_domotica;
         document.getElementById('stOnlyActivateFirstClick').checked = ui.solo_activar_primer_clic === undefined ? ui.abrir_carrito_al_activar === false : !!ui.solo_activar_primer_clic;
       } catch (_) {}
       renderRows(cfg);

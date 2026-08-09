@@ -979,15 +979,34 @@ func ListEmpresaControlElectricoLecturas(dbConn *sql.DB, empresaID, releID int64
 
 // ListEmpresaControlElectricoReglas lista reglas activas o historicas por empresa.
 func ListEmpresaControlElectricoReglas(dbConn *sql.DB, empresaID int64, includeInactive bool) ([]EmpresaControlElectricoRegla, error) {
+	return listEmpresaControlElectricoReglas(dbConn, empresaID, 0, false, includeInactive)
+}
+
+// ListEmpresaControlElectricoReglasByEstacion limita sensores y automatizaciones
+// a una estacion de la misma empresa. La dupla empresa_id/estacion_id evita que
+// una vista operativa mezcle dispositivos de otro tenant o ubicacion.
+func ListEmpresaControlElectricoReglasByEstacion(dbConn *sql.DB, empresaID, estacionID int64, includeInactive bool) ([]EmpresaControlElectricoRegla, error) {
+	if estacionID <= 0 {
+		return nil, errors.New("estacion_id invalido")
+	}
+	return listEmpresaControlElectricoReglas(dbConn, empresaID, estacionID, true, includeInactive)
+}
+
+func listEmpresaControlElectricoReglas(dbConn *sql.DB, empresaID, estacionID int64, filterStation, includeInactive bool) ([]EmpresaControlElectricoRegla, error) {
 	if empresaID <= 0 {
 		return nil, errors.New("empresa_id invalido")
 	}
 	q := `SELECT id, empresa_id, COALESCE(nombre,''), COALESCE(sensor_codigo,''), COALESCE(sensor_tipo,''), COALESCE(condicion,'igual'), COALESCE(valor,''), COALESCE(accion,'alarma'), COALESCE(estacion_id,0), COALESCE(rele_id,0), COALESCE(raspberry_id,0), COALESCE(entrada_gpio_pin,-1), COALESCE(entrada_pull,'none'), COALESCE(debounce_ms,250), COALESCE(alarma_habilitada,1), COALESCE(severidad,'advertencia'), COALESCE(mensaje,''), COALESCE(fecha_creacion,''), COALESCE(fecha_actualizacion,''), COALESCE(usuario_creador,''), COALESCE(estado,'activo') FROM empresa_control_electrico_reglas WHERE empresa_id=?`
+	args := []interface{}{empresaID}
+	if filterStation {
+		q += " AND estacion_id=?"
+		args = append(args, estacionID)
+	}
 	if !includeInactive {
 		q += " AND LOWER(COALESCE(estado,'activo')) = 'activo'"
 	}
 	q += " ORDER BY id DESC"
-	rows, err := querySQLCompat(dbConn, q, empresaID)
+	rows, err := querySQLCompat(dbConn, q, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -1074,6 +1093,19 @@ func InsertEmpresaControlElectricoEvento(dbConn *sql.DB, ev EmpresaControlElectr
 
 // ListEmpresaControlElectricoEventos lista los eventos recientes.
 func ListEmpresaControlElectricoEventos(dbConn *sql.DB, empresaID int64, limit int) ([]EmpresaControlElectricoEvento, error) {
+	return listEmpresaControlElectricoEventos(dbConn, empresaID, 0, false, limit)
+}
+
+// ListEmpresaControlElectricoEventosByEstacion entrega solo la trazabilidad de
+// una estacion dentro de la empresa autenticada.
+func ListEmpresaControlElectricoEventosByEstacion(dbConn *sql.DB, empresaID, estacionID int64, limit int) ([]EmpresaControlElectricoEvento, error) {
+	if estacionID <= 0 {
+		return nil, errors.New("estacion_id invalido")
+	}
+	return listEmpresaControlElectricoEventos(dbConn, empresaID, estacionID, true, limit)
+}
+
+func listEmpresaControlElectricoEventos(dbConn *sql.DB, empresaID, estacionID int64, filterStation bool, limit int) ([]EmpresaControlElectricoEvento, error) {
 	if empresaID <= 0 {
 		return nil, errors.New("empresa_id invalido")
 	}
@@ -1083,7 +1115,15 @@ func ListEmpresaControlElectricoEventos(dbConn *sql.DB, empresaID int64, limit i
 	if limit > 200 {
 		limit = 200
 	}
-	rows, err := querySQLCompat(dbConn, `SELECT id, empresa_id, COALESCE(estacion_id,0), COALESCE(rele_id,0), COALESCE(raspberry_id,0), COALESCE(gpio_pin,0), COALESCE(comando,''), COALESCE(estado_objetivo,''), COALESCE(resultado,''), COALESCE(http_status,0), COALESCE(raspberry_ip,''), COALESCE(response_body,''), COALESCE(error,''), COALESCE(fecha_evento,''), COALESCE(actor,''), COALESCE(origen,''), COALESCE(metadata_json,'') FROM empresa_control_electrico_eventos WHERE empresa_id=? ORDER BY id DESC LIMIT ?`, empresaID, limit)
+	q := `SELECT id, empresa_id, COALESCE(estacion_id,0), COALESCE(rele_id,0), COALESCE(raspberry_id,0), COALESCE(gpio_pin,0), COALESCE(comando,''), COALESCE(estado_objetivo,''), COALESCE(resultado,''), COALESCE(http_status,0), COALESCE(raspberry_ip,''), COALESCE(response_body,''), COALESCE(error,''), COALESCE(fecha_evento,''), COALESCE(actor,''), COALESCE(origen,''), COALESCE(metadata_json,'') FROM empresa_control_electrico_eventos WHERE empresa_id=?`
+	args := []interface{}{empresaID}
+	if filterStation {
+		q += " AND estacion_id=?"
+		args = append(args, estacionID)
+	}
+	q += " ORDER BY id DESC LIMIT ?"
+	args = append(args, limit)
+	rows, err := querySQLCompat(dbConn, q, args...)
 	if err != nil {
 		return nil, err
 	}

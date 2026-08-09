@@ -151,7 +151,23 @@ func evaluarControlElectricoReglasOrigen(dbEmp *sql.DB, empresaID int64, sensorC
 		if regla.RaspberryID > 0 && regla.EntradaGPIOPin >= 0 {
 			matches = raspberryID == regla.RaspberryID && gpioPin == regla.EntradaGPIOPin
 		}
-		if !matches || !controlElectricoReglaCumple(regla, valor) {
+		if !matches {
+			continue
+		}
+		_, _ = dbpkg.InsertEmpresaControlElectricoEvento(dbEmp, dbpkg.EmpresaControlElectricoEvento{
+			EmpresaID:      empresaID,
+			EstacionID:     regla.EstacionID,
+			ReleID:         regla.ReleID,
+			RaspberryID:    raspberryID,
+			GPIOPin:        eventGPIOPin,
+			Comando:        "sensor_input",
+			EstadoObjetivo: strings.TrimSpace(valor),
+			Resultado:      "recibido",
+			Actor:          actor,
+			Origen:         "entrada_gpio",
+			MetadataJSON:   metadata,
+		})
+		if !controlElectricoReglaCumple(regla, valor) {
 			continue
 		}
 		item := map[string]interface{}{"regla_id": regla.ID, "nombre": regla.Nombre, "accion": regla.Accion, "alarma": regla.AlarmaHabilitada}
@@ -326,10 +342,31 @@ func EmpresaControlElectricoHandler(dbEmp *sql.DB, dbSuper ...*sql.DB) http.Hand
 					http.Error(w, "No se pudieron cargar aparatos de domotica de la estacion", http.StatusInternalServerError)
 					return
 				}
+				reglas, err := dbpkg.ListEmpresaControlElectricoReglasByEstacion(dbEmp, empresaID, estacionID, false)
+				if err != nil {
+					log.Printf("[control_electrico] list station sensors empresa_id=%d estacion_id=%d error: %v", empresaID, estacionID, err)
+					http.Error(w, "No se pudieron cargar sensores de domotica de la estacion", http.StatusInternalServerError)
+					return
+				}
+				eventos, err := dbpkg.ListEmpresaControlElectricoEventosByEstacion(dbEmp, empresaID, estacionID, 200)
+				if err != nil {
+					log.Printf("[control_electrico] list station events empresa_id=%d estacion_id=%d error: %v", empresaID, estacionID, err)
+					http.Error(w, "No se pudo cargar el estado de sensores de la estacion", http.StatusInternalServerError)
+					return
+				}
+				raspberryPIs, err := dbpkg.ListEmpresaControlElectricoRaspberry(dbEmp, empresaID, false)
+				if err != nil {
+					log.Printf("[control_electrico] list station raspberry empresa_id=%d estacion_id=%d error: %v", empresaID, estacionID, err)
+					http.Error(w, "No se pudieron cargar controladores de la estacion", http.StatusInternalServerError)
+					return
+				}
 				writeJSON(w, http.StatusOK, map[string]interface{}{
-					"config":      cfg,
-					"estacion_id": estacionID,
-					"reles":       reles,
+					"config":        cfg,
+					"estacion_id":   estacionID,
+					"reles":         reles,
+					"sensores":      reglas,
+					"eventos":       eventos,
+					"raspberry_pis": raspberryPIs,
 				})
 				return
 			case "eventos":

@@ -10,6 +10,12 @@ watts, GPIO BCM, polaridad, programacion horaria, estado, lecturas y bitacora.
 Una regla puede usar un GPIO de la misma Raspberry como entrada y activar o
 desactivar otro aparato.
 
+En la pagina de Estaciones, cada habitacion o estacion muestra un unico boton
+`⚡ Domotica`. El check `Mostrar el boton Domotica en cada estacion o
+habitacion`, ubicado en Configuracion de estaciones, permite mostrarlo u
+ocultarlo. El boton abre una vista filtrada con todos los equipos y sensores de
+esa estacion, sus estados y la Raspberry asignada, sin activar el carrito.
+
 ## Flujo de instalacion desde la Raspberry
 
 1. Abrir PCS en el navegador de la Raspberry e iniciar sesion en la empresa.
@@ -24,6 +30,11 @@ desactivar otro aparato.
 5. El servicio `pcs-domotica-agent` se habilita con systemd, enrola el ID unico
    y mantiene solicitudes HTTPS salientes hacia el VPS. No se abren puertos en
    el router ni el VPS inicia conexiones hacia la red privada.
+
+Cada Raspberry requiere su propio registro e instalador. Si una empresa tiene
+varios controladores, PCS los identifica por separado, muestra cuales tienen
+actividad reciente y mantiene comandos, GPIO y transferencia asociados al ID
+correcto.
 
 El navegador no puede ejecutar un archivo descargado con privilegios de forma
 automatica. El paso `sudo` es deliberado y visible para evitar ejecucion remota
@@ -99,3 +110,12 @@ systemctl restart pcs-domotica-agent
 ```
 
 Los registros del agente no imprimen tokens ni credenciales PCS.
+
+## Reconexion automatica
+
+El agente conserva long polling con backoff exponencial cuando no hay red,
+Internet, DNS o respuesta del VPS. Al recuperarse la conectividad vuelve a
+conectarse automaticamente y recibe los comandos durables pendientes. systemd
+usa reinicio permanente y limite de arranque desactivado para recuperar tambien
+un cierre inesperado o el reinicio de la Raspberry. No requiere intervencion
+manual ni una IP publica en la empresa.
