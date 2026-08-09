@@ -12880,6 +12880,9 @@ panel de seguridad para que el navegador reciba la correccion CSRF de staging.
 - `documentos/evidencia_plan_109/P109-009/2026-08-09_sondeo_publico_staging_cabeceras.md`:
   registra salud, readiness y cabeceras públicas del staging, separando el
   caché de la portada de los controles autenticados.
+- `tools/observability_report.mjs`: comprueba recursos de observabilidad y
+  reconoce el registro de estado runtime en el handler dedicado, sin exigir
+  versionar archivos creados durante la ejecución.
 - `documentos/evidencia_plan_109/P109-010/2026-08-09_outbox_lease_dead_recovery_postgres.md`:
   documenta los controles PostgreSQL aislados de lease, dead-letter,
   recuperación, deduplicación y pago CxP idempotente.

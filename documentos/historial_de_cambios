@@ -41598,3 +41598,11 @@ acumulativa.
 - QA local: paquetes `db` y `handlers` enfocados pasan; el agente Python y los
   scripts inline pasan parseo; `192.168.1.16:22` responde. La validacion fisica,
   PCS autenticada y despliegue se completan despues del candidato.
+
+2026-08-09: Plan 109 / corrección del auditor de estado runtime.
+
+- `tools/observability_report.mjs` valida el estado runtime desde el handler
+  que lo implementa, además de `main.go`, evitando un aviso falso cuando el
+  archivo de estado se crea únicamente en ejecución.
+- El reporte vuelve a exigir que exista una referencia real a
+  `server_runtime_state`; no se añade un archivo runtime vacío al repositorio.
