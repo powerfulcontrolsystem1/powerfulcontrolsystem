@@ -1409,6 +1409,8 @@ Actualización 2026-08-09, barrido autenticado completo por lotes:
 - Renta IA se repitió sobre el digest corregido `e51228dd`: 2/2 vistas `ok`,
   cero mutaciones bloqueadas y cero errores.
 - Persisten seis escrituras automáticas de páginas públicas y dos respuestas
-  502 de ayuda móvil. P109-004 sigue **parcial** hasta resolverlos o excluirlos
+  502 de ayuda móvil. La repetición de páginas públicas aprobó 10/10 al separar
+  y bloquear su telemetría; P109-004 sigue **parcial** hasta resolver los 502 o
+  excluirlos
   con evidencia, además de acciones mutantes, roles y botones IA. El avance
   formal continúa **53,3 %**, **NO-GO**.

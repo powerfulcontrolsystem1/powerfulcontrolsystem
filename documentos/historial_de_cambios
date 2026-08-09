@@ -23,6 +23,9 @@
   se declara cobertura total hasta resolver/excluirlos y probar roles/mutantes.
 - El auditor ahora separa y bloquea el contador público de visitas como
   telemetría no operativa; no exceptúa otros métodos o rutas mutantes.
+- La repetición `31323978918` aprobó las cinco páginas públicas en escritorio y
+  móvil (10/10) con cero mutaciones operativas; los diez eventos de telemetría
+  quedaron bloqueados y auditados.
 
 2026-08-09: Plan 109 / integridad de archivos privados CxP-IA.
 - Descarga y carga hacia IA verifican SHA-256 persistido en tiempo constante,
