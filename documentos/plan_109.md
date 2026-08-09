@@ -1470,3 +1470,12 @@ Actualización 2026-08-09, restore de aplicación del digest activo:
 - P109-008 sigue parcial porque falta la variante autenticada con réplica A/B,
   hostiles y rollback coordinado sobre este mismo candidato. La fórmula se
   mantiene en **53,3 %**, certificación formal **0 %** y **NO-GO**.
+
+Actualización 2026-08-09, QA de impresión del candidato actual:
+
+- Veinte formatos Carta/POS aprobaron PDF, QR, imágenes, filas, columnas y
+  paginación; factura y recibo extensos alcanzaron seis páginas cada uno sin
+  recortes.
+- P109-005 conserva impresión física, dispositivos reales y accesibilidad como
+  aceptación pendiente. La fórmula sigue **53,3 %**, certificación formal
+  **0 %** y **NO-GO**.

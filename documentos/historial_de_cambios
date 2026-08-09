@@ -41605,3 +41605,10 @@ acumulativa.
 - La restauración aprobó health/ready, datos críticos de PCS, referencias
   privadas y privilegios runtime. Réplica autenticada, negativos hostiles y
   rollback coordinado quedan pendientes antes de cerrar P109-008.
+
+2026-08-09: Plan 109 / QA sintético de impresión del candidato.
+
+- La batería visual aprobó 20/20 documentos Carta/POS, QR y autoimpresión,
+  incluidos factura y recibo extensos de seis páginas.
+- La evidencia no sustituye impresión física, dispositivos del piloto ni
+  accesibilidad asistida; P109-005 mantiene esos límites explícitos.

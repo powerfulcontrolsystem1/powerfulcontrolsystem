@@ -12893,6 +12893,9 @@ panel de seguridad para que el navegador reciba la correccion CSRF de staging.
 - `documentos/evidencia_plan_109/P109-008/2026-08-09_restore_aplicacion_digest_actual_staging.md`:
   registra el restore de aplicación del candidato actual y los controles aún
   pendientes de réplica/rollback autenticados.
+- `documentos/evidencia_plan_109/P109-005/2026-08-09_qa_impresion_20_formatos_candidato_actual.md`:
+  conserva los veinte formatos sintéticos, PDF, QR, paginación y límites de
+  impresión física/accesibilidad.
 - `documentos/evidencia_plan_109/P109-010/2026-08-09_outbox_lease_dead_recovery_postgres.md`:
   documenta los controles PostgreSQL aislados de lease, dead-letter,
   recuperación, deduplicación y pago CxP idempotente.
