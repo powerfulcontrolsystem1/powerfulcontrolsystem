@@ -1414,3 +1414,14 @@ Actualización 2026-08-09, barrido autenticado completo por lotes:
   reprodujo los 502 transitorios. P109-004 sigue **parcial** por acciones
   mutantes, roles y botones IA. El avance
   formal continúa **53,3 %**, **NO-GO**.
+
+Actualización 2026-08-09, restore integral del snapshot vigente:
+
+- El snapshot `20260809_031501` aprobó restore PostgreSQL aislado con los
+  nueve tarballs obligatorios, dos bases PCS, cinco tablas críticas filtradas
+  por empresa y tres checksums de soportes IA privados.
+- El RTO observado fue 27 s y el RPO 50.544 s; el contenedor temporal se
+  eliminó automáticamente. No se modificaron staging activo ni producción.
+- P109-008 continúa parcial por réplica A/B, pérdida de réplica y rollback
+  coordinado. No cambia la fórmula: **53,3 %**, certificación formal **0 %**
+  y **NO-GO**.

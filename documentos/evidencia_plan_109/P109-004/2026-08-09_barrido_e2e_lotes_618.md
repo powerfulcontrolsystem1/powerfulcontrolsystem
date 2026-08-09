@@ -21,11 +21,15 @@ de 500 solicitudes, concurrencia 10, aprobó con p95 135 ms y 0 % de errores.
 El digest `e51228dd` quitó el POST automático de inicio. La repetición dirigida
 aprobó escritorio y móvil: 2/2 `ok`, cero mutaciones bloqueadas y cero errores.
 
-## Pendiente
+## Hallazgos iniciales y alcance pendiente
 
-Persisten seis escrituras automáticas en páginas públicas y dos 502 móviles de
-ayuda. El barrido no sustituye acciones mutantes, pruebas por rol ni botones IA
-que requieren aprobación humana.
+Durante los lotes originales se observaron seis solicitudes de telemetría de
+visitas de páginas públicas y dos respuestas 502 móviles de ayuda bajo carga
+paralela. Ambos hallazgos se repitieron de forma aislada en las secciones
+siguientes: la telemetría quedó clasificada y bloqueada como no operativa, y
+las ayudas aprobaron sin reproducir el 502. El barrido sigue sin sustituir las
+acciones mutantes, las pruebas por rol ni los botones IA que requieren revisión
+humana.
 
 ## Repetición de páginas públicas
 
