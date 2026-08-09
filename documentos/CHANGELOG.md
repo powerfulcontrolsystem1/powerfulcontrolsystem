@@ -3431,3 +3431,6 @@
 - [Super] Nueva pagina de transferencia diaria/acumulada RX/TX por dispositivo.
 - [QA local] Pruebas Go enfocadas, sintaxis Python/JavaScript y acceso TCP SSH
   a la Raspberry de laboratorio aprobados; la prueba fisica se registra aparte.
+
+### Correccion de enrolamiento del tunel
+- [Seguridad/Operacion] `/api/public/domotica/tunnel` queda exceptuado solo de la sesion web global: el handler conserva autenticacion criptografica propia por token de enrolamiento o token de dispositivo. Esto permite que una Raspberry recien instalada se conecte al VPS sin exponer endpoints empresariales autenticados.

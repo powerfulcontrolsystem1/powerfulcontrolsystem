@@ -1078,6 +1078,10 @@ func AuthMiddleware(dbSuper *sql.DB, next http.Handler) http.Handler {
 			"/auth/confirmar_admin":                                 {},
 			"/auth/logout":                                          {},
 			"/api/public/venta_publica":                             {},
+			// El agente instalado en la Raspberry inicia el tunel saliente sin
+			// sesion web. La autenticacion propia del dispositivo se valida en el
+			// handler mediante su token de enrolamiento o token de dispositivo.
+			"/api/public/domotica/tunnel":                           {},
 			"/api/public/taxi_system":                               {},
 			"/api/public/estacion_vip":                              {},
 			"/api/public/chat_portal":                               {},
