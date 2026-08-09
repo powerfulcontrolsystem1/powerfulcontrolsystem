@@ -41589,3 +41589,11 @@ acumulativa.
   archivo de estado se crea únicamente en ejecución.
 - El reporte vuelve a exigir que exista una referencia real a
   `server_runtime_state`; no se añade un archivo runtime vacío al repositorio.
+
+2026-08-09: Plan 109 / compilación integral aislada del candidato.
+
+- Los paquetes Go y herramientas se compilaron por grupos después de que la
+  orden global superara el límite local. `go vet ./...` y el preflight estándar
+  aprobaron; el timeout no se presentó como resultado positivo o negativo.
+- La evidencia queda en P109-012; permanecen capacitación, responsables y
+  aceptación de una persona distinta antes de cerrar soporte/piloto.

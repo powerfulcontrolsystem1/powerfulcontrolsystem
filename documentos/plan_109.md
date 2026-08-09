@@ -1453,3 +1453,11 @@ Actualización 2026-08-09, auditoría de observabilidad del candidato:
 - El resto de la compuerta breve aprobó. P109-010 continúa parcial por alertas
   externas, responsables y ensayo antivirus real; el avance sigue **53,3 %**,
   certificación formal **0 %** y **NO-GO**.
+
+Actualización 2026-08-09, compilación íntegra del candidato P109:
+
+- La compilación de todos los paquetes y herramientas Go se completó por grupos
+  y `go vet ./...` aprobó. El preflight estándar volvió a aprobar 20/20;
+  el timeout de la orden global se mantiene explícitamente inconcluso.
+- P109-012 conserva pendientes humanos de soporte/capacitación. No cambia la
+  fórmula: **53,3 %**, certificación formal **0 %** y **NO-GO**.

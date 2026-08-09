@@ -12883,6 +12883,9 @@ panel de seguridad para que el navegador reciba la correccion CSRF de staging.
 - `tools/observability_report.mjs`: comprueba recursos de observabilidad y
   reconoce el registro de estado runtime en el handler dedicado, sin exigir
   versionar archivos creados durante la ejecución.
+- `documentos/evidencia_plan_109/P109-012/2026-08-09_compilacion_total_y_vet_candidato_08272c56.md`:
+  registra la compilación por grupos, `go vet`, preflight y la diferencia frente
+  al timeout inconcluso de la orden global.
 - `documentos/evidencia_plan_109/P109-010/2026-08-09_outbox_lease_dead_recovery_postgres.md`:
   documenta los controles PostgreSQL aislados de lease, dead-letter,
   recuperación, deduplicación y pago CxP idempotente.
