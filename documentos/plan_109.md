@@ -1236,3 +1236,15 @@ Actualización 2026-08-09, dialogos verificables de papelera CxP/IA:
   recibe credito adicional hasta construir el candidato y repetir papelera y
   recuperacion visualmente en staging. Permanece **53,3 %**, **6,7 %** y
   **NO-GO**.
+
+Actualización 2026-08-09, papelera visual en el candidato `34cfd852`:
+
+- Release inmutable `31303668393`, preflight 22/22, respaldo de ambas bases y
+  promoción por cuatro digests sin build en staging aprobaron.
+- El nuevo diálogo validó motivo obligatorio, envió `SCI-0009` a Papelera y
+  mostró el bloqueo seguro de recuperación por el duplicado activo `SCI-0010`.
+- Tras enviar también el duplicado QA a Papelera, `SCI-0009` se recuperó con
+  auditoría. CxP/pagos/movimientos permanecieron 3/5/5.
+- P109-008 continúa parcial por retención, caída, antivirus y A/B. El avance de
+  implementación permanece **53,3 %** y el veredicto **NO-GO**. La certificación
+  formal del nuevo SHA se recalculará al repetir la compuerta completa P109-000.

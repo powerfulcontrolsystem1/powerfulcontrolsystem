@@ -5,6 +5,9 @@
   asincrona de motivo/codigo, restaura foco y conserva el payload oficial.
 - `backend/handlers/soportes_compras_ia_revision_contract_test.go`: exige el
   dialogo comprobable y bloquea la reintroduccion de `prompt`/`confirm`.
+- `documentos/evidencia_plan_109/P109-008/2026-08-09_dialogo_papelera_staging_34cfd852.md`:
+  registra release inmutable, respaldo, dialogo visual, validacion obligatoria,
+  bloqueo por duplicado, papelera/recuperacion y conciliacion sin efectos CxP.
 - `documentos/evidencia_plan_109/P109-009/2026-08-09_integridad_descarga_soportes_local.md`:
   evidencia local de SHA-256, límites, MIME, cabeceras y alerta agregada para
   archivos privados de soportes.

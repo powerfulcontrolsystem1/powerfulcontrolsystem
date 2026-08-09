@@ -6,6 +6,10 @@
 - Sintaxis JavaScript, contratos enfocados, `handlers`, `db`, `utils` y
   `git diff --check` aprobaron localmente. Falta candidato y repeticion visual
   de papelera/recuperacion en staging; produccion no cambia.
+- El candidato `34cfd852` aprobó release inmutable, respaldo y promoción por
+  cuatro digests en staging. El diálogo validó motivo, papelera, bloqueo por
+  duplicado y recuperación; la conciliación mantuvo CxP/pagos/movimientos en
+  3/5/5. Producción permaneció sin cambios.
 
 2026-08-09: Plan 109 / integridad de archivos privados CxP-IA.
 - Descarga y carga hacia IA verifican SHA-256 persistido en tiempo constante,
