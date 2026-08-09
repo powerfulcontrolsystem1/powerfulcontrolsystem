@@ -41423,6 +41423,16 @@ acumulativa.
   `3676cc02` una sola vez. Sus cuatro digests se promovieron sin build a
   staging, que quedó saludable con migrador `0`; producción permaneció intacta.
 
+2026-08-09: Plan 109 / capacidad Docker y QA visual financiero.
+
+- El VPS alcanzó 88 % de uso por imágenes Docker inactivas y caché de build.
+  Tras verificar que no se afectarían contenedores, volúmenes, bases ni copias,
+  se ejecutó exclusivamente `docker image prune -a -f` y `docker builder prune
+  -a -f`; se recuperaron 28,2 GB y el uso bajó a 60 %.
+- Staging y producción respondieron health/readiness después de la limpieza.
+  La pantalla de Finanzas/CxP PCS aprobó inspección visual móvil a 390 px sin
+  desbordamiento horizontal, botones anónimos ni errores de consola.
+
 2026-08-09: Plan 109 / extracción inmutable del indicador DIAN.
 
 - El primer ensayo del candidato por digest en staging confirmó que CSP, salud

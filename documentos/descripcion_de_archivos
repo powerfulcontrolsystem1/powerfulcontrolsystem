@@ -176,6 +176,9 @@
 - `documentos/evidencia_plan_109/P109-000/2026-08-09_release_inmutable_3676cc02_staging.md`:
   promoción posterior del SHA que incorpora lotes E2E, también por cuatro
   digests inmutables y solo hacia staging.
+- `documentos/evidencia_plan_109/P109-009/2026-08-09_capacidad_docker_y_qa_finanzas.md`:
+  diagnóstico y limpieza recuperable de Docker, salud posterior y revisión
+  visual responsive no mutante de Finanzas/CxP.
 - `tools/qa_e2e_buttons.cjs`: auditor visual autenticado con selectores estables,
   service workers bloqueados y guardia que impide y reporta cualquier mutacion
   HTTP durante los clics automaticos; acepta desplazamiento y tamaño de lote

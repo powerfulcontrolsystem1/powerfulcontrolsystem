@@ -1378,3 +1378,17 @@ Actualización 2026-08-09, SHA actual `3676cc02` en staging:
 - No se altera la fórmula: P109-000 permanece parcial sin PR/fusión y el plan
   sigue en **53,3 % de implementación**, **0 % de certificación formal**,
   **NO-GO**.
+
+Actualización 2026-08-09, capacidad VPS y revisión visual financiera:
+
+- El panel staging informó 87 % de disco. La inspección aisló 17,2 GB de
+  imágenes Docker sin uso y 2,5 GB de caché de build; no se tocaron volúmenes,
+  bases ni respaldos. La limpieza recuperable liberó 28,2 GB y redujo el uso
+  de `/` a 60 %. Staging y producción conservaron salud correcta.
+- Con sesión oficial PCS se comprobó visualmente Finanzas/CxP: formulario,
+  tabla de 11 cierres y controles de acciones aparecen organizados. A 390 px,
+  el ancho de documento fue exactamente 390 px, hubo cero botones visibles sin
+  etiqueta y cero errores de consola. Esta es evidencia no mutante y no
+  sustituye las pruebas de cuatro cajas, roles ni conciliación contable.
+- P109-005/P109-009 permanecen parciales; el avance formal continúa **53,3 %**
+  y **NO-GO**.
