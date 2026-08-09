@@ -2338,6 +2338,16 @@ Actualizacion 2026-08-01 (P109, pendiente de publicar):
   CxP desde `REAL` a `NUMERIC(18,2)`, recompone el saldo exacto y agrega el
   invariante monetario. Falla cerrada si detecta drift mayor de 0,02.
 
+Actualizacion 2026-08-09 (P109, candidato de staging):
+
+- `20260809-001-dian-local-production-flag-v1` agrega mediante `pcs-migrate`
+  `empresa_dian_configuracion.produccion_local_activa INTEGER NOT NULL DEFAULT
+  0` y el constraint que limita el indicador a `0/1`.
+- El backfill activa el indicador solo cuando `tipo_ambiente=produccion` y
+  existe una traza histórica explícita de `dian_activar_produccion_local` en
+  estado u observaciones. Una empresa configurada en producción sin esa traza
+  permanece inactiva y requiere el flujo oficial de activación.
+
 Actualizacion 2026-07-16:
 
 - `schema_migrations` conserva `scope`, `version`, `checksum`, `state`,

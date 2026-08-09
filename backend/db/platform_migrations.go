@@ -131,6 +131,14 @@ func PlatformMigrations(target string) ([]Migration, error) {
 					return applyEmpresaCarteraMoneyPrecisionTx(ctx, tx)
 				},
 			},
+			{
+				Version:     "20260809-001-dian-local-production-flag-v1",
+				Description: "dedicated local production activation gate for each DIAN tenant",
+				Body:        empresaDIANLocalProductionFlagFingerprint,
+				Apply: func(ctx context.Context, tx *sql.Tx) error {
+					return applyEmpresaDIANLocalProductionFlagTx(ctx, tx)
+				},
+			},
 		}, nil
 	case MigrationTargetSuper:
 		return []Migration{

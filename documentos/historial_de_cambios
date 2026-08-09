@@ -41391,3 +41391,17 @@ acumulativa.
   limpia el indicador al volver a habilitación.
 - Go enfocado/raíz, sintaxis JavaScript, contrato de blob, preflight profesional
   completo y diff-check aprobaron. El candidato no fue desplegado ni certificado.
+
+2026-08-09: Plan 109 / extracción inmutable del indicador DIAN.
+
+- El primer ensayo del candidato por digest en staging confirmó que CSP, salud
+  y servicios eran correctos, pero detectó que
+  `empresa_dian_configuracion.produccion_local_activa` seguía dependiendo del
+  bootstrap heredado, desactivado deliberadamente en staging.
+- Se agregó `20260809-001-dian-local-production-flag-v1` al catálogo empresarial
+  de `pcs-migrate`. La migración es transaccional, idempotente, agrega default,
+  obligatoriedad y constraint `0/1`, y preserva activaciones anteriores solo
+  con ambiente de producción y traza histórica explícita.
+- El hallazgo invalida la certificación del primer digest. Se requiere un nuevo
+  candidato inmutable y repetir migración, ledger, salud, aislamiento de
+  producción y pruebas autenticadas antes de cerrar la compuerta DIAN.

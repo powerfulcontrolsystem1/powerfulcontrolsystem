@@ -12813,3 +12813,8 @@ panel de seguridad para que el navegador reciba la correccion CSRF de staging.
   consolida el barrido autenticado responsive, impresiones del documento real,
   captura CxP/IA reversible, diagnóstico DIAN y reparación segura del cifrado
   del buzón, con resultados y compuertas pendientes del candidato local.
+- `backend/db/dian_local_production_flag_migration.go`: migración inmutable y
+  transaccional del indicador local DIAN, con backfill limitado a evidencia
+  histórica explícita, valor obligatorio y constraint binario.
+- `backend/db/dian_local_production_flag_migration_test.go`: contrato del
+  catálogo y prueba PostgreSQL idempotente del backfill positivo y negativo.
