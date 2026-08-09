@@ -123,3 +123,10 @@ groups:
         annotations:
           summary: "Persistencia de extraccion IA fallida"
           description: "El job {{ $labels.job }} obtuvo una extraccion valida pero no pudo guardarla; revisar base y auditoria sin repetir a ciegas."
+      - alert: PCSSoporteArchivoIntegridadFallida
+        expr: increase(pcs_support_file_integrity_failures_total{job=~"pcs-backend|pcs-staging-backend"}[10m]) > 0
+        labels:
+          severity: critical
+        annotations:
+          summary: "Integridad de archivo privado de soporte fallida"
+          description: "El job {{ $labels.job }} rechazo un archivo alterado, sobredimensionado o con hash invalido. Suspender su descarga y extraccion IA."

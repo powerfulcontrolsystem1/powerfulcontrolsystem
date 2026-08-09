@@ -60,16 +60,17 @@ type prometheusSupportPurgeMetrics struct {
 }
 
 type prometheusOperationalMetrics struct {
-	businessDBReady float64
-	superDBReady    float64
-	workerAge       float64
-	workerQueryOK   float64
-	businessOutbox  prometheusQueueMetrics
-	superOutbox     prometheusQueueMetrics
-	asyncJobs       prometheusQueueMetrics
-	supportPurge    prometheusSupportPurgeMetrics
-	supportAV       handlers.SupportAntivirusMetrics
-	supportExtract  handlers.SupportExtractionMetrics
+	businessDBReady  float64
+	superDBReady     float64
+	workerAge        float64
+	workerQueryOK    float64
+	businessOutbox   prometheusQueueMetrics
+	superOutbox      prometheusQueueMetrics
+	asyncJobs        prometheusQueueMetrics
+	supportPurge     prometheusSupportPurgeMetrics
+	supportAV        handlers.SupportAntivirusMetrics
+	supportExtract   handlers.SupportExtractionMetrics
+	supportIntegrity uint64
 }
 
 type prometheusOperationalCache struct {
@@ -151,6 +152,7 @@ func collectPrometheusOperationalMetrics(ctx context.Context, businessDB, superD
 	result := defaultPrometheusOperationalMetrics()
 	result.supportAV = handlers.SupportAntivirusOperationalMetrics()
 	result.supportExtract = handlers.SupportExtractionOperationalMetrics()
+	result.supportIntegrity = handlers.SupportFileOperationalMetrics()
 	result.businessDBReady = databaseReady(ctx, businessDB)
 	result.superDBReady = databaseReady(ctx, superDB)
 	if result.businessDBReady == 1 {
@@ -261,6 +263,9 @@ func renderPrometheusMetrics(values prometheusOperationalMetrics) string {
 	fmt.Fprintf(&builder, "pcs_support_ai_extractions_total{result=\"invalid_response\"} %d\n", values.supportExtract.InvalidResponse)
 	fmt.Fprintf(&builder, "pcs_support_ai_extractions_total{result=\"canceled\"} %d\n", values.supportExtract.Canceled)
 	fmt.Fprintf(&builder, "pcs_support_ai_extractions_total{result=\"persistence_error\"} %d\n", values.supportExtract.Persistence)
+	builder.WriteString("# HELP pcs_support_file_integrity_failures_total Purchase-support private files rejected by integrity validation.\n")
+	builder.WriteString("# TYPE pcs_support_file_integrity_failures_total counter\n")
+	fmt.Fprintf(&builder, "pcs_support_file_integrity_failures_total %d\n", values.supportIntegrity)
 	return builder.String()
 }
 

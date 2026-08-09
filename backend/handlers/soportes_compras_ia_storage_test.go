@@ -3,7 +3,9 @@ package handlers
 import (
 	"bufio"
 	"bytes"
+	"crypto/sha256"
 	"encoding/binary"
+	"encoding/hex"
 	"errors"
 	"io"
 	"net"
@@ -14,6 +16,62 @@ import (
 
 	dbpkg "github.com/you/pos-backend/db"
 )
+
+func TestSoporteComprasIAFileIntegrityAndDownloadMIME(t *testing.T) {
+	content := []byte("%PDF-1.7\ncontenido controlado\n%%EOF")
+	sum := sha256.Sum256(content)
+	expected := hex.EncodeToString(sum[:])
+	before := SupportFileOperationalMetrics()
+	if err := verifySoporteComprasIABytesIntegrity(content, expected); err != nil {
+		t.Fatalf("archivo integro rechazado: %v", err)
+	}
+	if err := verifySoporteComprasIABytesIntegrity(content, strings.ToUpper(expected)); err != nil {
+		t.Fatalf("hash mayuscula integro rechazado: %v", err)
+	}
+	if err := verifySoporteComprasIABytesIntegrity(content, ""); err != nil {
+		t.Fatalf("archivo legado sin hash rechazado: %v", err)
+	}
+	if err := verifySoporteComprasIABytesIntegrity(append(content, 'x'), expected); !errors.Is(err, errSoporteComprasIAIntegrity) {
+		t.Fatalf("archivo alterado = %v", err)
+	}
+	if err := verifySoporteComprasIABytesIntegrity(content, "hash-invalido"); !errors.Is(err, errSoporteComprasIAIntegrity) {
+		t.Fatalf("hash invalido = %v", err)
+	}
+	if got := SupportFileOperationalMetrics() - before; got != 2 {
+		t.Fatalf("fallos de integridad = %d, want 2", got)
+	}
+
+	path := filepath.Join(t.TempDir(), "factura.pdf")
+	file, err := os.Create(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer file.Close()
+	if _, err := file.Write(content); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := file.Seek(0, io.SeekStart); err != nil {
+		t.Fatal(err)
+	}
+	if err := verifySoporteComprasIAReaderIntegrity(file, expected); err != nil {
+		t.Fatalf("lector integro rechazado: %v", err)
+	}
+	first := make([]byte, 4)
+	if _, err := io.ReadFull(file, first); err != nil || string(first) != "%PDF" {
+		t.Fatalf("lector no regreso al inicio: %q err=%v", first, err)
+	}
+
+	for _, tc := range []struct{ mime, path, want string }{
+		{"application/pdf", "factura.pdf", "application/pdf"},
+		{"text/html", "factura.pdf", "application/octet-stream"},
+		{"text/xml", "factura.xml", "application/xml"},
+		{"image/png", "factura.exe", "application/octet-stream"},
+	} {
+		if got := safeSoporteComprasIADownloadMIME(tc.mime, tc.path); got != tc.want {
+			t.Fatalf("MIME seguro (%s,%s) = %q, want %q", tc.mime, tc.path, got, tc.want)
+		}
+	}
+}
 
 func TestSoporteComprasIAClamAVCleanMalwareAndFailClosed(t *testing.T) {
 	att := &aiAttachment{Filename: "factura.pdf", MimeType: "application/pdf", Bytes: []byte("%PDF-1.7\n%%EOF")}

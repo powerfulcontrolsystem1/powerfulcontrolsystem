@@ -1131,6 +1131,17 @@ Actualización 2026-08-09, evals adversariales de extracción IA:
   candidato desplegado, proveedor real y A/B; P109-002/P109-010 siguen parciales,
   el avance permanece **53,3 %** y el veredicto **NO-GO**.
 
+Actualización 2026-08-09, integridad de archivos privados de soportes:
+
+- Descarga y envío a IA verifican SHA-256, archivo regular y tamaño acotado. Un
+  contenido alterado o hash inválido falla antes de servir o llamar proveedor.
+- La respuesta fuerza attachment, MIME canónico/binario y cabeceras sandbox,
+  nosniff, same-origin, no-referrer, DENY y no-store. Métrica, alerta y panel no
+  contienen empresa, soporte, hash, nombre ni ruta.
+- Las pruebas locales de bytes, stream, MIME y contrato aprobaron. Falta fixture
+  reversible desplegado y A/B; P109-009 sigue parcial, permanece **53,3 %** y
+  **NO-GO**.
+
 ## 9. Siguiente orden para Terra alto
 
 P109-000 ya está aprobada para `ea9642dd...` y P109-011 para `c8094f5b`;

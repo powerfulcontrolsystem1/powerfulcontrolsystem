@@ -1,3 +1,14 @@
+2026-08-09: Plan 109 / integridad de archivos privados CxP-IA.
+- Descarga y carga hacia IA verifican SHA-256 persistido en tiempo constante,
+  archivo regular y tamaño 1..15 MiB. Alteración, hash inválido o exceso fallan
+  cerrados antes de servir o invocar proveedor.
+- La descarga restringe MIME por extensión y agrega sandbox, nosniff,
+  same-origin, no-referrer, DENY, no-store y attachment. Un legado sin hash se
+  sirve binario y revalida firma antes de IA.
+- Métrica, alerta crítica y panel registran solo el total agregado de fallos.
+  Pruebas de contenido, stream, MIME y cabeceras aprobaron localmente.
+- Sin staging ni archivos PCS: P109-009 sigue parcial; permanece 53,3 % y NO-GO.
+
 2026-08-09: Plan 109 / evals adversariales y telemetria de extracción CxP-IA.
 - El parser IA limita 128 KiB, claves/tipos declarados, 500 líneas, longitudes y
   rangos. Rechaza NaN, infinito, negativos, confianza fuera de 0..1 e importes

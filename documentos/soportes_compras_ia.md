@@ -83,6 +83,11 @@ mismo hash o numero de documento.
   valores no finitos/negativos, confianza fuera de 0..1, textos excesivos y
   fechas inválidas. Los resultados operativos se exponen agregados en
   `pcs_support_ai_extractions_total` sin datos del tenant o documento.
+- Antes de descargar o adjuntar a IA se verifica el SHA-256 almacenado y el
+  límite privado de 15 MiB. La descarga usa MIME canónico o binario seguro,
+  attachment y cabeceras sandbox/nosniff/same-origin/no-referrer/DENY/no-store.
+  Un legado sin hash se descarga como binario y revalida firma antes de IA. Los
+  fallos incrementan únicamente una métrica agregada de integridad.
 - Si la fila no puede persistirse despues de escribir el archivo privado, el
   adjunto recien creado se elimina dentro de la raiz segura para evitar huerfanos.
 - `Cancelar IA` aborta la solicitud HTTP y propaga el contexto al proveedor; el

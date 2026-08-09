@@ -3,7 +3,7 @@
   "title": "Powerful Control System - Operacion VPS",
   "timezone": "browser",
   "schemaVersion": 39,
-  "version": 5,
+  "version": 6,
   "refresh": "30s",
   "tags": ["pcs", "vps", "docker"],
   "panels": [
@@ -220,6 +220,18 @@
         {
           "expr": "sum by(job, result) (increase(pcs_support_ai_extractions_total{job=~\"pcs-backend|pcs-staging-backend\"}[5m]))",
           "legendFormat": "{{job}} {{result}}"
+        }
+      ],
+      "fieldConfig": {"defaults": {"min": 0}}
+    },
+    {
+      "type": "stat",
+      "title": "Fallos integridad archivos de soporte",
+      "gridPos": {"x": 0, "y": 50, "w": 24, "h": 5},
+      "targets": [
+        {
+          "expr": "pcs_support_file_integrity_failures_total{job=~\"pcs-backend|pcs-staging-backend\"}",
+          "legendFormat": "{{job}}"
         }
       ],
       "fieldConfig": {"defaults": {"min": 0}}

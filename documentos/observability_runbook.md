@@ -28,6 +28,10 @@
    desde la respuesta rechazada. Ante
    `PCSExtraccionIASoportesPersistenciaFallida`, verificar PostgreSQL y auditoria
    antes de repetir, para evitar consumo o decisiones duplicadas.
+9. Ante `PCSSoporteArchivoIntegridadFallida`, bloquear el flujo del soporte,
+   conservar fila/eventos y revisar backup, volumen privado y auditoria. No
+   recalcular/reemplazar el hash ni sobrescribir el archivo para silenciar la
+   alerta; recuperar únicamente mediante el procedimiento autorizado.
 
 Los paneles y alertas deben validarse en staging antes de usarse como evidencia
 de produccion.

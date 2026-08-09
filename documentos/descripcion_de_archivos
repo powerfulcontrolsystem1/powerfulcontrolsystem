@@ -1,4 +1,7 @@
 2026-08-09
+- `documentos/evidencia_plan_109/P109-009/2026-08-09_integridad_descarga_soportes_local.md`:
+  evidencia local de SHA-256, límites, MIME, cabeceras y alerta agregada para
+  archivos privados de soportes.
 - `documentos/evidencia_plan_109/P109-002/2026-08-09_evals_adversariales_telemetria_local.md`:
   evidencia local de esquema acotado, valores hostiles, revisión humana y
   resultados operativos agregados de extracción IA.

@@ -5,6 +5,8 @@ import (
 	"bytes"
 	"context"
 	"crypto/rand"
+	"crypto/sha256"
+	"crypto/subtle"
 	"database/sql"
 	"encoding/binary"
 	"encoding/hex"
@@ -55,6 +57,7 @@ var (
 	soporteComprasIAExtractionInvalidResponse atomic.Uint64
 	soporteComprasIAExtractionCanceled        atomic.Uint64
 	soporteComprasIAExtractionPersistence     atomic.Uint64
+	soporteComprasIAFileIntegrityFailures     atomic.Uint64
 )
 
 // SupportAntivirusMetrics contains process-level, tenant-free counters for the
@@ -118,6 +121,12 @@ func recordSupportExtractionOutcome(outcome string) {
 	case "persistence_error":
 		soporteComprasIAExtractionPersistence.Add(1)
 	}
+}
+
+// SupportFileOperationalMetrics exposes only an aggregate integrity failure
+// counter. It never reports a tenant, document, hash or private path.
+func SupportFileOperationalMetrics() uint64 {
+	return soporteComprasIAFileIntegrityFailures.Load()
 }
 
 // EmpresaSoportesComprasIAHandler administra la captura inteligente de compras y gastos.
@@ -1071,9 +1080,26 @@ func downloadSoporteComprasIA(w http.ResponseWriter, r *http.Request, dbEmp *sql
 		http.Error(w, "archivo no disponible", http.StatusNotFound)
 		return
 	}
+	if info.Size() < 1 || info.Size() > maxSoporteComprasIAUploadBytes {
+		_ = supportFileIntegrityFailure()
+		http.Error(w, "integridad del archivo no valida", http.StatusConflict)
+		return
+	}
+	if err := verifySoporteComprasIAReaderIntegrity(file, row.ArchivoHash); err != nil {
+		http.Error(w, "integridad del archivo no valida", http.StatusConflict)
+		return
+	}
 	w.Header().Set("Cache-Control", "no-store")
 	w.Header().Set("X-Content-Type-Options", "nosniff")
-	w.Header().Set("Content-Type", strings.TrimSpace(row.ArchivoMime))
+	w.Header().Set("Content-Security-Policy", "sandbox; default-src 'none'")
+	w.Header().Set("Cross-Origin-Resource-Policy", "same-origin")
+	w.Header().Set("Referrer-Policy", "no-referrer")
+	w.Header().Set("X-Frame-Options", "DENY")
+	downloadMIME := "application/octet-stream"
+	if strings.TrimSpace(row.ArchivoHash) != "" {
+		downloadMIME = safeSoporteComprasIADownloadMIME(row.ArchivoMime, path)
+	}
+	w.Header().Set("Content-Type", downloadMIME)
 	w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=%q", sanitizeComprobanteBaseName(row.ArchivoNombre)+filepath.Ext(path)))
 	http.ServeContent(w, r, filepath.Base(path), info.ModTime(), file)
 }
@@ -1090,6 +1116,7 @@ var (
 	errSoporteComprasIAStorageBusy          = errors.New("otra carga de almacenamiento empresarial esta en curso")
 	errSoporteComprasIAMalware              = errors.New("el antivirus rechazo el archivo del soporte")
 	errSoporteComprasIAAntivirusUnavailable = errors.New("el antivirus de soportes no esta disponible")
+	errSoporteComprasIAIntegrity            = errors.New("la integridad del archivo del soporte no es valida")
 )
 
 func extraerSoporteComprasIAGPT55(r *http.Request, dbEmp, dbSuper *sql.DB, empresaID int64, usuario string) (dbpkg.EmpresaSoporteComprasIA, error) {
@@ -1391,11 +1418,90 @@ func loadSoporteComprasIAAttachment(row dbpkg.EmpresaSoporteComprasIA) (*aiAttac
 	if err != nil {
 		return nil, err
 	}
-	b, err := os.ReadFile(path) // #nosec G304 -- path is an existing regular file resolved inside the private support root above.
+	file, err := os.Open(path) // #nosec G304 -- path is an existing regular file resolved inside the private support root above.
 	if err != nil {
 		return nil, err
 	}
-	return &aiAttachment{Filename: row.ArchivoNombre, MimeType: row.ArchivoMime, Bytes: b}, nil
+	defer func() { _ = file.Close() }()
+	info, err := file.Stat()
+	if err != nil || !info.Mode().IsRegular() || info.Size() < 1 || info.Size() > maxSoporteComprasIAUploadBytes {
+		return nil, supportFileIntegrityFailure()
+	}
+	b, err := io.ReadAll(io.LimitReader(file, maxSoporteComprasIAUploadBytes+1))
+	if err != nil || len(b) < 1 || len(b) > maxSoporteComprasIAUploadBytes {
+		return nil, supportFileIntegrityFailure()
+	}
+	if err := verifySoporteComprasIABytesIntegrity(b, row.ArchivoHash); err != nil {
+		return nil, err
+	}
+	att := &aiAttachment{Filename: row.ArchivoNombre, MimeType: row.ArchivoMime, Bytes: b}
+	if err := validateSoporteComprasIAAttachment(att); err != nil {
+		return nil, supportFileIntegrityFailure()
+	}
+	return att, nil
+}
+
+func verifySoporteComprasIAReaderIntegrity(file *os.File, expectedHash string) error {
+	if file == nil {
+		return supportFileIntegrityFailure()
+	}
+	hasher := sha256.New()
+	if _, err := io.Copy(hasher, file); err != nil {
+		return supportFileIntegrityFailure()
+	}
+	if _, err := file.Seek(0, io.SeekStart); err != nil {
+		return supportFileIntegrityFailure()
+	}
+	return verifySoporteComprasIADigest(hasher.Sum(nil), expectedHash)
+}
+
+func verifySoporteComprasIABytesIntegrity(content []byte, expectedHash string) error {
+	sum := sha256.Sum256(content)
+	return verifySoporteComprasIADigest(sum[:], expectedHash)
+}
+
+func verifySoporteComprasIADigest(actual []byte, expectedHash string) error {
+	expectedHash = strings.ToLower(strings.TrimSpace(expectedHash))
+	if expectedHash == "" {
+		return nil
+	}
+	expected, err := hex.DecodeString(expectedHash)
+	if err != nil || len(expected) != sha256.Size || len(actual) != sha256.Size || subtle.ConstantTimeCompare(actual, expected) != 1 {
+		return supportFileIntegrityFailure()
+	}
+	return nil
+}
+
+func supportFileIntegrityFailure() error {
+	soporteComprasIAFileIntegrityFailures.Add(1)
+	return errSoporteComprasIAIntegrity
+}
+
+func safeSoporteComprasIADownloadMIME(storedMIME, path string) string {
+	storedMIME = strings.ToLower(strings.TrimSpace(storedMIME))
+	switch strings.ToLower(filepath.Ext(path)) {
+	case ".png":
+		if storedMIME == "image/png" {
+			return storedMIME
+		}
+	case ".jpg", ".jpeg":
+		if storedMIME == "image/jpeg" {
+			return storedMIME
+		}
+	case ".webp":
+		if storedMIME == "image/webp" {
+			return storedMIME
+		}
+	case ".pdf":
+		if storedMIME == "application/pdf" {
+			return storedMIME
+		}
+	case ".xml":
+		if storedMIME == "application/xml" || storedMIME == "text/xml" {
+			return "application/xml"
+		}
+	}
+	return "application/octet-stream"
 }
 
 func safeSoporteComprasIAPathFromURL(url string) (string, error) {

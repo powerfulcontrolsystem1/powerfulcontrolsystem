@@ -192,6 +192,24 @@ func TestSoportesComprasIARendersExtractedValuesAsEscapedText(t *testing.T) {
 	}
 }
 
+func TestSoportesComprasIADownloadIsAttachmentSandboxedAndIntegrityChecked(t *testing.T) {
+	raw, err := os.ReadFile("soportes_compras_ia.go")
+	if err != nil {
+		t.Fatal(err)
+	}
+	source := string(raw)
+	for _, want := range []string{
+		"verifySoporteComprasIAReaderIntegrity", "verifySoporteComprasIABytesIntegrity",
+		`Content-Security-Policy", "sandbox; default-src 'none'`,
+		`Cross-Origin-Resource-Policy", "same-origin`, `Referrer-Policy", "no-referrer`,
+		`X-Frame-Options", "DENY`, "safeSoporteComprasIADownloadMIME",
+	} {
+		if !strings.Contains(source, want) {
+			t.Fatalf("contrato de descarga privada ausente: %q", want)
+		}
+	}
+}
+
 func TestSoportesComprasIAPapeleraIsRecoverableAuditedAndTenantScoped(t *testing.T) {
 	page, err := os.ReadFile(filepath.Join("..", "..", "web", "administrar_empresa", "soportes_compras_ia.html"))
 	if err != nil {
