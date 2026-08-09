@@ -12858,3 +12858,12 @@ panel de seguridad para que el navegador reciba la correccion CSRF de staging.
 - `documentos/evidencia_plan_109/P109-002/2026-08-09_centro_ia_visual_y_modo_agente_34cfd852.md`:
   registra las pruebas visibles del Centro IA, modo agente reversible, duplicado
   CxP/IA y la corrección local segura de presentación Markdown.
+- `documentos/evidencia_plan_109/P109-000/2026-08-09_candidato_bb285968_centro_ia_staging.md`:
+  registra el despliegue aislado, validación visual, E2E parcial/dirigido,
+  impresión, carga y compuerta fail-closed del candidato Centro IA.
+- `documentos/evidencia_plan_109/P109-004/2026-08-09_e2e_parcial_y_regresion_dirigida_bb285968.md`:
+  conserva el timeout del inventario completo y el PASS dirigido de escritorio
+  y móvil, sin presentarlo como cobertura total.
+- `documentos/releases/release_2026.08.09.json` y `.md`:
+  manifest generado de la compuerta; registra SHA, origen, digests requeridos y
+  bloqueos que impiden certificar el release.

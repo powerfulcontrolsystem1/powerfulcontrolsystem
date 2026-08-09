@@ -41485,6 +41485,16 @@ acumulativa.
   contrato del renderizado seguro y evita que la vista vuelva a mostrar Markdown
   literal.
 
+2026-08-09: Plan 109 / candidato Centro IA, compuerta y manifest de release.
+
+- `scripts/release_gate.ps1` resuelve el runtime Node y Chrome/Edge instalados
+  antes de E2E, impresión y carga, sin instalar dependencias ni depender de PATH.
+- `tools/release_manifest.mjs` incluye el digest obligatorio de frontend junto a
+  API, migrador y worker; la compuerta falla cerrada si cualquiera falta.
+- El SHA `bb285968` se validó visualmente solo en staging: siete funciones IA,
+  formato seguro, E2E dirigido, impresión 20/20 y carga sin errores. El E2E
+  completo quedó parcial por timeout externo y no se certificó producción.
+
 2026-08-09: Plan 109 / CxP e IA reales en el candidato de staging.
 
 - La captura oficial radicó, extrajo con IA, editó, vinculó proveedor, aprobó y

@@ -1327,3 +1327,21 @@ Actualización 2026-08-09, durabilidad outbox y Centro IA:
 - P109-002 y P109-010 permanecen parciales por criterios operativos externos y
   del candidato final. El avance formal continúa **53,3 %**, la certificación
   formal **0 %** y el veredicto **NO-GO**.
+
+Actualización 2026-08-09, candidato `bb285968` en staging:
+
+- El candidato aislado de Centro IA se construyó desde SHA exacto fuera del
+  checkout productivo y dejó health/readiness y los cuatro servicios saludables.
+  La revisión visual confirmó títulos, listas y énfasis seguros, sin Markdown
+  literal ni HTML del proveedor interpretado.
+- Se ejecutaron las siete funciones IA visibles como recomendaciones, con modo
+  agente apagado al inicio y al cierre. Las invariantes PCS siguieron en 3 CxP,
+  5 pagos y 5 movimientos; únicamente quedó un soporte demo duplicado bloqueado.
+- La compuerta resolvió el runtime Node y Chrome instalado; el E2E completo
+  registró 363 variantes antes del timeout externo y el dirigido aprobó 2/2
+  vistas, 108 botones y cero errores. Impresión 20/20 y carga p95 411 ms/error
+  0 % aprobaron.
+- El manifest se corrigió para exigir el digest de frontend. P109-000/P109-004
+  no se aprueban: faltan cuatro imágenes inmutables, fusión/revisión y el
+  inventario E2E completo. El avance permanece **53,3 %**, certificación **0 %**
+  y **NO-GO**.
