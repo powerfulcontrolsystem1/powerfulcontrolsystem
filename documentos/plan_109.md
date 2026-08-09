@@ -1425,3 +1425,13 @@ Actualización 2026-08-09, restore integral del snapshot vigente:
 - P109-008 continúa parcial por réplica A/B, pérdida de réplica y rollback
   coordinado. No cambia la fórmula: **53,3 %**, certificación formal **0 %**
   y **NO-GO**.
+
+Actualización 2026-08-09, Finanzas/CxP responsive en staging:
+
+- La revisión autenticada de PCS validó los formularios financieros y las seis
+  tablas CxP/CxC en móvil (390 px), sin desborde horizontal, sin botones sin
+  etiqueta y sin errores de consola. La carga CxP con IA conserva revisión
+  humana antes de guardar.
+- La inspección fue solo lectura; P109-005 continúa parcial por dispositivos,
+  impresión física, accesibilidad completa y roles. La fórmula permanece en
+  **53,3 %**, certificación formal **0 %** y **NO-GO**.

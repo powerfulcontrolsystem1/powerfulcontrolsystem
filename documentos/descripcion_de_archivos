@@ -12874,6 +12874,9 @@ panel de seguridad para que el navegador reciba la correccion CSRF de staging.
   registra la restauración temporal del snapshot vigente, integridad de los
   tarballs, datos críticos por empresa, checksums privados, RPO/RTO y límites
   pendientes de réplica/rollback.
+- `documentos/evidencia_plan_109/P109-005/2026-08-09_finanzas_cxp_responsive_staging.md`:
+  conserva la revisión visual móvil autenticada de Finanzas/CxP, sus tablas,
+  etiquetas, consola y alcance no mutante.
 - `documentos/evidencia_plan_109/P109-010/2026-08-09_outbox_lease_dead_recovery_postgres.md`:
   documenta los controles PostgreSQL aislados de lease, dead-letter,
   recuperación, deduplicación y pago CxP idempotente.
