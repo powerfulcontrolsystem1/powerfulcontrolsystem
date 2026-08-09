@@ -33,3 +33,10 @@ El QA `31323978918` repitió las cinco páginas públicas en ambos viewports: 10
 vistas `ok`, cero mutaciones operativas bloqueadas, 10 eventos de telemetría de
 visitas bloqueados y registrados, y cero errores de página. Solo permanecen los
 dos 502 de ayuda móvil y las pruebas operativas fuera del alcance no mutante.
+
+## Repetición de ayudas móviles
+
+La ejecución aislada `31325595643` repitió Ayuda APIs y Ayuda contextual en
+móvil y aprobó. Los 502 vistos durante la corrida paralela no se reprodujeron,
+por lo que se registran como condición transitoria de carga y no como defecto
+funcional abierto.

@@ -1410,7 +1410,7 @@ Actualización 2026-08-09, barrido autenticado completo por lotes:
   cero mutaciones bloqueadas y cero errores.
 - Persisten seis escrituras automáticas de páginas públicas y dos respuestas
   502 de ayuda móvil. La repetición de páginas públicas aprobó 10/10 al separar
-  y bloquear su telemetría; P109-004 sigue **parcial** hasta resolver los 502 o
-  excluirlos
-  con evidencia, además de acciones mutantes, roles y botones IA. El avance
+  y bloquear su telemetría; la repetición aislada de ayudas móviles aprobó y no
+  reprodujo los 502 transitorios. P109-004 sigue **parcial** por acciones
+  mutantes, roles y botones IA. El avance
   formal continúa **53,3 %**, **NO-GO**.

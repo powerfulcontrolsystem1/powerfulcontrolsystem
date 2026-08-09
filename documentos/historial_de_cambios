@@ -26,6 +26,9 @@
 - La repetición `31323978918` aprobó las cinco páginas públicas en escritorio y
   móvil (10/10) con cero mutaciones operativas; los diez eventos de telemetría
   quedaron bloqueados y auditados.
+- La repetición móvil aislada `31325595643` aprobó Ayuda APIs y Ayuda
+  contextual: los 502 del lote paralelo fueron transitorios y no quedan como
+  fallo funcional reproducible.
 
 2026-08-09: Plan 109 / integridad de archivos privados CxP-IA.
 - Descarga y carga hacia IA verifican SHA-256 persistido en tiempo constante,
