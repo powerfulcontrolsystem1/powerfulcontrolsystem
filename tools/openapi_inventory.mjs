@@ -28,6 +28,8 @@ routes.sort((a, b) => a.localeCompare(b));
 const methodOverrides = new Map([
   ["/health", ["get", "head"]],
   ["/ready", ["get", "head"]],
+  ["/api/public/domotica/tunnel", ["post"]],
+  ["/super/api/domotica_raspberry_trafico", ["get"]],
 ]);
 
 function yamlString(value) {

@@ -55,8 +55,8 @@ Este archivo se genera con `node tools/ensure_bootstrap_inventory.mjs`. Inventar
 | `EnsureEmpresaContabilidadColombiaSchema` | [backend/db/contabilidad_colombia.go:164](../../backend/db/contabilidad_colombia.go#L164) | DDL / indice / funcion | empresas o por confirmar |
 | `EnsureSuperContractSchema` | [backend/db/contrato_super.go:133](../../backend/db/contrato_super.go#L133) | DDL / indice / funcion | superadministrador o por confirmar |
 | `EnsureDefaultSuperContract` | [backend/db/contrato_super.go:231](../../backend/db/contrato_super.go#L231) | seed o provisionamiento idempotente | superadministrador o por confirmar |
-| `EnsureEmpresaControlElectricoSchema` | [backend/db/control_electrico.go:196](../../backend/db/control_electrico.go#L196) | DDL / indice / funcion | empresas o por confirmar |
-| `EnsureEmpresaControlElectricoPrimaryRaspberry` | [backend/db/control_electrico.go:514](../../backend/db/control_electrico.go#L514) | regla auxiliar o verificacion | empresas o por confirmar |
+| `EnsureEmpresaControlElectricoSchema` | [backend/db/control_electrico.go:209](../../backend/db/control_electrico.go#L209) | DDL / indice / funcion | empresas o por confirmar |
+| `EnsureEmpresaControlElectricoPrimaryRaspberry` | [backend/db/control_electrico.go:527](../../backend/db/control_electrico.go#L527) | regla auxiliar o verificacion | empresas o por confirmar |
 | `EnsureSuperCorreoNotificacionesPruebaSchema` | [backend/db/correo_notificaciones_prueba.go:44](../../backend/db/correo_notificaciones_prueba.go#L44) | DDL / indice / funcion | superadministrador o por confirmar |
 | `EnsureEmpresaCorteCajaConfiguracionSchema` | [backend/db/corte_caja_configuracion.go:102](../../backend/db/corte_caja_configuracion.go#L102) | DDL / indice / funcion | empresas o por confirmar |
 | `EnsureEmpresaCreditosSchema` | [backend/db/creditos.go:662](../../backend/db/creditos.go#L662) | DDL / indice / funcion | empresas o por confirmar |

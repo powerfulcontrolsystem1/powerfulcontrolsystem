@@ -2412,6 +2412,13 @@ paths:
       responses:
         "200":
           description: Respuesta exitosa o manejada por el handler real.
+  "/api/public/domotica/tunnel":
+    post:
+      tags: [publico]
+      summary: Ruta inventariada /api/public/domotica/tunnel
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
   "/api/public/estacion_vip":
     get:
       tags: [publico]
@@ -3592,6 +3599,13 @@ paths:
     post:
       tags: [super-administrador]
       summary: Ruta inventariada /super/api/docker_portabilidad
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/super/api/domotica_raspberry_trafico":
+    get:
+      tags: [super-administrador]
+      summary: Ruta inventariada /super/api/domotica_raspberry_trafico
       responses:
         "200":
           description: Respuesta exitosa o manejada por el handler real.

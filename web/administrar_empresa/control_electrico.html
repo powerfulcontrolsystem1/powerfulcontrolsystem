@@ -658,6 +658,9 @@
           <div class="integration-hint">
             Siri se integra de forma portable publicando entidades desde Home Assistant hacia Apple Home con HomeKit Bridge. Matter, Hue, Tuya, Zigbee2MQTT y Z-Wave JS pueden operar por Home Assistant o gateway compatible.
           </div>
+          <div class="integration-hint">
+            <strong>Instalacion desde la Raspberry:</strong> abre PCS en el navegador de la Raspberry Pi, entra a esta pagina y pulsa <strong>Generar instalador</strong>. Luego ejecuta una sola vez el archivo descargado con <code>sudo sh ~/Downloads/instalar-pcs-domotica-*.sh</code>. El instalador crea el servicio y la Raspberry mantiene el tunel HTTPS saliente hacia el VPS; no requiere abrir puertos en el router.
+          </div>
           <div id="raspberryList" class="raspberry-list"></div>
         </div>
       </aside>
@@ -689,6 +692,22 @@
         <div class="form-col">
           <label class="form-label" for="ruleSensorCodigo">Sensor / entidad</label>
           <input id="ruleSensorCodigo" class="form-input" placeholder="binary_sensor.puerta_1">
+        </div>
+        <div class="form-col">
+          <label class="form-label" for="ruleRaspberry">Raspberry de entrada</label>
+          <select id="ruleRaspberry" class="form-input"><option value="">Sensor externo / sin GPIO</option></select>
+        </div>
+        <div class="form-col">
+          <label class="form-label" for="ruleGPIO">GPIO de entrada (BCM)</label>
+          <input id="ruleGPIO" class="form-input" type="number" min="0" max="27" step="1" placeholder="Ej: 23">
+        </div>
+        <div class="form-col">
+          <label class="form-label" for="rulePull">Resistencia de entrada</label>
+          <select id="rulePull" class="form-input"><option value="none">Sin pull</option><option value="up">Pull-up</option><option value="down">Pull-down</option></select>
+        </div>
+        <div class="form-col">
+          <label class="form-label" for="ruleDebounce">Antirrebote ms</label>
+          <input id="ruleDebounce" class="form-input" type="number" min="50" max="10000" step="50" value="250">
         </div>
         <div class="form-col">
           <label class="form-label" for="ruleCondicion">Condicion</label>
@@ -780,6 +799,20 @@
           .replace(/>/g, '&gt;')
           .replace(/"/g, '&quot;')
           .replace(/'/g, '&#039;');
+      }
+
+      function formatBytes(value) {
+        var bytes = Number(value || 0);
+        var units = ['B', 'KB', 'MB', 'GB', 'TB'];
+        var index = 0;
+        while (bytes >= 1024 && index < units.length - 1) { bytes /= 1024; index += 1; }
+        return (index === 0 ? bytes.toFixed(0) : bytes.toFixed(2)) + ' ' + units[index];
+      }
+
+      function tunnelOnline(pi) {
+        if (!pi || !pi.tunnel_enabled || !pi.last_seen) return false;
+        var seen = new Date(pi.last_seen).getTime();
+        return Number.isFinite(seen) && Date.now() >= seen && Date.now() - seen <= 90000;
       }
 
       function showMessage(text, type) {
@@ -1103,6 +1136,7 @@
               '<div class="form-col"><label class="form-label">Device ID / canal</label><input class="form-input relay-device-id" value="' + sanitize(data.device_id) + '" placeholder="0"></div>' +
               '<div class="form-col"><label class="form-label">Capacidad</label><input class="form-input relay-capability" value="' + sanitize(data.capability) + '" placeholder="switch, light, cover"></div>' +
               '<div class="form-col span-2"><label class="form-label">Nombre del aparato</label><input class="form-input relay-name" value="' + sanitize(data.relay_name) + '" placeholder="Lampara, motobomba, aire..."></div>' +
+              '<div class="form-col span-2"><label class="form-label">Descripcion del equipo</label><textarea class="form-input relay-description" rows="2" placeholder="Ubicacion, uso, referencia electrica u observaciones">' + sanitize(data.observaciones) + '</textarea></div>' +
               '<label class="electric-switch span-2"><span>Monitorear consumo electrico</span><input class="relay-monitor-enabled" type="checkbox" ' + (data.monitoreo_habilitado ? 'checked' : '') + '></label>' +
               '<div class="form-col"><label class="form-label">Potencia nominal W</label><input class="form-input relay-power" type="number" min="0" step="1" value="' + sanitize(data.potencia_w) + '"></div>' +
               '<div class="form-col"><label class="form-label">Sensor consumo</label><input class="form-input relay-consumption-sensor" value="' + sanitize(data.sensor_consumo_entity_id) + '" placeholder="sensor.lampara_power"></div>' +
@@ -1157,6 +1191,7 @@
         box.innerHTML = state.raspberryPis.map(function (pi) {
           var inactive = String(pi.estado || 'activo').toLowerCase() !== 'activo';
           var primary = String(pi.codigo || '').toLowerCase() === 'principal';
+          var online = tunnelOnline(pi);
           return '<article class="raspberry-item" data-raspberry-id="' + sanitize(pi.id || 0) + '">' +
             '<div class="raspberry-item-head">' +
               '<div class="raspberry-item-title">' +
@@ -1171,9 +1206,13 @@
               '<span class="status-chip">' + sanitize(pi.proveedor || 'raspberry_pi') + '</span>' +
               '<span class="status-chip">' + sanitize((pi.timeout_ms || 2500) + ' ms') + '</span>' +
               '<span class="status-chip">' + sanitize(pi.api_token_configured ? 'Token configurado' : 'Sin token') + '</span>' +
+              '<span class="status-chip ' + (online ? 'on' : 'warn') + '">' + sanitize(online ? 'Tunel conectado' : (pi.tunnel_enabled ? 'Tunel desconectado' : 'Tunel sin configurar')) + '</span>' +
+              '<span class="status-chip">' + sanitize('Transferencia ' + formatBytes(Number(pi.bytes_rx || 0) + Number(pi.bytes_tx || 0))) + '</span>' +
             '</div>' +
+            '<small class="traffic-id">ID unico: ' + sanitize(pi.device_uid || 'se asigna al generar instalador') + (pi.last_seen ? ' · Ultima conexion: ' + sanitize(pi.last_seen) : '') + '</small>' +
             '<div class="raspberry-item-actions">' +
               '<button class="btn secondary small raspberry-edit" type="button">Editar</button>' +
+              (String(pi.tipo_controlador || 'raspberry_gpio') === 'raspberry_gpio' ? '<button class="btn add small raspberry-provision" type="button">Generar instalador</button>' : '') +
               (primary ? '<button class="btn secondary small" type="button" disabled>Principal</button>' : '<button class="btn danger small raspberry-delete" type="button">Desactivar</button>') +
             '</div>' +
           '</article>';
@@ -1206,12 +1245,24 @@
             html += '<option value="' + sanitize(r.id) + '">' + sanitize((r.estacion_nombre || ('Estacion ' + r.estacion_id)) + ' - ' + (r.relay_name || r.salida_codigo || ('Aparato ' + r.id))) + '</option>';
           });
         select.innerHTML = html;
+        var raspberrySelect = $('ruleRaspberry');
+        if (raspberrySelect) {
+          var selected = raspberrySelect.value;
+          raspberrySelect.innerHTML = '<option value="">Sensor externo / sin GPIO</option>' + state.raspberryPis.filter(function (pi) { return String(pi.estado || 'activo').toLowerCase() === 'activo'; }).map(function (pi) {
+            return '<option value="' + sanitize(pi.id) + '">' + sanitize(raspberryLabel(pi)) + '</option>';
+          }).join('');
+          raspberrySelect.value = selected;
+        }
       }
 
       function clearRuleForm() {
         $('ruleId').value = '0';
         $('ruleNombre').value = '';
         $('ruleSensorCodigo').value = '';
+        $('ruleRaspberry').value = '';
+        $('ruleGPIO').value = '';
+        $('rulePull').value = 'none';
+        $('ruleDebounce').value = '250';
         $('ruleCondicion').value = 'igual';
         $('ruleValor').value = '';
         $('ruleAccion').value = 'alarma';
@@ -1226,6 +1277,10 @@
         $('ruleId').value = rule.id || 0;
         $('ruleNombre').value = rule.nombre || '';
         $('ruleSensorCodigo').value = rule.sensor_codigo || '';
+        $('ruleRaspberry').value = rule.raspberry_id || '';
+        $('ruleGPIO').value = Number(rule.entrada_gpio_pin) >= 0 ? rule.entrada_gpio_pin : '';
+        $('rulePull').value = rule.entrada_pull || 'none';
+        $('ruleDebounce').value = rule.debounce_ms || 250;
         $('ruleCondicion').value = rule.condicion || 'igual';
         $('ruleValor').value = rule.valor || '';
         $('ruleAccion').value = rule.accion || 'alarma';
@@ -1242,6 +1297,10 @@
           id: Number($('ruleId').value || 0),
           nombre: $('ruleNombre').value.trim(),
           sensor_codigo: $('ruleSensorCodigo').value.trim(),
+          raspberry_id: Number($('ruleRaspberry').value || 0),
+          entrada_gpio_pin: $('ruleGPIO').value === '' ? -1 : Number($('ruleGPIO').value),
+          entrada_pull: $('rulePull').value || 'none',
+          debounce_ms: Number($('ruleDebounce').value || 250),
           condicion: $('ruleCondicion').value,
           valor: $('ruleValor').value.trim(),
           accion: $('ruleAccion').value,
@@ -1265,7 +1324,7 @@
           var inactive = String(rule.estado || 'activo').toLowerCase() !== 'activo';
           return '<article class="raspberry-item" data-rule-id="' + sanitize(rule.id || 0) + '">' +
             '<div class="raspberry-item-head"><div class="raspberry-item-title"><strong>' + sanitize(rule.nombre || rule.sensor_codigo || ('Regla #' + rule.id)) + '</strong><small>' + sanitize(rule.sensor_codigo || '') + ' ' + sanitize(rule.condicion || 'igual') + ' ' + sanitize(rule.valor || '') + '</small></div><span class="status-chip ' + (inactive ? 'off' : 'on') + '">' + sanitize(inactive ? 'Inactiva' : 'Activa') + '</span></div>' +
-            '<div class="relay-meta"><span class="status-chip">' + sanitize(rule.accion || 'alarma') + '</span><span class="status-chip ' + (rule.severidad === 'critica' ? 'warn' : '') + '">' + sanitize(rule.severidad || 'advertencia') + '</span><span class="status-chip">' + sanitize(rule.alarma_habilitada ? 'Alarma activa' : 'Sin alarma') + '</span></div>' +
+            '<div class="relay-meta"><span class="status-chip">' + sanitize(rule.accion || 'alarma') + '</span>' + (Number(rule.raspberry_id || 0) > 0 ? '<span class="status-chip">GPIO entrada ' + sanitize(rule.entrada_gpio_pin) + '</span>' : '') + '<span class="status-chip ' + (rule.severidad === 'critica' ? 'warn' : '') + '">' + sanitize(rule.severidad || 'advertencia') + '</span><span class="status-chip">' + sanitize(rule.alarma_habilitada ? 'Alarma activa' : 'Sin alarma') + '</span></div>' +
             '<div class="raspberry-item-actions"><button class="btn secondary small rule-edit" type="button">Editar</button><button class="btn danger small rule-delete" type="button">Desactivar</button></div>' +
           '</article>';
         }).join('');
@@ -1273,7 +1332,9 @@
 
       async function saveRule() {
         var payload = readRulePayload();
-        if (!payload.sensor_codigo) throw new Error('El sensor o entidad es obligatorio.');
+        if (payload.raspberry_id > 0 && payload.entrada_gpio_pin < 0) throw new Error('Selecciona el GPIO de entrada de la Raspberry Pi.');
+        if (!payload.sensor_codigo && payload.raspberry_id > 0) payload.sensor_codigo = 'gpio:' + payload.entrada_gpio_pin;
+        if (!payload.sensor_codigo) throw new Error('El sensor, entidad o GPIO de entrada es obligatorio.');
         var data = await requestJSON(api('regla'), {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
@@ -1385,6 +1446,31 @@
         await loadAll();
       }
 
+      async function provisionRaspberryTunnel(id) {
+        var response = await fetch(api('provisionar_tunel'), {
+          method: 'POST',
+          credentials: 'same-origin',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ raspberry_id: Number(id || 0) })
+        });
+        if (!response.ok) {
+          throw new Error((await response.text()) || 'No se pudo generar el instalador seguro.');
+        }
+        var blob = await response.blob();
+        var disposition = response.headers.get('Content-Disposition') || '';
+        var match = disposition.match(/filename="?([^";]+)"?/i);
+        var filename = match && match[1] ? match[1] : 'instalar-pcs-domotica-raspberry.sh';
+        var href = URL.createObjectURL(blob);
+        var link = document.createElement('a');
+        link.href = href;
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        window.setTimeout(function () { URL.revokeObjectURL(href); }, 1000);
+        await loadAll();
+      }
+
       function readRelayCard(card) {
         var estacionID = Number(card.getAttribute('data-estacion-id') || 0);
         var estacion = state.estaciones.find(function (x) { return Number(x.estacion_id) === estacionID; }) || {};
@@ -1415,6 +1501,7 @@
           programacion_dias: card.querySelector('.relay-schedule-days').value || 'todos',
           programacion_timezone: card.querySelector('.relay-schedule-timezone').value.trim() || 'America/Bogota',
           imagen_url: card.querySelector('.relay-image-url').value.trim(),
+          observaciones: card.querySelector('.relay-description').value.trim(),
           modo: 'seguimiento_estacion',
           estado: 'activo'
         };
@@ -1554,6 +1641,10 @@
             var pi = state.raspberryPis.find(function (item) { return Number(item.id) === editID; });
             fillRaspberryForm(pi);
             showMessage('Editando Raspberry Pi.', '');
+          } else if (raspberryCard && ev.target.classList.contains('raspberry-provision')) {
+            var provisionID = Number(raspberryCard.getAttribute('data-raspberry-id') || 0);
+            await provisionRaspberryTunnel(provisionID);
+            showMessage('Instalador seguro descargado. Ejecutalo una sola vez en la Raspberry Pi con sudo sh.', 'success');
           } else if (raspberryCard && ev.target.classList.contains('raspberry-delete')) {
             var deleteID = Number(raspberryCard.getAttribute('data-raspberry-id') || 0);
             await deleteRaspberry(deleteID);

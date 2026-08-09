@@ -12710,3 +12710,18 @@ panel de seguridad para que el navegador reciba la correccion CSRF de staging.
 - `documentos/evidencia_plan_109/P109-007/2026-08-08_diagnostico_autenticado_dian_staging.md`:
   conserva el diagnostico oficial, revisión visual y prerrequisitos ausentes
   que bloquean una emisión o anulación fiscal real de PCS en staging.
+2026-08-09 - Domotica Raspberry Pi por tunel HTTPS saliente
+- `backend/db/control_electrico_tunnel.go`: identidad segura, enrolamiento,
+  cola durable, GPIO de entrada y contabilidad diaria/acumulada de trafico.
+- `backend/db/control_electrico_tunnel_migration.go`: migracion PostgreSQL
+  versionada del dispositivo, comandos, reglas fisicas y transferencia.
+- `backend/handlers/control_electrico_tunnel.go` y
+  `backend/handlers/templates/instalar_domotica_raspberry.sh.tmpl`: descarga
+  protegida y agente Python/systemd saliente sin dependencias externas.
+- `backend/handlers/super_domotica_raspberry_trafico.go` y
+  `web/super/domotica_raspberry_trafico.html`: API/pagina super de RX/TX.
+- `backend/db/control_electrico_tunnel_test.go` y
+  `backend/handlers/control_electrico_tunnel_test.go`: contratos de identidad,
+  migracion, HTTPS e instalador.
+- `documentos/domotica_raspberry_tunnel.md`: arquitectura, instalacion,
+  seguridad, GPIO, persistencia y operacion del modulo.

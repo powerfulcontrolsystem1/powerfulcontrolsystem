@@ -131,6 +131,14 @@ func PlatformMigrations(target string) ([]Migration, error) {
 					return applyEmpresaCarteraMoneyPrecisionTx(ctx, tx)
 				},
 			},
+			{
+				Version:     "20260809-002-domotica-raspberry-tunnel-v1",
+				Description: "secure outbound Raspberry tunnel, GPIO inputs and daily transfer accounting",
+				Body:        empresaControlElectricoTunnelSchemaFingerprint,
+				Apply: func(_ context.Context, tx *sql.Tx) error {
+					return applyEmpresaControlElectricoTunnelSchemaTx(tx)
+				},
+			},
 		}, nil
 	case MigrationTargetSuper:
 		return []Migration{
