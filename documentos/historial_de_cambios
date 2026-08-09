@@ -14,6 +14,9 @@
   porque este runtime Go no tiene CGO; queda pendiente en Linux/staging. Sin PR,
   push, despliegue ni mutacion PCS; P109-002/P109-008 siguen parciales y el
   avance formal permanece en 53,3 %.
+- Se deja una integración PostgreSQL reproducible y aislada para A/B, duplicado,
+  auditoria y bloqueo contable. En este equipo queda SKIP porque no existe DSN
+  de pruebas ni Docker; no se declara como evidencia dinámica aprobada.
 
 2026-08-08: Plan 109 / SSRF en salidas DIAN e integraciones.
 - Los probes empresariales y los clientes DIAN usan un transporte que valida

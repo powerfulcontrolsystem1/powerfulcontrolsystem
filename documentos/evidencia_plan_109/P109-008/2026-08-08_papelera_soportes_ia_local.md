@@ -38,14 +38,18 @@ Resultado: **PASS local / pendiente de staging y PCS**
 | `profesional_preflight.ps1 -Full -Strict` (22 compuertas) | PASS |
 | Revision visual local escritorio/movil, filtros y seis botones | PASS |
 | `go test -race ./db ./handlers` | NO EJECUTABLE: runtime Go sin CGO |
+| Integracion `TestSoporteComprasIAPapeleraPostgres` | CREADA / SKIP: DSN no configurado |
 
 La revisión visual local usó una página servida sin backend autenticado; confirmó
 composición, responsive, estados deshabilitados y ausencia de errores de consola,
 pero no se contabiliza como UAT dinámica de datos.
 
 El cierre automatizado definitivo quedó en
-`documentos/reportes_profesionales/preflight_20260808_192749.md`. La ausencia de
+`documentos/reportes_profesionales/preflight_20260808_193344.md`. La ausencia de
 CGO mantiene pendiente la carrera real en Linux/staging y no recibe crédito.
+Se agregó una prueba PostgreSQL con tablas temporales para ejecutar al disponer
+de `PCS_TEST_POSTGRES_DSN`; el equipo local no tiene DSN ni Docker y por eso el
+resultado omitido no se presenta como PASS.
 
 ## Seguridad y datos
 
