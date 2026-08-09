@@ -1311,3 +1311,19 @@ Actualización 2026-08-09, identidad A/B no global e integración PostgreSQL:
   Ninguna fase parcial cerró todos sus criterios: el avance formal permanece
   **53,3 % de implementación**, **0 % de certificación formal del SHA** y
   **NO-GO**.
+
+Actualización 2026-08-09, durabilidad outbox y Centro IA:
+
+- PostgreSQL 16 efímero aprobó deduplicación outbox, reclamación concurrente
+  única, lease vencido, recuperación, dead-letter y pago CxP idempotente/A-B.
+  El túnel, contenedor y listener temporal fueron retirados al finalizar.
+- En staging PCS, el Centro IA cargó siete funciones, ejecutó diagnóstico y
+  consulta no mutante en modo agente; el interruptor inició y terminó apagado,
+  sin crear efectos financieros. La bandeja CxP/IA mostró su duplicado QA
+  bloqueado y no editable.
+- La revisión visual detectó Markdown literal en el resultado IA. El candidato
+  local ya lo muestra con títulos/listas/énfasis mediante escape previo y sin
+  dependencias; exige despliegue aislado y repetición visual antes de crédito.
+- P109-002 y P109-010 permanecen parciales por criterios operativos externos y
+  del candidato final. El avance formal continúa **53,3 %**, la certificación
+  formal **0 %** y el veredicto **NO-GO**.

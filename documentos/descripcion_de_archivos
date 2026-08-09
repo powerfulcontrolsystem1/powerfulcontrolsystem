@@ -12852,3 +12852,9 @@ panel de seguridad para que el navegador reciba la correccion CSRF de staging.
 - `documentos/evidencia_plan_109/P109-008/2026-08-09_postgres_papelera_integridad_71984cb5.md`:
   conserva la integración PostgreSQL aislada de papelera, restauración,
   integridad, purga idempotente y la limpieza del contenedor efímero.
+- `documentos/evidencia_plan_109/P109-010/2026-08-09_outbox_lease_dead_recovery_postgres.md`:
+  documenta los controles PostgreSQL aislados de lease, dead-letter,
+  recuperación, deduplicación y pago CxP idempotente.
+- `documentos/evidencia_plan_109/P109-002/2026-08-09_centro_ia_visual_y_modo_agente_34cfd852.md`:
+  registra las pruebas visibles del Centro IA, modo agente reversible, duplicado
+  CxP/IA y la corrección local segura de presentación Markdown.

@@ -41473,6 +41473,18 @@ acumulativa.
   idempotente, precisión monetaria y bandera DIAN por empresa. El contenedor y
   el túnel efímeros fueron eliminados; producción permaneció intacta.
 
+2026-08-09: Plan 109 / outbox durable y presentación segura de Centro IA.
+
+- La integración PostgreSQL aislada cubrió outbox idempotente, dos workers,
+  lease vencido, recuperación, dead-letter y evento contable CxP sin cruce de
+  empresa. La infraestructura efímera se retiró al terminar.
+- `web/administrar_empresa/centro_ia_empresarial.html` ahora transforma un
+  subconjunto de Markdown de IA solo después de escapar la salida; mantiene
+  títulos, listas y énfasis legibles sin interpretar HTML no confiable.
+- `backend/handlers/centro_ia_empresarial_render_contract_test.go` conserva el
+  contrato del renderizado seguro y evita que la vista vuelva a mostrar Markdown
+  literal.
+
 2026-08-09: Plan 109 / CxP e IA reales en el candidato de staging.
 
 - La captura oficial radicó, extrajo con IA, editó, vinculó proveedor, aprobó y
