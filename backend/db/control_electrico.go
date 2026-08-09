@@ -1187,6 +1187,9 @@ func ListEmpresaControlElectricoEstaciones(dbConn *sql.DB, empresaID int64) ([]E
 func defaultEmpresaControlElectricoConfig(empresaID int64) *EmpresaControlElectricoConfig {
 	return &EmpresaControlElectricoConfig{
 		EmpresaID:          empresaID,
+		// The cart can present an empty, read-only Domotica panel before hardware
+		// is provisioned. Actual GPIO commands still require a registered Raspberry.
+		Habilitado:          true,
 		RaspberryPort:      DefaultControlElectricoPort,
 		APIPath:            DefaultControlElectricoAPIPath,
 		TimeoutMS:          DefaultControlElectricoTimeoutMS,

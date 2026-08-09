@@ -18,7 +18,7 @@ func TestDomoticaStationUIHasSingleEntryAndVisibilityCheck(t *testing.T) {
 	}
 	stationSource := string(stationPage)
 	configSource := string(stationConfig)
-	for _, marker := range []string{"station-domotica-button", "⚡", "mostrar_boton_domotica", "carrito_control_electrico.html", "return_to"} {
+	for _, marker := range []string{"stationCardUI", "mostrar_boton_domotica", "estacion_id", "handleStationCardActivation"} {
 		if !strings.Contains(stationSource, marker) {
 			t.Fatalf("la pagina de estaciones no contiene %q", marker)
 		}
