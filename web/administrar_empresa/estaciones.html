@@ -2342,14 +2342,10 @@
             stationMetaRowHtml('aseo', 'Aseo', 'Clic para reportar', isDirty && state.aseoControlEnabled) +
             stationMetaRowHtml('total', 'Total', meta.total, useMostrarTotal && !!meta.total) +
           '</div>';
-		  const domoticaButtonHtml = state.stationCardUI.mostrar_boton_domotica
-			? '<div class="station-domotica-actions"><button type="button" class="btn secondary station-domotica-button" data-domotica-estacion-id="' + stationID + '" data-domotica-estacion-nombre="' + sanitize(est.nombre) + '" aria-label="Abrir Domotica de ' + sanitize(est.nombre) + '"><span class="station-domotica-bolt" aria-hidden="true">⚡</span><span>Domotica</span></button></div>'
-			: '';
           return '<article class="portal-card station-launch-card ' + stationClass + '" style="--station-state-bg:' + sanitize(stationColor) + ';" data-estacion-id="' + stationID + '" data-estacion-nombre="' + sanitize(est.nombre) + '" data-mostrar-total="' + (useMostrarTotal ? '1' : '0') + '" tabindex="0" role="button" aria-label="Abrir ' + sanitize(est.nombre) + '">' +
             '<div class="station-sensor-indicator" data-sensor-color="' + sanitize(sensorColor) + '"></div>' +
             '<h3>' + sanitize(est.nombre) + '</h3>' +
-            stationDataHtml +
-            domoticaButtonHtml +
+			stationDataHtml +
             '</article>';
       }).join('');
           html += afterSpecial.join('');
@@ -2363,13 +2359,6 @@
       grid.querySelectorAll('.station-launch-card').forEach(card => {
         card.style.cursor = 'pointer';
         card.addEventListener('click', ev => {
-		  const domoticaButton = ev.target && ev.target.closest ? ev.target.closest('.station-domotica-button') : null;
-		  if (domoticaButton) {
-			ev.preventDefault();
-			ev.stopPropagation();
-			openStationDomotica(domoticaButton.getAttribute('data-domotica-estacion-id'), domoticaButton.getAttribute('data-domotica-estacion-nombre'));
-			return;
-		  }
           handleStationCardActivation(ev, card);
         });
         card.addEventListener('keydown', ev => {
