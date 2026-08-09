@@ -41581,3 +41581,11 @@ acumulativa.
   nosniff, frame, referrer y permissions policy estuvieron presentes.
 - La portada no declara `Cache-Control`; queda registrado como contenido público
   y no se extrapola a rutas autenticadas. No hubo sesión ni mutación.
+
+2026-08-09: Plan 109 / corrección del auditor de estado runtime.
+
+- `tools/observability_report.mjs` valida el estado runtime desde el handler
+  que lo implementa, además de `main.go`, evitando un aviso falso cuando el
+  archivo de estado se crea únicamente en ejecución.
+- El reporte vuelve a exigir que exista una referencia real a
+  `server_runtime_state`; no se añade un archivo runtime vacío al repositorio.

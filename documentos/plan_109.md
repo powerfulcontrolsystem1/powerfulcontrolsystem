@@ -1444,3 +1444,12 @@ Actualización 2026-08-09, sondeo público seguro de staging:
 - P109-009 continúa parcial por DAST hostil, aislamiento A/B y recursos
   autenticados. La fórmula permanece **53,3 %**, certificación formal **0 %**
   y **NO-GO**.
+
+Actualización 2026-08-09, auditoría de observabilidad del candidato:
+
+- El preflight aislado encontró que `runtime_state_log` era una alerta estática
+  falsa: el registro vive en su handler y no necesariamente como archivo antes
+  del arranque. El auditor ahora revisa ambas fuentes reales.
+- El resto de la compuerta breve aprobó. P109-010 continúa parcial por alertas
+  externas, responsables y ensayo antivirus real; el avance sigue **53,3 %**,
+  certificación formal **0 %** y **NO-GO**.

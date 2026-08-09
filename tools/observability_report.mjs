@@ -22,6 +22,11 @@ function count(pattern, text) {
 
 const compose = exists("deploy/docker-compose.platform.yml") ? read("deploy/docker-compose.platform.yml") : "";
 const mainGo = exists("backend/main.go") ? read("backend/main.go") : "";
+const runtimeStateSourcePaths = [
+  "backend/main.go",
+  "backend/handlers/server_runtime_notifications.go",
+].filter(exists);
+const runtimeStateSources = runtimeStateSourcePaths.map(read).join("\n");
 
 const checks = [
   {
@@ -47,7 +52,8 @@ const checks = [
   },
   {
     name: "runtime_state_log",
-    ok: exists("backend/logs/server_runtime_state.json") || /server_runtime_state/.test(mainGo),
+    ok: exists("backend/logs/server_runtime_state.json") || /server_runtime_state/.test(runtimeStateSources),
+    sources_checked: runtimeStateSourcePaths.length,
   },
   {
     name: "prometheus_grafana_stack",
