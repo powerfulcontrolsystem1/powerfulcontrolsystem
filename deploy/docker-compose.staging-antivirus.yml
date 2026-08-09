@@ -7,8 +7,15 @@ services:
     restart: unless-stopped
     security_opt:
       - no-new-privileges:true
+    # La imagen oficial prepara /run/clamav y cambia al usuario clamscan durante
+    # /init. Conserva solamente las capacidades necesarias para ese bootstrap.
     cap_drop:
       - ALL
+    cap_add:
+      - CHOWN
+      - FOWNER
+      - SETGID
+      - SETUID
     tmpfs:
       - /tmp:rw,noexec,nosuid,size=64m
       - /run:rw,noexec,nosuid,size=16m
