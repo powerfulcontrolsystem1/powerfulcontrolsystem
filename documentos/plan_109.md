@@ -1186,3 +1186,25 @@ Actualización 2026-08-09, pruebas reales PCS y correcciones del candidato local
   siguen parciales porque falta desplegar el candidato, repetir visual/IMAP,
   comprobar empresa A/B y cerrar el estado DIAN. El avance permanece **53,3 %
   de implementación**, **0 % de certificación del arreglo local** y **NO-GO**.
+
+Actualización 2026-08-09, candidato `17c55dd8` y prioridad web:
+
+- El primer digest detectó correctamente que el indicador DIAN dependía del
+  bootstrap heredado y quedó invalidado. El segundo candidato incorporó la
+  migración inmutable `20260809-001-dian-local-production-flag-v1`; workflow,
+  respaldo, promoción por cuatro digests, ledger, checksum, constraint,
+  backfill transaccional, salud y aislamiento de producción aprobaron.
+- El barrido autenticado del mismo candidato cubrió 48 variantes de 24 rutas:
+  46 aprobaron y las dos revisiones corresponden a la URL heredada inexistente
+  `inventario.html`. Centro IA, correo y DIAN ya no reproducen los hallazgos
+  anteriores. La impresión sintética volvió a aprobar 20/20 y se inspeccionó
+  Carta, POS, QR y 96 filas.
+- Por decisión explícita del propietario se prioriza terminar la aplicación
+  web. La aplicación móvil nativa continúa formalmente aplazada y su código se
+  conserva. Solo se mantiene como requisito de la web la usabilidad responsive
+  mínima en navegador móvil; no se agregan funciones móviles al alcance del
+  piloto.
+- P109-000 queda aprobado para `17c55dd8`. P109-005 y P109-007 siguen parciales
+  por documentos físicos/reales, Mailu/IMAP y la prueba fiscal controlada. El
+  avance permanece **53,3 % de implementación**, la certificación del candidato
+  sube a **6,7 %** y el veredicto continúa **NO-GO**.

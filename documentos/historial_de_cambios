@@ -41405,3 +41405,21 @@ acumulativa.
 - El hallazgo invalida la certificación del primer digest. Se requiere un nuevo
   candidato inmutable y repetir migración, ledger, salud, aislamiento de
   producción y pruebas autenticadas antes de cerrar la compuerta DIAN.
+
+2026-08-09: Plan 109 / segundo candidato DIAN y prioridad web.
+
+- El candidato `17c55dd8` se construyó una vez, se escaneó, publicó por cuatro
+  digests y se promovió únicamente a staging después de respaldar ambas bases.
+- Migrador, ledger, checksum, columna obligatoria, constraint binario y
+  backfill PostgreSQL reversible aprobaron. Salud y huella demostraron que los
+  servicios productivos no cambiaron.
+- El barrido autenticado del candidato aprobó 46/48 variantes; las dos
+  revisiones son la misma URL heredada `inventario.html` inexistente. Centro
+  IA, CSP/correo y DIAN dejaron de reproducir sus hallazgos previos. Las
+  impresiones aprobaron 20/20 y se revisaron Carta, POS, QR y 96 filas.
+- Se conserva la app móvil nativa para una fase posterior y se prioriza el
+  cierre web. Solo permanece el control responsive mínimo de la web móvil.
+- Tras comprobar cero referencias de contenedores, se retiraron únicamente los
+  cuatro digests del primer candidato DIAN invalidado. El uso del disco raíz
+  bajó de 80 % a 78 %; volúmenes, bases, respaldos e imágenes activas quedaron
+  intactos y staging/producción conservaron salud `ok`.

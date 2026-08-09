@@ -12818,3 +12818,6 @@ panel de seguridad para que el navegador reciba la correccion CSRF de staging.
   histórica explícita, valor obligatorio y constraint binario.
 - `backend/db/dian_local_production_flag_migration_test.go`: contrato del
   catálogo y prueba PostgreSQL idempotente del backfill positivo y negativo.
+- `documentos/evidencia_plan_109/P109-000/2026-08-09_candidato_17c55dd8_migracion_dian.md`:
+  registra el segundo release inmutable, respaldo, migración/ledger DIAN,
+  aislamiento productivo, barrido autenticado, revisión visual e impresiones.
