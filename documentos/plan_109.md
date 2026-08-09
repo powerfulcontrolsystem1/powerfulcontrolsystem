@@ -1531,3 +1531,15 @@ Actualización 2026-08-09, aislamiento y carrera CxP del digest `349712fb`:
   la recuperación operativa de un evento elegible del mismo candidato. No se
   cierra una fase adicional: la implementación sigue en **56,7 %**, la
   certificación exacta en **6,7 %** y el veredicto en **NO-GO**.
+
+Actualización 2026-08-09, candidato ClamAV de staging:
+
+- Se preparó un overlay exclusivo de staging con ClamAV oficial fijado por
+  digest, red interna, volumen de firmas, healthcheck y modo obligatorio
+  fail-closed para soportes CxP/IA. Los scripts de staging y de promoción por
+  digest exigen y arrancan ese servicio; producción no incorpora el overlay.
+- Las pruebas Go simuladas aprobaron limpio, malware/EICAR, caída y métricas.
+  La estación local no dispone de Docker/WSL, así que la prueba con firmas
+  reales y alertas queda pendiente del despliegue aislado del candidato.
+- No se cierra fase adicional: la implementación permanece en **56,7 %**, la
+  certificación exacta en **6,7 %** y el estado en **NO-GO**.

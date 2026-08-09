@@ -27,7 +27,8 @@ try {
     "compose",
     "--env-file", $EnvFile,
     "-f", "deploy/docker-compose.platform.yml",
-    "-f", "deploy/docker-compose.staging.yml"
+    "-f", "deploy/docker-compose.staging.yml",
+    "-f", "deploy/docker-compose.staging-antivirus.yml"
   )
 
   if ($ConfigOnly) {

@@ -41669,6 +41669,16 @@ acumulativa.
 - P109-001 continúa parcial por recuperación elegible del candidato y
   conciliación/aceptación contable humana; producción no fue modificada.
 
+2026-08-09: Plan 109 / candidato ClamAV exclusivo de staging.
+
+- Se añadió un servicio interno de ClamAV por digest, sin puerto público, con
+  healthcheck, volumen de firmas, hardening y modo obligatorio fail-closed para
+  los soportes CxP/IA de staging.
+- La promoción por digest ahora exige la referencia inmutable de ClamAV y lo
+  levanta junto al candidato. Producción no recibe el overlay.
+- Las pruebas simuladas aprobaron, pero falta la ejecución real con firmas
+  actualizadas, EICAR, caída, recuperación y alertas en staging.
+
 2026-08-09: Plan 109 / réplica autenticada y rollback aislados.
 
 - Dos réplicas del digest de staging aprobaron login oficial y cinco dominios

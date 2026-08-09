@@ -81,7 +81,8 @@ fi
 
 compose=(docker compose --env-file "$STAGING_ENV"
   -f "$WORKTREE_DIR/deploy/docker-compose.platform.yml"
-  -f "$WORKTREE_DIR/deploy/docker-compose.staging.yml")
+  -f "$WORKTREE_DIR/deploy/docker-compose.staging.yml"
+  -f "$WORKTREE_DIR/deploy/docker-compose.staging-antivirus.yml")
 
 "${compose[@]}" config --quiet
 "${compose[@]}" up -d --build
