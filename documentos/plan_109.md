@@ -1435,3 +1435,12 @@ Actualización 2026-08-09, Finanzas/CxP responsive en staging:
 - La inspección fue solo lectura; P109-005 continúa parcial por dispositivos,
   impresión física, accesibilidad completa y roles. La fórmula permanece en
   **53,3 %**, certificación formal **0 %** y **NO-GO**.
+
+Actualización 2026-08-09, sondeo público seguro de staging:
+
+- Salud, readiness y portada pública respondieron HTTP 200; las seis cabeceras
+  de endurecimiento aplicables estuvieron presentes. La portada pública no
+  declara `Cache-Control`, observación que no se extrapola a rutas autenticadas.
+- P109-009 continúa parcial por DAST hostil, aislamiento A/B y recursos
+  autenticados. La fórmula permanece **53,3 %**, certificación formal **0 %**
+  y **NO-GO**.

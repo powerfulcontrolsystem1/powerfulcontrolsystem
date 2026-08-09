@@ -12877,6 +12877,9 @@ panel de seguridad para que el navegador reciba la correccion CSRF de staging.
 - `documentos/evidencia_plan_109/P109-005/2026-08-09_finanzas_cxp_responsive_staging.md`:
   conserva la revisión visual móvil autenticada de Finanzas/CxP, sus tablas,
   etiquetas, consola y alcance no mutante.
+- `documentos/evidencia_plan_109/P109-009/2026-08-09_sondeo_publico_staging_cabeceras.md`:
+  registra salud, readiness y cabeceras públicas del staging, separando el
+  caché de la portada de los controles autenticados.
 - `documentos/evidencia_plan_109/P109-010/2026-08-09_outbox_lease_dead_recovery_postgres.md`:
   documenta los controles PostgreSQL aislados de lease, dead-letter,
   recuperación, deduplicación y pago CxP idempotente.
