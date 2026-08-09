@@ -102,3 +102,24 @@ groups:
         annotations:
           summary: "Malware bloqueado en soporte de compra"
           description: "El job {{ $labels.job }} bloqueo al menos un archivo; revisar auditoria agregada sin extraer ni abrir el adjunto."
+      - alert: PCSExtraccionIASoportesProveedorFallando
+        expr: increase(pcs_support_ai_extractions_total{job=~"pcs-backend|pcs-staging-backend",result="provider_error"}[10m]) > 0
+        labels:
+          severity: warning
+        annotations:
+          summary: "Proveedor IA de soportes con fallos"
+          description: "El job {{ $labels.job }} registro fallos del proveedor IA; el soporte debe conservar su estado anterior."
+      - alert: PCSExtraccionIASoportesRespuestaInvalida
+        expr: increase(pcs_support_ai_extractions_total{job=~"pcs-backend|pcs-staging-backend",result="invalid_response"}[10m]) > 0
+        labels:
+          severity: warning
+        annotations:
+          summary: "Respuesta IA de soporte invalida"
+          description: "El job {{ $labels.job }} rechazo una respuesta fuera del contrato; no debe persistir datos extraidos."
+      - alert: PCSExtraccionIASoportesPersistenciaFallida
+        expr: increase(pcs_support_ai_extractions_total{job=~"pcs-backend|pcs-staging-backend",result="persistence_error"}[10m]) > 0
+        labels:
+          severity: critical
+        annotations:
+          summary: "Persistencia de extraccion IA fallida"
+          description: "El job {{ $labels.job }} obtuvo una extraccion valida pero no pudo guardarla; revisar base y auditoria sin repetir a ciegas."

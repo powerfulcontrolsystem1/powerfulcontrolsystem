@@ -1120,6 +1120,17 @@ Actualización 2026-08-09, telemetría del antivirus de soportes:
   clamd real con firmas, EICAR controlada, recuperación y recepción externa en
   staging; P109-008/P109-010 siguen parciales, permanece **53,3 %** y **NO-GO**.
 
+Actualización 2026-08-09, evals adversariales de extracción IA:
+
+- El parser limita tamaño, claves, tipos, líneas, textos y rangos; rechaza NaN,
+  infinito, negativos, confianza fuera de 0..1 y fechas inválidas. Faltantes o
+  descuadres obligan revisión humana antes de cualquier aprobación.
+- Se publican seis resultados agregados de extracción y alertas para proveedor,
+  respuesta inválida y persistencia, sin empresa, documento, prompt o respuesta.
+- Casos adversariales y 64 registros simultáneos aprobaron localmente. Falta el
+  candidato desplegado, proveedor real y A/B; P109-002/P109-010 siguen parciales,
+  el avance permanece **53,3 %** y el veredicto **NO-GO**.
+
 ## 9. Siguiente orden para Terra alto
 
 P109-000 ya está aprobada para `ea9642dd...` y P109-011 para `c8094f5b`;

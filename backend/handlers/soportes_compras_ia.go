@@ -28,10 +28,11 @@ import (
 )
 
 const (
-	maxSoporteComprasIAUploadBytes    = 15 << 20
-	soporteComprasIAAdvisoryNamespace = int64(0x534349)
-	soporteComprasIAStorageNamespace  = int64(0x534351)
-	soporteComprasIAPurgeNamespace    = int64(0x534350)
+	maxSoporteComprasIAUploadBytes     = 15 << 20
+	maxSoporteComprasIAExtractionBytes = 128 << 10
+	soporteComprasIAAdvisoryNamespace  = int64(0x534349)
+	soporteComprasIAStorageNamespace   = int64(0x534351)
+	soporteComprasIAPurgeNamespace     = int64(0x534350)
 )
 
 var soporteComprasIAAllowedExt = map[string]bool{
@@ -44,10 +45,16 @@ var soporteComprasIAAllowedExt = map[string]bool{
 }
 
 var (
-	soporteComprasIAAntivirusClean       atomic.Uint64
-	soporteComprasIAAntivirusMalware     atomic.Uint64
-	soporteComprasIAAntivirusUnavailable atomic.Uint64
-	soporteComprasIAAntivirusBypassed    atomic.Uint64
+	soporteComprasIAAntivirusClean            atomic.Uint64
+	soporteComprasIAAntivirusMalware          atomic.Uint64
+	soporteComprasIAAntivirusUnavailable      atomic.Uint64
+	soporteComprasIAAntivirusBypassed         atomic.Uint64
+	soporteComprasIAExtractionConsistent      atomic.Uint64
+	soporteComprasIAExtractionHumanReview     atomic.Uint64
+	soporteComprasIAExtractionProviderError   atomic.Uint64
+	soporteComprasIAExtractionInvalidResponse atomic.Uint64
+	soporteComprasIAExtractionCanceled        atomic.Uint64
+	soporteComprasIAExtractionPersistence     atomic.Uint64
 )
 
 // SupportAntivirusMetrics contains process-level, tenant-free counters for the
@@ -71,6 +78,45 @@ func SupportAntivirusOperationalMetrics() SupportAntivirusMetrics {
 		Bypassed:    soporteComprasIAAntivirusBypassed.Load(),
 		Required:    parseBoolSoporteComprasIA(os.Getenv("PCS_SUPPORTS_CLAMAV_REQUIRED")),
 		Configured:  strings.TrimSpace(os.Getenv("PCS_SUPPORTS_CLAMAV_ADDR")) != "",
+	}
+}
+
+// SupportExtractionMetrics contains bounded process-level outcomes for the IA
+// extraction pipeline. It deliberately excludes tenant and document data.
+type SupportExtractionMetrics struct {
+	Consistent      uint64
+	HumanReview     uint64
+	ProviderError   uint64
+	InvalidResponse uint64
+	Canceled        uint64
+	Persistence     uint64
+}
+
+func SupportExtractionOperationalMetrics() SupportExtractionMetrics {
+	return SupportExtractionMetrics{
+		Consistent:      soporteComprasIAExtractionConsistent.Load(),
+		HumanReview:     soporteComprasIAExtractionHumanReview.Load(),
+		ProviderError:   soporteComprasIAExtractionProviderError.Load(),
+		InvalidResponse: soporteComprasIAExtractionInvalidResponse.Load(),
+		Canceled:        soporteComprasIAExtractionCanceled.Load(),
+		Persistence:     soporteComprasIAExtractionPersistence.Load(),
+	}
+}
+
+func recordSupportExtractionOutcome(outcome string) {
+	switch outcome {
+	case "consistent":
+		soporteComprasIAExtractionConsistent.Add(1)
+	case "human_review":
+		soporteComprasIAExtractionHumanReview.Add(1)
+	case "provider_error":
+		soporteComprasIAExtractionProviderError.Add(1)
+	case "invalid_response":
+		soporteComprasIAExtractionInvalidResponse.Add(1)
+	case "canceled":
+		soporteComprasIAExtractionCanceled.Add(1)
+	case "persistence_error":
+		soporteComprasIAExtractionPersistence.Add(1)
 	}
 }
 
@@ -1092,16 +1138,20 @@ func extraerSoporteComprasIAGPT55(r *http.Request, dbEmp, dbSuper *sql.DB, empre
 	respuesta, promptTokens, completionTokens, err := ctrl.callOpenAIResponsesWithSystemPromptContext(r.Context(), model, pregunta, nil, systemPrompt, att, nil, nil)
 	if err != nil {
 		if errors.Is(err, context.Canceled) {
+			recordSupportExtractionOutcome("canceled")
 			if refundErr := dbpkg.RefundEmpresaAgenteUsoDiario(dbEmp, dbpkg.EmpresaAgenteUsoDiario{
 				EmpresaID: empresaID, FechaUso: time.Now().Format("2006-01-02"), ConsultasAvanzadas: 1, SegundosUsados: 5,
 			}); refundErr != nil {
 				log.Printf("[soportes_compras_ia] no se pudo devolver reserva IA cancelada empresa_id=%d: %v", empresaID, refundErr)
 			}
+		} else {
+			recordSupportExtractionOutcome("provider_error")
 		}
 		return dbpkg.EmpresaSoporteComprasIA{}, fmt.Errorf("%w: %w", errSoporteComprasIAProveedor, err)
 	}
 	extracted, compactJSON, err := parseSoporteComprasIAExtraction(respuesta)
 	if err != nil {
+		recordSupportExtractionOutcome("invalid_response")
 		return dbpkg.EmpresaSoporteComprasIA{}, fmt.Errorf("%w: respuesta invalida", errSoporteComprasIAProveedor)
 	}
 	extracted = evaluateSoporteComprasIAExtraction(extracted)
@@ -1111,7 +1161,13 @@ func extraerSoporteComprasIAGPT55(r *http.Request, dbEmp, dbSuper *sql.DB, empre
 	extracted.Usuario = usuario
 	updated, err := dbpkg.UpdateEmpresaSoporteComprasIAExtraccion(dbEmp, empresaID, payload.SoporteID, extracted, usuario)
 	if err != nil {
+		recordSupportExtractionOutcome("persistence_error")
 		return dbpkg.EmpresaSoporteComprasIA{}, err
+	}
+	if extracted.RequiereRevisionHumana {
+		recordSupportExtractionOutcome("human_review")
+	} else {
+		recordSupportExtractionOutcome("consistent")
 	}
 	_, _ = dbpkg.RegisterEmpresaAIConsulta(dbEmp, dbpkg.EmpresaAIConsulta{
 		EmpresaID:        empresaID,
@@ -1160,7 +1216,18 @@ func acquireSoporteComprasIAExtractionLock(r *http.Request, dbEmp *sql.DB, empre
 func evaluateSoporteComprasIAExtraction(row dbpkg.EmpresaSoporteComprasIA) dbpkg.EmpresaSoporteComprasIA {
 	expected := row.Subtotal + row.ImpuestoIVA - row.RetencionFuente - row.RetencionICA - row.RetencionIVA
 	tolerance := math.Max(1, math.Abs(expected)*0.01)
-	if strings.TrimSpace(row.ProveedorNombre) == "" || strings.TrimSpace(row.DocumentoNumero) == "" || row.Total <= 0 || row.ConfianzaIA < 0.85 || math.Abs(row.Total-expected) > tolerance {
+	invalidMoney := false
+	for _, value := range []float64{row.Subtotal, row.ImpuestoIVA, row.RetencionFuente, row.RetencionICA, row.RetencionIVA, row.Total} {
+		if math.IsNaN(value) || math.IsInf(value, 0) || value < 0 {
+			invalidMoney = true
+			break
+		}
+	}
+	if strings.TrimSpace(row.ProveedorNombre) == "" || strings.TrimSpace(row.DocumentoNumero) == "" ||
+		strings.TrimSpace(row.DocumentoTipo) == "" || strings.TrimSpace(row.FechaDocumento) == "" ||
+		!strings.EqualFold(strings.TrimSpace(row.Moneda), "COP") || row.Total <= 0 ||
+		row.ConfianzaIA < 0.85 || row.ConfianzaIA > 1 || math.IsNaN(row.ConfianzaIA) || math.IsInf(row.ConfianzaIA, 0) ||
+		invalidMoney || math.IsNaN(expected) || math.IsInf(expected, 0) || math.Abs(row.Total-expected) > tolerance {
 		row.RequiereRevisionHumana = true
 	}
 	return row
@@ -1197,10 +1264,19 @@ Usa numeros sin separadores de miles. Si falta un dato, deja cadena vacia o 0. M
 }
 
 func parseSoporteComprasIAExtraction(raw string) (dbpkg.EmpresaSoporteComprasIA, string, error) {
+	if len(raw) == 0 || len(raw) > maxSoporteComprasIAExtractionBytes {
+		return dbpkg.EmpresaSoporteComprasIA{}, "", errors.New("respuesta IA fuera del limite permitido")
+	}
 	candidate := extractJSONCandidate(raw)
+	if len(candidate) == 0 || len(candidate) > maxSoporteComprasIAExtractionBytes {
+		return dbpkg.EmpresaSoporteComprasIA{}, "", errors.New("JSON IA fuera del limite permitido")
+	}
 	var data map[string]interface{}
 	if err := json.Unmarshal([]byte(candidate), &data); err != nil {
 		return dbpkg.EmpresaSoporteComprasIA{}, "", fmt.Errorf("respuesta IA no es JSON valido: %w", err)
+	}
+	if err := validateSoporteComprasIAExtractionSchema(data); err != nil {
+		return dbpkg.EmpresaSoporteComprasIA{}, "", err
 	}
 	compactBytes, _ := json.Marshal(data)
 	row := dbpkg.EmpresaSoporteComprasIA{
@@ -1225,7 +1301,72 @@ func parseSoporteComprasIAExtraction(raw string) (dbpkg.EmpresaSoporteComprasIA,
 		RequiereRevisionHumana: boolFromMap(data, "requiere_revision_humana"),
 		Observaciones:          stringFromMap(data, "observaciones"),
 	}
+	if err := validateSoporteComprasIAExtractionValues(row); err != nil {
+		return dbpkg.EmpresaSoporteComprasIA{}, "", err
+	}
 	return row, string(compactBytes), nil
+}
+
+func validateSoporteComprasIAExtractionSchema(data map[string]interface{}) error {
+	allowed := map[string]struct{}{
+		"tipo_soporte": {}, "proveedor_nombre": {}, "proveedor_nit": {},
+		"documento_tipo": {}, "documento_numero": {}, "fecha_documento": {},
+		"fecha_vencimiento": {}, "subtotal": {}, "impuesto_iva": {},
+		"retencion_fuente": {}, "retencion_ica": {}, "retencion_iva": {},
+		"total": {}, "moneda": {}, "categoria_contable": {}, "centro_costo": {},
+		"impacta_inventario": {}, "confianza_ia": {}, "requiere_revision_humana": {},
+		"lineas_detectadas": {}, "observaciones": {},
+	}
+	for key := range data {
+		if _, ok := allowed[key]; !ok {
+			return fmt.Errorf("respuesta IA contiene campo no permitido: %s", key)
+		}
+	}
+	for key, value := range data {
+		if key == "lineas_detectadas" {
+			if value == nil {
+				continue
+			}
+			lines, ok := value.([]interface{})
+			if !ok || len(lines) > 500 {
+				return errors.New("respuesta IA contiene lineas_detectadas invalidas")
+			}
+			continue
+		}
+		switch value.(type) {
+		case nil, string, float64, bool:
+		default:
+			return fmt.Errorf("respuesta IA contiene tipo invalido para %s", key)
+		}
+	}
+	return nil
+}
+
+func validateSoporteComprasIAExtractionValues(row dbpkg.EmpresaSoporteComprasIA) error {
+	textLimits := map[string]struct {
+		value string
+		limit int
+	}{
+		"tipo_soporte": {row.TipoSoporte, 40}, "proveedor_nombre": {row.ProveedorNombre, 200},
+		"proveedor_nit": {row.ProveedorNIT, 40}, "documento_tipo": {row.DocumentoTipo, 50},
+		"documento_numero": {row.DocumentoNumero, 100}, "moneda": {row.Moneda, 8},
+		"categoria_contable": {row.CategoriaContable, 160}, "centro_costo": {row.CentroCosto, 160},
+		"observaciones": {row.Observaciones, 2000},
+	}
+	for field, item := range textLimits {
+		if len(item.value) > item.limit {
+			return fmt.Errorf("respuesta IA excede limite de %s", field)
+		}
+	}
+	for _, value := range []float64{row.Subtotal, row.ImpuestoIVA, row.RetencionFuente, row.RetencionICA, row.RetencionIVA, row.Total} {
+		if math.IsNaN(value) || math.IsInf(value, 0) || value < 0 || value > 1e15 {
+			return errors.New("respuesta IA contiene valor monetario invalido")
+		}
+	}
+	if math.IsNaN(row.ConfianzaIA) || math.IsInf(row.ConfianzaIA, 0) || row.ConfianzaIA < 0 || row.ConfianzaIA > 1 {
+		return errors.New("respuesta IA contiene confianza invalida")
+	}
+	return nil
 }
 
 func extractJSONCandidate(raw string) string {
@@ -1515,7 +1656,9 @@ func normalizeDateString(raw string) string {
 		}
 	}
 	if len(raw) >= 10 {
-		return raw[:10]
+		if t, err := time.Parse("2006-01-02", raw[:10]); err == nil {
+			return t.Format("2006-01-02")
+		}
 	}
-	return raw
+	return ""
 }

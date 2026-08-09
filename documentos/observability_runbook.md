@@ -22,6 +22,12 @@
    corregir la política antes de nuevas cargas. Ante
    `PCSAntivirusSoportesDetectoMalware`, conservar la auditoria agregada y no
    abrir, descargar ni extraer el adjunto rechazado.
+8. Ante `PCSExtraccionIASoportesProveedorFallando`, conservar el soporte sin
+   cambios y revisar proveedor/cuota antes de reintentar. Una
+   `PCSExtraccionIASoportesRespuestaInvalida` no autoriza copiar datos manuales
+   desde la respuesta rechazada. Ante
+   `PCSExtraccionIASoportesPersistenciaFallida`, verificar PostgreSQL y auditoria
+   antes de repetir, para evitar consumo o decisiones duplicadas.
 
 Los paneles y alertas deben validarse en staging antes de usarse como evidencia
 de produccion.

@@ -45,6 +45,8 @@ func TestPrometheusMetricsHandlerExposesAggregateOperationalSignals(t *testing.T
 		`pcs_support_antivirus_scans_total{result="clean"} 0`,
 		"pcs_support_antivirus_required 0",
 		"pcs_support_antivirus_configured 0",
+		`pcs_support_ai_extractions_total{result="consistent"} 0`,
+		`pcs_support_ai_extractions_total{result="invalid_response"} 0`,
 	}
 	for _, want := range expected {
 		if !strings.Contains(body, want) {
@@ -85,6 +87,7 @@ func TestRenderPrometheusMetricsUsesOnlyBoundedAggregateLabels(t *testing.T) {
 	values.asyncJobs = prometheusQueueMetrics{ready: 6, processing: 7, dead: 8, expiredLeases: 9, queryOK: 1}
 	values.supportPurge = prometheusSupportPurgeMetrics{pending: 10, stale: 2, purged: 11, queryOK: 1}
 	values.supportAV = handlers.SupportAntivirusMetrics{Clean: 12, Malware: 1, Unavailable: 2, Bypassed: 3, Required: true, Configured: true}
+	values.supportExtract = handlers.SupportExtractionMetrics{Consistent: 20, HumanReview: 4, ProviderError: 2, InvalidResponse: 1, Canceled: 3, Persistence: 1}
 
 	body := renderPrometheusMetrics(values)
 	for _, want := range []string{
@@ -101,6 +104,12 @@ func TestRenderPrometheusMetricsUsesOnlyBoundedAggregateLabels(t *testing.T) {
 		`pcs_support_antivirus_scans_total{result="bypassed"} 3`,
 		"pcs_support_antivirus_required 1",
 		"pcs_support_antivirus_configured 1",
+		`pcs_support_ai_extractions_total{result="consistent"} 20`,
+		`pcs_support_ai_extractions_total{result="human_review"} 4`,
+		`pcs_support_ai_extractions_total{result="provider_error"} 2`,
+		`pcs_support_ai_extractions_total{result="invalid_response"} 1`,
+		`pcs_support_ai_extractions_total{result="canceled"} 3`,
+		`pcs_support_ai_extractions_total{result="persistence_error"} 1`,
 	} {
 		if !strings.Contains(body, want) {
 			t.Fatalf("metrics body does not contain %q: %q", want, body)
@@ -132,6 +141,9 @@ func TestSupportPurgeMonitoringConfigurationContract(t *testing.T) {
 		"alert: PCSAntivirusSoportesNoDisponible",
 		"alert: PCSAntivirusSoportesOmitido",
 		"alert: PCSAntivirusSoportesDetectoMalware",
+		"alert: PCSExtraccionIASoportesProveedorFallando",
+		"alert: PCSExtraccionIASoportesRespuestaInvalida",
+		"alert: PCSExtraccionIASoportesPersistenciaFallida",
 		"runbook",
 	} {
 		if !strings.Contains(rulesText, want) {
@@ -150,7 +162,7 @@ func TestSupportPurgeMonitoringConfigurationContract(t *testing.T) {
 	if err := json.Unmarshal(dashboard, &parsed); err != nil {
 		t.Fatalf("dashboard JSON invalid: %v", err)
 	}
-	for _, want := range []string{"Depuraciones IA pendientes", "Depuraciones IA vencidas", "pcs_support_purge_stale_total", "Antivirus soportes", "pcs_support_antivirus_scans_total"} {
+	for _, want := range []string{"Depuraciones IA pendientes", "Depuraciones IA vencidas", "pcs_support_purge_stale_total", "Antivirus soportes", "pcs_support_antivirus_scans_total", "Resultados extraccion IA soportes", "pcs_support_ai_extractions_total"} {
 		if !strings.Contains(string(dashboard), want) {
 			t.Fatalf("dashboard does not contain %q", want)
 		}

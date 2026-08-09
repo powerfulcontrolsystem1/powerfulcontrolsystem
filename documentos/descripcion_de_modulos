@@ -1,3 +1,12 @@
+2026-08-09: Evals y telemetria de extracción IA de soportes.
+- Modulos afectados: `soportes_compras_ia`, `IA empresarial`, `evaluaciones`,
+  `observabilidad`, `Prometheus`, `Grafana` y `Alertmanager`.
+- La respuesta IA queda limitada por tamaño, claves, tipos, textos, importes,
+  fechas y confianza antes de persistir; anomalías fallan cerradas o fuerzan
+  revisión humana.
+- Resultados operativos agregados distinguen éxito consistente, revisión,
+  cancelación y fallos de proveedor, contrato o persistencia sin datos privados.
+
 2026-08-09: Observabilidad del antivirus de soportes CxP/IA.
 - Modulos afectados: `soportes_compras_ia`, `antivirus`, `observabilidad`,
   `Prometheus`, `Grafana` y `Alertmanager`.

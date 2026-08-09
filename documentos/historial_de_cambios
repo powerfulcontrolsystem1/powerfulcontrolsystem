@@ -1,3 +1,15 @@
+2026-08-09: Plan 109 / evals adversariales y telemetria de extracción CxP-IA.
+- El parser IA limita 128 KiB, claves/tipos declarados, 500 líneas, longitudes y
+  rangos. Rechaza NaN, infinito, negativos, confianza fuera de 0..1 e importes
+  desproporcionados; fechas inválidas dejan de aceptarse por recorte.
+- La evaluación exige revisión ante fecha/tipo/moneda faltante, baja confianza o
+  descuadre. Contadores atomicos registran seis resultados acotados sin empresa,
+  usuario, documento, prompt ni respuesta.
+- Prometheus alerta proveedor, contrato o persistencia; Grafana muestra los
+  resultados. Pruebas adversariales y 64 registros simultáneos aprobaron.
+- Sin proveedor, staging ni mutación PCS: P109-002/P109-010 siguen parciales,
+  Plan 109 permanece 53,3 % y NO-GO.
+
 2026-08-09: Plan 109 / telemetria del antivirus de soportes CxP-IA.
 - El scanner clamd cuenta con atomicos los resultados limpio, malware,
   indisponible y omitido; `/metrics` agrega los contadores y los gauges de modo

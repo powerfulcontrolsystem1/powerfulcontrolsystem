@@ -78,6 +78,11 @@ mismo hash o numero de documento.
   `pcs_support_antivirus_required`/`pcs_support_antivirus_configured`. No se usan
   etiquetas de empresa, usuario, soporte, archivo o ruta; las alertas conservan
   el modo obligatorio fail-closed y conducen al runbook de observabilidad.
+- La extracción IA admite como máximo 128 KiB y únicamente el esquema
+  documentado. Rechaza tipos compuestos en escalares, claves inesperadas,
+  valores no finitos/negativos, confianza fuera de 0..1, textos excesivos y
+  fechas inválidas. Los resultados operativos se exponen agregados en
+  `pcs_support_ai_extractions_total` sin datos del tenant o documento.
 - Si la fila no puede persistirse despues de escribir el archivo privado, el
   adjunto recien creado se elimina dentro de la raiz segura para evitar huerfanos.
 - `Cancelar IA` aborta la solicitud HTTP y propaga el contexto al proveedor; el

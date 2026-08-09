@@ -3,7 +3,7 @@
   "title": "Powerful Control System - Operacion VPS",
   "timezone": "browser",
   "schemaVersion": 39,
-  "version": 4,
+  "version": 5,
   "refresh": "30s",
   "tags": ["pcs", "vps", "docker"],
   "panels": [
@@ -207,6 +207,18 @@
       "targets": [
         {
           "expr": "sum by(job, result) (increase(pcs_support_antivirus_scans_total{job=~\"pcs-backend|pcs-staging-backend\"}[5m]))",
+          "legendFormat": "{{job}} {{result}}"
+        }
+      ],
+      "fieldConfig": {"defaults": {"min": 0}}
+    },
+    {
+      "type": "timeseries",
+      "title": "Resultados extraccion IA soportes (5m)",
+      "gridPos": {"x": 0, "y": 43, "w": 24, "h": 7},
+      "targets": [
+        {
+          "expr": "sum by(job, result) (increase(pcs_support_ai_extractions_total{job=~\"pcs-backend|pcs-staging-backend\"}[5m]))",
           "legendFormat": "{{job}} {{result}}"
         }
       ],
