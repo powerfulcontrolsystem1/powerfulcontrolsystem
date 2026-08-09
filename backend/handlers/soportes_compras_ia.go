@@ -71,7 +71,8 @@ func handleSoportesComprasIAGet(w http.ResponseWriter, r *http.Request, dbEmp *s
 		writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "dashboard": dashboard})
 	case "soportes":
 		estado := r.URL.Query().Get("estado")
-		rows, err := dbpkg.ListEmpresaSoportesComprasIA(dbEmp, empresaID, estado, 300)
+		registro := r.URL.Query().Get("registro")
+		rows, err := dbpkg.ListEmpresaSoportesComprasIARegistro(dbEmp, empresaID, estado, registro, 300)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
@@ -199,6 +200,23 @@ func handleSoportesComprasIAMutate(w http.ResponseWriter, r *http.Request, dbEmp
 			return
 		}
 		row, err := dbpkg.ContabilizarEmpresaSoporteComprasIA(dbEmp, empresaID, payload.SoporteID, usuario)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		exposeSoporteComprasIAURL(&row)
+		writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "soporte": row})
+	case "eliminar", "restaurar":
+		payload, err := decodeSoporteComprasIAActionPayload(r)
+		if err != nil || payload.SoporteID <= 0 {
+			http.Error(w, "soporte_id es obligatorio", http.StatusBadRequest)
+			return
+		}
+		next := "eliminado"
+		if action == "restaurar" {
+			next = "activo"
+		}
+		row, err := dbpkg.UpdateEmpresaSoporteComprasIARegistroEstado(dbEmp, empresaID, payload.SoporteID, next, usuario, payload.Observaciones)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
@@ -446,6 +464,10 @@ func soporteComprasIADownloadURL(empresaID, soporteID int64) string {
 }
 
 func exposeSoporteComprasIAURL(row *dbpkg.EmpresaSoporteComprasIA) {
+	if row != nil && !strings.EqualFold(strings.TrimSpace(row.Estado), "activo") {
+		row.ArchivoURL = ""
+		return
+	}
 	if row != nil && row.ID > 0 && strings.HasPrefix(strings.TrimSpace(row.ArchivoURL), "private://") {
 		row.ArchivoURL = soporteComprasIADownloadURL(row.EmpresaID, row.ID)
 	}
@@ -457,7 +479,7 @@ func downloadSoporteComprasIA(w http.ResponseWriter, r *http.Request, dbEmp *sql
 		http.Error(w, "soporte invalido", http.StatusBadRequest)
 		return
 	}
-	row, err := dbpkg.GetEmpresaSoporteComprasIA(dbEmp, empresaID, soporteID)
+	row, err := dbpkg.GetEmpresaSoporteComprasIAActivo(dbEmp, empresaID, soporteID)
 	if err != nil {
 		http.Error(w, "archivo no disponible", http.StatusNotFound)
 		return
@@ -515,7 +537,7 @@ func extraerSoporteComprasIAGPT55(r *http.Request, dbEmp, dbSuper *sql.DB, empre
 	if payload.SoporteID <= 0 {
 		return dbpkg.EmpresaSoporteComprasIA{}, errSoporteComprasIASolicitudInvalida
 	}
-	current, err := dbpkg.GetEmpresaSoporteComprasIA(dbEmp, empresaID, payload.SoporteID)
+	current, err := dbpkg.GetEmpresaSoporteComprasIAActivo(dbEmp, empresaID, payload.SoporteID)
 	if err != nil {
 		return dbpkg.EmpresaSoporteComprasIA{}, err
 	}

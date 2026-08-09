@@ -1,3 +1,14 @@
+2026-08-08: Papelera recuperable de soportes de compras IA.
+- Modulos afectados: `soportes_compras_ia`, `CxP`, `auditoria`,
+  `seguridad_multiempresa` y `frontend_ux`.
+- La bandeja separa activos y eliminados. Enviar o recuperar exige motivo y
+  conserva archivo, estado funcional, actor y eventos; no existe borrado fisico.
+- Los adjuntos eliminados no se exponen ni descargan, y las acciones de IA,
+  revision, aprobacion, rechazo y contabilizacion fallan cerradas hasta recuperar.
+- La recuperacion rechaza duplicados activos por hash/documento y un soporte
+  contabilizado o ya convertido nunca puede ocultarse. Todas las consultas y
+  transiciones mantienen `empresa_id` en lectura, bloqueo y escritura.
+
 2026-08-08: Soportes de compras IA y cuota empresarial.
 - Modulos afectados: `soportes_compras_ia`, `almacenamiento_empresarial`,
   `compras`, `CxP`, `seguridad_multiempresa`.

@@ -145,6 +145,7 @@
           <h2>Bandeja de soportes</h2>
           <div class="capture-toolbar-actions">
             <div class="capture-field"><label>Estado</label><select id="estadoFilter"><option value="">Todos</option><option value="radicado">Radicado</option><option value="extraido">Extraido</option><option value="en_revision">En revision</option><option value="aprobado">Aprobado</option><option value="contabilizado">Contabilizado</option><option value="duplicado">Duplicado</option><option value="rechazado">Rechazado</option></select></div>
+            <div class="capture-field"><label>Registro</label><select id="registroFilter"><option value="activo">Activos</option><option value="eliminado">Papelera</option></select></div>
             <div class="capture-field"><label>Tipo</label><select id="tipoFilter"><option value="">Todos</option><option value="gasto">Gasto</option><option value="compra">Compra</option><option value="documento_soporte">Documento soporte</option><option value="servicio">Servicio</option><option value="recibo">Recibo</option></select></div>
             <div class="capture-field"><label>Buscar</label><input id="searchFilter" placeholder="Proveedor, NIT, documento"></div>
           </div>
@@ -154,7 +155,10 @@
           <button class="capture-btn" id="btnAprobar" type="button">Aprobar</button>
           <button class="capture-btn danger" id="btnRechazar" type="button">Rechazar</button>
           <button class="capture-btn warn" id="btnContabilizar" type="button">Contabilizar</button>
+          <button class="capture-btn danger" id="btnEliminar" type="button">Enviar a papelera</button>
+          <button class="capture-btn" id="btnRestaurar" type="button">Recuperar</button>
         </div>
+        <p class="capture-muted">La papelera conserva el archivo y la auditoria. Los soportes contabilizados no pueden eliminarse y los adjuntos eliminados no se descargan hasta recuperarlos.</p>
         <div id="captureTable" class="capture-table-wrap"></div>
       </div>
     </section>

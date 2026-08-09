@@ -1,4 +1,23 @@
 2026-08-08
+- `documentos/evidencia_plan_109/P109-008/2026-08-08_papelera_soportes_ia_local.md`:
+  evidencia el ciclo local de eliminacion/recuperacion, aislamiento, auditoria,
+  cierres operativos y limites de certificacion de soportes CxP/IA.
+- `backend/db/soportes_compras_ia.go`: agrega bandeja por estado de registro,
+  papelera transaccional, recuperacion sin duplicados y cierres activos en IA,
+  revision, estado y contabilizacion.
+- `backend/db/soportes_compras_ia_test.go`: cubre transiciones recuperables,
+  idempotencia, estados heredados y filtro cerrado de la papelera.
+- `backend/handlers/soportes_compras_ia_revision_contract_test.go`: verifica el
+  contrato UI/backend de papelera, auditoria, `empresa_id` y enlaces same-origin.
+- `backend/handlers/soportes_compras_ia.go`: expone listar/eliminar/restaurar y
+  niega descarga o extraccion de registros eliminados.
+- `backend/handlers/empresa_permisos.go`: clasifica papelera como Delete y
+  recuperacion como Update en el wrapper efectivo del modulo.
+- `documentos/matriz_roles_permisos_pos_multiempresa.md`: registra U/D efectivos
+  de recuperacion y papelera para captura de soportes IA.
+- `web/administrar_empresa/soportes_compras_ia.html` y
+  `web/js/soportes_compras_ia.js`: incorporan filtro Activos/Papelera, botones,
+  motivo obligatorio, estados visibles y bloqueo de edicion/acciones.
 - `backend/handlers/outbound_http_security_test.go`: cubre rangos no publicos,
   normalizacion HTTP(S), origen DIAN, dominios oficiales, redirecciones y probes
   SSRF sin conexiones privadas.

@@ -15,13 +15,16 @@ Modulo empresarial para radicar soportes de compras y gastos por `empresa_id` de
 ## Flujo funcional
 
 1. Radicar soporte con archivo o datos manuales.
-2. Guardar archivo bajo `/uploads/soportes_compras_ia/empresa_<id>/`.
+2. Guardar el archivo en almacenamiento privado por empresa y exponerlo solo
+   mediante la descarga autenticada del modulo.
 3. Calcular hash SHA-256 y detectar duplicados por archivo o documento.
 4. Ejecutar extraccion con IA GPT-5.5 usando las limitaciones configuradas en Super Administrador.
 5. Normalizar proveedor, NIT, tipo/numero de documento, fechas, subtotal, IVA, retenciones, total, categoria, centro de costo e impacto en inventario.
 6. Marcar revision humana cuando la confianza sea baja o el modelo lo indique.
 7. Aprobar o rechazar.
 8. Contabilizar soporte aprobado como cuenta por pagar en `empresa_cuentas_por_pagar`.
+9. Enviar a papelera un soporte no contabilizado con motivo obligatorio o
+   recuperarlo conservando archivo, estado del flujo y auditoria.
 
 ## Estados
 
@@ -33,11 +36,18 @@ Modulo empresarial para radicar soportes de compras y gastos por `empresa_id` de
 - `duplicado`: detectado por hash o documento.
 - `contabilizado`: convertido en cuenta por pagar.
 
+El estado del registro es independiente del estado funcional: `activo` permite
+operar y `eliminado` lo mantiene en papelera. Un registro eliminado no se puede
+descargar, editar, extraer con IA, aprobar, rechazar ni contabilizar hasta ser
+recuperado. La recuperacion se bloquea si ya existe otro soporte activo con el
+mismo hash o numero de documento.
+
 ## Permisos por rol
 
 - Lectura: `admin_empresa`, `supervisor_sucursal`, `cajero`, `inventario`, `compras`, `contabilidad`, `auditor`.
 - Crear, extraer, aprobar y contabilizar: `admin_empresa`, `supervisor_sucursal`, `compras`, `contabilidad`.
-- Eliminacion funcional: no habilitada; se usa rechazo/anulacion trazable.
+- Papelera recuperable: usa el mismo permiso mutante del modulo, exige motivo,
+  actor y `empresa_id`; no borra fisicamente el archivo ni los eventos.
 
 ## Consideraciones de produccion
 
@@ -46,6 +56,8 @@ Modulo empresarial para radicar soportes de compras y gastos por `empresa_id` de
 - Los soportes con baja confianza, valores inconsistentes o datos tributarios incompletos deben revisarse antes de aprobar.
 - Para documentos oficiales DIAN, la extraccion IA no reemplaza validacion tributaria ni aceptacion/rechazo legal del documento.
 - La pantalla valida el enlace de archivo antes de renderizarlo y solo permite direcciones navegables seguras, evitando protocolos no esperados en soportes cargados.
+- Un soporte convertido a CxP no puede enviarse a papelera, porque su origen
+  documental debe permanecer visible para conciliacion y auditoria contable.
 
 ## Pruebas
 

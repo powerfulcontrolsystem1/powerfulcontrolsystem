@@ -129,3 +129,50 @@ func TestSoportesComprasIARendersExtractedValuesAsEscapedText(t *testing.T) {
 		}
 	}
 }
+
+func TestSoportesComprasIAPapeleraIsRecoverableAuditedAndTenantScoped(t *testing.T) {
+	page, err := os.ReadFile(filepath.Join("..", "..", "web", "administrar_empresa", "soportes_compras_ia.html"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, want := range []string{"registroFilter", "btnEliminar", "btnRestaurar", "Papelera", "soportes contabilizados no pueden eliminarse"} {
+		if !strings.Contains(string(page), want) {
+			t.Fatalf("papelera UI missing %q", want)
+		}
+	}
+	script, err := os.ReadFile(filepath.Join("..", "..", "web", "js", "soportes_compras_ia.js"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, want := range []string{
+		`action === "restaurar"`, `action === "eliminar"`, `estado || "activo"`,
+		`"&registro="`, `window.prompt`, `observaciones: motivo`,
+		`url.origin === window.location.origin`, `Recupera el soporte antes de editar sus datos`,
+	} {
+		if !strings.Contains(string(script), want) {
+			t.Fatalf("papelera client contract missing %q", want)
+		}
+	}
+	source, err := os.ReadFile(filepath.Join("..", "db", "soportes_compras_ia.go"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, want := range []string{
+		"func UpdateEmpresaSoporteComprasIARegistroEstado", "WHERE empresa_id=? AND id=? FOR UPDATE",
+		"un soporte contabilizado no puede eliminarse", "COALESCE(estado,'activo')='activo'",
+		"estado_registro_anterior", "estado_registro_nuevo", "func GetEmpresaSoporteComprasIAActivo",
+	} {
+		if !strings.Contains(string(source), want) {
+			t.Fatalf("papelera persistence contract missing %q", want)
+		}
+	}
+	permissions, err := os.ReadFile("empresa_permisos.go")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, want := range []string{`case "restaurar":`, `case "eliminar":`, "return permActionDelete", "return permActionUpdate"} {
+		if !strings.Contains(string(permissions), want) {
+			t.Fatalf("papelera permission contract missing %q", want)
+		}
+	}
+}

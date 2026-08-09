@@ -1037,6 +1037,20 @@ Actualización 2026-08-08, salidas HTTP DIAN e integraciones:
   local sin PR ni despliegue; P109-009 permanece parcial y el Plan conserva
   **53,3 %**, **0 % de certificación del arreglo local** y **NO-GO**.
 
+Actualización 2026-08-08, papelera recuperable de soportes CxP/IA:
+
+- Se implementó localmente eliminación lógica y recuperación con motivo,
+  actor, auditoría y bloqueo transaccional por `empresa_id`; el archivo y el
+  historial no se destruyen.
+- Los soportes eliminados no pueden descargarse, editarse, procesarse con IA ni
+  contabilizarse. La recuperación falla si existe duplicado activo y los
+  soportes contabilizados/convertidos no pueden enviarse a papelera.
+- La UI separa Activos/Papelera y habilita únicamente las acciones compatibles.
+  Las pruebas Go y contratos de interfaz aprobaron, pero falta desplegar el
+  candidato y repetir el ciclo autenticado/visual en PCS y en empresa A/B.
+- P109-002 y P109-008 continúan parciales. El avance permanece en **53,3 % de
+  implementación**, **0 % de certificación del arreglo local** y **NO-GO**.
+
 ## 9. Siguiente orden para Terra alto
 
 P109-000 ya está aprobada para `ea9642dd...` y P109-011 para `c8094f5b`;
@@ -1047,8 +1061,9 @@ continuar así:
    conserva sus imágenes anteriores;
 2. cerrar P109-001 únicamente cuando exista una segunda identidad/empresa A/B
    autorizada, sin usar la sesión global como prueba de aislamiento;
-3. completar en P109-002 confirmación/cancelación, doble clic, degradación del
-   proveedor y evals, sin convertir automáticamente el borrador en pago;
+3. desplegar el candidato aislado y repetir en P109-002/P109-008 la papelera,
+   descarga bloqueada, recuperación, duplicado y botones IA en PCS y empresa
+   A/B; completar además confirmación/cancelación, degradación y evals;
 4. ejecutar UAT contable/fiscal de P109-003 con contador autorizado;
 5. completar acciones mutantes de P109-004 por rol y flujo oficial;
 6. continuar cuatro cajas, DIAN, receptor externo y piloto solo cuando

@@ -7,7 +7,7 @@
     soportes: [],
     proveedores: [],
     selected: null,
-    filters: { estado: "", tipo: "", search: "" },
+    filters: { estado: "", registro: "activo", tipo: "", search: "" },
     loading: false
   };
 
@@ -19,6 +19,8 @@
     contabilizado: "Contabilizado",
     rechazado: "Rechazado",
     duplicado: "Duplicado",
+    activo: "Activo",
+    eliminado: "Eliminado",
     gasto: "Gasto",
     compra: "Compra",
     documento_soporte: "Documento soporte",
@@ -71,7 +73,11 @@
   }
 
   function actionAllowed(action) {
-    return !!state.selected && (actionStates[action] || []).indexOf(selectedState()) >= 0;
+    if (!state.selected) return false;
+    var registro = String(state.selected.estado || "activo").toLowerCase();
+    if (action === "restaurar") return registro === "eliminado";
+    if (action === "eliminar") return registro === "activo" && selectedState() !== "contabilizado" && Number(state.selected.convertido_id || 0) <= 0;
+    return registro === "activo" && (actionStates[action] || []).indexOf(selectedState()) >= 0;
   }
 
   function syncActionControls() {
@@ -79,7 +85,9 @@
       btnExtraer: "extraer_ia",
       btnAprobar: "aprobar",
       btnRechazar: "rechazar",
-      btnContabilizar: "contabilizar"
+      btnContabilizar: "contabilizar",
+      btnEliminar: "eliminar",
+      btnRestaurar: "restaurar"
     };
     Object.keys(actions).forEach(function (id) {
       var button = el(id);
@@ -89,6 +97,13 @@
       button.setAttribute("aria-disabled", button.disabled ? "true" : "false");
       button.title = !state.selected ? "Selecciona un soporte primero." : (!allowed ? "Accion no disponible para el estado " + label(selectedState()) + "." : "");
     });
+    var saveButton = el("btnGuardarRevision");
+    if (saveButton) {
+      var editable = !!state.selected && String(state.selected.estado || "activo").toLowerCase() === "activo" && ["radicado", "extraido", "en_revision", "aprobado"].indexOf(selectedState()) >= 0;
+      saveButton.disabled = state.loading || !editable;
+      saveButton.setAttribute("aria-disabled", saveButton.disabled ? "true" : "false");
+      saveButton.title = editable ? "" : "Solo puedes editar un soporte activo pendiente de contabilizar.";
+    }
   }
 
   function setBusy(on, text) {
@@ -181,9 +196,9 @@
     return '<table class="capture-table"><thead><tr><th>Codigo</th><th>Estado</th><th>Proveedor</th><th>Documento</th><th>Fecha</th><th>Total</th><th>Confianza</th><th>Control</th><th>Archivo</th></tr></thead><tbody>' +
       rows.map(function (s) {
         var selected = state.selected && String(state.selected.id) === String(s.id);
-        var archivo = safeHref(s.archivo_url);
+        var archivo = String(s.estado || "activo").toLowerCase() === "activo" ? safeHref(s.archivo_url) : "";
         var control = s.duplicado_soporte_id ? "Duplicado #" + s.duplicado_soporte_id : (s.requiere_revision_humana ? "Revision humana" : "OK");
-        return '<tr data-id="' + esc(s.id) + '" class="' + (selected ? "is-selected" : "") + '"><td><strong>' + esc(s.codigo || "-") + '</strong><br><span class="capture-muted">' + esc(label(s.tipo_soporte)) + '</span></td><td>' + chip(s.estado_soporte) + '</td><td>' + esc(s.proveedor_nombre || "Sin proveedor") + '<br><span class="capture-muted">' + esc(s.proveedor_nit || "-") + '</span></td><td>' + esc(label(s.documento_tipo)) + '<br><span class="capture-muted">' + esc(s.documento_numero || "-") + '</span></td><td>' + esc(s.fecha_documento || "-") + '<br><span class="capture-muted">Vence ' + esc(s.fecha_vencimiento || "-") + '</span></td><td class="num"><strong>' + money(s.total || 0) + '</strong></td><td>' + progress(s.confianza_ia || 0) + '</td><td>' + esc(control) + '</td><td>' + (archivo ? '<a href="' + esc(archivo) + '" target="_blank" rel="noopener">Ver</a>' : '<span class="capture-muted">Manual</span>') + '</td></tr>';
+        return '<tr data-id="' + esc(s.id) + '" class="' + (selected ? "is-selected" : "") + '"><td><strong>' + esc(s.codigo || "-") + '</strong><br><span class="capture-muted">' + esc(label(s.tipo_soporte)) + '</span></td><td>' + chip(s.estado_soporte) + (String(s.estado || "activo").toLowerCase() === "eliminado" ? '<br>' + chip("eliminado", "capture-bad") : "") + '</td><td>' + esc(s.proveedor_nombre || "Sin proveedor") + '<br><span class="capture-muted">' + esc(s.proveedor_nit || "-") + '</span></td><td>' + esc(label(s.documento_tipo)) + '<br><span class="capture-muted">' + esc(s.documento_numero || "-") + '</span></td><td>' + esc(s.fecha_documento || "-") + '<br><span class="capture-muted">Vence ' + esc(s.fecha_vencimiento || "-") + '</span></td><td class="num"><strong>' + money(s.total || 0) + '</strong></td><td>' + progress(s.confianza_ia || 0) + '</td><td>' + esc(control) + '</td><td>' + (archivo ? '<a href="' + esc(archivo) + '" target="_blank" rel="noopener">Ver</a>' : '<span class="capture-muted">No disponible</span>') + '</td></tr>';
       }).join("") + '</tbody></table>';
   }
 
@@ -204,6 +219,7 @@
     var fields = [
       ["Codigo", s.codigo],
       ["Estado", label(s.estado_soporte)],
+      ["Registro", label(s.estado || "activo")],
       ["Tipo", label(s.tipo_soporte)],
       ["Proveedor", s.proveedor_nombre],
       ["NIT", s.proveedor_nit],
@@ -330,7 +346,7 @@
     setBusy(true, "Cargando captura inteligente...");
     return Promise.all([
       api("dashboard"),
-      api("soportes", null, state.filters.estado ? "&estado=" + encodeURIComponent(state.filters.estado) : ""),
+      api("soportes", null, (state.filters.estado ? "&estado=" + encodeURIComponent(state.filters.estado) : "") + "&registro=" + encodeURIComponent(state.filters.registro)),
       loadProveedores()
     ]).then(function (res) {
       state.dashboard = res[0].dashboard || {};
@@ -386,8 +402,17 @@
       contabilizar: "¿Crear la cuenta por pagar con los datos aprobados? Esta acción no registra ningún pago."
     };
     if (confirmations[action] && !window.confirm(confirmations[action])) return;
+    var motivo = "";
+    if (action === "eliminar" || action === "restaurar") {
+      motivo = window.prompt(action === "eliminar" ? "Motivo obligatorio para enviar el soporte a la papelera:" : "Motivo obligatorio para recuperar el soporte:", "") || "";
+      motivo = motivo.trim();
+      if (!motivo) {
+        msg("Debes registrar un motivo para mantener la auditoria.", true);
+        return;
+      }
+    }
     setBusy(true, text);
-    api(action, { method: "POST", body: JSON.stringify({ soporte_id: state.selected.id }) }).then(function () {
+    api(action, { method: "POST", body: JSON.stringify({ soporte_id: state.selected.id, observaciones: motivo }) }).then(function () {
       msg("Accion completada.");
       return load();
     }).catch(function (e) {
@@ -401,6 +426,10 @@
     ev.preventDefault();
     if (!state.selected) {
       msg("Selecciona un soporte primero.", true);
+      return;
+    }
+    if (String(state.selected.estado || "activo").toLowerCase() !== "activo") {
+      msg("Recupera el soporte antes de editar sus datos.", true);
       return;
     }
     var proveedorId = Number(val("editProveedor")) || 0;
@@ -436,8 +465,8 @@
   }
 
   function exportCSV() {
-    var rows = [["ID", "Codigo", "Estado", "Tipo", "Proveedor", "NIT", "Documento", "Fecha", "Vencimiento", "Total", "Confianza"]].concat(rowList().map(function (s) {
-      return [s.id, s.codigo, s.estado_soporte, s.tipo_soporte, s.proveedor_nombre, s.proveedor_nit, s.documento_numero, s.fecha_documento, s.fecha_vencimiento, s.total, s.confianza_ia];
+    var rows = [["ID", "Codigo", "Estado", "Registro", "Tipo", "Proveedor", "NIT", "Documento", "Fecha", "Vencimiento", "Total", "Confianza"]].concat(rowList().map(function (s) {
+      return [s.id, s.codigo, s.estado_soporte, s.estado, s.tipo_soporte, s.proveedor_nombre, s.proveedor_nit, s.documento_numero, s.fecha_documento, s.fecha_vencimiento, s.total, s.confianza_ia];
     }));
     var csv = rows.map(function (row) {
       return row.map(function (v) { return '"' + String(v == null ? "" : v).replace(/"/g, '""') + '"'; }).join(";");
@@ -458,7 +487,7 @@
     if (!raw) return "";
     try {
       var url = new URL(raw, window.location.origin);
-      if ((url.protocol === "http:" || url.protocol === "https:") && (url.origin === window.location.origin || raw.indexOf("/") !== 0)) return url.href;
+      if ((url.protocol === "http:" || url.protocol === "https:") && url.origin === window.location.origin) return url.href;
       if (raw.indexOf("/") === 0 && url.origin === window.location.origin) return url.pathname + url.search + url.hash;
     } catch (_) {}
     return "";
@@ -494,7 +523,10 @@
   el("btnAprobar").addEventListener("click", function () { actionSelected("aprobar", "Aprobando soporte..."); });
   el("btnRechazar").addEventListener("click", function () { actionSelected("rechazar", "Rechazando soporte..."); });
   el("btnContabilizar").addEventListener("click", function () { actionSelected("contabilizar", "Generando cuenta por pagar..."); });
+  el("btnEliminar").addEventListener("click", function () { actionSelected("eliminar", "Enviando soporte a la papelera..."); });
+  el("btnRestaurar").addEventListener("click", function () { actionSelected("restaurar", "Recuperando soporte..."); });
   el("estadoFilter").addEventListener("change", function () { state.filters.estado = this.value; load(); });
+  el("registroFilter").addEventListener("change", function () { state.filters.registro = this.value; state.selected = null; load(); });
   el("tipoFilter").addEventListener("change", function () { state.filters.tipo = this.value; renderTables(); });
   el("searchFilter").addEventListener("input", function () { state.filters.search = this.value || ""; renderTables(); });
 

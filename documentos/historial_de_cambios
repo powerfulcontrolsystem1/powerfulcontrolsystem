@@ -1,3 +1,20 @@
+2026-08-08: Plan 109 / papelera recuperable para soportes CxP-IA.
+- Se agrega eliminacion logica y recuperacion con motivo obligatorio, actor,
+  transaccion bloqueada y evento auditable por `empresa_id`; archivos y eventos
+  no se borran fisicamente.
+- Un soporte eliminado queda fuera de descargas, IA, edicion, aprobacion,
+  rechazo y contabilizacion. La recuperacion rechaza duplicados activos y los
+  soportes contabilizados/convertidos no pueden ocultarse.
+- La interfaz separa Activos/Papelera, habilita solo botones compatibles,
+  identifica el registro eliminado y limita enlaces de adjuntos al mismo origen.
+- El wrapper asigna explicitamente `eliminar` a permiso Delete y `restaurar` a
+  Update; ninguna accion hereda Create solo por utilizar POST.
+- Go completo, vet, sintaxis JS, contratos visuales, revision responsive local y
+  las 22 compuertas del preflight estricto aprobaron. `-race` no fue ejecutable
+  porque este runtime Go no tiene CGO; queda pendiente en Linux/staging. Sin PR,
+  push, despliegue ni mutacion PCS; P109-002/P109-008 siguen parciales y el
+  avance formal permanece en 53,3 %.
+
 2026-08-08: Plan 109 / SSRF en salidas DIAN e integraciones.
 - Los probes empresariales y los clientes DIAN usan un transporte que valida
   DNS/IP publica, bloquea redes privadas/especiales, ignora proxies de entorno

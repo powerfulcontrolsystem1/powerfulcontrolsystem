@@ -132,3 +132,69 @@ func TestSoporteComprasIAStateTransitionsAreIdempotentAndClosed(t *testing.T) {
 		}
 	}
 }
+
+func TestSoporteComprasIARegistroTransitionsPreserveAccountingTrace(t *testing.T) {
+	tests := []struct {
+		name, current, workflow, next string
+		converted                     int64
+		idempotent                    bool
+		allowed                       bool
+	}{
+		{"eliminar radicado", "activo", "radicado", "eliminado", 0, false, true},
+		{"eliminar rechazado", "activo", "rechazado", "eliminado", 0, false, true},
+		{"recuperar", "eliminado", "en_revision", "activo", 0, false, true},
+		{"eliminar idempotente", "eliminado", "radicado", "eliminado", 0, true, true},
+		{"recuperar idempotente", "activo", "radicado", "activo", 0, true, true},
+		{"bloquear contabilizado", "activo", "contabilizado", "eliminado", 12, false, false},
+		{"bloquear convertido", "activo", "aprobado", "eliminado", 12, false, false},
+		{"bloquear archivado", "archivado", "radicado", "activo", 0, false, false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			gotIdempotent, err := validateSoporteIARegistroTransition(tt.current, tt.workflow, tt.converted, tt.next)
+			if (err == nil) != tt.allowed || gotIdempotent != tt.idempotent {
+				t.Fatalf("transition %s -> %s: idempotent=%v err=%v", tt.current, tt.next, gotIdempotent, err)
+			}
+		})
+	}
+}
+
+func TestNormalizeSoporteIAEstadoRegistroKeepsRecoverableAndLegacyStates(t *testing.T) {
+	for input, want := range map[string]string{
+		"":          "activo",
+		"ACTIVO":    "activo",
+		"eliminado": "eliminado",
+		"archivado": "archivado",
+		"inactivo":  "inactivo",
+		"inventado": "activo",
+	} {
+		if got := normalizeSoporteIAEstadoRegistro(input); got != want {
+			t.Fatalf("normalize %q = %q, want %q", input, got, want)
+		}
+	}
+}
+
+func TestSoporteComprasIARegistroFiltroFailsClosedToActive(t *testing.T) {
+	if got := normalizeSoporteIARegistroFiltro("eliminado"); got != "eliminado" {
+		t.Fatalf("papelera = %q", got)
+	}
+	for _, input := range []string{"", "activo", "archivado", "inactivo", "todos", "inventado"} {
+		if got := normalizeSoporteIARegistroFiltro(input); got != "activo" {
+			t.Fatalf("filtro %q = %q, want activo", input, got)
+		}
+	}
+}
+
+func TestSoporteComprasIAOperacionFailsClosedForUnknownRecordState(t *testing.T) {
+	for _, input := range []string{"", "eliminado", "archivado", "inactivo", "inventado"} {
+		if soporteIARegistroActivo(input) {
+			t.Fatalf("estado %q no debe habilitar acciones operativas", input)
+		}
+	}
+	if !soporteIARegistroActivo(" ACTIVO ") {
+		t.Fatal("estado activo normalizado debe habilitar acciones")
+	}
+	if _, err := validateSoporteIARegistroTransition("inventado", "radicado", 0, "eliminado"); err == nil {
+		t.Fatal("un estado persistido desconocido no debe convertirse implicitamente en activo")
+	}
+}
