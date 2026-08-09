@@ -68,6 +68,7 @@ type prometheusOperationalMetrics struct {
 	superOutbox     prometheusQueueMetrics
 	asyncJobs       prometheusQueueMetrics
 	supportPurge    prometheusSupportPurgeMetrics
+	supportAV       handlers.SupportAntivirusMetrics
 }
 
 type prometheusOperationalCache struct {
@@ -147,6 +148,7 @@ func collectSupportPurgeMetrics(ctx context.Context, dbConn *sql.DB) prometheusS
 
 func collectPrometheusOperationalMetrics(ctx context.Context, businessDB, superDB *sql.DB) prometheusOperationalMetrics {
 	result := defaultPrometheusOperationalMetrics()
+	result.supportAV = handlers.SupportAntivirusOperationalMetrics()
 	result.businessDBReady = databaseReady(ctx, businessDB)
 	result.superDBReady = databaseReady(ctx, superDB)
 	if result.businessDBReady == 1 {
@@ -237,7 +239,26 @@ func renderPrometheusMetrics(values prometheusOperationalMetrics) string {
 	builder.WriteString("# TYPE pcs_support_purged_total gauge\n")
 	fmt.Fprintf(&builder, "pcs_support_purged_total %d\n", values.supportPurge.purged)
 	fmt.Fprintf(&builder, "pcs_observability_query_success{source=\"support_purge\"} %.0f\n", values.supportPurge.queryOK)
+	builder.WriteString("# HELP pcs_support_antivirus_scans_total Purchase-support antivirus outcomes since process start.\n")
+	builder.WriteString("# TYPE pcs_support_antivirus_scans_total counter\n")
+	fmt.Fprintf(&builder, "pcs_support_antivirus_scans_total{result=\"clean\"} %d\n", values.supportAV.Clean)
+	fmt.Fprintf(&builder, "pcs_support_antivirus_scans_total{result=\"malware\"} %d\n", values.supportAV.Malware)
+	fmt.Fprintf(&builder, "pcs_support_antivirus_scans_total{result=\"unavailable\"} %d\n", values.supportAV.Unavailable)
+	fmt.Fprintf(&builder, "pcs_support_antivirus_scans_total{result=\"bypassed\"} %d\n", values.supportAV.Bypassed)
+	builder.WriteString("# HELP pcs_support_antivirus_required Whether support uploads require an antivirus verdict.\n")
+	builder.WriteString("# TYPE pcs_support_antivirus_required gauge\n")
+	fmt.Fprintf(&builder, "pcs_support_antivirus_required %.0f\n", boolPrometheus(values.supportAV.Required))
+	builder.WriteString("# HELP pcs_support_antivirus_configured Whether a clamd endpoint is configured.\n")
+	builder.WriteString("# TYPE pcs_support_antivirus_configured gauge\n")
+	fmt.Fprintf(&builder, "pcs_support_antivirus_configured %.0f\n", boolPrometheus(values.supportAV.Configured))
 	return builder.String()
+}
+
+func boolPrometheus(value bool) float64 {
+	if value {
+		return 1
+	}
+	return 0
 }
 
 // prometheusMetricsHandler exposes bounded aggregate operational signals. It

@@ -1,4 +1,7 @@
 2026-08-09
+- `documentos/evidencia_plan_109/P109-010/2026-08-09_observabilidad_antivirus_soportes_local.md`:
+  evidencia local de contadores atomicos, alertas y paneles del antivirus de
+  soportes sin datos empresariales ni contenido de archivos.
 - `documentos/evidencia_plan_109/P109-010/2026-08-09_observabilidad_depuracion_soportes_ia_local.md`:
   evidencia local de metricas, alerta, panel y runbook para sagas de depuracion
   vencidas sin etiquetas empresariales ni datos privados.

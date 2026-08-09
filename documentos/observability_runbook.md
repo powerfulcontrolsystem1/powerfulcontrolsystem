@@ -15,6 +15,13 @@
    No eliminar filas, archivos `.purge-*` ni referencias privadas por SQL o
    comandos manuales. Las metricas son agregadas y no revelan empresa, usuario,
    nombre ni ruta del soporte.
+7. Ante `PCSAntivirusSoportesSinConfigurar`, mantener las cargas cerradas y
+   restaurar el endpoint clamd antes de reintentar; no cambiar temporalmente el
+   modo obligatorio. Ante `PCSAntivirusSoportesNoDisponible`, verificar salud,
+   red privada y firmas. Ante `PCSAntivirusSoportesOmitido`, detener el piloto y
+   corregir la política antes de nuevas cargas. Ante
+   `PCSAntivirusSoportesDetectoMalware`, conservar la auditoria agregada y no
+   abrir, descargar ni extraer el adjunto rechazado.
 
 Los paneles y alertas deben validarse en staging antes de usarse como evidencia
 de produccion.

@@ -8,6 +8,8 @@ import (
 	"os"
 	"strings"
 	"testing"
+
+	"github.com/you/pos-backend/handlers"
 )
 
 func TestPrometheusMetricsHandlerExposesAggregateOperationalSignals(t *testing.T) {
@@ -40,6 +42,9 @@ func TestPrometheusMetricsHandlerExposesAggregateOperationalSignals(t *testing.T
 		"pcs_support_purge_pending_total 0",
 		"pcs_support_purge_stale_total 0",
 		`pcs_observability_query_success{source="support_purge"} 0`,
+		`pcs_support_antivirus_scans_total{result="clean"} 0`,
+		"pcs_support_antivirus_required 0",
+		"pcs_support_antivirus_configured 0",
 	}
 	for _, want := range expected {
 		if !strings.Contains(body, want) {
@@ -79,6 +84,7 @@ func TestRenderPrometheusMetricsUsesOnlyBoundedAggregateLabels(t *testing.T) {
 	values.superOutbox = prometheusQueueMetrics{ready: 5, queryOK: 1}
 	values.asyncJobs = prometheusQueueMetrics{ready: 6, processing: 7, dead: 8, expiredLeases: 9, queryOK: 1}
 	values.supportPurge = prometheusSupportPurgeMetrics{pending: 10, stale: 2, purged: 11, queryOK: 1}
+	values.supportAV = handlers.SupportAntivirusMetrics{Clean: 12, Malware: 1, Unavailable: 2, Bypassed: 3, Required: true, Configured: true}
 
 	body := renderPrometheusMetrics(values)
 	for _, want := range []string{
@@ -89,6 +95,12 @@ func TestRenderPrometheusMetricsUsesOnlyBoundedAggregateLabels(t *testing.T) {
 		"pcs_support_purge_stale_total 2",
 		"pcs_support_purged_total 11",
 		`pcs_observability_query_success{source="support_purge"} 1`,
+		`pcs_support_antivirus_scans_total{result="clean"} 12`,
+		`pcs_support_antivirus_scans_total{result="malware"} 1`,
+		`pcs_support_antivirus_scans_total{result="unavailable"} 2`,
+		`pcs_support_antivirus_scans_total{result="bypassed"} 3`,
+		"pcs_support_antivirus_required 1",
+		"pcs_support_antivirus_configured 1",
 	} {
 		if !strings.Contains(body, want) {
 			t.Fatalf("metrics body does not contain %q: %q", want, body)
@@ -116,6 +128,10 @@ func TestSupportPurgeMonitoringConfigurationContract(t *testing.T) {
 	for _, want := range []string{
 		"alert: PCSSoporteIAPurgaVencida",
 		`expr: pcs_support_purge_stale_total{job=~"pcs-backend|pcs-staging-backend"} > 0`,
+		"alert: PCSAntivirusSoportesSinConfigurar",
+		"alert: PCSAntivirusSoportesNoDisponible",
+		"alert: PCSAntivirusSoportesOmitido",
+		"alert: PCSAntivirusSoportesDetectoMalware",
 		"runbook",
 	} {
 		if !strings.Contains(rulesText, want) {
@@ -134,7 +150,7 @@ func TestSupportPurgeMonitoringConfigurationContract(t *testing.T) {
 	if err := json.Unmarshal(dashboard, &parsed); err != nil {
 		t.Fatalf("dashboard JSON invalid: %v", err)
 	}
-	for _, want := range []string{"Depuraciones IA pendientes", "Depuraciones IA vencidas", "pcs_support_purge_stale_total"} {
+	for _, want := range []string{"Depuraciones IA pendientes", "Depuraciones IA vencidas", "pcs_support_purge_stale_total", "Antivirus soportes", "pcs_support_antivirus_scans_total"} {
 		if !strings.Contains(string(dashboard), want) {
 			t.Fatalf("dashboard does not contain %q", want)
 		}

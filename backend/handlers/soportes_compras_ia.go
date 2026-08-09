@@ -21,6 +21,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"sync/atomic"
 	"time"
 
 	dbpkg "github.com/you/pos-backend/db"
@@ -40,6 +41,37 @@ var soporteComprasIAAllowedExt = map[string]bool{
 	".webp": true,
 	".pdf":  true,
 	".xml":  true,
+}
+
+var (
+	soporteComprasIAAntivirusClean       atomic.Uint64
+	soporteComprasIAAntivirusMalware     atomic.Uint64
+	soporteComprasIAAntivirusUnavailable atomic.Uint64
+	soporteComprasIAAntivirusBypassed    atomic.Uint64
+)
+
+// SupportAntivirusMetrics contains process-level, tenant-free counters for the
+// private purchase-support scanner. Result values are intentionally bounded.
+type SupportAntivirusMetrics struct {
+	Clean       uint64
+	Malware     uint64
+	Unavailable uint64
+	Bypassed    uint64
+	Required    bool
+	Configured  bool
+}
+
+// SupportAntivirusOperationalMetrics returns aggregate scanner state without
+// company, user, filename, route, provider response or attachment contents.
+func SupportAntivirusOperationalMetrics() SupportAntivirusMetrics {
+	return SupportAntivirusMetrics{
+		Clean:       soporteComprasIAAntivirusClean.Load(),
+		Malware:     soporteComprasIAAntivirusMalware.Load(),
+		Unavailable: soporteComprasIAAntivirusUnavailable.Load(),
+		Bypassed:    soporteComprasIAAntivirusBypassed.Load(),
+		Required:    parseBoolSoporteComprasIA(os.Getenv("PCS_SUPPORTS_CLAMAV_REQUIRED")),
+		Configured:  strings.TrimSpace(os.Getenv("PCS_SUPPORTS_CLAMAV_ADDR")) != "",
+	}
 }
 
 // EmpresaSoportesComprasIAHandler administra la captura inteligente de compras y gastos.
@@ -589,9 +621,21 @@ func validateSoporteComprasIAXML(raw []byte) error {
 	return nil
 }
 
-func scanSoporteComprasIAAttachment(att *aiAttachment) error {
+func scanSoporteComprasIAAttachment(att *aiAttachment) (scanErr error) {
 	addr := strings.TrimSpace(os.Getenv("PCS_SUPPORTS_CLAMAV_ADDR"))
 	required := parseBoolSoporteComprasIA(os.Getenv("PCS_SUPPORTS_CLAMAV_REQUIRED"))
+	defer func() {
+		switch {
+		case addr == "" && !required:
+			soporteComprasIAAntivirusBypassed.Add(1)
+		case scanErr == nil:
+			soporteComprasIAAntivirusClean.Add(1)
+		case errors.Is(scanErr, errSoporteComprasIAMalware):
+			soporteComprasIAAntivirusMalware.Add(1)
+		default:
+			soporteComprasIAAntivirusUnavailable.Add(1)
+		}
+	}()
 	if addr == "" {
 		if required {
 			return errSoporteComprasIAAntivirusUnavailable

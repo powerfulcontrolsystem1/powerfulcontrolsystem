@@ -3,7 +3,7 @@
   "title": "Powerful Control System - Operacion VPS",
   "timezone": "browser",
   "schemaVersion": 39,
-  "version": 3,
+  "version": 4,
   "refresh": "30s",
   "tags": ["pcs", "vps", "docker"],
   "panels": [
@@ -180,6 +180,34 @@
         {
           "expr": "pcs_support_purge_stale_total{job=~\"pcs-backend|pcs-staging-backend\"}",
           "legendFormat": "{{job}}"
+        }
+      ],
+      "fieldConfig": {"defaults": {"min": 0}}
+    },
+    {
+      "type": "stat",
+      "title": "Antivirus soportes",
+      "gridPos": {"x": 0, "y": 36, "w": 8, "h": 5},
+      "targets": [
+        {
+          "expr": "pcs_support_antivirus_configured{job=~\"pcs-backend|pcs-staging-backend\"}",
+          "legendFormat": "configurado {{job}}"
+        },
+        {
+          "expr": "pcs_support_antivirus_required{job=~\"pcs-backend|pcs-staging-backend\"}",
+          "legendFormat": "obligatorio {{job}}"
+        }
+      ],
+      "fieldConfig": {"defaults": {"min": 0, "max": 1}}
+    },
+    {
+      "type": "timeseries",
+      "title": "Resultados antivirus soportes (5m)",
+      "gridPos": {"x": 8, "y": 36, "w": 16, "h": 7},
+      "targets": [
+        {
+          "expr": "sum by(job, result) (increase(pcs_support_antivirus_scans_total{job=~\"pcs-backend|pcs-staging-backend\"}[5m]))",
+          "legendFormat": "{{job}} {{result}}"
         }
       ],
       "fieldConfig": {"defaults": {"min": 0}}

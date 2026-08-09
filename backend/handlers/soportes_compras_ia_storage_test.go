@@ -17,6 +17,7 @@ import (
 
 func TestSoporteComprasIAClamAVCleanMalwareAndFailClosed(t *testing.T) {
 	att := &aiAttachment{Filename: "factura.pdf", MimeType: "application/pdf", Bytes: []byte("%PDF-1.7\n%%EOF")}
+	before := SupportAntivirusOperationalMetrics()
 	t.Run("clean", func(t *testing.T) {
 		t.Setenv("PCS_SUPPORTS_CLAMAV_ADDR", startFakeSoporteClamd(t, "stream: OK"))
 		t.Setenv("PCS_SUPPORTS_CLAMAV_REQUIRED", "true")
@@ -45,6 +46,40 @@ func TestSoporteComprasIAClamAVCleanMalwareAndFailClosed(t *testing.T) {
 			t.Fatalf("optional scanner disabled = %v", err)
 		}
 	})
+	after := SupportAntivirusOperationalMetrics()
+	if after.Clean-before.Clean != 1 || after.Malware-before.Malware != 1 ||
+		after.Unavailable-before.Unavailable != 1 || after.Bypassed-before.Bypassed != 1 {
+		t.Fatalf("antivirus metrics delta = clean:%d malware:%d unavailable:%d bypassed:%d, want 1 each",
+			after.Clean-before.Clean, after.Malware-before.Malware,
+			after.Unavailable-before.Unavailable, after.Bypassed-before.Bypassed)
+	}
+	t.Setenv("PCS_SUPPORTS_CLAMAV_ADDR", "127.0.0.1:3310")
+	t.Setenv("PCS_SUPPORTS_CLAMAV_REQUIRED", "true")
+	configured := SupportAntivirusOperationalMetrics()
+	if !configured.Required || !configured.Configured {
+		t.Fatalf("antivirus configuration metrics = required:%v configured:%v, want true/true", configured.Required, configured.Configured)
+	}
+}
+
+func TestSupportAntivirusMetricsAreConcurrentAndTenantFree(t *testing.T) {
+	t.Setenv("PCS_SUPPORTS_CLAMAV_ADDR", "")
+	t.Setenv("PCS_SUPPORTS_CLAMAV_REQUIRED", "false")
+	before := SupportAntivirusOperationalMetrics()
+	const workers = 64
+	done := make(chan struct{}, workers)
+	for i := 0; i < workers; i++ {
+		go func() {
+			_ = scanSoporteComprasIAAttachment(nil)
+			done <- struct{}{}
+		}()
+	}
+	for i := 0; i < workers; i++ {
+		<-done
+	}
+	after := SupportAntivirusOperationalMetrics()
+	if got := after.Bypassed - before.Bypassed; got != workers {
+		t.Fatalf("concurrent bypassed scans = %d, want %d", got, workers)
+	}
 }
 
 func startFakeSoporteClamd(t *testing.T, response string) string {

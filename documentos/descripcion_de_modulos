@@ -1,3 +1,10 @@
+2026-08-09: Observabilidad del antivirus de soportes CxP/IA.
+- Modulos afectados: `soportes_compras_ia`, `antivirus`, `observabilidad`,
+  `Prometheus`, `Grafana` y `Alertmanager`.
+- El scanner publica contadores atomicos agregados por resultado y estado de
+  configuracion/obligatoriedad, sin dimensiones de empresa, usuario o archivo.
+- Alertas cubren fail-closed sin endpoint, indisponibilidad, omision y malware.
+
 2026-08-09: Observabilidad de depuracion CxP/IA.
 - Modulos afectados: `observabilidad`, `soportes_compras_ia`, `Prometheus`,
   `Grafana`, `Alertmanager` y `operacion_vps`.

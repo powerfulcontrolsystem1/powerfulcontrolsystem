@@ -1,3 +1,13 @@
+2026-08-09: Plan 109 / telemetria del antivirus de soportes CxP-IA.
+- El scanner clamd cuenta con atomicos los resultados limpio, malware,
+  indisponible y omitido; `/metrics` agrega los contadores y los gauges de modo
+  obligatorio/configurado sin etiquetas empresariales ni datos del adjunto.
+- Se agregan cuatro alertas: obligatorio sin endpoint, analisis no disponible,
+  analisis omitido y malware bloqueado. Grafana presenta estado y resultados.
+- Pruebas cubren los cuatro resultados, configuración y 64 invocaciones
+  simultaneas. El daemon real, EICAR controlada y recepción externa siguen
+  pendientes; P109-008/P109-010 continúan parciales, 53,3 % y NO-GO.
+
 2026-08-09: Plan 109 / observabilidad de depuracion CxP-IA.
 - `/metrics` incorpora conteos agregados de sagas pendientes, vencidas a 15
   minutos y finalizadas, mas señal explícita de éxito de consulta. No publica

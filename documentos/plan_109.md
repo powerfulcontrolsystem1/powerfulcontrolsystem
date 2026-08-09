@@ -1109,6 +1109,17 @@ Actualización 2026-08-09, observabilidad de la depuración CxP/IA:
   y resolver una saga vencida en staging y comprobar entrega externa; P109-010
   sigue parcial, el avance permanece **53,3 %** y el veredicto **NO-GO**.
 
+Actualización 2026-08-09, telemetría del antivirus de soportes:
+
+- El scanner clamd registra contadores atomicos agregados para limpio, malware,
+  indisponible y omitido, además de modo obligatorio/configurado. Las métricas
+  no contienen dimensiones empresariales, usuarios, archivos ni rutas.
+- Prometheus alerta configuración fail-closed incompleta, indisponibilidad,
+  omisión y malware bloqueado; Grafana muestra resultados recientes por job.
+- Pruebas locales cubren los cuatro resultados y 64 llamadas simultáneas. Falta
+  clamd real con firmas, EICAR controlada, recuperación y recepción externa en
+  staging; P109-008/P109-010 siguen parciales, permanece **53,3 %** y **NO-GO**.
+
 ## 9. Siguiente orden para Terra alto
 
 P109-000 ya está aprobada para `ea9642dd...` y P109-011 para `c8094f5b`;
