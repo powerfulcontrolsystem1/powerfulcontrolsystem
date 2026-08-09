@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Domotica del carrito</title>
+  <title>Domotica de la estacion</title>
   <link rel="stylesheet" href="/estilos.css">
   <style>
     :root {
@@ -61,13 +61,14 @@
 
     .cart-electric-summary {
       display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
+      grid-template-columns: repeat(5, minmax(0, 1fr));
       gap: 10px;
       margin-bottom: 14px;
     }
 
     .cart-electric-kpi,
-    .device-card {
+    .device-card,
+    .sensor-card {
       border: 1px solid var(--cart-electric-line);
       border-radius: 8px;
       background: var(--cart-electric-panel);
@@ -104,6 +105,50 @@
       display: grid;
       grid-template-rows: auto 1fr auto;
     }
+
+    .sensor-card {
+      min-width: 0;
+      padding: 14px;
+      display: grid;
+      gap: 10px;
+      align-content: start;
+      border-left: 4px solid var(--cart-electric-muted);
+    }
+
+    .sensor-card.is-active { border-left-color: var(--cart-electric-success); }
+    .sensor-card.is-error { border-left-color: var(--cart-electric-danger); }
+    .sensor-card .device-title-row { align-items: center; }
+
+    .controller-summary {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin: 0 0 14px;
+    }
+
+    .controller-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      border: 1px solid var(--cart-electric-line);
+      border-radius: 999px;
+      padding: 7px 10px;
+      background: var(--cart-electric-panel);
+      color: var(--cart-electric-muted);
+      font-size: .82rem;
+      font-weight: 750;
+    }
+
+    .controller-chip::before {
+      content: '';
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background: var(--cart-electric-muted);
+    }
+
+    .controller-chip.is-online { color: var(--cart-electric-success); }
+    .controller-chip.is-online::before { background: var(--cart-electric-success); box-shadow: 0 0 0 3px color-mix(in srgb, var(--cart-electric-success) 18%, transparent); }
 
     .device-photo {
       width: 100%;
@@ -227,12 +272,12 @@
   <main class="cart-electric-shell">
     <header class="cart-electric-header">
       <div>
-        <h1>Domotica</h1>
+        <h1><span aria-hidden="true">⚡</span> Domotica</h1>
         <p id="cartElectricMeta" class="cart-electric-meta">Cargando estacion...</p>
       </div>
       <div class="cart-electric-actions">
         <button id="cartElectricRefreshBtn" class="btn secondary" type="button">Actualizar</button>
-        <button id="cartElectricBackBtn" class="btn secondary" type="button">Volver al carrito</button>
+        <button id="cartElectricBackBtn" class="btn secondary" type="button">Volver</button>
       </div>
     </header>
 
@@ -249,8 +294,17 @@
         <small>Programados</small>
         <strong id="cartElectricScheduledDevices">0</strong>
       </div>
+      <div class="cart-electric-kpi">
+        <small>Sensores</small>
+        <strong id="cartElectricSensors">0</strong>
+      </div>
+      <div class="cart-electric-kpi">
+        <small>Raspberry conectadas</small>
+        <strong id="cartElectricControllers">0 / 0</strong>
+      </div>
     </section>
 
+    <section id="cartElectricControllerSummary" class="controller-summary" aria-label="Controladores Raspberry"></section>
     <div id="cartElectricMessage" class="form-help cart-electric-message"></div>
     <section id="cartElectricGrid" class="device-grid" aria-live="polite"></section>
   </main>
@@ -264,6 +318,10 @@
       carritoCodigo: '',
       config: null,
       reles: [],
+      sensores: [],
+      eventos: [],
+      raspberryPIs: [],
+      returnTo: '',
       sendingID: 0
     };
 
@@ -304,6 +362,13 @@
       return '/administrar_empresa/carrito_de_compras.html?' + params.toString();
     }
 
+    function buildBackURL() {
+      if (state.returnTo === 'estaciones') {
+        return '/administrar_empresa/estaciones.html?empresa_id=' + encodeURIComponent(state.empresaID);
+      }
+      return buildCarritoURL();
+    }
+
     function setMeta() {
       const parts = [];
       if (state.estacionNombre) parts.push(state.estacionNombre);
@@ -336,10 +401,76 @@
       return '<img class="device-photo" src="' + escapeHtml(url) + '" alt="' + escapeHtml(rele.relay_name || rele.tipo_carga || 'Aparato') + '">';
     }
 
+    function parseDate(raw) {
+      const text = normalize(raw);
+      if (!text) return null;
+      const date = new Date(text.indexOf('T') >= 0 ? text : text.replace(' ', 'T'));
+      return Number.isNaN(date.getTime()) ? null : date;
+    }
+
+    function raspberryOnline(item) {
+      if (!item || !item.tunnel_enabled) return false;
+      const status = normalize(item.tunnel_status).toLowerCase();
+      if (status !== 'connected' && status !== 'online' && status !== 'conectado') return false;
+      const seen = parseDate(item.last_seen);
+      return !!seen && (Date.now() - seen.getTime()) <= 90000;
+    }
+
+    function raspberryLabel(id) {
+      const item = state.raspberryPIs.find(function(pi) { return Number(pi && pi.id) === Number(id || 0); });
+      return item ? (normalize(item.nombre) || normalize(item.codigo) || ('Raspberry #' + id)) : (id ? ('Raspberry #' + id) : 'Raspberry no asignada');
+    }
+
+    function renderControllers() {
+      const box = document.getElementById('cartElectricControllerSummary');
+      const rows = Array.isArray(state.raspberryPIs) ? state.raspberryPIs : [];
+      const online = rows.filter(raspberryOnline).length;
+      document.getElementById('cartElectricControllers').textContent = online + ' / ' + rows.length;
+      if (!box) return;
+      if (!rows.length) {
+        box.innerHTML = '<span class="controller-chip">Sin Raspberry registradas</span>';
+        return;
+      }
+      box.innerHTML = rows.map(function(pi) {
+        const connected = raspberryOnline(pi);
+        const label = normalize(pi.nombre) || normalize(pi.codigo) || ('Raspberry #' + pi.id);
+        return '<span class="controller-chip' + (connected ? ' is-online' : '') + '" title="' + escapeHtml(connected ? 'Tunel conectado' : 'Sin conexion reciente') + '">' + escapeHtml(label) + ': ' + (connected ? 'conectada' : 'desconectada') + '</span>';
+      }).join('');
+    }
+
+    function lastSensorEvent(sensor) {
+      const raspberryID = Number(sensor && sensor.raspberry_id || 0);
+      const gpio = Number(sensor && sensor.entrada_gpio_pin);
+      return (Array.isArray(state.eventos) ? state.eventos : []).find(function(evento) {
+        return normalize(evento && evento.comando).toLowerCase() === 'sensor_input' &&
+          Number(evento && evento.raspberry_id || 0) === raspberryID &&
+          Number(evento && evento.gpio_pin) === gpio;
+      }) || null;
+    }
+
+    function sensorCardHTML(sensor) {
+      const event = lastSensorEvent(sensor);
+      const value = event ? normalize(event.estado_objetivo) : '';
+      const activeValues = ['1', 'true', 'on', 'active', 'open', 'abierto', 'encendido', 'activo'];
+      const active = activeValues.indexOf(value.toLowerCase()) >= 0;
+      const statusLabel = event ? (active ? 'Señal activa' : 'Señal inactiva') : 'Sin lectura reciente';
+      const name = normalize(sensor.nombre) || normalize(sensor.sensor_codigo) || ('Sensor GPIO ' + sensor.entrada_gpio_pin);
+      return '<article class="sensor-card' + (active ? ' is-active' : '') + '">' +
+        '<div class="device-title-row"><div class="device-title"><strong title="' + escapeHtml(name) + '">' + escapeHtml(name) + '</strong><small>Entrada / sensor</small></div>' +
+        '<span class="status-pill ' + (active ? 'is-on' : 'is-off') + '">' + escapeHtml(statusLabel) + '</span></div>' +
+        '<div class="device-details">' +
+          '<span>GPIO ' + escapeHtml(sensor.entrada_gpio_pin) + ' | ' + escapeHtml(raspberryLabel(sensor.raspberry_id)) + '</span>' +
+          '<span>Pull: ' + escapeHtml(sensor.entrada_pull || 'none') + ' | Debounce: ' + escapeHtml(sensor.debounce_ms || 250) + ' ms</span>' +
+          '<span>Accion: ' + escapeHtml(sensor.accion || 'alarma') + '</span>' +
+          (event && event.fecha_evento ? '<span>Ultima señal: ' + escapeHtml(event.fecha_evento) + '</span>' : '') +
+        '</div></article>';
+    }
+
     function render() {
       const grid = document.getElementById('cartElectricGrid');
       const cfg = state.config || {};
       const reles = Array.isArray(state.reles) ? state.reles : [];
+      const sensores = Array.isArray(state.sensores) ? state.sensores : [];
       const total = reles.length;
       const onCount = reles.filter(function(rele) {
         const raw = normalize(rele.ultimo_estado).toLowerCase();
@@ -350,17 +481,19 @@
       document.getElementById('cartElectricTotalDevices').textContent = String(total);
       document.getElementById('cartElectricOnDevices').textContent = String(onCount);
       document.getElementById('cartElectricScheduledDevices').textContent = String(scheduled);
+      document.getElementById('cartElectricSensors').textContent = String(sensores.length);
+      renderControllers();
 
       if (!cfg.habilitado) {
         grid.innerHTML = '<div class="alert">El modulo de domotica no esta activo para esta empresa.</div>';
         return;
       }
-      if (!reles.length) {
-        grid.innerHTML = '<div class="alert">Esta estacion no tiene aparatos configurados en Domotica.</div>';
+      if (!reles.length && !sensores.length) {
+        grid.innerHTML = '<div class="alert">Esta estacion no tiene equipos ni sensores configurados en Domotica.</div>';
         return;
       }
 
-      grid.innerHTML = reles.map(function(rele) {
+      const devicesHTML = reles.map(function(rele) {
         const info = estadoInfo(rele);
         const isOn = info.cls === 'is-on';
         const disabled = state.sendingID > 0 || !cfg.habilitado;
@@ -388,6 +521,8 @@
           '</div>' +
         '</article>';
       }).join('');
+      const sensorsHTML = sensores.map(sensorCardHTML).join('');
+      grid.innerHTML = devicesHTML + sensorsHTML;
     }
 
     async function ensureOk(res) {
@@ -415,6 +550,9 @@
       const payload = await res.json();
       state.config = payload.config || {};
       state.reles = Array.isArray(payload.reles) ? payload.reles : [];
+      state.sensores = Array.isArray(payload.sensores) ? payload.sensores : [];
+      state.eventos = Array.isArray(payload.eventos) ? payload.eventos : [];
+      state.raspberryPIs = Array.isArray(payload.raspberry_pis) ? payload.raspberry_pis : [];
       setMessage('', '');
       render();
     }
@@ -455,11 +593,15 @@
       state.estacionNombre = normalize(params.get('estacion_nombre'));
       state.carritoID = parsePositiveInt(params.get('carrito_id'));
       state.carritoCodigo = normalize(params.get('carrito_codigo'));
+      state.returnTo = normalize(params.get('return_to') || params.get('source')).toLowerCase();
       setMeta();
       render();
 
-      document.getElementById('cartElectricBackBtn').addEventListener('click', function() {
-        window.location.href = buildCarritoURL();
+      const backBtn = document.getElementById('cartElectricBackBtn');
+      backBtn.textContent = state.returnTo === 'estaciones' ? 'Volver a estaciones' : 'Volver al carrito';
+
+      backBtn.addEventListener('click', function() {
+        window.location.href = buildBackURL();
       });
       document.getElementById('cartElectricRefreshBtn').addEventListener('click', function() {
         fetchControls().catch(function(err) {

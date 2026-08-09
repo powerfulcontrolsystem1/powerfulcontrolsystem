@@ -59,6 +59,9 @@ func TestDomoticaInstallerTemplateIsSelfContainedAndSecretSafe(t *testing.T) {
 		"systemctl enable --now",
 		"chmod 0600 /etc/pcs-domotica/agent.json",
 		"NoNewPrivileges=true",
+		"StartLimitIntervalSec=0",
+		"Restart=always",
+		"backoff = min(30, backoff * 2)",
 		"one-time-enrollment-token",
 	} {
 		if !strings.Contains(body, marker) {
