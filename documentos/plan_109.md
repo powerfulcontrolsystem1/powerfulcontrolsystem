@@ -1461,3 +1461,12 @@ Actualización 2026-08-09, compilación íntegra del candidato P109:
   el timeout de la orden global se mantiene explícitamente inconcluso.
 - P109-012 conserva pendientes humanos de soporte/capacitación. No cambia la
   fórmula: **53,3 %**, certificación formal **0 %** y **NO-GO**.
+
+Actualización 2026-08-09, restore de aplicación del digest activo:
+
+- El candidato activo de staging restauró sus dos bases y API en recursos
+  efímeros: health/ready 200, cinco tablas, 31 filas críticas PCS y archivos
+  privados sin huérfanos. El rol runtime permaneció sin DDL.
+- P109-008 sigue parcial porque falta la variante autenticada con réplica A/B,
+  hostiles y rollback coordinado sobre este mismo candidato. La fórmula se
+  mantiene en **53,3 %**, certificación formal **0 %** y **NO-GO**.

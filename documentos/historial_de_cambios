@@ -41597,3 +41597,11 @@ acumulativa.
   aprobaron; el timeout no se presentó como resultado positivo o negativo.
 - La evidencia queda en P109-012; permanecen capacitación, responsables y
   aceptación de una persona distinta antes de cerrar soporte/piloto.
+
+2026-08-09: Plan 109 / restore de aplicación por digest actual de staging.
+
+- Se agregó un ejecutor que exige digests inmutables, ejecuta la aplicación y
+  migrador contra PostgreSQL temporal y elimina su script remoto al finalizar.
+- La restauración aprobó health/ready, datos críticos de PCS, referencias
+  privadas y privilegios runtime. Réplica autenticada, negativos hostiles y
+  rollback coordinado quedan pendientes antes de cerrar P109-008.

@@ -106,6 +106,7 @@ try {
       (Join-Path "scripts" "profesional_preflight.ps1"),
       (Join-Path "scripts" "vps_backup_operacion.ps1"),
       (Join-Path "scripts" "vps_restore_validation.ps1"),
+      (Join-Path "scripts" "vps_p109_restore_app_validation.ps1"),
       (Join-Path "scripts" "staging_up.ps1"),
       (Join-Path "scripts" "release_gate.ps1")
     )
