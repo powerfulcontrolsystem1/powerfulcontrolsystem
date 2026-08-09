@@ -1208,3 +1208,20 @@ Actualización 2026-08-09, candidato `17c55dd8` y prioridad web:
   por documentos físicos/reales, Mailu/IMAP y la prueba fiscal controlada. El
   avance permanece **53,3 % de implementación**, la certificación del candidato
   sube a **6,7 %** y el veredicto continúa **NO-GO**.
+
+Actualización 2026-08-09, CxP/IA autenticada en el candidato `17c55dd8`:
+
+- PCS radicó `SCI-0009`, extrajo los datos mediante IA, permitió editar la
+  lectura, vinculó proveedor, aprobó y rechazó con trazabilidad completa. La
+  aprobación no se contabilizó.
+- La repetición exacta quedó bloqueada como `SCI-0010` duplicado. Un segundo
+  soporte `SCI-0011` confirmó que **Cancelar IA** aborta la petición y conserva
+  `radicado`; luego se rechazó por el flujo oficial.
+- La conciliación pasó de 8 a 11 soportes y mantuvo sin cambios 3 CxP, 5 pagos y
+  5 movimientos. La bandeja se comprobó visualmente con filas, columnas,
+  importes, estados y confianza organizados.
+- La papelera visual permanece pendiente porque el navegador interno no soporta
+  `prompt()`; una sesión administrativa independiente recibió 403. La empresa
+  inexistente devolvió cero datos, pero no sustituye una identidad A/B real.
+- P109-002 y P109-008 siguen parciales. El avance permanece **53,3 % de
+  implementación**, **6,7 % de certificación del candidato** y **NO-GO**.

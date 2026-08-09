@@ -41423,3 +41423,15 @@ acumulativa.
   cuatro digests del primer candidato DIAN invalidado. El uso del disco raíz
   bajó de 80 % a 78 %; volúmenes, bases, respaldos e imágenes activas quedaron
   intactos y staging/producción conservaron salud `ok`.
+
+2026-08-09: Plan 109 / CxP e IA reales en el candidato de staging.
+
+- La captura oficial radicó, extrajo con IA, editó, vinculó proveedor, aprobó y
+  rechazó `SCI-0009`; el mismo archivo quedó bloqueado como duplicado en
+  `SCI-0010`.
+- `SCI-0011` confirmó que Cancelar IA conserva el estado anterior y evita
+  persistir una extracción terminada. Después se rechazó por el flujo oficial.
+- PostgreSQL mantuvo 3 CxP, 5 pagos y 5 movimientos; ninguna acción de prueba
+  contabilizó deuda. La bandeja se comprobó visualmente organizada.
+- Papelera/recuperación y A/B con segunda identidad siguen pendientes. No se
+  creó PR, no se desplegó código nuevo y producción no cambió.

@@ -12821,3 +12821,7 @@ panel de seguridad para que el navegador reciba la correccion CSRF de staging.
 - `documentos/evidencia_plan_109/P109-000/2026-08-09_candidato_17c55dd8_migracion_dian.md`:
   registra el segundo release inmutable, respaldo, migración/ledger DIAN,
   aislamiento productivo, barrido autenticado, revisión visual e impresiones.
+- `documentos/evidencia_plan_109/P109-002/2026-08-09_cxp_ia_staging_17c55dd8.md`:
+  documenta extracción y cancelación IA, edición, aprobación, rechazo,
+  duplicado, revisión visual y conciliación sin CxP, pagos ni movimientos en el
+  candidato desplegado exclusivamente en staging.
