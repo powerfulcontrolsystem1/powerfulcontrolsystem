@@ -1,20 +1,27 @@
 2026-08-09
 - `backend/db/soportes_compras_ia.go`: agrega tumba `purgado`, validacion
-  transaccional de retencion/codigo y auditoria de depuracion por empresa.
+  transaccional de retencion/codigo, estado reanudable `purga_pendiente` y
+  auditoria de inicio/final por empresa.
 - `backend/db/soportes_compras_ia_postgres_test.go`: amplía el ensayo opcional
   con depuracion, cruce A/B, confirmacion, URL invalidada y no recuperacion.
 - `backend/handlers/soportes_compras_ia.go`: coordina cuarentena/rollback del
-  archivo, ata rutas privadas al tenant y sanea adjuntos falsificados en JSON.
+  archivo, reanuda caidas entre fases, diagnostica cuarentena por tenant, ata
+  rutas privadas a la empresa y sanea adjuntos falsificados en JSON.
 - `backend/handlers/soportes_compras_ia_path_test.go`: cubre rutas A/B,
   cuarentena reversible/definitiva y saneamiento de radicacion manual.
 - `backend/handlers/empresa_permisos.go`: asigna `purgar` a Delete.
 - `web/administrar_empresa/soportes_compras_ia.html` y
   `web/js/soportes_compras_ia.js`: agregan Depurados, confirmacion fuerte y
-  boton de depuracion condicionado por estado.
+  boton de depuracion condicionado por estado, pendientes reanudables y
+  diagnostico de solo lectura.
 - `documentos/evidencia_plan_109/P109-008/2026-08-09_purga_segura_soportes_ia_local.md`:
   registra diseño, pruebas locales y limites de certificacion sin borrar PCS.
 - `documentos/reportes_profesionales/preflight_20260809_000638.md`: cierre
   profesional Full/Strict con 22 compuertas aprobadas para el bloque local.
+- `documentos/reportes_profesionales/preflight_20260809_001839.md`: revalidacion
+  Full/Strict 22/22 de saga reanudable y diagnostico de cuarentena.
+- `documentos/reportes_profesionales/preflight_20260809_002303.md`: revalidacion
+  final 22/22 posterior al saneamiento de errores internos del endpoint.
 
 2026-08-08
 - `documentos/evidencia_plan_109/P109-002/2026-08-08_cancelacion_y_validacion_adjuntos_local.md`:

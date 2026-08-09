@@ -23,6 +23,7 @@
     duplicado: "Duplicado",
     activo: "Activo",
     eliminado: "Eliminado",
+    purga_pendiente: "Depuracion pendiente",
     purgado: "Depurado",
     gasto: "Gasto",
     compra: "Compra",
@@ -79,7 +80,7 @@
     if (!state.selected) return false;
     var registro = String(state.selected.estado || "activo").toLowerCase();
     if (action === "restaurar") return registro === "eliminado";
-    if (action === "purgar") return registro === "eliminado" && selectedState() !== "contabilizado" && Number(state.selected.convertido_id || 0) <= 0;
+    if (action === "purgar") return (registro === "eliminado" || registro === "purga_pendiente") && selectedState() !== "contabilizado" && Number(state.selected.convertido_id || 0) <= 0;
     if (action === "eliminar") return registro === "activo" && selectedState() !== "contabilizado" && Number(state.selected.convertido_id || 0) <= 0;
     return registro === "activo" && (actionStates[action] || []).indexOf(selectedState()) >= 0;
   }
@@ -211,7 +212,7 @@
         var archivo = String(s.estado || "activo").toLowerCase() === "activo" ? safeHref(s.archivo_url) : "";
         var control = s.duplicado_soporte_id ? "Duplicado #" + s.duplicado_soporte_id : (s.requiere_revision_humana ? "Revision humana" : "OK");
         var recordState = String(s.estado || "activo").toLowerCase();
-        var recordChip = recordState === "eliminado" ? '<br>' + chip("eliminado", "capture-bad") : (recordState === "purgado" ? '<br>' + chip("purgado", "capture-bad") : "");
+        var recordChip = recordState === "eliminado" ? '<br>' + chip("eliminado", "capture-bad") : (recordState === "purga_pendiente" ? '<br>' + chip("purga_pendiente", "capture-warn") : (recordState === "purgado" ? '<br>' + chip("purgado", "capture-bad") : ""));
         return '<tr data-id="' + esc(s.id) + '" class="' + (selected ? "is-selected" : "") + '"><td><strong>' + esc(s.codigo || "-") + '</strong><br><span class="capture-muted">' + esc(label(s.tipo_soporte)) + '</span></td><td>' + chip(s.estado_soporte) + recordChip + '</td><td>' + esc(s.proveedor_nombre || "Sin proveedor") + '<br><span class="capture-muted">' + esc(s.proveedor_nit || "-") + '</span></td><td>' + esc(label(s.documento_tipo)) + '<br><span class="capture-muted">' + esc(s.documento_numero || "-") + '</span></td><td>' + esc(s.fecha_documento || "-") + '<br><span class="capture-muted">Vence ' + esc(s.fecha_vencimiento || "-") + '</span></td><td class="num"><strong>' + money(s.total || 0) + '</strong></td><td>' + progress(s.confianza_ia || 0) + '</td><td>' + esc(control) + '</td><td>' + (archivo ? '<a href="' + esc(archivo) + '" target="_blank" rel="noopener">Ver</a>' : '<span class="capture-muted">No disponible</span>') + '</td></tr>';
       }).join("") + '</tbody></table>';
   }
@@ -520,6 +521,19 @@
     }).finally(function () { setBusy(false); });
   }
 
+  function quarantinePreview() {
+    setBusy(true, "Inspeccionando cuarentena privada...");
+    api("cuarentena_preview").then(function (data) {
+      var bytes = Number(data.bytes || 0);
+      var size = bytes >= 1048576 ? (bytes / 1048576).toFixed(2) + " MB" : (bytes / 1024).toFixed(2) + " KB";
+      var mismatch = data.requiere_revision ? " Requiere revision: registros y archivos no coinciden." : " Registros y archivos coinciden.";
+      el("retencionPreviewMsg").textContent = (data.registros_pendientes || 0) + " registro(s) pendiente(s), " + (data.archivos_cuarentena || 0) + " archivo(s), " + size + "." + mismatch;
+      msg("Diagnostico de cuarentena actualizado.", !!data.requiere_revision);
+    }).catch(function (e) {
+      msg(e.message, true);
+    }).finally(function () { setBusy(false); });
+  }
+
   function exportCSV() {
     var rows = [["ID", "Codigo", "Estado", "Registro", "Tipo", "Proveedor", "NIT", "Documento", "Fecha", "Vencimiento", "Total", "Confianza"]].concat(rowList().map(function (s) {
       return [s.id, s.codigo, s.estado_soporte, s.estado, s.tipo_soporte, s.proveedor_nombre, s.proveedor_nit, s.documento_numero, s.fecha_documento, s.fecha_vencimiento, s.total, s.confianza_ia];
@@ -576,6 +590,7 @@
   el("captureSeed").addEventListener("click", seedDemo);
   el("captureExport").addEventListener("click", exportCSV);
   el("btnRetencionPreview").addEventListener("click", retentionPreview);
+  el("btnCuarentenaPreview").addEventListener("click", quarantinePreview);
   el("btnExtraer").addEventListener("click", function () { actionSelected("extraer_ia", "Extrayendo datos con IA..."); });
   el("btnCancelarIA").addEventListener("click", function () {
     if (state.activeController && state.activeAction === "extraer_ia") state.activeController.abort();

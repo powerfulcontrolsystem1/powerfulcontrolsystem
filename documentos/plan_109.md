@@ -1088,6 +1088,12 @@ Actualización 2026-08-09, depuración segura de soportes CxP/IA:
 - No se ejecutó purga real, staging ni restore posterior; P109-008 continúa
   parcial. El avance formal permanece en **53,3 % de implementación**, **0 % de
   certificación del cambio local** y **NO-GO**.
+- La depuración se endureció como saga `eliminado -> purga_pendiente -> purgado`:
+  inicio y final son idempotentes y un reintento recupera caídas en cada frontera
+  archivo/base. Cuarentenas múltiples se rechazan sin elegir arbitrariamente.
+- `cuarentena_preview` ofrece diagnóstico Read por empresa con registros,
+  archivos y bytes, sin nombres, rutas ni mutación. Esto mejora operación local,
+  pero no sustituye la prueba de caída real, restore, réplica A/B ni staging.
 
 ## 9. Siguiente orden para Terra alto
 

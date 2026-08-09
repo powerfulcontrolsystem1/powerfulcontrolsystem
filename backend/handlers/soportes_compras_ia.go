@@ -100,6 +100,23 @@ func handleSoportesComprasIAGet(w http.ResponseWriter, r *http.Request, dbEmp *s
 		writeJSON(w, http.StatusOK, map[string]interface{}{
 			"ok": true, "retencion_dias": days, "candidatos": len(rows), "bytes": bytes, "soportes": rows,
 		})
+	case "cuarentena_preview":
+		pending, err := dbpkg.ListEmpresaSoportesComprasIARegistro(dbEmp, empresaID, "", "purga_pendiente", 500)
+		if err != nil {
+			log.Printf("[soportes_compras_ia] diagnostico cuarentena empresa_id=%d: %v", empresaID, err)
+			http.Error(w, "no se pudo consultar el diagnostico de cuarentena", http.StatusInternalServerError)
+			return
+		}
+		files, bytes, err := soporteComprasIAQuarantineStats(empresaID)
+		if err != nil {
+			log.Printf("[soportes_compras_ia] filesystem cuarentena empresa_id=%d: %v", empresaID, err)
+			http.Error(w, "no se pudo inspeccionar la cuarentena privada", http.StatusInternalServerError)
+			return
+		}
+		writeJSON(w, http.StatusOK, map[string]interface{}{
+			"ok": true, "registros_pendientes": len(pending), "archivos_cuarentena": files,
+			"bytes": bytes, "requiere_revision": len(pending) != files,
+		})
 	case "descargar":
 		downloadSoporteComprasIA(w, r, dbEmp, empresaID)
 	case "eventos":
@@ -266,16 +283,28 @@ func handleSoportesComprasIAMutate(w http.ResponseWriter, r *http.Request, dbEmp
 			http.Error(w, "el archivo privado no se pudo preparar de forma segura", http.StatusConflict)
 			return
 		}
-		purged, err := dbpkg.PurgeEmpresaSoporteComprasIA(dbEmp, empresaID, payload.SoporteID, payload.RetentionDays, payload.Confirmation, usuario, payload.Observaciones)
-		if err != nil {
+		if _, err := dbpkg.BeginPurgeEmpresaSoporteComprasIA(dbEmp, empresaID, payload.SoporteID, payload.RetentionDays, payload.Confirmation, usuario, payload.Observaciones); err != nil {
 			if rollbackErr := quarantine.rollback(); rollbackErr != nil {
 				log.Printf("[soportes_compras_ia] ALERTA rollback de cuarentena fallo empresa_id=%d soporte_id=%d: %v", empresaID, payload.SoporteID, rollbackErr)
 			}
-			http.Error(w, err.Error(), http.StatusBadRequest)
+			if isSoporteComprasIAPurgePublicValidation(err) {
+				http.Error(w, err.Error(), http.StatusBadRequest)
+			} else {
+				log.Printf("[soportes_compras_ia] inicio de depuracion empresa_id=%d soporte_id=%d: %v", empresaID, payload.SoporteID, err)
+				http.Error(w, "no se pudo iniciar la depuracion del soporte", http.StatusInternalServerError)
+			}
 			return
 		}
 		if err := quarantine.commit(); err != nil {
-			log.Printf("[soportes_compras_ia] archivo en cuarentena pendiente de limpieza empresa_id=%d soporte_id=%d: %v", empresaID, payload.SoporteID, err)
+			log.Printf("[soportes_compras_ia] depuracion pendiente empresa_id=%d soporte_id=%d: %v", empresaID, payload.SoporteID, err)
+			http.Error(w, "la depuracion quedo pendiente y puede reintentarse de forma segura", http.StatusServiceUnavailable)
+			return
+		}
+		purged, err := dbpkg.FinalizePurgeEmpresaSoporteComprasIA(dbEmp, empresaID, payload.SoporteID, usuario)
+		if err != nil {
+			log.Printf("[soportes_compras_ia] archivo eliminado con metadato pendiente empresa_id=%d soporte_id=%d: %v", empresaID, payload.SoporteID, err)
+			http.Error(w, "el archivo fue eliminado y la auditoria final quedo pendiente; reintenta", http.StatusServiceUnavailable)
+			return
 		}
 		exposeSoporteComprasIAURL(&purged)
 		writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "soporte": purged})
@@ -289,6 +318,28 @@ func handleSoportesComprasIAMutate(w http.ResponseWriter, r *http.Request, dbEmp
 	default:
 		http.Error(w, "accion no soportada", http.StatusBadRequest)
 	}
+}
+
+func isSoporteComprasIAPurgePublicValidation(err error) bool {
+	if err == nil {
+		return false
+	}
+	message := err.Error()
+	for _, allowed := range []string{
+		"empresa_id y soporte_id son obligatorios",
+		"retencion_dias debe estar entre 1 y 3650",
+		"el motivo es obligatorio",
+		"el motivo no puede superar 500 caracteres",
+		"la confirmacion no coincide con el codigo del soporte",
+		"solo un soporte de la papelera puede depurarse",
+		"un soporte contabilizado no puede depurarse porque conserva trazabilidad contable",
+		"el soporte aun no cumple la retencion configurada",
+	} {
+		if message == allowed {
+			return true
+		}
+	}
+	return false
 }
 
 type soporteComprasIAActionPayload struct {
@@ -599,9 +650,40 @@ func prepareSoporteComprasIAPurgeFile(row dbpkg.EmpresaSoporteComprasIA) (soport
 	if strings.TrimSpace(row.ArchivoURL) == "" {
 		return soporteComprasIAPurgeFile{}, nil
 	}
-	path, err := safeSoporteComprasIAPathForEmpresa(row.ArchivoURL, row.EmpresaID)
+	path, err := safeSoporteComprasIAPathCandidateForEmpresa(row.ArchivoURL, row.EmpresaID)
 	if err != nil {
 		return soporteComprasIAPurgeFile{}, err
+	}
+	info, statErr := os.Lstat(path)
+	if statErr == nil {
+		if !info.Mode().IsRegular() || info.Mode()&os.ModeSymlink != 0 {
+			return soporteComprasIAPurgeFile{}, errors.New("el archivo privado no es regular")
+		}
+	} else if !errors.Is(statErr, os.ErrNotExist) {
+		return soporteComprasIAPurgeFile{}, statErr
+	} else {
+		matches, globErr := filepath.Glob(path + ".purge-????????????????????????")
+		if globErr != nil {
+			return soporteComprasIAPurgeFile{}, globErr
+		}
+		valid := make([]string, 0, len(matches))
+		for _, match := range matches {
+			matchInfo, matchErr := os.Lstat(match)
+			if matchErr == nil && matchInfo.Mode().IsRegular() && matchInfo.Mode()&os.ModeSymlink == 0 {
+				valid = append(valid, match)
+			}
+		}
+		if len(valid) == 1 {
+			return soporteComprasIAPurgeFile{original: path, quarantine: valid[0]}, nil
+		}
+		if len(valid) > 1 {
+			return soporteComprasIAPurgeFile{}, errors.New("existen varias cuarentenas para el soporte")
+		}
+		if strings.EqualFold(strings.TrimSpace(row.Estado), "purga_pendiente") {
+			// La fase de archivo ya terminó y solo falta cerrar la transacción.
+			return soporteComprasIAPurgeFile{}, nil
+		}
+		return soporteComprasIAPurgeFile{}, errors.New("archivo privado no disponible para depuracion")
 	}
 	random := make([]byte, 12)
 	if _, err := rand.Read(random); err != nil {
@@ -650,6 +732,47 @@ func soporteComprasIARetentionBytes(rows []dbpkg.EmpresaSoporteComprasIA) int64 
 		total += info.Size()
 	}
 	return total
+}
+
+func soporteComprasIAQuarantineStats(empresaID int64) (int, int64, error) {
+	if empresaID <= 0 {
+		return 0, 0, errors.New("empresa invalida para cuarentena")
+	}
+	tenantDir := filepath.Join(soporteComprasIAPrivateRoot(), "empresa_"+strconv.FormatInt(empresaID, 10))
+	entries, err := os.ReadDir(tenantDir)
+	if errors.Is(err, os.ErrNotExist) {
+		return 0, 0, nil
+	}
+	if err != nil {
+		return 0, 0, err
+	}
+	count := 0
+	var total int64
+	for _, entry := range entries {
+		if entry.IsDir() || entry.Type()&os.ModeSymlink != 0 || !isSoporteComprasIAQuarantineName(entry.Name()) {
+			continue
+		}
+		info, infoErr := entry.Info()
+		if infoErr != nil || !info.Mode().IsRegular() || info.Mode()&os.ModeSymlink != 0 {
+			continue
+		}
+		count++
+		total += info.Size()
+	}
+	return count, total, nil
+}
+
+func isSoporteComprasIAQuarantineName(name string) bool {
+	marker := strings.LastIndex(name, ".purge-")
+	if marker <= 0 {
+		return false
+	}
+	suffix := name[marker+len(".purge-"):]
+	if len(suffix) != 24 {
+		return false
+	}
+	_, err := hex.DecodeString(suffix)
+	return err == nil
 }
 
 // acquireSoporteComprasIAStorageLock serializa la comprobacion de cuota, la
@@ -1039,6 +1162,14 @@ func safeSoporteComprasIAPathFromURL(url string) (string, error) {
 }
 
 func safeSoporteComprasIAPathForEmpresa(url string, empresaID int64) (string, error) {
+	candidate, err := safeSoporteComprasIAPathCandidateForEmpresa(url, empresaID)
+	if err != nil {
+		return "", err
+	}
+	return resolveExistingPrivateFileUnderRoot(soporteComprasIAPrivateRoot(), candidate)
+}
+
+func safeSoporteComprasIAPathCandidateForEmpresa(url string, empresaID int64) (string, error) {
 	if empresaID <= 0 {
 		return "", errors.New("empresa invalida para archivo privado")
 	}
@@ -1046,7 +1177,32 @@ func safeSoporteComprasIAPathForEmpresa(url string, empresaID int64) (string, er
 	if !strings.HasPrefix(strings.TrimSpace(url), prefix) {
 		return "", errors.New("el archivo privado no pertenece a la empresa")
 	}
-	return safeSoporteComprasIAPathFromURL(url)
+	clean := strings.TrimPrefix(strings.TrimSpace(url), "private://soportes_compras_ia/")
+	root, err := filepath.Abs(filepath.Clean(soporteComprasIAPrivateRoot()))
+	if err != nil {
+		return "", errors.New("directorio privado no disponible")
+	}
+	candidate, err := filepath.Abs(filepath.Clean(filepath.Join(root, filepath.FromSlash(clean))))
+	if err != nil {
+		return "", errors.New("archivo privado no disponible")
+	}
+	rel, err := filepath.Rel(root, candidate)
+	if err != nil || rel == "." || rel == ".." || strings.HasPrefix(rel, ".."+string(os.PathSeparator)) || filepath.IsAbs(rel) {
+		return "", errors.New("ruta de soporte fuera del directorio permitido")
+	}
+	parentResolved, err := filepath.EvalSymlinks(filepath.Dir(candidate))
+	if err != nil {
+		return "", errors.New("directorio privado no disponible")
+	}
+	rootResolved, err := filepath.EvalSymlinks(root)
+	if err != nil {
+		return "", errors.New("directorio privado no disponible")
+	}
+	resolvedRel, err := filepath.Rel(rootResolved, parentResolved)
+	if err != nil || resolvedRel == ".." || strings.HasPrefix(resolvedRel, ".."+string(os.PathSeparator)) || filepath.IsAbs(resolvedRel) {
+		return "", errors.New("directorio privado fuera del tenant")
+	}
+	return candidate, nil
 }
 
 // resolveExistingPrivateFileUnderRoot rejects traversal and symlink escapes before

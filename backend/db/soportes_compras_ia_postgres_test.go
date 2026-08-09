@@ -98,9 +98,21 @@ func TestSoporteComprasIAPapeleraPostgres(t *testing.T) {
 	if _, err := PurgeEmpresaSoporteComprasIA(dbConn, 12, purgeID, 90, "WRONG", "qa@local", "wrong confirmation"); err == nil {
 		t.Fatal("purge accepted wrong confirmation")
 	}
-	purged, err := PurgeEmpresaSoporteComprasIA(dbConn, 12, purgeID, 90, "SCI-PG-PURGE", "qa@local", "retention passed")
+	pending, err := BeginPurgeEmpresaSoporteComprasIA(dbConn, 12, purgeID, 90, "SCI-PG-PURGE", "qa@local", "retention passed")
+	if err != nil || pending.Estado != "purga_pendiente" || pending.ArchivoURL == "" {
+		t.Fatalf("purge pending phase: row=%#v err=%v", pending, err)
+	}
+	retry, err := BeginPurgeEmpresaSoporteComprasIA(dbConn, 12, purgeID, 90, "SCI-PG-PURGE", "qa@local", "idempotent retry")
+	if err != nil || retry.Estado != "purga_pendiente" {
+		t.Fatalf("purge pending retry: row=%#v err=%v", retry, err)
+	}
+	purged, err := FinalizePurgeEmpresaSoporteComprasIA(dbConn, 12, purgeID, "qa@local")
 	if err != nil || purged.Estado != "purgado" || purged.ArchivoURL != "" {
 		t.Fatalf("purge tombstone: row=%#v err=%v", purged, err)
+	}
+	finalRetry, err := FinalizePurgeEmpresaSoporteComprasIA(dbConn, 12, purgeID, "qa@local")
+	if err != nil || finalRetry.Estado != "purgado" {
+		t.Fatalf("purge final retry: row=%#v err=%v", finalRetry, err)
 	}
 	if _, err := UpdateEmpresaSoporteComprasIARegistroEstado(dbConn, 12, purgeID, "activo", "qa@local", "must not restore"); err == nil {
 		t.Fatal("purged support was restored")

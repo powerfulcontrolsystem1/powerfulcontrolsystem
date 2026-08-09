@@ -13,6 +13,18 @@
   sintaxis JS, preflight 22/22 y UI local responsive aprobaron. No se depuro PCS,
   no hubo PR/push/despliegue. P109-008 sigue parcial y Plan 109 permanece en
   53,3 % de implementacion, 0 % de certificacion de este cambio y NO-GO.
+- Endurecimiento posterior: la purga ahora es saga reanudable con estado visible
+  `purga_pendiente`, inicio/final transaccionales e idempotentes y recuperacion de
+  caidas antes de base, antes de borrar o antes de finalizar. Cuarentenas
+  multiples fallan cerradas.
+- Se agrega `cuarentena_preview` con permiso Read: cuenta solo archivos validos
+  y bytes del directorio del tenant, compara registros pendientes y no expone
+  nombres/rutas ni modifica archivos.
+- Go completo, vet, sintaxis JS, preflight Full/Strict 22/22 y verificacion
+  visual local de escritorio/movil aprobaron nuevamente; sin mutacion PCS.
+- La revisión del checklist multiempresa confirmó wrapper/licencia, Read/Delete,
+  `empresa_id` en SQL y filesystem, confirmación fuerte, idempotencia y auditoría;
+  errores internos de base/ruta no se devuelven al cliente.
 
 2026-08-08: Plan 109 / adjuntos hostiles, cancelacion IA y retencion segura.
 - Soportes CxP/IA valida firmas PNG/JPEG/WebP/PDF/XML, fija MIME canónico y

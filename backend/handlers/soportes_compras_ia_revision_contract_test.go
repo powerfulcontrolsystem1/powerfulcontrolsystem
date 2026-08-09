@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"errors"
 	dbpkg "github.com/you/pos-backend/db"
 	"os"
 	"path/filepath"
@@ -38,6 +39,17 @@ func TestSoportesComprasIARevisionExposesEditableHumanReview(t *testing.T) {
 	} {
 		if !strings.Contains(string(script), want) {
 			t.Fatalf("review client contract missing %q", want)
+		}
+	}
+}
+
+func TestSoportesComprasIAPurgeErrorsFailClosed(t *testing.T) {
+	if !isSoporteComprasIAPurgePublicValidation(errors.New("el soporte aun no cumple la retencion configurada")) {
+		t.Fatal("known business validation was not public")
+	}
+	for _, private := range []string{"pq: relation empresa_soportes_compras_ia does not exist", "dial tcp private-db:5432", "permission denied /private/path"} {
+		if isSoporteComprasIAPurgePublicValidation(errors.New(private)) {
+			t.Fatalf("internal error exposed as public: %q", private)
 		}
 	}
 }
@@ -137,7 +149,7 @@ func TestSoportesComprasIAPapeleraIsRecoverableAuditedAndTenantScoped(t *testing
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, want := range []string{"registroFilter", "btnEliminar", "btnRestaurar", "btnPurgar", "Papelera", "Depurados", "soportes contabilizados no pueden eliminarse", "btnRetencionPreview", "retencionDias"} {
+	for _, want := range []string{"registroFilter", "btnEliminar", "btnRestaurar", "btnPurgar", "Papelera", "Depuracion pendiente", "Depurados", "soportes contabilizados no pueden eliminarse", "btnRetencionPreview", "btnCuarentenaPreview", "retencionDias"} {
 		if !strings.Contains(string(page), want) {
 			t.Fatalf("papelera UI missing %q", want)
 		}
@@ -152,6 +164,7 @@ func TestSoportesComprasIAPapeleraIsRecoverableAuditedAndTenantScoped(t *testing
 		`url.origin === window.location.origin`, `Recupera el soporte antes de editar sus datos`,
 		`retencion_preview`, `Vista previa sin borrado`,
 		`action === "purgar"`, `confirmacion: confirmation`, `retencion_dias: retentionDays`,
+		`cuarentena_preview`, `registros_pendientes`, `archivos_cuarentena`,
 	} {
 		if !strings.Contains(string(script), want) {
 			t.Fatalf("papelera client contract missing %q", want)
@@ -166,7 +179,7 @@ func TestSoportesComprasIAPapeleraIsRecoverableAuditedAndTenantScoped(t *testing
 		"un soporte contabilizado no puede eliminarse", "COALESCE(estado,'activo')='activo'",
 		"estado_registro_anterior", "estado_registro_nuevo", "func GetEmpresaSoporteComprasIAActivo",
 		"func ListEmpresaSoportesComprasIARetencion", "COALESCE(convertido_id,0)=0",
-		"func PurgeEmpresaSoporteComprasIA", "estado='purgado'", "archivo_privado",
+		"func BeginPurgeEmpresaSoporteComprasIA", "func FinalizePurgeEmpresaSoporteComprasIA", "estado='purga_pendiente'", "estado='purgado'", "archivo_privado",
 	} {
 		if !strings.Contains(string(source), want) {
 			t.Fatalf("papelera persistence contract missing %q", want)
@@ -176,7 +189,7 @@ func TestSoportesComprasIAPapeleraIsRecoverableAuditedAndTenantScoped(t *testing
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, want := range []string{`case "restaurar":`, `case "eliminar", "purgar":`, "return permActionDelete", "return permActionUpdate"} {
+	for _, want := range []string{`case "dashboard", "soportes", "eventos", "retencion_preview", "cuarentena_preview":`, `case "restaurar":`, `case "eliminar", "purgar":`, "return permActionRead", "return permActionDelete", "return permActionUpdate"} {
 		if !strings.Contains(string(permissions), want) {
 			t.Fatalf("papelera permission contract missing %q", want)
 		}

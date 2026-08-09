@@ -859,10 +859,20 @@ func UpdateEmpresaSoporteComprasIARegistroEstado(dbConn *sql.DB, empresaID, sopo
 	return GetEmpresaSoporteComprasIA(dbConn, empresaID, soporteID)
 }
 
-// PurgeEmpresaSoporteComprasIA convierte un registro eliminado y vencido en
-// una tumba auditable. No elimina la fila: retiene sus datos de negocio y
-// eventos, pero invalida definitivamente la referencia al archivo privado.
+// PurgeEmpresaSoporteComprasIA conserva el contrato transaccional para tareas
+// sin archivo: inicia y finaliza la tumba. Los handlers con archivo usan las
+// dos fases por separado para coordinar una saga reanudable con el filesystem.
 func PurgeEmpresaSoporteComprasIA(dbConn *sql.DB, empresaID, soporteID int64, retentionDays int, confirmation, usuario, motivo string) (EmpresaSoporteComprasIA, error) {
+	if _, err := BeginPurgeEmpresaSoporteComprasIA(dbConn, empresaID, soporteID, retentionDays, confirmation, usuario, motivo); err != nil {
+		return EmpresaSoporteComprasIA{}, err
+	}
+	return FinalizePurgeEmpresaSoporteComprasIA(dbConn, empresaID, soporteID, usuario)
+}
+
+// BeginPurgeEmpresaSoporteComprasIA valida y marca una depuracion pendiente.
+// Un reintento del mismo soporte pendiente es idempotente y no recalcula la
+// retencion desde la fecha de inicio de la saga.
+func BeginPurgeEmpresaSoporteComprasIA(dbConn *sql.DB, empresaID, soporteID int64, retentionDays int, confirmation, usuario, motivo string) (EmpresaSoporteComprasIA, error) {
 	if empresaID <= 0 || soporteID <= 0 {
 		return EmpresaSoporteComprasIA{}, errors.New("empresa_id y soporte_id son obligatorios")
 	}
@@ -899,7 +909,14 @@ func PurgeEmpresaSoporteComprasIA(dbConn *sql.DB, empresaID, soporteID int64, re
 	if !strings.EqualFold(strings.TrimSpace(codigo), strings.TrimSpace(confirmation)) {
 		return EmpresaSoporteComprasIA{}, errors.New("la confirmacion no coincide con el codigo del soporte")
 	}
-	if strings.ToLower(strings.TrimSpace(registro)) != "eliminado" {
+	registro = strings.ToLower(strings.TrimSpace(registro))
+	if registro == "purga_pendiente" {
+		if err := tx.Commit(); err != nil {
+			return EmpresaSoporteComprasIA{}, err
+		}
+		return GetEmpresaSoporteComprasIA(dbConn, empresaID, soporteID)
+	}
+	if registro != "eliminado" {
 		return EmpresaSoporteComprasIA{}, errors.New("solo un soporte de la papelera puede depurarse")
 	}
 	if normalizeSoporteIAEstado(estadoSoporte) == "contabilizado" || convertidoID > 0 {
@@ -909,7 +926,7 @@ func PurgeEmpresaSoporteComprasIA(dbConn *sql.DB, empresaID, soporteID int64, re
 		return EmpresaSoporteComprasIA{}, errors.New("el soporte aun no cumple la retencion configurada")
 	}
 	result, err := execTxSQLCompat(tx, `UPDATE empresa_soportes_compras_ia
-		SET estado='purgado', archivo_url='', fecha_actualizacion=CURRENT_TIMESTAMP, usuario_creador=?
+		SET estado='purga_pendiente', fecha_actualizacion=CURRENT_TIMESTAMP, usuario_creador=?
 		WHERE empresa_id=? AND id=? AND COALESCE(estado,'activo')='eliminado'`, usuario, empresaID, soporteID)
 	if err != nil {
 		return EmpresaSoporteComprasIA{}, err
@@ -919,8 +936,61 @@ func PurgeEmpresaSoporteComprasIA(dbConn *sql.DB, empresaID, soporteID int64, re
 	}
 	detalle, _ := json.Marshal(map[string]interface{}{
 		"motivo": motivo, "retencion_dias": retentionDays,
-		"estado_registro_anterior": "eliminado", "estado_registro_nuevo": "purgado",
-		"archivo_privado": "eliminado",
+		"estado_registro_anterior": "eliminado", "estado_registro_nuevo": "purga_pendiente",
+		"archivo_privado": "cuarentena",
+	})
+	if _, err := insertTxSQLCompat(tx, `INSERT INTO empresa_soportes_compras_ia_eventos
+		(empresa_id,soporte_id,evento,estado_anterior,estado_nuevo,detalle_json,usuario_creador)
+		VALUES (?,?,?,?,?,?,?)`, empresaID, soporteID, "purgar_iniciar", estadoSoporte, estadoSoporte, string(detalle), usuario); err != nil {
+		return EmpresaSoporteComprasIA{}, err
+	}
+	if err := tx.Commit(); err != nil {
+		return EmpresaSoporteComprasIA{}, err
+	}
+	return GetEmpresaSoporteComprasIA(dbConn, empresaID, soporteID)
+}
+
+// FinalizePurgeEmpresaSoporteComprasIA invalida la URL solo después de que el
+// handler confirma la eliminación del archivo en cuarentena.
+func FinalizePurgeEmpresaSoporteComprasIA(dbConn *sql.DB, empresaID, soporteID int64, usuario string) (EmpresaSoporteComprasIA, error) {
+	if empresaID <= 0 || soporteID <= 0 {
+		return EmpresaSoporteComprasIA{}, errors.New("empresa_id y soporte_id son obligatorios")
+	}
+	usuario = strings.TrimSpace(usuario)
+	if usuario == "" {
+		usuario = "sistema"
+	}
+	tx, err := dbConn.Begin()
+	if err != nil {
+		return EmpresaSoporteComprasIA{}, err
+	}
+	defer func() { _ = tx.Rollback() }()
+	var registro, estadoSoporte string
+	err = queryRowTxSQLCompat(tx, `SELECT COALESCE(estado,'activo'), COALESCE(estado_soporte,'radicado')
+		FROM empresa_soportes_compras_ia WHERE empresa_id=? AND id=? FOR UPDATE`, empresaID, soporteID).Scan(&registro, &estadoSoporte)
+	if err != nil {
+		return EmpresaSoporteComprasIA{}, err
+	}
+	registro = strings.ToLower(strings.TrimSpace(registro))
+	if registro == "purgado" {
+		if err := tx.Commit(); err != nil {
+			return EmpresaSoporteComprasIA{}, err
+		}
+		return GetEmpresaSoporteComprasIA(dbConn, empresaID, soporteID)
+	}
+	if registro != "purga_pendiente" {
+		return EmpresaSoporteComprasIA{}, errors.New("el soporte no tiene una depuracion pendiente")
+	}
+	result, err := execTxSQLCompat(tx, `UPDATE empresa_soportes_compras_ia SET estado='purgado', archivo_url='',
+		fecha_actualizacion=CURRENT_TIMESTAMP, usuario_creador=? WHERE empresa_id=? AND id=? AND estado='purga_pendiente'`, usuario, empresaID, soporteID)
+	if err != nil {
+		return EmpresaSoporteComprasIA{}, err
+	}
+	if affected, _ := result.RowsAffected(); affected != 1 {
+		return EmpresaSoporteComprasIA{}, errors.New("el soporte cambio mientras se finalizaba la depuracion")
+	}
+	detalle, _ := json.Marshal(map[string]interface{}{
+		"estado_registro_anterior": "purga_pendiente", "estado_registro_nuevo": "purgado", "archivo_privado": "eliminado",
 	})
 	if _, err := insertTxSQLCompat(tx, `INSERT INTO empresa_soportes_compras_ia_eventos
 		(empresa_id,soporte_id,evento,estado_anterior,estado_nuevo,detalle_json,usuario_creador)
@@ -1179,7 +1249,7 @@ func normalizeSoporteIADocumentoTipo(v string) string {
 
 func normalizeSoporteIAEstadoRegistro(v string) string {
 	v = strings.ToLower(strings.TrimSpace(v))
-	if v == "eliminado" || v == "purgado" || v == "inactivo" || v == "archivado" {
+	if v == "eliminado" || v == "purga_pendiente" || v == "purgado" || v == "inactivo" || v == "archivado" {
 		return v
 	}
 	return "activo"
@@ -1191,6 +1261,8 @@ func normalizeSoporteIARegistroFiltro(v string) string {
 		return "eliminado"
 	case "purgado":
 		return "purgado"
+	case "purga_pendiente":
+		return "purga_pendiente"
 	}
 	return "activo"
 }

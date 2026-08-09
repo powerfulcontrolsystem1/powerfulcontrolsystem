@@ -17,6 +17,15 @@ Resultado: **PASS local / pendiente de staging, restore y PCS**
   por el cliente.
 - La UI separa Activos, Papelera y Depurados; solicita motivo, advertencia y
   escritura exacta del codigo antes de enviar la accion irreversible.
+- La saga usa `purga_pendiente` y fases transaccionales idempotentes. Un reintento
+  recupera archivo ya movido, cuarentena pendiente o archivo ya eliminado; dos
+  cuarentenas candidatas se rechazan sin selección arbitraria.
+- El diagnóstico Read compara registros pendientes, cantidad de archivos y
+  bytes exclusivamente dentro de `empresa_<id>`, sin revelar nombres o rutas.
+- La ruta conserva `WithEmpresaSoportesComprasIAPermissions`: diagnóstico usa
+  Read y purga Delete. Consultas, bloqueos, updates y eventos combinan siempre
+  `empresa_id` con `soporte_id`; errores internos se registran y la respuesta
+  pública queda genérica.
 
 ## Evidencia local
 
@@ -26,6 +35,9 @@ Resultado: **PASS local / pendiente de staging, restore y PCS**
 | `go test ./... -count=1` | PASS |
 | `go vet ./...` | PASS |
 | Cuarentena con rollback y commit | PASS |
+| Reanudacion en tres fronteras de caída y ambigüedad | PASS |
+| Diagnostico de cuarentena aislado empresa 12/53 | PASS |
+| Errores de negocio permitidos y errores internos saneados | PASS |
 | Rechazo de referencia privada empresa 53 desde empresa 12 | PASS |
 | Saneamiento de metadatos manuales falsificados | PASS |
 | Fechas antiguas, recientes e invalidas | PASS |
@@ -39,6 +51,14 @@ Reporte de cierre: `documentos/reportes_profesionales/preflight_20260809_000638.
 La prueba visual confirmó `Depurados`, `Depurar archivo`, vista previa y controles
 en escritorio/móvil. El servidor estático no ofrecía API autenticada, por lo que
 los datos dinámicos no se contabilizan como UAT PCS.
+
+Revalidacion de la saga: `documentos/reportes_profesionales/preflight_20260809_001839.md`
+con 22/22 compuertas. La UI local mostró `Depuracion pendiente`, `Depurados`,
+`Depurar archivo` y `Diagnostico de cuarentena` en escritorio y ancho movil,
+sin overflow horizontal. Sigue siendo evidencia visual no autenticada.
+
+Candidato exacto posterior al saneamiento de errores:
+`documentos/reportes_profesionales/preflight_20260809_002303.md`, 22/22 PASS.
 
 ## Limites
 

@@ -161,12 +161,14 @@ func TestSoporteComprasIARegistroTransitionsPreserveAccountingTrace(t *testing.T
 
 func TestNormalizeSoporteIAEstadoRegistroKeepsRecoverableAndLegacyStates(t *testing.T) {
 	for input, want := range map[string]string{
-		"":          "activo",
-		"ACTIVO":    "activo",
-		"eliminado": "eliminado",
-		"archivado": "archivado",
-		"inactivo":  "inactivo",
-		"inventado": "activo",
+		"":                "activo",
+		"ACTIVO":          "activo",
+		"eliminado":       "eliminado",
+		"purga_pendiente": "purga_pendiente",
+		"purgado":         "purgado",
+		"archivado":       "archivado",
+		"inactivo":        "inactivo",
+		"inventado":       "activo",
 	} {
 		if got := normalizeSoporteIAEstadoRegistro(input); got != want {
 			t.Fatalf("normalize %q = %q, want %q", input, got, want)
@@ -178,6 +180,12 @@ func TestSoporteComprasIARegistroFiltroFailsClosedToActive(t *testing.T) {
 	if got := normalizeSoporteIARegistroFiltro("eliminado"); got != "eliminado" {
 		t.Fatalf("papelera = %q", got)
 	}
+	if got := normalizeSoporteIARegistroFiltro("purga_pendiente"); got != "purga_pendiente" {
+		t.Fatalf("purga pendiente = %q", got)
+	}
+	if got := normalizeSoporteIARegistroFiltro("purgado"); got != "purgado" {
+		t.Fatalf("purgado = %q", got)
+	}
 	for _, input := range []string{"", "activo", "archivado", "inactivo", "todos", "inventado"} {
 		if got := normalizeSoporteIARegistroFiltro(input); got != "activo" {
 			t.Fatalf("filtro %q = %q, want activo", input, got)
@@ -186,7 +194,7 @@ func TestSoporteComprasIARegistroFiltroFailsClosedToActive(t *testing.T) {
 }
 
 func TestSoporteComprasIAOperacionFailsClosedForUnknownRecordState(t *testing.T) {
-	for _, input := range []string{"", "eliminado", "archivado", "inactivo", "inventado"} {
+	for _, input := range []string{"", "eliminado", "purga_pendiente", "purgado", "archivado", "inactivo", "inventado"} {
 		if soporteIARegistroActivo(input) {
 			t.Fatalf("estado %q no debe habilitar acciones operativas", input)
 		}
