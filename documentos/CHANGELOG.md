@@ -1,3 +1,11 @@
+## [2026-08-09] Dialogos verificables de soportes CxP/IA
+- [UX] Aprobar, rechazar, contabilizar, papelera, recuperacion y depuracion usan
+  un dialogo accesible propio en lugar de ventanas nativas bloqueantes.
+- [Auditoria] Papelera, recuperacion y depuracion exigen motivo; la depuracion
+  mantiene confirmacion fuerte por codigo antes del endpoint.
+- [Seguridad] El cambio no altera permisos ni persistencia: el backend conserva
+  validacion empresarial, retencion y transiciones por `empresa_id`.
+
 ## [2026-08-01] Confirmación e idempotencia CxP/IA
 - [IA] La extracción documental usa un lock PostgreSQL por soporte para impedir llamadas y cuotas duplicadas entre réplicas.
 - [CxP] Aprobar y rechazar son transacciones idempotentes; no se puede revivir un soporte rechazado, duplicado o contabilizado.

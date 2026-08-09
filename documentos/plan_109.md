@@ -1225,3 +1225,14 @@ Actualización 2026-08-09, CxP/IA autenticada en el candidato `17c55dd8`:
   inexistente devolvió cero datos, pero no sustituye una identidad A/B real.
 - P109-002 y P109-008 siguen parciales. El avance permanece **53,3 % de
   implementación**, **6,7 % de certificación del candidato** y **NO-GO**.
+
+Actualización 2026-08-09, dialogos verificables de papelera CxP/IA:
+
+- Se sustituyeron `confirm`/`prompt` nativos por un dialogo propio con foco,
+  cancelacion, motivo obligatorio y confirmacion fuerte por codigo.
+- El payload y el endpoint no cambian; permisos, retencion, auditoria y
+  aislamiento por `empresa_id` permanecen bajo control del backend.
+- Sintaxis, contratos y paquetes enfocados aprobaron localmente. P109-008 no
+  recibe credito adicional hasta construir el candidato y repetir papelera y
+  recuperacion visualmente en staging. Permanece **53,3 %**, **6,7 %** y
+  **NO-GO**.

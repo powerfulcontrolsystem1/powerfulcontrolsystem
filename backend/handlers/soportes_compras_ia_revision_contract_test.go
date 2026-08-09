@@ -31,9 +31,9 @@ func TestSoportesComprasIARevisionExposesEditableHumanReview(t *testing.T) {
 		`rechazar: ["radicado", "extraido", "en_revision", "aprobado"]`,
 		`contabilizar: ["aprobado"]`,
 		`if (!actionAllowed(action))`,
-		"window.confirm(confirmations[action])",
+		"requestActionInput(action)",
 		"Confirma que revisaste proveedor, documento, impuestos y total",
-		"¿Rechazar este soporte?", "¿Crear la cuenta por pagar con los datos aprobados?",
+		"La acción quedará registrada y no generará una cuenta por pagar", "Se creará la cuenta por pagar con los datos aprobados",
 		`document.querySelectorAll(".capture-btn")`, "btn.disabled = !!on",
 		"btnCancelarIA", "AbortController", ".abort()", "Extraccion IA cancelada",
 	} {
@@ -242,7 +242,7 @@ func TestSoportesComprasIAPapeleraIsRecoverableAuditedAndTenantScoped(t *testing
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, want := range []string{"registroFilter", "btnEliminar", "btnRestaurar", "btnPurgar", "Papelera", "Depuracion pendiente", "Depurados", "soportes contabilizados no pueden eliminarse", "btnRetencionPreview", "btnCuarentenaPreview", "retencionDias"} {
+	for _, want := range []string{"registroFilter", "btnEliminar", "btnRestaurar", "btnPurgar", "Papelera", "Depuracion pendiente", "Depurados", "soportes contabilizados no pueden eliminarse", "btnRetencionPreview", "btnCuarentenaPreview", "retencionDias", "captureActionDialog", "captureActionMotivo", "captureActionConfirmacion"} {
 		if !strings.Contains(string(page), want) {
 			t.Fatalf("papelera UI missing %q", want)
 		}
@@ -253,15 +253,20 @@ func TestSoportesComprasIAPapeleraIsRecoverableAuditedAndTenantScoped(t *testing
 	}
 	for _, want := range []string{
 		`action === "restaurar"`, `action === "eliminar"`, `estado || "activo"`,
-		`"&registro="`, `window.prompt`, `observaciones: motivo`,
+		`"&registro="`, `requestActionInput(action)`, `observaciones: input.motivo`,
 		`url.origin === window.location.origin`, `Recupera el soporte antes de editar sus datos`,
 		`retencion_preview`, `Vista previa sin borrado`,
-		`action === "purgar"`, `confirmacion: confirmation`, `retencion_dias: retentionDays`,
+		`action === "purgar"`, `confirmacion: input.confirmation`, `retencion_dias: input.retentionDays`,
 		`cuarentena_preview`, `registros_pendientes`, `archivos_cuarentena`,
 		`pendientes_vencidos`, `umbral_minutos`,
 	} {
 		if !strings.Contains(string(script), want) {
 			t.Fatalf("papelera client contract missing %q", want)
+		}
+	}
+	for _, forbidden := range []string{"window.prompt", "window.confirm"} {
+		if strings.Contains(string(script), forbidden) {
+			t.Fatalf("papelera client reintrodujo dialogo nativo no comprobable: %q", forbidden)
 		}
 	}
 	source, err := os.ReadFile(filepath.Join("..", "db", "soportes_compras_ia.go"))

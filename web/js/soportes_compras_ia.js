@@ -10,7 +10,9 @@
     filters: { estado: "", registro: "activo", tipo: "", search: "" },
     loading: false,
     activeAction: "",
-    activeController: null
+    activeController: null,
+    dialogResolve: null,
+    dialogLastFocus: null
   };
 
   var labels = {
@@ -63,6 +65,58 @@
     if (!target) return;
     target.textContent = text || "";
     target.classList.toggle("is-error", !!isError);
+  }
+
+  function closeActionDialog(result) {
+    var dialog = el("captureActionDialog");
+    if (dialog && dialog.open) dialog.close();
+    var resolve = state.dialogResolve;
+    state.dialogResolve = null;
+    if (state.dialogLastFocus && typeof state.dialogLastFocus.focus === "function") state.dialogLastFocus.focus();
+    state.dialogLastFocus = null;
+    if (resolve) resolve(result || null);
+  }
+
+  function requestActionInput(action) {
+    if (action === "extraer_ia") return Promise.resolve({ motivo: "", retentionDays: 0, confirmation: "" });
+    if (state.dialogResolve) return Promise.resolve(null);
+    var selectedCode = String(state.selected && state.selected.codigo || "").trim();
+    var configs = {
+      aprobar: { title: "Aprobar soporte", message: "Confirma que revisaste proveedor, documento, impuestos y total.", submit: "Aprobar" },
+      rechazar: { title: "Rechazar soporte", message: "La acción quedará registrada y no generará una cuenta por pagar.", submit: "Rechazar", danger: true },
+      contabilizar: { title: "Contabilizar soporte", message: "Se creará la cuenta por pagar con los datos aprobados. Esta acción no registra ningún pago.", submit: "Crear cuenta por pagar" },
+      eliminar: { title: "Enviar a papelera", message: "El archivo y la auditoría se conservarán y el soporte podrá recuperarse.", submit: "Enviar a papelera", motive: "Motivo obligatorio para enviar el soporte a la papelera", danger: true },
+      restaurar: { title: "Recuperar soporte", message: "El soporte volverá a la bandeja activa con toda su auditoría.", submit: "Recuperar", motive: "Motivo obligatorio para recuperar el soporte" },
+      purgar: { title: "Depurar archivo privado", message: "Esta acción elimina definitivamente el archivo privado y no se puede deshacer. La fila y la auditoría se conservarán.", submit: "Depurar definitivamente", motive: "Motivo obligatorio para depurar el archivo", confirmation: selectedCode, danger: true }
+    };
+    var config = configs[action];
+    if (!config) return Promise.resolve(null);
+    var dialog = el("captureActionDialog");
+    if (!dialog || typeof dialog.showModal !== "function") {
+      msg("El diálogo de confirmación no está disponible en este navegador.", true);
+      return Promise.resolve(null);
+    }
+    state.dialogLastFocus = document.activeElement;
+    dialog.dataset.action = action;
+    dialog.dataset.confirmation = config.confirmation || "";
+    el("captureActionTitle").textContent = config.title;
+    el("captureActionMessage").textContent = config.message;
+    el("captureActionSubmit").textContent = config.submit;
+    el("captureActionSubmit").classList.toggle("primary", !config.danger);
+    el("captureActionSubmit").classList.toggle("danger", !!config.danger);
+    el("captureActionMotivoField").hidden = !config.motive;
+    el("captureActionMotivoField").querySelector("label").textContent = config.motive || "Motivo obligatorio";
+    el("captureActionMotivo").value = "";
+    el("captureActionConfirmacionField").hidden = !config.confirmation;
+    el("captureActionConfirmacionLabel").textContent = config.confirmation ? "Escribe " + config.confirmation + " para confirmar" : "Código de confirmación";
+    el("captureActionConfirmacion").value = "";
+    el("captureActionError").textContent = "";
+    dialog.showModal();
+    setTimeout(function () {
+      var target = config.motive ? el("captureActionMotivo") : (config.confirmation ? el("captureActionConfirmacion") : el("captureActionSubmit"));
+      if (target) target.focus();
+    }, 0);
+    return new Promise(function (resolve) { state.dialogResolve = resolve; });
   }
 
   var actionStates = {
@@ -411,56 +465,31 @@
       syncActionControls();
       return;
     }
-    var confirmations = {
-      aprobar: "Confirma que revisaste proveedor, documento, impuestos y total. ¿Aprobar este soporte?",
-      rechazar: "¿Rechazar este soporte? La acción quedará registrada y no generará una cuenta por pagar.",
-      contabilizar: "¿Crear la cuenta por pagar con los datos aprobados? Esta acción no registra ningún pago."
-    };
-    if (confirmations[action] && !window.confirm(confirmations[action])) return;
-    var motivo = "";
-    if (action === "eliminar" || action === "restaurar" || action === "purgar") {
-      var motivePrompt = action === "eliminar" ? "Motivo obligatorio para enviar el soporte a la papelera:" : (action === "restaurar" ? "Motivo obligatorio para recuperar el soporte:" : "Motivo obligatorio para depurar definitivamente el archivo:");
-      motivo = window.prompt(motivePrompt, "") || "";
-      motivo = motivo.trim();
-      if (!motivo) {
-        msg("Debes registrar un motivo para mantener la auditoria.", true);
-        return;
-      }
-    }
-    var retentionDays = 0;
-    var confirmation = "";
-    if (action === "purgar") {
-      retentionDays = Math.max(1, Math.min(3650, Math.trunc(Number(val("retencionDias")) || 90)));
-      var code = String(state.selected.codigo || "").trim();
-      if (!window.confirm("Esta accion elimina definitivamente el archivo privado, conserva la auditoria y no se puede deshacer. ¿Continuar?")) return;
-      confirmation = (window.prompt("Escribe el codigo " + code + " para confirmar la depuracion:", "") || "").trim();
-      if (confirmation !== code) {
-        msg("La confirmacion no coincide con el codigo del soporte.", true);
-        return;
-      }
-    }
-    var controller = action === "extraer_ia" && typeof AbortController !== "undefined" ? new AbortController() : null;
-    state.activeAction = action;
-    state.activeController = controller;
-    setBusy(true, text);
-    var options = { method: "POST", body: JSON.stringify({ soporte_id: state.selected.id, observaciones: motivo, retencion_dias: retentionDays, confirmacion: confirmation }) };
-    if (controller) options.signal = controller.signal;
-    api(action, options).then(function () {
-      if (state.activeController === controller) {
-        state.activeController = null;
-        state.activeAction = "";
-      }
-      msg("Accion completada.");
-      return load();
-    }).catch(function (e) {
-      if (e && e.name === "AbortError") msg("Extraccion IA cancelada. El soporte conserva su estado anterior.");
-      else msg(e.message, true);
-    }).finally(function () {
-      if (state.activeController === controller) {
-        state.activeController = null;
-        state.activeAction = "";
-      }
-      setBusy(false);
+    requestActionInput(action).then(function (input) {
+      if (!input) return;
+      var controller = action === "extraer_ia" && typeof AbortController !== "undefined" ? new AbortController() : null;
+      state.activeAction = action;
+      state.activeController = controller;
+      setBusy(true, text);
+      var options = { method: "POST", body: JSON.stringify({ soporte_id: state.selected.id, observaciones: input.motivo, retencion_dias: input.retentionDays, confirmacion: input.confirmation }) };
+      if (controller) options.signal = controller.signal;
+      return api(action, options).then(function () {
+        if (state.activeController === controller) {
+          state.activeController = null;
+          state.activeAction = "";
+        }
+        msg("Accion completada.");
+        return load();
+      }).catch(function (e) {
+        if (e && e.name === "AbortError") msg("Extraccion IA cancelada. El soporte conserva su estado anterior.");
+        else msg(e.message, true);
+      }).finally(function () {
+        if (state.activeController === controller) {
+          state.activeController = null;
+          state.activeAction = "";
+        }
+        setBusy(false);
+      });
     });
   }
 
@@ -580,6 +609,32 @@
 
   el("formSoporte").addEventListener("submit", submitForm);
   el("formEditarSoporte").addEventListener("submit", saveRevision);
+  el("captureActionForm").addEventListener("submit", function (ev) {
+    ev.preventDefault();
+    var action = el("captureActionDialog").dataset.action || "";
+    var motivoRequired = !el("captureActionMotivoField").hidden;
+    var motivo = el("captureActionMotivo").value.trim();
+    var expected = el("captureActionDialog").dataset.confirmation || "";
+    var confirmation = el("captureActionConfirmacion").value.trim();
+    if (motivoRequired && !motivo) {
+      el("captureActionError").textContent = "Debes registrar un motivo para mantener la auditoría.";
+      el("captureActionMotivo").focus();
+      return;
+    }
+    if (expected && confirmation !== expected) {
+      el("captureActionError").textContent = "El código de confirmación no coincide.";
+      el("captureActionConfirmacion").focus();
+      return;
+    }
+    closeActionDialog({
+      motivo: motivo,
+      retentionDays: action === "purgar" ? Math.max(1, Math.min(3650, Math.trunc(Number(val("retencionDias")) || 90))) : 0,
+      confirmation: confirmation
+    });
+  });
+  el("captureActionCancel").addEventListener("click", function () { closeActionDialog(null); });
+  el("captureActionClose").addEventListener("click", function () { closeActionDialog(null); });
+  el("captureActionDialog").addEventListener("cancel", function (ev) { ev.preventDefault(); closeActionDialog(null); });
   el("editProveedor").addEventListener("change", function () {
     var p = state.proveedores.find(function (item) { return String(item.id) === String(this.value); }, this);
     if (!p) return;

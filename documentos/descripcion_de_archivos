@@ -1,4 +1,10 @@
 2026-08-09
+- `web/administrar_empresa/soportes_compras_ia.html`: agrega dialogo responsive
+  y accesible para acciones humanas y destructivas de soportes.
+- `web/js/soportes_compras_ia.js`: sustituye dialogos nativos por captura
+  asincrona de motivo/codigo, restaura foco y conserva el payload oficial.
+- `backend/handlers/soportes_compras_ia_revision_contract_test.go`: exige el
+  dialogo comprobable y bloquea la reintroduccion de `prompt`/`confirm`.
 - `documentos/evidencia_plan_109/P109-009/2026-08-09_integridad_descarga_soportes_local.md`:
   evidencia local de SHA-256, límites, MIME, cabeceras y alerta agregada para
   archivos privados de soportes.

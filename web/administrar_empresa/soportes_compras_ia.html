@@ -39,6 +39,8 @@
     .capture-detail-item{display:grid;grid-template-columns:130px minmax(0,1fr);gap:10px;border-bottom:1px solid var(--border,rgba(15,35,64,.12));padding:8px 0;overflow-wrap:anywhere}.capture-detail-item span{color:var(--muted,#65758b);font-size:12px;font-weight:800}.capture-detail-item strong{font-size:13px;font-weight:750}
     .capture-progress{height:8px;border-radius:999px;overflow:hidden;background:color-mix(in srgb,var(--border,rgba(15,35,64,.14)) 65%,transparent)}.capture-progress span{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--accent,#1769e0),var(--accent-2,#0ea5a4))}
     .capture-msg{min-height:24px;color:var(--muted,#65758b);font-size:13px;line-height:1.35}.capture-msg.is-error{color:var(--danger,#c43737)}
+    .capture-dialog{width:min(520px,calc(100vw - 28px));max-height:calc(100vh - 28px);box-sizing:border-box;border:1px solid var(--border,rgba(15,35,64,.18));border-radius:10px;padding:0;background:var(--surface,#fff);color:var(--text,#172033);box-shadow:0 24px 70px rgba(15,23,42,.32)}
+    .capture-dialog::backdrop{background:rgba(8,18,34,.68);backdrop-filter:blur(2px)}.capture-dialog-form{display:grid;gap:14px;padding:18px}.capture-dialog-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}.capture-dialog-head h2{margin:0;font-size:19px}.capture-dialog-close{border:0;background:transparent;color:var(--muted,#65758b);font-size:24px;line-height:1;cursor:pointer;padding:0 4px}.capture-dialog-message{margin:0;color:var(--muted,#65758b);line-height:1.5}.capture-dialog-error{min-height:20px;margin:0;color:var(--danger,#c43737);font-size:13px;font-weight:750}.capture-dialog-actions{display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap}
     html[data-theme^="dark"] .capture-head,html[data-theme^="dark"] .capture-box,html[data-theme^="dark"] .capture-kpi,html[data-theme^="dark"] .capture-tabs,html[data-theme^="dark"] .capture-table-wrap{box-shadow:0 12px 28px rgba(0,0,0,.26)}
     @media(max-width:1180px){.capture-kpis{grid-template-columns:repeat(4,minmax(0,1fr))}.capture-grid,.capture-overview{grid-template-columns:1fr}.capture-head{display:grid}.capture-actions{justify-content:flex-start}.capture-stage-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
     @media(max-width:720px){.capture-shell{padding:12px}.capture-kpis,.capture-row,.capture-row.three,.capture-stage-grid{grid-template-columns:1fr}.capture-tab{flex:1 1 42%}.capture-table{min-width:760px}.capture-toolbar,.capture-toolbar-actions{display:grid}.capture-actions{display:grid;justify-content:stretch}.capture-detail-item{grid-template-columns:1fr}}
@@ -217,6 +219,28 @@
       </form>
     </section>
   </main>
+  <dialog id="captureActionDialog" class="capture-dialog" aria-labelledby="captureActionTitle" aria-describedby="captureActionMessage">
+    <form id="captureActionForm" class="capture-dialog-form" method="dialog" novalidate>
+      <div class="capture-dialog-head">
+        <h2 id="captureActionTitle">Confirmar acción</h2>
+        <button id="captureActionClose" class="capture-dialog-close" type="button" aria-label="Cerrar diálogo">×</button>
+      </div>
+      <p id="captureActionMessage" class="capture-dialog-message"></p>
+      <div id="captureActionMotivoField" class="capture-field" hidden>
+        <label for="captureActionMotivo">Motivo obligatorio</label>
+        <textarea id="captureActionMotivo" maxlength="500" autocomplete="off"></textarea>
+      </div>
+      <div id="captureActionConfirmacionField" class="capture-field" hidden>
+        <label id="captureActionConfirmacionLabel" for="captureActionConfirmacion">Código de confirmación</label>
+        <input id="captureActionConfirmacion" maxlength="80" autocomplete="off">
+      </div>
+      <p id="captureActionError" class="capture-dialog-error" role="alert"></p>
+      <div class="capture-dialog-actions">
+        <button id="captureActionCancel" class="capture-btn" type="button">Cancelar</button>
+        <button id="captureActionSubmit" class="capture-btn primary" type="submit">Confirmar</button>
+      </div>
+    </form>
+  </dialog>
   <script src="/js/soportes_compras_ia.js"></script>
 </body>
 </html>

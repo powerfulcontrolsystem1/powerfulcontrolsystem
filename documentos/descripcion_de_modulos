@@ -1,3 +1,12 @@
+2026-08-09: Dialogos verificables para acciones CxP/IA.
+- Modulos afectados: `soportes_compras_ia`, `CxP`, `auditoria` y
+  `frontend_ux`.
+- Aprobar, rechazar, contabilizar, enviar a papelera, recuperar y depurar usan
+  un dialogo accesible propio en vez de `confirm`/`prompt` nativos.
+- Papelera, recuperacion y depuracion exigen motivo; la depuracion conserva la
+  confirmacion fuerte por codigo. El backend mantiene permisos, aislamiento
+  por `empresa_id`, retencion, idempotencia y auditoria como autoridad final.
+
 2026-08-09: Integridad y descarga segura de soportes CxP/IA.
 - Modulos afectados: `soportes_compras_ia`, `almacenamiento_privado`,
   `seguridad_multiempresa`, `IA empresarial` y `observabilidad`.
