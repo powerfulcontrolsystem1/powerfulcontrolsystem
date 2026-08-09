@@ -17,6 +17,8 @@ Resultado: **PASS local / pendiente de staging y PCS**
   devuelve la reserva avanzada sin permitir contadores negativos.
 - Retención ofrece una vista previa no destructiva de eliminados antiguos,
   excluye contabilizados/convertidos y calcula bytes con rutas privadas seguras.
+- ClamAV usa el protocolo INSTREAM con límite de lectura y deadlines. Malware
+  bloquea antes de escribir y el modo obligatorio falla cerrado si clamd cae.
 
 ## Evidencia automatizada
 
@@ -27,6 +29,8 @@ Resultado: **PASS local / pendiente de staging y PCS**
 - Proveedor local lento y cancelación de contexto: PASS.
 - Parseo de retención 1-3650 y bytes privados seguros: PASS.
 - Integración PostgreSQL de retención: preparada, pendiente de DSN.
+- Clamd simulado: limpio PASS, firma malware bloqueada, modo opcional PASS y
+  modo obligatorio sin endpoint bloqueado.
 - Revisión visual local: siete acciones y vista previa visibles; `Cancelar IA`
   inicia deshabilitado, retención muestra 90 días y mensaje no destructivo.
 - Ancho móvil efectivo 480 px: todos los botones/filtros quedaron dentro del
@@ -35,12 +39,13 @@ Resultado: **PASS local / pendiente de staging y PCS**
 - `go vet ./...`: PASS.
 - Sintaxis JavaScript y `git diff --check`: PASS.
 - Preflight profesional Full/Strict: 22/22 compuertas PASS; reporte
-  `documentos/reportes_profesionales/preflight_20260808_195312.md`.
+  `documentos/reportes_profesionales/preflight_20260808_195938.md`.
 
 ## Límites
 
 - No se usó proveedor IA real, credenciales PCS ni datos empresariales.
-- No existe antivirus externo certificado en este equipo.
+- No existe daemon ClamAV real certificado en este equipo; el PASS corresponde
+  al protocolo simulado, no al servicio del VPS.
 - La vista previa no ejecuta purga física.
 - No hubo PR, push, despliegue ni cambio en producción/staging.
 

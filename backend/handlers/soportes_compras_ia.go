@@ -1,10 +1,12 @@
 package handlers
 
 import (
+	"bufio"
 	"bytes"
 	"context"
 	"crypto/rand"
 	"database/sql"
+	"encoding/binary"
 	"encoding/hex"
 	"encoding/json"
 	"encoding/xml"
@@ -13,6 +15,7 @@ import (
 	"io"
 	"log"
 	"math"
+	"net"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -118,6 +121,14 @@ func handleSoportesComprasIAMutate(w http.ResponseWriter, r *http.Request, dbEmp
 	case "radicar":
 		row, err := radicarSoporteComprasIA(r, dbEmp, dbSuper, empresaID, usuario)
 		if err != nil {
+			if errors.Is(err, errSoporteComprasIAMalware) {
+				writeJSON(w, http.StatusUnprocessableEntity, map[string]interface{}{"ok": false, "error": "El antivirus rechazo el archivo del soporte"})
+				return
+			}
+			if errors.Is(err, errSoporteComprasIAAntivirusUnavailable) {
+				writeJSON(w, http.StatusServiceUnavailable, map[string]interface{}{"ok": false, "error": "El antivirus de soportes no esta disponible. Intenta nuevamente."})
+				return
+			}
 			if errors.Is(err, errSoporteComprasIAStorageQuota) {
 				writeJSON(w, http.StatusInsufficientStorage, map[string]interface{}{
 					"ok":    false,
@@ -317,6 +328,9 @@ func radicarSoporteComprasIA(r *http.Request, dbEmp, dbSuper *sql.DB, empresaID 
 			if err := validateSoporteComprasIAAttachment(att); err != nil {
 				return row, err
 			}
+			if err := scanSoporteComprasIAAttachment(att); err != nil {
+				return row, err
+			}
 			release, err := acquireSoporteComprasIAStorageLock(r, dbEmp, empresaID)
 			if err != nil {
 				return row, err
@@ -466,6 +480,59 @@ func validateSoporteComprasIAXML(raw []byte) error {
 	}
 	if depth != 0 || tokens == 0 {
 		return errors.New("el XML del soporte no esta bien formado")
+	}
+	return nil
+}
+
+func scanSoporteComprasIAAttachment(att *aiAttachment) error {
+	addr := strings.TrimSpace(os.Getenv("PCS_SUPPORTS_CLAMAV_ADDR"))
+	required := parseBoolSoporteComprasIA(os.Getenv("PCS_SUPPORTS_CLAMAV_REQUIRED"))
+	if addr == "" {
+		if required {
+			return errSoporteComprasIAAntivirusUnavailable
+		}
+		return nil
+	}
+	if att == nil || len(att.Bytes) == 0 {
+		return errors.New("el archivo del soporte esta vacio")
+	}
+	conn, err := net.DialTimeout("tcp", addr, 3*time.Second)
+	if err != nil {
+		return fmt.Errorf("%w: conexion no disponible", errSoporteComprasIAAntivirusUnavailable)
+	}
+	defer conn.Close()
+	_ = conn.SetDeadline(time.Now().Add(15 * time.Second))
+	if _, err := conn.Write([]byte("zINSTREAM\x00")); err != nil {
+		return fmt.Errorf("%w: no se pudo iniciar el analisis", errSoporteComprasIAAntivirusUnavailable)
+	}
+	for offset := 0; offset < len(att.Bytes); {
+		end := offset + 32*1024
+		if end > len(att.Bytes) {
+			end = len(att.Bytes)
+		}
+		chunk := att.Bytes[offset:end]
+		if err := binary.Write(conn, binary.BigEndian, uint32(len(chunk))); err != nil {
+			return fmt.Errorf("%w: envio interrumpido", errSoporteComprasIAAntivirusUnavailable)
+		}
+		if _, err := conn.Write(chunk); err != nil {
+			return fmt.Errorf("%w: envio interrumpido", errSoporteComprasIAAntivirusUnavailable)
+		}
+		offset = end
+	}
+	if err := binary.Write(conn, binary.BigEndian, uint32(0)); err != nil {
+		return fmt.Errorf("%w: no se pudo finalizar el analisis", errSoporteComprasIAAntivirusUnavailable)
+	}
+	response, err := bufio.NewReader(io.LimitReader(conn, 4096)).ReadString(0)
+	if err != nil && !errors.Is(err, io.EOF) {
+		return fmt.Errorf("%w: respuesta invalida", errSoporteComprasIAAntivirusUnavailable)
+	}
+	response = strings.TrimSpace(strings.TrimRight(response, "\x00"))
+	upper := strings.ToUpper(response)
+	if strings.Contains(upper, " FOUND") || strings.HasSuffix(upper, "FOUND") {
+		return errSoporteComprasIAMalware
+	}
+	if !strings.HasSuffix(upper, "OK") {
+		return fmt.Errorf("%w: resultado no concluyente", errSoporteComprasIAAntivirusUnavailable)
 	}
 	return nil
 }
@@ -662,6 +729,8 @@ var (
 	errSoporteComprasIASinAdjunto           = errors.New("soporte sin adjunto privado disponible")
 	errSoporteComprasIAStorageQuota         = errors.New("limite de almacenamiento empresarial alcanzado")
 	errSoporteComprasIAStorageBusy          = errors.New("otra carga de almacenamiento empresarial esta en curso")
+	errSoporteComprasIAMalware              = errors.New("el antivirus rechazo el archivo del soporte")
+	errSoporteComprasIAAntivirusUnavailable = errors.New("el antivirus de soportes no esta disponible")
 )
 
 func extraerSoporteComprasIAGPT55(r *http.Request, dbEmp, dbSuper *sql.DB, empresaID int64, usuario string) (dbpkg.EmpresaSoporteComprasIA, error) {

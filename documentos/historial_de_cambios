@@ -10,7 +10,10 @@
   devuelve con `GREATEST(0,...)` para no penalizar ni crear saldos negativos.
 - La vista previa de retención lista por `empresa_id` únicamente eliminados
   antiguos no contabilizados y calcula bytes seguros sin borrar archivos.
-- Falta antivirus externo, purga física certificada, PostgreSQL dinámico y UAT
+- Se integra `clamd` por INSTREAM, timeout y respuesta acotada. El modo REQUIRED
+  falla cerrado con HTTP 503 si el scanner no está disponible y malware devuelve
+  422 sin escribir; pruebas TCP locales cubren OK, FOUND, opcional y caída.
+- Falta activar ClamAV real, purga física certificada, PostgreSQL dinámico y UAT
   PCS/staging. P109-002/P109-008/P109-009 siguen parciales; 53,3 % y NO-GO.
 
 2026-08-08: Plan 109 / papelera recuperable para soportes CxP-IA.

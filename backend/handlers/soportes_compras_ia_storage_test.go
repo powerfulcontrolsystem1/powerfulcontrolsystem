@@ -1,8 +1,12 @@
 package handlers
 
 import (
+	"bufio"
 	"bytes"
+	"encoding/binary"
 	"errors"
+	"io"
+	"net"
 	"os"
 	"path/filepath"
 	"strings"
@@ -10,6 +14,72 @@ import (
 
 	dbpkg "github.com/you/pos-backend/db"
 )
+
+func TestSoporteComprasIAClamAVCleanMalwareAndFailClosed(t *testing.T) {
+	att := &aiAttachment{Filename: "factura.pdf", MimeType: "application/pdf", Bytes: []byte("%PDF-1.7\n%%EOF")}
+	t.Run("clean", func(t *testing.T) {
+		t.Setenv("PCS_SUPPORTS_CLAMAV_ADDR", startFakeSoporteClamd(t, "stream: OK"))
+		t.Setenv("PCS_SUPPORTS_CLAMAV_REQUIRED", "true")
+		if err := scanSoporteComprasIAAttachment(att); err != nil {
+			t.Fatalf("clean attachment rejected: %v", err)
+		}
+	})
+	t.Run("malware", func(t *testing.T) {
+		t.Setenv("PCS_SUPPORTS_CLAMAV_ADDR", startFakeSoporteClamd(t, "stream: Eicar-Signature FOUND"))
+		t.Setenv("PCS_SUPPORTS_CLAMAV_REQUIRED", "true")
+		if err := scanSoporteComprasIAAttachment(att); !errors.Is(err, errSoporteComprasIAMalware) {
+			t.Fatalf("malware result = %v", err)
+		}
+	})
+	t.Run("required without address", func(t *testing.T) {
+		t.Setenv("PCS_SUPPORTS_CLAMAV_ADDR", "")
+		t.Setenv("PCS_SUPPORTS_CLAMAV_REQUIRED", "true")
+		if err := scanSoporteComprasIAAttachment(att); !errors.Is(err, errSoporteComprasIAAntivirusUnavailable) {
+			t.Fatalf("required scanner result = %v", err)
+		}
+	})
+	t.Run("optional without address", func(t *testing.T) {
+		t.Setenv("PCS_SUPPORTS_CLAMAV_ADDR", "")
+		t.Setenv("PCS_SUPPORTS_CLAMAV_REQUIRED", "false")
+		if err := scanSoporteComprasIAAttachment(att); err != nil {
+			t.Fatalf("optional scanner disabled = %v", err)
+		}
+	})
+}
+
+func startFakeSoporteClamd(t *testing.T, response string) string {
+	t.Helper()
+	listener, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = listener.Close() })
+	go func() {
+		conn, err := listener.Accept()
+		if err != nil {
+			return
+		}
+		defer conn.Close()
+		reader := bufio.NewReader(conn)
+		if _, err := reader.ReadString(0); err != nil {
+			return
+		}
+		for {
+			var size uint32
+			if err := binary.Read(reader, binary.BigEndian, &size); err != nil {
+				return
+			}
+			if size == 0 {
+				break
+			}
+			if _, err := io.CopyN(io.Discard, reader, int64(size)); err != nil {
+				return
+			}
+		}
+		_, _ = conn.Write(append([]byte(response), 0))
+	}()
+	return listener.Addr().String()
+}
 
 func TestSoporteComprasIAAttachmentValidatesSignatureAndCanonicalMIME(t *testing.T) {
 	tests := []struct {

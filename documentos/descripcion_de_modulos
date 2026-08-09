@@ -2,12 +2,14 @@
 - Modulos afectados: `soportes_compras_ia`, `IA empresarial`, `almacenamiento`,
   `seguridad_multiempresa` y `frontend_ux`.
 - La carga contrasta extensión y firma, usa MIME canónico, analiza XML estricto
-  y rechaza DTD, entidades, instrucciones y elementos activos. No sustituye el
-  antivirus externo pendiente de P109-008/P109-009.
+  y rechaza DTD, entidades, instrucciones y elementos activos. Integra ClamAV
+  `clamd` por INSTREAM con modo opcional u obligatorio fail-closed.
 - Un fallo de persistencia limpia únicamente el archivo privado recién creado;
   la extracción IA usa el contexto de la petición y puede cancelarse desde UI.
 - La vista previa de retención filtra eliminados antiguos no contabilizados por
   `empresa_id`, reporta cantidad/bytes y no borra ni expone archivos.
+- El protocolo antivirus se probó con un clamd local simulado para limpio,
+  malware, desactivado y obligatorio sin servicio; falta el daemon real de VPS.
 
 2026-08-08: Papelera recuperable de soportes de compras IA.
 - Modulos afectados: `soportes_compras_ia`, `CxP`, `auditoria`,

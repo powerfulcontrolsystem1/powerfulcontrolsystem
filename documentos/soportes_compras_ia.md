@@ -57,7 +57,9 @@ mismo hash o numero de documento.
 - Las credenciales del proveedor IA deben venir de configuracion segura o entorno.
 - La carga valida firma real contra extension, normaliza el MIME y rechaza XML
   con DTD, entidades, instrucciones o elementos activos; esto endurece la
-  admision, pero no sustituye un antivirus externo.
+  admision. Si `PCS_SUPPORTS_CLAMAV_ADDR` está configurado, además envía el
+  contenido a `clamd` mediante INSTREAM; `PCS_SUPPORTS_CLAMAV_REQUIRED=1`
+  bloquea la carga cuando el servicio no responde.
 - Si la fila no puede persistirse despues de escribir el archivo privado, el
   adjunto recien creado se elimina dentro de la raiz segura para evitar huerfanos.
 - `Cancelar IA` aborta la solicitud HTTP y propaga el contexto al proveedor; el

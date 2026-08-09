@@ -11,7 +11,10 @@
 - `backend/db/empresa_agentes_uso_test.go`: exige que una devolucion inválida de
   cuota IA falle antes de tocar la base de datos.
 - `backend/handlers/soportes_compras_ia_storage_test.go`: cubre firmas, MIME,
-  XML hostil, limpieza confinada y bytes/dias de retencion.
+  XML hostil, limpieza confinada, bytes/dias de retencion y protocolo clamd.
+- `deploy/docker-compose.platform.yml`, `.env.platform.example` y
+  `.env.staging.example`: propagan endpoint y modo obligatorio de ClamAV con
+  valores seguros desactivados hasta certificar el servicio.
 - `documentos/evidencia_plan_109/P109-008/2026-08-08_papelera_soportes_ia_local.md`:
   evidencia el ciclo local de eliminacion/recuperacion, aislamiento, auditoria,
   cierres operativos y limites de certificacion de soportes CxP/IA.

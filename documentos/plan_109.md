@@ -1064,6 +1064,16 @@ Actualización 2026-08-08, adjuntos hostiles, cancelación IA y retención:
   ni UAT PCS/A-B. P109-002, P109-008 y P109-009 continúan parciales; el avance
   permanece **53,3 %**, la certificación del cambio local **0 %** y **NO-GO**.
 
+Actualización 2026-08-08, protocolo antivirus para soportes:
+
+- Se integró localmente `clamd` por INSTREAM con deadlines, respuesta limitada,
+  rechazo de malware antes de escritura y modo obligatorio fail-closed.
+- Un servidor TCP simulado aprobó limpio, `FOUND`, modo opcional y caída
+  obligatoria. Compose y ejemplos exponen la configuración apagada por defecto.
+- Falta desplegar/actualizar firmas y comprobar ClamAV real en staging, carga
+  EICAR controlada, métricas y recuperación ante caída. P109-008/P109-009 siguen
+  parciales; permanece **53,3 %**, certificación local **0 %** y **NO-GO**.
+
 ## 9. Siguiente orden para Terra alto
 
 P109-000 ya está aprobada para `ea9642dd...` y P109-011 para `c8094f5b`;
