@@ -41426,6 +41426,9 @@ acumulativa.
   transmite ambos al auditor; los lotes autenticados pueden cubrir el
   inventario completo con los secretos CI, sin exponer credenciales ni ejecutar
   solicitudes mutantes.
+- La evidencia de los lotes iniciales detectó que `renta_ia.html` enviaba un
+  POST de cálculo al cargar. Se eliminó esa ejecución automática: el cálculo y
+  el análisis IA solo se solicitan por acción visible y explícita del usuario.
 
 2026-08-09: Plan 109 / capacidad Docker y QA visual financiero.
 

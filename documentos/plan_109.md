@@ -1392,3 +1392,11 @@ Actualización 2026-08-09, capacidad VPS y revisión visual financiera:
   sustituye las pruebas de cuatro cajas, roles ni conciliación contable.
 - P109-005/P109-009 permanecen parciales; el avance formal continúa **53,3 %**
   y **NO-GO**.
+
+Actualización 2026-08-09, hallazgo del barrido E2E de Renta IA:
+
+- Los lotes autenticados detectaron dos POST bloqueados al abrir Renta IA. La
+  causa fue un cálculo automático en el arranque de la pantalla. El candidato
+  local elimina ese POST: la consulta financiera y cualquier uso de IA requieren
+  el clic explícito del usuario. Debe construirse y repetirse el lote antes de
+  acreditar la corrección.

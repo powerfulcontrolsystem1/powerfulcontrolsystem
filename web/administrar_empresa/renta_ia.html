@@ -260,7 +260,7 @@
       $("btnCalcular").addEventListener("click", function(){ calcular(false); });
       $("btnIA").addEventListener("click", function(){ calcular(true); });
       $("rentaForm").addEventListener("submit", function(ev){ ev.preventDefault(); calcular(false); });
-      calcular(false);
+      setStatus("Selecciona los parámetros y pulsa Calcular para consultar la estimación.", false);
     })();
   </script>
 </body>

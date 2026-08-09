@@ -186,6 +186,8 @@
 - `.github/workflows/e2e-visual.yml`: ejecución autenticada manual/programada
   de botones, layout e impresión; admite offset y tamaño para recorrer el
   inventario por lotes seguros.
+- `web/administrar_empresa/renta_ia.html`: estimación de renta empresarial;
+  no realiza cálculo ni llamada IA al cargar, solo mediante acción visible.
 - `tools/qa_module_contracts.mjs`: contrato CI para impedir que el auditor E2E
   pierda su frontera no mutante.
 - `backend/handlers/super_vps2.go`: estado degradado, visible y no 5xx cuando el
