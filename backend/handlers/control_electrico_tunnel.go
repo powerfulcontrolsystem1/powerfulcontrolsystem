@@ -155,10 +155,71 @@ func PublicDomoticaRaspberryTunnelHandler(dbEmp *sql.DB) http.HandlerFunc {
 			handleDomoticaTunnelInput(w, r, dbEmp, device, requestBytes)
 		case "telemetry":
 			handleDomoticaTunnelTelemetry(w, r, dbEmp, device, requestBytes)
+		case "solar_telemetry":
+			handleDomoticaTunnelSolarTelemetry(w, r, dbEmp, device, requestBytes)
 		default:
 			writeDomoticaTunnelJSON(w, http.StatusBadRequest, map[string]interface{}{"ok": false, "error": "action no soportada"})
 		}
 	}
+}
+
+// handleDomoticaTunnelSolarTelemetry accepts VE.Direct metrics only from an
+// enrolled Raspberry. The tenant and controller are resolved from its tunnel
+// token, never from fields sent by the device.
+func handleDomoticaTunnelSolarTelemetry(w http.ResponseWriter, r *http.Request, dbEmp *sql.DB, device *dbpkg.EmpresaControlElectricoTunnelDevice, requestBytes int64) {
+	var payload struct {
+		Modelo  string                           `json:"modelo"`
+		Lectura dbpkg.EmpresaEnergiaSolarLectura `json:"lectura"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+		writeDomoticaTunnelJSON(w, http.StatusBadRequest, map[string]interface{}{"ok": false, "error": "telemetria solar invalida"})
+		return
+	}
+	if err := dbpkg.EmpresaEnergiaSolarSchemaReady(dbEmp); err != nil {
+		recordAndWriteDomoticaTunnel(w, r, dbEmp, device, requestBytes, map[string]interface{}{"ok": false, "error": "modulo solar no disponible"}, err.Error())
+		return
+	}
+	ref := "raspberry:" + strconv.FormatInt(device.RaspberryID, 10) + ":vedirect"
+	sistemas, err := dbpkg.ListEmpresaEnergiaSolarSistemas(dbEmp, device.EmpresaID, true)
+	if err != nil {
+		recordAndWriteDomoticaTunnel(w, r, dbEmp, device, requestBytes, map[string]interface{}{"ok": false, "error": "no se pudo consultar sistema solar"}, err.Error())
+		return
+	}
+	var sistemaID int64
+	for _, sistema := range sistemas {
+		if strings.EqualFold(strings.TrimSpace(sistema.InstalacionRef), ref) {
+			sistemaID = sistema.ID
+			break
+		}
+	}
+	if sistemaID == 0 {
+		sistemaID, err = dbpkg.UpsertEmpresaEnergiaSolarSistema(dbEmp, dbpkg.EmpresaEnergiaSolarSistema{
+			EmpresaID: device.EmpresaID, Proveedor: dbpkg.EnergiaSolarProviderVictron,
+			Modelo: firstNonEmpty(strings.TrimSpace(payload.Modelo), "BlueSolar MPPT VE.Direct"),
+			Nombre: "Victron solar - Raspberry Pi", Ubicacion: "Gateway VE.Direct por tunel PCS",
+			InstalacionRef: ref, LocalGatewayURL: "tunnel://raspberry/" + strconv.FormatInt(device.RaspberryID, 10) + "/vedirect",
+			IntervaloSegundos: 60, Activo: true, Estado: "activo", UsuarioCreador: device.DeviceUID,
+			Observaciones: "Telemetria VE.Direct autenticada desde Raspberry Pi; sin acceso entrante al VPS.",
+		})
+		if err != nil {
+			recordAndWriteDomoticaTunnel(w, r, dbEmp, device, requestBytes, map[string]interface{}{"ok": false, "error": "no se pudo crear sistema solar"}, err.Error())
+			return
+		}
+	}
+	payload.Lectura.EmpresaID = device.EmpresaID
+	payload.Lectura.SistemaID = sistemaID
+	payload.Lectura.UsuarioCreador = device.DeviceUID
+	if payload.Lectura.Raw == nil {
+		payload.Lectura.Raw = map[string]interface{}{}
+	}
+	payload.Lectura.Raw["origen"] = "vedirect_tunel_raspberry"
+	payload.Lectura.Raw["raspberry_id"] = device.RaspberryID
+	lecturaID, err := dbpkg.InsertEmpresaEnergiaSolarLectura(dbEmp, payload.Lectura)
+	if err != nil {
+		recordAndWriteDomoticaTunnel(w, r, dbEmp, device, requestBytes, map[string]interface{}{"ok": false, "error": "no se pudo guardar telemetria solar"}, err.Error())
+		return
+	}
+	recordAndWriteDomoticaTunnel(w, r, dbEmp, device, requestBytes, map[string]interface{}{"ok": true, "sistema_id": sistemaID, "lectura_id": lecturaID}, "")
 }
 
 func handleDomoticaTunnelEnroll(w http.ResponseWriter, r *http.Request, dbEmp *sql.DB, requestBytes int64) {
