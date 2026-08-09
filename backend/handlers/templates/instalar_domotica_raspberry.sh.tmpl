@@ -290,14 +290,17 @@ chmod 0750 /opt/pcs-domotica/agent.py
 cat > /etc/systemd/system/pcs-domotica-agent.service <<'PCS_SERVICE'
 [Unit]
 Description=PCS Domotica Raspberry outbound HTTPS tunnel
-After=network-online.target
+After=network-online.target nss-lookup.target
 Wants=network-online.target
+StartLimitIntervalSec=0
 
 [Service]
 Type=simple
 ExecStart=/usr/bin/python3 /opt/pcs-domotica/agent.py
 Restart=always
-RestartSec=3
+RestartSec=5
+TimeoutStopSec=15
+Environment=PYTHONUNBUFFERED=1
 User=root
 NoNewPrivileges=true
 PrivateTmp=true

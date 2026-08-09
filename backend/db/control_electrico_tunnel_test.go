@@ -1,6 +1,7 @@
 package db
 
 import (
+	"database/sql"
 	"strings"
 	"testing"
 )
@@ -20,6 +21,22 @@ func TestControlElectricoTunnelSecretsAreRandomAndHashed(t *testing.T) {
 	hash := controlElectricoTunnelTokenHash(first)
 	if len(hash) != 64 || hash == first || strings.Contains(hash, first) {
 		t.Fatal("el token debe persistirse unicamente como SHA-256 hexadecimal")
+	}
+}
+
+func TestControlElectricoStationQueriesRequireTenantAndStation(t *testing.T) {
+	var conn *sql.DB
+	if _, err := ListEmpresaControlElectricoReglasByEstacion(conn, 1, 0, false); err == nil {
+		t.Fatal("las reglas por estacion deben rechazar estacion_id invalido")
+	}
+	if _, err := ListEmpresaControlElectricoReglasByEstacion(conn, 0, 1, false); err == nil {
+		t.Fatal("las reglas por estacion deben rechazar empresa_id invalido")
+	}
+	if _, err := ListEmpresaControlElectricoEventosByEstacion(conn, 1, 0, 20); err == nil {
+		t.Fatal("los eventos por estacion deben rechazar estacion_id invalido")
+	}
+	if _, err := ListEmpresaControlElectricoEventosByEstacion(conn, 0, 1, 20); err == nil {
+		t.Fatal("los eventos por estacion deben rechazar empresa_id invalido")
 	}
 }
 

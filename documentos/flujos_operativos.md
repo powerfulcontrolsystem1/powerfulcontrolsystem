@@ -1493,3 +1493,10 @@ afecte dinero, documentos, licencias o seguridad.
    servidor evalua exclusivamente reglas de la misma empresa/controlador.
 6. El super administrador consulta transferencia por empresa y Raspberry sin
    acceder a tokens. Regenerar instalador revoca el acceso operativo anterior.
+7. En Configuracion de estaciones, el administrador activa o desactiva el check
+   del boton `⚡ Domotica`. Desde cada tarjeta de estacion el boton abre una
+   vista filtrada de equipos, sensores, estados y controladores, sin activar el
+   carrito ni cambiar el estado comercial de la estacion.
+8. Cada Raspberry usa un instalador exclusivo. Si pierde LAN, Internet, DNS o
+   el VPS, el agente reintenta con backoff y systemd lo reinicia sin limite; al
+   reconectar consume los comandos durables pendientes del dispositivo.

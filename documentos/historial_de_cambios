@@ -41214,3 +41214,20 @@ acumulativa.
 - QA local: paquetes `db` y `handlers` enfocados pasan; el agente Python y los
   scripts inline pasan parseo; `192.168.1.16:22` responde. La validacion fisica,
   PCS autenticada y despliegue se completan despues del candidato.
+2026-08-09: Informes funcional y tecnico del modulo Domotica.
+
+- `documentos/informe_modulo_domotica_2026-08-09.md`: alcance funcional,
+  seguridad, operacion, evidencia de despliegue y pendiente de validacion fisica.
+- `documentos/informe_tecnico_compacto_domotica_2026-08-09.md`: arquitectura,
+  componentes, datos, controles y estado de validacion en formato compacto.
+
+2026-08-09: Acceso unico a Domotica desde Estaciones y reconexion Raspberry.
+
+- Cada tarjeta de estacion puede mostrar un unico boton `⚡ Domotica`,
+  controlado por un check en Configuracion de estaciones.
+- La vista por estacion concentra equipos, sensores, ultimo estado de entrada y
+  multiples Raspberry registradas/conectadas, sin activar el carrito.
+- El endpoint empresarial filtra reglas y eventos por `empresa_id` y
+  `estacion_id`; las entradas GPIO registran su ultimo valor para consulta.
+- El agente conserva backoff de red y systemd queda sin limite de reinicios para
+  reconectar automaticamente tras caidas de LAN, Internet, DNS, VPS o reinicio.
