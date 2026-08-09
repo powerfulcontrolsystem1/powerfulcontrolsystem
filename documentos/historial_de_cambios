@@ -10,6 +10,9 @@
   cuatro digests en staging. El diálogo validó motivo, papelera, bloqueo por
   duplicado y recuperación; la conciliación mantuvo CxP/pagos/movimientos en
   3/5/5. Producción permaneció sin cambios.
+- La repetición E2E `31304164994` aprobó la página en escritorio/móvil sin
+  hallazgos, impresiones 20/20 y matrices de roles/pagos. Mutaciones sin sesión
+  devolvieron 401. P109-000 no cierra sin fusión y drills de migración exactos.
 
 2026-08-09: Plan 109 / integridad de archivos privados CxP-IA.
 - Descarga y carga hacia IA verifican SHA-256 persistido en tiempo constante,

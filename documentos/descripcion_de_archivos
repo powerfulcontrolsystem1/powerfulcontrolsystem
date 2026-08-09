@@ -8,6 +8,9 @@
 - `documentos/evidencia_plan_109/P109-008/2026-08-09_dialogo_papelera_staging_34cfd852.md`:
   registra release inmutable, respaldo, dialogo visual, validacion obligatoria,
   bloqueo por duplicado, papelera/recuperacion y conciliacion sin efectos CxP.
+- `documentos/evidencia_plan_109/P109-000/2026-08-09_verificacion_candidato_34cfd852.md`:
+  registra digests efectivos, salud, producción intacta, E2E responsive,
+  impresiones, matrices y rechazos sin sesión del nuevo candidato.
 - `documentos/evidencia_plan_109/P109-009/2026-08-09_integridad_descarga_soportes_local.md`:
   evidencia local de SHA-256, límites, MIME, cabeceras y alerta agregada para
   archivos privados de soportes.

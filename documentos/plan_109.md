@@ -1248,3 +1248,14 @@ Actualización 2026-08-09, papelera visual en el candidato `34cfd852`:
 - P109-008 continúa parcial por retención, caída, antivirus y A/B. El avance de
   implementación permanece **53,3 %** y el veredicto **NO-GO**. La certificación
   formal del nuevo SHA se recalculará al repetir la compuerta completa P109-000.
+
+Actualización 2026-08-09, verificación ampliada de `34cfd852`:
+
+- Digests efectivos, migrador 0, salud/listo, worker y producción sana fueron
+  comprobados. E2E `31304164994` aprobó escritorio/móvil sin hallazgos; impresión
+  20/20 y matrices de roles/pagos quedaron `ok`.
+- El endpoint rechazó con 401 eliminar/restaurar sin sesión y la empresa
+  inexistente. No hubo mutaciones.
+- P109-000 sigue parcial: falta PR/fusión y los drills exactos de base vacía y
+  upgrade. El avance permanece **53,3 %**, la certificación formal del SHA
+  exacto continúa **0 %** hasta cerrar la compuerta y el veredicto es **NO-GO**.
