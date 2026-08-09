@@ -41231,3 +41231,6 @@ acumulativa.
   `estacion_id`; las entradas GPIO registran su ultimo valor para consulta.
 - El agente conserva backoff de red y systemd queda sin limite de reinicios para
   reconectar automaticamente tras caidas de LAN, Internet, DNS, VPS o reinicio.
+2026-08-09: Domotica desde carrito de estacion
+- Se retira el acceso directo de las tarjetas de Estaciones y se conserva el boton `⚡ Domotica` dentro del carrito operativo de cada estacion.
+- La configuracion por defecto de Domotica queda habilitada para presentar el panel; las acciones GPIO siguen requiriendo Raspberry y equipos registrados por empresa.
