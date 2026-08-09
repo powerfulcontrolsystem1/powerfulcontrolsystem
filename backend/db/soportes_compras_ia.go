@@ -910,7 +910,7 @@ func BeginPurgeEmpresaSoporteComprasIA(dbConn *sql.DB, empresaID, soporteID int6
 		return EmpresaSoporteComprasIA{}, errors.New("la confirmacion no coincide con el codigo del soporte")
 	}
 	registro = strings.ToLower(strings.TrimSpace(registro))
-	if registro == "purga_pendiente" {
+	if registro == "purga_pendiente" || registro == "purgado" {
 		if err := tx.Commit(); err != nil {
 			return EmpresaSoporteComprasIA{}, err
 		}

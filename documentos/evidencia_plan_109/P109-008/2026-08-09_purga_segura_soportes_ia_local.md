@@ -22,6 +22,9 @@ Resultado: **PASS local / pendiente de staging, restore y PCS**
   cuarentenas candidatas se rechazan sin selección arbitraria.
 - El diagnóstico Read compara registros pendientes, cantidad de archivos y
   bytes exclusivamente dentro de `empresa_<id>`, sin revelar nombres o rutas.
+- La mutacion toma advisory lock PostgreSQL por empresa durante archivo y base;
+  un replay ya finalizado y la ausencia concurrente de una cuarentena son
+  idempotentes. El diagnostico identifica pendientes que superan el umbral.
 - La ruta conserva `WithEmpresaSoportesComprasIAPermissions`: diagnóstico usa
   Read y purga Delete. Consultas, bloqueos, updates y eventos combinan siempre
   `empresa_id` con `soporte_id`; errores internos se registran y la respuesta
@@ -38,6 +41,8 @@ Resultado: **PASS local / pendiente de staging, restore y PCS**
 | Reanudacion en tres fronteras de caída y ambigüedad | PASS |
 | Diagnostico de cuarentena aislado empresa 12/53 | PASS |
 | Errores de negocio permitidos y errores internos saneados | PASS |
+| Contrato de lock entre replicas, replay y borrado concurrente | PASS local/contrato; PostgreSQL dinámico pendiente |
+| Umbral acotado y conteo de pendientes vencidos | PASS |
 | Rechazo de referencia privada empresa 53 desde empresa 12 | PASS |
 | Saneamiento de metadatos manuales falsificados | PASS |
 | Fechas antiguas, recientes e invalidas | PASS |
@@ -59,6 +64,11 @@ sin overflow horizontal. Sigue siendo evidencia visual no autenticada.
 
 Candidato exacto posterior al saneamiento de errores:
 `documentos/reportes_profesionales/preflight_20260809_002303.md`, 22/22 PASS.
+
+Candidato con lock entre replicas, replay, antiguedad y runbook:
+`documentos/reportes_profesionales/preflight_20260809_003237.md`, 22/22 PASS.
+La revision visual local confirmó controles, mensaje diagnóstico y filtro
+pendiente en escritorio/móvil sin overflow; no ejecutó la mutación.
 
 ## Limites
 

@@ -10,6 +10,9 @@
 - La depuracion usa una saga reanudable `eliminado -> purga_pendiente -> purgado`:
   recupera caidas en cada frontera archivo/base y rechaza cuarentenas ambiguas.
   Un diagnostico de solo lectura compara pendientes, archivos y bytes del tenant.
+- Un advisory lock PostgreSQL serializa depuraciones por empresa entre replicas;
+  replays completos y `os.ErrNotExist` concurrente no duplican efectos. El
+  diagnostico alerta pendientes envejecidos con umbral acotado.
 
 2026-08-08: Admision hostil, cancelacion IA y retencion de soportes.
 - Modulos afectados: `soportes_compras_ia`, `IA empresarial`, `almacenamiento`,

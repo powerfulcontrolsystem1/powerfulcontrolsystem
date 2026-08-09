@@ -32,7 +32,7 @@ Modulo empresarial para radicar soportes de compras y gastos por `empresa_id` de
     como `purga_pendiente` reanudable; al terminar, la fila y los eventos
     permanecen como tumba `purgado` no recuperable.
 12. Consultar el diagnostico de cuarentena por empresa: compara registros
-    pendientes, archivos y bytes sin revelar nombres ni modificar datos.
+    pendientes, archivos, bytes y antiguedad sin revelar nombres ni modificar datos.
 
 ## Estados
 
@@ -61,7 +61,8 @@ mismo hash o numero de documento.
 - Depuracion: exige permiso `D`, motivo, antiguedad de 1 a 3650 dias y escribir
   el codigo del soporte. Nunca aplica a soportes contabilizados o convertidos.
 - Diagnostico de cuarentena: usa `R` y entrega solo conteos, bytes y desalineacion
-  de la empresa efectiva; no expone nombres ni rutas de archivos.
+  de la empresa efectiva; no expone nombres ni rutas. El umbral operativo se
+  limita a 5..1440 minutos y usa 15 minutos por defecto.
 
 ## Consideraciones de produccion
 
@@ -86,7 +87,8 @@ mismo hash o numero de documento.
   mueve primero el archivo a cuarentena, inicia `purga_pendiente` con `FOR UPDATE`,
   elimina el archivo y finaliza `purgado` en una segunda transaccion. Un reintento
   recupera las caidas antes de iniciar, antes de borrar o antes de finalizar; una
-  cuarentena ambigua falla cerrada. Su ejecucion real sigue prohibida hasta
+  cuarentena ambigua falla cerrada. Un advisory lock PostgreSQL por empresa
+  serializa replicas y los replays completos no duplican efectos. Su ejecucion real sigue prohibida hasta
   certificar backup/restore y el flujo en staging.
 - Las cargas JSON/manuales no aceptan nombre, MIME, hash ni `private://` enviados
   por el cliente. Descarga, IA, retencion y depuracion exigen que la ruta privada

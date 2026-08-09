@@ -30,6 +30,7 @@ const (
 	maxSoporteComprasIAUploadBytes    = 15 << 20
 	soporteComprasIAAdvisoryNamespace = int64(0x534349)
 	soporteComprasIAStorageNamespace  = int64(0x534351)
+	soporteComprasIAPurgeNamespace    = int64(0x534350)
 )
 
 var soporteComprasIAAllowedExt = map[string]bool{
@@ -101,6 +102,7 @@ func handleSoportesComprasIAGet(w http.ResponseWriter, r *http.Request, dbEmp *s
 			"ok": true, "retencion_dias": days, "candidatos": len(rows), "bytes": bytes, "soportes": rows,
 		})
 	case "cuarentena_preview":
+		thresholdMinutes := parseSoporteComprasIAQuarantineThreshold(r.URL.Query().Get("umbral_minutos"))
 		pending, err := dbpkg.ListEmpresaSoportesComprasIARegistro(dbEmp, empresaID, "", "purga_pendiente", 500)
 		if err != nil {
 			log.Printf("[soportes_compras_ia] diagnostico cuarentena empresa_id=%d: %v", empresaID, err)
@@ -113,9 +115,11 @@ func handleSoportesComprasIAGet(w http.ResponseWriter, r *http.Request, dbEmp *s
 			http.Error(w, "no se pudo inspeccionar la cuarentena privada", http.StatusInternalServerError)
 			return
 		}
+		stale := countSoporteComprasIAStalePending(pending, time.Now(), time.Duration(thresholdMinutes)*time.Minute)
 		writeJSON(w, http.StatusOK, map[string]interface{}{
 			"ok": true, "registros_pendientes": len(pending), "archivos_cuarentena": files,
-			"bytes": bytes, "requiere_revision": len(pending) != files,
+			"bytes": bytes, "umbral_minutos": thresholdMinutes,
+			"pendientes_vencidos": stale, "requiere_revision": len(pending) != files || stale > 0,
 		})
 	case "descargar":
 		downloadSoporteComprasIA(w, r, dbEmp, empresaID)
@@ -273,6 +277,13 @@ func handleSoportesComprasIAMutate(w http.ResponseWriter, r *http.Request, dbEmp
 			http.Error(w, "datos de depuracion invalidos", http.StatusBadRequest)
 			return
 		}
+		releasePurge, err := acquireSoporteComprasIAPurgeLock(r, dbEmp, empresaID)
+		if err != nil {
+			log.Printf("[soportes_compras_ia] lock depuracion empresa_id=%d soporte_id=%d: %v", empresaID, payload.SoporteID, err)
+			http.Error(w, "otra depuracion de la empresa esta en curso; reintenta", http.StatusConflict)
+			return
+		}
+		defer releasePurge()
 		row, err := dbpkg.GetEmpresaSoporteComprasIA(dbEmp, empresaID, payload.SoporteID)
 		if err != nil {
 			http.Error(w, "soporte no disponible", http.StatusNotFound)
@@ -707,7 +718,10 @@ func (f soporteComprasIAPurgeFile) commit() error {
 	if f.quarantine == "" {
 		return nil
 	}
-	return os.Remove(f.quarantine)
+	if err := os.Remove(f.quarantine); err != nil && !errors.Is(err, os.ErrNotExist) {
+		return err
+	}
+	return nil
 }
 
 func parseSoporteComprasIARetentionDays(raw string) int {
@@ -775,12 +789,63 @@ func isSoporteComprasIAQuarantineName(name string) bool {
 	return err == nil
 }
 
+func parseSoporteComprasIAQuarantineThreshold(raw string) int {
+	minutes, err := strconv.Atoi(strings.TrimSpace(raw))
+	if err != nil || minutes < 5 || minutes > 1440 {
+		return 15
+	}
+	return minutes
+}
+
+func countSoporteComprasIAStalePending(rows []dbpkg.EmpresaSoporteComprasIA, now time.Time, threshold time.Duration) int {
+	if threshold <= 0 {
+		threshold = 15 * time.Minute
+	}
+	count := 0
+	for i := range rows {
+		raw := strings.TrimSpace(rows[i].FechaActualizacion)
+		if raw == "" {
+			raw = strings.TrimSpace(rows[i].FechaCreacion)
+		}
+		parsed, ok := parseSoporteComprasIAOperationalTime(raw, now.Location())
+		if ok && !parsed.After(now) && now.Sub(parsed) >= threshold {
+			count++
+		}
+	}
+	return count
+}
+
+func parseSoporteComprasIAOperationalTime(raw string, location *time.Location) (time.Time, bool) {
+	if location == nil {
+		location = time.UTC
+	}
+	for _, layout := range []string{time.RFC3339Nano, "2006-01-02 15:04:05.999999999Z07:00", "2006-01-02 15:04:05Z07:00", "2006-01-02 15:04:05.999999999-07", "2006-01-02 15:04:05-07"} {
+		if parsed, err := time.Parse(layout, strings.TrimSpace(raw)); err == nil {
+			return parsed, true
+		}
+	}
+	for _, layout := range []string{"2006-01-02 15:04:05.999999999", "2006-01-02 15:04:05", "2006-01-02"} {
+		if parsed, err := time.ParseInLocation(layout, strings.TrimSpace(raw), location); err == nil {
+			return parsed, true
+		}
+	}
+	return time.Time{}, false
+}
+
 // acquireSoporteComprasIAStorageLock serializa la comprobacion de cuota, la
 // escritura privada y el registro del soporte para una empresa entre replicas.
 // El candado vive en PostgreSQL, por lo que no depende de memoria del proceso.
 func acquireSoporteComprasIAStorageLock(r *http.Request, dbEmp *sql.DB, empresaID int64) (func(), error) {
+	return acquireSoporteComprasIAAdvisoryLock(r, dbEmp, soporteComprasIAStorageNamespace, empresaID, "cuota")
+}
+
+func acquireSoporteComprasIAPurgeLock(r *http.Request, dbEmp *sql.DB, empresaID int64) (func(), error) {
+	return acquireSoporteComprasIAAdvisoryLock(r, dbEmp, soporteComprasIAPurgeNamespace, empresaID, "depuracion")
+}
+
+func acquireSoporteComprasIAAdvisoryLock(r *http.Request, dbEmp *sql.DB, namespace, empresaID int64, operation string) (func(), error) {
 	if r == nil || dbEmp == nil || empresaID <= 0 || empresaID > math.MaxInt32 {
-		return nil, errors.New("empresa invalida para cuota de soportes")
+		return nil, errors.New("empresa invalida para lock de soportes")
 	}
 	conn, err := dbEmp.Conn(r.Context())
 	if err != nil {
@@ -801,7 +866,7 @@ func acquireSoporteComprasIAStorageLock(r *http.Request, dbEmp *sql.DB, empresaI
 				defer releaseCancel()
 				var unlocked bool
 				if err := conn.QueryRowContext(releaseCtx, `SELECT pg_advisory_unlock($1::integer,$2::integer)`, soporteComprasIAStorageNamespace, empresaID).Scan(&unlocked); err != nil || !unlocked {
-					log.Printf("[soportes_compras_ia] no se pudo liberar lock de cuota empresa_id=%d: %v", empresaID, err)
+					log.Printf("[soportes_compras_ia] no se pudo liberar lock de %s empresa_id=%d: %v", operation, empresaID, err)
 				}
 				_ = conn.Close()
 			}, nil

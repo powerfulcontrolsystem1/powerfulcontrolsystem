@@ -114,6 +114,10 @@ func TestSoporteComprasIAPapeleraPostgres(t *testing.T) {
 	if err != nil || finalRetry.Estado != "purgado" {
 		t.Fatalf("purge final retry: row=%#v err=%v", finalRetry, err)
 	}
+	replayed, err := BeginPurgeEmpresaSoporteComprasIA(dbConn, 12, purgeID, 90, "SCI-PG-PURGE", "qa@local", "network replay")
+	if err != nil || replayed.Estado != "purgado" {
+		t.Fatalf("completed purge replay: row=%#v err=%v", replayed, err)
+	}
 	if _, err := UpdateEmpresaSoporteComprasIARegistroEstado(dbConn, 12, purgeID, "activo", "qa@local", "must not restore"); err == nil {
 		t.Fatal("purged support was restored")
 	}

@@ -1094,6 +1094,9 @@ Actualización 2026-08-09, depuración segura de soportes CxP/IA:
 - `cuarentena_preview` ofrece diagnóstico Read por empresa con registros,
   archivos y bytes, sin nombres, rutas ni mutación. Esto mejora operación local,
   pero no sustituye la prueba de caída real, restore, réplica A/B ni staging.
+- La saga incorpora advisory lock por empresa entre replicas, replay idempotente
+  incluso después de finalizar y alerta de pendientes envejecidos. El runbook
+  oficial prohíbe SQL/borrado manual y exige backup antes de una recuperación.
 
 ## 9. Siguiente orden para Terra alto
 

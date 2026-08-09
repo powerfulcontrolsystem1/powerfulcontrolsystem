@@ -25,6 +25,13 @@
 - La revisión del checklist multiempresa confirmó wrapper/licencia, Read/Delete,
   `empresa_id` en SQL y filesystem, confirmación fuerte, idempotencia y auditoría;
   errores internos de base/ruta no se devuelven al cliente.
+- La saga agrega advisory lock PostgreSQL por empresa para coordinar replicas;
+  replays posteriores a `purgado` y borrados concurrentes de la misma cuarentena
+  son idempotentes. El diagnostico marca pendientes que superan 5..1440 minutos.
+- Se documenta el runbook operativo: solo usa flujo oficial, exige backup y
+  prohibe SQL, borrado manual o mover cuarentenas entre empresas.
+- Go completo, vet, JavaScript, preflight 22/22 y revision visual local
+  escritorio/movil aprobaron; PostgreSQL dinámico y staging siguen pendientes.
 
 2026-08-08: Plan 109 / adjuntos hostiles, cancelacion IA y retencion segura.
 - Soportes CxP/IA valida firmas PNG/JPEG/WebP/PDF/XML, fija MIME canónico y

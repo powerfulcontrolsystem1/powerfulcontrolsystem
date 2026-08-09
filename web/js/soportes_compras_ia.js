@@ -527,8 +527,9 @@
       var bytes = Number(data.bytes || 0);
       var size = bytes >= 1048576 ? (bytes / 1048576).toFixed(2) + " MB" : (bytes / 1024).toFixed(2) + " KB";
       var mismatch = data.requiere_revision ? " Requiere revision: registros y archivos no coinciden." : " Registros y archivos coinciden.";
-      el("retencionPreviewMsg").textContent = (data.registros_pendientes || 0) + " registro(s) pendiente(s), " + (data.archivos_cuarentena || 0) + " archivo(s), " + size + "." + mismatch;
-      msg("Diagnostico de cuarentena actualizado.", !!data.requiere_revision);
+      var stale = Number(data.pendientes_vencidos || 0);
+      el("retencionPreviewMsg").textContent = (data.registros_pendientes || 0) + " registro(s) pendiente(s), " + (data.archivos_cuarentena || 0) + " archivo(s), " + size + "; " + stale + " supera(n) " + (data.umbral_minutos || 15) + " min." + mismatch;
+      msg("Diagnostico de cuarentena actualizado.", !!data.requiere_revision || stale > 0);
     }).catch(function (e) {
       msg(e.message, true);
     }).finally(function () { setBusy(false); });

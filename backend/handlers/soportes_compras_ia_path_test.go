@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 )
 
 func TestSafeSoporteComprasIAPathUsesPrivateTenantRoot(t *testing.T) {
@@ -103,6 +104,9 @@ func TestSoporteComprasIAPurgePendingCanFinalizeAfterFileRemoval(t *testing.T) {
 	if err != nil || quarantine.original != "" || quarantine.quarantine != "" {
 		t.Fatalf("pending metadata retry should need no file: %#v err=%v", quarantine, err)
 	}
+	if err := (soporteComprasIAPurgeFile{quarantine: filepath.Join(tenantDir, "already-gone.purge-aaaaaaaaaaaaaaaaaaaaaaaa")}).commit(); err != nil {
+		t.Fatalf("concurrent idempotent commit rejected missing quarantine: %v", err)
+	}
 }
 
 func TestSoporteComprasIAPurgeRejectsAmbiguousQuarantines(t *testing.T) {
@@ -154,6 +158,24 @@ func TestSoporteComprasIAQuarantineStatsAreTenantScoped(t *testing.T) {
 		if isSoporteComprasIAQuarantineName(name) {
 			t.Fatalf("invalid quarantine name accepted: %q", name)
 		}
+	}
+}
+
+func TestSoporteComprasIAStalePendingUsesBoundedThreshold(t *testing.T) {
+	if got := parseSoporteComprasIAQuarantineThreshold("4"); got != 15 {
+		t.Fatalf("threshold below minimum = %d", got)
+	}
+	if got := parseSoporteComprasIAQuarantineThreshold("60"); got != 60 {
+		t.Fatalf("valid threshold = %d", got)
+	}
+	now := time.Date(2026, 8, 9, 12, 0, 0, 0, time.UTC)
+	rows := []dbpkg.EmpresaSoporteComprasIA{
+		{FechaActualizacion: "2026-08-09T11:30:00Z"},
+		{FechaActualizacion: "2026-08-09 11:55:00"},
+		{FechaActualizacion: "invalid"},
+	}
+	if got := countSoporteComprasIAStalePending(rows, now, 15*time.Minute); got != 1 {
+		t.Fatalf("stale pending = %d, want 1", got)
 	}
 }
 

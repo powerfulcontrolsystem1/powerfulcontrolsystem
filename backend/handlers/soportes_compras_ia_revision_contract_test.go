@@ -165,6 +165,7 @@ func TestSoportesComprasIAPapeleraIsRecoverableAuditedAndTenantScoped(t *testing
 		`retencion_preview`, `Vista previa sin borrado`,
 		`action === "purgar"`, `confirmacion: confirmation`, `retencion_dias: retentionDays`,
 		`cuarentena_preview`, `registros_pendientes`, `archivos_cuarentena`,
+		`pendientes_vencidos`, `umbral_minutos`,
 	} {
 		if !strings.Contains(string(script), want) {
 			t.Fatalf("papelera client contract missing %q", want)
@@ -192,6 +193,15 @@ func TestSoportesComprasIAPapeleraIsRecoverableAuditedAndTenantScoped(t *testing
 	for _, want := range []string{`case "dashboard", "soportes", "eventos", "retencion_preview", "cuarentena_preview":`, `case "restaurar":`, `case "eliminar", "purgar":`, "return permActionRead", "return permActionDelete", "return permActionUpdate"} {
 		if !strings.Contains(string(permissions), want) {
 			t.Fatalf("papelera permission contract missing %q", want)
+		}
+	}
+	handlerSource, err := os.ReadFile("soportes_compras_ia.go")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, want := range []string{"soporteComprasIAPurgeNamespace", "acquireSoporteComprasIAPurgeLock", "pg_try_advisory_lock", "os.ErrNotExist"} {
+		if !strings.Contains(string(handlerSource), want) {
+			t.Fatalf("purge concurrency contract missing %q", want)
 		}
 	}
 }
