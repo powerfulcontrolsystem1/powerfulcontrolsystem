@@ -137,7 +137,7 @@ func TestSoportesComprasIAPapeleraIsRecoverableAuditedAndTenantScoped(t *testing
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, want := range []string{"registroFilter", "btnEliminar", "btnRestaurar", "Papelera", "soportes contabilizados no pueden eliminarse", "btnRetencionPreview", "retencionDias"} {
+	for _, want := range []string{"registroFilter", "btnEliminar", "btnRestaurar", "btnPurgar", "Papelera", "Depurados", "soportes contabilizados no pueden eliminarse", "btnRetencionPreview", "retencionDias"} {
 		if !strings.Contains(string(page), want) {
 			t.Fatalf("papelera UI missing %q", want)
 		}
@@ -151,6 +151,7 @@ func TestSoportesComprasIAPapeleraIsRecoverableAuditedAndTenantScoped(t *testing
 		`"&registro="`, `window.prompt`, `observaciones: motivo`,
 		`url.origin === window.location.origin`, `Recupera el soporte antes de editar sus datos`,
 		`retencion_preview`, `Vista previa sin borrado`,
+		`action === "purgar"`, `confirmacion: confirmation`, `retencion_dias: retentionDays`,
 	} {
 		if !strings.Contains(string(script), want) {
 			t.Fatalf("papelera client contract missing %q", want)
@@ -165,6 +166,7 @@ func TestSoportesComprasIAPapeleraIsRecoverableAuditedAndTenantScoped(t *testing
 		"un soporte contabilizado no puede eliminarse", "COALESCE(estado,'activo')='activo'",
 		"estado_registro_anterior", "estado_registro_nuevo", "func GetEmpresaSoporteComprasIAActivo",
 		"func ListEmpresaSoportesComprasIARetencion", "COALESCE(convertido_id,0)=0",
+		"func PurgeEmpresaSoporteComprasIA", "estado='purgado'", "archivo_privado",
 	} {
 		if !strings.Contains(string(source), want) {
 			t.Fatalf("papelera persistence contract missing %q", want)
@@ -174,7 +176,7 @@ func TestSoportesComprasIAPapeleraIsRecoverableAuditedAndTenantScoped(t *testing
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, want := range []string{`case "restaurar":`, `case "eliminar":`, "return permActionDelete", "return permActionUpdate"} {
+	for _, want := range []string{`case "restaurar":`, `case "eliminar", "purgar":`, "return permActionDelete", "return permActionUpdate"} {
 		if !strings.Contains(string(permissions), want) {
 			t.Fatalf("papelera permission contract missing %q", want)
 		}

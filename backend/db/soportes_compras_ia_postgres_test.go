@@ -6,6 +6,7 @@ import (
 	"os"
 	"strings"
 	"testing"
+	"time"
 
 	_ "github.com/jackc/pgx/v5/stdlib"
 )
@@ -85,6 +86,39 @@ func TestSoporteComprasIAPapeleraPostgres(t *testing.T) {
 	}
 	if eventCount != 4 {
 		t.Fatalf("audited transitions = %d, want 4", eventCount)
+	}
+
+	purgeID := insert(12, "SCI-PG-PURGE", "en_revision", "eliminado", "hash-purge", "FV-PURGE", 0)
+	if _, err := dbConn.Exec(`UPDATE empresa_soportes_compras_ia SET archivo_url='private://soportes_compras_ia/empresa_12/purge.pdf', fecha_actualizacion=(CURRENT_TIMESTAMP-INTERVAL '120 days')::text WHERE empresa_id=12 AND id=$1`, purgeID); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := PurgeEmpresaSoporteComprasIA(dbConn, 53, purgeID, 90, "SCI-PG-PURGE", "qa@local", "cross tenant"); !errors.Is(err, sql.ErrNoRows) {
+		t.Fatalf("cross-tenant purge must return no rows: %v", err)
+	}
+	if _, err := PurgeEmpresaSoporteComprasIA(dbConn, 12, purgeID, 90, "WRONG", "qa@local", "wrong confirmation"); err == nil {
+		t.Fatal("purge accepted wrong confirmation")
+	}
+	purged, err := PurgeEmpresaSoporteComprasIA(dbConn, 12, purgeID, 90, "SCI-PG-PURGE", "qa@local", "retention passed")
+	if err != nil || purged.Estado != "purgado" || purged.ArchivoURL != "" {
+		t.Fatalf("purge tombstone: row=%#v err=%v", purged, err)
+	}
+	if _, err := UpdateEmpresaSoporteComprasIARegistroEstado(dbConn, 12, purgeID, "activo", "qa@local", "must not restore"); err == nil {
+		t.Fatal("purged support was restored")
+	}
+}
+
+func TestSoporteComprasIARetentionEligibility(t *testing.T) {
+	now := time.Date(2026, 8, 8, 12, 0, 0, 0, time.UTC)
+	for _, raw := range []string{"2026-05-01 10:00:00", "2026-05-01T10:00:00Z", "2026-05-01 10:00:00-05"} {
+		if !soporteComprasIARetentionEligible(raw, 90, now) {
+			t.Fatalf("old timestamp rejected: %q", raw)
+		}
+	}
+	if soporteComprasIARetentionEligible("2026-08-01 10:00:00", 90, now) {
+		t.Fatal("recent timestamp accepted")
+	}
+	if soporteComprasIARetentionEligible("invalid", 90, now) {
+		t.Fatal("invalid timestamp accepted")
 	}
 }
 

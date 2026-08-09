@@ -2122,7 +2122,7 @@ func resolveSoportesComprasIAPermissionAction(r *http.Request) string {
 		return permActionUpdate
 	case "restaurar":
 		return permActionUpdate
-	case "eliminar":
+	case "eliminar", "purgar":
 		return permActionDelete
 	case "radicar", "seed_demo":
 		return permActionCreate

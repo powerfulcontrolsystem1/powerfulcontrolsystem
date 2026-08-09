@@ -859,6 +859,109 @@ func UpdateEmpresaSoporteComprasIARegistroEstado(dbConn *sql.DB, empresaID, sopo
 	return GetEmpresaSoporteComprasIA(dbConn, empresaID, soporteID)
 }
 
+// PurgeEmpresaSoporteComprasIA convierte un registro eliminado y vencido en
+// una tumba auditable. No elimina la fila: retiene sus datos de negocio y
+// eventos, pero invalida definitivamente la referencia al archivo privado.
+func PurgeEmpresaSoporteComprasIA(dbConn *sql.DB, empresaID, soporteID int64, retentionDays int, confirmation, usuario, motivo string) (EmpresaSoporteComprasIA, error) {
+	if empresaID <= 0 || soporteID <= 0 {
+		return EmpresaSoporteComprasIA{}, errors.New("empresa_id y soporte_id son obligatorios")
+	}
+	if retentionDays < 1 || retentionDays > 3650 {
+		return EmpresaSoporteComprasIA{}, errors.New("retencion_dias debe estar entre 1 y 3650")
+	}
+	motivo = strings.TrimSpace(motivo)
+	if motivo == "" {
+		return EmpresaSoporteComprasIA{}, errors.New("el motivo es obligatorio")
+	}
+	if len([]rune(motivo)) > 500 {
+		return EmpresaSoporteComprasIA{}, errors.New("el motivo no puede superar 500 caracteres")
+	}
+	usuario = strings.TrimSpace(usuario)
+	if usuario == "" {
+		usuario = "sistema"
+	}
+	tx, err := dbConn.Begin()
+	if err != nil {
+		return EmpresaSoporteComprasIA{}, err
+	}
+	defer func() { _ = tx.Rollback() }()
+
+	var codigo, registro, estadoSoporte, fechaRegistro string
+	var convertidoID int64
+	err = queryRowTxSQLCompat(tx, `SELECT COALESCE(codigo,''), COALESCE(estado,'activo'),
+		COALESCE(estado_soporte,'radicado'), COALESCE(convertido_id,0),
+		CAST(COALESCE(NULLIF(fecha_actualizacion,''),fecha_creacion) AS TEXT)
+		FROM empresa_soportes_compras_ia WHERE empresa_id=? AND id=? FOR UPDATE`, empresaID, soporteID).
+		Scan(&codigo, &registro, &estadoSoporte, &convertidoID, &fechaRegistro)
+	if err != nil {
+		return EmpresaSoporteComprasIA{}, err
+	}
+	if !strings.EqualFold(strings.TrimSpace(codigo), strings.TrimSpace(confirmation)) {
+		return EmpresaSoporteComprasIA{}, errors.New("la confirmacion no coincide con el codigo del soporte")
+	}
+	if strings.ToLower(strings.TrimSpace(registro)) != "eliminado" {
+		return EmpresaSoporteComprasIA{}, errors.New("solo un soporte de la papelera puede depurarse")
+	}
+	if normalizeSoporteIAEstado(estadoSoporte) == "contabilizado" || convertidoID > 0 {
+		return EmpresaSoporteComprasIA{}, errors.New("un soporte contabilizado no puede depurarse porque conserva trazabilidad contable")
+	}
+	if !soporteComprasIARetentionEligible(fechaRegistro, retentionDays, time.Now()) {
+		return EmpresaSoporteComprasIA{}, errors.New("el soporte aun no cumple la retencion configurada")
+	}
+	result, err := execTxSQLCompat(tx, `UPDATE empresa_soportes_compras_ia
+		SET estado='purgado', archivo_url='', fecha_actualizacion=CURRENT_TIMESTAMP, usuario_creador=?
+		WHERE empresa_id=? AND id=? AND COALESCE(estado,'activo')='eliminado'`, usuario, empresaID, soporteID)
+	if err != nil {
+		return EmpresaSoporteComprasIA{}, err
+	}
+	if affected, _ := result.RowsAffected(); affected != 1 {
+		return EmpresaSoporteComprasIA{}, errors.New("el soporte cambio mientras se confirmaba la depuracion")
+	}
+	detalle, _ := json.Marshal(map[string]interface{}{
+		"motivo": motivo, "retencion_dias": retentionDays,
+		"estado_registro_anterior": "eliminado", "estado_registro_nuevo": "purgado",
+		"archivo_privado": "eliminado",
+	})
+	if _, err := insertTxSQLCompat(tx, `INSERT INTO empresa_soportes_compras_ia_eventos
+		(empresa_id,soporte_id,evento,estado_anterior,estado_nuevo,detalle_json,usuario_creador)
+		VALUES (?,?,?,?,?,?,?)`, empresaID, soporteID, "purgar", estadoSoporte, estadoSoporte, string(detalle), usuario); err != nil {
+		return EmpresaSoporteComprasIA{}, err
+	}
+	if err := tx.Commit(); err != nil {
+		return EmpresaSoporteComprasIA{}, err
+	}
+	return GetEmpresaSoporteComprasIA(dbConn, empresaID, soporteID)
+}
+
+func soporteComprasIARetentionEligible(raw string, retentionDays int, now time.Time) bool {
+	if retentionDays < 1 || retentionDays > 3650 || strings.TrimSpace(raw) == "" {
+		return false
+	}
+	parsed, ok := parseSoporteComprasIATimestamp(raw, now.Location())
+	if !ok {
+		return false
+	}
+	return !parsed.After(now.AddDate(0, 0, -retentionDays))
+}
+
+func parseSoporteComprasIATimestamp(raw string, location *time.Location) (time.Time, bool) {
+	raw = strings.TrimSpace(raw)
+	if location == nil {
+		location = time.UTC
+	}
+	for _, layout := range []string{time.RFC3339Nano, "2006-01-02 15:04:05.999999999Z07:00", "2006-01-02 15:04:05Z07:00", "2006-01-02 15:04:05.999999999-07", "2006-01-02 15:04:05-07"} {
+		if parsed, err := time.Parse(layout, raw); err == nil {
+			return parsed, true
+		}
+	}
+	for _, layout := range []string{"2006-01-02 15:04:05.999999999", "2006-01-02 15:04:05", "2006-01-02"} {
+		if parsed, err := time.ParseInLocation(layout, raw, location); err == nil {
+			return parsed, true
+		}
+	}
+	return time.Time{}, false
+}
+
 func validateSoporteIARegistroTransition(actual, estadoSoporte string, convertidoID int64, siguiente string) (bool, error) {
 	actual = strings.ToLower(strings.TrimSpace(actual))
 	siguiente = strings.ToLower(strings.TrimSpace(siguiente))
@@ -1076,15 +1179,18 @@ func normalizeSoporteIADocumentoTipo(v string) string {
 
 func normalizeSoporteIAEstadoRegistro(v string) string {
 	v = strings.ToLower(strings.TrimSpace(v))
-	if v == "eliminado" || v == "inactivo" || v == "archivado" {
+	if v == "eliminado" || v == "purgado" || v == "inactivo" || v == "archivado" {
 		return v
 	}
 	return "activo"
 }
 
 func normalizeSoporteIARegistroFiltro(v string) string {
-	if strings.EqualFold(strings.TrimSpace(v), "eliminado") {
+	switch strings.ToLower(strings.TrimSpace(v)) {
+	case "eliminado":
 		return "eliminado"
+	case "purgado":
+		return "purgado"
 	}
 	return "activo"
 }

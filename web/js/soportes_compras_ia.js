@@ -23,6 +23,7 @@
     duplicado: "Duplicado",
     activo: "Activo",
     eliminado: "Eliminado",
+    purgado: "Depurado",
     gasto: "Gasto",
     compra: "Compra",
     documento_soporte: "Documento soporte",
@@ -78,6 +79,7 @@
     if (!state.selected) return false;
     var registro = String(state.selected.estado || "activo").toLowerCase();
     if (action === "restaurar") return registro === "eliminado";
+    if (action === "purgar") return registro === "eliminado" && selectedState() !== "contabilizado" && Number(state.selected.convertido_id || 0) <= 0;
     if (action === "eliminar") return registro === "activo" && selectedState() !== "contabilizado" && Number(state.selected.convertido_id || 0) <= 0;
     return registro === "activo" && (actionStates[action] || []).indexOf(selectedState()) >= 0;
   }
@@ -89,7 +91,8 @@
       btnRechazar: "rechazar",
       btnContabilizar: "contabilizar",
       btnEliminar: "eliminar",
-      btnRestaurar: "restaurar"
+      btnRestaurar: "restaurar",
+      btnPurgar: "purgar"
     };
     Object.keys(actions).forEach(function (id) {
       var button = el(id);
@@ -207,7 +210,9 @@
         var selected = state.selected && String(state.selected.id) === String(s.id);
         var archivo = String(s.estado || "activo").toLowerCase() === "activo" ? safeHref(s.archivo_url) : "";
         var control = s.duplicado_soporte_id ? "Duplicado #" + s.duplicado_soporte_id : (s.requiere_revision_humana ? "Revision humana" : "OK");
-        return '<tr data-id="' + esc(s.id) + '" class="' + (selected ? "is-selected" : "") + '"><td><strong>' + esc(s.codigo || "-") + '</strong><br><span class="capture-muted">' + esc(label(s.tipo_soporte)) + '</span></td><td>' + chip(s.estado_soporte) + (String(s.estado || "activo").toLowerCase() === "eliminado" ? '<br>' + chip("eliminado", "capture-bad") : "") + '</td><td>' + esc(s.proveedor_nombre || "Sin proveedor") + '<br><span class="capture-muted">' + esc(s.proveedor_nit || "-") + '</span></td><td>' + esc(label(s.documento_tipo)) + '<br><span class="capture-muted">' + esc(s.documento_numero || "-") + '</span></td><td>' + esc(s.fecha_documento || "-") + '<br><span class="capture-muted">Vence ' + esc(s.fecha_vencimiento || "-") + '</span></td><td class="num"><strong>' + money(s.total || 0) + '</strong></td><td>' + progress(s.confianza_ia || 0) + '</td><td>' + esc(control) + '</td><td>' + (archivo ? '<a href="' + esc(archivo) + '" target="_blank" rel="noopener">Ver</a>' : '<span class="capture-muted">No disponible</span>') + '</td></tr>';
+        var recordState = String(s.estado || "activo").toLowerCase();
+        var recordChip = recordState === "eliminado" ? '<br>' + chip("eliminado", "capture-bad") : (recordState === "purgado" ? '<br>' + chip("purgado", "capture-bad") : "");
+        return '<tr data-id="' + esc(s.id) + '" class="' + (selected ? "is-selected" : "") + '"><td><strong>' + esc(s.codigo || "-") + '</strong><br><span class="capture-muted">' + esc(label(s.tipo_soporte)) + '</span></td><td>' + chip(s.estado_soporte) + recordChip + '</td><td>' + esc(s.proveedor_nombre || "Sin proveedor") + '<br><span class="capture-muted">' + esc(s.proveedor_nit || "-") + '</span></td><td>' + esc(label(s.documento_tipo)) + '<br><span class="capture-muted">' + esc(s.documento_numero || "-") + '</span></td><td>' + esc(s.fecha_documento || "-") + '<br><span class="capture-muted">Vence ' + esc(s.fecha_vencimiento || "-") + '</span></td><td class="num"><strong>' + money(s.total || 0) + '</strong></td><td>' + progress(s.confianza_ia || 0) + '</td><td>' + esc(control) + '</td><td>' + (archivo ? '<a href="' + esc(archivo) + '" target="_blank" rel="noopener">Ver</a>' : '<span class="capture-muted">No disponible</span>') + '</td></tr>';
       }).join("") + '</tbody></table>';
   }
 
@@ -412,11 +417,24 @@
     };
     if (confirmations[action] && !window.confirm(confirmations[action])) return;
     var motivo = "";
-    if (action === "eliminar" || action === "restaurar") {
-      motivo = window.prompt(action === "eliminar" ? "Motivo obligatorio para enviar el soporte a la papelera:" : "Motivo obligatorio para recuperar el soporte:", "") || "";
+    if (action === "eliminar" || action === "restaurar" || action === "purgar") {
+      var motivePrompt = action === "eliminar" ? "Motivo obligatorio para enviar el soporte a la papelera:" : (action === "restaurar" ? "Motivo obligatorio para recuperar el soporte:" : "Motivo obligatorio para depurar definitivamente el archivo:");
+      motivo = window.prompt(motivePrompt, "") || "";
       motivo = motivo.trim();
       if (!motivo) {
         msg("Debes registrar un motivo para mantener la auditoria.", true);
+        return;
+      }
+    }
+    var retentionDays = 0;
+    var confirmation = "";
+    if (action === "purgar") {
+      retentionDays = Math.max(1, Math.min(3650, Math.trunc(Number(val("retencionDias")) || 90)));
+      var code = String(state.selected.codigo || "").trim();
+      if (!window.confirm("Esta accion elimina definitivamente el archivo privado, conserva la auditoria y no se puede deshacer. ¿Continuar?")) return;
+      confirmation = (window.prompt("Escribe el codigo " + code + " para confirmar la depuracion:", "") || "").trim();
+      if (confirmation !== code) {
+        msg("La confirmacion no coincide con el codigo del soporte.", true);
         return;
       }
     }
@@ -424,7 +442,7 @@
     state.activeAction = action;
     state.activeController = controller;
     setBusy(true, text);
-    var options = { method: "POST", body: JSON.stringify({ soporte_id: state.selected.id, observaciones: motivo }) };
+    var options = { method: "POST", body: JSON.stringify({ soporte_id: state.selected.id, observaciones: motivo, retencion_dias: retentionDays, confirmacion: confirmation }) };
     if (controller) options.signal = controller.signal;
     api(action, options).then(function () {
       if (state.activeController === controller) {
@@ -567,6 +585,7 @@
   el("btnContabilizar").addEventListener("click", function () { actionSelected("contabilizar", "Generando cuenta por pagar..."); });
   el("btnEliminar").addEventListener("click", function () { actionSelected("eliminar", "Enviando soporte a la papelera..."); });
   el("btnRestaurar").addEventListener("click", function () { actionSelected("restaurar", "Recuperando soporte..."); });
+  el("btnPurgar").addEventListener("click", function () { actionSelected("purgar", "Depurando archivo privado..."); });
   el("estadoFilter").addEventListener("change", function () { state.filters.estado = this.value; load(); });
   el("registroFilter").addEventListener("change", function () { state.filters.registro = this.value; state.selected = null; load(); });
   el("tipoFilter").addEventListener("change", function () { state.filters.tipo = this.value; renderTables(); });

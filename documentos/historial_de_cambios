@@ -1,3 +1,19 @@
+2026-08-09: Plan 109 / depuracion segura y tumbas auditables CxP-IA.
+- Se agrega `purgar` con permiso Delete, retencion 1..3650 dias, motivo y
+  confirmacion exacta del codigo. Solo acepta registros eliminados no
+  contabilizados/convertidos y revalida todo bajo `FOR UPDATE` por `empresa_id`.
+- El archivo se mueve a cuarentena local antes de la transaccion: un rechazo o
+  carrera restaura el original; tras commit se elimina y la fila queda
+  `purgado`, sin URL y no recuperable, conservando datos y evento auditable.
+- Cargas JSON/manuales ya no aceptan rutas, hash, MIME o nombre de adjunto del
+  cliente. Descarga, IA, retencion y depuracion verifican el directorio privado
+  exacto de la empresa, cerrando referencias cruzadas heredadas/falsificadas.
+- Pruebas enfocadas cubren cuarentena commit/rollback, referencia A/B,
+  saneamiento manual, fechas y contrato PostgreSQL preparado; Go completo, vet,
+  sintaxis JS, preflight 22/22 y UI local responsive aprobaron. No se depuro PCS,
+  no hubo PR/push/despliegue. P109-008 sigue parcial y Plan 109 permanece en
+  53,3 % de implementacion, 0 % de certificacion de este cambio y NO-GO.
+
 2026-08-08: Plan 109 / adjuntos hostiles, cancelacion IA y retencion segura.
 - Soportes CxP/IA valida firmas PNG/JPEG/WebP/PDF/XML, fija MIME canónico y
   rechaza suplantación, XML mal formado, DTD, entidades, instrucciones y

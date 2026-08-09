@@ -1074,6 +1074,21 @@ Actualización 2026-08-08, protocolo antivirus para soportes:
   EICAR controlada, métricas y recuperación ante caída. P109-008/P109-009 siguen
   parciales; permanece **53,3 %**, certificación local **0 %** y **NO-GO**.
 
+Actualización 2026-08-09, depuración segura de soportes CxP/IA:
+
+- Se implementó localmente la transición final `eliminado -> purgado` para un
+  soporte no contabilizado que ya cumple retención. Exige Delete, motivo,
+  antigüedad y confirmación exacta del código bajo bloqueo por `empresa_id`.
+- La fila y sus eventos se conservan; el archivo se procesa con cuarentena,
+  rollback si la transacción falla y eliminación solo después del commit. Un
+  registro purgado no se descarga, opera ni recupera.
+- Se cerró la fabricación de referencias privadas por JSON y cada consumo del
+  archivo exige el prefijo exacto de la empresa. Las pruebas locales cubren
+  A/B, commit/rollback, fechas y contrato PostgreSQL preparado.
+- No se ejecutó purga real, staging ni restore posterior; P109-008 continúa
+  parcial. El avance formal permanece en **53,3 % de implementación**, **0 % de
+  certificación del cambio local** y **NO-GO**.
+
 ## 9. Siguiente orden para Terra alto
 
 P109-000 ya está aprobada para `ea9642dd...` y P109-011 para `c8094f5b`;

@@ -1,3 +1,13 @@
+2026-08-09: Depuracion segura de soportes de compras IA.
+- Modulos afectados: `soportes_compras_ia`, `CxP`, `almacenamiento_privado`,
+  `auditoria`, `seguridad_multiempresa` y `frontend_ux`.
+- Un soporte no contabilizado que supera la retencion en papelera puede quedar
+  `purgado`: se destruye el archivo mediante cuarentena/rollback coordinado,
+  pero se conservan fila, datos contables y eventos como tumba no recuperable.
+- La accion exige Delete, motivo, codigo exacto y `empresa_id` en lectura,
+  bloqueo y escritura. Las rutas privadas se atan a la empresa y el JSON manual
+  no puede fabricar metadatos de adjunto.
+
 2026-08-08: Admision hostil, cancelacion IA y retencion de soportes.
 - Modulos afectados: `soportes_compras_ia`, `IA empresarial`, `almacenamiento`,
   `seguridad_multiempresa` y `frontend_ux`.
