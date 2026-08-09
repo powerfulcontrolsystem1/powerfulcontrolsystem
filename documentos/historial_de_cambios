@@ -41419,6 +41419,9 @@ acumulativa.
   matriz manual de roles/IA se conservan intactas.
 - `documentos/comandos_codex.md` documenta el uso seguro: destino,
   credenciales y evidencia se mantienen fuera del repositorio.
+- El workflow `31319557537` construyó, escaneó, generó SBOM y publicó el SHA
+  `3676cc02` una sola vez. Sus cuatro digests se promovieron sin build a
+  staging, que quedó saludable con migrador `0`; producción permaneció intacta.
 
 2026-08-09: Plan 109 / extracción inmutable del indicador DIAN.
 

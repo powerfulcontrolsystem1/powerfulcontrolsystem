@@ -1367,3 +1367,14 @@ Actualización 2026-08-09, candidato inmutable `31915619` promovido solo a stagi
   el SHA no está revisado ni fusionado a `main`. El avance de implementación
   permanece **53,3 %**, la certificación formal **0 %** y el veredicto
   **NO-GO**.
+
+Actualización 2026-08-09, SHA actual `3676cc02` en staging:
+
+- El workflow `31319557537` volvió a aprobar construcción única, Trivy, SBOM,
+  publicación y Compose para el SHA que añade la reanudación E2E por lotes.
+- Sus cuatro digests exactos fueron promovidos sin build. API, worker y frontend
+  alcanzaron estado saludable; migrador terminó `0`; `/health` y `/ready` de
+  staging aprobaron. Las tres imágenes y la salud de producción siguen intactas.
+- No se altera la fórmula: P109-000 permanece parcial sin PR/fusión y el plan
+  sigue en **53,3 % de implementación**, **0 % de certificación formal**,
+  **NO-GO**.
