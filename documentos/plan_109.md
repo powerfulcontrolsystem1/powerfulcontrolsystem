@@ -1152,8 +1152,9 @@ continuar así:
 
 1. confirmar que staging conserva los cuatro digests registrados y producción
    conserva sus imágenes anteriores;
-2. cerrar P109-001 únicamente cuando exista una segunda identidad/empresa A/B
-   autorizada, sin usar la sesión global como prueba de aislamiento;
+2. conservar la matriz A/B ya aprobada con identidad no global y cerrar
+   P109-001 únicamente después de la carrera reversible y la conciliación del
+   contador autorizado;
 3. desplegar el candidato aislado y repetir en P109-002/P109-008 la papelera,
    descarga bloqueada, recuperación, duplicado y botones IA en PCS y empresa
    A/B; completar además confirmación/cancelación, degradación y evals;
@@ -1288,3 +1289,25 @@ Actualización 2026-08-09, retención real y antivirus de `34cfd852`:
 - P109-008 y P109-010 siguen parciales por depuración vencida/reanudable,
   antivirus real, A/B y señales operativas restantes. El avance permanece
   **53,3 %**, la certificación formal del SHA **0 %** y el veredicto **NO-GO**.
+
+Actualización 2026-08-09, identidad A/B no global e integración PostgreSQL:
+
+- Una identidad empresarial temporal recuperó su acceso mediante el correo
+  oficial y probó soportes IA, finanzas, contabilidad, DIAN y documentos. PCS
+  cargó sus vistas; `empresa_id=7` fue rechazada fuera del alcance y no mostró
+  filas ni datos de PCS.
+- El intento visible de enviar `SCI-0011` a papelera fue rechazado por permiso
+  efectivo; la consulta posterior conservó el soporte activo/rechazado. La
+  cuenta quedó inactiva por HTTP 204 y su sesión previa respondió unauthorized.
+- PostgreSQL 16 efímero aprobó papelera, restauración, duplicado, retención,
+  bloqueo contable, incidente de integridad, purga reanudable/idempotente,
+  precisión monetaria y bandera DIAN por empresa. El fixture usa los esquemas
+  reales de migración y las tablas funcionales del ensayo son temporales.
+- Túnel y contenedor efímeros fueron retirados; producción no cambió. La prueba
+  A/B deja de ser pendiente, pero P109-001 conserva carrera/conciliación humana,
+  P109-002 proveedor/degradación y P109-008 antivirus/purga vencida/restore.
+  La compuerta profesional aprobó sus 20 controles y la regresión Go completa
+  aprobó pruebas y vet.
+  Ninguna fase parcial cerró todos sus criterios: el avance formal permanece
+  **53,3 % de implementación**, **0 % de certificación formal del SHA** y
+  **NO-GO**.

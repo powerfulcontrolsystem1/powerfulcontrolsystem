@@ -178,6 +178,18 @@ func TestSoporteComprasIARetentionEligibility(t *testing.T) {
 }
 
 func createTempSoportesComprasIAPapeleraTables(dbConn *sql.DB) error {
+	// Reproduce primero los prerrequisitos que pcs-migrate instala. Las tablas
+	// del soporte permanecen temporales para que cada ejecución sea aislada y
+	// no deje filas funcionales en la base efímera de integración.
+	if err := EnsureEmpresaModulosFaltantesSchema(dbConn); err != nil {
+		return err
+	}
+	if err := EnsureEmpresasComprasSchema(dbConn); err != nil {
+		return err
+	}
+	if err := EnsureOutboxSchema(dbConn); err != nil {
+		return err
+	}
 	if _, err := dbConn.Exec(`CREATE TEMP TABLE empresa_soportes_compras_ia (
 		id BIGSERIAL PRIMARY KEY, empresa_id INTEGER NOT NULL, codigo TEXT NOT NULL,
 		tipo_soporte TEXT DEFAULT 'gasto', estado_soporte TEXT DEFAULT 'radicado', origen TEXT DEFAULT 'manual',

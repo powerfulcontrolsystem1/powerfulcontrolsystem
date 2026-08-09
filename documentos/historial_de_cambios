@@ -41461,6 +41461,18 @@ acumulativa.
   antivirus y el VPS no ejecuta clamd. Se conserva como bloqueo previo al
   piloto; no se atribuye una aprobación simulada.
 
+2026-08-09: Plan 109 / aislamiento A-B e integración PostgreSQL CxP/IA.
+
+- Una identidad empresarial no global aprobó recuperación por correo, acceso a
+  cinco módulos propios y rechazo cruzado de otra empresa sin fuga visible.
+- El permiso efectivo bloqueó una acción de papelera y la limpieza desactivó la
+  cuenta por el endpoint oficial, revocando la sesión previa.
+- `backend/db/soportes_compras_ia_postgres_test.go` prepara los prerrequisitos
+  reales de migración antes de probar las tablas temporales de soportes.
+- PostgreSQL 16 aprobó aislamiento, papelera, restauración, integridad, purga
+  idempotente, precisión monetaria y bandera DIAN por empresa. El contenedor y
+  el túnel efímeros fueron eliminados; producción permaneció intacta.
+
 2026-08-09: Plan 109 / CxP e IA reales en el candidato de staging.
 
 - La captura oficial radicó, extrajo con IA, editó, vinculó proveedor, aprobó y

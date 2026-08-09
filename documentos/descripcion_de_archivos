@@ -12846,3 +12846,9 @@ panel de seguridad para que el navegador reciba la correccion CSRF de staging.
   documenta extracción y cancelación IA, edición, aprobación, rechazo,
   duplicado, revisión visual y conciliación sin CxP, pagos ni movimientos en el
   candidato desplegado exclusivamente en staging.
+- `documentos/evidencia_plan_109/P109-009/2026-08-09_aislamiento_ab_identidad_no_global_34cfd852.md`:
+  registra recuperación oficial, matriz A/B de cinco módulos, denegación por
+  permiso efectivo, no mutación y revocación de la identidad temporal.
+- `documentos/evidencia_plan_109/P109-008/2026-08-09_postgres_papelera_integridad_71984cb5.md`:
+  conserva la integración PostgreSQL aislada de papelera, restauración,
+  integridad, purga idempotente y la limpieza del contenedor efímero.
