@@ -1495,3 +1495,25 @@ Actualización 2026-08-09, impresión virtual real y prerrequisito de usuarios:
   vigente es **56,7 % de implementación**, certificación formal **0 %** y
   **NO-GO**. P109-005 continúa parcial y P109-006 conserva su aprobación previa
   de staging sin extrapolarla al PCS servido actual.
+
+Actualización 2026-08-09, repetición de cuatro cajas sobre el digest `349712fb`:
+
+- El workflow inmutable `31334057174` publicó API, migrador, worker y frontend
+  para el SHA completo; los cuatro digests se promovieron solo a staging.
+  Health, ready y login aprobaron, mientras las imágenes de producción se
+  conservaron sin cambios.
+- Los cuatro usuarios temporales confirmados se activaron, recuperaron su clave
+  mediante cuatro correos reales y abrieron cuatro sesiones independientes con
+  cookies y CSRF distintos. Después abrieron cuatro cajas simultáneas, crearon
+  cuatro ventas de COP 100, pagaron con efectivo, débito, Nequi y transferencia
+  y recibieron cuatro comprobantes no fiscales.
+- Los cuatro reintentos de pago devolvieron HTTP 409. Las cajas cerraron con
+  teórico igual a físico y cero incidencias. Al desactivar los usuarios, las
+  cuatro sesiones quedaron revocadas con HTTP 401.
+- La vista servida de staging imprimió uno de los comprobantes nuevos en una
+  página A4, 74.865 bytes y cero imágenes rotas; la inspección visual confirmó
+  filas, cinco columnas, importes, logo y observaciones sin recortes.
+- P109-006 queda aprobada para el digest exacto. La implementación permanece en
+  **56,7 %** porque no cerró una fase nueva del plan; la certificación formal del
+  candidato sube a **6,7 %**. P109-005, Mailu corporativo, UAT humano, piloto y
+  las demás compuertas P0/P1 mantienen **NO-GO**.

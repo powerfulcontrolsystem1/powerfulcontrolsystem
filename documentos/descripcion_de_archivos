@@ -1,4 +1,8 @@
 2026-08-09
+- `documentos/evidencia_plan_109/P109-006/2026-08-09_cuatro_cajas_digest_349712fb.md`:
+  registra release exacto, cuatro recuperaciones por correo, cuatro sesiones,
+  cajas y ventas simultaneas, rechazo idempotente, cierre limpio, revocacion y
+  comprobante PDF visual del digest servido por staging.
 - `tools/qa_authenticated_invoice_pdf.cjs`: inicia sesion por el flujo oficial,
   sustituye opcionalmente solo la vista candidata y genera un PDF A4 de una
   factura real sin registrar credenciales ni cookies.

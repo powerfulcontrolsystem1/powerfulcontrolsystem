@@ -43,9 +43,19 @@ if (!baseURL || !email || !password || !companyID || !executablePath) throw new 
     await frame.waitFor({ state: "attached", timeout: 20000 });
     await page.waitForFunction(() => {
       const element = document.querySelector("#emailFrame");
-      return Boolean(element && element.getAttribute("src"));
-    }, null, { timeout: 20000 });
+      return Boolean(element && /^https?:\/\//i.test(element.getAttribute("src") || ""));
+    }, null, { timeout: 20000 }).catch(() => null);
     const autologinURL = await frame.getAttribute("src");
+    if (!/^https?:\/\//i.test(autologinURL || "")) {
+      const unavailable = await page.locator("body").evaluate(() => ({
+        status: document.querySelector("#emailStatus")?.textContent?.trim() || "",
+        account: document.querySelector("#emailAccount")?.textContent?.trim() || "",
+        alert: document.querySelector("#emailAlert")?.textContent?.trim() || ""
+      }));
+      process.stdout.write(JSON.stringify({ status: "unavailable", companyID, details: unavailable }) + "\n");
+      await context.close();
+      return;
+    }
     const response = await context.request.get(autologinURL, { maxRedirects: 0, failOnStatusCode: false });
     const location = response.headers().location || "";
     const result = {
