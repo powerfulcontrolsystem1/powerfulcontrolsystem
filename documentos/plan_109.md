@@ -1259,3 +1259,32 @@ Actualización 2026-08-09, verificación ampliada de `34cfd852`:
 - P109-000 sigue parcial: falta PR/fusión y los drills exactos de base vacía y
   upgrade. El avance permanece **53,3 %**, la certificación formal del SHA
   exacto continúa **0 %** hasta cerrar la compuerta y el veredicto es **NO-GO**.
+
+Actualización 2026-08-09, drills exactos de migración de `34cfd852`:
+
+- El digest inmutable del migrador aprobó base vacía, segunda pasada
+  idempotente, fallo cerrado por drift de checksum y recuperación. El esquema
+  terminó con 337 tablas empresariales, 49 globales y ledger 20/10.
+- El upgrade de una copia lógica consistente de staging conservó 350 tablas
+  empresariales y 59 globales antes/después; ambas pasadas aplicaron cero
+  migraciones nuevas y el rol runtime continuó sin DDL.
+- La limpieza dejó cero contenedores, redes y volúmenes efímeros. Staging
+  conservó salud/listo y sus digests; PCS mantuvo CxP/pagos/movimientos 3/5/5;
+  producción permaneció saludable y sin despliegue.
+- La parte técnica pendiente de P109-000 queda aprobada. La fase continúa
+  formalmente parcial porque el candidato no tiene PR/revisión/fusión a `main`,
+  conforme a la instrucción de no crear PR. El avance permanece **53,3 % de
+  implementación**, **0 % de certificación formal del SHA** y **NO-GO**.
+
+Actualización 2026-08-09, retención real y antivirus de `34cfd852`:
+
+- En PCS, la vista previa con retención de un día informó cero candidatos. El
+  intento de depurar `SCI-0010`, con motivo y código fuerte correctos, fue
+  rechazado por no cumplir la retención; visualmente conservó estado eliminado.
+- PostgreSQL confirmó cero eventos de purga y mantuvo CxP/pagos/movimientos
+  3/5/5. La sesión autenticada se cerró al terminar.
+- Las métricas reales muestran antivirus `required=0`, `configured=0`, cero
+  escaneos y ningún servicio clamd en el VPS. Se registra como bloqueo, no PASS.
+- P109-008 y P109-010 siguen parciales por depuración vencida/reanudable,
+  antivirus real, A/B y señales operativas restantes. El avance permanece
+  **53,3 %**, la certificación formal del SHA **0 %** y el veredicto **NO-GO**.
