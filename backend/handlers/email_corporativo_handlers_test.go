@@ -105,6 +105,33 @@ func TestCorporateEmailAppendThemePreservesSnappyMailSSOQuery(t *testing.T) {
 	}
 }
 
+func TestSnappyMailAutologinUsesPublicWebmailHost(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Host != "mail.powerfulcontrolsystem.com" {
+			t.Fatalf("internal SSO host=%q, want public Mailu host", r.Host)
+		}
+		if got := r.Header.Get("X-Forwarded-Host"); got != "mail.powerfulcontrolsystem.com" {
+			t.Fatalf("X-Forwarded-Host=%q", got)
+		}
+		if got := r.Header.Get("X-Forwarded-Proto"); got != "https" {
+			t.Fatalf("X-Forwarded-Proto=%q", got)
+		}
+		http.Redirect(w, r, "/index.php?sso&hash=qa", http.StatusFound)
+	}))
+	defer server.Close()
+	t.Setenv("EMAIL_CORPORATIVO_INTERNAL_SNAPPYMAIL_URL", server.URL)
+
+	got, _, err := snappyMailAutologinRedirectURL(CorporateEmailConfig{
+		WebmailURL: "https://mail.powerfulcontrolsystem.com/webmail/",
+	}, "qa@powerfulcontrolsystem.com", "temporary-secret", "light")
+	if err != nil {
+		t.Fatalf("snappyMailAutologinRedirectURL error: %v", err)
+	}
+	if !strings.HasPrefix(got, "/index.php?sso&hash=qa&") {
+		t.Fatalf("unexpected public redirect %q", got)
+	}
+}
+
 func TestCorporateEmailAppendThemeRegularURL(t *testing.T) {
 	got := corporateEmailAppendThemeToURI("/webmail/?_task=mail", "light")
 	if !strings.Contains(got, "_task=mail") {

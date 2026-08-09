@@ -1,4 +1,12 @@
 2026-08-09
+- `tools/qa_authenticated_invoice_pdf.cjs`: inicia sesion por el flujo oficial,
+  sustituye opcionalmente solo la vista candidata y genera un PDF A4 de una
+  factura real sin registrar credenciales ni cookies.
+- `tools/qa_corporate_mail_autologin.cjs`: comprueba de forma saneada la cadena
+  de acceso automatico al buzón Mailu y registra solo estados, hosts y rutas.
+- `documentos/evidencia_plan_109/P109-005/2026-08-09_factura_pdf_real_y_buzon_pcs.md`:
+  documenta la inspeccion visual del PDF real y el bloqueo verificable para
+  crear cuatro identidades confirmadas en PCS.
 - `documentos/evidencia_plan_109/P109-008/2026-08-09_retencion_papelera_staging_34cfd852.md`:
   documenta la vista previa y el rechazo visual/transaccional de una depuracion
   antes de cumplir la retencion en PCS, sin efectos financieros.

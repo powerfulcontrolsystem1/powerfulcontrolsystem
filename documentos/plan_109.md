@@ -1479,3 +1479,19 @@ Actualización 2026-08-09, QA de impresión del candidato actual:
 - P109-005 conserva impresión física, dispositivos reales y accesibilidad como
   aceptación pendiente. La fórmula sigue **53,3 %**, certificación formal
   **0 %** y **NO-GO**.
+
+Actualización 2026-08-09, impresión virtual real y prerrequisito de usuarios:
+
+- Chrome imprimió la factura real PCS `1PCS6` en dos páginas A4 contra las APIs
+  autenticadas. El candidato recuperó el logo oficial y dejó encabezado, cinco
+  columnas, importes, CUFE, URL, observaciones y QR sin recortes; la regresión
+  sintética aprobó 20/20 formatos.
+- La repetición de cuatro usuarios no puede declararse: en el PCS servido existe
+  una sola identidad confirmada activa. El buzón propio está provisionado, pero
+  IMAP rechaza la consulta y el acceso SnappyMail termina 302/302/403. El arreglo
+  de host SSO queda probado localmente y requiere despliegue antes de emitir y
+  confirmar tres invitaciones nuevas.
+- Con P109-008 ya aprobada técnicamente en snapshot aislado, el avance formal
+  vigente es **56,7 % de implementación**, certificación formal **0 %** y
+  **NO-GO**. P109-005 continúa parcial y P109-006 conserva su aprobación previa
+  de staging sin extrapolarla al PCS servido actual.
