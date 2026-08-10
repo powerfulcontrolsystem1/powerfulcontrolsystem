@@ -3426,3 +3426,8 @@
 
 ### Correccion de enrolamiento del tunel
 - [Seguridad/Operacion] `/api/public/domotica/tunnel` queda exceptuado solo de la sesion web global: el handler conserva autenticacion criptografica propia por token de enrolamiento o token de dispositivo. Esto permite que una Raspberry recien instalada se conecte al VPS sin exponer endpoints empresariales autenticados.
+## [2026-08-10] Domotica desde carrito y polaridad de relés
+- [UX] El carrito operativo presenta únicamente `⚡ Domotica`; abre la página de equipos de la estación con tarjetas, foto, estado visible, encendido rápido, programación y edición.
+- [Hardware] La Raspberry enrolada informa por túnel la topología activa-baja del módulo de 16 relés (GPIO 2 a 17), sin aceptar empresa, estación ni relés arbitrarios desde la placa.
+- [Seguridad] El VPS identifica la empresa y Raspberry con el token del túnel antes de aplicar la polaridad a salidas ya asignadas a ese equipo.
+- [Guía] Domótica incorpora una página tutorial visible con el flujo de estación, Raspberry, GPIO, foto, programación, polaridad y seguridad eléctrica.
