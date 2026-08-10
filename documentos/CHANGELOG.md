@@ -3442,3 +3442,6 @@
 ## [2026-08-10] Domótica visible y automatización por equipo
 - [Estaciones] El botón `⚡ Domótica` se muestra a la derecha de las acciones de cada estación cuando el check empresarial está activo y abre solo sus equipos y sensores.
 - [Automatización] Cada equipo puede decidir de forma independiente si enciende al activar la estación y si apaga al desactivarla; la migración conserva ambos comportamientos activos para equipos existentes.
+
+### Corrección de almacenamiento de imágenes de Domótica
+- [Runtime] El despliegue normaliza con privilegios mínimos la propiedad del volumen público de subidas antes de iniciar API y worker. Así, un volumen heredado propiedad de `root` vuelve a permitir cargar fotos de equipos sin abrir escritura al frontend.
