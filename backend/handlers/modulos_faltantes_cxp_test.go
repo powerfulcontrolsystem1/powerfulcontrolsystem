@@ -5,6 +5,8 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+
+	dbpkg "github.com/you/pos-backend/db"
 )
 
 func TestRegistrarPagoCxPRequiresIdempotencyKeyBeforeDatabaseAccess(t *testing.T) {
@@ -58,5 +60,20 @@ func TestCxPConfigurationRequiresCanonicalRegisteredSupplier(t *testing.T) {
 		if !found {
 			t.Fatalf("CxP creation must require %q", required)
 		}
+	}
+}
+
+func TestCxPConcurrentNoBalanceIsReportedAsConflict(t *testing.T) {
+	for _, err := range []error{
+		dbpkg.ErrEmpresaCxPNoPendingBalance,
+		dbpkg.ErrEmpresaCxPAmountExceedsBalance,
+		dbpkg.ErrPeriodoFinancieroCerrado,
+	} {
+		if got := registrarPagoCxPErrorStatus(err); got != http.StatusConflict {
+			t.Fatalf("status for %v = %d, want %d", err, got, http.StatusConflict)
+		}
+	}
+	if got := registrarPagoCxPErrorStatus(http.ErrBodyNotAllowed); got != http.StatusBadRequest {
+		t.Fatalf("generic error status = %d, want %d", got, http.StatusBadRequest)
 	}
 }

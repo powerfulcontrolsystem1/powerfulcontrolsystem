@@ -15,6 +15,7 @@ func TestSuperConfigHandlersRequireSuperAdmin(t *testing.T) {
 		"limitaciones":    SuperEmpresaLimitacionesConfigHandler(nil),
 		"mantenimiento":   SuperMantenimientoConfigHandler(nil),
 		"recordatorios":   SuperRecordatoriosInfraestructuraHandler(nil),
+		"outbox_recovery": SuperOutboxRecoveryHandler(nil, nil),
 	}
 	for name, handler := range handlers {
 		t.Run(name, func(t *testing.T) {

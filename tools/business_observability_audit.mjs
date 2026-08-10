@@ -21,7 +21,9 @@ const alertRules = read("deploy/monitoring/alert_rules.yml");
 const checks = [
   { name: "grafana_dashboard_vps", ok: /CPU VPS|Memoria usada|Disco usado/.test(dashboard) },
   { name: "backend_health_visible", ok: /pcs-backend|pcs-staging-backend/.test(dashboard) },
+  { name: "database_worker_queue_visible", ok: /pcs_postgres_ready|pcs_worker_heartbeat_age_seconds|pcs_async_jobs_ready_total|pcs_outbox_ready_total|pcs_async_jobs_expired_leases_total/.test(dashboard) },
   { name: "capacity_alerts", ok: /PCSDiscoVPSAlto|PCSMemoriaAlta|PCSBackendCaido/.test(alertRules) },
+  { name: "database_worker_queue_alerts", ok: /PCSPostgreSQLNoDisponible|PCSWorkerSinLatido|PCSColaDurableAcumulada|PCSLeaseDurableVencido|PCSConsultaObservabilidadFallida/.test(alertRules) },
   { name: "email_alert_module_exists", ok: exists("web/super/alertas_sistema.html") && /alertas/i.test(read("backend/handlers/super_alertas.go")) }
 ];
 

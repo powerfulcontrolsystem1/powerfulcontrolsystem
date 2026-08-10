@@ -3,6 +3,20 @@
 Version: 2026-05-15.1.0
 Ultima actualizacion: 2026-05-15
 
+Actualizacion 2026-08-09 (tunel saliente de Domotica)
+- `empresa_control_electrico_raspberry_pis` agrega identidad unica, huellas de
+  enrolamiento/dispositivo, estado/ultima actividad del tunel, version del
+  agente y contadores acumulados RX/TX. Nunca persiste tokens en claro.
+- `empresa_control_electrico_comandos` es la cola durable de salidas GPIO por
+  `empresa_id` y `raspberry_id`, con entrega, reintentos, vencimiento y ACK.
+- `empresa_control_electrico_trafico_diario` agrega bytes RX/TX y solicitudes
+  por dispositivo y fecha.
+- `empresa_control_electrico_reglas` agrega `raspberry_id`, GPIO BCM de entrada,
+  pull y debounce. Toda regla valida que controlador, estacion y aparato
+  objetivo pertenezcan a la misma empresa.
+- La migracion versionada es
+  `20260809-002-domotica-raspberry-tunnel-v1`; API y worker no ejecutan DDL.
+
 Actualizacion 2026-07-13 (OpenAI propio por empresa)
 - `empresa_ai_openai_proveedor_configuracion` conserva una configuracion por
   `empresa_id`: habilitacion, clave cifrada con AES-GCM y proposito
@@ -1799,13 +1813,15 @@ Actualizacion 2026-04-29 (auditoria como fuente de contexto IA)
 - empresa_cuentas_por_cobrar:
   - empresa_id, codigo, cliente_id, cliente_nombre
   - documento_tipo, documento_codigo, fecha_emision, fecha_vencimiento
-  - valor_original, valor_pagado, saldo, estado_cartera, moneda
+  - valor_original, valor_pagado y saldo `NUMERIC(18,2)`; restricción exacta
+    `saldo = valor_original - valor_pagado`; estado_cartera, moneda
   - periodo_contable, referencia_pagos_json, fecha_ultimo_pago
   - conciliado_en, conciliado_por
 - empresa_cuentas_por_pagar:
   - empresa_id, codigo, proveedor_id, proveedor_nombre
   - documento_tipo, documento_codigo, fecha_emision, fecha_vencimiento
-  - valor_original, valor_pagado, saldo, estado_cartera, moneda
+  - valor_original, valor_pagado y saldo `NUMERIC(18,2)`; restricción exacta
+    `saldo = valor_original - valor_pagado`; estado_cartera, moneda
   - periodo_contable, referencia_pagos_json, fecha_ultimo_pago
   - conciliado_en, conciliado_por
 - empresa_creditos:
@@ -2327,6 +2343,12 @@ Actualizacion 2026-07-24 (P106, pendiente de ejecutar por migrador):
   `20260724-001-cxp-atomic-payments-v1` desde `pcs-migrate`; esta nota no
   confirma que exista en desarrollo, staging o produccion.
 
+Actualizacion 2026-08-01 (P109, pendiente de publicar):
+
+- `20260801-001-cartera-money-precision-v1` migra los tres importes de CxC y
+  CxP desde `REAL` a `NUMERIC(18,2)`, recompone el saldo exacto y agrega el
+  invariante monetario. Falla cerrada si detecta drift mayor de 0,02.
+
 Actualizacion 2026-07-16:
 
 - `schema_migrations` conserva `scope`, `version`, `checksum`, `state`,
@@ -2357,3 +2379,12 @@ la base de datos se usa unicamente para la comprobacion de disponibilidad.
   DDL ni privilegios administrativos.
 - Los dos roles se aplican de forma independiente dentro de
   `pcs_empresas` y `pcs_superadministrador`.
+
+## Reparación de uso diario IA (Plan 109, 2026-07-31)
+
+`empresa_ai_uso_diario` conserva una sola fila por
+`(empresa_id, provider, model_id, fecha_uso)`. La migración inmutable
+`20260731-001-ai-usage-unique-v1` materializa esa regla como índice único en
+instalaciones antiguas donde la tabla ya existía sin la restricción declarada.
+La migración no elimina ni fusiona auditoría: ante duplicados falla cerrada para
+reconciliación operativa explícita.

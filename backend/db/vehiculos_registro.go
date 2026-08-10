@@ -601,11 +601,11 @@ func ListEmpresaVehiculosPermanenciaReporte(dbConn *sql.DB, empresaID int64, inc
 		COALESCE(tipo_vehiculo, 'automovil'),
 		COALESCE(conductor_nombre, ''),
 		COALESCE(propietario_nombre, ''),
-		COALESCE(fecha_ingreso, ''),
-		COALESCE(fecha_salida, ''),
+		COALESCE(CAST(fecha_ingreso AS TEXT), ''),
+		COALESCE(CAST(fecha_salida AS TEXT), ''),
 		COALESCE(estado_registro, 'en_empresa'),
 		COALESCE(estado, 'activo'),
-		CAST(ROUND((pcs_julian_day(COALESCE(NULLIF(fecha_salida, ''), CURRENT_TIMESTAMP)) - pcs_julian_day(COALESCE(NULLIF(fecha_ingreso, ''), CURRENT_TIMESTAMP))) * 24.0 * 60.0, 0) AS INTEGER) AS minutos_estadia
+		CAST(ROUND(CAST((pcs_julian_day(COALESCE(NULLIF(CAST(fecha_salida AS TEXT), ''), CAST(CURRENT_TIMESTAMP AS TEXT))) - pcs_julian_day(COALESCE(NULLIF(CAST(fecha_ingreso AS TEXT), ''), CAST(CURRENT_TIMESTAMP AS TEXT)))) * 24.0 * 60.0 AS NUMERIC), 0) AS INTEGER) AS minutos_estadia
 	FROM empresa_vehiculos_registro
 	WHERE empresa_id = ?`
 	args := []interface{}{empresaID}
@@ -615,11 +615,11 @@ func ListEmpresaVehiculosPermanenciaReporte(dbConn *sql.DB, empresaID int64, inc
 	}
 
 	if desdeTrim := strings.TrimSpace(desde); desdeTrim != "" {
-		query += ` AND date(COALESCE(fecha_ingreso, '')) >= date(?)`
+		query += ` AND date(COALESCE(CAST(fecha_ingreso AS TEXT), '')) >= date(?)`
 		args = append(args, desdeTrim)
 	}
 	if hastaTrim := strings.TrimSpace(hasta); hastaTrim != "" {
-		query += ` AND date(COALESCE(fecha_ingreso, '')) <= date(?)`
+		query += ` AND date(COALESCE(CAST(fecha_ingreso AS TEXT), '')) <= date(?)`
 		args = append(args, hastaTrim)
 	}
 
@@ -647,7 +647,7 @@ func ListEmpresaVehiculosPermanenciaReporte(dbConn *sql.DB, empresaID int64, inc
 	if limit > 5000 {
 		limit = 5000
 	}
-	query += ` ORDER BY minutos_estadia DESC, COALESCE(fecha_ingreso, fecha_creacion) DESC, id DESC LIMIT ?`
+	query += ` ORDER BY minutos_estadia DESC, COALESCE(CAST(fecha_ingreso AS TEXT), CAST(fecha_creacion AS TEXT), '') DESC, id DESC LIMIT ?`
 	args = append(args, limit)
 
 	rows, err := dbConn.Query(query, args...)

@@ -843,6 +843,12 @@ botones, desde handlers estaticos del backend.
   para que cada boton del submenu abra una pagina/vista independiente,
   endpoint `/api/empresa/control_electrico` y storage super en
   `web/super/domotica_storage.html` con `/super/api/domotica_storage`.
+  Desde 2026-08-09 la pagina de controladores genera un instalador de un solo
+  uso para Raspberry Pi. El agente conserva un tunel HTTPS saliente mediante
+  `/api/public/domotica/tunnel`, con cola durable, GPIO de entrada/salida e
+  identidad que resuelve la empresa en servidor. El super administrador revisa
+  RX/TX por dispositivo en `web/super/domotica_raspberry_trafico.html`.
+  Runbook: `documentos/domotica_raspberry_tunnel.md`.
   Conserva la clave tecnica `control_electrico`; la carpeta empresarial de
   imagenes es `web/uploads/empresas/empresa_{id}_{slug}/imagenes/`, con
   subcarpetas como `domotica` y `usuarios`.

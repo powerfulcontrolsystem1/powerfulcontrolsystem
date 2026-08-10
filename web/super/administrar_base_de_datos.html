@@ -117,6 +117,41 @@
     .error-banner.show { display: block; }
     .muted { color: var(--muted); }
     .inline-status { color: var(--muted); font-size: 0.88rem; font-weight: 700; }
+    .recovery-controls {
+      display: grid;
+      grid-template-columns: minmax(150px, 0.35fr) minmax(280px, 1fr) auto;
+      gap: 10px;
+      align-items: end;
+      margin-top: 12px;
+    }
+    .recovery-field { display: grid; gap: 5px; }
+    .recovery-field label { color: var(--muted); font-size: 0.82rem; font-weight: 800; }
+    .recovery-field input,
+    .recovery-field textarea {
+      width: 100%;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--surface);
+      color: var(--text);
+      padding: 9px 10px;
+    }
+    .recovery-field textarea { min-height: 72px; resize: vertical; }
+    .recovery-confirm-grid {
+      display: grid;
+      grid-template-columns: minmax(280px, 1fr) auto;
+      gap: 10px;
+      align-items: end;
+      margin-top: 10px;
+    }
+    .recovery-warning {
+      margin-top: 10px;
+      padding: 9px 10px;
+      border: 1px solid color-mix(in srgb, var(--accent-yellow) 45%, transparent 55%);
+      border-radius: 8px;
+      background: color-mix(in srgb, var(--accent-yellow) 12%, transparent 88%);
+      color: var(--text);
+      font-size: 0.86rem;
+    }
     @media (max-width: 720px) {
       .db-shell { gap: 10px; }
       .hero-meta,
@@ -129,9 +164,11 @@
       .table td code { max-width: 240px; }
       .hero-card .toolbar { justify-content: stretch; }
       .hero-card .toolbar .btn { flex: 1 1 auto; justify-content: center; }
+      .recovery-controls,
+      .recovery-confirm-grid { grid-template-columns: minmax(0, 1fr); }
     }
   </style>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.1/dist/chart.umd.min.js" integrity="sha384-jb8JQMbMoBUzgWatfe6COACi2ljcDdZQ2OxczGA3bGNeWe+6DChMTBJemed7ZnvJ" crossorigin="anonymous"></script>
 </head>
 <body class="super-page form-bg-dark">
   <div class="container db-shell">
@@ -301,6 +338,59 @@
       </div>
     </section>
 
+    <section class="card" aria-labelledby="outboxRecoveryTitle">
+      <div class="page-header">
+        <div>
+          <h2 id="outboxRecoveryTitle">Recuperación controlada de eventos CxP</h2>
+          <p class="muted">Vista previa limitada a una empresa y al tema de pagos de cartera de proveedores. Solo permite reactivar eventos en estado <code>dead</code>.</p>
+        </div>
+      </div>
+      <div class="recovery-warning">
+        Esta operación no repite el pago. Reactiva únicamente su procesamiento contable asíncrono e idempotente. Selecciona eventos concretos, explica la razón y escribe la confirmación exacta.
+      </div>
+      <div class="recovery-controls">
+        <div class="recovery-field">
+          <label for="outboxEmpresaID">ID de empresa</label>
+          <input id="outboxEmpresaID" type="number" min="1" step="1" inputmode="numeric" placeholder="Ej. 12">
+        </div>
+        <div class="recovery-field">
+          <label for="outboxTopic">Tema permitido</label>
+          <input id="outboxTopic" type="text" value="cuentas_por_pagar.pago_registrado" readonly>
+        </div>
+        <button id="previewOutboxBtn" class="btn secondary" type="button">Vista previa</button>
+      </div>
+      <div id="outboxRecoveryStatus" class="inline-status" role="status" aria-live="polite">Ingrese una empresa para consultar eventos fallidos.</div>
+      <div class="table-wrap">
+        <table class="table table-wide" id="outboxRecoveryTable">
+          <thead>
+            <tr>
+              <th>Seleccionar</th>
+              <th>Evento</th>
+              <th>Pago</th>
+              <th>Cuenta CxP</th>
+              <th>Movimiento</th>
+              <th>Monto</th>
+              <th>Intentos</th>
+              <th>Fecha dead</th>
+              <th>Último error</th>
+            </tr>
+          </thead>
+          <tbody><tr><td colspan="9">Sin consulta.</td></tr></tbody>
+        </table>
+      </div>
+      <div class="recovery-field">
+        <label for="outboxRecoveryReason">Razón operativa (mínimo 10 caracteres)</label>
+        <textarea id="outboxRecoveryReason" maxlength="500" placeholder="Ej. El manejador CxP ya fue desplegado y se verificó su idempotencia."></textarea>
+      </div>
+      <div class="recovery-confirm-grid">
+        <div class="recovery-field">
+          <label for="outboxRecoveryConfirmation">Confirmación exacta: <code>REACTIVAR EVENTOS CXP</code></label>
+          <input id="outboxRecoveryConfirmation" type="text" autocomplete="off" spellcheck="false">
+        </div>
+        <button id="executeOutboxRecoveryBtn" class="btn" type="button" disabled>Reactivar seleccionados</button>
+      </div>
+    </section>
+
     <section class="card">
       <div class="page-header">
         <h2>Recomendaciones automaticas</h2>
@@ -312,6 +402,9 @@
   <script>
     const API_URL = '/super/api/postgres/performance'
     const EMPRESAS_STORAGE_API_URL = '/super/api/postgres/performance?action=empresas_storage'
+    const OUTBOX_RECOVERY_API_URL = '/super/api/outbox/recovery'
+    const OUTBOX_CXP_TOPIC = 'cuentas_por_pagar.pago_registrado'
+    const OUTBOX_RECOVERY_CONFIRMATION = 'REACTIVAR EVENTOS CXP'
     const HISTORY_MAX_POINTS = 72
     const AUTO_REFRESH_MS = 15000
     let autoRefreshEnabled = true
@@ -563,6 +656,141 @@
       banner.textContent = message
     }
 
+    function readCookieValue(name) {
+      const match = String(document.cookie || '').match(new RegExp('(?:^|;\\s*)' + name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '=([^;]+)'))
+      return match ? decodeURIComponent(match[1]) : ''
+    }
+
+    function formatOutboxMoney(value) {
+      const amount = Number(value)
+      if (!Number.isFinite(amount)) return '-'
+      return new Intl.NumberFormat('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(amount)
+    }
+
+    function selectedOutboxEventIDs() {
+      return Array.from(document.querySelectorAll('#outboxRecoveryTable input[data-event-id]:checked'))
+        .map(function (input) { return Number(input.dataset.eventId) })
+        .filter(function (id) { return Number.isInteger(id) && id > 0 })
+    }
+
+    function updateOutboxRecoveryButton() {
+      const reason = document.getElementById('outboxRecoveryReason').value.trim()
+      const confirmation = document.getElementById('outboxRecoveryConfirmation').value.trim()
+      document.getElementById('executeOutboxRecoveryBtn').disabled = !(
+        selectedOutboxEventIDs().length > 0 &&
+        reason.length >= 10 &&
+        confirmation === OUTBOX_RECOVERY_CONFIRMATION
+      )
+    }
+
+    function renderOutboxRecoveryItems(payload) {
+      const tbody = document.querySelector('#outboxRecoveryTable tbody')
+      const status = document.getElementById('outboxRecoveryStatus')
+      const rows = Array.isArray(payload && payload.items) ? payload.items : []
+      tbody.innerHTML = ''
+      if (!rows.length) {
+        tbody.innerHTML = '<tr><td colspan="9">No hay eventos dead recuperables para este alcance.</td></tr>'
+        status.textContent = 'Empresa ' + (payload && payload.empresa_nombre ? payload.empresa_nombre : payload.empresa_id) + ': 0 eventos dead.'
+        updateOutboxRecoveryButton()
+        return
+      }
+      rows.forEach(function (item) {
+        const tr = document.createElement('tr')
+        tr.innerHTML = [
+          '<td><input type="checkbox" data-event-id="' + Number(item.id) + '" aria-label="Seleccionar evento ' + Number(item.id) + '"></td>',
+          '<td>' + formatNumber(item.id) + '</td>',
+          '<td>' + formatNumber(item.pago_id) + '</td>',
+          '<td>' + formatNumber(item.cuenta_por_pagar_id) + '</td>',
+          '<td>' + formatNumber(item.movimiento_finanzas_id) + '</td>',
+          '<td>' + formatOutboxMoney(item.monto) + '</td>',
+          '<td>' + formatNumber(item.attempts) + ' / ' + formatNumber(item.max_attempts) + '</td>',
+          '<td>' + escapeHtml(item.dead_at || '-') + '</td>',
+          '<td><code>' + escapeHtml(item.last_error || '-') + '</code></td>'
+        ].join('')
+        tbody.appendChild(tr)
+      })
+      status.textContent = 'Empresa ' + (payload.empresa_nombre || payload.empresa_id) + ': ' + rows.length + ' evento(s) dead. Ninguno se reactiva sin selección y confirmación.'
+      tbody.querySelectorAll('input[data-event-id]').forEach(function (input) {
+        input.addEventListener('change', updateOutboxRecoveryButton)
+      })
+      updateOutboxRecoveryButton()
+    }
+
+    async function previewOutboxRecovery() {
+      const empresaID = Number(document.getElementById('outboxEmpresaID').value)
+      const button = document.getElementById('previewOutboxBtn')
+      const status = document.getElementById('outboxRecoveryStatus')
+      if (!Number.isInteger(empresaID) || empresaID <= 0) {
+        status.textContent = 'Ingrese un ID de empresa válido.'
+        return
+      }
+      button.disabled = true
+      button.textContent = 'Consultando...'
+      status.textContent = 'Consultando eventos dead con filtro por empresa...'
+      try {
+        const query = new URLSearchParams({
+          empresa_id: String(empresaID),
+          topic: OUTBOX_CXP_TOPIC,
+          limit: '20'
+        })
+        const response = await fetch(OUTBOX_RECOVERY_API_URL + '?' + query.toString())
+        const payload = await response.json().catch(function () { return null })
+        if (!response.ok || !payload || payload.ok === false) {
+          throw new Error(payload && payload.error ? payload.error : ('Error HTTP ' + response.status))
+        }
+        renderOutboxRecoveryItems(payload)
+      } catch (err) {
+        status.textContent = 'No fue posible consultar: ' + (err && err.message ? err.message : err)
+      } finally {
+        button.disabled = false
+        button.textContent = 'Vista previa'
+      }
+    }
+
+    async function executeOutboxRecovery() {
+      const eventIDs = selectedOutboxEventIDs()
+      const empresaID = Number(document.getElementById('outboxEmpresaID').value)
+      const reason = document.getElementById('outboxRecoveryReason').value.trim()
+      const confirmation = document.getElementById('outboxRecoveryConfirmation').value.trim()
+      const button = document.getElementById('executeOutboxRecoveryBtn')
+      const status = document.getElementById('outboxRecoveryStatus')
+      updateOutboxRecoveryButton()
+      if (button.disabled) return
+
+      button.disabled = true
+      button.textContent = 'Reactivando...'
+      status.textContent = 'Ejecutando recuperación transaccional y auditada...'
+      try {
+        const headers = new Headers({ 'Content-Type': 'application/json' })
+        const csrf = readCookieValue('pcs_csrf')
+        if (csrf) headers.set('X-CSRF-Token', csrf)
+        const response = await fetch(OUTBOX_RECOVERY_API_URL + '?empresa_id=' + encodeURIComponent(String(empresaID)), {
+          method: 'POST',
+          credentials: 'same-origin',
+          headers: headers,
+          body: JSON.stringify({
+            empresa_id: empresaID,
+            topic: OUTBOX_CXP_TOPIC,
+            event_ids: eventIDs,
+            reason: reason,
+            confirmation: confirmation
+          })
+        })
+        const payload = await response.json().catch(function () { return null })
+        if (!response.ok || !payload || payload.ok === false) {
+          throw new Error(payload && payload.error ? payload.error : ('Error HTTP ' + response.status))
+        }
+        status.textContent = 'Recuperación aceptada: ' + Number(payload.requeued || 0) + ' evento(s) quedaron pending para el worker.'
+        document.getElementById('outboxRecoveryConfirmation').value = ''
+        setTimeout(previewOutboxRecovery, 1200)
+      } catch (err) {
+        status.textContent = 'La recuperación no se ejecutó: ' + (err && err.message ? err.message : err)
+      } finally {
+        button.textContent = 'Reactivar seleccionados'
+        updateOutboxRecoveryButton()
+      }
+    }
+
     function initCharts() {
       const rootStyles = getComputedStyle(document.documentElement)
       const labelColor = (rootStyles.getPropertyValue('--text') || '#e8f0fb').trim()
@@ -724,6 +952,10 @@
 
       document.getElementById('refreshBtn').addEventListener('click', loadPerformance)
       document.getElementById('loadEmpresasStorageBtn').addEventListener('click', loadEmpresasStorage)
+      document.getElementById('previewOutboxBtn').addEventListener('click', previewOutboxRecovery)
+      document.getElementById('executeOutboxRecoveryBtn').addEventListener('click', executeOutboxRecovery)
+      document.getElementById('outboxRecoveryReason').addEventListener('input', updateOutboxRecoveryButton)
+      document.getElementById('outboxRecoveryConfirmation').addEventListener('input', updateOutboxRecoveryButton)
       document.getElementById('toggleAutoBtn').addEventListener('click', function () {
         setAutoRefresh(!autoRefreshEnabled)
       })

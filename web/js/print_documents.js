@@ -272,7 +272,7 @@
       page,
       'html,body{margin:0 auto;background:#fff;color:#111827;font-family:Arial,Helvetica,sans-serif;-webkit-print-color-adjust:exact;print-color-adjust:exact;}',
       'body{box-sizing:border-box;}*{box-sizing:border-box;}',
-      '.pcs-print-doc{width:100%;margin:0 auto;background:#fff;color:#111827;overflow-wrap:anywhere;word-break:break-word;}',
+      '.pcs-print-doc{width:100%;margin:0 auto;background:#fff;color:#111827;overflow-wrap:anywhere;word-break:break-word;-webkit-box-decoration-break:clone;box-decoration-break:clone;}',
       '.pcs-print-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;border-bottom:2px solid ' + accent + ';padding-bottom:10px;margin-bottom:12px;}',
       '.pcs-print-logos{display:flex;align-items:center;gap:8px;flex-wrap:wrap;max-width:220px;}',
       '.pcs-print-logo{max-width:100px;max-height:54px;object-fit:contain;display:block;filter:grayscale(1) contrast(1.08);}',
@@ -283,7 +283,16 @@
       '.pcs-print-box{border:1px solid #d1d5db;border-radius:8px;padding:9px;background:#fff;}',
       '.pcs-print-box span{display:block;color:#374151;font-size:10px;text-transform:uppercase;font-weight:800;letter-spacing:.04em;margin-bottom:3px;}',
       '.pcs-print-box strong{display:block;color:#111827;font-size:13px;line-height:1.25;overflow-wrap:anywhere;word-break:break-word;}',
-      '.pcs-print-table{width:100%;border-collapse:collapse;margin:10px 0;font-size:12px;}',
+      '.pcs-print-table{width:100%;table-layout:fixed;border-collapse:collapse;margin:10px 0;font-size:12px;}',
+      '.pcs-print-table thead{display:table-row-group;}',
+      '.pcs-print-table tr{break-inside:avoid;page-break-inside:avoid;}',
+      '.pcs-print-table-page{display:block;width:100%;margin:0;padding:0;break-inside:avoid;page-break-inside:avoid;}',
+      '.pcs-print-table-page-break{break-after:page;page-break-after:always;}',
+      '.pcs-print-summary-page{display:block;break-before:page;page-break-before:always;}',
+      '.pcs-print-cols-2 th:first-child,.pcs-print-cols-2 td:first-child{width:34%;}',
+      '.pcs-print-cols-2 th:nth-child(2),.pcs-print-cols-2 td:nth-child(2){width:66%;}',
+      '.pcs-print-cols-4 th:first-child,.pcs-print-cols-4 td:first-child{width:64%;}',
+      '.pcs-print-cols-4 th:not(:first-child),.pcs-print-cols-4 td:not(:first-child){width:12%;}',
       '.pcs-print-table th{color:#111827;text-align:left;font-size:11px;text-transform:uppercase;border-bottom:1px solid #111827;padding:6px 4px;}',
       '.pcs-print-table td{border-bottom:1px solid #d1d5db;padding:6px 4px;vertical-align:top;}',
       '.pcs-print-number{text-align:right;white-space:nowrap;}',
@@ -308,7 +317,7 @@
       '.pcs-print-footer{margin-top:12px;color:#374151;font-size:11px;text-align:center;line-height:1.35;overflow-wrap:anywhere;word-break:break-word;}',
       '.pcs-print-signatures{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:30px;}',
       '.pcs-print-signatures div{border-top:1px solid #111827;padding-top:6px;text-align:center;color:#374151;font-size:12px;}',
-      '@media print{.pcs-print-no-print{display:none!important;}}'
+      '@media print{.pcs-print-no-print{display:none!important;}.pcs-print-doc{border:0!important;padding:0!important;}}'
     ].join('');
     if (format === 'pos') {
       base += [
@@ -326,6 +335,8 @@
         '.pcs-print-box strong{font-size:11px;}',
         '.pcs-print-table{font-size:10px;margin:7px 0;}',
         '.pcs-print-table th,.pcs-print-table td{border-bottom:1px dashed #9ca3af;padding:4px 2px;}',
+        '.pcs-print-cols-4 th:first-child,.pcs-print-cols-4 td:first-child{width:46%;}',
+        '.pcs-print-cols-4 th:not(:first-child),.pcs-print-cols-4 td:not(:first-child){width:18%;}',
         '.pcs-print-code{width:14%;}',
         '.pcs-print-desc{width:34%;}',
         '.pcs-print-unit,.pcs-print-tax,.pcs-print-discount{display:none;}',
@@ -372,6 +383,47 @@
     }).join('');
   }
 
+  function tableHTML(headers, rows) {
+    var tableHeaders = Array.isArray(headers) ? headers : [];
+    var tableRows = Array.isArray(rows) ? rows : [];
+    var firstRow = tableRows.length && Array.isArray(tableRows[0]) ? tableRows[0] : [];
+    var columnCount = Math.max(tableHeaders.length || firstRow.length, 1);
+    return '<table class="pcs-print-table pcs-print-cols-' + columnCount + '"><thead><tr>' + tableHeaders.map(function(h, idx) {
+      var value = typeof h === 'object' && h ? h.label || h.value || '' : h;
+      var hasNumberFlag = typeof h === 'object' && h && Object.prototype.hasOwnProperty.call(h, 'number');
+      var extraClass = typeof h === 'object' && h && h.className ? ' ' + text(h.className).trim() : '';
+      var numberClass = hasNumberFlag ? (h.number ? 'pcs-print-number' : '') : (idx > 0 ? 'pcs-print-number' : '');
+      var cls = (numberClass + extraClass).trim();
+      return '<th' + (cls ? ' class="' + escapeHTML(cls) + '"' : '') + '>' + escapeHTML(value) + '</th>';
+    }).join('') + '</tr></thead><tbody>' + rowsHTML(tableRows) + '</tbody></table>';
+  }
+
+  function paginatedTablesHTML(headers, rows, format) {
+    var tableRows = Array.isArray(rows) ? rows : [];
+    if (format !== 'carta' || tableRows.length <= 40) return tableHTML(headers, tableRows);
+
+    var chunks = [];
+    var cursor = 0;
+    var firstPageRows = 20;
+    var middlePageRows = 24;
+    var lastPageRows = 10;
+    chunks.push(tableRows.slice(cursor, cursor + firstPageRows));
+    cursor += firstPageRows;
+    while (tableRows.length - cursor > lastPageRows) {
+      var remainingBeforeLast = tableRows.length - cursor - lastPageRows;
+      var take = Math.min(middlePageRows, remainingBeforeLast);
+      if (take <= 0) break;
+      chunks.push(tableRows.slice(cursor, cursor + take));
+      cursor += take;
+    }
+    if (cursor < tableRows.length) chunks.push(tableRows.slice(cursor));
+
+    return chunks.map(function(chunk, index) {
+      var pageClass = index < chunks.length - 1 ? ' pcs-print-table-page-break' : '';
+      return '<section class="pcs-print-table-page' + pageClass + '">' + tableHTML(headers, chunk) + '</section>';
+    }).join('');
+  }
+
   function metaHTML(meta) {
     return (Array.isArray(meta) ? meta : []).filter(function(item) {
       return item && text(item.value).trim() !== '';
@@ -415,32 +467,29 @@
     var badge = text(options.badge || (format === 'pos' ? 'POS' : 'Carta'));
     var headerLogos = Array.isArray(options.logos) ? options.logos : (options.logoUrl ? [{ src: options.logoUrl, alt: options.logoAlt || 'Logo' }] : []);
     var tableHeaders = Array.isArray(options.tableHeaders) ? options.tableHeaders : [];
+    var tableRows = Array.isArray(options.rows) ? options.rows : [];
+    var hasLongCartaTable = format === 'carta' && tableRows.length > 40;
     var table = '';
-    if (tableHeaders.length || (Array.isArray(options.rows) && options.rows.length)) {
-      table = '<table class="pcs-print-table"><thead><tr>' + tableHeaders.map(function(h, idx) {
-        var value = typeof h === 'object' && h ? h.label || h.value || '' : h;
-        var hasNumberFlag = typeof h === 'object' && h && Object.prototype.hasOwnProperty.call(h, 'number');
-        var extraClass = typeof h === 'object' && h && h.className ? ' ' + text(h.className).trim() : '';
-        var numberClass = hasNumberFlag ? (h.number ? 'pcs-print-number' : '') : (idx > 0 ? 'pcs-print-number' : '');
-        var cls = (numberClass + extraClass).trim();
-        return '<th' + (cls ? ' class="' + escapeHTML(cls) + '"' : '') + '>' + escapeHTML(value) + '</th>';
-      }).join('') + '</tr></thead><tbody>' + rowsHTML(options.rows) + '</tbody></table>';
+    if (tableHeaders.length || tableRows.length) {
+      table = paginatedTablesHTML(tableHeaders, tableRows, format);
     }
     var body = text(options.bodyHTML || '');
     var qrBlock = qrHTML(options.qr);
     if (!body) {
       body = '<section class="pcs-print-meta">' + metaHTML(options.meta) + '</section>' + table;
+      var trailing = '';
       if (text(options.totalLabel || options.totalValue).trim()) {
-        body += '<section class="pcs-print-total"><span>' + escapeHTML(options.totalLabel || 'Total') + '</span><span>' + escapeHTML(options.totalValue || '') + '</span></section>';
+        trailing += '<section class="pcs-print-total"><span>' + escapeHTML(options.totalLabel || 'Total') + '</span><span>' + escapeHTML(options.totalValue || '') + '</span></section>';
       }
       if (text(options.totalWords).trim()) {
-        body += '<section class="pcs-print-note"><strong>Total en letras:</strong> ' + escapeHTML(options.totalWords) + '</section>';
+        trailing += '<section class="pcs-print-note"><strong>Total en letras:</strong> ' + escapeHTML(options.totalWords) + '</section>';
       }
       var summary = summaryRowsHTML(options.summaryRows);
-      if (summary) body += '<section class="pcs-print-summary">' + summary + '</section>';
-      if (text(options.note).trim()) body += '<section class="pcs-print-note">' + escapeHTML(options.note) + '</section>';
-      body += qrBlock;
-      if (options.signatures !== false && format === 'carta') body += '<section class="pcs-print-signatures"><div>Recibe</div><div>Entrega / registra</div></section>';
+      if (summary) trailing += '<section class="pcs-print-summary">' + summary + '</section>';
+      if (text(options.note).trim()) trailing += '<section class="pcs-print-note">' + escapeHTML(options.note) + '</section>';
+      trailing += qrBlock;
+      if (options.signatures !== false && format === 'carta') trailing += '<section class="pcs-print-signatures"><div>Recibe</div><div>Entrega / registra</div></section>';
+      body += hasLongCartaTable ? '<section class="pcs-print-summary-page">' + trailing + '</section>' : trailing;
     } else if (qrBlock) {
       body += qrBlock;
     }

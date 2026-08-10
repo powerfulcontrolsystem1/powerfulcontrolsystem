@@ -492,7 +492,7 @@
           <button type="button" id="carritoBtnDescuentos" class="btn secondary">Descuentos</button>
           <button type="button" id="carritoBtnCambiarTarifa" class="btn secondary">Cambiar tarifa</button>
           <button type="button" id="carritoBtnTransferirCuenta" class="btn secondary">Transferir cuenta</button>
-          <button type="button" id="carritoBtnControlElectrico" class="btn secondary">Domotica</button>
+          <button type="button" id="carritoBtnControlElectrico" class="btn secondary" aria-label="Abrir Domotica de esta estacion">⚡ Domotica</button>
           <button type="button" id="carritoBtnCancelarCarrito" class="btn secondary">Cancelar carrito</button>
           <label id="carritoAlertaTiempoControl" class="form-help inline-check carrito-alert10-check" hidden>
             <input type="checkbox" id="carritoAlerta10Enable">
@@ -585,16 +585,6 @@
           </div>
           <div id="carritoAbonosList" class="form-help mt-8">Sin abonos registrados.</div>
           <div id="carritoAbonosMsg" class="form-help mt-6"></div>
-        </div>
-        <div id="carritoControlElectricoPanel" class="empresa-section mt-10 is-hidden" hidden>
-          <div class="empresa-section-header compact">
-            <div>
-              <h3 class="section-heading">Domotica</h3>
-              <p class="form-help mt-0">Aparatos asignados a esta estacion. Presiona un aparato para ver su estado, encender, apagar o programar horario.</p>
-            </div>
-          </div>
-          <div id="carritoControlElectricoContent" class="form-help">Cargando domotica...</div>
-          <div id="carritoControlElectricoMsg" class="form-help mt-6"></div>
         </div>
       </section>
 
@@ -11854,7 +11844,19 @@
     }
     const carritoBtnControlElectrico = document.getElementById('carritoBtnControlElectrico');
     if (carritoBtnControlElectrico) {
-      carritoBtnControlElectrico.addEventListener('click', openCarritoControlElectricoPanel);
+      carritoBtnControlElectrico.addEventListener('click', function() {
+        const selected = getSelectedCarrito();
+        const estacionID = Number(state.estacionID || (selected && selected.estacion_id) || 0);
+        if (!state.empresaID || !estacionID) return;
+        const query = new URLSearchParams({
+          empresa_id: String(state.empresaID),
+          estacion_id: String(estacionID),
+          estacion_nombre: String((selected && (selected.estacion_nombre || selected.nombre_estacion)) || state.estacionNombre || ''),
+          carrito_id: String((selected && selected.id) || 0),
+          carrito_codigo: String((selected && selected.codigo) || '')
+        });
+        window.location.href = '/administrar_empresa/carrito_control_electrico.html?' + query.toString();
+      });
     }
     const carritoControlElectricoContent = document.getElementById('carritoControlElectricoContent');
     if (carritoControlElectricoContent) {

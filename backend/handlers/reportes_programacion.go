@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"regexp"
 	"sort"
 	"strconv"
 	"strings"
@@ -308,6 +309,12 @@ type reportePlantillaPayload struct {
 	MarcarVigente  *bool                  `json:"marcar_vigente"`
 }
 
+var reportePlantillaCodigoPattern = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9._-]{1,79}$`)
+
+func reportePlantillaCodigoValido(value string) bool {
+	return reportePlantillaCodigoPattern.MatchString(strings.TrimSpace(value))
+}
+
 type reporteProgramacionPayload struct {
 	ID                  int64                  `json:"id"`
 	EmpresaID           int64                  `json:"empresa_id"`
@@ -440,6 +447,9 @@ func handleEmpresaReportesPlantillasAction(w http.ResponseWriter, r *http.Reques
 		if codigo == "" {
 			return newReportesHTTPError(http.StatusBadRequest, "codigo es obligatorio")
 		}
+		if !reportePlantillaCodigoValido(codigo) {
+			return newReportesHTTPError(http.StatusBadRequest, "codigo debe usar entre 2 y 80 caracteres: letras, numeros, punto, guion o guion bajo")
+		}
 		datasetKey := strings.ToLower(strings.TrimSpace(reportesFirstNonBlank(payload.DatasetKey, r.URL.Query().Get("dataset"))))
 		if datasetKey == "" {
 			return newReportesHTTPError(http.StatusBadRequest, "dataset_key es obligatorio")
@@ -456,6 +466,9 @@ func handleEmpresaReportesPlantillasAction(w http.ResponseWriter, r *http.Reques
 		nombre := strings.TrimSpace(payload.Nombre)
 		if nombre == "" {
 			nombre = "Plantilla " + strings.ToUpper(codigo)
+		}
+		if len([]rune(nombre)) > 160 {
+			return newReportesHTTPError(http.StatusBadRequest, "nombre supera 160 caracteres")
 		}
 
 		columnas := make([]string, 0, len(payload.Columnas))
