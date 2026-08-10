@@ -41252,3 +41252,6 @@ acumulativa.
 2026-08-10: Domotica visible en Estaciones y politicas por equipo.
 - El boton `⚡ Domotica` se muestra como accion independiente a la derecha de la tarjeta de estacion cuando la preferencia empresarial esta activa, sin disparar la apertura o activacion del carrito.
 - Cada rele incorpora checks independientes para encender al activar y apagar al desactivar su estacion; la migracion empresarial conserva ambos activos para equipos ya existentes.
+
+2026-08-10: Correccion runtime de imagenes de Domotica.
+- El stack inicializa el volumen `pcs_web_uploads` antes de API y worker con el UID/GID no privilegiado del servicio. Esto corrige volumenes heredados propiedad de root y mantiene Nginx solo-lectura para los archivos publicos.

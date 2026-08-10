@@ -106,6 +106,30 @@ services:
     volumes:
       - pcs_private_storage:/app/private_storage
 
+  # Volúmenes heredados pueden haber sido creados por root. Esta tarea única
+  # repara exclusivamente la propiedad de uploads antes de iniciar la API.
+  upload-permissions:
+    build:
+      context: ..
+      dockerfile: deploy/docker/backend.Dockerfile
+      target: api
+    image: ${PCS_BACKEND_IMAGE:-pcs-backend:local}
+    container_name: pcs-upload-permissions
+    restart: "no"
+    user: "0:0"
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - FOWNER
+      - DAC_OVERRIDE
+    command: ["/bin/sh", "-ec", "mkdir -p /app/web/uploads && chown -R 10001:10001 /app/web/uploads && chmod 0755 /app/web/uploads"]
+    volumes:
+      - pcs_web_uploads:/app/web/uploads
+
   backend:
     build:
       context: ..
@@ -125,6 +149,8 @@ services:
       postgres:
         condition: service_healthy
       migrate:
+        condition: service_completed_successfully
+      upload-permissions:
         condition: service_completed_successfully
     environment:
       PORT: "8080"
@@ -241,6 +267,8 @@ services:
       postgres:
         condition: service_healthy
       migrate:
+        condition: service_completed_successfully
+      upload-permissions:
         condition: service_completed_successfully
     environment:
       TZ: ${TZ:-America/Bogota}
