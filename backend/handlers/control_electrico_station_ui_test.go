@@ -65,4 +65,7 @@ func TestDomoticaStationPanelShowsDevicesSensorsAndMultipleRaspberry(t *testing.
 			t.Fatalf("el panel operativo de estacion no contiene %q", marker)
 		}
 	}
+	if strings.Contains(source, ">Editar</a>") || strings.Contains(source, "control_electrico.html?empresa_id=") {
+		t.Fatal("la pagina operativa de equipos no debe ofrecer edicion; debe quedar en configuracion")
+	}
 }
