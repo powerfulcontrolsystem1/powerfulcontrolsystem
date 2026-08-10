@@ -40408,6 +40408,13 @@ Archivos modificados:
 - La evidencia no certifica guardados, impresión, roles restrictivos o efectos
   financieros; P108-012 conserva estado parcial.
 
+2026-07-29: Plan 108 / evidencia de backpressure autenticado en staging.
+- Cinco rondas de lectura autenticada alcanzaron el límite seguro por empresa:
+  2.390 respuestas 200, 110 respuestas 429 controladas y cero 5xx. El peor p95
+  fue 138 ms y el backend registró `rate_limit` sin degradarse.
+- La prueba no contiene operaciones de negocio ni certifica capacidad total;
+  P108-019 permanece parcial.
+
 2026-07-29: Plan 108 / carga autenticada ampliada en staging.
 - El candidato `41be623a` atendió 500 GET autenticados de solo lectura, con
   concurrencia 10, cero fallos, p95 de 118 ms y p99 de 293 ms para la empresa
@@ -41279,3 +41286,8 @@ acumulativa.
 
 2026-08-10: Correccion runtime de imagenes de Domotica.
 - El stack inicializa el volumen `pcs_web_uploads` antes de API y worker con el UID/GID no privilegiado del servicio. Esto corrige volumenes heredados propiedad de root y mantiene Nginx solo-lectura para los archivos publicos.
+
+2026-08-10: Tarjetas compactas y conexion Raspberry en equipos de estacion.
+- Las fotos pasan a iconos pequeños en la esquina de cada tarjeta.
+- Se elimina la duplicidad de botones de encendido/apagado y queda un control contextual unico, incluyendo etiqueta para equipos programados.
+- Se corrige el parser de timestamps PostgreSQL con microsegundos para que el heartbeat real de Raspberry no aparezca como `0 / 2`.

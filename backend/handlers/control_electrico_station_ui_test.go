@@ -43,8 +43,10 @@ func TestDomoticaStationPanelShowsDevicesSensorsAndMultipleRaspberry(t *testing.
 		"payload.raspberry_pis",
 		"Raspberry conectadas",
 		"sensor_input",
-		"data-control-state=\"on\"",
-		"data-control-state=\"off\"",
+		"data-control-toggle",
+		"raspberryStatusHTML",
+		"device-toggle-action",
+		"programado",
 	} {
 		if !strings.Contains(source, marker) {
 			t.Fatalf("el panel operativo de estacion no contiene %q", marker)
