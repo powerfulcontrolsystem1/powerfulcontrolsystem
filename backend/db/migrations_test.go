@@ -63,6 +63,57 @@ func TestEmpresaCatalogIncludesNextcloudSchemaMigration(t *testing.T) {
 	t.Fatal("nextcloud migration is missing from empresas catalog")
 }
 
+func TestEmpresaCatalogIncludesNextcloudLegacyRepairMigration(t *testing.T) {
+	t.Parallel()
+	migrations, err := PlatformMigrations(MigrationTargetEmpresas)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, migration := range migrations {
+		if migration.Version == "20260730-001-nextcloud-accounts-v2" {
+			if migration.Body != empresaNextcloudSchemaRepairFingerprint || migration.Apply == nil {
+				t.Fatal("nextcloud repair migration must be immutable and executable")
+			}
+			return
+		}
+	}
+	t.Fatal("nextcloud legacy repair migration is missing from empresas catalog")
+}
+
+func TestEmpresaCatalogIncludesNextcloudCompleteLegacyRepairMigration(t *testing.T) {
+	t.Parallel()
+	migrations, err := PlatformMigrations(MigrationTargetEmpresas)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, migration := range migrations {
+		if migration.Version == "20260730-002-nextcloud-accounts-v3" {
+			if migration.Body != empresaNextcloudSchemaCompleteRepairFingerprint || migration.Apply == nil {
+				t.Fatal("nextcloud complete repair migration must be immutable and executable")
+			}
+			return
+		}
+	}
+	t.Fatal("nextcloud complete legacy repair migration is missing from empresas catalog")
+}
+
+func TestEmpresaCatalogIncludesNextcloudCredentialCleanupMigration(t *testing.T) {
+	t.Parallel()
+	migrations, err := PlatformMigrations(MigrationTargetEmpresas)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, migration := range migrations {
+		if migration.Version == "20260730-003-nextcloud-accounts-v4" {
+			if migration.Body != empresaNextcloudSchemaCredentialCleanupFingerprint || migration.Apply == nil {
+				t.Fatal("nextcloud credential cleanup migration must be immutable and executable")
+			}
+			return
+		}
+	}
+	t.Fatal("nextcloud credential cleanup migration is missing from empresas catalog")
+}
+
 func TestSuperCatalogIncludesSystemMetricsMigration(t *testing.T) {
 	t.Parallel()
 	migrations, err := PlatformMigrations(MigrationTargetSuper)

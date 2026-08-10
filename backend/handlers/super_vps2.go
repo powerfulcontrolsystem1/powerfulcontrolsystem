@@ -340,7 +340,9 @@ func buildSuperVPS2FilesResponse(cfg superVPS2Config, rawPath string) (int, supe
 		if err != nil {
 			response.OK = false
 			response.Errors = append(response.Errors, err.Error())
-			return http.StatusBadGateway, response
+			// La disponibilidad de VPS2 es estado operativo del panel, no un
+			// fallo del API principal. El payload conserva ok=false y el motivo.
+			return http.StatusOK, response
 		}
 		response.Mode = "live"
 		response.Entries = entries
@@ -351,7 +353,7 @@ func buildSuperVPS2FilesResponse(cfg superVPS2Config, rawPath string) (int, supe
 	if !ok || snapshot.FileBrowser.Directories == nil {
 		response.OK = false
 		response.Errors = append(response.Errors, "No hay indice de archivos VPS2 publicado. Ejecuta sync_to_vps2 para actualizarlo.")
-		return http.StatusBadGateway, response
+		return http.StatusOK, response
 	}
 	response.RootPath = firstNonEmptyVPS2(snapshot.FileBrowser.RootPath, cfg.NextcloudDataPath)
 	if entries, ok := snapshot.FileBrowser.Directories[relPath]; ok {

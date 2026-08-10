@@ -69,6 +69,12 @@ type empresaBrebQRRegistroManualPayload struct {
 	Observaciones      string  `json:"observaciones"`
 }
 
+const (
+	brebQRCarritosOrderExpr = "pcs_ts(COALESCE(pagado_en, fecha_actualizacion, fecha_creacion, ''))"
+	brebQRAbonosOrderExpr   = "pcs_ts(COALESCE(a.fecha_abono, a.fecha_creacion, ''))"
+	brebQRBancosOrderExpr   = "pcs_ts(COALESCE(fecha_movimiento, fecha_creacion, ''))"
+)
+
 // EmpresaFinanzasBrebQRHandler centraliza configuracion y trazabilidad Bre-B QR por empresa.
 func EmpresaFinanzasBrebQRHandler(dbEmp *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -344,7 +350,7 @@ func listEmpresaBrebQRPagos(dbEmp *sql.DB, empresaID int64, limit int) ([]empres
 		OR LOWER(COALESCE(referencia_pago,'')) LIKE 'qr-breb-%'
 		OR LOWER(COALESCE(referencia_pago,'')) LIKE 'breb-%'
 	  )
-	ORDER BY pcs_ts(COALESCE(pagado_en, fecha_actualizacion, fecha_creacion, CURRENT_TIMESTAMP)) DESC, id DESC
+	ORDER BY `+brebQRCarritosOrderExpr+` DESC, id DESC
 	LIMIT ?`, empresaID, limit)
 	if err != nil {
 		return nil, err
@@ -372,7 +378,7 @@ func listEmpresaBrebQRPagos(dbEmp *sql.DB, empresaID int64, limit int) ([]empres
 	WHERE a.empresa_id = ?
 	  AND LOWER(COALESCE(a.estado,'activo')) = 'activo'
 	  AND LOWER(COALESCE(a.metodo_pago,'')) = 'transferencia_bre_b'
-	ORDER BY pcs_ts(COALESCE(a.fecha_abono, a.fecha_creacion, CURRENT_TIMESTAMP)) DESC, a.id DESC
+	ORDER BY `+brebQRAbonosOrderExpr+` DESC, a.id DESC
 	LIMIT ?`, empresaID, limit)
 	if err != nil {
 		return nil, err
@@ -398,7 +404,7 @@ func listEmpresaBrebQRPagos(dbEmp *sql.DB, empresaID int64, limit int) ([]empres
 	WHERE empresa_id = ?
 	  AND LOWER(COALESCE(estado,'activo')) = 'activo'
 	  AND (LOWER(COALESCE(origen,'')) LIKE 'breb%' OR LOWER(COALESCE(descripcion,'')) LIKE '%bre-b%' OR LOWER(COALESCE(referencia_bancaria,'')) LIKE 'breb-%' OR LOWER(COALESCE(referencia_bancaria,'')) LIKE 'qr-breb-%')
-	ORDER BY pcs_ts(COALESCE(fecha_movimiento, fecha_creacion, CURRENT_TIMESTAMP)) DESC, id DESC
+	ORDER BY `+brebQRBancosOrderExpr+` DESC, id DESC
 	LIMIT ?`, empresaID, limit)
 	if err != nil {
 		return nil, err

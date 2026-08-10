@@ -2412,6 +2412,13 @@ paths:
       responses:
         "200":
           description: Respuesta exitosa o manejada por el handler real.
+  "/api/public/domotica/tunnel":
+    post:
+      tags: [publico]
+      summary: Ruta inventariada /api/public/domotica/tunnel
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
   "/api/public/estacion_vip":
     get:
       tags: [publico]
@@ -3010,6 +3017,19 @@ paths:
       responses:
         "200":
           description: Respuesta exitosa o manejada por el handler real.
+  "/metrics":
+    get:
+      tags: [publico]
+      summary: Ruta inventariada /metrics
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [publico]
+      summary: Ruta inventariada /metrics
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
   "/pantalla":
     get:
       tags: [publico]
@@ -3582,6 +3602,13 @@ paths:
       responses:
         "200":
           description: Respuesta exitosa o manejada por el handler real.
+  "/super/api/domotica_raspberry_trafico":
+    get:
+      tags: [super-administrador]
+      summary: Ruta inventariada /super/api/domotica_raspberry_trafico
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
   "/super/api/domotica_storage":
     get:
       tags: [super-administrador]
@@ -3813,6 +3840,19 @@ paths:
     post:
       tags: [super-administrador]
       summary: Ruta inventariada /super/api/noticias
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/super/api/outbox/recovery":
+    get:
+      tags: [super-administrador]
+      summary: Ruta inventariada /super/api/outbox/recovery
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [super-administrador]
+      summary: Ruta inventariada /super/api/outbox/recovery
       responses:
         "200":
           description: Respuesta exitosa o manejada por el handler real.

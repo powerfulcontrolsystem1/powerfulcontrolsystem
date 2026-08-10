@@ -17,6 +17,7 @@ param(
   [string]$BackupDir = "",
   [string]$RestoreImage = "postgres:16.14-alpine",
   [switch]$ExecuteDrill,
+  [switch]$VerifyCriticalData,
   [switch]$AllowRemoteTarget
 )
 
@@ -35,6 +36,9 @@ if ([string]::IsNullOrWhiteSpace($RemotePath) -and (Get-Variable -Name PcsVpsRem
 if ([string]::IsNullOrWhiteSpace($IdentityFile) -and (Get-Variable -Name PcsVpsIdentityFile -Scope Script -ErrorAction SilentlyContinue)) { $IdentityFile = $script:PcsVpsIdentityFile }
 if (-not $AllowRemoteTarget) {
   throw "Operacion remota bloqueada por seguridad. Usa -AllowRemoteTarget solo despues de verificar que el destino es aislado o esta expresamente autorizado."
+}
+if ($VerifyCriticalData -and -not $ExecuteDrill) {
+  throw "VerifyCriticalData requiere ExecuteDrill porque consulta una restauracion temporal."
 }
 if ([string]::IsNullOrWhiteSpace($RemoteUser) -or [string]::IsNullOrWhiteSpace($RemoteHost) -or $Port -le 0 -or [string]::IsNullOrWhiteSpace($RemotePath)) {
   throw "Faltan parametros de destino remoto. Configuralos localmente o indicalos de forma explicita."
@@ -91,6 +95,7 @@ $remotePathLit = Convert-ToBashLiteral $RemotePath
 $backupDirLit = Convert-ToBashLiteral $BackupDir
 $restoreImageLit = Convert-ToBashLiteral $RestoreImage
 $execute = if ($ExecuteDrill) { "1" } else { "0" }
+$verifyCritical = if ($VerifyCriticalData) { "1" } else { "0" }
 
 $remoteScript = @"
 set -e
@@ -98,6 +103,7 @@ validation_started_at=`$(date +%s)
 remote_path=$remotePathLit
 backup_dir=$backupDirLit
 execute_drill=$execute
+verify_critical=$verifyCritical
 restore_image=$restoreImageLit
 backup_root="`$remote_path/backups/vps-snapshots"
 
@@ -153,6 +159,65 @@ if [ "`$execute_drill" = "1" ]; then
   sleep 8
   gunzip -c "`$backup_dir/postgres_all.sql.gz" | docker exec -i "`$drill" psql -U postgres >/tmp/pcs_restore_drill.log
   docker exec "`$drill" psql -U postgres -tAc "select 1" >/dev/null
+  if [ "`$verify_critical" = "1" ]; then
+    database_count="`$(docker exec "`$drill" psql -U postgres -tAc "SELECT count(*) FROM pg_database WHERE datname IN ('pcs_empresas','pcs_superadministrador')")"
+    if [ "`$database_count" != "2" ]; then
+      echo "[ERROR] Restore critico: se esperaban dos bases y se encontraron `$database_count."
+      exit 1
+    fi
+
+    critical_tables="empresa_cuentas_por_pagar empresa_asientos_contables empresa_ai_memoria empresa_dian_configuracion empresa_documentos_gestion"
+    checked_tables=0
+    for table in `$critical_tables; do
+      exists="`$(docker exec "`$drill" psql -U postgres -d pcs_empresas -tAc "SELECT to_regclass('public.`$table') IS NOT NULL")"
+      if [ "`$exists" != "t" ]; then
+        echo "[ERROR] Restore critico: tabla obligatoria ausente: `$table"
+        exit 1
+      fi
+      docker exec "`$drill" psql -U postgres -d pcs_empresas -tAc "SELECT count(*) FROM `$table WHERE empresa_id=12" >/dev/null
+      checked_tables=`$((checked_tables+1))
+    done
+
+    private_tar="`$backup_dir/powerful-control-system_pcs_private_storage.tar.gz"
+    private_member_count="`$(tar -tzf "`$private_tar" | awk '!/\/$/ {count++} END {print count+0}')"
+    support_total="`$(docker exec "`$drill" psql -U postgres -d pcs_empresas -tAc "SELECT count(*) FROM empresa_soportes_compras_ia WHERE archivo_url LIKE 'private://soportes_compras_ia/%'")"
+    support_hashed="`$(docker exec "`$drill" psql -U postgres -d pcs_empresas -tAc "SELECT count(*) FROM empresa_soportes_compras_ia WHERE archivo_url LIKE 'private://soportes_compras_ia/%' AND btrim(COALESCE(archivo_hash,'')) <> ''")"
+    if [ "`$support_total" != "`$support_hashed" ]; then
+      echo "[ERROR] Restore critico: existen soportes IA privados sin checksum."
+      exit 1
+    fi
+
+    checked_hashes=0
+    while IFS='|' read -r empresa_id archivo_url archivo_hash; do
+      if [ -z "`$archivo_url" ]; then
+        continue
+      fi
+      expected_prefix="private://soportes_compras_ia/empresa_`$empresa_id/"
+      case "`$archivo_url" in
+        "`$expected_prefix"*) ;;
+        *)
+          echo "[ERROR] Restore critico: referencia de soporte IA fuera de su empresa."
+          exit 1
+          ;;
+      esac
+      relative="`${archivo_url#private://}"
+      member="./`$relative"
+      if ! tar -tzf "`$private_tar" "`$member" >/dev/null 2>&1; then
+        echo "[ERROR] Restore critico: falta un soporte IA referenciado en el volumen privado."
+        exit 1
+      fi
+      actual_hash="`$(tar -xOzf "`$private_tar" "`$member" | sha256sum | awk '{print `$1}')"
+      if [ "`$actual_hash" != "`$archivo_hash" ]; then
+        echo "[ERROR] Restore critico: checksum de soporte IA no coincide."
+        exit 1
+      fi
+      checked_hashes=`$((checked_hashes+1))
+    done <<EOF
+`$(docker exec "`$drill" psql -U postgres -d pcs_empresas -AtF '|' -c "SELECT empresa_id,archivo_url,lower(archivo_hash) FROM empresa_soportes_compras_ia WHERE archivo_url LIKE 'private://soportes_compras_ia/%' ORDER BY empresa_id,id")
+EOF
+
+    echo "[OK] Restore critico: bases=2 tablas=`$checked_tables filtros_empresa=5 archivos_privados=`$private_member_count checksums_soportes_ia=`$checked_hashes"
+  fi
   validation_finished_at="`$(date +%s)"
   echo "[OK] Restauracion temporal PostgreSQL completada. imagen=`$restore_image RTO=`$((validation_finished_at-validation_started_at))s RPO=`$((validation_finished_at-snapshot_epoch))s"
 else

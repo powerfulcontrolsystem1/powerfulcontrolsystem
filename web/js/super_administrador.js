@@ -83,6 +83,7 @@
     "/super/docker_portabilidad.html": true,
     "/super/soporte_remoto.html": true,
     "/super/domotica_storage.html": true,
+    "/super/domotica_raspberry_trafico.html": true,
     "/super/tickets_ayuda.html": true,
     "/super/email_corporativo.html": true,
     "/super/correos_masivos.html": true,

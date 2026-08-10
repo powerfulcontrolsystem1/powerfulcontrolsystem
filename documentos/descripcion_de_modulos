@@ -1,3 +1,15 @@
+2026-08-08: Soportes de compras IA y cuota empresarial.
+- Modulos afectados: `soportes_compras_ia`, `almacenamiento_empresarial`,
+  `compras`, `CxP`, `seguridad_multiempresa`.
+- Backend: al radicar un adjunto privado, el uso de almacenamiento suma la
+  carpeta publica empresarial y `private_storage/soportes_compras_ia/empresa_<id>`.
+  Aplica limite, maximo por archivo y bloqueo configurados desde super; un exceso
+  responde HTTP 507 saneado antes de crear archivo o fila.
+- Seguridad: la empresa viene del wrapper/parametro validado, no de la ruta del
+  archivo; no agrega permisos, tablas, dependencias ni expone rutas privadas.
+- Operacion: retencion, borrado recuperable, antivirus y prueba entre replicas
+  continúan como pendientes de certificacion P109-008.
+
 2026-07-28 - Migraciones P108 desde base vacía
 - El migrador es propietario del esquema; API y worker usan un login runtime
   separado con DML y sin DDL.
@@ -4603,6 +4615,16 @@ Actualización 2026-07-25 (Disponibilidad P107 de reportes):
   y ejecuciones con una consulta de marcador de una sola columna. Esto permite
   que catálogo, vista previa y exportación continúen hacia el dataset elegido
   sin relajar permisos ni el filtro de empresa.
+
+Actualización 2026-07-30 (Recuperación operacional de outbox CxP):
+- El panel PostgreSQL del super administrador incorpora una vista previa de
+  eventos `dead` del tema `cuentas_por_pagar.pago_registrado`.
+- La reactivación exige una empresa válida, selección de IDs concretos, razón
+  operativa y confirmación exacta. El backend vuelve a validar empresa, tema,
+  estado y cada ID bajo bloqueo transaccional.
+- La operación no repite el pago: pone en `pending` únicamente su evento
+  asíncrono para que el manejador contable idempotente lo procese. Cada
+  reactivación queda en auditoría de recuperación y auditoría empresarial.
 2026-07-28 - Email corporativo Mailu / P108-015
 
 - El panel super presenta por separado el logo oficial embebido y el avatar
@@ -4626,3 +4648,49 @@ Actualización 2026-07-25 (Disponibilidad P107 de reportes):
   movimientos manuales que el mismo `Scan` y la respuesta ya esperaban.
 - La consulta continúa aislada por `empresa_id`; no cambia configuraciones ni
   defaults empresariales.
+
+2026-07-31 - Reportes IA / plantillas accesibles
+
+- El centro de reportes permite guardar la especificación IA revisada mediante
+  un diálogo accesible y responsive, sin depender de ventanas `prompt`.
+- Código y nombre pueden editarse antes de confirmar; cancelar no persiste. La
+  API vuelve a validar la entrada y crea la versión solo en la empresa derivada
+  del contexto autenticado.
+- No cambian permisos, licencia, tablas ni dependencias. La plantilla conserva
+  la revalidación del `ReportSpec` contra el catálogo semántico autorizado.
+2026-08-01
+- Captura IA de compras/CxP: el listado sin filtro incluye soportes `radicado`,
+  `extraido`, `en_revision`, `aprobado`, `rechazado`, `contabilizado` y
+  `duplicado` activos. Los filtros explícitos conservan validación por estado.
+
+2026-08-08 - Captura IA de compras/CxP / cuota de adjuntos
+
+- La radicación con archivo aplica la cuota global corporativa a la suma de
+  adjuntos públicos y soportes privados de la misma empresa; el backend obtiene
+  empresa, límites y rutas y no los acepta desde el navegador.
+- Ante exceso responde HTTP 507 con texto público saneado antes de escribir el
+  archivo o crear el soporte. El control conserva el wrapper de permisos y el
+  aislamiento por `empresa_id`.
+- La prueba restaurada del candidato evidencia el rechazo y cero persistencia;
+  dos réplicas en paralelo validan que no hay sobregiro. Siguen pendientes los
+  controles operativos de retención, recuperación, antivirus y A/B no global.
+
+2026-08-08 - Facturación electrónica Colombia / compuerta DIAN
+
+- El Centro de habilitación muestra por empresa el ambiente, la preparación,
+  TestSetId, rango e historial de acuses antes de exponer emisión o anulación.
+- En PCS staging el diagnóstico devuelve operaciones objetivo sin configuración
+  fiscal empresarial; el flujo debe permanecer bloqueado hasta contar con firma
+  accesible, rango/resolución y TestSetId o producción habilitada, sin reutilizar
+  secretos de otra empresa o ambiente.
+2026-08-09: Domotica Raspberry Pi por tunel HTTPS saliente
+- Modulo: `Domotica`; clave tecnica conservada: `control_electrico`.
+- La empresa registra varias Raspberry Pi y varios aparatos por estacion, con
+  descripcion, foto, potencia, GPIO BCM, polaridad, agenda e historial.
+- La pagina abierta desde la Raspberry descarga un instalador de un solo uso;
+  systemd mantiene el agente conectado al VPS sin puertos entrantes.
+- Las entradas GPIO tienen pull/debounce y disparan reglas aisladas por
+  `empresa_id`, Raspberry y pin hacia un aparato objetivo de la misma empresa.
+- Super administrador incorpora transferencia diaria/acumulada por dispositivo.
+- Seguridad: tokens solo como SHA-256, empresa derivada del dispositivo y
+  regeneracion del instalador revoca el token anterior.

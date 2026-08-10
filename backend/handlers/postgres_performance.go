@@ -3,7 +3,9 @@ package handlers
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
+	"log"
 	"math"
 	"net/http"
 	"sort"
@@ -196,27 +198,18 @@ func PostgresPerformanceHandler(dbEmpresas, dbSuper *sql.DB) http.HandlerFunc {
 
 		cluster, clusterRecs, err := collectPostgresClusterInfo(ctx, dbSuper)
 		if err != nil {
-			writeJSON(w, http.StatusInternalServerError, map[string]interface{}{
-				"ok":    false,
-				"error": "no se pudo leer el estado del cluster PostgreSQL: " + err.Error(),
-			})
+			writePostgresPerformanceReadError(w, r, "cluster", "no se pudo leer el estado del cluster PostgreSQL", err)
 			return
 		}
 
 		superDB, superRecs, err := collectPostgresDatabaseInfo(ctx, dbSuper, "super", "Superadministrador")
 		if err != nil {
-			writeJSON(w, http.StatusInternalServerError, map[string]interface{}{
-				"ok":    false,
-				"error": "no se pudo leer metricas de superadministrador: " + err.Error(),
-			})
+			writePostgresPerformanceReadError(w, r, "super", "no se pudo leer metricas de superadministrador", err)
 			return
 		}
 		empresasDB, empresasRecs, err := collectPostgresDatabaseInfo(ctx, dbEmpresas, "empresas", "Empresas")
 		if err != nil {
-			writeJSON(w, http.StatusInternalServerError, map[string]interface{}{
-				"ok":    false,
-				"error": "no se pudo leer metricas de empresas: " + err.Error(),
-			})
+			writePostgresPerformanceReadError(w, r, "empresas", "no se pudo leer metricas de empresas", err)
 			return
 		}
 
@@ -252,10 +245,7 @@ func handlePostgresEmpresaStorage(w http.ResponseWriter, r *http.Request, dbEmpr
 
 	items, tablesScanned, totalBytes, err := collectPostgresEmpresaStorage(ctx, dbEmpresas)
 	if err != nil {
-		writeJSON(w, http.StatusInternalServerError, map[string]interface{}{
-			"ok":    false,
-			"error": "no se pudo calcular el tamano por empresa: " + err.Error(),
-		})
+		writePostgresPerformanceReadError(w, r, "empresas_storage", "no se pudo calcular el tamano por empresa", err)
 		return
 	}
 	applyPostgresEmpresaStorageQuotas(dbSuper, items)
@@ -269,6 +259,26 @@ func handlePostgresEmpresaStorage(w http.ResponseWriter, r *http.Request, dbEmpr
 		TotalBytes:    totalBytes,
 		TotalPretty:   humanizeBytesBinary(totalBytes),
 		Empresas:      items,
+	})
+}
+
+// writePostgresPerformanceReadError keeps client-side navigation cancellations
+// from becoming false HTTP 500 incidents. Timeouts are temporary availability
+// failures, while unexpected database errors remain 500 and are logged without
+// exposing SQL or driver details to the browser.
+func writePostgresPerformanceReadError(w http.ResponseWriter, r *http.Request, operation, publicMessage string, err error) {
+	if errors.Is(err, context.Canceled) || (r != nil && errors.Is(r.Context().Err(), context.Canceled)) {
+		return
+	}
+
+	status := http.StatusInternalServerError
+	if errors.Is(err, context.DeadlineExceeded) || (r != nil && errors.Is(r.Context().Err(), context.DeadlineExceeded)) {
+		status = http.StatusServiceUnavailable
+	}
+	log.Printf("[postgres_performance] lectura fallida operacion=%s status=%d error=%v", strings.TrimSpace(operation), status, err)
+	writeJSON(w, status, map[string]interface{}{
+		"ok":    false,
+		"error": publicMessage,
 	})
 }
 

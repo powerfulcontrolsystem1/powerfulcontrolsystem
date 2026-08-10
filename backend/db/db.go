@@ -480,6 +480,55 @@ func hashSessionToken(token string) string {
 	return fmt.Sprintf("%x", sum[:])
 }
 
+// maxActiveSessionsPerIdentity bounds browser/mobile sessions created with the
+// same effective identity. It remains comfortably above the four independent
+// cashiers required by the production acceptance plan while preventing load
+// tests or abandoned clients from keeping hundreds of valid sessions alive.
+const maxActiveSessionsPerIdentity = 20
+
+func acquireAdminSessionLockTx(tx *sql.Tx, adminEmail string) error {
+	if tx == nil || !isPostgresDialect() {
+		return nil
+	}
+	lockID := empresaCreateAdvisoryLockID("admin-session:" + strings.ToLower(strings.TrimSpace(adminEmail)))
+	_, err := execTxSQLCompat(tx, `SELECT pg_advisory_xact_lock(?)`, lockID)
+	return err
+}
+
+func pruneAdminSessionsTx(tx *sql.Tx, adminEmail string) error {
+	if tx == nil {
+		return sql.ErrConnDone
+	}
+	email := strings.TrimSpace(adminEmail)
+	if email == "" {
+		return fmt.Errorf("admin email required")
+	}
+	nowExpr := sqlNowExpr()
+	// Expired rows must not remain operationally active. This also makes the
+	// alert/dashboard state match the verifier used by session lookup.
+	if _, err := execTxSQLCompat(tx, `UPDATE sesiones
+		SET activo = 0, fecha_fin = `+nowExpr+`
+		WHERE LOWER(COALESCE(admin_email, '')) = LOWER(?)
+		  AND COALESCE(activo, 0) = 1
+		  AND NULLIF(TRIM(CAST(fecha_fin AS TEXT)), '') IS NOT NULL
+		  AND CAST(fecha_fin AS TIMESTAMP) <= `+nowExpr, email); err != nil {
+		return err
+	}
+	// IDs are monotonic and every session is inserted before this query. Keeping
+	// the newest IDs gives deterministic behavior even when textual timestamps
+	// come from historical schemas.
+	_, err := execTxSQLCompat(tx, `UPDATE sesiones
+		SET activo = 0, fecha_fin = `+nowExpr+`
+		WHERE id IN (
+			SELECT id FROM sesiones
+			WHERE LOWER(COALESCE(admin_email, '')) = LOWER(?)
+			  AND COALESCE(activo, 0) = 1
+			ORDER BY id DESC
+			LIMIT ? OFFSET ?
+		)`, email, 2147483647, maxActiveSessionsPerIdentity)
+	return err
+}
+
 // MigrateSessionTokensToHashes adds a dedicated verifier column and clears the
 // legacy plaintext value. Active browser cookies remain valid because lookup
 // hashes the cookie value too.
@@ -546,11 +595,27 @@ func CreateSession(dbConn *sql.DB, adminEmail, ip, userAgent, token string) erro
 	if strings.TrimSpace(token) == "" {
 		return fmt.Errorf("session token required")
 	}
+	if dbConn == nil {
+		dbConn = GetDB()
+	}
+	tx, err := dbConn.Begin()
+	if err != nil {
+		return err
+	}
+	defer func() { _ = tx.Rollback() }()
+	if err := acquireAdminSessionLockTx(tx, adminEmail); err != nil {
+		return err
+	}
 	nowExpr := sqlNowExpr()
 	expiresExpr := sqlPlusHoursExpr(24)
 	query := "INSERT INTO sesiones (admin_email, token, token_hash, ip, user_agent, fecha_inicio, fecha_fin, activo, fecha_creacion) VALUES (?, ?, ?, ?, ?, " + nowExpr + ", " + expiresExpr + ", 1, " + nowExpr + ")"
-	_, err := execSQLCompat(dbConn, query, adminEmail, "", hashSessionToken(token), ip, userAgent)
-	return err
+	if _, err := execTxSQLCompat(tx, query, adminEmail, "", hashSessionToken(token), ip, userAgent); err != nil {
+		return err
+	}
+	if err := pruneAdminSessionsTx(tx, adminEmail); err != nil {
+		return err
+	}
+	return tx.Commit()
 }
 
 // RevokeSessionByToken invalida una sesión activa por token.

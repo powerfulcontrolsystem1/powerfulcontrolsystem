@@ -1196,6 +1196,27 @@ func GetSuperAIUsoDiario(dbConn *sql.DB, adminEmail, provider, modelID, fechaUso
 	return uso, nil
 }
 
+func empresaAIConsultaInsertStatement(nowExpr string) string {
+	return `INSERT INTO empresa_ai_consultas (
+		empresa_id,
+		conversation_id,
+		provider,
+		model_id,
+		pregunta,
+		respuesta,
+		prompt_tokens,
+		completion_tokens,
+		total_tokens,
+		fecha_consulta,
+		plan_actual,
+		usuario_creador,
+		estado,
+		observaciones,
+		fecha_creacion,
+		fecha_actualizacion
+	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ` + nowExpr + `, ` + nowExpr + `)`
+}
+
 // RegisterEmpresaAIConsulta inserta la consulta IA y acumula el uso diario.
 func RegisterEmpresaAIConsulta(dbConn *sql.DB, in EmpresaAIConsulta) (int64, error) {
 	in.EmpresaID = maxInt64(in.EmpresaID, 0)
@@ -1249,24 +1270,7 @@ func RegisterEmpresaAIConsulta(dbConn *sql.DB, in EmpresaAIConsulta) (int64, err
 			_ = tx.Rollback()
 		}()
 
-		consultaID, err := insertTxSQLCompat(tx, `INSERT INTO empresa_ai_consultas (
-		empresa_id,
-		conversation_id,
-		provider,
-		model_id,
-		pregunta,
-		respuesta,
-		prompt_tokens,
-		completion_tokens,
-		total_tokens,
-		fecha_consulta,
-		plan_actual,
-		usuario_creador,
-		estado,
-		observaciones,
-		fecha_creacion,
-		fecha_actualizacion
-	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, `+nowExpr+`, `+nowExpr+`)`,
+		consultaID, err := insertTxSQLCompat(tx, empresaAIConsultaInsertStatement(nowExpr),
 			in.EmpresaID,
 			strings.TrimSpace(in.ConversationID),
 			in.Provider,

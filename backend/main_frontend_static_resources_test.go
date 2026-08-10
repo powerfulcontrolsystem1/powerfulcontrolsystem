@@ -55,6 +55,18 @@ func TestPublicDownloadsAreExplicitlyAllowlisted(t *testing.T) {
 	}
 }
 
+func TestPrometheusMetricsAreNotExposedByPublicFrontend(t *testing.T) {
+	raw, err := os.ReadFile(filepath.Join("..", "deploy", "nginx", "pcs.conf"))
+	if err != nil {
+		t.Fatalf("read frontend nginx config: %v", err)
+	}
+	config := string(raw)
+	block := regexp.MustCompile(`(?s)location\s*=\s*/metrics\s*\{[^}]*return\s+404;[^}]*\}`)
+	if !block.MatchString(config) {
+		t.Fatal("public frontend must reject /metrics; Prometheus scrapes the backend over the private Docker network")
+	}
+}
+
 func TestNextcloudFramePolicyUsesExactOrigins(t *testing.T) {
 	raw, err := os.ReadFile(filepath.Join("..", "deploy", "nginx", "pcs.conf"))
 	if err != nil {
@@ -75,6 +87,36 @@ func TestNextcloudFramePolicyUsesExactOrigins(t *testing.T) {
 	}
 	if strings.Contains(staticHeaders, "*.powerfulcontrolsystem.com") {
 		t.Fatal("Nextcloud framing must not rely on a wildcard company origin")
+	}
+	reportOnlyHeader := ""
+	for _, line := range strings.Split(staticHeaders, "\n") {
+		if strings.HasPrefix(line, "add_header Content-Security-Policy-Report-Only ") {
+			reportOnlyHeader = line
+			break
+		}
+	}
+	if reportOnlyHeader == "" {
+		t.Fatal("static frontend must define a report-only CSP header")
+	}
+	for _, forbidden := range []string{
+		`img-src 'self' data: blob: https:;`,
+		`style-src 'self' 'unsafe-inline'`,
+		`script-src 'self' 'unsafe-inline'`,
+	} {
+		if strings.Contains(reportOnlyHeader, forbidden) {
+			t.Fatalf("static report-only CSP must keep explicit origins and omit inline compatibility: %q", forbidden)
+		}
+	}
+	for _, required := range []string{
+		`Content-Security-Policy-Report-Only`,
+		`img-src 'self' data: blob: https://lh3.googleusercontent.com`,
+		`style-src 'self' https://unpkg.com https://fonts.googleapis.com`,
+		`script-src 'self' https://accounts.google.com`,
+		`connect-src 'self' https://api.openai.com`,
+	} {
+		if !strings.Contains(reportOnlyHeader, required) {
+			t.Fatalf("static strict report-only CSP is missing %q", required)
+		}
 	}
 	if strings.Contains(config, "add_header Content-Security-Policy") {
 		t.Fatal("server-level frontend CSP would duplicate backend API CSP")
@@ -106,6 +148,28 @@ func TestNextcloudFramePolicyUsesExactOrigins(t *testing.T) {
 	}
 	if strings.Contains(script, "proxy_hide_header Content-Security-Policy") || strings.Contains(script, "docker compose") {
 		t.Fatal("frame policy script must preserve vendor CSP and must not recreate Nextcloud")
+	}
+}
+
+func TestMenuThemeObserverGuardsItsTarget(t *testing.T) {
+	raw, err := os.ReadFile(filepath.Join("..", "web", "menu.js"))
+	if err != nil {
+		t.Fatalf("read menu script: %v", err)
+	}
+	script := string(raw)
+	for _, required := range []string{
+		"var observationTarget = document.documentElement || document.body;",
+		"observationTarget && observationTarget.nodeType === 1",
+		"observer.observe(observationTarget, { childList: true, subtree: true });",
+		"observedAdminBadge && observedAdminBadge.nodeType === 1",
+		"observedAdminBell && observedAdminBell.nodeType === 1",
+		"var iconObservationTarget = document.body || document.documentElement;",
+		"iconObservationTarget && iconObservationTarget.nodeType === 1",
+		"observer.observe(iconObservationTarget, { childList: true, subtree: true });",
+	} {
+		if !strings.Contains(script, required) {
+			t.Fatalf("menu theme observer must guard its target with %q", required)
+		}
 	}
 }
 
@@ -148,6 +212,29 @@ func TestStagingEdgeKeepsOnlyTransportHeaders(t *testing.T) {
 	}
 }
 
+func TestStagingDigestPromotionRequiresAllExactImagesBeforeRecreate(t *testing.T) {
+	raw, err := os.ReadFile(filepath.Join("..", "deploy", "scripts", "vps-staging-digest-up.sh"))
+	if err != nil {
+		t.Fatalf("read staging digest promotion script: %v", err)
+	}
+	script := string(raw)
+	for _, required := range []string{
+		"PLATFORM_COMPOSE_FILE",
+		"STAGING_COMPOSE_FILE",
+		"RELEASE_COMPOSE_FILE",
+		`config --images`,
+		`grep -Fqx "$image"`,
+		`up -d --no-build postgres migrate backend worker frontend`,
+	} {
+		if !strings.Contains(script, required) {
+			t.Fatalf("staging digest promotion must enforce %q", required)
+		}
+	}
+	if strings.Contains(script, `"${compose[@]}" up -d --no-build`+"\n") {
+		t.Fatal("staging digest promotion must not recreate the entire platform stack")
+	}
+}
+
 func TestOperationalVPSBackupRequiresPrivateStorage(t *testing.T) {
 	raw, err := os.ReadFile(filepath.Join("..", "deploy", "scripts", "vps-backup-operacion.sh"))
 	if err != nil {
@@ -165,6 +252,29 @@ func TestOperationalVPSBackupRequiresPrivateStorage(t *testing.T) {
 	} {
 		if !strings.Contains(script, required) {
 			t.Fatalf("operational VPS backup must require private storage artifact %q", required)
+		}
+	}
+}
+
+func TestOperationalVPSRestoreCanVerifyCriticalTenantDataAndPrivateChecksums(t *testing.T) {
+	raw, err := os.ReadFile(filepath.Join("..", "scripts", "vps_restore_validation.ps1"))
+	if err != nil {
+		t.Fatalf("read operational VPS restore script: %v", err)
+	}
+	script := string(raw)
+	for _, required := range []string{
+		"VerifyCriticalData",
+		"VerifyCriticalData requiere ExecuteDrill",
+		"pcs_empresas','pcs_superadministrador",
+		"empresa_cuentas_por_pagar empresa_asientos_contables empresa_ai_memoria empresa_dian_configuracion empresa_documentos_gestion",
+		"WHERE empresa_id=12",
+		"empresa_soportes_compras_ia",
+		"private://soportes_compras_ia/empresa_",
+		"sha256sum",
+		"trap cleanup EXIT",
+	} {
+		if !strings.Contains(script, required) {
+			t.Fatalf("operational VPS restore critical audit must enforce %q", required)
 		}
 	}
 }
@@ -204,6 +314,121 @@ func TestEmpresaSubmenuContextInstallsCSRFForDirectOperationalPages(t *testing.T
 	}
 	if !strings.Contains(string(carrito), "/js/empresa_submenu_context.js") {
 		t.Fatal("carrito must load the shared empresa context before operational mutations")
+	}
+}
+
+func TestEmpresaPagesWithMutatingFetchInstallCSRFSynchronizer(t *testing.T) {
+	root := filepath.Join("..", "web", "administrar_empresa")
+	mutatingFetch := regexp.MustCompile(`(?s)fetch\s*\(.{0,800}?method\s*:\s*["'](?:POST|PUT|PATCH|DELETE)["']`)
+	missing := make([]string, 0)
+	err := filepath.Walk(root, func(path string, info os.FileInfo, walkErr error) error {
+		if walkErr != nil {
+			return walkErr
+		}
+		if info.IsDir() || !strings.EqualFold(filepath.Ext(path), ".html") {
+			return nil
+		}
+		raw, readErr := os.ReadFile(path)
+		if readErr != nil {
+			return readErr
+		}
+		content := string(raw)
+		if !mutatingFetch.MatchString(content) {
+			return nil
+		}
+		usesSharedSynchronizer := strings.Contains(content, "/js/empresa_submenu_context.js")
+		usesExplicitToken := strings.Contains(content, "X-CSRF-Token") && strings.Contains(content, "pcs_csrf")
+		if !usesSharedSynchronizer && !usesExplicitToken {
+			relative, relErr := filepath.Rel(root, path)
+			if relErr != nil {
+				relative = path
+			}
+			missing = append(missing, filepath.ToSlash(relative))
+		}
+		return nil
+	})
+	if err != nil {
+		t.Fatalf("scan empresa HTML pages for CSRF coverage: %v", err)
+	}
+	sort.Strings(missing)
+	if len(missing) > 0 {
+		t.Fatalf("empresa pages with mutating fetch must install CSRF support:\n%s", strings.Join(missing, "\n"))
+	}
+}
+
+func TestPlan108FullSweepFrontendRegressions(t *testing.T) {
+	root := filepath.Clean("..")
+	products, err := os.ReadFile(filepath.Join(root, "web", "administrar_empresa", "administrar_productos.html"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, corrupted := range []string{
+		"/api/empresa/inventario/resumenú",
+		"/api/empresa/inventario/plan_reposicion_resumenú",
+	} {
+		if strings.Contains(string(products), corrupted) {
+			t.Fatalf("products keeps corrupted query separator %q", corrupted)
+		}
+	}
+
+	moduleScript, err := os.ReadFile(filepath.Join(root, "web", "js", "modulo_colombia_admin.js"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(moduleScript), "if (!state.modulo)") || !strings.Contains(string(moduleScript), "Selecciona un módulo") {
+		t.Fatal("generic Colombia module entry must stop before calling an empty /api/empresa/ route")
+	}
+
+	for _, rel := range []string{
+		"venta_publica.html",
+		filepath.Join("administrar_empresa", "alquileres.html"),
+		filepath.Join("administrar_empresa", "domicilios.html"),
+		filepath.Join("administrar_empresa", "taxi_system.html"),
+		filepath.Join("administrar_empresa", "ubicacion_gps.html"),
+		"taxi_system.html",
+		"taxi_system_conductor.html",
+	} {
+		content, readErr := os.ReadFile(filepath.Join(root, "web", rel))
+		if readErr != nil {
+			t.Fatal(readErr)
+		}
+		if strings.Contains(string(content), "unpkg.com/leaflet@1.9.4") && (!strings.Contains(string(content), "sha256-p4NxAoJBhIIN+") || !strings.Contains(string(content), "sha256-20nQCchB9co0qIjJZRGuk2/")) {
+			t.Fatalf("%s must pin Leaflet CSS and JavaScript with SRI", rel)
+		}
+	}
+
+	chartPage, err := os.ReadFile(filepath.Join(root, "web", "super", "administrar_base_de_datos.html"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(chartPage), "chart.js@4.5.1/dist/chart.umd.min.js") || !strings.Contains(string(chartPage), "integrity=\"sha384-") {
+		t.Fatal("PostgreSQL dashboard must pin Chart.js with SRI")
+	}
+
+	staticHeaders, err := os.ReadFile(filepath.Join(root, "deploy", "nginx", "pcs-static-security-headers.inc"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, origin := range []string{
+		"https://unpkg.com",
+		"https://cdn.jsdelivr.net",
+		"https://fonts.googleapis.com",
+		"https://fonts.gstatic.com",
+	} {
+		if !strings.Contains(string(staticHeaders), origin) {
+			t.Fatalf("frontend CSP must allow the pinned visual resource origin %s", origin)
+		}
+	}
+	if !strings.Contains(string(staticHeaders), "font-src 'self' data:") {
+		t.Fatal("frontend CSP must declare an explicit font-src")
+	}
+
+	domicilios, err := os.ReadFile(filepath.Join(root, "web", "js", "domicilios.js"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(domicilios), "function asArray(v)") || !strings.Contains(string(domicilios), "state.menu=asArray(menuData)") {
+		t.Fatal("Domicilios must render an empty menu response as an empty list")
 	}
 }
 

@@ -177,3 +177,30 @@ PostgreSQL de staging:
 Estos subcriterios continúan aprobados, pero P108-002 se mantiene **parcial**:
 la certificación aún requiere la matriz completa de rollback de datos y las
 demás compuertas P0 del mismo candidato.
+
+## Repetición final del candidato `5ec1c48f` - 2026-07-30
+
+Se repitieron los dos ensayos aislados con el migrador inmutable exacto
+`ghcr.io/powerfulcontrolsystem1/pcs-migrate@sha256:69636f9239b4bc4a28f2a72c5d2388f38f585453d25a8d4eea5302b9f020cfe4`.
+No se ejecutó DDL contra las bases reales de staging ni se tocó producción.
+
+- Base vacía: `16` registros de migración y `336` tablas empresariales; `10`
+  registros y `49` tablas administrativas.
+- Segunda pasada sobre base vacía: idempotente, sin migraciones nuevas.
+- Upgrade desde copia lógica temporal de staging: `349 -> 349` tablas
+  empresariales y `59 -> 59` administrativas.
+- Segunda pasada del upgrade: idempotente, con `11` migraciones empresariales y
+  `8` administrativas ya existentes.
+- El login runtime volvió a aprobar la comprobación negativa de privilegios
+  DDL.
+- La limpieza terminó con cero contenedores, volúmenes o redes residuales.
+- Staging permaneció saludable: `/health=ok` y `/ready=ready`.
+- El ensayo alteró deliberadamente el checksum de la última migración
+  empresarial solo dentro de la base efímera. El migrador rechazó el drift,
+  dejó auditado `migration_failed`, conservó `336` tablas y `16` registros
+  aplicados, y aprobó al restaurar el checksum controlado.
+
+Resultado: **PASS** para base vacía, upgrade representativo, repetición
+idempotente y runtime sin DDL del candidato final. P108-002 continúa
+**parcial** porque aún falta la matriz completa de rollback de datos y las
+demás compuertas P0 no cubiertas por estos ensayos.

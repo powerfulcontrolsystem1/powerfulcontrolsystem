@@ -2339,6 +2339,10 @@ Si necesita ayuda, consulte la sección de Inventario o contacte al administrado
 			}
 			if err := dbpkg.DeleteCarritoCompraItem(dbEmp, empresaID, carritoID, id); err != nil {
 				log.Printf("[carritos_items] delete empresa_id=%d carrito_id=%d id=%d error: %v", empresaID, carritoID, id, err)
+				if errors.Is(err, dbpkg.ErrCarritoYaPagado) {
+					http.Error(w, "La venta cerrada o pagada no permite devolver items", http.StatusConflict)
+					return
+				}
 				http.Error(w, "No se pudo eliminar el item del carrito", http.StatusInternalServerError)
 				return
 			}
@@ -3392,9 +3396,31 @@ func ventaDocumentoBaseDesdeCarrito(carrito *dbpkg.CarritoCompra) string {
 	}
 	sufijo := fmt.Sprintf("-CRT-%d", carrito.ID)
 	if strings.HasSuffix(base, sufijo) {
-		return base
+		return base + ventaDocumentoPagoSufijo(carrito.PagadoEn)
 	}
-	return base + sufijo
+	return base + sufijo + ventaDocumentoPagoSufijo(carrito.PagadoEn)
+}
+
+// ventaDocumentoPagoSufijo diferencia cada cierre de un carrito reutilizable de
+// estación. El carrito conserva su ID entre ventas, pero PagadoEn identifica de
+// forma estable una operación ya cerrada; sin este sufijo dos ventas sucesivas
+// terminaban compartiendo el mismo comprobante y la segunda quedaba absorbida
+// por el upsert idempotente.
+func ventaDocumentoPagoSufijo(pagadoEn string) string {
+	pagadoEn = strings.TrimSpace(pagadoEn)
+	if pagadoEn == "" {
+		return ""
+	}
+	var token strings.Builder
+	for _, r := range pagadoEn {
+		if r >= '0' && r <= '9' {
+			token.WriteRune(r)
+		}
+	}
+	if token.Len() == 0 {
+		return ""
+	}
+	return "-PG-" + token.String()
 }
 
 func buildVentaDocumentoCodigo(carrito *dbpkg.CarritoCompra, modo string) string {
@@ -3423,6 +3449,14 @@ func facturaElectronicaVentaIntegracionConfirmada(resultado facturacionIntegraci
 	return normalizeFacturacionEstadoEnvio(resultado.EstadoEnvio) == "aceptado"
 }
 
+func facturaElectronicaPendienteDebeSincronizarCliente(existingDoc, ventaDoc *dbpkg.EmpresaDocumentoFacturacion) bool {
+	if existingDoc == nil || ventaDoc == nil || existingDoc.EntidadRelacionadaID > 0 || ventaDoc.EntidadRelacionadaID <= 0 {
+		return false
+	}
+	estado := strings.ToLower(strings.TrimSpace(existingDoc.EstadoDocumento))
+	return estado == "pendiente_emision" || estado == "borrador"
+}
+
 func registrarFacturaElectronicaDesdeDocumentoVenta(dbEmp, dbSuper *sql.DB, ventaDoc *dbpkg.EmpresaDocumentoFacturacion, usuario, observaciones string) (map[string]interface{}, error) {
 	if dbEmp == nil || ventaDoc == nil || ventaDoc.EmpresaID <= 0 || strings.TrimSpace(ventaDoc.DocumentoCodigo) == "" {
 		return nil, nil
@@ -3442,6 +3476,21 @@ func registrarFacturaElectronicaDesdeDocumentoVenta(dbEmp, dbSuper *sql.DB, vent
 		return nil, existingErr
 	}
 	if existingDoc != nil {
+		if facturaElectronicaPendienteDebeSincronizarCliente(existingDoc, ventaDoc) {
+			updatedDoc, updateErr := dbpkg.UpdateEmpresaDocumentoFacturacionCliente(
+				dbEmp,
+				ventaDoc.EmpresaID,
+				existingDoc.TipoDocumento,
+				existingDoc.DocumentoCodigo,
+				ventaDoc.EntidadRelacionadaID,
+			)
+			if updateErr != nil {
+				return nil, fmt.Errorf("sincronizar cliente de factura electronica pendiente: %w", updateErr)
+			}
+			if updatedDoc != nil {
+				existingDoc = updatedDoc
+			}
+		}
 		return map[string]interface{}{
 			"ok":                true,
 			"ya_existia":        true,
