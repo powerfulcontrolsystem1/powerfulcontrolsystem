@@ -2804,15 +2804,21 @@
       reporteAseoBtn.addEventListener('click', function() {
         window.location.href = buildReporteAseoURL();
       });
+    }
 
-      grid.querySelectorAll('[data-open-station-domotica]').forEach(button => {
-        button.addEventListener('click', function(ev) {
-          ev.preventDefault();
-          ev.stopPropagation();
-          const card = button.closest('.station-launch-card');
-          if (!card) return;
-          openStationDomotica(Number(card.getAttribute('data-estacion-id') || 0), card.getAttribute('data-estacion-nombre') || '');
-        });
+    // Las tarjetas se renderizan después de cargar la configuración; usar
+    // delegación evita referencias a un `grid` fuera de alcance y conserva el
+    // botón Domótica tras cada refresco de estaciones.
+    const estacionesGrid = document.getElementById('estacionesGrid');
+    if (estacionesGrid) {
+      estacionesGrid.addEventListener('click', function(ev) {
+        const button = ev.target && ev.target.closest ? ev.target.closest('[data-open-station-domotica]') : null;
+        if (!button || !estacionesGrid.contains(button)) return;
+        ev.preventDefault();
+        ev.stopPropagation();
+        const card = button.closest('.station-launch-card');
+        if (!card) return;
+        openStationDomotica(Number(card.getAttribute('data-estacion-id') || 0), card.getAttribute('data-estacion-nombre') || '');
       });
     }
 
