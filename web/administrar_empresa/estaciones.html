@@ -17,10 +17,6 @@
     #estacionesGrid:not(.estaciones-thumb-mobile) .portal-card.station-launch-card{height:auto;min-height:170px}
     #estacionesGrid:not(.estaciones-thumb-mobile) .station-data-row{align-items:flex-start}
     #estacionesGrid:not(.estaciones-thumb-mobile) .station-data-value{white-space:normal;overflow:visible;text-overflow:clip;overflow-wrap:anywhere;line-height:1.2}
-    .station-domotica-actions{display:flex;justify-content:flex-end;align-items:center;gap:8px;margin-top:auto;padding-top:10px}
-    .station-domotica-button{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:38px;font-weight:700}
-    .station-domotica-button .station-domotica-bolt{font-size:1.15rem;line-height:1;color:#f6b700;filter:drop-shadow(0 0 3px rgba(246,183,0,.32))}
-    .station-domotica-button:focus-visible{outline:3px solid color-mix(in srgb,var(--primary,#2563eb) 35%,transparent);outline-offset:2px}
   </style>
 </head>
 <body class="empresa-subpage estaciones-page" data-auto-estacion-labels="true">
@@ -2342,13 +2338,10 @@
             stationMetaRowHtml('aseo', 'Aseo', 'Clic para reportar', isDirty && state.aseoControlEnabled) +
             stationMetaRowHtml('total', 'Total', meta.total, useMostrarTotal && !!meta.total) +
           '</div>';
-          const domoticaActionHtml = state.stationCardUI && state.stationCardUI.mostrar_boton_domotica
-            ? '<div class="station-domotica-actions" aria-label="Acciones de estación"><button class="btn secondary station-domotica-button" type="button" data-open-station-domotica="1" title="Abrir equipos electrónicos de esta estación"><span class="station-domotica-bolt" aria-hidden="true">⚡</span> Domótica</button></div>'
-            : '';
           return '<article class="portal-card station-launch-card ' + stationClass + '" style="--station-state-bg:' + sanitize(stationColor) + ';" data-estacion-id="' + stationID + '" data-estacion-nombre="' + sanitize(est.nombre) + '" data-mostrar-total="' + (useMostrarTotal ? '1' : '0') + '" tabindex="0" role="button" aria-label="Abrir ' + sanitize(est.nombre) + '">' +
             '<div class="station-sensor-indicator" data-sensor-color="' + sanitize(sensorColor) + '"></div>' +
             '<h3>' + sanitize(est.nombre) + '</h3>' +
-			stationDataHtml + domoticaActionHtml +
+			stationDataHtml +
             '</article>';
       }).join('');
           html += afterSpecial.join('');
@@ -2803,22 +2796,6 @@
     if (reporteAseoBtn) {
       reporteAseoBtn.addEventListener('click', function() {
         window.location.href = buildReporteAseoURL();
-      });
-    }
-
-    // Las tarjetas se renderizan después de cargar la configuración; usar
-    // delegación evita referencias a un `grid` fuera de alcance y conserva el
-    // botón Domótica tras cada refresco de estaciones.
-    const estacionesGrid = document.getElementById('estacionesGrid');
-    if (estacionesGrid) {
-      estacionesGrid.addEventListener('click', function(ev) {
-        const button = ev.target && ev.target.closest ? ev.target.closest('[data-open-station-domotica]') : null;
-        if (!button || !estacionesGrid.contains(button)) return;
-        ev.preventDefault();
-        ev.stopPropagation();
-        const card = button.closest('.station-launch-card');
-        if (!card) return;
-        openStationDomotica(Number(card.getAttribute('data-estacion-id') || 0), card.getAttribute('data-estacion-nombre') || '');
       });
     }
 

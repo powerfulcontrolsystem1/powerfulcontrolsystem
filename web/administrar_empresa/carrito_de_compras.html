@@ -62,6 +62,10 @@
     .carrito-flat-page button.btn:disabled{opacity:.58!important;filter:saturate(.7)}
     .carrito-action-select{font-size:16px!important;font-weight:900!important;min-height:48px!important}
     .carrito-action-select option{font-size:16px!important;font-weight:850}
+    .carrito-action-select-row{display:flex;align-items:flex-end;gap:8px;width:100%}
+    .carrito-action-select-row .carrito-action-select{flex:1 1 auto;min-width:0}
+    .carrito-domotica-button{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:48px;white-space:nowrap;font-weight:900}
+    @media(max-width:560px){.carrito-action-select-row{align-items:stretch;flex-direction:column}.carrito-domotica-button{width:100%}}
     #carritosList .table td.carrito-list-actions{min-width:360px;white-space:normal}
     #carritosList .carrito-list-actions{display:flex;flex-wrap:wrap;align-items:center;gap:6px}
     #carritosList .carrito-list-actions .btn{width:auto;margin:0;white-space:nowrap}
@@ -473,26 +477,28 @@
         </div>
         <div class="carrito-action-select-wrap">
           <label class="form-label carrito-action-select-label" for="carritoActionSelect">Acción del carrito</label>
-          <select id="carritoActionSelect" class="form-input carrito-action-select" aria-label="Seleccionar acción del carrito">
-            <option value="">Selecciona una acción</option>
-            <option value="historial_productos">Historial de productos</option>
-            <option value="carritoBtnDescuentos">☑ Descuentos</option>
-            <option value="carritoBtnCambiarTarifa">☑ Cambiar tarifa</option>
-            <option value="carritoBtnTransferirCuenta">☐ Transferir cuenta</option>
-            <option value="carritoBtnControlElectrico">☐ Domótica</option>
-            <option value="carritoBtnCancelarCarrito">☑ Cancelar carrito</option>
-            <option value="carritoBtnClientes">☑ Clientes</option>
-            <option value="carritoBtnAbonos">☑ Abonos</option>
-            <option value="carritoBtnPagoQR">☐ QR de pago</option>
-            <option value="carritoBtnVehiculo">☑ Vehículo</option>
-            <option value="cupo_credito">☑ Cupo de crédito</option>
-          </select>
+          <div class="carrito-action-select-row">
+            <select id="carritoActionSelect" class="form-input carrito-action-select" aria-label="Seleccionar acción del carrito">
+              <option value="">Selecciona una acción</option>
+              <option value="historial_productos">Historial de productos</option>
+              <option value="carritoBtnDescuentos">☑ Descuentos</option>
+              <option value="carritoBtnCambiarTarifa">☑ Cambiar tarifa</option>
+              <option value="carritoBtnTransferirCuenta">☐ Transferir cuenta</option>
+              <option value="carritoBtnControlElectrico">☐ Domótica</option>
+              <option value="carritoBtnCancelarCarrito">☑ Cancelar carrito</option>
+              <option value="carritoBtnClientes">☑ Clientes</option>
+              <option value="carritoBtnAbonos">☑ Abonos</option>
+              <option value="carritoBtnPagoQR">☐ QR de pago</option>
+              <option value="carritoBtnVehiculo">☑ Vehículo</option>
+              <option value="cupo_credito">☑ Cupo de crédito</option>
+            </select>
+            <button type="button" id="carritoBtnControlElectrico" class="btn secondary carrito-domotica-button" aria-label="Abrir Domótica de esta estación" title="Abrir Domótica de esta estación">⚡ Domótica</button>
+          </div>
         </div>
         <div id="carritoActionToolbar" class="carrito-station-toolbar form-actions action-toolbar actions-wrap-gap-10">
           <button type="button" id="carritoBtnDescuentos" class="btn secondary">Descuentos</button>
           <button type="button" id="carritoBtnCambiarTarifa" class="btn secondary">Cambiar tarifa</button>
           <button type="button" id="carritoBtnTransferirCuenta" class="btn secondary">Transferir cuenta</button>
-          <button type="button" id="carritoBtnControlElectrico" class="btn secondary" aria-label="Abrir Domotica de esta estacion">⚡ Domotica</button>
           <button type="button" id="carritoBtnCancelarCarrito" class="btn secondary">Cancelar carrito</button>
           <label id="carritoAlertaTiempoControl" class="form-help inline-check carrito-alert10-check" hidden>
             <input type="checkbox" id="carritoAlerta10Enable">
