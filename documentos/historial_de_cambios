@@ -41295,6 +41295,10 @@ acumulativa.
 2026-08-10: Edicion de equipos restringida a Configuracion.
 - La pagina operativa de equipos ya no muestra «Editar»; el cambio se realiza exclusivamente desde Configuracion.
 
+2026-08-10: Apertura de Domotica desde el carrito.
+- Se aumenta la separacion visual entre el selector de accion y el boton Domotica.
+- El boton usa el resolvedor de estacion del carrito, evitando la referencia de estado inexistente que podia impedir la navegacion; si falta el carrito muestra un mensaje explicito.
+
 2026-08-10: Domotica dentro del carrito, junto al selector de acciones.
 - Se elimina el boton y la delegacion de Domotica de las tarjetas de estaciones.
 - El carrito mantiene un unico boton `⚡ Domotica` a la derecha del selector de accion; conserva el check de visibilidad por empresa/estacion y el comportamiento responsive.
