@@ -62,10 +62,10 @@
     .carrito-flat-page button.btn:disabled{opacity:.58!important;filter:saturate(.7)}
     .carrito-action-select{font-size:16px!important;font-weight:900!important;min-height:48px!important}
     .carrito-action-select option{font-size:16px!important;font-weight:850}
-    .carrito-action-select-row{display:flex;align-items:flex-end;gap:8px;width:100%}
+    .carrito-action-select-row{display:flex;align-items:flex-end;gap:18px;width:100%}
     .carrito-action-select-row .carrito-action-select{flex:1 1 auto;min-width:0}
     .carrito-domotica-button{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:48px;white-space:nowrap;font-weight:900}
-    @media(max-width:560px){.carrito-action-select-row{align-items:stretch;flex-direction:column}.carrito-domotica-button{width:100%}}
+    @media(max-width:560px){.carrito-action-select-row{align-items:stretch;flex-direction:column;gap:8px}.carrito-domotica-button{width:100%}}
     #carritosList .table td.carrito-list-actions{min-width:360px;white-space:normal}
     #carritosList .carrito-list-actions{display:flex;flex-wrap:wrap;align-items:center;gap:6px}
     #carritosList .carrito-list-actions .btn{width:auto;margin:0;white-space:nowrap}
@@ -11852,16 +11852,21 @@
     if (carritoBtnControlElectrico) {
       carritoBtnControlElectrico.addEventListener('click', function() {
         const selected = getSelectedCarrito();
-        const estacionID = Number(state.estacionID || (selected && selected.estacion_id) || 0);
-        if (!state.empresaID || !estacionID) return;
+        const estacionID = resolveCarritoEstacionID(selected);
+        if (!state.empresaID || !estacionID) {
+          setMessage('itemMsg', 'Selecciona un carrito de estación para abrir Domótica.', true);
+          return;
+        }
         const query = new URLSearchParams({
           empresa_id: String(state.empresaID),
           estacion_id: String(estacionID),
-          estacion_nombre: String((selected && (selected.estacion_nombre || selected.nombre_estacion)) || state.estacionNombre || ''),
+          estacion_nombre: String((selected && (selected.estacion_nombre || selected.nombre_estacion)) || state.stationName || stationDefaultName(estacionID)),
           carrito_id: String((selected && selected.id) || 0),
-          carrito_codigo: String((selected && selected.codigo) || '')
+          carrito_codigo: String((selected && selected.codigo) || ''),
+          source: 'carrito',
+          return_to: 'carrito'
         });
-        window.location.href = '/administrar_empresa/carrito_control_electrico.html?' + query.toString();
+        window.location.assign('/administrar_empresa/carrito_control_electrico.html?' + query.toString());
       });
     }
     const carritoControlElectricoContent = document.getElementById('carritoControlElectricoContent');

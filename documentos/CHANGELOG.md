@@ -3452,6 +3452,7 @@
 - [Conectividad] La fecha PostgreSQL con microsegundos se normaliza antes de calcular el heartbeat, mostrando correctamente Raspberry conectada/desconectada.
 
 - [UX] La pagina operativa de equipos conserva solo control y programacion; el enlace «Editar» queda disponible unicamente en Configuracion.
+- [UX] El acceso Domotica del carrito queda separado del selector y resuelve la estacion desde el contexto real del carrito antes de abrir sus equipos.
 
 ### Ubicacion del acceso de Domotica en el carrito
 - [UX] Se retira el boton Domotica de las tarjetas de estaciones.
