@@ -313,7 +313,12 @@ func SeedEmpresaContabilidadColombiaBase(dbConn *sql.DB, empresaID int64, usuari
 	_ = QueryRowCompat(dbConn, `SELECT COUNT(*) FROM empresa_contabilidad_colombia_cuentas WHERE empresa_id=?`, empresaID).Scan(&count)
 	if count == 0 {
 		for _, c := range defaultPUCCuentas(empresaID, usuario) {
-			if _, err := CreateEmpresaContabilidadCuenta(dbConn, c); err != nil {
+			c.Codigo = cleanCode(c.Codigo)
+			c.Nombre = strings.TrimSpace(c.Nombre)
+			if err := ValidateEmpresaContabilidadCuenta(c); err != nil {
+				return err
+			}
+			if _, err := ExecCompat(dbConn, `INSERT INTO empresa_contabilidad_colombia_cuentas (empresa_id,codigo,nombre,naturaleza,tipo_cuenta,cuenta_padre,acepta_movimiento,tercero_requerido,impuesto_requerido,estado,fecha_creacion,fecha_actualizacion,usuario_creador) VALUES (?,?,?,?,?,?,?,?,?,?,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,?) ON CONFLICT (empresa_id,codigo) DO NOTHING`, c.EmpresaID, c.Codigo, c.Nombre, c.Naturaleza, c.TipoCuenta, cleanCode(c.CuentaPadre), boolInt(c.AceptaMovimiento), boolInt(c.TerceroRequerido), boolInt(c.ImpuestoRequerido), c.Estado, c.UsuarioCreador); err != nil {
 				return err
 			}
 		}
@@ -321,7 +326,12 @@ func SeedEmpresaContabilidadColombiaBase(dbConn *sql.DB, empresaID int64, usuari
 	_ = QueryRowCompat(dbConn, `SELECT COUNT(*) FROM empresa_contabilidad_colombia_impuestos WHERE empresa_id=?`, empresaID).Scan(&count)
 	if count == 0 {
 		for _, imp := range defaultContabilidadImpuestos(empresaID, usuario) {
-			if _, err := CreateEmpresaContabilidadImpuesto(dbConn, imp); err != nil {
+			imp.Codigo = strings.ToUpper(strings.TrimSpace(imp.Codigo))
+			imp.Nombre = strings.TrimSpace(imp.Nombre)
+			if err := ValidateEmpresaContabilidadImpuesto(imp); err != nil {
+				return err
+			}
+			if _, err := ExecCompat(dbConn, `INSERT INTO empresa_contabilidad_colombia_impuestos (empresa_id,codigo,nombre,tipo,porcentaje,cuenta_debito,cuenta_credito,estado,fecha_creacion,fecha_actualizacion,usuario_creador) VALUES (?,?,?,?,?,?,?,?,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,?) ON CONFLICT (empresa_id,codigo) DO NOTHING`, imp.EmpresaID, imp.Codigo, imp.Nombre, imp.Tipo, imp.Porcentaje, cleanCode(imp.CuentaDebito), cleanCode(imp.CuentaCredito), imp.Estado, imp.UsuarioCreador); err != nil {
 				return err
 			}
 		}

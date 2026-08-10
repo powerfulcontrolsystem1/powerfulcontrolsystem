@@ -1,5 +1,9 @@
 # Plan 108 - cierre integral y certificación para producción
 
+> Continuación vigente: `documentos/plan_109.md`. El Plan 108 conserva la
+> evidencia histórica; el Plan 109 corrige su corte porcentual y gobierna el
+> trabajo nuevo de cierre.
+
 Fecha de corte local: 2026-07-25
 Estado inicial: **NO-GO**
 Modelo ejecutor previsto: **GPT-5.6 Terra con razonamiento medio**
@@ -825,7 +829,7 @@ canónica, conciliación financiera y pruebas reales sobre los mismos datos.
 | P108-004 | Tenant/roles | matriz A/B negativa | Parcial estático |
 | P108-005 | CxP canónica | ADR, migración, conciliación, concurrencia | Parcial local |
 | P108-006 | Documentos proveedor IA | carga, edición, confirmación, duplicado | Parcial local |
-| P108-007 | Consistencia financiera | conciliación por evento | Pendiente |
+| P108-007 | Consistencia financiera | conciliación por evento | Parcial: CxP trazada y balanceada; falta matriz financiera completa |
 | P108-008 | Contador profesional | ciclo, reportes, impuestos, UAT | Parcial local |
 | P108-009 | ReportSpec IA | staging, rechazo seguro, exportación | Parcial local |
 | P108-010 | IA profesional | roles, memoria, tools, evals, costos | Parcial local |
@@ -834,12 +838,12 @@ canónica, conciliación financiera y pruebas reales sobre los mismos datos.
 | P108-013 | Impresiones | PDFs/capturas conciliados | Pendiente |
 | P108-014 | Cuatro cajas | sesiones y conciliación concurrente | Pendiente |
 | P108-015 | Proveedores | evidencia real autorizada | Parcial histórica |
-| P108-016 | Archivos privados | réplica, tenant, backup/restore | Pendiente |
+| P108-016 | Archivos privados | réplica, tenant, backup/restore | Parcial: volumen compartido, aislamiento de rutas y readiness; falta A/B, réplica y restore |
 | P108-017 | Seguridad dinámica | DAST y hardening | Parcial estático |
 | P108-018 | Observabilidad | alertas y simulacros | Parcial local |
 | P108-019 | Capacidad | carga autenticada sostenida | Parcial pública |
 | P108-020 | Continuidad | restore y rollback completos | Parcial |
-| P108-021 | Móvil | certificación o exclusión formal | Pendiente |
+| P108-021 | Móvil | certificación o exclusión formal | Aprobada: nativa fuera del primer lanzamiento; PWA incluida |
 | P108-022 | Documentación | gate limpio y runbooks | Parcial |
 | P108-023 | Ensayo general | un digest, matriz verde | Pendiente |
 | P108-024 | Empresa autorizada | acta y conciliación | Pendiente |
@@ -926,6 +930,111 @@ Siempre se deben informar dos cifras:
 Este porcentaje no equivale a cantidad de código construido. Mide evidencia de
 aceptación para producción; no se eleva por pruebas históricas, locales o de un
 SHA diferente.
+
+### Corte verificable 2026-07-30
+
+- El candidato inmutable activo en staging es
+  `f9396da5e41562968996b05136fffca9991b56f9`; GitHub Actions aprobó build,
+  `go test -race`, seguridad, secretos, escaneo, SBOM, publicación por digest
+  y Compose.
+- P108-018 ganó métricas privadas para PostgreSQL, worker, outbox y trabajos
+  durables. El scrape real del digest aprueba y la exposición pública devuelve
+  404; faltan los simulacros específicos y la configuración permanente.
+- P108-019 atendió 500 lecturas autenticadas con concurrencia 10, cero fallos y
+  p95 de 134 ms sobre este mismo digest; aún falta carga sostenida y
+  transaccional.
+- P108-020 ya tiene snapshot completo y restore PostgreSQL aislado, pero aún
+  falta recuperación funcional integral y rollback del mismo candidato.
+- P108-014 continúa bloqueada: la empresa autorizada no dispone de cuatro
+  usuarios cajeros activos. Ya existen cuatro invitaciones temporales creadas
+  por el flujo oficial y entregadas por Mailu; falta confirmarlas y abrir sus
+  cajas.
+- P108-006 continúa bloqueada por una credencial IA cifrada con una llave
+  incompatible en staging.
+- El barrido ampliado cubrió 48 rutas en escritorio y móvil: 96 combinaciones,
+  2.148 botones, 104 clics seguros y 253 mutaciones preservadas. Tras corregir
+  el contexto de empresa del runner, la repetición dirigida pasó 14/16; solo
+  Crédito conserva un 500 en el digest anterior.
+- El candidato corrige el agregado vacío de Créditos, hace idempotente la
+  siembra concurrente de Contabilidad Colombia, instala CSRF en 19 páginas
+  empresariales mutantes y corrige el desborde móvil de Cobranza. La repetición
+  desplegada terminó 16/16 `ok`; el botón real de reenvío de confirmación
+  respondió correctamente y la captura móvil no presenta desborde.
+- La carga del mismo digest terminó 500/500, p95 134 ms, cero fallos, cero
+  sesiones esperando lock y señales saludables de PostgreSQL, worker, outbox y
+  trabajos durables.
+- La batería imprimible volvió a aprobar 18/18 y la revisión visual de factura
+  carta/POS y corte de caja confirmó filas, columnas y totales ordenados. La
+  fase sigue parcial por documentos reales extensos e impresión física.
+- P108-021 queda aprobada por exclusión formal: la web responsive/PWA entra al
+  lanzamiento, el cliente nativo queda para una fase posterior y la API v1 se
+  conserva autenticada sin enlaces de descarga nativa.
+- P108-016 pasa a parcial: API y worker comparten almacenamiento privado,
+  staging aprobó su probe real de escritura/borrado y los contratos enfocados
+  rechazaron traversal, symlink, contenido activo y cruces de ruta. Faltan la
+  matriz A/B, dos réplicas y restore integral.
+- P108-022 eliminó las 218 secuencias dañadas de `CHANGELOG.md`; el auditor
+  estricto terminó con cero hallazgos. La fase sigue parcial por entrenamiento
+  y ensayo de runbooks.
+- El barrido integral P108-011 terminó 618/618 combinaciones: 10.979 controles,
+  896 clics seguros y 1.947 mutaciones preservadas. Detectó tres APIs 500,
+  rutas mal formadas y recursos cartográficos/gráficos bloqueados por CSP; las
+  correcciones están implementadas y pendientes de un nuevo digest y repetición.
+- El primer candidato de reparación `7819f775` aprobó CI/Trivy/SBOM y se
+  promovió solo a staging. La repetición de 22 vistas aprobó Bre-B, Colombia y
+  Productos, y descubrió pendientes adicionales de esquema Nextcloud, fecha
+  textual de Hoja de vida y CSP estático; ya tienen corrección complementaria
+  pero no se contabilizan hasta probar el siguiente digest.
+- El candidato consolidado `efc416b3` migró con código cero y su repetición
+  autenticada aprobó 22/22 vistas, 420 controles y 42 clics seguros, sin
+  respuestas HTTP erróneas. P108-011 continúa parcial porque faltan repetir el
+  barrido integral y las acciones mutantes oficiales sobre el mismo digest.
+- El candidato exacto `5ec1c48f` aprobó CI profesional, release inmutable y
+  staging. El workflow integral `30591586319` terminó 618 vistas: 604 `ok`,
+  14 `review`, 10.998 controles, 1.062 clics seguros, 1.975 mutaciones
+  preservadas, cero errores de página, cero HTTP 500 y cero bloqueos CSP.
+- La batería imprimible del mismo workflow aprobó 18/18 formatos y las matrices
+  de roles y pagos terminaron `PASS`. La inspección visual de factura carta/POS
+  confirmó filas, columnas, totales, legales y firmas organizados.
+- El migrador exacto `5ec1c48f` aprobó instalación desde PostgreSQL vacío,
+  upgrade desde copia lógica temporal, segunda pasada idempotente y un fallo
+  deliberado por checksum con auditoría, esquema intacto y recuperación.
+- En PCS staging se creó una CxP QA por la interfaz oficial. Dos abonos
+  simultáneos con la misma clave aplicaron un solo movimiento; dos claves
+  distintas agotaron exactamente el saldo y la carrera restante fue rechazada,
+  sin sobrepago. La UX del proveedor, el `409 Conflict` de saldo agotado y el
+  catálogo público están corregidos localmente y requieren nuevo digest.
+- El candidato `5566a213` aprobó CI/release, migró con código cero y se promovió
+  solo a staging sin cambiar la huella de producción. Finanzas y catálogo
+  terminaron 4/4 vistas `ok` en escritorio/móvil; la carga autenticada fue
+  500/500, p95 116 ms, cero fallos y cero esperas `Lock`.
+- La conciliación real de la CxP confirmó cuenta, asignaciones y movimientos por
+  `2`, pero descubrió dos outbox `dead` por topic sin handler. El worker
+  idempotente y multiempresa está implementado y requiere un nuevo digest,
+  pago controlado y asiento balanceado antes de contar P108-003/P108-007.
+- El candidato final `f7214329` aprobó CI profesional `30595918626`, release
+  inmutable `30595920016`, migración y promoción aislada a staging. Producción
+  conservó su huella. Un abono oficial PCS de `0,01` produjo outbox
+  `published`, job `completed`, evento único y asiento débito/crédito
+  balanceado; la vista final muestra `25,01`, `74,99` y `0,01` sin redondear a
+  cero.
+- El barrido integral `30594588317` terminó 618 vistas: 606 `ok`, 12
+  `review`, 11.040 controles, 1.088 clics seguros, 1.980 acciones riesgosas
+  preservadas y 18/18 impresiones. La amplitud mejora, pero no sustituye las
+  mutaciones oficiales ni todos los botones IA.
+- La recuperación de eventos CxP históricos quedó implementada con vista
+  previa por empresa, topic permitido, IDs explícitos, razón, confirmación,
+  bloqueo transaccional y auditoría durable. Todavía no suma certificación:
+  falta construir el digest, migrarlo y reactivar los dos eventos PCS en
+  staging con conciliación contable posterior.
+- Avance de implementación: **48,1 %**, aplicando tres fases aprobadas y
+  diecinueve parciales; la evidencia nueva fortalece P108-003/P108-005/P108-007
+  ya parciales, sin cerrar sus compuertas restantes.
+- Certificación del candidato para producción: **23,1 %** y **NO-GO**:
+  P108-000/P108-001/P108-021 aprobadas y P108-002, P108-011, P108-012,
+  P108-016, P108-018 y P108-019 parciales. La prueba CxP es evidencia positiva
+  del candidato, pero no se eleva el porcentaje hasta cerrar recuperación
+  histórica, A/B y la matriz financiera completa.
 
 ## 11. Compuerta final GO/NO-GO
 

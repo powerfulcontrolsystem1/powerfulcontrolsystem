@@ -256,6 +256,18 @@ func TestResolvePermissionPageKeyForDirectSaleCart(t *testing.T) {
 	}
 }
 
+func TestResolveVentasPermissionActionTreatsOpenItemReturnAsUpdate(t *testing.T) {
+	itemReturn := httptest.NewRequest(http.MethodDelete, "/api/empresa/carritos_compra/items?empresa_id=7&carrito_id=3&id=9", nil)
+	if got := resolveVentasPermissionAction(itemReturn); got != permActionUpdate {
+		t.Fatalf("item return action=%q, want %q", got, permActionUpdate)
+	}
+
+	cartDelete := httptest.NewRequest(http.MethodDelete, "/api/empresa/carritos_compra?empresa_id=7&id=3", nil)
+	if got := resolveVentasPermissionAction(cartDelete); got != permActionDelete {
+		t.Fatalf("cart delete action=%q, want %q", got, permActionDelete)
+	}
+}
+
 func TestResolvePermissionPageKeyForOperationalStationCart(t *testing.T) {
 	cases := map[string]string{
 		"/api/empresa/carritos_compra?empresa_id=7&perm_page=linkEstaciones":         "linkEstaciones",

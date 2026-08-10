@@ -262,6 +262,9 @@
       font-size: 14px;
       min-height: 22px;
       margin-bottom: 12px;
+      max-width: 100%;
+      overflow-wrap: anywhere;
+      word-break: break-word;
     }
 
     .status.error { color: var(--danger); }
@@ -603,7 +606,9 @@
           const host = window.location.hostname.toLowerCase();
           if (host !== 'localhost' && host !== '127.0.0.1' && host.indexOf('.') > 0) {
             const first = host.split('.')[0];
-            if (first && first !== 'www' && first !== 'powerfulcontrolsystem') state.slug = normalizeSlug(first);
+            if (first && !['www', 'powerfulcontrolsystem', 'staging'].includes(first)) {
+              state.slug = normalizeSlug(first);
+            }
           }
         }
       }
@@ -634,6 +639,17 @@
       function setContactStatus(message, error) {
         els.contactStatus.textContent = message || '';
         els.contactStatus.className = 'status' + (error ? ' error' : '');
+      }
+
+      async function responseErrorMessage(res, fallback) {
+        const text = await res.text().catch(() => '');
+        if (!text) return fallback;
+        try {
+          const parsed = JSON.parse(text);
+          return String(parsed.error || parsed.message || fallback);
+        } catch (_) {
+          return text.length <= 240 ? text : fallback;
+        }
       }
 
       function applyProfile(data) {
@@ -738,8 +754,7 @@
           headers: { 'Accept': 'application/json' }
         });
         if (!res.ok) {
-          const text = await res.text().catch(() => '');
-          throw new Error(text || 'No se pudo cargar la carta publica');
+          throw new Error(await responseErrorMessage(res, 'No se pudo cargar la carta publica.'));
         }
         const data = await res.json();
         state.data = data;
@@ -786,8 +801,7 @@
             body: JSON.stringify(payload)
           });
           if (!res.ok) {
-            const text = await res.text().catch(() => '');
-            throw new Error(text || 'No se pudo enviar el mensaje.');
+            throw new Error(await responseErrorMessage(res, 'No se pudo enviar el mensaje.'));
           }
           els.contactForm.reset();
           setContactStatus('Mensaje enviado. La empresa recibio tu consulta en su correo corporativo.', false);

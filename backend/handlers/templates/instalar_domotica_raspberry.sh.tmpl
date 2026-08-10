@@ -1,0 +1,371 @@
+#!/bin/sh
+set -eu
+
+if [ "$(id -u)" -ne 0 ]; then
+  if command -v sudo >/dev/null 2>&1; then
+    exec sudo -- "$0" "$@"
+  fi
+  echo "Este instalador debe ejecutarse como root." >&2
+  exit 1
+fi
+
+if ! command -v python3 >/dev/null 2>&1; then
+  echo "Python 3 es obligatorio y no esta instalado." >&2
+  exit 1
+fi
+
+install -d -m 0750 /opt/pcs-domotica /etc/pcs-domotica
+
+cat > /etc/pcs-domotica/agent.json <<'PCS_CONFIG'
+{"base_url":{{.BaseURLJSON}},"device_uid":{{.DeviceUIDJSON}},"enrollment_token":{{.EnrollmentTokenJSON}},"device_token":"","agent_version":"1.0.0"}
+PCS_CONFIG
+chmod 0600 /etc/pcs-domotica/agent.json
+
+cat > /opt/pcs-domotica/agent.py <<'PCS_AGENT'
+#!/usr/bin/env python3
+import json
+import os
+import re
+import shutil
+import socket
+import subprocess
+import threading
+import time
+import urllib.error
+import urllib.request
+
+CONFIG_PATH = "/etc/pcs-domotica/agent.json"
+API_PATH = "/api/public/domotica/tunnel"
+inputs_lock = threading.Lock()
+inputs_cache = []
+stop_event = threading.Event()
+
+
+def log(message):
+    print(time.strftime("%Y-%m-%d %H:%M:%S"), str(message), flush=True)
+
+
+def load_config():
+    with open(CONFIG_PATH, "r", encoding="utf-8") as handle:
+        return json.load(handle)
+
+
+def save_config(config):
+    tmp = CONFIG_PATH + ".tmp"
+    with open(tmp, "w", encoding="utf-8") as handle:
+        json.dump(config, handle, separators=(",", ":"))
+        handle.flush()
+        os.fsync(handle.fileno())
+    os.chmod(tmp, 0o600)
+    os.replace(tmp, CONFIG_PATH)
+
+
+def local_ip():
+    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    try:
+        sock.connect(("1.1.1.1", 53))
+        return sock.getsockname()[0]
+    except OSError:
+        return ""
+    finally:
+        sock.close()
+
+
+def request_json(config, action, payload, authenticated=True, timeout=35):
+    url = config["base_url"].rstrip("/") + API_PATH + "?action=" + action
+    body = json.dumps(payload, separators=(",", ":")).encode("utf-8")
+    headers = {"Content-Type": "application/json", "User-Agent": "PCS-Domotica-Agent/" + config.get("agent_version", "1")}
+    if authenticated:
+        headers["X-PCS-Device-ID"] = config["device_uid"]
+        headers["Authorization"] = "Bearer " + config.get("device_token", "")
+    req = urllib.request.Request(url, data=body, headers=headers, method="POST")
+    with urllib.request.urlopen(req, timeout=timeout) as response:
+        raw = response.read(262144)
+        return json.loads(raw.decode("utf-8")) if raw else {}
+
+
+class GPIOBackend:
+    def __init__(self):
+        self.pinctrl = shutil.which("pinctrl")
+        self.raspi_gpio = shutil.which("raspi-gpio")
+
+    def run(self, args):
+        return subprocess.run(args, check=True, capture_output=True, text=True, timeout=5).stdout.strip()
+
+    def set_output(self, pin, on, active_high=True):
+        pin = int(pin)
+        if pin < 0 or pin > 27:
+            raise ValueError("GPIO fuera del rango BCM 0-27")
+        high = bool(on) if bool(active_high) else not bool(on)
+        level = "dh" if high else "dl"
+        if self.pinctrl:
+            self.run([self.pinctrl, "set", str(pin), "op", level])
+            return "pinctrl"
+        if self.raspi_gpio:
+            self.run([self.raspi_gpio, "set", str(pin), "op", level])
+            return "raspi-gpio"
+        base = "/sys/class/gpio"
+        gpio = os.path.join(base, "gpio" + str(pin))
+        if not os.path.isdir(gpio):
+            with open(os.path.join(base, "export"), "w", encoding="ascii") as handle:
+                handle.write(str(pin))
+            time.sleep(0.1)
+        with open(os.path.join(gpio, "direction"), "w", encoding="ascii") as handle:
+            handle.write("out")
+        with open(os.path.join(gpio, "value"), "w", encoding="ascii") as handle:
+            handle.write("1" if high else "0")
+        return "sysfs"
+
+    def configure_input(self, pin, pull):
+        pin = int(pin)
+        if pin < 0 or pin > 27:
+            raise ValueError("GPIO de entrada fuera del rango BCM 0-27")
+        pull = str(pull or "none").lower()
+        pull_code = {"up": "pu", "down": "pd", "none": "pn"}.get(pull, "pn")
+        if self.pinctrl:
+            self.run([self.pinctrl, "set", str(pin), "ip", pull_code])
+            return
+        if self.raspi_gpio:
+            self.run([self.raspi_gpio, "set", str(pin), "ip", pull_code])
+            return
+        base = "/sys/class/gpio"
+        gpio = os.path.join(base, "gpio" + str(pin))
+        if not os.path.isdir(gpio):
+            with open(os.path.join(base, "export"), "w", encoding="ascii") as handle:
+                handle.write(str(pin))
+            time.sleep(0.1)
+        with open(os.path.join(gpio, "direction"), "w", encoding="ascii") as handle:
+            handle.write("in")
+
+    def read_input(self, pin):
+        pin = int(pin)
+        if self.pinctrl:
+            raw = self.run([self.pinctrl, "get", str(pin)]).lower()
+            if re.search(r"\bhi\b|level=1", raw):
+                return 1
+            if re.search(r"\blo\b|level=0", raw):
+                return 0
+            raise RuntimeError("No se pudo interpretar pinctrl")
+        if self.raspi_gpio:
+            raw = self.run([self.raspi_gpio, "get", str(pin)]).lower()
+            match = re.search(r"level=(0|1)", raw)
+            if match:
+                return int(match.group(1))
+            raise RuntimeError("No se pudo interpretar raspi-gpio")
+        with open("/sys/class/gpio/gpio" + str(pin) + "/value", "r", encoding="ascii") as handle:
+            return 1 if handle.read(1) == "1" else 0
+
+
+gpio = GPIOBackend()
+
+
+def ensure_enrolled(config):
+    if config.get("device_token"):
+        return config
+    response = request_json(config, "enroll", {
+        "device_uid": config["device_uid"],
+        "enrollment_token": config.get("enrollment_token", ""),
+        "hostname": socket.gethostname(),
+        "local_ip": local_ip(),
+        "agent_version": config.get("agent_version", "1.0.0"),
+    }, authenticated=False, timeout=20)
+    token = str(response.get("device_token", ""))
+    if not token:
+        raise RuntimeError("El VPS no entrego token de dispositivo")
+    config["device_token"] = token
+    config["enrollment_token"] = ""
+    save_config(config)
+    log("Raspberry enrolada; tunel HTTPS activo")
+    return config
+
+
+def execute_command(command):
+    pin = int(command.get("gpio_pin", -1))
+    state = str(command.get("estado", "")).lower()
+    if state not in ("on", "off"):
+        raise ValueError("Estado de salida invalido")
+    active_high = bool(command.get("active_high", True))
+    backend = gpio.set_output(pin, state == "on", active_high)
+    pulse_ms = max(0, min(60000, int(command.get("pulso_ms", 0) or 0)))
+    if state == "on" and pulse_ms:
+        time.sleep(pulse_ms / 1000.0)
+        gpio.set_output(pin, False, active_high)
+    return "GPIO {}={} via {}".format(pin, state, backend)
+
+
+def monitor_inputs(config):
+    states = {}
+    configured = set()
+    while not stop_event.is_set():
+        with inputs_lock:
+            current = list(inputs_cache)
+        active_keys = set()
+        for item in current:
+            try:
+                pin = int(item.get("gpio_pin", -1))
+                key = str(item.get("rule_id", pin)) + ":" + str(pin)
+                active_keys.add(key)
+                if key not in configured:
+                    gpio.configure_input(pin, item.get("pull", "none"))
+                    configured.add(key)
+                value = gpio.read_input(pin)
+                previous = states.get(key)
+                if previous is None:
+                    states[key] = (value, time.monotonic(), value)
+                    continue
+                stable, changed_at, observed = previous
+                if value != observed:
+                    states[key] = (stable, time.monotonic(), value)
+                    continue
+                debounce = max(50, min(10000, int(item.get("debounce_ms", 250) or 250))) / 1000.0
+                if value != stable and time.monotonic() - changed_at >= debounce:
+                    states[key] = (value, changed_at, value)
+                    request_json(config, "input", {
+                        "gpio_pin": pin,
+                        "value": str(value),
+                        "sensor_code": item.get("sensor_code", "gpio:" + str(pin)),
+                    }, timeout=15)
+            except Exception as exc:
+                log("Entrada GPIO no disponible: " + str(exc))
+        for key in list(states):
+            if key not in active_keys:
+                states.pop(key, None)
+                configured.discard(key)
+        stop_event.wait(0.2)
+
+
+def read_vedirect(path="/dev/ttyUSB0"):
+    import termios
+    if not os.path.exists(path):
+        return None
+    fd = os.open(path, os.O_RDWR | os.O_NOCTTY | os.O_NONBLOCK)
+    try:
+        attrs = termios.tcgetattr(fd)
+        attrs[0] = attrs[1] = attrs[3] = 0
+        attrs[2] = termios.CS8 | termios.CREAD | termios.CLOCAL
+        attrs[4] = attrs[5] = termios.B19200
+        attrs[6][termios.VMIN] = 0
+        attrs[6][termios.VTIME] = 0
+        termios.tcsetattr(fd, termios.TCSANOW, attrs)
+        end = time.monotonic() + 1.5
+        data = b""
+        while time.monotonic() < end:
+            try: data += os.read(fd, 4096)
+            except BlockingIOError: pass
+            time.sleep(0.05)
+    finally:
+        os.close(fd)
+    values = {}
+    for line in data.decode("ascii", "ignore").splitlines():
+        if "\t" in line:
+            key, value = line.split("\t", 1)
+            values[key.strip()] = value.strip()
+    if "V" not in values or "VPV" not in values:
+        return None
+    def number(key, scale=1.0):
+        try: return float(values.get(key, 0)) * scale
+        except (TypeError, ValueError): return 0.0
+    current = number("I", 0.001)
+    voltage = number("V", 0.001)
+    solar_w = number("PPV")
+    return {
+        "modelo": "Victron BlueSolar MPPT 75/15 VE.Direct",
+        "lectura": {
+            "potencia_solar_w": solar_w, "produccion_dia_kwh": number("H20", 0.01),
+            "bateria_voltaje_v": voltage, "bateria_corriente_a": current,
+            "bateria_carga_w": max(0.0, voltage * current), "bateria_descarga_w": max(0.0, -voltage * current),
+            "estado_paneles": "produciendo" if solar_w > 0 else "sin_produccion",
+            "estado_bateria": "cargando" if current > 0 else ("descargando" if current < 0 else "reposo"),
+            "estado_inversor": "no_reportado",
+            "raw": {"protocolo":"VE.Direct", "vpv_v":number("VPV", 0.001), "cs":values.get("CS", ""), "err":values.get("ERR", ""), "h19_kwh":number("H19", 0.01), "h21_w":number("H21")}
+        }
+    }
+
+
+def main():
+    config = ensure_enrolled(load_config())
+    watcher = threading.Thread(target=monitor_inputs, args=(config,), daemon=True)
+    watcher.start()
+    backoff = 1
+    next_solar = 0
+    while not stop_event.is_set():
+        try:
+            response = request_json(config, "poll", {
+                "hostname": socket.gethostname(),
+                "local_ip": local_ip(),
+                "agent_version": config.get("agent_version", "1.0.0"),
+            }, timeout=35)
+            with inputs_lock:
+                inputs_cache[:] = response.get("inputs", []) if isinstance(response.get("inputs"), list) else []
+            command = response.get("command")
+            if isinstance(command, dict) and command.get("command_id"):
+                ok = True
+                result = ""
+                error = ""
+                try:
+                    result = execute_command(command)
+                except Exception as exc:
+                    ok = False
+                    error = str(exc)[:500]
+                request_json(config, "ack", {
+                    "command_id": command.get("command_id"),
+                    "ok": ok,
+                    "result": result,
+                    "error": error,
+                }, timeout=20)
+            if time.monotonic() >= next_solar:
+                sample = read_vedirect()
+                if sample:
+                    request_json(config, "solar_telemetry", sample, timeout=20)
+                next_solar = time.monotonic() + 60
+            backoff = 1
+        except urllib.error.HTTPError as exc:
+            log("VPS respondio HTTP {}".format(exc.code))
+            if exc.code == 401:
+                config["device_token"] = ""
+                save_config(config)
+                config = ensure_enrolled(config)
+            stop_event.wait(backoff)
+            backoff = min(30, backoff * 2)
+        except Exception as exc:
+            log("Tunel temporalmente desconectado: " + str(exc))
+            stop_event.wait(backoff)
+            backoff = min(30, backoff * 2)
+
+
+if __name__ == "__main__":
+    try:
+        main()
+    finally:
+        stop_event.set()
+PCS_AGENT
+chmod 0750 /opt/pcs-domotica/agent.py
+
+cat > /etc/systemd/system/pcs-domotica-agent.service <<'PCS_SERVICE'
+[Unit]
+Description=PCS Domotica Raspberry outbound HTTPS tunnel
+After=network-online.target nss-lookup.target
+Wants=network-online.target
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/python3 /opt/pcs-domotica/agent.py
+Restart=always
+RestartSec=5
+TimeoutStopSec=15
+Environment=PYTHONUNBUFFERED=1
+User=root
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=true
+ProtectSystem=strict
+ReadWritePaths=/etc/pcs-domotica /sys/class/gpio
+
+[Install]
+WantedBy=multi-user.target
+PCS_SERVICE
+
+systemctl daemon-reload
+systemctl enable --now pcs-domotica-agent.service
+echo "PCS Domotica instalado. Estado: systemctl status pcs-domotica-agent --no-pager"

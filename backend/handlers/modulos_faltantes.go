@@ -3107,6 +3107,15 @@ func handleConciliarCarteraPagosAction(dbEmp *sql.DB, cfg empresaModuloGenericCo
 	})
 }
 
+func registrarPagoCxPErrorStatus(err error) int {
+	if errors.Is(err, dbpkg.ErrEmpresaCxPAmountExceedsBalance) ||
+		errors.Is(err, dbpkg.ErrEmpresaCxPNoPendingBalance) ||
+		errors.Is(err, dbpkg.ErrPeriodoFinancieroCerrado) {
+		return http.StatusConflict
+	}
+	return http.StatusBadRequest
+}
+
 func handleRegistrarPagoCarteraAction(dbEmp *sql.DB, cfg empresaModuloGenericConfig, tipoMovimiento, terceroField, modulo string, w http.ResponseWriter, r *http.Request) {
 	payload, err := decodeGenericBodyMapOptional(r)
 	if err != nil {
@@ -3154,11 +3163,7 @@ func handleRegistrarPagoCarteraAction(dbEmp *sql.DB, cfg empresaModuloGenericCon
 			IdempotencyKey:    idempotencyKey,
 		})
 		if err != nil {
-			if errors.Is(err, dbpkg.ErrEmpresaCxPAmountExceedsBalance) || errors.Is(err, dbpkg.ErrPeriodoFinancieroCerrado) {
-				http.Error(w, err.Error(), http.StatusConflict)
-				return
-			}
-			http.Error(w, err.Error(), http.StatusBadRequest)
+			http.Error(w, err.Error(), registrarPagoCxPErrorStatus(err))
 			return
 		}
 		itemActualizado, _ := dbpkg.GetEmpresaGenericRowByID(dbEmp, cfg.Table, empresaID, id)
@@ -8832,12 +8837,31 @@ func dianIssuepcs_ts(raw string) (string, string) {
 func dianDocumentKind(raw string) (rootName, lineName, customizationID, uuidSchemeName, typeCode, totalTag, quantityTag, correctionCode string) {
 	switch strings.ToLower(strings.TrimSpace(raw)) {
 	case "nota_credito", "credit_note", "creditnote", "credito", "credit":
-		return "CreditNote", "CreditNoteLine", "11", "CUDE-SHA384", "91", "LegalMonetaryTotal", "CreditedQuantity", "1"
+		return "CreditNote", "CreditNoteLine", "20", "CUDE-SHA384", "91", "LegalMonetaryTotal", "CreditedQuantity", "1"
 	case "nota_debito", "debit_note", "debitnote", "debito", "debit":
-		return "DebitNote", "DebitNoteLine", "11", "CUDE-SHA384", "", "RequestedMonetaryTotal", "DebitedQuantity", "1"
+		return "DebitNote", "DebitNoteLine", "30", "CUDE-SHA384", "", "RequestedMonetaryTotal", "DebitedQuantity", "1"
 	default:
 		return "Invoice", "InvoiceLine", "01", "CUFE-SHA384", "01", "LegalMonetaryTotal", "InvoicedQuantity", ""
 	}
+}
+
+func dianNotePrefix(documentID, fallback string) string {
+	documentID = strings.ToUpper(strings.TrimSpace(documentID))
+	var b strings.Builder
+	for _, ch := range documentID {
+		if ch < 'A' || ch > 'Z' || b.Len() >= 4 {
+			break
+		}
+		b.WriteRune(ch)
+	}
+	if b.Len() > 0 {
+		return b.String()
+	}
+	fallback = strings.ToUpper(strings.TrimSpace(fallback))
+	if len(fallback) > 4 {
+		fallback = fallback[:4]
+	}
+	return fallback
 }
 
 func dianDocumentProfileID(rootName string) string {
@@ -9588,6 +9612,10 @@ func generateDIANUBLBase(cfg map[string]interface{}, empresaID int64, payload ma
 
 	issueDateOnly, issueTime := dianIssuepcs_ts(issueDateTime)
 	rootName, lineName, customizationID, uuidSchemeName, typeCode, monetaryTotalTag, quantityTag, correctionCode := dianDocumentKind(documentoTipo)
+	if rootName == "CreditNote" || rootName == "DebitNote" {
+		prefijo = dianNotePrefix(documentoCodigo, prefijo)
+		correctionCode = dianFirstNonBlank(genericStringValue(payload["codigo_correccion"]), correctionCode)
+	}
 	totalFloat := ventasAnyToFloat64(total)
 	taxFloat := ventasAnyToFloat64(impuestoTotal)
 	taxableFloat := totalFloat - taxFloat
@@ -9615,7 +9643,9 @@ func generateDIANUBLBase(cfg map[string]interface{}, empresaID int64, payload ma
 	uuidValue := buildDIANCUFEFacturaVenta(documentoCodigo, issueDateOnly, issueTime, taxable, impuestoTotal, "0.00", "0.00", total, emisorNIT, clienteNIT, uuidSecret, profileExecutionID)
 	referenceID := dianFirstNonBlank(genericStringValue(payload["referencia_documento_codigo"]), genericStringValue(payload["documento_referencia"]), "SETP990000001")
 	referenceUUID := dianFirstNonBlank(genericStringValue(payload["referencia_cufe"]), genericStringValue(payload["cufe_referencia"]), buildDIANSHA384Hex(referenceID, issueDateOnly, emisorNIT))
-	referenceIssueDate := dianFirstNonBlank(genericStringValue(payload["referencia_fecha_emision"]), issueDateOnly)
+	referenceIssueDateRaw := dianFirstNonBlank(genericStringValue(payload["referencia_fecha_emision"]), issueDateOnly)
+	referenceIssueDate, _ := dianIssuepcs_ts(referenceIssueDateRaw)
+	correctionDescription := dianFirstNonBlank(genericStringValue(payload["descripcion_correccion"]), "Ajuste a factura electronica")
 	qrURL := "https://catalogo-vpfe-hab.dian.gov.co/Document/FindDocument?documentKey=" + strings.ToLower(uuidValue)
 	if chooseDIANAmbiente(cfg) == "produccion" {
 		qrURL = "https://catalogo-vpfe.dian.gov.co/Document/FindDocument?documentKey=" + strings.ToLower(uuidValue)
@@ -9657,8 +9687,8 @@ func generateDIANUBLBase(cfg map[string]interface{}, empresaID int64, payload ma
 		escapeXML("Documento electronico generado por Powerful Control System para validacion previa DIAN."), escapeXML(moneda))
 	references := ""
 	if rootName == "CreditNote" || rootName == "DebitNote" {
-		references = fmt.Sprintf(`<cac:DiscrepancyResponse><cbc:ReferenceID>%s</cbc:ReferenceID><cbc:ResponseCode>%s</cbc:ResponseCode><cbc:Description>Ajuste de habilitacion DIAN</cbc:Description></cac:DiscrepancyResponse><cac:BillingReference><cac:InvoiceDocumentReference><cbc:ID>%s</cbc:ID><cbc:UUID schemeName="CUFE-SHA384">%s</cbc:UUID><cbc:IssueDate>%s</cbc:IssueDate></cac:InvoiceDocumentReference></cac:BillingReference>`,
-			escapeXML(referenceID), escapeXML(correctionCode), escapeXML(referenceID), escapeXML(strings.ToLower(referenceUUID)), escapeXML(referenceIssueDate))
+		references = fmt.Sprintf(`<cac:DiscrepancyResponse><cbc:ReferenceID>%s</cbc:ReferenceID><cbc:ResponseCode>%s</cbc:ResponseCode><cbc:Description>%s</cbc:Description></cac:DiscrepancyResponse><cac:BillingReference><cac:InvoiceDocumentReference><cbc:ID>%s</cbc:ID><cbc:UUID schemeName="CUFE-SHA384">%s</cbc:UUID><cbc:IssueDate>%s</cbc:IssueDate></cac:InvoiceDocumentReference></cac:BillingReference>`,
+			escapeXML(referenceID), escapeXML(correctionCode), escapeXML(correctionDescription), escapeXML(referenceID), escapeXML(strings.ToLower(referenceUUID)), escapeXML(referenceIssueDate))
 	}
 	supplierParty := dianSupplierPartyXML(emisorNIT, emisorDV, emisorRazon, prefijo, dianFirstNonBlank(genericStringValue(cfg["responsabilidad_fiscal"]), "R-99-PN"))
 	customerParty := dianCustomerPartyXML(clienteNombre, clienteNIT, clienteTipoDocumento)

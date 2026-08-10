@@ -598,7 +598,7 @@ func buildEmpresaEstacionesPreconfig(estaciones dbpkg.TipoEmpresaPreconfigEstaci
 		"camaras_enabled":          false,
 		"camaras_placement":        "after",
 		"carrito_ui_global":        defaultEmpresaPreconfigCarritoUI(),
-		"station_card_ui":          map[string]any{"mostrar_cliente_nombre": true, "mostrar_tarifa_resumen": true, "mostrar_inicio": true, "mostrar_fin": true, "mostrar_total": true},
+		"station_card_ui":          map[string]any{"mostrar_cliente_nombre": true, "mostrar_tarifa_resumen": true, "mostrar_inicio": true, "mostrar_fin": true, "mostrar_total": true, "mostrar_boton_domotica": true},
 	})
 	return string(raw), cantidad
 }

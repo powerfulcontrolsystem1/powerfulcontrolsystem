@@ -994,11 +994,21 @@ afecte dinero, documentos, licencias o seguridad.
 1. Ingresos, Egresos y Compras tienen boton de analisis IA junto al adjunto.
 2. El archivo se radica en `/api/empresa/soportes_compras_ia` con `empresa_id`;
    luego `extraer_ia` usa GPT-5.5 y descuenta una consulta avanzada diaria del
-   limite de agentes de la empresa.
+   limite de agentes de la empresa. Un advisory lock PostgreSQL por soporte
+   impide que doble clic, reintento paralelo u otra réplica llamen dos veces al
+   proveedor o descuenten dos veces la cuota.
 3. La IA precarga campos del formulario (tercero/proveedor, numero, fecha,
    subtotal, IVA, retenciones, total, moneda y observaciones), pero el usuario
-   revisa y guarda manualmente.
-4. Productos agrega acceso "Cargar carta/precios con IA", que abre el chat con
+   revisa y guarda manualmente. Datos incompletos, baja confianza o totales
+   inconsistentes fuerzan revisión humana.
+4. Aprobar, rechazar y contabilizar muestran confirmación explícita. El backend
+   serializa la transición, trata la repetición idéntica como idempotente,
+   bloquea revivir rechazados/duplicados y exige proveedor activo de la misma
+   empresa, documento y total positivo antes de aprobar.
+5. Contabilizar crea una sola CxP y nunca un pago. Los errores del proveedor IA
+   se degradan con respuesta pública segura; los detalles quedan únicamente en
+   el log interno.
+6. Productos agrega acceso "Cargar carta/precios con IA", que abre el chat con
    `agente_configuracion_de_empresa` para adjuntar carta/lista, extraer tabla y
    confirmar antes de registrar productos.
    sin afectar la otra.
@@ -1469,3 +1479,24 @@ afecte dinero, documentos, licencias o seguridad.
    correccion posterior.
 8. Firma o resolucion vencida: renovar, cargar en PCS, asociar en DIAN y volver a
    probar.
+## Domotica: provisionar Raspberry desde su navegador
+
+1. El administrador abre PCS en la Raspberry, entra a Domotica y registra el
+   controlador dentro de su empresa.
+2. `Generar instalador` exige permiso efectivo de administracion, rota un token
+   de un solo uso y descarga un shell con `no-store`.
+3. El usuario ejecuta `sudo sh` una vez. El servicio systemd enrola el ID unico
+   y realiza long polling HTTPS saliente al VPS.
+4. Encender/apagar desde una estacion crea un comando durable; la Raspberry
+   opera el GPIO y confirma. Solo el ACK actualiza estado, lectura y bitacora.
+5. Un cambio estable en GPIO de entrada publica Raspberry/pin autenticados; el
+   servidor evalua exclusivamente reglas de la misma empresa/controlador.
+6. El super administrador consulta transferencia por empresa y Raspberry sin
+   acceder a tokens. Regenerar instalador revoca el acceso operativo anterior.
+7. En Configuracion de estaciones, el administrador activa o desactiva el check
+   del boton `⚡ Domotica`. Desde cada tarjeta de estacion el boton abre una
+   vista filtrada de equipos, sensores, estados y controladores, sin activar el
+   carrito ni cambiar el estado comercial de la estacion.
+8. Cada Raspberry usa un instalador exclusivo. Si pierde LAN, Internet, DNS o
+   el VPS, el agente reintenta con backoff y systemd lo reinicia sin limite; al
+   reconectar consume los comandos durables pendientes del dispositivo.

@@ -6709,3 +6709,17 @@ pcs-worker
 Los productores funcionales de correo, DIAN, pagos, documentos y reportes aun
 no cruzan este limite; su migracion a outbox es requisito posterior y los
 timers heredados de API se conservan hasta que el worker los reemplace.
+## Actualizacion 2026-08-09 - Domotica Raspberry por tunel saliente
+
+- `backend/handlers/control_electrico.go` conserva la API empresarial y coloca
+  comandos en `empresa_control_electrico_comandos` cuando el aparato apunta a
+  una Raspberry aprovisionada.
+- `backend/handlers/control_electrico_tunnel.go` atiende el canal publico de
+  dispositivo; autentica primero y deriva `empresa_id` desde PostgreSQL.
+- `backend/handlers/templates/instalar_domotica_raspberry.sh.tmpl` instala el
+  agente Python stdlib y su servicio systemd en la Raspberry.
+- `backend/db/control_electrico_tunnel.go` concentra identidad, cola, entradas
+  y trafico; `control_electrico_tunnel_migration.go` pertenece al rol migrate.
+- `web/administrar_empresa/control_electrico.html` genera el instalador y
+  configura aparatos/reglas; `web/super/domotica_raspberry_trafico.html` muestra
+  transferencia agregada sin secretos.

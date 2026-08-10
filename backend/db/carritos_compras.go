@@ -3721,11 +3721,14 @@ func DeleteCarritoCompraItem(dbConn *sql.DB, empresaID, carritoID, itemID int64)
 		if err != nil {
 			return err
 		}
+		if isCarritoCerrado(estadoCarrito) {
+			return ErrCarritoYaPagado
+		}
 		item, err := getCarritoItemSnapshotTx(tx, empresaID, carritoID, itemID)
 		if err != nil {
 			return err
 		}
-		if isItemActivo(item.Estado) && !isCarritoCerrado(estadoCarrito) {
+		if isItemActivo(item.Estado) {
 			referencia := fmt.Sprintf("carrito:%d:item:%d", carritoID, itemID)
 			if err := adjustCarritoItemStockTx(
 				tx,

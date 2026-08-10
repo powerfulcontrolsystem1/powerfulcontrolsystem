@@ -1,6 +1,7 @@
 package db
 
 import (
+	"os"
 	"strings"
 	"testing"
 )
@@ -75,5 +76,32 @@ func TestValidateEmpresaContabilidadTerceroAndImpuesto(t *testing.T) {
 	}
 	if err := ValidateEmpresaContabilidadImpuesto(EmpresaContabilidadImpuesto{EmpresaID: 7, Codigo: "IVA999", Nombre: "IVA", Tipo: "iva", Porcentaje: 120, Estado: "activo"}); err == nil {
 		t.Fatalf("porcentaje invalido no fue rechazado")
+	}
+}
+
+func TestSeedEmpresaContabilidadColombiaBaseIsConcurrentSafe(t *testing.T) {
+	raw, err := os.ReadFile("contabilidad_colombia.go")
+	if err != nil {
+		t.Fatalf("read contabilidad_colombia.go: %v", err)
+	}
+	src := string(raw)
+	start := strings.Index(src, "func SeedEmpresaContabilidadColombiaBase(")
+	if start < 0 {
+		t.Fatal("no se encontro SeedEmpresaContabilidadColombiaBase")
+	}
+	end := strings.Index(src[start:], "func defaultContabilidadConfig(")
+	if end < 0 {
+		t.Fatal("no se encontro el limite de SeedEmpresaContabilidadColombiaBase")
+	}
+	body := src[start : start+end]
+	for _, conflictTarget := range []string{
+		"ON CONFLICT (empresa_id,codigo) DO NOTHING",
+	} {
+		if got := strings.Count(body, conflictTarget); got != 2 {
+			t.Fatalf("la semilla debe tolerar carreras para cuentas e impuestos con %q, got=%d: %s", conflictTarget, got, body)
+		}
+	}
+	if strings.Contains(body, "CreateEmpresaContabilidadCuenta(") || strings.Contains(body, "CreateEmpresaContabilidadImpuesto(") {
+		t.Fatalf("la semilla concurrente no debe usar inserts que fallen por codigo duplicado: %s", body)
 	}
 }

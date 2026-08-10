@@ -59,6 +59,8 @@ func TestFacturasElectronicasFrontendOffersSafeDIANRetry(t *testing.T) {
 		`return runSearch();`,
 		`estadoDoc === "pendiente_emision" || estadoDoc === "fallida" || estadoDoc === "rechazada"`,
 		`estadoDoc === "anulada"`,
+		`anulacion_confirmada_dian`,
+		`DIAN no confirmó la anulación`,
 	} {
 		if !strings.Contains(page, marker) {
 			t.Fatalf("DIAN retry UI missing marker %q", marker)

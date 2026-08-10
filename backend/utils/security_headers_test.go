@@ -26,6 +26,9 @@ func TestSecurityHeadersAndNoStoreOnLogin(t *testing.T) {
 	t.Setenv("NEXTCLOUD_BASE_URL", "https://nextcloud.example.test")
 	t.Setenv("PCS_CSP_CONNECT_ORIGINS", "https://api.example.test")
 	t.Setenv("PCS_CSP_IMG_ORIGINS", "https://images.example.test")
+	t.Setenv("PCS_CSP_SCRIPT_ORIGINS", "https://scripts.example.test")
+	t.Setenv("PCS_CSP_STYLE_ORIGINS", "https://styles.example.test")
+	t.Setenv("PCS_CSP_FONT_ORIGINS", "https://fonts.example.test")
 	h := SecurityHeadersMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(http.StatusNoContent) }))
 	rec := httptest.NewRecorder()
 	h.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/login.html", nil))
@@ -47,14 +50,35 @@ func TestSecurityHeadersAndNoStoreOnLogin(t *testing.T) {
 			t.Fatalf("CSP keeps broad source %q: %q", forbidden, policy)
 		}
 	}
-	for _, expected := range []string{"form-action 'self'", "https://onlyoffice.example.test", "https://nextcloud.example.test", "https://api.example.test", "https://images.example.test", "https://lh3.googleusercontent.com"} {
+	for _, expected := range []string{"form-action 'self'", "font-src 'self' data:", "https://onlyoffice.example.test", "https://nextcloud.example.test", "https://api.example.test", "https://images.example.test", "https://scripts.example.test", "https://styles.example.test", "https://fonts.example.test", "https://lh3.googleusercontent.com"} {
 		if !strings.Contains(policy, expected) {
 			t.Fatalf("CSP missing explicit source %q: %q", expected, policy)
 		}
 	}
 	reportOnly := rec.Header().Get("Content-Security-Policy-Report-Only")
 	if reportOnly != policy {
-		t.Fatalf("CSP report-only must be generated from the same policy: %q != %q", reportOnly, policy)
+		t.Fatalf("CSP report-only must match the enforced compatibility policy unless strict reporting is enabled: %q != %q", reportOnly, policy)
+	}
+}
+
+func TestSecurityHeadersCanEnableStrictReportOnlyCSPWithoutBlockingCompatibility(t *testing.T) {
+	t.Setenv("PCS_CSP_REPORT_ONLY_STRICT", "true")
+	h := SecurityHeadersMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(http.StatusNoContent) }))
+	rec := httptest.NewRecorder()
+	h.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/administrar_empresa/administrar_productos.html", nil))
+
+	enforced := rec.Header().Get("Content-Security-Policy")
+	reportOnly := rec.Header().Get("Content-Security-Policy-Report-Only")
+	if !strings.Contains(enforced, "'unsafe-inline'") {
+		t.Fatalf("compatibility CSP unexpectedly removed inline support: %q", enforced)
+	}
+	if strings.Contains(reportOnly, "'unsafe-inline'") {
+		t.Fatalf("strict report-only CSP must omit unsafe-inline: %q", reportOnly)
+	}
+	for _, expected := range []string{"default-src 'self'", "form-action 'self'", "script-src 'self'", "style-src 'self'"} {
+		if !strings.Contains(reportOnly, expected) {
+			t.Fatalf("strict report-only CSP missing %q: %q", expected, reportOnly)
+		}
 	}
 }
 

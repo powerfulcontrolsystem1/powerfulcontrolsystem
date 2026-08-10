@@ -76,3 +76,34 @@ func TestBuildVentaDocumentoCodigoUsesImmutableCarritoID(t *testing.T) {
 		t.Fatalf("codigo de factura electronica=%q", got)
 	}
 }
+
+func TestBuildVentaDocumentoCodigoSeparaCierresDelMismoCarrito(t *testing.T) {
+	primera := &dbpkg.CarritoCompra{
+		ID:       117,
+		Codigo:   "VENTA-DIRECTA-12",
+		PagadoEn: "2026-08-08 03:17:59.789233-05",
+	}
+	segunda := &dbpkg.CarritoCompra{
+		ID:       117,
+		Codigo:   "VENTA-DIRECTA-12",
+		PagadoEn: "2026-08-08 03:54:09.375891-05",
+	}
+
+	codigoPrimera := buildVentaDocumentoCodigo(primera, "comprobante_pago")
+	codigoSegunda := buildVentaDocumentoCodigo(segunda, "comprobante_pago")
+	if codigoPrimera == codigoSegunda {
+		t.Fatalf("cierres distintos del mismo carrito no pueden compartir documento: %q", codigoPrimera)
+	}
+	if codigoPrimera != "CP-VENTA-DIRECTA-12-CRT-117-PG-2026080803175978923305" {
+		t.Fatalf("codigo primera venta inesperado: %q", codigoPrimera)
+	}
+	if codigoSegunda != "CP-VENTA-DIRECTA-12-CRT-117-PG-2026080803540937589105" {
+		t.Fatalf("codigo segunda venta inesperado: %q", codigoSegunda)
+	}
+	if repetido := buildVentaDocumentoCodigo(primera, "comprobante_pago"); repetido != codigoPrimera {
+		t.Fatalf("el mismo cierre debe conservar idempotencia: got %q want %q", repetido, codigoPrimera)
+	}
+	if factura := buildVentaDocumentoCodigo(segunda, "factura_electronica"); factura != "FV-VENTA-DIRECTA-12-CRT-117-PG-2026080803540937589105" {
+		t.Fatalf("factura debe conservar identidad de la venta: %q", factura)
+	}
+}

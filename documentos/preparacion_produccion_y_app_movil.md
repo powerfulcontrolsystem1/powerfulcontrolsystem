@@ -5,6 +5,18 @@ fundacion inicial. El plan de ejecucion vigente, hallazgos confirmados, backlog
 ordenado y gates de liberacion estan en `plan_final_para_produccion.md`; ambos
 deben leerse antes de declarar produccion o replicas listas.
 
+## Decisión de lanzamiento 2026-07-30
+
+El primer lanzamiento incluye la web responsive y la PWA. El cliente nativo
+Flutter queda fuera del alcance inicial porque no existe fuente completa
+versionada ni un build reproducible para firmar y auditar. No se elimina la base
+móvil: la API `/api/v1/`, sus contratos, pruebas y documentación se conservan
+para una fase posterior y continúan exigiendo autenticación, permisos e
+idempotencia.
+
+La decisión y sus comprobaciones viven en
+`evidencia_plan_108/P108-021/resultados.md`.
+
 ## Arquitectura acordada
 
 PCS conserva un monolito modular Go/PostgreSQL. Los modulos se comunican por

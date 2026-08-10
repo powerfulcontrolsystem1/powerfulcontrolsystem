@@ -658,6 +658,7 @@
     </div>
   </div>
 
+  <script src="/js/empresa_submenu_context.js"></script>
   <script src="/js/form_field_help.js?v=20260607-field-help1"></script>
   <script>
     const state = {
@@ -1613,6 +1614,11 @@
 
     async function verificarDianFirmaVencimiento(notificar) {
       if (!state.empresaID) return null;
+      if (!state.dianConfig || !Number(state.dianConfig.id)) {
+        var pendiente = { configurado: false, mensaje: "Configura y guarda primero los datos DIAN de esta empresa." };
+        renderFirmaExpiry(pendiente);
+        return pendiente;
+      }
       var url = "/api/empresa/facturacion_electronica/dian?action=vencimiento_certificado&empresa_id=" + encodeURIComponent(state.empresaID);
       url += "&notificar=" + (notificar === false ? "0" : "1");
       var res = await fetch(url, { credentials: "same-origin" });
@@ -1911,8 +1917,13 @@
       var data = await readJSONResponse(res);
       var item = Array.isArray(data) && data.length ? data[0] : null;
       setDianConfigFormData(item || {});
-      verificarDianFirmaVencimiento(true).catch(function() {});
-      verificarDianResolucionVencimiento(true).catch(function() {});
+      if (item && item.id) {
+        verificarDianFirmaVencimiento(true).catch(function() {});
+        verificarDianResolucionVencimiento(true).catch(function() {});
+      } else {
+        renderFirmaExpiry({ configurado: false });
+        renderDianResolutionExpiry({ mensaje: "Configura y guarda los datos DIAN antes de verificar la resolución." });
+      }
       return item;
     }
 
@@ -1959,6 +1970,11 @@
 
     async function verificarDianResolucionVencimiento(silent) {
       if (!state.empresaID) return null;
+      if (!state.dianConfig || !Number(state.dianConfig.id)) {
+        var pendiente = { mensaje: "Configura y guarda primero los datos DIAN de esta empresa." };
+        renderDianResolutionExpiry(pendiente);
+        return pendiente;
+      }
       var url = "/api/empresa/facturacion_electronica/dian?action=vencimiento_resolucion&empresa_id=" + encodeURIComponent(state.empresaID);
       if (silent) url += "&notificar=0";
       var res = await fetch(url, { credentials: "same-origin" });

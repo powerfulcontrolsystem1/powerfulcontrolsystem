@@ -1,6 +1,7 @@
 package db
 
 import (
+	"context"
 	"database/sql"
 	"math"
 	"os"
@@ -55,6 +56,52 @@ func TestEmpresaCxPMigrationIsInEnterpriseCatalog(t *testing.T) {
 	t.Fatal("CxP migration is missing from enterprise catalog")
 }
 
+func TestEmpresaCarteraMoneyPrecisionMigrationIsInEnterpriseCatalog(t *testing.T) {
+	t.Parallel()
+	migrations, err := PlatformMigrations(MigrationTargetEmpresas)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, migration := range migrations {
+		if migration.Version == "20260801-001-cartera-money-precision-v1" {
+			if migration.Apply == nil || migration.Body != empresaCarteraMoneyPrecisionFingerprint {
+				t.Fatal("cartera money precision migration must be executable and checksummed")
+			}
+			return
+		}
+	}
+	t.Fatal("cartera money precision migration is missing")
+}
+
+func TestEmpresaCarteraMoneyPrecisionUsesExactColumnsAndFailsClosed(t *testing.T) {
+	t.Parallel()
+	raw, err := os.ReadFile("cartera_money_precision.go")
+	if err != nil {
+		t.Fatal(err)
+	}
+	source := string(raw)
+	for _, required := range []string{
+		"empresa_cuentas_por_cobrar", "empresa_cuentas_por_pagar",
+		"NUMERIC(18,2)", "manual reconciliation",
+		"saldo = GREATEST(valor_original - valor_pagado, 0)",
+		"saldo = valor_original - valor_pagado",
+	} {
+		if !strings.Contains(source, required) {
+			t.Fatalf("money precision migration missing %q", required)
+		}
+	}
+
+	legacy, err := os.ReadFile("modulos_faltantes.go")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Count(string(legacy), "valor_original NUMERIC(18,2) DEFAULT 0") < 2 ||
+		strings.Count(string(legacy), "valor_pagado NUMERIC(18,2) DEFAULT 0") < 2 ||
+		strings.Count(string(legacy), "saldo NUMERIC(18,2) DEFAULT 0") < 2 {
+		t.Fatal("new CxC/CxP schemas must use exact NUMERIC money columns")
+	}
+}
+
 func TestNombreProveedorCxPCanonicoUsesRegisteredSupplierData(t *testing.T) {
 	t.Parallel()
 	if got := nombreProveedorCxPCanonico("  Proveedor Legal S.A.S.  ", "Nombre IA no confiable"); got != "Proveedor Legal S.A.S." {
@@ -89,6 +136,7 @@ func TestRegistrarEmpresaCxPAbonoKeepsTenantScopedAtomicInvariants(t *testing.T)
 		"INSERT INTO empresa_cxp_pagos",
 		"InsertOutboxEvent(tx",
 		"ErrEmpresaCxPAmountExceedsBalance",
+		"EmpresaCxPPaymentOutboxTopic",
 	} {
 		if !strings.Contains(body, required) {
 			t.Fatalf("CxP atomic flow must preserve %q", required)
@@ -100,6 +148,44 @@ func TestRegistrarEmpresaCxPAbonoKeepsTenantScopedAtomicInvariants(t *testing.T)
 	}
 	if strings.Count(body[accountLock:], "FROM empresa_cxp_pagos WHERE empresa_id = ? AND idempotency_key_hash = ?") == 0 {
 		t.Fatal("CxP flow must recheck idempotency after the account lock for concurrent retries")
+	}
+}
+
+func TestProcessEmpresaCxPPaymentAccountingRejectsInvalidPayloadBeforeDatabase(t *testing.T) {
+	t.Parallel()
+	for _, test := range []struct {
+		empresaID int64
+		payload   string
+	}{
+		{0, `{"cuenta_por_pagar_id":1,"pago_id":1,"movimiento_finanzas_id":1,"monto":1}`},
+		{12, `{}`},
+		{12, `{"cuenta_por_pagar_id":1,"pago_id":1,"movimiento_finanzas_id":1,"monto":-1}`},
+		{12, `no-json`},
+	} {
+		if _, err := ProcessEmpresaCxPPaymentAccounting(context.Background(), &sql.DB{}, test.empresaID, test.payload); err == nil {
+			t.Fatalf("empresa=%d payload=%q must fail before database access", test.empresaID, test.payload)
+		}
+	}
+}
+
+func TestProcessEmpresaCxPPaymentAccountingPreservesTenantAndRetryIdempotency(t *testing.T) {
+	t.Parallel()
+	raw, err := os.ReadFile("cuentas_por_pagar.go")
+	if err != nil {
+		t.Fatal(err)
+	}
+	source := string(raw)
+	for _, required := range []string{
+		"c.empresa_id = p.empresa_id AND c.id = p.cuenta_por_pagar_id",
+		"m.empresa_id = p.empresa_id AND m.id = p.movimiento_finanzas_id",
+		"WHERE p.empresa_id = ? AND p.id = ? AND p.cuenta_por_pagar_id = ?",
+		"FOR UPDATE OF p",
+		"entidad = 'empresa_cxp_pagos' AND entidad_id = ?",
+		"'abono_proveedor_registrado'",
+	} {
+		if !strings.Contains(source, required) {
+			t.Fatalf("CxP accounting worker contract missing %q", required)
+		}
 	}
 }
 

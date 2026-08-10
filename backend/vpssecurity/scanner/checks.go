@@ -82,7 +82,9 @@ func checkFirewall(ctx context.Context, executor Executor) (reports.Finding, str
 		command string
 		args    []string
 	}{
-		{command: "ufw", args: []string{"status"}},
+		// El modo no verbose oculta la politica default y producia un falso
+		// positivo aun con deny incoming aplicado.
+		{command: "ufw", args: []string{"status", "verbose"}},
 		{command: "nft", args: []string{"list", "ruleset"}},
 		{command: "iptables", args: []string{"-S"}},
 	}
@@ -130,16 +132,7 @@ func checkNginxConfig() ([]reports.Finding, string, bool) {
 	if _, err := os.Stat("/etc/nginx"); err != nil {
 		return nil, "nginx no detectado", false
 	}
-	configs := make([]string, 0)
-	_ = filepath.Walk("/etc/nginx", func(path string, info os.FileInfo, err error) error {
-		if err != nil || info == nil || info.IsDir() {
-			return nil
-		}
-		if strings.HasSuffix(strings.ToLower(info.Name()), ".conf") {
-			configs = append(configs, path)
-		}
-		return nil
-	})
+	configs := nginxConfigPaths("/etc/nginx")
 	combined := &strings.Builder{}
 	findings := make([]reports.Finding, 0)
 	hasTLS := false
@@ -147,7 +140,7 @@ func checkNginxConfig() ([]reports.Finding, string, bool) {
 	hasFrameOptions := false
 	hasNoSniff := false
 	for _, cfg := range configs {
-		// #nosec G304 -- path is normalized and constrained to a server-controlled root before this operation.
+		// #nosec G304 -- path is normalized and constrained to /etc/nginx.
 		raw, err := os.ReadFile(cfg)
 		if err != nil {
 			continue
@@ -189,6 +182,22 @@ func checkNginxConfig() ([]reports.Finding, string, bool) {
 		findings = append(findings, reports.Finding{Tool: "custom", Category: "nginx", Severity: reports.SeverityLow, Title: "Falta X-Content-Type-Options en Nginx", Description: "No se detecto la cabecera de endurecimiento X-Content-Type-Options.", Recommendation: "Agregue X-Content-Type-Options nosniff a los bloques HTTP/HTTPS.", Target: settingsTargetLocalhost()})
 	}
 	return findings, combined.String(), true
+}
+
+func nginxConfigPaths(root string) []string {
+	configs := make([]string, 0)
+	_ = filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
+		if err != nil || info == nil || info.IsDir() {
+			return nil
+		}
+		normalized := filepath.ToSlash(path)
+		if strings.HasSuffix(strings.ToLower(info.Name()), ".conf") || strings.Contains(normalized, "/sites-enabled/") {
+			configs = append(configs, path)
+		}
+		return nil
+	})
+	sort.Strings(configs)
+	return configs
 }
 
 func checkSSHConfig() ([]reports.Finding, string, bool) {

@@ -733,7 +733,9 @@ func saveEmpresaStorageConfig(dbSuper *sql.DB, cfg empresaStorageConfig, actor s
 func buildEmpresaStorageUsage(dbEmp, dbSuper *sql.DB, empresaID int64) empresaStorageUsage {
 	cfg := getEmpresaStorageConfig(dbSuper)
 	baseDir, _ := empresaUploadsBaseDir(dbEmp, empresaID)
-	used := dirSizeBytes(baseDir)
+	// La cuota empresarial es transversal: los soportes de compras se guardan en
+	// private_storage y no deben permitir eludir el limite de los adjuntos del buzon.
+	used := dirSizeBytes(baseDir) + empresaSoportesComprasIAStorageBytes(empresaID)
 	limit := cfg.DefaultLimitMB * 1024 * 1024
 	pct := 0.0
 	if limit > 0 {
@@ -763,6 +765,13 @@ func buildEmpresaStorageUsage(dbEmp, dbSuper *sql.DB, empresaID int64) empresaSt
 		}
 	}
 	return usage
+}
+
+func empresaSoportesComprasIAStorageBytes(empresaID int64) int64 {
+	if empresaID <= 0 {
+		return 0
+	}
+	return dirSizeBytes(filepath.Join(soporteComprasIAPrivateRoot(), fmt.Sprintf("empresa_%d", empresaID)))
 }
 
 func dirSizeBytes(root string) int64 {
