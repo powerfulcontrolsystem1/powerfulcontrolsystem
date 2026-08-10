@@ -33,3 +33,19 @@ Alcance: comprobaciones HTTP de solo lectura, sin sesion y sin datos de negocio.
    de sesion ni matriz A/B de tenant.
 
 Estado de fase: **parcial; no aprobada**.
+
+## Revalidación por digest 2026-07-30
+
+El candidato inmutable `d262874e` se comprobó otra vez en staging mediante
+solicitudes HTTP de solo lectura y sin sesión:
+
+- La portada respondió HTTP 200; HSTS, CSP y `X-Content-Type-Options` se
+  observaron una vez cada uno en la respuesta final.
+- `GET /api/empresa/reportes?empresa_id=999999` respondió HTTP 401 sin sesión.
+- Un `OPTIONS` con origen externo respondió HTTP 401 y no entregó
+  `Access-Control-Allow-Origin`.
+
+No se enviaron formularios ni se consultaron datos empresariales. Se mantiene
+el pendiente de CSP: `script-src` conserva `unsafe-inline`; por tanto P108-017
+continúa **parcial** y no sustituye DAST autenticado, pruebas de carga hostil,
+sesión ni aislamiento A/B.

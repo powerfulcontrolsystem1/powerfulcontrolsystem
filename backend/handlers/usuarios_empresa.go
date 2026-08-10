@@ -605,6 +605,17 @@ func EmpresaUsuariosHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 					http.Error(w, "no se puede activar el usuario hasta que confirme su correo", http.StatusConflict)
 					return
 				}
+				// Una cuenta desactivada no debe conservar sesiones emitidas antes
+				// del cambio. Se revocan primero: si la actualizacion posterior falla,
+				// el usuario activo solo tendra que autenticarse de nuevo; nunca queda
+				// una cuenta inactiva con acceso residual.
+				if estado == "inactivo" {
+					if err := dbpkg.RevokeSessionsByAdminEmail(dbSuper, item.Email); err != nil {
+						log.Printf("[usuarios_empresa] failed to revoke sessions empresa_id=%d id=%d error=%v", empresaID, id, err)
+						http.Error(w, "No se pudieron revocar las sesiones del usuario", http.StatusInternalServerError)
+						return
+					}
+				}
 				if err := dbpkg.SetEmpresaUsuarioEstado(dbEmp, empresaID, id, estado); err != nil {
 					http.Error(w, "failed to set estado: "+err.Error(), http.StatusInternalServerError)
 					return

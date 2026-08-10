@@ -624,7 +624,7 @@ func ListDomicilioMenuItems(dbConn *sql.DB, empresaID, restaurantID int64, onlyA
 		return nil, err
 	}
 	defer rows.Close()
-	var out []EmpresaDomicilioMenuItem
+	out := make([]EmpresaDomicilioMenuItem, 0)
 	for rows.Next() {
 		var x EmpresaDomicilioMenuItem
 		var disp int

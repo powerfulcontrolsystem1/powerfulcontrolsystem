@@ -6,8 +6,10 @@ No imprimir secretos ni variables privadas completas.
 ## Plan 108: ensayo destructivo aislado de migración vacía
 
 Este ensayo crea recursos Docker efímeros con prefijo `p108-empty-`, ejecuta el
-migrador exacto dos veces y los elimina mediante `trap`. Nunca se debe apuntar
-al volumen de staging o producción.
+migrador exacto dos veces, altera un checksum solo en el ledger temporal,
+comprueba fallo cerrado sin cambio de esquema, restaura el checksum controlado
+y verifica recuperación. Finalmente elimina todos los recursos mediante
+`trap`. Nunca se debe apuntar al volumen de staging o producción.
 
 ```bash
 PROJECT_DIR=/ruta/checkout-candidato \
@@ -17,8 +19,25 @@ P108_DRILL_ID=p108-empty-<sha-corto> \
 bash deploy/scripts/vps-p108-empty-migration-drill.sh
 ```
 
-El script rechaza recursos preexistentes, un ID fuera del prefijo autorizado o
-una imagen sin digest.
+El script rechaza recursos preexistentes, un ID fuera del prefijo autorizado,
+una imagen sin digest o un fallo de migración que no quede auditado y sin
+cambios de esquema/ledger.
+
+Para ampliar el ensayo a los fallos P109 antes/durante migración y a la
+compatibilidad hacia atrás, añadir:
+
+```bash
+PCS_PREVIOUS_API_IMAGE_DIGEST=ghcr.io/organizacion/pcs-api@sha256:<digest-anterior> \
+P109_VERIFY_MIGRATION_FAILURES=1 \
+P109_BACKWARD_HOST_PORT=<puerto-loopback-libre>
+```
+
+El modo ampliado primero niega DDL a un rol migrador restringido y exige que el
+esquema quede intacto. Después provoca un fallo real entre el DDL de una
+migración y su inserción en el ledger, verifica rollback y auditoría, recupera
+índice/ledger atómicamente y arranca la API anterior contra el esquema nuevo.
+Todo ocurre en base, volumen, red y puerto efímeros; no usar imágenes sin digest
+ni apuntar las DSN a staging o producción.
 
 Para ensayar un upgrade desde una copia lógica de staging sin escribir en el
 origen:
@@ -302,6 +321,45 @@ locales PCS, volumenes Docker, archivos del proyecto filtrados, SHA256, manifest
 local y un restaurador `restore_to_new_vps.sh` dentro del paquete. No imprimir
 secretos, `.env`, claves privadas, certificados ni DSN durante la ejecucion o al
 reportar resultados.
+
+Para arrancar la API y el migrador exactos contra un snapshot restaurado sin
+tocar los servicios activos, ejecutar en la VPS:
+
+```bash
+PROJECT_DIR=/ruta/checkout \
+SOURCE_ENV=/ruta/privada/.env.platform \
+PCS_API_IMAGE_DIGEST=ghcr.io/organizacion/pcs-api@sha256:<64-hex> \
+PCS_MIGRATE_IMAGE_DIGEST=ghcr.io/organizacion/pcs-migrate@sha256:<64-hex> \
+P109_DRILL_ID=p109-restore-app-<sha-corto> \
+bash deploy/scripts/vps-p109-restored-app-drill.sh
+```
+
+Las credenciales QA son opcionales y se pasan solo mediante variables de
+sesión `P109_QA_EMAIL` y `P109_QA_PASSWORD`; nunca se escriben en el script ni
+en la evidencia. Si se definen, el ensayo usa el login oficial y recorre CxP,
+contabilidad, CxP/IA, DIAN y documentos. El script exige digests, usa red y
+puerto loopback efímeros, bloquea acceso anónimo y limpia todos los recursos.
+Para una inspección visual por túnel local puede definirse
+`P109_HOLD_SECONDS`, con máximo de 900 segundos; al expirar se conserva la
+limpieza automática.
+Para comprobar dos réplicas de aplicación sobre la copia restaurada, definir
+`P109_VERIFY_REPLICA=1`, un `P109_REPLICA_HOST_PORT` loopback distinto y las
+credenciales QA por variables de sesión. El ensayo carga por A con CSRF,
+descarga por B, compara SHA-256, retira A y repite readiness/descarga en B.
+En ese modo también exige negativos de empresa cruzada, contenido HTML, tamaño
+superior a 15 MiB y symlink, y comprueba que los rechazos no creen filas.
+Para ensayar pérdida y recuperación conjunta de datos/archivos, añadir
+`P109_VERIFY_COORDINATED_ROLLBACK=1`. Este modo exige réplicas y credenciales
+QA: detiene ambas APIs efímeras, crea un checkpoint de las dos bases y del
+volumen privado, elimina exclusivamente esas copias temporales, las restaura,
+reinicia una réplica y vuelve a comprobar login, cinco dominios, fila y SHA-256.
+Nunca se debe apuntar este modo a las bases o volúmenes activos.
+Para auditar el snapshot antes del arranque, definir
+`P109_VERIFY_PRIVATE_INVENTORY=1`. La prueba cruza el catálogo cerrado de chat,
+buzón, DIAN, finanzas, grafología y soportes CxP/IA contra los archivos del
+volumen; bloquea referencias faltantes, symlinks y rutas fuera de
+`<categoria>/empresa_<id>/<archivo>`, y reporta sin borrar huérfanos o
+referencias heredadas que deban migrarse.
 
 Para subir una copia a un VPS nuevo y dejar preparada la restauracion:
 

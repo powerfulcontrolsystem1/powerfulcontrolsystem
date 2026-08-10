@@ -163,6 +163,9 @@ Estado: vigente. Ultima actualizacion: 2026-07-24.
   seguridad, permisos, auditoria y los limites de OpenAI permanecen activos.
 - La base movil versionada se publica bajo `/api/v1/` con JSON uniforme. Su
   contrato y plan de migracion estan en `documentos/api/mobile_api_v1.md`.
+- Alcance de lanzamiento 2026-07-30: web responsive y PWA sí entran; el cliente
+  nativo Flutter queda fuera del primer lanzamiento hasta disponer de fuente y
+  build reproducibles. La API v1 se conserva autenticada para esa fase futura.
 
 ## Regla obligatoria para agentes
 

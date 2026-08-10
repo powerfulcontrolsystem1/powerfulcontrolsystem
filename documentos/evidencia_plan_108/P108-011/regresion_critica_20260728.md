@@ -66,3 +66,63 @@ exigido por P108-011.
 
 La página de carrito se volvió a abrir autenticada después de promover el
 digest exacto; no produjo respuestas HTTP 4xx/5xx.
+
+## Contratos agrupados 2026-07-30
+
+`qa_module_contracts.mjs --strict` y `qa_roles_matrix.mjs --strict` terminaron
+en estado `ok`. Los archivos críticos, contratos de impresión y perfiles Super
+administrador, Administrador de empresa, Cajero, Vendedor, Asesor comercial y
+Soporte están presentes en el candidato local. Esta comprobación no sustituye
+las acciones mutables ni sesiones reales por rol.
+
+## Barrido ampliado autenticado 2026-07-30
+
+Se recorrieron 48 rutas empresariales críticas en escritorio y móvil: 96
+combinaciones, 2.148 botones inventariados, 104 clics de lectura clasificados
+como seguros y 253 acciones mutables omitidas. El resultado inicial fue 82
+combinaciones `ok` y 14 en revisión.
+
+La auditoría trataba las rutas explícitas literalmente y no agregaba
+`empresa_id`/`id`; esto generó falsos 400 en Compras, Clientes y Configuración.
+El runner normaliza ahora todas las rutas empresariales explícitas. La
+repetición dirigida sobre ocho rutas y dos viewports terminó 14/16 `ok`:
+Compras, Clientes, Configuración, Contabilidad Colombia, Facturación
+electrónica, Cobranza y Usuarios pasaron en ambos tamaños.
+
+El único 5xx reproducible restante fue
+`GET /api/empresa/creditos?action=resumen_cartera`: PostgreSQL entregaba `NULL`
+en cuatro `SUM(CASE ...)` cuando PCS no tenía créditos y Go intentaba leerlos
+como enteros. Los cuatro agregados usan ahora `COALESCE(..., 0)`, manteniendo el
+filtro obligatorio por `empresa_id`.
+
+La prueba oficial de `Reenviar confirmación` descubrió además que 19 páginas
+empresariales con mutaciones directas no instalaban el sincronizador CSRF. Todas
+incorporan ahora `empresa_submenu_context.js` y existe un contrato recursivo que
+impide agregar otra página mutante sin token. El intento rechazado no envió
+correo ni cambió usuarios.
+
+Las correcciones aprobaron `go test ./...`, `go vet` enfocado, contratos de
+módulos, matriz de roles, pipeline de despliegue y chequeo sintáctico del
+runner. Continúa pendiente promover el nuevo digest y repetir el 500 de
+Créditos y la mutación CSRF en staging.
+
+## Verificación del candidato `f9396da5` en staging
+
+GitHub Actions aprobó pruebas, `go test -race`, análisis estático, secretos,
+dependencias, contenedores, Trivy, SBOM y publicación inmutable. Las imágenes
+del commit `f9396da5e41562968996b05136fffca9991b56f9` se promovieron por digest
+sin reconstruir. El migrador terminó con código cero; backend, worker, frontend
+y PostgreSQL quedaron saludables.
+
+La matriz dirigida sobre las ocho rutas anteriores terminó **16/16 `ok`** en
+escritorio y móvil, 308 botones inventariados, cero 4xx/5xx y cero desbordes.
+Créditos respondió correctamente con cartera vacía y Contabilidad Colombia no
+reprodujo la carrera inicial.
+
+En el navegador interno se pulsó el botón real `Reenviar confirmación` del
+usuario de caja pendiente. El servidor aceptó la mutación con CSRF y la pantalla
+mostró `Correo de confirmación reenviado`; ya no aparece el 403 anterior. El
+usuario permanece pendiente hasta completar el enlace recibido.
+
+P108-011 sigue parcial porque esta pasada conserva 46 acciones riesgosas sin
+ejecutar y no sustituye el inventario mutable completo por rol.

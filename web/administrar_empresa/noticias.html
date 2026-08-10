@@ -53,6 +53,20 @@
       function esc(v){return String(v == null ? "" : v).replace(/[&<>"']/g,function(ch){return({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"})[ch];});}
       function text(v){return String(v == null ? "" : v).trim();}
       function qp(name){ try { return new URLSearchParams(window.location.search||"").get(name) || ""; } catch(e){ return ""; } }
+      function empresaId(){
+        var candidates = [qp("empresa_id"), qp("id")];
+        try {
+          candidates.push(sessionStorage.getItem("active_empresa_id"), sessionStorage.getItem("empresa_id"), sessionStorage.getItem("admin_empresa_id"));
+        } catch(e) {}
+        try {
+          candidates.push(localStorage.getItem("active_empresa_id"), localStorage.getItem("empresa_id"), localStorage.getItem("admin_empresa_id"));
+        } catch(e) {}
+        for(var i=0;i<candidates.length;i++){
+          var value = Number.parseInt(String(candidates[i] || "").trim(), 10);
+          if(Number.isInteger(value) && value > 0) return String(value);
+        }
+        return "";
+      }
       function detectedCountry(){
         var raw = (qp("pais") || qp("country") || (navigator.language || "") || "es-CO").toUpperCase();
         if(raw.indexOf("CO") >= 0 || raw.indexOf("COLOMB") >= 0) return { code:"CO", label:"Colombia" };
@@ -96,7 +110,12 @@
           '</article>';
         }).join('');
       }
-      fetch('/api/empresa/noticias',{credentials:'same-origin'})
+      var currentEmpresaId = empresaId();
+      if(!currentEmpresaId){
+        list.innerHTML = '<p class="empresa-news-private-empty">No se pudo identificar la empresa activa.</p>';
+        return;
+      }
+      fetch('/api/empresa/noticias?empresa_id=' + encodeURIComponent(currentEmpresaId),{credentials:'same-origin'})
         .then(function(res){ if(!res.ok) throw new Error('HTTP '+res.status); return res.json(); })
         .then(render)
         .catch(function(){ list.innerHTML = '<p class="empresa-news-private-empty">No se pudieron cargar las noticias.</p>'; });

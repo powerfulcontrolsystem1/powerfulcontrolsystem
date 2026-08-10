@@ -80,6 +80,17 @@ func TestCreditoDashboardsUsePostgresSafeDateComparisons(t *testing.T) {
 	}
 }
 
+func TestCreditoCarteraResumenCoalescesEmptyAggregateCounts(t *testing.T) {
+	raw, err := os.ReadFile("creditos.go")
+	if err != nil {
+		t.Fatalf("read creditos.go: %v", err)
+	}
+	body := extractCreditoFunctionForTest(t, string(raw), "func GetEmpresaCreditosCarteraResumen(", "func GetEmpresaCreditosMoraDashboard(")
+	if got := strings.Count(body, "COALESCE(SUM(CASE"); got != 4 {
+		t.Fatalf("el resumen debe convertir a cero sus cuatro conteos SUM(CASE) cuando no hay creditos, got=%d: %s", got, body)
+	}
+}
+
 func TestCreditoDailyScheduleSupportsLongContractsAndSkipsSundays(t *testing.T) {
 	if got := creditoMaxCuotas("diaria"); got < 730 {
 		t.Fatalf("los creditos diarios deben permitir contratos de al menos dos años, got=%d", got)
