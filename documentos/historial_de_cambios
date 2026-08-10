@@ -41648,3 +41648,8 @@ acumulativa.
 
 2026-08-10: Correccion runtime de imagenes de Domotica.
 - El stack inicializa el volumen `pcs_web_uploads` antes de API y worker con el UID/GID no privilegiado del servicio. Esto corrige volumenes heredados propiedad de root y mantiene Nginx solo-lectura para los archivos publicos.
+
+2026-08-10: Tarjetas compactas y conexion Raspberry en equipos de estacion.
+- Las fotos pasan a iconos pequeños en la esquina de cada tarjeta.
+- Se elimina la duplicidad de botones de encendido/apagado y queda un control contextual unico, incluyendo etiqueta para equipos programados.
+- Se corrige el parser de timestamps PostgreSQL con microsegundos para que el heartbeat real de Raspberry no aparezca como `0 / 2`.

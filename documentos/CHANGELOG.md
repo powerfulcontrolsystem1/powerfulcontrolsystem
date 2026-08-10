@@ -3445,3 +3445,8 @@
 
 ### Corrección de almacenamiento de imágenes de Domótica
 - [Runtime] El despliegue normaliza con privilegios mínimos la propiedad del volumen público de subidas antes de iniciar API y worker. Así, un volumen heredado propiedad de `root` vuelve a permitir cargar fotos de equipos sin abrir escritura al frontend.
+
+### Tarjetas compactas y estado de conexión de Domótica
+- [UX] La foto de cada equipo se presenta como icono pequeño en la esquina de la tarjeta.
+- [UX] Encender/apagar usa un único botón contextual, con color y texto según el estado; los equipos programados lo indican en el botón.
+- [Conectividad] La fecha PostgreSQL con microsegundos se normaliza antes de calcular el heartbeat, mostrando correctamente Raspberry conectada/desconectada.

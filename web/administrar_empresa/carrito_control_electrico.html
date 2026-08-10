@@ -103,7 +103,8 @@
       min-width: 0;
       overflow: hidden;
       display: grid;
-      grid-template-rows: auto 1fr auto;
+      grid-template-rows: 1fr auto;
+      position: relative;
     }
 
     .sensor-card {
@@ -151,25 +152,26 @@
     .controller-chip.is-online::before { background: var(--cart-electric-success); box-shadow: 0 0 0 3px color-mix(in srgb, var(--cart-electric-success) 18%, transparent); }
 
     .device-photo {
-      width: 100%;
-      aspect-ratio: 16 / 9;
-      object-fit: cover;
+      position: absolute;
+      top: 11px;
+      right: 11px;
+      width: 54px;
+      height: 54px;
+      object-fit: contain;
+      padding: 4px;
+      border: 1px solid var(--cart-electric-line);
+      border-radius: 10px;
       background: linear-gradient(135deg, color-mix(in srgb, var(--accent) 16%, var(--cart-electric-panel)), var(--cart-electric-soft));
-      border-bottom: 1px solid var(--cart-electric-line);
+      box-sizing: border-box;
+      z-index: 1;
     }
 
     .device-photo-empty {
-      display: grid;
-      place-items: center;
-      color: var(--cart-electric-muted);
-      font-size: .82rem;
-      font-weight: 800;
-      text-align: center;
-      padding: 12px;
+      display: none;
     }
 
     .device-body {
-      padding: 13px;
+      padding: 13px 80px 13px 13px;
       display: grid;
       gap: 10px;
     }
@@ -206,12 +208,40 @@
       font-size: .9rem;
     }
 
+    .raspberry-connection {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: .78rem;
+      font-weight: 800;
+    }
+
+    .raspberry-connection-dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      display: inline-block;
+      background: var(--cart-electric-danger);
+      box-shadow: 0 0 0 3px color-mix(in srgb, var(--cart-electric-danger) 16%, transparent);
+    }
+
+    .raspberry-connection.is-online { color: var(--cart-electric-success); }
+    .raspberry-connection.is-online .raspberry-connection-dot {
+      background: var(--cart-electric-success);
+      box-shadow: 0 0 0 3px color-mix(in srgb, var(--cart-electric-success) 16%, transparent);
+    }
+    .raspberry-connection.is-offline { color: var(--cart-electric-danger); }
+
     .device-footer {
       display: grid;
       grid-template-columns: 1fr 1fr;
       gap: 8px;
       padding: 0 13px 13px;
     }
+
+    .device-toggle-action { grid-column: 1 / -1; font-weight: 800; }
+    .device-toggle-action.is-on { background: var(--cart-electric-success); color: #fff; border-color: var(--cart-electric-success); }
+    .device-toggle-action.is-off { background: var(--cart-electric-danger); color: #fff; border-color: var(--cart-electric-danger); }
 
     .status-pill {
       display: inline-flex;
@@ -403,6 +433,13 @@
       return { label: 'Sin estado', cls: 'is-off' };
     }
 
+    function controlLabel(rele, isOn) {
+      if (rele && rele.programacion_habilitada) {
+        return isOn ? 'Apagar (programado)' : 'Encender (programado)';
+      }
+      return isOn ? 'Apagar' : 'Encender';
+    }
+
     function scheduleLabel(rele) {
       if (!rele || !rele.programacion_habilitada) return 'Sin programacion';
       const on = normalize(rele.hora_encendido) || '--:--';
@@ -416,13 +453,18 @@
       if (!url) {
         return '<div class="device-photo device-photo-empty">Sin foto</div>';
       }
-      return '<img class="device-photo" src="' + escapeHtml(url) + '" alt="' + escapeHtml(rele.relay_name || rele.tipo_carga || 'Aparato') + '">';
+      return '<img class="device-photo" src="' + escapeHtml(url) + '" alt="' + escapeHtml(rele.relay_name || rele.tipo_carga || 'Aparato') + '" loading="lazy">';
     }
 
     function parseDate(raw) {
       const text = normalize(raw);
       if (!text) return null;
-      const date = new Date(text.indexOf('T') >= 0 ? text : text.replace(' ', 'T'));
+      let iso = text.indexOf('T') >= 0 ? text : text.replace(' ', 'T');
+      // PostgreSQL puede entregar seis dígitos de microsegundos; ECMAScript
+      // acepta como máximo tres dígitos de milisegundos.
+      iso = iso.replace(/(\.\d{3})\d+(?=(Z|[+-]\d{2}(?::?\d{2})?)$)/, '$1');
+      iso = iso.replace(/([+-]\d{2})$/, '$1:00');
+      const date = new Date(iso);
       return Number.isNaN(date.getTime()) ? null : date;
     }
 
@@ -437,6 +479,13 @@
     function raspberryLabel(id) {
       const item = state.raspberryPIs.find(function(pi) { return Number(pi && pi.id) === Number(id || 0); });
       return item ? (normalize(item.nombre) || normalize(item.codigo) || ('Raspberry #' + id)) : (id ? ('Raspberry #' + id) : 'Raspberry no asignada');
+    }
+
+    function raspberryStatusHTML(id) {
+      const item = state.raspberryPIs.find(function(pi) { return Number(pi && pi.id) === Number(id || 0); });
+      const online = raspberryOnline(item);
+      const label = online ? 'Raspberry conectada' : 'Raspberry desconectada';
+      return '<span class="raspberry-connection ' + (online ? 'is-online' : 'is-offline') + '" title="' + escapeHtml(label) + '"><span class="raspberry-connection-dot" aria-hidden="true"></span>' + escapeHtml(label) + '</span>';
     }
 
     function renderControllers() {
@@ -524,18 +573,18 @@
                 '<small>' + escapeHtml(rele.tipo_carga || rele.salida_codigo || 'salida') + '</small>' +
               '</div>' +
               (isOn ? '<span class="electric-on-bolt" title="Aparato encendido" aria-label="Aparato encendido">⚡</span>' : '') +
-              '<button class="status-pill ' + info.cls + ' device-state-toggle" type="button" data-control-toggle="' + (isOn ? 'off' : 'on') + '" data-rele-id="' + escapeHtml(rele.id || 0) + '" title="' + (isOn ? 'Apagar rápidamente' : 'Encender rápidamente') + '">' + escapeHtml(info.label) + '</button>' +
+              '<span class="status-pill ' + info.cls + '" aria-label="Estado: ' + escapeHtml(info.label) + '">' + escapeHtml(info.label) + '</span>' +
             '</div>' +
             '<div class="device-details">' +
               '<span>GPIO ' + escapeHtml(rele.gpio_pin || '-') + ' | ' + escapeHtml(rele.raspberry_nombre || rele.raspberry_ip || 'Raspberry principal') + '</span>' +
+              raspberryStatusHTML(rele.raspberry_id) +
               '<span>Modo: ' + escapeHtml(rele.modo || 'manual') + '</span>' +
               '<span>' + escapeHtml(scheduleLabel(rele)) + '</span>' +
               (normalize(rele.ultimo_error) ? '<span class="error">' + escapeHtml(rele.ultimo_error) + '</span>' : '') +
             '</div>' +
           '</div>' +
           '<div class="device-footer">' +
-            '<button class="btn secondary" type="button" data-control-state="off" data-rele-id="' + escapeHtml(rele.id || 0) + '"' + (disabled ? ' disabled' : '') + '>Apagar</button>' +
-            '<button class="btn add" type="button" data-control-state="on" data-rele-id="' + escapeHtml(rele.id || 0) + '"' + (disabled ? ' disabled' : '') + '>Encender</button>' +
+            '<button class="btn device-toggle-action ' + info.cls + '" type="button" data-control-toggle="' + (isOn ? 'off' : 'on') + '" data-rele-id="' + escapeHtml(rele.id || 0) + '" title="' + escapeHtml(controlLabel(rele, isOn)) + '"' + (disabled ? ' disabled' : '') + '>' + escapeHtml(controlLabel(rele, isOn)) + '</button>' +
             '<button class="btn secondary" type="button" data-control-schedule data-rele-id="' + escapeHtml(rele.id || 0) + '">Programar</button>' +
             '<a class="btn secondary" href="/administrar_empresa/control_electrico.html?empresa_id=' + encodeURIComponent(state.empresaID) + '&pagina=reles&rele_id=' + encodeURIComponent(rele.id || 0) + '">Editar</a>' +
           '</div>' +
