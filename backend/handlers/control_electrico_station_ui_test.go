@@ -36,7 +36,7 @@ func TestDomoticaStationUIHasSingleEntryAndVisibilityCheck(t *testing.T) {
 		t.Fatal(err)
 	}
 	cartSource := string(cartPage)
-	for _, marker := range []string{"carrito-action-select-row", "id=\"carritoBtnControlElectrico\"", "aria-label=\"Abrir Domótica de esta estación\""} {
+	for _, marker := range []string{"carrito-action-select-row", "gap:18px", "id=\"carritoBtnControlElectrico\"", "aria-label=\"Abrir Domótica de esta estación\"", "const estacionID = resolveCarritoEstacionID(selected)", "return_to: 'carrito'"} {
 		if !strings.Contains(cartSource, marker) {
 			t.Fatalf("el carrito no contiene %q", marker)
 		}
