@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Domotica de la estacion</title>
+  <title>Equipos electrónicos de estación</title>
   <link rel="stylesheet" href="/estilos.css">
   <style>
     :root {
@@ -227,6 +227,11 @@
       font-weight: 800;
       white-space: nowrap;
     }
+    .device-state-toggle { border: 0; cursor: pointer; font: inherit; }
+    .device-state-toggle.is-on { background: var(--cart-electric-success); color: #fff; }
+    .device-state-toggle.is-off { background: var(--cart-electric-danger); color: #fff; }
+    .cart-electric-dialog { border: 0; border-radius: 16px; max-width: 520px; width: min(94vw, 520px); color: var(--cart-electric-text); background: var(--cart-electric-panel); box-shadow: 0 24px 80px var(--cart-electric-shadow); }
+    .cart-electric-dialog::backdrop { background: rgb(2 6 23 / .62); }
 
     .status-pill.is-on {
       color: var(--cart-electric-success);
@@ -272,7 +277,7 @@
   <main class="cart-electric-shell">
     <header class="cart-electric-header">
       <div>
-        <h1><span aria-hidden="true">⚡</span> Domotica</h1>
+        <h1><span aria-hidden="true">⚡</span> Equipos electrónicos de estación</h1>
         <p id="cartElectricMeta" class="cart-electric-meta">Cargando estacion...</p>
       </div>
       <div class="cart-electric-actions">
@@ -307,6 +312,18 @@
     <section id="cartElectricControllerSummary" class="controller-summary" aria-label="Controladores Raspberry"></section>
     <div id="cartElectricMessage" class="form-help cart-electric-message"></div>
     <section id="cartElectricGrid" class="device-grid" aria-live="polite"></section>
+
+    <dialog id="cartElectricScheduleDialog" class="domotica-device-dialog cart-electric-dialog">
+      <form method="dialog" id="cartElectricScheduleForm">
+        <header class="domotica-device-head"><div><p class="form-help mt-0 mb-4">Programación</p><h2 id="cartElectricScheduleTitle" class="section-heading">Equipo</h2></div><button class="btn secondary" value="cancel">Cerrar</button></header>
+        <div class="domotica-device-body">
+          <label class="form-help inline-check"><input id="cartElectricScheduleEnabled" type="checkbox"> Activar programación</label>
+          <div class="form-row"><div class="form-col"><label class="form-label" for="cartElectricScheduleOn">Encender</label><input id="cartElectricScheduleOn" class="form-input" type="time"></div><div class="form-col"><label class="form-label" for="cartElectricScheduleOff">Apagar</label><input id="cartElectricScheduleOff" class="form-input" type="time"></div></div>
+          <label class="form-label" for="cartElectricScheduleDays">Días</label><select id="cartElectricScheduleDays" class="form-input"><option value="todos">Todos</option><option value="lunes_viernes">Lunes a viernes</option><option value="sabado_domingo">Sábado y domingo</option></select>
+        </div>
+        <footer class="domotica-device-footer"><button class="btn secondary" value="cancel">Cancelar</button><button id="cartElectricScheduleSave" class="btn primary" value="default">Guardar programación</button></footer>
+      </form>
+    </dialog>
   </main>
 
   <script>
@@ -323,6 +340,7 @@
       raspberryPIs: [],
       returnTo: '',
       sendingID: 0
+      , selectedReleID: 0
     };
 
     function parsePositiveInt(raw) {
@@ -506,7 +524,7 @@
                 '<small>' + escapeHtml(rele.tipo_carga || rele.salida_codigo || 'salida') + '</small>' +
               '</div>' +
               (isOn ? '<span class="electric-on-bolt" title="Aparato encendido" aria-label="Aparato encendido">⚡</span>' : '') +
-              '<span class="status-pill ' + info.cls + '">' + escapeHtml(info.label) + '</span>' +
+              '<button class="status-pill ' + info.cls + ' device-state-toggle" type="button" data-control-toggle="' + (isOn ? 'off' : 'on') + '" data-rele-id="' + escapeHtml(rele.id || 0) + '" title="' + (isOn ? 'Apagar rápidamente' : 'Encender rápidamente') + '">' + escapeHtml(info.label) + '</button>' +
             '</div>' +
             '<div class="device-details">' +
               '<span>GPIO ' + escapeHtml(rele.gpio_pin || '-') + ' | ' + escapeHtml(rele.raspberry_nombre || rele.raspberry_ip || 'Raspberry principal') + '</span>' +
@@ -518,6 +536,8 @@
           '<div class="device-footer">' +
             '<button class="btn secondary" type="button" data-control-state="off" data-rele-id="' + escapeHtml(rele.id || 0) + '"' + (disabled ? ' disabled' : '') + '>Apagar</button>' +
             '<button class="btn add" type="button" data-control-state="on" data-rele-id="' + escapeHtml(rele.id || 0) + '"' + (disabled ? ' disabled' : '') + '>Encender</button>' +
+            '<button class="btn secondary" type="button" data-control-schedule data-rele-id="' + escapeHtml(rele.id || 0) + '">Programar</button>' +
+            '<a class="btn secondary" href="/administrar_empresa/control_electrico.html?empresa_id=' + encodeURIComponent(state.empresaID) + '&pagina=reles&rele_id=' + encodeURIComponent(rele.id || 0) + '">Editar</a>' +
           '</div>' +
         '</article>';
       }).join('');
@@ -586,6 +606,34 @@
       }
     }
 
+    function openSchedule(releID) {
+      const rele = state.reles.find(function(item) { return Number(item.id) === Number(releID); });
+      if (!rele) return;
+      state.selectedReleID = Number(releID);
+      document.getElementById('cartElectricScheduleTitle').textContent = rele.relay_name || 'Equipo';
+      document.getElementById('cartElectricScheduleEnabled').checked = !!rele.programacion_habilitada;
+      document.getElementById('cartElectricScheduleOn').value = rele.hora_encendido || '';
+      document.getElementById('cartElectricScheduleOff').value = rele.hora_apagado || '';
+      document.getElementById('cartElectricScheduleDays').value = rele.programacion_dias || 'todos';
+      document.getElementById('cartElectricScheduleDialog').showModal();
+    }
+
+    async function saveSchedule() {
+      const rele = state.reles.find(function(item) { return Number(item.id) === state.selectedReleID; });
+      if (!rele) return;
+      const enabled = document.getElementById('cartElectricScheduleEnabled').checked;
+      const on = document.getElementById('cartElectricScheduleOn').value;
+      const off = document.getElementById('cartElectricScheduleOff').value;
+      if (enabled && (!on || !off || on === off)) throw new Error('Indica horarios de encendido y apagado diferentes.');
+      const payload = Object.assign({}, rele, { programacion_habilitada: enabled, hora_encendido: on, hora_apagado: off, programacion_dias: document.getElementById('cartElectricScheduleDays').value, programacion_timezone: rele.programacion_timezone || 'America/Bogota' });
+      const url = '/api/empresa/control_electrico?empresa_id=' + encodeURIComponent(state.empresaID) + '&action=rele';
+      const res = await fetch(url, { method: 'PUT', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+      await ensureOk(res);
+      document.getElementById('cartElectricScheduleDialog').close();
+      await fetchControls();
+      setMessage('Programación guardada.', 'success');
+    }
+
     function bootstrap() {
       const params = new URLSearchParams(window.location.search || '');
       state.empresaID = parsePositiveInt(params.get('empresa_id') || params.get('id'));
@@ -609,10 +657,15 @@
         });
       });
       document.getElementById('cartElectricGrid').addEventListener('click', function(ev) {
+        const schedule = ev.target && ev.target.closest ? ev.target.closest('[data-control-schedule]') : null;
+        if (schedule) { openSchedule(schedule.getAttribute('data-rele-id')); return; }
+        const toggle = ev.target && ev.target.closest ? ev.target.closest('[data-control-toggle]') : null;
+        if (toggle) { sendCommand(toggle.getAttribute('data-rele-id'), toggle.getAttribute('data-control-toggle')); return; }
         const btn = ev.target && ev.target.closest ? ev.target.closest('button[data-control-state]') : null;
         if (!btn) return;
         sendCommand(btn.getAttribute('data-rele-id'), btn.getAttribute('data-control-state'));
       });
+      document.getElementById('cartElectricScheduleForm').addEventListener('submit', function(ev) { ev.preventDefault(); saveSchedule().catch(function(err) { setMessage(err.message || 'No se pudo guardar programación.', 'error'); }); });
 
       fetchControls().catch(function(err) {
         setMessage(err.message || 'No se pudieron cargar aparatos.', 'error');
