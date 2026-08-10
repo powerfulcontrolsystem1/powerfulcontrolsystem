@@ -710,9 +710,6 @@
         if (schedule) { openSchedule(schedule.getAttribute('data-rele-id')); return; }
         const toggle = ev.target && ev.target.closest ? ev.target.closest('[data-control-toggle]') : null;
         if (toggle) { sendCommand(toggle.getAttribute('data-rele-id'), toggle.getAttribute('data-control-toggle')); return; }
-        const btn = ev.target && ev.target.closest ? ev.target.closest('button[data-control-state]') : null;
-        if (!btn) return;
-        sendCommand(btn.getAttribute('data-rele-id'), btn.getAttribute('data-control-state'));
       });
       document.getElementById('cartElectricScheduleForm').addEventListener('submit', function(ev) { ev.preventDefault(); saveSchedule().catch(function(err) { setMessage(err.message || 'No se pudo guardar programación.', 'error'); }); });
 
