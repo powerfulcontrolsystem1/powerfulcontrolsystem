@@ -40393,6 +40393,13 @@ Archivos modificados:
   porque el canal SSH del VPS agotó tiempo; se registra como inconcluso, sin
   modificar el origen ni contar como aprobación de P108-002 o P108-005.
 
+2026-07-29: Plan 108 / seguridad dinámica sin sesión en staging con TLS válido.
+- Ruta empresarial con empresa manipulada y preflight CORS de origen externo
+  devolvieron 401 sin datos ni cabeceras de autorización. `/metrics` respondió
+  solo disponibilidad con `no-store`; no se usaron sesiones ni datos reales.
+- P108-017 sigue parcial hasta completar DAST autenticado, pruebas A/B y el
+  endurecimiento restante de CSP.
+
 2026-07-29: Plan 108 / carga autenticada ampliada en staging.
 - El candidato `41be623a` atendió 500 GET autenticados de solo lectura, con
   concurrencia 10, cero fallos, p95 de 118 ms y p99 de 293 ms para la empresa
