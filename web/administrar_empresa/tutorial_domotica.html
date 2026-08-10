@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Guia de Domotica</title>
+  <link rel="stylesheet" href="/estilos.css">
+  <style>
+    :root { --guide-bg: var(--surface-page, #f4f7fb); --guide-card: var(--surface-card, #fff); --guide-text: var(--text-primary, #152033); --guide-muted: var(--text-secondary, #5f6b7c); --guide-line: var(--border-color, #dce3ed); --guide-accent: var(--primary, #1769e0); --guide-good: #16834b; --guide-warn: #a85d00; }
+    @media (prefers-color-scheme: dark) { :root { --guide-bg: #101722; --guide-card: #182231; --guide-text: #edf3fb; --guide-muted: #b5c0d0; --guide-line: #334257; --guide-accent: #75adff; } }
+    body { background: var(--guide-bg); color: var(--guide-text); }
+    .guide-shell { max-width: 1060px; margin: 0 auto; padding: 28px 18px 52px; }
+    .guide-head { display:flex; gap:18px; align-items:flex-start; justify-content:space-between; margin-bottom:20px; }
+    .guide-kicker { margin:0 0 5px; color:var(--guide-accent); font-weight:800; letter-spacing:.06em; text-transform:uppercase; font-size:.76rem; }
+    h1 { margin:0; font-size:clamp(1.55rem, 3vw, 2.25rem); } .guide-intro { margin:8px 0 0; max-width:720px; color:var(--guide-muted); line-height:1.55; }
+    .guide-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:14px; margin:20px 0; }
+    .guide-card, .guide-note { background:var(--guide-card); border:1px solid var(--guide-line); border-radius:14px; padding:18px; box-shadow:0 5px 16px rgba(17,35,63,.06); }
+    .guide-card h2 { margin:0 0 8px; font-size:1rem; } .guide-card p, .guide-card li, .guide-step p { color:var(--guide-muted); line-height:1.5; }
+    .guide-num { width:30px; height:30px; display:grid; place-items:center; border-radius:50%; background:var(--guide-accent); color:#fff; font-weight:800; margin-bottom:10px; }
+    .guide-step { display:grid; grid-template-columns:44px 1fr; gap:14px; align-items:start; padding:17px 0; border-bottom:1px solid var(--guide-line); }
+    .guide-step:last-child { border-bottom:0; } .guide-step h2 { margin:2px 0 6px; font-size:1.08rem; }
+    .guide-step .guide-num { margin:0; } code { background:color-mix(in srgb, var(--guide-accent) 12%, transparent); color:var(--guide-text); border-radius:5px; padding:2px 5px; }
+    .guide-note { margin-top:18px; border-left:4px solid var(--guide-warn); } .guide-note strong { color:var(--guide-warn); }
+    .guide-ok { border-left-color:var(--guide-good); } .guide-ok strong { color:var(--guide-good); }
+    .guide-actions { display:flex; flex-wrap:wrap; gap:9px; margin-top:18px; } .guide-actions .btn { text-decoration:none; }
+    @media (max-width:720px) { .guide-head { display:block; } .guide-head .btn { margin-top:14px; } .guide-grid { grid-template-columns:1fr; } .guide-shell { padding:18px 14px 38px; } }
+  </style>
+</head>
+<body class="empresa-subpage">
+  <main class="guide-shell">
+    <header class="guide-head">
+      <div>
+        <p class="guide-kicker">Domotica PCS</p>
+        <h1>Como agregar un equipo electrónico</h1>
+        <p class="guide-intro">Conecta cada equipo a una estación y a una salida GPIO de una Raspberry registrada. La empresa, la estación y la Raspberry quedan separadas del resto de empresas.</p>
+      </div>
+      <a class="btn secondary" href="/administrar_empresa/control_electrico.html">Volver a Domotica</a>
+    </header>
+
+    <section class="guide-grid" aria-label="Antes de empezar">
+      <article class="guide-card"><div class="guide-num">1</div><h2>Raspberry conectada</h2><p>Registra o selecciona la Raspberry de la empresa y confirma que su túnel aparezca como conectado.</p></article>
+      <article class="guide-card"><div class="guide-num">2</div><h2>Estación existente</h2><p>La habitación, mesa o estación debe existir antes de asociarle aparatos.</p></article>
+      <article class="guide-card"><div class="guide-num">3</div><h2>Salida física identificada</h2><p>Verifica el GPIO cableado al canal del relé antes de controlar una carga real.</p></article>
+    </section>
+
+    <section class="guide-card" aria-label="Pasos para configurar un equipo">
+      <article class="guide-step"><div class="guide-num">1</div><div><h2>Abra Estaciones y aparatos</h2><p>En <strong>Domotica</strong>, abra la sección <strong>Estaciones y aparatos</strong>. Seleccione la estación en la que estará el equipo y pulse <strong>Agregar aparato</strong>.</p></div></article>
+      <article class="guide-step"><div class="guide-num">2</div><div><h2>Describa el equipo</h2><p>Indique un nombre claro, por ejemplo <code>Nevera estación 1</code>, tipo de carga, descripción, consumo estimado en watts y, si desea, cargue una foto. La imagen se mostrará en la tarjeta de esa estación.</p></div></article>
+      <article class="guide-step"><div class="guide-num">3</div><div><h2>Asigne Raspberry y GPIO</h2><p>Elija la Raspberry de la empresa y el número GPIO que llega al relé. Un GPIO solo puede pertenecer a un aparato activo de esa Raspberry. Para el módulo PCS de 16 relés se usan los canales instalados GPIO <code>2</code> a <code>17</code>.</p></div></article>
+      <article class="guide-step"><div class="guide-num">4</div><div><h2>Defina la polaridad y pruebe</h2><p>Para el módulo de 16 relés de PCS seleccione salida <strong>activa-baja</strong>: nivel bajo significa encendido. Guarde y use <strong>Probar relé</strong> primero sin una carga crítica conectada.</p></div></article>
+      <article class="guide-step"><div class="guide-num">5</div><div><h2>Programe y opere</h2><p>Active la programación si necesita horario de encendido y apagado. Desde el carrito de la estación pulse <strong>⚡ Domotica</strong> para abrir las tarjetas y encender, apagar, programar o editar cada equipo.</p></div></article>
+    </section>
+
+    <aside class="guide-note"><strong>Seguridad eléctrica:</strong> no conecte cargas de red directamente a los pines GPIO. Use módulos de relé adecuados, fuente aislada, protección eléctrica y un instalador calificado para cargas de potencia.</aside>
+    <aside class="guide-note guide-ok"><strong>Comprobación:</strong> una tarjeta verde indica que la orden lógica enviada es encendido; una roja, apagado. Consulte la bitácora si el estado no cambia o la Raspberry está desconectada.</aside>
+    <div class="guide-actions"><a class="btn" href="/administrar_empresa/control_electrico.html?pagina=reles">Configurar equipos</a><a class="btn secondary" href="/administrar_empresa/control_electrico.html?pagina=raspberry">Ver Raspberrys</a></div>
+  </main>
+</body>
+</html>

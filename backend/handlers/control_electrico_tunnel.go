@@ -157,10 +157,62 @@ func PublicDomoticaRaspberryTunnelHandler(dbEmp *sql.DB) http.HandlerFunc {
 			handleDomoticaTunnelTelemetry(w, r, dbEmp, device, requestBytes)
 		case "solar_telemetry":
 			handleDomoticaTunnelSolarTelemetry(w, r, dbEmp, device, requestBytes)
+		case "relay_topology":
+			handleDomoticaTunnelRelayTopology(w, r, dbEmp, device, requestBytes)
 		default:
 			writeDomoticaTunnelJSON(w, http.StatusBadRequest, map[string]interface{}{"ok": false, "error": "action no soportada"})
 		}
 	}
+}
+
+// handleDomoticaTunnelRelayTopology lets an enrolled controller report the
+// electrical polarity of its own configured outputs. It cannot select another
+// company, Raspberry, relay, or station: all of those are resolved server-side
+// from the authenticated tunnel device.
+func handleDomoticaTunnelRelayTopology(w http.ResponseWriter, r *http.Request, dbEmp *sql.DB, device *dbpkg.EmpresaControlElectricoTunnelDevice, requestBytes int64) {
+	var payload struct {
+		Relays []struct {
+			GPIOPin    int  `json:"gpio_pin"`
+			ActiveHigh bool `json:"active_high"`
+		} `json:"relays"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil || len(payload.Relays) == 0 || len(payload.Relays) > 28 {
+		writeDomoticaTunnelJSON(w, http.StatusBadRequest, map[string]interface{}{"ok": false, "error": "topologia de relays invalida"})
+		return
+	}
+	wanted := make(map[int]bool, len(payload.Relays))
+	for _, relay := range payload.Relays {
+		if relay.GPIOPin < 0 || relay.GPIOPin > 27 {
+			writeDomoticaTunnelJSON(w, http.StatusBadRequest, map[string]interface{}{"ok": false, "error": "gpio_pin invalido"})
+			return
+		}
+		if _, duplicate := wanted[relay.GPIOPin]; duplicate {
+			writeDomoticaTunnelJSON(w, http.StatusBadRequest, map[string]interface{}{"ok": false, "error": "gpio_pin repetido"})
+			return
+		}
+		wanted[relay.GPIOPin] = relay.ActiveHigh
+	}
+	relays, err := dbpkg.ListEmpresaControlElectricoReles(dbEmp, device.EmpresaID, false)
+	if err != nil {
+		recordAndWriteDomoticaTunnel(w, r, dbEmp, device, requestBytes, map[string]interface{}{"ok": false, "error": "no se pudieron consultar relays"}, err.Error())
+		return
+	}
+	updated := 0
+	for i := range relays {
+		relay := &relays[i]
+		activeHigh, found := wanted[relay.GPIOPin]
+		if !found || relay.RaspberryID != device.RaspberryID || relay.ActiveHigh == activeHigh {
+			continue
+		}
+		relay.ActiveHigh = activeHigh
+		relay.UsuarioCreador = device.DeviceUID
+		if _, err := dbpkg.UpsertEmpresaControlElectricoRele(dbEmp, relay); err != nil {
+			recordAndWriteDomoticaTunnel(w, r, dbEmp, device, requestBytes, map[string]interface{}{"ok": false, "error": "no se pudo actualizar polaridad"}, err.Error())
+			return
+		}
+		updated++
+	}
+	recordAndWriteDomoticaTunnel(w, r, dbEmp, device, requestBytes, map[string]interface{}{"ok": true, "updated": updated}, "")
 }
 
 // handleDomoticaTunnelSolarTelemetry accepts VE.Direct metrics only from an

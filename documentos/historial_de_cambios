@@ -41637,3 +41637,8 @@ acumulativa.
 2026-08-10: Domotica de carrito por pagina de equipos de estacion.
 - El carrito conserva un unico boton Domotica que abre la pagina dedicada de equipos de la estacion, sin panel ni modal duplicado dentro del carrito.
 - La pagina presenta tarjetas responsive compatibles con modo claro/oscuro, foto, estado rojo/verde accionable, encendido/apagado rapido, programacion y enlace de edicion por aparato.
+2026-08-10: Correccion persistente de polaridad para rele activo-bajo PCS.
+- La Raspberry autenticada declara la topologia de su propio modulo de 16 canales (GPIO 2 a 17); el VPS solo actualiza relays ya asociados a esa misma Raspberry y empresa.
+- La declaracion se aplica de forma puntual por el tunel autenticado de la Raspberry ya instalada; las futuras Raspberry conservan una polaridad independiente hasta que su modulo sea configurado.
+2026-08-10: Tutorial operativo de Domotica.
+- Se incorpora `tutorial_domotica.html`, accesible desde Domotica, con el flujo para asociar equipo, estacion, Raspberry y GPIO, mas validaciones de exclusividad, polaridad y seguridad electrica.
