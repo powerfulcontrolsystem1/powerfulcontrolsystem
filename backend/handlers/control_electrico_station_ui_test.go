@@ -28,6 +28,19 @@ func TestDomoticaStationUIHasSingleEntryAndVisibilityCheck(t *testing.T) {
 			t.Fatalf("la configuracion de estaciones no contiene %q", marker)
 		}
 	}
+	if strings.Contains(stationSource, "data-open-station-domotica") || strings.Contains(stationSource, "station-domotica-button") {
+		t.Fatal("la pagina de estaciones no debe mostrar un boton Domotica dentro de la tarjeta")
+	}
+	cartPage, err := os.ReadFile(filepath.Join("..", "..", "web", "administrar_empresa", "carrito_de_compras.html"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	cartSource := string(cartPage)
+	for _, marker := range []string{"carrito-action-select-row", "id=\"carritoBtnControlElectrico\"", "aria-label=\"Abrir Domótica de esta estación\""} {
+		if !strings.Contains(cartSource, marker) {
+			t.Fatalf("el carrito no contiene %q", marker)
+		}
+	}
 }
 
 func TestDomoticaStationPanelShowsDevicesSensorsAndMultipleRaspberry(t *testing.T) {
@@ -51,5 +64,8 @@ func TestDomoticaStationPanelShowsDevicesSensorsAndMultipleRaspberry(t *testing.
 		if !strings.Contains(source, marker) {
 			t.Fatalf("el panel operativo de estacion no contiene %q", marker)
 		}
+	}
+	if strings.Contains(source, ">Editar</a>") || strings.Contains(source, "control_electrico.html?empresa_id=") {
+		t.Fatal("la pagina operativa de equipos no debe ofrecer edicion; debe quedar en configuracion")
 	}
 }

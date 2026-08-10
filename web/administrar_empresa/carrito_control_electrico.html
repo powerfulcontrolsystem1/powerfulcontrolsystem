@@ -586,7 +586,6 @@
           '<div class="device-footer">' +
             '<button class="btn device-toggle-action ' + info.cls + '" type="button" data-control-toggle="' + (isOn ? 'off' : 'on') + '" data-rele-id="' + escapeHtml(rele.id || 0) + '" title="' + escapeHtml(controlLabel(rele, isOn)) + '"' + (disabled ? ' disabled' : '') + '>' + escapeHtml(controlLabel(rele, isOn)) + '</button>' +
             '<button class="btn secondary" type="button" data-control-schedule data-rele-id="' + escapeHtml(rele.id || 0) + '">Programar</button>' +
-            '<a class="btn secondary" href="/administrar_empresa/control_electrico.html?empresa_id=' + encodeURIComponent(state.empresaID) + '&pagina=reles&rele_id=' + encodeURIComponent(rele.id || 0) + '">Editar</a>' +
           '</div>' +
         '</article>';
       }).join('');

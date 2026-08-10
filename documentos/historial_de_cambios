@@ -41291,3 +41291,10 @@ acumulativa.
 - Las fotos pasan a iconos pequeños en la esquina de cada tarjeta.
 - Se elimina la duplicidad de botones de encendido/apagado y queda un control contextual unico, incluyendo etiqueta para equipos programados.
 - Se corrige el parser de timestamps PostgreSQL con microsegundos para que el heartbeat real de Raspberry no aparezca como `0 / 2`.
+
+2026-08-10: Edicion de equipos restringida a Configuracion.
+- La pagina operativa de equipos ya no muestra «Editar»; el cambio se realiza exclusivamente desde Configuracion.
+
+2026-08-10: Domotica dentro del carrito, junto al selector de acciones.
+- Se elimina el boton y la delegacion de Domotica de las tarjetas de estaciones.
+- El carrito mantiene un unico boton `⚡ Domotica` a la derecha del selector de accion; conserva el check de visibilidad por empresa/estacion y el comportamiento responsive.

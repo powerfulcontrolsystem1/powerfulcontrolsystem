@@ -3442,3 +3442,9 @@
 - [UX] La foto de cada equipo se presenta como icono pequeño en la esquina de la tarjeta.
 - [UX] Encender/apagar usa un único botón contextual, con color y texto según el estado; los equipos programados lo indican en el botón.
 - [Conectividad] La fecha PostgreSQL con microsegundos se normaliza antes de calcular el heartbeat, mostrando correctamente Raspberry conectada/desconectada.
+
+- [UX] La pagina operativa de equipos conserva solo control y programacion; el enlace «Editar» queda disponible unicamente en Configuracion.
+
+### Ubicacion del acceso de Domotica en el carrito
+- [UX] Se retira el boton Domotica de las tarjetas de estaciones.
+- [UX] Se conserva un unico boton `⚡ Domotica` dentro del carrito, junto al selector de accion, con adaptacion responsive y visibilidad por configuracion empresarial.
