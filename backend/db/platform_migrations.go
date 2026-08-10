@@ -147,6 +147,14 @@ func PlatformMigrations(target string) ([]Migration, error) {
 					return applyEmpresaControlElectricoTunnelSchemaTx(tx)
 				},
 			},
+			{
+				Version:     "20260810-001-domotica-station-automation-v1",
+				Description: "independent relay policies for station activation and deactivation",
+				Body:        empresaControlElectricoStationAutomationSchemaFingerprint,
+				Apply: func(_ context.Context, tx *sql.Tx) error {
+					return applyEmpresaControlElectricoStationAutomationSchemaTx(tx)
+				},
+			},
 		}, nil
 	case MigrationTargetSuper:
 		return []Migration{
