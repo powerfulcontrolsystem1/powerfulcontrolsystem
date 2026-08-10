@@ -936,7 +936,9 @@ func DispatchEmpresaControlElectricoEstacion(dbEmp *sql.DB, empresaID, estacionI
 	lastResult := controlElectricoDispatchResult{OK: true}
 	for i := range reles {
 		rele := reles[i]
-		if !strings.EqualFold(strings.TrimSpace(rele.Modo), "seguimiento_estacion") {
+		if !strings.EqualFold(strings.TrimSpace(rele.Modo), "seguimiento_estacion") ||
+			(activa && !rele.EncenderAlActivarEstacion) ||
+			(!activa && !rele.ApagarAlDesactivarEstacion) {
 			skipped++
 			continue
 		}

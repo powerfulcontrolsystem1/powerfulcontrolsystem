@@ -1030,6 +1030,8 @@
           ultimo_corriente_a: Number(rele.ultimo_corriente_a || 0),
           pulso_ms: rele.pulso_ms || 0,
           modo: rele.modo || 'seguimiento_estacion',
+          encender_al_activar_estacion: rele.encender_al_activar_estacion === undefined ? true : Boolean(rele.encender_al_activar_estacion),
+          apagar_al_desactivar_estacion: rele.apagar_al_desactivar_estacion === undefined ? true : Boolean(rele.apagar_al_desactivar_estacion),
           programacion_habilitada: Boolean(rele.programacion_habilitada),
           hora_encendido: rele.hora_encendido || '',
           hora_apagado: rele.hora_apagado || '',
@@ -1143,6 +1145,8 @@
               '<div class="form-col"><label class="form-label">Sensor consumo</label><input class="form-input relay-consumption-sensor" value="' + sanitize(data.sensor_consumo_entity_id) + '" placeholder="sensor.lampara_power"></div>' +
               '<div class="form-col span-2"><label class="form-label">Ultima lectura</label><input class="form-input" readonly value="' + sanitize((data.ultimo_consumo_w || 0) + ' W / ' + (data.ultimo_consumo_kwh || 0) + ' kWh / ' + (data.ultimo_voltaje_v || 0) + ' V') + '"></div>' +
               '<label class="electric-switch span-2"><span>Programacion horaria</span><input class="relay-schedule-enabled" type="checkbox" ' + (data.programacion_habilitada ? 'checked' : '') + '></label>' +
+              '<label class="electric-switch span-2"><span>Encender automáticamente al activar la estación</span><input class="relay-on-station-activate" type="checkbox" ' + (data.encender_al_activar_estacion ? 'checked' : '') + '></label>' +
+              '<label class="electric-switch span-2"><span>Apagar automáticamente al desactivar la estación</span><input class="relay-off-station-deactivate" type="checkbox" ' + (data.apagar_al_desactivar_estacion ? 'checked' : '') + '></label>' +
               '<div class="form-col"><label class="form-label">Hora encendido</label><input class="form-input relay-schedule-on" type="time" value="' + sanitize(data.hora_encendido) + '"></div>' +
               '<div class="form-col"><label class="form-label">Hora apagado</label><input class="form-input relay-schedule-off" type="time" value="' + sanitize(data.hora_apagado) + '"></div>' +
               '<div class="form-col"><label class="form-label">Dias</label><select class="form-input relay-schedule-days">' + relayDaysOptions(data.programacion_dias) + '</select></div>' +
@@ -1495,6 +1499,8 @@
           potencia_w: Number(card.querySelector('.relay-power').value || 0),
           sensor_consumo_entity_id: card.querySelector('.relay-consumption-sensor').value.trim(),
           active_high: card.querySelector('.relay-active-high').checked,
+		  encender_al_activar_estacion: card.querySelector('.relay-on-station-activate').checked,
+		  apagar_al_desactivar_estacion: card.querySelector('.relay-off-station-deactivate').checked,
           pulso_ms: Number(card.querySelector('.relay-pulse').value || 0),
           programacion_habilitada: card.querySelector('.relay-schedule-enabled').checked,
           hora_encendido: card.querySelector('.relay-schedule-on').value,
