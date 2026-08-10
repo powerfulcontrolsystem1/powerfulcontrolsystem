@@ -40383,6 +40383,15 @@ Archivos modificados:
   ni se invocó IA.
 - P108-006 continúa parcial hasta probar carga, lectura editable, confirmación,
   duplicados, tenant y conversión CxP con configuración IA segura.
+2026-07-29: Plan 108 / invariantes CxP y revalidación de impresión.
+- Las pruebas dirigidas de CxP aprobaron contratos de fuente canónica,
+  aislamiento empresarial, idempotencia, importes finitos, saldos no negativos,
+  catálogo de proveedores y dependencias de conversión desde soportes IA.
+- Se repitió la auditoría del motor común de impresión: 18 de 18 casos
+  correctos y las tres rutas de autoimpresión previstas llamaron una sola vez a
+  `window.print()`. El simulacro de migración aislado de staging no se inició
+  porque el canal SSH del VPS agotó tiempo; se registra como inconcluso, sin
+  modificar el origen ni contar como aprobación de P108-002 o P108-005.
 
 2026-07-29: Plan 108 / carga autenticada ampliada en staging.
 - El candidato `41be623a` atendió 500 GET autenticados de solo lectura, con
