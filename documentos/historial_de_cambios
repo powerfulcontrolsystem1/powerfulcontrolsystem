@@ -40400,6 +40400,14 @@ Archivos modificados:
 - P108-017 sigue parcial hasta completar DAST autenticado, pruebas A/B y el
   endurecimiento restante de CSP.
 
+2026-07-29: Plan 108 / evidencia visual responsive de Finanzas.
+- En staging del candidato `41be623a`, la pantalla real de Finanzas pasó en
+  escritorio y móvil: 94 controles detectados, 8 interacciones no mutantes,
+  sin errores de consola/red ni desbordamiento horizontal. Las capturas fueron
+  revisadas visualmente.
+- La evidencia no certifica guardados, impresión, roles restrictivos o efectos
+  financieros; P108-012 conserva estado parcial.
+
 2026-07-29: Plan 108 / evidencia de backpressure autenticado en staging.
 - Cinco rondas de lectura autenticada alcanzaron el límite seguro por empresa:
   2.390 respuestas 200, 110 respuestas 429 controladas y cero 5xx. El peor p95
