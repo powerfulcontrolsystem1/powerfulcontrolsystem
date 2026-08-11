@@ -1254,6 +1254,7 @@
             '<div class="raspberry-item-actions">' +
               '<button class="btn secondary small raspberry-edit" type="button">Editar</button>' +
               (String(pi.tipo_controlador || 'raspberry_gpio') === 'raspberry_gpio' ? '<button class="btn add small raspberry-provision" type="button">Generar instalador</button>' : '') +
+              (String(pi.tipo_controlador || 'raspberry_gpio') === 'raspberry_gpio' ? '<button class="btn secondary small raspberry-connection-test" type="button">Probar conexión</button><button class="btn secondary small raspberry-restart" type="button">Reiniciar</button><button class="btn danger small raspberry-shutdown" type="button">Apagar</button>' : '') +
               (String(pi.tipo_controlador || 'raspberry_gpio') === 'raspberry_gpio' ? '<button class="btn secondary small raspberry-gpio-toggle" type="button">Probar GPIO</button>' : '') +
               (primary ? '<button class="btn secondary small" type="button" disabled>Principal</button>' : '<button class="btn danger small raspberry-delete" type="button">Desactivar</button>') +
             '</div>' +
@@ -1730,6 +1731,20 @@
             var provisionID = Number(raspberryCard.getAttribute('data-raspberry-id') || 0);
             await provisionRaspberryTunnel(provisionID);
             showMessage('Instalador seguro descargado. Ejecutalo una sola vez en la Raspberry Pi con sudo sh.', 'success');
+          } else if (raspberryCard && ev.target.classList.contains('raspberry-connection-test')) {
+            var connectionPiID = Number(raspberryCard.getAttribute('data-raspberry-id') || 0);
+            var connectionResult = await requestJSON(api('raspberry_operacion'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ raspberry_id: connectionPiID, operacion: 'probar_conexion' }) });
+            showMessage(connectionResult.message || 'Conexion por tunel verificada.', 'success');
+          } else if (raspberryCard && ev.target.classList.contains('raspberry-restart')) {
+            var restartPiID = Number(raspberryCard.getAttribute('data-raspberry-id') || 0);
+            if (!window.confirm('La Raspberry se reiniciara y se reconectara automaticamente. Continuar?')) return;
+            var restartResult = await requestJSON(api('raspberry_operacion'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ raspberry_id: restartPiID, operacion: 'reiniciar' }) });
+            showMessage(restartResult.message || 'Reinicio enviado por el tunel seguro.', 'success');
+          } else if (raspberryCard && ev.target.classList.contains('raspberry-shutdown')) {
+            var shutdownPiID = Number(raspberryCard.getAttribute('data-raspberry-id') || 0);
+            if (!window.confirm('La Raspberry se apagara. Para volver a conectarla deberas energizarla de nuevo. Continuar?')) return;
+            var shutdownResult = await requestJSON(api('raspberry_operacion'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ raspberry_id: shutdownPiID, operacion: 'apagar' }) });
+            showMessage(shutdownResult.message || 'Apagado enviado por el tunel seguro.', 'success');
           } else if (raspberryCard && ev.target.classList.contains('raspberry-gpio-toggle')) {
             raspberryCard.classList.toggle('gpio-test-open');
             showMessage('Cada GPIO enviara un pulso de prueba de un segundo. Verifica que el relay no controle una carga critica.', '');
