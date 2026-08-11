@@ -1567,3 +1567,13 @@ Actualización 2026-08-11, extracción IA controlada en PCS staging:
   contabilización. P109-002 sigue parcial por los botones y escenarios IA que
   faltan, aislamiento A/B y las evaluaciones completas; la fórmula permanece
   **56,7 %** de implementación, **6,7 %** de certificación y **NO-GO**.
+
+Actualización 2026-08-11, carga de reglas antivirus en observabilidad:
+
+- Prometheus de staging retenía una versión anterior del archivo montado. Tras
+  recrear exclusivamente ese contenedor con su entorno de monitoreo existente,
+  `promtool` validó 17 reglas y quedaron montadas las cuatro alertas de
+  antivirus. No se modificaron backend, datos, ClamAV ni producción.
+- Falta probar entrega/deduplicación/resolución en un receptor externo aprobado.
+  P109-010 permanece parcial y la fórmula sigue **56,7 %**, **6,7 %** y
+  **NO-GO**.

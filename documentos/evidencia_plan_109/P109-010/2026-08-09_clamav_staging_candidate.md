@@ -48,6 +48,11 @@ explícitamente y levanta `clamav` junto con los servicios de staging.
 - Para que la sonda oficial sea bloqueable antes de cualquier parser, el backend
   analiza los bytes multipart sin confiar en su formato y solo después valida
   PNG/JPEG/WebP/PDF/XML; así no persiste ni entrega contenido hostil a parsers.
+- La revisión posterior detectó que Prometheus conservaba el inode de reglas
+  anterior (67 líneas). Se recreó únicamente `pcs-prometheus` usando el
+  archivo de entorno de monitoreo ya existente; `promtool` confirmó 17 reglas
+  y el contenedor pasó a montar las 132 líneas, incluidas las cuatro alertas
+  de antivirus. Backend, base de datos, ClamAV y producción no se tocaron.
 
 ## Pendiente obligatorio de cierre
 

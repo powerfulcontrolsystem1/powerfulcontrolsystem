@@ -41704,3 +41704,10 @@ acumulativa.
   guardar una revisión auditable sin contabilizar. P109-002 continúa parcial:
   faltan cancelación, reintento/error proveedor, campos reales, ReportSpec,
   memoria A/B y evals completas. El plan sigue 56,7 %, 6,7 % certificado y NO-GO.
+2026-08-11: Plan 109 / reglas antivirus activas en Prometheus de staging.
+- La instancia conservaba un montaje de reglas anterior; se recreó solo
+  Prometheus con su entorno de monitoreo existente y `promtool` validó 17
+  reglas, incluidas las cuatro señales de antivirus.
+- El receptor de Alertmanager continúa interno y no se habilitó correo ni
+  webhook externo. P109-010 sigue parcial, 56,7 % de implementación, 6,7 % de
+  certificación formal y NO-GO.
