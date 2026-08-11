@@ -115,6 +115,7 @@ resolve_digest() {
     pcs-staging-api) env_name=PCS_API_IMAGE_DIGEST ;;
     pcs-staging-backend) env_name=PCS_API_IMAGE_DIGEST ;;
     pcs-staging-migrate) env_name=PCS_MIGRATE_IMAGE_DIGEST ;;
+    pcs-staging-clamav) env_name=PCS_CLAMAV_IMAGE_DIGEST ;;
     *) return 0 ;;
   esac
   digest="`$(awk -F= -v key="`$env_name" '`$1 == key {sub(/^[^=]*=/, ""); print; exit}' "`$source_env")"
@@ -128,8 +129,10 @@ if ! [[ "`$api_image" =~ @sha256:???????????????????????????????????????????????
   api_image="`$(resolve_digest pcs-staging-backend)"
 fi
 migrate_image="`$(resolve_digest pcs-staging-migrate)"
+clamav_image="`$(resolve_digest pcs-staging-clamav)"
 case "`$api_image" in *@sha256:????????????????????????????????????????????????????????????????) ;; *) echo "[ERROR] API staging sin digest inmutable." >&2; exit 1;; esac
 case "`$migrate_image" in *@sha256:????????????????????????????????????????????????????????????????) ;; *) echo "[ERROR] Migrador staging sin digest inmutable." >&2; exit 1;; esac
+case "`$clamav_image" in *@sha256:????????????????????????????????????????????????????????????????) ;; *) echo "[ERROR] ClamAV staging sin digest inmutable." >&2; exit 1;; esac
 if ! docker image inspect "`$api_image" >/dev/null 2>&1; then
   [ "$pullMissingValue" = "1" ] || { echo "[ERROR] La imagen API exacta no esta disponible localmente." >&2; exit 1; }
   docker pull "`$api_image" >/dev/null
@@ -138,8 +141,12 @@ if ! docker image inspect "`$migrate_image" >/dev/null 2>&1; then
   [ "$pullMissingValue" = "1" ] || { echo "[ERROR] La imagen migrador exacta no esta disponible localmente." >&2; exit 1; }
   docker pull "`$migrate_image" >/dev/null
 fi
+if ! docker image inspect "`$clamav_image" >/dev/null 2>&1; then
+  [ "$pullMissingValue" = "1" ] || { echo "[ERROR] La imagen ClamAV exacta no esta disponible localmente." >&2; exit 1; }
+  docker pull "`$clamav_image" >/dev/null
+fi
 PROJECT_DIR="`$remote_path" SOURCE_ENV="`$source_env" BACKUP_DIR=$backupDirLit P109_DRILL_ID="`$drill_id" \
-  PCS_API_IMAGE_DIGEST="`$api_image" PCS_MIGRATE_IMAGE_DIGEST="`$migrate_image" \
+  PCS_API_IMAGE_DIGEST="`$api_image" PCS_MIGRATE_IMAGE_DIGEST="`$migrate_image" PCS_CLAMAV_IMAGE_DIGEST="`$clamav_image" \
   P109_VERIFY_PRIVATE_INVENTORY=1 P109_VERIFY_REPLICA=$verifyReplicaValue \
   P109_VERIFY_COORDINATED_ROLLBACK=$verifyRollbackValue \
   P109_QA_EMAIL=$qaEmailLit P109_QA_PASSWORD=$qaPasswordLit bash "`$tmp_script"

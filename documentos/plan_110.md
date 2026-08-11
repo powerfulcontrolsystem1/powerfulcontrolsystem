@@ -731,3 +731,14 @@ autoriza ni ejecuta despliegue productivo.
 - No se desplegó ni se modificó producción. Implementación P110: **15,4 %**
   (cuatro fases parciales de 13); certificación del candidato final: **0 %**;
   preparación productiva: **0 %**; veredicto **NO-GO**.
+
+## Actualización 2026-08-11, ClamAV dentro del restore A/B
+
+- El primer intento de dos réplicas detectó correctamente que ClamAV obligatorio
+  no existía dentro de la red efímera: la carga devolvió 503 y no se aceptó un
+  bypass. El drill y su runner ahora incluyen el digest de ClamAV, lo levantan
+  sin exposición pública y esperan su disponibilidad antes de las operaciones
+  autenticadas.
+- Se debe crear un candidato nuevo y repetir la matriz A/B y rollback sobre el
+  mismo digest. P110-008 sigue **parcial**; no cambia el **15,4 %** de
+  implementación ni el veredicto **NO-GO**.

@@ -41811,3 +41811,11 @@ acumulativa.
 - El restore efímero validó dos bases, cinco tablas críticas, referencias y
   archivos privados sin faltantes ni huérfanos, con RTO observado de 86 s. Aún
   faltan réplicas/rollback coordinado y DAST/A-B completo; no hay GO productivo.
+2026-08-11: Plan 110 / ClamAV obligatorio dentro del drill A/B restaurado.
+- El primer ensayo con dos réplicas detectó que el restore respetaba ClamAV
+  obligatorio pero no creaba el servicio en su red efímera; la carga oficial
+  respondió 503, por lo que no se desactivó la defensa para ocultar el fallo.
+- El runner resuelve el digest inmutable de ClamAV activo y el drill lo arranca
+  sin puertos públicos, con alias interno, capacidades mínimas, base temporal y
+  espera explícita de `clamdscan`. Falta reconstruir el candidato y repetir A/B
+  y rollback; producción no cambió.

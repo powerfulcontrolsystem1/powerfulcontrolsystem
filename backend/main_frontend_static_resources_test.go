@@ -291,6 +291,8 @@ func TestRestoredAppDrillUsesExplicitStagingEnvironmentAndBackendDigest(t *testi
 		"source_env=$sourceEnvLit",
 		"BACKUP_DIR=$backupDirLit",
 		"pcs-staging-backend) env_name=PCS_API_IMAGE_DIGEST",
+		"pcs-staging-clamav) env_name=PCS_CLAMAV_IMAGE_DIGEST",
+		"PCS_CLAMAV_IMAGE_DIGEST=\"`$clamav_image\"",
 	} {
 		if !strings.Contains(script, required) {
 			t.Fatalf("restored app drill must enforce %q", required)
@@ -298,6 +300,24 @@ func TestRestoredAppDrillUsesExplicitStagingEnvironmentAndBackendDigest(t *testi
 	}
 	if strings.Contains(script, `if [ ! -f "$source_env" ]; then source_env="$remote_path/deploy/.env.platform"; fi`) {
 		t.Fatal("restored app drill must not fall back from isolated staging to platform configuration")
+	}
+}
+
+func TestRestoredAppDrillKeepsClamAVRequiredInsideIsolatedNetwork(t *testing.T) {
+	raw, err := os.ReadFile(filepath.Join("..", "deploy", "scripts", "vps-p109-restored-app-drill.sh"))
+	if err != nil {
+		t.Fatalf("read restored app drill: %v", err)
+	}
+	script := string(raw)
+	for _, required := range []string{
+		"PCS_CLAMAV_IMAGE_DIGEST=\"${PCS_CLAMAV_IMAGE_DIGEST:-}\"",
+		"--network-alias clamav",
+		"clamdscan --ping 1",
+		"ClamAV aislado no alcanzo readiness.",
+	} {
+		if !strings.Contains(script, required) {
+			t.Fatalf("restored app drill must keep required ClamAV isolation %q", required)
+		}
 	}
 }
 
