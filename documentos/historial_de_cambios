@@ -41719,3 +41719,10 @@ acumulativa.
 - No se declara resolución ni entrega externa hasta superar la ventana de la
   regla y contar con un receptor autorizado. P109-010 conserva estado parcial
   y NO-GO.
+2026-08-11: Plan 109 / compatibilidad segura del drill de restauración.
+- `vps_p109_restore_app_validation.ps1` reconoce `pcs-staging-backend`, que es
+  el nombre de API de la topología vigente, y mantiene el intento histórico
+  como compatibilidad con candidatos anteriores.
+- El fallback no acepta tags ni referencias mutables: el drill sigue fallando
+  cerrado si API o migrador no resuelven a un digest SHA-256 exacto. No se
+  ejecutó restauración con imágenes mutables ni se modificó producción.

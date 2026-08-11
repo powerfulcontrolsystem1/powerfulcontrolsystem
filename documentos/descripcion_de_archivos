@@ -12912,8 +12912,9 @@ panel de seguridad para que el navegador reciba la correccion CSRF de staging.
   al timeout inconcluso de la orden global.
 - `scripts/vps_p109_restore_app_validation.ps1`: ejecuta el restore de
   aplicación P109 por SSH usando solo digests inmutables, recursos temporales y
-  limpieza garantizada; puede descargar una imagen faltante únicamente por
-  digest cuando se solicita de forma explícita.
+  limpieza garantizada; reconoce el nombre vigente `pcs-staging-backend` sin
+  relajar el requisito de digest y puede descargar una imagen faltante
+  únicamente por digest cuando se solicita de forma explícita.
 - `documentos/evidencia_plan_109/P109-008/2026-08-09_restore_aplicacion_digest_actual_staging.md`:
   registra el restore de aplicación del candidato actual y los controles aún
   pendientes de réplica/rollback autenticados.

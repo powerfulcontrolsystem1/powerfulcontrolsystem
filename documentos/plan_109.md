@@ -1586,3 +1586,13 @@ Actualización 2026-08-11, recepción interna de alerta antivirus:
 - La resolución depende de la ventana de diez minutos y el receptor externo
   permanece sin configurar, por lo que P109-010 continúa **parcial** y el
   veredicto **NO-GO** no cambia.
+
+Actualización 2026-08-11, preparaci\u00f3n del drill de restauraci\u00f3n por digest:
+
+- El validador P109 reconoce la topolog\u00eda actual de staging, cuyo contenedor
+  API se denomina `pcs-staging-backend`; conserva el nombre anterior como
+  compatibilidad y exige en ambos casos una referencia `@sha256` v\u00e1lida.
+- El candidato inmutable se construye, analiza y publica de forma separada
+  antes de ejecutar el restore. Mientras no existan los cuatro digests
+  publicados y no termine el drill, P109-008 no se declara aprobado y el
+  veredicto sigue **NO-GO**.
