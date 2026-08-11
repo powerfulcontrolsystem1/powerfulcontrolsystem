@@ -1,3 +1,7 @@
+## [2026-08-11] Tarjetas operativas compactas de Domotica
+- [UX] Las tarjetas de equipos de estacion son mas compactas, resaltan de forma leve cuando la salida esta encendida y organizan sus tres acciones en una columna uniforme.
+- [Privacidad operativa] GPIO, Raspberry y programacion se consultan solo en Configuracion de Domotica, donde cada tarjeta conserva un resumen tecnico completo.
+
 ## [2026-08-01] Confirmación e idempotencia CxP/IA
 - [IA] La extracción documental usa un lock PostgreSQL por soporte para impedir llamadas y cuotas duplicadas entre réplicas.
 - [CxP] Aprobar y rechazar son transacciones idempotentes; no se puede revivir un soporte rechazado, duplicado o contabilizado.

@@ -95,8 +95,8 @@
 
     .device-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(275px, 1fr));
-      gap: 12px;
+      grid-template-columns: repeat(auto-fill, minmax(235px, 1fr));
+      gap: 10px;
     }
 
     .device-card {
@@ -105,6 +105,12 @@
       display: grid;
       grid-template-rows: 1fr auto;
       position: relative;
+      transition: background-color .18s ease, border-color .18s ease, box-shadow .18s ease;
+    }
+
+    .device-card.is-on {
+      background: color-mix(in srgb, var(--cart-electric-success) 9%, var(--cart-electric-panel));
+      border-color: color-mix(in srgb, var(--cart-electric-success) 38%, var(--cart-electric-line));
     }
 
     .sensor-card {
@@ -153,8 +159,8 @@
 
     .device-photo {
       position: static;
-      width: 48px;
-      height: 48px;
+      width: 42px;
+      height: 42px;
       object-fit: contain;
       padding: 4px;
       border: 1px solid var(--cart-electric-line);
@@ -169,9 +175,9 @@
     }
 
     .device-body {
-      padding: 13px;
+      padding: 11px 12px 4px;
       display: grid;
-      gap: 10px;
+      gap: 6px;
     }
 
     .device-title-row {
@@ -232,14 +238,16 @@
 
     .device-footer {
       display: grid;
-      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-      gap: 8px;
+      grid-template-columns: minmax(0, 1fr);
+      gap: 6px;
       align-items: center;
-      padding: 0 13px 13px;
+      padding: 0 12px 12px;
     }
-    .device-footer.has-photo { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 48px; }
+    .device-footer.has-photo { grid-template-columns: minmax(0, 1fr) 42px; }
 
-    .device-toggle-action { grid-column: 1 / -1; font-weight: 800; }
+    .device-footer .btn { grid-column: 1; width: 100%; min-height: 34px; }
+    .device-footer.has-photo .device-photo { grid-column: 2; grid-row: 3; justify-self: end; }
+    .device-toggle-action { font-weight: 800; }
     .device-toggle-action.is-on { background: var(--cart-electric-success); color: #fff; border-color: var(--cart-electric-success); }
     .device-toggle-action.is-off { background: var(--cart-electric-danger); color: #fff; border-color: var(--cart-electric-danger); }
 
@@ -573,7 +581,7 @@
         const isOn = info.cls === 'is-on';
         const disabled = state.sendingID > 0 || !cfg.habilitado;
         const hasPhoto = !!normalize(rele.imagen_url);
-        return '<article class="device-card">' +
+        return '<article class="device-card' + (isOn ? ' is-on' : '') + '">' +
           '<div class="device-body">' +
             '<div class="device-title-row">' +
               '<div class="device-title">' +
@@ -582,11 +590,6 @@
               '</div>' +
               (isOn ? '<span class="electric-on-bolt" title="Aparato encendido" aria-label="Aparato encendido">⚡</span>' : '') +
               '<span class="status-pill ' + info.cls + '" aria-label="Estado: ' + escapeHtml(info.label) + '">' + escapeHtml(info.label) + '</span>' +
-            '</div>' +
-            '<div class="device-details">' +
-              '<span>GPIO ' + escapeHtml(rele.gpio_pin || '-') + ' | ' + escapeHtml(rele.raspberry_nombre || rele.raspberry_ip || 'Raspberry principal') + '</span>' +
-              '<span>' + escapeHtml(scheduleLabel(rele)) + '</span>' +
-              (normalize(rele.ultimo_error) ? '<span class="error">' + escapeHtml(rele.ultimo_error) + '</span>' : '') +
             '</div>' +
           '</div>' +
           '<div class="device-footer' + (hasPhoto ? ' has-photo' : '') + '">' +

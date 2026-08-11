@@ -296,6 +296,20 @@
       min-width: 0;
     }
 
+    .relay-operational-summary {
+      display: grid;
+      gap: 4px;
+      padding: 9px 10px;
+      border: 1px solid var(--electric-line);
+      border-radius: 8px;
+      background: color-mix(in srgb, var(--electric-panel) 76%, var(--electric-panel-soft));
+      color: var(--electric-muted);
+      font-size: .85rem;
+      line-height: 1.35;
+    }
+
+    .relay-operational-summary strong { color: var(--electric-text); }
+
     .relay-device {
       display: grid;
       grid-template-columns: 82px minmax(0, 1fr);
@@ -1121,7 +1135,7 @@
           var relayClass = isOn ? 'on' : (data.ultimo_estado === 'off' ? 'off' : 'warn');
           cards.push('<article class="relay-card" data-rele-id="' + sanitize(data.id || 0) + '" data-estacion-id="' + sanitize(estacion.estacion_id) + '">' +
             '<div class="relay-head">' +
-              '<div><h3>' + sanitize(data.estacion_nombre) + '</h3><div class="relay-meta">' +
+              '<div><h3>' + sanitize(data.relay_name || data.tipo_carga || data.salida_codigo || data.estacion_nombre) + '</h3><div class="relay-meta">' +
                 '<span class="status-chip ' + activeClass + '">' + (estacion.activa ? 'Estacion activa' : 'Estacion inactiva') + '</span>' +
                 '<span class="status-chip ' + relayClass + '">Aparato ' + sanitize(data.ultimo_estado || 'desconocido') + '</span>' +
                 (isOn ? '<span class="electric-on-bolt" title="Aparato encendido" aria-label="Aparato encendido">⚡</span>' : '') +
@@ -1130,6 +1144,10 @@
                 (data.programacion_habilitada ? '<span class="status-chip on">Agenda ' + sanitize(data.hora_encendido || '--:--') + ' / ' + sanitize(data.hora_apagado || '--:--') + '</span>' : '<span class="status-chip">Sin agenda</span>') +
               '</div></div>' +
               '<span class="status-chip">GPIO ' + sanitize(data.gpio_pin) + '</span>' +
+            '</div>' +
+            '<div class="relay-operational-summary">' +
+              '<strong>GPIO ' + sanitize(data.gpio_pin) + ' | ' + sanitize(data.raspberry_nombre || data.raspberry_codigo || 'Raspberry sin asignar') + ' - ' + sanitize(data.relay_name || data.salida_codigo || 'Salida') + '</strong>' +
+              '<span>' + (data.programacion_habilitada ? 'Programación: ' + sanitize(data.hora_encendido || '--:--') + ' a ' + sanitize(data.hora_apagado || '--:--') : 'Sin programación') + '</span>' +
             '</div>' +
             '<div class="relay-device">' +
               relayPhotoMarkup(data) +
