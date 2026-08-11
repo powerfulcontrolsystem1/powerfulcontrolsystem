@@ -354,6 +354,7 @@
         <footer class="domotica-device-footer"><button class="btn secondary" value="cancel">Cancelar</button><button id="cartElectricScheduleSave" class="btn primary" value="default">Guardar programación</button></footer>
       </form>
     </dialog>
+    <dialog id="cartElectricTimerDialog" class="domotica-device-dialog cart-electric-dialog"><form method="dialog" id="cartElectricTimerForm"><header class="domotica-device-head"><div><p class="form-help mt-0 mb-4">Temporizador</p><h2 id="cartElectricTimerTitle" class="section-heading">Equipo</h2></div><button class="btn secondary" value="cancel">Cerrar</button></header><div class="domotica-device-body"><p class="form-help">Enciende el equipo y lo apaga automáticamente al finalizar.</p><div class="form-row"><div class="form-col"><label class="form-label">Horas</label><input id="cartElectricTimerHours" class="form-input" type="number" min="0" max="168" value="0"></div><div class="form-col"><label class="form-label">Minutos</label><input id="cartElectricTimerMinutes" class="form-input" type="number" min="0" max="59" value="15"></div><div class="form-col"><label class="form-label">Segundos</label><input id="cartElectricTimerSeconds" class="form-input" type="number" min="0" max="59" value="0"></div></div></div><footer class="domotica-device-footer"><button class="btn secondary" value="cancel">Cancelar</button><button class="btn primary" value="default">Iniciar temporizador</button></footer></form></dialog>
   </main>
 
   <script>
@@ -589,6 +590,7 @@
           '<div class="device-footer' + (hasPhoto ? ' has-photo' : '') + '">' +
             '<button class="btn device-toggle-action ' + info.cls + '" type="button" data-control-toggle="' + (isOn ? 'off' : 'on') + '" data-rele-id="' + escapeHtml(rele.id || 0) + '" title="' + escapeHtml(controlLabel(rele, isOn)) + '"' + (disabled ? ' disabled' : '') + '>' + escapeHtml(controlLabel(rele, isOn)) + '</button>' +
             '<button class="btn secondary" type="button" data-control-schedule data-rele-id="' + escapeHtml(rele.id || 0) + '">Programar</button>' +
+			'<button class="btn secondary" type="button" data-control-timer data-rele-id="' + escapeHtml(rele.id || 0) + '">Temporizador</button>' +
             (hasPhoto ? photoHTML(rele) : '') +
           '</div>' +
         '</article>';
@@ -738,10 +740,13 @@
       document.getElementById('cartElectricGrid').addEventListener('click', function(ev) {
         const schedule = ev.target && ev.target.closest ? ev.target.closest('[data-control-schedule]') : null;
         if (schedule) { openSchedule(schedule.getAttribute('data-rele-id')); return; }
+		const timer = ev.target && ev.target.closest ? ev.target.closest('[data-control-timer]') : null;
+		if (timer) { state.selectedReleID=parsePositiveInt(timer.getAttribute('data-rele-id')); const r=state.reles.find(x=>Number(x.id)===state.selectedReleID); document.getElementById('cartElectricTimerTitle').textContent=(r&&r.relay_name)||'Equipo'; document.getElementById('cartElectricTimerDialog').showModal(); return; }
         const toggle = ev.target && ev.target.closest ? ev.target.closest('[data-control-toggle]') : null;
         if (toggle) { sendCommand(toggle.getAttribute('data-rele-id'), toggle.getAttribute('data-control-toggle')); return; }
       });
       document.getElementById('cartElectricScheduleForm').addEventListener('submit', function(ev) { ev.preventDefault(); saveSchedule().catch(function(err) { setMessage(err.message || 'No se pudo guardar programación.', 'error'); }); });
+		document.getElementById('cartElectricTimerForm').addEventListener('submit', async function(ev) { ev.preventDefault(); const sec=Number(document.getElementById('cartElectricTimerHours').value||0)*3600+Number(document.getElementById('cartElectricTimerMinutes').value||0)*60+Number(document.getElementById('cartElectricTimerSeconds').value||0); if(sec<1) throw new Error('Indica una duración válida.'); const res=await fetch('/api/empresa/control_electrico?empresa_id='+encodeURIComponent(state.empresaID)+'&action=temporizador_rele',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({estacion_id:state.estacionID,rele_id:state.selectedReleID,duracion_segundos:sec})}); await ensureOk(res); document.getElementById('cartElectricTimerDialog').close(); await fetchControls(); setMessage('Temporizador iniciado.','success'); });
 
       fetchControls().catch(function(err) {
         setMessage(err.message || 'No se pudieron cargar aparatos.', 'error');

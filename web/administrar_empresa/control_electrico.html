@@ -737,10 +737,12 @@
           <label class="form-label" for="ruleAccion">Tarea</label>
           <select id="ruleAccion" class="form-input">
             <option value="encender">Encender aparato</option>
+			<option value="encender_temporizado">Encender con temporizador</option>
             <option value="apagar">Apagar aparato</option>
             <option value="alarma">Solo alarma</option>
           </select>
         </div>
+		<div class="form-col"><label class="form-label" for="ruleTimerSeconds">Duración temporizador (segundos)</label><input id="ruleTimerSeconds" class="form-input" type="number" min="1" max="604800" value="900"></div>
         <div class="form-col">
           <label class="form-label" for="ruleRele">Aparato destino</label>
           <select id="ruleRele" class="form-input"></select>
@@ -1289,6 +1291,7 @@
         $('ruleCondicion').value = 'igual';
         $('ruleValor').value = '';
         $('ruleAccion').value = 'alarma';
+		$('ruleTimerSeconds').value = '900';
         $('ruleRele').value = '';
         $('ruleSeveridad').value = 'advertencia';
         $('ruleAlarma').checked = true;
@@ -1307,6 +1310,7 @@
         $('ruleCondicion').value = rule.condicion || 'igual';
         $('ruleValor').value = rule.valor || '';
         $('ruleAccion').value = rule.accion || 'alarma';
+		$('ruleTimerSeconds').value = rule.temporizador_segundos || 900;
         $('ruleRele').value = rule.rele_id || '';
         $('ruleSeveridad').value = rule.severidad || 'advertencia';
         $('ruleAlarma').checked = rule.alarma_habilitada !== false;
@@ -1327,6 +1331,7 @@
           condicion: $('ruleCondicion').value,
           valor: $('ruleValor').value.trim(),
           accion: $('ruleAccion').value,
+		  temporizador_segundos: Number($('ruleTimerSeconds').value || 0),
           rele_id: releID,
           estacion_id: Number(rele.estacion_id || 0),
           alarma_habilitada: $('ruleAlarma').checked,

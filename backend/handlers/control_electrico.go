@@ -176,6 +176,9 @@ func evaluarControlElectricoReglasOrigen(dbEmp *sql.DB, empresaID int64, sensorC
 			result := controlElectricoDispatchManual(dbEmp, empresaID, regla.EstacionID, regla.ReleID, target, actor, "regla_sensor")
 			item["resultado"] = result
 		}
+		if regla.Accion == "encender_temporizado" {
+			item["resultado"] = controlElectricoStartTimer(dbEmp, empresaID, regla.EstacionID, regla.ReleID, regla.TemporizadorSegundos, actor, "regla_sensor_temporizador")
+		}
 		if regla.AlarmaHabilitada || regla.Accion == "alarma" {
 			_, _ = dbpkg.InsertEmpresaControlElectricoEvento(dbEmp, dbpkg.EmpresaControlElectricoEvento{
 				EmpresaID:      empresaID,
@@ -515,6 +518,23 @@ func EmpresaControlElectricoHandler(dbEmp *sql.DB, dbSuper ...*sql.DB) http.Hand
 				}
 				writeJSON(w, status, result)
 				return
+			case "temporizador_rele":
+				var payload struct {
+					EstacionID       int64 `json:"estacion_id"`
+					ReleID           int64 `json:"rele_id"`
+					DuracionSegundos int   `json:"duracion_segundos"`
+				}
+				if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+					http.Error(w, "JSON invalido", http.StatusBadRequest)
+					return
+				}
+				result := controlElectricoStartTimer(dbEmp, empresaID, payload.EstacionID, payload.ReleID, payload.DuracionSegundos, strings.TrimSpace(adminEmailFromRequest(r)), "temporizador_manual")
+				status := http.StatusOK
+				if !result.OK && !result.Skipped {
+					status = http.StatusBadGateway
+				}
+				writeJSON(w, status, result)
+				return
 
 			case "probar_gpio":
 				var payload struct {
@@ -671,6 +691,22 @@ func EmpresaControlElectricoHandler(dbEmp *sql.DB, dbSuper ...*sql.DB) http.Hand
 		}
 		http.Error(w, "Metodo no permitido", http.StatusMethodNotAllowed)
 	}
+}
+
+func controlElectricoStartTimer(dbEmp *sql.DB, empresaID, estacionID, releID int64, seconds int, actor, origen string) controlElectricoDispatchResult {
+	if seconds < 1 || seconds > 7*24*60*60 {
+		return controlElectricoDispatchResult{OK: false, Error: "El temporizador debe estar entre 1 segundo y 7 dias"}
+	}
+	on := controlElectricoDispatchManual(dbEmp, empresaID, estacionID, releID, true, actor, origen)
+	if !on.OK && !on.Pending {
+		return on
+	}
+	_, _ = dbpkg.InsertEmpresaControlElectricoEvento(dbEmp, dbpkg.EmpresaControlElectricoEvento{EmpresaID: empresaID, EstacionID: estacionID, ReleID: releID, Comando: "temporizador", EstadoObjetivo: "on", Resultado: "programado", Actor: actor, Origen: origen, MetadataJSON: fmt.Sprintf(`{"duracion_segundos":%d}`, seconds)})
+	time.AfterFunc(time.Duration(seconds)*time.Second, func() {
+		_ = controlElectricoDispatchManual(dbEmp, empresaID, estacionID, releID, false, "temporizador", "temporizador_expirado")
+	})
+	on.Message = fmt.Sprintf("Equipo encendido por %d segundos; apagado programado", seconds)
+	return on
 }
 
 func handleControlElectricoReleFotoUpload(r *http.Request, dbEmp, dbSuper *sql.DB, empresaID int64) (int64, string, error) {
