@@ -11,6 +11,7 @@ STAGING_BACKEND_CONTAINER="${STAGING_BACKEND_CONTAINER:-pcs-staging-backend}"
 PROD_DB_USER="${PROD_DB_USER:-pcs}"
 STAGING_DB_USER="${STAGING_DB_USER:-pcs_staging}"
 EMPRESAS_DB="${EMPRESAS_DB:-pcs_empresas}"
+REQUIRE_STAGING_COMPLETE="${REQUIRE_STAGING_COMPLETE:-0}"
 
 fail() {
   echo "[ERROR] $*" >&2
@@ -66,8 +67,15 @@ reference_validation() {
 }
 
 echo "[INFO] Auditoria DIAN saneada empresa_id=${EMPRESA_ID}"
-echo "[INFO] principal $(config_summary "$PROD_POSTGRES_CONTAINER" "$PROD_DB_USER")"
+principal_summary="$(config_summary "$PROD_POSTGRES_CONTAINER" "$PROD_DB_USER")"
+staging_summary="$(config_summary "$STAGING_POSTGRES_CONTAINER" "$STAGING_DB_USER")"
+echo "[INFO] principal ${principal_summary}"
 echo "[INFO] principal $(reference_validation "$PROD_POSTGRES_CONTAINER" "$PROD_BACKEND_CONTAINER" "$PROD_DB_USER" | tr '\n' ',')"
-echo "[INFO] staging $(config_summary "$STAGING_POSTGRES_CONTAINER" "$STAGING_DB_USER")"
+echo "[INFO] staging ${staging_summary}"
 echo "[INFO] staging $(reference_validation "$STAGING_POSTGRES_CONTAINER" "$STAGING_BACKEND_CONTAINER" "$STAGING_DB_USER" | tr '\n' ',')"
+
+if [[ "$REQUIRE_STAGING_COMPLETE" == "1" ]] && ! grep -Eq 'row=1,identity=1,ambient=1,range=1,testset=1,cert_ref=1,key_ref=1' <<<"$staging_summary"; then
+  echo "[BLOCKED] Staging no tiene una configuracion DIAN completa para esta empresa."
+  exit 2
+fi
 echo "[OK] Auditoria terminada. No se copio ni mostro material fiscal sensible."

@@ -41921,3 +41921,8 @@ acumulativa.
   interna de una entrega externa sin mostrar destinos. En el VPS confirmó
   servicio sano, cero alertas activas y solo receptor interno; devolvió bloqueo
   controlado hasta contar con un canal aprobado y simulacro completo.
+2026-08-11: Plan 110 / compuerta integrada de preproducción.
+- Se añadió `vps-p110-preproduction-gate.sh`, que combina salud de staging,
+  paridad DIAN exigida y entrega externa de Alertmanager. La ejecución VPS
+  terminó en NO-GO controlado por los dos bloqueos reales, sin tocar servicios,
+  secretos ni documentos fiscales.
