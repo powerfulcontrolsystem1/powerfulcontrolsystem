@@ -3451,3 +3451,6 @@
 ### Ubicacion del acceso de Domotica en el carrito
 - [UX] Se retira el boton Domotica de las tarjetas de estaciones.
 - [UX] Se conserva un unico boton `⚡ Domotica` dentro del carrito, junto al selector de accion, con adaptacion responsive y visibilidad por configuracion empresarial.
+## 2026-08-11 - Correccion de migracion Domotica
+
+- Se versionan las columnas `programacion_inicio` y `programacion_fin` de los relés para que el rango de fecha/hora llegue al esquema empresarial antes de que la API lo consulte.
