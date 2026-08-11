@@ -12912,6 +12912,9 @@ panel de seguridad para que el navegador reciba la correccion CSRF de staging.
 - `documentos/evidencia_plan_110/P110-007/2026-08-11_dast_autenticado_candidato_9ee2fe9a.md`:
   registra el DAST autenticado no mutante del candidato P110 vigente, incluidos
   sesión, CSRF, Origin, CORS y límite empresarial, sin conservar secretos.
+- `documentos/evidencia_plan_110/P110-002/2026-08-11_cxp_concurrencia_candidato_6bed2315.md`:
+  conserva la corrección contractual y la prueba oficial concurrente de CxP:
+  proveedor derivado en servidor, idempotencia, bloqueo de sobrepago y saldo.
 - `documentos/plan_110.md`: plan de cierre verificable preparado para
   GPT-5.6 Terra con razonamiento medio; transforma las brechas restantes del
   Plan 109 en 13 compuertas ordenadas de integración, finanzas, IA, regresión

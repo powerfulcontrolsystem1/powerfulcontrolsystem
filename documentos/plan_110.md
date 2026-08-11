@@ -761,3 +761,13 @@ autoriza ni ejecuta despliegue productivo.
 - P110-007 permanece **parcial**: aún requiere DAST integral, CSP evaluada,
   matriz A/B de dominios y alerta externa. El avance se mantiene en **15,4 %**
   y el veredicto sigue siendo **NO-GO**.
+
+## Actualización 2026-08-11, proveedor CxP y carrera concurrente
+
+- El candidato `6bed2315` corrige la derivación servidor del proveedor CxP y
+  aprobó en staging el alta oficial, replay idempotente y bloqueo de sobrepago
+  bajo dos solicitudes simultáneas. El detalle final quedó pagado sin saldo.
+- P110-002 queda **parcial** hasta la conciliación independiente, recuperación
+  outbox, reportes con diferencia cero y UAT firmado del contador. Implementación
+  P110: **19,2 %** (cinco fases parciales de 13); certificación y preparación
+  productiva: **0 %**; veredicto **NO-GO**.

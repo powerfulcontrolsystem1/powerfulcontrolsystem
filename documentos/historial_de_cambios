@@ -41836,3 +41836,12 @@ acumulativa.
   contiene credenciales, cookies ni respuestas empresariales. P110-007 sigue
   parcial por DAST integral, CSP, A/B completo y alertas externas; producción
   no fue modificada.
+2026-08-11: Plan 110 / contrato de proveedor y concurrencia CxP.
+- Se corrigió el alta CxP para derivar `proveedor_nombre` a partir del
+  `proveedor_id` validado por empresa antes de persistir. El cliente no puede
+  escoger la identidad textual del proveedor. Las pruebas focalizadas Go y el
+  workflow inmutable aprobaron.
+- En staging aislado se creó una obligación de COP 2 por la API oficial, se
+  verificó replay idempotente 200/200 con el mismo pago, y una carrera final
+  200/409 sin sobrepago; el detalle cerró en saldo cero y estado pagada.
+  P110-002 queda parcial por conciliación/UAT pendientes; producción no cambió.
